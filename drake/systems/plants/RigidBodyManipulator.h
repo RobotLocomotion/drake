@@ -97,12 +97,6 @@ public:
   std::string getVelocityName(int velocity_num) const;
   std::string getStateName(int state_num) const;
 
-  template <typename Derived>
-  void doKinematics(MatrixBase<Derived> & q, bool b_compute_second_derivatives = false);
-
-  template <typename DerivedA, typename DerivedB>
-  void doKinematics(MatrixBase<DerivedA> & q, bool b_compute_second_derivatives, MatrixBase<DerivedB> & v);
-
   template <typename DerivedQ, typename DerivedV>
   void doKinematicsNew(const MatrixBase<DerivedQ>& q, const MatrixBase<DerivedV>& v, bool compute_gradients = false, bool compute_JdotV = true);
 
@@ -131,22 +125,10 @@ public:
   template <typename Scalar>
   GradientVar<Scalar, SPACE_DIMENSION, 1> centerOfMassJacobianDotTimesV(int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet);
 
-  template <typename Derived>
-  void getCOM(MatrixBase<Derived> &com,const std::set<int> &robotnum = RigidBody::defaultRobotNumSet);
-
   template <typename DerivedA, typename DerivedB, typename DerivedC>
   void jointLimitConstraints(MatrixBase<DerivedA> const & q, MatrixBase<DerivedB> &phi, MatrixBase<DerivedC> &J) const;
 
   size_t getNumJointLimitConstraints() const;
-
-  template <typename Derived>
-  void getCOMJac(MatrixBase<Derived> &J,const std::set<int> &robotnum = RigidBody::defaultRobotNumSet);
-
-  template <typename Derived>
-  void getCOMJacDot(MatrixBase<Derived> &Jdot,const std::set<int> &robotnum = RigidBody::defaultRobotNumSet);
-
-  template <typename Derived>
-  void getCOMdJac(MatrixBase<Derived> &dJ, const std::set<int> &robotnum = RigidBody::defaultRobotNumSet);
 
   int getNumContacts(const std::set<int> &body_idx);// = emptyIntSet);
 
@@ -156,9 +138,9 @@ public:
   template <typename Derived>
   void getContactPositionsJac(MatrixBase<Derived> &J, const std::set<int> &body_idx);// = emptyIntSet);
 
-  template <typename Derived>
-  void getContactPositionsJacDot(MatrixBase<Derived> &Jdot, const std::set<int> &body_idx);// = emptyIntSet);
-
+//  template <typename Derived>
+//  void getContactPositionsJacDot(MatrixBase<Derived> &Jdot, const std::set<int> &body_idx);// = emptyIntSet);
+//
 
   /**
    * Computes CoP in world frame. Normal and point on contact plane should be in world frame too.
@@ -169,18 +151,6 @@ public:
   void findAncestorBodies(std::vector<int>& ancestor_bodies, int body);
 
   void findKinematicPath(KinematicPath& path, int start_body_or_frame_idx, int end_body_or_frame_idx);
-
-  template <typename DerivedA, typename DerivedB>
-  void forwardKin(const int body_or_frame_ind, const MatrixBase<DerivedA>& pts, const int rotation_type, MatrixBase<DerivedB> &x);
-
-  template <typename DerivedA, typename DerivedB>
-  void forwardJacDot(const int body_ind, const MatrixBase<DerivedA>& pts, const int, MatrixBase<DerivedB> &Jdot);
-
-  template <typename DerivedA, typename DerivedB>
-  void forwardJac(const int body_ind, const MatrixBase<DerivedA>& pts, const int rotation_type, MatrixBase<DerivedB> &J);
-
-  template <typename DerivedA, typename DerivedB>
-  void forwarddJac(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &dJ);
 
   template <typename Scalar>
   GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> massMatrix(int gradient_order = 0);
@@ -202,9 +172,6 @@ public:
 
   template <typename DerivedPoints>
   GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, 1> forwardJacDotTimesV(const MatrixBase<DerivedPoints>& points, int body_or_frame_ind, int base_or_frame_ind, int rotation_type, int gradient_order);
-
-  template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD>
-  void bodyKin(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &x, MatrixBase<DerivedC> *J=NULL, MatrixBase<DerivedD> *P=NULL);
 
   template<typename Scalar>
   GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> geometricJacobian(int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, int gradient_order, bool in_terms_of_qdot = false, std::vector<int>* v_indices = nullptr);
@@ -364,14 +331,8 @@ public:
   VectorXd cached_q, cached_v;  // these should be private
   VectorXd cached_q_old, cached_v_old;  // these should be private
 
-  void setUseNewKinsol(bool tf) { use_new_kinsol=tf; kinematicsInit=false; }
-  bool getUseNewKinsol(void) { return use_new_kinsol; }
-
 private:
   VectorXd cached_q_new, cached_v_new;
-  bool use_new_kinsol;
-
-  void doKinematics(double* q, bool b_compute_second_derivatives=false, double* qd=NULL);
 
   //helper functions for contactConstraints
   void accumulateContactJacobian(const int bodyInd, Matrix3Xd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & J);
