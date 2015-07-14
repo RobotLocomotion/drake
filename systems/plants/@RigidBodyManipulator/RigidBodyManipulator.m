@@ -2066,6 +2066,9 @@ classdef RigidBodyManipulator < Manipulator
         d = surfaceTangentsmex(obj.mex_model_ptr, normal);
         return
       end
+      
+      len = norm(normal);
+      normal = normal/len;
 
       t1=normal; % initialize size
 
@@ -2083,8 +2086,10 @@ classdef RigidBodyManipulator < Manipulator
       t1(:,ind) = [normal(2,ind);-normal(1,ind);zeros(1,sum(ind))]; % cross(normal,[0;0;1]) normalized
       t1(:,ind) = bsxfun(@rdivide,t1(:,ind),sqrt(sum(t1(1:2,ind).^2,1))); % normalize
 
+      t1 = t1*len; % scaling t1 so t1 and t2 have the same norm as normal
+      
       t2 = cross(t1,normal);
-
+      
       m = 2;  % half of the the number of direct vectors
       theta = (0:(m-1))*pi/m;
 
