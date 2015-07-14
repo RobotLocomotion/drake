@@ -50,8 +50,6 @@ u0 = utraj.eval(tspan(1));
 xf = xtraj.eval(tspan(2));
 uf = utraj.eval(tspan(2));
 
-F0 = getFandFdot(obj,tspan(1),x0,u0);
-Ff = getFandFdot(obj,tspan(2),xf,uf);
 
 % if isfield(options,'P0')
 %   P0 = options.P0;
@@ -62,7 +60,11 @@ Ff = getFandFdot(obj,tspan(2),xf,uf);
   
 % end
 
-phi0 = obj.positionConstraints(x0(1:obj.getNumPositions));
+[phi0,J0] = obj.positionConstraints(x0(1:obj.getNumPositions));
+
+F0 = getFandFdot(obj,tspan(1),x0,u0);
+Ff = getFandFdot(obj,tspan(2),xf,uf);
+
 
 dynamicsFun = @(t,x,u) constrainedDynamics(obj,t,x,u);
 
@@ -149,23 +151,23 @@ function B = getBTrajectory(p,ts,xtraj,utraj)
   B = PPTrajectory(spline(ts,B));
 end
 
-
-function [F,Fdot]=getFandFdot(obj,t,x,u)
-  q = x(1:obj.getNumPositions());
-  qd = x(obj.getNumPositions()+1:end);
-
-  % check if this doesn't calculate the gradient
-  [~,J,dJ] = obj.positionConstraints(q);
-  Jdot = reshape(reshape(dJ, numel(J), []) * qd, size(J));
-
-  F = full([J zeros(size(J));Jdot J]);
-
-  if nargout > 1
-    [~,A] = obj.constrainedDynamics(t,x,u);
+  function [F,Fdot]=getFandFdot(obj,t,x,u)
+    q = x(1:obj.getNumPositions());
+    qd = x(obj.getNumPositions()+1:end);
     
-    Fdot = - F*A(:,2:1+length(x));
+    % check if this doesn't calculate the gradient
+    [~,J,dJ] = obj.positionConstraints(q);
+    Jdot = reshape(reshape(dJ, numel(J), []) * qd, size(J));
+    
+    F = full([J zeros(size(J));Jdot J]);
+    
+    if nargout > 1
+      [~,A] = obj.constrainedDynamics(t,x,u);
+      
+      Fdot = - F*A(:,2:1+length(x));
+    end
   end
-end
+
 
 function Pdot = getPdot(obj,t,x,u,P,alpha_1,alpha_2)
 
@@ -225,9 +227,6 @@ function PandSqrtSdotydot = PandSqrtSdynamics(t,PandSqrtS,p,dynamicsfn,xtraj,utr
 
   PandSqrtSdotydot = [Pdot_t(:);sqrtSdot(:)];
   % display(sprintf('S: %f',t))  
-%   if t < .4759
-%   keyboard
-% end
 % display(sprintf('%f: %e',t,max(eig(sqrtS))))
 end
 
