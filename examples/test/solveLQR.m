@@ -1,8 +1,20 @@
 function solveLQR(p,xtraj,utraj,ltraj,Q,R,Qf)
 
+if nargin <1
+  load data/hopper_traj_40_knots.mat
+  warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
+  warning('off','Drake:RigidBodyManipulator:WeldedLinkInd');
+  warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
+  options.terrain = RigidBodyFlatTerrain();
+  options.floating = true;
+  options.ignore_self_collisions = true;
+  options.use_bullet = false;
+  p = PlanarRigidBodyManipulator('OneLegHopper.urdf',options);
+end
+
 if nargin < 5
-  Q = diag([10*ones(p.getNumPositions,1);.1*ones(p.getNumVelocities,1)]);
-  R = 0.01*eye(getNumInputs(p));
+  Q = diag([10*ones(p.getNumPositions,1);1*ones(p.getNumVelocities,1)]);
+  R = 0.001*eye(getNumInputs(p));
   Qf = 2*Q;
 end
 

@@ -225,7 +225,7 @@ classdef FullStateQPControllerDT < DrakeSystem
     
   end
   
-    function y=output_miqp(obj,t,~,x)
+  function y=output_miqp(obj,t,~,x)
 %     y = obj.output_nlp(t,[],x);
 %     return;
     doProj = false;
@@ -242,13 +242,15 @@ classdef FullStateQPControllerDT < DrakeSystem
     supp_idx = find(ctrl_data.support_times<=(t+h),1,'last');
     support = ctrl_data.supports(supp_idx);
     if support.bodies(1) == 7,
+      % assuming heel is contact 1, toe is contact 2
       if length(support.bodies) > 1
-        supp_ind = [support.contact_pts{1} support.contact_pts{2}+2];
+        supp_ind = [1*strcmp(support.contact_groups{1},'heel') + 2*strcmp(support.contact_groups{1},'toe'), ...
+                    2 + 1*strcmp(support.contact_groups{1},'heel') + 2*strcmp(support.contact_groups{1},'toe')];
       else
-        supp_ind = support.contact_pts{1};
+        supp_ind = 1*strcmp(support.contact_groups{1},'heel') + 2*strcmp(support.contact_groups{1},'toe');
       end
     else
-      supp_ind = support.contact_pts{1} + 2;
+        supp_ind = 2 + 1*strcmp(support.contact_groups{1},'heel') + 2*strcmp(support.contact_groups{1},'toe');
     end
     
     
@@ -416,10 +418,13 @@ classdef FullStateQPControllerDT < DrakeSystem
     fqp = (- x0)'*S*Ix - h*u0'*R*Iu;
     
     % add cost off of the surface
+    try
     K = 000*ones(1,length(supp_idx));
     fq_add = K*n(supp_idx,:);
     fqp = fqp + fq_add*Iq;
-    
+    catch
+        keyboard
+    end
     %cost on boolean
     Kbool = 0*ones(1,length(supp_idx));
     fqp = fqp -Kbool*Ibool(supp_idx,:);

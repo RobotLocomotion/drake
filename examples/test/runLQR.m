@@ -69,13 +69,19 @@ playback(v,traj,struct('slider',true));
 
 
 if 1
-  % plot position tracking
-  pptraj = PPTrajectory(foh(traj.getBreaks,traj.eval(traj.getBreaks)));
+
+  xtraj_ts = xtraj.getBreaks();
+  xtraj_pts = xtraj.eval(xtraj_ts);
+  
+  traj_ts = traj.getBreaks();
+  traj_pts = traj.eval(traj_ts);
+  
   for i=1:10
     figure(100+i);
     hold on;
-    fnplt(xtraj(i));
-    fnplt(pptraj(i));
+    title(r.getStateFrame.coordinates{i});
+    plot(xtraj_ts,xtraj_pts(i,:),'g.-');
+    plot(traj_ts,traj_pts(i,:),'r.-');
     hold off;
   end
 end
