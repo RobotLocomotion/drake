@@ -345,11 +345,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         assert(mxGetM(prhs[4]) == 3 &&mxGetN(prhs[4]) == 1);
         memcpy(target.data(),mxGetPrSafe(prhs[4]),sizeof(double)*3);
         Vector3d gaze_origin;
-        Vector3d gaze_origin_tmp;
         assert(mxIsNumeric(prhs[5]));
         assert(mxGetM(prhs[5]) == 3 && mxGetN(prhs[5]) == 1);
-        memcpy(gaze_origin_tmp.data(),mxGetPrSafe(prhs[5]),sizeof(double)*3);
-        gaze_origin = gaze_origin_tmp;
+        memcpy(gaze_origin.data(),mxGetPrSafe(prhs[5]),sizeof(double)*3);
         double conethreshold = rigidBodyConstraintParseGazeConethreshold(prhs[6]);
         cnst = new WorldGazeTargetConstraint(model,body,axis,target,gaze_origin,conethreshold,tspan);
         plhs[0] = createDrakeConstraintMexPointer((void*)cnst, "WorldGazeTargetConstraint");
