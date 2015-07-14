@@ -30,7 +30,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     Matrix< Polynomiald, 2, 1> xdot;
     dynamicsRHS(x,xdot);
 //    cout << xdot << endl;
-    plhs[0] = eigenToMSSPoly(xdot);
+    plhs[0] = eigenToMSSPoly<2,1>(xdot);
 //    plhs[0] = mxCreateDoubleMatrix(2,1,mxREAL);
   } else {
     mexErrMsgIdAndTxt("Drake:VanDerPolCpp:UnknownType","don't know how to handle the datatype passed in for x (yet)");

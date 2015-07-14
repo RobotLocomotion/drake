@@ -53,8 +53,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
   const mxArray* pobj = prhs[0];
 
   if (mxIsDouble(prhs[1]) && mxIsDouble(prhs[2])) {
-    Map<VectorXd> q(mxGetPrSafe(prhs[1]), mxGetNumberOfElements(prhs[1]));
-    Map<VectorXd> qd(mxGetPrSafe(prhs[2]), mxGetNumberOfElements(prhs[2]));
+    auto q = matlabToEigenMap<2,1>(prhs[1]);
+    auto qd = matlabToEigenMap<2,1>(prhs[2]);
 
     plhs[0] = mxCreateDoubleMatrix(2,2,mxREAL);
     Map<Matrix2d> H(mxGetPr(plhs[0]));
@@ -73,9 +73,9 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
 
     manipulatorDynamics(pobj,q,qd,H,C,B);
 
-    plhs[0] = eigenToTrigPoly(H);
-    plhs[1] = eigenToTrigPoly(C);
-    plhs[2] = eigenToTrigPoly(B);
+    plhs[0] = eigenToTrigPoly<2,2>(H);
+    plhs[1] = eigenToTrigPoly<2,1>(C);
+    plhs[2] = eigenToTrigPoly<2,1>(B);
   } else {
     mexErrMsgIdAndTxt("Drake:AcrobotPLantCpp:UnknownType","don't know how to handle the datatypes passed in for q and/or qd (yet)");
   }

@@ -30,6 +30,7 @@ public:
   typedef _CoefficientType CoefficientType;
   typedef unsigned int VarType;
   typedef unsigned int PowerType;
+  typedef int MSVC_STD_POW_PowerType;  // can't believe i have to do this, but msvc considers the call to std::pow ambiguous because it won't cast unsigned int to int
   typedef typename Eigen::NumTraits<CoefficientType>::Real RealScalar;
   typedef std::complex<RealScalar> RootType;
   typedef Eigen::Matrix<RootType, Eigen::Dynamic, 1> RootsType;
@@ -115,14 +116,14 @@ public:
       if (iter->terms.empty())
         value += iter->coefficient;
       else
-        value += iter->coefficient*pow(x,iter->terms[0].power);
+        value += iter->coefficient*std::pow((ProductType)x,(MSVC_STD_POW_PowerType) iter->terms[0].power);
     }
     return value;
   }
 
   void subs(const VarType& orig, const VarType& replacement);
 
-  Polynomial derivative(int derivative_order = 1) const;
+  Polynomial derivative(unsigned int derivative_order = 1) const;
 
   Polynomial integral(const CoefficientType& integration_constant = 0.0) const;
 
@@ -223,10 +224,9 @@ public:
     return os;
   }
   
-  template<Eigen::DenseIndex RowsAtCompileTime = Eigen::Dynamic, Eigen::DenseIndex ColsAtCompileTime = Eigen::Dynamic>
-  static Eigen::Matrix<Polynomial, Eigen::Dynamic, Eigen::Dynamic> randomPolynomialMatrix(Eigen::DenseIndex num_coefficients_per_polynomial, Eigen::DenseIndex rows = RowsAtCompileTime, int cols = ColsAtCompileTime)
+static Eigen::Matrix<Polynomial, Eigen::Dynamic, Eigen::Dynamic> randomPolynomialMatrix(Eigen::DenseIndex num_coefficients_per_polynomial, Eigen::DenseIndex rows, Eigen::DenseIndex cols)
   {
-    Eigen::Matrix<Polynomial, RowsAtCompileTime, ColsAtCompileTime> mat(rows, cols);
+    Eigen::Matrix<Polynomial, Eigen::Dynamic, Eigen::Dynamic> mat(rows, cols);
     for (Eigen::DenseIndex row = 0; row < mat.rows(); ++row) {
       for (Eigen::DenseIndex col = 0; col < mat.cols(); ++col) {
         auto coeffs = (Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1>::Random(num_coefficients_per_polynomial)).eval();

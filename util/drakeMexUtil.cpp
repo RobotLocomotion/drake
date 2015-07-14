@@ -251,13 +251,13 @@ DLLEXPORT Matrix<Polynomiald, Dynamic, Dynamic> msspolyToEigen(const mxArray* ms
     int j=0;
     while (j<var.cols() && var(i,j)>0) {
       Polynomiald::Term t;
-      t.var = var(i,j);
-      t.power = pow(i,j);
+      t.var = (Polynomiald::VarType) var(i,j);
+      t.power = (Polynomiald::PowerType) pow(i,j);
       terms.push_back(t);
       j++;
     }
     Polynomiald p(coeff(i),terms);
-    poly(sub(i,0)-1,sub(i,1)-1) += p;
+    poly((DenseIndex) sub(i,0)-1,(DenseIndex) sub(i,1)-1) += p;
   }
 
 //  cout << poly << endl;
@@ -353,4 +353,4 @@ template DLLEXPORT mxArray* eigenToMatlabSparse(MatrixBase< Map< MatrixXd> > con
 template DLLEXPORT const std::vector<int> matlabToStdVector<int>(const mxArray* in);
 template DLLEXPORT const std::vector<Eigen::DenseIndex> matlabToStdVector<Eigen::DenseIndex>(const mxArray* in);
 template DLLEXPORT const std::vector<bool> matlabToStdVector<bool>(const mxArray* in);
-template DLLEXPORT mxArray* eigenToMSSPoly(const Matrix<Polynomiald,Dynamic,Dynamic> & poly);
+//template DLLEXPORT mxArray* eigenToMSSPoly(const Matrix<Polynomiald,Dynamic,Dynamic> & poly);

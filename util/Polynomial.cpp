@@ -40,7 +40,7 @@ Polynomial<CoefficientType>::Polynomial(const CoefficientType coefficient, const
   m.terms = terms;
 
   is_univariate = true;
-  for (int i=m.terms.size()-1; i>=0; i--) {
+  for (int i=(int)m.terms.size()-1; i>=0; i--) {
     if ((i>0) && (m.terms[i].var != m.terms[0].var)) {
       is_univariate = false;
     }
@@ -157,18 +157,16 @@ void Polynomial<CoefficientType>::subs(const VarType& orig, const VarType& repla
 }
 
 template <typename CoefficientType>
-Polynomial<CoefficientType> Polynomial<CoefficientType>::derivative(int derivative_order) const {
+Polynomial<CoefficientType> Polynomial<CoefficientType>::derivative(unsigned int derivative_order) const {
   if (!is_univariate)
     throw runtime_error("getCoefficients is only defined for univariate polynomials");
-  if (derivative_order < 0)
-    throw runtime_error("derivative order must be positive");
 
   Polynomial<CoefficientType> ret;
           
   for (typename vector<Monomial>::const_iterator iter=monomials.begin(); iter!=monomials.end(); iter++) {
     if (!iter->terms.empty() && iter->terms[0].power>=derivative_order) {
       Monomial m=*iter;
-      for (int k=0; k<derivative_order; k++) { // take the remaining derivatives
+      for (unsigned int k=0; k<derivative_order; k++) { // take the remaining derivatives
         m.coefficient = m.coefficient*m.terms[0].power;
         m.terms[0].power -= 1;
       }
@@ -190,9 +188,9 @@ Polynomial<CoefficientType> Polynomial<CoefficientType>::integral(const Coeffici
     if (iter->terms.empty()) {
       Term t;
       t.var=0;
-      for (typename vector<Monomial>::iterator iter=ret.monomials.begin(); iter!=ret.monomials.end(); iter++) {
-        if (!iter->terms.empty()) {
-          t.var = iter->terms[0].var;
+      for (typename vector<Monomial>::iterator iterB=ret.monomials.begin(); iterB!=ret.monomials.end(); iterB++) {
+        if (!iterB->terms.empty()) {
+          t.var = iterB->terms[0].var;
           break;
         }
       }
@@ -357,7 +355,7 @@ typename Polynomial<CoefficientType>::RootsType Polynomial<CoefficientType>::roo
   auto coefficients = getCoefficients();
 
   // need to handle degree 0 and 1 explicitly because Eigen's polynomial solver doesn't work for these
-  int degree = coefficients.size()-1;
+  int degree = static_cast<int>(coefficients.size())-1;
   switch (degree) {
   case 0:
     return Polynomial<CoefficientType>::RootsType(degree);
@@ -387,7 +385,7 @@ const unsigned int max_name_part = 923521; // (num_name_chars+1)^name_length;
 
 template <typename CoefficientType>
 bool Polynomial<CoefficientType>::isValidVariableName(const string name) {
-  int len = name.length();
+  size_t len = name.length();
   if (len<1) return false;
   for (int i=0; i<len; i++)
     if (name_chars.find(name[i]) == string::npos)
@@ -399,9 +397,9 @@ template <typename CoefficientType>
 typename Polynomial<CoefficientType>::VarType Polynomial<CoefficientType>::variableNameToId(const string name, const unsigned int m) {
   unsigned int exponent = 1;
   VarType name_part = 0;
-  for (int i=name.size()-1; i>=0; i--) {
+  for (int i=(int)name.size()-1; i>=0; i--) {
     exponent *= num_name_chars+1;
-    name_part += (name_chars.find(name[i])+1)*exponent;
+    name_part += ((VarType)name_chars.find(name[i])+1)*exponent;
   }
   const VarType maxId = std::numeric_limits<VarType>::max() / 2 / max_name_part;
   if (m>maxId) throw runtime_error("name exceeds max ID");
@@ -413,8 +411,8 @@ template <typename CoefficientType>
 string Polynomial<CoefficientType>::idToVariableName(const VarType id) {
   VarType name_part = (id/2) % max_name_part;  // id/2 to be compatible w/ msspoly, even though I'm not doing the trig support here
 
-  unsigned int m = std::round(id/2/max_name_part);
-  unsigned int exponent = pow(num_name_chars+1,name_length-1);
+  unsigned int m = id/2/max_name_part;
+  unsigned int exponent = (unsigned int) std::pow((double)(num_name_chars+1),(int)(name_length-1));
   char name[name_length+1];
   int j=0;
   for (int i=0; i<name_length; i++) {
@@ -424,7 +422,7 @@ string Polynomial<CoefficientType>::idToVariableName(const VarType id) {
   }
   if (j==0) name[j++] = name_chars[0];
   name[j] = '\0';
-  return string(name) + to_string(m+1);
+  return string(name) + std::to_string(static_cast<unsigned long long>(m+1)); // for msvc http://stackoverflow.com/questions/10664699/stdto-string-more-than-instance-of-overloaded-function-matches-the-argument
 }
 
 template <typename CoefficientType>
