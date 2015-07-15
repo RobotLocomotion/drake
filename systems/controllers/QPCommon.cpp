@@ -148,7 +148,6 @@ std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> l
       for (int k = 0; k < 3; k++) {
         available_supports[i].contact_pts[j][k] = qp_input->support_data[i].contact_pts[k][j];
       }
-      available_supports[i].contact_pts[j][3] = 1;
     }
   }
   return available_supports;
