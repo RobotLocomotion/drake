@@ -72,13 +72,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   
   int contact_logic_AND = (int) mxGetScalar(prhs[narg++]); // true if we should AND plan and sensor, false if we should OR them
 
-  pdata->r->doKinematics(qvec,false,qdvec);
+  pdata->r->doKinematicsNew(qvec, qdvec);
 
   //---------------------------------------------------------------------
   // Compute active support from desired supports -----------------------
-
-  Vector3d contact_pt = Vector3d::Zero();
-
   vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> active_supports;
   set<int> contact_bodies; // redundant, clean up later
   int num_active_contact_pts=0;
@@ -108,8 +105,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       SupportStateElement se;
       se.body_idx = (int) pBodies[i]-1;
       for (j=0; j<nc; j++) {
-        contact_pt.head(3) = all_body_contact_pts.col(j);
-        se.contact_pts.push_back(contact_pt);
+        se.contact_pts.push_back(all_body_contact_pts.col(j));
       }
       
       if (contact_threshold == -1) { // ignore terrain

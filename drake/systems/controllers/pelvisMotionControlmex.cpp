@@ -85,14 +85,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   double rfoot_yaw = mxGetScalar(prhs[narg++]);
   double foot_z = mxGetScalar(prhs[narg++]);
 
-  pdata->r->doKinematics(q,false,qd);
+  pdata->r->doKinematicsNew(q, qd);
 
   // TODO: this must be updated to use quaternions/spatial velocity
-  Vector6d pelvis_pose;
-  MatrixXd Jpelvis = MatrixXd::Zero(6,pdata->r->num_positions);
-  Vector3d zero = Vector3d::Zero();
-  pdata->r->forwardKin(pdata->pelvis_body_index,zero,1,pelvis_pose);
-  pdata->r->forwardJac(pdata->pelvis_body_index,zero,1,Jpelvis);
+  auto pelvis_pose_gradientvar = pdata->r->forwardKinNew(Vector3d::Zero().eval(), pdata->pelvis_body_index, 0, 1, 1);
+  const auto& pelvis_pose = pelvis_pose_gradientvar.value();
+  const auto& Jpelvis = pelvis_pose_gradientvar.gradient().value();
 
   if (pdata->pelvis_height_previous<-10000) {
     pdata->pelvis_height_previous = pelvis_pose(2);

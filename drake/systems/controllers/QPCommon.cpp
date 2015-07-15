@@ -505,28 +505,14 @@ int setupAndSolveQP(
   }
   Vector3d xcom;
   // consider making all J's into row-major
-  
 
-  if(!pdata->r->getUseNewKinsol())
-  {
-    pdata->r->getCOM(xcom);
-    pdata->r->getCOMJac(pdata->J);
-    MatrixXd Jdot;
-    pdata->r->getCOMJacDot(Jdot);
-    pdata->Jdotv = Jdot*robot_state.qd;
-    pdata->J_xy = pdata->J.topRows(2);
-    pdata->Jdotv_xy = pdata->Jdotv.head<2>();
-  }
-  else
-  {
-    GradientVar<double,3,1> xcom_grad = pdata->r->centerOfMass<double>(1);
-    xcom = xcom_grad.value();
-    pdata->J = xcom_grad.gradient().value();
-    GradientVar<double,3,1> comdotv_grad = pdata->r->centerOfMassJacobianDotTimesV<double>(0);
-    pdata->Jdotv = comdotv_grad.value();
-    pdata->J_xy = pdata->J.topRows(2);
-    pdata->Jdotv_xy = pdata->Jdotv.head<2>();
-  }
+  GradientVar<double,3,1> xcom_grad = pdata->r->centerOfMass<double>(1);
+  xcom = xcom_grad.value();
+  pdata->J = xcom_grad.gradient().value();
+  GradientVar<double,3,1> comdotv_grad = pdata->r->centerOfMassJacobianDotTimesV<double>(0);
+  pdata->Jdotv = comdotv_grad.value();
+  pdata->J_xy = pdata->J.topRows(2);
+  pdata->Jdotv_xy = pdata->Jdotv.head<2>();
 
   MatrixXd Jcom;
   VectorXd Jcomdotv;
