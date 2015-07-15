@@ -1,5 +1,6 @@
 function testBMI()
  % simple problem x^2+y^2=1,x+y+z >1, xz = 2
+ checkDependency('spotless');
  p = BMIspotless();
  [p,x] = p.newFree(1,1);
  [p,y] = p.newFree(1,1);

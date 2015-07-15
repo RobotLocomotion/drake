@@ -1,8 +1,10 @@
 classdef BMIspotless < spotsosprog
+  % Please make sure you have spotless on your machine. If not, call
+  % 'checkDependency('spotless')'
   properties(SetAccess = protected)
     w    % All the variables whose bilinear terms would appear
     W    % supposed to be the bilinear matrix w*w'.*blk1s
-    blk1s % A matrix with identity in some diagonal entries, and 0 otherwise. supposedly W = w*w'.*blk1s
+    blk1s % A block diagonal matrix with some blocks being 1s, and 0s for off diagonal blocks. supposedly W = w*w'.*blk1s
   end
   
   properties
@@ -30,6 +32,8 @@ classdef BMIspotless < spotsosprog
   
   methods
     function obj = BMIspotless()
+      % Please make sure you have spotless on your machine. If not, call
+      % 'checkDependency('spotless')'
       obj = obj@spotsosprog();
       obj.w = [];
       obj.W = [];
