@@ -50,7 +50,6 @@ int main()
   model->doKinematicsNew(qstar, v);
   Vector3d com0 = model->centerOfMass<double>(0).value();
 
-  l_hand_pt << 0.0, 0.0, 0.0;
   Vector3d r_hand_pt = Vector3d::Zero();
   Vector3d rhand_pos0 = model->forwardKinNew(r_hand_pt, r_hand, 0, 0, 0).value();
 
