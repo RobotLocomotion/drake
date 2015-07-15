@@ -232,6 +232,63 @@ DLLEXPORT const std::vector<double> matlabToStdVector<double>(const mxArray* in)
   return std::vector<double>(data, data + mxGetNumberOfElements(in));
 }
 
+DLLEXPORT Matrix<Polynomiald, Dynamic, Dynamic> msspolyToEigen(const mxArray* msspoly)
+{
+  auto dim = matlabToEigenMap<1,2>(mxGetPropertySafe(msspoly,0,"dim"));
+  auto sub = matlabToEigenMap<Dynamic,2>(mxGetPropertySafe(msspoly,0,"sub"));
+  auto var = matlabToEigenMap<Dynamic,Dynamic>(mxGetPropertySafe(msspoly,0,"var"));
+  auto pow = matlabToEigenMap<Dynamic,Dynamic>(mxGetPropertySafe(msspoly,0,"pow"));
+  auto coeff = matlabToEigenMap<Dynamic,1>(mxGetPropertySafe(msspoly,0,"coeff"));
+
+  assert(sub.rows()==var.rows());
+  assert(sub.rows()==pow.rows());
+  assert(sub.rows()==coeff.rows());
+  assert(var.cols()==pow.cols());
+
+  Matrix<Polynomiald, Dynamic, Dynamic> poly((int)dim(0),(int)dim(1));
+  for (int i=0; i<sub.rows(); i++) {
+    vector<Polynomiald::Term> terms;
+    int j=0;
+    while (j<var.cols() && var(i,j)>0) {
+      Polynomiald::Term t;
+      t.var = (Polynomiald::VarType) var(i,j);
+      t.power = (Polynomiald::PowerType) pow(i,j);
+      terms.push_back(t);
+      j++;
+    }
+    Polynomiald p(coeff(i),terms);
+    poly((DenseIndex) sub(i,0)-1,(DenseIndex) sub(i,1)-1) += p;
+  }
+
+//  cout << poly << endl;
+
+  return poly;
+}
+
+DLLEXPORT Eigen::Matrix<TrigPolyd, Eigen::Dynamic, Eigen::Dynamic> trigPolyToEigen(const mxArray* trigpoly)
+{
+  auto q = msspolyToEigen(mxGetPropertySafe(trigpoly,0,"q"));
+  auto s = msspolyToEigen(mxGetPropertySafe(trigpoly,0,"s"));
+  auto c = msspolyToEigen(mxGetPropertySafe(trigpoly,0,"c"));
+  auto p = msspolyToEigen(mxGetPropertySafe(trigpoly,0,"p"));
+
+  TrigPolyd::SinCosMap m;
+  for (int i=0; i<q.size(); i++) {
+    TrigPolyd::SinCosVars sc;
+    sc.s = s(i).getSimpleVariable();
+    sc.c = c(i).getSimpleVariable();
+    m[q(i).getSimpleVariable()] = sc;
+  }
+
+  Matrix<TrigPolyd, Dynamic, Dynamic> tp(p.rows(),p.cols());
+  for (int i=0; i<p.size(); i++) {
+    tp(i) = TrigPolyd(p(i),m);
+  }
+
+  return tp;
+}
+
+
 mwSize sub2ind(mwSize ndims, const mwSize* dims, const mwSize* sub) {
   mwSize stride = 1;
   mwSize ret = 0;
@@ -296,3 +353,4 @@ template DLLEXPORT mxArray* eigenToMatlabSparse(MatrixBase< Map< MatrixXd> > con
 template DLLEXPORT const std::vector<int> matlabToStdVector<int>(const mxArray* in);
 template DLLEXPORT const std::vector<Eigen::DenseIndex> matlabToStdVector<Eigen::DenseIndex>(const mxArray* in);
 template DLLEXPORT const std::vector<bool> matlabToStdVector<bool>(const mxArray* in);
+//template DLLEXPORT mxArray* eigenToMSSPoly(const Matrix<Polynomiald,Dynamic,Dynamic> & poly);

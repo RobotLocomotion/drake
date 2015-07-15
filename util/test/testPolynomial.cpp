@@ -12,7 +12,14 @@ template <typename CoefficientType>
 void testIntegralAndDerivative() {
   VectorXd coefficients = VectorXd::Random(5);
   Polynomial<CoefficientType> poly(coefficients);
+
+  cout << poly << endl;
+
+  cout << "derivative: " << poly.derivative(1) << endl;
+  
   Polynomial<CoefficientType> third_derivative = poly.derivative(3);
+  
+  cout << "third derivative: " << third_derivative << endl;
   Polynomial<CoefficientType> third_derivative_check = poly.derivative().derivative().derivative();
   valuecheckMatrix(third_derivative.getCoefficients(), third_derivative_check.getCoefficients(), 1e-14);
 
@@ -20,6 +27,7 @@ void testIntegralAndDerivative() {
   valuecheckMatrix(tenth_derivative.getCoefficients(), VectorXd::Zero(1), 1e-14);
 
   Polynomial<CoefficientType> integral = poly.integral(0.0);
+  cout << "integral: " << integral << endl;
   Polynomial<CoefficientType> poly_back = integral.derivative();
   valuecheckMatrix(poly_back.getCoefficients(), poly.getCoefficients(), 1e-14);
 }
@@ -41,15 +49,28 @@ void testOperators() {
 
     double scalar = uniform(generator);
 
+    cout << "-------" << endl;
+    cout << "p1 = " << poly1 << endl;
+    cout << "p2 = " << poly2 << endl;
+    cout << "c = " << scalar << endl;
+    
     Polynomial<CoefficientType> sum = poly1 + poly2;
+    cout << "p1+p2: " << sum << endl;
     Polynomial<CoefficientType> difference = poly2 - poly1;
+    cout << "p2-p1: " << difference << endl;
     Polynomial<CoefficientType> product = poly1 * poly2;
+    cout << "p1*p2: " << product << endl;
     Polynomial<CoefficientType> poly1_plus_scalar = poly1 + scalar;
+    cout << "p1+c: " << poly1_plus_scalar << endl;
     Polynomial<CoefficientType> poly1_minus_scalar = poly1 - scalar;
+    cout << "p1-c: " << poly1_minus_scalar << endl;
     Polynomial<CoefficientType> poly1_scaled = poly1 * scalar;
+    cout << "p1*c: " << poly1_scaled << endl;
     Polynomial<CoefficientType> poly1_div = poly1 / scalar;
+    cout << "p1/c: " << poly1_div << endl;
     Polynomial<CoefficientType> poly1_times_poly1 = poly1;
     poly1_times_poly1 *= poly1_times_poly1;
+    cout << "p1*p1" << poly1_times_poly1 << endl;
 
     double t = uniform(generator);
     valuecheck(sum.value(t), poly1.value(t) + poly2.value(t), 1e-8);
@@ -108,9 +129,9 @@ void testPolynomialMatrix() {
   int rows_B = cols_A;
   int cols_B = matrix_size_distribution(generator);
 
-  auto A = Polynomial<CoefficientType>::template randomPolynomialMatrix<Dynamic, Dynamic>(num_coefficients, rows_A, cols_A);
-  auto B = Polynomial<CoefficientType>::template randomPolynomialMatrix<Dynamic, Dynamic>(num_coefficients, rows_B, cols_B);
-  auto C = Polynomial<CoefficientType>::template randomPolynomialMatrix<Dynamic, Dynamic>(num_coefficients, rows_A, cols_A);
+  auto A = Polynomial<CoefficientType>::randomPolynomialMatrix(num_coefficients, rows_A, cols_A);
+  auto B = Polynomial<CoefficientType>::randomPolynomialMatrix(num_coefficients, rows_B, cols_B);
+  auto C = Polynomial<CoefficientType>::randomPolynomialMatrix(num_coefficients, rows_A, cols_A);
   auto product = A * B; // just verify that this is possible without crashing
   auto sum = A + C;
 
@@ -126,12 +147,10 @@ void testPolynomialMatrix() {
 }
 
 int main(int argc, char **argv) {
-
   testIntegralAndDerivative<double>();
   testOperators<double>();
   testRoots<double>();
   testEvalType();
   testPolynomialMatrix<double>();
-  cout << "test passed" << endl;
   return 0;
 }

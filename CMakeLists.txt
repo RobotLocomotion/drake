@@ -136,6 +136,8 @@ add_subdirectory(systems)
 add_subdirectory(thirdParty/GetFullPath)
 add_subdirectory(thirdParty/spruce)
 add_subdirectory(examples/Atlas)
+add_subdirectory(examples/Acrobot/@AcrobotPlantCpp)
+add_subdirectory(examples/@VanDerPolCpp)
 
 # setup matlab pods-compliance
 include(cmake/matlab_pods.cmake)

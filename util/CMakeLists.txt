@@ -15,6 +15,14 @@ if (LCM_FOUND AND MATLAB_FOUND)
   pods_use_pkg_config_packages(publishLCMLog lcm)
 endif()
 
+include_directories(.)
+add_library(drakePolynomial Polynomial.cpp)
+pods_install_libraries(drakePolynomial)
+pods_install_headers(Polynomial.h DESTINATION drake)
+pods_install_pkg_config_file(drakePolynomial
+LIBS -ldrakePolynomial
+REQUIRES
+VERSION 0.0.2)
 
 add_library(drakeUtil SHARED drakeUtil.cpp)
 pods_install_headers(drakeUtil.h  DESTINATION drake)
@@ -26,6 +34,7 @@ pods_install_pkg_config_file(drake-util
 
 if (MATLAB_FOUND)
   add_mex(drakeMexUtil SHARED drakeMexUtil.cpp MexWrapper.cpp)
+  target_link_libraries(drakeMexUtil drakePolynomial)
   # todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
   #add_mex(drakeUtil OBJECT drakeUtil.cpp)
 
@@ -41,7 +50,6 @@ if (LCM_FOUND)
   # note: requires drakeUtil header file, but not linking against it because
   # we only need methods that are templated and defined in the header
   include_directories (${PROJECT_SOURCE_DIR}/systems/trajectories )
-  include_directories (${PROJECT_SOURCE_DIR}/solvers/polynomial )
   include_directories (${PROJECT_BINARY_DIR}/lcmgen/lcmtypes )
   add_library(drakeLCMUtil SHARED lcmUtil.cpp)
   target_link_libraries(drakeLCMUtil drakeTrajectories)

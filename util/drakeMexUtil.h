@@ -1,6 +1,7 @@
 #include "mex.h"
 #include <vector>
 #include <Eigen/Core>
+#include "TrigPoly.h"
 
 #ifndef DRAKE_MEX_UTIL_H_
 #define DRAKE_MEX_UTIL_H_
@@ -18,6 +19,18 @@
 
 DLLEXPORT bool isa(const mxArray* mxa, const char* class_str);
 DLLEXPORT bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs, mxArray* prhs[], const char* filename);
+
+DLLEXPORT double *mxGetPrSafe(const mxArray *pobj);
+
+DLLEXPORT mxArray* mxGetPropertySafe(const mxArray* array, std::string const& field_name);
+DLLEXPORT mxArray* mxGetFieldSafe(const mxArray* array, std::string const& field_name);
+DLLEXPORT mxArray* mxGetPropertySafe(const mxArray* array, size_t index, std::string const& field_name);
+DLLEXPORT mxArray* mxGetFieldSafe(const mxArray* array, size_t index, std::string const& field_name);
+DLLEXPORT void mxSetFieldSafe(mxArray* array, size_t index, std::string const & fieldname, mxArray* data);
+DLLEXPORT mxArray* mxGetFieldOrPropertySafe(const mxArray* array, std::string const& field_name);
+DLLEXPORT mxArray* mxGetFieldOrPropertySafe(const mxArray* array, size_t index, std::string const& field_name);
+
+
 // Mex pointers shared through matlab
 DLLEXPORT mxArray* createDrakeMexPointer(void* ptr, const char* name="", int num_additional_inputs=0, mxArray *delete_fcn_additional_inputs[] = NULL, const char* subclass_name=NULL);  // increments lock count
 // Note: the same mex function which calls this method will be called with the syntax mexFunction(drake_mex_ptr) as the destructor
@@ -63,10 +76,15 @@ Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime> matlabToEigen(const 
   return ret;
 }
 
-template<int RowsAtCompileTime, int ColsAtCompileTime>
-Eigen::Map<const Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime>> matlabToEigenMap(const mxArray* matlab_array)
+template<int Rows, int Cols>
+Eigen::Map<const Eigen::Matrix<double, Rows, Cols>> matlabToEigenMap(const mxArray* matlab_array)
 {
-  Eigen::Map<const Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime>> ret(mxGetPr(matlab_array), mxGetM(matlab_array), mxGetN(matlab_array));
+  if (Rows!=Eigen::Dynamic && mxGetM(matlab_array)!=Rows)
+    throw std::runtime_error("Drake::matlabToEigenMap wrong number of rows");
+  if (Cols!=Eigen::Dynamic && mxGetN(matlab_array)!=Cols)
+    throw std::runtime_error("Drake::matlabToEigenMap wrong number of cols");    
+
+  Eigen::Map<const Eigen::Matrix<double, Rows, Cols>> ret(mxGetPrSafe(matlab_array), mxGetM(matlab_array), mxGetN(matlab_array));
   return ret;
 }
 
@@ -101,14 +119,93 @@ DLLEXPORT mwSize sub2ind(mwSize ndims, const mwSize* dims, const mwSize* sub);
 template <typename T>
 const std::vector<T> matlabToStdVector(const mxArray* in);
 
-DLLEXPORT double *mxGetPrSafe(const mxArray *pobj);
+DLLEXPORT Eigen::Matrix<Polynomiald, Eigen::Dynamic, Eigen::Dynamic> msspolyToEigen(const mxArray* msspoly);
 
-DLLEXPORT mxArray* mxGetPropertySafe(const mxArray* array, std::string const& field_name);
-DLLEXPORT mxArray* mxGetFieldSafe(const mxArray* array, std::string const& field_name);
-DLLEXPORT mxArray* mxGetPropertySafe(const mxArray* array, size_t index, std::string const& field_name);
-DLLEXPORT mxArray* mxGetFieldSafe(const mxArray* array, size_t index, std::string const& field_name);
-DLLEXPORT void mxSetFieldSafe(mxArray* array, size_t index, std::string const & fieldname, mxArray* data);
-DLLEXPORT mxArray* mxGetFieldOrPropertySafe(const mxArray* array, std::string const& field_name);
-DLLEXPORT mxArray* mxGetFieldOrPropertySafe(const mxArray* array, size_t index, std::string const& field_name);
+template< int _Rows, int _Cols >
+mxArray* eigenToMSSPoly(const Eigen::Matrix<Polynomiald,_Rows,_Cols> & poly)
+{
+  size_t num_monomials = 0, max_terms = 0;
+  for (int i=0; i<poly.size(); i++) {
+    auto monomials = poly(i).getMonomials();
+    num_monomials += monomials.size();
+    for (std::vector<Polynomiald::Monomial>::const_iterator iter=monomials.begin(); iter!=monomials.end(); iter++) {
+      if (iter->terms.size() > max_terms)
+        max_terms = iter->terms.size();
+    }
+  }
+
+  Eigen::Matrix<double,1,2> dim; dim << static_cast<double>(poly.rows()), static_cast<double>(poly.cols());
+  Eigen::MatrixXd sub(num_monomials,2);
+  Eigen::MatrixXd var = Eigen::MatrixXd::Zero(num_monomials,max_terms);
+  Eigen::MatrixXd pow = Eigen::MatrixXd::Zero(num_monomials,max_terms);
+  Eigen::VectorXd coeff(num_monomials);
+
+  int index=0;
+  for (int i=0; i<poly.rows(); i++) {
+    for (int j=0; j<poly.cols(); j++) {
+      auto monomials = poly(i,j).getMonomials();
+      for (std::vector<Polynomiald::Monomial>::const_iterator iter=monomials.begin(); iter!=monomials.end(); iter++) {
+        sub(index,0) = i+1;
+        sub(index,1) = j+1;
+        for (int k=0; k<iter->terms.size(); k++) {
+          var(index,k)=(double)iter->terms[k].var;
+          pow(index,k)=(double)iter->terms[k].power;
+        }
+        coeff(index) = iter->coefficient;
+        index++;
+      }
+    }
+  }
+
+  mxArray* plhs[1];
+  mxArray* prhs[5];
+  prhs[0] = eigenToMatlab(dim);
+  prhs[1] = eigenToMatlab(sub);
+  prhs[2] = eigenToMatlab(var);
+  prhs[3] = eigenToMatlab(pow);
+  prhs[4] = eigenToMatlab(coeff);
+  mexCallMATLABsafe(1,plhs,5,prhs,"msspoly");
+  return plhs[0];
+}
+
+DLLEXPORT Eigen::Matrix<TrigPolyd, Eigen::Dynamic, Eigen::Dynamic> trigPolyToEigen(const mxArray* trigpoly);
+
+template< int _Rows, int _Cols >
+mxArray* eigenToTrigPoly(const Eigen::Matrix<TrigPolyd,_Rows,_Cols> & trigpoly_mat)
+{
+  Eigen::Matrix<Polynomiald,Eigen::Dynamic,Eigen::Dynamic> poly_mat(trigpoly_mat.rows(),trigpoly_mat.cols());
+  TrigPolyd::SinCosMap sin_cos_map;
+  for (int i=0; i<trigpoly_mat.size(); i++) {
+    const TrigPolyd::SinCosMap& sc = trigpoly_mat(i).getSinCosMap();
+    sin_cos_map.insert(sc.begin(),sc.end());
+    poly_mat(i) = trigpoly_mat(i).getPolynomial();
+  }
+
+  if (sin_cos_map.empty()) // then just return the msspoly.  what else can i do?
+    return eigenToMSSPoly<Eigen::Dynamic,Eigen::Dynamic>(poly_mat);
+
+  // construct the equivalent of the sin/cos map
+  // (do I need to worry about them possibly being out of order?)
+  Eigen::Matrix<Polynomiald,Eigen::Dynamic,1> q(sin_cos_map.size()), s(sin_cos_map.size()), c(sin_cos_map.size());
+  int i=0;
+  for (TrigPolyd::SinCosMap::iterator iter=sin_cos_map.begin(); iter!=sin_cos_map.end(); iter++) {
+    q(i) = Polynomiald(1.0,iter->first);
+    s(i) = Polynomiald(1.0,iter->second.s);
+    c(i) = Polynomiald(1.0,iter->second.c);
+    i++;
+  }
+
+  mxArray* plhs[1];
+  mxArray* prhs[3];
+  prhs[0] = eigenToMSSPoly<Eigen::Dynamic,1>(q);
+  prhs[1] = eigenToMSSPoly<Eigen::Dynamic,1>(s);
+  prhs[2] = eigenToMSSPoly<Eigen::Dynamic,1>(c);
+  mexCallMATLABsafe(1,plhs,3,prhs,"TrigPoly");
+
+  mxSetProperty(plhs[0],0,"p",eigenToMSSPoly<Eigen::Dynamic,Eigen::Dynamic>(poly_mat));
+
+  return plhs[0];
+}
+
 
 #endif

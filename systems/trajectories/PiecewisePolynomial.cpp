@@ -270,7 +270,7 @@ PiecewisePolynomial<CoefficientType> PiecewisePolynomial<CoefficientType>::rando
   Eigen::DenseIndex num_segments = static_cast<Eigen::DenseIndex>(segment_times.size() - 1);
   std::vector<PolynomialMatrix> polynomials;
   for (Eigen::DenseIndex segment_index = 0; segment_index < num_segments; ++segment_index) {
-    polynomials.push_back(PolynomialType::template randomPolynomialMatrix<Dynamic, Dynamic>(num_coefficients_per_polynomial, rows, cols));
+    polynomials.push_back(PolynomialType::randomPolynomialMatrix(num_coefficients_per_polynomial, rows, cols));
   }
   return PiecewisePolynomial<CoefficientType>(polynomials, segment_times);
 }

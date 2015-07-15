@@ -1,5 +1,4 @@
 include_directories (${CMAKE_SOURCE_DIR}/util)
-include_directories (${CMAKE_SOURCE_DIR}/solvers/polynomial)
 include_directories (${CMAKE_SOURCE_DIR}/systems/trajectories)
 
 add_library(drakeSplineGeneration splineGeneration.cpp SplineInformation.cpp ValueConstraint.cpp ContinuityConstraint.cpp)
