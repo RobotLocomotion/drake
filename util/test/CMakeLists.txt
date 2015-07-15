@@ -5,7 +5,6 @@
 
 include_directories(..)
 include_directories(${PROJECT_SOURCE_DIR}/systems/trajectories)
-include_directories(${PROJECT_SOURCE_DIR}/solvers/polynomial)
 include_directories(${PROJECT_BINARY_DIR}/lcmgen/lcmtypes)
 
 if (NOT WIN32)
@@ -42,5 +41,12 @@ endif()
 
 add_executable(testConvexHull testConvexHull.cpp)
 target_link_libraries(testConvexHull drakeConvexHull)
-pods_install_executables(testConvexHull)
 add_test(NAME testConvexHull COMMAND testConvexHull)
+
+add_executable(testPolynomial testPolynomial.cpp)
+target_link_libraries(testPolynomial drakePolynomial)
+add_test(NAME testPolynomial COMMAND testPolynomial)
+
+add_executable(testTrigPoly testTrigPoly.cpp)
+target_link_libraries(testTrigPoly drakePolynomial)
+add_test(NAME testTrigPoly COMMAND testTrigPoly)
