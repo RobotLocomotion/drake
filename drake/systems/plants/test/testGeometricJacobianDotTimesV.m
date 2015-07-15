@@ -5,7 +5,6 @@ testAtlas('quat');
 end
 
 function testAtlas(floatingJointType)
-options.use_new_kinsol = true;
 robot = createAtlas(floatingJointType, options);
 testVersusNumericalDifferentiation(robot);
 testGradient(robot);

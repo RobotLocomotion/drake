@@ -1,5 +1,4 @@
 function testForwardJacDotTimesV
-options.use_new_kinsol = true;
 robot = createAtlas('rpy', options);
 
 for rotation_type = 0 : 2
@@ -15,12 +14,6 @@ for rotation_type = 0 : 2
   testJdotTimesVGradient(robot, rotation_type);
   checkMex(robot, rotation_type);
 end
-
-options.use_new_kinsol = false;
-robot = createAtlas('rpy', options);
-rotation_type = 0;
-compareToJacobianGradientMethod(robot, rotation_type);
-checkMex(robot, rotation_type);
 
 end
 
@@ -42,12 +35,7 @@ while test_number < n_tests
   v = randn(nv, 1);
   
   kinsol = robot.doKinematics(q, v, kinematics_options);
- 
-  if robot.use_new_kinsol
-    base = randi(body_range);
-  else
-    base = 1;
-  end
+  base = randi(body_range);
   end_effector = randi(body_range);
   if rotation_type == 1 && isForwardKinRPYNearSingularity(robot, kinsol, end_effector, base, 1e-1);
     continue;
@@ -114,12 +102,7 @@ kinematics_options.compute_gradients = true;
 n_tests = 5;
 test_number = 1;
 while test_number < n_tests
-  if robot.use_new_kinsol
-    base = randi(body_range);
-  else
-    base = 1;
-  end
-    
+  base = randi(body_range);
   end_effector = randi(body_range);
   
   if base ~= end_effector
@@ -134,20 +117,13 @@ while test_number < n_tests
       continue;
     end
     
-    if robot.use_new_kinsol
-      [Jdot_times_v, dJdot_times_v] = robot.forwardJacDotTimesV(kinsol, end_effector, points, rotation_type, base);
-      kinematics_options.use_mex = true;
-      kinsol = robot.doKinematics(q, v, kinematics_options);
-      [Jdot_times_v_mex, dJdot_times_v_mex] = robot.forwardJacDotTimesV(kinsol, end_effector, points, rotation_type, base);
-      valuecheck(Jdot_times_v_mex, Jdot_times_v, computeTolerance(Jdot_times_v, 1e-8, 1e-8));
-      valuecheck(dJdot_times_v_mex, dJdot_times_v, computeTolerance(dJdot_times_v, 1e-8, 1e-8));
-    else
-      Jdot_times_v = robot.forwardJacDotTimesV(kinsol, end_effector, points, rotation_type, base);
-      kinematics_options.use_mex = true;
-      kinsol = robot.doKinematics(q, v, kinematics_options);
-      Jdot_times_v_mex = robot.forwardJacDotTimesV(kinsol, end_effector, points, rotation_type, base);
-      valuecheck(Jdot_times_v_mex, Jdot_times_v, max(abs(Jdot_times_v)) * 1e-10);
-    end
+    [Jdot_times_v, dJdot_times_v] = robot.forwardJacDotTimesV(kinsol, end_effector, points, rotation_type, base);
+    kinematics_options.use_mex = true;
+    kinsol = robot.doKinematics(q, v, kinematics_options);
+    [Jdot_times_v_mex, dJdot_times_v_mex] = robot.forwardJacDotTimesV(kinsol, end_effector, points, rotation_type, base);
+    valuecheck(Jdot_times_v_mex, Jdot_times_v, computeTolerance(Jdot_times_v, 1e-8, 1e-8));
+    valuecheck(dJdot_times_v_mex, dJdot_times_v, computeTolerance(dJdot_times_v, 1e-8, 1e-8));
+
     test_number = test_number + 1;
   end
 end

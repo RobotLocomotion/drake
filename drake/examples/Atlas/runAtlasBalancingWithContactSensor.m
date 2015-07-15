@@ -22,7 +22,6 @@ options.floating = true;
 options.ignore_self_collisions = true;
 options.ignore_friction = true;
 options.dt = 0.001;
-options.use_new_kinsol = true;
 options.terrain = example_options.terrain;
 options.use_bullet = example_options.use_bullet;
 options.use_mex = example_options.use_mex;

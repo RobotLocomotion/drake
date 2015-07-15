@@ -15,13 +15,11 @@ end
 
 function robot = createFallingBrick(floating_type)
 options.floating = floating_type;
-options.use_new_kinsol = true;
 robot = RigidBodyManipulator('FallingBrick.urdf',options);
 end
 
 function testBrickQuaternion()
 options.floating = 'quat';
-options.use_new_kinsol = true;
 r = RigidBodyManipulator('FallingBrick.urdf',options);
 
 nv = r.getNumVelocities();
@@ -88,8 +86,7 @@ checkMex(r);
 end
 
 function testAtlasQuat()
-options.use_new_kinsol = true;
-r = createAtlas('quat',options);
+r = createAtlas('quat');
 nv = r.getNumVelocities();
 checkMex(r);
 
