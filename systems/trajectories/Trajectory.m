@@ -331,10 +331,12 @@ classdef Trajectory < DrakeSystem
         h=plot(ts,squeeze(pts),'b.-','LineWidth',1,'MarkerSize',5);
         xlabel('t');
         ylabel(obj.getOutputFrame.coordinates{1});
-      elseif (nargin>1 && ~isempty(plotdims) && length(plotdims)==1)
-        h=plot(ts,squeeze(pts(plotdims,:)),'b.-','LineWidth',1,'MarkerSize',5);
+      elseif (nargin>1 && ~isempty(plotdims))
+        h=plot(ts,squeeze(pts(plotdims,:)),'.-','LineWidth',1,'MarkerSize',5);
         xlabel('t');
-        ylabel(obj.getOutputFrame.coordinates{plotdims});
+%         ylabel(obj.getOutputFrame.coordinates{plotdims});
+        l=legend(obj.getOutputFrame.coordinates{plotdims})
+        set(l,'Interpreter','none')
       else
         if (nargin<2 || isempty(plotdims)) plotdims=[1,2]; end
         h=plot(pts(plotdims(1),:),pts(plotdims(2),:),'b-',pts(plotdims(1),[1:m:end,end]),pts(plotdims(2),[1:m:end,end]),'b.','LineWidth',1);% ,'MarkerSize',5);

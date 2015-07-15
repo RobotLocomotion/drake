@@ -29,6 +29,7 @@ lqr_options.periodic_jump = R_periodic;
 
 
 %%
+r = TimeSteppingRigidBodyManipulator(p,.001);
 c{1} = c{1}.setOutputFrame(r.getInputFrame);
 c{1} = c{1}.setInputFrame(r.getOutputFrame);
 c{2} = c{2}.setOutputFrame(r.getInputFrame);

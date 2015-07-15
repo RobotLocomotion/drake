@@ -330,7 +330,9 @@ classdef ConstrainedHybridTrajectoryOptimization < NonlinearProgram
         if i > 1
           xtraj{i} = xtraj{i}.shiftTime(xtraj{i-1}.tspan(2));
           utraj{i} = utraj{i}.shiftTime(utraj{i-1}.tspan(2));
-          ltraj{i} = ltraj{i}.shiftTime(ltraj{i-1}.tspan(2));
+          if ~isempty(ltraj{i})
+            ltraj{i} = ltraj{i}.shiftTime(xtraj{i-1}.tspan(2));
+          end
         end
         
         xtraj{i} = xtraj{i}.setOutputFrame(obj.plant.getStateFrame);
@@ -367,7 +369,7 @@ classdef ConstrainedHybridTrajectoryOptimization < NonlinearProgram
           xtraj{i} = xtraj{i}.shiftTime(xtraj{i-1}.tspan(2));
           utraj{i} = utraj{i}.shiftTime(utraj{i-1}.tspan(2));
           if ~isempty(ltraj{i})
-            ltraj{i} = ltraj{i}.shiftTime(ltraj{i-1}.tspan(2));
+            ltraj{i} = ltraj{i}.shiftTime(xtraj{i-1}.tspan(2));
           end
         end
         

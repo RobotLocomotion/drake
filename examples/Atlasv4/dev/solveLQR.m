@@ -29,7 +29,7 @@ R_periodic(17,17) = 1; % back joint
 options.periodic_jump = R_periodic;
 [c,Ktraj,Straj,Ptraj,Btraj,tvec,Straj_full,Ftraj] = hybridconstrainedtvlqr(p,xtraj,utraj,ltraj,Q,R,Qf,options);
 
-% keyboard;
+keyboard;
 % save('data/atlas_passive_ankle_lqr.mat','xtraj','utraj','ltraj','c','Ktraj','Straj','Ptraj','Btraj','tvec','Straj_full','Ftraj','Q','R','Qf');
 
 end

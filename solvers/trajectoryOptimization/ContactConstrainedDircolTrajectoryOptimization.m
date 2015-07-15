@@ -1,4 +1,4 @@
-classdef ContactConstrainedDircolTrajectoryOptimization < ConstrainedDircolTrajectoryOptimization
+classdef ContactConstrainedDircolTrajectoryOptimization < AccelConstrainedDircolTrajectoryOptimization
   properties
   end
   
@@ -13,6 +13,10 @@ classdef ContactConstrainedDircolTrajectoryOptimization < ConstrainedDircolTraje
       
       if ~isfield(options,'friction_limits')
         options.friction_limits = true;
+      end
+      
+      if ~isfield(options,'collocation_friction_limits')
+        options.collocation_friction_limits = true;
       end
       
       if ~isfield(options,'non_penetration')
@@ -57,7 +61,7 @@ classdef ContactConstrainedDircolTrajectoryOptimization < ConstrainedDircolTraje
         options.relative_constraints = repmat([options.relative_constraints;options.relative_constraints;false],length(indices),1);
       end
 
-      obj = obj@ConstrainedDircolTrajectoryOptimization(plant,N,duration,options);
+      obj = obj@AccelConstrainedDircolTrajectoryOptimization(plant,N,duration,options);
       
       nq = plant.getNumPositions;
       
@@ -72,8 +76,13 @@ classdef ContactConstrainedDircolTrajectoryOptimization < ConstrainedDircolTraje
       
       if obj.options.friction_limits
         if plant.dim == 2
-          lz_inds = reshape([obj.l_inds(2:2:end,:) obj.lc_inds(2:2:end,:)],[],1);
-          lx_inds = reshape([obj.l_inds(1:2:end,:) obj.lc_inds(1:2:end,:)],[],1);
+          if obj.options.collocation_friction_limits
+            lz_inds = reshape([obj.l_inds(2:2:end,:) obj.lc_inds(2:2:end,:)],[],1);
+            lx_inds = reshape([obj.l_inds(1:2:end,:) obj.lc_inds(1:2:end,:)],[],1);
+          else
+            lz_inds = reshape(obj.l_inds(2:2:end,:),[],1);
+            lx_inds = reshape(obj.l_inds(1:2:end,:),[],1);
+          end
           nlz = length(lz_inds);
           
           %lz >= 0
@@ -83,8 +92,14 @@ classdef ContactConstrainedDircolTrajectoryOptimization < ConstrainedDircolTraje
           A_fric = [mu*eye(nlz) eye(nlz);mu*eye(nlz) -eye(nlz)];
           obj = obj.addConstraint(LinearConstraint(zeros(2*nlz,1),inf(2*nlz,1),A_fric),[lz_inds;lx_inds]);
         else
-          lz_inds = reshape([obj.l_inds(2:3:end,:) obj.lc_inds(2:3:end,:)],[],1);
-          lx_inds = reshape([obj.l_inds(1:3:end,:) obj.l_inds(2:3:end,:) obj.lc_inds(1:3:end,:) obj.lc_inds(2:3:end,:)],[],1);
+          if obj.options.collocation_friction_limits
+            lz_inds = reshape([obj.l_inds(2:3:end,:) obj.lc_inds(2:3:end,:)],[],1);
+            lx_inds = reshape([obj.l_inds(1:3:end,:) obj.l_inds(2:3:end,:) obj.lc_inds(1:3:end,:) obj.lc_inds(2:3:end,:)],[],1);
+          else
+            lz_inds = reshape([obj.l_inds(2:3:end,:) obj.lc_inds(2:3:end,:)],[],1);
+            lx_inds = reshape([obj.l_inds(1:3:end,:) obj.l_inds(2:3:end,:) obj.lc_inds(1:3:end,:) obj.lc_inds(2:3:end,:)],[],1);
+          end
+          
           nlz = length(lz_inds);
           
           %lz >= 0

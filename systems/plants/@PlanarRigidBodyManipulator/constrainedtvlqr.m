@@ -31,7 +31,7 @@ if isfield(options,'alpha_1')
   typecheck(options.alpha_1,'double');
   alpha_1 = options.alpha_1;
 else
-  alpha_1 = 200; % was 5000
+  alpha_1 = 1000; % was 5000
 end
 
 if isfield(options,'alpha_2')
@@ -157,20 +157,24 @@ end
     qd = x(obj.getNumPositions()+1:end);
     
     % check if this doesn't calculate the gradient
-    [~,J,dJ] = obj.positionConstraints(q);
+%     [~,J,dJ] = obj.positionConstraints(q);
+    [phi,J,dJ,Jdotqd,dJdotqd] = obj.positionConstraintslWithJdot(q,qd);
+    dJ = reshape(dJ,numel(J),[]);
     if isempty(J)
       F = zeros(0,length(x));
       Fdot = F;
       return;
     end
-    Jdot = reshape(reshape(dJ, numel(J), []) * qd, size(J));
+    Jdot = reshape(dJ * qd, size(J));
     
     F = full([J zeros(size(J));Jdot J]);
     
     if nargout > 1
-      [~,A] = obj.constrainedDynamics(t,x,u);
-      
-      Fdot = - F*A(:,2:1+length(x));
+      xd = obj.constrainedDynamics(t,x,u);
+      %       [xd,A] = obj.constrainedDynamics(t,x,u);
+      %       Fdot = - F*A(:,2:1+length(x));
+        Jddot = dJdotqd(:,1:obj.getNumPositions) + matGradMult(dJ,xd(obj.getNumPositions+1:end));
+        Fdot = [Jdot zeros(size(Jdot)); Jddot Jdot];
     end
   end
 
@@ -196,16 +200,20 @@ function Pdot = getPdot(obj,t,x,u,P,alpha_1,alpha_2)
     row_ind = row_ind + i;
   end
   
-% if cond(A) > 1e3  %results from F*P != 0
-%   warning('The A matrix in getPdot is poorly conditioned.  Implies that J is poorly conditioned OR F*P != 0')
-%   display(sprintf('%f %e',t, cond(A)));
-% %   keyboard
-% end
+if cond(A) > 1e3  %results from F*P != 0
+  warning('The A matrix in getPdot is poorly conditioned.  Implies that J is poorly conditioned OR F*P != 0')
+  display(sprintf('%f %e',t, cond(A)));
+%   keyboard
+end
 % display(sprintf('P:%f',t))
 % Pdot = reshape(pinv(A)*b,n,n-d);
 Pdot = reshape(A\b,n,n-d);
 % [Q,R] = qr(A');
 % Pdot = reshape(Q'*(R'\b),n,n-d);
+
+% if max(max(abs(F*P))) > .1
+%   keyboard
+% end
 
 %   display(sprintf('t: %f FPerr: %e',t,max(max(abs(F*P)))))
 end
@@ -229,11 +237,16 @@ function PandSqrtSdotydot = PandSqrtSdynamics(t,PandSqrtS,p,dynamicsfn,xtraj,utr
 
   sqrtS = reshape(PandSqrtS(dimP+1:end),size(A_t,1),[]);
 
+%   if cond(sqrtS) > 1e4
+%     keyboard
+%   end
+  
+
   sqrtSdot = -A_t'*sqrtS + .5*sqrtS*sqrtS'*B_t*inv(R)*B_t'*sqrtS - .5*P_t'*Q*P_t*inv(sqrtS)';
 
   PandSqrtSdotydot = [Pdot_t(:);sqrtSdot(:)];
   % display(sprintf('S: %f',t))  
-% display(sprintf('%f: %e',t,max(eig(sqrtS))))
+%   display(sprintf('%f: %c',t,cond(sqrtS)))
 end
 
 function Pdot = Pdynamics(obj,t,xtraj,utraj,P,alpha_1,alpha_2)

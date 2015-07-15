@@ -1,4 +1,7 @@
-load atlas_hybrid_dircol_good_2
+% load atlas_hybrid_dircol_good
+% load atlas_hybrid_dircol_high
+% load atlas_hybrid_dircol_15
+load atlas_hybrid_dircol_longer
 
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 warning('off','Drake:RigidBodyManipulator:WeldedLinkInd');
@@ -10,6 +13,7 @@ options.use_bullet = false;
 options.use_new_kinsol = true;
 p = PlanarRigidBodyManipulator('../urdf/atlas_simple_planar_contact.urdf',options);
 
+R = cell(0);
 xtraj_=xtraj{1}.append(xtraj{2}).append(xtraj{3}).append(xtraj{4}).append(xtraj{5});
 utraj_=utraj{1}.append(utraj{2}).append(utraj{3}).append(utraj{4}).append(utraj{5});
 for i=1:length(xtraj),

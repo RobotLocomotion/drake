@@ -1,7 +1,7 @@
-function solveLQR(p,xtraj,utraj,ltraj,Q,R,Qf)
+function solveLQRDircol(p,xtraj,utraj,ltraj,Q,R,Qf)
 
 if nargin <1
-  load data/hopper_traj_40_knots.mat
+  load data/hopper_dircol_traj.mat
   warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
   warning('off','Drake:RigidBodyManipulator:WeldedLinkInd');
   warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
@@ -19,13 +19,10 @@ if nargin < 5
   Qf = 2*Q;
 end
 
-options.use_zoh_qd = true;
-options.use_zoh_u = true;
-
-[c,Ktraj,Straj,Ptraj,Btraj,tvec,Straj_full,Ftraj,xtraj,utraj,mode_data] = hybridconstrainedtvlqr(p,xtraj,utraj,ltraj,Q,R,Qf);
+[c,Ktraj,Straj,Ptraj,Btraj,Straj_full,Ftraj,xtraj,utraj] = hybriddircolconstrainedtvlqr(p,xtraj,utraj,contact_seq,Q,R,Qf);
 
 keyboard;
-save('data/hopper_traj_lqr.mat','xtraj','utraj','ltraj','c','Ktraj','Straj','Ptraj','Btraj','tvec','Straj_full','Ftraj','Q','R','Qf','mode_data');
+save('data/hopper_traj_lqr.mat','xtraj','utraj','ltraj','c','Ktraj','Straj','Ptraj','Btraj','Straj_full','Ftraj','Q','R','Qf','contact_seq');
 
 end
 

@@ -4,7 +4,7 @@ warning('off','Drake:RigidBodyManipulator:WeldedLinkInd');
 options.terrain = RigidBodyFlatTerrain();
 options.floating = true;
 options.ignore_self_collisions = true;
-% options.use_new_kinsol = true;
+options.use_new_kinsol = true;
 p = PlanarRigidBodyManipulator('../KneedCompassGait.urdf',options);
 p = p.setJointLimits(-inf(6,1),inf(6,1));
 p = p.compile();
