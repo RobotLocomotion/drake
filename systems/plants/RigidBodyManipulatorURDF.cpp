@@ -859,7 +859,8 @@ bool RigidBodyManipulator::addRobotFromURDF(const string &urdf_filename, map<str
 {
   TiXmlDocument xml_doc(urdf_filename);
   if (!xml_doc.LoadFile()) {
-    throw std::runtime_error("failed to load file " + urdf_filename);
+    
+    throw std::runtime_error("failed to parse xml in file " + urdf_filename + "\n" + xml_doc.ErrorDesc());
   }
 
   string root_dir=".";
