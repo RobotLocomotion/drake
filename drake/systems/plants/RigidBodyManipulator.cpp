@@ -1684,43 +1684,6 @@ GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> RigidBodyManipulat
   return ret;
 }
 
-template <typename DerivedA, typename DerivedB>
-void RigidBodyManipulator::forwardJac(const int body_or_frame_id, const MatrixBase<DerivedA> &pts, const int rotation_type, MatrixBase<DerivedB> &J)
-{
-  if (use_new_kinsol) {
-    warnOnce("new_kinsol_old_method_forwardJac", "Warning: called old forwardJac with use_new_kinsol set to true.");
-    Matrix3Xd newPts = pts.block(0, 0, 3, pts.cols());
-    auto ret = forwardKinNew(newPts, body_or_frame_id, 0, rotation_type, 1);
-    J = ret.gradient().value();
-    return;
-  }
-
-  int n_pts = static_cast<int>(pts.cols()); Matrix4d Tframe;
-  int body_ind = parseBodyOrFrameID(body_or_frame_id, &Tframe);
-
-  MatrixXd dTdq =  bodies[body_ind]->dTdq.topLeftCorner(3*num_positions,4)*Tframe;
-  MatrixXd tmp =dTdq*pts.colwise().homogeneous();
-  MatrixXd Jt = Map<MatrixXd>(tmp.data(),num_positions,3*n_pts);
-  J.topLeftCorner(3*n_pts,num_positions) = Jt.transpose();
-
-  if (rotation_type == 1) {
-    Matrix3d R = (bodies[body_ind]->T*Tframe).topLeftCorner(3,3);
-    /*
-     * note the unusual format of dTdq(chosen for efficiently calculating jacobians from many pts)
-     * dTdq = [dT(1,:)dq1; dT(1,:)dq2; ...; dT(1,:)dqN; dT(2,dq1) ...]
-     */
-
-    VectorXd dR21_dq(num_positions),dR22_dq(num_positions),dR20_dq(num_positions),dR00_dq(num_positions),dR10_dq(num_positions);
-    for (int i=0; i<num_positions; i++) {
-      dR21_dq(i) = dTdq(2*num_positions+i,1);
-      dR22_dq(i) = dTdq(2*num_positions+i,2);
-      dR20_dq(i) = dTdq(2*num_positions+i,0);
-      dR00_dq(i) = dTdq(i,0);
-      dR10_dq(i) = dTdq(num_positions+i,0);
-    }
-    double sqterm1 = R(2,1)*R(2,1) + R(2,2)*R(2,2);
-    double sqterm2 = R(0,0)*R(0,0) + R(1,0)*R(1,0);
-
 template<typename Scalar>
 GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMatrix(int gradient_order)
 {
@@ -2536,20 +2499,6 @@ template DLLEXPORT_RBM void RigidBodyManipulator::doKinematicsNew(const MatrixBa
 template DLLEXPORT_RBM void RigidBodyManipulator::doKinematicsNew(const MatrixBase<Block<MatrixXd, -1, 1, true> > &, const MatrixBase< Map<VectorXd> > &, bool, bool);
 template DLLEXPORT_RBM void RigidBodyManipulator::doKinematicsNew<Eigen::Map<Eigen::VectorXd, 0, Eigen::Stride<0, 0> >, Eigen::VectorXd >(Eigen::MatrixBase<Eigen::Map<Eigen::VectorXd, 0, Eigen::Stride<0, 0> > > const&, Eigen::MatrixBase<Eigen::VectorXd > const&, bool, bool);
 
-template DLLEXPORT_RBM void RigidBodyManipulator::getCOM(MatrixBase< Map<Vector3d> > &,const set<int> &);
-template DLLEXPORT_RBM void RigidBodyManipulator::getCOM(MatrixBase< Map<Matrix3Xd> > &,const set<int> &);
-template DLLEXPORT_RBM void RigidBodyManipulator::getCOM(MatrixBase< Vector3d > &,const set<int> &);
-template DLLEXPORT_RBM void RigidBodyManipulator::getCOM(MatrixBase< Matrix3Xd > &,const set<int> &);
-
-template DLLEXPORT_RBM void RigidBodyManipulator::getCOMJac(MatrixBase< Map<MatrixXd> > &,const set<int> &);
-template DLLEXPORT_RBM void RigidBodyManipulator::getCOMJac(MatrixBase< MatrixXd > &,const set<int> &);
-
-template DLLEXPORT_RBM void RigidBodyManipulator::getCOMdJac(MatrixBase< Map<MatrixXd> > &,const set<int> &);
-template DLLEXPORT_RBM void RigidBodyManipulator::getCOMdJac(MatrixBase< MatrixXd > &,const set<int> &);
-
-template DLLEXPORT_RBM void RigidBodyManipulator::getCOMJacDot(MatrixBase< Map<MatrixXd> > &,const set<int> &);
-template DLLEXPORT_RBM void RigidBodyManipulator::getCOMJacDot(MatrixBase< MatrixXd > &,const set<int> &);
-
 template DLLEXPORT_RBM void RigidBodyManipulator::getContactPositions(MatrixBase <MatrixXd > &, const set<int> &);
 template DLLEXPORT_RBM void RigidBodyManipulator::getContactPositionsJac(MatrixBase <MatrixXd > &,const set<int> &);
 
@@ -2568,6 +2517,7 @@ template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> Rigid
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardJacV<Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1>, -1, 1, true> >(Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1>, -1, 1, true> > const&, int, int, int, bool, int);
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardJacV<Eigen::MatrixXd >(Eigen::MatrixBase<Eigen::MatrixXd > const&, int, int, int, bool, int);
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardJacV<Eigen::Vector3d >(Eigen::MatrixBase<Eigen::Vector3d > const&, int, int, int, bool, int);
+template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardJacV<Eigen::Block<Eigen::Matrix3Xd, 3, 1, true> >(Eigen::MatrixBase<Eigen::Block<Eigen::Matrix3Xd, 3, 1, true> > const&, int, int, int, bool, int);
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinPositionGradient(int, int, int, int);
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::forwardJacDotTimesV(const MatrixBase< Matrix<double, 3, Eigen::Dynamic> >&, int, int, int, int);
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::forwardJacDotTimesV(const MatrixBase< Matrix<double, 3, 1> >&, int, int, int, int);

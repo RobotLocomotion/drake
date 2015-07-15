@@ -126,50 +126,6 @@ int contactPhi(RigidBodyManipulator* r, SupportStateElement& supp, void *map_ptr
   return nc;
 }
 
-//int contactConstraints(RigidBodyManipulator *r, int nc, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>& supp, void *map_ptr, MatrixXd &n, MatrixXd &D, MatrixXd &Jp, MatrixXd &Jpdot,double terrain_height)
-//{
-//  int j, k=0, nq = r->num_positions;
-//
-//  n.resize(nc,nq);
-//  D.resize(nq,nc*2*m_surface_tangents);
-//  Jp.resize(3*nc,nq);
-//  Jpdot.resize(3*nc,nq);
-//
-//  Vector3d contact_pos,pos,normal;
-//  MatrixXd J(3,nq);
-//  Matrix<double,3,m_surface_tangents> d;
-//
-//  for (std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>::iterator iter = supp.begin(); iter!=supp.end(); iter++) {
-//    if (nc>0) {
-//      for (std::vector<Vector3d,aligned_allocator<Vector3d>>::iterator pt_iter=iter->contact_pts.begin(); pt_iter!=iter->contact_pts.end(); pt_iter++) {
-//        auto contact_pos_gradientvar = r->forwardKinNew(*pt_iter, iter->body_idx, 0, 0, 1);
-//        contact_pos = contact_pos_gradientvar.value();
-//        J = contact_pos_gradientvar.gradient().value();
-//
-//        collisionDetect(map_ptr,contact_pos,pos,&normal,terrain_height);
-//        surfaceTangents(normal,d);
-//
-//        n.row(k) = normal.transpose()*J;
-//        for (j=0; j<m_surface_tangents; j++) {
-//          D.col(2*k*m_surface_tangents+j) = J.transpose()*d.col(j);
-//          D.col((2*k+1)*m_surface_tangents+j) = -D.col(2*k*m_surface_tangents+j);
-//        }
-//
-//        // store away kin sols into Jp and Jpdot
-//        // NOTE: I'm cheating and using a slightly different ordering of J and Jdot here
-//        Jp.block(3*k,0,3,nq) = J;
-//        r->forwardJacDot(iter->body_idx,*pt_iter,0,J);
-//        Jpdot.block(3*k,0,3,nq) = J;
-//
-//        k++;
-//      }
-//    }
-//  }
-//
-//  return k;
-//}
-
-
 int contactConstraintsBV(RigidBodyManipulator *r, int nc, std::vector<double> support_mus, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>& supp, void *map_ptr, MatrixXd &B, MatrixXd &JB, MatrixXd &Jp, VectorXd &Jpdotv, MatrixXd &normals, double terrain_height)
 {
   int j, k=0, nq = r->num_positions;

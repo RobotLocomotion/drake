@@ -1033,7 +1033,6 @@ WorldQuatConstraint::WorldQuatConstraint(RigidBodyManipulator *robot, int body, 
 void WorldQuatConstraint::evalOrientationProduct(double &prod, MatrixXd &dprod) const
 {
   Vector3d pts = Vector3d::Zero();
-  Vector3d pts;
   auto x_gradientvar = robot->forwardKinNew(pts, body, 0, 2, 1);
   const auto& x = x_gradientvar.value();
   const auto& J = x_gradientvar.gradient().value();
@@ -1609,8 +1608,8 @@ void RelativeGazeTargetConstraint::eval(const double* t, VectorXd &c, MatrixXd &
     const auto& dorigin_pos = origin_pos_gradientvar.gradient().value();
 
     auto axis_pos_gradientvar = robot->forwardKinNew(axis, bodyA_idx, 0, 0, 1);
-    const auto& axis_pos = axis_pos_gradientvar.value();
-    const auto& daxis_pos = axis_pos_gradientvar.gradient().value();
+    auto& axis_pos = axis_pos_gradientvar.value();
+    auto& daxis_pos = axis_pos_gradientvar.gradient().value();
 
     Vector3d axis_origin = Vector3d::Zero();
     auto axis_origin_pos_gradientvar = robot->forwardKinNew(axis_origin, bodyA_idx, 0, 0, 1);
@@ -2417,7 +2416,6 @@ MinDistanceConstraint::eval(const double* t, VectorXd& c, MatrixXd& dc) const
 
       auto J_k = robot->forwardJacV(x_k, k, 0, 0, true, 0).value();
 
-      robot->forwardJac(k,x_k,0,J_k);
       l = 0;
       for (; l < numA; ++l) {
         //DEBUG
