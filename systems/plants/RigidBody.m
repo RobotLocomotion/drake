@@ -25,7 +25,6 @@ classdef RigidBody < RigidBodyElement
     Xtree=eye(6);   % velocity space coordinate transform *from parent to this node*
     Ttree=eye(4);   % position space coordinate transform *from this node to parent*
     T_body_to_joint=eye(4);
-    wrljoint='';  % tranformation to joint coordinates in wrl syntax
     damping=0; % viscous friction term
     coulomb_friction=0; 
     static_friction=0; % currently not used for simulation
@@ -294,6 +293,7 @@ classdef RigidBody < RigidBodyElement
     % RigidBodyElement (yuck!) because the RigidBodyElement version does 
     % not have permissions to do the reflection on the protected properties 
     % in this class.
+    % Also have some additional logic for the nested geometry elements
     function body=bindParams(body,model,pval)
       fr = getParamFrame(model);
       pn = properties(body);
@@ -303,6 +303,12 @@ classdef RigidBody < RigidBodyElement
           body.(pn{i}) = double(subs(body.(pn{i}),fr.getPoly,pval));
         end
       end
+      for i=1:length(body.visual_geometry)
+        body.visual_geometry{i}=bindParams(body.visual_geometry{i},model,pval);
+      end
+      for i=1:length(body.collision_geometry)
+        body.collision_geometry{i}=bindParams(body.collision_geometry{i},model,pval);
+      end
     end
     
     function body=updateParams(body,poly,pval)
@@ -311,6 +317,13 @@ classdef RigidBody < RigidBodyElement
       fn = fieldnames(body.param_bindings);
       for i=1:length(fn)
         body.(fn{i}) = double(subs(body.param_bindings.(fn{i}),poly,pval));
+      end
+      
+      for i=1:length(body.visual_geometry)
+        body.visual_geometry{i}=updateParams(body.visual_geometry{i},poly,pval);
+      end
+      for i=1:length(body.collision_geometry)
+        body.collision_geometry{i}=updateParams(body.collision_geometry{i},poly,pval);
       end
     end
     

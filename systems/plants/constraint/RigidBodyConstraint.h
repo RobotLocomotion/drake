@@ -29,9 +29,9 @@
 class RigidBodyManipulator;
 
 namespace DrakeRigidBodyConstraint{
-  extern Eigen::Vector4d com_pts;
-  extern const int WorldCoMDefaultRobotNum[1];
-  extern Eigen::Vector2d default_tspan;
+  extern DLLEXPORT Eigen::Vector4d com_pts;
+  extern DLLEXPORT const int WorldCoMDefaultRobotNum[1];
+  extern DLLEXPORT Eigen::Vector2d default_tspan;
 }
 
 DLLEXPORT void drakePrintMatrix(const Eigen::MatrixXd &mat);

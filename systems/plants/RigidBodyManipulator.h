@@ -10,6 +10,7 @@
 #include "collision/DrakeCollision.h"
 #include "shapes/DrakeShapes.h"
 #include "KinematicPath.h"
+#include "ForceTorqueMeasurement.h"
 #include "GradientVar.h"
 
 #undef DLLEXPORT_RBM
@@ -158,6 +159,13 @@ public:
   template <typename Derived>
   void getContactPositionsJacDot(MatrixBase<Derived> &Jdot, const std::set<int> &body_idx);// = emptyIntSet);
 
+
+  /**
+   * Computes CoP in world frame. Normal and point on contact plane should be in world frame too.
+   */
+  template <typename DerivedNormal, typename DerivedPoint>
+  std::pair<Eigen::Vector3d, double> resolveCenterOfPressure( const std::vector< ForceTorqueMeasurement > & force_torque_measurements, const Eigen::MatrixBase<DerivedNormal> & normal, const Eigen::MatrixBase<DerivedPoint> & point_on_contact_plane);
+
   void findAncestorBodies(std::vector<int>& ancestor_bodies, int body);
 
   void findKinematicPath(KinematicPath& path, int start_body_or_frame_idx, int end_body_or_frame_idx);
@@ -186,8 +194,8 @@ public:
   template <typename DerivedPoints>
   GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> forwardKinNew(const MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, int gradient_order);
 
-  template <typename Scalar, int XRows, int XCols>
-  GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> forwardJacV(const GradientVar<Scalar, XRows, XCols>& x, int body_or_frame_ind, int base_or_frame_ind, int rotation_type, bool compute_analytic_jacobian, int gradient_order);
+  template <typename DerivedPoints>
+  GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, Eigen::Dynamic> forwardJacV(const MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, bool in_terms_of_qdot, int gradient_order);
 
   template <typename Scalar>
   GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> forwardKinPositionGradient(int npoints, int current_body_or_frame_ind, int new_body_or_frame_ind, int gradient_order);
@@ -300,7 +308,7 @@ public:
 
   template <typename Derived>
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> transformVelocityMappingToPositionDotMapping(
-      const Eigen::MatrixBase<Derived>& mat, const std::vector<int>& joint_path);
+      const Eigen::MatrixBase<Derived>& mat);
 
 template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> compactToFull(
@@ -314,9 +322,10 @@ Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynam
   int compact_col_start = 0;
   for (std::vector<int>::const_iterator it = joint_path.begin(); it != joint_path.end(); ++it) {
     RigidBody& body = *bodies[*it];
-    int nv_joint = body.getJoint().getNumVelocities();
-    full.middleCols(body.velocity_num_start, nv_joint) = compact.middleCols(compact_col_start, nv_joint);
-    compact_col_start += nv_joint;
+    int ncols_joint = in_terms_of_qdot ? body.getJoint().getNumPositions() : body.getJoint().getNumVelocities();
+    int col_start = in_terms_of_qdot ? body.position_num_start : body.velocity_num_start;
+    full.middleCols(col_start, ncols_joint) = compact.middleCols(compact_col_start, ncols_joint);
+    compact_col_start += ncols_joint;
   }
   return full;
 };

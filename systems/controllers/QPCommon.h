@@ -3,9 +3,13 @@
 
 #include "controlUtil.h"
 #include "drakeUtil.h"
-#include "drake/fastQP.h"
-#include "drake/gurobiQP.h"
+#include "fastQP.h"
 #include "drake/lcmt_qp_controller_input.hpp"
+#include "ExponentialPlusPiecewisePolynomial.h"
+#include <vector>
+#include "ForceTorqueMeasurement.h"
+#include "Side.h"
+#include "gurobiQP.h"
 
 const double REG = 1e-8;
 
@@ -64,20 +68,15 @@ struct QPControllerState {
   std::set<int> active;
   int num_active_contact_pts;
 
+  // center of mass observer
+  Vector4d center_of_mass_observer_state;
+  Vector3d last_com_ddot;
+
   // gurobi active set params
   int *vbasis;
   int *cbasis;
   int vbasis_len;
   int cbasis_len;
-};
-
-struct PositionIndicesCache {
-  VectorXi r_leg_kny;
-  VectorXi l_leg_kny;
-  VectorXi r_leg;
-  VectorXi l_leg;
-  VectorXi r_leg_ak;
-  VectorXi l_leg_ak;
 };
 
 struct BodyIdsCache {
@@ -87,7 +86,9 @@ struct BodyIdsCache {
 };
    
 struct RobotPropertyCache {
-  PositionIndicesCache position_indices;
+  typedef std::map<std::string, Eigen::Matrix3Xd> ContactGroupNameToContactPointsMap;
+  std::vector<ContactGroupNameToContactPointsMap> contact_groups; // one for each support
+  std::map<std::string, Eigen::VectorXi> position_indices;
   BodyIdsCache body_ids;
   VectorXi actuated_indices;
   int num_bodies;
@@ -169,6 +170,8 @@ struct AtlasParams {
   double Kp_accel;
   double contact_threshold;
   double min_knee_angle;
+  bool use_center_of_mass_observer;
+  Matrix4d center_of_mass_observer_gain;
 };
 
 struct NewQPControllerData {
@@ -257,7 +260,8 @@ struct PIDOutput {
   VectorXd qddot_des;
 };
 
-std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray *qp_input);
+//enum PlanShiftMode {NONE, XYZ, Z_ONLY, Z_AND_ZMP};
+
 
 PIDOutput wholeBodyPID(NewQPControllerData *pdata, double t, const Ref<const VectorXd> &q, const Ref<const VectorXd> &qd, const Ref<const VectorXd> &q_des, WholeBodyParams *params);
 
@@ -265,6 +269,10 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<Vecto
 
 std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> loadAvailableSupports(std::shared_ptr<drake::lcmt_qp_controller_input> qp_input);
 
-int setupAndSolveQP(NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, DrakeRobotState &robot_state, const Ref<Matrix<bool, Dynamic, 1>> &b_contact_force, QPControllerOutput *qp_output, std::shared_ptr<QPControllerDebugData> debug);
+int setupAndSolveQP(
+		NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, DrakeRobotState &robot_state,
+		const Ref<Matrix<bool, Dynamic, 1>> &b_contact_force, const std::map<Side, ForceTorqueMeasurement>& foot_force_torque_measurements,
+		QPControllerOutput *qp_output, std::shared_ptr<QPControllerDebugData> debug);
+
 
 #endif

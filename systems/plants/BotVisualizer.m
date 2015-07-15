@@ -38,15 +38,32 @@ classdef BotVisualizer < RigidBodyVisualizer
 %      end
 
       obj = obj@RigidBodyVisualizer(manip);
+      obj.use_collision_geometry = use_collision_geometry;
 
       lc = lcm.lcm.LCM.getSingleton();
       obj.status_agg = lcm.lcm.MessageAggregator();
       lc.subscribe('DRAKE_VIEWER_STATUS',obj.status_agg);
 
-      % check if there is an instance of drake_viewer already running
-      [~,ck] = system('ps ax 2> /dev/null | grep -i drake_viewer | grep -c -v grep');
+      % check if there is a viewer already running
+      [~,ck] = system('ps ax 2> /dev/null | grep -i "drake_viewer\|ddConsoleApp" | grep -c -v grep');
       if (str2num(ck)<1) 
-        % if not, then launch one...
+        % try launching director first
+        if exist(fullfile(pods_get_bin_path,'ddConsoleApp'))
+          disp('attempting to launch the drake director')
+          retval = systemWCMakeEnv([fullfile(pods_get_bin_path,'ddConsoleApp'),' -m ddapp.drakevisualizer &> ddConsoleApp.out &']);
+
+          if ismac % I'm missing valid acks on mac
+            pause(1);
+            % listen for ready message
+          elseif isempty(obj.status_agg.getNextMessage(5000)) % wait for viewer to come up
+            error('Drake:BotVisualizer:AutostartFailed','Failed to automatically start up a viewer');
+          end
+        end
+      end
+      
+      % if still no viewer, then launch the drake viewer
+      [~,ck] = system('ps ax 2> /dev/null | grep -i "drake_viewer\|ddConsoleApp" | grep -c -v grep');
+      if (str2num(ck)<1) 
         disp('launching drake_viewer...');
         retval = systemWCMakeEnv([fullfile(pods_get_bin_path,'drake_viewer'),' &> drake_viewer.out &']);
         
@@ -57,7 +74,25 @@ classdef BotVisualizer < RigidBodyVisualizer
           error('Drake:BotVisualizer:AutostartFailed','Failed to automatically start up a viewer');
         end
       end
-
+      
+      obj = updateManipulator(obj,manip);
+      
+      nq = getNumPositions(manip);
+      obj.draw_msg = drake.lcmt_viewer_draw();
+      nb = getNumBodies(manip);
+      obj.draw_msg.num_links = nb;
+      obj.draw_msg.link_name = {manip.body.linkname};
+      obj.draw_msg.robot_num = [manip.body.robotnum];
+      obj.draw_msg.position = single(zeros(nb,3));
+      obj.draw_msg.quaternion = single(zeros(nb,4));
+      
+      draw(obj,0,zeros(getNumPositions(manip),1));
+    end
+    
+    function obj = updateManipulator(obj,manip)
+      obj = updateManipulator@RigidBodyVisualizer(obj,manip);
+      
+      lc = lcm.lcm.LCM.getSingleton();
       vr = drake.lcmt_viewer_load_robot();
       vr.num_links = getNumBodies(manip);
       vr.link = javaArray('drake.lcmt_viewer_link_data',vr.num_links);
@@ -66,7 +101,7 @@ classdef BotVisualizer < RigidBodyVisualizer
         link = drake.lcmt_viewer_link_data();
         link.name = b.linkname;
         link.robot_num = b.robotnum;
-        if use_collision_geometry
+        if obj.use_collision_geometry
           link.num_geom = length(b.collision_geometry);
         else
           link.num_geom = length(b.visual_geometry);
@@ -75,7 +110,7 @@ classdef BotVisualizer < RigidBodyVisualizer
           link.geom = javaArray('drake.lcmt_viewer_geometry_data',link.num_geom);
         end
         for j=1:link.num_geom
-          if use_collision_geometry
+          if obj.use_collision_geometry
             link.geom(j) = serializeToLCM(b.collision_geometry{j});
           else
             link.geom(j) = serializeToLCM(b.visual_geometry{j});
@@ -98,18 +133,7 @@ classdef BotVisualizer < RigidBodyVisualizer
           %          error('Drake:BotVisualizer:LoadURDFFailed','ack from viewer contained different data');
           %        end
         end
-      end
-      
-      nq = getNumPositions(manip);
-      obj.draw_msg = drake.lcmt_viewer_draw();
-      nb = getNumBodies(manip);
-      obj.draw_msg.num_links = nb;
-      obj.draw_msg.link_name = {manip.body.linkname};
-      obj.draw_msg.robot_num = [manip.body.robotnum];
-      obj.draw_msg.position = single(zeros(nb,3));
-      obj.draw_msg.quaternion = single(zeros(nb,4));
-      
-      draw(obj,0,zeros(getNumPositions(manip),1));
+      end      
     end
     
     function drawWrapper(obj,t,y)
@@ -279,6 +303,7 @@ classdef BotVisualizer < RigidBodyVisualizer
     viewer_id;
     draw_msg;
     status_agg;
+    use_collision_geometry=false;
     lcmgl_inertia_ellipsoids;
     inertia_ellipsoids_density=600; % kg/m^3 density of wood (walnut) 
   end

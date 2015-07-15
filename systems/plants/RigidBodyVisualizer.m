@@ -15,6 +15,11 @@ classdef RigidBodyVisualizer < Visualizer
       obj.model = manip;
       obj.preserve_view = true;
     end
+    
+    function obj = updateManipulator(obj,manip)
+      obj.model = manip;
+    end
+    
     function inspector(obj,x0,state_dims,minrange,maxrange,options)
       % brings up a simple slider gui that displays the robot
       % in the specified state when possible. It also shows resulting

@@ -42,6 +42,15 @@ std::vector<double> const & SplineInformation::getSegmentTimes() const {
   return segment_times;
 }
 
-int SplineInformation::getSegmentPolynomialDegree(int segment_number) const {
+int SplineInformation::getSegmentPolynomialDegree(int segment_number, Eigen::DenseIndex row, Eigen::DenseIndex cols) const {
+  checkScalarValued();
   return segment_polynomial_degrees[segment_number];
+}
+
+Eigen::DenseIndex SplineInformation::rows() const {
+  return 1;
+}
+
+Eigen::DenseIndex SplineInformation::cols() const {
+  return 1;
 }

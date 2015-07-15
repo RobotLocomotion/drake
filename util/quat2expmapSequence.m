@@ -10,7 +10,7 @@ for i = 1:N
   [w(:,i),dw] = quat2expmapmex(quat(:,i));
   wdot(:,i) = dw*quat_dot(:,i);
   if(i>1)
-    [w(:,i),dw2] = unwrapExpmap(w(:,i-1),w(:,i));
+    [w(:,i),dw2] = closestExpmap(w(:,i-1),w(:,i));
     wdot(:,i) = dw2*wdot(:,i);
   end
 end

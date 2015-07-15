@@ -77,6 +77,7 @@ if (~isTrigOrPoly(all_methods))
   tp_update        %#ok
   tp_output        %#ok
   error('dynamics, update, and/or output methods depend both trigonometrically and polynomially on a single variable');
+  % did you perhaps need to use the "replace_output_w_new_state" option?
 end
 all_methods=getmsspoly(all_methods);
 

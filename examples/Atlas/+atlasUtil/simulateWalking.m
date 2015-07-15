@@ -6,7 +6,6 @@ end
 options = applyDefaults(options, struct('gui_control_interface', true));
 
 typecheck(r, 'Atlas');
-typecheck(walking_plan_data, 'QPLocomotionPlan');
 
 if ~isfield(options, 'v') || isempty(options.v)
   v = r.constructVisualizer;

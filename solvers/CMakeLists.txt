@@ -52,5 +52,4 @@ if(snopt_c_FOUND AND MATLAB_FOUND)
 	endif()
 endif()
 
-add_subdirectory(polynomial)
 add_subdirectory(qpSpline)
