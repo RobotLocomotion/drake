@@ -38,8 +38,7 @@ function [x_in_world, J, dJ] = terrainContactPositions(obj, ...
   %                      points
   % @retval J - dx_in_world/dq
   % @retval dJ - d^2x_in_world/dq^2
-  % @retval Jdot - d(dx_in_world/dq)/dt
-  
+
   if numel(varargin) > 2
     compute_Jdot_instead_of_dJ = varargin{3};
     varargin = varargin(1:2);
@@ -58,7 +57,7 @@ function [x_in_world, J, dJ] = terrainContactPositions(obj, ...
   compute_Jdot = nargout > 2 && compute_Jdot_instead_of_dJ;
 
   if compute_Jdot
-    error('computing Jdot is no longer supported');
+    error('Computing Jdot is no longer supported. See terrainContactJacobianDotTimesV');
   end
 
   if ~isstruct(kinsol)

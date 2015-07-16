@@ -248,9 +248,9 @@ classdef AtlasQPController < QPController
         Dbar_act = Dbar(act_idx,:);
 
         terrain_pts = getTerrainContactPoints(r,active_supports,active_contact_groups);
-        [~,Jp,Jpdot] = terrainContactPositions(r,kinsol,terrain_pts,true);
+        [~,Jp] = terrainContactPositions(r,kinsol,terrain_pts,true);
+        Jpdot_times_v = terrainContactJacobianDotTimesV(r, kinsol, terrain_pts);
         Jp = sparse(Jp);
-        Jpdot = sparse(Jpdot);
 
         if length(x0)==4
           xlimp = [xcom(1:2); Jcom*qd]; % state of LIP model
@@ -322,7 +322,7 @@ classdef AtlasQPController < QPController
       if nc > 0
         % relative acceleration constraint
         Aeq_{2} = Jp*Iqdd + Ieps;
-        beq_{2} = -Jpdot*qd - obj.Kp_accel*Jp*qd;
+        beq_{2} = -Jpdot_times_v - obj.Kp_accel*Jp*qd;
       end
 
       eq_count=3;

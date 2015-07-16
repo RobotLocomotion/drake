@@ -1190,6 +1190,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       [varargout{:}] = terrainContactPositions(obj.manip,varargin{:});
     end
 
+    function varargout = terrainContactJacobianDotTimesV(obj,varargin)
+      varargout = cell(1,nargout);
+      [varargout{:}] = terrainContactJacobianDotTimesV(obj.manip,varargin{:});
+    end
+
     function distance = collisionRaycast(obj, kinsol, origin, point_on_ray, use_margins)
       if nargin < 5
         use_margins = true;
