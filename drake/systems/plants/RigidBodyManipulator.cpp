@@ -1594,7 +1594,7 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::geometricJacobianDotTim
 
   ret.value() = bodies[end_effector_body_ind]->JdotV - bodies[base_body_ind]->JdotV;
   if (gradient_order > 0) {
-    ret.gradient().value() = bodies[end_effector_body_ind]->dJdotVdq - bodies[base_body_or_frame_ind]->dJdotVdq;
+    ret.gradient().value() = bodies[end_effector_body_ind]->dJdotVdq - bodies[base_body_ind]->dJdotVdq;
   }
 
   int world_ind = 0;
