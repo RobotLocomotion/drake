@@ -25,11 +25,15 @@ nu = getNumInputs(r);
 v = r.constructVisualizer;
 v.display_dt = 0.001;
 
-load('data/hopper_traj_lqr_40_knots.mat');
-xtraj = xtraj.setOutputFrame(getStateFrame(r));
-v.playback(xtraj);
-
+load('data/hopper_hybrid_lqr_sk.mat');
 if segment_number<1
+  if iscell(xtraj)
+    xtraj = cellToSplineTraj(xtraj); %this is not quite right
+  end
+  if iscell(utraj)
+    utraj = cellToFohTraj(utraj);
+  end
+
   % just do a foh for the full traj for now...
   ts=[];
   for i=1:length(Ktraj)
@@ -46,8 +50,16 @@ if segment_number<1
   end
   Ktraj = PPTrajectory(zoh(ts,Ks));
 else
+  xtraj = xtraj{segment_number};
+  utraj = utraj{segment_number};
   Ktraj = Ktraj{segment_number};
 end
+
+xtraj = xtraj.setOutputFrame(getStateFrame(r));
+v.playback(xtraj);
+
+utraj = PPTrajectory(foh(Ktraj.getBreaks(),utraj.eval(Ktraj.getBreaks())));
+
 c = AffineSystem([],[],[],[],[],[],[],-Ktraj,Ktraj*xtraj + utraj);
 c = c.setInputFrame(r.getOutputFrame);
 c = c.setOutputFrame(r.getInputFrame);
@@ -69,18 +81,15 @@ playback(v,traj,struct('slider',true));
 
 
 if 1
-
-  xtraj_ts = xtraj.getBreaks();
-  xtraj_pts = xtraj.eval(xtraj_ts);
-  
   traj_ts = traj.getBreaks();
   traj_pts = traj.eval(traj_ts);
+  xtraj_pts = xtraj.eval(traj_ts);
   
   for i=1:10
     figure(100+i);
     hold on;
     title(r.getStateFrame.coordinates{i});
-    plot(xtraj_ts,xtraj_pts(i,:),'g.-');
+    plot(traj_ts,xtraj_pts(i,:),'g.-');
     plot(traj_ts,traj_pts(i,:),'r.-');
     hold off;
   end
@@ -88,3 +97,25 @@ end
 
 end
 
+
+function [traj_ts,traj_pts] = extractUniquePointsFromCellTraj(traj_cell)
+  traj_ts = [];
+  traj_pts = [];
+  for i=1:length(traj_cell)
+    ts = traj_cell{i}.getBreaks();
+    pts = traj_cell{i}.eval(ts);
+    traj_ts = [traj_ts ts];
+    traj_pts = [traj_pts pts];
+  end
+  [traj_ts, ind] = unique(traj_ts);
+  traj_pts = traj_pts(:,ind);
+end
+
+function traj = cellToSplineTraj(traj_cell)
+ [traj_ts,traj_pts] = extractUniquePointsFromCellTraj(traj_cell);
+ traj = PPTrajectory(spline(traj_ts,traj_pts));
+end
+function traj = cellToFohTraj(traj_cell)
+ [traj_ts,traj_pts] = extractUniquePointsFromCellTraj(traj_cell);
+ traj = PPTrajectory(foh(traj_ts,traj_pts));
+end
