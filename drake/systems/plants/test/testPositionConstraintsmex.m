@@ -6,7 +6,7 @@ if nargin<1 || isempty(urdf)
 end
 robot = RigidBodyManipulator(urdf);
 
-if robot.mex_model_ptr == 0 || robot_new.mex_model_ptr == 0 
+if robot.mex_model_ptr == 0
   disp('No mex model pointer was found.  Aborting test')
   return
 end
