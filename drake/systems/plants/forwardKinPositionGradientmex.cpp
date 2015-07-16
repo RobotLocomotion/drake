@@ -1,10 +1,7 @@
 #include <mex.h>
 #include <iostream>
-#include <memory>
 #include "drakeMexUtil.h"
 #include "RigidBodyManipulator.h"
-#include "drakeGradientUtil.h"
-#include "math.h"
 
 using namespace Eigen;
 using namespace std;

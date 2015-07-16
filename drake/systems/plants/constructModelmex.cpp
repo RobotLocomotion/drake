@@ -67,7 +67,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     model->bodies[i]->robotnum = (int) mxGetScalar(pm)-1;
 
     pm = mxGetProperty(pBodies,i,"mass");
-    model->bodies[i]->mass = (double) mxGetScalar(pm);
+    model->bodies[i]->mass = mxGetScalar(pm);
 
     pm = mxGetProperty(pBodies,i,"com");
     if (!mxIsEmpty(pm)) memcpy(model->bodies[i]->com.data(),mxGetPrSafe(pm),sizeof(double)*3);
