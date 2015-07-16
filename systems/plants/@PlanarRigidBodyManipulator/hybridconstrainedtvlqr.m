@@ -186,7 +186,7 @@ for j = 1:jmax;
     idxB = tmp;
     while k <= length(mode_data{i}.constraint_ind)
       if false
-        if ~even(mode_data{i}.constraint_ind(k))
+        if mod(mode_data{i}.constraint_ind(k),2)~=0
           ind = (mode_data{i}.constraint_ind(k)+1)/2;
         else
           ind = (mode_data{i}.constraint_ind(k))/2;
@@ -199,7 +199,7 @@ for j = 1:jmax;
         k = k+2;
       else
         
-        if ~even(mode_data{i}.constraint_ind(k))
+        if mod(mode_data{i}.constraint_ind(k),2)~=0
           ind = (mode_data{i}.constraint_ind(k)+1)/2;
           if k < length(mode_data{i}.constraint_ind) && (mode_data{i}.constraint_ind(k+1) - mode_data{i}.constraint_ind(k)) == 1
             % Use both first and second (relative position)

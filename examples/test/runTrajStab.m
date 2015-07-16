@@ -33,15 +33,13 @@ nu = getNumInputs(r);
 v = r.constructVisualizer;
 v.display_dt = 0.01;
 
-load('data/hopper_traj_lqr_40_knots.mat');
+load('data/hopper_hybrid_lqr_sk.mat');
 %load('data/hopper_traj_lqr_refined.mat');
-N_hops = 1;
 
-[xtraj,utraj,Btraj,Straj,Straj_full] = repeatTraj(xtraj,utraj,Btraj,Straj,Straj_full,N_hops-1);
+N_hops = 10;
+
+[xtraj,utraj,Btraj,Straj,Straj_full] = repeatTraj(xtraj,utraj,Btraj,Straj,Straj_full,N_hops);
 %mode_data = repmat(mode_data,1,N_hops+1);
-
-xtraj = xtraj.setOutputFrame(getStateFrame(r));
-v.playback(xtraj);
 
 support_times = zeros(1,length(Straj_full));
 for i=1:length(Straj_full)
@@ -53,7 +51,43 @@ options.left_foot_name = 'thigh'; % junk for now
 
 foot_ind = findLinkId(r,'foot');
 
-[~,modes] = extractHybridModes(r,xtraj,support_times+0.03); % hack add time to make sure it's fully into the next mode
+if segment_number<1
+  B=Btraj;
+  S=Straj_full;
+  if iscell(xtraj)
+    t0 = xtraj{1}.tspan(1);
+    tf = xtraj{length(xtraj)}.tspan(2);
+  else
+    t0 = xtraj.tspan(1);
+    tf = xtraj.tspan(2);
+    v.playback(xtraj);
+  end
+else
+  B=Btraj{segment_number};
+  S=Straj_full{segment_number};
+  t0 = round(1000*Btraj{segment_number}.tspan(1))/1000;
+  tf = Btraj{segment_number}.tspan(2); 
+  if iscell(xtraj)
+    xtraj = xtraj{segment_number};
+    utraj = utraj{segment_number};
+  end
+  xtraj = xtraj.setOutputFrame(getStateFrame(r));
+  v.playback(xtraj);
+end
+
+
+
+% if iscell(xtraj)
+%   modes = [];
+%   for i=1:length(xtraj)
+%     [~,mode_i] = extractHybridModes(r,xtraj{i},xtraj.tspan(1)+0.02); % hack add time to make sure it's fully into the next mode
+%   end
+%   modes = [modes mode_i];
+% else
+%  [~,modes] = extractHybridModes(r,xtraj,support_times+0.03); % hack add time to make sure it's fully into the next mode
+% end
+
+modes = repmat([1 3 4 1],1,N_hops);
 
 % support_times = ts([1 find(diff(modes_))]);
 % modes = modes_([1 1+find(diff(modes_))]);
@@ -63,16 +97,21 @@ if length(support_times) ~= length(Straj)
   keyboard;
 end
 
+allowable_supports = RigidBodySupportState(r,foot_ind);
+
 supports = [];
 for i=1:length(modes)
   switch modes(i)
     case 1
       supp = RigidBodySupportState(r,foot_ind);
     case 2
-      supp = RigidBodySupportState(r,foot_ind,{{'heel'}}); 
+      options.contact_groups = {{'heel'}};
+      supp = RigidBodySupportState(r,foot_ind,options); 
     case 3
-      supp = RigidBodySupportState(r,foot_ind,{{'toe'}}); 
+      options.contact_groups = {{'toe'}};
+      supp = RigidBodySupportState(r,foot_ind,options); 
     case 4
+      options.contact_groups = [];
       supp = RigidBodySupportState(r,[]);
   end
   supports = [supports; supp];
@@ -84,41 +123,30 @@ end
 %   RigidBodySupportState(r,[]); ...
 %   RigidBodySupportState(r,foot_ind)];
 
-if segment_number<1
-  B=Btraj;
-  S=Straj_full;
-  t0 = xtraj.tspan(1);
-  tf = xtraj.tspan(2);
-else
-  B=Btraj{segment_number};
-  S=Straj_full{segment_number};
-  t0 = Btraj{segment_number}.tspan(1)+0.1;
-  tf = Btraj{segment_number}.tspan(2); 
-end
-
 ctrl_data = FullStateQPControllerData(true,struct(...
   'B',{B},...
   'S',{S},...
   'R',R,... 
-  'x0',xtraj,...
-  'u0',utraj,...
+  'x0',{xtraj},...
+  'u0',{utraj},...
   'support_times',support_times,...
-  'supports',supports));
+  'supports',supports,...
+  'allowable_supports',allowable_supports));
 
 %ctrl_data.mode_data = mode_data;
 
 % instantiate QP controller
 options.cpos_slack_limit = inf;
-options.w_cpos_slack = 1.0;
+options.w_cpos_slack = 0.1;
 options.phi_slack_limit = inf;
 options.w_phi_slack = 0.0;
-options.w_qdd = 0*ones(nq,1);
-options.w_grf = 0;
+options.w_qdd = 1e-10*ones(nq,1);
+options.w_grf = 1e-10;
 options.Kp_accel = 0;
 options.Kp_phi = 0;
 options.contact_threshold = 1e-3;
-options.timestep = 0.002;
-qp = FullStateQPControllerDT(r,ctrl_data,options);
+options.timestep = 0.001;
+qp = FullStateQPController(r,ctrl_data,options);
 
 % feedback QP controller with spring flamingo
 sys = feedback(r,qp);
@@ -129,22 +157,49 @@ output_select(1).output=1;
 sys = mimoCascade(sys,v,[],[],output_select);
 warning(S);
 
-traj = simulate(sys,[t0 tf],xtraj.eval(t0));
+if iscell(xtraj)
+  x0=xtraj{1}.eval(t0);  
+else
+  x0=xtraj.eval(t0);  
+end
+traj = simulate(sys,[t0 tf],x0);
 playback(v,traj,struct('slider',true));
 
-if 0
-  % plot position tracking
-  pptraj = PPTrajectory(foh(traj.getBreaks,traj.eval(traj.getBreaks)));
-  for i=1:10
-    figure(100+i);
-    hold on;
-    fnplt(xtraj(i));
-    fnplt(pptraj(i));
-    hold off;
-  end
-end
 
 if 1
+  traj_ts = traj.getBreaks();
+  traj_pts = traj.eval(traj_ts);
+  
+  figure(100+i);
+  if ~iscell(xtraj)
+    xtraj_pts = xtraj.eval(traj_ts);
+    for i=1:10
+      subplot(2,5,i);
+      hold on;
+      title(r.getStateFrame.coordinates{i});
+      plot(traj_ts,xtraj_pts(i,:),'b.-');
+      plot(traj_ts,traj_pts(i,:),'r.-');
+      hold off;
+    end
+  else
+    for i=1:10
+      figure(100+i);
+      hold on;
+      title(r.getStateFrame.coordinates{i});
+      for j=1:length(xtraj)
+        fnplt(xtraj{j},i);
+      end
+      plot(traj_ts,traj_pts(i,:),'r.-');
+      hold off;
+    end    
+  end
+
+  
+end
+
+save('data/hopper_traj.mat','traj');
+
+if 0
   % plot mode sequence
   pptraj = PPTrajectory(foh(traj.getBreaks,traj.eval(traj.getBreaks)));
   

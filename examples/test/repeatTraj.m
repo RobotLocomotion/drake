@@ -1,52 +1,59 @@
 function [xtraj_N,utraj_N,Btraj_N,Straj_N,Straj_full_N] = repeatTraj(xtraj,utraj,Btraj,Straj,Straj_full,N)
 
+if N<1
+  error('invalid N')
+elseif N==1
+  xtraj_N=xtraj;
+  utraj_N=utraj;
+  Btraj_N=Btraj;
+  Straj_N=Straj;
+  Straj_full_N=Straj_full;
+  return
+end
+
+if iscell(xtraj)
+  xtraj_cell = xtraj;
+  xtraj = xtraj_cell{1};
+  for i=2:length(xtraj_cell);
+    xtraj=xtraj.append(xtraj_cell{i});
+  end
+end
+
+if iscell(utraj)
+  utraj_cell = utraj;
+  utraj = utraj_cell{1};
+  for i=2:length(utraj_cell);
+    utraj=utraj.append(utraj_cell{i});
+  end
+end
 
 m = length(Straj);
 k=m;
 
-ts_N = xtraj.getBreaks();
-xpts_N = xtraj.eval(ts_N);
-upts_N = utraj.eval(ts_N);
 Btraj_N = Btraj;
 Straj_N = Straj;
 Straj_full_N = Straj_full;
 
-size_xpts = size(xpts_N);
-if length(size_xpts)==3
-  % due to PPTrajectory bug...
-  xpts_N = reshape(xpts_N, size_xpts(1), size_xpts(3));
-end
-
-
-for i=1:N
+xtraj_N = xtraj;
+utraj_N = utraj;
+  
+for i=1:N-1
   % append input traj
-  xtraj_ = xtraj;
-  utraj_ = utraj;
   Btraj_ = Btraj;
   Straj_ = Straj;
 
   % add to xtraj
-  ts = xtraj_.getBreaks();
-  xtraj_pts = xtraj_.eval(ts);
-  utraj_pts = utraj_.eval(ts);
-  
-  T = ts_N(end);
-  xT = xpts_N(:,end);
-  xtraj_pts(1,:) = xtraj_pts(1,:) + xT(1); % shift pelvis x
-  ts = ts + T;
-  ts_N = [ts_N, ts];
-  size_xpts = size(xtraj_pts);
-  size_upts = size(utraj_pts);
-  if length(size_xpts)==3
-    % due to PPTrajectory bug...
-    xtraj_pts = reshape(xtraj_pts, size_xpts(1), size_xpts(3));
-  end
-  if length(size_upts)==3
-    utraj_pts = reshape(utraj_pts, size_upts(1), size_upts(3));
-  end
-  xpts_N = [xpts_N, xtraj_pts];
-  upts_N = [upts_N, utraj_pts];
+  T = xtraj_N.tspan(2);
+  xT = xtraj_N.eval(T);
 
+  xT_1 = 0*xT; xT_1(1)=xT(1); % grab pelvis x
+
+  xtraj_ = xtraj + xT_1;
+  xtraj_ = shiftTime(xtraj_,T);
+  xtraj_N = xtraj_N.append(xtraj_);
+  
+  utraj_ = shiftTime(utraj,T);
+  utraj_N = utraj_N.append(utraj_);
   
   for i=1:m
     Btraj_N{k+i} = shiftTime(Btraj_{i},T);
@@ -54,11 +61,7 @@ for i=1:N
     Straj_full_N{k+i} = shiftTime(Straj_full{i},T);
   end
   k=k+m;
-  
 end
-
-xtraj_N = PPTrajectory(foh(ts_N,xpts_N));
-utraj_N = PPTrajectory(foh(ts_N,upts_N));
 
 end
 
