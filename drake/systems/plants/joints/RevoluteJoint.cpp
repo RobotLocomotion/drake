@@ -8,7 +8,7 @@ using namespace Eigen;
 RevoluteJoint::RevoluteJoint(const std::string& name, const Isometry3d& transform_to_parent_body, const Vector3d& rotation_axis) :
     FixedAxisOneDoFJoint(name, transform_to_parent_body, spatialJointAxis(rotation_axis)), rotation_axis(rotation_axis)
 {
-  assert(abs(rotation_axis.norm()-1)<1e-10);
+  assert(std::abs(rotation_axis.norm() - 1.0) < 1e-10);
 }
 
 RevoluteJoint::~RevoluteJoint()

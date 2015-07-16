@@ -329,7 +329,6 @@ public:
    * was called last).
    */
   VectorXd cached_q, cached_v;  // these should be private
-  VectorXd cached_q_old, cached_v_old;  // these should be private
 
 private:
   VectorXd cached_q_new, cached_v_new;
@@ -347,20 +346,10 @@ private:
   std::vector<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::aligned_allocator< Matrix<double, TWIST_SIZE, TWIST_SIZE> > > Ic_new;
 
 
-  //Variables for gradient calculations
-  MatrixXd dTdTmult;
   std::vector<Gradient<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::Dynamic>::type> dI_world;
   std::vector<Gradient<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::Dynamic>::type> dIc_new;
 
-  // preallocate for COM functions
-  Vector3d bc;
-  MatrixXd bJ;
-  MatrixXd bdJ;
-
-  int num_contact_pts;
   bool initialized;
-  bool kinematicsInit;
-  int secondDerivativesCached;
   bool position_kinematics_cached;
   bool gradients_cached;
   bool velocity_kinematics_cached;

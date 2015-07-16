@@ -8,7 +8,7 @@ using namespace Eigen;
 PrismaticJoint::PrismaticJoint(const std::string& name, const Isometry3d& transform_to_parent_body, const Vector3d& translation_axis) :
     FixedAxisOneDoFJoint(name, transform_to_parent_body, spatialJointAxis(translation_axis)), translation_axis(translation_axis)
 {
-  assert(abs(translation_axis.norm()-1)<1e-10);
+  assert(std::abs(translation_axis.norm() - 1.0) < 1e-10);
 }
 
 PrismaticJoint::~PrismaticJoint()
