@@ -661,9 +661,9 @@ classdef RigidBodyWing < RigidBodyForceElement
       if (nargout>1)
         
         [~,J] = forwardKin(manip,kinsol,kinframe,zeros(3,1));
-        Jdot = forwardJacDot(manip,kinsol,kinframe,zeros(3,1));
-        wingvel_world_xyz = J*qd; % assume still air. Air flow over the wing
-        dwingvel_worlddq = Jdot;
+        [Jdot_times_v, dJdot_times_v] = forwardJacDotTimesV(manip,kinsol,kinframe,zeros(3,1));
+        wingvel_world_xyz = Jdot_times_v; % assume still air. Air flow over the wing
+        dwingvel_worlddq = dJdot_times_v;
         dwingvel_worlddqd = J;
       else
         kinsol = doKinematics(manip,q);

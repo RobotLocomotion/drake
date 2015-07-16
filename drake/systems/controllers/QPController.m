@@ -349,10 +349,10 @@ classdef QPController < MIMODrakeSystem
         Adot_times_v = centroidalMomentumMatrixDotTimesVmex(r, kinsol);
       end
 
-      Jcomdot = forwardJacDot(r,kinsol,0);
+      Jcomdot_times_v = centerOfMassJacobianDotTimesV(r, kinsol);
       if length(x0)==4
        Jcom = Jcom(1:2,:); % only need COM x-y
-       Jcomdot = Jcomdot(1:2,:);
+       Jcomdot_times_v = Jcomdot_times_v(1:2);
       end
 
       if ~isempty(active_supports)
@@ -432,12 +432,12 @@ classdef QPController < MIMODrakeSystem
       for ii=1:obj.n_body_accel_bounds
         body_idx = obj.body_accel_bounds(ii).body_idx;
         [~,Jb] = forwardKin(r,kinsol,body_idx,[0;0;0],1);
-        Jbdot = forwardJacDot(r,kinsol,body_idx,[0;0;0],1);
+        Jbdot_times_v = forwardJacDotTimesV(r,kinsol,body_idx,[0;0;0],1);
         Ain_{constraint_index} = Jb*Iqdd;
-        bin_{constraint_index} = -Jbdot*qd + obj.body_accel_bounds(ii).max_acceleration;
+        bin_{constraint_index} = -Jbdot_times_v + obj.body_accel_bounds(ii).max_acceleration;
         constraint_index = constraint_index + 1;
         Ain_{constraint_index} = -Jb*Iqdd;
-        bin_{constraint_index} = Jbdot*qd - obj.body_accel_bounds(ii).min_acceleration;
+        bin_{constraint_index} = Jbdot_times_v - obj.body_accel_bounds(ii).min_acceleration;
         constraint_index = constraint_index + 1;
       end
 
@@ -456,10 +456,10 @@ classdef QPController < MIMODrakeSystem
           body_vdot = body_input(2:7);
           if ~any(active_supports==body_ind)
             [~,J] = forwardKin(r,kinsol,body_ind,[0;0;0],1);
-            Jdot = forwardJacDot(r,kinsol,body_ind,[0;0;0],1);
+            Jdot_times_v = forwardJacDotTimesV(r, kinsol, body_ind, [0;0;0], 1);
             cidx = ~isnan(body_vdot);
             Aeq_{eq_count} = J(cidx,:)*Iqdd;
-            beq_{eq_count} = -Jdot(cidx,:)*qd + body_vdot(cidx);
+            beq_{eq_count} = -Jdot_times_v(cidx) + body_vdot(cidx);
             eq_count = eq_count+1;
           end
         end
@@ -504,7 +504,7 @@ classdef QPController < MIMODrakeSystem
         end
 
         fqp = xlimp'*C_ls'*Qy*D_ls*Jcom*Iqdd;
-        fqp = fqp + qd'*Jcomdot'*R_DQyD_ls*Jcom*Iqdd;
+        fqp = fqp + Jcomdot_times_v'*R_DQyD_ls*Jcom*Iqdd;
         fqp = fqp + (x_bar'*S + 0.5*s1')*B_ls*Jcom*Iqdd;
         fqp = fqp - u0'*R_ls*Jcom*Iqdd;
         fqp = fqp - y0'*Qy*D_ls*Jcom*Iqdd;
@@ -529,10 +529,10 @@ classdef QPController < MIMODrakeSystem
           body_vdot = body_input(2:7);
           if ~any(active_supports==body_ind)
             [~,J] = forwardKin(r,kinsol,body_ind,[0;0;0],1);
-            Jdot = forwardJacDot(r,kinsol,body_ind,[0;0;0],1);
+            Jdot_times_v = forwardJacDotTimesV(r,kinsol,body_ind,[0;0;0],1);
             cidx = ~isnan(body_vdot);
             Hqp(1:nq,1:nq) = Hqp(1:nq,1:nq) + w*J(cidx,:)'*J(cidx,:);
-            fqp = fqp + w*(qd'*Jdot(cidx,:)'- body_vdot(cidx)')*J(cidx,:)*Iqdd;
+            fqp = fqp + w*Jdot_times_v(cidx,:)'- body_vdot(cidx)')*J(cidx,:)*Iqdd;
           end
         end
       end

@@ -5,7 +5,7 @@ testAtlas('quat');
 end
 
 function testAtlas(floatingJointType)
-robot = createAtlas(floatingJointType, options);
+robot = createAtlas(floatingJointType);
 testVersusNumericalDifferentiation(robot);
 testGradient(robot);
 checkMex(robot);

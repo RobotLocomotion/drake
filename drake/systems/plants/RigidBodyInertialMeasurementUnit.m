@@ -36,7 +36,7 @@ classdef RigidBodyInertialMeasurementUnit < RigidBodySensor
       kinsol = doKinematics(manip,q,false,true,qd);
       
       [x,J] = forwardKin(manip,kinsol,obj.body,obj.xyz,1);
-      Jdot = forwardJacDot(manip,kinsol,obj.body,obj.xyz,0,0);
+      Jdot_times_v = forwardJacDotTimesV(manip,kinsol,obj.body,obj.xyz,0,0);
       
       % x = f(q)
       % xdot = dfdq*dqdt = J*qd
@@ -47,7 +47,7 @@ classdef RigidBodyInertialMeasurementUnit < RigidBodySensor
         angle = x(3);
         omega_body = J(3,:)*qd;
         
-        accel_base = Jdot*qd + J(1:2,:)*qdd;
+        accel_base = Jdot_times_v + J(1:2,:)*qdd;
         R_base_to_body = rotmat(-angle);
         accel_body = R_base_to_body * accel_base;
         
@@ -63,7 +63,7 @@ classdef RigidBodyInertialMeasurementUnit < RigidBodySensor
         omega_base = rpydot2angularvel(rpy, rpydot); % TODO: replace with computation based on kinsol.twists
         omega_body = quatRotateVec(quat_world_to_body, omega_base);
         
-        accel_base = Jdot*qd + J(1:3,:)*qdd; % TODO: possibly replace with computation based on spatial accelerations
+        accel_base = Jdot_times_v + J(1:3,:)*qdd; % TODO: possibly replace with computation based on spatial accelerations
         accel_body = quatRotateVec(quat_world_to_body, accel_base);
         
         y = [ quat_body_to_world; ...

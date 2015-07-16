@@ -4,7 +4,7 @@ testAtlas('quat');
 end
 
 function testAtlas(floatingJointType)
-robot = createAtlas(floatingJointType,options);
+robot = createAtlas(floatingJointType);
 checkAgainstJacobianTimesJointVelocities(robot);
 checkGradients(robot);
 end

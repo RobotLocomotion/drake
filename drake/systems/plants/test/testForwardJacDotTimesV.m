@@ -1,5 +1,5 @@
 function testForwardJacDotTimesV
-robot = createAtlas('rpy', options);
+robot = createAtlas('rpy');
 
 for rotation_type = 0 : 2
   compareToJacobianGradientMethod(robot, rotation_type);
@@ -7,7 +7,7 @@ for rotation_type = 0 : 2
   checkMex(robot, rotation_type);
 end
 
-robot = createAtlas('quat', options);
+robot = createAtlas('quat');
 for rotation_type = 0 : 2
   % comparison to Jacobian gradient method is only meaningful for rpy
   % parameterization (derivative of vToqdot needs to be zero)

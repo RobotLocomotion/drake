@@ -864,11 +864,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       [varargout{:}]=forwardKin(obj.manip,varargin{:});
     end
 
-    function varargout = forwardJacDot(obj,varargin)
-      varargout = cell(1,nargout);
-      [varargout{:}]=forwardJacDot(obj.manip,varargin{:});
-    end
-
     function varargout = bodyKin(obj,varargin)
       varargout = cell(1,nargout);
       [varargout{:}]=bodyKin(obj.manip,varargin{:});

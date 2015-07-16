@@ -65,21 +65,8 @@ end
 function testAtlasRPY()
 
 r = createAtlas('rpy');
-r_newkinsol = setNewKinsolFlag(r,true);
 nq = r.getNumPositions();
 nv = r.getNumVelocities();
-
-nTests = 5;
-for i = 1 : nTests
-  q = randn(nq, 1);
-  v = randn(nv, 1);
-  [H, C, B] = manipulatorDynamics(r, q, v, false);
-  [H_new, C_new, B_new] = manipulatorDynamics(r_newkinsol, q, v, false);
-
-  valuecheck(H_new,H);
-  valuecheck(C_new,C);
-  valuecheck(B_new,B);
-end
 
 checkMex(r);
 
