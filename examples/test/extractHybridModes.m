@@ -2,8 +2,8 @@ function [ts,modes] = extractHybridModes(r,xtraj,switch_times)
 % specific to one-legged hopper. 
 % 
 %   mode 1: heel+toe
-%   mode 2: toe
-%   mode 3: heel
+%   mode 2: heel
+%   mode 3: toe
 %   mode 4: flight
 
 if nargin < 3
@@ -21,9 +21,9 @@ for i=1:length(ts)
   in_contact = phi < 5e-3;
   if in_contact(1) && in_contact(2) % heel+toe
     modes = [modes,1];
-  elseif in_contact(1) % toe
+  elseif in_contact(1) % heel
     modes = [modes,2];
-  elseif in_contact(2) % heel
+  elseif in_contact(2) % toe
     modes = [modes,3];
   else
     modes = [modes,4]; % flight

@@ -35,8 +35,10 @@ v.display_dt = 0.01;
 
 load('data/hopper_hybrid_lqr_sk.mat');
 %load('data/hopper_traj_lqr_refined.mat');
-%N_hops = 1;
-%[xtraj,utraj,Btraj,Straj,Straj_full] = repeatTraj(xtraj,utraj,Btraj,Straj,Straj_full,N_hops-1);
+
+N_hops = 10;
+
+[xtraj,utraj,Btraj,Straj,Straj_full] = repeatTraj(xtraj,utraj,Btraj,Straj,Straj_full,N_hops);
 %mode_data = repmat(mode_data,1,N_hops+1);
 
 support_times = zeros(1,length(Straj_full));
@@ -49,20 +51,26 @@ options.left_foot_name = 'thigh'; % junk for now
 
 foot_ind = findLinkId(r,'foot');
 
-
 if segment_number<1
   B=Btraj;
   S=Straj_full;
-  t0 = xtraj{1}.tspan(1);
-  tf = xtraj{length(xtraj)}.tspan(2);
+  if iscell(xtraj)
+    t0 = xtraj{1}.tspan(1);
+    tf = xtraj{length(xtraj)}.tspan(2);
+  else
+    t0 = xtraj.tspan(1);
+    tf = xtraj.tspan(2);
+    v.playback(xtraj);
+  end
 else
   B=Btraj{segment_number};
   S=Straj_full{segment_number};
   t0 = round(1000*Btraj{segment_number}.tspan(1))/1000;
   tf = Btraj{segment_number}.tspan(2); 
-  xtraj = xtraj{segment_number};
-  utraj = utraj{segment_number};
-
+  if iscell(xtraj)
+    xtraj = xtraj{segment_number};
+    utraj = utraj{segment_number};
+  end
   xtraj = xtraj.setOutputFrame(getStateFrame(r));
   v.playback(xtraj);
 end
@@ -79,7 +87,7 @@ end
 %  [~,modes] = extractHybridModes(r,xtraj,support_times+0.03); % hack add time to make sure it's fully into the next mode
 % end
 
-modes = [1 3 4 1];
+modes = repmat([1 3 4 1],1,N_hops);
 
 % support_times = ts([1 find(diff(modes_))]);
 % modes = modes_([1 1+find(diff(modes_))]);
@@ -160,19 +168,33 @@ playback(v,traj,struct('slider',true));
 
 if 1
   traj_ts = traj.getBreaks();
-%   xtraj_pts = xtraj.eval(traj_ts);
   traj_pts = traj.eval(traj_ts);
   
-  for i=1:10
-    figure(100+i);
-    hold on;
-    title(r.getStateFrame.coordinates{i});
-    for j=1:length(xtraj)
-      fnplt(xtraj{j},i);
+  figure(100+i);
+  if ~iscell(xtraj)
+    xtraj_pts = xtraj.eval(traj_ts);
+    for i=1:10
+      subplot(2,5,i);
+      hold on;
+      title(r.getStateFrame.coordinates{i});
+      plot(traj_ts,xtraj_pts(i,:),'b.-');
+      plot(traj_ts,traj_pts(i,:),'r.-');
+      hold off;
     end
-    plot(traj_ts,traj_pts(i,:),'r.-');
-    hold off;
+  else
+    for i=1:10
+      figure(100+i);
+      hold on;
+      title(r.getStateFrame.coordinates{i});
+      for j=1:length(xtraj)
+        fnplt(xtraj{j},i);
+      end
+      plot(traj_ts,traj_pts(i,:),'r.-');
+      hold off;
+    end    
   end
+
+  
 end
 
 save('data/hopper_traj.mat','traj');
