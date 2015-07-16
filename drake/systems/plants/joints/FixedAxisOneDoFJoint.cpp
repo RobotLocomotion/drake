@@ -130,10 +130,3 @@ GradientVar<double, Eigen::Dynamic, 1> FixedAxisOneDoFJoint::frictionTorque(cons
   return ret;
 }
 
-void FixedAxisOneDoFJoint::setupOldKinematicTree(RigidBodyManipulator* model, int body_ind, int position_num_start, int velocity_num_start) const
-{
-  DrakeJoint::setupOldKinematicTree(model,body_ind,position_num_start,velocity_num_start);
-  model->joint_limit_min[position_num_start] = joint_limit_min;
-  model->joint_limit_max[position_num_start] = joint_limit_max;
-}
-

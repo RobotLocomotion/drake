@@ -37,23 +37,13 @@ RigidBody::RigidBody(void) :
 	velocity_num_start = 0;
 	body_index = 0;
 	mass = 0.0;
-	floating = 0;
-	pitch = 0;
-	com = Vector3d::Zero();
+  com = Vector3d::Zero();
 	I << Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
-	T = Matrix4d::Identity();
-	Tdot = Matrix4d::Zero();
-	Ttree = Matrix4d::Identity();
-	T_body_to_joint = Matrix4d::Identity();
 }
 
 void RigidBody::setN(int nq, int nv) {
-  dTdq = MatrixXd::Zero(3*nq,4);
-  dTdqdot = MatrixXd::Zero(3*nq,4);
-  ddTdqdq = MatrixXd::Zero(3*nq*nq,4);
-
   dJdq.resize(J.size(), nq);
-  dTdq_new.resize(T.size(), nq);
+  dTdq_new.resize(HOMOGENEOUS_TRANSFORM_SIZE, nq);
   dtwistdq.resize(twist.size(), nq);
 
   dJdotVdq.resize(TWIST_SIZE, nq);
@@ -88,71 +78,6 @@ const DrakeJoint& RigidBody::getJoint() const
   }
   else {
     throw runtime_error("Joint is not initialized");
-  }
-}
-
-void RigidBody::setupOldKinematicTree(RigidBodyManipulator* model)
-{
-  // note: could also setup the featherstone data structures (in RBM) to use the old dynamics; but that doesn't add any additional functionality and is about to be removed
-
-  if (hasParent()) {
-    const DrakeJoint& joint = getJoint();
-    joint.setupOldKinematicTree(model,body_index,position_num_start,velocity_num_start);
-  }
-}
-
-void RigidBody::computeAncestorDOFs(RigidBodyManipulator* model)
-{
-  if (position_num_start>=0) {
-    int i,j;
-    if (parent!=nullptr) {
-      ancestor_dofs = parent->ancestor_dofs;
-      ddTdqdq_nonzero_rows = parent->ddTdqdq_nonzero_rows;
-    }
-
-    if (floating==1) {
-    	for (j=0; j<6; j++) {
-    		ancestor_dofs.insert(position_num_start+j);
-    		for (i=0; i<3*model->num_positions; i++) {
-    			ddTdqdq_nonzero_rows.insert(i*model->num_positions + position_num_start + j);
-    			ddTdqdq_nonzero_rows.insert(3*model->num_positions*position_num_start + i + j);
-    		}
-    	}
-    } else if (floating==2) {
-    	for (j=0; j<7; j++) {
-    		ancestor_dofs.insert(position_num_start+j);
-    		for (i=0; i<3*model->num_positions; i++) {
-    			ddTdqdq_nonzero_rows.insert(i*model->num_positions + position_num_start + j);
-    			ddTdqdq_nonzero_rows.insert(3*model->num_positions*position_num_start + i + j);
-    		}
-    	}
-    }
-    else {
-    	ancestor_dofs.insert(position_num_start);
-    	for (i=0; i<3*model->num_positions; i++) {
-    		ddTdqdq_nonzero_rows.insert(i*model->num_positions + position_num_start);
-    		ddTdqdq_nonzero_rows.insert(3*model->num_positions*position_num_start + i);
-    	}
-    }
-
-
-    // compute matrix blocks
-    IndexRange ind;  ind.start=-1; ind.length=0;
-    for (i=0; i<3*model->num_positions*model->num_positions; i++) {
-      if (ddTdqdq_nonzero_rows.find(i)!=ddTdqdq_nonzero_rows.end()) {
-        if (ind.start<0) ind.start=i;
-      } else {
-        if (ind.start>=0) {
-          ind.length = i-ind.start;
-          ddTdqdq_nonzero_rows_grouped.insert(ind);
-          ind.start = -1;
-        }
-      }
-    }
-    if (ind.start>=0) {
-      ind.length = i-ind.start;
-      ddTdqdq_nonzero_rows_grouped.insert(ind);
-    }
   }
 }
 
@@ -240,6 +165,7 @@ bool RigidBody::CollisionElement::collidesWith( const DrakeCollision::Element* o
 
 ostream &operator<<( ostream &out, const RigidBody &b)
 {
-  out << "RigidBody(" << b.linkname << "," << b.jointname << ")";
+  std::string joint_name = b.hasParent() ? b.getJoint().getName() : "no parent joint";
+  out << "RigidBody(" << b.linkname << "," << joint_name << ")";
   return out;
 }

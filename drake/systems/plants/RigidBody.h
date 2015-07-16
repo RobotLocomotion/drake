@@ -33,9 +33,6 @@ public:
   RigidBody();
 
   void setN(int nq, int nv);
-  void computeAncestorDOFs(RigidBodyManipulator* model);
-
-  void setupOldKinematicTree(RigidBodyManipulator* model);
 
   void setJoint(std::unique_ptr<DrakeJoint> joint);
   const DrakeJoint& getJoint() const;
@@ -61,8 +58,8 @@ public:
 
   bool adjacentTo(const std::shared_ptr<RigidBody>& other) const
   {
-      return ((parent==other && !(joint && joint->isFloating())) ||
-          (other->parent.get() == this && !(other->joint && other->joint->isFloating())));
+    return ((parent == other && !(joint && joint->isFloating())) ||
+            (other->parent.get() == this && !(other->joint && other->joint->isFloating())));
   };
 
   bool collidesWith(const std::shared_ptr<RigidBody>& other) const
@@ -77,7 +74,6 @@ public:
 
 public:
   std::string linkname;
-  std::string jointname; // FLOATINGBASE TODO: remove
   int robotnum; // uses 0-index. starts from 0
   static const std::set<int> defaultRobotNumSet;
 // note: it's very ugly, but parent,dofnum,and pitch also exist currently (independently) at the rigidbodymanipulator level to represent the featherstone structure.  this version is for the kinematics.
@@ -85,10 +81,6 @@ public:
   int body_index; // index in RBM bodies vector (set in compile())
   int position_num_start; // interpreted as start of position_num from Matlab
   int velocity_num_start;
-  int floating; // FLOATINGBASE TODO: remove
-  int pitch; // FLOATINGBASE TODO: remove
-  Matrix4d Ttree;  // floatingbase TODO: replace with Isometry3d?
-  Matrix4d T_body_to_joint;  // floatingbase TODO: replace with Isometry3d?
 
   DrakeShapes::VectorOfVisualElements visual_elements;
 
@@ -96,16 +88,6 @@ public:
   std::map< std::string, std::vector<DrakeCollision::ElementId> > collision_element_groups;
 
   Matrix3Xd contact_pts;
-
-  std::set<int> ancestor_dofs;
-  std::set<int> ddTdqdq_nonzero_rows;
-  std::set<IndexRange> ddTdqdq_nonzero_rows_grouped;
-
-  Matrix4d T;    // floatingbase TODO: replace with Isometry3d?
-  MatrixXd dTdq; // floatingbase TODO: replace with dTdq_new
-  MatrixXd dTdqdot;
-  Matrix4d Tdot; // floatingbase TODO: replace with Isometry3d?
-  MatrixXd ddTdqdq;
 
   double mass;
   Vector3d com; 

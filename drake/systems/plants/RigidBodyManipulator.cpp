@@ -425,17 +425,12 @@ void RigidBodyManipulator::compile(void)
   joint_limit_max = VectorXd::Constant(num_positions,std::numeric_limits<double>::infinity());
 
   for (int i=0; i<num_bodies; i++) {
-    bodies[i]->setupOldKinematicTree(this);
-
     if (!bodies[i]->hasParent())
       updateCollisionElements(bodies[i]);  // update static objects (not done in the kinematics loop)
 
     // update the body's contact points
     Matrix3Xd contact_pts;
     getTerrainContactPoints(*bodies[i], bodies[i]->contact_pts);
-
-    // precompute sparsity pattern for each rigid body
-    bodies[i]->computeAncestorDOFs(this); // TODO floating base : remove this
   }
 
   cached_q.resize(num_positions);
@@ -939,7 +934,7 @@ void RigidBodyManipulator::doKinematicsNew(const MatrixBase<DerivedQ>& q, const 
       updateCollisionElements(bodies[i]);
     }
     else {
-      body.T_new = Isometry3d(body.Ttree);
+      body.T_new.setIdentity();
       // motion subspace in body frame is empty
       // motion subspace in world frame is empty
       // qdot to v is empty
@@ -1427,157 +1422,100 @@ template<typename Scalar>
 GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJacobian(
     int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, int gradient_order, bool in_terms_of_qdot, std::vector<int>* v_or_qdot_indices)
 {
-  if (position_kinematics_cached) {
-    if (gradient_order > 1) {
-      throw std::runtime_error("gradient order not supported");
+  if (gradient_order > 1) {
+    throw std::runtime_error("gradient order not supported");
+  }
+  checkCachedKinematicsSettings(gradient_order > 0, false, false, "geometricJacobian");
+
+  KinematicPath kinematic_path;
+  findKinematicPath(kinematic_path, base_body_or_frame_ind, end_effector_body_or_frame_ind);
+  int nq = num_positions;
+
+  int cols = 0;
+  int body_index;
+  for (size_t i = 0; i < kinematic_path.joint_path.size(); i++) {
+    body_index = kinematic_path.joint_path[i];
+    const std::shared_ptr<RigidBody>& body = bodies[body_index];
+    const DrakeJoint& joint = body->getJoint();
+    cols += in_terms_of_qdot ? joint.getNumPositions() : joint.getNumVelocities();
+  }
+
+  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> ret(TWIST_SIZE, cols, nq, gradient_order);
+  auto& J = ret.value();
+
+  DrakeJoint::MotionSubspaceType motion_subspace;
+  if (v_or_qdot_indices != nullptr) {
+    v_or_qdot_indices->clear();
+    v_or_qdot_indices->reserve(cols);
+  }
+
+  int col_start = 0;
+  for (size_t i = 0; i < kinematic_path.joint_path.size(); i++) {
+    body_index = kinematic_path.joint_path[i];
+    RigidBody& body = *bodies[body_index];
+    const DrakeJoint& joint = body.getJoint();
+    int ncols_block = in_terms_of_qdot ? joint.getNumPositions() : joint.getNumVelocities();
+    int sign = kinematic_path.joint_direction_signs[i];
+    auto J_block = J.template block<TWIST_SIZE, Dynamic>(0, col_start, TWIST_SIZE, ncols_block);
+    if (in_terms_of_qdot) {
+      J_block.noalias() = sign * body.J * body.qdot_to_v;
     }
-    checkCachedKinematicsSettings(gradient_order > 0, false, false, "geometricJacobian");
-
-    KinematicPath kinematic_path;
-    findKinematicPath(kinematic_path, base_body_or_frame_ind, end_effector_body_or_frame_ind);
-    int nq = num_positions;
-
-    int cols = 0;
-    int body_index;
-    for (size_t i = 0; i < kinematic_path.joint_path.size(); i++) {
-      body_index = kinematic_path.joint_path[i];
-      const std::shared_ptr<RigidBody>& body = bodies[body_index];
-      const DrakeJoint& joint = body->getJoint();
-      cols += in_terms_of_qdot ? joint.getNumPositions() : joint.getNumVelocities();
+    else {
+      J_block.noalias() = sign * body.J;
     }
 
-    GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> ret(TWIST_SIZE, cols, nq, gradient_order);
-    auto& J = ret.value();
-
-    DrakeJoint::MotionSubspaceType motion_subspace;
     if (v_or_qdot_indices != nullptr) {
-      v_or_qdot_indices->clear();
-      v_or_qdot_indices->reserve(cols);
+      int cols_block_start = in_terms_of_qdot ? body.position_num_start : body.velocity_num_start;
+      for (int j = 0; j < ncols_block; j++) {
+        v_or_qdot_indices->push_back(cols_block_start + j);
+      }
     }
+    col_start += ncols_block;
+  }
 
-    int col_start = 0;
+  auto T_world_to_frame = relativeTransform<double>(expressed_in_body_or_frame_ind, 0, 0);
+  Isometry3d H0(T_world_to_frame.value());
+  if (expressed_in_body_or_frame_ind != 0) {
+    J = transformSpatialMotion(H0, J);
+  }
+
+  if (gradient_order > 0) {
+    auto& dJdq = ret.gradient().value();
+    dJdq.setZero();
+    int col = 0;
+    std::vector<int> qdot_ind_ij;
+    auto rows = intRange<TWIST_SIZE>(0);
     for (size_t i = 0; i < kinematic_path.joint_path.size(); i++) {
-      body_index = kinematic_path.joint_path[i];
-      RigidBody& body = *bodies[body_index];
-      const DrakeJoint& joint = body.getJoint();
-      int ncols_block = in_terms_of_qdot ? joint.getNumPositions() : joint.getNumVelocities();
+      int j = kinematic_path.joint_path[i];
       int sign = kinematic_path.joint_direction_signs[i];
-      auto J_block = J.template block<TWIST_SIZE, Dynamic>(0, col_start, TWIST_SIZE, ncols_block);
+      RigidBody& bodyJ = *bodies[j];
+      auto Jj = (sign * bodyJ.J).eval();
       if (in_terms_of_qdot) {
-        J_block.noalias() = sign * body.J * body.qdot_to_v;
-      }
-      else {
-        J_block.noalias() = sign * body.J;
+        Jj *= bodyJ.qdot_to_v;
       }
 
-      if (v_or_qdot_indices != nullptr) {
-        int cols_block_start = in_terms_of_qdot ? body.position_num_start : body.velocity_num_start;
-        for (int j = 0; j < ncols_block; j++) {
-          v_or_qdot_indices->push_back(cols_block_start + j);
-        }
+      auto dSjdqj = (sign * bodyJ.dSdqi).eval();
+      if (in_terms_of_qdot) {
+        dSjdqj = matGradMultMat((sign * bodyJ.S).eval(), bodyJ.qdot_to_v, dSjdqj, bodyJ.dqdot_to_v_dqi);
       }
-      col_start += ncols_block;
-    }
+      auto Hj_gradientvar = relativeTransform<double>(expressed_in_body_or_frame_ind, j, 0);
+      Isometry3d Hj(Hj_gradientvar.value());
+      auto Jj0_gradientvar = geometricJacobian<double>(expressed_in_body_or_frame_ind, j, 0, 0, true, &qdot_ind_ij);
 
-    auto T_world_to_frame = relativeTransform<double>(expressed_in_body_or_frame_ind, 0, 0);
-    Isometry3d H0(T_world_to_frame.value());
-    if (expressed_in_body_or_frame_ind != 0) {
-      J = transformSpatialMotion(H0, J);
-    }
-
-    if (gradient_order > 0) {
-      auto& dJdq = ret.gradient().value();
-      dJdq.setZero();
-      int col = 0;
-      std::vector<int> qdot_ind_ij;
-      auto rows = intRange<TWIST_SIZE>(0);
-      for (size_t i = 0; i < kinematic_path.joint_path.size(); i++) {
-        int j = kinematic_path.joint_path[i];
-        int sign = kinematic_path.joint_direction_signs[i];
-        RigidBody& bodyJ = *bodies[j];
-        auto Jj = (sign * bodyJ.J).eval();
-        if (in_terms_of_qdot) {
-          Jj *= bodyJ.qdot_to_v;
+      for (int Jj_col = 0; Jj_col < Jj.cols(); Jj_col++) {
+        auto dSjdqj_block = transformSpatialMotion(Hj, dSjdqj.middleRows<TWIST_SIZE>(Jj_col * TWIST_SIZE)).eval();
+        setSubMatrixGradient<Eigen::Dynamic>(dJdq, dSjdqj_block, rows, intRange<1>(col), TWIST_SIZE, bodyJ.position_num_start, bodyJ.getJoint().getNumPositions());
+        auto crm_block = transformSpatialMotion(H0, crossSpatialMotion((-Jj.col(Jj_col)).eval(), Jj0_gradientvar.value()));
+        int crm_block_col = 0;
+        for (std::vector<int>::iterator it = qdot_ind_ij.begin(); it != qdot_ind_ij.end(); ++it) {
+          dJdq.template block<TWIST_SIZE, 1>(TWIST_SIZE * col, *it) += crm_block.col(crm_block_col);
+          crm_block_col++;
         }
-
-        auto dSjdqj = (sign * bodyJ.dSdqi).eval();
-        if (in_terms_of_qdot) {
-          dSjdqj = matGradMultMat((sign * bodyJ.S).eval(), bodyJ.qdot_to_v, dSjdqj, bodyJ.dqdot_to_v_dqi);
-        }
-        auto Hj_gradientvar = relativeTransform<double>(expressed_in_body_or_frame_ind, j, 0);
-        Isometry3d Hj(Hj_gradientvar.value());
-        auto Jj0_gradientvar = geometricJacobian<double>(expressed_in_body_or_frame_ind, j, 0, 0, true, &qdot_ind_ij);
-
-        for (int Jj_col = 0; Jj_col < Jj.cols(); Jj_col++) {
-          auto dSjdqj_block = transformSpatialMotion(Hj, dSjdqj.middleRows<TWIST_SIZE>(Jj_col * TWIST_SIZE)).eval();
-          setSubMatrixGradient<Eigen::Dynamic>(dJdq, dSjdqj_block, rows, intRange<1>(col), TWIST_SIZE, bodyJ.position_num_start, bodyJ.getJoint().getNumPositions());
-          auto crm_block = transformSpatialMotion(H0, crossSpatialMotion((-Jj.col(Jj_col)).eval(), Jj0_gradientvar.value()));
-          int crm_block_col = 0;
-          for (std::vector<int>::iterator it = qdot_ind_ij.begin(); it != qdot_ind_ij.end(); ++it) {
-            dJdq.template block<TWIST_SIZE, 1>(TWIST_SIZE * col, *it) += crm_block.col(crm_block_col);
-            crm_block_col++;
-          }
-          col++;
-        }
+        col++;
       }
     }
-    return ret;
   }
-  else {
-    if (!kinematicsInit)
-      throw std::runtime_error("need to call old doKinematics");
-    if (gradient_order > 0) {
-      throw std::runtime_error("gradient order not supported");
-    }
-
-    KinematicPath kinematic_path;
-    findKinematicPath(kinematic_path, base_body_or_frame_ind, end_effector_body_or_frame_ind);
-
-    int cols = 0;
-    int body_index;
-    for (size_t i = 0; i < kinematic_path.joint_path.size(); i++) {
-      body_index = kinematic_path.joint_path[i];
-      const std::shared_ptr<RigidBody>& body = bodies[body_index];
-      const DrakeJoint& joint = body->getJoint();
-      cols += joint.getNumVelocities();
-    }
-
-    Matrix4d Tframe;
-    int expressed_in_body = parseBodyOrFrameID(expressed_in_body_or_frame_ind, &Tframe);
-    Matrix4d T_world_to_frame = (bodies[expressed_in_body]->T * Tframe).inverse();
-
-    GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> ret(TWIST_SIZE, cols);
-    auto& J = ret.value();
-    DrakeJoint::MotionSubspaceType motion_subspace;
-    if (v_or_qdot_indices) {
-      v_or_qdot_indices->clear();
-      v_or_qdot_indices->reserve(cols);
-    }
-
-    int col_start = 0;
-    int sign;
-    for (size_t i = 0; i < kinematic_path.joint_path.size(); i++) {
-      body_index = kinematic_path.joint_path[i];
-      const std::shared_ptr<RigidBody>& body = bodies[body_index];
-      const DrakeJoint& joint = body->getJoint();
-
-      motion_subspace.resize(Eigen::NoChange, joint.getNumVelocities());
-      joint.motionSubspace(cached_q_old.middleRows(body->position_num_start, joint.getNumPositions()), motion_subspace);
-
-      sign = kinematic_path.joint_direction_signs[i];
-      auto block = J.template block<TWIST_SIZE, Dynamic>(0, col_start, TWIST_SIZE, joint.getNumVelocities());
-      block.noalias() = sign * transformSpatialMotion(Isometry3d(body->T), motion_subspace);
-
-      if (v_or_qdot_indices) {
-        for (int j = 0; j < joint.getNumVelocities(); j++) {
-          v_or_qdot_indices->push_back(body->position_num_start + j); // assumes qd = v
-        }
-      }
-      col_start = col_start + joint.getNumVelocities();
-    }
-    J = transformSpatialMotion(Isometry3d(T_world_to_frame), J);
-    return ret;
-  }
+  return ret;
 }
 
 template <typename Scalar>

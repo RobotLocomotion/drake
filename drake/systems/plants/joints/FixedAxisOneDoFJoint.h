@@ -46,7 +46,6 @@ public:
 
   virtual GradientVar<double, Eigen::Dynamic, 1> frictionTorque(const Eigen::Ref<const Eigen::VectorXd>& v, int gradient_order) const; // override;
 
-  virtual void setupOldKinematicTree(RigidBodyManipulator* model, int body_ind, int position_num_start, int velocity_num_start) const;
 };
 
 #endif /* ONEDOFJOINT_H_ */

@@ -47,12 +47,3 @@ GradientVar<double, Eigen::Dynamic, 1> DrakeJoint::frictionTorque(const Eigen::R
   return ret;
 }
 
-void DrakeJoint::setupOldKinematicTree(RigidBodyManipulator* model, int body_ind, int position_num_start, int velocity_num_start) const
-{
-  model->bodies[body_ind]->jointname = name;
-  model->bodies[body_ind]->Ttree = transform_to_parent_body.matrix();
-//  model->bodies[body_ind]->T_body_to_joint = Matrix4d::Identity();
-  model->bodies[body_ind]->floating = 0;
-  model->bodies[body_ind]->pitch = 0;
-}
-
