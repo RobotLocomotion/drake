@@ -33,7 +33,10 @@ nu = getNumInputs(r);
 v = r.constructVisualizer;
 v.display_dt = 0.01;
 
-load('data/hopper_traj_lqr_40_knots.mat');
+% load('data/hopper_traj_lqr_40_knots.mat');
+load('data/hopper_hybrid_lqr2.mat');
+xtraj = xtraj{1}.append(xtraj{2}).append(xtraj{3}).append(xtraj{4});
+utraj = utraj{1}.append(utraj{2}).append(utraj{3}).append(utraj{4});
 %load('data/hopper_traj_lqr_refined.mat');
 N_hops = 1;
 

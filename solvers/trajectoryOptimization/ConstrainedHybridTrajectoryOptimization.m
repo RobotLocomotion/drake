@@ -137,7 +137,7 @@ classdef ConstrainedHybridTrajectoryOptimization < NonlinearProgram
       
       if options.u_const_across_transitions
         for i=1:obj.M-1,
-          nU = plant.modes{mode_indices(i)}.getNumInputs;
+          nU = plant.getNumInputs;
           
           u_const_constraint = LinearConstraint(zeros(nU,1),zeros(nU,1),[speye(nU) -speye(nU)]);
           u_const_inds = [obj.var_offset(i) + obj.mode_opt{i}.u_inds(:,end); obj.var_offset(i+1) + obj.mode_opt{i+1}.u_inds(:,1)];

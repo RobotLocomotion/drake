@@ -31,7 +31,8 @@ else
 
 % traj_file = 'data/atlas_lqr_fm2_periodic.mat';
 traj_file = 'data/atlas_lqr_fm2_periodic_100.mat';
-% traj_file = 'data/atlas_hybrid_lqr';
+traj_file = '../data/atlas_hybrid_lqr';
+  traj_file = 'data/atlas_hybrid_lqr_longer_nonperiodic';
 
 %   traj_file = 'data/atlas_lqr_01.mat';
 end
@@ -50,6 +51,8 @@ v.display_dt = 0.01;
 
 
 load(traj_file);
+xtraj=xtraj{1}.append(xtraj{2}).append(xtraj{3}).append(xtraj{4}).append(xtraj{5});
+utraj=utraj{1}.append(utraj{2}).append(utraj{3}).append(utraj{4}).append(utraj{5});
 
 if true %foh on u and qd
   t_t = xtraj.pp.breaks;
@@ -91,7 +94,8 @@ options.right_foot_name = 'r_foot';
 options.left_foot_name = 'l_foot'; 
 %modes = [8,6,3,3,4,4,4,2,7,7,8,8];%,8,6,3,3,4,4];
 % modes = [8,6,1,3,4,4,2,1,7,8];
-modes = [8,6,3,4,4,2,7,8];
+% modes = [8,6,3,4,4,2,7,8];
+modes = [8,6,1,3,4,4,2,1,7,8];
 modes = repmat(modes,1,repeat_n);
 lfoot_ind = findLinkId(r,options.left_foot_name);
 rfoot_ind = findLinkId(r,options.right_foot_name);  

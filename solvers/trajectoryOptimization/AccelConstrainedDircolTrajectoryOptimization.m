@@ -162,10 +162,10 @@ classdef AccelConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimiza
       dxcol = [1/8*(xdot0-xdot1) (.5*eye(nX) + h/8*dxdot0(:,2:1+nX)) ...
         (.5*eye(nX) - h/8*dxdot1(:,2:1+nX)) h/8*dxdot0(:,nX+2:1+nX+nU) -h/8*dxdot1(:,nX+2:1+nX+nU) ...
         h/8*dxdot0(:,nX+nU+2:1+nX+nU+nC) -h/8*dxdot1(:,nX+nU+2:1+nX+nU+nC) zeros(nX,2*nC)];
-      xdotcol = -1.5*(x0-x1)/h - .25*(xdot0+xdot1);
-      dxdotcol = [1.5*(x0-x1)/h^2 (-1.5*eye(nX)/h - .25*dxdot0(:,2:1+nX)) ...
-        (1.5*eye(nX)/h - .25*dxdot1(:,2:1+nX)) -.25*dxdot0(:,nX+2:1+nX+nU) -.25*dxdot1(:,nX+2:1+nX+nU) ...
-        -.25*dxdot0(:,nX+nU+2:1+nX+nU+nC) -.25*dxdot1(:,nX+nU+2:1+nX+nU+nC) zeros(nX,2*nC)];
+      hxdotcol = -1.5*(x0-x1) - .25*h*(xdot0+xdot1);
+      dhxdotcol = [- .25*h*(xdot0+xdot1) (-1.5*eye(nX) - .25*h*dxdot0(:,2:1+nX)) ...
+        (1.5*eye(nX) - .25*h*dxdot1(:,2:1+nX)) -.25*h*dxdot0(:,nX+2:1+nX+nU) -.25*h*dxdot1(:,nX+2:1+nX+nU) ...
+        -.25*h*dxdot0(:,nX+nU+2:1+nX+nU+nC) -.25*h*dxdot1(:,nX+nU+2:1+nX+nU+nC) zeros(nX,2*nC)];
       
       % evaluate xdot at xcol, using foh on control input
       datac = obj.dynamics_data(xcol,.5*(u0+u1),lambdac);
@@ -178,8 +178,8 @@ classdef AccelConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimiza
       dg = dgdxcol(:,2:1+nX)*dxcol + [zeros(nX,1+2*nX) .5*dgdxcol(:,2+nX:1+nX+nU) .5*dgdxcol(:,2+nX:1+nX+nU) zeros(nX,2*nC) dgdxcol(:,nX+nU+2:1+nX+nU+2*nC)];
       
       % constraint is the difference between the two
-      f = xdotcol - g;
-      df = dxdotcol - dg;
+      f = hxdotcol - g*h;
+      df = dhxdotcol - [dg(:,1)*h + g, dg(:,2:end)*h];
       
       
       df = [df(:,1)*h + f, df(:,2:end)*h];

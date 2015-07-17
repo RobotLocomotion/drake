@@ -45,11 +45,13 @@ classdef (InferiorClasses = {?ConstantTrajectory,?FunctionHandleTrajectory,?PPTr
         h=stem(obj.tt,obj.xx,'b');
       else
         if (nargin<2) plotdims=[1,2]; end
-        if (length(plotdims)==1)
-          h=stem(obj.tt,obj.xx(plotdims,:),'b','MarkerSize',5);
-        else
-          h=plot(obj.xx(plotdims(1),:),obj.xx(plotdims(2),:),'b.','MarkerSize',5);
-        end
+%         if (length(plotdims)==1)
+          h=plot(obj.tt,obj.xx(plotdims,:),'.-');
+          l=legend(obj.getOutputFrame.coordinates{plotdims})
+          set(l,'Interpreter','none')
+%         else
+%           h=plot(obj.xx(plotdims(1),:),obj.xx(plotdims(2),:),'b.','MarkerSize',5);
+%         end
       end
     end
     
