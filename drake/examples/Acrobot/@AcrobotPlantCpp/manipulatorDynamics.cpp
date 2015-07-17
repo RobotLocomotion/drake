@@ -3,7 +3,6 @@
 #include <cmath>
 #include <iostream>
 #include "drakeMexUtil.h"
-#include <unsupported/Eigen/AutoDiff>
 #include <drakeGradientUtil.h>
 
 using namespace Eigen;
@@ -48,89 +47,6 @@ void manipulatorDynamics(const mxArray* pobj, const MatrixBase<DerivedA> &q, con
   C(0)+=b1*qd(0); C(1)+=b2*qd(1);
 
   B << 0.0, 1.0;
-}
-
-template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime> autoDiffToValueMatrix(const Eigen::MatrixBase<Derived>& auto_diff_matrix) {
-  Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime> ret(auto_diff_matrix.rows(), auto_diff_matrix.cols());
-  for (int i = 0; i < auto_diff_matrix.rows(); i++) {
-    for (int j = 0; j < auto_diff_matrix.cols(); ++j) {
-      ret(i, j) = auto_diff_matrix(i, j).value();
-    }
-  }
-  return ret;
-};
-
-template<typename Derived>
-typename Gradient<Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>, Eigen::Dynamic>::type autoDiffToGradientMatrix(
-        const Eigen::MatrixBase<Derived>& auto_diff_matrix, int num_variables = Eigen::Dynamic)
-{
-  int num_variables_from_matrix = 0;
-  for (int i = 0; i < auto_diff_matrix.size(); ++i) {
-    num_variables_from_matrix = std::max(num_variables_from_matrix, static_cast<int>(auto_diff_matrix(i).derivatives().size()));
-  }
-  if (num_variables == Eigen::Dynamic) {
-    num_variables = num_variables_from_matrix;
-  }
-  else if (num_variables_from_matrix != 0 && num_variables_from_matrix != num_variables) {
-    std::stringstream buf;
-    buf << "Input matrix has derivatives w.r.t " << num_variables_from_matrix << ", variables" << ", whereas num_variables is " << num_variables << ".\n";
-    buf << "Either num_variables_from_matrix should be zero, or it should match num_variables";
-    throw std::runtime_error(buf.str());
-  }
-
-  typename Gradient<Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>, Eigen::Dynamic>::type gradient(auto_diff_matrix.size(), num_variables);
-  for (int row = 0; row < auto_diff_matrix.rows(); row++) {
-    for (int col = 0; col < auto_diff_matrix.cols(); col++) {
-      auto gradient_row = gradient.row(row + col * auto_diff_matrix.rows()).transpose();
-      if (auto_diff_matrix(row, col).derivatives().size() == 0) {
-        gradient_row.setZero();
-      } else {
-        gradient_row = auto_diff_matrix(row, col).derivatives();
-      }
-    }
-  }
-  return gradient;
-}
-
-template<typename DerivedGradient, typename DerivedAutoDiff>
-void gradientMatrixToAutoDiff(const Eigen::MatrixBase<DerivedGradient>& gradient, Eigen::MatrixBase<DerivedAutoDiff>& auto_diff_matrix)
-{
-  int nq = gradient.cols();
-  for (size_t row = 0; row < auto_diff_matrix.rows(); row++) {
-    for (size_t col = 0; col < auto_diff_matrix.cols(); col++) {
-      auto_diff_matrix(row, col).derivatives().resize(nq, 1);
-      auto_diff_matrix(row, col).derivatives() = gradient.row(row + col * auto_diff_matrix.rows()).transpose();
-    }
-  }
-}
-
-template<int Rows, int Cols>
-Eigen::Matrix<AutoDiffScalar<VectorXd>, Rows, Cols> taylorVarToEigen(const mxArray* taylor_var) {
-  auto f = mxGetPropertySafe(taylor_var, "f");
-  auto df = mxGetPropertySafe(taylor_var, "df");
-  if (mxGetNumberOfElements(df) > 1)
-    throw runtime_error("TaylorVars of order higher than 1 currently not supported");
-  auto ret = matlabToEigenMap<Rows, Cols>(f).template cast<AutoDiffScalar<VectorXd>>().eval();
-  typedef Gradient<decltype(ret), Dynamic> GradientType;
-  auto gradient_matrix = matlabToEigenMap<GradientType::type::RowsAtCompileTime, GradientType::type::ColsAtCompileTime>(mxGetCell(df, 0));
-  gradientMatrixToAutoDiff(gradient_matrix, ret);
-
-  return ret;
-}
-
-template <typename Derived>
-mxArray* eigenToTaylorVar(const MatrixBase<Derived>& m, int num_variables = Eigen::Dynamic)
-{
-  const int nrhs = 2;
-  mxArray *prhs[nrhs];
-  prhs[0] = eigenToMatlab(autoDiffToValueMatrix(m));
-  mwSize dims[] = {1};
-  prhs[1] = mxCreateCellArray(1, dims);
-  mxArray *plhs[1];
-  mxSetCell(prhs[1], 0, eigenToMatlab(autoDiffToGradientMatrix(m, num_variables)));
-  mexCallMATLABsafe(1, plhs, nrhs, prhs, "TaylorVar");
-  return plhs[0];
 }
 
 void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )

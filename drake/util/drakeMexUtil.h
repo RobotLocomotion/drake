@@ -1,7 +1,9 @@
 #include "mex.h"
 #include <vector>
 #include <Eigen/Core>
+#include <unsupported/Eigen/AutoDiff>
 #include "TrigPoly.h"
+#include "drakeGradientUtil.h"
 
 #ifndef DRAKE_MEX_UTIL_H_
 #define DRAKE_MEX_UTIL_H_
@@ -204,6 +206,33 @@ mxArray* eigenToTrigPoly(const Eigen::Matrix<TrigPolyd,_Rows,_Cols> & trigpoly_m
 
   mxSetProperty(plhs[0],0,"p",eigenToMSSPoly<Eigen::Dynamic,Eigen::Dynamic>(poly_mat));
 
+  return plhs[0];
+}
+
+template<int Rows, int Cols>
+Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>, Rows, Cols> taylorVarToEigen(const mxArray* taylor_var) {
+  auto f = mxGetPropertySafe(taylor_var, "f");
+  auto df = mxGetPropertySafe(taylor_var, "df");
+  if (mxGetNumberOfElements(df) > 1)
+    throw std::runtime_error("TaylorVars of order higher than 1 currently not supported");
+  auto ret = matlabToEigenMap<Rows, Cols>(f).template cast<Eigen::AutoDiffScalar<Eigen::VectorXd>>().eval();
+  typedef Gradient<decltype(ret), Eigen::Dynamic> GradientType;
+  auto gradient_matrix = matlabToEigenMap<GradientType::type::RowsAtCompileTime, GradientType::type::ColsAtCompileTime>(mxGetCell(df, 0));
+  gradientMatrixToAutoDiff(gradient_matrix, ret);
+  return ret;
+}
+
+template <typename Derived>
+mxArray* eigenToTaylorVar(const Eigen::MatrixBase<Derived>& m, int num_variables = Eigen::Dynamic)
+{
+  const int nrhs = 2;
+  mxArray *prhs[nrhs];
+  prhs[0] = eigenToMatlab(autoDiffToValueMatrix(m));
+  mwSize dims[] = {1};
+  prhs[1] = mxCreateCellArray(1, dims);
+  mxArray *plhs[1];
+  mxSetCell(prhs[1], 0, eigenToMatlab(autoDiffToGradientMatrix(m, num_variables)));
+  mexCallMATLABsafe(1, plhs, nrhs, prhs, "TaylorVar");
   return plhs[0];
 }
 
