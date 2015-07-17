@@ -14,15 +14,15 @@ if nargin <1
 end
 
 if nargin < 5
-  Q = diag([10*ones(p.getNumPositions,1);1*ones(p.getNumVelocities,1)]);
-  R = 0.001*eye(getNumInputs(p));
+  Q = diag([20*ones(p.getNumPositions,1);0.5*ones(p.getNumVelocities,1)]);
+  R = 0.01*eye(getNumInputs(p));
   Qf = 2*Q;
 end
 
 [c,Ktraj,Straj,Ptraj,Btraj,Straj_full,Ftraj,xtraj,utraj] = hybriddircolconstrainedtvlqr(p,xtraj,utraj,contact_seq,Q,R,Qf);
 
 keyboard;
-save('data/hopper_traj_lqr.mat','xtraj','utraj','ltraj','c','Ktraj','Straj','Ptraj','Btraj','Straj_full','Ftraj','Q','R','Qf','contact_seq');
+save('data/hopper_hybrid_lqr.mat','xtraj','utraj','ltraj','c','Ktraj','Straj','Ptraj','Btraj','Straj_full','Ftraj','Q','R','Qf','contact_seq');
 
 end
 

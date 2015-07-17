@@ -32,6 +32,7 @@ classdef FullStateQPControllerData < ControllerData
     % Contact stuff --------------------------------------------------------------
     support_times % vector of contact transition times
     supports % (array of) RigidBodySupportState object(s)
+    allowable_supports % RigidBodySupportState containing all supports allowable during execution
   end
   
   methods 
@@ -44,8 +45,8 @@ classdef FullStateQPControllerData < ControllerData
  
     function data=verifyControllerData(~,data)
       if data.lqr_is_time_varying
-        assert(isa(data.x0,'Trajectory'));
-        assert(isa(data.u0,'Trajectory'));
+        assert(isa(data.x0,'Trajectory') || isa(data.x0,'cell'));
+        assert(isa(data.u0,'Trajectory') || isa(data.u0,'cell'));
         assert(isa(data.S,'Trajectory') || isa(data.S,'cell')); 
         if isfield(data,'s1')
           assert(isa(data.s1,'Trajectory') || isa(data.s1,'cell'));
@@ -89,6 +90,9 @@ classdef FullStateQPControllerData < ControllerData
       end
       if isfield(data,'supports')
         obj.supports = data.supports;
+      end
+      if isfield(data,'allowable_supports')
+        obj.allowable_supports = data.allowable_supports;
       end
       if isfield(data,'support_times')
         obj.support_times = data.support_times;

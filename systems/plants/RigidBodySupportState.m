@@ -6,7 +6,7 @@ classdef RigidBodySupportState
     bodies; % array of supporting body indices
     contact_pts; % cell array of supporting contact points, each cell is 3x[num pts per body]
     contact_groups; % cell array of cell arrays of contact group strings, 1 for each body
-    num_contact_pts;  % convenience array containing the desired number of
+    num_contact_pts=0;  % convenience array containing the desired number of
                       %             contact points for each support body
     use_support_surface; % logical vector with the same length as bodies
     support_surface; % 4-vector describing a support surface: [v; b] such that v' * [x;y;z] + b == 0
@@ -19,10 +19,11 @@ classdef RigidBodySupportState
       if nargin < 3
         options = struct();
       end
-      
       obj.bodies = bodies(bodies~=0);
       nbod = length(obj.bodies);
-      obj.num_contact_pts = zeros(nbod,1);
+      if nbod>0
+        obj.num_contact_pts = zeros(nbod,1);
+      end
       obj.contact_pts = cell(1,nbod);
       obj.contact_groups = {};
       

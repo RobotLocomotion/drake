@@ -161,14 +161,52 @@ classdef FullStateQPController < DrakeSystem
     
   function y=output(obj,t,~,x)
     ctrl_data = obj.controller_data;
-      
+    
     r = obj.robot;
     nq = obj.numq; 
     q = x(1:nq); 
     qd = x(nq+(1:nq)); 
-            
-    supp_idx = find(ctrl_data.support_times<=t,1,'last');
+    dim = 2; % 2D or 3D
 
+    kinsol = doKinematics(r,q,true,true,qd);
+    
+    supp_idx = find(ctrl_data.support_times<=t,1,'last');
+    next_supp_idx = min(supp_idx+1,length(ctrl_data.support_times));
+
+    test_next_support = false;
+    if next_supp_idx > supp_idx && ctrl_data.support_times(next_supp_idx)-t < 0.002
+      test_next_support = true;
+    end
+    
+    if test_next_support
+      cur_rigid_body_support_state = ctrl_data.supports(supp_idx);
+      try
+      rigid_body_support_state = ctrl_data.supports(next_supp_idx);
+      catch
+        keyboard
+      end
+      if rigid_body_support_state.num_contact_pts > cur_rigid_body_support_state.num_contact_pts
+        % not quite right.. could simultaneously make and break contact with different points 
+
+        planned_supports = rigid_body_support_state.bodies;
+        planned_contact_groups = rigid_body_support_state.contact_groups;
+
+        phi = [];
+        np = 0;
+        for j=1:length(planned_supports)
+          phi_j = contactConstraints(r,kinsol,false,struct('terrain_only',1,...
+            'body_idx',[1,planned_supports(j)],'collision_groups',planned_contact_groups(j)));
+          phi = [phi; phi_j];
+        end
+        if all(phi <= 1e-4)
+          supp_idx = next_supp_idx;
+          t=ctrl_data.support_times(supp_idx);
+          disp('SWITCHING TO THE NEXT MODE!');
+        end
+      end
+    end
+    
+ 
     if ctrl_data.B_is_time_varying
       if isa(ctrl_data.B,'Trajectory')
         B_ls = fasteval(ctrl_data.B,t);
@@ -185,15 +223,23 @@ classdef FullStateQPController < DrakeSystem
       else
         S = fasteval(ctrl_data.S{supp_idx},t);
       end
-      x0 = fasteval(ctrl_data.x0,t);
-      u0 = fasteval(ctrl_data.u0,t);
+      if isa(ctrl_data.x0,'Trajectory')
+        x0 = fasteval(ctrl_data.x0,t);
+      else
+        x0 = fasteval(ctrl_data.x0{supp_idx},t);
+      end
+      if isa(ctrl_data.u0,'Trajectory')
+        u0 = fasteval(ctrl_data.u0,t);
+      else
+        u0 = fasteval(ctrl_data.u0{supp_idx},t);
+      end
     else
       S = ctrl_data.S;
       x0 = ctrl_data.x0;
       u0 = ctrl_data.u0;
     end
     q0 = x0(1:nq);
-
+    
     % get phi for planned contact groups
     % if phi < threshold, then add to active contacts
     % else, add to desired contacts
@@ -202,9 +248,11 @@ classdef FullStateQPController < DrakeSystem
       keyboard
     end
 
-    kinsol = doKinematics(r,q,true,true,qd);
     rigid_body_support_state = ctrl_data.supports(supp_idx);
     
+    all_supports = ctrl_data.allowable_supports.bodies;
+    all_contact_groups = ctrl_data.allowable_supports.contact_groups;
+
     planned_supports = rigid_body_support_state.bodies;
     planned_contact_groups = rigid_body_support_state.contact_groups;
     %planned_num_contacts = rigid_body_support_state.num_contact_pts;      
@@ -219,18 +267,26 @@ classdef FullStateQPController < DrakeSystem
     Jp = [];
     Jpdot = [];
     nc = 0;
-    for j=1:length(planned_supports)
-      % ridiculously inefficient for testing
-      [phi,~,~,~,~,~,~,~,n,~,dn,~] = contactConstraints(r,kinsol,false,struct('terrain_only',1,...
-          'body_idx',[1,planned_supports(j)],'collision_groups',planned_contact_groups(j)));
-      [~,~,JB] = contactConstraintsBV(r,kinsol,false,struct('terrain_only',1,...
-          'body_idx',[1,planned_supports(j)],'collision_groups',planned_contact_groups(j)));
+    
+    % ridiculously inefficient for testing
+    for j=1:length(all_supports)
+      [phi,~,JB] = contactConstraintsBV(r,kinsol,false,struct('terrain_only',1,...
+          'body_idx',[1,all_supports(j)],'collision_groups',all_contact_groups(j)));
       
       active_ind = phi<=obj.contact_threshold;
-      phi_err = [phi_err;-phi(~active_ind)];
-      
       nc = nc+sum(active_ind);
       Dbar = [Dbar, vertcat(JB{active_ind})']; 
+    end
+
+    np = 0;
+    for j=1:length(planned_supports)
+      [phi,~,~,~,~,~,~,~,n,~,dn,~] = contactConstraints(r,kinsol,false,struct('terrain_only',1,...
+          'body_idx',[1,planned_supports(j)],'collision_groups',planned_contact_groups(j)));
+      
+      active_ind = phi<=obj.contact_threshold*5;
+      phi_err = [phi_err;-phi(~active_ind)];
+
+      np = np+sum(active_ind);
       ndot = matGradMult(dn,qd);
       Jn = [Jn; n(~active_ind,:)];
       Jndot = [Jndot; ndot(~active_ind,:)];
@@ -248,18 +304,17 @@ classdef FullStateQPController < DrakeSystem
       Jp = [Jp;Jp_j];
       Jpdot = [Jpdot;Jpdot_j];
     end
-    if exist('xz_pts') && ~isempty(xz_pts)
-      % compute foot placement error
-      kinsol0 = r.doKinematics(q0);
-      xp0 = forwardKin(r,kinsol0,planned_supports(j),xz_pts,0);
-      obj.controller_data.xoffset = -1*(mean(xp0(1,:)-xp_j(1,:))); % not quite right, need to take this over all bodies in contact
-    end
-    
-    nc
+
+    % if exist('xz_pts') && ~isempty(xz_pts)
+    %   % compute foot placement error
+    %   kinsol0 = r.doKinematics(q0);
+    %   xp0 = forwardKin(r,kinsol0,planned_supports(j),xz_pts,0);
+    %   obj.controller_data.xoffset = -1*(mean(xp0(1,:)-xp_j(1,:))); % not quite right, need to take this over all bodies in contact
+    % end
     
     if dim==2
        % delete y rows
-      yind = 2:3:nc*3;
+      yind = 2:3:np*3;
       Jpdot(yind,:) = [];
       Jp = sparse(Jp);
       Jpdot = sparse(Jpdot);
@@ -270,12 +325,12 @@ classdef FullStateQPController < DrakeSystem
     end
     [H,C,B] = manipulatorDynamics(r,q,qd);
     
-    neps = nc*dim;
-    if obj.offset_x
-      xoffset = obj.controller_data.xoffset
+    neps = np*dim;
+    %if obj.offset_x
+    %  xoffset = obj.controller_data.xoffset
 %       x0(1) = x(1)  + obj.controller_data.xoffset;
-      x0(1) = x0(1) + obj.controller_data.xoffset;
-    end
+    %  x0(1) = x0(1) + obj.controller_data.xoffset;
+    %end
     %----------------------------------------------------------------------
     % Build handy index matrices ------------------------------------------
 
@@ -309,17 +364,17 @@ classdef FullStateQPController < DrakeSystem
     end
     beq_{1} = -C;
 
-    if nc > 0
+    if np > 0
       % relative acceleration constraint
       Aeq_{2} = Jp*Iqdd + Ieps;
       beq_{2} = -Jpdot*qd - obj.Kp_accel*Jp*qd; 
     end
 
-    if ~isempty(phi_err)
-      phi_ddot_desired = obj.Kp_phi*phi_err - obj.Kd_phi*(Jndot*qd);
-      Aeq_{3} = Jn*Iqdd + Ieta;
-      beq_{3} = -Jndot*qd + phi_ddot_desired; 
-    end
+%     if ~isempty(phi_err)
+%       phi_ddot_desired = obj.Kp_phi*phi_err - obj.Kd_phi*(Jndot*qd);
+%       Aeq_{3} = Jn*Iqdd + Ieta;
+%       beq_{3} = -Jndot*qd + phi_ddot_desired; 
+%     end
     
     % linear equality constraints: Aeq*alpha = beq
     Aeq = sparse(vertcat(Aeq_{:}));
