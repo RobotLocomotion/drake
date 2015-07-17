@@ -23,7 +23,7 @@ options.ignore_self_collisions = true;
 options.enable_fastqp = false;
 if traj_params==1
   s = '../urdf/atlas_simple_planar_contact.urdf';
-  traj_file = 'data/atlas_dircol_periodic_lqr'; 
+  traj_file = 'data/atlas_more_clearance_3mode_lqr'; 
   options.terrain = RigidBodyFlatTerrain();
 elseif traj_params==2
   s = '../urdf/atlas_simple_planar_contact.urdf';

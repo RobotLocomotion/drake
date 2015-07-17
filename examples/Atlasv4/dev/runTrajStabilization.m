@@ -23,13 +23,15 @@ options.ignore_self_collisions = true;
 options.enable_fastqp = false;
 if traj_params==1
   s = '../urdf/atlas_simple_planar_contact.urdf';
-  traj_file = 'data/atlas_dircol_periodic_lqr'; 
+  traj_file = 'data/atlas_more_clearance_3mode_lqr_sk'; 
   options.terrain = RigidBodyFlatTerrain();
+  modes = [8,6,4];
 elseif traj_params==2
   s = '../urdf/atlas_simple_planar_contact.urdf';
   traj_file = 'data/atlas_step_lqr_sk'; 
   step_height = .1;
   options.terrain = RigidBodyLinearStepTerrain(step_height,.35,.02);
+  modes = [8,3,4]; % step
 elseif traj_params==3
   s = '../urdf/atlas_simple_spring_ankle_planar_contact.urdf';
   traj_file = 'data/atlas_passiveankle_traj_lqr_zoh.mat';
@@ -54,8 +56,9 @@ v.display_dt = 0.01;
 
 
 load(traj_file);
-% repeat_n = 1;
-% [xtraj,utraj,Btraj,Straj_full] = repeatTraj(r,xtraj,utraj,Btraj,Straj_full,repeat_n,true);
+
+repeat_n = 1;
+[xtraj,utraj,Btraj,Straj_full] = repeatTraj(r,xtraj,utraj,Btraj,Straj_full,repeat_n,true);
 
 support_times = zeros(1,length(Straj_full));
 for i=1:length(Straj_full)
@@ -73,9 +76,8 @@ options.left_foot_name = 'l_foot';
 % modes = [8,6,3,4,4,2,7,8];
 %modes = [8,6,1,3,4,4,2,1,7,8];
 
-modes = [8,3,4];
 
-% modes = repmat(modes,1,repeat_n);
+modes = repmat(modes,1,repeat_n);
 lfoot_ind = findLinkId(r,options.left_foot_name);
 rfoot_ind = findLinkId(r,options.right_foot_name);  
 

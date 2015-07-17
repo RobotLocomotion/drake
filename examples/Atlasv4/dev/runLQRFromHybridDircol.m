@@ -5,7 +5,7 @@
 % load atlas_hybrid_dircol_clearance -- this was used to make
 % atlas_dircol_periodic
 
-load data/atlas_3mode_step.mat
+load data/atlas_more_clearance_3mode.mat
 
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 warning('off','Drake:RigidBodyManipulator:WeldedLinkInd');
@@ -31,7 +31,7 @@ p = PlanarRigidBodyManipulator('../urdf/atlas_simple_planar_contact.urdf',option
   R_periodic(18:20,14:16) = eye(3); %leg joints w/symmetry
   R_periodic(17,17) = 1; % back joint
   options.periodic_jump = R_periodic;
-  options.periodic = false;
+  options.periodic = true;
   
 % R = cell(0);
 % xtraj_=xtraj{1}.append(xtraj{2}).append(xtraj{3}).append(xtraj{4}).append(xtraj{5});

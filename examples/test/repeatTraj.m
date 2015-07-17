@@ -55,10 +55,10 @@ for i=1:N-1
   utraj_ = shiftTime(utraj,T);
   utraj_N = utraj_N.append(utraj_);
   
-  for i=1:m
-    Btraj_N{k+i} = shiftTime(Btraj_{i},T);
-    Straj_N{k+i} = shiftTime(Straj_{i},T);
-    Straj_full_N{k+i} = shiftTime(Straj_full{i},T);
+  for j=1:m
+    Btraj_N{k+j} = shiftTime(Btraj_{j},T);
+    Straj_N{k+j} = shiftTime(Straj_{j},T);
+    Straj_full_N{k+j} = shiftTime(Straj_full{j},T);
   end
   k=k+m;
 end
