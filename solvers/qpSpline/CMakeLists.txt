@@ -1,5 +1,5 @@
-include_directories (${CMAKE_SOURCE_DIR}/util)
-include_directories (${CMAKE_SOURCE_DIR}/systems/trajectories)
+include_directories (${PROJECT_SOURCE_DIR}/util)
+include_directories (${PROJECT_SOURCE_DIR}/systems/trajectories)
 
 add_library(drakeSplineGeneration splineGeneration.cpp SplineInformation.cpp ValueConstraint.cpp ContinuityConstraint.cpp)
 target_link_libraries(drakeSplineGeneration drakeTrajectories)

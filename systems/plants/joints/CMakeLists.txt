@@ -1,5 +1,5 @@
 include_directories ( .. )
-include_directories ( ${CMAKE_SOURCE_DIR}/util )
+include_directories ( ${PROJECT_SOURCE_DIR}/util )
 
 add_library(drakeJoints SHARED DrakeJoint.cpp FixedAxisOneDoFJoint.cpp HelicalJoint.cpp PrismaticJoint.cpp QuaternionFloatingJoint.cpp RevoluteJoint.cpp RollPitchYawFloatingJoint.cpp FixedJoint.cpp drakeJointUtil.cpp)
 
