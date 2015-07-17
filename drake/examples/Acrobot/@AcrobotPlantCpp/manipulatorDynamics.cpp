@@ -51,8 +51,8 @@ void manipulatorDynamics(const mxArray* pobj, const MatrixBase<DerivedA> &q, con
 }
 
 template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar::Real, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime> autoDiffToValueMatrix(const Eigen::MatrixBase<Derived>& autoDiff) {
-  Eigen::Matrix<typename Derived::Scalar::Real, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime> ret(autoDiff.rows(), autoDiff.cols());
+Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime> autoDiffToValueMatrix(const Eigen::MatrixBase<Derived>& autoDiff) {
+  Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime> ret(autoDiff.rows(), autoDiff.cols());
   for (int i = 0; i < autoDiff.rows(); i++) {
     for (int j = 0; j < autoDiff.cols(); ++j) {
       ret(i, j) = autoDiff(i, j).value();
@@ -62,7 +62,7 @@ Eigen::Matrix<typename Derived::Scalar::Real, Derived::RowsAtCompileTime, Derive
 };
 
 template<typename Derived>
-typename Gradient<Eigen::Matrix<typename Derived::Scalar::Real, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>, Eigen::Dynamic>::type autoDiffToGradientMatrix(
+typename Gradient<Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>, Eigen::Dynamic>::type autoDiffToGradientMatrix(
         const Eigen::MatrixBase<Derived>& autoDiff, int num_variables = Eigen::Dynamic)
 {
   int num_variables_from_matrix = 0;
@@ -79,7 +79,7 @@ typename Gradient<Eigen::Matrix<typename Derived::Scalar::Real, Derived::RowsAtC
     throw std::runtime_error(buf.str());
   }
 
-  typename Gradient<Eigen::Matrix<typename Derived::Scalar::Real, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>, Eigen::Dynamic>::type gradient(autoDiff.size(), num_variables);
+  typename Gradient<Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>, Eigen::Dynamic>::type gradient(autoDiff.size(), num_variables);
   for (int row = 0; row < autoDiff.rows(); row++) {
     for (int col = 0; col < autoDiff.cols(); col++) {
       auto gradient_row = gradient.row(row + col * autoDiff.rows()).transpose();
@@ -120,7 +120,7 @@ Eigen::Matrix<AutoDiffScalar<VectorXd>, Rows, Cols> taylorVarToEigen(const mxArr
 }
 
 template <typename Derived>
-mxArray *eigenToTaylorVar(const MatrixBase<Derived>& m, int num_variables = Eigen::Dynamic)
+mxArray* eigenToTaylorVar(const MatrixBase<Derived>& m, int num_variables = Eigen::Dynamic)
 {
   const int nrhs = 2;
   mxArray *prhs[nrhs];
