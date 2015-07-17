@@ -532,7 +532,7 @@ classdef QPController < MIMODrakeSystem
             Jdot_times_v = forwardJacDotTimesV(r,kinsol,body_ind,[0;0;0],1);
             cidx = ~isnan(body_vdot);
             Hqp(1:nq,1:nq) = Hqp(1:nq,1:nq) + w*J(cidx,:)'*J(cidx,:);
-            fqp = fqp + w*Jdot_times_v(cidx,:)'- body_vdot(cidx)')*J(cidx,:)*Iqdd;
+            fqp = fqp + w*(Jdot_times_v(cidx,:)'- body_vdot(cidx)')*J(cidx,:)*Iqdd;
           end
         end
       end
