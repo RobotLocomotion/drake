@@ -51,11 +51,11 @@ void manipulatorDynamics(const mxArray* pobj, const MatrixBase<DerivedA> &q, con
 }
 
 template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime> autoDiffToValueMatrix(const Eigen::MatrixBase<Derived>& autoDiff) {
-  Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime> ret(autoDiff.rows(), autoDiff.cols());
-  for (int i = 0; i < autoDiff.rows(); i++) {
-    for (int j = 0; j < autoDiff.cols(); ++j) {
-      ret(i, j) = autoDiff(i, j).value();
+Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime> autoDiffToValueMatrix(const Eigen::MatrixBase<Derived>& auto_diff_matrix) {
+  Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime> ret(auto_diff_matrix.rows(), auto_diff_matrix.cols());
+  for (int i = 0; i < auto_diff_matrix.rows(); i++) {
+    for (int j = 0; j < auto_diff_matrix.cols(); ++j) {
+      ret(i, j) = auto_diff_matrix(i, j).value();
     }
   }
   return ret;
@@ -63,11 +63,11 @@ Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsAtCompileTime, Deri
 
 template<typename Derived>
 typename Gradient<Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>, Eigen::Dynamic>::type autoDiffToGradientMatrix(
-        const Eigen::MatrixBase<Derived>& autoDiff, int num_variables = Eigen::Dynamic)
+        const Eigen::MatrixBase<Derived>& auto_diff_matrix, int num_variables = Eigen::Dynamic)
 {
   int num_variables_from_matrix = 0;
-  for (int i = 0; i < autoDiff.size(); ++i) {
-    num_variables_from_matrix = std::max(num_variables_from_matrix, static_cast<int>(autoDiff(i).derivatives().size()));
+  for (int i = 0; i < auto_diff_matrix.size(); ++i) {
+    num_variables_from_matrix = std::max(num_variables_from_matrix, static_cast<int>(auto_diff_matrix(i).derivatives().size()));
   }
   if (num_variables == Eigen::Dynamic) {
     num_variables = num_variables_from_matrix;
@@ -79,14 +79,14 @@ typename Gradient<Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsA
     throw std::runtime_error(buf.str());
   }
 
-  typename Gradient<Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>, Eigen::Dynamic>::type gradient(autoDiff.size(), num_variables);
-  for (int row = 0; row < autoDiff.rows(); row++) {
-    for (int col = 0; col < autoDiff.cols(); col++) {
-      auto gradient_row = gradient.row(row + col * autoDiff.rows()).transpose();
-      if (autoDiff(row, col).derivatives().size() == 0) {
+  typename Gradient<Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>, Eigen::Dynamic>::type gradient(auto_diff_matrix.size(), num_variables);
+  for (int row = 0; row < auto_diff_matrix.rows(); row++) {
+    for (int col = 0; col < auto_diff_matrix.cols(); col++) {
+      auto gradient_row = gradient.row(row + col * auto_diff_matrix.rows()).transpose();
+      if (auto_diff_matrix(row, col).derivatives().size() == 0) {
         gradient_row.setZero();
       } else {
-        gradient_row = autoDiff(row, col).derivatives();
+        gradient_row = auto_diff_matrix(row, col).derivatives();
       }
     }
   }
@@ -94,13 +94,13 @@ typename Gradient<Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsA
 }
 
 template<typename DerivedGradient, typename DerivedAutoDiff>
-void gradientMatrixToAutoDiff(const Eigen::MatrixBase<DerivedGradient>& gradient, Eigen::MatrixBase<DerivedAutoDiff>& autoDiff)
+void gradientMatrixToAutoDiff(const Eigen::MatrixBase<DerivedGradient>& gradient, Eigen::MatrixBase<DerivedAutoDiff>& auto_diff_matrix)
 {
   int nq = gradient.cols();
-  for (size_t row = 0; row < autoDiff.rows(); row++) {
-    for (size_t col = 0; col < autoDiff.cols(); col++) {
-      autoDiff(row, col).derivatives().resize(nq, 1);
-      autoDiff(row, col).derivatives() = gradient.row(row + col * autoDiff.rows()).transpose();
+  for (size_t row = 0; row < auto_diff_matrix.rows(); row++) {
+    for (size_t col = 0; col < auto_diff_matrix.cols(); col++) {
+      auto_diff_matrix(row, col).derivatives().resize(nq, 1);
+      auto_diff_matrix(row, col).derivatives() = gradient.row(row + col * auto_diff_matrix.rows()).transpose();
     }
   }
 }
