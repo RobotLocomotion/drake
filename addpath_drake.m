@@ -52,6 +52,19 @@ addpath(fullfile(root,'thirdParty','GetFullPath'));
 
 javaaddpath(fullfile(pods_get_base_path,'share','java','drake.jar'));
 
+% OSX platform-specific: revert to IPv4
+if (computer('arch') == 'maci64')
+  javaoptspath = fileread([matlabroot '/bin/' computer('arch') '/java.opts']);
+  k = strfind(javaoptspath, '-Djava.net.preferIPv4Stack=true');
+  if isempty(k)
+    setenv('DRAKE_IPV4_SET_MATLABROOT', matlabroot)
+    setenv('DRAKE_IPV4_SET_ARCH', computer('arch'))
+    display('Since you are on Mac, we will need to set your JVM to prefer IPV4 instead of IPV6 for MATLAB')
+    display('Please enter your sudo password below')
+    ! (echo "" | echo "-Djava.net.preferIPv4Stack=true") | sudo tee -a $DRAKE_IPV4_SET_MATLABROOT/bin/$DRAKE_IPV4_SET_ARCH/java.opts
+  end
+end
+
 if ispc 
   setenv('PATH',[getenv('PATH'),';',GetFullPath(pods_get_lib_path),';',fullfile(root,'pod-build','lib','Release'),';',fullfile(root,'pod-build','lib')]);
 end
