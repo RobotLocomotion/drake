@@ -13,34 +13,9 @@ using namespace std;
  *     function [H,C,B] = manipulatorDynamics(obj,q,qd)
  */
 
-template<typename Derived>
-mxArray *eigenToMatlabGeneral(const MatrixBase<Derived>& mat)
-{
-  throw std::runtime_error("Type not handled");
-}
-
-template<int RowsAtCompileTime, int ColsAtCompileTime>
-mxArray *eigenToMatlabGeneral(
-        const MatrixBase<Matrix<AutoDiffScalar<VectorXd>, RowsAtCompileTime, ColsAtCompileTime>>& mat)
-{
-  return eigenToTaylorVar(mat);
-};
-
-template<int RowsAtCompileTime, int ColsAtCompileTime>
-mxArray *eigenToMatlabGeneral(const MatrixBase<Eigen::Matrix<TrigPolyd, RowsAtCompileTime, ColsAtCompileTime>>& mat)
-{
-  return eigenToTrigPoly<RowsAtCompileTime, ColsAtCompileTime>(mat);
-};
-
-template<int RowsAtCompileTime, int ColsAtCompileTime>
-mxArray *eigenToMatlabGeneral(const MatrixBase<Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime>>& mat)
-{
-  return eigenToMatlab(mat.const_cast_derived());
-};
-
 template<typename DerivedQ>
 void manipulatorDynamics(const mxArray *pobj, const MatrixBase<DerivedQ>& q, const MatrixBase<DerivedQ>& qd,
-                         mxArray** plhs)
+                         mxArray **plhs)
 {
   // keep it readable:
   double m1 = mxGetScalar(mxGetProperty(pobj, 0, "m1"));
@@ -81,7 +56,9 @@ void manipulatorDynamics(const mxArray *pobj, const MatrixBase<DerivedQ>& q, con
   C(0) += b1 * qd(0);
   C(1) += b2 * qd(1);
 
-  B << 0.0 * q(0), 1.0;  // multiplying by q(0) just to get the size of the derivatives right; Matlab TaylorVar operations will complain otherwise
+  // input matrix
+  // multiplying by q(0) just to get the size of the derivatives vector right; Matlab TaylorVar operations will complain otherwise. We could handle this case on the Matlab side instead.
+  B << 0.0 * q(0), 1.0;
 
   plhs[0] = eigenToMatlabGeneral(H);
   plhs[1] = eigenToMatlabGeneral(C);

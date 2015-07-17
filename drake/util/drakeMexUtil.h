@@ -236,5 +236,30 @@ mxArray* eigenToTaylorVar(const Eigen::MatrixBase<Derived>& m, int num_variables
   return plhs[0];
 }
 
+template<typename Derived>
+mxArray *eigenToMatlabGeneral(const Eigen::MatrixBase<Derived>& mat)
+{
+  throw std::runtime_error("Type not handled");
+}
+
+template<int RowsAtCompileTime, int ColsAtCompileTime>
+mxArray *eigenToMatlabGeneral(
+        const Eigen::MatrixBase<Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>, RowsAtCompileTime, ColsAtCompileTime>>& mat)
+{
+return eigenToTaylorVar(mat);
+};
+
+template<int RowsAtCompileTime, int ColsAtCompileTime>
+mxArray *eigenToMatlabGeneral(const Eigen::MatrixBase<Eigen::Matrix<TrigPolyd, RowsAtCompileTime, ColsAtCompileTime>>& mat)
+{
+  return eigenToTrigPoly<RowsAtCompileTime, ColsAtCompileTime>(mat);
+};
+
+template<int RowsAtCompileTime, int ColsAtCompileTime>
+mxArray *eigenToMatlabGeneral(const Eigen::MatrixBase<Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime>>& mat)
+{
+  return eigenToMatlab(mat.const_cast_derived());
+};
+
 
 #endif
