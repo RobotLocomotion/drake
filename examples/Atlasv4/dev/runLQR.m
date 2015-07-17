@@ -1,8 +1,14 @@
-function runLQR(segment_number)
+function runLQR(traj_params,segment_number)
 
-if nargin < 1
+% traj params: 1-fully actuated, periodic; 2-fully actuated, step; 3-spring ankle 
+if nargin<1
+  traj_params = 1;
+end
+
+if nargin < 2
   segment_number = -1; % do full traj
 end
+
 if ~checkDependency('gurobi')
   warning('Must have gurobi installed to run this example');
   return;
@@ -10,31 +16,42 @@ end
 
 path_handle = addpathTemporary(fullfile(getDrakePath,'examples','Atlasv4'));
 
-if nargin < 1
-  segment_number = -1; % do full traj
-end
-
 options.twoD = true;
 options.view = 'right';
 options.floating = true;
 options.ignore_self_collisions = true;
-options.terrain = RigidBodyFlatTerrain();
-s = '../urdf/atlas_simple_planar_contact.urdf';
+options.enable_fastqp = false;
+if traj_params==1
+  s = '../urdf/atlas_simple_planar_contact.urdf';
+  traj_file = 'data/atlas_dircol_periodic_lqr'; 
+  options.terrain = RigidBodyFlatTerrain();
+elseif traj_params==2
+  s = '../urdf/atlas_simple_planar_contact.urdf';
+  traj_file = 'data/atlas_step_lqr_sk'; 
+  step_height = .1;
+  options.terrain = RigidBodyLinearStepTerrain(step_height,.35,.02);
+elseif traj_params==3
+  s = '../urdf/atlas_simple_spring_ankle_planar_contact.urdf';
+  traj_file = 'data/atlas_passiveankle_traj_lqr_zoh.mat';
+  %traj_file = 'data/atlas_passiveankle_traj_lqr_090314_zoh.mat';
+  options.terrain = RigidBodyFlatTerrain();
+else
+  error('unknown traj_params');
+end
+
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 r = Atlas(s,options);
 r = r.setOutputFrame(AtlasXZState(r));
 r = r.setStateFrame(AtlasXZState(r));
 warning(w);
 
+
 nx = getNumStates(r);
-nq = getNumPositions(r)
+nq = getNumPositions(r);
 nu = getNumInputs(r);
 
 v = r.constructVisualizer;
 v.display_dt = 0.01;
-
-%traj_file = 'data/atlas_passiveankle_traj_lqr_090314_zoh.mat';
-traj_file = 'data/atlas_dircol_periodic_lqr.mat';
 
 load(traj_file);
 

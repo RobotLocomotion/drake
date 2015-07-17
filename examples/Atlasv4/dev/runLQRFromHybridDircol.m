@@ -17,8 +17,8 @@ options.use_bullet = false;
 options.use_new_kinsol = true;
 p = PlanarRigidBodyManipulator('../urdf/atlas_simple_planar_contact.urdf',options);
 
-  Q = diag([100*ones(p.getNumPositions,1);10*ones(p.getNumVelocities,1)]);
-  R = 0.1*eye(getNumInputs(p));
+  Q = diag([100*ones(p.getNumPositions,1);1*ones(p.getNumVelocities,1)]);
+  R = 0.01*eye(getNumInputs(p));
   Qf = 2*Q;
   
   R_periodic = zeros(p.getNumStates);

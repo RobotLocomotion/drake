@@ -1,4 +1,13 @@
-function runTrajStabilization(segment_number,passive_ankle)
+function runTrajStabilization(traj_params,segment_number)
+
+% traj params: 1-fully actuated, periodic; 2-fully actuated, step; 3-spring ankle 
+if nargin<1
+  traj_params = 1;
+end
+
+if nargin < 2
+  segment_number = -1; % do full traj
+end
 
 if ~checkDependency('gurobi')
   warning('Must have gurobi installed to run this example');
@@ -7,35 +16,29 @@ end
 
 path_handle = addpathTemporary(fullfile(getDrakePath,'examples','Atlasv4'));
 
-if nargin < 1
-  segment_number = -1; % do full traj
-end
-
-if nargin < 2
-  passive_ankle = false;
-end
-
 options.twoD = true;
 options.view = 'right';
 options.floating = true;
 options.ignore_self_collisions = true;
-options.terrain = RigidBodyFlatTerrain();
 options.enable_fastqp = false;
-if passive_ankle
+if traj_params==1
+  s = '../urdf/atlas_simple_planar_contact.urdf';
+  traj_file = 'data/atlas_dircol_periodic_lqr'; 
+  options.terrain = RigidBodyFlatTerrain();
+elseif traj_params==2
+  s = '../urdf/atlas_simple_planar_contact.urdf';
+  traj_file = 'data/atlas_step_lqr_sk'; 
+  step_height = .1;
+  options.terrain = RigidBodyLinearStepTerrain(step_height,.35,.02);
+elseif traj_params==3
   s = '../urdf/atlas_simple_spring_ankle_planar_contact.urdf';
   traj_file = 'data/atlas_passiveankle_traj_lqr_zoh.mat';
   %traj_file = 'data/atlas_passiveankle_traj_lqr_090314_zoh.mat';
-else  
-  s = '../urdf/atlas_simple_planar_contact.urdf';
-%   traj_file = 'data/atlas_lqr_fm2_cost10.mat';
-
-% traj_file = 'data/atlas_lqr_fm2_periodic.mat';
-% traj_file = 'data/atlas_lqr_fm2_periodic_100.mat';
-traj_file = 'data/atlas_dircol_periodic_lqr';
-  traj_file = 'data/atlas_hybrid_lqr_longer_nonperiodic';
-
-%   traj_file = 'data/atlas_lqr_01.mat';
+  options.terrain = RigidBodyFlatTerrain();
+else
+  error('unknown traj_params');
 end
+
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 r = Atlas(s,options);
 r = r.setOutputFrame(AtlasXZState(r));
@@ -68,7 +71,10 @@ options.left_foot_name = 'l_foot';
 %modes = [8,6,3,3,4,4,4,2,7,7,8,8];%,8,6,3,3,4,4];
 % modes = [8,6,1,3,4,4,2,1,7,8];
 % modes = [8,6,3,4,4,2,7,8];
-modes = [8,6,1,3,4,4,2,1,7,8];
+%modes = [8,6,1,3,4,4,2,1,7,8];
+
+modes = [8,3,4];
+
 % modes = repmat(modes,1,repeat_n);
 lfoot_ind = findLinkId(r,options.left_foot_name);
 rfoot_ind = findLinkId(r,options.right_foot_name);  
@@ -102,8 +108,13 @@ end
 if segment_number<1
   B=Btraj;
   S=Straj_full;
-  t0 = xtraj.tspan(1);
-  tf = xtraj.tspan(2);
+  if iscell(xtraj)
+    t0 = xtraj{1}.tspan(1);
+    tf = xtraj{length(xtraj)}.tspan(2);
+  else
+    t0 = xtraj.tspan(1);
+    tf = xtraj.tspan(2);
+  end
 else
   B=Btraj{segment_number};
   S=Straj_full{segment_number};
@@ -123,8 +134,8 @@ ctrl_data = FullStateQPControllerData(true,struct(...
   'B',{B},...
   'S',{S},...
   'R',R,... 
-  'x0',xtraj,...
-  'u0',utraj,...
+  'x0',{xtraj},...
+  'u0',{utraj},...
   'support_times',support_times,...
   'supports',supports,...
   'allowable_supports',allowable_supports));
@@ -154,14 +165,26 @@ warning(S);
 
 % t0 = .418;
 % tf = 1;s
-
-x0 = xtraj.eval(t0);
+if iscell(xtraj)
+  x0 = xtraj{1}.eval(t0);
+else
+  x0 = xtraj.eval(t0);
+end
 traj = simulate(sys,[t0 tf],x0);
 playback(v,traj,struct('slider',true));
 
 if 1
   traj_ts = traj.getBreaks();
   traj_pts = traj.eval(traj_ts);
+  
+  if iscell(xtraj)
+    xtraj_cell = xtraj;
+    xtraj = xtraj_cell{1};
+    for i=2:length(xtraj_cell);
+      xtraj=xtraj.append(xtraj_cell{i});
+    end
+  end
+  
   xtraj_pts = xtraj.eval(traj_ts);
   
   figure(111);
