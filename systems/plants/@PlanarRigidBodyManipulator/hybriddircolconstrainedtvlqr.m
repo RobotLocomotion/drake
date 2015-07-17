@@ -44,7 +44,7 @@ end
 
 
 
-N = length(xtraj);
+N = length(contact_seq);
 constrained_plants = cell(N,1);
 for i=1:N,
   cplant = obj;    
@@ -73,16 +73,16 @@ for i=1:N,
     for j=2:length(contact_seq{i})
       J = [J; n(contact_seq{i}(j),:)];
       ind = contact_seq{i}(j);
-      posA = obj.T_2D_to_3D(:,2)'*xA(:,ind);
-      
+            
       if cond([J;D{1}(contact_seq{i}(j),:)]) < 1e2
+        posA = obj.T_2D_to_3D'*xA(:,ind);
         J = [J;D{1}(contact_seq{i}(j),:)];
         position_fun = drakeFunction.kinematic.RelativePosition(cplant,idxB(ind),idxA(ind),obj.T_2D_to_3D'*xB(:,ind));
         position_constraint = DrakeFunctionConstraint(posA,posA,position_fun);
         position_constraint.grad_level = 2;
         cplant = cplant.addPositionEqualityConstraint(position_constraint);
       else
-        
+        posA = obj.T_2D_to_3D(:,2)'*xA(:,ind);
         position_fun = drakeFunction.kinematic.RelativePosition(cplant,idxB(ind),idxA(ind),obj.T_2D_to_3D'*xB(:,ind),2);
         position_constraint = DrakeFunctionConstraint(posA,posA,position_fun);
         position_constraint.grad_level = 2;
@@ -128,7 +128,7 @@ for j = 1:jmax;
       else
         Qfi = options.periodic_jump'*Qfi*options.periodic_jump;
       end
-      Qfi = (Qfi+Qfi')/2 + 1e-2*eye(size(Qfi,1));
+      Qfi = (Qfi+Qfi')/2 + 1e-6*eye(size(Qfi,1));
       min(eig(Qfi))
     end
   end

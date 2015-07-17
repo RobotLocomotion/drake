@@ -29,7 +29,7 @@ N = [6,3,3,5,3];
 
 N = [6,5,5,5,5];
 
-N = [10,5,5,5,5];
+N = [7,5,5,5,5];
 % % N = [2,2,2,2,2];
 % % N = N+1;
 % % N = [7,3,3,3,7];
@@ -69,6 +69,30 @@ to_options.mode_options{4}.active_inds = [1;2;3;4;6];
 to_options.mode_options{5}.active_inds = [1;2;4];
 
 traj_opt = ConstrainedHybridTrajectoryOptimization(p,modes,N,duration,to_options);
+
+
+% Add foot height constraint
+[~,normal,d,xA,xB,idxA,idxB,mu,n,D] = contactConstraints(p,x0(1:p.getNumPositions));
+if idxA(1) == 1,
+  tmp = idxA;
+  idxA = idxB;
+  idxB = tmp;
+  tmp = xA;
+  xA = xB;
+  xB = tmp;
+end
+assert(isequal(idxB,ones(size(idxB))))
+ 
+fn1 = drakeFunction.kinematic.WorldPosition(p,idxA(3),p.T_2D_to_3D'*xA(:,3),2);
+fn2 = drakeFunction.kinematic.WorldPosition(p,idxA(4),p.T_2D_to_3D'*xA(:,4),2);
+traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.1,inf,p.getNumPositions, @fn1.eval, 1), floor(N(1)/2), 1:p.getNumPositions);
+traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.1,inf,p.getNumPositions, @fn2.eval, 1), floor(N(1)/2), 1:p.getNumPositions);
+
+for i=floor(N(1)/2)+1:N(1)-1,
+traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.02,inf,p.getNumPositions, @fn1.eval, 1), i, 1:p.getNumPositions);
+traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.02,inf,p.getNumPositions, @fn2.eval, 1), i, 1:p.getNumPositions);  
+end
+
 
 l0 = [0;897.3515;0;179.1489];
 
@@ -138,7 +162,7 @@ if nargin > 1
   end
 end
 
-traj_opt = traj_opt.setSolverOptions('snopt','print','snopt2.out');
+traj_opt = traj_opt.setSolverOptions('snopt','print','snopt.out');
 traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',200);
 traj_opt = traj_opt.setSolverOptions('snopt','MinorIterationsLimit',50000);
 traj_opt = traj_opt.setSolverOptions('snopt','IterationsLimit',2000000);

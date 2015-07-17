@@ -241,6 +241,9 @@ classdef FullStateQPControllerDT < DrakeSystem
             
     supp_idx = find(ctrl_data.support_times<=(t+h),1,'last');
     support = ctrl_data.supports(supp_idx);
+    if isempty(support.bodies)
+      supp_ind = [];
+    else
     if support.bodies(1) == 7,
       % assuming heel is contact 1, toe is contact 2
       if length(support.bodies) > 1
@@ -252,6 +255,9 @@ classdef FullStateQPControllerDT < DrakeSystem
     else
         supp_ind = 2 + 1*strcmp(support.contact_groups{1},'heel') + 2*strcmp(support.contact_groups{1},'toe');
     end
+    supp_ind = 1*strcmp(support.contact_groups{1},'heel') + 2*strcmp(support.contact_groups{1},'toe');
+    end
+    
     
     
 
@@ -276,8 +282,9 @@ classdef FullStateQPControllerDT < DrakeSystem
     
     % automatic offset for x position
     x_offset = [1;zeros(2*nq-1,1)]'*S0t*(x-x0t)/S0t(1,1);
-    x0t(1) = x0t(1) + x_offset;
-    x0(1) = x0(1) + x_offset;
+    
+%     x0t(1) = x0t(1) + x_offset;
+%     x0(1) = x0(1) + x_offset;
     
     q0 = x0(1:nq);
 
@@ -419,15 +426,15 @@ classdef FullStateQPControllerDT < DrakeSystem
     
     % add cost off of the surface
     try
-    K = 000*ones(1,length(supp_idx));
-    fq_add = K*n(supp_idx,:);
+    K = 000*ones(1,length(supp_ind));
+    fq_add = K*n(supp_ind,:);
     fqp = fqp + fq_add*Iq;
     catch
         keyboard
     end
     %cost on boolean
-    Kbool = 0*ones(1,length(supp_idx));
-    fqp = fqp -Kbool*Ibool(supp_idx,:);
+    Kbool = 0*ones(1,length(supp_ind));
+    fqp = fqp -Kbool*Ibool(supp_ind,:);
 
 %     if any(n_err)
 %     J = [n_err];
@@ -529,7 +536,7 @@ if false
     
 elseif true
   [x_opt,f_opt] = solveQPCC({Ix*model.Q*Ix'},{Iu*model.Q*Iu'},{prob.c*Ix'},{prob.c*Iu'},{H},{C},{B},{n},D(1),{phi},{n},{0*D{1}*qd},{[D{1}*0 D{1}]},mu,r.umin,r.umax,q,qd,h);
-  alpha = [x_opt(2*nq+1:2*nq+nu);x_opt(1:2*nq);x_opt(2*nq+nu+1:end);zeros(16,1)];  
+  alpha = [x_opt(2*nq+1:2*nq+nu);x_opt(1:2*nq);x_opt(2*nq+nu+1:end);zeros(nbool,1)];  
 else
   [info.console,msk_r,res] = evalc('mosekopt(''minimize'', prob);');
   
@@ -537,7 +544,7 @@ else
   [x_opt,f_opt] = solveQPCC({Ix*model.Q*Ix'},{Iu*model.Q*Iu'},{prob.c*Ix'},{prob.c*Iu'},{H},{C},{B},{n},D(1),{phi},{n},{0*D{1}*qd},{[D{1}*0 D{1}]},mu,r.umin,r.umax,q,qd,h);
   
   if f_opt < res.sol.int.pobjval
-    alpha = [x_opt(2*nq+1:2*nq+nu);x_opt(1:2*nq);x_opt(2*nq+nu+1:end);zeros(16,1)];
+    alpha = [x_opt(2*nq+1:2*nq+nu);x_opt(1:2*nq);x_opt(2*nq+nu+1:end);zeros(nbool,1)];
   end
 end
 
