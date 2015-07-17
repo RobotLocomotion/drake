@@ -28,10 +28,19 @@ v.display_dt = 0.001;
 load('data/hopper_hybrid_lqr_sk.mat');
 if segment_number<1
   if iscell(xtraj)
-    xtraj = cellToSplineTraj(xtraj); %this is not quite right
+    xtraj_full = xtraj{1};
+    for i=2:length(xtraj)
+      xtraj_full = xtraj_full.append(xtraj{i});
+    end
+    xtraj = xtraj_full; 
   end
+
   if iscell(utraj)
-    utraj = cellToFohTraj(utraj);
+    utraj_full = utraj{1};
+    for i=2:length(utraj)
+      utraj_full = utraj_full.append(utraj{i});
+    end
+    utraj = utraj_full; 
   end
 
   % just do a foh for the full traj for now...
@@ -97,25 +106,3 @@ end
 
 end
 
-
-function [traj_ts,traj_pts] = extractUniquePointsFromCellTraj(traj_cell)
-  traj_ts = [];
-  traj_pts = [];
-  for i=1:length(traj_cell)
-    ts = traj_cell{i}.getBreaks();
-    pts = traj_cell{i}.eval(ts);
-    traj_ts = [traj_ts ts];
-    traj_pts = [traj_pts pts];
-  end
-  [traj_ts, ind] = unique(traj_ts);
-  traj_pts = traj_pts(:,ind);
-end
-
-function traj = cellToSplineTraj(traj_cell)
- [traj_ts,traj_pts] = extractUniquePointsFromCellTraj(traj_cell);
- traj = PPTrajectory(spline(traj_ts,traj_pts));
-end
-function traj = cellToFohTraj(traj_cell)
- [traj_ts,traj_pts] = extractUniquePointsFromCellTraj(traj_cell);
- traj = PPTrajectory(foh(traj_ts,traj_pts));
-end
