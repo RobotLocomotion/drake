@@ -27,20 +27,34 @@ r = r.setStateFrame(AtlasXZState(r));
 warning(w);
 
 nx = getNumStates(r);
-nq = getNumPositions(r);
+nq = getNumPositions(r)
 nu = getNumInputs(r);
 
 v = r.constructVisualizer;
 v.display_dt = 0.01;
 
 %traj_file = 'data/atlas_passiveankle_traj_lqr_090314_zoh.mat';
-traj_file = 'data/atlas_lqr_fm2_periodic_100.mat';
+traj_file = 'data/atlas_dircol_periodic_lqr.mat';
 
 load(traj_file);
-xtraj = xtraj.setOutputFrame(getStateFrame(r));
-v.playback(xtraj);
 
 if segment_number<1
+  if iscell(xtraj)
+    xtraj_full = xtraj{1};
+    for i=2:length(xtraj)
+      xtraj_full = xtraj_full.append(xtraj{i});
+    end
+    xtraj = xtraj_full; 
+  end
+
+  if iscell(utraj)
+    utraj_full = utraj{1};
+    for i=2:length(utraj)
+      utraj_full = utraj_full.append(utraj{i});
+    end
+    utraj = utraj_full; 
+  end
+
   % just do a foh for the full traj for now...
   ts=[];
   for i=1:length(Ktraj)
@@ -57,8 +71,14 @@ if segment_number<1
   end
   Ktraj = PPTrajectory(zoh(ts,Ks));
 else
+  xtraj = xtraj{segment_number};
+  utraj = utraj{segment_number};
   Ktraj = Ktraj{segment_number};
 end
+
+xtraj = xtraj.setOutputFrame(getStateFrame(r));
+v.playback(xtraj);
+
 c = AffineSystem([],[],[],[],[],[],[],-Ktraj,Ktraj*xtraj + utraj);
 c = c.setInputFrame(r.getOutputFrame);
 c = c.setOutputFrame(r.getInputFrame);
@@ -80,20 +100,26 @@ playback(v,traj,struct('slider',true));
 
 
 if 1
-  % plot position tracking
-  
-  xtraj_ts = xtraj.getBreaks();
-  xtraj_pts = xtraj.eval(xtraj_ts);
-  
   traj_ts = traj.getBreaks();
   traj_pts = traj.eval(traj_ts);
+  xtraj_pts = xtraj.eval(traj_ts);
   
-  for i=1:10
-    figure(100+i);
+  figure(111);
+  for i=1:nq
+    subplot(2,5,i);
     hold on;
     title(r.getStateFrame.coordinates{i});
-    plot(xtraj_ts,xtraj_pts(i,:),'g.-');
+    plot(traj_ts,xtraj_pts(i,:),'g.-');
     plot(traj_ts,traj_pts(i,:),'r.-');
+    hold off;
+  end
+  figure(112);
+  for i=1:10
+    subplot(2,5,i);
+    hold on;
+    title(r.getStateFrame.coordinates{nq+i});
+    plot(traj_ts,xtraj_pts(nq+i,:),'g.-');
+    plot(traj_ts,traj_pts(nq+i,:),'r.-');
     hold off;
   end
 end

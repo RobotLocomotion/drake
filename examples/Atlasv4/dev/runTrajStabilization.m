@@ -30,8 +30,8 @@ else
 %   traj_file = 'data/atlas_lqr_fm2_cost10.mat';
 
 % traj_file = 'data/atlas_lqr_fm2_periodic.mat';
-traj_file = 'data/atlas_lqr_fm2_periodic_100.mat';
-traj_file = '../data/atlas_hybrid_lqr';
+% traj_file = 'data/atlas_lqr_fm2_periodic_100.mat';
+traj_file = 'data/atlas_dircol_periodic_lqr';
   traj_file = 'data/atlas_hybrid_lqr_longer_nonperiodic';
 
 %   traj_file = 'data/atlas_lqr_01.mat';
@@ -51,35 +51,8 @@ v.display_dt = 0.01;
 
 
 load(traj_file);
-xtraj=xtraj{1}.append(xtraj{2}).append(xtraj{3}).append(xtraj{4}).append(xtraj{5});
-utraj=utraj{1}.append(utraj{2}).append(utraj{3}).append(utraj{4}).append(utraj{5});
-
-if true %foh on u and qd
-  t_t = xtraj.pp.breaks;
-  x = xtraj.eval(t_t);
-  u = utraj.eval(t_t);
-  qtraj = PPTrajectory(foh(t_t,x(1:r.getNumPositions,:)));
-  qdtraj = PPTrajectory(zoh(t_t,[x(1+r.getNumPositions:end,2:end) zeros(r.getNumVelocities,1)]));
-  xtraj = [qtraj;qdtraj];
-  utraj = PPTrajectory(zoh(t_t,u));
-end
-
-
-repeat_n = 1;
-
-[xtraj,utraj,Btraj,Straj_full] = repeatTraj(r,xtraj,utraj,Btraj,Straj_full,repeat_n,true);
-
-%%% this is converting the trajectory to a zoh
-% if true
-%   t_t = xtraj.pp.breaks;
-%   x = xtraj.eval(t_t);
-%   qtraj = PPTrajectory(foh(t_t,x(1:r.getNumPositions,:)));
-%   qdtraj = PPTrajectory(zoh(t_t,[x(1+r.getNumPositions:end,2:end) zeros(r.getNumVelocities,1)]));
-%   xtraj = [qtraj;qdtraj];
-% end
-
-xtraj = xtraj.setOutputFrame(getStateFrame(r));
-v.playback(xtraj);%,struct('slider',true));
+% repeat_n = 1;
+% [xtraj,utraj,Btraj,Straj_full] = repeatTraj(r,xtraj,utraj,Btraj,Straj_full,repeat_n,true);
 
 support_times = zeros(1,length(Straj_full));
 for i=1:length(Straj_full)
@@ -96,7 +69,7 @@ options.left_foot_name = 'l_foot';
 % modes = [8,6,1,3,4,4,2,1,7,8];
 % modes = [8,6,3,4,4,2,7,8];
 modes = [8,6,1,3,4,4,2,1,7,8];
-modes = repmat(modes,1,repeat_n);
+% modes = repmat(modes,1,repeat_n);
 lfoot_ind = findLinkId(r,options.left_foot_name);
 rfoot_ind = findLinkId(r,options.right_foot_name);  
 
@@ -111,14 +84,14 @@ rfoot_ind = findLinkId(r,options.right_foot_name);
 %   mode 9: [left: toe,      right: heel]
 %   mode 10: [left: none,    right: none]
 support_states = [RigidBodySupportState(r,[lfoot_ind,rfoot_ind]); ...
-  RigidBodySupportState(r,[lfoot_ind,rfoot_ind],{{'heel'},{'heel','toe'}}); ...
-  RigidBodySupportState(r,[lfoot_ind,rfoot_ind],{{'toe'},{'heel','toe'}}); ...
+  RigidBodySupportState(r,[lfoot_ind,rfoot_ind],struct('contact_groups',{{{'heel'},{'heel','toe'}}})); ...
+  RigidBodySupportState(r,[lfoot_ind,rfoot_ind],struct('contact_groups',{{{'toe'},{'heel','toe'}}})); ...
   RigidBodySupportState(r,rfoot_ind); ...
-  RigidBodySupportState(r,[lfoot_ind,rfoot_ind],{{'heel'},{'toe'}}); ...
-  RigidBodySupportState(r,[lfoot_ind,rfoot_ind],{{'heel','toe'},{'heel'}}); ...
-  RigidBodySupportState(r,[lfoot_ind,rfoot_ind],{{'heel','toe'},{'toe'}}); ...
+  RigidBodySupportState(r,[lfoot_ind,rfoot_ind],struct('contact_groups',{{{'heel'},{'toe'}}})); ...
+  RigidBodySupportState(r,[lfoot_ind,rfoot_ind],struct('contact_groups',{{{'heel','toe'},{'heel'}}})); ...
+  RigidBodySupportState(r,[lfoot_ind,rfoot_ind],struct('contact_groups',{{{'heel','toe'},{'toe'}}})); ...
   RigidBodySupportState(r,lfoot_ind); ...
-  RigidBodySupportState(r,[lfoot_ind,rfoot_ind],{{'toe'},{'heel'}}); ...
+  RigidBodySupportState(r,[lfoot_ind,rfoot_ind],struct('contact_groups',{{{'toe'},{'heel'}}})); ...
   RigidBodySupportState(r,[])];
 
 supports = [];
@@ -135,8 +108,16 @@ else
   B=Btraj{segment_number};
   S=Straj_full{segment_number};
   t0 = Btraj{segment_number}.tspan(1);
-  tf = Btraj{segment_number}.tspan(2); 
+  tf = Btraj{segment_number}.tspan(2);
+  if iscell(xtraj)
+    xtraj = xtraj{segment_number};
+    utraj = utraj{segment_number};
+  end
+  xtraj = xtraj.setOutputFrame(getStateFrame(r));
+  v.playback(xtraj);%,struct('slider',true));
 end
+
+allowable_supports = RigidBodySupportState(r,[lfoot_ind,rfoot_ind]);
 
 ctrl_data = FullStateQPControllerData(true,struct(...
   'B',{B},...
@@ -145,21 +126,22 @@ ctrl_data = FullStateQPControllerData(true,struct(...
   'x0',xtraj,...
   'u0',utraj,...
   'support_times',support_times,...
-  'supports',supports));
+  'supports',supports,...
+  'allowable_supports',allowable_supports));
 
 % instantiate QP controller
 options.timestep = .001;
 options.dt = .001;
 options.cpos_slack_limit = inf;
-options.w_cpos_slack = 1.0;
+options.w_cpos_slack = 0.1;
 options.phi_slack_limit = inf;
 options.w_phi_slack = 0.0;
 options.w_qdd = 0*ones(nq,1);
 options.w_grf = 0;
 options.Kp_accel = 0;
-options.contact_threshold = 1e-4; %was 1e-4
+options.contact_threshold = 5e-4; %was 1e-4
 options.offset_x = true;
-qp = FullStateQPControllerDT(r,ctrl_data,options);
+qp = FullStateQPController(r,ctrl_data,options);
 
 % feedback QP controller with Atlas
 sys = feedback(r,qp);
@@ -174,23 +156,32 @@ warning(S);
 % tf = 1;s
 
 x0 = xtraj.eval(t0);
-keyboard
 traj = simulate(sys,[t0 tf],x0);
 playback(v,traj,struct('slider',true));
 
-
-if 0
-  % plot mode sequence
-  pptraj = PPTrajectory(foh(traj.getBreaks,traj.eval(traj.getBreaks)));
+if 1
+  traj_ts = traj.getBreaks();
+  traj_pts = traj.eval(traj_ts);
+  xtraj_pts = xtraj.eval(traj_ts);
   
-  [ts,modes] = extractHybridModes(r,xtraj);
-  [ts_,modes_] = extractHybridModes(r,pptraj);
-
-  figure(999);
-  plot(ts,modes,'b');
-  hold on;
-  plot(ts_,modes_,'r');
-  hold off;
+  figure(111);
+  for i=1:nq
+    subplot(2,5,i);
+    hold on;
+    title(r.getStateFrame.coordinates{i});
+    plot(traj_ts,xtraj_pts(i,:),'g.-');
+    plot(traj_ts,traj_pts(i,:),'r.-');
+    hold off;
+  end
+  figure(112);
+  for i=1:10
+    subplot(2,5,i);
+    hold on;
+    title(r.getStateFrame.coordinates{nq+i});
+    plot(traj_ts,xtraj_pts(nq+i,:),'g.-');
+    plot(traj_ts,traj_pts(nq+i,:),'r.-');
+    hold off;
+  end
 end
 
 if 0
@@ -204,6 +195,5 @@ if 0
     hold off;
   end
 end
-keyboard
 end
 

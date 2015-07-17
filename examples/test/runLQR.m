@@ -67,8 +67,6 @@ end
 xtraj = xtraj.setOutputFrame(getStateFrame(r));
 v.playback(xtraj);
 
-utraj = PPTrajectory(foh(Ktraj.getBreaks(),utraj.eval(Ktraj.getBreaks())));
-
 c = AffineSystem([],[],[],[],[],[],[],-Ktraj,Ktraj*xtraj + utraj);
 c = c.setInputFrame(r.getOutputFrame);
 c = c.setOutputFrame(r.getInputFrame);
