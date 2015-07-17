@@ -646,7 +646,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
 
               QP_FAILED = (~isempty(w(z_active)) && any(M(z_active,z_inactive)*z(z_inactive)+w(z_active) < 0)) || ...
                   any(((z(z_inactive)>lb(z_inactive)+1e-8) & (M(z_inactive, z_inactive)*z(z_inactive)+w(z_inactive)>1e-8))) || ...
-                  any(abs(z_'*(Aeq*z_ - beq)) > 1e-6);
+                  any(abs(z_'*(Aeq*z_ - beq)) > 1e-6) || ...
+                  any(abs(z(nL+nP+(mC+1)*nC+(1:nC))) > 1e-6);
             end
           end
         end
