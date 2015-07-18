@@ -28,10 +28,10 @@ if traj_params==1
   modes = [8,6,4];
 elseif traj_params==2
   s = '../urdf/atlas_simple_planar_contact.urdf';
-  traj_file = 'data/atlas_step_lqr_sk'; 
+  traj_file = 'data/atlas_step_and_stop_lqr'; 
   step_height = .1;
   options.terrain = RigidBodyLinearStepTerrain(step_height,.35,.02);
-  modes = [8,3,4]; % step
+  modes = [8,3,4,4,1]; % step
 elseif traj_params==3
   s = '../urdf/atlas_simple_spring_ankle_planar_contact.urdf';
   traj_file = 'data/atlas_passiveankle_traj_lqr_zoh.mat';
@@ -57,8 +57,12 @@ v.display_dt = 0.01;
 
 load(traj_file);
 
-repeat_n = 1;
-[xtraj,utraj,Btraj,Straj_full] = repeatTraj(r,xtraj,utraj,Btraj,Straj_full,repeat_n,true);
+if traj_params~=2
+  repeat_n = 2;
+  [xtraj,utraj,Btraj,Straj_full] = repeatTraj(r,xtraj,utraj,Btraj,Straj_full,repeat_n,true);
+else
+  repeat_n = 1;
+end
 
 support_times = zeros(1,length(Straj_full));
 for i=1:length(Straj_full)
@@ -116,6 +120,7 @@ if segment_number<1
   else
     t0 = xtraj.tspan(1);
     tf = xtraj.tspan(2);
+    v.playback(xtraj);%,struct('slider',true));
   end
 else
   B=Btraj{segment_number};
