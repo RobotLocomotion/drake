@@ -5,7 +5,7 @@
 % load atlas_hybrid_dircol_clearance -- this was used to make
 % atlas_dircol_periodic
 
-load data/atlas_more_clearance_3mode.mat
+load data/atlas_step_stop.mat
 
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 warning('off','Drake:RigidBodyManipulator:WeldedLinkInd');
