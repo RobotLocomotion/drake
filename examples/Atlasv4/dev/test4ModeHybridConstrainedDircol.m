@@ -1,4 +1,4 @@
-function [p,v,xtraj,utraj,ltraj,z,F,info,traj_opt] = testHybridConstrainedDircol(z0,xtraj,utraj,ltraj)
+function [p,v,xtraj,utraj,ltraj,z,F,info,traj_opt] = test4ModeHybridConstrainedDircol(z0,xtraj,utraj,ltraj)
 
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 warning('off','Drake:RigidBodyManipulator:WeldedLinkInd');
@@ -29,12 +29,12 @@ N = [6,3,3,5,3];
 
 N = [6,5,5,5,5];
 
-N = [7,5,5,5,5];
+N = [7,5,5,5];
 % % N = [2,2,2,2,2];
 % % N = N+1;
 % % N = [7,3,3,3,7];
-duration = {[.2 .7],[.05 .2],[.05 .2],[.05 .5], [.1 .7]};
-modes = {[1;2],[1;2;3],[1;2;3;4],[2;3;4], [3;4]};
+duration = {[.2 .7],[.05 .2],[.01 .5], [.1 .7]};
+modes = {[1;2],[1;2;3],[2;3;4], [3;4]};
 
 
 
@@ -64,9 +64,9 @@ to_options.mode_options{2}.active_inds = [1;2;4;5;6];
 % to_options.mode_options{3} = struct();
 % to_options.mode_options{4} = struct();
 % to_options.mode_options{5} = struct();
-to_options.mode_options{3}.active_inds = [1;2;4;5;6;8];
-to_options.mode_options{4}.active_inds = [1;2;3;4;6];
-to_options.mode_options{5}.active_inds = [1;2;4];
+% to_options.mode_options{3}.active_inds = [1;2;4;5;6;8];
+to_options.mode_options{3}.active_inds = [1;2;3;4;6];
+to_options.mode_options{4}.active_inds = [1;2;4];
 
 traj_opt = ConstrainedHybridTrajectoryOptimization(p,modes,N,duration,to_options);
 
@@ -89,8 +89,8 @@ traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.1,inf,p.g
 traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.1,inf,p.getNumPositions, @fn2.eval, 1), floor(N(1)/2), 1:p.getNumPositions);
 
 for i=floor(N(1)/2)+1:N(1)-1,
-traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.03,inf,p.getNumPositions, @fn1.eval, 1), i, 1:p.getNumPositions);
-traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.07,inf,p.getNumPositions, @fn2.eval, 1), i, 1:p.getNumPositions);  
+traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.01,inf,p.getNumPositions, @fn1.eval, 1), i, 1:p.getNumPositions);
+% traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.05,inf,p.getNumPositions, @fn2.eval, 1), i, 1:p.getNumPositions);  
 end
 
 
@@ -111,23 +111,23 @@ if length(N) > 1
   traj_init.mode{2}.u = PPTrajectory(foh(t_init{2},randn(7,N(2))));
   traj_init.mode{2}.l = PPTrajectory(foh(t_init{2},repmat([l0;l0(1:2)],1,N(2))));
 end
+% if length(N) > 2
+%   t_init{3} = linspace(0,.2,N(3));
+%   traj_init.mode{3}.x = PPTrajectory(foh(t_init{3},repmat(x0,1,N(3))));
+%   traj_init.mode{3}.u = PPTrajectory(foh(t_init{3},randn(7,N(3))));
+%   traj_init.mode{3}.l = PPTrajectory(foh(t_init{3},repmat([l0;l0],1,N(3))));
+% end
 if length(N) > 2
   t_init{3} = linspace(0,.2,N(3));
   traj_init.mode{3}.x = PPTrajectory(foh(t_init{3},repmat(x0,1,N(3))));
   traj_init.mode{3}.u = PPTrajectory(foh(t_init{3},randn(7,N(3))));
-  traj_init.mode{3}.l = PPTrajectory(foh(t_init{3},repmat([l0;l0],1,N(3))));
+  traj_init.mode{3}.l = PPTrajectory(foh(t_init{3},repmat([l0;l0(1:2)],1,N(3))));
 end
 if length(N) > 3
   t_init{4} = linspace(0,.2,N(4));
   traj_init.mode{4}.x = PPTrajectory(foh(t_init{4},repmat(x0,1,N(4))));
   traj_init.mode{4}.u = PPTrajectory(foh(t_init{4},randn(7,N(4))));
-  traj_init.mode{4}.l = PPTrajectory(foh(t_init{4},repmat([l0;l0(1:2)],1,N(4))));
-end
-if length(N) > 4
-  t_init{5} = linspace(0,.2,N(5));
-  traj_init.mode{5}.x = PPTrajectory(foh(t_init{5},repmat(x0,1,N(5))));
-  traj_init.mode{5}.u = PPTrajectory(foh(t_init{5},randn(7,N(5))));
-  traj_init.mode{5}.l = PPTrajectory(foh(t_init{5},repmat([l0],1,N(5))));
+  traj_init.mode{4}.l = PPTrajectory(foh(t_init{4},repmat([l0],1,N(4))));
   
   % build periodic constraint matrix
 

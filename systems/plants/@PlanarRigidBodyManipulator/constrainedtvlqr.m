@@ -215,7 +215,7 @@ Pdot = reshape(A\b,n,n-d);
 %   keyboard
 % end
 
-%   display(sprintf('t: %f FPerr: %e',t,max(max(abs(F*P)))))
+  display(sprintf('t: %f FPerr: %e',t,max(max(abs(F*P)))))
 end
 
 function PandSqrtSdotydot = PandSqrtSdynamics(t,PandSqrtS,p,dynamicsfn,xtraj,utraj,Q,R,alpha_1,alpha_2,dimP)

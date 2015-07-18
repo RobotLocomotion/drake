@@ -1,4 +1,4 @@
-function [p,v,xtraj,utraj,ltraj,z,F,info,traj_opt] = testHybridConstrainedDircol(z0,xtraj,utraj,ltraj)
+function [p,v,xtraj,utraj,ltraj,z,F,info,traj_opt] = test4ModePassiveHybridConstrainedDircol(z0,xtraj,utraj,ltraj)
 
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 warning('off','Drake:RigidBodyManipulator:WeldedLinkInd');
@@ -8,7 +8,7 @@ options.floating = true;
 options.ignore_self_collisions = true;
 options.use_new_kinsol = true;
 
-p = PlanarRigidBodyManipulator('../urdf/atlas_simple_planar_contact.urdf',options);
+p = PlanarRigidBodyManipulator('../urdf/atlas_simple_spring_ankle_planar_contact.urdf',options);
 nq = p.getNumPositions;
 nv = p.getNumVelocities;
 nu = p.getNumInputs;
@@ -29,12 +29,12 @@ N = [6,3,3,5,3];
 
 N = [6,5,5,5,5];
 
-N = [7,5,5,5,5];
+N = [7,5,5,5];
 % % N = [2,2,2,2,2];
 % % N = N+1;
 % % N = [7,3,3,3,7];
-duration = {[.2 .7],[.05 .2],[.05 .2],[.05 .5], [.1 .7]};
-modes = {[1;2],[1;2;3],[1;2;3;4],[2;3;4], [3;4]};
+duration = {[.2 1.3],[.05 .2],[.05 .5], [.1 .7]};
+modes = {[1;2],[1;2;3],[2;3;4], [3;4]};
 
 
 
@@ -64,9 +64,9 @@ to_options.mode_options{2}.active_inds = [1;2;4;5;6];
 % to_options.mode_options{3} = struct();
 % to_options.mode_options{4} = struct();
 % to_options.mode_options{5} = struct();
-to_options.mode_options{3}.active_inds = [1;2;4;5;6;8];
-to_options.mode_options{4}.active_inds = [1;2;3;4;6];
-to_options.mode_options{5}.active_inds = [1;2;4];
+% to_options.mode_options{3}.active_inds = [1;2;4;5;6;8];
+to_options.mode_options{3}.active_inds = [1;2;3;4;6];
+to_options.mode_options{4}.active_inds = [1;2;4];
 
 traj_opt = ConstrainedHybridTrajectoryOptimization(p,modes,N,duration,to_options);
 
@@ -85,8 +85,8 @@ assert(isequal(idxB,ones(size(idxB))))
  
 fn1 = drakeFunction.kinematic.WorldPosition(p,idxA(3),p.T_2D_to_3D'*xA(:,3),2);
 fn2 = drakeFunction.kinematic.WorldPosition(p,idxA(4),p.T_2D_to_3D'*xA(:,4),2);
-traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.1,inf,p.getNumPositions, @fn1.eval, 1), floor(N(1)/2), 1:p.getNumPositions);
-traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.1,inf,p.getNumPositions, @fn2.eval, 1), floor(N(1)/2), 1:p.getNumPositions);
+traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.05,inf,p.getNumPositions, @fn1.eval, 1), floor(N(1)/2), 1:p.getNumPositions);
+traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.05,inf,p.getNumPositions, @fn2.eval, 1), floor(N(1)/2), 1:p.getNumPositions);
 
 for i=floor(N(1)/2)+1:N(1)-1,
 traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.03,inf,p.getNumPositions, @fn1.eval, 1), i, 1:p.getNumPositions);
@@ -96,38 +96,38 @@ end
 
 l0 = [0;897.3515;0;179.1489];
 
-traj_opt = traj_opt.addModeStateConstraint(1,BoundingBoxConstraint(x0 - [0;.1*ones(9,1);.1*ones(10,1)],x0+[0;.1*ones(9,1);.1*ones(10,1)]),1);
+traj_opt = traj_opt.addModeStateConstraint(1,BoundingBoxConstraint(x0 - [0;.3*ones(9,1);.3*ones(10,1)],x0+[0;.3*ones(9,1);.3*ones(10,1)]),1);
 % traj_opt = traj_opt.addModeStateConstraint(1,BoundingBoxConstraint(x0 - [.01*ones(10,1);.1*ones(10,1)],x0+[.01*ones(10,1);.1*ones(10,1)]),1);
 traj_opt = traj_opt.addModeStateConstraint(length(N),BoundingBoxConstraint(.3,inf),N(end),1);
 
 t_init{1} = linspace(0,.4,N(1));
 traj_init.mode{1}.x = PPTrajectory(foh(t_init{1},repmat(x0,1,N(1))));
-traj_init.mode{1}.u = PPTrajectory(foh(t_init{1},randn(7,N(1))));
+traj_init.mode{1}.u = PPTrajectory(foh(t_init{1},randn(5,N(1))));
 traj_init.mode{1}.l = PPTrajectory(foh(t_init{1},repmat(l0,1,N(1))));
 
 if length(N) > 1
   t_init{2} = linspace(0,.2,N(2));
   traj_init.mode{2}.x = PPTrajectory(foh(t_init{2},repmat(x0,1,N(2))));
-  traj_init.mode{2}.u = PPTrajectory(foh(t_init{2},randn(7,N(2))));
+  traj_init.mode{2}.u = PPTrajectory(foh(t_init{2},randn(5,N(2))));
   traj_init.mode{2}.l = PPTrajectory(foh(t_init{2},repmat([l0;l0(1:2)],1,N(2))));
 end
+% if length(N) > 2
+%   t_init{3} = linspace(0,.2,N(3));
+%   traj_init.mode{3}.x = PPTrajectory(foh(t_init{3},repmat(x0,1,N(3))));
+%   traj_init.mode{3}.u = PPTrajectory(foh(t_init{3},randn(5,N(3))));
+%   traj_init.mode{3}.l = PPTrajectory(foh(t_init{3},repmat([l0;l0],1,N(3))));
+% end
 if length(N) > 2
   t_init{3} = linspace(0,.2,N(3));
   traj_init.mode{3}.x = PPTrajectory(foh(t_init{3},repmat(x0,1,N(3))));
-  traj_init.mode{3}.u = PPTrajectory(foh(t_init{3},randn(7,N(3))));
-  traj_init.mode{3}.l = PPTrajectory(foh(t_init{3},repmat([l0;l0],1,N(3))));
+  traj_init.mode{3}.u = PPTrajectory(foh(t_init{3},randn(5,N(3))));
+  traj_init.mode{3}.l = PPTrajectory(foh(t_init{3},repmat([l0;l0(1:2)],1,N(3))));
 end
 if length(N) > 3
   t_init{4} = linspace(0,.2,N(4));
   traj_init.mode{4}.x = PPTrajectory(foh(t_init{4},repmat(x0,1,N(4))));
-  traj_init.mode{4}.u = PPTrajectory(foh(t_init{4},randn(7,N(4))));
-  traj_init.mode{4}.l = PPTrajectory(foh(t_init{4},repmat([l0;l0(1:2)],1,N(4))));
-end
-if length(N) > 4
-  t_init{5} = linspace(0,.2,N(5));
-  traj_init.mode{5}.x = PPTrajectory(foh(t_init{5},repmat(x0,1,N(5))));
-  traj_init.mode{5}.u = PPTrajectory(foh(t_init{5},randn(7,N(5))));
-  traj_init.mode{5}.l = PPTrajectory(foh(t_init{5},repmat([l0],1,N(5))));
+  traj_init.mode{4}.u = PPTrajectory(foh(t_init{4},randn(5,N(4))));
+  traj_init.mode{4}.l = PPTrajectory(foh(t_init{4},repmat([l0],1,N(4))));
   
   % build periodic constraint matrix
 
@@ -184,7 +184,7 @@ for i=1:length(N)
   knee_inds = traj_opt.mode_opt{i}.x_inds([5;9],:) + traj_opt.var_offset(i);
   knee_inds = knee_inds(:);
   knee_constraint = BoundingBoxConstraint(.1*ones(length(knee_inds),1),inf(length(knee_inds),1));
-%   traj_opt = traj_opt.addBoundingBoxConstraint(knee_constraint,knee_inds);
+  traj_opt = traj_opt.addBoundingBoxConstraint(knee_constraint,knee_inds);
   
   traj_opt = traj_opt.addModeStateConstraint(i,BoundingBoxConstraint(p.joint_limit_min,p.joint_limit_max),1:N(i),1:10);
   
@@ -213,8 +213,8 @@ end
     pitch_idx = 3;
     pitch_dot_idx = p.getNumPositions+pitch_idx;
 
-    Kq = 50;
-    Kqd = 50;
+    Kq = 5000;
+    Kqd = 5000;
     f = Kq*x(pitch_idx)^2 + Kqd*x(pitch_dot_idx)^2; % try to avoid moving the pelvis quickly
     df = zeros(1,1+nx+nu);
     df(1+pitch_idx) = 2*Kq*x(pitch_idx);

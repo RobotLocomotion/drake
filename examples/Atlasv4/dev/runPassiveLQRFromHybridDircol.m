@@ -1,13 +1,4 @@
-% load atlas_hybrid_dircol_good
-% load atlas_hybrid_dircol_high
-% load atlas_hybrid_dircol_15
-
-% load atlas_hybrid_dircol_clearance -- this was used to make
-% atlas_dircol_periodic
-
-% load data/atlas_more_clearance_3mode
-% load data/atlas_3mode_step.mat
-load data/atlas_step_stop
+load data/atlas_3mode_K5_passive_traj
 
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 warning('off','Drake:RigidBodyManipulator:WeldedLinkInd');
@@ -17,7 +8,7 @@ options.floating = true;
 options.ignore_self_collisions = true;
 options.use_bullet = false;
 options.use_new_kinsol = true;
-p = PlanarRigidBodyManipulator('../urdf/atlas_simple_planar_contact.urdf',options);
+p = PlanarRigidBodyManipulator('../urdf/atlas_simple_spring_ankle_planar_contact.urdf',options);
 
   Q = diag([100*ones(p.getNumPositions,1);10*ones(p.getNumVelocities,1)]);
   R = .1*eye(getNumInputs(p));
@@ -33,7 +24,7 @@ p = PlanarRigidBodyManipulator('../urdf/atlas_simple_planar_contact.urdf',option
   R_periodic(18:20,14:16) = eye(3); %leg joints w/symmetry
   R_periodic(17,17) = 1; % back joint
   options.periodic_jump = R_periodic;
-  options.periodic = false;
+  options.periodic = true;
   
 % R = cell(0);
 % xtraj_=xtraj{1}.append(xtraj{2}).append(xtraj{3}).append(xtraj{4}).append(xtraj{5});
