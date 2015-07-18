@@ -1,4 +1,13 @@
-function runTrajStabilization(segment_number,passive_ankle)
+function runTrajStabilization(traj_params,segment_number)
+
+% traj params: 1-fully actuated, periodic; 2-fully actuated, step; 3-spring ankle 
+if nargin<1
+  traj_params = 1;
+end
+
+if nargin < 2
+  segment_number = -1; % do full traj
+end
 
 if ~checkDependency('gurobi')
   warning('Must have gurobi installed to run this example');
@@ -7,35 +16,31 @@ end
 
 path_handle = addpathTemporary(fullfile(getDrakePath,'examples','Atlasv4'));
 
-if nargin < 1
-  segment_number = -1; % do full traj
-end
-
-if nargin < 2
-  passive_ankle = false;
-end
-
 options.twoD = true;
 options.view = 'right';
 options.floating = true;
 options.ignore_self_collisions = true;
-options.terrain = RigidBodyFlatTerrain();
 options.enable_fastqp = false;
-if passive_ankle
+if traj_params==1
+  s = '../urdf/atlas_simple_planar_contact.urdf';
+  traj_file = 'data/atlas_more_clearance_3mode_lqr_sk'; 
+  options.terrain = RigidBodyFlatTerrain();
+  modes = [8,6,4];
+elseif traj_params==2
+  s = '../urdf/atlas_simple_planar_contact.urdf';
+  traj_file = 'data/atlas_step_and_stop_lqr'; 
+  step_height = .1;
+  options.terrain = RigidBodyLinearStepTerrain(step_height,.35,.02);
+  modes = [8,3,4,4,1]; % step
+elseif traj_params==3
   s = '../urdf/atlas_simple_spring_ankle_planar_contact.urdf';
   traj_file = 'data/atlas_passiveankle_traj_lqr_zoh.mat';
   %traj_file = 'data/atlas_passiveankle_traj_lqr_090314_zoh.mat';
-else  
-  s = '../urdf/atlas_simple_planar_contact.urdf';
-%   traj_file = 'data/atlas_lqr_fm2_cost10.mat';
-
-% traj_file = 'data/atlas_lqr_fm2_periodic.mat';
-traj_file = 'data/atlas_lqr_fm2_periodic_100.mat';
-traj_file = '../data/atlas_hybrid_lqr';
-  traj_file = 'data/atlas_hybrid_lqr_longer_nonperiodic';
-
-%   traj_file = 'data/atlas_lqr_01.mat';
+  options.terrain = RigidBodyFlatTerrain();
+else
+  error('unknown traj_params');
 end
+
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 r = Atlas(s,options);
 r = r.setOutputFrame(AtlasXZState(r));
@@ -51,35 +56,13 @@ v.display_dt = 0.01;
 
 
 load(traj_file);
-xtraj=xtraj{1}.append(xtraj{2}).append(xtraj{3}).append(xtraj{4}).append(xtraj{5});
-utraj=utraj{1}.append(utraj{2}).append(utraj{3}).append(utraj{4}).append(utraj{5});
 
-if true %foh on u and qd
-  t_t = xtraj.pp.breaks;
-  x = xtraj.eval(t_t);
-  u = utraj.eval(t_t);
-  qtraj = PPTrajectory(foh(t_t,x(1:r.getNumPositions,:)));
-  qdtraj = PPTrajectory(zoh(t_t,[x(1+r.getNumPositions:end,2:end) zeros(r.getNumVelocities,1)]));
-  xtraj = [qtraj;qdtraj];
-  utraj = PPTrajectory(zoh(t_t,u));
+if traj_params~=2
+  repeat_n = 2;
+  [xtraj,utraj,Btraj,Straj_full] = repeatTraj(r,xtraj,utraj,Btraj,Straj_full,repeat_n,true);
+else
+  repeat_n = 1;
 end
-
-
-repeat_n = 1;
-
-[xtraj,utraj,Btraj,Straj_full] = repeatTraj(r,xtraj,utraj,Btraj,Straj_full,repeat_n,true);
-
-%%% this is converting the trajectory to a zoh
-% if true
-%   t_t = xtraj.pp.breaks;
-%   x = xtraj.eval(t_t);
-%   qtraj = PPTrajectory(foh(t_t,x(1:r.getNumPositions,:)));
-%   qdtraj = PPTrajectory(zoh(t_t,[x(1+r.getNumPositions:end,2:end) zeros(r.getNumVelocities,1)]));
-%   xtraj = [qtraj;qdtraj];
-% end
-
-xtraj = xtraj.setOutputFrame(getStateFrame(r));
-v.playback(xtraj);%,struct('slider',true));
 
 support_times = zeros(1,length(Straj_full));
 for i=1:length(Straj_full)
@@ -95,7 +78,9 @@ options.left_foot_name = 'l_foot';
 %modes = [8,6,3,3,4,4,4,2,7,7,8,8];%,8,6,3,3,4,4];
 % modes = [8,6,1,3,4,4,2,1,7,8];
 % modes = [8,6,3,4,4,2,7,8];
-modes = [8,6,1,3,4,4,2,1,7,8];
+%modes = [8,6,1,3,4,4,2,1,7,8];
+
+
 modes = repmat(modes,1,repeat_n);
 lfoot_ind = findLinkId(r,options.left_foot_name);
 rfoot_ind = findLinkId(r,options.right_foot_name);  
@@ -111,14 +96,14 @@ rfoot_ind = findLinkId(r,options.right_foot_name);
 %   mode 9: [left: toe,      right: heel]
 %   mode 10: [left: none,    right: none]
 support_states = [RigidBodySupportState(r,[lfoot_ind,rfoot_ind]); ...
-  RigidBodySupportState(r,[lfoot_ind,rfoot_ind],{{'heel'},{'heel','toe'}}); ...
-  RigidBodySupportState(r,[lfoot_ind,rfoot_ind],{{'toe'},{'heel','toe'}}); ...
+  RigidBodySupportState(r,[lfoot_ind,rfoot_ind],struct('contact_groups',{{{'heel'},{'heel','toe'}}})); ...
+  RigidBodySupportState(r,[lfoot_ind,rfoot_ind],struct('contact_groups',{{{'toe'},{'heel','toe'}}})); ...
   RigidBodySupportState(r,rfoot_ind); ...
-  RigidBodySupportState(r,[lfoot_ind,rfoot_ind],{{'heel'},{'toe'}}); ...
-  RigidBodySupportState(r,[lfoot_ind,rfoot_ind],{{'heel','toe'},{'heel'}}); ...
-  RigidBodySupportState(r,[lfoot_ind,rfoot_ind],{{'heel','toe'},{'toe'}}); ...
+  RigidBodySupportState(r,[lfoot_ind,rfoot_ind],struct('contact_groups',{{{'heel'},{'toe'}}})); ...
+  RigidBodySupportState(r,[lfoot_ind,rfoot_ind],struct('contact_groups',{{{'heel','toe'},{'heel'}}})); ...
+  RigidBodySupportState(r,[lfoot_ind,rfoot_ind],struct('contact_groups',{{{'heel','toe'},{'toe'}}})); ...
   RigidBodySupportState(r,lfoot_ind); ...
-  RigidBodySupportState(r,[lfoot_ind,rfoot_ind],{{'toe'},{'heel'}}); ...
+  RigidBodySupportState(r,[lfoot_ind,rfoot_ind],struct('contact_groups',{{{'toe'},{'heel'}}})); ...
   RigidBodySupportState(r,[])];
 
 supports = [];
@@ -129,37 +114,52 @@ end
 if segment_number<1
   B=Btraj;
   S=Straj_full;
-  t0 = xtraj.tspan(1);
-  tf = xtraj.tspan(2);
+  if iscell(xtraj)
+    t0 = xtraj{1}.tspan(1);
+    tf = xtraj{length(xtraj)}.tspan(2);
+  else
+    t0 = xtraj.tspan(1);
+    tf = xtraj.tspan(2);
+    v.playback(xtraj);%,struct('slider',true));
+  end
 else
   B=Btraj{segment_number};
   S=Straj_full{segment_number};
   t0 = Btraj{segment_number}.tspan(1);
-  tf = Btraj{segment_number}.tspan(2); 
+  tf = Btraj{segment_number}.tspan(2);
+  if iscell(xtraj)
+    xtraj = xtraj{segment_number};
+    utraj = utraj{segment_number};
+  end
+  xtraj = xtraj.setOutputFrame(getStateFrame(r));
+  v.playback(xtraj);%,struct('slider',true));
 end
+
+allowable_supports = RigidBodySupportState(r,[lfoot_ind,rfoot_ind]);
 
 ctrl_data = FullStateQPControllerData(true,struct(...
   'B',{B},...
   'S',{S},...
   'R',R,... 
-  'x0',xtraj,...
-  'u0',utraj,...
+  'x0',{xtraj},...
+  'u0',{utraj},...
   'support_times',support_times,...
-  'supports',supports));
+  'supports',supports,...
+  'allowable_supports',allowable_supports));
 
 % instantiate QP controller
 options.timestep = .001;
 options.dt = .001;
 options.cpos_slack_limit = inf;
-options.w_cpos_slack = 1.0;
+options.w_cpos_slack = 0.1;
 options.phi_slack_limit = inf;
 options.w_phi_slack = 0.0;
 options.w_qdd = 0*ones(nq,1);
 options.w_grf = 0;
 options.Kp_accel = 0;
-options.contact_threshold = 1e-4; %was 1e-4
+options.contact_threshold = 5e-4; %was 1e-4
 options.offset_x = true;
-qp = FullStateQPControllerDT(r,ctrl_data,options);
+qp = FullStateQPController(r,ctrl_data,options);
 
 % feedback QP controller with Atlas
 sys = feedback(r,qp);
@@ -172,25 +172,46 @@ warning(S);
 
 % t0 = .418;
 % tf = 1;s
-
-x0 = xtraj.eval(t0);
-keyboard
+if iscell(xtraj)
+  x0 = xtraj{1}.eval(t0);
+else
+  x0 = xtraj.eval(t0);
+end
 traj = simulate(sys,[t0 tf],x0);
 playback(v,traj,struct('slider',true));
 
-
-if 0
-  % plot mode sequence
-  pptraj = PPTrajectory(foh(traj.getBreaks,traj.eval(traj.getBreaks)));
+if 1
+  traj_ts = traj.getBreaks();
+  traj_pts = traj.eval(traj_ts);
   
-  [ts,modes] = extractHybridModes(r,xtraj);
-  [ts_,modes_] = extractHybridModes(r,pptraj);
-
-  figure(999);
-  plot(ts,modes,'b');
-  hold on;
-  plot(ts_,modes_,'r');
-  hold off;
+  if iscell(xtraj)
+    xtraj_cell = xtraj;
+    xtraj = xtraj_cell{1};
+    for i=2:length(xtraj_cell);
+      xtraj=xtraj.append(xtraj_cell{i});
+    end
+  end
+  
+  xtraj_pts = xtraj.eval(traj_ts);
+  
+  figure(111);
+  for i=1:nq
+    subplot(2,5,i);
+    hold on;
+    title(r.getStateFrame.coordinates{i});
+    plot(traj_ts,xtraj_pts(i,:),'g.-');
+    plot(traj_ts,traj_pts(i,:),'r.-');
+    hold off;
+  end
+  figure(112);
+  for i=1:10
+    subplot(2,5,i);
+    hold on;
+    title(r.getStateFrame.coordinates{nq+i});
+    plot(traj_ts,xtraj_pts(nq+i,:),'g.-');
+    plot(traj_ts,traj_pts(nq+i,:),'r.-');
+    hold off;
+  end
 end
 
 if 0
@@ -204,6 +225,5 @@ if 0
     hold off;
   end
 end
-keyboard
 end
 

@@ -185,9 +185,7 @@ classdef FullStateQPController < DrakeSystem
       catch
         keyboard
       end
-      if rigid_body_support_state.num_contact_pts > cur_rigid_body_support_state.num_contact_pts
-        % not quite right.. could simultaneously make and break contact with different points 
-
+      if obj.hasImpact(cur_rigid_body_support_state,rigid_body_support_state)
         planned_supports = rigid_body_support_state.bodies;
         planned_contact_groups = rigid_body_support_state.contact_groups;
 
@@ -451,6 +449,35 @@ classdef FullStateQPController < DrakeSystem
 %     beta=Ibeta*alpha
     y = Iu*alpha;
 %     y = u0;
+  end
+
+
+  function bool=hasImpact(~,rb_support_state1, rb_support_state2)
+    bool=true;
+    
+    bodies1 = rb_support_state1.bodies;
+    bodies2 = rb_support_state2.bodies;
+    groups1 = rb_support_state1.contact_groups;
+    groups2 = rb_support_state2.contact_groups;
+    
+    if isempty(bodies2)
+      bool=false; % no impacts
+      return
+    end
+    bodies_union = union(bodies1,bodies2);
+    if length(intersect(bodies1,bodies_union))<length(bodies_union)
+      % new body coming into contact
+      return
+    end
+    
+    for i=1:length(bodies2)
+      num_groups1 = length(groups1{i});
+      num_groups2 = length(groups2{i});
+      if num_groups2 > num_groups1 || length(intersect(groups1{i},groups2{i})) < num_groups2
+        return
+      end
+    end
+    bool=false;
   end
   end
 
