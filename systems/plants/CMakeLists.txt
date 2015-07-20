@@ -65,7 +65,7 @@ if (MATLAB_FOUND)
   target_link_libraries(computeS1Trajmex drakeZMPUtil)
 
   if(gurobi_FOUND)
-    add_definitions(-DPATHLCP_MEXFILE=\"${CMAKE_SOURCE_DIR}/thirdParty/path/lcppath.${MEX_EXT}\")
+    add_definitions(-DPATHLCP_MEXFILE=\"${PROJECT_SOURCE_DIR}/thirdParty/path/lcppath.${MEX_EXT}\")
     add_mex(solveLCPmex solveLCPmex.cpp)
     target_link_libraries(solveLCPmex drakeRBM drakeMexUtil drakeQP)
   endif()
