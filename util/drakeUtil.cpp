@@ -14,6 +14,8 @@
 #include <algorithm>
 #include <functional>
 
+#include <iostream>
+
 using namespace std;
 using namespace Eigen;
 
@@ -68,6 +70,53 @@ std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(const Eigen::MatrixBa
   }
   return std::pair<Vector3d, double>(cop, normal_torque_at_cop);
 }
+
+template <typename DerivedA, typename DerivedB, typename DerivedQ, typename DerivedR, typename DerivedK, typename DerivedS>
+void lqr(MatrixBase<DerivedA> const& A, MatrixBase<DerivedB> const& B, MatrixBase<DerivedQ> const& Q, MatrixBase<DerivedR> const& R, MatrixBase<DerivedK> & K, MatrixBase<DerivedS> & S)
+{
+  const size_t n = A.rows();
+
+  MatrixXd R_inverse = R.inverse();
+
+  MatrixXd H(2 * n, 2 * n);
+  H << A, B*R_inverse*B.transpose(), Q, -A.transpose();
+
+  MatrixXd Z = H;
+  MatrixXd Z_old;
+
+  const double tolerance = 1e-6;
+  const double max_iterations = 100;
+
+  double relative_norm;
+  size_t iteration = 0;
+
+  do {
+    Z_old = Z;
+    Z = Z - 0.5 * (Z - Z.inverse());
+    relative_norm = (Z - Z_old).norm();
+    iteration ++;
+  } while(iteration < max_iterations && relative_norm > tolerance);
+  
+  MatrixXd W11 = Z.block(0,0, n, n);
+  MatrixXd W12 = Z.block(0, n,  n, n);
+  MatrixXd W21 = Z.block(n, 0 , n, n);
+  MatrixXd W22 = Z.block(n, n, n, n);
+
+  MatrixXd lhs(2 * n, n);
+  MatrixXd rhs(2 * n, n);
+  MatrixXd eye = MatrixXd::Identity(n, n);
+  lhs << W12, W22 + eye;
+  rhs << W11 + eye, W21;
+
+  LLT<MatrixXd> lhs_cholesky((lhs.transpose()*lhs));
+
+  S = lhs_cholesky.solve(lhs.transpose())*rhs;
+  K = R_inverse*B.transpose()*S;
+}
+
+template DLLEXPORT void lqr(MatrixBase<MatrixXd> const& A, MatrixBase<MatrixXd> const& B, MatrixBase<MatrixXd> const& Q, MatrixBase<MatrixXd> const& R, MatrixBase<MatrixXd> & K, MatrixBase<MatrixXd> & S);
+template DLLEXPORT void lqr(MatrixBase< Map<MatrixXd> > const& A, MatrixBase< Map<MatrixXd> > const& B, MatrixBase< Map<MatrixXd> > const& Q, MatrixBase< Map<MatrixXd> > const& R, MatrixBase< Map<MatrixXd> > & K, MatrixBase< Map<MatrixXd> > & S);
+template DLLEXPORT void lqr(MatrixBase<MatrixXd> const& A, MatrixBase<MatrixXd> const& B, MatrixBase<MatrixXd> const& Q, MatrixBase<MatrixXd> const& R, MatrixBase< Map<MatrixXd> > & K, MatrixBase< Map<MatrixXd> > & S);
 
 template DLLEXPORT std::pair<Eigen::Matrix<double, 3, 1, 0, 3, 1>, double> resolveCenterOfPressure<Eigen::Map<Eigen::Matrix<double, 3, 1, 0, 3, 1> const, 0, Eigen::Stride<0, 0> >, Eigen::Map<Eigen::Matrix<double, 3, 1, 0, 3, 1> const, 0, Eigen::Stride<0, 0> >, Eigen::Map<Eigen::Matrix<double, 3, 1, 0, 3, 1> const, 0, Eigen::Stride<0, 0> >, Eigen::Map<Eigen::Matrix<double, 3, 1, 0, 3, 1> const, 0, Eigen::Stride<0, 0> > >(Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, 1, 0, 3, 1> const, 0, Eigen::Stride<0, 0> > > const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, 1, 0, 3, 1> const, 0, Eigen::Stride<0, 0> > > const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, 1, 0, 3, 1> const, 0, Eigen::Stride<0, 0> > > const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, 1, 0, 3, 1> const, 0, Eigen::Stride<0, 0> > > const&);
 template DLLEXPORT std::pair<Eigen::Matrix<double, 3, 1, 0, 3, 1>, double> resolveCenterOfPressure<Eigen::Matrix<double, 3, 1, 0, 3, 1>, Eigen::Matrix<double, 3, 1, 0, 3, 1>, Eigen::Matrix<double, 3, 1, 0, 3, 1>, Eigen::Matrix<double, 3, 1, 0, 3, 1> >(Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&);
