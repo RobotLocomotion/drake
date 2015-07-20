@@ -102,6 +102,10 @@ isdiscrete = all(ts(1,:)>0 | ts(2,:)==1.0);  % isDT asks for more:  must have on
 
 if (~isdiscrete)
   pstruct.Refine = '3';  % shouldn't do anything for DT systems
+else
+  h = max(ts);
+  pstruct.StartTime = num2str(floor(tspan(1)/h)*h);
+  pstruct.StopTime = num2str(floor(tspan(2)/h)*h);
 end
 
 %If we are using variable-step solver, and want to specify the output time

@@ -116,7 +116,7 @@ end
 Qfi = Qf;
 for j = 1:jmax;
   for i = N:-1:1,  
-    ts = xtraj{i}.tspan;
+    ts = xtraj{i}.tspan;   
     [c{i},Ktraj{i},Straj{i},Ptraj{i},Btraj{i},Ftraj{i},Straj_full{i}] = constrainedtvlqr(constrained_plants{i},xtraj{i},utraj{i},Q,R,Qfi,struct('tspan',ts));
     P0 = Ptraj{i}.eval(ts(1));
     S0 = Straj{i}.eval(ts(1));

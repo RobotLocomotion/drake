@@ -1,4 +1,4 @@
-load data/atlas_3mode_K5B1_passive_traj
+load data/atlas_alt3mode_K10B2_passive_traj
 
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 warning('off','Drake:RigidBodyManipulator:WeldedLinkInd');

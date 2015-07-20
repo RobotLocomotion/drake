@@ -104,7 +104,7 @@ end
 else
   Pf = null(Ff);
   Sf = Pf'*Qf*Pf;
-  Sf = Sf^(1/2);
+  Sf = real(Sf^(1/2));
   display(sprintf('Solving for P and S backwards, from %f to %f',tspan(end),tspan(1)));
   PandSfun = @(t,PandSqrtS) PandSqrtSdynamics(t,PandSqrtS,obj,dynamicsFun,xtraj,utraj,Q,R,-alpha_1,-alpha_2,numel(Pf));
   [tout,yout] = ode45(PandSfun,tspan(end:-1:1),[Pf(:);Sf(:)]);
@@ -184,6 +184,7 @@ function Pdot = getPdot(obj,t,x,u,P,alpha_1,alpha_2)
   n = length(x);
   d = n - size(P,2);
   [F,Fdot] = getFandFdot(obj,t,x,u);
+%   display(sprintf('%f: %c, %c',t,max(svd(F)),max(abs(svd(Fdot)))))
   A = kron(eye(n-d),F);
   b = -reshape(Fdot*P + alpha_1*F*P,[],1);
   ortho_err = eye(n-d) - P'*P;
@@ -206,8 +207,8 @@ if cond(A) > 1e3  %results from F*P != 0
 %   keyboard
 end
 % display(sprintf('P:%f',t))
-% Pdot = reshape(pinv(A)*b,n,n-d);
-Pdot = reshape(A\b,n,n-d);
+Pdot = reshape(pinv(A)*b,n,n-d);
+% Pdot = reshape(A\b,n,n-d);
 % [Q,R] = qr(A');
 % Pdot = reshape(Q'*(R'\b),n,n-d);
 
@@ -215,7 +216,7 @@ Pdot = reshape(A\b,n,n-d);
 %   keyboard
 % end
 
-  display(sprintf('t: %f FPerr: %e',t,max(max(abs(F*P)))))
+%   display(sprintf('t: %f FPerr: %e',t,max(max(abs(F*P)))))
 end
 
 function PandSqrtSdotydot = PandSqrtSdynamics(t,PandSqrtS,p,dynamicsfn,xtraj,utraj,Q,R,alpha_1,alpha_2,dimP)
@@ -245,8 +246,11 @@ function PandSqrtSdotydot = PandSqrtSdynamics(t,PandSqrtS,p,dynamicsfn,xtraj,utr
   sqrtSdot = -A_t'*sqrtS + .5*sqrtS*sqrtS'*B_t*inv(R)*B_t'*sqrtS - .5*P_t'*Q*P_t*inv(sqrtS)';
 
   PandSqrtSdotydot = [Pdot_t(:);sqrtSdot(:)];
+%   display(sprintf('t: %f xd: %e',t,norm(xd)))
   % display(sprintf('S: %f',t))  
 %   display(sprintf('%f: %c',t,cond(sqrtS)))
+%   display(sprintf('%f: %c, %c',t,max(abs(eig(A))),max(abs(eig(A_t)))))
+%   display(sprintf('%f: %c, %c',t,max(svd(Pdot_t)),max(abs(eig(A_t)))))
 end
 
 function Pdot = Pdynamics(obj,t,xtraj,utraj,P,alpha_1,alpha_2)
