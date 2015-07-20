@@ -1,6 +1,7 @@
 function [sol,sol_bilinear] = testOptimalPolyhedronContactsLinFC(verts)
 % NOTEST
 checkDependency('spotless');
+addpath(fullfile(pwd,'..'));
 if(nargin<1)
   verts = 0.04*randn(3,1000);
 end

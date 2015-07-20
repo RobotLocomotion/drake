@@ -1,5 +1,6 @@
 function testFixedContactsSearchQ1
 checkDependency('spotless');
+addpath(fullfile(pwd,'..'));
 num_contacts = 4;
 num_fc_edges = 4;
 mu_face = 1;

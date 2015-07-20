@@ -1,6 +1,7 @@
 function [sol,sol_bilinear,info,solver_time] = testOptimalEllipseGraspLinFC(A_ellipse,b_ellipse)
 % NOTEST
 checkDependency('spotless');
+addpath(fullfile(pwd,'..'));
 if(nargin<1)
   quat = randn(4,1);
   quat = quat/norm(quat);

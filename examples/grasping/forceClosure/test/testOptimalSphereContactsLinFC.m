@@ -1,6 +1,7 @@
 function [sol,sol_bilinear,info,solver_time] = testOptimalSphereContactsLinFC()
 % NOTEST
 checkDependency('spotless');
+addpath(fullfile(pwd,'..'));
 num_contacts = 3;
 num_fc_edges = 4;
 mu_face = 1;

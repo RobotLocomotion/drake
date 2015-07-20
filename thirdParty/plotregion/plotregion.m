@@ -25,7 +25,7 @@ function plotregion(A,b,lb,ub,c,transp,points,linetyp,start_end)
 % If several regions must be plotted A ,b, lb, ub and c can be stored as a cell array {}
 % containing all sub-set information (see example1.m and example3.m). 
 %
-% Written by Per Bergström 2006-01-16
+% Written by Per Bergstrï¿½m 2006-01-16
 
 
 if nargin<2
@@ -507,4 +507,4 @@ else      %  A is not a cell
     end
     
 end
-
+warning on

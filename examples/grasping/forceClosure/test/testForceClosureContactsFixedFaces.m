@@ -1,5 +1,6 @@
 function testForceClosureContactsFixedFaces()
 checkDependency('spotless');
+addpath(fullfile(pwd,'..'));
 verts = repmat([0.025;0.03;0.02],1,8).*[1 1 1 1 -1 -1 -1 -1;1 1 -1 -1 1 1 -1 -1;1 -1 1 -1 1 -1 1 -1];
 face_idx = [1,2,3,4];
 mu_face = 2;

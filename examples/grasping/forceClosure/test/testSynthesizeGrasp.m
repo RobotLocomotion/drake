@@ -12,6 +12,7 @@ function testSynthesizeGrasp
 % test_userfun(p);
 % 
 checkDependency('spotless');
+addpath(fullfile(pwd,'..'));
 display('test SynthesizeGraspSphere on a small sphere');
 p = SynthesizeGraspSphere(0.02,100+randn(3,1),3,1);
 test_userfun(p);

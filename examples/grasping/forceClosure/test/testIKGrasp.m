@@ -3,6 +3,7 @@ function testIKGrasp(geometry)
 %             -- 2 grasp a cylinder
 % NOTEST
 checkDependency('spotless');
+addpath(fullfile(pwd,'..'));
 if(nargin<1)
   geometry = 2;
 end
