@@ -151,7 +151,7 @@ classdef AccelConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimiza
       nC = obj.nC;
       
       % use the shared data objects for the dynamics at the knot points
-      xdot0 = data0.xdot
+      xdot0 = data0.xdot;
       dxdot0 = data0.dxdot;
       xdot1 = data1.xdot;
       dxdot1 = data1.dxdot;
