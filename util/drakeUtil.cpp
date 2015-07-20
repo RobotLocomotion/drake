@@ -14,8 +14,6 @@
 #include <algorithm>
 #include <functional>
 
-#include <iostream>
-
 using namespace std;
 using namespace Eigen;
 
@@ -76,14 +74,15 @@ void lqr(MatrixBase<DerivedA> const& A, MatrixBase<DerivedB> const& B, MatrixBas
 {
   const size_t n = A.rows();
 
-  MatrixXd R_inverse = R.inverse();
+  LLT<MatrixXd> R_cholesky(R);
 
   MatrixXd H(2 * n, 2 * n);
-  H << A, B*R_inverse*B.transpose(), Q, -A.transpose();
+  H << A, B*R_cholesky.solve(B.transpose()), Q, -A.transpose();
 
   MatrixXd Z = H;
   MatrixXd Z_old;
 
+  //these could be options
   const double tolerance = 1e-6;
   const double max_iterations = 100;
 
@@ -111,7 +110,7 @@ void lqr(MatrixBase<DerivedA> const& A, MatrixBase<DerivedB> const& B, MatrixBas
   JacobiSVD<MatrixXd> svd(lhs, ComputeThinU | ComputeThinV);
 
   S = svd.solve(rhs);
-  K = R_inverse*B.transpose()*S;
+  K = R_cholesky.solve(B.transpose()*S);
 }
 
 template DLLEXPORT void lqr(MatrixBase<MatrixXd> const& A, MatrixBase<MatrixXd> const& B, MatrixBase<MatrixXd> const& Q, MatrixBase<MatrixXd> const& R, MatrixBase<MatrixXd> & K, MatrixBase<MatrixXd> & S);
