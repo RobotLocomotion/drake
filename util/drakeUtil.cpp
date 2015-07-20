@@ -96,7 +96,7 @@ void lqr(MatrixBase<DerivedA> const& A, MatrixBase<DerivedB> const& B, MatrixBas
     relative_norm = (Z - Z_old).norm();
     iteration ++;
   } while(iteration < max_iterations && relative_norm > tolerance);
-  
+
   MatrixXd W11 = Z.block(0,0, n, n);
   MatrixXd W12 = Z.block(0, n,  n, n);
   MatrixXd W21 = Z.block(n, 0 , n, n);
@@ -108,9 +108,9 @@ void lqr(MatrixBase<DerivedA> const& A, MatrixBase<DerivedB> const& B, MatrixBas
   lhs << W12, W22 + eye;
   rhs << W11 + eye, W21;
 
-  LLT<MatrixXd> lhs_cholesky((lhs.transpose()*lhs));
+  JacobiSVD<MatrixXd> svd(lhs, ComputeThinU | ComputeThinV);
 
-  S = lhs_cholesky.solve(lhs.transpose())*rhs;
+  S = svd.solve(rhs);
   K = R_inverse*B.transpose()*S;
 }
 
