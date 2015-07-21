@@ -12,8 +12,13 @@ classdef SynthesizeGraspFreeFaces < ForceClosureContacts
       % @param verts. A 3 x N matrix, obj.Pobj is the convex hull of all the verts
       % @param num_contacts   A scalar. The number of contact points
       % @param mu_face    A scalar. The friction coefficient
-      % @param shrink_factor   The factor to shrink each face of the polyhedron. The
-      % shrunk region is the allowable region for contact
+      % @param shrink_factor   To avoid edge contact, we define the allowalbe contact 
+      %                        region to be the shrunk region of each facet.
+      %                        shrink_factor = 1 corresponds to the whole
+      %                        region, shrink_factor = 0 corresponds to
+      %                        only the center point of each facet
+      % @param options      A struct, refer to the parent class for more
+      %                     details
       if(nargin<5)
         options = struct();
       end
