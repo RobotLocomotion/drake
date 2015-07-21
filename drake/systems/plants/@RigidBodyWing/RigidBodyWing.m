@@ -424,7 +424,8 @@ classdef RigidBodyWing < RigidBodyForceElement
       nq = size(q,1);
       frame = getFrame(manip,obj.kinframe);
       
-      kinsol = doKinematics(manip,q,true,true,qd);
+      kin_options.compute_gradients = nargout > 1;
+      kinsol = doKinematics(manip, q, qd, kin_options);
 
       if (nargout > 1)
 
@@ -660,10 +661,10 @@ classdef RigidBodyWing < RigidBodyForceElement
       
       if (nargout>1)
         
-        [~,J] = forwardKin(manip,kinsol,kinframe,zeros(3,1));
-        [Jdot_times_v, dJdot_times_v] = forwardJacDotTimesV(manip,kinsol,kinframe,zeros(3,1));
-        wingvel_world_xyz = Jdot_times_v; % assume still air. Air flow over the wing
-        dwingvel_worlddq = dJdot_times_v;
+        [~, J, dJ] = forwardKin(manip,kinsol,kinframe,zeros(3,1));
+        wingvel_world_xyz = J*qd; % assume still air. Air flow over the wing
+        nq = length(q);
+        dwingvel_worlddq = matGradMult(reshape(dJ, numel(J), nq), qd);
         dwingvel_worlddqd = J;
       else
         kinsol = doKinematics(manip,q);
