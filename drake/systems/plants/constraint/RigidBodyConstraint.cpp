@@ -912,7 +912,7 @@ void RelativePositionConstraint::evalPositions(Matrix3Xd &pos, MatrixXd &J) cons
   const auto& bodyA_pos = bodyA_pos_gradientvar.value();
   const auto& JA = bodyA_pos_gradientvar.gradient().value();
 
-  auto wTb_gradientvar = robot->forwardKinNew(Vector3d::Zero().eval(), bodyB_idx, bodyB_idx, 2, 1);
+  auto wTb_gradientvar = robot->forwardKinNew(Vector3d::Zero().eval(), bodyB_idx, 0, 2, 1);
   const auto& wTb = wTb_gradientvar.value();
   const auto& dwTb = wTb_gradientvar.gradient().value();
 
@@ -1089,7 +1089,7 @@ void RelativeQuatConstraint::evalOrientationProduct(double &prod, MatrixXd &dpro
   const auto& J_a = pos_a_gradientvar.gradient().value();
   auto pos_b_gradientvar = robot->forwardKinNew(origin_pt, bodyB_idx, 0, 2, 1);
   const auto& pos_b = pos_b_gradientvar.value();
-  const auto& J_b = pos_a_gradientvar.gradient().value();
+  const auto& J_b = pos_b_gradientvar.gradient().value();
 
   Vector4d quat_a2w = pos_a.block(3,0,4,1);
   MatrixXd dquat_a2w = J_a.block(3,0,4,nq);
@@ -1755,7 +1755,7 @@ void Point2PointDistanceConstraint::eval(const double* t, VectorXd &c, MatrixXd 
     MatrixXd dposB(3*this->ptB.cols(),this->robot->num_positions);
     if(this->bodyB != 0)
     {
-      auto posB_gradientvar = robot->forwardKinNew(ptA, bodyB, 0, 0, 1);
+      auto posB_gradientvar = robot->forwardKinNew(ptB, bodyB, 0, 0, 1);
       posB = posB_gradientvar.value();
       dposB = posB_gradientvar.gradient().value();
     }
