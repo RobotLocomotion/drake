@@ -6,6 +6,10 @@ using namespace Eigen;
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
+    if (nrhs != 4 || nlhs != 2) {
+        mexErrMsgIdAndTxt("Drake:lqrmex:InvalidUsage","Usage: [K, S] = lqrmex(A, B, Q, R)");
+    }
+
     const size_t A_rows = mxGetM(prhs[0]);
     const size_t A_cols = mxGetN(prhs[0]);
 
@@ -28,6 +32,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     Map<MatrixXd> B(mxGetPr(prhs[1]), B_rows, B_cols);
     Map<MatrixXd> Q(mxGetPr(prhs[2]), Q_rows, Q_cols);
     Map<MatrixXd> R(mxGetPr(prhs[3]), R_rows, R_cols);
+
 
     plhs[0] = mxCreateDoubleMatrix(R_rows, A_cols, mxREAL);
     plhs[1] = mxCreateDoubleMatrix(A_rows, A_cols, mxREAL);
