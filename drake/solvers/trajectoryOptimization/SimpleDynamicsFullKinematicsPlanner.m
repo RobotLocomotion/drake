@@ -113,7 +113,8 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
     end
 
     function data = kinematicsData(obj,q)
-      data = doKinematics(obj.robot,q,false,false);
+      options.compute_gradients = true;
+      data = doKinematics(obj.robot,q,[],options);
     end
 
     function obj = setFixInitialState(obj,flag,x0)
