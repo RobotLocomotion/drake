@@ -34,6 +34,13 @@ for i=0:(nodes.getLength()-1)
   end  
 end
 
+% delete the parameter nodes
+while (parameters.getLength()>0)
+  parent = parameters.item(0).getParentNode();
+  parent.removeChild(parameters.item(0));
+  parameters = urdf.getElementsByTagName('parameter');
+end
+
 xmlwrite(output_urdf_filename,urdf);
 fprintf('Output written to %s\n',output_urdf_filename);
 
