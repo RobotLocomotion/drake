@@ -14,8 +14,6 @@ using namespace Eigen;
 FixedAxisOneDoFJoint::FixedAxisOneDoFJoint(const std::string& name, const Isometry3d& transform_to_parent_body, const Matrix<double, TWIST_SIZE, 1>& joint_axis) :
     DrakeJoint(name, transform_to_parent_body, 1, 1),
     joint_axis(joint_axis),
-    joint_limit_min(-std::numeric_limits<double>::infinity()),
-    joint_limit_max(std::numeric_limits<double>::infinity()),
 		damping(0.0),
 		coulomb_friction(0.0),
 		coulomb_window(0.0)
@@ -34,8 +32,8 @@ void FixedAxisOneDoFJoint::setJointLimits(double joint_limit_min, double joint_l
     throw std::logic_error("joint_limit_min cannot be larger than joint_limit_max");
   }
 
-  this->joint_limit_min = joint_limit_min;
-  this->joint_limit_max = joint_limit_max;
+  this->joint_limit_min[0] = joint_limit_min;
+  this->joint_limit_max[0] = joint_limit_max;
 }
 
 
@@ -67,7 +65,7 @@ Eigen::VectorXd FixedAxisOneDoFJoint::randomConfiguration(std::default_random_en
 {
 	Eigen::VectorXd q(1);
 	if (isFinite(joint_limit_min) && isFinite(joint_limit_max)) {
-    std::uniform_real_distribution<double> distribution(joint_limit_min, joint_limit_max);
+    std::uniform_real_distribution<double> distribution(joint_limit_min.value(), joint_limit_max.value());
     q[0] = distribution(generator);
   }
   else {
@@ -75,21 +73,21 @@ Eigen::VectorXd FixedAxisOneDoFJoint::randomConfiguration(std::default_random_en
     double stddev = 1.0;
     double joint_limit_offset = 1.0;
     if (isFinite(joint_limit_min)) {
-      distribution = std::normal_distribution<double>(joint_limit_min + joint_limit_offset, stddev);
+      distribution = std::normal_distribution<double>(joint_limit_min.value() + joint_limit_offset, stddev);
     }
     else if (isFinite(joint_limit_max)) {
-      distribution = std::normal_distribution<double>(joint_limit_max - joint_limit_offset, stddev);
+      distribution = std::normal_distribution<double>(joint_limit_max.value() - joint_limit_offset, stddev);
     }
     else {
       distribution = std::normal_distribution<double>();
     }
 
     q[0] = distribution(generator);
-    if (q[0] < joint_limit_min) {
-      q[0] = joint_limit_min;
+    if (q[0] < joint_limit_min.value()) {
+      q[0] = joint_limit_min.value();
     }
-    if (q[0] > joint_limit_max) {
-      q[0] = joint_limit_max;
+    if (q[0] > joint_limit_max.value()) {
+      q[0] = joint_limit_max.value();
     }
   }
 	return q;

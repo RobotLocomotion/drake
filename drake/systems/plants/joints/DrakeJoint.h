@@ -19,8 +19,6 @@
   #define DLLEXPORT_DRAKEJOINT
 #endif
 
-#define INF -2147483648    // this number is only used for checking the pitch to see if it's a revolute joint or a helical joint, and is set to match the value handed to us for inf from matlab.
-
 class RigidBody;
 class RigidBodyManipulator;
 
@@ -45,6 +43,8 @@ private:
 protected:
   typedef Eigen::Matrix<double, 6, 1> Vector6d;
   const std::string name;
+  Eigen::VectorXd joint_limit_min;
+  Eigen::VectorXd joint_limit_max;
 
 public:
   DrakeJoint(const std::string& name, const Eigen::Isometry3d& transform_to_parent_body, int num_positions, int num_velocities);
@@ -79,6 +79,10 @@ public:
   virtual void v2qdot(const Eigen::Ref<const Eigen::VectorXd>& q, Eigen::MatrixXd& v_to_qdot, Eigen::MatrixXd* dv_to_qdot) const = 0;
 
   virtual GradientVar<double, Eigen::Dynamic, 1> frictionTorque(const Eigen::Ref<const Eigen::VectorXd>& v, int gradient_order) const;
+
+  virtual const Eigen::VectorXd& getJointLimitMin() const;
+
+  virtual const Eigen::VectorXd& getJointLimitMax() const;
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;

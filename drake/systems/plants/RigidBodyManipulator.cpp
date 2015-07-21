@@ -192,16 +192,26 @@ void RigidBodyManipulator::compile(void)
 
   resize(_num_positions, num_bodies, num_frames); // TODO: change _num_positions to num_positions above after removing this
 
-  joint_limit_min = VectorXd::Constant(num_positions,-std::numeric_limits<double>::infinity());
-  joint_limit_max = VectorXd::Constant(num_positions,std::numeric_limits<double>::infinity());
+  // gather joint limits in RBM vector
+  joint_limit_min = VectorXd::Constant(num_positions, -std::numeric_limits<double>::infinity());
+  joint_limit_max = VectorXd::Constant(num_positions, std::numeric_limits<double>::infinity());
+  for (int i = 0; i < num_bodies; i++) {
+    auto& body = bodies[i];
+    if (body->hasParent()) {
+      const DrakeJoint& joint = body->getJoint();
+      joint_limit_min.segment(body->position_num_start, joint.getNumPositions()) = joint.getJointLimitMin();
+      joint_limit_max.segment(body->position_num_start, joint.getNumPositions()) = joint.getJointLimitMax();
+    }
+  }
 
   for (int i=0; i<num_bodies; i++) {
-    if (!bodies[i]->hasParent())
-      updateCollisionElements(bodies[i]);  // update static objects (not done in the kinematics loop)
+    auto& body = bodies[i];
+    if (!body->hasParent())
+      updateCollisionElements(body);  // update static objects (not done in the kinematics loop)
 
     // update the body's contact points
     Matrix3Xd contact_pts;
-    getTerrainContactPoints(*bodies[i], bodies[i]->contact_pts);
+    getTerrainContactPoints(*body, body->contact_pts);
   }
 
   cached_q.resize(num_positions);
