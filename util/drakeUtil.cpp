@@ -69,6 +69,8 @@ std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(const Eigen::MatrixBa
   return std::pair<Vector3d, double>(cop, normal_torque_at_cop);
 }
 
+//Based on the Matrix Sign Function method outlined in this paper:
+//http://www.engr.iupui.edu/~skoskie/ECE684/Riccati_algorithms.pdf
 template <typename DerivedA, typename DerivedB, typename DerivedQ, typename DerivedR, typename DerivedK, typename DerivedS>
 void lqr(MatrixBase<DerivedA> const& A, MatrixBase<DerivedB> const& B, MatrixBase<DerivedQ> const& Q, MatrixBase<DerivedR> const& R, MatrixBase<DerivedK> & K, MatrixBase<DerivedS> & S)
 {
