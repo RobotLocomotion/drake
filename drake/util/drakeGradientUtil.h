@@ -7,6 +7,7 @@
 #include <vector>
 #include <array>
 #include <assert.h>
+#include <stdexcept>
 
 #undef DLLEXPORT
 #if defined(WIN32) || defined(WIN64)
