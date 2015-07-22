@@ -328,7 +328,7 @@ function [uf,rho] = findURhowithSats(V,x,u,f,f_umax,f_umin,umax,umin,L1,Lu1,Lu2,
     [prog,info] = sedumi(prog,-rho,1,pars,1)   
     
     if info.numerr == 2 || info.pinf == 1 || info.dinf == 1
-        keyboard;
+      error('No solution found');
     end
         
     disp('Backing off now...')
