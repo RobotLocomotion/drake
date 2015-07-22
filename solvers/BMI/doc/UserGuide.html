@@ -114,16 +114,16 @@ where $F_0,F_i,F_{ij}\in\mathbb{R}^{m\times m}$ are given matrices. $\succeq 0$ 
 <p> There are many methods to solve such BMI. We implement the method described in <elib>Ibaraki01</elib>,<elib>Dai15</elib>. This method replaces the bilinear product $xx^T$ by a symmetric matrix $X\in\mathbb{R}^{n\times n}$, and enforce the following constraints instead of \eqref{eq:bmi}
 \begin{align}
 F_0+\sum_{i=1}^nx_iF_i + \sum_{i,j=1}^n X_{ij}F_{ij}\succeq 0\label{eq:bmi_to_lmi}\\
-\text{rank}\left(\begin{bmatrix}X&x\\x^T&1\end{bmatrix}\right) = 1\label{eq:rank1}
+M:=\begin{bmatrix}X&x\\x^T&1\end{bmatrix}\succeq 0\label{eq:psd_M}\\
+\text{rank}\left(M\right) = 1\label{eq:rank1}
 \end{align}
-Notice that constraint \eqref{eq:rank1} enforces $X=xx^T$. Constraint \eqref{eq:bmi_to_lmi} is a convex constraint on $x,X$.
+Notice that constraints \eqref{eq:psd_M} and \eqref{eq:rank1} enforce $X=xx^T$. Constraint \eqref{eq:bmi_to_lmi} and \eqref{eq:psd_M} are convex constraints on $x,X$.
 </p>
-<p>The non-convex rank constraint \eqref{eq:rank1} can be reformulated as the following two constraints
+<p>The non-convex rank constraint \eqref{eq:rank1} can be reformulated as the following constraint
 \begin{align}
-\begin{bmatrix}X&x\\x^T&1\end{bmatrix}\succeq 0\label{eq:psd_W}\\
 \text{trace}(X)-x^Tx = 0\label{eq:residue}
 \end{align}
-where constraint \eqref{eq:psd_W} is convex in $x,X$. To enforce constraint \eqref{eq:residue}, we can linearize this constraint and solve it iteratively. As a result, we end up with the following algorithm
+To enforce constraint \eqref{eq:residue}, we can linearize this constraint and solve it iteratively. As a result, we end up with the following algorithm
 <ol>
 	<li>Start with $x^{(0)}=\mathbf{0}$.</li>
 	<li>At iteration $k$, solve the following convex problem
@@ -171,11 +171,11 @@ It is proved that this algorithm will converge.
 	</li>
 	<li><i>replaceBilinearProduct</i>
 	<ol>
-		<li> If the bilinear expression in constraint \eqref{eq:bmi} is too complicated to rewritten using matrix $X$ by hand, then the user can call function
+		<li> If the bilinear expression in constraint \eqref{eq:bmi} is too complicated to rewrite using matrix $X$ by hand, then the user can call function
 		<pre><code language="matlab">
-		expr_bilinear = replaceBilinearProduct(expr,x,X);
+		expression_bilinear = replaceBilinearProduct(expression,x,X);
 		</code></pre>
-		The returned argument is the expression in which the bilinear expression of $x$ is replaced by the proper entry of $X$.
+		The returned argument is the expression in which the bilinear product of $x$ is replaced by proper entries of $X$.
 		</li>
 		<li> In the previous example, if we call
 		<pre><code language="matlab">
