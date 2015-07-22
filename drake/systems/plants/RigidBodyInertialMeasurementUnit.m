@@ -36,7 +36,7 @@ classdef RigidBodyInertialMeasurementUnit < RigidBodySensor
       kinsol = doKinematics(manip,q,false,true,qd);
       
       [x,J] = forwardKin(manip,kinsol,obj.body,obj.xyz,1);
-      Jdot_times_v = forwardJacDotTimesV(manip,kinsol,obj.body,obj.xyz,0,0);
+      Jdot_times_v = forwardJacDotTimesV(manip, kinsol, obj.body, obj.xyz, 0, 1);
       
       % x = f(q)
       % xdot = dfdq*dqdt = J*qd
