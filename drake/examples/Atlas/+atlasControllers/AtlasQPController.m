@@ -310,7 +310,7 @@ classdef AtlasQPController < QPController
       for ii=1:obj.n_body_accel_bounds
         body_idx = obj.body_accel_bounds(ii).body_idx;
         [~,Jb] = forwardKin(r,kinsol,body_idx,[0;0;0],1);
-        Jbdot_times_v = forwardJacDotTimesV(r, kinsol, body_idx, [0; 0; 0], 1, 0);
+        Jbdot_times_v = forwardJacDotTimesV(r, kinsol, body_idx, [0; 0; 0], 1, 1);
         Ain_{constraint_index} = Jb*Iqdd;
         bin_{constraint_index} = -Jbdot_times_v + obj.body_accel_bounds(ii).max_acceleration;
         constraint_index = constraint_index + 1;
@@ -334,7 +334,7 @@ classdef AtlasQPController < QPController
           body_vdot = body_input(2:7);
           if ~any(active_supports==body_ind)
             [~,J] = forwardKin(r,kinsol,body_ind,[0;0;0],1);
-            Jdot_times_v = forwardJacDotTimesV(r, kinsol, body_ind, [0; 0; 0], 0, 0);
+            Jdot_times_v = forwardJacDotTimesV(r, kinsol, body_ind, [0; 0; 0], 0, 1);
             cidx = ~isnan(body_vdot);
             Aeq_{eq_count} = J(cidx,:)*Iqdd;
             beq_{eq_count} = -Jdot_times_v(cidx) + body_vdot(cidx);
@@ -407,10 +407,10 @@ classdef AtlasQPController < QPController
           body_vdot = body_input(2:7);
           if ~any(active_supports==body_ind)
             [~,J] = forwardKin(r,kinsol,body_ind,[0;0;0],1);
-            Jdot_times_v = forwardJacDotTimesV(r, kinsol, body_ind, [0; 0; 0], 1, 0);
+            Jdot_times_v = forwardJacDotTimesV(r, kinsol, body_ind, [0; 0; 0], 1, 1);
             cidx = ~isnan(body_vdot);
             Hqp(1:nq,1:nq) = Hqp(1:nq,1:nq) + w*J(cidx,:)'*J(cidx,:);
-            fqp = fqp + w*Jdot_times_v(cidx)'- body_vdot(cidx)')*J(cidx,:)*Iqdd;
+            fqp = fqp + w*(Jdot_times_v(cidx)'- body_vdot(cidx)')*J(cidx,:)*Iqdd;
           end
         end
       end
