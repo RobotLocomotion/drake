@@ -280,6 +280,8 @@ DLLEXPORT Eigen::Matrix<TrigPolyd, Eigen::Dynamic, Eigen::Dynamic> trigPolyToEig
     m[q(i).getSimpleVariable()] = sc;
   }
 
+  // todo: feels very inefficient (one copy of the sincosmap for every element of the matrix).
+  // consider using shared_ptrs for the sincosmap instead.
   Matrix<TrigPolyd, Dynamic, Dynamic> tp(p.rows(),p.cols());
   for (int i=0; i<p.size(); i++) {
     tp(i) = TrigPolyd(p(i),m);
