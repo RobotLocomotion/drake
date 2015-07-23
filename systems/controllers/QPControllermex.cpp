@@ -241,8 +241,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   //---------------------------------------------------------------------
   // Compute active support from desired supports -----------------------
   MatrixXd all_body_contact_pts;
-  Vector4d contact_pt = Vector4d::Zero();
-  contact_pt(3) = 1.0;
+  Vector3d contact_pt = Vector3d::Zero();
 
   vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> active_supports;
   set<int> contact_bodies; // redundant, clean up later
@@ -408,8 +407,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   
   // add in body spatial equality constraints
   VectorXd body_vdot;
-  MatrixXd orig = MatrixXd::Zero(4,1);
-  orig(3,0) = 1;
+  Vector3d orig(0.0, 0.0, 0.0);
+  
   int body_idx;
   int equality_ind = 6+neps;
   MatrixXd Jb(6,nq);

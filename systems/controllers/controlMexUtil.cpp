@@ -13,8 +13,7 @@ std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> p
   }
   int i, j;
   MatrixXd contact_pts;
-  Vector4d contact_pt = Vector4d::Zero();
-  contact_pt(3) = 1.0;
+  Vector3d contact_pt = Vector3d::Zero();
   int num_pts;
   std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> supports;
   const mxArray* pm;

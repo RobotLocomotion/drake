@@ -231,51 +231,51 @@ public:
   bool collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances, bool use_margins=false);
 
   bool collisionDetect( VectorXd& phi,
-                        MatrixXd& normal,
-                        MatrixXd& xA,
-                        MatrixXd& xB,
+                        Matrix3Xd& normal,
+                        Matrix3Xd& xA,
+                        Matrix3Xd& xB,
                         std::vector<int>& bodyA_idx,
                         std::vector<int>& bodyB_idx,
                         const std::vector<DrakeCollision::ElementId>& ids_to_check,
                         bool use_margins);
 
-  bool collisionDetect( VectorXd& phi, MatrixXd& normal,
-                        MatrixXd& xA, MatrixXd& xB,
+  bool collisionDetect( VectorXd& phi, Matrix3Xd& normal,
+                        Matrix3Xd& xA, Matrix3Xd& xB,
                         std::vector<int>& bodyA_idx,
                         std::vector<int>& bodyB_idx,
                         const std::vector<int>& bodies_idx,
                         const std::set<std::string>& active_element_groups,
                         bool use_margins = true);
 
-  bool collisionDetect( VectorXd& phi, MatrixXd& normal,
-                        MatrixXd& xA, MatrixXd& xB,
+  bool collisionDetect( VectorXd& phi, Matrix3Xd& normal,
+                        Matrix3Xd& xA, Matrix3Xd& xB,
                         std::vector<int>& bodyA_idx,
                         std::vector<int>& bodyB_idx,
                         const std::vector<int>& bodies_idx,
                         bool use_margins = true);
 
-  bool collisionDetect( VectorXd& phi, MatrixXd& normal,
-                        MatrixXd& xA, MatrixXd& xB,
+  bool collisionDetect( VectorXd& phi, Matrix3Xd& normal,
+                        Matrix3Xd& xA, Matrix3Xd& xB,
                         std::vector<int>& bodyA_idx,
                         std::vector<int>& bodyB_idx,
                         const std::set<std::string>& active_element_groups,
                         bool use_margins = true);
 
-  bool collisionDetect( VectorXd& phi, MatrixXd& normal,
-                        MatrixXd& xA, MatrixXd& xB,
+  bool collisionDetect( VectorXd& phi, Matrix3Xd& normal,
+                        Matrix3Xd& xA, Matrix3Xd& xB,
                         std::vector<int>& bodyA_idx,
                         std::vector<int>& bodyB_idx,
                         bool use_margins = true);
 
 
   bool allCollisions(std::vector<int>& bodyA_idx, std::vector<int>& bodyB_idx,
-                     MatrixXd& ptsA, MatrixXd& ptsB,
+                     Matrix3Xd& ptsA, Matrix3Xd& ptsB,
                         bool use_margins = true);
 
   void potentialCollisions(Eigen::VectorXd& phi,
-                           Eigen::MatrixXd& normal,
-                           Eigen::MatrixXd& xA,
-                           Eigen::MatrixXd& xB,
+                           Eigen::Matrix3Xd& normal,
+                           Eigen::Matrix3Xd& xA,
+                           Eigen::Matrix3Xd& xB,
                            std::vector<int>& bodyA_idx,
                            std::vector<int>& bodyB_idx,
                            bool use_margins = true);
@@ -374,8 +374,8 @@ private:
   void doKinematics(double* q, bool b_compute_second_derivatives=false, double* qd=NULL);
 
   //helper functions for contactConstraints
-  void accumulateContactJacobian(const int bodyInd, MatrixXd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & J);
-  void accumulateSecondOrderContactJacobian(const int bodyInd, MatrixXd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & dJ);
+  void accumulateContactJacobian(const int bodyInd, Matrix3Xd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & J);
+  void accumulateSecondOrderContactJacobian(const int bodyInd, Matrix3Xd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & dJ);
 
   void updateCompositeRigidBodyInertias(int gradient_order);
 

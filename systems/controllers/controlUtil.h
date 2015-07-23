@@ -32,7 +32,7 @@ typedef Matrix<double, 7,1> Vector7d;
 typedef struct _support_state_element
 {
   int body_idx;
-  std::vector<Vector4d, aligned_allocator<Vector4d>> contact_pts;
+  std::vector<Vector3d, aligned_allocator<Vector3d>> contact_pts;
   bool support_logic_map[4];
   bool use_support_surface;
   Vector4d support_surface; // 4-vector describing a support surface: [v; b] such that v' * [x;y;z] + b == 0

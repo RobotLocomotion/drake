@@ -39,7 +39,7 @@ RigidBody::RigidBody(void) :
 	mass = 0.0;
 	floating = 0;
 	pitch = 0;
-	com << Vector3d::Zero(), 1;
+	com = Vector3d::Zero();
 	I << Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
 	T = Matrix4d::Identity();
 	Tdot = Matrix4d::Zero();

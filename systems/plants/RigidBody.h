@@ -95,7 +95,7 @@ public:
   std::vector< DrakeCollision::ElementId > collision_element_ids;
   std::map< std::string, std::vector<DrakeCollision::ElementId> > collision_element_groups;
 
-  MatrixXd contact_pts;
+  Matrix3Xd contact_pts;
 
   std::set<int> ancestor_dofs;
   std::set<int> ddTdqdq_nonzero_rows;
@@ -108,7 +108,7 @@ public:
   MatrixXd ddTdqdq;
 
   double mass;
-  Vector4d com;  // this actually stores [com;1] (because that's what's needed in the kinematics functions)
+  Vector3d com; 
   Matrix<double, TWIST_SIZE, TWIST_SIZE> I;
 
   DrakeJoint::MotionSubspaceType S;

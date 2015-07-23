@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
 //  }
 
   VectorXd phi;
-  MatrixXd normal, xA, xB;
+  Matrix3Xd normal, xA, xB;
   vector<int> bodyA_idx, bodyB_idx;
 
   model->collisionDetect(phi,normal,xA,xB,bodyA_idx,bodyB_idx);
