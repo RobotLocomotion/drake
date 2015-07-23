@@ -48,5 +48,5 @@ else
 end
 valuecheck(abs(expmap2quat(w2)'*expmap2quat(w2_closest)),1,1e-3);
 [~,dw2_closest_dw2_numeric] = geval(@(w2) closestExpmap(w1,w2),w2,struct('grad_method','numerical'));
-valuecheck(dw2_closest_dw2,dw2_closest_dw2_numeric,1e-3);
+valuecheck(dw2_closest_dw2,dw2_closest_dw2_numeric,1e-2);
 end

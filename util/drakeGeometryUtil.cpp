@@ -1370,9 +1370,9 @@ void quat2expmapSequence(const Ref<const Matrix<double,4,Dynamic>> &quat, const 
     expmap_dot.col(i) = expmap_grad.gradient().value()*quat_dot.col(i);
     if(i>=1)
     {
-      auto unwrap_grad = unwrapExpmap(expmap.col(i-1),expmap.col(i),1);
-      expmap.col(i) = unwrap_grad.value();
-      expmap_dot.col(i) = unwrap_grad.gradient().value()*expmap_dot.col(i);
+      auto closest_grad = closestExpmap(expmap.col(i-1),expmap.col(i),1);
+      expmap.col(i) = closest_grad.value();
+      expmap_dot.col(i) = closest_grad.gradient().value()*expmap_dot.col(i);
     }
   }
 }
