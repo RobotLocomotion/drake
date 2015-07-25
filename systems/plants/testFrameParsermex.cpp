@@ -1,13 +1,13 @@
 #include "mex.h"
 #include <iostream>
-#include "drakeUtil.h"
+#include "drakeMexUtil.h"
 #include "RigidBodyManipulator.h"
 #include <Eigen/Dense>
 
 using namespace std;
 
 #define BUF_SIZE 256
-#define EPSILON 1e-6
+#define FRAME_PARSER_EPSILON 1e-6
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) 
 {
@@ -27,7 +27,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   for (size_t x = 0; x < model->num_frames ; x++) {
   	double err = (model->frames[x].Ttree - cpp_model.frames[x].Ttree).norm();
   	
-  	if (err > EPSILON) {
+  	if (err > FRAME_PARSER_EPSILON) {
   		mexErrMsgIdAndTxt("Drake:testFrameParsermex:FrameTransformMismatch", "The homogeneous frame transformation matrix did not match");		
   	}
 

@@ -26,7 +26,7 @@ v = r.constructVisualizer();
 v.draw(0, xstar);
 if isa(v, 'BotVisualizer')
   lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(), 'footstep_plan');
-  plan.draw_lcmgl(lcmgl);
+  plan.settings.draw_lcmgl(lcmgl);
   lcmgl.switchBuffers();
 else
   figure(25)

@@ -43,7 +43,7 @@ classdef PlanEval < handle
         else
           obj.plan_queue(1) = [];
         end
-        obj.plan_queue{1}.start_time = t;
+        obj.plan_queue{1}.setStartTime(t);
       end
     end
 

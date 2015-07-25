@@ -37,8 +37,9 @@ double randomSpeedTest(int ntests) {
     double x1 = uniform(generator);
     double x2 = uniform(generator);
 
-    PiecewisePolynomial<double> result = twoWaypointCubicSpline(segment_times, x0, xd0, xf, xdf, x1, x2);
-    ret += result.value(0.0);
+    Eigen::Vector2d xi(x1, x2);
+    PiecewisePolynomial<double> result = nWaypointCubicSpline(segment_times, x0, xd0, xf, xdf, xi);
+    ret += result.scalarValue(0.0);
   }
   return ret;
 }
@@ -58,7 +59,8 @@ int main(int argc, char **argv) {
   double x2 = uniform(generator);
 
 
-  PiecewisePolynomial<double> result = twoWaypointCubicSpline(segment_times, x0, xd0, xf, xdf, x1, x2);
+  Eigen::Vector2d xi(x1, x2);
+  PiecewisePolynomial<double> result = nWaypointCubicSpline(segment_times, x0, xd0, xf, xdf, xi);
 
   for (int i = 0; i < num_segments; i++) {
     valuecheck(segment_times[i], result.getStartTime(i));
@@ -71,24 +73,24 @@ int main(int argc, char **argv) {
   PiecewisePolynomial<double> second_derivative = derivative.derivative();
 
 
-  valuecheck(result.value(result.getStartTime(0)), x0, tol);
-  valuecheck(derivative.value(result.getStartTime(0)), xd0, tol);
+  valuecheck(result.scalarValue(result.getStartTime(0)), x0, tol);
+  valuecheck(derivative.scalarValue(result.getStartTime(0)), xd0, tol);
 
 
-  valuecheck(result.value(result.getEndTime(num_segments - 1)), xf, tol);
-  valuecheck(derivative.value(result.getEndTime(num_segments - 1)), xdf, tol);
+  valuecheck(result.scalarValue(result.getEndTime(num_segments - 1)), xf, tol);
+  valuecheck(derivative.scalarValue(result.getEndTime(num_segments - 1)), xdf, tol);
 
-  valuecheck(result.value(result.getStartTime(1)), x1, tol);
-  valuecheck(result.value(result.getStartTime(2)), x2, tol);
+  valuecheck(result.scalarValue(result.getStartTime(1)), x1, tol);
+  valuecheck(result.scalarValue(result.getStartTime(2)), x2, tol);
 
   // check continuity constraints
   double eps = 1e-10;
   int num_knots = num_segments - 1;
   for (int i = 0; i < num_knots; i++) {
     double t_knot = result.getEndTime(i);
-    valuecheck(result.value(t_knot - eps), result.value(t_knot + eps), 1e-8);
-    valuecheck(derivative.value(t_knot - eps), derivative.value(t_knot + eps), 1e-8);
-    valuecheck(second_derivative.value(t_knot - eps), second_derivative.value(t_knot + eps), 1e-8);
+    valuecheck(result.scalarValue(t_knot - eps), result.scalarValue(t_knot + eps), 1e-8);
+    valuecheck(derivative.scalarValue(t_knot - eps), derivative.scalarValue(t_knot + eps), 1e-8);
+    valuecheck(second_derivative.scalarValue(t_knot - eps), second_derivative.scalarValue(t_knot + eps), 1e-8);
   }
 
 #if !defined(WIN32) && !defined(WIN64)

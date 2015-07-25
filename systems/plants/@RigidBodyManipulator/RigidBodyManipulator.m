@@ -1911,13 +1911,13 @@ classdef RigidBodyManipulator < Manipulator
       % @retval default_val value of the parameter when default values of
       % params are used
 
-      fr = getParamFrame(model); p=fr.getPoly;
-      pstr = regexprep(str,'\$(\w+)','p(model.param_db{robotnum}.(''$1'').index)');
-%      if strcmp(pstr,str)  % then it didn't have any parameters in it
+      if any(str=='$') % then it has some parameters
+        fr = getParamFrame(model); p=fr.getPoly;
+        pstr = regexprep(str,'\$(\w+)','p(model.param_db{robotnum}.(''$1'').index)');
         val = eval(['[',pstr,']']);
-%      else
-%        val = RigidBodyParameterizedValue(['[',pstr,']'],model,robotnum);
-%      end
+      else 
+        val = eval(['[',str,']']);
+      end
 
       if nargout > 1
         % get the default value

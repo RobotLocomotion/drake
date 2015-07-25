@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <robot name="office">
 
    <material name="Brown">
@@ -171,7 +172,7 @@
       <material name="Brown"/>
     </visual>
     <collision>
-      <origin xyz="1.75 8. 1" rpy="0 0 0" />
+      <origin xyz="1.75 0. 1" rpy="0 0 0" />
       <geometry>
         <box size="6.5 .1 2."/>
       </geometry>
@@ -195,7 +196,7 @@
       <material name="Brown"/>
     </visual>
     <collision>
-      <origin xyz="-4.125 8. 1" rpy="0 0 0" />
+      <origin xyz="-4.125 0. 1" rpy="0 0 0" />
       <geometry>
         <box size="1.75 .1 2."/>
       </geometry>

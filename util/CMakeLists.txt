@@ -15,18 +15,46 @@ if (LCM_FOUND AND MATLAB_FOUND)
   pods_use_pkg_config_packages(publishLCMLog lcm)
 endif()
 
-if (MATLAB_FOUND)
-  add_mex(drakeUtil SHARED drakeUtil.cpp MexWrapper.cpp)
+include_directories(.)
+add_library(drakePolynomial Polynomial.cpp)
+pods_install_libraries(drakePolynomial)
+pods_install_headers(Polynomial.h DESTINATION drake)
+pods_install_pkg_config_file(drakePolynomial
+LIBS -ldrakePolynomial
+REQUIRES
+VERSION 0.0.2)
 
+add_library(drakeUtil SHARED drakeUtil.cpp)
+pods_install_headers(drakeUtil.h  DESTINATION drake)
+pods_install_libraries(drakeUtil)
+pods_install_pkg_config_file(drake-util
+  LIBS -ldrakeUtil
+  REQUIRES
+  VERSION 0.0.1)
+
+if (MATLAB_FOUND)
+  add_mex(drakeMexUtil SHARED drakeMexUtil.cpp MexWrapper.cpp)
+  target_link_libraries(drakeMexUtil drakePolynomial)
   # todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
   #add_mex(drakeUtil OBJECT drakeUtil.cpp)
 
-  pods_install_headers(drakeUtil.h MexWrapper.h DESTINATION drake)
-  pods_install_libraries(drakeUtil)
-  pods_install_pkg_config_file(drake-util
-    LIBS -ldrakeUtil
+  pods_install_headers(drakeMexUtil.h MexWrapper.h DESTINATION drake)
+  pods_install_libraries(drakeMexUtil)
+  pods_install_pkg_config_file(drake-mex-util
+    LIBS -ldrakeMexUtil
     REQUIRES
     VERSION 0.0.1)
+endif()
+
+if (LCM_FOUND)
+  # note: requires drakeUtil header file, but not linking against it because
+  # we only need methods that are templated and defined in the header
+  include_directories (${PROJECT_SOURCE_DIR}/systems/trajectories )
+  include_directories (${PROJECT_BINARY_DIR}/lcmgen/lcmtypes )
+  add_library(drakeLCMUtil SHARED lcmUtil.cpp)
+  target_link_libraries(drakeLCMUtil drakeTrajectories)
+  pods_install_headers(lcmUtil.h DESTINATION drake)
+  pods_install_libraries(drakeLCMUtil)
 endif()
 
 add_library(drakeGradientUtil SHARED drakeGradientUtil.cpp)
@@ -42,6 +70,14 @@ pods_install_pkg_config_file(drake-geometry-util
   REQUIRES
   VERSION 0.0.1)
 
+add_library(drakeConvexHull SHARED convexHull.cpp)
+pods_install_libraries(drakeConvexHull)
+pods_install_headers(convexHull.h DESTINATION drake)
+pods_install_pkg_config_file(drake-convex-hull
+  LIBS -ldrakeConvexHull
+  REQUIRES
+  VERSION 0.0.1)
+
 pods_install_headers(drakeFloatingPointUtil.h DESTINATION drake)
 
 pods_install_headers(GradientVar.h DESTINATION drake)
@@ -53,19 +89,25 @@ if (MATLAB_FOUND)
   target_link_libraries(cartesian2cylindricalmex drakeGeometryUtil drakeGradientUtil)
 
   add_mex(quat2expmapmex quat2expmapmex.cpp)
-  target_link_libraries(quat2expmapmex drakeUtil drakeGeometryUtil drakeGradientUtil)
+  target_link_libraries(quat2expmapmex drakeMexUtil drakeGeometryUtil drakeGradientUtil)
 
   add_mex(expmap2quatImplmex expmap2quatImplmex.cpp)
-  target_link_libraries(expmap2quatImplmex drakeUtil drakeGeometryUtil drakeGradientUtil)
+  target_link_libraries(expmap2quatImplmex drakeMexUtil drakeGeometryUtil drakeGradientUtil)
 
   add_mex(flipExpmapmex flipExpmapmex.cpp)
-  target_link_libraries(flipExpmapmex drakeUtil drakeGeometryUtil drakeGradientUtil)
+  target_link_libraries(flipExpmapmex drakeMexUtil drakeGeometryUtil drakeGradientUtil)
 
   add_mex(unwrapExpmapmex unwrapExpmapmex.cpp)
-  target_link_libraries(unwrapExpmapmex drakeUtil drakeGeometryUtil drakeGradientUtil)
+  target_link_libraries(unwrapExpmapmex drakeMexUtil drakeGeometryUtil drakeGradientUtil)
 
   add_mex(quat2expmapSequencemex quat2expmapSequencemex.cpp)
-  target_link_libraries(quat2expmapSequencemex drakeUtil drakeGeometryUtil drakeGradientUtil)
+  target_link_libraries(quat2expmapSequencemex drakeMexUtil drakeGeometryUtil drakeGradientUtil)
+
+  add_mex(closestExpmapmex closestExpmapmex.cpp)
+  target_link_libraries(closestExpmapmex drakeMexUtil drakeGeometryUtil drakeGradientUtil)
+  
+  add_mex(resolveCenterOfPressuremex resolveCenterOfPressuremex.cpp)
+  target_link_libraries(resolveCenterOfPressuremex drakeMexUtil drakeUtil)
 endif()
 
 add_subdirectory(test)

@@ -63,10 +63,10 @@ else
   if ~options.in_terms_of_qdot
     error('output in terms of v not supported unless RigidBodyManipulator.use_new_kinsol is true');
   end
-  
+
   % todo: zap this after the transition
   if isa(body_or_frame_id,'RigidBody'), error('support for passing in RigidBody objects has been removed.  please pass in the body index'); end
-  
+
   if (kinsol.mex)
     if (obj.mex_model_ptr==0)
       error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
@@ -74,7 +74,7 @@ else
     if  ~isnumeric(pts)
       error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is not valid because it was computed via mex, and you are now asking for an evaluation with non-numeric pts.  If you intended to use something like TaylorVar, then you must call doKinematics with use_mex = false');
     end
-    
+
     if nargout > 2
       [x,J,dJ] = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_id,pts,options.rotation_type);
     elseif nargout > 1
@@ -82,7 +82,7 @@ else
     else
       x = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_id,pts,options.rotation_type);
     end
-    
+
   else
     if (body_or_frame_id < 0)
       frame = obj.frame(-body_or_frame_id);
@@ -92,11 +92,11 @@ else
       body_ind = body_or_frame_id;
       Tframe=eye(4);
     end
-    
+
     m = size(pts,2);
     pts = [pts;ones(1,m)];
     T = kinsol.T{body_ind}*Tframe;
-    
+
     switch (options.rotation_type)
       case 0
         x = T(1:3,:)*pts;
@@ -107,17 +107,16 @@ else
         R = T(1:3,1:3);
         x = [T(1:3,:)*pts; bsxfun(@times,rotmat2quat(R),ones(1,m))];
     end
-    
+
     if (nargout>1)
       nq = obj.num_positions;
       dTdq = kinsol.dTdq{body_ind}*Tframe;
       if (options.rotation_type == 1)
         Jx = reshape(dTdq*pts,nq,[])';
-        
         Jr = zeros(3,nq)*dTdq(1);
         % note the unusual format of dTdq
         % dTdq = [dT(1,:)dq1; dT(1,:)dq2; ...; dT(1,:)dqN; dT(2,dq1) ...]
-        
+
         % droll_dq
         idx = sub2ind(size(dTdq),(3-1)*nq+(1:nq),2*ones(1,nq));
         dR32_dq = dTdq(idx);
@@ -125,12 +124,12 @@ else
         dR33_dq = dTdq(idx);
         sqterm = R(3,2)^2 + R(3,3)^2;
         Jr(1,:) = (R(3,3)*dR32_dq - R(3,2)*dR33_dq)/sqterm;
-        
+
         % dpitch_dq
         idx = sub2ind(size(dTdq),(3-1)*nq+(1:nq),ones(1,nq));
         dR31_dq = dTdq(idx);
         Jr(2,:) = (-sqrt(sqterm)*dR31_dq + R(3,1)/sqrt(sqterm)*(R(3,2)*dR32_dq + R(3,3)*dR33_dq) )/(R(3,1)^2 + R(3,2)^2 + R(3,3)^2);
-        
+
         % dyaw_dq
         idx = sub2ind(size(dTdq),(1-1)*nq+(1:nq),ones(1,nq));
         dR11_dq = dTdq(idx);
@@ -138,7 +137,7 @@ else
         dR21_dq = dTdq(idx);
         sqterm = R(1,1)^2 + R(2,1)^2;
         Jr(3,:) = (R(1,1)*dR21_dq - R(2,1)*dR11_dq)/sqterm;
-        
+
         Jtmp = [Jx;Jr];
         Jrow_ind = reshape([reshape(1:3*m,3,m);bsxfun(@times,3*m+(1:3)',ones(1,m))],[],1);
         J = Jtmp(Jrow_ind,:);
@@ -146,7 +145,7 @@ else
         J = reshape(dTdq*pts,nq,[])';
       elseif(options.rotation_type == 2)
         Jx = reshape(dTdq(1:3*nq,:)*pts,nq,[])';
-        
+
         idx = sub2ind(size(dTdq),(1-1)*nq+(1:nq),ones(1,nq));
         dR11_dq = dTdq(idx);
         idx = sub2ind(size(dTdq),(1-1)*nq+(1:nq),2*ones(1,nq));
@@ -165,7 +164,7 @@ else
         dR32_dq = dTdq(idx);
         idx = sub2ind(size(dTdq),(3-1)*nq+(1:nq),3*ones(1,nq));
         dR33_dq = dTdq(idx);
-        
+
         % now take gradients of rotmat2quat
         [val,ind] = max([1 1 1; 1 -1 -1; -1 1 -1; -1 -1 1]*diag(R));
         switch(ind)
@@ -202,13 +201,13 @@ else
             dqydq = ((dR23_dq+dR32_dq)*s - (R(2,3)+R(3,2))*dsdq)/ssquare; % y = (M(2,3)+M(3,2))/s;
             dqzdq = .25*dsdq; % z = 0.25*s;
         end
-        
+
         Jq = [dqwdq;dqxdq;dqydq;dqzdq];
-        
+
         Jtmp = [Jx;Jq];
         Jrow_ind = reshape([reshape(1:3*m,3,m);bsxfun(@times,3*m+(1:4)',ones(1,m))],[],1);
         J = Jtmp(Jrow_ind,:);
-        
+
       end
       if (nargout>2)
         if (options.rotation_type>0)
@@ -293,7 +292,7 @@ else
   else
     T = relativeTransform(obj, kinsol, base_or_frame_id, body_or_frame_id);
   end
-  
+
   [point_size, npoints] = size(points);
   R = T(1:3, 1:3);
   p = T(1:3, 4);
@@ -304,17 +303,17 @@ else
     dp = getSubMatrixGradient(dT, 1:3, 4, size(T));
     dpoints_base = matGradMult(dR, points) + repmat(dp, [npoints, 1]);
   end
-  
+
   % compute rotation representation
   if compute_gradient
     [qrot, dqrot] = rotmat2Representation(rotation_type, R, dR);
   else
     qrot = rotmat2Representation(rotation_type, R);
   end
-  
+
   % compute x output
   x = [points_base; repmat(qrot, 1, npoints)];
-  
+
   if compute_J
     % compute geometric Jacobian
     body = extractFrameInfo(obj, body_or_frame_id);
@@ -324,7 +323,7 @@ else
     else
       [J_geometric, v_or_qdot_indices] = geometricJacobian(obj, kinsol, base, body, expressed_in, in_terms_of_qdot);
     end
-    
+
     % split up into rotational and translational parts
     Jomega = J_geometric(1 : 3, :);
     Jv = J_geometric(4 : 6, :);
@@ -332,7 +331,7 @@ else
       dJomega = getSubMatrixGradient(dJ_geometric, 1:3, 1:size(J_geometric,2), size(J_geometric));
       dJv = getSubMatrixGradient(dJ_geometric, 4:6, 1:size(J_geometric,2), size(J_geometric));
     end
-    
+
     % compute position Jacobian
     if compute_gradient
       [r_hats, dr_hats] = vectorToSkewSymmetric(points_base, dpoints_base);
@@ -345,7 +344,7 @@ else
       blocks = repmat({dJv}, npoints, 1);
       dJpos = matGradMultMat(-r_hats, Jomega, -dr_hats, dJomega) + interleaveRows(block_sizes, blocks);
     end
-    
+
     % compute rotation Jacobian
     if compute_gradient
       [Phi, ~, dPhi, ~] = angularvel2RepresentationDotMatrix(rotation_type, qrot, dqrot);
@@ -354,12 +353,12 @@ else
       Phi = angularvel2RepresentationDotMatrix(rotation_type, qrot);
     end
     Jrot = Phi * Jomega;
-    
+
     % compute J from JPos and JRot
     x_size = point_size + size(Phi, 1);
     pos_row_indices = repeatVectorIndices(1 : point_size, x_size, npoints);
     rot_row_indices = repeatVectorIndices(point_size + 1 : x_size, x_size, npoints);
-    
+
     if in_terms_of_qdot
       J_cols = nq;
     else
@@ -367,12 +366,12 @@ else
     end
     J = zeros(length(pos_row_indices) + length(rot_row_indices), J_cols) * kinsol.q(1); % for TaylorVar
     J(pos_row_indices, v_or_qdot_indices) = Jpos;
-    
+
     if compute_gradient
       dJ = zeros(numel(J), nq) * kinsol.q(1); % for TaylorVar
       dJ = setSubMatrixGradient(dJ, dJpos, pos_row_indices, v_or_qdot_indices, size(J));
     end
-    
+
     if rotation_type ~= 0
       J(rot_row_indices, v_or_qdot_indices) = Jrot(reshape(bsxfun(@times,(1:size(Jrot, 1))',ones(1,npoints)), [], 1), :);
       if compute_gradient

@@ -4,7 +4,7 @@ classdef ExpPlusPPTrajectory < Trajectory
 %   in interval j, we have
 %  y(t) = K * exp(A*(t-tj)) * alpha(:,j) + sum_i gamma(:,j,i) (t-tj)^i
 
-  properties (Access=private)
+  properties % unfortunately these need to be public to be accessible from mex
     breaks  % with n+1 elements
     pporder 
     K       % must be dim x size(A,1)
