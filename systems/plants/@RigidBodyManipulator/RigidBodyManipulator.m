@@ -345,7 +345,7 @@ classdef RigidBodyManipulator < Manipulator
       compute_gradient = nargout > 1;
       
       nv = model.getNumVelocities();
-      damping = zeros(nv, 1);
+      damping = v(1)*zeros(nv, 1);
       coulomb_friction = zeros(nv, 1);
       static_friction = zeros(nv, 1);
       coulomb_window = zeros(nv, 1);
@@ -1051,8 +1051,10 @@ classdef RigidBodyManipulator < Manipulator
       end
       
       model = applyToAllRigidBodyElements(model,'updateParams',fr.getPoly,p);
-
-      model = compile(model);
+      
+      if isnumeric(p)
+        model = compile(model);
+      end
     end
 
     function p = getParams(model)
