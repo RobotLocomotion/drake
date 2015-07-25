@@ -78,4 +78,5 @@
     <joint name="elbow" />
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
+
 </robot>

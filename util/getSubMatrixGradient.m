@@ -25,7 +25,11 @@ sorted = issorted(rows) && issorted(cols);
 if sorted
   mask = false(M_size);
   mask(rows, cols) = true;
+  try
   dM_submatrix = dM(mask(:), q_indices);
+  catch
+     disp('debug') 
+  end
 else
   M_indices = reshape(1:prod(M_size), M_size);
   M_submatrix_indices = M_indices(rows, cols);

@@ -337,11 +337,13 @@ ret = cell(1, nb);
 ret{1} = zeros(16, nq);
 for i = 2 : nb
   body = bodies(i);
-  T_body_to_parent = T{body.parent} \ T{i};
+  %T_body_to_parent = T{body.parent} \ T{i};
+  T_body_to_parent = T{body.parent}^-1 * T{i};
   
   dT_body_to_parentdqi = dHomogTrans(T_body_to_parent, S{i}, qdotToV{i});
-  dT_body_to_parentdq = zeros(numel(T{i}), nq) * dT_body_to_parentdqi(1); % to make TaylorVar work better
+  dT_body_to_parentdq = zeros(length(T{i}(:)), nq) * dT_body_to_parentdqi(1); % to make TaylorVar work better
   dT_body_to_parentdq(:, body.position_num) = dT_body_to_parentdqi;
+  %ANDY CHANGE
   ret{i} = matGradMultMat(...
     T{body.parent}, T_body_to_parent, ret{body.parent}, dT_body_to_parentdq);
 end
@@ -544,13 +546,17 @@ for i = 2 : nb
     %     dtwistdv(:, v_indices) = J;
     nv_branch = length(v_indices);
     body_branch_velocity_num = nv_branch - length(body.velocity_num) + 1 : nv_branch;
-    djoint_twistdv = zeros(6, nv_branch);
+    %ANDY CHANGE
+    %djoint_twistdv = zeros(6, nv_branch);
+    djoint_twistdv = msspoly(zeros(6, nv_branch));
     djoint_twistdv(:, body_branch_velocity_num) = kinsol.J{i};
-    dSdotVidv = zeros(6, nv_branch);
+    %dSdotVidv = zeros(6, nv_branch);
+    dSdotVidv = msspoly(zeros(6, nv_branch));
     dSdotVidv(:, body_branch_velocity_num) = Sdot{i};
     djoint_acceldv = dcrm(twist, joint_twist, dtwistdv, djoint_twistdv)...
       + transformAdjoint(kinsol.T{i}) * dSdotVidv;
-    dJdotVidv{i} = zeros(6, nv);
+    %dJdotVidv{i} = zeros(6, nv);
+    dJdotVidv{i} = msspoly(zeros(6, nv));
     dJdotVidv{i}(:, v_indices) = djoint_acceldv;
     dJdotVidv{i} = dJdotVidv{parent} + dJdotVidv{i};
   end

@@ -19,7 +19,7 @@ if ((length(size(val))~=length(size(desired_val))) || any(size(val)~=size(desire
     return;
   end
 end
-
+val = double(val);
 if (tf && ~isequal(isnan(val(:)),isnan(desired_val(:))))
   errstr = 'NANs don''t match. ';
   if any(isnan(val(:)))

@@ -54,7 +54,10 @@ classdef Manipulator < DrakeSystem
         % want to raise for this method, stating that not all outputs were
         % assigned.  (since I can't write dxdot anymore)
         [H,C,B,dH,dC,dB] = obj.manipulatorDynamics(q,v);
-        Hinv = inv(H);
+        
+        %ANDY CHANGE
+        %Hinv = inv(H);
+        Hinv = invmsspoly(H);
 
         if (obj.num_u>0)
           vdot = Hinv*(B*u-C);
