@@ -122,6 +122,10 @@ if compute_gradient
   dHdq = zeros(numel(H), nq) * kinsol.q(1);
 end
 
+%ANDYCHANGE
+H = msspoly(H);
+dHdq = msspoly(dHdq);
+
 for i = 2 : NB
   Ic = crbs{i};
   Si = kinsol.J{i};
@@ -157,7 +161,9 @@ for i = 2 : NB
   end
 end
 if compute_gradient
-  dHdv = zeros(numel(H), nv);
+    %ANDYCHANGE
+  %dHdv = zeros(numel(H), nv);
+  dHdv = zeros(length(H(:)), nv);
   dH = [dHdq, dHdv];
 end
 end
@@ -195,7 +201,9 @@ for i = 2 : nBodies
     dtwist = kinsol.dtwistsdq{i};
     dspatial_accel = dJdotV{i};
     
-    dtwistdv = zeros(twist_size, nv);
+    %ANDY CHANGE
+    %dtwistdv = zeros(twist_size, nv);
+    dtwistdv = msspoly(zeros(twist_size, nv));
     [J, v_indices] = geometricJacobian(manipulator, kinsol, world, i, world);
     dtwistdv(:, v_indices) = J;
     dspatial_acceldv = kinsol.dJdotVidv{i};
@@ -238,7 +246,11 @@ for i = 2 : nBodies
   end
 end
 
+
 C = zeros(nv, 1) * kinsol.q(1);
+
+%ANDY CHANGE
+C = msspoly(C);
 
 if compute_gradient
   dC = zeros(nv, nq + nv);

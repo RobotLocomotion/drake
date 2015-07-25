@@ -69,7 +69,9 @@ classdef RigidBodyFrame
 
       % check to see if we have data for this frame
       if ~isempty(obj.param_binding_T)
-        obj.T = double(subs(obj.param_binding_T, poly, pval));
+        %obj.T = double(subs(obj.param_binding_T, poly, pval));
+        obj.T = subs(obj.param_binding_T, poly, pval);
+        if (deg(obj.T) == 0) obj.T = double(obj.T); end
       end
       
     end

@@ -114,7 +114,7 @@ else
       if (options.rotation_type == 1)
         Jx = reshape(dTdq*pts,nq,[])';
         
-        Jr = zeros(3,nq);
+        Jr = zeros(3,nq)*dTdq(1);
         % note the unusual format of dTdq
         % dTdq = [dT(1,:)dq1; dT(1,:)dq2; ...; dT(1,:)dqN; dT(2,dq1) ...]
         

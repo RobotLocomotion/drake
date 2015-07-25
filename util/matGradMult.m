@@ -15,7 +15,9 @@ if (size(b,2)>1 || ~isnumeric(A) || ~isnumeric(b)) % call my other method
   n = size(b,1);
   m = size(A,2);
   k = size(A,1)/n;
-  y = matGradMultMat(sparse(k,n),b,A,sparse(numel(b),m)); % with a minor abuse of notation
+  %ANDY CHANGE
+  %y = matGradMultMat(sparse(k,n),b,A,sparse(numel(b),m)); % with a minor abuse of notation
+  y = matGradMultMat(sparse(k,n),b,A,sparse(length(b(:)),m));
   return;
 end
 

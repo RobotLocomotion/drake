@@ -28,7 +28,10 @@ if isnumeric(dM) && isnumeric(dM_submatrix) && issorted(rows) && issorted(cols)
 else
   M_indices = reshape(1:prod(M_size), M_size);
   M_submatrix_indices = M_indices(rows, cols);
-  dM(M_submatrix_indices(:), q_indices) = dM_submatrix;
+  %dM(M_submatrix_indices(:), q_indices) = dM_submatrix;
+  %ANDYCHANGE
+  dM = msspoly(dM); %needed in order to make sure dM is msspoly
+  dM(M_submatrix_indices(:), find(q_indices)) = dM_submatrix;
 end
 end
 

@@ -31,7 +31,9 @@ end
 if isa(matrices{1}, 'TaylorVar')
   ret = zeros(rows, cols) * matrices{1}(1);
 else
-  ret = zeros(rows, cols);
+  %ANDY Change
+  %ret = zeros(rows, cols);
+  ret = msspoly.zeros(rows, cols);
 
   
 block_sizes_sum = sum(block_sizes);
