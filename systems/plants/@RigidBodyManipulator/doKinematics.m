@@ -548,15 +548,24 @@ for i = 2 : nb
     body_branch_velocity_num = nv_branch - length(body.velocity_num) + 1 : nv_branch;
     %ANDY CHANGE
     %djoint_twistdv = zeros(6, nv_branch);
-    djoint_twistdv = msspoly(zeros(6, nv_branch));
+    djoint_twistdv = zeros(6, nv_branch);
+    if isa(kinsol.J{i}, 'msspoly')
+        djoint_twistdv = msspoly(djoint_twistdv);
+    end
     djoint_twistdv(:, body_branch_velocity_num) = kinsol.J{i};
     %dSdotVidv = zeros(6, nv_branch);
-    dSdotVidv = msspoly(zeros(6, nv_branch));
+    dSdotVidv = zeros(6, nv_branch);
+    if isa(Sdot{i}, 'msspoly')
+        dSdotVidv = msspoly(dSdotVidv);
+    end
     dSdotVidv(:, body_branch_velocity_num) = Sdot{i};
     djoint_acceldv = dcrm(twist, joint_twist, dtwistdv, djoint_twistdv)...
       + transformAdjoint(kinsol.T{i}) * dSdotVidv;
     %dJdotVidv{i} = zeros(6, nv);
-    dJdotVidv{i} = msspoly(zeros(6, nv));
+    dJdotVidv{i} = zeros(6, nv);
+    if isa(djoint_acceldv, 'msspoly') || isa(dJdotVidv{parent}, 'msspoly') || isa(dJdotVidv{i}, 'msspoly')
+        dJdotVidv{i} = msspoly(dJdotVidv{i});
+    end
     dJdotVidv{i}(:, v_indices) = djoint_acceldv;
     dJdotVidv{i} = dJdotVidv{parent} + dJdotVidv{i};
   end

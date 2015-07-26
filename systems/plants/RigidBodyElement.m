@@ -34,7 +34,7 @@ classdef RigidBodyElement
             for i=1:length(fn)
 %                body.(fn{i}) = double(subs(body.param_bindings.(fn{i}),poly,pval));
                  body.(fn{i}) = subs(body.param_bindings.(fn{i}),poly,pval);
-                 if (deg(body.(fn{i}))==0) body.(fn{i}) = double(body.fn{i}); end
+                 if (deg(body.(fn{i}))==0) body.(fn{i}) = double(body.(fn{i})); end
             end
         end
     end

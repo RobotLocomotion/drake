@@ -48,7 +48,7 @@ else
   
     %ANDY CHANGE
     for i = 1:1:length(transformedMotionSubspaces)
-       transformedMotionSubspaces{i} = msspoly(transformedMotionSubspaces{i});
+       transformedMotionSubspaces{i} = transformedMotionSubspaces{i};
     end
         
     %END ANDY CHANGE
