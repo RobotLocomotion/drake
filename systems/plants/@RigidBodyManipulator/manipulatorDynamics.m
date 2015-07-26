@@ -122,12 +122,17 @@ if compute_gradient
   dHdq = zeros(numel(H), nq) * kinsol.q(1);
 end
 
+%ANDYCHANGE
+
 for i = 2 : NB
   Ic = crbs{i};
   Si = kinsol.J{i};
   i_indices = manipulator.body(i).velocity_num;
   F = Ic * Si;
   Hii = Si' * F;
+  if isa(Hii, 'msspoly')
+     H = msspoly(H); 
+  end
   H(i_indices, i_indices) = Hii;
   
   if compute_gradient
@@ -135,6 +140,9 @@ for i = 2 : NB
     dSi = kinsol.dJdq{i};
     dF = matGradMultMat(Ic, Si, dIc, dSi);
     dHii = matGradMultMat(Si', F, transposeGrad(dSi, size(Si)), dF);
+    if isa(dHii, 'msspoly') || isa(H, 'msspoly')
+       dHdq = msspoly(dHdq); 
+    end
     dHdq = setSubMatrixGradient(dHdq, dHii, i_indices, i_indices, size(H));
   end
   
@@ -157,7 +165,9 @@ for i = 2 : NB
   end
 end
 if compute_gradient
-  dHdv = zeros(numel(H), nv);
+    %ANDYCHANGE
+  %dHdv = zeros(numel(H), nv);
+  dHdv = zeros(length(H(:)), nv);
   dH = [dHdq, dHdv];
 end
 end
@@ -195,8 +205,13 @@ for i = 2 : nBodies
     dtwist = kinsol.dtwistsdq{i};
     dspatial_accel = dJdotV{i};
     
+    %ANDY CHANGE
     dtwistdv = zeros(twist_size, nv);
+    %dtwistdv = msspoly(zeros(twist_size, nv));
     [J, v_indices] = geometricJacobian(manipulator, kinsol, world, i, world);
+    if isa(J, 'msspoly')
+       dtwistdv = msspoly(dtwistdv); 
+    end
     dtwistdv(:, v_indices) = J;
     dspatial_acceldv = kinsol.dJdotVidv{i};
   end
@@ -238,7 +253,10 @@ for i = 2 : nBodies
   end
 end
 
+
 C = zeros(nv, 1) * kinsol.q(1);
+
+
 
 if compute_gradient
   dC = zeros(nv, nq + nv);
@@ -249,6 +267,9 @@ for i = nBodies : -1 : 2
   joint_wrench = net_wrenches{i};
   Ji = kinsol.J{i};
   tau = Ji' * joint_wrench;
+  if isa(tau, 'msspoly')
+     C = msspoly(C); 
+  end
   C(body.velocity_num) = tau;
   net_wrenches{body.parent} = net_wrenches{body.parent} + joint_wrench;
   

@@ -1,0 +1,21 @@
+# list of subdirectories to build, one one each line.  Empty lines
+# and lines starting with '#' are ignored
+
+lcm
+libbot
+#director
+eigen
+bullet
+octomap
+snopt
+gurobi
+mosek
+yalmip
+gloptipoly3
+bertini
+sedumi
+avl
+xfoil
+iris
+spotless
+drake

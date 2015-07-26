@@ -4,7 +4,10 @@ function dH = quadFormGrad(X, P, dX)
 
 nq = size(dX, 2);
 F = P * X;
-dF = matGradMultMat(P, X, sparse(numel(P), nq), dX);
+%ANDY CHANGE
+%dF = matGradMultMat(P, X, sparse(numel(P), nq), dX);
+dF = matGradMultMat(P, X, sparse(length(P(:)), nq), dX);
+
 % H = X' * F;
 dH = matGradMultMat(X', F, transposeGrad(dX, size(X)), dF);
 

@@ -6,11 +6,10 @@
 
   <parameter name="b1" value=".1" lb="0" />
   <parameter name="b2" value=".1" lb="0" />
-  <parameter name="l1" value="1" lb="0" />
-  <parameter name="lc1" value=".5" lb="0" />
-  <parameter name="lc2" value="1" lb="0" />
   <parameter name="Ic1" value=".083" lb="0" />
   <parameter name="Ic2" value=".33" lb="0" />
+  <parameter name="length1" value="1.0" lb="0" />
+  <parameter name="length2" value="2.0" lb="0" />
 
   <link name="base_link">
     <visual>
@@ -25,14 +24,14 @@
 
   <link name="upper_link">
     <inertial>
-      <origin xyz="0 0 -$lc1" rpy="0 0 0" />
+      <origin xyz="0 0 -$length1 / 2" rpy="0 0 0" />
       <mass value="1" />
       <inertia ixx="1" ixy="0" ixz="0" iyy="$Ic1" iyz="0" izz="1" />
     </inertial>
     <visual>
-      <origin xyz="0 0 -$l1/2" rpy="0 0 0" />
+      <origin xyz="0 0 -$length1 / 2" rpy="0 0 0" />
       <geometry>
-         <cylinder length="$l1+.1" radius=".05" />
+         <cylinder length="$length1" radius=".05" />
       </geometry>
       <material name="red">
 	<color rgba="1 0 0 1" />
@@ -42,14 +41,14 @@
 
   <link name="lower_link">
     <inertial>
-      <origin xyz="0 0 -$lc2" rpy="0 0 0" />
+      <origin xyz="0 0 -$length2 / 2" rpy="0 0 0" />
       <mass value="1" />
       <inertia ixx="1" ixy="0" ixz="0" iyy="$Ic2" iyz="0" izz="1" />
     </inertial>
     <visual>
-      <origin xyz="0 0 -1" rpy="0 0 0" />
+      <origin xyz="0 0 -$length2 / 2" rpy="0 0 0" />
       <geometry>
-         <cylinder length="2.1" radius=".05" />
+         <cylinder length="$length2" radius=".05" />
       </geometry>
       <material name="blue">
 	<color rgba="0 0 1 1" />
@@ -68,7 +67,7 @@
   <joint name="elbow" type="continuous">
     <parent link="upper_link" />
     <child link="lower_link" />
-    <origin xyz="0 .1 -$l1" />
+    <origin xyz="0 .1 -$length1" />
     <axis xyz="0 1 0" />
     <dynamics damping="$b2" />
   </joint>
@@ -79,4 +78,5 @@
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
 
+<frame name="hand" link="lower_link" xyz="0 0 -$length2" rpy="0 0 0" />
 </robot>

@@ -2,3 +2,71 @@
 	path = cmake
 	url = https://github.com/RobotLocomotion/cmake.git
 	branch = master
+[submodule "spotless"]
+	path = spotless
+	url = https://github.com/RobotLocomotion/spotless-pod.git
+	branch = master
+[submodule "drake"]
+	path = drake
+	url = https://github.com/RobotLocomotion/drake.git
+	branch = master
+[submodule "lcm"]
+	path = lcm
+	url = https://github.com/RobotLocomotion/lcm-pod.git
+	branch = master
+[submodule "bullet"]
+	path = bullet
+	url = https://github.com/RobotLocomotion/bullet-pod.git
+	branch = master
+[submodule "avl"]
+	path = avl
+	url = https://github.com/RobotLocomotion/avl.git
+	branch = master
+[submodule "eigen"]
+	path = eigen
+	url = https://github.com/RobotLocomotion/eigen-pod.git
+	branch = master
+[submodule "xfoil"]
+	path = xfoil
+	url = https://github.com/RobotLocomotion/xfoil.git
+	branch = master
+[submodule "libbot"]
+	path = libbot
+	url = https://github.com/RobotLocomotion/libbot.git
+	branch = master
+[submodule "snopt"]
+	path = snopt
+	url = https://github.com/RobotLocomotion/snopt.git
+	branch = master
+[submodule "bertini"]
+	path = bertini
+	url = https://github.com/RobotLocomotion/bertini.git
+	branch = master
+[submodule "gloptipoly3"]
+	path = gloptipoly3
+	url = https://github.com/RobotLocomotion/gloptipoly3.git
+	branch = master
+[submodule "gurobi"]
+	path = gurobi
+	url = https://github.com/RobotLocomotion/gurobi.git
+	branch = master
+[submodule "mosek"]
+	path = mosek
+	url = https://github.com/RobotLocomotion/mosek.git
+	branch = master
+[submodule "sedumi"]
+	path = sedumi
+	url = https://github.com/RobotLocomotion/sedumi.git
+	branch = master
+[submodule "octomap"]
+	path = octomap
+	url = https://github.com/RobotLocomotion/octomap-pod
+[submodule "director"]
+	path = director
+	url = https://github.com/RobotLocomotion/director
+[submodule "iris"]
+	path = iris
+	url = https://github.com/rdeits/iris-distro
+[submodule "yalmip"]
+	path = yalmip
+	url = https://github.com/RobotLocomotion/yalmip

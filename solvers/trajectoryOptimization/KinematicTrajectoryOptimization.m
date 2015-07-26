@@ -35,11 +35,11 @@ classdef KinematicTrajectoryOptimization
     end
     
     function obj = initialize(obj)
-      obj.N =obj.getN;
+      N =obj.getN;
       obj.nq = obj.robot.getNumPositions();
       x_inds = obj.getXinds();
       obj.q_inds = x_inds(1:obj.nq,:);
-      obj.qsc_weight_inds = cell(1,obj.N);
+      obj.qsc_weight_inds = cell(1,N);
       
       % Add joint limit constraints
       [joint_lb,joint_ub] = obj.robot.getJointLimits();
