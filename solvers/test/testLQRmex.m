@@ -21,7 +21,7 @@ function compareValues(A,B,Q,R)
   [K, S] = lqr(A,B,Q,R);
   [K_mex, S_mex] = lqrmex(A,B,Q,R);
 
-  valuecheck(K, K_mex, 1e-5);
-  valuecheck(S, S_mex, 1e-5);
+  valuecheck(K, K_mex);
+  valuecheck(S, S_mex);
 end
 

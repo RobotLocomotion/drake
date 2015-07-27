@@ -85,14 +85,20 @@ void lqr(MatrixBase<DerivedA> const& A, MatrixBase<DerivedB> const& B, MatrixBas
   MatrixXd Z_old;
 
   //these could be options
-  const double tolerance = 1e-6;
+  const double tolerance = 1e-9;
   const double max_iterations = 100;
 
   double relative_norm;
   size_t iteration = 0;
 
+  const double p = static_cast<double>(Z.rows());
+
   do {
     Z_old = Z;
+    //R. Byers. Solving the algebraic Riccati equation with the matrix sign function. Linear Algebra Appl., 85:267–279, 1987
+    //Added determinant scaling to improve convergence (converges in rough half the iterations with this)
+    double ck = pow(abs(Z.determinant()), -1.0/p);
+    Z *= ck;
     Z = Z - 0.5 * (Z - Z.inverse());
     relative_norm = (Z - Z_old).norm();
     iteration ++;
