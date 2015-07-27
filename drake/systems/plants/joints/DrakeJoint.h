@@ -3,6 +3,7 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
+#include <unsupported/Eigen/AutoDiff>
 //#include "RigidBody.h"
 #include <random>
 #include "drakeGeometryUtil.h"
@@ -19,8 +20,16 @@
   #define DLLEXPORT_DRAKEJOINT
 #endif
 
+#define POSITION_AND_VELOCITY_DEPENDENT_METHODS(Scalar, Specifier) \
+  virtual Eigen::Transform<Scalar, 3, Eigen::Isometry> jointTransform(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>& q) const Specifier; \
+  virtual GradientVar<Scalar, 6, Eigen::Dynamic> motionSubspace(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>& q) const Specifier; \
+  virtual GradientVar<Scalar, 6, 1> motionSubspaceDotTimesV(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>& q, const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>& v, int gradient_order) const Specifier; \
+  virtual GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> qdot2v(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>& q, int gradient_order) const Specifier; \
+  virtual GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> v2qdot(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>& q, int gradient_order) const Specifier; \
+  virtual GradientVar<Scalar, Eigen::Dynamic, 1> frictionTorque(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>& v, int gradient_order) const Specifier;
+
+
 class RigidBody;
-class RigidBodyManipulator;
 
 class DLLEXPORT_DRAKEJOINT DrakeJoint
 {
@@ -41,7 +50,6 @@ private:
   const int num_velocities;
 
 protected:
-  typedef Eigen::Matrix<double, 6, 1> Vector6d;
   const std::string name;
   Eigen::VectorXd joint_limit_min;
   Eigen::VectorXd joint_limit_max;
@@ -59,30 +67,22 @@ public:
   const int getNumVelocities() const;
 
   const std::string& getName() const;
-  virtual std::string getPositionName(int index) const = 0;
-  virtual std::string getVelocityName(int index) const { return getPositionName(index)+"dot"; }
 
-  virtual Eigen::Isometry3d jointTransform(const Eigen::Ref<const Eigen::VectorXd>& q) const = 0;
+  virtual std::string getPositionName(int index) const = 0;
+
+  virtual std::string getVelocityName(int index) const { return getPositionName(index)+"dot"; }
 
   virtual bool isFloating() const { return false; }
 
-  virtual void motionSubspace(const Eigen::Ref<const Eigen::VectorXd>& q, MotionSubspaceType& motion_subspace, Eigen::MatrixXd* dmotion_subspace = nullptr) const = 0;
-
-  virtual void motionSubspaceDotTimesV(const Eigen::Ref<const Eigen::VectorXd>& q, const Eigen::Ref<const Eigen::VectorXd>& v, Vector6d& motion_subspace_dot_times_v,
-      Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdq = nullptr,
-      Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdv = nullptr) const = 0;
-
   virtual Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const = 0;
-
-  virtual void qdot2v(const Eigen::Ref<const Eigen::VectorXd>& q, Eigen::MatrixXd& qdot_to_v, Eigen::MatrixXd* dqdot_to_v) const = 0;
-
-  virtual void v2qdot(const Eigen::Ref<const Eigen::VectorXd>& q, Eigen::MatrixXd& v_to_qdot, Eigen::MatrixXd* dv_to_qdot) const = 0;
-
-  virtual GradientVar<double, Eigen::Dynamic, 1> frictionTorque(const Eigen::Ref<const Eigen::VectorXd>& v, int gradient_order) const;
 
   virtual const Eigen::VectorXd& getJointLimitMin() const;
 
   virtual const Eigen::VectorXd& getJointLimitMax() const;
+
+  POSITION_AND_VELOCITY_DEPENDENT_METHODS(double, = 0)
+
+  POSITION_AND_VELOCITY_DEPENDENT_METHODS(Eigen::AutoDiffScalar<Eigen::VectorXd>, = 0)
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
