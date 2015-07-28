@@ -37,7 +37,8 @@ public:
 
   template<typename Scalar>
   void motionSubspaceDotTimesV(const Eigen::Ref<const Eigen::VectorXd>& q, const Eigen::Ref<const Eigen::VectorXd>& v,
-    Eigen::Matrix<Scalar, 6, 1> & motion_subspace_dot_times_v, Gradient<Eigen::Matrix<Scalar, 6, 1>, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdq = nullptr,
+    Eigen::Matrix<Scalar, 6, 1> & motion_subspace_dot_times_v, Gradient<Eigen::Matrix<Scalar, 6, 1>,
+    Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdq = nullptr,
     Gradient<Eigen::Matrix<Scalar, 6, 1>, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdv = nullptr) const {
     motion_subspace_dot_times_v.setZero();
 
@@ -50,9 +51,8 @@ public:
     }
   };
 
-  template<typename Scalar>
-  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> randomConfiguration(std::default_random_engine& generator) const {
-    return Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(0);
+  Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const {
+    return VectorXd::Zero(0);
   };
 
   template<typename Scalar>
@@ -71,8 +71,6 @@ public:
     if (dv_to_qdot) {
       dv_to_qdot->setZero(v_to_qdot.size(), getNumPositions());
     }
-  };
-
 };
 
 #endif /* DRAKE_SYSTEMS_PLANTS_JOINTS_FIXEDJOINT_H_ */
