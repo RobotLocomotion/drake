@@ -906,19 +906,20 @@ void rpydot2angularvelMatrix(const Eigen::MatrixBase<DerivedRPY>& rpy,
   }
 }
 
-template<typename DerivedRPY, typename DerivedRPYdot, typename DerivedOMEGA>
+template<typename DerivedRPY, typename DerivedRPYdot, typename DerivedOmega>
 void rpydot2angularvel(const Eigen::MatrixBase<DerivedRPY>& rpy,
                        const Eigen::MatrixBase<DerivedRPYdot>& rpydot,
-                             Eigen::MatrixBase<DerivedOMEGA>& omega,
-                             typename Gradient<DerivedOMEGA,RPY_SIZE,1>::type* domega)
+                             Eigen::MatrixBase<DerivedOmega>& omega,
+                             typename Gradient<DerivedOmega,RPY_SIZE,1>::type* domega)
 {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedRPY>, RPY_SIZE);
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedRPYdot>, RPY_SIZE);
-  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedOMEGA>, RPY_SIZE, 1);
+  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedOmega>, RPY_SIZE, 1);
 
-  Matrix3d E;
+  typedef typename DerivedRPY::Scalar Scalar;
+  Matrix<Scalar, 3, 3> E;
   if (domega) {
-    Matrix<double, 9, 3> dE;
+    Matrix<Scalar, 9, 3> dE; 
     rpydot2angularvelMatrix(rpy, E, &dE);
     (*domega) << matGradMult(dE, rpydot), E;
   }
