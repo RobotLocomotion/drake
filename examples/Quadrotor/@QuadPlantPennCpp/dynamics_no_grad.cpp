@@ -1,16 +1,3 @@
-/*********************************************************************
- * dynamics_no_grad.cpp
- *
- * This file shows the basics of setting up a mex file to work with
- * Matlab.  This example shows how to use 2D matricies.  This may
- *
- * Keep in mind:
- * <> Use 0-based indexing as always in C or C++
- * <> Indexing is column-based as in Matlab (not row-based as in C)
- * <> Use linear indexing.  [x*dimy+y] instead of [x][y]
- *
- *
- ********************************************************************/
 #include "mex.h"
 #include <Eigen/Dense>
 #include <cmath>
