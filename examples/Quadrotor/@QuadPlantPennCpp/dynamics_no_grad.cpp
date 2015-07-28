@@ -38,7 +38,6 @@ VectorXd quadDynamics(const mxArray *pobj, const double &t, const MatrixBase<Der
     Vector3d rpy;
     rpy << phi, theta, psi;
     auto R = rpy2rotmat(rpy);
-    std::cout << "R:\n " << R << std::endl;
 
     double kf = 1; // 6.11*10^-8;
 
