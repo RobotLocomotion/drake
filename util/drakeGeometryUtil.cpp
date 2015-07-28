@@ -555,18 +555,18 @@ Eigen::Matrix<typename Derived::Scalar,9,3> drpy2rotmat(const Eigen::MatrixBase<
   auto s = rpy_array.sin();
   auto c = rpy_array.cos();
 
-	Eigen::Matrix<typename Derived::Scalar, 9, 3> dR;
-	dR.row(0) << 0, c(2)*-s(1), c(1)*-s(2);
-	dR.row(1) << 0, -s(1)*s(2), c(2)*c(1);
-	dR.row(2) << 0, -c(1), 0;
-	dR.row(3) << c(2)*s(1)*c(0)-s(2)*-s(0), c(2)*c(1)*s(0), -s(2)*s(1)*s(0)-c(2)*c(0);
-	dR.row(4) << s(2)*s(1)*c(0)+c(2)*-s(0), s(2)*c(1)*s(0), c(2)*s(1)*s(0)-s(2)*c(0);
-	dR.row(5) << c(1)*c(0), -s(1)*s(0),0;
-	dR.row(6) << c(2)*s(1)*-s(0)+s(2)*c(0), c(2)*c(1)*c(0), -s(2)*s(1)*c(0)+c(2)*s(0);
-	dR.row(7) << s(2)*s(1)*-s(0)-c(2)*c(0), s(2)*c(1)*c(0), c(2)*s(1)*c(0)+s(2)*s(0);
-	dR.row(8) << c(1)*-s(0), -s(1)*c(0), 0; 
+  Eigen::Matrix<typename Derived::Scalar, 9, 3> dR;
+  dR.row(0) << 0, c(2)*-s(1), c(1)*-s(2);
+  dR.row(1) << 0, -s(1)*s(2), c(2)*c(1);
+  dR.row(2) << 0, -c(1), 0;
+  dR.row(3) << c(2)*s(1)*c(0)-s(2)*-s(0), c(2)*c(1)*s(0), -s(2)*s(1)*s(0)-c(2)*c(0);
+  dR.row(4) << s(2)*s(1)*c(0)+c(2)*-s(0), s(2)*c(1)*s(0), c(2)*s(1)*s(0)-s(2)*c(0);
+  dR.row(5) << c(1)*c(0), -s(1)*s(0),0;
+  dR.row(6) << c(2)*s(1)*-s(0)+s(2)*c(0), c(2)*c(1)*c(0), -s(2)*s(1)*c(0)+c(2)*s(0);
+  dR.row(7) << s(2)*s(1)*-s(0)-c(2)*c(0), s(2)*c(1)*c(0), c(2)*s(1)*c(0)+s(2)*s(0);
+  dR.row(8) << c(1)*-s(0), -s(1)*c(0), 0; 
 
-	return dR;
+  return dR;
 }
 
 // NOTE: not reshaping second derivative to Matlab geval output format!
@@ -885,8 +885,8 @@ DLLEXPORT GradientVar<typename Derived::Scalar, Eigen::Dynamic, SPACE_DIMENSION>
 
 template<typename DerivedRPY, typename DerivedE>
 void rpydot2angularvelMatrix(const Eigen::MatrixBase<DerivedRPY>& rpy,
-		Eigen::MatrixBase<DerivedE>& E,
-		typename Gradient<DerivedE,RPY_SIZE,1>::type* dE)
+    Eigen::MatrixBase<DerivedE>& E,
+    typename Gradient<DerivedE,RPY_SIZE,1>::type* dE)
 {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedRPY>, RPY_SIZE);
   EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedE>, SPACE_DIMENSION,RPY_SIZE);
@@ -904,6 +904,28 @@ void rpydot2angularvelMatrix(const Eigen::MatrixBase<DerivedRPY>& rpy,
   {
     (*dE)<< 0.0, -sp*cy, -cp*sy, 0.0, -sp*sy, cp*cy, 0.0, -cp, 0.0, 0.0, 0.0, -cy, 0.0, 0.0, -sy, 0.0, 0.0, 0.0,  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
   }
+}
+
+template<typename DerivedRPY, typename DerivedRPYdot, typename DerivedOMEGA>
+void rpydot2angularvel(const Eigen::MatrixBase<DerivedRPY>& rpy,
+                       const Eigen::MatrixBase<DerivedRPYdot>& rpydot,
+                             Eigen::MatrixBase<DerivedOMEGA>& omega,
+                             typename Gradient<DerivedOMEGA,RPY_SIZE,1>::type* domega)
+{
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedRPY>, RPY_SIZE);
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedRPYdot>, RPY_SIZE);
+  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedOMEGA>, RPY_SIZE, 1);
+
+  Matrix3d E;
+  if (domega) {
+    Matrix<double, 9, 3> dE;
+    rpydot2angularvelMatrix(rpy, E, &dE);
+    (*domega) << matGradMult(dE, rpydot), E;
+  }
+  else {
+    rpydot2angularvelMatrix(rpy, E);
+  }
+  omega = E * rpydot;
 }
 
 template<typename DerivedM>
@@ -1757,6 +1779,11 @@ template DLLEXPORT void rpydot2angularvelMatrix(const Eigen::MatrixBase<Map<Vect
 template DLLEXPORT void rpydot2angularvelMatrix(const Eigen::MatrixBase< Eigen::Block<Eigen::Ref<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const, 3, 1, false> >& rpy,
     Eigen::MatrixBase<Eigen::Matrix<double, SPACE_DIMENSION, RPY_SIZE> >& E,
     Gradient<Matrix<double,SPACE_DIMENSION,RPY_SIZE>,RPY_SIZE,1>::type* dE);
+
+
+template DLLEXPORT void rpydot2angularvel(const Eigen::MatrixBase<Vector3d>& rpy, const Eigen::MatrixBase<Vector3d>& rpydot,
+    Eigen::MatrixBase<Eigen::Matrix<double, RPY_SIZE, 1> >& omega,
+    Gradient<Matrix<double,RPY_SIZE,1>,RPY_SIZE,1>::type* domega);
 
 template DLLEXPORT GradientVar<double, Eigen::Dynamic, SPACE_DIMENSION> angularvel2RepresentationDotMatrix(
     int rotation_type, const Eigen::MatrixBase<VectorXd>& qrot, int gradient_order);

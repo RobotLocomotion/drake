@@ -193,6 +193,12 @@ DLLEXPORT void rpydot2angularvelMatrix(const Eigen::MatrixBase<DerivedRPY>& rpy,
     Eigen::MatrixBase<DerivedE>& E,
     typename Gradient<DerivedE,RPY_SIZE,1>::type* dE=nullptr);
 
+template<typename DerivedRPY, typename DerivedRPYdot, typename DerivedOMEGA>
+DLLEXPORT void rpydot2angularvel(const Eigen::MatrixBase<DerivedRPY>& rpy,
+    const Eigen::MatrixBase<DerivedRPYdot>& rpydot,
+    Eigen::MatrixBase<DerivedOMEGA>& omega,
+    typename Gradient<DerivedOMEGA,RPY_SIZE,1>::type* domega=nullptr);
+
 template <typename DerivedQ, typename DerivedM>
 DLLEXPORT void quatdot2angularvelMatrix(const Eigen::MatrixBase<DerivedQ>& q,
     Eigen::MatrixBase<DerivedM>& M,
