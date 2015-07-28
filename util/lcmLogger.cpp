@@ -10,8 +10,15 @@
 #define S_FUNCTION_LEVEL 2
 #include "simstruc.h"
 
+#ifdef WIN32
+#define __STDC_FORMAT_MACROS            // Enable integer types
+#include <lcm/WinPorting.h>
+#else
 #include <inttypes.h>
 #include <sys/select.h>
+#endif
+
+
 #include <lcm/lcm.h>
 
 #include <string>

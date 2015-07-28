@@ -1,3 +1,4 @@
+include_directories (${PROJECT_BINARY_DIR}/lcmgen/lcmtypes )
 
 if (simulink_FOUND)
   add_mex(realtime realtime.cpp)
@@ -52,6 +53,7 @@ if (LCM_FOUND)
   include_directories (${PROJECT_SOURCE_DIR}/systems/trajectories )
   include_directories (${PROJECT_BINARY_DIR}/lcmgen/lcmtypes )
   add_library(drakeLCMUtil SHARED lcmUtil.cpp)
+  add_dependencies(drakeLCMUtil ${LCMTYPES_C_LIBRARY})
   target_link_libraries(drakeLCMUtil drakeTrajectories)
   pods_install_headers(lcmUtil.h DESTINATION drake)
   pods_install_libraries(drakeLCMUtil)

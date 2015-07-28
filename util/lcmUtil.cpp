@@ -24,7 +24,7 @@ void encodePiecewisePolynomial(const PiecewisePolynomial<double>& piecewise_poly
   msg.breaks = piecewise_polynomial.getSegmentTimes();
   msg.polynomial_matrices.resize(piecewise_polynomial.getNumberOfSegments());
   for (int i = 0; i < piecewise_polynomial.getNumberOfSegments(); ++i) {
-    encodePolynomialMatrix(piecewise_polynomial.getPolynomialMatrix(i), msg.polynomial_matrices[i]);
+    encodePolynomialMatrix<Eigen::Dynamic,Eigen::Dynamic>(piecewise_polynomial.getPolynomialMatrix(i), msg.polynomial_matrices[i]);
   }
 }
 
