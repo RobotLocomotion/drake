@@ -23,14 +23,6 @@ classdef BotVisualizer < RigidBodyVisualizer
       end
       
       checkDependency('lcm');
-      
-      if ispc
-        error('Drake:MissingDependency:NoBotVisualizerOnWindowsYet','botvis doesn''t support windows yet');
-      end
-      
-      if ~exist(fullfile(pods_get_bin_path,'drake_viewer'),'file')
-        error('Drake:MissingDependency:BotVisualizer','can''t find drake_viewer executable.  you might need to run make (from the shell).  note: BotVisualizer is not supported on windows yet');
-      end
       typecheck(manip,'RigidBodyManipulator');
       
 %      if numel(manip.urdf)~=1
