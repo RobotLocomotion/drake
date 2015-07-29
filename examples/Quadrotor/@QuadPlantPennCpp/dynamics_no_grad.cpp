@@ -12,9 +12,9 @@ using namespace std;
 
 
 template<typename DerivedX, typename DerivedU>
-VectorXd quadDynamics(const mxArray *pobj, const double &t, const MatrixBase<DerivedX> &x,
+Matrix<double, 12, 1> quadDynamics(const mxArray *pobj, const double &t, const MatrixBase<DerivedX> &x,
                       const MatrixBase<DerivedU> &u) {
-    VectorXd xdot(12);
+    Matrix<double, 12, 1> xdot;
     double m = mxGetScalar(mxGetProperty(pobj, 0, "m"));
     auto I = matlabToEigenMap<3, 3>(mxGetProperty(pobj, 0, "I"));
 
@@ -75,18 +75,18 @@ VectorXd quadDynamics(const mxArray *pobj, const double &t, const MatrixBase<Der
 
     // This replaces the implementation of Rdot (make a 9x1 vector, reshape it into a 3 x 3)
     Matrix<double, 9, 3> drpy2drotmat = drpy2rotmat(rpy);
-    VectorXd Rdot_vec(9);
+    Matrix<double, 9, 1> Rdot_vec;
     Rdot_vec = drpy2drotmat * rpydot;
     Matrix3d Rdot = Map<MatrixXd>(Rdot_vec.data(), 3, 3);
 
-    VectorXd dPhi_x_rpydot_vec(9);
+    Matrix<double, 9, 1> dPhi_x_rpydot_vec;
     dPhi_x_rpydot_vec = dPhi * rpydot;
     Matrix3d dPhi_x_rpydot = Map<MatrixXd>(dPhi_x_rpydot_vec.data(), 3, 3);
     Vector3d rpy_ddot = Phi * R * pqr_dot + dPhi_x_rpydot * R * pqr + Phi * Rdot * pqr;
 
-    VectorXd qdd(6);
+    Matrix<double, 6, 1> qdd;
     qdd << xyz_ddot, rpy_ddot;
-    VectorXd qd(6);
+    Matrix<double, 6, 1> qd;
     qd = x.template segment<6>(6);
 
     xdot << qd, qdd;
@@ -110,7 +110,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         auto x = matlabToEigenMap<12, 1>(prhs[2]);
         auto u = matlabToEigenMap<4, 1>(prhs[3]);
 
-        VectorXd xdot = quadDynamics(pobj, t, x, u);
+        Matrix<double, 12, 1> xdot = quadDynamics(pobj, t, x, u);
 
         plhs[0] = eigenToMatlab(xdot);
 
