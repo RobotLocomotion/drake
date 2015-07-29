@@ -12,7 +12,7 @@ class DLLEXPORT_DRAKEJOINT QuaternionFloatingJoint: public DrakeJointImpl<Quater
   // QuaternionFloatingJoint& operator=(const QuaternionFloatingJoint&) = delete;
 
 public:
-  QuaternionFloatingJoint::QuaternionFloatingJoint(const std::string & name, const Eigen::Isometry3d & transform_to_parent_body) :
+  QuaternionFloatingJoint(const std::string & name, const Eigen::Isometry3d & transform_to_parent_body) :
           DrakeJointImpl(*this, name, transform_to_parent_body, 7, 6) { };
 
   virtual ~QuaternionFloatingJoint() { };
@@ -37,8 +37,8 @@ public:
   template <typename Scalar>
   void motionSubspaceDotTimesV(const Eigen::Ref< const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> > & q,
     const Eigen::Ref< const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> > & v, Eigen::Matrix<Scalar, 6, 1> & motion_subspace_dot_times_v,
-      Gradient< Eigen::Matrix<Scalar, 6, 1>, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdq = nullptr,
-      Gradient< Eigen::Matrix<Scalar, 6, 1>, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdv = nullptr) const {
+      Gradient< Eigen::Matrix<double, 6, 1>, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdq = nullptr,
+      Gradient< Eigen::Matrix<double, 6, 1>, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdv = nullptr) const {
     motion_subspace_dot_times_v.setZero();
     if (dmotion_subspace_dot_times_vdq) {
       dmotion_subspace_dot_times_vdq->setZero(motion_subspace_dot_times_v.size(), getNumPositions());
@@ -61,13 +61,13 @@ public:
     Eigen::Matrix<Scalar, SPACE_DIMENSION, QUAT_SIZE> M;
     Eigen::Matrix<Scalar, SPACE_DIMENSION, QUAT_SIZE> RTransposeM;
 
-    Gradient<Eigen::Matrix<Scalar, 4, 1>, QUAT_SIZE, 1>::type dquattildedquat;
+    Gradient<Eigen::Matrix<double, 4, 1>, QUAT_SIZE, 1>::type dquattildedquat;
 
     if (dqdot_to_v) {
-      Gradient<Eigen::Matrix<Scalar, 4, 1>, QUAT_SIZE, 2>::type ddquattildedquat;
+      Gradient<Eigen::Matrix<double, 4, 1>, QUAT_SIZE, 2>::type ddquattildedquat;
       normalizeVec(quat, quattilde, &dquattildedquat, &ddquattildedquat);
       auto dR = dquat2rotmat(quat);
-      Gradient<Eigen::Matrix<Scalar, SPACE_DIMENSION, QUAT_SIZE>, QUAT_SIZE, 1>::type dM;
+      Gradient<Eigen::Matrix<double, SPACE_DIMENSION, QUAT_SIZE>, QUAT_SIZE, 1>::type dM;
       quatdot2angularvelMatrix(quat, M, &dM);
 
       RTransposeM.noalias() = R.transpose() * M;

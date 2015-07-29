@@ -28,7 +28,6 @@
   virtual GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> v2qdot(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>& q, int gradient_order) const Specifier; \
   virtual GradientVar<Scalar, Eigen::Dynamic, 1> frictionTorque(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>& v, int gradient_order) const Specifier;
 
-
 class RigidBody;
 
 class DLLEXPORT_DRAKEJOINT DrakeJoint
