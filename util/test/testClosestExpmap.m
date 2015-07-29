@@ -48,5 +48,7 @@ else
 end
 valuecheck(abs(expmap2quat(w2)'*expmap2quat(w2_closest)),1,1e-3);
 [~,dw2_closest_dw2_numeric] = geval(@(w2) closestExpmap(w1,w2),w2,struct('grad_method','numerical'));
-valuecheck(dw2_closest_dw2,dw2_closest_dw2_numeric,1e-2);
+if(~valuecheck(dw2_closest_dw2,dw2_closest_dw2_numeric,1e-2) && ~valuecheck((dw2_closest_dw2-dw2_closest_dw2_numeric)*w2,zeros(3,1),1e-2));
+  error('The analytical gradient of closestExpmap does not match the numeric gradient');
+end
 end
