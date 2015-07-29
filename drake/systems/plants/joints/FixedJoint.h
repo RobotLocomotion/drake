@@ -18,15 +18,6 @@ public:
 
   virtual ~FixedJoint() { };
 
-
-//  virtual Eigen::Transform<Scalar, 3, Eigen::Isometry> jointTransform(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>& q) const Specifier; \
-//  virtual GradientVar<Scalar, 6, Eigen::Dynamic> motionSubspace(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>& q) const Specifier; \
-//  virtual GradientVar<Scalar, 6, 1> motionSubspaceDotTimesV(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>& q, const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>& v, int gradient_order) const Specifier; \
-//  virtual GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> qdot2v(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>& q, int gradient_order) const Specifier; \
-//  virtual GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> v2qdot(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>& q, int gradient_order) const Specifier; \
-//  virtual GradientVar<Scalar, Eigen::Dynamic, 1> frictionTorque(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>& v, int gradient_order) const Specifier;
-//
-
   template<typename Scalar>
   Eigen::Transform<Scalar, 3, Eigen::Isometry> jointTransform(
           const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> > &q) const {
@@ -44,10 +35,10 @@ public:
   };
 
   template<typename Scalar>
-  void motionSubspaceDotTimesV(const Eigen::Ref<const Eigen::VectorXd> &q, const Eigen::Ref<const Eigen::VectorXd> &v,
+  void motionSubspaceDotTimesV(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>> &q, const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>> &v,
                                Eigen::Matrix<Scalar, 6, 1> &motion_subspace_dot_times_v,
-                               Gradient<Eigen::Matrix<Scalar, 6, 1>, Eigen::Dynamic>::type *dmotion_subspace_dot_times_vdq = nullptr,
-                               Gradient<Eigen::Matrix<Scalar, 6, 1>, Eigen::Dynamic>::type *dmotion_subspace_dot_times_vdv = nullptr) const {
+                               typename Gradient<Eigen::Matrix<Scalar, 6, 1>, Eigen::Dynamic>::type *dmotion_subspace_dot_times_vdq = nullptr,
+                               typename Gradient<Eigen::Matrix<Scalar, 6, 1>, Eigen::Dynamic>::type *dmotion_subspace_dot_times_vdv = nullptr) const {
     motion_subspace_dot_times_v.setZero();
 
     if (dmotion_subspace_dot_times_vdq) {
@@ -78,6 +69,9 @@ public:
       dv_to_qdot->setZero(v_to_qdot.size(), getNumPositions());
     }
   };
+
+    std::string getPositionName(int index) const;
+    Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const;
 };
 
 #endif /* DRAKE_SYSTEMS_PLANTS_JOINTS_FIXEDJOINT_H_ */

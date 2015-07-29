@@ -5,6 +5,6 @@ std::string FixedJoint::getPositionName(int index) const {
 }
 
 Eigen::VectorXd FixedJoint::randomConfiguration(std::default_random_engine& generator) const {
-  return VectorXd::Zero(0);
+  return Eigen::VectorXd::Zero(0);
 }
 
