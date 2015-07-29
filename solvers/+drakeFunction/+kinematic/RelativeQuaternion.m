@@ -17,7 +17,7 @@ classdef RelativeQuaternion < drakeFunction.kinematic.Kinematic
       % @param frameB     -- Body/frame name or frame id/body idx
       %
       % @retval obj       -- RelativeQuaternion object
-      obj = obj@drakeFunction.kinematic.Kinematic(rbm,drakeFunction.frames.realCoordinateSpace(4));
+      obj = obj@drakeFunction.kinematic.Kinematic(rbm,4);
       obj.frameA = obj.rbm.parseBodyOrFrameID(frameA);
       obj.frameB = obj.rbm.parseBodyOrFrameID(frameB);
     end

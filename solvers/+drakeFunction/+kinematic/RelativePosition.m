@@ -34,9 +34,8 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
       end
       sizecheck(pts_in_A,[3,NaN]);
       n_pts_tmp = size(pts_in_A,2);
-      output_frame = MultiCoordinateFrame.constructFrame( ...
-        repmat({drakeFunction.frames.realCoordinateSpace(3)},1,n_pts_tmp));
-      obj = obj@drakeFunction.kinematic.Kinematic(rbm,output_frame);
+      dim_output = 3*n_pts_tmp;
+      obj = obj@drakeFunction.kinematic.Kinematic(rbm, dim_output);
       obj.frameA = obj.rbm.parseBodyOrFrameID(frameA);
       if obj.frameA == 0
         valuecheck(pts_in_A,zeros(3,1));
@@ -106,7 +105,7 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
 
   methods (Access = protected)
     function joint_idx = kinematicsPathJoints(obj)
-      if isempty(obj.frameA) || isempty(obj.frameB)
+      if isempty(obj.frameA) || isempty(obj.frameB) || obj.frameA == 0
         joint_idx = kinematicsPathJoints@drakeFunction.kinematic.Kinematic(obj);
       else
         [~,joint_path] = obj.rbm.findKinematicPath(obj.frameA,obj.frameB);

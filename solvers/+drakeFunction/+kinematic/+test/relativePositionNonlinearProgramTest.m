@@ -31,9 +31,6 @@ function relativePositionNonlinearProgramTest(visualize)
   q_nom = S.xstar(1:nq);
   q0 = q_nom;
 
-  % Create short name for R^3
-  R3 = drakeFunction.frames.realCoordinateSpace(3);
-
   %% Solve an inverse kinematics problem
   
   % Create a DrakeFunction that computes the world position of the hand points
@@ -43,7 +40,7 @@ function relativePositionNonlinearProgramTest(visualize)
   %% Constraints on body points
   % Create a DrakeFunction that computes the signed distance from a point to
   % the xy-plane
-  single_pt_dist_to_ground = SignedDistanceToHyperplane(Point(R3,0),Point(R3,[0;0;1]));
+  single_pt_dist_to_ground = SignedDistanceToHyperplane([0;0;0], [0;0;1]);
 
   %% Enforce that the corners of the left foot be on the ground
   % Create a DrakeFunction that computes the world positions of foot points
@@ -73,29 +70,27 @@ function relativePositionNonlinearProgramTest(visualize)
 
   %% Enforce that the projection of the COM onto the xy-plane be within the
   %% convex hull of the foot points
-  % Create a frame for the convex weights on the foot points
-  weights_frame = frames.realCoordinateSpace(foot_pts_fcn.n_pts);
 
   % Create a DrakeFunction that computes the COM position
   com_fcn = RelativePosition(rbm,0,'world');  % warning: this is not supported... findKinematicPathmex will (quietly) complain and get the sparsity pattern wrong
   % Add unused inputs for the weights
-  com_fcn = addInputFrame(com_fcn,weights_frame);
+  com_fcn = addInputs(com_fcn, foot_pts_fcn.n_pts);
 
   % Create a DrakeFunction that computes a linear combination of points in R3
   % given the points and the weights as inputs
-  lin_comb_of_pts = LinearCombination(foot_pts_fcn.n_pts,R3);
+  lin_comb_of_pts = LinearCombination(foot_pts_fcn.n_pts, 3);
   % Create a DrakeFUnction that computes a linear combination of the foot
   % points given joint-angles and weights as inputs
-  lin_comb_of_foot_pts = lin_comb_of_pts([foot_pts_fcn;Identity(weights_frame)]);
+  lin_comb_of_foot_pts = lin_comb_of_pts([foot_pts_fcn;Identity(foot_pts_fcn.n_pts)]);
 
   % Create a DrakeFunction that computes the difference between the COM
   % position computed from the joint-angles and the linear combination of the
   % foot points.
   support_polygon{1} = minus(com_fcn,lin_comb_of_foot_pts,true);
-  support_polygon{2} = Identity(weights_frame);
+  support_polygon{2} = Identity(foot_pts_fcn.n_pts);
 
   % Create a DrakeFunction that computes the sum of the weights
-  support_polygon{3} = Linear(weights_frame,frames.realCoordinateSpace(1),ones(1,foot_pts_fcn.n_pts));
+  support_polygon{3} = Linear(ones(1,foot_pts_fcn.n_pts));
 
   % Create quasi-static constraints
   % xy-coordinates of COM must match a linear combination of the foot points
