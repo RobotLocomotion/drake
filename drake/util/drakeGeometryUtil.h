@@ -191,7 +191,24 @@ DLLEXPORT GradientVar<typename Derived::Scalar, Eigen::Dynamic, SPACE_DIMENSION>
 template<typename DerivedRPY, typename DerivedE>
 DLLEXPORT void rpydot2angularvelMatrix(const Eigen::MatrixBase<DerivedRPY>& rpy,
     Eigen::MatrixBase<DerivedE>& E,
-    typename Gradient<DerivedE,RPY_SIZE,1>::type* dE=nullptr);
+    typename Gradient<DerivedE,RPY_SIZE,1>::type* dE=nullptr) {
+
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedRPY>, RPY_SIZE);
+  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedE>, SPACE_DIMENSION,RPY_SIZE);
+  typedef typename DerivedRPY::Scalar Scalar;
+  Scalar p = rpy(1);
+  Scalar y = rpy(2);
+  Scalar sp = sin(p);
+  Scalar cp = cos(p);
+  Scalar sy = sin(y);
+  Scalar cy = cos(y);
+
+  E << cp*cy, -sy, 0.0, cp*sy, cy, 0.0, -sp, 0.0, 1.0;
+  if(dE)
+  {
+      (*dE)<< 0.0, -sp*cy, -cp*sy, 0.0, -sp*sy, cp*cy, 0.0, -cp, 0.0, 0.0, 0.0, -cy, 0.0, 0.0, -sy, 0.0, 0.0, 0.0,  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+  }
+};
 
 template <typename DerivedQ, typename DerivedM>
 DLLEXPORT void quatdot2angularvelMatrix(const Eigen::MatrixBase<DerivedQ>& q,
