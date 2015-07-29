@@ -5,13 +5,13 @@ classdef RigidBodyManipulatorFunction < drakeFunction.DrakeFunction & RigidBodyE
     rbm %RigidBodyManipulator object
   end
   methods
-    function obj = RigidBodyManipulatorFunction(rbm,input_frame,output_frame)
+    function obj = RigidBodyManipulatorFunction(rbm, dim_input, dim_output)
       % obj = drakeFunction.RigidBodyManipulatorFunction(rbm,input_frame,output_frame)
       %
       % @param rbm          -- RigidBodyManipulator object
       % @param input_frame  -- CoordinateFrame object
       % @param output_frame -- CoordinateFrame object
-      obj = obj@drakeFunction.DrakeFunction(input_frame,output_frame);
+      obj = obj@drakeFunction.DrakeFunction(dim_input, dim_output);
       obj = setRigidBodyManipulator(obj,rbm);
     end
 

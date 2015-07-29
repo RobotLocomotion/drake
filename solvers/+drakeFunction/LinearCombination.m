@@ -21,10 +21,11 @@ classdef LinearCombination < drakeFunction.DrakeFunction
   properties (SetAccess = immutable)
     n_pts     % Integer number of points
     dim_pts   % Integer dimension of the frame to which the points belong
+    index_map               % Cell array of indices into the input vector
   end
 
   methods
-    function obj = LinearCombination(n_pts,frame)
+    function obj = LinearCombination(n_pts,dim_pts)
       % obj = LinearCombination(n_pts,frame) returns a DrakeFunction object
       %   representing the linear combination of n_pts points in 'frame'.
       %
@@ -32,12 +33,9 @@ classdef LinearCombination < drakeFunction.DrakeFunction
       %   @param frame  -- CoordinateFrame to which the points belong
       %
       %   @retval obj   -- drakeFunction.LinearCombination object
-      weights_frame = drakeFunction.frames.realCoordinateSpace(n_pts);
-      pts_frame = MultiCoordinateFrame.constructFrame(repmat({frame},1,n_pts));
-      input_frame = MultiCoordinateFrame({pts_frame,weights_frame});
-      output_frame = frame;
-      obj = obj@drakeFunction.DrakeFunction(input_frame,output_frame);
-      obj.dim_pts = frame.dim;
+      dim_input = n_pts*dim_pts + n_pts;
+      obj = obj@drakeFunction.DrakeFunction(dim_input,dim_pts);
+      obj.dim_pts = dim_pts;
       obj.n_pts = n_pts;
     end
 
