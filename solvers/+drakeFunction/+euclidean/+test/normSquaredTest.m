@@ -3,18 +3,18 @@ function [x,F,info] = normSquaredTest(N)
   if nargin < 1, N = 3; end
   lcmgl = LCMGLClient('normSquaredTest');
   r_inds = reshape(1:3*N,3,N);
-  R3 = drakeFunction.frames.realCoordinateSpace(3);
   radius = 0.2;
+  dim = 3;
 
   % Test Non-positive-defintite Q detection
   try
-    drakeFunction.euclidean.NormSquared(R3,zeros(3));
+    drakeFunction.euclidean.NormSquared(dim, zeros(dim));
   catch ex
     valuecheck(ex.identifier,'Drake:drakeFunction:euclidean:NormSquared:NonPositiveDefiniteQ');
   end
 
-  norm_squared_fcn = drakeFunction.euclidean.NormSquared(R3);
-  squared_dist_between_pts_fcn = norm_squared_fcn(Difference(R3));
+  norm_squared_fcn = drakeFunction.euclidean.NormSquared(3);
+  squared_dist_between_pts_fcn = norm_squared_fcn(Difference(3));
   distance_constraint = DrakeFunctionConstraint((2*radius)^2,inf,squared_dist_between_pts_fcn);
 
   prog = NonlinearProgram(3*N);

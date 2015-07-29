@@ -6,7 +6,7 @@ classdef NormSquared < drakeFunction.DrakeFunction
   end
 
   methods
-    function obj = NormSquared(input_frame,Q)
+    function obj = NormSquared(dim_input,Q)
       % obj = NormSquared(input_frame,Q) returns a NormSquared object
       %
       % @param input_frame  -- CoordinateFrame to which the input belongs
@@ -14,19 +14,17 @@ classdef NormSquared < drakeFunction.DrakeFunction
       %                        @default eye(input_frame.dim)
       %
       % @retval obj         -- drakeFunction.euclidean.NormSquared object
-      n = input_frame.dim;
       if nargin < 2, 
         Q = []; 
       else
-        sizecheck(Q,[n,n]);
+        sizecheck(Q,[dim_input, dim_input]);
         if any(eig(Q) <= 0)
           error('Drake:drakeFunction:euclidean:NormSquared:NonPositiveDefiniteQ', ...
             'The weighting matrix, Q, should be positive definite');
         end
         if all(all(Q == eye(size(Q)))), Q = []; end % Un-weighted case
       end
-      output_frame = drakeFunction.frames.realCoordinateSpace(1);
-      obj = obj@drakeFunction.DrakeFunction(input_frame,output_frame);
+      obj = obj@drakeFunction.DrakeFunction(dim_input,1);
       obj.Q = Q;
       obj.is_weighted = ~isempty(Q);
     end
