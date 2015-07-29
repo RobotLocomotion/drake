@@ -18,8 +18,6 @@ VectorXd quadDynamics(const mxArray *pobj, const double &t, const MatrixBase<Der
     double m = mxGetScalar(mxGetProperty(pobj, 0, "m"));
     auto I = matlabToEigenMap<3, 3>(mxGetProperty(pobj, 0, "I"));
 
-    auto invI = I.inverse().eval();
-
     double g = 9.81;
     double L = 0.1750;
 
@@ -37,7 +35,7 @@ VectorXd quadDynamics(const mxArray *pobj, const double &t, const MatrixBase<Der
 
     Vector3d rpy;
     rpy << phi, theta, psi;
-    auto R = rpy2rotmat(rpy);
+    Matrix3d R = rpy2rotmat(rpy);
 
     double kf = 1; // 6.11*10^-8;
 
@@ -68,7 +66,7 @@ VectorXd quadDynamics(const mxArray *pobj, const double &t, const MatrixBase<Der
 
     Vector3d pqr_dot_term1;
     pqr_dot_term1 << L * (F2 - F4), L * (F3 - F1), (M1 - M2 + M3 - M4);
-    Vector3d pqr_dot = invI * (pqr_dot_term1 - pqr.cross(I * pqr));
+    Vector3d pqr_dot = I.ldlt().solve(pqr_dot_term1 - pqr.cross(I * pqr));
 
     Matrix<double, 3, 3> Phi;
     Gradient<Matrix<double, 3, 3>, 3>::type dPhi;
@@ -79,17 +77,17 @@ VectorXd quadDynamics(const mxArray *pobj, const double &t, const MatrixBase<Der
     Matrix<double, 9, 3> drpy2drotmat = drpy2rotmat(rpy);
     VectorXd Rdot_vec(9);
     Rdot_vec = drpy2drotmat * rpydot;
-    auto Rdot = Map<MatrixXd>(Rdot_vec.data(), 3, 3);
+    Matrix3d Rdot = Map<MatrixXd>(Rdot_vec.data(), 3, 3);
 
     VectorXd dPhi_x_rpydot_vec(9);
     dPhi_x_rpydot_vec = dPhi * rpydot;
-    auto dPhi_x_rpydot = Map<MatrixXd>(dPhi_x_rpydot_vec.data(), 3, 3);
+    Matrix3d dPhi_x_rpydot = Map<MatrixXd>(dPhi_x_rpydot_vec.data(), 3, 3);
     Vector3d rpy_ddot = Phi * R * pqr_dot + dPhi_x_rpydot * R * pqr + Phi * Rdot * pqr;
 
     VectorXd qdd(6);
     qdd << xyz_ddot, rpy_ddot;
     VectorXd qd(6);
-    qd = x.segment(6,6);
+    qd = x.template segment<6>(6);
 
     xdot << qd, qdd;
 
