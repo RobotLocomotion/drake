@@ -9,7 +9,6 @@
 #define DRAKE_SYSTEMS_PLANTS_JOINTS_FIXEDJOINT_H_
 
 #include "DrakeJointImpl.h"
-//#include "../../controllers/controlUtil.h"
 
 class DLLEXPORT_DRAKEJOINT FixedJoint: public DrakeJointImpl<FixedJoint> {
 public:
@@ -19,8 +18,7 @@ public:
   virtual ~FixedJoint() { };
 
   template<typename Scalar>
-  Eigen::Transform<Scalar, 3, Eigen::Isometry> jointTransform(
-          const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> > &q) const {
+  Eigen::Transform<Scalar, 3, Eigen::Isometry> jointTransform(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> > &q) const {
     return Eigen::Transform<Scalar, 3, Eigen::Isometry>::Identity();
   };
 
@@ -70,8 +68,8 @@ public:
     }
   };
 
-    std::string getPositionName(int index) const;
-    Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const;
+    virtual std::string getPositionName(int index) const;
+    virtual Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const;
 };
 
 #endif /* DRAKE_SYSTEMS_PLANTS_JOINTS_FIXEDJOINT_H_ */
