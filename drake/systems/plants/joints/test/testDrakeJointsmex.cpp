@@ -78,7 +78,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     Isometry3d joint_transform = joint->jointTransform(q);
     safelySetField(joint_struct_out, "joint_transform", eigenToMatlab(joint_transform.matrix()));
 
-    DrakeJoint::MotionSubspaceType motion_subspace;
+    Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> motion_subspace;
     MatrixXd dmotion_subspace;
     joint->motionSubspace(q, motion_subspace, &dmotion_subspace);
     safelySetField(joint_struct_out, "motion_subspace", eigenToMatlab(motion_subspace));

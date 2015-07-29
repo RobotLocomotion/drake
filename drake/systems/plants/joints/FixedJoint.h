@@ -24,7 +24,7 @@ public:
 
   template<typename Scalar>
   void motionSubspace(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> > &q,
-                      MotionSubspaceType &motion_subspace,
+                      Eigen::Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> &motion_subspace,
                       Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> *dmotion_subspace = nullptr) const {
     motion_subspace.resize(TWIST_SIZE, getNumVelocities());
     if (dmotion_subspace) {
