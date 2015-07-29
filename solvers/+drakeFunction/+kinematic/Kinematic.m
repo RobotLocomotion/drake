@@ -3,7 +3,7 @@ classdef Kinematic < drakeFunction.RigidBodyManipulatorFunction
   %   All children of this class take the joint-angles of a specific
   %   RigidBodyManipulator as their input.
   methods
-    function obj = Kinematic(rbm,output_frame)
+    function obj = Kinematic(rbm,dim_output)
       % @param rbm            -- [TimeStepping]RigidBodyManipulator
       %                          object
       % @param output_frame   -- CoordinateFrame object
@@ -11,9 +11,9 @@ classdef Kinematic < drakeFunction.RigidBodyManipulatorFunction
       % @retval obj   -- drakeFunction.kinematic.Kinematic object
       typecheck(rbm,{'RigidBodyManipulator', ...
         'TimeSteppingRigidBodyManipulator'});
-      input_frame = rbm.getPositionFrame();
+      dim_input = rbm.getNumPositions();
       obj = obj@drakeFunction.RigidBodyManipulatorFunction(rbm, ...
-        input_frame, output_frame);
+        dim_input, dim_output);
       obj = obj.setSparsityPattern();
     end
 
@@ -29,7 +29,7 @@ classdef Kinematic < drakeFunction.RigidBodyManipulatorFunction
 
     function obj = setRigidBodyManipulator(obj, rbm)
       obj = setRigidBodyManipulator@drakeFunction.RigidBodyManipulatorFunction(obj, rbm);
-      obj.input_frame = rbm.getPositionFrame();
+      obj.dim_input = rbm.getNumPositions();
       obj = obj.setSparsityPattern();
     end
   end
