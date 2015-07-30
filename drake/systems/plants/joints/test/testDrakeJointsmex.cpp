@@ -57,9 +57,9 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   Isometry3d transform_to_parent = Isometry3d::Identity();
 
   vector<unique_ptr<DrakeJoint>> joints;
-  joints.push_back(unique_ptr<DrakeJoint>(new PrismaticJoint(prismaticJointName, transform_to_parent, prismatic_joint_axis)));
-  joints.push_back(unique_ptr<DrakeJoint>(new RevoluteJoint(revoluteJointName, transform_to_parent, revolute_joint_axis)));
-  joints.push_back(unique_ptr<DrakeJoint>(new HelicalJoint(helicalJointName, transform_to_parent, helical_joint_axis, helical_joint_pitch)));
+//  joints.push_back(unique_ptr<DrakeJoint>(new PrismaticJoint(prismaticJointName, transform_to_parent, prismatic_joint_axis)));
+//  joints.push_back(unique_ptr<DrakeJoint>(new RevoluteJoint(revoluteJointName, transform_to_parent, revolute_joint_axis)));
+//  joints.push_back(unique_ptr<DrakeJoint>(new HelicalJoint(helicalJointName, transform_to_parent, helical_joint_axis, helical_joint_pitch)));
   joints.push_back(unique_ptr<DrakeJoint>(new QuaternionFloatingJoint("quaternion_floating", transform_to_parent)));
   joints.push_back(unique_ptr<DrakeJoint>(new RollPitchYawFloatingJoint("rpy_floating", transform_to_parent)));
 
