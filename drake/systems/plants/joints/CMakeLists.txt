@@ -5,7 +5,7 @@ include_directories ( ${PROJECT_SOURCE_DIR}/util )
 add_library(drakeJoints SHARED DrakeJoint.cpp FixedJoint.cpp QuaternionFloatingJoint.cpp RollPitchYawFloatingJoint.cpp)
 #add_library(drakeJoints SHARED DrakeJoint.cpp DrakeJointImpl.cpp)
 
-target_link_libraries(drakeJoints drakeGeometryUtil drakeGradientUtil)
+target_link_libraries(drakeJoints drakeGeometryUtil)
 
 # enable_testing()
 pods_install_libraries(drakeJoints)

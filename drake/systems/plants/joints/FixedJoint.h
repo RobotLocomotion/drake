@@ -22,10 +22,10 @@ public:
     return Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>::Identity();
   };
 
-  template<typename Scalar>
-  void motionSubspace(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> > &q,
-                      Eigen::Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> &motion_subspace,
-                      Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> *dmotion_subspace = nullptr) const {
+  template <typename DerivedQ, typename DerivedMS>
+  void motionSubspace(const Eigen::MatrixBase<DerivedQ> & q,
+                      Eigen::MatrixBase<DerivedMS>& motion_subspace,
+                      typename Gradient<DerivedMS, Eigen::Dynamic>::type* dmotion_subspace = nullptr) const {
     motion_subspace.resize(TWIST_SIZE, getNumVelocities());
     if (dmotion_subspace) {
       dmotion_subspace->resize(motion_subspace.size(), getNumPositions());

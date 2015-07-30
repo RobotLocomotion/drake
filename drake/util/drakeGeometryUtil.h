@@ -172,18 +172,45 @@ DLLEXPORT Eigen::Matrix<typename DerivedA::Scalar, 3, Eigen::Dynamic> dcrossProd
     const typename Gradient<DerivedA, Eigen::Dynamic>::type& da,
     const typename Gradient<DerivedB, Eigen::Dynamic>::type& db);
 
-/*
- * rotation conversion gradient functions
- */
 
+// NOTE: not reshaping second derivative to Matlab geval output format!
 template <typename Derived>
 DLLEXPORT void normalizeVec(
     const Eigen::MatrixBase<Derived>& x,
     typename Derived::PlainObject& x_norm,
     typename Gradient<Derived, Derived::RowsAtCompileTime, 1>::type* dx_norm = nullptr,
-    typename Gradient<Derived, Derived::RowsAtCompileTime, 2>::type* ddx_norm = nullptr);
+    typename Gradient<Derived, Derived::RowsAtCompileTime, 2>::type* ddx_norm = nullptr)
+{
+  typename Derived::Scalar xdotx = x.squaredNorm();
+  typename Derived::Scalar norm_x = sqrt(xdotx);
+  x_norm = x / norm_x;
+
+  if (dx_norm) {
+    dx_norm->setIdentity(x.rows(), x.rows());
+    (*dx_norm) -= x * x.transpose() / xdotx;
+    (*dx_norm) /= norm_x;
+
+    if (ddx_norm) {
+      auto dx_norm_transpose = transposeGrad(*dx_norm, x.rows());
+      auto ddx_norm_times_norm = -matGradMultMat(x_norm, x_norm.transpose(), (*dx_norm), dx_norm_transpose);
+      auto dnorm_inv = -x.transpose() / (xdotx * norm_x);
+      (*ddx_norm) = ddx_norm_times_norm / norm_x;
+      auto temp = (*dx_norm) * norm_x;
+      typename Derived::Index n = x.rows();
+      for (int col = 0; col < n; col++) {
+        auto column_as_matrix = (dnorm_inv(0, col) * temp);
+        for (int row_block = 0; row_block < n; row_block++) {
+          ddx_norm->block(row_block * n, col, n, 1) += column_as_matrix.col(row_block);
+        }
+      }
+    }
+  }
+}
 
 
+/*
+ * rotation conversion gradient functions
+ */
 template <typename Derived>
 DLLEXPORT typename Gradient<Eigen::Matrix<typename Derived::Scalar, 3, 3>, QUAT_SIZE>::type dquat2rotmat(const Eigen::MatrixBase<Derived>& q)
 {
@@ -222,7 +249,21 @@ DLLEXPORT typename Gradient<Eigen::Matrix<typename DerivedR::Scalar, QUAT_SIZE, 
 template <typename DerivedQ, typename DerivedM, typename DerivedDM>
 void angularvel2quatdotMatrix(const Eigen::MatrixBase<DerivedQ>& q,
     Eigen::MatrixBase<DerivedM>& M,
-    Eigen::MatrixBase<DerivedDM>* dM = nullptr);
+    Eigen::MatrixBase<DerivedDM>* dM = nullptr) {
+  // note: not normalizing to match MATLAB implementation
+  M.resize(QUAT_SIZE, SPACE_DIMENSION);
+  M.row(0) << -q(1), -q(2), -q(3);
+  M.row(1) << q(0), q(3), -q(2);
+  M.row(2) << -q(3), q(0), q(1);
+  M.row(3) << q(2), -q(1), q(0);
+  M *= 0.5;
+
+  if (dM) {
+    (*dM) << 0.0, -0.5, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0,
+        -0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.0, 0.0, 0.0, 0.0, -0.5, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5, 0.0,
+        0.0, -0.5, 0.0, 0.0, 0.5, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0;
+  }
+};
 
 template<typename DerivedRPY, typename DerivedPhi, typename DerivedDPhi, typename DerivedDDPhi>
 void angularvel2rpydotMatrix(const Eigen::MatrixBase<DerivedRPY>& rpy,
@@ -259,7 +300,22 @@ DLLEXPORT void rpydot2angularvelMatrix(const Eigen::MatrixBase<DerivedRPY>& rpy,
 template <typename DerivedQ, typename DerivedM>
 DLLEXPORT void quatdot2angularvelMatrix(const Eigen::MatrixBase<DerivedQ>& q,
     Eigen::MatrixBase<DerivedM>& M,
-    typename Gradient<DerivedM, QUAT_SIZE, 1>::type* dM = nullptr);
+    typename Gradient<DerivedM, QUAT_SIZE, 1>::type* dM = nullptr) {
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedQ>, QUAT_SIZE);
+  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedM>, SPACE_DIMENSION, QUAT_SIZE);
+
+  typename DerivedQ::PlainObject qtilde;
+  if (dM) {
+    typename Gradient<DerivedQ, QUAT_SIZE>::type dqtilde;
+    normalizeVec(q, qtilde, &dqtilde);
+    (*dM) << 0.0, -2.0, 0.0, 0.0, 0.0, 0.0, -2.0, 0.0, 0.0, 0.0, 0.0, -2.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, -2.0, 0.0, 0.0, 0.0, 0.0, -2.0, 2.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, -2.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0;
+    (*dM) *= dqtilde;
+  } else {
+    normalizeVec(q, qtilde);
+  }
+  M << -qtilde(1), qtilde(0), -qtilde(3), qtilde(2), -qtilde(2), qtilde(3), qtilde(0), -qtilde(1), -qtilde(3), -qtilde(2), qtilde(1), qtilde(0);
+  M *= 2.0;
+};
 
 template<typename ScalarT>
 DLLEXPORT  void cylindrical2cartesian(const Eigen::Matrix<ScalarT,3,1> &cylinder_axis, const Eigen::Matrix<ScalarT,3,1> &cylinder_x_dir, const Eigen::Matrix<ScalarT,3,1> & cylinder_origin, const Eigen::Matrix<ScalarT,6,1> &x_cylinder, const Eigen::Matrix<ScalarT,6,1> &v_cylinder, Eigen::Matrix<ScalarT,6,1> &x_cartesian, Eigen::Matrix<ScalarT,6,1> &v_cartesian, Eigen::Matrix<ScalarT,6,6> &J, Eigen::Matrix<ScalarT,6,1> &Jdotv );

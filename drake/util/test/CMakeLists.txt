@@ -9,7 +9,7 @@ include_directories(${PROJECT_SOURCE_DIR}/systems/trajectories)
 if (NOT WIN32)
   # doesn't work because the timing tests require the <chrono> include
   add_executable(testDrakeGeometryUtil testDrakeGeometryUtil.cpp)
-  target_link_libraries(testDrakeGeometryUtil drakeGeometryUtil drakeGradientUtil)
+  target_link_libraries(testDrakeGeometryUtil drakeGeometryUtil)
   add_test(NAME testDrakeGeometryUtil COMMAND testDrakeGeometryUtil)
 
   add_executable(testGradientVar testGradientVar.cpp)
@@ -18,7 +18,7 @@ if (NOT WIN32)
   #add_test(NAME testGradientVar COMMAND testGradientVar)
 
   add_executable(testDrakeGradientUtil testDrakeGradientUtil.cpp)
-  target_link_libraries(testDrakeGradientUtil drakeGeometryUtil drakeGradientUtil)
+  target_link_libraries(testDrakeGradientUtil drakeGeometryUtil)
   add_test(NAME testDrakeGradientUtil COMMAND testDrakeGradientUtil)
 endif (NOT WIN32)
 
