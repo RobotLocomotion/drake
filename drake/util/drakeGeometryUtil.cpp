@@ -511,22 +511,6 @@ Eigen::Matrix<typename Derived::Scalar, 4, 1> rpy2quat(const Eigen::MatrixBase<D
   return q;
 }
 
-template<typename Derived>
-Eigen::Matrix<typename Derived::Scalar, 3, 3> rpy2rotmat(const Eigen::MatrixBase<Derived>& rpy)
-{
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
-  auto rpy_array = rpy.array();
-  auto s = rpy_array.sin();
-  auto c = rpy_array.cos();
-
-  Eigen::Matrix<typename Derived::Scalar, 3, 3> R;
-  R.row(0) << c(2) * c(1), c(2) * s(1) * s(0) - s(2) * c(0), c(2) * s(1) * c(0) + s(2) * s(0);
-  R.row(1) << s(2) * c(1), s(2) * s(1) * s(0) + c(2) * c(0), s(2) * s(1) * c(0) - c(2) * s(0);
-  R.row(2) << -s(1), c(1) * s(0), c(1) * c(0);
-
-  return R;
-}
-
 Matrix3d rotz(double theta) {
   // returns 3D rotation matrix (about the z axis)
   Matrix3d M;
@@ -1462,8 +1446,6 @@ template DLLEXPORT GradientVar<Eigen::Block<Eigen::Matrix<double, -1, 1, 0, -1, 
 
 template DLLEXPORT Vector4d rpy2axis(const Eigen::MatrixBase<Vector3d>&);
 template DLLEXPORT Vector4d rpy2quat(const Eigen::MatrixBase<Vector3d>&);
-template DLLEXPORT Matrix3d rpy2rotmat(const Eigen::MatrixBase<Vector3d>&);
-template DLLEXPORT Matrix3d rpy2rotmat(const Eigen::MatrixBase<Eigen::Block<Eigen::Ref<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const, 3, 1, false>>&);
 
 template DLLEXPORT Matrix<double,9,3> drpy2rotmat(const Eigen::MatrixBase<Vector3d>&);
 template DLLEXPORT Matrix<double,9,3> drpy2rotmat(const Eigen::MatrixBase<Eigen::Block<Eigen::Ref<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const, 3, 1, false>>&);
@@ -1482,7 +1464,6 @@ template DLLEXPORT Vector3d rotmat2rpy(const MatrixBase< Map<Matrix3d> >&);
 
 template DLLEXPORT Vector4d rpy2axis(const Eigen::MatrixBase< Map<Vector3d> >&);
 template DLLEXPORT Vector4d rpy2quat(const Eigen::MatrixBase< Map<Vector3d> >&);
-template DLLEXPORT Matrix3d rpy2rotmat(const Eigen::MatrixBase< Map<Vector3d> >&);
 template DLLEXPORT Matrix<double,9,3> drpy2rotmat(const Eigen::MatrixBase< Map<Vector3d> >&);
 
 template DLLEXPORT Matrix<Block<Matrix4d const, 3, 3, false>::Scalar, 4, 1, 0, 4, 1> rotmat2quat<Block<Matrix4d const, 3, 3, false> >(MatrixBase<Block<Matrix4d const, 3, 3, false> > const&);
