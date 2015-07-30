@@ -230,24 +230,6 @@ Eigen::Matrix<typename Derived::Scalar, 3, 1> quat2rpy(const Eigen::MatrixBase<D
 }
 
 template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, 3, 3> quat2rotmat(const Eigen::MatrixBase<Derived>& q)
-{
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
-  auto q_normalized = q.normalized();
-  auto w = q_normalized(0);
-  auto x = q_normalized(1);
-  auto y = q_normalized(2);
-  auto z = q_normalized(3);
-
-  Eigen::Matrix<typename Derived::Scalar, 3, 3> M;
-  M.row(0) << w * w + x * x - y * y - z * z, 2.0 * x * y - 2.0 * w * z, 2.0 * x * z + 2.0 * w * y;
-  M.row(1) << 2.0 * x * y + 2.0 * w * z, w * w + y * y - x * x - z * z, 2.0 * y * z - 2.0 * w * x;
-  M.row(2) << 2.0 * x * z - 2.0 * w * y, 2.0 * y * z + 2.0 * w * x, w * w + z * z - x * x - y * y;
-
-  return M;
-}
-
-template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, 4, 1> quat2axis(const Eigen::MatrixBase<Derived>& q)
 {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
@@ -1421,9 +1403,6 @@ template DLLEXPORT void normalizeVec(
     Gradient<Vector4d, 4, 2>::type*);
 
 template DLLEXPORT Vector4d quat2axis(const MatrixBase<Vector4d>&);
-template DLLEXPORT Matrix3d quat2rotmat(const MatrixBase<Vector4d>& q);
-template DLLEXPORT Matrix3d quat2rotmat(const MatrixBase<Eigen::Block<Eigen::Ref<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const, 4, 1, false> >& q);
-template DLLEXPORT Matrix<Map<Matrix<double, 4, 1, 0, 4, 1> const, 0, Stride<0, 0> >::Scalar, 3, 3, 0, 3, 3> quat2rotmat<Map<Matrix<double, 4, 1, 0, 4, 1> const, 0, Stride<0, 0> > >(MatrixBase<Map<Matrix<double, 4, 1, 0, 4, 1> const, 0, Stride<0, 0> > > const&);
 template DLLEXPORT Vector3d quat2rpy(const MatrixBase<Vector4d>&);
 
 template DLLEXPORT Vector4d axis2quat(const MatrixBase<Vector4d>&);
@@ -1451,7 +1430,6 @@ template DLLEXPORT Matrix<double,9,3> drpy2rotmat(const Eigen::MatrixBase<Vector
 template DLLEXPORT Matrix<double,9,3> drpy2rotmat(const Eigen::MatrixBase<Eigen::Block<Eigen::Ref<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const, 3, 1, false>>&);
 
 template DLLEXPORT Vector4d quat2axis(const MatrixBase< Map<Vector4d> >&);
-template DLLEXPORT Matrix3d quat2rotmat(const MatrixBase< Map<Vector4d> >& q);
 template DLLEXPORT Vector3d quat2rpy(const MatrixBase< Map<Vector4d> >&);
 
 template DLLEXPORT Vector4d axis2quat(const MatrixBase< Map<Vector4d> >&);
