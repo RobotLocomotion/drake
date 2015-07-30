@@ -17,9 +17,9 @@ public:
 
   virtual ~FixedJoint() { };
 
-  template<typename Scalar>
-  Eigen::Transform<Scalar, 3, Eigen::Isometry> jointTransform(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> > &q) const {
-    return Eigen::Transform<Scalar, 3, Eigen::Isometry>::Identity();
+  template<typename DerivedQ>
+  Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry> jointTransform(const Eigen::MatrixBase<DerivedQ> &q) const {
+    return Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>::Identity();
   };
 
   template<typename Scalar>

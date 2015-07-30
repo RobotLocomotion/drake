@@ -16,9 +16,9 @@ public:
 
   virtual ~RollPitchYawFloatingJoint() { };
 
-  template<typename Scalar>
-  Eigen::Transform<Scalar, 3, Eigen::Isometry> jointTransform(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> > &q) const {
-    Eigen::Transform<Scalar, 3, Eigen::Isometry> ret;
+  template<typename DerivedQ>
+  Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry> jointTransform(const Eigen::MatrixBase<DerivedQ> & q) const {
+    Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry> ret;
     auto pos = q.template middleRows<SPACE_DIMENSION>(0);
     auto rpy = q.template middleRows<RPY_SIZE>(SPACE_DIMENSION);
     ret.linear() = rpy2rotmat(rpy);

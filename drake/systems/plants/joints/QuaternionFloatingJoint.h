@@ -17,9 +17,9 @@ public:
 
   virtual ~QuaternionFloatingJoint() { };
 
-  template <typename Scalar>
-  Eigen::Transform<Scalar, 3, Eigen::Isometry> jointTransform(const Eigen::Ref< const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> > & q) const {
-    Eigen::Transform<Scalar, 3, Eigen::Isometry> ret(Eigen::Quaternion<Scalar>(q[3], q[4], q[5], q[6]));
+  template <typename DerivedQ>
+  Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry> jointTransform(const Eigen::MatrixBase<DerivedQ> & q) const {
+    Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry> ret(Eigen::Quaternion<typename DerivedQ::Scalar>(q[3], q[4], q[5], q[6]));
     ret.translation() << q[0], q[1], q[2];
     ret.makeAffine();
     return ret;
