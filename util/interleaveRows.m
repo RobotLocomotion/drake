@@ -43,7 +43,11 @@ for i = 1 : n
   block_size = block_sizes(i);
   selection = indices_mod_block_size > block_sizes_cumsum(i) - block_size ...
     & indices_mod_block_size <= block_sizes_cumsum(i);
+  if isa(matrices{i}, 'msspoly')
+     ret = msspoly(ret); 
+  end
   ret(indices(selection), :) = matrices{i};
+  
   row_assigned = row_assigned | selection;
 end
 

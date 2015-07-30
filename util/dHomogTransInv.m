@@ -20,4 +20,7 @@ dinvT_p = -R'*dp - matGradMult(dinvT_R, p, false);
 ret = zeros(numel(T), nq);
 ret = setSubMatrixGradient(ret, dinvT_R, 1:3, 1:3, size(T));
 ret = setSubMatrixGradient(ret, dinvT_p, 1:3, 4, size(T));
+
+ret(16, :) = 1;
+
 end

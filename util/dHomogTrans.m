@@ -32,5 +32,5 @@ ret(1:3, :) = - Rz * qdot_to_omega_y + Ry * qdot_to_omega_z;
 ret(5:7, :) = Rz * qdot_to_omega_x - Rx * qdot_to_omega_z;
 ret(9:11, :) = -Ry * qdot_to_omega_x + Rx * qdot_to_omega_y;
 ret(13:15, :) = R * qdot_to_twist(4:6, :);
-
+ret(16, :) = 1;
 end

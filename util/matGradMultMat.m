@@ -19,7 +19,7 @@ if (q2 ~= q) error('dA and dB must have the same number of gradient terms'); end
 if isnumeric(B)
   B_diag = kron(speye(q),B);
 else
-  B_diag = kron(eye(q),B);
+  B_diag = kronmsspoly(eye(q),B);
 end
 dAB = reshape(reshape(dA,m,n*q)*B_diag + A*reshape(dB,n,p*q),m*p,q);
 

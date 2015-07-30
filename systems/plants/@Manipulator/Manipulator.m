@@ -36,6 +36,73 @@ classdef Manipulator < DrakeSystem
       C_times_v = C-G;
     end
     
+    function [xdot,dxdot] = Hdynamics(obj,t,x,u)
+    % Provides the DrakeSystem interface to the manipulatorDynamics.
+    %the dynamics left multiplied by H
+
+      q = x(1:obj.num_positions);
+      v = x(obj.num_positions+1:end);
+
+      if (nargout>1)
+        if ~isempty(obj.position_constraints) || ~isempty(obj.velocity_constraints)
+          % by naming this 'MATLAB:TooManyOutputs', geval will catch the
+          % error and use TaylorVarInstead
+          error('MATLAB:TooManyOutputs','User gradients for constrained dynamics not implemented yet.');
+        end
+
+        % Note: the next line assumes that user gradients are implemented.
+        % If it fails, then it will raise the same exception that I would
+        % want to raise for this method, stating that not all outputs were
+        % assigned.  (since I can't write dxdot anymore)
+        [H,C,B,dH,dC,dB] = obj.manipulatorDynamics(q,v);
+        
+        %ANDY CHANGE
+        %Hinv = inv(H);
+        %Hinv = invmsspoly(H);
+
+        if (obj.num_u>0)
+          vdot = (B*u-C);
+          dtau = matGradMult(dB,u) - dC;
+          dvdot = [zeros(obj.num_positions,1),...
+            -matGradMult(dH(:,1:obj.num_positions),vdot) + dtau(:,1:obj.num_positions),...
+            +dtau(:,1+obj.num_positions:end), B];
+        else
+          vdot = -C;
+          dvdot = [zeros(obj.num_velocities,1),...
+            (-matGradMult(dH(:,1:obj.num_positions),vdot) - dC(:,1:obj.num_positions)),...
+            (-dC(:,obj.num_positions+1:end))];
+        end
+
+        [VqInv,dVqInv] = vToqdot(obj,q);
+        xdot = [VqInv*v;vdot];
+        dxdot = [...
+          zeros(obj.num_positions,1), matGradMult(dVqInv, v), VqInv, zeros(obj.num_positions,obj.num_u);
+          dvdot];
+      else
+        [H,C,B] = manipulatorDynamics(obj,q,v);
+        if (obj.num_u>0) tau=B*u - C; else tau=-C; end
+        tau = tau + computeConstraintForce(obj,q,v,H,tau,eye(size(H, 1)));
+
+        vdot = tau;
+        % note that I used to do this (instead of calling inv(H)):
+        %   vdot = H\tau
+        % but I already have and use Hinv, so use it again here
+
+        xdot = [vToqdot(obj,q)*v; vdot];
+      end
+        try
+           xdot = double(xdot); 
+        catch
+            
+        end
+        
+        try
+            dxdot =  double(dxdot);
+        catch
+            
+        end
+    end
+    
     function [xdot,dxdot] = dynamics(obj,t,x,u)
     % Provides the DrakeSystem interface to the manipulatorDynamics.
 
@@ -54,7 +121,65 @@ classdef Manipulator < DrakeSystem
         % want to raise for this method, stating that not all outputs were
         % assigned.  (since I can't write dxdot anymore)
         [H,C,B,dH,dC,dB] = obj.manipulatorDynamics(q,v);
+        
+        params = obj.getParamFrame().getPoly;
+        symp = sym('p',[length(params), 1]); %TODO: p is probably a bad idea here.
+        
+        
+        
+        try
+            H = double(H);
+        catch
+            if isa(H, 'msspoly')
+                H = msspoly2sym(params, symp, H);
+            end
+            
+        end
+        
+        try
+            C = double(C);
+        catch
+            if isa(C, 'msspoly')
+                C = msspoly2sym(params, symp, C);
+            end
+        end
+        %TODO: B should always be double, right?
+        
+        try
+            B = double(B);
+        catch
+            if isa(B, 'msspoly')
+                B = msspoly2sym(params, symp, B);
+            end
+        end
+        
+        try
+            dH = double(dH);
+        catch
+            if isa(dH, 'msspoly')
+                dH = msspoly2sym(params, symp, dH);
+            end
+        end
+        
+        try
+            dC = double(dC);
+        catch
+            if isa(dC, 'msspoly')
+                dC = msspoly2sym(params, symp, dC);
+            end
+        end
+        
+        try
+            dB = double(dB);
+        catch
+            if isa(dB, 'msspoly')
+                dB = msspoly2sym(params, symp, dB);
+            end
+        end
+        
+        %ANDY CHANGE
         Hinv = inv(H);
+        %Hinv = invmsspoly(H);
 
         if (obj.num_u>0)
           vdot = Hinv*(B*u-C);
