@@ -31,8 +31,6 @@ end
 if isa(matrices{1}, 'TaylorVar')
   ret = zeros(rows, cols) * matrices{1}(1);
 else
-  %ANDY Change
-  %ret = zeros(rows, cols);
   ret = zeros(rows, cols);
 
   

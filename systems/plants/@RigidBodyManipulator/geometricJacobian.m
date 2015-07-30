@@ -46,12 +46,11 @@ else
       kinsol.T(joint_path), motionSubspaces, num2cell(signs'), 'UniformOutput', ...
       false); % change frame from body to world
   
-    %ANDY CHANGE
+
     for i = 1:1:length(transformedMotionSubspaces)
        transformedMotionSubspaces{i} = transformedMotionSubspaces{i};
     end
-        
-    %END ANDY CHANGE
+
     J = cell2matmsspoly(transformedMotionSubspaces);
     J = transformTwists(invmsspoly(kinsol.T{expressed_in}), J); % change frame from world to expressedIn
   end

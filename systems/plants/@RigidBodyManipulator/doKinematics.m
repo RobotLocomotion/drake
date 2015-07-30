@@ -343,7 +343,6 @@ for i = 2 : nb
   dT_body_to_parentdqi = dHomogTrans(T_body_to_parent, S{i}, qdotToV{i});
   dT_body_to_parentdq = zeros(length(T{i}(:)), nq) * dT_body_to_parentdqi(1); % to make TaylorVar work better
   dT_body_to_parentdq(:, body.position_num) = dT_body_to_parentdqi;
-  %ANDY CHANGE
   ret{i} = matGradMultMat(...
     T{body.parent}, T_body_to_parent, ret{body.parent}, dT_body_to_parentdq);
 end
@@ -542,18 +541,13 @@ for i = 2 : nb
     
     % v gradient: dJdot_times_vi/dv
     [dtwistdv, v_indices] = geometricJacobian(model, kinsol, world, i, world);
-    %     dtwistdv = zeros(6, nv);
-    %     dtwistdv(:, v_indices) = J;
     nv_branch = length(v_indices);
     body_branch_velocity_num = nv_branch - length(body.velocity_num) + 1 : nv_branch;
-    %ANDY CHANGE
-    %djoint_twistdv = zeros(6, nv_branch);
     djoint_twistdv = zeros(6, nv_branch);
     if isa(kinsol.J{i}, 'msspoly')
         djoint_twistdv = msspoly(djoint_twistdv);
     end
     djoint_twistdv(:, body_branch_velocity_num) = kinsol.J{i};
-    %dSdotVidv = zeros(6, nv_branch);
     dSdotVidv = zeros(6, nv_branch);
     if isa(Sdot{i}, 'msspoly')
         dSdotVidv = msspoly(dSdotVidv);
@@ -561,7 +555,6 @@ for i = 2 : nb
     dSdotVidv(:, body_branch_velocity_num) = Sdot{i};
     djoint_acceldv = dcrm(twist, joint_twist, dtwistdv, djoint_twistdv)...
       + transformAdjoint(kinsol.T{i}) * dSdotVidv;
-    %dJdotVidv{i} = zeros(6, nv);
     dJdotVidv{i} = zeros(6, nv);
     if isa(djoint_acceldv, 'msspoly') || isa(dJdotVidv{parent}, 'msspoly') || isa(dJdotVidv{i}, 'msspoly')
         dJdotVidv{i} = msspoly(dJdotVidv{i});

@@ -80,18 +80,27 @@ classdef Manipulator < DrakeSystem
           dvdot];
       else
         [H,C,B] = manipulatorDynamics(obj,q,v);
-        Hinv = inv(H);
         if (obj.num_u>0) tau=B*u - C; else tau=-C; end
-        tau = tau + computeConstraintForce(obj,q,v,H,tau,Hinv);
+        tau = tau + computeConstraintForce(obj,q,v,H,tau,eye(size(H, 1)));
 
-        vdot = Hinv*tau;
+        vdot = tau;
         % note that I used to do this (instead of calling inv(H)):
         %   vdot = H\tau
         % but I already have and use Hinv, so use it again here
 
         xdot = [vToqdot(obj,q)*v; vdot];
       end
-
+        try
+           xdot = double(xdot); 
+        catch
+            
+        end
+        
+        try
+            dxdot =  double(dxdot);
+        catch
+            
+        end
     end
     
     function [xdot,dxdot] = dynamics(obj,t,x,u)
@@ -112,6 +121,61 @@ classdef Manipulator < DrakeSystem
         % want to raise for this method, stating that not all outputs were
         % assigned.  (since I can't write dxdot anymore)
         [H,C,B,dH,dC,dB] = obj.manipulatorDynamics(q,v);
+        
+        params = obj.getParamFrame().getPoly;
+        symp = sym('p',[length(params), 1]); %TODO: p is probably a bad idea here.
+        
+        
+        
+        try
+            H = double(H);
+        catch
+            if isa(H, 'msspoly')
+                H = msspoly2sym(params, symp, H);
+            end
+            
+        end
+        
+        try
+            C = double(C);
+        catch
+            if isa(C, 'msspoly')
+                C = msspoly2sym(params, symp, C);
+            end
+        end
+        %TODO: B should always be double, right?
+        
+        try
+            B = double(B);
+        catch
+            if isa(B, 'msspoly')
+                B = msspoly2sym(params, symp, B);
+            end
+        end
+        
+        try
+            dH = double(dH);
+        catch
+            if isa(dH, 'msspoly')
+                dH = msspoly2sym(params, symp, dH);
+            end
+        end
+        
+        try
+            dC = double(dC);
+        catch
+            if isa(dC, 'msspoly')
+                dC = msspoly2sym(params, symp, dC);
+            end
+        end
+        
+        try
+            dB = double(dB);
+        catch
+            if isa(dB, 'msspoly')
+                dB = msspoly2sym(params, symp, dB);
+            end
+        end
         
         %ANDY CHANGE
         Hinv = inv(H);

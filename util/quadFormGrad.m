@@ -4,7 +4,7 @@ function dH = quadFormGrad(X, P, dX)
 
 nq = size(dX, 2);
 F = P * X;
-%ANDY CHANGE
+
 %dF = matGradMultMat(P, X, sparse(numel(P), nq), dX);
 dF = matGradMultMat(P, X, sparse(length(P(:)), nq), dX);
 
