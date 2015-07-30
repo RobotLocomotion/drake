@@ -569,30 +569,6 @@ void normalizeVec(
   }
 }
 
-
-
-template <typename Derived>
-typename Gradient<Matrix<typename Derived::Scalar, 3, 3>, QUAT_SIZE>::type dquat2rotmat(const Eigen::MatrixBase<Derived>& q)
-{
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, QUAT_SIZE);
-
-  typename Gradient<Matrix<typename Derived::Scalar, 3, 3>, QUAT_SIZE>::type ret;
-  typename Eigen::MatrixBase<Derived>::PlainObject qtilde;
-  typename Gradient<Derived, QUAT_SIZE>::type dqtilde;
-  normalizeVec(q, qtilde, &dqtilde);
-
-  typedef typename Derived::Scalar Scalar;
-  Scalar w=qtilde(0);
-  Scalar x=qtilde(1);
-  Scalar y=qtilde(2);
-  Scalar z=qtilde(3);
-
-  ret << w, x, -y, -z, z, y, x, w, -y, z, -w, x, -z, y, x, -w, w, -x, y, -z, x, w, z, y, y, z, w, x, -x, -w, z, y, w, -x, -y, z;
-  ret *= 2.0;
-  ret *= dqtilde;
-  return ret;
-}
-
 template <typename DerivedR, typename DerivedDR>
 typename Gradient<Eigen::Matrix<typename DerivedR::Scalar, RPY_SIZE, 1>, DerivedDR::ColsAtCompileTime>::type drotmat2rpy(
     const Eigen::MatrixBase<DerivedR>& R,
@@ -1508,10 +1484,6 @@ template DLLEXPORT Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> dCrossSpati
   const Eigen::MatrixBase<Eigen::Matrix<double, 6, 1, 0, 6, 1> >& b,
   const Gradient<Eigen::Matrix<double, 6, 1, 0, 6, 1>, Eigen::Dynamic>::type& da,
   const Gradient<Eigen::Matrix<double, 6, 1, 0, 6, 1>, Eigen::Dynamic>::type& db);
-
-template DLLEXPORT Gradient<Matrix3d, QUAT_SIZE>::type dquat2rotmat(const Eigen::MatrixBase<Vector4d>&);
-template DLLEXPORT Gradient<Matrix3d, QUAT_SIZE>::type dquat2rotmat(const Eigen::MatrixBase< Map<Vector4d> >&);
-template DLLEXPORT Gradient<Matrix3d, QUAT_SIZE>::type dquat2rotmat(const Eigen::MatrixBase<Eigen::Block<Eigen::Ref<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const, 4, 1, false> >&);
 
 template DLLEXPORT Gradient<Vector3d, Dynamic>::type drotmat2rpy(
     const Eigen::MatrixBase<Matrix3d>&,

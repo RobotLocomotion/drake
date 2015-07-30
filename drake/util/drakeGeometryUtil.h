@@ -185,7 +185,26 @@ DLLEXPORT void normalizeVec(
 
 
 template <typename Derived>
-DLLEXPORT typename Gradient<Eigen::Matrix<typename Derived::Scalar, 3, 3>, QUAT_SIZE>::type dquat2rotmat(const Eigen::MatrixBase<Derived>& q);
+DLLEXPORT typename Gradient<Eigen::Matrix<typename Derived::Scalar, 3, 3>, QUAT_SIZE>::type dquat2rotmat(const Eigen::MatrixBase<Derived>& q)
+{
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, QUAT_SIZE);
+
+  typename Gradient<Eigen::Matrix<typename Derived::Scalar, 3, 3>, QUAT_SIZE>::type ret;
+  typename Eigen::MatrixBase<Derived>::PlainObject qtilde;
+  typename Gradient<Derived, QUAT_SIZE>::type dqtilde;
+  normalizeVec(q, qtilde, &dqtilde);
+
+  typedef typename Derived::Scalar Scalar;
+  Scalar w=qtilde(0);
+  Scalar x=qtilde(1);
+  Scalar y=qtilde(2);
+  Scalar z=qtilde(3);
+
+  ret << w, x, -y, -z, z, y, x, w, -y, z, -w, x, -z, y, x, -w, w, -x, y, -z, x, w, z, y, y, z, w, x, -x, -w, z, y, w, -x, -y, z;
+  ret *= 2.0;
+  ret *= dqtilde;
+  return ret;
+}
 
 template <typename DerivedR, typename DerivedDR>
 DLLEXPORT typename Gradient<Eigen::Matrix<typename DerivedR::Scalar, RPY_SIZE, 1>, DerivedDR::ColsAtCompileTime>::type drotmat2rpy(
