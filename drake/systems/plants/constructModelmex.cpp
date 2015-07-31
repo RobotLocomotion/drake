@@ -10,10 +10,6 @@
 #include <RollPitchYawFloatingJoint.h>
 #include <QuaternionFloatingJoint.h>
 
-void setLimits(const mxArray *pBodies, int i, FixedAxisOneDoFJoint *fixed_axis_one_dof_joint);
-
-void setDynamics(const mxArray *pBodies, int i, FixedAxisOneDoFJoint *fixed_axis_one_dof_joint);
-
 using namespace Eigen;
 using namespace std;
 
@@ -22,6 +18,21 @@ bool isMxArrayVector( const mxArray* array )
   size_t num_rows = mxGetM(array);
   size_t num_cols = mxGetN(array);
   return (num_rows <= 1) || (num_cols <= 1);
+}
+
+template <typename Derived>
+void setDynamics(const mxArray *pBodies, int i, FixedAxisOneDoFJoint<Derived>* fixed_axis_one_dof_joint) {
+  double damping = mxGetScalar(mxGetProperty(pBodies, i, "damping"));
+  double coulomb_friction = mxGetScalar(mxGetProperty(pBodies, i, "coulomb_friction"));
+  double coulomb_window = mxGetScalar(mxGetProperty(pBodies, i, "coulomb_window"));
+  fixed_axis_one_dof_joint->setDynamics(damping, coulomb_friction, coulomb_window);
+}
+
+template <typename Derived>
+void setLimits(const mxArray *pBodies, int i, FixedAxisOneDoFJoint<Derived>* fixed_axis_one_dof_joint) {
+  double joint_limit_min = mxGetScalar(mxGetProperty(pBodies,i,"joint_limit_min"));
+  double joint_limit_max = mxGetScalar(mxGetProperty(pBodies,i,"joint_limit_max"));
+  fixed_axis_one_dof_joint->setJointLimits(joint_limit_min,joint_limit_max);
 }
 
 
@@ -404,17 +415,4 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   //DEBUG
   //cout << "constructModelmex: END" << endl;
   //END_DEBUG
-}
-
-void setDynamics(const mxArray *pBodies, int i, FixedAxisOneDoFJoint *fixed_axis_one_dof_joint) {
-  double damping = mxGetScalar(mxGetProperty(pBodies, i, "damping"));
-  double coulomb_friction = mxGetScalar(mxGetProperty(pBodies, i, "coulomb_friction"));
-  double coulomb_window = mxGetScalar(mxGetProperty(pBodies, i, "coulomb_window"));
-  fixed_axis_one_dof_joint->setDynamics(damping, coulomb_friction, coulomb_window);
-}
-
-void setLimits(const mxArray *pBodies, int i, FixedAxisOneDoFJoint *fixed_axis_one_dof_joint) {
-  double joint_limit_min = mxGetScalar(mxGetProperty(pBodies,i,"joint_limit_min"));
-  double joint_limit_max = mxGetScalar(mxGetProperty(pBodies,i,"joint_limit_max"));
-  fixed_axis_one_dof_joint->setJointLimits(joint_limit_min,joint_limit_max);
 }
