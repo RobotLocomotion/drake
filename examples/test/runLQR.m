@@ -26,6 +26,11 @@ v = r.constructVisualizer;
 v.display_dt = 0.001;
 
 load('data/hopper_hybrid_lqr_sk.mat');
+
+N_hops = 1;
+[xtraj,utraj,Btraj,Ktraj,Straj_full] = repeatTraj(xtraj,utraj,Btraj,Ktraj,Straj_full,N_hops);
+
+
 if segment_number<1
   if iscell(xtraj)
     xtraj_full = xtraj{1};

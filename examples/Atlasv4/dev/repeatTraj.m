@@ -72,7 +72,7 @@ for i=1:N-1
   xtraj_tmp = shiftTime(xtraj_tmp,T);
   xtraj_N = xtraj_N.append(xtraj_tmp);
   
-  utraj_tmp = shiftTime(utraj,T);
+  utraj_tmp = shiftTime(utraj_,T);
   utraj_N = utraj_N.append(utraj_tmp);
   
   for j=1:m

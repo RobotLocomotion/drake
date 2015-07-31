@@ -1,4 +1,4 @@
-function [xtraj_N,utraj_N,Btraj_N,Straj_N,Straj_full_N] = repeatTraj(xtraj,utraj,Btraj,Straj,Straj_full,N)
+function [xtraj_N,utraj_N,Btraj_N,Ktraj_N,Straj_full_N] = repeatTraj(xtraj,utraj,Btraj,Ktraj,Straj_full,N)
 
 if N<1
   error('invalid N')
@@ -6,7 +6,7 @@ elseif N==1
   xtraj_N=xtraj;
   utraj_N=utraj;
   Btraj_N=Btraj;
-  Straj_N=Straj;
+  Ktraj_N=Ktraj;
   Straj_full_N=Straj_full;
   return
 end
@@ -27,21 +27,17 @@ if iscell(utraj)
   end
 end
 
-m = length(Straj);
+m = length(Ktraj);
 k=m;
 
 Btraj_N = Btraj;
-Straj_N = Straj;
+Ktraj_N = Ktraj;
 Straj_full_N = Straj_full;
 
 xtraj_N = xtraj;
 utraj_N = utraj;
   
 for i=1:N-1
-  % append input traj
-  Btraj_ = Btraj;
-  Straj_ = Straj;
-
   % add to xtraj
   T = xtraj_N.tspan(2);
   xT = xtraj_N.eval(T);
@@ -56,8 +52,8 @@ for i=1:N-1
   utraj_N = utraj_N.append(utraj_);
   
   for j=1:m
-    Btraj_N{k+j} = shiftTime(Btraj_{j},T);
-    Straj_N{k+j} = shiftTime(Straj_{j},T);
+    Btraj_N{k+j} = shiftTime(Btraj{j},T);
+    Ktraj_N{k+j} = shiftTime(Ktraj{j},T);
     Straj_full_N{k+j} = shiftTime(Straj_full{j},T);
   end
   k=k+m;
