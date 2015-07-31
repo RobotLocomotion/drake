@@ -3,11 +3,12 @@
 
 #include "DrakeJoint.h"
 
-#if defined(WIN32) || defined(WIN64)
 #define OVERRIDE
-#else
-#define OVERRIDE override
-#endif
+//#if defined(WIN32) || defined(WIN64)
+//#define OVERRIDE
+//#else
+//#define OVERRIDE override
+//#endif
 
 #define POSITION_AND_VELOCITY_DEPENDENT_METHODS_IMPL(Scalar) \
   virtual Eigen::Transform<Scalar, 3, Eigen::Isometry> jointTransform(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> > &q) const OVERRIDE { return derived.jointTransform(q); }; \
