@@ -49,12 +49,12 @@ public:
     }
   };
 
-  template <typename Scalar>
-  void qdot2v(const Eigen::Ref< const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> > & q,
-    Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> & qdot_to_v,
-    Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> * dqdot_to_v) const {
+  template<typename DerivedQ>
+  void qdot2v(const Eigen::MatrixBase<DerivedQ> & q,
+              Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic> &qdot_to_v,
+              Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic> *dqdot_to_v) const {
     qdot_to_v.resize(getNumVelocities(), getNumPositions());
-
+    typedef typename DerivedQ::Scalar Scalar;
     auto quat = q.template middleRows<QUAT_SIZE>(SPACE_DIMENSION);
     auto R = quat2rotmat(quat);
 
@@ -90,9 +90,11 @@ public:
     qdot_to_v.template block<3, 4>(3, 3).setZero();
   };
 
-  template<typename Scalar>
-  void v2qdot(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> > & q,
-    Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> & v_to_qdot, Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> * dv_to_qdot) const {
+  template<typename DerivedQ>
+  void v2qdot(const Eigen::MatrixBase<DerivedQ> & q,
+              Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic> &v_to_qdot,
+              Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic> *dv_to_qdot) const {
+    typedef typename DerivedQ::Scalar Scalar;
     v_to_qdot.resize(getNumPositions(), getNumVelocities());
 
     auto quat = q.template middleRows<QUAT_SIZE>(SPACE_DIMENSION);
