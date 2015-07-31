@@ -25,7 +25,7 @@ if traj_params==1
   s = '../urdf/atlas_simple_planar_contact.urdf';
   traj_file = 'data/atlas_more_clearance_3mode_lqr_sk'; 
   options.terrain = RigidBodyFlatTerrain();
-  modes = [8,6,4];
+  modes = [8,6,4,4,2,8];
 elseif traj_params==2
   s = '../urdf/atlas_simple_planar_contact.urdf';
   traj_file = 'data/atlas_step_and_stop_lqr'; 
@@ -34,9 +34,10 @@ elseif traj_params==2
   modes = [8,3,4,4,1]; % step
 elseif traj_params==3
   s = '../urdf/atlas_simple_spring_ankle_planar_contact.urdf';
-  traj_file = 'data/atlas_passiveankle_traj_lqr_zoh.mat';
+  traj_file = 'data/atlas_K10B2_passive_lqr_sk.mat';
   %traj_file = 'data/atlas_passiveankle_traj_lqr_090314_zoh.mat';
   options.terrain = RigidBodyFlatTerrain();
+  modes = [8,6,4,4,2,8];
 else
   error('unknown traj_params');
 end
@@ -58,10 +59,10 @@ v.display_dt = 0.01;
 load(traj_file);
 
 if traj_params~=2
-  repeat_n = 2;
+  repeat_n = 5;
   [xtraj,utraj,Btraj,Straj_full] = repeatTraj(r,xtraj,utraj,Btraj,Straj_full,repeat_n,true);
 else
-  repeat_n = 1;
+  repeat_n = 2;
 end
 
 support_times = zeros(1,length(Straj_full));
@@ -81,7 +82,7 @@ options.left_foot_name = 'l_foot';
 %modes = [8,6,1,3,4,4,2,1,7,8];
 
 
-modes = repmat(modes,1,repeat_n);
+modes = repmat(modes,1,repeat_n-1);
 lfoot_ind = findLinkId(r,options.left_foot_name);
 rfoot_ind = findLinkId(r,options.right_foot_name);  
 
@@ -125,7 +126,7 @@ if segment_number<1
 else
   B=Btraj{segment_number};
   S=Straj_full{segment_number};
-  t0 = Btraj{segment_number}.tspan(1);
+  t0 = round(1000*Btraj{segment_number}.tspan(1))/1000;
   tf = Btraj{segment_number}.tspan(2);
   if iscell(xtraj)
     xtraj = xtraj{segment_number};
@@ -213,17 +214,7 @@ if 1
     hold off;
   end
 end
+save('data/atlas_alt3mode_K10B2_passive_traj_exec.mat','traj');
 
-if 0
-  pptraj = PPTrajectory(foh(traj.getBreaks,traj.eval(traj.getBreaks)));
-  for i=1:20
-    figure(100+i);
-    fnplt(xtraj(i));
-    hold on;
-    fnplt(pptraj(i));
-    title(strrep(r.getStateFrame.coordinates(i),'_','\_'));
-    hold off;
-  end
-end
 end
 

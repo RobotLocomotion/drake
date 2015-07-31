@@ -174,7 +174,7 @@ classdef FullStateQPController < DrakeSystem
     next_supp_idx = min(supp_idx+1,length(ctrl_data.support_times));
 
     test_next_support = false;
-    if next_supp_idx > supp_idx && ctrl_data.support_times(next_supp_idx)-t < 0.002
+    if next_supp_idx > supp_idx && ctrl_data.support_times(next_supp_idx)-t < 0.025
       test_next_support = true;
     end
     
@@ -277,7 +277,10 @@ classdef FullStateQPController < DrakeSystem
     end
 
     np = 0;
+    leading_x_pos = -inf;
     for j=1:length(planned_supports)
+          kinsol = doKinematics(r,q,true,true,qd);
+
       [phi,~,~,~,~,~,~,~,n,~,dn,~] = contactConstraints(r,kinsol,false,struct('terrain_only',1,...
           'body_idx',[1,planned_supports(j)],'collision_groups',planned_contact_groups(j)));
       
@@ -301,14 +304,21 @@ classdef FullStateQPController < DrakeSystem
       xp = [xp,xp_j];
       Jp = [Jp;Jp_j];
       Jpdot = [Jpdot;Jpdot_j];
+
+      if exist('xz_pts') && ~isempty(xz_pts)
+        % compute foot placement error
+        kinsol0 = r.doKinematics(q0);
+        xp0 = forwardKin(r,kinsol0,planned_supports(j),xz_pts,0);
+        if any(xp_j(1,:) > leading_x_pos)
+          leading_x_pos = max(xp_j(1,:));
+          obj.controller_data.xoffset = (mean(xp_j(1,:)-xp0(1,:))); 
+        end
+
+      end
+
+
     end
 
-    % if exist('xz_pts') && ~isempty(xz_pts)
-    %   % compute foot placement error
-    %   kinsol0 = r.doKinematics(q0);
-    %   xp0 = forwardKin(r,kinsol0,planned_supports(j),xz_pts,0);
-    %   obj.controller_data.xoffset = -1*(mean(xp0(1,:)-xp_j(1,:))); % not quite right, need to take this over all bodies in contact
-    % end
     
     if dim==2
        % delete y rows
@@ -324,11 +334,11 @@ classdef FullStateQPController < DrakeSystem
     [H,C,B] = manipulatorDynamics(r,q,qd);
     
     neps = np*dim;
-    %if obj.offset_x
-    %  xoffset = obj.controller_data.xoffset
-%       x0(1) = x(1)  + obj.controller_data.xoffset;
-    %  x0(1) = x0(1) + obj.controller_data.xoffset;
-    %end
+    if obj.offset_x
+      xoffset = obj.controller_data.xoffset
+      x0(1) = x0(1) + obj.controller_data.xoffset;
+    end
+
     %----------------------------------------------------------------------
     % Build handy index matrices ------------------------------------------
 

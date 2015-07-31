@@ -13,20 +13,30 @@ r_leg = findPositionIndices(r,'r_leg');
 
 nq = getNumPositions(r);
 
-R = zeros(r.getNumStates());
-R(base_x,base_x) = 1;
-R(base_x+nq,base_x+nq) = 1;
-R(base_z,base_z) = 1;
-R(base_z+nq,base_z+nq) = 1;
-R(base_relative_pitch,base_relative_pitch) = 1;
-R(base_relative_pitch+nq,base_relative_pitch+nq) = 1;
-R(back_bky,back_bky) = 1;
-R(back_bky+nq,back_bky+nq) = 1;
+R = zeros(r.getNumStates);
+R(1:3,1:3) = eye(3); %x,z,pitch
+R(4:6,8:10) = eye(3); %leg joints w/symmetry
+R(8:10,4:6) = eye(3); %leg joints w/symmetry
+R(7,7) = 1; % back joint
+R(11:13,11:13) = eye(3); %x,z,pitch velocities
+R(14:16,18:20) = eye(3); %leg joints w/symmetry
+R(18:20,14:16) = eye(3); %leg joints w/symmetry
+R(17,17) = 1; % back joint
 
-R(l_leg,r_leg) = eye(length(r_leg));
-R(l_leg+nq,r_leg+nq) = eye(length(r_leg));
-R(r_leg,l_leg) = eye(length(r_leg));
-R(r_leg+nq,l_leg+nq) = eye(length(r_leg));
+% R = zeros(r.getNumStates());
+% R(base_x,base_x) = 1;
+% R(base_x+nq,base_x+nq) = 1;
+% R(base_z,base_z) = 1;
+% R(base_z+nq,base_z+nq) = 1;
+% R(base_relative_pitch,base_relative_pitch) = 1;
+% R(base_relative_pitch+nq,base_relative_pitch+nq) = 1;
+% R(back_bky,back_bky) = 1;
+% R(back_bky+nq,back_bky+nq) = 1;
+
+% R(l_leg,r_leg) = eye(length(r_leg));
+% R(l_leg+nq,r_leg+nq) = eye(length(r_leg));
+% R(r_leg,l_leg) = eye(length(r_leg));
+% R(r_leg+nq,l_leg+nq) = eye(length(r_leg));
 
 xtraj_ = R*xtraj;
 

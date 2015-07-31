@@ -146,6 +146,7 @@ options.Kp_accel = 0;
 options.Kp_phi = 0;
 options.contact_threshold = 1e-3;
 options.timestep = 0.001;
+options.offset_x = false;
 qp = FullStateQPController(r,ctrl_data,options);
 
 % feedback QP controller with spring flamingo
