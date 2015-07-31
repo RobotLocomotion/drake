@@ -115,7 +115,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       string joint_name;
       joint_name.assign(buf, strlen(buf));
 
-      pm = mxGetProperty(pBodies, i, "transform_to_parent_body");
+      pm = mxGetProperty(pBodies, i, "Ttree");
       // todo: check that the size is 4x4
       Isometry3d transform_to_parent_body;
       memcpy(transform_to_parent_body.data(), mxGetPrSafe(pm), sizeof(double) * 4 * 4);

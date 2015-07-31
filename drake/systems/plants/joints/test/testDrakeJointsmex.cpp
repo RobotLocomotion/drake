@@ -57,9 +57,9 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   Isometry3d transform_to_parent = Isometry3d::Identity();
 
   vector<unique_ptr<DrakeJoint>> joints;
-//  joints.push_back(unique_ptr<DrakeJoint>(new PrismaticJoint(prismaticJointName, transform_to_parent, prismatic_joint_axis)));
-//  joints.push_back(unique_ptr<DrakeJoint>(new RevoluteJoint(revoluteJointName, transform_to_parent, revolute_joint_axis)));
-//  joints.push_back(unique_ptr<DrakeJoint>(new HelicalJoint(helicalJointName, transform_to_parent, helical_joint_axis, helical_joint_pitch)));
+  joints.push_back(unique_ptr<DrakeJoint>(new PrismaticJoint(prismaticJointName, transform_to_parent, prismatic_joint_axis)));
+  joints.push_back(unique_ptr<DrakeJoint>(new RevoluteJoint(revoluteJointName, transform_to_parent, revolute_joint_axis)));
+  joints.push_back(unique_ptr<DrakeJoint>(new HelicalJoint(helicalJointName, transform_to_parent, helical_joint_axis, helical_joint_pitch)));
   joints.push_back(unique_ptr<DrakeJoint>(new QuaternionFloatingJoint("quaternion_floating", transform_to_parent)));
   joints.push_back(unique_ptr<DrakeJoint>(new RollPitchYawFloatingJoint("rpy_floating", transform_to_parent)));
 
@@ -78,7 +78,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     Isometry3d joint_transform = joint->jointTransform(q);
     safelySetField(joint_struct_out, "joint_transform", eigenToMatlab(joint_transform.matrix()));
 
-    Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> motion_subspace;
+    Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> motion_subspace(6, joint->getNumVelocities());
     MatrixXd dmotion_subspace;
     joint->motionSubspace(q, motion_subspace, &dmotion_subspace);
     safelySetField(joint_struct_out, "motion_subspace", eigenToMatlab(motion_subspace));
