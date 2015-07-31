@@ -41,7 +41,7 @@ public:
   void motionSubspace(const Eigen::MatrixBase<DerivedQ> & q,
                       Eigen::MatrixBase<DerivedMS>& motion_subspace,
                       typename Gradient<DerivedMS, Eigen::Dynamic>::type* dmotion_subspace = nullptr) const {
-    motion_subspace = joint_axis;
+    motion_subspace = joint_axis.cast<typename DerivedQ::Scalar>();
     if (dmotion_subspace) {
       dmotion_subspace->setZero(motion_subspace.size(), getNumPositions());
     }
@@ -83,13 +83,16 @@ public:
     }
   };
 
-  GradientVar<double, Eigen::Dynamic, 1> frictionTorque(const Eigen::Ref<const Eigen::VectorXd>& v, int gradient_order) const {
-    GradientVar<double, Eigen::Dynamic, 1> ret(getNumVelocities(), 1, getNumVelocities(), gradient_order);
+  template <typename DerivedV>
+  GradientVar<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorque(const Eigen::MatrixBase<DerivedV> & v, int gradient_order) const {
+    GradientVar<typename DerivedV::Scalar, Eigen::Dynamic, 1> ret(getNumVelocities(), 1, getNumVelocities(), gradient_order);
+    typedef typename DerivedV::Scalar Scalar;
     ret.value()[0] = damping * v[0];
-    ret.value()[0] += std::min(1.0, std::max(-1.0, v[0] / coulomb_window)) * coulomb_friction;
+    Scalar coulomb_window_fraction = v[0] / coulomb_window;
+    ret.value()[0] += std::min(static_cast<Scalar>(1.0), std::max(static_cast<Scalar>(-1.0), coulomb_window_fraction)) * coulomb_friction;
     if (gradient_order > 0) {
       ret.gradient().value()(0, 0) = damping;
-      if (std::abs(v[0]) < coulomb_window)
+      if (abs(v[0]) < coulomb_window)
         ret.gradient().value()(0, 0) += sign(v[0]) * (coulomb_friction / coulomb_window);
     }
     return ret;

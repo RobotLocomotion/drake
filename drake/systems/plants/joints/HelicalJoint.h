@@ -15,11 +15,19 @@ private:
   const double pitch;
 
 public:
-  HelicalJoint(const std::string& name, const Eigen::Isometry3d& transform_to_parent_body, const Eigen::Vector3d& axis, double pitch);
+  HelicalJoint(const std::string& name, const Eigen::Isometry3d& transform_to_parent_body, const Eigen::Vector3d& axis, double pitch) :
+      FixedAxisOneDoFJoint(*this, name, transform_to_parent_body, spatialJointAxis(axis, pitch)), axis(axis), pitch(pitch) { };
 
-  virtual ~HelicalJoint();
+  virtual ~HelicalJoint() { };
 
-  virtual Eigen::Isometry3d jointTransform(const Eigen::Ref<const Eigen::VectorXd>& q) const; //override;
+  template<typename DerivedQ>
+  Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry> jointTransform(const Eigen::MatrixBase<DerivedQ> &q) const {
+    typedef typename DerivedQ::Scalar Scalar;
+    Eigen::Transform<Scalar, 3, Eigen::Isometry> ret;
+    ret = Eigen::AngleAxis<Scalar>(q[0], axis.cast<Scalar>()) * Eigen::Translation<Scalar, 3>(q[0] * (pitch * axis).cast<Scalar>());
+    ret.makeAffine();
+    return ret;
+  }
 
 private:
   static Eigen::Matrix<double, TWIST_SIZE, 1> spatialJointAxis(const Eigen::Vector3d& axis, double pitch);

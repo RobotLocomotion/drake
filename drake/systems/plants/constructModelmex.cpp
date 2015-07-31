@@ -4,9 +4,15 @@
 #include "drakeMexUtil.h"
 #include "RigidBodyManipulator.h"
 #include <stdexcept>
+#include <RevoluteJoint.h>
+#include <PrismaticJoint.h>
+#include <HelicalJoint.h>
+#include <RollPitchYawFloatingJoint.h>
+#include <QuaternionFloatingJoint.h>
 
-#include "joints/drakeJointUtil.h"
-#include "joints/FixedAxisOneDoFJoint.h"
+void setLimits(const mxArray *pBodies, int i, FixedAxisOneDoFJoint *fixed_axis_one_dof_joint);
+
+void setDynamics(const mxArray *pBodies, int i, FixedAxisOneDoFJoint *fixed_axis_one_dof_joint);
 
 using namespace Eigen;
 using namespace std;
@@ -17,6 +23,7 @@ bool isMxArrayVector( const mxArray* array )
   size_t num_cols = mxGetN(array);
   return (num_rows <= 1) || (num_cols <= 1);
 }
+
 
 void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 {
@@ -94,13 +101,13 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
     {
       mxGetString(mxGetProperty(pBodies, i, "jointname"), buf, 100);
-      string jointname;
-      jointname.assign(buf, strlen(buf));
+      string joint_name;
+      joint_name.assign(buf, strlen(buf));
 
-      pm = mxGetProperty(pBodies, i, "Ttree");
+      pm = mxGetProperty(pBodies, i, "transform_to_parent_body");
       // todo: check that the size is 4x4
-      Isometry3d Ttree;
-      memcpy(Ttree.data(), mxGetPrSafe(pm), sizeof(double) * 4 * 4);
+      Isometry3d transform_to_parent_body;
+      memcpy(transform_to_parent_body.data(), mxGetPrSafe(pm), sizeof(double) * 4 * 4);
 
       int floating = (int) mxGetScalar(mxGetProperty(pBodies, i, "floating"));
 
@@ -111,27 +118,41 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       double pitch = mxGetScalar(mxGetProperty(pBodies, i, "pitch"));
 
       if (model->bodies[i]->hasParent()) {
-        unique_ptr<DrakeJoint> joint = createJoint(jointname, Ttree, floating, joint_axis, pitch);
-
-//        mexPrintf((model->bodies[i]->getJoint().getName() + ": " + std::to_string(model->bodies[i]->getJoint().getNumVelocities()) + "\n").c_str());
-
-        FixedAxisOneDoFJoint* fixed_axis_one_dof_joint = dynamic_cast<FixedAxisOneDoFJoint*>(joint.get());
-        if (fixed_axis_one_dof_joint != nullptr) {
-          double joint_limit_min = mxGetScalar(mxGetProperty(pBodies,i,"joint_limit_min"));
-          double joint_limit_max = mxGetScalar(mxGetProperty(pBodies,i,"joint_limit_max"));
-          fixed_axis_one_dof_joint->setJointLimits(joint_limit_min,joint_limit_max);
-
-          double damping = mxGetScalar(mxGetProperty(pBodies, i, "damping"));
-          double coulomb_friction = mxGetScalar(mxGetProperty(pBodies, i, "coulomb_friction"));
-          double coulomb_window = mxGetScalar(mxGetProperty(pBodies, i, "coulomb_window"));
-          fixed_axis_one_dof_joint->setDynamics(damping, coulomb_friction, coulomb_window);
+        std::unique_ptr<DrakeJoint> joint;
+        switch (floating) {
+          case 0: {
+            if (pitch == 0.0) {
+              RevoluteJoint *revolute_joint = new RevoluteJoint(joint_name, transform_to_parent_body, joint_axis);
+              joint = std::unique_ptr<RevoluteJoint>(revolute_joint);
+              setLimits(pBodies, i, revolute_joint);
+              setDynamics(pBodies, i, revolute_joint);
+            } else if (isInf(pitch)) {
+              PrismaticJoint *prismatic_joint = new PrismaticJoint(joint_name, transform_to_parent_body, joint_axis);
+              joint = std::unique_ptr<PrismaticJoint>(prismatic_joint);
+              setLimits(pBodies, i, prismatic_joint);
+              setDynamics(pBodies, i, prismatic_joint);
+            } else {
+              joint = std::unique_ptr<HelicalJoint>(new HelicalJoint(joint_name, transform_to_parent_body, joint_axis, pitch));
+            }
+            break;
+          }
+          case 1: {
+            joint = std::unique_ptr<RollPitchYawFloatingJoint>(new RollPitchYawFloatingJoint(joint_name, transform_to_parent_body));
+            break;
+          }
+          case 2: {
+            joint = std::unique_ptr<QuaternionFloatingJoint>(new QuaternionFloatingJoint(joint_name, transform_to_parent_body));
+            break;
+          }
+          default: {
+            std::ostringstream stream;
+            stream << "floating type " << floating << " not recognized.";
+            throw std::runtime_error(stream.str());
+          }
         }
 
         model->bodies[i]->setJoint(move(joint));
       }
-
-//      pm = mxGetProperty(pBodies,i,"T_body_to_joint");
-//      memcpy(model->bodies[i]->T_body_to_joint.data(),mxGetPrSafe(pm),sizeof(double)*4*4);
     }
 
     //DEBUG
@@ -383,4 +404,17 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   //DEBUG
   //cout << "constructModelmex: END" << endl;
   //END_DEBUG
+}
+
+void setDynamics(const mxArray *pBodies, int i, FixedAxisOneDoFJoint *fixed_axis_one_dof_joint) {
+  double damping = mxGetScalar(mxGetProperty(pBodies, i, "damping"));
+  double coulomb_friction = mxGetScalar(mxGetProperty(pBodies, i, "coulomb_friction"));
+  double coulomb_window = mxGetScalar(mxGetProperty(pBodies, i, "coulomb_window"));
+  fixed_axis_one_dof_joint->setDynamics(damping, coulomb_friction, coulomb_window);
+}
+
+void setLimits(const mxArray *pBodies, int i, FixedAxisOneDoFJoint *fixed_axis_one_dof_joint) {
+  double joint_limit_min = mxGetScalar(mxGetProperty(pBodies,i,"joint_limit_min"));
+  double joint_limit_max = mxGetScalar(mxGetProperty(pBodies,i,"joint_limit_max"));
+  fixed_axis_one_dof_joint->setJointLimits(joint_limit_min,joint_limit_max);
 }
