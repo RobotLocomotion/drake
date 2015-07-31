@@ -72,11 +72,12 @@ public:
     }
   };
 
-  template<typename Scalar>
-  void motionSubspaceDotTimesV(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>> &q, const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>> &v,
-                               Eigen::Matrix<Scalar, 6, 1> &motion_subspace_dot_times_v,
-                               typename Gradient<Eigen::Matrix<Scalar, 6, 1>, Eigen::Dynamic>::type *dmotion_subspace_dot_times_vdq = nullptr,
-                               typename Gradient<Eigen::Matrix<Scalar, 6, 1>, Eigen::Dynamic>::type *dmotion_subspace_dot_times_vdv = nullptr) const {
+  template<typename DerivedQ, typename DerivedV>
+  void motionSubspaceDotTimesV(const Eigen::MatrixBase<DerivedQ> &q, const Eigen::MatrixBase<DerivedV> &v,
+                               Eigen::Matrix<typename DerivedQ::Scalar, 6, 1> &motion_subspace_dot_times_v,
+                               typename Gradient<Eigen::Matrix<typename DerivedQ::Scalar, 6, 1>, Eigen::Dynamic>::type *dmotion_subspace_dot_times_vdq = nullptr,
+                               typename Gradient<Eigen::Matrix<typename DerivedQ::Scalar, 6, 1>, Eigen::Dynamic>::type *dmotion_subspace_dot_times_vdv = nullptr) const {
+    typedef typename DerivedQ::Scalar Scalar;
     motion_subspace_dot_times_v.resize(TWIST_SIZE, 1);
     auto rpy = q.template middleRows<RPY_SIZE>(SPACE_DIMENSION);
     Scalar roll = rpy(0);
@@ -153,6 +154,17 @@ public:
       dv_to_qdot->setZero(v_to_qdot.size(), getNumPositions());
     }
   };
+
+  template <typename DerivedV>
+  GradientVar<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorque(const Eigen::MatrixBase<DerivedV>, int gradient_order) const
+  {
+    GradientVar<typename DerivedV::Scalar, Eigen::Dynamic, 1> ret(getNumVelocities(), 1, getNumVelocities(), gradient_order);
+    ret.value().setZero();
+    if (gradient_order > 0) {
+      ret.gradient().value().setZero();
+    }
+    return ret;
+  }
 
   virtual bool isFloating() const { return true; }
   virtual Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const; //override;

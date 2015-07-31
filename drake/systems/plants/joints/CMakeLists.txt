@@ -2,7 +2,7 @@ include_directories ( .. )
 include_directories ( ${PROJECT_SOURCE_DIR}/util )
 
 #add_library(drakeJoints SHARED DrakeJoint.cpp DrakeJointImpl.cpp QuaternionFloatingJoint.cpp FixedAxisOneDoFJoint.cpp HelicalJoint.cpp PrismaticJoint.cpp RevoluteJoint.cpp RollPitchYawFloatingJoint.cpp drakeJointUtil.cpp)
-add_library(drakeJoints SHARED DrakeJoint.cpp FixedJoint.cpp QuaternionFloatingJoint.cpp RollPitchYawFloatingJoint.cpp)
+add_library(drakeJoints SHARED DrakeJoint.cpp FixedJoint.cpp QuaternionFloatingJoint.cpp RollPitchYawFloatingJoint.cpp  FixedAxisOneDoFJoint.cpp)
 #add_library(drakeJoints SHARED DrakeJoint.cpp DrakeJointImpl.cpp)
 
 target_link_libraries(drakeJoints drakeGeometryUtil)
