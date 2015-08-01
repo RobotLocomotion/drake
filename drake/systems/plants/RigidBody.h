@@ -93,32 +93,6 @@ public:
   Vector3d com; 
   Matrix<double, TWIST_SIZE, TWIST_SIZE> I;
 
-  Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> S;
-  MatrixXd dSdqi;
-  Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> J;
-  MatrixXd dJdq;
-
-  MatrixXd qdot_to_v;
-  MatrixXd dqdot_to_v_dqi;
-  MatrixXd dqdot_to_v_dq;
-  MatrixXd v_to_qdot;
-  MatrixXd dv_to_qdot_dqi;
-  MatrixXd dv_to_qdot_dq;
-
-  Vector6d twist;
-  Gradient<Vector6d, Eigen::Dynamic>::type dtwistdq;
-
-  Vector6d SdotV;
-  Gradient<Vector6d, Eigen::Dynamic>::type dSdotVdqi;
-  Gradient<Vector6d, Eigen::Dynamic>::type dSdotVdvi;
-
-  Vector6d JdotV;
-  Gradient<Vector6d, Eigen::Dynamic>::type dJdotVdq;
-  Gradient<Vector6d, Eigen::Dynamic>::type dJdotVdv;
-
-  Isometry3d T_new;
-  Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type dTdq_new;
-
   friend std::ostream& operator<<( std::ostream &out, const RigidBody &b);
 
   class DLLEXPORT_RBM CollisionElement : public DrakeCollision::Element
