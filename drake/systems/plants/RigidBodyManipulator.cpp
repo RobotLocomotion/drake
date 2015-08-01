@@ -14,6 +14,7 @@
 #include <limits>
 #include "drakeFloatingPointUtil.h" //for isFinite
 #include "RigidBodyConstraint.h"
+#include "KinematicsCache.h"
 //DEBUG
 //#include <stdexcept>
 //END_DEBUG
@@ -96,13 +97,6 @@ void RigidBodyManipulator::resize(int ndof, int num_rigid_body_objects, int num_
     throw runtime_error("number of rigid body objects must be positive");
   num_bodies = num_rigid_body_objects;
 
-  I_world.resize(num_bodies);
-  Ic_new.resize(num_bodies);
-  for (int i = 0; i < num_bodies; i++) {
-    I_world[i] = Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
-    Ic_new[i] = Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
-  }
-
   bodies.reserve(num_bodies);
   for (int i = last_num_bodies; i < num_bodies; i++) {
     bodies.push_back(std::shared_ptr<RigidBody>(new RigidBody()));
@@ -110,13 +104,6 @@ void RigidBodyManipulator::resize(int ndof, int num_rigid_body_objects, int num_
 
   num_frames = num_rigid_body_frames;
   frames.resize(num_frames);
-
-  dI_world.resize(num_bodies);
-  dIc_new.resize(num_bodies);
-  for (int i = 0; i < num_bodies; i++) {
-    dI_world[i] = MatrixXd::Zero(I_world[i].size(), num_positions);
-    dIc_new[i] = MatrixXd::Zero(Ic_new[i].size(), num_positions);
-  }
 
   initialized = false;
 
@@ -181,7 +168,6 @@ void RigidBodyManipulator::compile(void)
 
   for (int i=0; i<num_bodies; i++) {
     bodies[i]->body_index = i;
-    bodies[i]->setN(_num_positions, num_velocities);
   }
 
   B.resize(num_velocities,actuators.size());

@@ -27,6 +27,7 @@
 
 #include "RigidBody.h"
 #include "RigidBodyFrame.h"
+#include "KinematicsCache.h"
 
 #define BASIS_VECTOR_HALF_COUNT 2  //number of basis vectors over 2 (i.e. 4 basis vectors in this case)
 #define EPSILON 10e-8
@@ -343,13 +344,6 @@ private:
 
   void checkCachedKinematicsSettings(bool kinematics_gradients_required, bool velocity_kinematics_required, bool jdot_times_v_required, const std::string& method_name);
 
-  // variables for featherstone dynamics
-  std::vector<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::aligned_allocator< Matrix<double, TWIST_SIZE, TWIST_SIZE> > > I_world;
-  std::vector<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::aligned_allocator< Matrix<double, TWIST_SIZE, TWIST_SIZE> > > Ic_new;
-
-
-  std::vector<Gradient<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::Dynamic>::type> dI_world;
-  std::vector<Gradient<Matrix<double, TWIST_SIZE, TWIST_SIZE>, Eigen::Dynamic>::type> dIc_new;
 
   bool initialized;
   bool position_kinematics_cached;
