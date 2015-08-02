@@ -468,6 +468,8 @@ bool parseLink(RigidBodyManipulator* model, TiXmlElement* node, const map<string
     return false;
   }
   body->linkname = attr;
+  if (body->linkname == "world")
+    throw runtime_error("ERROR: do not name a link 'world', it is a reserved name");
 
   TiXmlElement* inertial_node = node->FirstChildElement("inertial");
   if (inertial_node)
@@ -753,6 +755,7 @@ bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const map<strin
   for (TiXmlElement* link_node = node->FirstChildElement("material"); link_node; link_node = link_node->NextSiblingElement("material")) {
     parseMaterial(link_node, materials);  // accept failed material parsing
   }
+
   // parse link elements
   for (TiXmlElement* link_node = node->FirstChildElement("link"); link_node; link_node = link_node->NextSiblingElement("link"))
     if (!parseLink(model, link_node, materials, package_map, root_dir)) {
@@ -773,12 +776,10 @@ bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const map<strin
     if (!parseJoint(model, joint_node))
       return false;
 
-
   // parse transmission elements
   for (TiXmlElement* transmission_node = node->FirstChildElement("transmission"); transmission_node; transmission_node = transmission_node->NextSiblingElement("transmission"))
     if (!parseTransmission(model, transmission_node))
       return false;
-
 
   // parse loop joints
   for (TiXmlElement* loop_node = node->FirstChildElement("loop_joint"); loop_node; loop_node = loop_node->NextSiblingElement("loop_joint"))
