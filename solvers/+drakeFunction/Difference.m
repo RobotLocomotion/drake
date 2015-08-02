@@ -11,26 +11,23 @@ classdef Difference < drakeFunction.Linear
   % \end{bmatrix}
   % \f]
   methods
-    function obj = Difference(frame,n)
+    function obj = Difference(m,n)
       % obj = Difference(frame,n) returns a function representing the
       %   differences between consectutive elements of a set of n points
-      %   in the CoordinateFrame 'frame'
+      %   in R^m
       %
       % obj = Difference(frame) is the same, but with n = 2
       %
-      % @param frame  -- CoordinateFrame
+      % @param m      -- length of each element
       % @param n      -- Number of elements. 
       %                  Optional @default = 2
       if nargin < 2, n = 2; end
-      typecheck(frame,'CoordinateFrame');
+      integervaluedcheck(m);
       integervaluedcheck(n);
       assert(n>=2,'Drake:DrakeFunction:Difference:BadInput',...
         'The number of points to difference, n, must be at least 2');
-      input_frame = MultiCoordinateFrame.constructFrame(repmat({frame},1,n));
-      output_frame = MultiCoordinateFrame.constructFrame(repmat({frame},1,n-1));
-      nx = frame.dim;
-      A = kron(spdiags(ones(n-1,1),0,n-1,n),eye(nx)) + kron(spdiags(-ones(n-1,1),1,n-1,n),eye(nx));
-      obj = obj@drakeFunction.Linear(input_frame,output_frame,A);
+      A = kron(spdiags(ones(n-1,1),0,n-1,n),eye(m)) + kron(spdiags(-ones(n-1,1),1,n-1,n),eye(m));
+      obj = obj@drakeFunction.Linear(A);
     end
   end
 end

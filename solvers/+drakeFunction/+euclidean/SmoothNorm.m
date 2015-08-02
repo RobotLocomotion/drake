@@ -11,19 +11,17 @@ classdef SmoothNorm < drakeFunction.DrakeFunction
   end
 
   methods
-    function obj = SmoothNorm(input_frame,smoothing_factor)
+    function obj = SmoothNorm(dim_input,smoothing_factor)
       % obj = SmoothNorm(input_frame,smoothing_factor)
       % 
-      % @param input_frame        -- CoordinateFrame to which the 
-      %                              input belongs
+      % @param dim_input          -- Length of the input vector
       % @param smoothing_factor   -- Numerical scalar
       %
       % @retval obj               -- drakeFunction.euclidean.SmoothNorm
       %                              object
       sizecheck(smoothing_factor,[1,1]);
       typecheck(smoothing_factor,'numeric');
-      output_frame = drakeFunction.frames.realCoordinateSpace(1);
-      obj = obj@drakeFunction.DrakeFunction(input_frame,output_frame);
+      obj = obj@drakeFunction.DrakeFunction(dim_input,1);
       obj.smoothing_factor = smoothing_factor;
     end
 

@@ -3,11 +3,11 @@ function [x,F,info] = smoothNormTest(N)
   if nargin < 1, N = 3; end
   lcmgl = LCMGLClient('smoothNormTest');
   r_inds = reshape(1:3*N,3,N);
-  R3 = drakeFunction.frames.realCoordinateSpace(3);
+  dim = 3;
   radius = 0.2;
   smoothing_factor = 1e-4;
-  smooth_norm_fcn = drakeFunction.euclidean.SmoothNorm(R3,smoothing_factor);
-  smooth_dist_between_pts_fcn = smooth_norm_fcn(Difference(R3));
+  smooth_norm_fcn = drakeFunction.euclidean.SmoothNorm(dim,smoothing_factor);
+  smooth_dist_between_pts_fcn = smooth_norm_fcn(Difference(dim));
   distance_constraint = DrakeFunctionConstraint((2*radius),inf,smooth_dist_between_pts_fcn);
 
   prog = NonlinearProgram(3*N);

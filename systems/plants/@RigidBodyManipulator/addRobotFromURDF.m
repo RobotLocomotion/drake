@@ -528,7 +528,7 @@ function model = parseCable(model,robotnum,node,options)
   end
 
   constraint = DrakeFunctionConstraint(min_length,max_length,cable_length_function);
-  constraint = setName(constraint,cable_length_function.getOutputFrame.name);
+  constraint = setName(constraint,cable_length_function.name);
   model = addPositionEqualityConstraint(model,constraint);
 end
 

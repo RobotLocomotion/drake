@@ -17,9 +17,9 @@ classdef DesiredQuatDiff<drakeFunction.DrakeFunction
       norm_quat_des = norm(quat_des);
       valuecheck(norm_quat_des,1,1e-4);
       quat_des = quat_des/norm_quat_des;
-      input_frame = drakeFunction.frames.realCoordinateSpace(4);
-      output_frame = drakeFunction.frames.realCoordinateSpace(1);
-      obj = obj@drakeFunction.DrakeFunction(input_frame,output_frame);
+      dim_input = 4;
+      dim_output = 1;
+      obj = obj@drakeFunction.DrakeFunction(dim_input, dim_output);
       obj.quat_des = quat_des;
     end
     

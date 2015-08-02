@@ -3,34 +3,20 @@ classdef ConstantPower < drakeFunction.DrakeFunction
     power   % Numeric vector or scalar
   end
   methods
-    function obj = ConstantPower(varargin)
-      % obj = ConstantPower(input_frame,output_frame,power) returns a
+    function obj = ConstantPower(dim_input, power)
+      % obj = ConstantPower(dim_input, power) returns a
       %   DrakeFunction that raises its input elementwise to the given
       %   power
       %
-      % obj = ConstantPower(frame,value) is the same, but with
-      %   identical input and output frames
-      %
-      % @param input_frame    -- CoordinateFrame of the input
-      % @param output_frame   -- CoordinateFrame of the output. Must
-      %                          have the same dimension as input_frame
+      % @param dim_input        -- Length of the input vector
       % @param power          -- Numeric scalar or vector. The output of
       %                          the returned function is x.^power
       %
-      % @retval fcn           -- drakeFunction.Linear object
-      input_frame = varargin{1};
-      if nargin > 2
-        output_frame = varargin{2};
-        power = varargin{3};
-      else
-        output_frame = input_frame;
-        power = varargin{2};
-      end
-      valuecheck(input_frame.dim,output_frame.dim);
+      % @retval obj           -- drakeFunction.Linear object
       if ~isscalar(power)
-        sizecheck(power,[input_frame.dim,1]);
+        sizecheck(power,[dim_input,1]);
       end
-      obj = obj@drakeFunction.DrakeFunction(input_frame,output_frame);
+      obj = obj@drakeFunction.DrakeFunction(dim_input, dim_input);
       obj.power = power;
     end
 

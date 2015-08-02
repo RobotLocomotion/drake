@@ -1,16 +1,19 @@
 classdef DrakeFunction
   % drakeFunction.DrakeFunction   Abstract parent class for all DrakeFunction classes
-  % A DrakeFunction represents a vector-valued function that maps a
-  % point in one CoordinateFrame to a point in another CoordinateFrame
+  % A DrakeFunction represents a vector-valued function of a single vector input
   
   properties (SetAccess = protected)
-    input_frame   % CoordinateFrame representing the domain
-    output_frame  % CoordinateFrame representing the range
+    dim_input   % length of input vector
+    dim_output   % length of output vector
 
     % gradient sparsity information
     iCfun   % An int vector. The row index of non-zero entries of the gradient matrix
     jCvar   % An int vector. The column index of the non-zero entries of the gradient matrix
     nnz     % An int scalar. The maximal number of non-zero entries in the gradient matrix
+  end
+
+  properties
+    name = '';
   end
 
   methods (Abstract)
@@ -20,20 +23,18 @@ classdef DrakeFunction
   end
 
   methods
-    function obj = DrakeFunction(input_frame,output_frame)
-      % obj = drakeFunction.DrakeFunction(input_frame,output_frame)
+    function obj = DrakeFunction(dim_input, dim_output)
+      % obj = drakeFunction.DrakeFunction(dim_input, dim_output)
       %   returns a DrakeFunction object representing a map from
-      %   input_frame to output_frame
+      %   R^dim_input to R^dim_output
       %
-      % @param input_frame    -- CoordinateFrame representing the domain
-      % @param output_frame   -- CoordinateFrame representing the range
+      % @param dim_input   % length of input vector
+      % @param dim_output   % length of output vector
       %
       % @retval obj           -- drakeFunction.DrakeFunction object
 
-      typecheck(input_frame,'CoordinateFrame');
-      typecheck(output_frame,'CoordinateFrame');
-      obj.input_frame = input_frame;
-      obj.output_frame = output_frame;
+      obj.dim_input = dim_input;
+      obj.dim_output = dim_output;
       obj = obj.setSparsityPattern();
     end
 
@@ -47,21 +48,18 @@ classdef DrakeFunction
       %   (iCfun and jGvar) in the returned object. Sub-classes that wish to
       %   modify the default sparsity pattern (dense) should overload this
       %   method
-      n_input = obj.getInputFrame().dim;
-      n_output = obj.getOutputFrame().dim;
-      obj.iCfun = reshape(bsxfun(@times,(1:n_output)',ones(1,n_input)),[],1);
-      obj.jCvar = reshape(bsxfun(@times,1:n_input,ones(n_output,1)),[],1);
+      obj.iCfun = reshape(bsxfun(@times,(1:obj.dim_output)',ones(1,obj.dim_input)),[],1);
+      obj.jCvar = reshape(bsxfun(@times,1:obj.dim_input,ones(obj.dim_output,1)),[],1);
     end
 
     function fcn = plus(obj,other,same_input)
       % fcn = plus(obj,other,same_input) returns a DrakeFunction whose output
       %   is the sum of the outputs of obj and other. If same_input = true, the
-      %   input frame of the returned DrakeFunction is the same as the input
-      %   frames of obj and other. If same_input = false, the input frame of
-      %   the returned DrakeFunction is the concatenation of their input
-      %   frames.
+      %   returned DrakeFunction has an input of the same size as that of obj
+      %   and other. If same_input = false, the returned DrakeFunction has an
+      %   input whose length is the sum of those of the inputs of obj and other
       %
-      % fcn = plus(obj,other,same_input) is equivalent to plus(obj,other,false)
+      % fcn = plus(obj,other) is equivalent to plus(obj,other,false)
       %
       % @param obj          -- DrakeFunction object
       % @param other        -- DrakeFunction object
@@ -74,7 +72,7 @@ classdef DrakeFunction
       import drakeFunction.*
       if nargin < 3, same_input = false; end
       if isa(other,'drakeFunction.DrakeFunction')
-        fcn = compose(Sum(obj.output_frame,2),Concatenated({obj,other},same_input));
+        fcn = compose(Sum(obj.dim_output,2),concatenate(obj,other,same_input));
       else
         error('Drake:drakeFunction:NotSupported', ...
           'Addition of DrakeFunctions with other classes is not supported');
@@ -97,8 +95,7 @@ classdef DrakeFunction
 
     function fcn = uminus(obj)
       import drakeFunction.*
-      fcn = compose(ConstantMultiple(obj.getOutputFrame, ...
-                                      obj.getOutputFrame,-1),obj);
+      fcn = compose(ConstantMultiple(obj.dim_output, -1),obj);
     end
 
     function fcn = mtimes(obj,other)
@@ -124,8 +121,7 @@ classdef DrakeFunction
         error('Drake:drakeFunction:DrakeFunction:NoDrakeFunctionProducts', ...
           'Elementwise products of two DrakeFunctions are not yet imiplemented');
       end
-      frame = fcn_orig.getOutputFrame();
-      fcn = compose(ConstantMultiple(frame,value),fcn_orig);
+      fcn = compose(ConstantMultiple(fcn_orig.dim_input,value),fcn_orig);
     end
 
     function fcn = vertcat(obj,varargin)
@@ -158,18 +154,18 @@ classdef DrakeFunction
       fcn = concatenate(obj,more_obj{:});
     end
 
-    function fcn = addInputFrame(obj,frame,append)
-      % fcn = appendInputFrame(obj,frame,append) returns a DrakeFunction that
+    function fcn = addInputs(obj,n_additional_inputs,append)
+      % fcn = appendInputs(obj,n_additional_inputs,append) returns a DrakeFunction that
       % is the same as obj, but with unused inputs added. These inputs are
       % appended or prepended based on the value of 'append'.
       %
       % @param obj
-      % @param frame
+      % @param n_additional_inputs
       % @param append -- Logical indicating whether to add the inputs after (T)
       %                  or before (F) the current inputs. 
       %                  Optional. @default True 
       if nargin < 3, append = true; end
-      dummy_fcn = drakeFunction.Zeros(frame,drakeFunction.frames.realCoordinateSpace(0));
+      dummy_fcn = drakeFunction.Zeros(0, n_additional_inputs);
       if append
         fcn = [obj;dummy_fcn];
       else
@@ -186,10 +182,10 @@ classdef DrakeFunction
               [varargout{:}] = compose(obj,s.subs{1});
             else
               if isa(s.subs{1},'Point')
-                assert(isequal_modulo_transforms(s.subs{1}.frame,obj.input_frame));
+                assert(s.subs{1}.frame.dim,obj.dim_input);
                 x = double(s.subs{1});
               elseif isnumeric(s.subs{1})
-                sizecheck(s.subs{1},[obj.input_frame.dim,1]);
+                sizecheck(s.subs{1},[obj.dim_input,1]);
                 x = s.subs{1};
               else
                 error('Drake:drakeFunction:DrakeFunction:UnsupportedType', ...
@@ -206,20 +202,12 @@ classdef DrakeFunction
       end
     end
 
-    function input_frame = getInputFrame(obj)
-      input_frame = obj.input_frame;
+    function dim_input = getNumInputs(obj)
+      dim_input = obj.dim_input;
     end
 
-    function output_frame = getOutputFrame(obj)
-      output_frame = obj.output_frame;
-    end
-
-    function n_inputs = getNumInputs(obj)
-      n_inputs = obj.input_frame.dim;
-    end
-
-    function n_outputs = getNumOutputs(obj)
-      n_outputs = obj.output_frame.dim;
+    function dim_output = getNumOutputs(obj)
+      dim_output = obj.dim_output;
     end
   end
 end

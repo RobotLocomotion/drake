@@ -175,7 +175,7 @@ classdef Manipulator < DrakeSystem
       assert(all(con.lb == con.ub));
         
       pos_fun = con.fcn;
-      state_fun = pos_fun.addInputFrame(obj.getVelocityFrame);
+      state_fun = pos_fun.addInputs(obj.getNumVelocities());
       state_con = DrakeFunctionConstraint(con.lb,con.ub,state_fun);
       state_con = state_con.setName(con.name);
 

@@ -1,6 +1,5 @@
 function testDesiredQuatDiff
 import drakeFunction.*
-import drakeFunction.frame.*
 import drakeFunction.geometry.*
 
 quat_des = randn(4,1);

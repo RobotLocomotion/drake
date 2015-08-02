@@ -18,9 +18,9 @@ classdef Composed < drakeFunction.DrakeFunction
       % @retval obj         -- Composed function
       typecheck(fcn_outer,'drakeFunction.DrakeFunction');
       typecheck(fcn_inner,'drakeFunction.DrakeFunction');
-      assert(isequal_modulo_transforms(fcn_outer.input_frame,fcn_inner.output_frame));
-      obj = obj@drakeFunction.DrakeFunction(fcn_inner.getInputFrame(),...
-                                   fcn_outer.getOutputFrame());
+      valuecheck(fcn_outer.dim_input, fcn_inner.dim_output);
+      obj = obj@drakeFunction.DrakeFunction(fcn_inner.dim_input, ...
+                                            fcn_outer.dim_output);
       obj.fcn_outer = fcn_outer;
       obj.fcn_inner = fcn_inner;
       obj = obj.setSparsityPattern();

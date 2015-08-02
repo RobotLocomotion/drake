@@ -2,7 +2,8 @@ classdef CableLength < drakeFunction.kinematic.Kinematic
 
   methods
     function obj = CableLength(rbm,name)
-      obj = obj@drakeFunction.kinematic.Kinematic(rbm,CoordinateFrame([name,'_length'],1,'l',{'length'}));
+      obj = obj@drakeFunction.kinematic.Kinematic(rbm,1);
+      obj.name = name;
     end
 
     function obj = addPulley(obj,frame,xyz,axis,radius,number_of_wraps)

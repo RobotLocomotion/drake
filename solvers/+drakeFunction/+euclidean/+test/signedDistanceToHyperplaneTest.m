@@ -6,22 +6,20 @@ function [x,F,info] = signedDistanceToHyperplaneTest(N)
   lcmgl = LCMGLClient('normSquaredTest');
 
   % Convenient constants
-  R3 = drakeFunction.frames.realCoordinateSpace(3);
+  dim = 3;
   r_inds = reshape(1:3*N,3,N);
   radius = 0.2;
   origin = [1;0;0];
 
   % Create functions for norm squared and squared distance
-  norm_squared_fcn = drakeFunction.euclidean.NormSquared(R3);
-  squared_dist_between_pts_fcn = norm_squared_fcn(Difference(R3));
+  norm_squared_fcn = drakeFunction.euclidean.NormSquared(dim);
+  squared_dist_between_pts_fcn = norm_squared_fcn(Difference(dim));
 
   % Create expressions for signed distances to two planes
   hyperplane_distance1 = ...
-    drakeFunction.euclidean.SignedDistanceToHyperplane(Point(R3,origin), ...
-                                                    Point(R3,[1;1;1]));
+    drakeFunction.euclidean.SignedDistanceToHyperplane(origin, [1;1;1]);
   hyperplane_distance2 = ...
-    drakeFunction.euclidean.SignedDistanceToHyperplane(Point(R3,origin), ...
-                                                    Point(R3,[0;0;-1]));
+    drakeFunction.euclidean.SignedDistanceToHyperplane(origin, [0;0;-1]);
 
   % Duplicate these for N points and concatenate with shared inputs
   hyperplane_distances = Concatenated({duplicate(hyperplane_distance1,N), ...

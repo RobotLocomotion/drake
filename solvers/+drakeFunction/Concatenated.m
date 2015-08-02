@@ -42,6 +42,7 @@ classdef Concatenated < drakeFunction.DrakeFunction
     n_contained_functions   % Number of elements in contained_functions
     same_input              % Logical scalar indicating whether all of
                             % the contained function share the same input
+    index_map               % Cell array of indices into the input vector
   end
 
   methods
@@ -61,11 +62,19 @@ classdef Concatenated < drakeFunction.DrakeFunction
       typecheck(fcns,'cell');
       assert(all(cellfun(@(arg)isa(arg,'drakeFunction.DrakeFunction'), fcns)));
 
-      input_frame = drakeFunction.Concatenated.constructInputFrame(fcns,same_input);
-      output_frame = drakeFunction.Concatenated.constructOutputFrame(fcns);
+      dim_input = drakeFunction.Concatenated.computeNumberOfInputs(fcns,same_input);
+      dim_output = drakeFunction.Concatenated.computeNumberOfOutputs(fcns);
 
-      obj = obj@drakeFunction.DrakeFunction(input_frame, output_frame);
+      obj = obj@drakeFunction.DrakeFunction(dim_input, dim_output);
 
+      obj.index_map = cell(numel(fcns),1);
+      offset = 0;
+      for i = 1:numel(fcns)
+        obj.index_map{i} = offset + (1:fcns{i}.dim_input);
+        if ~same_input
+          offset = offset + fcns{i}.dim_input;
+        end
+      end
       obj.contained_functions = fcns;
       obj.n_contained_functions = numel(fcns);
       obj.same_input = same_input;
@@ -118,25 +127,19 @@ classdef Concatenated < drakeFunction.DrakeFunction
       % @retval df_cell   -- Cell array of Jacobians for each component
       %                      function
       compute_second_derivatives = (nargout > 2);
-      x_cell = cell(size(obj.contained_functions));
-      f_cell = cell(size(x_cell));
-      df_cell = cell(size(x_cell));
+      f_cell = cell(obj.n_contained_functions, 1);
+      df_cell = cell(obj.n_contained_functions, 1);
       if compute_second_derivatives
-        ddf_cell = cell(size(x_cell));
-      end
-      if obj.same_input
-        x_cell(:) = {x};
-      else
-        x_cell = splitCoordinates(obj.input_frame, x);
+        ddf_cell = cell(obj.n_contained_functions, 1);
       end
       contained_functions_local = obj.contained_functions;
       if compute_second_derivatives
         for i = 1:obj.n_contained_functions
-          [f_cell{i},df_cell{i},ddf_cell{i}] = eval(contained_functions_local{i},x_cell{i});
+          [f_cell{i},df_cell{i},ddf_cell{i}] = eval(contained_functions_local{i},x(obj.index_map{i}));
         end
       else
         for i = 1:obj.n_contained_functions
-          [f_cell{i},df_cell{i}] = eval(contained_functions_local{i},x_cell{i});
+          [f_cell{i},df_cell{i}] = eval(contained_functions_local{i},x(obj.index_map{i}));
         end
       end
     end
@@ -160,27 +163,22 @@ classdef Concatenated < drakeFunction.DrakeFunction
   end
 
   methods (Static)
-    function input_frame = constructInputFrame(fcns, same_input)
+    function dim_input = computeNumberOfInputs(fcns, same_input)
       if nargin < 2, same_input = false; end
-      fcn_input_frames = cellfun(@(fcn) fcn.getInputFrame(), ...
-        fcns,'UniformOutput',false);
       if same_input
-        % Check that all elements of fcns have the same input_frame
-        input_frame = fcn_input_frames{1};
-        assert(all(cellfun(@(frame) isequal_modulo_transforms(frame,input_frame),fcn_input_frames)), ...
-          'Drake:DrakeFunction:InputFramesDoNotMatch', ...
+        dim_input = fcns{1}.dim_input;
+        % Check that all elements of fcns have the same number of inputs
+        assert(all(cellfun(@(fcn) fcn.dim_input == dim_input, fcns(2:end))), ...
+          'Drake:DrakeFunction:NInputsDoNotMatch', ...
           ['If ''same_input'' is set to true, all functions must ' ...
-           'have the same input frame']);
+           'have inputs of the same size']);
       else
-        input_frame = MultiCoordinateFrame(fcn_input_frames);
+        dim_input = sum(cellfun(@(fcn) fcn.dim_input, fcns));
       end
     end
 
-    function output_frame = constructOutputFrame(fcns)
-      fcn_output_frames = cellfun(@(fcn) fcn.getOutputFrame(), ...
-        fcns,'UniformOutput',false);
-      fcn_output_frames(cellfun(@(frame) frame.dim == 0, fcn_output_frames)) = [];
-      output_frame = MultiCoordinateFrame.constructFrame(fcn_output_frames);
+    function dim_output = computeNumberOfOutputs(fcns)
+      dim_output = sum(cellfun(@(fcn) fcn.dim_output, fcns));
     end
 
   end

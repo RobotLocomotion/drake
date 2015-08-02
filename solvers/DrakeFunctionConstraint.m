@@ -4,9 +4,9 @@ classdef DrakeFunctionConstraint < Constraint
   end
   methods
     function obj = DrakeFunctionConstraint(lb,ub,fcn)
-      sizecheck(lb,[fcn.getOutputFrame().dim,1]);
-      sizecheck(ub,[fcn.getOutputFrame().dim,1]);
-      obj = obj@Constraint(lb,ub,fcn.getInputFrame().dim,1);
+      sizecheck(lb,[fcn.dim_output,1]);
+      sizecheck(ub,[fcn.dim_output,1]);
+      obj = obj@Constraint(lb,ub,fcn.dim_input,1);
       obj.fcn = fcn;
       [iCfun,jCvar] = getSparsityPattern(obj.fcn);
       obj = setSparseStructure(obj,iCfun,jCvar);
