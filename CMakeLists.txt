@@ -51,7 +51,7 @@ set(MAKE_COMMAND ${MAKE_EXECUTABLE} $ENV{MAKEFLAGS}) # didn't work on my first t
 # process optional projects
 # note: keep drake in this loop in case externals depend on drake (e.g. the director might in the near future)
 set(EXTERNAL_PROJECTS)
-foreach(proj IN ITEMS eigen gtk lcm libbot bullet iris spotless director octomap snopt gurobi mosek yalmip gloptipoly bertini sedumi avl xfoil drake)
+foreach(proj IN ITEMS cmake eigen gtk lcm libbot bullet iris spotless director octomap snopt gurobi mosek yalmip gloptipoly bertini sedumi avl xfoil drake)
 	string(TOUPPER ${proj} proj_upper)
 	if (${proj} STREQUAL "drake" OR WITH_${proj_upper} OR WITH_ALL_SUPPORTED_EXTERNALS)
 		list(APPEND EXTERNAL_PROJECTS ${proj})
@@ -90,7 +90,7 @@ endif()
 set(lcm_dependencies gtk)
 set(libbot_dependencies lcm)
 set(director_dependencies lcm libbot)
-set(drake_dependencies eigen lcm libbot bullet octomap snopt gurobi)
+set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi)
 
 # download information, in alphabetical order
 find_package(Git QUIET)
@@ -100,6 +100,9 @@ set(bertini_GIT_REPOSITORY https://github.com/RobotLocomotion/bertini.git)
 set(bertini_GIT_TAG 3ae3e3ad3534acb4b6f7a4c3c22728b493beaa80)
 set(bullet_GIT_REPOSITORY https://github.com/RobotLocomotion/bullet-pod.git)
 set(bullet_GIT_TAG 6db7ae5e29f8b35ffcea384c53caa4bddcc6f986)
+set(cmake_GIT_REPOSITORY https://github.com/RobotLocomotion/cmake.git)
+set(cmake_GIT_TAG c48d1e461d8f0a8d67ebba3e4acb19d96dd5a25b)
+set(cmake_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/drake/cmake")
 set(director_GIT_REPOSITORY https://github.com/RobotLocomotion/director.git)
 set(director_GIT_TAG f44045f75e931165d9f519b989bdbd1ad8e70b08)
 set(director_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/director/distro/pods/drake-distro)
@@ -151,7 +154,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 		endif()
 	endforeach()
 
-	if (${proj} STREQUAL "drake")
+	if (NOT ${proj} STREQUAL "drake")
 		if (NOT ${proj}_GIT_CLONE_DIR)
 			set(${proj}_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/externals/${proj}")
 		endif()
@@ -199,8 +202,10 @@ foreach (proj ${EXTERNAL_PROJECTS})
 	#		BUILD_ALWAYS 1
 			)
 	else()
+		message(STATUS "Preparing to build ${proj} with dependencies: ${deps}")
+
 		ExternalProject_Add(${proj} 
-			SOURCE_DIR ${${proj}_SOURCE_DIR}
+			SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake"
 			DOWNLOAD_COMMAND ""
 			UPDATE_COMMAND ""
 			CONFIGURE_COMMAND ""
@@ -210,7 +215,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 			DEPENDS ${deps}
 	#		BUILD_ALWAYS 1
 			)
-	endif(${proj} STREQUAL "drake") 
+	endif(NOT ${proj} STREQUAL "drake") 
 
 
 	# once we require cmake version >= 3.1, then we can zap this and just use the BUILD_ALWAYS flags above
