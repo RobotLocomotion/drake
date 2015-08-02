@@ -72,14 +72,10 @@ endif
 		   -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
 
 .PHONY: doc doxygen
-doc:	doxygen doc/drake.pdf doc/urdf/drakeURDF.html
+doc:	doxygen doc/urdf/drakeURDF.html
 
 doxygen :
 	doxygen doc/Doxyfile
-
-doc/drake.pdf :
-	cd doc && make -f ~/code/latex/makefile_tex drake.pdf
-# apologies for hard-coding this for my mac for now... - Russ
 
 doc/urdf/drakeURDF.html : doc/drakeURDF.xsd
 ifeq ($(BUILD_SYSTEM),Darwin)
