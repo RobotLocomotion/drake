@@ -1,4 +1,4 @@
 [submodule "cmake"]
-	path = cmake
+	path = drake/cmake
 	url = https://github.com/RobotLocomotion/cmake.git
 	branch = master
