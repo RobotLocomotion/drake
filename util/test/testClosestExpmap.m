@@ -23,6 +23,14 @@ for i = 1:100
   testClosestExpmap_userfun(theta1*axis1,theta2*axis2);
 end
 
+% test when w2 is very small, thus the gradient dw1_dw2 is big
+axis1 = randn(3,1);
+axis1 = axis1/norm(axis1);
+theta1 = 4*pi + rand();
+axis2 = randn(3,1);
+axis2 = axis2/norm(axis2);
+theta2 = 1e-3*rand(); 
+testClosestExpmap_userfun(theta1*axis1,theta2*axis2);
 end
 
 function testClosestExpmap_userfun(w1,w2)
@@ -47,6 +55,15 @@ else
   valuecheck(w2_closest2,w2_closest,1e-3);
 end
 valuecheck(abs(expmap2quat(w2)'*expmap2quat(w2_closest)),1,1e-3);
-[~,dw2_closest_dw2_numeric] = geval(@(w2) closestExpmap(w1,w2),w2,struct('grad_method','numerical'));
-valuecheck(dw2_closest_dw2,dw2_closest_dw2_numeric,1e-2);
+[~,dw2_closest_dw2_numeric] = geval(@(w2) closestExpmap(w1,w2),w2,struct('grad_method','numerical','da',norm(w2)*1e-7));
+tol = 1e-2;
+if(~valuecheck(dw2_closest_dw2,dw2_closest_dw2_numeric,tol))
+  gradient_err = dw2_closest_dw2 - dw2_closest_dw2_numeric;
+  gradient_err(abs(gradient_err(:)) <= tol) = 0;
+  gradient_err_normalize = gradient_err./dw2_closest_dw2;
+  gradient_err_normalize(isnan(gradient_err_normalize(:))) = 0;
+  if(any(abs(gradient_err_normalize(:)) > 5e-2))
+    error('The analytical gradient of closestExpmap does not match the numeric gradient');
+  end
+end
 end
