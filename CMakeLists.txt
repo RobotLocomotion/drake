@@ -4,6 +4,12 @@ if (POLICY CMP0054)
   cmake_policy(SET CMP0054 OLD)  # so variables inside quotes are still evaluated in if() statements
 endif()
 
+# Set a consistent MACOSX_RPATH default across all CMake versions.
+# When CMake 3.0.0 is required, remove this block (see CMP0042).
+if (NOT DEFINED CMAKE_MACOSX_RPATH)
+  set(CMAKE_MACOSX_RPATH ON)
+endif()
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 # set up pods
