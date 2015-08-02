@@ -12,7 +12,6 @@ option(REMOVE_UNUSED_EXTERNALS "enable this to remove those projects from disk" 
 # ON by default:
 option(WITH_EIGEN		"required c++ matrix library.  only disable if you have it already."    ON)		
 option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" 			ON)
-option(WITH_BULLET 		"used for collision detection" 											ON)
 option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"							ON)
 
 # OFF by default:
@@ -33,9 +32,11 @@ option(WITH_XFOIL		"use w/ AVL to compute aerodynamic coefficients for airfoils"
 if (WIN32)
   option(WITH_GTK 		"precompiled gtk binaries/headers for Windows"		ON)
   option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	OFF)
+  option(WITH_BULLET 		"used for collision detection" 					OFF)
 else() 
   option(WITH_GTK 		"precompiled gtk binaries/headers for Windows"		OFF)
   option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	ON)
+  option(WITH_BULLET 		"used for collision detection" 					ON)
 endif()
 
 
@@ -79,6 +80,7 @@ endmacro()
 
 if (WIN32)
 	unsupported(libbot octomap gurobi mosek yalmip gloptipoly bertini sedumi avl xfoil iris director)  # many of these could potentially work, but haven't been tried
+	unsupported(bullet)  # drake has a silly c++11 compile error
 endif()
 
 #enable_language(Fortran)
@@ -109,12 +111,6 @@ set(director_GIT_TAG f44045f75e931165d9f519b989bdbd1ad8e70b08)
 set(director_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/director/distro/pods/drake-distro)
 set(eigen_GIT_REPOSITORY https://github.com/RobotLocomotion/eigen-pod.git)
 set(eigen_GIT_TAG fb56a4b8504eb115a7f257de4570c47c20c43397)
-if (NOT drake_GIT_REPOSITORY)
-	set(drake_GIT_REPOSITORY https://github.com/RobotLocomotion/drake.git)
-endif()	
-if (NOT drake_GIT_TAG)
-	set(drake_GIT_TAG d3ff393f9639135c6d421a311e789773fdc74701)
-endif()
 set(gtk_GIT_REPOSITORY https://github.com/RobotLocomotion/gtk-pod.git)
 set(gtk_GIT_TAG cbcecf686ad17eba5949e297ea187126b1a06431)
 set(gloptipoly_GIT_REPOSITORY https://github.com/RobotLocomotion/gloptipoly3.git)  # todo: rename that repo
