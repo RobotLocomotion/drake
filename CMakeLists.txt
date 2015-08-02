@@ -11,10 +11,10 @@ option(REMOVE_UNUSED_EXTERNALS "enable this to remove those projects from disk" 
 
 # ON by default:
 option(WITH_EIGEN		"required c++ matrix library.  only disable if you have it already."    ON)		
-option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" 			ON)
 option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"							ON)
 
 # OFF by default:
+option(WITH_GTK 		"precompiled gtk binaries/headers for Windows")
 option(WITH_DIRECTOR	"vtk-based visualization tool and robot user interface")
 option(WITH_IRIS		"fast approximate convex segmentation")
 option(WITH_OCTOMAP 	"provides oct-tree data structures")
@@ -30,13 +30,13 @@ option(WITH_XFOIL		"use w/ AVL to compute aerodynamic coefficients for airfoils"
 
 # system dependent defaults:
 if (WIN32)
-  option(WITH_GTK 		"precompiled gtk binaries/headers for Windows"		ON)
   option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	OFF)
   option(WITH_BULLET 		"used for collision detection" 					OFF)
+  option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" 			OFF)
 else() 
-  option(WITH_GTK 		"precompiled gtk binaries/headers for Windows"		OFF)
   option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	ON)
   option(WITH_BULLET 		"used for collision detection" 					ON)
+  option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" 			ON)
 endif()
 
 
@@ -80,7 +80,8 @@ endmacro()
 
 if (WIN32)
 	unsupported(libbot octomap gurobi mosek yalmip gloptipoly bertini sedumi avl xfoil iris director)  # many of these could potentially work, but haven't been tried
-	unsupported(bullet)  # drake has a silly c++11 compile error
+	unsupported(bullet)  # drake has a silly c++11 compile error.  probably just for MSVC << 2013
+	unsupported(lcm)  # just have to reliably add drake/build/lib to the path so that lcm-gen.exe can run when building drake.  note: move GTK back into ON by default for win32 only when I re-enable lcm
 endif()
 
 #enable_language(Fortran)
