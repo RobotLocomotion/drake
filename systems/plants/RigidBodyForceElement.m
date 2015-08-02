@@ -12,7 +12,8 @@ classdef RigidBodyForceElement < RigidBodyElement
     % B is (nq x nu) matrix which contributes a control-affine term 
     %      + B(q,qd)*u 
     % to the manipulator dynamics
-    [f_ext,B] = computeSpatialForce(obj,manip,q,qd)
+    [f_ext,B,df_ext,dB] = computeSpatialForce(obj,manip,q,qd)
+
   end
   
   methods
@@ -20,8 +21,17 @@ classdef RigidBodyForceElement < RigidBodyElement
       error('probably need to implement this (see changeRootLink)');
     end
     
+    function fr = constructFrame(obj,manip)
+      error('force elements with inputs must define the input frame');
+    end
+    
     function obj = setInputNum(obj, input_num)
+      % intended to be called only from the RBM (do not call this yourself)
       obj.input_num = input_num;
+    end
+
+    function obj = setInputLimits(obj, u_min, u_max)
+      obj.input_limits = [u_min, u_max];
     end
     
     function [T,U] = energy(obj,manip,q,qd)

@@ -636,6 +636,12 @@ classdef RigidBodyManipulator < Manipulator
       model.sensor{end+1}=sensor;
       model.dirty = true;
     end
+    
+    function model = addForceElement(model,force_element)
+      typecheck(force_element,'RigidBodyForceElement');
+      model.force{end+1} = force_element;
+      model.dirty = true;
+    end
 
     function model = compile(model)
       % After parsing, compute some relevant data structures that will be
@@ -720,10 +726,12 @@ classdef RigidBodyManipulator < Manipulator
 
       for i=1:length(model.force)
         if model.force{i}.direct_feedthrough_flag
-          input_num = size(B,2)+1;
-          B(1,size(B,2)+1) = 0; %Add another column to B
+          num_inputs = size(model.force{i}.input_limits,1);
+          if num_inputs<1, error('Drake:RigidBodyManipulator:BadForceElement','Your force element must define the input limits'); end
+          input_num = size(B,2)+(1:num_inputs);
+          B(:,size(B,2)+(1:num_inputs)) = 0; %Add another column to B
           model.force{i} = model.force{i}.setInputNum(input_num);
-          u_limit(size(u_limit,1)+1,:) = model.force{i}.input_limits;
+          u_limit(size(u_limit,1)+(1:num_inputs),:) = model.force{i}.input_limits;
         end
       end
       model.B = full(B);
@@ -2140,31 +2148,26 @@ classdef RigidBodyManipulator < Manipulator
 
     function fr = constructInputFrame(model)
       %inputparents is an array of the parent RigidBodies of each joint.
-      inputparents = [];
-      inputnames = {};
+      fr = {};
+      frame_ids = [];
       if ~isempty(model.actuator)
-        inputparents = [model.body([model.actuator.joint])];
+        input_robot_num = [];
+        inputnames = {};
+        input_parents = [model.body([model.actuator.joint])];
+        input_robot_num = [input_parents.robotnum];
         inputnames = {model.actuator.name};
+        for i=1:length(model.name)
+          robot_inputs = [input_robot_num]==i;
+          coordinates = {inputnames{robot_inputs}}';
+          fr{i}=CoordinateFrame([model.name{i},'Input'],sum(robot_inputs),'u',coordinates);
+        end
       end
       for i = 1:length(model.force)
-        if isa(model.force{i},'RigidBodyThrust') || isa(model.force{i}, 'RigidBodyPropellor')
-          frame = model.frame(-model.force{i}.kinframe);
-          inputparents = [inputparents model.body(frame.body_ind)];
-          inputnames{end+1} = model.force{i}.name;
-        elseif model.force{i}.direct_feedthrough_flag
-          frame = model.frame(-model.force{i}.kinframe);
-          inputparents = [inputparents model.body(frame.body_ind)];
-          inputnames{end+1} = model.force{i}.name;
+        if model.force{i}.direct_feedthrough_flag
+          fr{end+1} = constructFrame(model.force{i});
         end
-        
       end
-      for i=1:length(model.name)
-        robot_inputs = [inputparents.robotnum]==i;
-        coordinates = {inputnames{robot_inputs}}';
-        fr{i}=CoordinateFrame([model.name{i},'Input'],sum(robot_inputs),'u',coordinates);
-      end
-      frame_dims = [inputparents.robotnum];
-      fr = MultiCoordinateFrame.constructFrame(fr,frame_dims,true);
+      fr = MultiCoordinateFrame.constructFrame(fr,[],true);
     end
 
     function model=removeFixedJoints(model)

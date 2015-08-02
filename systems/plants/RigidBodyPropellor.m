@@ -100,6 +100,10 @@ classdef RigidBodyPropellor < RigidBodyForceElement
 
     end
     
+    function fr = constructFrame(obj,manip)
+      fr = CoordinateFrame(obj.name,1,'f',{'propellor'});
+    end
+    
     function varargout = addPropellorVisualShapeToBody(varargin)
       errorDeprecatedFunction('addPropellorVisualGeometryToBody');
     end
