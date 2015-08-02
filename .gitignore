@@ -18,6 +18,7 @@
 *.nav
 *~
 externals
+drake/cmake
 drake/util/drake_config.mat
 drake/doc/derivations/elib.bib
 fort.*

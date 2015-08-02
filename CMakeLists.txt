@@ -53,7 +53,7 @@ set(MAKE_COMMAND ${MAKE_EXECUTABLE} $ENV{MAKEFLAGS}) # didn't work on my first t
 set(EXTERNAL_PROJECTS)
 foreach(proj IN ITEMS cmake eigen gtk lcm libbot bullet iris spotless director octomap snopt gurobi mosek yalmip gloptipoly bertini sedumi avl xfoil drake)
 	string(TOUPPER ${proj} proj_upper)
-	if (${proj} STREQUAL "drake" OR WITH_${proj_upper} OR WITH_ALL_SUPPORTED_EXTERNALS)
+	if (${proj} STREQUAL "drake" OR ${proj} STREQUAL "cmake" OR WITH_${proj_upper} OR WITH_ALL_SUPPORTED_EXTERNALS)
 		list(APPEND EXTERNAL_PROJECTS ${proj})
 	elseif(REMOVE_UNUSED_EXTERNALS AND IS_DIRECTORY ${proj})
 		message(STATUS "removing unused project: ${proj}")
@@ -103,6 +103,7 @@ set(bullet_GIT_TAG 6db7ae5e29f8b35ffcea384c53caa4bddcc6f986)
 set(cmake_GIT_REPOSITORY https://github.com/RobotLocomotion/cmake.git)
 set(cmake_GIT_TAG c48d1e461d8f0a8d67ebba3e4acb19d96dd5a25b)
 set(cmake_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/drake/cmake")
+set(cmake_NO_BUILD TRUE)
 set(director_GIT_REPOSITORY https://github.com/RobotLocomotion/director.git)
 set(director_GIT_TAG f44045f75e931165d9f519b989bdbd1ad8e70b08)
 set(director_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/director/distro/pods/drake-distro)
@@ -160,7 +161,10 @@ foreach (proj ${EXTERNAL_PROJECTS})
 		endif()
 		if (NOT ${proj}_SOURCE_DIR)
 			set(${proj}_SOURCE_DIR ${${proj}_GIT_CLONE_DIR})
-		endif()	
+		endif()
+		if (NOT ${proj}_NO_BUILD)
+			set(${proj}_BUILD_COMMAND ${MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE})
+		endif()
 
 		message(STATUS "Preparing to build ${proj} with dependencies: ${deps}")
 
@@ -196,7 +200,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 			UPDATE_COMMAND ""
 			CONFIGURE_COMMAND ""
 			BUILD_IN_SOURCE 1
-			BUILD_COMMAND ${MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE}
+			BUILD_COMMAND "${${proj}_BUILD_COMMAND}"
 			INSTALL_COMMAND ""
 			DEPENDS download-${proj} ${deps}
 	#		BUILD_ALWAYS 1
