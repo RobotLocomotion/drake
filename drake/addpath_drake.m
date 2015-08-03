@@ -56,7 +56,6 @@ addpath(fullfile(root,'thirdParty','polytopes'));
 addpath(fullfile(root,'solvers','BMI'));
 addpath(fullfile(root,'solvers','BMI','util'));
 addpath(fullfile(root,'solvers','BMI','kinematics'));
-addpath(fullfile(root,'solvers','BMI','grasping'));
 
 javaaddpath(fullfile(pods_get_base_path,'share','java','drake.jar'));
 
