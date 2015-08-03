@@ -1,0 +1,483 @@
+<?xml version="1.0"?>
+<robot name="office">
+
+   <material name="Brown">
+     <color rgba="83./255. 53./255. 10./255."/>
+   </material>
+
+   <material name="White">
+    <color rgba="1 1 1"/>
+   </material>
+
+   <material name="Grey">
+    <color rgba=".3 .3 .3"/>
+   </material>
+
+    <material name="Red">
+     <color rgba="1 0 0"/>
+    </material>
+
+   <link name="wall1">
+   	<inertial>
+   		<mass value=".5" />
+   		<origin xyz="0 0 0" rpy="0 0 0"/>
+		<inertia ixx="10"  ixy="0"  ixz="0" iyy="10" iyz="0" izz="10" />
+   	</inertial>
+
+  	<visual>
+      <origin xyz="0 0 1" rpy="0 0 0" />
+      <geometry>
+        <box size="10 .1 2." />
+      </geometry>
+      <material name="Brown"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 1" rpy="0 0 0" />
+      <geometry>
+        <box size="10 .1 2." />
+      </geometry>
+      <material name="Brown"/>
+    </collision>
+   </link>
+
+   <link name="wall2">
+   	<inertial>
+   		<mass value=".5" />
+   		<origin xyz="0 0 0" rpy="0 0 0"/>
+		<inertia ixx="10"  ixy="0"  ixz="0" iyy="10" iyz="0" izz="10" />
+   	</inertial>
+
+  	<visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <box size=".1 8. 2." />
+      </geometry>
+      <material name="Brown"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <box size=".1 8. 2." />
+      </geometry>
+      <material name="Brown"/>
+    </collision>
+   </link>
+
+   <link name="wall3">
+   	<inertial>
+   		<mass value=".5"/>
+   		<origin xyz="0 0 0" rpy="0 0 0"/>
+		<inertia ixx="10"  ixy="0"  ixz="0" iyy="10" iyz="0" izz="10" />
+   	</inertial>
+
+  	<visual>
+      <origin xyz="0 0. .5" rpy="0 0 0" />
+      <geometry>
+        <box size="10 .1 1."/>
+      </geometry>
+      <material name="Brown"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0. .5" rpy="0 0 0" />
+      <geometry>
+        <box size="10 .1 1."/>
+      </geometry>
+      <material name="Brown"/>
+    </collision>
+   </link>
+
+   <link name="wall4">
+   	<inertial>
+   		<mass value=".5" />
+   		<origin xyz="0 0 0" rpy="0 0 0"/>
+		<inertia ixx="10"  ixy="0"  ixz="0" iyy="10" iyz="0" izz="10" />
+   	</inertial>
+
+  	<visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <box size=".1 8. 2." />
+      </geometry>
+      <material name="Brown"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <box size=".1 8. 2." />
+      </geometry>
+      <material name="Brown"/>
+    </collision>
+   </link>
+
+   <link name="internalWall">
+   	<inertial>
+   		<mass value=".5" />
+   		<origin xyz="0 0 0" rpy="0 0 0"/>
+		<inertia ixx="10"  ixy="0"  ixz="0" iyy="10" iyz="0" izz="10" />
+   	</inertial>
+
+  	<visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <box size="7.5 .1 2." />
+      </geometry>
+      <material name="Brown"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <box size="7.5 .1 2." />
+      </geometry>
+      <material name="Brown"/>
+    </collision>
+   </link>
+
+
+    <link name="tableLegUL">
+   	<inertial>
+   		<mass value=".5" />
+   		<origin xyz="0 0 0" rpy="0 0 0"/>
+		<inertia ixx="10"  ixy="0"  ixz="0" iyy="10" iyz="0" izz="10" />
+   	</inertial>
+
+  	<visual>
+      <origin xyz="-1 3 .5" rpy="0 0 0" />
+      <geometry>
+        <box size=".1 .1 1." />
+      </geometry>
+      <material name="White"/>
+    </visual>
+    <collision>
+      <origin xyz="-1 3 .5" rpy="0 0 0" />
+      <geometry>
+        <box size=".1 .1 1." />
+      </geometry>
+      <material name="White"/>
+    </collision>
+   </link>
+
+   <link name="wall23">
+   	<inertial>
+   		<mass value=".5"/>
+   		<origin xyz="0 0 0" rpy="0 0 0"/>
+		<inertia ixx="10"  ixy="0"  ixz="0" iyy="10" iyz="0" izz="10" />
+   	</inertial>
+
+  	<visual>
+      <!-- <origin xyz="1.75 8. 1" rpy="0 0 0" /> -->
+      <origin xyz="1.75 0. 1" rpy="0 0 0" />
+      <geometry>
+        <box size="6.5 .1 2."/>
+      </geometry>
+      <material name="Brown"/>
+    </visual>
+    <collision>
+      <origin xyz="1.75 0. 1" rpy="0 0 0" />
+      <geometry>
+        <box size="6.5 .1 2."/>
+      </geometry>
+      <material name="Brown"/>
+    </collision>
+   </link>
+
+   <link name="wall34">
+   	<inertial>
+   		<mass value=".5"/>
+   		<origin xyz="0 0. 0" rpy="0 0 0"/>
+		<inertia ixx="10"  ixy="0"  ixz="0" iyy="10" iyz="0" izz="10" />
+   	</inertial>
+
+  	<visual>
+      <!-- <origin xyz="-4.125 8. 1" rpy="0 0 0" /> -->
+      <origin xyz="-4.125 0. 1" rpy="0 0 0" />
+      <geometry>
+        <box size="1.75 .1 2."/>
+      </geometry>
+      <material name="Brown"/>
+    </visual>
+    <collision>
+      <origin xyz="-4.125 0. 1" rpy="0 0 0" />
+      <geometry>
+        <box size="1.75 .1 2."/>
+      </geometry>
+      <material name="Brown"/>
+    </collision>
+
+   </link>
+
+   <link name="tableLegUR">
+   	<inertial>
+   		<mass value=".5" />
+   		<origin xyz="0 0 0" rpy="0 0 0"/>
+		<inertia ixx="10"  ixy="0"  ixz="0" iyy="10" iyz="0" izz="10" />
+   	</inertial>
+
+  	<visual>
+      <origin xyz="1 3 .5" rpy="0 0 0" />
+      <geometry>
+        <box size=".1 .1 1." />
+      </geometry>
+      <material name="White"/>
+    </visual>
+    <collision>
+      <origin xyz="1 3 .5" rpy="0 0 0" />
+      <geometry>
+        <box size=".1 .1 1." />
+      </geometry>
+      <material name="White"/>
+    </collision>
+   </link>
+
+   <link name="tableLegLR">
+   	<inertial>
+   		<mass value=".5" />
+   		<origin xyz="0 0 0" rpy="0 0 0"/>
+		<inertia ixx="10"  ixy="0"  ixz="0" iyy="10" iyz="0" izz="10" />
+   	</inertial>
+
+  	<visual>
+      <origin xyz="1 1 .5" rpy="0 0 0" />
+      <geometry>
+        <box size=".1 .1 1." />
+      </geometry>
+      <material name="White"/>
+    </visual>
+    <collision>
+      <origin xyz="1 1 .5" rpy="0 0 0" />
+      <geometry>
+        <box size=".1 .1 1." />
+      </geometry>
+      <material name="White"/>
+    </collision>
+   </link>
+
+   <link name="tableLegLL">
+   	<inertial>
+   		<mass value=".5" />
+   		<origin xyz="0 0 0" rpy="0 0 0"/>
+		<inertia ixx="10"  ixy="0"  ixz="0" iyy="10" iyz="0" izz="10" />
+   	</inertial>
+
+  	<visual>
+      <origin xyz="-1 1 .5" rpy="0 0 0" />
+      <geometry>
+        <box size=".1 .1 1." />
+      </geometry>
+      <material name="White"/>
+    </visual>
+    <collision>
+      <origin xyz="-1 1 .5" rpy="0 0 0" />
+      <geometry>
+        <box size=".1 .1 1." />
+      </geometry>
+      <material name="White"/>
+    </collision>
+   </link>
+
+   <link name="TableTop">
+   	<inertial>
+   		<mass value=".5" />
+   		<origin xyz="0 0 0" rpy="0 0 0"/>
+		<inertia ixx="10"  ixy="0"  ixz="0" iyy="10" iyz="0" izz="10" />
+   	</inertial>
+
+  	<visual>
+      <origin xyz="0 2 .98" rpy="0 0 0" />
+      <geometry>
+        <box size="2.1 2.1 .1" />
+      </geometry>
+      <material name="Grey"/>
+    </visual>
+    <collision>
+      <origin xyz="0 2 .98" rpy="0 0 0" />
+      <geometry>
+        <box size="2.1 2.1 .1" />
+      </geometry>
+      <material name="Grey"/>
+    </collision>
+   </link>
+
+   
+   <link name="cabinet">
+   	<inertial>
+   		<mass value=".5" />
+   		<origin xyz="0 0 0" rpy="0 0 0"/>
+		<inertia ixx="10"  ixy="0"  ixz="0" iyy="10" iyz="0" izz="10" />
+   	</inertial>
+
+  	<visual>
+      <origin xyz="-3.3 5.5 .9" rpy="0 0 0" />
+      <geometry>
+        <box size="2.2 1. 1.8" />
+      </geometry>
+      <material name="Grey"/>
+    </visual>
+    <collision>
+      <origin xyz="-3.3 5.5 .9" rpy="0 0 0" />
+      <geometry>
+        <box size="2.2 1. 1.8" />
+      </geometry>
+      <material name="Grey"/>
+    </collision>
+   </link>
+
+    <link name="drawer1">
+   	<inertial>
+   		<mass value=".5" />
+   		<origin xyz="0 0 0" rpy="0 0 0"/>
+		<inertia ixx="10"  ixy="0"  ixz="0" iyy="10" iyz="0" izz="10" />
+   	</inertial>
+
+  	<visual>
+      <origin xyz="-3.3 5.3 .9" rpy="0 0 0" />
+      <geometry>
+        <box size="2. 1. .33" />
+      </geometry>
+      <material name="White"/>
+    </visual>
+    <collision>
+      <origin xyz="-3.3 5.3 .9" rpy="0 0 0" />
+      <geometry>
+        <box size="2. 1. .33" />
+      </geometry>
+      <material name="White"/>
+    </collision>
+   </link>
+
+    <link name="drawer2">
+   	<inertial>
+   		<mass value=".5" />
+   		<origin xyz="0 0 0" rpy="0 0 0"/>
+		<inertia ixx="10"  ixy="0"  ixz="0" iyy="10" iyz="0" izz="10" />
+   	</inertial>
+
+  	<visual>
+      <origin xyz="-3.3 5.3 1.4" rpy="0 0 0" />
+      <geometry>5
+        <box size="2. 1. .33" />
+      </geometry>
+      <material name="White"/>
+    </visual>
+    <collision>
+      <origin xyz="-3.3 5.3 1.4" rpy="0 0 0" />
+      <geometry>5
+        <box size="2. 1. .33" />
+      </geometry>
+      <material name="White"/>
+    </collision>
+   </link>
+
+    <link name="drawer3">
+   	<inertial>
+   		<mass value=".5" />
+   		<origin xyz="0 0 0" rpy="0 0 0"/>
+		<inertia ixx="10"  ixy="0"  ixz="0" iyy="10" iyz="0" izz="10" />
+   	</inertial>
+
+  	<visual>
+      <origin xyz="-3.3 5.3 .4" rpy="0 0 0" />
+      <geometry>
+        <box size="2. 1. .33" />
+      </geometry>
+      <material name="White"/>
+    </visual>
+    <collision>
+      <origin xyz="-3.3 5.3 .4" rpy="0 0 0" />
+      <geometry>
+        <box size="2. 1. .33" />
+      </geometry>
+      <material name="White"/>
+    </collision>
+   </link>
+
+   <joint name="joint1" type="fixed">
+   	<parent link="wall1"/>
+        <child link="wall2"/>
+	<origin xyz="5 4 1" rpy="0 0 0" />
+   </joint>
+
+   <joint name="joint2" type="fixed">
+   	<parent link="wall2"/>
+        <child link="wall3"/>
+	<origin xyz="-5 4 -1" rpy="0 0 0" />
+   </joint>
+
+   <joint name="joint3" type="fixed">
+   	<parent link="wall3"/>
+        <child link="wall4"/>
+	<origin xyz="-5 -4 1" rpy="0 0 0" />
+   </joint>
+
+   <joint name="lowerToUpperWall3From2" type="fixed">
+   	<parent link="wall3"/>
+        <child link="wall23"/>
+	<origin xyz="0 0 0" rpy="0 0 0" />
+   </joint>
+
+   <joint name="lowerToUpperWall3From4" type="fixed">
+   	<parent link="wall3"/>
+        <child link="wall34"/>
+	<origin xyz="0 0 0" rpy="0 0 0" />
+   </joint>
+
+   <joint name="internalJoint" type="fixed">
+    <parent link="wall4"/>
+      <child link="internalWall"/>
+    <origin xyz="3.75 2 0" rpy="0 0 0" />
+   </joint>
+
+   <joint name="WallToTableTop" type="fixed">
+        <parent link="wall1"/>
+        <child link="TableTop"/> 
+	<origin xyz="0 0 0" rpy="0 0 0" />
+   </joint>
+
+   <joint name="TableTopToLegUL" type="fixed">
+   	<parent link="TableTop"/>
+	<child link="tableLegUL"/>
+	<origin xyz="0 0 0" rpy="0 0 0" />
+   </joint>
+
+   <joint name="TableTopToLegUR" type="fixed">
+   	<parent link="TableTop"/>
+        <child link="tableLegUR"/>
+	<origin xyz="0 0 0" rpy="0 0 0" />
+   </joint>
+
+   <joint name="TableTopToLegLR" type="fixed">
+   	<parent link="TableTop"/>
+        <child link="tableLegLR"/>
+	<origin xyz="0 0 0" rpy="0 0 0" />
+   </joint>
+
+   <joint name="TableTopToLegLL" type="fixed">
+   	<parent link="TableTop"/>
+        <child link="tableLegLL"/>
+	<origin xyz="0 0 0" rpy="0 0 0" />
+   </joint>
+
+   <joint name="WallToCabinet" type="fixed">
+        <parent link="wall1"/>
+        <child link="cabinet"/> 
+	<origin xyz="0 0 0" rpy="0 0 0" />
+   </joint>
+
+   <joint name="CabinetToDrawer1" type="fixed">
+   	<parent link="cabinet"/>
+	<child link="drawer1"/>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+   </joint>
+
+   <joint name="CabinetToDrawer2" type="fixed">
+   	<parent link="cabinet"/>
+	<child link="drawer2"/>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+   </joint>
+   
+   <joint name="CabinetToDrawer3" type="fixed">
+   	<parent link="cabinet"/>
+        <child link="drawer3"/>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+   </joint>
+
+</robot>

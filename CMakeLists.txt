@@ -1,190 +1,260 @@
-cmake_minimum_required(VERSION 2.8.6) # for UseJava.cmake
-#cmake_policy(SET CMP0042 NEW)
-if (POLICY CMP0054)
-  cmake_policy(SET CMP0054 OLD)  # so variables inside quotes are still evaluated in if() statements
+cmake_minimum_required(VERSION 2.8.0)
+project(drake-superbuild)
+
+include(ExternalProject)
+
+option(AUTO_UPDATE_EXTERNALS "external projects are updated to their tag revision on compile" ON)
+
+# chinese menu of external projects 
+option(WITH_ALL_SUPPORTED_EXTERNALS "overrides the individual WITH_[external] options" OFF)
+option(REMOVE_UNUSED_EXTERNALS "enable this to remove those projects from disk" OFF)
+
+# ON by default:
+option(WITH_EIGEN		"required c++ matrix library.  only disable if you have it already."    ON)		
+option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"							ON)
+
+# OFF by default:
+option(WITH_GTK 		"precompiled gtk binaries/headers for Windows")
+option(WITH_DIRECTOR	"vtk-based visualization tool and robot user interface")
+option(WITH_IRIS		"fast approximate convex segmentation")
+option(WITH_OCTOMAP 	"provides oct-tree data structures")
+option(WITH_SNOPT 		"nonlinear optimization solver; requires access to RobotLocomotion/snopt-pod")
+option(WITH_GUROBI 		"convex/integer optimization solver; free for academics (will prompt you for login bits)")
+option(WITH_MOSEK 		"convex optimization solver; free for academics")
+option(WITH_YALMIP 		"free optimization front-end for MATLAB")
+option(WITH_GLOPTIPOLY 	"free global polynomial optimization tooblox")
+option(WITH_BERTINI 	"solve polynomial equations; free but pod requires permissions (can't redistribute)")
+option(WITH_SEDUMI		"semi-definite programming solver")
+option(WITH_AVL			"use w/ XFOIL to compute aerodynamic coefficients for airfoils")
+option(WITH_XFOIL		"use w/ AVL to compute aerodynamic coefficients for airfoils")
+
+# system dependent defaults:
+if (WIN32)
+  option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	OFF)
+  option(WITH_BULLET 		"used for collision detection" 					OFF)
+  option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" 			OFF)
+else() 
+  option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	ON)
+  option(WITH_BULLET 		"used for collision detection" 					ON)
+  option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" 			ON)
 endif()
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-# set up pods
-set(POD_NAME drake)
-include(cmake/pods.cmake)
-
-option(BUILD_SHARED_LIBS "Build Drake with shared libraries." ON)
-# set up Java, use a target of 1.6
-find_package(Java REQUIRED)
-include(UseJava)
-set(CMAKE_JAVA_COMPILE_FLAGS ${CMAKE_JAVA_COMPILE_FLAGS} -source 6 -target 6)
-
-if (CMAKE_COMPILER_IS_GNUCC)
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wreturn-type -Wuninitialized -Wunused-variable") # -Wunused-parameter")
-
-   execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion
-                OUTPUT_VARIABLE GCC_VERSION)
-   if (NOT (GCC_VERSION VERSION_GREATER 4.3 OR GCC_VERSION VERSION_EQUAL 4.3))
-        message(FATAL_ERROR "requires gcc version >= 4.3")  # to support the c++0x flag below
-   elseif(GCC_VERSION VERSION_LESS 4.7)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-   else()
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(MAKE_EXECUTABLE $ENV{MAKE})
+if (NOT MAKE_EXECUTABLE)
+   find_program(MAKE_EXECUTABLE make)
+   if (NOT MAKE_EXECUTABLE)
+      message(FATAL_ERROR "couldn't find gnu make")
    endif()
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wreturn-type -Wuninitialized -Wunused-variable") # -Wunused-parameter")
+endif()
+set(MAKE_COMMAND ${MAKE_EXECUTABLE} $ENV{MAKEFLAGS}) # didn't work on my first test, but should do no harm
 
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
- if (APPLE)  # this was a step towards getting things to work with
-#   clang on mac, but ultimately we didn't get there...   (but I would
-#   be worried about sharing pointers between objects compiled against
-#   different c++ libs, so removing it)
-#    # http://stackoverflow.com/questions/13445742/apple-and-shared-ptr
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-  endif()
-elseif (MSVC)
-#  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /arch:SSE2 /openmp")
-#  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:SSE2 /openmp")
+# process optional projects
+# note: keep drake in this loop in case externals depend on drake (e.g. the director might in the near future)
+set(EXTERNAL_PROJECTS)
+foreach(proj IN ITEMS cmake eigen gtk lcm libbot bullet iris spotless director octomap snopt gurobi mosek yalmip gloptipoly bertini sedumi avl xfoil drake)
+	string(TOUPPER ${proj} proj_upper)
+	if (${proj} STREQUAL "drake" OR ${proj} STREQUAL "cmake" OR WITH_${proj_upper} OR WITH_ALL_SUPPORTED_EXTERNALS)
+		list(APPEND EXTERNAL_PROJECTS ${proj})
+	elseif(REMOVE_UNUSED_EXTERNALS AND IS_DIRECTORY ${proj})
+		message(STATUS "removing unused project: ${proj}")
+		execute_process(COMMAND ${MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE} clean
+						WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/${proj})
+		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory "${PROJECT_SOURCE_DIR}/${proj}")
+	endif()
+endforeach()
 
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")
-    # disable warning C4251: e.g.'RigidBody::linkname' : class 'std::basic_string<_Elem,_Traits,_Ax>' needs to have dll-interface to be used by clients of class 'RigidBody'
-    # followed by template linking errors.  After reading, e.g.:
-    #   https://connect.microsoft.com/VisualStudio/feedback/details/696593/vc-10-vs-2010-basic-string-exports
-    # I think we're not being sufficiently careful with our library interfaces (on other platforms as well) - Russ
+# throw error for unsupported platform/project combinations
+macro( unsupported )
+	foreach(proj ${ARGN})
+		list(FIND EXTERNAL_PROJECTS ${proj} find_result)
+		if (NOT find_result EQUAL -1)
+			if (WITH_ALL_SUPPORTED_EXTERNALS)
+				list(REMOVE_ITEM EXTERNAL_PROJECTS ${proj})
+			else()
+				message(FATAL_ERROR ${proj} is not supported (yet) on this platform)
+			endif()
+		endif()
+	endforeach()
+endmacro()
 
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4996") # disable sprintf security warning
+if (WIN32)
+	unsupported(libbot octomap gurobi mosek yalmip gloptipoly bertini sedumi avl xfoil iris director)  # many of these could potentially work, but haven't been tried
+	unsupported(bullet)  # drake has a silly c++11 compile error.  probably just for MSVC << 2013
+	unsupported(lcm)  # just have to reliably add drake/build/lib to the path so that lcm-gen.exe can run when building drake.  note: move GTK back into ON by default for win32 only when I re-enable lcm
 endif()
 
-# set up matlab build
-include(cmake/mex.cmake)
-mex_setup()
-
-# frustratingly, this didn't seem to work, so instead I've added a -C argument to both the Makefile and the drake-admin/runUnitTests scripts
-#if (NOT CTEST_CONFIGURATION_TYPE)
-#   set(CTEST_CONFIGURATION_TYPE ${CMAKE_BUILD_TYPE})
-#   message("Setting CTEST Configuration Type to ${CTEST_CONFIGURATION_TYPE}")
+#enable_language(Fortran)
+#if (NOT CMAKE_Fortran_COMPILER)
+#   unsupported(avl xfoil)
 #endif()
 
-enable_testing()
-include(CTest)
+# list *compilation* dependencies, in alphabetical order by target (note: dependencies must come first in my foreach above)
+set(lcm_dependencies gtk)
+set(libbot_dependencies lcm)
+set(director_dependencies lcm libbot)
+set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi)
 
-set(drake_jar_javafiles util/Transform.java)
-set(drake_jar_requires)
-
-# set up and build lcm types
-include(cmake/lcmtypes.cmake)
-
-if (LCM_FOUND)
-  #add_subdirectory(lcmtypes)
-  lcmtypes_build()
-  pods_use_pkg_config_classpath(lcm-java)
-
-  list(APPEND drake_jar_javafiles
-        util/MyLCMTypeDatabase.java
-	util/MessageMonitor.java
-	util/CoordinateFrameData.java
-	util/LCMCoder.java
-	)
-  list(APPEND drake_jar_requires lcm-java lcmtypes_drake-java)
-
-  # add lcmgl
-  # annoyingly, libbot does not define a classpath variable. there might be a cleaner way to do this
-  execute_process(COMMAND pkg-config --variable=prefix bot2-lcmgl-client OUTPUT_VARIABLE LCMGL_BUILD_DIR)
-  if (NOT LCMGL_BUILD_DIR)
-     message(WARNING "\n\n----- WARNING: bot2-lcmgl not found")
-  else ()
-    string(STRIP ${LCMGL_BUILD_DIR} LCMGL_BUILD_DIR)
-    find_jar(LCMGL_JAR_FILE bot2-lcmgl
-  		PATHS "${LCMGL_BUILD_DIR}/share/java/")
-    if (NOT LCMGL_JAR_FILE)
-       message(FATAL_ERROR "\n\n----- ERROR: bot2-lcmgl not found")
-    else()
-       message(STATUS "Found bot2-lcmgl")
-    endif()
-    set(CMAKE_JAVA_INCLUDE_PATH ${CMAKE_JAVA_INCLUDE_PATH}:${LCMGL_JAR_FILE})
-    list(APPEND drake_jar_javafiles
- 	util/BotLCMGLClient.java
-	)
-  endif()
-
-endif()
-
-add_jar(drake SOURCES ${drake_jar_javafiles})
-install_jar(drake share/java)
-pods_install_pkg_config_file(drake-java
-    CLASSPATH drake
-    REQUIRES ${drake_jar_requires}
-    VERSION 0.0.1)
-
-pods_find_pkg_config(eigen3 3.2)
-
-if (eigen3_FOUND)
-   pods_use_pkg_config_includes( eigen3 )
+# download information, in alphabetical order
+find_package(Git QUIET)
+set(avl_GIT_REPOSITORY https://github.com/RobotLocomotion/avl.git)
+set(avl_GIT_TAG 9b927f90619460b29f7454c714369f65bc4536a1)
+set(bertini_GIT_REPOSITORY https://github.com/RobotLocomotion/bertini.git)
+set(bertini_GIT_TAG 3ae3e3ad3534acb4b6f7a4c3c22728b493beaa80)
+set(bullet_GIT_REPOSITORY https://github.com/RobotLocomotion/bullet-pod.git)
+set(bullet_GIT_TAG 6db7ae5e29f8b35ffcea384c53caa4bddcc6f986)
+set(cmake_GIT_REPOSITORY https://github.com/RobotLocomotion/cmake.git)
+set(cmake_GIT_TAG c48d1e461d8f0a8d67ebba3e4acb19d96dd5a25b)
+set(cmake_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/drake/cmake")
+set(cmake_NO_BUILD TRUE)
+set(director_GIT_REPOSITORY https://github.com/RobotLocomotion/director.git)
+set(director_GIT_TAG f44045f75e931165d9f519b989bdbd1ad8e70b08)
+set(director_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/director/distro/pods/drake-distro)
+set(eigen_GIT_REPOSITORY https://github.com/RobotLocomotion/eigen-pod.git)
+set(eigen_GIT_TAG fb56a4b8504eb115a7f257de4570c47c20c43397)
+set(gtk_GIT_REPOSITORY https://github.com/RobotLocomotion/gtk-pod.git)
+set(gtk_GIT_TAG cbcecf686ad17eba5949e297ea187126b1a06431)
+set(gloptipoly_GIT_REPOSITORY https://github.com/RobotLocomotion/gloptipoly3.git)  # todo: rename that repo
+set(gloptipoly_GIT_TAG a3547a6811bf76c4e18f00b6bcbc187c6a7fd3d8)
+set(gurobi_GIT_REPOSITORY https://github.com/RobotLocomotion/gurobi.git)
+set(gurobi_GIT_TAG beb0a84a1bcca1eb81a1b87d9fa140f2134d97e9)
+set(iris_GIT_REPOSITORY https://github.com/rdeits/iris-distro.git)
+set(iris_GIT_TAG 13468e0ea38e72ffae030adaa31e3015ea5f3ce0)
+set(lcm_GIT_REPOSITORY https://github.com/RobotLocomotion/lcm-pod.git)
+if (WIN32)  # then use the cmake branch of lcm
+	set(lcm_GIT_TAG f828ee126532ceb24f10a7ca74e5acc7c2093c12)
 else()
-   # then use the traditional approach to finding Eigen3
-   find_package( Eigen3 3.2 )
-   if (Eigen3_FOUND)
-      set(eigen3_FOUND 1)
-      include_directories( EIGEN3_INCLUDE_DIR )
-   else()
-      message(FATAL_ERROR "Could not find eigen, which is a required depedency")
-   endif()
+	set(lcm_GIT_TAG c537a9029b4b53fa7602acfc1467d93291fcc55e)
 endif()
+set(libbot_GIT_REPOSITORY https://github.com/RobotLocomotion/libbot.git)
+set(libbot_GIT_TAG c8c251cf2fe0954e5c4954a3e7c1e7a43a882492)
+set(mosek_GIT_REPOSITORY https://github.com/RobotLocomotion/mosek.git)
+set(mosek_GIT_TAG a72594c4a7c8c5c026fd291148bcac76146634c2)
+set(octomap_GIT_REPOSITORY https://github.com/RobotLocomotion/octomap-pod.git)
+set(octomap_GIT_TAG 00b28215d19580f9e964bc5d126ce55a9253671a)
+set(sedumi_GIT_REPOSITORY https://github.com/RobotLocomotion/sedumi.git)
+set(sedumi_GIT_TAG afac8ea98f91007a3710d761efd514e10d0ad536)
+set(snopt_GIT_REPOSITORY https://github.com/RobotLocomotion/snopt.git)
+set(snopt_GIT_TAG d7abb603690f41970273643ebb6e173b0e6e452b)
+set(spotless_GIT_REPOSITORY https://github.com/RobotLocomotion/spotless-pod.git)
+set(spotless_GIT_TAG 565b720c25414a249d8b547183cf3ea6cf043211)
+set(yalmip_GIT_REPOSITORY https://github.com/RobotLocomotion/yalmip.git)
+set(yalmip_GIT_TAG c071fb7b7193491f8eefadba3bfff26160ad6cd4)
+set(xfoil_GIT_REPOSITORY https://github.com/RobotLocomotion/xfoil.git)
+set(xfoil_GIT_TAG fde0a9368dd451c93604051fc5704e120073800c)
 
-include_directories(thirdParty/spruce/include)
+foreach (proj ${EXTERNAL_PROJECTS})
+	set(deps)
+	foreach(dep ${${proj}_dependencies})
+		list(FIND EXTERNAL_PROJECTS ${dep} find_result)
+		if (${dep} STREQUAL "drake" OR NOT find_result EQUAL -1)
+			list(APPEND deps ${dep})
+		endif()
+	endforeach()
 
-add_subdirectory(util)
-add_subdirectory(solvers)
-add_subdirectory(systems)
-add_subdirectory(thirdParty/GetFullPath)
-add_subdirectory(thirdParty/spruce)
-add_subdirectory(examples/Atlas)
-add_subdirectory(examples/Acrobot/@AcrobotPlantCpp)
-add_subdirectory(examples/@VanDerPolCpp)
+	if (NOT ${proj} STREQUAL "drake")
+		if (NOT ${proj}_GIT_CLONE_DIR)
+			set(${proj}_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/externals/${proj}")
+		endif()
+		if (NOT ${proj}_SOURCE_DIR)
+			set(${proj}_SOURCE_DIR ${${proj}_GIT_CLONE_DIR})
+		endif()
+		if (NOT ${proj}_NO_BUILD)
+			set(${proj}_BUILD_COMMAND ${MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE})
+		endif()
 
-# setup matlab pods-compliance
-include(cmake/matlab_pods.cmake)
-pods_configure_matlab_paths()
+		message(STATUS "Preparing to build ${proj} with dependencies: ${deps}")
 
-get_relative_path("${CMAKE_INSTALL_PREFIX}/matlab" "${CMAKE_CURRENT_SOURCE_DIR}" relpath)
+		# separate download target so I can make the download-all custom command as recommended in:
+		#   http://comments.gmane.org/gmane.comp.programming.tools.cmake.user/53002
+		if (AUTO_UPDATE_EXTERNALS)
+			ExternalProject_Add(download-${proj}   
+				DOWNLOAD_DIR ${${proj}_GIT_CLONE_DIR}
+				SOURCE_DIR ${${proj}_GIT_CLONE_DIR}
+				GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
+				GIT_TAG ${${proj}_GIT_TAG}
+				CONFIGURE_COMMAND ""
+				BUILD_COMMAND ""
+				INSTALL_COMMAND ""
+				)
+		else()
+			ExternalProject_Add(download-${proj}   
+				DOWNLOAD_DIR ${${proj}_GIT_CLONE_DIR}
+				SOURCE_DIR ${${proj}_GIT_CLONE_DIR}
+				GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
+				GIT_TAG ${${proj}_GIT_TAG}
+				UPDATE_COMMAND ""
+				CONFIGURE_COMMAND ""
+				BUILD_COMMAND ""
+				INSTALL_COMMAND ""
+				)
+		endif()
 
-message(STATUS "Writing addpath_drake.m and rmpath_drake.m to ${CMAKE_INSTALL_PREFIX}/matlab")
-file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/addpath_drake.m
-	   "function addpath_drake()\n"
-	   "  mfiledir = fileparts(which(mfilename));\n"
-	   "  wd = cd(fullfile(mfiledir,'${relpath}'));\n"
-	   "  addpath_drake();\n"
-	   "  cd(wd);\n"
-    )
+		# now the actual project
+		ExternalProject_Add(${proj} 
+			SOURCE_DIR ${${proj}_SOURCE_DIR}
+			DOWNLOAD_COMMAND ""
+			UPDATE_COMMAND ""
+			CONFIGURE_COMMAND ""
+			BUILD_IN_SOURCE 1
+			BUILD_COMMAND "${${proj}_BUILD_COMMAND}"
+			INSTALL_COMMAND ""
+			DEPENDS download-${proj} ${deps}
+	#		BUILD_ALWAYS 1
+			)
+	else()
+		message(STATUS "Preparing to build ${proj} with dependencies: ${deps}")
 
-file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/rmpath_drake.m
-	   "function rmpath_drake()\n"
-	   "  mfiledir = fileparts(which(mfilename));\n"
-	   "  wd = cd(fullfile(mfiledir,'${relpath}'));\n"
-	   "  rmpath_drake();\n"
-	   "  cd(wd);\n"
-    )
-
-find_program(avl avl PATHS ${CMAKE_INSTALL_DIR}/bin )
-find_program(xfoil xfoil PATHS ${CMAKE_INSTALL_DIR}/bin )
-find_program(ffmpeg ffmpeg)
-
-# todo: build doxygen here (and remove it from the Makefile)
-# http://majewsky.wordpress.com/2010/08/14/tip-of-the-day-cmake-and-doxygen/
+		ExternalProject_Add(${proj} 
+			SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake"
+			DOWNLOAD_COMMAND ""
+			UPDATE_COMMAND ""
+			CONFIGURE_COMMAND ""
+			BUILD_IN_SOURCE 1
+			BUILD_COMMAND ${MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE}
+			INSTALL_COMMAND ""
+			DEPENDS ${deps}
+	#		BUILD_ALWAYS 1
+			)
+	endif(NOT ${proj} STREQUAL "drake") 
 
 
-# write some additional information to the CMake cache
-set(lcm_java_classpath "${lcm-java_CLASSPATH}" CACHE FILEPATH "${lcm-java_CLASSPATH}" FORCE)
+	# once we require cmake version >= 3.1, then we can zap this and just use the BUILD_ALWAYS flags above
+ 	ExternalProject_Add_Step(${proj} forceconfigure 
+ 		COMMAND ${CMAKE_COMMAND} -E echo "Force configure of ${proj}"
+ 		DEPENDEES update 
+ 		DEPENDERS configure 
+ 		ALWAYS 1)
 
-if (APPLE)
-  set(DYLD_LIBRARY_PATH "$ENV{DYLD_LIBRARY_PATH}" CACHE STRING "Environment variable used to launch processes from Matlab")
-  set(DYLD_FRAMEWORK_PATH "$ENV{DYLD_FRAMEWORK_PATH}" CACHE STRING "Environment variable used to launch processes from Matlab")
-  mark_as_advanced(DYLD_LIBRARY_PATH)
-  mark_as_advanced(DYLD_FRAMEWORK_PATH)
-else()
-  set(LD_LIBRARY_PATH "$ENV{LD_LIBRARY_PATH}" CACHE STRING "Environment variable used to launch processes from Matlab")
-  mark_as_advanced(LD_LIBRARY_PATH)
-endif()
+endforeach()
 
-add_test(NAME "RigidBodyManipulatorMemoryTest"
-	WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/examples/Acrobot"
-	COMMAND "matlab" #"${PROJECT_SOURCE_DIR}/cmake/matlab_clean.pl"
-	"-nosplash" "-nodisplay" "-wait" "-r" "addpath('${CMAKE_INSTALL_PREFIX}/matlab'); addpath_${POD_NAME}; try, r = RigidBodyManipulator('Acrobot.urdf'); megaclear; catch ex, disp(getReport(ex,'extended')); disp(''); force_close_system; exit(1); end; force_close_system; exit(0)")
-set_tests_properties(RigidBodyManipulatorMemoryTest PROPERTIES TIMEOUT 300)
+
+# todo: add a custom target for release_filelist
+
+add_custom_target(download-all)
+add_custom_target(clean-all)
+add_custom_target(status)
+set(PROJECT_LIST)
+foreach (proj ${EXTERNAL_PROJECTS})
+	if (NOT ${proj} STREQUAL "drake")
+		add_dependencies(download-all download-${proj})
+		ExternalProject_Get_Property(download-${proj} SOURCE_DIR)
+		add_custom_target(status-${proj} 
+			COMMAND ${GIT_EXECUTABLE} status 
+			WORKING_DIRECTORY ${SOURCE_DIR})
+		add_dependencies(status status-${proj})
+	endif()
+
+	ExternalProject_Get_Property(${proj} SOURCE_DIR)
+	add_custom_target(clean-${proj} 
+		COMMAND ${MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE} clean 
+		WORKING_DIRECTORY ${SOURCE_DIR})
+	add_dependencies(clean-all clean-${proj})
+	list(APPEND PROJECT_LIST ${SOURCE_DIR})
+endforeach()
+
+string(REPLACE ";" " " PROJECT_LIST "${PROJECT_LIST}")
+add_custom_target(list-project-dirs COMMAND echo "${PROJECT_LIST}")
+
+
+

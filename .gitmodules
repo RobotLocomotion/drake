@@ -1,4 +1,0 @@
-[submodule "cmake"]
-	path = cmake
-	url = https://github.com/RobotLocomotion/cmake.git
-	branch = master
