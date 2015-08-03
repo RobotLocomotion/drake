@@ -101,6 +101,7 @@
 % facets on polyhedron. shrink_factor = 1 corresponds to the whole facet,
 % shrink_factor = 0 corresponds to only the center of the facet.
 cd(fullfile(getDrakePath,'examples','grasping','forceClosure'));
+checkDependency('spotless');
 polyhedron_vertices = randn(3,100); 
 num_contacts = 4; % 4 contact points
 mu_face = 1; % friction coefficient is 1

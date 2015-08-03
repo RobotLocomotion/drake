@@ -67,7 +67,9 @@ classdef SearchContactsBase < ForceClosureContactsBase
     function obj = addXCC(obj)
       for i = 1:obj.num_contacts
         [obj,obj.XCC{i}] = obj.newSym(6);
-        obj = obj.addBilinearVariable([obj.xc(:,i);obj.c(:,i)],obj.XCC{i});
+        [obj,xcc_ind_i] = obj.addBilinearVariable([obj.xc(:,i);obj.c(:,i)],obj.XCC{i});
+        obj.xc_ind(:,i) = xcc_ind_i(1:3);
+        obj.c_ind(:,i) = xcc_ind_i(4:6);
       end
     end
   end

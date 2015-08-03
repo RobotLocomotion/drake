@@ -3,7 +3,7 @@ classdef SearchContactsLinFC < SearchContactsBase
   % linearized friction cone
   properties(SetAccess = protected)
     monomial0 % The monomial for Lagrangian multiplier, for condition b >= radius
-    monomial1 % The monomial for Lagrangian on constraint a'*inv(Qw)*a=1
+    monomial1 % The monomial for Lagrangian on constraint 1-a'*inv(Qw)*a = 0
     monomial2 % The monomial for Lagrangian on constraint V_cell{i}(:,j)'a+b>=0
     
     V_cell % A obj.num_contacts x 1 cell, V_cell{i} is a 6 x num_fc_edges matrix, containing all the primitive wrenches for the i'th contact point

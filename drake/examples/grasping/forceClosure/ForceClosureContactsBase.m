@@ -68,6 +68,11 @@ classdef ForceClosureContactsBase < InverseKinematicsBMI
     body_grasp_QuatWeights % A num_contacts x 1 cell, body_grasp_QuatWeights{i} is the (10+num_body_grasp_vertices(i))*(10+num_body_grasp_vertices(i)) bilinear matrix, supposed to be wi*wi, where wi = [tril(body_Quat{obj.grasp_body_idx(i)});body_grasp_vertices_weights(:,i)]
   end
   
+  properties(Access = protected)
+    xc_ind % A 3 x num_contacts matrix, w(xc_ind(:,i)) is xc(:,i);
+    c_ind % A 3 x num_contacts matrix, w(c_ind(:,i)) is c(:,i);
+  end
+  
   methods
     function obj = ForceClosureContactsBase(A_xc,b_xc,num_contacts,mu_face,options)
       % @param A_xc     A 3 X 3 matrix. Refer to obj.A_xc property
@@ -124,11 +129,13 @@ classdef ForceClosureContactsBase < InverseKinematicsBMI
       obj.mu_face = mu_face;
       
       [obj,obj.xc] = obj.newFree(3,obj.num_contacts);
+      obj.xc_ind = zeros(3,obj.num_contacts);
       % contact_pos(:,i) = obj.A_xc*obj.xc(:,i)+obj.b_xc;
       obj.contact_pos = obj.A_xc*obj.xc+bsxfun(@times,obj.b_xc,ones(1,obj.num_contacts));
       
       [obj,obj.c] = obj.newFree(3,obj.num_contacts);
       [obj,obj.d] = obj.newFree(1,obj.num_contacts);
+      obj.c_ind = zeros(3,obj.num_contacts);
       
       % setup the linearized friction cone if it was used
       if(obj.lin_fc_flag)
@@ -454,10 +461,7 @@ classdef ForceClosureContactsBase < InverseKinematicsBMI
             sol.body_grasp_vertices_weights{i} = double(solver_sol.eval(obj.body_grasp_vertices_weights{i}));
           end
         end
-        if(nargout <2)
-          [sol.q,sol.body_pos,sol.body_quat,sol.cosine,sol.sine] = obj.retrieveIKSolution(solver_sol);
-        else
-          [sol.q,sol.body_pos,sol.body_quat,sol.cosine,sol.sine,sol_bilinear.body_Quat,sol_bilinear.body_QuatTheta,sol_bilinear.Theta] = obj.retrieveIKSolution(solver_sol);
+        if(nargout > 1)
           [sol.c_obj_link,sol.d_obj_link,sol_bilinear.c_bodyposQuat] = obj.retrieveCollisionAvoidanceSolution(solver_sol);
           if(~isempty(obj.body_grasp_pts))
             sol_bilinear.bodyQuat_pts = cell(obj.num_contacts,1);

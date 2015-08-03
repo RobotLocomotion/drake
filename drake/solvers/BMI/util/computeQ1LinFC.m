@@ -11,7 +11,7 @@ function radius = computeQ1LinFC(contact_pos,wrench_origin,friction_cone,Qw)
 % linearized friction cone, at the i'th point. friction_cone{i}(:,j) is the
 % j'th edge at i'th contact point
 % @param Qw    A 6 x 6 PSD matrix, the ellipse is defined as
-% {w | w'*Qw*w<=rho_optimal}
+% {w | w'*Qw*w<=radius^2}
 % @retval radius  The radius of the largest L2 ball contained in the 
 % wrench set. If force closure is not
 % achieved, then this is -inf;
@@ -40,10 +40,12 @@ for i = 1:num_pts
   wrench_vertices = [wrench_vertices G(:,3*(i-1)+(1:3))*(friction_cone{i}./bsxfun(@times,sqrt(sum(friction_cone{i}.^2,1)),ones(3,1)))];
 end
 
-[wrench_polyhedron_A,wrench_polyhedron_b] = vert2lcon(wrench_vertices');
+[wrench_polyhedron_A,wrench_polyhedron_b,wrench_polyhedron_Aeq,wrench_polyhedron_beq] = vert2lcon(wrench_vertices');
 % The ellipse is contained in the wrench polyhedron, if w'*Qw*w<=
 % rho_optimal implies wrench_polyhedron_A*w<=wrench_polyhedron_b
-if(any(wrench_polyhedron_b<=0))
+wrench_polyhedron_A = [wrench_polyhedron_A;wrench_polyhedron_Aeq;-wrench_polyhedron_Aeq];
+wrench_polyhedron_b = [wrench_polyhedron_b;wrench_polyhedron_beq;-wrench_polyhedron_beq];
+if(any(wrench_polyhedron_b<0))
   radius = -inf;
 else
   radius = sqrt(min((wrench_polyhedron_b.^2)./sum((wrench_polyhedron_A.*(wrench_polyhedron_A/Qw)),2)));

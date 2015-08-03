@@ -78,13 +78,13 @@ classdef OptimalGrasp
         else
           if(obj.bilinear_use_prev_w)
             if(isa(obj.contact_step,'SearchContactsLinFC'))
-              [solver_sol,info,solver_time_c] = obj.contact_step.findContactsGivenLagrangian(sol.L1_mat,Q1_radius(iter-1),contact_step_w); 
+              [solver_sol,info,solver_time_c] = obj.contact_step.findContactsGivenLagrangian(sol.L2_mat,Q1_radius(iter-1),contact_step_w); 
             elseif(isa(obj.contact_step,'SearchContacts'))
               [solver_sol,info,solver_time_c] = obj.contact_step.findContactsGivenLagrangian(sol.L1_mat,sol.L2_mat,Q1_radius(iter-1),contact_step_w); 
             end
           else
             if(isa(obj.contact_step,'SearchContactsLinFC'))
-              [solver_sol,info,solver_time_c] = obj.contact_step.findContactsGivenLagrangian(sol.L1_mat,Q1_radius(iter-1)); 
+              [solver_sol,info,solver_time_c] = obj.contact_step.findContactsGivenLagrangian(sol.L2_mat,Q1_radius(iter-1)); 
             elseif(isa(obj.contact_step,'SearchContacts'))
               [solver_sol,info,solver_time_c] = obj.contact_step.findContactsGivenLagrangian(sol.L1_mat,sol.L2_mat,Q1_radius(iter-1)); 
             end

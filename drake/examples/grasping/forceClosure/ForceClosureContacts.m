@@ -9,10 +9,6 @@ classdef ForceClosureContacts < ForceClosureContactsBase
     fc_QuatWeights % A obj.num_contacts x 1 cell, This is supposed to be the bilinear matrix [tril(fc_Quat{i});fc_weights(:,i)]*[tril(fc_Quat{i};fc_weights(:,i)]'
   end
   
-  properties(Access = protected)
-    xc_inds  % A 3 x obj.num_contacts matrix. obj.w(xc_inds(:,i)) = obj.xc(:,i)
-  end
-  
   methods
     function obj = ForceClosureContacts(A_xc,b_xc,num_contacts,mu_face,epsilonG,options)
       % @param A_xc     A 3 X 3 matrix. Refer to obj.A_xc property
@@ -151,12 +147,12 @@ classdef ForceClosureContacts < ForceClosureContactsBase
     function obj = addXCC(obj)
       [obj,obj.f] = obj.newFree(3,obj.num_contacts);
       obj.XCCF = cell(obj.num_contacts,1);
-      obj.xc_inds = zeros(3,obj.num_contacts);
       for j = 1:obj.num_contacts
         [obj,obj.XCCF{j}] = obj.newSym(9);
         obj.XCC{j} = obj.XCCF{j}(1:6,1:6);
-        [obj,xccf_inds] = obj.addBilinearVariable([obj.xc(:,j);obj.c(:,j);obj.f(:,j)],obj.XCCF{j});
-        obj.xc_inds(:,j) = xccf_inds(1:3);
+        [obj,xccf_ind_j] = obj.addBilinearVariable([obj.xc(:,j);obj.c(:,j);obj.f(:,j)],obj.XCCF{j});
+        obj.xc_ind(:,j) = xccf_ind_j(1:3);
+        obj.c_ind(:,j) = xccf_ind_j(4:6);
       end
     end
   end

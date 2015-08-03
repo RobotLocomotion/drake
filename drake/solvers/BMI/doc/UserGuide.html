@@ -157,6 +157,7 @@ It is proved that this algorithm will converge.
 		\end{align}
 		We can call following code to solve the problem
 		<pre><code language="matlab">
+		checkDependency('spotless');    % Make sure spotless is in the search path
 		p = BMIspotless();              % Construct the program
 		[p,x] = p.newFree(2,1);         % Declare the variables x1,x2
 		[p,X] = p.newSym(2);            % Declare a symmetric matrix X
