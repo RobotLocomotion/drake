@@ -168,7 +168,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 		# separate download target so I can make the download-all custom command as recommended in:
 		#   http://comments.gmane.org/gmane.comp.programming.tools.cmake.user/53002
 		if (AUTO_UPDATE_EXTERNALS)
-			ExternalProject_Add(download-${proj}   
+			ExternalProject_Add(download-${proj}
 				DOWNLOAD_DIR ${${proj}_GIT_CLONE_DIR}
 				SOURCE_DIR ${${proj}_GIT_CLONE_DIR}
 				GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
@@ -178,7 +178,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 				INSTALL_COMMAND ""
 				)
 		else()
-			ExternalProject_Add(download-${proj}   
+			ExternalProject_Add(download-${proj}
 				DOWNLOAD_DIR ${${proj}_GIT_CLONE_DIR}
 				SOURCE_DIR ${${proj}_GIT_CLONE_DIR}
 				GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
@@ -200,12 +200,13 @@ foreach (proj ${EXTERNAL_PROJECTS})
 			BUILD_COMMAND "${${proj}_BUILD_COMMAND}"
 			INSTALL_COMMAND ""
 			DEPENDS download-${proj} ${deps}
+			${${proj}_EXTERNAL_ARGS}
 	#		BUILD_ALWAYS 1
 			)
 	else()
 		message(STATUS "Preparing to build ${proj} with dependencies: ${deps}")
 
-		ExternalProject_Add(${proj} 
+		ExternalProject_Add(${proj}
 			SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake"
 			DOWNLOAD_COMMAND ""
 			UPDATE_COMMAND ""
