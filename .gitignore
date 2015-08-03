@@ -17,10 +17,12 @@
 *.snm
 *.nav
 *~
+uname.err
 externals
 drake/cmake
 drake/util/drake_config.mat
 drake/doc/derivations/elib.bib
+drake/.python
 fort.*
 *.aux
 .drake_unit_test_mutex.mat
