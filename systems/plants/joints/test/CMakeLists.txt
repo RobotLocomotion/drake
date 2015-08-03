@@ -1,6 +1,0 @@
-if (MATLAB_FOUND)
-  add_mex(testDrakeJointsmex testDrakeJointsmex.cpp)
-  include_directories( .. )
-  include_directories (${CMAKE_SOURCE_DIR}/util)
-  target_link_libraries(testDrakeJointsmex drakeJoints drakeMexUtil)
-endif(MATLAB_FOUND)
