@@ -56,27 +56,22 @@ class KinematicsCache
 private:
   int gradient_order;
   std::unordered_map<RigidBody*, KinematicsCacheElement<Scalar>> elements;
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> q;
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> v;
 
 public:
-  KinematicsCache(const std::vector<std::shared_ptr<RigidBody>>& bodies, int gradient_order) :
-      gradient_order(gradient_order)
+  template <typename DerivedQ, typename DerivedV>
+  KinematicsCache(const MatrixBase<DerivedQ>& q, const MatrixBase<DerivedV>& v,
+                  const std::vector<std::shared_ptr<RigidBody>>& bodies, int gradient_order) :
+      q(q), v(v), gradient_order(gradient_order)
   {
     assert(gradient_order == 0 || gradient_order == 1);
-
-    int num_positions_robot = 0;
-    int num_velocities_robot = 0;
-    for (const auto& body_shared_ptr : bodies) {
-      if (body_shared_ptr->hasParent()) {
-        num_positions_robot += body_shared_ptr->getJoint().getNumPositions();
-        num_positions_robot += body_shared_ptr->getJoint().getNumPositions();
-      }
-    }
 
     for (const auto& body_shared_ptr : bodies) {
       const RigidBody& body = *body_shared_ptr;
       int num_positions_joint = body.hasParent() ? body.getJoint().getNumPositions() : 0;
       int num_velocities_joint = body.hasParent() ? body.getJoint().getNumVelocities() : 0;
-      elements[&body] = KinematicsCacheElement<Scalar>(num_positions_robot, num_velocities_robot, num_positions_joint, num_velocities_joint, gradient_order);
+      elements[&body] = KinematicsCacheElement<Scalar>(q.size(), v.size(), num_positions_joint, num_velocities_joint, gradient_order);
     }
   }
 
