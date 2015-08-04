@@ -12,7 +12,7 @@ using namespace std;
 
 void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
 
-  std::string usage = "Usage [x, J, dJ] = forwardKinVMex(model_ptr, body_or_frame_ind, points, rotation_type, base_or_frame_ind, compute_analytic_jacobian)";
+  std::string usage = "Usage [x, J, dJ] = forwardKinmex(model_ptr, body_or_frame_ind, points, rotation_type, base_or_frame_ind, compute_analytic_jacobian)";
   if (nrhs != 6) {
     mexErrMsgIdAndTxt("Drake:geometricJacobianmex:WrongNumberOfInputs", usage.c_str());
   }
