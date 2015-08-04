@@ -239,17 +239,19 @@ foreach (proj ${EXTERNAL_PROJECTS})
 	if (NOT ${proj} STREQUAL "drake")
 		add_dependencies(download-all download-${proj})
 		ExternalProject_Get_Property(download-${proj} SOURCE_DIR)
-		add_custom_target(status-${proj} 
-			COMMAND ${GIT_EXECUTABLE} status 
+		add_custom_target(status-${proj}
+			COMMAND ${GIT_EXECUTABLE} status
 			WORKING_DIRECTORY ${SOURCE_DIR})
 		add_dependencies(status status-${proj})
 	endif()
 
 	ExternalProject_Get_Property(${proj} SOURCE_DIR)
-	add_custom_target(clean-${proj} 
-		COMMAND ${MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE} clean 
-		WORKING_DIRECTORY ${SOURCE_DIR})
-	add_dependencies(clean-all clean-${proj})
+	if (NOT ${proj}_NO_BUILD)
+		add_custom_target(clean-${proj}
+			COMMAND ${MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE} clean
+			WORKING_DIRECTORY ${SOURCE_DIR})
+		add_dependencies(clean-all clean-${proj})
+	endif()
 	list(APPEND PROJECT_LIST ${SOURCE_DIR})
 endforeach()
 
