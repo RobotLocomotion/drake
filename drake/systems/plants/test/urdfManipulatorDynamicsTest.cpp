@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
       sscanf(argv[2 + model->num_positions + i], "%lf", &v(i));
   }
 
-  model->doKinematicsNew(q, v, true, true);
+  model->doKinematics(q, v, true, true);
 
   auto H = model->massMatrix<double>();
   cout << H.value() << endl;

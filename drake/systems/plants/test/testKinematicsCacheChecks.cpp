@@ -61,9 +61,10 @@ void performChecks(RigidBodyManipulator& model, int gradient_order, const CheckS
   checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::geometricJacobian<double>, base_or_frame_ind, body_or_frame_ind, expressed_in_frame_ind, gradient_order, in_terms_of_qdot, &v_or_qdot_indices);
   checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::relativeTransform<double>, base_or_frame_ind, body_or_frame_ind, gradient_order);
   checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::massMatrix<double>, gradient_order);
-  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::forwardKinNew<PointsType>, points, body_or_frame_ind, base_or_frame_ind, rotation_type, gradient_order + 1);
+  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::forwardKin<PointsType>, points, body_or_frame_ind, base_or_frame_ind, rotation_type, gradient_order + 1);
   checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::forwardKinPositionGradient<double>, npoints, body_or_frame_ind, base_or_frame_ind, gradient_order);
-  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::forwardJacV<PointsType>, points, body_or_frame_ind, base_or_frame_ind, rotation_type, in_terms_of_qdot, gradient_order);
+  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::forwardKinJacobian<PointsType>, points, body_or_frame_ind, base_or_frame_ind, rotation_type, in_terms_of_qdot,
+                 gradient_order);
 
   checkForErrors(settings.expect_error_on_velocity_methods, model, &RigidBodyManipulator::relativeTwist<double>, base_or_frame_ind, body_or_frame_ind, expressed_in_frame_ind, gradient_order);
 
@@ -96,20 +97,20 @@ int main()
   // q only, no gradients
   VectorXd q = VectorXd::Random(model->num_positions);
   VectorXd v = VectorXd::Zero(0);
-  model->doKinematicsNew(q, v, false, false);
+  model->doKinematics(q, v, false, false);
   for (int gradient_order = 1; gradient_order < max_gradient_order; gradient_order++)
     performChecks(*model, gradient_order, settings); // still expect everything to fail for gradient_order > 0
   settings.expect_error_on_configuration_methods = false;
   performChecks(*model, 0, settings);
 
   // q only, with gradients
-  model->doKinematicsNew(q, v, true, false);
+  model->doKinematics(q, v, true, false);
   for (int gradient_order = 0; gradient_order < max_gradient_order; gradient_order++)
     performChecks(*model, gradient_order, settings);
 
   // q and v, no gradients, no jdot_times_v
   v = VectorXd::Random(model->num_velocities);
-  model->doKinematicsNew(q, v, false, false);
+  model->doKinematics(q, v, false, false);
   settings.expect_error_on_configuration_methods = true;
   settings.expect_error_on_velocity_methods = true;
   settings.expect_error_on_jdot_times_v_methods = true;
@@ -120,12 +121,12 @@ int main()
   performChecks(*model, 0, settings);
 
   // q and v, with gradients, no jdot_times_v
-  model->doKinematicsNew(q, v, true, false);
+  model->doKinematics(q, v, true, false);
   for (int gradient_order = 0; gradient_order < max_gradient_order; gradient_order++)
     performChecks(*model, gradient_order, settings);
 
   // q and v, no gradients, with jdot_times_v
-  model->doKinematicsNew(q, v, false, true);
+  model->doKinematics(q, v, false, true);
   settings.expect_error_on_configuration_methods = true;
   settings.expect_error_on_velocity_methods = true;
   settings.expect_error_on_jdot_times_v_methods = true;
@@ -137,7 +138,7 @@ int main()
   performChecks(*model, 0, settings);
 
   // q and v, with gradients, with jdot_times_v
-  model->doKinematicsNew(q, v, true, true);
+  model->doKinematics(q, v, true, true);
   for (int gradient_order = 0; gradient_order < max_gradient_order; gradient_order++)
     performChecks(*model, gradient_order, settings);
 

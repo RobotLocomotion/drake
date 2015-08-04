@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
 
 // for (i=0; i<model->num_dof; i++)
 // 	 q(i)=(double)rand() / RAND_MAX;
-    model->doKinematicsNew(q,VectorXd::Zero(model->num_velocities).eval());
+  model->doKinematics(q, VectorXd::Zero(model->num_velocities).eval());
 //  }
 
   VectorXd phi;

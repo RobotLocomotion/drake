@@ -190,7 +190,7 @@ static int snoptIKfun(snopt::integer *Status, snopt::integer *n, snopt::doublere
 {
   Map<VectorXd> q(x, nq);
   VectorXd v = VectorXd::Zero(0);
-  model->doKinematicsNew(q, v);
+  model->doKinematics(q, v);
   IK_cost_fun(x,F[0],G);
   IK_constraint_fun(x,&F[1],&G[nq]);
   return 0;
@@ -292,7 +292,7 @@ static int snoptIKtrajfun(snopt::integer *Status, snopt::integer *n, snopt::doub
     }
     Map<VectorXd> qvec(qi, nq);
     VectorXd v = VectorXd::Zero(0);
-    model->doKinematicsNew(qvec, v);
+    model->doKinematics(qvec, v);
     ti = &t[i];
     IK_constraint_fun(qi,F+nf_cum,G+nG_cum);
     nf_cum += nc_array[i];
@@ -315,7 +315,7 @@ static int snoptIKtrajfun(snopt::integer *Status, snopt::integer *n, snopt::doub
       double* qi = q_inbetween.data()+(inbetween_idx+j)*nq;
       Map<VectorXd> qvec(qi, nq);
       VectorXd v = VectorXd::Zero(0);
-      model->doKinematicsNew(qvec, v);
+      model->doKinematics(qvec, v);
       for(int k = 0;k<num_st_kc;k++)
       {
         if(st_kc_array[k]->isTimeValid(&t_j))

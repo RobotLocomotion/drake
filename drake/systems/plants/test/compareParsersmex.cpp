@@ -71,8 +71,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 		cpp_v.noalias() = P*matlab_v;
 
 		{ // run kinematics
-			matlab_model->doKinematicsNew(matlab_q, matlab_v, true, true);
-			cpp_model->doKinematicsNew(cpp_q, cpp_v, true, true);
+			matlab_model->doKinematics(matlab_q, matlab_v, true, true);
+			cpp_model->doKinematics(cpp_q, cpp_v, true, true);
 		}
 
 		{ // compare H, C, and B

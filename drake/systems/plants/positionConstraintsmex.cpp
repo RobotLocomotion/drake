@@ -22,7 +22,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   Map<VectorXd> q(mxGetPrSafe(prhs[1]),nq);
 
   VectorXd v = VectorXd::Zero(0);
-  model->doKinematicsNew(q, v);
+  model->doKinematics(q, v);
 
   const size_t numPositionConstraints = model->getNumPositionConstraints();
   

@@ -18,7 +18,7 @@ int main()
 
   VectorXd q = VectorXd::Random(model->num_positions);
   VectorXd v = VectorXd::Random(model->num_velocities);
-  model->doKinematicsNew(q, v, true, true);
+  model->doKinematics(q, v, true, true);
 
   auto points = Matrix<double, 3, Eigen::Dynamic>::Random(3, 5).eval();
   int body_or_frame_ind = 8;

@@ -236,7 +236,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   MatrixXd R_DQyD_ls = R_ls + D_ls.transpose()*Qy*D_ls;
 
-  pdata->r->doKinematicsNew(q, qd);
+  pdata->r->doKinematics(q, qd);
 
   //---------------------------------------------------------------------
   // Compute active support from desired supports -----------------------
@@ -275,7 +275,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
   }
 
-  pdata->r->doKinematicsNew(q, qd);
+  pdata->r->doKinematics(q, qd);
   std::map<int, std::unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
   pdata->H = pdata->r->massMatrix<double>().value();
   pdata->C = pdata->r->inverseDynamics(f_ext).value();
@@ -414,7 +414,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       body_idx = (int)(body_accel_inputs[i][0])-1;
 
       if (!inSupport(active_supports,body_idx)) {
-        auto Jb = pdata->r->forwardJacV(origin, body_idx, 0, 1, false, 0).value();
+        auto Jb = pdata->r->forwardKinJacobian(origin, body_idx, 0, 1, false, 0).value();
         auto Jbdot_times_v = pdata->r->forwardJacDotTimesV(origin, body_idx, 0, 1, 0).value();
 
         for (int j=0; j<6; j++) {
@@ -453,7 +453,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   int constraint_start_index = 2*nu;
   for (int i=0; i<pdata->n_body_accel_bounds; i++) {
     body_index = pdata->accel_bound_body_idx[i];
-    auto Jb = pdata->r->forwardJacV(origin, body_index, 0, 1, false, 0).value();
+    auto Jb = pdata->r->forwardKinJacobian(origin, body_index, 0, 1, false, 0).value();
     auto Jbdot_times_v = pdata->r->forwardJacDotTimesV(origin, body_index, 0, 1, 0).value();
 
     Ain.block(constraint_start_index,0,6,pdata->r->num_positions) = Jb;
@@ -563,7 +563,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         body_idx = (int)(body_accel_inputs[i][0])-1;
         
         if (!inSupport(active_supports,body_idx)) {
-          auto Jb = pdata->r->forwardJacV(origin, body_idx, 0, 1, false, 0).value();
+          auto Jb = pdata->r->forwardKinJacobian(origin, body_idx, 0, 1, false, 0).value();
           auto Jbdot_times_v = pdata->r->forwardJacDotTimesV(origin, body_idx, 0, 1, 0).value();
 
           for (int j=0; j<6; j++) {

@@ -134,7 +134,7 @@ void RigidBodyManipulator::accumulateContactJacobian(const int bodyInd, Matrix3X
   const size_t numCB = cindB.size();
   const size_t offset = 3*numCA;
 
-  auto J_tmp = forwardJacV(bodyPoints, bodyInd, 0, 0, true, 0).value();
+  auto J_tmp = forwardKinJacobian(bodyPoints, bodyInd, 0, 0, true, 0).value();
 
   //add contributions from points in xA
   for (int x = 0 ; x < numCA ; x++) {
@@ -159,7 +159,7 @@ void RigidBodyManipulator::accumulateSecondOrderContactJacobian(const int bodyIn
   const size_t numCB = cindB.size();
   const size_t offset = 3*numCA;
   MatrixXd dJ_tmp(3*numPts, dJCols);
-  auto J_gradientvar = forwardJacV(bodyPoints, bodyInd, 0, 0, true, 1);
+  auto J_gradientvar = forwardKinJacobian(bodyPoints, bodyInd, 0, 0, true, 1);
   dJ_tmp = Map<MatrixXd>(J_gradientvar.gradient().value().data(), dJ_tmp.rows(), dJ_tmp.cols());
 
   //add contributions from points in xA

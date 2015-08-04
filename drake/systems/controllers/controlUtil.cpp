@@ -115,7 +115,7 @@ int contactPhi(RigidBodyManipulator* r, SupportStateElement& supp, void *map_ptr
 
   int i=0;
   for (auto pt_iter = supp.contact_pts.begin(); pt_iter != supp.contact_pts.end(); pt_iter++) {
-    contact_pos = r->forwardKinNew(*pt_iter, supp.body_idx, 0, 0, 0).value();
+    contact_pos = r->forwardKin(*pt_iter, supp.body_idx, 0, 0, 0).value();
     collisionDetect(map_ptr,contact_pos,pos,&normal,terrain_height);
     pos -= contact_pos;  // now -rel_pos in matlab version
     phi(i) = pos.norm();
@@ -145,7 +145,7 @@ int contactConstraintsBV(RigidBodyManipulator *r, int nc, std::vector<double> su
     double norm = sqrt(1+mu*mu); // because normals and ds are orthogonal, the norm has a simple form
     if (nc>0) {
       for (auto pt_iter=iter->contact_pts.begin(); pt_iter!=iter->contact_pts.end(); pt_iter++) {
-        auto contact_pos_gradientvar = r->forwardKinNew(*pt_iter, iter->body_idx, 0, 0, 1);
+        auto contact_pos_gradientvar = r->forwardKin(*pt_iter, iter->body_idx, 0, 0, 1);
         contact_pos = contact_pos_gradientvar.value();
         J = contact_pos_gradientvar.gradient().value();
 
@@ -223,7 +223,7 @@ MatrixXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<Suppor
 
       Vector3d point_on_contact_plane = contact_positions.col(0);
       std::pair<Vector3d, double> cop_and_normal_torque = resolveCenterOfPressure(torque, force, normal, point_on_contact_plane);
-      Vector3d cop_world = r->forwardKinNew(cop_and_normal_torque.first, active_support.body_idx, 0, 0, 0).value();
+      Vector3d cop_world = r->forwardKin(cop_and_normal_torque.first, active_support.body_idx, 0, 0, 0).value();
       individual_cops.col(j) = cop_world;
     }
 
@@ -251,7 +251,7 @@ bool isSupportElementActive(SupportStateElement* se, bool contact_force_detected
 }
 
 Matrix<bool, Dynamic, 1> getActiveSupportMask(RigidBodyManipulator* r, void* map_ptr, VectorXd q, VectorXd qd, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &available_supports, const Ref<const Matrix<bool, Dynamic, 1>> &contact_force_detected, double contact_threshold, double terrain_height) {
-  r->doKinematicsNew(q, qd);
+  r->doKinematics(q, qd);
 
   size_t nsupp = available_supports.size();
   Matrix<bool, Dynamic, 1> active_supp_mask = Matrix<bool, Dynamic, 1>::Zero(nsupp);
@@ -316,10 +316,10 @@ Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_sta
   // @retval twist_dot, [angular_acceleration, xyz_acceleration] in body frame
 
   Isometry3d T_world_to_task = T_task_to_world.inverse();
-  r->doKinematicsNew(robot_state.q,robot_state.qd,false);
+  r->doKinematics(robot_state.q, robot_state.qd, false);
 
   Vector3d origin = Vector3d::Zero();
-  auto body_pose = r->forwardKinNew(origin,body_index,0,2,0);
+  auto body_pose = r->forwardKin(origin, body_index, 0, 2, 0);
   Vector3d body_xyz = body_pose.value().head<3>();
   Vector3d body_xyz_task = T_world_to_task * body_xyz.colwise().homogeneous();
   Vector4d body_quat = body_pose.value().tail<4>();

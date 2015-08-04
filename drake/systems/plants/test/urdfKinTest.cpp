@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
 
 // for (i=0; i<model->num_dof; i++)
 // 	 q(i)=(double)rand() / RAND_MAX;
-    model->doKinematicsNew(q,v);
+  model->doKinematics(q, v);
 //  }
 
 //  const Vector4d zero(0,0,0,1);
@@ -39,8 +39,8 @@ int main(int argc, char* argv[])
   Matrix<double,6,1> pt;
 
   for (i=0; i<model->num_bodies; i++) {
-//    model->forwardKinNew(i,zero,1,pt);
-		auto pt = model->forwardKinNew(zero, i, 0, 1, 0);
+//    model->forwardKin(i,zero,1,pt);
+		auto pt = model->forwardKin(zero, i, 0, 1, 0);
 //    cout << i << ": forward kin: " << model->bodies[i].linkname << " is at " << pt.transpose() << endl;
     cout << model->bodies[i]->linkname << " ";
 		cout << pt.value().transpose() << endl;
