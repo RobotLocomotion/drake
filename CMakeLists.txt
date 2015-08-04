@@ -120,7 +120,7 @@ set(gurobi_GIT_REPOSITORY https://github.com/RobotLocomotion/gurobi.git)
 set(gurobi_GIT_TAG beb0a84a1bcca1eb81a1b87d9fa140f2134d97e9)
 set(iris_GIT_REPOSITORY https://github.com/rdeits/iris-distro.git)
 set(iris_GIT_TAG cce0399a093a5632bd59fb8bc8a75cfe0896a563)
-set(iris_EXTERNAL_ARGS PATCH_COMMAND make configure-cdd-only)
+set(iris_ADDITIONAL_BUILD_ARGS PATCH_COMMAND make configure-cdd-only)
 set(lcm_GIT_REPOSITORY https://github.com/RobotLocomotion/lcm-pod.git)
 if (WIN32)  # then use the cmake branch of lcm
 	set(lcm_GIT_TAG f828ee126532ceb24f10a7ca74e5acc7c2093c12)
@@ -201,7 +201,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 			BUILD_COMMAND "${${proj}_BUILD_COMMAND}"
 			INSTALL_COMMAND ""
 			DEPENDS download-${proj} ${deps}
-			${${proj}_EXTERNAL_ARGS}
+			${${proj}_ADDITIONAL_BUILD_ARGS}
 	#		BUILD_ALWAYS 1
 			)
 	else()
@@ -216,6 +216,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 			BUILD_COMMAND ${MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE}
 			INSTALL_COMMAND ""
 			DEPENDS ${deps}
+			${${proj}_ADDITIONAL_BUILD_ARGS}
 	#		BUILD_ALWAYS 1
 			)
 	endif(NOT ${proj} STREQUAL "drake") 
