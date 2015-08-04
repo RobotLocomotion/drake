@@ -35,9 +35,6 @@ ifeq "$(BUILD_TYPE)" ""
   BUILD_TYPE="Release"
 endif
 
-export MAKE
-export MAKEFLAGS
-
 .PHONY: all
 all: pod-build/Makefile
 	cmake --build pod-build --config $(BUILD_TYPE)
