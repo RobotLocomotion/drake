@@ -6,7 +6,7 @@
 #include <lcm/lcm-cpp.hpp>
 #include "lcmUtil.h"
 #include "testUtil.h"
-#include "drake/lcmt_zmp_com_observer_state.hpp"
+#include "lcmtypes/drake/lcmt_zmp_com_observer_state.hpp"
 
 const bool CHECK_CENTROIDAL_MOMENTUM_RATE_MATCHES_TOTAL_WRENCH = false;
 const bool PUBLISH_ZMP_COM_OBSERVER_STATE = true;
