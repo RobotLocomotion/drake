@@ -53,8 +53,8 @@ while test_number < n_tests
     
     [~, J, dJ] = robot.forwardKin(kinsol, end_effector, points, forwardKin_options);
     [~, J_geval, dJ_geval] = geval(1, @(q) robot.forwardKin(robot.doKinematics(q, [], kinsol_options_geval), end_effector, points, forwardKin_options), q, geval_options);
-    valuecheck(J_geval, J, 1e-10);
-    valuecheck(dJ_geval, dJ, 1e-10);
+    valuecheck(J_geval, J, 1e-8);
+    valuecheck(dJ_geval, dJ, 1e-8);
 
     test_number = test_number + 1;
   end
@@ -140,7 +140,7 @@ end
 
 function valuecheckRotations(val, desired_val, rotation_type, tolerance)
 if nargin < 4
-  tolerance = 1e-10;
+  tolerance = 1e-8;
 end
 
 sizecheck(desired_val, size(val));
