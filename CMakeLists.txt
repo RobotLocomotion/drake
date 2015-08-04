@@ -47,7 +47,7 @@ if (NOT MAKE_EXECUTABLE)
       message(FATAL_ERROR "couldn't find gnu make")
    endif()
 endif()
-set(MAKE_COMMAND ${MAKE_EXECUTABLE} $ENV{MAKEFLAGS}) # didn't work on my first test, but should do no harm
+set(MAKE_COMMAND ${MAKE_EXECUTABLE} -$ENV{MAKEFLAGS}) # didn't work on my first test, but should do no harm
 
 # process optional projects
 # note: keep drake in this loop in case externals depend on drake (e.g. the director might in the near future)
