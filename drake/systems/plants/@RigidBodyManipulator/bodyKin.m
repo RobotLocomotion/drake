@@ -20,19 +20,6 @@ compute_P                   = (nargout > 1);
 compute_first_derivatives   = (nargout > 2);
 compute_second_derivatives  = (nargout > 3);
 
-if compute_second_derivatives
-  [x,P,J,dP,dJ] = bodyKinNew(obj,kinsol,body_or_frame_ind,pts);
-elseif compute_first_derivatives
-  [x,P,J] = bodyKinNew(obj,kinsol,body_or_frame_ind,pts);
-elseif compute_P
-  [x,P] = bodyKinNew(obj,kinsol,body_or_frame_ind,pts);
-else
-  x = bodyKinNew(obj,kinsol,body_or_frame_ind,pts);
-end
-
-end
-
-function [x,P,J,dP,dJ] = bodyKinNew(obj,kinsol,body_or_frame_ind,pts)
 compute_P = nargout > 1;
 compute_J = nargout > 2;
 compute_dP = nargout > 3;
@@ -82,4 +69,6 @@ else
     end
   end
 end
+
 end
+
