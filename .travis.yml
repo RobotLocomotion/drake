@@ -5,22 +5,19 @@ sudo: required
 notification:
   email: false
 
-compiler:
-  - gcc
-  - clang
+# addons:
+#   apt:
+#     sources:
+#       - ubuntu-toolchain-r-test
+#     packages:
+#       - gcc-4.8
+#       - g++-4.8
 
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-    packages:
-      - gcc-4.8
-      - g++-4.8
-
-install:
-  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
+# install:
+#   - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
 
 before_install:
+  - sudo apt-get update -qq
   - mkdir build
   - echo $BUILD_TYPE
   - make download-all
@@ -30,6 +27,12 @@ script:
   - make
   - cd drake/pod-build
   - ctest -j 1 -D Experimental -C $BUILD_TYPE --output-on-failure --timeout 1000 --track Continuous
+
+# The compiler and env:matrix options create an matrix of build configurations (gcc + Release, gcc + Debug, clang + Release, clang + Debug)
+
+compiler:
+  - gcc
+  - clang
 
 env:
   global:
