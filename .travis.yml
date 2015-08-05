@@ -5,21 +5,9 @@ sudo: required
 notification:
   email: false
 
-# addons:
-#   apt:
-#     sources:
-#       - ubuntu-toolchain-r-test
-#     packages:
-#       - gcc-4.8
-#       - g++-4.8
-
-# install:
-#   - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
-
 before_install:
   - sudo apt-get update -qq
   - mkdir build
-  - echo $BUILD_TYPE
   - make download-all
   - sudo ./install_prereqs.sh ubuntu
 
