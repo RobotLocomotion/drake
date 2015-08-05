@@ -26,7 +26,7 @@ before_install:
 
 script:
   - mkdir build
-  - make
+  - make BUILD_TYPE=$BUILD_TYPE
   - CTEST_OUTPUT_ON_FAILURE=1 make test
 
 env:
