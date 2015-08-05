@@ -1,0 +1,30 @@
+language: cpp
+
+sudo: required
+
+notification:
+  email: false
+
+compiler:
+  - gcc
+  - clang
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - gcc-4.8
+      - g++-4.8
+
+install:
+  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
+
+before_install:
+  - make download-all
+  - sudo ./install_prereqs.sh
+
+script:
+  - mkdir build
+  - make
+  - CTEST_OUTPUT_ON_FAILURE=1 make test
