@@ -255,7 +255,7 @@ classdef FullStateQPController < DrakeSystem
     planned_contact_groups = rigid_body_support_state.contact_groups;
     %planned_num_contacts = rigid_body_support_state.num_contact_pts;      
 
-    dim = 2; % 2D or 3D
+    dim = obj.robot.getManipulator.dim; % 2D or 3D
 
     Jn = [];
     Jndot = [];
@@ -297,7 +297,12 @@ classdef FullStateQPController < DrakeSystem
       pts = [terrain_pts.pts];
       pts = pts(:,active_ind);
 
-      xz_pts = pts([1 3],:);
+      if obj.robot.getManipulator.dim == 2
+        xz_pts = pts([1 3],:);
+      else
+        xz_pts = pts;
+      end
+      
       [xp_j,Jp_j] = forwardKin(r,kinsol,planned_supports(j),xz_pts,0);
       Jpdot_j = forwardJacDot(r,kinsol,planned_supports(j),pts,0);
           
