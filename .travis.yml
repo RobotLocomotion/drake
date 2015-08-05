@@ -27,8 +27,9 @@ before_install:
   - sudo ./install_prereqs.sh ubuntu
 
 script:
-  - echo $BUILD_TYPE
   - make
+  - cd drake/pod-build
+  - ctest -j 1 -D Experimental -C Release --output-on-failure --timeout 1000 --track Continuous
 
 env:
   global:
