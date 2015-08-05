@@ -22,12 +22,16 @@ install:
 
 before_install:
   - mkdir build
-  - make BUILD_TYPE=Debug download-all
+  - make BUILD_TYPE=$(BUILD_TYPE) download-all
   - sudo ./install_prereqs.sh ubuntu
 
 script:
-  - make BUILD_TYPE=Debug
+  - make BUILD_TYPE=$(BUILD_TYPE)
 
 env:
   global:
     - CMAKE_FLAGS="-DWITH_SPOTLESS:BOOL=OFF"
+  matrix:
+    - BUILD_TYPE=Debug
+    # empty build type should default to "Release"
+    - BUILD_TYPE=""
