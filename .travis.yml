@@ -37,4 +37,4 @@ env:
   matrix:
     - BUILD_TYPE=Debug
     # empty build type should default to "Release"
-    - BUILD_TYPE=""
+    -
