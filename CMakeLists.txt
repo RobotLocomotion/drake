@@ -143,6 +143,8 @@ set(yalmip_GIT_TAG c071fb7b7193491f8eefadba3bfff26160ad6cd4)
 set(xfoil_GIT_REPOSITORY https://github.com/RobotLocomotion/xfoil.git)
 set(xfoil_GIT_TAG fde0a9368dd451c93604051fc5704e120073800c)
 
+message("CMAKE_BUILD_TYPE: " ${CMAKE_BUILD_TYPE})
+
 foreach (proj ${EXTERNAL_PROJECTS})
 	set(deps)
 	foreach(dep ${${proj}_dependencies})

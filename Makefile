@@ -47,15 +47,16 @@ pod-build/Makefile:
 
 .PHONY: options
 options: configure
-ifeq ($(OS),Windows_NT)	
+ifeq ($(OS),Windows_NT)
 	cmake-gui pod-build
 else
 	ccmake pod-build
 endif
 
 .PHONY: configure
-configure: 
+configure:
 #	@echo "BUILD_SYSTEM: '$(BUILD_SYSTEM)'"
+	@echo "BUILD_TYPE: $(BUILD_TYPE)"
 	@echo "BUILD_PREFIX: $(BUILD_PREFIX)"
 
 # create the temporary build directory if needed
