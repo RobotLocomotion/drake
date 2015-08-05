@@ -21,13 +21,12 @@ install:
   - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
 
 before_install:
-  - make download-all
+  - make BUILD_TYPE=$BUILD_TYPE download-all
   - sudo ./install_prereqs.sh ubuntu
 
 script:
   - mkdir build
   - make BUILD_TYPE=$BUILD_TYPE
-  - CTEST_OUTPUT_ON_FAILURE=1 make test
 
 env:
  - BUILD_TYPE=Debug
