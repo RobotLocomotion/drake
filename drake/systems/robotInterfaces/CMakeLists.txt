@@ -44,7 +44,7 @@ if (MATLAB_FOUND)
 
   endif()
 
-  if (LCM_FOUND AND MATLAB_FOUND AND NOT WIN32)
+  if (LCM_FOUND AND NOT WIN32)
     add_mex(constructQPLocomotionPlanmex constructQPLocomotionPlanmex.cpp)
     target_link_libraries(constructQPLocomotionPlanmex drakeQPLocomotionPlan drakeUtil drakeZMPUtil drakeMexUtil)
 

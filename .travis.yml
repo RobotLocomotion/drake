@@ -28,3 +28,8 @@ script:
   - mkdir build
   - make
   - CTEST_OUTPUT_ON_FAILURE=1 make test
+
+env:
+ - BUILD_TYPE=Debug
+ # A build type which is empty should trigger a Release build in the Makefile
+ - BUILD_TYPE=""
