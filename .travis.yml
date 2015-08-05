@@ -36,5 +36,5 @@ env:
     - CMAKE_FLAGS="-DWITH_SPOTLESS:BOOL=OFF"
   matrix:
     - BUILD_TYPE=Debug
-    # empty build type should default to "Release"
+    # unset build type should default to "Release"
     -
