@@ -22,11 +22,13 @@ install:
 
 before_install:
   - mkdir build
-  - make BUILD_TYPE=$BUILD_TYPE download-all
+  - echo $BUILD_TYPE
+  - make download-all
   - sudo ./install_prereqs.sh ubuntu
 
 script:
-  - make BUILD_TYPE=$BUILD_TYPE
+  - echo $BUILD_TYPE
+  - make
 
 env:
   global:
