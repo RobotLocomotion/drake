@@ -22,7 +22,7 @@ install:
 
 before_install:
   - make download-all
-  - sudo ./install_prereqs.sh
+  - sudo ./install_prereqs.sh ubuntu
 
 script:
   - mkdir build
