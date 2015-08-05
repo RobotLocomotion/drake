@@ -21,14 +21,13 @@ install:
   - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
 
 before_install:
-  - make BUILD_TYPE=$BUILD_TYPE download-all
+  - mkdir build
+  - make BUILD_TYPE=Debug download-all
   - sudo ./install_prereqs.sh ubuntu
 
 script:
-  - mkdir build
-  - make BUILD_TYPE=$BUILD_TYPE
+  - make BUILD_TYPE=Debug
 
 env:
- - BUILD_TYPE=Debug
- # A build type which is empty should trigger a Release build in the Makefile
- - BUILD_TYPE=""
+  global:
+    - CMAKE_FLAGS="-DWITH_SPOTLESS:BOOL=OFF"
