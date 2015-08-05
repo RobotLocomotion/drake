@@ -73,7 +73,7 @@ endif
 
 .PHONY: download-all
 download-all: configure
-	cmake --build pod-build --config $(BUILD_TYPE) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) --target $@
+	cmake --build pod-build --config $(BUILD_TYPE) --target $@
 
 .PHONY: clean
 clean:
