@@ -29,12 +29,11 @@ before_install:
 script:
   - make
   - cd drake/pod-build
-  - ctest -j 1 -D Experimental -C Release --output-on-failure --timeout 1000 --track Continuous
+  - ctest -j 1 -D Experimental -C $BUILD_TYPE --output-on-failure --timeout 1000 --track Continuous
 
 env:
   global:
     - CMAKE_FLAGS="-DWITH_SPOTLESS:BOOL=OFF"
   matrix:
     - BUILD_TYPE=Debug
-    # unset build type should default to "Release"
-    -
+    - BUILD_TYPE=Release
