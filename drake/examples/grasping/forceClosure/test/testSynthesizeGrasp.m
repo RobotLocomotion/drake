@@ -86,13 +86,7 @@ test_userfun(p);
 end
 
 function solver_sol = test_userfun(p)
-num_trial = 1;
-info = 0;
-p.itr_max = 200;
-while(num_trial <=3 && info ~= 1)
 [solver_sol,info,itr,solver_time] = p.optimize();
-num_trial = num_trial +1;
-end
 if(info~=1)
   error('Info = %d,Failed to find a force closure grasp',info);
 end
