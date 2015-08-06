@@ -5,6 +5,12 @@ sudo: required
 notification:
   email: false
 
+cache:
+  pip: true
+  directories:
+    - "$HOME/.pip-cache"
+    - "$HOME/build/rdeits/iris-distro/venv"
+
 branches:
   only: 
     - master
@@ -31,6 +37,9 @@ script:
 compiler:
   - gcc
   - clang
+
+python:
+  - '2.7'
 
 env:
   global:
