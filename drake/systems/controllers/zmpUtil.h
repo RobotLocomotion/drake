@@ -1,5 +1,5 @@
 #include <Eigen/Core>
-#include "ExponentialPlusPiecewisePolynomial.h"
+#include "drake/ExponentialPlusPiecewisePolynomial.h"
 
 #undef DLLEXPORT
 #if defined(WIN32) || defined(WIN64)

@@ -103,12 +103,11 @@ if (MATLAB_FOUND)
   add_mex(supportDetectmex supportDetectmex.cpp)
   target_link_libraries(supportDetectmex drakeRBM drakeControlUtil) 
 
-
-  add_library(drakeZMPUtil zmpUtil.cpp)
-  target_link_libraries(drakeZMPUtil drakeTrajectories)
-  pods_install_headers(zmpUtil.h DESTINATION drake)
-
-
 endif(MATLAB_FOUND)
+
+add_library(drakeZMPUtil zmpUtil.cpp)
+target_link_libraries(drakeZMPUtil drakeTrajectories)
+pods_install_headers(zmpUtil.h DESTINATION drake)
+
 
 add_subdirectory(test)

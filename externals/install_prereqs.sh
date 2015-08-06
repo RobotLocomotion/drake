@@ -20,7 +20,7 @@ case $1 in
     exit 1 ;;
 esac
 
-SUBDIRS="drake externals"
+SUBDIRS=`ls`
 for subdir in $SUBDIRS; do
   if [ -f $subdir/install_prereqs.sh ]; then
     echo "installing prereqs for $subdir"
