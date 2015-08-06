@@ -15,10 +15,10 @@ before_install:
   - mkdir build
   - make download-all
   - sudo ./install_prereqs.sh ubuntu
-
-script:
   - make
   - cd drake/pod-build
+
+script:
   - ctest -j 1 -D Experimental -C $BUILD_TYPE --output-on-failure --timeout 1000 --track Continuous
 
 # The compiler and env:matrix options create an matrix of build configurations (gcc + Release, gcc + Debug, clang + Release, clang + Debug)
