@@ -69,7 +69,7 @@ set(gloptipoly_GIT_TAG a3547a6811bf76c4e18f00b6bcbc187c6a7fd3d8)
 set(gurobi_GIT_REPOSITORY https://github.com/RobotLocomotion/gurobi.git)
 set(gurobi_GIT_TAG beb0a84a1bcca1eb81a1b87d9fa140f2134d97e9)
 set(iris_GIT_REPOSITORY https://github.com/rdeits/iris-distro.git)
-set(iris_GIT_TAG aca44a426d391c56ae2a608defaeea10af3ed2e8)
+set(iris_GIT_TAG 6447e9dd2b38ec495179861d1f3b6b7700303330)
 set(iris_ADDITIONAL_BUILD_ARGS PATCH_COMMAND make configure-cdd-only)
 set(lcm_GIT_REPOSITORY https://github.com/RobotLocomotion/lcm-pod.git)
 if (WIN32)  # then use the cmake branch of lcm
