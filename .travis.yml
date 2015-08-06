@@ -15,10 +15,15 @@ before_install:
   - mkdir build
   - make download-all
   - sudo ./install_prereqs.sh ubuntu
+  - virtualenv venv
+  - source venv/bin/activate
+  - pip install --upgrade pip
+  - pip install --upgrade distribute --cache-dir=$HOME/.pip-cache
+  - pip install --upgrade -r externals/iris/python_requirements.txt --cache-dir=$HOME/.pip-cache
   - make
-  - cd drake/pod-build
 
 script:
+  - cd drake/pod-build
   - ctest -j 1 -D Experimental -C $BUILD_TYPE --output-on-failure --timeout 1000 --track Continuous
 
 # The compiler and env:matrix options create an matrix of build configurations (gcc + Release, gcc + Debug, clang + Release, clang + Debug)
