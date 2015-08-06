@@ -93,13 +93,14 @@ set(xfoil_GIT_REPOSITORY https://github.com/RobotLocomotion/xfoil.git)
 set(xfoil_GIT_TAG fde0a9368dd451c93604051fc5704e120073800c)
 
 
+find_program(MAKE_EXECUTABLE make)
+if (NOT MAKE_EXECUTABLE)
+	message(FATAL_ERROR "couldn't find gnu make")
+endif()
 if (${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
 	set(PODS_MAKE_COMMAND "$(MAKE)")   # so we can pass through commandline arguments.  
 else()
-   find_program(PODS_MAKE_COMMAND make)
-   if (NOT PODS_MAKE_COMMAND)
-      message(FATAL_ERROR "couldn't find gnu make")
-   endif()
+	set(PODS_MAKE_COMMAND ${MAKE_EXECUTABLE})
 endif()
 
 # process optional projects
@@ -112,7 +113,7 @@ foreach(proj IN ITEMS cmake eigen gtk lcm libbot bullet iris spotless director o
 	elseif(REMOVE_UNUSED_EXTERNALS AND IS_DIRECTORY ${proj})
 		message(STATUS "removing unused project: ${proj}")
 		if (NOT ${proj}_NO_BUILD)
-			execute_process(COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE} clean
+			execute_process(COMMAND ${MAKE_EXECUTABLE} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE} clean
 							WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/${proj})
 		endif()
 		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory "${PROJECT_SOURCE_DIR}/${proj}")
