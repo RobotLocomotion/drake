@@ -39,56 +39,6 @@ else()
   option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" 			ON)
 endif()
 
-
-set(MAKE_EXECUTABLE $ENV{MAKE})
-if (NOT MAKE_EXECUTABLE)
-   find_program(MAKE_EXECUTABLE make)
-   if (NOT MAKE_EXECUTABLE)
-      message(FATAL_ERROR "couldn't find gnu make")
-   endif()
-endif()
-set(MAKE_COMMAND ${MAKE_EXECUTABLE} $ENV{MAKEFLAGS}) # didn't work on my first test, but should do no harm
-
-# process optional projects
-# note: keep drake in this loop in case externals depend on drake (e.g. the director might in the near future)
-set(EXTERNAL_PROJECTS)
-foreach(proj IN ITEMS cmake eigen gtk lcm libbot bullet iris spotless director octomap snopt gurobi mosek yalmip gloptipoly bertini sedumi avl xfoil drake)
-	string(TOUPPER ${proj} proj_upper)
-	if (${proj} STREQUAL "drake" OR ${proj} STREQUAL "cmake" OR WITH_${proj_upper} OR WITH_ALL_SUPPORTED_EXTERNALS)
-		list(APPEND EXTERNAL_PROJECTS ${proj})
-	elseif(REMOVE_UNUSED_EXTERNALS AND IS_DIRECTORY ${proj})
-		message(STATUS "removing unused project: ${proj}")
-		execute_process(COMMAND ${MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE} clean
-						WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/${proj})
-		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory "${PROJECT_SOURCE_DIR}/${proj}")
-	endif()
-endforeach()
-
-# throw error for unsupported platform/project combinations
-macro( unsupported )
-	foreach(proj ${ARGN})
-		list(FIND EXTERNAL_PROJECTS ${proj} find_result)
-		if (NOT find_result EQUAL -1)
-			if (WITH_ALL_SUPPORTED_EXTERNALS)
-				list(REMOVE_ITEM EXTERNAL_PROJECTS ${proj})
-			else()
-				message(FATAL_ERROR ${proj} is not supported (yet) on this platform)
-			endif()
-		endif()
-	endforeach()
-endmacro()
-
-if (WIN32)
-	unsupported(libbot octomap gurobi mosek yalmip gloptipoly bertini sedumi avl xfoil iris director)  # many of these could potentially work, but haven't been tried
-	unsupported(bullet)  # drake has a silly c++11 compile error.  probably just for MSVC << 2013
-	unsupported(lcm)  # just have to reliably add drake/build/lib to the path so that lcm-gen.exe can run when building drake.  note: move GTK back into ON by default for win32 only when I re-enable lcm
-endif()
-
-#enable_language(Fortran)
-#if (NOT CMAKE_Fortran_COMPILER)
-#   unsupported(avl xfoil)
-#endif()
-
 # list *compilation* dependencies, in alphabetical order by target (note: dependencies must come first in my foreach above)
 set(lcm_dependencies gtk)
 set(libbot_dependencies lcm)
@@ -96,7 +46,6 @@ set(director_dependencies lcm libbot)
 set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi)
 
 # download information, in alphabetical order
-find_package(Git QUIET)
 set(avl_GIT_REPOSITORY https://github.com/RobotLocomotion/avl.git)
 set(avl_GIT_TAG 9b927f90619460b29f7454c714369f65bc4536a1)
 set(bertini_GIT_REPOSITORY https://github.com/RobotLocomotion/bertini.git)
@@ -143,6 +92,60 @@ set(yalmip_GIT_TAG c071fb7b7193491f8eefadba3bfff26160ad6cd4)
 set(xfoil_GIT_REPOSITORY https://github.com/RobotLocomotion/xfoil.git)
 set(xfoil_GIT_TAG fde0a9368dd451c93604051fc5704e120073800c)
 
+
+find_program(MAKE_EXECUTABLE make)
+if (NOT MAKE_EXECUTABLE)
+	message(FATAL_ERROR "couldn't find gnu make")
+endif()
+if (${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
+	set(PODS_MAKE_COMMAND "$(MAKE)")   # so we can pass through commandline arguments.  
+else()
+	set(PODS_MAKE_COMMAND ${MAKE_EXECUTABLE})
+endif()
+
+# process optional projects
+# note: keep drake in this loop in case externals depend on drake (e.g. the director might in the near future)
+set(EXTERNAL_PROJECTS)
+foreach(proj IN ITEMS cmake eigen gtk lcm libbot bullet iris spotless director octomap snopt gurobi mosek yalmip gloptipoly bertini sedumi avl xfoil drake)
+	string(TOUPPER ${proj} proj_upper)
+	if (${proj} STREQUAL "drake" OR ${proj} STREQUAL "cmake" OR WITH_${proj_upper} OR WITH_ALL_SUPPORTED_EXTERNALS)
+		list(APPEND EXTERNAL_PROJECTS ${proj})
+	elseif(REMOVE_UNUSED_EXTERNALS AND IS_DIRECTORY ${proj})
+		message(STATUS "removing unused project: ${proj}")
+		if (NOT ${proj}_NO_BUILD)
+			execute_process(COMMAND ${MAKE_EXECUTABLE} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE} clean
+							WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/${proj})
+		endif()
+		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory "${PROJECT_SOURCE_DIR}/${proj}")
+	endif()
+endforeach()
+
+# throw error for unsupported platform/project combinations
+macro( unsupported )
+	foreach(proj ${ARGN})
+		list(FIND EXTERNAL_PROJECTS ${proj} find_result)
+		if (NOT find_result EQUAL -1)
+			if (WITH_ALL_SUPPORTED_EXTERNALS)
+				list(REMOVE_ITEM EXTERNAL_PROJECTS ${proj})
+			else()
+				message(FATAL_ERROR ${proj} is not supported (yet) on this platform)
+			endif()
+		endif()
+	endforeach()
+endmacro()
+
+if (WIN32)
+	unsupported(libbot octomap gurobi mosek yalmip gloptipoly bertini sedumi avl xfoil iris director)  # many of these could potentially work, but haven't been tried
+	unsupported(bullet)  # drake has a silly c++11 compile error.  probably just for MSVC << 2013
+	unsupported(lcm)  # just have to reliably add drake/build/lib to the path so that lcm-gen.exe can run when building drake.  note: move GTK back into ON by default for win32 only when I re-enable lcm
+endif()
+
+#enable_language(Fortran)
+#if (NOT CMAKE_Fortran_COMPILER)
+#   unsupported(avl xfoil)
+#endif()
+
+
 foreach (proj ${EXTERNAL_PROJECTS})
 	set(deps)
 	foreach(dep ${${proj}_dependencies})
@@ -160,7 +163,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 			set(${proj}_SOURCE_DIR ${${proj}_GIT_CLONE_DIR})
 		endif()
 		if (NOT ${proj}_NO_BUILD)
-			set(${proj}_BUILD_COMMAND ${MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE})
+			set(${proj}_BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE})
 		endif()
 
 		message(STATUS "Preparing to build ${proj} with dependencies: ${deps}")
@@ -211,7 +214,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 			UPDATE_COMMAND ""
 			CONFIGURE_COMMAND ""
 			BUILD_IN_SOURCE 1
-			BUILD_COMMAND ${MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE}
+			BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE}
 			INSTALL_COMMAND ""
 			DEPENDS ${deps}
 	#		BUILD_ALWAYS 1
@@ -248,7 +251,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 	ExternalProject_Get_Property(${proj} SOURCE_DIR)
 	if (NOT ${proj}_NO_BUILD)
 		add_custom_target(clean-${proj}
-			COMMAND ${MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE} clean
+			COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE} clean
 			WORKING_DIRECTORY ${SOURCE_DIR})
 		add_dependencies(clean-all clean-${proj})
 	endif()
