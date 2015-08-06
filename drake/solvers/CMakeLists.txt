@@ -27,6 +27,8 @@ endif()
 
 pods_find_pkg_config(snopt_c)
 
+add_mex(lqrmex lqrmex.cpp)
+target_link_libraries(lqrmex drakeUtil)
 
 if(snopt_c_FOUND AND MATLAB_FOUND)
 	add_mex(NonlinearProgramSnoptmex NonlinearProgramSnoptmex.cpp)
