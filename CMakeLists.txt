@@ -150,7 +150,7 @@ endif()
 
 
 foreach (proj ${EXTERNAL_PROJECTS})
-	set(deps)`
+	set(deps)
 	foreach(dep ${${proj}_dependencies})
 		list(FIND EXTERNAL_PROJECTS ${dep} find_result)
 		if (${dep} STREQUAL "drake" OR NOT find_result EQUAL -1)
