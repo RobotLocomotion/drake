@@ -5,6 +5,11 @@ sudo: required
 notification:
   email: false
 
+branches:
+  only: 
+    - master
+    - stable
+
 before_install:
   - sudo apt-get update -qq
   - mkdir build
