@@ -173,6 +173,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 
 		# separate download target so I can make the download-all custom command as recommended in:
 		#   http://comments.gmane.org/gmane.comp.programming.tools.cmake.user/53002
+		message(STATUS "Using git tag: " ${${proj}_GIT_TAG})
 		if (AUTO_UPDATE_EXTERNALS)
 			ExternalProject_Add(download-${proj}
 				DOWNLOAD_DIR ${${proj}_GIT_CLONE_DIR}
