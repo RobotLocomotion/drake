@@ -5,12 +5,12 @@ include(ExternalProject)
 
 option(AUTO_UPDATE_EXTERNALS "external projects are updated to their tag revision on compile" ON)
 
-# chinese menu of external projects 
+# chinese menu of external projects
 option(WITH_ALL_SUPPORTED_EXTERNALS "overrides the individual WITH_[external] options" OFF)
 option(REMOVE_UNUSED_EXTERNALS "enable this to remove those projects from disk" OFF)
 
 # ON by default:
-option(WITH_EIGEN		"required c++ matrix library.  only disable if you have it already."    ON)		
+option(WITH_EIGEN		"required c++ matrix library.  only disable if you have it already."    ON)
 option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"							ON)
 
 # OFF by default:
@@ -33,7 +33,7 @@ if (WIN32)
   option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	OFF)
   option(WITH_BULLET 		"used for collision detection" 					OFF)
   option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" 			OFF)
-else() 
+else()
   option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	ON)
   option(WITH_BULLET 		"used for collision detection" 					ON)
   option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" 			ON)
@@ -62,7 +62,7 @@ set(director_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/director/distro/pods/dra
 set(eigen_GIT_REPOSITORY https://github.com/RobotLocomotion/eigen-pod.git)
 set(eigen_GIT_TAG fb56a4b8504eb115a7f257de4570c47c20c43397)
 set(gtk_GIT_REPOSITORY https://github.com/RobotLocomotion/gtk-pod.git)
-set(gtk_GIT_TAG cbcecf686ad17eba5949e297ea187126b1a06431)
+set(gtk_GIT_TAG dc9bb719ee771a2ae9c3a392796c42ccad5bca54)
 set(gloptipoly_GIT_REPOSITORY https://github.com/RobotLocomotion/gloptipoly3.git)  # todo: rename that repo
 set(gloptipoly_GIT_TAG a3547a6811bf76c4e18f00b6bcbc187c6a7fd3d8)
 set(gurobi_GIT_REPOSITORY https://github.com/RobotLocomotion/gurobi.git)
@@ -98,7 +98,7 @@ if (NOT MAKE_EXECUTABLE)
 	message(FATAL_ERROR "couldn't find gnu make")
 endif()
 if (${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
-	set(PODS_MAKE_COMMAND "$(MAKE)")   # so we can pass through commandline arguments.  
+	set(PODS_MAKE_COMMAND "$(MAKE)")   # so we can pass through commandline arguments.
 else()
 	set(PODS_MAKE_COMMAND ${MAKE_EXECUTABLE})
 endif()
@@ -171,7 +171,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 		# separate download target so I can make the download-all custom command as recommended in:
 		#   http://comments.gmane.org/gmane.comp.programming.tools.cmake.user/53002
 		if (AUTO_UPDATE_EXTERNALS)
-			ExternalProject_Add(download-${proj}   
+			ExternalProject_Add(download-${proj}
 				DOWNLOAD_DIR ${${proj}_GIT_CLONE_DIR}
 				SOURCE_DIR ${${proj}_GIT_CLONE_DIR}
 				GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
@@ -181,7 +181,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 				INSTALL_COMMAND ""
 				)
 		else()
-			ExternalProject_Add(download-${proj}   
+			ExternalProject_Add(download-${proj}
 				DOWNLOAD_DIR ${${proj}_GIT_CLONE_DIR}
 				SOURCE_DIR ${${proj}_GIT_CLONE_DIR}
 				GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
@@ -194,7 +194,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 		endif()
 
 		# now the actual project
-		ExternalProject_Add(${proj} 
+		ExternalProject_Add(${proj}
 			SOURCE_DIR ${${proj}_SOURCE_DIR}
 			DOWNLOAD_COMMAND ""
 			UPDATE_COMMAND ""
@@ -208,7 +208,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 	else()
 		message(STATUS "Preparing to build ${proj} with dependencies: ${deps}")
 
-		ExternalProject_Add(${proj} 
+		ExternalProject_Add(${proj}
 			SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake"
 			DOWNLOAD_COMMAND ""
 			UPDATE_COMMAND ""
@@ -219,14 +219,14 @@ foreach (proj ${EXTERNAL_PROJECTS})
 			DEPENDS ${deps}
 	#		BUILD_ALWAYS 1
 			)
-	endif(NOT ${proj} STREQUAL "drake") 
+	endif(NOT ${proj} STREQUAL "drake")
 
 
 	# once we require cmake version >= 3.1, then we can zap this and just use the BUILD_ALWAYS flags above
- 	ExternalProject_Add_Step(${proj} forceconfigure 
+ 	ExternalProject_Add_Step(${proj} forceconfigure
  		COMMAND ${CMAKE_COMMAND} -E echo "Force configure of ${proj}"
- 		DEPENDEES update 
- 		DEPENDERS configure 
+ 		DEPENDEES update
+ 		DEPENDERS configure
  		ALWAYS 1)
 
 endforeach()
@@ -260,6 +260,3 @@ endforeach()
 
 string(REPLACE ";" " " PROJECT_LIST "${PROJECT_LIST}")
 add_custom_target(list-project-dirs COMMAND echo "${PROJECT_LIST}")
-
-
-
