@@ -5,12 +5,6 @@ sudo: required
 notification:
   email: false
 
-cache:
-  pip: true
-  directories:
-    - "$HOME/.pip-cache"
-    - "$HOME/build/$USER/drake/venv"
-
 branches:
   only: 
     - master
@@ -21,11 +15,6 @@ before_install:
   - mkdir build
   - make download-all
   - sudo ./install_prereqs.sh ubuntu
-  - virtualenv venv
-  - source venv/bin/activate
-  - pip install --upgrade pip
-  - pip install --upgrade distribute --cache-dir=$HOME/.pip-cache
-  - pip install --upgrade -r externals/iris/python_requirements.txt --cache-dir=$HOME/.pip-cache
   - make
 
 script:
