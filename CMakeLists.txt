@@ -43,6 +43,7 @@ endif()
 set(lcm_dependencies gtk)
 set(libbot_dependencies lcm)
 set(director_dependencies lcm libbot)
+set(iris_dependencies eigen mosek)
 set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi)
 
 # download information, in alphabetical order
@@ -68,7 +69,8 @@ set(gloptipoly_GIT_TAG a3547a6811bf76c4e18f00b6bcbc187c6a7fd3d8)
 set(gurobi_GIT_REPOSITORY https://github.com/RobotLocomotion/gurobi.git)
 set(gurobi_GIT_TAG beb0a84a1bcca1eb81a1b87d9fa140f2134d97e9)
 set(iris_GIT_REPOSITORY https://github.com/rdeits/iris-distro.git)
-set(iris_GIT_TAG 13468e0ea38e72ffae030adaa31e3015ea5f3ce0)
+set(iris_GIT_TAG 7489c61cc1706ba94db71c1a96d5edfe672f1ee4)
+set(iris_ADDITIONAL_BUILD_ARGS PATCH_COMMAND make configure-cdd-only)
 set(lcm_GIT_REPOSITORY https://github.com/RobotLocomotion/lcm-pod.git)
 if (WIN32)  # then use the cmake branch of lcm
 	set(lcm_GIT_TAG f828ee126532ceb24f10a7ca74e5acc7c2093c12)
@@ -78,7 +80,7 @@ endif()
 set(libbot_GIT_REPOSITORY https://github.com/RobotLocomotion/libbot.git)
 set(libbot_GIT_TAG c8c251cf2fe0954e5c4954a3e7c1e7a43a882492)
 set(mosek_GIT_REPOSITORY https://github.com/RobotLocomotion/mosek.git)
-set(mosek_GIT_TAG a72594c4a7c8c5c026fd291148bcac76146634c2)
+set(mosek_GIT_TAG 8e93c8ad6e8de0c1401b8e39d187370a3a0bd2dc)
 set(octomap_GIT_REPOSITORY https://github.com/RobotLocomotion/octomap-pod.git)
 set(octomap_GIT_TAG 00b28215d19580f9e964bc5d126ce55a9253671a)
 set(sedumi_GIT_REPOSITORY https://github.com/RobotLocomotion/sedumi.git)
@@ -106,7 +108,7 @@ endif()
 # process optional projects
 # note: keep drake in this loop in case externals depend on drake (e.g. the director might in the near future)
 set(EXTERNAL_PROJECTS)
-foreach(proj IN ITEMS cmake eigen gtk lcm libbot bullet iris spotless director octomap snopt gurobi mosek yalmip gloptipoly bertini sedumi avl xfoil drake)
+foreach(proj IN ITEMS cmake eigen gtk lcm libbot bullet spotless director octomap snopt gurobi mosek iris yalmip gloptipoly bertini sedumi avl xfoil drake)
 	string(TOUPPER ${proj} proj_upper)
 	if (${proj} STREQUAL "drake" OR ${proj} STREQUAL "cmake" OR WITH_${proj_upper} OR WITH_ALL_SUPPORTED_EXTERNALS)
 		list(APPEND EXTERNAL_PROJECTS ${proj})
@@ -146,6 +148,7 @@ endif()
 #endif()
 
 
+
 foreach (proj ${EXTERNAL_PROJECTS})
 	set(deps)
 	foreach(dep ${${proj}_dependencies})
@@ -170,6 +173,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 
 		# separate download target so I can make the download-all custom command as recommended in:
 		#   http://comments.gmane.org/gmane.comp.programming.tools.cmake.user/53002
+		message(STATUS "Using git tag: " ${${proj}_GIT_TAG})
 		if (AUTO_UPDATE_EXTERNALS)
 			ExternalProject_Add(download-${proj}
 				DOWNLOAD_DIR ${${proj}_GIT_CLONE_DIR}
@@ -203,6 +207,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 			BUILD_COMMAND "${${proj}_BUILD_COMMAND}"
 			INSTALL_COMMAND ""
 			DEPENDS download-${proj} ${deps}
+			${${proj}_ADDITIONAL_BUILD_ARGS}
 	#		BUILD_ALWAYS 1
 			)
 	else()
@@ -217,6 +222,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 			BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE}
 			INSTALL_COMMAND ""
 			DEPENDS ${deps}
+			${${proj}_ADDITIONAL_BUILD_ARGS}
 	#		BUILD_ALWAYS 1
 			)
 	endif(NOT ${proj} STREQUAL "drake")
