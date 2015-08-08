@@ -80,9 +80,9 @@ classdef BMIspotless < spotsosprog
         if(numel(w_guess)~=length(obj.w))
           error('w_guess does not have the right size');
         end
-        w_direction = w_guess(:);
+        w_direction_init = w_guess(:);
       else
-        w_direction = zeros(size(obj.w));
+        w_direction_init = zeros(size(obj.w));
       end
       options = spot_sdp_default_options();
       options.verbose = 0;
@@ -92,6 +92,7 @@ classdef BMIspotless < spotsosprog
         converged = false;
         itr = 1;
         solver_time = 0;
+        w_direction = w_direction_init;
         while(~converged && itr<=obj.itr_max)
           solver_sol = obj.minimize(trace(obj.W)-2*w_direction'*obj.w,obj.solver,options);
           solver_time = solver_time + solver_sol.info.wtime;
