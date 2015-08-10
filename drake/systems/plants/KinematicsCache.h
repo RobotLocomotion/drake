@@ -9,6 +9,7 @@
 #include "GradientVar.h"
 #include "drakeGeometryUtil.h"
 #include "RigidBody.h"
+#include <stdexcept>
 
 template <typename Scalar>
 class KinematicsCacheElement
@@ -54,16 +55,28 @@ template <typename Scalar>
 class KinematicsCache
 {
 private:
-  int gradient_order;
   std::unordered_map<RigidBody*, KinematicsCacheElement<Scalar>> elements;
-  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> q;
-  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> v;
 
 public:
-  template <typename DerivedQ, typename DerivedV>
-  KinematicsCache(const MatrixBase<DerivedQ>& q, const MatrixBase<DerivedV>& v,
-                  const std::vector<std::shared_ptr<RigidBody>>& bodies, int gradient_order) :
-      q(q), v(v), gradient_order(gradient_order)
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> q;
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> v;
+  int gradient_order;
+  bool position_kinematics_cached;
+  bool gradients_cached;
+  bool velocity_kinematics_cached;
+  bool jdotV_cached;
+  int cached_inertia_gradients_order;
+
+public:
+  KinematicsCache(const std::vector<std::shared_ptr<RigidBody>>& bodies, int gradient_order) :
+      q(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(getNumPositions(bodies), 1)),
+      v(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(getNumVelocities(bodies), 1)),
+      gradient_order(gradient_order),
+      position_kinematics_cached(false),
+      gradients_cached(false),
+      velocity_kinematics_cached(false),
+      jdotV_cached(false),
+      cached_inertia_gradients_order(-1)
   {
     assert(gradient_order == 0 || gradient_order == 1);
 
@@ -83,6 +96,44 @@ public:
   const KinematicsCacheElement<Scalar>& getElement(const RigidBody& body) const
   {
     return elements.at(&body);
+  }
+
+  void checkCachedKinematicsSettings(bool kinematics_gradients_required, bool velocity_kinematics_required, bool jdot_times_v_required, const std::string& method_name)
+  {
+    std::string message;
+    if (!position_kinematics_cached) {
+      message = method_name + " requires position kinematics, which have not been cached. Please call doKinematics.";
+    }
+    if (kinematics_gradients_required && ! gradients_cached) {
+      message = method_name + " requires kinematics gradients, which have not been cached. Please call doKinematics with compute_gradients set to true.";
+    }
+    if (velocity_kinematics_required && ! velocity_kinematics_cached) {
+      message = method_name + " requires velocity kinematics, which have not been cached. Please call doKinematics with a velocity vector.";
+    }
+    if (jdot_times_v_required && !jdotV_cached) {
+      message = method_name + " requires Jdot times v, which has not been cached. Please call doKinematics with a velocity vector and compute_JdotV set to true.";
+    }
+    if (message.length() > 0) {
+      throw std::runtime_error(message.c_str());
+    }
+  }
+
+  static int getNumPositions(const std::vector<std::shared_ptr<RigidBody>>& bodies) {
+    int ret = 0;
+    for (auto it = bodies.begin(); it != bodies.end(); ++it) {
+      RigidBody& body = **it;
+      if (body.hasParent())
+        ret += body.getJoint().getNumPositions();
+    }
+  }
+
+  static int getNumVelocities(const std::vector<std::shared_ptr<RigidBody>>& bodies) {
+    int ret = 0;
+    for (auto it = bodies.begin(); it != bodies.end(); ++it) {
+      RigidBody& body = **it;
+      if (body.hasParent())
+        ret += body.getJoint().getNumVelocities();
+    }
   }
 };
 

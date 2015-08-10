@@ -99,7 +99,7 @@ public:
   std::string getStateName(int state_num) const;
 
   template <typename DerivedQ, typename DerivedV>
-  KinematicsCache<typename DerivedQ::Scalar> doKinematics(const MatrixBase<DerivedQ>& q, const MatrixBase<DerivedV>& v, bool compute_gradients = false, bool compute_JdotV = true);
+  void doKinematics(const MatrixBase<DerivedQ> &q, const MatrixBase<DerivedV> &v, bool compute_gradients = false, bool compute_JdotV = true);
 
   bool isBodyPartOfRobot(const RigidBody& body, const std::set<int>& robotnum);
 
@@ -163,10 +163,10 @@ public:
   GradientVar<typename DerivedV::Scalar, Dynamic, 1> frictionTorques(Eigen::MatrixBase<DerivedV> const & v, int gradient_order = 0);
 
   template <typename DerivedPoints>
-  GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> forwardKinNew(const MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, int gradient_order);
+  GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> forwardKin(const MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, int gradient_order);
 
   template <typename DerivedPoints>
-  GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, Eigen::Dynamic> forwardJacV(const MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, bool in_terms_of_qdot, int gradient_order);
+  GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, Eigen::Dynamic> forwardKinJacobian(const MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, bool in_terms_of_qdot, int gradient_order);
 
   template <typename Scalar>
   GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> forwardKinPositionGradient(int npoints, int current_body_or_frame_ind, int new_body_or_frame_ind, int gradient_order);
@@ -322,17 +322,8 @@ public:
   Matrix<double,TWIST_SIZE,1> a_grav;
   MatrixXd B;  // the B matrix maps inputs into joint-space forces
 
-  /*
-   * Temporary solution, as we're switching from old kinematics to new.
-   * Had to separate these so that it's possible to know specifically whether the old doKinematics and/or new doKinematics
-   * has been cached with a given q and v. There was a place outside of RigidBodyManipulator that used cached_q and should continue
-   * to work for both new and old doKinematics, so we kept cached_q and cached_v as well (set by whatever doKinematics method
-   * was called last).
-   */
-  VectorXd cached_q, cached_v;  // these should be private
-
 private:
-  VectorXd cached_q_new, cached_v_new;
+  KinematicsCache<double> cache;
 
   //helper functions for contactConstraints
   void accumulateContactJacobian(const int bodyInd, Matrix3Xd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & J);
@@ -340,15 +331,8 @@ private:
 
   void updateCompositeRigidBodyInertias(int gradient_order);
 
-  void checkCachedKinematicsSettings(bool kinematics_gradients_required, bool velocity_kinematics_required, bool jdot_times_v_required, const std::string& method_name);
-
-
   bool initialized;
-  bool position_kinematics_cached;
-  bool gradients_cached;
-  bool velocity_kinematics_cached;
-  bool jdotV_cached;
-  int cached_inertia_gradients_order;
+
 
   // collision_model and collision_model_no_margins both maintain
   // a collection of the collision geometry in the RBM for use in
