@@ -1,4 +1,4 @@
-classdef TWIP < Manipulator 
+classdef TWIP < DrakeSystem 
   
   properties
     m1 = 0.579;
@@ -8,6 +8,7 @@ classdef TWIP < Manipulator
     I1 = 0.008122;
     I2 = 2*(30/1000)*(40/1000)^2;
     g = 9.81;
+    V = 8.3;
     
     %motor constants
     Kt = 0.305;
@@ -22,22 +23,22 @@ classdef TWIP < Manipulator
   
   methods
     function obj = TWIP
-      obj = obj@Manipulator(2,1);
+      obj = obj@DrakeSystem(4,0,1,2);
       obj = setInputLimits(obj,-100, 100);
-      
       obj = setInputFrame(obj,CoordinateFrame('TWIPInput',1,'u',{'tau'}));
       obj = setStateFrame(obj,CoordinateFrame('TWIPState',4,'x',{'alpha','beta','alphadot','betadot'}));
-      obj = setOutputFrame(obj,obj.getStateFrame);
-      
-      obj = setParamFrame(obj,CoordinateFrame('TWIPParams',11,'p',...
-        { 'm1','m2','R','L','I1','I2', 'Kt', 'Ke', 'Rm', 'cfm', 'cfw'}));
+      obj = setOutputFrame(obj,CoordinateFrame('TWIPOutput',2,'y',{'gyroscope', 'encoder'}));
+      obj = setParamFrame(obj,CoordinateFrame('TWIPParams',12,'p',...
+        { 'm1','m2','R','L','I1','I2', 'Kt', 'Ke', 'Rm', 'cfm', 'cfw', 'V'}));
       obj = setParamLimits(obj,zeros(obj.getParamFrame.dim,1));
+      obj = obj.setTIFlag(true);
     end
-
-    function [H,C,B] = manipulatorDynamics(obj,q,qd)
+    
+    function [f,df,d2f,d3f] = dynamics(obj,t,x,u)
       m1=obj.m1; m2=obj.m2; R=obj.R; g=obj.g; L=obj.L; I1=obj.I1; I2=obj.I2; 
-      Kt = obj.Kt; Ke = obj.Ke; Rm = obj.Rm; cfm = obj.cfm; cfw = obj.cfw;
-      V = 9;
+      Kt = obj.Kt; Ke = obj.Ke; Rm = obj.Rm; cfm = obj.cfm; cfw = obj.cfw; V = obj.V;
+      q = x(1:2);
+      qd = x(3:4);
       
       alpha = q(1);
       alphadot = qd(1);
@@ -48,17 +49,20 @@ classdef TWIP < Manipulator
       A = [-cfm-(2*Ke*Kt)/Rm,cfm+(2*Ke*Kt)/Rm;cfm+(2*Ke*Kt)/Rm,-cfm-cfw-(2*Ke*Kt)/Rm];
       C = (C-A)*qd + G;
       B = [(Kt*V)/(50*Rm);-(Kt*V)/(50*Rm)];
-    end
-    
-    function [f,df,d2f,d3f] = dynamics(obj,t,x,u)
-      f = dynamics@Manipulator(obj,t,x,u);
+      f = [qd;H\(B*u-C)];
+      
       if (nargout>1)
         [df,d2f,d3f]= dynamicsGradients(obj,t,x,u,nargout-1);
       end
     end
     
+    function y = output(obj,t,x,u)
+        C = 180/pi*[0,0,1,0;1,-1,0,0];
+        y = C*x;
+    end
+    
     function x = getInitialState(obj)
-      x = .1*randn(4,1);
+      x = 0.2*randn(4,1);
     end
     
     function n = getNumPositions(obj)
