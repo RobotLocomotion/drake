@@ -350,8 +350,15 @@ bool parseGeometry(TiXmlElement* node, const map<string,string>& package_map, co
     }
     string filename(attr);
     string resolved_filename = resolveFilename(filename, package_map, root_dir);
-    element.setGeometry(DrakeShapes::Mesh(filename, resolved_filename));
+    DrakeShapes::Mesh mesh(filename, resolved_filename);
 
+    attr = shape_node->Attribute("scale");
+    if (attr) {
+      stringstream s(attr);
+      s >> mesh.scale;
+    }
+
+    element.setGeometry(mesh);
   } else {
     cerr << "Warning: geometry element has an unknown type and will be ignored." << endl;
   }

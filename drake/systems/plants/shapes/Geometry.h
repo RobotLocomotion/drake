@@ -103,6 +103,7 @@ namespace DrakeShapes
       virtual void getPoints(Eigen::Matrix3Xd &points) const;
       virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
 
+      double scale;
       std::string filename;
       std::string resolved_filename;
       bool extractMeshVertices(Eigen::Matrix3Xd& vertex_coordinates) const;
