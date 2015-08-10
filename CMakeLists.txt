@@ -72,7 +72,7 @@ set(iris_GIT_TAG 13468e0ea38e72ffae030adaa31e3015ea5f3ce0)
 set(lcm_GIT_REPOSITORY https://github.com/RobotLocomotion/lcm-pod.git)
 set(lcm_GIT_TAG f072e9a54ae168503de8f9b96a70205d56ff5788) # cmake branch 
 set(libbot_GIT_REPOSITORY https://github.com/RobotLocomotion/libbot.git)
-set(libbot_GIT_TAG c8c251cf2fe0954e5c4954a3e7c1e7a43a882492)
+set(libbot_GIT_TAG c328b73f3b48008d04468031e26f48468a7e3cc0)
 set(mosek_GIT_REPOSITORY https://github.com/RobotLocomotion/mosek.git)
 set(mosek_GIT_TAG a72594c4a7c8c5c026fd291148bcac76146634c2)
 set(octomap_GIT_REPOSITORY https://github.com/RobotLocomotion/octomap-pod.git)
