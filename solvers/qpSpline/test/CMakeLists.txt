@@ -1,5 +1,0 @@
-add_executable(testSplineGeneration testSplineGeneration.cpp)
-target_link_libraries(testSplineGeneration drakeSplineGeneration)
-include_directories( .. )
-include_directories (${CMAKE_SOURCE_DIR}/util/test)
-add_test(NAME testSplineGeneration COMMAND testSplineGeneration)
