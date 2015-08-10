@@ -70,11 +70,7 @@ set(gurobi_GIT_TAG beb0a84a1bcca1eb81a1b87d9fa140f2134d97e9)
 set(iris_GIT_REPOSITORY https://github.com/rdeits/iris-distro.git)
 set(iris_GIT_TAG 13468e0ea38e72ffae030adaa31e3015ea5f3ce0)
 set(lcm_GIT_REPOSITORY https://github.com/RobotLocomotion/lcm-pod.git)
-if (WIN32)  # then use the cmake branch of lcm
-	set(lcm_GIT_TAG f828ee126532ceb24f10a7ca74e5acc7c2093c12)
-else()
-	set(lcm_GIT_TAG c537a9029b4b53fa7602acfc1467d93291fcc55e)
-endif()
+set(lcm_GIT_TAG f072e9a54ae168503de8f9b96a70205d56ff5788) # cmake branch 
 set(libbot_GIT_REPOSITORY https://github.com/RobotLocomotion/libbot.git)
 set(libbot_GIT_TAG c8c251cf2fe0954e5c4954a3e7c1e7a43a882492)
 set(mosek_GIT_REPOSITORY https://github.com/RobotLocomotion/mosek.git)

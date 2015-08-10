@@ -32,7 +32,8 @@ if (gurobi_FOUND)
     REQUIRES drake-control-util
     VERSION 0.0.1)
     
-  if (LCM_FOUND)
+  pods_find_pkg_config(bot2-lcmgl-client)
+  if (LCM_FOUND AND bot2-lcmgl-client_FOUND)
     add_executable(zmpCoMObserverStateVisualizer zmpCoMObserverStateVisualizer.cpp)
     pods_use_pkg_config_packages(zmpCoMObserverStateVisualizer lcm bot2-lcmgl-client)
     target_link_libraries(zmpCoMObserverStateVisualizer drake_lcmtypes)
