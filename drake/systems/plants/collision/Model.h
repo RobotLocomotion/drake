@@ -148,7 +148,7 @@ namespace DrakeCollision
       * \param[out] distance to the first collision, or -1 on no collision
       * \return true if this method ran successfully
       */
-      virtual bool collisionRaycast(const Eigen::Matrix3Xd &origin, const Eigen::Matrix3Xd &ray_endpoint, bool use_margins, Eigen::VectorXd &distances) { return false; };
+      virtual bool collisionRaycast(const Eigen::Matrix3Xd &origin, const Eigen::Matrix3Xd &ray_endpoint, bool use_margins, Eigen::VectorXd &distances, Eigen::Matrix3Xd &normals) { return false; };
 
     protected:
       std::unordered_map< ElementId, std::unique_ptr<Element> >  elements;

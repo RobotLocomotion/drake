@@ -61,7 +61,7 @@ classdef RigidBodyDepthSensor < RigidBodySensor
       origin = repmat(pts(:,1),1,obj.num_pixel_rows*obj.num_pixel_cols);
       point_on_ray = pts(:,2:end);
       
-      distance = collisionRaycast(manip, kinsol, origin, point_on_ray);
+      [distance, normals] = collisionRaycast(manip, kinsol, origin, point_on_ray);
       distance( distance<0 ) = obj.range;
       
       % return the points in the sensor frame
