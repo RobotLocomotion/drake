@@ -1,21 +1,21 @@
 classdef TWIP < DrakeSystem 
   
   properties
-    m1 = 0.579;
-    m2 = 0.030;
-    R = 0.040;
-    L = 0.105;
-    I1 = 0.008122;
-    I2 = 2*(30/1000)*(40/1000)^2;
-    g = 9.81;
-    V = 8.3;
+    m1 = 0.579; %mass of body
+    m2 = 0.030; %mass of wheel(s)
+    R = 0.040; %radius of wheel
+    L = 0.105; %distance from wheel axis to CoM of body
+    I1 = 0.008122; %moment of inertia of body
+    I2 = 2*(30/1000)*(40/1000)^2; %moment of inertia of wheel
+    g = 9.81; 
+    V = 8.3; %supply voltage
     
     %motor constants
-    Kt = 0.305;
-    Ke = 0.472;
-    Rm = 6.83;
-    cfm = 0.000727;
-    cfw = 0.001;
+    Kt = 0.305; %torque constant
+    Ke = 0.472; %back-emf constant
+    Rm = 6.83; %winding resistance
+    cfm = 0.000727; %motor friction coefficient
+    cfw = 0.001; %wheel friction coefficient
     
     xG = zeros(4,1);
     uG = 0;
@@ -89,7 +89,7 @@ classdef TWIP < DrakeSystem
     end
     
     function [utraj,xtraj]=swingUpTrajectory(obj)
-      x0 = [pi;0;0;0]
+      x0 = [pi;0;0;0];
       xf = double(obj.xG);
       tf0 = 10;
       

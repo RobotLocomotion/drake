@@ -42,5 +42,4 @@ function sysCl = buildClosedLoopObserverControl(plant, observer, controller)
     sysCl = sysCl.setOutputFrame(observer.getOutputFrame);
 end
 
-
 end
