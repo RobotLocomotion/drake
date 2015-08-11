@@ -62,7 +62,7 @@ classdef TWIP < DrakeSystem
     end
     
     function x = getInitialState(obj)
-      x = 0.2*randn(4,1);
+      x = 0.1*randn(4,1);
     end
     
     function n = getNumPositions(obj)
