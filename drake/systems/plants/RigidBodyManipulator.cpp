@@ -580,13 +580,14 @@ void RigidBodyManipulator::doKinematics(const MatrixBase<DerivedQ> &q, const Mat
 
       // qdot to v, v to qdot
       if (compute_gradients) {
-        typename Gradient<decltype(element.qdot_to_v.value()), Eigen::Dynamic>::type dqdot_to_vdqi(element.qdot_to_v.value().size(), joint.getNumPositions());
+        // TODO: make DrakeJoint::v2qdot and qdot2v accept Refs instead, pass in blocks of element.v_to_qdot.gradient().value() and element.qdot_to_v.gradient().value()
+        Matrix<Scalar, Dynamic, Dynamic> dqdot_to_vdqi(element.qdot_to_v.value().size(), joint.getNumPositions());
         joint.qdot2v(q_body, element.qdot_to_v.value(), &dqdot_to_vdqi);
         auto& dqdot_to_v = element.qdot_to_v.gradient().value();
         dqdot_to_v.setZero();
         dqdot_to_v.middleCols(body.position_num_start, joint.getNumPositions()) = dqdot_to_vdqi;
 
-        typename Gradient<decltype(element.v_to_qdot.value()), Eigen::Dynamic>::type dv_to_qdotdqi(element.v_to_qdot.value().size(), joint.getNumPositions());
+        Matrix<Scalar, Dynamic, Dynamic> dv_to_qdotdqi(element.v_to_qdot.value().size(), joint.getNumPositions());
         joint.v2qdot(q_body, element.v_to_qdot.value(), &dv_to_qdotdqi);
         auto& dv_to_qdot = element.v_to_qdot.gradient().value();
         dv_to_qdot.setZero();
@@ -606,10 +607,10 @@ void RigidBodyManipulator::doKinematics(const MatrixBase<DerivedQ> &q, const Mat
         element.dtransform_to_world_dq = matGradMultMat(parent_element.transform_to_world.matrix(), T_body_to_parent.matrix(), parent_element.dtransform_to_world_dq, dT_body_to_parentdq);
 
         // gradient of motion subspace in world
-        typename Gradient<decltype(element.motion_subspace_in_body.value()), Eigen::Dynamic>::type dSdq(element.motion_subspace_in_body.value().size(), nq);
+        Matrix<Scalar, Dynamic, Dynamic> dSdq(element.motion_subspace_in_body.value().size(), nq);
         dSdq.setZero();
         dSdq.middleCols(body.position_num_start, joint.getNumPositions()) = element.motion_subspace_in_body.gradient().value();
-        element.motion_subspace_in_world.gradient().value() = dTransformSpatialMotion(element.transform_to_world, element.motion_subspace_in_body, element.dtransform_to_world_dq, dSdq);
+        element.motion_subspace_in_world.gradient().value() = dTransformSpatialMotion(element.transform_to_world, element.motion_subspace_in_body.value(), element.dtransform_to_world_dq, dSdq);
       }
 
       if (v.rows() == num_velocities) {
@@ -638,13 +639,21 @@ void RigidBodyManipulator::doKinematics(const MatrixBase<DerivedQ> &q, const Mat
 
           if (compute_JdotV) {
             // Sdotv
-            auto dSdotVdqi = compute_gradients ? &body.dSdotVdqi : nullptr;
-            auto dSdotVdvi = compute_gradients ? &body.dSdotVdvi : nullptr;
-            joint.motionSubspaceDotTimesV(q_body, v_body, element.motion_subspace_in_body_dot_times_v.value(), dSdotVdqi, dSdotVdvi);
+            if (compute_gradients) {
+              Matrix<Scalar, 6, Dynamic> dSdotVdqi(6, joint.getNumPositions()); // TODO: use block of dSdotv instead
+              Matrix<Scalar, 6, Dynamic> dSdotVdvi(6, joint.getNumVelocities()); // TODO: use block of dSdotv instead
+              joint.motionSubspaceDotTimesV(q_body, v_body, element.motion_subspace_in_body_dot_times_v.value(), &dSdotVdqi, &dSdotVdvi);
+              auto dSdotv = element.motion_subspace_in_body_dot_times_v.gradient().value();
+              dSdotv.leftCols(joint.getNumPositions()) = dSdotVdqi;
+              dSdotv.rightCols(joint.getNumVelocities()) = dSdotVdvi;
+            }
+            else {
+              joint.motionSubspaceDotTimesV(q_body, v_body, element.motion_subspace_in_body_dot_times_v.value(), nullptr, nullptr);
+            }
 
             // Jdotv
             auto joint_accel = crossSpatialMotion(element.twist_in_world.value(), joint_twist.value());
-            joint_accel += transformSpatialMotion(element.transform_to_world, body.SdotV);
+            joint_accel += transformSpatialMotion(element.transform_to_world, element.motion_subspace_in_body_dot_times_v.value());
             element.motion_subspace_in_world_dot_times_v.value() = parent_element.motion_subspace_in_world_dot_times_v.value() + joint_accel;
 
             if (compute_gradients) {
@@ -652,7 +661,8 @@ void RigidBodyManipulator::doKinematics(const MatrixBase<DerivedQ> &q, const Mat
               // TODO: exploit sparsity better
               Matrix<double, TWIST_SIZE, Eigen::Dynamic> dSdotVdq(TWIST_SIZE, nq);
               dSdotVdq.setZero();
-              dSdotVdq.middleCols(body.position_num_start, joint.getNumPositions()) = body.dSdotVdqi;
+              auto dSdotv = element.motion_subspace_in_body_dot_times_v.gradient().value();
+              dSdotVdq.middleCols(body.position_num_start, joint.getNumPositions()) = dSdotv.leftCols(joint.getNumPositions());
               auto dcrm_twist_joint_twistdq = dCrossSpatialMotion(element.twist_in_world.value(), joint_twist.value(), element.twist_in_world.gradient().value(), joint_twist.gradient().value());
               element.motion_subspace_in_world.gradient().value() = parent_element.motion_subspace_in_world.gradient().value()
                   + dcrm_twist_joint_twistdq
@@ -670,12 +680,15 @@ void RigidBodyManipulator::doKinematics(const MatrixBase<DerivedQ> &q, const Mat
 
               Matrix<double, TWIST_SIZE, Eigen::Dynamic> djoint_acceldv(TWIST_SIZE, nv_branch);
               djoint_acceldv = dCrossSpatialMotion(element.twist_in_world.value(), joint_twist.value(), dtwistdv.value(), djoint_twistdv); // TODO: can probably exploit sparsity better
-              djoint_acceldv.rightCols(nv_joint) += transformSpatialMotion(element.transform_to_world, *dSdotVdvi);
+              auto dSdotVdvi = dSdotv.rightCols(joint.getNumVelocities());
+              djoint_acceldv.rightCols(nv_joint) += transformSpatialMotion(element.transform_to_world, dSdotVdvi);
 
-              body.dJdotVdv.setZero();
+              auto dJdotVdv = element.motion_subspace_in_world_dot_times_v.gradient().value().rightCols(num_velocities);
+              auto dJdotVdv_parent = parent_element.motion_subspace_in_world_dot_times_v.gradient().value().rightCols(num_velocities);
+              dJdotVdv.setZero();
               for (int j = 0; j < nv_branch; j++) {
                 int v_index = v_indices[j];
-                body.dJdotVdv.col(v_index) = body.parent->dJdotVdv.col(v_index) + djoint_acceldv.col(j);
+                dJdotVdv.col(v_index) = dJdotVdv_parent.col(v_index) + djoint_acceldv.col(j);
               }
             }
           }
@@ -834,7 +847,8 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::worldMomentumMatrixDotT
         ret.value().noalias() += crossSpatialForce(element.twist_in_world.value(), inertia_times_twist);
 
         if (gradient_order > 0) {
-          ret.gradient().value() += matGradMultMat(element.inertia_in_world.value(), element.motion_subspace_in_world_dot_times_v.value(), element.inertia_in_world.gradient().value(), body.dJdotVdq);
+          auto dJdotVdq = element.motion_subspace_in_world_dot_times_v.gradient().value().leftCols(num_positions);
+          ret.gradient().value() += matGradMultMat(element.inertia_in_world.value(), element.motion_subspace_in_world_dot_times_v.value(), element.inertia_in_world.gradient().value(), dJdotVdq);
           auto dinertia_times_twist = (element.inertia_in_world.value() * element.twist_in_world.gradient().value()).eval();
           dinertia_times_twist.noalias() += matGradMult(element.inertia_in_world.gradient().value(), element.twist_in_world.value());
           ret.gradient().value() += dCrossSpatialForce(element.twist_in_world.value(), inertia_times_twist, element.twist_in_world.gradient().value(), dinertia_times_twist);
@@ -1245,9 +1259,9 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
         Jj *= element_j.qdot_to_v.value();
       }
 
-      auto dSjdqj = (sign * body_j.dSdqi).eval();
+      auto dSjdqj = (sign * element_j.motion_subspace_in_body_dot_times_v.gradient().value().leftCols(body_j.getJoint().getNumPositions())).eval();
       if (in_terms_of_qdot) {
-        dSjdqj = matGradMultMat((sign * element_j.motion_subspace_in_body.value()).eval(), element_j.qdot_to_v.value(), dSjdqj, body_j.dqdot_to_v_dqi);
+        dSjdqj = matGradMultMat((sign * element_j.motion_subspace_in_body.value()).eval(), element_j.qdot_to_v.value(), dSjdqj, element_j.qdot_to_v.gradient().value().middleCols(body_j.position_num_start, body_j.getJoint().getNumPositions()));
       }
       auto Hj_gradientvar = relativeTransform<double>(expressed_in_body_or_frame_ind, j, 0);
       Isometry3d Hj(Hj_gradientvar.value());
@@ -1286,8 +1300,7 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::geometricJacobianDotTim
 
   ret.value() = end_effector_element.motion_subspace_in_world_dot_times_v.value() - base_element.motion_subspace_in_world_dot_times_v.value();
   if (gradient_order > 0) {
-    // TODO: return gradient w.r.t. both v and q?
-    ret.gradient().value() = bodies[end_effector_body_ind]->dJdotVdq - bodies[base_body_ind]->dJdotVdq;
+    ret.gradient().value() = end_effector_element.motion_subspace_in_world_dot_times_v.gradient().value() - base_element.motion_subspace_in_world_dot_times_v.gradient().value();
   }
 
   int world_ind = 0;
@@ -1497,8 +1510,8 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(
       net_wrenches.value().col(i).noalias() += crossSpatialForce(element.twist_in_world.value(), I_times_twist);
 
       if (gradient_order > 0) {
-        typename Gradient<Vector6, Eigen::Dynamic>::type dspatial_acceldq = body.dJdotVdq;
-        typename Gradient<Vector6, Eigen::Dynamic>::type dspatial_acceldv = body.dJdotVdv;
+        typename Gradient<Vector6, Eigen::Dynamic>::type dspatial_acceldq = element.motion_subspace_in_world_dot_times_v.gradient().value().leftCols(num_positions);
+        typename Gradient<Vector6, Eigen::Dynamic>::type dspatial_acceldv = element.motion_subspace_in_world_dot_times_v.gradient().value().rightCols(num_velocities);
 
         if (vd != nullptr) {
           const auto& vd_const = *vd; // eliminates the need for an additional explicit instantiation

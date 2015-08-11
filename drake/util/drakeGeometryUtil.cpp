@@ -755,28 +755,6 @@ DLLEXPORT GradientVar<typename Derived::Scalar, Eigen::Dynamic, SPACE_DIMENSION>
   return ret;
 }
 
-template<typename DerivedM>
-typename TransformSpatial<DerivedM>::type transformSpatialMotion(
-    const Eigen::Transform<typename DerivedM::Scalar, 3, Eigen::Isometry>& T,
-    const Eigen::MatrixBase<DerivedM>& M) {
-  Eigen::Matrix<typename DerivedM::Scalar, TWIST_SIZE, DerivedM::ColsAtCompileTime> ret(TWIST_SIZE, M.cols());
-  ret.template topRows<3>().noalias() = T.linear() * M.template topRows<3>();
-  ret.template bottomRows<3>().noalias() = -ret.template topRows<3>().colwise().cross(T.translation());
-  ret.template bottomRows<3>().noalias() += T.linear() * M.template bottomRows<3>();
-  return ret;
-}
-
-template<typename DerivedF>
-typename TransformSpatial<DerivedF>::type transformSpatialForce(
-    const Eigen::Transform<typename DerivedF::Scalar, 3, Eigen::Isometry>& T,
-    const Eigen::MatrixBase<DerivedF>& F) {
-  Eigen::Matrix<typename DerivedF::Scalar, TWIST_SIZE, DerivedF::ColsAtCompileTime> ret(TWIST_SIZE, F.cols());
-  ret.template bottomRows<3>().noalias() = T.linear() * F.template bottomRows<3>().eval();
-  ret.template topRows<3>() = -ret.template bottomRows<3>().colwise().cross(T.translation());
-  ret.template topRows<3>().noalias() += T.linear() * F.template topRows<3>();
-  return ret;
-}
-
 template<typename DerivedI>
 GradientVar<typename DerivedI::Scalar, TWIST_SIZE, TWIST_SIZE> transformSpatialInertia(
     const Eigen::Transform<typename DerivedI::Scalar, SPACE_DIMENSION, Eigen::Isometry>& T_current_to_new,
@@ -1330,46 +1308,6 @@ template DLLEXPORT Matrix<double,9,3> drpy2rotmat(const Eigen::MatrixBase< Map<V
 
 template DLLEXPORT Matrix<Block<Matrix4d const, 3, 3, false>::Scalar, 4, 1, 0, 4, 1> rotmat2quat<Block<Matrix4d const, 3, 3, false> >(MatrixBase<Block<Matrix4d const, 3, 3, false> > const&);
 template DLLEXPORT Matrix<Block<Matrix4d, 3, 3, false>::Scalar, 4, 1, 0, 4, 1> rotmat2quat<Block<Matrix4d, 3, 3, false> >(MatrixBase<Block<Matrix4d, 3, 3, false> > const&);
-
-template DLLEXPORT Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> transformSpatialMotion(
-    const Eigen::Isometry3d&,
-    const Eigen::MatrixBase< Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> >&);
-
-template DLLEXPORT Eigen::Matrix<double, TWIST_SIZE, 1> transformSpatialMotion(
-    const Eigen::Isometry3d&,
-    const Eigen::MatrixBase< Eigen::Matrix<double, TWIST_SIZE, 1> >&);
-
-template DLLEXPORT TransformSpatial< MatrixXd >::type transformSpatialMotion<MatrixXd>(
-    const Eigen::Isometry3d&,
-    const Eigen::MatrixBase< MatrixXd >&);
-
-template DLLEXPORT TransformSpatial<Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1>, 6, -1, false> >::type transformSpatialMotion(
-    const Eigen::Isometry3d& T,
-    const Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1>, 6, -1, false> >& M);
-
-template DLLEXPORT TransformSpatial< Matrix<double, TWIST_SIZE, Eigen::Dynamic> >::type transformSpatialForce<Matrix<double, TWIST_SIZE, Eigen::Dynamic>>(
-    const Eigen::Isometry3d&,
-    const Eigen::MatrixBase< Matrix<double, TWIST_SIZE, Eigen::Dynamic> >&);
-
-template DLLEXPORT TransformSpatial< MatrixXd >::type transformSpatialForce<MatrixXd>(
-    const Eigen::Isometry3d&,
-    const Eigen::MatrixBase< MatrixXd >&);
-
-template DLLEXPORT TransformSpatial<Eigen::Block<Eigen::Matrix<double, 6, -1, 0, 6, -1>, 6, -1, true>>::type transformSpatialForce(
-    const Eigen::Isometry3d&,
-    const Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 6, -1, 0, 6, -1>, 6, -1, true> >&);
-
-template DLLEXPORT TransformSpatial<Eigen::Matrix<double, 6, 1, 0, 6, 1> >::type transformSpatialForce(
-    const Eigen::Isometry3d&,
-    const Eigen::MatrixBase<Eigen::Matrix<double, 6, 1, 0, 6, 1> >&);
-
-template DLLEXPORT TransformSpatial<Eigen::Block<Eigen::Matrix<double, 6, -1, 0, 6, -1> const, 6, 1, true> >::type transformSpatialForce(
-    const Eigen::Transform<Eigen::Block<Eigen::Matrix<double, 6, -1, 0, 6, -1> const, 6, 1, true>::Scalar, 3, 1, 0> &,
-    const Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 6, -1, 0, 6, -1> const, 6, 1, true> > &);
-
-template DLLEXPORT TransformSpatial<Map<Matrix<double, 6, 1, 0, 6, 1> const, 0, Stride<0, 0> > >::type transformSpatialForce<Map<Matrix<double, 6, 1, 0, 6, 1> const, 0, Stride<0, 0> >>(
-    const Eigen::Isometry3d&,
-    const Eigen::MatrixBase<Map<Matrix<double, 6, 1, 0, 6, 1> const, 0, Stride<0, 0> > >&);
 
 template DLLEXPORT GradientVar<double, TWIST_SIZE, TWIST_SIZE> transformSpatialInertia(
     const Eigen::Transform<double, SPACE_DIMENSION, Eigen::Isometry>& T_current_to_new,
