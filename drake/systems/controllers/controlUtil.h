@@ -8,8 +8,8 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-#include "RigidBodyManipulator.h"
-#include "PiecewisePolynomial.h"
+#include "drake/RigidBodyManipulator.h"
+#include "drake/PiecewisePolynomial.h"
 
 #if defined(WIN32) || defined(WIN64)
   #if defined(drakeControlUtil_EXPORTS)

@@ -1,5 +1,5 @@
 #include "controlUtil.h"
-#include "drakeUtil.h"
+#include "drake/drakeUtil.h"
 
 #ifdef USE_MAPS
 #include "terrain-map/TerrainMap.hpp"
