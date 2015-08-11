@@ -643,7 +643,7 @@ void RigidBodyManipulator::doKinematics(const MatrixBase<DerivedQ> &q, const Mat
               Matrix<Scalar, 6, Dynamic> dSdotVdqi(6, joint.getNumPositions()); // TODO: use block of dSdotv instead
               Matrix<Scalar, 6, Dynamic> dSdotVdvi(6, joint.getNumVelocities()); // TODO: use block of dSdotv instead
               joint.motionSubspaceDotTimesV(q_body, v_body, element.motion_subspace_in_body_dot_times_v.value(), &dSdotVdqi, &dSdotVdvi);
-              auto dSdotv = element.motion_subspace_in_body_dot_times_v.gradient().value();
+              auto& dSdotv = element.motion_subspace_in_body_dot_times_v.gradient().value();
               dSdotv.leftCols(joint.getNumPositions()) = dSdotVdqi;
               dSdotv.rightCols(joint.getNumVelocities()) = dSdotVdvi;
             }
@@ -661,11 +661,12 @@ void RigidBodyManipulator::doKinematics(const MatrixBase<DerivedQ> &q, const Mat
               // TODO: exploit sparsity better
               Matrix<double, TWIST_SIZE, Eigen::Dynamic> dSdotVdq(TWIST_SIZE, nq);
               dSdotVdq.setZero();
-              auto dSdotv = element.motion_subspace_in_body_dot_times_v.gradient().value();
+              auto& dSdotv = element.motion_subspace_in_body_dot_times_v.gradient().value();
               dSdotVdq.middleCols(body.position_num_start, joint.getNumPositions()) = dSdotv.leftCols(joint.getNumPositions());
               auto dcrm_twist_joint_twistdq = dCrossSpatialMotion(element.twist_in_world.value(), joint_twist.value(), element.twist_in_world.gradient().value(), joint_twist.gradient().value());
 
-              element.motion_subspace_in_world_dot_times_v.gradient().value().leftCols(num_positions) = parent_element.motion_subspace_in_world_dot_times_v.gradient().value().leftCols(num_positions)
+              auto dJdotVdq = element.motion_subspace_in_world_dot_times_v.gradient().value().leftCols(num_positions);
+              dJdotVdq = parent_element.motion_subspace_in_world_dot_times_v.gradient().value().leftCols(num_positions)
                   + dcrm_twist_joint_twistdq
                   + dTransformSpatialMotion(element.transform_to_world, element.motion_subspace_in_body_dot_times_v.value(), element.dtransform_to_world_dq, dSdotVdq);
 
