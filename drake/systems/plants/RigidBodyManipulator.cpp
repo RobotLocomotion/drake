@@ -665,7 +665,8 @@ void RigidBodyManipulator::doKinematics(const MatrixBase<DerivedQ> &q, const Mat
               auto dSdotv = element.motion_subspace_in_body_dot_times_v.gradient().value();
               dSdotVdq.middleCols(body.position_num_start, joint.getNumPositions()) = dSdotv.leftCols(joint.getNumPositions());
               auto dcrm_twist_joint_twistdq = dCrossSpatialMotion(element.twist_in_world.value(), joint_twist.value(), element.twist_in_world.gradient().value(), joint_twist.gradient().value());
-              element.motion_subspace_in_world.gradient().value() = parent_element.motion_subspace_in_world.gradient().value()
+
+              element.motion_subspace_in_world_dot_times_v.gradient().value().leftCols(num_positions) = parent_element.motion_subspace_in_world_dot_times_v.gradient().value().leftCols(num_positions)
                   + dcrm_twist_joint_twistdq
                   + dTransformSpatialMotion(element.transform_to_world, element.motion_subspace_in_body_dot_times_v.value(), element.dtransform_to_world_dq, dSdotVdq);
 
@@ -1301,7 +1302,7 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::geometricJacobianDotTim
 
   ret.value() = end_effector_element.motion_subspace_in_world_dot_times_v.value() - base_element.motion_subspace_in_world_dot_times_v.value();
   if (gradient_order > 0) {
-    ret.gradient().value() = end_effector_element.motion_subspace_in_world_dot_times_v.gradient().value() - base_element.motion_subspace_in_world_dot_times_v.gradient().value();
+    ret.gradient().value() = end_effector_element.motion_subspace_in_world_dot_times_v.gradient().value().leftCols(num_positions) - base_element.motion_subspace_in_world_dot_times_v.gradient().value().leftCols(num_positions);
   }
 
   int world_ind = 0;
@@ -1514,7 +1515,7 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(
         typename Gradient<Vector6, Eigen::Dynamic>::type dspatial_acceldq = element.motion_subspace_in_world_dot_times_v.gradient().value().leftCols(num_positions);
         typename Gradient<Vector6, Eigen::Dynamic>::type dspatial_acceldv = element.motion_subspace_in_world_dot_times_v.gradient().value().rightCols(num_velocities);
 
-        if (vd != nullptr) {
+        if (vd != nullptr && nv_joint > 0) {
           const auto& vd_const = *vd; // eliminates the need for an additional explicit instantiation
           auto vdJoint = vd_const.value().middleRows(body.velocity_num_start, nv_joint);
           auto dvdJoint = vd_const.gradient().value().middleRows(body.velocity_num_start, nv_joint);
@@ -1523,7 +1524,6 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(
 
           dspatial_acceldv.noalias() += element.motion_subspace_in_world.value() * dvdJoint.middleCols(nq, nv);
         }
-
 
         typename Gradient<Vector6, Eigen::Dynamic>::type dI_times_twistdq = element.inertia_in_world.value() * element.twist_in_world.gradient().value();
         dI_times_twistdq += matGradMult(element.inertia_in_world.gradient().value(), element.twist_in_world.value());

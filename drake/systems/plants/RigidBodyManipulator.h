@@ -322,8 +322,8 @@ public:
   Matrix<double,TWIST_SIZE,1> a_grav;
   MatrixXd B;  // the B matrix maps inputs into joint-space forces
 
+  KinematicsCache<double> cache; // TODO: have this not be a member of RigidBodyManipulator.
 private:
-  KinematicsCache<double> cache;
 
   //helper functions for contactConstraints
   void accumulateContactJacobian(const int bodyInd, Matrix3Xd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & J);
