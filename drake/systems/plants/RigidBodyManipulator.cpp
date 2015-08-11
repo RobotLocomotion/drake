@@ -713,16 +713,23 @@ void RigidBodyManipulator::doKinematics(const MatrixBase<DerivedQ> &q, const Mat
       }
       if (v.rows() == num_velocities) {
         element.twist_in_world.value().setZero();
+        element.motion_subspace_in_body.value().setZero();
+        element.motion_subspace_in_world.value().setZero();
+        element.qdot_to_v.value().setZero();
+        element.v_to_qdot.value().setZero();
+
         if (compute_gradients) {
           element.twist_in_world.gradient().value().setZero();
+          element.motion_subspace_in_body.gradient().value().setZero();
+          element.motion_subspace_in_world.gradient().value().setZero();
+          element.qdot_to_v.gradient().value().setZero();
+          element.v_to_qdot.gradient().value().setZero();
         }
         if (compute_JdotV) {
           element.motion_subspace_in_body_dot_times_v.value().setZero();
-          if (compute_gradients) {
-            element.motion_subspace_in_body_dot_times_v.gradient().value().setZero();
-          }
           element.motion_subspace_in_world_dot_times_v.value().setZero();
           if (compute_gradients) {
+            element.motion_subspace_in_body_dot_times_v.gradient().value().setZero();
             element.motion_subspace_in_world_dot_times_v.gradient().value().setZero();
           }
         }
@@ -1261,7 +1268,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
         Jj *= element_j.qdot_to_v.value();
       }
 
-      auto dSjdqj = (sign * element_j.motion_subspace_in_body_dot_times_v.gradient().value().leftCols(body_j.getJoint().getNumPositions())).eval();
+      auto dSjdqj = (sign * element_j.motion_subspace_in_body.gradient().value()).eval();
       if (in_terms_of_qdot) {
         dSjdqj = matGradMultMat((sign * element_j.motion_subspace_in_body.value()).eval(), element_j.qdot_to_v.value(), dSjdqj, element_j.qdot_to_v.gradient().value().middleCols(body_j.position_num_start, body_j.getJoint().getNumPositions()));
       }
