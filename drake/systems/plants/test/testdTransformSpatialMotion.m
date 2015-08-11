@@ -1,9 +1,6 @@
 function testdTransformSpatialMotion()
 testFallingBrick('rpy');
-
-options.use_new_kinsol = true;
-testFallingBrick('rpy',options);
-testFallingBrick('quat',options);
+testFallingBrick('quat');
 end
 
 function testFallingBrick(floatingType,options)

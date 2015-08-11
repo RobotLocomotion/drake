@@ -28,7 +28,7 @@ void drakePrintMatrix(const MatrixXd &mat)
 };
 
 namespace DrakeRigidBodyConstraint{
-  Vector4d com_pts(0.0,0.0,0.0,1.0);
+  Vector3d com_pts = Vector3d::Zero();
   const int WorldCoMDefaultRobotNum[1] = {0};
   Vector2d default_tspan(-std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
 }
@@ -106,10 +106,9 @@ void QuasiStaticConstraint::eval(const double* t, const double* weights, VectorX
   {
     int nq = this->robot->num_positions;
     dc.resize(2,nq+this->num_pts);
-    Vector3d com;
-    this->robot->getCOM(com,this->m_robotnumset);
-    MatrixXd dcom;
-    this->robot->getCOMJac(dcom,this->m_robotnumset);
+    auto com_gradientvar = robot->centerOfMass<double>(1, m_robotnumset);
+    const auto& com = com_gradientvar.value();
+    const auto& dcom = com_gradientvar.gradient().value();
     MatrixXd contact_pos(3,this->num_pts);
     MatrixXd dcontact_pos(3*this->num_pts,nq);
     int num_accum_pts = 0;
@@ -117,10 +116,10 @@ void QuasiStaticConstraint::eval(const double* t, const double* weights, VectorX
     MatrixXd dcenter_pos = MatrixXd::Zero(3,nq);
     for(int i = 0;i<this->num_bodies;i++)
     {
-      MatrixXd body_contact_pos(3,this->num_body_pts[i]);
-      MatrixXd dbody_contact_pos(3*this->num_body_pts[i],nq);
-      this->robot->forwardKin(this->bodies[i],this->body_pts[i],0,body_contact_pos);
-      this->robot->forwardJac(this->bodies[i],this->body_pts[i],0,dbody_contact_pos);
+      auto body_contact_pos_gradientvar = robot->forwardKin(body_pts[i], bodies[i], 0, 0, 1);
+      const auto& body_contact_pos = body_contact_pos_gradientvar.value();
+      const auto& dbody_contact_pos = body_contact_pos_gradientvar.gradient().value();
+
       contact_pos.block(0,num_accum_pts,3,this->num_body_pts[i]) = body_contact_pos;
       dcontact_pos.block(3*num_accum_pts,0,3*this->num_body_pts[i],nq) = dbody_contact_pos;
       for(int j = 0;j<this->num_body_pts[i];j++)
@@ -201,14 +200,14 @@ static bool compare3Dvector(const Vector3d& a, const Vector3d& b)
   if(a(2)<b(2)) return true;
   return false;
 }
-void QuasiStaticConstraint::addContact(int num_new_bodies,const int* new_bodies, const MatrixXd* new_body_pts)
+void QuasiStaticConstraint::addContact(int num_new_bodies,const int* new_bodies, const Matrix3Xd* new_body_pts)
 {
   for(int i = 0;i<num_new_bodies;i++)
   {
     bool findDuplicateBody = false;
-    if(new_body_pts[i].rows() != 4)
+    if(new_body_pts[i].rows() != 3)
     {
-      std::cerr<<"new_body_pts must all have 4 rows"<<std::endl;
+      std::cerr<<"new_body_pts must all have 3 rows"<<std::endl;
     }
     for(int j = 0;j<this->num_bodies;j++)
     {
@@ -228,14 +227,13 @@ void QuasiStaticConstraint::addContact(int num_new_bodies,const int* new_bodies,
         this->num_pts -= this->num_body_pts[j];
         this->num_body_pts[j] = static_cast<int>(unique_body_pts.size());
         this->num_pts += this->num_body_pts[j];
-        this->body_pts[j].resize(4,this->num_body_pts[j]);
+        this->body_pts[j].resize(3,this->num_body_pts[j]);
         int col_idx = 0;
         for(auto it = unique_body_pts.begin();it!=unique_body_pts.end();it++)
         {
           this->body_pts[j].block(0, col_idx,3,1) = *it;
           col_idx++;
         }
-        this->body_pts[j].row(3) = MatrixXd::Ones(1,this->num_body_pts[j]);
       }
     }
     if(!findDuplicateBody)
@@ -671,13 +669,14 @@ void MultipleTimeKinematicConstraint::updateRobot(RigidBodyManipulator* robot)
   this->robot = robot;
 }
 
-PositionConstraint::PositionConstraint(RigidBodyManipulator *robot, const MatrixXd &pts, MatrixXd lb, MatrixXd ub, const Vector2d &tspan):SingleTimeKinematicConstraint(robot,tspan)
+PositionConstraint::PositionConstraint(RigidBodyManipulator *robot, const Matrix3Xd &pts, MatrixXd lb, MatrixXd ub, const Vector2d &tspan):SingleTimeKinematicConstraint(robot,tspan)
 {
   this->n_pts = static_cast<int>(pts.cols());
-  if(pts.rows() != 4)
+  if(pts.rows() != 3)
   {
-    std::cerr<<"pts must have 4 rows"<<std::endl;
+    std::cerr<<"pts must have 3 rows"<<std::endl;
   }
+
   this->pts = pts;
   if(lb.rows() != 3 || lb.cols() != n_pts || ub.rows() != 3 || ub.cols() != n_pts)
   {
@@ -750,7 +749,7 @@ void PositionConstraint::eval(const double* t, VectorXd &c, MatrixXd &dc) const
 {
   if(this->isTimeValid(t))
   {
-    MatrixXd pos(3,this->n_pts);
+    Matrix3Xd pos(3,this->n_pts);
     MatrixXd J(3*this->n_pts,this->robot->num_positions);
     this->evalPositions(pos,J);
     c.resize(this->getNumConstraint(t),1);
@@ -804,17 +803,18 @@ void PositionConstraint::name(const double* t, std::vector<std::string> &name_st
   }
 }
 
-WorldPositionConstraint::WorldPositionConstraint(RigidBodyManipulator *robot, int body, const MatrixXd &pts, MatrixXd lb, MatrixXd ub, const Vector2d &tspan):PositionConstraint(robot,pts,lb,ub,tspan)
+WorldPositionConstraint::WorldPositionConstraint(RigidBodyManipulator *robot, int body, const Matrix3Xd &pts, MatrixXd lb, MatrixXd ub, const Vector2d &tspan):PositionConstraint(robot,pts,lb,ub,tspan)
 {
   this->body = body;
   this->body_name = robot->getBodyOrFrameName(body);
   this->type = RigidBodyConstraint::WorldPositionConstraintType;
 }
 
-void WorldPositionConstraint::evalPositions(MatrixXd &pos, MatrixXd &J) const
+void WorldPositionConstraint::evalPositions(Matrix3Xd &pos, MatrixXd &J) const
 {
-  this->robot->forwardKin(this->body, this->pts,0,pos);
-  this->robot->forwardJac(this->body, this->pts,0,J);
+  auto pos_gradientvar = robot->forwardKin(pts, body, 0, 0, 1);
+  pos = pos_gradientvar.value();
+  J = pos_gradientvar.gradient().value();
 }
 
 void WorldPositionConstraint::evalNames(const double* t, std::vector<std::string>& cnst_names) const
@@ -855,10 +855,11 @@ WorldCoMConstraint::WorldCoMConstraint(RigidBodyManipulator *robot, Vector3d lb,
   this->type = RigidBodyConstraint::WorldCoMConstraintType;
 }
 
-void WorldCoMConstraint::evalPositions(MatrixXd &pos, MatrixXd &J) const
+void WorldCoMConstraint::evalPositions(Matrix3Xd &pos, MatrixXd &J) const
 {
-  this->robot->getCOM(pos,this->m_robotnum);
-  this->robot->getCOMJac(J,this->m_robotnum);
+  auto com_gradientvar = robot->centerOfMass<double>(1, m_robotnum);
+  pos = com_gradientvar.value();
+  J = com_gradientvar.gradient().value();
 }
 
 
@@ -890,7 +891,7 @@ WorldCoMConstraint::~WorldCoMConstraint()
 {
 }
 
-RelativePositionConstraint::RelativePositionConstraint(RigidBodyManipulator* robot, const MatrixXd &pts, const MatrixXd &lb, const MatrixXd &ub, int bodyA_idx, int bodyB_idx, const Matrix<double,7,1> &bTbp, const Vector2d &tspan):PositionConstraint(robot,pts,lb,ub,tspan)
+RelativePositionConstraint::RelativePositionConstraint(RigidBodyManipulator* robot, const Matrix3Xd &pts, const MatrixXd &lb, const MatrixXd &ub, int bodyA_idx, int bodyB_idx, const Matrix<double,7,1> &bTbp, const Vector2d &tspan):PositionConstraint(robot,pts,lb,ub,tspan)
 {
   this->bTbp = bTbp;
   this->bodyA_idx = bodyA_idx;
@@ -903,19 +904,18 @@ RelativePositionConstraint::RelativePositionConstraint(RigidBodyManipulator* rob
   this->type = RigidBodyConstraint::RelativePositionConstraintType;
 }
 
-void RelativePositionConstraint::evalPositions(MatrixXd &pos, MatrixXd &J) const
+void RelativePositionConstraint::evalPositions(Matrix3Xd &pos, MatrixXd &J) const
 {
   int nq = this->robot->num_positions;
-  MatrixXd bodyA_pos(3,this->n_pts);
-  MatrixXd JA(3*this->n_pts,nq);
-  this->robot->forwardKin(this->bodyA_idx,this->pts,0,bodyA_pos);
-  this->robot->forwardJac(this->bodyA_idx,this->pts,0,JA);
-  Matrix<double,7,1> wTb;
-  MatrixXd dwTb(7,nq);
-  Vector4d origin_pt;
-  origin_pt << 0,0,0,1.0;
-  this->robot->forwardKin(this->bodyB_idx,origin_pt,2,wTb);
-  this->robot->forwardJac(this->bodyB_idx,origin_pt,2,dwTb);
+
+  auto bodyA_pos_gradientvar = robot->forwardKin(pts, bodyA_idx, 0, 0, 1);
+  const auto& bodyA_pos = bodyA_pos_gradientvar.value();
+  const auto& JA = bodyA_pos_gradientvar.gradient().value();
+
+  auto wTb_gradientvar = robot->forwardKin(Vector3d::Zero().eval(), bodyB_idx, 0, 2, 1);
+  const auto& wTb = wTb_gradientvar.value();
+  const auto& dwTb = wTb_gradientvar.gradient().value();
+
   Vector4d bTw_quat = quatConjugate(wTb.block(3,0,4,1));
   Matrix4d dbTw_quat = dquatConjugate();
   MatrixXd dbTw_quatdq = dbTw_quat*dwTb.block(3,0,4,nq);
@@ -1032,12 +1032,11 @@ WorldQuatConstraint::WorldQuatConstraint(RigidBodyManipulator *robot, int body, 
 
 void WorldQuatConstraint::evalOrientationProduct(double &prod, MatrixXd &dprod) const
 {
-  Matrix<double,7,1>  x;
-  MatrixXd J(7,this->robot->num_positions);
-  Vector4d pts;
-  pts << 0.0,0.0,0.0,1.0;
-  this->robot->forwardKin(this->body,pts,2,x);
-  this->robot->forwardJac(this->body,pts,2,J);
+  Vector3d pts = Vector3d::Zero();
+  auto x_gradientvar = robot->forwardKin(pts, body, 0, 2, 1);
+  const auto& x = x_gradientvar.value();
+  const auto& J = x_gradientvar.gradient().value();
+
   Vector4d quat = x.tail(4);
   prod = (quat.transpose()*this->quat_des);
   dprod = this->quat_des.transpose()*J.block(3,0,4,this->robot->num_positions);
@@ -1084,16 +1083,14 @@ RelativeQuatConstraint::RelativeQuatConstraint(RigidBodyManipulator* robot, int 
 void RelativeQuatConstraint::evalOrientationProduct(double &prod, MatrixXd &dprod) const
 {
   int nq = this->robot->num_positions;
-  Vector4d origin_pt;
-  origin_pt << 0.0,0.0,0.0,1.0;
-  Matrix<double,7,1> pos_a;
-  MatrixXd J_a(7,nq);
-  Matrix<double,7,1> pos_b;
-  MatrixXd J_b(7,nq);
-  this->robot->forwardKin(this->bodyA_idx,origin_pt,2,pos_a);
-  this->robot->forwardJac(this->bodyA_idx,origin_pt,2,J_a);
-  this->robot->forwardKin(this->bodyB_idx,origin_pt,2,pos_b);
-  this->robot->forwardJac(this->bodyB_idx,origin_pt,2,J_b);
+  Vector3d origin_pt = Vector3d::Zero();
+  auto pos_a_gradientvar = robot->forwardKin(origin_pt, bodyA_idx, 0, 2, 1);
+  const auto& pos_a = pos_a_gradientvar.value();
+  const auto& J_a = pos_a_gradientvar.gradient().value();
+  auto pos_b_gradientvar = robot->forwardKin(origin_pt, bodyB_idx, 0, 2, 1);
+  const auto& pos_b = pos_b_gradientvar.value();
+  const auto& J_b = pos_b_gradientvar.gradient().value();
+
   Vector4d quat_a2w = pos_a.block(3,0,4,1);
   MatrixXd dquat_a2w = J_a.block(3,0,4,nq);
   Vector4d quat_b2w = pos_b.block(3,0,4,1);
@@ -1253,12 +1250,10 @@ WorldEulerConstraint::WorldEulerConstraint(RigidBodyManipulator *robot, int body
 
 void WorldEulerConstraint::evalrpy(Vector3d &rpy,MatrixXd &J) const
 {
-  Vector4d pt;
-  pt<<0.0,0.0,0.0,1.0;
-  Matrix<double,6,1> x;
-  MatrixXd dx(6,this->robot->num_positions);
-  this->robot->forwardKin(this->body,pt,1,x);
-  this->robot->forwardJac(this->body,pt,1,dx);
+  auto x_gradientvar = robot->forwardKin(Vector3d::Zero().eval(), body, 0, 1, 1);
+  const auto& x = x_gradientvar.value();
+  const auto& dx = x_gradientvar.gradient().value();
+
   rpy = x.tail(3);
   J = dx.block(3,0,3,this->robot->num_positions);
 }
@@ -1402,12 +1397,9 @@ WorldGazeOrientConstraint::WorldGazeOrientConstraint(RigidBodyManipulator* robot
 
 void WorldGazeOrientConstraint::evalOrientation(Vector4d &quat, MatrixXd &dquat_dq) const
 {
-  Matrix<double,7,1> x;
-  MatrixXd J(7,this->robot->num_positions);
-  Vector4d pts;
-  pts<<0.0,0.0,0.0,1.0;
-  this->robot->forwardKin(this->body,pts,2,x);
-  this->robot->forwardJac(this->body,pts,2,J);
+  auto x_gradientvar = robot->forwardKin(Vector3d::Zero().eval(), body, 0, 2, 1);
+  const auto& x = x_gradientvar.value();
+  const auto& J = x_gradientvar.gradient().value();
   quat = x.tail(4);
   dquat_dq = J.block(3,0,4,this->robot->num_positions);
 }
@@ -1477,19 +1469,17 @@ void WorldGazeDirConstraint::eval(const double* t, VectorXd &c, MatrixXd &dc) co
 {
   if(this->isTimeValid(t))
   {
-    MatrixXd body_axis_ends(4,2);
-    body_axis_ends.block(0,0,3,1) = MatrixXd::Zero(3,1);
-    body_axis_ends.block(0,1,3,1) = this->axis;
-    body_axis_ends.block(3,0,1,2) = MatrixXd::Ones(1,2);
+    Matrix3Xd body_axis_ends(3, 2);
+    body_axis_ends.col(0).setZero();
+    body_axis_ends.col(1) = this->axis;
     int nq = this->robot->num_positions;
-    MatrixXd axis_pos(3,2);
-    MatrixXd daxis_pos(6,nq);
-    this->robot->forwardKin(this->body,body_axis_ends,0,axis_pos);
-    this->robot->forwardJac(this->body,body_axis_ends,0,daxis_pos);
-    Vector3d axis_world = axis_pos.col(1)-axis_pos.col(0);
-    MatrixXd daxis_world = daxis_pos.block(3,0,3,nq)-daxis_pos.block(0,0,3,nq);
+    auto axis_pos_gradientvar = robot->forwardKin(body_axis_ends, body, 0, 0, 1);
+    const auto &axis_pos = axis_pos_gradientvar.value();
+    const auto &daxis_pos = axis_pos_gradientvar.gradient().value();
+    Vector3d axis_world = axis_pos.col(1) - axis_pos.col(0);
+    MatrixXd daxis_world = daxis_pos.block(3, 0, 3, nq) - daxis_pos.block(0, 0, 3, nq);
     c.resize(1);
-    c(0) = axis_world.dot(this->dir)-1.0;
+    c(0) = axis_world.dot(this->dir) - 1.0;
     dc = this->dir.transpose()*daxis_world;
   }
   else
@@ -1498,6 +1488,7 @@ void WorldGazeDirConstraint::eval(const double* t, VectorXd &c, MatrixXd &dc) co
     dc.resize(0,0);
   }
 }
+
 void WorldGazeDirConstraint::name(const double* t, std::vector<std::string> &name_str) const
 {
   if(this->isTimeValid(t))
@@ -1516,8 +1507,7 @@ void WorldGazeDirConstraint::name(const double* t, std::vector<std::string> &nam
   }
 }
 
-
-GazeTargetConstraint::GazeTargetConstraint(RigidBodyManipulator* robot, const Vector3d &axis, const Vector3d &target, const Vector4d &gaze_origin, double conethreshold, const Vector2d &tspan):GazeConstraint(robot,axis,conethreshold,tspan)
+GazeTargetConstraint::GazeTargetConstraint(RigidBodyManipulator* robot, const Vector3d &axis, const Vector3d &target, const Vector3d &gaze_origin, double conethreshold, const Vector2d &tspan):GazeConstraint(robot,axis,conethreshold,tspan)
 {
   this->target = target;
   this->gaze_origin = gaze_origin;
@@ -1536,7 +1526,7 @@ void GazeTargetConstraint::bounds(const double* t, VectorXd &lb, VectorXd &ub) c
   }
 }
 
-WorldGazeTargetConstraint::WorldGazeTargetConstraint(RigidBodyManipulator* robot, int body, const Vector3d &axis, const Vector3d &target, const Vector4d &gaze_origin, double conethreshold, const Vector2d &tspan): GazeTargetConstraint(robot,axis,target,gaze_origin,conethreshold,tspan)
+WorldGazeTargetConstraint::WorldGazeTargetConstraint(RigidBodyManipulator* robot, int body, const Vector3d &axis, const Vector3d &target, const Vector3d &gaze_origin, double conethreshold, const Vector2d &tspan): GazeTargetConstraint(robot,axis,target,gaze_origin,conethreshold,tspan)
 {
   this->body = body;
   this->body_name = robot->getBodyOrFrameName(body);
@@ -1551,23 +1541,22 @@ void WorldGazeTargetConstraint::eval(const double* t,VectorXd &c, MatrixXd &dc) 
   dc.resize(num_constraint,nq);
   if(this->isTimeValid(t))
   {
-    MatrixXd body_axis_ends(4,2);
-    body_axis_ends.block(0,0,4,1) = this->gaze_origin;
-    body_axis_ends.block(0,1,3,1) = this->gaze_origin.block(0,0,3,1)+this->axis;
-    body_axis_ends.block(3,0,1,2) = MatrixXd::Ones(1,2);
+    Matrix3Xd body_axis_ends(3, 2);
+    body_axis_ends.col(0) = this->gaze_origin;
+    body_axis_ends.col(1) = this->gaze_origin + this->axis;
     int nq = this->robot->num_positions;
-    MatrixXd axis_ends(3,2);
-    MatrixXd daxis_ends(6,nq);
-    this->robot->forwardKin(this->body, body_axis_ends, 0, axis_ends);
-    this->robot->forwardJac(this->body, body_axis_ends, 0, daxis_ends);
-    Vector3d world_axis = axis_ends.col(1)-axis_ends.col(0);
-    MatrixXd dworld_axis = daxis_ends.block(3,0,3,nq)-daxis_ends.block(0,0,3,nq);
-    Vector3d dir = this->target-axis_ends.col(0);
-    MatrixXd ddir = -daxis_ends.block(0,0,3,nq);
+    auto axis_ends_gradientvar = robot->forwardKin(body_axis_ends, body, 0, 0, 1);
+    const auto &axis_ends = axis_ends_gradientvar.value();
+    const auto &daxis_ends = axis_ends_gradientvar.gradient().value();
+
+    Vector3d world_axis = axis_ends.col(1) - axis_ends.col(0);
+    MatrixXd dworld_axis = daxis_ends.block(3, 0, 3, nq) - daxis_ends.block(0, 0, 3, nq);
+    Vector3d dir = this->target - axis_ends.col(0);
+    MatrixXd ddir = -daxis_ends.block(0, 0, 3, nq);
     double dir_norm = dir.norm();
-    Vector3d dir_normalized = dir/dir_norm;
-    MatrixXd ddir_normalized = (MatrixXd::Identity(3,3)*dir_norm*dir_norm-dir*dir.transpose())/(std::pow(dir_norm,3))*ddir;
-    c(0) = dir_normalized.dot(world_axis)-1.0;
+    Vector3d dir_normalized = dir / dir_norm;
+    MatrixXd ddir_normalized = (MatrixXd::Identity(3, 3) * dir_norm * dir_norm - dir * dir.transpose()) / (std::pow(dir_norm, 3)) * ddir;
+    c(0) = dir_normalized.dot(world_axis) - 1.0;
     dc = dir_normalized.transpose()*dworld_axis+world_axis.transpose()*ddir_normalized;
   }
   else
@@ -1596,7 +1585,7 @@ void WorldGazeTargetConstraint::name(const double* t, std::vector<std::string> &
 }
 
 
-RelativeGazeTargetConstraint::RelativeGazeTargetConstraint(RigidBodyManipulator *robot, int bodyA_idx, int bodyB_idx, const Eigen::Vector3d &axis, const Vector3d &target, const Vector4d &gaze_origin, double conethreshold, const Eigen::Vector2d &tspan):GazeTargetConstraint(robot,axis,target,gaze_origin,conethreshold,tspan)
+RelativeGazeTargetConstraint::RelativeGazeTargetConstraint(RigidBodyManipulator *robot, int bodyA_idx, int bodyB_idx, const Eigen::Vector3d &axis, const Vector3d &target, const Vector3d &gaze_origin, double conethreshold, const Eigen::Vector2d &tspan):GazeTargetConstraint(robot,axis,target,gaze_origin,conethreshold,tspan)
 {
   this->bodyA_idx = bodyA_idx;
   this->bodyB_idx = bodyB_idx;
@@ -1610,31 +1599,35 @@ void RelativeGazeTargetConstraint::eval(const double* t, VectorXd &c, MatrixXd &
   if(this->isTimeValid(t))
   {
     int nq = this->robot->num_positions;
-    Vector4d target_pt;
-    target_pt<<this->target,1.0;
-    Vector3d target_pos;
-    MatrixXd dtarget_pos(3,nq);
-    this->robot->forwardKin(this->bodyB_idx, target_pt, 0, target_pos);
-    this->robot->forwardJac(this->bodyB_idx, target_pt, 0, dtarget_pos);
-    Vector3d origin_pos;
-    MatrixXd dorigin_pos(3,nq);
-    this->robot->forwardKin(this->bodyA_idx,this->gaze_origin,0,origin_pos);
-    this->robot->forwardJac(this->bodyA_idx,this->gaze_origin,0,dorigin_pos);
-    Vector3d axis_pos;
-    Vector4d axis_pt;
-    axis_pt<<this->axis,0.0;
-    MatrixXd daxis_pos(3,nq);
-    this->robot->forwardKin(this->bodyA_idx,axis_pt,0,axis_pos);
-    this->robot->forwardJac(this->bodyA_idx,axis_pt,0,daxis_pos);
-    Vector3d origin_to_target = target_pos-origin_pos;
-    MatrixXd dorigin_to_target = dtarget_pos-dorigin_pos;
+    auto target_pos_gradientvar = robot->forwardKin(target, bodyB_idx, 0, 0, 1);
+    const auto& target_pos = target_pos_gradientvar.value();
+    const auto& dtarget_pos = target_pos_gradientvar.gradient().value();
+
+    auto origin_pos_gradientvar = robot->forwardKin(gaze_origin, bodyA_idx, 0, 0, 1);
+    const auto& origin_pos = origin_pos_gradientvar.value();
+    const auto& dorigin_pos = origin_pos_gradientvar.gradient().value();
+
+    auto axis_pos_gradientvar = robot->forwardKin(axis, bodyA_idx, 0, 0, 1);
+    auto& axis_pos = axis_pos_gradientvar.value();
+    auto& daxis_pos = axis_pos_gradientvar.gradient().value();
+
+    Vector3d axis_origin = Vector3d::Zero();
+    auto axis_origin_pos_gradientvar = robot->forwardKin(axis_origin, bodyA_idx, 0, 0, 1);
+    const auto& axis_origin_pos = axis_origin_pos_gradientvar.value();
+    const auto& daxis_origin_pos = axis_origin_pos_gradientvar.gradient().value();
+
+    axis_pos -= axis_origin_pos;
+    daxis_pos -= daxis_origin_pos;
+
+    Vector3d origin_to_target = target_pos - origin_pos;
+    MatrixXd dorigin_to_target = dtarget_pos - dorigin_pos;
     double origin_to_target_norm = origin_to_target.norm();
     c.resize(1);
-    c(0) = origin_to_target.dot(axis_pos)/origin_to_target_norm-1.0;
-    dc.resize(1,nq);
-    MatrixXd dcdorigin_to_target = (axis_pos.transpose()*origin_to_target_norm-axis_pos.dot(origin_to_target)/origin_to_target_norm*origin_to_target.transpose())/(origin_to_target_norm*origin_to_target_norm);
-    MatrixXd dcdaxis_pos = origin_to_target.transpose()/origin_to_target_norm;
-    dc = dcdorigin_to_target*dorigin_to_target+dcdaxis_pos*daxis_pos;
+    c(0) = origin_to_target.dot(axis_pos) / origin_to_target_norm - 1.0;
+    dc.resize(1, nq);
+    MatrixXd dcdorigin_to_target = (axis_pos.transpose() * origin_to_target_norm - axis_pos.dot(origin_to_target) / origin_to_target_norm * origin_to_target.transpose()) / (origin_to_target_norm * origin_to_target_norm);
+    MatrixXd dcdaxis_pos = origin_to_target.transpose() / origin_to_target_norm;
+    dc = dcdorigin_to_target * dorigin_to_target+dcdaxis_pos*daxis_pos;
   }
   else
   {
@@ -1678,23 +1671,21 @@ void RelativeGazeDirConstraint::eval(const double* t, VectorXd &c, MatrixXd &dc)
 {
   if(this->isTimeValid(t))
   {
-    MatrixXd body_axis_ends(4,2);
+    Matrix3Xd body_axis_ends(3,2);
     body_axis_ends.block(0,0,3,1) = MatrixXd::Zero(3,1);
     body_axis_ends.block(0,1,3,1) = this->axis;
-    body_axis_ends.block(3,0,1,2) = MatrixXd::Ones(1,2);
-    MatrixXd body_dir_ends(4,2);
+    Matrix3Xd body_dir_ends(3,2);
     body_dir_ends.block(0,0,3,1) = MatrixXd::Zero(3,1);
     body_dir_ends.block(0,1,3,1) = this->dir;
-    body_dir_ends.block(3,0,1,2) = MatrixXd::Ones(1,2);
     int nq = this->robot->num_positions;
-    MatrixXd axis_pos(3,2);
-    MatrixXd daxis_pos(6,nq);
-    MatrixXd dir_pos(3,2);
-    MatrixXd ddir_pos(6,nq);
-    this->robot->forwardKin(this->bodyA_idx,body_axis_ends,0,axis_pos);
-    this->robot->forwardJac(this->bodyA_idx,body_axis_ends,0,daxis_pos);
-    this->robot->forwardKin(this->bodyB_idx,body_dir_ends,0,dir_pos);
-    this->robot->forwardJac(this->bodyB_idx,body_dir_ends,0,ddir_pos);
+
+    auto axis_pos_gradientvar = robot->forwardKin(body_axis_ends, bodyA_idx, 0, 0, 1);
+    const auto& axis_pos = axis_pos_gradientvar.value();
+    const auto& daxis_pos = axis_pos_gradientvar.gradient().value();
+    auto dir_pos_gradientvar = robot->forwardKin(body_dir_ends, bodyB_idx, 0, 0, 1);
+    const auto& dir_pos = dir_pos_gradientvar.value();
+    const auto& ddir_pos = dir_pos_gradientvar.gradient().value();
+
     Vector3d axis_world = axis_pos.col(1)-axis_pos.col(0);
     MatrixXd daxis_world = daxis_pos.block(3,0,3,nq)-daxis_pos.block(0,0,3,nq);
     Vector3d dir_world = dir_pos.col(1)-dir_pos.col(0);
@@ -1730,7 +1721,7 @@ void RelativeGazeDirConstraint::name(const double* t, std::vector<std::string> &
 
 
 
-Point2PointDistanceConstraint::Point2PointDistanceConstraint(RigidBodyManipulator *robot, int bodyA, int bodyB, const MatrixXd &ptA, const MatrixXd &ptB, const VectorXd &dist_lb, const VectorXd &dist_ub, const Vector2d &tspan): SingleTimeKinematicConstraint(robot,tspan)
+Point2PointDistanceConstraint::Point2PointDistanceConstraint(RigidBodyManipulator *robot, int bodyA, int bodyB, const Matrix3Xd &ptA, const Matrix3Xd &ptB, const VectorXd &dist_lb, const VectorXd &dist_ub, const Vector2d &tspan): SingleTimeKinematicConstraint(robot,tspan)
 {
   this->bodyA = bodyA;
   this->bodyB = bodyB;
@@ -1751,8 +1742,9 @@ void Point2PointDistanceConstraint::eval(const double* t, VectorXd &c, MatrixXd 
     MatrixXd dposA(3*this->ptA.cols(),this->robot->num_positions);
     if(this->bodyA != 0)
     {
-      this->robot->forwardKin(this->bodyA,this->ptA,0,posA);
-      this->robot->forwardJac(this->bodyA,this->ptA,0,dposA);
+      auto posA_gradientvar = robot->forwardKin(ptA, bodyA, 0, 0, 1);
+      posA = posA_gradientvar.value();
+      dposA = posA_gradientvar.gradient().value();
     }
     else
     {
@@ -1763,8 +1755,9 @@ void Point2PointDistanceConstraint::eval(const double* t, VectorXd &c, MatrixXd 
     MatrixXd dposB(3*this->ptB.cols(),this->robot->num_positions);
     if(this->bodyB != 0)
     {
-      this->robot->forwardKin(this->bodyB,this->ptB,0,posB);
-      this->robot->forwardJac(this->bodyB,this->ptB,0,dposB);
+      auto posB_gradientvar = robot->forwardKin(ptB, bodyB, 0, 0, 1);
+      posB = posB_gradientvar.value();
+      dposB = posB_gradientvar.gradient().value();
     }
     else
     {
@@ -1839,7 +1832,7 @@ void Point2PointDistanceConstraint::bounds(const double* t, VectorXd &lb, Vector
 
 
 
-Point2LineSegDistConstraint::Point2LineSegDistConstraint(RigidBodyManipulator* robot, int pt_body, const Vector4d &pt, int line_body, const Matrix<double,4,2> &line_ends, double dist_lb, double dist_ub, const Vector2d &tspan):SingleTimeKinematicConstraint(robot,tspan)
+Point2LineSegDistConstraint::Point2LineSegDistConstraint(RigidBodyManipulator* robot, int pt_body, const Vector3d &pt, int line_body, const Matrix<double,3,2> &line_ends, double dist_lb, double dist_ub, const Vector2d &tspan):SingleTimeKinematicConstraint(robot,tspan)
 {
   this->pt_body = pt_body;
   this->pt = pt;
@@ -1856,14 +1849,15 @@ void Point2LineSegDistConstraint::eval(const double* t, VectorXd &c, MatrixXd &d
   if(this->isTimeValid(t))
   {
     int nq = this->robot->num_positions;
-    Vector3d pt_pos;
-    MatrixXd J_pt(3,nq);
-    this->robot->forwardKin(this->pt_body,this->pt,0,pt_pos);
-    this->robot->forwardJac(this->pt_body,this->pt,0,J_pt);
-    MatrixXd line_pos(3,2);
-    MatrixXd J_line(6,nq);
-    this->robot->forwardKin(this->line_body,this->line_ends,0,line_pos);
-    this->robot->forwardJac(this->line_body,this->line_ends,0,J_line);
+
+    auto pt_pos_gradientvar = robot->forwardKin(pt, pt_body, 0, 0, 1);
+    const auto& pt_pos = pt_pos_gradientvar.value();
+    const auto& J_pt = pt_pos_gradientvar.gradient().value();
+
+    auto line_pos_gradientvar = robot->forwardKin(line_ends, line_body, 0, 0, 1);
+    const auto& line_pos = line_pos_gradientvar.value();
+    const auto& J_line = line_pos_gradientvar.gradient().value();
+
     Vector3d x0 = pt_pos;
     Vector3d x1 = line_pos.col(0);
     Vector3d x2 = line_pos.col(1);
@@ -1925,12 +1919,12 @@ void Point2LineSegDistConstraint::name(const double* t, std::vector<std::string>
 }
 
 
-WorldFixedPositionConstraint::WorldFixedPositionConstraint(RigidBodyManipulator* robot, int body, const MatrixXd &pts, const Vector2d &tspan):MultipleTimeKinematicConstraint(robot,tspan)
+WorldFixedPositionConstraint::WorldFixedPositionConstraint(RigidBodyManipulator* robot, int body, const Matrix3Xd &pts, const Vector2d &tspan):MultipleTimeKinematicConstraint(robot,tspan)
 {
   this->body = body;
-  if(pts.rows() != 4)
+  if(pts.rows() != 3)
   {
-    std::cerr<<"pts must have 4 rows"<<std::endl;
+    std::cerr<<"pts must have 3 rows"<<std::endl;
   }
   this->pts = pts;
   this->body_name = robot->getBodyOrFrameName(body);
@@ -1959,11 +1953,12 @@ void WorldFixedPositionConstraint::eval_valid(const double* valid_t, int num_val
   for(int i = 0;i<num_valid_t;i++)
   {
     Map<VectorXd> qvec((double*) valid_q.data()+i*nq, nq);
-    this->robot->doKinematics(qvec);
+    VectorXd v = VectorXd::Zero(0);
+    robot->doKinematics(qvec, v);
     pos[i].resize(3,n_pts);
-    this->robot->forwardKin(this->body,this->pts,0,pos[i]);
-    dpos[i].resize(3*n_pts,nq);
-    this->robot->forwardJac(this->body,this->pts,0,dpos[i]);
+    auto pos_gradientvar = robot->forwardKin(pts, body, 0, 0, 1);
+    pos[i] = pos_gradientvar.value();
+    dpos[i] = pos_gradientvar.gradient().value();
   }
   int* next_idx = new int[num_valid_t];
   int* prev_idx = new int[num_valid_t];
@@ -2049,16 +2044,14 @@ void WorldFixedOrientConstraint::eval_valid(const double* valid_t, int num_valid
   int nq = this->robot->num_positions;
   Vector4d* quat = new Vector4d[num_valid_t];
   MatrixXd* dquat = new MatrixXd[num_valid_t];
-  Vector4d origin_pt;
-  origin_pt<<0.0,0.0,0.0,1.0;
   for(int i = 0;i<num_valid_t;i++)
   {
     Map<VectorXd> qvec((double*) valid_q.data()+i*nq, nq);
-    this->robot->doKinematics(qvec);
-    Matrix<double,7,1> tmp_pos;
-    MatrixXd dtmp_pos(7,nq);
-    this->robot->forwardKin(this->body,origin_pt,2,tmp_pos);
-    this->robot->forwardJac(this->body,origin_pt,2,dtmp_pos);
+    VectorXd v = VectorXd::Zero(0);
+    robot->doKinematics(qvec, v);
+    auto tmp_pos_gradientvar = robot->forwardKin(Vector3d::Zero().eval(), body, 0, 2, 1);
+    const auto& tmp_pos = tmp_pos_gradientvar.value();
+    const auto& dtmp_pos = tmp_pos_gradientvar.gradient().value();
     quat[i] = tmp_pos.tail(4);
     dquat[i].resize(4,nq);
     dquat[i] = dtmp_pos.block(3,0,4,nq);
@@ -2143,18 +2136,17 @@ void WorldFixedBodyPoseConstraint::eval_valid(const double* valid_t, int num_val
   Vector4d *quat = new Vector4d[num_valid_t];
   MatrixXd *dpos = new MatrixXd[num_valid_t];
   MatrixXd *dquat = new MatrixXd[num_valid_t];
-  Vector4d origin_pt;
-  origin_pt<< 0.0,0.0,0.0,1.0;
   for(int i = 0;i<num_valid_t;i++)
   {
-    Map<VectorXd> qvec((double*) valid_q.data()+i*nq, nq);
-    this->robot->doKinematics(qvec);
-    Matrix<double,7,1> pos_tmp;
-    this->robot->forwardKin(this->body,origin_pt,2,pos_tmp);
+    Map<VectorXd> qvec((double *) valid_q.data() + i * nq, nq);
+    VectorXd v = VectorXd::Zero(0);
+    robot->doKinematics(qvec, v);
+    auto pos_tmp_gradientvar = robot->forwardKin(Vector3d::Zero().eval(), body, 0, 2, 1);
+    const auto& pos_tmp = pos_tmp_gradientvar.value();
+    const auto& J_tmp = pos_tmp_gradientvar.gradient().value();
+
     pos[i] = pos_tmp.head(3);
     quat[i] = pos_tmp.tail(4);
-    MatrixXd J_tmp(7,nq);
-    this->robot->forwardJac(this->body,origin_pt,2,J_tmp);
     dpos[i].resize(3,nq);
     dpos[i] = J_tmp.block(0,0,3,nq);
     dquat[i].resize(4,nq);
@@ -2268,7 +2260,7 @@ void
 AllBodiesClosestDistanceConstraint::eval(const double* t, VectorXd& c, MatrixXd& dc) const
 {
   if(this->isTimeValid(t)) {
-    MatrixXd xA, xB, normal;
+    Matrix3Xd xA, xB, normal;
     std::vector<int> idxA;
     std::vector<int> idxB;
 
@@ -2290,13 +2282,9 @@ AllBodiesClosestDistanceConstraint::eval(const double* t, VectorXd& c, MatrixXd&
     MatrixXd JA = MatrixXd::Zero(3,robot->num_positions);
     MatrixXd JB = MatrixXd::Zero(3,robot->num_positions);
     for (int i = 0; i < num_pts; ++i) {
-      Vector4d xA_1;
-      Vector4d xB_1;
-      xA_1 << xA.col(i), 1;
-      xB_1 << xB.col(i), 1;
-      robot->forwardJac(idxA.at(i),xA_1,0,JA);
-      robot->forwardJac(idxB.at(i),xB_1,0,JB);
-      dc.row(i) = normal.col(i).transpose()*(JA-JB);
+      JA = robot->forwardKinJacobian(xA.col(i), idxA.at(i), 0, 0, true, 0).value();
+      JB = robot->forwardKinJacobian(xB.col(i), idxB.at(i), 0, 0, true, 0).value();
+      dc.row(i) = normal.col(i).transpose() * (JA - JB);
     }
   } else {
     c.resize(0);
@@ -2359,7 +2347,8 @@ MinDistanceConstraint::eval(const double* t, VectorXd& c, MatrixXd& dc) const
   //END_DEBUG
   if(this->isTimeValid(t)) {
     VectorXd dist, scaled_dist, pairwise_costs;
-    MatrixXd xA, xB, normal, ddist_dq, dscaled_dist_ddist, dpairwise_costs_dscaled_dist;
+    Matrix3Xd xA, xB, normal;
+    MatrixXd ddist_dq, dscaled_dist_ddist, dpairwise_costs_dscaled_dist;
     std::vector<int> idxA;
     std::vector<int> idxB;
 
@@ -2411,7 +2400,7 @@ MinDistanceConstraint::eval(const double* t, VectorXd& c, MatrixXd& dc) const
       {
         continue;
       }
-      MatrixXd x_k(3, numA + numB);
+      Matrix3Xd x_k(3, numA + numB);
       for (; l < numA; ++l) {
         //DEBUG
         //std::cout << "MinDistanceConstraint::eval: Third loop: " << l << std::endl;
@@ -2424,10 +2413,9 @@ MinDistanceConstraint::eval(const double* t, VectorXd& c, MatrixXd& dc) const
         //END_DEBUG
         x_k.col(l) = xB.col(orig_idx_of_pt_on_bodyB.at(k).at(l-numA));
       }
-      MatrixXd x_k_1(4,x_k.cols());
-      MatrixXd J_k(3*x_k.cols(),robot->num_positions);
-      x_k_1 << x_k, MatrixXd::Ones(1,x_k.cols());
-      robot->forwardJac(k,x_k_1,0,J_k);
+
+      auto J_k = robot->forwardKinJacobian(x_k, k, 0, 0, true, 0).value();
+
       l = 0;
       for (; l < numA; ++l) {
         //DEBUG
@@ -2514,7 +2502,7 @@ void MinDistanceConstraint::name(const double* t, std::vector<std::string> &name
 }
 
 WorldPositionInFrameConstraint::WorldPositionInFrameConstraint(
-    RigidBodyManipulator *robot, int body, const Eigen::MatrixXd &pts,
+    RigidBodyManipulator *robot, int body, const Eigen::Matrix3Xd &pts,
     const Eigen::Matrix4d& T_frame_to_world,
     const Eigen::MatrixXd &lb, const Eigen::MatrixXd &ub, const Eigen::Vector2d &tspan)
   : WorldPositionConstraint(robot,body,pts,lb,ub,tspan)
@@ -2524,12 +2512,10 @@ WorldPositionInFrameConstraint::WorldPositionInFrameConstraint(
   this->type = RigidBodyConstraint::WorldPositionInFrameConstraintType;
 }
 
-void WorldPositionInFrameConstraint::evalPositions(MatrixXd &pos, MatrixXd &J) const
+void WorldPositionInFrameConstraint::evalPositions(Matrix3Xd &pos, MatrixXd &J) const
 {
   WorldPositionConstraint::evalPositions(pos, J);
-  MatrixXd pos_1(4,n_pts);
-  pos_1 << pos, MatrixXd::Ones(1,n_pts);
-  pos = (this->T_world_to_frame*pos_1).topRows(3);
+  pos = (this->T_world_to_frame*pos.colwise().homogeneous()).topRows(3);
   auto J_reshaped = Map<MatrixXd>(J.data(),3,n_pts*J.cols());
   J_reshaped = T_world_to_frame.topLeftCorner<3,3>()*J_reshaped;
 }
@@ -2710,7 +2696,7 @@ GravityCompensationTorqueConstraint(RigidBodyManipulator* robot,
 void GravityCompensationTorqueConstraint::eval(const double* t, VectorXd& c, MatrixXd& dc) const
 {
   VectorXd qd = VectorXd::Zero(robot->num_velocities);
-  robot->doKinematicsNew(robot->cached_q, qd, true, true);
+  robot->doKinematics(robot->cached_q, qd, true, true);
   std::map<int, std::unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
   auto G_gradientvar = robot->inverseDynamics(f_ext, (GradientVar<double, Eigen::Dynamic, 1>*) nullptr, 1);
 

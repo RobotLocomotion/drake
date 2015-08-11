@@ -14,7 +14,7 @@ for urdf=urdfs'
   warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
   warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
   try 
-    r = RigidBodyManipulator(urdffile,struct('floating','rpy','use_new_kinsol',true));
+    r = RigidBodyManipulator(urdffile,struct('floating','rpy'));
   catch ex
     if strncmp(ex.identifier,'Drake:MissingDependency:',24)
       disp(' skipping due to a missing dependency'); 

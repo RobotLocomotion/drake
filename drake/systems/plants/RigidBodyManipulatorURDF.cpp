@@ -219,7 +219,7 @@ bool parseInertial(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyMani
   if (mass)
     mass->Attribute("value", &(body->mass));
 
-  body->com << T(0, 3), T(1, 3), T(2, 3), 1.0;
+  body->com << T(0, 3), T(1, 3), T(2, 3);
 
   Matrix<double, TWIST_SIZE, TWIST_SIZE> I = Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
   I.block(3, 3, 3, 3) << body->mass * Matrix3d::Identity();
@@ -558,7 +558,6 @@ bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
   TiXmlElement* origin = node->FirstChildElement("origin");
   if (origin) {
     poseAttributesToTransform(origin, Ttree.matrix());
-    model->bodies[child_index]->Ttree = Ttree.matrix(); // scheduled for deletion
   }
 
   Vector3d axis;

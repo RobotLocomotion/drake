@@ -1,4 +1,4 @@
-function [x_in_world, J, dJ_or_Jdot] = terrainContactPositions(obj, ...
+function [x_in_world, J, dJ] = terrainContactPositions(obj, ...
     kinsol,varargin)
   % x_in_world = terrainContactPositions(obj,kinsol) returns the
   %   world-frame position of all terrain contact points on the
@@ -38,8 +38,7 @@ function [x_in_world, J, dJ_or_Jdot] = terrainContactPositions(obj, ...
   %                      points
   % @retval J - dx_in_world/dq
   % @retval dJ - d^2x_in_world/dq^2
-  % @retval Jdot - d(dx_in_world/dq)/dt
-  
+
   if numel(varargin) > 2
     compute_Jdot_instead_of_dJ = varargin{3};
     varargin = varargin(1:2);
@@ -56,6 +55,10 @@ function [x_in_world, J, dJ_or_Jdot] = terrainContactPositions(obj, ...
   compute_first_derivative = nargout > 1;
   compute_second_derivative = nargout > 2 && ~compute_Jdot_instead_of_dJ;
   compute_Jdot = nargout > 2 && compute_Jdot_instead_of_dJ;
+
+  if compute_Jdot
+    error('Computing Jdot is no longer supported. See terrainContactJacobianDotTimesV');
+  end
 
   if ~isstruct(kinsol)
     kinsol = doKinematics(obj,kinsol,compute_second_derivative);
@@ -76,8 +79,6 @@ function [x_in_world, J, dJ_or_Jdot] = terrainContactPositions(obj, ...
   end
   if compute_second_derivative
     dJ = zeros(3*cumsum_n_pts(end),nq^2)*kinsol.q(1);
-  elseif compute_Jdot
-    Jdot = zeros(3*cumsum_n_pts(end),nq)*kinsol.q(1);
   end
 
   for i = 1:numel(terrain_contact_point_struct)
@@ -92,22 +93,10 @@ function [x_in_world, J, dJ_or_Jdot] = terrainContactPositions(obj, ...
        J(3*cumsum_n_pts(i)+(1:3*n_pts(i)),:)] =  ...
         forwardKin(obj,kinsol,terrain_contact_point_struct(i).idx, ...
         terrain_contact_point_struct(i).pts);
-      if compute_Jdot
-        Jdot(3*cumsum_n_pts(i)+(1:3*n_pts(i)),:) = ...
-          forwardJacDot(obj,kinsol, ...
-                        terrain_contact_point_struct(i).idx, ...
-                        terrain_contact_point_struct(i).pts);
-      end
     else
       x_in_world(:,cumsum_n_pts(i)+(1:n_pts(i))) = ...
         forwardKin(obj,kinsol,terrain_contact_point_struct(i).idx, ...
         terrain_contact_point_struct(i).pts);
     end
-  end
-
-  if compute_second_derivative
-    dJ_or_Jdot = dJ;
-  elseif compute_Jdot_instead_of_dJ
-    dJ_or_Jdot = Jdot;
   end
 end

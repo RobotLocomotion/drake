@@ -18,15 +18,12 @@ geval_options.grad_method = {'user','taylorvar'};
 end
 
 function [x,J,dJ] = bodyKinWrapper(q,r,body_ind,pts)
-if r.use_new_kinsol
-  kinsol_options.use_mex = false;
-  if nargout > 2
-    kinsol_options.compute_gradients = true;
-  end
-  kinsol = r.doKinematics(q, [], kinsol_options);
-else
-  kinsol = r.doKinematics(q,true,false);
+kinsol_options.use_mex = false;
+if nargout > 2
+  kinsol_options.compute_gradients = true;
 end
+kinsol = r.doKinematics(q, [], kinsol_options);
+
 switch nargout
   case 1
     x = r.bodyKin(kinsol,body_ind,pts);
@@ -38,15 +35,12 @@ end
 end
 
 function [P,dP] = bodyKinPWrapper(q,r,body_ind,pts)
-if r.use_new_kinsol
-  kinsol_options.use_mex = false;
-  if nargout > 1
-    kinsol_options.compute_gradients = true;
-  end
-  kinsol = r.doKinematics(q, [], kinsol_options);
-else
-  kinsol = r.doKinematics(q,true,false);
+kinsol_options.use_mex = false;
+if nargout > 1
+  kinsol_options.compute_gradients = true;
 end
+kinsol = r.doKinematics(q, [], kinsol_options);
+
 switch nargout
   case 1
     [~, P] = r.bodyKin(kinsol,body_ind,pts);
@@ -70,25 +64,15 @@ for i = 1 : n_tests
   kinsol_options.use_mex = false;
   kinsol_options.compute_gradients = true;
   kinsol = robot.doKinematics(q, [], kinsol_options);
-  if robot.use_new_kinsol
-    [x, P, J, dP, dJ] = robot.bodyKin(kinsol,body_ind,points);
-  else
-    [x, P, J] = robot.bodyKin(kinsol,body_ind,points);
-  end
+  [x, P, J, dP, dJ] = robot.bodyKin(kinsol,body_ind,points);
   
   kinsol_options.use_mex = true;
   kinsol_mex = robot.doKinematics(q, [], kinsol_options);
-  if robot.use_new_kinsol
-    [x_mex, P_mex, J_mex, dP_mex, dJ_mex] = robot.bodyKin(kinsol_mex,body_ind,points);
-  else
-    [x_mex, P_mex, J_mex] = robot.bodyKin(kinsol_mex,body_ind,points);
-  end
+  [x_mex, P_mex, J_mex, dP_mex, dJ_mex] = robot.bodyKin(kinsol_mex,body_ind,points);
   valuecheck(x_mex, x);
   valuecheck(P_mex, P);
   valuecheck(J_mex, J);
-  if robot.use_new_kinsol
-    valuecheck(dP_mex, dP);
-    valuecheck(dJ_mex, dJ);
-  end
+  valuecheck(dP_mex, dP);
+  valuecheck(dJ_mex, dJ);
 end
 end

@@ -5,9 +5,6 @@ end
 
 function testFallingBrick(floatingType)
 options.floating = floatingType;
-if strcmp(floatingType,'quat')
-  options.use_new_kinsol = true;
-end
 m = RigidBodyManipulator('FallingBrick.urdf',options);
 nq = m.getNumPositions();
 q = getRandomConfiguration(m);

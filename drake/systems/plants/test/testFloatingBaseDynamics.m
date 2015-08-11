@@ -43,37 +43,39 @@ for i=1:100
   qd = rand(nq,1)-.5; u = rand(getNumInputs(m_rpy),1)-.5;
 
   kinsol = doKinematics(m_rpy,q,true,false,qd);
-  [pt,J,Jdot] = terrainContactPositions(m_rpy,kinsol,true);
-  [~,~,dJ] = terrainContactPositions(m_rpy,kinsol);
+  [pt,J,dJ] = terrainContactPositions(m_rpy,kinsol);
+  Jdot_times_v = terrainContactJacobianDotTimesV(m_rpy, kinsol);
   phi = [jointLimitConstraints(m_rpy,q); contactConstraints(m_rpy,kinsol,false,collision_options)];
   
   kinsol2 = doKinematics(m_ypr_rel,q(ind),true,false,qd(ind));
-  [pt2,J2,Jdot2] = terrainContactPositions(m_ypr_rel,kinsol2,true);
-  [~,~,dJ2] = terrainContactPositions(m_ypr_rel,kinsol2);
+  [pt2,J2,dJ2] = terrainContactPositions(m_ypr_rel,kinsol2);
+  Jdot_times_v2 = terrainContactJacobianDotTimesV(m_ypr_rel, kinsol2);
   
   dJind = reshape(1:nq*nq,[nq,nq]);  
   dJind = reshape(dJind(ind,ind),nq*nq,1); 
   
   valuecheck(pt,pt2);
   valuecheck(J,J2(:,ind));
-  valuecheck(Jdot,Jdot2(:,ind));
+  valuecheck(Jdot_times_v, Jdot_times_v2);
   valuecheck(full(dJ),full(dJ2(:,dJind))); 
-  
+
   kinsol = doKinematics(m_rpy,q,true,true,qd);
-  [pt2,J2,Jdot2] = terrainContactPositions(m_rpy,kinsol,true);
+  [pt2,J2] = terrainContactPositions(m_rpy,kinsol);
+  Jdot_times_v2 = terrainContactJacobianDotTimesV(m_rpy, kinsol);
   phi2 = [jointLimitConstraints(m_rpy,q); contactConstraints(m_rpy,kinsol,false,collision_options)];
 
   valuecheck(pt,pt2);
   valuecheck(J,J2);
-  valuecheck(Jdot,Jdot2);
+  valuecheck(Jdot_times_v, Jdot_times_v2);
   valuecheck(phi,phi2);
   
   kinsol2 = doKinematics(m_ypr_rel,q(ind),true,true,qd(ind));
-  [pt2,J2,Jdot2] = terrainContactPositions(m_ypr_rel,kinsol2,true);
+  [pt2,J2] = terrainContactPositions(m_ypr_rel,kinsol2);
+  Jdot_times_v2 = terrainContactJacobianDotTimesV(m_ypr_rel, kinsol2);
 
   valuecheck(pt,pt2);
   valuecheck(J,J2(:,ind));
-  valuecheck(Jdot,Jdot2(:,ind));
+  valuecheck(Jdot_times_v, Jdot_times_v2);
   
   % check dynamics:
   [H,C,B] = manipulatorDynamics(m_rpy,q,qd,false);

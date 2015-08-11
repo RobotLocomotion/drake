@@ -24,7 +24,6 @@ options.floating = true;
 options.ignore_self_collisions = true;
 options.ignore_friction = true;
 options.dt = 0.001;
-options.use_new_kinsol = true;
 
 box_xpos = 0.19;
 boxurdf = fullfile(getDrakePath,'systems','plants','test','FallingBrick.urdf');

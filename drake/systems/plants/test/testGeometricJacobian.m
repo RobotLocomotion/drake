@@ -1,33 +1,24 @@
 function testGeometricJacobian
-
 testFallingBrick('rpy');
 testAtlas('rpy');
-
-options.use_new_kinsol = true;
-testFallingBrick('rpy',options);
-testAtlas('rpy',options);
-testFallingBrick('quat',options);
-testAtlas('quat',options);
+testFallingBrick('quat');
+testAtlas('quat');
 end
 
 function testFallingBrick(floatingType,options)
 options.floating = floatingType;
 robot = RigidBodyManipulator('FallingBrick.urdf',options);
 checkTransformDerivatives(robot);
-if robot.use_new_kinsol
-  checkJacobianGradients(robot);
-  checkMex(robot);
-end
+checkJacobianGradients(robot);
+checkMex(robot);
 end
 
 function testAtlas(floatingJointType,options)
 if nargin<2, options=struct(); end
 robot = createAtlas(floatingJointType,options);
 checkTransformDerivatives(robot);
-if robot.use_new_kinsol
-  checkJacobianGradients(robot);
-  checkMex(robot);
-end
+checkJacobianGradients(robot);
+checkMex(robot);
 end
 
 function checkTransformDerivatives(robot)
@@ -54,11 +45,7 @@ for i = 1 : nTests
 
   HBase = kinsol.T{base};
   HBody = kinsol.T{endEffector};
-  if robot.use_new_kinsol
-    Tdot = computeTdots(kinsol.T, kinsol.twists);
-  else
-    Tdot = kinsol.Tdot;
-  end
+  Tdot = computeTdots(kinsol.T, kinsol.twists);
   HBaseDot = Tdot{base};
   HBodyDot = Tdot{endEffector};
 

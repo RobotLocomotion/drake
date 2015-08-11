@@ -48,7 +48,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   }
 
   vector<int> bodyA_idx, bodyB_idx;
-  MatrixXd ptsA, ptsB;
+  Matrix3Xd ptsA, ptsB;
   model->allCollisions(bodyA_idx,bodyB_idx,ptsA,ptsB);
   vector<int32_T> idxA(bodyA_idx.size());
   transform(bodyA_idx.begin(),bodyA_idx.end(),idxA.begin(),
