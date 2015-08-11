@@ -13,7 +13,6 @@ if (NOT WIN32)
   add_test(NAME testDrakeGeometryUtil COMMAND testDrakeGeometryUtil)
 
   add_executable(testGradientVar testGradientVar.cpp)
-  target_link_libraries(testGradientVar drakeGradientUtil)
   #set_target_properties(testGradientVar PROPERTIES COMPILE_FLAGS "-g -O0")
   #add_test(NAME testGradientVar COMMAND testGradientVar)
 
