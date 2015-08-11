@@ -10,6 +10,7 @@
 #include "drakeGeometryUtil.h"
 #include "RigidBody.h"
 #include <stdexcept>
+#include <utility>
 
 template <typename Scalar>
 class KinematicsCacheElement
@@ -31,7 +32,7 @@ public:
    * Configuration and velocity dependent
    */
   GradientVar<Scalar, TWIST_SIZE, 1> twist_in_world; // gradient w.r.t. q only; gradient w.r.t. v is motion_subspace_in_world
-  GradientVar<Scalar, TWIST_SIZE, 1> motion_subspace_in_body_dot_times_v; // gradient w.r.t. q and v
+  GradientVar<Scalar, TWIST_SIZE, 1> motion_subspace_in_body_dot_times_v; // gradient w.r.t. q_i and v_i only
   GradientVar<Scalar, TWIST_SIZE, 1> motion_subspace_in_world_dot_times_v; // gradient w.r.t. q and v
 
 public:
@@ -44,7 +45,7 @@ public:
       inertia_in_world(TWIST_SIZE, TWIST_SIZE, num_positions_robot, gradient_order),
       crb_in_world(TWIST_SIZE, TWIST_SIZE, num_positions_robot, gradient_order),
       twist_in_world(TWIST_SIZE, 1, num_positions_robot, gradient_order),
-      motion_subspace_in_body_dot_times_v(TWIST_SIZE, 1, num_positions_robot + num_velocities_robot, gradient_order),
+      motion_subspace_in_body_dot_times_v(TWIST_SIZE, 1, num_positions_joint + num_velocities_joint, gradient_order),
       motion_subspace_in_world_dot_times_v(TWIST_SIZE, 1, num_positions_robot + num_velocities_robot, gradient_order)
   {
     // empty
@@ -55,7 +56,7 @@ template <typename Scalar>
 class KinematicsCache
 {
 private:
-  std::unordered_map<RigidBody*, KinematicsCacheElement<Scalar>> elements;
+  std::unordered_map<RigidBody const *, KinematicsCacheElement<Scalar>> elements;
 
 public:
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> q;
@@ -84,7 +85,7 @@ public:
       const RigidBody& body = *body_shared_ptr;
       int num_positions_joint = body.hasParent() ? body.getJoint().getNumPositions() : 0;
       int num_velocities_joint = body.hasParent() ? body.getJoint().getNumVelocities() : 0;
-      elements[&body] = KinematicsCacheElement<Scalar>(q.size(), v.size(), num_positions_joint, num_velocities_joint, gradient_order);
+      elements.insert(std::make_pair(&body, KinematicsCacheElement<Scalar>(q.size(), v.size(), num_positions_joint, num_velocities_joint, gradient_order)));
     }
   }
 
@@ -125,6 +126,7 @@ public:
       if (body.hasParent())
         ret += body.getJoint().getNumPositions();
     }
+    return ret;
   }
 
   static int getNumVelocities(const std::vector<std::shared_ptr<RigidBody>>& bodies) {
@@ -134,6 +136,7 @@ public:
       if (body.hasParent())
         ret += body.getJoint().getNumVelocities();
     }
+    return ret;
   }
 };
 

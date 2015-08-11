@@ -331,14 +331,26 @@ struct TransformSpatial {
 };
 
 template<typename DerivedM>
-DLLEXPORT typename TransformSpatial<DerivedM>::type transformSpatialMotion(
+typename TransformSpatial<DerivedM>::type transformSpatialMotion(
     const Eigen::Transform<typename DerivedM::Scalar, 3, Eigen::Isometry>& T,
-    const Eigen::MatrixBase<DerivedM>& M);
+    const Eigen::MatrixBase<DerivedM>& M) {
+  Eigen::Matrix<typename DerivedM::Scalar, TWIST_SIZE, DerivedM::ColsAtCompileTime> ret(TWIST_SIZE, M.cols());
+  ret.template topRows<3>().noalias() = T.linear() * M.template topRows<3>();
+  ret.template bottomRows<3>().noalias() = -ret.template topRows<3>().colwise().cross(T.translation());
+  ret.template bottomRows<3>().noalias() += T.linear() * M.template bottomRows<3>();
+  return ret;
+}
 
 template<typename DerivedF>
-DLLEXPORT typename TransformSpatial<DerivedF>::type transformSpatialForce(
+typename TransformSpatial<DerivedF>::type transformSpatialForce(
     const Eigen::Transform<typename DerivedF::Scalar, 3, Eigen::Isometry>& T,
-    const Eigen::MatrixBase<DerivedF>& F);
+    const Eigen::MatrixBase<DerivedF>& F) {
+  Eigen::Matrix<typename DerivedF::Scalar, TWIST_SIZE, DerivedF::ColsAtCompileTime> ret(TWIST_SIZE, F.cols());
+  ret.template bottomRows<3>().noalias() = T.linear() * F.template bottomRows<3>().eval();
+  ret.template topRows<3>() = -ret.template bottomRows<3>().colwise().cross(T.translation());
+  ret.template topRows<3>().noalias() += T.linear() * F.template topRows<3>();
+  return ret;
+}
 
 template<typename DerivedI>
 DLLEXPORT GradientVar<typename DerivedI::Scalar, TWIST_SIZE, TWIST_SIZE> transformSpatialInertia(
