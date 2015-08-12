@@ -1,13 +1,10 @@
 function testRelativeTwist()
-
 testAtlas('rpy');
 testAtlas('quat');
 end
 
 function testAtlas(floatingJointType)
-options.use_new_kinsol = true;
-robot = createAtlas(floatingJointType,options);
-
+robot = createAtlas(floatingJointType);
 checkAgainstJacobianTimesJointVelocities(robot);
 checkGradients(robot);
 end

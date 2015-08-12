@@ -148,7 +148,6 @@ std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> l
       for (int k = 0; k < 3; k++) {
         available_supports[i].contact_pts[j][k] = qp_input->support_data[i].contact_pts[k][j];
       }
-      available_supports[i].contact_pts[j][3] = 1;
     }
   }
   return available_supports;
@@ -203,7 +202,7 @@ double averageContactPointHeight(RigidBodyManipulator* r, std::vector<SupportSta
     const SupportStateElement& support = *support_it;
     for (auto contact_position_it = support.contact_pts.begin(); contact_position_it != support.contact_pts.end(); ++contact_position_it) {
       Vector3d contact_point = contact_position_it->head<3>(); // copy, ah well
-      contact_positions_world.col(col++) = r->forwardKinNew(contact_point, support.body_idx, 0, 0, 0).value();
+      contact_positions_world.col(col++) = r->forwardKin(contact_point, support.body_idx, 0, 0, 0).value();
     }
   }
   double average_contact_point_height = contact_positions_world.row(2).mean();
@@ -303,7 +302,7 @@ void checkCentroidalMomentumMatchesTotalWrench(RigidBodyManipulator* r, const Ve
     const auto& Bj = B.middleCols(beta_start, active_support_length);
     const auto& betaj = beta.segment(beta_start, active_support_length);
     Vector6d wrench_for_body_in_body_frame = Vector6d::Zero();
-    auto body_xyzquat = r->forwardKinNew(Vector3d::Zero().eval(), 0, active_support.body_idx, 2, 0).value();
+    auto body_xyzquat = r->forwardKin(Vector3d::Zero().eval(), 0, active_support.body_idx, 2, 0).value();
     Matrix3d R_world_to_body = quat2rotmat(body_xyzquat.tail<4>().eval());
 
     for (size_t k = 0; k < contact_pts.size(); k++) {
@@ -469,7 +468,7 @@ int setupAndSolveQP(
 
   MatrixXd R_DQyD_ls = R_ls + D_ls.transpose()*Qy*D_ls;
 
-  pdata->r->doKinematicsNew(robot_state.q, robot_state.qd);
+  pdata->r->doKinematics(robot_state.q, robot_state.qd);
 
   //---------------------------------------------------------------------
 
@@ -506,28 +505,14 @@ int setupAndSolveQP(
   }
   Vector3d xcom;
   // consider making all J's into row-major
-  
 
-  if(!pdata->r->getUseNewKinsol())
-  {
-    pdata->r->getCOM(xcom);
-    pdata->r->getCOMJac(pdata->J);
-    MatrixXd Jdot;
-    pdata->r->getCOMJacDot(Jdot);
-    pdata->Jdotv = Jdot*robot_state.qd;
-    pdata->J_xy = pdata->J.topRows(2);
-    pdata->Jdotv_xy = pdata->Jdotv.head<2>();
-  }
-  else
-  {
-    GradientVar<double,3,1> xcom_grad = pdata->r->centerOfMass<double>(1);
-    xcom = xcom_grad.value();
-    pdata->J = xcom_grad.gradient().value();
-    GradientVar<double,3,1> comdotv_grad = pdata->r->centerOfMassJacobianDotTimesV<double>(0);
-    pdata->Jdotv = comdotv_grad.value();
-    pdata->J_xy = pdata->J.topRows(2);
-    pdata->Jdotv_xy = pdata->Jdotv.head<2>();
-  }
+  GradientVar<double,3,1> xcom_grad = pdata->r->centerOfMass<double>(1);
+  xcom = xcom_grad.value();
+  pdata->J = xcom_grad.gradient().value();
+  GradientVar<double,3,1> comdotv_grad = pdata->r->centerOfMassJacobianDotTimesV<double>(0);
+  pdata->Jdotv = comdotv_grad.value();
+  pdata->J_xy = pdata->J.topRows(2);
+  pdata->Jdotv_xy = pdata->Jdotv.head<2>();
 
   MatrixXd Jcom;
   VectorXd Jcomdotv;

@@ -4,10 +4,13 @@
 using namespace Eigen;
 
 DrakeJoint::DrakeJoint(
-    const std::string& name,
-    const Isometry3d& transform_to_parent_body,
-    int num_positions, int num_velocities) :
-name(name), transform_to_parent_body(transform_to_parent_body), num_positions(num_positions), num_velocities(num_velocities)
+        const std::string& name,
+        const Isometry3d& transform_to_parent_body,
+        int num_positions, int num_velocities) :
+        name(name), transform_to_parent_body(transform_to_parent_body), num_positions(num_positions),
+        num_velocities(num_velocities),
+        joint_limit_min(VectorXd::Constant(num_positions, -std::numeric_limits<double>::infinity())),
+        joint_limit_max(VectorXd::Constant(num_positions, std::numeric_limits<double>::infinity()))
 {
   // empty;
 }
@@ -47,12 +50,13 @@ GradientVar<double, Eigen::Dynamic, 1> DrakeJoint::frictionTorque(const Eigen::R
   return ret;
 }
 
-void DrakeJoint::setupOldKinematicTree(RigidBodyManipulator* model, int body_ind, int position_num_start, int velocity_num_start) const
+const Eigen::VectorXd& DrakeJoint::getJointLimitMin() const
 {
-  model->bodies[body_ind]->jointname = name;
-  model->bodies[body_ind]->Ttree = transform_to_parent_body.matrix();
-//  model->bodies[body_ind]->T_body_to_joint = Matrix4d::Identity();
-  model->bodies[body_ind]->floating = 0;
-  model->bodies[body_ind]->pitch = 0;
+  return joint_limit_min;
+}
+
+const Eigen::VectorXd& DrakeJoint::getJointLimitMax() const
+{
+  return joint_limit_max;
 }
 

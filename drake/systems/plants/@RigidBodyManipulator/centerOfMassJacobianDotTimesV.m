@@ -24,15 +24,6 @@ if (kinsol.mex)
     [com_Jacobian_dot_times_v] = centerOfMassJacobianDotTimesVmex(obj.mex_model_ptr, robotnum);
   end
 else
-  if ~obj.use_new_kinsol
-    if compute_gradients
-      error('gradients not implemented for old kinsol format.');
-    end
-    Jdot = forwardJacDot(obj,kinsol,0);
-    com_Jacobian_dot_times_v = Jdot * kinsol.qd;
-    return;
-  end
-  
   total_mass = getMass(obj, robotnum);
   if compute_gradients
     [Adot_times_v, dAdot_times_v] = centroidalMomentumMatrixDotTimesV(obj, kinsol, robotnum);

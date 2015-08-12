@@ -72,11 +72,7 @@ set(iris_GIT_REPOSITORY https://github.com/rdeits/iris-distro.git)
 set(iris_GIT_TAG 3ea968e1ca8d19f11198d165bcc9d8b0ab919d51)
 set(iris_ADDITIONAL_BUILD_ARGS PATCH_COMMAND make configure-cdd-only)
 set(lcm_GIT_REPOSITORY https://github.com/RobotLocomotion/lcm-pod.git)
-if (WIN32)  # then use the cmake branch of lcm
-	set(lcm_GIT_TAG f828ee126532ceb24f10a7ca74e5acc7c2093c12)
-else()
-	set(lcm_GIT_TAG c537a9029b4b53fa7602acfc1467d93291fcc55e)
-endif()
+set(lcm_GIT_TAG 31e9a3e2dd056cac749fc2879e841434181180ad) # cmake branch 
 set(libbot_GIT_REPOSITORY https://github.com/RobotLocomotion/libbot.git)
 set(libbot_GIT_TAG c8c251cf2fe0954e5c4954a3e7c1e7a43a882492)
 set(mosek_GIT_REPOSITORY https://github.com/RobotLocomotion/mosek.git)

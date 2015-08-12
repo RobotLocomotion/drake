@@ -14,7 +14,6 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits')
 
 options.floating = true;
 options.dt = 0.002;
-options.use_new_kinsol = true;
 r = Atlas('urdf/atlas_minimal_contact.urdf',options);
 r = r.removeCollisionGroupsExcept({'heel','toe'});
 r = compile(r);

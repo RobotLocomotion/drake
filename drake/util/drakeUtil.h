@@ -90,4 +90,11 @@ DLLEXPORT double angleAverage(double theta1, double theta2);
 template <typename DerivedTorque, typename DerivedForce, typename DerivedNormal, typename DerivedPoint>
 DLLEXPORT std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(const Eigen::MatrixBase<DerivedTorque> & torque, const Eigen::MatrixBase<DerivedForce> & force, const Eigen::MatrixBase<DerivedNormal> & normal, const Eigen::MatrixBase<DerivedPoint> & point_on_contact_plane);
 
+
+template <typename DerivedA, typename DerivedB, typename DerivedQ, typename DerivedR, typename DerivedX>
+DLLEXPORT void care(Eigen::MatrixBase<DerivedA> const& A, Eigen::MatrixBase<DerivedB> const& B, Eigen::MatrixBase<DerivedQ> const& Q, Eigen::MatrixBase<DerivedR> const& R, Eigen::MatrixBase<DerivedX> & X);
+
+template <typename DerivedA, typename DerivedB, typename DerivedQ, typename DerivedR, typename DerivedK, typename DerivedS>
+DLLEXPORT void lqr(Eigen::MatrixBase<DerivedA> const& A, Eigen::MatrixBase<DerivedB> const& B, Eigen::MatrixBase<DerivedQ> const& Q, Eigen::MatrixBase<DerivedR> const& R, Eigen::MatrixBase<DerivedK> & K, Eigen::MatrixBase<DerivedS> & S);
+
 #endif /* DRAKE_UTIL_H_ */

@@ -29,11 +29,11 @@ int main(int argc, char* argv[])
 
 // for (i=0; i<model->num_dof; i++)
 // 	 q(i)=(double)rand() / RAND_MAX;
-    model->doKinematicsNew(q,VectorXd::Zero(model->num_velocities).eval());
+  model->doKinematics(q, VectorXd::Zero(model->num_velocities).eval());
 //  }
 
   VectorXd phi;
-  MatrixXd normal, xA, xB;
+  Matrix3Xd normal, xA, xB;
   vector<int> bodyA_idx, bodyB_idx;
 
   model->collisionDetect(phi,normal,xA,xB,bodyA_idx,bodyB_idx);

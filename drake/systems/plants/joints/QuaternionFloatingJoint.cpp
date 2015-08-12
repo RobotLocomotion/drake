@@ -175,8 +175,3 @@ void QuaternionFloatingJoint::v2qdot(const Eigen::Ref<const VectorXd>& q, Eigen:
   v_to_qdot.block<4, 3>(3, 3).setZero();
 }
 
-void QuaternionFloatingJoint::setupOldKinematicTree(RigidBodyManipulator* model, int body_ind, int position_num_start, int velocity_num_start) const
-{
-  DrakeJoint::setupOldKinematicTree(model,body_ind,position_num_start,velocity_num_start);
-  model->bodies[body_ind]->floating = 2;
-}

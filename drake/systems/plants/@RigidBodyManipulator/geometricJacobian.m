@@ -1,63 +1,5 @@
 function [J, v_or_qdot_indices, dJ] = geometricJacobian(obj, kinsol, base, end_effector, expressed_in, in_terms_of_qdot)
 %GEOMETRICJACOBIAN Computes the geometric Jacobian from base to end_effector
-% expressed in frame attached to expressedIn
-%   The general contract of this method is that for joint velocity vector
-%   v, the twist of endEffector with respect to base, expressed in
-%   expressedIn, can be computed as J * (v(vIndices)).
-
-if nargin < 6
-  in_terms_of_qdot = false;
-end
-
-if (kinsol.mex)
-  if (obj.mex_model_ptr==0)
-    error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
-  end
-  if nargout > 2
-    [J, v_or_qdot_indices, dJ] = geometricJacobianmex(obj.mex_model_ptr, base, end_effector, expressed_in, in_terms_of_qdot);
-  else
-    [J, v_or_qdot_indices] = geometricJacobianmex(obj.mex_model_ptr, base, end_effector, expressed_in, in_terms_of_qdot);
-  end
-else
-  if obj.use_new_kinsol
-    if nargout > 2
-      [J, v_or_qdot_indices, dJ] = geometricJacobianNew(obj, kinsol, base, end_effector, expressed_in, in_terms_of_qdot);
-    else
-      [J, v_or_qdot_indices] = geometricJacobianNew(obj, kinsol, base, end_effector, expressed_in, in_terms_of_qdot);
-    end
-  else
-    if in_terms_of_qdot
-      error('not implemented when use_new_kinsol is false');
-    end
-    [~, joint_path, signs] = findKinematicPath(obj, base, end_effector);
-    v_or_qdot_indices = vertcat(obj.body(joint_path).velocity_num);
-    if isempty(joint_path)
-      J = zeros(6,0);
-      return;
-    end
-    
-    motionSubspaces = cell(1, length(joint_path));
-    for i = 1 : length(joint_path)
-      body = obj.body(joint_path(i));
-      motionSubspaces{i} = motionSubspace(body, kinsol.q(body.position_num));
-    end
-    
-    transformedMotionSubspaces = cellfun(@transformMotionSubspace, ...
-      kinsol.T(joint_path), motionSubspaces, num2cell(signs'), 'UniformOutput', ...
-      false); % change frame from body to world
-    J = cell2mat(transformedMotionSubspaces);
-    J = transformTwists(inv(kinsol.T{expressed_in}), J); % change frame from world to expressedIn
-  end
-end
-end
-
-function ret = transformMotionSubspace(H, S, sign)
-ret = sign * transformTwists(H, S);
-end
-
-
-function [J, v_or_qdot_indices, dJdq] = geometricJacobianNew(obj, kinsol, base, end_effector, expressed_in, in_terms_of_qdot)
-% Computes the geometric Jacobian from base to end_effector
 % expressed in frame expressed_in
 %
 % @param kinsol solution structure obtained from doKinematics
@@ -86,6 +28,30 @@ function [J, v_or_qdot_indices, dJdq] = geometricJacobianNew(obj, kinsol, base, 
 % indices of v_or_qdot_indices are exactly
 % body.velocity_num/body.position_num.
 % @retval dJdq gradient of J with respect to joint configuration vector q
+
+if nargin < 6
+  in_terms_of_qdot = false;
+end
+
+if (kinsol.mex)
+  if (obj.mex_model_ptr==0)
+    error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
+  end
+  if nargout > 2
+    [J, v_or_qdot_indices, dJ] = geometricJacobianmex(obj.mex_model_ptr, base, end_effector, expressed_in, in_terms_of_qdot);
+  else
+    [J, v_or_qdot_indices] = geometricJacobianmex(obj.mex_model_ptr, base, end_effector, expressed_in, in_terms_of_qdot);
+  end
+else
+  if nargout > 2
+    [J, v_or_qdot_indices, dJ] = geometricJacobianMatlab(obj, kinsol, base, end_effector, expressed_in, in_terms_of_qdot);
+  else
+    [J, v_or_qdot_indices] = geometricJacobianMatlab(obj, kinsol, base, end_effector, expressed_in, in_terms_of_qdot);
+  end
+end
+end
+
+function [J, v_or_qdot_indices, dJdq] = geometricJacobianMatlab(obj, kinsol, base, end_effector, expressed_in, in_terms_of_qdot)
 
 compute_gradient = nargout > 2;
 
