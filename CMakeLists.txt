@@ -145,6 +145,7 @@ endif()
 
 
 
+set(EXTERNAL_SOURCE_DIRS)
 foreach (proj ${EXTERNAL_PROJECTS})
 	set(deps)
 	foreach(dep ${${proj}_dependencies})
@@ -164,6 +165,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 		if (NOT ${proj}_NO_BUILD)
 			set(${proj}_BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE})
 		endif()
+		set(EXTERNAL_SOURCE_DIRS ${EXTERNAL_SOURCE_DIRS} ${${proj}_SOURCE_DIR} "\n")
 
 		message(STATUS "Preparing to build ${proj} with dependencies: ${deps}")
 
@@ -231,6 +233,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
  		ALWAYS 1)
 
 endforeach()
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/drake_external_source_dirs.txt ${EXTERNAL_SOURCE_DIRS})
 
 
 # todo: add a custom target for release_filelist
