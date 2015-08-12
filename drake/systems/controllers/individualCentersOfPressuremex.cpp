@@ -16,9 +16,6 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
   RigidBodyManipulator* r = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
 
-  Vector4d contact_pt = Vector4d::Zero();
-  contact_pt(3) = 1.0;
-
   int desired_support_argid = 1;
   vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> active_supports;
   int num_active_contact_pts = 0;
@@ -42,9 +39,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
       SupportStateElement se;
       se.body_idx = (int) pBodies[i]-1;
-      for (int j=0; j<nc; j++) {
-        contact_pt.head(3) = all_body_contact_pts.col(j);
-        se.contact_pts.push_back(contact_pt);
+      for (int j = 0; j < nc; j++) {
+        se.contact_pts.push_back(all_body_contact_pts.col(j));
       }
 
       active_supports.push_back(se);

@@ -32,8 +32,6 @@ classdef RigidBodyManipulator < Manipulator
     robot_state_frames;
     robot_position_frames;
     robot_velocity_frames;
-    
-    use_new_kinsol = false;
   end
 
   properties (Access=public)  % i think these should be private, but probably needed to access them from mex? - Russ
@@ -61,10 +59,6 @@ classdef RigidBodyManipulator < Manipulator
 
       obj.collision_filter_groups = PassByValueMap('KeyType','char','ValueType','any');
       obj.collision_filter_groups('no_collision') = CollisionFilterGroup();
-
-      if isfield(options,'use_new_kinsol')
-        obj.use_new_kinsol = options.use_new_kinsol;
-      end
       
       if (nargin>0 && ~isempty(filename))
         [path,name,ext]=fileparts(filename);
@@ -127,11 +121,6 @@ classdef RigidBodyManipulator < Manipulator
   end
 
   methods
-    function obj = setNewKinsolFlag(obj,flag)
-      obj.use_new_kinsol = flag;
-      obj = compile(obj);
-    end
-    
     function [Vq, dVq] = qdotToV(obj, q)
       compute_gradient = nargout > 1;
 

@@ -3,6 +3,7 @@ function runRobotiqPDControl
 %construct robot model
 robot = TimeSteppingRigidBodyManipulator([], 0.01);
 robot = robot.addRobotFromURDF('urdf/robotiq_simple.urdf', [0;0;1], [-pi/2;0;0]);
+robot = robot.setJointLimits(-inf(robot.getNumPositions,1),inf(robot.getNumPositions,1));
 robot = compile(robot);
 
 %resolve initial condition

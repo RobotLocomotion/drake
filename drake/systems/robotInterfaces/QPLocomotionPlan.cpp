@@ -93,7 +93,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
 
   // do kinematics
   VectorXd v_dummy(0, 1);
-  robot.doKinematicsNew(q, v_dummy);
+  robot.doKinematics(q, v_dummy);
 
   RigidBodySupportState& support_state = settings.supports[support_index];
   bool is_last_support = support_index == settings.supports.size() - 1;
@@ -163,7 +163,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
           } else {
             pts = support_state_element.contact_points;
           }
-          Matrix3Xd pts_in_world = robot.forwardKinNew(pts, support_state_element.body, 0, 0, 0).value();
+          Matrix3Xd pts_in_world = robot.forwardKin(pts, support_state_element.body, 0, 0, 0).value();
           reduced_support_pts.conservativeResize(2, reduced_support_pts.cols() + pts.cols());
           reduced_support_pts.block(0, reduced_support_pts.cols() - pts_in_world.cols(), 2, pts_in_world.cols()) = pts_in_world.topRows<2>();
         }
@@ -443,7 +443,7 @@ void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body
   VectorXd xf = trajectory.value(trajectory.getEndTime(takeoff_segment_index + 2));
 
   // first knot point from current position
-  auto x0_xyzquat = robot.forwardKinNew((Vector3d::Zero()).eval(), body_motion_data.getBodyOrFrameId(), 0, 2, 1);
+  auto x0_xyzquat = robot.forwardKin((Vector3d::Zero()).eval(), body_motion_data.getBodyOrFrameId(), 0, 2, 1);
   auto& J = x0_xyzquat.gradient().value();
   auto xd0_xyzquat = (J * qd).eval();
   Vector4d x0_quat = x0_xyzquat.value().tail<4>(); // copying to Vector4d for quatRotateVec later on.
@@ -671,7 +671,7 @@ void QPLocomotionPlan::updatePlanShift(double t_plan, const std::vector<bool>& c
             if (body_motion_body_id == side_it->second) {
               int world = 0;
               int rotation_type = 0;
-              Vector3d foot_frame_origin_actual = robot.forwardKinNew(Vector3d::Zero().eval(), body_motion_it->getBodyOrFrameId(), world, rotation_type, 0).value();
+              Vector3d foot_frame_origin_actual = robot.forwardKin(Vector3d::Zero().eval(), body_motion_it->getBodyOrFrameId(), world, rotation_type, 0).value();
               Vector3d foot_frame_origin_planned = body_motion_it->getTrajectory().value(t_plan).topRows<3>();
               // std::cout << "actual: " << foot_frame_origin_actual.transpose() << " planned: " << foot_frame_origin_planned.transpose() << std::endl;
               foot_shifts[side_it->first] = foot_frame_origin_planned - foot_frame_origin_actual;

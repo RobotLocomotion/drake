@@ -8,8 +8,8 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-#include "RigidBodyManipulator.h"
-#include "PiecewisePolynomial.h"
+#include "drake/RigidBodyManipulator.h"
+#include "drake/PiecewisePolynomial.h"
 
 #if defined(WIN32) || defined(WIN64)
   #if defined(drakeControlUtil_EXPORTS)
@@ -32,7 +32,7 @@ typedef Matrix<double, 7,1> Vector7d;
 typedef struct _support_state_element
 {
   int body_idx;
-  std::vector<Vector4d, aligned_allocator<Vector4d>> contact_pts;
+  std::vector<Vector3d, aligned_allocator<Vector3d>> contact_pts;
   bool support_logic_map[4];
   bool use_support_surface;
   Vector4d support_surface; // 4-vector describing a support surface: [v; b] such that v' * [x;y;z] + b == 0
@@ -66,7 +66,6 @@ drakeControlUtilEXPORT bool inSupport(std::vector<SupportStateElement,Eigen::ali
 drakeControlUtilEXPORT void collisionDetect(void* map_ptr, Vector3d const & contact_pos, Vector3d &pos, Vector3d *normal, double terrain_height);
 drakeControlUtilEXPORT void surfaceTangents(const Vector3d & normal, Matrix<double,3,m_surface_tangents> & d);
 drakeControlUtilEXPORT int contactPhi(RigidBodyManipulator* r, SupportStateElement& supp, void *map_ptr, VectorXd &phi, double terrain_height);
-drakeControlUtilEXPORT int contactConstraints(RigidBodyManipulator *r, int nc, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>& supp, void *map_ptr, MatrixXd &n, MatrixXd &D, MatrixXd &Jp, MatrixXd &Jpdot,double terrain_height);
 drakeControlUtilEXPORT int contactConstraintsBV(RigidBodyManipulator *r, int nc, std::vector<double> support_mus, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>& supp, void *map_ptr, MatrixXd &B, MatrixXd &JB, MatrixXd &Jp, VectorXd &Jpdotv, MatrixXd &normals, double terrain_height);
 drakeControlUtilEXPORT MatrixXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>& active_supports, const MatrixXd& normals, const MatrixXd& B, const VectorXd& beta);
 drakeControlUtilEXPORT Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_state, const int body_index, const Isometry3d &body_pose_des, const Ref<const Vector6d> &body_v_des, const Ref<const Vector6d> &body_vdot_des, const Ref<const Vector6d> &Kp, const Ref<const Vector6d> &Kd, const Isometry3d &T_task_to_world=Isometry3d::Identity());

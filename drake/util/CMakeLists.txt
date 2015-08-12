@@ -37,7 +37,7 @@ if (MATLAB_FOUND)
   # todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
   #add_mex(drakeUtil OBJECT drakeUtil.cpp)
 
-  pods_install_headers(drakeMexUtil.h MexWrapper.h DESTINATION drake)
+  pods_install_headers(drakeMexUtil.h MexWrapper.h TrigPoly.h DESTINATION drake)
   pods_install_libraries(drakeMexUtil)
   pods_install_pkg_config_file(drake-mex-util
     LIBS -ldrakeMexUtil

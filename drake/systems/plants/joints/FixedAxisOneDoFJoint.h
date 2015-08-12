@@ -12,8 +12,6 @@ class DLLEXPORT_DRAKEJOINT FixedAxisOneDoFJoint : public DrakeJoint
 
 private:
   Eigen::Matrix<double, TWIST_SIZE, 1> joint_axis;
-  double joint_limit_min;
-  double joint_limit_max;
   double damping;
   double coulomb_friction;
   double coulomb_window;
@@ -25,8 +23,6 @@ public:
   virtual ~FixedAxisOneDoFJoint();
 
   void setJointLimits(double joint_limit_min, double joint_limit_max);
-  double getJointLimitMin(void) const { return joint_limit_min; }
-  double getJointLimitMax(void) const { return joint_limit_max; }
 
   virtual std::string getPositionName(int index) const { if (index!=0) throw std::runtime_error("bad index"); return name; }
 
@@ -46,7 +42,6 @@ public:
 
   virtual GradientVar<double, Eigen::Dynamic, 1> frictionTorque(const Eigen::Ref<const Eigen::VectorXd>& v, int gradient_order) const; // override;
 
-  virtual void setupOldKinematicTree(RigidBodyManipulator* model, int body_ind, int position_num_start, int velocity_num_start) const;
 };
 
 #endif /* ONEDOFJOINT_H_ */

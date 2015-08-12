@@ -11,7 +11,7 @@ end
 
 %random initial pose
 q = getRandomConfiguration(robot);
-kinsol = robot.doKinematics(q);
+kinsol = robot.doKinematics(q, [], struct('compute_gradients', true));
 
 %get collision data
 [~,normal,xA,xB,idxA,idxB] = robot.collisionDetect(kinsol);

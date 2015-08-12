@@ -35,9 +35,6 @@ ifeq "$(BUILD_TYPE)" ""
   BUILD_TYPE="Release"
 endif
 
-export MAKE
-export MAKEFLAGS
-
 .PHONY: all
 all: pod-build/Makefile
 	cmake --build pod-build --config $(BUILD_TYPE)
@@ -47,14 +44,14 @@ pod-build/Makefile:
 
 .PHONY: options
 options: configure
-ifeq ($(OS),Windows_NT)	
+ifeq ($(OS),Windows_NT)
 	cmake-gui pod-build
 else
 	ccmake pod-build
 endif
 
 .PHONY: configure
-configure: 
+configure:
 #	@echo "BUILD_SYSTEM: '$(BUILD_SYSTEM)'"
 	@echo "BUILD_PREFIX: $(BUILD_PREFIX)"
 

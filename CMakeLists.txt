@@ -5,12 +5,12 @@ include(ExternalProject)
 
 option(AUTO_UPDATE_EXTERNALS "external projects are updated to their tag revision on compile" ON)
 
-# chinese menu of external projects 
+# chinese menu of external projects
 option(WITH_ALL_SUPPORTED_EXTERNALS "overrides the individual WITH_[external] options" OFF)
 option(REMOVE_UNUSED_EXTERNALS "enable this to remove those projects from disk" OFF)
 
 # ON by default:
-option(WITH_EIGEN		"required c++ matrix library.  only disable if you have it already."    ON)		
+option(WITH_EIGEN		"required c++ matrix library.  only disable if you have it already."    ON)
 option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"							ON)
 
 # OFF by default:
@@ -33,21 +33,71 @@ if (WIN32)
   option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	OFF)
   option(WITH_BULLET 		"used for collision detection" 					OFF)
   option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" 			OFF)
-else() 
+else()
   option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	ON)
   option(WITH_BULLET 		"used for collision detection" 					ON)
   option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" 			ON)
 endif()
 
+# list *compilation* dependencies, in alphabetical order by target (note: dependencies must come first in my foreach above)
+set(lcm_dependencies gtk)
+set(libbot_dependencies lcm)
+set(director_dependencies lcm libbot)
+set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi)
 
-set(MAKE_EXECUTABLE $ENV{MAKE})
+# download information, in alphabetical order
+set(avl_GIT_REPOSITORY https://github.com/RobotLocomotion/avl.git)
+set(avl_GIT_TAG 9b927f90619460b29f7454c714369f65bc4536a1)
+set(bertini_GIT_REPOSITORY https://github.com/RobotLocomotion/bertini.git)
+set(bertini_GIT_TAG 3ae3e3ad3534acb4b6f7a4c3c22728b493beaa80)
+set(bullet_GIT_REPOSITORY https://github.com/RobotLocomotion/bullet-pod.git)
+set(bullet_GIT_TAG 6db7ae5e29f8b35ffcea384c53caa4bddcc6f986)
+set(cmake_GIT_REPOSITORY https://github.com/RobotLocomotion/cmake.git)
+set(cmake_GIT_TAG cdf6fb7942d1e4b222f6114ef22873d313f60958)
+set(cmake_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/drake/cmake")
+set(cmake_NO_BUILD TRUE)
+set(director_GIT_REPOSITORY https://github.com/RobotLocomotion/director.git)
+set(director_GIT_TAG f44045f75e931165d9f519b989bdbd1ad8e70b08)
+set(director_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/director/distro/pods/drake-distro)
+set(eigen_GIT_REPOSITORY https://github.com/RobotLocomotion/eigen-pod.git)
+set(eigen_GIT_TAG fb56a4b8504eb115a7f257de4570c47c20c43397)
+set(gtk_GIT_REPOSITORY https://github.com/RobotLocomotion/gtk-pod.git)
+set(gtk_GIT_TAG dc9bb719ee771a2ae9c3a392796c42ccad5bca54)
+set(gloptipoly_GIT_REPOSITORY https://github.com/RobotLocomotion/gloptipoly3.git)  # todo: rename that repo
+set(gloptipoly_GIT_TAG a3547a6811bf76c4e18f00b6bcbc187c6a7fd3d8)
+set(gurobi_GIT_REPOSITORY https://github.com/RobotLocomotion/gurobi.git)
+set(gurobi_GIT_TAG beb0a84a1bcca1eb81a1b87d9fa140f2134d97e9)
+set(iris_GIT_REPOSITORY https://github.com/rdeits/iris-distro.git)
+set(iris_GIT_TAG 13468e0ea38e72ffae030adaa31e3015ea5f3ce0)
+set(lcm_GIT_REPOSITORY https://github.com/RobotLocomotion/lcm-pod.git)
+set(lcm_GIT_TAG f072e9a54ae168503de8f9b96a70205d56ff5788) # cmake branch 
+set(libbot_GIT_REPOSITORY https://github.com/RobotLocomotion/libbot.git)
+set(libbot_GIT_TAG c8c251cf2fe0954e5c4954a3e7c1e7a43a882492)
+set(mosek_GIT_REPOSITORY https://github.com/RobotLocomotion/mosek.git)
+set(mosek_GIT_TAG a72594c4a7c8c5c026fd291148bcac76146634c2)
+set(octomap_GIT_REPOSITORY https://github.com/RobotLocomotion/octomap-pod.git)
+set(octomap_GIT_TAG 00b28215d19580f9e964bc5d126ce55a9253671a)
+set(sedumi_GIT_REPOSITORY https://github.com/RobotLocomotion/sedumi.git)
+set(sedumi_GIT_TAG afac8ea98f91007a3710d761efd514e10d0ad536)
+set(snopt_GIT_REPOSITORY https://github.com/RobotLocomotion/snopt.git)
+set(snopt_GIT_TAG d7abb603690f41970273643ebb6e173b0e6e452b)
+set(spotless_GIT_REPOSITORY https://github.com/RobotLocomotion/spotless-pod.git)
+set(spotless_GIT_TAG 565b720c25414a249d8b547183cf3ea6cf043211)
+set(yalmip_GIT_REPOSITORY https://github.com/RobotLocomotion/yalmip.git)
+set(yalmip_GIT_TAG c071fb7b7193491f8eefadba3bfff26160ad6cd4)
+set(xfoil_GIT_REPOSITORY https://github.com/RobotLocomotion/xfoil.git)
+set(xfoil_GIT_TAG fde0a9368dd451c93604051fc5704e120073800c)
+
+
+find_program(MAKE_EXECUTABLE make)
 if (NOT MAKE_EXECUTABLE)
-   find_program(MAKE_EXECUTABLE make)
-   if (NOT MAKE_EXECUTABLE)
-      message(FATAL_ERROR "couldn't find gnu make")
-   endif()
+	message(FATAL_ERROR "couldn't find gnu make")
 endif()
-set(MAKE_COMMAND ${MAKE_EXECUTABLE} $ENV{MAKEFLAGS}) # didn't work on my first test, but should do no harm
+if (${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
+	set(PODS_MAKE_COMMAND "$(MAKE)")   # so we can pass through commandline arguments.
+else()
+	set(PODS_MAKE_COMMAND ${MAKE_EXECUTABLE})
+endif()
 
 # process optional projects
 # note: keep drake in this loop in case externals depend on drake (e.g. the director might in the near future)
@@ -58,8 +108,10 @@ foreach(proj IN ITEMS cmake eigen gtk lcm libbot bullet iris spotless director o
 		list(APPEND EXTERNAL_PROJECTS ${proj})
 	elseif(REMOVE_UNUSED_EXTERNALS AND IS_DIRECTORY ${proj})
 		message(STATUS "removing unused project: ${proj}")
-		execute_process(COMMAND ${MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE} clean
-						WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/${proj})
+		if (NOT ${proj}_NO_BUILD)
+			execute_process(COMMAND ${MAKE_EXECUTABLE} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE} clean
+							WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/${proj})
+		endif()
 		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory "${PROJECT_SOURCE_DIR}/${proj}")
 	endif()
 endforeach()
@@ -89,59 +141,6 @@ endif()
 #   unsupported(avl xfoil)
 #endif()
 
-# list *compilation* dependencies, in alphabetical order by target (note: dependencies must come first in my foreach above)
-set(lcm_dependencies gtk)
-set(libbot_dependencies lcm)
-set(director_dependencies lcm libbot)
-set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi)
-
-# download information, in alphabetical order
-find_package(Git QUIET)
-set(avl_GIT_REPOSITORY https://github.com/RobotLocomotion/avl.git)
-set(avl_GIT_TAG 9b927f90619460b29f7454c714369f65bc4536a1)
-set(bertini_GIT_REPOSITORY https://github.com/RobotLocomotion/bertini.git)
-set(bertini_GIT_TAG 3ae3e3ad3534acb4b6f7a4c3c22728b493beaa80)
-set(bullet_GIT_REPOSITORY https://github.com/RobotLocomotion/bullet-pod.git)
-set(bullet_GIT_TAG 6db7ae5e29f8b35ffcea384c53caa4bddcc6f986)
-set(cmake_GIT_REPOSITORY https://github.com/RobotLocomotion/cmake.git)
-set(cmake_GIT_TAG dd69c2b87493aed87e797968561695173c6468c2)
-set(cmake_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/drake/cmake")
-set(cmake_NO_BUILD TRUE)
-set(director_GIT_REPOSITORY https://github.com/RobotLocomotion/director.git)
-set(director_GIT_TAG f44045f75e931165d9f519b989bdbd1ad8e70b08)
-set(director_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/director/distro/pods/drake-distro)
-set(eigen_GIT_REPOSITORY https://github.com/RobotLocomotion/eigen-pod.git)
-set(eigen_GIT_TAG fb56a4b8504eb115a7f257de4570c47c20c43397)
-set(gtk_GIT_REPOSITORY https://github.com/RobotLocomotion/gtk-pod.git)
-set(gtk_GIT_TAG cbcecf686ad17eba5949e297ea187126b1a06431)
-set(gloptipoly_GIT_REPOSITORY https://github.com/RobotLocomotion/gloptipoly3.git)  # todo: rename that repo
-set(gloptipoly_GIT_TAG a3547a6811bf76c4e18f00b6bcbc187c6a7fd3d8)
-set(gurobi_GIT_REPOSITORY https://github.com/RobotLocomotion/gurobi.git)
-set(gurobi_GIT_TAG beb0a84a1bcca1eb81a1b87d9fa140f2134d97e9)
-set(iris_GIT_REPOSITORY https://github.com/rdeits/iris-distro.git)
-set(iris_GIT_TAG 13468e0ea38e72ffae030adaa31e3015ea5f3ce0)
-set(lcm_GIT_REPOSITORY https://github.com/RobotLocomotion/lcm-pod.git)
-if (WIN32)  # then use the cmake branch of lcm
-	set(lcm_GIT_TAG f828ee126532ceb24f10a7ca74e5acc7c2093c12)
-else()
-	set(lcm_GIT_TAG c537a9029b4b53fa7602acfc1467d93291fcc55e)
-endif()
-set(libbot_GIT_REPOSITORY https://github.com/RobotLocomotion/libbot.git)
-set(libbot_GIT_TAG c8c251cf2fe0954e5c4954a3e7c1e7a43a882492)
-set(mosek_GIT_REPOSITORY https://github.com/RobotLocomotion/mosek.git)
-set(mosek_GIT_TAG a72594c4a7c8c5c026fd291148bcac76146634c2)
-set(octomap_GIT_REPOSITORY https://github.com/RobotLocomotion/octomap-pod.git)
-set(octomap_GIT_TAG 00b28215d19580f9e964bc5d126ce55a9253671a)
-set(sedumi_GIT_REPOSITORY https://github.com/RobotLocomotion/sedumi.git)
-set(sedumi_GIT_TAG afac8ea98f91007a3710d761efd514e10d0ad536)
-set(snopt_GIT_REPOSITORY https://github.com/RobotLocomotion/snopt.git)
-set(snopt_GIT_TAG d7abb603690f41970273643ebb6e173b0e6e452b)
-set(spotless_GIT_REPOSITORY https://github.com/RobotLocomotion/spotless-pod.git)
-set(spotless_GIT_TAG 565b720c25414a249d8b547183cf3ea6cf043211)
-set(yalmip_GIT_REPOSITORY https://github.com/RobotLocomotion/yalmip.git)
-set(yalmip_GIT_TAG c071fb7b7193491f8eefadba3bfff26160ad6cd4)
-set(xfoil_GIT_REPOSITORY https://github.com/RobotLocomotion/xfoil.git)
-set(xfoil_GIT_TAG fde0a9368dd451c93604051fc5704e120073800c)
 
 foreach (proj ${EXTERNAL_PROJECTS})
 	set(deps)
@@ -160,7 +159,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 			set(${proj}_SOURCE_DIR ${${proj}_GIT_CLONE_DIR})
 		endif()
 		if (NOT ${proj}_NO_BUILD)
-			set(${proj}_BUILD_COMMAND ${MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE})
+			set(${proj}_BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE})
 		endif()
 
 		message(STATUS "Preparing to build ${proj} with dependencies: ${deps}")
@@ -168,7 +167,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 		# separate download target so I can make the download-all custom command as recommended in:
 		#   http://comments.gmane.org/gmane.comp.programming.tools.cmake.user/53002
 		if (AUTO_UPDATE_EXTERNALS)
-			ExternalProject_Add(download-${proj}   
+			ExternalProject_Add(download-${proj}
 				DOWNLOAD_DIR ${${proj}_GIT_CLONE_DIR}
 				SOURCE_DIR ${${proj}_GIT_CLONE_DIR}
 				GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
@@ -178,7 +177,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 				INSTALL_COMMAND ""
 				)
 		else()
-			ExternalProject_Add(download-${proj}   
+			ExternalProject_Add(download-${proj}
 				DOWNLOAD_DIR ${${proj}_GIT_CLONE_DIR}
 				SOURCE_DIR ${${proj}_GIT_CLONE_DIR}
 				GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
@@ -191,7 +190,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 		endif()
 
 		# now the actual project
-		ExternalProject_Add(${proj} 
+		ExternalProject_Add(${proj}
 			SOURCE_DIR ${${proj}_SOURCE_DIR}
 			DOWNLOAD_COMMAND ""
 			UPDATE_COMMAND ""
@@ -205,25 +204,25 @@ foreach (proj ${EXTERNAL_PROJECTS})
 	else()
 		message(STATUS "Preparing to build ${proj} with dependencies: ${deps}")
 
-		ExternalProject_Add(${proj} 
+		ExternalProject_Add(${proj}
 			SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake"
 			DOWNLOAD_COMMAND ""
 			UPDATE_COMMAND ""
 			CONFIGURE_COMMAND ""
 			BUILD_IN_SOURCE 1
-			BUILD_COMMAND ${MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE}
+			BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE}
 			INSTALL_COMMAND ""
 			DEPENDS ${deps}
 	#		BUILD_ALWAYS 1
 			)
-	endif(NOT ${proj} STREQUAL "drake") 
+	endif(NOT ${proj} STREQUAL "drake")
 
 
 	# once we require cmake version >= 3.1, then we can zap this and just use the BUILD_ALWAYS flags above
- 	ExternalProject_Add_Step(${proj} forceconfigure 
+ 	ExternalProject_Add_Step(${proj} forceconfigure
  		COMMAND ${CMAKE_COMMAND} -E echo "Force configure of ${proj}"
- 		DEPENDEES update 
- 		DEPENDERS configure 
+ 		DEPENDEES update
+ 		DEPENDERS configure
  		ALWAYS 1)
 
 endforeach()
@@ -248,7 +247,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 	ExternalProject_Get_Property(${proj} SOURCE_DIR)
 	if (NOT ${proj}_NO_BUILD)
 		add_custom_target(clean-${proj}
-			COMMAND ${MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE} clean
+			COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE} clean
 			WORKING_DIRECTORY ${SOURCE_DIR})
 		add_dependencies(clean-all clean-${proj})
 	endif()
@@ -257,6 +256,3 @@ endforeach()
 
 string(REPLACE ";" " " PROJECT_LIST "${PROJECT_LIST}")
 add_custom_target(list-project-dirs COMMAND echo "${PROJECT_LIST}")
-
-
-

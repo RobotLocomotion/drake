@@ -14,8 +14,8 @@ for fb = {'rpy','RPY'};%,'quat'};
     options.grad_method = 'taylorvar';
     [x,J,dJ] = geval(1,@terrainContactPositions,m,q,options);
     kinsol = doKinematics(m,q,false,false,qd);
-    [~,~,Jdot] = terrainContactPositions(m,kinsol,true);
-    valuecheck(Jdot,matGradMult(reshape(dJ,numel(x)*nq,nq),qd));
+    Jdot_times_v = terrainContactJacobianDotTimesV(m,kinsol);
+    valuecheck(Jdot_times_v,matGradMult(reshape(dJ,numel(x)*nq,nq),qd) * qd);
   end
 end
 

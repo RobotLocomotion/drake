@@ -2,37 +2,31 @@
 #include "drakeMexUtil.h"
 #include "RigidBodyManipulator.h"
 
-
 using namespace Eigen;
 using namespace std;
 
-/*
- * A C version of the doKinematics function
- *
- * Call with doKinematicsmex(q,b_compute_second_derivatives);
- */
-
- 
-void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
-  if (nrhs != 4) {
-    mexErrMsgIdAndTxt("Drake:doKinematicsmex:NotEnoughInputs", "Usage doKinematicsmex(model_ptr,q,b_compute_second_derivatives,qd)");
+void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+{
+  if (nrhs != 5) {
+    mexErrMsgIdAndTxt("Drake:doKinematicsmex:NotEnoughInputs", "Usage doKinematicsmex(model_ptr,q,compute_gradients,v,compute_JdotV)");
   }
-  
+
   // first get the model_ptr back from matlab
-  RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
-  int nq = model->num_positions;
-  int nv = model->num_velocities;
-  
-  if (mxGetNumberOfElements(prhs[1])!=nq)
-    mexErrMsgIdAndTxt("Drake:doKinematicsmex:BadInputs", "q must be size %d x 1", nq);
-  
-  Map<VectorXd> q(mxGetPrSafe(prhs[1]), nq);
-  bool b_compute_second_derivatives = (mxGetScalar(prhs[2])!=0.0);
-  if (mxGetNumberOfElements(prhs[3])>0) 
-  {
-    Map<VectorXd> qd(mxGetPrSafe(prhs[3]), nv);
-    model->doKinematics(q,b_compute_second_derivatives,qd);
-  } else {
-    model->doKinematics(q,b_compute_second_derivatives);
-  }  
+  RigidBodyManipulator *model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+
+  Map<VectorXd> q(mxGetPrSafe(prhs[1]), mxGetNumberOfElements(prhs[1]));
+  if (q.rows() != model->num_positions)
+    mexErrMsgIdAndTxt("Drake:doKinematicsmex:BadInputs", "q must be size %d x 1", model->num_positions);
+  bool compute_gradients = (bool) (mxGetLogicals(prhs[2]))[0];
+  bool compute_Jdotv = (bool) (mxGetLogicals(prhs[4]))[0];
+  if (mxGetNumberOfElements(prhs[3]) > 0) {
+    auto v = Map<VectorXd>(mxGetPrSafe(prhs[3]), mxGetNumberOfElements(prhs[3]));
+    if (v.rows() != model->num_velocities)
+      mexErrMsgIdAndTxt("Drake:doKinematicsmex:BadInputs", "v must be size %d x 1", model->num_velocities);
+    model->doKinematics(q, v, compute_gradients, compute_Jdotv);
+  }
+  else {
+    Map<VectorXd> v(nullptr, 0, 1);
+    model->doKinematics(q, v, compute_gradients, compute_Jdotv);
+  }
 }

@@ -51,7 +51,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   pm = mxGetProperty(pRBM, 0, "num_positions");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","model should have a num_positions field");
   int num_positions = static_cast<int>(*mxGetPrSafe(pm));
-
   model = new RigidBodyManipulator(num_positions, num_bodies, num_frames);
 
   for (int i=0; i<model->num_bodies; i++) {
@@ -64,15 +63,11 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     mxGetString(pm,buf,100);
     model->bodies[i]->linkname.assign(buf,strlen(buf));
 
-    pm = mxGetProperty(pBodies,i,"jointname");
-    mxGetString(pm,buf,100);
-    model->bodies[i]->jointname.assign(buf,strlen(buf));
-
     pm = mxGetProperty(pBodies,i,"robotnum");
     model->bodies[i]->robotnum = (int) mxGetScalar(pm)-1;
 
     pm = mxGetProperty(pBodies,i,"mass");
-    model->bodies[i]->mass = (double) mxGetScalar(pm);
+    model->bodies[i]->mass = mxGetScalar(pm);
 
     pm = mxGetProperty(pBodies,i,"com");
     if (!mxIsEmpty(pm)) memcpy(model->bodies[i]->com.data(),mxGetPrSafe(pm),sizeof(double)*3);
@@ -318,9 +313,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       //cout << "constructModelmex: Got number of points: " << n_pts << endl;
       //cout << "constructModelmex: Set contact_pts of body" << endl;
       //END_DEBUG
-      Map<MatrixXd> pts(mxGetPrSafe(pPts),3,n_pts);
-      model->bodies[body_idx]->contact_pts.resize(4,n_pts);
-      model->bodies[body_idx]->contact_pts << pts, MatrixXd::Ones(1,n_pts);
+      Map<Matrix3Xd> pts(mxGetPrSafe(pPts),3,n_pts);
+      model->bodies[body_idx]->contact_pts = pts;
       //DEBUG
       //cout << "constructModelmex: Contact_pts of body: " << endl;
       //cout << model->bodies[body_idx]->contact_pts << endl;
@@ -349,9 +343,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   } else {
     mexErrMsgIdAndTxt("Drake:constructModelmex:BadGravity","Couldn't find a 3 element gravity vector in the object.");
   }
-
-  mxLogical* use_new_kinsol = mxGetLogicals(mxGetProperty(pRBM,0,"use_new_kinsol"));
-  model->setUseNewKinsol((bool)use_new_kinsol[0]);
 
   //  LOOP CONSTRAINTS
   const mxArray* pLoops = mxGetProperty(pRBM,0,"loop");

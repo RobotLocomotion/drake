@@ -129,13 +129,11 @@ for i=1:100
   [xm,Jm,dJm] = forwardKin(p,kinsol,1,rp);
   [commex,Jcommex,dJcommex]=getCOM(p,kinsol);
   xbm = bodyKin(p,kinsol,1,rp);
-  Jdotm = forwardJacDot(p,kinsol,1,rp,1);
-  
+
   kinsol=p.doKinematics(rq,true,false,rqd);
   [x,J,dJ] = forwardKin(p,kinsol,1,rp);
   [com,Jcom,dJcom]=getCOM(p,kinsol);
   xb = bodyKin(p,kinsol,1,rp);
-  Jdot = forwardJacDot(p,kinsol,1,rp,1);
 
   valuecheck(x,xm,1e-8);
   valuecheck(J,Jm,1e-8);
@@ -145,8 +143,7 @@ for i=1:100
   valuecheck(com,commex,1e-8);
   valuecheck(Jcom,Jcommex,1e-8);
   valuecheck(dJcom,dJcommex,1e-8);
-  valuecheck(Jdot,Jdotm,1e-8);
-  
+
   valuecheck(xbm,xb);
 end
 
