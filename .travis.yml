@@ -2,7 +2,7 @@ language: cpp
 
 sudo: required
 
-notification:
+notifications:
   email: false
 
 branches:
