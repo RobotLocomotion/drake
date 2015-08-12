@@ -4,10 +4,10 @@
 #include <Eigen/Core>
 #include <iostream>
 #include "PiecewisePolynomial.h"
-#include "drake/lcmt_polynomial.hpp"
-#include "drake/lcmt_polynomial_matrix.hpp"
-#include "drake/lcmt_piecewise_polynomial.hpp"
-#include "drake/lcmt_qp_controller_input.hpp"
+#include "lcmtypes/drake/lcmt_polynomial.hpp"
+#include "lcmtypes/drake/lcmt_polynomial_matrix.hpp"
+#include "lcmtypes/drake/lcmt_piecewise_polynomial.hpp"
+#include "lcmtypes/drake/lcmt_qp_controller_input.hpp"
 
 #undef DLLEXPORT
 #if defined(WIN32) || defined(WIN64)
