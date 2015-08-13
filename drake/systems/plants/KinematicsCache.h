@@ -99,7 +99,7 @@ public:
     return elements.at(&body);
   }
 
-  void checkCachedKinematicsSettings(bool kinematics_gradients_required, bool velocity_kinematics_required, bool jdot_times_v_required, const std::string& method_name)
+  void checkCachedKinematicsSettings(bool kinematics_gradients_required, bool velocity_kinematics_required, bool jdot_times_v_required, const std::string& method_name) const
   {
     std::string message;
     if (!position_kinematics_cached) {
