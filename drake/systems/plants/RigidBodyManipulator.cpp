@@ -180,16 +180,16 @@ void RigidBodyManipulator::compile(void)
     }
   }
 
+  cache = KinematicsCache<double>(bodies, 1);
+
   for (int i=0; i<num_bodies; i++) {
     auto& body = bodies[i];
     if (!body->hasParent())
-      updateCollisionElements(body);  // update static objects (not done in the kinematics loop)
+      updateCollisionElements(body, cache);  // update static objects (not done in the kinematics loop)
 
     // update the body's contact points
     getTerrainContactPoints(*body, body->contact_pts);
   }
-
-  cache = KinematicsCache<double>(bodies, 1);
 
   initialized=true;
 }
@@ -254,12 +254,12 @@ DrakeCollision::ElementId RigidBodyManipulator::addCollisionElement(const RigidB
   return id;
 }
 
-void RigidBodyManipulator::updateCollisionElements(const shared_ptr<RigidBody>& body)
+void RigidBodyManipulator::updateCollisionElements(const shared_ptr<RigidBody>& body, KinematicsCache<double> & kin_cache)
 {
   for (auto id_iter = body->collision_element_ids.begin();
        id_iter != body->collision_element_ids.end();
        ++id_iter) {
-    collision_model->updateElementWorldTransform(*id_iter, cache.getElement(*body).transform_to_world.matrix());
+    collision_model->updateElementWorldTransform(*id_iter, kin_cache.getElement(*body).transform_to_world.matrix());
   }
 };
 
@@ -519,44 +519,15 @@ KinematicsCache<typename DerivedQ::Scalar> RigidBodyManipulator::doKinematics(co
   if (!initialized)
     compile();
 
-  typedef typename DerivedQ::Scalar Scalar;
-  KinematicsCache<Scalar>& kinematics_cache = cache;
-
-  compute_JdotV = compute_JdotV && (v.rows() == num_velocities); // no sense in computing Jdot times v if v is not passed in
-
-  if (cache.position_kinematics_cached) {
-    bool skip = true;
-    if (compute_gradients && !cache.gradients_cached) {
-      skip = false;
-    }
-    if (v.rows() == num_velocities) {
-      if (!cache.velocity_kinematics_cached) {
-        skip = false;
-      }
-      for (int i = 0; i < num_velocities; i++) {
-        if (v[i] != cache.v[i]) {
-          skip = false;
-          break;
-        }
-      }
-    }
-    if (compute_JdotV && !cache.jdotV_cached)
-      skip = false;
-    for (int i = 0; i < num_positions; i++) {
-      if (q[i] != cache.q[i]) {
-        skip = false;
-        break;
-      }
-    }
-    if (skip) {
-      return kinematics_cache;
-    }
-  }
-  cache.position_kinematics_cached = true; // doing this here because there is a geometricJacobian within doKinematics below which checks for this
-
   int nq = num_positions;
   int gradient_order = compute_gradients ? 1 : 0;
 
+  typedef typename DerivedQ::Scalar Scalar;
+  KinematicsCache<Scalar>& kinematics_cache = cache;//(bodies, gradient_order);
+
+  compute_JdotV = compute_JdotV && (v.rows() == num_velocities); // no sense in computing Jdot times v if v is not passed in
+
+  kinematics_cache.position_kinematics_cached = true; // doing this here because there is a geometricJacobian within doKinematics below which checks for this
 
   for (int i = 0; i < bodies.size(); i++) {
     RigidBody& body = *bodies[i];
@@ -698,7 +669,7 @@ KinematicsCache<typename DerivedQ::Scalar> RigidBodyManipulator::doKinematics(co
       }
 
       // Update collision geometries
-      updateCollisionElements(bodies[i]);
+      updateCollisionElements(bodies[i], kinematics_cache);
     }
     else {
       element.transform_to_world.setIdentity();
@@ -740,16 +711,19 @@ KinematicsCache<typename DerivedQ::Scalar> RigidBodyManipulator::doKinematics(co
   // Have the collision model do any model-wide updates that it needs to
   collision_model->updateModel();
 
-  cache.cached_inertia_gradients_order = -1;
-  cache.gradients_cached = compute_gradients;
-  cache.velocity_kinematics_cached = v.rows() == num_velocities;
-  cache.jdotV_cached = compute_JdotV && cache.velocity_kinematics_cached;
+  kinematics_cache.cached_inertia_gradients_order = -1;
+  kinematics_cache.gradients_cached = compute_gradients;
+  kinematics_cache.velocity_kinematics_cached = v.rows() == num_velocities;
+  kinematics_cache.jdotV_cached = compute_JdotV && kinematics_cache.velocity_kinematics_cached;
 
-  cache.q = q;
+  kinematics_cache.q = q;
 
   if (v.rows() > 0) {
-    cache.v = v;
+    kinematics_cache.v = v;
   }
+
+  //cache = kinematics_cache;
+
   return kinematics_cache;
 }
 
