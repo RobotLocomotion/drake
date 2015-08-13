@@ -250,7 +250,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         model->addCollisionElement(element, model->bodies[i], group_name);
       }
       if (!model->bodies[i]->hasParent()) {
-        model->updateCollisionElements(model->bodies[i]);  // update static objects only once - right here on load
+        model->updateCollisionElements(model->bodies[i], model->cache);  // update static objects only once - right here on load
       }
 
 
