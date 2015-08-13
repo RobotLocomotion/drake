@@ -193,8 +193,8 @@ public:
 
   DrakeCollision::ElementId addCollisionElement(const RigidBody::CollisionElement& element, const std::shared_ptr<RigidBody>& body, std::string group_name);
 
-  //TODO: template this
-  void updateCollisionElements(const std::shared_ptr<RigidBody>& body, KinematicsCache<double>& kin_cache);
+  template <typename Scalar>
+  void updateCollisionElements(const std::shared_ptr<RigidBody>& body, KinematicsCache<Scalar>& kin_cache);
 
   void getTerrainContactPoints(const RigidBody& body, Eigen::Matrix3Xd &terrain_points) const;
 

@@ -254,7 +254,8 @@ DrakeCollision::ElementId RigidBodyManipulator::addCollisionElement(const RigidB
   return id;
 }
 
-void RigidBodyManipulator::updateCollisionElements(const shared_ptr<RigidBody>& body, KinematicsCache<double> & kin_cache)
+template <typename Scalar>
+void RigidBodyManipulator::updateCollisionElements(const shared_ptr<RigidBody>& body, KinematicsCache<Scalar> & kin_cache)
 {
   for (auto id_iter = body->collision_element_ids.begin();
        id_iter != body->collision_element_ids.end();
@@ -523,6 +524,9 @@ KinematicsCache<typename DerivedQ::Scalar> RigidBodyManipulator::doKinematics(co
   int gradient_order = compute_gradients ? 1 : 0;
 
   typedef typename DerivedQ::Scalar Scalar;
+
+  cache = KinematicsCache<Scalar>(bodies, gradient_order);
+
   KinematicsCache<Scalar>& kinematics_cache = cache;//(bodies, gradient_order);
 
   compute_JdotV = compute_JdotV && (v.rows() == num_velocities); // no sense in computing Jdot times v if v is not passed in
@@ -721,8 +725,6 @@ KinematicsCache<typename DerivedQ::Scalar> RigidBodyManipulator::doKinematics(co
   if (v.rows() > 0) {
     kinematics_cache.v = v;
   }
-
-  //cache = kinematics_cache;
 
   return kinematics_cache;
 }
@@ -2217,3 +2219,4 @@ template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints(MatrixBa
 template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints(MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > &) const ;
 
 template DLLEXPORT_RBM std::pair<Eigen::Vector3d, double> RigidBodyManipulator::resolveCenterOfPressure(const std::vector<ForceTorqueMeasurement> &, const Eigen::MatrixBase<Eigen::Vector3d> &, const Eigen::MatrixBase<Eigen::Vector3d> &);
+template DLLEXPORT_RBM void RigidBodyManipulator::updateCollisionElements(const shared_ptr<RigidBody>& body, KinematicsCache<double> & kin_cache);
