@@ -512,7 +512,7 @@ void RigidBodyManipulator::warnOnce(const string& id, const string& msg)
 //};
 
 template <typename DerivedQ, typename DerivedV>
-void RigidBodyManipulator::doKinematics(const MatrixBase<DerivedQ> &q, const MatrixBase<DerivedV> &v, bool compute_gradients, bool compute_JdotV) {
+KinematicsCache<typename DerivedQ::Scalar> RigidBodyManipulator::doKinematics(const MatrixBase<DerivedQ> &q, const MatrixBase<DerivedV> &v, bool compute_gradients, bool compute_JdotV) {
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(MatrixBase<DerivedQ>);
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(MatrixBase<DerivedV>);
   assert(q.rows() == num_positions);
@@ -550,7 +550,7 @@ void RigidBodyManipulator::doKinematics(const MatrixBase<DerivedQ> &q, const Mat
       }
     }
     if (skip) {
-      return;
+      return kinematics_cache;
     }
   }
   cache.position_kinematics_cached = true; // doing this here because there is a geometricJacobian within doKinematics below which checks for this
@@ -751,6 +751,7 @@ void RigidBodyManipulator::doKinematics(const MatrixBase<DerivedQ> &q, const Mat
   if (v.rows() > 0) {
     cache.v = v;
   }
+  return kinematics_cache;
 }
 
 void RigidBodyManipulator::updateCompositeRigidBodyInertias(int gradient_order) {
@@ -2193,13 +2194,13 @@ void RigidBodyManipulator::addFrame(const RigidBodyFrame& frame)
 }
 
 // explicit instantiations (required for linking):
-template DLLEXPORT_RBM void RigidBodyManipulator::doKinematics(const MatrixBase<Map<VectorXd> > &, const MatrixBase<Map<VectorXd> > &, bool, bool);
-template DLLEXPORT_RBM void RigidBodyManipulator::doKinematics<Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, 0, Eigen::Stride<0, 0> >, Eigen::Matrix<double, -1, 1, 0, -1, 1> >(
+template DLLEXPORT_RBM KinematicsCache<double> RigidBodyManipulator::doKinematics(const MatrixBase<Map<VectorXd> > &, const MatrixBase<Map<VectorXd> > &, bool, bool);
+template DLLEXPORT_RBM KinematicsCache<double> RigidBodyManipulator::doKinematics<Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, 0, Eigen::Stride<0, 0> >, Eigen::Matrix<double, -1, 1, 0, -1, 1> >(
     Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, 0, Eigen::Stride<0, 0> > > const &, Eigen::MatrixBase<Eigen::Matrix<double, -1, 1, 0, -1, 1> > const &, bool, bool);
-template DLLEXPORT_RBM void RigidBodyManipulator::doKinematics(const MatrixBase<VectorXd> &, const MatrixBase<VectorXd> &, bool, bool);
-template DLLEXPORT_RBM void RigidBodyManipulator::doKinematics(const MatrixBase<Block<MatrixXd, -1, 1, true> > &, const MatrixBase<Block<MatrixXd, -1, 1, true> > &, bool, bool);
-template DLLEXPORT_RBM void RigidBodyManipulator::doKinematics(const MatrixBase<Block<MatrixXd, -1, 1, true> > &, const MatrixBase<Map<VectorXd> > &, bool, bool);
-template DLLEXPORT_RBM void RigidBodyManipulator::doKinematics<Eigen::Map<Eigen::VectorXd, 0, Eigen::Stride<0, 0> >, Eigen::VectorXd >(Eigen::MatrixBase<Eigen::Map<Eigen::VectorXd, 0, Eigen::Stride<0, 0> > > const &,
+template DLLEXPORT_RBM KinematicsCache<double> RigidBodyManipulator::doKinematics(const MatrixBase<VectorXd> &, const MatrixBase<VectorXd> &, bool, bool);
+template DLLEXPORT_RBM KinematicsCache<double> RigidBodyManipulator::doKinematics(const MatrixBase<Block<MatrixXd, -1, 1, true> > &, const MatrixBase<Block<MatrixXd, -1, 1, true> > &, bool, bool);
+template DLLEXPORT_RBM KinematicsCache<double> RigidBodyManipulator::doKinematics(const MatrixBase<Block<MatrixXd, -1, 1, true> > &, const MatrixBase<Map<VectorXd> > &, bool, bool);
+template DLLEXPORT_RBM KinematicsCache<double> RigidBodyManipulator::doKinematics<Eigen::Map<Eigen::VectorXd, 0, Eigen::Stride<0, 0> >, Eigen::VectorXd >(Eigen::MatrixBase<Eigen::Map<Eigen::VectorXd, 0, Eigen::Stride<0, 0> > > const &,
                                                                                                                                        Eigen::MatrixBase<Eigen::VectorXd> const &, bool, bool);
 
 template DLLEXPORT_RBM void RigidBodyManipulator::getContactPositions(MatrixBase <MatrixXd > &, const set<int> &);
