@@ -269,7 +269,7 @@ public:
   int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe = nullptr) const;
 
   template <typename Scalar>
-  GradientVar<Scalar, Eigen::Dynamic, 1> positionConstraintsNew(const KinematicsCache<Scalar>& cache, int gradient_order) const;
+  GradientVar<Scalar, Eigen::Dynamic, 1> positionConstraints(const KinematicsCache<Scalar>& cache, int gradient_order) const;
 
   template <typename DerivedA, typename DerivedB>
   void positionConstraints(const KinematicsCache<typename DerivedA::Scalar>& cache, Eigen::MatrixBase<DerivedA> & phi, Eigen::MatrixBase<DerivedB> & J) const;
