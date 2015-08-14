@@ -94,7 +94,7 @@ for testnr = 1 : ntests
 
   cops = individualCentersOfPressure(r, kinsol, active_supports, normals, B, beta);
 
-  [~] = r.doKinematics(q, false, true);
+  kinsol = r.doKinematics(q, false, true);
 
   nd = nbeta / ncontact_points;
   ncontact_points_per_foot = ncontact_points / length(active_supports);
@@ -106,7 +106,7 @@ for testnr = 1 : ntests
   
   B = [B{:}];
 
-  cops_mex = individualCentersOfPressuremex(r.getMexModelPtr, supp, normals, nd, B, beta);
+  cops_mex = individualCentersOfPressuremex(r.getMexModelPtr, kinsol.mex_model_ptr, supp, normals, nd, B, beta);
   valuecheck(cops, cops_mex);
 end
 
