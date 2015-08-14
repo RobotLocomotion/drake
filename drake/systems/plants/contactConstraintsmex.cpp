@@ -47,38 +47,43 @@ inline void buildSparseMatrix(Matrix3xd const & pts, SparseMatrix<double> & spar
 
 void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   
-  if (nrhs < 7) {
-    mexErrMsgIdAndTxt("Drake:contactConstraintsmex:NotEnoughInputs","Usage: \n[n, D] = contactConstraintsmex(model_ptr, normal, idxA, idxB, xA, xB, d)\n[n, D, dn, dD] = contactConstraintsmex(model_ptr, normal, idxA, idxB, xA, xB, d)");
+  if (nrhs < 8) {
+    mexErrMsgIdAndTxt("Drake:contactConstraintsmex:NotEnoughInputs","Usage: \n[n, D] = contactConstraintsmex(model_ptr, cache_ptr, normal, idxA, idxB, xA, xB, d)\n[n, D, dn, dD] = contactConstraintsmex(model_ptr, normal, idxA, idxB, xA, xB, d)");
   }
 
-  if (nrhs >= 5 && mxGetN(prhs[2]) != mxGetN(prhs[3])) {
+  if (nrhs >= 6 && mxGetN(prhs[3]) != mxGetN(prhs[4])) {
     mexErrMsgIdAndTxt("Drake:contactConstraintsmex:InvalidBodyIndexes", "idxA and idxB must be the same size");
   }
 
-  if (nrhs >= 7 && mxGetN(prhs[4]) != mxGetN(prhs[5])) {
+  if (nrhs >= 8 && mxGetN(prhs[5]) != mxGetN(prhs[6])) {
     mexErrMsgIdAndTxt("Drake:contactConstraintsmex:InvalidBodyPoints", "xA and xB must be the same size");
   } 
 
-  if (nrhs >= 7 && (mxGetM(prhs[4]) != 3 || mxGetM(prhs[5]) != 3)) {
+  if (nrhs >= 8 && (mxGetM(prhs[5]) != 3 || mxGetM(prhs[6]) != 3)) {
     mexErrMsgIdAndTxt("Drake:contactConstraintsmex:InvalidBodyPointsDimension", "body points xA and xB must be 3 dimensional");
   }
 
-  if (nrhs >= 6 && mxGetN(prhs[1]) != mxGetN(prhs[4])) {
+  if (nrhs >= 7 && mxGetN(prhs[2]) != mxGetN(prhs[5])) {
     mexErrMsgIdAndTxt("Drake:contactConstraintsmex:InvalidBodyPointsDimension", "normals must match the number of contact points");
   }
 
-  const size_t numContactPairs = mxGetN(prhs[1]);
-  const Map<Matrix3xd> normals(mxGetPrSafe(prhs[1]), 3, numContactPairs); //contact normals in world space
+  int arg_num = 0;
+  RigidBodyManipulator *model = static_cast<RigidBodyManipulator*>(getDrakeMexPointer(prhs[arg_num++]));
+  KinematicsCache<double>* cache = static_cast<KinematicsCache<double>*>(getDrakeMexPointer(prhs[arg_num++]));
+
+  const size_t numContactPairs = mxGetN(prhs[arg_num]);
+  const Map<Matrix3xd> normals(mxGetPrSafe(prhs[arg_num]), 3, numContactPairs); //contact normals in world space
+  arg_num++;
+
   const bool compute_second_derivatives = nlhs > 3;
 
-  RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
 
   if (model != NULL) {
 
-    const Map<VectorXi> idxA((int*)mxGetData(prhs[2]), numContactPairs); //collision pairs index of body A
-    const Map<VectorXi> idxB((int*)mxGetData(prhs[3]), numContactPairs); //collision pairs index of body B
-    const Map<Matrix3xd> xA(mxGetPrSafe(prhs[4]), 3, numContactPairs); //contact point in body A space
-    const Map<Matrix3xd> xB(mxGetPrSafe(prhs[5]), 3, numContactPairs); //contact point in body B space
+    const Map<VectorXi> idxA((int*)mxGetData(prhs[arg_num++]), numContactPairs); //collision pairs index of body A
+    const Map<VectorXi> idxB((int*)mxGetData(prhs[arg_num++]), numContactPairs); //collision pairs index of body B
+    const Map<Matrix3xd> xA(mxGetPrSafe(prhs[arg_num++]), 3, numContactPairs); //contact point in body A space
+    const Map<Matrix3xd> xB(mxGetPrSafe(prhs[arg_num++]), 3, numContactPairs); //contact point in body B space
     const size_t nq = model->num_positions;
     
     VectorXi idxA_zero_indexed = idxA.array() - 1;
@@ -89,12 +94,13 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
       MatrixXd dJ;
       vector<int> bodyInds;
       SparseMatrix<double> sparseNormals;
-      model->computeContactJacobians(idxA_zero_indexed, idxB_zero_indexed, xA, xB, compute_second_derivatives, J, dJ);      
+      model->computeContactJacobians(*cache, idxA_zero_indexed, idxB_zero_indexed, xA, xB, compute_second_derivatives, J, dJ);
       buildSparseMatrix(normals, sparseNormals);
       plhs[0] = mxCreateDoubleMatrix(numContactPairs, nq, mxREAL);
       Map<MatrixXd> n(mxGetPrSafe(plhs[0]), numContactPairs, nq);
       n = sparseNormals * J; //dphi/dq
-      const size_t* dims = mxGetDimensions(prhs[6]);
+      int d_arg_num = arg_num;
+      const size_t* dims = mxGetDimensions(prhs[d_arg_num]);
       const mwSize num_tangent_vectors = dims[1];
 
       if (nlhs > 1) {
@@ -104,7 +110,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
           plhs[3] = mxCreateCellArray(2, cellDims);
         }
         for (int k = 0 ; k < num_tangent_vectors ; k++) { //for each friction cone basis vector
-          Map<Matrix3xd> dk(mxGetPrSafe(mxGetCell(prhs[6], k)), 3, numContactPairs);
+          Map<Matrix3xd> dk(mxGetPrSafe(mxGetCell(prhs[d_arg_num], k)), 3, numContactPairs);
           SparseMatrix<double> sparseTangents;
           buildSparseMatrix(dk, sparseTangents);
           mxArray *D_cell = mxCreateDoubleMatrix(numContactPairs, nq, mxREAL);

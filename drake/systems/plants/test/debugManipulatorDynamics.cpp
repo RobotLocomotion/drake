@@ -18,15 +18,15 @@ int main()
 
   VectorXd q = VectorXd::Random(model->num_positions);
   VectorXd v = VectorXd::Random(model->num_velocities);
-  model->doKinematics(q, v, true, true);
+  KinematicsCache<double> cache = model->doKinematics(q, v, true, true);
 
   auto points = Matrix<double, 3, Eigen::Dynamic>::Random(3, 5).eval();
   int body_or_frame_ind = 8;
   int base_or_frame_ind = 0;
   int rotation_type = 0;
-  model->forwardJacDotTimesV(points, body_or_frame_ind, base_or_frame_ind, rotation_type, gradient_order);
+  model->forwardJacDotTimesV(cache, points, body_or_frame_ind, base_or_frame_ind, rotation_type, gradient_order);
 
-  auto M = model->massMatrix<double>(gradient_order);
+  auto M = model->massMatrix<double>(cache, gradient_order);
   cout << M.value() << endl << endl;
 
   map<int, unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
@@ -39,7 +39,7 @@ int main()
   if (vd.hasGradient())
     vd.gradient().value().setRandom();
 
-  auto C = model->inverseDynamics(f_ext, &vd, gradient_order);
+  auto C = model->inverseDynamics(cache, f_ext, &vd, gradient_order);
   cout << C.value() << endl << endl;
   return 0;
 }

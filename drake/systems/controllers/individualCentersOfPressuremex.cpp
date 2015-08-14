@@ -9,23 +9,24 @@ using namespace Eigen;
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-  if (nrhs != 6 || nlhs != 1)
+  if (nrhs != 7 || nlhs != 1)
   {
-    mexErrMsgIdAndTxt("Drake:testControlUtil:BadInputs","Usage r, active_supports, normals, nd, B, beta");
+    mexErrMsgIdAndTxt("Drake:testControlUtil:BadInputs","Usage: individualCentersOfPressuremex(model_ptr, cache_ptr, active_supports, normals, nd, B, beta");
   }
 
-  RigidBodyManipulator* r = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+  int arg_num = 0;
+  RigidBodyManipulator *model = static_cast<RigidBodyManipulator*>(getDrakeMexPointer(prhs[arg_num++]));
+  KinematicsCache<double>* cache = static_cast<KinematicsCache<double>*>(getDrakeMexPointer(prhs[arg_num++]));
 
-  int desired_support_argid = 1;
   vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> active_supports;
   int num_active_contact_pts = 0;
-  if (!mxIsEmpty(prhs[desired_support_argid])) {
-    mxArray* mxBodies = myGetField(prhs[desired_support_argid], "bodies");
+  if (!mxIsEmpty(prhs[arg_num])) {
+    mxArray* mxBodies = myGetField(prhs[arg_num], "bodies");
     if (!mxBodies)
       mexErrMsgTxt("couldn't get bodies");
     double* pBodies = mxGetPrSafe(mxBodies);
 
-    mxArray* mxContactPts = myGetField(prhs[desired_support_argid], "contact_pts");
+    mxArray* mxContactPts = myGetField(prhs[arg_num], "contact_pts");
     if (!mxContactPts)
       mexErrMsgTxt("couldn't get contact points");
 
@@ -47,19 +48,20 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
       num_active_contact_pts += nc;
     }
   }
+  arg_num++;
 
 //  df_ext = new Map<MatrixXd>(mxGetPrSafe(prhs[4]),6*model->NB,2*model->num_dof);
   MatrixXd normals(3,num_active_contact_pts);
-  memcpy(normals.data(), mxGetPrSafe(prhs[2]), sizeof(double)*normals.size());
+  memcpy(normals.data(), mxGetPrSafe(prhs[arg_num++]), sizeof(double)*normals.size());
 
-  int nd = static_cast<int>(mxGetScalar(prhs[3]));
+  int nd = static_cast<int>(mxGetScalar(prhs[arg_num++]));
   MatrixXd B(3, num_active_contact_pts * nd);
-  memcpy(B.data(), mxGetPrSafe(prhs[4]), sizeof(double)*B.size());
+  memcpy(B.data(), mxGetPrSafe(prhs[arg_num++]), sizeof(double)*B.size());
 
   VectorXd beta(num_active_contact_pts * nd);
-  memcpy(beta.data(), mxGetPrSafe(prhs[5]), sizeof(double)*beta.size());
+  memcpy(beta.data(), mxGetPrSafe(prhs[arg_num++]), sizeof(double)*beta.size());
 
-  MatrixXd individual_cops = individualSupportCOPs(r, active_supports, normals, B, beta);
+  MatrixXd individual_cops = individualSupportCOPs(model, *cache, active_supports, normals, B, beta);
 
   plhs[0] = eigenToMatlab(individual_cops);
 }

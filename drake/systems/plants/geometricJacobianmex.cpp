@@ -11,8 +11,8 @@ using namespace std;
 
 void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
-  std::string usage = "Usage [J, vIndices] = geometricJacobianmex(model_ptr, base_body_or_frame_ind, end_effector_body_or_frame_ind, expressed_in_body_or_frame_ind, in_terms_of_qdot)";
-  if (nrhs != 5) {
+  std::string usage = "Usage [J, vIndices] = geometricJacobianmex(model_ptr, cache_ptr, base_body_or_frame_ind, end_effector_body_or_frame_ind, expressed_in_body_or_frame_ind, in_terms_of_qdot)";
+  if (nrhs != 6) {
     mexErrMsgIdAndTxt("Drake:geometricJacobianmex:WrongNumberOfInputs", usage.c_str());
   }
 
@@ -20,20 +20,21 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     mexErrMsgIdAndTxt("Drake:geometricJacobianmex:WrongNumberOfOutputs", usage.c_str());
   }
 
-  // first get the model_ptr back from matlab
-  RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+  int arg_num = 0;
+  RigidBodyManipulator *model = static_cast<RigidBodyManipulator*>(getDrakeMexPointer(prhs[arg_num++]));
+  KinematicsCache<double>* cache = static_cast<KinematicsCache<double>*>(getDrakeMexPointer(prhs[arg_num++]));
 
-  int base_body_or_frame_ind = ((int) mxGetScalar(prhs[1])) - 1; // base 1 to base 0
-  int end_effector_body_or_frame_ind = ((int) mxGetScalar(prhs[2])) - 1; // base 1 to base 0
-  int expressed_in_body_or_frame_ind = ((int) mxGetScalar(prhs[3])) - 1; // base 1 to base 0
-  bool in_terms_of_qdot = (bool) (mxGetLogicals(prhs[4]))[0];
+  int base_body_or_frame_ind = ((int) mxGetScalar(prhs[arg_num++])) - 1; // base 1 to base 0
+  int end_effector_body_or_frame_ind = ((int) mxGetScalar(prhs[arg_num++])) - 1; // base 1 to base 0
+  int expressed_in_body_or_frame_ind = ((int) mxGetScalar(prhs[arg_num++])) - 1; // base 1 to base 0
+  bool in_terms_of_qdot = (bool) (mxGetLogicals(prhs[arg_num++]))[0];
 
   Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> J(TWIST_SIZE, 1);
 
   int gradient_order = nlhs > 2 ? 1 : 0;
   if (nlhs > 1) {
     std::vector<int> v_indices;
-    auto J_gradientVar = model->geometricJacobian<double>(base_body_or_frame_ind, end_effector_body_or_frame_ind, expressed_in_body_or_frame_ind, gradient_order, in_terms_of_qdot, &v_indices);
+    auto J_gradientVar = model->geometricJacobian<double>(*cache, base_body_or_frame_ind, end_effector_body_or_frame_ind, expressed_in_body_or_frame_ind, gradient_order, in_terms_of_qdot, &v_indices);
     plhs[0] = eigenToMatlab(J_gradientVar.value());
 
     baseZeroToBaseOne(v_indices);
@@ -43,7 +44,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     }
   }
   else if (nlhs > 0){
-    auto J_gradientVar = model->geometricJacobian<double>(base_body_or_frame_ind, end_effector_body_or_frame_ind, expressed_in_body_or_frame_ind, gradient_order, in_terms_of_qdot, nullptr);
+    auto J_gradientVar = model->geometricJacobian<double>(*cache, base_body_or_frame_ind, end_effector_body_or_frame_ind, expressed_in_body_or_frame_ind, gradient_order, in_terms_of_qdot, nullptr);
     plhs[0] = eigenToMatlab(J_gradientVar.value());
   }
 
