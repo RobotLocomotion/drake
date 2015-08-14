@@ -301,13 +301,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   if (nlhs<1) mexErrMsgTxt("take at least one output... please.");
 
-  struct NewQPControllerData* pdata;
-  pdata = new struct NewQPControllerData;
-
   int narg = 0;
   
   // robot_obj
-  pdata->r = (RigidBodyManipulator*) getDrakeMexPointer(prhs[narg]);
+  NewQPControllerData* pdata = new NewQPControllerData(static_cast<RigidBodyManipulator*>(getDrakeMexPointer(prhs[narg])));
   narg++;
 
   // param_sets

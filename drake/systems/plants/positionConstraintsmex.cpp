@@ -22,7 +22,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   Map<VectorXd> q(mxGetPrSafe(prhs[1]),nq);
 
   VectorXd v = VectorXd::Zero(0);
-  model->doKinematics(q, v);
+  KinematicsCache<double> cache = model->doKinematics(q, v); // FIXME: KinematicsCache should be passed in!
 
   const size_t numPositionConstraints = model->getNumPositionConstraints();
   
@@ -32,6 +32,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   Map<VectorXd> phi(mxGetPrSafe(plhs[0]), numPositionConstraints);
   Map<MatrixXd> J(mxGetPrSafe(plhs[1]), numPositionConstraints, nq);
 
-  model->positionConstraints(phi, J);  
+  model->positionConstraints(cache, phi, J);
 }
 

@@ -181,14 +181,14 @@ void RigidBodyManipulator::compile(void)
   }
 
   initialized = true; // doing this here because doKinematics checks for it.
-  VectorXd q = VectorXd::Zero(num_positions); // FIXME: this is not a valid configuration if there are any QuaternionFloatingJoints
+  VectorXd q = VectorXd::Zero(num_positions); // TODO: this is not a valid configuration if there are any QuaternionFloatingJoints, but then again we only need transforms to world for bodies without a parent
   VectorXd v = VectorXd::Zero(0);
   KinematicsCache<double> cache = doKinematics(q, v, false, false);
   for (int i=0; i<num_bodies; i++) {
     auto& body = bodies[i];
     if (!body->hasParent()) {
-      updateCollisionElements(body, cache);
-    }  // update static objects (not done in the kinematics loop)
+      updateCollisionElements(body, cache); // update static objects (not done in the kinematics loop)
+    }
 
     // update the body's contact points
     getTerrainContactPoints(*body, body->contact_pts);

@@ -26,6 +26,7 @@ vector<string> get_strings(const mxArray *rhs) {
 void 
 smoothDistancePenalty(double& c, MatrixXd& dc,
                       RigidBodyManipulator* robot,
+                      const KinematicsCache<double>& cache,
                       const double min_distance,
                       const VectorXd& dist,
                       const MatrixXd& normal,
@@ -94,7 +95,7 @@ smoothDistancePenalty(double& c, MatrixXd& dc,
       //END_DEBUG
       x_k.col(l) = xB.col(orig_idx_of_pt_on_bodyB.at(k).at(l-numA));
     }
-    auto J_k = robot->forwardKinJacobian(x_k, k, 0, 0, true, 0).value();
+    auto J_k = robot->forwardKinJacobian(cache, x_k, k, 0, 0, true, 0).value();
     l = 0;
     for (; l < numA; ++l) {
       //DEBUG
@@ -147,21 +148,22 @@ smoothDistancePenalty(double& c, MatrixXd& dc,
 
 void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
-  if (nrhs < 2) {
-    mexErrMsgIdAndTxt("Drake:smoothDistancePenaltymex:NotEnoughInputs","Usage smoothDistancePenaltymex(model_ptr,min_distance)");
+  if (nrhs < 4) {
+    mexErrMsgIdAndTxt("Drake:smoothDistancePenaltymex:NotEnoughInputs","Usage smoothDistancePenaltymex(model_ptr, cache_ptr, min_distance, active_collision_options)");
   }
 
-  // first get the model_ptr back from matlab
-  RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+  int arg_num = 0;
+  RigidBodyManipulator *model = static_cast<RigidBodyManipulator*>(getDrakeMexPointer(prhs[arg_num++]));
+  KinematicsCache<double>* cache = static_cast<KinematicsCache<double>*>(getDrakeMexPointer(prhs[arg_num++]));
 
   // Get the minimum allowable distance
-  double min_distance = mxGetScalar(prhs[1]);
+  double min_distance = mxGetScalar(prhs[arg_num++]);
 
   // Parse `active_collision_options`
   vector<int> active_bodies_idx;
   set<string> active_group_names;
   // First get the list of body indices for which to compute distances
-  const mxArray* active_collision_options = prhs[3];
+  const mxArray* active_collision_options = prhs[arg_num++];
   const mxArray* body_idx = mxGetField(active_collision_options,0,"body_idx");
   if (body_idx != NULL) {
     int n_active_bodies = static_cast<int>(mxGetNumberOfElements(body_idx));
@@ -218,7 +220,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     }
   }
 
-  smoothDistancePenalty(penalty, dpenalty, model, min_distance, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx);
+  smoothDistancePenalty(penalty, dpenalty, model, *cache, min_distance, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx);
 
   vector<int32_T> idxA(bodyA_idx.size());
   transform(bodyA_idx.begin(),bodyA_idx.end(),idxA.begin(),
