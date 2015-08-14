@@ -243,7 +243,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         kinsol = doKinematics(obj,q);
         [H,C,B] = manipulatorDynamics(obj.manip, q, v);
         [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D] = obj.manip.contactConstraints(kinsol, obj.multiple_contacts);
-        [z, Mqdn, wqdn, possible_contact_indices, possible_jointlimit_indices] = solveLCPmex(obj.manip.mex_model_ptr, q, v, u, phiC, n, D, obj.timestep, obj.z_inactive_guess_tol, obj.LCP_cache.data.z, H, C, B, obj.enable_fastqp);
+        [z, Mqdn, wqdn, possible_contact_indices, possible_jointlimit_indices] = solveLCPmex(obj.manip.mex_model_ptr, kinsol.mex_model_ptr, u, phiC, n, D, obj.timestep, obj.z_inactive_guess_tol, obj.LCP_cache.data.z, H, C, B, obj.enable_fastqp);
         possible_contact_indices = logical(possible_contact_indices);
         contact_data.normal = normal(:,possible_contact_indices);
         

@@ -186,10 +186,10 @@ bool callFastQP(MatrixBase<DerivedM> const & M, MatrixBase<Derivedw> const & w, 
   return true;
 }
 
-//[z, Mqdn, wqdn] = setupLCPmex(mex_model_ptr, cache_ptr, q, qd, u, phiC, n, D, h, z_inactive_guess_tol)
+//[z, Mqdn, wqdn] = setupLCPmex(mex_model_ptr, cache_ptr, u, phiC, n, D, h, z_inactive_guess_tol)
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) { 
   
-  if (nlhs != 5 || nrhs != 15) {
+  if (nlhs != 5 || nrhs != 13) {
     mexErrMsgIdAndTxt("Drake:setupLCPmex:InvalidUsage","Usage: [z, Mqdn, wqdn, zqp] = setupLCPmex(mex_model_ptr, cache_ptr, u, phiC, n, D, h, z_inactive_guess_tol, z_cached, H, C, B)");
   }
   static unique_ptr<MexWrapper> lcp_mex = unique_ptr<MexWrapper>(new MexWrapper(PATHLCP_MEXFILE));
@@ -202,8 +202,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   const int nv = model->num_velocities;
   
   //input mappings
-  const mxArray* q_array = prhs[arg_num++];
-  const mxArray* v_array = prhs[arg_num++];
   const mxArray* u_array = prhs[arg_num++];
   const mxArray* phiC_array = prhs[arg_num++];
   const mxArray* n_array = prhs[arg_num++];
