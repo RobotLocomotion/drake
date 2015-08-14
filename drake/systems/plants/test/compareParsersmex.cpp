@@ -94,8 +94,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 		}
 
 		{ // compare position constraints
-			auto matlab_phi = matlab_model->positionConstraintsNew(matlab_cache, 1);
-			auto cpp_phi = cpp_model->positionConstraintsNew<double>(cpp_cache, 1);
+			auto matlab_phi = matlab_model->positionConstraints(matlab_cache, 1);
+			auto cpp_phi = cpp_model->positionConstraints(cpp_cache, 1);
 
 			if (!matlab_phi.value().isApprox(cpp_phi.value(),1e-8)) {
 				cout << endl;

@@ -2041,7 +2041,7 @@ std::string RigidBodyManipulator::getBodyOrFrameName(int body_or_frame_id) const
 }
 
 template <typename Scalar>
-GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraintsNew(const KinematicsCache<Scalar>& cache, int gradient_order) const
+GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints(const KinematicsCache<Scalar>& cache, int gradient_order) const
 {
   if (gradient_order > 1)
     throw std::runtime_error("only first order gradients are implemented so far (it's trivial to add more)");
@@ -2217,7 +2217,7 @@ template DLLEXPORT_RBM GradientVar<double, 6, Dynamic> RigidBodyManipulator::wor
 template DLLEXPORT_RBM GradientVar<double, 6, 1> RigidBodyManipulator::transformSpatialAcceleration<double>(const KinematicsCache<double>&, GradientVar<double, 6, 1> const&, int, int, int, int) const;
 template DLLEXPORT_RBM GradientVar<double, 6, 1> RigidBodyManipulator::worldMomentumMatrixDotTimesV<double>(KinematicsCache<double>&, int, const std::set<int>&) const;
 
-template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraintsNew(const KinematicsCache<double>&, int) const;
+template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints(const KinematicsCache<double>&, int) const;
 
 template DLLEXPORT_RBM void RigidBodyManipulator::positionConstraints(const KinematicsCache<double>&, MatrixBase<VectorXd> &, MatrixBase<MatrixXd> &) const;
 template DLLEXPORT_RBM void RigidBodyManipulator::positionConstraints(const KinematicsCache<double>&, MatrixBase< Map< VectorXd > > &, MatrixBase< Map< MatrixXd > > &) const;
