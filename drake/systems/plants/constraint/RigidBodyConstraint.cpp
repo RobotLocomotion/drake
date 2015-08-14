@@ -2277,15 +2277,15 @@ AllBodiesClosestDistanceConstraint::eval(const double* t, KinematicsCache<double
 
     if (active_bodies_idx.size() > 0) {
       if (active_group_names.size() > 0) {
-        robot->collisionDetect(c,normal,xA,xB,idxA,idxB,active_bodies_idx,active_group_names);
+        robot->collisionDetect(cache, c,normal,xA,xB,idxA,idxB,active_bodies_idx,active_group_names);
       } else {
-        robot->collisionDetect(c,normal,xA,xB,idxA,idxB,active_bodies_idx);
+        robot->collisionDetect(cache, c,normal,xA,xB,idxA,idxB,active_bodies_idx);
       }
     } else {
       if (active_group_names.size() > 0) {
-        robot->collisionDetect(c,normal,xA,xB,idxA,idxB,active_group_names);
+        robot->collisionDetect(cache, c,normal,xA,xB,idxA,idxB,active_group_names);
       } else {
-        robot->collisionDetect(c,normal,xA,xB,idxA,idxB);
+        robot->collisionDetect(cache, c,normal,xA,xB,idxA,idxB);
       }
     }
     int num_pts = static_cast<int>(xA.cols());
@@ -2365,15 +2365,15 @@ MinDistanceConstraint::eval(const double* t, KinematicsCache<double>& cache, Vec
 
     if (active_bodies_idx.size() > 0) {
       if (active_group_names.size() > 0) {
-        robot->collisionDetect(dist,normal,xA,xB,idxA,idxB,active_bodies_idx,active_group_names);
+        robot->collisionDetect(cache, dist,normal,xA,xB,idxA,idxB,active_bodies_idx,active_group_names);
       } else {
-        robot->collisionDetect(dist,normal,xA,xB,idxA,idxB,active_bodies_idx);
+        robot->collisionDetect(cache, dist,normal,xA,xB,idxA,idxB,active_bodies_idx);
       }
     } else {
       if (active_group_names.size() > 0) {
-        robot->collisionDetect(dist,normal,xA,xB,idxA,idxB,active_group_names);
+        robot->collisionDetect(cache, dist,normal,xA,xB,idxA,idxB,active_group_names);
       } else {
-        robot->collisionDetect(dist,normal,xA,xB,idxA,idxB);
+        robot->collisionDetect(cache, dist,normal,xA,xB,idxA,idxB);
       }
     }
 

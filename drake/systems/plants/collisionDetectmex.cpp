@@ -21,8 +21,8 @@ using namespace std;
 void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
 
   //check number of arguments
-  if (nrhs < 3) {
-    mexErrMsgIdAndTxt("Drake:collisionDetectmex:NotEnoughInputs", "Usage: [xA,xB,normal,distance,idxA,idxB] = collisionDetectmex(mex_model_ptr, allow_multiple_contacts, active_collision_options)");
+  if (nrhs < 4) {
+    mexErrMsgIdAndTxt("Drake:collisionDetectmex:NotEnoughInputs", "Usage: [xA,xB,normal,distance,idxA,idxB] = collisionDetectmex(mex_model_ptr, cache_ptr, allow_multiple_contacts, active_collision_options)");
   }
 
   //check argument types
@@ -30,23 +30,28 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     mexErrMsgIdAndTxt("Drake:collisionDetectmex:InvalidInputType", "Expected a DrakeMexPointer for mex_model_ptr but got something else.");
   }
 
-  if (!mxIsLogical(prhs[1])) {
+  if (!mxIsClass(prhs[1], "DrakeMexPointer")) {
+    mexErrMsgIdAndTxt("Drake:collisionDetectmex:InvalidInputType", "Expected a DrakeMexPointer for cache_ptr but got something else.");
+  }
+
+  if (!mxIsLogical(prhs[2])) {
     mexErrMsgIdAndTxt("Drake:collisionDetectmex:InvalidInputType", "Expected a boolean logic type for allow_multiple_collisions but got something else.");
   }
 
-  if (!mxIsStruct(prhs[2])) { 
+  if (!mxIsStruct(prhs[3])) {
     mexErrMsgIdAndTxt("Drake:collisionDetectmex:InvalidInputType", "Expected a struct type for active_collision_options but got something else.");    
   }
 
-  // first get the model_ptr back from matlab
-  RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+  int arg_num = 0;
+  RigidBodyManipulator *model = static_cast<RigidBodyManipulator*>(getDrakeMexPointer(prhs[arg_num++]));
+  KinematicsCache<double>* cache = static_cast<KinematicsCache<double>*>(getDrakeMexPointer(prhs[arg_num++]));
 
   // Parse `active_collision_options`
   vector<int> active_bodies_idx;
   set<string> active_group_names;
 
-  const mxArray* active_collision_options = prhs[2];
-  const mxArray* allow_multiple_contacts = prhs[1];
+  const mxArray* allow_multiple_contacts = prhs[arg_num++];
+  const mxArray* active_collision_options = prhs[arg_num++];
 
   const mxArray* body_idx = mxGetField(active_collision_options, 0, "body_idx");
   if (body_idx != NULL) {
@@ -81,21 +86,21 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
 
   if (active_bodies_idx.size() > 0) {
     if (active_group_names.size() > 0) {
-      model->collisionDetect(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
+      model->collisionDetect(*cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
                               active_bodies_idx,active_group_names);
     } else {
-      model->collisionDetect(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
+      model->collisionDetect(*cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
                               active_bodies_idx);
     }
   } else {
     const bool multiple_contacts = mxIsLogicalScalarTrue(allow_multiple_contacts);
     if(multiple_contacts) {
-      model->potentialCollisions(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx);
+      model->potentialCollisions(*cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx);
     } else if (active_group_names.size() > 0) {
-      model->collisionDetect(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
+      model->collisionDetect(*cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
                              active_group_names);
     } else {
-      model->collisionDetect(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx);
+      model->collisionDetect(*cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx);
     }
   }
 

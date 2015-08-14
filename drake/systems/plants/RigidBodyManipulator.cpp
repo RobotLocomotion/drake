@@ -185,16 +185,7 @@ void RigidBodyManipulator::compile(void)
   VectorXd q = VectorXd::Zero(num_positions); // TODO: this is not a valid configuration if there are any QuaternionFloatingJoints, but then again we only need transforms to world for bodies without a parent
   VectorXd v = VectorXd::Zero(0);
   KinematicsCache<double> cache = doKinematics(q, v, false, false);
-  for (int i=0; i<num_bodies; i++) {
-    auto& body = bodies[i];
-    if (!body->hasParent()) {
-      updateCollisionElements(body, cache); // update static objects (not done in the kinematics loop)
-    }
-
-    // update the body's contact points
-    getTerrainContactPoints(*body, body->contact_pts);
-  }
-
+  updateStaticCollisionElements(cache);
 }
 
 void RigidBodyManipulator::getRandomConfiguration(Eigen::VectorXd& q, std::default_random_engine& generator) const
@@ -257,15 +248,34 @@ DrakeCollision::ElementId RigidBodyManipulator::addCollisionElement(const RigidB
   return id;
 }
 
-template <typename Scalar>
-void RigidBodyManipulator::updateCollisionElements(const shared_ptr<RigidBody>& body, KinematicsCache<Scalar> & kin_cache)
+void RigidBodyManipulator::updateCollisionElements(const RigidBody& body, const Eigen::Transform<double, 3, Eigen::Isometry>& transform_to_world)
 {
-  for (auto id_iter = body->collision_element_ids.begin();
-       id_iter != body->collision_element_ids.end();
-       ++id_iter) {
-    collision_model->updateElementWorldTransform(*id_iter, kin_cache.getElement(*body).transform_to_world.matrix());
+  for (auto id_iter = body.collision_element_ids.begin(); id_iter != body.collision_element_ids.end(); ++id_iter) {
+    collision_model->updateElementWorldTransform(*id_iter, transform_to_world.matrix());
   }
-};
+}
+
+void RigidBodyManipulator::updateStaticCollisionElements(const KinematicsCache<double>& cache)
+{
+  for (auto it = bodies.begin(); it != bodies.end(); ++it) {
+    RigidBody& body = **it;
+    if (!body.hasParent()) {
+      updateCollisionElements(body, cache.getElement(body).transform_to_world);
+      getTerrainContactPoints(body, body.contact_pts);
+    }
+  }
+}
+
+void RigidBodyManipulator::updateDynamicCollisionElements(const KinematicsCache<double>& cache)
+{
+  for (auto it = bodies.begin(); it != bodies.end(); ++it) {
+    const RigidBody& body = **it;
+    if (body.hasParent()) {
+      updateCollisionElements(body, cache.getElement(body).transform_to_world);
+    }
+  }
+  collision_model->updateModel();
+}
 
 void RigidBodyManipulator::getTerrainContactPoints(const RigidBody& body, Eigen::Matrix3Xd &terrain_points) const
 {
@@ -273,9 +283,7 @@ void RigidBodyManipulator::getTerrainContactPoints(const RigidBody& body, Eigen:
   size_t num_points = 0;
   terrain_points.resize(Eigen::NoChange,0);
 
-  for (auto id_iter = body.collision_element_ids.begin();
-       id_iter != body.collision_element_ids.end();
-       ++id_iter) {
+  for (auto id_iter = body.collision_element_ids.begin(); id_iter != body.collision_element_ids.end();++id_iter) {
 
     Matrix3Xd element_points;
     collision_model->getTerrainContactPoints(*id_iter, element_points);
@@ -285,24 +293,29 @@ void RigidBodyManipulator::getTerrainContactPoints(const RigidBody& body, Eigen:
   }
 }
 
-bool RigidBodyManipulator::collisionRaycast(const Matrix3Xd &origins,
+bool RigidBodyManipulator::collisionRaycast(const KinematicsCache<double>& cache,
+                                            const Matrix3Xd &origins,
                                             const Matrix3Xd &ray_endpoints,
                                             VectorXd &distances,
                                             bool use_margins )
 {
+  updateDynamicCollisionElements(cache);
   return collision_model->collisionRaycast(origins, ray_endpoints, use_margins, distances);
 }
 
 
-bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
-                                            Matrix3Xd& normal,
-                                            Matrix3Xd& xA,
-                                            Matrix3Xd& xB,
-                                            vector<int>& bodyA_idx,
-                                            vector<int>& bodyB_idx,
-                                            const vector<DrakeCollision::ElementId>& ids_to_check,
-                                            bool use_margins)
+bool RigidBodyManipulator::collisionDetect(const KinematicsCache<double>& cache,
+                                           VectorXd& phi,
+                                           Matrix3Xd& normal,
+                                           Matrix3Xd& xA,
+                                           Matrix3Xd& xB,
+                                           vector<int>& bodyA_idx,
+                                           vector<int>& bodyB_idx,
+                                           const vector<DrakeCollision::ElementId>& ids_to_check,
+                                           bool use_margins)
 {
+  updateDynamicCollisionElements(cache);
+
   vector<DrakeCollision::PointPair> points;
   //DEBUG
   //cout << "RigidBodyManipulator::collisionDetect: calling collision_model->closestPointsAllToAll" << endl;
@@ -339,15 +352,16 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
   return points_found;
 }
 
-bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
-                                            Matrix3Xd& normal,
-                                            Matrix3Xd& xA,
-                                            Matrix3Xd& xB,
-                                            vector<int>& bodyA_idx,
-                                            vector<int>& bodyB_idx,
-                                            const vector<int>& bodies_idx,
-                                            const set<string>& active_element_groups,
-                                            bool use_margins)
+bool RigidBodyManipulator::collisionDetect(const KinematicsCache<double>& cache,
+                                           VectorXd& phi,
+                                           Matrix3Xd& normal,
+                                           Matrix3Xd& xA,
+                                           Matrix3Xd& xB,
+                                           vector<int>& bodyA_idx,
+                                           vector<int>& bodyB_idx,
+                                           const vector<int>& bodies_idx,
+                                           const set<string>& active_element_groups,
+                                           bool use_margins)
 {
   vector<DrakeCollision::ElementId> ids_to_check;
   for (auto body_idx_iter = bodies_idx.begin();
@@ -361,17 +375,18 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
       }
     }
   }
-  return collisionDetect(phi, normal, xA, xB, bodyA_idx, bodyB_idx, ids_to_check, use_margins);
+  return collisionDetect(cache, phi, normal, xA, xB, bodyA_idx, bodyB_idx, ids_to_check, use_margins);
 }
 
-bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
-                                            Matrix3Xd& normal,
-                                            Matrix3Xd& xA,
-                                            Matrix3Xd& xB,
-                                            vector<int>& bodyA_idx,
-                                            vector<int>& bodyB_idx,
-                                            const vector<int>& bodies_idx,
-                                            bool use_margins)
+bool RigidBodyManipulator::collisionDetect(const KinematicsCache<double>& cache,
+                                           VectorXd& phi,
+                                           Matrix3Xd& normal,
+                                           Matrix3Xd& xA,
+                                           Matrix3Xd& xB,
+                                           vector<int>& bodyA_idx,
+                                           vector<int>& bodyB_idx,
+                                           const vector<int>& bodies_idx,
+                                           bool use_margins)
 {
   vector<DrakeCollision::ElementId> ids_to_check;
   for (auto body_idx_iter = bodies_idx.begin();
@@ -381,17 +396,18 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
       bodies[*body_idx_iter]->appendCollisionElementIdsFromThisBody(ids_to_check);
     }
   }
-  return collisionDetect(phi, normal, xA, xB, bodyA_idx, bodyB_idx, ids_to_check, use_margins);
+  return collisionDetect(cache, phi, normal, xA, xB, bodyA_idx, bodyB_idx, ids_to_check, use_margins);
 }
 
-bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
-                                            Matrix3Xd& normal,
-                                            Matrix3Xd& xA,
-                                            Matrix3Xd& xB,
-                                            vector<int>& bodyA_idx,
-                                            vector<int>& bodyB_idx,
-                                            const set<string>& active_element_groups,
-                                            bool use_margins)
+bool RigidBodyManipulator::collisionDetect(const KinematicsCache<double>& cache,
+                                           VectorXd& phi,
+                                           Matrix3Xd& normal,
+                                           Matrix3Xd& xA,
+                                           Matrix3Xd& xB,
+                                           vector<int>& bodyA_idx,
+                                           vector<int>& bodyB_idx,
+                                           const set<string>& active_element_groups,
+                                           bool use_margins)
 {
   vector<DrakeCollision::ElementId> ids_to_check;
   for (auto body_iter = bodies.begin();
@@ -403,16 +419,17 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
       (*body_iter)->appendCollisionElementIdsFromThisBody(*group_iter, ids_to_check);
     }
   }
-  return collisionDetect(phi, normal, xA, xB, bodyA_idx, bodyB_idx, ids_to_check, use_margins);
+  return collisionDetect(cache, phi, normal, xA, xB, bodyA_idx, bodyB_idx, ids_to_check, use_margins);
 }
 
-bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
-                                            Matrix3Xd& normal,
-                                            Matrix3Xd& xA,
-                                            Matrix3Xd& xB,
-                                            vector<int>& bodyA_idx,
-                                            vector<int>& bodyB_idx,
-                                            bool use_margins)
+bool RigidBodyManipulator::collisionDetect(const KinematicsCache<double>& cache,
+                                           VectorXd& phi,
+                                           Matrix3Xd& normal,
+                                           Matrix3Xd& xA,
+                                           Matrix3Xd& xB,
+                                           vector<int>& bodyA_idx,
+                                           vector<int>& bodyB_idx,
+                                           bool use_margins)
 {
   vector<DrakeCollision::ElementId> ids_to_check;
   for (auto body_iter = bodies.begin();
@@ -420,18 +437,18 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
        ++body_iter) {
     (*body_iter)->appendCollisionElementIdsFromThisBody(ids_to_check);
   }
-  return collisionDetect(phi, normal, xA, xB, bodyA_idx, bodyB_idx, ids_to_check, use_margins);
+  return collisionDetect(cache, phi, normal, xA, xB, bodyA_idx, bodyB_idx, ids_to_check, use_margins);
 }
 
-void RigidBodyManipulator::potentialCollisions(VectorXd& phi,
-                                            Matrix3Xd& normal,
-                                            Matrix3Xd& xA,
-                                            Matrix3Xd& xB,
-                                            vector<int>& bodyA_idx,
-                                            vector<int>& bodyB_idx,
-                                            bool use_margins)
+void RigidBodyManipulator::potentialCollisions(const KinematicsCache<double>& cache, VectorXd& phi,
+                                               Matrix3Xd& normal,
+                                               Matrix3Xd& xA,
+                                               Matrix3Xd& xB,
+                                               vector<int>& bodyA_idx,
+                                               vector<int>& bodyB_idx,
+                                               bool use_margins)
 {
-
+  updateDynamicCollisionElements(cache);
   vector<DrakeCollision::PointPair> potential_collisions;
   potential_collisions = collision_model->potentialCollisionPoints(use_margins);
   size_t num_potential_collisions = potential_collisions.size();
@@ -460,18 +477,21 @@ void RigidBodyManipulator::potentialCollisions(VectorXd& phi,
   }
 }
 
-vector<size_t> RigidBodyManipulator::collidingPoints(
+vector<size_t> RigidBodyManipulator::collidingPoints(const KinematicsCache<double>& cache,
     const vector<Vector3d>& points,
     double collision_threshold)
 {
+  updateDynamicCollisionElements(cache);
   return collision_model->collidingPoints(points, collision_threshold);
 }
 
-bool RigidBodyManipulator::allCollisions(vector<int>& bodyA_idx,
+bool RigidBodyManipulator::allCollisions(const KinematicsCache<double>& cache, vector<int>& bodyA_idx,
                                          vector<int>& bodyB_idx,
                                          Matrix3Xd& xA_in_world, Matrix3Xd& xB_in_world,
                                          bool use_margins)
 {
+  updateDynamicCollisionElements(cache);
+
   vector<DrakeCollision::PointPair> points;
   bool points_found = collision_model->collisionPointsAllToAll(use_margins, points);
 
@@ -515,13 +535,13 @@ void RigidBodyManipulator::warnOnce(const string& id, const string& msg)
 //};
 
 template <typename DerivedQ, typename DerivedV>
-KinematicsCache<typename DerivedQ::Scalar> RigidBodyManipulator::doKinematics(const MatrixBase<DerivedQ> &q, const MatrixBase<DerivedV> &v, bool compute_gradients, bool compute_JdotV) {
+KinematicsCache<typename DerivedQ::Scalar> RigidBodyManipulator::doKinematics(const MatrixBase<DerivedQ> &q, const MatrixBase<DerivedV> &v, bool compute_gradients, bool compute_JdotV) const {
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(MatrixBase<DerivedQ>);
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(MatrixBase<DerivedV>);
   assert(q.rows() == num_positions);
   assert(v.rows() == num_velocities || v.rows() == 0);
-  if (!initialized)
-    compile();
+//  if (!initialized)
+//    compile();
 
   int nq = num_positions;
   int gradient_order = compute_gradients ? 1 : 0;
@@ -672,9 +692,6 @@ KinematicsCache<typename DerivedQ::Scalar> RigidBodyManipulator::doKinematics(co
           }
         }
       }
-
-      // Update collision geometries
-      updateCollisionElements(bodies[i], cache);
     }
     else {
       element.transform_to_world.setIdentity();
@@ -712,9 +729,6 @@ KinematicsCache<typename DerivedQ::Scalar> RigidBodyManipulator::doKinematics(co
       }
     }
   }
-
-  // Have the collision model do any model-wide updates that it needs to
-  collision_model->updateModel();
 
   cache.cached_inertia_gradients_order = -1;
   cache.gradients_cached = compute_gradients;
@@ -770,7 +784,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::worldMomen
     throw std::runtime_error("only first order gradient is available");
   cache.checkCachedKinematicsSettings(gradient_order > 0, false, false, "worldMomentumMatrix");
 
-  updateCompositeRigidBodyInertias(cache, gradient_order);
+  updateCompositeRigidBodyInertias(cache, cache.gradient_order);
 
   int nq = num_positions;
   int nv = num_velocities;
@@ -820,7 +834,7 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::worldMomentumMatrixDotT
     throw std::runtime_error("only first order gradient is available");
   cache.checkCachedKinematicsSettings(gradient_order > 0, true, true, "worldMomentumMatrixDotTimesV");
 
-  updateCompositeRigidBodyInertias(cache, gradient_order);
+  updateCompositeRigidBodyInertias(cache, cache.gradient_order);
 
   GradientVar<Scalar, TWIST_SIZE, 1> ret(TWIST_SIZE, 1, num_positions, gradient_order);
   ret.value().setZero();
@@ -1402,7 +1416,7 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMa
   if (gradient_order > 0)
     ret.gradient().value().setZero();
 
-  updateCompositeRigidBodyInertias(cache, gradient_order);
+  updateCompositeRigidBodyInertias(cache, cache.gradient_order);
 
   for (int i = 0; i < num_bodies; i++) {
     RigidBody& body_i = *bodies[i];
@@ -1473,7 +1487,7 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(Kin
     throw std::runtime_error("only first order gradients are available");
   cache.checkCachedKinematicsSettings(gradient_order > 0, true, true, "inverseDynamics");
 
-  updateCompositeRigidBodyInertias(cache, gradient_order);
+  updateCompositeRigidBodyInertias(cache, cache.gradient_order);
 
   int nq = num_positions;
   int nv = num_velocities;
@@ -1905,7 +1919,7 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, 1> RigidBodyManipula
   return ret;
 }
 
-shared_ptr<RigidBody> RigidBodyManipulator::findLink(string linkname, int robot) const
+shared_ptr<RigidBody> RigidBodyManipulator::findLink(std::string linkname, int robot) const
 {
   std::transform(linkname.begin(), linkname.end(), linkname.begin(), ::tolower); // convert to lower case
 
@@ -1959,7 +1973,7 @@ shared_ptr<RigidBody> RigidBodyManipulator::findLink(string linkname, int robot)
   }
 }
 
-int RigidBodyManipulator::findLinkId(string name, int robot) const
+int RigidBodyManipulator::findLinkId(const std::string& name, int robot) const
 {
 	shared_ptr<RigidBody> link = findLink(name,robot);
 	if (link == nullptr)
@@ -1967,7 +1981,7 @@ int RigidBodyManipulator::findLinkId(string name, int robot) const
 	return link->body_index;
 }
 
-shared_ptr<RigidBody> RigidBodyManipulator::findJoint(string jointname, int robot) const
+shared_ptr<RigidBody> RigidBodyManipulator::findJoint(std::string jointname, int robot) const
 {
   std::transform(jointname.begin(), jointname.end(), jointname.begin(), ::tolower); // convert to lower case
 
@@ -2020,14 +2034,13 @@ shared_ptr<RigidBody> RigidBodyManipulator::findJoint(string jointname, int robo
   }
 }
 
-int RigidBodyManipulator::findJointId(string name, int robot) const
+int RigidBodyManipulator::findJointId(const std::string& name, int robot) const
 {
 	shared_ptr<RigidBody> link = findJoint(name,robot);
 	if (link == nullptr)
     throw std::runtime_error("could not find joint id: " + name);
 	return link->body_index;
 }
-
 
 std::string RigidBodyManipulator::getBodyOrFrameName(int body_or_frame_id) const
 {
@@ -2062,8 +2075,6 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints
 template <typename DerivedA, typename DerivedB, typename DerivedC>
 void RigidBodyManipulator::jointLimitConstraints(MatrixBase<DerivedA> const & q, MatrixBase<DerivedB> &phi, MatrixBase<DerivedC> &J) const
 {
-  // FIXME: iterate of fixedAxisOneDoFJoints
-
   std::vector<int> finite_min_index;
   std::vector<int> finite_max_index;
 
@@ -2177,14 +2188,14 @@ void RigidBodyManipulator::addFrame(const RigidBodyFrame& frame)
 }
 
 // explicit instantiations (required for linking):
-template DLLEXPORT_RBM KinematicsCache<double> RigidBodyManipulator::doKinematics(const MatrixBase<Map<VectorXd> > &, const MatrixBase<Map<VectorXd> > &, bool, bool);
+template DLLEXPORT_RBM KinematicsCache<double> RigidBodyManipulator::doKinematics(const MatrixBase<Map<VectorXd> > &, const MatrixBase<Map<VectorXd> > &, bool, bool) const;
 template DLLEXPORT_RBM KinematicsCache<double> RigidBodyManipulator::doKinematics<Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, 0, Eigen::Stride<0, 0> >, Eigen::Matrix<double, -1, 1, 0, -1, 1> >(
-    Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, 0, Eigen::Stride<0, 0> > > const &, Eigen::MatrixBase<Eigen::Matrix<double, -1, 1, 0, -1, 1> > const &, bool, bool);
-template DLLEXPORT_RBM KinematicsCache<double> RigidBodyManipulator::doKinematics(const MatrixBase<VectorXd> &, const MatrixBase<VectorXd> &, bool, bool);
-template DLLEXPORT_RBM KinematicsCache<double> RigidBodyManipulator::doKinematics(const MatrixBase<Block<MatrixXd, -1, 1, true> > &, const MatrixBase<Block<MatrixXd, -1, 1, true> > &, bool, bool);
-template DLLEXPORT_RBM KinematicsCache<double> RigidBodyManipulator::doKinematics(const MatrixBase<Block<MatrixXd, -1, 1, true> > &, const MatrixBase<Map<VectorXd> > &, bool, bool);
+    Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, 0, Eigen::Stride<0, 0> > > const &, Eigen::MatrixBase<Eigen::Matrix<double, -1, 1, 0, -1, 1> > const &, bool, bool) const;
+template DLLEXPORT_RBM KinematicsCache<double> RigidBodyManipulator::doKinematics(const MatrixBase<VectorXd> &, const MatrixBase<VectorXd> &, bool, bool) const;
+template DLLEXPORT_RBM KinematicsCache<double> RigidBodyManipulator::doKinematics(const MatrixBase<Block<MatrixXd, -1, 1, true> > &, const MatrixBase<Block<MatrixXd, -1, 1, true> > &, bool, bool) const;
+template DLLEXPORT_RBM KinematicsCache<double> RigidBodyManipulator::doKinematics(const MatrixBase<Block<MatrixXd, -1, 1, true> > &, const MatrixBase<Map<VectorXd> > &, bool, bool) const;
 template DLLEXPORT_RBM KinematicsCache<double> RigidBodyManipulator::doKinematics<Eigen::Map<Eigen::VectorXd, 0, Eigen::Stride<0, 0> >, Eigen::VectorXd >(Eigen::MatrixBase<Eigen::Map<Eigen::VectorXd, 0, Eigen::Stride<0, 0> > > const &,
-                                                                                                                                       Eigen::MatrixBase<Eigen::VectorXd> const &, bool, bool);
+                                                                                                                                       Eigen::MatrixBase<Eigen::VectorXd> const &, bool, bool) const;
 
 template DLLEXPORT_RBM void RigidBodyManipulator::getContactPositions(const KinematicsCache<double>& cache, MatrixBase <MatrixXd > &, const set<int> &) const;
 template DLLEXPORT_RBM void RigidBodyManipulator::getContactPositionsJac(const KinematicsCache<double>& cache, MatrixBase <MatrixXd > &,const set<int> &) const;
@@ -2227,4 +2238,3 @@ template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints(MatrixBa
 template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints(MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > &) const;
 
 template DLLEXPORT_RBM std::pair<Eigen::Vector3d, double> RigidBodyManipulator::resolveCenterOfPressure(const KinematicsCache<double>&, const std::vector<ForceTorqueMeasurement> &, const Eigen::MatrixBase<Eigen::Vector3d> &, const Eigen::MatrixBase<Eigen::Vector3d> &) const;
-template DLLEXPORT_RBM void RigidBodyManipulator::updateCollisionElements(const shared_ptr<RigidBody>& body, KinematicsCache<double> & kin_cache);

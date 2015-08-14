@@ -13,40 +13,43 @@ using namespace std;
 
 void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   
-  if (nrhs < 1) {
-    mexErrMsgIdAndTxt("Drake:collisionRaycastmex:NotEnoughInputs","Usage collisionRaycastmex(model_ptr, origin_vector, ray_endpoint)");
+  if (nrhs < 5) {
+    mexErrMsgIdAndTxt("Drake:collisionRaycastmex:NotEnoughInputs","Usage collisionRaycastmex(model_ptr, cache_ptr, origin_vector, ray_endpoint, use_margins)");
   }
 
-  // first get the model_ptr back from matlab
-  RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+  int arg_num = 0;
+  RigidBodyManipulator *model = static_cast<RigidBodyManipulator*>(getDrakeMexPointer(prhs[arg_num++]));
+  KinematicsCache<double>* cache = static_cast<KinematicsCache<double>*>(getDrakeMexPointer(prhs[arg_num++]));
   
+  const mxArray* origin_vector_mex = prhs[arg_num++];
+  const mxArray* ray_endpoint_mex = prhs[arg_num++];
+  bool use_margins = (mxGetScalar(prhs[arg_num++])!=0.0);
+
+  Matrix3Xd origins(3, mxGetN(origin_vector_mex)), ray_endpoints(3, mxGetN(ray_endpoint_mex));
   
-  Matrix3Xd origins(3, mxGetN(prhs[1])), ray_endpoints(3, mxGetN(prhs[2]));
-  
-  if (mxIsNumeric(prhs[1]) != true) {
+  if (!mxIsNumeric(origin_vector_mex)) {
       mexErrMsgIdAndTxt("Drake:collisionRaycastmex:InputNotNumeric","Expected a numeric value, got something else.");
   }
   
-  if (mxIsNumeric(prhs[2]) != true) {
+  if (!mxIsNumeric(ray_endpoint_mex)) {
       mexErrMsgIdAndTxt("Drake:collisionRaycastmex:InputNotNumeric","Expected a numeric value, got something else.");
   }
   
   
-  if (mxGetM(prhs[1]) != 3) {
-    mexErrMsgIdAndTxt("Drake:collisionRaycastmex:InputSizeWrong","Expected a 3 x N matrix, got %d x %d.", mxGetM(prhs[1]), mxGetN(prhs[1]));
+  if (mxGetM(origin_vector_mex) != 3) {
+    mexErrMsgIdAndTxt("Drake:collisionRaycastmex:InputSizeWrong","Expected a 3 x N matrix, got %d x %d.", mxGetM(origin_vector_mex), mxGetN(origin_vector_mex));
   }
   
-  if (mxGetM(prhs[2]) != 3) {
-    mexErrMsgIdAndTxt("Drake:collisionRaycastmex:InputSizeWrong","Expected a 3-element vector for ray_endpoint, got %d elements", mxGetNumberOfElements(prhs[2]));
+  if (mxGetM(ray_endpoint_mex) != 3) {
+    mexErrMsgIdAndTxt("Drake:collisionRaycastmex:InputSizeWrong","Expected a 3-element vector for ray_endpoint, got %d elements", mxGetNumberOfElements(ray_endpoint_mex));
   }
   
   
-  memcpy(origins.data(), mxGetPrSafe(prhs[1]), sizeof(double)*mxGetNumberOfElements(prhs[1]));
-  memcpy(ray_endpoints.data(), mxGetPrSafe(prhs[2]), sizeof(double)*mxGetNumberOfElements(prhs[2]));
-  bool use_margins = (mxGetScalar(prhs[3])!=0.0);
+  memcpy(origins.data(), mxGetPrSafe(origin_vector_mex), sizeof(double)*mxGetNumberOfElements(origin_vector_mex));
+  memcpy(ray_endpoints.data(), mxGetPrSafe(ray_endpoint_mex), sizeof(double)*mxGetNumberOfElements(ray_endpoint_mex));
   VectorXd distances;
   
-  model->collisionRaycast(origins, ray_endpoints, distances, use_margins);
+  model->collisionRaycast(*cache, origins, ray_endpoints, distances, use_margins);
   
   if (nlhs>0) {
     plhs[0] = mxCreateDoubleMatrix(static_cast<int>(distances.size()),1,mxREAL);

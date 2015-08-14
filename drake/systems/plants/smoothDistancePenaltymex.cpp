@@ -205,18 +205,18 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   VectorXd dist;
   if (active_bodies_idx.size() > 0) {
     if (active_group_names.size() > 0) {
-      model-> collisionDetect(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
+      model->collisionDetect(*cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
                               active_bodies_idx,active_group_names);
     } else {
-      model-> collisionDetect(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
+      model->collisionDetect(*cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
                               active_bodies_idx);
     }
   } else {
     if (active_group_names.size() > 0) {
-      model-> collisionDetect(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
+      model->collisionDetect(*cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
                              active_group_names);
     } else {
-      model-> collisionDetect(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx);
+      model->collisionDetect(*cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx);
     }
   }
 
