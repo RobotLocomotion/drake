@@ -16,6 +16,7 @@ option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"							ON)
 # OFF by default:
 option(WITH_GTK 		"precompiled gtk binaries/headers for Windows")
 option(WITH_DIRECTOR	"vtk-based visualization tool and robot user interface")
+option(WITH_SIGNALSCOPE	"live plotting tool for lcm messages")
 option(WITH_IRIS		"fast approximate convex segmentation")
 option(WITH_OCTOMAP 	"provides oct-tree data structures")
 option(WITH_SNOPT 		"nonlinear optimization solver; requires access to RobotLocomotion/snopt-pod")
@@ -43,6 +44,7 @@ endif()
 set(lcm_dependencies gtk)
 set(libbot_dependencies lcm)
 set(director_dependencies lcm libbot)
+set(signalscope_dependencies director)
 set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi)
 
 # download information, in alphabetical order
@@ -59,6 +61,8 @@ set(cmake_NO_BUILD TRUE)
 set(director_GIT_REPOSITORY https://github.com/RobotLocomotion/director.git)
 set(director_GIT_TAG f44045f75e931165d9f519b989bdbd1ad8e70b08)
 set(director_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/director/distro/pods/drake-distro)
+set(signalscope_GIT_REPOSITORY https://github.com/mitdrc/signal-scope.git)
+set(signalscope_GIT_TAG dc61a95daf31d25c730a075b5a8c9bba9eadafb3)
 set(eigen_GIT_REPOSITORY https://github.com/RobotLocomotion/eigen-pod.git)
 set(eigen_GIT_TAG fb56a4b8504eb115a7f257de4570c47c20c43397)
 set(gtk_GIT_REPOSITORY https://github.com/RobotLocomotion/gtk-pod.git)
@@ -102,7 +106,7 @@ endif()
 # process optional projects
 # note: keep drake in this loop in case externals depend on drake (e.g. the director might in the near future)
 set(EXTERNAL_PROJECTS)
-foreach(proj IN ITEMS cmake eigen gtk lcm libbot bullet iris spotless director octomap snopt gurobi mosek yalmip gloptipoly bertini sedumi avl xfoil drake)
+foreach(proj IN ITEMS cmake eigen gtk lcm libbot bullet iris spotless director signalscope octomap snopt gurobi mosek yalmip gloptipoly bertini sedumi avl xfoil drake)
 	string(TOUPPER ${proj} proj_upper)
 	if (${proj} STREQUAL "drake" OR ${proj} STREQUAL "cmake" OR WITH_${proj_upper} OR WITH_ALL_SUPPORTED_EXTERNALS)
 		list(APPEND EXTERNAL_PROJECTS ${proj})
@@ -131,7 +135,7 @@ macro( unsupported )
 endmacro()
 
 if (WIN32)
-	unsupported(libbot octomap gurobi mosek yalmip gloptipoly bertini sedumi avl xfoil iris director)  # many of these could potentially work, but haven't been tried
+	unsupported(libbot octomap gurobi mosek yalmip gloptipoly bertini sedumi avl xfoil iris director signalscope)  # many of these could potentially work, but haven't been tried
 	unsupported(bullet)  # drake has a silly c++11 compile error.  probably just for MSVC << 2013
 	unsupported(lcm)  # just have to reliably add drake/build/lib to the path so that lcm-gen.exe can run when building drake.  note: move GTK back into ON by default for win32 only when I re-enable lcm
 endif()
