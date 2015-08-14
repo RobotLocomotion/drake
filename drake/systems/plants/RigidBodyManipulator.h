@@ -99,7 +99,7 @@ public:
   std::string getStateName(int state_num) const;
 
   template <typename DerivedQ, typename DerivedV>
-  KinematicsCache<typename DerivedQ::Scalar> doKinematics(const MatrixBase<DerivedQ> &q, const MatrixBase<DerivedV> &v, bool compute_gradients = false, bool compute_JdotV = true);
+  KinematicsCache<typename DerivedQ::Scalar> doKinematics(const MatrixBase<DerivedQ> &q, const MatrixBase<DerivedV> &v, bool compute_gradients = false, bool compute_JdotV = true) const;
 
   bool isBodyPartOfRobot(const RigidBody& body, const std::set<int>& robotnum) const;
 
@@ -193,56 +193,67 @@ public:
 
   DrakeCollision::ElementId addCollisionElement(const RigidBody::CollisionElement& element, const std::shared_ptr<RigidBody>& body, std::string group_name);
 
-  template <typename Scalar>
-  void updateCollisionElements(const std::shared_ptr<RigidBody>& body, KinematicsCache<Scalar>& kin_cache);
+  void updateCollisionElements(const RigidBody& body, const Eigen::Transform<double, 3, Eigen::Isometry>& transform_to_world);
+
+  void updateStaticCollisionElements(const KinematicsCache<double>& cache);
+
+  void updateDynamicCollisionElements(const KinematicsCache<double>& kin_cache);
 
   void getTerrainContactPoints(const RigidBody& body, Eigen::Matrix3Xd &terrain_points) const;
 
-  bool collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances, bool use_margins=false);
+  bool collisionRaycast(const KinematicsCache<double>& cache, const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances, bool use_margins=false);
 
-  bool collisionDetect( VectorXd& phi,
-                        Matrix3Xd& normal,
-                        Matrix3Xd& xA,
-                        Matrix3Xd& xB,
-                        std::vector<int>& bodyA_idx,
-                        std::vector<int>& bodyB_idx,
-                        const std::vector<DrakeCollision::ElementId>& ids_to_check,
-                        bool use_margins);
+  bool collisionDetect(const KinematicsCache<double>& cache,
+                       VectorXd& phi,
+                       Matrix3Xd& normal,
+                       Matrix3Xd& xA,
+                       Matrix3Xd& xB,
+                       std::vector<int>& bodyA_idx,
+                       std::vector<int>& bodyB_idx,
+                       const std::vector<DrakeCollision::ElementId>& ids_to_check,
+                       bool use_margins);
 
-  bool collisionDetect( VectorXd& phi, Matrix3Xd& normal,
-                        Matrix3Xd& xA, Matrix3Xd& xB,
-                        std::vector<int>& bodyA_idx,
-                        std::vector<int>& bodyB_idx,
-                        const std::vector<int>& bodies_idx,
-                        const std::set<std::string>& active_element_groups,
+  bool collisionDetect(const KinematicsCache<double>& cache,
+                       VectorXd& phi,
+                       Matrix3Xd& normal,
+                       Matrix3Xd& xA, Matrix3Xd& xB,
+                       std::vector<int>& bodyA_idx,
+                       std::vector<int>& bodyB_idx,
+                       const std::vector<int>& bodies_idx,
+                       const std::set<std::string>& active_element_groups,
+                       bool use_margins = true);
+
+  bool collisionDetect(const KinematicsCache<double>& cache,
+                       VectorXd& phi, Matrix3Xd& normal,
+                       Matrix3Xd& xA, Matrix3Xd& xB,
+                       std::vector<int>& bodyA_idx,
+                       std::vector<int>& bodyB_idx,
+                       const std::vector<int>& bodies_idx,
+                       bool use_margins = true);
+
+  bool collisionDetect(const KinematicsCache<double>& cache,
+                       VectorXd& phi, Matrix3Xd& normal,
+                       Matrix3Xd& xA, Matrix3Xd& xB,
+                       std::vector<int>& bodyA_idx,
+                       std::vector<int>& bodyB_idx,
+                       const std::set<std::string>& active_element_groups,
+                       bool use_margins = true);
+
+  bool collisionDetect(const KinematicsCache<double>& cache,
+                       VectorXd& phi, Matrix3Xd& normal,
+                       Matrix3Xd& xA, Matrix3Xd& xB,
+                       std::vector<int>& bodyA_idx,
+                       std::vector<int>& bodyB_idx,
                         bool use_margins = true);
 
-  bool collisionDetect( VectorXd& phi, Matrix3Xd& normal,
-                        Matrix3Xd& xA, Matrix3Xd& xB,
-                        std::vector<int>& bodyA_idx,
-                        std::vector<int>& bodyB_idx,
-                        const std::vector<int>& bodies_idx,
-                        bool use_margins = true);
 
-  bool collisionDetect( VectorXd& phi, Matrix3Xd& normal,
-                        Matrix3Xd& xA, Matrix3Xd& xB,
-                        std::vector<int>& bodyA_idx,
-                        std::vector<int>& bodyB_idx,
-                        const std::set<std::string>& active_element_groups,
-                        bool use_margins = true);
-
-  bool collisionDetect( VectorXd& phi, Matrix3Xd& normal,
-                        Matrix3Xd& xA, Matrix3Xd& xB,
-                        std::vector<int>& bodyA_idx,
-                        std::vector<int>& bodyB_idx,
-                        bool use_margins = true);
-
-
-  bool allCollisions(std::vector<int>& bodyA_idx, std::vector<int>& bodyB_idx,
+  bool allCollisions(const KinematicsCache<double>& cache,
+                     std::vector<int>& bodyA_idx, std::vector<int>& bodyB_idx,
                      Matrix3Xd& ptsA, Matrix3Xd& ptsB,
-                        bool use_margins = true);
+                     bool use_margins = true);
 
-  void potentialCollisions(Eigen::VectorXd& phi,
+  void potentialCollisions(const KinematicsCache<double>& cache,
+                           Eigen::VectorXd& phi,
                            Eigen::Matrix3Xd& normal,
                            Eigen::Matrix3Xd& xA,
                            Eigen::Matrix3Xd& xB,
@@ -251,16 +262,16 @@ public:
                            bool use_margins = true);
   //bool closestDistanceAllBodies(VectorXd& distance, MatrixXd& Jd);
 
-  virtual std::vector<size_t> collidingPoints(
-        const std::vector<Eigen::Vector3d>& points,
+  virtual std::vector<size_t> collidingPoints(const KinematicsCache<double>& cache,
+                                              const std::vector<Eigen::Vector3d>& points,
         double collision_threshold);
 
   void warnOnce(const std::string& id, const std::string& msg);
 
   std::shared_ptr<RigidBody> findLink(std::string linkname, int robot=-1) const;
-  int findLinkId(std::string linkname, int robot = -1) const;
+  int findLinkId(const std::string& linkname, int robot = -1) const;
   std::shared_ptr<RigidBody> findJoint(std::string jointname, int robot=-1) const;
-  int findJointId(std::string linkname, int robot = -1) const;
+  int findJointId(const std::string& linkname, int robot = -1) const;
   //@param robot   the index of the robot. robot = -1 means to look at all the robots
 
   std::string getBodyOrFrameName(int body_or_frame_id) const;
