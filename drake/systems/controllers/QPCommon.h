@@ -4,7 +4,7 @@
 #include "controlUtil.h"
 #include "drakeUtil.h"
 #include "fastQP.h"
-#include "drake/lcmt_qp_controller_input.hpp"
+#include "lcmtypes/drake/lcmt_qp_controller_input.hpp"
 #include "ExponentialPlusPiecewisePolynomial.h"
 #include <vector>
 #include "ForceTorqueMeasurement.h"
