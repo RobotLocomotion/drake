@@ -1,5 +1,3 @@
-include_directories (${PROJECT_BINARY_DIR}/lcmgen/lcmtypes )
-
 if (simulink_FOUND)
   add_mex(realtime realtime.cpp)
   endif()
@@ -51,7 +49,6 @@ if (LCM_FOUND)
   # note: requires drakeUtil header file, but not linking against it because
   # we only need methods that are templated and defined in the header
   include_directories (${PROJECT_SOURCE_DIR}/systems/trajectories )
-  include_directories (${PROJECT_BINARY_DIR}/lcmgen/lcmtypes )
   add_library(drakeLCMUtil SHARED lcmUtil.cpp)
   add_dependencies(drakeLCMUtil ${LCMTYPES_C_LIBRARY})
   target_link_libraries(drakeLCMUtil drakeTrajectories)

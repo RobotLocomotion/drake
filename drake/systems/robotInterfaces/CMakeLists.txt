@@ -4,7 +4,6 @@ include_directories (${PROJECT_SOURCE_DIR}/systems/controllers )
 include_directories (${PROJECT_SOURCE_DIR}/systems/plants )
 include_directories (${PROJECT_SOURCE_DIR}/systems/plants/joints )
 include_directories (${PROJECT_SOURCE_DIR}/solvers/qpSpline )
-include_directories (${PROJECT_BINARY_DIR}/lcmgen/lcmtypes )
 include_directories (${PROJECT_SOURCE_DIR}/examples/Atlas)
 
 add_library(drakeSide SHARED Side.cpp)
