@@ -5,7 +5,6 @@
 
 include_directories(..)
 include_directories(${PROJECT_SOURCE_DIR}/systems/trajectories)
-include_directories(${PROJECT_BINARY_DIR}/lcmgen/lcmtypes)
 
 if (NOT WIN32)
   # doesn't work because the timing tests require the <chrono> include
