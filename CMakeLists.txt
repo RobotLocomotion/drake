@@ -28,6 +28,7 @@ option(WITH_BERTINI 	"solve polynomial equations; free but pod requires permissi
 option(WITH_SEDUMI		"semi-definite programming solver")
 option(WITH_AVL			"use w/ XFOIL to compute aerodynamic coefficients for airfoils")
 option(WITH_XFOIL		"use w/ AVL to compute aerodynamic coefficients for airfoils")
+option(WITH_MESHCONVERTERS "uses vcglib to convert a few standard filetypes")
 
 # system dependent defaults:
 if (WIN32)
@@ -77,6 +78,8 @@ set(lcm_GIT_REPOSITORY https://github.com/RobotLocomotion/lcm-pod.git)
 set(lcm_GIT_TAG 31e9a3e2dd056cac749fc2879e841434181180ad) # cmake branch 
 set(libbot_GIT_REPOSITORY https://github.com/RobotLocomotion/libbot.git)
 set(libbot_GIT_TAG c328b73f3b48008d04468031e26f48468a7e3cc0)
+set(meshconverters_GIT_REPOSITORY https://github.com/RobotLocomotion/meshConverters.git)
+set(meshconverters_GIT_TAG 34daf686ebdb7fa572cbe32af983dfe91a2af761)
 set(mosek_GIT_REPOSITORY https://github.com/RobotLocomotion/mosek.git)
 set(mosek_GIT_TAG a72594c4a7c8c5c026fd291148bcac76146634c2)
 set(octomap_GIT_REPOSITORY https://github.com/RobotLocomotion/octomap-pod.git)
@@ -106,7 +109,7 @@ endif()
 # process optional projects
 # note: keep drake in this loop in case externals depend on drake (e.g. the director might in the near future)
 set(EXTERNAL_PROJECTS)
-foreach(proj IN ITEMS cmake eigen gtk lcm libbot bullet iris spotless director signalscope octomap snopt gurobi mosek yalmip gloptipoly bertini sedumi avl xfoil drake)
+foreach(proj IN ITEMS cmake eigen gtk lcm libbot bullet iris spotless director signalscope octomap snopt gurobi mosek yalmip gloptipoly bertini sedumi avl xfoil meshconverters drake)
 	string(TOUPPER ${proj} proj_upper)
 	if (${proj} STREQUAL "drake" OR ${proj} STREQUAL "cmake" OR WITH_${proj_upper} OR WITH_ALL_SUPPORTED_EXTERNALS)
 		list(APPEND EXTERNAL_PROJECTS ${proj})
@@ -135,7 +138,7 @@ macro( unsupported )
 endmacro()
 
 if (WIN32)
-	unsupported(libbot octomap gurobi mosek yalmip gloptipoly bertini sedumi avl xfoil iris director signalscope)  # many of these could potentially work, but haven't been tried
+	unsupported(libbot octomap gurobi mosek yalmip gloptipoly bertini sedumi avl xfoil iris director signalscope meshconverters)  # many of these could potentially work, but haven't been tried
 	unsupported(bullet)  # drake has a silly c++11 compile error.  probably just for MSVC << 2013
 	unsupported(lcm)  # just have to reliably add drake/build/lib to the path so that lcm-gen.exe can run when building drake.  note: move GTK back into ON by default for win32 only when I re-enable lcm
 endif()
