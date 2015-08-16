@@ -138,7 +138,7 @@ macro( unsupported )
 endmacro()
 
 if (WIN32)
-	unsupported(libbot octomap gurobi mosek yalmip gloptipoly bertini sedumi avl xfoil iris director signalscope)  # many of these could potentially work, but haven't been tried
+	unsupported(libbot octomap gurobi mosek yalmip gloptipoly bertini sedumi avl xfoil iris director signalscope meshconverters)  # many of these could potentially work, but haven't been tried
 	unsupported(bullet)  # drake has a silly c++11 compile error.  probably just for MSVC << 2013
 	unsupported(lcm)  # just have to reliably add drake/build/lib to the path so that lcm-gen.exe can run when building drake.  note: move GTK back into ON by default for win32 only when I re-enable lcm
 endif()
