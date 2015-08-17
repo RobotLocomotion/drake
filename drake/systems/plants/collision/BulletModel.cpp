@@ -119,9 +119,12 @@ namespace DrakeCollision
         bt_shape->setMargin(BulletModel::large_margin);
       else
         bt_shape->setMargin(BulletModel::small_margin);
-      for (int i=0; i<vertices.cols(); i++){
-        dynamic_cast<btConvexHullShape*>(bt_shape.get())->addPoint(btVector3(vertices(0,i),vertices(1,i),vertices(2,i)));
+      auto bt_convex_hull_shape = dynamic_cast<btConvexHullShape*>(bt_shape.get());
+      for (int i = 0; i < vertices.cols(); i++) {
+        bt_convex_hull_shape->addPoint(btVector3(vertices(0, i), vertices(1, i), vertices(2, i)), false);
       }
+      bt_convex_hull_shape->recalcLocalAabb();
+
       return bt_shape;
     } else {
       return nullptr;
@@ -135,9 +138,11 @@ namespace DrakeCollision
       bt_shape->setMargin(BulletModel::large_margin);
     else
       bt_shape->setMargin(BulletModel::small_margin);
-    for (int i=0; i<geometry.points.cols(); i++){
-      dynamic_cast<btConvexHullShape*>(bt_shape.get())->addPoint(btVector3(geometry.points(0,i),geometry.points(1,i),geometry.points(2,i)));
+    auto bt_convex_hull_shape = dynamic_cast<btConvexHullShape*>(bt_shape.get());
+    for (int i = 0; i < geometry.points.cols(); i++){
+      bt_convex_hull_shape->addPoint(btVector3(geometry.points(0, i), geometry.points(1, i), geometry.points(2, i)), false);
     }
+    bt_convex_hull_shape->recalcLocalAabb();
     return bt_shape;
   }
 
