@@ -15,7 +15,7 @@ classdef Observer < DrakeSystem
       if (nargin<3), num_xd=0; end
       if (nargin<4), direct_feedthrough_flag = true; end
       if (nargin<5), time_invariant_flag = false; end
-      obj = obj@DrakeSystem(num_xc,num_xd,getNumInputs(sys_to_observe)+getNumOutputs(sys_to_observe),getNumStates(sys_to_observer),direct_feedthrough_flag,time_invariant_flag);
+      obj = obj@DrakeSystem(num_xc,num_xd,getNumInputs(sys_to_observe)+getNumOutputs(sys_to_observe),getNumStates(sys_to_observe),direct_feedthrough_flag,time_invariant_flag);
 
       % setup input/output frames
       obj = setInputFrame(obj,MultiCoordinateFrame.constructFrame({getInputFrame(sys_to_observe),getOutputFrame(sys_to_observe)}));
@@ -26,6 +26,10 @@ classdef Observer < DrakeSystem
     
     function sys = constructErrorSystem(obj)
       sys = ObserverErrorSystem(obj)
+    end
+    
+    function x0 = getInitialState(obj)
+        x0 = zeros(obj.num_xc + obj.num_xd, 1);
     end
   end
   
