@@ -26,7 +26,8 @@ coord2_t cross(const Point &O, const Point &A, const Point &B)
 vector<Point> convexHull(vector<Point> P)
 {
 
-  size_t n = P.size(), k = 0;
+  ptrdiff_t n = P.size();
+  ptrdiff_t k = 0;
   vector<Point> H(2*n);
 
   if (n == 2) {
