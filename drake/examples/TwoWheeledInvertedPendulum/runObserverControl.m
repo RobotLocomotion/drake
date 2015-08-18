@@ -18,15 +18,9 @@ observer.forward_model = LinearSystem(A, B, [], [], C, []);
 controller = r.balanceLQR();
 
 %wire up the system
-sysCl = buildClosedLoopObserverControl(r, observer, controller);
+sysCl = mimoFeedback(mimoCascade(r,observer),controller);
 
 ytraj = sysCl.simulate([0, 5]);
 v.playback(ytraj)
-
-function sysCl = buildClosedLoopObserverControl(plant, observer, controller)
-  output_select.system = 1;
-  output_select.output = 1;
-  sysCl = mimoFeedback(mimoCascade(plant,observer),controller,[],[],[],output_select);
-end
 
 end
