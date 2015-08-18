@@ -429,7 +429,7 @@ template <typename CoefficientType>
 void Polynomial<CoefficientType>::makeMonomialsUnique(void)
 {
   VarType unique_var = 0;    // also update the univariate flag
-  for (int i=monomials.size()-1; i>=0; i--) {
+  for (size_t i=monomials.size()-1; i>=0; i--) {
     Monomial& mi=monomials[i];
     if (!mi.terms.empty()) {
       if (mi.terms.size()>1) is_univariate = false;
@@ -441,7 +441,7 @@ void Polynomial<CoefficientType>::makeMonomialsUnique(void)
         }
       }
     }
-    for (int j=0; j<(i-1); j++) {
+    for (size_t j=0; j<(i-1); j++) {
       Monomial& mj=monomials[j];
       if (mi.hasSameExponents(mj)) {
         // it's a match, so delete monomial i

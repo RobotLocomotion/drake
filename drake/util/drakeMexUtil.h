@@ -101,7 +101,7 @@ mxArray* stdVectorToMatlab(const std::vector<Scalar>& vec) {
   return pm;
 }
 
-DLLEXPORT void sizecheck(const mxArray* mat, int M, int N);
+DLLEXPORT void sizecheck(const mxArray* mat, mwSize M, mwSize N);
 
 template <size_t Rows, size_t Cols>
 void matlabToCArrayOfArrays(const mxArray *source, double (&destination)[Rows][Cols])  {

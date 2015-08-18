@@ -175,9 +175,10 @@ typename Gradient<Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsA
 template<typename DerivedGradient, typename DerivedAutoDiff>
 void gradientMatrixToAutoDiff(const Eigen::MatrixBase<DerivedGradient>& gradient, Eigen::MatrixBase<DerivedAutoDiff>& auto_diff_matrix)
 {
-  int nx = gradient.cols();
-  for (size_t row = 0; row < auto_diff_matrix.rows(); row++) {
-    for (size_t col = 0; col < auto_diff_matrix.cols(); col++) {
+  typedef typename Eigen::MatrixBase<DerivedGradient>::Index Index;
+  auto nx = gradient.cols();
+  for (Index row = 0; row < auto_diff_matrix.rows(); row++) {
+    for (Index col = 0; col < auto_diff_matrix.cols(); col++) {
       auto_diff_matrix(row, col).derivatives().resize(nx, 1);
       auto_diff_matrix(row, col).derivatives() = gradient.row(row + col * auto_diff_matrix.rows()).transpose();
     }
