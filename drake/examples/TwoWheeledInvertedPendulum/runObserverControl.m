@@ -24,16 +24,9 @@ ytraj = sysCl.simulate([0, 5]);
 v.playback(ytraj)
 
 function sysCl = buildClosedLoopObserverControl(plant, observer, controller)
-  output_select(1).system = 1;
-  output_select(1).output = 1;
-  output_select(2).system = 2;
-  output_select(2).output = 1;
-  sys = mimoCascade(controller,plant,[],[],output_select);
-
-  clear output_select;
-  output_select(1).system = 2;
-  output_select(1).output = 1;
-  sysCl = mimoFeedback(sys,observer,[],[],[],output_select);
+  output_select.system = 1;
+  output_select.output = 1;
+  sysCl = mimoFeedback(mimoCascade(plant,observer),controller,[],[],[],output_select);
 end
 
 end
