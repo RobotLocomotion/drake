@@ -47,7 +47,7 @@ vector<Point> convexHull(vector<Point> P)
   }
  
   // Build upper hull
-  for (size_t i = n-2, t = k+1; i >= 0; i--) {
+  for (ptrdiff_t i = n-2, t = k+1; i >= 0; i--) {
     while (k >= t && cross(H[k-2], H[k-1], P[i]) <= 0) k--;
     H[k++] = P[i];
   }
