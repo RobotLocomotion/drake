@@ -20,26 +20,20 @@ controller = r.balanceLQR();
 %wire up the system
 sysCl = buildClosedLoopObserverControl(r, observer, controller);
 
-xtraj = sysCl.simulate([0, 5]);
-v.playback(xtraj)
+ytraj = sysCl.simulate([0, 5]);
+v.playback(ytraj)
 
 function sysCl = buildClosedLoopObserverControl(plant, observer, controller)
-    mdl_name = 'observer_control';
-    new_system(mdl_name, 'Model');
-    mdl = SimulinkModelHandle(mdl_name);
-    mdl.addSubsystem('plant', getModel(plant));
-    mdl.addSubsystem('controller', getModel(controller));
-    mdl.addSubsystem('observer', getModel(observer));
-    add_block('simulink3/Signals & Systems/Mux', [mdl_name, '/Mux']);
-    mdl.add_line('controller/1', 'Mux/1');
-    mdl.add_line('controller/1', 'plant/1');
-    mdl.add_line('plant/1', 'Mux/2');
-    mdl.add_line('Mux/1', 'observer/1');
-    mdl.add_line('observer/1', 'controller/1');
-    add_block('simulink3/Sinks/Out1',  [mdl_name, '/out']);
-    mdl.add_line('observer/1', 'out/1');
-    sysCl = SimulinkModel(mdl, 0);
-    sysCl = sysCl.setOutputFrame(observer.getOutputFrame);
+  output_select(1).system = 1;
+  output_select(1).output = 1;
+  output_select(2).system = 2;
+  output_select(2).output = 1;
+  sys = mimoCascade(controller,plant,[],[],output_select);
+
+  clear output_select;
+  output_select(1).system = 2;
+  output_select(1).output = 1;
+  sysCl = mimoFeedback(sys,observer,[],[],[],output_select);
 end
 
 end
