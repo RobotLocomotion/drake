@@ -109,7 +109,29 @@ endif()
 # process optional projects
 # note: keep drake in this loop in case externals depend on drake (e.g. the director might in the near future)
 set(EXTERNAL_PROJECTS)
-foreach(proj IN ITEMS cmake eigen gtk lcm libbot bullet iris spotless director signalscope octomap snopt gurobi mosek yalmip gloptipoly bertini sedumi avl xfoil meshconverters drake)
+foreach(proj IN ITEMS 
+		cmake
+		eigen
+		gtk
+		lcm
+		libbot
+		bullet
+		iris
+		spotless
+		director
+		signalscope
+		octomap
+		snopt
+		gurobi
+		mosek
+		yalmip
+		gloptipoly
+		bertini
+		sedumi
+		avl
+		xfoil
+		meshconverters
+		drake)
 	string(TOUPPER ${proj} proj_upper)
 	if (${proj} STREQUAL "drake" OR ${proj} STREQUAL "cmake" OR WITH_${proj_upper} OR WITH_ALL_SUPPORTED_EXTERNALS)
 		list(APPEND EXTERNAL_PROJECTS ${proj})
