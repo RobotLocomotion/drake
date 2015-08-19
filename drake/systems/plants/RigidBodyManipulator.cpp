@@ -1737,7 +1737,7 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, Eigen::Dynamic> Rigi
         J.value().template block<Eigen::Dynamic, 1>(row_start, *it, Jrot.rows(), 1) = Jrot.col(col);
         col++;
       }
-      row_start += qrot.rows();
+      row_start += static_cast<int>(qrot.rows());
     }
   }
 
@@ -1792,7 +1792,7 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, Eigen::Dynamic> Rigi
           }
           col++;
         }
-        row_start += qrot.rows();
+        row_start += static_cast<int>(qrot.rows());
       }
     }
   }
@@ -2202,7 +2202,7 @@ void RigidBodyManipulator::checkCachedKinematicsSettings(bool kinematics_gradien
 void RigidBodyManipulator::addFrame(const RigidBodyFrame& frame)
 {
   frames.push_back(frame);
-  num_frames = frames.size();
+  num_frames = static_cast<int>(frames.size());
 }
 
 // explicit instantiations (required for linking):

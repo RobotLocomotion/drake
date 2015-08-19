@@ -30,7 +30,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   }
   else
   {
-    int num_t = mxGetNumberOfElements(prhs[2]);
+    size_t num_t = mxGetNumberOfElements(prhs[2]);
     if(num_t == 0)
     {
       t_ptr = nullptr;

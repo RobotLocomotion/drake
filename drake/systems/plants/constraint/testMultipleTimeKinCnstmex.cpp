@@ -24,7 +24,7 @@ void mexFunction(int nlhs,mxArray* plhs[], int nrhs, const mxArray * prhs[])
     mexErrMsgIdAndTxt("Drake:testMultipleTimeKinCnstmex:BadInputs","Usage [type,num_cnst,cnst_val,dcnst_val,cnst_name,lb,ub] = testMultipleTimeKinCnstmex(kinCnst,q,t)");
   }
   MultipleTimeKinematicConstraint* cnst = (MultipleTimeKinematicConstraint*) getDrakeMexPointer(prhs[0]);
-  int n_breaks = mxGetNumberOfElements(prhs[2]);
+  int n_breaks = static_cast<int>(mxGetNumberOfElements(prhs[2]));
   double* t_ptr = new double[n_breaks];
   memcpy(t_ptr,mxGetPrSafe(prhs[2]),sizeof(double)*n_breaks);
   int nq = cnst->getRobotPointer()->num_positions;
