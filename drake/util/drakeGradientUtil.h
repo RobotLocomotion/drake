@@ -77,6 +77,16 @@ template<int QSubvectorSize, typename Derived>
 struct GetSubMatrixGradientSingleElement {
   typedef typename Eigen::Block<const Derived, 1, ((QSubvectorSize == Eigen::Dynamic) ? Derived::ColsAtCompileTime : QSubvectorSize)> type;
 };
+
+template <typename Derived>
+struct AutoDiffToValueMatrix {
+  typedef typename Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime> type;
+};
+
+template <typename Derived>
+struct AutoDiffToGradientMatrix {
+  typedef typename Gradient<Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>, Eigen::Dynamic>::type type;
+};
  
 /*
  * Profile results: looks like return value optimization works; a version that sets a reference
@@ -130,8 +140,8 @@ DLLEXPORT void setSubMatrixGradient(Eigen::MatrixBase<DerivedDM>& dM, const Eige
     typename DerivedDM::Index q_start = 0, typename DerivedDM::Index q_subvector_size = QSubvectorSize);
 
 template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime> autoDiffToValueMatrix(const Eigen::MatrixBase<Derived>& auto_diff_matrix) {
-  Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime> ret(auto_diff_matrix.rows(), auto_diff_matrix.cols());
+typename AutoDiffToValueMatrix<Derived>::type autoDiffToValueMatrix(const Eigen::MatrixBase<Derived>& auto_diff_matrix) {
+  typename AutoDiffToValueMatrix<Derived>::type ret(auto_diff_matrix.rows(), auto_diff_matrix.cols());
   for (int i = 0; i < auto_diff_matrix.rows(); i++) {
     for (int j = 0; j < auto_diff_matrix.cols(); ++j) {
       ret(i, j) = auto_diff_matrix(i, j).value();
@@ -141,7 +151,7 @@ Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsAtCompileTime, Deri
 };
 
 template<typename Derived>
-typename Gradient<Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>, Eigen::Dynamic>::type autoDiffToGradientMatrix(
+typename AutoDiffToGradientMatrix<Derived>::type autoDiffToGradientMatrix(
         const Eigen::MatrixBase<Derived>& auto_diff_matrix, int num_variables = Eigen::Dynamic)
 {
   int num_variables_from_matrix = 0;
@@ -158,7 +168,7 @@ typename Gradient<Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsA
     throw std::runtime_error(buf.str());
   }
 
-  typename Gradient<Eigen::Matrix<typename Derived::Scalar::Scalar, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>, Eigen::Dynamic>::type gradient(auto_diff_matrix.size(), num_variables);
+  typename AutoDiffToGradientMatrix<Derived>::type gradient(auto_diff_matrix.size(), num_variables);
   for (int row = 0; row < auto_diff_matrix.rows(); row++) {
     for (int col = 0; col < auto_diff_matrix.cols(); col++) {
       auto gradient_row = gradient.row(row + col * auto_diff_matrix.rows()).transpose();
