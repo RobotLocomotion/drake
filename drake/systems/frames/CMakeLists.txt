@@ -1,2 +1,2 @@
 
-add_subdirectory(@CoordinateFrameTest)
+add_subdirectory(@CoordinateFrame)

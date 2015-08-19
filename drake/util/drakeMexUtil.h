@@ -106,6 +106,7 @@ mxArray* stdVectorToMatlab(const std::vector<Scalar>& vec) {
   return pm;
 }
 DLLEXPORT mxArray* stdStringToMatlab(const std::string& str);
+DLLEXPORT mxArray* vectorOfStdStringsToMatlab(const std::vector<std::string>& strs);
 
 DLLEXPORT void sizecheck(const mxArray* mat, int M, int N);
 

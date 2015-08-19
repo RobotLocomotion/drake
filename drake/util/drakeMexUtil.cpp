@@ -168,6 +168,17 @@ mxArray* stdStringToMatlab(const std::string& str)
   return mxCreateString(str.c_str());
 }
 
+mxArray* vectorOfStdStringsToMatlab(const std::vector<std::string>& strs) {
+  mxArray* cell = mxCreateCellMatrix(1,strs.size());
+  for (int i=0; i<strs.size(); i++) {
+    mxSetCell(cell,i,mxCreateString(strs[i].c_str()));
+  }
+  return cell;
+}
+
+
+
+
 double * mxGetPrSafe(const mxArray *pobj) {
   if (!mxIsDouble(pobj)) mexErrMsgIdAndTxt("Drake:mxGetPrSafe:BadInputs", "mxGetPr can only be called on arguments which correspond to Matlab doubles");
   return mxGetPr(pobj);
