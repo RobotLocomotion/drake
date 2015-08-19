@@ -62,6 +62,14 @@ if ispc
 end
 
 
+jarfiledir = fullfile(pods_get_base_path(), 'share', 'java');
+if exist(jarfiledir, 'dir') 
+ javaaddpathIfNew(jarfiledir);
+ for jarfile = dir(fullfile(jarfiledir, '*.jar'))'; 
+   javaaddpathIfNew(fullfile(jarfiledir, jarfile.name)); 
+ end
+end
+
 clear util/checkDependency;  % makes sure that the persistent variable in the dependency checker gets cleared
 clear util/getDrakePath;
 
@@ -70,6 +78,12 @@ clear util/getDrakePath;
 % Any other use will be considered a violation of the license.  You can obtain a free license
 % from here: http://pages.cs.wisc.edu/~ferris/path.html
 setenv('PATH_LICENSE_STRING', '2096056969&Russ_Tedrake&Massachusetts_Institute_of_Technology&&USR&75042&18_4_2014&1000&PATH&GEN&0_0_0&0_0_0&5000&0_0');
+end
 
 
+function javaaddpathIfNew(p)
+ % Add a .jar to the dynamic java classpath only if it hasn't already been added
+ if ~any(cellfun(@(x) strcmp(x, p), javaclasspath('-dynamic')))
+   javaaddpathProtectGlobals(p);
+ end
 end
