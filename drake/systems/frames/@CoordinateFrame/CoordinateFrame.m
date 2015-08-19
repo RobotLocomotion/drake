@@ -1,4 +1,4 @@
-classdef CoordinateFrame < DrakeMexPointer
+classdef CoordinateFrame < handle
 % Every input, state, and output in a DynamicalSystem has a coordinate frame
 % attached to it.  Many bugs can be avoided by forcing developers to be
 % explicit about these coordinate systems when they make combinations of
@@ -8,6 +8,7 @@ classdef CoordinateFrame < DrakeMexPointer
     prefix='';
     transforms={};  % handles to CoordinateTransform objects
     poly=[];        % optional msspoly variables for this frame
+    mex_ptr=[];
   end
 
   methods
@@ -67,9 +68,9 @@ classdef CoordinateFrame < DrakeMexPointer
         coordinates = {coordinates{:}}';
       end
       
-      mex_ptr_args = cell(1,3);
-      [mex_ptr_args{:}] = CoordinateFrame.new(name,dim,coordinates);
-      obj = obj@DrakeMexPointer(mex_ptr_args{:});
+      if isempty(obj.mex_ptr) % because it may have already been set by a derived class
+        obj.mex_ptr = CoordinateFrame.new(name,dim,coordinates);
+      end
       obj.prefix = prefix;
     end
 

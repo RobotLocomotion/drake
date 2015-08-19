@@ -17,5 +17,5 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
   CoordinateFrame* frame = new CoordinateFrame(name,dim,coordinates);
 
-  populateDrakeMexPointerArguments(nlhs, plhs, frame, name,0,NULL,"CoordinateFrame.");
+  plhs[0] = createDrakeMexPointer(frame,name,0,NULL,"","CoordinateFrame.");
 }
