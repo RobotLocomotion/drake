@@ -32,12 +32,17 @@ DLLEXPORT mxArray* mxGetFieldOrPropertySafe(const mxArray* array, size_t index, 
 
 
 // Mex pointers shared through matlab
-DLLEXPORT mxArray* createDrakeMexPointer(void* ptr, const char* name="", int num_additional_inputs=0, mxArray *delete_fcn_additional_inputs[] = NULL, const char* subclass_name=NULL);  // increments lock count
 // Note: the same mex function which calls this method will be called with the syntax mexFunction(drake_mex_ptr) as the destructor
+
+DLLEXPORT void populateDrakeMexPointerArguments(int nlhs, mxArray *plhs[], void* ptr, const std::string& name="", int num_additional_inputs=0, mxArray *delete_fcn_additional_inputs[] = NULL, const std::string& mex_function_name_prefix="");
+DLLEXPORT mxArray* createDrakeMexPointer(void* ptr, const std::string& name="", int num_additional_inputs=0, mxArray *delete_fcn_additional_inputs[] = NULL, const std::string& subclass_name="");  // increments lock count
 DLLEXPORT void* getDrakeMexPointer(const mxArray* mx);
 
 template <typename Derived> inline void destroyDrakeMexPointer(const mxArray* mx)
 {
+  if (!isa(mx, "DrakeMexPointer"))
+    mexErrMsgIdAndTxt("Drake:destroyDrakeMexPointer:BadInputs","This object is not a DrakeMexPointer.  Delete failed.");
+
   Derived typed_ptr = (Derived) getDrakeMexPointer(mx);
 
   //mexPrintf("deleting drake mex pointer\n");
@@ -46,6 +51,7 @@ template <typename Derived> inline void destroyDrakeMexPointer(const mxArray* mx
 
 //  mexPrintf(mexIsLocked() ? "mex file is locked\n" : "mex file is unlocked\n");
 }
+
 
 template <typename Derived>
 DLLEXPORT mxArray* eigenToMatlabSparse(Eigen::MatrixBase<Derived> const & M, int & num_non_zero);
@@ -89,6 +95,7 @@ Eigen::Map<const Eigen::Matrix<double, Rows, Cols>> matlabToEigenMap(const mxArr
 }
 
 DLLEXPORT std::string mxGetStdString(const mxArray* array);
+DLLEXPORT std::vector<std::string> mxGetVectorOfStdStrings(const mxArray* array);
 
 template <typename Scalar>
 mxArray* stdVectorToMatlab(const std::vector<Scalar>& vec) {
@@ -98,6 +105,7 @@ mxArray* stdVectorToMatlab(const std::vector<Scalar>& vec) {
   }
   return pm;
 }
+DLLEXPORT mxArray* stdStringToMatlab(const std::string& str);
 
 DLLEXPORT void sizecheck(const mxArray* mat, int M, int N);
 

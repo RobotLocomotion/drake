@@ -47,39 +47,52 @@ bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs, mxArray* prhs[], con
   return false;
 }
 
+void populateDrakeMexPointerArguments(int nlhs, mxArray *plhs[], void* ptr, const std::string& name, int num_additional_inputs, mxArray *delete_fcn_additional_inputs[], const std::string& mex_function_name_prefix) {
+  mxClassID cid;
+  if (sizeof(ptr) == 4) cid = mxUINT32_CLASS;
+  else if (sizeof(ptr) == 8) cid = mxUINT64_CLASS;
+  else
+    mexErrMsgIdAndTxt("Drake:populateDrakeMexPointerArguments:PointerSize", "Are you on a 32-bit machine or 64-bit machine??");
+
+  if (nlhs < 2) mexErrMsgIdAndTxt("Drake:populateDrakeMexPointerArguments", "Need at least two arguments");
+
+  plhs[0] = mxCreateNumericMatrix(1, 1, cid, mxREAL);
+  memcpy(mxGetData(plhs[0]), &ptr, sizeof(ptr));
+  plhs[1] = mxCreateString((mex_function_name_prefix+mexFunctionName()).c_str());
+
+  if (nlhs > 2)
+    plhs[2] = mxCreateString(name.c_str());
+
+  for (int i = 0; i < num_additional_inputs; i++) {
+    if (nlhs < 3 + i)
+      mexErrMsgIdAndTxt("Drake:populateDrakeMexPointerArguments",
+                        "Insufficient outputs given the specified number of additional inputs");
+    plhs[3 + i] = delete_fcn_additional_inputs[i];
+  }
+
+  mexLock();
+//  mexPrintf("incrementing lock count\n");
+}
+
+
+
 /*
  * @param subclass_name (optional) if you want to call a class that derives from
  * DrakeMexPointer (e.g. so that you can refer to it as something more specific in
  * your matlab code), then you can pass in the alternative name here.  The constructor
  * for this class must take the same inputs as the DrakeMexPointer constructor.
  */
-mxArray* createDrakeMexPointer(void* ptr, const char* name, int num_additional_inputs, mxArray* delete_fcn_additional_inputs[], const char* subclass_name)
-{
-  mxClassID cid;
-  if (sizeof(ptr) == 4) cid = mxUINT32_CLASS;
-  else if (sizeof(ptr) == 8) cid = mxUINT64_CLASS;
-  else mexErrMsgIdAndTxt("Drake:constructDrakeMexPointer:PointerSize", "Are you on a 32-bit machine or 64-bit machine??");
-
+mxArray* createDrakeMexPointer(void* ptr, const std::string& name, int num_additional_inputs, mxArray* delete_fcn_additional_inputs[], const std::string& subclass_name) {
   int nrhs = 3 + num_additional_inputs;
   mxArray *plhs[1];
-  mxArray **prhs;  
-  prhs = new mxArray*[nrhs];
+  mxArray **prhs;
+  prhs = new mxArray *[nrhs];
 
-  prhs[0] = mxCreateNumericMatrix(1, 1, cid, mxREAL);
-  memcpy(mxGetData(prhs[0]), &ptr, sizeof(ptr));
-
-  prhs[1] = mxCreateString(mexFunctionName());
-
-  prhs[2] = mxCreateString(name);
-
-  for (int i = 0; i < num_additional_inputs; i++)
-    prhs[3+i] = delete_fcn_additional_inputs[i];
-
-//  mexPrintf("deleteMethod = %s\n name =%s\n", deleteMethod,name);
+  populateDrakeMexPointerArguments(nrhs, prhs, ptr, name, num_additional_inputs, delete_fcn_additional_inputs);
 
   // call matlab to construct mex pointer object
-  if (subclass_name) {
-    mexCallMATLABsafe(1, plhs, nrhs, prhs, subclass_name);
+  if (!subclass_name.empty()) {
+    mexCallMATLABsafe(1, plhs, nrhs, prhs, subclass_name.c_str());
     if (!isa(plhs[0], "DrakeMexPointer")) {
       mxDestroyArray(plhs[0]);
       mexErrMsgIdAndTxt("Drake:createDrakeMexPointer:InvalidSubclass", "subclass_name is not a valid subclass of DrakeMexPointer");
@@ -88,13 +101,10 @@ mxArray* createDrakeMexPointer(void* ptr, const char* name, int num_additional_i
   else
     mexCallMATLABsafe(1, plhs, nrhs, prhs, "DrakeMexPointer");
 
-  mexLock();
-
-//  mexPrintf("incrementing lock count\n");
-
   delete[] prhs;
   return plhs[0];
 }
+
 
 void* getDrakeMexPointer(const mxArray* mx)
 {
@@ -127,6 +137,7 @@ void* getDrakeMexPointer(const mxArray* mx)
   return ptr;
 }
 
+
 std::string mxGetStdString(const mxArray* array) {
   mwSize buffer_length = mxGetNumberOfElements(array) + 1;
   char* buffer = new char[buffer_length];
@@ -141,6 +152,20 @@ std::string mxGetStdString(const mxArray* array) {
     delete[] buffer;
     return ret;
   }
+}
+
+std::vector<std::string> mxGetVectorOfStdStrings(const mxArray* array) {
+  std::vector<std::string> strings;
+  int numel = mxGetNumberOfElements(array);
+  for (int i=0; i<numel; i++) {
+    strings.push_back(mxGetStdString(mxGetCell(array,i)));
+  }
+  return strings;
+}
+
+mxArray* stdStringToMatlab(const std::string& str)
+{
+  return mxCreateString(str.c_str());
 }
 
 double * mxGetPrSafe(const mxArray *pobj) {
