@@ -4,7 +4,8 @@ classdef CoordinateFrame < DrakeMexPointer
 % explicit about these coordinate systems when they make combinations of
 % systems.
 
-  properties (Access=private)
+  properties (Access=protected)
+    prefix='';
     transforms={};  % handles to CoordinateTransform objects
     poly=[];        % optional msspoly variables for this frame
   end
@@ -67,8 +68,9 @@ classdef CoordinateFrame < DrakeMexPointer
       end
       
       mex_ptr_args = cell(1,3);
-      [mex_ptr_args{:}] = CoordinateFrame.new(name,dim,prefix(1),coordinates);
+      [mex_ptr_args{:}] = CoordinateFrame.new(name,dim,coordinates);
       obj = obj@DrakeMexPointer(mex_ptr_args{:});
+      obj.prefix = prefix;
     end
 
     function tf = hasSamePrefix(frame1,frame2)

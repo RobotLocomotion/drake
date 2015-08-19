@@ -18,8 +18,8 @@
 
 class DLLEXPORT_FRAME CoordinateFrame {
 public:
-  CoordinateFrame(std::string& _name, unsigned int _dim, std::string& _prefix, std::vector<std::string>& _coordinates)
-          : name(_name), dim(_dim), prefix(_prefix), coordinates(_coordinates) {};
+  CoordinateFrame(std::string& _name, unsigned int _dim, std::vector<std::string>& _coordinates)
+          : name(_name), dim(_dim), coordinates(_coordinates) {};
   virtual ~CoordinateFrame(void) {};
 
   const std::string& getName() const { return name; };
@@ -40,7 +40,6 @@ public:
 private:
   std::string name;
   unsigned int dim;
-  std::string prefix;
   std::vector<std::string> coordinates;
 };
 

@@ -169,7 +169,7 @@ mxArray* stdStringToMatlab(const std::string& str)
 }
 
 mxArray* vectorOfStdStringsToMatlab(const std::vector<std::string>& strs) {
-  mxArray* cell = mxCreateCellMatrix(1,strs.size());
+  mxArray* cell = mxCreateCellMatrix(strs.size(),1);
   for (int i=0; i<strs.size(); i++) {
     mxSetCell(cell,i,mxCreateString(strs[i].c_str()));
   }
