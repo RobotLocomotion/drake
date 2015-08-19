@@ -69,7 +69,7 @@ set(eigen_GIT_TAG fb56a4b8504eb115a7f257de4570c47c20c43397)
 set(gtk_GIT_REPOSITORY https://github.com/RobotLocomotion/gtk-pod.git)
 set(gtk_GIT_TAG dc9bb719ee771a2ae9c3a392796c42ccad5bca54)
 set(gloptipoly_GIT_REPOSITORY https://github.com/RobotLocomotion/gloptipoly3.git)  # todo: rename that repo
-set(gloptipoly_GIT_TAG a3547a6811bf76c4e18f00b6bcbc187c6a7fd3d8)
+set(gloptipoly_GIT_TAG c9e796e99c584ecf78317348c4162a2ed4121156)
 set(gurobi_GIT_REPOSITORY https://github.com/RobotLocomotion/gurobi.git)
 set(gurobi_GIT_TAG beb0a84a1bcca1eb81a1b87d9fa140f2134d97e9)
 set(iris_GIT_REPOSITORY https://github.com/rdeits/iris-distro.git)
