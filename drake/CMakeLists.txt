@@ -1,4 +1,9 @@
 cmake_minimum_required(VERSION 2.8.6) # for UseJava.cmake
+
+# options
+option(BUILD_SHARED_LIBS "Build Drake with shared libraries." ON)
+option(RANDOMIZE_UNIT_TESTS "every matlab unit is started with a new random seed" OFF)
+
 #cmake_policy(SET CMP0042 NEW)
 if (POLICY CMP0054)
   cmake_policy(SET CMP0054 OLD)  # so variables inside quotes are still evaluated in if() statements
@@ -16,7 +21,6 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set(POD_NAME drake)
 include(cmake/pods.cmake)
 
-option(BUILD_SHARED_LIBS "Build Drake with shared libraries." ON)
 # set up Java, use a target of 1.6
 find_package(Java REQUIRED)
 include(UseJava)

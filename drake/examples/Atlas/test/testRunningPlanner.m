@@ -427,9 +427,13 @@ function [sol,robot_vis,v,cdfkp] = testRunningPlanner(seed,stride_length,major_i
   % Solve trajectory optimization
   tic
   %profile on;
-  [x_sol,~,~] = cdfkp.solve(x_seed);
+  [x_sol,~,exitflag] = cdfkp.solve(x_seed);
   %profile off;
   toc
+  
+  if exitflag > 10
+    error(['Trajectory optimization failed. exitflag = ' num2str(exitflag)]);
+  end
 
   % Parse trajectory optimization output
   sol.x_sol = x_sol;

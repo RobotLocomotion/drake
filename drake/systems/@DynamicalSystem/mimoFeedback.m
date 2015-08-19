@@ -38,8 +38,7 @@ function newsys = mimoFeedback(sys1,sys2,sys1_to_sys2_connection,sys2_to_sys1_co
 %
 % @param output_select an optional structure with fields "system" and 
 % "output" representing the outputs from sys1 and sys2 (analogous to
-% input_select).  @default all of the unused outputs from sys1
-% followed by all of unused outputs from sys2.
+% input_select).  @default all output from sys1  
 %
 % Notes:
 %  - The inputs to a system may not be used by more than one input (from
@@ -105,16 +104,9 @@ if (nargin>4 && ~isempty(output_select))
     rangecheck(output_select(i).output,1,getNumFrames(sys{output_select(i).system}.getOutputFrame));
   end
 else
-  sys1outputs = setdiff(1:getNumFrames(sys1.getOutputFrame),[sys1_to_sys2_connection.from_output]);
-  sys2outputs = setdiff(1:getNumFrames(sys2.getOutputFrame),[sys2_to_sys1_connection.from_output]);
-  output_select=[];
-  for i=1:length(sys1outputs)
+  for i=1:getNumFrames(sys1.getOutputFrame)
     output_select(i).system=1;
-    output_select(i).output=sys1outputs(i);
-  end
-  for i=1:length(sys2outputs)
-    output_select(end+1).system=2;
-    output_select(end).output=sys2outputs(i);
+    output_select(i).output=i;
   end
 end
 

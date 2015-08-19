@@ -9,7 +9,7 @@
 #include "PiecewisePolynomial.h"
 #include "ExponentialPlusPiecewisePolynomial.h"
 #include "RigidBodyManipulator.h"
-#include "drake/lcmt_qp_controller_input.hpp"
+#include "lcmtypes/drake/lcmt_qp_controller_input.hpp"
 #include "BodyMotionData.h"
 #include "Side.h"
 #include <lcm/lcm-cpp.hpp>

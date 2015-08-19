@@ -1,10 +1,6 @@
 include_directories(${PROJECT_SOURCE_DIR}/systems/robotInterfaces)
 include_directories(${PROJECT_SOURCE_DIR}/util/test)
 
-if (LCM_FOUND)
-  include_directories (${CMAKE_BINARY_DIR}/lcmgen/lcmtypes )
-endif()
-
 add_library(drakeControlUtil SHARED controlUtil.cpp)
 pods_find_pkg_config(terrain-map)
 if (terrain-map_FOUND)
