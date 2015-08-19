@@ -73,6 +73,10 @@ classdef CoordinateFrame < DrakeMexPointer
       obj.prefix = prefix;
     end
 
+    function coordinates(obj)
+      error('Drake:Deprecated','coordinates was a property of this class that should not have been public.  please use getCoordinateName() and/or getCoordinateNames() instead.')
+    end
+
     function tf = hasSamePrefix(frame1,frame2)
       % useful for alarming on a possible prefix clash between two polys
       tf = any(any(bsxfun(@eq,frame1.prefix,frame2.prefix')));

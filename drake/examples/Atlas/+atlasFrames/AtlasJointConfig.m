@@ -17,7 +17,8 @@ classdef AtlasJointConfig < SingletonCoordinateFrame
         jrange = 1:nq;
       end
       
-      joint_names = r.getStateFrame.coordinates(jrange); 
+      coords = r.getStateFrame.getCoordinateNames();
+      joint_names = coords(jrange); 
       obj = obj@SingletonCoordinateFrame('NominalPositionGoal',length(jrange),'x',joint_names);
     end
   end

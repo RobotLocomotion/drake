@@ -39,8 +39,9 @@ if isTI(obj)
   end
 
   h=fill3(x(1,:),x(2,:),repmat(0,1,size(x,2)),options.color,'LineStyle','-','LineWidth',2);
-  xlabel(obj.getFrame.coordinates{options.plotdims(1)});
-  ylabel(obj.getFrame.coordinates{options.plotdims(2)});
+  coords = obj.getFrame.getCoordinateNames();
+  xlabel(coords{options.plotdims(1)});
+  ylabel(coords{options.plotdims(2)});
 else
   if ~isfield(options,'ts') error('you must specify the time samples for this system using options.ts'); end
   ts = options.ts;

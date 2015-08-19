@@ -565,7 +565,7 @@ classdef DynamicalSystem
       else
         sizecheck(p,obj.param_frame.dim);
       end
-      c = obj.param_frame.coordinates;
+      c = obj.param_frame.getCoordinateNames();
       for i=1:length(c)
         obj.(c{i}) = p(i);
       end
@@ -575,7 +575,7 @@ classdef DynamicalSystem
       % This default getParams method attempts to get class properties of the
       % system according to the coordinate names in the parameter frame.
 
-      c = obj.param_frame.coordinates;
+      c = obj.param_frame.getCoordinateNames();
       p=zeros(obj.param_frame.dim,1);
       for i=1:length(c)
         p(i) = obj.(c{i});

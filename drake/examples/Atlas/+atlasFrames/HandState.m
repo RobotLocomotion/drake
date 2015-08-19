@@ -7,7 +7,7 @@ classdef HandState < SingletonCoordinateFrame
       % our hand state is. 
       manipStateFrame = r.getManipulator().getStateFrame();
       manipStateFrame = manipStateFrame.getFrameByNum(ind);
-      coordinates = manipStateFrame.coordinates;
+      coordinates = manipStateFrame.getCoordinateNames();
       obj = obj@SingletonCoordinateFrame(name,length(coordinates),'x',coordinates);
     end
   end
