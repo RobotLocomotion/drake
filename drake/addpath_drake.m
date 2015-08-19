@@ -59,16 +59,15 @@ addpath(fullfile(root,'solvers','BMI','kinematics'));
 
 javaaddpath(fullfile(pods_get_base_path,'share','java','drake.jar'));
 
-% OSX platform-specific: revert to IPv4
+% OSX platform-specific: check if reverted to IPv4
 if (computer('arch') == 'maci64')
   javaoptspath = fileread([matlabroot '/bin/' computer('arch') '/java.opts']);
   k = strfind(javaoptspath, '-Djava.net.preferIPv4Stack=true');
   if isempty(k)
-    setenv('DRAKE_IPV4_SET_MATLABROOT', matlabroot)
-    setenv('DRAKE_IPV4_SET_ARCH', computer('arch'))
-    display('Since you are on Mac, we will need to set your JVM to prefer IPV4 instead of IPV6 for MATLAB')
-    display('Please enter your sudo password below')
-    ! (echo "" | echo "-Djava.net.preferIPv4Stack=true") | sudo tee -a $DRAKE_IPV4_SET_MATLABROOT/bin/$DRAKE_IPV4_SET_ARCH/java.opts
+    display('WARNING: Your JVM may crash if you do not set it to prefer IPv4 over IPv6.')
+    display('This may cause any dependencies that involve the JVM (including LCM) to crash at runtime.')
+    display('Please see bug report and solution here: https://github.com/RobotLocomotion/drake/issues/558.')
+    display('(It just involves adding one line to your java.opts file for Matlab.)')
   end
 end
 
