@@ -33,7 +33,7 @@ classdef LuenbergerObserver < Observer
         Lc = diag(Lc);
       end
       
-      sizecheck(Lc,num_xc,num_y);
+      sizecheck(Lc,[num_xc,num_y]);
       if ~tiflag
         if isnumeric(Lc), Lc = ConstantTrajectory(Lc); end
         typecheck(Lc,'Trajectory');
@@ -45,9 +45,9 @@ classdef LuenbergerObserver < Observer
         Ld = diag(Ld);
       end
       
-      sizecheck(Ld,num_xd,num_y);
+      sizecheck(Ld,[num_xd,num_y]);
       if ~tiflag
-        if inumeric(Ld), Ld = ConstantTrajectory(Ld); end
+        if isnumeric(Ld), Ld = ConstantTrajectory(Ld); end
         typecheck(Ld,'Trajectory');
       end
       
@@ -70,7 +70,8 @@ classdef LuenbergerObserver < Observer
       yhat = output(obj.forward_model,t,x,u);
       
       xcdot = dynamics(obj.forward_model,t,x,u);
-      if (isTi(obj))
+      
+      if (isTI(obj))
         xcdot = xcdot + obj.Lc*(y-yhat);
       else
         xcdot = xcdot + eval(obj.Lc,t)*(y-yhat);
@@ -83,7 +84,8 @@ classdef LuenbergerObserver < Observer
       yhat = output(obj.forward_model,t,x,u);
       
       xdn = update(obj.forward_model,t,x,u);
-      if (isTi(obj))
+      xdn = xdn + obj.Ld*(y-yhat);
+      if (isTI(obj))
         xdn = xdn + obj.Ld*(y-yhat);
       else
         xdn = xdn + eval(obj.Ld,t)*(y-yhat);

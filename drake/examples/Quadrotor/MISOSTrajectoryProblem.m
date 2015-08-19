@@ -35,6 +35,7 @@ classdef MISOSTrajectoryProblem
       %                                 safe_region_assignments directly from the prior output. 
       % @retval ytraj a PPTrajectory 
 
+    mosek_found = checkDependency('mosek'); % we have to do this now, before we create any yalmip variables. Otherwise adding the mosek .jar to the java classpath with clear all of yalmip's internal state. Ew. 
     checkDependency('yalmip');
     if nargin < 5
       safe_region_assignments = [];
