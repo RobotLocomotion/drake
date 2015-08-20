@@ -1032,6 +1032,7 @@ GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMassJacobi
 template <typename DerivedNormal, typename DerivedPoint>
 std::pair<Eigen::Vector3d, double> RigidBodyManipulator::resolveCenterOfPressure(const KinematicsCache<double>& cache, const std::vector<ForceTorqueMeasurement> & force_torque_measurements, const Eigen::MatrixBase<DerivedNormal> & normal, const Eigen::MatrixBase<DerivedPoint> & point_on_contact_plane) const
 {
+  // kinematics cache checks are already being done in relativeTransform
   typedef typename DerivedNormal::Scalar Scalar;
   typedef Matrix<Scalar, 6, 1> Vector6;
   Vector6 total_wrench = Vector6::Zero();
@@ -1058,6 +1059,7 @@ int RigidBodyManipulator::getNumContacts(const set<int> &body_idx) const
 
 template<typename Derived>
 void RigidBodyManipulator::getContactPositions(const KinematicsCache<typename Derived::Scalar>& cache, MatrixBase<Derived> &pos, const set<int> &body_idx) const {
+  // kinematics cache checks are already being done in forwardKin
   int n = 0, nc, nb = static_cast<int>(body_idx.size()), bi;
   if (nb == 0) nb = num_bodies;
   set<int>::iterator iter = body_idx.begin();
@@ -1074,6 +1076,7 @@ void RigidBodyManipulator::getContactPositions(const KinematicsCache<typename De
 
 template<typename Derived>
 void RigidBodyManipulator::getContactPositionsJac(const KinematicsCache<typename Derived::Scalar>& cache, MatrixBase<Derived> &J, const set<int> &body_idx) const {
+  // kinematics cache checks are already being done in forwardKinJacobian
   int n = 0, nc, nb = static_cast<int>(body_idx.size()), bi;
   if (nb == 0) nb = num_bodies;
   set<int>::iterator iter = body_idx.begin();
@@ -2058,6 +2061,7 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints
 {
   if (gradient_order > 1)
     throw std::runtime_error("only first order gradients are implemented so far (it's trivial to add more)");
+  // kinematics cache checks are already being done in forwardKin
 
   GradientVar<Scalar, Eigen::Dynamic, 1> ret(3*loops.size(), 1, num_positions, gradient_order);
   for (size_t i = 0; i < loops.size(); i++) {
@@ -2139,6 +2143,7 @@ size_t RigidBodyManipulator::getNumPositionConstraints() const
 template <typename DerivedA, typename DerivedB>
 void RigidBodyManipulator::positionConstraints(const KinematicsCache<typename DerivedA::Scalar>& cache, MatrixBase<DerivedA> & phi, MatrixBase<DerivedB> & J) const
 {
+  // kinematics cache checks are already being done in forwardKin
   const int nq = num_positions;
   const size_t numLoops = loops.size();
   const size_t numConstraints = getNumPositionConstraints();

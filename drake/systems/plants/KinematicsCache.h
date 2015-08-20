@@ -101,21 +101,17 @@ public:
 
   void checkCachedKinematicsSettings(bool kinematics_gradients_required, bool velocity_kinematics_required, bool jdot_times_v_required, const std::string& method_name) const
   {
-    std::string message;
     if (!position_kinematics_cached) {
-      message = method_name + " requires position kinematics, which have not been cached. Please call doKinematics.";
+      throw std::runtime_error(method_name + " requires position kinematics, which have not been cached. Please call doKinematics.");
     }
-    if (kinematics_gradients_required && ! gradients_cached) {
-      message = method_name + " requires kinematics gradients, which have not been cached. Please call doKinematics with compute_gradients set to true.";
+    if (kinematics_gradients_required && !gradients_cached) {
+      throw std::runtime_error(method_name + " requires kinematics gradients, which have not been cached. Please call doKinematics with compute_gradients set to true.");
     }
-    if (velocity_kinematics_required && ! velocity_kinematics_cached) {
-      message = method_name + " requires velocity kinematics, which have not been cached. Please call doKinematics with a velocity vector.";
+    if (velocity_kinematics_required && !velocity_kinematics_cached) {
+      throw std::runtime_error(method_name + " requires velocity kinematics, which have not been cached. Please call doKinematics with a velocity vector.");
     }
     if (jdot_times_v_required && !jdotV_cached) {
-      message = method_name + " requires Jdot times v, which has not been cached. Please call doKinematics with a velocity vector and compute_JdotV set to true.";
-    }
-    if (message.length() > 0) {
-      throw std::runtime_error(message.c_str());
+      throw std::runtime_error(method_name + " requires Jdot times v, which has not been cached. Please call doKinematics with a velocity vector and compute_JdotV set to true.");
     }
   }
 
