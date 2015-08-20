@@ -197,6 +197,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   int arg_num = 0;
   RigidBodyManipulator *model = static_cast<RigidBodyManipulator*>(getDrakeMexPointer(prhs[arg_num++]));
   KinematicsCache<double>* cache = static_cast<KinematicsCache<double>*>(getDrakeMexPointer(prhs[arg_num++]));
+  cache->checkCachedKinematicsSettings(false, true, true, "solveLCPmex");
 
   const int nq = model->num_positions;
   const int nv = model->num_velocities;
