@@ -16,7 +16,7 @@ public:
               std::shared_ptr<CoordinateFrame> continuous_state_frame,
               std::shared_ptr<CoordinateFrame> discrete_state_frame,
               std::shared_ptr<CoordinateFrame> input_frame,
-              std::shared_ptr<CoordinateFrame> output_state_frame);
+              std::shared_ptr<CoordinateFrame> output_frame);
 
   DrakeSystem(const std::string& name,
               unsigned int num_continuous_states,

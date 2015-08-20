@@ -50,6 +50,7 @@ public:
   MultiCoordinateFrame(const std::string& name, std::initializer_list<std::shared_ptr<CoordinateFrame>> _frames)
           : CoordinateFrame(name) {
     for (auto subframe : _frames) {
+      if (!subframe) continue;  // ok if they pass in nullptr
       struct SubFrame s;
       s.frame = subframe;
       struct CoordinateRef c;
@@ -58,7 +59,7 @@ public:
       for (unsigned int i=0; i<subframe->getDim(); i++) {
         s.coordinate_indices.push_back(dim+i);
         c.index_in_subframe = i;
-        coordinates[i] = subframe->getCoordinateName(i);
+        coordinates.push_back(subframe->getCoordinateName(i));
       }
       dim += subframe->getDim();
       frames.push_back(s);
