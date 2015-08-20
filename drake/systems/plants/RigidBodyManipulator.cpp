@@ -180,11 +180,14 @@ void RigidBodyManipulator::compile(void)
     }
   }
 
-  initialized = true; // doing this here because doKinematics checks for it.
-  VectorXd q = VectorXd::Zero(num_positions); // TODO: this is not a valid configuration if there are any QuaternionFloatingJoints, but then again we only need transforms to world for bodies without a parent
-  VectorXd v = VectorXd::Zero(0);
-  KinematicsCache<double> cache = doKinematics(q, v, false, false);
-  updateStaticCollisionElements(cache);
+  updateStaticCollisionElements();
+
+  for (auto it = bodies.begin(); it != bodies.end(); ++it) {
+    RigidBody& body = **it;
+    getTerrainContactPoints(body, body.contact_pts);
+  }
+
+  initialized = true;
 }
 
 void RigidBodyManipulator::getRandomConfiguration(Eigen::VectorXd& q, std::default_random_engine& generator) const
@@ -254,13 +257,12 @@ void RigidBodyManipulator::updateCollisionElements(const RigidBody& body, const 
   }
 }
 
-void RigidBodyManipulator::updateStaticCollisionElements(const KinematicsCache<double>& cache)
+void RigidBodyManipulator::updateStaticCollisionElements()
 {
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     RigidBody& body = **it;
     if (!body.hasParent()) {
-      updateCollisionElements(body, cache.getElement(body).transform_to_world);
-      getTerrainContactPoints(body, body.contact_pts);
+      updateCollisionElements(body, Isometry3d::Identity());
     }
   }
 }
@@ -539,8 +541,8 @@ KinematicsCache<typename DerivedQ::Scalar> RigidBodyManipulator::doKinematics(co
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(MatrixBase<DerivedV>);
   assert(q.rows() == num_positions);
   assert(v.rows() == num_velocities || v.rows() == 0);
-//  if (!initialized)
-//    compile();
+  if (!initialized)
+    throw runtime_error("RigidBodyManipulator::doKinematics: call compile first.");
 
   int nq = num_positions;
   int gradient_order = compute_gradients ? 1 : 0;

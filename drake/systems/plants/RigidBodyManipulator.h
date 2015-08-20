@@ -195,7 +195,7 @@ public:
 
   void updateCollisionElements(const RigidBody& body, const Eigen::Transform<double, 3, Eigen::Isometry>& transform_to_world);
 
-  void updateStaticCollisionElements(const KinematicsCache<double>& cache);
+  void updateStaticCollisionElements();
 
   void updateDynamicCollisionElements(const KinematicsCache<double>& kin_cache);
 
