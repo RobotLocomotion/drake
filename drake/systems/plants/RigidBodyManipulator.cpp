@@ -534,13 +534,13 @@ void RigidBodyManipulator::warnOnce(const string& id, const string& msg)
 //};
 
 template <typename DerivedQ, typename DerivedV>
-KinematicsCache<typename DerivedQ::Scalar> RigidBodyManipulator::doKinematics(const MatrixBase<DerivedQ> &q, const MatrixBase<DerivedV> &v, bool compute_gradients, bool compute_JdotV) const {
+KinematicsCache<typename DerivedQ::Scalar> RigidBodyManipulator::doKinematics(const MatrixBase<DerivedQ> &q, const MatrixBase<DerivedV> &v, bool compute_gradients, bool compute_JdotV) {
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(MatrixBase<DerivedQ>);
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(MatrixBase<DerivedV>);
   assert(q.rows() == num_positions);
   assert(v.rows() == num_velocities || v.rows() == 0);
-//  if (!initialized)
-//    compile();
+  if (!initialized)
+    compile();
 
   int nq = num_positions;
   int gradient_order = compute_gradients ? 1 : 0;
@@ -758,8 +758,14 @@ void RigidBodyManipulator::updateCompositeRigidBodyInertias(KinematicsCache<Scal
       if (gradient_order > 0)
         dTdq = &element.dtransform_to_world_dq;
 
-      element.inertia_in_world = transformSpatialInertia(element.transform_to_world, dTdq, bodies[i]->I);
-      element.crb_in_world = element.inertia_in_world;
+      auto inertia_in_world = transformSpatialInertia(element.transform_to_world, dTdq, bodies[i]->I);
+      element.inertia_in_world.value() = inertia_in_world.value();
+      element.crb_in_world.value() = inertia_in_world.value();
+
+      if (inertia_in_world.hasGradient()) {
+        element.inertia_in_world.gradient().value() = inertia_in_world.gradient().value();
+        element.crb_in_world.gradient().value() = inertia_in_world.gradient().value();
+      }
     }
 
     for (int i = num_bodies - 1; i >= 0; i--) {
@@ -784,7 +790,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::worldMomen
     throw std::runtime_error("only first order gradient is available");
   cache.checkCachedKinematicsSettings(gradient_order > 0, false, false, "worldMomentumMatrix");
 
-  updateCompositeRigidBodyInertias(cache, cache.gradient_order);
+  updateCompositeRigidBodyInertias(cache, gradient_order);
 
   int nq = num_positions;
   int nv = num_velocities;
@@ -834,7 +840,7 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::worldMomentumMatrixDotT
     throw std::runtime_error("only first order gradient is available");
   cache.checkCachedKinematicsSettings(gradient_order > 0, true, true, "worldMomentumMatrixDotTimesV");
 
-  updateCompositeRigidBodyInertias(cache, cache.gradient_order);
+  updateCompositeRigidBodyInertias(cache, gradient_order);
 
   GradientVar<Scalar, TWIST_SIZE, 1> ret(TWIST_SIZE, 1, num_positions, gradient_order);
   ret.value().setZero();
@@ -1419,7 +1425,7 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMa
   if (gradient_order > 0)
     ret.gradient().value().setZero();
 
-  updateCompositeRigidBodyInertias(cache, cache.gradient_order);
+  updateCompositeRigidBodyInertias(cache, gradient_order);
 
   for (int i = 0; i < num_bodies; i++) {
     RigidBody& body_i = *bodies[i];
@@ -1490,7 +1496,7 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(Kin
     throw std::runtime_error("only first order gradients are available");
   cache.checkCachedKinematicsSettings(gradient_order > 0, true, true, "inverseDynamics");
 
-  updateCompositeRigidBodyInertias(cache, cache.gradient_order);
+  updateCompositeRigidBodyInertias(cache, gradient_order);
 
   int nq = num_positions;
   int nv = num_velocities;
@@ -2193,14 +2199,14 @@ void RigidBodyManipulator::addFrame(const RigidBodyFrame& frame)
 }
 
 // explicit instantiations (required for linking):
-template DLLEXPORT_RBM KinematicsCache<double> RigidBodyManipulator::doKinematics(const MatrixBase<Map<VectorXd> > &, const MatrixBase<Map<VectorXd> > &, bool, bool) const;
+template DLLEXPORT_RBM KinematicsCache<double> RigidBodyManipulator::doKinematics(const MatrixBase<Map<VectorXd> > &, const MatrixBase<Map<VectorXd> > &, bool, bool);
 template DLLEXPORT_RBM KinematicsCache<double> RigidBodyManipulator::doKinematics<Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, 0, Eigen::Stride<0, 0> >, Eigen::Matrix<double, -1, 1, 0, -1, 1> >(
-    Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, 0, Eigen::Stride<0, 0> > > const &, Eigen::MatrixBase<Eigen::Matrix<double, -1, 1, 0, -1, 1> > const &, bool, bool) const;
-template DLLEXPORT_RBM KinematicsCache<double> RigidBodyManipulator::doKinematics(const MatrixBase<VectorXd> &, const MatrixBase<VectorXd> &, bool, bool) const;
-template DLLEXPORT_RBM KinematicsCache<double> RigidBodyManipulator::doKinematics(const MatrixBase<Block<MatrixXd, -1, 1, true> > &, const MatrixBase<Block<MatrixXd, -1, 1, true> > &, bool, bool) const;
-template DLLEXPORT_RBM KinematicsCache<double> RigidBodyManipulator::doKinematics(const MatrixBase<Block<MatrixXd, -1, 1, true> > &, const MatrixBase<Map<VectorXd> > &, bool, bool) const;
+    Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, 0, Eigen::Stride<0, 0> > > const &, Eigen::MatrixBase<Eigen::Matrix<double, -1, 1, 0, -1, 1> > const &, bool, bool);
+template DLLEXPORT_RBM KinematicsCache<double> RigidBodyManipulator::doKinematics(const MatrixBase<VectorXd> &, const MatrixBase<VectorXd> &, bool, bool);
+template DLLEXPORT_RBM KinematicsCache<double> RigidBodyManipulator::doKinematics(const MatrixBase<Block<MatrixXd, -1, 1, true> > &, const MatrixBase<Block<MatrixXd, -1, 1, true> > &, bool, bool);
+template DLLEXPORT_RBM KinematicsCache<double> RigidBodyManipulator::doKinematics(const MatrixBase<Block<MatrixXd, -1, 1, true> > &, const MatrixBase<Map<VectorXd> > &, bool, bool);
 template DLLEXPORT_RBM KinematicsCache<double> RigidBodyManipulator::doKinematics<Eigen::Map<Eigen::VectorXd, 0, Eigen::Stride<0, 0> >, Eigen::VectorXd >(Eigen::MatrixBase<Eigen::Map<Eigen::VectorXd, 0, Eigen::Stride<0, 0> > > const &,
-                                                                                                                                       Eigen::MatrixBase<Eigen::VectorXd> const &, bool, bool) const;
+                                                                                                                                       Eigen::MatrixBase<Eigen::VectorXd> const &, bool, bool);
 
 template DLLEXPORT_RBM void RigidBodyManipulator::getContactPositions(const KinematicsCache<double>& cache, MatrixBase <MatrixXd > &, const set<int> &) const;
 template DLLEXPORT_RBM void RigidBodyManipulator::getContactPositionsJac(const KinematicsCache<double>& cache, MatrixBase <MatrixXd > &,const set<int> &) const;
