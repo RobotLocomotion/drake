@@ -58,8 +58,8 @@ q = test_approximateIK_userfun(r,q_seed,q0,kc_com,kc_rfoot,kc_lfoot,kc_rhand,iko
 
 display('Check with posture constraint');
 pc = PostureConstraint(r);
-l_leg_kny = find(strcmp(r.getStateFrame.coordinates,'l_leg_kny'));
-r_leg_kny = find(strcmp(r.getStateFrame.coordinates,'r_leg_kny'));
+l_leg_kny = find(strcmp(r.getStateFrame.getCoordinateNames(),'l_leg_kny'));
+r_leg_kny = find(strcmp(r.getStateFrame.getCoordinateNames(),'r_leg_kny'));
 pc = pc.setJointLimits([l_leg_kny;r_leg_kny],[0.2;0.2],[inf;inf]);
 q = test_approximateIK_userfun(r,q_seed,q0,kc_com,kc_rfoot,kc_lfoot,kc_rhand,ikoption);
 

@@ -5,17 +5,19 @@ classdef DrakeMexPointer < handle
 %      myMexFunctions(mex_ptr,other_data);  // these call getDrakeMexPointer
 
   properties (SetAccess=private,GetAccess=public)
-    name = '';
     ptr
+  end
+  properties (SetAccess=private,GetAccess=private)
+    ptr_name = '';
     delete_fcn='';
     delete_fcn_additional_inputs={};
   end
-
+  
   methods
     function obj = DrakeMexPointer(ptr, delete_fcn, name, varargin)
       obj.ptr = ptr;
       if (nargin>1) obj.delete_fcn = delete_fcn; end
-      if (nargin>2) obj.name = name; end
+      if (nargin>2) obj.ptr_name = name; end
       if (nargin>3) 
         obj.delete_fcn_additional_inputs=varargin; 
       end
@@ -26,10 +28,10 @@ classdef DrakeMexPointer < handle
         fprintf(1,'Calling %s(',obj.delete_fcn);
         celldisp(obj.delete_fcn_additional_inputs);
         fprintf(1,') to delete ');
-        if isempty(obj.name)
+        if isempty(obj.ptr_name)
           fprintf(1,'unnamed drake mex pointer\n');
         else
-          fprintf(1,'drake mex pointer %s\n',obj.name);
+          fprintf(1,'drake mex pointer %s\n',obj.ptr_name);
         end
       end
       if ~isempty(obj.delete_fcn)

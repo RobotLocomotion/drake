@@ -470,7 +470,8 @@ classdef Manipulator < DrakeSystem
       % tau = Kp*thetadesired
       pdff = LinearSystem([],[],[],[],[],Kp*eye(sys.num_u));
       pdff = setOutputFrame(pdff,sys.getInputFrame);
-      pdff = setInputFrame(pdff,CoordinateFrame('q_d',length(index),'d',{sys.getStateFrame.coordinates{index}}));
+      coordinates = sys.getStateFrame.getCoordinates();
+      pdff = setInputFrame(pdff,CoordinateFrame('q_d',length(index),'d',{coordinates{index}}));
 
       if nargout>1
         varargout{1} = pdff;
@@ -495,7 +496,7 @@ classdef Manipulator < DrakeSystem
       obj.joint_limit_max = jl_max;
       
       con = BoundingBoxConstraint(jl_min,jl_max);
-      con = setName(con,cellfun(@(a) [a,'_limit'],obj.getPositionFrame.coordinates,'UniformOutput',false));
+      con = setName(con,cellfun(@(a) [a,'_limit'],obj.getPositionFrame.getCoordinateNames(),'UniformOutput',false));
       if isempty(obj.joint_limit_constraint_id)
         if any(jl_min~=-inf) || any(jl_max~=inf)
           [obj,id] = addStateConstraint(obj,con,1:obj.getNumPositions);

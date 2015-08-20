@@ -5,16 +5,13 @@ classdef CoordinateFrame < handle
 % systems.
 
   properties (SetAccess=private,GetAccess=public)
-    name='';        % string name for this coordinate system
-    dim=0;          % scalar dimension of this coordinate system
+    prefix='';
     transforms={};  % handles to CoordinateTransform objects
-
-    coordinates={}; % list of coordinate names
-
-    prefix;         % a vector character prefix used for the msspoly variables, or a vector of size dim listing prefixes for each variable
-  end
-  properties (Access=private)
     poly=[];        % optional msspoly variables for this frame
+  end 
+
+  properties (Access=protected)
+    mex_ptr=[];
   end
 
   methods
@@ -35,13 +32,10 @@ classdef CoordinateFrame < handle
       % where x is the prefix
       %
       % @retval obj the newly constructed CoordinateFrame
-
+  
       typecheck(name,'char');
-      obj.name = name;
-
       typecheck(dim,'double');
       sizecheck(dim,[1 1]);
-      obj.dim = dim;
 
       if (nargin<3 || isempty(prefix))
         ind = strfind(name,':');
@@ -60,7 +54,6 @@ classdef CoordinateFrame < handle
       if isscalar(prefix)
         prefix = repmat(prefix,dim,1);
       end
-      obj.prefix = prefix;
 
       ind=1;
       function str=coordinateName(~)
@@ -68,17 +61,26 @@ classdef CoordinateFrame < handle
         ind=ind+1;
       end
       if (nargin<4 || isempty(coordinates))
-        obj.coordinates=cellfun(@coordinateName,cell(dim,1),'UniformOutput',false);
+        coordinates=cellfun(@coordinateName,cell(dim,1),'UniformOutput',false);
       else
         typecheck(coordinates,'cell');
         sizecheck(coordinates,dim);
         for i=1:dim
           typecheck(coordinates{i},'char');
         end
-        obj.coordinates = {coordinates{:}}';
+        coordinates = {coordinates{:}}';
       end
+      
+      if isempty(obj.mex_ptr) % because it may have already been set by a derived class
+        obj.mex_ptr = CoordinateFrame.new(name,dim,coordinates);
+      end
+      obj.prefix = prefix;
     end
-    
+
+    function coordinates(obj)
+      error('Drake:Deprecated','coordinates was a property of this class that should not have been public.  please use getCoordinateName() and/or getCoordinateNames() instead.')
+    end
+
     function tf = hasSamePrefix(frame1,frame2)
       % useful for alarming on a possible prefix clash between two polys
       tf = any(any(bsxfun(@eq,frame1.prefix,frame2.prefix')));
@@ -103,8 +105,9 @@ classdef CoordinateFrame < handle
 
     function disp(obj)
       fprintf(1,'Coordinate Frame: %s (%d elements)\n',obj.name,obj.dim);
+      coordinates = obj.getCoordinateNames();
       for i=1:obj.dim
-        fprintf(1,'  %s\n',obj.coordinates{i});
+        fprintf(1,'  %s\n',coordinates{i});
       end
     end
 
@@ -115,13 +118,14 @@ classdef CoordinateFrame < handle
       % C, but A does not.
       tf = isequal(a.name,b.name) && ...
         isequal(a.dim,b.dim) && ...
-        isequal(a.coordinates,b.coordinates) && ...
+        isequal(a.getCoordinateNames(),b.getCoordinateNames()) && ...
         isequal(a.prefix,b.prefix);
     end
 
     function s = getSym(obj)
+      coordinates = obj.getCoordinateNames();
       for i=1:length(obj.dim)
-        s(1) = sym(obj.coordinates{i},'real');
+        s(1) = sym(coordinates{i},'real');
       end
     end
 
@@ -191,7 +195,7 @@ classdef CoordinateFrame < handle
         error('default values must be in the fr2 frame');
       end
 
-      [lia,locb] = ismember(fr2.coordinates,fr.coordinates);
+      [lia,locb] = ismember(fr2.getCoordinateNames(),fr.getCoordinateNames());
       T = sparse(find(lia),locb(locb>0),1,fr2.dim,fr.dim);
       b = double(fr2_defaultvals); b(lia)=0;
       tf = AffineTransform(fr,fr2,T,b);
@@ -297,30 +301,8 @@ classdef CoordinateFrame < handle
       end
     end
 
-    function str = getCoordinateName(obj,i)
-      str = obj.coordinates{i};
-    end
-
     function ind = findCoordinateIndex(obj,varname)
-      ind = find(strcmp(varname,obj.coordinates));
-    end
-
-    function strs = getCoordinateNames(obj)
-      strs = obj.coordinates;
-    end
-
-    function setCoordinateNames(obj,cnames)
-      % Updates the coordinate names
-      %
-      % @param cnames must be a cell array vector of length dim populated
-      % with strings
-      %
-
-      if (iscellstr(cnames) && isvector(cnames) && length(cnames)==obj.dim)
-        obj.coordinates=cnames;
-      else
-        error('cnames must be a cell vector of length dim populated with strings');
-      end
+      ind = find(strcmp(varname,obj.getCoordinateNames()));
     end
 
     function fr=subFrame(obj,dims)
@@ -335,7 +317,8 @@ classdef CoordinateFrame < handle
       if ~isnumeric(dims) || ~isvector(dims) error('dims must be a numeric vector'); end
       if (any(dims>obj.dim | dims<1)) error(['dims must be between 1 and ',obj.dim]); end
       fr = CoordinateFrame([obj.name,mat2str(dims)], length(dims), obj.prefix(dims));
-      fr.coordinates = obj.coordinates(dims);
+      coordinates = obj.getCoordinateNames();
+      fr.coordinates = coordinates(dims);
       if ~isempty(fr.poly)
         fr.poly = obj.poly(dims);
       end
@@ -353,7 +336,7 @@ classdef CoordinateFrame < handle
       % perform the wrapping.  it should be the length of the number of
       % wrapped angles (e.g., so that x(angle_flags) = q0).
 
-      fr = CoordinateFrame([obj.name,'Wrapped'],obj.dim,obj.prefix,obj.coordinates);
+      fr = CoordinateFrame([obj.name,'Wrapped'],obj.dim,obj.prefix,obj.getCoordinateNames());
 
       if (nargin>2)
         obj.addTransform(AngleWrappingTransform(obj,fr,angle_flag,q0));
@@ -366,8 +349,9 @@ classdef CoordinateFrame < handle
     function scope(obj,t,val,options)
       % publishes coordinate information to the lcm scope
       if (nargin<4) options=struct(); end
+      coordinates = obj.getCoordinateNames();
       for i=1:length(obj.dim)
-        scope(obj.name,obj.coordinates{i},t,val(i),options);
+        scope(obj.name,coordinates{i},t,val(i),options);
       end
     end
 
@@ -382,13 +366,14 @@ classdef CoordinateFrame < handle
       end
       typename = ['lcmt_',name];
       fname = [typename,'.lcm'];
+      coordinates = obj.getCoordinateNames();
       if strcmpi(input(['About to write file ',fname,' .  Should I proceed (y/n)? '],'s'),'y')
         fptr=fopen(fname,'w');
 
         fprintf(fptr,'// Note: this file was automatically generated using the\n// CoordinateFrame.generateLCMType() method.\n\n');
         fprintf(fptr,'struct %s\n{\n  int64_t timestamp;\n\n',typename);
         for i=1:obj.dim
-          fprintf(fptr,'  double %s;\n',CoordinateFrame.stripSpecialChars(obj.coordinates{i}));
+          fprintf(fptr,'  double %s;\n',CoordinateFrame.stripSpecialChars(coordinates{i}));
         end
         fprintf(fptr,'}\n\n');
         fclose(fptr);
@@ -523,6 +508,8 @@ classdef CoordinateFrame < handle
   end
 
   methods (Static=true,Hidden=true)
+    varargout = new(varargin)
+    
     function s=stripSpecialChars(s)
       s=regexprep(s,'\\','');
     end
