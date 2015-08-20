@@ -71,7 +71,7 @@ public:
 public:
   KinematicsCache(const std::vector<std::shared_ptr<RigidBody>>& bodies, int gradient_order) :
       q(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(getNumPositions(bodies), 1)),
-      v(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(0, 1)), // initialize to zero length; doKinematics must resize to getNumVelocities(bodies) if v is passed in
+      v(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(getNumVelocities(bodies), 1)),
       gradient_order(gradient_order),
       position_kinematics_cached(false),
       gradients_cached(false),

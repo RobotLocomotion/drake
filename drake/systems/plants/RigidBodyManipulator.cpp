@@ -738,7 +738,6 @@ KinematicsCache<typename DerivedQ::Scalar> RigidBodyManipulator::doKinematics(co
   cache.q = q;
 
   if (v.rows() > 0) {
-    cache.v.resize(num_velocities);
     cache.v = v;
   }
 
