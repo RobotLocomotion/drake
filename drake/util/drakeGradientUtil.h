@@ -9,16 +9,6 @@
 #include <cassert>
 #include <stdexcept>
 
-#undef DLLEXPORT
-#if defined(WIN32) || defined(WIN64)
-  #if defined(drakeGradientUtil_EXPORTS)
-    #define DLLEXPORT __declspec( dllexport )
-  #else
-    #define DLLEXPORT __declspec( dllimport )
-  #endif
-#else
-  #define DLLEXPORT
-#endif
 
 template<std::size_t Size>
 std::array<int, Size> intRange(int start)
@@ -160,7 +150,7 @@ matGradMult(const Eigen::MatrixBase<DerivedDA>& dA, const Eigen::MatrixBase<Deri
 
 // TODO: could save copies once http://eigen.tuxfamily.org/bz/show_bug.cgi?id=329 is fixed
 template<typename Derived>
-DLLEXPORT Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic> getSubMatrixGradient(
+Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic> getSubMatrixGradient(
     const Eigen::MatrixBase<Derived>& dM, const std::vector<int>& rows, const std::vector<int>& cols,
     typename Derived::Index M_rows, int q_start = 0, typename Derived::Index q_subvector_size = -1) {
   if (q_subvector_size < 0) {
@@ -178,7 +168,7 @@ DLLEXPORT Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic
 }
 
 template<int QSubvectorSize, typename Derived, std::size_t NRows, std::size_t NCols>
-DLLEXPORT typename GetSubMatrixGradientArray<QSubvectorSize, Derived, NRows, NCols>::type
+typename GetSubMatrixGradientArray<QSubvectorSize, Derived, NRows, NCols>::type
 getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM,
   const std::array<int, NRows>& rows,
   const std::array<int, NCols>& cols,
@@ -197,7 +187,7 @@ getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM,
 };
 
 template<int QSubvectorSize, typename Derived>
-DLLEXPORT typename GetSubMatrixGradientSingleElement<QSubvectorSize, Derived>::type
+typename GetSubMatrixGradientSingleElement<QSubvectorSize, Derived>::type
 getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM, int row, int col, typename Derived::Index M_rows,
     typename Derived::Index q_start = 0, typename Derived::Index q_subvector_size = QSubvectorSize) {
   if (q_subvector_size == Eigen::Dynamic) {
@@ -207,7 +197,7 @@ getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM, int row, int col, typ
 };
 
 template<typename DerivedA, typename DerivedB>
-DLLEXPORT void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBase<DerivedB>& dM_submatrix,
+void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBase<DerivedB>& dM_submatrix,
     const std::vector<int>& rows, const std::vector<int>& cols, typename DerivedA::Index M_rows, typename DerivedA::Index q_start = 0, typename DerivedA::Index q_subvector_size = -1) {
   if (q_subvector_size < 0) {
     q_subvector_size = dM.cols() - q_start;
@@ -221,7 +211,7 @@ DLLEXPORT void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen
 };
 
 template<int QSubvectorSize, typename DerivedA, typename DerivedB, std::size_t NRows, std::size_t NCols>
-DLLEXPORT void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBase<DerivedB>& dM_submatrix,
+void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBase<DerivedB>& dM_submatrix,
     const std::array<int, NRows>& rows, const std::array<int, NCols>& cols, typename DerivedA::Index M_rows, typename DerivedA::Index q_start = 0, typename DerivedA::Index q_subvector_size = QSubvectorSize) {
   if (q_subvector_size == Eigen::Dynamic) {
     q_subvector_size = dM.cols() - q_start;
@@ -235,7 +225,7 @@ DLLEXPORT void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen
 };
 
 template<int QSubvectorSize, typename DerivedDM, typename DerivedDMSub>
-DLLEXPORT void setSubMatrixGradient(Eigen::MatrixBase<DerivedDM>& dM, const Eigen::MatrixBase<DerivedDMSub>& dM_submatrix, int row, int col, typename DerivedDM::Index M_rows,
+void setSubMatrixGradient(Eigen::MatrixBase<DerivedDM>& dM, const Eigen::MatrixBase<DerivedDMSub>& dM_submatrix, int row, int col, typename DerivedDM::Index M_rows,
     typename DerivedDM::Index q_start = 0, typename DerivedDM::Index q_subvector_size = QSubvectorSize) {
   if (q_subvector_size == Eigen::Dynamic) {
     q_subvector_size = dM.cols() - q_start;
