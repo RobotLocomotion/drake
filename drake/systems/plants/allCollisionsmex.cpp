@@ -15,7 +15,7 @@ using namespace std;
 void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
   if (nrhs < 3) {
-    mexErrMsgIdAndTxt("Drake:collisionDetectmex:NotEnoughInputs", "Usage collisionDetectmex(model_ptr, cache_ptr, active_collision_options)");
+    mexErrMsgIdAndTxt("Drake:allCollisions:NotEnoughInputs", "Usage allCollisionsmex(model_ptr, cache_ptr, active_collision_options)");
   }
 
   int arg_num = 0;
