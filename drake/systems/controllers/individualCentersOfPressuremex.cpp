@@ -2,7 +2,6 @@
 #include "controlUtil.h"
 #include "drakeMexUtil.h"
 #include "controlMexUtil.h"
-#include <iostream>
 
 using namespace std;
 using namespace Eigen;
