@@ -1,0 +1,3 @@
+
+add_executable(testDrakeSystemFrames testDrakeSystemFrames.cpp)
+target_link_libraries(testDrakeSystemFrames drakeSystem)
