@@ -99,7 +99,7 @@ public:
   std::string getStateName(int state_num) const;
 
   template <typename DerivedQ, typename DerivedV>
-  KinematicsCache<typename DerivedQ::Scalar> doKinematics(const MatrixBase<DerivedQ> &q, const MatrixBase<DerivedV> &v, bool compute_gradients = false, bool compute_JdotV = true);
+  KinematicsCache<typename DerivedQ::Scalar> doKinematics(const MatrixBase<DerivedQ> &q, const MatrixBase<DerivedV> &v, bool compute_gradients = false, bool compute_JdotV = true) const;
 
   bool isBodyPartOfRobot(const RigidBody& body, const std::set<int>& robotnum) const;
 
