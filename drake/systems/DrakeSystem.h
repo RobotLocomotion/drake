@@ -5,11 +5,22 @@
 #include <memory>
 #include "CoordinateFrame.h"
 
+#undef DLLEXPORT
+#if defined(WIN32) || defined(WIN64)
+#if defined(drakeSystem_EXPORTS)
+#define DLLEXPORT __declspec( dllexport )
+#else
+#define DLLEXPORT __declspec( dllimport )
+#endif
+#else
+#define DLLEXPORT
+#endif
+
 
 /// A dynamical system authored in Drake registers it's dynamics as well as information
 /// about it's coordinate frames.
 
-class DrakeSystem {
+class DLLEXPORT DrakeSystem {
 public:
 
   DrakeSystem(const std::string& name,
@@ -26,9 +37,9 @@ public:
 
   DrakeSystem(const std::string& name) : DrakeSystem(name,0,0,0,0) {}; // build the empty system
 
-  const std::shared_ptr<CoordinateFrame> getInputFrame() { return input_frame; }
-  const std::shared_ptr<CoordinateFrame> getStateFrame() { return state_frame; }
-  const std::shared_ptr<CoordinateFrame> getOutputFrame() { return output_frame; }
+  const CoordinateFrame& getInputFrame() { return *input_frame.get(); }
+  const CoordinateFrame& getStateFrame() { return *state_frame.get(); }
+  const CoordinateFrame& getOutputFrame() { return *output_frame.get(); }
 
 private:
   std::string name;

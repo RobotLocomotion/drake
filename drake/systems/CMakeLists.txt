@@ -13,5 +13,6 @@ add_subdirectory(controllers)
 add_subdirectory(robotInterfaces)
 
 add_library(drakeSystem DrakeSystem.cpp)
+target_link_libraries(drakeSystem drakeCoordinateFrame)
 
 add_subdirectory(test)

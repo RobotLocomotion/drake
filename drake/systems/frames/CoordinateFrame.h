@@ -1,17 +1,30 @@
 #ifndef __CoordinateFrame_H__
 #define __CoordinateFrame_H__
 
+#include <iostream>
 #include <string>
 #include <memory>
 #include <vector>
 #include <exception>
 #include <initializer_list>
 
+#undef DLLEXPORT
+#if defined(WIN32) || defined(WIN64)
+#if defined(drakeCoordinateFrame_EXPORTS)
+#define DLLEXPORT __declspec( dllexport )
+#else
+#define DLLEXPORT __declspec( dllimport )
+#endif
+#else
+#define DLLEXPORT
+#endif
+
+
 /// Every input, state, and output in a DynamicalSystem has a coordinate frame
 /// attached to it.  Many bugs can be avoided by forcing developers to be
 /// explicit about these coordinate systems when they make combinations of systems.
 
-class CoordinateFrame {
+class DLLEXPORT CoordinateFrame {
 public:
   CoordinateFrame(const std::string& _name, const unsigned int _dim, const std::vector<std::string>& _coordinates)
           : name(_name), dim(_dim), coordinates(_coordinates) {};
@@ -38,6 +51,20 @@ public:
     coordinates = _coordinates;
   }
 
+  virtual std::ostream& print(std::ostream& os) const {
+    os << "Coordinate Frame: " << name << " (" << dim << " elements)" << std::endl;
+
+    for (auto c : coordinates) {
+      os << "  " << c << std::endl;
+    }
+    return os;
+  }
+
+  friend std::ostream& operator<<(std::ostream& os, const CoordinateFrame& m)
+  {
+    return m.print(os);
+  }
+
 protected:
   std::string name;  // a descriptive name for this coordinate frame
   unsigned int dim;  // number of elements in the coordinate vector
@@ -45,25 +72,31 @@ protected:
 };
 
 
-class MultiCoordinateFrame : public CoordinateFrame {
+class DLLEXPORT MultiCoordinateFrame : public CoordinateFrame {
 public:
-  MultiCoordinateFrame(const std::string& name, std::initializer_list<std::shared_ptr<CoordinateFrame>> _frames)
-          : CoordinateFrame(name) {
-    for (auto subframe : _frames) {
-      if (!subframe) continue;  // ok if they pass in nullptr
-      struct SubFrame s;
-      s.frame = subframe;
-      struct CoordinateRef c;
-      c.frame = subframe;
+  MultiCoordinateFrame(const std::string& name, std::initializer_list<std::shared_ptr<CoordinateFrame>> _frames);
+  virtual ~MultiCoordinateFrame(void) {};
 
-      for (unsigned int i=0; i<subframe->getDim(); i++) {
-        s.coordinate_indices.push_back(dim+i);
-        c.index_in_subframe = i;
-        coordinates.push_back(subframe->getCoordinateName(i));
-      }
-      dim += subframe->getDim();
-      frames.push_back(s);
-      coordinate_refs.push_back(c);
+  virtual std::ostream& print(std::ostream& os) const {
+    os << "Multi-Coordinate Frame: " << name << " (" << dim << " elements)" << std::endl;
+
+    for (auto sf : frames) {
+      os << "  " << sf.frame->getName() << " (" << sf.frame->getDim() << " elements) " << std::endl;
+    }
+    return os;
+  }
+
+  static std::shared_ptr<CoordinateFrame> constructFrame(const std::string& name, std::initializer_list<std::shared_ptr<CoordinateFrame>> _frames) {
+    unsigned int count=0;
+    for (auto f : _frames)
+      if (f) count++;
+    if (count<1) return nullptr;
+    else if (count==1) {
+      for (auto f : _frames)
+        if (f) return f;
+      return nullptr;  // shouldn't get here, but makes the compiler happier
+    } else {
+      return std::shared_ptr<CoordinateFrame>(new MultiCoordinateFrame(name,_frames));
     }
   }
 
@@ -83,5 +116,6 @@ private:
   std::vector<struct SubFrame> frames;
   std::vector<struct CoordinateRef> coordinate_refs;
 };
+
 
 #endif // #define __CoordinateFrame_H_

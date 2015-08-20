@@ -9,7 +9,7 @@ DrakeSystem::DrakeSystem(const std::string &name, std::shared_ptr<CoordinateFram
                          std::shared_ptr<CoordinateFrame> _output_frame)
   : continuous_state_frame(_continuous_state_frame), discrete_state_frame(_discrete_state_frame),
     input_frame(_input_frame), output_frame(_output_frame) {
-  state_frame = shared_ptr<CoordinateFrame>(new MultiCoordinateFrame(name+"state",{continuous_state_frame,discrete_state_frame}));
+  state_frame = MultiCoordinateFrame::constructFrame(name+"State",{continuous_state_frame,discrete_state_frame});
 }
 
 DrakeSystem::DrakeSystem(const std::string &name, unsigned int num_continuous_states, unsigned int num_discrete_states,
