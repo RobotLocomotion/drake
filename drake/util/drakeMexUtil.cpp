@@ -88,6 +88,8 @@ mxArray* createDrakeMexPointer(void* ptr, const std::string&  name, int num_addi
   else
     mexCallMATLABsafe(1, plhs, nrhs, prhs, "DrakeMexPointer");
 
+  mexLock();
+
   delete[] prhs;
   return plhs[0];
 }
@@ -95,6 +97,9 @@ mxArray* createDrakeMexPointer(void* ptr, const std::string&  name, int num_addi
 
 void* getDrakeMexPointer(const mxArray* mx)
 {
+  if (!mx)
+    mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadInputs", "null mxArray");
+
   void* ptr = NULL;
 
   // todo: optimize this by caching the pointer values, as described in

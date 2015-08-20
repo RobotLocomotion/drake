@@ -2,6 +2,8 @@
 include_directories(${PROJECT_SOURCE_DIR}/util)
 include_directories(..)
 
+if (MATLAB_FOUND)
+
 add_mex(CoordinateFrame.new new.cpp OUTPUT_NAME new)
 target_link_libraries(CoordinateFrame.new drakeMexUtil)
 
@@ -19,3 +21,5 @@ target_link_libraries(CoordinateFrame.getCoordinateNames drakeMexUtil)
 
 add_mex(CoordinateFrame.setCoordinateNames setCoordinateNames.cpp OUTPUT_NAME setCoordinateNames)
 target_link_libraries(CoordinateFrame.setCoordinateNames drakeMexUtil)
+
+endif()

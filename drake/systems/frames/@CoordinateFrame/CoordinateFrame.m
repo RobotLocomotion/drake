@@ -4,10 +4,13 @@ classdef CoordinateFrame < handle
 % explicit about these coordinate systems when they make combinations of
 % systems.
 
-  properties (Access=protected)
+  properties (SetAccess=private,GetAccess=public)
     prefix='';
     transforms={};  % handles to CoordinateTransform objects
     poly=[];        % optional msspoly variables for this frame
+  end 
+
+  properties (Access=protected)
     mex_ptr=[];
   end
 

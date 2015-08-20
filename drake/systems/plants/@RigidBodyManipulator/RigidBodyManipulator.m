@@ -863,7 +863,7 @@ classdef RigidBodyManipulator < Manipulator
       % name contains a specified string.
       %   @param str (sub)string to be searched for
       %   @retvall indices array of indices into state vector
-      coordinates = model.getStateFrame().getCoordinateNames()
+      coordinates = model.getStateFrame().getCoordinateNames();
       indices = find(~cellfun('isempty',strfind(coordinates(1:getNumPositions(model)),str)));
     end
 
@@ -872,7 +872,7 @@ classdef RigidBodyManipulator < Manipulator
       % name contains a specified string.
       %   @param str (sub)string to be searched for
       %   @retvall indices array of indices into state vector
-      coordinates = model.getStateFrame().getCoordinateNames()
+      coordinates = model.getStateFrame().getCoordinateNames();
       indices = find(~cellfun('isempty',strfind(coordinates((getNumPositions(model)+1):end),str)));
     end
     

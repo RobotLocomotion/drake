@@ -5,7 +5,7 @@ using namespace std;
 
 void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   if (nrhs==1) {
-    destroyDrakeMexPointer<CoordinateFrame*>(prhs[0]);
+    destroyDrakeMexPointer<CoordinateFrame*>(prhs[0]);  // note: prhs[0] is the actual DrakeMexPointer object (not the CoordinateFrame object, as it would be in the non-static class methods)
     return;
   }
 
