@@ -5,9 +5,9 @@ classdef AtlasInput < SingletonCoordinateFrame
       typecheck(r,'TimeSteppingRigidBodyManipulator');
 
       manipInputFrame = r.getManipulator().getInputFrame();
-      if (r.hands > 0)
-        manipInputFrame = manipInputFrame.getFrameByNum(1);
-      end
+%       if (r.hands > 0)
+%         manipInputFrame = manipInputFrame.getFrameByNum(1);
+%       end
       input_names = manipInputFrame.coordinates;
       input_names = regexprep(input_names,'_motor',''); % remove motor suffix     
       
