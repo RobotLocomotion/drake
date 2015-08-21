@@ -3,7 +3,7 @@ include(CMakeParseArguments)
 function(add_swig_python_module)
 	# Parse our arguments and make sure we got the required ones
 	set(options CPLUSPLUS)
-	set(oneValueArgs SWIG_I_FILE TARGET)
+	set(oneValueArgs SWIG_I_FILE TARGET DESTINATION)
 	set(multiValueArgs INCLUDE_DIRS LINK_LIBRARIES SWIG_INCLUDE_DIRS)
 	cmake_parse_arguments(swigpy "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 	if (NOT swigpy_TARGET)
@@ -57,12 +57,12 @@ function(add_swig_python_module)
 		set(CPLUSPLUS OFF)
 	endif()
 	if (PYTHON_VERSION_MAJOR GREATER 2)
-		set_source_files_properties(inverter_wrapper.i PROPERTIES
+		set_source_files_properties(${swigpy_SWIG_I_FILE} PROPERTIES
 			CPLUSPLUS ${CPLUSPLUS}
 			SWIG_FLAGS "-py3"
 			)
 	else()
-		set_source_files_properties(inverter_wrapper.i PROPERTIES 
+		set_source_files_properties(${swigpy_SWIG_I_FILE} PROPERTIES 
 			CPLUSPLUS ${CPLUSPLUS})
 	endif()
 
@@ -77,4 +77,9 @@ function(add_swig_python_module)
 
 	# Set a variable in the scope of the cmake file that called this function so that it can be referenced later (for example, to 
 	set(SWIG_MODULE_${swigpy_TARGET}_REAL_NAME ${SWIG_MODULE_${swigpy_TARGET}_REAL_NAME} PARENT_SCOPE)
+
+	if (swigpy_DESTINATION)
+		install(TARGETS ${SWIG_MODULE_${swigpy_TARGET}_REAL_NAME} DESTINATION ${swigpy_DESTINATION})
+		install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${swigpy_TARGET}.py DESTINATION ${swigpy_DESTINATION})
+	endif()
 endfunction()
