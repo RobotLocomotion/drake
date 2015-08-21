@@ -9,13 +9,12 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     return;
   }
 
-  if (nrhs<3) mexErrMsgIdAndTxt("Drake:CoordinateFrame:BadInputs","Usage: new(name,dim,coordinates)");
+  if (nrhs<3) mexErrMsgIdAndTxt("Drake:CoordinateFrame:BadInputs","Usage: new(name,coordinates)");
 
   string name = mxGetStdString(prhs[0]);
-  unsigned int dim = static_cast<unsigned int>(mxGetScalar(prhs[1]));
-  vector<string> coordinates = mxGetVectorOfStdStrings(prhs[2]);
+  vector<string> coordinates = mxGetVectorOfStdStrings(prhs[1]);
 
-  CoordinateFrame* frame = new CoordinateFrame(name,dim,coordinates);
+  CoordinateFrame* frame = new CoordinateFrame(name,coordinates);
 
   plhs[0] = createDrakeMexPointer(frame,name,0,NULL,"","CoordinateFrame.");
 }

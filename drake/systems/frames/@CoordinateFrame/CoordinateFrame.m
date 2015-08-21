@@ -72,7 +72,7 @@ classdef CoordinateFrame < handle
       end
       
       if isempty(obj.mex_ptr) % because it may have already been set by a derived class
-        obj.mex_ptr = CoordinateFrame.new(name,dim,coordinates);
+        obj.mex_ptr = CoordinateFrame.new(name,coordinates);
       end
       obj.prefix = prefix;
     end

@@ -26,18 +26,18 @@
 
 class DLLEXPORT CoordinateFrame {
 public:
-  CoordinateFrame(const std::string& _name, const unsigned int _dim, const std::vector<std::string>& _coordinates)
-          : name(_name), dim(_dim), coordinates(_coordinates) {};
-  CoordinateFrame(const std::string& _name, const unsigned int _dim, const std::string& prefix)
-          : name(_name), dim(_dim) {
+  CoordinateFrame(const std::string& _name, const std::vector<std::string>& _coordinates)
+          : name(_name), coordinates(_coordinates) {};
+  CoordinateFrame(const std::string& _name, const unsigned int dim, const std::string& prefix)
+          : name(_name) {
     for (int i=0; i<dim; i++) coordinates.push_back(prefix+std::to_string(i));
   }
-  CoordinateFrame(const std::string& _name) : name(_name), dim(0) {}
+  CoordinateFrame(const std::string& _name) : name(_name) {}
 
   virtual ~CoordinateFrame(void) {};
 
   const std::string& getName() const { return name; };
-  const unsigned int getDim() const { return dim; };
+  const unsigned int getDim() const { return coordinates.size(); };
   const std::string& getCoordinateName(unsigned int i) const {
     if (i>=coordinates.size())
       throw std::runtime_error("index exceeds dimension of coordinate frame");
@@ -46,13 +46,11 @@ public:
   const std::vector<std::string>& getCoordinateNames() const { return coordinates; }
   void setCoordinateNames(const std::vector<std::string>& _coordinates)
   {
-    if (_coordinates.size()!=dim)
-      throw std::runtime_error("coordinates must be an array of dim strings");
     coordinates = _coordinates;
   }
 
   virtual std::ostream& print(std::ostream& os) const {
-    os << "Coordinate Frame: " << name << " (" << dim << " elements)" << std::endl;
+    os << "Coordinate Frame: " << name << " (" << getDim() << " elements)" << std::endl;
 
     for (auto c : coordinates) {
       os << "  " << c << std::endl;
@@ -67,7 +65,6 @@ public:
 
 protected:
   std::string name;  // a descriptive name for this coordinate frame
-  unsigned int dim;  // number of elements in the coordinate vector
   std::vector<std::string> coordinates; // a string name for each element in the vector (size==dim)
 };
 
@@ -78,7 +75,7 @@ public:
   virtual ~MultiCoordinateFrame(void) {};
 
   virtual std::ostream& print(std::ostream& os) const {
-    os << "Multi-Coordinate Frame: " << name << " (" << dim << " elements)" << std::endl;
+    os << "Multi-Coordinate Frame: " << name << " (" << getDim() << " elements)" << std::endl;
 
     for (auto sf : frames) {
       os << "  " << sf.frame->getName() << " (" << sf.frame->getDim() << " elements) " << std::endl;

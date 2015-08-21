@@ -28,7 +28,7 @@ public:
   typedef Eigen::Matrix<double,Eigen::Dynamic,1> VectorXs;
 
   DrakeSystem(const std::string& name,
-              std::shared_ptr<CoordinateFrame> continuous_state_frame,
+              std::shared_ptr<CoordinateFrame> continuous_state_frame,  // should these be const? (right now, I think that we should be allowed to modify them)
               std::shared_ptr<CoordinateFrame> discrete_state_frame,
               std::shared_ptr<CoordinateFrame> input_frame,
               std::shared_ptr<CoordinateFrame> output_frame);
@@ -56,7 +56,10 @@ public:
   }
 
   virtual VectorXs output(double t, const VectorXs& x, const VectorXs& u) {
-    throw std::runtime_error("(Drake:DrakeSystem:dynamics) systems with outputs must overload the output method");
+    if (output_frame->getDim()>0)
+      throw std::runtime_error("(Drake:DrakeSystem:dynamics) systems with outputs must overload the output method");
+    else
+      return VectorXs::Zero(0);
   }
 
   virtual VectorXs getRandomState(void);
@@ -71,7 +74,9 @@ protected:
   std::shared_ptr<CoordinateFrame> output_frame;
 
   virtual void ode1(double t0, double tf, const VectorXs& x0, double step_size);
+
 //  virtual void ode45(double t0, double tf, const VectorXs& x0, double initial_step_size, double relative_error_tolerance, double absolute_error_tolerance);
+// c.f. https://www.google.com/search?q=Runge-Kutta-Fehlberg and edit ode45.m in matlab.
 
   /*
   bool is_direct_feedthrough;  // does the output method depend on the input u?  set false if you can!

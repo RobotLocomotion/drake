@@ -3,6 +3,7 @@
 
 MultiCoordinateFrame::MultiCoordinateFrame(const std::string& name, std::initializer_list<std::shared_ptr<CoordinateFrame>> _frames)
   : CoordinateFrame(name) {
+  unsigned int dim = 0;
   for (auto subframe : _frames) {
     if (!subframe) continue;  // ok if they pass in nullptr
     struct SubFrame s;
