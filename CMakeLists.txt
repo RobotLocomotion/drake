@@ -45,6 +45,7 @@ endif()
 set(lcm_dependencies gtk)
 set(libbot_dependencies lcm)
 set(director_dependencies lcm libbot)
+set(iris_dependencies eigen mosek)
 set(signalscope_dependencies director)
 set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi)
 
@@ -73,7 +74,8 @@ set(gloptipoly_GIT_TAG c9e796e99c584ecf78317348c4162a2ed4121156)
 set(gurobi_GIT_REPOSITORY https://github.com/RobotLocomotion/gurobi.git)
 set(gurobi_GIT_TAG beb0a84a1bcca1eb81a1b87d9fa140f2134d97e9)
 set(iris_GIT_REPOSITORY https://github.com/rdeits/iris-distro.git)
-set(iris_GIT_TAG 13468e0ea38e72ffae030adaa31e3015ea5f3ce0)
+set(iris_GIT_TAG b93735978a3effc63f2d9b0808928a7c2ace9ae9)
+set(iris_ADDITIONAL_BUILD_ARGS PATCH_COMMAND make configure-cdd-only)
 set(lcm_GIT_REPOSITORY https://github.com/RobotLocomotion/lcm-pod.git)
 set(lcm_GIT_TAG 31e9a3e2dd056cac749fc2879e841434181180ad) # cmake branch
 set(libbot_GIT_REPOSITORY https://github.com/RobotLocomotion/libbot.git)
@@ -81,7 +83,7 @@ set(libbot_GIT_TAG c328b73f3b48008d04468031e26f48468a7e3cc0)
 set(meshconverters_GIT_REPOSITORY https://github.com/RobotLocomotion/meshConverters.git)
 set(meshconverters_GIT_TAG 34daf686ebdb7fa572cbe32af983dfe91a2af761)
 set(mosek_GIT_REPOSITORY https://github.com/RobotLocomotion/mosek.git)
-set(mosek_GIT_TAG a72594c4a7c8c5c026fd291148bcac76146634c2)
+set(mosek_GIT_TAG 8e93c8ad6e8de0c1401b8e39d187370a3a0bd2dc)
 set(octomap_GIT_REPOSITORY https://github.com/RobotLocomotion/octomap-pod.git)
 set(octomap_GIT_TAG 00b28215d19580f9e964bc5d126ce55a9253671a)
 set(sedumi_GIT_REPOSITORY https://github.com/RobotLocomotion/sedumi.git)
@@ -109,7 +111,7 @@ endif()
 # process optional projects
 # note: keep drake in this loop in case externals depend on drake (e.g. the director might in the near future)
 set(EXTERNAL_PROJECTS)
-foreach(proj IN ITEMS cmake eigen gtk lcm libbot bullet iris spotless director signalscope octomap snopt gurobi mosek yalmip gloptipoly bertini sedumi avl xfoil meshconverters drake)
+foreach(proj IN ITEMS cmake eigen gtk lcm libbot bullet spotless director signalscope octomap snopt gurobi mosek iris yalmip gloptipoly bertini sedumi avl xfoil meshconverters drake)
 	string(TOUPPER ${proj} proj_upper)
 	if (${proj} STREQUAL "drake" OR ${proj} STREQUAL "cmake" OR WITH_${proj_upper} OR WITH_ALL_SUPPORTED_EXTERNALS)
 		list(APPEND EXTERNAL_PROJECTS ${proj})
@@ -147,6 +149,7 @@ endif()
 #if (NOT CMAKE_Fortran_COMPILER)
 #   unsupported(avl xfoil)
 #endif()
+
 
 
 foreach (proj ${EXTERNAL_PROJECTS})
@@ -206,6 +209,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 			BUILD_COMMAND "${${proj}_BUILD_COMMAND}"
 			INSTALL_COMMAND ""
 			DEPENDS download-${proj} ${deps}
+			${${proj}_ADDITIONAL_BUILD_ARGS}
 	#		BUILD_ALWAYS 1
 			)
 	else()
@@ -220,6 +224,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 			BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE}
 			INSTALL_COMMAND ""
 			DEPENDS ${deps}
+			${${proj}_ADDITIONAL_BUILD_ARGS}
 	#		BUILD_ALWAYS 1
 			)
 	endif(NOT ${proj} STREQUAL "drake")

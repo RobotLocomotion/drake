@@ -5,14 +5,19 @@ sudo: required
 notification:
   email: false
 
+branches:
+  only: 
+    - master
+    - stable
+
 before_install:
   - sudo apt-get update -qq
   - mkdir build
   - make download-all
   - sudo ./install_prereqs.sh ubuntu
+  - make
 
 script:
-  - make
   - cd drake/pod-build
   - ctest -j 1 -D Experimental -C $BUILD_TYPE --output-on-failure --timeout 1000 --track Continuous
 
@@ -22,9 +27,12 @@ compiler:
   - gcc
   - clang
 
+python:
+  - '2.7'
+
 env:
   global:
-    - CMAKE_FLAGS="-DWITH_SPOTLESS:BOOL=OFF"
+    - CMAKE_FLAGS="-DWITH_SPOTLESS:BOOL=OFF -DWITH_MOSEK:BOOL=ON -DWITH_IRIS:BOOL=ON"
   matrix:
     - BUILD_TYPE=Debug
     - BUILD_TYPE=Release
