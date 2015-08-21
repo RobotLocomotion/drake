@@ -59,12 +59,19 @@ public:
     throw std::runtime_error("(Drake:DrakeSystem:dynamics) systems with outputs must overload the output method");
   }
 
+  virtual VectorXs getRandomState(void);
+  virtual VectorXs getInitialState(void);
+  virtual void simulate(double t0, double tf, const VectorXs& x0);
+
 protected:
   std::string name;
 
   std::shared_ptr<CoordinateFrame> input_frame;
   std::shared_ptr<CoordinateFrame> continuous_state_frame, discrete_state_frame, state_frame;
   std::shared_ptr<CoordinateFrame> output_frame;
+
+  virtual void ode1(double t0, double tf, const VectorXs& x0, double step_size);
+//  virtual void ode45(double t0, double tf, const VectorXs& x0, double initial_step_size, double relative_error_tolerance, double absolute_error_tolerance);
 
   /*
   bool is_direct_feedthrough;  // does the output method depend on the input u?  set false if you can!

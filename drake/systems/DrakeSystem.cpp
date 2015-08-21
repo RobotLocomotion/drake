@@ -1,4 +1,5 @@
 
+#include <algorithm>
 #include "DrakeSystem.h"
 
 using namespace std;
@@ -20,4 +21,29 @@ DrakeSystem::DrakeSystem(const std::string &name, unsigned int num_continuous_st
   if (num_discrete_states>0) discrete_state_frame = shared_ptr<CoordinateFrame>(new CoordinateFrame(name+"DiscreteState",num_discrete_states,"xd"));
   if (num_outputs>0) output_frame = shared_ptr<CoordinateFrame>(new CoordinateFrame(name+"Output",num_outputs,"y"));
   state_frame = shared_ptr<CoordinateFrame>(new MultiCoordinateFrame(name+"state",{continuous_state_frame,discrete_state_frame}));
+}
+
+DrakeSystem::VectorXs DrakeSystem::getRandomState(void) {
+  return DrakeSystem::VectorXs::Random(state_frame->getDim());
+}
+
+DrakeSystem::VectorXs DrakeSystem::getInitialState(void) {
+  return getRandomState();
+}
+
+void DrakeSystem::simulate(double t0, double tf, const DrakeSystem::VectorXs &x0) {
+  ode1(t0,tf,x0,.1);
+}
+
+void DrakeSystem::ode1(double t0, double tf, const DrakeSystem::VectorXs& x0, double step_size) {
+  double t = t0, dt;
+  DrakeSystem::VectorXs x = x0;
+  DrakeSystem::VectorXs u = DrakeSystem::VectorXs::Zero(input_frame->getDim());
+  DrakeSystem::VectorXs y(output_frame->getDim());
+  while (t<tf) {
+    dt = std::min(step_size,tf-t);
+    y = output(t,x,u);
+    x += dt * dynamics(t, x, u);
+    t += dt;
+  }
 }

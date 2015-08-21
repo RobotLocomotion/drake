@@ -1,6 +1,7 @@
 #ifndef _PENDULUM_H_
 #define _PENDULUM_H_
 
+#include <iostream>
 #include "DrakeSystem.h"
 
 using namespace std;
@@ -25,6 +26,7 @@ public:
   virtual VectorXs output(double t, const VectorXs& x, const VectorXs& u) {
     VectorXd y(1);
     y(0) = x(0);
+    cout << y << endl;
     return y;
   }
 
