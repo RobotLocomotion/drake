@@ -3,6 +3,8 @@
 
 #include <string>
 #include <memory>
+#include <exception>
+#include <Eigen/Dense>
 #include "CoordinateFrame.h"
 
 #undef DLLEXPORT
@@ -23,6 +25,8 @@
 class DLLEXPORT DrakeSystem {
 public:
 
+  typedef Eigen::Matrix<double,Eigen::Dynamic,1> VectorXs;
+
   DrakeSystem(const std::string& name,
               std::shared_ptr<CoordinateFrame> continuous_state_frame,
               std::shared_ptr<CoordinateFrame> discrete_state_frame,
@@ -41,7 +45,21 @@ public:
   const CoordinateFrame& getStateFrame() { return *state_frame.get(); }
   const CoordinateFrame& getOutputFrame() { return *output_frame.get(); }
 
-private:
+  // todo: templates for these
+
+  virtual VectorXs dynamics(double t, const VectorXs& x, const VectorXs& u) {
+    throw std::runtime_error("(Drake:DrakeSystem:dynamics) systems with continuous dynamics must overload the dynamics method");
+  }
+
+  virtual VectorXs update(double t, const VectorXs& x, const VectorXs& u) {
+    throw std::runtime_error("(Drake:DrakeSystem:update) systems with discrete dynamics must overload the update method");
+  }
+
+  virtual VectorXs output(double t, const VectorXs& x, const VectorXs& u) {
+    throw std::runtime_error("(Drake:DrakeSystem:dynamics) systems with outputs must overload the output method");
+  }
+
+protected:
   std::string name;
 
   std::shared_ptr<CoordinateFrame> input_frame;
