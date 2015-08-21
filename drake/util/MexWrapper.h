@@ -6,7 +6,7 @@
 
 #undef DLLEXPORT
 #if defined(WIN32) || defined(WIN64)
-  #if defined(drakeUtil_EXPORTS)
+  #if defined(drakeMexUtil_EXPORTS)
     #define DLLEXPORT __declspec( dllexport )
   #else
     #define DLLEXPORT __declspec( dllimport )
@@ -15,7 +15,7 @@
     #define DLLEXPORT
 #endif
 
-DLLEXPORT class MexWrapper {
+class DLLEXPORT MexWrapper {
   public:
     MexWrapper(std::string const & filename);
     ~MexWrapper();

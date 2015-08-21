@@ -329,7 +329,7 @@ mwSize sub2ind(mwSize ndims, const mwSize* dims, const mwSize* sub) {
   return ret;
 }
 
-void sizecheck(const mxArray* mat, int M, int N) {
+void sizecheck(const mxArray* mat, mwSize M, mwSize N) {
   if (mxGetM(mat) != M) {
     mexErrMsgIdAndTxt("Drake:WrongSize", "wrong number of rows. Expected: %d but got: %d", M, mxGetM(mat));
   }

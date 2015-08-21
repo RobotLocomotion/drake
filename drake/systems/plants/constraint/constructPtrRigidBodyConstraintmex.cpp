@@ -40,7 +40,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         RigidBodyManipulator* model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[1]);
         Vector2d tspan;
         int* robotnum;
-        int num_robot;
+        size_t num_robot;
         if(nrhs <= 3)
         {
           num_robot = 1;
@@ -115,7 +115,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         {
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","iAfun, jAvar and A must be numeric");
         }
-        int lenA = mxGetM(prhs[2]);
+        size_t lenA = mxGetM(prhs[2]);
         if(mxGetM(prhs[3]) != lenA || mxGetM(prhs[4]) != lenA || mxGetN(prhs[2]) != 1 || mxGetN(prhs[3]) != 1 || mxGetN(prhs[4]) != 1)
         {
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","iAfun,jAvar,A must be column vectors of the same size");
@@ -133,7 +133,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         {
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","lb and ub must be numeric column vectors of the same size");
         }
-        int num_constraint = mxGetM(prhs[5]);
+        size_t num_constraint = mxGetM(prhs[5]);
         VectorXd lb(num_constraint);
         VectorXd ub(num_constraint);
         memcpy(lb.data(),mxGetPrSafe(prhs[5]),sizeof(double)*num_constraint);
@@ -177,7 +177,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           //DEBUG
           //cout << "collisionDetectmex: Received body_idx" << endl;
           //END_DEBUG
-          int n_active_bodies = mxGetNumberOfElements(body_idx);
+          size_t n_active_bodies = mxGetNumberOfElements(body_idx);
           //DEBUG
           //cout << "collisionDetectmex: n_active_bodies = " << n_active_bodies << endl;
           //END_DEBUG
@@ -193,10 +193,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         const mxArray* collision_groups = mxGetField(active_collision_options,0,
             "collision_groups");
 	if (collision_groups != NULL) {
-	  int num = mxGetNumberOfElements(collision_groups);
+	  size_t num = mxGetNumberOfElements(collision_groups);
 	  for (int i=0; i<num; i++) {
 	    const mxArray *ptr = mxGetCell(collision_groups,i);
-	    int buflen = mxGetN(ptr)*sizeof(mxChar)+1;
+	    size_t buflen = mxGetN(ptr)*sizeof(mxChar)+1;
 	    char* str = (char*)mxMalloc(buflen);
 	    mxGetString(ptr, str, buflen);
 	    active_group_names.insert(str);
@@ -512,7 +512,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         WorldCoMConstraint* cnst = nullptr;
         Vector2d tspan;
         int* robotnum;
-        int num_robot;
+        size_t num_robot;
         if(nrhs <= 5)
         {
           num_robot = 1;
@@ -578,7 +578,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         }
         int body = (int) mxGetScalar(prhs[2])-1;
         checkBodyOrFrameID(body, model);
-        int n_pts = mxGetN(prhs[3]);
+        size_t n_pts = mxGetN(prhs[3]);
         if(!mxIsNumeric(prhs[3])||mxGetM(prhs[3]) != 3)
         {
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","Argument 3 should be a double matrix with 3 rows");
@@ -618,7 +618,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         }
         int body = (int) mxGetScalar(prhs[2])-1;
         checkBodyOrFrameID(body, model);
-        int n_pts = mxGetN(prhs[3]);
+        size_t n_pts = mxGetN(prhs[3]);
         if(!mxIsNumeric(prhs[3])||mxGetM(prhs[3]) != 3)
         {
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","Argument 3 should be a double matrix with 3 rows");
@@ -711,7 +711,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         {
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","ptA and ptB should be numeric");
         }
-        int npts = mxGetN(prhs[4]);
+        size_t npts = mxGetN(prhs[4]);
         if(mxGetM(prhs[4]) != 3 || mxGetM(prhs[5]) != 3)
         {
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","ptA and ptB should have 3 rows");
@@ -824,7 +824,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           rigidBodyConstraintParseTspan(prhs[4],tspan);
         }
         int body = (int) mxGetScalar(prhs[2])-1;
-        int n_pts = mxGetN(prhs[3]);
+        size_t n_pts = mxGetN(prhs[3]);
         if(!mxIsNumeric(prhs[3])||mxGetM(prhs[3]) != 3)
         {
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","Argument 4 should be a double matrix with 3 rows");
@@ -905,7 +905,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         {
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","joint_ind must be a column numeric vector");
         }
-        int num_joints = mxGetM(prhs[2]);
+        size_t num_joints = mxGetM(prhs[2]);
         VectorXd joint_ind_tmp(num_joints);
         memcpy(joint_ind_tmp.data(),mxGetPrSafe(prhs[2]),sizeof(double)*num_joints);
         VectorXi joint_ind(num_joints);
@@ -960,7 +960,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         {
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","Argument 3 (pts) should be a double matrix with 3 rows");
         }
-        int n_pts = mxGetN(prhs[3]);
+        size_t n_pts = mxGetN(prhs[3]);
         Matrix3Xd pts_tmp(3,n_pts);
         memcpy(pts_tmp.data(),mxGetPrSafe(prhs[2]),sizeof(double)*3*n_pts);
 
@@ -1090,10 +1090,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         const mxArray* collision_groups = mxGetField(active_collision_options,0,
             "collision_groups");
 	if (collision_groups != NULL) {
-	  int num = mxGetNumberOfElements(collision_groups);
+	  size_t num = mxGetNumberOfElements(collision_groups);
 	  for (int i=0; i<num; i++) {
 	    const mxArray *ptr = mxGetCell(collision_groups,i);
-	    int buflen = mxGetN(ptr)*sizeof(mxChar)+1;
+	    size_t buflen = mxGetN(ptr)*sizeof(mxChar)+1;
 	    char* str = (char*)mxMalloc(buflen);
 	    mxGetString(ptr, str, buflen);
 	    active_group_names.insert(str);
