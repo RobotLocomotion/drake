@@ -65,13 +65,15 @@ public:
   virtual VectorXs getRandomState(void);
   virtual VectorXs getInitialState(void);
   virtual void simulate(double t0, double tf, const VectorXs& x0);
+  virtual void runLCM(double t0, double tf, const VectorXs& x0);
 
-protected:
   std::string name;
 
   std::shared_ptr<CoordinateFrame> input_frame;
-  std::shared_ptr<CoordinateFrame> continuous_state_frame, discrete_state_frame, state_frame;
   std::shared_ptr<CoordinateFrame> output_frame;
+  std::shared_ptr<CoordinateFrame> continuous_state_frame, discrete_state_frame, state_frame; // should either protect these or avoid storing them all
+
+protected:
 
   virtual void ode1(double t0, double tf, const VectorXs& x0, double step_size);
 
@@ -83,5 +85,21 @@ protected:
   bool is_time_invariant; // are all of the dynamics and output methods independent of time? set to true if you can!
    */
 };
+
+class CascadeSystem : public DrakeSystem {
+public:
+  CascadeSystem(std::shared_ptr<DrakeSystem> sys1, std::shared_ptr<DrakeSystem> sys2);
+
+  virtual VectorXs dynamics(double t, const VectorXs& x, const VectorXs& u);
+  virtual VectorXs update(double t, const VectorXs& x, const VectorXs& u);
+  virtual VectorXs output(double t, const VectorXs& x, const VectorXs& u);
+
+private:
+  VectorXs getX1(const VectorXs& x);
+  VectorXs getX2(const VectorXs& x);
+
+  std::shared_ptr<DrakeSystem> sys1, sys2;
+};
+
 
 #endif // #define __DrakeSystem_H_

@@ -1,5 +1,4 @@
 #include "LCMCoordinateFrame.h"
-#include <lcmtypes/lcmt_drake_signal.hpp>
 
 using namespace std;
 using namespace Eigen;
@@ -9,12 +8,12 @@ static bool encode(const CoordinateFrame& frame, const double t, const VectorXd&
   msg.dim = frame.getDim();
   msg.coord = frame.getCoordinateNames(); // note: inefficient to do a deep copy every time
   for (int i=0; i<msg.dim; i++) msg.val[i] = x(i);
+  return true;
 }
 
 static bool decode(const CoordinateFrame& frame, const lcmt_drake_signal& msg, double& t, VectorXd& x) {
   throw runtime_error("decode lcmt_drake_signal not implemented yet (will be trivial).");
+  return false;
 }
 
-
-template DLLEXPORT LCMCoordinateFrame<lcmt_drake_signal>;
 
