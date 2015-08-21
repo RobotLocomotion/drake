@@ -331,11 +331,18 @@
   }
 }
 
-// %typemap(in, fragment="Eigen_Fragments") const Eigen::Ref<CLASS > & (CLASS temp)
-// {
-//   if (!ConvertFromNumpyToEigenMatrix<CLASS >(&temp, $input))
-//     SWIG_fail;
-//   new ($1) Eigen::Ref<CLASS >(temp);
-//   // $1->construct(temp);
-// }
+%typecheck(SWIG_TYPECHECK_DOUBLE_ARRAY)
+    CLASS,
+    const CLASS &,
+    CLASS &
+  {
+    $1 = is_array($input);
+  }
+
+%typecheck(SWIG_TYPECHECK_DOUBLE_ARRAY)
+  std::vector<CLASS >
+  {
+    $1 = PyList_Check($input) && ((PyList_Size($input) == 0) || is_array(PyList_GetItem($input, 0)));
+  }
+
 %enddef
