@@ -15,6 +15,7 @@ public:
     continuous_state_frame->setCoordinateNames({"theta","thetadot"});
     output_frame->setCoordinateNames({"theta"});
   }
+  virtual ~Pendulum(void) {};
 
   virtual VectorXs dynamics(double t, const VectorXs& x, const VectorXs& u) {
     VectorXd xdot(2);

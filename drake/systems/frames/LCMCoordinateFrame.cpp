@@ -3,11 +3,11 @@
 using namespace std;
 using namespace Eigen;
 
-static bool encode(const CoordinateFrame& frame, const double t, const VectorXd& x, lcmt_drake_signal& msg) {
+static bool encode(const CoordinateFrame* frame, const double t, const VectorXd& x, lcmt_drake_signal& msg) {
   msg.timestamp = static_cast<int64_t>(t*1000);
-  msg.dim = frame.getDim();
-  msg.coord = frame.getCoordinateNames(); // note: inefficient to do a deep copy every time
-  for (int i=0; i<msg.dim; i++) msg.val[i] = x(i);
+  msg.dim = frame->getDim();
+  msg.coord = frame->getCoordinateNames(); // note: inefficient to do a deep copy every time
+  for (int i=0; i<msg.dim; i++) msg.val.push_back(x(i));
   return true;
 }
 
@@ -16,4 +16,18 @@ static bool decode(const CoordinateFrame& frame, const lcmt_drake_signal& msg, d
   return false;
 }
 
+template <class MessageType>
+void LCMCoordinateFrame<MessageType>::publish(const double t, const Eigen::VectorXd& x) {
+  MessageType msg;
+  if (!encode(this,t,x,msg))
+    throw std::runtime_error(std::string("failed to encode")+msg.getTypeName());
+  lcm->publish(channel,&msg);
+}
 
+
+template <class MessageType>
+DrakeSystemPtr LCMCoordinateFrame<MessageType>::setupLCMOutputs(DrakeSystemPtr sys) {
+  return cascade(sys,DrakeSystemPtr(new LCMOutput<MessageType>(shared_ptr<LCMCoordinateFrame<MessageType> >(this))));
+}
+
+template class LCMCoordinateFrame<lcmt_drake_signal>;

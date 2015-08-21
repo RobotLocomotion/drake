@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
   cout << "state frame: " << test_system2->getStateFrame() << endl;
   cout << "output frame: " << test_system2->getOutputFrame() << endl;
 
-  shared_ptr<DrakeSystem> test_system3( new CascadeSystem(test_system1,test_system2) );
+  auto test_system3 = cascade(test_system1,test_system2);
 
   cout << "input frame: " << test_system3->getInputFrame() << endl;
   cout << "state frame: " << test_system3->getStateFrame() << endl;

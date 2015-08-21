@@ -19,6 +19,8 @@
 #define DLLEXPORT
 #endif
 
+class DrakeSystem;
+typedef std::shared_ptr<DrakeSystem> DrakeSystemPtr;
 
 /// Every input, state, and output in a DynamicalSystem has a coordinate frame
 /// attached to it.  Many bugs can be avoided by forcing developers to be
@@ -63,11 +65,14 @@ public:
     return m.print(os);
   }
 
+  virtual DrakeSystemPtr setupLCMOutputs(DrakeSystemPtr sys) { return sys; }
+
 protected:
   std::string name;  // a descriptive name for this coordinate frame
   std::vector<std::string> coordinates; // a string name for each element in the vector (size==dim)
 };
 
+typedef std::shared_ptr<CoordinateFrame> CoordinateFramePtr;
 
 class DLLEXPORT MultiCoordinateFrame : public CoordinateFrame {
 public:
@@ -83,20 +88,7 @@ public:
     return os;
   }
 
-  static std::shared_ptr<CoordinateFrame> constructFrame(const std::string& name, std::initializer_list<std::shared_ptr<CoordinateFrame>> _frames) {
-    unsigned int count=0;
-    for (auto f : _frames)
-      if (f) count++;
-    if (count<1) return nullptr;
-    else if (count==1) {
-      for (auto f : _frames)
-        if (f) return f;
-      return nullptr;  // shouldn't get here, but makes the compiler happier
-    } else {
-      return std::shared_ptr<CoordinateFrame>(new MultiCoordinateFrame(name,_frames));
-    }
-  }
-
+  virtual DrakeSystemPtr setupLCMOutputs(DrakeSystemPtr sys) { throw std::runtime_error("not implemented yet (need CoordinateTransforms)"); }
 
 private:
   /// Store the data in two (compatible) ways:

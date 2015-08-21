@@ -41,6 +41,8 @@ public:
 
   DrakeSystem(const std::string& name) : DrakeSystem(name,0,0,0,0) {}; // build the empty system
 
+  virtual ~DrakeSystem(void) {};
+
   const CoordinateFrame& getInputFrame() { return *input_frame.get(); }
   const CoordinateFrame& getStateFrame() { return *state_frame.get(); }
   const CoordinateFrame& getOutputFrame() { return *output_frame.get(); }
@@ -86,9 +88,12 @@ protected:
    */
 };
 
+typedef std::shared_ptr<DrakeSystem> DrakeSystemPtr;
+
 class CascadeSystem : public DrakeSystem {
 public:
-  CascadeSystem(std::shared_ptr<DrakeSystem> sys1, std::shared_ptr<DrakeSystem> sys2);
+  CascadeSystem(DrakeSystemPtr sys1, DrakeSystemPtr sys2);
+  virtual ~CascadeSystem(void) {};
 
   virtual VectorXs dynamics(double t, const VectorXs& x, const VectorXs& u);
   virtual VectorXs update(double t, const VectorXs& x, const VectorXs& u);
@@ -101,5 +106,8 @@ private:
   std::shared_ptr<DrakeSystem> sys1, sys2;
 };
 
+static DrakeSystemPtr cascade(DrakeSystemPtr sys1, DrakeSystemPtr sys2) {
+  return DrakeSystemPtr(new CascadeSystem(sys1,sys2));
+}
 
 #endif // #define __DrakeSystem_H_
