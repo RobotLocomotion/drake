@@ -9,7 +9,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     return;
   }
 
-  if (nrhs<3) mexErrMsgIdAndTxt("Drake:CoordinateFrame:BadInputs","Usage: new(name,coordinates)");
+  if (nrhs<2) mexErrMsgIdAndTxt("Drake:CoordinateFrame:BadInputs","Usage: new(name,coordinates)");
 
   string name = mxGetStdString(prhs[0]);
   vector<string> coordinates = mxGetVectorOfStdStrings(prhs[1]);

@@ -2,6 +2,8 @@
 #include <algorithm>
 #include "DrakeSystem.h"
 
+
+
 using namespace std;
 
 DrakeSystem::DrakeSystem(const std::string &name, const std::shared_ptr<CoordinateFrame>& _continuous_state_frame,
@@ -35,23 +37,47 @@ DrakeSystem::VectorXs DrakeSystem::getInitialState(void) {
   return getRandomState();
 }
 
-void DrakeSystem::simulate(double t0, double tf, const DrakeSystem::VectorXs &x0) {
-  ode1(t0,tf,x0,.1);
+void DrakeSystem::simulate(double t0, double tf, const DrakeSystem::VectorXs &x0, const SimulationOptions& options) {
+  ode1(t0,tf,x0,options);
 }
 
-void DrakeSystem::runLCM(double t0, double tf, const VectorXs &x0) {
+void DrakeSystem::runLCM(double t0, double tf, const VectorXs &x0, const SimulationOptions& options) {
+  SimulationOptions lcm_options = options;
+  lcm_options.realtime_factor = 1.0;
+
 //  input_frame->setupLCMInputs(); // not implemented yet
   DrakeSystemPtr lcm_sys = output_frame->setupLCMOutputs(DrakeSystemPtr(this));
-  lcm_sys->simulate(t0,tf,x0);
+  lcm_sys->simulate(t0,tf,x0,lcm_options);
 }
 
-void DrakeSystem::ode1(double t0, double tf, const DrakeSystem::VectorXs& x0, double step_size) {
+
+#include "timeUtil.h"
+
+inline void handle_realtime_factor(double wall_clock_start_time, double sim_time, double realtime_factor)
+{
+  if (realtime_factor>=0.0) {
+    double time_diff = (getTimeOfDay() - wall_clock_start_time) * realtime_factor - sim_time;
+    if (time_diff <= 0.0) {
+      nanoSleep(-time_diff);
+    } else if (time_diff > 1.0) { // then I'm behind by more than 1 second
+      throw runtime_error(
+              "Not keeping up with requested realtime_factor!  At time " + to_string(sim_time) + ", I'm behind by " +
+              to_string(time_diff) + " sec.");
+    }
+  }
+}
+
+
+void DrakeSystem::ode1(double t0, double tf, const DrakeSystem::VectorXs& x0, const SimulationOptions& options) {
   double t = t0, dt;
+  double wall_clock_start_time = getTimeOfDay();
   DrakeSystem::VectorXs x = x0;
   DrakeSystem::VectorXs u = DrakeSystem::VectorXs::Zero(input_frame->getDim());
   DrakeSystem::VectorXs y(output_frame->getDim());
   while (t<tf) {
-    dt = std::min(step_size,tf-t);
+    handle_realtime_factor(wall_clock_start_time, t, options.realtime_factor);
+
+    dt = std::min(options.initial_step_size,tf-t);
     y = output(t,x,u);
     x += dt * dynamics(t, x, u);
     t += dt;

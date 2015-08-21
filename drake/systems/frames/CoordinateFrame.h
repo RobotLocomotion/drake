@@ -38,16 +38,17 @@ public:
 
   virtual ~CoordinateFrame(void) {};
 
-  const std::string& getName() const { return name; };
-  const unsigned int getDim() const { return coordinates.size(); };
-  const std::string& getCoordinateName(unsigned int i) const {
+  virtual const unsigned int getDim() const { return coordinates.size(); };
+  virtual const std::string& getCoordinateName(unsigned int i) const {
     if (i>=coordinates.size())
       throw std::runtime_error("index exceeds dimension of coordinate frame");
     return coordinates[i];
   }
-  const std::vector<std::string>& getCoordinateNames() const { return coordinates; }
-  void setCoordinateNames(const std::vector<std::string>& _coordinates)
+  virtual std::vector<std::string> getCoordinateNames() const { return coordinates; }
+  virtual void setCoordinateNames(const std::vector<std::string>& _coordinates)
   {
+    if (_coordinates.size()!=coordinates.size())
+      throw std::runtime_error("(CoordinateFrame:setCoordinateNames) this would change the dimension of the frame");  // which would, e.g. confuse a multi-coordinate frame that was pointing to this
     coordinates = _coordinates;
   }
 
@@ -67,8 +68,9 @@ public:
 
   virtual DrakeSystemPtr setupLCMOutputs(DrakeSystemPtr sys) { return sys; }
 
-protected:
   std::string name;  // a descriptive name for this coordinate frame
+
+protected:
   std::vector<std::string> coordinates; // a string name for each element in the vector (size==dim)
 };
 
@@ -83,9 +85,28 @@ public:
     os << "Multi-Coordinate Frame: " << name << " (" << getDim() << " elements)" << std::endl;
 
     for (auto sf : frames) {
-      os << "  " << sf.frame->getName() << " (" << sf.frame->getDim() << " elements) " << std::endl;
+      os << "  " << sf.frame->name << " (" << sf.frame->getDim() << " elements) " << std::endl;
     }
     return os;
+  }
+
+  virtual const unsigned int getDim() const { return coordinate_refs.size(); };
+  virtual const std::string& getCoordinateName(unsigned int i) const {
+    if (i>=coordinate_refs.size())
+      throw std::runtime_error("index exceeds dimension of coordinate frame");
+    return coordinate_refs[i].frame->getCoordinateName(coordinate_refs[i].index_in_subframe);
+  }
+  virtual std::vector<std::string> getCoordinateNames() const {
+    std::vector<std::string> coordinates;
+    for (auto c : coordinate_refs) {
+      coordinates.push_back(c.frame->getCoordinateName(c.index_in_subframe));
+    }
+    return coordinates;
+  }
+  virtual void setCoordinateNames(const std::vector<std::string>& _coordinates)
+  {
+    throw std::runtime_error("cannot change the names of a multi-coordinate frame directory.  change the subframes.");
+    // note: i could potentially allow this if the sizes were correct, but it seems unlikely to be used for good
   }
 
   virtual DrakeSystemPtr setupLCMOutputs(DrakeSystemPtr sys) { throw std::runtime_error("not implemented yet (need CoordinateTransforms)"); }
@@ -99,7 +120,8 @@ private:
     std::vector<unsigned int> coordinate_indices; // which indices in the multi-frame are associated with this sub-frame
   };
   struct CoordinateRef {
-    std::shared_ptr<CoordinateFrame> frame;
+    CoordinateRef(const std::shared_ptr<CoordinateFrame>& _frame) : frame(_frame) {};
+    const std::shared_ptr<CoordinateFrame>& frame;  // reference to one of the SubFrame shared pointers
     unsigned int index_in_subframe;
   };
   std::vector<struct SubFrame> frames;

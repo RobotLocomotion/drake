@@ -11,7 +11,7 @@ int main(int argc, char* argv[]) {
   if(!lcm->good())
    return 1;
 
-  p->output_frame = shared_ptr<CoordinateFrame>(new LCMCoordinateFrame<lcmt_drake_signal>("PendulumOutput",{"theta"},lcm));
+  p->output_frame = shared_ptr<CoordinateFrame>(new LCMCoordinateFrame<drake::lcmt_drake_signal>("PendulumState",{"theta","thetadot"},lcm));
 
   cout << "output frame: " << p->getOutputFrame() << endl;
   p->runLCM(0,5,p->getRandomState());

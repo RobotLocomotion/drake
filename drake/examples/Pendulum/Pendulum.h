@@ -10,10 +10,10 @@ using namespace Eigen;
 
 class Pendulum : public DrakeSystem {
 public:
-  Pendulum(void) : DrakeSystem("Pendulum",2,0,1,1) {
+  Pendulum(void) : DrakeSystem("Pendulum",2,0,1,2) {
     input_frame->setCoordinateNames({"tau"});
     continuous_state_frame->setCoordinateNames({"theta","thetadot"});
-    output_frame->setCoordinateNames({"theta"});
+    output_frame = continuous_state_frame;
   }
   virtual ~Pendulum(void) {};
 
@@ -25,9 +25,7 @@ public:
   }
 
   virtual VectorXs output(double t, const VectorXs& x, const VectorXs& u) {
-    VectorXd y(1);
-    y(0) = x(0);
-    cout << y << endl;
+    VectorXd y=x;
     return y;
   }
 

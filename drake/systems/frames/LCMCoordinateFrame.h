@@ -4,7 +4,7 @@
 #include <lcm/lcm-cpp.hpp>
 #include "CoordinateFrame.h"
 #include "DrakeSystem.h"
-#include "lcmtypes/lcmt_drake_signal.hpp"
+#include "lcmtypes/drake/lcmt_drake_signal.hpp"
 
 //class LCMInput;
 template <class MessageType> class LCMOutput;
@@ -17,7 +17,7 @@ template <class MessageType> class LCMOutput;
 ///
 /// just like the examples in LCMCoordinateFrame.cpp
 
-template <class MessageType = lcmt_drake_signal>
+template <class MessageType = drake::lcmt_drake_signal>
 class DLLEXPORT LCMCoordinateFrame : public CoordinateFrame {
 public:
   LCMCoordinateFrame(const std::string& _name, const std::vector<std::string>& _coordinates, std::shared_ptr<lcm::LCM> _lcm)
@@ -47,7 +47,7 @@ template <class MessageType>
 class LCMOutput : public DrakeSystem {
 public:
   LCMOutput(std::shared_ptr<LCMCoordinateFrame<MessageType> > _lcm_coordinate_frame)
-          : DrakeSystem(_lcm_coordinate_frame->getName(),nullptr,nullptr,_lcm_coordinate_frame,nullptr),
+          : DrakeSystem(_lcm_coordinate_frame->name,nullptr,nullptr,_lcm_coordinate_frame,nullptr),
             lcm_coordinate_frame(_lcm_coordinate_frame) {}
   virtual ~LCMOutput(void) {};
 

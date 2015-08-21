@@ -66,8 +66,22 @@ public:
 
   virtual VectorXs getRandomState(void);
   virtual VectorXs getInitialState(void);
-  virtual void simulate(double t0, double tf, const VectorXs& x0);
-  virtual void runLCM(double t0, double tf, const VectorXs& x0);
+
+  // simulation options
+  typedef struct _SimulationOptions {
+    double realtime_factor = -1.0;  // 1 means try to run at realtime speed, < 0 is run as fast as possible
+    double initial_step_size = 0.01;
+  } SimulationOptions;
+  SimulationOptions default_simulation_options;
+
+  virtual void simulate(double t0, double tf, const VectorXs& x0, const SimulationOptions& options);
+  virtual void simulate(double t0, double tf, const VectorXs& x0) {
+    simulate(t0,tf,x0,default_simulation_options);
+  }
+  virtual void runLCM(double t0, double tf, const VectorXs& x0, const SimulationOptions& options);
+  virtual void runLCM(double t0, double tf, const VectorXs& x0) {
+    runLCM(t0,tf,x0,default_simulation_options);
+  }
 
   std::string name;
 
@@ -75,9 +89,10 @@ public:
   std::shared_ptr<CoordinateFrame> output_frame;
   std::shared_ptr<CoordinateFrame> continuous_state_frame, discrete_state_frame, state_frame; // should either protect these or avoid storing them all
 
+
 protected:
 
-  virtual void ode1(double t0, double tf, const VectorXs& x0, double step_size);
+  virtual void ode1(double t0, double tf, const VectorXs& x0, const SimulationOptions& options);
 
 //  virtual void ode45(double t0, double tf, const VectorXs& x0, double initial_step_size, double relative_error_tolerance, double absolute_error_tolerance);
 // c.f. https://www.google.com/search?q=Runge-Kutta-Fehlberg and edit ode45.m in matlab.

@@ -3,7 +3,7 @@
 using namespace std;
 using namespace Eigen;
 
-static bool encode(const CoordinateFrame* frame, const double t, const VectorXd& x, lcmt_drake_signal& msg) {
+static bool encode(const CoordinateFrame* frame, const double t, const VectorXd& x, drake::lcmt_drake_signal& msg) {
   msg.timestamp = static_cast<int64_t>(t*1000);
   msg.dim = frame->getDim();
   msg.coord = frame->getCoordinateNames(); // note: inefficient to do a deep copy every time
@@ -11,7 +11,7 @@ static bool encode(const CoordinateFrame* frame, const double t, const VectorXd&
   return true;
 }
 
-static bool decode(const CoordinateFrame& frame, const lcmt_drake_signal& msg, double& t, VectorXd& x) {
+static bool decode(const CoordinateFrame& frame, const drake::lcmt_drake_signal& msg, double& t, VectorXd& x) {
   throw runtime_error("decode lcmt_drake_signal not implemented yet (will be trivial).");
   return false;
 }
@@ -30,4 +30,4 @@ DrakeSystemPtr LCMCoordinateFrame<MessageType>::setupLCMOutputs(DrakeSystemPtr s
   return cascade(sys,DrakeSystemPtr(new LCMOutput<MessageType>(shared_ptr<LCMCoordinateFrame<MessageType> >(this))));
 }
 
-template class LCMCoordinateFrame<lcmt_drake_signal>;
+template class LCMCoordinateFrame<drake::lcmt_drake_signal>;
