@@ -201,7 +201,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   double penalty;
   vector<int> bodyA_idx, bodyB_idx;
   Matrix3Xd ptsA, ptsB, normals;
-  MatrixXd JA, JB, Jd, dpenalty;
+  MatrixXd dpenalty;
   VectorXd dist;
   if (active_bodies_idx.size() > 0) {
     if (active_group_names.size() > 0) {
