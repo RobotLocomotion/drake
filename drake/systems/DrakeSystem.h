@@ -28,10 +28,10 @@ public:
   typedef Eigen::Matrix<double,Eigen::Dynamic,1> VectorXs;
 
   DrakeSystem(const std::string& name,
-              std::shared_ptr<CoordinateFrame> continuous_state_frame,  // should these be const? (right now, I think that we should be allowed to modify them)
-              std::shared_ptr<CoordinateFrame> discrete_state_frame,
-              std::shared_ptr<CoordinateFrame> input_frame,
-              std::shared_ptr<CoordinateFrame> output_frame);
+              const std::shared_ptr<CoordinateFrame>& continuous_state_frame,  // note: the frames are not const
+              const std::shared_ptr<CoordinateFrame>& discrete_state_frame,
+              const std::shared_ptr<CoordinateFrame>& input_frame,
+              const std::shared_ptr<CoordinateFrame>& output_frame);
 
   DrakeSystem(const std::string& name,
               unsigned int num_continuous_states,

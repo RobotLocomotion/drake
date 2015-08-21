@@ -4,10 +4,10 @@
 
 using namespace std;
 
-DrakeSystem::DrakeSystem(const std::string &name, std::shared_ptr<CoordinateFrame> _continuous_state_frame,
-                         std::shared_ptr<CoordinateFrame> _discrete_state_frame,
-                         std::shared_ptr<CoordinateFrame> _input_frame,
-                         std::shared_ptr<CoordinateFrame> _output_frame)
+DrakeSystem::DrakeSystem(const std::string &name, const std::shared_ptr<CoordinateFrame>& _continuous_state_frame,
+                         const std::shared_ptr<CoordinateFrame>& _discrete_state_frame,
+                         const std::shared_ptr<CoordinateFrame>& _input_frame,
+                         const std::shared_ptr<CoordinateFrame>& _output_frame)
   : continuous_state_frame(_continuous_state_frame), discrete_state_frame(_discrete_state_frame),
     input_frame(_input_frame), output_frame(_output_frame) {
   if (!continuous_state_frame) continuous_state_frame = shared_ptr<CoordinateFrame>(new CoordinateFrame(name+"ContinuousState"));
