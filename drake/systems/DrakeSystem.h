@@ -22,7 +22,7 @@
 /// A dynamical system authored in Drake registers it's dynamics as well as information
 /// about it's coordinate frames.
 
-class DLLEXPORT DrakeSystem {
+class DLLEXPORT DrakeSystem : public std::enable_shared_from_this<DrakeSystem> {
 public:
 
   typedef Eigen::Matrix<double,Eigen::Dynamic,1> VectorXs;
@@ -112,7 +112,7 @@ typedef std::shared_ptr<DrakeSystem> DrakeSystemPtr;
 
 class CascadeSystem : public DrakeSystem {
 public:
-  CascadeSystem(DrakeSystemPtr sys1, DrakeSystemPtr sys2);
+  CascadeSystem(const DrakeSystemPtr& sys1, const DrakeSystemPtr& sys2);
   virtual ~CascadeSystem(void) {};
 
   virtual VectorXs dynamics(double t, const VectorXs& x, const VectorXs& u);
@@ -123,11 +123,11 @@ private:
   VectorXs getX1(const VectorXs& x);
   VectorXs getX2(const VectorXs& x);
 
-  std::shared_ptr<DrakeSystem> sys1, sys2;
+  DrakeSystemPtr sys1, sys2;
 };
 
-static DrakeSystemPtr cascade(DrakeSystemPtr sys1, DrakeSystemPtr sys2) {
-  return DrakeSystemPtr(new CascadeSystem(sys1,sys2));
+static DrakeSystemPtr cascade(const DrakeSystemPtr& sys1, const DrakeSystemPtr& sys2) {
+  return std::make_shared<CascadeSystem>(sys1,sys2);
 }
 
 #endif // #define __DrakeSystem_H_

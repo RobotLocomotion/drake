@@ -27,7 +27,7 @@ void LCMCoordinateFrame<MessageType>::publish(const double t, const Eigen::Vecto
 
 template <class MessageType>
 DrakeSystemPtr LCMCoordinateFrame<MessageType>::setupLCMOutputs(DrakeSystemPtr sys) {
-  return cascade(sys,DrakeSystemPtr(new LCMOutput<MessageType>(shared_ptr<LCMCoordinateFrame<MessageType> >(this))));
+  return cascade(sys,make_shared<LCMOutput<MessageType> >(this->shared_from_this()));
 }
 
 template class LCMCoordinateFrame<drake::lcmt_drake_signal>;

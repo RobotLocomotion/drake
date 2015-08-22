@@ -18,9 +18,9 @@ template <class MessageType> class LCMOutput;
 /// just like the examples in LCMCoordinateFrame.cpp
 
 template <class MessageType = drake::lcmt_drake_signal>
-class DLLEXPORT LCMCoordinateFrame : public CoordinateFrame {
+class DLLEXPORT LCMCoordinateFrame : public CoordinateFrame, public std::enable_shared_from_this<LCMCoordinateFrame<MessageType> > {
 public:
-  LCMCoordinateFrame(const std::string& _name, const std::vector<std::string>& _coordinates, std::shared_ptr<lcm::LCM> _lcm)
+  LCMCoordinateFrame(const std::string& _name, const std::vector<std::string>& _coordinates, const std::shared_ptr<lcm::LCM>& _lcm)
           : CoordinateFrame(_name,_coordinates), lcm(_lcm), channel(_name) {};
   virtual ~LCMCoordinateFrame(void) {};
 
@@ -46,7 +46,7 @@ class LCMInput : public DrakeSystem {
 template <class MessageType>
 class LCMOutput : public DrakeSystem {
 public:
-  LCMOutput(std::shared_ptr<LCMCoordinateFrame<MessageType> > _lcm_coordinate_frame)
+  LCMOutput(const std::shared_ptr<LCMCoordinateFrame<MessageType> >& _lcm_coordinate_frame)
           : DrakeSystem(_lcm_coordinate_frame->name,nullptr,nullptr,_lcm_coordinate_frame,nullptr),
             lcm_coordinate_frame(_lcm_coordinate_frame) {}
   virtual ~LCMOutput(void) {};

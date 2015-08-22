@@ -6,27 +6,34 @@
 
 using namespace std;
 
-DrakeSystem::DrakeSystem(const std::string &name, const std::shared_ptr<CoordinateFrame>& _continuous_state_frame,
+DrakeSystem::DrakeSystem(const std::string &_name, const std::shared_ptr<CoordinateFrame>& _continuous_state_frame,
                          const std::shared_ptr<CoordinateFrame>& _discrete_state_frame,
                          const std::shared_ptr<CoordinateFrame>& _input_frame,
                          const std::shared_ptr<CoordinateFrame>& _output_frame)
-  : continuous_state_frame(_continuous_state_frame), discrete_state_frame(_discrete_state_frame),
-    input_frame(_input_frame), output_frame(_output_frame) {
-  if (!continuous_state_frame) continuous_state_frame = shared_ptr<CoordinateFrame>(new CoordinateFrame(name+"ContinuousState"));
-  if (!discrete_state_frame) discrete_state_frame = shared_ptr<CoordinateFrame>(new CoordinateFrame(name+"DiscreteState"));
-  if (!input_frame) input_frame = shared_ptr<CoordinateFrame>(new CoordinateFrame(name+"Input"));
-  if (!output_frame) output_frame = shared_ptr<CoordinateFrame>(new CoordinateFrame(name+"Output"));
-  state_frame = shared_ptr<CoordinateFrame>(new MultiCoordinateFrame(name+"State",{continuous_state_frame,discrete_state_frame}));
+  : name(_name),
+    continuous_state_frame(_continuous_state_frame),
+    discrete_state_frame(_discrete_state_frame),
+    input_frame(_input_frame),
+    output_frame(_output_frame) {
+  if (!continuous_state_frame) continuous_state_frame = make_shared<CoordinateFrame>(name+"ContinuousState");
+  if (!discrete_state_frame) discrete_state_frame = make_shared<CoordinateFrame>(name+"DiscreteState");
+  if (!input_frame) input_frame = make_shared<CoordinateFrame>(name+"Input");
+  if (!output_frame) output_frame = make_shared<CoordinateFrame>(name+"Output");
+  state_frame = make_shared<MultiCoordinateFrame>(name+"State",initializer_list<CoordinateFramePtr>({continuous_state_frame,discrete_state_frame}));
 }
 
-DrakeSystem::DrakeSystem(const std::string &name, unsigned int num_continuous_states, unsigned int num_discrete_states,
+DrakeSystem::DrakeSystem(const std::string &_name, unsigned int num_continuous_states, unsigned int num_discrete_states,
                          unsigned int num_inputs, unsigned int num_outputs)
-        : input_frame(nullptr), continuous_state_frame(nullptr), discrete_state_frame(nullptr), output_frame(nullptr) {
-  input_frame = shared_ptr<CoordinateFrame>(new CoordinateFrame(name+"Input",num_inputs,"u"));
-  continuous_state_frame = shared_ptr<CoordinateFrame>(new CoordinateFrame(name+"ContinuousState",num_continuous_states,"xc"));
-  discrete_state_frame = shared_ptr<CoordinateFrame>(new CoordinateFrame(name+"DiscreteState",num_discrete_states,"xd"));
-  output_frame = shared_ptr<CoordinateFrame>(new CoordinateFrame(name+"Output",num_outputs,"y"));
-  state_frame = shared_ptr<CoordinateFrame>(new MultiCoordinateFrame(name+"state",{continuous_state_frame,discrete_state_frame}));
+        : name(_name),
+          input_frame(nullptr),
+          continuous_state_frame(nullptr),
+          discrete_state_frame(nullptr),
+          output_frame(nullptr) {
+  input_frame = make_shared<CoordinateFrame>(name+"Input",num_inputs,"u");
+  continuous_state_frame = make_shared<CoordinateFrame>(name+"ContinuousState",num_continuous_states,"xc");
+  discrete_state_frame = make_shared<CoordinateFrame>(name+"DiscreteState",num_discrete_states,"xd");
+  output_frame = make_shared<CoordinateFrame>(name+"Output",num_outputs,"y");
+  state_frame = make_shared<MultiCoordinateFrame>(name+"State",initializer_list<CoordinateFramePtr>({continuous_state_frame,discrete_state_frame}));
 }
 
 DrakeSystem::VectorXs DrakeSystem::getRandomState(void) {
@@ -46,7 +53,7 @@ void DrakeSystem::runLCM(double t0, double tf, const VectorXs &x0, const Simulat
   lcm_options.realtime_factor = 1.0;
 
 //  input_frame->setupLCMInputs(); // not implemented yet
-  DrakeSystemPtr lcm_sys = output_frame->setupLCMOutputs(DrakeSystemPtr(this));
+  DrakeSystemPtr lcm_sys = output_frame->setupLCMOutputs(shared_from_this());
   lcm_sys->simulate(t0,tf,x0,lcm_options);
 }
 
@@ -86,15 +93,15 @@ void DrakeSystem::ode1(double t0, double tf, const DrakeSystem::VectorXs& x0, co
 
 
 
-CascadeSystem::CascadeSystem(std::shared_ptr<DrakeSystem> _sys1, std::shared_ptr<DrakeSystem> _sys2)
+CascadeSystem::  CascadeSystem(const DrakeSystemPtr& _sys1, const DrakeSystemPtr& _sys2)
   : DrakeSystem("CascadeSystem"), sys1(_sys1), sys2(_sys2) {
   if (sys1->output_frame != sys2->input_frame)
     throw runtime_error("Cascade combination failed: output frame of "+sys1->name+" must match the input frame of "+sys2->name);
   input_frame = sys1->input_frame;
   output_frame = sys2->output_frame;
-  continuous_state_frame = CoordinateFramePtr(new MultiCoordinateFrame("CascadeSystemContState",{sys1->continuous_state_frame, sys2->continuous_state_frame}));
-  discrete_state_frame = CoordinateFramePtr(new MultiCoordinateFrame("CascadeSystemDiscState",{sys1->discrete_state_frame, sys2->discrete_state_frame}));
-  state_frame = CoordinateFramePtr(new MultiCoordinateFrame("CascadeSystemState",{continuous_state_frame,discrete_state_frame}));
+  continuous_state_frame = make_shared<MultiCoordinateFrame>("CascadeSystemContState",initializer_list<CoordinateFramePtr>({sys1->continuous_state_frame, sys2->continuous_state_frame}));
+  discrete_state_frame = make_shared<MultiCoordinateFrame>("CascadeSystemDiscState",initializer_list<CoordinateFramePtr>({sys1->discrete_state_frame, sys2->discrete_state_frame}));
+  state_frame = make_shared<MultiCoordinateFrame>("CascadeSystemState",initializer_list<CoordinateFramePtr>({continuous_state_frame,discrete_state_frame}));
 }
 
 DrakeSystem::VectorXs CascadeSystem::getX1(const VectorXs &x) {

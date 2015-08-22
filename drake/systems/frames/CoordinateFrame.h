@@ -36,7 +36,7 @@ public:
   }
   CoordinateFrame(const std::string& _name) : name(_name) {}
 
-  virtual ~CoordinateFrame(void) {};
+  virtual ~CoordinateFrame(void) {  };
 
   virtual const unsigned int getDim() const { return coordinates.size(); };
   virtual const std::string& getCoordinateName(unsigned int i) const {
