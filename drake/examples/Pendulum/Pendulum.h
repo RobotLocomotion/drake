@@ -40,8 +40,33 @@ public:
   virtual bool isTimeInvariant(void) { return true; }
   virtual bool isDirectFeedthrough(void) { return false; }
 
-private:
   double m,l,b,lc,I,g;  // pendulum parameters (initialized in the constructor)
+};
+
+class PendulumEnergyShaping : public DrakeSystem {
+public:
+  PendulumEnergyShaping(const shared_ptr<Pendulum>& pendulum)
+          : DrakeSystem("PendulumEnergyShaping"),
+            m(pendulum->m),
+            l(pendulum->l),
+            b(pendulum->b),
+            g(pendulum->g)
+  {
+    input_frame = pendulum->output_frame;
+    output_frame = pendulum->input_frame;
+  };
+
+  virtual VectorXs output(double t, const VectorXs& unused, const VectorXs& x) {
+    double Etilde = .5 * m*l*l*x(1)*x(1) - m*g*l*cos(x(0)) - 1.1*m*g*l;
+    VectorXs u(1);
+    u << b*x(1) - .1*x(1)*Etilde;
+    return u;
+  }
+
+  virtual bool isTimeInvariant(void) { return true; }
+  virtual bool isDirectFeedthrough(void) { return true; }
+
+  double m,l,b,g;  // pendulum parameters (initialized in the constructor)
 };
 
 #endif // _PENDULUM_H_
