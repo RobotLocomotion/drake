@@ -20,89 +20,56 @@ bool decode(const CoordinateFrame* frame, const drake::lcmt_drake_signal& msg, d
 }
 
 
-class LCMHandler {
+bool waitForLCM(lcm::LCM* lcm, double timeout) {
+  int lcmFd = lcm->getFileno();
 
-public:
+  struct timeval tv;
+  tv.tv_sec = 0;
+  tv.tv_usec = timeout * 1e6;
 
-  thread ThreadHandle;
-  shared_ptr<lcm::LCM> LCMHandle;
-  bool ShouldStop;
+  fd_set fds;
+  FD_ZERO(&fds);
+  FD_SET(lcmFd, &fds);
 
-  LCMHandler() : ShouldStop(false) {}
-
-  bool WaitForLCM(double timeout) {
-    int lcmFd = this->LCMHandle->getFileno();
-
-    struct timeval tv;
-    tv.tv_sec = 0;
-    tv.tv_usec = timeout * 1e6;
-
-    fd_set fds;
-    FD_ZERO(&fds);
-    FD_SET(lcmFd, &fds);
-
-    int status = select(lcmFd + 1, &fds, 0, 0, &tv);
-    if (status == -1 && errno != EINTR)
-    {
-      cout << "select() returned error: " << errno << endl;
-    }
-    else if (status == -1 && errno == EINTR)
-    {
-      cout << "select() interrupted" << endl;
-    }
-    return (status > 0 && FD_ISSET(lcmFd, &fds));
+  int status = select(lcmFd + 1, &fds, 0, 0, &tv);
+  if (status == -1 && errno != EINTR)
+  {
+    cout << "select() returned error: " << errno << endl;
   }
+  else if (status == -1 && errno == EINTR)
+  {
+    cout << "select() interrupted" << endl;
+  }
+  return (status > 0 && FD_ISSET(lcmFd, &fds));
+}
 
-  void ThreadLoopWithSelect() {
-    cout << "ThreadLoopWithSelect " << this_thread::get_id() << endl;
+class LCMLoop {
+public:
+  bool stop;
+  lcm::LCM* lcm;
 
-    while (!this->ShouldStop)
+  LCMLoop(const shared_ptr<lcm::LCM>& _lcm) : lcm(_lcm.get()), stop(false) {}
+
+  void loopWithSelect() {
+//    cout << "starting lcm handler thread " << this_thread::get_id() << endl;
+
+    while (!this->stop)
     {
       const double timeoutInSeconds = 0.3;
-      bool lcmReady = this->WaitForLCM(timeoutInSeconds);
+      bool lcmReady = waitForLCM(lcm,timeoutInSeconds);
 
-      if (this->ShouldStop) break;
+      if (this->stop) break;
 
       if (lcmReady) {
-        if (this->LCMHandle->handle() != 0) {
+        if (lcm->handle() != 0) {
           cout << "lcm->handle() returned non-zero" << endl;
           break;
         }
       }
     }
 
-    cout << "ThreadLoopWithSelect ended " << this_thread::get_id() << endl;
+//    cout << "stopping lcm handler thread " << this_thread::get_id() << endl;
   }
-
-  void ThreadLoop() {
-    while (!this->ShouldStop) {
-      if (this->LCMHandle->handle() != 0) {
-        cout << "lcm->handle() returned non-zero" << endl;
-        break;
-      }
-    }
-  }
-
-  bool IsRunning() {
-    return this->ThreadHandle.joinable();
-  }
-
-  void Start() {
-    cout << "LCMHandler start... " << this_thread::get_id() << endl;
-    if (this->IsRunning()) {
-      cout << "already running lcm thread. " << this_thread::get_id() << endl;
-      return;
-    }
-
-    this->ShouldStop = false;
-    this->ThreadHandle = std::thread(&LCMHandler::ThreadLoopWithSelect, this);
-  }
-
-  void Stop() {
-    this->ShouldStop = true;
-    this->ThreadHandle.join();
-  }
-
 };
 
 
@@ -140,15 +107,19 @@ void runLCM(const shared_ptr<lcm::LCM>& lcm, const DrakeSystemPtr& sys, double t
     DrakeSystem::SimulationOptions lcm_options = *options;
     lcm_options.realtime_factor = 1.0;
 
+    LCMLoop lcm_loop(lcm);
+    thread lcm_thread;
     if (has_lcm_input) {
-      throw runtime_error("not implemented yet");
-      // todo: spawn a thread for the lcm handle loop
+      // only start up the listener thread if I actually have inputs to listen to
+      lcm_thread = thread(&LCMLoop::loopWithSelect, &lcm_loop);
     }
 
     lcm_sys->simulate(t0,tf,x0,lcm_options);
 
     if (has_lcm_input) {
-      // todo: shutdown the lcm handle thread
+      // shutdown the lcm thread
+      lcm_loop.stop = true;
+      lcm_thread.join();
     }
   }
 }
