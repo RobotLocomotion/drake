@@ -59,8 +59,7 @@ static void mdlUpdate(SimStruct *S, int_T tid)
     return;
   }
 
-  double wall_t = timevalToDouble(tv),
-  			simtime = ssGetT(S),
+  double wall_t = getTimeOfDay(), simtime = ssGetT(S),
   			realtime_factor = mxGetScalar(ssGetSFcnParam(S, 1));
 
   double t_diff = (wall_t - *wall_t0)*realtime_factor - simtime;
