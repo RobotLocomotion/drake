@@ -22,6 +22,7 @@ classdef LCMSignalCoder < LCMCoder
     function msg = encode(obj,t,x)
       msg = drake.lcmt_drake_signal();
       msg.timestamp = t*1000;
+      msg.dim = numel(x);
       msg.coord = obj.coordinate_names;
       msg.val = x;
     end

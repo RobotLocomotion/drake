@@ -12,19 +12,19 @@ classdef DrakeMexPointer < handle
     delete_fcn='';
     delete_fcn_additional_inputs={};
   end
-  
+
   methods
     function obj = DrakeMexPointer(ptr, delete_fcn, name, varargin)
       obj.ptr = ptr;
       if (nargin>1) obj.delete_fcn = delete_fcn; end
       if (nargin>2) obj.ptr_name = name; end
-      if (nargin>3) 
-        obj.delete_fcn_additional_inputs=varargin; 
+      if (nargin>3)
+        obj.delete_fcn_additional_inputs=varargin;
       end
     end
 
     function delete(obj)
-      if ~isempty(obj.delete_fcn)  % useful for debugging
+      if 0 %~isempty(obj.delete_fcn)  % useful for debugging
         fprintf(1,'Calling %s(',obj.delete_fcn);
         celldisp(obj.delete_fcn_additional_inputs);
         fprintf(1,') to delete ');

@@ -53,6 +53,7 @@ inline void handle_realtime_factor(double wall_clock_start_time, double sim_time
 {
   if (realtime_factor>=0.0) {
     double time_diff = (getTimeOfDay() - wall_clock_start_time) * realtime_factor - sim_time;
+//    cout << "real time: " << (getTimeOfDay() - wall_clock_start_time) << ", sim time: " << sim_time << endl;
     if (time_diff <= 0.0) {
       nanoSleep(-time_diff);
     } else if (time_diff > 1.0) { // then I'm behind by more than 1 second

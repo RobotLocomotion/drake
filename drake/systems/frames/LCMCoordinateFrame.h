@@ -48,7 +48,7 @@ public:
   LCMInput(const std::shared_ptr<LCMCoordinateFrame<MessageType> >& _lcm_coordinate_frame)
           : DrakeSystem(_lcm_coordinate_frame->name,nullptr,nullptr,nullptr,_lcm_coordinate_frame),
             lcm_coordinate_frame(_lcm_coordinate_frame),
-            timestamp(0.0), data(Eigen::VectorXd(_lcm_coordinate_frame->getDim())) {
+            timestamp(0.0), data(Eigen::VectorXd::Zero(_lcm_coordinate_frame->getDim())) {
     // subscribe to the lcm traffic:
     lcm::Subscription* sub = lcm_coordinate_frame->lcm->subscribe(lcm_coordinate_frame->channel,&LCMInput<MessageType>::handleMessage,this);
     sub->setQueueCapacity(1);

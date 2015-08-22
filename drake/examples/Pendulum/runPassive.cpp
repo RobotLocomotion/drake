@@ -11,8 +11,8 @@ int main(int argc, char* argv[]) {
   if(!lcm->good())
    return 1;
 
-  p->input_frame = make_shared<LCMCoordinateFrame<drake::lcmt_drake_signal> >("PendulumInputFrame",p->input_frame->getCoordinateNames(),lcm);
-  p->output_frame = make_shared<LCMCoordinateFrame<drake::lcmt_drake_signal> >("PendulumStateFrame",p->output_frame->getCoordinateNames(),lcm);
+  p->input_frame = make_shared<LCMCoordinateFrame<drake::lcmt_drake_signal> >("PendulumInput",p->input_frame->getCoordinateNames(),lcm);
+  p->output_frame = make_shared<LCMCoordinateFrame<drake::lcmt_drake_signal> >("PendulumState",p->output_frame->getCoordinateNames(),lcm);
 
   runLCM(lcm,p,0,5,p->getRandomState());
 
