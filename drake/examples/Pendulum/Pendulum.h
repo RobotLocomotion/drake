@@ -37,6 +37,9 @@ public:
     return y;
   }
 
+  virtual bool isTimeInvariant(void) { return true; }
+  virtual bool isDirectFeedthrough(void) { return false; }
+
 private:
   double m,l,b,lc,I,g;  // pendulum parameters (initialized in the constructor)
 };

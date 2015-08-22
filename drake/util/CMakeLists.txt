@@ -1,6 +1,10 @@
+
+add_library(timeUtil SHARED timeUtil.cpp)
+
 if (simulink_FOUND)
   add_mex(realtime realtime.cpp)
-  endif()
+  target_link_libraries(realtime timeUtil)
+endif()
 
 add_mex(barycentricInterpolation barycentricInterpolation.cpp)
 

@@ -23,6 +23,6 @@ if (LCM_FOUND)
   add_dependencies(drakeSystem drake_lcmtypes)
   pods_use_pkg_config_packages(drakeSystem lcm)
 endif()
-
+target_link_libraries(drakeSystem timeUtil)
 
 add_subdirectory(test)

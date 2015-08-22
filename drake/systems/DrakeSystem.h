@@ -81,10 +81,6 @@ public:
   virtual void simulate(double t0, double tf, const VectorXs& x0) {
     simulate(t0,tf,x0,default_simulation_options);
   }
-  virtual void runLCM(double t0, double tf, const VectorXs& x0, const SimulationOptions& options);
-  virtual void runLCM(double t0, double tf, const VectorXs& x0) {
-    runLCM(t0,tf,x0,default_simulation_options);
-  }
 
   std::string name;
 
@@ -92,6 +88,8 @@ public:
   std::shared_ptr<CoordinateFrame> output_frame;
   std::shared_ptr<CoordinateFrame> continuous_state_frame, discrete_state_frame, state_frame; // should either protect these or avoid storing them all
 
+  virtual bool isTimeInvariant(void) { return false; }    // are the dynamics,update, and output methods independent of t?  set to true if possible!
+  virtual bool isDirectFeedthrough(void) { return true; } // does the output method depend (directly) on the input u?  set to false if possible!
 
 protected:
 
@@ -99,11 +97,6 @@ protected:
 
 //  virtual void ode45(double t0, double tf, const VectorXs& x0, double initial_step_size, double relative_error_tolerance, double absolute_error_tolerance);
 // c.f. https://www.google.com/search?q=Runge-Kutta-Fehlberg and edit ode45.m in matlab.
-
-  /*
-  bool is_direct_feedthrough;  // does the output method depend on the input u?  set false if you can!
-  bool is_time_invariant; // are all of the dynamics and output methods independent of time? set to true if you can!
-   */
 };
 
 typedef std::shared_ptr<DrakeSystem> DrakeSystemPtr;

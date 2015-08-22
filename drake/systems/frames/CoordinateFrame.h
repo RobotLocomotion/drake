@@ -38,7 +38,7 @@ public:
 
   virtual ~CoordinateFrame(void) {  };
 
-  virtual const unsigned int getDim() const { return coordinates.size(); };
+  virtual unsigned int getDim() const { return coordinates.size(); };
   virtual const std::string& getCoordinateName(unsigned int i) const {
     if (i>=coordinates.size())
       throw std::runtime_error("index exceeds dimension of coordinate frame");
@@ -91,7 +91,7 @@ public:
     return os;
   }
 
-  virtual const unsigned int getDim() const { return coordinate_refs.size(); };
+  virtual unsigned int getDim() const { return coordinate_refs.size(); };
   virtual const std::string& getCoordinateName(unsigned int i) const {
     if (i>=coordinate_refs.size())
       throw std::runtime_error("index exceeds dimension of coordinate frame");

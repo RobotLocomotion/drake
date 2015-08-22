@@ -24,7 +24,7 @@ classdef DrakeMexPointer < handle
     end
 
     function delete(obj)
-      if 0 %~isempty(obj.delete_fcn)  % useful for debugging
+      if ~isempty(obj.delete_fcn)  % useful for debugging
         fprintf(1,'Calling %s(',obj.delete_fcn);
         celldisp(obj.delete_fcn_additional_inputs);
         fprintf(1,') to delete ');
