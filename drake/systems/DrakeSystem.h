@@ -3,7 +3,7 @@
 
 #include <string>
 #include <memory>
-#include <exception>
+#include <stdexcept>
 #include <Eigen/Dense>
 #include "CoordinateFrame.h"
 

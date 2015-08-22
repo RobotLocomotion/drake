@@ -5,7 +5,7 @@
 #include <string>
 #include <memory>
 #include <vector>
-#include <exception>
+#include <stdexcept>
 #include <initializer_list>
 
 #undef DLLEXPORT
