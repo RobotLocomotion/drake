@@ -60,12 +60,12 @@ addpath(fullfile(root,'solvers','BMI','kinematics'));
 javaaddpath(fullfile(pods_get_base_path,'share','java','drake.jar'));
 
 % OSX platform-specific: check if reverted to IPv4
-if (computer('arch') == 'maci64')
+if (strcmp(computer('arch'),'maci64'))
   ipv4_preferred = java.lang.System.getProperty('java.net.preferIPv4Stack');
   if isempty(ipv4_preferred)
     ipv4_preferred = 'false';
   end
-  if (ipv4_preferred ~= 'true')
+  if (strcmp(ipv4_preferred,'true'))
     display('WARNING: Your JVM may crash if you do not set it to prefer IPv4 over IPv6.')
     display('This may cause any dependencies that involve the JVM (including LCM) to crash at runtime.')
     display('Please see bug report and solution here: https://github.com/RobotLocomotion/drake/issues/558.')
