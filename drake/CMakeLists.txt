@@ -67,6 +67,11 @@ elseif (MSVC)
   # it will be more difficult to determine the type of the symbol in the error. Debugging will also be more difficult; 
   # the debugger will also have difficultly mapping symbol name to type name. The correctness of the program, however,
   # is unaffected by the truncated name.
+  
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4522")
+  # disable C4522: 'class' : multiple assignment operators specified
+  # The class has multiple assignment operators of a single type. This warning is informational;
+  # the constructors are callable in your program.
 
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4996") # disable sprintf security warning
 endif()

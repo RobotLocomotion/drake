@@ -10,8 +10,9 @@
 #include "drakeFloatingPointUtil.h"
 #include "drakeGradientUtil.h"
 
+
 template <typename Derived>
-class DLLEXPORT_DRAKEJOINT FixedAxisOneDoFJoint : public DrakeJointImpl<Derived>
+class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived>
 {
   // disable copy construction and assignment
   // not available in MSVC2010...
