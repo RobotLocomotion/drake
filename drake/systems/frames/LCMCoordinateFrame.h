@@ -89,13 +89,12 @@ public:
     MessageType msg;
     if (!encode(lcm_coordinate_frame.get(),t,u,msg))
     throw std::runtime_error(std::string("failed to encode")+msg.getTypeName());
-    lcm->publish(lcm_coordinate_frame->channel,&msg);
+    lcm_coordinate_frame->lcm->publish(lcm_coordinate_frame->channel,&msg);
     return Eigen::VectorXd::Zero(0);
   }
 
 protected:
   std::shared_ptr<LCMCoordinateFrame<MessageType> > lcm_coordinate_frame;
-  std::shared_ptr<lcm::LCM> lcm;
 };
 
 
