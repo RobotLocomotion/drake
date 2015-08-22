@@ -10,7 +10,7 @@
 
 #undef DLLEXPORT
 #if defined(WIN32) || defined(WIN64)
-#if defined(drakeCoordinateFrame_EXPORTS)
+#if defined(drakeSystem_EXPORTS)
 #define DLLEXPORT __declspec( dllexport )
 #else
 #define DLLEXPORT __declspec( dllimport )
