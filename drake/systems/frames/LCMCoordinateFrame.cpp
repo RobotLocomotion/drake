@@ -24,9 +24,14 @@ void LCMCoordinateFrame<MessageType>::publish(const double t, const Eigen::Vecto
   lcm->publish(channel,&msg);
 }
 
+template <class MessageType>
+DrakeSystemPtr LCMCoordinateFrame<MessageType>::setupLCMInputs(const DrakeSystemPtr& sys) {
+  throw runtime_error("not implemented yet");
+//  return cascade(sys,make_shared<LCMInput<MessageType> >(this->shared_from_this()));
+}
 
 template <class MessageType>
-DrakeSystemPtr LCMCoordinateFrame<MessageType>::setupLCMOutputs(DrakeSystemPtr sys) {
+DrakeSystemPtr LCMCoordinateFrame<MessageType>::setupLCMOutputs(const DrakeSystemPtr& sys) {
   return cascade(sys,make_shared<LCMOutput<MessageType> >(this->shared_from_this()));
 }
 

@@ -66,7 +66,8 @@ public:
     return m.print(os);
   }
 
-  virtual DrakeSystemPtr setupLCMOutputs(DrakeSystemPtr sys) { return sys; }
+  virtual DrakeSystemPtr setupLCMInputs(const DrakeSystemPtr& sys) { return sys; }
+  virtual DrakeSystemPtr setupLCMOutputs(const DrakeSystemPtr& sys) { return sys; }
 
   std::string name;  // a descriptive name for this coordinate frame
 
@@ -109,7 +110,8 @@ public:
     // note: i could potentially allow this if the sizes were correct, but it seems unlikely to be used for good
   }
 
-  virtual DrakeSystemPtr setupLCMOutputs(DrakeSystemPtr sys) { throw std::runtime_error("not implemented yet (need CoordinateTransforms)"); }
+  virtual DrakeSystemPtr setupLCMInputs(const DrakeSystemPtr& sys) { throw std::runtime_error("not implemented yet (need CoordinateTransforms)"); }
+  virtual DrakeSystemPtr setupLCMOutputs(const DrakeSystemPtr& sys) { throw std::runtime_error("not implemented yet (need CoordinateTransforms)"); }
 
 private:
   /// Store the data in two (compatible) ways:

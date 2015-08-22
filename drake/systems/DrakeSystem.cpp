@@ -49,12 +49,40 @@ void DrakeSystem::simulate(double t0, double tf, const DrakeSystem::VectorXs &x0
 }
 
 void DrakeSystem::runLCM(double t0, double tf, const VectorXs &x0, const SimulationOptions& options) {
-  SimulationOptions lcm_options = options;
-  lcm_options.realtime_factor = 1.0;
-
-//  input_frame->setupLCMInputs(); // not implemented yet
   DrakeSystemPtr lcm_sys = output_frame->setupLCMOutputs(shared_from_this());
-  lcm_sys->simulate(t0,tf,x0,lcm_options);
+
+  bool has_lcm_input = false;
+  {
+    DrakeSystemPtr new_sys = input_frame->setupLCMInputs(lcm_sys);
+    has_lcm_input = (new_sys != lcm_sys);
+    lcm_sys = new_sys;
+  }
+
+  if (has_lcm_input && state_frame->getDim()<1) {
+    // then this is really a static function, not a dynamical system.
+    // block on receiving lcm input and process the output exactly when a new input message is received.
+
+    throw runtime_error("not implemented yet (but will be simple)");
+
+    // todo: lcm handle loop goes here
+
+  } else {
+    // then the system's dynamics should control when the output is produced.  try to run a simulation at realtime
+
+    SimulationOptions lcm_options = options;
+    lcm_options.realtime_factor = 1.0;
+
+    if (has_lcm_input) {
+      throw runtime_error("not implemented yet");
+      // todo: spawn a thread for the lcm handle loop
+    }
+
+    lcm_sys->simulate(t0,tf,x0,lcm_options);
+
+    if (has_lcm_input) {
+      // todo: shutdown the lcm handle thread
+    }
+  }
 }
 
 

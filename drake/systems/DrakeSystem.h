@@ -34,12 +34,10 @@ public:
               const std::shared_ptr<CoordinateFrame>& output_frame);
 
   DrakeSystem(const std::string& name,
-              unsigned int num_continuous_states,
-              unsigned int num_discrete_states,
-              unsigned int num_inputs,
-              unsigned int num_outputs);
-
-  DrakeSystem(const std::string& name) : DrakeSystem(name,0,0,0,0) {}; // build the empty system
+              unsigned int num_continuous_states = 0,
+              unsigned int num_discrete_states = 0,
+              unsigned int num_inputs = 0,
+              unsigned int num_outputs = 0);
 
   virtual ~DrakeSystem(void) {};
 

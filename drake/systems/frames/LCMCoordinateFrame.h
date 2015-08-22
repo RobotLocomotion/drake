@@ -30,7 +30,8 @@ public:
 
   void publish(const double t, const Eigen::VectorXd& x);
 
-  virtual DrakeSystemPtr setupLCMOutputs(DrakeSystemPtr sys);
+  virtual DrakeSystemPtr setupLCMInputs(const DrakeSystemPtr& sys);
+  virtual DrakeSystemPtr setupLCMOutputs(const DrakeSystemPtr& sys);
 
 protected:
   std::shared_ptr<lcm::LCM> lcm;
@@ -38,6 +39,7 @@ protected:
 };
 
 /*
+template <class MessageType>
 class LCMInput : public DrakeSystem {
 
 };
