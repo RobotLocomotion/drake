@@ -94,12 +94,12 @@ public:
   virtual const std::string& getCoordinateName(unsigned int i) const {
     if (i>=coordinate_refs.size())
       throw std::runtime_error("index exceeds dimension of coordinate frame");
-    return coordinate_refs[i].frame->getCoordinateName(coordinate_refs[i].index_in_subframe);
+    return coordinate_refs[i].pframe->getCoordinateName(coordinate_refs[i].index_in_subframe);
   }
   virtual std::vector<std::string> getCoordinateNames() const {
     std::vector<std::string> coordinates;
     for (auto c : coordinate_refs) {
-      coordinates.push_back(c.frame->getCoordinateName(c.index_in_subframe));
+      coordinates.push_back(c.pframe->getCoordinateName(c.index_in_subframe));
     }
     return coordinates;
   }
@@ -120,8 +120,8 @@ private:
     std::vector<unsigned int> coordinate_indices; // which indices in the multi-frame are associated with this sub-frame
   };
   struct CoordinateRef {
-    CoordinateRef(const std::shared_ptr<CoordinateFrame>& _frame) : frame(_frame) {};
-    const std::shared_ptr<CoordinateFrame>& frame;  // reference to one of the SubFrame shared pointers
+    CoordinateRef(const std::shared_ptr<CoordinateFrame>& _frame) : pframe(_frame.get()) {};
+    CoordinateFrame* pframe;
     unsigned int index_in_subframe;
   };
   std::vector<struct SubFrame> frames;
