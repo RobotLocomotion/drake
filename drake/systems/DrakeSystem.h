@@ -69,8 +69,13 @@ public:
 
   // simulation options
   typedef struct _SimulationOptions {
-    double realtime_factor = -1.0;  // 1 means try to run at realtime speed, < 0 is run as fast as possible
-    double initial_step_size = 0.01;
+    double realtime_factor;  // 1 means try to run at realtime speed, < 0 is run as fast as possible
+    double initial_step_size;
+
+    _SimulationOptions(void) :
+            realtime_factor(-1.0),
+            initial_step_size(0.01)
+    {};
   } SimulationOptions;
   SimulationOptions default_simulation_options;
 
