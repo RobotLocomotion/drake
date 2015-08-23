@@ -470,7 +470,7 @@ classdef Manipulator < DrakeSystem
       % tau = Kp*thetadesired
       pdff = LinearSystem([],[],[],[],[],Kp*eye(sys.num_u));
       pdff = setOutputFrame(pdff,sys.getInputFrame);
-      coordinates = sys.getStateFrame.getCoordinates();
+      coordinates = sys.getStateFrame.getCoordinateNames();
       pdff = setInputFrame(pdff,CoordinateFrame('q_d',length(index),'d',{coordinates{index}}));
 
       if nargout>1
