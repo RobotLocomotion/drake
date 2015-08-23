@@ -18,6 +18,7 @@
 *.snm
 *.nav
 *~
+*.DS_Store
 uname.err
 externals/*
 !externals/install_prereqs.sh
