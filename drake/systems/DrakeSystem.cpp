@@ -1,5 +1,7 @@
 
 #include <algorithm>
+#include <thread>
+#include <chrono>
 #include "DrakeSystem.h"
 
 using namespace std;
@@ -43,19 +45,15 @@ void DrakeSystem::simulate(double t0, double tf, const DrakeSystem::VectorXs &x0
   ode1(t0,tf,x0,options);
 }
 
-#include "timeUtil.h"
-
-inline void handle_realtime_factor(double wall_clock_start_time, double sim_time, double realtime_factor)
+inline void handle_realtime_factor(std::chrono::time_point<std::chrono::steady_clock> wall_clock_start_time, double sim_time, double realtime_factor)
 {
-  if (realtime_factor>=0.0) {
-    double time_diff = (getTimeOfDay() - wall_clock_start_time) * realtime_factor - sim_time;
-//    cout << "real time: " << (getTimeOfDay() - wall_clock_start_time) << ", sim time: " << sim_time << endl;
-    if (time_diff <= 0.0) {
-      nanoSleep(-time_diff);
-    } else if (time_diff > 1.0) { // then I'm behind by more than 1 second
-      throw runtime_error(
-              "Not keeping up with requested realtime_factor!  At time " + to_string(sim_time) + ", I'm behind by " +
-              to_string(time_diff) + " sec.");
+  if (realtime_factor>0.0) {
+    auto wall_clock = std::chrono::steady_clock::now();
+    auto desired_clock = wall_clock_start_time + std::chrono::duration<double>(sim_time/realtime_factor);
+    if (desired_clock>wall_clock) { // could probably just call sleep_until, but just in case
+      std::this_thread::sleep_until(desired_clock);
+    } else if (wall_clock>desired_clock+std::chrono::duration<double>(1.0/realtime_factor)) {
+      throw runtime_error("Simulation is not keeping up with desired real-time factor -- behind by more than 1 (scaled) second at simulation time " + to_string(sim_time));
     }
   }
 }
@@ -63,12 +61,12 @@ inline void handle_realtime_factor(double wall_clock_start_time, double sim_time
 
 void DrakeSystem::ode1(double t0, double tf, const DrakeSystem::VectorXs& x0, const SimulationOptions& options) const {
   double t = t0, dt;
-  double wall_clock_start_time = getTimeOfDay();
+  auto start = std::chrono::steady_clock::now();
   DrakeSystem::VectorXs x = x0;
   DrakeSystem::VectorXs u = DrakeSystem::VectorXs::Zero(input_frame->getDim());
   DrakeSystem::VectorXs y(output_frame->getDim());
   while (t<tf) {
-    handle_realtime_factor(wall_clock_start_time, t, options.realtime_factor);
+    handle_realtime_factor(start, t, options.realtime_factor);
 
     dt = (std::min)(options.initial_step_size,tf-t);
     y = output(t,x,u);
