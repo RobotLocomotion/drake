@@ -4,6 +4,7 @@
 #include "CoordinateFrame.h"
 #include "DrakeSystem.h"
 
+#include <chrono>
 #include <mutex>
 #include <lcm/lcm-cpp.hpp>
 #include "lcmtypes/drake/lcmt_drake_signal.hpp"
