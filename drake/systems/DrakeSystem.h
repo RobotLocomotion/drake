@@ -7,19 +7,8 @@
 #include <Eigen/Dense>
 #include "CoordinateFrame.h"
 
-#undef DLLEXPORT
-#if defined(WIN32) || defined(WIN64)
-#if defined(drakeSystem_EXPORTS)
-#define DLLEXPORT __declspec( dllexport )
-#else
-#define DLLEXPORT __declspec( dllimport )
-#endif
-#else
-#define DLLEXPORT
-#endif
 
-
-/// A dynamical system authored in Drake registers it's dynamics as well as information
+/// A dynamical system authored in Drake registers its dynamics as well as information
 /// about it's coordinate frames.
 
 class DLLEXPORT DrakeSystem : public std::enable_shared_from_this<DrakeSystem> {
