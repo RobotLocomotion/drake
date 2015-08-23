@@ -5,10 +5,11 @@
 using namespace std;
 using namespace Eigen;
 
-DrakeSystem::DrakeSystem(const std::string &_name, const std::shared_ptr<CoordinateFrame>& _continuous_state_frame,
-                         const std::shared_ptr<CoordinateFrame>& _discrete_state_frame,
-                         const std::shared_ptr<CoordinateFrame>& _input_frame,
-                         const std::shared_ptr<CoordinateFrame>& _output_frame)
+DrakeSystem::DrakeSystem(const std::string &_name,
+                         const CoordinateFramePtr& _continuous_state_frame,
+                         const CoordinateFramePtr& _discrete_state_frame,
+                         const CoordinateFramePtr& _input_frame,
+                         const CoordinateFramePtr& _output_frame)
   : name(_name),
     continuous_state_frame(_continuous_state_frame),
     discrete_state_frame(_discrete_state_frame),

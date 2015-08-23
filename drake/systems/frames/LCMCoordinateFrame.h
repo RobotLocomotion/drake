@@ -30,10 +30,10 @@ public:
   virtual ~LCMCoordinateFrame(void) {};
 
 
-  virtual DrakeSystemPtr setupLCMInputs(const DrakeSystemPtr& sys) {
+  virtual DrakeSystemPtr setupLCMInputs(const DrakeSystemPtr& sys) const override {
     return cascade(std::make_shared<LCMInput<MessageType> >(this->shared_from_this()), sys);
   }
-  virtual DrakeSystemPtr setupLCMOutputs(const DrakeSystemPtr& sys) {
+  virtual DrakeSystemPtr setupLCMOutputs(const DrakeSystemPtr& sys) const override {
     return cascade(sys,std::make_shared<LCMOutput<MessageType> >(this->shared_from_this()));
   }
 
@@ -45,7 +45,7 @@ public:
 template <class MessageType>
 class LCMInput : public DrakeSystem {
 public:
-  LCMInput(const std::shared_ptr<LCMCoordinateFrame<MessageType> >& _lcm_coordinate_frame)
+  LCMInput(const std::shared_ptr<const LCMCoordinateFrame<MessageType> >& _lcm_coordinate_frame)
           : DrakeSystem(_lcm_coordinate_frame->name,nullptr,nullptr,nullptr,_lcm_coordinate_frame),
             lcm_coordinate_frame(_lcm_coordinate_frame),
             timestamp(0.0), data(Eigen::VectorXd::Zero(_lcm_coordinate_frame->getDim())) {
@@ -73,14 +73,14 @@ protected:
   std::mutex data_mutex;
   double timestamp;
   Eigen::VectorXd data;
-  std::shared_ptr<LCMCoordinateFrame<MessageType> > lcm_coordinate_frame;
+  std::shared_ptr<const LCMCoordinateFrame<MessageType> > lcm_coordinate_frame;
 };
 
 
 template <class MessageType>
 class LCMOutput : public DrakeSystem {
 public:
-  LCMOutput(const std::shared_ptr<LCMCoordinateFrame<MessageType> >& _lcm_coordinate_frame)
+  LCMOutput(const std::shared_ptr<const LCMCoordinateFrame<MessageType> >& _lcm_coordinate_frame)
           : DrakeSystem(_lcm_coordinate_frame->name,nullptr,nullptr,_lcm_coordinate_frame,nullptr),
             lcm_coordinate_frame(_lcm_coordinate_frame) {}
   virtual ~LCMOutput(void) {};
@@ -95,7 +95,7 @@ public:
   }
 
 protected:
-  std::shared_ptr<LCMCoordinateFrame<MessageType> > lcm_coordinate_frame;
+  std::shared_ptr<const LCMCoordinateFrame<MessageType> > lcm_coordinate_frame;
 };
 
 
