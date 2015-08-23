@@ -17,10 +17,10 @@ public:
   typedef Eigen::Matrix<double,Eigen::Dynamic,1> VectorXs;
 
   DrakeSystem(const std::string& name,
-              const std::shared_ptr<CoordinateFrame>& continuous_state_frame,  // note: the frames are not const
-              const std::shared_ptr<CoordinateFrame>& discrete_state_frame,
-              const std::shared_ptr<CoordinateFrame>& input_frame,
-              const std::shared_ptr<CoordinateFrame>& output_frame);
+              const CoordinateFramePtr& continuous_state_frame,
+              const CoordinateFramePtr& discrete_state_frame,
+              const CoordinateFramePtr& input_frame,
+              const CoordinateFramePtr& output_frame);
 
   DrakeSystem(const std::string& name,
               unsigned int num_continuous_states = 0,
@@ -36,15 +36,15 @@ public:
 
   // todo: templates for these
 
-  virtual VectorXs dynamics(double t, const VectorXs& x, const VectorXs& u) {
+  virtual VectorXs dynamics(double t, const VectorXs& x, const VectorXs& u) const {
     throw std::runtime_error("(Drake:DrakeSystem:dynamics) systems with continuous dynamics must overload the dynamics method");
   }
 
-  virtual VectorXs update(double t, const VectorXs& x, const VectorXs& u) {
+  virtual VectorXs update(double t, const VectorXs& x, const VectorXs& u) const {
     throw std::runtime_error("(Drake:DrakeSystem:update) systems with discrete dynamics must overload the update method");
   }
 
-  virtual VectorXs output(double t, const VectorXs& x, const VectorXs& u) {
+  virtual VectorXs output(double t, const VectorXs& x, const VectorXs& u) const {
     if (output_frame->getDim()>0)
       throw std::runtime_error("(Drake:DrakeSystem:dynamics) systems with outputs must overload the output method");
     else
@@ -55,34 +55,34 @@ public:
   virtual VectorXs getInitialState();
 
   // simulation options
-  typedef struct _SimulationOptions {
+  struct SimulationOptions {
     double realtime_factor;  // 1 means try to run at realtime speed, < 0 is run as fast as possible
     double initial_step_size;
 
-    _SimulationOptions() :
+    SimulationOptions() :
             realtime_factor(-1.0),
             initial_step_size(0.01)
     {};
-  } SimulationOptions;
+  };
   SimulationOptions default_simulation_options;
 
-  virtual void simulate(double t0, double tf, const VectorXs& x0, const SimulationOptions& options);
-  virtual void simulate(double t0, double tf, const VectorXs& x0) {
+  virtual void simulate(double t0, double tf, const VectorXs& x0, const SimulationOptions& options) const;
+  virtual void simulate(double t0, double tf, const VectorXs& x0) const {
     simulate(t0,tf,x0,default_simulation_options);
   }
 
   std::string name;
 
-  std::shared_ptr<CoordinateFrame> input_frame;
-  std::shared_ptr<CoordinateFrame> output_frame;
-  std::shared_ptr<CoordinateFrame> continuous_state_frame, discrete_state_frame, state_frame; // should either protect these or avoid storing them all
+  std::shared_ptr<const CoordinateFrame> input_frame;
+  std::shared_ptr<const CoordinateFrame> output_frame;
+  std::shared_ptr<const CoordinateFrame> continuous_state_frame, discrete_state_frame, state_frame; // should either protect these or avoid storing them all
 
-  virtual bool isTimeInvariant() { return false; }    // are the dynamics,update, and output methods independent of t?  set to true if possible!
-  virtual bool isDirectFeedthrough() { return true; } // does the output method depend (directly) on the input u?  set to false if possible!
+  virtual bool isTimeInvariant() const { return false; }    // are the dynamics,update, and output methods independent of t?  set to true if possible!
+  virtual bool isDirectFeedthrough() const { return true; } // does the output method depend (directly) on the input u?  set to false if possible!
 
 protected:
 
-  virtual void ode1(double t0, double tf, const VectorXs& x0, const SimulationOptions& options);
+  virtual void ode1(double t0, double tf, const VectorXs& x0, const SimulationOptions& options) const;
 
 //  virtual void ode45(double t0, double tf, const VectorXs& x0, double initial_step_size, double relative_error_tolerance, double absolute_error_tolerance);
 // c.f. https://www.google.com/search?q=Runge-Kutta-Fehlberg and edit ode45.m in matlab.
@@ -95,16 +95,16 @@ public:
   CascadeSystem(const DrakeSystemPtr& sys1, const DrakeSystemPtr& sys2);
   virtual ~CascadeSystem(void) {};
 
-  virtual VectorXs dynamics(double t, const VectorXs& x, const VectorXs& u);
-  virtual VectorXs update(double t, const VectorXs& x, const VectorXs& u);
-  virtual VectorXs output(double t, const VectorXs& x, const VectorXs& u);
+  virtual VectorXs dynamics(double t, const VectorXs& x, const VectorXs& u) const override;
+  virtual VectorXs update(double t, const VectorXs& x, const VectorXs& u) const override;
+  virtual VectorXs output(double t, const VectorXs& x, const VectorXs& u) const override;
 
-  virtual bool isTimeInvariant() { return sys1->isTimeInvariant() && sys2->isTimeInvariant(); }
-  virtual bool isDirectFeedthrough() { return sys1->isDirectFeedthrough() && sys2->isDirectFeedthrough(); }
+  virtual bool isTimeInvariant() const override { return sys1->isTimeInvariant() && sys2->isTimeInvariant(); }
+  virtual bool isDirectFeedthrough() const override { return sys1->isDirectFeedthrough() && sys2->isDirectFeedthrough(); }
 
 private:
-  VectorXs getX1(const VectorXs& x);
-  VectorXs getX2(const VectorXs& x);
+  VectorXs getX1(const VectorXs& x) const;
+  VectorXs getX2(const VectorXs& x) const;
 
   DrakeSystemPtr sys1, sys2;
 };

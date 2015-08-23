@@ -66,8 +66,8 @@ public:
     return m.print(os);
   }
 
-  virtual DrakeSystemPtr setupLCMInputs(const DrakeSystemPtr& sys) { return sys; }
-  virtual DrakeSystemPtr setupLCMOutputs(const DrakeSystemPtr& sys) { return sys; }
+  virtual DrakeSystemPtr setupLCMInputs(const DrakeSystemPtr& sys) const { return sys; }
+  virtual DrakeSystemPtr setupLCMOutputs(const DrakeSystemPtr& sys) const { return sys; }
 
   std::string name;  // a descriptive name for this coordinate frame
 
@@ -75,14 +75,14 @@ protected:
   std::vector<std::string> coordinates; // a string name for each element in the vector (size==dim)
 };
 
-typedef std::shared_ptr<CoordinateFrame> CoordinateFramePtr;
+typedef std::shared_ptr<const CoordinateFrame> CoordinateFramePtr;
 
 class DLLEXPORT MultiCoordinateFrame : public CoordinateFrame {
 public:
-  MultiCoordinateFrame(const std::string& name, std::initializer_list<std::shared_ptr<CoordinateFrame>> _frames);
+  MultiCoordinateFrame(const std::string& name, std::initializer_list<std::shared_ptr<const CoordinateFrame>> _frames);
   virtual ~MultiCoordinateFrame(void) {};
 
-  virtual std::ostream& print(std::ostream& os) const {
+  virtual std::ostream& print(std::ostream& os) const override {
     os << "Multi-Coordinate Frame: " << name << " (" << getDim() << " elements)" << std::endl;
 
     for (auto sf : frames) {
@@ -91,39 +91,39 @@ public:
     return os;
   }
 
-  virtual unsigned int getDim() const { return coordinate_refs.size(); };
-  virtual const std::string& getCoordinateName(unsigned int i) const {
+  virtual unsigned int getDim() const override { return coordinate_refs.size(); };
+  virtual const std::string& getCoordinateName(unsigned int i) const override {
     if (i>=coordinate_refs.size())
       throw std::runtime_error("index exceeds dimension of coordinate frame");
     return coordinate_refs[i].pframe->getCoordinateName(coordinate_refs[i].index_in_subframe);
   }
-  virtual std::vector<std::string> getCoordinateNames() const {
+  virtual std::vector<std::string> getCoordinateNames() const override {
     std::vector<std::string> coordinates;
     for (auto c : coordinate_refs) {
       coordinates.push_back(c.pframe->getCoordinateName(c.index_in_subframe));
     }
     return coordinates;
   }
-  virtual void setCoordinateNames(const std::vector<std::string>& _coordinates)
+  virtual void setCoordinateNames(const std::vector<std::string>& _coordinates) override
   {
     throw std::runtime_error("cannot change the names of a multi-coordinate frame directory.  change the subframes.");
     // note: i could potentially allow this if the sizes were correct, but it seems unlikely to be used for good
   }
 
-  virtual DrakeSystemPtr setupLCMInputs(const DrakeSystemPtr& sys) { throw std::runtime_error("not implemented yet (need CoordinateTransforms)"); }
-  virtual DrakeSystemPtr setupLCMOutputs(const DrakeSystemPtr& sys) { throw std::runtime_error("not implemented yet (need CoordinateTransforms)"); }
+  virtual DrakeSystemPtr setupLCMInputs(const DrakeSystemPtr& sys) const override { throw std::runtime_error("not implemented yet (need CoordinateTransforms)"); }
+  virtual DrakeSystemPtr setupLCMOutputs(const DrakeSystemPtr& sys) const override { throw std::runtime_error("not implemented yet (need CoordinateTransforms)"); }
 
 private:
   /// Store the data in two (compatible) ways:
   ///   1) as a list of subframes, with a map to the relevant indices in the multi-frame
   ///   2) as a list of coordinates, with references to the associated subframe
   struct SubFrame {
-    std::shared_ptr<CoordinateFrame> frame;
+    std::shared_ptr<const CoordinateFrame> frame;
     std::vector<unsigned int> coordinate_indices; // which indices in the multi-frame are associated with this sub-frame
   };
   struct CoordinateRef {
-    CoordinateRef(const std::shared_ptr<CoordinateFrame>& _frame) : pframe(_frame.get()) {};
-    CoordinateFrame* pframe;
+    CoordinateRef(const std::shared_ptr<const CoordinateFrame>& _frame) : pframe(_frame.get()) {};
+    const CoordinateFrame* pframe;  // todo: make this more robust to if we ever allow changes to subframes in the future
     unsigned int index_in_subframe;
   };
   std::vector<struct SubFrame> frames;

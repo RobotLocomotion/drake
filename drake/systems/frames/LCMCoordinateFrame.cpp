@@ -5,23 +5,23 @@
 using namespace std;
 using namespace Eigen;
 
-bool encode(const CoordinateFrame* frame, const double t, const VectorXd& x, drake::lcmt_drake_signal& msg) {
+bool encode(const CoordinateFrame& frame, const double t, const VectorXd& x, drake::lcmt_drake_signal& msg) {
   msg.timestamp = static_cast<int64_t>(t*1000);
-  msg.dim = frame->getDim();
-  msg.coord = frame->getCoordinateNames(); // note: inefficient to do a deep copy every time
+  msg.dim = frame.getDim();
+  msg.coord = frame.getCoordinateNames(); // note: inefficient to do a deep copy every time
   for (int i=0; i<msg.dim; i++) msg.val.push_back(x(i));
   return true;
 }
 
-bool decode(const CoordinateFrame* frame, const drake::lcmt_drake_signal& msg, double& t, VectorXd& x) {
+bool decode(const CoordinateFrame& frame, const drake::lcmt_drake_signal& msg, double& t, VectorXd& x) {
   t = double(msg.timestamp)/1000.0;
   for (int i=0; i<msg.dim; i++) { x(i) = msg.val[i]; }  // todo: make this more robust by doing string matching on the coordinate names (with a hashmap?)
   return true;
 }
 
 
-bool waitForLCM(lcm::LCM* lcm, double timeout) {
-  int lcmFd = lcm->getFileno();
+bool waitForLCM(lcm::LCM& lcm, double timeout) {
+  int lcmFd = lcm.getFileno();
 
   struct timeval tv;
   tv.tv_sec = 0;
@@ -46,9 +46,9 @@ bool waitForLCM(lcm::LCM* lcm, double timeout) {
 class LCMLoop {
 public:
   bool stop;
-  lcm::LCM* lcm;
+  lcm::LCM& lcm;
 
-  LCMLoop(const shared_ptr<lcm::LCM>& _lcm) : lcm(_lcm.get()), stop(false) {}
+  LCMLoop(const shared_ptr<lcm::LCM>& _lcm) : lcm(*_lcm), stop(false) {}
 
   void loopWithSelect() {
 //    cout << "starting lcm handler thread " << this_thread::get_id() << endl;
@@ -61,7 +61,7 @@ public:
       if (this->stop) break;
 
       if (lcmReady) {
-        if (lcm->handle() != 0) {
+        if (lcm.handle() != 0) {
           cout << "lcm->handle() returned non-zero" << endl;
           break;
         }
