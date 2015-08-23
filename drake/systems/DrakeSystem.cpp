@@ -24,22 +24,17 @@ DrakeSystem::DrakeSystem(const std::string &_name, const std::shared_ptr<Coordin
 DrakeSystem::DrakeSystem(const std::string &_name, unsigned int num_continuous_states, unsigned int num_discrete_states,
                          unsigned int num_inputs, unsigned int num_outputs)
         : name(_name),
-          input_frame(nullptr),
-          continuous_state_frame(nullptr),
-          discrete_state_frame(nullptr),
-          output_frame(nullptr) {
-  input_frame = make_shared<CoordinateFrame>(name+"Input",num_inputs,"u");
-  continuous_state_frame = make_shared<CoordinateFrame>(name+"ContinuousState",num_continuous_states,"xc");
-  discrete_state_frame = make_shared<CoordinateFrame>(name+"DiscreteState",num_discrete_states,"xd");
-  output_frame = make_shared<CoordinateFrame>(name+"Output",num_outputs,"y");
-  state_frame = make_shared<MultiCoordinateFrame>(name+"State",initializer_list<CoordinateFramePtr>({continuous_state_frame,discrete_state_frame}));
-}
+          input_frame(make_shared<CoordinateFrame>(name+"Input",num_inputs,"u")),
+          continuous_state_frame(make_shared<CoordinateFrame>(name+"ContinuousState",num_continuous_states,"xc")),
+          discrete_state_frame(make_shared<CoordinateFrame>(name+"DiscreteState",num_discrete_states,"xd")),
+          state_frame(make_shared<MultiCoordinateFrame>(name+"State",initializer_list<CoordinateFramePtr>({continuous_state_frame,discrete_state_frame}))),
+          output_frame(make_shared<CoordinateFrame>(name+"Output",num_outputs,"y")) { }
 
-DrakeSystem::VectorXs DrakeSystem::getRandomState(void) {
+DrakeSystem::VectorXs DrakeSystem::getRandomState() {
   return DrakeSystem::VectorXs::Random(state_frame->getDim());
 }
 
-DrakeSystem::VectorXs DrakeSystem::getInitialState(void) {
+DrakeSystem::VectorXs DrakeSystem::getInitialState() {
   return getRandomState();
 }
 
@@ -74,7 +69,7 @@ void DrakeSystem::ode1(double t0, double tf, const DrakeSystem::VectorXs& x0, co
   while (t<tf) {
     handle_realtime_factor(wall_clock_start_time, t, options.realtime_factor);
 
-    dt = std::min(options.initial_step_size,tf-t);
+    dt = (std::min)(options.initial_step_size,tf-t);
     y = output(t,x,u);
     x += dt * dynamics(t, x, u);
     t += dt;

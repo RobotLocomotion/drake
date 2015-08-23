@@ -39,7 +39,7 @@ public:
               unsigned int num_inputs = 0,
               unsigned int num_outputs = 0);
 
-  virtual ~DrakeSystem(void) {};
+  virtual ~DrakeSystem() {};
 
   const CoordinateFrame& getInputFrame() { return *input_frame.get(); }
   const CoordinateFrame& getStateFrame() { return *state_frame.get(); }
@@ -62,15 +62,15 @@ public:
       return VectorXs::Zero(0);
   }
 
-  virtual VectorXs getRandomState(void);
-  virtual VectorXs getInitialState(void);
+  virtual VectorXs getRandomState();
+  virtual VectorXs getInitialState();
 
   // simulation options
   typedef struct _SimulationOptions {
     double realtime_factor;  // 1 means try to run at realtime speed, < 0 is run as fast as possible
     double initial_step_size;
 
-    _SimulationOptions(void) :
+    _SimulationOptions() :
             realtime_factor(-1.0),
             initial_step_size(0.01)
     {};
@@ -88,8 +88,8 @@ public:
   std::shared_ptr<CoordinateFrame> output_frame;
   std::shared_ptr<CoordinateFrame> continuous_state_frame, discrete_state_frame, state_frame; // should either protect these or avoid storing them all
 
-  virtual bool isTimeInvariant(void) { return false; }    // are the dynamics,update, and output methods independent of t?  set to true if possible!
-  virtual bool isDirectFeedthrough(void) { return true; } // does the output method depend (directly) on the input u?  set to false if possible!
+  virtual bool isTimeInvariant() { return false; }    // are the dynamics,update, and output methods independent of t?  set to true if possible!
+  virtual bool isDirectFeedthrough() { return true; } // does the output method depend (directly) on the input u?  set to false if possible!
 
 protected:
 
@@ -109,6 +109,9 @@ public:
   virtual VectorXs dynamics(double t, const VectorXs& x, const VectorXs& u);
   virtual VectorXs update(double t, const VectorXs& x, const VectorXs& u);
   virtual VectorXs output(double t, const VectorXs& x, const VectorXs& u);
+
+  virtual bool isTimeInvariant() { return sys1->isTimeInvariant() && sys2->isTimeInvariant(); }
+  virtual bool isDirectFeedthrough() { return sys1->isDirectFeedthrough() && sys2->isDirectFeedthrough(); }
 
 private:
   VectorXs getX1(const VectorXs& x);

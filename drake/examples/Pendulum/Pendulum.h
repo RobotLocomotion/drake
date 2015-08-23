@@ -45,22 +45,22 @@ public:
 
 class PendulumEnergyShaping : public DrakeSystem {
 public:
-  PendulumEnergyShaping(const shared_ptr<Pendulum>& pendulum)
+  PendulumEnergyShaping(const Pendulum& pendulum)
           : DrakeSystem("PendulumEnergyShaping"),
-            m(pendulum->m),
-            l(pendulum->l),
-            b(pendulum->b),
-            g(pendulum->g)
+            m(pendulum.m),
+            l(pendulum.l),
+            b(pendulum.b),
+            g(pendulum.g)
   {
-    input_frame = pendulum->output_frame;
-    output_frame = pendulum->input_frame;
+    input_frame = pendulum.output_frame;
+    output_frame = pendulum.input_frame;
   };
 
-  virtual VectorXs output(double t, const VectorXs& unused, const VectorXs& x) {
-    double Etilde = .5 * m*l*l*x(1)*x(1) - m*g*l*cos(x(0)) - 1.1*m*g*l;
-    VectorXs u(1);
-    u << b*x(1) - .1*x(1)*Etilde;
-    return u;
+  virtual VectorXs output(double t, const VectorXs& unused, const VectorXs& u) {
+    double Etilde = .5 * m*l*l*u(1)*u(1) - m*g*l*cos(u(0)) - 1.1*m*g*l;
+    VectorXs y(1);
+    y << b*u(1) - .1*u(1)*Etilde;
+    return y;
   }
 
   virtual bool isTimeInvariant(void) { return true; }

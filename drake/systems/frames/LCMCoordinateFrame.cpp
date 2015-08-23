@@ -73,7 +73,7 @@ public:
 };
 
 
-void runLCM(const shared_ptr<lcm::LCM>& lcm, const DrakeSystemPtr& sys, double t0, double tf, const Eigen::VectorXd& x0, DrakeSystem::SimulationOptions* options) {
+void runLCM(const DrakeSystemPtr& sys, const shared_ptr<lcm::LCM>& lcm, double t0, double tf, const Eigen::VectorXd& x0, const DrakeSystem::SimulationOptions* options) {
   if(!lcm->good())
     throw runtime_error("bad LCM reference");
 
