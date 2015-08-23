@@ -39,7 +39,7 @@ DrakeSystem::VectorXs DrakeSystem::getInitialState() {
   return getRandomState();
 }
 
-void DrakeSystem::simulate(double t0, double tf, const DrakeSystem::VectorXs &x0, const SimulationOptions& options) {
+void DrakeSystem::simulate(double t0, double tf, const DrakeSystem::VectorXs &x0, const SimulationOptions& options) const {
   ode1(t0,tf,x0,options);
 }
 
@@ -61,7 +61,7 @@ inline void handle_realtime_factor(double wall_clock_start_time, double sim_time
 }
 
 
-void DrakeSystem::ode1(double t0, double tf, const DrakeSystem::VectorXs& x0, const SimulationOptions& options) {
+void DrakeSystem::ode1(double t0, double tf, const DrakeSystem::VectorXs& x0, const SimulationOptions& options) const {
   double t = t0, dt;
   double wall_clock_start_time = getTimeOfDay();
   DrakeSystem::VectorXs x = x0;
@@ -90,21 +90,21 @@ CascadeSystem::  CascadeSystem(const DrakeSystemPtr& _sys1, const DrakeSystemPtr
   state_frame = make_shared<MultiCoordinateFrame>("CascadeSystemState",initializer_list<CoordinateFramePtr>({continuous_state_frame,discrete_state_frame}));
 }
 
-DrakeSystem::VectorXs CascadeSystem::getX1(const VectorXs &x) {
+DrakeSystem::VectorXs CascadeSystem::getX1(const VectorXs &x) const {
   DrakeSystem::VectorXs x1(sys1->state_frame->getDim());
   x1 << x.head(sys1->continuous_state_frame->getDim()),
         x.segment(sys1->state_frame->getDim(),sys1->discrete_state_frame->getDim());
   return x1;
 }
 
-DrakeSystem::VectorXs CascadeSystem::getX2(const VectorXs &x) {
+DrakeSystem::VectorXs CascadeSystem::getX2(const VectorXs &x) const {
   DrakeSystem::VectorXs x2(sys2->state_frame->getDim());
   x2 << x.segment(sys1->continuous_state_frame->getDim(),sys2->continuous_state_frame->getDim()),
         x.segment(sys1->state_frame->getDim()+sys2->continuous_state_frame->getDim(),sys2->discrete_state_frame->getDim());
   return x2;
 }
 
-DrakeSystem::VectorXs CascadeSystem::dynamics(double t, const DrakeSystem::VectorXs& x, const DrakeSystem::VectorXs& u) {
+DrakeSystem::VectorXs CascadeSystem::dynamics(double t, const DrakeSystem::VectorXs& x, const DrakeSystem::VectorXs& u) const {
   unsigned int num_xc1 = sys1->continuous_state_frame->getDim(),
                num_xc2 = sys2->continuous_state_frame->getDim();
 
@@ -116,7 +116,7 @@ DrakeSystem::VectorXs CascadeSystem::dynamics(double t, const DrakeSystem::Vecto
   return xdot;
 }
 
-DrakeSystem::VectorXs CascadeSystem::update(double t, const DrakeSystem::VectorXs& x, const DrakeSystem::VectorXs& u) {
+DrakeSystem::VectorXs CascadeSystem::update(double t, const DrakeSystem::VectorXs& x, const DrakeSystem::VectorXs& u) const  {
   unsigned int num_xd1 = sys1->discrete_state_frame->getDim(),
           num_xd2 = sys2->discrete_state_frame->getDim();
 
@@ -128,7 +128,7 @@ DrakeSystem::VectorXs CascadeSystem::update(double t, const DrakeSystem::VectorX
   return xn;
 }
 
-DrakeSystem::VectorXs CascadeSystem::output(double t, const DrakeSystem::VectorXs& x, const DrakeSystem::VectorXs& u) {
+DrakeSystem::VectorXs CascadeSystem::output(double t, const DrakeSystem::VectorXs& x, const DrakeSystem::VectorXs& u) const {
   DrakeSystem::VectorXs y1 = sys1->output(t,getX1(x),u);
   return sys2->output(t,getX2(x),y1);
 }

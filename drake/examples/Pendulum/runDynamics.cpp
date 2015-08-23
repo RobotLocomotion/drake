@@ -14,7 +14,7 @@ int main(int argc, char* argv[]) {
   p->input_frame = make_shared<LCMCoordinateFrame<drake::lcmt_drake_signal> >("PendulumInput",p->input_frame->getCoordinateNames(),lcm);
   p->output_frame = make_shared<LCMCoordinateFrame<drake::lcmt_drake_signal> >("PendulumState",p->output_frame->getCoordinateNames(),lcm);
 
-  runLCM(p,lcm,0,5000,p->getRandomState());
+  runLCM(p,lcm,0,5,p->getRandomState());
 
   cout << "output frame: " << p->getOutputFrame() << endl;
 }

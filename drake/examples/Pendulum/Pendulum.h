@@ -24,14 +24,14 @@ public:
   }
   virtual ~Pendulum(void) {};
 
-  virtual VectorXs dynamics(double t, const VectorXs& x, const VectorXs& u) {
+  virtual VectorXs dynamics(double t, const VectorXs& x, const VectorXs& u) const override {
     VectorXs xdot(2);
     xdot(0) = x(1);
     xdot(1) = (u(0) - m*g*lc*sin(x(0)) - b*x(1))/I;
     return xdot;
   }
 
-  virtual VectorXs output(double t, const VectorXs& x, const VectorXs& u) {
+  virtual VectorXs output(double t, const VectorXs& x, const VectorXs& u) const override {
     VectorXs y=x;
     return y;
   }
@@ -55,15 +55,15 @@ public:
     output_frame = pendulum.input_frame;
   };
 
-  virtual VectorXs output(double t, const VectorXs& unused, const VectorXs& u) override {
+  virtual VectorXs output(double t, const VectorXs& unused, const VectorXs& u) const override {
     double Etilde = .5 * m*l*l*u(1)*u(1) - m*g*l*cos(u(0)) - 1.1*m*g*l;
     VectorXs y(1);
     y << b*u(1) - .1*u(1)*Etilde;
     return y;
   }
 
-  virtual bool isTimeInvariant(void) override { return true; }
-  virtual bool isDirectFeedthrough(void) override { return true; }
+  virtual bool isTimeInvariant() const override { return true; }
+  virtual bool isDirectFeedthrough() const override { return true; }
 
   double m,l,b,g;  // pendulum parameters (initialized in the constructor)
 };
