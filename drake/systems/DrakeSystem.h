@@ -88,9 +88,7 @@ protected:
 // c.f. https://www.google.com/search?q=Runge-Kutta-Fehlberg and edit ode45.m in matlab.
 };
 
-typedef std::shared_ptr<DrakeSystem> DrakeSystemPtr;
-
-class CascadeSystem : public DrakeSystem {
+class DLLEXPORT CascadeSystem : public DrakeSystem {
 public:
   CascadeSystem(const DrakeSystemPtr& sys1, const DrakeSystemPtr& sys2);
   virtual ~CascadeSystem(void) {};

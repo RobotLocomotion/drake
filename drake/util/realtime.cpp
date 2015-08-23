@@ -6,8 +6,6 @@
 
 #define UNUSED(x) (void)(x)
 
-typedef std::chrono::time_point<std::chrono::steady_clock> TimePoint;
-
 #define MDL_INITIAL_SIZES
 static void mdlInitializeSizes(SimStruct *S)
 {
@@ -43,6 +41,10 @@ static void mdlStart(SimStruct *S)
   ssSetPWorkValue(S,0,NULL);
 }
 
+typedef std::chrono::system_clock TimeClock;  // would love to use steady_clock, but it seems to not compile on all platforms (e.g. MSVC 2013 Win64)
+typedef std::chrono::duration<double> TimeDuration;
+typedef std::chrono::time_point<TimeClock,TimeDuration> TimePoint;
+
 #define MDL_UPDATE
 static void mdlUpdate(SimStruct *S, int_T tid)
 {
@@ -51,17 +53,18 @@ static void mdlUpdate(SimStruct *S, int_T tid)
   TimePoint *wall_clock_start_time = static_cast<TimePoint*>(ssGetPWorkValue(S,0));
   if (!wall_clock_start_time) {
     // t0 not set yet, set it now.  (note: used to set this in mdlStart, but there can be a big pause between mdlStart and the full simulation start)
-    wall_clock_start_time = new TimePoint(std::chrono::steady_clock::now());
+    wall_clock_start_time = new TimePoint();
+    *wall_clock_start_time = TimeClock::now();
     ssSetPWorkValue(S,0,wall_clock_start_time);
   }
 
   double sim_time = ssGetT(S);
   double realtime_factor = mxGetScalar(ssGetSFcnParam(S, 1));
-  auto wall_clock = std::chrono::steady_clock::now();
-  auto desired_clock = *wall_clock_start_time + std::chrono::duration<double>(sim_time/realtime_factor);
-  if (desired_clock>wall_clock) { // could probably just call sleep_until, but just in case
-    std::this_thread::sleep_until(desired_clock);
-  } else if (wall_clock>desired_clock+std::chrono::duration<double>(1.0/realtime_factor)) {
+  TimePoint wall_time = TimeClock::now();
+  TimePoint desired_time = *wall_clock_start_time + TimeDuration(sim_time/realtime_factor);
+  if (desired_time>wall_time) { // could probably just call sleep_until, but just in case
+    std::this_thread::sleep_until(desired_time);
+  } else if (wall_time>desired_time+std::chrono::duration<double>(1.0/realtime_factor)) {
     mexPrintf("at time %f, I'm behind by more than 1 (scaled) second\n", sim_time);
     ssSetErrorStatus(S, "Simulink is not keeping up with real time.  Consider reducing demands on your ODE solver, or optimizing your code.");
   }
