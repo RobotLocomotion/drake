@@ -7,6 +7,8 @@ notification:
 
 before_install:
   - sudo apt-get update -qq
+  - sudo apt-get install gcc-4.8 g++4.8
+  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
   - mkdir build
   - make download-all
   - sudo ./install_prereqs.sh ubuntu
