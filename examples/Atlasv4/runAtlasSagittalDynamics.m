@@ -5,11 +5,11 @@ options.twoD = true;
 options.view = 'right';
 options.floating = true;
 options.terrain = RigidBodyFlatTerrain();
-s = 'urdf/atlas_minimal_contact.urdf';
+s = 'urdf/atlas_planar_two_arms.urdf';
 dt = 0.005;
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 r = TimeSteppingRigidBodyManipulator(s,dt,options);
-r = r.removeCollisionGroupsExcept({'heel','toe','back','front','knee','butt'});
+r = r.removeCollisionGroupsExcept({'heel','toe','palm'});
 r = compile(r);
 warning(w);
 
@@ -18,4 +18,4 @@ v.display_dt = 0.02;
 
 % Run simulation, then play it back at realtime speed
 xtraj = simulate(r,[0 3]);
-v.playback(xtraj);
+v.playback(xtraj,struct('slider',true));
