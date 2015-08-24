@@ -1,5 +1,7 @@
 
 #include <algorithm>
+#include <thread>
+#include <chrono>
 #include "DrakeSystem.h"
 
 using namespace std;
@@ -43,19 +45,19 @@ void DrakeSystem::simulate(double t0, double tf, const DrakeSystem::VectorXs &x0
   ode1(t0,tf,x0,options);
 }
 
-#include "timeUtil.h"
+typedef std::chrono::system_clock TimeClock;  // would love to use steady_clock, but it seems to not compile on all platforms (e.g. MSVC 2013 Win64)
+typedef std::chrono::duration<double> TimeDuration;
+typedef std::chrono::time_point<TimeClock,TimeDuration> TimePoint;
 
-inline void handle_realtime_factor(double wall_clock_start_time, double sim_time, double realtime_factor)
+inline void handle_realtime_factor(const TimePoint& wall_clock_start_time, double sim_time, double realtime_factor)
 {
-  if (realtime_factor>=0.0) {
-    double time_diff = (getTimeOfDay() - wall_clock_start_time) * realtime_factor - sim_time;
-//    cout << "real time: " << (getTimeOfDay() - wall_clock_start_time) << ", sim time: " << sim_time << endl;
-    if (time_diff <= 0.0) {
-      nanoSleep(-time_diff);
-    } else if (time_diff > 1.0) { // then I'm behind by more than 1 second
-      throw runtime_error(
-              "Not keeping up with requested realtime_factor!  At time " + to_string(sim_time) + ", I'm behind by " +
-              to_string(time_diff) + " sec.");
+  if (realtime_factor>0.0) {
+    TimePoint wall_time = TimeClock::now();
+    TimePoint desired_time = wall_clock_start_time + TimeDuration(sim_time/realtime_factor);
+    if (desired_time>wall_time) { // could probably just call sleep_until, but just in case
+      std::this_thread::sleep_until(desired_time);
+    } else if (wall_time>desired_time+TimeDuration(1.0/realtime_factor)) {
+      throw runtime_error("Simulation is not keeping up with desired real-time factor -- behind by more than 1 (scaled) second at simulation time " + to_string(sim_time));
     }
   }
 }
@@ -63,12 +65,12 @@ inline void handle_realtime_factor(double wall_clock_start_time, double sim_time
 
 void DrakeSystem::ode1(double t0, double tf, const DrakeSystem::VectorXs& x0, const SimulationOptions& options) const {
   double t = t0, dt;
-  double wall_clock_start_time = getTimeOfDay();
+  TimePoint start = TimeClock::now();
   DrakeSystem::VectorXs x = x0;
   DrakeSystem::VectorXs u = DrakeSystem::VectorXs::Zero(input_frame->getDim());
   DrakeSystem::VectorXs y(output_frame->getDim());
   while (t<tf) {
-    handle_realtime_factor(wall_clock_start_time, t, options.realtime_factor);
+    handle_realtime_factor(start, t, options.realtime_factor);
 
     dt = (std::min)(options.initial_step_size,tf-t);
     y = output(t,x,u);
@@ -79,7 +81,7 @@ void DrakeSystem::ode1(double t0, double tf, const DrakeSystem::VectorXs& x0, co
 
 
 
-CascadeSystem::  CascadeSystem(const DrakeSystemPtr& _sys1, const DrakeSystemPtr& _sys2)
+CascadeSystem::CascadeSystem(const DrakeSystemPtr& _sys1, const DrakeSystemPtr& _sys2)
   : DrakeSystem("CascadeSystem"), sys1(_sys1), sys2(_sys2) {
   if (sys1->output_frame != sys2->input_frame)
     throw runtime_error("Cascade combination failed: output frame of "+sys1->name+" must match the input frame of "+sys2->name);

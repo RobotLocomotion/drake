@@ -1,6 +1,5 @@
 #include "LCMCoordinateFrame.h"
 #include <thread>
-#include "timeUtil.h"
 
 using namespace std;
 using namespace Eigen;
@@ -19,6 +18,11 @@ bool decode(const CoordinateFrame& frame, const drake::lcmt_drake_signal& msg, d
   return true;
 }
 
+#if defined(_WIN32) || defined(_WIN64)
+#include <Winsock2.h>
+#else
+#include <sys/select.h>
+#endif
 
 bool waitForLCM(lcm::LCM& lcm, double timeout) {
   int lcmFd = lcm.getFileno();

@@ -36,9 +36,9 @@ public:
   }
   CoordinateFrame(const std::string& _name) : name(_name) {}
 
-  virtual ~CoordinateFrame(void) {  };
+  virtual ~CoordinateFrame() {}
 
-  virtual unsigned int getDim() const { return coordinates.size(); };
+  virtual unsigned int getDim() const { return coordinates.size(); }
   virtual const std::string& getCoordinateName(unsigned int i) const {
     if (i>=coordinates.size())
       throw std::runtime_error("index exceeds dimension of coordinate frame");
@@ -80,7 +80,7 @@ typedef std::shared_ptr<const CoordinateFrame> CoordinateFramePtr;
 class DLLEXPORT MultiCoordinateFrame : public CoordinateFrame {
 public:
   MultiCoordinateFrame(const std::string& name, std::initializer_list<std::shared_ptr<const CoordinateFrame>> _frames);
-  virtual ~MultiCoordinateFrame(void) {};
+  virtual ~MultiCoordinateFrame(void) {}
 
   virtual std::ostream& print(std::ostream& os) const override {
     os << "Multi-Coordinate Frame: " << name << " (" << getDim() << " elements)" << std::endl;
@@ -122,7 +122,7 @@ private:
     std::vector<unsigned int> coordinate_indices; // which indices in the multi-frame are associated with this sub-frame
   };
   struct CoordinateRef {
-    CoordinateRef(const std::shared_ptr<const CoordinateFrame>& _frame) : pframe(_frame.get()) {};
+    CoordinateRef(const std::shared_ptr<const CoordinateFrame>& _frame) : pframe(_frame.get()) {}
     const CoordinateFrame* pframe;  // todo: make this more robust to if we ever allow changes to subframes in the future
     unsigned int index_in_subframe;
   };
