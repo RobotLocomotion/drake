@@ -4,14 +4,15 @@
 MultiCoordinateFrame::MultiCoordinateFrame(const std::string& name, std::initializer_list<std::shared_ptr<const CoordinateFrame>> _frames)
   : CoordinateFrame(name) {
   unsigned int dim = 0;
-  for (auto subframe : _frames) {
+  CoordinateRef c;
+  for (const auto& subframe : _frames) {
     if (!subframe) continue;  // ok if they pass in nullptr
-    struct SubFrame s;
+    SubFrame s;
     s.frame = subframe;
     for (unsigned int i=0; i<subframe->getDim(); i++) {
       s.coordinate_indices.push_back(dim+i);
 
-      struct CoordinateRef c(s.frame);
+      c.subframe_number = frames.size()-1;
       c.index_in_subframe = i;
       coordinate_refs.push_back(c);
 
