@@ -5,20 +5,32 @@
 #include <Eigen/Dense>
 #include "../DrakeSystem.h"
 #include "RigidBodyManipulator.h"
+
+// these could all go in the cpp file:
 #include "lcmtypes/drake/lcmt_viewer_load_robot.hpp"
+#include "lcmtypes/drake/lcmt_viewer_draw.hpp"
 #include "drakeGeometryUtil.h"
 
 class BotVisualizer : public DrakeSystem {
 public:
-  BotVisualizer(const std::string& urdf_filename, const std::shared_ptr<lcm::LCM>& _lcm) :
+  BotVisualizer(const std::shared_ptr<lcm::LCM>& _lcm, const std::string& urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type) :
           DrakeSystem("BotVisualizer"),
-          manip(urdf_filename),
+          manip(urdf_filename,floating_base_type),
           lcm(_lcm)
   {
     publishLoadRobot();
+
+    draw_msg.num_links = manip.bodies.size();
+    std::vector<float> position = {0,0,0}, quaternion = {0,0,0,1};
+    for (const auto& body : manip.bodies) {
+      draw_msg.link_name.push_back(body->linkname);
+      draw_msg.robot_num.push_back(body->robotnum);
+      draw_msg.position.push_back(position);
+      draw_msg.quaternion.push_back(quaternion);
+    }
   }
 
-  void publishLoadRobot() {
+  void publishLoadRobot() const {
     drake::lcmt_viewer_load_robot vr;
     vr.num_links = manip.bodies.size();
     for (const auto& body : manip.bodies) {
@@ -78,7 +90,7 @@ public:
 
         Eigen::Matrix4d T = v.getLocalTransform();
         Eigen::Map<Eigen::Vector3f> position(gdata.position);
-        position = T.topRightCorner<1,3>().cast<float>();
+        position = T.topRightCorner<3,1>().cast<float>();
         Eigen::Map<Eigen::Vector4f> quaternion(gdata.quaternion);
         quaternion = rotmat2quat(T.topLeftCorner<3,3>()).cast<float>();
 
@@ -93,9 +105,32 @@ public:
     lcm->publish("DRAKE_VIEWER_LOAD_ROBOT",&vr);
   }
 
+  virtual VectorXs output(double t, const VectorXs& unused, const VectorXs& u) const override {
+    draw_msg.timestamp = static_cast<int64_t>(t*1000.0);
+
+    Eigen::VectorXd q = u.head(manip.num_positions), v=Eigen::VectorXd::Zero(0);
+    manip.doKinematics(q,v);
+
+    Eigen::Vector3d points = Eigen::Vector3d::Zero();
+    int i,j;
+    for (i=0; i<manip.num_bodies; i++) {
+      auto pose = manip.forwardKin(points,i,0,2,0).value();
+      std::vector<float>& position = draw_msg.position[i];
+      for (j=0; j<3; j++) position[j] = static_cast<float>(pose(j));
+      std::vector<float>& quaternion = draw_msg.quaternion[i];
+      for (j=0; j<4; j++) quaternion[j] = static_cast<float>(pose(j+3));
+    }
+
+    lcm->publish("DRAKE_VIEWER_DRAW",&draw_msg);
+
+    return VectorXs::Zero(0);
+  }
+
+
 private:
-  RigidBodyManipulator manip;
+  mutable RigidBodyManipulator manip;  // todo: remove mutable tag after RBM cleanup
   std::shared_ptr<lcm::LCM> lcm;
+  mutable drake::lcmt_viewer_draw draw_msg;
 };
 
 #endif //DRAKE_BOTVISUALIZER_H
