@@ -83,6 +83,12 @@ if ispc
 end
 
 
+% Previously, we added .jar files to the classpath only when they were used.
+% This introduced a number of issues because manipulating the java classpath
+% clears all existing java variables. This would create problems when a user,
+% for example, tried to load the LCMGL jar after creating an lcm object. Now,
+% we instead just add all available .jars to the classpath at startup. See
+% also https://github.com/mitdrc/drc/issues/2100
 jarfiledir = fullfile(pods_get_base_path(), 'share', 'java');
 if exist(jarfiledir, 'dir') 
  javaaddpathIfNew(jarfiledir);
