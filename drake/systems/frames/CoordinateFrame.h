@@ -44,7 +44,7 @@ public:
       throw std::runtime_error("index exceeds dimension of coordinate frame");
     return coordinates[i];
   }
-  virtual const std::vector<std::string>& getCoordinateNames() const { return coordinates; }
+  virtual std::vector<std::string> getCoordinateNames() const { return coordinates; }
   virtual void setCoordinateNames(const std::vector<std::string>& _coordinates)
   {
     if (_coordinates.size()!=coordinates.size())
