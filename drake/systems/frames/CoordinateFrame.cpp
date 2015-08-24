@@ -12,7 +12,7 @@ MultiCoordinateFrame::MultiCoordinateFrame(const std::string& name, std::initial
     for (unsigned int i=0; i<subframe->getDim(); i++) {
       s.coordinate_indices.push_back(dim+i);
 
-      c.subframe_number = frames.size()-1;
+      c.subframe_number = frames.size();
       c.index_in_subframe = i;
       coordinate_refs.push_back(c);
 
