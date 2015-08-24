@@ -44,7 +44,7 @@ public:
       throw std::runtime_error("index exceeds dimension of coordinate frame");
     return coordinates[i];
   }
-  virtual std::vector<std::string> getCoordinateNames() const { return coordinates; }
+  virtual const std::vector<std::string>& getCoordinateNames() const { return coordinates; }
   virtual void setCoordinateNames(const std::vector<std::string>& _coordinates)
   {
     if (_coordinates.size()!=coordinates.size())
@@ -55,7 +55,7 @@ public:
   virtual std::ostream& print(std::ostream& os) const {
     os << "Coordinate Frame: " << name << " (" << getDim() << " elements)" << std::endl;
 
-    for (auto c : coordinates) {
+    for (const auto& c : coordinates) {
       os << "  " << c << std::endl;
     }
     return os;
@@ -77,15 +77,18 @@ protected:
 
 typedef std::shared_ptr<const CoordinateFrame> CoordinateFramePtr;
 
+
+
+
 class DLLEXPORT MultiCoordinateFrame : public CoordinateFrame {
 public:
-  MultiCoordinateFrame(const std::string& name, std::initializer_list<std::shared_ptr<const CoordinateFrame>> _frames);
+  MultiCoordinateFrame(const std::string& name, std::initializer_list<CoordinateFramePtr> _frames);
   virtual ~MultiCoordinateFrame(void) {}
 
   virtual std::ostream& print(std::ostream& os) const override {
     os << "Multi-Coordinate Frame: " << name << " (" << getDim() << " elements)" << std::endl;
 
-    for (auto sf : frames) {
+    for (const auto& sf : frames) {
       os << "  " << sf.frame->name << " (" << sf.frame->getDim() << " elements) " << std::endl;
     }
     return os;
@@ -95,12 +98,12 @@ public:
   virtual const std::string& getCoordinateName(unsigned int i) const override {
     if (i>=coordinate_refs.size())
       throw std::runtime_error("index exceeds dimension of coordinate frame");
-    return coordinate_refs[i].pframe->getCoordinateName(coordinate_refs[i].index_in_subframe);
+    return frames[coordinate_refs[i].subframe_number].frame->getCoordinateName(coordinate_refs[i].index_in_subframe);
   }
   virtual std::vector<std::string> getCoordinateNames() const override {
     std::vector<std::string> coordinates;
-    for (auto c : coordinate_refs) {
-      coordinates.push_back(c.pframe->getCoordinateName(c.index_in_subframe));
+    for (const auto& c : coordinate_refs) {
+      coordinates.push_back(frames[c.subframe_number].frame->getCoordinateName(c.index_in_subframe));
     }
     return coordinates;
   }
@@ -118,12 +121,11 @@ private:
   ///   1) as a list of subframes, with a map to the relevant indices in the multi-frame
   ///   2) as a list of coordinates, with references to the associated subframe
   struct SubFrame {
-    std::shared_ptr<const CoordinateFrame> frame;
+    CoordinateFramePtr frame;
     std::vector<unsigned int> coordinate_indices; // which indices in the multi-frame are associated with this sub-frame
   };
   struct CoordinateRef {
-    CoordinateRef(const std::shared_ptr<const CoordinateFrame>& _frame) : pframe(_frame.get()) {}
-    const CoordinateFrame* pframe;  // todo: make this more robust to if we ever allow changes to subframes in the future
+    unsigned int subframe_number;
     unsigned int index_in_subframe;
   };
   std::vector<struct SubFrame> frames;

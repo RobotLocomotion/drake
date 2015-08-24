@@ -147,6 +147,9 @@ std::string mxGetStdString(const mxArray* array) {
 }
 
 std::vector<std::string> mxGetVectorOfStdStrings(const mxArray* array) {
+  if (!mxIsCell(array))
+    throw runtime_error("the input is not a cell array");
+
   std::vector<std::string> strings;
   int numel = mxGetNumberOfElements(array);
   for (int i=0; i<numel; i++) {

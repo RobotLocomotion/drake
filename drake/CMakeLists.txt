@@ -75,6 +75,8 @@ include(CTest)
 set(drake_jar_javafiles util/Transform.java)
 set(drake_jar_requires)
 
+include(cmake/procman.cmake)  # helper script for writing procman files
+
 # set up and build lcm types
 include(cmake/lcmtypes.cmake)
 
@@ -136,6 +138,7 @@ else()
 endif()
 
 include_directories(thirdParty/spruce/include)
+
 
 add_subdirectory(util)
 add_subdirectory(solvers)
