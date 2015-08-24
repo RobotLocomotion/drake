@@ -55,7 +55,7 @@ public:
   virtual std::ostream& print(std::ostream& os) const {
     os << "Coordinate Frame: " << name << " (" << getDim() << " elements)" << std::endl;
 
-    for (auto c : coordinates) {
+    for (const auto& c : coordinates) {
       os << "  " << c << std::endl;
     }
     return os;
@@ -85,7 +85,7 @@ public:
   virtual std::ostream& print(std::ostream& os) const override {
     os << "Multi-Coordinate Frame: " << name << " (" << getDim() << " elements)" << std::endl;
 
-    for (auto sf : frames) {
+    for (const auto& sf : frames) {
       os << "  " << sf.frame->name << " (" << sf.frame->getDim() << " elements) " << std::endl;
     }
     return os;
@@ -99,7 +99,7 @@ public:
   }
   virtual std::vector<std::string> getCoordinateNames() const override {
     std::vector<std::string> coordinates;
-    for (auto c : coordinate_refs) {
+    for (const auto& c : coordinate_refs) {
       coordinates.push_back(c.pframe->getCoordinateName(c.index_in_subframe));
     }
     return coordinates;
