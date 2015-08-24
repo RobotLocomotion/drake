@@ -102,22 +102,26 @@ classdef ConstrainedHybridTrajectoryOptimization < NonlinearProgram
       obj.nD = 2*length(d);
       
       for i=1:obj.M-1,
-        nLambda = length(mode_indices{i+1})*(obj.nD+1);
-        obj.Lambda_inds{i} = nvars + (1:nLambda)';
-        obj = obj.addDecisionVariable(nLambda);
-        nvars = nvars + nLambda;
-        
-        % todo: get the real mu here
-        mu = 1;
-        obj = obj.addConstraint(BoundingBoxConstraint(zeros(nLambda,1),inf(nLambda,1)),obj.Lambda_inds{i});
-        
-        A_fric = zeros(length(mode_indices{i+1})*obj.nD,nLambda);
-        for j=1:length(mode_indices{i+1}),
-          A_fric((j-1)*obj.nD + (1:obj.nD),(j-1)*(obj.nD+1) + 1) = mu*ones(obj.nD,1);
-          A_fric((j-1)*obj.nD + (1:obj.nD),(j-1)*(obj.nD+1) + (2:obj.nD+1)) = -eye(obj.nD);
+        if any(setdiff(mode_indices{i+1},mode_indices{i}))
+          nLambda = length(mode_indices{i+1})*(obj.nD+1);
+          obj.Lambda_inds{i} = nvars + (1:nLambda)';
+          obj = obj.addDecisionVariable(nLambda);
+          nvars = nvars + nLambda;
+          
+          % todo: get the real mu here
+          mu = 1;
+          obj = obj.addConstraint(BoundingBoxConstraint(zeros(nLambda,1),inf(nLambda,1)),obj.Lambda_inds{i});
+          
+          A_fric = zeros(length(mode_indices{i+1})*obj.nD,nLambda);
+          for j=1:length(mode_indices{i+1}),
+            A_fric((j-1)*obj.nD + (1:obj.nD),(j-1)*(obj.nD+1) + 1) = mu*ones(obj.nD,1);
+            A_fric((j-1)*obj.nD + (1:obj.nD),(j-1)*(obj.nD+1) + (2:obj.nD+1)) = -eye(obj.nD);
+          end
+          
+          obj = obj.addConstraint(LinearConstraint(zeros(size(A_fric,1),1),inf(size(A_fric,1),1),A_fric),obj.Lambda_inds{i});
+        else
+          obj.Lambda_inds{i} = [];
         end
-        
-        obj = obj.addConstraint(LinearConstraint(zeros(size(A_fric,1),1),inf(size(A_fric,1),1),A_fric),obj.Lambda_inds{i});
       end
       
       obj = obj.addJumpConstraints();    

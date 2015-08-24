@@ -39,11 +39,7 @@ classdef AccelConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimiza
         options.relative_constraints = false(nActive,1);
       elseif length(options.relative_constraints) == 1
         options.relative_constraints = repmat(options.relative_constraints,nActive,1);
-      end
-      
-      if ~isfield(options,'lambda_bound')
-        options.lambda_bound = 100;
-      end
+      end      
       
       if ~isfield(options,'constrain_start')
         options.constrain_start = true;
