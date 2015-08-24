@@ -4,54 +4,32 @@
 
 #define UNUSED(x) (void)(x)
 
-#if defined(_WIN32) || defined(_WIN64)
+#include <time.h>
 
-  #include <Winsock2.h>
-  #include <time.h>
-  #include <windows.h>
-  #include <time.h>
+#if defined(_MSC_VER) && (_MSC_VER < 1900) // timespec and nanosleep not defined in earlier versions of MSVC
+#include <Winsock2.h>
+#include <windows.h>
 
 struct timespec {
     long tv_sec;
     long tv_nsec;
 };
 typedef long suseconds_t;
+#endif
+
+#if defined(_MSC_VER) // sys/time.h, unistd.h not available on MSVC
+#define DELTA_EPOCH_IN_MICROSECS  11644473600000000ULL
+#include <Winsock2.h>
+#include <windows.h>
+#include <Winbase.h>
 
 const unsigned int BILLION = 1000000000;
-#define DELTA_EPOCH_IN_MICROSECS  11644473600000000ULL
+
+int nanosleep (const timespec *requested_delay, timespec *remaining_delay);
 
 int gettimeofday(struct timeval *tv);
 
-int
-nanosleep (const timespec *requested_delay,
-timespec *remaining_delay);
-
-int gettimeofday(struct timeval *tv, void* junk)  // second argument only here for compatibility
-{
-  FILETIME ft;
-  unsigned __int64 tmpres = 0;
-  static int tzflag;
-
-  if (NULL != tv)
- {
-    GetSystemTimeAsFileTime(&ft);
-
-    tmpres |= ft.dwHighDateTime;
-    tmpres <<= 32;
-    tmpres |= ft.dwLowDateTime;
-
-    /*converting file time to unix epoch*/
-    tmpres -= DELTA_EPOCH_IN_MICROSECS;
-    tmpres /= 10;  /*convert into microseconds*/
-    tv->tv_sec = (long)(tmpres / 1000000UL);
-    tv->tv_usec = (long)(tmpres % 1000000UL);
-  }
-  return 0;
-}
-
-int
-nanosleep (const timespec *requested_delay,
-timespec *remaining_delay)
+int nanosleep (const timespec *requested_delay, timespec *remaining_delay)
 {
   static bool initialized;
   /* Number of performance counter increments per nanosecond,
@@ -132,12 +110,31 @@ timespec *remaining_delay)
     return 0;
 }
 
-#else  // non windows
+int gettimeofday(struct timeval *tv, void* junk)  // second argument only here for compatibility
+{
+  FILETIME ft;
+  unsigned __int64 tmpres = 0;
+  static int tzflag;
 
+  if (NULL != tv)
+ {
+    GetSystemTimeAsFileTime(&ft);
+
+    tmpres |= ft.dwHighDateTime;
+    tmpres <<= 32;
+    tmpres |= ft.dwLowDateTime;
+
+    /*converting file time to unix epoch*/
+    tmpres -= DELTA_EPOCH_IN_MICROSECS;
+    tmpres /= 10;  /*convert into microseconds*/
+    tv->tv_sec = (long)(tmpres / 1000000UL);
+    tv->tv_usec = (long)(tmpres % 1000000UL);
+  }
+  return 0;
+}
+#else
 #include <sys/time.h>
-#include <time.h>
 #include <unistd.h>
-
 #endif
 
 const double TIME_NOT_YET_SET = -1.0;

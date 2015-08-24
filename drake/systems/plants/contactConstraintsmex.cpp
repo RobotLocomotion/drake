@@ -29,19 +29,20 @@ using namespace std;
 
 inline void buildSparseMatrix(Matrix3xd const & pts, SparseMatrix<double> & sparse)
 {
-  const size_t m = pts.cols();
-  const size_t numNonZero = 3*m;
+	typedef SparseMatrix<double>::Index SparseIndex;
+  const SparseIndex m = static_cast<SparseIndex>(pts.cols());
+  const SparseIndex numNonZero = 3*m;
 
   sparse.resize(m, numNonZero);
   sparse.reserve(VectorXi::Constant(numNonZero, 1));
 
-  size_t j = 0;
-  for (size_t i = 0 ; i < m ; i++) {
-    for (size_t k = 0 ; k < 3 ; k++) {
-     sparse.insert(i, j) =  pts(j);
-     j++;
-   }
- }
+	SparseIndex j = 0;
+  for (SparseIndex i = 0 ; i < m ; i++) {
+    for (SparseIndex k = 0 ; k < 3 ; k++) {
+      sparse.insert(i, j) =  pts(j);
+      j++;
+    }
+  }
 }
 
 void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {

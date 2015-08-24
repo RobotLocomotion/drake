@@ -17,7 +17,7 @@ void rigidBodyConstraintParseTspan(const mxArray* pm,Eigen::Vector2d &tspan)
   {
     mexErrMsgIdAndTxt("Drake:rigidBodyConstraintParseTspan:BadInputs","tspan is a 1x2 vector");
   }
-  int num_tspan = mxGetNumberOfElements(pm);
+  size_t num_tspan = mxGetNumberOfElements(pm);
   if(num_tspan == 1)
   {
     mexErrMsgIdAndTxt("Drake:rigidBodyConstraintParseTspan:BadInputs","tspan is a 1x2 vector");

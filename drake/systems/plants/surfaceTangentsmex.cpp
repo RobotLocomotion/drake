@@ -18,7 +18,7 @@ using namespace std;
 
 inline mxArray* getTangentsArray(RigidBodyManipulator* const model, Map<Matrix3xd> const & normals)
 {
-  const int numContactPairs = normals.cols();
+  const size_t numContactPairs = normals.cols();
   const mwSize cellDims[] = {1, BASIS_VECTOR_HALF_COUNT};
   mxArray* tangentCells = mxCreateCellArray(2, cellDims);
   
@@ -41,8 +41,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
   
   RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
-  const unsigned int numNormals = mxGetN(prhs[1]);  //number of normal vectors
-  const unsigned int dimNormals = mxGetM(prhs[1]);  //dimension of each normal vector
+  const size_t numNormals = mxGetN(prhs[1]);  //number of normal vectors
+  const size_t dimNormals = mxGetM(prhs[1]);  //dimension of each normal vector
   
 
   if (dimNormals != 3) {
