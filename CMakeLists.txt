@@ -55,7 +55,7 @@ set(avl_GIT_TAG 9b927f90619460b29f7454c714369f65bc4536a1)
 set(bertini_GIT_REPOSITORY https://github.com/RobotLocomotion/bertini.git)
 set(bertini_GIT_TAG 3ae3e3ad3534acb4b6f7a4c3c22728b493beaa80)
 set(bullet_GIT_REPOSITORY https://github.com/RobotLocomotion/bullet-pod.git)
-set(bullet_GIT_TAG 6db7ae5e29f8b35ffcea384c53caa4bddcc6f986)
+set(bullet_GIT_TAG c7c87f327b7f3ba02de279d026d6642e9f6443f7)
 set(cmake_GIT_REPOSITORY https://github.com/RobotLocomotion/cmake.git)
 set(cmake_GIT_TAG 9f9f53877a77b1d1dc9f7ac592ca6ddeb18f7f28)
 set(cmake_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/drake/cmake")
@@ -66,18 +66,18 @@ set(director_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/director/distro/pods/dra
 set(signalscope_GIT_REPOSITORY https://github.com/mitdrc/signal-scope.git)
 set(signalscope_GIT_TAG dc61a95daf31d25c730a075b5a8c9bba9eadafb3)
 set(eigen_GIT_REPOSITORY https://github.com/RobotLocomotion/eigen-pod.git)
-set(eigen_GIT_TAG fb56a4b8504eb115a7f257de4570c47c20c43397)
+set(eigen_GIT_TAG c6c4738f9d18fa30003c33028486436adfe8bc70)
 set(gtk_GIT_REPOSITORY https://github.com/RobotLocomotion/gtk-pod.git)
 set(gtk_GIT_TAG dc9bb719ee771a2ae9c3a392796c42ccad5bca54)
 set(gloptipoly_GIT_REPOSITORY https://github.com/RobotLocomotion/gloptipoly3.git)  # todo: rename that repo
-set(gloptipoly_GIT_TAG a3547a6811bf76c4e18f00b6bcbc187c6a7fd3d8)
+set(gloptipoly_GIT_TAG c9e796e99c584ecf78317348c4162a2ed4121156)
 set(gurobi_GIT_REPOSITORY https://github.com/RobotLocomotion/gurobi.git)
 set(gurobi_GIT_TAG beb0a84a1bcca1eb81a1b87d9fa140f2134d97e9)
 set(iris_GIT_REPOSITORY https://github.com/rdeits/iris-distro.git)
 set(iris_GIT_TAG 3ea968e1ca8d19f11198d165bcc9d8b0ab919d51)
 set(iris_ADDITIONAL_BUILD_ARGS PATCH_COMMAND make configure-cdd-only)
 set(lcm_GIT_REPOSITORY https://github.com/RobotLocomotion/lcm-pod.git)
-set(lcm_GIT_TAG 31e9a3e2dd056cac749fc2879e841434181180ad) # cmake branch 
+set(lcm_GIT_TAG 31e9a3e2dd056cac749fc2879e841434181180ad) # cmake branch
 set(libbot_GIT_REPOSITORY https://github.com/RobotLocomotion/libbot.git)
 set(libbot_GIT_TAG c328b73f3b48008d04468031e26f48468a7e3cc0)
 set(meshconverters_GIT_REPOSITORY https://github.com/RobotLocomotion/meshConverters.git)
@@ -87,11 +87,11 @@ set(mosek_GIT_TAG 8e93c8ad6e8de0c1401b8e39d187370a3a0bd2dc)
 set(octomap_GIT_REPOSITORY https://github.com/RobotLocomotion/octomap-pod.git)
 set(octomap_GIT_TAG 00b28215d19580f9e964bc5d126ce55a9253671a)
 set(sedumi_GIT_REPOSITORY https://github.com/RobotLocomotion/sedumi.git)
-set(sedumi_GIT_TAG afac8ea98f91007a3710d761efd514e10d0ad536)
+set(sedumi_GIT_TAG 8263577d4ab375524060c19369ccf410133bb9eb)
 set(snopt_GIT_REPOSITORY https://github.com/RobotLocomotion/snopt.git)
 set(snopt_GIT_TAG d7abb603690f41970273643ebb6e173b0e6e452b)
 set(spotless_GIT_REPOSITORY https://github.com/RobotLocomotion/spotless-pod.git)
-set(spotless_GIT_TAG 565b720c25414a249d8b547183cf3ea6cf043211)
+set(spotless_GIT_TAG 88e8eefc9a853e96268cad7ac0d70ae2d8d39f35)
 set(yalmip_GIT_REPOSITORY https://github.com/RobotLocomotion/yalmip.git)
 set(yalmip_GIT_TAG c071fb7b7193491f8eefadba3bfff26160ad6cd4)
 set(xfoil_GIT_REPOSITORY https://github.com/RobotLocomotion/xfoil.git)
@@ -111,7 +111,29 @@ endif()
 # process optional projects
 # note: keep drake in this loop in case externals depend on drake (e.g. the director might in the near future)
 set(EXTERNAL_PROJECTS)
-foreach(proj IN ITEMS cmake eigen gtk lcm libbot bullet spotless director signalscope octomap snopt gurobi mosek iris yalmip gloptipoly bertini sedumi avl xfoil meshconverters drake)
+foreach(proj IN ITEMS 
+		cmake
+		eigen
+		gtk
+		lcm
+		libbot
+		bullet
+		spotless
+		director
+		signalscope
+		octomap
+		snopt
+		gurobi
+		mosek
+		iris
+		yalmip
+		gloptipoly
+		bertini
+		sedumi
+		avl
+		xfoil
+		meshconverters
+		drake)
 	string(TOUPPER ${proj} proj_upper)
 	if (${proj} STREQUAL "drake" OR ${proj} STREQUAL "cmake" OR WITH_${proj_upper} OR WITH_ALL_SUPPORTED_EXTERNALS)
 		list(APPEND EXTERNAL_PROJECTS ${proj})
