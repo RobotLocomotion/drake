@@ -1,7 +1,7 @@
 
 #include "CoordinateFrame.h"
 
-MultiCoordinateFrame::MultiCoordinateFrame(const std::string& name, std::initializer_list<std::shared_ptr<const CoordinateFrame>> _frames)
+MultiCoordinateFrame::MultiCoordinateFrame(const std::string& name, std::initializer_list<CoordinateFramePtr> _frames)
   : CoordinateFrame(name) {
   unsigned int dim = 0;
   CoordinateRef c;

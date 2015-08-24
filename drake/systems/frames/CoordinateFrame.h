@@ -77,9 +77,12 @@ protected:
 
 typedef std::shared_ptr<const CoordinateFrame> CoordinateFramePtr;
 
+
+
+
 class DLLEXPORT MultiCoordinateFrame : public CoordinateFrame {
 public:
-  MultiCoordinateFrame(const std::string& name, std::initializer_list<std::shared_ptr<const CoordinateFrame>> _frames);
+  MultiCoordinateFrame(const std::string& name, std::initializer_list<CoordinateFramePtr> _frames);
   virtual ~MultiCoordinateFrame(void) {}
 
   virtual std::ostream& print(std::ostream& os) const override {
