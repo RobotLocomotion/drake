@@ -67,7 +67,7 @@ classdef IRB140 < TimeSteppingRigidBodyManipulator
           end
         else
           arm_state_frame = getStateFrame(obj);
-          if (length(arm_state_frame.coordinates) > length(IRB140State(obj).coordinates))
+          if (length(arm_state_frame.getCoordinateNames()) > length(IRB140State(obj).getCoordinateNames()))
             arm_state_frame = replaceFrameNum(arm_state_frame, 1, IRB140State(obj));
           else
             arm_state_frame = IRB140State(obj);

@@ -75,7 +75,8 @@ endif
 doc:	doxygen doc/urdf/drakeURDF.html
 
 doxygen :
-	doxygen doc/Doxyfile
+	doxygen doc/doxyfile_matlab
+	doxygen doc/doxyfile_cpp
 
 doc/urdf/drakeURDF.html : doc/drakeURDF.xsd
 ifeq ($(BUILD_SYSTEM),Darwin)

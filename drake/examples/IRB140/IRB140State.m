@@ -7,7 +7,7 @@ classdef IRB140State < SingletonCoordinateFrame
       if (r.hands > 0)
         manipStateFrame = manipStateFrame.getFrameByNum(1);
       end
-      coordinates = manipStateFrame.coordinates;
+      coordinates = manipStateFrame.getCoordinateNames();
       obj = obj@SingletonCoordinateFrame('IRB140State',length(coordinates),'x',coordinates);
     end
   end

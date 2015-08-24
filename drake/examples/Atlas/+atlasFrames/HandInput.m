@@ -7,7 +7,7 @@ classdef HandInput < SingletonCoordinateFrame
       % our hand state is. 
       manipInputFrame = r.getManipulator().getInputFrame();
       manipInputFrame = manipInputFrame.getFrameByNum(ind);
-      input_names = manipInputFrame.coordinates;
+      input_names = manipInputFrame.getCoordinateNames();
       input_names = regexprep(input_names,'_motor',''); % remove motor suffix     
       
       obj = obj@SingletonCoordinateFrame(name,length(input_names),'x',input_names);

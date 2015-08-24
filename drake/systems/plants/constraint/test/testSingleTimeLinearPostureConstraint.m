@@ -2,7 +2,8 @@ function testSingleTimeLinearPostureConstraint
 urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
 options.floating = true;
 robot = RigidBodyManipulator(urdf,options);
-coords = robot.getStateFrame.coordinates(1:robot.getNumPositions);
+coords = robot.getStateFrame.getCoordinateNames();
+coords = coords(1:robot.getNumPositions);
 l_leg_kny = find(strcmp(coords,'l_leg_kny'));
 r_leg_kny = find(strcmp(coords,'r_leg_kny'));
 l_leg_hpy = find(strcmp(coords,'l_leg_hpy'));
