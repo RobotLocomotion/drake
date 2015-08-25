@@ -57,11 +57,38 @@ addpath(fullfile(root,'solvers','BMI'));
 addpath(fullfile(root,'solvers','BMI','util'));
 addpath(fullfile(root,'solvers','BMI','kinematics'));
 
+
+% OSX platform-specific
+if (strcmp(computer('arch'),'maci64'))
+  % Check if on Yosemite or after
+  [OSXvers,~] = evalc('system(''sw_vers -productVersion'')');
+  if ~isempty(regexp(OSXvers, '10\.1.', 'match'));
+    % Check if reverted to IPv4
+    ipv4_preferred = java.lang.System.getProperty('java.net.preferIPv4Stack');
+    if isempty(ipv4_preferred)
+      ipv4_preferred = 'false';
+    end
+    if ~(strcmp(ipv4_preferred,'true'))
+      display('WARNING: Your JVM may crash if you do not set it to prefer IPv4 over IPv6.')
+      display('This may cause any dependencies that involve the JVM (including LCM) to crash at runtime.')
+      display('Please see bug report and solution here: https://github.com/RobotLocomotion/drake/issues/558.')
+      display('(It just involves adding one line to your java.opts file for Matlab.)')
+      display('Make sure to restart Matlab after editing your java.opts file.')
+    end
+  end
+end
+
 if ispc 
   setenv('PATH',[getenv('PATH'),';',GetFullPath(pods_get_lib_path),';',fullfile(root,'pod-build','lib','Release'),';',fullfile(root,'pod-build','lib')]);
 end
 
 
+% Previously, we added .jar files to the classpath only when they were used.
+% This introduced a number of issues because manipulating the java classpath
+% clears all existing java variables. This would create problems when a user,
+% for example, tried to load the LCMGL jar after creating an lcm object. Now,
+% we instead just add all available .jars to the classpath at startup. See
+% also https://github.com/mitdrc/drc/issues/2100
 jarfiledir = fullfile(pods_get_base_path(), 'share', 'java');
 if exist(jarfiledir, 'dir') 
  javaaddpathIfNew(jarfiledir);

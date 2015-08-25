@@ -169,7 +169,6 @@ file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/addpath_drake.m
 file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/rmpath_drake.m
 	   "function rmpath_drake()\n"
 	   "  mfiledir = fileparts(which(mfilename));\n"
-     "  jarfiledir = fullfile(mfiledir, '..', 'share', 'java');\n"
 	   "  wd = cd(fullfile(mfiledir,'${relpath}'));\n"
 	   "  rmpath_drake();\n"
 	   "  cd(wd);\n"

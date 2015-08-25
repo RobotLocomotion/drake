@@ -33,7 +33,7 @@ pods_install_pkg_config_file(drake-util
 
 if (MATLAB_FOUND)
   add_mex(drakeMexUtil SHARED drakeMexUtil.cpp MexWrapper.cpp)
-  target_link_libraries(drakeMexUtil drakePolynomial)
+  target_link_libraries(drakeMexUtil drakePolynomial drakeGradientUtil)
   # todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
   #add_mex(drakeUtil OBJECT drakeUtil.cpp)
 

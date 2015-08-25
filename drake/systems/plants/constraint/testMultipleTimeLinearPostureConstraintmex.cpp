@@ -23,7 +23,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray *prhs[])
     mexErrMsgIdAndTxt("Drake:testMultipleTimeLinearPostureConstrainttmex:BadInputs","Usage [num_cnst,cnst_val,iAfun,jAvar,A,cnst_name,lb,ub] = testMultipleTimeLinearPostureConstraintmex(kinCnst,q,t)");
   }
   MultipleTimeLinearPostureConstraint* cnst = (MultipleTimeLinearPostureConstraint*) getDrakeMexPointer(prhs[0]);
-  int n_breaks = mxGetNumberOfElements(prhs[2]);
+  int n_breaks = static_cast<int>(mxGetNumberOfElements(prhs[2]));
   double* t_ptr = new double[n_breaks];
   memcpy(t_ptr,mxGetPrSafe(prhs[2]),sizeof(double)*n_breaks);
   int nq = cnst->getRobotPointer()->num_positions;

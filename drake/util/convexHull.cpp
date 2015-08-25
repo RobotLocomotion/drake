@@ -26,7 +26,8 @@ coord2_t cross(const Point &O, const Point &A, const Point &B)
 vector<Point> convexHull(vector<Point> P)
 {
 
-  size_t n = P.size(), k = 0;
+  ptrdiff_t n = P.size();
+  ptrdiff_t k = 0;
   vector<Point> H(2*n);
 
   if (n == 2) {
@@ -41,13 +42,13 @@ vector<Point> convexHull(vector<Point> P)
   sort(P.begin(), P.end());
 
   // Build lower hull
-  for (int i = 0; i < n; ++i) {
+  for (size_t i = 0; i < n; ++i) {
     while (k >= 2 && cross(H[k-2], H[k-1], P[i]) <= 0) k--;
     H[k++] = P[i];
   }
  
   // Build upper hull
-  for (int i = (int)n-2, t = k+1; i >= 0; i--) {
+  for (ptrdiff_t i = n-2, t = k+1; i >= 0; i--) {
     while (k >= t && cross(H[k-2], H[k-1], P[i]) <= 0) k--;
     H[k++] = P[i];
   }
