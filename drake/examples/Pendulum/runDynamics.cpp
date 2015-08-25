@@ -5,12 +5,13 @@
 #include "BotVisualizer.h"
 
 using namespace std;
+using namespace Eigen;
 
 class PendulumWithBotVis : public Pendulum {
 public:
   PendulumWithBotVis(const shared_ptr<lcm::LCM>& lcm) : botvis(lcm,"Pendulum.urdf",DrakeJoint::FIXED) {}
 
-  virtual VectorXs output(double t, const VectorXs& x, const VectorXs& u) const override {
+  virtual VectorXd output(double t, const VectorXd& x, const VectorXd& u) const override {
     botvis.output(t,Eigen::VectorXd::Zero(0),x);
     return Pendulum::output(t,x,u);
   }

@@ -24,15 +24,15 @@ public:
   }
   virtual ~Pendulum(void) {};
 
-  virtual VectorXs dynamics(double t, const VectorXs& x, const VectorXs& u) const override {
-    VectorXs xdot(2);
-    xdot(0) = x(1);
-    xdot(1) = (u(0) - m*g*lc*sin(x(0)) - b*x(1))/I;
-    return xdot;
+  virtual Eigen::VectorXd dynamics(double t, const Eigen::VectorXd& x, const Eigen::VectorXd& u) const override {
+    return dynamics_implementation(t,x,u);
+  }
+  virtual Drake::TaylorVecX dynamics(Drake::TaylorVarX t, const Drake::TaylorVecX& x, const Drake::TaylorVecX& u) const override {
+    return dynamics_implementation(t,x,u);
   }
 
-  virtual VectorXs output(double t, const VectorXs& x, const VectorXs& u) const override {
-    VectorXs y=x;
+  virtual Eigen::VectorXd output(double t, const Eigen::VectorXd& x, const Eigen::VectorXd& u) const override {
+    Eigen::VectorXd y=x;
     return y;
   }
 
@@ -40,6 +40,16 @@ public:
   virtual bool isDirectFeedthrough(void) { return false; }
 
   double m,l,b,lc,I,g;  // pendulum parameters (initialized in the constructor)
+
+private:
+  template <typename Scalar,typename Vector>
+  Vector dynamics_implementation(Scalar t, const Vector& x, const Vector& u) const {
+    Vector xdot(2);
+    xdot(0) = x(1);
+    xdot(1) = (u(0) - m*g*lc*sin(x(0)) - b*x(1))/I;
+    return xdot;
+  }
+
 };
 
 class PendulumEnergyShaping : public DrakeSystem {
@@ -55,9 +65,9 @@ public:
     output_frame = pendulum.input_frame;
   };
 
-  virtual VectorXs output(double t, const VectorXs& unused, const VectorXs& u) const override {
+  virtual Eigen::VectorXd output(double t, const Eigen::VectorXd& unused, const Eigen::VectorXd& u) const override {
     double Etilde = .5 * m*l*l*u(1)*u(1) - m*g*l*cos(u(0)) - 1.1*m*g*l;
-    VectorXs y(1);
+    Eigen::VectorXd y(1);
     y << b*u(1) - .1*u(1)*Etilde;
     return y;
   }
