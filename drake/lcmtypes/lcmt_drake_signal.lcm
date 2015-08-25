@@ -2,6 +2,8 @@
 // a basic vector of doubles which can represent any signal passed 
 // around in drake
 
+package drake;
+
 struct lcmt_drake_signal
 {
 	int32_t dim;        // number of elements in the signal

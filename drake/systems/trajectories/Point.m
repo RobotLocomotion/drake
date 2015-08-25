@@ -40,15 +40,16 @@ classdef Point
     end
     
     function display(obj)
+      coordinates = obj.frame.getCoordinateNames();
       for i=1:length(obj.p)
-        fprintf(1,'%20s = %f\n',obj.frame.coordinates{i},obj.p(i));
+        fprintf(1,'%20s = %f\n',coordinates{i},obj.p(i));
       end
     end
     
     function varargout = subsasgn(obj,s,val)
       % support the syntax pt.theta = .5 , where theta is a coordinate name
       if (length(s)==1 && strcmp(s(1).type,'.'))
-        tf=strcmp(s(1).subs,obj.frame.coordinates);
+        tf=strcmp(s(1).subs,obj.frame.getCoordinateNames());
         if any(tf)
           ind = find(tf,1);
           obj.p(ind)=val;
@@ -65,7 +66,7 @@ classdef Point
     function varargout = subsref(obj,s)
       % support the syntax pt.theta, where theta is a coordinate name
       if (length(s)==1 && strcmp(s(1).type,'.'))
-        tf=strcmp(s(1).subs,obj.frame.coordinates);
+        tf=strcmp(s(1).subs,obj.frame.getCoordinateNames());
         if any(tf)
           ind = find(tf,1);
           varargout = {obj.p(ind)};

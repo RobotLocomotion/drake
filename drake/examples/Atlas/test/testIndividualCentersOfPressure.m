@@ -60,7 +60,7 @@ end
 function testMex(r)
 
 if exist('individualCentersOfPressuremex','file')~=3
-  error('Drake:MissingDependency', 'Cannot find individualCentersOfPressuremex. It may not have been compiled due to a missing dependency.');
+  error('Drake:MissingDependency:individualCentersOfPressuremex', 'Cannot find individualCentersOfPressuremex. It may not have been compiled due to a missing dependency.');
 end
 
 nq = r.getNumPositions();

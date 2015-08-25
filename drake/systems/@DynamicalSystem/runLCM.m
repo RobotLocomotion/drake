@@ -48,7 +48,7 @@ if (obj.getNumInputs>0 && getNumStates(obj)<1 && isa(fin,'LCMSubscriber'))
   while (t<=options.tspan(2))
     [u,t] = getNextMessage(fin,1000);
     if isempty(t)
-      t=last_t+toc;
+      t=toc;
       fprintf(1,'waiting... (t=%f)\n',t);
     else
       last_t=t; tic;

@@ -55,9 +55,9 @@ set(avl_GIT_TAG 9b927f90619460b29f7454c714369f65bc4536a1)
 set(bertini_GIT_REPOSITORY https://github.com/RobotLocomotion/bertini.git)
 set(bertini_GIT_TAG 3ae3e3ad3534acb4b6f7a4c3c22728b493beaa80)
 set(bullet_GIT_REPOSITORY https://github.com/RobotLocomotion/bullet-pod.git)
-set(bullet_GIT_TAG c7c87f327b7f3ba02de279d026d6642e9f6443f7)
+set(bullet_GIT_TAG cf8e2d4d20062a78de6d08926fba3a6544789bdd)
 set(cmake_GIT_REPOSITORY https://github.com/RobotLocomotion/cmake.git)
-set(cmake_GIT_TAG 9f9f53877a77b1d1dc9f7ac592ca6ddeb18f7f28)
+set(cmake_GIT_TAG 2ad0710eda0d3409ddf63846a25c9656a153c6d5)
 set(cmake_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/drake/cmake")
 set(cmake_NO_BUILD TRUE)
 set(director_GIT_REPOSITORY https://github.com/RobotLocomotion/director.git)
@@ -77,11 +77,11 @@ set(iris_GIT_REPOSITORY https://github.com/rdeits/iris-distro.git)
 set(iris_GIT_TAG b93735978a3effc63f2d9b0808928a7c2ace9ae9)
 set(iris_ADDITIONAL_BUILD_ARGS PATCH_COMMAND make configure-cdd-only)
 set(lcm_GIT_REPOSITORY https://github.com/RobotLocomotion/lcm-pod.git)
-set(lcm_GIT_TAG 31e9a3e2dd056cac749fc2879e841434181180ad) # cmake branch
+set(lcm_GIT_TAG ff1462a688ef67227b4656ec7a10cc401c9b0069) # note: cmake branch
 set(libbot_GIT_REPOSITORY https://github.com/RobotLocomotion/libbot.git)
 set(libbot_GIT_TAG c328b73f3b48008d04468031e26f48468a7e3cc0)
 set(meshconverters_GIT_REPOSITORY https://github.com/RobotLocomotion/meshConverters.git)
-set(meshconverters_GIT_TAG 34daf686ebdb7fa572cbe32af983dfe91a2af761)
+set(meshconverters_GIT_TAG d50a79b80d74dd7a924daba7bd2011e03d9e66b4)
 set(mosek_GIT_REPOSITORY https://github.com/RobotLocomotion/mosek.git)
 set(mosek_GIT_TAG 8e93c8ad6e8de0c1401b8e39d187370a3a0bd2dc)
 set(octomap_GIT_REPOSITORY https://github.com/RobotLocomotion/octomap-pod.git)
@@ -111,7 +111,7 @@ endif()
 # process optional projects
 # note: keep drake in this loop in case externals depend on drake (e.g. the director might in the near future)
 set(EXTERNAL_PROJECTS)
-foreach(proj IN ITEMS 
+foreach(proj IN ITEMS
 		cmake
 		eigen
 		gtk
