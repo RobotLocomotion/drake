@@ -5,9 +5,9 @@ classdef LCMCoder
 % (which provides the same interface) for authoring coders in java.
   
   methods (Abstract)
-    d = dim();
-    str = timestampName();
-    names = coordinateNames();
+    d = dim(obj);
+    str = timestampName(obj);
+    names = coordinateNames(obj);
     [x,t] = decode(obj,data);
     msg = encode(obj,t,x);
   end

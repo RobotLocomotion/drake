@@ -46,7 +46,7 @@ classdef AtlasPlanEvalAndControlSystem < DrakeSystem
       else
         output_frame = r.getInputFrame();
       end
-      obj = obj@DrakeSystem(0,0,numel(input_frame.coordinates),numel(output_frame.coordinates),true,true);
+      obj = obj@DrakeSystem(0,0,numel(input_frame.getCoordinateNames()),numel(output_frame.getCoordinateNames()),true,true);
       obj = obj.setInputFrame(input_frame);
       obj = obj.setOutputFrame(output_frame);
       obj.control = control;

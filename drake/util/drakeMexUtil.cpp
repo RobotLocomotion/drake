@@ -53,7 +53,7 @@ bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs, mxArray* prhs[], con
  * your matlab code), then you can pass in the alternative name here.  The constructor
  * for this class must take the same inputs as the DrakeMexPointer constructor.
  */
-mxArray* createDrakeMexPointer(void* ptr, const char* name, int num_additional_inputs, mxArray* delete_fcn_additional_inputs[], const char* subclass_name)
+mxArray* createDrakeMexPointer(void* ptr, const std::string&  name, int num_additional_inputs, mxArray* delete_fcn_additional_inputs[], const std::string&  subclass_name, const std::string& mex_function_name_prefix)
 {
   mxClassID cid;
   if (sizeof(ptr) == 4) cid = mxUINT32_CLASS;
@@ -68,9 +68,9 @@ mxArray* createDrakeMexPointer(void* ptr, const char* name, int num_additional_i
   prhs[0] = mxCreateNumericMatrix(1, 1, cid, mxREAL);
   memcpy(mxGetData(prhs[0]), &ptr, sizeof(ptr));
 
-  prhs[1] = mxCreateString(mexFunctionName());
+  prhs[1] = mxCreateString((mex_function_name_prefix+mexFunctionName()).c_str());
 
-  prhs[2] = mxCreateString(name);
+  prhs[2] = mxCreateString(name.c_str());
 
   for (int i = 0; i < num_additional_inputs; i++)
     prhs[3+i] = delete_fcn_additional_inputs[i];
@@ -78,8 +78,8 @@ mxArray* createDrakeMexPointer(void* ptr, const char* name, int num_additional_i
 //  mexPrintf("deleteMethod = %s\n name =%s\n", deleteMethod,name);
 
   // call matlab to construct mex pointer object
-  if (subclass_name) {
-    mexCallMATLABsafe(1, plhs, nrhs, prhs, subclass_name);
+  if (!subclass_name.empty()) {
+    mexCallMATLABsafe(1, plhs, nrhs, prhs, subclass_name.c_str());
     if (!isa(plhs[0], "DrakeMexPointer")) {
       mxDestroyArray(plhs[0]);
       mexErrMsgIdAndTxt("Drake:createDrakeMexPointer:InvalidSubclass", "subclass_name is not a valid subclass of DrakeMexPointer");
@@ -90,14 +90,16 @@ mxArray* createDrakeMexPointer(void* ptr, const char* name, int num_additional_i
 
   mexLock();
 
-//  mexPrintf("incrementing lock count\n");
-
   delete[] prhs;
   return plhs[0];
 }
 
+
 void* getDrakeMexPointer(const mxArray* mx)
 {
+  if (!mx)
+    mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadInputs", "null mxArray");
+
   void* ptr = NULL;
 
   // todo: optimize this by caching the pointer values, as described in
@@ -127,6 +129,7 @@ void* getDrakeMexPointer(const mxArray* mx)
   return ptr;
 }
 
+
 std::string mxGetStdString(const mxArray* array) {
   mwSize buffer_length = mxGetNumberOfElements(array) + 1;
   char* buffer = new char[buffer_length];
@@ -142,6 +145,34 @@ std::string mxGetStdString(const mxArray* array) {
     return ret;
   }
 }
+
+std::vector<std::string> mxGetVectorOfStdStrings(const mxArray* array) {
+  if (!mxIsCell(array))
+    throw runtime_error("the input is not a cell array");
+
+  std::vector<std::string> strings;
+  int numel = mxGetNumberOfElements(array);
+  for (int i=0; i<numel; i++) {
+    strings.push_back(mxGetStdString(mxGetCell(array,i)));
+  }
+  return strings;
+}
+
+mxArray* stdStringToMatlab(const std::string& str)
+{
+  return mxCreateString(str.c_str());
+}
+
+mxArray* vectorOfStdStringsToMatlab(const std::vector<std::string>& strs) {
+  mxArray* cell = mxCreateCellMatrix(strs.size(),1);
+  for (int i=0; i<strs.size(); i++) {
+    mxSetCell(cell,i,mxCreateString(strs[i].c_str()));
+  }
+  return cell;
+}
+
+
+
 
 double * mxGetPrSafe(const mxArray *pobj) {
   if (!mxIsDouble(pobj)) mexErrMsgIdAndTxt("Drake:mxGetPrSafe:BadInputs", "mxGetPr can only be called on arguments which correspond to Matlab doubles");

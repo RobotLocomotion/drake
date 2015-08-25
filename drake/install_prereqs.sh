@@ -13,7 +13,7 @@ case $1 in
   ("macports")
     port install graphviz ;;
   ("ubuntu")
-    apt-get install graphviz ;;
+    apt-get install graphviz cmake-curses-gui ;;
   ("cygwin")
     ;;
   (*)

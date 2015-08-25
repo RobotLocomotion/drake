@@ -41,7 +41,7 @@ rpy = 0.1*pi*randn(3,1)+[pi/2;0;0];
 w = warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
 r = r.addRobotFromURDF('valve_task_wall.urdf',xyz,rpy,struct('floating',false));
 warning(w);
-nq_aff = length(r.getStateFrame.frame{2}.coordinates)/2;
+nq_aff = length(r.getStateFrame.frame{2}.getCoordinateNames())/2;
 q_seed_aff = zeros(nq_aff,1);
 nq = r.getNumPositions();
 qdot = randn(nq,1);

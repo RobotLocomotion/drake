@@ -8,7 +8,7 @@ classdef AtlasState < SingletonCoordinateFrame
       if (r.hand_left > 0 || r.hand_right > 0 || r.external_force ~= 0)
         manipStateFrame = manipStateFrame.getFrameByNum(1);
       end
-      coordinates = manipStateFrame.coordinates;
+      coordinates = manipStateFrame.getCoordinateNames();
       obj = obj@SingletonCoordinateFrame('atlasFrames.AtlasState',length(coordinates),'x',coordinates);
     end
   end

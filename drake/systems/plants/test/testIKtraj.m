@@ -31,7 +31,8 @@ l_foot_pts = [0;0;0];
 
 
 nq = r.getNumPositions();
-coords = r.getStateFrame.coordinates(1:nq);
+coords = r.getStateFrame.getCoordinateNames();
+coords = coords(1:nq);
 l_leg_kny = find(strcmp(coords,'l_leg_kny'));
 r_leg_kny = find(strcmp(coords,'r_leg_kny'));
 l_leg_hpy = find(strcmp(coords,'l_leg_hpy'));
