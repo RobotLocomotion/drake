@@ -1220,7 +1220,8 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
   GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> ret(TWIST_SIZE, cols, nq, gradient_order);
   auto& J = ret.value();
 
-  DrakeJoint::MotionSubspaceType motion_subspace;
+  Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> motion_subspace;
+
   if (v_or_qdot_indices != nullptr) {
     v_or_qdot_indices->clear();
     v_or_qdot_indices->reserve(cols);
