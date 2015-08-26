@@ -44,11 +44,8 @@ classdef BotVisualizer < RigidBodyVisualizer
           disp('attempting to launch the drake director')
           retval = systemWCMakeEnv([fullfile(pods_get_bin_path,'ddConsoleApp'),' -m ddapp.drakevisualizer &> ddConsoleApp.out &']);
 
-          if ismac % I'm missing valid acks on mac
-            pause(1);
-            % listen for ready message
-          elseif isempty(obj.status_agg.getNextMessage(5000)) % wait for viewer to come up
-            error('Drake:BotVisualizer:AutostartFailed','Failed to automatically start up a viewer');
+          if isempty(obj.status_agg.getNextMessage(5000)) % wait for viewer to come up
+            error('Drake:BotVisualizer:AutostartFailed','Failed to automatically start up a viewer (or to receive the ack, see https://github.com/RobotLocomotion/drake/issues/317)');
           end
         end
       end
@@ -59,11 +56,8 @@ classdef BotVisualizer < RigidBodyVisualizer
         disp('launching drake_viewer...');
         retval = systemWCMakeEnv([fullfile(pods_get_bin_path,'drake_viewer'),' &> drake_viewer.out &']);
         
-        if ismac % I'm missing valid acks on mac
-          pause(1);
-        % listen for ready message
-        elseif isempty(obj.status_agg.getNextMessage(5000)) % wait for viewer to come up
-          error('Drake:BotVisualizer:AutostartFailed','Failed to automatically start up a viewer');
+        if isempty(obj.status_agg.getNextMessage(5000)) % wait for viewer to come up
+          error('Drake:BotVisualizer:AutostartFailed','Failed to automatically start up a viewer (or to receive the ack, https://github.com/RobotLocomotion/drake/issues/317)');
         end
       end
       
