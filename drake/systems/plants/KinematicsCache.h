@@ -20,7 +20,7 @@ public:
    * Configuration dependent
    */
   Eigen::Transform<Scalar, SPACE_DIMENSION, Eigen::Isometry> transform_to_world;
-  typename Gradient<typename decltype(transform_to_world)::MatrixType, Eigen::Dynamic>::type dtransform_to_world_dq;
+  typename Gradient<typename Eigen::Transform<Scalar, SPACE_DIMENSION, Eigen::Isometry>::MatrixType, Eigen::Dynamic>::type dtransform_to_world_dq;
   GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> motion_subspace_in_body; // gradient w.r.t. q_i only
   GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> motion_subspace_in_world; // gradient w.r.t. q
   GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> qdot_to_v; // gradient w.r.t. q
@@ -36,7 +36,7 @@ public:
   GradientVar<Scalar, TWIST_SIZE, 1> motion_subspace_in_world_dot_times_v; // gradient w.r.t. q and v
 
 public:
-  KinematicsCacheElement(int num_positions_robot, int num_velocities_robot, int num_positions_joint, int num_velocities_joint, int gradient_order) :
+  KinematicsCacheElement(Eigen::DenseIndex num_positions_robot, Eigen::DenseIndex num_velocities_robot, int num_positions_joint, int num_velocities_joint, int gradient_order) :
       dtransform_to_world_dq(HOMOGENEOUS_TRANSFORM_SIZE, num_positions_robot),
       motion_subspace_in_body(TWIST_SIZE, num_velocities_joint, num_positions_joint, gradient_order),
       motion_subspace_in_world(TWIST_SIZE, num_velocities_joint, num_positions_robot, gradient_order),

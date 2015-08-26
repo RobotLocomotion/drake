@@ -8,31 +8,16 @@
 #include <memory>
 #include "DrakeJoint.h"
 
-class DLLEXPORT_RBM IndexRange {
- public:
-  int start;
-  int length;
-
-  bool operator<(const IndexRange& other) const {
-    return start<other.start;
-  }
-};
-
 class RigidBodyManipulator;
-
-using namespace Eigen;
 
 class DLLEXPORT_RBM RigidBody {
 private:
   std::unique_ptr<DrakeJoint> joint;
-  typedef Matrix<double, 6,1> Vector6d;
   DrakeCollision::bitmask collision_filter_group;
   DrakeCollision::bitmask collision_filter_ignores;
 
 public:
   RigidBody();
-
-  void setN(int nq, int nv);
 
   void setJoint(std::unique_ptr<DrakeJoint> joint);
   const DrakeJoint& getJoint() const;
@@ -87,21 +72,22 @@ public:
   std::vector< DrakeCollision::ElementId > collision_element_ids;
   std::map< std::string, std::vector<DrakeCollision::ElementId> > collision_element_groups;
 
-  Matrix3Xd contact_pts;
+  Eigen::Matrix3Xd contact_pts;
 
   double mass;
-  Vector3d com; 
-  Matrix<double, TWIST_SIZE, TWIST_SIZE> I;
+  Eigen::Vector3d com;
+  Eigen::Matrix<double, TWIST_SIZE, TWIST_SIZE> I;
 
   friend std::ostream& operator<<( std::ostream &out, const RigidBody &b);
 
+  // FIXME: move to a better place:
   class DLLEXPORT_RBM CollisionElement : public DrakeCollision::Element
   {
     public:
       CollisionElement(const CollisionElement& other);
-      CollisionElement(const Matrix4d& T_element_to_link, std::shared_ptr<RigidBody> body);
+      CollisionElement(const Eigen::Matrix4d& T_element_to_link, std::shared_ptr<RigidBody> body);
       CollisionElement(const DrakeShapes::Geometry& geometry,
-                       const Matrix4d& T_element_to_link, std::shared_ptr<RigidBody> body);
+                       const Eigen::Matrix4d& T_element_to_link, std::shared_ptr<RigidBody> body);
       virtual ~CollisionElement(){};
 
       virtual CollisionElement* clone() const;
