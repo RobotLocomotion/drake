@@ -87,8 +87,6 @@ if (MATLAB_FOUND)
     endmacro()
     
     add_control_mex(bodyMotionControlmex)
-    
-    add_control_mex(individualCentersOfPressuremex) 
   endif()
 
   add_mex(supportDetectmex supportDetectmex.cpp)
