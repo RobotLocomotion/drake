@@ -257,6 +257,7 @@ classdef CoordinateFrame < handle
 
           % add myself to the dirty list
           options.dirty_list = horzcat(options.dirty_list, struct('frame',obj,'tf_from_parent',options.tf_from_parent));
+          options.tf_from_parent = [];
 
           % add my children to the queue
           options.queue = horzcat(options.queue,struct('frame',cellfun(@getOutputFrame,obj.transforms,'UniformOutput',false),'tf_from_parent',obj.transforms));
