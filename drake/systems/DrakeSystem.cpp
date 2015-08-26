@@ -169,7 +169,7 @@ VectorXd FeedbackSystem::getX2(const VectorXd &x) const {
   return x2;
 }
 
-void FeedbackSystem::subsystemOutputs(double t, const Eigen::VectorXd &x1, const Eigen:VectorXd& x2, const Eigen::VectorXd &u,
+void FeedbackSystem::subsystemOutputs(double t, const Eigen::VectorXd &x1, const Eigen::VectorXd& x2, const Eigen::VectorXd &u,
                                       Eigen::VectorXd &y1, Eigen::VectorXd &y2) const {
   if (!sys1->isDirectFeedthrough()) {
     y1 = output(t,x1,u);  // output does not depend on u (so it's ok that we're not passing u+y2)

@@ -98,10 +98,10 @@ public:
 
     Eigen::VectorXd xu(continuous_state_frame->getDim()+input_frame->getDim());
     xu << x0, u0;
-    auto xu_taylor = Drake::initTaylorVecX(xu);
+//    auto xu_taylor = Drake::initTaylorVecX(xu);
 
-    auto xdot = dynamics(0,xu_taylor.head(continuous_state_frame->getDim()),xu_taylor.tail(input_frame->getDim()));
-    std::cout << "xdot = " << xdot << std::endl;
+//    auto xdot = dynamics(0,xu_taylor.head(continuous_state_frame->getDim()),xu_taylor.tail(input_frame->getDim()));
+//    std::cout << "xdot = " << xdot << std::endl;
 /*
     auto xdot = autoDiffToGradientMatrix();
     auto A = xdot->gradient().leftcols(continuous_state_frame->getDim());
