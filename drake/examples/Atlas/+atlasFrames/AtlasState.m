@@ -10,6 +10,10 @@ classdef AtlasState < SingletonCoordinateFrame
       end
       coordinates = manipStateFrame.getCoordinateNames();
       obj = obj@SingletonCoordinateFrame('atlasFrames.AtlasState',length(coordinates),'x',coordinates);
+      positionFrame = r.getManipulator().getPositionFrame();
+      if isempty(findTransform(obj,positionFrame))
+        obj.addProjectionTransformByCoordinateNames(positionFrame);
+      end
     end
   end
 end
