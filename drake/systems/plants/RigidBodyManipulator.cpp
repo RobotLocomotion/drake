@@ -759,8 +759,13 @@ void RigidBodyManipulator::updateCompositeRigidBodyInertias(KinematicsCache<Scal
       if (gradient_order > 0)
         dTdq = &element.dtransform_to_world_dq;
 
-      element.inertia_in_world = transformSpatialInertia(element.transform_to_world, dTdq, bodies[i]->I);
-      element.crb_in_world = element.inertia_in_world;
+      auto inertia_in_world = transformSpatialInertia(element.transform_to_world, dTdq, bodies[i]->I);
+      element.inertia_in_world.value() = inertia_in_world.value();
+      element.crb_in_world.value() = inertia_in_world.value();
+      if (gradient_order > 0) {
+        element.inertia_in_world.gradient().value() = inertia_in_world.gradient().value();
+        element.crb_in_world.gradient().value() = inertia_in_world.gradient().value();
+      }
     }
 
     for (int i = num_bodies - 1; i >= 0; i--) {

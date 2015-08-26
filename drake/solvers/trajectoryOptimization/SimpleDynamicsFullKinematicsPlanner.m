@@ -114,7 +114,7 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
 
     function data = kinematicsData(obj,q)
       options.compute_gradients = true;
-      options.use_mex = false;
+      options.use_mex = true;
       data = doKinematics(obj.robot,q,[],options);
     end
 
