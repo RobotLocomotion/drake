@@ -13,7 +13,7 @@ add_subdirectory(trajectories)
 add_subdirectory(controllers)
 add_subdirectory(robotInterfaces)
 
-set(coordinate_frame_files frames/CoordinateFrame.cpp)
+set(coordinate_frame_files)
 if (LCM_FOUND)
   include_directories(${PROJECT_SOURCE_DIR}/pod-build/lcmgen)
   list(APPEND coordinate_frame_files frames/LCMCoordinateFrame.cpp)

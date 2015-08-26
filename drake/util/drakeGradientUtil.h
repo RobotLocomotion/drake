@@ -3,6 +3,7 @@
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
+#include <unsupported/Eigen/AutoDiff>
 #include <cmath>
 #include <vector>
 #include <array>
@@ -28,6 +29,31 @@ std::array<int, Size> intRange(int start)
     ret[i] = i + start;
   }
   return ret;
+}
+
+namespace Drake {
+  // todo: recursive template to get arbitrary gradient order
+
+  // note: tried using template default values (e.g. Eigen::Dynamic), but they didn't seem to work on my mac clang
+  template <int num_vars> using TaylorVar = Eigen::AutoDiffScalar< Eigen::Matrix<double,num_vars,1> >;
+  template <int num_vars, int cols> using TaylorVec = Eigen::Matrix< TaylorVar<num_vars>, cols, 1>;
+  template <int num_vars, int rows, int cols> using TaylorMat = Eigen::Matrix< TaylorVar<num_vars>, rows, cols>;
+
+  typedef TaylorVar<Eigen::Dynamic> TaylorVarX;
+  typedef TaylorVec<Eigen::Dynamic,Eigen::Dynamic> TaylorVecX;
+  typedef TaylorMat<Eigen::Dynamic,Eigen::Dynamic,Eigen::Dynamic> TaylorMatX;
+
+  // initializes the vector with x=val and dx=eye(numel(val))
+  template <typename EigenVec>
+  TaylorVecX initTaylorVecX(EigenVec val) {
+    TaylorVecX x(val.cols());
+    Eigen::MatrixXd der = Eigen::MatrixXd::Identity(val.cols(),val.cols());
+    for (int i=0; i<val.cols(); i++) {
+      x(i).value() = val(i);
+      x(i).derivatives() = der.col(i);
+    }
+    return x;
+  }
 }
 
 /*

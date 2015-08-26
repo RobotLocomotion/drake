@@ -4,10 +4,11 @@
 #include <string>
 #include <memory>
 #include <stdexcept>
+#include <Eigen/Core>
 #include <Eigen/Dense>
 #include <unsupported/Eigen/AutoDiff>
 #include "CoordinateFrame.h"
-
+#include "drakeGradientUtil.h"
 
 /// A DrakeSystem is a dynamical system that is compatible with most of our tools for design and analysis.
 /// It must have:
@@ -21,18 +22,6 @@
 ///   - algebraic constraints (c++ support coming soon)
 ///   - zero-crossings (c++ support coming soon) to inform the tools of discontinuities in the dynamics
 
-namespace Drake {
-  // todo: move this to a util directory?
-
-  // note: tried using template default values (e.g. Eigen::Dynamic), but they didn't seem to work on my mac clang
-  template <int order> using TaylorVar = Eigen::AutoDiffScalar< Eigen::Matrix<double,order,1> >;
-  template <int order, int cols> using TaylorVec = Eigen::Matrix< TaylorVar<order>, cols, 1>;
-  template <int order, int rows, int cols> using TaylorMat = Eigen::Matrix< TaylorVar<order>, rows, cols>;
-
-  typedef TaylorVar<Eigen::Dynamic> TaylorVarX;
-  typedef TaylorVec<Eigen::Dynamic,Eigen::Dynamic> TaylorVecX;
-  typedef TaylorMat<Eigen::Dynamic,Eigen::Dynamic,Eigen::Dynamic> TaylorMatX;
-}
 
 class DLLEXPORT DrakeSystem : public std::enable_shared_from_this<DrakeSystem> {
 public:
@@ -97,6 +86,34 @@ public:
     simulate(t0,tf,x0,default_simulation_options);
   }
 
+  template <typename Vec1, typename Vec2, typename Mat1, typename Mat2>
+  DrakeSystemPtr tilqr(const Vec1& x0, const Vec2& u0, const Mat1& Q, const Mat2& R) {
+    if (!isTimeInvariant())
+      throw std::runtime_error("DrakeSystem::TILQR.  Time-invariant LQR only makes sense for time invariant systems.");
+
+    if (discrete_state_frame->getDim()>0)
+      throw std::runtime_error("DrakeSystem::TILQR.  Discrete-time LQR is not implemented yet (but would be easy).");
+    if (continuous_state_frame->getDim()<1)
+      throw std::runtime_error("DrakeSystem::TILQR.  This system has no continuous states.");
+
+    Eigen::VectorXd xu(continuous_state_frame->getDim()+input_frame->getDim());
+    xu << x0, u0;
+    auto xu_taylor = Drake::initTaylorVecX(xu);
+
+    auto xdot = dynamics(0,xu_taylor.head(continuous_state_frame->getDim()),xu_taylor.tail(input_frame->getDim()));
+    std::cout << "xdot = " << xdot << std::endl;
+/*
+    auto xdot = autoDiffToGradientMatrix();
+    auto A = xdot->gradient().leftcols(continuous_state_frame->getDim());
+    auto B = xdot->gradient().rightcols(input_frame->getDim());
+
+    std::cout << "A = " << A << std::endl;
+    std::cout << "B = " << B << std::endl;
+*/
+    throw std::runtime_error("got here.");
+    return nullptr;
+  }
+
   std::string name;
 
   std::shared_ptr<const CoordinateFrame> input_frame;
@@ -135,6 +152,31 @@ private:
 
 static DrakeSystemPtr cascade(const DrakeSystemPtr& sys1, const DrakeSystemPtr& sys2) {
   return std::make_shared<CascadeSystem>(sys1,sys2);
+}
+
+
+class DLLEXPORT FeedbackSystem : public DrakeSystem {
+public:
+  FeedbackSystem(const DrakeSystemPtr& sys1, const DrakeSystemPtr& sys2);
+  virtual ~FeedbackSystem(void) {};
+
+  virtual Eigen::VectorXd dynamics(double t, const Eigen::VectorXd& x, const Eigen::VectorXd& u) const override;
+  virtual Eigen::VectorXd update(double t, const Eigen::VectorXd& x, const Eigen::VectorXd& u) const override;
+  virtual Eigen::VectorXd output(double t, const Eigen::VectorXd& x, const Eigen::VectorXd& u) const override;
+
+  virtual bool isTimeInvariant() const override { return sys1->isTimeInvariant() && sys2->isTimeInvariant(); }
+  virtual bool isDirectFeedthrough() const override { return sys1->isDirectFeedthrough() && sys2->isDirectFeedthrough(); }
+
+private:
+  Eigen::VectorXd getX1(const Eigen::VectorXd& x) const;
+  Eigen::VectorXd getX2(const Eigen::VectorXd& x) const;
+  void subsystemOutputs(double t, const Eigen::VectorXd& x1, const Eigen::VectorXd& x2, const Eigen::VectorXd& u, Eigen::VectorXd& y1, Eigen::VectorXd& y2) const;
+
+  DrakeSystemPtr sys1, sys2;
+};
+
+static DrakeSystemPtr feedback(const DrakeSystemPtr& sys1, const DrakeSystemPtr& sys2) {
+  return std::make_shared<FeedbackSystem>(sys1,sys2);
 }
 
 #endif // #define __DrakeSystem_H_

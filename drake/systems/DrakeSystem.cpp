@@ -110,8 +110,9 @@ VectorXd CascadeSystem::dynamics(double t, const VectorXd& x, const VectorXd& u)
   unsigned int num_xc1 = sys1->continuous_state_frame->getDim(),
                num_xc2 = sys2->continuous_state_frame->getDim();
 
-  VectorXd x1 = getX1(x);
-  VectorXd y1 = sys1->output(t,x1,u);
+  const VectorXd& x1 = getX1(x);
+  const VectorXd& y1 = sys1->output(t,x1,u);
+
   VectorXd xdot(continuous_state_frame->getDim());
   if (num_xc1>0) xdot.head(num_xc1) = sys1->dynamics(t,x1,u);
   if (num_xc2>0) xdot.tail(num_xc2) = sys2->dynamics(t,getX2(x),y1);
@@ -122,8 +123,9 @@ VectorXd CascadeSystem::update(double t, const VectorXd& x, const VectorXd& u) c
   unsigned int num_xd1 = sys1->discrete_state_frame->getDim(),
           num_xd2 = sys2->discrete_state_frame->getDim();
 
-  VectorXd x1 = getX1(x);
-  VectorXd y1 = sys1->output(t,x1,u);
+  const VectorXd& x1 = getX1(x);
+  const VectorXd& y1 = sys1->output(t,x1,u);
+
   VectorXd xn(discrete_state_frame->getDim());
   if (num_xd1>0) xn.head(num_xd1) = sys1->update(t,x1,u);
   if (num_xd2>0) xn.tail(num_xd2) = sys2->update(t,getX2(x),y1);
@@ -131,6 +133,88 @@ VectorXd CascadeSystem::update(double t, const VectorXd& x, const VectorXd& u) c
 }
 
 VectorXd CascadeSystem::output(double t, const VectorXd& x, const VectorXd& u) const {
-  VectorXd y1 = sys1->output(t,getX1(x),u);
+  const VectorXd& y1 = sys1->output(t,getX1(x),u);
   return sys2->output(t,getX2(x),y1);
+}
+
+
+
+FeedbackSystem::FeedbackSystem(const DrakeSystemPtr& _sys1, const DrakeSystemPtr& _sys2)
+        : DrakeSystem("FeedbackSystem"), sys1(_sys1), sys2(_sys2) {
+  if (sys1->output_frame != sys2->input_frame)
+    throw runtime_error("Feedback combination failed: output frame of "+sys1->name+" must match the input frame of "+sys2->name);
+  if (sys2->output_frame != sys1->input_frame)
+    throw runtime_error("Feedback combination failed: output frame of "+sys1->name+" must match the input frame of "+sys2->name);
+  if (sys1->isDirectFeedthrough() && sys2->isDirectFeedthrough())
+    throw runtime_error("Drake:FeedbackSystem:AlgebraicLoop.  algebraic loop");
+
+  input_frame = sys1->input_frame;
+  output_frame = sys1->output_frame;
+  continuous_state_frame = make_shared<MultiCoordinateFrame>("FeedbackSystemContState",initializer_list<CoordinateFramePtr>({sys1->continuous_state_frame, sys2->continuous_state_frame}));
+  discrete_state_frame = make_shared<MultiCoordinateFrame>("FeedbackSystemDiscState",initializer_list<CoordinateFramePtr>({sys1->discrete_state_frame, sys2->discrete_state_frame}));
+  state_frame = make_shared<MultiCoordinateFrame>("FeedbackSystemState",initializer_list<CoordinateFramePtr>({continuous_state_frame,discrete_state_frame}));
+}
+
+VectorXd FeedbackSystem::getX1(const VectorXd &x) const {
+  VectorXd x1(sys1->state_frame->getDim());
+  x1 << x.head(sys1->continuous_state_frame->getDim()),
+          x.segment(sys1->state_frame->getDim(),sys1->discrete_state_frame->getDim());
+  return x1;
+}
+
+VectorXd FeedbackSystem::getX2(const VectorXd &x) const {
+  VectorXd x2(sys2->state_frame->getDim());
+  x2 << x.segment(sys1->continuous_state_frame->getDim(),sys2->continuous_state_frame->getDim()),
+          x.segment(sys1->state_frame->getDim()+sys2->continuous_state_frame->getDim(),sys2->discrete_state_frame->getDim());
+  return x2;
+}
+
+void FeedbackSystem::subsystemOutputs(double t, const Eigen::VectorXd &x1, const Eigen:VectorXd& x2, const Eigen::VectorXd &u,
+                                      Eigen::VectorXd &y1, Eigen::VectorXd &y2) const {
+  if (!sys1->isDirectFeedthrough()) {
+    y1 = output(t,x1,u);  // output does not depend on u (so it's ok that we're not passing u+y2)
+    y2 = output(t,x2,y1);
+  } else {
+    y2 = output(t,x2,y1); // y1 might be uninitialized junk, but has to be ok
+    y1 = output(t,x1,y2+u);
+  }
+}
+
+VectorXd FeedbackSystem::dynamics(double t, const VectorXd& x, const VectorXd& u) const {
+  unsigned int num_xc1 = sys1->continuous_state_frame->getDim(),
+          num_xc2 = sys2->continuous_state_frame->getDim();
+
+  const VectorXd& x1 = getX1(x), x2 = getX2(x);
+  VectorXd y1(sys1->output_frame->getDim()), y2(sys2->output_frame->getDim());
+  subsystemOutputs(t,x1,x2,u,y1,y2);
+
+  VectorXd xdot(continuous_state_frame->getDim());
+  if (num_xc1>0) xdot.head(num_xc1) = sys1->dynamics(t,x1,y2+u);
+  if (num_xc2>0) xdot.tail(num_xc2) = sys2->dynamics(t,x2,y1);
+  return xdot;
+}
+
+VectorXd FeedbackSystem::update(double t, const VectorXd& x, const VectorXd& u) const  {
+  unsigned int num_xd1 = sys1->discrete_state_frame->getDim(),
+          num_xd2 = sys2->discrete_state_frame->getDim();
+
+  const VectorXd& x1 = getX1(x), x2 = getX2(x);
+  VectorXd y1(sys1->output_frame->getDim()), y2(sys2->output_frame->getDim());
+  subsystemOutputs(t,x1,x2,u,y1,y2);
+
+  VectorXd xn(discrete_state_frame->getDim());
+  if (num_xd1>0) xn.head(num_xd1) = sys1->update(t,x1,y2+u);
+  if (num_xd2>0) xn.tail(num_xd2) = sys2->update(t,x2,y1);
+  return xn;
+}
+
+VectorXd FeedbackSystem::output(double t, const VectorXd& x, const VectorXd& u) const {
+  VectorXd y1(sys1->output_frame->getDim());
+  if (!sys1->isDirectFeedthrough()) {
+    y1 = output(t,getX1(x),u);  // output does not depend on u (so it's ok that we're not passing u+y2)
+  } else {
+    const VectorXd& y2 = output(t,getX2(x),y1); // y1 might be uninitialized junk, but has to be ok
+    y1 = output(t,getX2(x),y2+u);
+  }
+  return y1;
 }

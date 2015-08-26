@@ -15,6 +15,10 @@ if (LCM_FOUND)
   target_link_libraries(runPendulumEnergyShaping drakeSystem)
   add_test(NAME runPendulumEnergyShaping COMMAND runPendulumEnergyShaping)
 
+  add_executable(runPendulumLQR runLQR.cpp)
+  target_link_libraries(runPendulumLQR drakeSystem)
+  add_test(NAME runPendulumLQR COMMAND runPendulumLQR)
+
   write_procman(Pendulum.pmd
       GROUP "Simulate"
         NAME "cpp dynamics" COMMAND "bash -c 'cd ${CMAKE_CURRENT_SOURCE_DIR} && ${CMAKE_BINARY_DIR}/bin/runPendulumDynamics'"

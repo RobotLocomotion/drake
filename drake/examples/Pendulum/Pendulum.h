@@ -2,26 +2,26 @@
 #define _PENDULUM_H_
 
 #include <iostream>
+#include <cmath>
 #include "DrakeSystem.h"
-
+#include "LCMCoordinateFrame.h"
+#include "BotVisualizer.h"
 
 class Pendulum : public DrakeSystem {
 public:
-  Pendulum(void) :
+  Pendulum(const std::shared_ptr<lcm::LCM>& lcm) :
           DrakeSystem("Pendulum",
                   std::make_shared<CoordinateFrame>("PendulumContState",std::vector<std::string>({"theta","thetadot"})),
                   nullptr,
-                  std::make_shared<CoordinateFrame>("PendulumInput",std::vector<std::string>({"tau"})),
-                  nullptr),
+                  std::make_shared<LCMCoordinateFrame<drake::lcmt_drake_signal> >("PendulumInput",std::vector<std::string>({"tau"}),lcm),
+                  std::make_shared<LCMCoordinateFrame<drake::lcmt_drake_signal> >("PendulumState",continuous_state_frame->getCoordinateNames(),lcm)),
           m(1.0), // kg
           l(.5),  // m
           b(0.1), // kg m^2 /s
           lc(.5), // m
           I(.25), // m*l^2; % kg*m^2
           g(9.81) // m/s^2
-  {
-    output_frame = continuous_state_frame;
-  }
+  {}
   virtual ~Pendulum(void) {};
 
   virtual Eigen::VectorXd dynamics(double t, const Eigen::VectorXd& x, const Eigen::VectorXd& u) const override {
@@ -39,6 +39,17 @@ public:
   virtual bool isTimeInvariant(void) { return true; }
   virtual bool isDirectFeedthrough(void) { return false; }
 
+
+  DrakeSystemPtr balanceLQR() {
+    Eigen::MatrixXd Q(2,2);  Q << 10, 0, 0, 1;
+    Eigen::MatrixXd R(1,1);  R << 1;
+    Eigen::VectorXd xG(2);   xG << M_PI, 0;
+    Eigen::VectorXd uG(1);   uG << 0;
+
+    return tilqr(xG,uG,Q,R);
+  }
+
+
   double m,l,b,lc,I,g;  // pendulum parameters (initialized in the constructor)
 
 private:
@@ -50,6 +61,18 @@ private:
     return xdot;
   }
 
+};
+
+class PendulumWithBotVis : public Pendulum {
+public:
+  PendulumWithBotVis(const std::shared_ptr<lcm::LCM>& lcm) : Pendulum(lcm), botvis(lcm,"Pendulum.urdf",DrakeJoint::FIXED) {}
+
+  virtual Eigen::VectorXd output(double t, const Eigen::VectorXd& x, const Eigen::VectorXd& u) const override {
+    botvis.output(t,Eigen::VectorXd::Zero(0),x);
+    return Pendulum::output(t,x,u);
+  }
+
+  BotVisualizer botvis;
 };
 
 class PendulumEnergyShaping : public DrakeSystem {
