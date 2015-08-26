@@ -3,11 +3,12 @@
 #include <stdexcept>
 
 using namespace std;
+using namespace Eigen;
 
 const int defaultRobotNum[1] = {0};
 const set<int> RigidBody::defaultRobotNumSet(defaultRobotNum,defaultRobotNum+1);
 
-RigidBody::RigidBody(void) :
+RigidBody::RigidBody() :
     parent(nullptr),
     collision_filter_group(DrakeCollision::DEFAULT_GROUP),
     collision_filter_ignores(DrakeCollision::NONE_MASK)
