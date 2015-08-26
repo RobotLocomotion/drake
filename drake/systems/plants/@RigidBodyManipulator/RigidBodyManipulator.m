@@ -1610,7 +1610,7 @@ classdef RigidBodyManipulator < Manipulator
 
         switch (type)
           case 'NullVisualizer'
-            arg = {getOutputFrame(obj)};
+            arg = {getPositionFrame(obj)};
           case 'BotVisualizer'
             arg = {obj,options.use_collision_geometry};
           otherwise
