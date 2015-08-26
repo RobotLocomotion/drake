@@ -16,7 +16,7 @@ warning(w);
 end
 
 function testTangentialTorque(r)
-load('../data/atlas_fp.mat');
+xstar = r.loadFixedPoint();
 nq = r.getNumPositions();
 q = xstar(1:nq);
 
@@ -26,7 +26,7 @@ for i = 1 : length(sides)
   active_supports(i) = r.findLinkId([sides{i} '_foot']);
 end
 
-kinsol = r.doKinematics(q, false, false);
+kinsol = r.doKinematics(q);
 
 [~,B,~,~,normals] = contactConstraintsBV(r,kinsol);
 nbeta = sum(cellfun('size', B, 2));
@@ -35,8 +35,8 @@ cops = individualCentersOfPressure(r, kinsol, active_supports, normals, B, beta)
 
 ncontact_points = size(B, 2);
 ncontact_points_per_foot = ncontact_points / length(active_supports);
-nd = nbeta / ncontact_points;
-beta_cell = num2cell(reshape(beta, nd, []), 1);
+num_basis_vectors_per_contact_point = nbeta / ncontact_points;
+beta_cell = num2cell(reshape(beta, num_basis_vectors_per_contact_point, []), 1);
 
 for i = 1 : length(sides)
   indices = (i - 1) * ncontact_points_per_foot + (1 : ncontact_points_per_foot);
@@ -48,10 +48,15 @@ for i = 1 : length(sides)
   contact_point_forces = [contact_point_forces{:}];
   foot_force = sum(contact_point_forces, 2);
   contact_positions = r.getBody(active_supports(i)).getTerrainContactPoints();
-  foot_torque = sum(cross(contact_positions, contact_point_forces), 2);
+  contact_positions = r.forwardKin(kinsol, active_supports(i), contact_positions);
+  foot_torque = zeros(3, 1);
+  for j = 1 : num_basis_vectors_per_contact_point
+    indices = (j - 1) * num_basis_vectors_per_contact_point + 1 : num_basis_vectors_per_contact_point;
+    contact_point_force = sum(contact_point_forces(:, indices), 2);
+    foot_torque = foot_torque + cross(contact_positions(:, j), contact_point_force);
+  end
   foot_tangential_torque = foot_torque - normal * dot(normal, foot_torque);
-  foot_cop_body = r.bodyKin(kinsol, active_supports(i), cops(:, i));
-  foot_torque_due_to_force_at_cop = cross(foot_cop_body, foot_force);
+  foot_torque_due_to_force_at_cop = cross(cops(:, i), foot_force);
   foot_tangential_torque_back = foot_torque_due_to_force_at_cop - normal * dot(normal, foot_torque_due_to_force_at_cop);
   valuecheck(foot_tangential_torque, foot_tangential_torque_back);
 end
@@ -110,4 +115,8 @@ for testnr = 1 : ntests
   valuecheck(cops, cops_mex);
 end
 
+end
+
+function ret = crossColumnByColumn(a, b)
+ret = cellfun(@cross, mat2cell(a, size(a, 1), ones(size(a, 2), 1)), mat2cell(b, size(b, 1), ones(size(b, 2), 1)));
 end
