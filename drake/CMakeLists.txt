@@ -55,16 +55,16 @@ elseif (MSVC)
   # followed by template linking errors.  After reading, e.g.:
   #   https://connect.microsoft.com/VisualStudio/feedback/details/696593/vc-10-vs-2010-basic-string-exports
   # I think we're not being sufficiently careful with our library interfaces (on other platforms as well) - Russ
-    
+
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4503")
   # disable C4503: 'identifier' : decorated name length exceeded, name was truncated
   # these occur due to AutoDiffScalar inputs to DrakeJoint methods, which results in very long type names
   # From https://msdn.microsoft.com/en-us/library/074af4b6.aspx:
   # It is possible to ship an application that generates C4503, but if you get link time errors on a truncated symbol,
-  # it will be more difficult to determine the type of the symbol in the error. Debugging will also be more difficult; 
+  # it will be more difficult to determine the type of the symbol in the error. Debugging will also be more difficult;
   # the debugger will also have difficultly mapping symbol name to type name. The correctness of the program, however,
   # is unaffected by the truncated name.
-  
+
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4522")
   # disable C4522: 'class' : multiple assignment operators specified
   # The class has multiple assignment operators of a single type. This warning is informational;
@@ -207,8 +207,7 @@ endif()
 
 if (MATLAB_FOUND)
   add_test(NAME "RigidBodyManipulatorMemoryTest"
-  	WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/examples/Acrobot"
   	COMMAND "matlab" #"${PROJECT_SOURCE_DIR}/cmake/matlab_clean.pl"
-  	"-nosplash" "-nodisplay" "-wait" "-r" "addpath('${CMAKE_INSTALL_PREFIX}/matlab'); addpath_${POD_NAME}; try, r = RigidBodyManipulator('Acrobot.urdf'); megaclear; catch ex, disp(getReport(ex,'extended')); disp(''); force_close_system; exit(1); end; force_close_system; exit(0)")
+  	"-nosplash" "-nodisplay" "-wait" "-r" "addpath('${CMAKE_INSTALL_PREFIX}/matlab'); addpath_${POD_NAME}; cd('${PROJECT_SOURCE_DIR}/examples/Acrobot'); try, r = RigidBodyManipulator('Acrobot.urdf'); megaclear; catch ex, disp(getReport(ex,'extended')); disp(''); force_close_system; exit(1); end; force_close_system; exit(0)")
   set_tests_properties(RigidBodyManipulatorMemoryTest PROPERTIES TIMEOUT 300)
 endif()
