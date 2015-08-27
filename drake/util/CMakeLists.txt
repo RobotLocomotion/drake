@@ -73,27 +73,25 @@ pods_install_headers(GradientVar.h DESTINATION drake)
 
 if (MATLAB_FOUND)
   add_mex(cylindrical2cartesianmex cylindrical2cartesianmex.cpp)
-  target_link_libraries(cylindrical2cartesianmex drakeGradientUtil)
   add_mex(cartesian2cylindricalmex cartesian2cylindricalmex.cpp)
-  target_link_libraries(cartesian2cylindricalmex drakeGradientUtil)
 
   add_mex(quat2expmapmex quat2expmapmex.cpp)
-  target_link_libraries(quat2expmapmex drakeMexUtil drakeGradientUtil)
+  target_link_libraries(quat2expmapmex drakeMexUtil)
 
   add_mex(expmap2quatImplmex expmap2quatImplmex.cpp)
-  target_link_libraries(expmap2quatImplmex drakeMexUtil drakeGradientUtil)
+  target_link_libraries(expmap2quatImplmex drakeMexUtil)
 
   add_mex(flipExpmapmex flipExpmapmex.cpp)
-  target_link_libraries(flipExpmapmex drakeMexUtil drakeGradientUtil)
+  target_link_libraries(flipExpmapmex drakeMexUtil)
 
   add_mex(unwrapExpmapmex unwrapExpmapmex.cpp)
-  target_link_libraries(unwrapExpmapmex drakeMexUtil drakeGradientUtil)
+  target_link_libraries(unwrapExpmapmex drakeMexUtil)
 
   add_mex(quat2expmapSequencemex quat2expmapSequencemex.cpp)
-  target_link_libraries(quat2expmapSequencemex drakeMexUtil drakeGradientUtil)
+  target_link_libraries(quat2expmapSequencemex drakeMexUtil)
 
   add_mex(closestExpmapmex closestExpmapmex.cpp)
-  target_link_libraries(closestExpmapmex drakeMexUtil drakeGradientUtil)
+  target_link_libraries(closestExpmapmex drakeMexUtil)
 
   add_mex(resolveCenterOfPressuremex resolveCenterOfPressuremex.cpp)
   target_link_libraries(resolveCenterOfPressuremex drakeMexUtil drakeUtil)
