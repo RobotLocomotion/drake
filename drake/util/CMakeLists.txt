@@ -59,14 +59,6 @@ endif()
 
 pods_install_headers(drakeGradientUtil.h DESTINATION drake)
 
-add_library(drakeGeometryUtil SHARED drakeGeometryUtil.cpp expmap2quat.cpp)
-pods_install_libraries(drakeGeometryUtil)
-pods_install_headers(drakeGeometryUtil.h DESTINATION drake)
-pods_install_pkg_config_file(drake-geometry-util
-  LIBS -ldrakeGeometryUtil
-  REQUIRES
-  VERSION 0.0.1)
-
 add_library(drakeConvexHull SHARED convexHull.cpp)
 pods_install_libraries(drakeConvexHull)
 pods_install_headers(convexHull.h DESTINATION drake)
@@ -81,28 +73,28 @@ pods_install_headers(GradientVar.h DESTINATION drake)
 
 if (MATLAB_FOUND)
   add_mex(cylindrical2cartesianmex cylindrical2cartesianmex.cpp)
-  target_link_libraries(cylindrical2cartesianmex drakeGeometryUtil)
+  target_link_libraries(cylindrical2cartesianmex drakeGradientUtil)
   add_mex(cartesian2cylindricalmex cartesian2cylindricalmex.cpp)
-  target_link_libraries(cartesian2cylindricalmex drakeGeometryUtil)
+  target_link_libraries(cartesian2cylindricalmex drakeGradientUtil)
 
   add_mex(quat2expmapmex quat2expmapmex.cpp)
-  target_link_libraries(quat2expmapmex drakeMexUtil drakeGeometryUtil)
+  target_link_libraries(quat2expmapmex drakeMexUtil drakeGradientUtil)
 
   add_mex(expmap2quatImplmex expmap2quatImplmex.cpp)
-  target_link_libraries(expmap2quatImplmex drakeMexUtil drakeGeometryUtil)
+  target_link_libraries(expmap2quatImplmex drakeMexUtil drakeGradientUtil)
 
   add_mex(flipExpmapmex flipExpmapmex.cpp)
-  target_link_libraries(flipExpmapmex drakeMexUtil drakeGeometryUtil)
+  target_link_libraries(flipExpmapmex drakeMexUtil drakeGradientUtil)
 
   add_mex(unwrapExpmapmex unwrapExpmapmex.cpp)
-  target_link_libraries(unwrapExpmapmex drakeMexUtil drakeGeometryUtil)
+  target_link_libraries(unwrapExpmapmex drakeMexUtil drakeGradientUtil)
 
   add_mex(quat2expmapSequencemex quat2expmapSequencemex.cpp)
-  target_link_libraries(quat2expmapSequencemex drakeMexUtil drakeGeometryUtil)
+  target_link_libraries(quat2expmapSequencemex drakeMexUtil drakeGradientUtil)
 
   add_mex(closestExpmapmex closestExpmapmex.cpp)
-  target_link_libraries(closestExpmapmex drakeMexUtil drakeGeometryUtil)
-  
+  target_link_libraries(closestExpmapmex drakeMexUtil drakeGradientUtil)
+
   add_mex(resolveCenterOfPressuremex resolveCenterOfPressuremex.cpp)
   target_link_libraries(resolveCenterOfPressuremex drakeMexUtil drakeUtil)
 endif()

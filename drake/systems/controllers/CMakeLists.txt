@@ -94,7 +94,6 @@ if (MATLAB_FOUND)
     
     add_control_mex(individualCentersOfPressuremex) 
     add_control_mex(bodySpatialMotionPDmex)
-    target_link_libraries(bodySpatialMotionPDmex drakeGeometryUtil)
   endif()
 
   add_mex(supportDetectmex supportDetectmex.cpp)
