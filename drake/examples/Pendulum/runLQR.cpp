@@ -11,15 +11,17 @@ int main(int argc, char* argv[]) {
 
   std::shared_ptr<PendulumWithBotVis> pendulum = make_shared<PendulumWithBotVis>(lcm);
   DrakeSystemPtr controller = pendulum->balanceLQR();
-  return 1;
 
   DrakeSystemPtr sys = feedback(pendulum,controller);
 
   Eigen::VectorXd x0(2);
+  x0 << M_PI, 0;
+
+  DrakeSystem::SimulationOptions options = sys->default_simulation_options;
+  options.realtime_factor = 1.0;
 
   for (int i=0; i<5; i++) {
-    x0 << M_PI+0.05, 0;
-    sys->simulate(0, 5, x0);
+    sys->simulate(0, 5, x0+pendulum->getRandomState(), options);
   }
 }
 

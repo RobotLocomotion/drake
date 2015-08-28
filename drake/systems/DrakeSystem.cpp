@@ -5,6 +5,7 @@
 #include "DrakeSystem.h"
 #include "drakeGradientUtil.h"
 #include "drakeUtil.h"
+#include "LinearSystem.h"
 
 using namespace std;
 using namespace Eigen;
@@ -43,7 +44,6 @@ VectorXd DrakeSystem::getInitialState() {
   return getRandomState();
 }
 
-
 DrakeSystemPtr DrakeSystem::tilqr(const Eigen::VectorXd& x0, const Eigen::VectorXd& u0, const Eigen::MatrixXd& Q, const Eigen::MatrixXd& R) {
   if (!isTimeInvariant())
   throw runtime_error("DrakeSystem::TILQR.  Time-invariant LQR only makes sense for time invariant systems.");
@@ -67,9 +67,18 @@ DrakeSystemPtr DrakeSystem::tilqr(const Eigen::VectorXd& x0, const Eigen::Vector
   Eigen::MatrixXd K(num_u,num_x), S(num_x,num_x);
   lqr(A, B, Q, R, K, S);
 
-  cout << "K = " << endl << K << endl;
-  cout << "S = " << endl << S << endl;
-  return nullptr;
+  // todo: return the linear system with the affine transform.  But for now, just give the affine controller:
+  // u = u0 - K(x-x0)
+  #define nullmat MatrixXd::Zero(0,0)
+  #define nullvec VectorXd::Zero(0)
+
+  DrakeSystemPtr controller =  make_shared<AffineSystem>(name+"LQR",
+                                   nullmat,MatrixXd::Zero(0,num_x),nullvec,
+                                   nullmat,MatrixXd::Zero(0,num_x),nullvec,
+                                   MatrixXd::Zero(num_u,0),-K,u0+K*x0);
+  controller->input_frame = output_frame;
+  controller->output_frame = input_frame;
+  return controller;
 }
 
 
@@ -204,11 +213,11 @@ VectorXd FeedbackSystem::getX2(const VectorXd &x) const {
 void FeedbackSystem::subsystemOutputs(double t, const Eigen::VectorXd &x1, const Eigen::VectorXd& x2, const Eigen::VectorXd &u,
                                       Eigen::VectorXd &y1, Eigen::VectorXd &y2) const {
   if (!sys1->isDirectFeedthrough()) {
-    y1 = output(t,x1,u);  // output does not depend on u (so it's ok that we're not passing u+y2)
-    y2 = output(t,x2,y1);
+    y1 = sys1->output(t,x1,u);  // output does not depend on u (so it's ok that we're not passing u+y2)
+    y2 = sys2->output(t,x2,y1);
   } else {
-    y2 = output(t,x2,y1); // y1 might be uninitialized junk, but has to be ok
-    y1 = output(t,x1,y2+u);
+    y2 = sys1->output(t,x2,y1); // y1 might be uninitialized junk, but has to be ok
+    y1 = sys2->output(t,x1,y2+u);
   }
 }
 
@@ -243,10 +252,10 @@ VectorXd FeedbackSystem::update(double t, const VectorXd& x, const VectorXd& u) 
 VectorXd FeedbackSystem::output(double t, const VectorXd& x, const VectorXd& u) const {
   VectorXd y1(sys1->output_frame->getDim());
   if (!sys1->isDirectFeedthrough()) {
-    y1 = output(t,getX1(x),u);  // output does not depend on u (so it's ok that we're not passing u+y2)
+    y1 = sys1->output(t,getX1(x),u);  // output does not depend on u (so it's ok that we're not passing u+y2)
   } else {
-    const VectorXd& y2 = output(t,getX2(x),y1); // y1 might be uninitialized junk, but has to be ok
-    y1 = output(t,getX2(x),y2+u);
+    const VectorXd& y2 = sys2->output(t,getX2(x),y1); // y1 might be uninitialized junk, but has to be ok
+    y1 = sys1->output(t,getX2(x),y2+u);
   }
   return y1;
 }

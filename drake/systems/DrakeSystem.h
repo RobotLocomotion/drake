@@ -25,7 +25,6 @@
 
 class DLLEXPORT DrakeSystem : public std::enable_shared_from_this<DrakeSystem> {
 public:
-
   DrakeSystem(const std::string& name,
               const CoordinateFramePtr& continuous_state_frame,
               const CoordinateFramePtr& discrete_state_frame,
@@ -53,7 +52,6 @@ public:
   DRAKESYSTEM_DYNAMICS_METHOD(double, Eigen::VectorXd)
   DRAKESYSTEM_DYNAMICS_METHOD(Drake::TaylorVarX, Drake::TaylorVecX)
 #undef DRAKESYTEM_DYNAMICS_METHOD
-
 
   virtual Eigen::VectorXd update(double t, const Eigen::VectorXd& x, const Eigen::VectorXd& u) const {
     throw std::runtime_error("(Drake:DrakeSystem:update) systems with discrete dynamics must overload the update method");
