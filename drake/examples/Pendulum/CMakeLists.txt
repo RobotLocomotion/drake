@@ -12,8 +12,12 @@ if (LCM_FOUND)
   add_test(NAME runPendulumDynamics COMMAND runPendulumDynamics WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/examples/Pendulum)
 
   add_executable(runPendulumEnergyShaping runEnergyShaping.cpp)
-  target_link_libraries(runPendulumEnergyShaping drakeSystem)
+  target_link_libraries(runPendulumEnergyShaping drakeSystem drakeGeometryUtil drakeRBM)
   add_test(NAME runPendulumEnergyShaping COMMAND runPendulumEnergyShaping)
+
+  add_executable(runPendulumLQR runLQR.cpp)
+  target_link_libraries(runPendulumLQR drakeSystem drakeGeometryUtil drakeRBM)
+  add_test(NAME runPendulumLQR COMMAND runPendulumLQR)
 
   write_procman(Pendulum.pmd
       GROUP "Simulate"

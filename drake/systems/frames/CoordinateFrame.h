@@ -44,7 +44,7 @@ public:
       throw std::runtime_error("index exceeds dimension of coordinate frame");
     return coordinates[i];
   }
-  virtual const std::vector<std::string>& getCoordinateNames() const { return coordinates; }
+  virtual std::vector<std::string> getCoordinateNames() const { return coordinates; }
   virtual void setCoordinateNames(const std::vector<std::string>& _coordinates)
   {
     if (_coordinates.size()!=coordinates.size())
@@ -82,7 +82,29 @@ typedef std::shared_ptr<const CoordinateFrame> CoordinateFramePtr;
 
 class DLLEXPORT MultiCoordinateFrame : public CoordinateFrame {
 public:
-  MultiCoordinateFrame(const std::string& name, std::initializer_list<CoordinateFramePtr> _frames);
+  MultiCoordinateFrame(const std::string& name, std::initializer_list<CoordinateFramePtr> _frames)
+    : CoordinateFrame(name) {
+    unsigned int dim = 0;
+    CoordinateRef c;
+    for (const auto& subframe : _frames) {
+      if (!subframe) continue;  // ok if they pass in nullptr
+      SubFrame s;
+      s.frame = subframe;
+      for (unsigned int i=0; i<subframe->getDim(); i++) {
+        s.coordinate_indices.push_back(dim+i);
+
+        c.subframe_number = frames.size();
+        c.index_in_subframe = i;
+        coordinate_refs.push_back(c);
+
+        // just to get the dim right, because the subframes could change out from underneath us (via some other reference)
+        // instead, I overload all of the access methods that look for coordinates
+        coordinates.push_back("NEVER USE");
+      }
+      dim += subframe->getDim();
+      frames.push_back(s);
+    }
+  }
   virtual ~MultiCoordinateFrame(void) {}
 
   virtual std::ostream& print(std::ostream& os) const override {

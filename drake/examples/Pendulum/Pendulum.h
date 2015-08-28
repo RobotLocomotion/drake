@@ -2,44 +2,77 @@
 #define _PENDULUM_H_
 
 #include <iostream>
+#include <cmath>
 #include "DrakeSystem.h"
-
+#include "LCMCoordinateFrame.h"
+#include "BotVisualizer.h"
 
 class Pendulum : public DrakeSystem {
 public:
-  Pendulum(void) :
+  Pendulum(const std::shared_ptr<lcm::LCM>& lcm) :
           DrakeSystem("Pendulum",
                   std::make_shared<CoordinateFrame>("PendulumContState",std::vector<std::string>({"theta","thetadot"})),
                   nullptr,
-                  std::make_shared<CoordinateFrame>("PendulumInput",std::vector<std::string>({"tau"})),
-                  nullptr),
+                  std::make_shared<LCMCoordinateFrame<drake::lcmt_drake_signal> >("PendulumInput",std::vector<std::string>({"tau"}),lcm),
+                  std::make_shared<LCMCoordinateFrame<drake::lcmt_drake_signal> >("PendulumState",std::vector<std::string>({"theta","thetadot"}),lcm)),
           m(1.0), // kg
           l(.5),  // m
           b(0.1), // kg m^2 /s
           lc(.5), // m
           I(.25), // m*l^2; % kg*m^2
           g(9.81) // m/s^2
-  {
-    output_frame = continuous_state_frame;
-  }
+  {}
   virtual ~Pendulum(void) {};
 
-  virtual VectorXs dynamics(double t, const VectorXs& x, const VectorXs& u) const override {
-    VectorXs xdot(2);
+  virtual Eigen::VectorXd dynamics(double t, const Eigen::VectorXd& x, const Eigen::VectorXd& u) const override {
+    return dynamics_implementation(t,x,u);
+  }
+  virtual Drake::TaylorVecX dynamics(Drake::TaylorVarX t, const Drake::TaylorVecX& x, const Drake::TaylorVecX& u) const override {
+    return dynamics_implementation(t,x,u);
+  }
+
+  virtual Eigen::VectorXd output(double t, const Eigen::VectorXd& x, const Eigen::VectorXd& u) const override {
+    Eigen::VectorXd y=x;
+    return y;
+  }
+
+  virtual bool isTimeInvariant() const override { return true; }
+  virtual bool isDirectFeedthrough() const override { return false; }
+
+
+  DrakeSystemPtr balanceLQR() {
+    Eigen::MatrixXd Q(2,2);  Q << 10, 0, 0, 1;
+    Eigen::MatrixXd R(1,1);  R << 1;
+    Eigen::VectorXd xG(2);   xG << M_PI, 0;
+    Eigen::VectorXd uG(1);   uG << 0;
+
+    return tilqr(xG,uG,Q,R);
+  }
+
+
+  double m,l,b,lc,I,g;  // pendulum parameters (initialized in the constructor)
+
+private:
+  template <typename Scalar,typename Vector>
+  Vector dynamics_implementation(Scalar t, const Vector& x, const Vector& u) const {
+    Vector xdot(2);
     xdot(0) = x(1);
     xdot(1) = (u(0) - m*g*lc*sin(x(0)) - b*x(1))/I;
     return xdot;
   }
 
-  virtual VectorXs output(double t, const VectorXs& x, const VectorXs& u) const override {
-    VectorXs y=x;
-    return y;
+};
+
+class PendulumWithBotVis : public Pendulum {
+public:
+  PendulumWithBotVis(const std::shared_ptr<lcm::LCM>& lcm) : Pendulum(lcm), botvis(lcm,"Pendulum.urdf",DrakeJoint::FIXED) {}
+
+  virtual Eigen::VectorXd output(double t, const Eigen::VectorXd& x, const Eigen::VectorXd& u) const override {
+    botvis.output(t,Eigen::VectorXd::Zero(0),x);
+    return Pendulum::output(t,x,u);
   }
 
-  virtual bool isTimeInvariant(void) { return true; }
-  virtual bool isDirectFeedthrough(void) { return false; }
-
-  double m,l,b,lc,I,g;  // pendulum parameters (initialized in the constructor)
+  BotVisualizer botvis;
 };
 
 class PendulumEnergyShaping : public DrakeSystem {
@@ -55,9 +88,9 @@ public:
     output_frame = pendulum.input_frame;
   };
 
-  virtual VectorXs output(double t, const VectorXs& unused, const VectorXs& u) const override {
+  virtual Eigen::VectorXd output(double t, const Eigen::VectorXd& unused, const Eigen::VectorXd& u) const override {
     double Etilde = .5 * m*l*l*u(1)*u(1) - m*g*l*cos(u(0)) - 1.1*m*g*l;
-    VectorXs y(1);
+    Eigen::VectorXd y(1);
     y << b*u(1) - .1*u(1)*Etilde;
     return y;
   }

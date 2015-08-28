@@ -1475,6 +1475,7 @@ template DLLEXPORT Vector3d rotmat2rpy(const MatrixBase<Matrix3d>&);
 
 template DLLEXPORT Eigen::Matrix<Eigen::Block<Eigen::Matrix<double, 4, 4, 0, 4, 4>, 3, 3, false>::Scalar, -1, 1, 0, -1, 1> rotmat2Representation<Eigen::Block<Eigen::Matrix<double, 4, 4, 0, 4, 4>, 3, 3, false> >(Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 4, 4, 0, 4, 4>, 3, 3, false> > const&, int);
 
+
 template DLLEXPORT GradientVar<double, Eigen::Dynamic, 1> rotmat2Representation(
     const GradientVar<double, SPACE_DIMENSION, SPACE_DIMENSION>& R,
     int rotation_type);
@@ -1510,7 +1511,6 @@ template DLLEXPORT Matrix<double,9,3> drpy2rotmat(const Eigen::MatrixBase< Map<V
 
 template DLLEXPORT Matrix<Block<Matrix4d const, 3, 3, false>::Scalar, 4, 1, 0, 4, 1> rotmat2quat<Block<Matrix4d const, 3, 3, false> >(MatrixBase<Block<Matrix4d const, 3, 3, false> > const&);
 template DLLEXPORT Matrix<Block<Matrix4d, 3, 3, false>::Scalar, 4, 1, 0, 4, 1> rotmat2quat<Block<Matrix4d, 3, 3, false> >(MatrixBase<Block<Matrix4d, 3, 3, false> > const&);
-
 
 template DLLEXPORT Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> transformSpatialMotion(
     const Eigen::Isometry3d&,
