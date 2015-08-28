@@ -11,7 +11,6 @@ option(REMOVE_UNUSED_EXTERNALS "enable this to remove those projects from disk" 
 
 # ON by default:
 option(WITH_EIGEN		"required c++ matrix library.  only disable if you have it already."    ON)
-option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"							ON)
 
 # OFF by default:
 option(WITH_GTK 		"precompiled gtk binaries/headers for Windows")
@@ -29,6 +28,13 @@ option(WITH_SEDUMI		"semi-definite programming solver")
 option(WITH_AVL			"use w/ XFOIL to compute aerodynamic coefficients for airfoils")
 option(WITH_XFOIL		"use w/ AVL to compute aerodynamic coefficients for airfoils")
 option(WITH_MESHCONVERTERS "uses vcglib to convert a few standard filetypes")
+
+find_program(matlab matlab)
+if (matlab)
+  option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"							ON)
+else()
+  option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"							OFF)
+endif()
 
 # system dependent defaults:
 if (WIN32)
