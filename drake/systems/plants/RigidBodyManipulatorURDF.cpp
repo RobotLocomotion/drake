@@ -6,7 +6,6 @@
 
 #include "tinyxml.h"
 #include "RigidBodyManipulator.h"
-#include "joints/drakeJointUtil.h"
 #include "joints/FixedJoint.h"
 #include "joints/HelicalJoint.h"
 #include "joints/PrismaticJoint.h"
@@ -503,6 +502,30 @@ bool parseLink(RigidBodyManipulator* model, TiXmlElement* node, const map<string
   return true;
 }
 
+template <typename JointType>
+void setLimits(TiXmlElement *node, FixedAxisOneDoFJoint<JointType> *fjoint) {
+  TiXmlElement* limit_node = node->FirstChildElement("limit");
+  if (fjoint != nullptr && limit_node) {
+    double lower = -numeric_limits<double>::infinity(), upper = numeric_limits<double>::infinity();
+    parseScalarAttribute(limit_node,"lower",lower);
+    parseScalarAttribute(limit_node,"upper",upper);
+    fjoint->setJointLimits(lower,upper);
+  }
+}
+
+template <typename JointType>
+void setDynamics(RigidBodyManipulator *model, TiXmlElement *node, FixedAxisOneDoFJoint<JointType> *fjoint) {
+  TiXmlElement* dynamics_node = node->FirstChildElement("dynamics");
+  if (fjoint != nullptr && dynamics_node) {
+    model->warnOnce("joint_dynamics", "Warning: joint dynamics xml tag is parsed, but not included in the dynamics methods yet.");
+    double damping=0.0, coulomb_friction=0.0, coulomb_window=0.0;
+    parseScalarAttribute(dynamics_node,"damping",damping);
+    parseScalarAttribute(dynamics_node,"friction",coulomb_friction);
+    parseScalarAttribute(dynamics_node,"coulomb_window",coulomb_window);
+    fjoint->setDynamics(damping,coulomb_friction,coulomb_window);
+  }
+}
+
 bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
 {
   const char* attr = node->Attribute("drake_ignore");
@@ -581,15 +604,18 @@ bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
 
   // now construct the actual joint (based on it's type)
   DrakeJoint* joint = nullptr;
-  FixedAxisOneDoFJoint* fjoint = nullptr;
 
   if (type.compare("revolute") == 0 || type.compare("continuous") == 0) {
-    fjoint = new RevoluteJoint(name, Ttree, axis);
+    FixedAxisOneDoFJoint<RevoluteJoint>* fjoint = new RevoluteJoint(name, Ttree, axis);
+    setDynamics(model, node, fjoint);
+    setLimits(node, fjoint);
     joint = fjoint;
   } else if (type.compare("fixed") == 0) {
     joint = new FixedJoint(name, Ttree);
   } else if (type.compare("prismatic") == 0) {
-    fjoint = new PrismaticJoint(name, Ttree, axis);
+    FixedAxisOneDoFJoint<PrismaticJoint>* fjoint = new PrismaticJoint(name, Ttree, axis);
+    setDynamics(model, node, fjoint);
+    setLimits(node, fjoint);
     joint = fjoint;
   } else if (type.compare("floating") == 0) {
     joint = new RollPitchYawFloatingJoint(name, Ttree);
@@ -598,23 +624,6 @@ bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
     return false;
   }
 
-  TiXmlElement* dynamics_node = node->FirstChildElement("dynamics");
-  if (fjoint != nullptr && dynamics_node) {
-    model->warnOnce("joint_dynamics", "Warning: joint dynamics xml tag is parsed, but not included in the dynamics methods yet.");
-  	double damping=0.0, coulomb_friction=0.0, coulomb_window=0.0;
-  	parseScalarAttribute(dynamics_node,"damping",damping);
-  	parseScalarAttribute(dynamics_node,"friction",coulomb_friction);
-  	parseScalarAttribute(dynamics_node,"coulomb_window",coulomb_window);
-  	fjoint->setDynamics(damping,coulomb_friction,coulomb_window);
-  }
-
-  TiXmlElement* limit_node = node->FirstChildElement("limit");
-  if (fjoint != nullptr && limit_node) {
-    double lower = -std::numeric_limits<double>::infinity(), upper = std::numeric_limits<double>::infinity();
-    parseScalarAttribute(limit_node,"lower",lower);
-    parseScalarAttribute(limit_node,"upper",upper);
-    fjoint->setJointLimits(lower,upper);
-  }
 
   unique_ptr<DrakeJoint> joint_unique_ptr(joint);
   model->bodies[child_index]->setJoint(move(joint_unique_ptr));

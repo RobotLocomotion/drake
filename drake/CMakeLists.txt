@@ -27,37 +27,48 @@ include(UseJava)
 set(CMAKE_JAVA_COMPILE_FLAGS ${CMAKE_JAVA_COMPILE_FLAGS} -source 6 -target 6)
 
 if (CMAKE_COMPILER_IS_GNUCC)
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wreturn-type -Wuninitialized -Wunused-variable") # -Wunused-parameter")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wreturn-type -Wuninitialized -Wunused-variable") # -Wunused-parameter")
 
-   execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion
-                OUTPUT_VARIABLE GCC_VERSION)
-   if (NOT (GCC_VERSION VERSION_GREATER 4.3 OR GCC_VERSION VERSION_EQUAL 4.3))
-        message(FATAL_ERROR "requires gcc version >= 4.3")  # to support the c++0x flag below
-   elseif(GCC_VERSION VERSION_LESS 4.7)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-   else()
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-   endif()
+  execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
+  if (NOT (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7))
+    message(FATAL_ERROR "requires gcc version >= 4.7")  # to support the c++0x flag below
+  else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+  endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wreturn-type -Wuninitialized -Wunused-variable") # -Wunused-parameter")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wreturn-type -Wuninitialized -Wunused-variable") # -Wunused-parameter")
 
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
- if (APPLE)  # this was a step towards getting things to work with
-#   clang on mac, but ultimately we didn't get there...   (but I would
-#   be worried about sharing pointers between objects compiled against
-#   different c++ libs, so removing it)
-#    # http://stackoverflow.com/questions/13445742/apple-and-shared-ptr
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+  if (APPLE)  # this was a step towards getting things to work with
+  #   clang on mac, but ultimately we didn't get there...   (but I would
+  #   be worried about sharing pointers between objects compiled against
+  #   different c++ libs, so removing it)
+  #    # http://stackoverflow.com/questions/13445742/apple-and-shared-ptr
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
   endif()
 elseif (MSVC)
 #  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /arch:SSE2 /openmp")
 #  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:SSE2 /openmp")
 
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")
-    # disable warning C4251: e.g.'RigidBody::linkname' : class 'std::basic_string<_Elem,_Traits,_Ax>' needs to have dll-interface to be used by clients of class 'RigidBody'
-    # followed by template linking errors.  After reading, e.g.:
-    #   https://connect.microsoft.com/VisualStudio/feedback/details/696593/vc-10-vs-2010-basic-string-exports
-    # I think we're not being sufficiently careful with our library interfaces (on other platforms as well) - Russ
+  # disable warning C4251: e.g.'RigidBody::linkname' : class 'std::basic_string<_Elem,_Traits,_Ax>' needs to have dll-interface to be used by clients of class 'RigidBody'
+  # followed by template linking errors.  After reading, e.g.:
+  #   https://connect.microsoft.com/VisualStudio/feedback/details/696593/vc-10-vs-2010-basic-string-exports
+  # I think we're not being sufficiently careful with our library interfaces (on other platforms as well) - Russ
+    
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4503")
+  # disable C4503: 'identifier' : decorated name length exceeded, name was truncated
+  # these occur due to AutoDiffScalar inputs to DrakeJoint methods, which results in very long type names
+  # From https://msdn.microsoft.com/en-us/library/074af4b6.aspx:
+  # It is possible to ship an application that generates C4503, but if you get link time errors on a truncated symbol,
+  # it will be more difficult to determine the type of the symbol in the error. Debugging will also be more difficult; 
+  # the debugger will also have difficultly mapping symbol name to type name. The correctness of the program, however,
+  # is unaffected by the truncated name.
+  
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4522")
+  # disable C4522: 'class' : multiple assignment operators specified
+  # The class has multiple assignment operators of a single type. This warning is informational;
+  # the constructors are callable in your program.
 
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4996") # disable sprintf security warning
 endif()
@@ -77,6 +88,8 @@ include(CTest)
 
 set(drake_jar_javafiles util/Transform.java)
 set(drake_jar_requires)
+
+include(cmake/procman.cmake)  # helper script for writing procman files
 
 # set up and build lcm types
 include(cmake/lcmtypes.cmake)
@@ -130,9 +143,9 @@ if (eigen3_FOUND)
 else()
    # then use the traditional approach to finding Eigen3
    find_package( Eigen3 3.2 )
-   if (Eigen3_FOUND)
+   if (EIGEN3_FOUND)
       set(eigen3_FOUND 1)
-      include_directories( EIGEN3_INCLUDE_DIR )
+      include_directories( ${EIGEN3_INCLUDE_DIR} )
    else()
       message(FATAL_ERROR "Could not find eigen, which is a required depedency")
    endif()
@@ -140,14 +153,13 @@ endif()
 
 include_directories(thirdParty/spruce/include)
 
+
 add_subdirectory(util)
 add_subdirectory(solvers)
 add_subdirectory(systems)
 add_subdirectory(thirdParty/GetFullPath)
 add_subdirectory(thirdParty/spruce)
-add_subdirectory(examples/Atlas)
-add_subdirectory(examples/Acrobot/@AcrobotPlantCpp)
-add_subdirectory(examples/@VanDerPolCpp)
+add_subdirectory(examples)
 
 # setup matlab pods-compliance
 include(cmake/matlab_pods.cmake)

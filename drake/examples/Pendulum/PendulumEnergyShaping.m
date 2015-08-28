@@ -13,9 +13,9 @@ classdef PendulumEnergyShaping < DrakeSystem
       obj = setOutputFrame(obj,PendulumInput);
     end
     
-    function u = output(obj,t,junk,x)
-      Etilde = .5*obj.p.m*obj.p.l^2*x(2)^2 - obj.p.m*obj.p.g*obj.p.l*cos(x(1)) - 1.1*obj.p.m*obj.p.g*obj.p.l;
-      u = +obj.p.b*x(2)-.1*x(2)*Etilde;
+    function y = output(obj,t,~,u)
+      Etilde = .5*obj.p.m*obj.p.l^2*u(2)^2 - obj.p.m*obj.p.g*obj.p.l*cos(u(1)) - 1.1*obj.p.m*obj.p.g*obj.p.l;
+      y = +obj.p.b*u(2)-.1*u(2)*Etilde;
     end
   end 
   

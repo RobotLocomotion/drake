@@ -7,8 +7,8 @@ options.floating = true;
 r = RigidBodyManipulator(urdf,options);
 nq = r.getNumPositions();
 
-l_leg_kny = find(strcmp(r.getStateFrame.coordinates,'l_leg_kny'));
-r_leg_kny = find(strcmp(r.getStateFrame.coordinates,'r_leg_kny'));
+l_leg_kny = find(strcmp(r.getStateFrame.getCoordinateNames(),'l_leg_kny'));
+r_leg_kny = find(strcmp(r.getStateFrame.getCoordinateNames(),'r_leg_kny'));
 
 tspan0 = [0,1];
 t = 0.5;

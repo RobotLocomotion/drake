@@ -64,7 +64,7 @@ classdef GravityCompensationTorqueConstraint < SingleTimeKinematicConstraint
 
     function name_str = name(obj, t)
       if(obj.isTimeValid(t))
-        joint_names = obj.robot.getPositionFrame().coordinates;
+        joint_names = obj.robot.getPositionFrame().getCoordinateNames();
         name_str = cellStrCat({'Gravity compensation torque constraint on  '}, ...
                                joint_names(obj.joint_indices), ...
                               {sprintf(' at time %10.4f',t)})';

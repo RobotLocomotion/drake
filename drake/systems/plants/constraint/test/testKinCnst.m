@@ -48,7 +48,7 @@ end
 
 q = randn(nq,1);
 % q_aff = randn(nq_aff,1);
-q_aff = [q;randn(length(robot_aff.getStateFrame.frame{2}.coordinates)/2,1)];
+q_aff = [q;randn(length(robot_aff.getStateFrame.frame{2}.getCoordinateNames())/2,1)];
 tspan0 = [0,1];
 tspan1 = [];
 t_valid = 0.5;
@@ -126,9 +126,9 @@ q31 = repmat(randn(nq,1),1,length(t3));
 % q21_aff = randn(nq_aff,length(t2));
 % q22_aff = repmat(randn(nq_aff,1),1,length(t2));
 % q31_aff = repmat(randn(nq_aff,1),1,length(t3));
-q21_aff = [q21;randn(length(robot_aff.getStateFrame.frame{2}.coordinates)/2,length(t2))];
-q22_aff = [q22;repmat(randn(length(robot_aff.getStateFrame.frame{2}.coordinates)/2,1),1,length(t2))];
-q31_aff = [q31;repmat(randn(length(robot_aff.getStateFrame.frame{2}.coordinates)/2,1),1,length(t3))];
+q21_aff = [q21;randn(length(robot_aff.getStateFrame.frame{2}.getCoordinateNames())/2,length(t2))];
+q22_aff = [q22;repmat(randn(length(robot_aff.getStateFrame.frame{2}.getCoordinateNames())/2,1),1,length(t2))];
+q31_aff = [q31;repmat(randn(length(robot_aff.getStateFrame.frame{2}.getCoordinateNames())/2,1),1,length(t3))];
 display('Check world fixed position constraint')
 testKinCnst_userfun(false,false,t2,q21,q21_aff,RigidBodyConstraint.WorldFixedPositionConstraintType,robot,robot_aff,l_hand,[[0;0;1] [1;0;1]],tspan0);
 kc = WorldFixedPositionConstraint(robot,l_hand,[[0;0;1] [1;0;1]],tspan0);

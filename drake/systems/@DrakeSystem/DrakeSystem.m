@@ -423,7 +423,7 @@ classdef DrakeSystem < DynamicalSystem
       % to keep things clean.
 
       con = BoundingBoxConstraint(obj.umin,obj.umax);
-      con = setName(con,cellfun(@(a) [a,'_limit'],obj.getInputFrame.coordinates,'UniformOutput',false));
+      con = setName(con,cellfun(@(a) [a,'_limit'],obj.getInputFrame.getCoordinateNames(),'UniformOutput',false));
 
       prog = prog.addBoundingBoxConstraint(con,indices);
     end

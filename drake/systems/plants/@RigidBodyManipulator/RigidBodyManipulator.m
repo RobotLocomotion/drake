@@ -863,7 +863,8 @@ classdef RigidBodyManipulator < Manipulator
       % name contains a specified string.
       %   @param str (sub)string to be searched for
       %   @retvall indices array of indices into state vector
-      indices = find(~cellfun('isempty',strfind(model.getStateFrame().coordinates(1:getNumPositions(model)),str)));
+      coordinates = model.getStateFrame().getCoordinateNames();
+      indices = find(~cellfun('isempty',strfind(coordinates(1:getNumPositions(model)),str)));
     end
 
     function indices = findVelocityIndices(model, str)
@@ -871,7 +872,8 @@ classdef RigidBodyManipulator < Manipulator
       % name contains a specified string.
       %   @param str (sub)string to be searched for
       %   @retvall indices array of indices into state vector
-      indices = find(~cellfun('isempty',strfind(model.getStateFrame().coordinates((getNumPositions(model)+1):end),str)));
+      coordinates = model.getStateFrame().getCoordinateNames();
+      indices = find(~cellfun('isempty',strfind(coordinates((getNumPositions(model)+1):end),str)));
     end
     
     
@@ -1608,7 +1610,7 @@ classdef RigidBodyManipulator < Manipulator
 
         switch (type)
           case 'NullVisualizer'
-            arg = {getOutputFrame(obj)};
+            arg = {getPositionFrame(obj)};
           case 'BotVisualizer'
             arg = {obj,options.use_collision_geometry};
           otherwise

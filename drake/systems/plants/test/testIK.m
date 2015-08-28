@@ -36,7 +36,8 @@ n_r_foot_pts = size(r_foot_pts, 2);
 l_hand_pts = [0;0;0];
 r_hand_pts = [0;0;0];
 
-coords = robot.getStateFrame.coordinates(1:robot.getNumPositions);
+coords = robot.getStateFrame.getCoordinateNames();
+coords = coords(1:robot.getNumPositions);
 l_leg_kny = find(strcmp(coords,'l_leg_kny'));
 r_leg_kny = find(strcmp(coords,'r_leg_kny'));
 l_leg_hpy = find(strcmp(coords,'l_leg_hpy'));
@@ -94,8 +95,8 @@ if(com(3)>1+1e-5 ||com(3)<0.9-1e-5)
 end
 end
 pc_knee = PostureConstraint(robot,tspan);
-l_knee_idx = find(strcmp(robot.getStateFrame.coordinates,'l_leg_kny'));
-r_knee_idx = find(strcmp(robot.getStateFrame.coordinates,'r_leg_kny'));
+l_knee_idx = find(strcmp(robot.getStateFrame.getCoordinateNames(),'l_leg_kny'));
+r_knee_idx = find(strcmp(robot.getStateFrame.getCoordinateNames(),'r_leg_kny'));
 pc_knee = pc_knee.setJointLimits([l_knee_idx;r_knee_idx],[0.2;0.2],[inf;inf]);
 display('Check a single CoM constraint with a posture constraint')
 q = test_IK_userfun(robot,q_seed,q_nom,kc1,pc_knee,ikoptions);
@@ -426,7 +427,7 @@ kc6 = kc6.updateRobot(robot);
 ikoptions = ikoptions.updateRobot(robot);
 ikoptions = ikoptions.setMajorIterationsLimit(2000);
 ikmexoptions = ikmexoptions.updateRobot(robot);
-nq_aff = length(robot.getStateFrame.frame{2}.coordinates)/2;
+nq_aff = length(robot.getStateFrame.frame{2}.getCoordinateNames())/2;
 q_seed_aff = zeros(nq_aff,1);
 q_nom_aff = zeros(nq_aff,1);
 q = test_IK_userfun(robot,[q_seed;q_seed_aff],[q_nom;q_nom_aff],kc1,qsc,kc2l,kc2r,kc3,kc4,kc5,kc6,ikoptions);

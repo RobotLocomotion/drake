@@ -93,9 +93,9 @@ public:
   Vector3d com; 
   Matrix<double, TWIST_SIZE, TWIST_SIZE> I;
 
-  DrakeJoint::MotionSubspaceType S;
+  Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> S;
   MatrixXd dSdqi;
-  DrakeJoint::MotionSubspaceType J;
+  Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> J;
   MatrixXd dJdq;
 
   MatrixXd qdot_to_v;

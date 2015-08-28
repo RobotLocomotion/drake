@@ -29,8 +29,8 @@ classdef PendulumPlant < SecondOrderSystem
       obj = setStateFrame(obj,PendulumState);
       obj = setOutputFrame(obj,PendulumState);
       
-      obj.xG = Point(PendulumState,[pi;0]);
-      obj.uG = Point(PendulumInput,0);
+      obj.xG = Point(getStateFrame(obj),[pi;0]);
+      obj.uG = Point(getInputFrame(obj),0);
     end
     
     function qdd = sodynamics(obj,t,q,qd,u)

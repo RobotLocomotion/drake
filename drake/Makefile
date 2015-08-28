@@ -75,7 +75,8 @@ endif
 doc:	doxygen doc/urdf/drakeURDF.html
 
 doxygen :
-	doxygen doc/Doxyfile
+	doxygen doc/doxyfile_matlab
+	doxygen doc/doxyfile_cpp
 
 doc/urdf/drakeURDF.html : doc/drakeURDF.xsd
 ifeq ($(BUILD_SYSTEM),Darwin)
@@ -104,8 +105,12 @@ release_filelist:
 	-find pod-build/bin -type f 2> /dev/null
 
 clean:
+ifeq ($(BUILD_SYSTEM),Windows_NT)
+	rd /s pod-build
+else
 	-if [ -e pod-build/install_manifest.txt ]; then rm -f `cat pod-build/install_manifest.txt`; fi
 	-if [ -d pod-build ]; then cmake --build pod-build --target clean; rm -rf pod-build; fi
+endif
 
 # other (custom) targets are passed through to the cmake-generated Makefile
 %::
