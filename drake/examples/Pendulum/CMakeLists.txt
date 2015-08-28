@@ -17,13 +17,18 @@ if (LCM_FOUND)
 
   add_executable(runPendulumLQR runLQR.cpp)
   target_link_libraries(runPendulumLQR drakeSystem drakeGeometryUtil drakeRBM)
-  add_test(NAME runPendulumLQR COMMAND runPendulumLQR)
+  add_test(NAME runPendulumLQR COMMAND runPendulumLQR WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/examples/Pendulum)
 
   write_procman(Pendulum.pmd
       GROUP "Simulate"
-        NAME "cpp dynamics" COMMAND "bash -c 'cd ${CMAKE_CURRENT_SOURCE_DIR} && ${CMAKE_BINARY_DIR}/bin/runPendulumDynamics'"
+        NAME "dynamics (cpp)" COMMAND "bash -c 'cd ${CMAKE_CURRENT_SOURCE_DIR} && ${CMAKE_BINARY_DIR}/bin/runPendulumDynamics'"
       ENDGROUP
-      NAME "swingup controller" COMMAND "${CMAKE_BINARY_DIR}/bin/runPendulumEnergyShaping"
-      NAME "director" COMMAND "${CMAKE_INSTALL_PREFIX}/bin/ddConsoleApp -m ddapp.drakevisualizer"
+      GROUP "LCM Controllers"
+        NAME "energy shaping (cpp)" COMMAND "${CMAKE_BINARY_DIR}/bin/runPendulumEnergyShaping"
+      ENDGROUP
+      GROUP "Controllers+Simulation In One"
+        NAME "LQR (cpp)" COMMAND "bash -c 'cd ${CMAKE_CURRENT_SOURCE_DIR} && ${CMAKE_BINARY_DIR}/bin/runPendulumLQR'"
+      ENDGROUP
+      NAME "viewer" COMMAND "${CMAKE_INSTALL_PREFIX}/bin/ddConsoleApp -m ddapp.drakevisualizer"
   )
 endif()
