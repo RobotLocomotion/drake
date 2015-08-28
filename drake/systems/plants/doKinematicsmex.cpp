@@ -29,11 +29,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     auto v = Map<VectorXd>(mxGetPrSafe(prhs[3]), mxGetNumberOfElements(prhs[3]));
     if (v.rows() != model->num_velocities)
       mexErrMsgIdAndTxt("Drake:doKinematicsmex:BadInputs", "v must be size %d x 1", model->num_velocities);
-    *cache = model->doKinematics(q, v, compute_gradients, compute_Jdotv);
+    model->doKinematics(q, v, *cache, compute_gradients, compute_Jdotv);
   }
   else {
     Map<VectorXd> v(nullptr, 0, 1);
-    *cache = model->doKinematics(q, v, compute_gradients, compute_Jdotv);
+    model->doKinematics(q, v, *cache, compute_gradients, compute_Jdotv);
   }
 
   plhs[0] = createDrakeMexPointer((void*)cache, "KinematicsCache<double>");

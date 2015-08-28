@@ -12,6 +12,7 @@
 #include "KinematicPath.h"
 #include "ForceTorqueMeasurement.h"
 #include "GradientVar.h"
+#include <stdexcept>
 
 #undef DLLEXPORT_RBM
 #if defined(WIN32) || defined(WIN64)
@@ -99,7 +100,213 @@ public:
   std::string getStateName(int state_num) const;
 
   template <typename DerivedQ, typename DerivedV>
-  KinematicsCache<typename DerivedQ::Scalar> doKinematics(const MatrixBase<DerivedQ> &q, const MatrixBase<DerivedV> &v, bool compute_gradients = false, bool compute_JdotV = true) const;
+  void doKinematics(const MatrixBase<DerivedQ>& q, const MatrixBase<DerivedV>& v, KinematicsCache<typename DerivedQ::Scalar>& cache, bool compute_gradients = false, bool compute_JdotV = false) const {
+    using namespace std;
+    using namespace Eigen;
+
+    EIGEN_STATIC_ASSERT_VECTOR_ONLY(MatrixBase<DerivedQ>);
+    EIGEN_STATIC_ASSERT_VECTOR_ONLY(MatrixBase<DerivedV>);
+    assert(q.rows() == num_positions);
+    assert(v.rows() == num_velocities || v.rows() == 0);
+    if (!initialized)
+      throw runtime_error("RigidBodyManipulator::doKinematics: call compile first.");
+
+    int nq = num_positions;
+    int gradient_order = compute_gradients ? 1 : 0;
+
+    typedef typename DerivedQ::Scalar Scalar;
+
+    compute_JdotV = compute_JdotV && (v.rows() == num_velocities); // no sense in computing Jdot times v if v is not passed in
+
+    cache.position_kinematics_cached = true; // doing this here because there is a geometricJacobian call within doKinematics below which checks for this
+
+    for (int i = 0; i < bodies.size(); i++) {
+      RigidBody& body = *bodies[i];
+      KinematicsCacheElement<Scalar>& element = cache.getElement(body);
+
+      if (body.hasParent()) {
+        const KinematicsCacheElement<Scalar>& parent_element = cache.getElement(*body.parent);
+        const DrakeJoint& joint = body.getJoint();
+        auto q_body = q.middleRows(body.position_num_start, joint.getNumPositions());
+
+        // transform
+        auto T_body_to_parent = joint.getTransformToParentBody().cast<Scalar>() * joint.jointTransform(q_body);
+        element.transform_to_world = parent_element.transform_to_world * T_body_to_parent;
+
+        // motion subspace in body frame
+        Eigen::MatrixXd* dSdq = compute_gradients ? &(element.motion_subspace_in_body.gradient().value()) : nullptr;
+        joint.motionSubspace(q_body, element.motion_subspace_in_body.value(), dSdq);
+
+        // motion subspace in world frame
+        element.motion_subspace_in_world.value() = transformSpatialMotion(element.transform_to_world, element.motion_subspace_in_body.value());
+
+        // qdot to v, v to qdot
+        if (compute_gradients) {
+          // TODO: make DrakeJoint::v2qdot and qdot2v accept Refs instead, pass in blocks of element.v_to_qdot.gradient().value() and element.qdot_to_v.gradient().value()
+          Matrix<Scalar, Dynamic, Dynamic> dqdot_to_vdqi(element.qdot_to_v.value().size(), joint.getNumPositions());
+          joint.qdot2v(q_body, element.qdot_to_v.value(), &dqdot_to_vdqi);
+          auto& dqdot_to_v = element.qdot_to_v.gradient().value();
+          dqdot_to_v.setZero();
+          dqdot_to_v.middleCols(body.position_num_start, joint.getNumPositions()) = dqdot_to_vdqi;
+
+          Matrix<Scalar, Dynamic, Dynamic> dv_to_qdotdqi(element.v_to_qdot.value().size(), joint.getNumPositions());
+          joint.v2qdot(q_body, element.v_to_qdot.value(), &dv_to_qdotdqi);
+          auto& dv_to_qdot = element.v_to_qdot.gradient().value();
+          dv_to_qdot.setZero();
+          dv_to_qdot.middleCols(body.position_num_start, joint.getNumPositions()) = dv_to_qdotdqi;
+        }
+        else {
+          joint.qdot2v(q_body, element.qdot_to_v.value(), nullptr);
+          joint.v2qdot(q_body, element.v_to_qdot.value(), nullptr);
+        }
+
+        if (compute_gradients) {
+          // gradient of transform
+          auto dT_body_to_parentdqi = dHomogTrans(T_body_to_parent, element.motion_subspace_in_body.value(), element.qdot_to_v.value()).eval();
+          typename Gradient<typename Transform<Scalar, 3, Isometry>::MatrixType, Eigen::Dynamic>::type dT_body_to_parentdq(HOMOGENEOUS_TRANSFORM_SIZE, nq);
+          dT_body_to_parentdq.setZero();
+          dT_body_to_parentdq.middleCols(body.position_num_start, joint.getNumPositions()) = dT_body_to_parentdqi;
+          element.dtransform_to_world_dq = matGradMultMat(parent_element.transform_to_world.matrix(), T_body_to_parent.matrix(), parent_element.dtransform_to_world_dq, dT_body_to_parentdq);
+
+          // gradient of motion subspace in world
+          Matrix<Scalar, Dynamic, Dynamic> dSdq(element.motion_subspace_in_body.value().size(), nq);
+          dSdq.setZero();
+          dSdq.middleCols(body.position_num_start, joint.getNumPositions()) = element.motion_subspace_in_body.gradient().value();
+          element.motion_subspace_in_world.gradient().value() = dTransformSpatialMotion(element.transform_to_world, element.motion_subspace_in_body.value(), element.dtransform_to_world_dq, dSdq);
+        }
+
+        if (v.rows() == num_velocities) {
+          if (joint.getNumVelocities()==0) { // for fixed joints
+            element.twist_in_world.value() = parent_element.twist_in_world.value();
+            if (compute_gradients) element.twist_in_world.gradient().value() = parent_element.twist_in_world.gradient().value();
+            if (compute_JdotV) {
+              element.motion_subspace_in_world_dot_times_v.value() = parent_element.motion_subspace_in_world_dot_times_v.value();
+              if (compute_gradients) {
+                element.motion_subspace_in_world_dot_times_v.gradient().value() = parent_element.motion_subspace_in_world_dot_times_v.gradient().value();
+              }
+            }
+          } else {
+            // twist
+            auto v_body = v.middleRows(body.velocity_num_start, joint.getNumVelocities());
+
+            GradientVar<Scalar, TWIST_SIZE, 1> joint_twist(TWIST_SIZE, 1, nq, gradient_order);
+            joint_twist.value().noalias() = element.motion_subspace_in_world.value() * v_body;
+            element.twist_in_world.value() = parent_element.twist_in_world.value() + joint_twist.value();
+
+            if (compute_gradients) {
+              // dtwistdq
+              joint_twist.gradient().value() = matGradMult(element.motion_subspace_in_world.gradient().value(), v_body);
+              element.twist_in_world.gradient().value() = parent_element.twist_in_world.gradient().value() + joint_twist.gradient().value();
+            }
+
+            if (compute_JdotV) {
+              // Sdotv
+              if (compute_gradients) {
+                Matrix<Scalar, 6, Dynamic> dSdotVdqi(6, joint.getNumPositions()); // TODO: use block of dSdotv instead
+                Matrix<Scalar, 6, Dynamic> dSdotVdvi(6, joint.getNumVelocities()); // TODO: use block of dSdotv instead
+                joint.motionSubspaceDotTimesV(q_body, v_body, element.motion_subspace_in_body_dot_times_v.value(), &dSdotVdqi, &dSdotVdvi);
+                auto& dSdotv = element.motion_subspace_in_body_dot_times_v.gradient().value();
+                dSdotv.leftCols(joint.getNumPositions()) = dSdotVdqi;
+                dSdotv.rightCols(joint.getNumVelocities()) = dSdotVdvi;
+              }
+              else {
+                joint.motionSubspaceDotTimesV(q_body, v_body, element.motion_subspace_in_body_dot_times_v.value(), nullptr, nullptr);
+              }
+
+              // Jdotv
+              auto joint_accel = crossSpatialMotion(element.twist_in_world.value(), joint_twist.value());
+              joint_accel += transformSpatialMotion(element.transform_to_world, element.motion_subspace_in_body_dot_times_v.value());
+              element.motion_subspace_in_world_dot_times_v.value() = parent_element.motion_subspace_in_world_dot_times_v.value() + joint_accel;
+
+              if (compute_gradients) {
+                // dJdotvdq
+                // TODO: exploit sparsity better
+                Matrix<double, TWIST_SIZE, Eigen::Dynamic> dSdotVdq(TWIST_SIZE, nq);
+                dSdotVdq.setZero();
+                auto& dSdotv = element.motion_subspace_in_body_dot_times_v.gradient().value();
+                dSdotVdq.middleCols(body.position_num_start, joint.getNumPositions()) = dSdotv.leftCols(joint.getNumPositions());
+                auto dcrm_twist_joint_twistdq = dCrossSpatialMotion(element.twist_in_world.value(), joint_twist.value(), element.twist_in_world.gradient().value(), joint_twist.gradient().value());
+
+                auto dJdotVdq = element.motion_subspace_in_world_dot_times_v.gradient().value().leftCols(num_positions);
+                dJdotVdq = parent_element.motion_subspace_in_world_dot_times_v.gradient().value().leftCols(num_positions)
+                           + dcrm_twist_joint_twistdq
+                           + dTransformSpatialMotion(element.transform_to_world, element.motion_subspace_in_body_dot_times_v.value(), element.dtransform_to_world_dq, dSdotVdq);
+
+                // dJdotvdv
+                int nv_joint = joint.getNumVelocities();
+                std::vector<int> v_indices;
+                auto dtwistdv = geometricJacobian(cache, 0, i, 0, 0, false, &v_indices);
+                int nv_branch = static_cast<int>(v_indices.size());
+
+                Matrix<double, TWIST_SIZE, Eigen::Dynamic> djoint_twistdv(TWIST_SIZE, nv_branch);
+                djoint_twistdv.setZero();
+                djoint_twistdv.rightCols(nv_joint) = element.motion_subspace_in_world.value();
+
+                Matrix<double, TWIST_SIZE, Eigen::Dynamic> djoint_acceldv(TWIST_SIZE, nv_branch);
+                djoint_acceldv = dCrossSpatialMotion(element.twist_in_world.value(), joint_twist.value(), dtwistdv.value(), djoint_twistdv); // TODO: can probably exploit sparsity better
+                auto dSdotVdvi = dSdotv.rightCols(joint.getNumVelocities());
+                djoint_acceldv.rightCols(nv_joint) += transformSpatialMotion(element.transform_to_world, dSdotVdvi);
+
+                auto dJdotVdv = element.motion_subspace_in_world_dot_times_v.gradient().value().rightCols(num_velocities);
+                auto dJdotVdv_parent = parent_element.motion_subspace_in_world_dot_times_v.gradient().value().rightCols(num_velocities);
+                dJdotVdv.setZero();
+                for (int j = 0; j < nv_branch; j++) {
+                  int v_index = v_indices[j];
+                  dJdotVdv.col(v_index) = dJdotVdv_parent.col(v_index) + djoint_acceldv.col(j);
+                }
+              }
+            }
+          }
+        }
+      }
+      else {
+        element.transform_to_world.setIdentity();
+        // motion subspace in body frame is empty
+        // motion subspace in world frame is empty
+        // qdot to v is empty
+        // v to qdot is empty
+        if (compute_gradients) {
+          // gradient of transform
+          element.dtransform_to_world_dq.setZero();
+          // gradient of motion subspace in world is empty
+        }
+        if (v.rows() == num_velocities) {
+          element.twist_in_world.value().setZero();
+          element.motion_subspace_in_body.value().setZero();
+          element.motion_subspace_in_world.value().setZero();
+          element.qdot_to_v.value().setZero();
+          element.v_to_qdot.value().setZero();
+
+          if (compute_gradients) {
+            element.twist_in_world.gradient().value().setZero();
+            element.motion_subspace_in_body.gradient().value().setZero();
+            element.motion_subspace_in_world.gradient().value().setZero();
+            element.qdot_to_v.gradient().value().setZero();
+            element.v_to_qdot.gradient().value().setZero();
+          }
+          if (compute_JdotV) {
+            element.motion_subspace_in_body_dot_times_v.value().setZero();
+            element.motion_subspace_in_world_dot_times_v.value().setZero();
+            if (compute_gradients) {
+              element.motion_subspace_in_body_dot_times_v.gradient().value().setZero();
+              element.motion_subspace_in_world_dot_times_v.gradient().value().setZero();
+            }
+          }
+        }
+      }
+    }
+
+    cache.cached_inertia_gradients_order = -1;
+    cache.gradients_cached = compute_gradients;
+    cache.velocity_kinematics_cached = v.rows() == num_velocities;
+    cache.jdotV_cached = compute_JdotV && cache.velocity_kinematics_cached;
+
+    cache.q = q;
+
+    if (v.rows() > 0) {
+      cache.v = v;
+    }
+  };
 
   bool isBodyPartOfRobot(const RigidBody& body, const std::set<int>& robotnum) const;
 
@@ -291,7 +498,7 @@ public:
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> transformVelocityMappingToPositionDotMapping(
       const KinematicsCache<typename Derived::Scalar>& cache, const Eigen::MatrixBase<Derived>& mat) const;
 
-template <typename Derived>
+  template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> compactToFull(
     const Eigen::MatrixBase<Derived>& compact, const std::vector<int>& joint_path, bool in_terms_of_qdot) const {
   /*

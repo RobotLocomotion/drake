@@ -273,7 +273,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
   }
 
-  KinematicsCache<double> cache = pdata->r->doKinematics(q, qd);
+  KinematicsCache<double> cache(pdata->r->bodies, 0);
+  pdata->r->doKinematics(q, qd, cache, false, false);
   std::map<int, std::unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
   pdata->H = pdata->r->massMatrix(cache).value();
   pdata->C = pdata->r->inverseDynamics(cache, f_ext).value();

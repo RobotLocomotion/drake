@@ -8,8 +8,6 @@
 #include <memory>
 #include "DrakeJoint.h"
 
-class RigidBodyManipulator;
-
 class DLLEXPORT_RBM RigidBody {
 private:
   std::unique_ptr<DrakeJoint> joint;

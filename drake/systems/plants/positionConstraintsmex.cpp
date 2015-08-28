@@ -22,7 +22,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   Map<VectorXd> q(mxGetPrSafe(prhs[1]),nq);
 
   VectorXd v = VectorXd::Zero(0);
-  KinematicsCache<double> cache = model->doKinematics(q, v); // FIXME: KinematicsCache should be passed in!
+  KinematicsCache<double> cache(model->bodies, 0); // FIXME: KinematicsCache should be passed in!
+  model->doKinematics(q, v, cache);
 
   const size_t numPositionConstraints = model->getNumPositionConstraints();
   

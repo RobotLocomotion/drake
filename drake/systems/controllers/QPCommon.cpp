@@ -467,8 +467,7 @@ int setupAndSolveQP(
 
   MatrixXd R_DQyD_ls = R_ls + D_ls.transpose()*Qy*D_ls;
 
-  KinematicsCache<double>& cache = pdata->cache;
-  cache = pdata->r->doKinematics(robot_state.q, robot_state.qd);
+pdata->r->doKinematics(robot_state.q, robot_state.qd, pdata->cache, false, false);
 
   //---------------------------------------------------------------------
 
@@ -487,6 +486,7 @@ int setupAndSolveQP(
     f_ext[body_id]->value() = Map<const Matrix<double, TWIST_SIZE, 1> >(body_wrench_data.wrench);
   }
 
+  auto& cache = pdata->cache;
   pdata->H = pdata->r->massMatrix(cache).value();
   pdata->C = pdata->r->inverseDynamics(cache, f_ext).value();
 

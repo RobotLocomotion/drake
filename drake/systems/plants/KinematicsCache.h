@@ -11,6 +11,7 @@
 #include "RigidBody.h"
 #include <stdexcept>
 #include <utility>
+#include "RigidBodyManipulator.h"
 
 template <typename Scalar>
 class KinematicsCacheElement

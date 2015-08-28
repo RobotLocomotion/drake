@@ -79,6 +79,8 @@ public:
 
   virtual const Eigen::VectorXd& getJointLimitMax() const;
 
+//  typedef typename Eigen::AutoDiffScalar<Eigen::Matrix<double, 36, 1>> AutoDiffScalarFixedSize;
+  typedef typename Eigen::AutoDiffScalar<Eigen::VectorXd> AutoDiffScalarFixedSize;
   POSITION_AND_VELOCITY_DEPENDENT_METHODS(double)
 
   POSITION_AND_VELOCITY_DEPENDENT_METHODS(Eigen::AutoDiffScalar<Eigen::VectorXd>)
