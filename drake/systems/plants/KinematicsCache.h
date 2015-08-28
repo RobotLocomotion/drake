@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <vector>
 #include <cassert>
+#include <type_traits>
 #include "GradientVar.h"
 #include "drakeGeometryUtil.h"
 #include "RigidBody.h"
@@ -73,12 +74,7 @@ public:
   KinematicsCache(const std::vector<std::shared_ptr<RigidBody>>& bodies, int gradient_order) :
       q(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(getNumPositions(bodies), 1)),
       v(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(getNumVelocities(bodies), 1)),
-      gradient_order(gradient_order),
-      position_kinematics_cached(false),
-      gradients_cached(false),
-      velocity_kinematics_cached(false),
-      jdotV_cached(false),
-      cached_inertia_gradients_order(-1)
+      gradient_order(gradient_order)
   {
     assert(gradient_order == 0 || gradient_order == 1);
 
@@ -88,6 +84,7 @@ public:
       int num_velocities_joint = body.hasParent() ? body.getJoint().getNumVelocities() : 0;
       elements.insert(std::make_pair(&body, KinematicsCacheElement<Scalar>(q.size(), v.size(), num_positions_joint, num_velocities_joint, gradient_order)));
     }
+    invalidate();
   }
 
   KinematicsCacheElement<Scalar>& getElement(const RigidBody& body)
@@ -98,6 +95,24 @@ public:
   const KinematicsCacheElement<Scalar>& getElement(const RigidBody& body) const
   {
     return elements.at(&body);
+  }
+
+  template <typename Derived>
+  void initialize(const Eigen::MatrixBase<Derived>& q) {
+    static_assert(Derived::ColsAtCompileTime == 1, "q must be a vector");
+    static_assert(std::is_same<typename Derived::Scalar, Scalar>::value, "scalar type of q must match scalar type of KinematicsCache");
+    assert(this->q.rows() == q.rows());
+    this->q = q;
+    invalidate();
+  }
+
+  template <typename DerivedQ, typename DerivedV>
+  void initialize(const Eigen::MatrixBase<DerivedQ>& q, const Eigen::MatrixBase<DerivedV>& v) {
+    initialize(q);
+    static_assert(DerivedV::ColsAtCompileTime == 1, "v must be a vector");
+    static_assert(std::is_same<typename DerivedV::Scalar, Scalar>::value, "scalar type of v must match scalar type of KinematicsCache");
+    assert(this->v.rows() == v.rows());
+    this->v = v;
   }
 
   void checkCachedKinematicsSettings(bool kinematics_gradients_required, bool velocity_kinematics_required, bool jdot_times_v_required, const std::string& method_name) const
@@ -114,6 +129,16 @@ public:
     if (jdot_times_v_required && !jdotV_cached) {
       throw std::runtime_error(method_name + " requires Jdot times v, which has not been cached. Please call doKinematics with a velocity vector and compute_JdotV set to true.");
     }
+  }
+
+private:
+  void invalidate()
+  {
+    position_kinematics_cached = false;
+    gradients_cached = false;
+    velocity_kinematics_cached = false;
+    jdotV_cached = false;
+    cached_inertia_gradients_order = -1;
   }
 
   static int getNumPositions(const std::vector<std::shared_ptr<RigidBody>>& bodies) {
