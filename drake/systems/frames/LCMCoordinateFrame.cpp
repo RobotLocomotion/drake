@@ -77,7 +77,7 @@ public:
 };
 
 
-void runLCM(const DrakeSystemPtr& sys, const shared_ptr<lcm::LCM>& lcm, double t0, double tf, const Eigen::VectorXd& x0, const DrakeSystem::SimulationOptions* options) {
+void runLCM(const DrakeSystemPtr& sys, const shared_ptr<lcm::LCM>& lcm, double t0, double tf, const Eigen::VectorXd& x0, const SimulationOptions* options) {
   if(!lcm->good())
     throw runtime_error("bad LCM reference");
 
@@ -108,7 +108,7 @@ void runLCM(const DrakeSystemPtr& sys, const shared_ptr<lcm::LCM>& lcm, double t
     // then the system's dynamics should control when the output is produced.  try to run a simulation in real time
 
     if (!options) options = &(sys->default_simulation_options);
-    DrakeSystem::SimulationOptions lcm_options = *options;
+    SimulationOptions lcm_options = *options;
     lcm_options.realtime_factor = 1.0;
 
     LCMLoop lcm_loop(lcm);

@@ -4,10 +4,22 @@ include(SwigPython)
 find_package(PythonInterp REQUIRED)
 set(python_install_dir lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages)
 
-add_swig_python_module(TARGET drake_wrapper
-                       SWIG_I_FILE ${CMAKE_CURRENT_SOURCE_DIR}/drake.i
+add_swig_python_module(TARGET pendulum_wrapper
+                       SWIG_I_FILE ${CMAKE_CURRENT_SOURCE_DIR}/pendulum.i
                        CPLUSPLUS
-                       INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../examples/Pendulum ${CMAKE_CURRENT_SOURCE_DIR}/../systems ${CMAKE_CURRENT_SOURCE_DIR}/../systems/frames 
-                       LINK_LIBRARIES drakeSystem
+                       INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../examples/Pendulum 
+	                       ${CMAKE_CURRENT_SOURCE_DIR}/../systems 
+	                       ${CMAKE_CURRENT_SOURCE_DIR}/../systems/frames 
+	                       ${CMAKE_CURRENT_SOURCE_DIR}/../systems/plants 
+	                       ${CMAKE_CURRENT_SOURCE_DIR}/../systems/plants/joints 
+	                       ${CMAKE_CURRENT_SOURCE_DIR}/../util
+                       LINK_LIBRARIES drakeSystem drakeGeometryUtil drakeRBM
                        SWIG_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../swigmake/swig
-                       DESTINATION ${python_install_dir}/drake ${CMAKE_CURRENT_SOURCE_DIR}/drake)
+                       DESTINATION ${python_install_dir}/pendulum ${CMAKE_CURRENT_SOURCE_DIR}/pendulum)
+
+# add_swig_python_module(TARGET systems_wrapper
+#                        SWIG_I_FILE ${CMAKE_CURRENT_SOURCE_DIR}/systems.i
+#                        CPLUSPLUS
+#                        LINK_LIBRARIES drakeSystem
+#                        SWIG_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../swigmake/swig
+#                        DESTINATION ${python_install_dir}/systems ${CMAKE_CURRENT_SOURCE_DIR}/systems)

@@ -101,7 +101,7 @@ protected:
 
 
 // todo: clean this up so it does not take shared ptrs for sys and lcm (this method should not be allowed to maintain ownership)
-extern void runLCM(const DrakeSystemPtr& sys, const std::shared_ptr<lcm::LCM>& lcm, double t0, double tf, const Eigen::VectorXd& x0, const DrakeSystem::SimulationOptions* options=nullptr);
+extern void runLCM(const DrakeSystemPtr& sys, const std::shared_ptr<lcm::LCM>& lcm, double t0, double tf, const Eigen::VectorXd& x0, const SimulationOptions* options=nullptr);
 
 
 #endif //DRAKE_LCMCOORDINATEFRAME_H

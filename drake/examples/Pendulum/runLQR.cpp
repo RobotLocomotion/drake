@@ -17,7 +17,7 @@ int main(int argc, char* argv[]) {
   Eigen::VectorXd x0(2);
   x0 << M_PI, 0;
 
-  DrakeSystem::SimulationOptions options = sys->default_simulation_options;
+  SimulationOptions options = sys->default_simulation_options;
   options.realtime_factor = 1.0;
 
   for (int i=0; i<5; i++) {

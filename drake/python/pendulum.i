@@ -1,4 +1,4 @@
-%module drake_wrapper
+%module pendulum_wrapper
 
 %include <std_except.i>
 %include <std_string.i>
@@ -7,8 +7,6 @@
 %{
 #define SWIG_FILE_WITH_INIT
 #include <Python.h>
-#include "CoordinateFrame.h"
-#include "DrakeSystem.h"
 #include "Pendulum.h"
 %}
 
@@ -23,8 +21,20 @@
 %eigen_typemaps(Eigen::VectorXd)
 %eigen_typemaps(Eigen::MatrixXd)
 %eigen_typemaps(Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>)
-%eigen_typemaps(DrakeSystem::VectorXs)
 
-%include "CoordinateFrame.h"
-%include "DrakeSystem.h"
+%include <std_shared_ptr.i>
+%shared_ptr(lcm::LCM)
+%shared_ptr(PendulumWithBotVis)
+%shared_ptr(PendulumEnergyShaping)
+%shared_ptr(BotVisualizer)
+%shared_ptr(Pendulum)
+%shared_ptr(FeedbackSystem)
+%shared_ptr(CascadeSystem)
+%shared_ptr(DrakeSystem)
+
+%include <lcm/lcm-cpp.hpp>
+%import "drake/CoordinateFrame.h"
+%include "drake/DrakeSystem.h"
+%import "drake/BotVisualizer.h"
+
 %include "Pendulum.h"
