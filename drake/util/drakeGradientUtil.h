@@ -46,9 +46,9 @@ namespace Drake {
   // initializes the vector with x=val and dx=eye(numel(val))
   template <typename EigenVec>
   TaylorVecX initTaylorVecX(EigenVec val) {
-    TaylorVecX x(val.cols());
-    Eigen::MatrixXd der = Eigen::MatrixXd::Identity(val.cols(),val.cols());
-    for (int i=0; i<val.cols(); i++) {
+    TaylorVecX x(val.rows());
+    Eigen::MatrixXd der = Eigen::MatrixXd::Identity(val.rows(),val.rows());
+    for (int i=0; i<val.rows(); i++) {
       x(i).value() = val(i);
       x(i).derivatives() = der.col(i);
     }

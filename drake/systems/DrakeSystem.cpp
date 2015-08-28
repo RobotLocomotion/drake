@@ -3,11 +3,13 @@
 #include <thread>
 #include <chrono>
 #include "DrakeSystem.h"
+#include "drakeGradientUtil.h"
+#include "drakeUtil.h"
 
 using namespace std;
 using namespace Eigen;
 
-DrakeSystem::DrakeSystem(const std::string &_name,
+DrakeSystem::DrakeSystem(const string &_name,
                          const CoordinateFramePtr& _continuous_state_frame,
                          const CoordinateFramePtr& _discrete_state_frame,
                          const CoordinateFramePtr& _input_frame,
@@ -24,7 +26,7 @@ DrakeSystem::DrakeSystem(const std::string &_name,
   state_frame = make_shared<MultiCoordinateFrame>(name+"State",initializer_list<CoordinateFramePtr>({continuous_state_frame,discrete_state_frame}));
 }
 
-DrakeSystem::DrakeSystem(const std::string &_name, unsigned int num_continuous_states, unsigned int num_discrete_states,
+DrakeSystem::DrakeSystem(const string &_name, unsigned int num_continuous_states, unsigned int num_discrete_states,
                          unsigned int num_inputs, unsigned int num_outputs)
         : name(_name),
           input_frame(make_shared<CoordinateFrame>(name+"Input",num_inputs,"u")),
@@ -41,13 +43,43 @@ VectorXd DrakeSystem::getInitialState() {
   return getRandomState();
 }
 
+
+DrakeSystemPtr DrakeSystem::tilqr(const Eigen::VectorXd& x0, const Eigen::VectorXd& u0, const Eigen::MatrixXd& Q, const Eigen::MatrixXd& R) {
+  if (!isTimeInvariant())
+  throw runtime_error("DrakeSystem::TILQR.  Time-invariant LQR only makes sense for time invariant systems.");
+
+  if (discrete_state_frame->getDim()>0)
+  throw runtime_error("DrakeSystem::TILQR.  Discrete-time LQR is not implemented yet (but would be easy).");
+  if (continuous_state_frame->getDim()<1)
+  throw runtime_error("DrakeSystem::TILQR.  This system has no continuous states.");
+
+  int num_x = continuous_state_frame->getDim(),
+      num_u = input_frame->getDim();
+
+  Eigen::VectorXd xu(num_x+num_u);
+  xu << x0, u0;
+  Drake::TaylorVecX xu_taylor = Drake::initTaylorVecX(xu);
+
+  auto xdot = autoDiffToGradientMatrix(dynamics(0*xu_taylor(1),xu_taylor.head(num_x),xu_taylor.tail(num_u)));
+  auto A = xdot.leftCols(continuous_state_frame->getDim());
+  auto B = xdot.rightCols(input_frame->getDim());
+
+  Eigen::MatrixXd K(num_u,num_x), S(num_x,num_x);
+  lqr(A, B, Q, R, K, S);
+
+  cout << "K = " << endl << K << endl;
+  cout << "S = " << endl << S << endl;
+  return nullptr;
+}
+
+
 void DrakeSystem::simulate(double t0, double tf, const VectorXd &x0, const SimulationOptions& options) const {
   ode1(t0,tf,x0,options);
 }
 
-typedef std::chrono::system_clock TimeClock;  // would love to use steady_clock, but it seems to not compile on all platforms (e.g. MSVC 2013 Win64)
-typedef std::chrono::duration<double> TimeDuration;
-typedef std::chrono::time_point<TimeClock,TimeDuration> TimePoint;
+typedef chrono::system_clock TimeClock;  // would love to use steady_clock, but it seems to not compile on all platforms (e.g. MSVC 2013 Win64)
+typedef chrono::duration<double> TimeDuration;
+typedef chrono::time_point<TimeClock,TimeDuration> TimePoint;
 
 inline void handle_realtime_factor(const TimePoint& wall_clock_start_time, double sim_time, double realtime_factor)
 {
@@ -55,7 +87,7 @@ inline void handle_realtime_factor(const TimePoint& wall_clock_start_time, doubl
     TimePoint wall_time = TimeClock::now();
     TimePoint desired_time = wall_clock_start_time + TimeDuration(sim_time/realtime_factor);
     if (desired_time>wall_time) { // could probably just call sleep_until, but just in case
-      std::this_thread::sleep_until(desired_time);
+      this_thread::sleep_until(desired_time);
     } else if (wall_time>desired_time+TimeDuration(1.0/realtime_factor)) {
       throw runtime_error("Simulation is not keeping up with desired real-time factor -- behind by more than 1 (scaled) second at simulation time " + to_string(sim_time));
     }

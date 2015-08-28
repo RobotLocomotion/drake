@@ -6,9 +6,9 @@
 #include <stdexcept>
 #include <Eigen/Core>
 #include <Eigen/Dense>
-#include <unsupported/Eigen/AutoDiff>
 #include "CoordinateFrame.h"
 #include "drakeGradientUtil.h"
+
 
 /// A DrakeSystem is a dynamical system that is compatible with most of our tools for design and analysis.
 /// It must have:
@@ -86,48 +86,21 @@ public:
     simulate(t0,tf,x0,default_simulation_options);
   }
 
-  template <typename Vec1, typename Vec2, typename Mat1, typename Mat2>
-  DrakeSystemPtr tilqr(const Vec1& x0, const Vec2& u0, const Mat1& Q, const Mat2& R) {
-    if (!isTimeInvariant())
-      throw std::runtime_error("DrakeSystem::TILQR.  Time-invariant LQR only makes sense for time invariant systems.");
-
-    if (discrete_state_frame->getDim()>0)
-      throw std::runtime_error("DrakeSystem::TILQR.  Discrete-time LQR is not implemented yet (but would be easy).");
-    if (continuous_state_frame->getDim()<1)
-      throw std::runtime_error("DrakeSystem::TILQR.  This system has no continuous states.");
-
-    Eigen::VectorXd xu(continuous_state_frame->getDim()+input_frame->getDim());
-    xu << x0, u0;
-//    auto xu_taylor = Drake::initTaylorVecX(xu);
-
-//    auto xdot = dynamics(0,xu_taylor.head(continuous_state_frame->getDim()),xu_taylor.tail(input_frame->getDim()));
-//    std::cout << "xdot = " << xdot << std::endl;
-/*
-    auto xdot = autoDiffToGradientMatrix();
-    auto A = xdot->gradient().leftcols(continuous_state_frame->getDim());
-    auto B = xdot->gradient().rightcols(input_frame->getDim());
-
-    std::cout << "A = " << A << std::endl;
-    std::cout << "B = " << B << std::endl;
-*/
-    throw std::runtime_error("got here.");
-    return nullptr;
-  }
+  DrakeSystemPtr tilqr(const Eigen::VectorXd& x0, const Eigen::VectorXd& u0, const Eigen::MatrixXd& Q, const Eigen::MatrixXd& R);
 
   std::string name;
 
+  std::shared_ptr<const CoordinateFrame> continuous_state_frame, discrete_state_frame, state_frame; // should either protect these or avoid storing them all
   std::shared_ptr<const CoordinateFrame> input_frame;
   std::shared_ptr<const CoordinateFrame> output_frame;
-  std::shared_ptr<const CoordinateFrame> continuous_state_frame, discrete_state_frame, state_frame; // should either protect these or avoid storing them all
 
   virtual bool isTimeInvariant() const { return false; }    // are the dynamics,update, and output methods independent of t?  set to true if possible!
   virtual bool isDirectFeedthrough() const { return true; } // does the output method depend (directly) on the input u?  set to false if possible!
 
-protected:
+private:
 
-  virtual void ode1(double t0, double tf, const Eigen::VectorXd& x0, const SimulationOptions& options) const;
-
-//  virtual void ode45(double t0, double tf, const VectorXs& x0, double initial_step_size, double relative_error_tolerance, double absolute_error_tolerance);
+  void ode1(double t0, double tf, const Eigen::VectorXd& x0, const SimulationOptions& options) const;
+//  void ode45(double t0, double tf, const VectorXs& x0, double initial_step_size, double relative_error_tolerance, double absolute_error_tolerance);
 // c.f. https://www.google.com/search?q=Runge-Kutta-Fehlberg and edit ode45.m in matlab.
 };
 

@@ -14,7 +14,7 @@ public:
                   std::make_shared<CoordinateFrame>("PendulumContState",std::vector<std::string>({"theta","thetadot"})),
                   nullptr,
                   std::make_shared<LCMCoordinateFrame<drake::lcmt_drake_signal> >("PendulumInput",std::vector<std::string>({"tau"}),lcm),
-                  std::make_shared<LCMCoordinateFrame<drake::lcmt_drake_signal> >("PendulumState",continuous_state_frame->getCoordinateNames(),lcm)),
+                  std::make_shared<LCMCoordinateFrame<drake::lcmt_drake_signal> >("PendulumState",std::vector<std::string>({"theta","thetadot"}),lcm)),
           m(1.0), // kg
           l(.5),  // m
           b(0.1), // kg m^2 /s
@@ -36,8 +36,8 @@ public:
     return y;
   }
 
-  virtual bool isTimeInvariant(void) { return true; }
-  virtual bool isDirectFeedthrough(void) { return false; }
+  virtual bool isTimeInvariant() const override { return true; }
+  virtual bool isDirectFeedthrough() const override { return false; }
 
 
   DrakeSystemPtr balanceLQR() {

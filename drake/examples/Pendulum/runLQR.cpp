@@ -11,6 +11,7 @@ int main(int argc, char* argv[]) {
 
   std::shared_ptr<PendulumWithBotVis> pendulum = make_shared<PendulumWithBotVis>(lcm);
   DrakeSystemPtr controller = pendulum->balanceLQR();
+  return 1;
 
   DrakeSystemPtr sys = feedback(pendulum,controller);
 
