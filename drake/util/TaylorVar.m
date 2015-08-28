@@ -147,19 +147,32 @@ classdef TaylorVar
       end
       obj.dim=siz;
     end
-    function a=bsxfun(fun,a,b)
-      if (isa(a,'TaylorVar'))
-        if (any(a.dim~=size(b)))
-          error('not implemented yet'); 
-        end
-        for i=1:prod(a.dim)
-%          a(i)=feval(fun,a(i),b(i));  % want this, but can't call subsref
-%          indirectly from inside the class, so do it the hard way
-          si=substruct('()',{i});
-          subsasgn(a,si,feval(fun,subsref(a,si),subsref(b,si)));
-        end
-      else % only b is a TaylorVar
-        error('not implemented yet');
+    function c=bsxfun(fun,a,b)
+      size_a = size(a);
+      size_b = size(b);
+      if (numel(size_a)~=numel(size_b))
+        error('not implemented yet'); 
+      end
+      for i=1:numel(size_a)
+        if (size_a(i)==1 && size_b(i)>1)
+          d = 0*size_a+1; d(i)=size_b(i);
+          a = repmat(a,d);
+        elseif size_b(i)==1 && size_a(i)>1
+          d = 0*size_a+1; d(i)=size_a(i);
+          b = repmat(b,d);
+        end          
+      end
+      % make sure we insert into a TaylorVar
+      if ~isa(a,'TaylorVar') 
+        c=b;
+      else
+        c=a;
+      end
+      for i=1:prod(size(a))
+%       a(i)=feval(fun,a(i),b(i));  % want this, but can't call subsref
+%       indirectly from inside the class, so do it the hard way
+        si=substruct('()',{i});
+        subsasgn(c,si,feval(fun,subsref(a,si),subsref(b,si)));
       end
     end
     
@@ -337,8 +350,11 @@ classdef TaylorVar
         tv=TaylorVar(f,{df});
       end
     end
-    function tv=pinv(a)
-      tv=inv(a);  % try just using inv until i implement something better
+    function tv=pinv(A)
+      if rank(A.f)<A.dim(1)
+        error('not implemented yet')
+      end
+      tv=inv(A);
     end
     
     function tv=mldivide(a,b)
