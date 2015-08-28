@@ -72,6 +72,7 @@ public:
     return Pendulum::output(t,x,u);
   }
 
+private:
   BotVisualizer botvis;
 };
 
