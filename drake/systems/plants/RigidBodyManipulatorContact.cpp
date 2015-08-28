@@ -127,14 +127,14 @@ void getBodyPoints(std::vector<size_t> const & cindA, std::vector<size_t> const 
 //  After one call to the function, the n rows of the Jacobian matrix corresponding to bodyInd will be completed
 //  This function must be called with all bodyInds to finish the total accumulation of the contact Jacobian
 
-void RigidBodyManipulator::accumulateContactJacobian(const int bodyInd, Matrix3Xd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & J)
+void RigidBodyManipulator::accumulateContactJacobian(const KinematicsCache<double>& cache, const int bodyInd, Matrix3Xd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & J) const
 {
   const size_t nq = J.cols();
   const size_t numCA = cindA.size();
   const size_t numCB = cindB.size();
   const size_t offset = 3*numCA;
 
-  auto J_tmp = forwardKinJacobian(bodyPoints, bodyInd, 0, 0, true, 0).value();
+  auto J_tmp = forwardKinJacobian(cache, bodyPoints, bodyInd, 0, 0, true, 0).value();
 
   //add contributions from points in xA
   for (int x = 0 ; x < numCA ; x++) {
@@ -151,7 +151,7 @@ void RigidBodyManipulator::accumulateContactJacobian(const int bodyInd, Matrix3X
 // OUTPUTS:
 //  dJ: (3m x nq^2) Second order contact Jacobian
 // TODO: change output to be 3m * nq x nq (or possibly 3m * nv x nq)
-void RigidBodyManipulator::accumulateSecondOrderContactJacobian(const int bodyInd, Matrix3Xd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & dJ)
+void RigidBodyManipulator::accumulateSecondOrderContactJacobian(const KinematicsCache<double>& cache, const int bodyInd, Matrix3Xd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, MatrixXd & dJ) const
 {
   const size_t dJCols = dJ.cols(); //nq^2 instead of nq
   const size_t numPts = bodyPoints.cols();
@@ -159,7 +159,7 @@ void RigidBodyManipulator::accumulateSecondOrderContactJacobian(const int bodyIn
   const size_t numCB = cindB.size();
   const size_t offset = 3*numCA;
   MatrixXd dJ_tmp(3*numPts, dJCols);
-  auto J_gradientvar = forwardKinJacobian(bodyPoints, bodyInd, 0, 0, true, 1);
+  auto J_gradientvar = forwardKinJacobian(cache, bodyPoints, bodyInd, 0, 0, true, 1);
   dJ_tmp = Map<MatrixXd>(J_gradientvar.gradient().value().data(), dJ_tmp.rows(), dJ_tmp.cols());
 
   //add contributions from points in xA
@@ -188,7 +188,7 @@ void RigidBodyManipulator::accumulateSecondOrderContactJacobian(const int bodyIn
 //  dJ: (3m x nq^2) Second order contact Jacobian
 // TODO: change output to be 3m * nq x nq (or possibly 3m * nv x nq)
 
-void RigidBodyManipulator::computeContactJacobians(VectorXi const & idxA, VectorXi const & idxB, Map<Matrix3xd> const & xA, Map<Matrix3xd> const & xB, const bool compute_second_derivatives, MatrixXd & J, MatrixXd & dJ)
+void RigidBodyManipulator::computeContactJacobians(const KinematicsCache<double>& cache, VectorXi const & idxA, VectorXi const & idxB, Map<Matrix3xd> const & xA, Map<Matrix3xd> const & xB, const bool compute_second_derivatives, MatrixXd & J, MatrixXd & dJ) const
 {
   std::vector<int> bodyInds;
   const size_t nq = num_positions;
@@ -208,9 +208,9 @@ void RigidBodyManipulator::computeContactJacobians(VectorXi const & idxA, Vector
     findContactIndexes(idxA, bodyInd, cindA);
     findContactIndexes(idxB, bodyInd, cindB);
     getBodyPoints(cindA, cindB, xA, xB, bodyPoints);
-    accumulateContactJacobian(bodyInd, bodyPoints, cindA, cindB, J);
+    accumulateContactJacobian(cache, bodyInd, bodyPoints, cindA, cindB, J);
     if (compute_second_derivatives) {
-      accumulateSecondOrderContactJacobian(bodyInd, bodyPoints, cindA, cindB, dJ);
+      accumulateSecondOrderContactJacobian(cache, bodyInd, bodyPoints, cindA, cindB, dJ);
     }
   } 
 }
@@ -224,7 +224,7 @@ void RigidBodyManipulator::computeContactJacobians(VectorXi const & idxA, Vector
 // NOTE:
 //  k = BASIS_VECTOR_HALF_COUNT is defined as a preprocessor directive so that 
 //      Eigen templates can be optimized at compile time
-void RigidBodyManipulator::surfaceTangents(Map<Matrix3xd> const & normals, std::vector< Map<Matrix3xd> > & tangents)
+void RigidBodyManipulator::surfaceTangents(Map<Matrix3xd> const & normals, std::vector< Map<Matrix3xd> > & tangents) const
 {
   const size_t numContactPairs = normals.cols();
   for (size_t curNormal = 0 ; curNormal < numContactPairs; curNormal++) {

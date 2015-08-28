@@ -83,7 +83,7 @@ kinsol.q = q;
 kinsol.v = v;
 
 if (options.use_mex && model.mex_model_ptr~=0 && isnumeric(q))
-  doKinematicsmex(model.mex_model_ptr,q,options.compute_gradients,v,options.compute_JdotV);
+  kinsol.mex_model_ptr = doKinematicsmex(model.mex_model_ptr,q,options.compute_gradients,v,options.compute_JdotV);
   kinsol.mex = true;
 else
   kinsol.mex = false;

@@ -3,32 +3,13 @@
 #include <stdexcept>
 
 using namespace std;
+using namespace Eigen;
 
 const int defaultRobotNum[1] = {0};
 const set<int> RigidBody::defaultRobotNumSet(defaultRobotNum,defaultRobotNum+1);
 
-RigidBody::RigidBody(void) :
+RigidBody::RigidBody() :
     parent(nullptr),
-    S(TWIST_SIZE, 0),
-    dSdqi(0, 0),
-    J(TWIST_SIZE, 0),
-    dJdq(0, 0),
-    qdot_to_v(0, 0),
-    dqdot_to_v_dqi(0, 0),
-    dqdot_to_v_dq(0, 0),
-    v_to_qdot(0, 0),
-    dv_to_qdot_dqi(0, 0),
-    dv_to_qdot_dq(0, 0),
-    T_new(Isometry3d::Identity()),
-    dTdq_new(HOMOGENEOUS_TRANSFORM_SIZE, 0),
-    twist(TWIST_SIZE, 1),
-    dtwistdq(TWIST_SIZE, 0),
-    SdotV(TWIST_SIZE, 1),
-    dSdotVdqi(TWIST_SIZE, 0),
-    dSdotVdvi(TWIST_SIZE, 0),
-    JdotV(TWIST_SIZE, 1),
-    dJdotVdq(TWIST_SIZE, 0),
-    dJdotVdv(TWIST_SIZE, 0),
     collision_filter_group(DrakeCollision::DEFAULT_GROUP),
     collision_filter_ignores(DrakeCollision::NONE_MASK)
 {
@@ -41,34 +22,9 @@ RigidBody::RigidBody(void) :
 	I << Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
 }
 
-void RigidBody::setN(int nq, int nv) {
-  dJdq.resize(J.size(), nq);
-  dTdq_new.resize(HOMOGENEOUS_TRANSFORM_SIZE, nq);
-  dtwistdq.resize(twist.size(), nq);
-
-  dJdotVdq.resize(TWIST_SIZE, nq);
-  dJdotVdv.resize(TWIST_SIZE, nv);
-
-  dqdot_to_v_dq.resize(Eigen::NoChange, nq);
-  dv_to_qdot_dq.resize(Eigen::NoChange, nq);
-}
-
-
 void RigidBody::setJoint(std::unique_ptr<DrakeJoint> new_joint)
 {
   this->joint = move(new_joint);
-
-  S.resize(TWIST_SIZE, joint->getNumVelocities());
-  dSdqi.resize(S.size(), joint->getNumPositions());
-  J.resize(TWIST_SIZE, joint->getNumVelocities());
-  qdot_to_v.resize(joint->getNumVelocities(), joint->getNumPositions()),
-  dqdot_to_v_dqi.resize(qdot_to_v.size(), joint->getNumPositions()),
-  dqdot_to_v_dq.resize(qdot_to_v.size(), Eigen::NoChange);
-  v_to_qdot.resize(joint->getNumPositions(), joint->getNumVelocities()),
-  dv_to_qdot_dqi.resize(v_to_qdot.size(), joint->getNumPositions());
-  dv_to_qdot_dq.resize(v_to_qdot.size(), Eigen::NoChange);
-  dSdotVdqi.resize(TWIST_SIZE, joint->getNumPositions());
-  dSdotVdvi.resize(TWIST_SIZE, joint->getNumVelocities());
 }
 
 const DrakeJoint& RigidBody::getJoint() const

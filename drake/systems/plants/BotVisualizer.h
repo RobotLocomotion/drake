@@ -109,12 +109,12 @@ public:
     draw_msg.timestamp = static_cast<int64_t>(t*1000.0);
 
     Eigen::VectorXd q = u.head(manip.num_positions), v=Eigen::VectorXd::Zero(0);
-    manip.doKinematics(q,v);
+    KinematicsCache<double> cache = manip.doKinematics(q,v);
 
     Eigen::Vector3d points = Eigen::Vector3d::Zero();
     int i,j;
     for (i=0; i<manip.num_bodies; i++) {
-      auto pose = manip.forwardKin(points,i,0,2,0).value();
+      auto pose = manip.forwardKin(cache, points,i,0,2,0).value();
       std::vector<float>& position = draw_msg.position[i];
       for (j=0; j<3; j++) position[j] = static_cast<float>(pose(j));
       std::vector<float>& quaternion = draw_msg.quaternion[i];

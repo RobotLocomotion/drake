@@ -1,4 +1,4 @@
-function testcentroidalMomentumMatrix()
+function testCentroidalMomentumMatrix()
 test_cases = struct('urdf', ...
   {[getDrakePath, '/examples/Atlas/urdf/atlas_minimal_contact.urdf'], ...
   [getDrakePath, '/systems/plants/test/FallingBrick.urdf'], ...
@@ -39,6 +39,8 @@ kinsol = r.doKinematics(q, [], kinsol_options);
 
 kinsol_options.use_mex = true;
 kinsol = r.doKinematics(q, [], kinsol_options);
+kinsol_options.compute_gradients = false;
+r.doKinematics(getRandomConfiguration(r), [], kinsol_options); % to make sure there are no side effects in the C++ code
 [A_mex, dA_mex] = r.centroidalMomentumMatrix(kinsol);
 valuecheck(A_mex, A);
 valuecheck(dA_mex, dA);

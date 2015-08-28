@@ -38,19 +38,19 @@ int main(int argc, char* argv[])
       sscanf(argv[2 + model->num_positions + i], "%lf", &v(i));
   }
 
-  model->doKinematics(q, v, true, true);
+  KinematicsCache<double> cache = model->doKinematics(q, v, true, true);
 
-  auto H = model->massMatrix<double>();
+  auto H = model->massMatrix(cache);
   cout << H.value() << endl;
 
   map<int, unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
-  auto C = model->inverseDynamics(f_ext);
+  auto C = model->inverseDynamics(cache, f_ext);
   cout << C.value() << endl;
 
   cout << model->B << endl;
 
   if (model->loops.size()>0) {
-    auto phi = model->positionConstraintsNew<double>(1);
+    auto phi = model->positionConstraints(cache, 1);
     cout << phi.value() << endl;
     cout << phi.gradient().value() << endl;
   }

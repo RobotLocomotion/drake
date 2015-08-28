@@ -23,7 +23,7 @@ function [phi,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = contactConstraints(obj,ki
 % @retval dD {2k}(mn x n) dD/dq derivative
 
 compute_first_derivative = nargout > 8;
-compute_second_derivative = nargout > 10;
+compute_kinematics_gradients = nargout > 10;
 
 if nargin<3,
   allow_multiple_contacts = false;
@@ -35,7 +35,8 @@ end
 
 if ~isstruct(kinsol)
   % treat input as contactPositions(obj,q)
-  kinsol = doKinematics(obj,kinsol,compute_second_derivative);
+  kin_options = struct('compute_gradients', compute_kinematics_gradients);
+  kinsol = doKinematics(obj, kinsol, [], kin_options);
 end
 
 [phi,normal,xA,xB,idxA,idxB] = collisionDetect(obj,kinsol,allow_multiple_contacts,active_collision_options);
@@ -61,16 +62,16 @@ d = obj.surfaceTangents(normal);
 
 if obj.mex_model_ptr ~= 0
   if compute_first_derivative
-    if ~compute_second_derivative
-      [n, D] = contactConstraintsmex(obj.mex_model_ptr, normal, int32(idxA), int32(idxB), xA, xB, d);
+    if ~compute_kinematics_gradients
+      [n, D] = contactConstraintsmex(obj.mex_model_ptr, kinsol.mex_model_ptr, normal, int32(idxA), int32(idxB), xA, xB, d);
     else
-      [n, D, dn, dD] = contactConstraintsmex(obj.mex_model_ptr, normal, int32(idxA), int32(idxB), xA, xB, d);
+      [n, D, dn, dD] = contactConstraintsmex(obj.mex_model_ptr, kinsol.mex_model_ptr, normal, int32(idxA), int32(idxB), xA, xB, d);
     end
   end
 
 else %MATLAB implementation
   if compute_first_derivative
-    if ~compute_second_derivative
+    if ~compute_kinematics_gradients
       [n, D] = contactConstraintDerivatives(obj, normal, kinsol, idxA, idxB, xA, xB, d);
     else
       [n, D, dn, dD] = contactConstraintDerivatives(obj, normal, kinsol, idxA, idxB, xA, xB, d);

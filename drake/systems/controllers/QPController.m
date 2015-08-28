@@ -346,7 +346,7 @@ classdef QPController < MIMODrakeSystem
 
       if include_angular_momentum
         A = centroidalMomentumMatrix(r, kinsol);
-        Adot_times_v = centroidalMomentumMatrixDotTimesVmex(r, kinsol);
+        Adot_times_v = centroidalMomentumMatrixDotTimesVmex(r, kinsol.mex_model_ptr);
       end
 
       Jcomdot_times_v = centerOfMassJacobianDotTimesV(r, kinsol);

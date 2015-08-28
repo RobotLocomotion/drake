@@ -70,20 +70,19 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 		for (int i=0; i<matlab_model->num_velocities; i++) matlab_v[i] = distribution(generator);
 		cpp_v.noalias() = P*matlab_v;
 
-		{ // run kinematics
-			matlab_model->doKinematics(matlab_q, matlab_v, true, true);
-			cpp_model->doKinematics(cpp_q, cpp_v, true, true);
-		}
+		// run kinematics
+		KinematicsCache<double> matlab_cache = matlab_model->doKinematics(matlab_q, matlab_v, true, true);
+    KinematicsCache<double> cpp_cache = cpp_model->doKinematics(cpp_q, cpp_v, true, true);
 
 		{ // compare H, C, and B
 		  map<int, unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
 
-		  auto matlab_H = matlab_model->massMatrix<double>();
-		  auto cpp_H = cpp_model->massMatrix<double>();
+		  auto matlab_H = matlab_model->massMatrix(matlab_cache);
+		  auto cpp_H = cpp_model->massMatrix(cpp_cache);
 		  valuecheckMatrix(matlab_H.value(),cpp_H.value(),1e-8,"H doesn't match");
 
-		  auto matlab_C = matlab_model->inverseDynamics(f_ext);
-		  auto cpp_C = cpp_model->inverseDynamics(f_ext);
+		  auto matlab_C = matlab_model->inverseDynamics(matlab_cache, f_ext);
+		  auto cpp_C = cpp_model->inverseDynamics(cpp_cache, f_ext);
 		  valuecheckMatrix(matlab_C.value(),cpp_C.value(),1e-8,"C doesn't match");
 
 		  valuecheckMatrix(matlab_model->B,cpp_model->B,1e-8,"B doesn't match");
@@ -95,8 +94,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 		}
 
 		{ // compare position constraints
-			auto matlab_phi = matlab_model->positionConstraintsNew<double>(1);
-			auto cpp_phi = cpp_model->positionConstraintsNew<double>(1);
+			auto matlab_phi = matlab_model->positionConstraints(matlab_cache, 1);
+			auto cpp_phi = cpp_model->positionConstraints(cpp_cache, 1);
 
 			if (!matlab_phi.value().isApprox(cpp_phi.value(),1e-8)) {
 				cout << endl;
@@ -108,7 +107,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 					// rotate the vector into the non-fixed coordinate system
 					shared_ptr<RigidBody> b = cpp_model->loops[i].bodyB;
 					while (b->hasParent() && b->getJoint().getNumPositions()==0) {
-						c_phi = b->getJoint().getTransformToParentBody().matrix().topLeftCorner(3,3) * c_phi;
+						c_phi = b->getJoint().getTransformToParentBody().linear() * c_phi;
 						b = b->parent;
 					}
 					if (!m_phi.isApprox(c_phi,1e-8)) {
