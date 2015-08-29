@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
 // for (i=0; i<model->num_dof; i++)
 // 	 q(i)=(double)rand() / RAND_MAX;
   KinematicsCache<double> cache(model->bodies, 0);
-  model->doKinematics(q, VectorXd::Zero(model->num_velocities).eval(), cache);
+  model->doKinematics(q, VectorXd::Zero(model->num_velocities).eval(), cache, false);
 //  }
 
   VectorXd phi;

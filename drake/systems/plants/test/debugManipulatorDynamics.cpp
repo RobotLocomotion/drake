@@ -16,7 +16,7 @@ int main()
   VectorXd q = VectorXd::Random(model.num_positions);
   VectorXd v = VectorXd::Random(model.num_velocities);
   KinematicsCache<double> cache(model.bodies, 1);
-  model.doKinematics(q, v, cache, true, true);
+  model.doKinematics(q, v, cache, true);
 
   auto points = Matrix<double, 3, Eigen::Dynamic>::Random(3, 5).eval();
   int body_or_frame_ind = 8;

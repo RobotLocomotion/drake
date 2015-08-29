@@ -252,7 +252,7 @@ bool isSupportElementActive(SupportStateElement* se, bool contact_force_detected
 
 Matrix<bool, Dynamic, 1> getActiveSupportMask(RigidBodyManipulator* r, void* map_ptr, VectorXd q, VectorXd qd, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &available_supports, const Ref<const Matrix<bool, Dynamic, 1>> &contact_force_detected, double contact_threshold, double terrain_height) {
   KinematicsCache<double> cache(r->bodies, 0);
-  r->doKinematics(q, qd, cache, false, false);
+  r->doKinematics(q, qd, cache, false);
 
   size_t nsupp = available_supports.size();
   Matrix<bool, Dynamic, 1> active_supp_mask = Matrix<bool, Dynamic, 1>::Zero(nsupp);
@@ -318,7 +318,7 @@ Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_sta
 
   Isometry3d T_world_to_task = T_task_to_world.inverse();
   KinematicsCache<double> cache(r->bodies, 0);
-  r->doKinematics(robot_state.q, robot_state.qd, cache, false, false);
+  r->doKinematics(robot_state.q, robot_state.qd, cache, false);
 
   Vector3d origin = Vector3d::Zero();
   auto body_pose = r->forwardKin(cache, origin, body_index, 0, 2, 0);

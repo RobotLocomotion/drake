@@ -23,7 +23,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   VectorXd v = VectorXd::Zero(0);
   KinematicsCache<double> cache(model->bodies, 0); // FIXME: KinematicsCache should be passed in!
-  model->doKinematics(q, v, cache);
+  model->doKinematics(q, v, cache, false);
 
   const size_t numPositionConstraints = model->getNumPositionConstraints();
   

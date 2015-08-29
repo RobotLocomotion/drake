@@ -467,7 +467,7 @@ int setupAndSolveQP(
 
   MatrixXd R_DQyD_ls = R_ls + D_ls.transpose()*Qy*D_ls;
 
-pdata->r->doKinematics(robot_state.q, robot_state.qd, pdata->cache, false, false);
+  pdata->r->doKinematics(robot_state.q, robot_state.qd, pdata->cache, false);
 
   //---------------------------------------------------------------------
 

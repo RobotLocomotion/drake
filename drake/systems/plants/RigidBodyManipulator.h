@@ -14,6 +14,7 @@
 #include "GradientVar.h"
 #include <stdexcept>
 
+
 #undef DLLEXPORT_RBM
 #if defined(WIN32) || defined(WIN64)
   #if defined(drakeRBM_EXPORTS)
@@ -24,7 +25,6 @@
 #else
   #define DLLEXPORT_RBM
 #endif
-
 
 #include "RigidBody.h"
 #include "RigidBodyFrame.h"
@@ -100,7 +100,7 @@ public:
   std::string getStateName(int state_num) const;
 
   template <typename DerivedQ, typename DerivedV>
-  void doKinematics(const MatrixBase<DerivedQ>& q, const MatrixBase<DerivedV>& v, KinematicsCache<typename DerivedQ::Scalar>& cache, bool compute_gradients = false, bool compute_JdotV = false) const {
+  void doKinematics(const MatrixBase<DerivedQ>& q, const MatrixBase<DerivedV>& v, KinematicsCache<typename DerivedQ::Scalar>& cache, bool compute_JdotV = false) const {
     using namespace std;
     using namespace Eigen;
 
@@ -112,7 +112,8 @@ public:
       throw runtime_error("RigidBodyManipulator::doKinematics: call compile first.");
 
     int nq = num_positions;
-    int gradient_order = compute_gradients ? 1 : 0;
+    int gradient_order = cache.gradient_order;
+    bool compute_gradients = gradient_order > 0;
 
     typedef typename DerivedQ::Scalar Scalar;
 

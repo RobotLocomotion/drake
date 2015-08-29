@@ -1947,7 +1947,7 @@ void WorldFixedPositionConstraint::eval_valid(const double* valid_t, int num_val
   {
     Map<VectorXd> qvec((double*) valid_q.data()+i*nq, nq);
     VectorXd v = VectorXd::Zero(0);
-    robot->doKinematics(qvec, v, cache, false, false);
+    robot->doKinematics(qvec, v, cache, false);
     pos[i].resize(3,n_pts);
     auto pos_gradientvar = robot->forwardKin(cache, pts, body, 0, 0, 1);
     pos[i] = pos_gradientvar.value();
@@ -2042,7 +2042,7 @@ void WorldFixedOrientConstraint::eval_valid(const double* valid_t, int num_valid
   {
     Map<VectorXd> qvec((double*) valid_q.data()+i*nq, nq);
     VectorXd v = VectorXd::Zero(0);
-    robot->doKinematics(qvec, v, cache, false, false);
+    robot->doKinematics(qvec, v, cache, false);
     auto tmp_pos_gradientvar = robot->forwardKin(cache, Vector3d::Zero().eval(), body, 0, 2, 1);
     const auto& tmp_pos = tmp_pos_gradientvar.value();
     const auto& dtmp_pos = tmp_pos_gradientvar.gradient().value();
@@ -2135,7 +2135,7 @@ void WorldFixedBodyPoseConstraint::eval_valid(const double* valid_t, int num_val
   {
     Map<VectorXd> qvec((double *) valid_q.data() + i * nq, nq);
     VectorXd v = VectorXd::Zero(0);
-    robot->doKinematics(qvec, v, cache, false, false);
+    robot->doKinematics(qvec, v, cache, false);
     auto pos_tmp_gradientvar = robot->forwardKin(cache, Vector3d::Zero().eval(), body, 0, 2, 1);
     const auto& pos_tmp = pos_tmp_gradientvar.value();
     const auto& J_tmp = pos_tmp_gradientvar.gradient().value();
@@ -2225,7 +2225,7 @@ AllBodiesClosestDistanceConstraint::AllBodiesClosestDistanceConstraint(
   VectorXd q = VectorXd::Zero(robot->num_positions);
   VectorXd v(0, 1);
   KinematicsCache<double> cache(robot->bodies, 1);
-  robot->doKinematics(q, v, cache, true, false);
+  robot->doKinematics(q, v, cache, false);
   eval(&t, cache, c, dc);
   //DEBUG
   //std::cout << "ABCDC::ABCDC: c.size() = " << c.size() << std::endl;
@@ -2258,7 +2258,7 @@ void AllBodiesClosestDistanceConstraint::updateRobot(RigidBodyManipulator* robot
   VectorXd q = VectorXd::Zero(robot->num_positions);
   VectorXd v(0, 1);
   KinematicsCache<double> cache(robot->bodies, 1);
-  robot->doKinematics(q, v, cache, true, false);
+  robot->doKinematics(q, v, cache, false);
   eval(&t, cache, c, dc);
 
   this->num_constraint = static_cast<int>(c.size());
@@ -2705,7 +2705,7 @@ void GravityCompensationTorqueConstraint::eval(const double* t, KinematicsCache<
 {
   VectorXd qd = VectorXd::Zero(robot->num_velocities);
   KinematicsCache<double> cache_zero_velocity(robot->bodies, 1);
-  robot->doKinematics(cache.q, qd, cache_zero_velocity, true, true);
+  robot->doKinematics(cache.q, qd, cache_zero_velocity, true);
   std::map<int, std::unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
   auto G_gradientvar = robot->inverseDynamics(cache_zero_velocity, f_ext, (GradientVar<double, Eigen::Dynamic, 1>*) nullptr, 1);
 

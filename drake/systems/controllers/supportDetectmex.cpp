@@ -73,7 +73,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   int contact_logic_AND = (int) mxGetScalar(prhs[narg++]); // true if we should AND plan and sensor, false if we should OR them
 
   KinematicsCache<double> cache(pdata->r->bodies, 0); // FIXME: pass this into the function.
-  pdata->r->doKinematics(qvec, qdvec, cache, false, false);
+  pdata->r->doKinematics(qvec, qdvec, cache, false);
 
   //---------------------------------------------------------------------
   // Compute active support from desired supports -----------------------

@@ -37,7 +37,7 @@ int main()
   }
   VectorXd v = VectorXd::Zero(0);
   KinematicsCache<double> cache(model.bodies, 0);
-  model.doKinematics(q_sol, v, cache);
+  model.doKinematics(q_sol, v, cache, false);
   Vector3d com = model.centerOfMass(cache, 0).value();
   printf("%5.2f\n%5.2f\n%5.2f\n",com(0),com(1),com(2));
   /*MATFile *presultmat;

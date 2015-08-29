@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
   }
 
   KinematicsCache<double> cache(model->bodies, 1);
-  model->doKinematics(q, v, cache, true, true);
+  model->doKinematics(q, v, cache, true);
 
   auto H = model->massMatrix(cache);
   cout << H.value() << endl;

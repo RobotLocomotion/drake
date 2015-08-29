@@ -71,7 +71,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   Map< Vector6d > body_vdot_des(mxGetPrSafe(prhs[narg++]));
 
   KinematicsCache<double> cache(pdata->r->bodies, false);
-  pdata->r->doKinematics(q, qd, cache, false, false); // FIXME: pass this into the mex function instead
+  pdata->r->doKinematics(q, qd, cache, false); // FIXME: pass this into the mex function instead
 
   // TODO: this must be updated to use quaternions/spatial velocity
   auto body_pose_gradientvar = pdata->r->forwardKin(cache, Vector3d::Zero().eval(), pdata->body_index, 0, 1, 1);

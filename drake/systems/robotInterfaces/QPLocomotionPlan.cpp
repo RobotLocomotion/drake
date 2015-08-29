@@ -93,7 +93,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
   // do kinematics
   VectorXd v_dummy(0, 1);
   KinematicsCache<double> cache(robot.bodies, 0);
-  robot.doKinematics(q, v_dummy, cache);
+  robot.doKinematics(q, v_dummy, cache, false);
 
   RigidBodySupportState& support_state = settings.supports[support_index];
   bool is_last_support = support_index == settings.supports.size() - 1;
