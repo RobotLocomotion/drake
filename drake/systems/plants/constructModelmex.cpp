@@ -137,7 +137,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
               joint = std::unique_ptr<RevoluteJoint>(revolute_joint);
               setLimits(pBodies, i, revolute_joint);
               setDynamics(pBodies, i, revolute_joint);
-            } else if (std::isinf<double>(pitch)) {
+            } else if (std::isinf(static_cast<double>(pitch))) {
               PrismaticJoint *prismatic_joint = new PrismaticJoint(joint_name, transform_to_parent_body, joint_axis);
               joint = std::unique_ptr<PrismaticJoint>(prismatic_joint);
               setLimits(pBodies, i, prismatic_joint);
