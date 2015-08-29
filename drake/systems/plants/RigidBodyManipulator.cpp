@@ -29,7 +29,7 @@ void getFiniteIndexes(T const & v, std::vector<int> &finite_indexes)
   const size_t n = v.size();
   for (int x = 0; x < n; x++)
   {
-    if (std::isfinite<double>(static_cast<double>(v[x]))) {
+    if (std::isfinite(static_cast<double>(v[x]))) {
       finite_indexes.push_back(x);
     }
   }
