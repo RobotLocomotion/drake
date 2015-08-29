@@ -25,4 +25,13 @@ public:
   POSITION_AND_VELOCITY_DEPENDENT_METHODS_IMPL(Eigen::AutoDiffScalar<Eigen::VectorXd>)
 };
 
+/*
+ * from http://stackoverflow.com/questions/1903954/is-there-a-standard-sign-function-signum-sgn-in-c-c
+ * returns 0 when val is +0 or -0
+ */
+template <typename T> int sign(T val)
+{
+  return (T(0) < val) - (val < T(0));
+}
+
 #endif //DRAKE_DRAKEJOINTIMPL_H

@@ -1,5 +1,4 @@
 #include "QPCommon.h"
-#include "drakeFloatingPointUtil.h"
 #include "controlUtil.h"
 #include <map>
 #include <memory>
