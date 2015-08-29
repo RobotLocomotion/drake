@@ -19,6 +19,7 @@ classdef RigidBodyLoop < RigidBodyElement
       relative_position_fun = drakeFunction.kinematic.RelativePosition(model,obj.body1,obj.body2,obj.pt1);
 %      relative_position_fun = relative_position_fun.addInputFrame(model.getVelocityFrame);
       con = DrakeFunctionConstraint(obj.pt2,obj.pt2,relative_position_fun);
+      con.grad_level = 2;
       % todo: naming logic should go into the constraint classes
       % todo: support 2D constraints for planar loops?
       con = setName(con,{[obj.name,'_x'];[obj.name,'_y'];[obj.name,'_z']});

@@ -67,7 +67,7 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
       options.base_or_frame_id = obj.frameB;
       options.in_terms_of_qdot = true;
       if compute_second_derivatives
-        kinsol = obj.rbm.doKinematics(q,true,false);
+        kinsol = obj.rbm.doKinematics(q,true);
         if obj.frameA == 0
           [pts_in_world,JA,dJA] = getCOM(obj.rbm,kinsol);
           [pts_in_B,P,JB,dP,dJB] = obj.rbm.bodyKin(kinsol,obj.frameB,pts_in_world);
