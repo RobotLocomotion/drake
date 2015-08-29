@@ -47,6 +47,11 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
   endif()
 elseif (MSVC)
+   if (NOT ${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER 18.0.0)
+     # version number decoder ring at https://en.wikipedia.org/wiki/Visual_C%2B%2B
+     message(FATAL_ERROR "requires MS VC++ 12.0 or greater (Visual Studio >= 2013).  download for free at http://visualstudio.com")
+   endif()
+
 #  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /arch:SSE2 /openmp")
 #  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:SSE2 /openmp")
 

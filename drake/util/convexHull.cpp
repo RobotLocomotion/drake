@@ -8,7 +8,6 @@
 #include <iostream>
 #include <limits>
 #include "convexHull.h"
-#include "drakeFloatingPointUtil.h"
 
 using namespace std;
 using namespace Eigen;
@@ -86,7 +85,7 @@ double signedDistanceInsideConvexHull(const Ref<const Matrix<double, 2, Dynamic>
     Vector2d ai = R * Vector2d(hull_pts[i+1].x - hull_pts[i].x, hull_pts[i+1].y - hull_pts[i].y);
     double b = ai.transpose() * Vector2d(hull_pts[i].x, hull_pts[i].y);
     double n = ai.norm();
-    if (isNormal(n)) {
+    if (std::isnormal(n)) {
       ai = ai.array() / n;
       b = b / n;
       double d = b - ai.transpose() * q;

@@ -7,7 +7,6 @@
 #include <limits>
 #include <exception>
 #include <stdexcept>
-#include "drakeFloatingPointUtil.h"
 #include "drakeGradientUtil.h"
 
 
@@ -115,7 +114,7 @@ public:
   Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const
   {
     Eigen::VectorXd q(1);
-    if (isFinite(DrakeJoint::joint_limit_min.value()) && isFinite(DrakeJoint::joint_limit_max.value())) {
+    if (std::isfinite(DrakeJoint::joint_limit_min.value()) && std::isfinite(DrakeJoint::joint_limit_max.value())) {
       std::uniform_real_distribution<double> distribution(DrakeJoint::joint_limit_min.value(), DrakeJoint::joint_limit_max.value());
       q[0] = distribution(generator);
     }
@@ -123,10 +122,10 @@ public:
       std::normal_distribution<double> distribution;
       double stddev = 1.0;
       double joint_limit_offset = 1.0;
-      if (isFinite(DrakeJoint::joint_limit_min.value())) {
+      if (std::isfinite(DrakeJoint::joint_limit_min.value())) {
         distribution = std::normal_distribution<double>(DrakeJoint::joint_limit_min.value() + joint_limit_offset, stddev);
       }
-      else if (isFinite(DrakeJoint::joint_limit_max.value())) {
+      else if (std::isfinite(DrakeJoint::joint_limit_max.value())) {
         distribution = std::normal_distribution<double>(DrakeJoint::joint_limit_max.value() - joint_limit_offset, stddev);
       }
       else {

@@ -10,7 +10,6 @@
 #include <string>
 #include <stdexcept>
 #include <cmath>
-#include "../drakeFloatingPointUtil.h"
 
 // requires <chrono>, which isn't available in MSVC2010...
 #if !defined(WIN32) && !defined(WIN64)
@@ -98,7 +97,7 @@ void valuecheckMatrix(const Eigen::MatrixBase<DerivedA>& a, const Eigen::MatrixB
         for (int j = 0; j < a.cols(); j++) {
           bool both_positive_infinity = a(i, j) == std::numeric_limits<double>::infinity() && b(i, j) == std::numeric_limits<double>::infinity();
           bool both_negative_infinity = a(i, j) == -std::numeric_limits<double>::infinity() && b(i, j) == -std::numeric_limits<double>::infinity();
-          bool both_nan = isNaN(a(i, j)) && isNaN(b(i, j));
+          bool both_nan = std::isnan(a(i, j)) && std::isnan(b(i, j));
           ok = ok && (both_positive_infinity || both_negative_infinity || (both_nan) || (std::abs(a(i, j) - b(i, j)) < tol));
         }
       if (ok)
