@@ -24,14 +24,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   VectorXd v = VectorXd::Zero(0);
   model->doKinematics(q, v);
 
-  const size_t numPositionConstraints = model->getNumPositionConstraints();
-  
-  plhs[0] = mxCreateDoubleMatrix(numPositionConstraints, 1, mxREAL);
-  plhs[1] = mxCreateDoubleMatrix(numPositionConstraints, nq, mxREAL);
+  auto phi = model->positionConstraints<double>(1);
+  plhs[0] = eigenToMatlab(phi.value());
+  plhs[1] = eigenToMatlab(phi.gradient().value());
 
-  Map<VectorXd> phi(mxGetPrSafe(plhs[0]), numPositionConstraints);
-  Map<MatrixXd> J(mxGetPrSafe(plhs[1]), numPositionConstraints, nq);
-
-  model->positionConstraints(phi, J);  
 }
 

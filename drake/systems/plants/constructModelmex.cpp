@@ -360,10 +360,12 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     model->frames[i].name.assign(buf,strlen(buf));
 
     pm = mxGetProperty(pFrames,i,"body_ind");
-    model->frames[i].body_ind = (int) mxGetScalar(pm)-1;
+    model->frames[i].body = model->bodies[(int) mxGetScalar(pm)-1];
 
     pm = mxGetProperty(pFrames,i,"T");
     memcpy(model->frames[i].Ttree.data(),mxGetPrSafe(pm),sizeof(double)*4*4);
+
+    model->frames[i].frame_index = -i-2;
   }
 
   const mxArray* a_grav_array = mxGetProperty(pRBM,0,"gravity");
@@ -382,17 +384,14 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   model->loops.clear();
   for (int i=0; i<num_loops; i++)
   {
-    pm = mxGetProperty(pLoops,i,"body1");
-    int body_A_ind = static_cast<int>(mxGetScalar(pm)-1);
-    pm = mxGetProperty(pLoops,i,"body2");
-    int body_B_ind = static_cast<int>(mxGetScalar(pm)-1);
-    pm = mxGetProperty(pLoops,i,"pt1");
-    Vector3d pA;
-    memcpy(pA.data(), mxGetPrSafe(pm), 3*sizeof(double));
-    pm = mxGetProperty(pLoops,i,"pt2");
-    Vector3d pB;
-    memcpy(pB.data(), mxGetPrSafe(pm), 3*sizeof(double));
-    model->loops.push_back(RigidBodyLoop(model->bodies[body_A_ind], pA, model->bodies[body_B_ind], pB));
+    pm = mxGetProperty(pLoops,i,"frameA");
+    int frame_A_ind = static_cast<int>(-mxGetScalar(pm)-2);
+    pm = mxGetProperty(pLoops,i,"frameB");
+    int frame_B_ind = static_cast<int>(-mxGetScalar(pm)-2);
+    pm = mxGetProperty(pLoops,i,"axis");
+    Vector3d axis;
+    memcpy(axis.data(), mxGetPrSafe(pm), 3*sizeof(double));
+    model->loops.push_back(RigidBodyLoop(model->frames[frame_A_ind],model->frames[frame_B_ind],axis));
   }
 
   //ACTUATORS

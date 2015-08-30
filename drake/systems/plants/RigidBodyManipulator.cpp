@@ -38,7 +38,7 @@ void getFiniteIndexes(T const & v, std::vector<int> &finite_indexes)
 
 std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj)
 {
-  os << "loop connects pt " << obj.ptA.transpose() << " on " << obj.bodyA->linkname << " to pt " << obj.ptB.transpose() << " on " << obj.bodyB->linkname << std::endl;
+  os << "loop connects pt " << obj.frameA->Ttree.topRightCorner(1,3).transpose() << " on " << obj.frameA->body->linkname << " to pt " << obj.frameB->Ttree.topRightCorner(1,3).transpose() << " on " << obj.frameB->body->linkname << std::endl;
   return os;
 }
 
@@ -1115,7 +1115,7 @@ int RigidBodyManipulator::parseBodyOrFrameID(const int body_or_frame_id, Matrix4
       stream << "Got a frame ind greater than available!\n";
       throw std::runtime_error(stream.str());
     }
-    body_ind = frames[frame_ind].body_ind;
+    body_ind = frames[frame_ind].body->body_index;
 
     if (Tframe)
       (*Tframe) = frames[frame_ind].Ttree;
@@ -2052,20 +2052,22 @@ std::string RigidBodyManipulator::getBodyOrFrameName(int body_or_frame_id)
 }
 
 template <typename Scalar>
-GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraintsNew(int gradient_order)
+GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints(int gradient_order)
 {
   if (gradient_order > 1)
     throw std::runtime_error("only first order gradients are implemented so far (it's trivial to add more)");
 
   GradientVar<Scalar, Eigen::Dynamic, 1> ret(3*loops.size(), 1, num_positions, gradient_order);
   for (size_t i = 0; i < loops.size(); i++) {
-    auto ptA_in_B = forwardKin(loops[i].ptA, loops[i].bodyA->body_index, loops[i].bodyB->body_index, 0, gradient_order);
+    auto ptA_in_B = forwardKin(Vector3d::Zero(),loops[i].frameA->frame_index, loops[i].frameB->frame_index, 0, gradient_order);
 
-    ret.value().middleRows(3*i,3) = ptA_in_B.value() - loops[i].ptB;
-
+    ret.value().middleRows(3*i,3) = ptA_in_B.value();
     if (gradient_order > 0) {
       ret.gradient().value().middleRows(3*i, 3) = ptA_in_B.gradient().value();
     }
+
+    // todo: implement orientation constraints
+
   }
   return ret;
 }
@@ -2135,50 +2137,6 @@ size_t RigidBodyManipulator::getNumPositionConstraints() const
   return loops.size()*3;
 }
 
-template <typename DerivedA, typename DerivedB>
-void RigidBodyManipulator::positionConstraints(MatrixBase<DerivedA> & phi, MatrixBase<DerivedB> & J)
-{
-  const int nq = num_positions;
-  const size_t numLoops = loops.size();
-  const size_t numConstraints = getNumPositionConstraints();
-  phi = VectorXd::Zero(numConstraints);
-  J = MatrixXd::Zero(numConstraints, nq);
-  Matrix<double, 7, 1> bpTb, wTb;
-
-  Vector3d bodyA_pos;
-  Vector3d ptA, origin_pt;
-  MatrixXd JA(3,nq), dbTw_transdq(3,nq), dwTb(7,nq);
-  origin_pt.setZero();
-  Matrix4d dbTw_quat = dquatConjugate();
-
-  for (size_t i = 0; i < numLoops; i++) {
-    bpTb << -loops[i].ptB, 1.0, 0.0, 0.0, 0.0;
-    ptA = loops[i].ptA;
-
-    auto bodyA_pos_gradientvar = forwardKin(ptA, loops[i].bodyA->body_index, 0, 0, 1);
-    bodyA_pos = bodyA_pos_gradientvar.value();
-    JA = bodyA_pos_gradientvar.gradient().value();
-    auto bodyB_pos_gradientvar = forwardKin(origin_pt, loops[i].bodyB->body_index, 0, 2, 1);
-    wTb = bodyB_pos_gradientvar.value();
-    dwTb = bodyB_pos_gradientvar.gradient().value();
-
-    Vector4d bTw_quat = quatConjugate(wTb.tail<4>());
-    MatrixXd dbTw_quatdq = dbTw_quat*dwTb.block(3,0,4,nq);
-    Vector3d bTw_trans = quatRotateVec(bTw_quat,-wTb.head<3>());
-    Matrix<double,3,7> dbTw_trans = dquatRotateVec(bTw_quat,-wTb.head<3>());
-    dbTw_transdq = dbTw_trans.block(0,0,3,4)*dbTw_quatdq-dbTw_trans.block(0,4,3,3)*dwTb.block(0,0,3,nq);
-    Matrix<double,3,7> dbpTw_trans1 = dquatRotateVec(bpTb.tail<4>(),bTw_trans);
-    MatrixXd dbpTw_trans1dq = dbpTw_trans1.block(0,4,3,3)*dbTw_transdq;
-    Vector3d bpTw_trans = bTw_trans-loops[i].ptB;
-    Matrix<double,4,8> dbpTw_quat = dquatProduct(bpTb.tail<4>(),bTw_quat);
-    MatrixXd dbpTw_quatdq = dbpTw_quat.block(0,4,4,4)*dbTw_quatdq;
-    Vector3d bp_bodyA_pos1 = quatRotateVec(bTw_quat,bodyA_pos);
-    Matrix<double,3,7> dbp_bodyA_pos1 = dquatRotateVec(bTw_quat,bodyA_pos);
-    MatrixXd dbp_bodyA_pos1dq = dbp_bodyA_pos1.block(0,0,3,4)*dbpTw_quatdq+dbp_bodyA_pos1.block(0,4,3,3)*JA;
-    phi.segment(3*i, 3) = bp_bodyA_pos1+bpTw_trans;
-    J.block(3*i, 0, 3, nq) = dbp_bodyA_pos1dq+dbpTw_trans1dq;
-  }
-}
 
 void RigidBodyManipulator::checkCachedKinematicsSettings(bool kinematics_gradients_required, bool velocity_kinematics_required, bool jdot_times_v_required, const std::string& method_name)
 {
@@ -2204,6 +2162,7 @@ void RigidBodyManipulator::addFrame(const RigidBodyFrame& frame)
 {
   frames.push_back(frame);
   num_frames = static_cast<int>(frames.size());
+  frames[num_frames].frame_index=-num_frames-2; // yuck!!
 }
 
 // explicit instantiations (required for linking):
@@ -2247,10 +2206,7 @@ template DLLEXPORT_RBM GradientVar<double, 6, Dynamic> RigidBodyManipulator::wor
 template DLLEXPORT_RBM GradientVar<double, 6, 1> RigidBodyManipulator::transformSpatialAcceleration<double>(GradientVar<double, 6, 1> const&, int, int, int, int);
 template DLLEXPORT_RBM GradientVar<double, 6, 1> RigidBodyManipulator::worldMomentumMatrixDotTimesV<double>(int, const std::set<int>&);
 
-template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraintsNew(int);
-
-template DLLEXPORT_RBM void RigidBodyManipulator::positionConstraints(MatrixBase<VectorXd> &, MatrixBase<MatrixXd> &);
-template DLLEXPORT_RBM void RigidBodyManipulator::positionConstraints(MatrixBase< Map< VectorXd > > &, MatrixBase< Map< MatrixXd > > &);
+template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints(int);
 
 template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints(MatrixBase<VectorXd> const &, MatrixBase<VectorXd> &, MatrixBase<MatrixXd> &) const ;
 template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints(MatrixBase< Map<VectorXd> > const &, MatrixBase<VectorXd> &, MatrixBase<MatrixXd> &) const ;

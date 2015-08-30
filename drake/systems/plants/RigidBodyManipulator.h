@@ -56,11 +56,11 @@ public:
 class DLLEXPORT_RBM RigidBodyLoop
 {
 public:
-  RigidBodyLoop(std::shared_ptr<RigidBody> _bodyA, Vector3d _ptA, std::shared_ptr<RigidBody> _bodyB, Vector3d _ptB) :
-    bodyA(_bodyA), bodyB(_bodyB), ptA(_ptA), ptB(_ptB) {};
+  RigidBodyLoop(const std::shared_ptr<RigidBodyFrame>& _frameA, const std::shared_ptr<RigidBodyFrame>& _frameB, const Vector3d& _axis) :
+    frameA(_frameA), frameB(_frameB), axis(_axis) {};
 
-  std::shared_ptr<RigidBody> bodyA, bodyB;
-  Vector3d ptA, ptB;
+  std::shared_ptr<RigidBodyFrame> frameA, frameB;
+  Vector3d axis;
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -268,10 +268,7 @@ public:
   int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe = nullptr);
 
   template <typename Scalar>
-  GradientVar<Scalar, Eigen::Dynamic, 1> positionConstraintsNew(int gradient_order);
-
-  template <typename DerivedA, typename DerivedB>
-  void positionConstraints(Eigen::MatrixBase<DerivedA> & phi, Eigen::MatrixBase<DerivedB> & J);
+  GradientVar<Scalar, Eigen::Dynamic, 1> positionConstraints(int gradient_order);
 
   size_t getNumPositionConstraints() const;
 
