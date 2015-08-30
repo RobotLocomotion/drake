@@ -11,9 +11,9 @@ if (kinsol.mex)
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
   end
   if compute_gradients
-    [Adot_times_v, dAdot_times_v] = centroidalMomentumMatrixDotTimesVmex(obj.mex_model_ptr, kinsol.mex_model_ptr, robotnum);
+    [Adot_times_v, dAdot_times_v] = centroidalMomentumMatrixDotTimesVmex(obj.mex_model_ptr, kinsol.mex_ptr, robotnum);
   else
-    Adot_times_v = centroidalMomentumMatrixDotTimesVmex(obj.mex_model_ptr, kinsol.mex_model_ptr, robotnum);
+    Adot_times_v = centroidalMomentumMatrixDotTimesVmex(obj.mex_model_ptr, kinsol.mex_ptr, robotnum);
   end
 else
   

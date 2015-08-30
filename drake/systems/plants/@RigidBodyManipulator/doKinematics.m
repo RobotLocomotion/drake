@@ -70,6 +70,7 @@ if ~isfield(options, 'use_mex'), options.use_mex = true; end
 if ~isfield(options, 'compute_gradients'), options.compute_gradients = false; end
 if ~isfield(options, 'compute_JdotV'), options.compute_JdotV = ~isempty(v); end
 if ~isfield(options, 'force_new_kinsol'), options.force_new_kinsol = false; end
+if ~isfield(options, 'kinematics_cache_ptr_to_use'), options.kinematics_cache_ptr_to_use = []; end
 
 if warn_signature_changed
   % TODO: turn on warning
@@ -83,7 +84,18 @@ kinsol.q = q;
 kinsol.v = v;
 
 if (options.use_mex && model.mex_model_ptr~=0 && isnumeric(q))
-  kinsol.mex_model_ptr = doKinematicsmex(model.mex_model_ptr,q,options.compute_gradients,v,options.compute_JdotV);
+  if isempty(options.kinematics_cache_ptr_to_use)
+    if options.compute_gradients
+      kinematics_cache_ptr = model.default_kinematics_cache_ptr_with_gradients;
+    else
+      kinematics_cache_ptr = model.default_kinematics_cache_ptr_no_gradients;
+    end
+  else
+    kinematics_cache_ptr = options.kinematics_cache_ptr_to_use;
+  end
+  
+  doKinematicsmex(model.mex_model_ptr, kinematics_cache_ptr, q, v, options.compute_JdotV);
+  kinsol.mex_ptr = kinematics_cache_ptr;
   kinsol.mex = true;
 else
   kinsol.mex = false;

@@ -26,6 +26,12 @@ classdef RigidBodyManipulator < Manipulator
     % That output does not change between compilations, and is requested
     % at every simulation dt, so storing it can speed things up.
     cached_terrain_contact_points_struct=[];
+    
+    % default kinematics caches; temporary way to avoid having to create
+    % and destroy DrakeMexPointers to KinematicsCache every time
+    % doKinematics is called
+    default_kinematics_cache_ptr_no_gradients = [];
+    default_kinematics_cache_ptr_with_gradients = [];
                                             
     frame = [];     % array of RigidBodyFrame objects
 
@@ -2065,6 +2071,8 @@ classdef RigidBodyManipulator < Manipulator
       if (exist('constructModelmex')==3)
 %        obj.mex_model_ptr = debugMexEval('constructModelmex',obj);
         obj.mex_model_ptr = constructModelmex(obj);
+        obj.default_kinematics_cache_ptr_no_gradients = createKinematicsCachemex(obj.mex_model_ptr, false);
+        obj.default_kinematics_cache_ptr_with_gradients = createKinematicsCachemex(obj.mex_model_ptr, true);
       end
     end
 

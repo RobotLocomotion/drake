@@ -63,9 +63,9 @@ d = obj.surfaceTangents(normal);
 if obj.mex_model_ptr ~= 0
   if compute_first_derivative
     if ~compute_kinematics_gradients
-      [n, D] = contactConstraintsmex(obj.mex_model_ptr, kinsol.mex_model_ptr, normal, int32(idxA), int32(idxB), xA, xB, d);
+      [n, D] = contactConstraintsmex(obj.mex_model_ptr, kinsol.mex_ptr, normal, int32(idxA), int32(idxB), xA, xB, d);
     else
-      [n, D, dn, dD] = contactConstraintsmex(obj.mex_model_ptr, kinsol.mex_model_ptr, normal, int32(idxA), int32(idxB), xA, xB, d);
+      [n, D, dn, dD] = contactConstraintsmex(obj.mex_model_ptr, kinsol.mex_ptr, normal, int32(idxA), int32(idxB), xA, xB, d);
     end
   end
 

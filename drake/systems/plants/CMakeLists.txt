@@ -59,6 +59,7 @@ if (MATLAB_FOUND)
   add_rbm_mex(positionConstraintsmex)
   add_rbm_mex(testFrameParsermex)
   add_rbm_mex(computeS1Trajmex)
+  add_rbm_mex(createKinematicsCachemex)
   target_link_libraries(computeS1Trajmex drakeZMPUtil)
 
   if(gurobi_FOUND)

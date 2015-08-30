@@ -26,7 +26,7 @@ classdef MinDistanceConstraint < SingleTimeKinematicConstraint
       else
         kinsol = q_or_kinsol;
       end
-      [c,dc] = smoothDistancePenaltymex(obj.robot.mex_model_ptr, kinsol.mex_model_ptr, obj.min_distance,obj.active_collision_options);
+      [c,dc] = smoothDistancePenaltymex(obj.robot.mex_model_ptr, kinsol.mex_ptr, obj.min_distance,obj.active_collision_options);
     end
   end
 
