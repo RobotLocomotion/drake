@@ -63,6 +63,7 @@ private:
 public:
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> q;
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> v;
+  bool velocity_vector_valid;
   int gradient_order;
   bool position_kinematics_cached;
   bool gradients_cached;
@@ -74,6 +75,7 @@ public:
   KinematicsCache(const std::vector<std::shared_ptr<RigidBody>>& bodies, int gradient_order) :
       q(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(getNumPositions(bodies), 1)),
       v(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(getNumVelocities(bodies), 1)),
+      velocity_vector_valid(false),
       gradient_order(gradient_order)
   {
     assert(gradient_order == 0 || gradient_order == 1);
@@ -104,15 +106,17 @@ public:
     assert(this->q.rows() == q.rows());
     this->q = q;
     invalidate();
+    velocity_vector_valid = false;
   }
 
   template <typename DerivedQ, typename DerivedV>
   void initialize(const Eigen::MatrixBase<DerivedQ>& q, const Eigen::MatrixBase<DerivedV>& v) {
-    initialize(q);
+    initialize(q); // also invalidates
     static_assert(DerivedV::ColsAtCompileTime == 1, "v must be a vector");
     static_assert(std::is_same<typename DerivedV::Scalar, Scalar>::value, "scalar type of v must match scalar type of KinematicsCache");
     assert(this->v.rows() == v.rows());
     this->v = v;
+    velocity_vector_valid = true;
   }
 
   void checkCachedKinematicsSettings(bool kinematics_gradients_required, bool velocity_kinematics_required, bool jdot_times_v_required, const std::string& method_name) const
@@ -142,23 +146,17 @@ private:
   }
 
   static int getNumPositions(const std::vector<std::shared_ptr<RigidBody>>& bodies) {
-    int ret = 0;
-    for (auto it = bodies.begin(); it != bodies.end(); ++it) {
-      RigidBody& body = **it;
-      if (body.hasParent())
-        ret += body.getJoint().getNumPositions();
-    }
-    return ret;
+    auto add_num_positions = [] (int result, std::shared_ptr<RigidBody> body_ptr) -> int {
+      return body_ptr->hasParent() ? result + body_ptr->getJoint().getNumPositions() : result;
+    };
+    return std::accumulate(bodies.begin(), bodies.end(), 0, add_num_positions);
   }
 
   static int getNumVelocities(const std::vector<std::shared_ptr<RigidBody>>& bodies) {
-    int ret = 0;
-    for (auto it = bodies.begin(); it != bodies.end(); ++it) {
-      RigidBody& body = **it;
-      if (body.hasParent())
-        ret += body.getJoint().getNumVelocities();
-    }
-    return ret;
+    auto add_num_velocities = [] (int result, std::shared_ptr<RigidBody> body_ptr) -> int {
+      return body_ptr->hasParent() ? result + body_ptr->getJoint().getNumVelocities() : result;
+    };
+    return std::accumulate(bodies.begin(), bodies.end(), 0, add_num_velocities);
   }
 };
 
