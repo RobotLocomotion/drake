@@ -84,7 +84,7 @@ public:
       const RigidBody& body = *body_shared_ptr;
       int num_positions_joint = body.hasParent() ? body.getJoint().getNumPositions() : 0;
       int num_velocities_joint = body.hasParent() ? body.getJoint().getNumVelocities() : 0;
-      elements.insert(std::make_pair(&body, KinematicsCacheElement<Scalar>(q.size(), v.size(), num_positions_joint, num_velocities_joint, gradient_order)));
+      elements.insert({&body, KinematicsCacheElement<Scalar>(q.size(), v.size(), num_positions_joint, num_velocities_joint, gradient_order)});
     }
     invalidate();
   }
