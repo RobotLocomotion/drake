@@ -2691,7 +2691,7 @@ GravityCompensationTorqueConstraint(RigidBodyManipulator* robot,
 void GravityCompensationTorqueConstraint::eval(const double* t, KinematicsCache<double>& cache, VectorXd& c, MatrixXd& dc) const
 {
   VectorXd qd = VectorXd::Zero(robot->num_velocities);
-  KinematicsCache<double> cache_zero_velocity = robot->doKinematics(cache.getQ(), qd, 1, true);
+  KinematicsCache<double> cache_zero_velocity = robot->doKinematics(cache.getQ(), qd, 1);
   std::map<int, std::unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
   auto G_gradientvar = robot->inverseDynamics(cache_zero_velocity, f_ext, (GradientVar<double, Eigen::Dynamic, 1>*) nullptr, 1);
 

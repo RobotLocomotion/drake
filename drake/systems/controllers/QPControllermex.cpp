@@ -236,7 +236,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   MatrixXd R_DQyD_ls = R_ls + D_ls.transpose()*Qy*D_ls;
 
-  KinematicsCache<double> cache = pdata->r->doKinematics(q, qd, 0, false);
+  KinematicsCache<double> cache = pdata->r->doKinematics(q, qd);
 
   //---------------------------------------------------------------------
   // Compute active support from desired supports -----------------------

@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
       sscanf(argv[2 + model->num_positions + i], "%lf", &v(i));
   }
 
-  KinematicsCache<double> cache = model->doKinematics(q, v, 1, true);
+  KinematicsCache<double> cache = model->doKinematics(q, v, 1);
 
   auto H = model->massMatrix(cache);
   cout << H.value() << endl;

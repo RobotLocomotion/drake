@@ -185,7 +185,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
         if (!isSupportingBody(body_id, support_state)) {
           toe_off_active[side] = false;
           knee_pd_active[side] = false;
-          updateSwingTrajectory(t_plan, body_motion, body_motion_segment_index - 1, cache);
+          updateSwingTrajectory(t_plan, body_motion, body_motion_segment_index - 1, cache, v);
         }
       }
 
@@ -209,7 +209,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
         this->applyKneePD(side, qp_input);
       }
       if (body_motion.isToeOffAllowed(body_motion_segment_index)) {
-        updateSwingTrajectory(t_plan, body_motion, body_motion_segment_index, cache);
+        updateSwingTrajectory(t_plan, body_motion, body_motion_segment_index, cache, v);
       }
     }
 
@@ -429,7 +429,7 @@ drake::lcmt_support_data QPLocomotionPlan::createSupportDataElement(const RigidB
   return support_data_element_lcm;
 }
 
-void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const KinematicsCache<double>& cache) {
+void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const KinematicsCache<double>& cache, const VectorXd& v) {
   int takeoff_segment_index = body_motion_segment_index + 1; // this function is called before takeoff
   int num_swing_segments = 3;
   int landing_segment_index = takeoff_segment_index + num_swing_segments - 1;
@@ -443,7 +443,7 @@ void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body
   // first knot point from current position
   auto x0_xyzquat = robot.forwardKin(cache, (Vector3d::Zero()).eval(), body_motion_data.getBodyOrFrameId(), 0, 2, 1);
   auto& J = x0_xyzquat.gradient().value();
-  auto xd0_xyzquat = (J * cache.getV()).eval(); // TODO: doesn't work for qd != v
+  auto xd0_xyzquat = (J * v).eval(); // TODO: doesn't work for qd != v
   Vector4d x0_quat = x0_xyzquat.value().tail<4>(); // copying to Vector4d for quatRotateVec later on.
   auto x0_expmap = quat2expmap(x0_quat, 1);
   Vector3d xd0_expmap = x0_expmap.gradient().value() * xd0_xyzquat.tail<4>();
