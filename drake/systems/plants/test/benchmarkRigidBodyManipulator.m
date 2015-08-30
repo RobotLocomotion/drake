@@ -1,9 +1,9 @@
 function benchmarkRigidBodyManipulator
 %NOTEST
-iters = 1000000;
-gradient_options = false; %[false true];
+iters = 1000;
+gradient_options = [false true];
 
-for scenario = 1; %[1 2]
+for scenario = [1 2]
   % 1: a couple of Jacobians
   % 2: manipulatorDynamics
   
