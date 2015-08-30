@@ -715,6 +715,7 @@ bool parseLoop(RigidBodyManipulator* model, TiXmlElement* node)
   std::shared_ptr<RigidBodyFrame> frameA = make_shared<RigidBodyFrame>(name+"FrameA",body,xyz,rpy);
 
   link_node = node->FirstChildElement("link2");
+  linkname = link_node->Attribute("link");
   xyz=Vector3d::Zero();
   rpy=Vector3d::Zero();
   body = model->findLink(linkname);
@@ -739,6 +740,8 @@ bool parseLoop(RigidBodyManipulator* model, TiXmlElement* node)
     return false;
   }
 
+  model->addFrame(frameA);
+  model->addFrame(frameB);
   RigidBodyLoop l(frameA,frameB,axis);
   model->loops.push_back(l);
   return true;
@@ -781,7 +784,7 @@ bool parseFrame(RigidBodyManipulator* model, TiXmlElement* node)
   Matrix4d T;
   T << rpy2rotmat(rpy), xyz, 0,0,0,1;
 
-  RigidBodyFrame frame(frame_name,body,T);
+  std::shared_ptr<RigidBodyFrame> frame = make_shared<RigidBodyFrame>(frame_name,body,T);
   model->addFrame(frame);
 
 

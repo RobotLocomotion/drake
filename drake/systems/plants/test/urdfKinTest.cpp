@@ -48,6 +48,9 @@ int main(int argc, char* argv[])
 //    	cout << pt(j) << " ";
   }
 
+  auto phi = model->positionConstraints<double>(0);
+  cout << "phi = " << phi.value().transpose() << endl;
+
   delete model;
   return 0;
 }

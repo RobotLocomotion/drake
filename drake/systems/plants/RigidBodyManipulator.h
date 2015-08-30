@@ -80,7 +80,7 @@ public:
   bool addRobotFromURDF(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
   bool addRobotFromURDF(const std::string &urdf_filename, std::map<std::string,std::string>& package_map, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
 
-  void addFrame(const RigidBodyFrame& frame);
+  void addFrame(const std::shared_ptr<RigidBodyFrame>& frame);
 
   std::map<std::string, int> computePositionNameToIndexMap() const;
 
@@ -309,7 +309,7 @@ public:
 
   // Rigid body frames
   int num_frames;
-  std::vector<RigidBodyFrame,Eigen::aligned_allocator<RigidBodyFrame> > frames;
+  std::vector<std::shared_ptr<RigidBodyFrame> > frames;
 
   // Rigid body actuators
   std::vector<RigidBodyActuator,Eigen::aligned_allocator<RigidBodyActuator> > actuators;

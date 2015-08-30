@@ -108,8 +108,8 @@ void RigidBodyManipulator::resize(int ndof, int num_rigid_body_objects, int num_
     bodies.push_back(std::shared_ptr<RigidBody>(new RigidBody()));
   }
 
-  num_frames = num_rigid_body_frames;
-  frames.resize(num_frames);
+  if (num_frames != num_rigid_body_frames)
+    throw std::runtime_error("shouldn't have to resize frames");
 
   dI_world.resize(num_bodies);
   dIc_new.resize(num_bodies);
@@ -1115,10 +1115,10 @@ int RigidBodyManipulator::parseBodyOrFrameID(const int body_or_frame_id, Matrix4
       stream << "Got a frame ind greater than available!\n";
       throw std::runtime_error(stream.str());
     }
-    body_ind = frames[frame_ind].body->body_index;
+    body_ind = frames[frame_ind]->body->body_index;
 
     if (Tframe)
-      (*Tframe) = frames[frame_ind].Ttree;
+      (*Tframe) = frames[frame_ind]->Ttree;
   } else {
     body_ind = body_or_frame_id;
     if (Tframe)
@@ -1924,10 +1924,11 @@ shared_ptr<RigidBody> RigidBodyManipulator::findLink(string linkname, int robot)
   //cout<<"get linkname_connector"<<endl;
   //linkname = std::regex_replace(linkname,linkname_connector,string("_"));
   vector<bool> name_match;
-  name_match.resize(this->num_bodies);
-  for(int i = 0;i<this->num_bodies;i++)
+  num_bodies = bodies.size();
+  name_match.resize(num_bodies);
+  for(int i = 0;i<num_bodies;i++)
   {
-    string lower_linkname = this->bodies[i]->linkname;
+    string lower_linkname = bodies[i]->linkname;
     std::transform(lower_linkname.begin(), lower_linkname.end(), lower_linkname.begin(), ::tolower); // convert to lower case
     if(lower_linkname.find(linkname) != string::npos)
     {
@@ -1940,18 +1941,18 @@ shared_ptr<RigidBody> RigidBodyManipulator::findLink(string linkname, int robot)
   }
   if(robot != -1)
   {
-    for(int i = 0;i<this->num_bodies;i++)
+    for(int i = 0;i<num_bodies;i++)
     {
       if(name_match[i])
       {
-        name_match[i] = this->bodies[i]->robotnum == robot;
+        name_match[i] = bodies[i]->robotnum == robot;
       }
     }
   }
   // Unlike the MATLAB implementation, I am not handling the fixed joints
   int num_match = 0;
   int ind_match = -1;
-  for(int i = 0;i<this->num_bodies;i++)
+  for(int i = 0;i<num_bodies;i++)
   {
     if(name_match[i])
     {
@@ -2045,7 +2046,7 @@ std::string RigidBodyManipulator::getBodyOrFrameName(int body_or_frame_id)
   if (body_or_frame_id>=0) {
     return bodies[body_or_frame_id]->linkname;
   } else if (body_or_frame_id < -1) {
-    return frames[-body_or_frame_id-2].name;
+    return frames[-body_or_frame_id-2]->name;
   } else {
     return "COM";
   }
@@ -2158,11 +2159,11 @@ void RigidBodyManipulator::checkCachedKinematicsSettings(bool kinematics_gradien
   }
 }
 
-void RigidBodyManipulator::addFrame(const RigidBodyFrame& frame)
+void RigidBodyManipulator::addFrame(const std::shared_ptr<RigidBodyFrame>& frame)
 {
   frames.push_back(frame);
   num_frames = static_cast<int>(frames.size());
-  frames[num_frames].frame_index=-num_frames-2; // yuck!!
+  frame->frame_index=-(num_frames-1)-2; // yuck!!
 }
 
 // explicit instantiations (required for linking):

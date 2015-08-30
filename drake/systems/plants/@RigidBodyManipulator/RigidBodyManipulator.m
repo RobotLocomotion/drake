@@ -793,7 +793,7 @@ classdef RigidBodyManipulator < Manipulator
 
       model.dirty = false;
 
-%      model = createMexPointer(model);
+      model = createMexPointer(model);
 
       % collisionDetect may require the mex version of the manipulator,
       % so it should go after createMexPointer
