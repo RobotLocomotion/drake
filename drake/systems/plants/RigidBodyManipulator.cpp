@@ -1704,9 +1704,8 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, Eigen::Dynamic> Rigi
   // compute geometric Jacobian
   int body_ind = parseBodyOrFrameID(current_body_or_frame_ind);
   int base_ind = parseBodyOrFrameID(new_body_or_frame_ind);
-  int expressed_in = base_ind;
   std::vector<int> v_or_q_indices;
-  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> J_geometric = geometricJacobian<Scalar>(base_ind, body_ind, expressed_in, gradient_order, in_terms_of_qdot, &v_or_q_indices);
+  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> J_geometric = geometricJacobian<Scalar>(base_ind, body_ind, new_body_or_frame_ind, gradient_order, in_terms_of_qdot, &v_or_q_indices);
 
   // split up into rotational and translational parts
   auto Jomega = J_geometric.value().template topRows<SPACE_DIMENSION>();

@@ -17,9 +17,9 @@ function [x,J,dJ] = forwardKin(obj, kinsol, body_or_frame_id, points, options)
 %                -- 0, no rotation included
 %                -- 1, output Euler angle
 %                -- 2, output quaternion
-% @param options.base_or_frame_id an integer ID for a RigidBody or RigidBodyFrame
+% @option base_or_frame_id an integer ID for a RigidBody or RigidBodyFrame
 % (obtained via e.g., findLinkInd or findFrameInd) @default 1 (world).
-% @param in_terms_of_qdot boolean specifying whether to return the mapping
+% @option in_terms_of_qdot boolean specifying whether to return the mapping
 % from qdot to xdot (i.e. the gradient dx/dq) or v to xdot.
 %
 % @retval x a matrix with m columns, such that column i is
