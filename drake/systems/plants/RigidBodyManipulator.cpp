@@ -2061,17 +2061,24 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints
   if (gradient_order > 1)
     throw std::runtime_error("only first order gradients are implemented so far (it's trivial to add more)");
 
-  GradientVar<Scalar, Eigen::Dynamic, 1> ret(3*loops.size(), 1, num_positions, gradient_order);
+  GradientVar<Scalar, Eigen::Dynamic, 1> ret(6*loops.size(), 1, num_positions, gradient_order);
   for (size_t i = 0; i < loops.size(); i++) {
-    auto ptA_in_B = forwardKin(Vector3d::Zero(),loops[i].frameA->frame_index, loops[i].frameB->frame_index, 0, gradient_order);
-
-    ret.value().middleRows(3*i,3) = ptA_in_B.value();
-    if (gradient_order > 0) {
-      ret.gradient().value().middleRows(3*i, 3) = ptA_in_B.gradient().value();
+    { // position constraint
+      auto ptA_in_B = forwardKin(Vector3d::Zero(), loops[i].frameA->frame_index, loops[i].frameB->frame_index, 0,
+                                 gradient_order);
+      ret.value().middleRows(6 * i, 3) = ptA_in_B.value();
+      if (gradient_order > 0) {
+        ret.gradient().value().middleRows(6 * i, 3) = ptA_in_B.gradient().value();
+      }
     }
-
-    // todo: implement orientation constraints
-
+    { // second position constraint (to constrain orientation)
+      auto ptA_in_B = forwardKin(loops[i].axis, loops[i].frameA->frame_index, loops[i].frameB->frame_index, 0,
+                                 gradient_order);
+      ret.value().middleRows(6 * i + 3, 3) = ptA_in_B.value() - loops[i].axis;
+      if (gradient_order > 0) {
+        ret.gradient().value().middleRows(6 * i + 3, 3) = ptA_in_B.gradient().value();
+      }
+    }
   }
   return ret;
 }
@@ -2138,7 +2145,7 @@ Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynam
 }
 size_t RigidBodyManipulator::getNumPositionConstraints() const
 {
-  return loops.size()*3;
+  return loops.size()*6;
 }
 
 

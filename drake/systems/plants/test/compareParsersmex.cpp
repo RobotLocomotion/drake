@@ -99,23 +99,9 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 			auto cpp_phi = cpp_model->positionConstraints<double>(0);
 
 			if (!matlab_phi.value().isApprox(cpp_phi.value(),1e-8)) {
-        cout << "warning:  phi doesn't match (just checking norms)" << endl;
         cout << "matlab_phi = " << matlab_phi.value().transpose() << endl;
         cout << "cpp_phi = " << cpp_phi.value().transpose() << endl;
-
-        for (int i=0; i<matlab_model->loops.size(); i++) {
-          cout << "loop " << i << ": " << endl << " matlab " << matlab_model->loops[i] << endl << " cpp " << cpp_model->loops[i] << endl;
-        }
-
-        // could be the same error vector, but in a different coordinate frame
-        // for now, just make sure they are the same sized vectors
-        for (int i=0; i<matlab_phi.value().rows(); i+=3) {
-          Vector3d a = matlab_phi.value().segment(i,3), b= cpp_phi.value().segment(i,3);
-          if (std::abs(a.norm() - b.norm())>1e-4)
-            cout << "norm(a) = " << a.norm() << ", norm(b) = " << b.norm() << endl;
-            mexErrMsgTxt("ERROR: phi doesn't match");
-        }
-
+        mexErrMsgTxt("ERROR: phi doesn't match");
 			}
 		}
   }
