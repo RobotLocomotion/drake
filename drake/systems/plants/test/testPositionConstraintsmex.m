@@ -19,11 +19,11 @@ kinsol_mat = robot.doKinematics(q,false,false);
 kinsol_mex = robot.doKinematics(q,false,true);
 options.in_terms_of_qdot = false;
 for i = 1:numel(robot.loop)
-  loop = robot.loop(i)
-  options.base_or_frame_id = robot.loop(i).frameB;
-  robot.frame(-robot.loop(i).frameB)
-  robot.body(robot.frame(-robot.loop(i).frameB).body_ind)
-  robot.frame(-robot.loop(i).frameB).T
+%  loop = robot.loop(i)
+%  options.base_or_frame_id = robot.loop(i).frameB;
+%  robot.frame(-robot.loop(i).frameB)
+%  robot.body(robot.frame(-robot.loop(i).frameB).body_ind)
+%  robot.frame(-robot.loop(i).frameB).T
   [x_mat,J_mat] = robot.forwardKin(kinsol_mat,robot.loop(i).frameA,0*[1;0;0],options);
   [x_mex,J_mex] = robot.forwardKin(kinsol_mex,robot.loop(i).frameA,0*[1;0;0],options);
   valuecheck(x_mex,x_mat);
