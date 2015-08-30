@@ -97,21 +97,20 @@ int main()
 
   // q only, no gradients
   VectorXd q = VectorXd::Random(model->num_positions);
-  VectorXd v = VectorXd::Zero(0);
-  model->doKinematics(q, v, cache, false);
+  cache = model->doKinematics(q, 0);
   for (int gradient_order = 1; gradient_order < max_gradient_order; gradient_order++)
     performChecks(*model, cache, gradient_order, settings); // still expect everything to fail for gradient_order > 0
   settings.expect_error_on_configuration_methods = false;
   performChecks(*model, cache, 0, settings);
 
   // q only, with gradients
-  model->doKinematics(q, v, cache, false);
+  cache = model->doKinematics(q, 1);
   for (int gradient_order = 0; gradient_order < max_gradient_order; gradient_order++)
     performChecks(*model, cache, gradient_order, settings);
 
   // q and v, no gradients, no jdot_times_v
-  v = VectorXd::Random(model->num_velocities);
-  model->doKinematics(q, v, cache, false);
+  VectorXd v = VectorXd::Random(model->num_velocities);
+  cache = model->doKinematics(q, v, 0, false);
   settings.expect_error_on_configuration_methods = true;
   settings.expect_error_on_velocity_methods = true;
   settings.expect_error_on_jdot_times_v_methods = true;
@@ -122,12 +121,12 @@ int main()
   performChecks(*model, cache, 0, settings);
 
   // q and v, with gradients, no jdot_times_v
-  model->doKinematics(q, v, cache, false);
+  cache = model->doKinematics(q, v, 1, false);
   for (int gradient_order = 0; gradient_order < max_gradient_order; gradient_order++)
     performChecks(*model, cache, gradient_order, settings);
 
   // q and v, no gradients, with jdot_times_v
-  model->doKinematics(q, v, cache, true);
+  cache = model->doKinematics(q, v, 0, true);
   settings.expect_error_on_configuration_methods = true;
   settings.expect_error_on_velocity_methods = true;
   settings.expect_error_on_jdot_times_v_methods = true;
@@ -139,7 +138,7 @@ int main()
   performChecks(*model, cache, 0, settings);
 
   // q and v, with gradients, with jdot_times_v
-  model->doKinematics(q, v, cache, true);
+  cache = model->doKinematics(q, v, 1, true);
   for (int gradient_order = 0; gradient_order < max_gradient_order; gradient_order++)
     performChecks(*model, cache, gradient_order, settings);
 

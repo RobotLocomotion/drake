@@ -49,9 +49,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   //mexPrintf("num_cnst = %d\n",num_cnst);
   int nq = cnst->getRobotPointer()->num_positions;
   Map<VectorXd> q(mxGetPrSafe(prhs[1]), nq);
-  VectorXd v = VectorXd::Zero(0);
-  KinematicsCache<double> cache(cnst->getRobotPointer()->bodies, 0);
-  cnst->getRobotPointer()->doKinematics(q, v, cache, false);
+  KinematicsCache<double> cache = cnst->getRobotPointer()->doKinematics(q, 0);
   VectorXd c(num_cnst);
   MatrixXd dc(num_cnst,nq);
   cnst->eval(t_ptr, cache, c, dc);

@@ -99,30 +99,36 @@ public:
   std::string getVelocityName(int velocity_num) const;
   std::string getStateName(int state_num) const;
 
+  template <typename DerivedQ>
+  KinematicsCache<typename DerivedQ::Scalar> doKinematics(const MatrixBase<DerivedQ>& q, int gradient_order) {
+    KinematicsCache<typename DerivedQ::Scalar> ret(bodies, gradient_order);
+    ret.initialize(q);
+    doKinematics(ret);
+    return ret;
+  }
+
   template <typename DerivedQ, typename DerivedV>
-  void doKinematics(const MatrixBase<DerivedQ>& q, const MatrixBase<DerivedV>& v, KinematicsCache<typename DerivedQ::Scalar>& cache, bool compute_JdotV = false) const {
+  KinematicsCache<typename DerivedQ::Scalar> doKinematics(const MatrixBase<DerivedQ>& q, const MatrixBase<DerivedV>& v, int gradient_order, bool compute_JdotV) {
+    KinematicsCache<typename DerivedQ::Scalar> ret(bodies, gradient_order);
+    ret.initialize(q, v);
+    doKinematics(ret, compute_JdotV);
+    return ret;
+  }
+
+  template <typename Scalar>
+  void doKinematics(KinematicsCache<Scalar>& cache, bool compute_JdotV = false) const {
     using namespace std;
     using namespace Eigen;
 
-    EIGEN_STATIC_ASSERT_VECTOR_ONLY(MatrixBase<DerivedQ>);
-    EIGEN_STATIC_ASSERT_VECTOR_ONLY(MatrixBase<DerivedV>);
-    assert(q.rows() == num_positions);
-    assert(v.rows() == num_velocities || v.rows() == 0);
+    const auto& q = cache.getQ();
     if (!initialized)
       throw runtime_error("RigidBodyManipulator::doKinematics: call compile first.");
-
-    if (v.rows() > 0)
-      cache.initialize(q, v);
-    else
-      cache.initialize(q);
 
     int nq = num_positions;
     int gradient_order = cache.gradient_order;
     bool compute_gradients = gradient_order > 0;
 
-    typedef typename DerivedQ::Scalar Scalar;
-
-    compute_JdotV = compute_JdotV && (v.rows() == num_velocities); // no sense in computing Jdot times v if v is not passed in
+    compute_JdotV = compute_JdotV && cache.hasV(); // no sense in computing Jdot times v if v is not passed in
 
     cache.position_kinematics_cached = true; // doing this here because there is a geometricJacobian call within doKinematics below which checks for this
 
@@ -181,7 +187,8 @@ public:
           element.motion_subspace_in_world.gradient().value() = dTransformSpatialMotion(element.transform_to_world, element.motion_subspace_in_body.value(), element.dtransform_to_world_dq, dSdq);
         }
 
-        if (v.rows() == num_velocities) {
+        if (cache.hasV()) {
+          const auto& v = cache.getV();
           if (joint.getNumVelocities()==0) { // for fixed joints
             element.twist_in_world.value() = parent_element.twist_in_world.value();
             if (compute_gradients) element.twist_in_world.gradient().value() = parent_element.twist_in_world.gradient().value();
@@ -276,7 +283,7 @@ public:
           element.dtransform_to_world_dq.setZero();
           // gradient of motion subspace in world is empty
         }
-        if (v.rows() == num_velocities) {
+        if (cache.hasV()) {
           element.twist_in_world.value().setZero();
           element.motion_subspace_in_body.value().setZero();
           element.motion_subspace_in_world.value().setZero();
@@ -304,7 +311,7 @@ public:
 
     cache.cached_inertia_gradients_order = -1;
     cache.gradients_cached = compute_gradients;
-    cache.velocity_kinematics_cached = v.rows() == num_velocities;
+    cache.velocity_kinematics_cached = cache.hasV();
     cache.jdotV_cached = compute_JdotV && cache.velocity_kinematics_cached;
   };
 

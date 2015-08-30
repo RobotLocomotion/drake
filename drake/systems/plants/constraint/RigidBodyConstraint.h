@@ -11,10 +11,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <Eigen/Dense>
-#define EIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET
 #include <Eigen/Sparse>
 #include <sstream>
-#include "../RigidBodyManipulator.h"
 
 #undef DLLEXPORT 
 #if defined(WIN32) || defined(WIN64)
@@ -27,6 +25,8 @@
   #define DLLEXPORT
 #endif
 
+template <typename Scalar>
+class KinematicsCache<Scalar>;
 class RigidBodyManipulator;
 
 namespace DrakeRigidBodyConstraint{

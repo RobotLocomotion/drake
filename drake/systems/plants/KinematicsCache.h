@@ -7,12 +7,11 @@
 #include <vector>
 #include <cassert>
 #include <type_traits>
+#include <stdexcept>
+#include <utility>
 #include "GradientVar.h"
 #include "drakeGeometryUtil.h"
 #include "RigidBody.h"
-#include <stdexcept>
-#include <utility>
-#include "RigidBodyManipulator.h"
 
 template <typename Scalar>
 class KinematicsCacheElement
@@ -143,8 +142,15 @@ public:
 
   const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& getV() const
   {
-    assert(velocity_vector_valid);
-    return v;
+    if (hasV())
+      return v;
+    else
+      throw std::runtime_error("Kinematics cache has no valid velocity vector.");
+  }
+
+  bool hasV() const
+  {
+    return velocity_vector_valid;
   }
 
 private:

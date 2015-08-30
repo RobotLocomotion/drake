@@ -31,8 +31,7 @@ int main(int argc, char* argv[])
 
 // for (i=0; i<model->num_dof; i++)
 // 	 q(i)=(double)rand() / RAND_MAX;
-  KinematicsCache<double> cache(model->bodies, 0);
-  model->doKinematics(q, v, cache, false);
+  KinematicsCache<double> cache = model->doKinematics(q, v, 0, false);
 //  }
 
 //  const Vector4d zero(0,0,0,1);

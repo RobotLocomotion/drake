@@ -71,11 +71,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 		cpp_v.noalias() = P*matlab_v;
 
 		// run kinematics
-		KinematicsCache<double> matlab_cache(matlab_model->bodies, 1);
-		matlab_model->doKinematics(matlab_q, matlab_v, matlab_cache, true);
-
-    KinematicsCache<double> cpp_cache(cpp_model->bodies, 1);
-		cpp_model->doKinematics(cpp_q, cpp_v, cpp_cache, true);
+		KinematicsCache<double> matlab_cache = matlab_model->doKinematics(matlab_q, matlab_v, 1, true);
+		KinematicsCache<double> cpp_cache = cpp_model->doKinematics(cpp_q, cpp_v, 1, true);
 
 		{ // compare H, C, and B
 		  map<int, unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;

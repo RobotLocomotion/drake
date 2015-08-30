@@ -86,16 +86,15 @@ kinsol.v = v;
 if (options.use_mex && model.mex_model_ptr~=0 && isnumeric(q))
   if isempty(options.kinematics_cache_ptr_to_use)
     if options.compute_gradients
-      kinematics_cache_ptr = model.default_kinematics_cache_ptr_with_gradients;
+      kinsol.mex_ptr = model.default_kinematics_cache_ptr_with_gradients;
     else
-      kinematics_cache_ptr = model.default_kinematics_cache_ptr_no_gradients;
+      kinsol.mex_ptr = model.default_kinematics_cache_ptr_no_gradients;
     end
   else
-    kinematics_cache_ptr = options.kinematics_cache_ptr_to_use;
+    kinsol.mex_ptr = options.kinematics_cache_ptr_to_use;
   end
   
-  doKinematicsmex(model.mex_model_ptr, kinematics_cache_ptr, q, v, options.compute_JdotV);
-  kinsol.mex_ptr = kinematics_cache_ptr;
+  doKinematicsmex(model.mex_model_ptr, kinsol.mex_ptr, q, v, options.compute_JdotV);
   kinsol.mex = true;
 else
   kinsol.mex = false;
