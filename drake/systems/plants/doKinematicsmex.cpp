@@ -17,7 +17,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   auto v = matlabToEigenMap<Dynamic, 1>(prhs[3]);
   bool compute_Jdotv = mxIsLogicalScalarTrue(prhs[4]);
 
-  if (v.size() > 0)
+  if (v.size() == 0)
     cache->initialize(q);
   else
     cache->initialize(q, v);

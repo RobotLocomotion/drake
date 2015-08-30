@@ -25,8 +25,7 @@
   #define DLLEXPORT
 #endif
 
-template <typename Scalar>
-class KinematicsCache<Scalar>;
+template <typename Scalar> class KinematicsCache;
 class RigidBodyManipulator;
 
 namespace DrakeRigidBodyConstraint{

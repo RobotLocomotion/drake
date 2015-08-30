@@ -1056,7 +1056,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
       int sign = kinematic_path.joint_direction_signs[i];
       RigidBody& body_j = *bodies[j];
       const auto& element_j = cache.getElement(body_j);
-      auto Jj = (sign * element_j.motion_subspace_in_world.value()).eval();
+      Matrix<double, TWIST_SIZE, Dynamic, 0, TWIST_SIZE, DrakeJoint::MAX_NUM_POSITIONS> Jj = (sign * element_j.motion_subspace_in_world.value()).eval();
       if (in_terms_of_qdot) {
         Jj *= element_j.qdot_to_v.value();
       }
