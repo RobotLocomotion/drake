@@ -4,7 +4,6 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 #include <unsupported/Eigen/AutoDiff>
-//#include "RigidBody.h"
 #include <random>
 #include "drakeGeometryUtil.h"
 #include "GradientVar.h"
@@ -43,6 +42,8 @@ public:
     ROLLPITCHYAW = 1,
     QUATERNION   = 2
   };
+  static const int MAX_NUM_POSITIONS = 7;
+  static const int MAX_NUM_VELOCITIES = 6;
 
 private:
   const Eigen::Isometry3d transform_to_parent_body;

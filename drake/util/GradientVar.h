@@ -8,11 +8,11 @@
 #include <cstdint>
 
 
-template <typename Scalar, int Rows, int Cols>
+template <typename Scalar, int Rows, int Cols, int MaxRows = Rows, int MaxCols = Cols>
 class GradientVar
 {
 public:
-  typedef typename Eigen::Matrix<Scalar, Rows, Cols> DataType;
+  typedef typename Eigen::Matrix<Scalar, Rows, Cols, 0, MaxRows, MaxCols> DataType;
   typedef typename Gradient<DataType, Eigen::Dynamic>::type GradientDataType;
   typedef GradientVar<Scalar, GradientDataType::RowsAtCompileTime, GradientDataType::ColsAtCompileTime> ChildGradientVarType;
 
