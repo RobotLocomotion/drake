@@ -793,7 +793,7 @@ classdef RigidBodyManipulator < Manipulator
 
       model.dirty = false;
 
-      model = createMexPointer(model);
+%      model = createMexPointer(model);
 
       % collisionDetect may require the mex version of the manipulator,
       % so it should go after createMexPointer
@@ -1396,11 +1396,12 @@ classdef RigidBodyManipulator < Manipulator
       A = cell(length(model.body));
       for i=1:length(model.body)
         if model.body(i).parent>0
-          A{model.body(i).parent,i} = model.body(i).jointname;
+          rpy = rotmat2rpy(model.body(i).Ttree(1:3,1:3));
+          A{model.body(i).parent,i} = [model.body(i).jointname,'\npos:', num2str(model.body(i).Ttree(1:3,4)'),'\nrpy: ',num2str(rpy','%.2f  ')];
         end
       end
       for i=1:length(model.loop)
-        A{model.loop(i).body1,model.loop(i).body2} = ['loop',num2str(i),':',model.loop(i).name];
+        A{model.loop(i).body1,model.loop(i).body2} = ['loop',num2str(i),':',model.loop(i).name,'\npt1:', num2str(model.loop(i).pt1'),'\npt2:', num2str(model.loop(i).pt2'),'\naxis: ',num2str(model.loop(i).axis')];
       end
       node_names = {model.body.linkname};
 %      node_names = regexprep({model.body.linkname},'+(.)*','');
