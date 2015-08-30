@@ -35,6 +35,17 @@ ifeq "$(BUILD_TYPE)" ""
   BUILD_TYPE="Release"
 endif
 
+override CMAKE_FLAGS:=$(shell echo $(CMAKE_FLAGS))
+# The line above is to help passing through multiple CMAKE_FLAGS from the parent.
+# Previously, sending in more than one command was not supported because it required
+# quotes in the CMakeLists.txt and then the it was acting as only a single argument
+# to cmake.  This is an age-old problem (see c.f. http://stackoverflow.com/a/9484942 ).
+# For the more complicated case, where you want to pass in a string that needs quotes,
+# can still handle it in your CMakeLists.txt by using, e.g.
+# string(REPLACE \" \\\" CMAKE_FLAGS_FROM_ENV "$ENV{CMAKE_FLAGS}")  # turn " into \" for passing through
+# and then
+# BUILD_COMMAND ${PODS_MAKE_COMMAND} CMAKE_FLAGS="${CMAKE_FLAGS_FROM_ENV} -DWITH_SNOPT=ON -DWITH_BULLET=OFF" BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE}
+
 .PHONY: all
 all: pod-build/Makefile
 	cmake --build pod-build --config $(BUILD_TYPE)
@@ -64,6 +75,7 @@ else
 endif
 
 # run CMake to generate and configure the build scripts
+	@echo "Configuring with CMAKE_FLAGS: $(CMAKE_FLAGS)"
 	@cd pod-build && cmake $(CMAKE_FLAGS) -DCMAKE_INSTALL_PREFIX=$(BUILD_PREFIX) \
 	       	-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
 
