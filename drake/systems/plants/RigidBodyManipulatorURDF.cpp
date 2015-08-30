@@ -731,7 +731,6 @@ bool parseLoop(RigidBodyManipulator* model, TiXmlElement* node)
     cerr << "ERROR parsing loop joint rpy" << endl;
     return false;
   }
-
   std::shared_ptr<RigidBodyFrame> frameB = make_shared<RigidBodyFrame>(name+"FrameB",body,xyz,rpy);
 
   TiXmlElement* axis_node = node->FirstChildElement("axis");
@@ -744,6 +743,7 @@ bool parseLoop(RigidBodyManipulator* model, TiXmlElement* node)
   model->addFrame(frameB);
   RigidBodyLoop l(frameA,frameB,axis);
   model->loops.push_back(l);
+
   return true;
 }
 

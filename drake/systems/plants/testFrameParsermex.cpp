@@ -25,13 +25,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
 
   for (size_t x = 0; x < model->num_frames ; x++) {
-  	double err = (model->frames[x].Ttree - cpp_model.frames[x].Ttree).norm();
+  	double err = (model->frames[x]->Ttree - cpp_model.frames[x]->Ttree).norm();
   	
   	if (err > FRAME_PARSER_EPSILON) {
   		mexErrMsgIdAndTxt("Drake:testFrameParsermex:FrameTransformMismatch", "The homogeneous frame transformation matrix did not match");		
   	}
 
-  	if (model->frames[x].name.compare(cpp_model.frames[x].name) != 0 ) {
+  	if (model->frames[x]->name.compare(cpp_model.frames[x]->name) != 0 ) {
   		mexErrMsgIdAndTxt("Drake:testFrameParsermex:FrameNameMismatch", "The frame name did not match");		
   	}
   	

@@ -38,7 +38,7 @@ void getFiniteIndexes(T const & v, std::vector<int> &finite_indexes)
 
 std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj)
 {
-  os << "loop connects pt " << obj.frameA->Ttree.topRightCorner(1,3).transpose() << " on " << obj.frameA->body->linkname << " to pt " << obj.frameB->Ttree.topRightCorner(1,3).transpose() << " on " << obj.frameB->body->linkname << std::endl;
+  os << "loop connects pt " << obj.frameA->Ttree.topRightCorner(3,1).transpose() << " on " << obj.frameA->body->linkname << " to pt " << obj.frameB->Ttree.topRightCorner(3,1).transpose() << " on " << obj.frameB->body->linkname << std::endl;
   return os;
 }
 
@@ -108,8 +108,11 @@ void RigidBodyManipulator::resize(int ndof, int num_rigid_body_objects, int num_
     bodies.push_back(std::shared_ptr<RigidBody>(new RigidBody()));
   }
 
-  if (num_frames != num_rigid_body_frames)
-    throw std::runtime_error("shouldn't have to resize frames");
+  frames.reserve(num_rigid_body_frames);
+  for (int i = num_frames; i < num_rigid_body_frames; i++) {
+    frames.push_back(std::shared_ptr<RigidBodyFrame>(new RigidBodyFrame()));
+  }
+  num_frames = num_rigid_body_frames;
 
   dI_world.resize(num_bodies);
   dIc_new.resize(num_bodies);
