@@ -26,7 +26,7 @@ function testGeneratedManipulators(urdf_filename)
   r_file_struct = struct(r_file);
   r_string_struct = struct(r_string);
   fields = fieldnames(r_file_struct);
-  fields = setdiff(fields, {'mex_model_ptr', 'uid', 'urdf','robot_position_frames'});
+  fields = setdiff(fields, {'mex_model_ptr', 'uid', 'urdf','robot_position_frames', 'default_kinematics_cache_ptr_no_gradients', 'default_kinematics_cache_ptr_with_gradients'});
   for f = reshape(fields, 1, [])
     field = f{1};
     assert(isfield(r_string_struct, field));
