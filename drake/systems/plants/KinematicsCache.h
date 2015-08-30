@@ -23,10 +23,10 @@ public:
    */
   Eigen::Transform<Scalar, SPACE_DIMENSION, Eigen::Isometry> transform_to_world;
   typename Gradient<typename Eigen::Transform<Scalar, SPACE_DIMENSION, Eigen::Isometry>::MatrixType, Eigen::Dynamic>::type dtransform_to_world_dq;
-  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> motion_subspace_in_body; // gradient w.r.t. q_i only
-  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> motion_subspace_in_world; // gradient w.r.t. q
-  GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> qdot_to_v; // gradient w.r.t. q
-  GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> v_to_qdot; // gradient w.r.t. q
+  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic, TWIST_SIZE, DrakeJoint::MAX_NUM_VELOCITIES> motion_subspace_in_body; // gradient w.r.t. q_i only
+  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic, TWIST_SIZE, DrakeJoint::MAX_NUM_VELOCITIES> motion_subspace_in_world; // gradient w.r.t. q
+  GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic, DrakeJoint::MAX_NUM_VELOCITIES, DrakeJoint::MAX_NUM_POSITIONS> qdot_to_v; // gradient w.r.t. q
+  GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic, DrakeJoint::MAX_NUM_POSITIONS, DrakeJoint::MAX_NUM_VELOCITIES> v_to_qdot; // gradient w.r.t. q
   GradientVar<Scalar, TWIST_SIZE, TWIST_SIZE> inertia_in_world;
   GradientVar<Scalar, TWIST_SIZE, TWIST_SIZE> crb_in_world;
 
@@ -59,11 +59,11 @@ class KinematicsCache
 {
 private:
   std::unordered_map<RigidBody const *, KinematicsCacheElement<Scalar>> elements;
-
-public:
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> q;
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> v;
   bool velocity_vector_valid;
+
+public:
   int gradient_order;
   bool position_kinematics_cached;
   bool gradients_cached;
@@ -133,6 +133,18 @@ public:
     if (jdot_times_v_required && !jdotV_cached) {
       throw std::runtime_error(method_name + " requires Jdot times v, which has not been cached. Please call doKinematics with a velocity vector and compute_JdotV set to true.");
     }
+  }
+
+
+  const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& getQ() const
+  {
+    return q;
+  }
+
+  const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& getV() const
+  {
+    assert(velocity_vector_valid);
+    return v;
   }
 
 private:

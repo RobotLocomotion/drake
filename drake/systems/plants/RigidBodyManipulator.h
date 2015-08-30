@@ -111,6 +111,11 @@ public:
     if (!initialized)
       throw runtime_error("RigidBodyManipulator::doKinematics: call compile first.");
 
+    if (v.rows() > 0)
+      cache.initialize(q, v);
+    else
+      cache.initialize(q);
+
     int nq = num_positions;
     int gradient_order = cache.gradient_order;
     bool compute_gradients = gradient_order > 0;
@@ -301,12 +306,6 @@ public:
     cache.gradients_cached = compute_gradients;
     cache.velocity_kinematics_cached = v.rows() == num_velocities;
     cache.jdotV_cached = compute_JdotV && cache.velocity_kinematics_cached;
-
-    cache.q = q;
-
-    if (v.rows() > 0) {
-      cache.v = v;
-    }
   };
 
   bool isBodyPartOfRobot(const RigidBody& body, const std::set<int>& robotnum) const;

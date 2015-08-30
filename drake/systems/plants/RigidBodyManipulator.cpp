@@ -1403,7 +1403,7 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(Kin
     }
   }
 
-  auto friction_torques = frictionTorques(cache.v, gradient_order);
+  auto friction_torques = frictionTorques(cache.getV(), gradient_order);
   ret.value() += friction_torques.value();
   if (gradient_order > 0)
     ret.gradient().value().block(0, nq, nv, nv) += friction_torques.gradient().value();

@@ -445,7 +445,7 @@ void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body
   // first knot point from current position
   auto x0_xyzquat = robot.forwardKin(cache, (Vector3d::Zero()).eval(), body_motion_data.getBodyOrFrameId(), 0, 2, 1);
   auto& J = x0_xyzquat.gradient().value();
-  auto xd0_xyzquat = (J * cache.v).eval(); // TODO: doesn't work for qd != v
+  auto xd0_xyzquat = (J * cache.getV()).eval(); // TODO: doesn't work for qd != v
   Vector4d x0_quat = x0_xyzquat.value().tail<4>(); // copying to Vector4d for quatRotateVec later on.
   auto x0_expmap = quat2expmap(x0_quat, 1);
   Vector3d xd0_expmap = x0_expmap.gradient().value() * xd0_xyzquat.tail<4>();

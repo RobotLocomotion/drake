@@ -2705,7 +2705,7 @@ void GravityCompensationTorqueConstraint::eval(const double* t, KinematicsCache<
 {
   VectorXd qd = VectorXd::Zero(robot->num_velocities);
   KinematicsCache<double> cache_zero_velocity(robot->bodies, 1);
-  robot->doKinematics(cache.q, qd, cache_zero_velocity, true);
+  robot->doKinematics(cache.getQ(), qd, cache_zero_velocity, true);
   std::map<int, std::unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
   auto G_gradientvar = robot->inverseDynamics(cache_zero_velocity, f_ext, (GradientVar<double, Eigen::Dynamic, 1>*) nullptr, 1);
 

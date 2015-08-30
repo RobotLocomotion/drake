@@ -218,10 +218,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   const size_t num_z_cached = mxGetNumberOfElements(z_cached_array);
   const size_t num_contact_pairs = mxGetNumberOfElements(phiC_array);
   const size_t mC = mxGetNumberOfElements(D_array);
-  const double z_inactive_guess_tol = static_cast<double>(mxGetScalar(inactive_guess_array));
-  const double h = static_cast<double>(mxGetScalar(h_array));
-  const auto& q = cache->q;
-  const auto& v = cache->v;
+  const double z_inactive_guess_tol = mxGetScalar(inactive_guess_array);
+  const double h = mxGetScalar(h_array);
+  const auto& q = cache->getQ();
+  const auto& v = cache->getV();
   const Map<VectorXd> u(mxGetPrSafe(u_array), mxGetNumberOfElements(u_array));
   const Map<VectorXd> phiC(mxGetPrSafe(phiC_array), num_contact_pairs);
   const Map<MatrixXd> n(mxGetPrSafe(n_array), num_contact_pairs, nq);
