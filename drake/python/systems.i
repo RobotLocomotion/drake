@@ -23,10 +23,9 @@
 %eigen_typemaps(Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>)
 
 %include <std_shared_ptr.i>
-%shared_ptr(lcm::LCM)
 %shared_ptr(CascadeSystem)
 %shared_ptr(FeedbackSystem)
 %shared_ptr(DrakeSystem)
 
-%import "drake/CoordinateFrame.h"
+%import "CoordinateFrame.h"
 %include "DrakeSystem.h"
