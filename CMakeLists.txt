@@ -296,7 +296,7 @@ string(REPLACE ";" " " PROJECT_LIST "${PROJECT_LIST}")
 add_custom_target(list-project-dirs COMMAND echo "${PROJECT_LIST}")
 
 ## grab and install precompiled snopt
-if (NOT WIN32)
+if (NOT WIN32)  # just have to add the win libs to the zip to re-enable this support
   ExternalProject_Add(download-snopt-precompiled
     URL "http://drake002.csail.mit.edu/drake/drakeSnopt-2592a9e4e7666c6c3aafc49def9dc726f4942cea.tgz"  # todo: host this someplace better?
     SOURCE_DIR "${CMAKE_BINARY_DIR}/snopt-precompiled"
