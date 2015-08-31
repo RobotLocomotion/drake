@@ -29,6 +29,10 @@ option(WITH_AVL			"use w/ XFOIL to compute aerodynamic coefficients for airfoils
 option(WITH_XFOIL		"use w/ AVL to compute aerodynamic coefficients for airfoils")
 option(WITH_MESHCONVERTERS "uses vcglib to convert a few standard filetypes")
 
+# todo: make this on by default once it's tested:
+option(WITH_SNOPT_PRECOMPILED "precompiled binaries only for snopt; the source requires a license (will be disabled if WITH_SNOPT=ON)"  OFF)
+
+
 find_program(matlab matlab)
 if (matlab)
   option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"							ON)
@@ -262,7 +266,6 @@ foreach (proj ${EXTERNAL_PROJECTS})
 
 endforeach()
 
-
 # todo: add a custom target for release_filelist
 
 add_custom_target(download-all)
@@ -291,3 +294,23 @@ endforeach()
 
 string(REPLACE ";" " " PROJECT_LIST "${PROJECT_LIST}")
 add_custom_target(list-project-dirs COMMAND echo "${PROJECT_LIST}")
+
+## grab and install precompiled snopt
+if (NOT WIN32)
+  ExternalProject_Add(download-snopt-precompiled
+    URL "http://drake002.csail.mit.edu/drake/drakeSnopt-2592a9e4e7666c6c3aafc49def9dc726f4942cea.tgz"  # todo: host this someplace better?
+    SOURCE_DIR "${CMAKE_BINARY_DIR}/snopt-precompiled"
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND cmake -E copy_directory ${CMAKE_BINARY_DIR}/snopt-precompiled/ ${PROJECT_SOURCE_DIR}/drake/solvers/
+    INSTALL_COMMAND ""
+    EXCLUDE_FROM_ALL 1)
+  # todo: look for snopt_c
+  if (snopt_c_FOUND OR WITH_SNOPT)
+    set(WITH_SNOPT_PRECOMPILED OFF)
+  endif()
+  if (WITH_SNOPT_PRECOMPILED)
+    message(STATUS "Preparing to install precompiled snopt")
+    add_dependencies(download-all download-snopt-precompiled)
+    add_dependencies(drake download-snopt-precompiled) # just in case: make sure any compiled drake version happens after precompiled install
+  endif()
+endif()
