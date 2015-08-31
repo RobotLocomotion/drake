@@ -18,4 +18,3 @@ drakeIK_DLLEXPORT void inverseKin(RigidBodyManipulator* model, const MatrixBase<
 
 template drakeIK_DLLEXPORT void inverseKin(RigidBodyManipulator* model, const MatrixBase<VectorXd> &q_seed, const MatrixBase<VectorXd> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, MatrixBase<VectorXd> &q_sol, int &INFO, vector<string> &infeasible_constraint, const IKoptions &ikoptions);
 template drakeIK_DLLEXPORT void inverseKin(RigidBodyManipulator* model, const MatrixBase<Map<VectorXd>> &q_seed, const MatrixBase<Map<VectorXd>> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, MatrixBase<Map<VectorXd>> &q_sol, int &INFO, vector<string> &infeasible_constraint, const IKoptions &ikoptions);
-

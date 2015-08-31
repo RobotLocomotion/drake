@@ -63,7 +63,6 @@ class drakeIKoptions_DLLEXPORT IKoptions
     void setqd0(const Eigen::VectorXd &lb, const Eigen::VectorXd &ub);
     void setqdf(const Eigen::VectorXd &lb, const Eigen::VectorXd &ub);
     void setAdditionaltSamples(const Eigen::RowVectorXd &t_samples);
-    void updateRobot(const RigidBodyManipulator* robot);
     void getQ(Eigen::MatrixXd &Q) const;
     void getQa(Eigen::MatrixXd &Qa) const;
     void getQv(Eigen::MatrixXd &Qv) const;

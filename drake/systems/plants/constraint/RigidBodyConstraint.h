@@ -163,6 +163,7 @@ class DLLEXPORT PostureConstraint: public RigidBodyConstraint
     PostureConstraint(const PostureConstraint& rhs);
     bool isTimeValid(const double* t) const;
     void setJointLimits(int num_idx, const int* joint_idx, const Eigen::VectorXd& lb, const Eigen::VectorXd& ub);
+    void setJointLimits(const Eigen::VectorXi& joint_idx, const Eigen::VectorXd& lb, const Eigen::VectorXd& ub);
     void bounds(const double* t,Eigen::VectorXd& joint_min, Eigen::VectorXd& joint_max) const;
     virtual ~PostureConstraint(void) {};
 };
@@ -373,7 +374,9 @@ class DLLEXPORT WorldQuatConstraint: public QuatConstraint
     virtual ~WorldQuatConstraint();
 
 public:
+#ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 class DLLEXPORT RelativeQuatConstraint: public QuatConstraint
@@ -391,7 +394,9 @@ class DLLEXPORT RelativeQuatConstraint: public QuatConstraint
     virtual ~RelativeQuatConstraint();
 
 public:
+#ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 class DLLEXPORT EulerConstraint: public SingleTimeKinematicConstraint
@@ -432,7 +437,9 @@ class DLLEXPORT GazeConstraint : public SingleTimeKinematicConstraint
     virtual ~GazeConstraint(void){};
 
 public:
+#ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 class DLLEXPORT GazeOrientConstraint : public GazeConstraint
@@ -447,7 +454,9 @@ class DLLEXPORT GazeOrientConstraint : public GazeConstraint
     virtual void bounds(const double* t,Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     virtual ~GazeOrientConstraint(void){};
 public:
+#ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 class DLLEXPORT WorldGazeOrientConstraint: public GazeOrientConstraint
@@ -471,7 +480,9 @@ class DLLEXPORT GazeDirConstraint: public GazeConstraint
     virtual void bounds(const double* t, Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     virtual ~GazeDirConstraint(void){};
 public:
+#ifndef SWIG   
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 class DLLEXPORT WorldGazeDirConstraint: public GazeDirConstraint
@@ -496,7 +507,9 @@ class DLLEXPORT GazeTargetConstraint: public GazeConstraint
     virtual void bounds(const double* t, Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     virtual ~GazeTargetConstraint(void){};
 public:
+#ifndef SWIG   
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 class DLLEXPORT WorldGazeTargetConstraint: public GazeTargetConstraint
@@ -572,7 +585,9 @@ class DLLEXPORT Point2LineSegDistConstraint: public SingleTimeKinematicConstrain
     virtual void bounds(const double* t, Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     virtual ~Point2LineSegDistConstraint(void){};
 public:
+#ifndef SWIG   
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 class DLLEXPORT WorldFixedPositionConstraint: public MultipleTimeKinematicConstraint
@@ -672,7 +687,9 @@ class DLLEXPORT WorldPositionInFrameConstraint: public WorldPositionConstraint
         const Eigen::MatrixXd &lb, const Eigen::MatrixXd &ub, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual ~WorldPositionInFrameConstraint();
 public:
+#ifndef SWIG   
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 class DLLEXPORT PostureChangeConstraint: public MultipleTimeLinearPostureConstraint

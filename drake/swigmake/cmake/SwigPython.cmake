@@ -79,7 +79,6 @@ function(add_swig_python_module)
 	set(SWIG_MODULE_${swigpy_TARGET}_REAL_NAME ${SWIG_MODULE_${swigpy_TARGET}_REAL_NAME} PARENT_SCOPE)
 
 	foreach(dir IN LISTS swigpy_DESTINATION)
-		message("installing to: " ${dir})
 		install(TARGETS ${SWIG_MODULE_${swigpy_TARGET}_REAL_NAME} DESTINATION ${dir})
 		install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${swigpy_TARGET}.py DESTINATION ${dir})
 	endforeach(dir)

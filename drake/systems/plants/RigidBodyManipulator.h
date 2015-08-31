@@ -50,7 +50,9 @@ public:
   double reduction;
 
 public:
+#ifndef SWIG 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 class DLLEXPORT_RBM RigidBodyLoop
@@ -63,7 +65,9 @@ public:
   Vector3d ptA, ptB;
 
 public:
+#ifndef SWIG 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 	friend std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj);
 };
 
@@ -371,7 +375,9 @@ private:
   std::unique_ptr< DrakeCollision::Model > collision_model;
   //std::shared_ptr< DrakeCollision::Model > collision_model_no_margins;
 public:
+#ifndef SWIG 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 
 // The following was required for building w/ DLLEXPORT_RBM on windows (due to the unique_ptrs).  See
 // http://stackoverflow.com/questions/8716824/cannot-access-private-member-error-only-when-class-has-export-linkage

@@ -17,6 +17,25 @@ add_swig_python_module(TARGET systems_wrapper
                        SWIG_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../swigmake/swig
                        DESTINATION ${python_install_dir}/drake ${CMAKE_CURRENT_SOURCE_DIR}/drake)
 
+add_swig_python_module(TARGET rbm_wrapper
+                       SWIG_I_FILE ${CMAKE_CURRENT_SOURCE_DIR}/rbm.i
+                       CPLUSPLUS
+                       INCLUDE_DIRS 
+                         ${CMAKE_CURRENT_SOURCE_DIR}/../systems/plants 
+                       LINK_LIBRARIES drakeRBM 
+                       SWIG_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../swigmake/swig
+                       DESTINATION ${python_install_dir}/drake ${CMAKE_CURRENT_SOURCE_DIR}/drake)
+
+add_swig_python_module(TARGET ik_wrapper
+                       SWIG_I_FILE ${CMAKE_CURRENT_SOURCE_DIR}/ik.i
+                       CPLUSPLUS
+                       INCLUDE_DIRS 
+                         ${CMAKE_CURRENT_SOURCE_DIR}/../systems/plants 
+                         ${CMAKE_CURRENT_SOURCE_DIR}/../systems/plants/constraint 
+                       LINK_LIBRARIES drakeRBM drakeRigidBodyConstraint drakeIK 
+                       SWIG_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../swigmake/swig
+                       DESTINATION ${python_install_dir}/drake ${CMAKE_CURRENT_SOURCE_DIR}/drake)
+
 add_swig_python_module(TARGET pendulum_wrapper
                        SWIG_I_FILE ${CMAKE_CURRENT_SOURCE_DIR}/pendulum.i
                        CPLUSPLUS

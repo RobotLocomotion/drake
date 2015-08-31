@@ -290,6 +290,10 @@ bool PostureConstraint::isTimeValid(const double* t) const
   return (*t)>=this->tspan[0]&&(*t)<=this->tspan[1];
 }
 
+void PostureConstraint::setJointLimits(const VectorXi& joint_idx, const VectorXd& lb, const VectorXd& ub) {
+  return this->setJointLimits(joint_idx.size(), joint_idx.data(), lb, ub);
+}
+
 void PostureConstraint::setJointLimits(int num_idx,const int* joint_idx, const VectorXd& lb, const VectorXd& ub)
 {
   for(int i = 0;i<num_idx;i++)
