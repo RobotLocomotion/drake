@@ -896,8 +896,8 @@ RelativePositionConstraint::RelativePositionConstraint(RigidBodyManipulator* rob
   this->bTbp = bTbp;
   this->bodyA_idx = bodyA_idx;
   this->bodyB_idx = bodyB_idx;
-  this->bodyA_name = this->robot->bodies[this->bodyA_idx]->linkname;
-  this->bodyB_name = this->robot->bodies[this->bodyB_idx]->linkname;
+  bodyA_name = robot->getBodyOrFrameName(bodyA_idx);
+  bodyB_name = robot->getBodyOrFrameName(bodyB_idx);
   Vector4d bpTb_quat = quatConjugate(bTbp.block(3,0,4,1));
   Vector3d bpTb_trans = quatRotateVec(bpTb_quat,-bTbp.block(0,0,3,1));
   this->bpTb << bpTb_trans, bpTb_quat;
