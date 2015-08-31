@@ -4,14 +4,6 @@
 #include <map>
 #include "../../../util/drakeGeometryUtil.h"
 
-#if defined(WIN32) || defined(WIN64)
-  #include <math.h>
-  #define isnan(x) _isnan(x)
-  #define isinf(x) (!_finite(x))
-#else
-  #define isnan(x) std::isnan(x)
-  #define isinf(x) std::isinf(x)
-#endif
 using namespace Eigen;
 
 
@@ -690,11 +682,11 @@ PositionConstraint::PositionConstraint(RigidBodyManipulator *robot, const Matrix
     for(int i = 0;i<3;i++)
     {
       int idx = j*3+i;
-      if(isnan(lb(i,j)))
+      if(std::isnan(lb(i,j)))
       {
         lb(i,j) = -std::numeric_limits<double>::infinity();
       }
-      if(isnan(ub(i,j)))
+      if(std::isnan(ub(i,j)))
       {
         ub(i,j) = std::numeric_limits<double>::infinity();
       }
@@ -1140,11 +1132,11 @@ EulerConstraint::EulerConstraint(RigidBodyManipulator *robot, const Vector3d &lb
   Vector3d my_lb = lb, my_ub = ub;
   for(int i = 0;i<3;i++)
   {
-    if(isnan(my_lb(i)))
+    if(std::isnan(my_lb(i)))
     {
       my_lb(i) = -std::numeric_limits<double>::infinity();
     }
-    if(isnan(my_ub(i)))
+    if(std::isnan(my_ub(i)))
     {
       my_ub(i) = std::numeric_limits<double>::infinity();
     }
@@ -1152,7 +1144,7 @@ EulerConstraint::EulerConstraint(RigidBodyManipulator *robot, const Vector3d &lb
     {
       std::cerr<<"Drake:EulerConstraint:BadInputs:lb must be no larger than ub"<<std::endl;;
     }
-    if(isinf(my_lb(i))&&isinf(my_ub(i)))
+    if(std::isinf(my_lb(i))&&std::isinf(my_ub(i)))
     {
       null_constraint_rows[i] = true;
     }

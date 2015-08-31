@@ -1,5 +1,4 @@
 #include "QPLocomotionPlan.h"
-#include "drakeFloatingPointUtil.h"
 #include <stdexcept>
 #include <algorithm>
 #include <cmath>
@@ -78,7 +77,7 @@ template <typename DerivedQ, typename DerivedV>
 drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
     double t_global, const MatrixBase<DerivedQ>& q, const MatrixBase<DerivedV>& v, const std::vector<bool>& contact_force_detected)
 {
-  if (isNaN(start_time))
+  if (std::isnan(start_time))
     start_time = t_global;
 
   double t_plan = t_global - start_time;
@@ -353,7 +352,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::getLastQPInput() const
 
 bool QPLocomotionPlan::isFinished(double t) const
 {
-  if (isNaN(start_time)) {
+  if (std::isnan(start_time)) {
     return false;
   } else {
     return (t - start_time) >= settings.duration;

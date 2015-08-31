@@ -75,8 +75,6 @@ pods_install_pkg_config_file(drake-convex-hull
   REQUIRES
   VERSION 0.0.1)
 
-pods_install_headers(drakeFloatingPointUtil.h DESTINATION drake)
-
 pods_install_headers(GradientVar.h DESTINATION drake)
 
 if (MATLAB_FOUND)

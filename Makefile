@@ -51,7 +51,7 @@ all: pod-build/Makefile
 	cmake --build pod-build --config $(BUILD_TYPE)
 
 pod-build/Makefile:
-	$(MAKE) configure
+	"$(MAKE)" configure
 
 .PHONY: options
 options: configure

@@ -11,7 +11,6 @@ option(REMOVE_UNUSED_EXTERNALS "enable this to remove those projects from disk" 
 
 # ON by default:
 option(WITH_EIGEN		"required c++ matrix library.  only disable if you have it already."    ON)
-option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"							ON)
 
 # OFF by default:
 option(WITH_GTK 		"precompiled gtk binaries/headers for Windows")
@@ -29,6 +28,13 @@ option(WITH_SEDUMI		"semi-definite programming solver")
 option(WITH_AVL			"use w/ XFOIL to compute aerodynamic coefficients for airfoils")
 option(WITH_XFOIL		"use w/ AVL to compute aerodynamic coefficients for airfoils")
 option(WITH_MESHCONVERTERS "uses vcglib to convert a few standard filetypes")
+
+find_program(matlab matlab)
+if (matlab)
+  option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"							ON)
+else()
+  option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"							OFF)
+endif()
 
 # system dependent defaults:
 if (WIN32)
@@ -65,7 +71,7 @@ set(director_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/director/distro/pods/dra
 set(signalscope_GIT_REPOSITORY https://github.com/mitdrc/signal-scope.git)
 set(signalscope_GIT_TAG bd891bb2a8284a969086b7f286462572e5698855)
 set(eigen_GIT_REPOSITORY https://github.com/RobotLocomotion/eigen-pod.git)
-set(eigen_GIT_TAG c6c4738f9d18fa30003c33028486436adfe8bc70)
+set(eigen_GIT_TAG 0ceb687d1319621b80404346146d9ff5a417bb23)
 set(gtk_GIT_REPOSITORY https://github.com/RobotLocomotion/gtk-pod.git)
 set(gtk_GIT_TAG dc9bb719ee771a2ae9c3a392796c42ccad5bca54)
 set(gloptipoly_GIT_REPOSITORY https://github.com/RobotLocomotion/gloptipoly3.git)  # todo: rename that repo
@@ -89,7 +95,7 @@ set(sedumi_GIT_TAG 8263577d4ab375524060c19369ccf410133bb9eb)
 set(snopt_GIT_REPOSITORY https://github.com/RobotLocomotion/snopt.git)
 set(snopt_GIT_TAG d7abb603690f41970273643ebb6e173b0e6e452b)
 set(spotless_GIT_REPOSITORY https://github.com/RobotLocomotion/spotless-pod.git)
-set(spotless_GIT_TAG 651fbb17ec4ccb8e714d8894dfae88e6d7fae6ac)
+set(spotless_GIT_TAG d4fe0647e64a6d6fc2ca933ce020a1990cf035cd)
 set(yalmip_GIT_REPOSITORY https://github.com/RobotLocomotion/yalmip.git)
 set(yalmip_GIT_TAG c071fb7b7193491f8eefadba3bfff26160ad6cd4)
 set(xfoil_GIT_REPOSITORY https://github.com/RobotLocomotion/xfoil.git)
