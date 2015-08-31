@@ -158,6 +158,15 @@ void RigidBodyManipulator::compile(void)
         }
       }
       if (!hasChild) {
+        // now check if this body is attached by a loop joint
+        for (const auto &loop : loops) {
+          if ((loop.frameA->body == bodies[i]) || (loop.frameB->body == bodies[i])) {
+            hasChild = true;
+            break;
+          }
+        }
+      }
+      if (!hasChild) {
       	cout << "welding " << bodies[i]->getJoint().getName() << " because it has no inertia beneath it" << endl;
         unique_ptr<DrakeJoint> joint_unique_ptr(new FixedJoint(bodies[i]->getJoint().getName(), bodies[i]->getJoint().getTransformToParentBody()));
         bodies[i]->setJoint(move(joint_unique_ptr));

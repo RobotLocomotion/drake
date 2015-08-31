@@ -1401,7 +1401,9 @@ classdef RigidBodyManipulator < Manipulator
         end
       end
       for i=1:length(model.loop)
-        A{model.loop(i).body1,model.loop(i).body2} = ['loop',num2str(i),':',model.loop(i).name,'\npt1:', num2str(model.loop(i).pt1'),'\npt2:', num2str(model.loop(i).pt2'),'\naxis: ',num2str(model.loop(i).axis')];
+        bodyA = model.frame(-model.loop(i).frameA).body_ind;
+        bodyB = model.frame(-model.loop(i).frameB).body_ind;
+        A{bodyA,bodyB} = ['loop',num2str(i),':',model.loop(i).name];%,'\npt1:', num2str(model.loop(i).pt1'),'\npt2:', num2str(model.loop(i).pt2'),'\naxis: ',num2str(model.loop(i).axis')];
       end
       node_names = {model.body.linkname};
 %      node_names = regexprep({model.body.linkname},'+(.)*','');
@@ -2182,9 +2184,14 @@ classdef RigidBodyManipulator < Manipulator
             % pr link has inertia now (from a fixed link coming from a
             % descendant).  abort removal.
             continue;
-          else
-            warning('Drake:RigidBodyManipulator:BodyHasZeroInertia',['Link ',body.linkname,' has zero inertia (even though gravity is on and it''s not a fixed joint) and will be removed']);
           end
+          % check if it's in a loop joint
+          frames_on_this_body = find([model.frame.body_ind]==i);
+          if ~isempty(intersect(frames_on_this_body,-[model.loop.frameA,model.loop.frameB]))
+            % then it's part of a loop joint
+            continue;
+          end
+          warning('Drake:RigidBodyManipulator:BodyHasZeroInertia',['Link ',body.linkname,' has zero inertia (even though gravity is on and it''s not a fixed joint) and will be removed']);
         end
 
         parent.linkname=[parent.linkname,'+',body.linkname];
