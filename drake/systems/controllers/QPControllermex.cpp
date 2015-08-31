@@ -318,7 +318,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   MatrixXd B,JB,Jp,normals;
   VectorXd Jpdotv;
   std::vector<double> support_mus(active_supports.size(), mu);
-  int nc = contactConstraintsBV(pdata->r,num_active_contact_pts,support_mus,active_supports,pdata->map_ptr,B,JB,Jp,Jpdotv,normals,terrain_height);
+  int nc = contactConstraintsBV(pdata->r,num_active_contact_pts,support_mus,active_supports,B,JB,Jp,Jpdotv,normals,terrain_height);
   int neps = nc*dim;
 
   VectorXd x_bar,xlimp;

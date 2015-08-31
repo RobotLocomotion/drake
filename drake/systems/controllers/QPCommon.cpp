@@ -137,7 +137,6 @@ std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> l
   available_supports.resize(qp_input->num_support_data);
   for (int i=0; i < qp_input->num_support_data; i++) {
     available_supports[i].body_idx = qp_input->support_data[i].body_id - 1;
-    available_supports[i].use_support_surface = qp_input->support_data[i].use_support_surface;
     for (int j=0; j < 4; j++) {
       available_supports[i].support_logic_map[j] = qp_input->support_data[i].support_logic_map[j];
       available_supports[i].support_surface[j] = qp_input->support_data[i].support_surface[j];
@@ -380,7 +379,7 @@ int setupAndSolveQP(
 
   // Active supports
   std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> available_supports = loadAvailableSupports(qp_input);
-  std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> active_supports = getActiveSupports(pdata->r, pdata->map_ptr, robot_state.q, robot_state.qd, available_supports, b_contact_force, params->contact_threshold, pdata->default_terrain_height);
+  std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> active_supports = getActiveSupports(pdata->r, robot_state.q, robot_state.qd, available_supports, b_contact_force, params->contact_threshold, pdata->default_terrain_height);
 
 
   // // whole_body_data
@@ -542,7 +541,7 @@ int setupAndSolveQP(
     // std::cout << adjusted_mus[i] << " ";
   }
   // std::cout << std::endl;
-  int nc = contactConstraintsBV(pdata->r,num_active_contact_pts,adjusted_mus,active_supports,pdata->map_ptr,B,JB,Jp,Jpdotv,normals,pdata->default_terrain_height);
+  int nc = contactConstraintsBV(pdata->r,num_active_contact_pts,adjusted_mus,active_supports,B,JB,Jp,Jpdotv,normals,pdata->default_terrain_height);
   int neps = nc*dim;
 
   if (params->use_center_of_mass_observer && foot_force_torque_measurements.size() > 0) {

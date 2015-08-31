@@ -424,7 +424,6 @@ drake::lcmt_support_data QPLocomotionPlan::createSupportDataElement(const RigidB
   for (int i = 0; i < support_logic.size(); i++)
     support_data_element_lcm.support_logic_map[i] = support_logic[i];
   support_data_element_lcm.mu = settings.mu;
-  support_data_element_lcm.use_support_surface = element.use_contact_surface;
   Vector4f support_surface_float = element.support_surface.cast<float>();
   memcpy(support_data_element_lcm.support_surface, support_surface_float.data(), sizeof(float) * 4);
   return support_data_element_lcm;

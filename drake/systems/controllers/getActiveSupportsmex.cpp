@@ -46,7 +46,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
 
   vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> available_supports = parseSupportData(supp_data);
-  Matrix<bool, Dynamic, 1> b_mask = getActiveSupportMask(pdata->r, pdata->map_ptr, q, qd, available_supports, b_contact_force_detected, contact_threshold, terrain_height);
+  Matrix<bool, Dynamic, 1> b_mask = getActiveSupportMask(pdata->r, q, qd, available_supports, b_contact_force_detected, contact_threshold, terrain_height);
 
   VectorXd active_supp_mask = VectorXd::Zero(b_mask.size());
   for (int i = 0; i < b_mask.size(); i++) {

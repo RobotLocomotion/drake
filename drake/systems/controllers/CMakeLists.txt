@@ -2,11 +2,6 @@ include_directories(${PROJECT_SOURCE_DIR}/systems/robotInterfaces)
 include_directories(${PROJECT_SOURCE_DIR}/util/test)
 
 add_library(drakeControlUtil SHARED controlUtil.cpp)
-pods_find_pkg_config(terrain-map)
-if (terrain-map_FOUND)
-  pods_use_pkg_config_packages(drakeControlUtil terrain-map)
-  set_target_properties(drakeControlUtil PROPERTIES COMPILE_FLAGS "-DUSE_MAPS")
-endif()
 target_link_libraries(drakeControlUtil drakeRBM drakeUtil drakeTrajectories)
 pods_install_libraries(drakeControlUtil)
 pods_install_headers(controlUtil.h DESTINATION drake)
@@ -45,18 +40,12 @@ if (MATLAB_FOUND)
   include_directories (${PROJECT_SOURCE_DIR}/solvers/qpSpline )
   pods_find_pkg_config(gurobi)
 
-  pods_find_pkg_config(terrain-map)
-
   if (gurobi_FOUND AND LCM_FOUND)
     # NOTE: controlMexUtil.h currently includes QPCommon.h, which includes a gurobi header.
     # drakeControlMexUtil also has LCM as a dependency.
     # Lots of things depend on drakeControlMexUtil. We should consider reducing dependencies
 
     add_mex(drakeControlMexUtil SHARED controlMexUtil.cpp)
-    if (terrain-map_FOUND)
-      pods_use_pkg_config_packages(drakeControlMexUtil terrain-map)
-      set_target_properties(drakeControlMexUtil PROPERTIES COMPILE_FLAGS "-DUSE_MAPS")
-    endif()
     target_link_libraries(drakeControlMexUtil drakeRBM drakeMexUtil drakeTrajectories drakeControlUtil drakeLCMUtil)
     pods_install_libraries(drakeControlMexUtil)
     pods_install_headers(controlMexUtil.h DESTINATION drake)
