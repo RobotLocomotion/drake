@@ -335,8 +335,22 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
         
         f = [fq;fv];
         df = [dfq;dfv];
+     end
+      
+     function [xtraj,utraj,ltraj,ljltraj,z,F,info] = solveTrajFromZ(obj,z0)
+       [xtraj,utraj,z,F,info] = solveTrajFromZ@DirectTrajectoryOptimization(obj,z0);
+      t = [0; cumsum(z(obj.h_inds))];
+      if obj.nC>0
+        ltraj = PPTrajectory(foh(t,reshape(z(obj.l_inds),[],obj.N)));
+      else
+        ltraj = [];
       end
-    
+      if obj.nJL>0
+        ljltraj = PPTrajectory(foh(t,reshape(z(obj.ljl_inds),[],obj.N)));
+      else
+        ljltraj = [];
+      end
+     end
     function [xtraj,utraj,ltraj,ljltraj,z,F,info] = solveTraj(obj,t_init,traj_init)
       [xtraj,utraj,z,F,info] = solveTraj@DirectTrajectoryOptimization(obj,t_init,traj_init);
       t = [0; cumsum(z(obj.h_inds))];

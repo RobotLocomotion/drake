@@ -41,9 +41,10 @@ fid=fopen(filename,'w');
 n=reshape(1:(l*h),l,h);
 [i,j]=ndgrid(linspace(0,1,l),linspace(0,1,h));
 fprintf(fid,'v %f %f %f\n',[X(:)';Y(:)';Z(:)']);
-fprintf(fid,'vt %f %f\n',[i(:)';j(:)']);
+% fprintf(fid,'vt %f %f\n',[i(:)';j(:)']);
 fprintf(fid,'g mesh\n');
-fprintf(fid,'f %d/%d %d/%d %d/%d %d/%d\n',[reshape(n(1:end-1,1:end-1),1,[]);reshape(n(1:end-1,1:end-1),1,[]);reshape(n(2:end,1:end-1),1,[]);reshape(n(2:end,1:end-1),1,[]);reshape(n(2:end,2:end),1,[]);reshape(n(2:end,2:end),1,[]);reshape(n(1:end-1,2:end),1,[]);reshape(n(1:end-1,2:end),1,[])]);
+% fprintf(fid,'f %d/%d %d/%d %d/%d %d/%d\n',[reshape(n(1:end-1,1:end-1),1,[]);reshape(n(1:end-1,1:end-1),1,[]);reshape(n(2:end,1:end-1),1,[]);reshape(n(2:end,1:end-1),1,[]);reshape(n(2:end,2:end),1,[]);reshape(n(2:end,2:end),1,[]);reshape(n(1:end-1,2:end),1,[]);reshape(n(1:end-1,2:end),1,[])]);
+fprintf(fid,'f %d %d %d %d\n',[reshape(n(1:end-1,1:end-1),1,[]);reshape(n(2:end,1:end-1),1,[]);reshape(n(2:end,2:end),1,[]);reshape(n(1:end-1,2:end),1,[])]);
 fprintf(fid,'g\n\n');
 fclose(fid);
 

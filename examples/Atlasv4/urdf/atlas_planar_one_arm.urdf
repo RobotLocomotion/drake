@@ -4,19 +4,6 @@
 <!-- |    EDITING THIS FILE BY HAND IS NOT RECOMMENDED                                 | -->
 <!-- =================================================================================== -->
 <robot name="atlas" xmlns:xacro="http://www.ros.org/wiki/xacro">
-  <link name="l_clav">
-    <inertial>
-      <mass value="3.45"/>
-      <origin rpy="-1.05 -0 0" xyz="0 -0.095 0.025"/>
-      <inertia ixx="0.011" ixy="0" ixz="0" iyy="0.009" iyz="-0.004" izz="0.004"/>
-    </inertial>
-    <visual>
-      <origin rpy="-1.05 -0 0" xyz="0 -0.095 0.025"/>
-      <geometry>
-        <mesh filename="meshes/l_clav.wrl" scale="1 1 1"/>
-      </geometry>
-    </visual>
-  </link>
   <link name="l_foot">
     <inertial>
       <mass value="2.05"/>
@@ -231,83 +218,6 @@
       </geometry>
     </visual>
   </link>
-  <link name="l_farm">
-    <inertial>
-      <mass value="3.388"/>
-      <origin rpy="0 -0 0" xyz="0 -0.065 0"/>
-      <inertia ixx="0.00656" ixy="0" ixz="0" iyy="0.00358" iyz="0" izz="0.00656"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 -0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="meshes/l_farm.wrl" scale="1 1 1"/>
-      </geometry>
-    </visual>
-  </link>
-  <link name="l_scap">
-    <inertial>
-      <mass value="3.012"/>
-      <origin rpy="0 -0 0" xyz="0 0 0"/>
-      <inertia ixx="0.00319" ixy="0" ixz="0" iyy="0.00583" iyz="0" izz="0.00583"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 -0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="meshes/l_sh_rx.wrl" scale="1 1 1"/>
-      </geometry>
-    </visual>
-  </link>
-<link name="l_uarm">
-    <inertial>
-      <mass value="3.388"/>
-      <origin rpy="0 -0 0" xyz="0 -0.065 0"/>
-      <inertia ixx="0.00656" ixy="0" ixz="0" iyy="0.00358" iyz="0" izz="0.00656"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 -0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="meshes/l_elbow_ry.wrl" scale="1 1 1"/>
-      </geometry>
-    </visual>
-  </link>
-<link name="l_larm">
-    <inertial>
-      <mass value="2.509"/>
-      <origin rpy="0 -0 0" xyz="0 0 0"/>
-      <inertia ixx="0.00265" ixy="0" ixz="0" iyy="0.00446" iyz="0" izz="0.00446"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 3.14159 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="meshes/l_elbow_rx.wrl" scale="1 1 1"/>
-      </geometry>
-    </visual>
-  </link>
-  <link name="l_hand">
-    <inertial>
-      <mass value="2.509"/>
-      <origin rpy="0 -0 -1.5708" xyz="0 0 0"/>
-      <inertia ixx="0.00265" ixy="0" ixz="0" iyy="0.00446" iyz="0" izz="0.00446"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 -0 -1.5708" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="meshes/l_hand.wrl" scale="1 1 1"/>
-      </geometry>
-    </visual>
-    <collision group="palm">
-      <origin rpy="0 0 0" xyz="0.115 0 0"/>
-      <geometry>
-        <sphere radius="0"/>
-      </geometry>
-    </collision>
-    <visual>
-      <origin rpy="0 0 0" xyz="0.115 0 0"/>
-      <geometry>
-        <sphere radius="0.01"/>
-      </geometry>
-    </visual>
- </link>
   <link name="r_lglut">
     <inertial>
       <mass value="0.866"/>
@@ -483,56 +393,6 @@
     <limit effort="114" lower="-0.663225" upper="0.663225" velocity="12"/>
     <safety_controller k_position="100" k_velocity="100" soft_lower_limit="-10.6632" soft_upper_limit="10.6632"/>
   </joint>
-  <joint name="l_arm_elx" type="revolute">
-    <origin rpy="0 -0 0" xyz="0 0.119 0.00921"/>
-    <axis xyz="1 0 0"/>
-    <parent link="l_uarm"/>
-    <child link="l_larm"/>
-    <dynamics damping="0.1" friction="0"/>
-    <limit effort="55" lower="-3" upper="3" velocity="12"/>
-    <safety_controller k_position="100" k_velocity="100" soft_lower_limit="-10" soft_upper_limit="12.3562"/>
-  </joint>
-  <joint name="l_arm_ely" type="revolute">
-    <origin rpy="0 1.57 0" xyz="0 0.187 0.016"/>
-    <axis xyz="0 1 0"/>
-    <parent link="l_scap"/>
-    <child link="l_uarm"/>
-    <dynamics damping="0.1" friction="0"/>
-    <limit effort="55" lower="-3.14159" upper="3.14159" velocity="12"/>
-    <safety_controller k_position="100" k_velocity="100" soft_lower_limit="-10" soft_upper_limit="13.1416"/>
-  </joint>
-  <joint name="l_arm_shx" type="revolute">
-    <origin rpy="-1.57 -0 0" xyz="0 0.14035 0.0"/>
-    <axis xyz="1 0 0"/>
-    <parent link="l_clav"/>
-    <child link="l_scap"/>
-    <dynamics damping="0.1" friction="0"/>
-    <limit effort="107" lower="-1.5708" upper="1.5708" velocity="12"/>
-    <safety_controller k_position="100" k_velocity="100" soft_lower_limit="-11.5708" soft_upper_limit="11.5708"/>
-  </joint>
-  <joint name="l_arm_usy" type="revolute">
-    <origin rpy="0 -0 0" xyz="0.06441 0.13866 0.25"/>
-    <axis xyz="0 1 0"/>
-    <parent link="utorso"/>
-    <child link="l_clav"/>
-    <dynamics damping="0.1" friction="0"/>
-    <limit effort="75" lower="-2.5" upper="2.5" velocity="12"/>
-    <safety_controller k_position="100" k_velocity="100" soft_lower_limit="-11.5708" soft_upper_limit="10.7854"/>
-  </joint>
-  <joint name="l_arm_mwx" type="fixed">
-    <origin rpy="0 -0 1.5708" xyz="0 0.119 0.00921"/>
-    <parent link="l_farm"/>
-    <child link="l_hand"/>
-  </joint>
-  <joint name="l_arm_uwy" type="revolute">
-    <origin rpy="0 -0 0" xyz="0 0.187 -0.00921"/>
-    <axis xyz="0 1 0"/>
-    <parent link="l_larm"/>
-    <child link="l_farm"/>
-    <dynamics damping="0.1" friction="0"/>
-    <limit effort="55" lower="0" upper="3.14159" velocity="12"/>
-    <safety_controller k_position="100" k_velocity="100" soft_lower_limit="-10" soft_upper_limit="13.1416"/>
-  </joint>
   <joint name="l_leg_akx" type="revolute">
     <origin rpy="0 -0 0" xyz="0 0 0"/>
     <axis xyz="1 0 0"/>
@@ -666,7 +526,7 @@
   </joint>
   <joint name="r_leg_hpy" type="revolute">
     <origin rpy="0 -0 0" xyz="0.05 0 -0.05"/>
-    <axis xyz="0 1 0"/>
+    <axis xyz="0 1 0"/>7
     <parent link="r_lglut"/>
     <child link="r_uleg"/>
     <dynamics damping="0.1" friction="0"/>
@@ -705,37 +565,7 @@
     <actuator name="back_bkx_motor"/>
     <joint name="back_bkx"/>
     <mechanicalReduction>1</mechanicalReduction>
-  </transmission>
-  <transmission name="l_arm_elx_trans" type="pr2_mechanism_model/SimpleTransmission">
-    <actuator name="l_arm_elx_motor"/>
-    <joint name="l_arm_elx"/>
-    <mechanicalReduction>1</mechanicalReduction>
-  </transmission>
-  <transmission name="l_arm_ely_trans" type="pr2_mechanism_model/SimpleTransmission">
-    <actuator name="l_arm_ely_motor"/>
-    <joint name="l_arm_ely"/>
-    <mechanicalReduction>1</mechanicalReduction>
-  </transmission>
-  <transmission name="l_arm_mwx_trans" type="pr2_mechanism_model/SimpleTransmission">
-    <actuator name="l_arm_mwx_motor"/>
-    <joint name="l_arm_mwx"/>
-    <mechanicalReduction>1</mechanicalReduction>
-  </transmission>
-  <transmission name="l_arm_shx_trans" type="pr2_mechanism_model/SimpleTransmission">
-    <actuator name="l_arm_shx_motor"/>
-    <joint name="l_arm_shx"/>
-    <mechanicalReduction>1</mechanicalReduction>
-  </transmission>
-  <transmission name="l_arm_usy_trans" type="pr2_mechanism_model/SimpleTransmission">
-    <actuator name="l_arm_usy_motor"/>
-    <joint name="l_arm_usy"/>
-    <mechanicalReduction>1</mechanicalReduction>
-  </transmission>
-  <transmission name="l_arm_uwy_trans" type="pr2_mechanism_model/SimpleTransmission">
-    <actuator name="l_arm_uwy_motor"/>
-    <joint name="l_arm_uwy"/>
-    <mechanicalReduction>1</mechanicalReduction>
-  </transmission>
+  </transmission>  
   <transmission name="l_leg_kny_trans" type="pr2_mechanism_model/SimpleTransmission">
     <actuator name="l_leg_kny_motor"/>
     <joint name="l_leg_kny"/>

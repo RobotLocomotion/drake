@@ -27,6 +27,10 @@ classdef ContactConstrainedDircolTrajectoryOptimization < AccelConstrainedDircol
         options.relative_constraints = true; %defaults to true, unlike subclass
       end
       
+      if ~isfield(options,'additional_constraints')
+        options.additional_constraints = [];
+      end
+      
       if length(options.relative_constraints) > 1
         error('ContactConstrainedDircolTrajectoryOptimization only supports a single value for options.relative_constraints');
       end
@@ -39,8 +43,11 @@ classdef ContactConstrainedDircolTrajectoryOptimization < AccelConstrainedDircol
         xB_i = xB(:,indices(i));
         
         if plant.dim == 2,
-          xA_i = plant.T_2D_to_3D'*xA_i;
-          xB_i = plant.T_2D_to_3D'*xB_i;
+          if idxA(indices(i)) == 1,
+            xA_i = plant.T_2D_to_3D'*xA_i;
+          else
+            xB_i = plant.T_2D_to_3D'*xB_i;
+          end
         end
         
         if idxA(indices(i)) == 1,
@@ -53,6 +60,10 @@ classdef ContactConstrainedDircolTrajectoryOptimization < AccelConstrainedDircol
         position_constraint.grad_level = 2;
         
         plant = plant.addPositionEqualityConstraint(position_constraint);
+      end
+      
+      for i=1:length(options.additional_constraints)
+        plant = plant.addPositionEqualityConstraint(options.additional_constraints{i});
       end
       
       if plant.dim == 2

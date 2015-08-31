@@ -8,8 +8,9 @@ classdef RigidBodyLinearStepTerrain < RigidBodyHeightMapTerrain
   
   methods 
     function obj = RigidBodyLinearStepTerrain(step_height,step_x,smoothing_width)
-      x = -10:.01:10;
-      y = [-5 5];
+%       x = -10:.01:10;
+      y = [-1 1];
+      x = [-10 step_x-smoothing_width step_x+smoothing_width 10];
       
       [X,Y] = ndgrid(x,y);
       

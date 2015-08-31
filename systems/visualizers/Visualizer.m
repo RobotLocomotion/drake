@@ -290,7 +290,7 @@ classdef Visualizer < DrakeSystem
           set(value{i},'String',num2str(x(state_dims(i)),'%4.3f'));
         end
 
-        if (~isempty(visualized_system) && getNumStateConstraints(visualized_system)+getNumUnilateralConstraints(visualized_system)>0)
+        if false && (~isempty(visualized_system) && getNumStateConstraints(visualized_system)+getNumUnilateralConstraints(visualized_system)>0)
           % constrain the current slider to be exactly the specified value
           current_slider_statedim = get(source,'UserData');
           this_prog = addConstraint(prog,ConstantConstraint(get(source,'Value')),current_slider_statedim);

@@ -36,18 +36,18 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
         pts_in_A = zeros(rbm.dim,1);
       end
       if nargin < 5
-        indices = 1:rbm.dim;        
+        indices = 1:rbm.dim;
       end
       nC = length(indices);
       
-      sizecheck(pts_in_A,[rbm.dim,NaN]);
+%       sizecheck(pts_in_A,[rbm.dim,NaN]);
       n_pts_tmp = size(pts_in_A,2);
       output_frame = MultiCoordinateFrame.constructFrame( ...
         repmat({drakeFunction.frames.realCoordinateSpace(nC)},1,n_pts_tmp));
       obj = obj@drakeFunction.kinematic.Kinematic(rbm,output_frame);
       obj.frameA = obj.rbm.parseBodyOrFrameID(frameA);
       if obj.frameA == 0
-        valuecheck(pts_in_A,zeros(rbm.dim,1));
+        valuecheck(pts_in_A,zeros(size(pts_in_A,1),n_pts_tmp));
       end
       obj.frameB = obj.rbm.parseBodyOrFrameID(frameB);
       obj.pts_in_A = pts_in_A;
@@ -124,6 +124,19 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
         end
       end
       pos = reshape(pts_in_B,[],1);
+      
+            
+      if obj.rbm.dim == 2 && size(obj.pts_in_A,1) == 3
+        % convert to 2-D
+        pos = obj.rbm.T_2D_to_3D'*pos;
+        T_rep = kron(eye(size(pos,2)),obj.rbm.T_2D_to_3D');
+        J = T_rep*J;
+        
+        if compute_second_derivatives
+          dJ = T_rep*dJ;
+        end
+      end      
+      
       pos = pos(obj.ind);
       J = J(obj.ind,:);
       if compute_second_derivatives
@@ -148,10 +161,8 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
       [pts_in_B,J,dJ] = forwardKin(obj.rbm,kinsol,obj.frameA,obj.pts_in_A,options);      
       pos = reshape(pts_in_B,[],1);
       
-      if obj.rbm.dim == 2
-        [Jdotv,dJdotvdq] = forwardJacDotTimesV(obj.rbm,kinsol,obj.frameA,obj.rbm.T_2D_to_3D*obj.pts_in_A,0,obj.frameB);
-        Jdotv = obj.rbm.T_2D_to_3D'*Jdotv;
-        dJdotvdq = obj.rbm.T_2D_to_3D'*dJdotvdq;
+      if obj.rbm.dim == 2 && size(obj.pts_in_A,1) == 2
+        [Jdotv,dJdotvdq] = forwardJacDotTimesV(obj.rbm,kinsol,obj.frameA,obj.rbm.T_2D_to_3D*obj.pts_in_A,0,obj.frameB);        
       else
         [Jdotv,dJdotvdq] = forwardJacDotTimesV(obj.rbm,kinsol,obj.frameA,obj.pts_in_A,0,obj.frameB);
       end
@@ -161,11 +172,22 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
 %       Jdot = reshape(reshape(dJ',length(q),[])'*v,length(q),[])';
       dJdotvdv = 2*Jdot;
       dJdotv = [dJdotvdq dJdotvdv];
+      
+      if obj.rbm.dim == 2 && size(obj.pts_in_A,1) == 3
+        % convert to 2-D
+        pos = obj.rbm.T_2D_to_3D'*pos;
+        T_rep = kron(eye(size(pos,2)),obj.rbm.T_2D_to_3D');
+        J = T_rep*J;
+        dJ = T_rep*dJ;
+        Jdotv = T_rep*Jdotv;
+        dJdotv = T_rep*dJdotv;
+      end
+      
       pos = pos(obj.ind);
       J = J(obj.ind,:);
       dJ = dJ(obj.ind,:);
       Jdotv = Jdotv(obj.ind);
-      dJdotv = dJdotv(obj.ind,:);
+      dJdotv = dJdotv(obj.ind,:);     
     end
   end
 
