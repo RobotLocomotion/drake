@@ -1,5 +1,4 @@
 #include <iostream>
-#include <cstdlib>
 #include "RigidBodyManipulator.h"
 
 #include "../RigidBodyConstraint.h"

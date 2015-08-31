@@ -38,6 +38,7 @@ if (~isfield(options,'damping_error')), options.damping_error = 0.0; end
 if (~isfield(options,'ignore_friction')), options.ignore_friction = false; end
 
 %disp(['Parsing ', urdf_filename]);
+urdf_filename = GetFullPath(urdf_filename);
 [options.urdfpath,name,ext] = fileparts(urdf_filename);
 
 urdf = xmlread(urdf_filename);
@@ -53,7 +54,7 @@ end
 
 model = parseRobot(model,robot,xyz,rpy,options);
 
-model.urdf = vertcat(model.urdf, GetFullPath(which(urdf_filename)));
+model.urdf = vertcat(model.urdf, urdf_filename);
 model.dirty = true;
 
 model = compile(model);  % ideally this would happen on entry into any function...

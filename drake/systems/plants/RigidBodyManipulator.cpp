@@ -12,7 +12,6 @@
 #include <regex>
 #include <stdexcept>
 #include <limits>
-#include "drakeFloatingPointUtil.h" //for isFinite
 #include "RigidBodyConstraint.h"
 //DEBUG
 //#include <stdexcept>
@@ -30,7 +29,7 @@ void getFiniteIndexes(T const & v, std::vector<int> &finite_indexes)
   const size_t n = v.size();
   for (int x = 0; x < n; x++)
   {
-    if (isFinite<double>(static_cast<double>(v[x]))) {
+    if (std::isfinite(static_cast<double>(v[x]))) {
       finite_indexes.push_back(x);
     }
   }
@@ -1220,7 +1219,8 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
   GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> ret(TWIST_SIZE, cols, nq, gradient_order);
   auto& J = ret.value();
 
-  DrakeJoint::MotionSubspaceType motion_subspace;
+  Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> motion_subspace;
+
   if (v_or_qdot_indices != nullptr) {
     v_or_qdot_indices->clear();
     v_or_qdot_indices->reserve(cols);

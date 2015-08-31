@@ -8,13 +8,6 @@
 #include <limits>
 #include <cmath>
 
-#if defined(WIN32) || defined(WIN64)
-  #define isnan(x) _isnan(x)
-  #define isinf(x) (!_finite(x))
-#else
-  #define isnan(x) std::isnan(x)
-#endif
-
 namespace snopt {
 #include "snopt.hh"
 #include "snfilewrapper.hh"
@@ -1816,7 +1809,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
     }
     for(int i = 0;i<nx;i++)
     {
-      if(isnan(x[i]))
+      if(std::isnan(x[i]))
       {
         x[i] = 0.0;
       }
