@@ -1934,52 +1934,27 @@ shared_ptr<RigidBody> RigidBodyManipulator::findLink(string linkname, int robot)
   //std::regex linkname_connector("[abc]");
   //cout<<"get linkname_connector"<<endl;
   //linkname = std::regex_replace(linkname,linkname_connector,string("_"));
-  vector<bool> name_match;
+  int match = -1;
   num_bodies = bodies.size();
-  name_match.resize(num_bodies);
-  for(int i = 0;i<num_bodies;i++)
-  {
+  for(int i = 0;i<num_bodies;i++) {
+    // Note: unlike the MATLAB implementation, I don't have to handle the fixed joint names
     string lower_linkname = bodies[i]->linkname;
-    std::transform(lower_linkname.begin(), lower_linkname.end(), lower_linkname.begin(), ::tolower); // convert to lower case
-    if(lower_linkname.find(linkname) != string::npos)
-    {
-      name_match[i] = true;
-    }
-    else
-    {
-      name_match[i] = false;
-    }
-  }
-  if(robot != -1)
-  {
-    for(int i = 0;i<num_bodies;i++)
-    {
-      if(name_match[i])
-      {
-        name_match[i] = bodies[i]->robotnum == robot;
+    std::transform(lower_linkname.begin(), lower_linkname.end(), lower_linkname.begin(),
+                   ::tolower); // convert to lower case
+    if (lower_linkname.compare(linkname) == 0) { // the names match
+      if (robot == -1 || bodies[i]->robotnum == robot) { // it's the right robot
+        if (match < 0) { // it's the first match
+          match = i;
+        } else {
+          cerr << "found multiple links named " << linkname << endl;
+          return nullptr;
+        }
       }
     }
   }
-  // Unlike the MATLAB implementation, I am not handling the fixed joints
-  int num_match = 0;
-  int ind_match = -1;
-  for(int i = 0;i<num_bodies;i++)
-  {
-    if(name_match[i])
-    {
-      num_match++;
-      ind_match = i;
-    }
-  }
-  if(num_match != 1)
-  {
-    cerr<<"couldn't find unique link "<<linkname<<endl;
-    return(nullptr);
-  }
-  else
-  {
-    return this->bodies[ind_match];
-  }
+  if (match>=0) return bodies[match];
+  cerr << "could not find any links named " << linkname << endl;
+  return nullptr;
 }
 
 int RigidBodyManipulator::findLinkId(string name, int robot)
