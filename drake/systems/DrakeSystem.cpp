@@ -44,14 +44,14 @@ VectorXd DrakeSystem::getInitialState() {
   return getRandomState();
 }
 
-DrakeSystemPtr DrakeSystem::tilqr(const Eigen::VectorXd& x0, const Eigen::VectorXd& u0, const Eigen::MatrixXd& Q, const Eigen::MatrixXd& R) {
+DrakeSystemPtr DrakeSystem::timeInvariantLQR(const Eigen::VectorXd& x0, const Eigen::VectorXd& u0, const Eigen::MatrixXd& Q, const Eigen::MatrixXd& R) {
   if (!isTimeInvariant())
-  throw runtime_error("DrakeSystem::TILQR.  Time-invariant LQR only makes sense for time invariant systems.");
+  throw runtime_error("DrakeSystem::timeInvariantLQR.  Time-invariant LQR only makes sense for time invariant systems.");
 
   if (discrete_state_frame->getDim()>0)
-  throw runtime_error("DrakeSystem::TILQR.  Discrete-time LQR is not implemented yet (but would be easy).");
+  throw runtime_error("DrakeSystem::timeInvariantLQR.  Discrete-time LQR is not implemented yet (but would be easy).");
   if (continuous_state_frame->getDim()<1)
-  throw runtime_error("DrakeSystem::TILQR.  This system has no continuous states.");
+  throw runtime_error("DrakeSystem::timeInvariantLQR.  This system has no continuous states.");
 
   int num_x = continuous_state_frame->getDim(),
       num_u = input_frame->getDim();

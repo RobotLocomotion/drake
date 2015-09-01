@@ -99,9 +99,8 @@ protected:
   std::shared_ptr<const LCMCoordinateFrame<MessageType> > lcm_coordinate_frame;
 };
 
-
-// todo: clean this up so it does not take shared ptrs for sys and lcm (this method should not be allowed to maintain ownership)
-extern void runLCM(const DrakeSystemPtr& sys, const std::shared_ptr<lcm::LCM>& lcm, double t0, double tf, const Eigen::VectorXd& x0, const DrakeSystem::SimulationOptions* options=nullptr);
+// todo:  can I send in only a const DrakeSystem& instead?
+extern void runLCM(const DrakeSystemPtr& sys, lcm::LCM& lcm, double t0, double tf, const Eigen::VectorXd& x0, const DrakeSystem::SimulationOptions* options=nullptr);
 
 
 #endif //DRAKE_LCMCOORDINATEFRAME_H

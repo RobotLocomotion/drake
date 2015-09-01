@@ -36,7 +36,7 @@ namespace Drake {
 
   // note: tried using template default values (e.g. Eigen::Dynamic), but they didn't seem to work on my mac clang
   template <int num_vars> using TaylorVar = Eigen::AutoDiffScalar< Eigen::Matrix<double,num_vars,1> >;
-  template <int num_vars, int cols> using TaylorVec = Eigen::Matrix< TaylorVar<num_vars>, cols, 1>;
+  template <int num_vars, int rows> using TaylorVec = Eigen::Matrix< TaylorVar<num_vars>, rows, 1>;
   template <int num_vars, int rows, int cols> using TaylorMat = Eigen::Matrix< TaylorVar<num_vars>, rows, cols>;
 
   typedef TaylorVar<Eigen::Dynamic> TaylorVarX;
@@ -44,8 +44,8 @@ namespace Drake {
   typedef TaylorMat<Eigen::Dynamic,Eigen::Dynamic,Eigen::Dynamic> TaylorMatX;
 
   // initializes the vector with x=val and dx=eye(numel(val))
-  template <typename EigenVec>
-  TaylorVecX initTaylorVecX(EigenVec val) {
+  template <typename Derived>
+  TaylorVecX initTaylorVecX(const Eigen::MatrixBase<Derived>& val) {
     TaylorVecX x(val.rows());
     Eigen::MatrixXd der = Eigen::MatrixXd::Identity(val.rows(),val.rows());
     for (int i=0; i<val.rows(); i++) {

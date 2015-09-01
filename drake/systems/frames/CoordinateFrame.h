@@ -96,10 +96,6 @@ public:
         c.subframe_number = frames.size();
         c.index_in_subframe = i;
         coordinate_refs.push_back(c);
-
-        // just to get the dim right, because the subframes could change out from underneath us (via some other reference)
-        // instead, I overload all of the access methods that look for coordinates
-        coordinates.push_back("NEVER USE");
       }
       dim += subframe->getDim();
       frames.push_back(s);

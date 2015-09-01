@@ -8,15 +8,15 @@ include_directories(${PROJECT_SOURCE_DIR}/util)
 if (LCM_FOUND)
   include_directories(${PROJECT_SOURCE_DIR}/pod-build/lcmgen)
   add_executable(runPendulumDynamics runDynamics.cpp)
-  target_link_libraries(runPendulumDynamics drakeSystem drakeRBM drakeGeometryUtil)
+  target_link_libraries(runPendulumDynamics drakeSystem drakeRBM)
   add_test(NAME runPendulumDynamics COMMAND runPendulumDynamics WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/examples/Pendulum)
 
   add_executable(runPendulumEnergyShaping runEnergyShaping.cpp)
-  target_link_libraries(runPendulumEnergyShaping drakeSystem drakeGeometryUtil drakeRBM)
+  target_link_libraries(runPendulumEnergyShaping drakeSystem drakeRBM)
   add_test(NAME runPendulumEnergyShaping COMMAND runPendulumEnergyShaping)
 
   add_executable(runPendulumLQR runLQR.cpp)
-  target_link_libraries(runPendulumLQR drakeSystem drakeGeometryUtil drakeRBM)
+  target_link_libraries(runPendulumLQR drakeSystem drakeRBM)
   add_test(NAME runPendulumLQR COMMAND runPendulumLQR WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/examples/Pendulum)
 
   write_procman(Pendulum.pmd

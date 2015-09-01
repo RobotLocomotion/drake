@@ -12,6 +12,6 @@ int main(int argc, char* argv[]) {
   Pendulum p(lcm);
   DrakeSystemPtr controller = make_shared<PendulumEnergyShaping>(p);
 
-  runLCM(controller,lcm,0,5,Eigen::VectorXd::Zero(0));
+  runLCM(controller,*lcm,0,5,Eigen::VectorXd::Zero(0));
 }
 

@@ -10,7 +10,7 @@ int main(int argc, char* argv[]) {
    return 1;
 
   DrakeSystemPtr p = make_shared<PendulumWithBotVis>(lcm);
-  runLCM(p,lcm,0,50,p->getRandomState());
+  runLCM(p,*lcm,0,50,p->getRandomState());
 
   cout << "output frame: " << p->getOutputFrame() << endl;
 }

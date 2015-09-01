@@ -32,8 +32,7 @@ public:
   }
 
   virtual Eigen::VectorXd output(double t, const Eigen::VectorXd& x, const Eigen::VectorXd& u) const override {
-    Eigen::VectorXd y=x;
-    return y;
+    return x;
   }
 
   virtual bool isTimeInvariant() const override { return true; }
@@ -46,7 +45,7 @@ public:
     Eigen::VectorXd xG(2);   xG << M_PI, 0;
     Eigen::VectorXd uG(1);   uG << 0;
 
-    return tilqr(xG,uG,Q,R);
+    return timeInvariantLQR(xG,uG,Q,R);
   }
 
 
