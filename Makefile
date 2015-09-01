@@ -35,15 +35,24 @@ ifeq "$(BUILD_TYPE)" ""
   BUILD_TYPE="Release"
 endif
 
-ifneq ($(BUILD_SYSTEM),"Windows_NT")
-	## extra logic to support complex CMAKE_FLAG inputs (e.g. passed in from CMakeLists.txt) which might have quotes, etc.
+# extra logic to support complex CMAKE_FLAG inputs (e.g. passed in from CMakeLists.txt) which might have quotes, etc.
+ifeq ($(BUILD_SYSTEM),"Windows_NT")
+  CMAKE_FLAGS=$(strip $(shell echo off & setlocal enableextensions enabledelayedexpansion\
+				set /a "count = 1"\
+				:while1\
+				if defined CMAKE_FLAGS%count% (\
+				  for /F  %%a in ('echo CMAKE_FLAGS%count%') do set CMAKE_FLAGS=%CMAKE_FLAGS% !%%a!\
+				  set /a "count = count + 1"\
+				  goto :while1\
+				)\
+				if defined CMAKE_FLAGS  echo %CMAKE_FLAGS% ))
+else
 	CMAKE_FLAGS=$(strip $(shell count=1; eval flag=\$$CMAKE_FLAGS$$count; while [ ! -z "$$flag" ]; do CMAKE_FLAGS="$$CMAKE_FLAGS $$flag"; count=`expr $$count + 1`; eval flag=\$$CMAKE_FLAGS$$count; done; echo $$CMAKE_FLAGS ))
-	# todo: implement the windows cmd version of this...
 endif
 
 .PHONY: all
 all: pod-build/Makefile
-	cmake --build pod-build --config $(BUILD_TYPE)
+#	cmake --build pod-build --config $(BUILD_TYPE)
 
 pod-build/Makefile:
 	"$(MAKE)" configure
@@ -70,8 +79,9 @@ else
 endif
 
 # run CMake to generate and configure the build scripts
+	@echo BUILD_SYSTEM = $(BUILD_SYSTEM)
 	@echo "Configuring with CMAKE_FLAGS: $(CMAKE_FLAGS)"
-	@cd pod-build && cmake $(CMAKE_FLAGS) -DCMAKE_INSTALL_PREFIX=$(BUILD_PREFIX) \
+	@cd pod-build && cmake -L $(CMAKE_FLAGS) -DCMAKE_INSTALL_PREFIX=$(BUILD_PREFIX) \
 	       	-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
 
 .PHONY: download-all
