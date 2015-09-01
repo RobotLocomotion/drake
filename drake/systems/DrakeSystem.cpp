@@ -69,8 +69,8 @@ DrakeSystemPtr DrakeSystem::timeInvariantLQR(const Eigen::VectorXd& x0, const Ei
 
   // todo: return the linear system with the affine transform.  But for now, just give the affine controller:
   // u = u0 - K(x-x0)
-  #define nullmat MatrixXd::Zero(0,0)
-  #define nullvec VectorXd::Zero(0)
+  MatrixXd nullmat(0, 0);
+  VectorXd nullvec((Eigen::DenseIndex)0);
 
   DrakeSystemPtr controller =  make_shared<AffineSystem>(name+"LQR",
                                    nullmat,MatrixXd::Zero(0,num_x),nullvec,
