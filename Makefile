@@ -36,23 +36,16 @@ ifeq "$(BUILD_TYPE)" ""
 endif
 
 # extra logic to support complex CMAKE_FLAG inputs (e.g. passed in from CMakeLists.txt) which might have quotes, etc.
-ifeq ($(BUILD_SYSTEM),"Windows_NT")
-  CMAKE_FLAGS=$(strip $(shell echo off & setlocal enableextensions enabledelayedexpansion\
-				set /a "count = 1"\
-				:while1\
-				if defined CMAKE_FLAGS%count% (\
-				  for /F  %%a in ('echo CMAKE_FLAGS%count%') do set CMAKE_FLAGS=%CMAKE_FLAGS% !%%a!\
-				  set /a "count = count + 1"\
-				  goto :while1\
-				)\
-				if defined CMAKE_FLAGS  echo %CMAKE_FLAGS% ))
+ifeq "$(BUILD_SYSTEM)" "Windows_NT"
+  # note: i had (see the git history just before this) a windows batch while loop all worked out, but it requires a goto which I can't do on a single line in make...
+  CMAKE_FLAGS+=$(strip $(CMAKE_FLAGS1) $(CMAKE_FLAGS2) $(CMAKE_FLAGS3) $(CMAKE_FLAGS4) $(CMAKE_FLAGS5) $(CMAKE_FLAGS6) $(CMAKE_FLAGS7) $(CMAKE_FLAGS8) $(CMAKE_FLAGS9) $(CMAKE_FLAGS10) $(CMAKE_FLAGS11) $(CMAKE_FLAGS12) $(CMAKE_FLAGS13) $(CMAKE_FLAGS14) $(CMAKE_FLAGS15) $(CMAKE_FLAGS16) $(CMAKE_FLAGS17) $(CMAKE_FLAGS18) $(CMAKE_FLAGS19) $(CMAKE_FLAGS20))
 else
 	CMAKE_FLAGS=$(strip $(shell count=1; eval flag=\$$CMAKE_FLAGS$$count; while [ ! -z "$$flag" ]; do CMAKE_FLAGS="$$CMAKE_FLAGS $$flag"; count=`expr $$count + 1`; eval flag=\$$CMAKE_FLAGS$$count; done; echo $$CMAKE_FLAGS ))
 endif
 
 .PHONY: all
 all: pod-build/Makefile
-#	cmake --build pod-build --config $(BUILD_TYPE)
+	cmake --build pod-build --config $(BUILD_TYPE)
 
 pod-build/Makefile:
 	"$(MAKE)" configure
@@ -67,8 +60,9 @@ endif
 
 .PHONY: configure
 configure:
-#	@echo "BUILD_SYSTEM: '$(BUILD_SYSTEM)'"
-	@echo "BUILD_PREFIX: $(BUILD_PREFIX)"
+	@echo BUILD_PREFIX: $(BUILD_PREFIX)
+	@echo BUILD_SYSTEM = $(BUILD_SYSTEM)
+	@echo Configuring with CMAKE_FLAGS: $(CMAKE_FLAGS)
 
 # create the temporary build directory if needed
 # create the lib directory if needed, so the pkgconfig gets installed to the right place
@@ -79,9 +73,7 @@ else
 endif
 
 # run CMake to generate and configure the build scripts
-	@echo BUILD_SYSTEM = $(BUILD_SYSTEM)
-	@echo "Configuring with CMAKE_FLAGS: $(CMAKE_FLAGS)"
-	@cd pod-build && cmake -L $(CMAKE_FLAGS) -DCMAKE_INSTALL_PREFIX=$(BUILD_PREFIX) \
+	@cd pod-build && cmake $(CMAKE_FLAGS) -DCMAKE_INSTALL_PREFIX=$(BUILD_PREFIX) \
 	       	-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
 
 .PHONY: download-all
