@@ -45,9 +45,6 @@ public:
   std::string name;
   std::shared_ptr<RigidBody> body;
   double reduction;
-
-public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 class DLLEXPORT_RBM RigidBodyLoop
@@ -306,28 +303,28 @@ public:
 
   bool isBodyPartOfRobot(const RigidBody& body, const std::set<int>& robotnum) const;
 
-  double getMass(const std::set<int>& robotnum = RigidBody::defaultRobotNumSet) const;
+  double getMass(const std::set<int>& robotnum = default_robot_num_set) const;
 
   template <typename Scalar>
-  Eigen::Matrix<Scalar, SPACE_DIMENSION, 1> centerOfMass(KinematicsCache<Scalar> &cache, const std::set<int> &robotnum = RigidBody::defaultRobotNumSet) const;
+  Eigen::Matrix<Scalar, SPACE_DIMENSION, 1> centerOfMass(KinematicsCache<Scalar> &cache, const std::set<int> &robotnum = default_robot_num_set) const;
 
   template <typename Scalar>
-  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> worldMomentumMatrix(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet, bool in_terms_of_qdot = false) const;
+  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> worldMomentumMatrix(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum = default_robot_num_set, bool in_terms_of_qdot = false) const;
 
   template <typename Scalar>
-  GradientVar<Scalar, TWIST_SIZE, 1> worldMomentumMatrixDotTimesV(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet) const;
+  GradientVar<Scalar, TWIST_SIZE, 1> worldMomentumMatrixDotTimesV(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum = default_robot_num_set) const;
 
   template <typename Scalar>
-  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> centroidalMomentumMatrix(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet, bool in_terms_of_qdot = false) const;
+  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> centroidalMomentumMatrix(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum = default_robot_num_set, bool in_terms_of_qdot = false) const;
 
   template <typename Scalar>
-  GradientVar<Scalar, TWIST_SIZE, 1> centroidalMomentumMatrixDotTimesV(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet) const;
+  GradientVar<Scalar, TWIST_SIZE, 1> centroidalMomentumMatrixDotTimesV(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum = default_robot_num_set) const;
 
   template <typename Scalar>
-  GradientVar<Scalar, SPACE_DIMENSION, Eigen::Dynamic> centerOfMassJacobian(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet, bool in_terms_of_qdot = false) const;
+  GradientVar<Scalar, SPACE_DIMENSION, Eigen::Dynamic> centerOfMassJacobian(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum = default_robot_num_set, bool in_terms_of_qdot = false) const;
 
   template <typename Scalar>
-  GradientVar<Scalar, SPACE_DIMENSION, 1> centerOfMassJacobianDotTimesV(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet) const;
+  GradientVar<Scalar, SPACE_DIMENSION, 1> centerOfMassJacobianDotTimesV(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum = default_robot_num_set) const;
 
   template <typename DerivedA, typename DerivedB, typename DerivedC>
   void jointLimitConstraints(Eigen::MatrixBase<DerivedA> const & q, Eigen::MatrixBase<DerivedB> &phi, Eigen::MatrixBase<DerivedC> &J) const;
@@ -566,6 +563,8 @@ Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynam
   return full;
 };
 public:
+  static const std::set<int> default_robot_num_set;
+
   std::vector<std::string> robot_name;
 
   int num_positions;
