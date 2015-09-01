@@ -21,6 +21,7 @@
 %eigen_typemaps(Eigen::VectorXd)
 %eigen_typemaps(Eigen::MatrixXd)
 %eigen_typemaps(Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>)
+%eigen_typemaps(Eigen::VectorXi)
 
 %include <std_shared_ptr.i>
 %shared_ptr(CascadeSystem)

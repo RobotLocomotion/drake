@@ -2,6 +2,7 @@
 
 %include <eigen.i>
 %import "systems.i"
+%import "botvis.i"
 
 %{
 #define SWIG_FILE_WITH_INIT
@@ -10,11 +11,8 @@
 %}
 
 
-%shared_ptr(lcm::LCM)
 %shared_ptr(PendulumWithBotVis)
 %shared_ptr(PendulumEnergyShaping)
-%shared_ptr(BotVisualizer)
 %shared_ptr(Pendulum)
 
-%include <lcm/lcm-cpp.hpp>
 %include "Pendulum.h"

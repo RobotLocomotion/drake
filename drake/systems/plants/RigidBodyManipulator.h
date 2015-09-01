@@ -67,8 +67,8 @@ public:
 public:
 #ifndef SWIG 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
 	friend std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj);
+#endif
 };
 
 class DLLEXPORT_RBM RigidBodyManipulator
