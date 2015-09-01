@@ -16,8 +16,7 @@
 using namespace std;
 using namespace Eigen;
 
-std::set<int> emptyIntSet;
-
+const set<int> RigidBodyManipulator::default_robot_num_set = {0};
 
 template <typename T>
 void getFiniteIndexes(T const & v, std::vector<int> &finite_indexes)
