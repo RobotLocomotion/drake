@@ -297,19 +297,18 @@ add_custom_target(list-project-dirs COMMAND echo "${PROJECT_LIST}")
 
 ## grab and install precompiled snopt
 if (NOT WIN32)  # just have to add the win libs to the zip to re-enable this support
-  ExternalProject_Add(download-snopt-precompiled
-    URL "http://drake002.csail.mit.edu/drake/drakeSnopt-2592a9e4e7666c6c3aafc49def9dc726f4942cea.tgz"  # todo: host this someplace better?
-    SOURCE_DIR "${CMAKE_BINARY_DIR}/snopt-precompiled"
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND cmake -E copy_directory ${CMAKE_BINARY_DIR}/snopt-precompiled/ ${PROJECT_SOURCE_DIR}/drake/solvers/
-    INSTALL_COMMAND ""
-    EXCLUDE_FROM_ALL 1)
   # todo: look for snopt_c
   if (snopt_c_FOUND OR WITH_SNOPT)
     set(WITH_SNOPT_PRECOMPILED OFF)
   endif()
   if (WITH_SNOPT_PRECOMPILED)
     message(STATUS "Preparing to install precompiled snopt")
+    ExternalProject_Add(download-snopt-precompiled
+      URL "http://drake002.csail.mit.edu/drake/drakeSnopt-2592a9e4e7666c6c3aafc49def9dc726f4942cea.tgz"  # todo: host this someplace better?
+      SOURCE_DIR "${CMAKE_BINARY_DIR}/snopt-precompiled"
+      CONFIGURE_COMMAND ""
+      BUILD_COMMAND cmake -E copy_directory ${CMAKE_BINARY_DIR}/snopt-precompiled/ ${PROJECT_SOURCE_DIR}/drake/solvers/
+      INSTALL_COMMAND "")
     add_dependencies(download-all download-snopt-precompiled)
     add_dependencies(drake download-snopt-precompiled) # just in case: make sure any compiled drake version happens after precompiled install
   endif()
