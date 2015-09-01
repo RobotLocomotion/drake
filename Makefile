@@ -35,16 +35,13 @@ ifeq "$(BUILD_TYPE)" ""
   BUILD_TYPE="Release"
 endif
 
-override CMAKE_FLAGS:=$(shell echo $(CMAKE_FLAGS))
-# The line above is to help passing through multiple CMAKE_FLAGS from the parent.
-# Previously, sending in more than one command was not supported because it required
-# quotes in the CMakeLists.txt and then the it was acting as only a single argument
-# to cmake.  This is an age-old problem (see c.f. http://stackoverflow.com/a/9484942 ).
-# For the more complicated case, where you want to pass in a string that needs quotes,
-# can still handle it in your CMakeLists.txt by using, e.g.
-# string(REPLACE \" \\\" CMAKE_FLAGS_FROM_ENV "$ENV{CMAKE_FLAGS}")  # turn " into \" for passing through
-# and then
-# BUILD_COMMAND ${PODS_MAKE_COMMAND} CMAKE_FLAGS="${CMAKE_FLAGS_FROM_ENV} -DWITH_SNOPT=ON -DWITH_BULLET=OFF" BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE}
+# extra logic to support complex CMAKE_FLAG inputs (e.g. passed in from CMakeLists.txt) which might have quotes, etc.
+ifeq "$(BUILD_SYSTEM)" "Windows_NT"
+  # note: i had (see the git history just before this) a windows batch while loop all worked out, but it requires a goto which I can't do on a single line in make...
+  CMAKE_FLAGS+=$(strip $(CMAKE_FLAGS1) $(CMAKE_FLAGS2) $(CMAKE_FLAGS3) $(CMAKE_FLAGS4) $(CMAKE_FLAGS5) $(CMAKE_FLAGS6) $(CMAKE_FLAGS7) $(CMAKE_FLAGS8) $(CMAKE_FLAGS9) $(CMAKE_FLAGS10) $(CMAKE_FLAGS11) $(CMAKE_FLAGS12) $(CMAKE_FLAGS13) $(CMAKE_FLAGS14) $(CMAKE_FLAGS15) $(CMAKE_FLAGS16) $(CMAKE_FLAGS17) $(CMAKE_FLAGS18) $(CMAKE_FLAGS19) $(CMAKE_FLAGS20))
+else
+	CMAKE_FLAGS=$(strip $(shell count=1; eval flag=\$$CMAKE_FLAGS$$count; while [ ! -z "$$flag" ]; do CMAKE_FLAGS="$$CMAKE_FLAGS $$flag"; count=`expr $$count + 1`; eval flag=\$$CMAKE_FLAGS$$count; done; echo $$CMAKE_FLAGS ))
+endif
 
 .PHONY: all
 all: pod-build/Makefile
@@ -63,8 +60,9 @@ endif
 
 .PHONY: configure
 configure:
-#	@echo "BUILD_SYSTEM: '$(BUILD_SYSTEM)'"
-	@echo "BUILD_PREFIX: $(BUILD_PREFIX)"
+	@echo BUILD_PREFIX: $(BUILD_PREFIX)
+	@echo BUILD_SYSTEM = $(BUILD_SYSTEM)
+	@echo Configuring with CMAKE_FLAGS: $(CMAKE_FLAGS)
 
 # create the temporary build directory if needed
 # create the lib directory if needed, so the pkgconfig gets installed to the right place
@@ -75,7 +73,6 @@ else
 endif
 
 # run CMake to generate and configure the build scripts
-	@echo "Configuring with CMAKE_FLAGS: $(CMAKE_FLAGS)"
 	@cd pod-build && cmake $(CMAKE_FLAGS) -DCMAKE_INSTALL_PREFIX=$(BUILD_PREFIX) \
 	       	-DCMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
 
