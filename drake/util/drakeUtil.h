@@ -24,7 +24,11 @@
     #define DLLEXPORT
 #endif
 
-
+template <typename Derived>
+inline void sizecheck(const Eigen::MatrixBase<Derived>& mat, size_t rows, size_t cols){
+  if ((mat.rows() != rows) || (mat.cols() != cols))
+    throw std::runtime_error("Wrong-sized matrix:  Expected " + std::to_string(rows) + "-by-" + std::to_string(cols) + " but got " + std::to_string(mat.rows()) + "-by-" + std::to_string(mat.cols()));
+}
 
 // note for if/when we split off all Matlab related stuff into a different file: this function is not Matlab related
 // can only be used when the dimension information of the array is known at compile time

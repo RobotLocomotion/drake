@@ -179,6 +179,8 @@ file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/addpath_drake.m
 	   "  wd = cd(fullfile(mfiledir,'${relpath}'));\n"
 	   "  addpath_drake();\n"
 	   "  cd(wd);\n"
+     "end\n"
+     "\n"
     )
 
 file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/rmpath_drake.m

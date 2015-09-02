@@ -105,7 +105,7 @@ public:
     lcm->publish("DRAKE_VIEWER_LOAD_ROBOT",&vr);
   }
 
-  virtual VectorXs output(double t, const VectorXs& unused, const VectorXs& u) const override {
+  virtual Eigen::VectorXd output(double t, const Eigen::VectorXd& unused, const Eigen::VectorXd& u) const override {
     draw_msg.timestamp = static_cast<int64_t>(t*1000.0);
 
     Eigen::VectorXd q = u.head(manip.num_positions), v=Eigen::VectorXd::Zero(0);
@@ -123,7 +123,7 @@ public:
 
     lcm->publish("DRAKE_VIEWER_DRAW",&draw_msg);
 
-    return VectorXs::Zero(0);
+    return Eigen::VectorXd::Zero(0);
   }
 
 
