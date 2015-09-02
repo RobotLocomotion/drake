@@ -6,12 +6,14 @@
 #include <unordered_map>
 #include <vector>
 #include <cassert>
+#include <numeric>
 #include <type_traits>
 #include <stdexcept>
 #include <utility>
 #include "GradientVar.h"
 #include "drakeGeometryUtil.h"
 #include "RigidBody.h"
+
 
 template <typename Scalar>
 class KinematicsCacheElement
