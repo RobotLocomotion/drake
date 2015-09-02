@@ -46,7 +46,7 @@ classdef RigidBodySupportState
       end
       
       if isfield(options,'use_support_surface')
-        warning('Drake:RigidBodySupportState:UseSupportSurfaceDepcreated', 'The use_support_surface options has been deprecated. A support surface is now mandatory');
+        warning('Drake:RigidBodySupportState:UseSupportSurfaceDepcreated', 'The use_support_surface option has been deprecated. A support surface is now mandatory');
       end
 
       if isfield(options,'support_surface')
@@ -54,7 +54,7 @@ classdef RigidBodySupportState
         sizecheck(options.support_surface,nbod);
         obj.support_surface = options.support_surface;
       else
-        warning('Drake:RigidBodySupportState:NoSupportSurface', 'No support surface provided. A plane at z = 0 will be assumed');
+        warning('Drake:RigidBodySupportState:NoSupportSurface', 'No support surface provided. A horizontal plane at z = 0 will be assumed');
         obj.support_surface = cell(1,nbod);
         for i=1:nbod
           obj.support_surface{i} = [0;0;1;0];
