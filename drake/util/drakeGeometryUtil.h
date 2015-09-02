@@ -197,6 +197,8 @@ Eigen::Matrix<typename Derived::Scalar, 3, 1> axis2rpy(const Eigen::MatrixBase<D
 template <typename Derived>
 GradientVar<typename Derived::Scalar, QUAT_SIZE, 1> expmap2quat(const Eigen::MatrixBase<Derived>& v, const int gradient_order) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
+  assert(gradient_order >= 0 && gradient_order <= 1);
+
   GradientVar<typename Derived::Scalar, QUAT_SIZE, 1> ret(QUAT_SIZE, 1, EXPMAP_SIZE,gradient_order);
   auto theta = v.norm();
   if (theta < pow(std::numeric_limits<typename Derived::Scalar>::epsilon(),0.25)) {
@@ -207,10 +209,6 @@ GradientVar<typename Derived::Scalar, QUAT_SIZE, 1> expmap2quat(const Eigen::Mat
       if(gradient_order>1)
       {
         ret.gradient().gradient().value() = ddexpmap2quatDegenerate(v, theta);
-        if(gradient_order>2)
-        {
-          throw std::runtime_error("expmap2quat does not support gradient order larger than 2");
-        }
       }
     }
   } else {
@@ -221,10 +219,6 @@ GradientVar<typename Derived::Scalar, QUAT_SIZE, 1> expmap2quat(const Eigen::Mat
       if(gradient_order>1)
       {
         ret.gradient().gradient().value() = ddexpmap2quatNonDegenerate(v, theta);
-        if(gradient_order>2)
-        {
-          throw std::runtime_error("expmap2quat does not support gradient order larger than 2");
-        }
       }
     }
   }

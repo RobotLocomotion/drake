@@ -28,7 +28,7 @@ void checkForErrors(bool expect_error, O& object, F function, Args&&... argument
     if (expect_error)
       return;
     else
-      throw std::runtime_error("Caught an unexpected runtime error.");
+      throw std::runtime_error(std::string("Caught an unexpected runtime error.\n") + e.what());
   }
   if (expect_error)
     throw std::runtime_error("Expected a runtime error, but did not catch one.");
@@ -87,60 +87,75 @@ int main()
   CheckSettings settings;
   int max_gradient_order = 2;
 
+  VectorXd q = VectorXd::Random(model->num_positions);
+  VectorXd v = VectorXd::Random(model->num_velocities);
+
   // check before calling doKinematics
-  KinematicsCache<double> cache(model->bodies, 1);
-  settings.expect_error_on_configuration_methods = true;
-  settings.expect_error_on_velocity_methods = true;
-  settings.expect_error_on_jdot_times_v_methods = true;
-  for (int gradient_order = 0; gradient_order < max_gradient_order; gradient_order++)
-    performChecks(*model, cache, gradient_order, settings);
+  {
+    KinematicsCache<double> cache(model->bodies, 1);
+    settings.expect_error_on_configuration_methods = true;
+    settings.expect_error_on_velocity_methods = true;
+    settings.expect_error_on_jdot_times_v_methods = true;
+    for (int gradient_order = 0; gradient_order < max_gradient_order; gradient_order++)
+      performChecks(*model, cache, gradient_order, settings);
+  }
 
   // q only, no gradients
-  VectorXd q = VectorXd::Random(model->num_positions);
-  cache = model->doKinematics(q, 0);
-  for (int gradient_order = 1; gradient_order < max_gradient_order; gradient_order++)
-    performChecks(*model, cache, gradient_order, settings); // still expect everything to fail for gradient_order > 0
-  settings.expect_error_on_configuration_methods = false;
-  performChecks(*model, cache, 0, settings);
+  {
+    KinematicsCache<double> cache = model->doKinematics(q, 0);
+    for (int gradient_order = 1; gradient_order < max_gradient_order; gradient_order++)
+      performChecks(*model, cache, gradient_order, settings); // still expect everything to fail for gradient_order > 0
+    settings.expect_error_on_configuration_methods = false;
+    performChecks(*model, cache, 0, settings);
+  }
 
   // q only, with gradients
-  cache = model->doKinematics(q, 1);
-  for (int gradient_order = 0; gradient_order < max_gradient_order; gradient_order++)
-    performChecks(*model, cache, gradient_order, settings);
+  {
+    KinematicsCache<double> cache = model->doKinematics(q, 1);
+    for (int gradient_order = 0; gradient_order < max_gradient_order; gradient_order++)
+      performChecks(*model, cache, gradient_order, settings);
+  }
 
   // q and v, no gradients, no jdot_times_v
-  VectorXd v = VectorXd::Random(model->num_velocities);
-  cache = model->doKinematics(q, v, 0, false);
-  settings.expect_error_on_configuration_methods = true;
-  settings.expect_error_on_velocity_methods = true;
-  settings.expect_error_on_jdot_times_v_methods = true;
-  for (int gradient_order = 1; gradient_order < max_gradient_order; gradient_order++)
-    performChecks(*model, cache, gradient_order, settings); // still expect everything to fail for gradient_order > 0
-  settings.expect_error_on_configuration_methods = false;
-  settings.expect_error_on_velocity_methods = false;
-  performChecks(*model, cache, 0, settings);
+  {
+    KinematicsCache<double> cache = model->doKinematics(q, v, 0, false);
+    settings.expect_error_on_configuration_methods = true;
+    settings.expect_error_on_velocity_methods = true;
+    settings.expect_error_on_jdot_times_v_methods = true;
+    for (int gradient_order = 1; gradient_order < max_gradient_order; gradient_order++)
+      performChecks(*model, cache, gradient_order, settings); // still expect everything to fail for gradient_order > 0
+    settings.expect_error_on_configuration_methods = false;
+    settings.expect_error_on_velocity_methods = false;
+    performChecks(*model, cache, 0, settings);
+  }
 
   // q and v, with gradients, no jdot_times_v
-  cache = model->doKinematics(q, v, 1, false);
-  for (int gradient_order = 0; gradient_order < max_gradient_order; gradient_order++)
-    performChecks(*model, cache, gradient_order, settings);
+  {
+    KinematicsCache<double> cache = model->doKinematics(q, v, 1, false);
+    for (int gradient_order = 0; gradient_order < max_gradient_order; gradient_order++)
+      performChecks(*model, cache, gradient_order, settings);
+  }
 
   // q and v, no gradients, with jdot_times_v
-  cache = model->doKinematics(q, v, 0, true);
-  settings.expect_error_on_configuration_methods = true;
-  settings.expect_error_on_velocity_methods = true;
-  settings.expect_error_on_jdot_times_v_methods = true;
-  for (int gradient_order = 1; gradient_order < max_gradient_order; gradient_order++)
-    performChecks(*model, cache, gradient_order, settings); // still expect everything to fail for gradient_order > 0
-  settings.expect_error_on_configuration_methods = false;
-  settings.expect_error_on_velocity_methods = false;
-  settings.expect_error_on_jdot_times_v_methods = false;
-  performChecks(*model, cache, 0, settings);
+  {
+    KinematicsCache<double> cache = model->doKinematics(q, v, 0, true);
+    settings.expect_error_on_configuration_methods = true;
+    settings.expect_error_on_velocity_methods = true;
+    settings.expect_error_on_jdot_times_v_methods = true;
+    for (int gradient_order = 1; gradient_order < max_gradient_order; gradient_order++)
+      performChecks(*model, cache, gradient_order, settings); // still expect everything to fail for gradient_order > 0
+    settings.expect_error_on_configuration_methods = false;
+    settings.expect_error_on_velocity_methods = false;
+    settings.expect_error_on_jdot_times_v_methods = false;
+    performChecks(*model, cache, 0, settings);
+  }
 
   // q and v, with gradients, with jdot_times_v
-  cache = model->doKinematics(q, v, 1, true);
-  for (int gradient_order = 0; gradient_order < max_gradient_order; gradient_order++)
-    performChecks(*model, cache, gradient_order, settings);
+  {
+    KinematicsCache<double> cache = model->doKinematics(q, v, 1, true);
+    for (int gradient_order = 0; gradient_order < max_gradient_order; gradient_order++)
+      performChecks(*model, cache, gradient_order, settings);
+  }
 
   return 0;
 }

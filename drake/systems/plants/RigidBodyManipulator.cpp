@@ -541,7 +541,7 @@ void RigidBodyManipulator::updateCompositeRigidBodyInertias(KinematicsCache<Scal
   }
   cache.checkCachedKinematicsSettings(gradient_order > 0, false, false, "updateCompositeRigidBodyInertias");
 
-  if (gradient_order > cache.cached_inertia_gradients_order) {
+  if (gradient_order > cache.getCachedInertiaGradientsOrder()) {
     for (int i = 0; i < num_bodies; i++) {
       auto& element = cache.getElement(*bodies[i]);
       Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type* dTdq = nullptr;
@@ -568,7 +568,7 @@ void RigidBodyManipulator::updateCompositeRigidBodyInertias(KinematicsCache<Scal
       }
     }
   }
-  cache.cached_inertia_gradients_order = gradient_order;
+  cache.setCachedInertiaGradientsOrder(gradient_order);
 }
 
 template <typename Scalar>
@@ -579,7 +579,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::worldMomen
     throw std::runtime_error("only first order gradient is available");
   cache.checkCachedKinematicsSettings(gradient_order > 0, false, false, "worldMomentumMatrix");
 
-  updateCompositeRigidBodyInertias(cache, cache.gradient_order);
+  updateCompositeRigidBodyInertias(cache, cache.getGradientOrder());
 
   int nq = num_positions;
   int nv = num_velocities;
@@ -629,7 +629,7 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::worldMomentumMatrixDotT
     throw std::runtime_error("only first order gradient is available");
   cache.checkCachedKinematicsSettings(gradient_order > 0, true, true, "worldMomentumMatrixDotTimesV");
 
-  updateCompositeRigidBodyInertias(cache, cache.gradient_order);
+  updateCompositeRigidBodyInertias(cache, cache.getGradientOrder());
 
   GradientVar<Scalar, TWIST_SIZE, 1> ret(TWIST_SIZE, 1, num_positions, gradient_order);
   ret.value().setZero();
@@ -1214,7 +1214,7 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMa
   if (gradient_order > 0)
     ret.gradient().value().setZero();
 
-  updateCompositeRigidBodyInertias(cache, cache.gradient_order);
+  updateCompositeRigidBodyInertias(cache, cache.getGradientOrder());
 
   for (int i = 0; i < num_bodies; i++) {
     RigidBody& body_i = *bodies[i];
@@ -1285,7 +1285,7 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(Kin
     throw std::runtime_error("only first order gradients are available");
   cache.checkCachedKinematicsSettings(gradient_order > 0, true, true, "inverseDynamics");
 
-  updateCompositeRigidBodyInertias(cache, cache.gradient_order);
+  updateCompositeRigidBodyInertias(cache, cache.getGradientOrder());
 
   int nq = num_positions;
   int nv = num_velocities;

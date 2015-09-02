@@ -63,12 +63,8 @@ private:
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> q;
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> v;
   bool velocity_vector_valid;
-
-public:
-  int gradient_order;
+  const int gradient_order;
   bool position_kinematics_cached;
-  bool gradients_cached;
-  bool velocity_kinematics_cached;
   bool jdotV_cached;
   int cached_inertia_gradients_order;
 
@@ -125,10 +121,10 @@ public:
     if (!position_kinematics_cached) {
       throw std::runtime_error(method_name + " requires position kinematics, which have not been cached. Please call doKinematics.");
     }
-    if (kinematics_gradients_required && !gradients_cached) {
+    if (kinematics_gradients_required && gradient_order < 1) {
       throw std::runtime_error(method_name + " requires kinematics gradients, which have not been cached. Please call doKinematics with compute_gradients set to true.");
     }
-    if (velocity_kinematics_required && !velocity_kinematics_cached) {
+    if (velocity_kinematics_required && !hasV()) {
       throw std::runtime_error(method_name + " requires velocity kinematics, which have not been cached. Please call doKinematics with a velocity vector.");
     }
     if (jdot_times_v_required && !jdotV_cached) {
@@ -155,12 +151,31 @@ public:
     return velocity_vector_valid;
   }
 
+
+  const int getGradientOrder() const {
+    return gradient_order;
+  }
+
+  int getCachedInertiaGradientsOrder() const {
+    return cached_inertia_gradients_order;
+  }
+
+  void setCachedInertiaGradientsOrder(int cached_inertia_gradients_order) {
+    this->cached_inertia_gradients_order = cached_inertia_gradients_order;
+  }
+
+  void setPositionKinematicsCached() {
+    position_kinematics_cached = true;
+  }
+
+  void setJdotVCached(bool jdotV_cached) {
+    this->jdotV_cached = jdotV_cached;
+  }
+
 private:
   void invalidate()
   {
     position_kinematics_cached = false;
-    gradients_cached = false;
-    velocity_kinematics_cached = false;
     jdotV_cached = false;
     cached_inertia_gradients_order = -1;
   }

@@ -125,12 +125,12 @@ public:
       throw runtime_error("RigidBodyManipulator::doKinematics: call compile first.");
 
     int nq = num_positions;
-    int gradient_order = cache.gradient_order;
+    int gradient_order = cache.getGradientOrder();
     bool compute_gradients = gradient_order > 0;
 
     compute_JdotV = compute_JdotV && cache.hasV(); // no sense in computing Jdot times v if v is not passed in
 
-    cache.position_kinematics_cached = true; // doing this here because there is a geometricJacobian call within doKinematics below which checks for this
+    cache.setPositionKinematicsCached(); // doing this here because there is a geometricJacobian call within doKinematics below which checks for this
 
     for (int i = 0; i < bodies.size(); i++) {
       RigidBody& body = *bodies[i];
@@ -309,10 +309,7 @@ public:
       }
     }
 
-    cache.cached_inertia_gradients_order = -1;
-    cache.gradients_cached = compute_gradients;
-    cache.velocity_kinematics_cached = cache.hasV();
-    cache.jdotV_cached = compute_JdotV && cache.velocity_kinematics_cached;
+    cache.setJdotVCached(compute_JdotV && cache.hasV());
   };
 
   bool isBodyPartOfRobot(const RigidBody& body, const std::set<int>& robotnum) const;
