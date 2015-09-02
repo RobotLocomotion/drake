@@ -1,4 +1,4 @@
-%module systems_wrapper
+%module(package="drake") rbm_wrapper
 
 %include <std_except.i>
 %include <std_string.i>
@@ -7,7 +7,7 @@
 %{
 #define SWIG_FILE_WITH_INIT
 #include <Python.h>
-#include "DrakeSystem.h"
+#include "RigidBodyManipulator.h"
 %}
 
 %include <typemaps.i>
@@ -23,10 +23,5 @@
 %eigen_typemaps(Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>)
 %eigen_typemaps(Eigen::VectorXi)
 
-%include <std_shared_ptr.i>
-%shared_ptr(CascadeSystem)
-%shared_ptr(FeedbackSystem)
-%shared_ptr(DrakeSystem)
-
-%import "CoordinateFrame.h"
-%include "DrakeSystem.h"
+%import <Eigen/Core>
+%include "RigidBodyManipulator.h"

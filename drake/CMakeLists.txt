@@ -146,7 +146,7 @@ add_subdirectory(systems)
 add_subdirectory(thirdParty/GetFullPath)
 add_subdirectory(thirdParty/spruce)
 add_subdirectory(examples)
-add_subdirectory(python)
+add_subdirectory(bindings)
 
 # setup matlab pods-compliance
 include(cmake/matlab_pods.cmake)

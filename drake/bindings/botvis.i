@@ -1,4 +1,4 @@
-%module bot_visualizer_wrapper
+%module(package="drake") bot_visualizer_wrapper
 
 %include <eigen.i>
 %import "systems.i"

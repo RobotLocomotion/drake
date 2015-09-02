@@ -12,6 +12,8 @@ option(REMOVE_UNUSED_EXTERNALS "enable this to remove those projects from disk" 
 # ON by default:
 option(WITH_EIGEN		"required c++ matrix library.  only disable if you have it already."    ON)
 option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"							ON)
+option(WITH_SWIGMAKE    "helper tools to build python & MATLAB wrappers for C++ libraries with Eigen" ON)
+option(WITH_SWIG_MATLAB "A version of SWIG with MATLAB support" ON)
 
 # OFF by default:
 option(WITH_GTK 		"precompiled gtk binaries/headers for Windows")
@@ -46,7 +48,7 @@ set(lcm_dependencies gtk)
 set(libbot_dependencies lcm)
 set(director_dependencies lcm libbot)
 set(signalscope_dependencies director)
-set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi)
+set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi swig_matlab swigmake)
 
 # download information, in alphabetical order
 set(avl_GIT_REPOSITORY https://github.com/RobotLocomotion/avl.git)
@@ -90,6 +92,10 @@ set(snopt_GIT_REPOSITORY https://github.com/RobotLocomotion/snopt.git)
 set(snopt_GIT_TAG d7abb603690f41970273643ebb6e173b0e6e452b)
 set(spotless_GIT_REPOSITORY https://github.com/RobotLocomotion/spotless-pod.git)
 set(spotless_GIT_TAG 88e8eefc9a853e96268cad7ac0d70ae2d8d39f35)
+set(swigmake_GIT_REPOSITORY https://github.com/rdeits/swigmake.git)
+set(swigmake_GIT_TAG 3b3e8846921b2aebc7e12bfb74b9af5a01513761)
+set(swig_matlab_GIT_REPOSITORY https://github.com/rdeits/swig-matlab-pod.git)
+set(swig_matlab_GIT_TAG 2c4fcbf461b9caba968a7ab22299b8c18afe3ff1)
 set(yalmip_GIT_REPOSITORY https://github.com/RobotLocomotion/yalmip.git)
 set(yalmip_GIT_TAG c071fb7b7193491f8eefadba3bfff26160ad6cd4)
 set(xfoil_GIT_REPOSITORY https://github.com/RobotLocomotion/xfoil.git)
@@ -131,6 +137,8 @@ foreach(proj IN ITEMS
 		avl
 		xfoil
 		meshconverters
+		swigmake
+		swig_matlab
 		drake)
 	string(TOUPPER ${proj} proj_upper)
 	if (${proj} STREQUAL "drake" OR ${proj} STREQUAL "cmake" OR WITH_${proj_upper} OR WITH_ALL_SUPPORTED_EXTERNALS)

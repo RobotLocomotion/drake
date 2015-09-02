@@ -1,4 +1,4 @@
-%module ik_wrapper
+%module(package="drake") systems_wrapper
 
 %include <std_except.i>
 %include <std_string.i>
@@ -7,7 +7,7 @@
 %{
 #define SWIG_FILE_WITH_INIT
 #include <Python.h>
-#include "RigidBodyIK.h"
+#include "DrakeSystem.h"
 %}
 
 %include <typemaps.i>
@@ -17,16 +17,16 @@
 %template(vectorVectorXd) std::vector<Eigen::VectorXd>;
 %template(vectorMatrixXd) std::vector<Eigen::MatrixXd>;
 %template(vectorString) std::vector<std::string>;
-namespace std {
-  %template(vectorConstraintPtr) vector<RigidBodyConstraint *>;
-}
 
 %eigen_typemaps(Eigen::VectorXd)
 %eigen_typemaps(Eigen::MatrixXd)
 %eigen_typemaps(Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>)
 %eigen_typemaps(Eigen::VectorXi)
 
-%include "IKoptions.h"
-%include "RigidBodyIK.h"
-%include "RigidBodyConstraint.h"
+%include <std_shared_ptr.i>
+%shared_ptr(CascadeSystem)
+%shared_ptr(FeedbackSystem)
+%shared_ptr(DrakeSystem)
 
+%import "CoordinateFrame.h"
+%include "DrakeSystem.h"

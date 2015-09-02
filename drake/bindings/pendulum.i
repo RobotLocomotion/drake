@@ -1,4 +1,4 @@
-%module pendulum_wrapper
+%module(package="drake") pendulum_wrapper
 
 %include <eigen.i>
 %import "systems.i"

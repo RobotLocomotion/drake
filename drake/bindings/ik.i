@@ -1,4 +1,4 @@
-%module rbm_wrapper
+%module(package="drake") ik_wrapper
 
 %include <std_except.i>
 %include <std_string.i>
@@ -7,7 +7,7 @@
 %{
 #define SWIG_FILE_WITH_INIT
 #include <Python.h>
-#include "RigidBodyManipulator.h"
+#include "RigidBodyIK.h"
 %}
 
 %include <typemaps.i>
@@ -17,11 +17,16 @@
 %template(vectorVectorXd) std::vector<Eigen::VectorXd>;
 %template(vectorMatrixXd) std::vector<Eigen::MatrixXd>;
 %template(vectorString) std::vector<std::string>;
+namespace std {
+  %template(vectorConstraintPtr) vector<RigidBodyConstraint *>;
+}
 
 %eigen_typemaps(Eigen::VectorXd)
 %eigen_typemaps(Eigen::MatrixXd)
 %eigen_typemaps(Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>)
 %eigen_typemaps(Eigen::VectorXi)
 
-%import <Eigen/Core>
-%include "RigidBodyManipulator.h"
+%include "IKoptions.h"
+%include "RigidBodyIK.h"
+%include "RigidBodyConstraint.h"
+
