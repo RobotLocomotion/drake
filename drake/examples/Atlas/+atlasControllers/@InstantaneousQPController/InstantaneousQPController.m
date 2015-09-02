@@ -11,8 +11,6 @@ classdef InstantaneousQPController
     debug_pub;
     robot;
     controller_data
-    q_integrator_data
-    vref_integrator_data
     robot_property_cache
     data_mex_ptr;
     support_detect_mex_ptr;
@@ -60,9 +58,6 @@ classdef InstantaneousQPController
       obj.controller_data = InstantaneousQPControllerData(struct('infocount', 0,...
                                                      'qp_active_set', [],...
                                                      'num_active_contact_pts', 0));
-      obj.q_integrator_data = IntegratorData(r);
-      obj.vref_integrator_data = VRefIntegratorData(r);
-
       obj.gurobi_options.outputflag = 0; % not verbose
       if obj.solver==0
         obj.gurobi_options.method = 2; % -1=automatic, 0=primal simplex, 1=dual simplex, 2=barrier
