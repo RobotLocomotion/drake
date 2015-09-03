@@ -104,12 +104,12 @@ void RigidBodyManipulator::resize(int ndof, int num_rigid_body_objects, int num_
 
   bodies.reserve(num_bodies);
   for (int i = last_num_bodies; i < num_bodies; i++) {
-    bodies.push_back(std::shared_ptr<RigidBody>(new RigidBody()));
+    bodies.push_back(make_shared<RigidBody>());
   }
 
   frames.reserve(num_rigid_body_frames);
   for (int i = num_frames; i < num_rigid_body_frames; i++) {
-    frames.push_back(std::shared_ptr<RigidBodyFrame>(new RigidBodyFrame()));
+    frames.push_back(make_shared<RigidBodyFrame>());
   }
   num_frames = num_rigid_body_frames;
 
@@ -126,7 +126,7 @@ void RigidBodyManipulator::resize(int ndof, int num_rigid_body_objects, int num_
   gradients_cached = false;
   velocity_kinematics_cached = false;
   jdotV_cached = false;
-  cached_inertia_gradients_order = -1;  
+  cached_inertia_gradients_order = -1;
 }
 
 

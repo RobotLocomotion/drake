@@ -39,7 +39,7 @@ void setLimits(const mxArray *pBodies, int i, FixedAxisOneDoFJoint<Derived>* fix
 void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 {
   //DEBUG
-  //cout << "constructModelmex: START" << endl;
+  mexPrintf("constructModelmex: START\n");
   //END_DEBUG
   char buf[100];
   mxArray *pm;
@@ -73,7 +73,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
   for (int i=0; i<model->num_bodies; i++) {
     //DEBUG
-    //cout << "constructModelmex: body " << i << endl;
+    mexPrintf("constructModelmex: body %d\n",i);
     //END_DEBUG
     model->bodies[i]->body_index = i;
 
@@ -167,7 +167,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     }
 
     //DEBUG
-    //cout << "constructModelmex: About to parse collision geometry"  << endl;
+    mexPrintf("constructModelmex: About to parse collision geometry\n");
     //END_DEBUG
     pm = mxGetProperty(pBodies,i,"collision_geometry");
     Matrix4d T;
@@ -238,7 +238,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
             break;
           default:
             // intentionally do nothing..
-            
+
             //DEBUG
             //cout << "constructModelmex: SHOULD NOT GET HERE" << endl;
             //END_DEBUG
@@ -279,8 +279,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       if (num_collision_filter_groups > MAX_NUM_COLLISION_FILTER_GROUPS) {
         mexErrMsgIdAndTxt("Drake:constructModelmex:TooManyCollisionFilterGroups",
                           "The total number of collision filter groups (%d) "
-                          "exceeds the maximum allowed number (%d)", 
-                          num_collision_filter_groups, 
+                          "exceeds the maximum allowed number (%d)",
+                          num_collision_filter_groups,
                           MAX_NUM_COLLISION_FILTER_GROUPS);
       }
 
@@ -304,13 +304,13 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   // THIS IS UGLY: I'm sending the terrain contact points into the
   // contact_pts field of the cpp RigidBody objects
   //DEBUG
-  //cout << "constructModelmex: Parsing contact points " << endl;
+  mexPrintf("constructModelmex: Parsing contact points\n");
   //cout << "constructModelmex: Get struct" << endl;
   //END_DEBUG
   mxArray* contact_pts_struct[1];
   if (~mexCallMATLAB(1,contact_pts_struct,1,const_cast<mxArray**>(&pRBM),"getTerrainContactPoints")) {
     //DEBUG
-    //cout << "constructModelmex: Got struct" << endl;
+    mexPrintf("constructModelmex: Got terrain contact points struct\n");
     //if (contact_pts_struct) {
     //cout << "constructModelmex: Struct pointer: " << contact_pts_struct << endl;
     //} else {
@@ -354,6 +354,10 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     }
   }
 
+  //  FRAMES
+  //DEBUG
+  mexPrintf("constructModelmex: Parsing frames\n");
+  //END_DEBUG
   for (int i=0; i<model->num_frames; i++) {
     pm = mxGetProperty(pFrames,i,"name");
     mxGetString(pm,buf,100);
@@ -379,6 +383,9 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   }
 
   //  LOOP CONSTRAINTS
+  //DEBUG
+  mexPrintf("constructModelmex: Parsing loop constraints\n");
+  //END_DEBUG
   const mxArray* pLoops = mxGetProperty(pRBM,0,"loop");
   int num_loops = static_cast<int>(mxGetNumberOfElements(pLoops));
   model->loops.clear();
@@ -396,6 +403,10 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   }
 
   //ACTUATORS
+  //  LOOP CONSTRAINTS
+  //DEBUG
+  mexPrintf("constructModelmex: Parsing actuators\n");
+  //END_DEBUG
   const mxArray* pActuators = mxGetProperty(pRBM,0,"actuator");
   int num_actuators = static_cast<int>(mxGetNumberOfElements(pActuators));
   model->actuators.clear();
@@ -407,12 +418,16 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     int joint = static_cast<int>(mxGetScalar(pm)-1);
     pm = mxGetProperty(pActuators,i, "reduction");
     model->actuators.push_back(RigidBodyActuator(std::string(buf), model->bodies[joint], static_cast<double>(mxGetScalar(pm))));
-  }  
+  }
 
+  //  LOOP CONSTRAINTS
+  //DEBUG
+  mexPrintf("constructModelmex: Calling compile\n");
+  //END_DEBUG
   model->compile();
 
   plhs[0] = createDrakeMexPointer((void*)model,"RigidBodyManipulator");
   //DEBUG
-  //cout << "constructModelmex: END" << endl;
+  mexPrintf("constructModelmex: END\n");
   //END_DEBUG
 }
