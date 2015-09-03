@@ -197,7 +197,7 @@ Eigen::Matrix<typename Derived::Scalar, 3, 1> axis2rpy(const Eigen::MatrixBase<D
 template <typename Derived>
 GradientVar<typename Derived::Scalar, QUAT_SIZE, 1> expmap2quat(const Eigen::MatrixBase<Derived>& v, const int gradient_order) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
-  assert(gradient_order >= 0 && gradient_order <= 1);
+  assert(gradient_order >= 0 && gradient_order <= 2);
 
   GradientVar<typename Derived::Scalar, QUAT_SIZE, 1> ret(QUAT_SIZE, 1, EXPMAP_SIZE,gradient_order);
   auto theta = v.norm();
