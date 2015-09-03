@@ -1,4 +1,4 @@
-%module(package="drake") systems_wrapper
+%module(package="drake.systems") drakesystem
 
 %include <std_except.i>
 %include <std_string.i>

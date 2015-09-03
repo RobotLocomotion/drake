@@ -1,4 +1,4 @@
-%module(package="drake") bot_visualizer_wrapper
+%module(package="drake.systems.plants") botvis
 
 %include <eigen.i>
 %import "systems.i"

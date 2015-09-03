@@ -1,4 +1,4 @@
-%module(package="drake") ik_wrapper
+%module(package="drake.solvers") ik
 
 %include <std_except.i>
 %include <std_string.i>

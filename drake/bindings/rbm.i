@@ -1,4 +1,4 @@
-%module(package="drake") rbm_wrapper
+%module(package="drake") rbm
 
 %include <std_except.i>
 %include <std_string.i>

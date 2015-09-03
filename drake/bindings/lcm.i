@@ -1,4 +1,4 @@
-%module(package="drake") lcm_wrapper
+%module(package="drake.wrappers") lcm
 
 %include <std_shared_ptr.i>
 
