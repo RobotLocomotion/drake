@@ -50,7 +50,7 @@ add_swig_python_module(ikPython ik.i
                        SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/python
                        DESTINATION ${python_install_dir} ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_swig_python_module(pendulum pendulum.i
+add_swig_python_module(pendulumPython pendulum.i
                        CPLUSPLUS
                        INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../examples/Pendulum 
 	                       ${CMAKE_CURRENT_SOURCE_DIR}/../systems 
@@ -106,7 +106,7 @@ if (MATLAB_FOUND)
 	                       SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/matlab
 	                       DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/matlab)
 
-	add_swig_matlab_module(pendulum pendulum.i
+	add_swig_matlab_module(pendulumMatlab pendulum.i
 	                       CPLUSPLUS
 	                       INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../examples/Pendulum 
 		                       ${CMAKE_CURRENT_SOURCE_DIR}/../systems 
