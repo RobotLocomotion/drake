@@ -65,7 +65,7 @@ private:
 
 class PendulumWithBotVis : public Pendulum {
 public:
-  PendulumWithBotVis(const std::shared_ptr<lcm::LCM>& lcm) : Pendulum(lcm), botvis(lcm,"/home/rdeits/locomotion/drake/drake/examples/Pendulum/Pendulum.urdf",DrakeJoint::FIXED) {}
+  PendulumWithBotVis(const std::shared_ptr<lcm::LCM>& lcm) : Pendulum(lcm), botvis(lcm,"/Users/rdeits/locomotion/drake-distro/drake/examples/Pendulum/Pendulum.urdf",DrakeJoint::FIXED) {}
 
   virtual Eigen::VectorXd output(double t, const Eigen::VectorXd& x, const Eigen::VectorXd& u) const override {
     botvis.output(t,Eigen::VectorXd::Zero(0),x);

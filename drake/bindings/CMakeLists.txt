@@ -62,6 +62,8 @@ add_swig_python_module(pendulum pendulum.i
                        SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/python
                        DESTINATION ${python_install_dir} ${CMAKE_CURRENT_SOURCE_DIR})
 
+pods_install_python_packages(${CMAKE_CURRENT_SOURCE_DIR}/pydrake)
+
 # if (MATLAB_FOUND)
 # 	add_swig_matlab_module(MODULE lcm
 # 	                       SWIG_I_FILE ${CMAKE_CURRENT_SOURCE_DIR}/lcm.i

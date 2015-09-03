@@ -1,4 +1,4 @@
-%module(package="drake.examples") pendulum
+%module(package="pydrake.examples") pendulum
 
 %include <eigen.i>
 %import "systems.i"
