@@ -20,7 +20,14 @@ case $1 in
     exit 1 ;;
 esac
 
-SUBDIRS=`ls`
+if [ -e "../pod-build/drake_external_source_dirs.txt" ]
+then
+  SUBDIRS=`cat ../pod-build/drake_external_source_dirs.txt`
+else
+  echo "install_prereqs could not find the list of external source directories. Please run 'make download-all' first." 1>&2
+  exit 1
+fi
+
 for subdir in $SUBDIRS; do
   if [ -f $subdir/install_prereqs.sh ]; then
     echo "installing prereqs for $subdir"
