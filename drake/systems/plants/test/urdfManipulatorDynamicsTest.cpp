@@ -19,8 +19,8 @@ int main(int argc, char* argv[])
   cout << "=======" << endl;
 
   // the order of the bodies may be different in matlab, so print it out once here
-  cout << model->num_bodies << endl;
-  for (int i = 0; i < model->num_bodies; i++) {
+  cout << model->bodies.size() << endl;
+  for (int i = 0; i < model->bodies.size(); i++) {
     cout << model->bodies[i]->linkname << endl;
   }
 

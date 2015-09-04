@@ -41,27 +41,16 @@ std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj)
   return os;
 }
 
-RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_rigid_body_objects, int num_rigid_body_frames) :
-    collision_model(DrakeCollision::newModel())
-{
-  num_positions = 0;
-  num_bodies = 0;
-  num_frames = 0;
-  a_grav << 0, 0, 0, 0, 0, -9.81;
-  resize(ndof, num_rigid_body_objects, num_rigid_body_frames);
-}
-
 RigidBodyManipulator::RigidBodyManipulator(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type)
   :  collision_model(DrakeCollision::newModel())
 {
-  num_positions = 0;
-  num_bodies = 0;
-  num_frames = 0;
   a_grav << 0, 0, 0, 0, 0, -9.81;
-  resize(num_positions, 1, num_frames);
-  bodies[0]->linkname = "world";
-  bodies[0]->robotnum = 0;
-  bodies[0]->body_index = 0;
+
+  shared_ptr<RigidBody> b = make_shared<RigidBody>();
+  b->linkname = "world";
+  b->robotnum = 0;
+  b->body_index = 0;
+  bodies.push_back(b);
 
   addRobotFromURDF(urdf_filename,floating_base_type);
 }
@@ -69,64 +58,17 @@ RigidBodyManipulator::RigidBodyManipulator(const std::string &urdf_filename, con
 RigidBodyManipulator::RigidBodyManipulator(void) :
     collision_model(DrakeCollision::newModel())
 {
-  num_positions = 0;
-  num_bodies = 0;
-  num_frames = 0;
   a_grav << 0, 0, 0, 0, 0, -9.81;
-  resize(num_positions, 1, num_frames);
-  bodies[0]->linkname = "world";
-  bodies[0]->robotnum = 0;
-  bodies[0]->body_index = 0;
+
+  shared_ptr<RigidBody> b = make_shared<RigidBody>();
+  b->linkname = "world";
+  b->robotnum = 0;
+  b->body_index = 0;
+  bodies.push_back(b);
 }
 
 RigidBodyManipulator::~RigidBodyManipulator(void)
 {
-}
-
-
-// Note:  this method is gross and should be scheduled for deletion upon switching to the new kinsol
-void RigidBodyManipulator::resize(int ndof, int num_rigid_body_objects, int num_rigid_body_frames)
-{
-  int last_num_bodies = num_bodies;
-
-  num_positions = ndof;
-
-  if (num_rigid_body_objects < 0)
-    throw runtime_error("number of rigid body objects must be positive");
-  num_bodies = num_rigid_body_objects;
-
-  I_world.resize(num_bodies);
-  Ic_new.resize(num_bodies);
-  for (int i = 0; i < num_bodies; i++) {
-    I_world[i] = Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
-    Ic_new[i] = Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
-  }
-
-  bodies.reserve(num_bodies);
-  for (int i = last_num_bodies; i < num_bodies; i++) {
-    bodies.push_back(make_shared<RigidBody>());
-  }
-
-  frames.reserve(num_rigid_body_frames);
-  for (int i = num_frames; i < num_rigid_body_frames; i++) {
-    frames.push_back(make_shared<RigidBodyFrame>());
-  }
-  num_frames = num_rigid_body_frames;
-
-  dI_world.resize(num_bodies);
-  dIc_new.resize(num_bodies);
-  for (int i = 0; i < num_bodies; i++) {
-    dI_world[i] = MatrixXd::Zero(I_world[i].size(), num_positions);
-    dIc_new[i] = MatrixXd::Zero(Ic_new[i].size(), num_positions);
-  }
-
-  initialized = false;
-
-  position_kinematics_cached = false;
-  gradients_cached = false;
-  velocity_kinematics_cached = false;
-  jdotV_cached = false;
-  cached_inertia_gradients_order = -1;
 }
 
 
@@ -173,7 +115,6 @@ void RigidBodyManipulator::compile(void)
     }
   }
 
-  num_bodies = static_cast<int>(bodies.size());
   int _num_positions = 0;
   num_velocities = 0;
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
@@ -190,7 +131,7 @@ void RigidBodyManipulator::compile(void)
     }
   }
 
-  for (int i=0; i<num_bodies; i++) {
+  for (size_t i=0; i<bodies.size(); i++) {
     bodies[i]->body_index = i;
     bodies[i]->setN(_num_positions, num_velocities);
   }
@@ -201,12 +142,24 @@ void RigidBodyManipulator::compile(void)
     for (int i=0; i<actuators[ia].body->getJoint().getNumVelocities(); i++)
       B(actuators[ia].body->velocity_num_start+i,ia) = actuators[ia].reduction;
 
-  resize(_num_positions, num_bodies, num_frames); // TODO: change _num_positions to num_positions above after removing this
+  I_world.resize(bodies.size());
+  Ic_new.resize(bodies.size());
+  for (int i = 0; i < bodies.size(); i++) {
+    I_world[i] = Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
+    Ic_new[i] = Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
+  }
+
+  dI_world.resize(bodies.size());
+  dIc_new.resize(bodies.size());
+  for (int i = 0; i < bodies.size(); i++) {
+    dI_world[i] = MatrixXd::Zero(I_world[i].size(), num_positions);
+    dIc_new[i] = MatrixXd::Zero(Ic_new[i].size(), num_positions);
+  }
 
   // gather joint limits in RBM vector
   joint_limit_min = VectorXd::Constant(num_positions, -std::numeric_limits<double>::infinity());
   joint_limit_max = VectorXd::Constant(num_positions, std::numeric_limits<double>::infinity());
-  for (int i = 0; i < num_bodies; i++) {
+  for (int i = 0; i < bodies.size(); i++) {
     auto& body = bodies[i];
     if (body->hasParent()) {
       const DrakeJoint& joint = body->getJoint();
@@ -215,7 +168,7 @@ void RigidBodyManipulator::compile(void)
     }
   }
 
-  for (int i=0; i<num_bodies; i++) {
+  for (int i=0; i<bodies.size(); i++) {
     auto& body = bodies[i];
     if (!body->hasParent())
       updateCollisionElements(body);  // update static objects (not done in the kinematics loop)
@@ -236,7 +189,7 @@ void RigidBodyManipulator::compile(void)
 
 void RigidBodyManipulator::getRandomConfiguration(Eigen::VectorXd& q, std::default_random_engine& generator) const
 {
-	for (int i=0; i<num_bodies; i++) {
+	for (int i=0; i<bodies.size(); i++) {
 		if (bodies[i]->hasParent()) {
 			const DrakeJoint& joint = bodies[i]->getJoint();
 			q.middleRows(bodies[i]->position_num_start,joint.getNumPositions()) = joint.randomConfiguration(generator);
@@ -250,7 +203,7 @@ string RigidBodyManipulator::getPositionName(int position_num) const
 		throw std::runtime_error("position_num is out of range");
 
 	size_t body_index = 0;
-	while (body_index+1<num_bodies && bodies[body_index+1]->position_num_start<=position_num) body_index++;
+	while (body_index+1<bodies.size() && bodies[body_index+1]->position_num_start<=position_num) body_index++;
 
 	return bodies[body_index]->getJoint().getPositionName(position_num-bodies[body_index]->position_num_start);
 }
@@ -261,7 +214,7 @@ string RigidBodyManipulator::getVelocityName(int velocity_num) const
 		throw std::runtime_error("velocity_num is out of range");
 
 	size_t body_index = 0;
-	while (body_index+1<num_bodies && bodies[body_index+1]->velocity_num_start<=velocity_num) body_index++;
+	while (body_index+1<bodies.size() && bodies[body_index+1]->velocity_num_start<=velocity_num) body_index++;
 
 	return bodies[body_index]->getJoint().getVelocityName(velocity_num-bodies[body_index]->velocity_num_start);
 }
@@ -777,7 +730,7 @@ void RigidBodyManipulator::updateCompositeRigidBodyInertias(int gradient_order) 
   checkCachedKinematicsSettings(gradient_order > 0, false, false, "updateCompositeRigidBodyInertias");
 
   if (gradient_order > cached_inertia_gradients_order) {
-    for (int i = 0; i < num_bodies; i++) {
+    for (int i = 0; i < bodies.size(); i++) {
       Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type* dTdq = nullptr;
       if (gradient_order > 0)
         dTdq = &(bodies[i]->dTdq_new);
@@ -792,7 +745,7 @@ void RigidBodyManipulator::updateCompositeRigidBodyInertias(int gradient_order) 
       }
     }
 
-    for (int i = num_bodies - 1; i >= 0; i--) {
+    for (int i = bodies.size() - 1; i >= 0; i--) {
       if (bodies[i]->hasParent()) {
         Ic_new[bodies[i]->parent->body_index] += Ic_new[i];
         if (gradient_order > 0) {
@@ -821,7 +774,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::worldMomen
   if (gradient_order > 0)
     ret.gradient().value().setZero();
   int gradient_row_start = 0;
-  for (int i = 0; i < num_bodies; i++) {
+  for (int i = 0; i < bodies.size(); i++) {
     RigidBody& body = *bodies[i];
 
     if (body.hasParent()) {
@@ -866,7 +819,7 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::worldMomentumMatrixDotT
   if (gradient_order > 0)
     ret.gradient().value().setZero();
 
-  for (int i = 0; i < num_bodies; i++) {
+  for (int i = 0; i < bodies.size(); i++) {
     RigidBody& body = *bodies[i];
     if (body.hasParent()) {
       if (isBodyPartOfRobot(body, robotnum)) {
@@ -905,7 +858,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::centroidal
     }
     else {
       // transform in terms of v -> in terms of qdot
-      for (int i = 0; i < num_bodies; i++) {
+      for (int i = 0; i < bodies.size(); i++) {
         RigidBody& body = *bodies[i];
         if (body.hasParent()) {
           const DrakeJoint& joint = body.getJoint();
@@ -973,7 +926,7 @@ bool RigidBodyManipulator::isBodyPartOfRobot(const RigidBody& body, const std::s
 double RigidBodyManipulator::getMass(const std::set<int>& robotnum)
 {
   double total_mass = 0.0;
-  for (int i = 0; i < num_bodies; i++) {
+  for (int i = 0; i < bodies.size(); i++) {
     RigidBody& body = *bodies[i];
     if (isBodyPartOfRobot(body, robotnum))
     {
@@ -994,7 +947,7 @@ GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(int g
   double body_mass;
   com.value().setZero();
 
-  for (int i = 0; i < num_bodies; i++) {
+  for (int i = 0; i < bodies.size(); i++) {
     RigidBody& body = *bodies[i];
     if (isBodyPartOfRobot(body, robotnum))
     {
@@ -1067,7 +1020,7 @@ std::pair<Eigen::Vector3d, double> RigidBodyManipulator::resolveCenterOfPressure
 int RigidBodyManipulator::getNumContacts(const set<int> &body_idx)
 {
   size_t n=0,nb=body_idx.size(),bi;
-  if (nb==0) nb=num_bodies;
+  if (nb==0) nb=bodies.size();
   set<int>::iterator iter = body_idx.begin();
   for (size_t i=0; i<nb; i++) {
     if (body_idx.size()==0) bi=i;
@@ -1081,7 +1034,7 @@ int RigidBodyManipulator::getNumContacts(const set<int> &body_idx)
 template<typename Derived>
 void RigidBodyManipulator::getContactPositions(MatrixBase<Derived> &pos, const set<int> &body_idx) {
   int n = 0, nc, nb = static_cast<int>(body_idx.size()), bi;
-  if (nb == 0) nb = num_bodies;
+  if (nb == 0) nb = bodies.size();
   set<int>::iterator iter = body_idx.begin();
   for (int i = 0; i < nb; i++) {
     if (body_idx.size() == 0) bi = i;
@@ -1097,7 +1050,7 @@ void RigidBodyManipulator::getContactPositions(MatrixBase<Derived> &pos, const s
 template<typename Derived>
 void RigidBodyManipulator::getContactPositionsJac(MatrixBase<Derived> &J, const set<int> &body_idx) {
   int n = 0, nc, nb = static_cast<int>(body_idx.size()), bi;
-  if (nb == 0) nb = num_bodies;
+  if (nb == 0) nb = bodies.size();
   set<int>::iterator iter = body_idx.begin();
   MatrixXd p;
   for (int i = 0; i < nb; i++) {
@@ -1121,7 +1074,7 @@ int RigidBodyManipulator::parseBodyOrFrameID(const int body_or_frame_id, Matrix4
   } else if (body_or_frame_id<0) {
     int frame_ind = -body_or_frame_id-2;
     // check that this is in range
-    if (frame_ind >= num_frames){
+    if (frame_ind >= frames.size()){
       std::ostringstream stream;
       stream << "Got a frame ind greater than available!\n";
       throw std::runtime_error(stream.str());
@@ -1427,7 +1380,7 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMa
 
   updateCompositeRigidBodyInertias(gradient_order);
 
-  for (int i = 0; i < num_bodies; i++) {
+  for (int i = 0; i < bodies.size(); i++) {
     RigidBody& body_i = *bodies[i];
     if (body_i.hasParent()) {
       int v_start_i = body_i.velocity_num_start;
@@ -1505,13 +1458,13 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(
   typedef typename Eigen::Matrix<Scalar, TWIST_SIZE, 1> Vector6;
 
   Vector6 root_accel = -a_grav;
-  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> net_wrenches(TWIST_SIZE, num_bodies, nq + nv, gradient_order); // gradient w.r.t q and v
+  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> net_wrenches(TWIST_SIZE, bodies.size(), nq + nv, gradient_order); // gradient w.r.t q and v
   net_wrenches.value().col(0).setZero();
   if (gradient_order > 0) {
     net_wrenches.gradient().value().template topRows<TWIST_SIZE>().setZero();
   }
 
-  for (int i = 0; i < num_bodies; i++) {
+  for (int i = 0; i < bodies.size(); i++) {
     RigidBody& body = *bodies[i];
     if (body.hasParent()) {
       Vector6 spatial_accel = root_accel + body.JdotV;
@@ -1584,7 +1537,7 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(
 
   GradientVar<Scalar, Eigen::Dynamic, 1> ret(num_velocities, 1, nq + nv, gradient_order);
 
-  for (int i = num_bodies - 1; i >= 0; i--) {
+  for (int i = bodies.size() - 1; i >= 0; i--) {
     RigidBody& body = *bodies[i];
     if (body.hasParent()) {
       const auto& net_wrenches_const = net_wrenches; // eliminates the need for another explicit instantiation
@@ -1934,8 +1887,7 @@ shared_ptr<RigidBody> RigidBodyManipulator::findLink(string linkname, int robot)
   //cout<<"get linkname_connector"<<endl;
   //linkname = std::regex_replace(linkname,linkname_connector,string("_"));
   int match = -1;
-  num_bodies = bodies.size();
-  for(int i = 0;i<num_bodies;i++) {
+  for(int i = 0;i<bodies.size();i++) {
     // Note: unlike the MATLAB implementation, I don't have to handle the fixed joint names
     string lower_linkname = bodies[i]->linkname;
     std::transform(lower_linkname.begin(), lower_linkname.end(), lower_linkname.begin(),
@@ -1969,8 +1921,8 @@ shared_ptr<RigidBody> RigidBodyManipulator::findJoint(string jointname, int robo
   std::transform(jointname.begin(), jointname.end(), jointname.begin(), ::tolower); // convert to lower case
 
   vector<bool> name_match;
-  name_match.resize(this->num_bodies);
-  for(int i = 0;i<this->num_bodies;i++)
+  name_match.resize(this->bodies.size());
+  for(int i = 0;i<this->bodies.size();i++)
   {
   	if (bodies[i]->hasParent()) {
   		string lower_jointname = this->bodies[i]->getJoint().getName();
@@ -1987,7 +1939,7 @@ shared_ptr<RigidBody> RigidBodyManipulator::findJoint(string jointname, int robo
   }
   if(robot != -1)
   {
-    for(int i = 0;i<this->num_bodies;i++)
+    for(int i = 0;i<this->bodies.size();i++)
     {
       if(name_match[i])
       {
@@ -1998,7 +1950,7 @@ shared_ptr<RigidBody> RigidBodyManipulator::findJoint(string jointname, int robo
   // Unlike the MATLAB implementation, I am not handling the fixed joints
   int num_match = 0;
   int ind_match = -1;
-  for(int i = 0;i<this->num_bodies;i++)
+  for(int i = 0;i<this->bodies.size();i++)
   {
     if(name_match[i])
     {
@@ -2149,13 +2101,6 @@ void RigidBodyManipulator::checkCachedKinematicsSettings(bool kinematics_gradien
   if (message.length() > 0) {
     throw runtime_error(message.c_str());
   }
-}
-
-void RigidBodyManipulator::addFrame(const std::shared_ptr<RigidBodyFrame>& frame)
-{
-  frames.push_back(frame);
-  num_frames = static_cast<int>(frames.size());
-  frame->frame_index=-(num_frames-1)-2; // yuck!!
 }
 
 // explicit instantiations (required for linking):

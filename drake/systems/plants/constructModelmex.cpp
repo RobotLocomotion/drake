@@ -69,45 +69,47 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   pm = mxGetProperty(pRBM, 0, "num_positions");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","model should have a num_positions field");
   int num_positions = static_cast<int>(*mxGetPrSafe(pm));
-  model = new RigidBodyManipulator(num_positions, num_bodies, num_frames);
+  model = new RigidBodyManipulator();
+  model->bodies.clear();  // a little gross:  the default constructor makes a body "world".  zap it because we will construct one again below
 
-  for (int i=0; i<model->num_bodies; i++) {
+  for (int i=0; i<num_bodies; i++) {
     //DEBUG
     mexPrintf("constructModelmex: body %d\n",i);
     //END_DEBUG
-    model->bodies[i]->body_index = i;
+    shared_ptr<RigidBody> b = make_shared<RigidBody>();
+    b->body_index = i;
 
     pm = mxGetProperty(pBodies,i,"linkname");
     mxGetString(pm,buf,100);
-    model->bodies[i]->linkname.assign(buf,strlen(buf));
+    b->linkname.assign(buf,strlen(buf));
 
     pm = mxGetProperty(pBodies,i,"robotnum");
-    model->bodies[i]->robotnum = (int) mxGetScalar(pm)-1;
+    b->robotnum = (int) mxGetScalar(pm)-1;
 
     pm = mxGetProperty(pBodies,i,"mass");
-    model->bodies[i]->mass = mxGetScalar(pm);
+    b->mass = mxGetScalar(pm);
 
     pm = mxGetProperty(pBodies,i,"com");
-    if (!mxIsEmpty(pm)) memcpy(model->bodies[i]->com.data(),mxGetPrSafe(pm),sizeof(double)*3);
+    if (!mxIsEmpty(pm)) memcpy(b->com.data(),mxGetPrSafe(pm),sizeof(double)*3);
 
     pm = mxGetProperty(pBodies,i,"I");
-    if (!mxIsEmpty(pm)) memcpy(model->bodies[i]->I.data(),mxGetPrSafe(pm),sizeof(double)*6*6);
+    if (!mxIsEmpty(pm)) memcpy(b->I.data(),mxGetPrSafe(pm),sizeof(double)*6*6);
 
     pm = mxGetProperty(pBodies,i,"position_num");
-    model->bodies[i]->position_num_start = (int) mxGetScalar(pm) - 1;  //zero-indexed
+    b->position_num_start = (int) mxGetScalar(pm) - 1;  //zero-indexed
 
     pm = mxGetProperty(pBodies,i,"velocity_num");
-    model->bodies[i]->velocity_num_start = (int) mxGetScalar(pm) - 1;  //zero-indexed
+    b->velocity_num_start = (int) mxGetScalar(pm) - 1;  //zero-indexed
 
     pm = mxGetProperty(pBodies,i,"parent");
     if (!pm || mxIsEmpty(pm))
-      model->bodies[i]->parent = nullptr;
+      b->parent = nullptr;
     else {
       int parent_ind = static_cast<int>(mxGetScalar(pm))-1;
       if (parent_ind >= static_cast<int>(model->bodies.size()))
         mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","bad body.parent %d (only have %d bodies)",parent_ind,model->bodies.size());
       if (parent_ind>=0)
-        model->bodies[i]->parent = model->bodies[parent_ind];
+        b->parent = model->bodies[parent_ind];
     }
 
     {
@@ -128,7 +130,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
       double pitch = mxGetScalar(mxGetProperty(pBodies, i, "pitch"));
 
-      if (model->bodies[i]->hasParent()) {
+      if (b->hasParent()) {
         std::unique_ptr<DrakeJoint> joint;
         switch (floating) {
           case 0: {
@@ -162,7 +164,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
           }
         }
 
-        model->bodies[i]->setJoint(move(joint));
+        b->setJoint(move(joint));
       }
     }
 
@@ -189,7 +191,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         memcpy(T.data(), mxGetPrSafe(mxGetProperty(pShape,0,"T")), sizeof(double)*4*4);
         auto shape = (DrakeShapes::Shape)static_cast<int>(mxGetScalar(mxGetProperty(pShape,0,"drake_shape_id")));
         vector<double> params_vec;
-        RigidBody::CollisionElement element(T, model->bodies[i]);
+        RigidBody::CollisionElement element(T, b);
         switch (shape) {
           case DrakeShapes::BOX:
           {
@@ -247,10 +249,10 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         //DEBUG
         //cout << "constructModelmex: geometry = " << geometry.get() << endl;
         //END_DEBUG
-        model->addCollisionElement(element, model->bodies[i], group_name);
+        model->addCollisionElement(element, b, group_name);
       }
-      if (!model->bodies[i]->hasParent()) {
-        model->updateCollisionElements(model->bodies[i]);  // update static objects only once - right here on load
+      if (!b->hasParent()) {
+        model->updateCollisionElements(b);  // update static objects only once - right here on load
       }
 
 
@@ -297,8 +299,10 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
           mask.set(j);
         }
       }
-      model->bodies[i]->setCollisionFilter(group,mask);
+      b->setCollisionFilter(group,mask);
     }
+
+    model->bodies.push_back(b);
   }
 
   // THIS IS UGLY: I'm sending the terrain contact points into the
@@ -358,18 +362,21 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   //DEBUG
   mexPrintf("constructModelmex: Parsing frames\n");
   //END_DEBUG
-  for (int i=0; i<model->num_frames; i++) {
+  for (int i=0; i<num_frames; i++) {
+    shared_ptr<RigidBodyFrame> fr = make_shared<RigidBodyFrame>();
+
     pm = mxGetProperty(pFrames,i,"name");
     mxGetString(pm,buf,100);
-    model->frames[i]->name.assign(buf,strlen(buf));
+    fr->name.assign(buf,strlen(buf));
 
     pm = mxGetProperty(pFrames,i,"body_ind");
-    model->frames[i]->body = model->bodies[(int) mxGetScalar(pm)-1];
+    fr->body = model->bodies[(int) mxGetScalar(pm)-1];
 
     pm = mxGetProperty(pFrames,i,"T");
-    memcpy(model->frames[i]->Ttree.data(),mxGetPrSafe(pm),sizeof(double)*4*4);
+    memcpy(fr->Ttree.data(),mxGetPrSafe(pm),sizeof(double)*4*4);
 
-    model->frames[i]->frame_index = -i-2;
+    fr->frame_index = -i-2;
+    model->frames.push_back(fr);
   }
 
   const mxArray* a_grav_array = mxGetProperty(pRBM,0,"gravity");
@@ -393,8 +400,12 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   {
     pm = mxGetProperty(pLoops,i,"frameA");
     int frame_A_ind = static_cast<int>(-mxGetScalar(pm)-1);
+    if (frame_A_ind<0 || frame_A_ind>=model->frames.size())
+      mexErrMsgIdAndTxt("Drake:constructModelmex:BadFrameNumber","Something is wrong, this doesn't point to a valid frame");
     pm = mxGetProperty(pLoops,i,"frameB");
     int frame_B_ind = static_cast<int>(-mxGetScalar(pm)-1);
+    if (frame_B_ind<0 || frame_B_ind>=model->frames.size())
+      mexErrMsgIdAndTxt("Drake:constructModelmex:BadFrameNumber","Something is wrong, this doesn't point to a valid frame");
     pm = mxGetProperty(pLoops,i,"axis");
     Vector3d axis;
     memcpy(axis.data(), mxGetPrSafe(pm), 3*sizeof(double));

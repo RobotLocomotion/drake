@@ -57,8 +57,8 @@ smoothDistancePenalty(double& c, MatrixXd& dc,
   }
 
   // Compute Jacobian of closest distance vector
-  std::vector< std::vector<int> > orig_idx_of_pt_on_bodyA(robot->num_bodies);
-  std::vector< std::vector<int> > orig_idx_of_pt_on_bodyB(robot->num_bodies);
+  std::vector< std::vector<int> > orig_idx_of_pt_on_bodyA(robot->bodies.size());
+  std::vector< std::vector<int> > orig_idx_of_pt_on_bodyB(robot->bodies.size());
   for (int k = 0; k < num_pts; ++k) {
     //DEBUG
     //std::cout << "MinDistanceConstraint::eval: First loop: " << k << std::endl;
@@ -70,7 +70,7 @@ smoothDistancePenalty(double& c, MatrixXd& dc,
       orig_idx_of_pt_on_bodyB.at(idxB.at(k)).push_back(k);
     }
   }
-  for (int k = 0; k < robot->num_bodies; ++k) {
+  for (int k = 0; k < robot->bodies.size(); ++k) {
     //DEBUG
     //std::cout << "MinDistanceConstraint::eval: Second loop: " << k << std::endl;
     //END_DEBUG

@@ -70,7 +70,6 @@ public:
 class DLLEXPORT_RBM RigidBodyManipulator
 {
 public:
-  RigidBodyManipulator(int num_dof, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
   RigidBodyManipulator(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
   RigidBodyManipulator(void);
   virtual ~RigidBodyManipulator(void);
@@ -80,13 +79,9 @@ public:
   bool addRobotFromURDF(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
   bool addRobotFromURDF(const std::string &urdf_filename, std::map<std::string,std::string>& package_map, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
 
-  void addFrame(const std::shared_ptr<RigidBodyFrame>& frame);
-
   std::map<std::string, int> computePositionNameToIndexMap() const;
 
   void surfaceTangents(Eigen::Map<Matrix3xd> const & normals, std::vector< Map<Matrix3xd> > & tangents);
-
-  void resize(int num_dof, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
 
   void compile(void);  // call me after the model is loaded
 
@@ -304,11 +299,9 @@ public:
   VectorXd joint_limit_max;
 
   // Rigid body objects
-  int num_bodies;  // rigid body objects
   std::vector<std::shared_ptr<RigidBody> > bodies;
 
   // Rigid body frames
-  int num_frames;
   std::vector<std::shared_ptr<RigidBodyFrame> > frames;
 
   // Rigid body actuators

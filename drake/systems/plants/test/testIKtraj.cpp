@@ -24,7 +24,7 @@ int main()
   int r_hand;
   //int l_foot;
   //int r_foot;
-  for(int i = 0;i<model->num_bodies;i++)
+  for(int i = 0;i<model->bodies.size();i++)
   {
     if(model->bodies[i]->linkname.compare(string("l_hand")))
     {
