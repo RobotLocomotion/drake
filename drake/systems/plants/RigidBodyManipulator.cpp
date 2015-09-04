@@ -115,13 +115,13 @@ void RigidBodyManipulator::compile(void)
     }
   }
 
-  int _num_positions = 0;
+  num_positions = 0;
   num_velocities = 0;
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     RigidBody& body = **it;
     if (body.hasParent()) {
-      body.position_num_start = _num_positions;
-      _num_positions += body.getJoint().getNumPositions();
+      body.position_num_start = num_positions;
+      num_positions += body.getJoint().getNumPositions();
       body.velocity_num_start = num_velocities;
       num_velocities += body.getJoint().getNumVelocities();
     }
@@ -133,7 +133,7 @@ void RigidBodyManipulator::compile(void)
 
   for (size_t i=0; i<bodies.size(); i++) {
     bodies[i]->body_index = i;
-    bodies[i]->setN(_num_positions, num_velocities);
+    bodies[i]->setN(num_positions, num_velocities);
   }
 
   B.resize(num_velocities,actuators.size());
