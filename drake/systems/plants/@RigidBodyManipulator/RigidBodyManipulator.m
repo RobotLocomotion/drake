@@ -1157,7 +1157,6 @@ classdef RigidBodyManipulator < Manipulator
       % See also RigidBodyGeometry/getTerrainContactPoints,
       % RigidBodyManipulator/terrainContactPositions
       checkDirty(obj);
-      disp('start of getTerrainContactPoints')
       if nargin == 1 && ~isempty(obj.cached_terrain_contact_points_struct)
         terrain_contact_point_struct = obj.cached_terrain_contact_points_struct;
       else
@@ -1189,8 +1188,6 @@ classdef RigidBodyManipulator < Manipulator
             end
           end
         end
-        disp('end of getTerrainContactPoints')
-        terrain_contact_point_struct
       end
     end
 
@@ -2188,11 +2185,12 @@ classdef RigidBodyManipulator < Manipulator
             % descendant).  abort removal.
             continue;
           end
-          % check if it's in a loop joint
-          frames_on_this_body = find([model.frame.body_ind]==i);
-          if ~isempty(intersect(frames_on_this_body,-[model.loop.frameA,model.loop.frameB]))
-            % then it's part of a loop joint
-            continue;
+          if ~isempty(model.loop)   % check if it's in a loop joint
+            frames_on_this_body = find([model.frame.body_ind]==i);
+            if ~isempty(intersect(frames_on_this_body,-[model.loop.frameA,model.loop.frameB]))
+              % then it's part of a loop joint
+              continue;
+            end
           end
           warning('Drake:RigidBodyManipulator:BodyHasZeroInertia',['Link ',body.linkname,' has zero inertia (even though gravity is on and it''s not a fixed joint) and will be removed']);
         end

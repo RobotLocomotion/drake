@@ -39,7 +39,7 @@ void setLimits(const mxArray *pBodies, int i, FixedAxisOneDoFJoint<Derived>* fix
 void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 {
   //DEBUG
-  mexPrintf("constructModelmex: START\n");
+  //mexPrintf("constructModelmex: START\n");
   //END_DEBUG
   char buf[100];
   mxArray *pm;
@@ -69,7 +69,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   
   for (int i=0; i<num_bodies; i++) {
     //DEBUG
-    mexPrintf("constructModelmex: body %d\n",i);
+    //mexPrintf("constructModelmex: body %d\n",i);
     //END_DEBUG
     shared_ptr<RigidBody> b = make_shared<RigidBody>();
     b->body_index = i;
@@ -164,7 +164,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     }
 
     //DEBUG
-    mexPrintf("constructModelmex: About to parse collision geometry\n");
+    //mexPrintf("constructModelmex: About to parse collision geometry\n");
     //END_DEBUG
     pm = mxGetProperty(pBodies,i,"collision_geometry");
     Matrix4d T;
@@ -303,13 +303,13 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   // THIS IS UGLY: I'm sending the terrain contact points into the
   // contact_pts field of the cpp RigidBody objects
   //DEBUG
-  mexPrintf("constructModelmex: Parsing contact points\n");
+  //mexPrintf("constructModelmex: Parsing contact points\n");
   //cout << "constructModelmex: Get struct" << endl;
   //END_DEBUG
   mxArray* contact_pts_struct[1];
   if (~mexCallMATLAB(1,contact_pts_struct,1,const_cast<mxArray**>(&pRBM),"getTerrainContactPoints")) {
     //DEBUG
-    mexPrintf("constructModelmex: Got terrain contact points struct\n");
+    //mexPrintf("constructModelmex: Got terrain contact points struct\n");
     //if (contact_pts_struct) {
     //cout << "constructModelmex: Struct pointer: " << contact_pts_struct << endl;
     //} else {
@@ -355,7 +355,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
   //  FRAMES
   //DEBUG
-  mexPrintf("constructModelmex: Parsing frames\n");
+  //mexPrintf("constructModelmex: Parsing frames\n");
   //END_DEBUG
   for (int i=0; i<num_frames; i++) {
     shared_ptr<RigidBodyFrame> fr = make_shared<RigidBodyFrame>();
@@ -386,7 +386,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
   //  LOOP CONSTRAINTS
   //DEBUG
-  mexPrintf("constructModelmex: Parsing loop constraints\n");
+  //mexPrintf("constructModelmex: Parsing loop constraints\n");
   //END_DEBUG
   const mxArray* pLoops = mxGetProperty(pRBM,0,"loop");
   int num_loops = static_cast<int>(mxGetNumberOfElements(pLoops));
@@ -411,7 +411,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   //ACTUATORS
   //  LOOP CONSTRAINTS
   //DEBUG
-  mexPrintf("constructModelmex: Parsing actuators\n");
+  //mexPrintf("constructModelmex: Parsing actuators\n");
   //END_DEBUG
   const mxArray* pActuators = mxGetProperty(pRBM,0,"actuator");
   int num_actuators = static_cast<int>(mxGetNumberOfElements(pActuators));
@@ -428,12 +428,12 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
   //  LOOP CONSTRAINTS
   //DEBUG
-  mexPrintf("constructModelmex: Calling compile\n");
+  //mexPrintf("constructModelmex: Calling compile\n");
   //END_DEBUG
   model->compile();
 
   plhs[0] = createDrakeMexPointer((void*)model,"RigidBodyManipulator");
   //DEBUG
-  mexPrintf("constructModelmex: END\n");
+  //mexPrintf("constructModelmex: END\n");
   //END_DEBUG
 }
