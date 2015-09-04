@@ -54,7 +54,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   }
 
   const mxArray* pRBM = prhs[0];
-  RigidBodyManipulator *model=NULL;
+  RigidBodyManipulator *model=new RigidBodyManipulator();
+  model->bodies.clear();  // a little gross:  the default constructor makes a body "world".  zap it because we will construct one again below
 
 //  model->robot_name = get_strings(mxGetProperty(pRBM,0,"name"));
 
@@ -65,13 +66,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   const mxArray* pFrames = mxGetProperty(pRBM,0,"frame");
   if (!pFrames) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","the frame array is invalid");
   int num_frames = static_cast<int>(mxGetNumberOfElements(pFrames));
-
-  pm = mxGetProperty(pRBM, 0, "num_positions");
-  if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","model should have a num_positions field");
-  int num_positions = static_cast<int>(*mxGetPrSafe(pm));
-  model = new RigidBodyManipulator();
-  model->bodies.clear();  // a little gross:  the default constructor makes a body "world".  zap it because we will construct one again below
-
+  
   for (int i=0; i<num_bodies; i++) {
     //DEBUG
     mexPrintf("constructModelmex: body %d\n",i);
