@@ -33,7 +33,6 @@
     if (n <= 0) {
       Eigen::MatrixXd value;
       value = gvar.value();
-      std::cout << "value: " << value << std::endl;
       return value;
     } else {
       return nthGradientValue(gvar.gradient(), n-1);
