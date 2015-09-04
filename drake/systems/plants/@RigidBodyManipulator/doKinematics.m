@@ -19,6 +19,12 @@ function kinsol = doKinematics(model, q, v, options, qd_old)
 % compute_JdotV: whether or not to precompute quantities necessary to
 % compute biases such as Jdot * v and the C term in manipulatorDynamics
 % @default true if v is passed in and not empty.
+% kinematics_cache_ptr_to_use: DrakeMexPointer. Tells doKinematics to use a
+% specific kinematics cache  DrakeMexPointer. This option can be useful when
+% multiple kinsols need to be valid at the same time. By default, the
+% default kinematics cache pointers stored in the RigidBodyManipulator are
+% used, meaning that subsequent doKinematics calls overwrite the previous
+% cache, and hence invalidate kinsols from earlier doKinematics calls.
 %
 % @retval kinsol a structure containing the precomputed information
 % (non-mex case) or a certificate of having precomputed this information
