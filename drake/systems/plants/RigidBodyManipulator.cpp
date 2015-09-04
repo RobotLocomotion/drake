@@ -53,6 +53,14 @@ RigidBodyManipulator::RigidBodyManipulator(const std::string &urdf_filename, con
   bodies.push_back(b);
 
   addRobotFromURDF(urdf_filename,floating_base_type);
+
+  initialized = false;
+
+  position_kinematics_cached = false;
+  gradients_cached = false;
+  velocity_kinematics_cached = false;
+  jdotV_cached = false;
+  cached_inertia_gradients_order = -1;
 }
 
 RigidBodyManipulator::RigidBodyManipulator(void) :
@@ -65,6 +73,14 @@ RigidBodyManipulator::RigidBodyManipulator(void) :
   b->robotnum = 0;
   b->body_index = 0;
   bodies.push_back(b);
+
+  initialized = false;
+
+  position_kinematics_cached = false;
+  gradients_cached = false;
+  velocity_kinematics_cached = false;
+  jdotV_cached = false;
+  cached_inertia_gradients_order = -1;
 }
 
 RigidBodyManipulator::~RigidBodyManipulator(void)
@@ -2101,6 +2117,12 @@ void RigidBodyManipulator::checkCachedKinematicsSettings(bool kinematics_gradien
   if (message.length() > 0) {
     throw runtime_error(message.c_str());
   }
+}
+
+void RigidBodyManipulator::addFrame(const std::shared_ptr<RigidBodyFrame>& frame)
+{
+  frames.push_back(frame);
+  frame->frame_index=-(frames.size()-1)-2; // yuck!!
 }
 
 // explicit instantiations (required for linking):

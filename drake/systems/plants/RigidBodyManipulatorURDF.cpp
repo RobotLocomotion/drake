@@ -739,8 +739,8 @@ bool parseLoop(RigidBodyManipulator* model, TiXmlElement* node)
     return false;
   }
 
-  model->frames.push_back(frameA);
-  model->frames.push_back(frameB);
+  model->addFrame(frameA);
+  model->addFrame(frameB);
   RigidBodyLoop l(frameA,frameB,axis);
   model->loops.push_back(l);
 
@@ -785,7 +785,8 @@ bool parseFrame(RigidBodyManipulator* model, TiXmlElement* node)
   T << rpy2rotmat(rpy), xyz, 0,0,0,1;
 
   std::shared_ptr<RigidBodyFrame> frame = make_shared<RigidBodyFrame>(frame_name,body,T);
-  model->frames.push_back(frame);
+  model->addFrame(frame);
+
 
   return true;
 }
