@@ -1,4 +1,4 @@
-function [xtraj_N,utraj_N,Btraj_N,Straj_N] = repeatTraj(r,xtraj,utraj,Btraj,Straj,N,flip_lr)
+function [xtraj_N,utraj_N,Btraj_N,Straj_N] = repeatTraj(r,xtraj,utraj,Btraj,Straj,N,flip_lr,is3D)
 
 
 if N<1
@@ -31,8 +31,16 @@ if nargin < 7
   flip_lr = false;
 end
 
+if nargin < 7
+  is3D = false;
+end
+
 if flip_lr
-  [xtraj_flipped,utraj_flipped,Btraj_flipped,Straj_flipped] = flipLeftRight(r,xtraj,utraj,Btraj,Straj);
+  if is3D
+    [xtraj_flipped,utraj_flipped,Btraj_flipped,Straj_flipped] = flipLeftRight3D(r,xtraj,utraj,Btraj,Straj);
+  else
+    [xtraj_flipped,utraj_flipped,Btraj_flipped,Straj_flipped] = flipLeftRight(r,xtraj,utraj,Btraj,Straj);
+  end
 end
 
 m = length(Straj);
