@@ -102,7 +102,7 @@ public:
   std::string getStateName(int state_num) const;
 
   template <typename DerivedQ, typename DerivedV>
-  void doKinematics(const MatrixBase<DerivedQ> &q, const MatrixBase<DerivedV> &v, bool compute_gradients = false, bool compute_JdotV = true);
+  void doKinematics(const Eigen::MatrixBase<DerivedQ> &q, const Eigen::MatrixBase<DerivedV> &v, bool compute_gradients = false, bool compute_JdotV = true);
 
   bool isBodyPartOfRobot(const RigidBody& body, const std::set<int>& robotnum);
 
@@ -130,20 +130,20 @@ public:
   GradientVar<Scalar, SPACE_DIMENSION, 1> centerOfMassJacobianDotTimesV(int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet);
 
   template <typename DerivedA, typename DerivedB, typename DerivedC>
-  void jointLimitConstraints(MatrixBase<DerivedA> const & q, MatrixBase<DerivedB> &phi, MatrixBase<DerivedC> &J) const;
+  void jointLimitConstraints(Eigen::MatrixBase<DerivedA> const & q, Eigen::MatrixBase<DerivedB> &phi, Eigen::MatrixBase<DerivedC> &J) const;
 
   size_t getNumJointLimitConstraints() const;
 
   int getNumContacts(const std::set<int> &body_idx);// = emptyIntSet);
 
   template <typename Derived>
-  void getContactPositions(MatrixBase<Derived> &pos, const std::set<int> &body_idx);// = emptyIntSet);
+  void getContactPositions(Eigen::MatrixBase<Derived> &pos, const std::set<int> &body_idx);// = emptyIntSet);
 
   template <typename Derived>
-  void getContactPositionsJac(MatrixBase<Derived> &J, const std::set<int> &body_idx);// = emptyIntSet);
+  void getContactPositionsJac(Eigen::MatrixBase<Derived> &J, const std::set<int> &body_idx);// = emptyIntSet);
 
 //  template <typename Derived>
-//  void getContactPositionsJacDot(MatrixBase<Derived> &Jdot, const std::set<int> &body_idx);// = emptyIntSet);
+//  void getContactPositionsJacDot(Eigen::MatrixBase<Derived> &Jdot, const std::set<int> &body_idx);// = emptyIntSet);
 //
 
   /**
@@ -166,18 +166,18 @@ public:
   GradientVar<typename DerivedV::Scalar, Dynamic, 1> frictionTorques(Eigen::MatrixBase<DerivedV> const & v, int gradient_order = 0);
 
   template <typename DerivedPoints>
-  GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> forwardKin(const MatrixBase<DerivedPoints> &points, int current_body_or_frame_ind, int new_body_or_frame_ind,
+  GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> forwardKin(const Eigen::MatrixBase<DerivedPoints> &points, int current_body_or_frame_ind, int new_body_or_frame_ind,
                                                                                                            int rotation_type, int gradient_order);
 
   template <typename DerivedPoints>
-  GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, Eigen::Dynamic> forwardKinJacobian(const MatrixBase<DerivedPoints> &points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type,
+  GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, Eigen::Dynamic> forwardKinJacobian(const Eigen::MatrixBase<DerivedPoints> &points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type,
                                                                                                  bool in_terms_of_qdot, int gradient_order);
 
   template <typename Scalar>
   GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> forwardKinPositionGradient(int npoints, int current_body_or_frame_ind, int new_body_or_frame_ind, int gradient_order);
 
   template <typename DerivedPoints>
-  GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, 1> forwardJacDotTimesV(const MatrixBase<DerivedPoints>& points, int body_or_frame_ind, int base_or_frame_ind, int rotation_type, int gradient_order);
+  GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, 1> forwardJacDotTimesV(const Eigen::MatrixBase<DerivedPoints>& points, int body_or_frame_ind, int base_or_frame_ind, int rotation_type, int gradient_order);
 
   template<typename Scalar>
   GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> geometricJacobian(int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, int gradient_order, bool in_terms_of_qdot = false, std::vector<int>* v_indices = nullptr);
