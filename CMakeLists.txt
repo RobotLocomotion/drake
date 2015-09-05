@@ -3,9 +3,13 @@ project(drake-superbuild)
 
 include(ExternalProject)
 
+# menu of extra examples
+option(EXAMPLES_LITTLEDOG "planning and control for a small quadruped robot" OFF)
+
+## External dependencies
 option(AUTO_UPDATE_EXTERNALS "external projects are updated to their tag revision on compile" ON)
 
-# chinese menu of external projects
+# menu of external projects
 option(WITH_ALL_SUPPORTED_EXTERNALS "overrides the individual WITH_[external] options" OFF)
 option(REMOVE_UNUSED_EXTERNALS "enable this to remove those projects from disk" OFF)
 
@@ -14,7 +18,6 @@ option(WITH_EIGEN		"required c++ matrix library.  only disable if you have it al
 
 # OFF by default:
 option(WITH_GTK 		"precompiled gtk binaries/headers for Windows")
-option(WITH_DIRECTOR	"vtk-based visualization tool and robot user interface")
 option(WITH_SIGNALSCOPE	"live plotting tool for lcm messages")
 option(WITH_IRIS		"fast approximate convex segmentation")
 option(WITH_OCTOMAP 	"provides oct-tree data structures")
@@ -42,10 +45,12 @@ endif()
 
 # system dependent defaults:
 if (WIN32)
+  option(WITH_DIRECTOR	"vtk-based visualization tool and robot user interface"   OFF)
   option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	OFF)
   option(WITH_BULLET 		"used for collision detection" 					OFF)
   option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" 			OFF)
 else()
+  option(WITH_DIRECTOR	"vtk-based visualization tool and robot user interface"   ON)
   option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	ON)
   option(WITH_BULLET 		"used for collision detection" 					ON)
   option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" 			ON)
@@ -73,8 +78,6 @@ set(cmake_NO_BUILD TRUE)
 set(director_GIT_REPOSITORY https://github.com/RobotLocomotion/director.git)
 set(director_GIT_TAG 9c2bb9de70a0945d05eb0a4a7d13c0a91afa74a3)
 set(director_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/director/distro/pods/drake-distro)
-set(signalscope_GIT_REPOSITORY https://github.com/mitdrc/signal-scope.git)
-set(signalscope_GIT_TAG bd891bb2a8284a969086b7f286462572e5698855)
 set(eigen_GIT_REPOSITORY https://github.com/RobotLocomotion/eigen-pod.git)
 set(eigen_GIT_TAG 0ceb687d1319621b80404346146d9ff5a417bb23)
 set(gtk_GIT_REPOSITORY https://github.com/RobotLocomotion/gtk-pod.git)
@@ -98,6 +101,8 @@ set(octomap_GIT_REPOSITORY https://github.com/RobotLocomotion/octomap-pod.git)
 set(octomap_GIT_TAG 00b28215d19580f9e964bc5d126ce55a9253671a)
 set(sedumi_GIT_REPOSITORY https://github.com/RobotLocomotion/sedumi.git)
 set(sedumi_GIT_TAG 8263577d4ab375524060c19369ccf410133bb9eb)
+set(signalscope_GIT_REPOSITORY https://github.com/mitdrc/signal-scope.git)
+set(signalscope_GIT_TAG bd891bb2a8284a969086b7f286462572e5698855)
 set(snopt_GIT_REPOSITORY https://github.com/RobotLocomotion/snopt.git)
 set(snopt_GIT_TAG d7abb603690f41970273643ebb6e173b0e6e452b)
 set(spotless_GIT_REPOSITORY https://github.com/RobotLocomotion/spotless-pod.git)
@@ -107,6 +112,9 @@ set(yalmip_GIT_TAG c071fb7b7193491f8eefadba3bfff26160ad6cd4)
 set(xfoil_GIT_REPOSITORY https://github.com/RobotLocomotion/xfoil.git)
 set(xfoil_GIT_TAG fde0a9368dd451c93604051fc5704e120073800c)
 
+# and now for the examples
+set(LittleDog_GIT_REPOSITORY https://github.com/RobotLocomotion/LittleDog.git)
+set(LittleDog_GIT_TAG master)
 
 find_program(MAKE_EXECUTABLE make)
 if (NOT MAKE_EXECUTABLE)
@@ -181,7 +189,6 @@ endif()
 #if (NOT CMAKE_Fortran_COMPILER)
 #   unsupported(avl xfoil)
 #endif()
-
 
 
 set(EXTERNAL_SOURCE_DIRS)
@@ -298,6 +305,26 @@ foreach (proj ${EXTERNAL_PROJECTS})
 		add_dependencies(clean-all clean-${proj})
 	endif()
 	list(APPEND PROJECT_LIST ${SOURCE_DIR})
+endforeach()
+
+# process optional examples
+foreach (example IN ITEMS
+    LittleDog)
+    string(TOUPPER ${example} example_upper)
+  	if (EXAMPLES_${example_upper})
+      message(STATUS "Installation will include extra example: ${example}")
+      ExternalProject_Add(download-${example}
+        DOWNLOAD_DIR ${PROJECT_SOURCE_DIR}/drake/examples/${example}
+        SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake/examples/${example}
+        GIT_REPOSITORY ${${example}_GIT_REPOSITORY}
+        GIT_TAG ${${example}_GIT_TAG}
+        CONFIGURE_COMMAND ""
+        BUILD_COMMAND ""
+        INSTALL_COMMAND ""
+        )
+      add_dependencies(drake download-${example})
+      add_dependencies(download-all download-${example})
+    endif()
 endforeach()
 
 string(REPLACE ";" " " PROJECT_LIST "${PROJECT_LIST}")
