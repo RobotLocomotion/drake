@@ -44,13 +44,13 @@ classdef JointSpaceMotionPlanningTree < CartesianMotionPlanningTree
       obj.q_nom = q;
     end
 
-    function [q, valid, infeasibleConstraints] = solveIK(obj, q_seed, q_nom, additional_constraints)
+    function [q, valid] = solveIK(obj, q_seed, q_nom, additional_constraints)
       if nargin < 2 || isempty(q_seed), q_seed = obj.q_nom; end
       if nargin < 3 || isempty(q_nom), q_nom = q_seed; end
       if nargin < 4 || isempty(additional_constraints)
         additional_constraints = {};
       end
-      [q, info, infeasibleConstraints] = inverseKin(obj.rbm, q_nom, q_seed, obj.kinematic_constraints{:}, additional_constraints{:}, obj.ikoptions);
+      [q, info] = inverseKin(obj.rbm, q_nom, q_seed, obj.kinematic_constraints{:}, additional_constraints{:}, obj.ikoptions);
       valid = (info < 10);
     end
 
