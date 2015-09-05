@@ -1,4 +1,4 @@
-classdef OptimalMotionPlanningTree < TaskSpaceMotionPlanningTree
+classdef OptimalTaskSpaceMotionPlanningTree < TaskSpaceMotionPlanningTree
   %Subclass of motion planning tree that override and add functions to be
   %used with asymptotically optimal versions of RRT algorithms. It also
   %adds the following properties
@@ -16,13 +16,13 @@ classdef OptimalMotionPlanningTree < TaskSpaceMotionPlanningTree
     steerFactor
     traj
     eta
-    costType
+    costType = 'length';
     xGoal
   end
   
   methods
     
-    function obj = OptimalMotionPlanningTree(robot, endEffectorId, endEffectorPoint)
+    function obj = OptimalTaskSpaceMotionPlanningTree(robot, endEffectorId, endEffectorPoint)
       obj = obj@TaskSpaceMotionPlanningTree(robot, endEffectorId, endEffectorPoint);
     end
     
