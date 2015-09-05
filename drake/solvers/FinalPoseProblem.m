@@ -131,7 +131,7 @@ classdef FinalPoseProblem
         point = (sphCenters(:,sph).*mapMirror.(obj.graspingHand)) + tr2root;
         shConstraint = WorldPositionConstraint(obj.robot, base, point, xGoal(1:3), xGoal(1:3));
         constraints = [{shConstraint}, obj.goalConstraints];
-        [q, valid, ~] = cSpaceTree.solveIK(obj.qNom, obj.qNom, constraints);
+        [q, valid] = cSpaceTree.solveIK(obj.qNom, obj.qNom, constraints);
         kinSol = obj.robot.doKinematics(q, ones(obj.robot.num_positions, 1), options);
         palmPose = obj.robot.forwardKin(kinSol, endEffector, EEPoint, options);
         targetPos = [palmPose(1:3); quat2rpy(palmPose(4:7))];
