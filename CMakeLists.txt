@@ -114,7 +114,7 @@ set(xfoil_GIT_TAG fde0a9368dd451c93604051fc5704e120073800c)
 
 # and now for the examples
 set(LittleDog_GIT_REPOSITORY https://github.com/RobotLocomotion/LittleDog.git)
-set(LittleDog_GIT_TAG master)
+set(LittleDog_GIT_TAG 74ccb4f861e78bd78ac7c8e09fedafa89e8088fb)
 
 find_program(MAKE_EXECUTABLE make)
 if (NOT MAKE_EXECUTABLE)
