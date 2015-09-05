@@ -30,8 +30,8 @@ classdef SmoothDistancePenalty < drakeFunction.kinematic.Kinematic
 
     function [f,df] = eval(obj,q)
       if (obj.mex_model_ptr ~= 0) && obj.contact_options.use_bullet
-        obj.rbm.doKinematics(q);
-        [f,df] = smoothDistancePenaltymex(obj.rbm.mex_model_ptr,obj.min_distance,false,obj.active_collision_options);
+        kinsol = obj.rbm.doKinematics(q);
+        [f,df] = smoothDistancePenaltymex(obj.rbm.mex_model_ptr, kinsol.mex_ptr,obj.min_distance,obj.active_collision_options);
       else
         [dist,ddist_dq] = closestDistance(obj.rbm,q,obj.active_collision_options);
         [scaled_dist,dscaled_dist_ddist] = scaleDistance(obj,dist);

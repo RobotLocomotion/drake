@@ -19,6 +19,12 @@ function kinsol = doKinematics(model, q, v, options, qd_old)
 % compute_JdotV: whether or not to precompute quantities necessary to
 % compute biases such as Jdot * v and the C term in manipulatorDynamics
 % @default true if v is passed in and not empty.
+% kinematics_cache_ptr_to_use: DrakeMexPointer. Tells doKinematics to use a
+% specific kinematics cache  DrakeMexPointer. This option can be useful when
+% multiple kinsols need to be valid at the same time. By default, the
+% default kinematics cache pointers stored in the RigidBodyManipulator are
+% used, meaning that subsequent doKinematics calls overwrite the previous
+% cache, and hence invalidate kinsols from earlier doKinematics calls.
 %
 % @retval kinsol a structure containing the precomputed information
 % (non-mex case) or a certificate of having precomputed this information
@@ -70,6 +76,7 @@ if ~isfield(options, 'use_mex'), options.use_mex = true; end
 if ~isfield(options, 'compute_gradients'), options.compute_gradients = false; end
 if ~isfield(options, 'compute_JdotV'), options.compute_JdotV = ~isempty(v); end
 if ~isfield(options, 'force_new_kinsol'), options.force_new_kinsol = false; end
+if ~isfield(options, 'kinematics_cache_ptr_to_use'), options.kinematics_cache_ptr_to_use = []; end
 
 if warn_signature_changed
   % TODO: turn on warning
@@ -83,7 +90,17 @@ kinsol.q = q;
 kinsol.v = v;
 
 if (options.use_mex && model.mex_model_ptr~=0 && isnumeric(q))
-  doKinematicsmex(model.mex_model_ptr,q,options.compute_gradients,v,options.compute_JdotV);
+  if isempty(options.kinematics_cache_ptr_to_use)
+    if options.compute_gradients
+      kinsol.mex_ptr = model.default_kinematics_cache_ptr_with_gradients;
+    else
+      kinsol.mex_ptr = model.default_kinematics_cache_ptr_no_gradients;
+    end
+  else
+    kinsol.mex_ptr = options.kinematics_cache_ptr_to_use;
+  end
+  
+  doKinematicsmex(model.mex_model_ptr, kinsol.mex_ptr, q, v, options.compute_JdotV);
   kinsol.mex = true;
 else
   kinsol.mex = false;
