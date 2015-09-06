@@ -5,6 +5,7 @@ classdef FinalPoseProblem
     endEffectorId
     xStart
     xGoal
+    additionalConstraints
     goalConstraints
     qNom
     endEffectorPoint
@@ -12,7 +13,7 @@ classdef FinalPoseProblem
     capabilityMap
     graspingHand
     activeCollisionOptions
-    tree
+    jointSpaceTree
   end
   
   properties (Constant)
@@ -23,12 +24,12 @@ classdef FinalPoseProblem
   methods
     
     function obj = FinalPoseProblem(robot, endEffectorId,...
-         xStart, xGoal, goalConstraints, qNom, varargin)
+         xStart, xGoal, additionalConstraints, goalConstraints, qNom, varargin)
       
       opt = struct('capabilitymap', [], 'graspinghand', 'right', ...
                    'mindistance', 0.005, ...
-                   'activecollisionoptions', struct(), ...
-                   'endeffectorpoint', [0; 0; 0], 'tree', []);
+                   'activecollisionoptions', struct(), 'ikoptions', struct(), ...
+                   'endeffectorpoint', [0; 0; 0]);
       optNames = fieldnames(opt);
       nArgs = length(varargin);
       if round(nArgs/2)~=nArgs/2
@@ -47,6 +48,7 @@ classdef FinalPoseProblem
       obj.endEffectorId = endEffectorId;
       obj.xStart = xStart;
       obj.xGoal = xGoal;
+      obj.additionalConstraints = additionalConstraints;
       obj.goalConstraints = goalConstraints;
       obj.qNom = qNom;
       obj.endEffectorPoint = opt.endeffectorpoint;
@@ -54,10 +56,15 @@ classdef FinalPoseProblem
       obj.capabilityMap = opt.capabilitymap;   
       obj.graspingHand = opt.graspinghand;
       obj.activeCollisionOptions = opt.activecollisionoptions;
-      obj.tree = opt.tree;
       
+      obj.jointSpaceTree = JointSpaceMotionPlanningTree(obj.robot);
+      obj.jointSpaceTree.min_distance = 0.9*obj.minDistance; % minoring TaskSpaceMotionPlanningTree 0.9 magic number
+      obj.jointSpaceTree.active_collision_options = opt.activecollisionoptions;
+      obj.jointSpaceTree.ikoptions = opt.ikoptions;
+      obj.jointSpaceTree = obj.jointSpaceTree.addKinematicConstraint(additionalConstraints{:});
+
     end    
-    
+
     function [xGoal, info] = getFinalPose(obj, options)
       if nargin < 2, options = struct(); end
       
@@ -67,7 +74,7 @@ classdef FinalPoseProblem
       tic
       if length(obj.xGoal) == 3 || length(obj.xGoal) == 7
         disp('Searching for a feasible final configuration...')
-        qGoal = obj.findFinalPose(obj.xStart, obj.xGoal);
+        qGoal = obj.searchFinalPose(obj.xStart, obj.xGoal);
         if isempty(qGoal)
           info = obj.FAIL_NO_FINAL_POSE;
           disp('Failed to find a feasible final configuration')
@@ -91,10 +98,8 @@ classdef FinalPoseProblem
       xGoal = obj.xGoal;
     end
     
-    function [qOpt, cost] = findFinalPose(obj, xStart, xGoal)
+    function [qOpt, cost] = searchFinalPose(obj, xStart, xGoal)
       
-      %tree = obj.trees(1);
-      cSpaceTree = obj.tree.trees{obj.tree.cspace_idx};
       kinSol = obj.robot.doKinematics(xStart(8:end));
       options.rotation_type = 2;
       options.use_mex = false;
@@ -131,7 +136,7 @@ classdef FinalPoseProblem
         point = (sphCenters(:,sph).*mapMirror.(obj.graspingHand)) + tr2root;
         shConstraint = WorldPositionConstraint(obj.robot, base, point, xGoal(1:3), xGoal(1:3));
         constraints = [{shConstraint}, obj.goalConstraints];
-        [q, valid] = cSpaceTree.solveIK(obj.qNom, obj.qNom, constraints);
+        [q, valid] = obj.jointSpaceTree.solveIK(obj.qNom, obj.qNom, constraints);
         kinSol = obj.robot.doKinematics(q, ones(obj.robot.num_positions, 1), options);
         palmPose = obj.robot.forwardKin(kinSol, endEffector, EEPoint, options);
         targetPos = [palmPose(1:3); quat2rpy(palmPose(4:7))];
@@ -184,7 +189,7 @@ classdef FinalPoseProblem
               eps = 1e-3;
             end
             if eps <= 1e-3 && all(phi >= 0)
-              cost = (obj.qNom - q)'*cSpaceTree.ikoptions.Q*(obj.qNom - q);
+              cost = (obj.qNom - q)'*obj.jointSpaceTree.ikoptions.Q*(obj.qNom - q);
               validConfs(:,sph) = [cost; q];
               succ(sph, :) = [1, nIter];
               if cost < 20
