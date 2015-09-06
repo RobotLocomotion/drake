@@ -74,7 +74,7 @@ set(bullet_GIT_TAG 78c36cd116becf8417334f98bfcfd8d1300b03e0)
 set(cmake_GIT_REPOSITORY https://github.com/RobotLocomotion/cmake.git)
 set(cmake_GIT_TAG 5ea95a6bb936c5fb8635b671a3355d86a882f5f7)
 set(cmake_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/drake/cmake")
-set(cmake_NO_BUILD TRUE)
+set(cmake_BUILD_COMMAND "")
 set(director_GIT_REPOSITORY https://github.com/RobotLocomotion/director.git)
 set(director_GIT_TAG 9c2bb9de70a0945d05eb0a4a7d13c0a91afa74a3)
 set(director_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/director/distro/pods/drake-distro)
@@ -90,7 +90,9 @@ set(iris_GIT_REPOSITORY https://github.com/rdeits/iris-distro.git)
 set(iris_GIT_TAG a17bdb4a20a8195363b629c47fd1b6251b44c95e)
 set(iris_ADDITIONAL_BUILD_ARGS PATCH_COMMAND make configure-cdd-only)
 set(lcm_GIT_REPOSITORY https://github.com/RobotLocomotion/lcm-pod.git)
-set(lcm_GIT_TAG ff1462a688ef67227b4656ec7a10cc401c9b0069) # note: cmake branch
+set(lcm_GIT_TAG 4bb13061afafa126e58a1ac3345489425971ee04) # note: cmake branch
+set(lcm_IS_CMAKE_POD TRUE)
+set(lcm_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/lcm/lcm-1.0.0)
 set(libbot_GIT_REPOSITORY https://github.com/RobotLocomotion/libbot.git)
 set(libbot_GIT_TAG c328b73f3b48008d04468031e26f48468a7e3cc0)
 set(meshconverters_GIT_REPOSITORY https://github.com/RobotLocomotion/meshConverters.git)
@@ -208,8 +210,16 @@ foreach (proj ${EXTERNAL_PROJECTS})
 		if (NOT ${proj}_SOURCE_DIR)
 			set(${proj}_SOURCE_DIR ${${proj}_GIT_CLONE_DIR})
 		endif()
-		if (NOT ${proj}_NO_BUILD)
-			set(${proj}_BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE})
+    if (NOT DEFINED ${proj}_CONFIGURE_COMMAND AND ${proj}_IS_CMAKE_POD)
+      set(${proj}_CONFIGURE_COMMAND ${CMAKE_COMMAND} -E make_directory ${${proj}_SOURCE_DIR}/pod-build
+        COMMAND ${CMAKE_COMMAND} -E chdir ${${proj}_SOURCE_DIR}/pod-build ${CMAKE_COMMAND} $ENV{CMAKE_FLAGS} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} ..)
+    endif()
+		if (NOT DEFINED ${proj}_BUILD_COMMAND)
+      if (${proj}_IS_CMAKE_POD)
+        set(${proj}_BUILD_COMMAND ${CMAKE_COMMAND} --build ${${proj}_SOURCE_DIR}/pod-build --config ${CMAKE_BUILD_TYPE})
+      else() # then use the PODS gnu make system
+			   set(${proj}_BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE})
+      endif()
 		endif()
 		set(EXTERNAL_SOURCE_DIRS ${EXTERNAL_SOURCE_DIRS} ${${proj}_SOURCE_DIR} "\n")
 
@@ -245,7 +255,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 			SOURCE_DIR ${${proj}_SOURCE_DIR}
 			DOWNLOAD_COMMAND ""
 			UPDATE_COMMAND ""
-			CONFIGURE_COMMAND ""
+			CONFIGURE_COMMAND "${${proj}_CONFIGURE_COMMAND}"
 			BUILD_IN_SOURCE 1
 			BUILD_COMMAND "${${proj}_BUILD_COMMAND}"
 			INSTALL_COMMAND ""
@@ -260,9 +270,9 @@ foreach (proj ${EXTERNAL_PROJECTS})
 			SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake"
 			DOWNLOAD_COMMAND ""
 			UPDATE_COMMAND ""
-			CONFIGURE_COMMAND ""
-			BUILD_IN_SOURCE 1
-			BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE}
+			CONFIGURE_COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/drake/pod-build
+        COMMAND ${CMAKE_COMMAND} -E chdir ${PROJECT_SOURCE_DIR}/drake/pod-build ${CMAKE_COMMAND} $ENV{CMAKE_FLAGS} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} ..
+			BUILD_COMMAND ${CMAKE_COMMAND} --build ${PROJECT_SOURCE_DIR}/drake/pod-build --config ${CMAKE_BUILD_TYPE} --target install
 			INSTALL_COMMAND ""
 			DEPENDS ${deps}
 			${${proj}_ADDITIONAL_BUILD_ARGS}
