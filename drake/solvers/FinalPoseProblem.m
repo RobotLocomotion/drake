@@ -65,7 +65,7 @@ classdef FinalPoseProblem
 
     end    
 
-    function [xGoal, info] = getFinalPose(obj, options)
+    function [xGoal, info] = findFinalPose(obj, options)
       if nargin < 2, options = struct(); end
       
       info = obj.SUCCESS;
