@@ -215,11 +215,11 @@ foreach (proj ${EXTERNAL_PROJECTS})
 		endif()
     if (NOT DEFINED ${proj}_CONFIGURE_COMMAND AND ${proj}_IS_CMAKE_POD)
       set(${proj}_CONFIGURE_COMMAND ${CMAKE_COMMAND} -E make_directory ${${proj}_SOURCE_DIR}/pod-build
-        COMMAND ${CMAKE_COMMAND} -E chdir ${${proj}_SOURCE_DIR}/pod-build ${CMAKE_COMMAND} $ENV{CMAKE_FLAGS} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} ..)
+        COMMAND ${CMAKE_COMMAND} -E chdir ${${proj}_SOURCE_DIR}/pod-build ${CMAKE_COMMAND} -G${CMAKE_GENERATOR} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} ..)
     endif()
 		if (NOT DEFINED ${proj}_BUILD_COMMAND)
       if (${proj}_IS_CMAKE_POD)
-        set(${proj}_BUILD_COMMAND ${CMAKE_COMMAND} --build ${${proj}_SOURCE_DIR}/pod-build --config ${CMAKE_BUILD_TYPE} --target install)
+        set(${proj}_BUILD_COMMAND ${CMAKE_COMMAND} -E chdir ${${proj}_SOURCE_DIR} ${CMAKE_COMMAND} -G${CMAKE_GENERATOR} --build pod-build --config ${CMAKE_BUILD_TYPE})
       else() # then use the PODS gnu make system
 			   set(${proj}_BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE})
       endif()
@@ -256,16 +256,18 @@ foreach (proj ${EXTERNAL_PROJECTS})
 		# now the actual project
 		ExternalProject_Add(${proj}
 			SOURCE_DIR ${${proj}_SOURCE_DIR}
+#      BINARY_DIR ${${proj}_SOURCE_DIR}/pod-build
 			DOWNLOAD_COMMAND ""
 			UPDATE_COMMAND ""
 			CONFIGURE_COMMAND "${${proj}_CONFIGURE_COMMAND}"
-			BUILD_IN_SOURCE 1
+      BUILD_IN_SOURCE 1
 			BUILD_COMMAND "${${proj}_BUILD_COMMAND}"
 			INSTALL_COMMAND ""
 			DEPENDS download-${proj} ${deps}
 			${${proj}_ADDITIONAL_BUILD_ARGS}
-	#		BUILD_ALWAYS 1
 			)
+    message(STATUS "${proj}_BUILD_COMMAND: ${${proj}_BUILD_COMMAND}")
+
 	else()
 		message(STATUS "Preparing to build ${proj} with dependencies: ${deps}")
 
@@ -274,8 +276,8 @@ foreach (proj ${EXTERNAL_PROJECTS})
 			DOWNLOAD_COMMAND ""
 			UPDATE_COMMAND ""
 			CONFIGURE_COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/drake/pod-build
-        COMMAND ${CMAKE_COMMAND} -E chdir ${PROJECT_SOURCE_DIR}/drake/pod-build ${CMAKE_COMMAND} $ENV{CMAKE_FLAGS} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} ..
-			BUILD_COMMAND ${CMAKE_COMMAND} --build ${PROJECT_SOURCE_DIR}/drake/pod-build --config ${CMAKE_BUILD_TYPE} --target install
+        COMMAND ${CMAKE_COMMAND} -E chdir ${PROJECT_SOURCE_DIR}/drake/pod-build ${CMAKE_COMMAND} -G${CMAKE_GENERATOR} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} ..
+			BUILD_COMMAND ${CMAKE_COMMAND} -G${CMAKE_GENERATOR} --build ${PROJECT_SOURCE_DIR}/drake/pod-build --config ${CMAKE_BUILD_TYPE} --target install
 			INSTALL_COMMAND ""
 			DEPENDS ${deps}
 			${${proj}_ADDITIONAL_BUILD_ARGS}
