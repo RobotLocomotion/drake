@@ -13,6 +13,7 @@ classdef MultipleTreeProblem
     trees
     nTrees
     startPoints
+    activeCollisionOptions
     status
     iterations
   end
@@ -36,7 +37,7 @@ classdef MultipleTreeProblem
       
       warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
       opt = struct('mergingthreshold', 0.2,...
-        'mindistance', 0.005, 'ikoptions', struct(),...
+        'mindistance', 0.005,'activecollisionoptions', struct(), 'ikoptions', struct(),...
         'steerfactor', 0.1, 'orientationweight', 1, 'maxedgelength', 0.05,...
         'angletol', 10*pi/180, 'positiontol', 1e-3, 'endeffectorpoint', [0; 0; 0]);
       optNames = fieldnames(opt);
@@ -62,6 +63,7 @@ classdef MultipleTreeProblem
       obj.qNom = qNom;
       obj.mergingThreshold = opt.mergingthreshold;
       obj.minDistance = opt.mindistance;
+      obj.activeCollisionOptions = opt.activecollisionoptions;
       obj.endEffectorPoint = opt.endeffectorpoint;
       obj.status = obj.EXPLORING;
       
@@ -80,6 +82,7 @@ classdef MultipleTreeProblem
         obj.trees(t).max_length_between_constraint_checks = opt.maxedgelength;
         obj.trees(t).angle_tol = opt.angletol;
         obj.trees(t).position_tol = opt.positiontol;
+        obj.trees(t).trees{obj.trees(t).cspace_idx}.active_collision_options = opt.activecollisionoptions;
         obj.trees(t).trees{obj.trees(t).cspace_idx}.ikoptions = opt.ikoptions;
         obj.trees(t) = obj.trees(t).setTranslationSamplingBounds(xyzMin, xyzMax);
         obj.trees(t) = obj.trees(t).addKinematicConstraint(obj.additionalConstraints{:});
