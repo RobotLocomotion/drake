@@ -23,16 +23,15 @@ options.terrain = RigidBodyFlatTerrain(); %Changed to a smaller terrain to avoid
 options.joint_v_max = 15*pi/180;
 options.viewer = 'NullVisualizer';
 
+urdf = fullfile(getDrakePath(),'examples','Atlas','urdf','atlas_convex_hull.urdf');
+options.fp = load([getDrakePath(), '/examples/Atlas/data/atlas_fp.mat']);
 
-urdf = fullfile(getDrakePath(),'../../','models','atlas_v5','model_chull.urdf');
+% Two alternative nominal starting configurations to be used for the other trees:
+qNominalC = [-0.047, 0.000, 0.844, 0.000, 0.000, 0.000, 0.434, 0.000, 0.000, 0.270, -0.000, 0.055, -0.604, 1.138, -0.525, -0.055, -1.330, 2.153, 0.500, 0.098, 0.000, 0.001, -0.785, 0.000, -0.055, -0.604, 1.138, -0.525, 0.055, 1.571, 2.532, -1.687, 1.794, 0.426, -3.141, 0.256];
+qNominalD = [-0.026, 0.000, 0.844, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.270, 0.000, 0.055, -0.570, 1.130, -0.550, -0.055, -1.330, 2.153, 0.500, 0.098, 0.000, 0.001, -0.270, 0.000, -0.055, -0.570, 1.130, -0.550, 0.055, 1.330, 2.153, -1.845, 1.353, 0.394, -3.046, 0.256];
+
 r = RigidBodyManipulator(urdf,options);
-options.fp = load([getDrakePath(), '/../../control/matlab/data/atlas_v5/atlas_v5_fp.mat']);
-options.qNominalC_fp = load([getDrakePath(), '/../../control/matlab/data/atlas_v5/atlasv5_fp_rHand_up.mat']);
-options.qNominalD_fp = load([getDrakePath(), '/../../control/matlab/data/atlas_v5/atlasv5_fp_rHand_up_right.mat']);
-
 q_nom = options.fp.xstar(1:r.getNumPositions());
-qNominalC = options.qNominalC_fp.xstar(1:r.getNumPositions());
-qNominalD = options.qNominalD_fp.xstar(1:r.getNumPositions());
 
 % Create Scene:
 world = r.findLinkId('world');
@@ -41,14 +40,16 @@ r = addGeometryToBody(r, world, table);
 targetObject = RigidBodyBox([.05 .05 .3], [0.8 0 1.0625], [0 0 0]);
 targetObject = targetObject.setColor([1 0 0]);
 r = addGeometryToBody(r, world, targetObject);
-
 r = r.compile();
+
 
 lFoot = r.findLinkId('l_foot');
 rFoot = r.findLinkId('r_foot');
 g_hand = r.findLinkId('r_hand');
 options.point_in_link_frame = [0; -0.3; 0];
-options.targetObjectPos = [0.8 0 1.0625];
+% had to move target back from obstacle:
+options.targetObjectPos = [0.7 0 1.0625];
+%options.targetObjectPos = [0.8 0 1.0625];
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -189,7 +190,7 @@ else
 end
 
 
-xtraj = xtraj.setOutputFrame(r.getStateFrame());
+%xtraj = xtraj.setOutputFrame(r.getStateFrame());
 
 rrt_time = toc(rrt_timer);
 fprintf(['TIMING:\n',...
