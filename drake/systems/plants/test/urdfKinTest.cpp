@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
   Vector3d zero = Vector3d::Zero();
   Matrix<double,6,1> pt;
 
-  for (i=0; i<model->num_bodies; i++) {
+  for (i=0; i<model->bodies.size(); i++) {
 //    model->forwardKin(i,zero,1,pt);
 		auto pt = model->forwardKin(zero, i, 0, 1, 0);
 //    cout << i << ": forward kin: " << model->bodies[i].linkname << " is at " << pt.transpose() << endl;

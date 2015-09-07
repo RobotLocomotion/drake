@@ -20,11 +20,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   mxGetString(prhs[1] ,buf, BUF_SIZE);
   RigidBodyManipulator cpp_model(buf);
 
-  if (cpp_model.num_frames != model->num_frames) {
+  if (cpp_model.frames.size() != model->frames.size()) {
   	mexErrMsgIdAndTxt("Drake:testFrameParsermex:FrameCountMismatch", "The manipulator frame counts did not match");
   }
 
-  for (size_t x = 0; x < model->num_frames ; x++) {
+  for (size_t x = 0; x < model->frames.size() ; x++) {
   	double err = (model->frames[x]->Ttree - cpp_model.frames[x]->Ttree).norm();
   	
   	if (err > FRAME_PARSER_EPSILON) {

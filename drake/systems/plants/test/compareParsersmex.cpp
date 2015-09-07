@@ -38,7 +38,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
   // Compute coordinate transform between the two models (in case they are not identical)
   MatrixXd P = MatrixXd::Zero(cpp_model->num_positions,matlab_model->num_positions);  // projection from the coordinates of matlab_model to cpp_model
-  for (int i=0; i<cpp_model->num_bodies; i++) {
+  for (int i=0; i<cpp_model->bodies.size(); i++) {
   	if (cpp_model->bodies[i]->hasParent() && cpp_model->bodies[i]->getJoint().getNumPositions()>0) {
   		shared_ptr<RigidBody> b = matlab_model->findJoint(cpp_model->bodies[i]->getJoint().getName());
   		if (b==nullptr) continue;
