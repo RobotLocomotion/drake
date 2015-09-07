@@ -79,7 +79,7 @@ set(director_GIT_REPOSITORY https://github.com/RobotLocomotion/director.git)
 set(director_GIT_TAG 9c2bb9de70a0945d05eb0a4a7d13c0a91afa74a3)
 set(director_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/director/distro/pods/drake-distro)
 set(eigen_GIT_REPOSITORY https://github.com/RobotLocomotion/eigen-pod.git)
-set(eigen_GIT_TAG 721d5b8e9776b2323e8b53e1c6087b4e730ade12)
+set(eigen_GIT_TAG c499960042718585f076e385e6974aee695a99c7)
 set(eigen_IS_CMAKE_POD TRUE)
 set(gtk_GIT_REPOSITORY https://github.com/RobotLocomotion/gtk-pod.git)
 set(gtk_GIT_TAG dc9bb719ee771a2ae9c3a392796c42ccad5bca54)
@@ -219,7 +219,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
     endif()
 		if (NOT DEFINED ${proj}_BUILD_COMMAND)
       if (${proj}_IS_CMAKE_POD)
-        set(${proj}_BUILD_COMMAND ${CMAKE_COMMAND} -E chdir ${${proj}_SOURCE_DIR} ${CMAKE_COMMAND} -G${CMAKE_GENERATOR} --build pod-build --config ${CMAKE_BUILD_TYPE})
+        set(${proj}_BUILD_COMMAND ${CMAKE_COMMAND} -E chdir ${${proj}_SOURCE_DIR} ${CMAKE_COMMAND} --build pod-build --config ${CMAKE_BUILD_TYPE})
       else() # then use the PODS gnu make system
 			   set(${proj}_BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE})
       endif()
@@ -277,7 +277,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 			UPDATE_COMMAND ""
 			CONFIGURE_COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/drake/pod-build
         COMMAND ${CMAKE_COMMAND} -E chdir ${PROJECT_SOURCE_DIR}/drake/pod-build ${CMAKE_COMMAND} -G${CMAKE_GENERATOR} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} ..
-			BUILD_COMMAND ${CMAKE_COMMAND} -G${CMAKE_GENERATOR} --build ${PROJECT_SOURCE_DIR}/drake/pod-build --config ${CMAKE_BUILD_TYPE} --target install
+			BUILD_COMMAND ${CMAKE_COMMAND} --build ${PROJECT_SOURCE_DIR}/drake/pod-build --config ${CMAKE_BUILD_TYPE} --target install
 			INSTALL_COMMAND ""
 			DEPENDS ${deps}
 			${${proj}_ADDITIONAL_BUILD_ARGS}
