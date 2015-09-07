@@ -266,7 +266,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 			DEPENDS download-${proj} ${deps}
 			${${proj}_ADDITIONAL_BUILD_ARGS}
 			)
-    message(STATUS "${proj}_BUILD_COMMAND: ${${proj}_BUILD_COMMAND}")
+#    message(STATUS "${proj}_BUILD_COMMAND: ${${proj}_BUILD_COMMAND}")
 
 	else()
 		message(STATUS "Preparing to build ${proj} with dependencies: ${deps}")
