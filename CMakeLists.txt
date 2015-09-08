@@ -15,11 +15,13 @@ option(REMOVE_UNUSED_EXTERNALS "enable this to remove those projects from disk" 
 
 # ON by default:
 option(WITH_EIGEN		"required c++ matrix library.  only disable if you have it already."    ON)
-if (NOT WIN32)
+option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" ON) # not win32 because I have to reliably add drake/build/lib to the path so that lcm-gen.exe can run when building drake.  note: move GTK back into ON by default for win32 only when I re-enable lcm
+if (WIN32)
+  option(WITH_GTK 		"precompiled gtk binaries/headers for Windows"  ON)  # needed for lcm on windows
+else()
   option(WITH_DIRECTOR	"vtk-based visualization tool and robot user interface"   ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
   option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	ON) # there is hope, but i spent a long time cleaning up c/c++ language errors trying to make msvc happy.. and still had a long way to go.
   option(WITH_BULLET 		"used for collision detection" 	ON)  # not win32 because drake had a silly c++11 compile error.  probably just for MSVC << 2013
-  option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" ON) # not win32 because I have to reliably add drake/build/lib to the path so that lcm-gen.exe can run when building drake.  note: move GTK back into ON by default for win32 only when I re-enable lcm
 endif()
 find_program(matlab matlab)
 if (matlab)
@@ -29,9 +31,7 @@ endif()
 
 # OFF by default:
 option(WITH_SNOPT 		"nonlinear optimization solver; requires access to RobotLocomotion/snopt-pod")
-if (WIN32)
-  option(WITH_GTK 		"precompiled gtk binaries/headers for Windows")
-else() # many of these might work on win32 with little or no work... they just haven't been tried
+if (NOT WIN32) # many of these might work on win32 with little or no work... they just haven't been tried
   option(WITH_SIGNALSCOPE	"live plotting tool for lcm messages")
   option(WITH_IRIS		"fast approximate convex segmentation")
   option(WITH_OCTOMAP 	"provides oct-tree data structures")
@@ -75,10 +75,11 @@ set(director_GIT_REPOSITORY https://github.com/RobotLocomotion/director.git)
 set(director_GIT_TAG 9c2bb9de70a0945d05eb0a4a7d13c0a91afa74a3)
 set(director_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/director/distro/pods/drake-distro)
 set(eigen_GIT_REPOSITORY https://github.com/RobotLocomotion/eigen-pod.git)
-set(eigen_GIT_TAG 9fdb567778561415ca7032a64b8431484900798e)
+set(eigen_GIT_TAG d3410a8f835190073e8df3c59a995c0694bdb898)
 set(eigen_IS_CMAKE_POD TRUE)
 set(gtk_GIT_REPOSITORY https://github.com/RobotLocomotion/gtk-pod.git)
-set(gtk_GIT_TAG dc9bb719ee771a2ae9c3a392796c42ccad5bca54)
+set(gtk_GIT_TAG 9bc335184969402ad39dc091dd38379490eac398)
+set(gtk_IS_CMAKE_POD TRUE)
 set(gloptipoly_GIT_REPOSITORY https://github.com/RobotLocomotion/gloptipoly3.git)  # todo: rename that repo
 set(gloptipoly_GIT_TAG c9e796e99c584ecf78317348c4162a2ed4121156)
 set(gurobi_GIT_REPOSITORY https://github.com/RobotLocomotion/gurobi.git)
@@ -166,7 +167,6 @@ foreach(proj IN ITEMS
 	endif()
 endforeach()
 
-
 set(EXTERNAL_SOURCE_DIRS)
 foreach (proj ${EXTERNAL_PROJECTS})
 	set(deps)
@@ -192,7 +192,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
       if (${proj}_IS_CMAKE_POD)
         set(${proj}_BUILD_COMMAND ${CMAKE_COMMAND} -E chdir ${${proj}_SOURCE_DIR} ${CMAKE_COMMAND} --build pod-build --config ${CMAKE_BUILD_TYPE} --target install)
       else() # then use the PODS gnu make system
-			   set(${proj}_BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE})
+		    set(${proj}_BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE})
       endif()
 		endif()
 		set(EXTERNAL_SOURCE_DIRS ${EXTERNAL_SOURCE_DIRS} ${${proj}_SOURCE_DIR} "\n")
