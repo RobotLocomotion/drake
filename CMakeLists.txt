@@ -15,45 +15,42 @@ option(REMOVE_UNUSED_EXTERNALS "enable this to remove those projects from disk" 
 
 # ON by default:
 option(WITH_EIGEN		"required c++ matrix library.  only disable if you have it already."    ON)
+if (NOT WIN32)
+  option(WITH_DIRECTOR	"vtk-based visualization tool and robot user interface"   ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
+  option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	ON) # there is hope, but i spent a long time cleaning up c/c++ language errors trying to make msvc happy.. and still had a long way to go.
+  option(WITH_BULLET 		"used for collision detection" 	ON)  # not win32 because drake had a silly c++11 compile error.  probably just for MSVC << 2013
+  option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" ON) # not win32 because I have to reliably add drake/build/lib to the path so that lcm-gen.exe can run when building drake.  note: move GTK back into ON by default for win32 only when I re-enable lcm
+endif()
 
 # OFF by default:
-option(WITH_GTK 		"precompiled gtk binaries/headers for Windows")
-option(WITH_SIGNALSCOPE	"live plotting tool for lcm messages")
-option(WITH_IRIS		"fast approximate convex segmentation")
-option(WITH_OCTOMAP 	"provides oct-tree data structures")
 option(WITH_SNOPT 		"nonlinear optimization solver; requires access to RobotLocomotion/snopt-pod")
-option(WITH_GUROBI 		"convex/integer optimization solver; free for academics (will prompt you for login bits)")
-option(WITH_MOSEK 		"convex optimization solver; free for academics")
-option(WITH_YALMIP 		"free optimization front-end for MATLAB")
-option(WITH_GLOPTIPOLY 	"free global polynomial optimization tooblox")
-option(WITH_BERTINI 	"solve polynomial equations; free but pod requires permissions (can't redistribute)")
-option(WITH_SEDUMI		"semi-definite programming solver")
-option(WITH_AVL			"use w/ XFOIL to compute aerodynamic coefficients for airfoils")
-option(WITH_XFOIL		"use w/ AVL to compute aerodynamic coefficients for airfoils")
-option(WITH_MESHCONVERTERS "uses vcglib to convert a few standard filetypes")
-
-# todo: make this on by default once it's tested:
-option(WITH_SNOPT_PRECOMPILED "precompiled binaries only for snopt; the source requires a license (will be disabled if WITH_SNOPT=ON)"  OFF)
-
+if (WIN32)
+  option(WITH_GTK 		"precompiled gtk binaries/headers for Windows")
+else() # many of these might work on win32 with little or no work... they just haven't been tried
+  option(WITH_SIGNALSCOPE	"live plotting tool for lcm messages")
+  option(WITH_IRIS		"fast approximate convex segmentation")
+  option(WITH_OCTOMAP 	"provides oct-tree data structures")
+  option(WITH_GUROBI 		"convex/integer optimization solver; free for academics (will prompt you for login bits)")
+  option(WITH_MOSEK 		"convex optimization solver; free for academics")
+  option(WITH_YALMIP 		"free optimization front-end for MATLAB")
+  option(WITH_GLOPTIPOLY 	"free global polynomial optimization tooblox")
+  option(WITH_BERTINI 	"solve polynomial equations; free but pod requires permissions (can't redistribute)")
+  option(WITH_SEDUMI		"semi-definite programming solver")
+  enable_language(Fortran)
+  if (CMAKE_Fortran_COMPILER)
+    option(WITH_AVL			"use w/ XFOIL to compute aerodynamic coefficients for airfoils")
+    option(WITH_XFOIL		"use w/ AVL to compute aerodynamic coefficients for airfoils")
+  endif()
+  option(WITH_MESHCONVERTERS "uses vcglib to convert a few standard filetypes")
+  # todo: make this on by default once it's tested:
+  option(WITH_SNOPT_PRECOMPILED "precompiled binaries only for snopt; the source requires a license (will be disabled if WITH_SNOPT=ON)"  OFF)
+endif()
 
 find_program(matlab matlab)
 if (matlab)
   option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"							ON)
 else()
   option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"							OFF)
-endif()
-
-# system dependent defaults:
-if (WIN32)
-  option(WITH_DIRECTOR	"vtk-based visualization tool and robot user interface"   OFF)
-  option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	OFF)
-  option(WITH_BULLET 		"used for collision detection" 					OFF)
-  option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" 			OFF)
-else()
-  option(WITH_DIRECTOR	"vtk-based visualization tool and robot user interface"   ON)
-  option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	ON)
-  option(WITH_BULLET 		"used for collision detection" 					ON)
-  option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" 			ON)
 endif()
 
 # list *compilation* dependencies, in alphabetical order by target (note: dependencies must come first in my foreach above)
@@ -158,7 +155,7 @@ foreach(proj IN ITEMS
 		meshconverters
 		drake)
 	string(TOUPPER ${proj} proj_upper)
-	if (${proj} STREQUAL "drake" OR ${proj} STREQUAL "cmake" OR WITH_${proj_upper} OR WITH_ALL_SUPPORTED_EXTERNALS)
+	if (${proj} STREQUAL "drake" OR ${proj} STREQUAL "cmake" OR WITH_${proj_upper} OR (WITH_ALL_SUPPORTED_EXTERNALS AND DEFINED WITH_${proj_upper}))
 		list(APPEND EXTERNAL_PROJECTS ${proj})
 	elseif(REMOVE_UNUSED_EXTERNALS AND IS_DIRECTORY ${proj})
 		message(STATUS "removing unused project: ${proj}")
@@ -169,31 +166,6 @@ foreach(proj IN ITEMS
 		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory "${PROJECT_SOURCE_DIR}/${proj}")
 	endif()
 endforeach()
-
-# throw error for unsupported platform/project combinations
-macro( unsupported )
-	foreach(proj ${ARGN})
-		list(FIND EXTERNAL_PROJECTS ${proj} find_result)
-		if (NOT find_result EQUAL -1)
-			if (WITH_ALL_SUPPORTED_EXTERNALS)
-				list(REMOVE_ITEM EXTERNAL_PROJECTS ${proj})
-			else()
-				message(FATAL_ERROR ${proj} is not supported (yet) on this platform)
-			endif()
-		endif()
-	endforeach()
-endmacro()
-
-if (WIN32)
-	unsupported(libbot octomap gurobi mosek yalmip gloptipoly bertini sedumi avl xfoil iris director signalscope meshconverters)  # many of these could potentially work, but haven't been tried
-	unsupported(bullet)  # drake has a silly c++11 compile error.  probably just for MSVC << 2013
-	unsupported(lcm)  # just have to reliably add drake/build/lib to the path so that lcm-gen.exe can run when building drake.  note: move GTK back into ON by default for win32 only when I re-enable lcm
-endif()
-
-#enable_language(Fortran)
-#if (NOT CMAKE_Fortran_COMPILER)
-#   unsupported(avl xfoil)
-#endif()
 
 
 set(EXTERNAL_SOURCE_DIRS)
