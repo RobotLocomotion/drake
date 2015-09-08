@@ -21,6 +21,11 @@ if (NOT WIN32)
   option(WITH_BULLET 		"used for collision detection" 	ON)  # not win32 because drake had a silly c++11 compile error.  probably just for MSVC << 2013
   option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" ON) # not win32 because I have to reliably add drake/build/lib to the path so that lcm-gen.exe can run when building drake.  note: move GTK back into ON by default for win32 only when I re-enable lcm
 endif()
+find_program(matlab matlab)
+if (matlab)
+  option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"  ON)
+endif()
+
 
 # OFF by default:
 option(WITH_SNOPT 		"nonlinear optimization solver; requires access to RobotLocomotion/snopt-pod")
@@ -46,12 +51,6 @@ else() # many of these might work on win32 with little or no work... they just h
   option(WITH_SNOPT_PRECOMPILED "precompiled binaries only for snopt; the source requires a license (will be disabled if WITH_SNOPT=ON)"  OFF)
 endif()
 
-find_program(matlab matlab)
-if (matlab)
-  option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"							ON)
-else()
-  option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"							OFF)
-endif()
 
 # list *compilation* dependencies, in alphabetical order by target (note: dependencies must come first in my foreach above)
 set(lcm_dependencies gtk)
