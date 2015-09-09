@@ -26,7 +26,7 @@ region_server = iris.terrain_grid.Server();
 region_server.addHeightmap(1, options.terrain);
 
 region_args = {r.getFootstepPlanningCollisionModel(), ...
-   'xy_bounds', iris.Polytope.fromBounds([-1,-.5], [3, .5]),...
+   'xy_bounds', iris.Polyhedron.fromBounds([-1,-.5], [3, .5]),...
    'debug', false};
 
 i = 1;  
@@ -36,7 +36,7 @@ combined_xtraj = [];
 
 while true
   options.navgoal = [options.initial_pose(1)+3; 0;0;0;0;0];
-  options.safe_regions(end+1) = region_server.getCSpaceRegionAtIndex(region_server.xy2ind(1, options.initial_pose(1:2)), options.initial_pose(6), region_args{:}, 'error_on_infeas_start', false);
+  options.safe_regions(end+1) = region_server.getCSpaceRegionAtIndex(region_server.xy2ind(1, options.initial_pose(1:2)), options.initial_pose(6), region_args{:}, 'error_on_infeasible_start', false);
 %   figure(i+20)
 %   i = i + 1;
 %   clf

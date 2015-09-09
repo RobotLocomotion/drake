@@ -135,7 +135,7 @@ public:
 
   template<typename DerivedQ>
   void qdot2v(const Eigen::MatrixBase<DerivedQ> & q,
-              Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic> &qdot_to_v,
+              Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic, 0, DrakeJoint::MAX_NUM_VELOCITIES, DrakeJoint::MAX_NUM_POSITIONS> &qdot_to_v,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic> *dqdot_to_v) const {
     qdot_to_v.setIdentity(getNumVelocities(), getNumPositions());
 
@@ -146,7 +146,7 @@ public:
 
   template<typename DerivedQ>
   void v2qdot(const Eigen::MatrixBase<DerivedQ> & q,
-              Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic> &v_to_qdot,
+              Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic, 0, DrakeJoint::MAX_NUM_POSITIONS, DrakeJoint::MAX_NUM_VELOCITIES> &v_to_qdot,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic> *dv_to_qdot) const {
     v_to_qdot.setIdentity(getNumPositions(), getNumVelocities());
 

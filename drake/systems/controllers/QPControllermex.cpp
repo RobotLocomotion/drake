@@ -236,7 +236,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   MatrixXd R_DQyD_ls = R_ls + D_ls.transpose()*Qy*D_ls;
 
-  pdata->r->doKinematics(q, qd);
+  KinematicsCache<double> cache = pdata->r->doKinematics(q, qd);
 
   //---------------------------------------------------------------------
   // Compute active support from desired supports -----------------------
@@ -275,10 +275,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
   }
 
-  pdata->r->doKinematics(q, qd);
   std::map<int, std::unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
-  pdata->H = pdata->r->massMatrix<double>().value();
-  pdata->C = pdata->r->inverseDynamics(f_ext).value();
+  pdata->H = pdata->r->massMatrix(cache).value();
+  pdata->C = pdata->r->inverseDynamics(cache, f_ext).value();
 
   pdata->H_float = pdata->H.topRows(6);
   pdata->H_act = pdata->H.bottomRows(nu);
@@ -288,18 +287,18 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   bool include_angular_momentum = (pdata->W_kdot.array().maxCoeff() > 1e-10);
 
   if (include_angular_momentum) {
-    pdata->Ag = pdata->r->centroidalMomentumMatrix<double>(0).value();
-    pdata->Agdot_times_v = pdata->r->centroidalMomentumMatrixDotTimesV<double>(0).value();
+    pdata->Ag = pdata->r->centroidalMomentumMatrix(cache, 0).value();
+    pdata->Agdot_times_v = pdata->r->centroidalMomentumMatrixDotTimesV(cache, 0).value();
     pdata->Ak = pdata->Ag.topRows<3>();
     pdata->Akdot_times_v = pdata->Agdot_times_v.topRows<3>();
   }
 
   // consider making all J's into row-major
 
-  auto com_gradientvar = pdata->r->centerOfMass<double>(1);
+  auto com_gradientvar = pdata->r->centerOfMass(cache, 1);
   Vector3d xcom = com_gradientvar.value();
   pdata->J = com_gradientvar.gradient().value();
-  pdata->Jdotv = pdata->r->centerOfMassJacobianDotTimesV<double>(0).value();
+  pdata->Jdotv = pdata->r->centerOfMassJacobianDotTimesV(cache, 0).value();
   pdata->J_xy = pdata->J.topRows(2);
   pdata->Jdotv_xy = pdata->Jdotv.head<2>();
 
@@ -318,7 +317,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   MatrixXd B,JB,Jp,normals;
   VectorXd Jpdotv;
   std::vector<double> support_mus(active_supports.size(), mu);
-  int nc = contactConstraintsBV(pdata->r,num_active_contact_pts,support_mus,active_supports,B,JB,Jp,Jpdotv,normals,terrain_height);
+  int nc = contactConstraintsBV(pdata->r, cache, num_active_contact_pts, support_mus, active_supports, B, JB, Jp, Jpdotv, normals, terrain_height);
   int neps = nc*dim;
 
   VectorXd x_bar,xlimp;
@@ -414,8 +413,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       body_idx = (int)(body_accel_inputs[i][0])-1;
 
       if (!inSupport(active_supports,body_idx)) {
-        auto Jb = pdata->r->forwardKinJacobian(origin, body_idx, 0, 1, false, 0).value();
-        auto Jbdot_times_v = pdata->r->forwardJacDotTimesV(origin, body_idx, 0, 1, 0).value();
+        auto Jb = pdata->r->forwardKinJacobian(cache, origin, body_idx, 0, 1, false, 0).value();
+        auto Jbdot_times_v = pdata->r->forwardJacDotTimesV(cache, origin, body_idx, 0, 1, 0).value();
 
         for (int j=0; j<6; j++) {
           if (!std::isnan(body_vdot[j])) {
@@ -453,8 +452,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   int constraint_start_index = 2*nu;
   for (int i=0; i<pdata->n_body_accel_bounds; i++) {
     body_index = pdata->accel_bound_body_idx[i];
-    auto Jb = pdata->r->forwardKinJacobian(origin, body_index, 0, 1, false, 0).value();
-    auto Jbdot_times_v = pdata->r->forwardJacDotTimesV(origin, body_index, 0, 1, 0).value();
+    auto Jb = pdata->r->forwardKinJacobian(cache, origin, body_index, 0, 1, false, 0).value();
+    auto Jbdot_times_v = pdata->r->forwardJacDotTimesV(cache, origin, body_index, 0, 1, 0).value();
 
     Ain.block(constraint_start_index,0,6,pdata->r->num_positions) = Jb;
     bin.segment(constraint_start_index,6) = -Jbdot_times_v + pdata->max_body_acceleration[i];
@@ -563,8 +562,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         body_idx = (int)(body_accel_inputs[i][0])-1;
         
         if (!inSupport(active_supports,body_idx)) {
-          auto Jb = pdata->r->forwardKinJacobian(origin, body_idx, 0, 1, false, 0).value();
-          auto Jbdot_times_v = pdata->r->forwardJacDotTimesV(origin, body_idx, 0, 1, 0).value();
+          auto Jb = pdata->r->forwardKinJacobian(cache, origin, body_idx, 0, 1, false, 0).value();
+          auto Jbdot_times_v = pdata->r->forwardJacDotTimesV(cache, origin, body_idx, 0, 1, 0).value();
 
           for (int j=0; j<6; j++) {
             if (!std::isnan(body_vdot[j])) {
@@ -698,7 +697,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   if (nlhs>14) {
     RigidBodyManipulator* r = pdata->r;
 
-    VectorXd individual_cops = individualSupportCOPs(r, active_supports, normals, B, beta);
+    VectorXd individual_cops = individualSupportCOPs(r, cache, active_supports, normals, B, beta);
     plhs[14] = eigenToMatlab(individual_cops);
   }
 

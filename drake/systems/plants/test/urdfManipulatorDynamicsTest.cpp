@@ -11,7 +11,7 @@ int main(int argc, char* argv[])
     cerr << "Usage: urdfManipulatorDynamicsTest urdf_filename" << endl;
     exit(-1);
   }
-  RigidBodyManipulator* model = new RigidBodyManipulator(argv[1]);
+  auto model = std::unique_ptr<RigidBodyManipulator>(new RigidBodyManipulator(argv[1]));
   if (!model) {
     cerr << "ERROR: Failed to load model from " << argv[1] << endl;
     return -1;
@@ -38,23 +38,22 @@ int main(int argc, char* argv[])
       sscanf(argv[2 + model->num_positions + i], "%lf", &v(i));
   }
 
-  model->doKinematics(q, v, true, true);
+  KinematicsCache<double> cache = model->doKinematics(q, v, 1);
 
-  auto H = model->massMatrix<double>();
+  auto H = model->massMatrix(cache);
   cout << H.value() << endl;
 
   map<int, unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
-  auto C = model->inverseDynamics(f_ext);
+  auto C = model->inverseDynamics(cache, f_ext);
   cout << C.value() << endl;
 
   cout << model->B << endl;
 
   if (model->loops.size()>0) {
-    auto phi = model->positionConstraintsNew<double>(1);
+    auto phi = model->positionConstraints(cache, 1);
     cout << phi.value() << endl;
     cout << phi.gradient().value() << endl;
   }
 
-  delete model;
   return 0;
 }

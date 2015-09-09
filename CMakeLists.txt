@@ -29,6 +29,10 @@ option(WITH_AVL			"use w/ XFOIL to compute aerodynamic coefficients for airfoils
 option(WITH_XFOIL		"use w/ AVL to compute aerodynamic coefficients for airfoils")
 option(WITH_MESHCONVERTERS "uses vcglib to convert a few standard filetypes")
 
+# todo: make this on by default once it's tested:
+option(WITH_SNOPT_PRECOMPILED "precompiled binaries only for snopt; the source requires a license (will be disabled if WITH_SNOPT=ON)"  OFF)
+
+
 find_program(matlab matlab)
 if (matlab)
   option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"							ON)
@@ -51,6 +55,7 @@ endif()
 set(lcm_dependencies gtk)
 set(libbot_dependencies lcm)
 set(director_dependencies lcm libbot)
+set(iris_dependencies eigen mosek)
 set(signalscope_dependencies director)
 set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi)
 
@@ -62,7 +67,7 @@ set(bertini_GIT_TAG 3ae3e3ad3534acb4b6f7a4c3c22728b493beaa80)
 set(bullet_GIT_REPOSITORY https://github.com/RobotLocomotion/bullet-pod.git)
 set(bullet_GIT_TAG 78c36cd116becf8417334f98bfcfd8d1300b03e0)
 set(cmake_GIT_REPOSITORY https://github.com/RobotLocomotion/cmake.git)
-set(cmake_GIT_TAG b933f5420d429eabf410c90da60614b5f828dc62)
+set(cmake_GIT_TAG 5ea95a6bb936c5fb8635b671a3355d86a882f5f7)
 set(cmake_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/drake/cmake")
 set(cmake_NO_BUILD TRUE)
 set(director_GIT_REPOSITORY https://github.com/RobotLocomotion/director.git)
@@ -79,15 +84,16 @@ set(gloptipoly_GIT_TAG c9e796e99c584ecf78317348c4162a2ed4121156)
 set(gurobi_GIT_REPOSITORY https://github.com/RobotLocomotion/gurobi.git)
 set(gurobi_GIT_TAG beb0a84a1bcca1eb81a1b87d9fa140f2134d97e9)
 set(iris_GIT_REPOSITORY https://github.com/rdeits/iris-distro.git)
-set(iris_GIT_TAG 13468e0ea38e72ffae030adaa31e3015ea5f3ce0)
+set(iris_GIT_TAG a17bdb4a20a8195363b629c47fd1b6251b44c95e)
+set(iris_ADDITIONAL_BUILD_ARGS PATCH_COMMAND make configure-cdd-only)
 set(lcm_GIT_REPOSITORY https://github.com/RobotLocomotion/lcm-pod.git)
 set(lcm_GIT_TAG ff1462a688ef67227b4656ec7a10cc401c9b0069) # note: cmake branch
 set(libbot_GIT_REPOSITORY https://github.com/RobotLocomotion/libbot.git)
 set(libbot_GIT_TAG c328b73f3b48008d04468031e26f48468a7e3cc0)
 set(meshconverters_GIT_REPOSITORY https://github.com/RobotLocomotion/meshConverters.git)
 set(meshconverters_GIT_TAG d50a79b80d74dd7a924daba7bd2011e03d9e66b4)
-set(mosek_GIT_REPOSITORY https://github.com/RobotLocomotion/mosek.git)
-set(mosek_GIT_TAG a72594c4a7c8c5c026fd291148bcac76146634c2)
+set(mosek_GIT_REPOSITORY https://github.com/rdeits/mosek-pod.git)
+set(mosek_GIT_TAG 1919b622df17b7584ac644406f360bd07cdf5fba)
 set(octomap_GIT_REPOSITORY https://github.com/RobotLocomotion/octomap-pod.git)
 set(octomap_GIT_TAG 00b28215d19580f9e964bc5d126ce55a9253671a)
 set(sedumi_GIT_REPOSITORY https://github.com/RobotLocomotion/sedumi.git)
@@ -122,7 +128,6 @@ foreach(proj IN ITEMS
 		lcm
 		libbot
 		bullet
-		iris
 		spotless
 		director
 		signalscope
@@ -130,6 +135,7 @@ foreach(proj IN ITEMS
 		snopt
 		gurobi
 		mosek
+		iris
 		yalmip
 		gloptipoly
 		bertini
@@ -177,6 +183,8 @@ endif()
 #endif()
 
 
+
+set(EXTERNAL_SOURCE_DIRS)
 foreach (proj ${EXTERNAL_PROJECTS})
 	set(deps)
 	foreach(dep ${${proj}_dependencies})
@@ -196,6 +204,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 		if (NOT ${proj}_NO_BUILD)
 			set(${proj}_BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE})
 		endif()
+		set(EXTERNAL_SOURCE_DIRS ${EXTERNAL_SOURCE_DIRS} ${${proj}_SOURCE_DIR} "\n")
 
 		message(STATUS "Preparing to build ${proj} with dependencies: ${deps}")
 
@@ -234,6 +243,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 			BUILD_COMMAND "${${proj}_BUILD_COMMAND}"
 			INSTALL_COMMAND ""
 			DEPENDS download-${proj} ${deps}
+			${${proj}_ADDITIONAL_BUILD_ARGS}
 	#		BUILD_ALWAYS 1
 			)
 	else()
@@ -248,6 +258,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 			BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE}
 			INSTALL_COMMAND ""
 			DEPENDS ${deps}
+			${${proj}_ADDITIONAL_BUILD_ARGS}
 	#		BUILD_ALWAYS 1
 			)
 	endif(NOT ${proj} STREQUAL "drake")
@@ -261,7 +272,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
  		ALWAYS 1)
 
 endforeach()
-
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/drake_external_source_dirs.txt ${EXTERNAL_SOURCE_DIRS})
 
 # todo: add a custom target for release_filelist
 
@@ -291,3 +302,22 @@ endforeach()
 
 string(REPLACE ";" " " PROJECT_LIST "${PROJECT_LIST}")
 add_custom_target(list-project-dirs COMMAND echo "${PROJECT_LIST}")
+
+## grab and install precompiled snopt
+if (NOT WIN32)  # just have to add the win libs to the zip to re-enable this support
+  # todo: look for snopt_c
+  if (snopt_c_FOUND OR WITH_SNOPT)
+    set(WITH_SNOPT_PRECOMPILED OFF)
+  endif()
+  if (WITH_SNOPT_PRECOMPILED)
+    message(STATUS "Preparing to install precompiled snopt")
+    ExternalProject_Add(download-snopt-precompiled
+      URL "http://drake002.csail.mit.edu/drake/drakeSnopt-2592a9e4e7666c6c3aafc49def9dc726f4942cea.tgz"  # todo: host this someplace better?
+      SOURCE_DIR "${CMAKE_BINARY_DIR}/snopt-precompiled"
+      CONFIGURE_COMMAND ""
+      BUILD_COMMAND cmake -E copy_directory ${CMAKE_BINARY_DIR}/snopt-precompiled/ ${PROJECT_SOURCE_DIR}/drake/solvers/
+      INSTALL_COMMAND "")
+    add_dependencies(download-all download-snopt-precompiled)
+    add_dependencies(drake download-snopt-precompiled) # just in case: make sure any compiled drake version happens after precompiled install
+  endif()
+endif()

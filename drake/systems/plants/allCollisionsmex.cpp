@@ -14,16 +14,17 @@ using namespace std;
 
 void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
-  if (nrhs < 1) {
-    mexErrMsgIdAndTxt("Drake:collisionDetectmex:NotEnoughInputs","Usage collisionDetectmex(model_ptr)");
+  if (nrhs < 3) {
+    mexErrMsgIdAndTxt("Drake:allCollisions:NotEnoughInputs", "Usage allCollisionsmex(model_ptr, cache_ptr, active_collision_options)");
   }
 
-  // first get the model_ptr back from matlab
-  RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+  int arg_num = 0;
+  RigidBodyManipulator *model = static_cast<RigidBodyManipulator*>(getDrakeMexPointer(prhs[arg_num++]));
+  KinematicsCache<double>* cache = static_cast<KinematicsCache<double>*>(getDrakeMexPointer(prhs[arg_num++]));
 
   // Now get the list of body indices for which to compute distances
   vector<int> active_bodies_idx;
-  const mxArray* active_collision_options = prhs[2];
+  const mxArray* active_collision_options = prhs[arg_num++];
   //DEBUG
   //cout << "collisionDetectmex: Num fields in active_collision_options" << mxGetNumberOfFields(active_collision_options) << endl;
   //for (int i = 0; i < mxGetNumberOfFields(active_collision_options); ++i) {
@@ -49,7 +50,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
   vector<int> bodyA_idx, bodyB_idx;
   Matrix3Xd ptsA, ptsB;
-  model->allCollisions(bodyA_idx,bodyB_idx,ptsA,ptsB);
+  model->allCollisions(*cache, bodyA_idx,bodyB_idx,ptsA,ptsB);
   vector<int32_T> idxA(bodyA_idx.size());
   transform(bodyA_idx.begin(),bodyA_idx.end(),idxA.begin(),
       [](int i){return ++i;});

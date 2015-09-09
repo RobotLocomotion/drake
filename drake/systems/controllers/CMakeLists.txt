@@ -58,9 +58,6 @@ if (MATLAB_FOUND)
     target_link_libraries(QPControllermex drakeQP drakeControlUtil drakeMexUtil drakeControlMexUtil)
     pods_use_pkg_config_packages(QPControllermex gurobi)
 
-    add_mex(getActiveSupportsmex getActiveSupportsmex.cpp)
-    target_link_libraries(getActiveSupportsmex drakeQP drakeMexUtil drakeControlMexUtil)
-
     add_mex(instantaneousQPControllermex instantaneousQPControllermex.cpp)
     target_link_libraries(instantaneousQPControllermex drakeQP drakeControlUtil drakeQPCommon drakeMexUtil drakeSide)
     pods_use_pkg_config_packages(instantaneousQPControllermex gurobi)
@@ -79,11 +76,6 @@ if (MATLAB_FOUND)
     endmacro()
     
     add_control_mex(bodyMotionControlmex)
-    add_control_mex(pelvisMotionControlmex)
-    
-    add_control_mex(individualCentersOfPressuremex) 
-    add_control_mex(bodySpatialMotionPDmex)
-    target_link_libraries(bodySpatialMotionPDmex drakeGeometryUtil)
   endif()
 
   add_mex(supportDetectmex supportDetectmex.cpp)
@@ -93,6 +85,7 @@ endif(MATLAB_FOUND)
 
 add_library(drakeZMPUtil zmpUtil.cpp)
 target_link_libraries(drakeZMPUtil drakeTrajectories)
+pods_install_libraries(drakeZMPUtil)
 pods_install_headers(zmpUtil.h DESTINATION drake)
 
 

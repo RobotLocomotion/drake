@@ -249,11 +249,10 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         //END_DEBUG
         model->addCollisionElement(element, model->bodies[i], group_name);
       }
-      if (!model->bodies[i]->hasParent()) {
-        model->updateCollisionElements(model->bodies[i]);  // update static objects only once - right here on load
-      }
-
-
+      // NOTE: the following should not be necessary since the same thing is being done in RigidBodyManipulator::compile, which is called below.
+//      if (!model->bodies[i]->hasParent()) {
+//        model->updateCollisionElements(model->bodies[i], cache);  // update static objects only once - right here on load
+//      }
 
       // Set collision filtering bitmasks
       pm = mxGetProperty(pBodies,i,"collision_filter");

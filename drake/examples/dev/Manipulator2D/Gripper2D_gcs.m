@@ -86,7 +86,7 @@ classdef Gripper2D_gcs < Gripper2D
         dv = zeros(2*nObjContacts,2*obj.num_positions)*q(1);
       else
       end
-      kinsol = doKinematicsmex(obj.mex_model_ptr,q,1)
+      kinsol = doKinematicsmex(obj.mex_model_ptr,q,1); % FIXME
 
       contact_pos = zeros(2,nObjContacts)*q(1);  % *q(1) to help TaylorVar
       if (nargout>1) 

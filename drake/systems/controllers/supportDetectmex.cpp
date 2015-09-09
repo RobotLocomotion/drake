@@ -72,7 +72,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   
   int contact_logic_AND = (int) mxGetScalar(prhs[narg++]); // true if we should AND plan and sensor, false if we should OR them
 
-  pdata->r->doKinematics(qvec, qdvec);
+  KinematicsCache<double> cache = pdata->r->doKinematics(qvec, qdvec); // FIXME: pass this into the function.
 
   //---------------------------------------------------------------------
   // Compute active support from desired supports -----------------------
@@ -116,7 +116,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         }
       } 
       else {
-        contactPhi(pdata->r,se,phi,terrain_height);
+        contactPhi(pdata->r, cache, se, phi, terrain_height);
         bool in_contact = true;
         if (contact_logic_AND) { // plan is true, now check contact sensor/kinematics
           in_contact =  (phi.minCoeff()<=contact_threshold || contact_sensor(i)==1); // any contact below threshold (kinematically) OR contact sensor says yes contact
