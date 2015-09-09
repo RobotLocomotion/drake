@@ -368,7 +368,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     fr->body = model->bodies[(int) mxGetScalar(pm)-1];
 
     pm = mxGetProperty(pFrames,i,"T");
-    memcpy(fr->Ttree.data(),mxGetPrSafe(pm),sizeof(double)*4*4);
+    memcpy(fr->transform_to_body.data(),mxGetPrSafe(pm),sizeof(double)*4*4);
 
     fr->frame_index = -i-2;
     model->frames.push_back(fr);

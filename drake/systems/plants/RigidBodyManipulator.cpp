@@ -37,7 +37,7 @@ void getFiniteIndexes(T const & v, std::vector<int> &finite_indexes)
 
 std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj)
 {
-  os << "loop connects pt " << obj.frameA->Ttree.topRightCorner(3,1).transpose() << " on " << obj.frameA->body->linkname << " to pt " << obj.frameB->Ttree.topRightCorner(3,1).transpose() << " on " << obj.frameB->body->linkname << std::endl;
+  os << "loop connects pt " << obj.frameA->transform_to_body.topRightCorner(3,1).transpose() << " on " << obj.frameA->body->linkname << " to pt " << obj.frameB->transform_to_body.topRightCorner(3,1).transpose() << " on " << obj.frameB->body->linkname << std::endl;
   return os;
 }
 
@@ -1098,7 +1098,7 @@ int RigidBodyManipulator::parseBodyOrFrameID(const int body_or_frame_id, Matrix4
     body_ind = frames[frame_ind]->body->body_index;
 
     if (Tframe)
-      (*Tframe) = frames[frame_ind]->Ttree;
+      (*Tframe) = frames[frame_ind]->transform_to_body;
   } else {
     body_ind = body_or_frame_id;
     if (Tframe)

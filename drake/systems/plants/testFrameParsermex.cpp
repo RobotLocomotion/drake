@@ -25,7 +25,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
 
   for (size_t x = 0; x < model->frames.size() ; x++) {
-  	double err = (model->frames[x]->Ttree - cpp_model.frames[x]->Ttree).norm();
+  	double err = (model->frames[x]->transform_to_body - cpp_model.frames[x]->transform_to_body).norm();
   	
   	if (err > FRAME_PARSER_EPSILON) {
   		mexErrMsgIdAndTxt("Drake:testFrameParsermex:FrameTransformMismatch", "The homogeneous frame transformation matrix did not match");		
