@@ -15,7 +15,6 @@ classdef InstantaneousQPController
     data_mex_ptr;
     support_detect_mex_ptr;
     use_bullet = false;
-    default_terrain_height = 0;
     param_sets
     gurobi_options = struct();
     solver = 0;

@@ -175,13 +175,8 @@ classdef FootContactBlock < MIMODrakeSystem
       else
         contact_thresh = obj.contact_threshold;
       end
-      if ~obj.using_flat_terrain
-        height = getTerrainHeight(obj.robot,[0;0]); % get height from DRCFlatTerrainMap
-      else
-        height = 0;
-      end
       
-      active_supports = supportDetectmex(obj.mex_ptr.data,x,supp,contact_sensor,contact_thresh,height,contact_logic_AND);
+      active_supports = supportDetectmex(obj.mex_ptr.data,x,supp,contact_sensor,contact_thresh,contact_logic_AND);
       y = [1.0*any(active_supports==obj.robot.foot_body_id.left); 1.0*any(active_supports==obj.robot.foot_body_id.right)];
 
       if ~isempty(ctrl_data.link_constraints)

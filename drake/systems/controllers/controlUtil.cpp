@@ -72,7 +72,7 @@ void surfaceTangents(const Vector3d & normal, Matrix<double,3,m_surface_tangents
   }
 }
 
-int contactPhi(RigidBodyManipulator* r, const KinematicsCache<double>& cache, SupportStateElement& supp, VectorXd &phi, double terrain_height)
+int contactPhi(RigidBodyManipulator* r, const KinematicsCache<double>& cache, SupportStateElement& supp, VectorXd &phi)
 {
   int nc = static_cast<int>(supp.contact_pts.size());
   phi.resize(nc);
@@ -88,7 +88,7 @@ int contactPhi(RigidBodyManipulator* r, const KinematicsCache<double>& cache, Su
   return nc;
 }
 
-int contactConstraintsBV(RigidBodyManipulator *r, const KinematicsCache<double>& cache, int nc, std::vector<double> support_mus, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>& supp, MatrixXd &B, MatrixXd &JB, MatrixXd &Jp, VectorXd &Jpdotv, MatrixXd &normals, double terrain_height)
+int contactConstraintsBV(RigidBodyManipulator *r, const KinematicsCache<double>& cache, int nc, std::vector<double> support_mus, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>& supp, MatrixXd &B, MatrixXd &JB, MatrixXd &Jp, VectorXd &Jpdotv, MatrixXd &normals)
 {
   int j, k=0, nq = r->num_positions;
 
@@ -207,7 +207,7 @@ bool isSupportElementActive(SupportStateElement* se, bool contact_force_detected
   return is_active;
 }
 
-Matrix<bool, Dynamic, 1> getActiveSupportMask(RigidBodyManipulator* r, VectorXd q, VectorXd qd, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &available_supports, const Ref<const Matrix<bool, Dynamic, 1>> &contact_force_detected, double contact_threshold, double terrain_height) {
+Matrix<bool, Dynamic, 1> getActiveSupportMask(RigidBodyManipulator* r, VectorXd q, VectorXd qd, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &available_supports, const Ref<const Matrix<bool, Dynamic, 1>> &contact_force_detected, double contact_threshold) {
   KinematicsCache<double> cache = r->doKinematics(q, qd);
 
   size_t nsupp = available_supports.size();
@@ -235,7 +235,7 @@ Matrix<bool, Dynamic, 1> getActiveSupportMask(RigidBodyManipulator* r, VectorXd 
       if (contact_threshold == -1) {
         kin_contact = true;
       } else {
-        contactPhi(r, cache, se, phi, terrain_height);
+        contactPhi(r, cache, se, phi);
         kin_contact = (phi.minCoeff()<=contact_threshold);
       }
     } else {
@@ -248,9 +248,9 @@ Matrix<bool, Dynamic, 1> getActiveSupportMask(RigidBodyManipulator* r, VectorXd 
   return active_supp_mask;
 }
 
-std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> getActiveSupports(RigidBodyManipulator* r, VectorXd q, VectorXd qd, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &available_supports, const Ref<const Matrix<bool, Dynamic, 1>> &contact_force_detected, double contact_threshold, double terrain_height) {
+std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> getActiveSupports(RigidBodyManipulator* r, VectorXd q, VectorXd qd, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &available_supports, const Ref<const Matrix<bool, Dynamic, 1>> &contact_force_detected, double contact_threshold) {
 
-  Matrix<bool, Dynamic, 1> active_supp_mask = getActiveSupportMask(r, q, qd, available_supports, contact_force_detected, contact_threshold, terrain_height);
+  Matrix<bool, Dynamic, 1> active_supp_mask = getActiveSupportMask(r, q, qd, available_supports, contact_force_detected, contact_threshold);
 
   std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> active_supports;
 

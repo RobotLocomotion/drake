@@ -232,7 +232,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   memcpy(pdata->w_qdd.data(),mxGetPrSafe(prhs[narg++]),sizeof(double)*nq); 
   
   double mu = mxGetScalar(prhs[narg++]);
-  double terrain_height = mxGetScalar(prhs[narg++]); // nonzero if we're using DRCFlatTerrainMap
 
   MatrixXd R_DQyD_ls = R_ls + D_ls.transpose()*Qy*D_ls;
 
@@ -317,7 +316,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   MatrixXd B,JB,Jp,normals;
   VectorXd Jpdotv;
   std::vector<double> support_mus(active_supports.size(), mu);
-  int nc = contactConstraintsBV(pdata->r, cache, num_active_contact_pts, support_mus, active_supports, B, JB, Jp, Jpdotv, normals, terrain_height);
+  int nc = contactConstraintsBV(pdata->r, cache, num_active_contact_pts, support_mus, active_supports, B, JB, Jp, Jpdotv, normals);
   int neps = nc*dim;
 
   VectorXd x_bar,xlimp;

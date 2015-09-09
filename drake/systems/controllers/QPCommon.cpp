@@ -379,7 +379,7 @@ int setupAndSolveQP(
 
   // Active supports
   std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> available_supports = loadAvailableSupports(qp_input);
-  std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> active_supports = getActiveSupports(pdata->r, robot_state.q, robot_state.qd, available_supports, b_contact_force, params->contact_threshold, pdata->default_terrain_height);
+  std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> active_supports = getActiveSupports(pdata->r, robot_state.q, robot_state.qd, available_supports, b_contact_force, params->contact_threshold);
 
 
   // // whole_body_data
@@ -543,7 +543,7 @@ int setupAndSolveQP(
     // std::cout << adjusted_mus[i] << " ";
   }
   // std::cout << std::endl;
-  int nc = contactConstraintsBV(pdata->r, pdata->cache, num_active_contact_pts, adjusted_mus, active_supports, B, JB, Jp, Jpdotv, normals, pdata->default_terrain_height);
+  int nc = contactConstraintsBV(pdata->r, pdata->cache, num_active_contact_pts, adjusted_mus, active_supports, B, JB, Jp, Jpdotv, normals);
   int neps = nc*dim;
 
   if (params->use_center_of_mass_observer && foot_force_torque_measurements.size() > 0) {
