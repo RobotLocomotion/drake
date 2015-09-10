@@ -5,6 +5,3 @@ function testDoubleIntegratorDircol
 cd(fullfile(getDrakePath,'examples'));
 DoubleIntegrator.runDircol;
 
-% make sure you take a look at the code!
-edit('DoubleIntegrator.runDircol')
-

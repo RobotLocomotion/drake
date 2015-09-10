@@ -5,6 +5,3 @@ function testDoubleIntegratorDirtran
 cd(fullfile(getDrakePath,'examples'));
 DoubleIntegrator.runDirtran;
 
-% make sure you take a look at the code!
-edit('DoubleIntegrator.runDirtran')
-
