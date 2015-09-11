@@ -7,6 +7,23 @@
  <xacro:include filename="LegPair.xacro" />
  <xacro:property name="pi" value="3.1415926535897931" />
 
+ <link name="crossbar">
+    <inertial>
+      <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+      <mass value="1"/>
+        <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+      <geometry>
+        <cylinder length="1" radius="0.01"/>
+      </geometry>
+      <material>
+        <color rgba="0 0 .6353 1"/>
+      </material>
+    </visual>
+  </link>
+
  <link name="crank_axle">
     <inertial>
       <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
@@ -24,32 +41,47 @@
     </visual>
   </link>
 
+  <joint name="joint_crossbar_crank" type="continuous">
+    <axis xyz="0 1 0"/>
+    <parent link="crossbar"/>
+    <child link="crank_axle"/>
+    <origin rpy="0 0 0" xyz="0 0 0.078"/>
+  </joint>
+
+
   <xacro:macro name="positioned_leg_pair" params="name offset angle">
 	  <xacro:strandbeest_leg_pair prefix="${name}">
 	  </xacro:strandbeest_leg_pair>
 
-	  <joint name="joint_crank_axle_l" type="fixed">
+	  <joint name="${name}_joint_crossbar_l" type="fixed">
 	    <axis xyz="0 1 0"/>
-	    <parent link="crank_axle"/>
+	    <parent link="crossbar"/>
 	    <child link="${name}_bar_l"/>
-	    <origin rpy="0 ${pi} 0" xyz="0 ${offset} 0"/>
+	    <origin rpy="0 0 0" xyz="0 ${offset} 0"/>
 	  </joint>
 
-	  <joint name="joint_crank_axle_m" type="fixed">
+	  <joint name="${name}_joint_crank_axle_m" type="fixed">
 	    <axis xyz="0 1 0"/>
 	    <parent link="crank_axle"/>
 	    <child link="${name}_bar_m"/>
 	    <origin rpy="0 ${angle} 0" xyz="0 ${offset} 0"/>
 	  </joint>
+
+  <loop_joint name="${name}_loop_crank_l" type="continuous">
+    <axis xyz="0 1 0"/>
+    <link1 link="crank_axle" rpy="0 0 0" xyz="0 ${offset} 0"/>
+    <link2 link="${name}_bar_l" rpy="0 0 0" xyz="0 0 0.078"/>
+  </loop_joint>
+
 	</xacro:macro>
 
 	<xacro:positioned_leg_pair name="pair01" offset="-0.5" angle="0">
 	</xacro:positioned_leg_pair>
 
-	<xacro:positioned_leg_pair name="pair02" offset="-0.3" angle="${2*pi/3}">
+<!-- 	<xacro:positioned_leg_pair name="pair02" offset="-0.3" angle="${2*pi/3}">
 	</xacro:positioned_leg_pair>
-
-	<xacro:positioned_leg_pair name="pair03" offset="-0.1" angle="${4*pi/3}">
+ -->
+<!-- 	<xacro:positioned_leg_pair name="pair03" offset="-0.1" angle="${4*pi/3}">
 	</xacro:positioned_leg_pair>
 
 	<xacro:positioned_leg_pair name="pair04" offset="0.1" angle="${pi/3}">
@@ -60,5 +92,5 @@
 
 	<xacro:positioned_leg_pair name="pair06" offset="0.5" angle="${5*pi/3}">
 	</xacro:positioned_leg_pair>
-
+ -->
 </robot>

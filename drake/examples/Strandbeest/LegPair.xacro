@@ -47,7 +47,7 @@
     <axis xyz="0 1 0"/>
     <parent link="${prefix}_bar_l"/>
     <child link="${prefix}_bar_a"/>
-    <origin rpy="0 ${pi/2} 0" xyz="0 0 0.078"/>
+    <origin rpy="0 ${-pi/2} 0" xyz="0 0 0"/>
   </joint>
 
   <link name="${prefix}_bar_m">
