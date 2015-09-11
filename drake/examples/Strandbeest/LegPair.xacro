@@ -4,6 +4,9 @@
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
  xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd"
  xmlns:xacro="http://ros.org/wiki/xacro" name="Strandbeest">
+
+ <!-- Measurements and lables were taken from http://files.tested.com/photos/2015/04/05/74549-leg-measurement.jpg -->
+
  <xacro:include filename="LegAssembly.xacro" />
  <xacro:property name="pi" value="3.1415926535897931" />
 
@@ -25,7 +28,7 @@
       </material>
     </visual>
   </link>
-  
+
   <link name="${prefix}_bar_a">
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0"/>

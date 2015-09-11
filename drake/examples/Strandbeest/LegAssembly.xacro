@@ -5,6 +5,8 @@
  xmlns:xacro="http://ros.org/wiki/xacro" name="LegAssembly">
  <xacro:property name="pi" value="3.1415926535897931" />
 
+ <!-- Measurements and lables were taken from http://files.tested.com/photos/2015/04/05/74549-leg-measurement.jpg -->
+
 <xacro:macro name="strandbeest_leg" params="prefix">
   <link name="${prefix}_bar_j">
     <inertial>
@@ -63,7 +65,7 @@
         <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
-  </link> 
+  </link>
 
   <joint name="${prefix}_joint_k_c" type="revolute">
     <axis xyz="0 1 0"/>
@@ -112,7 +114,7 @@
         <sphere radius="0.01"/>
       </geometry>
     </collision>
-  </link>  
+  </link>
 
   <joint name="${prefix}_joint_k_i" type="revolute">
     <axis xyz="0 1 0"/>
@@ -161,7 +163,7 @@
         <color rgba=".6353 0.6353 0.6353 1"/>
       </material>
     </visual>
-  </link>  
+  </link>
 
   <loop_joint name="${prefix}_loop_b_c" type="continuous">
     <axis xyz="0 1 0"/>
@@ -192,7 +194,7 @@
         <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
-  </link> 
+  </link>
 
   <joint name="${prefix}_joint_e_f" type="revolute">
     <axis xyz="0 1 0"/>
