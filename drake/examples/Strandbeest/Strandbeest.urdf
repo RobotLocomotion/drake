@@ -59,7 +59,7 @@
         <cylinder length="0.078" radius="0.01"/>
       </geometry>
       <material>
-        <color rgba=".6353 0 0 1"/>
+        <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
   </link>
@@ -75,7 +75,7 @@
         <cylinder length="0.76" radius="0.01"/>
       </geometry>
       <material>
-        <color rgba="0 .6353 0 1"/>
+        <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
   </link>
@@ -518,7 +518,7 @@
         <cylinder length="0.078" radius="0.01"/>
       </geometry>
       <material>
-        <color rgba=".6353 0 0 1"/>
+        <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
   </link>
@@ -534,7 +534,7 @@
         <cylinder length="0.76" radius="0.01"/>
       </geometry>
       <material>
-        <color rgba="0 .6353 0 1"/>
+        <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
   </link>
@@ -977,7 +977,7 @@
         <cylinder length="0.078" radius="0.01"/>
       </geometry>
       <material>
-        <color rgba=".6353 0 0 1"/>
+        <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
   </link>
@@ -993,7 +993,7 @@
         <cylinder length="0.76" radius="0.01"/>
       </geometry>
       <material>
-        <color rgba="0 .6353 0 1"/>
+        <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
   </link>
@@ -1436,7 +1436,7 @@
         <cylinder length="0.078" radius="0.01"/>
       </geometry>
       <material>
-        <color rgba=".6353 0 0 1"/>
+        <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
   </link>
@@ -1452,7 +1452,7 @@
         <cylinder length="0.76" radius="0.01"/>
       </geometry>
       <material>
-        <color rgba="0 .6353 0 1"/>
+        <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
   </link>
@@ -1895,7 +1895,7 @@
         <cylinder length="0.078" radius="0.01"/>
       </geometry>
       <material>
-        <color rgba=".6353 0 0 1"/>
+        <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
   </link>
@@ -1911,7 +1911,7 @@
         <cylinder length="0.76" radius="0.01"/>
       </geometry>
       <material>
-        <color rgba="0 .6353 0 1"/>
+        <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
   </link>
@@ -2354,7 +2354,7 @@
         <cylinder length="0.078" radius="0.01"/>
       </geometry>
       <material>
-        <color rgba=".6353 0 0 1"/>
+        <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
   </link>
@@ -2370,7 +2370,7 @@
         <cylinder length="0.76" radius="0.01"/>
       </geometry>
       <material>
-        <color rgba="0 .6353 0 1"/>
+        <color rgba=".6353 .6353 .6353 1"/>
       </material>
     </visual>
   </link>
