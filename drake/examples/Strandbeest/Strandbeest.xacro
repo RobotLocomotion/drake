@@ -4,7 +4,7 @@
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
  xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd"
  xmlns:xacro="http://ros.org/wiki/xacro" name="Strandbeest">
- <xacro:include filename="LegAssembly.xacro" />
+ <xacro:include filename="LegPair.xacro" />
 
  <link name="crank_axle">
     <inertial>
@@ -22,93 +22,22 @@
       </material>
     </visual>
   </link>
-
-  <link name="bar_l">
-    <inertial>
-      <origin xyz="0 0 0.039" rpy="0 0 0"/>
-      <mass value="1"/>
-        <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
-    </inertial>
-    <visual>
-      <origin xyz="0 0 0.039" rpy="0 0 0"/>
-      <geometry>
-        <cylinder length="0.078" radius="0.01"/>
-      </geometry>
-      <material>
-        <color rgba=".6353 0 0 1"/>
-      </material>
-    </visual>
-  </link>
   
+  <xacro:strandbeest_leg_pair prefix="pair01">
+  </xacro:strandbeest_leg_pair>
+
   <joint name="joint_crank_axle_l" type="fixed">
     <axis xyz="0 1 0"/>
     <parent link="crank_axle"/>
-    <child link="bar_l"/>
+    <child link="pair01_bar_l"/>
     <origin rpy="0 3.14159 0" xyz="0 0 0"/>
   </joint>
-
-  <link name="bar_a">
-    <inertial>
-      <origin xyz="0 0 0.19" rpy="0 0 0"/>
-      <mass value="1"/>
-        <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
-    </inertial>
-    <visual>
-      <origin xyz="0 0 0.19" rpy="0 0 0"/>
-      <geometry>
-        <cylinder length="0.38" radius="0.01"/>
-      </geometry>
-      <material>
-        <color rgba="0 .6353 0 1"/>
-      </material>
-    </visual>
-  </link>
-
-  <joint name="joint_l_a" type="fixed">
-    <axis xyz="0 1 0"/>
-    <parent link="bar_l"/>
-    <child link="bar_a"/>
-    <origin rpy="0 1.5708 0" xyz="0 0 0.078"/>
-  </joint>
-
-  <link name="bar_m">
-    <inertial>
-      <origin xyz="0 0 0.075" rpy="0 0 0"/>
-      <mass value="1"/>
-        <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
-    </inertial>
-    <visual>
-      <origin xyz="0 0 0.075" rpy="0 0 0"/>
-      <geometry>
-        <cylinder length="0.15" radius="0.01"/>
-      </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
-    </visual>
-  </link>
 
   <joint name="joint_crank_axle_m" type="continuous">
     <axis xyz="0 1 0"/>
     <parent link="crank_axle"/>
-    <child link="bar_m"/>
+    <child link="pair01_bar_m"/>
     <origin rpy="0 0 0" xyz="0 0 0"/>
   </joint>
 
-  <loop_joint name="leg01_loop_a_c" type="continuous">
-    <axis xyz="0 1 0"/>
-    <link1 link="bar_a" rpy="0 0 0" xyz="0 0 0.38"/>
-    <link2 link="leg01_bar_c" rpy="0 0 0" xyz="0 0 0.393"/>
-  </loop_joint>
-
-  <joint name="leg01_joint_m_j" type="continuous">
-    <axis xyz="0 1 0"/>
-    <parent link="bar_m"/>
-    <child link="leg01_bar_j"/>
-    <origin rpy="0 0 0" xyz="0 0 0.15"/>
-  </joint>
-
-
-  <xacro:strandbeest_leg prefix="leg01">
-  </xacro:strandbeest_leg>
 </robot>
