@@ -144,30 +144,6 @@
     <origin rpy="0 0 0" xyz="0 0 0.15"/>
   </joint>
 
-  <link name="bar_b">
-    <inertial>
-      <origin xyz="0 0 0.2075" rpy="0 0 0"/>
-      <mass value="1"/>
-        <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
-    </inertial>
-    <visual>
-      <origin xyz="0 0 0.2075" rpy="0 0 0"/>
-      <geometry>
-        <cylinder length="0.415" radius="0.01"/>
-      </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
-    </visual>
-  </link> 
-
-  <joint name="joint_j_b" type="continuous">
-    <axis xyz="0 1 0"/>
-    <parent link="bar_j"/>
-    <child link="bar_b"/>
-    <origin rpy="0 0 0" xyz="0 0 0.5"/>
-  </joint>
-
   <link name="bar_c">
     <inertial>
       <origin xyz="0 0 0.1965" rpy="0 0 0"/>
@@ -185,72 +161,12 @@
     </visual>
   </link> 
 
-  <joint name="joint_k_c" type="continuous">
+  <joint name="joint_k_c" type="revolute">
     <axis xyz="0 1 0"/>
     <parent link="bar_k"/>
     <child link="bar_c"/>
     <origin rpy="0 0 0" xyz="0 0 0.619"/>
-  </joint>
-
-  <loop_joint name="loop_b_c" type="continuous">
-    <axis xyz="0 1 0"/>
-    <link1 link="bar_b" rpy="0 0 0" xyz="0 0 0.415"/>
-    <link2 link="bar_c" rpy="0 0 0" xyz="0 0 0.393"/>
-  </loop_joint>
-
-  <joint name="joint_j_b" type="continuous">
-    <axis xyz="0 1 0"/>
-    <parent link="bar_j"/>
-    <child link="bar_b"/>
-    <origin rpy="0 0 0" xyz="0 0 0.5"/>
-  </joint>
-
-  <link name="bar_e">
-    <inertial>
-      <origin xyz="0 0 0.279" rpy="0 0 0"/>
-      <mass value="1"/>
-        <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
-    </inertial>
-    <visual>
-      <origin xyz="0 0 0.279" rpy="0 0 0"/>
-      <geometry>
-        <cylinder length="0.558" radius="0.01"/>
-      </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
-    </visual>
-  </link> 
-
-  <joint name="joint_j_e" type="continuous">
-    <axis xyz="0 1 0"/>
-    <parent link="bar_j"/>
-    <child link="bar_e"/>
-    <origin rpy="0 0 0" xyz="0 0 0.5"/>
-  </joint>
-
-  <link name="bar_d">
-    <inertial>
-      <origin xyz="0 0 0.2005" rpy="0 0 0"/>
-      <mass value="1"/>
-        <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
-    </inertial>
-    <visual>
-      <origin xyz="0 0 0.2005" rpy="0 0 0"/>
-      <geometry>
-        <cylinder length="0.401" radius="0.01"/>
-      </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
-    </visual>
-  </link> 
-
-  <joint name="joint_e_d" type="continuous">
-    <axis xyz="0 1 0"/>
-    <parent link="bar_e"/>
-    <child link="bar_d"/>
-    <origin rpy="0 0 0" xyz="0 0 0.558"/>
+    <limit lower="1.5708" upper="3.14159" effort="0" velocity="1000"/>
   </joint>
 
   <link name="bars_g_h_i">
@@ -265,7 +181,7 @@
         <cylinder length="0.49" radius="0.01"/>
       </geometry>
       <material>
-        <color rgba=".6353 0 0 1"/>
+        <color rgba=".6353 0.6353 0.6353 1"/>
       </material>
     </visual>
     <visual>
@@ -274,7 +190,7 @@
         <cylinder length="0.367" radius="0.01"/>
       </geometry>
       <material>
-        <color rgba="0 .6353 0 1"/>
+        <color rgba=".6353 0.6353 0.6353 1"/>
       </material>
     </visual>
     <visual>
@@ -283,16 +199,17 @@
         <cylinder length="0.657" radius="0.01"/>
       </geometry>
       <material>
-        <color rgba="0 0 .6353 1"/>
+        <color rgba=".6353 0.6353 0.6353 1"/>
       </material>
     </visual>
   </link>  
 
-  <joint name="joint_k_i" type="continuous">
+  <joint name="joint_k_i" type="revolute">
     <axis xyz="0 1 0"/>
     <parent link="bar_k"/>
     <child link="bars_g_h_i"/>
     <origin rpy="0 0 0" xyz="0 0 0.619"/>
+    <limit lower="-2" upper="-0.05" effort="0" velocity="1000"/>
   </joint>
 
   <loop_joint name="loop_f_g" type="continuous">
@@ -301,11 +218,54 @@
     <link2 link="bars_g_h_i" rpy="0 0 0" xyz="0.3624 0 -0.0582"/>
   </loop_joint>
 
-  <loop_joint name="loop_d_b" type="continuous">
+  <link name="bars_b_d_e">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1"/>
+        <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.279" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.558" radius="0.01"/>
+      </geometry>
+      <material>
+        <color rgba=".6353 0.6353 0.6353 1"/>
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0.1488 0 0.4236" rpy="0 -2.3056 0"/>
+      <geometry>
+        <cylinder length="0.401" radius="0.01"/>
+      </geometry>
+      <material>
+        <color rgba=".6353 0.6353 0.6353 1"/>
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="-0.1489 0 0.1446" rpy="0 -0.8 0"/>
+      <geometry>
+        <cylinder length="0.415" radius="0.01"/>
+      </geometry>
+      <material>
+        <color rgba=".6353 0.6353 0.6353 1"/>
+      </material>
+    </visual>
+  </link>  
+
+  <loop_joint name="loop_b_c" type="continuous">
     <axis xyz="0 1 0"/>
-    <link1 link="bar_d" rpy="0 0 0" xyz="0 0 0.401"/>
-    <link2 link="bar_b" rpy="0 0 0" xyz="0 0 0.415"/>
+    <link1 link="bars_b_d_e" rpy="0 0 0" xyz="-0.2978 0 0.2892"/>
+    <link2 link="bar_c" rpy="0 0 0" xyz="0 0 0.393"/>
   </loop_joint>
+
+  <joint name="joint_j_e" type="revolute">
+    <axis xyz="0 1 0"/>
+    <parent link="bar_j"/>
+    <child link="bars_b_d_e"/>
+    <origin rpy="0 0 0" xyz="0 0 0.50"/>
+    <limit lower="-1.9" upper="-1.0" effort="0" velocity="1000"/>
+  </joint>
 
   <link name="bar_f">
     <inertial>
@@ -324,11 +284,12 @@
     </visual>
   </link> 
 
-  <joint name="joint_e_f" type="continuous">
+  <joint name="joint_e_f" type="revolute">
     <axis xyz="0 1 0"/>
-    <parent link="bar_e"/>
+    <parent link="bars_b_d_e"/>
     <child link="bar_f"/>
     <origin rpy="0 0 0" xyz="0 0 0.558"/>
+    <limit lower="-1.7" upper="0.4" effort="0" velocity="1000"/>
   </joint>
 
   <transmission type="SimpleTransmission" name="fake_actuator">
