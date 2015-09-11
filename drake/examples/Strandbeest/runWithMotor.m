@@ -1,4 +1,4 @@
-function runPassiveLCP
+function runWithMotor
 % To learn more about Stranbeests, created by Theo Jansen, see http://www.strandbeest.com/
 % Leg measurements taken from http://files.tested.com/photos/2015/04/05/74549-leg-measurement.jpg
 
