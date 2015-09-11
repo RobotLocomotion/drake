@@ -48,6 +48,11 @@
     <origin rpy="0 0 0" xyz="0 0 0.078"/>
   </joint>
 
+  <transmission name="crossbar_crank_transmission" type="pr2_mechanism_model/SimpleTransmission">
+    <joint name="joint_crossbar_crank"/>
+    <actuator name="crossbar_crank_motor"/>
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
 
   <xacro:macro name="positioned_leg_pair" params="name offset angle">
 	  <xacro:strandbeest_leg_pair prefix="${name}">
@@ -78,10 +83,10 @@
 	<xacro:positioned_leg_pair name="pair01" offset="-0.5" angle="0">
 	</xacro:positioned_leg_pair>
 
-<!-- 	<xacro:positioned_leg_pair name="pair02" offset="-0.3" angle="${2*pi/3}">
+	<xacro:positioned_leg_pair name="pair02" offset="-0.3" angle="${2*pi/3}">
 	</xacro:positioned_leg_pair>
- -->
-<!-- 	<xacro:positioned_leg_pair name="pair03" offset="-0.1" angle="${4*pi/3}">
+
+	<xacro:positioned_leg_pair name="pair03" offset="-0.1" angle="${4*pi/3}">
 	</xacro:positioned_leg_pair>
 
 	<xacro:positioned_leg_pair name="pair04" offset="0.1" angle="${pi/3}">
@@ -92,5 +97,5 @@
 
 	<xacro:positioned_leg_pair name="pair06" offset="0.5" angle="${5*pi/3}">
 	</xacro:positioned_leg_pair>
- -->
+
 </robot>

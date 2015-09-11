@@ -1,19 +1,24 @@
 function runPassiveLCP
 
 options.twoD = false;
-% options.floating = true;
+options.floating = true;
 w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
 p = TimeSteppingRigidBodyManipulator('Strandbeest.urdf',.01,options);
 warning(w);
-% p = p.setTerrain(RigidBodyFlatTerrain()).compile();
+p = p.setTerrain(RigidBodyFlatTerrain()).compile();
 v = p.constructVisualizer();
-% load('x0_no_floating_base.mat', 'x0');
-% nq = p.getNumPositions();
-% x0 = [0;0;2;0;0;0; x0(1:nq); zeros(6,1); x0(nq+1:end)];
-v.inspector();
 
-% sys = cascade(p, v);
+controller = AffineSystem([], [], [], [], [], [], [], zeros(1, p.getNumOutputs()), 10);
+controller = controller.setInputFrame(p.getOutputFrame());
+controller = controller.setOutputFrame(p.getInputFrame());
+sys = feedback(p, controller);
 
-% xtraj = sys.simulate([0 5], x0);
+sys = cascade(p, v);
 
-% v.playback(xtraj, struct('slider', true));
+x0 = p.getInitialState();
+x0(4:6) = 0;
+x0(3) = 1.5;
+% v.inspector();
+xtraj = sys.simulate([0 5], x0);
+
+v.playback(xtraj, struct('slider', true, 'gui_control_interface', true));
