@@ -1,4 +1,4 @@
-load data/first_3d.mat
+load data/longer_step_refined_3d.mat
 
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 warning('off','Drake:RigidBodyManipulator:WeldedLinkInd');
@@ -25,7 +25,7 @@ p = RigidBodyManipulator('../urdf/atlas_simple_contact_noback.urdf',options);
   R_periodic(7:12,13:18) = diag([-1;-1;1;1;1;-1]); %leg joints w/symmetry
   R_periodic(13:18,7:12) = diag([-1;-1;1;1;1;-1]); %leg joints w/symmetry
   options.periodic_jump = R_periodic;
-  options.periodic = true;
+  options.periodic = false;
   
 % R = cell(0);
 % xtraj_=xtraj{1}.append(xtraj{2}).append(xtraj{3}).append(xtraj{4}).append(xtraj{5});

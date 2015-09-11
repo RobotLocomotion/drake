@@ -160,6 +160,12 @@ classdef FullStateQPController < DrakeSystem
   end
     
   function y=output(obj,t,~,x)
+    global utraj_pts utraj_ts
+    
+    if isempty(utraj_pts)
+      utraj_pts = []; 
+      utraj_ts = [];
+    end
     ctrl_data = obj.controller_data;
     
     r = obj.robot;
@@ -464,6 +470,15 @@ classdef FullStateQPController < DrakeSystem
 %     beta=Ibeta*alpha
     y = Iu*alpha;
 %     y = u0;
+
+    nc_np = [nc,np]
+
+    utraj_pts = [utraj_pts y];
+    utraj_ts = [utraj_ts t];
+    if any(alpha-lb == 0) || any(ub-alpha==0)
+      blah=2;
+    end
+
   end
 
 

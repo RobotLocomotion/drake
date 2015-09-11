@@ -16,8 +16,8 @@ options.ignore_self_collisions = true;
 options.enable_fastqp = false;
 
 s = '../urdf/atlas_simple_contact_noback.urdf';
-traj_file = 'data/atlas_3d_lqr2.mat'; 
-% traj_file = 'data/atlas_longer_3d_lqr.mat'; 
+% traj_file = 'data/atlas_3d_lqr2.mat'; 
+traj_file = 'data/longer_step_refined_lqr11.mat'; 
 options.terrain = RigidBodyFlatTerrain();
 modes = [8,3,4,4,7,8];
 
@@ -26,7 +26,7 @@ r = Atlas(s,options);
 warning(w);
 
 nx = getNumStates(r);
-nq = getNumPositions(r)
+nq = getNumPositions(r);
 nu = getNumInputs(r);
 
 v = r.constructVisualizer;
@@ -55,7 +55,9 @@ options.left_foot_name = 'l_foot';
 %modes = [8,6,1,3,4,4,2,1,7,8];
 
 
-modes = repmat(modes,1,repeat_n-1);
+if repeat_n >1
+  modes = repmat(modes,1,repeat_n-1);
+end
 lfoot_ind = findLinkId(r,options.left_foot_name);
 rfoot_ind = findLinkId(r,options.right_foot_name);  
 
@@ -125,13 +127,13 @@ ctrl_data = FullStateQPControllerData(true,struct(...
 options.timestep = .001;
 options.dt = .001;
 options.cpos_slack_limit = inf;
-options.w_cpos_slack = 0.01;
+options.w_cpos_slack = 1;
 options.phi_slack_limit = inf;
 options.w_phi_slack = 0.0;
 options.w_qdd = 0*ones(nq,1);
 options.w_grf = 0;
 options.Kp_accel = 0;
-options.contact_threshold = 1e-4; %was 1e-4
+options.contact_threshold = 5e-4;
 options.offset_x = false;
 qp = FullStateQPController(r,ctrl_data,options);
 
@@ -155,7 +157,7 @@ traj = simulate(sys,[t0 tf],x0);
 playback(v,traj,struct('slider',true));
 
 
-save('data/atlas_3d_traj_exec.mat','xtraj','traj');
+% save('data/atlas_3d_traj_exec.mat','xtraj','traj');
 
 
 
@@ -174,24 +176,66 @@ if 1
   xtraj_pts = xtraj.eval(traj_ts);
   
   figure(111);
+  max_y = -inf;
+  min_y = inf;
   for i=1:nq
     subplot(2,ceil(nq/2),i);
 %     figure(111+i);
     hold on;
-    title(r.getStateFrame.coordinates{i});
-    plot(traj_ts,xtraj_pts(i,:),'g.-');
-    plot(traj_ts,traj_pts(i,:),'r.-');
+    title(r.getStateFrame.coordinates{i},'interpreter','none');
+%     plot(traj_ts,xtraj_pts(i,:),'g.-');
+%     plot(traj_ts,traj_pts(i,:),'r.-');
+    y = abs(traj_pts(i,:)-xtraj_pts(i,:));
+    plot(traj_ts,y,'r.-');
+    max_y = max(max_y,max(y));
+    min_y = min(min_y,min(y));
     hold off;
+  end
+  for i=1:nq
+    subplot(2,ceil(nq/2),i);
+    axis([-inf inf min_y max_y]);
   end
   
   figure(112);
+  max_y = -inf;
+  min_y = inf;
   for i=1:nq
     subplot(2,ceil(nq/2),i);
 %     figure(555+i);
     hold on;
-    title(r.getStateFrame.coordinates{nq+i});
-    plot(traj_ts,xtraj_pts(nq+i,:),'g.-');
-    plot(traj_ts,traj_pts(nq+i,:),'r.-');
+    title(r.getStateFrame.coordinates{nq+i},'interpreter','none');
+%     plot(traj_ts,xtraj_pts(nq+i,:),'g.-');
+%     plot(traj_ts,traj_pts(nq+i,:),'r.-');
+    y = abs(traj_pts(nq+i,:)-xtraj_pts(nq+i,:));
+    plot(traj_ts,y,'r.-');
+    max_y = max(max_y,max(y));
+    min_y = min(min_y,min(y));
+    hold off;
+  end
+  for i=1:nq
+    subplot(2,ceil(nq/2),i);
+    axis([-inf inf min_y max_y]);
+  end
+  
+  global utraj_pts utraj_ts
+  
+  if iscell(utraj)
+    utraj_cell = utraj;
+    utraj = utraj_cell{1};
+    for i=2:length(utraj_cell);
+      utraj=utraj.append(utraj_cell{i});
+    end
+  end
+  
+  u0_pts = utraj.eval(traj_ts);
+  
+  figure(116);
+  for i=1:nu
+    subplot(2,ceil(nu/2),i);
+    hold on;
+    title(r.getInputFrame.coordinates{i});
+    plot(traj_ts,u0_pts(i,:),'g.-');
+    plot(utraj_ts,utraj_pts(i,:),'r.-');
     hold off;
   end
 end
