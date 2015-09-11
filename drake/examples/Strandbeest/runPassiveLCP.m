@@ -3,7 +3,7 @@ function runPassiveLCP
 options.twoD = false;
 options.floating = false;
 w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
-p = TimeSteppingRigidBodyManipulator('LegAssembly.urdf',.01,options);
+p = TimeSteppingRigidBodyManipulator('Strandbeest.urdf',.01,options);
 % p = p.setTerrain(RigidBodyFlatTerrain()).compile();
 warning(w);
 v = p.constructVisualizer();
