@@ -49,9 +49,9 @@ RigidBodyManipulator::RigidBodyManipulator(const std::string &urdf_filename, con
   b->body_index = 0;
   bodies.push_back(b);
 
-  addRobotFromURDF(urdf_filename,floating_base_type);
-
   initialized = false;
+
+  addRobotFromURDF(urdf_filename,floating_base_type);
 }
 
 RigidBodyManipulator::RigidBodyManipulator(void) :
