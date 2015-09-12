@@ -15,7 +15,6 @@ classdef InstantaneousQPController
     data_mex_ptr;
     support_detect_mex_ptr;
     use_bullet = false;
-    default_terrain_height = 0;
     param_sets
     gurobi_options = struct();
     solver = 0;
@@ -73,14 +72,6 @@ classdef InstantaneousQPController
         obj.gurobi_options.barconvtol = 5e-4;
       end
 
-      terrain = getTerrain(r);
-      obj.default_terrain_height = r.getTerrainHeight([0;0]);
-      if isa(terrain,'DRCTerrainMap')
-        terrain_map_ptr = terrain.map_handle.getPointerForMex();
-      else
-        terrain_map_ptr = nullPointer();
-      end
-
       state_coordinates = obj.robot.getStateFrame().getCoordinateNames();
       coordinate_names = struct(...
         'state', {state_coordinates(1:obj.robot.getNumPositions())},...
@@ -95,8 +86,6 @@ classdef InstantaneousQPController
                                        obj.robot.getB(),...
                                        obj.robot.umin,...
                                        obj.robot.umax,...
-                                       terrain_map_ptr,...
-                                       obj.default_terrain_height,...
                                        obj.solver==0,...
                                        obj.gurobi_options,...
                                        coordinate_names);

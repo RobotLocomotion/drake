@@ -141,7 +141,6 @@ std::vector<RigidBodySupportState> setUpSupports(const mxArray* mex_supports)
       RigidBodySupportStateElement support_state_element;
       support_state_element.body = body_ids[i] - 1; // base 1 to base zero
       support_state_element.contact_points = matlabToEigenMap<3, Dynamic>(mxGetCell(mxGetFieldOrPropertySafe(mex_supports, support_num, "contact_pts"), i));
-      support_state_element.use_contact_surface = mxGetLogicals(mxGetFieldOrPropertySafe(mex_supports, support_num, "use_support_surface"))[i];
       support_state_element.support_surface = matlabToEigenMap<4, 1>(mxGetCell(mxGetFieldOrPropertySafe(mex_supports, support_num, "support_surface"), i));
       support_state.push_back(support_state_element);
     }
