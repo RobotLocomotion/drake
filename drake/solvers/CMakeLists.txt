@@ -3,7 +3,7 @@
 
 pods_find_pkg_config(gurobi)
 
-if (0) #gurobi_FOUND)
+if (gurobi_FOUND)
 
   add_library(drakeQP QP.cpp)
   set_target_properties(drakeQP PROPERTIES COMPILE_FLAGS -fPIC)

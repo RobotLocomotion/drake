@@ -234,7 +234,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
 
   auto phiPgrad = model->positionConstraints<double>(1);
   auto phiP = phiPgrad.value();
-  auto JP = phiPgrad.gradient();
+  auto JP = phiPgrad.gradient().value();
   model->jointLimitConstraints(q, phiL, JL);
   
   const size_t nP = phiP.size();
