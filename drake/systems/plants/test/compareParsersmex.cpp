@@ -38,7 +38,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
   // Compute coordinate transform between the two models (in case they are not identical)
   MatrixXd P = MatrixXd::Zero(cpp_model->num_positions,matlab_model->num_positions);  // projection from the coordinates of matlab_model to cpp_model
-  for (int i=0; i<cpp_model->num_bodies; i++) {
+  for (int i=0; i<cpp_model->bodies.size(); i++) {
   	if (cpp_model->bodies[i]->hasParent() && cpp_model->bodies[i]->getJoint().getNumPositions()>0) {
   		shared_ptr<RigidBody> b = matlab_model->findJoint(cpp_model->bodies[i]->getJoint().getName());
   		if (b==nullptr) continue;
@@ -94,26 +94,13 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 		}
 
 		{ // compare position constraints
-			auto matlab_phi = matlab_model->positionConstraints(matlab_cache, 1);
-			auto cpp_phi = cpp_model->positionConstraints(cpp_cache, 1);
+            auto matlab_phi = matlab_model->positionConstraints(matlab_cache, 1);
+            auto cpp_phi = cpp_model->positionConstraints(cpp_cache, 1);
 
 			if (!matlab_phi.value().isApprox(cpp_phi.value(),1e-8)) {
-				cout << endl;
-				for (int i=0; i<matlab_model->loops.size(); i++) {
-					// could be the same error vector, but in a different coordinate frame
-					Vector3d m_phi = matlab_phi.value().middleRows(i*3,3);
-					Vector3d c_phi = cpp_phi.value().middleRows(i*3,3);
-
-					// rotate the vector into the non-fixed coordinate system
-					shared_ptr<RigidBody> b = cpp_model->loops[i].bodyB;
-					while (b->hasParent() && b->getJoint().getNumPositions()==0) {
-						c_phi = b->getJoint().getTransformToParentBody().linear() * c_phi;
-						b = b->parent;
-					}
-					if (!m_phi.isApprox(c_phi,1e-8)) {
-						mexErrMsgTxt("ERROR: phi doesn't match (see terminal output)");
-					}
-				}
+                cout << "matlab_phi = " << matlab_phi.value().transpose() << endl;
+                cout << "cpp_phi = " << cpp_phi.value().transpose() << endl;
+                mexErrMsgTxt("ERROR: phi doesn't match");
 			}
 		}
   }
