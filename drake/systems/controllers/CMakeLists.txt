@@ -12,6 +12,9 @@ pods_install_pkg_config_file(drake-control-util
 
 pods_find_pkg_config(gurobi)
 if (gurobi_FOUND)
+  include_directories (${PROJECT_SOURCE_DIR}/systems/trajectories )
+  include_directories (${PROJECT_SOURCE_DIR}/systems/plants )
+  include_directories (${PROJECT_SOURCE_DIR}/solvers )
   add_library(drakeQPCommon SHARED QPCommon.cpp)
   target_link_libraries(drakeQPCommon drakeControlUtil drakeQP drakeTrajectories drakeLCMUtil drakeSide)
   pods_use_pkg_config_packages(drakeQPCommon lcm)
