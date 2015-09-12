@@ -125,7 +125,7 @@ static void gevalNumerical(void (*func_ptr)(const VectorXd &, VectorXd &),const 
 }
 
 
-static void IK_constraint_fun(double* x,double* c, double* G)
+static void IK_constraint_fun(KinematicsCache<double>& cache, double* x, double* c, double* G)
 {
   double* qsc_weights=nullptr;
   if(qscActiveFlag)
@@ -140,7 +140,7 @@ static void IK_constraint_fun(double* x,double* c, double* G)
     nc = st_kc_array[i]->getNumConstraint(ti);
     VectorXd cnst(nc);
     MatrixXd dcnst(nc,nq);
-    st_kc_array[i]->eval(ti,cnst,dcnst);
+    st_kc_array[i]->eval(ti, cache, cnst, dcnst);
     memcpy(&c[nc_accum],cnst.data(),sizeof(double)*nc);
     memcpy(&G[ng_accum],dcnst.data(),sizeof(double)*nc*nq);
     nc_accum += nc;
@@ -155,7 +155,7 @@ static void IK_constraint_fun(double* x,double* c, double* G)
     int num_qsc_cnst = qsc_ptr->getNumConstraint(ti);
     VectorXd cnst(num_qsc_cnst-1);
     MatrixXd dcnst(num_qsc_cnst-1,nq+num_qsc_pts);
-    qsc_ptr->eval(ti,qsc_weights,cnst,dcnst);
+    qsc_ptr->eval(ti, cache, qsc_weights, cnst, dcnst);
     memcpy(c+nc_accum,cnst.data(),sizeof(double)*(num_qsc_cnst-1));
     c[nc_accum+num_qsc_cnst-1] = 0.0;
     memcpy(G+ng_accum,dcnst.data(),sizeof(double)*dcnst.size());
@@ -182,10 +182,9 @@ static int snoptIKfun(snopt::integer *Status, snopt::integer *n, snopt::doublere
     snopt::doublereal ru[], snopt::integer *lenru)
 {
   Map<VectorXd> q(x, nq);
-  VectorXd v = VectorXd::Zero(0);
-  model->doKinematics(q, v);
+  KinematicsCache<double> cache = model->doKinematics(q, 0); // TODO: pass this into the function?
   IK_cost_fun(x,F[0],G);
-  IK_constraint_fun(x,&F[1],&G[nq]);
+  IK_constraint_fun(cache, x, &F[1], &G[nq]);
   return 0;
 }
 
@@ -272,6 +271,7 @@ static int snoptIKtrajfun(snopt::integer *Status, snopt::integer *n, snopt::doub
   IKtraj_cost_fun(q,qdot0,qdotf,F[0],G);
   int nf_cum = 1;
   int nG_cum = nq*(num_qfree+num_qdotfree);
+
   for(int i = qstart_idx;i<nT;i++)
   {
     double* qi;
@@ -284,10 +284,9 @@ static int snoptIKtrajfun(snopt::integer *Status, snopt::integer *n, snopt::doub
       qi = x+(i-qstart_idx)*nq;
     }
     Map<VectorXd> qvec(qi, nq);
-    VectorXd v = VectorXd::Zero(0);
-    model->doKinematics(qvec, v);
+    KinematicsCache<double> cache = model->doKinematics(qvec, 0);
     ti = &t[i];
-    IK_constraint_fun(qi,F+nf_cum,G+nG_cum);
+    IK_constraint_fun(cache, qi, F + nf_cum, G + nG_cum);
     nf_cum += nc_array[i];
     nG_cum += nG_array[i];
   }
@@ -307,8 +306,7 @@ static int snoptIKtrajfun(snopt::integer *Status, snopt::integer *n, snopt::doub
       double t_j = t_inbetween[i](j)+t[i];
       double* qi = q_inbetween.data()+(inbetween_idx+j)*nq;
       Map<VectorXd> qvec(qi, nq);
-      VectorXd v = VectorXd::Zero(0);
-      model->doKinematics(qvec, v);
+      KinematicsCache<double> cache = model->doKinematics(qvec, 0);
       for(int k = 0;k<num_st_kc;k++)
       {
         if(st_kc_array[k]->isTimeValid(&t_j))
@@ -316,7 +314,7 @@ static int snoptIKtrajfun(snopt::integer *Status, snopt::integer *n, snopt::doub
           int nc = st_kc_array[k]->getNumConstraint(&t_j);
           VectorXd c_k(nc);
           MatrixXd dc_k(nc,nq);
-          st_kc_array[k]->eval(&t_j,c_k,dc_k);
+          st_kc_array[k]->eval(&t_j, cache, c_k, dc_k);
           memcpy(F+nf_cum,c_k.data(),sizeof(double)*nc);
           MatrixXd dc_kdx = MatrixXd::Zero(nc,nq*(num_qfree+num_qdotfree));
           dc_kdx.block(0,0,nc,nq*num_qfree) = dc_k*dqInbetweendqknot[i].block(nq*j,nq*qstart_idx,nq,nq*num_qfree);

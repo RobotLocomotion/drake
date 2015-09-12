@@ -10,12 +10,9 @@
 #include <algorithm>
 #include <string>
 #include <regex>
-#include <stdexcept>
 #include <limits>
 #include "RigidBodyConstraint.h"
-//DEBUG
-//#include <stdexcept>
-//END_DEBUG
+#include "KinematicsCache.h"
 
 using namespace std;
 
@@ -55,12 +52,6 @@ RigidBodyManipulator::RigidBodyManipulator(const std::string &urdf_filename, con
   addRobotFromURDF(urdf_filename,floating_base_type);
 
   initialized = false;
-
-  position_kinematics_cached = false;
-  gradients_cached = false;
-  velocity_kinematics_cached = false;
-  jdotV_cached = false;
-  cached_inertia_gradients_order = -1;
 }
 
 RigidBodyManipulator::RigidBodyManipulator(void) :
@@ -75,12 +66,6 @@ RigidBodyManipulator::RigidBodyManipulator(void) :
   bodies.push_back(b);
 
   initialized = false;
-
-  position_kinematics_cached = false;
-  gradients_cached = false;
-  velocity_kinematics_cached = false;
-  jdotV_cached = false;
-  cached_inertia_gradients_order = -1;
 }
 
 RigidBodyManipulator::~RigidBodyManipulator(void)
@@ -149,7 +134,6 @@ void RigidBodyManipulator::compile(void)
 
   for (size_t i=0; i<bodies.size(); i++) {
     bodies[i]->body_index = i;
-    bodies[i]->setN(num_positions, num_velocities);
   }
 
   B.resize(num_velocities,actuators.size());
@@ -157,20 +141,6 @@ void RigidBodyManipulator::compile(void)
   for (size_t ia=0; ia<actuators.size(); ia++)
     for (int i=0; i<actuators[ia].body->getJoint().getNumVelocities(); i++)
       B(actuators[ia].body->velocity_num_start+i,ia) = actuators[ia].reduction;
-
-  I_world.resize(bodies.size());
-  Ic_new.resize(bodies.size());
-  for (int i = 0; i < bodies.size(); i++) {
-    I_world[i] = Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
-    Ic_new[i] = Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
-  }
-
-  dI_world.resize(bodies.size());
-  dIc_new.resize(bodies.size());
-  for (int i = 0; i < bodies.size(); i++) {
-    dI_world[i] = MatrixXd::Zero(I_world[i].size(), num_positions);
-    dIc_new[i] = MatrixXd::Zero(Ic_new[i].size(), num_positions);
-  }
 
   // gather joint limits in RBM vector
   joint_limit_min = VectorXd::Constant(num_positions, -std::numeric_limits<double>::infinity());
@@ -184,23 +154,14 @@ void RigidBodyManipulator::compile(void)
     }
   }
 
-  for (int i=0; i<bodies.size(); i++) {
-    auto& body = bodies[i];
-    if (!body->hasParent())
-      updateCollisionElements(body);  // update static objects (not done in the kinematics loop)
+  updateStaticCollisionElements();
 
-    // update the body's contact points
-    Matrix3Xd contact_pts;
-    getTerrainContactPoints(*body, body->contact_pts);
+  for (auto it = bodies.begin(); it != bodies.end(); ++it) {
+    RigidBody& body = **it;
+    getTerrainContactPoints(body, body.contact_pts);
   }
 
-  cached_q.resize(num_positions);
-  cached_v.resize(num_velocities);
-
-  cached_q_new.resize(num_positions);
-  cached_v_new.resize(num_velocities);
-
-  initialized=true;
+  initialized = true;
 }
 
 void RigidBodyManipulator::getRandomConfiguration(Eigen::VectorXd& q, std::default_random_engine& generator) const
@@ -245,14 +206,10 @@ string RigidBodyManipulator::getStateName(int state_num) const
 
 map<string, int> RigidBodyManipulator::computePositionNameToIndexMap() const
 {
-  const RigidBodyManipulator* const model = this;
-
-  const std::shared_ptr<RigidBody> worldBody = model->bodies[0];
-
   map<string, int> name_to_index_map;
 
   for (int i = 0; i < this->num_positions; ++i) {
-      name_to_index_map[getPositionName(i)] = i;
+    name_to_index_map[getPositionName(i)] = i;
   }
   return name_to_index_map;
 }
@@ -267,14 +224,33 @@ DrakeCollision::ElementId RigidBodyManipulator::addCollisionElement(const RigidB
   return id;
 }
 
-void RigidBodyManipulator::updateCollisionElements(const shared_ptr<RigidBody>& body)
+void RigidBodyManipulator::updateCollisionElements(const RigidBody& body, const Eigen::Transform<double, 3, Eigen::Isometry>& transform_to_world)
 {
-  for (auto id_iter = body->collision_element_ids.begin();
-       id_iter != body->collision_element_ids.end();
-       ++id_iter) {
-    collision_model->updateElementWorldTransform(*id_iter, body->T_new.matrix());
+  for (auto id_iter = body.collision_element_ids.begin(); id_iter != body.collision_element_ids.end(); ++id_iter) {
+    collision_model->updateElementWorldTransform(*id_iter, transform_to_world.matrix());
   }
-};
+}
+
+void RigidBodyManipulator::updateStaticCollisionElements()
+{
+  for (auto it = bodies.begin(); it != bodies.end(); ++it) {
+    RigidBody& body = **it;
+    if (!body.hasParent()) {
+      updateCollisionElements(body, Isometry3d::Identity());
+    }
+  }
+}
+
+void RigidBodyManipulator::updateDynamicCollisionElements(const KinematicsCache<double>& cache)
+{
+  for (auto it = bodies.begin(); it != bodies.end(); ++it) {
+    const RigidBody& body = **it;
+    if (body.hasParent()) {
+      updateCollisionElements(body, cache.getElement(body).transform_to_world);
+    }
+  }
+  collision_model->updateModel();
+}
 
 void RigidBodyManipulator::getTerrainContactPoints(const RigidBody& body, Eigen::Matrix3Xd &terrain_points) const
 {
@@ -282,9 +258,7 @@ void RigidBodyManipulator::getTerrainContactPoints(const RigidBody& body, Eigen:
   size_t num_points = 0;
   terrain_points.resize(Eigen::NoChange,0);
 
-  for (auto id_iter = body.collision_element_ids.begin();
-       id_iter != body.collision_element_ids.end();
-       ++id_iter) {
+  for (auto id_iter = body.collision_element_ids.begin(); id_iter != body.collision_element_ids.end();++id_iter) {
 
     Matrix3Xd element_points;
     collision_model->getTerrainContactPoints(*id_iter, element_points);
@@ -294,24 +268,29 @@ void RigidBodyManipulator::getTerrainContactPoints(const RigidBody& body, Eigen:
   }
 }
 
-bool RigidBodyManipulator::collisionRaycast(const Matrix3Xd &origins,
+bool RigidBodyManipulator::collisionRaycast(const KinematicsCache<double>& cache,
+                                            const Matrix3Xd &origins,
                                             const Matrix3Xd &ray_endpoints,
                                             VectorXd &distances,
                                             bool use_margins )
 {
+  updateDynamicCollisionElements(cache);
   return collision_model->collisionRaycast(origins, ray_endpoints, use_margins, distances);
 }
 
 
-bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
-                                            Matrix3Xd& normal,
-                                            Matrix3Xd& xA,
-                                            Matrix3Xd& xB,
-                                            vector<int>& bodyA_idx,
-                                            vector<int>& bodyB_idx,
-                                            const vector<DrakeCollision::ElementId>& ids_to_check,
-                                            bool use_margins)
+bool RigidBodyManipulator::collisionDetect(const KinematicsCache<double>& cache,
+                                           VectorXd& phi,
+                                           Matrix3Xd& normal,
+                                           Matrix3Xd& xA,
+                                           Matrix3Xd& xB,
+                                           vector<int>& bodyA_idx,
+                                           vector<int>& bodyB_idx,
+                                           const vector<DrakeCollision::ElementId>& ids_to_check,
+                                           bool use_margins)
 {
+  updateDynamicCollisionElements(cache);
+
   vector<DrakeCollision::PointPair> points;
   //DEBUG
   //cout << "RigidBodyManipulator::collisionDetect: calling collision_model->closestPointsAllToAll" << endl;
@@ -348,15 +327,16 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
   return points_found;
 }
 
-bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
-                                            Matrix3Xd& normal,
-                                            Matrix3Xd& xA,
-                                            Matrix3Xd& xB,
-                                            vector<int>& bodyA_idx,
-                                            vector<int>& bodyB_idx,
-                                            const vector<int>& bodies_idx,
-                                            const set<string>& active_element_groups,
-                                            bool use_margins)
+bool RigidBodyManipulator::collisionDetect(const KinematicsCache<double>& cache,
+                                           VectorXd& phi,
+                                           Matrix3Xd& normal,
+                                           Matrix3Xd& xA,
+                                           Matrix3Xd& xB,
+                                           vector<int>& bodyA_idx,
+                                           vector<int>& bodyB_idx,
+                                           const vector<int>& bodies_idx,
+                                           const set<string>& active_element_groups,
+                                           bool use_margins)
 {
   vector<DrakeCollision::ElementId> ids_to_check;
   for (auto body_idx_iter = bodies_idx.begin();
@@ -370,17 +350,18 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
       }
     }
   }
-  return collisionDetect(phi, normal, xA, xB, bodyA_idx, bodyB_idx, ids_to_check, use_margins);
+  return collisionDetect(cache, phi, normal, xA, xB, bodyA_idx, bodyB_idx, ids_to_check, use_margins);
 }
 
-bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
-                                            Matrix3Xd& normal,
-                                            Matrix3Xd& xA,
-                                            Matrix3Xd& xB,
-                                            vector<int>& bodyA_idx,
-                                            vector<int>& bodyB_idx,
-                                            const vector<int>& bodies_idx,
-                                            bool use_margins)
+bool RigidBodyManipulator::collisionDetect(const KinematicsCache<double>& cache,
+                                           VectorXd& phi,
+                                           Matrix3Xd& normal,
+                                           Matrix3Xd& xA,
+                                           Matrix3Xd& xB,
+                                           vector<int>& bodyA_idx,
+                                           vector<int>& bodyB_idx,
+                                           const vector<int>& bodies_idx,
+                                           bool use_margins)
 {
   vector<DrakeCollision::ElementId> ids_to_check;
   for (auto body_idx_iter = bodies_idx.begin();
@@ -390,17 +371,18 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
       bodies[*body_idx_iter]->appendCollisionElementIdsFromThisBody(ids_to_check);
     }
   }
-  return collisionDetect(phi, normal, xA, xB, bodyA_idx, bodyB_idx, ids_to_check, use_margins);
+  return collisionDetect(cache, phi, normal, xA, xB, bodyA_idx, bodyB_idx, ids_to_check, use_margins);
 }
 
-bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
-                                            Matrix3Xd& normal,
-                                            Matrix3Xd& xA,
-                                            Matrix3Xd& xB,
-                                            vector<int>& bodyA_idx,
-                                            vector<int>& bodyB_idx,
-                                            const set<string>& active_element_groups,
-                                            bool use_margins)
+bool RigidBodyManipulator::collisionDetect(const KinematicsCache<double>& cache,
+                                           VectorXd& phi,
+                                           Matrix3Xd& normal,
+                                           Matrix3Xd& xA,
+                                           Matrix3Xd& xB,
+                                           vector<int>& bodyA_idx,
+                                           vector<int>& bodyB_idx,
+                                           const set<string>& active_element_groups,
+                                           bool use_margins)
 {
   vector<DrakeCollision::ElementId> ids_to_check;
   for (auto body_iter = bodies.begin();
@@ -412,16 +394,17 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
       (*body_iter)->appendCollisionElementIdsFromThisBody(*group_iter, ids_to_check);
     }
   }
-  return collisionDetect(phi, normal, xA, xB, bodyA_idx, bodyB_idx, ids_to_check, use_margins);
+  return collisionDetect(cache, phi, normal, xA, xB, bodyA_idx, bodyB_idx, ids_to_check, use_margins);
 }
 
-bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
-                                            Matrix3Xd& normal,
-                                            Matrix3Xd& xA,
-                                            Matrix3Xd& xB,
-                                            vector<int>& bodyA_idx,
-                                            vector<int>& bodyB_idx,
-                                            bool use_margins)
+bool RigidBodyManipulator::collisionDetect(const KinematicsCache<double>& cache,
+                                           VectorXd& phi,
+                                           Matrix3Xd& normal,
+                                           Matrix3Xd& xA,
+                                           Matrix3Xd& xB,
+                                           vector<int>& bodyA_idx,
+                                           vector<int>& bodyB_idx,
+                                           bool use_margins)
 {
   vector<DrakeCollision::ElementId> ids_to_check;
   for (auto body_iter = bodies.begin();
@@ -429,18 +412,18 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
        ++body_iter) {
     (*body_iter)->appendCollisionElementIdsFromThisBody(ids_to_check);
   }
-  return collisionDetect(phi, normal, xA, xB, bodyA_idx, bodyB_idx, ids_to_check, use_margins);
+  return collisionDetect(cache, phi, normal, xA, xB, bodyA_idx, bodyB_idx, ids_to_check, use_margins);
 }
 
-void RigidBodyManipulator::potentialCollisions(VectorXd& phi,
-                                            Matrix3Xd& normal,
-                                            Matrix3Xd& xA,
-                                            Matrix3Xd& xB,
-                                            vector<int>& bodyA_idx,
-                                            vector<int>& bodyB_idx,
-                                            bool use_margins)
+void RigidBodyManipulator::potentialCollisions(const KinematicsCache<double>& cache, VectorXd& phi,
+                                               Matrix3Xd& normal,
+                                               Matrix3Xd& xA,
+                                               Matrix3Xd& xB,
+                                               vector<int>& bodyA_idx,
+                                               vector<int>& bodyB_idx,
+                                               bool use_margins)
 {
-
+  updateDynamicCollisionElements(cache);
   vector<DrakeCollision::PointPair> potential_collisions;
   potential_collisions = collision_model->potentialCollisionPoints(use_margins);
   size_t num_potential_collisions = potential_collisions.size();
@@ -469,18 +452,21 @@ void RigidBodyManipulator::potentialCollisions(VectorXd& phi,
   }
 }
 
-vector<size_t> RigidBodyManipulator::collidingPoints(
+vector<size_t> RigidBodyManipulator::collidingPoints(const KinematicsCache<double>& cache,
     const vector<Vector3d>& points,
     double collision_threshold)
 {
+  updateDynamicCollisionElements(cache);
   return collision_model->collidingPoints(points, collision_threshold);
 }
 
-bool RigidBodyManipulator::allCollisions(vector<int>& bodyA_idx,
+bool RigidBodyManipulator::allCollisions(const KinematicsCache<double>& cache, vector<int>& bodyA_idx,
                                          vector<int>& bodyB_idx,
                                          Matrix3Xd& xA_in_world, Matrix3Xd& xB_in_world,
                                          bool use_margins)
 {
+  updateDynamicCollisionElements(cache);
+
   vector<DrakeCollision::PointPair> points;
   bool points_found = collision_model->collisionPointsAllToAll(use_margins, points);
 
@@ -523,264 +509,52 @@ void RigidBodyManipulator::warnOnce(const string& id, const string& msg)
   //return return_val;
 //};
 
-template <typename DerivedQ, typename DerivedV>
-void RigidBodyManipulator::doKinematics(const MatrixBase<DerivedQ> &q, const MatrixBase<DerivedV> &v, bool compute_gradients, bool compute_JdotV) {
-  EIGEN_STATIC_ASSERT_VECTOR_ONLY(MatrixBase<DerivedQ>);
-  EIGEN_STATIC_ASSERT_VECTOR_ONLY(MatrixBase<DerivedV>);
-  assert(q.rows() == num_positions);
-  assert(v.rows() == num_velocities || v.rows() == 0);
-  if (!initialized)
-    compile();
-
-  compute_JdotV = compute_JdotV && (v.rows() == num_velocities); // no sense in computing Jdot times v if v is not passed in
-
-  if (position_kinematics_cached) {
-    bool skip = true;
-    if (compute_gradients && !gradients_cached) {
-      skip = false;
-    }
-    if (v.rows() == num_velocities) {
-      if (!velocity_kinematics_cached) {
-        skip = false;
-      }
-      for (int i = 0; i < num_velocities; i++) {
-        if (v[i] != cached_v_new[i]) {
-          skip = false;
-          break;
-        }
-      }
-    }
-    if (compute_JdotV && !jdotV_cached)
-      skip = false;
-    for (int i = 0; i < num_positions; i++) {
-      if (q[i] != cached_q_new[i]) {
-        skip = false;
-        break;
-      }
-    }
-    if (skip) {
-      return;
-    }
-  }
-  position_kinematics_cached = true; // doing this here because there is a geometricJacobian within doKinematics below which checks for this
-
-  int nq = num_positions;
-  int gradient_order = compute_gradients ? 1 : 0;
-  GradientVar<double, TWIST_SIZE, 1> joint_twist(TWIST_SIZE, 1, nq, gradient_order);
-
-  // other bodies
-  for (int i = 0; i < bodies.size(); i++) {
-    RigidBody& body = *bodies[i];
-
-    if (body.hasParent()) {
-      const DrakeJoint& joint = body.getJoint();
-      auto q_body = q.middleRows(body.position_num_start, joint.getNumPositions());
-
-      // transform
-      Isometry3d T_body_to_parent = joint.getTransformToParentBody() * joint.jointTransform(q_body);
-      body.T_new = body.parent->T_new * T_body_to_parent;
-
-      // motion subspace in body frame
-      Eigen::MatrixXd* dSdq = compute_gradients ? &(body.dSdqi) : nullptr;
-      joint.motionSubspace(q_body, body.S, dSdq);
-
-      // motion subspace in world frame
-      body.J = transformSpatialMotion(body.T_new, body.S);
-
-      // qdot to v
-      Eigen::MatrixXd* dqdot_to_v = compute_gradients ? &(body.dqdot_to_v_dqi) : nullptr;
-      joint.qdot2v(q_body, body.qdot_to_v, dqdot_to_v);
-      if (compute_gradients) {
-        body.dqdot_to_v_dq.setZero();
-        body.dqdot_to_v_dq.middleCols(body.position_num_start, joint.getNumPositions()) = body.dqdot_to_v_dqi;
-      }
-
-      // v to qdot
-      Eigen::MatrixXd* dv_to_qdot = compute_gradients ? &(body.dv_to_qdot_dqi) : nullptr;
-      joint.v2qdot(q_body, body.v_to_qdot, dv_to_qdot);
-      if (compute_gradients) {
-        body.dv_to_qdot_dq.setZero();
-        body.dv_to_qdot_dq.middleCols(body.position_num_start, joint.getNumPositions()) = body.dv_to_qdot_dqi;
-      }
-
-      if (compute_gradients) {
-        // gradient of transform
-        auto dT_body_to_parentdqi = dHomogTrans(T_body_to_parent, body.S, body.qdot_to_v).eval();
-        Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type dT_body_to_parentdq(HOMOGENEOUS_TRANSFORM_SIZE, nq);
-        dT_body_to_parentdq.setZero();
-        dT_body_to_parentdq.middleCols(body.position_num_start, joint.getNumPositions()) = dT_body_to_parentdqi;
-        body.dTdq_new = matGradMultMat(body.parent->T_new.matrix(), T_body_to_parent.matrix(), body.parent->dTdq_new, dT_body_to_parentdq);
-
-        // gradient of motion subspace in world
-        MatrixXd dSdq = MatrixXd::Zero(body.S.size(), nq);
-        dSdq.middleCols(body.position_num_start, joint.getNumPositions()) = body.dSdqi;
-        body.dJdq = dTransformSpatialMotion(body.T_new, body.S, body.dTdq_new, dSdq);
-      }
-
-      if (v.rows() == num_velocities) {
-        if (joint.getNumVelocities()==0) { // for fixed joints
-          body.twist = body.parent->twist;
-           if (compute_gradients) body.dtwistdq = body.parent->dtwistdq;
-           if (compute_JdotV) {
-             body.JdotV = body.parent->JdotV;
-             if (compute_gradients) {
-               body.dJdotVdq = body.parent->dJdotVdq;
-               body.dJdotVdv = body.parent->dJdotVdv;
-             }
-           }
-        } else {
-          // twist
-          auto v_body = v.middleRows(body.velocity_num_start, joint.getNumVelocities());
-          joint_twist.value().noalias() = body.J * v_body;
-          body.twist = body.parent->twist;
-          body.twist += joint_twist.value();
-
-          if (compute_gradients) {
-            // dtwistdq
-            joint_twist.gradient().value() = matGradMult(body.dJdq, v_body);
-            body.dtwistdq = body.parent->dtwistdq + joint_twist.gradient().value();
-          }
-
-          if (compute_JdotV) {
-            // Sdotv
-            auto dSdotVdqi = compute_gradients ? &body.dSdotVdqi : nullptr;
-            auto dSdotVdvi = compute_gradients ? &body.dSdotVdvi : nullptr;
-            joint.motionSubspaceDotTimesV(q_body, v_body, body.SdotV, dSdotVdqi, dSdotVdvi);
-
-            // Jdotv
-            auto joint_accel = crossSpatialMotion(body.twist, joint_twist.value());
-            joint_accel += transformSpatialMotion(body.T_new, body.SdotV);
-            body.JdotV = body.parent->JdotV + joint_accel;
-
-            if (compute_gradients) {
-              // dJdotvdq
-              // TODO: exploit sparsity better
-              Matrix<double, TWIST_SIZE, Eigen::Dynamic> dSdotVdq(TWIST_SIZE, nq);
-              dSdotVdq.setZero();
-              dSdotVdq.middleCols(body.position_num_start, joint.getNumPositions()) = body.dSdotVdqi;
-              auto dcrm_twist_joint_twistdq = dCrossSpatialMotion(body.twist, joint_twist.value(), body.dtwistdq, joint_twist.gradient().value());
-              body.dJdotVdq = body.parent->dJdotVdq
-                  + dcrm_twist_joint_twistdq
-                  + dTransformSpatialMotion(body.T_new, body.SdotV, body.dTdq_new, dSdotVdq);
-
-              // dJdotvdv
-              int nv_joint = joint.getNumVelocities();
-              std::vector<int> v_indices;
-              auto dtwistdv = geometricJacobian<double>(0, i, 0, 0, false, &v_indices);
-              int nv_branch = static_cast<int>(v_indices.size());
-
-              Matrix<double, TWIST_SIZE, Eigen::Dynamic> djoint_twistdv(TWIST_SIZE, nv_branch);
-              djoint_twistdv.setZero();
-              djoint_twistdv.rightCols(nv_joint) = body.J;
-
-              Matrix<double, TWIST_SIZE, Eigen::Dynamic> djoint_acceldv(TWIST_SIZE, nv_branch);
-              djoint_acceldv = dCrossSpatialMotion(body.twist, joint_twist.value(), dtwistdv.value(), djoint_twistdv); // TODO: can probably exploit sparsity better
-              djoint_acceldv.rightCols(nv_joint) += transformSpatialMotion(body.T_new, *dSdotVdvi);
-
-              body.dJdotVdv.setZero();
-              for (int j = 0; j < nv_branch; j++) {
-                int v_index = v_indices[j];
-                body.dJdotVdv.col(v_index) = body.parent->dJdotVdv.col(v_index) + djoint_acceldv.col(j);
-              }
-            }
-          }
-        }
-      }
-
-      // Update collision geometries
-      updateCollisionElements(bodies[i]);
-    }
-    else {
-      body.T_new.setIdentity();
-      // motion subspace in body frame is empty
-      // motion subspace in world frame is empty
-      // qdot to v is empty
-      // v to qdot is empty
-      if (compute_gradients) {
-        // gradient of transform
-        body.dTdq_new.setZero();
-        // gradient of motion subspace in world is empty
-      }
-      if (v.rows() == num_velocities) {
-        body.twist.setZero();
-        if (compute_gradients) {
-          body.dtwistdq.setZero();
-        }
-        if (compute_JdotV) {
-          body.SdotV.setZero();
-          if (compute_gradients) {
-            body.dSdotVdqi.setZero();
-            body.dSdotVdvi.setZero();
-          }
-          body.JdotV.setZero();
-          if (compute_gradients) {
-            body.dJdotVdq.setZero();
-            body.dJdotVdv.setZero();
-          }
-        }
-      }
-    }
-  }
-
-  // Have the collision model do any model-wide updates that it needs to
-  collision_model->updateModel();
-
-  cached_inertia_gradients_order = -1;
-  gradients_cached = compute_gradients;
-  velocity_kinematics_cached = v.rows() == num_velocities;
-  jdotV_cached = compute_JdotV && velocity_kinematics_cached;
-
-  cached_q = q;
-  cached_q_new = q;
-
-  if (v.rows() > 0) {
-    cached_v = v;
-    cached_v_new = v;
-  }
-}
-
-void RigidBodyManipulator::updateCompositeRigidBodyInertias(int gradient_order) {
+template <typename Scalar>
+void RigidBodyManipulator::updateCompositeRigidBodyInertias(KinematicsCache<Scalar>& cache, int gradient_order) const {
   if (gradient_order > 1) {
     throw std::runtime_error("only first order gradients are available");
   }
-  checkCachedKinematicsSettings(gradient_order > 0, false, false, "updateCompositeRigidBodyInertias");
+  cache.checkCachedKinematicsSettings(gradient_order > 0, false, false, "updateCompositeRigidBodyInertias");
 
-  if (gradient_order > cached_inertia_gradients_order) {
+  if (gradient_order > cache.getCachedInertiaGradientsOrder()) {
     for (int i = 0; i < bodies.size(); i++) {
+      auto& element = cache.getElement(*bodies[i]);
       Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type* dTdq = nullptr;
       if (gradient_order > 0)
-        dTdq = &(bodies[i]->dTdq_new);
+        dTdq = &element.dtransform_to_world_dq;
 
-      auto inertia_world = transformSpatialInertia(bodies[i]->T_new, dTdq, bodies[i]->I);
-      I_world[i] = inertia_world.value();
-      Ic_new[i] = inertia_world.value();
-
-      if (inertia_world.hasGradient()) {
-        dI_world[i] = inertia_world.gradient().value();
-        dIc_new[i] = inertia_world.gradient().value();
+      auto inertia_in_world = transformSpatialInertia(element.transform_to_world, dTdq, bodies[i]->I);
+      element.inertia_in_world.value() = inertia_in_world.value();
+      element.crb_in_world.value() = inertia_in_world.value();
+      if (gradient_order > 0) {
+        element.inertia_in_world.gradient().value() = inertia_in_world.gradient().value();
+        element.crb_in_world.gradient().value() = inertia_in_world.gradient().value();
       }
     }
 
     for (int i = bodies.size() - 1; i >= 0; i--) {
       if (bodies[i]->hasParent()) {
-        Ic_new[bodies[i]->parent->body_index] += Ic_new[i];
+        const auto& element = cache.getElement(*bodies[i]);
+        auto& parent_element = cache.getElement(*(bodies[i]->parent));
+        parent_element.crb_in_world.value() += element.crb_in_world.value();
         if (gradient_order > 0) {
-          dIc_new[bodies[i]->parent->body_index] += dIc_new[i];
+          parent_element.crb_in_world.gradient().value() += element.crb_in_world.gradient().value();
         }
       }
     }
   }
-  cached_inertia_gradients_order = gradient_order;
+  cache.setCachedInertiaGradientsOrder(gradient_order);
 }
 
 template <typename Scalar>
-GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::worldMomentumMatrix(int gradient_order, const std::set<int>& robotnum, bool in_terms_of_qdot)
+GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::worldMomentumMatrix(KinematicsCache<Scalar>& cache,
+    int gradient_order, const std::set<int>& robotnum, bool in_terms_of_qdot) const
 {
   if (gradient_order > 1)
     throw std::runtime_error("only first order gradient is available");
-  checkCachedKinematicsSettings(gradient_order > 0, false, false, "worldMomentumMatrix");
+  cache.checkCachedKinematicsSettings(gradient_order > 0, false, false, "worldMomentumMatrix");
 
-  updateCompositeRigidBodyInertias(gradient_order);
+  updateCompositeRigidBodyInertias(cache, cache.getGradientOrder());
 
   int nq = num_positions;
   int nv = num_velocities;
@@ -794,6 +568,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::worldMomen
     RigidBody& body = *bodies[i];
 
     if (body.hasParent()) {
+      const auto& element = cache.getElement(body);
       const DrakeJoint& joint = body.getJoint();
       int ncols_joint = in_terms_of_qdot ? joint.getNumPositions() : joint.getNumVelocities();
       if (isBodyPartOfRobot(body, robotnum))
@@ -801,17 +576,17 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::worldMomen
         int start = in_terms_of_qdot ? body.position_num_start : body.velocity_num_start;
 
         if (in_terms_of_qdot) {
-          auto IcJ = (Ic_new[i] * body.J).eval();
-          ret.value().middleCols(start, ncols_joint).noalias() = IcJ * body.qdot_to_v;
+          auto crb = (element.crb_in_world.value() * element.motion_subspace_in_world.value()).eval();
+          ret.value().middleCols(start, ncols_joint).noalias() = crb * element.qdot_to_v.value();
           if (gradient_order > 0) {
-            auto dIcJ = matGradMultMat(Ic_new[i], body.J, dIc_new[i], body.dJdq);
-            ret.gradient().value().middleRows(gradient_row_start, TWIST_SIZE * ncols_joint) = matGradMultMat(IcJ, body.qdot_to_v, dIcJ, body.dqdot_to_v_dq);
+            auto dcrb = matGradMultMat(element.crb_in_world.value(), element.motion_subspace_in_world.value(), element.crb_in_world.gradient().value(), element.motion_subspace_in_world.gradient().value());
+            ret.gradient().value().middleRows(gradient_row_start, TWIST_SIZE * ncols_joint) = matGradMultMat(crb, element.qdot_to_v.value(), dcrb, element.qdot_to_v.gradient().value());
           }
         }
         else {
-          ret.value().middleCols(start, ncols_joint).noalias() = Ic_new[i] * body.J;
+          ret.value().middleCols(start, ncols_joint).noalias() = element.crb_in_world.value() * element.motion_subspace_in_world.value();
           if (gradient_order > 0) {
-            ret.gradient().value().middleRows(gradient_row_start, TWIST_SIZE * ncols_joint) = matGradMultMat(Ic_new[i], body.J, dIc_new[i], body.dJdq);
+            ret.gradient().value().middleRows(gradient_row_start, TWIST_SIZE * ncols_joint) = matGradMultMat(element.crb_in_world.value(), element.motion_subspace_in_world.value(), element.crb_in_world.gradient().value(), element.motion_subspace_in_world.gradient().value());
           }
         }
       }
@@ -822,13 +597,14 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::worldMomen
 }
 
 template <typename Scalar>
-GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::worldMomentumMatrixDotTimesV(int gradient_order, const std::set<int>& robotnum)
+GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::worldMomentumMatrixDotTimesV(KinematicsCache<Scalar>& cache,
+    int gradient_order, const std::set<int>& robotnum) const
 {
   if (gradient_order > 1)
     throw std::runtime_error("only first order gradient is available");
-  checkCachedKinematicsSettings(gradient_order > 0, true, true, "worldMomentumMatrixDotTimesV");
+  cache.checkCachedKinematicsSettings(gradient_order > 0, true, true, "worldMomentumMatrixDotTimesV");
 
-  updateCompositeRigidBodyInertias(gradient_order);
+  updateCompositeRigidBodyInertias(cache, cache.getGradientOrder());
 
   GradientVar<Scalar, TWIST_SIZE, 1> ret(TWIST_SIZE, 1, num_positions, gradient_order);
   ret.value().setZero();
@@ -839,15 +615,17 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::worldMomentumMatrixDotT
     RigidBody& body = *bodies[i];
     if (body.hasParent()) {
       if (isBodyPartOfRobot(body, robotnum)) {
-        ret.value().noalias() += I_world[i] * body.JdotV;
-        auto inertia_times_twist = (I_world[i] * body.twist).eval();
-        ret.value().noalias() += crossSpatialForce(body.twist, inertia_times_twist);
+        const auto& element = cache.getElement(body);
+        ret.value().noalias() += element.inertia_in_world.value() * element.motion_subspace_in_world_dot_times_v.value();
+        auto inertia_times_twist = (element.inertia_in_world.value() * element.twist_in_world.value()).eval();
+        ret.value().noalias() += crossSpatialForce(element.twist_in_world.value(), inertia_times_twist);
 
         if (gradient_order > 0) {
-          ret.gradient().value() += matGradMultMat(I_world[i], body.JdotV, dI_world[i], body.dJdotVdq);
-          auto dinertia_times_twist = (I_world[i] * body.dtwistdq).eval();
-          dinertia_times_twist.noalias() += matGradMult(dI_world[i], body.twist);
-          ret.gradient().value() += dCrossSpatialForce(body.twist, inertia_times_twist, body.dtwistdq, dinertia_times_twist);
+          auto dJdotVdq = element.motion_subspace_in_world_dot_times_v.gradient().value().leftCols(num_positions);
+          ret.gradient().value() += matGradMultMat(element.inertia_in_world.value(), element.motion_subspace_in_world_dot_times_v.value(), element.inertia_in_world.gradient().value(), dJdotVdq);
+          auto dinertia_times_twist = (element.inertia_in_world.value() * element.twist_in_world.gradient().value()).eval();
+          dinertia_times_twist.noalias() += matGradMult(element.inertia_in_world.gradient().value(), element.twist_in_world.value());
+          ret.gradient().value() += dCrossSpatialForce(element.twist_in_world.value(), inertia_times_twist, element.twist_in_world.gradient().value(), dinertia_times_twist);
         }
       }
     }
@@ -857,13 +635,13 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::worldMomentumMatrixDotT
 }
 
 template <typename Scalar>
-GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::centroidalMomentumMatrix(int gradient_order, const std::set<int>& robotnum, bool in_terms_of_qdot)
+GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::centroidalMomentumMatrix(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum, bool in_terms_of_qdot) const
 {
   // kinematics cache checks already being done in worldMomentumMatrix.
-  auto ret = worldMomentumMatrix<Scalar>(gradient_order, robotnum, in_terms_of_qdot);
+  auto ret = worldMomentumMatrix(cache, gradient_order, robotnum, in_terms_of_qdot);
 
   // transform from world frame to COM frame
-  Matrix<Scalar, SPACE_DIMENSION, 1> com = centerOfMass<Scalar>(0).value();
+  Matrix<Scalar, SPACE_DIMENSION, 1> com = centerOfMass(cache, 0).value();
   auto angular_momentum_matrix = ret.value().template topRows<SPACE_DIMENSION>();
   auto linear_momentum_matrix = ret.value().template bottomRows<SPACE_DIMENSION>();
   if (gradient_order > 0) {
@@ -877,10 +655,11 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::centroidal
       for (int i = 0; i < bodies.size(); i++) {
         RigidBody& body = *bodies[i];
         if (body.hasParent()) {
+          const auto& element = cache.getElement(body);
           const DrakeJoint& joint = body.getJoint();
           int nv_joint = joint.getNumVelocities();
           int nq_joint = joint.getNumPositions();
-          dcom.middleCols(body.position_num_start, nq_joint).noalias() = linear_momentum_matrix.middleCols(body.velocity_num_start, nv_joint) * body.qdot_to_v;
+          dcom.middleCols(body.position_num_start, nq_joint).noalias() = linear_momentum_matrix.middleCols(body.velocity_num_start, nv_joint) * element.qdot_to_v.value();
         }
       }
     }
@@ -904,13 +683,13 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::centroidal
 }
 
 template <typename Scalar>
-GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::centroidalMomentumMatrixDotTimesV(int gradient_order, const std::set<int>& robotnum)
+GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::centroidalMomentumMatrixDotTimesV(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum) const
 {
   // kinematics cache checks already being done in worldMomentumMatrixDotTimesV
-  auto ret = worldMomentumMatrixDotTimesV<Scalar>(gradient_order, robotnum);
+  auto ret = worldMomentumMatrixDotTimesV(cache, gradient_order, robotnum);
 
   // transform from world frame to COM frame:
-  auto com = centerOfMass<Scalar>(gradient_order);
+  auto com = centerOfMass(cache, gradient_order);
   auto angular_momentum_matrix_dot_times_v = ret.value().template topRows<SPACE_DIMENSION>();
   auto linear_momentum_matrix_dot_times_v = ret.value().template bottomRows<SPACE_DIMENSION>();
 
@@ -928,7 +707,7 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::centroidalMomentumMatri
   return ret;
 }
 
-bool RigidBodyManipulator::isBodyPartOfRobot(const RigidBody& body, const std::set<int>& robotnum)
+bool RigidBodyManipulator::isBodyPartOfRobot(const RigidBody& body, const std::set<int>& robotnum) const
 {
   for (std::set<int>::const_iterator it = robotnum.begin(); it != robotnum.end(); ++it) {
     if (*it < -1) {
@@ -939,7 +718,7 @@ bool RigidBodyManipulator::isBodyPartOfRobot(const RigidBody& body, const std::s
   return robotnum.find(body.robotnum) != robotnum.end();
 }
 
-double RigidBodyManipulator::getMass(const std::set<int>& robotnum)
+double RigidBodyManipulator::getMass(const std::set<int>& robotnum) const
 {
   double total_mass = 0.0;
   for (int i = 0; i < bodies.size(); i++) {
@@ -953,9 +732,9 @@ double RigidBodyManipulator::getMass(const std::set<int>& robotnum)
 }
 
 template <typename Scalar>
-GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(int gradient_order, const std::set<int>& robotnum)
+GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum) const
 {
-  checkCachedKinematicsSettings(false, false, false, "centerOfMass"); // don't check for gradients, that will be done in centerOfMassJacobian below.
+  cache.checkCachedKinematicsSettings(false, false, false, "centerOfMass"); // don't check for gradients, that will be done in centerOfMassJacobian below.
 
   int nq = num_positions;
   GradientVar<Scalar, SPACE_DIMENSION, 1> com(SPACE_DIMENSION, 1, nq, gradient_order);
@@ -970,7 +749,7 @@ GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(int g
       body_mass = body.mass;
       if (body_mass > 0) {
         Vector3d body_com_body_frame = (body.com.topRows<SPACE_DIMENSION>());
-        auto body_com = forwardKin(body_com_body_frame, i, 0, 0, gradient_order);
+        auto body_com = forwardKin(cache, body_com_body_frame, i, 0, 0, gradient_order);
         com.value() *= m;
         com.value().noalias() += body_mass * body_com.value();
         com.value() /= (m + body_mass);
@@ -980,7 +759,7 @@ GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(int g
   }
 
   if (gradient_order > 0) {
-    auto J_com = centerOfMassJacobian<Scalar>(gradient_order - 1, robotnum, true);
+    auto J_com = centerOfMassJacobian(cache, gradient_order - 1, robotnum, true);
     com.gradient().value() = J_com.value();
     if (gradient_order > 1)
       com.gradient().gradient().value() = J_com.gradient().value();
@@ -990,11 +769,11 @@ GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(int g
 }
 
 template <typename Scalar>
-GradientVar<Scalar, SPACE_DIMENSION, Eigen::Dynamic> RigidBodyManipulator::centerOfMassJacobian(int gradient_order, const std::set<int>& robotnum, bool in_terms_of_qdot)
+GradientVar<Scalar, SPACE_DIMENSION, Eigen::Dynamic> RigidBodyManipulator::centerOfMassJacobian(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum, bool in_terms_of_qdot) const
 {
-  checkCachedKinematicsSettings(gradient_order > 0, false, false, "centerOfMassJacobian");
+  cache.checkCachedKinematicsSettings(gradient_order > 0, false, false, "centerOfMassJacobian");
 
-  auto A = worldMomentumMatrix<Scalar>(gradient_order, robotnum, in_terms_of_qdot);
+  auto A = worldMomentumMatrix(cache, gradient_order, robotnum, in_terms_of_qdot);
   GradientVar<Scalar, SPACE_DIMENSION, Eigen::Dynamic> ret(SPACE_DIMENSION, A.value().cols(), num_positions, gradient_order);
   double total_mass = getMass(robotnum);
   ret.value() = A.value().template bottomRows<SPACE_DIMENSION>() / total_mass;
@@ -1007,10 +786,10 @@ GradientVar<Scalar, SPACE_DIMENSION, Eigen::Dynamic> RigidBodyManipulator::cente
 }
 
 template <typename Scalar>
-GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMassJacobianDotTimesV(int gradient_order, const std::set<int>& robotnum)
+GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMassJacobianDotTimesV(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum) const
 {
   // kinematics cache checks are already being done in centroidalMomentumMatrixDotTimesV
-  auto cmm_dot_times_v = centroidalMomentumMatrixDotTimesV<Scalar>(gradient_order, robotnum);
+  auto cmm_dot_times_v = centroidalMomentumMatrixDotTimesV(cache, gradient_order, robotnum);
   GradientVar<Scalar, SPACE_DIMENSION, 1> ret(SPACE_DIMENSION, 1, num_positions, gradient_order);
   double total_mass = getMass(robotnum);
   ret.value().noalias() = cmm_dot_times_v.value().template bottomRows<SPACE_DIMENSION>() / total_mass;
@@ -1021,19 +800,20 @@ GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMassJacobi
 }
 
 template <typename DerivedNormal, typename DerivedPoint>
-std::pair<Eigen::Vector3d, double> RigidBodyManipulator::resolveCenterOfPressure(const std::vector<ForceTorqueMeasurement> & force_torque_measurements, const Eigen::MatrixBase<DerivedNormal> & normal, const Eigen::MatrixBase<DerivedPoint> & point_on_contact_plane)
+std::pair<Eigen::Vector3d, double> RigidBodyManipulator::resolveCenterOfPressure(const KinematicsCache<double>& cache, const std::vector<ForceTorqueMeasurement> & force_torque_measurements, const Eigen::MatrixBase<DerivedNormal> & normal, const Eigen::MatrixBase<DerivedPoint> & point_on_contact_plane) const
 {
+  // kinematics cache checks are already being done in relativeTransform
   typedef typename DerivedNormal::Scalar Scalar;
   typedef Matrix<Scalar, 6, 1> Vector6;
   Vector6 total_wrench = Vector6::Zero();
   for (auto it = force_torque_measurements.begin(); it != force_torque_measurements.end(); ++it) {
-    Isometry3d transform_to_world(relativeTransform<Scalar>(0, it->frame_idx, 0).value());
+    Isometry3d transform_to_world(relativeTransform(cache, 0, it->frame_idx, 0).value());
     total_wrench += transformSpatialForce(transform_to_world, it->wrench);
   }
   return ::resolveCenterOfPressure(total_wrench.template head<3>(), total_wrench.template tail<3>(), normal, point_on_contact_plane);
 }
 
-int RigidBodyManipulator::getNumContacts(const set<int> &body_idx)
+int RigidBodyManipulator::getNumContacts(const set<int> &body_idx) const
 {
   size_t n=0,nb=body_idx.size(),bi;
   if (nb==0) nb=bodies.size();
@@ -1048,7 +828,8 @@ int RigidBodyManipulator::getNumContacts(const set<int> &body_idx)
 
 
 template<typename Derived>
-void RigidBodyManipulator::getContactPositions(MatrixBase<Derived> &pos, const set<int> &body_idx) {
+void RigidBodyManipulator::getContactPositions(const KinematicsCache<typename Derived::Scalar>& cache, MatrixBase<Derived> &pos, const set<int> &body_idx) const {
+  // kinematics cache checks are already being done in forwardKin
   int n = 0, nc, nb = static_cast<int>(body_idx.size()), bi;
   if (nb == 0) nb = bodies.size();
   set<int>::iterator iter = body_idx.begin();
@@ -1057,14 +838,15 @@ void RigidBodyManipulator::getContactPositions(MatrixBase<Derived> &pos, const s
     else bi = *iter++;
     nc = static_cast<int>(bodies[bi]->contact_pts.cols());
     if (nc > 0) {
-      pos.block(0, n, 3, nc) = forwardKin(bodies[bi]->contact_pts, bi, 0, 0, 1).value();
+      pos.block(0, n, 3, nc) = forwardKin(cache, bodies[bi]->contact_pts, bi, 0, 0, 1).value();
       n += nc;
     }
   }
 }
 
 template<typename Derived>
-void RigidBodyManipulator::getContactPositionsJac(MatrixBase<Derived> &J, const set<int> &body_idx) {
+void RigidBodyManipulator::getContactPositionsJac(const KinematicsCache<typename Derived::Scalar>& cache, MatrixBase<Derived> &J, const set<int> &body_idx) const {
+  // kinematics cache checks are already being done in forwardKinJacobian
   int n = 0, nc, nb = static_cast<int>(body_idx.size()), bi;
   if (nb == 0) nb = bodies.size();
   set<int>::iterator iter = body_idx.begin();
@@ -1075,14 +857,14 @@ void RigidBodyManipulator::getContactPositionsJac(MatrixBase<Derived> &J, const 
     nc = static_cast<int>(bodies[bi]->contact_pts.cols());
     if (nc > 0) {
       p.resize(3 * nc, num_positions);
-      J.block(3 * n, 0, 3 * nc, num_positions) = forwardKinJacobian(bodies[bi]->contact_pts, bi, 0, 0, true, 0).value();
+      J.block(3 * n, 0, 3 * nc, num_positions) = forwardKinJacobian(cache, bodies[bi]->contact_pts, bi, 0, 0, true, 0).value();
       n += nc;
     }
   }
 }
 
 /* [body_ind,Tframe] = parseBodyOrFrameID(body_or_frame_id) */
-int RigidBodyManipulator::parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe)
+int RigidBodyManipulator::parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe) const
 {
   int body_ind=0;
   if (body_or_frame_id == -1) {
@@ -1107,7 +889,7 @@ int RigidBodyManipulator::parseBodyOrFrameID(const int body_or_frame_id, Matrix4
   return body_ind;
 }
 
-void RigidBodyManipulator::findAncestorBodies(std::vector<int>& ancestor_bodies, int body_idx)
+void RigidBodyManipulator::findAncestorBodies(std::vector<int>& ancestor_bodies, int body_idx) const
 {
   const RigidBody* current_body = bodies[body_idx].get();
   while (current_body->hasParent())
@@ -1117,7 +899,7 @@ void RigidBodyManipulator::findAncestorBodies(std::vector<int>& ancestor_bodies,
   }
 }
 
-void RigidBodyManipulator::findKinematicPath(KinematicPath& path, int start_body_or_frame_idx, int end_body_or_frame_idx)
+void RigidBodyManipulator::findKinematicPath(KinematicPath& path, int start_body_or_frame_idx, int end_body_or_frame_idx) const
 {
   // find all ancestors of start_body and end_body
   int start_body = parseBodyOrFrameID(start_body_or_frame_idx);
@@ -1176,13 +958,13 @@ void RigidBodyManipulator::findKinematicPath(KinematicPath& path, int start_body
 }
 
 template<typename Scalar>
-GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJacobian(
-    int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, int gradient_order, bool in_terms_of_qdot, std::vector<int>* v_or_qdot_indices)
+GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJacobian(const KinematicsCache<Scalar>& cache,
+    int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, int gradient_order, bool in_terms_of_qdot, std::vector<int>* v_or_qdot_indices) const
 {
   if (gradient_order > 1) {
     throw std::runtime_error("gradient order not supported");
   }
-  checkCachedKinematicsSettings(gradient_order > 0, false, false, "geometricJacobian");
+  cache.checkCachedKinematicsSettings(gradient_order > 0, false, false, "geometricJacobian");
 
   KinematicPath kinematic_path;
   findKinematicPath(kinematic_path, base_body_or_frame_ind, end_effector_body_or_frame_ind);
@@ -1211,15 +993,16 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
   for (size_t i = 0; i < kinematic_path.joint_path.size(); i++) {
     body_index = kinematic_path.joint_path[i];
     RigidBody& body = *bodies[body_index];
+    const auto& element = cache.getElement(body);
     const DrakeJoint& joint = body.getJoint();
     int ncols_block = in_terms_of_qdot ? joint.getNumPositions() : joint.getNumVelocities();
     int sign = kinematic_path.joint_direction_signs[i];
     auto J_block = J.template block<TWIST_SIZE, Dynamic>(0, col_start, TWIST_SIZE, ncols_block);
     if (in_terms_of_qdot) {
-      J_block.noalias() = sign * body.J * body.qdot_to_v;
+      J_block.noalias() = sign * element.motion_subspace_in_world.value() * element.qdot_to_v.value();
     }
     else {
-      J_block.noalias() = sign * body.J;
+      J_block.noalias() = sign * element.motion_subspace_in_world.value();
     }
 
     if (v_or_qdot_indices != nullptr) {
@@ -1231,7 +1014,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
     col_start += ncols_block;
   }
 
-  auto T_world_to_frame = relativeTransform<double>(expressed_in_body_or_frame_ind, 0, 0);
+  auto T_world_to_frame = relativeTransform(cache, expressed_in_body_or_frame_ind, 0, 0);
   Isometry3d H0(T_world_to_frame.value());
   if (expressed_in_body_or_frame_ind != 0) {
     J = transformSpatialMotion(H0, J);
@@ -1246,23 +1029,24 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
     for (size_t i = 0; i < kinematic_path.joint_path.size(); i++) {
       int j = kinematic_path.joint_path[i];
       int sign = kinematic_path.joint_direction_signs[i];
-      RigidBody& bodyJ = *bodies[j];
-      auto Jj = (sign * bodyJ.J).eval();
+      RigidBody& body_j = *bodies[j];
+      const auto& element_j = cache.getElement(body_j);
+      Matrix<double, TWIST_SIZE, Dynamic, 0, TWIST_SIZE, DrakeJoint::MAX_NUM_POSITIONS> Jj = (sign * element_j.motion_subspace_in_world.value()).eval();
       if (in_terms_of_qdot) {
-        Jj *= bodyJ.qdot_to_v;
+        Jj *= element_j.qdot_to_v.value();
       }
 
-      auto dSjdqj = (sign * bodyJ.dSdqi).eval();
+      auto dSjdqj = (sign * element_j.motion_subspace_in_body.gradient().value()).eval();
       if (in_terms_of_qdot) {
-        dSjdqj = matGradMultMat((sign * bodyJ.S).eval(), bodyJ.qdot_to_v, dSjdqj, bodyJ.dqdot_to_v_dqi);
+        dSjdqj = matGradMultMat((sign * element_j.motion_subspace_in_body.value()).eval(), element_j.qdot_to_v.value(), dSjdqj, element_j.qdot_to_v.gradient().value().middleCols(body_j.position_num_start, body_j.getJoint().getNumPositions()));
       }
-      auto Hj_gradientvar = relativeTransform<double>(expressed_in_body_or_frame_ind, j, 0);
+      auto Hj_gradientvar = relativeTransform(cache, expressed_in_body_or_frame_ind, j, 0);
       Isometry3d Hj(Hj_gradientvar.value());
-      auto Jj0_gradientvar = geometricJacobian<double>(expressed_in_body_or_frame_ind, j, 0, 0, true, &qdot_ind_ij);
+      auto Jj0_gradientvar = geometricJacobian(cache, expressed_in_body_or_frame_ind, j, 0, 0, true, &qdot_ind_ij);
 
       for (int Jj_col = 0; Jj_col < Jj.cols(); Jj_col++) {
-        auto dSjdqj_block = transformSpatialMotion(Hj, dSjdqj.middleRows<TWIST_SIZE>(Jj_col * TWIST_SIZE)).eval();
-        setSubMatrixGradient<Eigen::Dynamic>(dJdq, dSjdqj_block, rows, intRange<1>(col), TWIST_SIZE, bodyJ.position_num_start, bodyJ.getJoint().getNumPositions());
+        auto dSjdqj_block = transformSpatialMotion(Hj, dSjdqj.template middleRows<TWIST_SIZE>(Jj_col * TWIST_SIZE)).eval();
+        setSubMatrixGradient<Eigen::Dynamic>(dJdq, dSjdqj_block, rows, intRange<1>(col), TWIST_SIZE, body_j.position_num_start, body_j.getJoint().getNumPositions());
         auto crm_block = transformSpatialMotion(H0, crossSpatialMotion((-Jj.col(Jj_col)).eval(), Jj0_gradientvar.value()));
         int crm_block_col = 0;
         for (std::vector<int>::iterator it = qdot_ind_ij.begin(); it != qdot_ind_ij.end(); ++it) {
@@ -1277,55 +1061,62 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
 }
 
 template <typename Scalar>
-GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::geometricJacobianDotTimesV(int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, int gradient_order)
+GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::geometricJacobianDotTimesV(const KinematicsCache<Scalar>& cache,
+    int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, int gradient_order) const
 {
   if (gradient_order > 1)
     throw std::runtime_error("only first order gradient available");
-  checkCachedKinematicsSettings(gradient_order > 0, true, true, "geometricJacobianDotTimesV");
+  cache.checkCachedKinematicsSettings(gradient_order > 0, true, true, "geometricJacobianDotTimesV");
 
   GradientVar<Scalar, TWIST_SIZE, 1> ret(TWIST_SIZE, 1, num_positions, gradient_order);
 
   int base_body_ind = parseBodyOrFrameID(base_body_or_frame_ind);
   int end_effector_body_ind = parseBodyOrFrameID(end_effector_body_or_frame_ind);
 
-  ret.value() = bodies[end_effector_body_ind]->JdotV - bodies[base_body_ind]->JdotV;
+  const auto& base_element = cache.getElement(*bodies[base_body_ind]);
+  const auto& end_effector_element = cache.getElement(*bodies[end_effector_body_ind]);
+
+  ret.value() = end_effector_element.motion_subspace_in_world_dot_times_v.value() - base_element.motion_subspace_in_world_dot_times_v.value();
   if (gradient_order > 0) {
-    ret.gradient().value() = bodies[end_effector_body_ind]->dJdotVdq - bodies[base_body_ind]->dJdotVdq;
+    ret.gradient().value() = end_effector_element.motion_subspace_in_world_dot_times_v.gradient().value().leftCols(num_positions) - base_element.motion_subspace_in_world_dot_times_v.gradient().value().leftCols(num_positions);
   }
 
   int world_ind = 0;
-  return transformSpatialAcceleration(ret, base_body_ind, end_effector_body_ind, world_ind, expressed_in_body_or_frame_ind);
+  return transformSpatialAcceleration(cache, ret, base_body_ind, end_effector_body_ind, world_ind, expressed_in_body_or_frame_ind);
 }
 
 template <typename Scalar>
-GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::relativeTwist(int base_or_frame_ind, int body_or_frame_ind, int expressed_in_body_or_frame_ind, int gradient_order)
+GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::relativeTwist(const KinematicsCache<Scalar>& cache,
+    int base_or_frame_ind, int body_or_frame_ind, int expressed_in_body_or_frame_ind, int gradient_order) const
 {
-  checkCachedKinematicsSettings(gradient_order > 0, true, false, "relativeTwist");
+  cache.checkCachedKinematicsSettings(gradient_order > 0, true, false, "relativeTwist");
 
   GradientVar<Scalar, TWIST_SIZE, 1> ret(TWIST_SIZE, 1, num_positions, gradient_order);
 
   int base_ind = parseBodyOrFrameID(base_or_frame_ind);
   int body_ind = parseBodyOrFrameID(body_or_frame_ind);
   int world = 0;
-  auto T = relativeTransform<Scalar>(expressed_in_body_or_frame_ind, world, gradient_order);
+  auto T = relativeTransform(cache, expressed_in_body_or_frame_ind, world, gradient_order);
   auto T_isometry = Transform<Scalar, SPACE_DIMENSION, Isometry>(T.value());
 
-  Matrix<Scalar, TWIST_SIZE, 1> relative_twist_in_world = bodies[body_ind]->twist - bodies[base_ind]->twist;
+  const auto& base_element = cache.getElement(*bodies[base_ind]);
+  const auto& body_element = cache.getElement(*bodies[body_ind]);
+  Matrix<Scalar, TWIST_SIZE, 1> relative_twist_in_world = body_element.twist_in_world.value() - base_element.twist_in_world.value();
   ret.value() = transformSpatialMotion(T_isometry, relative_twist_in_world);
 
   if (gradient_order > 0) {
-    auto drelative_twist_in_world = (bodies[body_ind]->dtwistdq - bodies[base_ind]->dtwistdq).eval();
+    auto drelative_twist_in_world = (body_element.twist_in_world.gradient().value() - base_element.twist_in_world.gradient().value()).eval();
     ret.gradient().value() = dTransformSpatialMotion(T_isometry, relative_twist_in_world, T.gradient().value(), drelative_twist_in_world);
   }
   return ret;
 }
 
 template <typename Scalar>
-GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::transformSpatialAcceleration(
-    const GradientVar<Scalar, TWIST_SIZE, 1>& spatial_acceleration, int base_ind, int body_ind, int old_expressed_in_body_or_frame_ind, int new_expressed_in_body_or_frame_ind)
+GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::transformSpatialAcceleration(const KinematicsCache<Scalar>& cache,
+    const GradientVar<Scalar, TWIST_SIZE, 1>& spatial_acceleration, int base_ind, int body_ind, int old_expressed_in_body_or_frame_ind, int new_expressed_in_body_or_frame_ind) const
 {
   int gradient_order = spatial_acceleration.maxOrder();
-  checkCachedKinematicsSettings(gradient_order > 0, true, true, "transformSpatialAcceleration");
+  cache.checkCachedKinematicsSettings(gradient_order > 0, true, true, "transformSpatialAcceleration");
 
   if (old_expressed_in_body_or_frame_ind == new_expressed_in_body_or_frame_ind) {
     return spatial_acceleration;
@@ -1333,9 +1124,9 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::transformSpatialAcceler
 
   GradientVar<Scalar, TWIST_SIZE, 1> ret(TWIST_SIZE, 1, num_positions, gradient_order);
 
-  auto twist_of_body_wrt_base = relativeTwist<Scalar>(base_ind, body_ind, old_expressed_in_body_or_frame_ind, gradient_order);
-  auto twist_of_old_wrt_new = relativeTwist<Scalar>(new_expressed_in_body_or_frame_ind, old_expressed_in_body_or_frame_ind, old_expressed_in_body_or_frame_ind, gradient_order);
-  auto T_old_to_new = relativeTransform<Scalar>(new_expressed_in_body_or_frame_ind, old_expressed_in_body_or_frame_ind, gradient_order);
+  auto twist_of_body_wrt_base = relativeTwist(cache, base_ind, body_ind, old_expressed_in_body_or_frame_ind, gradient_order);
+  auto twist_of_old_wrt_new = relativeTwist(cache, new_expressed_in_body_or_frame_ind, old_expressed_in_body_or_frame_ind, old_expressed_in_body_or_frame_ind, gradient_order);
+  auto T_old_to_new = relativeTransform(cache, new_expressed_in_body_or_frame_ind, old_expressed_in_body_or_frame_ind, gradient_order);
   auto T_old_to_new_isometry = Transform<Scalar, SPACE_DIMENSION, Isometry>(T_old_to_new.value());
 
   Matrix<double, TWIST_SIZE, 1> spatial_accel_temp = crossSpatialMotion(twist_of_old_wrt_new.value(), twist_of_body_wrt_base.value());
@@ -1351,9 +1142,10 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::transformSpatialAcceler
 }
 
 template<typename Scalar>
-GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> RigidBodyManipulator::relativeTransform(int base_or_frame_ind, int body_or_frame_ind, int gradient_order)
+GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> RigidBodyManipulator::relativeTransform(const KinematicsCache<Scalar>& cache,
+    int base_or_frame_ind, int body_or_frame_ind, int gradient_order) const
 {
-  checkCachedKinematicsSettings(gradient_order > 0, false, false, "relativeTransform");
+  cache.checkCachedKinematicsSettings(gradient_order > 0, false, false, "relativeTransform");
 
   int nq = num_positions;
   GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> ret(SPACE_DIMENSION + 1, SPACE_DIMENSION + 1, nq, gradient_order);
@@ -1363,15 +1155,18 @@ GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> RigidBodyManipulat
   Matrix4d Tbody_frame;
   int body_ind = parseBodyOrFrameID(body_or_frame_ind, &Tbody_frame);
 
-  Isometry3d Tbaseframe_to_world = bodies[base_ind]->T_new * Isometry3d(Tbase_frame); // TODO: copy to Isometry3d
+  const auto& body_element = cache.getElement(*bodies[body_ind]);
+  const auto& base_element = cache.getElement(*bodies[base_ind]);
+
+  Isometry3d Tbaseframe_to_world = base_element.transform_to_world * Isometry3d(Tbase_frame); // TODO: copy to Isometry3d
   Isometry3d Tworld_to_baseframe = Tbaseframe_to_world.inverse();
-  Isometry3d Tbodyframe_to_world = bodies[body_ind]->T_new * Isometry3d(Tbody_frame); // TODO: copy to Isometry3d
+  Isometry3d Tbodyframe_to_world = body_element.transform_to_world * Isometry3d(Tbody_frame); // TODO: copy to Isometry3d
   ret.value() = (Tworld_to_baseframe * Tbodyframe_to_world).matrix();
 
   if (gradient_order > 0) {
-    auto dTbaseframe_to_world = matGradMult(bodies[base_ind]->dTdq_new, Tbase_frame);
+    auto dTbaseframe_to_world = matGradMult(base_element.dtransform_to_world_dq, Tbase_frame);
     auto dTworld_to_baseframe = dHomogTransInv(Tbaseframe_to_world, dTbaseframe_to_world);
-    auto dTbodyframe_to_world = matGradMult(bodies[body_ind]->dTdq_new, Tbody_frame);
+    auto dTbodyframe_to_world = matGradMult(body_element.dtransform_to_world_dq, Tbody_frame);
     ret.gradient().value() = matGradMultMat(Tworld_to_baseframe.matrix(), Tbodyframe_to_world.matrix(), dTworld_to_baseframe, dTbodyframe_to_world);
   }
   if (gradient_order > 1) {
@@ -1381,11 +1176,11 @@ GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> RigidBodyManipulat
 }
 
 template<typename Scalar>
-GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMatrix(int gradient_order)
+GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMatrix(KinematicsCache<Scalar>& cache, int gradient_order) const
 {
   if (gradient_order > 1)
     throw std::runtime_error("only first order gradients are available");
-  checkCachedKinematicsSettings(gradient_order > 0, false, false, "massMatrix");
+  cache.checkCachedKinematicsSettings(gradient_order > 0, false, false, "massMatrix");
 
   int nv = num_velocities;
   int nq = num_positions;
@@ -1394,21 +1189,22 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMa
   if (gradient_order > 0)
     ret.gradient().value().setZero();
 
-  updateCompositeRigidBodyInertias(gradient_order);
+  updateCompositeRigidBodyInertias(cache, cache.getGradientOrder());
 
   for (int i = 0; i < bodies.size(); i++) {
     RigidBody& body_i = *bodies[i];
     if (body_i.hasParent()) {
+      const auto& element_i = cache.getElement(body_i);
       int v_start_i = body_i.velocity_num_start;
       int nv_i = body_i.getJoint().getNumVelocities();
       GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> F(TWIST_SIZE, nv_i, nq, gradient_order);
-      F.value().noalias() = (Ic_new[i] * body_i.J).eval();
+      F.value().noalias() = (element_i.crb_in_world.value() * element_i.motion_subspace_in_world.value()).eval();
 
       // Hii
-      ret.value().block(v_start_i, v_start_i, nv_i, nv_i).noalias() = (body_i.J.transpose() * F.value()).eval();
+      ret.value().block(v_start_i, v_start_i, nv_i, nv_i).noalias() = (element_i.motion_subspace_in_world.value().transpose() * F.value()).eval();
       if (gradient_order > 0) {
-        F.gradient().value() = matGradMultMat(Ic_new[i], body_i.J, dIc_new[i], body_i.dJdq);
-        auto dHii = matGradMultMat(body_i.J.transpose(), F.value(), transposeGrad(body_i.dJdq, TWIST_SIZE), F.gradient().value());
+        F.gradient().value() = matGradMultMat(element_i.crb_in_world.value(), element_i.motion_subspace_in_world.value(), element_i.crb_in_world.gradient().value(), element_i.motion_subspace_in_world.gradient().value());
+        auto dHii = matGradMultMat(element_i.motion_subspace_in_world.value().transpose(), F.value(), transposeGrad(element_i.motion_subspace_in_world.gradient().value(), TWIST_SIZE), F.gradient().value());
         for (int row = 0; row < nv_i; row++) {
           for (int col = 0; col < nv_i; col++) {
             setSubMatrixGradient<Eigen::Dynamic>(ret.gradient().value(), getSubMatrixGradient<Eigen::Dynamic>(dHii, row, col, nv_i), v_start_i + row, v_start_i + col, nv);
@@ -1420,14 +1216,15 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMa
       // Hij
       shared_ptr<RigidBody> body_j(body_i.parent);
       while (body_j->hasParent()) {
+        const auto& element_j = cache.getElement(*body_j);
         int v_start_j = body_j->velocity_num_start;
         int nv_j = body_j->getJoint().getNumVelocities();
-        auto Hji = (body_j->J.transpose() * F.value()).eval();
+        auto Hji = (element_j.motion_subspace_in_world.value().transpose() * F.value()).eval();
         ret.value().block(v_start_j, v_start_i, nv_j, nv_i) = Hji;
         ret.value().block(v_start_i, v_start_j, nv_i, nv_j) = Hji.transpose();
 
         if (gradient_order > 0) {
-          auto dHji = matGradMultMat(body_j->J.transpose(), F.value(), transposeGrad(body_j->dJdq, TWIST_SIZE), F.gradient().value());
+          auto dHji = matGradMultMat(element_j.motion_subspace_in_world.value().transpose(), F.value(), transposeGrad(element_j.motion_subspace_in_world.gradient().value(), TWIST_SIZE), F.gradient().value());
           for (int row = 0; row < Hji.rows(); row++) {
             for (int col = 0; col < Hji.cols(); col++) {
               auto dHji_element = getSubMatrixGradient<Eigen::Dynamic>(dHji, row, col, Hji.rows());
@@ -1455,18 +1252,15 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMa
  * Note that the wrenches in f_ext are expressed in body frame.
  */
 template <typename Scalar>
-GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(
+GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(KinematicsCache<Scalar>& cache,
     std::map<int, std::unique_ptr<GradientVar<Scalar, TWIST_SIZE, 1> > >& f_ext,
-    GradientVar<Scalar, Eigen::Dynamic, 1>* vd, int gradient_order)
+    GradientVar<Scalar, Eigen::Dynamic, 1>* vd, int gradient_order) const
 {
   if (gradient_order > 1)
     throw std::runtime_error("only first order gradients are available");
-  checkCachedKinematicsSettings(gradient_order > 0, true, true, "inverseDynamics");
+  cache.checkCachedKinematicsSettings(gradient_order > 0, true, true, "inverseDynamics");
 
-  if (!jdotV_cached)
-  	throw std::runtime_error("you must call doKinematics with compute_JdotV set to true");
-
-  updateCompositeRigidBodyInertias(gradient_order);
+  updateCompositeRigidBodyInertias(cache, cache.getGradientOrder());
 
   int nq = num_positions;
   int nv = num_velocities;
@@ -1483,69 +1277,69 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(
   for (int i = 0; i < bodies.size(); i++) {
     RigidBody& body = *bodies[i];
     if (body.hasParent()) {
-      Vector6 spatial_accel = root_accel + body.JdotV;
+      const auto& element = cache.getElement(body);
+      Vector6 spatial_accel = root_accel + element.motion_subspace_in_world_dot_times_v.value();
       int nv_joint = body.getJoint().getNumVelocities();
       if (vd != nullptr) {
         auto vdJoint = vd->value().middleRows(body.velocity_num_start, nv_joint);
-        spatial_accel.noalias() += body.J * vdJoint;
+        spatial_accel.noalias() += element.motion_subspace_in_world.value() * vdJoint;
       }
 
-      auto I_times_twist = (I_world[i] * body.twist).eval();
-      net_wrenches.value().col(i).noalias() = I_world[i] * spatial_accel;
-      net_wrenches.value().col(i).noalias() += crossSpatialForce(body.twist, I_times_twist);
+      auto I_times_twist = (element.inertia_in_world.value() * element.twist_in_world.value()).eval();
+      net_wrenches.value().col(i).noalias() = element.inertia_in_world.value() * spatial_accel;
+      net_wrenches.value().col(i).noalias() += crossSpatialForce(element.twist_in_world.value(), I_times_twist);
 
       if (gradient_order > 0) {
-        typename Gradient<Vector6, Eigen::Dynamic>::type dspatial_acceldq = body.dJdotVdq;
-        typename Gradient<Vector6, Eigen::Dynamic>::type dspatial_acceldv = body.dJdotVdv;
+        typename Gradient<Vector6, Eigen::Dynamic>::type dspatial_acceldq = element.motion_subspace_in_world_dot_times_v.gradient().value().leftCols(num_positions);
+        typename Gradient<Vector6, Eigen::Dynamic>::type dspatial_acceldv = element.motion_subspace_in_world_dot_times_v.gradient().value().rightCols(num_velocities);
 
-        if (vd != nullptr) {
+        if (vd != nullptr && nv_joint > 0) {
           const auto& vd_const = *vd; // eliminates the need for an additional explicit instantiation
           auto vdJoint = vd_const.value().middleRows(body.velocity_num_start, nv_joint);
           auto dvdJoint = vd_const.gradient().value().middleRows(body.velocity_num_start, nv_joint);
-          dspatial_acceldq.noalias() += body.J * dvdJoint.middleCols(0, nq);
-          dspatial_acceldq += matGradMult(body.dJdq, vdJoint);
+          dspatial_acceldq.noalias() += element.motion_subspace_in_world.value() * dvdJoint.middleCols(0, nq);
+          dspatial_acceldq += matGradMult(element.motion_subspace_in_world.gradient().value(), vdJoint);
 
-          dspatial_acceldv.noalias() += body.J * dvdJoint.middleCols(nq, nv);
+          dspatial_acceldv.noalias() += element.motion_subspace_in_world.value() * dvdJoint.middleCols(nq, nv);
         }
 
-
-        typename Gradient<Vector6, Eigen::Dynamic>::type dI_times_twistdq = I_world[i] * body.dtwistdq;
-        dI_times_twistdq += matGradMult(dI_world[i], body.twist);
+        typename Gradient<Vector6, Eigen::Dynamic>::type dI_times_twistdq = element.inertia_in_world.value() * element.twist_in_world.gradient().value();
+        dI_times_twistdq += matGradMult(element.inertia_in_world.gradient().value(), element.twist_in_world.value());
 
         std::vector<int> v_indices;
-        auto dtwist_dvsubvector = geometricJacobian<Scalar>(0, i, 0, 0, false, &v_indices);
+        auto dtwist_dvsubvector = geometricJacobian(cache, 0, i, 0, 0, false, &v_indices);
 
         typename Gradient<Vector6, Eigen::Dynamic>::type dtwistdv(TWIST_SIZE, nv);
         dtwistdv.setZero();
         typename Gradient<Vector6, Eigen::Dynamic>::type dI_times_twistdv(TWIST_SIZE, nv);
         dI_times_twistdv.setZero();
-        auto dI_times_twist_dvsubvector = I_world[i] * dtwist_dvsubvector.value();
+        auto dI_times_twist_dvsubvector = element.inertia_in_world.value() * dtwist_dvsubvector.value();
         for (size_t col = 0; col < v_indices.size(); col++) {
           dtwistdv.col(v_indices[col]) = dtwist_dvsubvector.value().col(col);
           dI_times_twistdv.col(v_indices[col]) = dI_times_twist_dvsubvector.col(col);
         }
 
         auto net_wrenches_q_gradient_block = net_wrenches.gradient().value().template block<TWIST_SIZE, Eigen::Dynamic>(TWIST_SIZE * i, 0, TWIST_SIZE, nq);
-        net_wrenches_q_gradient_block.noalias() = I_world[i] * dspatial_acceldq;
-        net_wrenches_q_gradient_block += matGradMult(dI_world[i], spatial_accel);
-        net_wrenches_q_gradient_block += dCrossSpatialForce(body.twist, I_times_twist, body.dtwistdq, dI_times_twistdq);
+        net_wrenches_q_gradient_block.noalias() = element.inertia_in_world.value() * dspatial_acceldq;
+        net_wrenches_q_gradient_block += matGradMult(element.inertia_in_world.gradient().value(), spatial_accel);
+        net_wrenches_q_gradient_block += dCrossSpatialForce(element.twist_in_world.value(), I_times_twist, element.twist_in_world.gradient().value(), dI_times_twistdq);
 
         auto net_wrenches_v_gradient_block = net_wrenches.gradient().value().template block<TWIST_SIZE, Eigen::Dynamic>(TWIST_SIZE * i, nq, TWIST_SIZE, nv);
-        net_wrenches_v_gradient_block.noalias() = I_world[i] * dspatial_acceldv;
-        net_wrenches_v_gradient_block += dCrossSpatialForce(body.twist, I_times_twist, dtwistdv, dI_times_twistdv);
+        net_wrenches_v_gradient_block.noalias() = element.inertia_in_world.value() * dspatial_acceldv;
+        net_wrenches_v_gradient_block += dCrossSpatialForce(element.twist_in_world.value(), I_times_twist, dtwistdv, dI_times_twistdv);
       }
 
       if (f_ext[i] != nullptr) {
-        net_wrenches.value().col(i) -= transformSpatialForce(body.T_new, f_ext[i]->value());
+        net_wrenches.value().col(i) -= transformSpatialForce(element.transform_to_world, f_ext[i]->value());
 
         if (gradient_order > 0) {
           auto net_wrenches_q_gradient_block = net_wrenches.gradient().value().template block<TWIST_SIZE, Eigen::Dynamic>(TWIST_SIZE * i, 0, TWIST_SIZE, nq);
           auto df_extdq = f_ext[i]->gradient().value().middleCols(0, nq);
-          net_wrenches_q_gradient_block -= dTransformSpatialForce(body.T_new, f_ext[i]->value(), body.dTdq_new, df_extdq);
+          net_wrenches_q_gradient_block -= dTransformSpatialForce(element.transform_to_world, f_ext[i]->value(), element.dtransform_to_world_dq, df_extdq);
 
           auto net_wrenches_v_gradient_block = net_wrenches.gradient().value().template block<TWIST_SIZE, Eigen::Dynamic>(TWIST_SIZE * i, nq, TWIST_SIZE, nv);
           auto df_extdv = f_ext[i]->gradient().value().middleCols(nq, nv);
-          net_wrenches_v_gradient_block -= transformSpatialForce(body.T_new, df_extdv);
+          net_wrenches_v_gradient_block -= transformSpatialForce(element.transform_to_world, df_extdv);
         }
       }
     }
@@ -1556,10 +1350,11 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(
   for (int i = bodies.size() - 1; i >= 0; i--) {
     RigidBody& body = *bodies[i];
     if (body.hasParent()) {
+      const auto& element = cache.getElement(body);
       const auto& net_wrenches_const = net_wrenches; // eliminates the need for another explicit instantiation
       auto joint_wrench = net_wrenches_const.value().col(i);
       int nv_joint = body.getJoint().getNumVelocities();
-      auto J_transpose = body.J.transpose();
+      auto J_transpose = element.motion_subspace_in_world.value().transpose();
       ret.value().middleRows(body.velocity_num_start, nv_joint).noalias() = J_transpose * joint_wrench;
       auto parent_net_wrench = net_wrenches.value().col(body.parent->body_index);
       parent_net_wrench += joint_wrench;
@@ -1568,7 +1363,7 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(
         auto djoint_wrenchdq = net_wrenches.gradient().value().template block<TWIST_SIZE, Eigen::Dynamic>(TWIST_SIZE * i, 0, TWIST_SIZE, nq);
         auto dCdq_block = ret.gradient().value().block(body.velocity_num_start, 0, nv_joint, nq);
         dCdq_block = J_transpose * djoint_wrenchdq;
-        dCdq_block += matGradMult(transposeGrad(body.dJdq, TWIST_SIZE), joint_wrench);
+        dCdq_block += matGradMult(transposeGrad(element.motion_subspace_in_world.gradient().value(), TWIST_SIZE), joint_wrench);
 
         auto djoint_wrenchdv = net_wrenches.gradient().value().template block<TWIST_SIZE, Eigen::Dynamic>(TWIST_SIZE * i, nq, TWIST_SIZE, nv);
         auto dCdv_block = ret.gradient().value().block(body.velocity_num_start, nq, nv_joint, nv);
@@ -1583,7 +1378,7 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(
     }
   }
 
-  auto friction_torques = frictionTorques(cached_v_new, gradient_order);
+  auto friction_torques = frictionTorques(cache.getV(), gradient_order);
   ret.value() += friction_torques.value();
   if (gradient_order > 0)
     ret.gradient().value().block(0, nq, nv, nv) += friction_torques.gradient().value();
@@ -1592,7 +1387,7 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(
 }
 
 template <typename DerivedV>
-GradientVar<typename DerivedV::Scalar, Dynamic, 1> RigidBodyManipulator::frictionTorques(Eigen::MatrixBase<DerivedV> const & v, int gradient_order) {
+GradientVar<typename DerivedV::Scalar, Dynamic, 1> RigidBodyManipulator::frictionTorques(Eigen::MatrixBase<DerivedV> const & v, int gradient_order) const {
   typedef typename DerivedV::Scalar Scalar;
   GradientVar<Scalar, Dynamic, 1> ret(num_velocities, 1, num_velocities, gradient_order);
   if (gradient_order > 1)
@@ -1625,19 +1420,19 @@ GradientVar<typename DerivedV::Scalar, Dynamic, 1> RigidBodyManipulator::frictio
  *      2, output quaternion [w,x,y,z], with w>=0
  */
 template <typename DerivedPoints>
-GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> RigidBodyManipulator::forwardKin(
-    const MatrixBase<DerivedPoints> &points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, int gradient_order)
+GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> RigidBodyManipulator::forwardKin(const KinematicsCache<typename DerivedPoints::Scalar>& cache,
+    const MatrixBase<DerivedPoints> &points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, int gradient_order) const
 {
   if (gradient_order > 2)
     throw std::runtime_error("only first and second order gradients are available");
-  checkCachedKinematicsSettings(false, false, false, "forwardKin"); // rely on forwardJac for gradient cache check
+  cache.checkCachedKinematicsSettings(false, false, false, "forwardKin"); // rely on forwardJac for gradient cache check
 
   int nq = num_positions;
   int npoints = static_cast<int>(points.cols());
   typedef typename DerivedPoints::Scalar Scalar;
 
   // compute rotation and translation
-  auto T = relativeTransform<Scalar>(new_body_or_frame_ind, current_body_or_frame_ind, 0).value();
+  auto T = relativeTransform(cache, new_body_or_frame_ind, current_body_or_frame_ind, 0).value();
   auto R = T.template topLeftCorner<SPACE_DIMENSION, SPACE_DIMENSION>();
   auto p = T.template topRightCorner<SPACE_DIMENSION, 1>();
 
@@ -1652,7 +1447,7 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsA
 
   if (gradient_order > 0) {
     int J_gradient_order = gradient_order - 1;
-    auto J = forwardKinJacobian(points, current_body_or_frame_ind, new_body_or_frame_ind, rotation_type, true, J_gradient_order);
+    auto J = forwardKinJacobian(cache, points, current_body_or_frame_ind, new_body_or_frame_ind, rotation_type, true, J_gradient_order);
     x.gradient().value() = J.value();
     if (J_gradient_order > 0)
       x.gradient().gradient().value() = J.gradient().value();
@@ -1662,16 +1457,16 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsA
 }
 
 template <typename DerivedPoints>
-GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinJacobian(
-    const MatrixBase<DerivedPoints> &points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, bool in_terms_of_qdot, int gradient_order)
+GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinJacobian(const KinematicsCache<typename DerivedPoints::Scalar>& cache,
+    const MatrixBase<DerivedPoints> &points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, bool in_terms_of_qdot, int gradient_order) const
 {
   if (gradient_order > 1)
     throw std::runtime_error("only first order gradient is available");
-  checkCachedKinematicsSettings(gradient_order > 0, false, false, "forwardKinJacobian");
+  cache.checkCachedKinematicsSettings(gradient_order > 0, false, false, "forwardKinJacobian");
   typedef typename DerivedPoints::Scalar Scalar;
 
   // possibly slightly wasteful if we needed x anyway, but not terrible
-  auto x = forwardKin(points, current_body_or_frame_ind, new_body_or_frame_ind, rotation_type, 0).value();
+  auto x = forwardKin(cache, points, current_body_or_frame_ind, new_body_or_frame_ind, rotation_type, 0).value();
 
   int nq = num_positions;
   int nv = num_velocities;
@@ -1682,7 +1477,7 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, Eigen::Dynamic> Rigi
   int body_ind = parseBodyOrFrameID(current_body_or_frame_ind);
   int base_ind = parseBodyOrFrameID(new_body_or_frame_ind);
   std::vector<int> v_or_q_indices;
-  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> J_geometric = geometricJacobian<Scalar>(base_ind, body_ind, new_body_or_frame_ind, gradient_order, in_terms_of_qdot, &v_or_q_indices);
+  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> J_geometric = geometricJacobian(cache, base_ind, body_ind, new_body_or_frame_ind, gradient_order, in_terms_of_qdot, &v_or_q_indices);
 
   // split up into rotational and translational parts
   auto Jomega = J_geometric.value().template topRows<SPACE_DIMENSION>();
@@ -1733,7 +1528,7 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, Eigen::Dynamic> Rigi
 
     KinematicPath path;
     findKinematicPath(path, base_ind, body_ind);
-    MatrixXd dqrotdq = in_terms_of_qdot ? compactToFull(Jrot, path.joint_path, true) : transformVelocityMappingToPositionDotMapping(compactToFull(Jrot, path.joint_path, false));
+    MatrixXd dqrotdq = in_terms_of_qdot ? compactToFull(Jrot, path.joint_path, true) : transformVelocityMappingToPositionDotMapping(cache, compactToFull(Jrot, path.joint_path, false));
 
     auto dPhidq = (Phi.gradient().value() * dqrotdq).eval();
     auto dJrot = matGradMultMat(Phi.value(), Jomega, dPhidq, dJomega);
@@ -1750,7 +1545,7 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, Eigen::Dynamic> Rigi
       if (in_terms_of_qdot)
         dpoint = getSubMatrixGradient<Eigen::Dynamic>(J.value(), rows, intRange<1>(i), x.rows());
       else
-        dpoint = transformVelocityMappingToPositionDotMapping(getSubMatrixGradient<Eigen::Dynamic>(J.value(), rows, intRange<1>(i), x.rows()));
+        dpoint = transformVelocityMappingToPositionDotMapping(cache, getSubMatrixGradient<Eigen::Dynamic>(J.value(), rows, intRange<1>(i), x.rows()));
 
       for (std::vector<int>::iterator it = v_or_q_indices.begin(); it != v_or_q_indices.end(); ++it) {
         const auto& Jomega_col = Jomega.col(col);
@@ -1781,14 +1576,15 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, Eigen::Dynamic> Rigi
 }
 
 template <typename Scalar>
-GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinPositionGradient(int npoints, int current_body_or_frame_ind, int new_body_or_frame_ind, int gradient_order)
+GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinPositionGradient(const KinematicsCache<Scalar>& cache,
+  int npoints, int current_body_or_frame_ind, int new_body_or_frame_ind, int gradient_order) const
 {
   if (gradient_order > 1)
     throw std::runtime_error("Only first order gradients supported");
-  checkCachedKinematicsSettings(gradient_order > 0, false, false, "forwardKinPositionGradient");
+  cache.checkCachedKinematicsSettings(gradient_order > 0, false, false, "forwardKinPositionGradient");
 
   int nq = num_positions;
-  auto Tinv = relativeTransform<Scalar>(current_body_or_frame_ind, new_body_or_frame_ind, gradient_order);
+  auto Tinv = relativeTransform(cache, current_body_or_frame_ind, new_body_or_frame_ind, gradient_order);
   GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> ret(SPACE_DIMENSION * npoints, SPACE_DIMENSION * npoints, nq, gradient_order);
   ret.value().setZero();
   for (int i = 0; i < npoints; i++) {
@@ -1812,24 +1608,24 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwar
 }
 
 template <typename DerivedPoints>
-GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::forwardJacDotTimesV(const MatrixBase<DerivedPoints>& points,
-    int body_or_frame_ind, int base_or_frame_ind, int rotation_type, int gradient_order)
+GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::forwardJacDotTimesV(const KinematicsCache<typename DerivedPoints::Scalar>& cache, const MatrixBase<DerivedPoints>& points,
+    int body_or_frame_ind, int base_or_frame_ind, int rotation_type, int gradient_order) const
 {
   if (gradient_order > 1)
     throw std::runtime_error("only first order gradients are available");
-  checkCachedKinematicsSettings(gradient_order > 0, true, true, "forwardJacDotTimesV");
+  cache.checkCachedKinematicsSettings(gradient_order > 0, true, true, "forwardJacDotTimesV");
 
   typedef typename DerivedPoints::Scalar Scalar;
   int npoints = static_cast<int>(points.cols());
 
-  auto x = forwardKin(points, body_or_frame_ind, base_or_frame_ind, rotation_type, gradient_order);
+  auto x = forwardKin(cache, points, body_or_frame_ind, base_or_frame_ind, rotation_type, gradient_order);
   auto r = x.value().template topRows<SPACE_DIMENSION>();
   auto qrot = x.value().template bottomLeftCorner<Eigen::Dynamic, 1>(rotationRepresentationSize(rotation_type), 1);
   GradientVar<Scalar, Eigen::Dynamic, SPACE_DIMENSION> Phi = angularvel2RepresentationDotMatrix(rotation_type, qrot, gradient_order + 1);
 
   int expressed_in = base_or_frame_ind;
-  const auto twist = relativeTwist<Scalar>(base_or_frame_ind, body_or_frame_ind, expressed_in, gradient_order);
-  const auto J_geometric_dot_times_v = geometricJacobianDotTimesV<Scalar>(base_or_frame_ind, body_or_frame_ind, expressed_in, gradient_order);
+  const auto twist = relativeTwist(cache, base_or_frame_ind, body_or_frame_ind, expressed_in, gradient_order);
+  const auto J_geometric_dot_times_v = geometricJacobianDotTimesV(cache, base_or_frame_ind, body_or_frame_ind, expressed_in, gradient_order);
 
   auto omega_twist = twist.value().template topRows<SPACE_DIMENSION>();
   auto v_twist = twist.value().template bottomRows<SPACE_DIMENSION>();
@@ -1895,7 +1691,7 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, 1> RigidBodyManipula
   return ret;
 }
 
-shared_ptr<RigidBody> RigidBodyManipulator::findLink(string linkname, int robot)
+shared_ptr<RigidBody> RigidBodyManipulator::findLink(std::string linkname, int robot) const
 {
   std::transform(linkname.begin(), linkname.end(), linkname.begin(), ::tolower); // convert to lower case
 
@@ -1924,7 +1720,7 @@ shared_ptr<RigidBody> RigidBodyManipulator::findLink(string linkname, int robot)
   return nullptr;
 }
 
-int RigidBodyManipulator::findLinkId(string name, int robot)
+int RigidBodyManipulator::findLinkId(const std::string& name, int robot) const
 {
 	shared_ptr<RigidBody> link = findLink(name,robot);
 	if (link == nullptr)
@@ -1932,7 +1728,7 @@ int RigidBodyManipulator::findLinkId(string name, int robot)
 	return link->body_index;
 }
 
-shared_ptr<RigidBody> RigidBodyManipulator::findJoint(string jointname, int robot)
+shared_ptr<RigidBody> RigidBodyManipulator::findJoint(std::string jointname, int robot) const
 {
   std::transform(jointname.begin(), jointname.end(), jointname.begin(), ::tolower); // convert to lower case
 
@@ -1985,7 +1781,7 @@ shared_ptr<RigidBody> RigidBodyManipulator::findJoint(string jointname, int robo
   }
 }
 
-int RigidBodyManipulator::findJointId(string name, int robot)
+int RigidBodyManipulator::findJointId(const std::string& name, int robot) const
 {
 	shared_ptr<RigidBody> link = findJoint(name,robot);
 	if (link == nullptr)
@@ -1993,8 +1789,7 @@ int RigidBodyManipulator::findJointId(string name, int robot)
 	return link->body_index;
 }
 
-
-std::string RigidBodyManipulator::getBodyOrFrameName(int body_or_frame_id)
+std::string RigidBodyManipulator::getBodyOrFrameName(int body_or_frame_id) const
 {
   if (body_or_frame_id>=0) {
     return bodies[body_or_frame_id]->linkname;
@@ -2006,7 +1801,7 @@ std::string RigidBodyManipulator::getBodyOrFrameName(int body_or_frame_id)
 }
 
 template <typename Scalar>
-GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints(int gradient_order)
+GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints(const KinematicsCache<Scalar>& cache, int gradient_order) const
 {
   if (gradient_order > 1)
     throw std::runtime_error("only first order gradients are implemented so far (it's trivial to add more)");
@@ -2014,7 +1809,7 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints
   GradientVar<Scalar, Eigen::Dynamic, 1> ret(6*loops.size(), 1, num_positions, gradient_order);
   for (size_t i = 0; i < loops.size(); i++) {
     { // position constraint
-      auto ptA_in_B = forwardKin(Vector3d::Zero(), loops[i].frameA->frame_index, loops[i].frameB->frame_index, 0,
+      auto ptA_in_B = forwardKin(cache, Vector3d::Zero(), loops[i].frameA->frame_index, loops[i].frameB->frame_index, 0,
                                  gradient_order);
       ret.value().middleRows(6 * i, 3) = ptA_in_B.value();
       if (gradient_order > 0) {
@@ -2022,7 +1817,7 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints
       }
     }
     { // second position constraint (to constrain orientation)
-      auto ptA_in_B = forwardKin(loops[i].axis, loops[i].frameA->frame_index, loops[i].frameB->frame_index, 0,
+      auto ptA_in_B = forwardKin(cache, loops[i].axis, loops[i].frameA->frame_index, loops[i].frameB->frame_index, 0,
                                  gradient_order);
       ret.value().middleRows(6 * i + 3, 3) = ptA_in_B.value() - loops[i].axis;
       if (gradient_order > 0) {
@@ -2036,8 +1831,6 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints
 template <typename DerivedA, typename DerivedB, typename DerivedC>
 void RigidBodyManipulator::jointLimitConstraints(MatrixBase<DerivedA> const & q, MatrixBase<DerivedB> &phi, MatrixBase<DerivedC> &J) const
 {
-  // FIXME: iterate of fixedAxisOneDoFJoints
-
   std::vector<int> finite_min_index;
   std::vector<int> finite_max_index;
 
@@ -2077,7 +1870,7 @@ size_t RigidBodyManipulator::getNumJointLimitConstraints() const
 
 template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> RigidBodyManipulator::transformVelocityMappingToPositionDotMapping(
-    const Eigen::MatrixBase<Derived>& mat)
+    const KinematicsCache<typename Derived::Scalar>& cache, const Eigen::MatrixBase<Derived>& mat) const
 {
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> ret(mat.rows(), num_positions);
   int ret_col_start = 0;
@@ -2086,7 +1879,8 @@ Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynam
     RigidBody& body = **it;
     if (body.hasParent()) {
       const DrakeJoint& joint = body.getJoint();
-      ret.middleCols(ret_col_start, joint.getNumPositions()).noalias() = mat.middleCols(mat_col_start, joint.getNumVelocities()) * body.qdot_to_v;
+      const auto& element = cache.getElement(body);
+      ret.middleCols(ret_col_start, joint.getNumPositions()).noalias() = mat.middleCols(mat_col_start, joint.getNumVelocities()) * element.qdot_to_v.value();
       ret_col_start += joint.getNumPositions();
       mat_col_start += joint.getNumVelocities();
     }
@@ -2099,77 +1893,47 @@ size_t RigidBodyManipulator::getNumPositionConstraints() const
 }
 
 
-void RigidBodyManipulator::checkCachedKinematicsSettings(bool kinematics_gradients_required, bool velocity_kinematics_required, bool jdot_times_v_required, const std::string& method_name)
-{
-  std::string message;
-  if (!position_kinematics_cached) {
-    message = method_name + " requires position kinematics, which have not been cached. Please call doKinematics.";
-  }
-  if (kinematics_gradients_required && ! gradients_cached) {
-    message = method_name + " requires kinematics gradients, which have not been cached. Please call doKinematics with compute_gradients set to true.";
-  }
-  if (velocity_kinematics_required && ! velocity_kinematics_cached) {
-    message = method_name + " requires velocity kinematics, which have not been cached. Please call doKinematics with a velocity vector.";
-  }
-  if (jdot_times_v_required && !jdotV_cached) {
-    message = method_name + " requires Jdot times v, which has not been cached. Please call doKinematics with a velocity vector and compute_JdotV set to true.";
-  }
-  if (message.length() > 0) {
-    throw runtime_error(message.c_str());
-  }
-}
-
 void RigidBodyManipulator::addFrame(const std::shared_ptr<RigidBodyFrame>& frame)
 {
   frames.push_back(frame);
   frame->frame_index=-(frames.size()-1)-2; // yuck!!
 }
 
-// explicit instantiations (required for linking):
-template DLLEXPORT_RBM void RigidBodyManipulator::doKinematics(const MatrixBase<Map<VectorXd> > &, const MatrixBase<Map<VectorXd> > &, bool, bool);
-template DLLEXPORT_RBM void RigidBodyManipulator::doKinematics<Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, 0, Eigen::Stride<0, 0> >, Eigen::Matrix<double, -1, 1, 0, -1, 1> >(
-    Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1> const, 0, Eigen::Stride<0, 0> > > const &, Eigen::MatrixBase<Eigen::Matrix<double, -1, 1, 0, -1, 1> > const &, bool, bool);
-template DLLEXPORT_RBM void RigidBodyManipulator::doKinematics(const MatrixBase<VectorXd> &, const MatrixBase<VectorXd> &, bool, bool);
-template DLLEXPORT_RBM void RigidBodyManipulator::doKinematics(const MatrixBase<Block<MatrixXd, -1, 1, true> > &, const MatrixBase<Block<MatrixXd, -1, 1, true> > &, bool, bool);
-template DLLEXPORT_RBM void RigidBodyManipulator::doKinematics(const MatrixBase<Block<MatrixXd, -1, 1, true> > &, const MatrixBase<Map<VectorXd> > &, bool, bool);
-template DLLEXPORT_RBM void RigidBodyManipulator::doKinematics<Eigen::Map<Eigen::VectorXd, 0, Eigen::Stride<0, 0> >, Eigen::VectorXd >(Eigen::MatrixBase<Eigen::Map<Eigen::VectorXd, 0, Eigen::Stride<0, 0> > > const &,
-                                                                                                                                       Eigen::MatrixBase<Eigen::VectorXd> const &, bool, bool);
+template DLLEXPORT_RBM void RigidBodyManipulator::getContactPositions(const KinematicsCache<double>& cache, MatrixBase <MatrixXd > &, const set<int> &) const;
+template DLLEXPORT_RBM void RigidBodyManipulator::getContactPositionsJac(const KinematicsCache<double>& cache, MatrixBase <MatrixXd > &,const set<int> &) const;
 
-template DLLEXPORT_RBM void RigidBodyManipulator::getContactPositions(MatrixBase <MatrixXd > &, const set<int> &);
-template DLLEXPORT_RBM void RigidBodyManipulator::getContactPositionsJac(MatrixBase <MatrixXd > &,const set<int> &);
-
-template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::centroidalMomentumMatrix(int, const std::set<int>&, bool);
-template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, 1> RigidBodyManipulator::centroidalMomentumMatrixDotTimesV(int, const std::set<int>&);
-template DLLEXPORT_RBM GradientVar<double, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(int, const std::set<int>&);
-template DLLEXPORT_RBM GradientVar<double, SPACE_DIMENSION, Eigen::Dynamic> RigidBodyManipulator::centerOfMassJacobian(int, const std::set<int>&, bool);
-template DLLEXPORT_RBM GradientVar<double, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMassJacobianDotTimesV(int, const std::set<int>&);
-template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJacobian<double>(int, int, int, int, bool, std::vector<int>*);
-template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, 1> RigidBodyManipulator::geometricJacobianDotTimesV(int, int, int, int);
-template DLLEXPORT_RBM GradientVar<double, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> RigidBodyManipulator::relativeTransform(int, int, int);
-template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKin(const MatrixBase<Matrix<double, 3, Eigen::Dynamic> > &, int, int, int, int);
-template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKin<Eigen::MatrixXd >(Eigen::MatrixBase<Eigen::MatrixXd> const &, int, int, int, int);
-template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::forwardKin(const MatrixBase<Matrix<double, 3, 1> > &, int, int, int, int);
-template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinJacobian(const MatrixBase<Matrix3Xd> &, int, int, int, bool, int);
-template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinJacobian<Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1>, -1, 1, true> >(
-    Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1>, -1, 1, true> > const &, int, int, int, bool, int);
-template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinJacobian<Eigen::MatrixXd >(Eigen::MatrixBase<Eigen::MatrixXd> const &, int, int, int, bool, int);
-template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinJacobian<Eigen::Vector3d >(Eigen::MatrixBase<Eigen::Vector3d> const &, int, int, int, bool, int);
+template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::centroidalMomentumMatrix(KinematicsCache<double>&, int, const std::set<int>&, bool) const;
+template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, 1> RigidBodyManipulator::centroidalMomentumMatrixDotTimesV(KinematicsCache<double>&, int, const std::set<int>&) const;
+template DLLEXPORT_RBM GradientVar<double, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(KinematicsCache<double>&, int, const std::set<int>&) const;
+template DLLEXPORT_RBM GradientVar<double, SPACE_DIMENSION, Eigen::Dynamic> RigidBodyManipulator::centerOfMassJacobian(KinematicsCache<double>&, int, const std::set<int>&, bool) const;
+template DLLEXPORT_RBM GradientVar<double, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMassJacobianDotTimesV(KinematicsCache<double>&, int, const std::set<int>&) const;
+template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJacobian<double>(const KinematicsCache<double>&, int, int, int, int, bool, std::vector<int>*) const;
+template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, 1> RigidBodyManipulator::geometricJacobianDotTimesV(const KinematicsCache<double>&, int, int, int, int) const;
+template DLLEXPORT_RBM GradientVar<double, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> RigidBodyManipulator::relativeTransform(const KinematicsCache<double>&, int, int, int) const;
+template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKin<Matrix3Xd >(const KinematicsCache<double>&, const MatrixBase<Matrix3Xd> &, int, int, int, int) const;
+template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKin<Eigen::MatrixXd >(const KinematicsCache<double>&, Eigen::MatrixBase<Eigen::MatrixXd> const &, int, int, int, int) const;
+template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::forwardKin<Vector3d>(const KinematicsCache<double>&, const MatrixBase<Vector3d> &, int, int, int, int) const;
+template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinJacobian(const KinematicsCache<double>&, const MatrixBase<Matrix3Xd> &, int, int, int, bool, int) const;
+template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinJacobian<Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1>, -1, 1, true> >(const KinematicsCache<double>&,
+    Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1>, -1, 1, true> > const &, int, int, int, bool, int) const;
+template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinJacobian<Eigen::MatrixXd >(const KinematicsCache<double>&, Eigen::MatrixBase<Eigen::MatrixXd> const &, int, int, int, bool, int) const;
+template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinJacobian<Eigen::Vector3d >(const KinematicsCache<double>&, Eigen::MatrixBase<Eigen::Vector3d> const &, int, int, int, bool, int) const;
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinJacobian<Eigen::Block<Eigen::Matrix3Xd, 3, 1, true> >(
-    Eigen::MatrixBase<Eigen::Block<Eigen::Matrix3Xd, 3, 1, true> > const &, int, int, int, bool, int);
-template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinPositionGradient(int, int, int, int);
-template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::forwardJacDotTimesV(const MatrixBase< Matrix<double, 3, Eigen::Dynamic> >&, int, int, int, int);
-template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::forwardJacDotTimesV(const MatrixBase< Matrix<double, 3, 1> >&, int, int, int, int);
-template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMatrix(int);
-template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(std::map<int, std::unique_ptr<GradientVar<double, TWIST_SIZE, 1> > >& f_ext, GradientVar<double, Eigen::Dynamic, 1>* vd, int);
-template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, 1> RigidBodyManipulator::relativeTwist<double>(int, int, int, int);
-template DLLEXPORT_RBM GradientVar<double, 6, Dynamic> RigidBodyManipulator::worldMomentumMatrix<double>(int, const std::set<int>&, bool);
-template DLLEXPORT_RBM GradientVar<double, 6, 1> RigidBodyManipulator::transformSpatialAcceleration<double>(GradientVar<double, 6, 1> const&, int, int, int, int);
-template DLLEXPORT_RBM GradientVar<double, 6, 1> RigidBodyManipulator::worldMomentumMatrixDotTimesV<double>(int, const std::set<int>&);
+    const KinematicsCache<double>&, Eigen::MatrixBase<Eigen::Block<Eigen::Matrix3Xd, 3, 1, true> > const &, int, int, int, bool, int) const;
+template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinPositionGradient(const KinematicsCache<double>&, int, int, int, int) const;
+template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::forwardJacDotTimesV(const KinematicsCache<double>&, const MatrixBase< Matrix<double, 3, Eigen::Dynamic> >&, int, int, int, int) const;
+template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::forwardJacDotTimesV(const KinematicsCache<double>&, const MatrixBase< Matrix<double, 3, 1> >&, int, int, int, int) const;
+template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMatrix(KinematicsCache<double>&, int) const;
+template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(KinematicsCache<double>&, std::map<int, std::unique_ptr<GradientVar<double, TWIST_SIZE, 1> > >& f_ext, GradientVar<double, Eigen::Dynamic, 1>* vd, int) const;
+template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, 1> RigidBodyManipulator::relativeTwist<double>(const KinematicsCache<double>&, int, int, int, int) const;
+template DLLEXPORT_RBM GradientVar<double, 6, Dynamic> RigidBodyManipulator::worldMomentumMatrix<double>(KinematicsCache<double>&, int, const std::set<int>&, bool) const;
+template DLLEXPORT_RBM GradientVar<double, 6, 1> RigidBodyManipulator::transformSpatialAcceleration<double>(const KinematicsCache<double>&, GradientVar<double, 6, 1> const&, int, int, int, int) const;
+template DLLEXPORT_RBM GradientVar<double, 6, 1> RigidBodyManipulator::worldMomentumMatrixDotTimesV<double>(KinematicsCache<double>&, int, const std::set<int>&) const;
 
-template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints(int);
+template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints(const KinematicsCache<double>&, int) const;
 
-template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints(MatrixBase<VectorXd> const &, MatrixBase<VectorXd> &, MatrixBase<MatrixXd> &) const ;
-template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints(MatrixBase< Map<VectorXd> > const &, MatrixBase<VectorXd> &, MatrixBase<MatrixXd> &) const ;
-template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints(MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > &) const ;
+template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints(MatrixBase<VectorXd> const &, MatrixBase<VectorXd> &, MatrixBase<MatrixXd> &) const;
+template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints(MatrixBase< Map<VectorXd> > const &, MatrixBase<VectorXd> &, MatrixBase<MatrixXd> &) const;
+template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints(MatrixBase< Map<VectorXd> > const &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > &) const;
 
-template DLLEXPORT_RBM std::pair<Eigen::Vector3d, double> RigidBodyManipulator::resolveCenterOfPressure(const std::vector<ForceTorqueMeasurement> &, const Eigen::MatrixBase<Eigen::Vector3d> &, const Eigen::MatrixBase<Eigen::Vector3d> &);
+template DLLEXPORT_RBM std::pair<Eigen::Vector3d, double> RigidBodyManipulator::resolveCenterOfPressure(const KinematicsCache<double>&, const std::vector<ForceTorqueMeasurement> &, const Eigen::MatrixBase<Eigen::Vector3d> &, const Eigen::MatrixBase<Eigen::Vector3d> &) const;

@@ -215,9 +215,9 @@ private:
 
   std::vector<Side> getSupportSides(const RigidBodySupportState &support_state) const;
 
-  void updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const Eigen::VectorXd& qd);
+  void updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const KinematicsCache<double>& cache, const VectorXd& v);
 
-  void updatePlanShift(double t_plan, const std::vector<bool>& contact_force_detected, int support_index);
+  void updatePlanShift(const KinematicsCache<double>& cache, double t_plan, const std::vector<bool>& contact_force_detected, int support_index);
 
   void findPlannedSupportFraction(double t_plan, int support_index, double &last_support_fraction, double &next_support_fraction, double &transition_fraction) const;
 

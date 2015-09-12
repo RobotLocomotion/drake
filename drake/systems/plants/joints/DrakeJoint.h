@@ -4,7 +4,6 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 #include <unsupported/Eigen/AutoDiff>
-//#include "RigidBody.h"
 #include <random>
 #include "drakeGeometryUtil.h"
 #include "GradientVar.h"
@@ -23,10 +22,10 @@
 
 #define POSITION_AND_VELOCITY_DEPENDENT_METHODS(Scalar) \
   virtual Eigen::Transform<Scalar, 3, Eigen::Isometry> jointTransform(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> > &q) const = 0; \
-  virtual void motionSubspace(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> > &q, Eigen::Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> &motion_subspace, Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> *dmotion_subspace = nullptr) const = 0; \
+  virtual void motionSubspace(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> > &q, Eigen::Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic, 0, TWIST_SIZE, MAX_NUM_VELOCITIES> &motion_subspace, Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> *dmotion_subspace = nullptr) const = 0; \
   virtual void motionSubspaceDotTimesV(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>> &q, const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>> &v, Eigen::Matrix<Scalar, 6, 1> &motion_subspace_dot_times_v, Gradient<Eigen::Matrix<Scalar, 6, 1>, Eigen::Dynamic>::type *dmotion_subspace_dot_times_vdq = nullptr, Gradient<Eigen::Matrix<Scalar, 6, 1>, Eigen::Dynamic>::type *dmotion_subspace_dot_times_vdv = nullptr) const = 0; \
-  virtual void qdot2v(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> > &q, Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> &qdot_to_v, Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> *dqdot_to_v) const = 0; \
-  virtual void v2qdot(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>> &q, Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> &v_to_qdot, Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> *dv_to_qdot) const = 0; \
+  virtual void qdot2v(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> > &q, Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, 0, MAX_NUM_VELOCITIES, MAX_NUM_POSITIONS> &qdot_to_v, Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> *dqdot_to_v) const = 0; \
+  virtual void v2qdot(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>> &q, Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, 0, MAX_NUM_POSITIONS, MAX_NUM_VELOCITIES> &v_to_qdot, Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> *dv_to_qdot) const = 0; \
   virtual GradientVar<Scalar, Eigen::Dynamic, 1> frictionTorque(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>& v, int gradient_order) const = 0;
 
 class RigidBody;
@@ -43,6 +42,8 @@ public:
     ROLLPITCHYAW = 1,
     QUATERNION   = 2
   };
+  static const int MAX_NUM_POSITIONS = 7;
+  static const int MAX_NUM_VELOCITIES = 6;
 
 private:
   const Eigen::Isometry3d transform_to_parent_body;

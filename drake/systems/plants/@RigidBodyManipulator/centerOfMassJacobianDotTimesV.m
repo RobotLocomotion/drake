@@ -19,9 +19,9 @@ end
 
 if (kinsol.mex)
   if compute_gradients
-    [com_Jacobian_dot_times_v, dcom_Jacobian_dot_times_v] = centerOfMassJacobianDotTimesVmex(obj.mex_model_ptr, robotnum);
+    [com_Jacobian_dot_times_v, dcom_Jacobian_dot_times_v] = centerOfMassJacobianDotTimesVmex(obj.mex_model_ptr, kinsol.mex_ptr, robotnum);
   else
-    [com_Jacobian_dot_times_v] = centerOfMassJacobianDotTimesVmex(obj.mex_model_ptr, robotnum);
+    [com_Jacobian_dot_times_v] = centerOfMassJacobianDotTimesVmex(obj.mex_model_ptr, kinsol.mex_ptr, robotnum);
   end
 else
   total_mass = getMass(obj, robotnum);

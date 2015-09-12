@@ -12,8 +12,8 @@ using namespace std;
 
 void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
 
-  string usage = "Usage [C, dC] = inverseDynamicsmex(model_ptr, f_ext, vd, df_ext, dvd)";
-  if (nrhs < 1 || nrhs > 5) {
+  string usage = "Usage [C, dC] = inverseDynamicsmex(model_ptr, cache_ptr, f_ext, vd, df_ext, dvd)";
+  if (nrhs < 2 || nrhs > 6) {
     mexErrMsgIdAndTxt("Drake:geometricJacobianmex:WrongNumberOfInputs", usage.c_str());
   }
 
@@ -24,21 +24,24 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
   int gradient_order = nlhs - 1;
 
 
-  RigidBodyManipulator *model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+  int arg_num = 0;
+  RigidBodyManipulator *model = static_cast<RigidBodyManipulator*>(getDrakeMexPointer(prhs[arg_num++]));
+  KinematicsCache<double>* cache = static_cast<KinematicsCache<double>*>(getDrakeMexPointer(prhs[arg_num++]));
+
   int nq = model->num_positions;
   int nv = model->num_velocities;
   const mxArray* f_ext_matlab = nullptr;
   const mxArray* vd_matlab = nullptr;
   const mxArray* df_ext_matlab = nullptr;
   const mxArray* dvd_matlab = nullptr;
-  if (nrhs > 1)
-    f_ext_matlab = prhs[1];
   if (nrhs > 2)
-    vd_matlab = prhs[2];
+    f_ext_matlab = prhs[arg_num++];
   if (nrhs > 3)
-    df_ext_matlab = prhs[3];
+    vd_matlab = prhs[arg_num++];
   if (nrhs > 4)
-    dvd_matlab = prhs[4];
+    df_ext_matlab = prhs[arg_num++];
+  if (nrhs > 5)
+    dvd_matlab = prhs[arg_num++];
 
   map<int, unique_ptr<GradientVar<double, TWIST_SIZE, 1> > > f_ext;
   if (f_ext_matlab != nullptr) {
@@ -111,7 +114,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
     }
   }
 
-  auto ret = model->inverseDynamics(f_ext, vd_ptr.get(), gradient_order);
+  auto ret = model->inverseDynamics(*cache, f_ext, vd_ptr.get(), gradient_order);
 
   plhs[0] = eigenToMatlab(ret.value());
   if (gradient_order > 0)

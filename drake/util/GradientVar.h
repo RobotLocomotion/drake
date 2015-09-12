@@ -8,11 +8,11 @@
 #include <cstdint>
 
 
-template <typename Scalar, int Rows, int Cols>
+template <typename Scalar, int Rows, int Cols, int MaxRows = Rows, int MaxCols = Cols>
 class GradientVar
 {
 public:
-  typedef typename Eigen::Matrix<Scalar, Rows, Cols> DataType;
+  typedef typename Eigen::Matrix<Scalar, Rows, Cols, 0, MaxRows, MaxCols> DataType;
   typedef typename Gradient<DataType, Eigen::Dynamic>::type GradientDataType;
   typedef GradientVar<Scalar, GradientDataType::RowsAtCompileTime, GradientDataType::ColsAtCompileTime> ChildGradientVarType;
 
@@ -21,16 +21,12 @@ private:
   ChildGradientVarType* grad;
 
 private:
-  GradientVar& operator= (const GradientVar& other); // disallow assignment
-//  GradientVar(const GradientVar& other);
 
 public:
   GradientVar(typename DataType::Index rows, typename DataType::Index cols, typename DataType::Index nq = 0, int order = 0) :
     val(rows, cols),
     grad(order > 0 ? new ChildGradientVarType(rows * cols, nq, nq, order - 1) : nullptr)
   {
-//    std::cout << "rows: " << rows << ", cols: " << cols << std::endl;
-    // empty
   }
 
   // copy constructor
@@ -38,8 +34,21 @@ public:
      val(other.val),
      grad(other.grad == nullptr ? nullptr : new ChildGradientVarType(*other.grad))
   {
-//    std::cout << "copy constructor called" << std::endl;
-    // empty
+  }
+
+  GradientVar& operator= (const GradientVar& other) {
+    // Check for self-assignment
+    if (this == &other)
+      return *this;
+
+    val = other.val;
+
+    if (hasGradient() != other.hasGradient())
+      throw std::runtime_error("Refusing to assign this GradientVar based on a right hand side that does not have the same gradient order to avoid large, hidden allocations.");
+    else
+      *grad = *(other.grad); // perform recursive deep copy
+
+    return *this;
   }
 
   virtual ~GradientVar()

@@ -173,7 +173,6 @@ function [zmp, supp] = getZMPBetweenFeet(biped, steps)
     end
   end
   zmp = mean(zmp, 2);
-  support_options.use_support_surface = ones(length(initial_supports),1);
   support_options.support_surface = initial_support_surfaces;
   support_options.contact_groups = initial_support_groups;
   supp = RigidBodySupportState(biped, initial_supports, support_options);

@@ -21,12 +21,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   Map<VectorXd> q(mxGetPrSafe(prhs[1]),nq);
 
-  VectorXd v = VectorXd::Zero(0);
-  model->doKinematics(q, v);
+  KinematicsCache<double> cache = model->doKinematics(q, 0); // FIXME: KinematicsCache should be passed in!
 
-  auto phi = model->positionConstraints<double>(1);
+  auto phi = model->positionConstraints<double>(cache,1);
   plhs[0] = eigenToMatlab(phi.value());
   plhs[1] = eigenToMatlab(phi.gradient().value());
-
 }
 

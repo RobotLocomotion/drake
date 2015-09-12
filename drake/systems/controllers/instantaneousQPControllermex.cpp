@@ -178,7 +178,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   if (nlhs>narg) {
     RigidBodyManipulator* r = pdata->r;
 
-    VectorXd individual_cops = individualSupportCOPs(r, debug->active_supports, debug->normals, debug->B, debug->beta);
+    VectorXd individual_cops = individualSupportCOPs(r, pdata->cache, debug->active_supports, debug->normals, debug->B, debug->beta);
     plhs[narg] = eigenToMatlab(individual_cops);
   }
   narg++;

@@ -53,7 +53,7 @@ classdef QPInputConstantHeight
       % To allow support only if the force sensor is TRUE, we would say:
       % support_logic_map = [0;0;1;1];
       %
-      obj.support_data = struct('body_id', {}, 'contact_pts', {}, 'support_logic_map', {}, 'mu', {}, 'use_support_surface', {}, 'support_surface', {});
+      obj.support_data = struct('body_id', {}, 'contact_pts', {}, 'support_logic_map', {}, 'mu', {}, 'support_surface', {});
       
       % Data describing the desired motions of 0 or more bodies on the robot. Each element in this structure is produced by the BodyMotionData.slice() method. For documentation of all the parameters, please see BodyMotionData.m
       obj.body_motion_data = struct('body_id', {},...

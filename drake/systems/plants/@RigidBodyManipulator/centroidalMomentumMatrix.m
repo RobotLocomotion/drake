@@ -28,9 +28,9 @@ end
 
 if kinsol.mex
   if compute_gradients
-    [A, dA] = centroidalMomentumMatrixmex(robot.mex_model_ptr, robotnum, in_terms_of_qdot);
+    [A, dA] = centroidalMomentumMatrixmex(robot.mex_model_ptr, kinsol.mex_ptr, robotnum, in_terms_of_qdot);
   else
-    A = centroidalMomentumMatrixmex(robot.mex_model_ptr, robotnum, in_terms_of_qdot);
+    A = centroidalMomentumMatrixmex(robot.mex_model_ptr, kinsol.mex_ptr, robotnum, in_terms_of_qdot);
   end
 else
   if compute_gradients

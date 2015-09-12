@@ -41,7 +41,7 @@ vector<Point> convexHull(vector<Point> P)
   sort(P.begin(), P.end());
 
   // Build lower hull
-  for (size_t i = 0; i < n; ++i) {
+  for (ptrdiff_t i = 0; i < n; ++i) {
     while (k >= 2 && cross(H[k-2], H[k-1], P[i]) <= 0) k--;
     H[k++] = P[i];
   }

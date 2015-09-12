@@ -10,8 +10,8 @@ using namespace std;
 
 void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
 
-  std::string usage = "Usage [A, dA] = centroidalMomentumMatrixmex(mex_model_ptr, robotnum, in_terms_of_qdot)";
-  if (nrhs != 3) {
+  std::string usage = "Usage [A, dA] = centroidalMomentumMatrixmex(mex_model_ptr, cache_ptr, robotnum, in_terms_of_qdot)";
+  if (nrhs != 4) {
     mexErrMsgIdAndTxt("Drake:centroidalMomentumMatrixmex:WrongNumberOfInputs", usage.c_str());
   }
 
@@ -19,17 +19,22 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
     mexErrMsgIdAndTxt("Drake:centroidalMomentumMatrixmex:WrongNumberOfOutputs", usage.c_str());
   }
 
-  RigidBodyManipulator *model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+  int arg_num = 0;
+  RigidBodyManipulator *model = static_cast<RigidBodyManipulator*>(getDrakeMexPointer(prhs[arg_num++]));
+  KinematicsCache<double>* cache = static_cast<KinematicsCache<double>*>(getDrakeMexPointer(prhs[arg_num++]));
+
   set<int> robotnum_set;
-  int num_robot = static_cast<int>(mxGetNumberOfElements(prhs[1]));
-  double* robotnum = mxGetPrSafe(prhs[1]);
+  int num_robot = static_cast<int>(mxGetNumberOfElements(prhs[arg_num]));
+  double* robotnum = mxGetPrSafe(prhs[arg_num]);
   for (int i = 0; i < num_robot; i++) {
     robotnum_set.insert((int) robotnum[i] - 1);
   }
-  bool in_terms_of_qdot = (bool) (mxGetLogicals(prhs[2]))[0];
+  arg_num++;
+
+  bool in_terms_of_qdot = (bool) (mxGetLogicals(prhs[arg_num++]))[0];
 
   int gradient_order = nlhs - 1;
-  auto A = model->centroidalMomentumMatrix<double>(gradient_order, robotnum_set, in_terms_of_qdot);
+  auto A = model->centroidalMomentumMatrix<double>(*cache, gradient_order, robotnum_set, in_terms_of_qdot);
 
   plhs[0] = eigenToMatlab(A.value());
   if (gradient_order > 0)

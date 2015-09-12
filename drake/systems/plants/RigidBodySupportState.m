@@ -8,7 +8,6 @@ classdef RigidBodySupportState
     contact_groups; % cell array of cell arrays of contact group strings, 1 for each body
     num_contact_pts;  % convenience array containing the desired number of
                       %             contact points for each support body
-    use_support_surface; % logical vector with the same length as bodies
     support_surface; % 4-vector describing a support surface: [v; b] such that v' * [x;y;z] + b == 0
    end
 
@@ -47,10 +46,7 @@ classdef RigidBodySupportState
       end
       
       if isfield(options,'use_support_surface')
-        sizecheck(options.use_support_surface,nbod);
-        obj.use_support_surface = options.use_support_surface;
-      else
-        obj.use_support_surface = zeros(nbod,1);
+        warning('Drake:RigidBodySupportState:UseSupportSurfaceDepcreated', 'The use_support_surface option has been deprecated. A support surface is now mandatory');
       end
 
       if isfield(options,'support_surface')
@@ -58,6 +54,7 @@ classdef RigidBodySupportState
         sizecheck(options.support_surface,nbod);
         obj.support_surface = options.support_surface;
       else
+        warning('Drake:RigidBodySupportState:NoSupportSurface', 'No support surface provided. A horizontal plane at z = 0 will be assumed');
         obj.support_surface = cell(1,nbod);
         for i=1:nbod
           obj.support_surface{i} = [0;0;1;0];

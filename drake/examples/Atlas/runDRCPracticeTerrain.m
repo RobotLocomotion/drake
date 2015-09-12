@@ -29,7 +29,7 @@ i = 1;
 combined_xtraj = [];
 while true
   options.navgoal = [options.initial_pose(1)+3; 0;0;0;0;0];
-  options.safe_regions = region_server.findSafeTerrainRegions(1, region_args{:}, 'xy_bounds', iris.Polytope.fromBounds(options.initial_pose(1:2) - [0.5;1], options.initial_pose(1:2) + [3; 1]), 'seeds', seeds);
+  options.safe_regions = region_server.findSafeTerrainRegions(1, region_args{:}, 'xy_bounds', iris.Polyhedron.fromBounds(options.initial_pose(1:2) - [0.5;1], options.initial_pose(1:2) + [3; 1]), 'seeds', seeds);
   seeds = [];
   figure(i+20)
   i = i + 1;
