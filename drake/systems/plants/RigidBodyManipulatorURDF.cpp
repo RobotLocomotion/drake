@@ -749,17 +749,10 @@ bool parseLoop(RigidBodyManipulator* model, TiXmlElement* node)
 
 bool parseFrame(RigidBodyManipulator* model, TiXmlElement* node)
 {
-  Vector3d xyz, rpy;
+  Vector3d xyz=Vector3d::Zero(), rpy=Vector3d::Zero();
 
-  if (!parseVectorAttribute(node, "xyz", xyz)) {
-    cerr << "ERROR parsing Drake frame xyz" << endl;
-    return false;
-  }
-
-  if (!parseVectorAttribute(node, "rpy", rpy)) {
-    cerr << "ERROR parsing Drake frame rpy" << endl;
-    return false;
-  }
+  parseVectorAttribute(node, "xyz", xyz);
+  parseVectorAttribute(node, "rpy", rpy);
 
   const char* frame_link = node->Attribute("link");
 
@@ -793,6 +786,10 @@ bool parseFrame(RigidBodyManipulator* model, TiXmlElement* node)
 
 bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const map<string,string> package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
 {
+  if (!node->Attribute("name")) {
+    cerr << "Error: your robot must have a name attribute" << endl;
+    return false;
+  }
   string robotname = node->Attribute("name");
 
   // parse material elements

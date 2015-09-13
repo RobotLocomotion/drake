@@ -8,7 +8,7 @@ using namespace std;
 
 void checkBodyOrFrameID(const int body, const RigidBodyManipulator* model, const char* body_var_name="body")
 {
-  if(body >= model->bodies.size()) {
+  if(body >= static_cast<int>(model->bodies.size())) {
     mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","%s must be less than %d (got %d)",body_var_name,model->bodies.size(),body);
   } else if(body < -static_cast<int>(model->frames.size()) - 1) {
     mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","%s must be greater than %d (got %d)",body_var_name,-model->frames.size(),body);

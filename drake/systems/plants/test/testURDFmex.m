@@ -48,6 +48,7 @@ for urdf = urdfs'
   [retval,outstr] = systemWCMakeEnv([urdf_kin_test,' ',urdffile,sprintf(' %f',q),' 2> /dev/null']);
   valuecheck(retval,0);
   outstr_cell = regexp(outstr, '=======', 'split');  outstr = outstr_cell{2}(2:end);
+  outstr_cell = regexp(outstr, 'phi =', 'split'); outstr = outstr_cell{1}; 
   out = textscan(outstr,'%s %f %f %f %f %f %f');%,'delimiter',',');
   
   num_q = getNumPositions(r);
@@ -126,7 +127,7 @@ for urdf = urdfs'
   index = index + num_vc;
   Bcpp = reshape(Hcpp{1}(index+(1:num_u*num_vc)),num_u,num_vc)';
   index = index + numel(Bcpp);
-  num_phi = 3*length(r.loop);
+  num_phi = 6*length(r.loop);
   phicpp = reshape(Hcpp{1}(index+(1:num_phi)),num_phi,1);
   index = index + num_phi;
   Jcpp = reshape(Hcpp{1}(index+(1:num_phi*num_qc)),num_qc,num_phi)';
