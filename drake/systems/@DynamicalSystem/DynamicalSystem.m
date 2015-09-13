@@ -651,6 +651,8 @@ classdef DynamicalSystem
       if (getNumStates(obj)<1) xs=[]; return; end
       if (nargin<3) mdl = getModel(obj); end
       
+      % note: obj is not being returned from this method, so this probably
+      % happens every time.
       if (isempty(obj.structured_x))
         obj.structured_x = getSimulinkStateStructure(mdl.name);
       end
