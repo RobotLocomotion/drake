@@ -114,7 +114,12 @@ for i=1:N,
   end
   
   if i > 1
-    [xp,F_i] = geval(@jump,cplant,xtraj{i-1}.eval(xtraj{i-1}.tspan(2)),struct('grad_method','numerical'));
+    if ~isempty(setdiff(contact_seq{i},contact_seq{i-1}))
+%       [xp,F_i] = geval(@jump,cplant,xtraj{i-1}.eval(xtraj{i-1}.tspan(2)),struct('grad_method','numerical'));
+      [xp,F_i] = jump(cplant,xtraj{i-1}.eval(xtraj{i-1}.tspan(2)));
+    else
+      F_i = eye(obj.getNumStates);
+    end
     
     F{i} = F_i;
   end
@@ -130,7 +135,7 @@ for i=1:N
 end
 
 if options.periodic
-  jmax = 3;
+  jmax = 5;
 else
   jmax = 1;
 end
@@ -159,13 +164,38 @@ end
 
 function [xp,dxp] = jump(obj,xm)
 if obj.num_position_constraints > 0
-  q=xm(1:obj.getNumPositions());
-  qd=xm((obj.getNumPositions()+1):end);
+  nq = obj.getNumPositions;
+  q=xm(1:nq);
+  qd=xm((nq+1):end);
   [phi,J,dJ] = obj.positionConstraints(q);
   [H,~,~,dH] = manipulatorDynamics(obj,q,qd);
   Hinv = inv(H);
   qdp = qd-Hinv*J'*inv(J*Hinv*J')*J*qd;
   xp = [q;qdp];
+  
+  if nargout > 1
+  dJ = reshape(dJ,prod(size(J)),[]);
+  dJ_transpose = transposeGrad(dJ,size(J));
+  dH = dH(:,1:nq);
+  dHinv = invMatGrad(H,dH);
+  % gradient of J*Hinv*J'
+  R = J*Hinv*J';
+  dR = matGradMultMat(J*Hinv,J',matGradMultMat(J,Hinv,dJ,dHinv),dJ_transpose);
+  % J'*inv(J*Hinv*J')
+  Y = J'*pinv(R);
+  dY = matGradMultMat(J',inv(R),dJ_transpose,invMatGrad(R,dR));
+  % J'*inv(J*Hinv*J')*J
+  Z = Y*J;
+  dZ = matGradMultMat(Y,J,dY,dJ);
+  % inv(H)*J'*inv(J*Hinv*J')*J
+  ZZ = Hinv*Z;
+  dZZ = matGradMultMat(Hinv,Z,dHinv,dZ);
+  
+  dvpdq = -matGradMult(dZZ,qd);
+  dvpdv = eye(nq) - Hinv*J'*inv(J*Hinv*J')*J;
+  dxp = [eye(nq) zeros(nq);
+    dvpdq dvpdv];
+  end
 else
   xp = xm;
 end

@@ -3,6 +3,12 @@ function pp = pchipDeriv(t,y,ydot_minus,ydot_plus,dim)
 % implements piecewise cubic Hermite polynomials with the derivatives
 % specified.  (e.g., as in Hargraves86).
 
+if length(t) == 1
+  t = [t t+1];
+  y = [y y];
+  ydot_minus = zeros(size(y));
+end
+
 if (nargin<4 || isempty(ydot_plus)) ydot_plus = ydot_minus; end
 
 s = size(y);  n = prod(s(1:end-1));

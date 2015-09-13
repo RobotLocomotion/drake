@@ -17,7 +17,7 @@ options.enable_fastqp = false;
 
 s = '../urdf/atlas_simple_contact_noback.urdf';
 % traj_file = 'data/atlas_3d_lqr2.mat'; 
-traj_file = 'data/longer_step_refined_lqr11.mat'; 
+traj_file = 'data/longer_step_smooth_lqr.mat'; 
 options.terrain = RigidBodyFlatTerrain();
 modes = [8,3,4,4,7,8];
 
@@ -34,7 +34,7 @@ v.display_dt = 0.005;
 
 load(traj_file);
 
-repeat_n = 3;
+repeat_n = 5;
 [xtraj,utraj,Btraj,Straj_full] = repeatTraj(r,xtraj,utraj,Btraj,Straj_full,repeat_n,true,true);
 
 
@@ -134,7 +134,7 @@ options.w_qdd = 0*ones(nq,1);
 options.w_grf = 0;
 options.Kp_accel = 0;
 options.contact_threshold = 5e-4;
-options.offset_x = false;
+options.offset_x = true;
 qp = FullStateQPController(r,ctrl_data,options);
 
 % feedback QP controller with Atlas
@@ -153,6 +153,7 @@ if iscell(xtraj)
 else
   x0 = xtraj.eval(t0);
 end
+
 traj = simulate(sys,[t0 tf],x0);
 playback(v,traj,struct('slider',true));
 
@@ -176,6 +177,7 @@ if 1
   xtraj_pts = xtraj.eval(traj_ts);
   
   figure(111);
+  clf
   max_y = -inf;
   min_y = inf;
   for i=1:nq
@@ -185,7 +187,7 @@ if 1
     title(r.getStateFrame.coordinates{i},'interpreter','none');
 %     plot(traj_ts,xtraj_pts(i,:),'g.-');
 %     plot(traj_ts,traj_pts(i,:),'r.-');
-    y = abs(traj_pts(i,:)-xtraj_pts(i,:));
+    y = (traj_pts(i,:)-xtraj_pts(i,:));
     plot(traj_ts,y,'r.-');
     max_y = max(max_y,max(y));
     min_y = min(min_y,min(y));
@@ -193,10 +195,11 @@ if 1
   end
   for i=1:nq
     subplot(2,ceil(nq/2),i);
-    axis([-inf inf min_y max_y]);
+    ylim([min_y max_y])
   end
   
   figure(112);
+  clf
   max_y = -inf;
   min_y = inf;
   for i=1:nq
@@ -206,7 +209,7 @@ if 1
     title(r.getStateFrame.coordinates{nq+i},'interpreter','none');
 %     plot(traj_ts,xtraj_pts(nq+i,:),'g.-');
 %     plot(traj_ts,traj_pts(nq+i,:),'r.-');
-    y = abs(traj_pts(nq+i,:)-xtraj_pts(nq+i,:));
+    y = (traj_pts(nq+i,:)-xtraj_pts(nq+i,:));
     plot(traj_ts,y,'r.-');
     max_y = max(max_y,max(y));
     min_y = min(min_y,min(y));
@@ -214,7 +217,7 @@ if 1
   end
   for i=1:nq
     subplot(2,ceil(nq/2),i);
-    axis([-inf inf min_y max_y]);
+    ylim([min_y max_y])
   end
   
   global utraj_pts utraj_ts
@@ -230,6 +233,7 @@ if 1
   u0_pts = utraj.eval(traj_ts);
   
   figure(116);
+  clf
   for i=1:nu
     subplot(2,ceil(nu/2),i);
     hold on;
@@ -239,6 +243,6 @@ if 1
     hold off;
   end
 end
-
+keyboard
 end
 

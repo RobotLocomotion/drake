@@ -77,6 +77,10 @@ to_options.mode_options{3}.active_inds = [1;2;3;4;6;9];
 % to_options.mode_options{2}.friction_limits = false;
 % to_options.mode_options{3}.friction_limits = false;
 
+to_options.mode_options{1}.accel_cost = .0001;
+to_options.mode_options{2}.accel_cost = .0001;
+to_options.mode_options{3}.accel_cost = .0001;
+
 traj_opt = ConstrainedHybridTrajectoryOptimization(p,modes,N,duration,to_options);
 
 
@@ -105,9 +109,9 @@ end
 
 l0 = [0;0;897.3515;0;0;897.3515;0;0;179.1489;0;0;179.1489]/2;
 
-traj_opt = traj_opt.addModeStateConstraint(1,BoundingBoxConstraint(x0 - [0;.1*ones(17,1);.1*ones(18,1)],x0+[0;.1*ones(17,1);.1*ones(18,1)]),1);
+traj_opt = traj_opt.addModeStateConstraint(1,BoundingBoxConstraint(x0 - [0;.3*ones(17,1);3*ones(18,1)],x0+[0;.3*ones(17,1);3*ones(18,1)]),1);
 % traj_opt = traj_opt.addModeStateConstraint(1,BoundingBoxConstraint(x0 - [0;.02*ones(20,1);.1*ones(21,1)],x0+[0;.02*ones(20,1);.1*ones(21,1)]),1);
-traj_opt = traj_opt.addModeStateConstraint(length(N),BoundingBoxConstraint(.3,inf),N(end),1);
+traj_opt = traj_opt.addModeStateConstraint(length(N),BoundingBoxConstraint(.5,inf),N(end),1); % WAS .3
 
 t_init{1} = linspace(0,.4,N(1));
 traj_init.mode{1}.x = PPTrajectory(foh(t_init{1},repmat(x0,1,N(1))));
@@ -158,12 +162,12 @@ end
 if nargin > 1
   for i=1:length(N)
     t_init{i} = linspace(0,diff(xtraj{i}.tspan),N(i));
-    traj_init.mode{i}.x = xtraj{i};
+    traj_init.mode{i}.x = xtraj{i}.shiftTime(-xtraj{i}.tspan(1));
     if nargin < 2
-      traj_init.mode{i}.u = utraj{i};
+      traj_init.mode{i}.u = utraj{i}.shiftTime(-utraj{i}.tspan(1));
     end
     if nargin > 3
-      traj_init.mode{i}.l = ltraj{i};
+      traj_init.mode{i}.l = ltraj{i}.shiftTime(-ltraj{i}.tspan(1));
     end
   end
 end
@@ -182,7 +186,7 @@ end
 % end
 
 traj_opt = traj_opt.setSolverOptions('snopt','print','snopt2.out');
-traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',200);
+traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',100);
 traj_opt = traj_opt.setSolverOptions('snopt','MinorIterationsLimit',50000);
 traj_opt = traj_opt.setSolverOptions('snopt','IterationsLimit',2000000);
 
@@ -194,6 +198,9 @@ for i=1:length(N)
   traj_opt = traj_opt.addModeRunningCost(i,@running_cost_fun);
   traj_opt = traj_opt.addModeRunningCost(i,@pelvis_motion_fun);
   
+  lz_inds = traj_opt.mode_opt{i}.l_inds(3:3:end,:) + traj_opt.var_offset(i);
+  force_cost = FunctionHandleObjective(numel(lz_inds),@force_cost_fun);
+  traj_opt = traj_opt.addCost(force_cost,lz_inds(:));
 end
 % traj_opt = traj_opt.addModeRunningCost(2,@running_cost_fun);
 % traj_opt = traj_opt.addModeRunningCost(3,@running_cost_fun);
@@ -201,15 +208,15 @@ end
 % traj_opt = traj_opt.addFinalCost(@final_cost_fun);
 
 for i=1:length(N)
-%   knee_inds = traj_opt.mode_opt{i}.x_inds([5;9],:) + traj_opt.var_offset(i);
-%   knee_inds = knee_inds(:);
-%   knee_constraint = BoundingBoxConstraint(.1*ones(length(knee_inds),1),inf(length(knee_inds),1));
-%   traj_opt = traj_opt.addBoundingBoxConstraint(knee_constraint,knee_inds);
+  knee_inds = traj_opt.mode_opt{i}.x_inds([10;16],:) + traj_opt.var_offset(i);
+  knee_inds = knee_inds(:);
+  knee_constraint = BoundingBoxConstraint(.15*ones(length(knee_inds),1),inf(length(knee_inds),1));
+  traj_opt = traj_opt.addBoundingBoxConstraint(knee_constraint,knee_inds);
   
   traj_opt = traj_opt.addModeStateConstraint(i,BoundingBoxConstraint(p.joint_limit_min,p.joint_limit_max),1:N(i),1:p.getNumPositions);
   
   % bound joint velocities
-  joint_vel_max = 5; % was 10
+  joint_vel_max = 8; % was 10
   joint_vel_bound = BoundingBoxConstraint(-joint_vel_max*ones(p.getNumVelocities,1),joint_vel_max*ones(p.getNumVelocities,1));
   traj_opt = traj_opt.addModeStateConstraint(i,joint_vel_bound,1:N(i),p.getNumPositions+1:nx);
   
@@ -229,17 +236,24 @@ else
   [xtraj,utraj,ltraj,z,F,info] = traj_opt.solveTraj(t_init,traj_init);
 end
 
+  function [f,df] = force_cost_fun(lz)
+    K = 0.0001;
+    f = K*(lz'*lz);
+    df = 2*K*lz';
+  end
+
 
   function [f,df] = running_cost_fun(h,x,u)
-    R_diag = 1*ones(12,1);
+    R_diag = .1*ones(12,1);
     %     R_diag([1;3;5;6;7;8;11;12;13;14]) = 10*ones(10,1); %aky,akx
-%     R_diag([2;4;6;8;10;12]) = 10*ones(6,1);
+    R_diag([2;4;6;8;10;12]) = 10*ones(6,1);
     R = diag(R_diag);
-    
+%       = 0;
     %Also penalize out of plane joints
     Q_diag = zeros(nx,1);
+    Q_diag(outplane_inds) = 10;
     Q_diag(nq+1:end) = 00;
-    Q_diag(outplane_inds + nq) = 100;
+    Q_diag(outplane_inds + nq) = 10;
     Q = diag(Q_diag);
 %     Q = 0;
     
@@ -274,7 +288,7 @@ end
     
     [phi,~,~,~,~,~,~,~,n] = p.contactConstraints(q,false,struct('terrain_only',true));
     phi0 = .2*ones(8,1);
-    K = 50000;
+    K = 1000;
     
 %     [~,I1] = min(phi(1:2));
 %     [~,I2] = min(phi(3:4));

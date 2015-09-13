@@ -37,7 +37,7 @@ classdef RigidBodyLinearStepTerrain < RigidBodyHeightMapTerrain
       I_s = find(t > 0 & t < 1);
       z(I_s) = obj.height*t(I_s);
       normal = repmat([0;0;1],1,n);
-      normal(1,I_s) = obj.height/(2*obj.smoothing);
+      normal(1,I_s) = -obj.height/(2*obj.smoothing);
     end
     
     function pts = getPoints(obj)

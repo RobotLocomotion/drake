@@ -60,6 +60,10 @@ classdef AccelConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimiza
       if ~isfield(options,'test_bound')
         options.test_bound = false;
       end
+
+      if ~isfield(options,'accel_cost')
+        options.accel_cost = 0;
+      end
 %       if ~isfield(options,'start_active_inds')
 %         options.start_active_inds = options.active_inds;
 %       end
@@ -133,6 +137,50 @@ classdef AccelConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimiza
           end
         end
       end
+      
+      
+      if obj.options.accel_cost > 0
+        accel_cost = FunctionHandleObjective(nX+nU+nC,@obj.accel_cost_fun);
+        for i=1:obj.N,
+          obj = obj.addCost(accel_cost,{obj.x_inds(:,i);obj.u_inds(:,i);obj.l_inds(:,i)},shared_data_index+i);
+        end
+        
+      end
+    end
+    
+    function [f,df] = accel_cost_fun(obj,x,u,lambda,data)
+      nq = obj.plant.getNumPositions;
+      qddot = data.xdot(nq+1:end);
+      dqddot = data.dxdot(nq+1:end,2:end);
+      f = obj.options.accel_cost*(qddot'*qddot);
+      df = 2*obj.options.accel_cost*qddot'*dqddot;
+%       f=0;
+%       
+%          nq = obj.plant.getNumPositions;
+%       nC = obj.nC;
+%       nU = obj.plant.getNumInputs();
+% 
+%       q = x(1:nq);
+%       v = x(nq+1:end);
+%       
+%       [H,C,B,dH,dC,dB] = obj.plant.manipulatorDynamics(q,v);
+%       Hinv = inv(H);
+% %       if nC > 0      
+%         [phi,J,dJ,Jdotqd,dJdotqd] = obj.plant.positionConstraintslWithJdot(q,v);
+% %         phi = phi(obj.active_inds,:);  
+% %         J = J(obj.active_inds,:);      
+% %         dJ = dJ(obj.active_inds,:);
+%         dJ = reshape(dJ,[],nq);
+%         Jdot = matGradMult(dJ,v);      
+%         vdot = Hinv*(B*u - C + J'*lambda);
+%         dtau = matGradMult(dB,u) - dC + [matGradMult(dJ,lambda,true), zeros(nq,nq)];
+% 
+%         dvdot = [zeros(nq,1),...
+%           -Hinv*matGradMult(dH(:,1:nq),vdot) + Hinv*dtau(:,1:nq),...
+%           +Hinv*dtau(:,1+nq:end), Hinv*B, Hinv*J'];
+%         
+%         f = obj.options.accel_cost*vdot'*vdot;
+%         df = 2*obj.options.accel_cost*vdot'*dvdot(:,2:end);
     end
     
     function [f,df] = constraint_fun(obj,h,x0,x1,u0,u1,lambda0,lambda1,lambdac,vc,data0,data1)

@@ -1,33 +1,19 @@
-load data/longer_step_smooth.mat
+
+load data/step_up_clearance.mat
 
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 warning('off','Drake:RigidBodyManipulator:WeldedLinkInd');
 warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
-options.terrain = RigidBodyFlatTerrain();
+options.terrain = RigidBodyLinearStepTerrain(.3,.35,.02);
 options.floating = true;
 options.ignore_self_collisions = true;
-options.use_new_kinsol = true;
 options.use_bullet = false;
-
-p = RigidBodyManipulator('../urdf/atlas_simple_contact_noback.urdf',options);
+options.use_new_kinsol = true;
+p = PlanarRigidBodyManipulator('../urdf/atlas_planar_one_arm_noback.urdf',options);
 
   Q = diag([100*ones(p.getNumPositions,1);1*ones(p.getNumVelocities,1)]);
   R = 0.01*eye(getNumInputs(p));
   Qf = 2*Q;
-  
-  nq = p.getNumPositions;
-   R_periodic = zeros(p.getNumStates);
-  R_periodic(1,1) = 1; %x 
-  R_periodic(2,2) = -1; %y
-  R_periodic(3,3) = 1; %z
-  R_periodic(4,4) = -1; %roll
-  R_periodic(5,5) = 1; %pitch
-  R_periodic(6,6) = -1; %yaw
-  R_periodic(7:12,13:18) = diag([-1;-1;1;1;1;-1]); %leg joints w/symmetry
-  R_periodic(13:18,7:12) = diag([-1;-1;1;1;1;-1]); %leg joints w/symmetry
-  R_periodic(nq+1:end,nq+1:end) = R_periodic(1:nq,1:nq);
-  options.periodic_jump = R_periodic;
-  options.periodic = true;
   
 % R = cell(0);
 % xtraj_=xtraj{1}.append(xtraj{2}).append(xtraj{3}).append(xtraj{4}).append(xtraj{5});

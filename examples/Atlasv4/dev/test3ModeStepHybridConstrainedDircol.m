@@ -5,7 +5,7 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 warning('off','Drake:RigidBodyManipulator:WeldedLinkInd');
 warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 % options.terrain = RigidBodyFlatTerrain();
-options.terrain = RigidBodyLinearStepTerrain(step_height,.35,.02);
+options.terrain = RigidBodyLinearStepTerrain(step_height,.35,.03);
 options.floating = true;
 options.ignore_self_collisions = true;
 options.use_new_kinsol = true;
@@ -15,7 +15,7 @@ nq = p.getNumPositions;
 nv = p.getNumVelocities;
 nu = p.getNumInputs;
 nx = p.getNumStates();
-v = p.constructVisualizer();
+v = p.constructVisualizer(struct('viewer','BotVisualizer'));
 %works with this
 % N = [10,5,5];
 % duration = {[.2 .5],[.02 .2],[.02 .2]};
@@ -33,11 +33,11 @@ N = [6,5,5,5,5];
 
 N = [8,5,5,8,5];
 
-N = [7,7,5];
+N = [6,6,6];
 % % N = [2,2,2,2,2];
 % % N = N+1;
 % % N = [7,3,3,3,7];
-duration = {[.2 .7],[.1 1.5], [.1 .7]};
+duration = {[.2 1],[.1 1.5], [.1 1]};
 modes = {[1;2],[2;3;4], [3;4]};
 
 
@@ -94,12 +94,16 @@ l0 = [0;897.3515;0;179.1489];
 % Add foot height constraint
 fn1 = drakeFunction.kinematic.WorldPosition(p,idxA(3),p.T_2D_to_3D'*xA(:,3),2);
 fn2 = drakeFunction.kinematic.WorldPosition(p,idxA(4),p.T_2D_to_3D'*xA(:,4),2);
-traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.2,inf,p.getNumPositions, @fn1.eval, 1), floor(N(1)/2), 1:p.getNumPositions);
-traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.2,inf,p.getNumPositions, @fn2.eval, 1), floor(N(1)/2), 1:p.getNumPositions);
+traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.35,inf,p.getNumPositions, @fn1.eval, 1), floor(N(1)/2), 1:p.getNumPositions);
+traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.35,inf,p.getNumPositions, @fn2.eval, 1), floor(N(1)/2), 1:p.getNumPositions);
 
-traj_opt = traj_opt.addModeStateConstraint(1,BoundingBoxConstraint(x0 - [0;.1*ones(9,1);.1*ones(10,1)],x0+[0;.1*ones(9,1);.1*ones(10,1)]),1);
+traj_opt = traj_opt.addModeStateConstraint(1,BoundingBoxConstraint(x0 - [0;.1*ones(9,1);3*ones(10,1)],x0+[0;.1*ones(9,1);3*ones(10,1)]),1);
 % traj_opt = traj_opt.addModeStateConstraint(1,BoundingBoxConstraint(x0 - [.01*ones(10,1);.1*ones(10,1)],x0+[.01*ones(10,1);.1*ones(10,1)]),1);
 traj_opt = traj_opt.addModeStateConstraint(length(N),BoundingBoxConstraint(.4,inf),N(end),1);
+
+
+% to keep first foot behind the step
+traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(-inf,.15),traj_opt.mode_opt{1}.cstrval_inds(1) + traj_opt.var_offset(1));
 
 % to push the foot over the lip
 traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(-.33,inf),traj_opt.mode_opt{2}.cstrval_inds(2) + traj_opt.var_offset(2));
@@ -145,7 +149,7 @@ if length(N) > 2
   periodic_constraint = LinearConstraint(zeros(nx-2,1),zeros(nx-2,1),R_periodic(3:end,:));
   periodic_inds = [traj_opt.mode_opt{1}.x_inds(:,1) + traj_opt.var_offset(1);...
     traj_opt.mode_opt{end}.x_inds(:,end) + traj_opt.var_offset(end)];
-  traj_opt = traj_opt.addConstraint(periodic_constraint,periodic_inds);
+%   traj_opt = traj_opt.addConstraint(periodic_constraint,periodic_inds);
 end
 
 if nargin > 1
@@ -184,12 +188,12 @@ for i=1:length(N)
   knee_constraint = BoundingBoxConstraint(.1*ones(length(knee_inds),1),inf(length(knee_inds),1));
 %   traj_opt = traj_opt.addBoundingBoxConstraint(knee_constraint,knee_inds);
   
-%   traj_opt = traj_opt.addModeStateConstraint(i,BoundingBoxConstraint(p.joint_limit_min,p.joint_limit_max),1:N(i),1:10);
+  traj_opt = traj_opt.addModeStateConstraint(i,BoundingBoxConstraint(p.joint_limit_min,p.joint_limit_max),1:N(i),1:10);
   
   % bound joint velocities
   joint_vel_max = 3;
   joint_vel_bound = BoundingBoxConstraint(-joint_vel_max*ones(p.getNumVelocities,1),joint_vel_max*ones(p.getNumVelocities,1));
-  traj_opt = traj_opt.addModeStateConstraint(i,joint_vel_bound,1:N(i),11:20);
+%   traj_opt = traj_opt.addModeStateConstraint(i,joint_vel_bound,1:N(i),11:20);
 end
 
 traj_opt = traj_opt.compile();

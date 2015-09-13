@@ -158,11 +158,15 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
         error('Requires new kinsol')
       end
       
-      [pts_in_B,J,dJ] = forwardKin(obj.rbm,kinsol,obj.frameA,obj.pts_in_A,options);      
+      [pts_in_B,J,dJ] = forwardKin(obj.rbm,kinsol,obj.frameA,obj.pts_in_A,options);
       pos = reshape(pts_in_B,[],1);
       
       if obj.rbm.dim == 2 && size(obj.pts_in_A,1) == 2
         [Jdotv,dJdotvdq] = forwardJacDotTimesV(obj.rbm,kinsol,obj.frameA,obj.rbm.T_2D_to_3D*obj.pts_in_A,0,obj.frameB);        
+        if obj.rbm.dim == 2
+          Jdotv = obj.rbm.T_2D_to_3D'*Jdotv;
+          dJdotvdq = obj.rbm.T_2D_to_3D'*dJdotvdq;
+        end
       else
         [Jdotv,dJdotvdq] = forwardJacDotTimesV(obj.rbm,kinsol,obj.frameA,obj.pts_in_A,0,obj.frameB);
       end

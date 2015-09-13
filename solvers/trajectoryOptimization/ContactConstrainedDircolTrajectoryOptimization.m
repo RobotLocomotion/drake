@@ -103,6 +103,7 @@ classdef ContactConstrainedDircolTrajectoryOptimization < AccelConstrainedDircol
           A_fric = [mu*eye(nlz) eye(nlz);mu*eye(nlz) -eye(nlz)];
           obj = obj.addConstraint(LinearConstraint(zeros(2*nlz,1),inf(2*nlz,1),A_fric),[lz_inds;lx_inds]);
         else
+          mu = .7;
           if obj.options.collocation_friction_limits
             lz_inds = reshape([obj.l_inds(3:3:end,:) obj.lc_inds(3:3:end,:)],[],1);
             lx_inds = reshape([obj.l_inds(1:3:end,:) obj.lc_inds(1:3:end,:)],[],1);
@@ -119,7 +120,7 @@ classdef ContactConstrainedDircolTrajectoryOptimization < AccelConstrainedDircol
           obj = obj.addConstraint(BoundingBoxConstraint(zeros(nlz,1),inf(nlz,1)),lz_inds);
           
           % using l1 norm for nowlz^2 >= |lx|^2
-          A_fric = [eye(nlz) eye(nlz);eye(nlz) -eye(nlz)];
+          A_fric = [mu*eye(nlz) eye(nlz);mu*eye(nlz) -eye(nlz)];
           obj = obj.addConstraint(LinearConstraint(zeros(2*nlz,1),inf(2*nlz,1),A_fric),[lz_inds;lx_inds]);
           obj = obj.addConstraint(LinearConstraint(zeros(2*nlz,1),inf(2*nlz,1),A_fric),[lz_inds;ly_inds]);
         end

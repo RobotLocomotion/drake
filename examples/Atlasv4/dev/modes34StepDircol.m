@@ -1,4 +1,4 @@
-function [p,v,xtraj,utraj,ltraj,z,F,info,traj_opt] = stepAlt5ModeOneArmNoBackHybridConstrainedDircol(z0,xtraj,utraj,ltraj)
+function [p,v,xtraj,utraj,ltraj,z,F,info,traj_opt] = modes34StepDircol(z0,xtraj,utraj,ltraj)
 step_height = .3;
 
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
@@ -22,50 +22,63 @@ v = p.constructVisualizer(struct('viewer','BotVisualizer'));
 % % N = N+1;
 % % N = [7,3,3,3,7];
 % N = [6,6,5,5,6];
-N = [5,5,3,4,5];
-duration = {[.2 1.5],[.1 1.5] [.1 1.5] [.1 1] [.1 2]};
-modes = {[1;2],[1;2;5],[2;3;4;5], [3;4;5], [1;2;3;4]};
+N = [5,10,5];
+duration = {[.02 .2] [.5 1.5] [.05 1.5]};
+modes = {[1;2;3;4;5], [3;4], [1;2;3;4]};
 
-% N = N(1:4);
-% duration = duration(1:4);
-% modes = modes(1:4);
+N = N(1:2);
+duration = duration(1:2);
+modes = modes(1:2);
 
 
-x0 = [      0
-    0.9371
-    0.2000
-   -0.4414
-    0.2625
-   -0.0211
-   0   
-   -0.4997
-    0.9273
-   -0.6403
-   0   
-    0.2346
-   -0.0077
-    0.0731
-   -0.2012
-    0.7876
-   -0.6596
-   0       
-   -1.9375
-    2.5602
-   -2.2319
-   0   ]; 
+x0 = [    0.1831
+    0.9319
+    1.2869
+   -1.4764
+    0.4070
+   -0.2175
+   -1.5300
+   -2.8093
+    1.5995
+   -0.0771
+    0.1000
+   -0.0589
+   -0.1848
+   -0.3119
+   -1.6396
+    3.6395
+   -1.6880
+   -0.4325
+   -0.2153
+    0.5184
+    0.0088
+    1.0700]; 
+  
+    % from clearance traj
+  x0=[    0.1831
+    0.9319
+    1.2869
+   -1.4764
+    0.4070
+   -0.2175
+   -1.5300
+   -2.8093
+    1.5995
+   -0.0771
+    0.1000
+   -0.0648
+   -0.1958
+   -0.3235
+   -1.7483
+    3.8575
+   -1.7856
+   -0.5391
+   -0.2351
+    0.5427
+    0.0159
+    1.2556
+];
  
- % position with hand near ground, both feet on ground
-q_mid=[     0.2000
-    0.9000
-    1.3000
-   -1.4000
-    0.3000
-         0
-   -2.0000
-   -3.0000
-    1.6000
-         0
-    0.9000];
  
  [~,normal,d,xA,xB,idxA,idxB,mu,n,D] = contactConstraints(p,x0(1:p.getNumPositions));
  assert(isequal(idxB,ones(size(idxB))))
@@ -74,11 +87,11 @@ q_mid=[     0.2000
 % to_options.u_const_across_transitions = true;
 % to_options.lambda_bound = 20; %was 400
 
-to_options.mode_options{1}.active_inds = [1;2;4];
-to_options.mode_options{2}.active_inds = [1;2;4;5;6];
-to_options.mode_options{3}.active_inds = [1;2;3;4;6;7;8];
-to_options.mode_options{4}.active_inds = [1;2;4;5;6];
-to_options.mode_options{6}.active_inds = [1;2;4;5;6;8];
+% to_options.mode_options{1}.active_inds = [1;2;3;4;6;7;8];
+% to_options.mode_options{2}.active_inds = [1;2;4;5;6];
+to_options.mode_options{1}.active_inds = [1;2;4;5;6;8;9;10];
+to_options.mode_options{2}.active_inds = [1;2;4];
+to_options.mode_options{3}.active_inds = [1;2;4;5;6;8];
 % 
 % to_options.mode_options{1}.non_penetration = false;
 % to_options.mode_options{2}.non_penetration = false;
@@ -97,9 +110,7 @@ contact_q0_final(4) = -1.5;
 
 to_options.mode_options{1}.contact_q0 =  contact_q0;
 to_options.mode_options{2}.contact_q0 =  contact_q0;
-to_options.mode_options{3}.contact_q0 =  contact_q0;
-to_options.mode_options{4}.contact_q0 =  contact_q0;
-to_options.mode_options{5}.contact_q0 =  contact_q0_final;
+to_options.mode_options{3}.contact_q0 =  contact_q0_final;
 
 traj_opt = ConstrainedHybridTrajectoryOptimization(p,modes,N,duration,to_options);
 
@@ -108,22 +119,57 @@ l0 = [0;400];
 
 
 % Add foot height constraint
-fn1 = drakeFunction.kinematic.WorldPosition(p,idxA(3),p.T_2D_to_3D'*xA(:,3),2);
-fn2 = drakeFunction.kinematic.WorldPosition(p,idxA(4),p.T_2D_to_3D'*xA(:,4),2);
-% traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.5,inf,p.getNumPositions, @fn1.eval, 1), floor(N(1)/2), 1:p.getNumPositions);
-% traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.5,inf,p.getNumPositions, @fn2.eval, 1), floor(N(1)/2), 1:p.getNumPositions);
+% fn1_all = drakeFunction.kinematic.WorldPosition(p,idxA(3),p.T_2D_to_3D'*xA(:,3));
+fn1_all = drakeFunction.kinematic.WorldPosition(p,idxA(1),p.T_2D_to_3D'*xA(:,1));
+fn1 = drakeFunction.kinematic.WorldPosition(p,idxA(1),p.T_2D_to_3D'*xA(:,1),2);
+fn2 = drakeFunction.kinematic.WorldPosition(p,idxA(2),p.T_2D_to_3D'*xA(:,2),2);
+
+traj_opt = traj_opt.addModeStateConstraint(2,FunctionHandleConstraint(.04,inf,p.getNumPositions, @fn1.eval, 1), 2, 1:p.getNumPositions);
+traj_opt = traj_opt.addModeStateConstraint(2,FunctionHandleConstraint(.04,inf,p.getNumPositions, @fn2.eval, 1), 2, 1:p.getNumPositions);
+
+
+% traj_opt = traj_opt.addModeStateConstraint(2,FunctionHandleConstraint([-inf;.4;],[.3;inf],p.getNumPositions, @fn1_all.eval, 1), floor(N(2)/2), 1:p.getNumPositions);
+
+% traj_opt = traj_opt.addModeStateConstraint(2,FunctionHandleConstraint(.35,inf,p.getNumPositions, @fn1.eval, 1), N(2)-2, 1:p.getNumPositions);
+% traj_opt = traj_opt.addModeStateConstraint(2,FunctionHandleConstraint(.35,inf,p.getNumPositions, @fn2.eval, 1), N(2)-2, 1:p.getNumPositions);
 
 % traj_opt = traj_opt.addModeStateConstraint(1,BoundingBoxConstraint(x0 - [0;.1*ones(13,1);.1*ones(14,1)],x0+[0;.1*ones(13,1);.1*ones(14,1)]),1);
-traj_opt = traj_opt.addModeStateConstraint(1,BoundingBoxConstraint(x0 - [0;.3*ones(nq-1,1);1*ones(nq,1)],x0+[0;.3*ones(nq-1,1);1*ones(nq,1)]),1);
+traj_opt = traj_opt.addModeStateConstraint(1,BoundingBoxConstraint(x0-.001,x0+.001),1);
 
 
 
-if length(N) == 5
-  traj_opt = traj_opt.addModeStateConstraint(length(N),BoundingBoxConstraint(zeros(nq-2,1),zeros(nq-2,1)),N(end),3:nq);
+if length(N) >= 2
+  qf = [         0
+    2.0000
+    0.1000
+   -0.2000
+    0.2000
+   -0.1000
+         0
+   -0.2000
+    0.2000
+   -0.1000
+   -0.5000];
+ 
+ qf = [
+         0
+    0.9460
+    0.5000
+   -0.7997
+    0.9925
+   -0.5412
+   -0.3000
+   -0.6900
+    0.1000
+    0.0900
+    0.1000
+];
+ qf_ind = [3:11];
+  traj_opt = traj_opt.addModeStateConstraint(length(N),BoundingBoxConstraint(qf(qf_ind),qf(qf_ind)),N(end),qf_ind);
 %   traj_opt = traj_opt.addModeStateConstraint(length(N),BoundingBoxConstraint(.4,inf),N(end),1);
 end
 
-  traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(-inf,.15),traj_opt.mode_opt{1}.cstrval_inds(1) + traj_opt.var_offset(1));
+%   traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(-inf,.15),traj_opt.mode_opt{1}.cstrval_inds(1) + traj_opt.var_offset(1));
 
 % to push the foot and hand over the lip
 if length(N) > 1
@@ -133,48 +179,18 @@ end
 if length(N) > 2
 %   traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(-.33,inf),traj_opt.mode_opt{3}.cstrval_inds(2) + traj_opt.var_offset(3));
 end
-if length(N) == 5
-  traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(-.3,inf),traj_opt.mode_opt{5}.cstrval_inds(1) + traj_opt.var_offset(5));
+if length(N) == 2
+%   traj_opt = traj_opt.addConstraint(BoundingBoxConstraint(-.3,inf),traj_opt.mode_opt{5}.cstrval_inds(1) + traj_opt.var_offset(5));
 end
 
-if length(N) == 5
-z0_ind = traj_opt.mode_opt{1}.x_inds(2,1) + traj_opt.var_offset(1);
-zf_ind = traj_opt.mode_opt{end}.x_inds(2,end) + traj_opt.var_offset(end);
-z_constraint = LinearConstraint(step_height,step_height,[-1 1]);
-% traj_opt = traj_opt.addConstraint(z_constraint,[z0_ind;zf_ind]);
-end
 
 for i=1:length(N)
   t_init{i} = linspace(0,mean(duration{i}),N(i));
-  if i >3
-    traj_init.mode{i}.x = PPTrajectory(foh(t_init{i},repmat([q_mid;q_mid*0],1,N(i))));
-  else
-    traj_init.mode{i}.x = PPTrajectory(foh(t_init{i},repmat(x0,1,N(i))));
-  end
+  traj_init.mode{i}.x = PPTrajectory(foh(t_init{i},repmat(x0,1,N(i))));
   traj_init.mode{i}.u = PPTrajectory(foh(t_init{i},randn(nu,N(i))));
   traj_init.mode{i}.l = PPTrajectory(foh(t_init{i},repmat(l0,length(modes{i}),N(i))));
 end
 
-if length(N) == 5
-  % build periodic constraint matrix
-
-  R_periodic = zeros(p.getNumStates,2*p.getNumStates);
-  R_periodic(2,2) = 1; %z
-  R_periodic(3,3) = 1; %pitch
-  R_periodic(4:6,8:10) = eye(3); %leg and usy joints w/symmetry
-  R_periodic(8:10,4:6) = eye(3); %leg ans usy joints w/symmetry
-  
-  R_periodic(12:14,12:14) = eye(3); %x,z,pitch velocities
-  R_periodic(15:17,19:21) = eye(3); %leg and usy joints w/symmetry
-  R_periodic(19:21,15:17) = eye(3); %leg ans usy joints w/symmetry
-  
-  R_periodic(3:end,p.getNumStates+3:end) = -eye(p.getNumStates-2);
-  
-  periodic_constraint = LinearConstraint(zeros(nx-2,1),zeros(nx-2,1),R_periodic(3:end,:));
-  periodic_inds = [traj_opt.mode_opt{1}.x_inds(:,1) + traj_opt.var_offset(1);...
-    traj_opt.mode_opt{end}.x_inds(:,end) + traj_opt.var_offset(end)];
-%   traj_opt = traj_opt.addConstraint(periodic_constraint,periodic_inds);
-end
 
 if nargin > 1
   for i=1:length(N)
@@ -190,9 +206,9 @@ if nargin > 1
 end
 
 traj_opt = traj_opt.setSolverOptions('snopt','print','snopt.out');
-traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',200);
+traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',100);
 traj_opt = traj_opt.setSolverOptions('snopt','MinorIterationsLimit',50000);
-traj_opt = traj_opt.setSolverOptions('snopt','IterationsLimit',2000000);
+traj_opt = traj_opt.setSolverOptions('snopt','IterationsLimit',200000);
 
 
 %   traj_opt = traj_opt.addModeRunningCost(1,@foot_height_fun);
@@ -213,9 +229,15 @@ for i=1:length(N)
 %   traj_opt = traj_opt.addBoundingBoxConstraint(knee_constraint,knee_inds);
   
 %   traj_opt = traj_opt.addModeStateConstraint(i,BoundingBoxConstraint(p.joint_limit_min,p.joint_limit_max),1:N(i),1:14);
+
+  aky_ind = 6;
+  traj_opt = traj_opt.addModeStateConstraint(i,BoundingBoxConstraint(-1,inf),1:N(i),aky_ind);
+  
+    el_ind = 11;
+  traj_opt = traj_opt.addModeStateConstraint(i,BoundingBoxConstraint(.1,inf),1:N(i),el_ind);
   
   % bound joint velocities
-  joint_vel_max = 3;
+  joint_vel_max = 10;
   joint_vel_bound = BoundingBoxConstraint(-joint_vel_max*ones(p.getNumVelocities,1),joint_vel_max*ones(p.getNumVelocities,1));
   traj_opt = traj_opt.addModeStateConstraint(i,joint_vel_bound,1:N(i),nq+1:nx);
 end
@@ -229,9 +251,13 @@ end
 
 
   function [f,df] = running_cost_fun(h,x,u)
+    Q_diag = ones(nx,1);
+    Q_diag(nq+1:end) = 5*ones(nv,1);
+    Q = diag(Q_diag);
+    
     R = .1;
-    f = h*u'*R*u;
-    df = [u'*R*u zeros(1,22) 2*h*u'*R];    
+    f = h*u'*R*u + h*x'*Q*x;
+    df = [u'*R*u+x'*Q*x 2*h*x'*Q 2*h*u'*R];    
   end
 
   function [f,df] = pelvis_motion_fun(h,x,u)

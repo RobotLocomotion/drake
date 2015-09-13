@@ -310,6 +310,7 @@ classdef FullStateQPController < DrakeSystem
       end
       
       [xp_j,Jp_j] = forwardKin(r,kinsol,planned_supports(j),xz_pts,0);
+      xp_jrot = forwardKin(r,kinsol,planned_supports(j),xz_pts,1);
       Jpdot_j = forwardJacDot(r,kinsol,planned_supports(j),pts,0);
           
       xp = [xp,xp_j];
@@ -319,10 +320,12 @@ classdef FullStateQPController < DrakeSystem
       if exist('xz_pts') && ~isempty(xz_pts)
         % compute foot placement error
         kinsol0 = r.doKinematics(q0);
-        xp0 = forwardKin(r,kinsol0,planned_supports(j),xz_pts,0);
+        xp0 = forwardKin(r,kinsol0,planned_supports(j),xz_pts,1);
         if any(xp_j(1,:) > leading_x_pos)
           leading_x_pos = max(xp_j(1,:));
           obj.controller_data.xoffset = (mean(xp_j(1,:)-xp0(1,:))); 
+          yoffset = (mean(xp_j(2,:)-xp0(2,:)));
+          yawoffset = (mean(xp_jrot(6,:)-xp0(6,:)));
         end
 
       end
@@ -346,10 +349,17 @@ classdef FullStateQPController < DrakeSystem
     
     neps = np*dim;
     if obj.offset_x
-      xoffset = obj.controller_data.xoffset
-      x0(1) = x0(1) + obj.controller_data.xoffset;
+      if r.getManipulator.dim == 3
+        xoffset = obj.controller_data.xoffset;
+        x0(1) = x0(1) + obj.controller_data.xoffset;
+%         x0(2) = x0(2) + yoffset;
+%         x0(6) = x0(6) + yawoffset;
+      else
+        xoffset = obj.controller_data.xoffset;
+        x0(1) = x0(1) + obj.controller_data.xoffset;
+      end
     end
-
+display(sprintf('t: %.3f S: %3.3e',t,(x-x0)'*S*(x-x0)));
     %----------------------------------------------------------------------
     % Build handy index matrices ------------------------------------------
 
@@ -467,11 +477,12 @@ classdef FullStateQPController < DrakeSystem
       qp_active_set = find(abs(Ain_fqp*alpha - bin_fqp)<1e-6);
       obj.controller_data.qp_active_set = qp_active_set;
     end
+    
 %     beta=Ibeta*alpha
     y = Iu*alpha;
 %     y = u0;
 
-    nc_np = [nc,np]
+    nc_np = [nc,np];
 
     utraj_pts = [utraj_pts y];
     utraj_ts = [utraj_ts t];
@@ -480,7 +491,7 @@ classdef FullStateQPController < DrakeSystem
     end
 
   end
-
+ 
 
   function bool=hasImpact(~,rb_support_state1, rb_support_state2)
     bool=true;
@@ -501,9 +512,10 @@ classdef FullStateQPController < DrakeSystem
     end
     
     for i=1:length(bodies2)
-      num_groups1 = length(groups1{i});
+      group1_i = groups1{bodies1 == bodies2(i)};
+      num_groups1 = length(group1_i);
       num_groups2 = length(groups2{i});
-      if num_groups2 > num_groups1 || length(intersect(groups1{i},groups2{i})) < num_groups2
+      if num_groups2 > num_groups1 || length(intersect(group1_i,groups2{i})) < num_groups2
         return
       end
     end
