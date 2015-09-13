@@ -276,6 +276,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 			DOWNLOAD_COMMAND ""
 			UPDATE_COMMAND ""
       CONFIGURE_COMMAND ""
+      BUILD_IN_SOURCE 1
       BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE}
 # note: missed one step in making drake the cmake (sub)project: it doesn't write the CTestTestfile so only runs the non-matlab unit tests.  Should be fixed easily enough.
 #			CONFIGURE_COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/drake/pod-build
