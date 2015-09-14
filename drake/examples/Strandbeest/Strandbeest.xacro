@@ -18,8 +18,8 @@
       <geometry>
         <cylinder length="1" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba="0 0 .6353 1"/>
+      <material name="orange">
+        <color rgba="1 .6392 .0980 1"/>
       </material>
     </visual>
   </link>
@@ -35,9 +35,7 @@
       <geometry>
         <cylinder length="1" radius="0.02"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
 

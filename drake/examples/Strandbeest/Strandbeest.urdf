@@ -15,8 +15,8 @@
       <geometry>
         <cylinder length="1" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba="0 0 .6353 1"/>
+      <material name="orange">
+        <color rgba="1 .6392 .0980 1"/>
       </material>
     </visual>
   </link>
@@ -31,9 +31,7 @@
       <geometry>
         <cylinder length="1" radius="0.02"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="joint_crossbar_crank" type="continuous">
@@ -58,9 +56,7 @@
       <geometry>
         <cylinder length="0.078" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <link name="pair01_bar_a">
@@ -74,9 +70,7 @@
       <geometry>
         <cylinder length="0.76" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair01_joint_l_a" type="fixed">
@@ -96,9 +90,7 @@
       <geometry>
         <cylinder length="0.15" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <link name="pair01_leg1_bar_j">
@@ -112,8 +104,8 @@
       <geometry>
         <cylinder length="0.50" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
+      <material name="orange">
+        <color rgba="1 .6392 .0980 1"/>
       </material>
     </visual>
   </link>
@@ -128,9 +120,7 @@
       <geometry>
         <cylinder length="0.619" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair01_leg1_joint_j_k" type="revolute">
@@ -151,9 +141,7 @@
       <geometry>
         <cylinder length="0.393" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair01_leg1_joint_k_c" type="revolute">
@@ -174,27 +162,21 @@
       <geometry>
         <cylinder length="0.49" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 1.73 0" xyz="0.1812 0 -0.0291"/>
       <geometry>
         <cylinder length="0.367" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 2.5576 0" xyz="0.1811 0 0.2159"/>
       <geometry>
         <cylinder length="0.657" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0.49"/>
@@ -226,27 +208,21 @@
       <geometry>
         <cylinder length="0.558" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 -2.3056 0" xyz="-0.1488 0 0.4236"/>
       <geometry>
         <cylinder length="0.401" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 -0.8 0" xyz="-0.1489 0 0.1446"/>
       <geometry>
         <cylinder length="0.415" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <loop_joint name="pair01_leg1_loop_b_c" type="continuous">
@@ -272,9 +248,7 @@
       <geometry>
         <cylinder length="0.394" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair01_leg1_joint_e_f" type="revolute">
@@ -306,8 +280,8 @@
       <geometry>
         <cylinder length="0.50" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
+      <material name="orange">
+        <color rgba="1 .6392 .0980 1"/>
       </material>
     </visual>
   </link>
@@ -322,9 +296,7 @@
       <geometry>
         <cylinder length="0.619" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair01_leg2_joint_j_k" type="revolute">
@@ -345,9 +317,7 @@
       <geometry>
         <cylinder length="0.393" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair01_leg2_joint_k_c" type="revolute">
@@ -368,27 +338,21 @@
       <geometry>
         <cylinder length="0.49" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 1.73 0" xyz="0.1812 0 -0.0291"/>
       <geometry>
         <cylinder length="0.367" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 2.5576 0" xyz="0.1811 0 0.2159"/>
       <geometry>
         <cylinder length="0.657" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0.49"/>
@@ -420,27 +384,21 @@
       <geometry>
         <cylinder length="0.558" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 -2.3056 0" xyz="-0.1488 0 0.4236"/>
       <geometry>
         <cylinder length="0.401" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 -0.8 0" xyz="-0.1489 0 0.1446"/>
       <geometry>
         <cylinder length="0.415" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <loop_joint name="pair01_leg2_loop_b_c" type="continuous">
@@ -466,9 +424,7 @@
       <geometry>
         <cylinder length="0.394" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair01_leg2_joint_e_f" type="revolute">
@@ -517,9 +473,7 @@
       <geometry>
         <cylinder length="0.078" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <link name="pair02_bar_a">
@@ -533,9 +487,7 @@
       <geometry>
         <cylinder length="0.76" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair02_joint_l_a" type="fixed">
@@ -555,9 +507,7 @@
       <geometry>
         <cylinder length="0.15" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <link name="pair02_leg1_bar_j">
@@ -571,8 +521,8 @@
       <geometry>
         <cylinder length="0.50" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
+      <material name="orange">
+        <color rgba="1 .6392 .0980 1"/>
       </material>
     </visual>
   </link>
@@ -587,9 +537,7 @@
       <geometry>
         <cylinder length="0.619" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair02_leg1_joint_j_k" type="revolute">
@@ -610,9 +558,7 @@
       <geometry>
         <cylinder length="0.393" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair02_leg1_joint_k_c" type="revolute">
@@ -633,27 +579,21 @@
       <geometry>
         <cylinder length="0.49" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 1.73 0" xyz="0.1812 0 -0.0291"/>
       <geometry>
         <cylinder length="0.367" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 2.5576 0" xyz="0.1811 0 0.2159"/>
       <geometry>
         <cylinder length="0.657" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0.49"/>
@@ -685,27 +625,21 @@
       <geometry>
         <cylinder length="0.558" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 -2.3056 0" xyz="-0.1488 0 0.4236"/>
       <geometry>
         <cylinder length="0.401" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 -0.8 0" xyz="-0.1489 0 0.1446"/>
       <geometry>
         <cylinder length="0.415" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <loop_joint name="pair02_leg1_loop_b_c" type="continuous">
@@ -731,9 +665,7 @@
       <geometry>
         <cylinder length="0.394" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair02_leg1_joint_e_f" type="revolute">
@@ -765,8 +697,8 @@
       <geometry>
         <cylinder length="0.50" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
+      <material name="orange">
+        <color rgba="1 .6392 .0980 1"/>
       </material>
     </visual>
   </link>
@@ -781,9 +713,7 @@
       <geometry>
         <cylinder length="0.619" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair02_leg2_joint_j_k" type="revolute">
@@ -804,9 +734,7 @@
       <geometry>
         <cylinder length="0.393" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair02_leg2_joint_k_c" type="revolute">
@@ -827,27 +755,21 @@
       <geometry>
         <cylinder length="0.49" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 1.73 0" xyz="0.1812 0 -0.0291"/>
       <geometry>
         <cylinder length="0.367" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 2.5576 0" xyz="0.1811 0 0.2159"/>
       <geometry>
         <cylinder length="0.657" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0.49"/>
@@ -879,27 +801,21 @@
       <geometry>
         <cylinder length="0.558" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 -2.3056 0" xyz="-0.1488 0 0.4236"/>
       <geometry>
         <cylinder length="0.401" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 -0.8 0" xyz="-0.1489 0 0.1446"/>
       <geometry>
         <cylinder length="0.415" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <loop_joint name="pair02_leg2_loop_b_c" type="continuous">
@@ -925,9 +841,7 @@
       <geometry>
         <cylinder length="0.394" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair02_leg2_joint_e_f" type="revolute">
@@ -976,9 +890,7 @@
       <geometry>
         <cylinder length="0.078" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <link name="pair03_bar_a">
@@ -992,9 +904,7 @@
       <geometry>
         <cylinder length="0.76" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair03_joint_l_a" type="fixed">
@@ -1014,9 +924,7 @@
       <geometry>
         <cylinder length="0.15" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <link name="pair03_leg1_bar_j">
@@ -1030,8 +938,8 @@
       <geometry>
         <cylinder length="0.50" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
+      <material name="orange">
+        <color rgba="1 .6392 .0980 1"/>
       </material>
     </visual>
   </link>
@@ -1046,9 +954,7 @@
       <geometry>
         <cylinder length="0.619" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair03_leg1_joint_j_k" type="revolute">
@@ -1069,9 +975,7 @@
       <geometry>
         <cylinder length="0.393" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair03_leg1_joint_k_c" type="revolute">
@@ -1092,27 +996,21 @@
       <geometry>
         <cylinder length="0.49" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 1.73 0" xyz="0.1812 0 -0.0291"/>
       <geometry>
         <cylinder length="0.367" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 2.5576 0" xyz="0.1811 0 0.2159"/>
       <geometry>
         <cylinder length="0.657" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0.49"/>
@@ -1144,27 +1042,21 @@
       <geometry>
         <cylinder length="0.558" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 -2.3056 0" xyz="-0.1488 0 0.4236"/>
       <geometry>
         <cylinder length="0.401" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 -0.8 0" xyz="-0.1489 0 0.1446"/>
       <geometry>
         <cylinder length="0.415" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <loop_joint name="pair03_leg1_loop_b_c" type="continuous">
@@ -1190,9 +1082,7 @@
       <geometry>
         <cylinder length="0.394" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair03_leg1_joint_e_f" type="revolute">
@@ -1224,8 +1114,8 @@
       <geometry>
         <cylinder length="0.50" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
+      <material name="orange">
+        <color rgba="1 .6392 .0980 1"/>
       </material>
     </visual>
   </link>
@@ -1240,9 +1130,7 @@
       <geometry>
         <cylinder length="0.619" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair03_leg2_joint_j_k" type="revolute">
@@ -1263,9 +1151,7 @@
       <geometry>
         <cylinder length="0.393" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair03_leg2_joint_k_c" type="revolute">
@@ -1286,27 +1172,21 @@
       <geometry>
         <cylinder length="0.49" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 1.73 0" xyz="0.1812 0 -0.0291"/>
       <geometry>
         <cylinder length="0.367" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 2.5576 0" xyz="0.1811 0 0.2159"/>
       <geometry>
         <cylinder length="0.657" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0.49"/>
@@ -1338,27 +1218,21 @@
       <geometry>
         <cylinder length="0.558" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 -2.3056 0" xyz="-0.1488 0 0.4236"/>
       <geometry>
         <cylinder length="0.401" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 -0.8 0" xyz="-0.1489 0 0.1446"/>
       <geometry>
         <cylinder length="0.415" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <loop_joint name="pair03_leg2_loop_b_c" type="continuous">
@@ -1384,9 +1258,7 @@
       <geometry>
         <cylinder length="0.394" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair03_leg2_joint_e_f" type="revolute">
@@ -1435,9 +1307,7 @@
       <geometry>
         <cylinder length="0.078" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <link name="pair04_bar_a">
@@ -1451,9 +1321,7 @@
       <geometry>
         <cylinder length="0.76" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair04_joint_l_a" type="fixed">
@@ -1473,9 +1341,7 @@
       <geometry>
         <cylinder length="0.15" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <link name="pair04_leg1_bar_j">
@@ -1489,8 +1355,8 @@
       <geometry>
         <cylinder length="0.50" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
+      <material name="orange">
+        <color rgba="1 .6392 .0980 1"/>
       </material>
     </visual>
   </link>
@@ -1505,9 +1371,7 @@
       <geometry>
         <cylinder length="0.619" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair04_leg1_joint_j_k" type="revolute">
@@ -1528,9 +1392,7 @@
       <geometry>
         <cylinder length="0.393" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair04_leg1_joint_k_c" type="revolute">
@@ -1551,27 +1413,21 @@
       <geometry>
         <cylinder length="0.49" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 1.73 0" xyz="0.1812 0 -0.0291"/>
       <geometry>
         <cylinder length="0.367" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 2.5576 0" xyz="0.1811 0 0.2159"/>
       <geometry>
         <cylinder length="0.657" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0.49"/>
@@ -1603,27 +1459,21 @@
       <geometry>
         <cylinder length="0.558" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 -2.3056 0" xyz="-0.1488 0 0.4236"/>
       <geometry>
         <cylinder length="0.401" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 -0.8 0" xyz="-0.1489 0 0.1446"/>
       <geometry>
         <cylinder length="0.415" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <loop_joint name="pair04_leg1_loop_b_c" type="continuous">
@@ -1649,9 +1499,7 @@
       <geometry>
         <cylinder length="0.394" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair04_leg1_joint_e_f" type="revolute">
@@ -1683,8 +1531,8 @@
       <geometry>
         <cylinder length="0.50" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
+      <material name="orange">
+        <color rgba="1 .6392 .0980 1"/>
       </material>
     </visual>
   </link>
@@ -1699,9 +1547,7 @@
       <geometry>
         <cylinder length="0.619" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair04_leg2_joint_j_k" type="revolute">
@@ -1722,9 +1568,7 @@
       <geometry>
         <cylinder length="0.393" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair04_leg2_joint_k_c" type="revolute">
@@ -1745,27 +1589,21 @@
       <geometry>
         <cylinder length="0.49" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 1.73 0" xyz="0.1812 0 -0.0291"/>
       <geometry>
         <cylinder length="0.367" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 2.5576 0" xyz="0.1811 0 0.2159"/>
       <geometry>
         <cylinder length="0.657" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0.49"/>
@@ -1797,27 +1635,21 @@
       <geometry>
         <cylinder length="0.558" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 -2.3056 0" xyz="-0.1488 0 0.4236"/>
       <geometry>
         <cylinder length="0.401" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 -0.8 0" xyz="-0.1489 0 0.1446"/>
       <geometry>
         <cylinder length="0.415" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <loop_joint name="pair04_leg2_loop_b_c" type="continuous">
@@ -1843,9 +1675,7 @@
       <geometry>
         <cylinder length="0.394" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair04_leg2_joint_e_f" type="revolute">
@@ -1894,9 +1724,7 @@
       <geometry>
         <cylinder length="0.078" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <link name="pair05_bar_a">
@@ -1910,9 +1738,7 @@
       <geometry>
         <cylinder length="0.76" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair05_joint_l_a" type="fixed">
@@ -1932,9 +1758,7 @@
       <geometry>
         <cylinder length="0.15" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <link name="pair05_leg1_bar_j">
@@ -1948,8 +1772,8 @@
       <geometry>
         <cylinder length="0.50" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
+      <material name="orange">
+        <color rgba="1 .6392 .0980 1"/>
       </material>
     </visual>
   </link>
@@ -1964,9 +1788,7 @@
       <geometry>
         <cylinder length="0.619" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair05_leg1_joint_j_k" type="revolute">
@@ -1987,9 +1809,7 @@
       <geometry>
         <cylinder length="0.393" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair05_leg1_joint_k_c" type="revolute">
@@ -2010,27 +1830,21 @@
       <geometry>
         <cylinder length="0.49" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 1.73 0" xyz="0.1812 0 -0.0291"/>
       <geometry>
         <cylinder length="0.367" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 2.5576 0" xyz="0.1811 0 0.2159"/>
       <geometry>
         <cylinder length="0.657" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0.49"/>
@@ -2062,27 +1876,21 @@
       <geometry>
         <cylinder length="0.558" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 -2.3056 0" xyz="-0.1488 0 0.4236"/>
       <geometry>
         <cylinder length="0.401" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 -0.8 0" xyz="-0.1489 0 0.1446"/>
       <geometry>
         <cylinder length="0.415" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <loop_joint name="pair05_leg1_loop_b_c" type="continuous">
@@ -2108,9 +1916,7 @@
       <geometry>
         <cylinder length="0.394" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair05_leg1_joint_e_f" type="revolute">
@@ -2142,8 +1948,8 @@
       <geometry>
         <cylinder length="0.50" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
+      <material name="orange">
+        <color rgba="1 .6392 .0980 1"/>
       </material>
     </visual>
   </link>
@@ -2158,9 +1964,7 @@
       <geometry>
         <cylinder length="0.619" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair05_leg2_joint_j_k" type="revolute">
@@ -2181,9 +1985,7 @@
       <geometry>
         <cylinder length="0.393" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair05_leg2_joint_k_c" type="revolute">
@@ -2204,27 +2006,21 @@
       <geometry>
         <cylinder length="0.49" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 1.73 0" xyz="0.1812 0 -0.0291"/>
       <geometry>
         <cylinder length="0.367" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 2.5576 0" xyz="0.1811 0 0.2159"/>
       <geometry>
         <cylinder length="0.657" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0.49"/>
@@ -2256,27 +2052,21 @@
       <geometry>
         <cylinder length="0.558" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 -2.3056 0" xyz="-0.1488 0 0.4236"/>
       <geometry>
         <cylinder length="0.401" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 -0.8 0" xyz="-0.1489 0 0.1446"/>
       <geometry>
         <cylinder length="0.415" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <loop_joint name="pair05_leg2_loop_b_c" type="continuous">
@@ -2302,9 +2092,7 @@
       <geometry>
         <cylinder length="0.394" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair05_leg2_joint_e_f" type="revolute">
@@ -2353,9 +2141,7 @@
       <geometry>
         <cylinder length="0.078" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <link name="pair06_bar_a">
@@ -2369,9 +2155,7 @@
       <geometry>
         <cylinder length="0.76" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair06_joint_l_a" type="fixed">
@@ -2391,9 +2175,7 @@
       <geometry>
         <cylinder length="0.15" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <link name="pair06_leg1_bar_j">
@@ -2407,8 +2189,8 @@
       <geometry>
         <cylinder length="0.50" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
+      <material name="orange">
+        <color rgba="1 .6392 .0980 1"/>
       </material>
     </visual>
   </link>
@@ -2423,9 +2205,7 @@
       <geometry>
         <cylinder length="0.619" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair06_leg1_joint_j_k" type="revolute">
@@ -2446,9 +2226,7 @@
       <geometry>
         <cylinder length="0.393" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair06_leg1_joint_k_c" type="revolute">
@@ -2469,27 +2247,21 @@
       <geometry>
         <cylinder length="0.49" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 1.73 0" xyz="0.1812 0 -0.0291"/>
       <geometry>
         <cylinder length="0.367" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 2.5576 0" xyz="0.1811 0 0.2159"/>
       <geometry>
         <cylinder length="0.657" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0.49"/>
@@ -2521,27 +2293,21 @@
       <geometry>
         <cylinder length="0.558" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 -2.3056 0" xyz="-0.1488 0 0.4236"/>
       <geometry>
         <cylinder length="0.401" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 -0.8 0" xyz="-0.1489 0 0.1446"/>
       <geometry>
         <cylinder length="0.415" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <loop_joint name="pair06_leg1_loop_b_c" type="continuous">
@@ -2567,9 +2333,7 @@
       <geometry>
         <cylinder length="0.394" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair06_leg1_joint_e_f" type="revolute">
@@ -2601,8 +2365,8 @@
       <geometry>
         <cylinder length="0.50" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
+      <material name="orange">
+        <color rgba="1 .6392 .0980 1"/>
       </material>
     </visual>
   </link>
@@ -2617,9 +2381,7 @@
       <geometry>
         <cylinder length="0.619" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair06_leg2_joint_j_k" type="revolute">
@@ -2640,9 +2402,7 @@
       <geometry>
         <cylinder length="0.393" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair06_leg2_joint_k_c" type="revolute">
@@ -2663,27 +2423,21 @@
       <geometry>
         <cylinder length="0.49" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 1.73 0" xyz="0.1812 0 -0.0291"/>
       <geometry>
         <cylinder length="0.367" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 2.5576 0" xyz="0.1811 0 0.2159"/>
       <geometry>
         <cylinder length="0.657" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0.49"/>
@@ -2715,27 +2469,21 @@
       <geometry>
         <cylinder length="0.558" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 -2.3056 0" xyz="-0.1488 0 0.4236"/>
       <geometry>
         <cylinder length="0.401" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin rpy="0 -0.8 0" xyz="-0.1489 0 0.1446"/>
       <geometry>
         <cylinder length="0.415" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <loop_joint name="pair06_leg2_loop_b_c" type="continuous">
@@ -2761,9 +2509,7 @@
       <geometry>
         <cylinder length="0.394" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
   <joint name="pair06_leg2_joint_e_f" type="revolute">

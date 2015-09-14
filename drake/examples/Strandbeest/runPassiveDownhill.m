@@ -26,6 +26,6 @@ x0(1:6) = [0; 0; 1.25; 0; 0; 0];
 nq = p.getNumPositions();
 x0(nq+1:end) = 0;
 % v.inspector(x0);
-xtraj = sys.simulate([0 20], x0, struct('gui_control_interface', true));
+xtraj = sys.simulate([0 15], x0, struct('gui_control_interface', true));
 
 v.playback(xtraj, struct('slider', true));
