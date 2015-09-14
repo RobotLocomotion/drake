@@ -119,11 +119,17 @@ classdef InverseKinematicsBMI < BMIspotless
         % body2
         frameA = obj.robot.loop(i).frameA;
         frameB = obj.robot.loop(i).frameB;
+        [bodyA,T_frameA] = extractFrameInfo(obj.robot,frameA);
+        [bodyB,T_frameB] = extractFrameInfo(obj.robot,frameB);
+        bodyA_rotmat = rotmatFromQuatBilinear(obj.body_Quat{bodyA});
+        bodyB_rotmat = rotmatFromQuatBilinear(obj.body_Quat{bodyB});
         % origins coincide.
-        obj = obj.withEqs(obj.body_pos(:,frameA) - obj.body_pos(:,frameB));
+        frameA_origin = bodyA_rotmat*T_frameA(1:3,4) + obj.body_pos(:,bodyA);
+        frameB_origin = bodyB_rotmat*T_frameB(1:3,4) + obj.body_pos(:,bodyB);
+        obj = obj.withEqs(frameA_origin - frameB_origin);
         % axis coincide
-        frameA_axis = obj.body_pos(:,frameA) + rotmatFromQuatBilinear(obj.body_Quat{frameA})*obj.robot.loop(i).axis;
-        frameB_axis = obj.body_pos(:,frameB) + rotmatFromQuatBilinear(obj.body_Quat{frameB})*obj.robot.loop(i).axis;
+        frameA_axis = bodyA_rotmat*T_frameA(1:3,1:3)*obj.robot.loop(i).axis + frameA_origin;
+        frameB_axis = bodyB_rotmat*T_frameB(1:3,1:3)*obj.robot.loop(i).axis + frameB_origin;      
         obj = obj.withEqs(frameA_axis - frameB_axis);
       end
       
