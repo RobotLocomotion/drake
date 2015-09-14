@@ -34,8 +34,8 @@ r = addGeometryToBody(r, world, targetObject);
 r = r.compile();
 
 
-lFoot = r.findLinkId('l_foot');
-rFoot = r.findLinkId('r_foot');
+l_foot = r.findLinkId('l_foot');
+r_foot = r.findLinkId('r_foot');
 g_hand = r.findLinkId('r_hand');
 options.point_in_link_frame = [0; -0.3; 0];
 % had to move target back from obstacle:
@@ -74,9 +74,35 @@ ikoptions = ikoptions.setQ(Q);
 ikoptions = ikoptions.setMajorOptimalityTolerance(1e-3);
 
 %Set start pose constraints and compute starting configuration
-startPoseConstraints = [fixedFeetConstraints(options, r),...
-  {addQuasiStaticConstraint(options, r),...
-  nonGraspingHandDistanceConstraint(options, r, 0.4)}];
+
+%Fixed feet constraints
+state = options.fp.xstar(1:r.getNumPositions());
+kinsol = r.doKinematics(state);
+
+footPose = r.forwardKin(kinsol,l_foot, [0; 0; 0], 2);
+leftFootPosConstraint = WorldPositionConstraint(r, l_foot, [0; 0; 0], footPose(1:3), footPose(1:3));
+leftFootQuatConstraint = WorldQuatConstraint(r, l_foot, footPose(4:7), 0.0, [0.0, 1.0]);
+
+footPose = r.forwardKin(kinsol,r_foot, [0; 0; 0], 2);
+rightFootPosConstraint = WorldPositionConstraint(r, r_foot, [0; 0; 0], footPose(1:3), footPose(1:3));
+rightFootQuatConstraint = WorldQuatConstraint(r, r_foot, footPose(4:7), 0.0, [0.0, 1.0]);
+
+%Quasi tatic constraint
+l_foot_pts = r.getBody(l_foot).getTerrainContactPoints();
+r_foot_pts = r.getBody(r_foot).getTerrainContactPoints();
+quasiStaticConstraint = QuasiStaticConstraint(r, [-inf, inf], 1);
+quasiStaticConstraint = quasiStaticConstraint.setShrinkFactor(0.5);
+quasiStaticConstraint = quasiStaticConstraint.setActive(true);
+quasiStaticConstraint = quasiStaticConstraint.addContact(l_foot, l_foot_pts);
+quasiStaticConstraint = quasiStaticConstraint.addContact(r_foot, r_foot_pts);
+
+%non-Grasping Hand Distance Constraint
+elbow = r.findLinkId('l_larm');
+trunk = r.findLinkId('utorso');
+nonGraspingHandConstraint = Point2PointDistanceConstraint(r, elbow, trunk, [0; 0; 0], [0; 0; 0], 0.4, Inf);
+
+startPoseConstraints = {leftFootPosConstraint, leftFootQuatConstraint, rightFootPosConstraint, rightFootQuatConstraint,...
+  quasiStaticConstraint, nonGraspingHandConstraint};
 [q_start, info, infeasible_constraint] = inverseKin(r, ik_seed_pose, ik_nominal_pose, startPoseConstraints{:}, ikoptions);
 if options.visualize
   v.draw(0,q_start);
@@ -84,7 +110,11 @@ if options.visualize
 end
 
 %Set end pose constraints and compute end configuration
-goalConstraints = addGoalConstraint(options, r);
+goalFrame = [eye(3) options.targetObjectPos'; 0 0 0 1];
+goalEulerConstraint.left = WorldEulerConstraint(r, g_hand, [-pi; pi/2;0 ], [pi; pi/2; 0]);
+goalEulerConstraint.right = WorldEulerConstraint(r, g_hand, [-pi; -pi/2;0 ], [pi; -pi/2; 0]);
+goalDistConstraint = Point2PointDistanceConstraint(r, g_hand, world, options.point_in_link_frame, goalFrame(1:3, 4), -0.001, 0.001);
+goalConstraints = {goalDistConstraint, goalEulerConstraint.(options.graspingHand)};
 endPoseConstraints = [startPoseConstraints, goalConstraints];
 
 [q_end, info, infeasible_constraint] = inverseKin(r, ik_seed_pose, ik_nominal_pose, endPoseConstraints{:}, ikoptions);
@@ -93,7 +123,7 @@ if options.visualize
 end
 
 %Create RRTs
-inactive_collision_bodies = [lFoot,rFoot];
+inactive_collision_bodies = [l_foot,r_foot];
 
 kinsol = r.doKinematics(q_start);
 xyz_quat_start = r.forwardKin(kinsol,g_hand,options.point_in_link_frame,2);
@@ -104,7 +134,7 @@ x_goal = [xyz_quat_goal;q_end];
 
 
 kinsol = r.doKinematics(qNominalC);
-EEpose = r.forwardKin(kinsol, r.findLinkId('r_hand'),  [0; -0.3; 0], 2);
+EEpose = r.forwardKin(kinsol, g_hand,  [0; -0.3; 0], 2);
 constraints = [startPoseConstraints, generateEEConstraints(r, options, EEpose)];
 [qStartC, info, infeasible_constraint] = inverseKin(r, qNominalC, qNominalC, constraints{:}, ikoptions);
 if options.visualize
@@ -115,7 +145,7 @@ xyz_quat_start = r.forwardKin(kinsol,g_hand,options.point_in_link_frame,2);
 xStartC = [xyz_quat_start; qStartC];
 
 kinsol = r.doKinematics(qNominalD);
-EEpose = r.forwardKin(kinsol, r.findLinkId('r_hand'),  [0; -0.3; 0], 2);
+EEpose = r.forwardKin(kinsol, g_hand,  [0; -0.3; 0], 2);
 constraints = [startPoseConstraints, generateEEConstraints(r, options, EEpose)];
 [qStartD, info, infeasible_constraint] = inverseKin(r, qNominalD, qNominalD, constraints{:}, ikoptions);
 if options.visualize
@@ -174,65 +204,6 @@ fprintf(['TIMING:\n',...
   rrt_time);
 
 end
-
-
-
-function quasiStaticConstraint = addQuasiStaticConstraint(options, robot)
-l_foot = robot.findLinkId('l_foot');
-r_foot = robot.findLinkId('r_foot');
-l_foot_pts = robot.getBody(l_foot).getTerrainContactPoints();
-r_foot_pts = robot.getBody(r_foot).getTerrainContactPoints();
-quasiStaticConstraint = QuasiStaticConstraint(robot, [-inf, inf], 1);
-quasiStaticConstraint = quasiStaticConstraint.setShrinkFactor(0.5);
-quasiStaticConstraint = quasiStaticConstraint.setActive(true);
-quasiStaticConstraint = quasiStaticConstraint.addContact(l_foot, l_foot_pts);
-quasiStaticConstraint = quasiStaticConstraint.addContact(r_foot, r_foot_pts);
-end
-
-function constraints = fixedFeetConstraints(options, robot, state, foot)
-if nargin < 4, foot = 'both'; end;
-if nargin < 3
-  state = options.fp.xstar(1:robot.getNumPositions());
-end
-leftConstraints = {};
-rightConstraints = {};
-kinsol = robot.doKinematics(state);
-l_foot = robot.findLinkId('l_foot');
-r_foot = robot.findLinkId('r_foot');
-if any(strcmp(foot, {'both', 'left'}))
-  footPose = robot.forwardKin(kinsol,l_foot, [0; 0; 0], 2);
-  %                 drawLinkFrame(robot, l_foot, state, 'Left Foot Frame');
-  leftFootPosConstraint = WorldPositionConstraint(robot, l_foot, [0; 0; 0], footPose(1:3), footPose(1:3));
-  leftFootQuatConstraint = WorldQuatConstraint(robot, l_foot, footPose(4:7), 0.0, [0.0, 1.0]);
-  leftConstraints = {leftFootPosConstraint, leftFootQuatConstraint};
-end
-if any(strcmp(foot, {'both', 'right'}))
-  footPose = robot.forwardKin(kinsol,r_foot, [0; 0; 0], 2);
-  %                 drawLinkFrame(robot, r_foot, state, 'Right Foot Frame');
-  rightFootPosConstraint = WorldPositionConstraint(robot, r_foot, [0; 0; 0], footPose(1:3), footPose(1:3));
-  rightFootQuatConstraint = WorldQuatConstraint(robot, r_foot, footPose(4:7), 0.0, [0.0, 1.0]);
-  rightConstraints = {rightFootPosConstraint, rightFootQuatConstraint};
-end
-constraints = [leftConstraints, rightConstraints];
-end
-
-
-function constraint = nonGraspingHandDistanceConstraint(options, robot, dist)
-elbow = robot.findLinkId('l_larm');
-trunk = robot.findLinkId('utorso');
-constraint = Point2PointDistanceConstraint(robot, elbow, trunk, [0; 0; 0], [0; 0; 0], dist, Inf);
-end
-
-
-function constraints = addGoalConstraint(options, robot)
-hand = robot.findLinkId('r_hand');
-goalFrame = [eye(3) options.targetObjectPos'; 0 0 0 1];
-goalEulerConstraint.left = WorldEulerConstraint(robot, hand, [-pi; pi/2;0 ], [pi; pi/2; 0]);
-goalEulerConstraint.right = WorldEulerConstraint(robot, hand, [-pi; -pi/2;0 ], [pi; -pi/2; 0]);
-goalDistConstraint = Point2PointDistanceConstraint(robot, hand, robot.findLinkId('world'), options.point_in_link_frame, goalFrame(1:3, 4), -0.001, 0.001);
-constraints = {goalDistConstraint, goalEulerConstraint.(options.graspingHand)};
-end
-
 
 function constraints = generateEEConstraints(robot, options, x)
 constraints = {};
