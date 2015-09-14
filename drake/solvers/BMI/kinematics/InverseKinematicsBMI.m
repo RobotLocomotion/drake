@@ -117,13 +117,14 @@ classdef InverseKinematicsBMI < BMIspotless
       for i = 1:length(obj.robot.loop)
         % Add the constraint that the pt1 on body1 coincides with pt2 on
         % body2
-        body1 = obj.robot.loop(i).body1;
-        body2 = obj.robot.loop(i).body2;
-        pt1 = obj.robot.loop(i).pt1;
-        pt2 = obj.robot.loop(i).pt2;
-        pt1_pos = obj.body_pos(:,body1) + rotmatFromQuatBilinear(obj.body_Quat{body1})*pt1;
-        pt2_pos = obj.body_pos(:,body2) + rotmatFromQuatBilinear(obj.body_Quat{body2})*pt2;
-        obj = obj.withEqs(pt1_pos-pt2_pos);
+        frameA = obj.robot.loop(i).frameA;
+        frameB = obj.robot.loop(i).frameB;
+        % origins coincide.
+        obj = obj.withEqs(obj.body_pos(:,frameA) - obj.body_pos(:,frameB));
+        % axis coincide
+        frameA_axis = obj.body_pos(:,frameA) + rotmatFromQuatBilinear(obj.body_Quat{frameA})*obj.robot.loop(i).axis;
+        frameB_axis = obj.body_pos(:,frameB) + rotmatFromQuatBilinear(obj.body_Quat{frameB})*obj.robot.loop(i).axis;
+        obj = obj.withEqs(frameA_axis - frameB_axis);
       end
       
       obj.robot_visualizer = obj.robot.constructVisualizer();
