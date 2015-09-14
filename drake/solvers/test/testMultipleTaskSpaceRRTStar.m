@@ -8,7 +8,6 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 if ~isfield(options,'goal_bias'), options.goal_bias = 0.5; end;
 if ~isfield(options,'n_smoothing_passes'), options.n_smoothing_passes = 10; end;
 if ~isfield(options,'visualize'), options.visualize = true; end;
-if ~isfield(options,'graspingHand'), options.graspingHand = 'right'; end;
 
 options.floating = true;
 options.terrain = RigidBodyFlatTerrain();
@@ -111,10 +110,9 @@ end
 
 %Set end pose constraints and compute end configuration
 goalFrame = [eye(3) options.targetObjectPos'; 0 0 0 1];
-goalEulerConstraint.left = WorldEulerConstraint(r, g_hand, [-pi; pi/2;0 ], [pi; pi/2; 0]);
-goalEulerConstraint.right = WorldEulerConstraint(r, g_hand, [-pi; -pi/2;0 ], [pi; -pi/2; 0]);
+goalEulerConstraint = WorldEulerConstraint(r, g_hand, [-pi; -pi/2;0 ], [pi; -pi/2; 0]);
 goalDistConstraint = Point2PointDistanceConstraint(r, g_hand, world, options.point_in_link_frame, goalFrame(1:3, 4), -0.001, 0.001);
-goalConstraints = {goalDistConstraint, goalEulerConstraint.(options.graspingHand)};
+goalConstraints = {goalDistConstraint, goalEulerConstraint};
 endPoseConstraints = [startPoseConstraints, goalConstraints];
 
 [q_end, info, infeasible_constraint] = inverseKin(r, ik_seed_pose, ik_nominal_pose, endPoseConstraints{:}, ikoptions);
@@ -168,7 +166,7 @@ x_end.v5 = x_goal;
 
 finalPose = FinalPoseProblem(r, g_hand, x_start, x_goal, ...
   startPoseConstraints, goalConstraints, q_nom, ...
-  'capabilityMap', [], 'graspinghand', options.graspingHand, ...
+  'capabilityMap', [], 'graspinghand', 'right', ...
   'activecollisionoptions', ...
   struct('body_idx', setdiff(1:r.getNumBodies(), inactive_collision_bodies)),...
   'ikoptions', ikoptions, ...
