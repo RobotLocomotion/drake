@@ -32,10 +32,15 @@ if(abs(finger_1_link_3_pt_pos(3))>1e-2 || abs(finger_2_link_3_pt_pos(3))>1e-2 ||
   error('The kinematics constraints are not satisfied');
 end
 for i = 1:length(hand.loop)
-  pt1_pos = hand.forwardKin(kinsol,hand.loop(i).body1,hand.loop(i).pt1);
-  pt2_pos = hand.forwardKin(kinsol,hand.loop(i).body2,hand.loop(i).pt2);
-  if(norm(pt1_pos - pt2_pos) > 1e-2)
-    error('The loop constraint is not satisfied');
+  frameA_origin = hand.forwardKin(kinsol,hand.loop(i).frameA,zeros(3,1));
+  frameB_origin = hand.forwardKin(kinsol,hand.loop(i).frameB,zeros(3,1));
+  if(norm(frameA_origin - frameB_origin) > 1e-2)
+    error('In the loop constraint, the origins in the two frames do not coincide');
+  end
+  frameA_axis = hand.forwardKin(kinsol,hand.loop(i).frameA,hand.loop(i).axis);
+  frameB_axis = hand.forwardKin(kinsol,hand.loop(i).frameB,hand.loop(i).axis);
+  if(norm(frameA_axis - frameB_axis) > 1e-2)
+    error('In the loop constraint, the axes in the two frames do not coincide');
   end
 end
 end
