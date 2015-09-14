@@ -7,20 +7,13 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 if ~isfield(options,'goal_bias'), options.goal_bias = 0.5; end;
 if ~isfield(options,'n_smoothing_passes'), options.n_smoothing_passes = 10; end;
-if ~isfield(options,'planning_mode'), options.planning_mode = 'multiRRT'; end;
 if ~isfield(options,'visualize'), options.visualize = true; end;
-if ~isfield(options,'scene'), options.scene = 1; end;
-if ~isfield(options,'convex_hull'), options.convex_hull = true; end;
 if ~isfield(options,'graspingHand'), options.graspingHand = 'right'; end;
-if ~isfield(options,'costType'), options.costType = 'length'; end;
-if ~isfield(options,'firstFeasibleTraj'), options.firstFeasibleTraj = false; end;
-if ~isfield(options,'robot'), options.robot = []; end;
 if ~isfield(options,'nTrees'), options.nTrees = 4; end;
-if ~isfield(options,'goalObject'), options.goalObject = 1; end;
+
 options.floating = true;
-options.terrain = RigidBodyFlatTerrain(); %Changed to a smaller terrain to avoid visualization problem when zooming
+options.terrain = RigidBodyFlatTerrain();
 options.joint_v_max = 15*pi/180;
-options.viewer = 'NullVisualizer';
 
 urdf = fullfile(getDrakePath(),'examples','Atlas','urdf','atlas_convex_hull.urdf');
 options.fp = load([getDrakePath(), '/examples/Atlas/data/atlas_fp.mat']);
