@@ -10,8 +10,8 @@ option(EXAMPLES_LITTLEDOG "planning and control for a small quadruped robot" OFF
 option(AUTO_UPDATE_EXTERNALS "external projects are updated to their tag revision on compile" ON)
 
 # menu of external projects
-option(WITH_ALL_SUPPORTED_EXTERNALS "overrides the individual WITH_[external] options" OFF)
 option(WITH_ALL_PUBLIC_EXTERNALS "enable all externals available to public academic users" OFF)
+option(WITH_ALL_SUPPORTED_EXTERNALS "enable all externals available for your platform (includes private git repositories)" OFF)
 option(REMOVE_UNUSED_EXTERNALS "enable this to remove those projects from disk" OFF)
 
 # ON by default:
