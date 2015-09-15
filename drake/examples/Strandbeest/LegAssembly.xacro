@@ -19,8 +19,8 @@
       <geometry>
         <cylinder length="0.50" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
+      <material name="orange">
+        <color rgba="1 .6392 .0980 1"/>
       </material>
     </visual>
   </link>
@@ -36,9 +36,7 @@
       <geometry>
         <cylinder length="0.619" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
 
@@ -61,9 +59,7 @@
       <geometry>
         <cylinder length="0.393" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
 
@@ -86,27 +82,21 @@
       <geometry>
         <cylinder length="0.49" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin xyz="0.1812 0 -0.0291" rpy="0 1.73 0"/>
       <geometry>
         <cylinder length="0.367" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin xyz="0.1811 0 0.2159" rpy="0 2.5576 0"/>
       <geometry>
         <cylinder length="0.657" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0.49"/>
@@ -141,27 +131,21 @@
       <geometry>
         <cylinder length="0.558" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin xyz="-0.1488 0 0.4236" rpy="0 -2.3056 0"/>
       <geometry>
         <cylinder length="0.401" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
     <visual>
       <origin xyz="-0.1489 0 0.1446" rpy="0 -0.8 0"/>
       <geometry>
         <cylinder length="0.415" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 0.6353 0.6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
 
@@ -190,9 +174,7 @@
       <geometry>
         <cylinder length="0.394" radius="0.01"/>
       </geometry>
-      <material>
-        <color rgba=".6353 .6353 .6353 1"/>
-      </material>
+      <material name="orange"/>
     </visual>
   </link>
 
