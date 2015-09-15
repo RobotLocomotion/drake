@@ -11,6 +11,7 @@ classdef MotionPlanningTree
     max_edge_length = 0.1;
     max_length_between_constraint_checks = 0.01;
     line_color = 0.3*[1 1 1];
+    lcmgl_name = '';
     lcmgl;
   end
 
@@ -304,6 +305,7 @@ classdef MotionPlanningTree
       obj.lcmgl = LCMGLClient(name);
       sizecheck(color, 3);
       obj.line_color = color;
+      obj.lcmgl_name = name;
       obj.lcmgl.switchBuffers();
     end
 
