@@ -8,10 +8,10 @@ using namespace std;
 
 void checkBodyOrFrameID(const int body, const RigidBodyManipulator* model, const char* body_var_name="body")
 {
-  if(body >= model->num_bodies) {
-    mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","%s must be less than %d",body_var_name,model->num_bodies);
-  } else if(body < -model->num_frames - 1) {
-    mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","%s must be greater than %d",body_var_name,-model->num_frames);
+  if(body >= static_cast<int>(model->bodies.size())) {
+    mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","%s must be less than %d (got %d)",body_var_name,model->bodies.size(),body);
+  } else if(body < -static_cast<int>(model->frames.size()) - 1) {
+    mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","%s must be greater than %d (got %d)",body_var_name,-model->frames.size(),body);
   } else if(body == -1){
     mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","Recieved %s == 0, which is reserved for the center of mass. Please use a WorldCoMConstraint instead.");
   }
@@ -766,7 +766,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","pt_body should be a numeric scalar");
         }
         int pt_body = (int) mxGetScalar(prhs[2])-1;
-        if(pt_body>=model->num_bodies || pt_body<0)
+        if(pt_body>=model->bodies.size() || pt_body<0)
         {
           mexErrMsgIdAndTxt("Drake:constructPtrPoint2LineSegDistConstraintmex:BadInputs","pt_body is invalid");
         }
@@ -781,7 +781,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","line_body should be a numeric scalar");
         }
         int line_body = (int) mxGetScalar(prhs[4])-1;
-        if(line_body>=model->num_bodies || line_body<0)
+        if(line_body>=model->bodies.size() || line_body<0)
         {
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","line_body is invalid");
         }

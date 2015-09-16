@@ -173,9 +173,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
   
   methods (Access=protected)
     function model = parseLoopJoint(model,robotnum,node,options)
-      w = warning('off','Drake:RigidBodyManipulator:ThreeDLoopJoints');
       model = parseLoopJoint@RigidBodyManipulator(model,robotnum,node,options);
-      warning(w);
       if abs(dot(model.loop.axis,model.view_axis))<1-1e-6
         error('Drake:PlanarRigidBodyManipulator:OutOfPlaneLoopJoint','Loop joints must have their axis aligned with the viewing axis (for now)');
       end

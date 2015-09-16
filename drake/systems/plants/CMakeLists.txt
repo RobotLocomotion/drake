@@ -11,7 +11,7 @@ target_link_libraries(drakeRBM drakeCollision drakeJoints spruce drakeUtil)
 pods_install_libraries(drakeRBM)
 pods_install_headers(RigidBodyManipulator.h RigidBody.h RigidBodyFrame.h KinematicPath.h KinematicsCache.h ForceTorqueMeasurement.h DESTINATION drake)
 pods_install_pkg_config_file(drake-rbm
-  LIBS -ldrakeRBM
+  LIBS -ldrakeRBM -ldrakeCollision -ldrakeJoints -lspruce -ldrakeUtil
   REQUIRES
   VERSION 0.0.1)
 

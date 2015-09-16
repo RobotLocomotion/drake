@@ -61,7 +61,7 @@ pods_install_headers(drakeGradientUtil.h DESTINATION drake)
 
 add_library(drakeGeometryUtil SHARED drakeGeometryUtil.cpp expmap2quat.cpp)
 pods_install_libraries(drakeGeometryUtil)
-pods_install_headers(drakeGeometryUtil.h DESTINATION drake)
+pods_install_headers(drakeGeometryUtil.h expmap2quat.h DESTINATION drake)
 pods_install_pkg_config_file(drake-geometry-util
   LIBS -ldrakeGeometryUtil
   REQUIRES
@@ -100,7 +100,7 @@ if (MATLAB_FOUND)
 
   add_mex(closestExpmapmex closestExpmapmex.cpp)
   target_link_libraries(closestExpmapmex drakeMexUtil drakeGeometryUtil)
-  
+
   add_mex(resolveCenterOfPressuremex resolveCenterOfPressuremex.cpp)
   target_link_libraries(resolveCenterOfPressuremex drakeMexUtil drakeUtil)
 endif()

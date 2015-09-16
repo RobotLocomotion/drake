@@ -888,8 +888,8 @@ RelativePositionConstraint::RelativePositionConstraint(RigidBodyManipulator* rob
   this->bTbp = bTbp;
   this->bodyA_idx = bodyA_idx;
   this->bodyB_idx = bodyB_idx;
-  this->bodyA_name = this->robot->bodies[this->bodyA_idx]->linkname;
-  this->bodyB_name = this->robot->bodies[this->bodyB_idx]->linkname;
+  bodyA_name = robot->getBodyOrFrameName(bodyA_idx);
+  bodyB_name = robot->getBodyOrFrameName(bodyB_idx);
   Vector4d bpTb_quat = quatConjugate(bTbp.block(3,0,4,1));
   Vector3d bpTb_trans = quatRotateVec(bpTb_quat,-bTbp.block(0,0,3,1));
   this->bpTb << bpTb_trans, bpTb_quat;
@@ -2371,8 +2371,8 @@ MinDistanceConstraint::eval(const double* t, KinematicsCache<double>& cache, Vec
     scaleDistance(dist,scaled_dist,dscaled_dist_ddist);
     penalty(scaled_dist, pairwise_costs, dpairwise_costs_dscaled_dist);
 
-    std::vector< std::vector<int> > orig_idx_of_pt_on_bodyA(robot->num_bodies);
-    std::vector< std::vector<int> > orig_idx_of_pt_on_bodyB(robot->num_bodies);
+    std::vector< std::vector<int> > orig_idx_of_pt_on_bodyA(robot->bodies.size());
+    std::vector< std::vector<int> > orig_idx_of_pt_on_bodyB(robot->bodies.size());
     for (int k = 0; k < num_pts; ++k) {
       //DEBUG
       //std::cout << "MinDistanceConstraint::eval: First loop: " << k << std::endl;
@@ -2384,7 +2384,7 @@ MinDistanceConstraint::eval(const double* t, KinematicsCache<double>& cache, Vec
         orig_idx_of_pt_on_bodyB.at(idxB.at(k)).push_back(k);
       }
     }
-    for (int k = 0; k < robot->num_bodies; ++k) {
+    for (int k = 0; k < robot->bodies.size(); ++k) {
       //DEBUG
       //std::cout << "MinDistanceConstraint::eval: Second loop: " << k << std::endl;
       //END_DEBUG

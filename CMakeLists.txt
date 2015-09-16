@@ -107,7 +107,7 @@ set(sedumi_GIT_TAG 8263577d4ab375524060c19369ccf410133bb9eb)
 set(signalscope_GIT_REPOSITORY https://github.com/mitdrc/signal-scope.git)
 set(signalscope_GIT_TAG bd891bb2a8284a969086b7f286462572e5698855)
 set(snopt_GIT_REPOSITORY https://github.com/RobotLocomotion/snopt.git)
-set(snopt_GIT_TAG d7abb603690f41970273643ebb6e173b0e6e452b)
+set(snopt_GIT_TAG e1b03db07d22ee11b2549d8a7c93466d263ce322)
 set(snopt_IS_CMAKE_POD TRUE)
 set(spotless_GIT_REPOSITORY https://github.com/RobotLocomotion/spotless-pod.git)
 set(spotless_GIT_TAG 28f97e3267b245c11a770abd57687906840a041d)
@@ -119,7 +119,7 @@ set(xfoil_GIT_TAG fde0a9368dd451c93604051fc5704e120073800c)
 
 # and now for the examples
 set(LittleDog_GIT_REPOSITORY https://github.com/RobotLocomotion/LittleDog.git)
-set(LittleDog_GIT_TAG 74ccb4f861e78bd78ac7c8e09fedafa89e8088fb)
+set(LittleDog_GIT_TAG a21aef548c33386243c40e315b1c70d83c122430)
 
 find_program(MAKE_EXECUTABLE make)
 if (NOT MAKE_EXECUTABLE)

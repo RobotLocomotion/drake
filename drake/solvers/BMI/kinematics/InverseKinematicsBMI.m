@@ -117,13 +117,20 @@ classdef InverseKinematicsBMI < BMIspotless
       for i = 1:length(obj.robot.loop)
         % Add the constraint that the pt1 on body1 coincides with pt2 on
         % body2
-        body1 = obj.robot.loop(i).body1;
-        body2 = obj.robot.loop(i).body2;
-        pt1 = obj.robot.loop(i).pt1;
-        pt2 = obj.robot.loop(i).pt2;
-        pt1_pos = obj.body_pos(:,body1) + rotmatFromQuatBilinear(obj.body_Quat{body1})*pt1;
-        pt2_pos = obj.body_pos(:,body2) + rotmatFromQuatBilinear(obj.body_Quat{body2})*pt2;
-        obj = obj.withEqs(pt1_pos-pt2_pos);
+        frameA = obj.robot.loop(i).frameA;
+        frameB = obj.robot.loop(i).frameB;
+        [bodyA,T_frameA] = extractFrameInfo(obj.robot,frameA);
+        [bodyB,T_frameB] = extractFrameInfo(obj.robot,frameB);
+        bodyA_rotmat = rotmatFromQuatBilinear(obj.body_Quat{bodyA});
+        bodyB_rotmat = rotmatFromQuatBilinear(obj.body_Quat{bodyB});
+        % origins coincide.
+        frameA_origin = bodyA_rotmat*T_frameA(1:3,4) + obj.body_pos(:,bodyA);
+        frameB_origin = bodyB_rotmat*T_frameB(1:3,4) + obj.body_pos(:,bodyB);
+        obj = obj.withEqs(frameA_origin - frameB_origin);
+        % axis coincide
+        frameA_axis = bodyA_rotmat*T_frameA(1:3,1:3)*obj.robot.loop(i).axis + frameA_origin;
+        frameB_axis = bodyB_rotmat*T_frameB(1:3,1:3)*obj.robot.loop(i).axis + frameB_origin;      
+        obj = obj.withEqs(frameA_axis - frameB_axis);
       end
       
       obj.robot_visualizer = obj.robot.constructVisualizer();
