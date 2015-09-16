@@ -324,8 +324,8 @@ classdef FullStateQPController < DrakeSystem
         if any(xp_j(1,:) > leading_x_pos)
           leading_x_pos = max(xp_j(1,:));
           obj.controller_data.xoffset = (mean(xp_j(1,:)-xp0(1,:))); 
-          yoffset = (mean(xp_j(2,:)-xp0(2,:)));
-          yawoffset = (mean(xp_jrot(6,:)-xp0(6,:)));
+%           yoffset = (mean(xp_j(2,:)-xp0(2,:)));
+%           yawoffset = (mean(xp_jrot(6,:)-xp0(6,:)));
         end
 
       end
