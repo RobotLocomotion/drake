@@ -103,7 +103,6 @@ release_filelist:
 	find * -type f | grep -v "pod-build" | grep -v "\.valgrind" | grep -v "\.viewer-prefs" | grep -v "\.out" | grep -v "\.autosave" | grep -v "\.git" | grep -v "\.tmp" | grep -v "drake_config\.mat" | grep -v "DoxygenMatlab" | grep -v "\.aux" | grep -v "\.d" | grep -v "\.log" | grep -v "\.bib"
 	find pod-build/lib -type f
 	-find pod-build/bin -type f 2> /dev/null
-	echo "pod-build/CMakeCache.txt"
 
 clean:
 ifeq ($(BUILD_SYSTEM),Windows_NT)
