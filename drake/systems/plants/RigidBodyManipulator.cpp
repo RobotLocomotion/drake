@@ -899,7 +899,7 @@ void RigidBodyManipulator::findAncestorBodies(std::vector<int>& ancestor_bodies,
   }
 }
 
-void RigidBodyManipulator::findKinematicPath(KinematicPath& path, int start_body_or_frame_idx, int end_body_or_frame_idx) const
+KinematicPath RigidBodyManipulator::findKinematicPath(int start_body_or_frame_idx, int end_body_or_frame_idx) const
 {
   // find all ancestors of start_body and end_body
   int start_body = parseBodyOrFrameID(start_body_or_frame_idx);
@@ -936,9 +936,7 @@ void RigidBodyManipulator::findKinematicPath(KinematicPath& path, int start_body
   int least_common_ancestor = *start_body_lca_it;
 
   // compute path
-  path.joint_path.clear();
-  path.joint_direction_signs.clear();
-  path.body_path.clear();
+  KinematicPath path;
 
   std::vector<int>::iterator it = start_body_ancestors.begin();
   for ( ; it != start_body_lca_it; it++) {
@@ -955,6 +953,7 @@ void RigidBodyManipulator::findKinematicPath(KinematicPath& path, int start_body
     path.joint_direction_signs.push_back(1);
     path.body_path.push_back(*reverse_it);
   }
+  return path;
 }
 
 template<typename Scalar>
@@ -966,8 +965,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
   }
   cache.checkCachedKinematicsSettings(gradient_order > 0, false, false, "geometricJacobian");
 
-  KinematicPath kinematic_path;
-  findKinematicPath(kinematic_path, base_body_or_frame_ind, end_effector_body_or_frame_ind);
+  KinematicPath kinematic_path = findKinematicPath(base_body_or_frame_ind, end_effector_body_or_frame_ind);
   int nq = num_positions;
 
   int cols = 0;
@@ -1526,8 +1524,7 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, Eigen::Dynamic> Rigi
       }
     }
 
-    KinematicPath path;
-    findKinematicPath(path, base_ind, body_ind);
+    KinematicPath path = findKinematicPath(base_ind, body_ind);
     MatrixXd dqrotdq = in_terms_of_qdot ? compactToFull(Jrot, path.joint_path, true) : transformVelocityMappingToPositionDotMapping(cache, compactToFull(Jrot, path.joint_path, false));
 
     auto dPhidq = (Phi.gradient().value() * dqrotdq).eval();

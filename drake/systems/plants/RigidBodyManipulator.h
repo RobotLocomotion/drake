@@ -359,7 +359,7 @@ public:
 
   void findAncestorBodies(std::vector<int>& ancestor_bodies, int body) const;
 
-  void findKinematicPath(KinematicPath& path, int start_body_or_frame_idx, int end_body_or_frame_idx) const;
+  KinematicPath findKinematicPath(int start_body_or_frame_idx, int end_body_or_frame_idx) const;
 
   template <typename Scalar>
   GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> massMatrix(KinematicsCache<Scalar>& cache, int gradient_order = 0) const;

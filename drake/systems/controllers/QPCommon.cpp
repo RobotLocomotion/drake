@@ -439,7 +439,7 @@ int setupAndSolveQP(
     double expmap_kp_multiplier = qp_input->body_motion_data[i].expmap_kp_multiplier;
     double expmap_damping_ratio_multiplier = qp_input->body_motion_data[i].expmap_damping_ratio_multiplier;
     memcpy(desired_body_accelerations[i].weight_multiplier.data(),qp_input->body_motion_data[i].weight_multiplier,sizeof(double)*6);
-    pdata->r->findKinematicPath(desired_body_accelerations[i].body_path,0,desired_body_accelerations[i].body_or_frame_id0);
+    desired_body_accelerations[i].body_path = pdata->r->findKinematicPath(0, desired_body_accelerations[i].body_or_frame_id0);
 
     auto spline = decodePiecewisePolynomial(qp_input->body_motion_data[i].spline);
     evaluateXYZExpmapCubicSpline(robot_state.t, spline, body_pose_des, body_v_des, body_vdot_des);
