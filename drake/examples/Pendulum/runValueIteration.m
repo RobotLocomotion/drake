@@ -27,7 +27,14 @@ function drawfun(J,PI)
   drawnow;
 end
 
-valueIteration(mdp,0.001,@drawfun);
+[J,PI] = valueIteration(mdp,0.001,@drawfun);
+
+sys = feedback(plant,PI);
+v = PendulumVisualizer();
+for i=1:5
+  xtraj = simulate(sys,[0,10],randn(2,1));
+  v.playback(xtraj);
+end
 
 end
 
