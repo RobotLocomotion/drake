@@ -1,10 +1,7 @@
 #ifndef TESTUTIL_H_
 #define TESTUTIL_H_
 
-#if !defined(WIN32) && !defined(WIN64)
 #include <chrono>
-#endif
-
 #include <Eigen/Core>
 #include <sstream>
 #include <string>
@@ -12,7 +9,6 @@
 #include <cmath>
 
 // requires <chrono>, which isn't available in MSVC2010...
-#if !defined(WIN32) && !defined(WIN64)
 template<typename TimeT = std::chrono::milliseconds>
 struct measure
 {
@@ -25,12 +21,11 @@ struct measure
     func(std::forward<Args>(args)...);
 
     auto duration = std::chrono::duration_cast< TimeT>
-    (std::chrono::system_clock::now() - start);
+        (std::chrono::system_clock::now() - start);
 
     return duration.count();
   }
 };
-#endif
 
 template<typename Derived>
 std::string to_string(const Eigen::MatrixBase<Derived> & a)
