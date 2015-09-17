@@ -427,7 +427,7 @@ int setupAndSolveQP(
     if (qp_input->body_motion_data[i].body_id == 0)
       throw std::runtime_error("Body motion data with body id 0\n");
     int body_or_frame_id0 = qp_input->body_motion_data[i].body_id - 1;
-    int true_body_id0 = pdata->r->parseBodyOrFrameID(body_or_frame_id0, NULL);
+    int true_body_id0 = pdata->r->parseBodyOrFrameID(body_or_frame_id0);
     double weight = params->body_motion[true_body_id0].weight;
     desired_body_accelerations[i].body_or_frame_id0 = body_or_frame_id0;
     Map<Vector4d> quat_task_to_world(qp_input->body_motion_data[i].quat_task_to_world);
@@ -639,7 +639,7 @@ int setupAndSolveQP(
   Vector6d Jbdotv;	
   for (int i=0; i<desired_body_accelerations.size(); i++) {
     if (desired_body_accelerations[i].weight < 0) { // negative implies constraint
-      int body_id0 = pdata->r->parseBodyOrFrameID(desired_body_accelerations[i].body_or_frame_id0,(Matrix4d*)nullptr);
+      int body_id0 = pdata->r->parseBodyOrFrameID(desired_body_accelerations[i].body_or_frame_id0);
       if (desired_body_accelerations[i].control_pose_when_in_contact || !inSupport(active_supports,body_id0)) {
         auto J_geometric = pdata->r->geometricJacobian(cache, 0,desired_body_accelerations[i].body_or_frame_id0, desired_body_accelerations[i].body_or_frame_id0, 0, true, (std::vector<int> *) nullptr);
         auto J_geometric_dot_times_v = pdata->r->geometricJacobianDotTimesV(cache, 0,desired_body_accelerations[i].body_or_frame_id0,desired_body_accelerations[i].body_or_frame_id0,0);
@@ -814,7 +814,7 @@ int setupAndSolveQP(
     // add in body spatial acceleration cost terms
     for (int i=0; i<desired_body_accelerations.size(); i++) {
       if (desired_body_accelerations[i].weight > 0) {
-        int body_id0 = pdata->r->parseBodyOrFrameID(desired_body_accelerations[i].body_or_frame_id0,(Matrix4d*)nullptr);
+        int body_id0 = pdata->r->parseBodyOrFrameID(desired_body_accelerations[i].body_or_frame_id0);
         if (desired_body_accelerations[i].control_pose_when_in_contact || !inSupport(active_supports,body_id0)) {
           auto J_geometric = pdata->r->geometricJacobian(cache, 0,desired_body_accelerations[i].body_or_frame_id0,desired_body_accelerations[i].body_or_frame_id0,0,true,(std::vector<int>*)nullptr);
           auto J_geometric_dot_times_v = pdata->r->geometricJacobianDotTimesV(cache, 0, desired_body_accelerations[i].body_or_frame_id0, desired_body_accelerations[i].body_or_frame_id0, 0);

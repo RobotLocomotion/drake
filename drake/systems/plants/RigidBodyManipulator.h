@@ -143,7 +143,7 @@ public:
         element.transform_to_world = parent_element.transform_to_world * T_body_to_parent;
 
         // motion subspace in body frame
-        Eigen::MatrixXd* dSdq = compute_gradients ? &(element.motion_subspace_in_body.gradient().value()) : nullptr;
+        Matrix<Scalar, Dynamic, Dynamic>* dSdq = compute_gradients ? &(element.motion_subspace_in_body.gradient().value()) : nullptr;
         joint.motionSubspace(q_body, element.motion_subspace_in_body.value(), dSdq);
 
         // motion subspace in world frame
@@ -231,7 +231,7 @@ public:
               if (compute_gradients) {
                 // dJdotvdq
                 // TODO: exploit sparsity better
-                Matrix<double, TWIST_SIZE, Eigen::Dynamic> dSdotVdq(TWIST_SIZE, nq);
+                Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> dSdotVdq(TWIST_SIZE, nq);
                 dSdotVdq.setZero();
                 auto& dSdotv = element.motion_subspace_in_body_dot_times_v.gradient().value();
                 dSdotVdq.middleCols(body.position_num_start, joint.getNumPositions()) = dSdotv.leftCols(joint.getNumPositions());
@@ -248,11 +248,11 @@ public:
                 auto dtwistdv = geometricJacobian(cache, 0, i, 0, 0, false, &v_indices);
                 int nv_branch = static_cast<int>(v_indices.size());
 
-                Matrix<double, TWIST_SIZE, Eigen::Dynamic> djoint_twistdv(TWIST_SIZE, nv_branch);
+                Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> djoint_twistdv(TWIST_SIZE, nv_branch);
                 djoint_twistdv.setZero();
                 djoint_twistdv.rightCols(nv_joint) = element.motion_subspace_in_world.value();
 
-                Matrix<double, TWIST_SIZE, Eigen::Dynamic> djoint_acceldv(TWIST_SIZE, nv_branch);
+                Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> djoint_acceldv(TWIST_SIZE, nv_branch);
                 djoint_acceldv = dCrossSpatialMotion(element.twist_in_world.value(), joint_twist.value(), dtwistdv.value(), djoint_twistdv); // TODO: can probably exploit sparsity better
                 auto dSdotVdvi = dSdotv.rightCols(joint.getNumVelocities());
                 djoint_acceldv.rightCols(nv_joint) += transformSpatialMotion(element.transform_to_world, dSdotVdvi);
@@ -485,7 +485,10 @@ public:
   std::string getBodyOrFrameName(int body_or_frame_id) const;
   //@param body_or_frame_id   the index of the body or the id of the frame.
 
-  int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe = nullptr) const;
+  // TODO: remove parseBodyOrFrameID methods
+  template <typename Scalar>
+  int parseBodyOrFrameID(const int body_or_frame_id, Eigen::Transform<Scalar, 3, Isometry>* Tframe) const;
+  int parseBodyOrFrameID(const int body_or_frame_id) const;
 
   template <typename Scalar>
   GradientVar<Scalar, Eigen::Dynamic, 1> positionConstraints(const KinematicsCache<Scalar>& cache, int gradient_order) const;
