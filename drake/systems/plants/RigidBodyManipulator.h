@@ -58,11 +58,11 @@ public:
 class DLLEXPORT_RBM RigidBodyLoop
 {
 public:
-  RigidBodyLoop(std::shared_ptr<RigidBody> _bodyA, Vector3d _ptA, std::shared_ptr<RigidBody> _bodyB, Vector3d _ptB) :
-    bodyA(_bodyA), bodyB(_bodyB), ptA(_ptA), ptB(_ptB) {};
+  RigidBodyLoop(const std::shared_ptr<RigidBodyFrame>& _frameA, const std::shared_ptr<RigidBodyFrame>& _frameB, const Vector3d& _axis) :
+    frameA(_frameA), frameB(_frameB), axis(_axis) {};
 
-  std::shared_ptr<RigidBody> bodyA, bodyB;
-  Vector3d ptA, ptB;
+  std::shared_ptr<RigidBodyFrame> frameA, frameB;
+  Vector3d axis;
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -72,7 +72,6 @@ public:
 class DLLEXPORT_RBM RigidBodyManipulator
 {
 public:
-  RigidBodyManipulator(int num_dof, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
   RigidBodyManipulator(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
   RigidBodyManipulator(void);
   virtual ~RigidBodyManipulator(void);
@@ -82,13 +81,11 @@ public:
   bool addRobotFromURDF(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
   bool addRobotFromURDF(const std::string &urdf_filename, std::map<std::string,std::string>& package_map, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
 
-  void addFrame(const RigidBodyFrame& frame);
+  void addFrame(const std::shared_ptr<RigidBodyFrame>& frame);
 
   std::map<std::string, int> computePositionNameToIndexMap() const;
 
   void surfaceTangents(Eigen::Map<Matrix3xd> const & normals, std::vector< Map<Matrix3xd> > & tangents) const;
-
-  void resize(int num_dof, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
 
   void compile(void);  // call me after the model is loaded
 
@@ -493,9 +490,6 @@ public:
   template <typename Scalar>
   GradientVar<Scalar, Eigen::Dynamic, 1> positionConstraints(const KinematicsCache<Scalar>& cache, int gradient_order) const;
 
-  template <typename DerivedA, typename DerivedB>
-  void positionConstraints(const KinematicsCache<typename DerivedA::Scalar>& cache, Eigen::MatrixBase<DerivedA> & phi, Eigen::MatrixBase<DerivedB> & J) const;
-
   size_t getNumPositionConstraints() const;
 
   template <typename Derived>
@@ -530,12 +524,10 @@ public:
   VectorXd joint_limit_max;
 
   // Rigid body objects
-  int num_bodies;  // rigid body objects
   std::vector<std::shared_ptr<RigidBody> > bodies;
 
   // Rigid body frames
-  int num_frames;
-  std::vector<RigidBodyFrame,Eigen::aligned_allocator<RigidBodyFrame> > frames;
+  std::vector<std::shared_ptr<RigidBodyFrame> > frames;
 
   // Rigid body actuators
   std::vector<RigidBodyActuator,Eigen::aligned_allocator<RigidBodyActuator> > actuators;
