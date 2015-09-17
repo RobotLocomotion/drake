@@ -48,6 +48,7 @@ add_executable(debugManipulatorDynamics debugManipulatorDynamics.cpp)
 include_directories( .. )
 target_link_libraries(debugManipulatorDynamics drakeRBM)
 
+include_directories(${PROJECT_SOURCE_DIR}/util)
 add_executable(benchmarkAutoDiffScalar benchmarkAutoDiffScalar.cpp)
 target_link_libraries(benchmarkAutoDiffScalar drakeRBM)
 
