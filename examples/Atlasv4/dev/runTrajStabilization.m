@@ -34,7 +34,7 @@ elseif traj_params==2
   modes = [8,3,4,4,1]; % step
 elseif traj_params==3
   s = '../urdf/atlas_simple_spring_ankle_planar_contact.urdf';
-  traj_file = 'data/atlas_K10B2_passive_lqr_sk.mat';
+  traj_file = 'data/atlas_alt3mode_K10B2_passive_traj_update_lqr.mat';
   %traj_file = 'data/atlas_passiveankle_traj_lqr_090314_zoh.mat';
   options.terrain = RigidBodyFlatTerrain();
   modes = [8,6,4,4,2,8];
@@ -190,14 +190,14 @@ ctrl_data = FullStateQPControllerData(true,struct(...
 options.timestep = .001;
 options.dt = .001;
 options.cpos_slack_limit = inf;
-options.w_cpos_slack = 0.5;
+options.w_cpos_slack = 0.1;
 options.phi_slack_limit = inf;
 options.w_phi_slack = 0.0;
 options.w_qdd = 0*ones(nq,1);
 options.w_grf = 0;
 options.Kp_accel = 0;
-options.contact_threshold = 1e-3; %was 1e-4
-options.offset_x = false;
+options.contact_threshold = 5e-4; %was 1e-4
+options.offset_x = true;
 qp = FullStateQPController(r,ctrl_data,options);
 
 % feedback QP controller with Atlas
@@ -252,7 +252,7 @@ if 1
     hold off;
   end
 end
-save('data/atlas_step_up_traj_exec.mat','traj');
+save('data/atlas_passive_walking_exec.mat','traj');
 
 end
 
