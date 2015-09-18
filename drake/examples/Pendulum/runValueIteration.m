@@ -5,7 +5,7 @@ options.dt = 1e-2;
 options.gamma = .999;
 options.wrap_flag = [true;false];
 %cost = @mintime; ulimit = 1;
-cost = @lqrcost; ulimit = 5;
+cost = @lqrcost; ulimit = 2; % = 5 converges faster (but pumps less)
 xbins = {linspace(0,2*pi,51),linspace(-10,10,51)};
 ubins = linspace(-ulimit,ulimit,9);
 mdp = MarkovDecisionProcess.discretizeSystem(plant,cost,xbins,ubins,options);
@@ -27,7 +27,14 @@ function drawfun(J,PI)
   drawnow;
 end
 
-valueIteration(mdp,0.001,@drawfun);
+[J,PI] = valueIteration(mdp,0.001,@drawfun);
+
+sys = feedback(plant,PI);
+v = PendulumVisualizer();
+for i=1:5
+  xtraj = simulate(sys,[0,10],0.2*randn(2,1));
+  v.playback(xtraj);
+end
 
 end
 
