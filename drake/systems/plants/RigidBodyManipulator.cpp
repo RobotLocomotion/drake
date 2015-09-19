@@ -519,11 +519,11 @@ void RigidBodyManipulator::updateCompositeRigidBodyInertias(KinematicsCache<Scal
   if (gradient_order > cache.getCachedInertiaGradientsOrder()) {
     for (int i = 0; i < bodies.size(); i++) {
       auto& element = cache.getElement(*bodies[i]);
-      Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type* dTdq = nullptr;
+      typename Gradient<typename Transform<Scalar, 3, Isometry>::MatrixType, Dynamic>::type* dTdq = nullptr;
       if (gradient_order > 0)
         dTdq = &element.dtransform_to_world_dq;
 
-      auto inertia_in_world = transformSpatialInertia(element.transform_to_world, dTdq, bodies[i]->I);
+      auto inertia_in_world = transformSpatialInertia(element.transform_to_world, dTdq, bodies[i]->I.cast<Scalar>());
       element.inertia_in_world.value() = inertia_in_world.value();
       element.crb_in_world.value() = inertia_in_world.value();
       if (gradient_order > 0) {
@@ -864,8 +864,9 @@ void RigidBodyManipulator::getContactPositionsJac(const KinematicsCache<typename
 }
 
 /* [body_ind,Tframe] = parseBodyOrFrameID(body_or_frame_id) */
-int RigidBodyManipulator::parseBodyOrFrameID(const int body_or_frame_id, Matrix4d* Tframe) const
-{
+template <typename Scalar>
+int RigidBodyManipulator::parseBodyOrFrameID(const int body_or_frame_id, Eigen::Transform<Scalar, 3, Isometry>* Tframe) const {
+
   int body_ind=0;
   if (body_or_frame_id == -1) {
     cerr << "parseBodyOrFrameID got a -1, which should have been reserved for COM.  Shouldn't have gotten here." << endl;
@@ -880,13 +881,18 @@ int RigidBodyManipulator::parseBodyOrFrameID(const int body_or_frame_id, Matrix4
     body_ind = frames[frame_ind]->body->body_index;
 
     if (Tframe)
-      (*Tframe) = frames[frame_ind]->transform_to_body;
+      (*Tframe) = frames[frame_ind]->transform_to_body.cast<Scalar>();
   } else {
     body_ind = body_or_frame_id;
     if (Tframe)
-      (*Tframe) = Matrix4d::Identity();
+      Tframe->setIdentity();
   }
   return body_ind;
+}
+
+int RigidBodyManipulator::parseBodyOrFrameID(const int body_or_frame_id) const
+{
+  return parseBodyOrFrameID<double>(body_or_frame_id, nullptr);
 }
 
 void RigidBodyManipulator::findAncestorBodies(std::vector<int>& ancestor_bodies, int body_idx) const
@@ -899,7 +905,7 @@ void RigidBodyManipulator::findAncestorBodies(std::vector<int>& ancestor_bodies,
   }
 }
 
-void RigidBodyManipulator::findKinematicPath(KinematicPath& path, int start_body_or_frame_idx, int end_body_or_frame_idx) const
+KinematicPath RigidBodyManipulator::findKinematicPath(int start_body_or_frame_idx, int end_body_or_frame_idx) const
 {
   // find all ancestors of start_body and end_body
   int start_body = parseBodyOrFrameID(start_body_or_frame_idx);
@@ -936,9 +942,7 @@ void RigidBodyManipulator::findKinematicPath(KinematicPath& path, int start_body
   int least_common_ancestor = *start_body_lca_it;
 
   // compute path
-  path.joint_path.clear();
-  path.joint_direction_signs.clear();
-  path.body_path.clear();
+  KinematicPath path;
 
   std::vector<int>::iterator it = start_body_ancestors.begin();
   for ( ; it != start_body_lca_it; it++) {
@@ -955,6 +959,7 @@ void RigidBodyManipulator::findKinematicPath(KinematicPath& path, int start_body
     path.joint_direction_signs.push_back(1);
     path.body_path.push_back(*reverse_it);
   }
+  return path;
 }
 
 template<typename Scalar>
@@ -966,8 +971,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
   }
   cache.checkCachedKinematicsSettings(gradient_order > 0, false, false, "geometricJacobian");
 
-  KinematicPath kinematic_path;
-  findKinematicPath(kinematic_path, base_body_or_frame_ind, end_effector_body_or_frame_ind);
+  KinematicPath kinematic_path = findKinematicPath(base_body_or_frame_ind, end_effector_body_or_frame_ind);
   int nq = num_positions;
 
   int cols = 0;
@@ -1015,7 +1019,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
   }
 
   auto T_world_to_frame = relativeTransform(cache, expressed_in_body_or_frame_ind, 0, 0);
-  Isometry3d H0(T_world_to_frame.value());
+  Transform<Scalar, 3, Isometry> H0(T_world_to_frame.value());
   if (expressed_in_body_or_frame_ind != 0) {
     J = transformSpatialMotion(H0, J);
   }
@@ -1031,7 +1035,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
       int sign = kinematic_path.joint_direction_signs[i];
       RigidBody& body_j = *bodies[j];
       const auto& element_j = cache.getElement(body_j);
-      Matrix<double, TWIST_SIZE, Dynamic, 0, TWIST_SIZE, DrakeJoint::MAX_NUM_POSITIONS> Jj = (sign * element_j.motion_subspace_in_world.value()).eval();
+      Matrix<Scalar, TWIST_SIZE, Dynamic, 0, TWIST_SIZE, DrakeJoint::MAX_NUM_POSITIONS> Jj = (sign * element_j.motion_subspace_in_world.value()).eval();
       if (in_terms_of_qdot) {
         Jj *= element_j.qdot_to_v.value();
       }
@@ -1041,7 +1045,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJ
         dSjdqj = matGradMultMat((sign * element_j.motion_subspace_in_body.value()).eval(), element_j.qdot_to_v.value(), dSjdqj, element_j.qdot_to_v.gradient().value().middleCols(body_j.position_num_start, body_j.getJoint().getNumPositions()));
       }
       auto Hj_gradientvar = relativeTransform(cache, expressed_in_body_or_frame_ind, j, 0);
-      Isometry3d Hj(Hj_gradientvar.value());
+      Transform<Scalar, 3, Isometry> Hj(Hj_gradientvar.value());
       auto Jj0_gradientvar = geometricJacobian(cache, expressed_in_body_or_frame_ind, j, 0, 0, true, &qdot_ind_ij);
 
       for (int Jj_col = 0; Jj_col < Jj.cols(); Jj_col++) {
@@ -1150,23 +1154,23 @@ GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> RigidBodyManipulat
   int nq = num_positions;
   GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> ret(SPACE_DIMENSION + 1, SPACE_DIMENSION + 1, nq, gradient_order);
 
-  Matrix4d Tbase_frame;
+  Transform<Scalar, 3, Isometry> Tbase_frame;
   int base_ind = parseBodyOrFrameID(base_or_frame_ind, &Tbase_frame);
-  Matrix4d Tbody_frame;
+  Transform<Scalar, 3, Isometry> Tbody_frame;
   int body_ind = parseBodyOrFrameID(body_or_frame_ind, &Tbody_frame);
 
   const auto& body_element = cache.getElement(*bodies[body_ind]);
   const auto& base_element = cache.getElement(*bodies[base_ind]);
 
-  Isometry3d Tbaseframe_to_world = base_element.transform_to_world * Isometry3d(Tbase_frame); // TODO: copy to Isometry3d
-  Isometry3d Tworld_to_baseframe = Tbaseframe_to_world.inverse();
-  Isometry3d Tbodyframe_to_world = body_element.transform_to_world * Isometry3d(Tbody_frame); // TODO: copy to Isometry3d
+  Transform<Scalar, 3, Isometry> Tbaseframe_to_world = base_element.transform_to_world * Tbase_frame;
+  Transform<Scalar, 3, Isometry> Tworld_to_baseframe = Tbaseframe_to_world.inverse();
+  Transform<Scalar, 3, Isometry> Tbodyframe_to_world = body_element.transform_to_world * Tbody_frame;
   ret.value() = (Tworld_to_baseframe * Tbodyframe_to_world).matrix();
 
   if (gradient_order > 0) {
-    auto dTbaseframe_to_world = matGradMult(base_element.dtransform_to_world_dq, Tbase_frame);
+    auto dTbaseframe_to_world = matGradMult(base_element.dtransform_to_world_dq, Tbase_frame.matrix());
     auto dTworld_to_baseframe = dHomogTransInv(Tbaseframe_to_world, dTbaseframe_to_world);
-    auto dTbodyframe_to_world = matGradMult(body_element.dtransform_to_world_dq, Tbody_frame);
+    auto dTbodyframe_to_world = matGradMult(body_element.dtransform_to_world_dq, Tbody_frame.matrix());
     ret.gradient().value() = matGradMultMat(Tworld_to_baseframe.matrix(), Tbodyframe_to_world.matrix(), dTworld_to_baseframe, dTbodyframe_to_world);
   }
   if (gradient_order > 1) {
@@ -1526,8 +1530,7 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, Eigen::Dynamic> Rigi
       }
     }
 
-    KinematicPath path;
-    findKinematicPath(path, base_ind, body_ind);
+    KinematicPath path = findKinematicPath(base_ind, body_ind);
     MatrixXd dqrotdq = in_terms_of_qdot ? compactToFull(Jrot, path.joint_path, true) : transformVelocityMappingToPositionDotMapping(cache, compactToFull(Jrot, path.joint_path, false));
 
     auto dPhidq = (Phi.gradient().value() * dqrotdq).eval();
@@ -1908,6 +1911,7 @@ template DLLEXPORT_RBM GradientVar<double, SPACE_DIMENSION, 1> RigidBodyManipula
 template DLLEXPORT_RBM GradientVar<double, SPACE_DIMENSION, Eigen::Dynamic> RigidBodyManipulator::centerOfMassJacobian(KinematicsCache<double>&, int, const std::set<int>&, bool) const;
 template DLLEXPORT_RBM GradientVar<double, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMassJacobianDotTimesV(KinematicsCache<double>&, int, const std::set<int>&) const;
 template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJacobian<double>(const KinematicsCache<double>&, int, int, int, int, bool, std::vector<int>*) const;
+template DLLEXPORT_RBM GradientVar<AutoDiffScalar<VectorXd>, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJacobian< AutoDiffScalar<VectorXd> >(KinematicsCache< AutoDiffScalar<VectorXd> > const&, int, int, int, int, bool, vector<int>*) const;
 template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, 1> RigidBodyManipulator::geometricJacobianDotTimesV(const KinematicsCache<double>&, int, int, int, int) const;
 template DLLEXPORT_RBM GradientVar<double, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> RigidBodyManipulator::relativeTransform(const KinematicsCache<double>&, int, int, int) const;
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKin<Matrix3Xd >(const KinematicsCache<double>&, const MatrixBase<Matrix3Xd> &, int, int, int, int) const;
@@ -1924,6 +1928,7 @@ template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> Rigid
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::forwardJacDotTimesV(const KinematicsCache<double>&, const MatrixBase< Matrix<double, 3, Eigen::Dynamic> >&, int, int, int, int) const;
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::forwardJacDotTimesV(const KinematicsCache<double>&, const MatrixBase< Matrix<double, 3, 1> >&, int, int, int, int) const;
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMatrix(KinematicsCache<double>&, int) const;
+template DLLEXPORT_RBM GradientVar<AutoDiffScalar<VectorXd>, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMatrix<AutoDiffScalar<VectorXd> >(KinematicsCache<AutoDiffScalar<VectorXd> >&, int) const;
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(KinematicsCache<double>&, std::map<int, std::unique_ptr<GradientVar<double, TWIST_SIZE, 1> > >& f_ext, GradientVar<double, Eigen::Dynamic, 1>* vd, int) const;
 template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, 1> RigidBodyManipulator::relativeTwist<double>(const KinematicsCache<double>&, int, int, int, int) const;
 template DLLEXPORT_RBM GradientVar<double, 6, Dynamic> RigidBodyManipulator::worldMomentumMatrix<double>(KinematicsCache<double>&, int, const std::set<int>&, bool) const;

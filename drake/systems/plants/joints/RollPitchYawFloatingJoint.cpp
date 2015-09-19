@@ -1,8 +1,6 @@
 #include "RollPitchYawFloatingJoint.h"
 #include <random>
 
-#include "RigidBodyManipulator.h" // todo: remove this when I remove setupOldKinematicTree
-
 using namespace Eigen;
 
 std::string RollPitchYawFloatingJoint::getPositionName(int index) const

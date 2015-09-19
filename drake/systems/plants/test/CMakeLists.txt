@@ -48,6 +48,10 @@ add_executable(debugManipulatorDynamics debugManipulatorDynamics.cpp)
 include_directories( .. )
 target_link_libraries(debugManipulatorDynamics drakeRBM)
 
+include_directories(${PROJECT_SOURCE_DIR}/util/test)
+add_executable(benchmarkAutoDiffScalar benchmarkAutoDiffScalar.cpp)
+target_link_libraries(benchmarkAutoDiffScalar drakeRBM)
+
 if (MATLAB_FOUND)
   macro(add_ikoptions_mex)
     add_mex(${ARGV} ${ARGV}.cpp)

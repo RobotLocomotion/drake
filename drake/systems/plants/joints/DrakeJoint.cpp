@@ -1,5 +1,4 @@
 #include "DrakeJoint.h"
-#include "RigidBodyManipulator.h"
 
 using namespace Eigen;
 
