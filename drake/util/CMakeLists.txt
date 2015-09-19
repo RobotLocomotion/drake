@@ -6,6 +6,8 @@ endif()
 add_mex(barycentricInterpolation barycentricInterpolation.cpp)
 
 if (LCM_FOUND AND MATLAB_FOUND)
+  include_directories(${PROJECT_SOURCE_DIR}/pod-build/lcmgen)
+
   if (simulink_FOUND)
     add_mex(lcmLogger lcmLogger.cpp)
     pods_use_pkg_config_packages(lcmLogger lcm)
@@ -49,7 +51,9 @@ endif()
 if (LCM_FOUND)
   # note: requires drakeUtil header file, but not linking against it because
   # we only need methods that are templated and defined in the header
+  include_directories(${PROJECT_SOURCE_DIR}/pod-build/lcmgen)
   include_directories (${PROJECT_SOURCE_DIR}/systems/trajectories )
+  
   add_library(drakeLCMUtil SHARED lcmUtil.cpp)
   add_dependencies(drakeLCMUtil ${LCMTYPES_C_LIBRARY})
   target_link_libraries(drakeLCMUtil drakeTrajectories)
