@@ -177,7 +177,7 @@ foreach(proj IN ITEMS
 		meshconverters
 		drake)
 	string(TOUPPER ${proj} proj_upper)
-	if (${proj} STREQUAL "drake" OR ${proj} STREQUAL "cmake" OR WITH_${proj_upper} OR (WITH_ALL_SUPPORTED_EXTERNALS OR \(WITH_ALL_PUBLIC_EXTERNALS AND ${${proj}_IS_PUBLIC}\) AND DEFINED WITH_${proj_upper}))
+	if (${proj} STREQUAL "drake" OR ${proj} STREQUAL "cmake" OR WITH_${proj_upper} OR \(WITH_ALL_SUPPORTED_EXTERNALS OR \(WITH_ALL_PUBLIC_EXTERNALS AND ${${proj}_IS_PUBLIC}\) AND DEFINED WITH_${proj_upper}\))
 		list(APPEND EXTERNAL_PROJECTS ${proj})
 	elseif(REMOVE_UNUSED_EXTERNALS AND IS_DIRECTORY ${proj})
 		message(STATUS "removing unused project: ${proj}")
