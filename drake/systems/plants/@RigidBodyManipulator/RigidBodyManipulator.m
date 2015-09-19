@@ -73,7 +73,7 @@ classdef RigidBodyManipulator < Manipulator
         elseif strcmpi(ext,'.sdf') || strcmpi(ext,'.world')
           obj = addRobotFromSDF(obj,filename,zeros(3,1),zeros(3,1),options);
         else
-          error('Drake:RigidBodyManipulator:UnsupportedFileExtension','Unrecognized file extension: %s',ext);
+          error('Drake:RigidBodyManipulator:UnsupportedFileExtension','Unrecognized file extension: %s for file %s',ext,name);
         end
       end
     end
