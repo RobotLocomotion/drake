@@ -1,10 +1,6 @@
 #include "controlUtil.h"
 #include "drake/drakeUtil.h"
 
-#ifdef USE_MAPS
-#include "terrain-map/TerrainMap.hpp"
-#endif
-
 template <typename DerivedA, typename DerivedB>
 void getRows(std::set<int> &rows, MatrixBase<DerivedA> const &M, MatrixBase<DerivedB> &Msub)
 {
@@ -54,34 +50,6 @@ bool inSupport(std::vector<SupportStateElement,Eigen::aligned_allocator<SupportS
   return false;
 }
 
-void collisionDetect(void* map_ptr, Vector3d const &contact_pos, Vector3d &pos, Vector3d *normal, double terrain_height)
-{
-  if (map_ptr) {
-#ifdef USE_MAPS    
-    Vector3d oNormal;
-    double height;
-    auto state = static_cast<terrainmap::TerrainMap*>(map_ptr);
-    if (state != NULL) {
-      state->getHeightAndNormal(contact_pos(0), contact_pos(1), height, oNormal);
-      pos << contact_pos.topRows(2), height;
-      if (normal) {
-        *normal = oNormal.cast<double>();
-        if ((*normal)(2) < 0) {
-          *normal = -(*normal);
-        }
-        return;
-      }
-    }
-#else
-    throw std::runtime_error("map_ptr is not NULL, but controlUtil was built without USE_MAPS support");
-#endif      
-  } else {
-//    mexPrintf("Warning: using 0,0,1 as normal\n");
-    pos << contact_pos.topRows(2), terrain_height;
-    if (normal) *normal << 0,0,1;
-  }
-}
-
 void surfaceTangents(const Vector3d & normal, Matrix<double,3,m_surface_tangents> & d)
 {
   Vector3d t1,t2;
@@ -104,29 +72,23 @@ void surfaceTangents(const Vector3d & normal, Matrix<double,3,m_surface_tangents
   }
 }
 
-int contactPhi(RigidBodyManipulator* r, const KinematicsCache<double>& cache, SupportStateElement& supp, void *map_ptr, VectorXd &phi, double terrain_height)
+int contactPhi(RigidBodyManipulator* r, const KinematicsCache<double>& cache, SupportStateElement& supp, VectorXd &phi)
 {
   int nc = static_cast<int>(supp.contact_pts.size());
   phi.resize(nc);
 
   if (nc<1) return nc;
 
-  Vector3d contact_pos,pos,normal;
-
   int i=0;
   for (auto pt_iter = supp.contact_pts.begin(); pt_iter != supp.contact_pts.end(); pt_iter++) {
-    contact_pos = r->forwardKin(cache, *pt_iter, supp.body_idx, 0, 0, 0).value();
-    collisionDetect(map_ptr,contact_pos,pos,&normal,terrain_height);
-    pos -= contact_pos;  // now -rel_pos in matlab version
-    phi(i) = pos.norm();
-    if (pos.dot(normal)>0)
-      phi(i)=-phi(i);
+    Vector3d contact_pos = r->forwardKin(cache, *pt_iter, supp.body_idx, 0, 0, 0).value();
+    phi(i) = supp.support_surface.head<3>().dot(contact_pos) + supp.support_surface(3);
     i++;
   }
   return nc;
 }
 
-int contactConstraintsBV(RigidBodyManipulator *r, const KinematicsCache<double>& cache, int nc, std::vector<double> support_mus, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>& supp, void *map_ptr, MatrixXd &B, MatrixXd &JB, MatrixXd &Jp, VectorXd &Jpdotv, MatrixXd &normals, double terrain_height)
+int contactConstraintsBV(RigidBodyManipulator *r, const KinematicsCache<double>& cache, int nc, std::vector<double> support_mus, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>& supp, MatrixXd &B, MatrixXd &JB, MatrixXd &Jp, VectorXd &Jpdotv, MatrixXd &normals)
 {
   int j, k=0, nq = r->num_positions;
 
@@ -149,12 +111,7 @@ int contactConstraintsBV(RigidBodyManipulator *r, const KinematicsCache<double>&
         contact_pos = contact_pos_gradientvar.value();
         J = contact_pos_gradientvar.gradient().value();
 
-        if (iter->use_support_surface) {
-          normal = iter->support_surface.head(3);
-        }
-        else {
-          collisionDetect(map_ptr,contact_pos,pos,&normal,terrain_height);
-        }
+        normal = iter->support_surface.head(3);
         surfaceTangents(normal,d);
         for (j=0; j<m_surface_tangents; j++) {
           B.col(2*k*m_surface_tangents+j) = (normal + mu*d.col(j)) / norm; 
@@ -250,7 +207,7 @@ bool isSupportElementActive(SupportStateElement* se, bool contact_force_detected
   return is_active;
 }
 
-Matrix<bool, Dynamic, 1> getActiveSupportMask(RigidBodyManipulator* r, void* map_ptr, VectorXd q, VectorXd qd, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &available_supports, const Ref<const Matrix<bool, Dynamic, 1>> &contact_force_detected, double contact_threshold, double terrain_height) {
+Matrix<bool, Dynamic, 1> getActiveSupportMask(RigidBodyManipulator* r, VectorXd q, VectorXd qd, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &available_supports, const Ref<const Matrix<bool, Dynamic, 1>> &contact_force_detected, double contact_threshold) {
   KinematicsCache<double> cache = r->doKinematics(q, qd);
 
   size_t nsupp = available_supports.size();
@@ -278,7 +235,7 @@ Matrix<bool, Dynamic, 1> getActiveSupportMask(RigidBodyManipulator* r, void* map
       if (contact_threshold == -1) {
         kin_contact = true;
       } else {
-        contactPhi(r, cache, se, map_ptr, phi, terrain_height);
+        contactPhi(r, cache, se, phi);
         kin_contact = (phi.minCoeff()<=contact_threshold);
       }
     } else {
@@ -291,9 +248,9 @@ Matrix<bool, Dynamic, 1> getActiveSupportMask(RigidBodyManipulator* r, void* map
   return active_supp_mask;
 }
 
-std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> getActiveSupports(RigidBodyManipulator* r, void* map_ptr, VectorXd q, VectorXd qd, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &available_supports, const Ref<const Matrix<bool, Dynamic, 1>> &contact_force_detected, double contact_threshold, double terrain_height) {
+std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> getActiveSupports(RigidBodyManipulator* r, VectorXd q, VectorXd qd, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &available_supports, const Ref<const Matrix<bool, Dynamic, 1>> &contact_force_detected, double contact_threshold) {
 
-  Matrix<bool, Dynamic, 1> active_supp_mask = getActiveSupportMask(r, map_ptr, q, qd, available_supports, contact_force_detected, contact_threshold, terrain_height);
+  Matrix<bool, Dynamic, 1> active_supp_mask = getActiveSupportMask(r, q, qd, available_supports, contact_force_detected, contact_threshold);
 
   std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> active_supports;
 

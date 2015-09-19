@@ -40,7 +40,7 @@ classdef TaskSpaceMotionPlanningTree < CompositeVertexArrayTree
 
     function obj = setMinDistance(obj, min_distance)
       for i = 1:obj.num_trees
-        obj.trees{i}.min_distance = 0.9*min_distance;
+        obj.trees{i}.min_distance = min_distance;
       end
     end
 

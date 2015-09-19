@@ -103,9 +103,6 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
       }
       msg->support_data[i].mu = mxGetScalar(myGetField(support_data, i, "mu"));
       
-      double use_support_surface_dbl = mxGetScalar(myGetField(support_data, i, "use_support_surface"));
-      msg->support_data[i].use_support_surface = (use_support_surface_dbl != 0);
-
       const mxArray *support_surface = myGetField(support_data, i, "support_surface");
       if (!support_surface) mexErrMsgTxt("couldn't get support surface");
       Map<Vector4d>support_surface_vec(mxGetPrSafe(support_surface));

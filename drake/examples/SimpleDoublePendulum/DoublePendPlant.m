@@ -15,6 +15,7 @@ classdef DoublePendPlant < Manipulator
       obj = obj@Manipulator(2,2);
       obj.I1 = obj.m1*obj.l1^2;
       obj.I2 = obj.m2*obj.l2^2;
+      obj = setStateFrame(obj,CoordinateFrame('DoublePendState',4,'x',{'theta1','theta2','theta1_dot','theta2_dot'}));
       obj = obj.setOutputFrame(obj.getStateFrame);
     end
     

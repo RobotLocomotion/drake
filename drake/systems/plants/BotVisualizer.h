@@ -113,7 +113,7 @@ public:
 
     Eigen::Vector3d points = Eigen::Vector3d::Zero();
     int i,j;
-    for (i=0; i<manip.num_bodies; i++) {
+    for (i=0; i<manip.bodies.size(); i++) {
       auto pose = manip.forwardKin(cache, points,i,0,2,0).value();
       std::vector<float>& position = draw_msg.position[i];
       for (j=0; j<3; j++) position[j] = static_cast<float>(pose(j));

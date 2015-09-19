@@ -2,6 +2,7 @@
 #include <float.h>
 #include <stdlib.h>
 
+#include <memory>
 #include <cstdio>
 #include <cstring>
 #include <iostream>
@@ -31,6 +32,14 @@ namespace snopt {
 
 using namespace Eigen;
 using namespace std;
+
+// NOTE: all snopt calls will use this shared memory... so this code is NOT THREAD SAFE
+static unique_ptr<snopt::doublereal []> rw;
+static unique_ptr<snopt::integer []> iw;
+static unique_ptr<char []> cw;
+static snopt::integer lenrw=0;
+static snopt::integer leniw=0;
+static snopt::integer lencw=0;
 
 static RigidBodyManipulator* model = nullptr;
 static SingleTimeKinematicConstraint** st_kc_array = nullptr;
@@ -431,6 +440,16 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
   {
     cerr<<"Drake:inverseKinBackend: q_seed and q_nom must be of size nq x nT"<<endl;
   }
+
+  if (lenrw==0) { // then initialize (sninit needs some default allocation)
+    lenrw = 500000;
+    rw.reset(new snopt::doublereal[lenrw]);
+    leniw = 500000;
+    iw.reset(new snopt::integer[leniw]);
+    lencw = 500;
+    cw.reset(new char[8*lencw]);
+  }
+
   num_st_kc = 0;
   num_mt_kc = 0;
   num_st_lpc = 0;
@@ -563,18 +582,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
     jAvar_array[i].resize(0);
   }
 
-  const int DEFAULT_LENRW = 100000;
-  const int DEFAULT_LENIW = 50000;
-  const int DEFAULT_LENCW = 500;
   snopt::integer minrw,miniw,mincw;
-  snopt::integer lenrw = DEFAULT_LENRW, leniw = DEFAULT_LENIW, lencw = DEFAULT_LENCW;
-  snopt::doublereal rw_static[DEFAULT_LENRW];
-  snopt::integer iw_static[DEFAULT_LENIW];
-  char cw_static[8*DEFAULT_LENCW];
-  snopt::doublereal *rw = rw_static;
-  snopt::integer *iw = iw_static;
-  char* cw = cw_static;
-
 
   for(int i = 0;i<nT;i++)
   {
@@ -870,44 +878,44 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
       npname = strlen(Prob);
       snopenappend_(&iPrint,printname, &INFO_snopt[i], prnt_len);*/
 
-      snopt::sninit_(&iPrint,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*lencw);
-      snopt::snmema_(&INFO_snopt[i],&nF,&nx,&nxname,&nFname,&lenA,&nG,&mincw,&miniw,&minrw,cw,&lencw,iw,&leniw,rw,&lenrw,8*lencw);
+      snopt::sninit_(&iPrint,&iSumm,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw,8*lencw);
+      snopt::snmema_(&INFO_snopt[i],&nF,&nx,&nxname,&nFname,&lenA,&nG,&mincw,&miniw,&minrw,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw,8*lencw);
       if (minrw>lenrw) {
-        if (rw != rw_static) { delete[] rw; }
+        //mexPrintf("reallocation rw with size %d\n",minrw);
         lenrw = minrw;
-        rw = new snopt::doublereal[lenrw];
+        rw.reset(new snopt::doublereal[lenrw]);
       }
       if (miniw>leniw) {
-        if (iw != iw_static) { delete[] iw; }
+        //mexPrintf("reallocation iw with size %d\n",miniw);
         leniw = miniw;
-        iw = new snopt::integer[leniw];
+        iw.reset(new snopt::integer[leniw]);
       }
       if (mincw>lencw) {
-        if (cw != cw_static) { delete[] cw; }
+        //mexPrintf("reallocation cw with size %d\n",mincw);
         lencw = mincw;
-        cw = new char[8*lencw];
+        cw.reset(new char[8*lencw]);
       }
 
-      snopt::sninit_(&iPrint,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*lencw);
-      //snopt::snfilewrapper_(specname,&iSpecs,&INFO_snopt[i],cw,&lencw,iw,&leniw,rw,&lenrw,spec_len,8*lencw);
+      snopt::sninit_(&iPrint,&iSumm,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw,8*lencw);
+      //snopt::snfilewrapper_(specname,&iSpecs,&INFO_snopt[i],cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw,spec_len,8*lencw);
       char strOpt1[200] = "Derivative option";
       snopt::integer DerOpt = 1, strOpt_len = static_cast<snopt::integer>(strlen(strOpt1));
-      snopt::snseti_(strOpt1,&DerOpt,&iPrint,&iSumm,&INFO_snopt[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*lencw);
+      snopt::snseti_(strOpt1,&DerOpt,&iPrint,&iSumm,&INFO_snopt[i],cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw,strOpt_len,8*lencw);
       char strOpt2[200] = "Major optimality tolerance";
 	  strOpt_len = static_cast<snopt::integer>(strlen(strOpt2));
-      snopt::snsetr_(strOpt2,&SNOPT_MajorOptimalityTolerance,&iPrint,&iSumm,&INFO_snopt[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*lencw);
+      snopt::snsetr_(strOpt2,&SNOPT_MajorOptimalityTolerance,&iPrint,&iSumm,&INFO_snopt[i],cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw,strOpt_len,8*lencw);
       char strOpt3[200] = "Major feasibility tolerance";
 	  strOpt_len = static_cast<snopt::integer>(strlen(strOpt3));
-      snopt::snsetr_(strOpt3,&SNOPT_MajorFeasibilityTolerance,&iPrint,&iSumm,&INFO_snopt[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*lencw);
+      snopt::snsetr_(strOpt3,&SNOPT_MajorFeasibilityTolerance,&iPrint,&iSumm,&INFO_snopt[i],cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw,strOpt_len,8*lencw);
       char strOpt4[200] = "Superbasics limit";
 	  strOpt_len = static_cast<snopt::integer>(strlen(strOpt4));
-      snopt::snseti_(strOpt4,&SNOPT_SuperbasicsLimit,&iPrint,&iSumm,&INFO_snopt[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*lencw);
+      snopt::snseti_(strOpt4,&SNOPT_SuperbasicsLimit,&iPrint,&iSumm,&INFO_snopt[i],cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw,strOpt_len,8*lencw);
       char strOpt5[200] = "Major iterations limit";
 	  strOpt_len = static_cast<snopt::integer>(strlen(strOpt5));
-      snopt::snseti_(strOpt5,&SNOPT_MajorIterationsLimit,&iPrint,&iSumm,&INFO_snopt[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*lencw);
+      snopt::snseti_(strOpt5,&SNOPT_MajorIterationsLimit,&iPrint,&iSumm,&INFO_snopt[i],cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw,strOpt_len,8*lencw);
       char strOpt6[200] = "Iterations limit";
 	  strOpt_len = static_cast<snopt::integer>(strlen(strOpt6));
-      snopt::snseti_(strOpt6,&SNOPT_IterationsLimit,&iPrint,&iSumm,&INFO_snopt[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*lencw);
+      snopt::snseti_(strOpt6,&SNOPT_IterationsLimit,&iPrint,&iSumm,&INFO_snopt[i],cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw,strOpt_len,8*lencw);
 
 
       //debug only
@@ -985,8 +993,8 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
           x, xstate, xmul, F, Fstate, Fmul,
           &INFO_snopt[i], &mincw, &miniw, &minrw,
           &nS, &nInf, &sInf,
-          cw, &lencw, iw, &leniw, rw, &lenrw,
-          cw, &lencw, iw, &leniw, rw, &lenrw,
+          cw.get(), &lencw, iw.get(), &leniw, rw.get(), &lenrw,
+          cw.get(), &lencw, iw.get(), &leniw, rw.get(), &lenrw,
           8*npname, 8*nxname, 8*nFname,
           8*lencw, 8*lencw);
       //snclose_(&iPrint);
@@ -1846,43 +1854,43 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
     snopt::integer nS, nInf;
     snopt::doublereal sInf;
 
-    snopt::sninit_(&iPrint,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*lencw);
-    snopt::snmema_(INFO_snopt,&nF,&nx,&nxname,&nFname,&lenA,&nG,&mincw,&miniw,&minrw,cw,&lencw,iw,&leniw,rw,&lenrw,8*lencw);
+    snopt::sninit_(&iPrint,&iSumm,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw,8*lencw);
+    snopt::snmema_(INFO_snopt,&nF,&nx,&nxname,&nFname,&lenA,&nG,&mincw,&miniw,&minrw,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw,8*lencw);
     if (minrw>lenrw) {
-      if (rw != rw_static) { delete[] rw; }
+      //mexPrintf("reallocation rw with size %d\n",minrw);
       lenrw = minrw;
-      rw = new snopt::doublereal[lenrw];
+      rw.reset(new snopt::doublereal[lenrw]);
     }
     if (miniw>leniw) {
-      if (iw != iw_static) { delete[] iw; }
+      //mexPrintf("reallocation iw with size %d\n",miniw);
       leniw = miniw;
-      iw = new snopt::integer[leniw];
+      iw.reset(new snopt::integer[leniw]);
     }
     if (mincw>lencw) {
-      if (cw != cw_static) { delete[] cw; }
+      //mexPrintf("reallocation cw with size %d\n",mincw);
       lencw = mincw;
-      cw = new char[8*lencw];
+      cw.reset(new char[8*lencw]);
     }
 
-    snopt::sninit_(&iPrint,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*500);
+    snopt::sninit_(&iPrint,&iSumm,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw,8*500);
     char strOpt1[200] = "Derivative option";
     snopt::integer DerOpt = 1, strOpt_len = static_cast<snopt::integer>(strlen(strOpt1));
-    snopt::snseti_(strOpt1,&DerOpt,&iPrint,&iSumm,INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*lencw);
+    snopt::snseti_(strOpt1,&DerOpt,&iPrint,&iSumm,INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw,strOpt_len,8*lencw);
     char strOpt2[200] = "Major optimality tolerance";
 	strOpt_len = static_cast<snopt::integer>(strlen(strOpt2));
-    snopt::snsetr_(strOpt2,&SNOPT_MajorOptimalityTolerance,&iPrint,&iSumm,INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*lencw);
+    snopt::snsetr_(strOpt2,&SNOPT_MajorOptimalityTolerance,&iPrint,&iSumm,INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw,strOpt_len,8*lencw);
     char strOpt3[200] = "Major feasibility tolerance";
     strOpt_len = static_cast<snopt::integer>(strlen(strOpt3));
-    snopt::snsetr_(strOpt3,&SNOPT_MajorFeasibilityTolerance,&iPrint,&iSumm,INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*lencw);
+    snopt::snsetr_(strOpt3,&SNOPT_MajorFeasibilityTolerance,&iPrint,&iSumm,INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw,strOpt_len,8*lencw);
     char strOpt4[200] = "Superbasics limit";
 	strOpt_len = static_cast<snopt::integer>(strlen(strOpt4));
-    snopt::snseti_(strOpt4,&SNOPT_SuperbasicsLimit,&iPrint,&iSumm,INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*lencw);
+    snopt::snseti_(strOpt4,&SNOPT_SuperbasicsLimit,&iPrint,&iSumm,INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw,strOpt_len,8*lencw);
     char strOpt5[200] = "Major iterations limit";
     strOpt_len = static_cast<snopt::integer>(strlen(strOpt5));
-    snopt::snseti_(strOpt5,&SNOPT_MajorIterationsLimit,&iPrint,&iSumm,INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*lencw);
+    snopt::snseti_(strOpt5,&SNOPT_MajorIterationsLimit,&iPrint,&iSumm,INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw,strOpt_len,8*lencw);
     char strOpt6[200] = "Iterations limit";
 	strOpt_len = static_cast<snopt::integer>(strlen(strOpt6));
-    snopt::snseti_(strOpt6,&SNOPT_IterationsLimit,&iPrint,&iSumm,INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*lencw);
+    snopt::snseti_(strOpt6,&SNOPT_IterationsLimit,&iPrint,&iSumm,INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw,strOpt_len,8*lencw);
     //debug only
     /*MATFile *pmat;
     pmat = matOpen("inverseKinBackend_cpp.mat","w");
@@ -2042,8 +2050,8 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
         x, xstate, xmul, F, Fstate, Fmul,
         INFO_snopt, &mincw, &miniw, &minrw,
         &nS, &nInf, &sInf,
-        cw, &lencw, iw, &leniw, rw, &lenrw,
-        cw, &lencw, iw, &leniw, rw, &lenrw,
+        cw.get(), &lencw, iw.get(), &leniw, rw.get(), &lenrw,
+        cw.get(), &lencw, iw.get(), &leniw, rw.get(), &lenrw,
         npname, 8*nxname, 8*nFname,
         8*500, 8*500);
     if(*INFO_snopt == 41)
@@ -2203,9 +2211,6 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
   }
   if (INFO_snopt) delete[] INFO_snopt;
   delete[] iAfun_array; delete[] jAvar_array; delete[] A_array;
-  if (rw != rw_static) { delete[] rw; }
-  if (iw != iw_static) { delete[] iw; }
-  if (cw != cw_static) { delete[] cw; }
   if(mode == 2)
   {
     delete[] qfree_idx; delete[] qdotf_idx;

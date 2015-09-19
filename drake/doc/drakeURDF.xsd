@@ -40,6 +40,9 @@ or
         <xs:annotation>
             <xs:documentation>You can add a loop joint if you have a kinematic loop (e.g. four-bar linkage, or even something more complicated) in your robot.  To use this interface, you must first describe every link in your robot as part of a kinematic tree (no loops). You should be able to take a path through the linkages that touches everything without any loops. Then add the remaining loops by referencing existing links from the tree.
 
+The loop joint is a one-degree of freedom joint oriented along the specified axis of the body frame in each link.  Use the rpy fields of the link references to rotate that axis in the coordinate frame of the links.
+
+
 There are a few limitations with the current implementation.  We do not currently support joint limits nor actuators at the new joint created by the loop_joint tag.  For all of the systems we have modeled so far, there has always been at least one of these "simple" joints in each kinematic loop; and we are simply careful to write down the initial kinematic tree so that it includes all of the more complex joints, leaving the simple joint as the loop joint.
 </xs:documentation>
         </xs:annotation>

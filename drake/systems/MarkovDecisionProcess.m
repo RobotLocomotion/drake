@@ -14,7 +14,7 @@ classdef MarkovDecisionProcess < DrakeSystem
   
   methods
     function obj = MarkovDecisionProcess(S,A,T,C,gamma,ts)
-      obj = obj@DrakeSystem(0,1,size(A,1),size(S,1),false,true);
+      obj = obj@DrakeSystem(0,size(S,2),size(A,1),size(S,1),false,true);
       obj.S = S;
       obj.A = A;
       obj.T = T;
@@ -24,14 +24,15 @@ classdef MarkovDecisionProcess < DrakeSystem
       obj = setSampleTime(obj,[ts;0]);
     end
     
-    function x0 = getInitialState(obj)
+    function s0 = getInitialState(obj)
       % discrete state
-      x0 = randi(size(obj.S,2));
+      s0 = zeros(size(obj.S,2),1);
+      s0(randi(size(obj.S,2))) = 1;
     end
     
     function y = output(obj,t,s,u)
-      % x here is the integer discrete state
-      y = obj.S(:,s);
+      % y is the expected state 
+      y = obj.S*s;
     end
 
     function sn = update(obj,t,s,u)
@@ -40,8 +41,7 @@ classdef MarkovDecisionProcess < DrakeSystem
       if (isempty(a) || length(a)>1)
         error('Error looking up discrete action');
       end
-      psn = T{a}(s,:);
-      sn = find(cumsum(psn)>rand(),1);
+      sn = obj.T{a}'*s;
     end
     
     function [J,PI]=valueIteration(mdp,converged,drawfun)
@@ -60,6 +60,10 @@ classdef MarkovDecisionProcess < DrakeSystem
         err = max(abs(Jold-J));
         if nargin>2, drawfun(J,PI); drawnow; end
       end
+      
+      PI = MarkovDecisionProcessPolicy(mdp.A,PI);
+      PI = setInputFrame(PI,getStateFrame(mdp));
+      PI = setOutputFrame(PI,getInputFrame(mdp));
     end
     
     function dynamicProgramming(mdp)
@@ -158,6 +162,17 @@ classdef MarkovDecisionProcess < DrakeSystem
       end
       
       mdp = MarkovDecisionProcess(S,A,T,C,options.gamma,options.dt);
+      mdp = setInputFrame(mdp,getInputFrame(sys));
+      mdp = setOutputFrame(mdp,getStateFrame(sys));  % todo: should it use the outputs instead?
+      
+      function x_disc = stateTransform(x_cont)
+        x_disc = zeros(ns,1);
+        x_cont(options.wrap_flag) = mod(x_cont(options.wrap_flag)-xmin(options.wrap_flag),xmax(options.wrap_flag)-xmin(options.wrap_flag)) + xmin(options.wrap_flag);
+        [idx,coef] = barycentricInterpolation(xbins,x_cont);
+        x_disc(idx) = coef;
+      end
+      
+      addTransform(getStateFrame(sys),FunctionHandleCoordinateTransform(0,0,getStateFrame(sys),getStateFrame(mdp),true,true,[],[],@(t,x,u)stateTransform(u)));
     end
   end
 end

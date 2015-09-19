@@ -231,10 +231,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   const Map<MatrixXd> B(mxGetPrSafe(B_array), mxGetM(B_array), mxGetN(B_array));
   const bool enable_fastqp = mxIsLogicalScalarTrue(enable_fastqp_array);
 
-  VectorXd phiL, phiP, phiL_possible, phiC_possible, phiL_check, phiC_check;
-  MatrixXd JP, JL, JL_possible, n_possible, JL_check, n_check;
+  VectorXd phiL, phiL_possible, phiC_possible, phiL_check, phiC_check;
+  MatrixXd JL, JL_possible, n_possible, JL_check, n_check;
 
-  model->positionConstraints(*cache, phiP, JP);
+  auto phiPgrad = model->positionConstraints<double>(*cache,1);
+  auto phiP = phiPgrad.value();
+  auto JP = phiPgrad.gradient().value();
   model->jointLimitConstraints(q, phiL, JL);
   
   const size_t nP = phiP.size();

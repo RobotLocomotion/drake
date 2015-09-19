@@ -687,58 +687,82 @@ bool parseTransmission(RigidBodyManipulator* model, TiXmlElement* node)
 
 bool parseLoop(RigidBodyManipulator* model, TiXmlElement* node)
 {
-  Vector3d ptA,ptB;
+  Vector3d xyz=Vector3d::Zero(),rpy=Vector3d::Zero(),axis;
+  axis << 1.0, 0.0, 0.0;
+
+  if (!node || !node->Attribute("name"))  {
+    cerr << "ERROR: loop is missing a name element" << endl;
+    return false;
+  }
+  string name(node->Attribute("name"));
+
 
   TiXmlElement* link_node = node->FirstChildElement("link1");
   string linkname = link_node->Attribute("link");
-  int bodyA = findLinkIndex(model,linkname);
-  if (bodyA<0) {
+  std::shared_ptr<RigidBody> body = model->findLink(linkname);
+  if (!body) {
     cerr << "couldn't find link %s referenced in loop joint " << linkname << endl;
     return false;
   }
-  if (!parseVectorAttribute(link_node, "xyz", ptA)) {
+  if (!parseVectorAttribute(link_node, "xyz", xyz)) {
     cerr << "ERROR parsing loop joint xyz" << endl;
     return false;
   }
+  if (!parseVectorAttribute(link_node, "rpy", rpy)) {
+    cerr << "ERROR parsing loop joint rpy" << endl;
+    return false;
+  }
+  std::shared_ptr<RigidBodyFrame> frameA = make_shared<RigidBodyFrame>(name+"FrameA",body,xyz,rpy);
 
   link_node = node->FirstChildElement("link2");
   linkname = link_node->Attribute("link");
-  int bodyB = findLinkIndex(model,linkname);
-  if (bodyB<0) {
+  xyz=Vector3d::Zero();
+  rpy=Vector3d::Zero();
+  body = model->findLink(linkname);
+  if (!body) {
     cerr << "couldn't find link %s referenced in loop joint " << linkname << endl;
     return false;
   }
-  if (!parseVectorAttribute(link_node, "xyz", ptB)) {
+  if (!parseVectorAttribute(link_node, "xyz", xyz)) {
     cerr << "ERROR parsing loop joint xyz" << endl;
     return false;
   }
+  if (!parseVectorAttribute(link_node, "rpy", rpy)) {
+    cerr << "ERROR parsing loop joint rpy" << endl;
+    return false;
+  }
+  std::shared_ptr<RigidBodyFrame> frameB = make_shared<RigidBodyFrame>(name+"FrameB",body,xyz,rpy);
 
-  RigidBodyLoop l(model->bodies[bodyA],ptA,model->bodies[bodyB],ptB);
+  TiXmlElement* axis_node = node->FirstChildElement("axis");
+  if (axis_node && !parseVectorAttribute(axis_node, "xyz", axis)) {
+    cerr << "ERROR parsing loop joint axis" << endl;
+    return false;
+  }
+
+  model->addFrame(frameA);
+  model->addFrame(frameB);
+  RigidBodyLoop l(frameA,frameB,axis);
   model->loops.push_back(l);
+
   return true;
 }
 
 bool parseFrame(RigidBodyManipulator* model, TiXmlElement* node)
 {
-  Vector3d xyz, rpy;
+  Vector3d xyz=Vector3d::Zero(), rpy=Vector3d::Zero();
 
-  if (!parseVectorAttribute(node, "xyz", xyz)) {
-    cerr << "ERROR parsing Drake frame xyz" << endl;
-    return false;
-  }
-
-  if (!parseVectorAttribute(node, "rpy", rpy)) {
-    cerr << "ERROR parsing Drake frame rpy" << endl;
-    return false;
-  }
-
-  RigidBodyFrame frame;
-  Map<Matrix4d> T(frame.Ttree.data());
+  parseVectorAttribute(node, "xyz", xyz);
+  parseVectorAttribute(node, "rpy", rpy);
 
   const char* frame_link = node->Attribute("link");
 
   if (!frame_link) {
     cerr << "ERROR parsing Drake frame linkname" << endl;
+    return false;
+  }
+  const std::shared_ptr<RigidBody> body = model->findLink(frame_link);
+  if (!body) {
+    cerr << "ERROR parsing Drake frame: couldn't find link " << frame_link << endl;
     return false;
   }
 
@@ -749,20 +773,23 @@ bool parseFrame(RigidBodyManipulator* model, TiXmlElement* node)
     return false;
   }
 
-  frame.name = frame_name;
-  frame.body_ind = findLinkIndex(model, frame_link);
 
-  T = Matrix4d::Identity();
-  T.block(0, 0, 3, 3) = rpy2rotmat(rpy);
-  T.block(0, 3, 3, 1) = xyz;
+  Matrix4d T;
+  T << rpy2rotmat(rpy), xyz, 0,0,0,1;
 
+  std::shared_ptr<RigidBodyFrame> frame = make_shared<RigidBodyFrame>(frame_name,body,T);
   model->addFrame(frame);
+
 
   return true;
 }
 
 bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const map<string,string> package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
 {
+  if (!node->Attribute("name")) {
+    cerr << "Error: your robot must have a name attribute" << endl;
+    return false;
+  }
   string robotname = node->Attribute("name");
 
   // parse material elements
