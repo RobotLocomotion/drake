@@ -14,7 +14,7 @@ classdef RigidBodyTorsionalSpring < RigidBodyForceElement
     function [f_ext,df_ext] = computeSpatialForce(obj,manip,q,qd)
       theta = q(manip.body(obj.child_body).position_num);
       torque = obj.k*(obj.rest_angle - theta);
-      f_ext = sparse(6,getNumBodies(manip));
+      f_ext = q(1)*sparse(6,getNumBodies(manip));
       
       if (nargout>1)
          dthetadq = zeros(1,size(q,1)); dthetadq(manip.body(obj.child_body).position_num) = 1;

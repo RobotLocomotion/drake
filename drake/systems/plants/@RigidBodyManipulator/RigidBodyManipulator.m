@@ -340,10 +340,10 @@ classdef RigidBodyManipulator < Manipulator
       compute_gradient = nargout > 1;
 
       nv = model.getNumVelocities();
-      damping = zeros(nv, 1);
-      coulomb_friction = zeros(nv, 1);
-      static_friction = zeros(nv, 1);
-      coulomb_window = zeros(nv, 1);
+      damping = v(1)*zeros(nv, 1);
+      coulomb_friction = v(1)*zeros(nv, 1);
+      static_friction = v(1)*zeros(nv, 1);
+      coulomb_window = v(1)*zeros(nv, 1);
 
       for i = 2 : model.getNumBodies()
         b = model.body(i);
@@ -2071,7 +2071,7 @@ classdef RigidBodyManipulator < Manipulator
     end
 
     function obj = createMexPointer(obj)
-      if (exist('constructModelmex')==3)
+      if (exist('constructModelmex')==3 && isnumeric(getParams(obj))) % note that this getParams call could be somewhat expensive to be putting here, but it seems like it does need to be there for symbolic parameters (which are not supported in the c++ version yet)
 %        obj.mex_model_ptr = debugMexEval('constructModelmex',obj);
         obj.mex_model_ptr = constructModelmex(obj);
         obj.default_kinematics_cache_ptr_no_gradients = createKinematicsCachemex(obj.mex_model_ptr, false);

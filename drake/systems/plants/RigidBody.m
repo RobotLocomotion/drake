@@ -300,7 +300,11 @@ classdef RigidBody < RigidBodyElement
       for i=1:length(pn)
         if isa(body.(pn{i}),'msspoly')
           body.param_bindings.(pn{i}) = body.(pn{i});
-          body.(pn{i}) = double(subs(body.(pn{i}),fr.getPoly,pval));
+          if isnumeric(pval)
+            body.(pn{i}) = double(subs(body.(pn{i}),fr.getPoly,pval));
+          else
+            body.(pn{i}) = subs(body.(pn{i}),fr.getPoly,pval);
+          end            
         end
       end
       for i=1:length(body.visual_geometry)
