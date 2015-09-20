@@ -53,6 +53,10 @@ $(VERBOSE).SILENT:
 
 ### rules specific to this project (everything above is the generic pods makefile wrapper of a cmake project)
 
+.PHONY: download-all
+download-all : configure
+	cmake --build pod-build $(CMAKE_CONFIG) --target $@
+	
 .PHONY: release_filelist
 release_filelist: configure
 # note: the following will not work in windows cmd shells
