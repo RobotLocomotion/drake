@@ -16,7 +16,6 @@ all: configure
 	cmake --build pod-build $(CMAKE_CONFIG)
 
 pod-build:
-	@echo "Creating directory"
 	@-mkdir pod-build
 
 .PHONY: configure
