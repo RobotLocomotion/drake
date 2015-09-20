@@ -43,7 +43,7 @@ clean:
 	@-rm -rf build
 
 # other (custom) targets are passed through to the cmake-generated Makefile
-%:: configure
+%:: 
 	cmake --build pod-build $(CMAKE_CONFIG) --target $@
 
 # Default to a less-verbose build.  If you want all the gory compiler output,
