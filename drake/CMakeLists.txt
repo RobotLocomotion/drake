@@ -90,7 +90,7 @@ mex_setup()
 #endif()
 
 file(WRITE ${CMAKE_BINARY_DIR}/CTestCustom.cmake 
-  "set(CTEST_CUSTOM_PRE_TEST ${PROJECT_SOURCE_DIR}/cmake/add_matlab_unit_tests.pl ${PROJECT_SOURCE_DIR})\n")
+  "set(CTEST_CUSTOM_PRE_TEST \"${PROJECT_SOURCE_DIR}/cmake/add_matlab_unit_tests.pl ${PROJECT_SOURCE_DIR}\")\n")
 
 enable_testing()
 include(CTest)
