@@ -22,6 +22,10 @@ classdef Point
     function fr = getFrame(obj)
       fr = obj.frame;
     end
+
+    function tf = isnumeric(obj)
+      tf = isnumeric(obj.p);
+    end
     
     function p = double(obj)
       p = obj.p;
