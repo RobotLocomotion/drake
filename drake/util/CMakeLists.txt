@@ -55,7 +55,7 @@ if (LCM_FOUND)
   include_directories (${PROJECT_SOURCE_DIR}/systems/trajectories )
   
   add_library(drakeLCMUtil SHARED lcmUtil.cpp)
-  add_dependencies(drakeLCMUtil ${LCMTYPES_C_LIBRARY})
+  add_dependencies(drakeLCMUtil drake_lcmtypes lcmtype_agg_hpp)
   target_link_libraries(drakeLCMUtil drakeTrajectories)
   pods_install_headers(lcmUtil.h DESTINATION drake)
   pods_install_libraries(drakeLCMUtil)
