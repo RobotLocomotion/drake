@@ -1,5 +1,4 @@
 #include <iostream>
-#include <map>
 
 #include "drakeGeometryUtil.h"
 #include "RigidBodyManipulator.h"
@@ -1248,18 +1247,28 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMa
 }
 
 /**
- * Note that this inverse dynamics algorithm can be used to compute the 'C' dynamics bias term by setting
- * the joint acceleration vector to zero (or just passing in a nullptr for vd).
- * This algorithm can also be used to compute the gravitational term only by passing in nullptr for vd and
- * additionally calling doKinematics with a zero joint velocity vector.
+ * note that this method can also be used to compute the gravitational term only by calling doKinematics with a zero joint velocity vector.
  * To compute only the Coriolis term, pass in nullptr for vd and set gravity to zero.
- *
+ * Note that the wrenches in f_ext are expressed in body frame.
+ */
+template <typename Scalar>
+GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::dynamicsBiasTerm(KinematicsCache<Scalar>& cache, const std::unordered_map<RigidBody const *, GradientVar<Scalar, TWIST_SIZE, 1> >& f_ext, int gradient_order) const
+{
+  GradientVar<Scalar, Eigen::Dynamic, 1> vd(num_velocities, 1, num_positions + num_velocities, gradient_order);
+  vd.value().setZero();
+  if (gradient_order > 0)
+    vd.gradient().value().setZero();
+
+  return inverseDynamics(cache, f_ext, vd, gradient_order);
+};
+
+/*
  * Note that the wrenches in f_ext are expressed in body frame.
  */
 template <typename Scalar>
 GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(KinematicsCache<Scalar>& cache,
-    std::map<int, std::unique_ptr<GradientVar<Scalar, TWIST_SIZE, 1> > >& f_ext,
-    GradientVar<Scalar, Eigen::Dynamic, 1>* vd, int gradient_order) const
+    const std::unordered_map<RigidBody const *, GradientVar<Scalar, TWIST_SIZE, 1> >& f_ext,
+    const GradientVar<Scalar, Eigen::Dynamic, 1>& vd, int gradient_order) const
 {
   if (gradient_order > 1)
     throw std::runtime_error("only first order gradients are available");
@@ -1285,10 +1294,8 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(Kin
       const auto& element = cache.getElement(body);
       Vector6 spatial_accel = root_accel + element.motion_subspace_in_world_dot_times_v.value();
       int nv_joint = body.getJoint().getNumVelocities();
-      if (vd != nullptr) {
-        auto vdJoint = vd->value().middleRows(body.velocity_num_start, nv_joint);
-        spatial_accel.noalias() += element.motion_subspace_in_world.value() * vdJoint;
-      }
+      auto vdJoint = vd.value().middleRows(body.velocity_num_start, nv_joint);
+      spatial_accel.noalias() += element.motion_subspace_in_world.value() * vdJoint;
 
       auto I_times_twist = (element.inertia_in_world.value() * element.twist_in_world.value()).eval();
       net_wrenches.value().col(i).noalias() = element.inertia_in_world.value() * spatial_accel;
@@ -1298,10 +1305,9 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(Kin
         typename Gradient<Vector6, Eigen::Dynamic>::type dspatial_acceldq = element.motion_subspace_in_world_dot_times_v.gradient().value().leftCols(num_positions);
         typename Gradient<Vector6, Eigen::Dynamic>::type dspatial_acceldv = element.motion_subspace_in_world_dot_times_v.gradient().value().rightCols(num_velocities);
 
-        if (vd != nullptr && nv_joint > 0) {
-          const auto& vd_const = *vd; // eliminates the need for an additional explicit instantiation
-          auto vdJoint = vd_const.value().middleRows(body.velocity_num_start, nv_joint);
-          auto dvdJoint = vd_const.gradient().value().middleRows(body.velocity_num_start, nv_joint);
+        if (nv_joint > 0) {
+          auto vdJoint = vd.value().middleRows(body.velocity_num_start, nv_joint);
+          auto dvdJoint = vd.gradient().value().middleRows(body.velocity_num_start, nv_joint);
           dspatial_acceldq.noalias() += element.motion_subspace_in_world.value() * dvdJoint.middleCols(0, nq);
           dspatial_acceldq += matGradMult(element.motion_subspace_in_world.gradient().value(), vdJoint);
 
@@ -1334,16 +1340,18 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(Kin
         net_wrenches_v_gradient_block += dCrossSpatialForce(element.twist_in_world.value(), I_times_twist, dtwistdv, dI_times_twistdv);
       }
 
-      if (f_ext[i] != nullptr) {
-        net_wrenches.value().col(i) -= transformSpatialForce(element.transform_to_world, f_ext[i]->value());
+      auto f_ext_iterator = f_ext.find(bodies[i].get());
+      if (f_ext_iterator != f_ext.end()) {
+        const auto& f_ext_i = f_ext_iterator->second;
+        net_wrenches.value().col(i) -= transformSpatialForce(element.transform_to_world, f_ext_i.value());
 
         if (gradient_order > 0) {
           auto net_wrenches_q_gradient_block = net_wrenches.gradient().value().template block<TWIST_SIZE, Eigen::Dynamic>(TWIST_SIZE * i, 0, TWIST_SIZE, nq);
-          auto df_extdq = f_ext[i]->gradient().value().middleCols(0, nq);
-          net_wrenches_q_gradient_block -= dTransformSpatialForce(element.transform_to_world, f_ext[i]->value(), element.dtransform_to_world_dq, df_extdq);
+          auto df_extdq = f_ext_i.gradient().value().middleCols(0, nq);
+          net_wrenches_q_gradient_block -= dTransformSpatialForce(element.transform_to_world, f_ext_i.value(), element.dtransform_to_world_dq, df_extdq);
 
           auto net_wrenches_v_gradient_block = net_wrenches.gradient().value().template block<TWIST_SIZE, Eigen::Dynamic>(TWIST_SIZE * i, nq, TWIST_SIZE, nv);
-          auto df_extdv = f_ext[i]->gradient().value().middleCols(nq, nv);
+          auto df_extdv =  f_ext_i.gradient().value().middleCols(nq, nv);
           net_wrenches_v_gradient_block -= transformSpatialForce(element.transform_to_world, df_extdv);
         }
       }
@@ -1930,11 +1938,12 @@ template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulat
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::forwardJacDotTimesV(const KinematicsCache<double>&, const MatrixBase< Matrix<double, 3, 1> >&, int, int, int, int) const;
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMatrix(KinematicsCache<double>&, int) const;
 template DLLEXPORT_RBM GradientVar<AutoDiffScalar<VectorXd>, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMatrix<AutoDiffScalar<VectorXd> >(KinematicsCache<AutoDiffScalar<VectorXd> >&, int) const;
-template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(KinematicsCache<double>&, std::map<int, std::unique_ptr<GradientVar<double, TWIST_SIZE, 1> > >& f_ext, GradientVar<double, Eigen::Dynamic, 1>* vd, int) const;
 template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, 1> RigidBodyManipulator::relativeTwist<double>(const KinematicsCache<double>&, int, int, int, int) const;
 template DLLEXPORT_RBM GradientVar<double, 6, Dynamic> RigidBodyManipulator::worldMomentumMatrix<double>(KinematicsCache<double>&, int, const std::set<int>&, bool) const;
 template DLLEXPORT_RBM GradientVar<double, 6, 1> RigidBodyManipulator::transformSpatialAcceleration<double>(const KinematicsCache<double>&, GradientVar<double, 6, 1> const&, int, int, int, int) const;
 template DLLEXPORT_RBM GradientVar<double, 6, 1> RigidBodyManipulator::worldMomentumMatrixDotTimesV<double>(KinematicsCache<double>&, int, const std::set<int>&) const;
+template DLLEXPORT_RBM GradientVar<double, -1, 1> RigidBodyManipulator::inverseDynamics<double>(KinematicsCache<double>&, unordered_map<RigidBody const*, GradientVar<double, 6, 1> > const&, GradientVar<double, -1, 1, -1, 1> const&, int) const;
+template DLLEXPORT_RBM GradientVar<double, -1, 1> RigidBodyManipulator::dynamicsBiasTerm<double>(KinematicsCache<double>&, unordered_map<RigidBody const*, GradientVar<double, 6, 1> > const&, int) const;
 
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints(const KinematicsCache<double>&, int) const;
 

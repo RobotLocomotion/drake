@@ -480,17 +480,18 @@ int setupAndSolveQP(
 
   // handle external wrenches to compensate for
   typedef GradientVar<double, TWIST_SIZE, 1> WrenchGradientVarType;
-  std::map<int, std::unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
+  std::unordered_map<RigidBody const *, GradientVar<double, TWIST_SIZE, 1> > f_ext;
   for (auto it = qp_input->body_wrench_data.begin(); it != qp_input->body_wrench_data.end(); ++it) {
     const drake::lcmt_body_wrench_data& body_wrench_data = *it;
     int body_id = body_wrench_data.body_id - 1;
-    f_ext[body_id] = std::unique_ptr<WrenchGradientVarType>(new WrenchGradientVarType(TWIST_SIZE, 1, nq, 0));
-    f_ext[body_id]->value() = Map<const Matrix<double, TWIST_SIZE, 1> >(body_wrench_data.wrench);
+    auto f_ext_i = WrenchGradientVarType(TWIST_SIZE, 1, nq, 0);
+    f_ext_i.value() = Map<const Matrix<double, TWIST_SIZE, 1> >(body_wrench_data.wrench);
+    f_ext.insert({pdata->r->bodies[body_id].get(), f_ext_i});
   }
 
   auto& cache = pdata->cache;
   pdata->H = pdata->r->massMatrix(cache).value();
-  pdata->C = pdata->r->inverseDynamics(cache, f_ext).value();
+  pdata->C = pdata->r->dynamicsBiasTerm(cache, f_ext).value();
 
   pdata->H_float = pdata->H.topRows(6);
   pdata->H_act = pdata->H.bottomRows(nu);
