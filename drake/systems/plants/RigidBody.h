@@ -4,6 +4,7 @@
 #include <Eigen/Dense>
 #include <iostream>
 #include <set>
+#include <map>
 #include <Eigen/StdVector>
 #include <memory>
 #include "DrakeJoint.h"
