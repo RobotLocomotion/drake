@@ -89,8 +89,11 @@ mex_setup()
 #   message("Setting CTEST Configuration Type to ${CTEST_CONFIGURATION_TYPE}")
 #endif()
 
-file(WRITE ${CMAKE_BINARY_DIR}/CTestCustom.cmake 
-  "set(CTEST_CUSTOM_PRE_TEST \"${PROJECT_SOURCE_DIR}/cmake/add_matlab_unit_tests.pl ${PROJECT_SOURCE_DIR}\")\n")
+find_package( Perl )
+if ( PERL_FOUND )
+   file(WRITE ${CMAKE_BINARY_DIR}/CTestCustom.cmake 
+   	      "set(CTEST_CUSTOM_PRE_TEST \"${PERL_EXECUTABLE} ${PROJECT_SOURCE_DIR}/cmake/add_matlab_unit_tests.pl ${PROJECT_SOURCE_DIR}\")\n")
+endif()
 
 enable_testing()
 include(CTest)
