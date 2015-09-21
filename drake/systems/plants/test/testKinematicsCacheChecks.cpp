@@ -56,6 +56,7 @@ void performChecks(RigidBodyManipulator& model, KinematicsCache<double>& cache, 
 
   if (gradient_order == 0) {
     checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::centerOfMass<double>, cache, RigidBody::defaultRobotNumSet);
+    checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::forwardKin<PointsType>, cache, points, body_or_frame_ind, base_or_frame_ind, rotation_type);
   }
 
   checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::worldMomentumMatrix<double>, cache, gradient_order, RigidBody::defaultRobotNumSet, in_terms_of_qdot);
@@ -64,7 +65,6 @@ void performChecks(RigidBodyManipulator& model, KinematicsCache<double>& cache, 
   checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::geometricJacobian<double>, cache, base_or_frame_ind, body_or_frame_ind, expressed_in_frame_ind, gradient_order, in_terms_of_qdot, &v_or_qdot_indices);
   checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::relativeTransform<double>, cache, base_or_frame_ind, body_or_frame_ind, gradient_order);
   checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::massMatrix<double>, cache, gradient_order);
-  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::forwardKin<PointsType>, cache, points, body_or_frame_ind, base_or_frame_ind, rotation_type, gradient_order + 1);
   checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::forwardKinPositionGradient<double>, cache, npoints, body_or_frame_ind, base_or_frame_ind, gradient_order);
   checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::forwardKinJacobian<PointsType>, cache, points, body_or_frame_ind, base_or_frame_ind, rotation_type, in_terms_of_qdot,
                  gradient_order);

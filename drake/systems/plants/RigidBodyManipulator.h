@@ -369,7 +369,30 @@ public:
   GradientVar<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorques(Eigen::MatrixBase<DerivedV> const & v, int gradient_order = 0) const;
 
   template <typename DerivedPoints>
-  GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> forwardKin(const KinematicsCache<typename DerivedPoints::Scalar>& cache, const Eigen::MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, int gradient_order) const;
+  Eigen::Matrix<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> forwardKin(
+      const KinematicsCache<typename DerivedPoints::Scalar> &cache, const Eigen::MatrixBase<DerivedPoints> &points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type) const
+  {
+    cache.checkCachedKinematicsSettings(false, false, false, "forwardKin"); // rely on forwardJac for gradient cache check
+
+    int npoints = static_cast<int>(points.cols());
+    typedef typename DerivedPoints::Scalar Scalar;
+
+    // compute rotation and translation
+    auto T = relativeTransform(cache, new_body_or_frame_ind, current_body_or_frame_ind, 0).value();
+    auto R = T.template topLeftCorner<SPACE_DIMENSION, SPACE_DIMENSION>();
+    auto p = T.template topRightCorner<SPACE_DIMENSION, 1>();
+
+    // transform points to new frame
+    Eigen::Matrix<Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> x(SPACE_DIMENSION + rotationRepresentationSize(rotation_type), npoints);
+    x.template topRows<SPACE_DIMENSION>().colwise() = p;
+    x.template topRows<SPACE_DIMENSION>().noalias() += R * points;
+
+    // convert rotation representation
+    auto qrot = rotmat2Representation(R, rotation_type);
+    x.bottomRows(qrot.rows()).colwise() = qrot;
+
+    return x;
+  };
 
   template <typename DerivedPoints>
   GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, Eigen::Dynamic> forwardKinJacobian(const KinematicsCache<typename DerivedPoints::Scalar>& cache, const Eigen::MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, bool in_terms_of_qdot, int gradient_order) const;
