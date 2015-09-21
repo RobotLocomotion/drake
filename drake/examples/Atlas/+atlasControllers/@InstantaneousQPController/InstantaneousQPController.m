@@ -11,13 +11,10 @@ classdef InstantaneousQPController
     debug_pub;
     robot;
     controller_data
-    q_integrator_data
-    vref_integrator_data
     robot_property_cache
     data_mex_ptr;
     support_detect_mex_ptr;
     use_bullet = false;
-    default_terrain_height = 0;
     param_sets
     gurobi_options = struct();
     solver = 0;
@@ -60,9 +57,6 @@ classdef InstantaneousQPController
       obj.controller_data = InstantaneousQPControllerData(struct('infocount', 0,...
                                                      'qp_active_set', [],...
                                                      'num_active_contact_pts', 0));
-      obj.q_integrator_data = IntegratorData(r);
-      obj.vref_integrator_data = VRefIntegratorData(r);
-
       obj.gurobi_options.outputflag = 0; % not verbose
       if obj.solver==0
         obj.gurobi_options.method = 2; % -1=automatic, 0=primal simplex, 1=dual simplex, 2=barrier
@@ -76,14 +70,6 @@ classdef InstantaneousQPController
         obj.gurobi_options.bariterlimit = 20; % iteration limit
         obj.gurobi_options.barhomogeneous = 0; % 0 off, 1 on
         obj.gurobi_options.barconvtol = 5e-4;
-      end
-
-      terrain = getTerrain(r);
-      obj.default_terrain_height = r.getTerrainHeight([0;0]);
-      if isa(terrain,'DRCTerrainMap')
-        terrain_map_ptr = terrain.map_handle.getPointerForMex();
-      else
-        terrain_map_ptr = nullPointer();
       end
 
       state_coordinates = obj.robot.getStateFrame().getCoordinateNames();
@@ -100,8 +86,6 @@ classdef InstantaneousQPController
                                        obj.robot.getB(),...
                                        obj.robot.umin,...
                                        obj.robot.umax,...
-                                       terrain_map_ptr,...
-                                       obj.default_terrain_height,...
                                        obj.solver==0,...
                                        obj.gurobi_options,...
                                        coordinate_names);

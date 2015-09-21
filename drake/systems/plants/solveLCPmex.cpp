@@ -186,40 +186,42 @@ bool callFastQP(MatrixBase<DerivedM> const & M, MatrixBase<Derivedw> const & w, 
   return true;
 }
 
-//[z, Mqdn, wqdn] = setupLCPmex(mex_model_ptr, q, qd, u, phiC, n, D, h, z_inactive_guess_tol)
+//[z, Mqdn, wqdn] = setupLCPmex(mex_model_ptr, cache_ptr, u, phiC, n, D, h, z_inactive_guess_tol)
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) { 
   
-  if (nlhs != 5 || nrhs != 14) {
-    mexErrMsgIdAndTxt("Drake:setupLCPmex:InvalidUsage","Usage: [z, Mqdn, wqdn, zqp] = setupLCPmex(mex_model_ptr, q, qd, u, phiC, n, D, h, z_inactive_guess_tol, z_cached, H, C, B)");
+  if (nlhs != 5 || nrhs != 13) {
+    mexErrMsgIdAndTxt("Drake:setupLCPmex:InvalidUsage","Usage: [z, Mqdn, wqdn, zqp] = setupLCPmex(mex_model_ptr, cache_ptr, u, phiC, n, D, h, z_inactive_guess_tol, z_cached, H, C, B)");
   }
   static unique_ptr<MexWrapper> lcp_mex = unique_ptr<MexWrapper>(new MexWrapper(PATHLCP_MEXFILE));
-  
-  RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+
+  int arg_num = 0;
+  RigidBodyManipulator *model = static_cast<RigidBodyManipulator*>(getDrakeMexPointer(prhs[arg_num++]));
+  KinematicsCache<double>* cache = static_cast<KinematicsCache<double>*>(getDrakeMexPointer(prhs[arg_num++]));
+  cache->checkCachedKinematicsSettings(false, true, true, "solveLCPmex");
+
   const int nq = model->num_positions;
   const int nv = model->num_velocities;
   
   //input mappings
-  const mxArray* q_array = prhs[1];
-  const mxArray* v_array = prhs[2];
-  const mxArray* u_array = prhs[3];
-  const mxArray* phiC_array = prhs[4];
-  const mxArray* n_array = prhs[5];
-  const mxArray* D_array = prhs[6];
-  const mxArray* h_array = prhs[7];
-  const mxArray* inactive_guess_array = prhs[8];
-  const mxArray* z_cached_array = prhs[9];
-  const mxArray* H_array = prhs[10];
-  const mxArray* C_array = prhs[11];
-  const mxArray* B_array = prhs[12];
-  const mxArray* enable_fastqp_array = prhs[13];
+  const mxArray* u_array = prhs[arg_num++];
+  const mxArray* phiC_array = prhs[arg_num++];
+  const mxArray* n_array = prhs[arg_num++];
+  const mxArray* D_array = prhs[arg_num++];
+  const mxArray* h_array = prhs[arg_num++];
+  const mxArray* inactive_guess_array = prhs[arg_num++];
+  const mxArray* z_cached_array = prhs[arg_num++];
+  const mxArray* H_array = prhs[arg_num++];
+  const mxArray* C_array = prhs[arg_num++];
+  const mxArray* B_array = prhs[arg_num++];
+  const mxArray* enable_fastqp_array = prhs[arg_num++];
 
   const size_t num_z_cached = mxGetNumberOfElements(z_cached_array);
   const size_t num_contact_pairs = mxGetNumberOfElements(phiC_array);
   const size_t mC = mxGetNumberOfElements(D_array);
-  const double z_inactive_guess_tol = static_cast<double>(mxGetScalar(inactive_guess_array));
-  const double h = static_cast<double>(mxGetScalar(h_array));
-  const Map<VectorXd> q(mxGetPrSafe(q_array), nq);
-  const Map<VectorXd> v(mxGetPrSafe(v_array), nv);
+  const double z_inactive_guess_tol = mxGetScalar(inactive_guess_array);
+  const double h = mxGetScalar(h_array);
+  const auto& q = cache->getQ();
+  const auto& v = cache->getV();
   const Map<VectorXd> u(mxGetPrSafe(u_array), mxGetNumberOfElements(u_array));
   const Map<VectorXd> phiC(mxGetPrSafe(phiC_array), num_contact_pairs);
   const Map<MatrixXd> n(mxGetPrSafe(n_array), num_contact_pairs, nq);
@@ -229,10 +231,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   const Map<MatrixXd> B(mxGetPrSafe(B_array), mxGetM(B_array), mxGetN(B_array));
   const bool enable_fastqp = mxIsLogicalScalarTrue(enable_fastqp_array);
 
-  VectorXd phiL, phiP, phiL_possible, phiC_possible, phiL_check, phiC_check;
-  MatrixXd JP, JL, JL_possible, n_possible, JL_check, n_check;
+  VectorXd phiL, phiL_possible, phiC_possible, phiL_check, phiC_check;
+  MatrixXd JL, JL_possible, n_possible, JL_check, n_check;
 
-  model->positionConstraints(phiP, JP);
+  auto phiPgrad = model->positionConstraints<double>(*cache,1);
+  auto phiP = phiPgrad.value();
+  auto JP = phiPgrad.gradient().value();
   model->jointLimitConstraints(q, phiL, JL);
   
   const size_t nP = phiP.size();

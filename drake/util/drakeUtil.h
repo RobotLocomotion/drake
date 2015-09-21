@@ -25,7 +25,7 @@
 #endif
 
 template <typename Derived>
-inline void sizecheck(const Eigen::MatrixBase<Derived>& mat, unsigned int rows, unsigned int cols){
+inline void sizecheck(const Eigen::MatrixBase<Derived>& mat, size_t rows, size_t cols){
   if ((mat.rows() != rows) || (mat.cols() != cols))
     throw std::runtime_error("Wrong-sized matrix:  Expected " + std::to_string(rows) + "-by-" + std::to_string(cols) + " but got " + std::to_string(mat.rows()) + "-by-" + std::to_string(mat.cols()));
 }

@@ -31,22 +31,25 @@ int main(int argc, char* argv[])
 
 // for (i=0; i<model->num_dof; i++)
 // 	 q(i)=(double)rand() / RAND_MAX;
-  model->doKinematics(q, v);
+  KinematicsCache<double> cache = model->doKinematics(q, v, 0);
 //  }
 
 //  const Vector4d zero(0,0,0,1);
   Vector3d zero = Vector3d::Zero();
   Matrix<double,6,1> pt;
 
-  for (i=0; i<model->num_bodies; i++) {
+  for (i=0; i<model->bodies.size(); i++) {
 //    model->forwardKin(i,zero,1,pt);
-		auto pt = model->forwardKin(zero, i, 0, 1, 0);
+		auto pt = model->forwardKin(cache, zero, i, 0, 1, 0);
 //    cout << i << ": forward kin: " << model->bodies[i].linkname << " is at " << pt.transpose() << endl;
     cout << model->bodies[i]->linkname << " ";
 		cout << pt.value().transpose() << endl;
 //    for (int j=0; j<pt.size(); j++)
 //    	cout << pt(j) << " ";
   }
+
+  auto phi = model->positionConstraints<double>(cache,1);
+  cout << "phi = " << phi.value().transpose() << endl;
 
   delete model;
   return 0;

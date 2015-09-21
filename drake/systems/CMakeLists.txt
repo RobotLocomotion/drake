@@ -22,7 +22,7 @@ add_library(drakeSystem DrakeSystem.cpp LinearSystem.cpp ${coordinate_frame_file
 target_link_libraries(drakeSystem drakeUtil)
 pods_install_libraries(drakeSystem)
 if (LCM_FOUND)
-  add_dependencies(drakeSystem drake_lcmtypes)
+  add_dependencies(drakeSystem drake_lcmtypes lcmtype_agg_hpp)
   pods_use_pkg_config_packages(drakeSystem lcm)
 endif()
 

@@ -346,7 +346,7 @@ classdef QPController < MIMODrakeSystem
 
       if include_angular_momentum
         A = centroidalMomentumMatrix(r, kinsol);
-        Adot_times_v = centroidalMomentumMatrixDotTimesVmex(r, kinsol);
+        Adot_times_v = centroidalMomentumMatrixDotTimesVmex(r, kinsol.mex_ptr);
       end
 
       Jcomdot_times_v = centerOfMassJacobianDotTimesV(r, kinsol);
@@ -613,22 +613,16 @@ classdef QPController < MIMODrakeSystem
 
 
     if (obj.use_mex==1 || obj.use_mex==2)
-      if obj.using_flat_terrain
-        height = getTerrainHeight(r,[0;0]); % get height from DRCFlatTerrainMap
-      else
-        height = 0;
-      end
-
       if (obj.use_mex==1)
         [y,qdd] = QPControllermex(obj.mex_ptr.data,obj.solver==0,qddot_des,x,...
             varargin{4:end},condof,supp,A_ls,B_ls,Qy,R_ls,C_ls,D_ls,...
-            S,s1,s1dot,s2dot,x0,u0,y0,qdd_lb,qdd_ub,w_qdd,mu,height);
+            S,s1,s1dot,s2dot,x0,u0,y0,qdd_lb,qdd_ub,w_qdd,mu);
       else
         [y_mex,mex_qdd,info_mex,active_supports_mex,~,Hqp_mex,fqp_mex,...
           Aeq_mex,beq_mex,Ain_mex,bin_mex,Qf,Qeps] = ...
           QPControllermex(obj.mex_ptr.data,obj.solver==0,qddot_des,x,...
           varargin{4:end},condof,supp,A_ls,B_ls,Qy,R_ls,C_ls,D_ls,S,s1,...
-          s1dot,s2dot,x0,u0,y0,qdd_lb,qdd_ub,w_qdd,mu,height);
+          s1dot,s2dot,x0,u0,y0,qdd_lb,qdd_ub,w_qdd,mu);
 
         if (nc>0)
           valuecheck(active_supports_mex,active_supports);

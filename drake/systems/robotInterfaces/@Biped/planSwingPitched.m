@@ -101,7 +101,6 @@ zmp1 = shift_step_inward(biped, stance, instep_shift);
 
 hold_time = params.drake_min_hold_time;
 
-support_options.use_support_surface = 1;
 v = quat2rotmat(stance.pos(4:7)) * [0;0;1];
 b = -v' * stance.pos(1:3);
 support_options.support_surface = {[v;b]};
@@ -177,7 +176,6 @@ end
 zmp_knots(end+1).t = frame_knots(end).t;
 zmp_knots(end).zmp = zmp1;
 
-support_options.use_support_surface = ones(2,1);
 v_stance = quat2rotmat(stance.pos(4:7)) * [0;0;1];
 b_stance = -v_stance' * stance.pos(1:3);
 v_swing = quat2rotmat(swing2.pos(4:7)) * [0;0;1];

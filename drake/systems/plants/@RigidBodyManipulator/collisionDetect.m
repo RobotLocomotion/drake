@@ -66,7 +66,7 @@ force_collisionDetectTerrain = ~obj.contact_options.use_bullet;
 
 
 if (obj.contact_options.use_bullet && ~active_collision_options.terrain_only && obj.mex_model_ptr ~= 0 && kinsol.mex)
-  [xA,xB,normal,distance,idxA,idxB] = collisionDetectmex(obj.mex_model_ptr,allow_multiple_contacts,active_collision_options);
+  [xA,xB,normal,distance,idxA,idxB] = collisionDetectmex(obj.mex_model_ptr, kinsol.mex_ptr, allow_multiple_contacts,active_collision_options);
   if isempty(idxA)
     idxA = [];
     idxB = [];

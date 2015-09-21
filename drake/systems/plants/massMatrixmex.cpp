@@ -9,8 +9,8 @@ using namespace std;
 
 void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
 
-  string usage = "Usage [M, dM] = massMatrixmex(model_ptr)";
-  if (nrhs != 1) {
+  string usage = "Usage [M, dM] = massMatrixmex(model_ptr, cache_ptr)";
+  if (nrhs != 2) {
     mexErrMsgIdAndTxt("Drake:geometricJacobianmex:WrongNumberOfInputs", usage.c_str());
   }
 
@@ -20,9 +20,11 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
 
   int gradient_order = nlhs - 1;
 
+  int arg_num = 0;
+  RigidBodyManipulator *model = static_cast<RigidBodyManipulator*>(getDrakeMexPointer(prhs[arg_num++]));
+  KinematicsCache<double>* cache = static_cast<KinematicsCache<double>*>(getDrakeMexPointer(prhs[arg_num++]));
 
-  RigidBodyManipulator *model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
-  auto ret = model->massMatrix<double>(gradient_order);
+  auto ret = model->massMatrix(*cache, gradient_order);
 
   plhs[0] = eigenToMatlab(ret.value());
   if (gradient_order > 0)

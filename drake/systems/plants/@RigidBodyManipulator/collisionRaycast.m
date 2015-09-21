@@ -41,4 +41,4 @@ if (kinsol.mex ~= true)
     'Call doKinematics using mex before proceeding (got kinsol.mex ~= true).');
 end
 
-distance = collisionRaycastmex(obj.mex_model_ptr, origins, ray_endpoints, use_margins);
+distance = collisionRaycastmex(obj.mex_model_ptr, kinsol.mex_ptr, origins, ray_endpoints, use_margins);

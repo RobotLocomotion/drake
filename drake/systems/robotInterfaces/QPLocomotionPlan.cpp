@@ -1,5 +1,4 @@
 #include "QPLocomotionPlan.h"
-#include "drakeFloatingPointUtil.h"
 #include <stdexcept>
 #include <algorithm>
 #include <cmath>
@@ -78,7 +77,7 @@ template <typename DerivedQ, typename DerivedV>
 drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
     double t_global, const MatrixBase<DerivedQ>& q, const MatrixBase<DerivedV>& v, const std::vector<bool>& contact_force_detected)
 {
-  if (isNaN(start_time))
+  if (std::isnan(start_time))
     start_time = t_global;
 
   double t_plan = t_global - start_time;
@@ -92,14 +91,13 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
     support_index++;
 
   // do kinematics
-  VectorXd v_dummy(0, 1);
-  robot.doKinematics(q, v_dummy);
+  KinematicsCache<double> cache = robot.doKinematics(q, 0);
 
   RigidBodySupportState& support_state = settings.supports[support_index];
   bool is_last_support = support_index == settings.supports.size() - 1;
   const RigidBodySupportState& next_support = is_last_support ? settings.supports[support_index] : settings.supports[support_index + 1];
   if (settings.use_plan_shift) {
-    updatePlanShift(t_plan, contact_force_detected, support_index);
+    updatePlanShift(cache, t_plan, contact_force_detected, support_index);
   }
 
   drake::lcmt_qp_controller_input qp_input;
@@ -163,7 +161,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
           } else {
             pts = support_state_element.contact_points;
           }
-          Matrix3Xd pts_in_world = robot.forwardKin(pts, support_state_element.body, 0, 0, 0).value();
+          Matrix3Xd pts_in_world = robot.forwardKin(cache, pts, support_state_element.body, 0, 0, 0).value();
           reduced_support_pts.conservativeResize(2, reduced_support_pts.cols() + pts.cols());
           reduced_support_pts.block(0, reduced_support_pts.cols() - pts_in_world.cols(), 2, pts_in_world.cols()) = pts_in_world.topRows<2>();
         }
@@ -187,7 +185,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
         if (!isSupportingBody(body_id, support_state)) {
           toe_off_active[side] = false;
           knee_pd_active[side] = false;
-          updateSwingTrajectory(t_plan, body_motion, body_motion_segment_index - 1, v);
+          updateSwingTrajectory(t_plan, body_motion, body_motion_segment_index - 1, cache, v);
         }
       }
 
@@ -211,7 +209,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
         this->applyKneePD(side, qp_input);
       }
       if (body_motion.isToeOffAllowed(body_motion_segment_index)) {
-        updateSwingTrajectory(t_plan, body_motion, body_motion_segment_index, v);
+        updateSwingTrajectory(t_plan, body_motion, body_motion_segment_index, cache, v);
       }
     }
 
@@ -353,7 +351,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::getLastQPInput() const
 
 bool QPLocomotionPlan::isFinished(double t) const
 {
-  if (isNaN(start_time)) {
+  if (std::isnan(start_time)) {
     return false;
   } else {
     return (t - start_time) >= settings.duration;
@@ -425,13 +423,12 @@ drake::lcmt_support_data QPLocomotionPlan::createSupportDataElement(const RigidB
   for (int i = 0; i < support_logic.size(); i++)
     support_data_element_lcm.support_logic_map[i] = support_logic[i];
   support_data_element_lcm.mu = settings.mu;
-  support_data_element_lcm.use_support_surface = element.use_contact_surface;
   Vector4f support_surface_float = element.support_surface.cast<float>();
   memcpy(support_data_element_lcm.support_surface, support_surface_float.data(), sizeof(float) * 4);
   return support_data_element_lcm;
 }
 
-void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const VectorXd& qd) {
+void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const KinematicsCache<double>& cache, const VectorXd& v) {
   int takeoff_segment_index = body_motion_segment_index + 1; // this function is called before takeoff
   int num_swing_segments = 3;
   int landing_segment_index = takeoff_segment_index + num_swing_segments - 1;
@@ -443,9 +440,9 @@ void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body
   VectorXd xf = trajectory.value(trajectory.getEndTime(takeoff_segment_index + 2));
 
   // first knot point from current position
-  auto x0_xyzquat = robot.forwardKin((Vector3d::Zero()).eval(), body_motion_data.getBodyOrFrameId(), 0, 2, 1);
+  auto x0_xyzquat = robot.forwardKin(cache, (Vector3d::Zero()).eval(), body_motion_data.getBodyOrFrameId(), 0, 2, 1);
   auto& J = x0_xyzquat.gradient().value();
-  auto xd0_xyzquat = (J * qd).eval();
+  auto xd0_xyzquat = (J * v).eval(); // TODO: doesn't work for qd != v
   Vector4d x0_quat = x0_xyzquat.value().tail<4>(); // copying to Vector4d for quatRotateVec later on.
   auto x0_expmap = quat2expmap(x0_quat, 1);
   Vector3d xd0_expmap = x0_expmap.gradient().value() * xd0_xyzquat.tail<4>();
@@ -654,7 +651,7 @@ void QPLocomotionPlan::updateZMPController(const double t_plan, const double las
   this->updateS1Trajectory();
 }
 
-void QPLocomotionPlan::updatePlanShift(double t_plan, const std::vector<bool>& contact_force_detected, int support_index) {
+void QPLocomotionPlan::updatePlanShift(const KinematicsCache<double>& cache, double t_plan, const std::vector<bool>& contact_force_detected, int support_index) {
   const bool is_last_support = support_index == settings.supports.size() - 1;
   const RigidBodySupportState& next_support = is_last_support ? settings.supports[support_index] : settings.supports[support_index + 1];
 
@@ -671,7 +668,7 @@ void QPLocomotionPlan::updatePlanShift(double t_plan, const std::vector<bool>& c
             if (body_motion_body_id == side_it->second) {
               int world = 0;
               int rotation_type = 0;
-              Vector3d foot_frame_origin_actual = robot.forwardKin(Vector3d::Zero().eval(), body_motion_it->getBodyOrFrameId(), world, rotation_type, 0).value();
+              Vector3d foot_frame_origin_actual = robot.forwardKin(cache, Vector3d::Zero().eval(), body_motion_it->getBodyOrFrameId(), world, rotation_type, 0).value();
               Vector3d foot_frame_origin_planned = body_motion_it->getTrajectory().value(t_plan).topRows<3>();
               // std::cout << "actual: " << foot_frame_origin_actual.transpose() << " planned: " << foot_frame_origin_planned.transpose() << std::endl;
               foot_shifts[side_it->first] = foot_frame_origin_planned - foot_frame_origin_actual;

@@ -1,15 +1,15 @@
 classdef TaylorVar
 % does inline autodiff
-% overloads operators: http://www.mathworks.com/help/techdoc/matlab_oop/br02znk-1.html  
+% overloads operators: http://www.mathworks.com/help/techdoc/matlab_oop/br02znk-1.html
 %
 % Use TaylorVar.init(...) to create a new TaylorVar.
 %
 % Use getmsspoly(...) to get the approximation around a point close to where
 % you initialized the TaylorVar.
 %
-% the internal representation is 
+% the internal representation is
 % m=prod(size(f)), n=prod(size(x));
-% df{o} is a m x n^o sparse matrix , where e.g. 
+% df{o} is a m x n^o sparse matrix , where e.g.
 %        d^2 f(i,j)/dx_k dx_l =
 %             df{o}(sub2ind(obj.dim,i,j),sub2ind([n n],k,l))
 
@@ -19,7 +19,7 @@ classdef TaylorVar
     dim % size(f) - since I store things locally as a column vector
     nX   % size(x,1)
   end
-  
+
   methods
     function obj=TaylorVar(f,df)
       obj.f = f(:);
@@ -27,47 +27,47 @@ classdef TaylorVar
       obj.df = df;
       obj.nX = size(df{1},2);
     end
-    
+
     function varargout=eval(obj)
       varargout{1}=reshape(obj.f,obj.dim);
-      
+
       for i=2:min(nargout,length(obj.df)+1)
         varargout{i}=obj.df{i-1};
       end
-     
+
       % note: would love to reshape the df's into ND arrays, but matlab
       % can't handle sparse ND arrays.  and making them full could be very
       % inefficient!
     end
-    
+
     function d=double(obj)
       d = reshape(obj.f,obj.dim);
       for o=1:length(obj.df)
         if (any(obj.df{o}(:)))
-          warning('Drake:TaylorVar:DoubleConversion','converting taylorvar to double even though it has non-zero gradients.  gradient information will be lost!'); 
+          warning('Drake:TaylorVar:DoubleConversion','converting taylorvar to double even though it has non-zero gradients.  gradient information will be lost!');
         end
       end
     end
-    
+
     function p = getmsspoly(obj,p_xbar)
       % returns the taylor approximation as an msspoly
       % @param p_xbar should be relative to the original value of x used in
       % TaylorVar.init()
-      
+
       if (~isvector(p_xbar)) error('p_xbar should be a vector'); end
       if (length(obj.dim)>2) error('msspolys are not defined for ND arrays'); end
       p_xbar=p_xbar(:); % make sure p_x is a column vector
-      
+
       p=reshape(obj.f,obj.dim);
       nX=obj.nX;
       x=1;
       for o=1:length(obj.df)
-        % x needs to be nX^o-by-1 
+        % x needs to be nX^o-by-1
         x=reshape(x(:)*p_xbar',nX^o,1)/o;
         p=p+reshape(obj.df{o}*x,obj.dim(1),obj.dim(2));
       end
     end
-    
+
     function classname=superiorfloat(varargin)
       classname='double';
     end
@@ -78,10 +78,10 @@ classdef TaylorVar
       tf=isinf(reshape(obj.f,obj.dim));
     end
     function varargout=size(obj,dim)
-      if (nargin>1)  
+      if (nargin>1)
         varargout{1}=obj.dim(dim);
       elseif (nargout>1)
-        N=nargout; 
+        N=nargout;
         NDIMS=length(obj.dim);
         for i=1:N
           if (i>NDIMS) varargout{i}=1;
@@ -91,9 +91,9 @@ classdef TaylorVar
         if (N<NDIMS)
           vargout{N}=prod(obj.dim(N:end));
         end
-      else 
+      else
         varargout{1}=obj.dim;
-      end        
+      end
     end
     function numberOfElements = length(obj)
       numberOfElements = max(size(obj));
@@ -105,7 +105,7 @@ classdef TaylorVar
     function lastind=end(obj,k,n)
       % end called as part of the kth index of n indices
       % 'help end' was the only way i found documentation on this
-      if (n>length(obj.dim)) error('dimension mismatch'); end 
+      if (n>length(obj.dim)) error('dimension mismatch'); end
       lastind=obj.dim(k);
     end
     function obj=repmat(obj,M,N)
@@ -147,38 +147,51 @@ classdef TaylorVar
       end
       obj.dim=siz;
     end
-    function a=bsxfun(fun,a,b)
-      if (isa(a,'TaylorVar'))
-        if (any(a.dim~=size(b)))
-          error('not implemented yet'); 
-        end
-        for i=1:prod(a.dim)
-%          a(i)=feval(fun,a(i),b(i));  % want this, but can't call subsref
-%          indirectly from inside the class, so do it the hard way
-          si=substruct('()',{i});
-          subsasgn(a,si,feval(fun,subsref(a,si),subsref(b,si)));
-        end
-      else % only b is a TaylorVar
+    function c=bsxfun(fun,a,b)
+      size_a = size(a);
+      size_b = size(b);
+      if (numel(size_a)~=numel(size_b))
         error('not implemented yet');
       end
+      for i=1:numel(size_a)
+        if (size_a(i)==1 && size_b(i)>1)
+          d = 0*size_a+1; d(i)=size_b(i);
+          a = repmat(a,d);
+        elseif size_b(i)==1 && size_a(i)>1
+          d = 0*size_a+1; d(i)=size_a(i);
+          b = repmat(b,d);
+        end
+      end
+      % make sure we insert into a TaylorVar
+      if ~isa(a,'TaylorVar')
+        c=b;
+      else
+        c=a;
+      end
+      for i=1:prod(size(a))
+%       a(i)=feval(fun,a(i),b(i));  % want this, but can't call subsref
+%       indirectly from inside the class, so do it the hard way
+        si=substruct('()',{i});
+        subsasgn(c,si,feval(fun,subsref(a,si),subsref(b,si)));
+      end
     end
-    
+
     function a=plus(a,b)
       if (~isa(a,'TaylorVar'))% then b is the TaylorVar.
         tmp=a; a=b; b=tmp;    % switch them (so we have less cases below)
       end
-        
+
       if (isempty(a)) % handle the empty cases
         a=b; return;
       end
       if (isempty(b))
         return;
       end
-      
+
       if (isa(b,'TaylorVar'))  % both are TaylorVars
         if (isscalar(a) && ~isscalar(b)) a=repmat(a,size(b)); end
         if (isscalar(b) && ~isscalar(a)) b=repmat(b,size(a)); end
-        
+
         a.f=a.f + b.f;
         for o=1:length(a.df)
           a.df{o}=a.df{o}+b.df{o};
@@ -187,7 +200,7 @@ classdef TaylorVar
         if (isscalar(a)&&~isscalar(b))
           a=repmat(a,size(b));
         end
-        try 
+        try
         a.f=reshape(reshape(a.f,a.dim)+b,[],1);
         catch
           keyboard;
@@ -211,11 +224,11 @@ classdef TaylorVar
       if (~isa(a,'TaylorVar'))% then b is the TaylorVar.
         tmp=a; a=b; b=tmp;    % switch them (so we have less cases below)
       end
-      
+
       if (isa(b,'TaylorVar')) % then both are taylorvars
         if (isscalar(a) && ~isscalar(b)) a=repmat(a,size(b)); end
         if (isscalar(b) && ~isscalar(a)) b=repmat(b,size(a)); end
-        
+
         f=a.f .* b.f;
         m=prod(a.dim);
         ra = reshape(a,m,1); rb=reshape(b,m,1);
@@ -230,7 +243,7 @@ classdef TaylorVar
       else
         if (isscalar(a) && ~isscalar(b)) a=repmat(a,size(b)); end
         if (isscalar(b) && ~isscalar(a)) b=repmat(b,size(a)); end
-        
+
         b=b(:);
         a.f=a.f.*b;
         for o=1:length(a.df)
@@ -248,7 +261,7 @@ classdef TaylorVar
           f = a*b.f;
           for o=1:length(b.df), b.df{o}=repmat(a(:),1,b.nX^o).*repmat(b.df{o},numel(a),1); end
         else
-          f = a*reshape(b.f,b.dim); 
+          f = a*reshape(b.f,b.dim);
           for o=1:length(b.df)
             b.df{o} = reshape(a*reshape(b.df{o},k,n*b.nX^o),m*n,b.nX^o);
           end
@@ -266,7 +279,7 @@ classdef TaylorVar
         % so i have to handle the multiplies properly (as above)
         % dcdx is size [ma,nb,nX]
         ma=a.dim(1); na=a.dim(2); mb=b.dim(1); nb=b.dim(2); nX=a.nX;
-        if isscalar(a) 
+        if isscalar(a)
           % tvdiff(a) will be [1,1,nX]
           dcdx = reshape(reshape(reduceOrder(b),mb*nb,1)*reshape(tvdiff(a),1,nX) + reduceOrder(a)*reshape(tvdiff(b),mb*nb,nX),[mb,nb,nX]);
         elseif isscalar(b)
@@ -303,12 +316,12 @@ classdef TaylorVar
       if (isscalar(a) && ~isscalar(b)) a=repmat(a,size(b)); end
       if (isscalar(b) && ~isscalar(a)) b=repmat(b,size(a)); end
       tv = a.*(b.^(-1));
-    end 
+    end
     function tv=ldivide(a,b)
       if (isscalar(a) && ~isscalar(b)) a=repmat(a,size(b)); end
       if (isscalar(b) && ~isscalar(a)) b=repmat(b,size(a)); end
       tv = (a.^(-1)).*b;
-    end   
+    end
     function a=mrdivide(a,b)
       if (~isa(b,'TaylorVar')) % then a is a TaylorVar, b is a const
         if (isscalar(b))
@@ -322,7 +335,7 @@ classdef TaylorVar
       end
     end
     function tv=inv(a)
-      % use d/dq inv(H(q)) = - inv(H(q)) [d/dq H(q)] inv(H(q)) 
+      % use d/dq inv(H(q)) = - inv(H(q)) [d/dq H(q)] inv(H(q))
       if (length(a.dim)>2) error('only for 2D matrices'); end
       [m,n]=size(a);nX=a.nX;
       if (m~=n) error('only for square matrices'); end
@@ -337,15 +350,20 @@ classdef TaylorVar
         tv=TaylorVar(f,{df});
       end
     end
-    function tv=pinv(a)
-      tv=inv(a);  % try just using inv until i implement something better
+    function tv=pinv(A)
+      if rank(A.f)<A.dim(1)
+        error('not implemented yet')
+        % note: found matlab code for the gradient of pinv here:
+        % http://onlinelibrary.wiley.com.libproxy.mit.edu/doi/10.1002/%28SICI%291097-0207%2819971130%2940:22%3C4211::AID-NME255%3E3.0.CO;2-8/epdf
+      end
+      tv=inv(A);
     end
-    
+
     function tv=mldivide(a,b)
       tv=inv(a)*b;
       % todo: could make this better (more efficient/accurate?) if I handle
       % all the cases to use the actual \ call.
-    end   
+    end
     function tv=power(a,k)
       if (isa(k,'TaylorVar')) error('not implemented yet'); end
       if (k==0)
@@ -355,7 +373,7 @@ classdef TaylorVar
       else
         tv=elementwise(a,@(x)power(x,k),@(x) k.*x.^(k-1));
       end
-    end   
+    end
     function a=mpower(a,k)
       if (isa(k,'TaylorVar')) error('not implemented yet'); end
       % only defined for square matrices (including scalars)
@@ -363,11 +381,11 @@ classdef TaylorVar
         a=eye(a.dim(1));  % just a constant
       elseif (k>0)
         a=a*a^(k-1);  % compute gradients using mtimes (at least for now)
-      else 
+      else
         error('not implemented yet');
       end
     end
-    
+
     function l=lt(a,b)
       if (isa(a,'TaylorVar'))
         a=reshape(a.f,a.dim);
@@ -375,7 +393,7 @@ classdef TaylorVar
       if (isa(b,'TaylorVar'))
         b=reshape(b.f,b.dim);
       end
-      l=lt(a,b);  
+      l=lt(a,b);
     end
     function l=gt(a,b)
       if (isa(a,'TaylorVar'))
@@ -384,7 +402,7 @@ classdef TaylorVar
       if (isa(b,'TaylorVar'))
         b=reshape(b.f,b.dim);
       end
-      l=gt(a,b);  
+      l=gt(a,b);
     end
     function l=le(a,b)
       if (isa(a,'TaylorVar'))
@@ -393,7 +411,7 @@ classdef TaylorVar
       if (isa(b,'TaylorVar'))
         b=reshape(b.f,b.dim);
       end
-      l=le(a,b);  
+      l=le(a,b);
     end
     function l=ge(a,b)
       if (isa(a,'TaylorVar'))
@@ -402,7 +420,7 @@ classdef TaylorVar
       if (isa(b,'TaylorVar'))
         b=reshape(b.f,b.dim);
       end
-      l=ge(a,b);  
+      l=ge(a,b);
     end
     function l=ne(a,b)
       if (isa(a,'TaylorVar'))
@@ -411,7 +429,7 @@ classdef TaylorVar
       if (isa(b,'TaylorVar'))
         b=reshape(b.f,b.dim);
       end
-      l=ne(a,b);  
+      l=ne(a,b);
     end
     function l=eq(a,b)
       if (isa(a,'TaylorVar'))
@@ -420,9 +438,9 @@ classdef TaylorVar
       if (isa(b,'TaylorVar'))
         b=reshape(b.f,b.dim);
       end
-      l=eq(a,b);  
+      l=eq(a,b);
     end
-    function l=sign(a) 
+    function l=sign(a)
       a=reshape(a.f,a.dim);
       l=sign(a);  % no grad info
     end
@@ -433,7 +451,7 @@ classdef TaylorVar
       if (isa(b,'TaylorVar'))
         b=reshape(b.f,b.dim);
       end
-      l=and(a,b);  
+      l=and(a,b);
     end
     function l=or(a,b)
       if (isa(a,'TaylorVar'))
@@ -442,13 +460,13 @@ classdef TaylorVar
       if (isa(b,'TaylorVar'))
         b=reshape(b.f,b.dim);
       end
-      l=or(a,b);  
+      l=or(a,b);
     end
     function l=not(a)
       a=reshape(a.f,a.dim);
-      l=not(a)  
+      l=not(a)
     end
-    
+
     function a=ctranspose(a)
       if (~any(imag(a.f)))  % strictly real
         a=transpose(a);
@@ -464,7 +482,7 @@ classdef TaylorVar
         a.df{o}=a.df{o}(map,:);
       end
     end
-    
+
 %    function display(a)
 %    end
 
@@ -475,10 +493,10 @@ classdef TaylorVar
 
       % NOTE: use df' instead of df internally here (for efficiency), then
       % convert it back at the end
-      
+
       f=[];
       for o=1:order, df{o}=sparse(nX^o,0); end
-      
+
       for i=1:length(varargin)
         if (isa(varargin{i},'TaylorVar'))
           % figure out indices where the new data will be inserted:
@@ -487,7 +505,7 @@ classdef TaylorVar
           tags=[oldtag,newtag];
           oldinds=find(~tags(:));
           inds=find(tags(:));
-          
+
           % now insert the data
           f=[f,reshape(varargin{i}.f,varargin{i}.dim)];
           if (varargin{i}.nX ~=nX) error('dimension mismatch'); end
@@ -520,10 +538,10 @@ classdef TaylorVar
       % find the index of the first TaylorVar
       for i=1:length(varargin), if (isa(varargin{i},'TaylorVar')), tvi=i; break; end; end
       nX=varargin{tvi}.nX; order=length(varargin{tvi}.df);
-      
+
       f=[];
       for o=1:order, df{o}=sparse(nX^o,0); end
-      
+
       for i=1:length(varargin)
         if (isa(varargin{i},'TaylorVar'))
           % figure out indices where the new data will be inserted:
@@ -532,7 +550,7 @@ classdef TaylorVar
           tags=[oldtag;newtag];
           oldinds=find(~tags(:));
           inds=find(tags(:));
-          
+
           % now insert the data
           f=[f;reshape(varargin{i}.f,varargin{i}.dim)];
           if (varargin{i}.nX ~=nX) error('dimension mismatch'); end
@@ -561,7 +579,7 @@ classdef TaylorVar
       for o=1:order, df{o}=df{o}'; end
       tv=TaylorVar(f,df);
     end
-    
+
     function obj = subsref(obj,s)
       % figure out indices corresponding to s
       tags = reshape(1:length(obj.f),obj.dim);
@@ -576,7 +594,7 @@ classdef TaylorVar
         obj.df{o}=obj.df{o}(ind,:);
       end
     end
-    
+
     function a=subsasgn(a,s,b)
       if (~isa(a,'TaylorVar'))  % then turn it into one
         n = numel(a);
@@ -585,7 +603,7 @@ classdef TaylorVar
         end
         a=TaylorVar(a,da);
       end
-      
+
       function cleanup_subs
         % turn all subsrefs into A(ind)=B(:), instead of A(sub1,sub2)=B.
         for k=1:length(s.subs)
@@ -596,7 +614,7 @@ classdef TaylorVar
         inds = reshape(1:prod(a.dim),a.dim);
         s.subs = {reshape(subsref(inds,s),[],1)};
       end
-      
+
       if (isa(b,'TaylorVar'))
         % handle the case where the assignment will make the matrix bigger
         f = subsasgn(reshape(a.f,a.dim),s,reshape(b.f,b.dim));
@@ -622,7 +640,7 @@ classdef TaylorVar
     function ind=subsindex(a)
       ind = reshape(a.f,a.dim);  % just return the nominal value to be used as an index
     end
-    
+
     function tv = sin(obj)
       tv=elementwise(obj,@sin,@cos);
     end
@@ -639,7 +657,7 @@ classdef TaylorVar
       tv=elementwise(obj,@asin,@(x) ones(size(x))./sqrt(1-x.^2));
     end
     function tv = acos(obj)
-      tv=elementwise(obj,@acos,@(x) -ones(size(x))./sqrt(1-x.^2));  
+      tv=elementwise(obj,@acos,@(x) -ones(size(x))./sqrt(1-x.^2));
     end
     function tv = atan(obj)
       tv=elementwise(obj,@atan,@(x) ones(size(x))./(1+x.^2));
@@ -654,7 +672,7 @@ classdef TaylorVar
       tv=elementwise(obj,@tanh,@(x) ones(size(x))-tanh(x).^2);
     end
     function tv = exp(obj)
-      tv=elementwise(obj,@exp,@exp); 
+      tv=elementwise(obj,@exp,@exp);
     end
     function a=abs(a)
       s=sign(a.f);
@@ -663,8 +681,8 @@ classdef TaylorVar
         a.df{o}=a.df{o}.*repmat(s,1,a.nX^o);
       end
     end
-    
-    
+
+
     function tv = diag(v,k)
       % v is a TaylorVar
       if (nargin>1) error('k handling not implemented yet'); end
@@ -691,7 +709,7 @@ classdef TaylorVar
         tv=f;
       end
     end
-    
+
     function X=mod(X,Y)
       if (isa(Y,'TaylorVar'))
         error('not implemented yet'); % but shouldn't be hard
@@ -700,15 +718,15 @@ classdef TaylorVar
         % no change to gradients
       end
     end
-    
+
     function a=conj(a)
       % intentionally left blank.  i've assumed real everywhere in here.
     end
-    
+
     function a=sqrt(a)
       a=a.^(1/2);
     end
-    
+
     function a=sum(a,d)
       if (nargin<2)
         d = min(find(a.dim~=1));
@@ -717,13 +735,13 @@ classdef TaylorVar
       a.f = sum(reshape(a.f,a.dim),d);
       newdim = size(a.f);
       a.f = a.f(:);
-      
+
       for o=1:length(a.df)
         a.df{o}=sparse(reshape(sum(reshape(full(a.df{o}),[a.dim,a.nX^o]),d),[prod(newdim),a.nX^o]));
       end
       a.dim = newdim;
     end
-    
+
     function [a,i]=max(a,b,dim)
       if (nargin>2) error('not implemented yet'); end
       if (nargin<2)
@@ -749,7 +767,7 @@ classdef TaylorVar
         end
       end
     end
-    
+
     function [a,i]=min(a,b,dim)
       if (nargin>2) error('not implemented yet'); end
       if (nargin<2) % then just look over the TaylorVar a
@@ -781,8 +799,8 @@ classdef TaylorVar
         end
         a.f=c;
       end
-    end    
-    
+    end
+
     function B = cumprod(A,dim)
       if (nargin<2) dim=1; end
       if (dim~=1) error('not implemented yet'); end
@@ -796,13 +814,13 @@ classdef TaylorVar
         subsasgn(B,si,subsref(B,sim).*subsref(A,si));
       end
     end
-    
+
     function n=norm(A,p)
       if (~isvector(A)) error('not implemented yet'); end
       if (nargin<2) p=2; end
       if (isinf(p))
         if (p>0) n=max(abs(A));
-        else     n=min(abs(A)); 
+        else     n=min(abs(A));
         end
       elseif p==2  % break out special case just because mpower isn't full implemented yet
         n=sqrt(sum(A.^2));
@@ -811,43 +829,43 @@ classdef TaylorVar
         n=sum(abs(A).^p)^(1/p);
       end
     end
-    
+
     function y = diff(x,n,dim)
-      if (nargin>1 && n~=1) error('higher order diff not implemented yet - but should be trivial with a recursion'); end  
+      if (nargin>1 && n~=1) error('higher order diff not implemented yet - but should be trivial with a recursion'); end
 
       if (nargin<3) % then operate along first non-singleton dimension
         dim=find(x.dim>1,1);
       end
       if isempty(dim)
-        y=[]; 
+        y=[];
         return;
       end
-      
+
       m=x.dim(dim);
       s1=substruct('()',[repmat({':'},1,dim-1),[2:m],repmat({':'},1,length(x.dim)-dim)]);
       s2=substruct('()',[repmat({':'},1,dim-1),[1:m-1],repmat({':'},1,length(x.dim)-dim)]);
-      
+
       y = subsref(x,s1)-subsref(x,s2);
     end
-    
+
     function v = ppval(pp,xx)
       % equivalent to ppval.m, but made taylorvar compatible
-      
+
       %  obtain the row vector xs equivalent to XX
       sizexx = size(xx); lx = numel(xx); xs = reshape(xx,1,lx);
       %  if XX is row vector, suppress its first dimension
       if length(sizexx)==2&&sizexx(1)==1, sizexx(1) = []; end
-      
+
       % take apart PP
       [b,c,l,k,dd] = unmkpp(pp);
-      
+
       % for each evaluation site, compute its breakpoint interval
       % (mindful of the possibility that xx might be empty)
       index = sum(repmat(xs.f,1,length(b))>=repmat(b,lx,1),2);
-      
+
       % now go to local coordinates ...
       xs = xs-b(index);
-      
+
       d = prod(dd);
       if d>1 % ... replicate xs and index in case PP is vector-valued ...
         xs = reshape(repmat(xs,d,1),1,d*lx);
@@ -861,10 +879,10 @@ classdef TaylorVar
         v = xs'.*v + c(index,i);
       end
       v = reshape(v,[dd,sizexx]);
-      
+
     end
-    
-    
+
+
 %    function obj=blkdiagcpy(obj,c)
 %      if (length(obj.dim)~=2) error('only for 2D matrices'); end
 %      m=obj.dim(1);n=obj.dim(2);
@@ -879,9 +897,9 @@ classdef TaylorVar
 %      error('need to finish df terms');
 %    end
   end
-  
+
   methods (Access=private)
-    
+
     function tv=tvdiff(obj)  % removes one order  (tv.f=obj.df{1}, etc)
       f=reshape(full(obj.df{1}),[obj.dim,obj.nX]);
       m=prod(obj.dim); n=obj.nX;
@@ -896,8 +914,8 @@ classdef TaylorVar
     end
     function tv=tvint(obj,f) % tv.f=f tv.df{1}=obj.f tv.df{2}=obj.df{1}, etc
       dim=size(f);
-      if (obj.dim(end)~=obj.nX) 
-        error('dimension mismatch'); 
+      if (obj.dim(end)~=obj.nX)
+        error('dimension mismatch');
       end
       df{1}=reshape(sparse(obj.f),[prod(dim),obj.nX]);
       m=prod(obj.dim(1:end-1)); n=obj.nX;
@@ -917,7 +935,7 @@ classdef TaylorVar
     function a=elementwise(a,fun,dfun)  % fun and dfun must be vectorized
       f=fun(a.f);
       if (length(a.df)>0)
-        df=tvdiff(a); 
+        df=tvdiff(a);
         dfsub=repmat(dfun(reduceOrder(a)),[0*a.dim+1,a.nX]).*df;
 
         % dim=size(df);
@@ -927,7 +945,7 @@ classdef TaylorVar
           a=tvint(dfsub,reshape(f,a.dim));
         else
           a.f = f;
-          a.df = {reshape(dfsub,[],a.nX)}; 
+          a.df = {reshape(dfsub,[],a.nX)};
         end
       else
         a=reshape(f,a.dim);
@@ -939,26 +957,26 @@ classdef TaylorVar
       if (any(size(a)~=size(b))) error('not implemented yet'); end
       f=fun(a.f,b.f);
       if (length(a.df)>0)
-        da=tvdiff(a); 
+        da=tvdiff(a);
         db=tvdiff(b);
-        
+
         dfsub=repmat(dfunda(reduceOrder(a),reduceOrder(b)),[0*a.dim+1,a.nX]).*da + repmat(dfundb(reduceOrder(a),reduceOrder(b)),[0*b.dim+1,b.nX]).*db;
         if (isa(dfsub,'TaylorVar'))
           a=tvint(dfsub,reshape(f,a.dim));
         else
           a.f = f;
-          a.df = {reshape(dfsub,[],a.nX)}; 
+          a.df = {reshape(dfsub,[],a.nX)};
         end
       else
         a=reshape(f,a.dim);
       end
     end
   end
-  
+
   methods (Static)
     function tv=init(x,order)
       dim=size(x);
-      if (length(dim)>2 || dim(2)~=1), error('x must be a column vector'); end  
+      if (length(dim)>2 || dim(2)~=1), error('x must be a column vector'); end
       n = length(x);
       dx{1} = eye(n);
       for o=2:order
@@ -967,7 +985,5 @@ classdef TaylorVar
       tv=TaylorVar(x,dx);
     end
   end
-  
-end
 
-    
+end

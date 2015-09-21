@@ -41,13 +41,13 @@ r = r.setInitialState(xstar);
 x0 = xstar;
 nq = r.getNumPositions();
 
-box_size = [0.28, 39*0.0254, 0.22];
+box_size = [0.29, 39*0.0254, 0.22];
 
 box_tops = [0.2, 0, 0;
-            0.2+0.28, 0, 0.22;
-            0.2+2*0.28, 0, 0.22*2;
-            0.2+3*0.28, 0, 0.22*3;
-            0.2+4*0.28, 0, 0.22*4]';
+            0.2+0.29, 0, 0.22;
+            0.2+2*0.29, 0, 0.22*2;
+            0.2+3*0.29, 0, 0.22*3;
+            0.2+4*0.29, 0, 0.22*4]';
 
 safe_regions = iris.TerrainRegion.empty();
 
@@ -90,7 +90,7 @@ walking_plan = r.planWalkingZMP(x0(1:nq), footstep_plan);
 
 v.playback(ytraj, struct('slider', true));
 
-if ~rangecheck(rms_com, 0, 0.005);
+if ~rangecheck(rms_com, 0, 0.006);
   error('Drake:runAtlasWalkingStairs:BadCoMTracking', 'Center-of-mass during execution differs substantially from the plan.');
 end
 

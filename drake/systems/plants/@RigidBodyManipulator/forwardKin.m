@@ -17,9 +17,9 @@ function [x,J,dJ] = forwardKin(obj, kinsol, body_or_frame_id, points, options)
 %                -- 0, no rotation included
 %                -- 1, output Euler angle
 %                -- 2, output quaternion
-% @param options.base_or_frame_id an integer ID for a RigidBody or RigidBodyFrame
+% @option base_or_frame_id an integer ID for a RigidBody or RigidBodyFrame
 % (obtained via e.g., findLinkInd or findFrameInd) @default 1 (world).
-% @param in_terms_of_qdot boolean specifying whether to return the mapping
+% @option in_terms_of_qdot boolean specifying whether to return the mapping
 % from qdot to xdot (i.e. the gradient dx/dq) or v to xdot.
 %
 % @retval x a matrix with m columns, such that column i is
@@ -66,12 +66,12 @@ if (kinsol.mex)
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
   end
   if nargout > 2
-    [x, J, dJ] = forwardKinmex(obj.mex_model_ptr, body_or_frame_id, points, rotation_type, base_or_frame_id, in_terms_of_qdot);
+    [x, J, dJ] = forwardKinmex(obj.mex_model_ptr, kinsol.mex_ptr, body_or_frame_id, points, rotation_type, base_or_frame_id, in_terms_of_qdot);
     dJ = reshape(dJ, size(J, 1), []); % convert to strange second derivative output format
   elseif nargout > 1
-    [x, J] = forwardKinmex(obj.mex_model_ptr, body_or_frame_id, points, rotation_type, base_or_frame_id, in_terms_of_qdot);
+    [x, J] = forwardKinmex(obj.mex_model_ptr, kinsol.mex_ptr, body_or_frame_id, points, rotation_type, base_or_frame_id, in_terms_of_qdot);
   else
-    x = forwardKinmex(obj.mex_model_ptr, body_or_frame_id, points, rotation_type, base_or_frame_id, in_terms_of_qdot);
+    x = forwardKinmex(obj.mex_model_ptr, kinsol.mex_ptr, body_or_frame_id, points, rotation_type, base_or_frame_id, in_terms_of_qdot);
   end
 else
   nq = obj.getNumPositions();

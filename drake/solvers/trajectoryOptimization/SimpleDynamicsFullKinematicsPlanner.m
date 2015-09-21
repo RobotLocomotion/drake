@@ -11,6 +11,9 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
     % N-element vector of indices into the shared_data, where
     % shared_data{kinsol_dataind(i)} is the kinsol for knot point i
     kinsol_dataind
+    
+    % kinematics cache pointers, one for each knot point
+    kinematics_cache_ptrs
 
     contact_wrench % A cell of RigidBodyContactWrench objects
     contact_wrench_active_knot  % A cell with same length as contact_wrench. contact_wrench_active_knot{i} contains all the indices of the knots that the constraint is active
@@ -83,8 +86,10 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
         reshape(bsxfun(@times,joint_ub,ones(1,obj.N)),[],1)),obj.q_inds(:));
       obj = obj.addBoundingBoxConstraint(BoundingBoxConstraint(zeros(obj.N-1,1),inf(obj.N-1,1)),obj.h_inds);
       kinsol_dataind = zeros(obj.N,1);
+      obj.kinematics_cache_ptrs = cell(obj.N, 1);
       for i=1:obj.N,
-        [obj,kinsol_dataind(i)] = obj.addSharedDataFunction(@obj.kinematicsData,{obj.q_inds(:,i)});
+        obj.kinematics_cache_ptrs{i} = createKinematicsCachemex(robot.mex_model_ptr, true);
+        [obj,kinsol_dataind(i)] = obj.addSharedDataFunction(@(q) obj.kinematicsData(q, obj.kinematics_cache_ptrs{i}),{obj.q_inds(:,i)});
       end
       obj.kinsol_dataind = kinsol_dataind;
 
@@ -112,9 +117,10 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
       obj = obj.setSolverOptions('snopt','majoriterationslimit',200);
     end
 
-    function data = kinematicsData(obj,q)
+    function data = kinematicsData(obj,q,kinematics_cache_ptr)
       options.compute_gradients = true;
-      options.use_mex = false;
+      options.use_mex = true;
+      options.kinematics_cache_ptr_to_use = kinematics_cache_ptr;
       data = doKinematics(obj.robot,q,[],options);
     end
 

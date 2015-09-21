@@ -12,8 +12,8 @@ using namespace std;
 
 void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
 
-  string usage = "Usage [C, dC] = inverseDynamicsmex(model_ptr, f_ext, vd, df_ext, dvd)";
-  if (nrhs < 1 || nrhs > 5) {
+  string usage = "Usage [C, dC] = inverseDynamicsmex(model_ptr, cache_ptr, f_ext, vd, df_ext, dvd)";
+  if (nrhs < 2 || nrhs > 6) {
     mexErrMsgIdAndTxt("Drake:geometricJacobianmex:WrongNumberOfInputs", usage.c_str());
   }
 
@@ -24,21 +24,24 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
   int gradient_order = nlhs - 1;
 
 
-  RigidBodyManipulator *model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+  int arg_num = 0;
+  RigidBodyManipulator *model = static_cast<RigidBodyManipulator*>(getDrakeMexPointer(prhs[arg_num++]));
+  KinematicsCache<double>* cache = static_cast<KinematicsCache<double>*>(getDrakeMexPointer(prhs[arg_num++]));
+
   int nq = model->num_positions;
   int nv = model->num_velocities;
   const mxArray* f_ext_matlab = nullptr;
   const mxArray* vd_matlab = nullptr;
   const mxArray* df_ext_matlab = nullptr;
   const mxArray* dvd_matlab = nullptr;
-  if (nrhs > 1)
-    f_ext_matlab = prhs[1];
   if (nrhs > 2)
-    vd_matlab = prhs[2];
+    f_ext_matlab = prhs[arg_num++];
   if (nrhs > 3)
-    df_ext_matlab = prhs[3];
+    vd_matlab = prhs[arg_num++];
   if (nrhs > 4)
-    dvd_matlab = prhs[4];
+    df_ext_matlab = prhs[arg_num++];
+  if (nrhs > 5)
+    dvd_matlab = prhs[arg_num++];
 
   map<int, unique_ptr<GradientVar<double, TWIST_SIZE, 1> > > f_ext;
   if (f_ext_matlab != nullptr) {
@@ -48,10 +51,10 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
         mwSize cols = mxGetN(f_ext_matlab);
         if (rows != 1)
           throw runtime_error("f_ext cell array has number of rows not equal to 1");
-        if (cols != model->num_bodies)
+        if (cols != model->bodies.size())
           throw runtime_error("f_ext cell array has number of columns not equal to number of rigid bodies in manipulator");
 
-        for (int i = 0; i < model->num_bodies; i++) {
+        for (int i = 0; i < model->bodies.size(); i++) {
           mxArray* f_ext_cell = mxGetCell(f_ext_matlab, i);
           if (!mxIsEmpty(f_ext_cell)) {
             f_ext[i] = unique_ptr< GradientVar<double, TWIST_SIZE, 1> >(new GradientVar<double, TWIST_SIZE, 1>(TWIST_SIZE, 1, nq + nv, gradient_order));
@@ -70,11 +73,11 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
 
         if (rows != TWIST_SIZE)
           throw runtime_error("f_ext matrix has number of rows not equal to 6");
-        if (cols != model->num_bodies)
+        if (cols != model->bodies.size())
           throw runtime_error("f_ext matrix has number of columns not equal to number of rigid bodies in manipulator");
 
 
-        GradientVar<double, TWIST_SIZE, Dynamic> f_ext_matrix(TWIST_SIZE, model->num_bodies, nq + nv, gradient_order);
+        GradientVar<double, TWIST_SIZE, Dynamic> f_ext_matrix(TWIST_SIZE, model->bodies.size(), nq + nv, gradient_order);
         f_ext_matrix.value() = matlabToEigen<TWIST_SIZE, Dynamic>(f_ext_matlab);
         if (gradient_order > 0) {
           if (df_ext_matlab == nullptr) {
@@ -83,7 +86,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
           f_ext_matrix.gradient().value() = matlabToEigen<Dynamic, Dynamic>(df_ext_matlab);
         }
 
-        for (int i = 0; i < model->num_bodies; i++) {
+        for (int i = 0; i < model->bodies.size(); i++) {
           f_ext[i] = unique_ptr< GradientVar<double, TWIST_SIZE, 1> >(new GradientVar<double, TWIST_SIZE, 1>(TWIST_SIZE, 1, nq + nv, gradient_order));
           f_ext[i]->value() = f_ext_matrix.value().col(i);
           if (f_ext_matrix.hasGradient()) {
@@ -111,7 +114,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
     }
   }
 
-  auto ret = model->inverseDynamics(f_ext, vd_ptr.get(), gradient_order);
+  auto ret = model->inverseDynamics(*cache, f_ext, vd_ptr.get(), gradient_order);
 
   plhs[0] = eigenToMatlab(ret.value());
   if (gradient_order > 0)

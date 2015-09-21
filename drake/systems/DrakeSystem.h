@@ -53,14 +53,14 @@ public:
   const CoordinateFrame& getStateFrame() { return *state_frame.get(); }
   const CoordinateFrame& getOutputFrame() { return *output_frame.get(); }
 
-#define DRAKESYSTEM_DYNAMICS_METHOD(ScalarType,VectorType) \
-  virtual VectorType dynamics(ScalarType t, const VectorType& x, const VectorType& u) const { \
+#define DRAKESYSTEM_DYNAMICS_METHOD(VectorType) \
+  virtual VectorType dynamics(VectorType::Scalar t, const VectorType& x, const VectorType& u) const { \
     throw std::runtime_error("Drake:DrakeSystem:dynamics: your system needs to overload the dynamics method with ScalarType t and VectorType x and u"); \
   }
 // end of #define
 
-  DRAKESYSTEM_DYNAMICS_METHOD(double, Eigen::VectorXd)
-  DRAKESYSTEM_DYNAMICS_METHOD(Drake::TaylorVarX, Drake::TaylorVecX)
+  DRAKESYSTEM_DYNAMICS_METHOD(Eigen::VectorXd)
+  DRAKESYSTEM_DYNAMICS_METHOD(Drake::TaylorVecX)
 #undef DRAKESYTEM_DYNAMICS_METHOD
 
   virtual Eigen::VectorXd update(double t, const Eigen::VectorXd& x, const Eigen::VectorXd& u) const {
@@ -84,7 +84,7 @@ public:
     simulate(t0,tf,x0,default_simulation_options);
   }
 
-  DrakeSystemPtr tilqr(const Eigen::VectorXd& x0, const Eigen::VectorXd& u0, const Eigen::MatrixXd& Q, const Eigen::MatrixXd& R);
+  DrakeSystemPtr timeInvariantLQR(const Eigen::VectorXd& x0, const Eigen::VectorXd& u0, const Eigen::MatrixXd& Q, const Eigen::MatrixXd& R);
 
   std::string name;
 

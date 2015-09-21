@@ -9,9 +9,9 @@ include_directories(${PROJECT_SOURCE_DIR}/solvers)
 add_library(drakeRBM SHARED RigidBodyManipulator.cpp RigidBody.cpp RigidBodyManipulatorURDF.cpp RigidBodyManipulatorContact.cpp tinyxml/tinyxml.cpp tinyxml/tinyxmlparser.cpp tinyxml/tinyxmlerror.cpp)
 target_link_libraries(drakeRBM drakeCollision drakeJoints spruce drakeUtil)
 pods_install_libraries(drakeRBM)
-pods_install_headers(RigidBodyManipulator.h RigidBody.h RigidBodyFrame.h KinematicPath.h ForceTorqueMeasurement.h DESTINATION drake)
+pods_install_headers(RigidBodyManipulator.h RigidBody.h RigidBodyFrame.h KinematicPath.h KinematicsCache.h ForceTorqueMeasurement.h DESTINATION drake)
 pods_install_pkg_config_file(drake-rbm
-  LIBS -ldrakeRBM
+  LIBS -ldrakeRBM -ldrakeCollision -ldrakeJoints -lspruce -ldrakeUtil
   REQUIRES
   VERSION 0.0.1)
 
@@ -59,6 +59,7 @@ if (MATLAB_FOUND)
   add_rbm_mex(positionConstraintsmex)
   add_rbm_mex(testFrameParsermex)
   add_rbm_mex(computeS1Trajmex)
+  add_rbm_mex(createKinematicsCachemex)
   target_link_libraries(computeS1Trajmex drakeZMPUtil)
 
   if(gurobi_FOUND)

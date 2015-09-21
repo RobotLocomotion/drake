@@ -8,31 +8,14 @@
 #include <memory>
 #include "DrakeJoint.h"
 
-class DLLEXPORT_RBM IndexRange {
- public:
-  int start;
-  int length;
-
-  bool operator<(const IndexRange& other) const {
-    return start<other.start;
-  }
-};
-
-class RigidBodyManipulator;
-
-using namespace Eigen;
-
 class DLLEXPORT_RBM RigidBody {
 private:
   std::unique_ptr<DrakeJoint> joint;
-  typedef Matrix<double, 6,1> Vector6d;
   DrakeCollision::bitmask collision_filter_group;
   DrakeCollision::bitmask collision_filter_ignores;
 
 public:
   RigidBody();
-
-  void setN(int nq, int nv);
 
   void setJoint(std::unique_ptr<DrakeJoint> joint);
   const DrakeJoint& getJoint() const;
@@ -87,47 +70,22 @@ public:
   std::vector< DrakeCollision::ElementId > collision_element_ids;
   std::map< std::string, std::vector<DrakeCollision::ElementId> > collision_element_groups;
 
-  Matrix3Xd contact_pts;
+  Eigen::Matrix3Xd contact_pts;
 
   double mass;
-  Vector3d com; 
-  Matrix<double, TWIST_SIZE, TWIST_SIZE> I;
-
-  DrakeJoint::MotionSubspaceType S;
-  MatrixXd dSdqi;
-  DrakeJoint::MotionSubspaceType J;
-  MatrixXd dJdq;
-
-  MatrixXd qdot_to_v;
-  MatrixXd dqdot_to_v_dqi;
-  MatrixXd dqdot_to_v_dq;
-  MatrixXd v_to_qdot;
-  MatrixXd dv_to_qdot_dqi;
-  MatrixXd dv_to_qdot_dq;
-
-  Vector6d twist;
-  Gradient<Vector6d, Eigen::Dynamic>::type dtwistdq;
-
-  Vector6d SdotV;
-  Gradient<Vector6d, Eigen::Dynamic>::type dSdotVdqi;
-  Gradient<Vector6d, Eigen::Dynamic>::type dSdotVdvi;
-
-  Vector6d JdotV;
-  Gradient<Vector6d, Eigen::Dynamic>::type dJdotVdq;
-  Gradient<Vector6d, Eigen::Dynamic>::type dJdotVdv;
-
-  Isometry3d T_new;
-  Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type dTdq_new;
+  Eigen::Vector3d com;
+  Eigen::Matrix<double, TWIST_SIZE, TWIST_SIZE> I;
 
   friend std::ostream& operator<<( std::ostream &out, const RigidBody &b);
 
+  // FIXME: move to a better place:
   class DLLEXPORT_RBM CollisionElement : public DrakeCollision::Element
   {
     public:
       CollisionElement(const CollisionElement& other);
-      CollisionElement(const Matrix4d& T_element_to_link, std::shared_ptr<RigidBody> body);
+      CollisionElement(const Eigen::Matrix4d& T_element_to_link, std::shared_ptr<RigidBody> body);
       CollisionElement(const DrakeShapes::Geometry& geometry,
-                       const Matrix4d& T_element_to_link, std::shared_ptr<RigidBody> body);
+                       const Eigen::Matrix4d& T_element_to_link, std::shared_ptr<RigidBody> body);
       virtual ~CollisionElement(){};
 
       virtual CollisionElement* clone() const;

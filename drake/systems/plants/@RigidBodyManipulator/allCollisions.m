@@ -35,5 +35,5 @@ function [ptsA,ptsB,idxA,idxB] = allCollisions(obj,kinsol)
       'You must call doKinematics with mex enabled');
   end
 
-  [ptsA,ptsB,idxA,idxB] = allCollisionsmex(obj.mex_model_ptr);
+  [ptsA,ptsB,idxA,idxB] = allCollisionsmex(obj.mex_model_ptr, kinsol.mex_ptr);
 end

@@ -57,7 +57,6 @@ addpath(fullfile(root,'solvers','BMI'));
 addpath(fullfile(root,'solvers','BMI','util'));
 addpath(fullfile(root,'solvers','BMI','kinematics'));
 
-javaaddpath(fullfile(pods_get_base_path,'share','java','drake.jar'));
 
 % OSX platform-specific
 if (strcmp(computer('arch'),'maci64'))
@@ -84,6 +83,20 @@ if ispc
 end
 
 
+% Previously, we added .jar files to the classpath only when they were used.
+% This introduced a number of issues because manipulating the java classpath
+% clears all existing java variables. This would create problems when a user,
+% for example, tried to load the LCMGL jar after creating an lcm object. Now,
+% we instead just add all available .jars to the classpath at startup. See
+% also https://github.com/mitdrc/drc/issues/2100
+jarfiledir = fullfile(pods_get_base_path(), 'share', 'java');
+if exist(jarfiledir, 'dir') 
+ javaaddpathIfNew(jarfiledir);
+ for jarfile = dir(fullfile(jarfiledir, '*.jar'))'; 
+   javaaddpathIfNew(fullfile(jarfiledir, jarfile.name)); 
+ end
+end
+
 clear util/checkDependency;  % makes sure that the persistent variable in the dependency checker gets cleared
 clear util/getDrakePath;
 
@@ -92,6 +105,12 @@ clear util/getDrakePath;
 % Any other use will be considered a violation of the license.  You can obtain a free license
 % from here: http://pages.cs.wisc.edu/~ferris/path.html
 setenv('PATH_LICENSE_STRING', '2096056969&Russ_Tedrake&Massachusetts_Institute_of_Technology&&USR&75042&18_4_2014&1000&PATH&GEN&0_0_0&0_0_0&5000&0_0');
+end
 
 
+function javaaddpathIfNew(p)
+ % Add a .jar to the dynamic java classpath only if it hasn't already been added
+ if ~any(cellfun(@(x) strcmp(x, p), javaclasspath('-dynamic')))
+   javaaddpathProtectGlobals(p);
+ end
 end

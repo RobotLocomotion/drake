@@ -38,9 +38,9 @@ if (kinsol.mex)
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
   end
   if nargout > 2
-    [J, v_or_qdot_indices, dJ] = geometricJacobianmex(obj.mex_model_ptr, base, end_effector, expressed_in, in_terms_of_qdot);
+    [J, v_or_qdot_indices, dJ] = geometricJacobianmex(obj.mex_model_ptr, kinsol.mex_ptr, base, end_effector, expressed_in, in_terms_of_qdot);
   else
-    [J, v_or_qdot_indices] = geometricJacobianmex(obj.mex_model_ptr, base, end_effector, expressed_in, in_terms_of_qdot);
+    [J, v_or_qdot_indices] = geometricJacobianmex(obj.mex_model_ptr, kinsol.mex_ptr, base, end_effector, expressed_in, in_terms_of_qdot);
   end
 else
   if nargout > 2

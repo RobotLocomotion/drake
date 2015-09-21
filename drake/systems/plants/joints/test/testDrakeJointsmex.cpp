@@ -78,7 +78,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     Isometry3d joint_transform = joint->jointTransform(q);
     safelySetField(joint_struct_out, "joint_transform", eigenToMatlab(joint_transform.matrix()));
 
-    DrakeJoint::MotionSubspaceType motion_subspace;
+    Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic, 0, TWIST_SIZE, DrakeJoint::MAX_NUM_VELOCITIES> motion_subspace(6, joint->getNumVelocities());
     MatrixXd dmotion_subspace;
     joint->motionSubspace(q, motion_subspace, &dmotion_subspace);
     safelySetField(joint_struct_out, "motion_subspace", eigenToMatlab(motion_subspace));
@@ -96,13 +96,14 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     safelySetField(joint_struct_out, "dmotion_subspace_dot_times_vdq", eigenToMatlab(dmotion_subspace_dot_times_vdq));
     safelySetField(joint_struct_out, "dmotion_subspace_dot_times_vdv", eigenToMatlab(dmotion_subspace_dot_times_vdv));
 
-    MatrixXd qdot_to_v;
+
+    Matrix<double, Dynamic, Dynamic, 0, DrakeJoint::MAX_NUM_VELOCITIES, DrakeJoint::MAX_NUM_POSITIONS> qdot_to_v;
     MatrixXd dqdot_to_v;
     joint->qdot2v(q, qdot_to_v, &dqdot_to_v);
     safelySetField(joint_struct_out, "qdot_to_v", eigenToMatlab(qdot_to_v));
     safelySetField(joint_struct_out, "dqdot_to_v", eigenToMatlab(dqdot_to_v));
 
-    MatrixXd v_to_qdot;
+    Matrix<double, Dynamic, Dynamic, 0, DrakeJoint::MAX_NUM_POSITIONS, DrakeJoint::MAX_NUM_VELOCITIES> v_to_qdot;
     MatrixXd dv_to_qdot;
     joint->v2qdot(q, v_to_qdot, &dv_to_qdot);
     safelySetField(joint_struct_out, "v_to_qdot", eigenToMatlab(v_to_qdot));

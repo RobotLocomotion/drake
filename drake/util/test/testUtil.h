@@ -1,19 +1,14 @@
 #ifndef TESTUTIL_H_
 #define TESTUTIL_H_
 
-#if !defined(WIN32) && !defined(WIN64)
 #include <chrono>
-#endif
-
 #include <Eigen/Core>
 #include <sstream>
 #include <string>
 #include <stdexcept>
 #include <cmath>
-#include "../drakeFloatingPointUtil.h"
 
 // requires <chrono>, which isn't available in MSVC2010...
-#if !defined(WIN32) && !defined(WIN64)
 template<typename TimeT = std::chrono::milliseconds>
 struct measure
 {
@@ -26,12 +21,11 @@ struct measure
     func(std::forward<Args>(args)...);
 
     auto duration = std::chrono::duration_cast< TimeT>
-    (std::chrono::system_clock::now() - start);
+        (std::chrono::system_clock::now() - start);
 
     return duration.count();
   }
 };
-#endif
 
 template<typename Derived>
 std::string to_string(const Eigen::MatrixBase<Derived> & a)
@@ -98,7 +92,7 @@ void valuecheckMatrix(const Eigen::MatrixBase<DerivedA>& a, const Eigen::MatrixB
         for (int j = 0; j < a.cols(); j++) {
           bool both_positive_infinity = a(i, j) == std::numeric_limits<double>::infinity() && b(i, j) == std::numeric_limits<double>::infinity();
           bool both_negative_infinity = a(i, j) == -std::numeric_limits<double>::infinity() && b(i, j) == -std::numeric_limits<double>::infinity();
-          bool both_nan = isNaN(a(i, j)) && isNaN(b(i, j));
+          bool both_nan = std::isnan(a(i, j)) && std::isnan(b(i, j));
           ok = ok && (both_positive_infinity || both_negative_infinity || (both_nan) || (std::abs(a(i, j) - b(i, j)) < tol));
         }
       if (ok)

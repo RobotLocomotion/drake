@@ -52,7 +52,7 @@ public:
   bool stop;
   lcm::LCM& lcm;
 
-  LCMLoop(const shared_ptr<lcm::LCM>& _lcm) : lcm(*_lcm), stop(false) {}
+  LCMLoop(lcm::LCM& _lcm) : lcm(_lcm), stop(false) {}
 
   void loopWithSelect() {
 //    cout << "starting lcm handler thread " << this_thread::get_id() << endl;
@@ -77,8 +77,8 @@ public:
 };
 
 
-void runLCM(const DrakeSystemPtr& sys, const shared_ptr<lcm::LCM>& lcm, double t0, double tf, const Eigen::VectorXd& x0, const SimulationOptions* options) {
-  if(!lcm->good())
+void runLCM(const DrakeSystemPtr& sys, lcm::LCM& lcm, double t0, double tf, const Eigen::VectorXd& x0, const SimulationOptions* options) {
+  if(!lcm.good())
     throw runtime_error("bad LCM reference");
 
   DrakeSystemPtr lcm_sys = sys->output_frame->setupLCMOutputs(sys);
@@ -101,7 +101,7 @@ void runLCM(const DrakeSystemPtr& sys, const shared_ptr<lcm::LCM>& lcm, double t
     VectorXd u = VectorXd::Zero(lcm_sys->input_frame->getDim());
 
     while(1) {
-      if (lcm->handle() != 0) { throw runtime_error("something went wrong in lcm.handle"); }
+      if (lcm.handle() != 0) { throw runtime_error("something went wrong in lcm.handle"); }
       lcm_sys->output(t,x,u);
     }
   } else {

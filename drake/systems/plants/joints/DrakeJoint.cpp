@@ -1,5 +1,4 @@
 #include "DrakeJoint.h"
-#include "RigidBodyManipulator.h"
 
 using namespace Eigen;
 
@@ -12,7 +11,8 @@ DrakeJoint::DrakeJoint(
         joint_limit_min(VectorXd::Constant(num_positions, -std::numeric_limits<double>::infinity())),
         joint_limit_max(VectorXd::Constant(num_positions, std::numeric_limits<double>::infinity()))
 {
-  // empty;
+  assert(num_positions <= MAX_NUM_POSITIONS);
+  assert(num_velocities <= MAX_NUM_VELOCITIES);
 }
 
 DrakeJoint::~DrakeJoint()
@@ -38,16 +38,6 @@ const int DrakeJoint::getNumVelocities() const
 const std::string& DrakeJoint::getName() const
 {
   return name;
-}
-
-GradientVar<double, Eigen::Dynamic, 1> DrakeJoint::frictionTorque(const Eigen::Ref<const VectorXd>& v, int gradient_order) const
-{
-  GradientVar<double, Eigen::Dynamic, 1> ret(getNumVelocities(), 1, getNumVelocities(), gradient_order);
-  ret.value().setZero();
-  if (gradient_order > 0) {
-    ret.gradient().value().setZero();
-  }
-  return ret;
 }
 
 const Eigen::VectorXd& DrakeJoint::getJointLimitMin() const

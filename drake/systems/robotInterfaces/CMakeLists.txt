@@ -15,7 +15,7 @@ pods_install_pkg_config_file(drake-side
 	REQUIRES
 	VERSION 0.0.1)
 
-if (LCM_FOUND AND NOT WIN32)
+if (LCM_FOUND)
   add_library(drakeQPLocomotionPlan SHARED QPLocomotionPlan.cpp BodyMotionData.cpp) # TODO: move BodyMotionData to a better place
   target_link_libraries(drakeQPLocomotionPlan drakeSplineGeneration drakeRBM drakeLCMUtil drakeSide drakeConvexHull drakeAtlasUtil drakeZMPUtil)
   pods_use_pkg_config_packages(drakeQPLocomotionPlan lcm)

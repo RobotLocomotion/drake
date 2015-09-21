@@ -174,19 +174,20 @@ struct AtlasParams {
   Matrix4d center_of_mass_observer_gain;
 };
 
-struct NewQPControllerData {
+class NewQPControllerData {
+public:
   GRBenv *env;
   RigidBodyManipulator* r;
   std::map<std::string,AtlasParams> param_sets;
   RobotPropertyCache rpc;
   void* map_ptr;
-  double default_terrain_height;
   VectorXd umin,umax;
   int use_fast_qp;
   JointNames input_joint_names;
   std::vector<std::string> state_coordinate_names;
 
   // preallocate memory
+  KinematicsCache<double> cache;
   MatrixXd H, H_float, H_act;
   VectorXd C, C_float, C_act;
   MatrixXd B, B_act;
@@ -209,6 +210,11 @@ struct NewQPControllerData {
   // and which must persist to the next iteration
   QPControllerState state;
 
+  NewQPControllerData(RigidBodyManipulator* r) :
+      r(r), cache(r->bodies, 0)
+  {
+    // empty
+  }
 };
 
 struct DesiredBodyAcceleration {

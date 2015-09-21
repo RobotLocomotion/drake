@@ -2,11 +2,6 @@ include_directories(${PROJECT_SOURCE_DIR}/systems/robotInterfaces)
 include_directories(${PROJECT_SOURCE_DIR}/util/test)
 
 add_library(drakeControlUtil SHARED controlUtil.cpp)
-pods_find_pkg_config(terrain-map)
-if (terrain-map_FOUND)
-  pods_use_pkg_config_packages(drakeControlUtil terrain-map)
-  set_target_properties(drakeControlUtil PROPERTIES COMPILE_FLAGS "-DUSE_MAPS")
-endif()
 target_link_libraries(drakeControlUtil drakeRBM drakeUtil drakeTrajectories)
 pods_install_libraries(drakeControlUtil)
 pods_install_headers(controlUtil.h DESTINATION drake)
@@ -16,7 +11,10 @@ pods_install_pkg_config_file(drake-control-util
   VERSION 0.0.1)
 
 pods_find_pkg_config(gurobi)
-if (gurobi_FOUND)
+if (gurobi_FOUND AND LCM_FOUND)
+  include_directories (${PROJECT_SOURCE_DIR}/systems/trajectories )
+  include_directories (${PROJECT_SOURCE_DIR}/systems/plants )
+  include_directories (${PROJECT_SOURCE_DIR}/solvers )
   add_library(drakeQPCommon SHARED QPCommon.cpp)
   target_link_libraries(drakeQPCommon drakeControlUtil drakeQP drakeTrajectories drakeLCMUtil drakeSide)
   pods_use_pkg_config_packages(drakeQPCommon lcm)
@@ -29,7 +27,7 @@ if (gurobi_FOUND)
     VERSION 0.0.1)
     
   pods_find_pkg_config(bot2-lcmgl-client)
-  if (LCM_FOUND AND bot2-lcmgl-client_FOUND)
+  if (bot2-lcmgl-client_FOUND)
     add_executable(zmpCoMObserverStateVisualizer zmpCoMObserverStateVisualizer.cpp)
     pods_use_pkg_config_packages(zmpCoMObserverStateVisualizer lcm bot2-lcmgl-client)
     target_link_libraries(zmpCoMObserverStateVisualizer drake_lcmtypes)
@@ -45,18 +43,12 @@ if (MATLAB_FOUND)
   include_directories (${PROJECT_SOURCE_DIR}/solvers/qpSpline )
   pods_find_pkg_config(gurobi)
 
-  pods_find_pkg_config(terrain-map)
-
   if (gurobi_FOUND AND LCM_FOUND)
     # NOTE: controlMexUtil.h currently includes QPCommon.h, which includes a gurobi header.
     # drakeControlMexUtil also has LCM as a dependency.
     # Lots of things depend on drakeControlMexUtil. We should consider reducing dependencies
 
     add_mex(drakeControlMexUtil SHARED controlMexUtil.cpp)
-    if (terrain-map_FOUND)
-      pods_use_pkg_config_packages(drakeControlMexUtil terrain-map)
-      set_target_properties(drakeControlMexUtil PROPERTIES COMPILE_FLAGS "-DUSE_MAPS")
-    endif()
     target_link_libraries(drakeControlMexUtil drakeRBM drakeMexUtil drakeTrajectories drakeControlUtil drakeLCMUtil)
     pods_install_libraries(drakeControlMexUtil)
     pods_install_headers(controlMexUtil.h DESTINATION drake)
@@ -68,9 +60,6 @@ if (MATLAB_FOUND)
     add_mex(QPControllermex QPControllermex.cpp)
     target_link_libraries(QPControllermex drakeQP drakeControlUtil drakeMexUtil drakeControlMexUtil)
     pods_use_pkg_config_packages(QPControllermex gurobi)
-
-    add_mex(getActiveSupportsmex getActiveSupportsmex.cpp)
-    target_link_libraries(getActiveSupportsmex drakeQP drakeMexUtil drakeControlMexUtil)
 
     add_mex(instantaneousQPControllermex instantaneousQPControllermex.cpp)
     target_link_libraries(instantaneousQPControllermex drakeQP drakeControlUtil drakeQPCommon drakeMexUtil drakeSide)
@@ -90,11 +79,6 @@ if (MATLAB_FOUND)
     endmacro()
     
     add_control_mex(bodyMotionControlmex)
-    add_control_mex(pelvisMotionControlmex)
-    
-    add_control_mex(individualCentersOfPressuremex) 
-    add_control_mex(bodySpatialMotionPDmex)
-    target_link_libraries(bodySpatialMotionPDmex drakeGeometryUtil)
   endif()
 
   add_mex(supportDetectmex supportDetectmex.cpp)
@@ -104,6 +88,7 @@ endif(MATLAB_FOUND)
 
 add_library(drakeZMPUtil zmpUtil.cpp)
 target_link_libraries(drakeZMPUtil drakeTrajectories)
+pods_install_libraries(drakeZMPUtil)
 pods_install_headers(zmpUtil.h DESTINATION drake)
 
 

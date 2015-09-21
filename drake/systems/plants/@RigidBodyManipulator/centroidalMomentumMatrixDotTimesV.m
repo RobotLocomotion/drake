@@ -6,22 +6,14 @@ end
 
 compute_gradients = nargout > 1;
 
-if ~isfield(kinsol, 'v')
-  obj.warning_manager.warnOnce('Drake:centroidalMomentumMatrixDotTimesV:OldKinsol','You called centroidalMomentumMatrixDotTimesV with a kinsol in the old format. Redoing kinematics in new format using q and qd from old kinsol');
-  kinsol_options.compute_gradients = compute_gradients;
-  kinsol_options.use_mex = kinsol.mex;
-  kinsol_options.force_new_kinsol = true;
-  kinsol = obj.doKinematics(kinsol.q, kinsol.qd, kinsol_options);
-end
-
 if (kinsol.mex)
   if (obj.mex_model_ptr==0)
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
   end
   if compute_gradients
-    [Adot_times_v, dAdot_times_v] = centroidalMomentumMatrixDotTimesVmex(obj.mex_model_ptr, robotnum);
+    [Adot_times_v, dAdot_times_v] = centroidalMomentumMatrixDotTimesVmex(obj.mex_model_ptr, kinsol.mex_ptr, robotnum);
   else
-    Adot_times_v = centroidalMomentumMatrixDotTimesVmex(obj.mex_model_ptr, robotnum);
+    Adot_times_v = centroidalMomentumMatrixDotTimesVmex(obj.mex_model_ptr, kinsol.mex_ptr, robotnum);
   end
 else
   

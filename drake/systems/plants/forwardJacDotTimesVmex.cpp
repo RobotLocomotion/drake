@@ -12,8 +12,8 @@ using namespace std;
 
 void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
 
-  std::string usage = "Usage [Jdot_times_v, dJdot_times_v] = forwardJacDotTimesVmex(model_ptr, body_or_frame_ind, points, rotation_type, base_or_frame_ind)";
-  if (nrhs != 5) {
+  std::string usage = "Usage [Jdot_times_v, dJdot_times_v] = forwardJacDotTimesVmex(model_ptr, cache_ptr, body_or_frame_ind, points, rotation_type, base_or_frame_ind)";
+  if (nrhs != 6) {
     mexErrMsgIdAndTxt("Drake:forwardJacDotTimesVmex:WrongNumberOfInputs", usage.c_str());
   }
 
@@ -21,14 +21,17 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
     mexErrMsgIdAndTxt("Drake:forwardJacDotTimesVmex:WrongNumberOfOutputs", usage.c_str());
   }
 
-  RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
-  int body_or_frame_ind = ((int) mxGetScalar(prhs[1])) - 1; // base 1 to base 0
-  auto points = matlabToEigen<SPACE_DIMENSION, Eigen::Dynamic>(prhs[2]);
-  int rotation_type = (int) mxGetScalar(prhs[3]);
-  int base_or_frame_ind = ((int) mxGetScalar(prhs[4])) - 1; // base 1 to base 0
+  int arg_num = 0;
+  RigidBodyManipulator *model = static_cast<RigidBodyManipulator*>(getDrakeMexPointer(prhs[arg_num++]));
+  KinematicsCache<double>* cache = static_cast<KinematicsCache<double>*>(getDrakeMexPointer(prhs[arg_num++]));
+
+  int body_or_frame_ind = ((int) mxGetScalar(prhs[arg_num++])) - 1; // base 1 to base 0
+  auto points = matlabToEigen<SPACE_DIMENSION, Eigen::Dynamic>(prhs[arg_num++]);
+  int rotation_type = (int) mxGetScalar(prhs[arg_num++]);
+  int base_or_frame_ind = ((int) mxGetScalar(prhs[arg_num++])) - 1; // base 1 to base 0
 
   int gradient_order = nlhs - 1;
-  auto Jdot_times_v = model->forwardJacDotTimesV(points, body_or_frame_ind, base_or_frame_ind, rotation_type, gradient_order);
+  auto Jdot_times_v = model->forwardJacDotTimesV(*cache, points, body_or_frame_ind, base_or_frame_ind, rotation_type, gradient_order);
   plhs[0] = eigenToMatlab(Jdot_times_v.value());
   if (gradient_order > 0) {
     plhs[1] = eigenToMatlab(Jdot_times_v.gradient().value());
