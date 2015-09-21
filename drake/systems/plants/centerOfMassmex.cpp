@@ -34,8 +34,8 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
   bool in_terms_of_qdot = (bool) (mxGetLogicals(prhs[arg_num++]))[0];
   int gradient_order = nlhs - 1;
 
-  auto com = model->centerOfMass<double>(*cache, 0, robotnum_set);
-  plhs[0] = eigenToMatlab(com.value());
+  auto com = model->centerOfMass<double>(*cache, robotnum_set);
+  plhs[0] = eigenToMatlab(com);
   if (gradient_order > 0) {
     auto J_com = model->centerOfMassJacobian<double>(*cache, gradient_order - 1, robotnum_set, in_terms_of_qdot);
     plhs[1] = eigenToMatlab(J_com.value());

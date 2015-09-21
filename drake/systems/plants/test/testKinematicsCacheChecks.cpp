@@ -54,9 +54,12 @@ void performChecks(RigidBodyManipulator& model, KinematicsCache<double>& cache, 
     spatial_acceleration.gradient().value().setRandom();
   std::unordered_map<RigidBody const *, GradientVar<double, TWIST_SIZE, 1> > f_ext;
 
+  if (gradient_order == 0) {
+    checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::centerOfMass<double>, cache, RigidBody::defaultRobotNumSet);
+  }
+
   checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::worldMomentumMatrix<double>, cache, gradient_order, RigidBody::defaultRobotNumSet, in_terms_of_qdot);
   checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::centroidalMomentumMatrix<double>, cache, gradient_order, RigidBody::defaultRobotNumSet, in_terms_of_qdot);
-  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::centerOfMass<double>, cache, gradient_order + 1, RigidBody::defaultRobotNumSet);
   checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::centerOfMassJacobian<double>, cache, gradient_order, RigidBody::defaultRobotNumSet, in_terms_of_qdot);
   checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::geometricJacobian<double>, cache, base_or_frame_ind, body_or_frame_ind, expressed_in_frame_ind, gradient_order, in_terms_of_qdot, &v_or_qdot_indices);
   checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::relativeTransform<double>, cache, base_or_frame_ind, body_or_frame_ind, gradient_order);

@@ -641,7 +641,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::centroidal
   auto ret = worldMomentumMatrix(cache, gradient_order, robotnum, in_terms_of_qdot);
 
   // transform from world frame to COM frame
-  Matrix<Scalar, SPACE_DIMENSION, 1> com = centerOfMass(cache, 0).value();
+  Matrix<Scalar, SPACE_DIMENSION, 1> com = centerOfMass(cache);
   auto angular_momentum_matrix = ret.value().template topRows<SPACE_DIMENSION>();
   auto linear_momentum_matrix = ret.value().template bottomRows<SPACE_DIMENSION>();
   if (gradient_order > 0) {
@@ -689,16 +689,17 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::centroidalMomentumMatri
   auto ret = worldMomentumMatrixDotTimesV(cache, gradient_order, robotnum);
 
   // transform from world frame to COM frame:
-  auto com = centerOfMass(cache, gradient_order);
+  auto com = centerOfMass(cache);
+  auto com_jacobian = centerOfMassJacobian(cache, 0, robotnum, true).value();
   auto angular_momentum_matrix_dot_times_v = ret.value().template topRows<SPACE_DIMENSION>();
   auto linear_momentum_matrix_dot_times_v = ret.value().template bottomRows<SPACE_DIMENSION>();
 
   if (gradient_order > 0) {
     auto dangular_momentum_matrix_dot_times_v = ret.gradient().value().template middleRows<SPACE_DIMENSION>(0);
     auto dlinear_momentum_matrix_dot_times_v = ret.gradient().value().template middleRows<SPACE_DIMENSION>(SPACE_DIMENSION);
-    dangular_momentum_matrix_dot_times_v += dcrossProduct(linear_momentum_matrix_dot_times_v, com.value(), dlinear_momentum_matrix_dot_times_v, com.gradient().value());
+    dangular_momentum_matrix_dot_times_v += dcrossProduct(linear_momentum_matrix_dot_times_v, com, dlinear_momentum_matrix_dot_times_v, com_jacobian);
   }
-  angular_momentum_matrix_dot_times_v += linear_momentum_matrix_dot_times_v.cross(com.value());
+  angular_momentum_matrix_dot_times_v += linear_momentum_matrix_dot_times_v.cross(com);
 
   //  Valid for more general frame transformations but slower:
   //  Eigen::Transform<Scalar, SPACE_DIMENSION, Eigen::Isometry> T(Translation<Scalar, SPACE_DIMENSION>(-com.value()));
@@ -732,38 +733,27 @@ double RigidBodyManipulator::getMass(const std::set<int>& robotnum) const
 }
 
 template <typename Scalar>
-GradientVar<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum) const
+Eigen::Matrix<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(KinematicsCache<Scalar> &cache, const std::set<int> &robotnum) const
 {
   cache.checkCachedKinematicsSettings(false, false, false, "centerOfMass"); // don't check for gradients, that will be done in centerOfMassJacobian below.
 
-  int nq = num_positions;
-  GradientVar<Scalar, SPACE_DIMENSION, 1> com(SPACE_DIMENSION, 1, nq, gradient_order);
+  Eigen::Matrix<Scalar, SPACE_DIMENSION, 1> com;
+  com.setZero();
   double m = 0.0;
-  double body_mass;
-  com.value().setZero();
 
   for (int i = 0; i < bodies.size(); i++) {
     RigidBody& body = *bodies[i];
     if (isBodyPartOfRobot(body, robotnum))
     {
-      body_mass = body.mass;
-      if (body_mass > 0) {
-        Vector3d body_com_body_frame = (body.com.topRows<SPACE_DIMENSION>());
-        auto body_com = forwardKin(cache, body_com_body_frame, i, 0, 0, gradient_order);
-        com.value() *= m;
-        com.value().noalias() += body_mass * body_com.value();
-        com.value() /= (m + body_mass);
+      if (body.mass > 0) {
+        auto body_com = forwardKin(cache, body.com, i, 0, 0, 0).value();
+        com.noalias() += body.mass * body_com;
       }
-      m += body_mass;
+      m += body.mass;
     }
   }
-
-  if (gradient_order > 0) {
-    auto J_com = centerOfMassJacobian(cache, gradient_order - 1, robotnum, true);
-    com.gradient().value() = J_com.value();
-    if (gradient_order > 1)
-      com.gradient().gradient().value() = J_com.gradient().value();
-  }
+  if (m > 0.0)
+    com /= m;
 
   return com;
 }
@@ -1916,7 +1906,7 @@ template DLLEXPORT_RBM void RigidBodyManipulator::getContactPositionsJac(const K
 
 template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::centroidalMomentumMatrix(KinematicsCache<double>&, int, const std::set<int>&, bool) const;
 template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, 1> RigidBodyManipulator::centroidalMomentumMatrixDotTimesV(KinematicsCache<double>&, int, const std::set<int>&) const;
-template DLLEXPORT_RBM GradientVar<double, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(KinematicsCache<double>&, int, const std::set<int>&) const;
+template DLLEXPORT_RBM Eigen::Matrix<double, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(KinematicsCache<double>&, const std::set<int>&) const;
 template DLLEXPORT_RBM GradientVar<double, SPACE_DIMENSION, Eigen::Dynamic> RigidBodyManipulator::centerOfMassJacobian(KinematicsCache<double>&, int, const std::set<int>&, bool) const;
 template DLLEXPORT_RBM GradientVar<double, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMassJacobianDotTimesV(KinematicsCache<double>&, int, const std::set<int>&) const;
 template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJacobian<double>(const KinematicsCache<double>&, int, int, int, int, bool, std::vector<int>*) const;

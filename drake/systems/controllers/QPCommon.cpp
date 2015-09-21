@@ -324,7 +324,7 @@ void checkCentroidalMomentumMatchesTotalWrench(RigidBodyManipulator* r, Kinemati
   double mass = r->getMass();
   Vector6d gravitational_wrench_in_com = r->a_grav * mass;
   Isometry3d com_to_world = Isometry3d::Identity();
-  com_to_world.translation() = r->centerOfMass(cache, 0).value();
+  com_to_world.translation() = r->centerOfMass(cache);
   Vector6d gravitational_wrench_in_world = transformSpatialForce(com_to_world, gravitational_wrench_in_com);
   total_wrench_in_world += gravitational_wrench_in_world;
 
@@ -509,9 +509,8 @@ int setupAndSolveQP(
   Vector3d xcom;
   // consider making all J's into row-major
 
-  GradientVar<double,3,1> xcom_grad = pdata->r->centerOfMass(cache, 1);
-  xcom = xcom_grad.value();
-  pdata->J = xcom_grad.gradient().value();
+  xcom = pdata->r->centerOfMass(cache);
+  pdata->J = pdata->r->centerOfMassJacobian(cache, 0).value();
   GradientVar<double,3,1> comdotv_grad = pdata->r->centerOfMassJacobianDotTimesV(cache, 0);
   pdata->Jdotv = comdotv_grad.value();
   pdata->J_xy = pdata->J.topRows(2);

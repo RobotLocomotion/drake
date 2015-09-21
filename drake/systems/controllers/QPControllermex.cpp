@@ -295,9 +295,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   // consider making all J's into row-major
 
-  auto com_gradientvar = pdata->r->centerOfMass(cache, 1);
-  Vector3d xcom = com_gradientvar.value();
-  pdata->J = com_gradientvar.gradient().value();
+  Vector3d xcom = pdata->r->centerOfMass(cache);
+  pdata->J = pdata->r->centerOfMassJacobian(cache, 0).value();
   pdata->Jdotv = pdata->r->centerOfMassJacobianDotTimesV(cache, 0).value();
   pdata->J_xy = pdata->J.topRows(2);
   pdata->Jdotv_xy = pdata->Jdotv.head<2>();
