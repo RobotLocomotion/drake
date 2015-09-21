@@ -98,9 +98,8 @@ void QuasiStaticConstraint::eval(const double* t, KinematicsCache<double>& cache
   {
     int nq = this->robot->num_positions;
     dc.resize(2,nq+this->num_pts);
-    auto com_gradientvar = robot->centerOfMass(cache, 1, m_robotnumset);
-    const auto& com = com_gradientvar.value();
-    const auto& dcom = com_gradientvar.gradient().value();
+    const auto& com = robot->centerOfMass(cache);
+    const auto& dcom = robot->centerOfMassJacobian(cache, 0, m_robotnumset, true).value();
     MatrixXd contact_pos(3,this->num_pts);
     MatrixXd dcontact_pos(3*this->num_pts,nq);
     int num_accum_pts = 0;
@@ -849,9 +848,8 @@ WorldCoMConstraint::WorldCoMConstraint(RigidBodyManipulator *robot, Vector3d lb,
 
 void WorldCoMConstraint::evalPositions(KinematicsCache<double>& cache, Matrix3Xd &pos, MatrixXd &J) const
 {
-  auto com_gradientvar = robot->centerOfMass(cache, 1, m_robotnum);
-  pos = com_gradientvar.value();
-  J = com_gradientvar.gradient().value();
+  pos = robot->centerOfMass(cache);
+  J = robot->centerOfMassJacobian(cache, 0, m_robotnum, true).value();
 }
 
 

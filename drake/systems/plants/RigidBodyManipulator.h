@@ -310,7 +310,7 @@ public:
   double getMass(const std::set<int>& robotnum = RigidBody::defaultRobotNumSet) const;
 
   template <typename Scalar>
-  GradientVar<Scalar, SPACE_DIMENSION, 1> centerOfMass(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet) const;
+  Eigen::Matrix<Scalar, SPACE_DIMENSION, 1> centerOfMass(KinematicsCache<Scalar> &cache, const std::set<int> &robotnum = RigidBody::defaultRobotNumSet) const;
 
   template <typename Scalar>
   GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> worldMomentumMatrix(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet, bool in_terms_of_qdot = false) const;
