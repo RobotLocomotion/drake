@@ -22,7 +22,7 @@
   $result = PyTuple_New(num_elements);
 
   for (int i=0; i < num_elements; i++) {
-    MatrixXd gval;
+    Eigen::MatrixXd gval;
     try {
       gval = nthGradientValue(*(&($1)), i);
     } catch (const std::exception& e) {
@@ -46,7 +46,7 @@
   $result = mxCreateCellMatrix(1, num_elements);
 
   for (int i=0; i < num_elements; i++) {
-    MatrixXd gval = nthGradientValue(*(&($1)), i);
+    Eigen::MatrixXd gval = nthGradientValue(*(&($1)), i);
     mxArray* pobj;
     if (!ConvertFromEigenToMatlabMatrix< Eigen::MatrixXd >(&pobj, &gval))
       SWIG_fail;
@@ -56,8 +56,7 @@
 %enddef
 #endif
 
-%gradientvar_typemaps(Eigen::VectorXd::Scalar, Eigen::Dynamic, Eigen::Dynamic)
-%gradientvar_typemaps(Eigen::VectorXd::Scalar, Eigen::Dynamic, 1)
-%gradientvar_typemaps(Eigen::VectorXd::Scalar, SPACE_DIMENSION, 1)
-%gradientvar_typemaps(Eigen::VectorXd::Scalar,Eigen::Dynamic,Eigen::VectorXd::ColsAtCompileTime)
+%gradientvar_typemaps(double, Eigen::Dynamic, Eigen::Dynamic)
+%gradientvar_typemaps(double, Eigen::Dynamic, 1)
+%gradientvar_typemaps(double, SPACE_DIMENSION, 1)
 %import "GradientVar.h"
