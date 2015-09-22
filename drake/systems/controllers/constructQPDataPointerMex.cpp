@@ -7,6 +7,7 @@
 // #include "drakeUtil.h"
 
 using namespace std;
+using namespace Eigen;
 
 void parseIntegratorParams(const mxArray *params_obj, IntegratorParams &params) {
   const mxArray *pobj;
