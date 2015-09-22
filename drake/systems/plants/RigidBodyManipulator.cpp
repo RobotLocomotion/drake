@@ -15,6 +15,7 @@
 #include "KinematicsCache.h"
 
 using namespace std;
+using namespace Eigen;
 
 std::set<int> emptyIntSet;
 
