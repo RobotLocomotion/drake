@@ -1,12 +1,19 @@
+#ifdef SWIGPYTHON
 %module(package="pydrake") rbm
+#endif
+#ifdef SWIGMATLAB
+%module(package="rbm") rbm
+#endif
 
-%include <std_except.i>
+%include "exception_helper.i"
 %include <std_string.i>
 %include <windows.i>
 
 %{
-#define SWIG_FILE_WITH_INIT
-#include <Python.h>
+#ifdef SWIGPYTHON
+  #define SWIG_FILE_WITH_INIT
+  #include <Python.h>
+#endif
 #include "RigidBodyManipulator.h"
 %}
 
@@ -23,49 +30,13 @@
 %eigen_typemaps(Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>)
 %eigen_typemaps(Eigen::VectorXi)
 
-#ifdef SWIGPYTHON
-%fragment("gradientvar_typemaps", "header")
-%{
-  #include<iostream>
-  template<typename Scalar, int Rows, int Cols>
-  Eigen::MatrixXd nthGradientValue(const GradientVar<Scalar, Rows, Cols> &gvar, int n) {
-    if (n <= 0) {
-      Eigen::MatrixXd value;
-      value = gvar.value();
-      return value;
-    } else {
-      return nthGradientValue(gvar.gradient(), n-1);
-    }
-  }
-%}
-
-%define %gradientvar_typemaps(SCALAR, ROWS, COLS)
-
-%typemap(out, fragment="gradientvar_typemaps") GradientVar< SCALAR, ROWS, COLS >
-{
-  int num_elements = $1.maxOrder() + 1;
-  $result = PyTuple_New(num_elements);
-
-  for (int i=0; i < num_elements; i++) {
-    MatrixXd gval = nthGradientValue(*(&($1)), i);
-    PyObject* pyarray;
-    if (!ConvertFromEigenToNumPyMatrix< Eigen::MatrixXd >(&pyarray, &gval))
-      SWIG_fail;
-    PyTuple_SetItem($result, i, pyarray);
-  }
-}
-%enddef
-
-%gradientvar_typemaps(Eigen::VectorXd::Scalar, Eigen::Dynamic, Eigen::Dynamic)
-%gradientvar_typemaps(Eigen::VectorXd::Scalar, SPACE_DIMENSION, 1)
-
-#endif
-
-%import "GradientVar.h"
+%include "gradientvar.i"
 %import <Eigen/Core>
-%import "KinematicsCache.h"
-%include "RigidBodyManipulator.h"
 
-%template(KinematicsCache) KinematicsCache<Eigen::VectorXd::Scalar>;
+%include "KinematicsCache.h"
+%template(KinematicsCache_d) KinematicsCache<Eigen::VectorXd::Scalar>;
+
+%include "RigidBodyManipulator.h"
 %template(doKinematics) RigidBodyManipulator::doKinematics<Eigen::VectorXd, Eigen::VectorXd>;
 %template(centerOfMass) RigidBodyManipulator::centerOfMass<Eigen::VectorXd::Scalar>;
+%template(forwardKin) RigidBodyManipulator::forwardKin<Eigen::VectorXd>;

@@ -10,7 +10,6 @@
 #include "Pendulum.h"
 %}
 
-
 %shared_ptr(PendulumWithBotVis)
 %shared_ptr(PendulumEnergyShaping)
 %shared_ptr(Pendulum)

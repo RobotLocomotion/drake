@@ -1,12 +1,15 @@
 %module(package="pydrake.solvers") ik
 
+
 %include <std_except.i>
 %include <std_string.i>
 %include <windows.i>
 
 %{
-#define SWIG_FILE_WITH_INIT
-#include <Python.h>
+#ifdef SWIGPYTHON
+  #define SWIG_FILE_WITH_INIT
+  #include <Python.h>
+#endif
 #include "RigidBodyIK.h"
 %}
 
@@ -17,9 +20,7 @@
 %template(vectorVectorXd) std::vector<Eigen::VectorXd>;
 %template(vectorMatrixXd) std::vector<Eigen::MatrixXd>;
 %template(vectorString) std::vector<std::string>;
-namespace std {
-  %template(vectorConstraintPtr) vector<RigidBodyConstraint *>;
-}
+%template(vectorConstraintPtr) std::vector<RigidBodyConstraint *>;
 
 %eigen_typemaps(Eigen::VectorXd)
 %eigen_typemaps(Eigen::MatrixXd)
