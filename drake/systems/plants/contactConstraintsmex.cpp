@@ -27,7 +27,7 @@ using namespace std;
  *   dD = {2k} m*num_dof x numdof dD/dq second derivate of basis vectors with respect to state
  */
 
-inline void buildSparseMatrix(Matrix3xd const & pts, SparseMatrix<double> & sparse)
+inline void buildSparseMatrix(Matrix3Xd const & pts, SparseMatrix<double> & sparse)
 {
 	typedef SparseMatrix<double>::Index SparseIndex;
   const SparseIndex m = static_cast<SparseIndex>(pts.cols());
@@ -72,7 +72,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   KinematicsCache<double>* cache = static_cast<KinematicsCache<double>*>(getDrakeMexPointer(prhs[arg_num++]));
 
   const size_t numContactPairs = mxGetN(prhs[arg_num]);
-  const Map<Matrix3xd> normals(mxGetPrSafe(prhs[arg_num]), 3, numContactPairs); //contact normals in world space
+  const Map<Matrix3Xd> normals(mxGetPrSafe(prhs[arg_num]), 3, numContactPairs); //contact normals in world space
   arg_num++;
 
   const bool compute_second_derivatives = nlhs > 3;
@@ -82,8 +82,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
     const Map<VectorXi> idxA((int*)mxGetData(prhs[arg_num++]), numContactPairs); //collision pairs index of body A
     const Map<VectorXi> idxB((int*)mxGetData(prhs[arg_num++]), numContactPairs); //collision pairs index of body B
-    const Map<Matrix3xd> xA(mxGetPrSafe(prhs[arg_num++]), 3, numContactPairs); //contact point in body A space
-    const Map<Matrix3xd> xB(mxGetPrSafe(prhs[arg_num++]), 3, numContactPairs); //contact point in body B space
+    const Map<Matrix3Xd> xA(mxGetPrSafe(prhs[arg_num++]), 3, numContactPairs); //contact point in body A space
+    const Map<Matrix3Xd> xB(mxGetPrSafe(prhs[arg_num++]), 3, numContactPairs); //contact point in body B space
     const size_t nq = model->num_positions;
     
     VectorXi idxA_zero_indexed = idxA.array() - 1;
@@ -110,7 +110,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
           plhs[3] = mxCreateCellArray(2, cellDims);
         }
         for (int k = 0 ; k < num_tangent_vectors ; k++) { //for each friction cone basis vector
-          Map<Matrix3xd> dk(mxGetPrSafe(mxGetCell(prhs[d_arg_num], k)), 3, numContactPairs);
+          Map<Matrix3Xd> dk(mxGetPrSafe(mxGetCell(prhs[d_arg_num], k)), 3, numContactPairs);
           SparseMatrix<double> sparseTangents;
           buildSparseMatrix(dk, sparseTangents);
           mxArray *D_cell = mxCreateDoubleMatrix(numContactPairs, nq, mxREAL);

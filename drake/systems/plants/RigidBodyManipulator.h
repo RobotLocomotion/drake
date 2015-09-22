@@ -35,11 +35,6 @@
 #define MIN_RADIUS 1e-7
 
 typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
-typedef Eigen::Matrix<double, 3, Eigen::Dynamic> Matrix3xd;
-
-//using namespace Eigen;
-
-//extern std::set<int> emptyIntSet;  // was const std:set<int> emptyIntSet, but valgrind said I was leaking memory
 
 class DLLEXPORT_RBM RigidBodyActuator
 {
@@ -89,7 +84,7 @@ public:
 
   std::map<std::string, int> computePositionNameToIndexMap() const;
 
-  void surfaceTangents(Eigen::Map<Matrix3xd> const & normals, std::vector< Eigen::Map<Matrix3xd> > & tangents) const;
+  void surfaceTangents(Eigen::Map<Eigen::Matrix3Xd> const & normals, std::vector< Eigen::Map<Eigen::Matrix3Xd> > & tangents) const;
 
   void compile(void);  // call me after the model is loaded
 
@@ -401,7 +396,7 @@ public:
   template<typename Scalar>
   GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> relativeTransform(const KinematicsCache<Scalar>& cache, int base_or_frame_ind, int body_or_frame_ind, int gradient_order) const;
 
-  void computeContactJacobians(const KinematicsCache<double>& cache, Eigen::VectorXi const & idxA, Eigen::VectorXi const & idxB, Eigen::Map<Matrix3xd> const & xA, Eigen::Map<Matrix3xd> const & xB, const bool compute_second_derivatives, Eigen::MatrixXd & J, Eigen::MatrixXd & dJ) const;
+  void computeContactJacobians(const KinematicsCache<double>& cache, Eigen::VectorXi const & idxA, Eigen::VectorXi const & idxB, Eigen::Map<Eigen::Matrix3Xd> const & xA, Eigen::Map<Eigen::Matrix3Xd> const & xB, const bool compute_second_derivatives, Eigen::MatrixXd & J, Eigen::MatrixXd & dJ) const;
 
   DrakeCollision::ElementId addCollisionElement(const RigidBody::CollisionElement& element, const std::shared_ptr<RigidBody>& body, std::string group_name);
 
