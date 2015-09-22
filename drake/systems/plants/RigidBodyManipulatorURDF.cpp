@@ -23,6 +23,7 @@
 #endif
 
 using namespace std;
+using namespace Eigen;
 
 string exec(string cmd)
 {
