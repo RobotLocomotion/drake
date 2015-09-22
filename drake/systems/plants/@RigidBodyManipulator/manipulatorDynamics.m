@@ -38,10 +38,10 @@ if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(v))
     [H, dH] = massMatrixmex(obj.mex_model_ptr, kinsol.mex_ptr, 1);
     nv = obj.num_velocities;
     dH = [dH, zeros(numel(H), nv)];
-    [C, dC] = dynamicsBiasTermmex(obj.mex_model_ptr, kinsol.mex_ptr, f_ext, df_ext);
+    [C, dC] = dynamicsBiasTermmex(obj.mex_model_ptr, kinsol.mex_ptr, f_ext, df_ext, 1);
   else
-    H = massMatrixmex(obj.mex_model_ptr, kinsol.mex_ptr);
-    C = dynamicsBiasTermmex(obj.mex_model_ptr, kinsol.mex_ptr, f_ext, []);
+    H = massMatrixmex(obj.mex_model_ptr, kinsol.mex_ptr, 0);
+    C = dynamicsBiasTermmex(obj.mex_model_ptr, kinsol.mex_ptr, f_ext, [], 0);
   end
 else
   if compute_gradients
