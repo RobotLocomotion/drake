@@ -109,7 +109,7 @@ public:
   }
 
   template <typename DerivedQ, typename DerivedV>
-  KinematicsCache<typename DerivedQ::Scalar> doKinematics(const Eigen::MatrixBase<DerivedQ>& q, const MatrixBase<DerivedV>& v, int gradient_order = 0, bool compute_JdotV = true) {
+  KinematicsCache<typename DerivedQ::Scalar> doKinematics(const Eigen::MatrixBase<DerivedQ>& q, const Eigen::MatrixBase<DerivedV>& v, int gradient_order = 0, bool compute_JdotV = true) {
     KinematicsCache<typename DerivedQ::Scalar> ret(bodies, gradient_order);
     ret.initialize(q, v);
     doKinematics(ret, compute_JdotV);

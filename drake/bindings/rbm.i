@@ -23,7 +23,6 @@
 %eigen_typemaps(Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>)
 %eigen_typemaps(Eigen::VectorXi)
 
-
 #ifdef SWIGPYTHON
 %fragment("gradientvar_typemaps", "header")
 %{
@@ -57,15 +56,16 @@
 }
 %enddef
 
-%gradientvar_typemaps(double, Eigen::Dynamic, Eigen::Dynamic)
-%gradientvar_typemaps(double, SPACE_DIMENSION, 1)
+%gradientvar_typemaps(Eigen::VectorXd::Scalar, Eigen::Dynamic, Eigen::Dynamic)
+%gradientvar_typemaps(Eigen::VectorXd::Scalar, SPACE_DIMENSION, 1)
 
 #endif
 
 %import "GradientVar.h"
 %import <Eigen/Core>
+%import "KinematicsCache.h"
 %include "RigidBodyManipulator.h"
 
+%template(KinematicsCache) KinematicsCache<Eigen::VectorXd::Scalar>;
 %template(doKinematics) RigidBodyManipulator::doKinematics<Eigen::VectorXd, Eigen::VectorXd>;
-%template(massMatrix) RigidBodyManipulator::massMatrix<double>;
-%template(centerOfMass) RigidBodyManipulator::centerOfMass<double>;
+%template(centerOfMass) RigidBodyManipulator::centerOfMass<Eigen::VectorXd::Scalar>;
