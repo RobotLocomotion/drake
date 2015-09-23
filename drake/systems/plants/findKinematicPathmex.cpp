@@ -31,8 +31,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   int start_body_or_frame_idx = ((int) mxGetScalar(prhs[1])) - 1; // base 1 to base 0
   int end_body_or_frame_idx = ((int) mxGetScalar(prhs[2])) - 1; // base 1 to base 0
 
-  KinematicPath path;
-  model->findKinematicPath(path, start_body_or_frame_idx, end_body_or_frame_idx);
+  KinematicPath path = model->findKinematicPath(start_body_or_frame_idx, end_body_or_frame_idx);
 
   if (nlhs > 0) {
     baseZeroToBaseOne(path.body_path);

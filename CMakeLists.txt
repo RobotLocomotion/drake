@@ -1,6 +1,18 @@
 cmake_minimum_required(VERSION 2.8.0)
 project(drake-superbuild)
 
+# PODs out-of-source build logic
+if (CMAKE_INSTALL_PREFIX STREQUAL "/usr/local" OR CMAKE_INSTALL_PREFIX STREQUAL "C:/Program Files/${PROJECT_NAME}") 
+	find_file(_build_dir build PATHS ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/.. ${PROJECT_SOURCE_DIR}/../.. ${PROJECT_SOURCE_DIR}/../../.. ${PROJECT_SOURCE_DIR}/../../../..)
+	if (_build_dir)
+	    set(CMAKE_INSTALL_PREFIX "${_build_dir}")
+	else()
+		execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/build)
+		set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/build)
+	endif()	
+endif()
+message(STATUS CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
+
 include(ExternalProject)
 
 # menu of extra examples
@@ -16,47 +28,43 @@ option(REMOVE_UNUSED_EXTERNALS "enable this to remove those projects from disk" 
 
 # ON by default:
 option(WITH_EIGEN		"required c++ matrix library.  only disable if you have it already."    ON)
-
-# OFF by default:
-option(WITH_GTK 		"precompiled gtk binaries/headers for Windows")
-option(WITH_SIGNALSCOPE	"live plotting tool for lcm messages")
-option(WITH_IRIS		"fast approximate convex segmentation")
-option(WITH_OCTOMAP 	"provides oct-tree data structures")
-option(WITH_SNOPT 		"nonlinear optimization solver; requires access to RobotLocomotion/snopt-pod")
-option(WITH_GUROBI 		"convex/integer optimization solver; free for academics (will prompt you for login bits)")
-option(WITH_MOSEK 		"convex optimization solver; free for academics")
-option(WITH_YALMIP 		"free optimization front-end for MATLAB")
-option(WITH_GLOPTIPOLY 	"free global polynomial optimization tooblox")
-option(WITH_BERTINI 	"solve polynomial equations; free but pod requires permissions (can't redistribute)")
-option(WITH_SEDUMI		"semi-definite programming solver")
-option(WITH_AVL			"use w/ XFOIL to compute aerodynamic coefficients for airfoils")
-option(WITH_XFOIL		"use w/ AVL to compute aerodynamic coefficients for airfoils")
-option(WITH_MESHCONVERTERS "uses vcglib to convert a few standard filetypes")
-option(WITH_TEXTBOOK "pull in the Underactuated Robotics textbook and its examples")
-
-# todo: make this on by default once it's tested:
-option(WITH_SNOPT_PRECOMPILED "precompiled binaries only for snopt; the source requires a license (will be disabled if WITH_SNOPT=ON)"  OFF)
-
-
+option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" ON)
+if (WIN32)
+  option(WITH_GTK 		"precompiled gtk binaries/headers for Windows"  ON)  # needed for lcm on windows
+else()
+  option(WITH_DIRECTOR	"vtk-based visualization tool and robot user interface"   ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
+  option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	ON) # there is hope, but i spent a long time cleaning up c/c++ language errors trying to make msvc happy.. and still had a long way to go.
+  option(WITH_BULLET 		"used for collision detection" 	ON) # almost works.  just one remaining link error..?
+endif()
 find_program(matlab matlab)
 if (matlab)
-  option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"							ON)
-else()
-  option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"							OFF)
+  option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"  ON)
 endif()
 
-# system dependent defaults:
-if (WIN32)
-  option(WITH_DIRECTOR	"vtk-based visualization tool and robot user interface"   OFF)
-  option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	OFF)
-  option(WITH_BULLET 		"used for collision detection" 					OFF)
-  option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" 			OFF)
-else()
-  option(WITH_DIRECTOR	"vtk-based visualization tool and robot user interface"   ON)
-  option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	ON)
-  option(WITH_BULLET 		"used for collision detection" 					ON)
-  option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" 			ON)
+
+# OFF by default:
+option(WITH_SNOPT 		"nonlinear optimization solver; requires access to RobotLocomotion/snopt-pod")
+option(WITH_TEXTBOOK "pull in the Underactuated Robotics textbook and its examples")
+if (NOT WIN32) # many of these might work on win32 with little or no work... they just haven't been tried
+  option(WITH_SIGNALSCOPE	"live plotting tool for lcm messages")
+  option(WITH_IRIS		"fast approximate convex segmentation")
+  option(WITH_OCTOMAP 	"provides oct-tree data structures")
+  option(WITH_GUROBI 		"convex/integer optimization solver; free for academics (will prompt you for login bits)")
+  option(WITH_MOSEK 		"convex optimization solver; free for academics")
+  option(WITH_YALMIP 		"free optimization front-end for MATLAB")
+  option(WITH_GLOPTIPOLY 	"free global polynomial optimization tooblox")
+  option(WITH_BERTINI 	"solve polynomial equations; free but pod requires permissions (can't redistribute)")
+  option(WITH_SEDUMI		"semi-definite programming solver")
+#  include(CMakeDetermineFortranCompiler) # this didn't do the trick, and enable_language(Fortran OPTIONAL) simply fails if not found (optional is a placeholder option that doesn't work yet)
+#  if (CMAKE_Fortran_COMPILER)
+    option(WITH_AVL			"use w/ XFOIL to compute aerodynamic coefficients for airfoils")
+    option(WITH_XFOIL		"use w/ AVL to compute aerodynamic coefficients for airfoils")
+#  endif()
+  option(WITH_MESHCONVERTERS "uses vcglib to convert a few standard filetypes")
+  # todo: make this on by default once it's tested:
+  option(WITH_SNOPT_PRECOMPILED "precompiled binaries only for snopt; the source requires a license (will be disabled if WITH_SNOPT=ON)"  OFF)
 endif()
+
 
 # list *compilation* dependencies, in alphabetical order by target (note: dependencies must come first in my foreach above)
 set(lcm_dependencies gtk)
@@ -70,29 +78,31 @@ set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi)
 set(avl_GIT_REPOSITORY https://github.com/RobotLocomotion/avl.git)
 set(avl_GIT_TAG 9b927f90619460b29f7454c714369f65bc4536a1)
 set(avl_IS_PUBLIC TRUE)
-set(bertini_GIT_REPOSITORY https://github.com/RobotLocomotion/bertini.git)
+set(bertini_GIT_REPOSITORY git@github.com:RobotLocomotion/bertini.git)
 set(bertini_GIT_TAG 3ae3e3ad3534acb4b6f7a4c3c22728b493beaa80)
 set(bertini_IS_PUBLIC FALSE)
 set(bullet_GIT_REPOSITORY https://github.com/RobotLocomotion/bullet-pod.git)
-set(bullet_GIT_TAG 78c36cd116becf8417334f98bfcfd8d1300b03e0)
+set(bullet_GIT_TAG c07601224d27fdbe58a7862e96ac643a70a4307b)
 set(bullet_IS_PUBLIC TRUE)
+set(bullet_IS_CMAKE_POD TRUE)
 set(cmake_GIT_REPOSITORY https://github.com/RobotLocomotion/cmake.git)
-set(cmake_GIT_TAG 5ea95a6bb936c5fb8635b671a3355d86a882f5f7)
+set(cmake_GIT_TAG 3ca531594097919f0c9784585ecb32fe0df15404)
 set(cmake_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/drake/cmake")
 set(cmake_BUILD_COMMAND "")
 set(cmake_IS_PUBLIC TRUE)
 set(director_GIT_REPOSITORY https://github.com/RobotLocomotion/director.git)
-set(director_GIT_TAG 9c2bb9de70a0945d05eb0a4a7d13c0a91afa74a3)
+set(director_GIT_TAG 2bbd3cbbd4c06268b75263aca5056e9022c91bce)
 set(director_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/director/distro/pods/drake-distro)
 set(director_IS_PUBLIC TRUE)
 set(eigen_GIT_REPOSITORY https://github.com/RobotLocomotion/eigen-pod.git)
-set(eigen_GIT_TAG 9fdb567778561415ca7032a64b8431484900798e)
+set(eigen_GIT_TAG 110a27cb1f91bb1d548ff7c087b5564fa8013d41)
 set(eigen_IS_CMAKE_POD TRUE)
 set(eigen_IS_PUBLIC TRUE)
 set(gtk_GIT_REPOSITORY https://github.com/RobotLocomotion/gtk-pod.git)
-set(gtk_GIT_TAG dc9bb719ee771a2ae9c3a392796c42ccad5bca54)
+set(gtk_GIT_TAG 7f945dd1ac9576ef55f5c54029e53163ca5337ac)
+set(gtk_IS_CMAKE_POD TRUE)
 set(gtk_IS_PUBLIC TRUE)
-set(gloptipoly_GIT_REPOSITORY https://github.com/RobotLocomotion/gloptipoly3.git)  # todo: rename that repo
+set(gloptipoly_GIT_REPOSITORY git@github.com:RobotLocomotion/gloptipoly3.git)  # todo: rename that repo
 set(gloptipoly_GIT_TAG c9e796e99c584ecf78317348c4162a2ed4121156)
 set(gloptipoly_IS_PUBLIC FALSE)
 set(gurobi_GIT_REPOSITORY https://github.com/RobotLocomotion/gurobi.git)
@@ -103,7 +113,7 @@ set(iris_GIT_TAG a17bdb4a20a8195363b629c47fd1b6251b44c95e)
 set(iris_ADDITIONAL_BUILD_ARGS PATCH_COMMAND make configure-cdd-only)
 set(iris_IS_PUBLIC TRUE)
 set(lcm_GIT_REPOSITORY https://github.com/RobotLocomotion/lcm-pod.git)
-set(lcm_GIT_TAG 4bb13061afafa126e58a1ac3345489425971ee04) # note: cmake branch
+set(lcm_GIT_TAG aeda7df31d9e39833f85b78a8273e63699356ff3) # note: cmake branch
 set(lcm_IS_CMAKE_POD TRUE)
 set(lcm_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/lcm/lcm-1.0.0)
 set(lcm_IS_PUBLIC TRUE)
@@ -119,18 +129,18 @@ set(mosek_IS_PUBLIC TRUE)
 set(octomap_GIT_REPOSITORY https://github.com/RobotLocomotion/octomap-pod.git)
 set(octomap_GIT_TAG 00b28215d19580f9e964bc5d126ce55a9253671a)
 set(octomap_IS_PUBLIC TRUE)
-set(sedumi_GIT_REPOSITORY https://github.com/RobotLocomotion/sedumi.git)
+set(sedumi_GIT_REPOSITORY git@github.com:RobotLocomotion/sedumi.git)
 set(sedumi_GIT_TAG 8263577d4ab375524060c19369ccf410133bb9eb)
 set(sedumi_IS_PUBLIC FALSE)
 set(signalscope_GIT_REPOSITORY https://github.com/mitdrc/signal-scope.git)
 set(signalscope_GIT_TAG bd891bb2a8284a969086b7f286462572e5698855)
 set(signalscope_IS_PUBLIC TRUE)
-set(snopt_GIT_REPOSITORY https://github.com/RobotLocomotion/snopt.git)
-set(snopt_GIT_TAG e1b03db07d22ee11b2549d8a7c93466d263ce322)
+set(snopt_GIT_REPOSITORY git@github.com:RobotLocomotion/snopt.git)
+set(snopt_GIT_TAG 7abcead9d14f55e8c5b22c0c0853bdcc919cdff4)
 set(snopt_IS_CMAKE_POD TRUE)
 set(snopt_IS_PUBLIC FALSE)
 set(spotless_GIT_REPOSITORY https://github.com/RobotLocomotion/spotless-pod.git)
-set(spotless_GIT_TAG 28f97e3267b245c11a770abd57687906840a041d)
+set(spotless_GIT_TAG abb1f96947a244c069746c24de95edaeb84e7555)
 set(spotless_IS_CMAKE_POD TRUE)
 set(spotless_IS_PUBLIC TRUE)
 set(textbook_GIT_REPOSITORY https://github.com/rdeits/underactuated.git)
@@ -187,7 +197,7 @@ foreach(proj IN ITEMS
 		meshconverters
 		drake)
 	string(TOUPPER ${proj} proj_upper)
-	if (${proj} STREQUAL "drake" OR ${proj} STREQUAL "cmake" OR WITH_${proj_upper} OR WITH_ALL_SUPPORTED_EXTERNALS OR \(WITH_ALL_PUBLIC_EXTERNALS AND ${${proj}_IS_PUBLIC}\))
+	if (${proj} STREQUAL "drake" OR ${proj} STREQUAL "cmake" OR WITH_${proj_upper} OR \(WITH_ALL_SUPPORTED_EXTERNALS OR \(WITH_ALL_PUBLIC_EXTERNALS AND ${${proj}_IS_PUBLIC}\) AND DEFINED WITH_${proj_upper}\))
 		list(APPEND EXTERNAL_PROJECTS ${proj})
 	elseif(REMOVE_UNUSED_EXTERNALS AND IS_DIRECTORY ${proj})
 		message(STATUS "removing unused project: ${proj}")
@@ -198,32 +208,6 @@ foreach(proj IN ITEMS
 		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory "${PROJECT_SOURCE_DIR}/${proj}")
 	endif()
 endforeach()
-
-# throw error for unsupported platform/project combinations
-macro( unsupported )
-	foreach(proj ${ARGN})
-		list(FIND EXTERNAL_PROJECTS ${proj} find_result)
-		if (NOT find_result EQUAL -1)
-			if (WITH_ALL_SUPPORTED_EXTERNALS)
-				list(REMOVE_ITEM EXTERNAL_PROJECTS ${proj})
-			else()
-				message(FATAL_ERROR ${proj} is not supported (yet) on this platform)
-			endif()
-		endif()
-	endforeach()
-endmacro()
-
-if (WIN32)
-	unsupported(libbot octomap gurobi mosek yalmip gloptipoly bertini sedumi avl xfoil iris director signalscope meshconverters)  # many of these could potentially work, but haven't been tried
-	unsupported(bullet)  # drake has a silly c++11 compile error.  probably just for MSVC << 2013
-	unsupported(lcm)  # just have to reliably add drake/build/lib to the path so that lcm-gen.exe can run when building drake.  note: move GTK back into ON by default for win32 only when I re-enable lcm
-endif()
-
-#enable_language(Fortran)
-#if (NOT CMAKE_Fortran_COMPILER)
-#   unsupported(avl xfoil)
-#endif()
-
 
 set(EXTERNAL_SOURCE_DIRS)
 foreach (proj ${EXTERNAL_PROJECTS})
@@ -250,7 +234,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
       if (${proj}_IS_CMAKE_POD)
         set(${proj}_BUILD_COMMAND ${CMAKE_COMMAND} -E chdir ${${proj}_SOURCE_DIR} ${CMAKE_COMMAND} --build pod-build --config ${CMAKE_BUILD_TYPE} --target install)
       else() # then use the PODS gnu make system
-			   set(${proj}_BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE})
+		    set(${proj}_BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE})
       endif()
 		endif()
 		set(EXTERNAL_SOURCE_DIRS ${EXTERNAL_SOURCE_DIRS} ${${proj}_SOURCE_DIR} "\n")
@@ -304,13 +288,12 @@ foreach (proj ${EXTERNAL_PROJECTS})
 			SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake"
 			DOWNLOAD_COMMAND ""
 			UPDATE_COMMAND ""
-      CONFIGURE_COMMAND ""
-      BUILD_IN_SOURCE 1
-      BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE}
-# note: missed one step in making drake the cmake (sub)project: it doesn't write the CTestTestfile so only runs the non-matlab unit tests.  Should be fixed easily enough.
-#			CONFIGURE_COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/drake/pod-build
-#        COMMAND ${CMAKE_COMMAND} -E chdir ${PROJECT_SOURCE_DIR}/drake/pod-build ${CMAKE_COMMAND} -G${CMAKE_GENERATOR} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} ..
-#			BUILD_COMMAND ${CMAKE_COMMAND} --build ${PROJECT_SOURCE_DIR}/drake/pod-build --config ${CMAKE_BUILD_TYPE} --target install
+#      CONFIGURE_COMMAND ""
+#      BUILD_IN_SOURCE 1
+#      BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE}
+	  		CONFIGURE_COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/drake/pod-build
+	    		COMMAND ${CMAKE_COMMAND} -E chdir ${PROJECT_SOURCE_DIR}/drake/pod-build ${CMAKE_COMMAND} -G${CMAKE_GENERATOR} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} ..
+			BUILD_COMMAND ${CMAKE_COMMAND} --build ${PROJECT_SOURCE_DIR}/drake/pod-build --config ${CMAKE_BUILD_TYPE} --target install
 			INSTALL_COMMAND ""
 			DEPENDS ${deps}
 			${${proj}_ADDITIONAL_BUILD_ARGS}

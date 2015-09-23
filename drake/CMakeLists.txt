@@ -47,8 +47,9 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
   endif()
 elseif (MSVC)
-   if (NOT ${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER 18.0.0)
-     # version number decoder ring at https://en.wikipedia.org/wiki/Visual_C%2B%2B
+   if (NOT ${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER 18.00.40628)
+     # version number decoder ring at https://en.wikipedia.org/wiki/Visual_C%2B%2B 
+     # at least one user hit a compiler crash with VC++ 12.0, which was resolved by installing the latest service packs.  I don't know that 40629 is required, but know that 00 is not sufficient.
      message(FATAL_ERROR "requires MS VC++ 12.0 or greater (Visual Studio >= 2013).  download for free at http://visualstudio.com")
    endif()
 
@@ -87,6 +88,12 @@ mex_setup()
 #   set(CTEST_CONFIGURATION_TYPE ${CMAKE_BUILD_TYPE})
 #   message("Setting CTEST Configuration Type to ${CTEST_CONFIGURATION_TYPE}")
 #endif()
+
+find_package( Perl )
+if ( PERL_FOUND )
+   file(WRITE ${CMAKE_BINARY_DIR}/CTestCustom.cmake 
+   	      "set(CTEST_CUSTOM_PRE_TEST \"${PERL_EXECUTABLE} ${PROJECT_SOURCE_DIR}/cmake/add_matlab_unit_tests.pl ${PROJECT_SOURCE_DIR}\")\n")
+endif()
 
 enable_testing()
 include(CTest)

@@ -4,8 +4,20 @@
 #include <array>
 #include <string>
 
+#undef DLLEXPORT_DRAKESIDE
+#if defined(WIN32) || defined(WIN64)
+  #if defined(drakeSide_EXPORTS)
+    #define DLLEXPORT_DRAKESIDE __declspec( dllexport )
+  #else
+    #define DLLEXPORT_DRAKESIDE __declspec( dllimport )
+  #endif
+#else
+  #define DLLEXPORT_DRAKESIDE
+#endif
+
+
 // adapted from https://en.wikibooks.org/wiki/More_C%2B%2B_Idioms/Type_Safe_Enum
-class Side
+class DLLEXPORT_DRAKESIDE Side
 {
 public:
   enum SideEnum {LEFT, RIGHT};

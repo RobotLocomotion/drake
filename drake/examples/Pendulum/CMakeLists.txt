@@ -5,7 +5,7 @@ include_directories(${PROJECT_SOURCE_DIR}/systems/plants)
 include_directories(${PROJECT_SOURCE_DIR}/systems/plants/joints)
 include_directories(${PROJECT_SOURCE_DIR}/util)
 
-if (LCM_FOUND)
+if (LCM_FOUND AND NOT WIN32)  # win32 won't be hard... just have to add declspecs
   include_directories(${PROJECT_SOURCE_DIR}/pod-build/lcmgen)
   add_executable(runPendulumDynamics runDynamics.cpp)
   target_link_libraries(runPendulumDynamics drakeSystem drakeRBM)
