@@ -1,2 +1,8 @@
 matlab/
 *.so
+pydrake/rbm.py
+pydrake/solvers/ik.py
+pydrake/systems/drakesystem.py
+pydrake/systems/plants/botvis.py
+pydrake/wrappers/lcm.py
+pydrake/examples/pendulum.py
