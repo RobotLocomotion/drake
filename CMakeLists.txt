@@ -21,6 +21,9 @@ option(EXAMPLES_LITTLEDOG "planning and control for a small quadruped robot" OFF
 ## External dependencies
 option(AUTO_UPDATE_EXTERNALS "external projects are updated to their tag revision on compile" ON)
 
+# Choose your python (major) version
+option(WITH_PYTHON_3 "Build extensions for python 3 instead of python 2" OFF)
+
 # menu of external projects
 option(WITH_ALL_PUBLIC_EXTERNALS "enable all externals available to public academic users" OFF)
 option(WITH_ALL_SUPPORTED_EXTERNALS "enable all externals available for your platform (includes private git repositories)" OFF)
@@ -95,6 +98,7 @@ set(director_GIT_REPOSITORY https://github.com/RobotLocomotion/director.git)
 set(director_GIT_TAG 2bbd3cbbd4c06268b75263aca5056e9022c91bce)
 set(director_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/director/distro/pods/drake-distro)
 set(director_IS_PUBLIC TRUE)
+set(drake_ADDITIONAL_BUILD_ARGS CMAKE_ARGS -DWITH_PYTHON_3=${WITH_PYTHON_3})
 set(eigen_GIT_REPOSITORY https://github.com/RobotLocomotion/eigen-pod.git)
 set(eigen_GIT_TAG 110a27cb1f91bb1d548ff7c087b5564fa8013d41)
 set(eigen_IS_CMAKE_POD TRUE)
@@ -142,9 +146,10 @@ set(snopt_IS_CMAKE_POD TRUE)
 set(snopt_IS_PUBLIC FALSE)
 set(spotless_GIT_REPOSITORY https://github.com/RobotLocomotion/spotless-pod.git)
 set(swigmake_GIT_REPOSITORY https://github.com/rdeits/swigmake.git)
-set(swigmake_GIT_TAG 8f9819e9fcda9b77b51111c90a63a1dd27fe5f69)
+set(swigmake_GIT_TAG 0959fd6717e72a12bff68b9921454fafa289c26d)
 set(swig_matlab_GIT_REPOSITORY https://github.com/rdeits/swig-matlab-pod.git)
 set(swig_matlab_GIT_TAG c41b5b6a89130cc498d42b97555bd0501ef84c00)
+set(swig_matlab_IS_CMAKE_POD TRUE)
 set(spotless_GIT_TAG abb1f96947a244c069746c24de95edaeb84e7555)
 set(spotless_IS_CMAKE_POD TRUE)
 set(spotless_IS_PUBLIC TRUE)
@@ -293,7 +298,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 #      BUILD_IN_SOURCE 1
 #      BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE}
 	  		CONFIGURE_COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/drake/pod-build
-	    		COMMAND ${CMAKE_COMMAND} -E chdir ${PROJECT_SOURCE_DIR}/drake/pod-build ${CMAKE_COMMAND} -G${CMAKE_GENERATOR} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} ..
+	    		COMMAND ${CMAKE_COMMAND} -E chdir ${PROJECT_SOURCE_DIR}/drake/pod-build ${CMAKE_COMMAND} -G${CMAKE_GENERATOR} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DWITH_PYTHON_3=${WITH_PYTHON_3} ..
 			BUILD_COMMAND ${CMAKE_COMMAND} --build ${PROJECT_SOURCE_DIR}/drake/pod-build --config ${CMAKE_BUILD_TYPE} --target install
 			INSTALL_COMMAND ""
 			DEPENDS ${deps}
