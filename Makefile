@@ -16,7 +16,7 @@ all: configure
 	cmake --build pod-build $(CMAKE_CONFIG)
 
 pod-build:
-	@-mkdir pod-build
+	cmake -E make_directory pod-build
 
 .PHONY: configure
 configure: pod-build
@@ -34,12 +34,8 @@ endif
 .PHONY: clean
 clean:
 	cmake --build pod-build --target clean-all
-# for windows cmd shell
-	@-rd /s pod-build        
-	@-rd /s build
-# for everyone else
-	@-rm -rf pod-build
-	@-rm -rf build
+	cmake -E remove_directory pod-build
+	cmake -E remove_directory build
 
 # other (custom) targets are passed through to the cmake-generated Makefile
 %:: 
