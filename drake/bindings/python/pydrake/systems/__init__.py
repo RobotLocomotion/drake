@@ -1,1 +1,1 @@
-import plants
+from . import plants

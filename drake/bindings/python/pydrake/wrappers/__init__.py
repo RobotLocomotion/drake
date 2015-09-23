@@ -1,1 +1,1 @@
-import lcm
+from . import lcm

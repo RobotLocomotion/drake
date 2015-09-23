@@ -1,3 +1,4 @@
+from __future__ import print_function
 import unittest
 import numpy as np
 import pydrake
@@ -10,7 +11,7 @@ class TestRBMCoM(unittest.TestCase):
 
         c, = r.centerOfMass(kinsol, 0)
 
-        print c
+        print(c)
 
     def testCoM1(self):
         r = pydrake.rbm.RigidBodyManipulator("../../examples/Pendulum/Pendulum.urdf")
@@ -19,8 +20,8 @@ class TestRBMCoM(unittest.TestCase):
 
         c, dc = r.centerOfMass(kinsol, 1)
 
-        print c
-        print dc
+        print(c)
+        print(dc)
 
     def testCoM2(self):
         r = pydrake.rbm.RigidBodyManipulator("../../examples/Pendulum/Pendulum.urdf")

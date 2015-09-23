@@ -1,4 +1,3 @@
-find_package(PythonInterp REQUIRED)
 set(python_install_dir lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages)
 
 add_subdirectory(swig)

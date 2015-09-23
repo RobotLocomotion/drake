@@ -1,1 +1,1 @@
-import botvis
+from . import botvis
