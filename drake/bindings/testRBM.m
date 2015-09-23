@@ -1,7 +1,7 @@
 function testRBM()
 
 addpath('matlab');
-r = rbm.RigidBodyManipulator('../examples/Pendulum/Pendulum.urdf')
+r = pydrake.RigidBodyManipulator('../examples/Pendulum/Pendulum.urdf')
 
 kinsol = r.doKinematics(zeros(7,1), zeros(7,1), 1, true)
 

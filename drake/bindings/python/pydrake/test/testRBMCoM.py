@@ -4,7 +4,7 @@ import pydrake
 
 class TestRBMCoM(unittest.TestCase):
     def testCoM0(self):
-        r = pydrake.rbm.RigidBodyManipulator("../examples/Pendulum/Pendulum.urdf")
+        r = pydrake.rbm.RigidBodyManipulator("../../examples/Pendulum/Pendulum.urdf")
 
         kinsol = r.doKinematics(np.zeros((7,1)), np.zeros((7,1)))
 
@@ -13,7 +13,7 @@ class TestRBMCoM(unittest.TestCase):
         print c
 
     def testCoM1(self):
-        r = pydrake.rbm.RigidBodyManipulator("../examples/Pendulum/Pendulum.urdf")
+        r = pydrake.rbm.RigidBodyManipulator("../../examples/Pendulum/Pendulum.urdf")
 
         kinsol = r.doKinematics(np.zeros((7,1)), np.zeros((7,1)), 1)
 
@@ -23,7 +23,7 @@ class TestRBMCoM(unittest.TestCase):
         print dc
 
     def testCoM2(self):
-        r = pydrake.rbm.RigidBodyManipulator("../examples/Pendulum/Pendulum.urdf")
+        r = pydrake.rbm.RigidBodyManipulator("../../examples/Pendulum/Pendulum.urdf")
 
         kinsol = r.doKinematics(np.zeros((7,1)), np.zeros((7,1)), 2)
 
