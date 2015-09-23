@@ -1,9 +1,4 @@
-#ifdef SWIGPYTHON
 %module(package="pydrake") rbm
-#endif
-#ifdef SWIGMATLAB
-%module(package="rbm") rbm
-#endif
 
 %include "exception_helper.i"
 %include <std_string.i>

@@ -1,1 +1,1 @@
-import ik
+from . import ik

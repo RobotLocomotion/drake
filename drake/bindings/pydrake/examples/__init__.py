@@ -1,1 +1,1 @@
-import pendulum
+from . import pendulum
