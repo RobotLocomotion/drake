@@ -32,6 +32,7 @@ option(WITH_SEDUMI		"semi-definite programming solver")
 option(WITH_AVL			"use w/ XFOIL to compute aerodynamic coefficients for airfoils")
 option(WITH_XFOIL		"use w/ AVL to compute aerodynamic coefficients for airfoils")
 option(WITH_MESHCONVERTERS "uses vcglib to convert a few standard filetypes")
+option(WITH_TEXTBOOK "pull in the Underactuated Robotics textbook and its examples")
 
 # todo: make this on by default once it's tested:
 option(WITH_SNOPT_PRECOMPILED "precompiled binaries only for snopt; the source requires a license (will be disabled if WITH_SNOPT=ON)"  OFF)
@@ -132,6 +133,11 @@ set(spotless_GIT_REPOSITORY https://github.com/RobotLocomotion/spotless-pod.git)
 set(spotless_GIT_TAG 28f97e3267b245c11a770abd57687906840a041d)
 set(spotless_IS_CMAKE_POD TRUE)
 set(spotless_IS_PUBLIC TRUE)
+set(textbook_GIT_REPOSITORY https://github.com/rdeits/underactuated.git)
+set(textbook_GIT_TAG ff554118b1046a4b20abf9dae5433a47588d663a)
+set(textbook_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/drake/doc/textbook")
+set(textbook_BUILD_COMMAND "")
+set(textbook_IS_PUBLIC TRUE)
 set(yalmip_GIT_REPOSITORY https://github.com/RobotLocomotion/yalmip.git)
 set(yalmip_GIT_TAG c071fb7b7193491f8eefadba3bfff26160ad6cd4)
 set(yalmip_IS_PUBLIC TRUE)
@@ -158,6 +164,7 @@ endif()
 set(EXTERNAL_PROJECTS)
 foreach(proj IN ITEMS
 		cmake
+		textbook
 		eigen
 		gtk
 		lcm
