@@ -6,6 +6,7 @@ classdef Quadrotor < RigidBodyManipulator
       if nargin<1, sensor=''; end
       options.floating = true;
       options.terrain = RigidBodyFlatTerrain();
+      options.collision = false;
       w = warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
       warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
       obj = obj@RigidBodyManipulator(getFullPathFromRelativePath('quadrotor.urdf'),options);
