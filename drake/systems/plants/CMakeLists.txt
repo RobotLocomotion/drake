@@ -23,6 +23,9 @@ add_subdirectory(constraint)
 add_subdirectory(joints)
 
 if (MATLAB_FOUND)
+  add_mex(rbmMexFunctions SHARED rigidBodyManipulatorMexFunctions.cpp)
+  target_link_libraries(rbmMexFunctions drakeRBM drakeMexUtil)
+
   macro(add_rbm_mex)
     # todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
 #    add_mex(${ARGV} ${ARGV}.cpp $<TARGET_OBJECTS:drakeUtil>)
