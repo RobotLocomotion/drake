@@ -20,8 +20,8 @@ int main(int argc, char* argv[])
   cout << "=======" << endl;
 
   // run kinematics with second derivatives 100 times
-  VectorXd q = VectorXd::Zero(model->num_positions);
-  VectorXd v = VectorXd::Zero(model->num_velocities);
+  Eigen::VectorXd q = Eigen::VectorXd::Zero(model->num_positions);
+  Eigen::VectorXd v = Eigen::VectorXd::Zero(model->num_velocities);
   int i;
 
   if (argc>=2+model->num_positions) {
@@ -35,8 +35,8 @@ int main(int argc, char* argv[])
 //  }
 
 //  const Vector4d zero(0,0,0,1);
-  Vector3d zero = Vector3d::Zero();
-  Matrix<double,6,1> pt;
+  Eigen::Vector3d zero = Eigen::Vector3d::Zero();
+  Eigen::Matrix<double,6,1> pt;
 
   for (i=0; i<model->bodies.size(); i++) {
 //    model->forwardKin(i,zero,1,pt);

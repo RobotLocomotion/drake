@@ -20,6 +20,7 @@
 //#define USE_MATRIX_INVERSION_LEMMA
 
 using namespace std;
+using namespace Eigen;
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
