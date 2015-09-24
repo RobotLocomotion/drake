@@ -101,7 +101,7 @@ else % otherwise set up the LCM blocks and run simulink.
 
   if (~isempty(x0)) % handle initial conditions
     x0 = obj.stateVectorToStructure(double(x0),mdl);
-    pstruct.InitialState = registerParameter(mdl_handle,x0,'x0');
+    pstruct.InitialState = registerParameter(mdl,x0,'x0');
     pstruct.LoadInitialState = 'on';
 
     if (~isempty(find_system(mdl,'ClassName','InitialCondition')))
