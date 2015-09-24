@@ -46,8 +46,8 @@ classdef DoubleIntegrator < LinearSystem
       options.gamma = .9999;  % discount factor
       options.dt = .01;
       
-%      costfun = @mintime_cost;
-      costfun = @lqr_cost;
+      costfun = @mintime_cost;
+%      costfun = @lqr_cost;
       xbins = {[-3:.2:3],[-4:.2:4]};
       ubins = linspace(p.umin,p.umax,9);
       mdp = MarkovDecisionProcess.discretizeSystem(p,costfun,xbins,ubins,options);
