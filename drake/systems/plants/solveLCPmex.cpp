@@ -186,11 +186,11 @@ bool callFastQP(MatrixBase<DerivedM> const & M, MatrixBase<Derivedw> const & w, 
   return true;
 }
 
-//[z, Mqdn, wqdn] = setupLCPmex(mex_model_ptr, cache_ptr, u, phiC, n, D, h, z_inactive_guess_tol)
+//[z, Mvn, wvn] = setupLCPmex(mex_model_ptr, cache_ptr, u, phiC, n, D, h, z_inactive_guess_tol)
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) { 
   
   if (nlhs != 5 || nrhs != 13) {
-    mexErrMsgIdAndTxt("Drake:setupLCPmex:InvalidUsage","Usage: [z, Mqdn, wqdn, zqp] = setupLCPmex(mex_model_ptr, cache_ptr, u, phiC, n, D, h, z_inactive_guess_tol, z_cached, H, C, B)");
+    mexErrMsgIdAndTxt("Drake:setupLCPmex:InvalidUsage","Usage: [z, Mvn, wvn, zqp] = setupLCPmex(mex_model_ptr, cache_ptr, u, phiC, n, D, h, z_inactive_guess_tol, z_cached, H, C, B)");
   }
   static unique_ptr<MexWrapper> lcp_mex = unique_ptr<MexWrapper>(new MexWrapper(PATHLCP_MEXFILE));
 
@@ -229,6 +229,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   const Map<MatrixXd> H(mxGetPrSafe(H_array), nv, nv);
   const Map<VectorXd> C(mxGetPrSafe(C_array), nv);
   const Map<MatrixXd> B(mxGetPrSafe(B_array), mxGetM(B_array), mxGetN(B_array));
+ 
   const bool enable_fastqp = mxIsLogicalScalarTrue(enable_fastqp_array);
 
   VectorXd phiL, phiL_possible, phiC_possible, phiL_check, phiC_check;
@@ -237,17 +238,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   auto phiPgrad = model->positionConstraints<double>(*cache,1);
   auto phiP = phiPgrad.value();
   auto JP = phiPgrad.gradient().value();
-  model->jointLimitConstraints(q, phiL, JL);
+  model->jointLimitConstraints(q, phiL, JL);  
   
   const size_t nP = phiP.size();
   
-  plhs[2] = mxCreateDoubleMatrix(nq, 1, mxREAL);
-  Map<VectorXd> wqdn(mxGetPrSafe(plhs[2]), nq);
+  plhs[2] = mxCreateDoubleMatrix(nv, 1, mxREAL);
+  Map<VectorXd> wvn(mxGetPrSafe(plhs[2]), nv);
 
   LLT<MatrixXd> H_cholesky(H); // compute the Cholesky decomposition of H
-  wqdn = H_cholesky.solve(B * u - C);
-  wqdn *= h;
-  wqdn += v;
+  wvn = H_cholesky.solve(B * u - C);
+  wvn *= h;
+  wvn += v;
 
   //use forward euler step in joint space as
   //initial guess for active constraints
@@ -255,8 +256,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   vector<bool> possible_jointlimit;
   vector<bool> z_inactive;
 
-  getThresholdInclusion((phiC + h * n * v).eval(), z_inactive_guess_tol, possible_contact);
-  getThresholdInclusion((phiL + h * JL * v).eval(), z_inactive_guess_tol, possible_jointlimit);
+  getThresholdInclusion((phiC + h * model->transformPositionDotMappingToVelocityMapping(*cache,n) * v).eval(), z_inactive_guess_tol, possible_contact);
+  getThresholdInclusion((phiL + h * model->transformPositionDotMappingToVelocityMapping(*cache,JL) * v).eval(), z_inactive_guess_tol, possible_jointlimit);
 
   while (true) {
   //continue from here if our inactive guess fails
@@ -265,10 +266,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     const size_t lcp_size = nL + nP + (mC + 2) * nC;
 
     plhs[0] = mxCreateDoubleMatrix(lcp_size, 1, mxREAL);
-    plhs[1] = mxCreateDoubleMatrix(nq, lcp_size, mxREAL);
+    plhs[1] = mxCreateDoubleMatrix(nv, lcp_size, mxREAL);
 
     Map<VectorXd> z(mxGetPrSafe(plhs[0]), lcp_size);
-    Map<MatrixXd> Mqdn(mxGetPrSafe(plhs[1]), nq, lcp_size);
+    Map<MatrixXd> Mvn(mxGetPrSafe(plhs[1]), nv, lcp_size);
 
     if (lcp_size == 0) {
       plhs[3] = mxCreateDoubleMatrix(1, possible_contact.size(), mxREAL);
@@ -295,8 +296,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
 
     MatrixXd J(lcp_size, nq);
     J << JL_possible, JP, n_possible, D_possible, MatrixXd::Zero(nC, nq);
-
-    Mqdn = H_cholesky.solve(J.transpose());
+    Mvn = H_cholesky.solve(model->transformPositionDotMappingToVelocityMapping(*cache,J).transpose());
     
     //solve LCP problem 
     //TODO: call path from C++ (currently only 32-bit C libraries available)
@@ -315,10 +315,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     Map<VectorXd> w(mxGetPrSafe(mxw), lcp_size);
 
     //build LCP matrix
-    M << h * JL_possible * Mqdn,
-         h * JP * Mqdn,
-         h * n_possible * Mqdn,
-         D_possible * Mqdn,
+    M << h * model->transformPositionDotMappingToVelocityMapping(*cache,JL_possible) * Mvn,
+         h * model->transformPositionDotMappingToVelocityMapping(*cache,JP) * Mvn,
+         h * model->transformPositionDotMappingToVelocityMapping(*cache,n_possible) * Mvn,
+         model->transformPositionDotMappingToVelocityMapping(*cache,D_possible) * Mvn,
          MatrixXd::Zero(nC, lcp_size);
     
 
@@ -332,14 +332,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     }
 
     //build LCP vector
-    w << phiL_possible + h * JL_possible * wqdn,
-         phiP + h * JP * wqdn,
-         phiC_possible + h * n_possible * wqdn,
-         D_possible * wqdn,
+    w << phiL_possible + h *  model->transformPositionDotMappingToVelocityMapping(*cache,JL_possible) * wvn,
+         phiP + h *  model->transformPositionDotMappingToVelocityMapping(*cache,JP) * wvn,
+         phiC_possible + h *  model->transformPositionDotMappingToVelocityMapping(*cache,n_possible) * wvn,
+          model->transformPositionDotMappingToVelocityMapping(*cache,D_possible) * wvn,
          VectorXd::Zero(nC);
 
     //try fastQP first
     bool qp_failed = true;
+    
     if (enable_fastqp) {
       if (num_z_cached != lcp_size) {
         z_inactive.clear();
@@ -378,15 +379,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     mxDestroyArray(mxw);
     mxDestroyArray(mxM_sparse);
 
-    VectorXd qdn = Mqdn * z + wqdn;
+    VectorXd vn = Mvn * z + wvn;
 
     vector<size_t> impossible_contact_indices, impossible_limit_indices;
     getInclusionIndices(possible_contact, impossible_contact_indices, false);
     getInclusionIndices(possible_jointlimit, impossible_limit_indices, false);
 
     vector<bool> penetrating_joints, penetrating_contacts;
-    getThresholdInclusion((phiL_check + h * JL_check * qdn).eval(), 0.0, penetrating_joints);
-    getThresholdInclusion((phiC_check + h * n_check * qdn).eval(), 0.0, penetrating_contacts);
+    getThresholdInclusion((phiL_check + h * model->transformPositionDotMappingToVelocityMapping(*cache,JL_check) * vn).eval(), 0.0, penetrating_joints);
+    getThresholdInclusion((phiC_check + h * model->transformPositionDotMappingToVelocityMapping(*cache,n_check) * vn).eval(), 0.0, penetrating_contacts);
 
     const size_t num_penetrating_joints = getNumTrue(penetrating_joints);
     const size_t num_penetrating_contacts = getNumTrue(penetrating_contacts);

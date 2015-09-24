@@ -25,6 +25,9 @@ end
 typecheck(tspan,'double');
 if (length(tspan)<2) error('length(tspan) must be > 1'); end
 if (nargin<4) options=struct(); end
+if (nargin>2 && ~isempty(x0)) % handle initial conditions
+    obj.initial_state = x0;
+end
 mdl = getModel(obj);
 
 if (strcmp(get_param(mdl,'SimulationStatus'),'paused'))
