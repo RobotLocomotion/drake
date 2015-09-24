@@ -16,17 +16,17 @@ using namespace std;
  *     surfaceTangents(mex_model_ptr, normals)
  */
 
-inline mxArray* getTangentsArray(RigidBodyManipulator* const model, Map<Matrix3xd> const & normals)
+inline mxArray* getTangentsArray(RigidBodyManipulator* const model, Map<Matrix3Xd> const & normals)
 {
   const size_t numContactPairs = normals.cols();
   const mwSize cellDims[] = {1, BASIS_VECTOR_HALF_COUNT};
   mxArray* tangentCells = mxCreateCellArray(2, cellDims);
   
-  vector< Map<Matrix3xd> > tangents;
+  vector< Map<Matrix3Xd> > tangents;
   for (int k = 0 ; k < BASIS_VECTOR_HALF_COUNT ; k++)
   {
     mxArray *cell = mxCreateDoubleMatrix(3, numContactPairs, mxREAL );    
-    tangents.push_back(Map<Matrix3xd>(mxGetPrSafe(cell), 3, numContactPairs));
+    tangents.push_back(Map<Matrix3Xd>(mxGetPrSafe(cell), 3, numContactPairs));
     mxSetCell(tangentCells, k, cell);
   }
 
@@ -50,7 +50,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
 
   //Mapping Eigen Matrix to existing memory to avoid copy overhead
-  Map<Matrix3xd> normals(mxGetPrSafe(prhs[1]), 3, numNormals); 
+  Map<Matrix3Xd> normals(mxGetPrSafe(prhs[1]), 3, numNormals); 
 
   if (nlhs > 0) {
     plhs[0] = getTangentsArray(model, normals);

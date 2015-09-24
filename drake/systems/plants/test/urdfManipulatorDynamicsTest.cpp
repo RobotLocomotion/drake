@@ -24,8 +24,8 @@ int main(int argc, char* argv[])
     cout << model->bodies[i]->linkname << endl;
   }
 
-  VectorXd q = VectorXd::Zero(model->num_positions);
-  VectorXd v = VectorXd::Zero(model->num_velocities);
+  Eigen::VectorXd q = Eigen::VectorXd::Zero(model->num_positions);
+  Eigen::VectorXd v = Eigen::VectorXd::Zero(model->num_velocities);
   int i;
 
   if (argc >= 2 + model->num_positions) {
