@@ -1,6 +1,8 @@
 #include "controlUtil.h"
 #include "drake/drakeUtil.h"
 
+using namespace Eigen;
+
 template <typename DerivedA, typename DerivedB>
 void getRows(std::set<int> &rows, MatrixBase<DerivedA> const &M, MatrixBase<DerivedB> &Msub)
 {

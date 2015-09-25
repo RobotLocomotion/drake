@@ -19,7 +19,7 @@ int main(int argc, char* argv[])
   }
 
   // run kinematics with second derivatives 100 times
-  VectorXd q = VectorXd::Zero(model->num_positions);
+  Eigen::VectorXd q = Eigen::VectorXd::Zero(model->num_positions);
   int i;
 
   if (argc>=2+model->num_positions) {
@@ -32,8 +32,8 @@ int main(int argc, char* argv[])
   KinematicsCache<double> cache = model->doKinematics(q, 0);
 //  }
 
-  VectorXd phi;
-  Matrix3Xd normal, xA, xB;
+  Eigen::VectorXd phi;
+  Eigen::Matrix3Xd normal, xA, xB;
   vector<int> bodyA_idx, bodyB_idx;
 
   model->collisionDetect(cache, phi,normal,xA,xB,bodyA_idx,bodyB_idx);

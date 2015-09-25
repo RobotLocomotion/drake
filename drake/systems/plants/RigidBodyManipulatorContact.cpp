@@ -92,7 +92,7 @@ void findContactIndexes(VectorXi const & idxList, const size_t bodyIdx, std::vec
 //   bodyPoints: (4 x n) matrix of contact points containing occurrences of body A contact points followed
 //     by body B contact points where n = size(cindA) + size(cindB)
 // NOTE: the output is a matrix of 4-vector columns in homogeneous coordinates (x,y,z,1)'
-void getBodyPoints(std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, Matrix3xd const & xA, Matrix3xd const & xB, Matrix3Xd & bodyPoints)
+void getBodyPoints(std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, Matrix3Xd const & xA, Matrix3Xd const & xB, Matrix3Xd & bodyPoints)
 {
   size_t i = 0;
   size_t numPtsA = cindA.size();
@@ -188,7 +188,7 @@ void RigidBodyManipulator::accumulateSecondOrderContactJacobian(const Kinematics
 //  dJ: (3m x nq^2) Second order contact Jacobian
 // TODO: change output to be 3m * nq x nq (or possibly 3m * nv x nq)
 
-void RigidBodyManipulator::computeContactJacobians(const KinematicsCache<double>& cache, VectorXi const & idxA, VectorXi const & idxB, Map<Matrix3xd> const & xA, Map<Matrix3xd> const & xB, const bool compute_second_derivatives, MatrixXd & J, MatrixXd & dJ) const
+void RigidBodyManipulator::computeContactJacobians(const KinematicsCache<double>& cache, VectorXi const & idxA, VectorXi const & idxB, Map<Matrix3Xd> const & xA, Map<Matrix3Xd> const & xB, const bool compute_second_derivatives, MatrixXd & J, MatrixXd & dJ) const
 {
   std::vector<int> bodyInds;
   const size_t nq = num_positions;
@@ -224,7 +224,7 @@ void RigidBodyManipulator::computeContactJacobians(const KinematicsCache<double>
 // NOTE:
 //  k = BASIS_VECTOR_HALF_COUNT is defined as a preprocessor directive so that 
 //      Eigen templates can be optimized at compile time
-void RigidBodyManipulator::surfaceTangents(Map<Matrix3xd> const & normals, std::vector< Map<Matrix3xd> > & tangents) const
+void RigidBodyManipulator::surfaceTangents(Map<Matrix3Xd> const & normals, std::vector< Map<Matrix3Xd> > & tangents) const
 {
   const size_t numContactPairs = normals.cols();
   for (size_t curNormal = 0 ; curNormal < numContactPairs; curNormal++) {

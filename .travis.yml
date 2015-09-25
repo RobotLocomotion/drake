@@ -39,3 +39,7 @@ env:
   matrix:
     - BUILD_TYPE=Release
     # - BUILD_TYPE=Debug
+
+matrix:
+  allow_failures:
+    - compiler: gcc

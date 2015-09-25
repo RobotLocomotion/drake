@@ -28,7 +28,7 @@ void mexFunction(int nlhs,mxArray* plhs[], int nrhs, const mxArray * prhs[])
   double* t_ptr = new double[n_breaks];
   memcpy(t_ptr,mxGetPrSafe(prhs[2]),sizeof(double)*n_breaks);
   int nq = cnst->getRobotPointer()->num_positions;
-  MatrixXd q(nq,n_breaks);
+  Eigen::MatrixXd q(nq,n_breaks);
   if(mxGetM(prhs[1]) != nq || mxGetN(prhs[1]) != n_breaks)
   {
     mexErrMsgIdAndTxt("Drake:testMultipleTimeKinCnstmex:BadInputs","Argument 2 must be of size nq*n_breaks");
@@ -36,11 +36,11 @@ void mexFunction(int nlhs,mxArray* plhs[], int nrhs, const mxArray * prhs[])
   memcpy(q.data(),mxGetPrSafe(prhs[1]),sizeof(double)*nq*n_breaks); 
   int type = cnst->getType();
   int num_cnst = cnst->getNumConstraint(t_ptr,n_breaks); 
-  VectorXd c(num_cnst);
-  MatrixXd dc(num_cnst,nq*n_breaks);
+  Eigen::VectorXd c(num_cnst);
+  Eigen::MatrixXd dc(num_cnst,nq*n_breaks);
   cnst->eval(t_ptr,n_breaks,q,c,dc);
-  VectorXd lb(num_cnst);
-  VectorXd ub(num_cnst);
+  Eigen::VectorXd lb(num_cnst);
+  Eigen::VectorXd ub(num_cnst);
   cnst->bounds(t_ptr,n_breaks,lb,ub);
   std::vector<std::string> cnst_names;
   cnst->name(t_ptr,n_breaks,cnst_names);

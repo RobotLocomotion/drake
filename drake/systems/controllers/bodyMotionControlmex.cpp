@@ -4,6 +4,8 @@
 #include "controlUtil.h"
 #include "drakeMexUtil.h"
 
+ using namespace Eigen;
+
 struct BodyMotionControlData {
   RigidBodyManipulator* r;
   Vector6d Kp;
