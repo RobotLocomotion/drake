@@ -153,11 +153,11 @@ namespace DrakeShapes
   }
 
   Mesh::Mesh(const string& filename)
-    : Geometry(MESH), filename(filename)
+    : Geometry(MESH), scale(1.0), filename(filename)
   {}
 
   Mesh::Mesh(const string& filename, const string& resolved_filename)
-    : Geometry(MESH), filename(filename), resolved_filename(resolved_filename)
+    : Geometry(MESH), scale(1.0), filename(filename), resolved_filename(resolved_filename)
   {}
 
   bool Mesh::extractMeshVertices(Matrix3Xd& vertex_coordinates) const 

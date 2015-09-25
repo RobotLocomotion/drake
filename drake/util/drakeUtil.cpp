@@ -69,6 +69,73 @@ std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(const Eigen::MatrixBa
   return std::pair<Vector3d, double>(cop, normal_torque_at_cop);
 }
 
+//Based on the Matrix Sign Function method outlined in this paper:
+//http://www.engr.iupui.edu/~skoskie/ECE684/Riccati_algorithms.pdf
+template <typename DerivedA, typename DerivedB, typename DerivedQ, typename DerivedR, typename DerivedX>
+void care(MatrixBase<DerivedA> const& A, MatrixBase<DerivedB> const& B, MatrixBase<DerivedQ> const& Q, MatrixBase<DerivedR> const& R,  MatrixBase<DerivedX> & X)
+{
+  const size_t n = A.rows();
+
+  LLT<MatrixXd> R_cholesky(R);
+
+  MatrixXd H(2 * n, 2 * n);
+  H << A, B * R_cholesky.solve(B.transpose()), Q, -A.transpose();
+
+  MatrixXd Z = H;
+  MatrixXd Z_old;
+
+  //these could be options
+  const double tolerance = 1e-9;
+  const double max_iterations = 100;
+
+  double relative_norm;
+  size_t iteration = 0;
+
+  const double p = static_cast<double>(Z.rows());
+
+  do {
+    Z_old = Z;
+    //R. Byers. Solving the algebraic Riccati equation with the matrix sign function. Linear Algebra Appl., 85:267–279, 1987
+    //Added determinant scaling to improve convergence (converges in rough half the iterations with this)
+    double ck = pow(abs(Z.determinant()), -1.0/p);
+    Z *= ck;
+    Z = Z - 0.5 * (Z - Z.inverse());
+    relative_norm = (Z - Z_old).norm();
+    iteration ++;
+  } while(iteration < max_iterations && relative_norm > tolerance);
+
+  MatrixXd W11 = Z.block(0, 0, n, n);
+  MatrixXd W12 = Z.block(0, n, n, n);
+  MatrixXd W21 = Z.block(n, 0, n, n);
+  MatrixXd W22 = Z.block(n, n, n, n);
+
+  MatrixXd lhs(2 * n, n);
+  MatrixXd rhs(2 * n, n);
+  MatrixXd eye = MatrixXd::Identity(n, n);
+  lhs << W12, W22 + eye;
+  rhs << W11 + eye, W21;
+
+  JacobiSVD<MatrixXd> svd(lhs, ComputeThinU | ComputeThinV);
+
+  X = svd.solve(rhs);
+}
+
+template <typename DerivedA, typename DerivedB, typename DerivedQ, typename DerivedR, typename DerivedK, typename DerivedS>
+void lqr(MatrixBase<DerivedA> const& A, MatrixBase<DerivedB> const& B, MatrixBase<DerivedQ> const& Q, MatrixBase<DerivedR> const& R, MatrixBase<DerivedK> & K, MatrixBase<DerivedS> & S)
+{
+  LLT<MatrixXd> R_cholesky(R);
+  care(A, B, Q, R, S);
+  K = R_cholesky.solve(B.transpose() * S);
+}
+
+template DLLEXPORT void lqr(MatrixBase<MatrixXd> const& A, MatrixBase<MatrixXd> const& B, MatrixBase<MatrixXd> const& Q, MatrixBase<MatrixXd> const& R, MatrixBase<MatrixXd> & K, MatrixBase<MatrixXd> & S);
+template DLLEXPORT void lqr(MatrixBase< Map<MatrixXd> > const& A, MatrixBase< Map<MatrixXd> > const& B, MatrixBase< Map<MatrixXd> > const& Q, MatrixBase< Map<MatrixXd> > const& R, MatrixBase< Map<MatrixXd> > & K, MatrixBase< Map<MatrixXd> > & S);
+template DLLEXPORT void lqr(MatrixBase<MatrixXd> const& A, MatrixBase<MatrixXd> const& B, MatrixBase<MatrixXd> const& Q, MatrixBase<MatrixXd> const& R, MatrixBase< Map<MatrixXd> > & K, MatrixBase< Map<MatrixXd> > & S);
+template DLLEXPORT void lqr<Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1>, -1, -1, true>, Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1>, -1, -1, true>, Eigen::Matrix<double, -1, -1, 0, -1, -1>, Eigen::Matrix<double, -1, -1, 0, -1, -1>, Eigen::Matrix<double, -1, -1, 0, -1, -1>, Eigen::Matrix<double, -1, -1, 0, -1, -1> >(Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1>, -1, -1, true> > const&, Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, -1, -1, 0, -1, -1>, -1, -1, true> > const&, Eigen::MatrixBase<Eigen::Matrix<double, -1, -1, 0, -1, -1> > const&, Eigen::MatrixBase<Eigen::Matrix<double, -1, -1, 0, -1, -1> > const&, Eigen::MatrixBase<Eigen::Matrix<double, -1, -1, 0, -1, -1> >&, Eigen::MatrixBase<Eigen::Matrix<double, -1, -1, 0, -1, -1> >&);
+
+template DLLEXPORT void care(MatrixBase<MatrixXd> const& A, MatrixBase<MatrixXd> const& B, MatrixBase<MatrixXd> const& Q, MatrixBase<MatrixXd> const& R, MatrixBase<MatrixXd> & X);
+template DLLEXPORT void care(MatrixBase< Map<MatrixXd> > const& A, MatrixBase< Map<MatrixXd> > const& B, MatrixBase< Map<MatrixXd> > const& Q, MatrixBase< Map<MatrixXd> > const& R, MatrixBase< Map<MatrixXd> > & X);
+
 template DLLEXPORT std::pair<Eigen::Matrix<double, 3, 1, 0, 3, 1>, double> resolveCenterOfPressure<Eigen::Map<Eigen::Matrix<double, 3, 1, 0, 3, 1> const, 0, Eigen::Stride<0, 0> >, Eigen::Map<Eigen::Matrix<double, 3, 1, 0, 3, 1> const, 0, Eigen::Stride<0, 0> >, Eigen::Map<Eigen::Matrix<double, 3, 1, 0, 3, 1> const, 0, Eigen::Stride<0, 0> >, Eigen::Map<Eigen::Matrix<double, 3, 1, 0, 3, 1> const, 0, Eigen::Stride<0, 0> > >(Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, 1, 0, 3, 1> const, 0, Eigen::Stride<0, 0> > > const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, 1, 0, 3, 1> const, 0, Eigen::Stride<0, 0> > > const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, 1, 0, 3, 1> const, 0, Eigen::Stride<0, 0> > > const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, 1, 0, 3, 1> const, 0, Eigen::Stride<0, 0> > > const&);
 template DLLEXPORT std::pair<Eigen::Matrix<double, 3, 1, 0, 3, 1>, double> resolveCenterOfPressure<Eigen::Matrix<double, 3, 1, 0, 3, 1>, Eigen::Matrix<double, 3, 1, 0, 3, 1>, Eigen::Matrix<double, 3, 1, 0, 3, 1>, Eigen::Matrix<double, 3, 1, 0, 3, 1> >(Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&);
 template DLLEXPORT std::pair<Eigen::Matrix<double, 3, 1, 0, 3, 1>, double> resolveCenterOfPressure<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1>, 3, 1, false>, Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1>, 3, 1, false>, Eigen::Matrix<double, 3, 1, 0, 3, 1>, Eigen::Matrix<double, 3, 1, 0, 3, 1> >(Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1>, 3, 1, false> > const&, Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 6, 1, 0, 6, 1>, 3, 1, false> > const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&);

@@ -2,37 +2,24 @@
 #include "drakeMexUtil.h"
 #include "RigidBodyManipulator.h"
 
-
 using namespace Eigen;
 using namespace std;
 
-/*
- * A C version of the doKinematics function
- *
- * Call with doKinematicsmex(q,b_compute_second_derivatives);
- */
-
- 
-void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
-  if (nrhs != 4) {
-    mexErrMsgIdAndTxt("Drake:doKinematicsmex:NotEnoughInputs", "Usage doKinematicsmex(model_ptr,q,b_compute_second_derivatives,qd)");
+void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+{
+  if (nrhs != 5 || nlhs != 0) {
+    mexErrMsgIdAndTxt("Drake:doKinematicsmex:NotEnoughInputs", "Usage doKinematicsmex(mex_model_ptr, kinematics_cache_ptr, q, v, compute_JdotV)");
   }
-  
-  // first get the model_ptr back from matlab
-  RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
-  int nq = model->num_positions;
-  int nv = model->num_velocities;
-  
-  if (mxGetNumberOfElements(prhs[1])!=nq)
-    mexErrMsgIdAndTxt("Drake:doKinematicsmex:BadInputs", "q must be size %d x 1", nq);
-  
-  Map<VectorXd> q(mxGetPrSafe(prhs[1]), nq);
-  bool b_compute_second_derivatives = (mxGetScalar(prhs[2])!=0.0);
-  if (mxGetNumberOfElements(prhs[3])>0) 
-  {
-    Map<VectorXd> qd(mxGetPrSafe(prhs[3]), nv);
-    model->doKinematics(q,b_compute_second_derivatives,qd);
-  } else {
-    model->doKinematics(q,b_compute_second_derivatives);
-  }  
+
+  RigidBodyManipulator *model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+  KinematicsCache<double>* cache = static_cast<KinematicsCache<double>*>(getDrakeMexPointer(prhs[1]));
+  auto q = matlabToEigenMap<Dynamic, 1>(prhs[2]);
+  auto v = matlabToEigenMap<Dynamic, 1>(prhs[3]);
+  bool compute_Jdotv = mxIsLogicalScalarTrue(prhs[4]);
+
+  if (v.size() == 0 && model->num_velocities != 0)
+    cache->initialize(q);
+  else
+    cache->initialize(q, v);
+  model->doKinematics(*cache, compute_Jdotv);
 }

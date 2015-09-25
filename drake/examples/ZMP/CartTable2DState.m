@@ -3,7 +3,8 @@ function fr = CartTable2DState
   % changing it)
 
 S = warning('off','Drake:PlanarRigidBodyManipulator:RemovedJoint');
-r = PlanarRigidBodyManipulator('CartTable.urdf',struct('floating',true,'view','right'));
+path_to_this_file = fileparts(which(mfilename));
+r = PlanarRigidBodyManipulator(fullfile(path_to_this_file,'CartTable.urdf'),struct('floating',true,'view','right'));
 fr = r.getStateFrame();
 warning(S);
 

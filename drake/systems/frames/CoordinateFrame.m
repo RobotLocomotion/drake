@@ -8,12 +8,10 @@ classdef CoordinateFrame < handle
     name='';        % string name for this coordinate system
     dim=0;          % scalar dimension of this coordinate system
     transforms={};  % handles to CoordinateTransform objects
-
-    coordinates={}; % list of coordinate names
-
     prefix;         % a vector character prefix used for the msspoly variables, or a vector of size dim listing prefixes for each variable
   end
   properties (Access=private)
+    coordinates={}; % list of coordinate names
     poly=[];        % optional msspoly variables for this frame
   end
 
@@ -420,7 +418,7 @@ classdef CoordinateFrame < handle
     end
 
     function setupLCMInputs(obj,mdl,subsys,subsys_portnum,options)
-      typecheck(mdl,'char');
+      typecheck(mdl,{'char','SimulinkModelHandle'});
       typecheck(subsys,'char');
       uid = datestr(now,'MMSSFFF');
       if (nargin<4) subsys_portnum=1; end
@@ -430,7 +428,7 @@ classdef CoordinateFrame < handle
     end
 
     function setupLCMOutputs(obj,mdl,subsys,subsys_portnum,options)
-      typecheck(mdl,'char');
+      typecheck(mdl,{'char','SimulinkModelHandle'});
       typecheck(subsys,'char');
       uid = datestr(now,'MMSSFFF');
       if (nargin<4) subsys_portnum=1; end

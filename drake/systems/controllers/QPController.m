@@ -346,13 +346,13 @@ classdef QPController < MIMODrakeSystem
 
       if include_angular_momentum
         A = centroidalMomentumMatrix(r, kinsol);
-        Adot_times_v = centroidalMomentumMatrixDotTimesVmex(r, kinsol);
+        Adot_times_v = centroidalMomentumMatrixDotTimesVmex(r, kinsol.mex_ptr);
       end
 
-      Jcomdot = forwardJacDot(r,kinsol,0);
+      Jcomdot_times_v = centerOfMassJacobianDotTimesV(r, kinsol);
       if length(x0)==4
        Jcom = Jcom(1:2,:); % only need COM x-y
-       Jcomdot = Jcomdot(1:2,:);
+       Jcomdot_times_v = Jcomdot_times_v(1:2);
       end
 
       if ~isempty(active_supports)
@@ -370,9 +370,9 @@ classdef QPController < MIMODrakeSystem
         Dbar_act = Dbar(act_idx,:);
 
         terrain_pts = getTerrainContactPoints(r,active_supports,active_contact_groups);
-        [~,Jp,Jpdot] = terrainContactPositions(r,kinsol,terrain_pts,true);
+        [~,Jp] = terrainContactPositions(r,kinsol,terrain_pts,true);
+        Jpdot_times_v = terrainContactJacobianDotTimesV(r, kinsol, terrain_pts);
         Jp = sparse(Jp);
-        Jpdot = sparse(Jpdot);
 
         if length(x0)==4
           xlimp = [xcom(1:2); Jcom*qd]; % state of LIP model
@@ -432,19 +432,19 @@ classdef QPController < MIMODrakeSystem
       for ii=1:obj.n_body_accel_bounds
         body_idx = obj.body_accel_bounds(ii).body_idx;
         [~,Jb] = forwardKin(r,kinsol,body_idx,[0;0;0],1);
-        Jbdot = forwardJacDot(r,kinsol,body_idx,[0;0;0],1);
+        Jbdot_times_v = forwardJacDotTimesV(r,kinsol,body_idx,[0;0;0],1);
         Ain_{constraint_index} = Jb*Iqdd;
-        bin_{constraint_index} = -Jbdot*qd + obj.body_accel_bounds(ii).max_acceleration;
+        bin_{constraint_index} = -Jbdot_times_v + obj.body_accel_bounds(ii).max_acceleration;
         constraint_index = constraint_index + 1;
         Ain_{constraint_index} = -Jb*Iqdd;
-        bin_{constraint_index} = Jbdot*qd - obj.body_accel_bounds(ii).min_acceleration;
+        bin_{constraint_index} = Jbdot_times_v - obj.body_accel_bounds(ii).min_acceleration;
         constraint_index = constraint_index + 1;
       end
 
       if nc > 0
         % relative acceleration constraint
         Aeq_{2} = Jp*Iqdd + Ieps;
-        beq_{2} = -Jpdot*qd - obj.Kp_accel*Jp*qd;
+        beq_{2} = -Jpdot_times_v - obj.Kp_accel*Jp*qd;
       end
 
       eq_count=3;
@@ -456,10 +456,10 @@ classdef QPController < MIMODrakeSystem
           body_vdot = body_input(2:7);
           if ~any(active_supports==body_ind)
             [~,J] = forwardKin(r,kinsol,body_ind,[0;0;0],1);
-            Jdot = forwardJacDot(r,kinsol,body_ind,[0;0;0],1);
+            Jdot_times_v = forwardJacDotTimesV(r, kinsol, body_ind, [0;0;0], 1);
             cidx = ~isnan(body_vdot);
             Aeq_{eq_count} = J(cidx,:)*Iqdd;
-            beq_{eq_count} = -Jdot(cidx,:)*qd + body_vdot(cidx);
+            beq_{eq_count} = -Jdot_times_v(cidx) + body_vdot(cidx);
             eq_count = eq_count+1;
           end
         end
@@ -504,7 +504,7 @@ classdef QPController < MIMODrakeSystem
         end
 
         fqp = xlimp'*C_ls'*Qy*D_ls*Jcom*Iqdd;
-        fqp = fqp + qd'*Jcomdot'*R_DQyD_ls*Jcom*Iqdd;
+        fqp = fqp + Jcomdot_times_v'*R_DQyD_ls*Jcom*Iqdd;
         fqp = fqp + (x_bar'*S + 0.5*s1')*B_ls*Jcom*Iqdd;
         fqp = fqp - u0'*R_ls*Jcom*Iqdd;
         fqp = fqp - y0'*Qy*D_ls*Jcom*Iqdd;
@@ -529,10 +529,10 @@ classdef QPController < MIMODrakeSystem
           body_vdot = body_input(2:7);
           if ~any(active_supports==body_ind)
             [~,J] = forwardKin(r,kinsol,body_ind,[0;0;0],1);
-            Jdot = forwardJacDot(r,kinsol,body_ind,[0;0;0],1);
+            Jdot_times_v = forwardJacDotTimesV(r,kinsol,body_ind,[0;0;0],1);
             cidx = ~isnan(body_vdot);
             Hqp(1:nq,1:nq) = Hqp(1:nq,1:nq) + w*J(cidx,:)'*J(cidx,:);
-            fqp = fqp + w*(qd'*Jdot(cidx,:)'- body_vdot(cidx)')*J(cidx,:)*Iqdd;
+            fqp = fqp + w*(Jdot_times_v(cidx,:)'- body_vdot(cidx)')*J(cidx,:)*Iqdd;
           end
         end
       end
@@ -613,22 +613,16 @@ classdef QPController < MIMODrakeSystem
 
 
     if (obj.use_mex==1 || obj.use_mex==2)
-      if obj.using_flat_terrain
-        height = getTerrainHeight(r,[0;0]); % get height from DRCFlatTerrainMap
-      else
-        height = 0;
-      end
-
       if (obj.use_mex==1)
         [y,qdd] = QPControllermex(obj.mex_ptr.data,obj.solver==0,qddot_des,x,...
             varargin{4:end},condof,supp,A_ls,B_ls,Qy,R_ls,C_ls,D_ls,...
-            S,s1,s1dot,s2dot,x0,u0,y0,qdd_lb,qdd_ub,w_qdd,mu,height);
+            S,s1,s1dot,s2dot,x0,u0,y0,qdd_lb,qdd_ub,w_qdd,mu);
       else
         [y_mex,mex_qdd,info_mex,active_supports_mex,~,Hqp_mex,fqp_mex,...
           Aeq_mex,beq_mex,Ain_mex,bin_mex,Qf,Qeps] = ...
           QPControllermex(obj.mex_ptr.data,obj.solver==0,qddot_des,x,...
           varargin{4:end},condof,supp,A_ls,B_ls,Qy,R_ls,C_ls,D_ls,S,s1,...
-          s1dot,s2dot,x0,u0,y0,qdd_lb,qdd_ub,w_qdd,mu,height);
+          s1dot,s2dot,x0,u0,y0,qdd_lb,qdd_ub,w_qdd,mu);
 
         if (nc>0)
           valuecheck(active_supports_mex,active_supports);

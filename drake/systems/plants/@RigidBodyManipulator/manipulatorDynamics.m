@@ -18,12 +18,6 @@ if (nargin<4) use_mex = true; end
 
 compute_gradients = nargout > 3;
 
-options.use_mex = use_mex;
-options.compute_gradients = compute_gradients;
-options.compute_JdotV = true;
-options.force_new_kinsol = true;
-kinsol = doKinematics(obj, q, v, options);
-
 % if (nargin<4) use_mex = true; end
 if compute_gradients
   [f_ext, B, df_ext, dB] = computeExternalForcesAndInputMatrix(obj, q, v);
@@ -31,18 +25,23 @@ else
   [f_ext, B] = computeExternalForcesAndInputMatrix(obj, q, v);
 end
 
+options.use_mex = use_mex;
+options.compute_gradients = compute_gradients;
+options.compute_JdotV = true;
+kinsol = doKinematics(obj, q, v, options);
+
 a_grav = [zeros(3, 1); obj.gravity];
 if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(v))
   f_ext = full(f_ext);  % makes the mex implementation simpler (for now)
   if compute_gradients
     df_ext = full(df_ext);
-    [H, dH] = massMatrixmex(obj.mex_model_ptr);
+    [H, dH] = massMatrixmex(obj.mex_model_ptr, kinsol.mex_ptr);
     nv = obj.num_velocities;
     dH = [dH, zeros(numel(H), nv)];
-    [C, dC] = inverseDynamicsmex(obj.mex_model_ptr, f_ext, [], df_ext);
+    [C, dC] = inverseDynamicsmex(obj.mex_model_ptr, kinsol.mex_ptr, f_ext, [], df_ext);
   else
-    H = massMatrixmex(obj.mex_model_ptr);
-    C = inverseDynamicsmex(obj.mex_model_ptr, f_ext);
+    H = massMatrixmex(obj.mex_model_ptr, kinsol.mex_ptr);
+    C = inverseDynamicsmex(obj.mex_model_ptr, kinsol.mex_ptr, f_ext);
   end
 else
   if compute_gradients

@@ -1,13 +1,11 @@
 function testInertiasInWorldFrame()
 testAtlas('rpy');
-% testAtlas('quat');
+testAtlas('quat');
 end
 
 function testAtlas(floatingJointType)
 robot = createAtlas(floatingJointType);
-if robot.use_new_kinsol
-  checkInertiaGradients(robot);
-end
+checkInertiaGradients(robot);
 end
 
 function checkInertiaGradients(robot)

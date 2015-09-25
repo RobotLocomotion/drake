@@ -19,18 +19,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     mexErrMsgIdAndTxt("Drake:positionConstraintsmex:InvalidPositionVectorLength", "q contains the wrong number of elements");
   }
 
-  Map<VectorXd> q(mxGetPrSafe(prhs[1]),nq); 
+  Map<VectorXd> q(mxGetPrSafe(prhs[1]),nq);
 
-  model->doKinematics(q);
+  KinematicsCache<double> cache = model->doKinematics(q, 0); // FIXME: KinematicsCache should be passed in!
 
-  const size_t numPositionConstraints = model->getNumPositionConstraints();
-  
-  plhs[0] = mxCreateDoubleMatrix(numPositionConstraints, 1, mxREAL);
-  plhs[1] = mxCreateDoubleMatrix(numPositionConstraints, nq, mxREAL);
-
-  Map<VectorXd> phi(mxGetPrSafe(plhs[0]), numPositionConstraints);
-  Map<MatrixXd> J(mxGetPrSafe(plhs[1]), numPositionConstraints, nq);
-
-  model->positionConstraints(phi, J);  
+  auto phi = model->positionConstraints<double>(cache,1);
+  plhs[0] = eigenToMatlab(phi.value());
+  plhs[1] = eigenToMatlab(phi.gradient().value());
 }
 

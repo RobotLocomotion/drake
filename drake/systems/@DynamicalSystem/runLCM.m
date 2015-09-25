@@ -44,14 +44,14 @@ if (obj.getNumInputs>0 && getNumStates(obj)<1 && isa(fin,'LCMSubscriber'))
   global g_scope_enable; g_scope_enable = true;
   
   % just run as fast as possible
-  t=options.tspan(1); last_t=t; tic;
+  t=options.tspan(1); tic;
   while (t<=options.tspan(2))
     [u,t] = getNextMessage(fin,1000);
     if isempty(t)
-      t=last_t+toc;
+      t=toc;
       fprintf(1,'waiting... (t=%f)\n',t);
     else
-      last_t=t; tic;
+      tic;
       y = obj.output(t,[],u);
       if (getNumOutputs(obj)>0 && b_lcm_output)
         publish(fout,t,y,options.outchannel);
@@ -101,7 +101,7 @@ else % otherwise set up the LCM blocks and run simulink.
 
   if (~isempty(x0)) % handle initial conditions
     x0 = obj.stateVectorToStructure(double(x0),mdl);
-    pstruct.InitialState = registerParameter(mdl_handle,x0,'x0');
+    pstruct.InitialState = registerParameter(mdl,x0,'x0');
     pstruct.LoadInitialState = 'on';
 
     if (~isempty(find_system(mdl,'ClassName','InitialCondition')))

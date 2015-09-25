@@ -101,7 +101,7 @@ xnew=[];  %#ok<*AGROW>
 G=msspoly(zeros(sys.num_x)); Phi=msspoly([]); phidot=msspoly([]);
 unit_circle_constraints=[];
 sin_ind=false(sys.num_x); cos_ind=sin_ind; x_ind=sin_ind;
-name=sys.getStateFrame.coordinates; newname={};
+name=sys.getStateFrame.getCoordinateNames(); newname={};
 for i=1:sys.num_x
   if (deg(all_methods,s(i))>0 || deg(all_methods,c(i))>0)
     xnew=[xnew;s(i);c(i)];  

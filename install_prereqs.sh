@@ -20,9 +20,8 @@ case $1 in
     exit 1 ;;
 esac
 
-make download-all
-SUBDIRS=`make list-project-dirs`
-for subdir in $SUBDIRS; do  # note this will also catch `Built target list-project-dirs`, but it's harmless
+SUBDIRS="drake externals"
+for subdir in $SUBDIRS; do
   if [ -f $subdir/install_prereqs.sh ]; then
     echo "installing prereqs for $subdir"
     ( cd $subdir; ./install_prereqs.sh $1 || true )

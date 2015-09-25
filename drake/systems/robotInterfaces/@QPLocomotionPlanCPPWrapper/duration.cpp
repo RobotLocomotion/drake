@@ -1,6 +1,5 @@
 #include "QPLocomotionPlan.h"
 #include "drakeMexUtil.h"
-#include "drakeFloatingPointUtil.h"
 
 using namespace std;
 using namespace Eigen;

@@ -1,9 +1,0 @@
-package drake.examples.Pendulum;
-
-struct lcmt_pendulum_x
-{
-	int64_t timestamp;
-
-	double theta;       // radians
-	double thetaDot;    // radians/sec
-}

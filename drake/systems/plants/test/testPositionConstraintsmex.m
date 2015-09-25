@@ -5,9 +5,8 @@ if nargin<1 || isempty(urdf)
   urdf = fullfile('../../../examples/Atlas/urdf/robotiq.urdf');
 end
 robot = RigidBodyManipulator(urdf);
-robot_new = RigidBodyManipulator(urdf, struct('use_new_kinsol', true));
 
-if robot.mex_model_ptr == 0 || robot_new.mex_model_ptr == 0 
+if robot.mex_model_ptr == 0
   disp('No mex model pointer was found.  Aborting test')
   return
 end
@@ -15,33 +14,39 @@ end
 %random initial pose
 q = getRandomConfiguration(robot);
 
-robot.doKinematics(q);
-robot_new.doKinematics(q);
+%% test frame jacobians
+kinsol_mat = robot.doKinematics(q,false,false);
+kinsol_mex = robot.doKinematics(q,false,true);
+options.in_terms_of_qdot = false;
+for i = 1:numel(robot.loop)
+%  loop = robot.loop(i)
+%  options.base_or_frame_id = robot.loop(i).frameB;
+%  robot.frame(-robot.loop(i).frameB)
+%  robot.body(robot.frame(-robot.loop(i).frameB).body_ind)
+%  robot.frame(-robot.loop(i).frameB).T
+  [x_mat,J_mat] = robot.forwardKin(kinsol_mat,robot.loop(i).frameA,0*[1;0;0],options);
+  [x_mex,J_mex] = robot.forwardKin(kinsol_mex,robot.loop(i).frameA,0*[1;0;0],options);
+  valuecheck(x_mex,x_mat);
+  valuecheck(J_mex,J_mat);
+end
 
-%mex
-[phi_mex, J_mex] = positionConstraintsmex(robot.mex_model_ptr, q); 
-
-%mex, use_new_kinsol
-[phi_mex_new, J_mex_new] = positionConstraintsmex(robot_new.mex_model_ptr, q); 
+%% test position constraints
 
 %matlab
 [phi, J] = robot.positionConstraints(q);
 
-%matlab, use_new_kinsol
-[phi_new, J_new] = robot_new.positionConstraints(q);
+% taylorvar
+[phi_tv,J_tv]=geval(@robot.positionConstraints,q,struct('grad_method','taylorvar'));
 
-%make sure every pair of implementations matches
-valuecheck(phi_mex, phi_mex_new);
+%mex
+[phi_mex, J_mex] = positionConstraintsmex(robot.mex_model_ptr, q); 
+
+valuecheck(phi,phi_tv);
+valuecheck(J,J_tv);
+
+
+%compare
 valuecheck(phi_mex, phi);
-valuecheck(phi_mex, phi_new);
-valuecheck(phi_mex_new, phi);
-valuecheck(phi_mex_new, phi_new);
-valuecheck(phi, phi_new);
-valuecheck(J_mex, J_mex_new);
 valuecheck(J_mex, J);
-valuecheck(J_mex, J_new);
-valuecheck(J_mex_new, J);
-valuecheck(J_mex_new, J_new);
-valuecheck(J, J_new);
 end
 

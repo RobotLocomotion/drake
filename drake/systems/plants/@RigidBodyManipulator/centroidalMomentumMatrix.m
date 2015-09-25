@@ -19,31 +19,18 @@ end
 
 compute_gradients = nargout > 1;
 
-compute_kinematics = false;
 if ~isstruct(kinsol)  
   % treat input as centroidalMomentumMatrix(model,q)
   q = kinsol;
-  compute_kinematics = true;
-else
-  if ~isfield(kinsol, 'v')
-    kinsol_options.use_mex = kinsol.mex;
-    robot.warning_manager.warnOnce('Drake:centroidalMomentumMatrix:OldKinsol','You called centroidalMomentumMatrix with a kinsol in the old format. Redoing kinematics in new format using q from old kinsol');
-    q = kinsol.q;
-    compute_kinematics = true;
-  end
-end
-
-if compute_kinematics
   kinsol_options.compute_gradients = compute_gradients;
-  kinsol_options.force_new_kinsol = true;
   kinsol = robot.doKinematics(q, [], kinsol_options);
 end
 
 if kinsol.mex
   if compute_gradients
-    [A, dA] = centroidalMomentumMatrixmex(robot.mex_model_ptr, robotnum, in_terms_of_qdot);
+    [A, dA] = centroidalMomentumMatrixmex(robot.mex_model_ptr, kinsol.mex_ptr, robotnum, in_terms_of_qdot);
   else
-    A = centroidalMomentumMatrixmex(robot.mex_model_ptr, robotnum, in_terms_of_qdot);
+    A = centroidalMomentumMatrixmex(robot.mex_model_ptr, kinsol.mex_ptr, robotnum, in_terms_of_qdot);
   end
 else
   if compute_gradients

@@ -5,8 +5,10 @@ classdef DrakeMexPointer < handle
 %      myMexFunctions(mex_ptr,other_data);  // these call getDrakeMexPointer
 
   properties (SetAccess=private,GetAccess=public)
-    name = '';
     ptr
+    name = '';
+  end
+  properties (SetAccess=private,GetAccess=private)
     delete_fcn='';
     delete_fcn_additional_inputs={};
   end
@@ -16,8 +18,8 @@ classdef DrakeMexPointer < handle
       obj.ptr = ptr;
       if (nargin>1) obj.delete_fcn = delete_fcn; end
       if (nargin>2) obj.name = name; end
-      if (nargin>3) 
-        obj.delete_fcn_additional_inputs=varargin; 
+      if (nargin>3)
+        obj.delete_fcn_additional_inputs=varargin;
       end
     end
 

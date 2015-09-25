@@ -2,6 +2,7 @@
 #include "drakeMexUtil.h"
 
 using namespace std;
+using namespace Eigen;
 
 struct SupportDetectData {
   RigidBodyManipulator* r;
@@ -68,18 +69,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   for (i=0; i<len; i++)
     contact_sensor(i)=(int)double_contact_sensor[i];
   double contact_threshold = mxGetScalar(prhs[narg++]);
-  double terrain_height = mxGetScalar(prhs[narg++]); // nonzero if we're using DRCFlatTerrainMap
   
   int contact_logic_AND = (int) mxGetScalar(prhs[narg++]); // true if we should AND plan and sensor, false if we should OR them
 
-  pdata->r->doKinematics(qvec,false,qdvec);
+  KinematicsCache<double> cache = pdata->r->doKinematics(qvec, qdvec); // FIXME: pass this into the function.
 
   //---------------------------------------------------------------------
   // Compute active support from desired supports -----------------------
-
-  Vector4d contact_pt = Vector4d::Zero();
-  contact_pt(3) = 1.0;
-
   vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> active_supports;
   set<int> contact_bodies; // redundant, clean up later
   int num_active_contact_pts=0;
@@ -109,8 +105,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       SupportStateElement se;
       se.body_idx = (int) pBodies[i]-1;
       for (j=0; j<nc; j++) {
-        contact_pt.head(3) = all_body_contact_pts.col(j);
-        se.contact_pts.push_back(contact_pt);
+        se.contact_pts.push_back(all_body_contact_pts.col(j));
       }
       
       if (contact_threshold == -1) { // ignore terrain
@@ -121,7 +116,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         }
       } 
       else {
-        contactPhi(pdata->r,se,pdata->map_ptr,phi,terrain_height);
+        contactPhi(pdata->r, cache, se, phi);
         bool in_contact = true;
         if (contact_logic_AND) { // plan is true, now check contact sensor/kinematics
           in_contact =  (phi.minCoeff()<=contact_threshold || contact_sensor(i)==1); // any contact below threshold (kinematically) OR contact sensor says yes contact

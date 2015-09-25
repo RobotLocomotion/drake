@@ -141,7 +141,6 @@ std::vector<RigidBodySupportState> setUpSupports(const mxArray* mex_supports)
       RigidBodySupportStateElement support_state_element;
       support_state_element.body = body_ids[i] - 1; // base 1 to base zero
       support_state_element.contact_points = matlabToEigenMap<3, Dynamic>(mxGetCell(mxGetFieldOrPropertySafe(mex_supports, support_num, "contact_pts"), i));
-      support_state_element.use_contact_surface = mxGetLogicals(mxGetFieldOrPropertySafe(mex_supports, support_num, "use_support_surface"))[i];
       support_state_element.support_surface = matlabToEigenMap<4, 1>(mxGetCell(mxGetFieldOrPropertySafe(mex_supports, support_num, "support_surface"), i));
       support_state.push_back(support_state_element);
     }
@@ -152,10 +151,10 @@ std::vector<RigidBodySupportState> setUpSupports(const mxArray* mex_supports)
 
 std::vector<QPLocomotionPlanSettings::ContactNameToContactPointsMap> setUpContactGroups(RigidBodyManipulator* robot, const mxArray* mex_contact_groups)
 {
-  assert(mxGetNumberOfElements(mex_contact_groups) == robot->num_bodies);
+  assert(mxGetNumberOfElements(mex_contact_groups) == robot->bodies.size());
   std::vector<QPLocomotionPlanSettings::ContactNameToContactPointsMap> contact_groups;
-  contact_groups.reserve(robot->num_bodies);
-  for (int body_id = 0; body_id < robot->num_bodies; body_id++) {
+  contact_groups.reserve(robot->bodies.size());
+  for (int body_id = 0; body_id < robot->bodies.size(); body_id++) {
     const mxArray* mex_contact_group = mxGetCell(mex_contact_groups, body_id);
     QPLocomotionPlanSettings::ContactNameToContactPointsMap contact_group;
     for (int field_number = 0; field_number < mxGetNumberOfFields(mex_contact_group); field_number++) {

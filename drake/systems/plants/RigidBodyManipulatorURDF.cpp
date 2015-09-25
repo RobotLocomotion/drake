@@ -6,7 +6,6 @@
 
 #include "tinyxml.h"
 #include "RigidBodyManipulator.h"
-#include "joints/drakeJointUtil.h"
 #include "joints/FixedJoint.h"
 #include "joints/HelicalJoint.h"
 #include "joints/PrismaticJoint.h"
@@ -24,6 +23,7 @@
 #endif
 
 using namespace std;
+using namespace Eigen;
 
 string exec(string cmd)
 {
@@ -219,7 +219,7 @@ bool parseInertial(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyMani
   if (mass)
     mass->Attribute("value", &(body->mass));
 
-  body->com << T(0, 3), T(1, 3), T(2, 3), 1.0;
+  body->com << T(0, 3), T(1, 3), T(2, 3);
 
   Matrix<double, TWIST_SIZE, TWIST_SIZE> I = Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
   I.block(3, 3, 3, 3) << body->mass * Matrix3d::Identity();
@@ -350,8 +350,15 @@ bool parseGeometry(TiXmlElement* node, const map<string,string>& package_map, co
     }
     string filename(attr);
     string resolved_filename = resolveFilename(filename, package_map, root_dir);
-    element.setGeometry(DrakeShapes::Mesh(filename, resolved_filename));
+    DrakeShapes::Mesh mesh(filename, resolved_filename);
 
+    attr = shape_node->Attribute("scale");
+    if (attr) {
+      stringstream s(attr);
+      s >> mesh.scale;
+    }
+
+    element.setGeometry(mesh);
   } else {
     cerr << "Warning: geometry element has an unknown type and will be ignored." << endl;
   }
@@ -496,6 +503,30 @@ bool parseLink(RigidBodyManipulator* model, TiXmlElement* node, const map<string
   return true;
 }
 
+template <typename JointType>
+void setLimits(TiXmlElement *node, FixedAxisOneDoFJoint<JointType> *fjoint) {
+  TiXmlElement* limit_node = node->FirstChildElement("limit");
+  if (fjoint != nullptr && limit_node) {
+    double lower = -numeric_limits<double>::infinity(), upper = numeric_limits<double>::infinity();
+    parseScalarAttribute(limit_node,"lower",lower);
+    parseScalarAttribute(limit_node,"upper",upper);
+    fjoint->setJointLimits(lower,upper);
+  }
+}
+
+template <typename JointType>
+void setDynamics(RigidBodyManipulator *model, TiXmlElement *node, FixedAxisOneDoFJoint<JointType> *fjoint) {
+  TiXmlElement* dynamics_node = node->FirstChildElement("dynamics");
+  if (fjoint != nullptr && dynamics_node) {
+    model->warnOnce("joint_dynamics", "Warning: joint dynamics xml tag is parsed, but not included in the dynamics methods yet.");
+    double damping=0.0, coulomb_friction=0.0, coulomb_window=0.0;
+    parseScalarAttribute(dynamics_node,"damping",damping);
+    parseScalarAttribute(dynamics_node,"friction",coulomb_friction);
+    parseScalarAttribute(dynamics_node,"coulomb_window",coulomb_window);
+    fjoint->setDynamics(damping,coulomb_friction,coulomb_window);
+  }
+}
+
 bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
 {
   const char* attr = node->Attribute("drake_ignore");
@@ -558,7 +589,6 @@ bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
   TiXmlElement* origin = node->FirstChildElement("origin");
   if (origin) {
     poseAttributesToTransform(origin, Ttree.matrix());
-    model->bodies[child_index]->Ttree = Ttree.matrix(); // scheduled for deletion
   }
 
   Vector3d axis;
@@ -575,15 +605,18 @@ bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
 
   // now construct the actual joint (based on it's type)
   DrakeJoint* joint = nullptr;
-  FixedAxisOneDoFJoint* fjoint = nullptr;
 
   if (type.compare("revolute") == 0 || type.compare("continuous") == 0) {
-    fjoint = new RevoluteJoint(name, Ttree, axis);
+    FixedAxisOneDoFJoint<RevoluteJoint>* fjoint = new RevoluteJoint(name, Ttree, axis);
+    setDynamics(model, node, fjoint);
+    setLimits(node, fjoint);
     joint = fjoint;
   } else if (type.compare("fixed") == 0) {
     joint = new FixedJoint(name, Ttree);
   } else if (type.compare("prismatic") == 0) {
-    fjoint = new PrismaticJoint(name, Ttree, axis);
+    FixedAxisOneDoFJoint<PrismaticJoint>* fjoint = new PrismaticJoint(name, Ttree, axis);
+    setDynamics(model, node, fjoint);
+    setLimits(node, fjoint);
     joint = fjoint;
   } else if (type.compare("floating") == 0) {
     joint = new RollPitchYawFloatingJoint(name, Ttree);
@@ -592,23 +625,6 @@ bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
     return false;
   }
 
-  TiXmlElement* dynamics_node = node->FirstChildElement("dynamics");
-  if (fjoint != nullptr && dynamics_node) {
-    model->warnOnce("joint_dynamics", "Warning: joint dynamics xml tag is parsed, but not included in the dynamics methods yet.");
-  	double damping=0.0, coulomb_friction=0.0, coulomb_window=0.0;
-  	parseScalarAttribute(dynamics_node,"damping",damping);
-  	parseScalarAttribute(dynamics_node,"friction",coulomb_friction);
-  	parseScalarAttribute(dynamics_node,"coulomb_window",coulomb_window);
-  	fjoint->setDynamics(damping,coulomb_friction,coulomb_window);
-  }
-
-  TiXmlElement* limit_node = node->FirstChildElement("limit");
-  if (fjoint != nullptr && limit_node) {
-    double lower = -std::numeric_limits<double>::infinity(), upper = std::numeric_limits<double>::infinity();
-    parseScalarAttribute(limit_node,"lower",lower);
-    parseScalarAttribute(limit_node,"upper",upper);
-    fjoint->setJointLimits(lower,upper);
-  }
 
   unique_ptr<DrakeJoint> joint_unique_ptr(joint);
   model->bodies[child_index]->setJoint(move(joint_unique_ptr));
@@ -672,58 +688,82 @@ bool parseTransmission(RigidBodyManipulator* model, TiXmlElement* node)
 
 bool parseLoop(RigidBodyManipulator* model, TiXmlElement* node)
 {
-  Vector3d ptA,ptB;
+  Vector3d xyz=Vector3d::Zero(),rpy=Vector3d::Zero(),axis;
+  axis << 1.0, 0.0, 0.0;
+
+  if (!node || !node->Attribute("name"))  {
+    cerr << "ERROR: loop is missing a name element" << endl;
+    return false;
+  }
+  string name(node->Attribute("name"));
+
 
   TiXmlElement* link_node = node->FirstChildElement("link1");
   string linkname = link_node->Attribute("link");
-  int bodyA = findLinkIndex(model,linkname);
-  if (bodyA<0) {
+  std::shared_ptr<RigidBody> body = model->findLink(linkname);
+  if (!body) {
     cerr << "couldn't find link %s referenced in loop joint " << linkname << endl;
     return false;
   }
-  if (!parseVectorAttribute(link_node, "xyz", ptA)) {
+  if (!parseVectorAttribute(link_node, "xyz", xyz)) {
     cerr << "ERROR parsing loop joint xyz" << endl;
     return false;
   }
+  if (!parseVectorAttribute(link_node, "rpy", rpy)) {
+    cerr << "ERROR parsing loop joint rpy" << endl;
+    return false;
+  }
+  std::shared_ptr<RigidBodyFrame> frameA = make_shared<RigidBodyFrame>(name+"FrameA",body,xyz,rpy);
 
   link_node = node->FirstChildElement("link2");
   linkname = link_node->Attribute("link");
-  int bodyB = findLinkIndex(model,linkname);
-  if (bodyB<0) {
+  xyz=Vector3d::Zero();
+  rpy=Vector3d::Zero();
+  body = model->findLink(linkname);
+  if (!body) {
     cerr << "couldn't find link %s referenced in loop joint " << linkname << endl;
     return false;
   }
-  if (!parseVectorAttribute(link_node, "xyz", ptB)) {
+  if (!parseVectorAttribute(link_node, "xyz", xyz)) {
     cerr << "ERROR parsing loop joint xyz" << endl;
     return false;
   }
+  if (!parseVectorAttribute(link_node, "rpy", rpy)) {
+    cerr << "ERROR parsing loop joint rpy" << endl;
+    return false;
+  }
+  std::shared_ptr<RigidBodyFrame> frameB = make_shared<RigidBodyFrame>(name+"FrameB",body,xyz,rpy);
 
-  RigidBodyLoop l(model->bodies[bodyA],ptA,model->bodies[bodyB],ptB);
+  TiXmlElement* axis_node = node->FirstChildElement("axis");
+  if (axis_node && !parseVectorAttribute(axis_node, "xyz", axis)) {
+    cerr << "ERROR parsing loop joint axis" << endl;
+    return false;
+  }
+
+  model->addFrame(frameA);
+  model->addFrame(frameB);
+  RigidBodyLoop l(frameA,frameB,axis);
   model->loops.push_back(l);
+
   return true;
 }
 
 bool parseFrame(RigidBodyManipulator* model, TiXmlElement* node)
 {
-  Vector3d xyz, rpy;
+  Vector3d xyz=Vector3d::Zero(), rpy=Vector3d::Zero();
 
-  if (!parseVectorAttribute(node, "xyz", xyz)) {
-    cerr << "ERROR parsing Drake frame xyz" << endl;
-    return false;
-  }
-
-  if (!parseVectorAttribute(node, "rpy", rpy)) {
-    cerr << "ERROR parsing Drake frame rpy" << endl;
-    return false;
-  }
-
-  RigidBodyFrame frame;
-  Map<Matrix4d> T(frame.Ttree.data());
+  parseVectorAttribute(node, "xyz", xyz);
+  parseVectorAttribute(node, "rpy", rpy);
 
   const char* frame_link = node->Attribute("link");
 
   if (!frame_link) {
     cerr << "ERROR parsing Drake frame linkname" << endl;
+    return false;
+  }
+  const std::shared_ptr<RigidBody> body = model->findLink(frame_link);
+  if (!body) {
+    cerr << "ERROR parsing Drake frame: couldn't find link " << frame_link << endl;
     return false;
   }
 
@@ -734,20 +774,23 @@ bool parseFrame(RigidBodyManipulator* model, TiXmlElement* node)
     return false;
   }
 
-  frame.name = frame_name;
-  frame.body_ind = findLinkIndex(model, frame_link);
 
-  T = Matrix4d::Identity();
-  T.block(0, 0, 3, 3) = rpy2rotmat(rpy);
-  T.block(0, 3, 3, 1) = xyz;
+  Matrix4d T;
+  T << rpy2rotmat(rpy), xyz, 0,0,0,1;
 
+  std::shared_ptr<RigidBodyFrame> frame = make_shared<RigidBodyFrame>(frame_name,body,T);
   model->addFrame(frame);
+
 
   return true;
 }
 
 bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const map<string,string> package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
 {
+  if (!node->Attribute("name")) {
+    cerr << "Error: your robot must have a name attribute" << endl;
+    return false;
+  }
   string robotname = node->Attribute("name");
 
   // parse material elements

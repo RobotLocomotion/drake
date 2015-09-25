@@ -46,7 +46,7 @@ classdef MultiCoordinateFrame < CoordinateFrame
         name = [name,'+',coordinate_frames{i}.name];
         dim = dim+coordinate_frames{i}.dim;
         prefix = vertcat(prefix,coordinate_frames{i}.prefix);
-        coordinates(frame_id==i) = reshape(coordinate_frames{i}.coordinates,[],1);
+        coordinates(frame_id==i) = reshape(coordinate_frames{i}.getCoordinateNames(),[],1);
         coord_ids{i} = reshape(find(frame_id==i),1,[]);
       end
       name=name(2:end); % remove extra '+'
@@ -404,7 +404,7 @@ classdef MultiCoordinateFrame < CoordinateFrame
     end
     
     function setupLCMInputs(obj,mdl,subsys,subsys_portnum,options)
-      typecheck(mdl,'char');
+      typecheck(mdl,{'char','SimulinkModelHandle'});
       typecheck(subsys,'char');
       uid = datestr(now,'MMSSFFF');
       if (nargin<4) subsys_portnum=1; end
@@ -424,7 +424,7 @@ classdef MultiCoordinateFrame < CoordinateFrame
     end
     
     function setupLCMOutputs(obj,mdl,subsys,subsys_portnum,options)
-      typecheck(mdl,'char');
+      typecheck(mdl,{'char','SimulinkModelHandle'});
       typecheck(subsys,'char');
       uid = datestr(now,'MMSSFFF');
       if (nargin<4) subsys_portnum=1; end

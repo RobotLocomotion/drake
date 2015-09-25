@@ -13,8 +13,6 @@ std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> p
   }
   int i, j;
   MatrixXd contact_pts;
-  Vector4d contact_pt = Vector4d::Zero();
-  contact_pt(3) = 1.0;
   int num_pts;
   std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> supports;
   const mxArray* pm;
@@ -40,8 +38,7 @@ std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> p
     memcpy(contact_pts.data(), mxGetPrSafe(pm), sizeof(double)*mxGetNumberOfElements(pm));
 
     for (j = 0; j < num_pts; j++) {
-      contact_pt.head(3) = contact_pts.col(j);
-      se.contact_pts.push_back(contact_pt);
+      se.contact_pts.push_back(contact_pts.col(j));
     }
     supports.push_back(se);
   }
@@ -106,9 +103,6 @@ std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray 
       }
       msg->support_data[i].mu = mxGetScalar(myGetField(support_data, i, "mu"));
       
-      double use_support_surface_dbl = mxGetScalar(myGetField(support_data, i, "use_support_surface"));
-      msg->support_data[i].use_support_surface = (use_support_surface_dbl != 0);
-
       const mxArray *support_surface = myGetField(support_data, i, "support_surface");
       if (!support_surface) mexErrMsgTxt("couldn't get support surface");
       Map<Vector4d>support_surface_vec(mxGetPrSafe(support_surface));

@@ -2,6 +2,14 @@
 #include <vector>
 #include <Eigen/Core>
 #include "TrigPoly.h"
+/*
+ * NOTE: include AutoDiff AFTER TrigPoly.h. 
+ * TrigPoly.h includes LLDT.h via Eigenvalues, PolynomialSolver, and our Polynomial.h
+ * MSVC versions up to and including 2013 have trouble with the rankUpdate method in LLDT.h
+ * For some reason there is a bad interaction with AutoDiff, even though LLDT.h still gets included if TrigPoly.h is included before AutoDiff.
+ */
+#include <unsupported/Eigen/AutoDiff>
+#include "drakeGradientUtil.h"
 
 #ifndef DRAKE_MEX_UTIL_H_
 #define DRAKE_MEX_UTIL_H_
@@ -32,12 +40,16 @@ DLLEXPORT mxArray* mxGetFieldOrPropertySafe(const mxArray* array, size_t index, 
 
 
 // Mex pointers shared through matlab
-DLLEXPORT mxArray* createDrakeMexPointer(void* ptr, const char* name="", int num_additional_inputs=0, mxArray *delete_fcn_additional_inputs[] = NULL, const char* subclass_name=NULL);  // increments lock count
 // Note: the same mex function which calls this method will be called with the syntax mexFunction(drake_mex_ptr) as the destructor
+
+DLLEXPORT mxArray* createDrakeMexPointer(void* ptr, const std::string& name="", int num_additional_inputs=0, mxArray *delete_fcn_additional_inputs[] = NULL, const std::string& subclass_name="", const std::string& mex_function_name_prefix="");  // increments lock count
 DLLEXPORT void* getDrakeMexPointer(const mxArray* mx);
 
 template <typename Derived> inline void destroyDrakeMexPointer(const mxArray* mx)
 {
+  if (!isa(mx, "DrakeMexPointer"))
+    mexErrMsgIdAndTxt("Drake:destroyDrakeMexPointer:BadInputs","This object is not a DrakeMexPointer.  Delete failed.");
+
   Derived typed_ptr = (Derived) getDrakeMexPointer(mx);
 
   //mexPrintf("deleting drake mex pointer\n");
@@ -46,6 +58,7 @@ template <typename Derived> inline void destroyDrakeMexPointer(const mxArray* mx
 
 //  mexPrintf(mexIsLocked() ? "mex file is locked\n" : "mex file is unlocked\n");
 }
+
 
 template <typename Derived>
 DLLEXPORT mxArray* eigenToMatlabSparse(Eigen::MatrixBase<Derived> const & M, int & num_non_zero);
@@ -77,18 +90,38 @@ Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime> matlabToEigen(const 
 }
 
 template<int Rows, int Cols>
-Eigen::Map<const Eigen::Matrix<double, Rows, Cols>> matlabToEigenMap(const mxArray* matlab_array)
+Eigen::Map<const Eigen::Matrix<double, Rows, Cols>> matlabToEigenMap(const mxArray* mex)
 {
-  if (Rows!=Eigen::Dynamic && mxGetM(matlab_array)!=Rows)
-    throw std::runtime_error("Drake::matlabToEigenMap wrong number of rows");
-  if (Cols!=Eigen::Dynamic && mxGetN(matlab_array)!=Cols)
-    throw std::runtime_error("Drake::matlabToEigenMap wrong number of cols");    
+  using namespace Eigen;
+  using namespace std;
+  int rows;
+  if (Rows == Dynamic)
+    rows = static_cast<int>(mxGetM(mex));
+  else if (mxGetM(mex) == Rows || mxGetM(mex) == 0) // be lenient in the empty input case
+    rows = Rows;
+  else {
+    ostringstream stream;
+    stream << "Error converting Matlab matrix. Expected " << Rows << " rows, but got " << mxGetM(mex) << ".";
+    throw runtime_error(stream.str().c_str());
+  }
 
-  Eigen::Map<const Eigen::Matrix<double, Rows, Cols>> ret(mxGetPrSafe(matlab_array), mxGetM(matlab_array), mxGetN(matlab_array));
-  return ret;
+  int cols;
+  if (Cols == Dynamic)
+    cols = static_cast<int>(mxGetN(mex));
+  else if (mxGetN(mex) == Cols || mxGetN(mex) == 0) // be lenient in the empty input case
+    cols = Cols;
+  else {
+    ostringstream stream;
+    stream << "Error converting Matlab matrix. Expected " << Cols << " cols, but got " << mxGetN(mex) << ".";
+    throw runtime_error(stream.str().c_str());
+  }
+
+  double* data = rows * cols == 0 ? nullptr : mxGetPrSafe(mex);
+  return Map<const Matrix<double, Rows, Cols>>(data, rows, cols);
 }
 
 DLLEXPORT std::string mxGetStdString(const mxArray* array);
+DLLEXPORT std::vector<std::string> mxGetVectorOfStdStrings(const mxArray* array);
 
 template <typename Scalar>
 mxArray* stdVectorToMatlab(const std::vector<Scalar>& vec) {
@@ -98,8 +131,10 @@ mxArray* stdVectorToMatlab(const std::vector<Scalar>& vec) {
   }
   return pm;
 }
+DLLEXPORT mxArray* stdStringToMatlab(const std::string& str);
+DLLEXPORT mxArray* vectorOfStdStringsToMatlab(const std::vector<std::string>& strs);
 
-DLLEXPORT void sizecheck(const mxArray* mat, int M, int N);
+DLLEXPORT void sizecheck(const mxArray* mat, mwSize M, mwSize N);
 
 template <size_t Rows, size_t Cols>
 void matlabToCArrayOfArrays(const mxArray *source, double (&destination)[Rows][Cols])  {
@@ -206,6 +241,52 @@ mxArray* eigenToTrigPoly(const Eigen::Matrix<TrigPolyd,_Rows,_Cols> & trigpoly_m
 
   return plhs[0];
 }
+
+template<int Rows, int Cols>
+Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>, Rows, Cols> taylorVarToEigen(const mxArray* taylor_var) {
+  auto f = mxGetPropertySafe(taylor_var, "f");
+  auto df = mxGetPropertySafe(taylor_var, "df");
+  if (mxGetNumberOfElements(df) > 1)
+    throw std::runtime_error("TaylorVars of order higher than 1 currently not supported");
+  auto ret = matlabToEigenMap<Rows, Cols>(f).template cast<Eigen::AutoDiffScalar<Eigen::VectorXd>>().eval();
+  typedef Gradient<decltype(ret), Eigen::Dynamic> GradientType;
+  auto gradient_matrix = matlabToEigenMap<GradientType::type::RowsAtCompileTime, GradientType::type::ColsAtCompileTime>(mxGetCell(df, 0));
+  gradientMatrixToAutoDiff(gradient_matrix, ret);
+  return ret;
+}
+
+template <typename Derived>
+mxArray* eigenToTaylorVar(const Eigen::MatrixBase<Derived>& m, int num_variables = Eigen::Dynamic)
+{
+  const int nrhs = 2;
+  mxArray *prhs[nrhs];
+  prhs[0] = eigenToMatlab(autoDiffToValueMatrix(m));
+  mwSize dims[] = {1};
+  prhs[1] = mxCreateCellArray(1, dims);
+  mxArray *plhs[1];
+  mxSetCell(prhs[1], 0, eigenToMatlab(autoDiffToGradientMatrix(m, num_variables)));
+  mexCallMATLABsafe(1, plhs, nrhs, prhs, "TaylorVar");
+  return plhs[0];
+}
+
+template<int RowsAtCompileTime, int ColsAtCompileTime>
+mxArray *eigenToMatlabGeneral(
+        const Eigen::MatrixBase<Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>, RowsAtCompileTime, ColsAtCompileTime>>& mat)
+{
+return eigenToTaylorVar(mat);
+};
+
+template<int RowsAtCompileTime, int ColsAtCompileTime>
+mxArray *eigenToMatlabGeneral(const Eigen::MatrixBase<Eigen::Matrix<TrigPolyd, RowsAtCompileTime, ColsAtCompileTime>>& mat)
+{
+  return eigenToTrigPoly<RowsAtCompileTime, ColsAtCompileTime>(mat);
+};
+
+template<int RowsAtCompileTime, int ColsAtCompileTime>
+mxArray *eigenToMatlabGeneral(const Eigen::MatrixBase<Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime>>& mat)
+{
+  return eigenToMatlab(mat.const_cast_derived());
+};
 
 
 #endif

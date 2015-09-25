@@ -24,7 +24,7 @@ int main()
   int r_hand;
   //int l_foot;
   //int r_foot;
-  for(int i = 0;i<model->num_bodies;i++)
+  for(int i = 0;i<model->bodies.size();i++)
   {
     if(model->bodies[i]->linkname.compare(string("l_hand")))
     {
@@ -46,17 +46,12 @@ int main()
   int nq = model->num_positions;
   VectorXd qstar = VectorXd::Zero(nq);
   qstar(3) = 0.8;
-  model->doKinematics(qstar);
-  Vector3d com0;
-  model->getCOM(com0);
-  Vector4d l_hand_pt;
-  l_hand_pt<<0.0,0.0,0.0,1.0;
-  Vector4d r_hand_pt;
-  r_hand_pt<<0.0,0.0,0.0,1.0;
-  Vector3d lhand_pos0;
-  model->forwardKin(l_hand,l_hand_pt,0,lhand_pos0);
-  Vector3d rhand_pos0;
-  model->forwardKin(r_hand,r_hand_pt,0,rhand_pos0);
+  KinematicsCache<double> cache = model->doKinematics(qstar, 0);
+  Vector3d com0 = model->centerOfMass(cache, 0).value();
+
+  Vector3d r_hand_pt = Vector3d::Zero();
+  Vector3d rhand_pos0 = model->forwardKin(cache, r_hand_pt, r_hand, 0, 0, 0).value();
+
   int nT = 4;
   double* t = new double[nT];
   double dt = 1.0/(nT-1);

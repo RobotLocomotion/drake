@@ -1,5 +1,4 @@
 #include <iostream>
-#include <cstdlib>
 #include "RigidBodyManipulator.h"
 
 #include "../RigidBodyConstraint.h"
@@ -14,9 +13,9 @@ int main()
     cerr << "ERROR: Failed to load model"<<endl;
     return -1;
   }
-  Vector2d tspan;
+  Eigen::Vector2d tspan;
   tspan<< 0,1;
-  Vector3d kc1_lb, kc1_ub;
+  Eigen::Vector3d kc1_lb, kc1_ub;
   kc1_lb<<0,0,0;
   kc1_ub<<0,0,0;
   WorldCoMConstraint* kc1 = new WorldCoMConstraint(model,kc1_lb,kc1_ub,tspan);

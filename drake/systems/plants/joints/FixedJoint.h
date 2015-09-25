@@ -8,30 +8,79 @@
 #ifndef DRAKE_SYSTEMS_PLANTS_JOINTS_FIXEDJOINT_H_
 #define DRAKE_SYSTEMS_PLANTS_JOINTS_FIXEDJOINT_H_
 
-#include "DrakeJoint.h"
+#include "DrakeJointImpl.h"
 
-class DLLEXPORT_DRAKEJOINT FixedJoint: public DrakeJoint
-{
+class DLLEXPORT_DRAKEJOINT FixedJoint: public DrakeJointImpl<FixedJoint> {
 public:
-  FixedJoint(const std::string& name, const Eigen::Isometry3d& transform_to_parent_body);
+  FixedJoint(const std::string &name, const Eigen::Isometry3d &transform_to_parent_body)
+          : DrakeJointImpl(*this, name, transform_to_parent_body, 0, 0) { };
 
-  virtual ~FixedJoint();
+  virtual ~FixedJoint() { };
 
-  virtual std::string getPositionName(int index) const { throw std::runtime_error("bad index"); }
+  template<typename DerivedQ>
+  Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry> jointTransform(const Eigen::MatrixBase<DerivedQ> &q) const {
+    return Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>::Identity();
+  };
 
-  virtual Eigen::Isometry3d jointTransform(const Eigen::Ref<const Eigen::VectorXd>& q) const;
+  template <typename DerivedQ, typename DerivedMS>
+  void motionSubspace(const Eigen::MatrixBase<DerivedQ> & q,
+                      Eigen::MatrixBase<DerivedMS>& motion_subspace,
+                      typename Gradient<DerivedMS, Eigen::Dynamic>::type* dmotion_subspace = nullptr) const {
+    motion_subspace.resize(TWIST_SIZE, getNumVelocities());
+    if (dmotion_subspace) {
+      dmotion_subspace->resize(motion_subspace.size(), getNumPositions());
+    }
+  };
 
-  virtual void motionSubspace(const Eigen::Ref<const Eigen::VectorXd>& q, MotionSubspaceType& motion_subspace, Eigen::MatrixXd* dmotion_subspace = nullptr) const;
+  template<typename DerivedQ, typename DerivedV>
+  void motionSubspaceDotTimesV(const Eigen::MatrixBase<DerivedQ> &q, const Eigen::MatrixBase<DerivedV> &v,
+                               Eigen::Matrix<typename DerivedQ::Scalar, 6, 1> &motion_subspace_dot_times_v,
+                               typename Gradient<Eigen::Matrix<typename DerivedQ::Scalar, 6, 1>, Eigen::Dynamic>::type *dmotion_subspace_dot_times_vdq = nullptr,
+                               typename Gradient<Eigen::Matrix<typename DerivedQ::Scalar, 6, 1>, Eigen::Dynamic>::type *dmotion_subspace_dot_times_vdv = nullptr) const {
+    motion_subspace_dot_times_v.setZero();
 
-  virtual void motionSubspaceDotTimesV(const Eigen::Ref<const Eigen::VectorXd>& q, const Eigen::Ref<const Eigen::VectorXd>& v, Vector6d& motion_subspace_dot_times_v,
-      Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdq = nullptr,
-      Gradient<Vector6d, Eigen::Dynamic>::type* dmotion_subspace_dot_times_vdv = nullptr) const;
+    if (dmotion_subspace_dot_times_vdq) {
+      dmotion_subspace_dot_times_vdq->setZero(TWIST_SIZE, 1);
+    }
 
-  virtual Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const;
+    if (dmotion_subspace_dot_times_vdv) {
+      dmotion_subspace_dot_times_vdv->setZero(TWIST_SIZE, 1);
+    }
+  };
 
-  virtual void qdot2v(const Eigen::Ref<const Eigen::VectorXd>& q, Eigen::MatrixXd& qdot_to_v, Eigen::MatrixXd* dqdot_to_v) const;
+  template<typename DerivedQ>
+  void qdot2v(const Eigen::MatrixBase<DerivedQ> & q,
+              Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic, 0, MAX_NUM_VELOCITIES, MAX_NUM_POSITIONS> &qdot_to_v,
+              Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic> *dqdot_to_v) const {
+    qdot_to_v.resize(getNumVelocities(), getNumPositions());
+    if (dqdot_to_v) {
+      dqdot_to_v->setZero(qdot_to_v.size(), getNumPositions());
+    }
+  };
 
-  virtual void v2qdot(const Eigen::Ref<const Eigen::VectorXd>& q, Eigen::MatrixXd& v_to_qdot, Eigen::MatrixXd* dv_to_qdot) const;
+  template<typename DerivedQ>
+  void v2qdot(const Eigen::MatrixBase<DerivedQ> & q,
+              Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic, 0, MAX_NUM_POSITIONS, MAX_NUM_VELOCITIES> &v_to_qdot,
+              Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic> *dv_to_qdot) const {
+    v_to_qdot.resize(getNumPositions(), getNumVelocities());
+    if (dv_to_qdot) {
+      dv_to_qdot->setZero(v_to_qdot.size(), getNumPositions());
+    }
+  };
+
+  template <typename DerivedV>
+  GradientVar<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorque(const Eigen::MatrixBase<DerivedV> &v, int gradient_order) const
+  {
+    GradientVar<typename DerivedV::Scalar, Eigen::Dynamic, 1> ret(getNumVelocities(), 1, getNumVelocities(), gradient_order);
+    ret.value().setZero();
+    if (gradient_order > 0) {
+      ret.gradient().value().setZero();
+    }
+    return ret;
+  }
+
+    virtual std::string getPositionName(int index) const;
+    virtual Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const;
 };
 
 #endif /* DRAKE_SYSTEMS_PLANTS_JOINTS_FIXEDJOINT_H_ */

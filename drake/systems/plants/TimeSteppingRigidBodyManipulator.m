@@ -240,10 +240,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         num_q = obj.manip.num_positions;
         q=x(1:num_q);
         v=x(num_q+(1:obj.manip.num_velocities));
-        kinsol = doKinematics(obj,q);
+        kinsol = doKinematics(obj, q, v);
         [H,C,B] = manipulatorDynamics(obj.manip, q, v);
         [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D] = obj.manip.contactConstraints(kinsol, obj.multiple_contacts);
-        [z, Mqdn, wqdn, possible_contact_indices, possible_jointlimit_indices] = solveLCPmex(obj.manip.mex_model_ptr, q, v, u, phiC, n, D, obj.timestep, obj.z_inactive_guess_tol, obj.LCP_cache.data.z, H, C, B, obj.enable_fastqp);
+        [z, Mqdn, wqdn, possible_contact_indices, possible_jointlimit_indices] = solveLCPmex(obj.manip.mex_model_ptr, kinsol.mex_ptr, u, phiC, n, D, obj.timestep, obj.z_inactive_guess_tol, obj.LCP_cache.data.z, H, C, B, obj.enable_fastqp);
         possible_contact_indices = logical(possible_contact_indices);
         contact_data.normal = normal(:,possible_contact_indices);
         
@@ -864,11 +864,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       [varargout{:}]=forwardKin(obj.manip,varargin{:});
     end
 
-    function varargout = forwardJacDot(obj,varargin)
-      varargout = cell(1,nargout);
-      [varargout{:}]=forwardJacDot(obj.manip,varargin{:});
-    end
-
     function varargout = bodyKin(obj,varargin)
       varargout = cell(1,nargout);
       [varargout{:}]=bodyKin(obj.manip,varargin{:});
@@ -1193,6 +1188,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     function varargout = terrainContactPositions(obj,varargin)
       varargout = cell(1,nargout);
       [varargout{:}] = terrainContactPositions(obj.manip,varargin{:});
+    end
+
+    function varargout = terrainContactJacobianDotTimesV(obj,varargin)
+      varargout = cell(1,nargout);
+      [varargout{:}] = terrainContactJacobianDotTimesV(obj.manip,varargin{:});
     end
 
     function distance = collisionRaycast(obj, kinsol, origin, point_on_ray, use_margins)

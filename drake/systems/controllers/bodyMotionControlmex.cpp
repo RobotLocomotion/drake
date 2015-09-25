@@ -4,6 +4,8 @@
 #include "controlUtil.h"
 #include "drakeMexUtil.h"
 
+ using namespace Eigen;
+
 struct BodyMotionControlData {
   RigidBodyManipulator* r;
   Vector6d Kp;
@@ -70,16 +72,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   assert(mxGetM(prhs[narg])==6); assert(mxGetN(prhs[narg])==1);
   Map< Vector6d > body_vdot_des(mxGetPrSafe(prhs[narg++]));
 
-  pdata->r->doKinematics(q,false,qd);
+  KinematicsCache<double> cache = pdata->r->doKinematics(q, qd, 0); // FIXME: pass this into the mex function instead
 
   // TODO: this must be updated to use quaternions/spatial velocity
-  Vector6d body_pose;
-  MatrixXd J = MatrixXd::Zero(6,pdata->r->num_positions);
-  Vector4d zero = Vector4d::Zero();
-  zero(3) = 1.0;
-  pdata->r->forwardKin(pdata->body_index,zero,1,body_pose);
-  pdata->r->forwardJac(pdata->body_index,zero,1,J);
-  
+  auto body_pose_gradientvar = pdata->r->forwardKin(cache, Vector3d::Zero().eval(), pdata->body_index, 0, 1, 1);
+  const auto& body_pose = body_pose_gradientvar.value();
+  const auto& J = body_pose_gradientvar.gradient().value();
+
   Vector6d body_error;
   body_error.head<3>()= body_pose_des.head<3>()-body_pose.head<3>();
 

@@ -10,6 +10,11 @@
 #define S_FUNCTION_LEVEL 2
 #include "simstruc.h"
 
+#include <lcm/lcm.h>
+
+#include <string>
+#include <list>
+
 #ifdef WIN32
 #define __STDC_FORMAT_MACROS            // Enable integer types
 #include <lcm/WinPorting.h>
@@ -18,11 +23,6 @@
 #include <sys/select.h>
 #endif
 
-
-#include <lcm/lcm.h>
-
-#include <string>
-#include <list>
 using namespace std;
 
 

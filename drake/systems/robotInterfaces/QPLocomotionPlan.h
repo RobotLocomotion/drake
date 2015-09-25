@@ -9,7 +9,7 @@
 #include "PiecewisePolynomial.h"
 #include "ExponentialPlusPiecewisePolynomial.h"
 #include "RigidBodyManipulator.h"
-#include "drake/lcmt_qp_controller_input.hpp"
+#include "lcmtypes/drake/lcmt_qp_controller_input.hpp"
 #include "BodyMotionData.h"
 #include "Side.h"
 #include <lcm/lcm-cpp.hpp>
@@ -28,7 +28,7 @@ public:
   QuadraticLyapunovFunction() { }
 
   template<typename DerivedS>
-  QuadraticLyapunovFunction(const MatrixBase<DerivedS>& S, const ExponentialPlusPiecewisePolynomial<double>& s1) :
+  QuadraticLyapunovFunction(const Eigen::MatrixBase<DerivedS>& S, const ExponentialPlusPiecewisePolynomial<double>& s1) :
       S(S), s1(s1) { }
 
   const Eigen::MatrixXd& getS() const
@@ -164,8 +164,8 @@ private:
   std::string lcm_channel;
 
   double start_time;
-  Vector3d plan_shift;
-  std::map<Side,Vector3d> foot_shifts;
+  Eigen::Vector3d plan_shift;
+  std::map<Side,Eigen::Vector3d> foot_shifts;
   double last_foot_shift_time;
   drake::lcmt_qp_controller_input last_qp_input;
   std::map<Side, bool> toe_off_active;
@@ -215,9 +215,9 @@ private:
 
   std::vector<Side> getSupportSides(const RigidBodySupportState &support_state) const;
 
-  void updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const Eigen::VectorXd& qd);
+  void updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const KinematicsCache<double>& cache, const Eigen::VectorXd& v);
 
-  void updatePlanShift(double t_plan, const std::vector<bool>& contact_force_detected, int support_index);
+  void updatePlanShift(const KinematicsCache<double>& cache, double t_plan, const std::vector<bool>& contact_force_detected, int support_index);
 
   void findPlannedSupportFraction(double t_plan, int support_index, double &last_support_fraction, double &next_support_fraction, double &transition_fraction) const;
 

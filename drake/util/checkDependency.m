@@ -51,8 +51,12 @@ else % then try to evaluate the dependency now...
     case 'spotless'
       conf.spotless_enabled = logical(exist('msspoly','class'));
       if ~conf.spotless_enabled
-        if ~pod_pkg_config('spotless')
-          error('Drake:SpotlessRequired','Missing required dependency "spotless".  Please include the spotless pod in your pods collection or install spotless directly from <a href="https://github.com/mmt/spotless">https://github.com/mmt/spotless</a>');
+        if ~pod_pkg_config('spotless') && nargout<1
+          disp(' ');
+          disp(' SPOTLESS not found.  spotless support will be disabled.');
+          disp(' To re-enable, install spotless using drake''s cmake option WITH_SPOTLESS=ON');
+          disp(' Or install it directly from https://github.com/spot-toolbox/spotless and add it to your path');
+          disp(' ');
         end
         conf.spotless_enabled = logical(exist('msspoly','class'));
       end
@@ -78,7 +82,6 @@ else % then try to evaluate the dependency now...
         end
 
         if (conf.lcm_enabled)
-          javaaddpathProtectGlobals(fullfile(pods_get_base_path,'share','java','lcmtypes_drake.jar'));
           [retval,info] = systemWCMakeEnv(fullfile(getDrakePath(),'util','check_multicast_is_loopback.sh'));
           if (retval)
             info = strrep(info,'ERROR: ','');

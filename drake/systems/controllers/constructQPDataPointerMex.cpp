@@ -7,6 +7,7 @@
 // #include "drakeUtil.h"
 
 using namespace std;
+using namespace Eigen;
 
 void parseIntegratorParams(const mxArray *params_obj, IntegratorParams &params) {
   const mxArray *pobj;
@@ -286,7 +287,7 @@ void parseRobotJointNames(const mxArray *input_names, JointNames *joint_names) {
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
-  if (nrhs<1) mexErrMsgTxt("usage: ptr = constructQPDataPointerMex(robot_obj, params_sets, robot_property_cache, B, umin, umax, terrain_map_ptr, gurobi_opts);");
+  if (nrhs<1) mexErrMsgTxt("usage: ptr = constructQPDataPointerMex(robot_obj, params_sets, robot_property_cache, B, umin, umax, gurobi_opts);");
 
   if (nrhs == 1) {
     // By convention, calling the constructor with just one argument (the pointer) should delete the pointer
@@ -301,13 +302,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   if (nlhs<1) mexErrMsgTxt("take at least one output... please.");
 
-  struct NewQPControllerData* pdata;
-  pdata = new struct NewQPControllerData;
-
   int narg = 0;
   
   // robot_obj
-  pdata->r = (RigidBodyManipulator*) getDrakeMexPointer(prhs[narg]);
+  NewQPControllerData* pdata = new NewQPControllerData(static_cast<RigidBodyManipulator*>(getDrakeMexPointer(prhs[narg])));
   narg++;
 
   // param_sets
@@ -332,29 +330,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // umax
   memcpy(pdata->umax.data(),mxGetPrSafe(prhs[narg++]),sizeof(double)*nu);
 
-  // terrain_map_ptr
-  if (!mxIsNumeric(prhs[narg]) || mxGetNumberOfElements(prhs[narg])!=1) mexErrMsgIdAndTxt("Drake:constructQPDataPointerMex:BadInputs","this should be a map pointer");
-  void *ptr = NULL;
-  mxClassID cid;
-  if (sizeof(ptr) == 4) {
-    cid = mxUINT32_CLASS;
-  } else if (sizeof(ptr) == 8) {
-    cid = mxUINT64_CLASS;
-  } else {
-    std::cout << "size of ptr: " << sizeof(ptr) << std::endl;
-    mexErrMsgTxt("We expect size of pointer to be 4 on a 32-bit machine or 8 on a 64-bit machine");
-  }
-  if (mxGetClassID(prhs[narg]) != cid) {
-    mexErrMsgTxt("map_ptr should be a uint64 (for 64-bit machines) or uint32 (for 32-bit machines)");
-  }
-  memcpy(&pdata->map_ptr,mxGetData(prhs[narg]),sizeof(ptr));
-  if (!pdata->map_ptr) mexWarnMsgTxt("Map ptr is NULL. Assuming flat ground.");
-  narg++;
-
-  // default_terrain_height
-  pdata->default_terrain_height = mxGetScalar(prhs[narg]);
-  narg++;
-
   // use_fast_qp
   pdata->use_fast_qp = (int) mxGetScalar(prhs[narg]);
   narg++;
@@ -378,8 +353,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   //create gurobi environment
   int error = GRBloadenv(&(pdata->env),NULL);
-  if (error)
-    mexErrMsgTxt("Cannot load gurobi environment.");
+  if (error) {
+    mexPrintf("Gurobi error code: %d\n", error);
+    mexErrMsgTxt("Cannot load gurobi environment");
+  }
 
   // set solver params (http://www.gurobi.com/documentation/5.5/reference-manual/node798#sec:Parameters)
   int method = (int) mxGetScalar(myGetField(psolveropts,"method"));

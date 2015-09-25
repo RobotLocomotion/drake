@@ -30,7 +30,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   }
   else
   {
-    int num_t = mxGetNumberOfElements(prhs[2]);
+    size_t num_t = mxGetNumberOfElements(prhs[2]);
     if(num_t == 0)
     {
       t_ptr = nullptr;
@@ -48,14 +48,14 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   int num_cnst = cnst->getNumConstraint(t_ptr);
   //mexPrintf("num_cnst = %d\n",num_cnst);
   int nq = cnst->getRobotPointer()->num_positions;
-  Map<VectorXd> q(mxGetPrSafe(prhs[1]), nq);
-  cnst->getRobotPointer()->doKinematics(q);
-  VectorXd c(num_cnst);
-  MatrixXd dc(num_cnst,nq);
-  cnst->eval(t_ptr,c,dc);
+  Eigen::Map<Eigen::VectorXd> q(mxGetPrSafe(prhs[1]), nq);
+  KinematicsCache<double> cache = cnst->getRobotPointer()->doKinematics(q, 0);
+  Eigen::VectorXd c(num_cnst);
+  Eigen::MatrixXd dc(num_cnst,nq);
+  cnst->eval(t_ptr, cache, c, dc);
   //mexPrintf("get c,dc\n");
-  VectorXd lb(num_cnst);
-  VectorXd ub(num_cnst);
+  Eigen::VectorXd lb(num_cnst);
+  Eigen::VectorXd ub(num_cnst);
   cnst->bounds(t_ptr,lb,ub);
   //mexPrintf("get lb, ub\n");
   std::vector<std::string> cnst_names;
