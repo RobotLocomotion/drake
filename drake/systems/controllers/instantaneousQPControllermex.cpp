@@ -47,7 +47,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   narg++;
 
   // qp_input
-  shared_ptr<drake::lcmt_qp_controller_input> qp_input(new drake::lcmt_qp_controller_input());
+  shared_ptr<lcmdrake::lcmt_qp_controller_input> qp_input(new lcmdrake::lcmt_qp_controller_input());
   const mxArray* lcm_message_mex = prhs[narg];
   if (!mxIsInt8(lcm_message_mex))
     mexErrMsgTxt("Expected an int8 array as the qp_input argument");

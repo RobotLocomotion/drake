@@ -15,12 +15,12 @@ classdef LCMSignalCoder < LCMCoder
       names=obj.coordinate_names;
     end
     function [x,t] = decode(obj,data)
-      msg = drake.lcmt_drake_signal(data);
+      msg = lcmdrake.lcmt_drake_signal(data);
       t = msg.timestamp/1000;
       x = msg.val;  % todo: would be more robust to string match the coordinate names
     end
     function msg = encode(obj,t,x)
-      msg = drake.lcmt_drake_signal();
+      msg = lcmdrake.lcmt_drake_signal();
       msg.timestamp = t*1000;
       msg.dim = numel(x);
       msg.coord = obj.coordinate_names;

@@ -41,7 +41,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   }
   narg++;
 
-  shared_ptr<drake::lcmt_qp_controller_input> msg = encodeQPInputLCM(qp_input);
+  shared_ptr<lcmdrake::lcmt_qp_controller_input> msg = encodeQPInputLCM(qp_input);
 
   if (publish_flag) {
     lcm.publish("QP_CONTROLLER_INPUT", &*msg);

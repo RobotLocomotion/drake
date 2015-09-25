@@ -5,7 +5,7 @@
 #include <lcm/lcm-cpp.hpp>
 #include "lcmUtil.h"
 #include "testUtil.h"
-#include "lcmtypes/drake/lcmt_zmp_com_observer_state.hpp"
+#include "lcmtypes/lcmdrake/lcmt_zmp_com_observer_state.hpp"
 
 const bool CHECK_CENTROIDAL_MOMENTUM_RATE_MATCHES_TOTAL_WRENCH = false;
 const bool PUBLISH_ZMP_COM_OBSERVER_STATE = true;
@@ -133,7 +133,7 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<Vecto
   return qd_ref;
 }
 
-std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> loadAvailableSupports(std::shared_ptr<drake::lcmt_qp_controller_input> qp_input) {
+std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> loadAvailableSupports(std::shared_ptr<lcmdrake::lcmt_qp_controller_input> qp_input) {
   // Parse a qp_input LCM message to extract its available supports as a vector of SupportStateElements
   std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> available_supports;
   available_supports.resize(qp_input->num_support_data);
@@ -153,9 +153,9 @@ std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> l
   return available_supports;
 }
 
-void addJointSoftLimits(const JointSoftLimitParams &params, const DrakeRobotState &robot_state, const VectorXd &q_des, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &supports, std::vector<drake::lcmt_joint_pd_override> &joint_pd_override) {
+void addJointSoftLimits(const JointSoftLimitParams &params, const DrakeRobotState &robot_state, const VectorXd &q_des, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &supports, std::vector<lcmdrake::lcmt_joint_pd_override> &joint_pd_override) {
   Matrix<bool, Dynamic, 1> has_joint_override = Matrix<bool, Dynamic, 1>::Zero(q_des.size());
-  for (std::vector<drake::lcmt_joint_pd_override>::iterator it = joint_pd_override.begin(); it != joint_pd_override.end(); ++it) {
+  for (std::vector<lcmdrake::lcmt_joint_pd_override>::iterator it = joint_pd_override.begin(); it != joint_pd_override.end(); ++it) {
     has_joint_override(it->position_ind - 1) = true;
   }
   for (int i=0; i < params.lb.size(); i++) {
@@ -171,7 +171,7 @@ void addJointSoftLimits(const JointSoftLimitParams &params, const DrakeRobotStat
           w_ub = logisticSigmoid(params.weight(i), params.k_logistic(i), robot_state.q(i), params.ub(i));
         }
         double weight = std::max(w_ub, w_lb);
-        drake::lcmt_joint_pd_override override;
+        lcmdrake::lcmt_joint_pd_override override;
         override.position_ind = i + 1;
         override.qi_des = q_des(i);
         override.qdi_des = 0;
@@ -184,8 +184,8 @@ void addJointSoftLimits(const JointSoftLimitParams &params, const DrakeRobotStat
   }
 }
 
-void applyJointPDOverride(const std::vector<drake::lcmt_joint_pd_override> &joint_pd_override, const DrakeRobotState &robot_state, PIDOutput &pid_out, VectorXd &w_qdd) {
-  for (std::vector<drake::lcmt_joint_pd_override>::const_iterator it = joint_pd_override.begin(); it != joint_pd_override.end(); ++it) {
+void applyJointPDOverride(const std::vector<lcmdrake::lcmt_joint_pd_override> &joint_pd_override, const DrakeRobotState &robot_state, PIDOutput &pid_out, VectorXd &w_qdd) {
+  for (std::vector<lcmdrake::lcmt_joint_pd_override>::const_iterator it = joint_pd_override.begin(); it != joint_pd_override.end(); ++it) {
     int ind = it->position_ind - 1;
     double err_q = it->qi_des - robot_state.q(ind);
     double err_qd = it->qdi_des - robot_state.qd(ind);
@@ -275,7 +275,7 @@ void estimateCoMBasedOnMeasuredZMP(NewQPControllerData* pdata, AtlasParams* para
   if (PUBLISH_ZMP_COM_OBSERVER_STATE) {
     std::unique_ptr<lcm::LCM> lcm(new lcm::LCM);
     if (lcm->good()) {
-      drake::lcmt_zmp_com_observer_state zmp_com_observer_state_msg;
+      lcmdrake::lcmt_zmp_com_observer_state zmp_com_observer_state_msg;
       eigenVectorToCArray(pdata->state.center_of_mass_observer_state.head<2>(), zmp_com_observer_state_msg.com);
       eigenVectorToCArray(pdata->state.center_of_mass_observer_state.tail<2>(), zmp_com_observer_state_msg.comd);
       zmp_com_observer_state_msg.ground_plane_height = point_on_contact_plane(2);
@@ -336,7 +336,7 @@ void checkCentroidalMomentumMatchesTotalWrench(RigidBodyManipulator* r, Kinemati
 }
 
 int setupAndSolveQP(
-		NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, DrakeRobotState &robot_state,
+		NewQPControllerData *pdata, std::shared_ptr<lcmdrake::lcmt_qp_controller_input> qp_input, DrakeRobotState &robot_state,
 		const Ref<Matrix<bool, Dynamic, 1>> &b_contact_force, const std::map<Side, ForceTorqueMeasurement>& foot_force_torque_measurements,
 		QPControllerOutput *qp_output, std::shared_ptr<QPControllerDebugData> debug) {
   // The primary solve loop for our controller. This constructs and solves a Quadratic Program and produces the instantaneous desired torques, along with reference positions, velocities, and accelerations. It mirrors the Matlab implementation in atlasControllers.InstantaneousQPController.setupAndSolveQP(), and more documentation can be found there. 
@@ -482,7 +482,7 @@ int setupAndSolveQP(
   typedef GradientVar<double, TWIST_SIZE, 1> WrenchGradientVarType;
   std::map<int, std::unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
   for (auto it = qp_input->body_wrench_data.begin(); it != qp_input->body_wrench_data.end(); ++it) {
-    const drake::lcmt_body_wrench_data& body_wrench_data = *it;
+    const lcmdrake::lcmt_body_wrench_data& body_wrench_data = *it;
     int body_id = body_wrench_data.body_id - 1;
     f_ext[body_id] = std::unique_ptr<WrenchGradientVarType>(new WrenchGradientVarType(TWIST_SIZE, 1, nq, 0));
     f_ext[body_id]->value() = Map<const Matrix<double, TWIST_SIZE, 1> >(body_wrench_data.wrench);

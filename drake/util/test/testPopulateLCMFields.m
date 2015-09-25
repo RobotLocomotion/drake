@@ -2,7 +2,7 @@ function testPopulateLCMFields()
 
 checkDependency('lcm');
 
-msg = drake.lcmt_force_torque();
+msg = lcmdrake.lcmt_force_torque();
 data.timestamp = randi(100);
 data.fx = rand(1);
 data.fy = rand(1);

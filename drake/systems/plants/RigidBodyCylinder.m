@@ -62,7 +62,7 @@ classdef RigidBodyCylinder < RigidBodyGeometry
     end 
     
     function geometry = serializeToLCM(obj)
-      geometry = drake.lcmt_viewer_geometry_data();
+      geometry = lcmdrake.lcmt_viewer_geometry_data();
       geometry.type = geometry.CYLINDER;
       geometry.string_data = '';
       geometry.num_float_data = 2;

@@ -17,7 +17,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   auto q = Map<const VectorXd>(mxGetPrSafe(prhs[2]), nq);
   auto v = Map<const VectorXd>(mxGetPrSafe(prhs[2]) + nq, nv);
   auto contact_force_detected = matlabToStdVector<bool>(prhs[3]);
-  drake::lcmt_qp_controller_input qp_controller_input = plan->createQPControllerInput(t_global, q, v, contact_force_detected);
+  lcmdrake::lcmt_qp_controller_input qp_controller_input = plan->createQPControllerInput(t_global, q, v, contact_force_detected);
   const size_t size = qp_controller_input.getEncodedSize();
   plhs[0] = mxCreateNumericMatrix(size, 1, mxUINT8_CLASS, mxREAL);
   qp_controller_input.encode(mxGetData(plhs[0]), 0, static_cast<int>(size));

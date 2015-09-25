@@ -2,7 +2,7 @@
 // a basic vector of doubles which can represent any signal passed 
 // around in drake
 
-package drake;
+package lcmdrake;
 
 struct lcmt_drake_signal
 {

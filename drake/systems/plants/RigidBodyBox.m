@@ -50,7 +50,7 @@ classdef RigidBodyBox < RigidBodyGeometry
     end
     
     function geometry = serializeToLCM(obj)
-      geometry = drake.lcmt_viewer_geometry_data();
+      geometry = lcmdrake.lcmt_viewer_geometry_data();
       geometry.type = geometry.BOX;
       geometry.string_data = '';
       geometry.num_float_data = 3;
