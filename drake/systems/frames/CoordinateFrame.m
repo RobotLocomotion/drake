@@ -418,7 +418,7 @@ classdef CoordinateFrame < handle
     end
 
     function setupLCMInputs(obj,mdl,subsys,subsys_portnum,options)
-      typecheck(mdl,'char');
+      typecheck(mdl,{'char','SimulinkModelHandle'});
       typecheck(subsys,'char');
       uid = datestr(now,'MMSSFFF');
       if (nargin<4) subsys_portnum=1; end
@@ -428,7 +428,7 @@ classdef CoordinateFrame < handle
     end
 
     function setupLCMOutputs(obj,mdl,subsys,subsys_portnum,options)
-      typecheck(mdl,'char');
+      typecheck(mdl,{'char','SimulinkModelHandle'});
       typecheck(subsys,'char');
       uid = datestr(now,'MMSSFFF');
       if (nargin<4) subsys_portnum=1; end
