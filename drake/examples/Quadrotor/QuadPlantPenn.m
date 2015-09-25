@@ -18,6 +18,11 @@ classdef QuadPlantPenn < SecondOrderSystem
           I = obj.I;
         end
         
+        function u0 = nominalThrust(obj)
+          % each propellor commands -mg/4
+          u0 = Point(getInputFrame(obj),obj.m*9.81*ones(4,1)/4);
+        end
+        
         function qdd = sodynamics(obj,t,q,qd,u)
             % States
             % x
@@ -111,6 +116,13 @@ classdef QuadPlantPenn < SecondOrderSystem
             x = zeros(12,1);
         end
         
+        
+        function v = constructVisualizer(obj)
+          r = Quadrotor();
+          v = r.constructVisualizer();
+          tf = AffineTransform(obj.getOutputFrame(),v.getInputFrame(),[eye(6),zeros(6)],zeros(6,1));
+          obj.getOutputFrame().addTransform(tf);
+        end
     end
     properties
       m = .5;
