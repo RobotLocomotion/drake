@@ -164,38 +164,38 @@ class LinkGeometry {
   double pos[3], theta, axis[3];
   float color[4];
 
-  LinkGeometry(const drake_lcmt_viewer_geometry_data * geometry_data) : theta(0.0)
+  LinkGeometry(const lcmdrake_lcmt_viewer_geometry_data * geometry_data) : theta(0.0)
   {
     pos[0] = pos[1] = pos[2] = 0.0;
     axis[0] = axis[1] = axis[2] = 0.0;
     color[0] = color[1] = color[2] = .7f; color[3] = 1.0f;  // todo: pick better defaults
 
     switch (geometry_data->type) {
-    case DRAKE_LCMT_VIEWER_GEOMETRY_DATA_SPHERE:
+    case LCMDRAKE_LCMT_VIEWER_GEOMETRY_DATA_SPHERE:
       {
 	      shared_ptr<Geometry> g(new Sphere(geometry_data->float_data[0]));
 	      pGeometry = g;
       }
       break;
-    case DRAKE_LCMT_VIEWER_GEOMETRY_DATA_BOX:
+    case LCMDRAKE_LCMT_VIEWER_GEOMETRY_DATA_BOX:
       {
 	      shared_ptr<Geometry> g(new Box(geometry_data->float_data[0], geometry_data->float_data[1], geometry_data->float_data[2]));
 	      pGeometry = g;
       }
       break;
-    case DRAKE_LCMT_VIEWER_GEOMETRY_DATA_CYLINDER:
+    case LCMDRAKE_LCMT_VIEWER_GEOMETRY_DATA_CYLINDER:
       {
 	      shared_ptr<Geometry> g(new Cylinder(geometry_data->float_data[0], geometry_data->float_data[1]));
 	      pGeometry = g;
       }
       break;
-    case DRAKE_LCMT_VIEWER_GEOMETRY_DATA_MESH:
+    case LCMDRAKE_LCMT_VIEWER_GEOMETRY_DATA_MESH:
       {
 	      shared_ptr<Geometry> g(new Mesh(geometry_data->string_data, geometry_data->num_float_data, geometry_data->float_data));
 	      pGeometry = g;
       }
       break;
-    case DRAKE_LCMT_VIEWER_GEOMETRY_DATA_CAPSULE:
+    case LCMDRAKE_LCMT_VIEWER_GEOMETRY_DATA_CAPSULE:
       {
 	      shared_ptr<Geometry> g(new Capsule(geometry_data->float_data[0], geometry_data->float_data[1]));
 	      pGeometry = g;
@@ -235,7 +235,7 @@ public:
   double pos[3], theta, axis[3];
   list<shared_ptr<LinkGeometry>> geometry;
 
-  Link(const drake_lcmt_viewer_link_data* link_data) : theta(0.0)
+  Link(const lcmdrake_lcmt_viewer_link_data* link_data) : theta(0.0)
   {
     pos[0] = pos[1] = pos[2] = 0.0;
     axis[0] = axis[1] = axis[2] = 0.0;
@@ -324,7 +324,7 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
 }
 
 static void handle_lcm_viewer_load_robot(const lcm_recv_buf_t *rbuf, const char * channel,
-        const drake_lcmt_viewer_load_robot * msg, void * user)
+        const lcmdrake_lcmt_viewer_load_robot * msg, void * user)
 {
   RendererData *self = (RendererData*) user;
   self->links.clear();
@@ -342,45 +342,45 @@ static void handle_lcm_viewer_load_robot(const lcm_recv_buf_t *rbuf, const char 
   }
 
   // send ack that model was successfully loaded
-  drake_lcmt_viewer_command status_message;
-  status_message.command_type = DRAKE_LCMT_VIEWER_COMMAND_STATUS;
+  lcmdrake_lcmt_viewer_command status_message;
+  status_message.command_type = LCMDRAKE_LCMT_VIEWER_COMMAND_STATUS;
   status_message.command_data = (char*) "successfully loaded robot";
-  drake_lcmt_viewer_command_publish(self->lcm, "DRAKE_VIEWER_STATUS", &status_message);
+  lcmdrake_lcmt_viewer_command_publish(self->lcm, "DRAKE_VIEWER_STATUS", &status_message);
   cout << "successfully loaded model" << endl;
 
   // bot_viewer_request_redraw(self->viewer);
 }
 
 static void handle_lcm_viewer_command(const lcm_recv_buf_t *rbuf, const char * channel,
-        const drake_lcmt_viewer_command * msg, void * user)
+        const lcmdrake_lcmt_viewer_command * msg, void * user)
 {
   RendererData *self = (RendererData*) user;
 
   switch(msg->command_type) {
-  case DRAKE_LCMT_VIEWER_COMMAND_START_RECORDING:
+  case LCMDRAKE_LCMT_VIEWER_COMMAND_START_RECORDING:
     {
       bot_viewer_start_recording(self->viewer);
       string movie_path(self->viewer->movie_path);
       self->movie_path = movie_path;
     }
     break;
-  case DRAKE_LCMT_VIEWER_COMMAND_STOP_RECORDING:
+  case LCMDRAKE_LCMT_VIEWER_COMMAND_STOP_RECORDING:
     {
       bot_viewer_stop_recording(self->viewer);
 
-      drake_lcmt_viewer_command status_message;
-      status_message.command_type = DRAKE_LCMT_VIEWER_COMMAND_STATUS;
+      lcmdrake_lcmt_viewer_command status_message;
+      status_message.command_type = LCMDRAKE_LCMT_VIEWER_COMMAND_STATUS;
       status_message.command_data = const_cast<char*>(self->movie_path.c_str());
-      drake_lcmt_viewer_command_publish(self->lcm, "DRAKE_VIEWER_STATUS", &status_message);
+      lcmdrake_lcmt_viewer_command_publish(self->lcm, "DRAKE_VIEWER_STATUS", &status_message);
     }
     break;
-  case DRAKE_LCMT_VIEWER_COMMAND_LOAD_TERRAIN:
+  case LCMDRAKE_LCMT_VIEWER_COMMAND_LOAD_TERRAIN:
     {
       cerr << "Terrain loading from file not implemented yet" << endl;
     }
     break;
 
-  case DRAKE_LCMT_VIEWER_COMMAND_SET_TERRAIN_TRANSFORM:
+  case LCMDRAKE_LCMT_VIEWER_COMMAND_SET_TERRAIN_TRANSFORM:
     {
       cerr << "Setting the terrain transform is not implemented yet" << endl;
     }
@@ -395,7 +395,7 @@ static void handle_lcm_viewer_command(const lcm_recv_buf_t *rbuf, const char * c
 }
 
 static void handle_lcm_viewer_draw(const lcm_recv_buf_t *rbuf, const char * channel,
-        const drake_lcmt_viewer_draw * msg, void * user)
+        const lcmdrake_lcmt_viewer_draw * msg, void * user)
 {
   RendererData *self = (RendererData*) user;
 
@@ -433,18 +433,18 @@ drake_urdf_add_renderer_to_viewer(BotViewer* viewer, lcm_t* lcm, int priority)
   renderer->enabled = 1;
   renderer->user = self;
 
-  drake_lcmt_viewer_command_subscribe(lcm,"DRAKE_VIEWER_COMMAND",&handle_lcm_viewer_command,self);
-  //  drake_lcmt_robot_state_subscribe(lcm,"DRAKE_VIEWER_STATE",&handle_lcm_robot_state,self);
-  drake_lcmt_viewer_load_robot_subscribe(lcm,"DRAKE_VIEWER_LOAD_ROBOT",&handle_lcm_viewer_load_robot,self);
-  drake_lcmt_viewer_draw_subscribe(lcm,"DRAKE_VIEWER_DRAW",&handle_lcm_viewer_draw,self);
+  lcmdrake_lcmt_viewer_command_subscribe(lcm,"DRAKE_VIEWER_COMMAND",&handle_lcm_viewer_command,self);
+  //  lcmdrake_lcmt_robot_state_subscribe(lcm,"DRAKE_VIEWER_STATE",&handle_lcm_robot_state,self);
+  lcmdrake_lcmt_viewer_load_robot_subscribe(lcm,"DRAKE_VIEWER_LOAD_ROBOT",&handle_lcm_viewer_load_robot,self);
+  lcmdrake_lcmt_viewer_draw_subscribe(lcm,"DRAKE_VIEWER_DRAW",&handle_lcm_viewer_draw,self);
 
   bot_viewer_add_renderer(viewer, renderer, priority);
 
-  drake_lcmt_viewer_command status_message;
-  status_message.command_type = DRAKE_LCMT_VIEWER_COMMAND_STATUS;
+  lcmdrake_lcmt_viewer_command status_message;
+  status_message.command_type = LCMDRAKE_LCMT_VIEWER_COMMAND_STATUS;
   status_message.command_data = (char*) "loaded";
 
-  drake_lcmt_viewer_command_publish(lcm, "DRAKE_VIEWER_STATUS", &status_message);
+  lcmdrake_lcmt_viewer_command_publish(lcm, "DRAKE_VIEWER_STATUS", &status_message);
 }
 
 /*

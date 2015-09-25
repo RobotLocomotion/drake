@@ -9,7 +9,7 @@
 #include "PiecewisePolynomial.h"
 #include "ExponentialPlusPiecewisePolynomial.h"
 #include "RigidBodyManipulator.h"
-#include "lcmtypes/drake/lcmt_qp_controller_input.hpp"
+#include "lcmtypes/lcmdrake/lcmt_qp_controller_input.hpp"
 #include "BodyMotionData.h"
 #include "Side.h"
 #include <lcm/lcm-cpp.hpp>
@@ -167,7 +167,7 @@ private:
   Eigen::Vector3d plan_shift;
   std::map<Side,Eigen::Vector3d> foot_shifts;
   double last_foot_shift_time;
-  drake::lcmt_qp_controller_input last_qp_input;
+  lcmdrake::lcmt_qp_controller_input last_qp_input;
   std::map<Side, bool> toe_off_active;
   std::map<Side, bool> knee_pd_active;
   std::map<Side, KneeSettings> knee_pd_settings;
@@ -190,7 +190,7 @@ public:
    * @param contact_force_detected num_bodies vector indicating whether contact force
    */
   template <typename DerivedQ, typename DerivedV>
-  drake::lcmt_qp_controller_input createQPControllerInput(double t_global, const Eigen::MatrixBase<DerivedQ>& q, const Eigen::MatrixBase<DerivedV>& v, const std::vector<bool>& contact_force_detected);
+  lcmdrake::lcmt_qp_controller_input createQPControllerInput(double t_global, const Eigen::MatrixBase<DerivedQ>& q, const Eigen::MatrixBase<DerivedV>& v, const std::vector<bool>& contact_force_detected);
 
   void setDuration(double duration);
 
@@ -202,14 +202,14 @@ public:
 
   bool isFinished(double t) const;
 
-  drake::lcmt_qp_controller_input getLastQPInput() const;
+  lcmdrake::lcmt_qp_controller_input getLastQPInput() const;
 
   const RigidBodyManipulator& getRobot() const;
 
 private:
-  drake::lcmt_zmp_data createZMPData(double t_plan) const;
+  lcmdrake::lcmt_zmp_data createZMPData(double t_plan) const;
 
-  drake::lcmt_support_data createSupportDataElement(const RigidBodySupportStateElement& element, const std::vector<bool>& support_logic);
+  lcmdrake::lcmt_support_data createSupportDataElement(const RigidBodySupportStateElement& element, const std::vector<bool>& support_logic);
 
   bool isSupportingBody(int body_index, const RigidBodySupportState& support_state) const;
 
@@ -227,7 +227,7 @@ private:
 
   void updateS1Trajectory();
 
-  void applyKneePD(Side side, drake::lcmt_qp_controller_input &qp_input);
+  void applyKneePD(Side side, lcmdrake::lcmt_qp_controller_input &qp_input);
 
   static const std::map<SupportLogicType, std::vector<bool> > createSupportLogicMaps();
 

@@ -117,7 +117,7 @@ if (LCM_FOUND)
 	util/CoordinateFrameData.java
 	util/LCMCoder.java
 	)
-  list(APPEND drake_jar_requires lcm-java lcmtypes_drake-java)
+  list(APPEND drake_jar_requires lcm-java lcmtypes_lcmdrake-java)
 
   # add lcmgl
   # annoyingly, libbot does not define a classpath variable. there might be a cleaner way to do this

@@ -4,7 +4,7 @@
 #include "controlUtil.h"
 #include "drakeUtil.h"
 #include "fastQP.h"
-#include "lcmtypes/drake/lcmt_qp_controller_input.hpp"
+#include "lcmtypes/lcmdrake/lcmt_qp_controller_input.hpp"
 #include "ExponentialPlusPiecewisePolynomial.h"
 #include <vector>
 #include "ForceTorqueMeasurement.h"
@@ -273,10 +273,10 @@ PIDOutput wholeBodyPID(NewQPControllerData *pdata, double t, const Eigen::Ref<co
 
 Eigen::VectorXd velocityReference(NewQPControllerData *pdata, double t, const Eigen::Ref<Eigen::VectorXd> &q, const Eigen::Ref<Eigen::VectorXd> &qd, const Eigen::Ref<Eigen::VectorXd> &qdd, bool foot_contact[2], VRefIntegratorParams *params, RobotPropertyCache *rpc);
 
-std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> loadAvailableSupports(std::shared_ptr<drake::lcmt_qp_controller_input> qp_input);
+std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> loadAvailableSupports(std::shared_ptr<lcmdrake::lcmt_qp_controller_input> qp_input);
 
 int setupAndSolveQP(
-		NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, DrakeRobotState &robot_state,
+		NewQPControllerData *pdata, std::shared_ptr<lcmdrake::lcmt_qp_controller_input> qp_input, DrakeRobotState &robot_state,
 		const Eigen::Ref<Eigen::Matrix<bool, Eigen::Dynamic, 1>> &b_contact_force, const std::map<Side, ForceTorqueMeasurement>& foot_force_torque_measurements,
 		QPControllerOutput *qp_output, std::shared_ptr<QPControllerDebugData> debug);
 

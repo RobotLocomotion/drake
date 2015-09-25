@@ -4,7 +4,7 @@
 using namespace std;
 using namespace Eigen;
 
-bool encode(const CoordinateFrame& frame, const double t, const VectorXd& x, drake::lcmt_drake_signal& msg) {
+bool encode(const CoordinateFrame& frame, const double t, const VectorXd& x, lcmdrake::lcmt_drake_signal& msg) {
   msg.timestamp = static_cast<int64_t>(t*1000);
   msg.dim = frame.getDim();
   msg.coord = frame.getCoordinateNames(); // note: inefficient to do a deep copy every time
@@ -12,7 +12,7 @@ bool encode(const CoordinateFrame& frame, const double t, const VectorXd& x, dra
   return true;
 }
 
-bool decode(const CoordinateFrame& frame, const drake::lcmt_drake_signal& msg, double& t, VectorXd& x) {
+bool decode(const CoordinateFrame& frame, const lcmdrake::lcmt_drake_signal& msg, double& t, VectorXd& x) {
   t = double(msg.timestamp)/1000.0;
   for (int i=0; i<msg.dim; i++) { x(i) = msg.val[i]; }  // todo: make this more robust by doing string matching on the coordinate names (with a hashmap?)
   return true;

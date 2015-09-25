@@ -45,9 +45,9 @@ std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> p
   return supports;
 }
 
-std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray *qp_input) {
+std::shared_ptr<lcmdrake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray *qp_input) {
   // Take a matlab data structure corresponding to a QPInputConstantHeight object and parse it down to its representation as an equivalent LCM message. 
-  std::shared_ptr<drake::lcmt_qp_controller_input> msg (new drake::lcmt_qp_controller_input());
+  std::shared_ptr<lcmdrake::lcmt_qp_controller_input> msg (new lcmdrake::lcmt_qp_controller_input());
 
   msg->be_silent = mxGetScalar(myGetProperty(qp_input, "be_silent")) > 0.5;
 

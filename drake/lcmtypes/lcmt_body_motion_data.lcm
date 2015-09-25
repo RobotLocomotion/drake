@@ -1,4 +1,4 @@
-package drake;
+package lcmdrake;
 
 struct lcmt_body_motion_data
 {

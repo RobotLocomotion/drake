@@ -16,7 +16,7 @@ classdef SimulationControlBlock < DrakeSystem
       % Construct a block to easily halt a running simulation. 
       % @param show_gui whether to show a Matlab button labeled 'Halt Simulation'
       % @param lcm_channel channel on which to listen for
-      % drake.lcmt_simulation_command messages
+      % lcmdrake.lcmt_simulation_command messages
       if nargin < 2
         lcm_channel = '';
       end
@@ -27,7 +27,7 @@ classdef SimulationControlBlock < DrakeSystem
       if ~isempty(lcm_channel)
         checkDependency('lcm');
         obj.lc = lcm.lcm.LCM.getSingleton();
-        obj.monitor = drake.util.MessageMonitor(drake.lcmt_simulation_command(), 'timestamp');
+        obj.monitor = drake.util.MessageMonitor(lcmdrake.lcmt_simulation_command(), 'timestamp');
         obj.lc.subscribe(lcm_channel, obj.monitor);
         fprintf(1,'Enabling LCM simultion control on channel %s\n',lcm_channel);
       end
@@ -50,7 +50,7 @@ classdef SimulationControlBlock < DrakeSystem
       if ~isempty(obj.monitor)
         msg = obj.monitor.getNextMessage(0);
         if ~isempty(msg)
-          msg = drake.lcmt_simulation_command(msg);
+          msg = lcmdrake.lcmt_simulation_command(msg);
           
           % note: according to http://www.mathworks.com/help/simulink/ug/using-the-set-param-command.html
           % these will not work when matlab is run in -nodisplay mode

@@ -14,7 +14,7 @@
 
 DLLEXPORT std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> parseSupportData(const mxArray* supp_data);
 
-DLLEXPORT std::shared_ptr<drake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray *qp_input);
+DLLEXPORT std::shared_ptr<lcmdrake::lcmt_qp_controller_input> encodeQPInputLCM(const mxArray *qp_input);
 
 DLLEXPORT PiecewisePolynomial<double> matlabToPiecewisePolynomial(const mxArray* pobj, int index); 
 

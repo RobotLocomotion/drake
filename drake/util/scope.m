@@ -24,7 +24,7 @@ if (g_scope_enable && checkDependency('lcm'))
   for i = 1:length(yval)
       varnameExt = [varname num2str(i)];
       lc = lcm.lcm.LCM.getSingleton();
-      msg = drake.lcmt_scope_data();
+      msg = lcmdrake.lcmt_scope_data();
       msg.scope_id = options.scope_id;
       msg.xdata = xval;
       msg.ydata = yval(i);

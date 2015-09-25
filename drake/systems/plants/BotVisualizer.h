@@ -7,8 +7,8 @@
 #include "RigidBodyManipulator.h"
 
 // these could all go in the cpp file:
-#include "lcmtypes/drake/lcmt_viewer_load_robot.hpp"
-#include "lcmtypes/drake/lcmt_viewer_draw.hpp"
+#include "lcmtypes/lcmdrake/lcmt_viewer_load_robot.hpp"
+#include "lcmtypes/lcmdrake/lcmt_viewer_draw.hpp"
 #include "drakeGeometryUtil.h"
 
 class BotVisualizer : public DrakeSystem {
@@ -31,15 +31,15 @@ public:
   }
 
   void publishLoadRobot() const {
-    drake::lcmt_viewer_load_robot vr;
+    lcmdrake::lcmt_viewer_load_robot vr;
     vr.num_links = manip.bodies.size();
     for (const auto& body : manip.bodies) {
-      drake::lcmt_viewer_link_data link;
+      lcmdrake::lcmt_viewer_link_data link;
       link.name = body->linkname;
       link.robot_num = body->robotnum;
       link.num_geom = body->visual_elements.size();
       for (const auto& v : body->visual_elements) {
-        drake::lcmt_viewer_geometry_data gdata;
+        lcmdrake::lcmt_viewer_geometry_data gdata;
 
         const DrakeShapes::Geometry& geometry = v.getGeometry();
 
@@ -130,7 +130,7 @@ public:
 private:
   mutable RigidBodyManipulator manip;  // todo: remove mutable tag after RBM cleanup
   std::shared_ptr<lcm::LCM> lcm;
-  mutable drake::lcmt_viewer_draw draw_msg;
+  mutable lcmdrake::lcmt_viewer_draw draw_msg;
 };
 
 #endif //DRAKE_BOTVISUALIZER_H

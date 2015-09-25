@@ -5,19 +5,19 @@
 
 using namespace Eigen;
 
-void encodePolynomial(const Polynomial<double>& polynomial, drake::lcmt_polynomial& msg)
+void encodePolynomial(const Polynomial<double>& polynomial, lcmdrake::lcmt_polynomial& msg)
 {
   eigenVectorToStdVector(polynomial.getCoefficients(), msg.coefficients);
   msg.num_coefficients = polynomial.getNumberOfCoefficients();
 }
 
-Polynomial<double> decodePolynomial(const drake::lcmt_polynomial& msg)
+Polynomial<double> decodePolynomial(const lcmdrake::lcmt_polynomial& msg)
 {
   Map<const VectorXd> coefficients(msg.coefficients.data(), msg.coefficients.size());
   return Polynomial<double>(coefficients);
 }
 
-void encodePiecewisePolynomial(const PiecewisePolynomial<double>& piecewise_polynomial, drake::lcmt_piecewise_polynomial& msg)
+void encodePiecewisePolynomial(const PiecewisePolynomial<double>& piecewise_polynomial, lcmdrake::lcmt_piecewise_polynomial& msg)
 {
   msg.num_segments = piecewise_polynomial.getNumberOfSegments();
   msg.num_breaks = piecewise_polynomial.getNumberOfSegments() + 1;
@@ -28,7 +28,7 @@ void encodePiecewisePolynomial(const PiecewisePolynomial<double>& piecewise_poly
   }
 }
 
-PiecewisePolynomial<double> decodePiecewisePolynomial(const drake::lcmt_piecewise_polynomial& msg)
+PiecewisePolynomial<double> decodePiecewisePolynomial(const lcmdrake::lcmt_piecewise_polynomial& msg)
 {
   typedef PiecewisePolynomial<double>::PolynomialMatrix PolynomialMatrix;
   std::vector<PolynomialMatrix> polynomial_matrices;
@@ -38,7 +38,7 @@ PiecewisePolynomial<double> decodePiecewisePolynomial(const drake::lcmt_piecewis
   return PiecewisePolynomial<double>(polynomial_matrices, msg.breaks);
 }
 
-void verifySubtypeSizes(drake::lcmt_support_data &support_data) {
+void verifySubtypeSizes(lcmdrake::lcmt_support_data &support_data) {
   // Check for errors in sizes of variable-length fields. 
   if (support_data.contact_pts.size() != 3) {
     throw std::runtime_error("contact_pts must have 3 rows");
@@ -53,7 +53,7 @@ void verifySubtypeSizes(drake::lcmt_support_data &support_data) {
   }
 }
 
-void verifySubtypeSizes(drake::lcmt_qp_controller_input &qp_input) {
+void verifySubtypeSizes(lcmdrake::lcmt_qp_controller_input &qp_input) {
   // Check (and try to fix) errors in the sizes of the variable-length fields in our message
   if (qp_input.support_data.size() != qp_input.num_support_data) {
     std::cerr << "WARNING: num support data doesn't match" << std::endl;

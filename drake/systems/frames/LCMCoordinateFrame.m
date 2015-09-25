@@ -31,7 +31,7 @@ classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher
       elseif isa(lcmcoder_or_lcmtype_or_dim,'LCMCoder')
         lcmcoder = lcmcoder_or_lcmtype_or_dim;
         d = lcmcoder.dim();
-      elseif strcmp(lcmcoder_or_lcmtype_or_dim,'drake.lcmt_drake_signal') || isa(lcmcoder_or_lcmtype_or_dim,'drake.lcmt_drake_signal')
+      elseif strcmp(lcmcoder_or_lcmtype_or_dim,'lcmdrake.lcmt_drake_signal') || isa(lcmcoder_or_lcmtype_or_dim,'lcmdrake.lcmt_drake_signal')
         lcmcoder = LCMSignalCoder(coordinate_names_or_dim);
         d = lcmcoder.dim();
       else

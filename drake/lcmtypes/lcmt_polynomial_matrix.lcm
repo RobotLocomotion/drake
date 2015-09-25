@@ -1,4 +1,4 @@
-package drake;
+package lcmdrake;
 
 struct lcmt_polynomial_matrix
 {

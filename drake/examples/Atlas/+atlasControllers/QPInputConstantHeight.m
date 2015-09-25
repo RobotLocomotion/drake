@@ -84,7 +84,7 @@ classdef QPInputConstantHeight
     end
 
     function msg = to_lcm(obj)
-      msg = drake.lcmt_qp_controller_input(encodeQPInputLCMMex(obj, false));
+      msg = lcmdrake.lcmt_qp_controller_input(encodeQPInputLCMMex(obj, false));
     end
   end
 end

@@ -74,7 +74,7 @@ Matrix3Xd getFrontTwoContactPoints(const Ref<const Matrix3Xd>& contact_points) {
 }
 
 template <typename DerivedQ, typename DerivedV>
-drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
+lcmdrake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
     double t_global, const MatrixBase<DerivedQ>& q, const MatrixBase<DerivedV>& v, const std::vector<bool>& contact_force_detected)
 {
   if (std::isnan(start_time))
@@ -100,7 +100,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
     updatePlanShift(cache, t_plan, contact_force_detected, support_index);
   }
 
-  drake::lcmt_qp_controller_input qp_input;
+  lcmdrake::lcmt_qp_controller_input qp_input;
   qp_input.be_silent = false;
   qp_input.timestamp = static_cast<int64_t>(t_global * 1e6);
   qp_input.num_support_data = 0;
@@ -229,7 +229,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
       body_motion_trajectory_slice -= trajectory_shift;
     }
 
-    drake::lcmt_body_motion_data body_motion_data_for_support_lcm;
+    lcmdrake::lcmt_body_motion_data body_motion_data_for_support_lcm;
     body_motion_data_for_support_lcm.timestamp = 0;
     body_motion_data_for_support_lcm.body_id = body_or_frame_id + 1; // use 1-indexing in LCM
 
@@ -285,7 +285,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
   qp_input.param_set_name = settings.gain_set;
 
   for (auto it = settings.untracked_position_indices.begin(); it != settings.untracked_position_indices.end(); ++it) {
-    drake::lcmt_joint_pd_override joint_pd_override;
+    lcmdrake::lcmt_joint_pd_override joint_pd_override;
     joint_pd_override.timestamp = 0;
     joint_pd_override.position_ind = *it + 1; // use 1-indexing in LCM
     joint_pd_override.qi_des = q[*it];
@@ -309,10 +309,10 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
   return qp_input;
 }
 
-void QPLocomotionPlan::applyKneePD(Side side, drake::lcmt_qp_controller_input &qp_input)
+void QPLocomotionPlan::applyKneePD(Side side, lcmdrake::lcmt_qp_controller_input &qp_input)
 {
   int knee_index = knee_indices.at(side);
-  drake::lcmt_joint_pd_override joint_pd_override_for_support;
+  lcmdrake::lcmt_joint_pd_override joint_pd_override_for_support;
   joint_pd_override_for_support.timestamp = 0;
   joint_pd_override_for_support.position_ind = static_cast<int32_t>(knee_index) + 1; // use 1-indexing in LCM
   joint_pd_override_for_support.qi_des = knee_pd_settings.at(side).min_knee_angle;
@@ -344,7 +344,7 @@ double QPLocomotionPlan::getDuration() const
   return settings.duration;
 }
 
-drake::lcmt_qp_controller_input QPLocomotionPlan::getLastQPInput() const
+lcmdrake::lcmt_qp_controller_input QPLocomotionPlan::getLastQPInput() const
 {
   return this->last_qp_input;
 }
@@ -363,9 +363,9 @@ const RigidBodyManipulator& QPLocomotionPlan::getRobot() const
   return robot;
 }
 
-drake::lcmt_zmp_data QPLocomotionPlan::createZMPData(double t_plan) const
+lcmdrake::lcmt_zmp_data QPLocomotionPlan::createZMPData(double t_plan) const
 {
-  drake::lcmt_zmp_data zmp_data_lcm;
+  lcmdrake::lcmt_zmp_data zmp_data_lcm;
   zmp_data_lcm.timestamp = 0;
   eigenToCArrayOfArrays(settings.zmp_data.A, zmp_data_lcm.A);
   eigenToCArrayOfArrays(settings.zmp_data.B, zmp_data_lcm.B);
@@ -413,9 +413,9 @@ drake::lcmt_zmp_data QPLocomotionPlan::createZMPData(double t_plan) const
   return zmp_data_lcm;
 }
 
-drake::lcmt_support_data QPLocomotionPlan::createSupportDataElement(const RigidBodySupportStateElement& element, const std::vector<bool>& support_logic)
+lcmdrake::lcmt_support_data QPLocomotionPlan::createSupportDataElement(const RigidBodySupportStateElement& element, const std::vector<bool>& support_logic)
 {
-  drake::lcmt_support_data support_data_element_lcm;
+  lcmdrake::lcmt_support_data support_data_element_lcm;
   support_data_element_lcm.timestamp = 0;
   support_data_element_lcm.body_id = static_cast<int32_t>(element.body) + 1; // use 1-indexing in LCM
   support_data_element_lcm.num_contact_pts = element.contact_points.cols();
@@ -719,5 +719,5 @@ const std::map<Side, int> QPLocomotionPlan::createJointIndicesMap(RigidBodyManip
   return joint_indices;
 }
 
-template drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput<Matrix<double, -1, 1, 0, -1, 1>, Matrix<double, -1, 1, 0, -1, 1> >(double, MatrixBase<Matrix<double, -1, 1, 0, -1, 1> > const&, MatrixBase<Matrix<double, -1, 1, 0, -1, 1> > const&, std::vector<bool, std::allocator<bool> > const&);
-template drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput<Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0> >, Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0> > >(double, MatrixBase<Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0> > > const&, MatrixBase<Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0> > > const&, vector<bool, allocator<bool> > const&);
+template lcmdrake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput<Matrix<double, -1, 1, 0, -1, 1>, Matrix<double, -1, 1, 0, -1, 1> >(double, MatrixBase<Matrix<double, -1, 1, 0, -1, 1> > const&, MatrixBase<Matrix<double, -1, 1, 0, -1, 1> > const&, std::vector<bool, std::allocator<bool> > const&);
+template lcmdrake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput<Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0> >, Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0> > >(double, MatrixBase<Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0> > > const&, MatrixBase<Map<Matrix<double, -1, 1, 0, -1, 1> const, 0, Stride<0, 0> > > const&, vector<bool, allocator<bool> > const&);

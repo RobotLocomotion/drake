@@ -1,10 +1,10 @@
 #include <lcm/lcm.h>
 #include <bot_lcmgl_client/lcmgl.h>
-#include "lcmtypes/drake_lcmt_zmp_com_observer_state.h"
+#include "lcmtypes/lcmdrake_lcmt_zmp_com_observer_state.h"
 
 bot_lcmgl_t* lcmgl;
 
-static void handleMessage(const lcm_recv_buf_t *rbuf, const char *channel, const drake_lcmt_zmp_com_observer_state *msg, void *user)
+static void handleMessage(const lcm_recv_buf_t *rbuf, const char *channel, const lcmdrake_lcmt_zmp_com_observer_state *msg, void *user)
 {
   double height = msg->ground_plane_height + 0.01; // a little above the ground to make sure it doesn't get occluded by the ground plane.
   bot_lcmgl_color3f(lcmgl, 1.0, 0.0, 0.0); // red
@@ -21,7 +21,7 @@ int main(int argc, char **argv)
     return 1;
 
   lcmgl = bot_lcmgl_init(lcm, "zmp-based CoM estimate");
-  drake_lcmt_zmp_com_observer_state_subscribe(lcm, "ZMP_COM_OBSERVER_STATE", &handleMessage, nullptr);
+  lcmdrake_lcmt_zmp_com_observer_state_subscribe(lcm, "ZMP_COM_OBSERVER_STATE", &handleMessage, nullptr);
 
   while (true)
     lcm_handle(lcm);

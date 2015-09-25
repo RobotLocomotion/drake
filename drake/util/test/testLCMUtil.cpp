@@ -15,7 +15,7 @@ void testPolynomial()
   int num_coefficients = int_distribution(generator);
   VectorXd coefficients = VectorXd::Random(num_coefficients);
   Polynomial<double> poly(coefficients);
-  drake::lcmt_polynomial msg;
+  lcmdrake::lcmt_polynomial msg;
   encodePolynomial(poly, msg);
   auto poly_back = decodePolynomial(msg);
   valuecheck(poly.isApprox(poly_back, 1e-8), true);
@@ -24,7 +24,7 @@ void testPolynomial()
 void testPolynomialMatrix()
 {
   auto poly_matrix = Polynomial<double>::randomPolynomialMatrix(6, 5, 8);
-  drake::lcmt_polynomial_matrix msg;
+  lcmdrake::lcmt_polynomial_matrix msg;
   encodePolynomialMatrix<Eigen::Dynamic,Eigen::Dynamic>(poly_matrix, msg);
   valuecheck(static_cast<int>(msg.rows), static_cast<int>(poly_matrix.rows()));
   valuecheck(static_cast<int>(msg.cols), static_cast<int>(poly_matrix.cols()));
@@ -46,7 +46,7 @@ void testPiecewisePolynomial()
   int num_coefficients = 3;
   std::vector<double> segment_times = PiecewiseFunction::randomSegmentTimes(num_segments, generator);
   PiecewisePolynomial<double> piecewise_polynomial = PiecewisePolynomial<double>::random(rows, cols, num_coefficients, segment_times);
-  drake::lcmt_piecewise_polynomial msg;
+  lcmdrake::lcmt_piecewise_polynomial msg;
   encodePiecewisePolynomial(piecewise_polynomial, msg);
   auto piecewise_polynomial_back = decodePiecewisePolynomial(msg);
   valuecheck(piecewise_polynomial_back.isApprox(piecewise_polynomial, 1e-10), true);

@@ -4,10 +4,10 @@
 #include <Eigen/Core>
 #include <iostream>
 #include "PiecewisePolynomial.h"
-#include "lcmtypes/drake/lcmt_polynomial.hpp"
-#include "lcmtypes/drake/lcmt_polynomial_matrix.hpp"
-#include "lcmtypes/drake/lcmt_piecewise_polynomial.hpp"
-#include "lcmtypes/drake/lcmt_qp_controller_input.hpp"
+#include "lcmtypes/lcmdrake/lcmt_polynomial.hpp"
+#include "lcmtypes/lcmdrake/lcmt_polynomial_matrix.hpp"
+#include "lcmtypes/lcmdrake/lcmt_piecewise_polynomial.hpp"
+#include "lcmtypes/lcmdrake/lcmt_qp_controller_input.hpp"
 
 #undef DLLEXPORT
 #if defined(WIN32) || defined(WIN64)
@@ -20,12 +20,12 @@
     #define DLLEXPORT
 #endif
 
-DLLEXPORT void encodePolynomial(const Polynomial<double>& polynomial, drake::lcmt_polynomial& msg);
+DLLEXPORT void encodePolynomial(const Polynomial<double>& polynomial, lcmdrake::lcmt_polynomial& msg);
 
-DLLEXPORT Polynomial<double> decodePolynomial(const drake::lcmt_polynomial& msg);
+DLLEXPORT Polynomial<double> decodePolynomial(const lcmdrake::lcmt_polynomial& msg);
 
 template <int RowsAtCompileTime, int ColsAtCompileTime>
-void encodePolynomialMatrix(const Eigen::Matrix<Polynomial<double>, RowsAtCompileTime, ColsAtCompileTime>& polynomial_matrix, drake::lcmt_polynomial_matrix& msg)
+void encodePolynomialMatrix(const Eigen::Matrix<Polynomial<double>, RowsAtCompileTime, ColsAtCompileTime>& polynomial_matrix, lcmdrake::lcmt_polynomial_matrix& msg)
 {
   msg.polynomials.clear();
   msg.polynomials.resize(polynomial_matrix.rows());
@@ -41,7 +41,7 @@ void encodePolynomialMatrix(const Eigen::Matrix<Polynomial<double>, RowsAtCompil
 }
 
 template <int RowsAtCompileTime, int ColsAtCompileTime>
-Eigen::Matrix<Polynomial<double>, RowsAtCompileTime, ColsAtCompileTime> decodePolynomialMatrix(const drake::lcmt_polynomial_matrix& msg)
+Eigen::Matrix<Polynomial<double>, RowsAtCompileTime, ColsAtCompileTime> decodePolynomialMatrix(const lcmdrake::lcmt_polynomial_matrix& msg)
 {
   Eigen::Matrix<Polynomial<double>, RowsAtCompileTime, ColsAtCompileTime> ret(msg.rows, msg.cols);
   for (int row = 0; row < msg.rows; ++row) {
@@ -52,11 +52,11 @@ Eigen::Matrix<Polynomial<double>, RowsAtCompileTime, ColsAtCompileTime> decodePo
   return ret;
 }
 
-DLLEXPORT void encodePiecewisePolynomial(const PiecewisePolynomial<double>& piecewise_polynomial, drake::lcmt_piecewise_polynomial& msg);
+DLLEXPORT void encodePiecewisePolynomial(const PiecewisePolynomial<double>& piecewise_polynomial, lcmdrake::lcmt_piecewise_polynomial& msg);
 
-DLLEXPORT PiecewisePolynomial<double> decodePiecewisePolynomial(const drake::lcmt_piecewise_polynomial& msg);
+DLLEXPORT PiecewisePolynomial<double> decodePiecewisePolynomial(const lcmdrake::lcmt_piecewise_polynomial& msg);
 
-DLLEXPORT void verifySubtypeSizes(drake::lcmt_support_data &support_data);
-DLLEXPORT void verifySubtypeSizes(drake::lcmt_qp_controller_input &qp_input);
+DLLEXPORT void verifySubtypeSizes(lcmdrake::lcmt_support_data &support_data);
+DLLEXPORT void verifySubtypeSizes(lcmdrake::lcmt_qp_controller_input &qp_input);
 
 #endif /* UTIL_LCMUTIL_H_ */

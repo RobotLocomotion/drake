@@ -22,7 +22,7 @@ classdef RigidBodyMeshPoints < RigidBodyMesh
     
     function msg = serializeToLCM(obj)
       warning('Drake:RigidBodyMeshPoints:NoOBJVisualization','OBJ visualization is not implemented yet for RigidBodyMeshPoints (but it shouldn''t be too hard)');
-      msg = drake.lcmt_viewer_geometry_data();
+      msg = lcmdrake.lcmt_viewer_geometry_data();
       msg.type = msg.SPHERE;
       msg.string_data = '';
       msg.num_float_data = 1;

@@ -40,7 +40,7 @@ classdef RigidBodyHeightMapTerrain < RigidBodyTerrain & RigidBodyGeometry
     function geometry = serializeToLCM(obj)
       fname = [tempname,'.obj'];
       writeOBJ(obj,fname);
-      geometry = drake.lcmt_viewer_geometry_data();
+      geometry = lcmdrake.lcmt_viewer_geometry_data();
       geometry.type = geometry.MESH;
       geometry.string_data = fname;
       geometry.num_float_data = 1;

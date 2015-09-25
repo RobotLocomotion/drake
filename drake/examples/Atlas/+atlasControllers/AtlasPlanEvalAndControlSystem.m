@@ -56,7 +56,7 @@ classdef AtlasPlanEvalAndControlSystem < DrakeSystem
       if isempty(obj.plan_eval) || isempty(obj.control)
         obj.lc = lcm.lcm.LCM.getSingleton();
         if isempty(obj.plan_eval)
-          obj.monitor = drake.util.MessageMonitor(drake.lcmt_qp_controller_input, 'timestamp');
+          obj.monitor = drake.util.MessageMonitor(lcmdrake.lcmt_qp_controller_input, 'timestamp');
           obj.lc.subscribe('QP_CONTROLLER_INPUT', obj.monitor);
         end
       end
@@ -73,9 +73,9 @@ classdef AtlasPlanEvalAndControlSystem < DrakeSystem
         qp_input_obj = obj.plan_eval.getQPControllerInput(t, x);
         if isa(qp_input_obj, 'atlasControllers.QPInputConstantHeight')
           qp_input_msg_data = encodeQPInputLCMMex(qp_input_obj, false);
-          qp_input_msg = drake.lcmt_qp_controller_input(qp_input_msg_data);
+          qp_input_msg = lcmdrake.lcmt_qp_controller_input(qp_input_msg_data);
         elseif isnumeric(qp_input_obj)
-          qp_input_msg = drake.lcmt_qp_controller_input(qp_input_obj);
+          qp_input_msg = lcmdrake.lcmt_qp_controller_input(qp_input_obj);
         else
           qp_input_msg = qp_input_obj;
         end
@@ -91,7 +91,7 @@ classdef AtlasPlanEvalAndControlSystem < DrakeSystem
         while isempty(qp_input_msg_data)
           qp_input_msg_data = obj.monitor.getMessage();
         end
-        qp_input_msg = drake.lcmt_qp_controller_input(qp_input_msg_data);
+        qp_input_msg = lcmdrake.lcmt_qp_controller_input(qp_input_msg_data);
         if ~obj.quiet 
           lcm_time = toc(t0);
           fprintf(1, 'lcm receive: %f, ', lcm_time);

@@ -7,7 +7,7 @@
 #include <chrono>
 #include <mutex>
 #include <lcm/lcm-cpp.hpp>
-#include "lcmtypes/drake/lcmt_drake_signal.hpp"
+#include "lcmtypes/lcmdrake/lcmt_drake_signal.hpp"
 
 template <class MessageType> class LCMInput;
 template <class MessageType> class LCMOutput;
@@ -20,10 +20,10 @@ template <class MessageType> class LCMOutput;
 ///
 /// just like the examples in LCMCoordinateFrame.cpp (externed below)
 
-extern bool encode(const CoordinateFrame& frame, const double t, const Eigen::VectorXd& x, drake::lcmt_drake_signal& msg);
-extern bool decode(const CoordinateFrame& frame, const drake::lcmt_drake_signal& msg, double& t, Eigen::VectorXd& x);
+extern bool encode(const CoordinateFrame& frame, const double t, const Eigen::VectorXd& x, lcmdrake::lcmt_drake_signal& msg);
+extern bool decode(const CoordinateFrame& frame, const lcmdrake::lcmt_drake_signal& msg, double& t, Eigen::VectorXd& x);
 
-template <class MessageType = drake::lcmt_drake_signal>
+template <class MessageType = lcmdrake::lcmt_drake_signal>
 class DLLEXPORT LCMCoordinateFrame : public CoordinateFrame, public std::enable_shared_from_this<LCMCoordinateFrame<MessageType> > {
 public:
   LCMCoordinateFrame(const std::string& _name, const std::vector<std::string>& _coordinates, const std::shared_ptr<lcm::LCM>& _lcm)
