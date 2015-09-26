@@ -719,8 +719,5 @@ classdef DynamicalSystem
   
   properties (Access=public)
     warning_manager;
-  end
-  properties (SetAccess=protected)
-    initial_state = [];
-  end
+  end    
 end

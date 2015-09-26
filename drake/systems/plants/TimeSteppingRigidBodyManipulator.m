@@ -180,7 +180,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     end
 
     function x0 = getInitialState(obj)
-      obj.manip.initial_state = obj.initial_state;       
       x0 = obj.manip.getInitialState();
       for i=1:length(obj.sensor)
         if isa(obj.sensor{i},'TimeSteppingRigidBodySensorWithState')
