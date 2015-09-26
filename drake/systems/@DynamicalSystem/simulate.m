@@ -59,21 +59,26 @@ if ~isfield(pstruct,'Solver')
 end
 pstruct.StartTime = num2str(tspan(1));
 pstruct.StopTime = num2str(tspan(end));
-if (nargin>2 && ~isempty(x0)) % handle initial conditions
-  if (isa(x0,'Point'))
-    x0 = double(x0.inFrame(obj.getStateFrame));
-  else
-    typecheck(x0,'double');
-    sizecheck(x0,[obj.getStateFrame.dim,1]);
-  end
-  x0 = stateVectorToStructure(obj,x0,mdl);
-  pstruct.InitialState = registerParameter(mdl,x0,'x0');
-  pstruct.LoadInitialState = 'on';
 
-  if (~isempty(find_system(mdl,'ClassName','InitialCondition')))
-    warning('Your model appears to have an initial conditions block in it (e.g., from SimMechanics).  That block will overwrite any initial conditions that you pass in to simulate.');
-  end
+%% handle initial conditions
+if (nargin<2 || isempty(x0))
+  x0 = getInitialState(obj);
 end
+  
+if (isa(x0,'Point'))
+  x0 = double(x0.inFrame(obj.getStateFrame));
+else
+  typecheck(x0,'double');
+  sizecheck(x0,[obj.getStateFrame.dim,1]);
+end
+x0 = stateVectorToStructure(obj,x0,mdl);
+pstruct.InitialState = registerParameter(mdl,x0,'x0');
+pstruct.LoadInitialState = 'on';
+
+if (~isempty(find_system(mdl,'ClassName','InitialCondition')))
+  warning('Your model appears to have an initial conditions block in it (e.g., from SimMechanics).  That block will overwrite any initial conditions that you pass in to simulate.');
+end
+%% 
 
 pstruct.SaveFormat = 'StructureWithTime';
 pstruct.SaveTime = 'on';

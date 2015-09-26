@@ -175,32 +175,13 @@ static void mdlInitializeConditions(SimStruct *S)
 {
   mxArray *psys = const_cast<mxArray*>(ssGetSFcnParam(S, 0));
   mxArray* plhs[1];
-  if (mexCallMATLABsafe(S,1,plhs,1,&psys,"getInitialState")) return;
-
-  real_T* xc0 = ssGetContStates(S);
-  real_T* xd0 = ssGetDiscStates(S);
-  real_T* x = mxGetPr(plhs[0]);
-  int_T num_xd = ssGetNumDiscStates(S);
-  int_T num_xc = ssGetNumContStates(S);
-  
   if (isa(psys,"HybridDrakeSystem")) {
     ssSetIWorkValue(S, IS_HYBRID_IDX, 1);
   } else {
     ssSetIWorkValue(S,IS_HYBRID_IDX,0);
   }
-  
-  if (num_xd) {
-    memcpy(xd0,x,sizeof(real_T)*num_xd);
-    x+=num_xd;
-  }
-  if (num_xc) {
-    memcpy(xc0, x, sizeof(real_T)*num_xc);
-  }    
-  
   ssSetIWorkValue(S,0,1);
 
-  mxDestroyArray(plhs[0]);
-  
   if (isa(psys,"StochasticDrakeSystem")) {
     if (mexCallMATLABsafe(S,1,plhs,1,&psys,"getNumDisturbances")) return;
     int num_w = static_cast<int>(mxGetScalar(plhs[0]));
