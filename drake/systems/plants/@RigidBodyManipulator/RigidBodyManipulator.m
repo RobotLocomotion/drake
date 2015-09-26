@@ -318,6 +318,38 @@ classdef RigidBodyManipulator < Manipulator
       obj.gravity = grav;
       obj.dirty = true;
     end
+    
+    function x0 = getInitialState(obj)
+      x0 = .01*randn(getNumStates(obj),1);
+      for i=1:getNumBodies(obj)
+        if any(obj.body(i).position_num>0)
+          x0(obj.body(i).position_num) = getRandomConfiguration(obj.body(i));
+        end
+      end
+      if ~isempty(obj.state_constraints)
+        attempts=0;
+        success=false;
+        while (~success)
+          attempts=attempts+1;
+          try
+            [x0,success] = resolveConstraints(obj,x0);
+          catch ex
+            if strcmp(ex.identifier,'Drake:DrakeSystem:FailedToResolveConstraints');
+              success=false;
+            else
+              rethrow(ex);
+            end
+          end
+          if (~success)
+            x0 = randn(obj.num_xd+obj.num_xc,1);
+            if (attempts>=10)
+              error('Drake:DrakeSystem:FailedToResolveConstraints','Failed to resolve state constraints on initial conditions after 10 tries');
+            end
+          end
+        end
+      end
+      x0 = double(x0);      
+    end
 
     function obj = setJointLimits(obj,jl_min,jl_max)
       obj = setJointLimits@Manipulator(obj,jl_min,jl_max);

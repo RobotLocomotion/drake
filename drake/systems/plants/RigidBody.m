@@ -53,6 +53,19 @@ classdef RigidBody < RigidBodyElement
   
   methods    
 
+    function q = getRandomConfiguration(obj)
+      switch (obj.floating)
+        case 0
+          q = randn();
+        case 1
+          q = [randn(3,1);uniformlyRandomRPY()];
+        case 2
+          q = [randn(3,1);uniformlyRandomQuat()];
+        otherwise
+          error('bad value for floating property');
+      end
+    end
+    
     function varargout = forwardKin(varargin)
       error('forwardKin(body,...) has been replaced by forwardKin(model,body_num,...), because it has a mex version.  please update your kinematics calls');
     end

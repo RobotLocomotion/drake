@@ -59,7 +59,7 @@ classdef DrakeSystem < DynamicalSystem
           if (~success)
             x0 = randn(obj.num_xd+obj.num_xc,1);
             if (attempts>=10)
-              error('Drake:Manipulator:FailedToResolveConstraints','Failed to resolve state constraints on initial conditions after 10 tries');
+              error('Drake:DrakeSystem:FailedToResolveConstraints','Failed to resolve state constraints on initial conditions after 10 tries');
             end
           end
         end
