@@ -315,7 +315,7 @@ classdef DynamicalSystem
       end
       
       [x,~,exitflag,infeasible_constraint_name] = solve(prog,x0);
-      success=(exitflag==1);
+      success=(exitflag<10);
       if ~isempty(infeasible_constraint_name)
         infeasible_constraint_name
       end

@@ -22,10 +22,13 @@ classdef RigidBodyManipulator < Manipulator
     contact_options; % struct containing options for contact/collision handling
     contact_constraint_id=[];
 
+    
     % struct containing the output of 'obj.getTerrainContactPoints()'.
     % That output does not change between compilations, and is requested
     % at every simulation dt, so storing it can speed things up.
     cached_terrain_contact_points_struct=[];
+    
+    quat_norm_constraint_id=[];  % indices of state constraints asserting that the quaternion coordinates have norm=1
     
     % default kinematics caches; temporary way to make it easy to avoid creating
     % and destroying DrakeMexPointers to KinematicsCache every time
@@ -866,6 +869,22 @@ classdef RigidBodyManipulator < Manipulator
         end
       elseif ~isempty(model.contact_constraint_id)
         model = updateStateConstraint(model,model.contact_constraint_id,NullConstraint(model.getNumPositions),1:model.getNumPositions);
+      end
+      
+      quat_inds = find([model.body.floating]==2);
+      for j=1:length(quat_inds)
+        bind = quat_inds(j);
+        quat_norm_constraint = QuadraticConstraint(1,1,2*eye(4),zeros(4,1));
+        quat_norm_constraint = quat_norm_constraint.setName({[model.body(bind).jointname,' quat norm = 1']});
+        if length(model.quat_norm_constraint_id)<j
+          [model,id] = addStateConstraint(model,quat_norm_constraint,model.body(bind).position_num(4:7));
+          model.quat_norm_constraint_id(j) = id;
+        else
+          model = updateStateConstraint(model,model.quat_norm_constraint_id(j),quat_norm_constraint,model.body(bind).position_num(4:7));
+        end
+      end
+      for j=(length(quat_inds)+1):length(model.quat_norm_constraint_id)
+        model = updateStateConstraint(model,model.quat_norm_constraint_id(j),NullConstraint(0),1);
       end
 
       for j=1:length(model.loop)
