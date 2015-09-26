@@ -4,7 +4,7 @@ classdef Quadrotor < RigidBodyManipulator
     
     function obj = Quadrotor(sensor)
       if nargin<1, sensor=''; end
-      options.floating = true;
+      options.floating = 'quat';
       options.terrain = RigidBodyFlatTerrain();
       w = warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
       warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
@@ -119,7 +119,8 @@ classdef Quadrotor < RigidBodyManipulator
       
       v = sys.constructVisualizer();
 
-      x0 = [0;0;.5;zeros(9,1)];
+      x0 = [getRandomConfiguration(r);zeros(6,1)];
+      x0(3) = .5;
       u0 = nominalThrust(r);
       
       sys = cascade(ConstantTrajectory(u0),sys);
@@ -128,7 +129,7 @@ classdef Quadrotor < RigidBodyManipulator
 %      simulate(sys,[0 2],double(x0)+.1*randn(12,1));
       
       options.capture_lcm_channels = 'LCMGL';
-      [ytraj,xtraj,lcmlog] = simulate(sys,[0 2],double(x0)+.1*randn(12,1),options);
+      [ytraj,xtraj,lcmlog] = simulate(sys,[0 2],double(x0),options);
       lcmlog
       v.playback(xtraj,struct('lcmlog',lcmlog));
 %      figure(1); clf; fnplt(ytraj);

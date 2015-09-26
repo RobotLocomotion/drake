@@ -53,16 +53,35 @@ classdef RigidBody < RigidBodyElement
   
   methods    
 
-    function q = getRandomConfiguration(obj)
-      switch (obj.floating)
-        case 0
-          q = randn();
-        case 1
-          q = [randn(3,1);uniformlyRandomRPY()];
-        case 2
-          q = [randn(3,1);uniformlyRandomQuat()];
-        otherwise
-          error('bad value for floating property');
+    function q_body = getRandomConfiguration(body)
+      if body.floating == 0
+        if isinf(body.joint_limit_min) && isinf(body.joint_limit_max)
+          q_body = randn;
+        elseif ~isinf(body.joint_limit_min) && ~isinf(body.joint_limit_max)
+          q_body = body.joint_limit_min + rand * (body.joint_limit_max - body.joint_limit_min);
+        elseif ~isinf(body.joint_limit_min)
+          % one-sided joint limit
+          q_body = randn;
+          if (q_body<body.joint_limit_min) % then flip it to the other side of the limit
+            q_body = body.joint_limit_min + (body.joint_limit_min - q_body);
+          end
+        else
+          % other one-sided joint limit
+          q_body = randn;
+          if (q_body>body.joint_limit_max) % then flip it to the other side of the limit
+            q_body = body.joint_limit_max - (q_body - body.joint_limit_max);
+          end
+        end
+      else
+        pos = randn(3, 1);
+        axis_angle = [randn(3, 1); (rand - 0.5) * 2 * pi];
+        if body.floating == 1
+          q_body = [pos; axis2rpy(axis_angle)];
+        elseif body.floating == 2
+          q_body = [pos; axis2quat(axis_angle)];
+        else
+          error('floating joint type not recognized');
+        end
       end
     end
     

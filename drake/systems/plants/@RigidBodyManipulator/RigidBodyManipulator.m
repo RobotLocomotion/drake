@@ -322,13 +322,17 @@ classdef RigidBodyManipulator < Manipulator
       obj.dirty = true;
     end
     
-    function x0 = getInitialState(obj)
-      x0 = .01*randn(getNumStates(obj),1);
+    function q0 = getRandomConfiguration(obj)
+      q0 = zeros(getNumPositions(obj),1);
       for i=1:getNumBodies(obj)
         if any(obj.body(i).position_num>0)
-          x0(obj.body(i).position_num) = getRandomConfiguration(obj.body(i));
+          q0(obj.body(i).position_num) = getRandomConfiguration(obj.body(i));
         end
       end
+    end
+    
+    function x0 = getInitialState(obj)
+      x0 = [ getRandomConfiguration(obj); .01*randn(getNumVelocities(obj),1)];
       if ~isempty(obj.state_constraints)
         attempts=0;
         success=false;

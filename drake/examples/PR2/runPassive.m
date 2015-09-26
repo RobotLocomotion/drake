@@ -1,7 +1,7 @@
 function runPassive
 
 options.ignore_self_collisions = true;
-options.floating = true;
+options.floating = 'quat';
 options.terrain = RigidBodyFlatTerrain();
 
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
