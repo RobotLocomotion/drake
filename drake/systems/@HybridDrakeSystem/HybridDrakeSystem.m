@@ -199,6 +199,7 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
     end
 
     function x0 = getInitialStateWInput(obj,t,x,u)
+      if x(1)<1, x(1) = getInitialMode(obj); end
       m = x(1); nX = getNumStates(obj.modes{m});
       if (nX>0) xm = x(1+(1:nX)); else xm=[]; end
       x0=[x(1); getInitialStateWInput(obj.modes{m},t,xm,u)];

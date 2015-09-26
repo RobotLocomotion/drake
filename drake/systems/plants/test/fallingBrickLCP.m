@@ -1,4 +1,4 @@
-function fallingQuaternionBrickLCP
+function fallingBrickLCP
 
 options.floating = 'quat';
 options.terrain = RigidBodyFlatTerrain();

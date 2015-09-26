@@ -58,6 +58,17 @@ classdef HybridTrajectory < Trajectory
       end
     end
     
+    function varargout = subsref(a,s)
+      if (length(s)==1 && strcmp(s(1).type,'()'))
+        for i=1:length(a.traj)
+          traj{i} = subsref(a.traj{i},s);
+        end
+        varargout{1} = HybridTrajectory(traj);
+      else % use builtin
+        varargout=cell(1,max(nargout,1));
+        [varargout{:}] = builtin('subsref',a,s);
+      end
+    end    
     function y = eval(obj,t)
       % look into and evaluate correct trajectory based on the time
       if (any(t<obj.tspan(1)) || any(t>obj.tspan(end)))
