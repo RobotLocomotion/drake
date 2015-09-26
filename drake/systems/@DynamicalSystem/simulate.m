@@ -61,7 +61,7 @@ pstruct.StartTime = num2str(tspan(1));
 pstruct.StopTime = num2str(tspan(end));
 
 %% handle initial conditions
-if (nargin<2 || isempty(x0))
+if (nargin<3 || isempty(x0))
   x0 = getInitialState(obj);
 end
   
