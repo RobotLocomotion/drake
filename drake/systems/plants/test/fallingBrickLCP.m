@@ -1,10 +1,15 @@
-function fallingBrickLCP
+function fallingQuaternionBrickLCP
 
-options.floating = true;
+options.floating = 'quat';
 options.terrain = RigidBodyFlatTerrain();
-p = TimeSteppingRigidBodyManipulator('FallingBrickBetterCollisionGeometry.urdf',.01,options);
-x0 = getInitialState(p);
-x0(3)=x0(3)+1;
+% options.ignore_self_collisions = true;
+% options.use_bullet = false;
+s = 'FallingBrickContactPoints.urdf';
+% s = 'FallingBrickBetterCollisionGeometry.urdf';
+p = TimeSteppingRigidBodyManipulator(s,.01,options);
+p = p.addRobotFromURDF(s,[],[],options);
+% x0 = [0;1;2;rpy2quat(randn(3,1));randn(6,1)];
+x0 = [0;1;2;rpy2quat(randn(3,1));2;1;2;rpy2quat(randn(3,1));randn(12,1)];
 x0 = p.resolveConstraints(x0);
 
 if 0 
@@ -18,12 +23,3 @@ v = p.constructVisualizer();
 v.drawWrapper(0,x0);
 xtraj = p.simulate([0 4],x0);
 v.playback(xtraj);
-
-for t=xtraj.getBreaks()
-  x=xtraj.eval(t);
-  phi = p.contactConstraints(x(1:6));
-  if any(phi<-0.05)
-    phi
-    error('penetration');
-  end
-end
