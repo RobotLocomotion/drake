@@ -6,7 +6,7 @@ else
   typecheck(display,'logical');
 end
 
-options.floating = true;
+options.floating = 'quat';
 options.use_bullet = false;
 options.terrain = RigidBodyFlatTerrain();
 r = TimeSteppingRigidBodyManipulator('ball.urdf',0.005,options);
@@ -16,7 +16,7 @@ if display
   lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'qp-control-block-debug');
 end
 
-x0 = zeros(12,1);
+x0 = zeros(13,1);
 x0(3) = 15;
 x0(6+1) = rand()-.5;
 x0(6+2) = rand()-.5;
@@ -37,13 +37,15 @@ xtraj = r.simulate([0 T],x0);
 body = getBody(r,2); % get ball
 
 nq = getNumPositions(r);
+nv = getNumVelocities(r);
 for t=0:0.05:T
   x = xtraj.eval(t);
   if display
     draw(v,t,x);
   end
   q = x(1:nq);
-  qd = x(nq+(1:nq));
+  v = x(nq+(1:nv));
+  qd = r.getManipulator().vToqdot(q)*v;
   
   % test derivative
   [A,dAdq] = geval(@myfun,q);
@@ -55,7 +57,7 @@ for t=0:0.05:T
   kinsol = doKinematics(r, q, false, true, qd);
   A = centroidalMomentumMatrix(r, kinsol);
   Adot_times_v = centroidalMomentumMatrixDotTimesV(r, kinsol);
-  valuecheck(Adot_times_v,Adot_tv * qd);
+  valuecheck(Adot_times_v,Adot_tv * v);
 
   % test mex
   kinsol_matlab = doKinematics(r, q, false, false, qd);
@@ -66,7 +68,7 @@ for t=0:0.05:T
   
   % test physics
   h = A*qd;
-  omega = rpydot2angularvel(q(4:6),qd(4:6));
+  omega = v(4:6);
   am = body.inertia * omega;
 
   valuecheck(h(1:3),am); 
@@ -128,7 +130,7 @@ if display
   v = r.constructVisualizer();
 end
 
-x0 = zeros(12,1);
+x0 = zeros(13,1);
 x0(3) = 15;
 x0(6+1) = randn();
 x0(6+2) = randn();
@@ -150,13 +152,14 @@ for t=0:0.05:T
     draw(v,t,x);
   end
   q = x(1:nq);
-  qd = x(nq+(1:nq));
+  v = x(nq+(1:nv));
+  qd = r.getManipulator().vToqdot(q)*v;
   kinsol = doKinematics(r,q,false,true);
   
   A = centroidalMomentumMatrix(r, kinsol);
   h = A*qd;
   
-  omega = rpydot2angularvel(q(4:6),qd(4:6));
+  omega = v(4:6);
   am = body.inertia * omega;
 
   valuecheck(h(1:3),am); 

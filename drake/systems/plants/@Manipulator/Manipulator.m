@@ -90,7 +90,7 @@ classdef Manipulator < DrakeSystem
 
     end
 
-    function [Vq,dVq] = qdotTov(obj, q)
+    function [Vq,dVq] = qdotToV(obj, q)
       % defines the linear map v = Vq * qdot
       % default relationship is that v = qdot
       assert(obj.num_positions==obj.num_velocities);
