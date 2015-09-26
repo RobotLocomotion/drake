@@ -93,5 +93,49 @@ classdef (InferiorClasses = {?ConstantTrajectory,?FunctionHandleTrajectory,?PPTr
       obj = setOutputFrame(obj,MultiCoordinateFrame(fr));
     end
 
+    function c = mtimes(a,b)
+      if any([size(a,1) size(b,2)]==0)  % handle the empty case
+        c = ConstantTrajectory(zeros(size(a,1),size(b,2)));
+        return;
+      end
+      if isa(a,'ConstantTrajectory') a=double(a); end
+      if isa(b,'ConstantTrajectory') b=double(b); end
+
+      if isnumeric(a)  % then only b is a DTTrajectory
+        tt = b.tt;
+        xx = a*b.xx;  % ok since last dimension of xx is the time dim...
+        c = DTTrajectory(tt,xx);
+%      elseif isnumeric(b) % then only a is a DTTrajectory
+%        c = a;
+%        c.xx = a.xx*b;
+      else
+        error('not implemented (yet)');
+      end
+        
+    end    
+    
+    function c = plus(a,b)
+      if ~isequal(size(a),size(b))
+        error('must be the same size');  % should support scalars, too (but don't yet)
+      end
+      if any(size(a)==0)  % handle the empty case
+        c = ConstantTrajectory(zeros(size(a)));
+        return;
+      end
+      if isa(a,'ConstantTrajectory') a=double(a); end
+      if isa(b,'ConstantTrajectory') b=double(b); end
+      
+      if isnumeric(a)  % then only b is a PPTrajectory
+        tt = b.tt;
+        xx = bsxfun(@plus,a,b.xx);
+        c = DTTrajectory(tt,xx);
+      elseif isnumeric(b)
+        tt = a.tt;
+        xx = bsxfun(@plus,a.xx,b);
+        c = DTTrajectory(tt,xx);
+      else
+        error('not implemented (yet)');
+      end
+    end
   end
 end
