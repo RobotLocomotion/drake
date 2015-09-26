@@ -157,7 +157,7 @@ classdef Manipulator < DrakeSystem
   end
 
   methods
-    function [obj,id] = addPositionEqualityConstraint(obj,con)
+    function [obj,id] = addPositionEqualityConstraint(obj,con,position_ind)
       % Adds a position constraint of the form phi(q) = constant
       % which can be enforced directly in the manipulator dynamics.
       % This method will also register phi (and it's time derivative)
@@ -165,58 +165,58 @@ classdef Manipulator < DrakeSystem
       if( isa(con, 'DrakeFunctionConstraint') && ~isa(con.fcn, 'drakeFunction.kinematic.RelativePosition'))
         obj.only_loops = false;
       end
+      if (nargin<3 || isempty(position_ind)) 
+        position_ind = 1:getNumPositions(obj);
+      end
       id = numel(obj.position_constraints)+1;
-      obj = updatePositionEqualityConstraint(obj,id,con);
+      obj = updatePositionEqualityConstraint(obj,id,con,position_ind);
     end
     
-    function obj = updatePositionEqualityConstraint(obj,id,con)
-      typecheck(con,'DrakeFunctionConstraint'); % for now
-      assert(con.xdim == obj.num_positions,'DrakeSystem:InvalidPositionConstraint','Position constraints must take a vector that is the same size as the number of positions of this system as an input');
+    function obj = updatePositionEqualityConstraint(obj,id,con,position_ind)
+      typecheck(con,'Constraint'); % for now
       assert(all(con.lb == con.ub));
+      if (nargin<4 || isempty(position_ind)) 
+        position_ind = 1:getNumPositions(obj);
+      end
         
-      pos_fun = con.fcn;
-      state_fun = pos_fun.addInputs(obj.getNumVelocities());
-      state_con = DrakeFunctionConstraint(con.lb,con.ub,state_fun);
-      state_con = state_con.setName(con.name);
-
       if id>numel(obj.position_constraints) % then it's a new constraint
-        [obj,obj.position_constraint_ids(1,id)] = addStateConstraint(obj,state_con);
+        [obj,obj.position_constraint_ids(1,id)] = addStateConstraint(obj,con,position_ind);
       else 
         obj.num_position_constraints = obj.num_position_constraints-obj.position_constraints{id}.num_cnstr;
-        obj = updateStateConstraint(obj,obj.position_constraint_ids(1,id),state_con, 1:2*obj.num_positions);
+        obj = updateStateConstraint(obj,obj.position_constraint_ids(1,id),con,position_ind);
       end
       
       obj.num_position_constraints = obj.num_position_constraints+con.num_cnstr;
       obj.position_constraints{id} = con;
       
-      obj.warning_manager.warnOnce('Drake:Manipulator:Todo','still need to add time derivatives of position constraints');
+%      obj.warning_manager.warnOnce('Drake:Manipulator:Todo','still need to add time derivatives of position constraints');
     end
     
-    function [obj,id] = addVelocityEqualityConstraint(obj,con)
+    function [obj,id] = addVelocityEqualityConstraint(obj,con,velocity_ind)
       % Adds a velocity constraint of the form psi(q,v) = constant
       % (with dpsidv~=0) which can be enforced directly in the manipulator dynamics.
       % This method will also register psi as a state constraint
       % for the dynamical system.
+      if (nargin<3 || isempty(velocity_ind))
+        velocity_ind = 1:getNumVelocities(obj);
+      end
       
       id = numel(obj.position_constraints)+1;
       obj = updatePositionEqualityConstraint(obj,id,con);
       
     end
-    function obj = updateVelocityEqualityConstraint(obj,id,con)
-      typecheck(con,'DrakeFunctionConstraint'); % for now
-      assert(con.xdim == obj.num_velocities,'DrakeSystem:InvalidVelocityConstraint','Velocity constraints must take a vector that is the same size as the number of velocity s of this system as an input');
+    function obj = updateVelocityEqualityConstraint(obj,id,con,velocity_ind)
+      typecheck(con,'Constraint'); % for now
       assert(all(con.lb == con.ub));
+      if (nargin<4 || isempty(velocity_ind))
+        velocity_ind = 1:getNumVelocities(obj);
+      end
         
-      pos_fun = con.fcn;
-      state_fun = pos_fun.addInputFrame(obj.getPositionFrame,false);
-      state_con = DrakeFunctionConstraint(con.lb,con.ub,state_fun);
-      state_con = state_con.setName(con.name);
-
       if id>numel(obj.velocity_constraints) % then it's a new constraint
-        [obj,obj.velocity_constraint_ids(1,id)] = addStateConstraint(obj,state_con);
+        [obj,obj.velocity_constraint_ids(1,id)] = addStateConstraint(obj,con,getNumPositions(obj) + velocity_ind);
       else 
         obj.num_velocity_constraints = obj.num_velocity_constraints-obj.velocity_constraints{id}.num_cnstr;
-        obj = updateStateConstraint(obj,obj.velocity_constraint_ids(1,id),state_con);
+        obj = updateStateConstraint(obj,obj.velocity_constraint_ids(1,id),con,getNumPositions(obj) + velocity_ind);
       end
       
       obj.num_velocity_constraints = obj.num_velocity_constraints+con.num_cnstr;
