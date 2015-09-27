@@ -14,6 +14,7 @@ warning(w);
 
 r = setSimulinkParam(r,'MinStep','0.001');
 x0 = Point(r.getStateFrame);
+x0(4) = 1;  % make it a valid quaternion
 
 v = r.constructVisualizer;
 v.display_dt = .05;

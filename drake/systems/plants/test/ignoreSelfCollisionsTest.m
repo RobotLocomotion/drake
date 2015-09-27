@@ -6,10 +6,12 @@ function ignoreSelfCollisionsTest()
   r = RigidBodyManipulator(urdf_filename,options);
   valuecheck(r.getNumContactPairs(),0);
 
-  options.ignore_self_collisions = false;
-  options.floating = true;
-  r = RigidBodyManipulator(urdf_filename,options);
-  if r.getNumContactPairs()==0,
-    error('should have contact pairs');
+  if (checkDependency('bullet'))
+    options.ignore_self_collisions = false;
+    options.floating = true;
+    r = RigidBodyManipulator(urdf_filename,options);
+    if r.getNumContactPairs()==0,
+      error('should have contact pairs');
+    end
   end
 end
