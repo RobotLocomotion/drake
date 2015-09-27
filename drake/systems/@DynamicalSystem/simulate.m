@@ -25,6 +25,7 @@ end
 typecheck(tspan,'double');
 if (length(tspan)<2) error('length(tspan) must be > 1'); end
 if (nargin<4) options=struct(); end
+pstruct = obj.simulink_params;
 
 if (nargin>2 && ~isempty(x0)) % handle initial conditions
   if (isa(x0,'Point'))
@@ -68,7 +69,6 @@ if options.gui_control_interface || ~isempty(options.lcm_control_interface)
     'parameters',registerParameter(mdl,SimulationControlBlock(mdl,options.gui_control_interface,options.lcm_control_interface),'control'));
 end
 
-pstruct = obj.simulink_params;
 if ~isfield(pstruct,'Solver')
   % set the default solver if it's clear what to do (because someone might
   % have manually changed their default simulink solver)
