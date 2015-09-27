@@ -62,16 +62,7 @@ for t=0:0.05:T
   valuecheck(Adot_times_v, Adot_times_v_mat);
   
   % test physics
-  h = A*v;
-  omega = v(1:3);
-  x = forwardKin(r, kinsol, 2, zeros(3, 1), struct('rotation_type', 2));
-  quat = x(4 : 7);
-  R_body_to_world = quat2rotmat(quat);
-  angular_momentum = R_body_to_world * body.inertia * omega; % in world frame
-  linear_momentum = R_body_to_world * body.mass * v(4:6);
-
-  valuecheck(h(1:3),angular_momentum); 
-  valuecheck(h(4:6),linear_momentum);
+  checkSingleQuatBodyMomentum(r, kinsol, A, v);
   
   if display
     xyzrpy = forwardKin(r,kinsol,2,[0;0;0],1);
@@ -150,16 +141,7 @@ for t=0:0.05:T
   
   A = centroidalMomentumMatrix(r, kinsol);
 
-  h = A*v;
-  omega = v(1:3);
-  x = forwardKin(r, kinsol, 2, zeros(3, 1), struct('rotation_type', 2));
-  quat = x(4 : 7);
-  R_body_to_world = quat2rotmat(quat);
-  angular_momentum = R_body_to_world * body.inertia * omega; % in world frame
-  linear_momentum = R_body_to_world * body.mass * v(4:6);
-
-  valuecheck(h(1:3),angular_momentum); 
-  valuecheck(h(4:6),linear_momentum);
+  checkSingleQuatBodyMomentum(r, kinsol, A, v);
   
   if display
     xyzrpy = forwardKin(r,kinsol,2,[0;0;0],1);
@@ -211,4 +193,18 @@ for t=0:0.05:T
   end
 end
 
+end
+
+function checkSingleQuatBodyMomentum(r, kinsol, A, v)
+h = A*v;
+body_id = 2;
+body = r.getBody(body_id);
+x = forwardKin(r, kinsol, body_id, zeros(3, 1), struct('rotation_type', 2));
+quat = x(4 : 7);
+R_body_to_world = quat2rotmat(quat);
+angular_momentum = R_body_to_world * body.inertia * v(1:3); % in world frame
+linear_momentum = R_body_to_world * body.mass * v(4:6);
+
+valuecheck(h(1:3),angular_momentum);
+valuecheck(h(4:6),linear_momentum);
 end
