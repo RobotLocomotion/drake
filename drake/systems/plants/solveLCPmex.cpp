@@ -316,17 +316,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
           -BIG * VectorXd::Ones(nP),
           VectorXd::Zero(nC + mC * nC + nC);
     ub = BIG * VectorXd::Ones(lcp_size);
-    
+
     MatrixXd M(lcp_size, lcp_size);
     Map<VectorXd> w(mxGetPrSafe(mxw), lcp_size);
 
     //build LCP matrix
     M << h * JL_possible * Mvn,
-         h * JP * Mvn,
+         h * JP_velocity * Mvn,
          h * n_possible * Mvn,
          D_possible * Mvn,
          MatrixXd::Zero(nC, lcp_size);
-    
+
 
     if (nC > 0) {
       for (size_t i = 0; i < mC ; i++) {
@@ -339,7 +339,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
 
     //build LCP vector
     w << phiL_possible + h *  JL_possible * wvn,
-         phiP + h *  JP * wvn,
+         phiP + h *  JP_velocity * wvn,
          phiC_possible + h * n_possible * wvn,
          D_possible * wvn,
          VectorXd::Zero(nC);

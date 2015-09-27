@@ -16,14 +16,9 @@ if display
   lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'qp-control-block-debug');
 end
 
-x0 = zeros(13,1);
+manipulator = r.getManipulator();
+x0 = [getRandomConfiguration(manipulator); randn(manipulator.getNumVelocities(), 1)];
 x0(3) = 15;
-x0(6+1) = rand()-.5;
-x0(6+2) = rand()-.5;
-x0(6+3) = 10*rand();
-x0(6+4) = 0.5*(rand()-.5);
-x0(6+5) = 0.5*(rand()-.5);
-x0(6+6) = 0.5*(rand()-.5);
 
   function A = myfun(q)
     % for derivative check
@@ -45,7 +40,7 @@ for t=0:0.05:T
   end
   q = x(1:nq);
   v = x(nq+(1:nv));
-  qd = r.getManipulator().vToqdot(q)*v;
+  qd = manipulator.vToqdot(q)*v;
   
   % test derivative
   [A,dAdq] = geval(@myfun,q);
@@ -54,25 +49,20 @@ for t=0:0.05:T
     Adot_tv = Adot_tv + reshape(dAdq(:,jj),size(A)) * qd(jj);
   end
   
-  kinsol = doKinematics(r, q, false, true, qd);
+  kinsol = doKinematics(r, q, v);
   A = centroidalMomentumMatrix(r, kinsol);
   Adot_times_v = centroidalMomentumMatrixDotTimesV(r, kinsol);
   valuecheck(Adot_times_v,Adot_tv * v);
 
   % test mex
-  kinsol_matlab = doKinematics(r, q, false, false, qd);
+  kinsol_matlab = doKinematics(r, q, v, struct('use_mex', false));
   A_mat = centroidalMomentumMatrix(r, kinsol_matlab);
   Adot_times_v_mat = centroidalMomentumMatrixDotTimesV(r, kinsol_matlab);
   valuecheck(A, A_mat);
   valuecheck(Adot_times_v, Adot_times_v_mat);
   
   % test physics
-  h = A*qd;
-  omega = v(4:6);
-  am = body.inertia * omega;
-
-  valuecheck(h(1:3),am); 
-  valuecheck(h(4:6),body.mass*qd(1:3));
+  checkSingleQuatBodyMomentum(r, kinsol, A, v);
   
   if display
     xyzrpy = forwardKin(r,kinsol,2,[0;0;0],1);
@@ -107,7 +97,7 @@ for t=0:0.05:T
     lcmgl.glEnd();
 
     % draw angular momentum vector
-    aa_m = rpy2axis(am(1:3));
+    aa_m = rpy2axis(angular_momentum(1:3));
     lcmgl.glLineWidth(3);
     lcmgl.glBegin(lcmgl.LCMGL_LINES);
     lcmgl.glColor3f(1, 0, 0);
@@ -126,19 +116,13 @@ end
 
 clear r;
 r = TimeSteppingRigidBodyManipulator('brick1.urdf',0.005,options);
+manipulator = r.getManipulator();
 if display
   v = r.constructVisualizer();
 end
 
-x0 = zeros(13,1);
+x0 = [getRandomConfiguration(manipulator); randn(manipulator.getNumVelocities(), 1)];
 x0(3) = 15;
-x0(6+1) = randn();
-x0(6+2) = randn();
-x0(6+3) = 10*rand();
-x0(6+4) = 0.5*randn();
-x0(6+5) = 0.5*randn();
-x0(6+6) = 0.5*randn();
-
 
 T = 3.0;
 xtraj = r.simulate([0 T],x0);
@@ -153,18 +137,12 @@ for t=0:0.05:T
   end
   q = x(1:nq);
   v = x(nq+(1:nv));
-  qd = r.getManipulator().vToqdot(q)*v;
-  kinsol = doKinematics(r,q,false,true);
+  kinsol = doKinematics(r,q);
   
   A = centroidalMomentumMatrix(r, kinsol);
-  h = A*qd;
+
+  checkSingleQuatBodyMomentum(r, kinsol, A, v);
   
-  omega = v(4:6);
-  am = body.inertia * omega;
-
-  valuecheck(h(1:3),am); 
-  valuecheck(h(4:6),body.mass*qd(1:3));
-
   if display
     xyzrpy = forwardKin(r,kinsol,2,[0;0;0],1);
     xcom = getCOM(r,kinsol);
@@ -198,7 +176,7 @@ for t=0:0.05:T
     lcmgl.glEnd();
 
     % draw angular momentum vector
-    aa_m = rpy2axis(am(1:3));
+    aa_m = rpy2axis(angular_momentum(1:3));
     lcmgl.glLineWidth(3);
     lcmgl.glBegin(lcmgl.LCMGL_LINES);
     lcmgl.glColor3f(1, 0, 0);
@@ -215,4 +193,18 @@ for t=0:0.05:T
   end
 end
 
+end
+
+function checkSingleQuatBodyMomentum(r, kinsol, A, v)
+h = A*v;
+body_id = 2;
+body = r.getBody(body_id);
+x = forwardKin(r, kinsol, body_id, zeros(3, 1), struct('rotation_type', 2));
+quat = x(4 : 7);
+R_body_to_world = quat2rotmat(quat);
+angular_momentum = R_body_to_world * body.inertia * v(1:3); % in world frame
+linear_momentum = R_body_to_world * body.mass * v(4:6);
+
+valuecheck(h(1:3),angular_momentum);
+valuecheck(h(4:6),linear_momentum);
 end
