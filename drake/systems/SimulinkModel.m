@@ -69,6 +69,10 @@ classdef SimulinkModel < DynamicalSystem
     end
     
     function x0 = getInitialState(obj)
+      if ~isempty(obj.initial_state)
+        x0 = obj.initial_state;
+        return;
+      end
       if (getNumStates(obj)>0)
         x0 = Simulink.BlockDiagram.getInitialState(obj.mdl);
         x0 = stateStructureToVector(obj,x0);

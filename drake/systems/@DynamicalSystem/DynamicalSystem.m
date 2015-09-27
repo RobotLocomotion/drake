@@ -715,6 +715,7 @@ classdef DynamicalSystem
 
   properties (SetAccess=private,GetAccess=protected)
     simulink_params=struct();     % simulink model parameters
+    initial_state = [];  % getInitialState returns this if non-empty instead of a random state
   end
   
   properties (Access=public)

@@ -332,6 +332,11 @@ classdef RigidBodyManipulator < Manipulator
     end
     
     function x0 = getInitialState(obj)
+      if ~isempty(obj.initial_state)
+        x0 = obj.initial_state;
+        return;
+      end
+      
       x0 = [ getRandomConfiguration(obj); .01*randn(getNumVelocities(obj),1)];
       if ~isempty(obj.state_constraints)
         attempts=0;
