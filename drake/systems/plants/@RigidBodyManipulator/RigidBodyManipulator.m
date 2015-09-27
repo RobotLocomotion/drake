@@ -886,14 +886,17 @@ classdef RigidBodyManipulator < Manipulator
         quat_norm_constraint = QuadraticConstraint(1,1,2*eye(4),zeros(4,1));
         quat_norm_constraint = quat_norm_constraint.setName({[model.body(bind).jointname,' quat norm = 1']});
         if length(model.quat_norm_constraint_id)<j
-          [model,id] = addPositionEqualityConstraint(model,quat_norm_constraint,model.body(bind).position_num(4:7));
+          % note: these could be PositionEqualityConstraints, but then they
+          % would be evaluated in the lcp solution.  But we currently 
+          % special case the normalization in the lcp. 
+          [model,id] = addStateConstraint(model,quat_norm_constraint,model.body(bind).position_num(4:7));
           model.quat_norm_constraint_id(j) = id;
         else
-          model = updatePositionEqualityConstraint(model,model.quat_norm_constraint_id(j),quat_norm_constraint,model.body(bind).position_num(4:7));
+          model = updateStateConstraint(model,model.quat_norm_constraint_id(j),quat_norm_constraint,model.body(bind).position_num(4:7));
         end
       end
       for j=(length(quat_inds)+1):length(model.quat_norm_constraint_id)
-        model = updatePositionEqualityConstraint(model,model.quat_norm_constraint_id(j),NullConstraint(0),1);
+        model = updateStateConstraint(model,model.quat_norm_constraint_id(j),NullConstraint(0),1);
       end
 
       for j=1:length(model.loop)

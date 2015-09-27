@@ -283,7 +283,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     function [obj,z,Mvn,wvn,dz,dMvn,dwvn] = solveLCP(obj,t,x,u)
       if (nargout<5 && obj.gurobi_present && obj.manip.only_loops && obj.manip.mex_model_ptr~=0 && ~obj.position_control)
         [obj,z,Mvn,wvn] = solveMexLCP(obj,t,x,u);
-	return;
+        return;
       end
       
 %       global active_set_fail_count

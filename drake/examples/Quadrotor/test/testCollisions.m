@@ -2,7 +2,7 @@ function testCollisions
 
 tmp = addpathTemporary(fullfile(pwd,'..'));
 
-r = Quadrotor();
+r = Quadrotor('','quat');
 r = r.setTerrain([]);
 r = addTrees(r, 25);
 % The important trees to create swerving path

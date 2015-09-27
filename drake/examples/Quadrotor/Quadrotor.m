@@ -2,9 +2,13 @@ classdef Quadrotor < RigidBodyManipulator
   
   methods
     
-    function obj = Quadrotor(sensor)
+    function obj = Quadrotor(sensor,floating_base_type)
       if nargin<1, sensor=''; end
-      options.floating = 'quat';
+      if (nargin<2) 
+        options.floating = true; 
+      else
+        options.floating = floating_base_type;
+      end
       options.terrain = RigidBodyFlatTerrain();
       w = warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
       warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
@@ -113,7 +117,7 @@ classdef Quadrotor < RigidBodyManipulator
   methods (Static)
     
     function runOpenLoop
-      r = Quadrotor('lidar');
+      r = Quadrotor('lidar','quat');
       r = addTrees(r); 
       sys = TimeSteppingRigidBodyManipulator(r,.01);
       
