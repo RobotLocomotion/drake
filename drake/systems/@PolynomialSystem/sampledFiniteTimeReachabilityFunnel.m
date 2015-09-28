@@ -1,4 +1,4 @@
-function [V,rho,Phi] = sampledFiniteTimeReach_B0(sys,polyOrig,Vtraj0,G,R0,tv,ts,xtraj0,utraj,options,Phi,rho)
+function [V,rho,Phi] = sampledFiniteTimeReachabilityFunnel(sys,polyOrig,Vtraj0,G,R0,tv,ts,xtraj0,utraj,options,Phi,rho)
 % % Implements time-varying reachability computation.
 % The approach searches for a Lyapunov function
 % and attempts to minimize the size of the funnel.
@@ -56,7 +56,7 @@ if (~isfield(options,'converged_tol')) options.converged_tol = 1e-3; end % Toler
 if (~isfield(options,'saturations')) options.saturations = false; end % Set whether or not there are any input saturations
 if (~isfield(options,'rho0')) options.rho0 = 0.1*ones(length(ts),1); options.rho0(end) = 1; end % Initial "guessed" rho
 if (~isfield(options,'clean_tol')) options.clean_tol = 1e-6; end % tolerance for cleaning small terms
-if (~isfield(options,'backoff_percent')) options.backoff_percent = 5; end % 5 percent backing off
+if (~isfield(options,'backoff_percent')) options.backoff_percent = 0; end % 5 percent backing off
 if (~isfield(options,'degL1')) options.degL1 = options.controller_deg + 1; end % Chosen to do degree matching
 if (~isfield(options,'degLu')) options.degLu = options.controller_deg - 1; end
 if (~isfield(options,'degLu1')) options.degLu1 = 2; end
@@ -792,14 +792,14 @@ function [V,rho,Phi] = findVRho_containG_vol(G,Vtraj0,ts,forig_u,Phiold,options,
     sol = prog.minimize(costfun,@spot_mosek,pars);
 
 
-    disp('Backing off now...')
-
-    % Back off on objective
-    %costfun_opt = double(sol.eval(costfun));
-    %prog = prog.withPos(costfun_opt + (options.backoff_percent/100)*abs(costfun_opt) - costfun);
-
-    %sol = prog.minimize(0,@spot_sedumi,pars);
     
+    if (options.backoff_percent > 0)
+        disp('Backing off now...')
+        % Back off on objective
+        costfun_opt = double(sol.eval(costfun));
+        prog = prog.withPos(costfun_opt + (options.backoff_percent/100)*abs(costfun_opt) - costfun);
+        sol = prog.minimize(0,@spot_sedumi,pars);
+    end
 
     rho = double(sol.eval(rho));
 

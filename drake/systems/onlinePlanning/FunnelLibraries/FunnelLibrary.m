@@ -57,7 +57,7 @@ classdef FunnelLibrary
             G0 = V.S.eval(0) / obj.options.rho0 * 1.01;
 
             disp('computing reachable set')
-            [V,rho,Phi] = sysClPoly.sampledFiniteTimeReach_B0(sysPoly, V, G0, 0, tv, ts, xtraj, utraj, obj.options);
+            [V,rho,Phi] = sysClPoly.sampledFiniteTimeReachabilityFunnel(sysPoly, V, G0, 0, tv, ts, xtraj, utraj, obj.options);
 
             obj.funnels{i} = struct();
             obj.funnels{i}.V = V;
