@@ -35,7 +35,6 @@ typename FromMexReturnType<T>::type fromMex(const mxArray* mex);
 // default implementation calls the templated function version
 template <typename T>
 struct FromMex {
-  FromMex(T* ptr) { };
   typename FromMexReturnType<T>::type operator() (const mxArray* mex) {
     return fromMex<T>(mex);
   }
@@ -98,7 +97,7 @@ void mexCallFunction(std::function<R(Arg0, Args...)> func, int nlhs, mxArray *pl
     // remove reference because in general you don't want to return a reference from fromMex
     // remove const to have fewer template specializations
     typedef typename std::remove_cv<typename std::remove_reference<Arg0>::type>::type FromMexType;
-    FromMex<FromMexType> converter((FromMexType*) nullptr);
+    FromMex<FromMexType> converter;
 
     try {
       return std::move(func)(converter(prhs[0]), std::forward<Args>(tail)...);
