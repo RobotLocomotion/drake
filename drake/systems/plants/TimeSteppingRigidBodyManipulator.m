@@ -547,7 +547,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         % s(1:nL) = phiL(qn) approx phiL + h*JL*qdn
         if (nL > 0)
           w(1:nL) = phiL + h*JL*vToqdot*wvn;
-          M(1:nL,:) = h*JL*Mvn;
+          M(1:nL,:) = h*JL*vToqdot*Mvn;
           if (nargout>4)
             dJL = [zeros(numel(JL),1),reshape(dJL,numel(JL),[]),zeros(numel(JL),num_q+obj.num_u)];
             if (obj.position_control)
@@ -563,8 +563,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         %% Bilateral Position Constraints:
         % enforcing eq7, line 2
         if (nP > 0)
-          w(nL+(1:nP)) = phiP + h*JP*wvn;
-          M(nL+(1:nP),:) = h*JP*Mvn;
+          w(nL+(1:nP)) = phiP + h*JP*vToqdot*wvn;
+          M(nL+(1:nP),:) = h*JP*vToqdot*Mvn;
           if (nargout>4)
             dJP = [zeros(numel(JP),1),reshape(dJP,numel(JP),[]),zeros(numel(JP),num_q+obj.num_u)];
             dw(nL+(1:nP),:) = [zeros(size(JP,1),1),JP,zeros(size(JP,1),num_q+obj.num_u)] + h*matGradMultMat(JP,wvn,dJP,dwvn);
