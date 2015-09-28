@@ -113,7 +113,7 @@ classdef Quadrotor < RigidBodyManipulator
   methods (Static)
     
     function runOpenLoop
-      r = Quadrotor();
+      r = Quadrotor('lidar');
       r = addTrees(r); 
       sys = TimeSteppingRigidBodyManipulator(r,.01);
       
