@@ -640,7 +640,7 @@ GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::centroidal
   auto ret = worldMomentumMatrix(cache, gradient_order, robotnum, in_terms_of_qdot);
 
   // transform from world frame to COM frame
-  Matrix<Scalar, SPACE_DIMENSION, 1> com = centerOfMass(cache);
+  Matrix<Scalar, SPACE_DIMENSION, 1> com = centerOfMass(cache, robotnum);
   auto angular_momentum_matrix = ret.value().template topRows<SPACE_DIMENSION>();
   auto linear_momentum_matrix = ret.value().template bottomRows<SPACE_DIMENSION>();
   if (gradient_order > 0) {
@@ -688,7 +688,7 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::centroidalMomentumMatri
   auto ret = worldMomentumMatrixDotTimesV(cache, gradient_order, robotnum);
 
   // transform from world frame to COM frame:
-  auto com = centerOfMass(cache);
+  auto com = centerOfMass(cache, robotnum);
   auto com_jacobian = centerOfMassJacobian(cache, 0, robotnum, true).value();
   auto angular_momentum_matrix_dot_times_v = ret.value().template topRows<SPACE_DIMENSION>();
   auto linear_momentum_matrix_dot_times_v = ret.value().template bottomRows<SPACE_DIMENSION>();
