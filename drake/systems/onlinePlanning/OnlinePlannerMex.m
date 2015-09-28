@@ -9,7 +9,7 @@ classdef OnlinePlannerMex < DrakeSystem
         
         % Mutable properties
         currentFunnel;
-        forestAhead;
+        currentObstacles;
         t_start;
         x_start;
         init_replan;
@@ -19,7 +19,7 @@ classdef OnlinePlannerMex < DrakeSystem
     methods
         
         % construction
-        function obj = OnlinePlannerMex(funnelLibrary,forestAhead,currentFunnel,cyclicIdx,t_replan,t_start,x_start,num_inputs)
+        function obj = OnlinePlannerMex(funnelLibrary,currentObstacles,currentFunnel,cyclicIdx,t_replan,t_start,x_start,num_inputs)
             
             disp('Setting up online planner...');
             
@@ -27,7 +27,7 @@ classdef OnlinePlannerMex < DrakeSystem
             
             obj.funnelLibrary = funnelLibrary;
             
-            obj.forestAhead = forestAhead;
+            obj.currentObstacles = currentObstacles;
             obj.currentFunnel = currentFunnel;
             
             obj.t_replan = t_replan;
@@ -35,7 +35,7 @@ classdef OnlinePlannerMex < DrakeSystem
             obj.x_start = x_start;
             obj.cyclicIdx = cyclicIdx;
             
-            obj.forestAhead = SharedDataHandleMutable(obj.forestAhead);
+            obj.currentObstacles = SharedDataHandleMutable(obj.currentObstacles);
             obj.currentFunnel = SharedDataHandleMutable(obj.currentFunnel);
             obj.t_start = SharedDataHandleMutable(obj.t_start);
             obj.x_start = SharedDataHandleMutable(obj.x_start);
@@ -120,8 +120,8 @@ classdef OnlinePlannerMex < DrakeSystem
         
         function nextFunnel = replanFunnels(obj,t,x)
            % Get latest reported obstacle positions
-           forest = obj.forestAhead.getData();
-           nextFunnel = replanFunnels_mex(x,forest,obj.funnelLibraryReduced);
+           obstacles = obj.currentObstacles.getData();
+           nextFunnel = replanFunnels_mex(x,obstacles,obj.funnelLibraryReduced);
             
            % Set start time for new funnels
            obj.t_start.setData(t);
@@ -137,8 +137,8 @@ classdef OnlinePlannerMex < DrakeSystem
         % at x (assuming polytopic obstacles) with bullet collision checking
         function [collisionFree,min_dist] = isCollisionFree(obj,funnelIdx,x)
             % Get latest reported obstacle positions
-            forest = obj.forestAhead.getData();
-            [collisionFree,min_dist] = isCollisionFree_mex(x,forest,obj.funnelLibraryReduced, funnelIdx);    
+            obstacles = obj.currentObstacles.getData();
+            [collisionFree,min_dist] = isCollisionFree_mex(x,obstacles,obj.funnelLibraryReduced, funnelIdx);    
     	end	      
         
     end
