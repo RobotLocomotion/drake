@@ -10,16 +10,6 @@
 #include <stdexcept>
 #include "drakeMexUtil.h"
 
-
-/**
- * fromMex
- */
-// return type of fromMex. Default to just T
-template <typename T>
-struct FromMexReturnType {
-  typedef T type;
-};
-
 class MexToCppConversionError : public std::runtime_error {
 public:
   MexToCppConversionError(const std::string& msg) : std::runtime_error(msg) { };
@@ -27,28 +17,16 @@ public:
   MexToCppConversionError(const char *msg) : std::runtime_error(msg) { };
 };
 
-// fromMex and specializations
-// templated class version to allow partial specialization
-template <typename T>
-typename FromMexReturnType<T>::type fromMex(const mxArray* mex);
-
-// default implementation calls the templated function version
-template <typename T>
-struct FromMex {
-  typename FromMexReturnType<T>::type operator() (const mxArray* mex) {
-    return fromMex<T>(mex);
-  }
-};
-
-template <>
-int fromMex<int>(const mxArray* source) {
+/**
+ * fromMex
+ */
+int fromMex(const mxArray* source, int*) {
   if (!mxIsScalar(source))
     throw MexToCppConversionError("Expected scalar.");
   return static_cast<int>(mxGetScalar(source));
 }
 
-template <>
-bool fromMex<bool>(const mxArray* source) {
+bool fromMex(const mxArray* source, bool*) {
   if (!mxIsLogicalScalar(source))
     throw MexToCppConversionError("Expected logical.");
   return mxGetLogicals(source)[0];
@@ -97,10 +75,9 @@ void mexCallFunction(std::function<R(Arg0, Args...)> func, int nlhs, mxArray *pl
     // remove reference because in general you don't want to return a reference from fromMex
     // remove const to have fewer template specializations
     typedef typename std::remove_cv<typename std::remove_reference<Arg0>::type>::type FromMexType;
-    FromMex<FromMexType> converter;
 
     try {
-      return std::move(func)(converter(prhs[0]), std::forward<Args>(tail)...);
+      return std::move(func)(fromMex(prhs[0], (FromMexType*) nullptr), std::forward<Args>(tail)...);
     }
     catch (MexToCppConversionError& e) {
       std::ostringstream buf;
