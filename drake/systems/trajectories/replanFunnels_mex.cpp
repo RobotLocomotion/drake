@@ -50,8 +50,6 @@ namespace snopt {
 #include "BulletCollision/CollisionShapes/btSphereShape.h"
 #include "BulletCollision/CollisionShapes/btBoxShape.h"
 #include "BulletCollision/CollisionShapes/btConvexHullShape.h"
-// #include <iostream>
-
 #include "BulletCollision/NarrowPhaseCollision/btGjkPairDetector.h"
 #include "BulletCollision/NarrowPhaseCollision/btPointCollector.h"
 #include "BulletCollision/NarrowPhaseCollision/btVoronoiSimplexSolver.h"
