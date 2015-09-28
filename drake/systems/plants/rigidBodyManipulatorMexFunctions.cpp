@@ -7,15 +7,15 @@ using namespace Eigen;
 /**
  * fromMex specializations
  */
-RigidBodyManipulator& fromMex(const mxArray* source, RigidBodyManipulator*) {
-  return *static_cast<RigidBodyManipulator*>(getDrakeMexPointer(source));
+RigidBodyManipulator &fromMex(const mxArray *source, RigidBodyManipulator *) {
+  return *static_cast<RigidBodyManipulator *>(getDrakeMexPointer(source));
 }
 
-std::set<int> fromMex(const mxArray* source, std::set<int>*) {
+std::set<int> fromMex(const mxArray *source, std::set<int> *) {
   // for robotnum. this is kind of a weird one, but OK for now
   std::set<int> robotnum_set;
   int num_robot = static_cast<int>(mxGetNumberOfElements(source));
-  double* robotnum = mxGetPrSafe(source);
+  double *robotnum = mxGetPrSafe(source);
   for (int i = 0; i < num_robot; i++) {
     robotnum_set.insert((int) robotnum[i] - 1);
   }
@@ -28,32 +28,32 @@ std::set<int> fromMex(const mxArray* source, std::set<int>*) {
  * Map<const Matrix<double, Rows, Cols>> fromMex(const mxArray* mex, MatrixBase<Map<const Matrix<double, Rows, Cols>>>*)
  */
 
-Map<const Matrix<double, Dynamic, Dynamic>> fromMex(const mxArray* mex, MatrixBase<Map<const Matrix<double, Dynamic, Dynamic>>>*) {
+Map<const Matrix<double, Dynamic, Dynamic>> fromMex(const mxArray *mex, MatrixBase<Map<const Matrix<double, Dynamic, Dynamic>>> *) {
   return matlabToEigenMap<Dynamic, Dynamic>(mex);
 }
 
-Map<const Matrix<double, 3, Dynamic>> fromMex(const mxArray* mex, MatrixBase<Map<const Matrix<double, 3, Dynamic>>>*) {
+Map<const Matrix<double, 3, Dynamic>> fromMex(const mxArray *mex, MatrixBase<Map<const Matrix<double, 3, Dynamic>>> *) {
   return matlabToEigenMap<3, Dynamic>(mex);
 }
 
-Map<const Matrix<double, 6, Dynamic>> fromMex(const mxArray* mex, MatrixBase<Map<const Matrix<double, 6, Dynamic>>>*) {
+Map<const Matrix<double, 6, Dynamic>> fromMex(const mxArray *mex, MatrixBase<Map<const Matrix<double, 6, Dynamic>>> *) {
   return matlabToEigenMap<6, Dynamic>(mex);
 }
 
-Map<const Matrix<double, Dynamic, 1>> fromMex(const mxArray* mex, MatrixBase<Map<const Matrix<double, Dynamic, 1>>>*) {
+Map<const Matrix<double, Dynamic, 1>> fromMex(const mxArray *mex, MatrixBase<Map<const Matrix<double, Dynamic, 1>>> *) {
   return matlabToEigenMap<Dynamic, 1>(mex);
 }
 
-template <typename Scalar>
-KinematicsCache<Scalar>& fromMex(const mxArray* mex, KinematicsCache<Scalar>*) {
-  return *static_cast<KinematicsCache<Scalar>*>(getDrakeMexPointer(mex));
+template<typename Scalar>
+KinematicsCache<Scalar> &fromMex(const mxArray *mex, KinematicsCache<Scalar> *) {
+  return *static_cast<KinematicsCache<Scalar> *>(getDrakeMexPointer(mex));
 }
 
 /**
  * toMex specializations
  */
-template <typename Scalar, int Rows, int Cols>
-void toMex(const GradientVar<Scalar, Rows, Cols>& source, mxArray* dest[], int nlhs, bool top_level = true) {
+template<typename Scalar, int Rows, int Cols>
+void toMex(const GradientVar<Scalar, Rows, Cols> &source, mxArray *dest[], int nlhs, bool top_level = true) {
   if (top_level) {
     // check number of output arguments
     if (nlhs > source.maxOrder() + 1) {
@@ -63,8 +63,7 @@ void toMex(const GradientVar<Scalar, Rows, Cols>& source, mxArray* dest[], int n
     }
   }
 
-  if (nlhs != 0)
-  {
+  if (nlhs != 0) {
     // set an output argument
     dest[0] = eigenToMatlab(source.value());
 
@@ -75,14 +74,14 @@ void toMex(const GradientVar<Scalar, Rows, Cols>& source, mxArray* dest[], int n
   }
 };
 
-template <int Rows, int Cols>
-void toMex(const Matrix<double, Rows, Cols>& source, mxArray* dest[], int nlhs) {
+template<int Rows, int Cols>
+void toMex(const Matrix<double, Rows, Cols> &source, mxArray *dest[], int nlhs) {
   if (nlhs > 0)
     dest[0] = eigenToMatlab(source);
 };
 
 template<>
-void toMex(const KinematicPath& path, mxArray* dest[], int nlhs) {
+void toMex(const KinematicPath &path, mxArray *dest[], int nlhs) {
   if (nlhs > 0) {
     dest[0] = stdVectorToMatlab(path.body_path);
   }
@@ -97,118 +96,113 @@ void toMex(const KinematicPath& path, mxArray* dest[], int nlhs) {
 /**
  * Mex function implementations
  */
-void centerOfMassJacobianDotTimesVmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-{
+void centerOfMassJacobianDotTimesVmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   typedef double Scalar;
-  function<GradientVar<Scalar, SPACE_DIMENSION, 1>(const RigidBodyManipulator&, KinematicsCache<Scalar>&, int, const std::set<int>&)> func = mem_fn(&RigidBodyManipulator::centerOfMassJacobianDotTimesV<Scalar>);
+  function<GradientVar<Scalar, SPACE_DIMENSION, 1>(const RigidBodyManipulator &, KinematicsCache<Scalar> &, int, const std::set<int> &)> func = mem_fn(
+      &RigidBodyManipulator::centerOfMassJacobianDotTimesV<Scalar>);
   mexCallFunction(func, nlhs, plhs, nrhs, prhs);
 }
 
-void centerOfMassmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-{
+void centerOfMassmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   typedef double Scalar;
-  function<Matrix<Scalar, SPACE_DIMENSION, 1>(const RigidBodyManipulator&, KinematicsCache<Scalar>&, const std::set<int>&)> func = mem_fn(&RigidBodyManipulator::centerOfMass<Scalar>);
+  function<Matrix<Scalar, SPACE_DIMENSION, 1>(const RigidBodyManipulator &, KinematicsCache<Scalar> &, const std::set<int> &)> func = mem_fn(&RigidBodyManipulator::centerOfMass<Scalar>);
   mexCallFunction(func, nlhs, plhs, nrhs, prhs);
 }
 
-void centerOfMassJacobianmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-{
+void centerOfMassJacobianmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   typedef double Scalar;
-  function<GradientVar<Scalar, SPACE_DIMENSION, Dynamic>(const RigidBodyManipulator&, KinematicsCache<Scalar>&, int, const std::set<int>&, bool)> func = mem_fn(&RigidBodyManipulator::centerOfMassJacobian<Scalar>);
+  function<GradientVar<Scalar, SPACE_DIMENSION, Dynamic>(const RigidBodyManipulator &, KinematicsCache<Scalar> &, int, const std::set<int> &, bool)> func = mem_fn(
+      &RigidBodyManipulator::centerOfMassJacobian<Scalar>);
   mexCallFunction(func, nlhs, plhs, nrhs, prhs);
 }
 
-void centroidalMomentumMatrixDotTimesvmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-{
+void centroidalMomentumMatrixDotTimesvmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   typedef double Scalar;
-  function<GradientVar<Scalar, TWIST_SIZE, 1>(const RigidBodyManipulator&, KinematicsCache<Scalar>&, int, const std::set<int>&)> func = mem_fn(&RigidBodyManipulator::centroidalMomentumMatrixDotTimesV<Scalar>);
+  function<GradientVar<Scalar, TWIST_SIZE, 1>(const RigidBodyManipulator &, KinematicsCache<Scalar> &, int, const std::set<int> &)> func = mem_fn(
+      &RigidBodyManipulator::centroidalMomentumMatrixDotTimesV<Scalar>);
   mexCallFunction(func, nlhs, plhs, nrhs, prhs);
 }
 
-void centroidalMomentumMatrixmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-{
+void centroidalMomentumMatrixmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   typedef double Scalar;
-  function<GradientVar<Scalar, TWIST_SIZE, Dynamic>const (RigidBodyManipulator&, KinematicsCache<Scalar>&, int, const std::set<int>&, bool)> func = mem_fn(&RigidBodyManipulator::centroidalMomentumMatrix<Scalar>);
+  function<GradientVar<Scalar, TWIST_SIZE, Dynamic> const(RigidBodyManipulator &, KinematicsCache<Scalar> &, int, const std::set<int> &, bool)> func = mem_fn(
+      &RigidBodyManipulator::centroidalMomentumMatrix<Scalar>);
   mexCallFunction(func, nlhs, plhs, nrhs, prhs);
 }
 
-void doKinematicsmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-{
+void doKinematicsmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   // temporary solution. Explicit doKinematics calls will not be necessary in the near future.
   typedef Map<const VectorXd> DerivedQ;
   typedef Map<const VectorXd> DerivedV;
   typedef DerivedQ::Scalar Scalar;
-  auto lambda = [] (const RigidBodyManipulator& model, KinematicsCache<Scalar>& cache, const MatrixBase<DerivedQ>& q, const MatrixBase<DerivedV>& v, bool compute_JdotV) {
+  auto lambda = [](const RigidBodyManipulator &model, KinematicsCache<Scalar> &cache, const MatrixBase<DerivedQ> &q, const MatrixBase<DerivedV> &v, bool compute_JdotV) {
     if (v.size() == 0 && model.num_velocities != 0)
       cache.initialize(q);
     else
       cache.initialize(q, v);
     model.doKinematics(cache, compute_JdotV);
   };
-  function<void(const RigidBodyManipulator&, KinematicsCache<Scalar>&, const MatrixBase<DerivedQ>&, const MatrixBase<DerivedV>&, bool)> func{lambda};
+  function<void(const RigidBodyManipulator &, KinematicsCache<Scalar> &, const MatrixBase<DerivedQ> &, const MatrixBase<DerivedV> &, bool)> func{lambda};
   mexCallFunction(func, nlhs, plhs, nrhs, prhs);
 }
 
-void findKinematicPathmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-{
-  function<KinematicPath(const RigidBodyManipulator&, int, int)> func = mem_fn(&RigidBodyManipulator::findKinematicPath);
+void findKinematicPathmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+  function<KinematicPath(const RigidBodyManipulator &, int, int)> func = mem_fn(&RigidBodyManipulator::findKinematicPath);
   mexCallFunction(func, nlhs, plhs, nrhs, prhs);
 }
 
-void forwardJacDotTimesVmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-{
+void forwardJacDotTimesVmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   typedef Map<const Matrix3Xd> DerivedPoints;
   typedef DerivedPoints::Scalar Scalar;
-  function<GradientVar<Scalar, Dynamic, 1>(const RigidBodyManipulator&, const KinematicsCache<Scalar>&, const MatrixBase<DerivedPoints>&, int, int, int, int)> func = mem_fn(&RigidBodyManipulator::forwardJacDotTimesV<DerivedPoints>);
+  function<GradientVar<Scalar, Dynamic, 1>(const RigidBodyManipulator &, const KinematicsCache<Scalar> &, const MatrixBase<DerivedPoints> &, int, int, int, int)> func = mem_fn(
+      &RigidBodyManipulator::forwardJacDotTimesV<DerivedPoints>);
   mexCallFunction(func, nlhs, plhs, nrhs, prhs);
 }
 
-void forwardKinmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-{
-  typedef Map< const Matrix3Xd > DerivedPoints;
-  typedef DerivedPoints::Scalar Scalar;
-  function<Matrix<Scalar, Dynamic, DerivedPoints::ColsAtCompileTime>(RigidBodyManipulator&, const KinematicsCache<Scalar>&, const MatrixBase<DerivedPoints>&, int, int, int)> func = mem_fn(&RigidBodyManipulator::forwardKin<DerivedPoints>);
-  mexCallFunction(func, nlhs, plhs, nrhs, prhs);
-}
-
-void forwardKinJacobianmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-{
+void forwardKinmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   typedef Map<const Matrix3Xd> DerivedPoints;
   typedef DerivedPoints::Scalar Scalar;
-  function<GradientVar<Scalar, Dynamic, Dynamic>(const RigidBodyManipulator&, const KinematicsCache<Scalar>&, const MatrixBase<DerivedPoints>&, int, int, int, bool, int)> func = mem_fn(&RigidBodyManipulator::forwardKinJacobian<DerivedPoints>);
+  function<Matrix<Scalar, Dynamic, DerivedPoints::ColsAtCompileTime>(RigidBodyManipulator &, const KinematicsCache<Scalar> &, const MatrixBase<DerivedPoints> &, int, int, int)> func = mem_fn(
+      &RigidBodyManipulator::forwardKin<DerivedPoints>);
   mexCallFunction(func, nlhs, plhs, nrhs, prhs);
 }
 
-void forwardKinPositionGradientmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-{
+void forwardKinJacobianmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+  typedef Map<const Matrix3Xd> DerivedPoints;
+  typedef DerivedPoints::Scalar Scalar;
+  function<GradientVar<Scalar, Dynamic, Dynamic>(const RigidBodyManipulator &, const KinematicsCache<Scalar> &, const MatrixBase<DerivedPoints> &, int, int, int, bool, int)> func = mem_fn(
+      &RigidBodyManipulator::forwardKinJacobian<DerivedPoints>);
+  mexCallFunction(func, nlhs, plhs, nrhs, prhs);
+}
+
+void forwardKinPositionGradientmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   typedef double Scalar;
-  function<GradientVar<Scalar, Dynamic, Dynamic>(const RigidBodyManipulator&, const KinematicsCache<Scalar>&, int, int, int, int)> func = mem_fn(&RigidBodyManipulator::forwardKinPositionGradient<Scalar>);
+  function<GradientVar<Scalar, Dynamic, Dynamic>(const RigidBodyManipulator &, const KinematicsCache<Scalar> &, int, int, int, int)> func = mem_fn(
+      &RigidBodyManipulator::forwardKinPositionGradient<Scalar>);
   mexCallFunction(func, nlhs, plhs, nrhs, prhs);
 }
 
-void geometricJacobianDotTimesVmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-{
+void geometricJacobianDotTimesVmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   typedef double Scalar;
-  std::function<GradientVar<Scalar, TWIST_SIZE, 1>(const RigidBodyManipulator&, const KinematicsCache<Scalar>&, int, int, int, int)> func = mem_fn(&RigidBodyManipulator::geometricJacobianDotTimesV<Scalar>);
+  std::function<GradientVar<Scalar, TWIST_SIZE, 1>(const RigidBodyManipulator &, const KinematicsCache<Scalar> &, int, int, int, int)> func = mem_fn(
+      &RigidBodyManipulator::geometricJacobianDotTimesV<Scalar>);
   mexCallFunction(func, nlhs, plhs, nrhs, prhs);
 }
 
-void geometricJacobianmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-{
+void geometricJacobianmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   // temporary solution. Gross v_or_qdot_indices pointer will be gone soon.
   typedef double Scalar;
-  auto lambda = [] (const RigidBodyManipulator& model, const KinematicsCache<Scalar>& cache,
-                    int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, int gradient_order, bool in_terms_of_qdot) {
+  auto lambda = [](const RigidBodyManipulator &model, const KinematicsCache<Scalar> &cache,
+                   int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, int gradient_order, bool in_terms_of_qdot) {
     return model.geometricJacobian(cache, base_body_or_frame_ind, end_effector_body_or_frame_ind, expressed_in_body_or_frame_ind, gradient_order, in_terms_of_qdot, nullptr);
   };
-  function<GradientVar<Scalar, TWIST_SIZE, Dynamic>(const RigidBodyManipulator&, const KinematicsCache<Scalar>&, int, int, int, int, bool)> func{lambda};
+  function<GradientVar<Scalar, TWIST_SIZE, Dynamic>(const RigidBodyManipulator &, const KinematicsCache<Scalar> &, int, int, int, int, bool)> func{lambda};
   mexCallFunction(func, nlhs, plhs, nrhs, prhs);
 }
 
-void massMatrixmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-{
+void massMatrixmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   typedef double Scalar;
-  function<GradientVar<Scalar, Dynamic, Dynamic>(const RigidBodyManipulator&, KinematicsCache<Scalar>&, int)> func = mem_fn(&RigidBodyManipulator::massMatrix<Scalar>);
+  function<GradientVar<Scalar, Dynamic, Dynamic>(const RigidBodyManipulator &, KinematicsCache<Scalar> &, int)> func = mem_fn(&RigidBodyManipulator::massMatrix<Scalar>);
   mexCallFunction(func, nlhs, plhs, nrhs, prhs);
 }
 
