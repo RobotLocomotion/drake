@@ -5,20 +5,13 @@ using namespace std;
 using namespace Eigen;
 
 /**
- * fromMex and FromMex specializations
+ * fromMex specializations
  */
-template<>
-struct FromMexReturnType<RigidBodyManipulator> {
-  typedef RigidBodyManipulator& type;
-};
-
-template<>
-RigidBodyManipulator& fromMex<RigidBodyManipulator>(const mxArray* source) {
+RigidBodyManipulator& fromMex(const mxArray* source, RigidBodyManipulator*) {
   return *static_cast<RigidBodyManipulator*>(getDrakeMexPointer(source));
 }
 
-template <>
-std::set<int> fromMex<std::set<int>>(const mxArray* source) {
+std::set<int> fromMex(const mxArray* source, std::set<int>*) {
   // for robotnum. this is kind of a weird one, but OK for now
   std::set<int> robotnum_set;
   int num_robot = static_cast<int>(mxGetNumberOfElements(source));
@@ -29,67 +22,24 @@ std::set<int> fromMex<std::set<int>>(const mxArray* source) {
   return robotnum_set;
 }
 
-template <>
-std::vector<int>* fromMex<std::vector<int>*>(const mxArray* source) {
-  return nullptr; // for now
+Map<const Matrix<double, 3, Dynamic>> fromMex(const mxArray* mex, MatrixBase<Map<const Matrix<double, 3, Dynamic>>>*) {
+  return matlabToEigenMap<3, Dynamic>(mex);
 }
 
-template<typename Derived>
-struct FromMexReturnType<MatrixBase<Derived>> {
-  typedef Derived type;
-};
-
-template <int Rows, int Cols>
-Map<const Matrix<double, Rows, Cols>> matlabToEigenMap2(const mxArray* mex) {
-  int rows;
-  if (Rows == Dynamic)
-    rows = static_cast<int>(mxGetM(mex));
-  else if (mxGetM(mex) == Rows || mxGetM(mex) == 0) // be lenient in the empty input case
-    rows = Rows;
-  else {
-    ostringstream stream;
-    stream << "Error converting Matlab matrix. Expected " << Rows << " rows, but got " << mxGetM(mex) << ".";
-    throw MexToCppConversionError(stream.str().c_str());
-  }
-
-  int cols;
-  if (Cols == Dynamic)
-    cols = static_cast<int>(mxGetN(mex));
-  else if (mxGetN(mex) == Cols || mxGetN(mex) == 0) // be lenient in the empty input case
-    cols = Cols;
-  else {
-    ostringstream stream;
-    stream << "Error converting Matlab matrix. Expected " << Cols << " cols, but got " << mxGetN(mex) << ".";
-    throw MexToCppConversionError(stream.str().c_str());
-  }
-
-  double* data = rows * cols == 0 ? nullptr : mxGetPrSafe(mex);
-  return Map<const Matrix<double, Rows, Cols>>(data, rows, cols);
+Map<const Matrix<double, Dynamic, 1>> fromMex(const mxArray* mex, MatrixBase<Map<const Matrix<double, Dynamic, 1>>>*) {
+  return matlabToEigenMap<Dynamic, 1>(mex);
 }
 
-template <>
-Map<const Matrix3Xd> fromMex< MatrixBase<Map<const Matrix3Xd>> >(const mxArray* mex) {
-  return matlabToEigenMap2<3, Dynamic>(mex);
-}
-
-template <>
-Map<const VectorXd> fromMex< MatrixBase<Map<const VectorXd>> >(const mxArray* mex) {
-  return matlabToEigenMap2<Dynamic, 1>(mex);
-}
+/*
+ * unfortunately, due to an MSVC internal compiler error, can't have
+ * template <int Rows, int Cols>
+ * Map<const Matrix<double, Rows, Cols>> fromMex(const mxArray* mex, MatrixBase<Map<const Matrix<double, Rows, Cols>>>*)
+ */
 
 template <typename Scalar>
-struct FromMexReturnType<KinematicsCache<Scalar>> {
-  typedef KinematicsCache<Scalar>& type;
-};
-
-template <typename Scalar>
-struct FromMex<KinematicsCache<Scalar>>
-{
-  KinematicsCache<Scalar>& operator()(const mxArray *mex)
-  {
-    return *static_cast<KinematicsCache<Scalar>*>(getDrakeMexPointer(mex));
-  }
-};
+KinematicsCache<Scalar>& fromMex(const mxArray* mex, KinematicsCache<Scalar>*) {
+  return *static_cast<KinematicsCache<Scalar>*>(getDrakeMexPointer(mex));
+}
 
 /**
  * toMex specializations
