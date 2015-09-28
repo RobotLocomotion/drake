@@ -795,10 +795,11 @@ function [V,rho,Phi] = findVRho_containG_vol(G,Vtraj0,ts,forig_u,Phiold,options,
     disp('Backing off now...')
 
     % Back off on objective
-    costfun_opt = double(sol.eval(costfun));
-    prog = prog.withPos(costfun_opt + (options.backoff_percent/100)*abs(costfun_opt) - costfun);
+    %costfun_opt = double(sol.eval(costfun));
+    %prog = prog.withPos(costfun_opt + (options.backoff_percent/100)*abs(costfun_opt) - costfun);
 
-    sol = prog.minimize(0,@spot_sedumi,pars);
+    %sol = prog.minimize(0,@spot_sedumi,pars);
+    
 
     rho = double(sol.eval(rho));
 
