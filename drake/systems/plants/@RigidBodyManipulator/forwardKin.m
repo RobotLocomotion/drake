@@ -72,7 +72,7 @@ if (kinsol.mex)
   elseif nargout > 1
     J = forwardKinJacobianmex(obj.mex_model_ptr, kinsol.mex_ptr, points, body_or_frame_id - 1, base_or_frame_id - 1, rotation_type, in_terms_of_qdot, 0);
   end
-  x = forwardKinmex(obj.mex_model_ptr, kinsol.mex_ptr, points, body_or_frame_id - 1, base_or_frame_id - 1, rotation_type, 0);
+  x = forwardKinmex(obj.mex_model_ptr, kinsol.mex_ptr, points, body_or_frame_id - 1, base_or_frame_id - 1, rotation_type);
 else
   nq = obj.getNumPositions();
   nv = obj.getNumVelocities();
