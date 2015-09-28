@@ -29,7 +29,8 @@ function [V,rho,Phi] = sampledFiniteTimeReachabilityFunnel(sys,polyOrig,Vtraj0,G
 % @option Lup Multiplier degree
 % @option Lum Multiplier degree
 
-addpath_mosek;
+checkDependency('mosek');
+checkDependency('sedumi');
 
 % Get the necessary variables
 t=msspoly('t',1);
