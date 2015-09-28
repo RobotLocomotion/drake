@@ -43,7 +43,6 @@ addpath(fullfile(root,'systems','robotInterfaces'));
 addpath(fullfile(root,'systems','onlinePlanning'));
 addpath(fullfile(root,'systems','onlinePlanning','TrajectoryLibraries'));
 addpath(fullfile(root,'systems','onlinePlanning','FunnelLibraries'));
-addpath(fullfile(root,'systems','onlinePlanning','Util'));
 addpath(fullfile(root,'systems','robotInterfaces','calibration'));
 addpath(fullfile(root,'solvers'));
 addpath(fullfile(root,'solvers','trajectoryOptimization'));

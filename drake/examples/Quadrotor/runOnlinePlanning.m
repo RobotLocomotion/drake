@@ -31,8 +31,11 @@ function runOnlinePlanning
     op = op.setOutputFrame(r.getInputFrame);
 
     sysCl = feedback(r, op);
-
-    xtrajSim = simulateEuler(sysCl, 10, x0, 0.001);
+    
+    sysCl = sysCl.setSimulinkParam('Solver', 'ode1');
+    sysCl = sysCl.setSimulinkParam('FixedStep', '0.001');    
+    
+    xtrajSim = sysCl.simulate([0 10], x0);
 
     v.playback(xtrajSim);
 end
