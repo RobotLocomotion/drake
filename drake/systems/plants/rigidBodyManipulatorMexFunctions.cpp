@@ -40,36 +40,42 @@ struct FromMexReturnType<MatrixBase<Derived>> {
 };
 
 template <int Rows, int Cols>
-struct FromMex< MatrixBase<Map<const Matrix<double, Rows, Cols>>> > {
-  FromMex(MatrixBase<Map<const Matrix<double, Rows, Cols>>>* ptr) {};
-
-  Map<const Matrix<double, Rows, Cols>> operator() (const mxArray* mex) {
-    int rows;
-    if (Rows == Dynamic)
-      rows = static_cast<int>(mxGetM(mex));
-    else if (mxGetM(mex) == Rows || mxGetM(mex) == 0) // be lenient in the empty input case
-      rows = Rows;
-    else {
-      ostringstream stream;
-      stream << "Error converting Matlab matrix. Expected " << Rows << " rows, but got " << mxGetM(mex) << ".";
-      throw MexToCppConversionError(stream.str().c_str());
-    }
-
-    int cols;
-    if (Cols == Dynamic)
-      cols = static_cast<int>(mxGetN(mex));
-    else if (mxGetN(mex) == Cols || mxGetN(mex) == 0) // be lenient in the empty input case
-      cols = Cols;
-    else {
-      ostringstream stream;
-      stream << "Error converting Matlab matrix. Expected " << Cols << " cols, but got " << mxGetN(mex) << ".";
-      throw MexToCppConversionError(stream.str().c_str());
-    }
-
-    double* data = rows * cols == 0 ? nullptr : mxGetPrSafe(mex);
-    return Map<const Matrix<double, Rows, Cols>>(data, rows, cols);
+Map<const Matrix<double, Rows, Cols>> matlabToEigenMap2(const mxArray* mex) {
+  int rows;
+  if (Rows == Dynamic)
+    rows = static_cast<int>(mxGetM(mex));
+  else if (mxGetM(mex) == Rows || mxGetM(mex) == 0) // be lenient in the empty input case
+    rows = Rows;
+  else {
+    ostringstream stream;
+    stream << "Error converting Matlab matrix. Expected " << Rows << " rows, but got " << mxGetM(mex) << ".";
+    throw MexToCppConversionError(stream.str().c_str());
   }
-};
+
+  int cols;
+  if (Cols == Dynamic)
+    cols = static_cast<int>(mxGetN(mex));
+  else if (mxGetN(mex) == Cols || mxGetN(mex) == 0) // be lenient in the empty input case
+    cols = Cols;
+  else {
+    ostringstream stream;
+    stream << "Error converting Matlab matrix. Expected " << Cols << " cols, but got " << mxGetN(mex) << ".";
+    throw MexToCppConversionError(stream.str().c_str());
+  }
+
+  double* data = rows * cols == 0 ? nullptr : mxGetPrSafe(mex);
+  return Map<const Matrix<double, Rows, Cols>>(data, rows, cols);
+}
+
+template <>
+Map<const Matrix3Xd> fromMex< MatrixBase<Map<const Matrix3Xd>> >(const mxArray* mex) {
+  return matlabToEigenMap2<3, Dynamic>(mex);
+}
+
+template <>
+Map<const VectorXd> fromMex< MatrixBase<Map<const VectorXd>> >(const mxArray* mex) {
+  return matlabToEigenMap2<Dynamic, 1>(mex);
+}
 
 template <typename Scalar>
 struct FromMexReturnType<KinematicsCache<Scalar>> {
@@ -79,8 +85,6 @@ struct FromMexReturnType<KinematicsCache<Scalar>> {
 template <typename Scalar>
 struct FromMex<KinematicsCache<Scalar>>
 {
-  FromMex(KinematicsCache<Scalar>* ptr) { };
-
   KinematicsCache<Scalar>& operator()(const mxArray *mex)
   {
     return *static_cast<KinematicsCache<Scalar>*>(getDrakeMexPointer(mex));
@@ -170,22 +174,22 @@ void centroidalMomentumMatrixmex(int nlhs, mxArray *plhs[], int nrhs, const mxAr
   mexCallFunction(func, nlhs, plhs, nrhs, prhs);
 }
 
-// void doKinematicsmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-// {
-  // // temporary solution. Explicit doKinematics calls will not be necessary in the near future.
-  // typedef Map<const VectorXd> DerivedQ;
-  // typedef Map<const VectorXd> DerivedV;
-  // typedef DerivedQ::Scalar Scalar;
-  // auto lambda = [] (const RigidBodyManipulator& model, KinematicsCache<Scalar>& cache, const MatrixBase<DerivedQ>& q, const MatrixBase<DerivedV>& v, bool compute_JdotV) {
-    // if (v.size() == 0 && model.num_velocities != 0)
-      // cache.initialize(q);
-    // else
-      // cache.initialize(q, v);
-    // model.doKinematics(cache, compute_JdotV);
-  // };
-  // function<void(const RigidBodyManipulator&, KinematicsCache<Scalar>&, const MatrixBase<DerivedQ>&, const MatrixBase<DerivedV>&, bool)> func{lambda};
-  // mexCallFunction(func, nlhs, plhs, nrhs, prhs);
-// }
+void doKinematicsmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+{
+  // temporary solution. Explicit doKinematics calls will not be necessary in the near future.
+  typedef Map<const VectorXd> DerivedQ;
+  typedef Map<const VectorXd> DerivedV;
+  typedef DerivedQ::Scalar Scalar;
+  auto lambda = [] (const RigidBodyManipulator& model, KinematicsCache<Scalar>& cache, const MatrixBase<DerivedQ>& q, const MatrixBase<DerivedV>& v, bool compute_JdotV) {
+    if (v.size() == 0 && model.num_velocities != 0)
+      cache.initialize(q);
+    else
+      cache.initialize(q, v);
+    model.doKinematics(cache, compute_JdotV);
+  };
+  function<void(const RigidBodyManipulator&, KinematicsCache<Scalar>&, const MatrixBase<DerivedQ>&, const MatrixBase<DerivedV>&, bool)> func{lambda};
+  mexCallFunction(func, nlhs, plhs, nrhs, prhs);
+}
 
 void findKinematicPathmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
@@ -193,29 +197,29 @@ void findKinematicPathmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *pr
   mexCallFunction(func, nlhs, plhs, nrhs, prhs);
 }
 
-// void forwardJacDotTimesVmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-// {
-  // typedef Map<const Matrix3Xd> DerivedPoints;
-  // typedef DerivedPoints::Scalar Scalar;
-  // function<GradientVar<Scalar, Dynamic, 1>(const RigidBodyManipulator&, const KinematicsCache<Scalar>&, const MatrixBase<DerivedPoints>&, int, int, int, int)> func = mem_fn(&RigidBodyManipulator::forwardJacDotTimesV<DerivedPoints>);
-  // mexCallFunction(func, nlhs, plhs, nrhs, prhs);
-// }
+void forwardJacDotTimesVmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+{
+  typedef Map<const Matrix3Xd> DerivedPoints;
+  typedef DerivedPoints::Scalar Scalar;
+  function<GradientVar<Scalar, Dynamic, 1>(const RigidBodyManipulator&, const KinematicsCache<Scalar>&, const MatrixBase<DerivedPoints>&, int, int, int, int)> func = mem_fn(&RigidBodyManipulator::forwardJacDotTimesV<DerivedPoints>);
+  mexCallFunction(func, nlhs, plhs, nrhs, prhs);
+}
 
-// //void forwardKinmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-// //{
-// //  typedef Map< const Matrix3Xd > DerivedPoints;
-// //  typedef DerivedPoints::Scalar Scalar;
-// //  function<Matrix<Scalar, Dynamic, DerivedPoints::ColsAtCompileTime>(RigidBodyManipulator&, const KinematicsCache<Scalar>&, const MatrixBase<DerivedPoints>&, int, int, int)> func = mem_fn(&RigidBodyManipulator::forwardKin<DerivedPoints>);
-// //  mexCallFunction(func, nlhs, plhs, nrhs, prhs);
-// //}
+//void forwardKinmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+//{
+//  typedef Map< const Matrix3Xd > DerivedPoints;
+//  typedef DerivedPoints::Scalar Scalar;
+//  function<Matrix<Scalar, Dynamic, DerivedPoints::ColsAtCompileTime>(RigidBodyManipulator&, const KinematicsCache<Scalar>&, const MatrixBase<DerivedPoints>&, int, int, int)> func = mem_fn(&RigidBodyManipulator::forwardKin<DerivedPoints>);
+//  mexCallFunction(func, nlhs, plhs, nrhs, prhs);
+//}
 
-// void forwardKinJacobianmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-// {
-  // typedef Map<const Matrix3Xd> DerivedPoints;
-  // typedef DerivedPoints::Scalar Scalar;
-  // function<GradientVar<Scalar, Dynamic, Dynamic>(const RigidBodyManipulator&, const KinematicsCache<Scalar>&, const MatrixBase<DerivedPoints>&, int, int, int, int, int)> func = mem_fn(&RigidBodyManipulator::forwardKinJacobian<DerivedPoints>);
-  // mexCallFunction(func, nlhs, plhs, nrhs, prhs);
-// }
+void forwardKinJacobianmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+{
+  typedef Map<const Matrix3Xd> DerivedPoints;
+  typedef DerivedPoints::Scalar Scalar;
+  function<GradientVar<Scalar, Dynamic, Dynamic>(const RigidBodyManipulator&, const KinematicsCache<Scalar>&, const MatrixBase<DerivedPoints>&, int, int, int, bool, int)> func = mem_fn(&RigidBodyManipulator::forwardKinJacobian<DerivedPoints>);
+  mexCallFunction(func, nlhs, plhs, nrhs, prhs);
+}
 
 void forwardKinPositionGradientmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
