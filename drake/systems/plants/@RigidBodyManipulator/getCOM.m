@@ -35,7 +35,7 @@ if kinsol.mex
   elseif nargout > 1
     J = centerOfMassJacobianmex(model.mex_model_ptr, kinsol.mex_ptr, 0, robotnum, in_terms_of_qdot);
   end
-  com = centerOfMassmex(model.mex_model_ptr, kinsol.mex_ptr, 0, robotnum);
+  com = centerOfMassmex(model.mex_model_ptr, kinsol.mex_ptr, robotnum);
 else
   m = 0;
   com = zeros(3,1);
