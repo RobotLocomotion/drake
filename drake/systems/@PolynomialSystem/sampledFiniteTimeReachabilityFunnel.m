@@ -57,7 +57,7 @@ if (~isfield(options,'converged_tol')) options.converged_tol = 1e-3; end % Toler
 if (~isfield(options,'saturations')) options.saturations = false; end % Set whether or not there are any input saturations
 if (~isfield(options,'rho0')) options.rho0 = 0.1*ones(length(ts),1); options.rho0(end) = 1; end % Initial "guessed" rho
 if (~isfield(options,'clean_tol')) options.clean_tol = 1e-6; end % tolerance for cleaning small terms
-if (~isfield(options,'backoff_percent')) options.backoff_percent = 0; end % 5 percent backing off
+if (~isfield(options,'backoff_percent')) options.backoff_percent = 0; end
 if (~isfield(options,'degL1')) options.degL1 = options.controller_deg + 1; end % Chosen to do degree matching
 if (~isfield(options,'degLu')) options.degLu = options.controller_deg - 1; end
 if (~isfield(options,'degLu1')) options.degLu1 = 2; end

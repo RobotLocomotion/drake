@@ -18,7 +18,6 @@ classdef FunnelLibrary
             obj.options.rho0 = 1;
             obj.options.degL1 = 2;
             obj.options.max_iterations = 1;
-            obj.options.backoff_percent = 5;
         end
         
         function obj = plotFunnels(obj, robot)
