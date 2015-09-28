@@ -315,7 +315,7 @@ classdef DynamicalSystem
       end
       
       [x,~,exitflag,infeasible_constraint_name] = solve(prog,x0);
-      success=(exitflag==1);
+      success=(exitflag<10);
       if ~isempty(infeasible_constraint_name)
         infeasible_constraint_name
       end
@@ -715,6 +715,7 @@ classdef DynamicalSystem
 
   properties (SetAccess=private,GetAccess=protected)
     simulink_params=struct();     % simulink model parameters
+    initial_state = [];  % getInitialState returns this if non-empty instead of a random state
   end
   
   properties (Access=public)

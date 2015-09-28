@@ -41,6 +41,11 @@ classdef DrakeSystem < DynamicalSystem
       % Attempts to return the result of resolveConstraints using a
       % small random vector as an initial seed.
 
+      if ~isempty(obj.initial_state)
+        x0 = obj.initial_state;
+        return;
+      end
+      
       x0 = .01*randn(obj.num_xd+obj.num_xc,1);
       if ~isempty(obj.state_constraints)
         attempts=0;
@@ -59,7 +64,7 @@ classdef DrakeSystem < DynamicalSystem
           if (~success)
             x0 = randn(obj.num_xd+obj.num_xc,1);
             if (attempts>=10)
-              error('Drake:Manipulator:FailedToResolveConstraints','Failed to resolve state constraints on initial conditions after 10 tries');
+              error('Drake:DrakeSystem:FailedToResolveConstraints','Failed to resolve state constraints on initial conditions after 10 tries');
             end
           end
         end

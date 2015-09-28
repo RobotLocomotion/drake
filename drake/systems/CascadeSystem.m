@@ -81,6 +81,11 @@ classdef CascadeSystem < DrakeSystem
     end
 
     function x0=getInitialState(obj)
+      if ~isempty(obj.initial_state)
+        x0 = obj.initial_state;
+        return;
+      end
+
       x0=encodeX(obj,getInitialState(obj.sys1),getInitialState(obj.sys2));
     end
 

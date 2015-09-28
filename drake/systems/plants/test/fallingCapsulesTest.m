@@ -1,25 +1,28 @@
 function fallingCapsulesTest
 
-options.floating = true;
+options.floating = 'quat';
 options.terrain = RigidBodyFlatTerrain();
-N = 4;
+N = 5;
 p = TimeSteppingRigidBodyManipulator('Capsule.urdf',.001,options);
 for i=2:N,
   options.namesuffix = num2str(N);
   p = p.addRobotFromURDF('Capsule.urdf',[],[],options);
 end
-% p = p.addRobotFromURDF('ground_plane.urdf');
 
-x0 = .2*randn(p.getNumDiscStates,1);
-x0(3:6:end) = x0(3:6:end) + .5;
-% x0(N*6+1:end) = 0;
+x0 = .2*randn(p.getNumStates,1);
+for i=1:N
+  x0(7*(i-1)+3) = i;  % z coordinate
+  x0(7*(i-1)+(4:7)) = uniformlyRandomQuat();
+end
 
-x0 = p.resolveConstraints(x0);
 v = p.constructVisualizer();
 v.drawWrapper(0,x0);
 
+x0 = p.resolveConstraints(x0,v);
+v.drawWrapper(0,x0);
+
 traj = simulate(p,[0 2],x0);
-v.playback(traj)
+v.playback(traj); %,struct('slider',true));
 % function collisionDetectGradTest(visualize,n_debris)
 %   if nargin < 1
 %     visualize = false;
