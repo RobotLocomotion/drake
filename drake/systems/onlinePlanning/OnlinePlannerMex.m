@@ -35,11 +35,11 @@ classdef OnlinePlannerMex < DrakeSystem
             obj.x_start = x_start;
             obj.cyclicIdx = cyclicIdx;
             
-            obj.currentObstacles = SharedDataHandleMutable(obj.currentObstacles);
-            obj.currentFunnel = SharedDataHandleMutable(obj.currentFunnel);
-            obj.t_start = SharedDataHandleMutable(obj.t_start);
-            obj.x_start = SharedDataHandleMutable(obj.x_start);
-            obj.init_replan = SharedDataHandleMutable(false);
+            obj.currentObstacles = SharedDataHandle(obj.currentObstacles);
+            obj.currentFunnel = SharedDataHandle(obj.currentFunnel);
+            obj.t_start = SharedDataHandle(obj.t_start);
+            obj.x_start = SharedDataHandle(obj.x_start);
+            obj.init_replan = SharedDataHandle(false);
 
 	    for k = 1:length(funnelLibrary)
 	    	obj.funnelLibraryReduced(k).xyz = funnelLibrary{k}.xyz;
@@ -144,9 +144,3 @@ classdef OnlinePlannerMex < DrakeSystem
     end
     
 end
-            
-            
-            
-            
-            
-            
