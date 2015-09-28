@@ -170,22 +170,22 @@ void centroidalMomentumMatrixmex(int nlhs, mxArray *plhs[], int nrhs, const mxAr
   mexCallFunction(func, nlhs, plhs, nrhs, prhs);
 }
 
-void doKinematicsmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-{
-  // temporary solution. Explicit doKinematics calls will not be necessary in the near future.
-  typedef Map<const VectorXd> DerivedQ;
-  typedef Map<const VectorXd> DerivedV;
-  typedef DerivedQ::Scalar Scalar;
-  auto lambda = [] (const RigidBodyManipulator& model, KinematicsCache<Scalar>& cache, const MatrixBase<DerivedQ>& q, const MatrixBase<DerivedV>& v, bool compute_JdotV) {
-    if (v.size() == 0 && model.num_velocities != 0)
-      cache.initialize(q);
-    else
-      cache.initialize(q, v);
-    model.doKinematics(cache, compute_JdotV);
-  };
-  function<void(const RigidBodyManipulator&, KinematicsCache<Scalar>&, const MatrixBase<DerivedQ>&, const MatrixBase<DerivedV>&, bool)> func{lambda};
-  mexCallFunction(func, nlhs, plhs, nrhs, prhs);
-}
+// void doKinematicsmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+// {
+  // // temporary solution. Explicit doKinematics calls will not be necessary in the near future.
+  // typedef Map<const VectorXd> DerivedQ;
+  // typedef Map<const VectorXd> DerivedV;
+  // typedef DerivedQ::Scalar Scalar;
+  // auto lambda = [] (const RigidBodyManipulator& model, KinematicsCache<Scalar>& cache, const MatrixBase<DerivedQ>& q, const MatrixBase<DerivedV>& v, bool compute_JdotV) {
+    // if (v.size() == 0 && model.num_velocities != 0)
+      // cache.initialize(q);
+    // else
+      // cache.initialize(q, v);
+    // model.doKinematics(cache, compute_JdotV);
+  // };
+  // function<void(const RigidBodyManipulator&, KinematicsCache<Scalar>&, const MatrixBase<DerivedQ>&, const MatrixBase<DerivedV>&, bool)> func{lambda};
+  // mexCallFunction(func, nlhs, plhs, nrhs, prhs);
+// }
 
 void findKinematicPathmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
@@ -193,29 +193,29 @@ void findKinematicPathmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *pr
   mexCallFunction(func, nlhs, plhs, nrhs, prhs);
 }
 
-void forwardJacDotTimesVmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-{
-  typedef Map<const Matrix3Xd> DerivedPoints;
-  typedef DerivedPoints::Scalar Scalar;
-  function<GradientVar<Scalar, Dynamic, 1>(const RigidBodyManipulator&, const KinematicsCache<Scalar>&, const MatrixBase<DerivedPoints>&, int, int, int, int)> func = mem_fn(&RigidBodyManipulator::forwardJacDotTimesV<DerivedPoints>);
-  mexCallFunction(func, nlhs, plhs, nrhs, prhs);
-}
+// void forwardJacDotTimesVmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+// {
+  // typedef Map<const Matrix3Xd> DerivedPoints;
+  // typedef DerivedPoints::Scalar Scalar;
+  // function<GradientVar<Scalar, Dynamic, 1>(const RigidBodyManipulator&, const KinematicsCache<Scalar>&, const MatrixBase<DerivedPoints>&, int, int, int, int)> func = mem_fn(&RigidBodyManipulator::forwardJacDotTimesV<DerivedPoints>);
+  // mexCallFunction(func, nlhs, plhs, nrhs, prhs);
+// }
 
-//void forwardKinmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-//{
-//  typedef Map< const Matrix3Xd > DerivedPoints;
-//  typedef DerivedPoints::Scalar Scalar;
-//  function<Matrix<Scalar, Dynamic, DerivedPoints::ColsAtCompileTime>(RigidBodyManipulator&, const KinematicsCache<Scalar>&, const MatrixBase<DerivedPoints>&, int, int, int)> func = mem_fn(&RigidBodyManipulator::forwardKin<DerivedPoints>);
-//  mexCallFunction(func, nlhs, plhs, nrhs, prhs);
-//}
+// //void forwardKinmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+// //{
+// //  typedef Map< const Matrix3Xd > DerivedPoints;
+// //  typedef DerivedPoints::Scalar Scalar;
+// //  function<Matrix<Scalar, Dynamic, DerivedPoints::ColsAtCompileTime>(RigidBodyManipulator&, const KinematicsCache<Scalar>&, const MatrixBase<DerivedPoints>&, int, int, int)> func = mem_fn(&RigidBodyManipulator::forwardKin<DerivedPoints>);
+// //  mexCallFunction(func, nlhs, plhs, nrhs, prhs);
+// //}
 
-void forwardKinJacobianmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-{
-  typedef Map<const Matrix3Xd> DerivedPoints;
-  typedef DerivedPoints::Scalar Scalar;
-  function<GradientVar<Scalar, Dynamic, Dynamic>(const RigidBodyManipulator&, const KinematicsCache<Scalar>&, const MatrixBase<DerivedPoints>&, int, int, int, int, int)> func = mem_fn(&RigidBodyManipulator::forwardKinJacobian<DerivedPoints>);
-  mexCallFunction(func, nlhs, plhs, nrhs, prhs);
-}
+// void forwardKinJacobianmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+// {
+  // typedef Map<const Matrix3Xd> DerivedPoints;
+  // typedef DerivedPoints::Scalar Scalar;
+  // function<GradientVar<Scalar, Dynamic, Dynamic>(const RigidBodyManipulator&, const KinematicsCache<Scalar>&, const MatrixBase<DerivedPoints>&, int, int, int, int, int)> func = mem_fn(&RigidBodyManipulator::forwardKinJacobian<DerivedPoints>);
+  // mexCallFunction(func, nlhs, plhs, nrhs, prhs);
+// }
 
 void forwardKinPositionGradientmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
@@ -250,40 +250,40 @@ void massMatrixmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   mexCallFunction(func, nlhs, plhs, nrhs, prhs);
 }
 
-//void dynamicsBiasTermmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-//{
-//  // temporary solution. GradientVar will disappear, obviating the need for the extra argument. integer body indices will be handled differently.
-//  typedef double Scalar;
-//  typedef Map< const Matrix<Scalar, 6, Dynamic> > DerivedF;
-//  typedef Map< const Matrix<Scalar, Dynamic, Dynamic> > DerivedDF;
-//
-//  auto lambda = [](const RigidBodyManipulator& model, KinematicsCache<Scalar>& cache, const MatrixBase<DerivedF>& f_ext_value, const MatrixBase<DerivedDF>& f_ext_gradient, int gradient_order) {
-//
-//    unordered_map<const RigidBody *, GradientVar<Scalar, 6, 1> > f_ext;
-//
-//    if (f_ext_value.size() > 0) {
-//      assert(f_ext_value.cols() == model.bodies.size());
-//      if (gradient_order > 0) {
-//        assert(f_ext_gradient.rows() == f_ext_value.size());
-//        assert(f_ext_gradient.cols() == model.num_positions + model.num_velocities);
-//      }
-//
-//      for (DenseIndex i = 0; i < f_ext_value.cols(); i++) {
-//        GradientVar<Scalar, TWIST_SIZE, 1> f_ext_gradientvar(TWIST_SIZE, 1, model.num_positions + model.num_velocities, gradient_order);
-//        f_ext_gradientvar.value() = f_ext_value.col(i);
-//
-//        if (gradient_order > 0) {
-//          f_ext_gradientvar.gradient().value() = f_ext_gradient.middleRows<TWIST_SIZE>(TWIST_SIZE * i);
-//        }
-//
-//        f_ext.insert({model.bodies[i].get(), f_ext_gradientvar});
-//      }
-//    }
-//
-//    return model.dynamicsBiasTerm(cache, f_ext, gradient_order);
-//  };
-//
-//  function<GradientVar<Scalar, Eigen::Dynamic, 1>(const RigidBodyManipulator&, KinematicsCache<Scalar>&, const MatrixBase<DerivedF>&, const MatrixBase<DerivedDF>&, int)> func{lambda};
-//
-//  mexCallFunction(func, nlhs, plhs, nrhs, prhs);
-//}
+// //void dynamicsBiasTermmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+// //{
+// //  // temporary solution. GradientVar will disappear, obviating the need for the extra argument. integer body indices will be handled differently.
+// //  typedef double Scalar;
+// //  typedef Map< const Matrix<Scalar, 6, Dynamic> > DerivedF;
+// //  typedef Map< const Matrix<Scalar, Dynamic, Dynamic> > DerivedDF;
+// //
+// //  auto lambda = [](const RigidBodyManipulator& model, KinematicsCache<Scalar>& cache, const MatrixBase<DerivedF>& f_ext_value, const MatrixBase<DerivedDF>& f_ext_gradient, int gradient_order) {
+// //
+// //    unordered_map<const RigidBody *, GradientVar<Scalar, 6, 1> > f_ext;
+// //
+// //    if (f_ext_value.size() > 0) {
+// //      assert(f_ext_value.cols() == model.bodies.size());
+// //      if (gradient_order > 0) {
+// //        assert(f_ext_gradient.rows() == f_ext_value.size());
+// //        assert(f_ext_gradient.cols() == model.num_positions + model.num_velocities);
+// //      }
+// //
+// //      for (DenseIndex i = 0; i < f_ext_value.cols(); i++) {
+// //        GradientVar<Scalar, TWIST_SIZE, 1> f_ext_gradientvar(TWIST_SIZE, 1, model.num_positions + model.num_velocities, gradient_order);
+// //        f_ext_gradientvar.value() = f_ext_value.col(i);
+// //
+// //        if (gradient_order > 0) {
+// //          f_ext_gradientvar.gradient().value() = f_ext_gradient.middleRows<TWIST_SIZE>(TWIST_SIZE * i);
+// //        }
+// //
+// //        f_ext.insert({model.bodies[i].get(), f_ext_gradientvar});
+// //      }
+// //    }
+// //
+// //    return model.dynamicsBiasTerm(cache, f_ext, gradient_order);
+// //  };
+// //
+// //  function<GradientVar<Scalar, Eigen::Dynamic, 1>(const RigidBodyManipulator&, KinematicsCache<Scalar>&, const MatrixBase<DerivedF>&, const MatrixBase<DerivedDF>&, int)> func{lambda};
+// //
+// //  mexCallFunction(func, nlhs, plhs, nrhs, prhs);
+// //}
