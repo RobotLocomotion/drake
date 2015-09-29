@@ -8,6 +8,7 @@
 #include <functional>
 #include <sstream>
 #include <stdexcept>
+#include "mex.h"
 #include "drakeMexUtil.h"
 
 class MexToCppConversionError : public std::runtime_error {
