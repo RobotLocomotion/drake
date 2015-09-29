@@ -22,7 +22,7 @@ public:
  * fromMex
  */
 int fromMex(const mxArray* source, int*) {
-  if (!mxIsScalar(source))
+  if (mxGetM(source) != 1 || mxGetN(source) != 1)
     throw MexToCppConversionError("Expected scalar.");
   return static_cast<int>(mxGetScalar(source));
 }
