@@ -74,8 +74,18 @@ void toMex(const GradientVar<Scalar, Rows, Cols> &source, mxArray *dest[], int n
   }
 };
 
-template<int Rows, int Cols>
-void toMex(const Matrix<double, Rows, Cols> &source, mxArray *dest[], int nlhs) {
+/*
+ * unfortunately, due to an MSVC internal compiler error, can't have
+ * template <int Rows, int Cols>
+ * void toMex(const Matrix<double, Rows, Cols> &source, mxArray *dest[], int nlhs)
+ */
+
+void toMex(const Matrix<double, 3, 1> &source, mxArray *dest[], int nlhs) {
+  if (nlhs > 0)
+    dest[0] = eigenToMatlab(source);
+};
+
+void toMex(const Matrix<double, Dynamic, Dynamic> &source, mxArray *dest[], int nlhs) {
   if (nlhs > 0)
     dest[0] = eigenToMatlab(source);
 };
