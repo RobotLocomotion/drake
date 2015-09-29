@@ -61,6 +61,10 @@ classdef PolytopicSystem < DrakeSystem
     end
 
     function x0 = getInitialState(obj)
+      if ~isempty(obj.initial_state)
+        x0 = obj.initial_state;
+        return;
+      end
       x0 = getInitialState(obj.subsys{1});
     end
 

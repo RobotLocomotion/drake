@@ -590,6 +590,13 @@ classdef NonlinearProgram
       if(nargout>1)
         G = [G(1,:);G(1+obj.nlcon_ineq_idx,:);G(1+obj.nlcon_eq_idx,:)];
       end
+      
+      % useful debugging info
+%      fprintf(1,'objective = %f\n',f(1));
+%      cnstr_name = [obj.cin_name;obj.ceq_name];
+%      for i=1:length(cnstr_name),
+%        fprintf(1,'%s = %f\n',cnstr_name{i},f(i+1));
+%      end
     end
     
     function obj = addDecisionVariable(obj,num_new_vars,var_name)
