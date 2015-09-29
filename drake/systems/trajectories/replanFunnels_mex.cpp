@@ -41,8 +41,6 @@ namespace snopt {
 }
 
 #include <string.h>
-#include <iostream>
-
 
 // Internal access to bullet
 #include "LinearMath/btTransform.h"
