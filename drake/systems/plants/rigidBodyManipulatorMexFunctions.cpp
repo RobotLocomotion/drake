@@ -23,25 +23,12 @@ std::set<int> fromMex(const mxArray *source, std::set<int> *) {
 }
 
 /*
- * unfortunately, due to an MSVC internal compiler error, can't have
- * template <int Rows, int Cols>
- * Map<const Matrix<double, Rows, Cols>> fromMex(const mxArray* mex, MatrixBase<Map<const Matrix<double, Rows, Cols>>>*)
+ * note: leaving Options, MaxRows, and MaxCols out as template parameters (leaving them to their defaults)
+ * results in an internal compiler error on MSVC. See https://connect.microsoft.com/VisualStudio/feedback/details/1847159
  */
-
-Map<const Matrix<double, Dynamic, Dynamic>> fromMex(const mxArray *mex, MatrixBase<Map<const Matrix<double, Dynamic, Dynamic>>> *) {
-  return matlabToEigenMap<Dynamic, Dynamic>(mex);
-}
-
-Map<const Matrix<double, 3, Dynamic>> fromMex(const mxArray *mex, MatrixBase<Map<const Matrix<double, 3, Dynamic>>> *) {
-  return matlabToEigenMap<3, Dynamic>(mex);
-}
-
-Map<const Matrix<double, 6, Dynamic>> fromMex(const mxArray *mex, MatrixBase<Map<const Matrix<double, 6, Dynamic>>> *) {
-  return matlabToEigenMap<6, Dynamic>(mex);
-}
-
-Map<const Matrix<double, Dynamic, 1>> fromMex(const mxArray *mex, MatrixBase<Map<const Matrix<double, Dynamic, 1>>> *) {
-  return matlabToEigenMap<Dynamic, 1>(mex);
+template <int Rows, int Cols, int Options, int MaxRows, int MaxCols>
+Map<const Matrix<double, Rows, Cols>> fromMex(const mxArray *mex, MatrixBase<Map<const Matrix<double, Rows, Cols, Options, MaxRows, MaxCols>>> *) {
+  return matlabToEigenMap<Rows, Cols>(mex);
 }
 
 template<typename Scalar>
@@ -75,17 +62,11 @@ void toMex(const GradientVar<Scalar, Rows, Cols> &source, mxArray *dest[], int n
 };
 
 /*
- * unfortunately, due to an MSVC internal compiler error, can't have
- * template <int Rows, int Cols>
- * void toMex(const Matrix<double, Rows, Cols> &source, mxArray *dest[], int nlhs)
+ * note: leaving Options, MaxRows, and MaxCols out as template parameters (leaving them to their defaults)
+ * results in an internal compiler error on MSVC. See https://connect.microsoft.com/VisualStudio/feedback/details/1847159
  */
-
-void toMex(const Matrix<double, 3, 1> &source, mxArray *dest[], int nlhs) {
-  if (nlhs > 0)
-    dest[0] = eigenToMatlab(source);
-};
-
-void toMex(const Matrix<double, Dynamic, Dynamic> &source, mxArray *dest[], int nlhs) {
+template <int Rows, int Cols, int Options, int MaxRows, int MaxCols> 
+void toMex(const Matrix<double, Rows, Cols, Options, MaxRows, MaxCols> &source, mxArray *dest[], int nlhs) {
   if (nlhs > 0)
     dest[0] = eigenToMatlab(source);
 };
