@@ -40,25 +40,29 @@ template <typename T>
 void toMex(const T& source, mxArray* dest[], int nlhs);
 
 /**
- * mexCallFunction base case
+ * mexCallFunction
  */
+class MexCallFunctionError : public std::runtime_error {
+public:
+  MexCallFunctionError(const std::string& msg) : std::runtime_error(msg) { };
+
+  MexCallFunctionError(const char *msg) : std::runtime_error(msg) { };
+};
+
+// base case
 template <typename R>
 void mexCallFunction(std::function<R(void)> func, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[], int nrhs_already_processed) {
   // call function and convert to mxArray
   toMex(func(), plhs, nlhs);
 }
 
-/**
- * void return type specialization...
- */
+// void return type specialization
 template <>
 void mexCallFunction(std::function<void(void)> func, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[], int nrhs_already_processed) {
   func();
 }
 
-/**
- * mexCallFunction: recursion
- */
+// recursive case
 template<typename R, typename Arg0, typename ...Args>
 void mexCallFunction(std::function<R(Arg0, Args...)> func, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[], int nrhs_already_processed = 0)
 {
@@ -84,13 +88,69 @@ void mexCallFunction(std::function<R(Arg0, Args...)> func, int nlhs, mxArray *pl
       std::ostringstream buf;
       buf << "Error processing argument number " << nrhs_already_processed + 1 << ". Reason:\n";
       buf << e.what();
-      throw std::runtime_error(buf.str().c_str());
+      throw MexCallFunctionError(buf.str().c_str());
     }
   };
 
   // recursively call mexCallFunction with partially applied function
   mexCallFunction(std::function<R(Args...)>{partially_applied}, nlhs, plhs, nrhs - 1, &prhs[1], nrhs_already_processed + 1);
 };
+
+/*
+ * mexTryToCallFunctions: keep trying functions in order until one is called without error.
+ */
+class MexTryToCallFunctionError : public std::exception {
+private:
+  std::vector<MexCallFunctionError> errors;
+
+public:
+  MexTryToCallFunctionError() : std::exception() { };
+
+  void addMexCallFunctionError(const MexCallFunctionError& error)
+  {
+    errors.push_back(error);
+  }
+
+  virtual const char* what() const noexcept
+  {
+    std::ostringstream buf;
+    buf << "No suitable function to call after trying " << errors.size() << " functions. Errors:";
+    for (auto it = errors.rbegin(); it != errors.rend(); ++it) {
+      buf << std::endl << it->what();
+    }
+    return buf.str().c_str();
+  }
+};
+
+template <typename Func0, typename ...Funcs>
+void mexTryToCallFunctions(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[], Func0 function0, Funcs... functions)
+{
+  try {
+    mexCallFunction(function0, nlhs, plhs, nrhs, prhs);
+  }
+  catch (MexCallFunctionError& call_function_error) {
+    try {
+      mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, functions...);
+    }
+    catch (MexTryToCallFunctionError& options_exhausted_error) {
+      options_exhausted_error.addMexCallFunctionError(call_function_error);
+      throw options_exhausted_error;
+    }
+  }
+}
+
+template <typename Func0>
+void mexTryToCallFunctions(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[], Func0 function0)
+{
+  try {
+    mexCallFunction(function0, nlhs, plhs, nrhs, prhs);
+  }
+  catch (MexCallFunctionError& e) {
+    MexTryToCallFunctionError options_exhausted_error;
+    options_exhausted_error.addMexCallFunctionError(e);
+    throw options_exhausted_error;
+  }
+}
 
 
 #endif //DRAKE_MEXIFY_H
