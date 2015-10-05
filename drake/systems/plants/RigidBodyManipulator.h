@@ -59,9 +59,10 @@ public:
   std::shared_ptr<RigidBodyFrame> frameA, frameB;
   Eigen::Vector3d axis;
 
+  friend std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj);
+
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-	friend std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj);
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 class DLLEXPORT_RBM RigidBodyManipulator

@@ -7,12 +7,12 @@ class DLLEXPORT_DRAKEJOINT RollPitchYawFloatingJoint: public DrakeJointImpl<Roll
 {
 public:
   // disable copy construction and assignment
-  // not available in MSVC2010...
-  // RollPitchYawFloatingJoint(const RollPitchYawFloatingJoint&) = delete;
-  // RollPitchYawFloatingJoint& operator=(const RollPitchYawFloatingJoint&) = delete;
+  //RollPitchYawFloatingJoint(const RollPitchYawFloatingJoint&) = delete;
+  //RollPitchYawFloatingJoint& operator=(const RollPitchYawFloatingJoint&) = delete;
 
 public:
-  RollPitchYawFloatingJoint(const std::string& name, const Eigen::Isometry3d& transform_to_parent_body) : DrakeJointImpl(*this, name, transform_to_parent_body, 6, 6) { };
+  RollPitchYawFloatingJoint(const std::string& name, const Eigen::Isometry3d& transform_to_parent_body) : 
+	  DrakeJointImpl(this, name, transform_to_parent_body, 6, 6) { };
 
   virtual ~RollPitchYawFloatingJoint() { };
 
@@ -169,6 +169,9 @@ public:
   virtual bool isFloating() const { return true; }
   virtual Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const; //override;
   virtual std::string getPositionName(int index) const;
+
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 #endif /* ROLLPITCHYAWFLOATINGJOINT_H_ */

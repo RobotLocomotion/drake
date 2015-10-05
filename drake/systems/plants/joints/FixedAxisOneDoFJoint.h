@@ -14,9 +14,8 @@ template <typename Derived>
 class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived>
 {
   // disable copy construction and assignment
-  // not available in MSVC2010...
-  // FixedAxisOneDoFJoint(const DrakeJoint&) = delete;
-  // FixedAxisOneDoFJoint& operator=(const FixedAxisOneDoFJoint&) = delete;
+  //FixedAxisOneDoFJoint(const DrakeJoint&) = delete;
+  //FixedAxisOneDoFJoint& operator=(const FixedAxisOneDoFJoint&) = delete;
 
 private:
   Eigen::Matrix<double, TWIST_SIZE, 1> joint_axis;
@@ -25,17 +24,15 @@ private:
   double coulomb_window;
 
 protected:
-  FixedAxisOneDoFJoint(Derived& derived, const std::string& name, const Eigen::Isometry3d& transform_to_parent_body, const Eigen::Matrix<double, TWIST_SIZE, 1>& joint_axis) :
+  FixedAxisOneDoFJoint(Derived* derived, const std::string& name, const Eigen::Isometry3d& transform_to_parent_body, const Eigen::Matrix<double, TWIST_SIZE, 1>& _joint_axis) :
       DrakeJointImpl<Derived>(derived, name, transform_to_parent_body, 1, 1),
-      joint_axis(joint_axis),
+      joint_axis(_joint_axis),
       damping(0.0),
       coulomb_friction(0.0),
       coulomb_window(0.0) { };
 
 public:
-
-  using DrakeJoint::getNumPositions;
-  using DrakeJoint::getNumVelocities;
+  virtual ~FixedAxisOneDoFJoint() {};
 
   template <typename DerivedQ, typename DerivedMS>
   void motionSubspace(const Eigen::MatrixBase<DerivedQ> & q,
@@ -99,8 +96,6 @@ public:
     return ret;
   }
 
-  virtual ~FixedAxisOneDoFJoint() { } ;
-
   void setJointLimits(double joint_limit_min, double joint_limit_max)
   {
     if (joint_limit_min > joint_limit_max) {
@@ -153,6 +148,8 @@ public:
 
   virtual std::string getPositionName(int index) const { if (index!=0) throw std::runtime_error("bad index"); return DrakeJoint::name; }
 
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 #endif /* ONEDOFJOINT_H_ */

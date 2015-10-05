@@ -4,20 +4,20 @@
 #include "FixedAxisOneDoFJoint.h"
 #include <Eigen/Geometry>
 
-class DLLEXPORT_DRAKEJOINT RevoluteJoint: public FixedAxisOneDoFJoint<RevoluteJoint>
+class DLLEXPORT_DRAKEJOINT RevoluteJoint : public FixedAxisOneDoFJoint<RevoluteJoint>
 {
   // disable copy construction and assignment
-  // not available in MSVC2010...
-  // RevoluteJoint(const RevoluteJoint&) = delete;
-  // RevoluteJoint& operator=(const RevoluteJoint&) = delete;
+  //RevoluteJoint(const RevoluteJoint&) = delete;
+  //RevoluteJoint& operator=(const RevoluteJoint&) = delete;
 
 private:
   Eigen::Vector3d rotation_axis;
 public:
-  RevoluteJoint(const std::string& name, const Eigen::Isometry3d& transform_to_parent_body, const Eigen::Vector3d& rotation_axis) :
-      FixedAxisOneDoFJoint(*this, name, transform_to_parent_body, spatialJointAxis(rotation_axis)), rotation_axis(rotation_axis)
+  RevoluteJoint(const std::string& name, const Eigen::Isometry3d& transform_to_parent_body, const Eigen::Vector3d& _rotation_axis) :
+      FixedAxisOneDoFJoint<RevoluteJoint>(this, name, transform_to_parent_body, spatialJointAxis(_rotation_axis)), 
+	  rotation_axis(_rotation_axis)
   {
-    assert(std::abs(rotation_axis.norm() - 1.0) < 1e-10);
+//    assert(std::abs(rotation_axis.norm() - 1.0) < 1e-10);
   };
 
   virtual ~RevoluteJoint() {};
@@ -32,6 +32,9 @@ public:
 
 private:
   static Eigen::Matrix<double, TWIST_SIZE, 1> spatialJointAxis(const Eigen::Vector3d& rotation_axis);
+
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 #endif /* REVOLUTEJOINT_H_ */

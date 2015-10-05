@@ -33,9 +33,9 @@ class RigidBody;
 class DLLEXPORT_DRAKEJOINT DrakeJoint
 {
   // disable copy construction and assignment
-  // not available in MSVC2010...
-  // DrakeJoint(const DrakeJoint&) = delete;
-  // DrakeJoint& operator=(const DrakeJoint&) = delete;
+  //DrakeJoint(const DrakeJoint&) = delete;
+  //DrakeJoint& operator=(const DrakeJoint&) = delete;
+
 public:
   enum FloatingBaseType {
     FIXED        = 0,
@@ -85,7 +85,7 @@ public:
   POSITION_AND_VELOCITY_DEPENDENT_METHODS(Eigen::AutoDiffScalar<Eigen::VectorXd>)
 
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 #endif /* DRAKEJOINT_H_ */

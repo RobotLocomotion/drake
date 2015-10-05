@@ -3,16 +3,16 @@
 using namespace Eigen;
 
 DrakeJoint::DrakeJoint(
-        const std::string& name,
-        const Isometry3d& transform_to_parent_body,
-        int num_positions, int num_velocities) :
-        name(name), transform_to_parent_body(transform_to_parent_body), num_positions(num_positions),
-        num_velocities(num_velocities),
-        joint_limit_min(VectorXd::Constant(num_positions, -std::numeric_limits<double>::infinity())),
-        joint_limit_max(VectorXd::Constant(num_positions, std::numeric_limits<double>::infinity()))
+        const std::string& _name,
+        const Isometry3d& _transform_to_parent_body,
+        int _num_positions, int _num_velocities) :
+        name(_name), transform_to_parent_body(_transform_to_parent_body), num_positions(_num_positions),
+        num_velocities(_num_velocities),
+        joint_limit_min(VectorXd::Constant(_num_positions, -std::numeric_limits<double>::infinity())),
+        joint_limit_max(VectorXd::Constant(_num_positions, std::numeric_limits<double>::infinity()))
 {
-  assert(num_positions <= MAX_NUM_POSITIONS);
-  assert(num_velocities <= MAX_NUM_VELOCITIES);
+//  assert(num_positions <= MAX_NUM_POSITIONS);
+//  assert(num_velocities <= MAX_NUM_VELOCITIES);
 }
 
 DrakeJoint::~DrakeJoint()

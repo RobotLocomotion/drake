@@ -6,9 +6,8 @@
 class DLLEXPORT_DRAKEJOINT HelicalJoint: public FixedAxisOneDoFJoint<HelicalJoint>
 {
   // disable copy construction and assignment
-  // not available in MSVC2010...
-  // HelicalJoint(const HelicalJoint&) = delete;
-  // HelicalJoint& operator=(const HelicalJoint&) = delete;
+  //HelicalJoint(const HelicalJoint&) = delete;
+  //HelicalJoint& operator=(const HelicalJoint&) = delete;
 
 private:
   const Eigen::Vector3d axis;
@@ -16,7 +15,7 @@ private:
 
 public:
   HelicalJoint(const std::string& name, const Eigen::Isometry3d& transform_to_parent_body, const Eigen::Vector3d& axis, double pitch) :
-      FixedAxisOneDoFJoint(*this, name, transform_to_parent_body, spatialJointAxis(axis, pitch)), axis(axis), pitch(pitch) { };
+      FixedAxisOneDoFJoint<HelicalJoint>(this, name, transform_to_parent_body, spatialJointAxis(axis, pitch)), axis(axis), pitch(pitch) { };
 
   virtual ~HelicalJoint() { };
 
@@ -31,6 +30,9 @@ public:
 
 private:
   static Eigen::Matrix<double, TWIST_SIZE, 1> spatialJointAxis(const Eigen::Vector3d& axis, double pitch);
+
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 #endif /* HELICALJOINT_H_ */
