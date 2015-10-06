@@ -16,7 +16,7 @@ int main()
   tspan<<0,1;
   VectorXd q0 = VectorXd::Zero(model.num_positions);
   // The state frame of cpp model does not match with the state frame of MATLAB model, since the dofname_to_dofnum is different in cpp and MATLAB
-  q0(3) = 0.8;
+  q0(2) = 0.8;
   Vector3d com_lb = Vector3d::Zero(); 
   Vector3d com_ub = Vector3d::Zero(); 
   com_lb(2) = 0.9;
