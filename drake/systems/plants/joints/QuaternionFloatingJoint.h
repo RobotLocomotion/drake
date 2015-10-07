@@ -12,7 +12,7 @@ class DLLEXPORT_DRAKEJOINT QuaternionFloatingJoint: public DrakeJointImpl<Quater
 
 public:
   QuaternionFloatingJoint(const std::string & name, const Eigen::Isometry3d & transform_to_parent_body) :
-          DrakeJointImpl(this, name, transform_to_parent_body, 7, 6) { };
+          DrakeJointImpl(*this, name, transform_to_parent_body, 7, 6) { };
 
   virtual ~QuaternionFloatingJoint() { };
 

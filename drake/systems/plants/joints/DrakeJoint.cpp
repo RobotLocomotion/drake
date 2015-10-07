@@ -11,8 +11,8 @@ DrakeJoint::DrakeJoint(
         joint_limit_min(VectorXd::Constant(_num_positions, -std::numeric_limits<double>::infinity())),
         joint_limit_max(VectorXd::Constant(_num_positions, std::numeric_limits<double>::infinity()))
 {
-//  assert(num_positions <= MAX_NUM_POSITIONS);
-//  assert(num_velocities <= MAX_NUM_VELOCITIES);
+  assert(num_positions <= MAX_NUM_POSITIONS);
+  assert(num_velocities <= MAX_NUM_VELOCITIES);
 }
 
 DrakeJoint::~DrakeJoint()
@@ -49,4 +49,3 @@ const Eigen::VectorXd& DrakeJoint::getJointLimitMax() const
 {
   return joint_limit_max;
 }
-

@@ -14,10 +14,10 @@ private:
   Eigen::Vector3d rotation_axis;
 public:
   RevoluteJoint(const std::string& name, const Eigen::Isometry3d& transform_to_parent_body, const Eigen::Vector3d& _rotation_axis) :
-      FixedAxisOneDoFJoint<RevoluteJoint>(this, name, transform_to_parent_body, spatialJointAxis(_rotation_axis)), 
+      FixedAxisOneDoFJoint<RevoluteJoint>(*this, name, transform_to_parent_body, spatialJointAxis(_rotation_axis)),
 	  rotation_axis(_rotation_axis)
   {
-//    assert(std::abs(rotation_axis.norm() - 1.0) < 1e-10);
+    assert(std::abs(rotation_axis.norm() - 1.0) < 1e-10);
   };
 
   virtual ~RevoluteJoint() {};

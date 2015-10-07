@@ -11,8 +11,8 @@ public:
   //RollPitchYawFloatingJoint& operator=(const RollPitchYawFloatingJoint&) = delete;
 
 public:
-  RollPitchYawFloatingJoint(const std::string& name, const Eigen::Isometry3d& transform_to_parent_body) : 
-	  DrakeJointImpl(this, name, transform_to_parent_body, 6, 6) { };
+  RollPitchYawFloatingJoint(const std::string& name, const Eigen::Isometry3d& transform_to_parent_body) :
+	  DrakeJointImpl(*this, name, transform_to_parent_body, 6, 6) { };
 
   virtual ~RollPitchYawFloatingJoint() { };
 

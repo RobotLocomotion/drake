@@ -24,7 +24,7 @@ private:
   double coulomb_window;
 
 protected:
-  FixedAxisOneDoFJoint(Derived* derived, const std::string& name, const Eigen::Isometry3d& transform_to_parent_body, const Eigen::Matrix<double, TWIST_SIZE, 1>& _joint_axis) :
+  FixedAxisOneDoFJoint(Derived& derived, const std::string& name, const Eigen::Isometry3d& transform_to_parent_body, const Eigen::Matrix<double, TWIST_SIZE, 1>& _joint_axis) :
       DrakeJointImpl<Derived>(derived, name, transform_to_parent_body, 1, 1),
       joint_axis(_joint_axis),
       damping(0.0),

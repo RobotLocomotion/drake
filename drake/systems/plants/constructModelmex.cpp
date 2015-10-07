@@ -52,18 +52,18 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     return;
   }
 
-  {
+  if (false) {  // just for debugging
 	  string joint_name("test");
 	  Isometry3d transform_to_parent_body = Isometry3d::Identity();
-	  Vector3d joint_axis;  joint_axis << 1.0, 0.0, 0.0; 
+	  Vector3d joint_axis;  joint_axis << 1.0, 0.0, 0.0;
 	  mexPrintf("creating quat joint\n");
 	  QuaternionFloatingJoint *quat_joint = new QuaternionFloatingJoint(joint_name, transform_to_parent_body);
 	  mexPrintf("destroying quat joint\n");
 	  delete quat_joint;
-//	  mexPrintf("creating revolute joint\n");
-//	  RevoluteJoint *revolute_joint = new RevoluteJoint(joint_name, transform_to_parent_body, joint_axis);
-//	  mexPrintf("destroying revolute joint\n");
-//	  delete revolute_joint;
+	  mexPrintf("creating revolute joint\n");
+	  RevoluteJoint *revolute_joint = new RevoluteJoint(joint_name, transform_to_parent_body, joint_axis);
+	  mexPrintf("destroying revolute joint\n");
+	  delete revolute_joint;
 	  mexPrintf("returning\n");
 	  return;
   }
@@ -81,7 +81,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   const mxArray* pFrames = mxGetPropertySafe(pRBM,0,"frame");
   if (!pFrames) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","the frame array is invalid");
   int num_frames = static_cast<int>(mxGetNumberOfElements(pFrames));
-  
+
   for (int i = 0; i < num_bodies; i++) {
     //DEBUG
     //mexPrintf("constructModelmex: body %d\n",i);
@@ -142,9 +142,9 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 		case 0: {
 			if (pitch == 0.0) {
 				RevoluteJoint *revolute_joint = new RevoluteJoint(joint_name, transform_to_parent_body, joint_axis);
-//				joint = std::unique_ptr<RevoluteJoint>(revolute_joint);
-//				setLimits(pBodies, i, revolute_joint);
-//				setDynamics(pBodies, i, revolute_joint);
+				joint = std::unique_ptr<RevoluteJoint>(revolute_joint);
+				setLimits(pBodies, i, revolute_joint);
+				setDynamics(pBodies, i, revolute_joint);
 			} else if (std::isinf(static_cast<double>(pitch))) {
 				PrismaticJoint *prismatic_joint = new PrismaticJoint(joint_name, transform_to_parent_body, joint_axis);
 				joint = std::unique_ptr<PrismaticJoint>(prismatic_joint);
@@ -169,7 +169,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 			throw std::runtime_error(stream.str());
         }
 
-//		b->setJoint(move(joint));
+		b->setJoint(move(joint));
       }
     }
 
@@ -178,7 +178,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     //END_DEBUG
     pm = mxGetPropertySafe(pBodies,i,"collision_geometry");
     Matrix4d T;
-    if (false) { //!mxIsEmpty(pm)){
+    if (!mxIsEmpty(pm)) {
       for (int j=0; j<mxGetNumberOfElements(pm); j++) {
         //DEBUG
         //cout << "constructModelmex: Body " << i << ", Element " << j << endl;
@@ -245,7 +245,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
             break;
           default:
             // intentionally do nothing..
-            
+
             //DEBUG
             //cout << "constructModelmex: SHOULD NOT GET HERE" << endl;
             //END_DEBUG
@@ -316,7 +316,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   //cout << "constructModelmex: Get struct" << endl;
   //END_DEBUG
   mxArray* contact_pts_struct[1];
-  if (false) { //~mexCallMATLAB(1,contact_pts_struct,1,const_cast<mxArray**>(&pRBM),"getTerrainContactPoints")) {
+  if (!mexCallMATLAB(1,contact_pts_struct,1,const_cast<mxArray**>(&pRBM),"getTerrainContactPoints")) {
     //DEBUG
     //mexPrintf("constructModelmex: Got terrain contact points struct\n");
     //if (contact_pts_struct) {

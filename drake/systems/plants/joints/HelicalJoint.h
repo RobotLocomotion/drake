@@ -15,7 +15,7 @@ private:
 
 public:
   HelicalJoint(const std::string& name, const Eigen::Isometry3d& transform_to_parent_body, const Eigen::Vector3d& axis, double pitch) :
-      FixedAxisOneDoFJoint<HelicalJoint>(this, name, transform_to_parent_body, spatialJointAxis(axis, pitch)), axis(axis), pitch(pitch) { };
+      FixedAxisOneDoFJoint<HelicalJoint>(*this, name, transform_to_parent_body, spatialJointAxis(axis, pitch)), axis(axis), pitch(pitch) { };
 
   virtual ~HelicalJoint() { };
 
