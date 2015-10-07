@@ -52,22 +52,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     return;
   }
 
-  if (false) {  // just for debugging
-	  string joint_name("test");
-	  Isometry3d transform_to_parent_body = Isometry3d::Identity();
-	  Vector3d joint_axis;  joint_axis << 1.0, 0.0, 0.0;
-	  mexPrintf("creating quat joint\n");
-	  QuaternionFloatingJoint *quat_joint = new QuaternionFloatingJoint(joint_name, transform_to_parent_body);
-	  mexPrintf("destroying quat joint\n");
-	  delete quat_joint;
-	  mexPrintf("creating revolute joint\n");
-	  RevoluteJoint *revolute_joint = new RevoluteJoint(joint_name, transform_to_parent_body, joint_axis);
-	  mexPrintf("destroying revolute joint\n");
-	  delete revolute_joint;
-	  mexPrintf("returning\n");
-	  return;
-  }
-
   const mxArray* pRBM = prhs[0];
   RigidBodyManipulator *model=new RigidBodyManipulator();
   model->bodies.clear();  // a little gross:  the default constructor makes a body "world".  zap it because we will construct one again below
