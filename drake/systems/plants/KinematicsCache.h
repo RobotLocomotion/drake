@@ -53,6 +53,9 @@ public:
   {
     // empty
   }
+
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 template <typename Scalar>
@@ -193,6 +196,9 @@ private:
     };
     return std::accumulate(bodies.begin(), bodies.end(), 0, add_num_velocities);
   }
+
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 

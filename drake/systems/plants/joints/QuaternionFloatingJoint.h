@@ -7,9 +7,8 @@
 class DLLEXPORT_DRAKEJOINT QuaternionFloatingJoint: public DrakeJointImpl<QuaternionFloatingJoint>
 {
   // disable copy construction and assignment
-  // not available in MSVC2010...
-  // QuaternionFloatingJoint(const QuaternionFloatingJoint&) = delete;
-  // QuaternionFloatingJoint& operator=(const QuaternionFloatingJoint&) = delete;
+  //QuaternionFloatingJoint(const QuaternionFloatingJoint&) = delete;
+  //QuaternionFloatingJoint& operator=(const QuaternionFloatingJoint&) = delete;
 
 public:
   QuaternionFloatingJoint(const std::string & name, const Eigen::Isometry3d & transform_to_parent_body) :
@@ -137,6 +136,9 @@ public:
   virtual std::string getPositionName(int index) const;
   virtual std::string getVelocityName(int index) const;
   virtual Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const; //override;
+
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 #endif /* QUATERNIONFLOATINGJOINT_H_ */

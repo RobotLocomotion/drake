@@ -134,7 +134,7 @@ void RigidBodyManipulator::compile(void)
   }
 
   for (size_t i=0; i<bodies.size(); i++) {
-    bodies[i]->body_index = i;
+    bodies[i]->body_index = static_cast<int>(i);
   }
 
   B.resize(num_velocities,actuators.size());
@@ -533,7 +533,7 @@ void RigidBodyManipulator::updateCompositeRigidBodyInertias(KinematicsCache<Scal
       }
     }
 
-    for (int i = bodies.size() - 1; i >= 0; i--) {
+    for (int i = static_cast<int>(bodies.size()) - 1; i >= 0; i--) {
       if (bodies[i]->hasParent()) {
         const auto& element = cache.getElement(*bodies[i]);
         auto& parent_element = cache.getElement(*(bodies[i]->parent));
@@ -832,7 +832,7 @@ template<typename Derived>
 void RigidBodyManipulator::getContactPositions(const KinematicsCache<typename Derived::Scalar>& cache, MatrixBase<Derived> &pos, const set<int> &body_idx) const {
   // kinematics cache checks are already being done in forwardKin
   int n = 0, nc, nb = static_cast<int>(body_idx.size()), bi;
-  if (nb == 0) nb = bodies.size();
+  if (nb == 0) nb = static_cast<int>(bodies.size());
   set<int>::iterator iter = body_idx.begin();
   for (int i = 0; i < nb; i++) {
     if (body_idx.size() == 0) bi = i;
@@ -849,7 +849,7 @@ template<typename Derived>
 void RigidBodyManipulator::getContactPositionsJac(const KinematicsCache<typename Derived::Scalar>& cache, MatrixBase<Derived> &J, const set<int> &body_idx) const {
   // kinematics cache checks are already being done in forwardKinJacobian
   int n = 0, nc, nb = static_cast<int>(body_idx.size()), bi;
-  if (nb == 0) nb = bodies.size();
+  if (nb == 0) nb = static_cast<int>(bodies.size());
   set<int>::iterator iter = body_idx.begin();
   MatrixXd p;
   for (int i = 0; i < nb; i++) {
@@ -1352,7 +1352,7 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(Kin
 
   GradientVar<Scalar, Eigen::Dynamic, 1> ret(num_velocities, 1, nq + nv, gradient_order);
 
-  for (int i = bodies.size() - 1; i >= 0; i--) {
+  for (int i = static_cast<int>(bodies.size()) - 1; i >= 0; i--) {
     RigidBody& body = *bodies[i];
     if (body.hasParent()) {
       const auto& element = cache.getElement(body);
@@ -1900,7 +1900,7 @@ size_t RigidBodyManipulator::getNumPositionConstraints() const
 void RigidBodyManipulator::addFrame(const std::shared_ptr<RigidBodyFrame>& frame)
 {
   frames.push_back(frame);
-  frame->frame_index=-(frames.size()-1)-2; // yuck!!
+  frame->frame_index=-(static_cast<int>(frames.size())-1)-2; // yuck!!
 }
 
 template DLLEXPORT_RBM void RigidBodyManipulator::getContactPositions(const KinematicsCache<double>& cache, MatrixBase <MatrixXd > &, const set<int> &) const;

@@ -81,6 +81,9 @@ public:
 
     virtual std::string getPositionName(int index) const;
     virtual Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const;
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 #endif /* DRAKE_SYSTEMS_PLANTS_JOINTS_FIXEDJOINT_H_ */

@@ -1401,25 +1401,15 @@ void WorldGazeOrientConstraint::name(const double* t, std::vector<std::string> &
 {
   if(this->isTimeValid(t))
   {
-    char cnst_name_str_buffer[500];
-    std::string cnst_name_str;
     if(t == nullptr)
     {
-      sprintf(cnst_name_str_buffer,"%s conic gaze orientation constraint",this->body_name.c_str());
-      cnst_name_str = std::string(cnst_name_str_buffer);
-      name_str.push_back(cnst_name_str);
-      sprintf(cnst_name_str_buffer,"%s revolute gaze orientation constraint",this->body_name.c_str());
-      cnst_name_str = std::string(cnst_name_str_buffer);
-      name_str.push_back(cnst_name_str);
+      name_str.push_back(this->body_name + " conic gaze orientation constraint");
+      name_str.push_back(this->body_name + " revolute gaze orientation constraint");
     }
     else
     {
-      sprintf(cnst_name_str_buffer,"%s conic gaze orientation constraint at time %10.4f",this->body_name.c_str(),*t);
-      cnst_name_str = std::string(cnst_name_str_buffer);
-      name_str.push_back(cnst_name_str);
-      sprintf(cnst_name_str_buffer,"%s revolute gaze orientation constraint at time %10.4f",this->body_name.c_str(),*t);
-      cnst_name_str = std::string(cnst_name_str_buffer);
-      name_str.push_back(cnst_name_str);
+      name_str.push_back(this->body_name + " conic gaze orientation constraint at time " + std::to_string(*t));
+      name_str.push_back(this->body_name + " revolute gaze orientation constraint at time " + std::to_string(*t));
     }
   }
 }
