@@ -120,9 +120,9 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 		  b->parent = model->bodies[parent_ind];
     }
 
-	if (b->hasParent()) {
-	  string joint_name = mxGetStdString(mxGetPropertySafe(pBodies, i, "jointname"));
-	  //mexPrintf("adding joint %s\n", joint_name.c_str());
+  	if (b->hasParent()) {
+  	  string joint_name = mxGetStdString(mxGetPropertySafe(pBodies, i, "jointname"));
+  	  //mexPrintf("adding joint %s\n", joint_name.c_str());
 
       pm = mxGetPropertySafe(pBodies, i, "Ttree");
       // todo: check that the size is 4x4
@@ -137,40 +137,40 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
       double pitch = mxGetScalar(mxGetPropertySafe(pBodies, i, "pitch"));
 
-	  std::unique_ptr<DrakeJoint> joint;
-	  switch (floating) {
-		case 0: {
-			if (pitch == 0.0) {
-				RevoluteJoint *revolute_joint = new RevoluteJoint(joint_name, transform_to_parent_body, joint_axis);
-				joint = std::unique_ptr<RevoluteJoint>(revolute_joint);
-				setLimits(pBodies, i, revolute_joint);
-				setDynamics(pBodies, i, revolute_joint);
-			} else if (std::isinf(static_cast<double>(pitch))) {
-				PrismaticJoint *prismatic_joint = new PrismaticJoint(joint_name, transform_to_parent_body, joint_axis);
-				joint = std::unique_ptr<PrismaticJoint>(prismatic_joint);
-				setLimits(pBodies, i, prismatic_joint);
-				setDynamics(pBodies, i, prismatic_joint);
-			} else {
-				joint = std::unique_ptr<HelicalJoint>(new HelicalJoint(joint_name, transform_to_parent_body, joint_axis, pitch));
-			}
-			break;
+  	  std::unique_ptr<DrakeJoint> joint;
+  	  switch (floating) {
+    		case 0: {
+    			if (pitch == 0.0) {
+    				RevoluteJoint *revolute_joint = new RevoluteJoint(joint_name, transform_to_parent_body, joint_axis);
+    				joint = std::unique_ptr<RevoluteJoint>(revolute_joint);
+    				setLimits(pBodies, i, revolute_joint);
+    				setDynamics(pBodies, i, revolute_joint);
+    			} else if (std::isinf(static_cast<double>(pitch))) {
+    				PrismaticJoint *prismatic_joint = new PrismaticJoint(joint_name, transform_to_parent_body, joint_axis);
+    				joint = std::unique_ptr<PrismaticJoint>(prismatic_joint);
+    				setLimits(pBodies, i, prismatic_joint);
+    				setDynamics(pBodies, i, prismatic_joint);
+    			} else {
+    				joint = std::unique_ptr<HelicalJoint>(new HelicalJoint(joint_name, transform_to_parent_body, joint_axis, pitch));
+    			}
+    			break;
         }
         case 1: {
-			joint = std::unique_ptr<RollPitchYawFloatingJoint>(new RollPitchYawFloatingJoint(joint_name, transform_to_parent_body));
-			break;
+    			joint = std::unique_ptr<RollPitchYawFloatingJoint>(new RollPitchYawFloatingJoint(joint_name, transform_to_parent_body));
+    			break;
         }
         case 2: {
-			joint = std::unique_ptr<QuaternionFloatingJoint>(new QuaternionFloatingJoint(joint_name, transform_to_parent_body));
-			break;
+    			joint = std::unique_ptr<QuaternionFloatingJoint>(new QuaternionFloatingJoint(joint_name, transform_to_parent_body));
+    			break;
         }
         default: {
-			std::ostringstream stream;
-			stream << "floating type " << floating << " not recognized.";
-			throw std::runtime_error(stream.str());
+    			std::ostringstream stream;
+    			stream << "floating type " << floating << " not recognized.";
+    			throw std::runtime_error(stream.str());
         }
-
-		b->setJoint(move(joint));
       }
+
+  		b->setJoint(move(joint));
     }
 
     //DEBUG
