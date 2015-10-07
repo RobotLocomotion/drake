@@ -34,6 +34,9 @@ protected:
 public:
   virtual ~FixedAxisOneDoFJoint() {};
 
+  using DrakeJoint::getNumPositions;
+  using DrakeJoint::getNumVelocities;
+  
   template <typename DerivedQ, typename DerivedMS>
   void motionSubspace(const Eigen::MatrixBase<DerivedQ> & q,
                       Eigen::MatrixBase<DerivedMS>& motion_subspace,
