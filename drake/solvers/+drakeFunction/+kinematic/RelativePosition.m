@@ -42,7 +42,7 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
       
 %       sizecheck(pts_in_A,[rbm.dim,NaN]);
       n_pts_tmp = size(pts_in_A,2);
-      dim_output = 3*n_pts_tmp;
+      dim_output = nC*n_pts_tmp;
       obj = obj@drakeFunction.kinematic.Kinematic(rbm, dim_output);
       obj.frameA = obj.rbm.parseBodyOrFrameID(frameA);
       if obj.frameA == 0
@@ -142,7 +142,9 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
       end      
       
       pos = pos(obj.ind);
-      J = J(obj.ind,:);
+      if nargout > 1
+        J = J(obj.ind,:);
+      end
       if compute_second_derivatives
         dJ = dJ(obj.ind,:);
       end
@@ -158,9 +160,9 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
       if obj.frameA == 0
         error('COM version of evalWithJdot is not implemented yet')
       end
-      if ~obj.rbm.use_new_kinsol
-        error('Requires new kinsol')
-      end
+%       if ~obj.rbm.use_new_kinsol
+%         error('Requires new kinsol')
+%       end  
       
       [pts_in_B,J,dJ] = forwardKin(obj.rbm,kinsol,obj.frameA,obj.pts_in_A,options);
       pos = reshape(pts_in_B,[],1);
