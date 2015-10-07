@@ -773,6 +773,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
 
         end
       end
+%       sim_impulse = J(nL+nP+(1:(1+mC)*nC),:)'*z(nL+nP+(1:(1+mC)*nC))
+%       sim_qd = Mqdn*z + wqdn
     end
 
     function obj = addSensor(obj,sensor)
@@ -1211,6 +1213,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     function varargout = terrainContactPositions(obj,varargin)
       varargout = cell(1,nargout);
       [varargout{:}] = terrainContactPositions(obj.manip,varargin{:});
+    end
+    
+    function xdot = constrainedDynamics(obj,varargin)
+      xdot = constrainedDynamics(obj.manip,varargin{:});
     end
 
     function varargout = terrainContactJacobianDotTimesV(obj,varargin)

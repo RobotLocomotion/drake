@@ -1,0 +1,72 @@
+<?xml version="1.0" ?>
+<robot name="simple_hopper" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <link name="fixed_base"/>
+  <link name="floating"/>
+  <link name="body">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="1"/>
+      <inertia ixx=".0075" ixy="0" ixz="0" iyy=".0075" iyz="0" izz=".0075"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <box size=".1 .1 .1"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <material name="grey">
+        <color rgba=".8 .8 .8 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <link name="foot">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="1"/>
+      <inertia ixx=".0075" ixy="0" ixz="0" iyy=".0075" iyz="0" izz=".0075"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <box size=".1 .1 .1"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <material name="grey">
+        <color rgba=".8 .8 .8 1"/>
+      </material>
+    </visual>
+    <collision group="foot">
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="x_floating" type="prismatic">
+    <parent link="fixed_base"/>
+    <child link="floating"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <axis xyz="1 0 0"/>
+  </joint>
+
+  <joint name="z_floating" type="prismatic">
+    <parent link="floating"/>
+    <child link="body"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+
+  <joint name="knee" type="prismatic">
+    <parent link="body"/>
+    <child link="foot"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+
+  <transmission name="knee_motor" type="SimpleTransmission">
+    <actuator name="knee_motor"/>
+    <joint name="knee"/>
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+</robot>
+

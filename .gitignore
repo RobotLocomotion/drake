@@ -50,6 +50,7 @@ mlint_output.html
 .#*
 VALGRIND_OUTPUT.xml
 *.ppms.gz
+*.DS_Store
 glider_trajs.mat
 results_testRunning.mat
 drake/doc/DoxygenCPP

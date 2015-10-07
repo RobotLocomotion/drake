@@ -44,6 +44,7 @@ idxA = idxA';
 idxB = idxB';
 nC = numel(phi);
 
+% normal
 % If there are no potential collisions, return empty
 if nC == 0
   d = [];

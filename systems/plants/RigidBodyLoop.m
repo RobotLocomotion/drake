@@ -2,42 +2,65 @@ classdef RigidBodyLoop < RigidBodyElement
   
   properties
     name
-    frameA
-    frameB
-    axis=[1;0;0];
+    body1
+    pt1=[0;0;0]
+    body2
+    pt2=[0;0;0]
+    axis=[1;0;0]
     constraint_id
   end
   
   methods   
     function [obj,model] = updateConstraints(obj,model)
 
-      % todo: support planar kinematics here (should output only 2
-      % constraints instead of 3)
+      if model.dim == 2
+        pt1 = model.T_2D_to_3D'*obj.pt1;
+        pt2 = model.T_2D_to_3D'*obj.pt2;
+      else
+        pt1 = obj.pt1;
+        pt2 = obj.pt2;
+      end
       
-      relative_position_fun = drakeFunction.kinematic.RelativePosition(model,obj.frameA,obj.frameB,zeros(3,1));
+      relative_position_fun = drakeFunction.kinematic.RelativePosition(model,obj.body1,obj.body2,pt1);
 %      relative_position_fun = relative_position_fun.addInputFrame(model.getVelocityFrame);
-      position_constraint = DrakeFunctionConstraint(zeros(3,1),zeros(3,1),relative_position_fun);
-      position_constraint.grad_level = 2;
+      con = DrakeFunctionConstraint(pt2,pt2,relative_position_fun);
+      con.grad_level = 2;
       % todo: naming logic should go into the constraint classes
       % todo: support 2D constraints for planar loops?
-      position_constraint = setName(position_constraint,{[obj.name,'_x'];[obj.name,'_y'];[obj.name,'_z']});
-      
-      % a second relative position constraint enforces the orientation
-      relative_position_fun = drakeFunction.kinematic.RelativePosition(model,obj.frameA,obj.frameB,obj.axis);
-%      relative_position_fun = relative_position_fun.addInputFrame(model.getVelocityFrame);
-      orientation_constraint = DrakeFunctionConstraint(obj.axis,obj.axis,relative_position_fun);
-      orientation_constraint.grad_level = 2;
-      orientation_constraint = setName(orientation_constraint,{[obj.name,'_ax'];[obj.name,'_ay'];[obj.name,'_az']});
-            
-      if isempty(obj.constraint_id)
-        [model,obj.constraint_id(1)] = addPositionEqualityConstraint(model,position_constraint);
-        [model,obj.constraint_id(2)] = addPositionEqualityConstraint(model,orientation_constraint);
+
+      if model.dim == 2        
+        con = setName(con,{[obj.name,'_x'];[obj.name,'_z']});
       else
-        model = updatePositionEqualityConstraint(model,obj.constraint_id(1),position_constraint);
-        model = updatePositionEqualityConstraint(model,obj.constraint_id(2),orientation_constraint);
+        con = setName(con,{[obj.name,'_x'];[obj.name,'_y'];[obj.name,'_z']});
+      end
+      
+      if isempty(obj.constraint_id)
+        [model,obj.constraint_id] = addPositionEqualityConstraint(model,con);
+      else
+        model = updatePositionEqualityConstraint(model,obj.constraint_id,con);
       end
     end
-
+    
+    function obj = updateBodyIndices(obj,map_from_old_to_new)
+      obj.body1 = map_from_old_to_new(obj.body1);
+      obj.body2 = map_from_old_to_new(obj.body2);
+    end
+    
+    function obj = updateForRemovedLink(obj,model,body_ind)
+      if (obj.body1 == body_ind)
+        obj.pt1 = model.body(body_ind).Ttree(1:end-1,:)*[obj.pt1;1];
+        obj.body1 = model.body(body_ind).parent;
+      end
+      if (obj.body2 == body_ind)
+        obj.pt2 = model.body(body_ind).Ttree(1:end-1,:)*[obj.pt2;1];
+        obj.body2 = model.body(body_ind).parent;
+      end
+    end
+    
+    function obj = updateBodyCoordinates(obj,body_ind,T_old_body_to_new_body)
+      error('need to implement this.  (see changeRootLink)');
+    end
+    
   end
   
   methods (Static)
@@ -47,29 +70,20 @@ classdef RigidBodyLoop < RigidBodyElement
       loop.name = regexprep(loop.name, '\.', '_', 'preservecase');
 
       link1Node = node.getElementsByTagName('link1').item(0);
-      body = findLinkId(model,char(link1Node.getAttribute('link')),robotnum);
-      xyz = zeros(3,1);
+      link1 = findLinkId(model,char(link1Node.getAttribute('link')),robotnum);
+      loop.body1 = link1;
       if link1Node.hasAttribute('xyz')
-        xyz = reshape(str2num(char(link1Node.getAttribute('xyz'))),3,1);
+        loop.pt1 = reshape(str2num(char(link1Node.getAttribute('xyz'))),3,1);
       end
-      rpy=[0;0;0];  % default according to URDF documentation
-      if link1Node.hasAttribute('rpy')
-        rpy = reshape(str2num(char(link1Node.getAttribute('rpy'))),3,1);
-      end
-      [model,loop.frameA] = addFrame(model,RigidBodyFrame(body,xyz,rpy,[loop.name,'FrameA']));
 
       link2Node = node.getElementsByTagName('link2').item(0);
-      body = findLinkId(model,char(link2Node.getAttribute('link')),robotnum);
-      xyz = zeros(3,1);
+      link2 = findLinkId(model,char(link2Node.getAttribute('link')),robotnum);
+      loop.body2 = link2;
       if link2Node.hasAttribute('xyz')
-        xyz = reshape(str2num(char(link2Node.getAttribute('xyz'))),3,1);
+        loop.pt2 = reshape(str2num(char(link2Node.getAttribute('xyz'))),3,1);
       end
-      rpy=[0;0;0];  % default according to URDF documentation
-      if link2Node.hasAttribute('rpy')
-        rpy = reshape(str2num(char(link2Node.getAttribute('rpy'))),3,1);
-      end
-      [model,loop.frameB] = addFrame(model,RigidBodyFrame(body,xyz,rpy,[loop.name,'FrameB']));
-      
+
+      axis=[1;0;0];  % default according to URDF documentation
       axisnode = node.getElementsByTagName('axis').item(0);
       if ~isempty(axisnode)
         if axisnode.hasAttribute('xyz')
@@ -83,6 +97,9 @@ classdef RigidBodyLoop < RigidBodyElement
       if ~strcmpi(type,'continuous')
         error(['joint type ',type,' not supported (yet?)']);
       end
+
+      % todo: add relativeQuatConstraint, too
+      warnOnce(model.warning_manager,'Drake:RigidBodyManipulator:ThreeDLoopJoints','3D loop joints do not properly enforce the joint axis constraint.  (they perform more like a ball joint)');
     end
   end  
 end

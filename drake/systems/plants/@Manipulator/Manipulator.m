@@ -266,8 +266,22 @@ classdef Manipulator < DrakeSystem
       obj = setNumContStates(obj,num_v+obj.num_positions);
     end
 
-    function n = getNumVelocities(obj);
+    function n = getNumVelocities(obj)
       n = obj.num_velocities;
+    end
+    
+    function varargout = positionConstraintslWithJdot(obj,q,v)
+      varargout = cell(1,nargout);
+      for i=1:length(obj.position_constraints)
+        outi = cell(1,max(nargout,1));
+        % This call will cause an error if the constraint isn't a function
+        % handle constraint,a nd the function isn't relativeposition
+        [outi{:}] = obj.position_constraints{i}.fcn.evalWithJdot(q,v);
+        outi{1} = outi{1} - obj.position_constraints{i}.lb;  % center it around 0
+        for j=1:nargout
+          varargout{j} = vertcat(varargout{j},outi{j});
+        end
+      end
     end
     
     function varargout = positionConstraints(obj,q)

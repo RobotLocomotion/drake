@@ -1,8 +1,8 @@
 function simple_pulley
 
 % note that the masses are constrained to move only vertically
-%r = PlanarRigidBodyManipulator('simple_pulley.urdf');
-r = TimeSteppingRigidBodyManipulator('simple_pulley.urdf',.01,struct('twoD',true));
+r = PlanarRigidBodyManipulator('simple_pulley.urdf');
+% r = TimeSteppingRigidBodyManipulator('simple_pulley.urdf',.01,struct('twoD',true));
 
 clf;
 v = r.constructVisualizer();

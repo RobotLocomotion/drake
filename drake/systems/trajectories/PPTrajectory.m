@@ -87,7 +87,12 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       if (obj.getOutputFrame == frame)
         mobj = obj;
       else
-        tf = findTransform(obj.getOutputFrame,frame,struct('throw_error_if_fail',true));
+%         tf = findTransform(obj.getOutputFrame,frame,struct('throw_error_if_fail',true));
+        tf = findTransform(obj.getOutputFrame,frame);
+        if isempty(tf)
+          mobj = obj;
+          return;
+        end
         if isa(tf,'AffineSystem') && getNumStates(tf)==0
           D=tf.D;c=tf.y0;
           mobj = D*obj + c;
@@ -334,9 +339,14 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
         if length(d)<2, d=[d 1]; elseif length(d)>2, error('mtimes is not defined for ND arrays'); end
         if isscalar(a), cd = d; elseif isscalar(b), cd = size(a); else cd = [size(a,1),d(2)]; end
         coefs = full(reshape(coefs,[d,l,k])); a=full(a);
-        for i=1:l, for j=1:k,
-          c(:,:,i,j)=a*coefs(:,:,i,j);
-        end, end
+        %         c = zeros(size(a,1),size(coefs,2),l,k);
+        %         for i=1:l,
+        %           for j=1:k,
+        %           c(:,:,i,j)=a*coefs(:,:,i,j);
+        %           end
+        %         end
+        % replaced the loop above with a one line solution
+        c=reshape(a*reshape(coefs,size(a,2),size(coefs,2)*l*k),size(a,1),size(coefs,2),l,k);
         c=PPTrajectory(mkpp(breaks,c,cd));
         return;
       elseif isnumeric(b) % then only a is a PPTrajectory
@@ -344,9 +354,15 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
         if length(d)<2, d=[d 1]; elseif length(d)>2, error('mtimes is not defined for ND arrays'); end
         if isscalar(a), cd = d; elseif isscalar(b), cd = size(a); else cd = [size(a,1),d(2)]; end
         coefs = full(reshape(coefs,[d,l,k])); b=full(b);
-        for i=1:l, for j=1:k,
-          c(:,:,i,j)=coefs(:,:,i,j)*b;
-        end, end
+        %         c = zeros(size(a,1),size(coefs,2),l,k);
+        %         for i=1:l,
+        %           for j=1:k,
+        %             c(:,:,i,j)=coefs(:,:,i,j)*b;
+        %           end
+        %         end
+        % replaced loop with one line
+        pcoeffs = permute(coefs,[3 4 1 2]); % permute coefficients
+        c=permute(reshape(reshape(pcoeffs,l*k*size(coefs,1),size(b,1))*b,l,k,size(coefs,1),size(b,2)),[3 4 1 2]);
         c=PPTrajectory(mkpp(breaks,c,[d(1) size(b,2)]));
         return;
       end

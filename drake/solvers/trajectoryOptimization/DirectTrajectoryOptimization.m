@@ -77,6 +77,10 @@ classdef DirectTrajectoryOptimization < NonlinearProgram
           A_time = ones(1,N-1);
           time_constraint = LinearConstraint(durations(1),durations(2),A_time);
           obj = obj.addConstraint(time_constraint,obj.h_inds);
+        case 3 % fixed scaling          
+          A_time = [ones(1,N-1);[diag(options.time_scaling(1:end-1)) zeros(N-2,1)] - [zeros(N-2,1) diag(options.time_scaling(2:end))]];
+          time_constraint = LinearConstraint([durations(1);zeros(N-2,1)],[durations(2);zeros(N-2,1)],A_time);
+          obj = obj.addConstraint(time_constraint,obj.h_inds);
       end
 
       % Ensure that all h values are non-negative
@@ -189,6 +193,12 @@ classdef DirectTrajectoryOptimization < NonlinearProgram
       xtraj = reconstructStateTrajectory(obj,z);
       if nargout>1, utraj = reconstructInputTrajectory(obj,z); end
     end
+    
+    function [xtraj,utraj,z,F,info,infeasible_constraint_name] = solveTrajFromZ(obj,z0)
+      [z,F,info,infeasible_constraint_name] = obj.solve(z0);
+      xtraj = reconstructStateTrajectory(obj,z);
+      if nargout>1, utraj = reconstructInputTrajectory(obj,z); end
+    end
 
     function z0 = getInitialVars(obj,t_init,traj_init)
     % evaluates the initial trajectories at the sampled times and
@@ -227,7 +237,7 @@ classdef DirectTrajectoryOptimization < NonlinearProgram
         else
           sys_ol = obj.plant;
         end
-        
+
         if ~isfield(traj_init,'x0')
           [~,x_sim] = sys_ol.simulate([t_init(1) t_init(end)]);
         else

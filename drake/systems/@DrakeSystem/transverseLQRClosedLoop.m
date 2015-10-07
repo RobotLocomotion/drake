@@ -2,6 +2,8 @@ function [controller,sys,xtraj,utraj,Vtraj,Vf]=transverseLQRClosedLoop(obj,xtraj
 
 [controller,Vtraj] = transverseLQR(obj,xtraj,utraj,Q,R,Vf,transSurf);
 
+controller = controller.setInputFrame(obj.getStateFrame);
+controller = controller.setOutputFrame(obj.getInputFrame);
 sys = feedback(obj,controller);
 
 N = obj.getNumStates();

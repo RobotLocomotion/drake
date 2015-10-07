@@ -15,19 +15,24 @@ using namespace std;
 //      Eigen templates can be optimized at compile time
 void surfaceTangentsSingle(Vector3d const & normal, Matrix3kd & d)
 {
-  Vector3d t1,t2;
+  Vector3d t1,t2,unit_normal;
   double theta;
   
-  if (1.0 - normal(2) < EPSILON) { // handle the unit-normal case (since it's unit length, just check z)
+  double len = normal.norm();
+  unit_normal = normal/len;
+  
+  if (1.0 - unit_normal(2) < EPSILON) { // handle the unit-normal case (since it's unit length, just check z)
     t1 << 1.0, 0.0, 0.0;
-  } else if (1 + normal(2) < EPSILON) {
+  } else if (1 + unit_normal(2) < EPSILON) {
     t1 << -1.0, 0.0, 0.0;  //same for the reflected case
   } else {// now the general case
-    t1 << normal(1), -normal(0), 0.0;
-    t1 /= sqrt(normal(1)*normal(1) + normal(0)*normal(0));
+    t1 << unit_normal(1), -unit_normal(0), 0.0;
+    t1 /= sqrt(unit_normal(1)*unit_normal(1) + unit_normal(0)*unit_normal(0));
   }
   
-  t2 = t1.cross(normal);
+  t1 = t1 * len;
+  
+  t2 = t1.cross(unit_normal);
 
   for (size_t k = 0 ; k < BASIS_VECTOR_HALF_COUNT ; k++) {
     theta = k*M_PI/BASIS_VECTOR_HALF_COUNT;

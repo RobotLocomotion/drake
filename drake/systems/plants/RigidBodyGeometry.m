@@ -60,6 +60,7 @@ classdef RigidBodyGeometry < RigidBodyElement
       
       % keep only convex hull (todo: do better here)
       ind = convhull(pts(1,:),pts(2,:));
+
       z = max(pts(3,:));
       
       % take it back out of view coordinates

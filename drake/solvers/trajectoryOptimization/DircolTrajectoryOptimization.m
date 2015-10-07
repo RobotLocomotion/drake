@@ -96,16 +96,21 @@ classdef DircolTrajectoryOptimization < DirectTrajectoryOptimization
       nX = obj.plant.getNumStates();
       nU = obj.plant.getNumInputs();
             
-      running_cost_end = FunctionHandleObjective(1+nX+nU,@(h,x,u) obj.running_fun_end(running_cost_function,h,x,u));
-      running_cost_mid = FunctionHandleObjective(2+nX+nU,@(h0,h1,x,u) obj.running_fun_mid(running_cost_function,h0,h1,x,u));
-
-      obj = obj.addCost(running_cost_end,{obj.h_inds(1);obj.x_inds(:,1);obj.u_inds(:,1)});
+%       running_cost_end = FunctionHandleObjective(1+nX+nU,@(h,x,u) obj.running_fun_end(running_cost_function,h,x,u));
+%       running_cost_mid = FunctionHandleObjective(2+nX+nU,@(h0,h1,x,u) obj.running_fun_mid(running_cost_function,h0,h1,x,u));
+% 
+%       obj = obj.addCost(running_cost_end,{obj.h_inds(1);obj.x_inds(:,1);obj.u_inds(:,1)});
+%       
+%       for i=2:obj.N-1,
+%         obj = obj.addCost(running_cost_mid,{obj.h_inds(i-1);obj.h_inds(i);obj.x_inds(:,i);obj.u_inds(:,i)});
+%       end
+%       
+%       obj = obj.addCost(running_cost_end,{obj.h_inds(end);obj.x_inds(:,end);obj.u_inds(:,end)});
       
-      for i=2:obj.N-1,
-        obj = obj.addCost(running_cost_mid,{obj.h_inds(i-1);obj.h_inds(i);obj.x_inds(:,i);obj.u_inds(:,i)});
+      running_cost_second = FunctionHandleObjective(1+2*nX+2*nU,@(h,x0,u0,x1,u1) obj.running_fun_second(running_cost_function,h,x0,u0,x1,u1));
+      for i=1:obj.N-1,
+        obj = obj.addCost(running_cost_second,{obj.h_inds(i);obj.x_inds(:,i);obj.u_inds(:,i);obj.x_inds(:,i+1);obj.u_inds(:,i+1)});
       end
-      
-      obj = obj.addCost(running_cost_end,{obj.h_inds(end);obj.x_inds(:,end);obj.u_inds(:,end)});
     end
     
     function [utraj,xtraj] = reconstructInputTrajectory(obj,z)
@@ -144,6 +149,15 @@ classdef DircolTrajectoryOptimization < DirectTrajectoryOptimization
       [f,dg] = running_handle(.5*(h0+h1),x,u);
       
       df = [.5*dg(:,1) .5*dg(:,1) dg(:,2:end)];
+    end
+    
+    function [f,df] = running_fun_second(obj,running_handle,h,x0,u0,x1,u1)
+      [f0,df0] = running_handle(h,x0,u0);
+      [fm,dfm] = running_handle(h,.5*(x0+x1),.5*(u0+u1));
+      [f1,df1] = running_handle(h,x1,u1);
+      
+      f = f0/6 + 2*fm/3 + f1/6;
+      df = [1/6*df0(:,1) + 2/3*dfm(:,1) + 1/6*df1(:,1), 1/6*df0(:,2:end) + 2/6*dfm(:,2:end), 2/6*dfm(:,2:end) + 1/6*df1(:,2:end)];      
     end
     
   end

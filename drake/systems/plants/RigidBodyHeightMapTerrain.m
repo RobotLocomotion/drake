@@ -18,7 +18,7 @@ classdef RigidBodyHeightMapTerrain < RigidBodyTerrain & RigidBodyGeometry
       obj.Z = Z';  % store it in ndgrid format, instead of meshgrid format
       obj.T_world_to_terrain = inv(terrain_to_world_transform);
 
-      obj.c = hex2dec({'ee','cb','ad'})/256;  % something a little brighter (peach puff 2 from http://www.tayloredmktg.com/rgb/)
+      obj.c = hex2dec({'ee','cb','ad'})'/256;  % something a little brighter (peach puff 2 from http://www.tayloredmktg.com/rgb/)
     end
 
     function pts = getPoints(obj)

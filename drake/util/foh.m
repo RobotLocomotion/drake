@@ -5,6 +5,11 @@ function ypp = foh(t0,y0)
 %   first-order hold.  Use ppval, ppval_safe, or fnval to evaluate it.
 %   Whatever the size of y0, the last dimension is paired up with time. 
 
+if length(t0) == 1
+  t0 = [t0 t0+1];
+  y0 = [y0 y0];
+end
+
 D = size(y0); L = D(end)-1; D = D(1:(end-1));
 if (length(t0)~=L+1) error('t0 and y0 do not match'); end
 

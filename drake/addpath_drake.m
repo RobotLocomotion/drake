@@ -58,6 +58,9 @@ addpath(fullfile(root,'solvers','BMI','util'));
 addpath(fullfile(root,'solvers','BMI','kinematics'));
 
 
+addpath(fullfile(root,'mposatest'));
+
+
 % OSX platform-specific
 if (strcmp(computer('arch'),'maci64'))
   % Check if on Yosemite or after

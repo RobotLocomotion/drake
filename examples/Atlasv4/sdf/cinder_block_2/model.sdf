@@ -1,0 +1,138 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+  <model name="cinder_block_2">
+    <link name="link">
+      <inertial>
+        <pose>0 0 0.0714375 0 0 0</pose>
+        <!-- volume about 0.0085 m^3, density 2000 kg/m^3 -->
+        <mass>5</mass>
+        <!-- approximate as uniform box 0.37 x 0.17 x 0.20 m -->
+        <inertia>
+          <ixx>0.06908</ixx>
+          <ixy>0.0000</ixy>
+          <iyy>0.028705</iyy>
+          <ixz>0.0000</ixz>
+          <iyz>0.0000</iyz>
+          <izz>0.073708</izz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>model://cinder_block_2/meshes/cinder_block.dae</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="top">
+        <pose>0 0 0.130175 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.19368008 0.396875 0.0254</size>
+          </box>
+        </geometry>
+        <surface>
+          <contact>
+            <ode>
+              <max_vel>0.1</max_vel>
+              <min_depth>0.001</min_depth>
+            </ode>
+          </contact>
+          <friction>
+            <ode>
+              <mu>1.0</mu>
+              <mu2>1.0</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+      <collision name="bottom">
+        <pose>0 0 0.0127 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.19368008 0.396875 0.0254</size>
+          </box>
+        </geometry>
+        <surface>
+          <contact>
+            <ode>
+              <max_vel>0.1</max_vel>
+              <min_depth>0.001</min_depth>
+            </ode>
+          </contact>
+          <friction>
+            <ode>
+              <mu>1.0</mu>
+              <mu2>1.0</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+      <collision name="left">
+        <pose>0 -0.1857375 0.0714375 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.19368008 0.0254 0.092075</size>
+          </box>
+        </geometry>
+        <surface>
+          <contact>
+            <ode>
+              <max_vel>0.1</max_vel>
+              <min_depth>0.001</min_depth>
+            </ode>
+          </contact>
+          <friction>
+            <ode>
+              <mu>1.0</mu>
+              <mu2>1.0</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+      <collision name="right">
+        <pose>0 0.1857375 0.0714375 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.19368008 0.0254 0.092075</size>
+          </box>
+        </geometry>
+        <surface>
+          <contact>
+            <ode>
+              <max_vel>0.1</max_vel>
+              <min_depth>0.001</min_depth>
+            </ode>
+          </contact>
+          <friction>
+            <ode>
+              <mu>1.0</mu>
+              <mu2>1.0</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+      <collision name="middle">
+        <pose>0 0 0.0714375 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.19368008 0.0254 0.092075</size>
+          </box>
+        </geometry>
+        <surface>
+          <contact>
+            <ode>
+              <max_vel>0.1</max_vel>
+              <min_depth>0.001</min_depth>
+            </ode>
+          </contact>
+          <friction>
+            <ode>
+              <mu>1.0</mu>
+              <mu2>1.0</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+    </link>
+  </model>
+</sdf>

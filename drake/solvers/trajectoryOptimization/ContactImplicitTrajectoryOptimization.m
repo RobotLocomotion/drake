@@ -54,6 +54,13 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
       if ~isfield(options,'integration_method')
         options.integration_method = ContactImplicitTrajectoryOptimization.MIDPOINT;
       end
+      if ~isfield(options,'allow_sliding')
+        options.allow_sliding = true;
+      end
+      
+      if ~isfield(options,'use_joint_limits')
+        options.use_joint_limits = false;
+      end
       
       obj = obj@DirectTrajectoryOptimization(plant,N,duration,options);
 
@@ -77,6 +84,9 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
       
       [~,~,~,~,~,~,~,mu] = obj.plant.contactConstraints(zeros(nq,1),false,obj.options.active_collision_options);
       
+      % set all contact variables to be positive
+      obj = obj.addConstraint(BoundingBoxConstraint(zeros(N*obj.nC*(obj.nD+2),1),inf(N*obj.nC*(obj.nD+2),1)),obj.l_inds(:));
+      
       for i=1:obj.N-1,
 %         dyn_inds{i} = [obj.h_inds(i);obj.x_inds(:,i);obj.x_inds(:,i+1);obj.u_inds(:,i);obj.l_inds(:,i);obj.ljl_inds(:,i)];
         dyn_inds{i} = {obj.h_inds(i);obj.x_inds(:,i);obj.x_inds(:,i+1);obj.u_inds(:,i);obj.l_inds(:,i);obj.ljl_inds(:,i)};
@@ -91,27 +101,56 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
           % lambda_f
           lambda_inds = obj.l_inds(repmat((1:1+obj.nD)',obj.nC,1) + kron((0:obj.nC-1)',(2+obj.nD)*ones(obj.nD+1,1)),i);
           
-          
-          obj.nonlincompl_constraints{i} = NonlinearComplementarityConstraint(@nonlincompl_fun,nX + obj.nC,obj.nC*(1+obj.nD),obj.options.nlcc_mode,obj.options.compl_slack);
-          obj.nonlincompl_slack_inds{i} = obj.num_vars+1:obj.num_vars + obj.nonlincompl_constraints{i}.n_slack;          
-          obj = obj.addConstraint(obj.nonlincompl_constraints{i},[obj.x_inds(:,i+1);gamma_inds;lambda_inds]);
-          
-          % linear complementarity constraint
-          %   gamma /perp mu*lambda_N - sum(lambda_fi)
-          %
-          %  Generate terms W,r,M,gamma_inds so that
-          %  gamma = y(gamma_inds)
-          %  Wz+Mx+r = mu*lambda_N - sum(lambda_fi)
-          r = zeros(obj.nC,1);
-          W = zeros(obj.nC,obj.nC);
-          M = zeros(obj.nC,obj.nC*(1+obj.nD));
-          for k=1:obj.nC,
-            M(k,1 + (k-1)*(1+obj.nD)) = mu(k);
-            M(k,(2:obj.nD+1) + (k-1)*(1+obj.nD)) = -ones(obj.nD,1);
+          if obj.options.allow_sliding
+            obj.nonlincompl_constraints{i} = NonlinearComplementarityConstraint(@nonlincompl_fun,nX + obj.nC,obj.nC*(1+obj.nD),obj.options.nlcc_mode,obj.options.compl_slack);
+            obj.nonlincompl_slack_inds{i} = obj.num_vars+1:obj.num_vars + obj.nonlincompl_constraints{i}.n_slack;
+            obj = obj.addConstraint(obj.nonlincompl_constraints{i},[obj.x_inds(:,i+1);gamma_inds;lambda_inds]);
+            
+            % linear complementarity constraint
+            %   gamma /perp mu*lambda_N - sum(lambda_fi)
+            %
+            %  Generate terms W,r,M,gamma_inds so that
+            %  gamma = y(gamma_inds)
+            %  Wz+Mx+r = mu*lambda_N - sum(lambda_fi)
+            r = zeros(obj.nC,1);
+            W = zeros(obj.nC,obj.nC);
+            M = zeros(obj.nC,obj.nC*(1+obj.nD));
+            for k=1:obj.nC,
+              M(k,1 + (k-1)*(1+obj.nD)) = mu(k);
+              M(k,(2:obj.nD+1) + (k-1)*(1+obj.nD)) = -ones(obj.nD,1);
+            end
+            
+            lincompl_constraints{i} = LinearComplementarityConstraint(W,r,M,obj.options.lincc_mode,obj.options.lincompl_slack);
+            obj = obj.addConstraint(lincompl_constraints{i},[lambda_inds;gamma_inds]);
+          else
+            lambdaz_inds = obj.l_inds(1:obj.nD+2:end,i);
+            obj.nonlincompl_constraints{i} = NonlinearComplementarityConstraint(@noslip_nonlincompl_fun,nq,obj.nC,obj.options.nlcc_mode,obj.options.compl_slack);
+            obj.nonlincompl_slack_inds{i} = obj.num_vars+1:obj.num_vars + obj.nonlincompl_constraints{i}.n_slack;
+            obj = obj.addConstraint(obj.nonlincompl_constraints{i},[obj.x_inds(1:nq,i+1);lambdaz_inds]);                        
+            
+            % friction limit
+            % mu*lambda_N - sum(lambda_fi) >= 0
+            M = zeros(obj.nC,obj.nC*(1+obj.nD));
+            for k=1:obj.nC,
+              M(k,1 + (k-1)*(1+obj.nD)) = mu(k);
+              M(k,(2:obj.nD+1) + (k-1)*(1+obj.nD)) = -ones(obj.nD,1);
+            end
+            friction_cnstr = LinearConstraint(zeros(obj.nC,1),inf(obj.nC,1),M);
+            obj = obj.addConstraint(friction_cnstr,lambda_inds);
+            
+            % gamma constraint
+            gamma_cnstr = FunctionHandleConstraint(zeros(obj.nC*obj.nD,1),inf(obj.nC*obj.nD,1),nX + obj.nC,@obj.gamma_fun);
+            obj = obj.addConstraint(gamma_cnstr,{obj.x_inds(1:nq,i+1),obj.x_inds(nq+1:end,i+1),gamma_inds});
+            
+            % linear complementarity constraint
+            %   gamma /perp lambda_N
+            M = eye(obj.nC);
+            r = zeros(obj.nC,1);
+            W = zeros(obj.nC,obj.nC);
+            
+            lincompl_constraints{i} = LinearComplementarityConstraint(W,r,M,obj.options.lincc_mode,obj.options.lincompl_slack);
+            obj = obj.addConstraint(lincompl_constraints{i},[lambdaz_inds;gamma_inds]);
           end
-          
-          lincompl_constraints{i} = LinearComplementarityConstraint(W,r,M,obj.options.lincc_mode,obj.options.lincompl_slack);
-          obj = obj.addConstraint(lincompl_constraints{i},[lambda_inds;gamma_inds]);
         end
         
         if obj.nJL > 0
@@ -154,6 +193,39 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
           df(1+j:1+obj.nD:end,1:nq) = matGradMult(dD{j},v);%d/dq
         end
         
+      end
+      
+      % nonlinear complementarity constraints:
+      %   lambda_N /perp phi(q)
+      % x = q;
+      % z = lambda_N (each contact sequentially)
+      function [f,df] = noslip_nonlincompl_fun(y)
+        nq = obj.plant.getNumPositions;
+        nv = obj.plant.getNumVelocities;
+        q = y(1:nq);
+%         z = y(nq+1:end);
+        
+        [phi,normal,d,xA,xB,idxA,idxB,mu,n] = obj.plant.contactConstraints(q,false,obj.options.active_collision_options);
+        
+        f = phi;
+        df = zeros(obj.nC,nq+obj.nC);        
+        df(:,1:nq) = n;
+      end      
+    end
+    
+    function [f,df] = gamma_fun(obj,q,v,gamma)
+      nq = obj.plant.getNumPositions;
+      nv = obj.plant.getNumVelocities;
+      [phi,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = obj.plant.contactConstraints(q,false,obj.options.active_collision_options);
+      
+      f = zeros(obj.nC*obj.nD,1);
+      df = zeros(obj.nC*obj.nD,nq+nv+obj.nC);
+
+      for j=1:obj.nD,
+        f(j:obj.nD:end) = gamma+D{j}*v;
+        df(j:obj.nD:end,nq+nv+(1:obj.nC)) = eye(size(D{j},1));  %d/dgamma
+        df(j:obj.nD:end,nq+(1:nv)) = D{j};%d/dv
+        df(j:obj.nD:end,1:nq) = matGradMult(dD{j},v);%d/dq
       end
     end
     
@@ -236,7 +308,7 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
           [zeros(nv,1) matGradMult(dH0,v1-v0)-h*dBuminusC0 matGradMult(dH1,v1-v0)-h*dBuminusC1 zeros(nv,nu+nl+njl)];
         
         if nl>0
-          [phi,normal,~,~,~,~,~,~,n,D,dn,dD] = obj.plant.contactConstraints(q1,false,obj.options.active_collision_options);
+          [phi,~,~,~,~,~,~,~,n,D,dn,dD] = obj.plant.contactConstraints(q1,false,obj.options.active_collision_options);
           % construct J and dJ from n,D,dn, and dD so they relate to the
           % lambda vector
           J = zeros(nl,nq);
@@ -263,8 +335,22 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
         
         f = [fq;fv];
         df = [dfq;dfv];
+     end
+      
+     function [xtraj,utraj,ltraj,ljltraj,z,F,info] = solveTrajFromZ(obj,z0)
+       [xtraj,utraj,z,F,info] = solveTrajFromZ@DirectTrajectoryOptimization(obj,z0);
+      t = [0; cumsum(z(obj.h_inds))];
+      if obj.nC>0
+        ltraj = PPTrajectory(foh(t,reshape(z(obj.l_inds),[],obj.N)));
+      else
+        ltraj = [];
       end
-    
+      if obj.nJL>0
+        ljltraj = PPTrajectory(foh(t,reshape(z(obj.ljl_inds),[],obj.N)));
+      else
+        ljltraj = [];
+      end
+     end
     function [xtraj,utraj,ltraj,ljltraj,z,F,info] = solveTraj(obj,t_init,traj_init)
       [xtraj,utraj,z,F,info] = solveTraj@DirectTrajectoryOptimization(obj,t_init,traj_init);
       t = [0; cumsum(z(obj.h_inds))];
@@ -297,15 +383,21 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
         obj.lfi_inds(:,i) = (2:1+obj.nD)' + (i-1)*(2+obj.nD)*ones(obj.nD,1);
       end            
       
-      obj.nJL = obj.plant.getNumJointLimitConstraints();
-      obj.ljl_inds = reshape(obj.num_vars + (1:N * obj.nJL),obj.nJL,N);
-      
-      % joint limit constraints
-      [jl_lb,jl_ub] = obj.plant.getJointLimits();
-      obj.jl_lb_ind = find(jl_lb ~= -inf);
-      obj.jl_ub_ind = find(jl_ub ~= inf);
-      
-      obj = obj.addDecisionVariable(N * obj.nJL);
+      if obj.options.use_joint_limits
+        obj.nJL = obj.plant.getNumJointLimitConstraints();
+        
+        obj.ljl_inds = reshape(obj.num_vars + (1:N * obj.nJL),obj.nJL,N);
+        
+        % joint limit constraints
+        [jl_lb,jl_ub] = obj.plant.getJointLimits();
+        obj.jl_lb_ind = find(jl_lb ~= -inf);
+        obj.jl_ub_ind = find(jl_ub ~= inf);
+        
+        obj = obj.addDecisionVariable(N * obj.nJL);
+      else
+        obj.nJL = 0;
+        obj.ljl_inds = reshape(obj.num_vars + (1:N * obj.nJL),obj.nJL,N);
+      end
     end
     
     % evaluates the initial trajectories at the sampled times and
@@ -375,6 +467,19 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
       running_cost = FunctionHandleObjective(1+nX+nU,running_cost_function);
       for i=1:obj.N-1,
         obj = obj.addCost(running_cost,{obj.h_inds(i);obj.x_inds(:,i);obj.u_inds(:,i)});
+      end
+    end
+    
+    function utraj = reconstructInputTrajectory(obj,z)
+      % use a zero order hold
+      t = [0; cumsum(z(obj.h_inds))];
+
+      if size(obj.u_inds,1)>0
+        u = reshape(z(obj.u_inds),[],obj.N);
+        utraj = PPTrajectory(zoh(t,u));
+        utraj = utraj.setOutputFrame(obj.plant.getInputFrame);
+      else
+        utraj=[];
       end
     end
     
