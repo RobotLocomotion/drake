@@ -65,5 +65,5 @@ end
 end 
 
 function ind = findInputInd(r,str)
- ind = find(~cellfun('isempty',strfind(r.getInputFrame().coordinates,str)));
+ ind = find(~cellfun('isempty',strfind(r.getInputFrame().getCoordinateNames,str)));
 end

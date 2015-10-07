@@ -72,7 +72,7 @@ v.display_dt = 0.01;
 load(traj_file);
 
 if traj_params~=2 && traj_params~=4
-  repeat_n = 5;
+  repeat_n = 1;
   [xtraj,utraj,Btraj,Straj_full] = repeatTraj(r,xtraj,utraj,Btraj,Straj_full,repeat_n,true,false);
 else
   repeat_n = 2;
@@ -237,7 +237,7 @@ if 1
   for i=1:nq
     subplot(2,ceil(nq/2),i);
     hold on;
-    title(r.getStateFrame.coordinates{i});
+    title(r.getStateFrame.getCoordinateNames{i});
     plot(traj_ts,xtraj_pts(i,:),'g.-');
     plot(traj_ts,traj_pts(i,:),'r.-');
     hold off;
@@ -246,7 +246,7 @@ if 1
   for i=1:nq
     subplot(2,ceil(nq/2),i);
     hold on;
-    title(r.getStateFrame.coordinates{nq+i});
+    title(r.getStateFrame.getCoordinateNames{nq+i});
     plot(traj_ts,xtraj_pts(nq+i,:),'g.-');
     plot(traj_ts,traj_pts(nq+i,:),'r.-');
     hold off;

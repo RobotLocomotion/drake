@@ -4,7 +4,7 @@ classdef AtlasXZState < SingletonCoordinateFrame
     function obj=AtlasXZState(r)
       typecheck(r,'TimeSteppingRigidBodyManipulator');
       manipStateFrame = r.getManipulator().getStateFrame();
-      coordinates = manipStateFrame.coordinates;
+      coordinates = manipStateFrame.getCoordinateNames;
       obj = obj@SingletonCoordinateFrame('AtlasXZState',length(coordinates),'x',coordinates);
     end
   end

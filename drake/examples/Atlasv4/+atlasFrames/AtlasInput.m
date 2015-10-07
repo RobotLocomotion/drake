@@ -8,7 +8,7 @@ classdef AtlasInput < SingletonCoordinateFrame
 %       if (r.hands > 0)
 %         manipInputFrame = manipInputFrame.getFrameByNum(1);
 %       end
-      input_names = manipInputFrame.coordinates;
+      input_names = manipInputFrame.getCoordinateNames;
       input_names = regexprep(input_names,'_motor',''); % remove motor suffix     
       
       obj = obj@SingletonCoordinateFrame('atlasFrames.AtlasInput',length(input_names),'x',input_names);

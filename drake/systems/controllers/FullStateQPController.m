@@ -269,7 +269,7 @@ classdef FullStateQPController < DrakeSystem
     Dbar = [];
     xp = [];
     Jp = [];
-    Jpdot = [];
+    Jpdotv = [];
     nc = 0;
     
     % ridiculously inefficient for testing
@@ -311,11 +311,11 @@ classdef FullStateQPController < DrakeSystem
       
       [xp_j,Jp_j] = forwardKin(r,kinsol,planned_supports(j),xz_pts,0);
       xp_jrot = forwardKin(r,kinsol,planned_supports(j),xz_pts,1);
-      Jpdot_j = forwardJacDot(r,kinsol,planned_supports(j),pts,0);
+      Jpdotv_j = r.getManipulator.forwardJacDotTimesV(kinsol,planned_supports(j),pts,0);
           
       xp = [xp,xp_j];
       Jp = [Jp;Jp_j];
-      Jpdot = [Jpdot;Jpdot_j];
+      Jpdotv = [Jpdotv;Jpdotv_j];
 
       if exist('xz_pts') && ~isempty(xz_pts)
         % compute foot placement error
@@ -337,9 +337,9 @@ classdef FullStateQPController < DrakeSystem
     if dim==2
        % delete y rows
       yind = 2:3:np*3;
-      Jpdot(yind,:) = [];
+      Jpdotv(yind,:) = [];
       Jp = sparse(Jp);
-      Jpdot = sparse(Jpdot);
+      Jpdotv = sparse(Jpdotv);
 
       nd = 2; % for friction cone approx, hard coded for now
     elseif dim==3
@@ -396,7 +396,7 @@ display(sprintf('t: %.3f S: %3.3e',t,(x-x0)'*S*(x-x0)));
     if np > 0
       % relative acceleration constraint
       Aeq_{2} = Jp*Iqdd + Ieps;
-      beq_{2} = -Jpdot*qd - obj.Kp_accel*Jp*qd; 
+      beq_{2} = -Jpdotv - obj.Kp_accel*Jp*qd; 
     end
 
 %     if ~isempty(phi_err)
