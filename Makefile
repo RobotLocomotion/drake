@@ -58,7 +58,7 @@ release_filelist: configure
 # note: the following will not work in windows cmd shells
 	echo "drake/.UNITTEST"
 	echo ".mlintopts"
-	find * -type f | grep -v "pod-build" | grep -v "\.valgrind" | grep -v "\.viewer-prefs" | grep -v "\.out" | grep -v "\.autosave" | grep -v "\.git" | grep -v "\.tmp" | grep -v "drake_config\.mat" | grep -v "DoxygenMatlab" | grep -v "\.aux" | grep -v "\.d" | grep -v "\.log" | grep -v "\.bib"
+	find * -type f | grep -v "pod-build" | grep -v "\.valgrind" | grep -v "\.viewer-prefs" | grep -v "\.out" | grep -v "\.autosave" | grep -v "\.git" | grep -v "\.tmp" | grep -v "drake_config\.mat" | grep -v "DoxygenMatlab" | grep -v "\.aux" | grep -v "\.d" | grep -v "\.log" | grep -v "\.bib" | grep -v "libsnopt*" | grep -v "snopt.*src" | grep -v "snopt.cmex"
 	find drake/pod-build/lib -type f
 	-find pod-build/bin -type f 2> /dev/null
 	echo "drake/pod-build/CMakeCache.txt"
