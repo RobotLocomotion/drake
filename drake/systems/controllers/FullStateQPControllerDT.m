@@ -164,8 +164,8 @@ classdef FullStateQPControllerDT < DrakeSystem
     for i=1:length(controller_data.supports)      
       to_options.non_penetration = false;
       to_options.collocation_friction_limits = false;
-      obj.constrained_trajopts{i} = ContactConstrainedDircolTrajectoryOptimization(r.getManipulator,2,[0 inf],controller_data.contact_seq{i},to_options);
-      
+      to_options.constrain_start = false;
+      obj.constrained_trajopts{i} = ContactConstrainedDircolTrajectoryOptimization(r.getManipulator,2,[-inf inf],controller_data.contact_seq{i},to_options);      
     end
   end
     

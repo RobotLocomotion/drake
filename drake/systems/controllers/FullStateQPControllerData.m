@@ -33,6 +33,7 @@ classdef FullStateQPControllerData < ControllerData
     support_times % vector of contact transition times
     supports % (array of) RigidBodySupportState object(s)
     allowable_supports % RigidBodySupportState containing all supports allowable during execution
+    contact_seq
   end
   
   methods 

@@ -38,7 +38,7 @@ elseif traj_params==3
   %traj_file = 'data/atlas_passiveankle_traj_lqr_090314_zoh.mat';
   options.terrain = RigidBodyFlatTerrain();
   modes = [8,6,4,4,2,8];
-  contact_seq = {[1;2], [2;3;4], [3;4], [3;4], [1;2;4], [1;2]};
+  contact_seq_full = {[1;2], [2;3;4], [3;4], [3;4], [1;2;4], [1;2]};
 elseif traj_params==4
 % options.ignore_effort_limits = true;
   s = '../urdf/atlas_planar_one_arm_noback.urdf';
@@ -97,7 +97,7 @@ options.left_foot_name = 'l_foot';
 
 
 modes = repmat(modes,1,repeat_n-1);
-contact_seq = repmat(contact_seq,1,repeat_n-1);
+contact_seq_full = repmat(contact_seq_full,1,repeat_n-1);
 lfoot_ind = findLinkId(r,options.left_foot_name);
 rfoot_ind = findLinkId(r,options.right_foot_name);  
 
@@ -187,6 +187,8 @@ ctrl_data = FullStateQPControllerData(true,struct(...
   'support_times',support_times,...
   'supports',supports,...
   'allowable_supports',allowable_supports));
+
+ctrl_data.contact_seq = contact_seq_full;
 
 % instantiate QP controller
 options.timestep = .001;
