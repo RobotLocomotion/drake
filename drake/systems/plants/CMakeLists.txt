@@ -22,8 +22,6 @@ add_subdirectory(collision)
 add_subdirectory(constraint)
 add_subdirectory(joints)
 
-add_subdirectory(viewer)
-
 if (MATLAB_FOUND)
   macro(add_rbm_mex)
     # todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
