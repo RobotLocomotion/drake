@@ -25,9 +25,10 @@ N = [7,5,5];
 % % N = [2,2,2,2,2];
 % % N = N+1;
 % % N = [7,3,3,3,7];
-duration = {[.2 1.3],[.01 .4], [.1 .5]};
+duration = {[.2 1],[.01 .4], [.1 1]};
 modes = {[1;2],[2;3;4], [3;4]};
 
+T_max = 1;
 
 
 x0 = [      0
@@ -50,7 +51,7 @@ x0 = [      0
    -1.9375
     2.5602
    -2.2319]; 
-to_options.lambda_bound = 20; %was 400
+% to_options.lambda_bound = 20; %was 400
 to_options.mode_options{1}.active_inds = [1;2;4];
 to_options.mode_options{2}.active_inds = [1;2;4;5;6];
 % to_options.mode_options{3} = struct();
@@ -60,8 +61,17 @@ to_options.mode_options{2}.active_inds = [1;2;4;5;6];
 % to_options.mode_options{3}.active_inds = [1;2;3;4;6];
 to_options.mode_options{3}.active_inds = [1;2;4];
 
+to_options.mode_options{1}.accel_cost = .0001;
+to_options.mode_options{2}.accel_cost = .0001;
+to_options.mode_options{3}.accel_cost = .0001;
+
 traj_opt = ConstrainedHybridTrajectoryOptimization(p,modes,N,duration,to_options);
 
+h_inds = [traj_opt.mode_opt{1}.h_inds + traj_opt.var_offset(1);...
+  traj_opt.mode_opt{2}.h_inds + traj_opt.var_offset(2);...
+  traj_opt.mode_opt{3}.h_inds + traj_opt.var_offset(3)];
+
+traj_opt = traj_opt.addConstraint(LinearConstraint(0,T_max,ones(1,numel(h_inds))),h_inds);
 
 % Add foot height constraint
 [~,normal,d,xA,xB,idxA,idxB,mu,n,D] = contactConstraints(p,x0(1:p.getNumPositions));
@@ -77,10 +87,10 @@ assert(isequal(idxB,ones(size(idxB))))
  
 fn1 = drakeFunction.kinematic.WorldPosition(p,idxA(3),p.T_2D_to_3D'*xA(:,3),2);
 fn2 = drakeFunction.kinematic.WorldPosition(p,idxA(4),p.T_2D_to_3D'*xA(:,4),2);
-traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.05,inf,p.getNumPositions, @fn1.eval, 1), floor(N(1)/2), 1:p.getNumPositions);
-traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.05,inf,p.getNumPositions, @fn2.eval, 1), floor(N(1)/2), 1:p.getNumPositions);
-traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.02,inf,p.getNumPositions, @fn1.eval, 1), floor(N(1)/2)-1, 1:p.getNumPositions);
-traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.02,inf,p.getNumPositions, @fn2.eval, 1), floor(N(1)/2)-1, 1:p.getNumPositions);
+traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.02,inf,p.getNumPositions, @fn1.eval, 1), floor(N(1)/2), 1:p.getNumPositions);
+traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.02,inf,p.getNumPositions, @fn2.eval, 1), floor(N(1)/2), 1:p.getNumPositions);
+% traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.01,inf,p.getNumPositions, @fn1.eval, 1), floor(N(1)/2)-1, 1:p.getNumPositions);
+% traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.01,inf,p.getNumPositions, @fn2.eval, 1), floor(N(1)/2)-1, 1:p.getNumPositions);
 
 
 for i=floor(N(1)/2)+1:N(1)-1,
@@ -89,7 +99,8 @@ for i=floor(N(1)/2)+1:N(1)-1,
 end
 
 fn3 = drakeFunction.kinematic.WorldPosition(p,idxA(2),p.T_2D_to_3D'*xA(:,2),2);
-for i=2:N(3)
+traj_opt = traj_opt.addModeStateConstraint(3,FunctionHandleConstraint(.01,inf,p.getNumPositions, @fn3.eval, 1), 2, 1:p.getNumPositions);
+for i=3:N(3)
 traj_opt = traj_opt.addModeStateConstraint(3,FunctionHandleConstraint(.02,inf,p.getNumPositions, @fn3.eval, 1), i, 1:p.getNumPositions);
 end
 
@@ -99,9 +110,9 @@ end
 
 l0 = [0;897.3515;0;179.1489];
 
-traj_opt = traj_opt.addModeStateConstraint(1,BoundingBoxConstraint(x0 - [0;1*ones(9,1);5*ones(10,1)],x0+[0;1*ones(9,1);5*ones(10,1)]),1);
+traj_opt = traj_opt.addModeStateConstraint(1,BoundingBoxConstraint(x0 - [0;1*ones(9,1);10*ones(10,1)],x0+[0;1*ones(9,1);10*ones(10,1)]),1);
 % traj_opt = traj_opt.addModeStateConstraint(1,BoundingBoxConstraint(x0 - [.01*ones(10,1);.1*ones(10,1)],x0+[.01*ones(10,1);.1*ones(10,1)]),1);
-traj_opt = traj_opt.addModeStateConstraint(length(N),BoundingBoxConstraint(.35,inf),N(end),1);
+traj_opt = traj_opt.addModeStateConstraint(length(N),BoundingBoxConstraint(.45,inf),N(end),1);
 
 t_init{1} = linspace(0,.4,N(1));
 traj_init.mode{1}.x = PPTrajectory(foh(t_init{1},repmat(x0,1,N(1))));
@@ -154,12 +165,12 @@ if nargin > 1
 end
 
 traj_opt = traj_opt.setSolverOptions('snopt','print','snopt.out');
-traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',100);
+traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',200);
 traj_opt = traj_opt.setSolverOptions('snopt','MinorIterationsLimit',50000);
 traj_opt = traj_opt.setSolverOptions('snopt','IterationsLimit',2000000);
 
 
-traj_opt = traj_opt.addModeRunningCost(1,@foot_height_fun);
+% traj_opt = traj_opt.addModeRunningCost(1,@foot_height_fun);
 % traj_opt = traj_opt.setCheckGrad(true);
 for i=1:length(N)
   traj_opt = traj_opt.addModeRunningCost(i,@running_cost_fun);
@@ -196,7 +207,16 @@ end
   function [f,df] = running_cost_fun(h,x,u)
     R = .1;
     f = h*u'*R*u;
-    df = [u'*R*u zeros(1,20) 2*h*u'*R];    
+    df = [u'*R*u zeros(1,20) 2*h*u'*R];
+    
+%     % cost of transport
+%     power = x(nq+1:end).*(p.B*u);
+%     mult = sign(power);
+%     f = h*R*sum(abs(power));
+%     dfdh = R*sum(abs(power));
+%     dfdv = h*R*(p.B*u)'.*mult';
+%     dfdu = h*R*(x(nq+1:end).*mult)'*p.B;
+%     df = [dfdh zeros(1,nq) dfdv dfdu];
   end
 
   function [f,df] = pelvis_motion_fun(h,x,u)
