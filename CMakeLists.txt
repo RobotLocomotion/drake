@@ -44,9 +44,11 @@ if (matlab)
 	option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"  ON)
 endif()
 
+option(WITH_SNOPT_PRECOMPILED "precompiled binaries only for snopt; the source requires a license (will be disabled if WITH_SNOPT=ON)"  ON)
 
 # OFF by default:
 option(WITH_SNOPT 		"nonlinear optimization solver; requires access to RobotLocomotion/snopt-pod")
+
 if (NOT WIN32) # many of these might work on win32 with little or no work... they just haven't been tried
 	option(WITH_SIGNALSCOPE	"live plotting tool for lcm messages")
 	option(WITH_IRIS		"fast approximate convex segmentation")
@@ -63,8 +65,6 @@ if (NOT WIN32) # many of these might work on win32 with little or no work... the
 	option(WITH_XFOIL		"use w/ AVL to compute aerodynamic coefficients for airfoils")
 	#  endif()
 	option(WITH_MESHCONVERTERS "uses vcglib to convert a few standard filetypes")
-	# todo: make this on by default once it's tested:
-	option(WITH_SNOPT_PRECOMPILED "precompiled binaries only for snopt; the source requires a license (will be disabled if WITH_SNOPT=ON)"  OFF)
 endif()
 
 
@@ -364,20 +364,20 @@ string(REPLACE ";" " " PROJECT_LIST "${PROJECT_LIST}")
 add_custom_target(list-project-dirs COMMAND echo "${PROJECT_LIST}")
 
 ## grab and install precompiled snopt
-if (NOT WIN32)  # just have to add the win libs to the zip to re-enable this support
-	# todo: look for snopt_c
-	if (snopt_c_FOUND OR WITH_SNOPT)
-		set(WITH_SNOPT_PRECOMPILED OFF)
-	endif()
-	if (WITH_SNOPT_PRECOMPILED)
-		message(STATUS "Preparing to install precompiled snopt")
-		ExternalProject_Add(download-snopt-precompiled
-				URL "http://drake002.csail.mit.edu/drake/drakeSnopt-2592a9e4e7666c6c3aafc49def9dc726f4942cea.tgz"  # todo: host this someplace better?
-				SOURCE_DIR "${CMAKE_BINARY_DIR}/snopt-precompiled"
-				CONFIGURE_COMMAND ""
-				BUILD_COMMAND cmake -E copy_directory ${CMAKE_BINARY_DIR}/snopt-precompiled/ ${PROJECT_SOURCE_DIR}/drake/solvers/
-				INSTALL_COMMAND "")
-		add_dependencies(download-all download-snopt-precompiled)
-		add_dependencies(drake download-snopt-precompiled) # just in case: make sure any compiled drake version happens after precompiled install
-	endif()
+
+# todo: look for snopt_c
+if (snopt_c_FOUND OR WITH_SNOPT)
+  set(WITH_SNOPT_PRECOMPILED OFF)
 endif()
+if (WITH_SNOPT_PRECOMPILED)
+  message(STATUS "Preparing to install precompiled snopt")
+  ExternalProject_Add(download-snopt-precompiled
+		URL "http://drake002.csail.mit.edu/drake/drakeSnopt.zip"
+		SOURCE_DIR "${CMAKE_BINARY_DIR}/snopt-precompiled"
+		CONFIGURE_COMMAND ""
+		BUILD_COMMAND cmake -E copy_directory ${CMAKE_BINARY_DIR}/snopt-precompiled/ ${PROJECT_SOURCE_DIR}/drake/solvers/
+		INSTALL_COMMAND "")
+  add_dependencies(download-all download-snopt-precompiled)
+  add_dependencies(drake download-snopt-precompiled) # just in case: make sure any compiled drake version happens after precompiled install
+endif()
+
