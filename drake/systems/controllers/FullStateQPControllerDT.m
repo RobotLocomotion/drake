@@ -165,13 +165,17 @@ classdef FullStateQPControllerDT < DrakeSystem
       to_options.non_penetration = false;
       to_options.collocation_friction_limits = false;
       to_options.constrain_start = false;
-      obj.constrained_trajopts{i} = ContactConstrainedDircolTrajectoryOptimization(r.getManipulator,2,[-inf inf],controller_data.contact_seq{i},to_options);      
+      hyb_to_options.mode_options = {to_options,to_options};
+      
+      mode_indices = repmat(controller_data.contact_seq{i},1,2);
+      obj.constrained_trajopts(i) = ConstrainedHybridTrajectoryOptimization(r.getManipulator,mode_indices,{2,1},{[-inf inf], [-inf inf]},hyb_to_options);      
+%       obj.constrained_trajopts(i) = ContactConstrainedDircolTrajectoryOptimization(r.getManipulator,2,[-inf inf],controller_data.contact_seq{i},to_options);      
     end
   end
     
   function y=output(obj,t,~,x)
     global utraj_pts utraj_ts
-    
+    nu = getNumInputs(r);
     if isempty(utraj_pts)
       utraj_pts = []; 
       utraj_ts = [];
@@ -182,13 +186,116 @@ classdef FullStateQPControllerDT < DrakeSystem
     nq = obj.numq; 
     q = x(1:nq); 
     qd = x(nq+(1:nq)); 
-    dim = 2; % 2D or 3D
 
     kinsol = doKinematics(r,q,true,true,qd);
     
     supp_idx = find(ctrl_data.support_times<=t,1,'last');
     next_supp_idx = min(supp_idx+1,length(ctrl_data.support_times));
-
+    
+    
+    if ctrl_data.B_is_time_varying
+      if isa(ctrl_data.B,'Trajectory')
+        B_ls = fasteval(ctrl_data.B,t);
+      else
+        B_ls = fasteval(ctrl_data.B{supp_idx},t);
+      end
+    else
+      B_ls = ctrl_data.B; 
+    end
+    R = ctrl_data.R;
+    if (ctrl_data.lqr_is_time_varying)
+      if isa(ctrl_data.S,'Trajectory')
+        S = fasteval(ctrl_data.S,t);
+      else
+        S = fasteval(ctrl_data.S{supp_idx},t);
+      end
+      if isa(ctrl_data.x0,'Trajectory')
+        x0 = fasteval(ctrl_data.x0,t);
+      else
+        x0 = fasteval(ctrl_data.x0{supp_idx},t);
+      end
+      if isa(ctrl_data.u0,'Trajectory')
+        u0 = fasteval(ctrl_data.u0,t);
+      else
+        u0 = fasteval(ctrl_data.u0{supp_idx},t);
+      end
+    else
+      S = ctrl_data.S;
+      x0 = ctrl_data.x0;
+      u0 = ctrl_data.u0;
+    end
+    q0 = x0(1:nq);
+    
+    %% New controller code here
+    h = obj.getSampleTime;
+    u_last = utraj_pts(:,end);
+    traj_opt = obj.constrained_trajopts(supp_idx);
+    x_guess = x; % maybe use nominal?
+    u_guess = u_last; % maybe use nominal?
+    z0 = zeros(traj_opt.num_vars,1);
+    z0(traj_opt.mode_opt{1}.h_inds) = h;
+    z0(traj_opt.mode_opt{1}.x_inds) = [x x_guess];
+    z0(traj_opt.mode_opt{1}.u_inds) = [u_last u_guess];
+    
+    % Possible things to try
+    % 1) Linearizae about x or xnom
+    % 2) Actually use FOH controller
+    % 3) Handle "late" contacts
+    %    a) Extract contact state
+    %    b) Zero forces for states not in contact
+    %    c) Impulse event
+    % 4) Handle "early" contacts
+    %    a) Allow an early switch to next-mode
+    
+    % Linearize Constraints
+    [~,~,G_in,G_eq] = traj_opt.nonlinearConstraints(z0);
+    A_in = [traj_opt.Ain;-G_in(~isinf(traj_opt.cin_lb),:);G_in(~isinf(traj_opt.cin_ub),:)];
+    b_in = [traj_opt.bin;-traj_opt.cin_lb(~isinf(obj.cin_lb));traj_opt.cin_ub(~isinf(obj.cin_ub))];
+    A_eq = [traj_opt.Aeq;Geq];
+    b_eq = [traj_opt.beq;zeros(size(Geq,1),1)];
+    
+    % Cost
+    % (x-x0)^T*S*(x-x0) + h*(u-u0)^T*R*(u-u0)
+    x_ind = traj_opt.mode_opt{1}.x_inds(:,2);
+    u_ind = traj_opt.mode_opt{1}.u_inds(:,2);
+    H = zeros(traj_opt.num_vars);
+    H(x_ind,x_ind) = S;
+    H(u_ind,u_ind) = h*R;
+    
+    f = zeros(traj_opt.num_vars,1);
+    f(x_ind) = -2*S*x0;
+    f(u_ind) = -2*R*u0;
+    
+    lb = traj_opt.x_lb;
+    ub = traj_opt.x_ub;
+    
+    lb(traj_opt.mode_opt{1}.x_inds(:,1)) = x;
+    ub(traj_opt.mode_opt{1}.x_inds(:,1)) = x;
+    u_option = 1;
+    if u_option == 1,
+      % Assume u0 fixed, solve for u1      
+      lb(traj_opt.mode_opt{1}.u_inds(:,1)) = u_last;
+      ub(traj_opt.mode_opt{1}.u_inds(:,1)) = u_last;
+    else
+      % Assume u0 = u1
+      A_sub = zeros(nu,traj_opt.num_vars);
+      A_sub(:,traj_opt.mode_opt{1}.u_inds(:,1)) = eye(nu);
+      A_sub(:,traj_opt.mode_opt{1}.u_inds(:,2)) = -eye(nu);
+      A_eq = [A_eq;A_sub];
+      b_eq = [b_eq;zeros(nu,1)];
+    end
+    
+    %TODO: eliminate unnecessary variables. Fixed, or absent in gradient
+    
+    [z,fval,exitflag] = quadprog(H,f,A_in,b_in,A_eq,b_eq,lb,ub,z0);
+    
+    if exitflag ~= 1
+      keyboard
+    end
+    
+    y = z(u_ind);
+    return
+    %% OLD CODE IS BELOW HERE
     test_next_support = false;
     if next_supp_idx > supp_idx && ctrl_data.support_times(next_supp_idx)-t < 0.025
       test_next_support = true;

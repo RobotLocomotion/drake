@@ -9,10 +9,10 @@ if nargin < 2
   segment_number = -1; % do full traj
 end
 
-if ~checkDependency('gurobi')
-  warning('Must have gurobi installed to run this example');
-  return;
-end
+% if ~checkDependency('gurobi')
+%   warning('Must have gurobi installed to run this example');
+%   return;
+% end
 
 path_handle = addpathTemporary(fullfile(getDrakePath,'examples','Atlasv4'));
 
@@ -202,7 +202,8 @@ options.w_grf = 0;
 options.Kp_accel = 0;
 options.contact_threshold = 5e-4; %was 1e-4
 options.offset_x = true;
-qp = FullStateQPController(r,ctrl_data,options);
+% qp = FullStateQPController(r,ctrl_data,options);
+qp = FullStateQPControllerDT(r,ctrl_data,options);
 
 % feedback QP controller with Atlas
 sys = feedback(r,qp);
