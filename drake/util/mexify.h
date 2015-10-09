@@ -71,7 +71,7 @@ void mexCallFunction(std::function<R(Arg0, Args...)> func, int nlhs, mxArray *pl
   if (nrhs != expected_num_args) {
     std::ostringstream buf;
     buf << "Expected " << expected_num_args << " arguments, but got " << nrhs << ".";
-    mexErrMsgTxt(buf.str().c_str());
+    throw MexCallFunctionError(buf.str());
   }
 
   // bind the first argument
@@ -102,6 +102,7 @@ void mexCallFunction(std::function<R(Arg0, Args...)> func, int nlhs, mxArray *pl
 class MexTryToCallFunctionError : public std::exception {
 private:
   std::vector<MexCallFunctionError> errors;
+  mutable std::string message;
 
 public:
   MexTryToCallFunctionError() : std::exception() { };
@@ -114,11 +115,13 @@ public:
   virtual const char* what() const noexcept
   {
     std::ostringstream buf;
-    buf << "No suitable function to call after trying " << errors.size() << " functions. Errors:";
+    std::string functions = errors.size() == 1 ? "function" : "functions";
+    buf << "No suitable function to call after trying " << errors.size() << " " << functions << ". Errors:";
     for (auto it = errors.rbegin(); it != errors.rend(); ++it) {
       buf << std::endl << it->what();
     }
-    return buf.str().c_str();
+    message = buf.str();
+    return message.c_str();
   }
 };
 
