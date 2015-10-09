@@ -1,0 +1,55 @@
+<robot
+  name="Planar_CBSE_Window">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="-0.00002987 0 0.00036917"
+        rpy="0 0 0" />
+      <mass
+        value="0.119560590194123" />
+      <inertia
+        ixx=" 0.00018004"
+        ixy="-0.00000005"
+        ixz="-0.00000110"
+        iyy="0.00035326"
+        iyz="0.00000079"
+        izz="0.00018004" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size = "0.1 0 0.1"/>
+      </geometry>
+      <material
+        name="">
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0.05 0 0.05"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="-0.05 0 0.05"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0.05 0 -0.05"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="-0.05 0 -0.05"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+  </link>
+</robot>
