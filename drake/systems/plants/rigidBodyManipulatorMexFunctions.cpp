@@ -39,6 +39,17 @@ KinematicsCache<Scalar> &fromMex(const mxArray *mex, KinematicsCache<Scalar> *) 
 /**
  * toMex specializations
  */
+
+/*
+ * note: leaving Options, MaxRows, and MaxCols out as template parameters (leaving them to their defaults)
+ * results in an internal compiler error on MSVC. See https://connect.microsoft.com/VisualStudio/feedback/details/1847159
+ */
+template <typename Scalar, int Rows, int Cols, int Options, int MaxRows, int MaxCols>
+void toMex(const Matrix<Scalar, Rows, Cols, Options, MaxRows, MaxCols> &source, mxArray *dest[], int nlhs) {
+  if (nlhs > 0)
+    dest[0] = eigenToMatlabGeneral(source);
+};
+
 template<typename Scalar, int Rows, int Cols>
 void toMex(const GradientVar<Scalar, Rows, Cols> &source, mxArray *dest[], int nlhs, bool top_level = true) {
   if (top_level) {
@@ -52,23 +63,13 @@ void toMex(const GradientVar<Scalar, Rows, Cols> &source, mxArray *dest[], int n
 
   if (nlhs != 0) {
     // set an output argument
-    dest[0] = eigenToMatlab(source.value());
+    toMex(source.value(), dest, nlhs);
 
     // recurse
     if (source.hasGradient()) {
       toMex(source.gradient(), &dest[1], nlhs - 1, false);
     }
   }
-};
-
-/*
- * note: leaving Options, MaxRows, and MaxCols out as template parameters (leaving them to their defaults)
- * results in an internal compiler error on MSVC. See https://connect.microsoft.com/VisualStudio/feedback/details/1847159
- */
-template <int Rows, int Cols, int Options, int MaxRows, int MaxCols> 
-void toMex(const Matrix<double, Rows, Cols, Options, MaxRows, MaxCols> &source, mxArray *dest[], int nlhs) {
-  if (nlhs > 0)
-    dest[0] = eigenToMatlab(source);
 };
 
 template<>
