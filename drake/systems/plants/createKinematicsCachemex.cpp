@@ -1,5 +1,6 @@
 #include "drakeMexUtil.h"
 #include "RigidBodyManipulator.h"
+#include <typeinfo>
 
 using namespace Eigen;
 using namespace std;
@@ -19,7 +20,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     RigidBodyManipulator *model = static_cast<RigidBodyManipulator*>(getDrakeMexPointer(prhs[0]));
     bool include_gradients = mxIsLogicalScalarTrue(prhs[1]);
     KinematicsCache<double>* cache = new KinematicsCache<double>(model->bodies, include_gradients ? 1 : 0);
-    plhs[0] = createDrakeMexPointer((void*)cache, "KinematicsCache<double>");
+    plhs[0] = createDrakeMexPointer((void*)cache, typeid(KinematicsCache<double>).name());
   }
   else
     mexErrMsgTxt("couldn't parse input");

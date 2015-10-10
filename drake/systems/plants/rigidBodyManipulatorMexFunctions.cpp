@@ -1,5 +1,6 @@
 #include "rigidBodyManipulatorMexFunctions.h"
 #include "RigidBodyManipulator.h"
+#include <typeinfo>
 
 using namespace std;
 using namespace Eigen;
@@ -27,12 +28,32 @@ std::set<int> fromMex(const mxArray *source, std::set<int> *) {
  * results in an internal compiler error on MSVC. See https://connect.microsoft.com/VisualStudio/feedback/details/1847159
  */
 template <int Rows, int Cols, int Options, int MaxRows, int MaxCols>
-Map<const Matrix<double, Rows, Cols>> fromMex(const mxArray *mex, MatrixBase<Map<const Matrix<double, Rows, Cols, Options, MaxRows, MaxCols>>> *) {
+Map<const Matrix<double, Rows, Cols, Options, MaxRows, MaxCols>> fromMex(const mxArray *mex, MatrixBase<Map<const Matrix<double, Rows, Cols, Options, MaxRows, MaxCols>>> *) {
+  if (!mxIsNumeric(mex)) {
+    throw MexToCppConversionError("Expected a numeric array");
+  }
   return matlabToEigenMap<Rows, Cols>(mex);
+}
+
+template <typename DerType, int Rows, int Cols, int Options, int MaxRows, int MaxCols>
+Matrix<AutoDiffScalar<DerType>, Rows, Cols, Options, MaxRows, MaxCols> fromMex(const mxArray *mex, MatrixBase<Matrix<AutoDiffScalar<DerType>, Rows, Cols, Options, MaxRows, MaxCols>> *) {
+  if (!mxIsClass(mex, "TaylorVar"))
+    throw MexToCppConversionError("Expected an array of TaylorVar");
+
+  return taylorVarToEigen<Rows, Cols>(mex);
 }
 
 template<typename Scalar>
 KinematicsCache<Scalar> &fromMex(const mxArray *mex, KinematicsCache<Scalar> *) {
+  if (!mxIsClass(mex, "DrakeMexPointer")) {
+    throw MexToCppConversionError("Expected DrakeMexPointer containing KinematicsCache");
+  }
+  auto name = mxGetStdString(mxGetPropertySafe(mex, "name"));
+  if (name != typeid(KinematicsCache<Scalar>).name()) {
+    ostringstream buf;
+    buf << "Expected KinematicsCache of type " << typeid(KinematicsCache<Scalar>).name() << ", but got " << name;
+    throw MexToCppConversionError(buf.str());
+  }
   return *static_cast<KinematicsCache<Scalar> *>(getDrakeMexPointer(mex));
 }
 
@@ -72,7 +93,6 @@ void toMex(const GradientVar<Scalar, Rows, Cols> &source, mxArray *dest[], int n
   }
 };
 
-template<>
 void toMex(const KinematicPath &path, mxArray *dest[], int nlhs) {
   if (nlhs > 0) {
     dest[0] = stdVectorToMatlab(path.body_path);
@@ -122,20 +142,21 @@ void centroidalMomentumMatrixmex(int nlhs, mxArray *plhs[], int nrhs, const mxAr
   mexCallFunction(func, nlhs, plhs, nrhs, prhs);
 }
 
-void doKinematicsmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+template <typename DerivedQ, typename DerivedV>
+void doKinematicsTemp(const RigidBodyManipulator &model, KinematicsCache<typename DerivedQ::Scalar> &cache, const MatrixBase<DerivedQ> &q, const MatrixBase<DerivedV> &v, bool compute_JdotV) {
   // temporary solution. Explicit doKinematics calls will not be necessary in the near future.
-  typedef Map<const VectorXd> DerivedQ;
-  typedef Map<const VectorXd> DerivedV;
-  typedef DerivedQ::Scalar Scalar;
-  auto lambda = [](const RigidBodyManipulator &model, KinematicsCache<Scalar> &cache, const MatrixBase<DerivedQ> &q, const MatrixBase<DerivedV> &v, bool compute_JdotV) {
-    if (v.size() == 0 && model.num_velocities != 0)
-      cache.initialize(q);
-    else
-      cache.initialize(q, v);
-    model.doKinematics(cache, compute_JdotV);
-  };
-  function<void(const RigidBodyManipulator &, KinematicsCache<Scalar> &, const MatrixBase<DerivedQ> &, const MatrixBase<DerivedV> &, bool)> func{lambda};
-  mexCallFunction(func, nlhs, plhs, nrhs, prhs);
+  if (v.size() == 0 && model.num_velocities != 0)
+    cache.initialize(q);
+  else
+    cache.initialize(q, v);
+  model.doKinematics(cache, compute_JdotV);
+}
+
+void doKinematicsmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+  function<void(const RigidBodyManipulator &, KinematicsCache<double> &, const MatrixBase<Map<const VectorXd>> &, const MatrixBase<Map<const VectorXd>> &, bool)> func_double = &doKinematicsTemp<Map<const VectorXd>, Map<const VectorXd>>;
+  typedef Matrix<AutoDiffScalar<VectorXd>, Dynamic, 1> AutoDiffVector;
+  function<void(const RigidBodyManipulator &, KinematicsCache<typename AutoDiffVector::Scalar> &, const MatrixBase<AutoDiffVector> &, const MatrixBase<AutoDiffVector> &, bool)> func_autodiff = &doKinematicsTemp<AutoDiffVector, AutoDiffVector>;
+  mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, func_double, func_autodiff);
 }
 
 void findKinematicPathmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
@@ -193,9 +214,9 @@ void geometricJacobianmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *pr
 }
 
 void massMatrixmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
-  typedef double Scalar;
-  function<GradientVar<Scalar, Dynamic, Dynamic>(const RigidBodyManipulator &, KinematicsCache<Scalar> &, int)> func = mem_fn(&RigidBodyManipulator::massMatrix<Scalar>);
-  mexCallFunction(func, nlhs, plhs, nrhs, prhs);
+  function<GradientVar<double, Dynamic, Dynamic>(const RigidBodyManipulator &, KinematicsCache<double> &, int)> func_double = mem_fn(&RigidBodyManipulator::massMatrix<double>);
+  function<GradientVar<AutoDiffScalar<VectorXd>, Dynamic, Dynamic>(const RigidBodyManipulator &, KinematicsCache<AutoDiffScalar<VectorXd>> &, int)> func_autodiff = mem_fn(&RigidBodyManipulator::massMatrix<AutoDiffScalar<VectorXd>>);
+  mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, func_double, func_autodiff);
 }
 
 void dynamicsBiasTermmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {

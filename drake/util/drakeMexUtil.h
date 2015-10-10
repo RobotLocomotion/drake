@@ -245,6 +245,9 @@ mxArray* eigenToTrigPoly(const Eigen::Matrix<TrigPolyd,_Rows,_Cols> & trigpoly_m
 
 template<int Rows, int Cols>
 Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>, Rows, Cols> taylorVarToEigen(const mxArray* taylor_var) {
+  if (mxIsEmpty(taylor_var)) {
+    return Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>, Rows, Cols>(mxGetM(taylor_var), mxGetN(taylor_var));
+  }
   auto f = mxGetPropertySafe(taylor_var, "f");
   auto df = mxGetPropertySafe(taylor_var, "df");
   if (mxGetNumberOfElements(df) > 1)

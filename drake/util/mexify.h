@@ -19,8 +19,13 @@ public:
 };
 
 /**
- * fromMex
+ * fromMex functions should be of the form
+ * ReturnType fromMex(const mxArray* source, ArgumentType*)
+ *
+ * toMex functions should be of the form
+ * void toMex(const SourceType& source, mxArray* dest[], int nlhs)
  */
+
 int fromMex(const mxArray* source, int*) {
   if (mxGetM(source) != 1 || mxGetN(source) != 1)
     throw MexToCppConversionError("Expected scalar.");
@@ -32,12 +37,6 @@ bool fromMex(const mxArray* source, bool*) {
     throw MexToCppConversionError("Expected logical.");
   return mxGetLogicals(source)[0];
 }
-
-/**
- * toMex
- */
-template <typename T>
-void toMex(const T& source, mxArray* dest[], int nlhs);
 
 /**
  * mexCallFunction

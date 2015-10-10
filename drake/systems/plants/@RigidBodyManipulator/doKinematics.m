@@ -89,7 +89,7 @@ end
 kinsol.q = q;
 kinsol.v = v;
 
-if (options.use_mex && model.mex_model_ptr~=0 && isnumeric(q))
+if (options.use_mex && model.mex_model_ptr~=0)
   if isempty(options.kinematics_cache_ptr_to_use)
     if options.compute_gradients
       kinsol.mex_ptr = model.default_kinematics_cache_ptr_with_gradients;
