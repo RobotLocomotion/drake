@@ -62,7 +62,7 @@ template <typename Scalar>
 class KinematicsCache
 {
 private:
-  std::unordered_map<RigidBody const *, KinematicsCacheElement<Scalar>> elements;
+  std::unordered_map<RigidBody const *, KinematicsCacheElement<Scalar>, std::hash<RigidBody const *>, std::equal_to<RigidBody const *>, Eigen::aligned_allocator<std::pair<RigidBody const*, KinematicsCacheElement<Scalar> > > > elements;
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> q;
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> v;
   bool velocity_vector_valid;
