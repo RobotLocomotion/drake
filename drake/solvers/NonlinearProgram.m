@@ -58,7 +58,7 @@ classdef NonlinearProgram
     
   end
   
-  properties (Access=private)
+  properties (Access=public)
     nlcon_xind_stacked % a cell array of vectors, the stacked values of nlcon_xind{i}
     cost_xind_stacked % A cell array, cost_xind{i} is an int vector recording the indices of x that is used in evaluating obj.cost{i}
     nlcon_ineq_idx % row index of nonlinear inequality constraint in the value [obj.nlcon{i}.eval for i = 1:length(obj.nlcon)]

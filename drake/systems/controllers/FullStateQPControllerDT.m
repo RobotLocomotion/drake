@@ -167,15 +167,20 @@ classdef FullStateQPControllerDT < DrakeSystem
       to_options.constrain_start = false;
       hyb_to_options.mode_options = {to_options,to_options};
       
-      mode_indices = repmat(controller_data.contact_seq{i},1,2);
-      obj.constrained_trajopts(i) = ConstrainedHybridTrajectoryOptimization(r.getManipulator,mode_indices,{2,1},{[-inf inf], [-inf inf]},hyb_to_options);      
+      mode_indices = {controller_data.contact_seq{i},controller_data.contact_seq{i}};
+      obj.constrained_trajopts{i} = ConstrainedHybridTrajectoryOptimization(r.getManipulator,mode_indices,[2 1],{[-inf inf], [-inf inf]},hyb_to_options);      
+      
+      obj.constrained_trajopts{i}.mode_opt{2} = obj.constrained_trajopts{i}.mode_opt{2}.deleteNonlinearConstraint(obj.constrained_trajopts{i}.mode_opt{2}.nlcon_id(1));
+      obj.constrained_trajopts{i}.mode_opt{2} = obj.constrained_trajopts{i}.mode_opt{2}.deleteNonlinearConstraint(obj.constrained_trajopts{i}.mode_opt{2}.nlcon_id(1));
+      
+      obj.constrained_trajopts{i} = obj.constrained_trajopts{i}.compile();
 %       obj.constrained_trajopts(i) = ContactConstrainedDircolTrajectoryOptimization(r.getManipulator,2,[-inf inf],controller_data.contact_seq{i},to_options);      
     end
   end
     
   function y=output(obj,t,~,x)
     global utraj_pts utraj_ts
-    nu = getNumInputs(r);
+    
     if isempty(utraj_pts)
       utraj_pts = []; 
       utraj_ts = [];
@@ -186,8 +191,9 @@ classdef FullStateQPControllerDT < DrakeSystem
     nq = obj.numq; 
     q = x(1:nq); 
     qd = x(nq+(1:nq)); 
-
-    kinsol = doKinematics(r,q,true,true,qd);
+    nu = getNumInputs(r);
+    
+%     kinsol = doKinematics(r,q,true,true,qd);
     
     supp_idx = find(ctrl_data.support_times<=t,1,'last');
     next_supp_idx = min(supp_idx+1,length(ctrl_data.support_times));
@@ -228,9 +234,18 @@ classdef FullStateQPControllerDT < DrakeSystem
     
     %% New controller code here
     h = obj.getSampleTime;
-    u_last = utraj_pts(:,end);
-    traj_opt = obj.constrained_trajopts(supp_idx);
-    x_guess = x; % maybe use nominal?
+    h = h(1);
+    u_last = u0; %utraj_pts(:,end);
+    traj_opt = obj.constrained_trajopts{supp_idx};
+    
+%     traj_opt2 = traj_opt;
+%     traj_opt = traj_opt.deleteConstraint(traj_opt.nlcon_id(1));
+%     traj_opt = traj_opt.deleteConstraint(traj_opt.nlcon_id(4));
+%     traj_opt = traj_opt.deleteConstraint(traj_opt.nlcon_id(2));
+%     traj_opt = traj_opt.deleteConstraint(traj_opt.nlcon_id(2));
+    
+    
+    x_guess = x0; % maybe use nominal?
     u_guess = u_last; % maybe use nominal?
     z0 = zeros(traj_opt.num_vars,1);
     z0(traj_opt.mode_opt{1}.h_inds) = h;
@@ -248,11 +263,13 @@ classdef FullStateQPControllerDT < DrakeSystem
     %    a) Allow an early switch to next-mode
     
     % Linearize Constraints
-    [~,~,G_in,G_eq] = traj_opt.nonlinearConstraints(z0);
+    [f_in,f_eq,G_in,G_eq] = traj_opt.nonlinearConstraints(z0);
     A_in = [traj_opt.Ain;-G_in(~isinf(traj_opt.cin_lb),:);G_in(~isinf(traj_opt.cin_ub),:)];
-    b_in = [traj_opt.bin;-traj_opt.cin_lb(~isinf(obj.cin_lb));traj_opt.cin_ub(~isinf(obj.cin_ub))];
-    A_eq = [traj_opt.Aeq;Geq];
-    b_eq = [traj_opt.beq;zeros(size(Geq,1),1)];
+    b_in = [traj_opt.bin;...
+      f_in - G_in*z0 - traj_opt.cin_lb(~isinf(traj_opt.cin_lb));...
+      -f_in + G_in*z0 + traj_opt.cin_ub(~isinf(traj_opt.cin_ub))];
+    A_eq = [traj_opt.Aeq;G_eq];
+    b_eq = [traj_opt.beq;G_eq*z0 - f_eq];
     
     % Cost
     % (x-x0)^T*S*(x-x0) + h*(u-u0)^T*R*(u-u0)
@@ -263,20 +280,20 @@ classdef FullStateQPControllerDT < DrakeSystem
     H(u_ind,u_ind) = h*R;
     
     f = zeros(traj_opt.num_vars,1);
-    f(x_ind) = -2*S*x0;
-    f(u_ind) = -2*R*u0;
+    f(x_ind) = -S*x0;
+    f(u_ind) = -h*R*u0;
     
     lb = traj_opt.x_lb;
     ub = traj_opt.x_ub;
     
     lb(traj_opt.mode_opt{1}.x_inds(:,1)) = x;
     ub(traj_opt.mode_opt{1}.x_inds(:,1)) = x;
-    u_option = 1;
+    u_option = 2;
     if u_option == 1,
       % Assume u0 fixed, solve for u1      
       lb(traj_opt.mode_opt{1}.u_inds(:,1)) = u_last;
       ub(traj_opt.mode_opt{1}.u_inds(:,1)) = u_last;
-    else
+    elseif u_option == 2,
       % Assume u0 = u1
       A_sub = zeros(nu,traj_opt.num_vars);
       A_sub(:,traj_opt.mode_opt{1}.u_inds(:,1)) = eye(nu);
@@ -286,10 +303,18 @@ classdef FullStateQPControllerDT < DrakeSystem
     end
     
     %TODO: eliminate unnecessary variables. Fixed, or absent in gradient
+    H = (H+H')/2 + 1e-12*eye(traj_opt.num_vars);
+    [z,fval,exitflag] = quadprog(H,f,A_in,b_in,A_eq,b_eq,lb,ub,z0,struct('Display','off'));
     
-    [z,fval,exitflag] = quadprog(H,f,A_in,b_in,A_eq,b_eq,lb,ub,z0);
+    res = mskqpopt(H,f,[A_in;A_eq],[-inf(size(b_in));b_eq],[b_in;b_eq],lb,ub);
+    %%
+    display(sprintf('t: %.3f S: %3.3e',t,(x-x0)'*S*(x-x0)));
     
-    if exitflag ~= 1
+    if t > .009
+%       keyboard
+    end
+    
+    if exitflag ~= 1 && exitflag ~= 0
       keyboard
     end
     

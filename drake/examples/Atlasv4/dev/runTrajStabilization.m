@@ -34,7 +34,7 @@ elseif traj_params==2
   modes = [8,3,4,4,1]; % step
 elseif traj_params==3
   s = '../urdf/atlas_simple_spring_ankle_planar_contact.urdf';
-  traj_file = 'data/atlas_alt3mode_K10B2_passive_traj_update_lqr.mat';
+    traj_file = 'data/atlas_alt3mode_K10B2_passive_traj_update_lqr.mat';
   %traj_file = 'data/atlas_passiveankle_traj_lqr_090314_zoh.mat';
   options.terrain = RigidBodyFlatTerrain();
   modes = [8,6,4,4,2,8];
