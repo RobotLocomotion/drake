@@ -1,5 +1,6 @@
 #include "rigidBodyManipulatorMexFunctions.h"
 #include "RigidBodyManipulator.h"
+#include "standardMexConversions.h"
 #include <typeinfo>
 
 using namespace std;
@@ -23,26 +24,6 @@ std::set<int> fromMex(const mxArray *source, std::set<int> *) {
   return robotnum_set;
 }
 
-/*
- * note: leaving Options, MaxRows, and MaxCols out as template parameters (leaving them to their defaults)
- * results in an internal compiler error on MSVC. See https://connect.microsoft.com/VisualStudio/feedback/details/1847159
- */
-template <int Rows, int Cols, int Options, int MaxRows, int MaxCols>
-Map<const Matrix<double, Rows, Cols, Options, MaxRows, MaxCols>> fromMex(const mxArray *mex, MatrixBase<Map<const Matrix<double, Rows, Cols, Options, MaxRows, MaxCols>>> *) {
-  if (!mxIsNumeric(mex)) {
-    throw MexToCppConversionError("Expected a numeric array");
-  }
-  return matlabToEigenMap<Rows, Cols>(mex);
-}
-
-template <typename DerType, int Rows, int Cols, int Options, int MaxRows, int MaxCols>
-Matrix<AutoDiffScalar<DerType>, Rows, Cols, Options, MaxRows, MaxCols> fromMex(const mxArray *mex, MatrixBase<Matrix<AutoDiffScalar<DerType>, Rows, Cols, Options, MaxRows, MaxCols>> *) {
-  if (!mxIsClass(mex, "TaylorVar"))
-    throw MexToCppConversionError("Expected an array of TaylorVar");
-
-  return taylorVarToEigen<Rows, Cols>(mex);
-}
-
 template<typename Scalar>
 KinematicsCache<Scalar> &fromMex(const mxArray *mex, KinematicsCache<Scalar> *) {
   if (!mxIsClass(mex, "DrakeMexPointer")) {
@@ -60,39 +41,6 @@ KinematicsCache<Scalar> &fromMex(const mxArray *mex, KinematicsCache<Scalar> *) 
 /**
  * toMex specializations
  */
-
-/*
- * note: leaving Options, MaxRows, and MaxCols out as template parameters (leaving them to their defaults)
- * results in an internal compiler error on MSVC. See https://connect.microsoft.com/VisualStudio/feedback/details/1847159
- */
-template <typename Scalar, int Rows, int Cols, int Options, int MaxRows, int MaxCols>
-void toMex(const Matrix<Scalar, Rows, Cols, Options, MaxRows, MaxCols> &source, mxArray *dest[], int nlhs) {
-  if (nlhs > 0)
-    dest[0] = eigenToMatlabGeneral(source);
-};
-
-template<typename Scalar, int Rows, int Cols>
-void toMex(const GradientVar<Scalar, Rows, Cols> &source, mxArray *dest[], int nlhs, bool top_level = true) {
-  if (top_level) {
-    // check number of output arguments
-    if (nlhs > source.maxOrder() + 1) {
-      std::ostringstream buf;
-      buf << nlhs << " output arguments desired, which is more than the maximum number: " << source.maxOrder() + 1 << ".";
-      mexErrMsgTxt(buf.str().c_str());
-    }
-  }
-
-  if (nlhs != 0) {
-    // set an output argument
-    toMex(source.value(), dest, nlhs);
-
-    // recurse
-    if (source.hasGradient()) {
-      toMex(source.gradient(), &dest[1], nlhs - 1, false);
-    }
-  }
-};
-
 void toMex(const KinematicPath &path, mxArray *dest[], int nlhs) {
   if (nlhs > 0) {
     dest[0] = stdVectorToMatlab(path.body_path);

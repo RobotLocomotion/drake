@@ -5,6 +5,8 @@
 #include <vector>
 #include <Eigen/Core>
 #include "TrigPoly.h"
+#include "unsupported/Eigen/AutoDiff"
+
 /*
  * NOTE: include AutoDiff AFTER TrigPoly.h. 
  * TrigPoly.h includes LLDT.h via Eigenvalues, PolynomialSolver, and our Polynomial.h
