@@ -650,7 +650,8 @@ template<typename Derived>
 GradientVar<typename Derived::Scalar, Eigen::Dynamic, SPACE_DIMENSION> angularvel2RepresentationDotMatrix(
     int rotation_type, const Eigen::MatrixBase<Derived>& qrot, int gradient_order) {
   // note: gradients w.r.t. qrot
-  GradientVar<typename Derived::Scalar, Eigen::Dynamic, SPACE_DIMENSION> ret(qrot.rows(), SPACE_DIMENSION, qrot.rows(), gradient_order);
+  typedef typename Derived::Scalar Scalar;
+  GradientVar<Scalar, Eigen::Dynamic, SPACE_DIMENSION> ret(qrot.rows(), SPACE_DIMENSION, qrot.rows(), gradient_order);
   switch (rotation_type) {
     case 0:
       // done
@@ -660,10 +661,10 @@ GradientVar<typename Derived::Scalar, Eigen::Dynamic, SPACE_DIMENSION> angularve
         angularvel2rpydotMatrix(qrot, ret.value(), &ret.gradient().value(), &ret.gradient().gradient().value());
       }
       else if (gradient_order > 0) {
-        angularvel2rpydotMatrix(qrot, ret.value(), &ret.gradient().value(), (Eigen::MatrixXd*) nullptr);
+        angularvel2rpydotMatrix(qrot, ret.value(), &ret.gradient().value(), (Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>*) nullptr);
       }
       else {
-        angularvel2rpydotMatrix(qrot, ret.value(), (Eigen::MatrixXd*) nullptr, (Eigen::MatrixXd*) nullptr);
+        angularvel2rpydotMatrix(qrot, ret.value(), (Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>*) nullptr, (Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>*) nullptr);
       }
       break;
     }
@@ -675,7 +676,7 @@ GradientVar<typename Derived::Scalar, Eigen::Dynamic, SPACE_DIMENSION> angularve
         angularvel2quatdotMatrix(qrot, ret.value(), &ret.gradient().value());
       }
       else {
-        angularvel2quatdotMatrix(qrot, ret.value(), (Eigen::MatrixXd*) nullptr);
+        angularvel2quatdotMatrix(qrot, ret.value(), (Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>*) nullptr);
       }
       break;
     }
