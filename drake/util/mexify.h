@@ -146,6 +146,9 @@ void mexTryToCallFunctions(int nlhs, mxArray *plhs[], int nrhs, const mxArray *p
 {
   try {
     mexCallFunction(function0, nlhs, plhs, nrhs, prhs);
+
+    // Debug:
+    // std::cout << "mexTryToCallFunctions called function:\n" << typeid(function0).name() << std::endl;
   }
   catch (MexCallFunctionError& e) {
     MexTryToCallFunctionError options_exhausted_error;
