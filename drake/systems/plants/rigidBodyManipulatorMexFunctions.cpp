@@ -224,7 +224,7 @@ GradientVar<Scalar, Eigen::Dynamic, 1>  dynamicsBiasTermTemp(const RigidBodyMani
 
 void dynamicsBiasTermmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   function<GradientVar<double, Eigen::Dynamic, 1>(const RigidBodyManipulator &, KinematicsCache<double> &, const MatrixBase<Map<const Matrix<double, 6, Dynamic> > > &, const MatrixBase<Map<const Matrix<double, Dynamic, Dynamic> > >&, int)> func_double = &dynamicsBiasTermTemp<double, Map<const Matrix<double, 6, Dynamic> >, Map<const Matrix<double, Dynamic, Dynamic> > >;
-//  function<GradientVar<AutoDiffDynamicSize, Eigen::Dynamic, 1>(const RigidBodyManipulator &, KinematicsCache<AutoDiffDynamicSize> &, const MatrixBase<Matrix<AutoDiffDynamicSize, 6, Dynamic>> &, const MatrixBase<Matrix<AutoDiffDynamicSize, Dynamic, Dynamic>> &, int)> func_autodiff_dynamic = &dynamicsBiasTermTemp<AutoDiffDynamicSize, Matrix<AutoDiffDynamicSize, 6, Dynamic>, Matrix<AutoDiffDynamicSize, Dynamic, Dynamic> >;
+  function<GradientVar<AutoDiffDynamicSize, Eigen::Dynamic, 1>(const RigidBodyManipulator &, KinematicsCache<AutoDiffDynamicSize> &, const MatrixBase<Matrix<AutoDiffDynamicSize, 6, Dynamic>> &, const MatrixBase<Matrix<AutoDiffDynamicSize, Dynamic, Dynamic>> &, int)> func_autodiff_dynamic = &dynamicsBiasTermTemp<AutoDiffDynamicSize, Matrix<AutoDiffDynamicSize, 6, Dynamic>, Matrix<AutoDiffDynamicSize, Dynamic, Dynamic> >;
 
-//  mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, func_double, func_autodiff_dynamic);
+  mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, func_double, func_autodiff_dynamic);
 }
