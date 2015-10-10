@@ -745,7 +745,7 @@ Eigen::Matrix<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(Kin
     if (isBodyPartOfRobot(body, robotnum))
     {
       if (body.mass > 0) {
-        auto body_com = forwardKin(cache, body.com, i, 0, 0);
+        auto body_com = forwardKin(cache, body.com.cast<Scalar>(), i, 0, 0);
         com.noalias() += body.mass * body_com;
       }
       m += body.mass;
@@ -1122,7 +1122,7 @@ GradientVar<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::transformSpatialAcceler
   auto T_old_to_new = relativeTransform(cache, new_expressed_in_body_or_frame_ind, old_expressed_in_body_or_frame_ind, gradient_order);
   auto T_old_to_new_isometry = Transform<Scalar, SPACE_DIMENSION, Isometry>(T_old_to_new.value());
 
-  Matrix<double, TWIST_SIZE, 1> spatial_accel_temp = crossSpatialMotion(twist_of_old_wrt_new.value(), twist_of_body_wrt_base.value());
+  Matrix<Scalar, TWIST_SIZE, 1> spatial_accel_temp = crossSpatialMotion(twist_of_old_wrt_new.value(), twist_of_body_wrt_base.value());
   spatial_accel_temp += spatial_acceleration.value();
   ret.value() = transformSpatialMotion(T_old_to_new_isometry, spatial_accel_temp);
 
@@ -1450,16 +1450,16 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, Eigen::Dynamic> Rigi
   auto Jrot = (Phi.value() * Jomega).eval();
 
   // compute J
-  GradientVar<double, Eigen::Dynamic, Eigen::Dynamic> J(x.size(), cols, nq, gradient_order);
+  GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> J(x.size(), cols, nq, gradient_order);
   J.value().setZero();
   int row_start = 0;
   for (int i = 0; i < npoints; i++) {
     // translation part
     int col = 0;
-    const auto& point = x.template block<SPACE_DIMENSION, 1>(0, i);
+    const auto point = x.template block<SPACE_DIMENSION, 1>(0, i);
     for (std::vector<int>::iterator it = v_or_q_indices.begin(); it != v_or_q_indices.end(); ++it) {
       J.value().template block<SPACE_DIMENSION, 1>(row_start, *it) = Jv.col(col);
-      const auto& Jomega_col = Jomega.col(col);
+      const auto Jomega_col = Jomega.col(col);
       J.value().template block<SPACE_DIMENSION, 1>(row_start, *it).noalias() += Jomega_col.cross(point);
       col++;
     }
@@ -1487,7 +1487,7 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, Eigen::Dynamic> Rigi
     }
 
     KinematicPath path = findKinematicPath(base_ind, body_ind);
-    MatrixXd dqrotdq = in_terms_of_qdot ? compactToFull(Jrot, path.joint_path, true) : transformVelocityMappingToPositionDotMapping(cache, compactToFull(Jrot, path.joint_path, false));
+    auto dqrotdq = in_terms_of_qdot ? compactToFull(Jrot, path.joint_path, true) : transformVelocityMappingToPositionDotMapping(cache, compactToFull(Jrot, path.joint_path, false));
 
     auto dPhidq = (Phi.gradient().value() * dqrotdq).eval();
     auto dJrot = matGradMultMat(Phi.value(), Jomega, dPhidq, dJomega);
@@ -1499,7 +1499,7 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, Eigen::Dynamic> Rigi
     for (int i = 0; i < npoints; i++) {
       // translation part
       int col = 0;
-      const auto& point = x.template block<SPACE_DIMENSION, 1>(0, i);
+      const auto point = x.template block<SPACE_DIMENSION, 1>(0, i);
       Matrix<Scalar, SPACE_DIMENSION, Dynamic> dpoint;
       if (in_terms_of_qdot)
         dpoint = getSubMatrixGradient<Eigen::Dynamic>(J.value(), rows, intRange<1>(i), x.rows());
@@ -1507,7 +1507,7 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, Eigen::Dynamic> Rigi
         dpoint = transformVelocityMappingToPositionDotMapping(cache, getSubMatrixGradient<Eigen::Dynamic>(J.value(), rows, intRange<1>(i), x.rows()));
 
       for (std::vector<int>::iterator it = v_or_q_indices.begin(); it != v_or_q_indices.end(); ++it) {
-        const auto& Jomega_col = Jomega.col(col);
+        const auto Jomega_col = Jomega.col(col);
         auto dJpos_col = getSubMatrixGradient<Eigen::Dynamic>(dJv, rows, intRange<1>(col), Jv.rows());
         auto dJomega_col = getSubMatrixGradient<Eigen::Dynamic>(dJomega, rows, intRange<1>(col), Jomega.rows());
         dJpos_col.noalias() += dcrossProduct(Jomega_col, point, dJomega_col, dpoint);
@@ -1603,7 +1603,7 @@ GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, 1> RigidBodyManipula
   Jposdot_times_v_mat.colwise() += J_geometric_dot_times_v.value().template bottomRows<SPACE_DIMENSION>();
 
   GradientVar<Scalar, Dynamic, 1> ret(x.size(), 1, num_positions, gradient_order);
-  typename MatrixXd::Index row_start = 0;
+  DenseIndex row_start = 0;
   for (int i = 0; i < npoints; i++) {
     ret.value().template middleRows<SPACE_DIMENSION>(row_start) = Jposdot_times_v_mat.col(i);
     row_start += SPACE_DIMENSION;
@@ -1902,3 +1902,14 @@ template DLLEXPORT_RBM std::pair<Eigen::Vector3d, double> RigidBodyManipulator::
 template DLLEXPORT_RBM GradientVar<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> >::Scalar, -1, -1, -1, -1> RigidBodyManipulator::forwardKinJacobian<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > >(KinematicsCache<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> >::Scalar> const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > > const&, int, int, int, bool, int) const;
 template DLLEXPORT_RBM GradientVar<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> >::Scalar, -1, 1, -1, 1> RigidBodyManipulator::forwardJacDotTimesV<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > >(KinematicsCache<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> >::Scalar> const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > > const&, int, int, int, int) const;
 
+// AutoDiffScalar stuff:
+template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 3, 1, 0, 3, 1> RigidBodyManipulator::centerOfMass<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&, std::__1::set<int, std::__1::less<int>, std::__1::allocator<int> > const&) const;
+template DLLEXPORT_RBM GradientVar<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 4, 4, 4, 4> RigidBodyManipulator::relativeTransform<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, int, int, int) const;
+template DLLEXPORT_RBM GradientVar<Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 3, -1, 0, 3, -1>::Scalar, -1, -1, -1, -1> RigidBodyManipulator::forwardKinJacobian<Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 3, -1, 0, 3, -1> >(KinematicsCache<Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 3, -1, 0, 3, -1>::Scalar> const&, Eigen::MatrixBase<Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 3, -1, 0, 3, -1> > const&, int, int, int, bool, int) const;
+template DLLEXPORT_RBM GradientVar<Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 3, -1, 0, 3, -1>::Scalar, -1, 1, -1, 1> RigidBodyManipulator::forwardJacDotTimesV<Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 3, -1, 0, 3, -1> >(KinematicsCache<Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 3, -1, 0, 3, -1>::Scalar> const&, Eigen::MatrixBase<Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 3, -1, 0, 3, -1> > const&, int, int, int, int) const;
+template DLLEXPORT_RBM GradientVar<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 3, -1, 3, -1> RigidBodyManipulator::centerOfMassJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&, int, std::__1::set<int, std::__1::less<int>, std::__1::allocator<int> > const&, bool) const;
+template DLLEXPORT_RBM GradientVar<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 6, -1, 6, -1> RigidBodyManipulator::centroidalMomentumMatrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&, int, std::__1::set<int, std::__1::less<int>, std::__1::allocator<int> > const&, bool) const;
+template DLLEXPORT_RBM GradientVar<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, -1, -1, -1> RigidBodyManipulator::forwardKinPositionGradient<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, int, int, int, int) const;
+template DLLEXPORT_RBM GradientVar<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 6, 1, 6, 1> RigidBodyManipulator::geometricJacobianDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, int, int, int, int) const;
+template DLLEXPORT_RBM GradientVar<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 3, 1, 3, 1> RigidBodyManipulator::centerOfMassJacobianDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&, int, std::__1::set<int, std::__1::less<int>, std::__1::allocator<int> > const&) const;
+template DLLEXPORT_RBM GradientVar<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 6, 1, 6, 1> RigidBodyManipulator::centroidalMomentumMatrixDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&, int, std::__1::set<int, std::__1::less<int>, std::__1::allocator<int> > const&) const;
