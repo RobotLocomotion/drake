@@ -26,9 +26,9 @@ configure: pod-build
 .PHONY: options
 options: configure
 ifeq ($(OS),Windows_NT)
-	cmake-gui pod-build
+	cmake-gui $(CMAKE_FLAGS) pod-build
 else
-	ccmake pod-build
+	ccmake $(CMAKE_FLAGS) pod-build
 endif
 
 .PHONY: clean
