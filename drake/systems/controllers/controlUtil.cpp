@@ -83,7 +83,7 @@ int contactPhi(RigidBodyManipulator* r, const KinematicsCache<double>& cache, Su
 
   int i=0;
   for (auto pt_iter = supp.contact_pts.begin(); pt_iter != supp.contact_pts.end(); pt_iter++) {
-    Vector3d contact_pos = r->forwardKin(cache, *pt_iter, supp.body_idx, 0, 0, 0).value();
+    Vector3d contact_pos = r->forwardKin(cache, *pt_iter, supp.body_idx, 0, 0);
     phi(i) = supp.support_surface.head<3>().dot(contact_pos) + supp.support_surface(3);
     i++;
   }
@@ -109,9 +109,8 @@ int contactConstraintsBV(RigidBodyManipulator *r, const KinematicsCache<double>&
     double norm = sqrt(1+mu*mu); // because normals and ds are orthogonal, the norm has a simple form
     if (nc>0) {
       for (auto pt_iter=iter->contact_pts.begin(); pt_iter!=iter->contact_pts.end(); pt_iter++) {
-        auto contact_pos_gradientvar = r->forwardKin(cache, *pt_iter, iter->body_idx, 0, 0, 1);
-        contact_pos = contact_pos_gradientvar.value();
-        J = contact_pos_gradientvar.gradient().value();
+        contact_pos = r->forwardKin(cache, *pt_iter, iter->body_idx, 0, 0);
+        J = r->forwardKinJacobian(cache, *pt_iter, iter->body_idx, 0, 0, true, 0).value();
 
         normal = iter->support_surface.head(3);
         surfaceTangents(normal,d);
@@ -182,7 +181,7 @@ MatrixXd individualSupportCOPs(RigidBodyManipulator* r, const KinematicsCache<do
 
       Vector3d point_on_contact_plane = contact_positions.col(0);
       std::pair<Vector3d, double> cop_and_normal_torque = resolveCenterOfPressure(torque, force, normal, point_on_contact_plane);
-      Vector3d cop_world = r->forwardKin(cache, cop_and_normal_torque.first, active_support.body_idx, 0, 0, 0).value();
+      Vector3d cop_world = r->forwardKin(cache, cop_and_normal_torque.first, active_support.body_idx, 0, 0);
       individual_cops.col(j) = cop_world;
     }
 
@@ -278,10 +277,10 @@ Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_sta
   KinematicsCache<double> cache = r->doKinematics(robot_state.q, robot_state.qd);
 
   Vector3d origin = Vector3d::Zero();
-  auto body_pose = r->forwardKin(cache, origin, body_index, 0, 2, 0);
-  Vector3d body_xyz = body_pose.value().head<3>();
+  auto body_pose = r->forwardKin(cache, origin, body_index, 0, 2);
+  Vector3d body_xyz = body_pose.head<3>();
   Vector3d body_xyz_task = T_world_to_task * body_xyz.colwise().homogeneous();
-  Vector4d body_quat = body_pose.value().tail<4>();
+  Vector4d body_quat = body_pose.tail<4>();
   std::vector<int> v_indices;
   auto J_geometric = r->geometricJacobian(cache, 0, body_index, body_index, 0, true, &v_indices);
   VectorXd v_compact(v_indices.size());

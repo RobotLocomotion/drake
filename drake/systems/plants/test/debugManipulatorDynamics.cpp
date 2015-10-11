@@ -26,17 +26,18 @@ int main()
   auto M = model.massMatrix<double>(cache, gradient_order);
   cout << M.value() << endl << endl;
 
-  map<int, unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
-  f_ext[3] = unique_ptr< GradientVar<double, TWIST_SIZE, 1> >(new GradientVar<double, TWIST_SIZE, 1>(TWIST_SIZE, 1, nq + nv, gradient_order));
-  f_ext[3]->value().setRandom();
-  f_ext[3]->gradient().value().setRandom();
+  unordered_map<RigidBody const *, GradientVar<double, TWIST_SIZE, 1> > f_ext;
+  GradientVar<double, TWIST_SIZE, 1> f_ext_r_foot(TWIST_SIZE, 1, nq + nv, gradient_order);
+  f_ext_r_foot.value().setRandom();
+  f_ext_r_foot.gradient().value().setRandom();
+  f_ext.insert({model.findLink("r_foot").get(), f_ext_r_foot});
 
   GradientVar<double, Eigen::Dynamic, 1> vd(model.num_velocities, 1, nq + nv, gradient_order);
   vd.value().setRandom();
   if (vd.hasGradient())
     vd.gradient().value().setRandom();
 
-  auto C = model.inverseDynamics(cache, f_ext, &vd, gradient_order);
+  auto C = model.inverseDynamics(cache, f_ext, vd, gradient_order);
   cout << C.value() << endl << endl;
   return 0;
 }

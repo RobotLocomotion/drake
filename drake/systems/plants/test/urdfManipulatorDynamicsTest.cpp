@@ -43,8 +43,8 @@ int main(int argc, char* argv[])
   auto H = model->massMatrix(cache);
   cout << H.value() << endl;
 
-  map<int, unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
-  auto C = model->inverseDynamics(cache, f_ext);
+  unordered_map<RigidBody const *, GradientVar<double, TWIST_SIZE, 1> > f_ext;
+  auto C = model->dynamicsBiasTerm(cache, f_ext);
   cout << C.value() << endl;
 
   cout << model->B << endl;

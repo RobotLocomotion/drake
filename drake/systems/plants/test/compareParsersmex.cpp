@@ -75,14 +75,14 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 		KinematicsCache<double> cpp_cache = cpp_model->doKinematics(cpp_q, cpp_v, 1);
 
 		{ // compare H, C, and B
-		  map<int, unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
+		  unordered_map<RigidBody const *, GradientVar<double, TWIST_SIZE, 1> > f_ext;
 
 		  auto matlab_H = matlab_model->massMatrix(matlab_cache);
 		  auto cpp_H = cpp_model->massMatrix(cpp_cache);
 		  valuecheckMatrix(matlab_H.value(),cpp_H.value(),1e-8,"H doesn't match");
 
-		  auto matlab_C = matlab_model->inverseDynamics(matlab_cache, f_ext);
-		  auto cpp_C = cpp_model->inverseDynamics(cpp_cache, f_ext);
+		  auto matlab_C = matlab_model->dynamicsBiasTerm(matlab_cache, f_ext);
+		  auto cpp_C = cpp_model->dynamicsBiasTerm(cpp_cache, f_ext);
 		  valuecheckMatrix(matlab_C.value(),cpp_C.value(),1e-8,"C doesn't match");
 
 		  valuecheckMatrix(matlab_model->B,cpp_model->B,1e-8,"B doesn't match");

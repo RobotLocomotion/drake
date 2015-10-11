@@ -4,6 +4,7 @@
 #include <Eigen/Dense>
 #include <iostream>
 #include <set>
+#include <map>
 #include <Eigen/StdVector>
 #include <memory>
 #include "DrakeJoint.h"
@@ -58,11 +59,10 @@ public:
 public:
   std::string linkname;
   int robotnum; // uses 0-index. starts from 0
-  static const std::set<int> defaultRobotNumSet;
 // note: it's very ugly, but parent,dofnum,and pitch also exist currently (independently) at the rigidbodymanipulator level to represent the featherstone structure.  this version is for the kinematics.
   std::shared_ptr<RigidBody> parent;
-  int body_index; // index in RBM bodies vector (set in compile())
-  int position_num_start; // interpreted as start of position_num from Matlab
+  int body_index;
+  int position_num_start;
   int velocity_num_start;
 
   DrakeShapes::VectorOfVisualElements visual_elements;
