@@ -66,13 +66,22 @@ if (kinsol.mex)
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
   end
   % base 1 to base 0 for body_or_frame_ids:
-  if nargout > 2
-    [J, dJ] = forwardKinJacobianmex(obj.mex_model_ptr, kinsol.mex_ptr, points, body_or_frame_id - 1, base_or_frame_id - 1, rotation_type, in_terms_of_qdot, 1);
-    dJ = reshape(dJ, size(J, 1), []); % convert to strange second derivative output format
-  elseif nargout > 1
-    J = forwardKinJacobianmex(obj.mex_model_ptr, kinsol.mex_ptr, points, body_or_frame_id - 1, base_or_frame_id - 1, rotation_type, in_terms_of_qdot, 0);
-  end
   x = forwardKinmex(obj.mex_model_ptr, kinsol.mex_ptr, points, body_or_frame_id - 1, base_or_frame_id - 1, rotation_type);
+  if nargout > 1
+    J = forwardKinJacobianmex(obj.mex_model_ptr, kinsol.mex_ptr, points, body_or_frame_id - 1, base_or_frame_id - 1, rotation_type, in_terms_of_qdot, 0);
+    if nargout > 2
+      x = eval(x);
+      [J, dJ] = eval(J);
+      nq = length(kinsol.q);
+      if isempty(dJ)
+        dJ = zeros(numel(J), nq);
+      else
+        dJ = reshape(dJ, numel(J), []);
+        dJ = dJ(:, 1 : nq);
+      end
+      dJ = reshape(dJ, size(J, 1), []); % convert to strange second derivative output format
+    end
+  end
 else
   nq = obj.getNumPositions();
   nv = obj.getNumVelocities();
