@@ -6,6 +6,7 @@
 #define DRAKE_STANDARDMEXCONVERSIONS_H
 
 #include "drakeMexUtil.h"
+#include <string>
 
 /**
  * fromMex specializations
@@ -41,27 +42,44 @@ Eigen::Matrix<Eigen::AutoDiffScalar<DerType>, Rows, Cols, Options, MaxRows, MaxC
   if (!mxIsClass(mex, "TaylorVar"))
     throw MexToCppConversionError("Expected an array of TaylorVar");
 
-  typedef typename Eigen::AutoDiffScalar<DerType> ADScalar;
-  Eigen::Matrix<ADScalar, Rows, Cols, Options, MaxRows, MaxCols> ret(mxGetM(mex), mxGetN(mex));
+  if (mxIsEmpty(mex)) {
+    throw std::runtime_error("Can't parse empty TaylorVar arrays");
+  }
+
+  using namespace Eigen;
+  using namespace std;
+
+  typedef AutoDiffScalar<DerType> ADScalar;
+  auto f = mxGetPropertySafe(mex, "f");
+  auto derivs = mxGetPropertySafe(mex, "df");
+  if (mxGetNumberOfElements(derivs) > 1)
+    throw std::runtime_error("TaylorVars of order higher than 1 currently not supported");
+  auto df = mxGetCell(derivs, 0);
+
+  auto dim = mxGetPrSafe(mxGetPropertySafe(mex, "dim"));
+  auto rows = static_cast<int>(dim[0]); // note: apparently not always the same as mxGetM(f)
+  auto cols = static_cast<int>(dim[1]); // note: apparently not always the same as mxGetN(f)
+
+  if ((MaxRows != Dynamic && rows > MaxRows) || (Rows != Dynamic && rows != Rows)) {
+    throw MexToCppConversionError("Row size mismatch. rows: " + to_string(rows) +  ", rows at compile time: " + to_string(Rows) +  ", max rows at compile time: " + to_string(MaxRows));
+  }
+
+  if ((MaxCols != Dynamic && cols > MaxCols) || (Cols != Dynamic && cols != Cols))
+    throw MexToCppConversionError("Col size mismatch. cols: " + to_string(cols) +  ", cols at compile time: " + to_string(Cols) +  ", max cols at compile time: " + to_string(MaxCols));
+
+  auto num_derivs = mxGetN(df);
+  if ((DerType::MaxRowsAtCompileTime != Dynamic && num_derivs > DerType::MaxRowsAtCompileTime) || (DerType::RowsAtCompileTime != Dynamic && num_derivs != DerType::RowsAtCompileTime))
+    throw MexToCppConversionError("Derivative size mismatch. num_derivs: " + to_string(num_derivs) +  ", num_derivs at compile time: " + to_string(DerType::RowsAtCompileTime) +  ", max num_derivs at compile time: " + to_string(DerType::MaxRowsAtCompileTime));
+
+  Matrix<ADScalar, Rows, Cols, Options, MaxRows, MaxCols> ret(rows, cols);
   if (!mxIsEmpty(mex)) {
-    auto f = mxGetPropertySafe(mex, "f");
-    auto derivs = mxGetPropertySafe(mex, "df");
-    if (mxGetNumberOfElements(derivs) > 1)
-      throw std::runtime_error("TaylorVars of order higher than 1 currently not supported");
-    auto df = mxGetCell(derivs, 0);
-
-    auto num_derivs = mxGetN(df);
-    if (num_derivs > DerType::MaxRowsAtCompileTime || (DerType::RowsAtCompileTime != Eigen::Dynamic && num_derivs != DerType::RowsAtCompileTime)) {
-      throw MexToCppConversionError("Number of derivatives does not match the size of AutoDiff derivative vector");
-    }
-
     typedef typename ADScalar::Scalar NormalScalar;
-    typedef Eigen::Matrix<NormalScalar, Rows, Cols, Options, MaxRows, MaxCols> ValueMatrixType;
-    ret = Eigen::Map<ValueMatrixType>(mxGetPrSafe(f), mxGetM(f), mxGetN(f)).template cast<ADScalar>();
+    typedef Matrix<NormalScalar, Rows, Cols, Options, MaxRows, MaxCols> ValueMatrixType;
+    ret = Map<ValueMatrixType>(mxGetPrSafe(f), rows, cols).template cast<ADScalar>();
 
     typedef typename Gradient<ValueMatrixType, DerType::RowsAtCompileTime>::type GradientType;
-    typedef Eigen::Matrix<NormalScalar, GradientType::RowsAtCompileTime, GradientType::ColsAtCompileTime, 0, GradientType::RowsAtCompileTime, DerType::MaxRowsAtCompileTime> GradientTypeFixedMaxSize;
-    auto gradient_matrix = Eigen::Map<GradientTypeFixedMaxSize>(mxGetPrSafe(df), mxGetM(df), num_derivs);
+    typedef Matrix<NormalScalar, GradientType::RowsAtCompileTime, GradientType::ColsAtCompileTime, 0, GradientType::RowsAtCompileTime, DerType::MaxRowsAtCompileTime> GradientTypeFixedMaxSize;
+    auto gradient_matrix = Map<GradientTypeFixedMaxSize>(mxGetPrSafe(df), mxGetM(df), num_derivs);
     gradientMatrixToAutoDiff(gradient_matrix, ret);
   }
   return ret;

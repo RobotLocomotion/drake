@@ -12,7 +12,7 @@ if user_gradients
   [H, dH] = massMatrixmex(r.mex_model_ptr, kinsol.mex_ptr, 1);
 else
   cache_ptr = createKinematicsCacheAutoDiffmex(r.mex_model_ptr, false);
-  kinsol = r.doKinematics(q, TaylorVar.empty(0, 1), struct('kinematics_cache_ptr_to_use', cache_ptr));
+  kinsol = r.doKinematics(q, Taylorvar(double.empty(0, 1), {double.empty(0, length(q))}), struct('kinematics_cache_ptr_to_use', cache_ptr));
   H = massMatrixmex(r.mex_model_ptr, kinsol.mex_ptr, 0);
 end
 end

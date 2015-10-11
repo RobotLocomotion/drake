@@ -205,38 +205,28 @@ void massMatrixmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, func_double, func_autodiff_fixed_max, func_autodiff_dynamic);
 }
 
-template <typename Scalar, typename DerivedF, typename DerivedDF>
-GradientVar<Scalar, Eigen::Dynamic, 1>  dynamicsBiasTermTemp(const RigidBodyManipulator &model, KinematicsCache<Scalar> &cache, const MatrixBase<DerivedF> &f_ext_value, const MatrixBase<DerivedDF> &f_ext_gradient, int gradient_order) {
+template <typename Scalar, typename DerivedF>
+GradientVar<Scalar, Eigen::Dynamic, 1>  dynamicsBiasTermTemp(const RigidBodyManipulator &model, KinematicsCache<Scalar> &cache, const MatrixBase<DerivedF> &f_ext_value) {
   // temporary solution. GradientVar will disappear, obviating the need for the extra argument. integer body indices will be handled differently.
 
   unordered_map<const RigidBody *, GradientVar<Scalar, 6, 1> > f_ext;
 
   if (f_ext_value.size() > 0) {
     assert(f_ext_value.cols() == model.bodies.size());
-    if (gradient_order > 0) {
-      assert(f_ext_gradient.rows() == f_ext_value.size());
-      assert(f_ext_gradient.cols() == model.num_positions + model.num_velocities);
-    }
-
     for (DenseIndex i = 0; i < f_ext_value.cols(); i++) {
-      GradientVar<Scalar, TWIST_SIZE, 1> f_ext_gradientvar(TWIST_SIZE, 1, model.num_positions + model.num_velocities, gradient_order);
+      GradientVar<Scalar, TWIST_SIZE, 1> f_ext_gradientvar(TWIST_SIZE, 1, model.num_positions + model.num_velocities, 0);
       f_ext_gradientvar.value() = f_ext_value.col(i);
-
-      if (gradient_order > 0) {
-        f_ext_gradientvar.gradient().value() = f_ext_gradient.template middleRows<TWIST_SIZE>(TWIST_SIZE * i);
-      }
-
       f_ext.insert({model.bodies[i].get(), f_ext_gradientvar});
     }
   }
 
-  return model.dynamicsBiasTerm(cache, f_ext, gradient_order);
+  return model.dynamicsBiasTerm(cache, f_ext, 0);
 };
 
 void dynamicsBiasTermmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
-  auto func_double = make_function(&dynamicsBiasTermTemp<double, Map<const Matrix<double, 6, Dynamic> >, Map<const Matrix<double, Dynamic, Dynamic> > >);
-  auto func_autodiff_fixed_max = make_function(&dynamicsBiasTermTemp<AutoDiffFixedMaxSize, Matrix<AutoDiffFixedMaxSize, 6, Dynamic>, Matrix<AutoDiffFixedMaxSize, Dynamic, Dynamic> >);
-  auto func_autodiff_dynamic = make_function(&dynamicsBiasTermTemp<AutoDiffDynamicSize, Matrix<AutoDiffDynamicSize, 6, Dynamic>, Matrix<AutoDiffDynamicSize, Dynamic, Dynamic> >);
+  auto func_double = make_function(&dynamicsBiasTermTemp<double, Map<const Matrix<double, 6, Dynamic> > >);
+  auto func_autodiff_fixed_max = make_function(&dynamicsBiasTermTemp<AutoDiffFixedMaxSize, Matrix<AutoDiffFixedMaxSize, 6, Dynamic> >);
+  auto func_autodiff_dynamic = make_function(&dynamicsBiasTermTemp<AutoDiffDynamicSize, Matrix<AutoDiffDynamicSize, 6, Dynamic> >);
 
   mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, func_double, func_autodiff_fixed_max, func_autodiff_dynamic);
 }
