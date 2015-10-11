@@ -23,14 +23,21 @@ if ~isstruct(kinsol)
   % treat input as centroidalMomentumMatrix(model,q)
   q = kinsol;
   kinsol_options.compute_gradients = compute_gradients;
-  kinsol = robot.doKinematics(q, [], kinsol_options);
+  kinsol = robot.doKinematics(q, double.empty(0, 1) * q(1), kinsol_options);
 end
 
 if kinsol.mex
+  A = centroidalMomentumMatrixmex(robot.mex_model_ptr, kinsol.mex_ptr, 0, robotnum, in_terms_of_qdot);
   if compute_gradients
-    [A, dA] = centroidalMomentumMatrixmex(robot.mex_model_ptr, kinsol.mex_ptr, 1, robotnum, in_terms_of_qdot);
+    [A, dA] = eval(A);
+    nq = length(kinsol.q);
+    if isempty(dA)
+      dA = double.empty(0, nq);
+    else
+      dA = dA(:, 1 : nq);
+    end
   else
-    A = centroidalMomentumMatrixmex(robot.mex_model_ptr, kinsol.mex_ptr, 0, robotnum, in_terms_of_qdot);
+    
   end
 else
   if compute_gradients
