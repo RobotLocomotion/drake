@@ -29,13 +29,21 @@ end
 
 function [com,J,dJ] = centerOfMass(model,kinsol,robotnum,in_terms_of_qdot)
 if kinsol.mex
-  if nargout > 2
-    [J, dJ] = centerOfMassJacobianmex(model.mex_model_ptr, kinsol.mex_ptr, 1, robotnum, in_terms_of_qdot);
-    dJ = reshape(dJ, size(J, 1), []); % convert to strange second derivative output format
-  elseif nargout > 1
+  com = centerOfMassmex(model.mex_model_ptr, kinsol.mex_ptr, robotnum);
+  if nargout > 1
     J = centerOfMassJacobianmex(model.mex_model_ptr, kinsol.mex_ptr, 0, robotnum, in_terms_of_qdot);
   end
-  com = centerOfMassmex(model.mex_model_ptr, kinsol.mex_ptr, robotnum);
+  if nargout > 2
+    com = eval(com);
+    [J, dJ] = eval(J);
+    nq = length(kinsol.q);
+    if isempty(dJ)
+      dJ = double.empty(0, nq);
+    else
+      dJ = dJ(:, 1 : nq);
+    end
+    dJ = reshape(dJ, size(J, 1), []); % convert to strange second derivative output format
+  end
 else
   m = 0;
   com = zeros(3,1);
