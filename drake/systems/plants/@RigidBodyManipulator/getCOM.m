@@ -37,11 +37,8 @@ if kinsol.mex
     com = eval(com);
     [J, dJ] = eval(J);
     nq = length(kinsol.q);
-    if isempty(dJ)
-      dJ = double.empty(0, nq);
-    else
-      dJ = dJ(:, 1 : nq);
-    end
+    dJ = reshape(dJ, numel(J), []);
+    dJ = dJ(:, 1 : nq);
     dJ = reshape(dJ, size(J, 1), []); % convert to strange second derivative output format
   end
 else

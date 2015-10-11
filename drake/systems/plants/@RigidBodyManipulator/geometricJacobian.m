@@ -42,7 +42,7 @@ if (kinsol.mex)
     [J, dJ] = eval(J);
     nq = length(kinsol.q);
     if isempty(dJ)
-      dJ = double.empty(0, nq);
+      dJ = zeros(numel(J), nq);
     else
       dJ = dJ(:, 1 : nq);
     end

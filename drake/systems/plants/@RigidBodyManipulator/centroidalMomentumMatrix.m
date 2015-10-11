@@ -31,11 +31,7 @@ if kinsol.mex
   if compute_gradients
     [A, dA] = eval(A);
     nq = length(kinsol.q);
-    if isempty(dA)
-      dA = double.empty(0, nq);
-    else
-      dA = dA(:, 1 : nq);
-    end
+    dA = dA(:, 1 : nq);
   else
     
   end

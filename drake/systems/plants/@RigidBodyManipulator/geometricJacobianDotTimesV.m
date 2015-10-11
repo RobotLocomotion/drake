@@ -21,7 +21,7 @@ if kinsol.mex
     [Jdot_times_v, dJdot_times_v] = eval(Jdot_times_v);
     nq = length(kinsol.q);
     if isempty(dJdot_times_v)
-      dJdot_times_v = double.empty(0, nq);
+      dJdot_times_v = zeros(numel(Jdot_times_v), nq);
     else
       dJdot_times_v = dJdot_times_v(:, 1 : nq);
     end

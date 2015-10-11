@@ -14,17 +14,11 @@ if (kinsol.mex)
   if compute_gradients
     [Adot_times_v, dAdot_times_v] = eval(Adot_times_v);
     nq = length(kinsol.q);
-    if isempty(dAdot_times_v)
-      dAdot_times_v = double.empty(0, nq);
-    else
-      dAdot_times_v = dAdot_times_v(:, 1 : nq);
-    end
+    dAdot_times_v = dAdot_times_v(:, 1 : nq);
   end
   
 else
-  
   nq = obj.getNumPositions();
-  
   if compute_gradients
     [Adot_times_v, dAdot_times_v] = worldMomentumMatrixDotTimesV(obj, kinsol, robotnum);
   else

@@ -22,13 +22,7 @@ if (kinsol.mex)
   if compute_gradients
     [com_Jacobian_dot_times_v, dcom_Jacobian_dot_times_v] = eval(com_Jacobian_dot_times_v);
     nq = length(kinsol.q);
-    if isempty(dcom_Jacobian_dot_times_v)
-      dcom_Jacobian_dot_times_v = double.empty(0, nq);
-    else
-      dcom_Jacobian_dot_times_v = dcom_Jacobian_dot_times_v(:, 1 : nq);
-    end
-  else
-    
+    dcom_Jacobian_dot_times_v = dcom_Jacobian_dot_times_v(:, 1 : nq);
   end
 else
   total_mass = getMass(obj, robotnum);
