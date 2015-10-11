@@ -9,7 +9,7 @@ int main(int argc, char* argv[]) {
   if(!lcm->good())
    return 1;
 
-  DrakeSystemPtr p = make_shared<PendulumWithBotVis>(lcm);
+  DrakeSystemPtr p = allocate_shared<PendulumWithBotVis>(Eigen::AlignedAllocator<PendulumWithBotVis>(),lcm);
   runLCM(p,*lcm,0,50,p->getRandomState());
 
   cout << "output frame: " << p->getOutputFrame() << endl;
