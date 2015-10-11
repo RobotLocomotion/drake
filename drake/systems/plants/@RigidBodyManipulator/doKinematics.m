@@ -92,6 +92,16 @@ kinsol.v = v;
 if (options.use_mex && model.mex_model_ptr~=0)
   if isempty(options.kinematics_cache_ptr_to_use)
     if options.compute_gradients
+      if isnumeric(q)
+        nq = length(q);
+        nv = length(v);
+        q = TaylorVar(q, {[eye(nq), zeros(nq, nv)]});
+        if isempty(v)
+          v = TaylorVar.empty(0, 1);
+        else
+          v = TaylorVar(v, {[zeros(nv, nq), eye(nv)]});
+        end
+      end
       kinsol.mex_ptr = model.default_kinematics_cache_ptr_with_gradients;
     else
       kinsol.mex_ptr = model.default_kinematics_cache_ptr_no_gradients;
