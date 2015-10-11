@@ -23,7 +23,7 @@ else
   zmp_opts.comdot0 = comdot(1:2);
 end
 
-foot_pos = forwardKin(obj, kinsol, [obj.foot_frame_id.right, obj.foot_frame_id.left], [0;0;0]);
+foot_pos = [forwardKin(obj, kinsol, obj.foot_frame_id.right, zeros(3, 1)), forwardKin(obj, kinsol, obj.foot_frame_id.left, zeros(3, 1))];
 zfeet = mean(foot_pos(3,:));
 
 pelvis_pos = forwardKin(obj, kinsol, obj.findLinkId('pelvis'), [0;0;0]);

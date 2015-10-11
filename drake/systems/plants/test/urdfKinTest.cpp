@@ -40,10 +40,10 @@ int main(int argc, char* argv[])
 
   for (i=0; i<model->bodies.size(); i++) {
 //    model->forwardKin(i,zero,1,pt);
-		auto pt = model->forwardKin(cache, zero, i, 0, 1, 0);
+		auto pt = model->forwardKin(cache, zero, i, 0, 1);
 //    cout << i << ": forward kin: " << model->bodies[i].linkname << " is at " << pt.transpose() << endl;
     cout << model->bodies[i]->linkname << " ";
-		cout << pt.value().transpose() << endl;
+		cout << pt.transpose() << endl;
 //    for (int j=0; j<pt.size(); j++)
 //    	cout << pt(j) << " ";
   }
