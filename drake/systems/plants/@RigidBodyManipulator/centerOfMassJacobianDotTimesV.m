@@ -18,10 +18,17 @@ if(nargin < 3)
 end
 
 if (kinsol.mex)
+  com_Jacobian_dot_times_v = centerOfMassJacobianDotTimesVmex(obj.mex_model_ptr, kinsol.mex_ptr, 0, robotnum);
   if compute_gradients
-    [com_Jacobian_dot_times_v, dcom_Jacobian_dot_times_v] = centerOfMassJacobianDotTimesVmex(obj.mex_model_ptr, kinsol.mex_ptr, 1, robotnum);
+    [com_Jacobian_dot_times_v, dcom_Jacobian_dot_times_v] = eval(com_Jacobian_dot_times_v);
+    nq = length(kinsol.q);
+    if isempty(dcom_Jacobian_dot_times_v)
+      dcom_Jacobian_dot_times_v = double.empty(0, nq);
+    else
+      dcom_Jacobian_dot_times_v = dcom_Jacobian_dot_times_v(:, 1 : nq);
+    end
   else
-    [com_Jacobian_dot_times_v] = centerOfMassJacobianDotTimesVmex(obj.mex_model_ptr, kinsol.mex_ptr, 0, robotnum);
+    
   end
 else
   total_mass = getMass(obj, robotnum);
