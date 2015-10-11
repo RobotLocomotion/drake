@@ -35,17 +35,31 @@ Eigen::Map<const Eigen::Matrix<double, Rows, Cols, Options, MaxRows, MaxCols>> f
   return matlabToEigenMap<Rows, Cols>(mex);
 }
 
-/*
- * note: leaving Options, MaxRows, and MaxCols out as template parameters (leaving them to their defaults)
- * results in an internal compiler error on MSVC. See https://connect.microsoft.com/VisualStudio/feedback/details/1847159
- */
 template<typename DerType, int Rows, int Cols, int Options, int MaxRows, int MaxCols>
 Eigen::Matrix<Eigen::AutoDiffScalar<DerType>, Rows, Cols, Options, MaxRows, MaxCols> fromMex(
     const mxArray *mex, Eigen::MatrixBase<Eigen::Matrix<Eigen::AutoDiffScalar<DerType>, Rows, Cols, Options, MaxRows, MaxCols>> *) {
   if (!mxIsClass(mex, "TaylorVar"))
     throw MexToCppConversionError("Expected an array of TaylorVar");
 
-  return taylorVarToEigen<Rows, Cols>(mex);
+  typedef typename Eigen::AutoDiffScalar<DerType> ADScalar;
+  Eigen::Matrix<ADScalar, Rows, Cols, Options, MaxRows, MaxCols> ret(mxGetM(mex), mxGetN(mex));
+  if (!mxIsEmpty(mex)) {
+    auto f = mxGetPropertySafe(mex, "f");
+    auto derivs = mxGetPropertySafe(mex, "df");
+    if (mxGetNumberOfElements(derivs) > 1)
+      throw std::runtime_error("TaylorVars of order higher than 1 currently not supported");
+    auto df = mxGetCell(derivs, 0);
+
+    typedef typename ADScalar::Scalar NormalScalar;
+    typedef Eigen::Matrix<NormalScalar, Rows, Cols, Options, MaxRows, MaxCols> ValueMatrixType;
+    ret = Eigen::Map<ValueMatrixType>(mxGetPrSafe(f), mxGetM(f), mxGetN(f)).template cast<ADScalar>();
+
+    typedef typename Gradient<ValueMatrixType, DerType::RowsAtCompileTime>::type GradientType;
+    typedef Eigen::Matrix<NormalScalar, GradientType::RowsAtCompileTime, GradientType::ColsAtCompileTime, 0, GradientType::RowsAtCompileTime, DerType::MaxRowsAtCompileTime> GradientTypeFixedMaxSize;
+    auto gradient_matrix = Eigen::Map<GradientTypeFixedMaxSize>(mxGetPrSafe(df), mxGetM(df), mxGetN(df));
+    gradientMatrixToAutoDiff(gradient_matrix, ret);
+  }
+  return ret;
 }
 
 /**
