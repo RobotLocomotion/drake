@@ -366,14 +366,13 @@ public:
   template <typename DerivedV>
   GradientVar<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorques(Eigen::MatrixBase<DerivedV> const & v, int gradient_order = 0) const;
 
-  template <typename DerivedPoints>
-  Eigen::Matrix<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> forwardKin(
-      const KinematicsCache<typename DerivedPoints::Scalar> &cache, const Eigen::MatrixBase<DerivedPoints> &points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type) const
+  template <typename Scalar, typename DerivedPoints> // not necessarily any relation between the two; a major use case is having an AutoDiff KinematicsCache, but double points matrix
+  Eigen::Matrix<Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> forwardKin(
+      const KinematicsCache<Scalar> &cache, const Eigen::MatrixBase<DerivedPoints> &points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type) const
   {
     cache.checkCachedKinematicsSettings(false, false, false, "forwardKin"); // rely on forwardJac for gradient cache check
 
     int npoints = static_cast<int>(points.cols());
-    typedef typename DerivedPoints::Scalar Scalar;
 
     // compute rotation and translation
     auto T = relativeTransform(cache, new_body_or_frame_ind, current_body_or_frame_ind, 0).value();
@@ -383,7 +382,7 @@ public:
     // transform points to new frame
     Eigen::Matrix<Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> x(SPACE_DIMENSION + rotationRepresentationSize(rotation_type), npoints);
     x.template topRows<SPACE_DIMENSION>().colwise() = p;
-    x.template topRows<SPACE_DIMENSION>().noalias() += R * points;
+    x.template topRows<SPACE_DIMENSION>().noalias() += R * points.template cast<Scalar>();
 
     // convert rotation representation
     auto qrot = rotmat2Representation(R, rotation_type);
@@ -392,14 +391,14 @@ public:
     return x;
   };
 
-  template <typename DerivedPoints>
-  GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, Eigen::Dynamic> forwardKinJacobian(const KinematicsCache<typename DerivedPoints::Scalar>& cache, const Eigen::MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, bool in_terms_of_qdot, int gradient_order) const;
+  template <typename Scalar, typename DerivedPoints>
+  GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> forwardKinJacobian(const KinematicsCache<Scalar>& cache, const Eigen::MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, bool in_terms_of_qdot, int gradient_order) const;
 
   template <typename Scalar>
   GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> forwardKinPositionGradient(const KinematicsCache<Scalar>& cache, int npoints, int current_body_or_frame_ind, int new_body_or_frame_ind, int gradient_order) const;
 
-  template <typename DerivedPoints>
-  GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, 1> forwardJacDotTimesV(const KinematicsCache<typename DerivedPoints::Scalar>& cache, const Eigen::MatrixBase<DerivedPoints>& points, int body_or_frame_ind, int base_or_frame_ind, int rotation_type, int gradient_order) const;
+  template <typename Scalar, typename DerivedPoints>
+  GradientVar<Scalar, Eigen::Dynamic, 1> forwardJacDotTimesV(const KinematicsCache<Scalar>& cache, const Eigen::MatrixBase<DerivedPoints>& points, int body_or_frame_ind, int base_or_frame_ind, int rotation_type, int gradient_order) const;
 
   template<typename Scalar>
   GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> geometricJacobian(const KinematicsCache<Scalar>& cache, int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, int gradient_order, bool in_terms_of_qdot = false, std::vector<int>* v_indices = nullptr) const;

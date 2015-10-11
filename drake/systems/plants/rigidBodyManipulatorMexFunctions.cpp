@@ -143,40 +143,28 @@ void findKinematicPathmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *pr
 }
 
 void forwardJacDotTimesVmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
-  typedef Map<const Matrix3Xd> DerivedPointsDouble;
-  auto func_double = make_function(&RigidBodyManipulator::forwardJacDotTimesV<DerivedPointsDouble>);
-
-  typedef Matrix<AutoDiffFixedMaxSize, 3, Dynamic> DerivedPointsAutoDiffFixedMax;
-  auto func_autodiff_fixed_max = make_function(&RigidBodyManipulator::forwardJacDotTimesV<DerivedPointsAutoDiffFixedMax>);
-
-  typedef Matrix<AutoDiffDynamicSize, 3, Dynamic> DerivedPointsAutoDiffDynamic;
-  auto func_autodiff_dynamic = make_function(&RigidBodyManipulator::forwardJacDotTimesV<DerivedPointsAutoDiffDynamic>);
+  typedef Map<const Matrix3Xd> DerivedPoints;
+  auto func_double = make_function(&RigidBodyManipulator::forwardJacDotTimesV<double, DerivedPoints>);
+  auto func_autodiff_fixed_max = make_function(&RigidBodyManipulator::forwardJacDotTimesV<AutoDiffFixedMaxSize, DerivedPoints>);
+  auto func_autodiff_dynamic = make_function(&RigidBodyManipulator::forwardJacDotTimesV<AutoDiffDynamicSize, DerivedPoints>);
 
   mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, func_double, func_autodiff_fixed_max, func_autodiff_dynamic);
 }
 
 void forwardKinmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
-  typedef Map<const Matrix3Xd> DerivedPointsDouble;
-  auto func_double = make_function(&RigidBodyManipulator::forwardKin<DerivedPointsDouble>);
-
-  typedef Matrix<AutoDiffFixedMaxSize, 3, Dynamic> DerivedPointsAutoDiffFixedMax;
-  auto func_autodiff_fixed_max = make_function(&RigidBodyManipulator::forwardKin<DerivedPointsAutoDiffFixedMax>);
-
-  typedef Matrix<AutoDiffDynamicSize, 3, Dynamic> DerivedPointsAutoDiffDynamic;
-  auto func_autodiff_dynamic = make_function(&RigidBodyManipulator::forwardKin<DerivedPointsAutoDiffDynamic>);
+  typedef Map<const Matrix3Xd> DerivedPoints;
+  auto func_double = make_function(&RigidBodyManipulator::forwardKin<double, DerivedPoints>);
+  auto func_autodiff_fixed_max = make_function(&RigidBodyManipulator::forwardKin<AutoDiffFixedMaxSize, DerivedPoints>);
+  auto func_autodiff_dynamic = make_function(&RigidBodyManipulator::forwardKin<AutoDiffDynamicSize, DerivedPoints>);
 
   mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, func_double, func_autodiff_fixed_max, func_autodiff_dynamic);
 }
 
 void forwardKinJacobianmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
-  typedef Map<const Matrix3Xd> DerivedPointsDouble;
-  auto func_double = make_function(&RigidBodyManipulator::forwardKinJacobian<DerivedPointsDouble>);
-
-  typedef Matrix<AutoDiffFixedMaxSize, 3, Dynamic> DerivedPointsAutoDiffFixedMax;
-  auto func_autodiff_fixed_max = make_function(&RigidBodyManipulator::forwardKinJacobian<DerivedPointsAutoDiffFixedMax>);
-
-  typedef Matrix<AutoDiffDynamicSize, 3, Dynamic> DerivedPointsAutoDiffDynamic;
-  auto func_autodiff_dynamic = make_function(&RigidBodyManipulator::forwardKinJacobian<DerivedPointsAutoDiffDynamic>);
+  typedef Map<const Matrix3Xd> DerivedPoints;
+  auto func_double = make_function(&RigidBodyManipulator::forwardKinJacobian<double, DerivedPoints>);
+  auto func_autodiff_fixed_max = make_function(&RigidBodyManipulator::forwardKinJacobian<AutoDiffFixedMaxSize, DerivedPoints>);
+  auto func_autodiff_dynamic = make_function(&RigidBodyManipulator::forwardKinJacobian<AutoDiffDynamicSize, DerivedPoints>);
 
   mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, func_double, func_autodiff_fixed_max, func_autodiff_dynamic);
 }
