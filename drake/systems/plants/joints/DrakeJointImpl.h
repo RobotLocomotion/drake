@@ -23,6 +23,7 @@ public:
   virtual ~DrakeJointImpl() {};
 
   POSITION_AND_VELOCITY_DEPENDENT_METHODS_IMPL(double)
+  POSITION_AND_VELOCITY_DEPENDENT_METHODS_IMPL(DrakeJoint::AutoDiffFixedMaxSize)
   POSITION_AND_VELOCITY_DEPENDENT_METHODS_IMPL(Eigen::AutoDiffScalar<Eigen::VectorXd>)
 
 public:

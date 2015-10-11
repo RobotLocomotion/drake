@@ -50,13 +50,18 @@ Eigen::Matrix<Eigen::AutoDiffScalar<DerType>, Rows, Cols, Options, MaxRows, MaxC
       throw std::runtime_error("TaylorVars of order higher than 1 currently not supported");
     auto df = mxGetCell(derivs, 0);
 
+    auto num_derivs = mxGetN(df);
+    if (num_derivs > DerType::MaxRowsAtCompileTime || (DerType::RowsAtCompileTime != Eigen::Dynamic && num_derivs != DerType::RowsAtCompileTime)) {
+      throw MexToCppConversionError("Number of derivatives does not match the size of AutoDiff derivative vector");
+    }
+
     typedef typename ADScalar::Scalar NormalScalar;
     typedef Eigen::Matrix<NormalScalar, Rows, Cols, Options, MaxRows, MaxCols> ValueMatrixType;
     ret = Eigen::Map<ValueMatrixType>(mxGetPrSafe(f), mxGetM(f), mxGetN(f)).template cast<ADScalar>();
 
     typedef typename Gradient<ValueMatrixType, DerType::RowsAtCompileTime>::type GradientType;
     typedef Eigen::Matrix<NormalScalar, GradientType::RowsAtCompileTime, GradientType::ColsAtCompileTime, 0, GradientType::RowsAtCompileTime, DerType::MaxRowsAtCompileTime> GradientTypeFixedMaxSize;
-    auto gradient_matrix = Eigen::Map<GradientTypeFixedMaxSize>(mxGetPrSafe(df), mxGetM(df), mxGetN(df));
+    auto gradient_matrix = Eigen::Map<GradientTypeFixedMaxSize>(mxGetPrSafe(df), mxGetM(df), num_derivs);
     gradientMatrixToAutoDiff(gradient_matrix, ret);
   }
   return ret;

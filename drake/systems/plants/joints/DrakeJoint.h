@@ -44,6 +44,7 @@ public:
   };
   static const int MAX_NUM_POSITIONS = 7;
   static const int MAX_NUM_VELOCITIES = 6;
+  typedef Eigen::AutoDiffScalar<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73, 1>> AutoDiffFixedMaxSize; // 73 is number of states of quat-parameterized Atlas
 
 private:
   const Eigen::Isometry3d transform_to_parent_body;
@@ -81,6 +82,8 @@ public:
   virtual const Eigen::VectorXd& getJointLimitMax() const;
 
   POSITION_AND_VELOCITY_DEPENDENT_METHODS(double)
+
+  POSITION_AND_VELOCITY_DEPENDENT_METHODS(AutoDiffFixedMaxSize)
 
   POSITION_AND_VELOCITY_DEPENDENT_METHODS(Eigen::AutoDiffScalar<Eigen::VectorXd>)
 

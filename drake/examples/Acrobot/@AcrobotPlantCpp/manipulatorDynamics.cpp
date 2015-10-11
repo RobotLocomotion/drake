@@ -60,9 +60,9 @@ void manipulatorDynamics(const mxArray *pobj, const MatrixBase<DerivedQ>& q, con
   // multiplying by q(0) just to get the size of the derivatives vector right; Matlab TaylorVar operations will complain otherwise. We could handle this case on the Matlab side instead.
   B << 0.0 * q(0), 1.0;
 
-  plhs[0] = eigenToMatlabGeneral<2, 2>(H);
-  plhs[1] = eigenToMatlabGeneral<2, 1>(C);
-  plhs[2] = eigenToMatlabGeneral<2, 1>(B);
+  plhs[0] = eigenToMatlabGeneral(H);
+  plhs[1] = eigenToMatlabGeneral(C);
+  plhs[2] = eigenToMatlabGeneral(B);
 }
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
