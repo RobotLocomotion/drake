@@ -1241,7 +1241,7 @@ GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMa
  * Note that the wrenches in f_ext are expressed in body frame.
  */
 template <typename Scalar>
-GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::dynamicsBiasTerm(KinematicsCache<Scalar>& cache, const std::unordered_map<RigidBody const *, GradientVar<Scalar, TWIST_SIZE, 1> >& f_ext, int gradient_order) const
+GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::dynamicsBiasTerm(KinematicsCache<Scalar>& cache, const eigen_aligned_unordered_map<RigidBody const *, GradientVar<Scalar, TWIST_SIZE, 1> >& f_ext, int gradient_order) const
 {
   GradientVar<Scalar, Eigen::Dynamic, 1> vd(num_velocities, 1, num_positions + num_velocities, gradient_order);
   vd.value().setZero();
@@ -1256,7 +1256,7 @@ GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::dynamicsBiasTerm(Ki
  */
 template <typename Scalar>
 GradientVar<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(KinematicsCache<Scalar>& cache,
-    const std::unordered_map<RigidBody const *, GradientVar<Scalar, TWIST_SIZE, 1> >& f_ext,
+    const eigen_aligned_unordered_map<RigidBody const *, GradientVar<Scalar, TWIST_SIZE, 1> >& f_ext,
     const GradientVar<Scalar, Eigen::Dynamic, 1>& vd, int gradient_order) const
 {
   if (gradient_order > 1)
@@ -1888,8 +1888,8 @@ template DLLEXPORT_RBM GradientVar<double, TWIST_SIZE, 1> RigidBodyManipulator::
 template DLLEXPORT_RBM GradientVar<double, 6, Dynamic> RigidBodyManipulator::worldMomentumMatrix<double>(KinematicsCache<double>&, int, const std::set<int>&, bool) const;
 template DLLEXPORT_RBM GradientVar<double, 6, 1> RigidBodyManipulator::transformSpatialAcceleration<double>(const KinematicsCache<double>&, GradientVar<double, 6, 1> const&, int, int, int, int) const;
 template DLLEXPORT_RBM GradientVar<double, 6, 1> RigidBodyManipulator::worldMomentumMatrixDotTimesV<double>(KinematicsCache<double>&, int, const std::set<int>&) const;
-template DLLEXPORT_RBM GradientVar<double, -1, 1> RigidBodyManipulator::inverseDynamics<double>(KinematicsCache<double>&, unordered_map<RigidBody const*, GradientVar<double, 6, 1> > const&, GradientVar<double, -1, 1, -1, 1> const&, int) const;
-template DLLEXPORT_RBM GradientVar<double, -1, 1> RigidBodyManipulator::dynamicsBiasTerm<double>(KinematicsCache<double>&, unordered_map<RigidBody const*, GradientVar<double, 6, 1> > const&, int) const;
+template DLLEXPORT_RBM GradientVar<double, -1, 1> RigidBodyManipulator::inverseDynamics<double>(KinematicsCache<double>&, eigen_aligned_unordered_map<RigidBody const*, GradientVar<double, 6, 1> > const&, GradientVar<double, -1, 1, -1, 1> const&, int) const;
+template DLLEXPORT_RBM GradientVar<double, -1, 1> RigidBodyManipulator::dynamicsBiasTerm<double>(KinematicsCache<double>&, eigen_aligned_unordered_map<RigidBody const*, GradientVar<double, 6, 1> > const&, int) const;
 
 template DLLEXPORT_RBM GradientVar<double, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints(const KinematicsCache<double>&, int) const;
 

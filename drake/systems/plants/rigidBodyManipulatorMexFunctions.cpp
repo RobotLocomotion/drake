@@ -205,7 +205,7 @@ void dynamicsBiasTermmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
 
   auto lambda = [](const RigidBodyManipulator &model, KinematicsCache<Scalar> &cache, const MatrixBase<DerivedF> &f_ext_value, const MatrixBase<DerivedDF> &f_ext_gradient, int gradient_order) {
 
-    unordered_map<const RigidBody *, GradientVar<Scalar, 6, 1> > f_ext;
+    eigen_aligned_unordered_map<const RigidBody *, GradientVar<Scalar, 6, 1> > f_ext;
 
     if (f_ext_value.size() > 0) {
       assert(f_ext_value.cols() == model.bodies.size());
