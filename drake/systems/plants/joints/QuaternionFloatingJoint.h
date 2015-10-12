@@ -18,7 +18,8 @@ public:
 
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry> jointTransform(const Eigen::MatrixBase<DerivedQ> & q) const {
-    Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry> ret(Eigen::Quaternion<typename DerivedQ::Scalar>(q[3], q[4], q[5], q[6]));
+    Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry> ret;
+    ret.linear() = quat2rotmat(q.template bottomRows<4>());
     ret.translation() << q[0], q[1], q[2];
     ret.makeAffine();
     return ret;
