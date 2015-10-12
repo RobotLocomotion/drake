@@ -42,7 +42,8 @@ RigidBodyManipulator::RigidBodyManipulator(const std::string &urdf_filename, con
 {
   a_grav << 0, 0, 0, 0, 0, -9.81;
 
-  shared_ptr<RigidBody> b = allocate_shared<RigidBody>(Eigen::aligned_allocator<RigidBody>());
+  shared_ptr<RigidBody> b(new RigidBody());
+  make_shared<RigidBody>();
   b->linkname = "world";
   b->robotnum = 0;
   b->body_index = 0;
@@ -58,7 +59,7 @@ RigidBodyManipulator::RigidBodyManipulator(void) :
 {
   a_grav << 0, 0, 0, 0, 0, -9.81;
 
-  shared_ptr<RigidBody> b = allocate_shared<RigidBody>(Eigen::aligned_allocator<RigidBody>());
+  shared_ptr<RigidBody> b(new RigidBody());
   b->linkname = "world";
   b->robotnum = 0;
   b->body_index = 0;
