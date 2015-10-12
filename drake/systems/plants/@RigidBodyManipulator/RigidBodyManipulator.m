@@ -2138,7 +2138,7 @@ classdef RigidBodyManipulator < Manipulator
 %        obj.mex_model_ptr = debugMexEval('constructModelmex',obj);
         obj.mex_model_ptr = constructModelmex(obj);
         obj.default_kinematics_cache_ptr_no_gradients = createKinematicsCachemex(obj.mex_model_ptr, false);
-        obj.default_kinematics_cache_ptr_with_gradients = createKinematicsCacheAutoDiffmex(obj.mex_model_ptr, false);
+        obj.default_kinematics_cache_ptr_with_gradients = createKinematicsCacheAutoDiffmex(obj.mex_model_ptr, obj.getNumPositions() + obj.getNumVelocities());
       end
     end
 
