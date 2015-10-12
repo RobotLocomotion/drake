@@ -70,7 +70,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     //DEBUG
     //mexPrintf("constructModelmex: body %d\n",i);
     //END_DEBUG
-    shared_ptr<RigidBody> b = allocate_shared<RigidBody>(Eigen::aligned_allocator<RigidBody>());
+    shared_ptr<RigidBody> b(new RigidBody());
     b->body_index = i;
 
     b->linkname = mxGetStdString(mxGetPropertySafe(pBodies, i, "linkname"));
@@ -352,7 +352,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   //mexPrintf("constructModelmex: Parsing frames\n");
   //END_DEBUG
   for (int i = 0; i < num_frames; i++) {
-    shared_ptr<RigidBodyFrame> fr = allocate_shared<RigidBodyFrame>(Eigen::aligned_allocator<RigidBodyFrame>());
+    shared_ptr<RigidBodyFrame> fr(new RigidBodyFrame());
 
 	fr->name = mxGetStdString(mxGetPropertySafe(pFrames, i, "name"));
 
