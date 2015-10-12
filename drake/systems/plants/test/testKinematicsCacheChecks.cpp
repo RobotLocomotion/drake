@@ -52,7 +52,7 @@ void performChecks(RigidBodyManipulator& model, KinematicsCache<double>& cache, 
   spatial_acceleration.value().setRandom();
   if (gradient_order > 0)
     spatial_acceleration.gradient().value().setRandom();
-  std::unordered_map<RigidBody const *, GradientVar<double, TWIST_SIZE, 1> > f_ext;
+  eigen_aligned_unordered_map<RigidBody const *, GradientVar<double, TWIST_SIZE, 1> > f_ext;
 
   if (gradient_order == 0) {
     checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::centerOfMass<double>, cache, RigidBodyManipulator::default_robot_num_set);

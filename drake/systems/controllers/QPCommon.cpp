@@ -480,7 +480,7 @@ int setupAndSolveQP(
 
   // handle external wrenches to compensate for
   typedef GradientVar<double, TWIST_SIZE, 1> WrenchGradientVarType;
-  std::unordered_map<RigidBody const *, GradientVar<double, TWIST_SIZE, 1> > f_ext;
+  eigen_aligned_unordered_map<RigidBody const *, GradientVar<double, TWIST_SIZE, 1> > f_ext;
   for (auto it = qp_input->body_wrench_data.begin(); it != qp_input->body_wrench_data.end(); ++it) {
     const drake::lcmt_body_wrench_data& body_wrench_data = *it;
     int body_id = body_wrench_data.body_id - 1;

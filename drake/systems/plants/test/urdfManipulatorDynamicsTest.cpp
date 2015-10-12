@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
   auto H = model->massMatrix(cache);
   cout << H.value() << endl;
 
-  unordered_map<RigidBody const *, GradientVar<double, TWIST_SIZE, 1> > f_ext;
+  eigen_aligned_unordered_map<RigidBody const *, GradientVar<double, TWIST_SIZE, 1> > f_ext;
   auto C = model->dynamicsBiasTerm(cache, f_ext);
   cout << C.value() << endl;
 
