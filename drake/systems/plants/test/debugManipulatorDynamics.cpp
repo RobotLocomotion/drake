@@ -26,7 +26,7 @@ int main()
   auto M = model.massMatrix<double>(cache, gradient_order);
   cout << M.value() << endl << endl;
 
-  unordered_map<RigidBody const *, GradientVar<double, TWIST_SIZE, 1> > f_ext;
+  eigen_aligned_unordered_map<RigidBody const *, GradientVar<double, TWIST_SIZE, 1> > f_ext;
   GradientVar<double, TWIST_SIZE, 1> f_ext_r_foot(TWIST_SIZE, 1, nq + nv, gradient_order);
   f_ext_r_foot.value().setRandom();
   f_ext_r_foot.gradient().value().setRandom();

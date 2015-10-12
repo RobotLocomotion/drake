@@ -9,6 +9,7 @@
 #include <vector>
 #include <utility>
 #include <Eigen/Core>
+#include <unordered_map>
 
 #ifndef DRAKE_UTIL_H_
 #define DRAKE_UTIL_H_
@@ -23,6 +24,9 @@
 #else
     #define DLLEXPORT
 #endif
+
+template <typename Key, typename T>
+using eigen_aligned_unordered_map = std::unordered_map<Key, T, std::hash<Key>, std::equal_to<Key>, Eigen::aligned_allocator<std::pair<Key const, T > > >;
 
 template <typename Derived>
 inline void sizecheck(const Eigen::MatrixBase<Derived>& mat, size_t rows, size_t cols){
