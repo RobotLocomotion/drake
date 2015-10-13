@@ -406,7 +406,7 @@ classdef RigidBodyManipulator < Manipulator
         f_friction = f_friction + min(1,max(-1,v./coulomb_window)).*coulomb_friction;
         if compute_gradient
           ind = find(abs(v)<coulomb_window');
-          dind = sign(v(ind))./coulomb_window(ind)' .* coulomb_friction(ind)';
+          dind = coulomb_friction(ind)' ./coulomb_window(ind)';
           fc_drv = zeros(model.getNumVelocities(),1);
           fc_drv(ind) = dind;
           df_frictiondv = df_frictiondv + diag(fc_drv);
