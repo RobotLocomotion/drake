@@ -44,7 +44,7 @@ if (kinsol.mex)
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is not valid because it was computed via mex, and you are now asking for an evaluation with non-numeric pts.  If you intended to use something like TaylorVar, then you must call doKinematics with use_mex = false');
   end
   P = forwardKinPositionGradientmex(obj.mex_model_ptr, kinsol.mex_ptr, m, body_or_frame_ind - 1, 0, 0);
-  if compute_dP
+  if kinsol.has_gradients
     [P, dP] = eval(P);
   end
 else

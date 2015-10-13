@@ -67,10 +67,10 @@ if (kinsol.mex)
   end
   % base 1 to base 0 for body_or_frame_ids:
   x = forwardKinmex(obj.mex_model_ptr, kinsol.mex_ptr, points, body_or_frame_id - 1, base_or_frame_id - 1, rotation_type);
-  if nargout > 1
-    J = forwardKinJacobianmex(obj.mex_model_ptr, kinsol.mex_ptr, points, body_or_frame_id - 1, base_or_frame_id - 1, rotation_type, in_terms_of_qdot, 0);
-    if nargout > 2
-      x = eval(x);
+  if kinsol.has_gradients
+    [x, J] = eval(x);
+    if nargout > 2 || ~in_terms_of_qdot
+      J = forwardKinJacobianmex(obj.mex_model_ptr, kinsol.mex_ptr, points, body_or_frame_id - 1, base_or_frame_id - 1, rotation_type, in_terms_of_qdot, 0);
       [J, dJ] = eval(J);
       nq = length(kinsol.q);
       if isempty(dJ)
@@ -80,6 +80,10 @@ if (kinsol.mex)
         dJ = dJ(:, 1 : nq);
       end
       dJ = reshape(dJ, size(J, 1), []); % convert to strange second derivative output format
+    end
+  else
+    if nargout > 1
+      J = forwardKinJacobianmex(obj.mex_model_ptr, kinsol.mex_ptr, points, body_or_frame_id - 1, base_or_frame_id - 1, rotation_type, in_terms_of_qdot, 0);
     end
   end
 else

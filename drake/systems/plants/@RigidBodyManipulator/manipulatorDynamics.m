@@ -31,21 +31,17 @@ options.compute_JdotV = true;
 kinsol = doKinematics(obj, q, v, options);
 
 a_grav = [zeros(3, 1); obj.gravity];
-if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(v))
-  f_ext = full(f_ext);  % makes the mex implementation simpler (for now)
-  if isempty(f_ext)
-    f_ext = double.empty(6, 0);
+if (use_mex && obj.mex_model_ptr~=0)
+  if isnumeric(f_ext)
+    f_ext = full(f_ext); % makes the mex implementation simpler (for now)
   end
-  df_ext = [];
   if compute_gradients
-    if isempty(df_ext)
-      df_ext = zeros(numel(f_ext), length(q));
-    end
     f_ext = TaylorVar(f_ext, {df_ext});
   end
+  
   H = massMatrixmex(obj.mex_model_ptr, kinsol.mex_ptr, 0);
   C = dynamicsBiasTermmex(obj.mex_model_ptr, kinsol.mex_ptr, f_ext);
-  if compute_gradients
+  if kinsol.has_gradients
     [H, dH] = eval(H);
     [C, dC] = eval(C);
   end
@@ -78,7 +74,7 @@ end
 
 if ~isempty(obj.force)
   NB = obj.getNumBodies();
-  f_ext = zeros(6,NB);
+  f_ext = q(1) * zeros(6,NB);
   if compute_gradients
     df_ext = zeros(numel(f_ext), nq + nv);
   end
@@ -107,7 +103,7 @@ if ~isempty(obj.force)
     end
   end
 else
-  f_ext = [];
+  f_ext = q(1) * double.empty(6, 0);
   if compute_gradients
     df_ext = [];
   end

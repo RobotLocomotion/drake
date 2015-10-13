@@ -25,7 +25,7 @@ if kinsol.mex
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
   end
   Jdot_times_v = forwardJacDotTimesVmex(obj.mex_model_ptr, kinsol.mex_ptr, points, body_or_frame_id - 1, base_or_frame_id - 1, rotation_type, 0); % base 1 to base 0
-  if compute_gradient
+  if kinsol.has_gradients
     [Jdot_times_v, dJdot_times_v] = eval(Jdot_times_v);
     nq = length(kinsol.q);
     if isempty(dJdot_times_v)

@@ -30,16 +30,20 @@ end
 function [com,J,dJ] = centerOfMass(model,kinsol,robotnum,in_terms_of_qdot)
 if kinsol.mex
   com = centerOfMassmex(model.mex_model_ptr, kinsol.mex_ptr, robotnum);
-  if nargout > 1
-    J = centerOfMassJacobianmex(model.mex_model_ptr, kinsol.mex_ptr, 0, robotnum, in_terms_of_qdot);
-  end
-  if nargout > 2
-    com = eval(com);
-    [J, dJ] = eval(J);
-    nq = length(kinsol.q);
-    dJ = reshape(dJ, numel(J), []);
-    dJ = dJ(:, 1 : nq);
-    dJ = reshape(dJ, size(J, 1), []); % convert to strange second derivative output format
+  if kinsol.has_gradients
+    [com, J] = eval(com);
+    if nargout > 2 || ~in_terms_of_qdot
+      J = centerOfMassJacobianmex(model.mex_model_ptr, kinsol.mex_ptr, 0, robotnum, in_terms_of_qdot);
+      [J, dJ] = eval(J);
+      nq = length(kinsol.q);
+      dJ = reshape(dJ, numel(J), []); % convert to format where cols correspond to variables
+      dJ = dJ(:, 1 : nq); % make sure only gradients w.r.t. q are returned
+      dJ = reshape(dJ, size(J, 1), []); % convert to strange second derivative output format
+    end
+  else
+    if nargout > 1
+      J = centerOfMassJacobianmex(model.mex_model_ptr, kinsol.mex_ptr, 0, robotnum, in_terms_of_qdot);
+    end
   end
 else
   m = 0;

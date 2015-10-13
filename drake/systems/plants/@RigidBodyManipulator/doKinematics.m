@@ -88,10 +88,14 @@ end
 % gradient computations.
 kinsol.q = q;
 kinsol.v = v;
+kinsol.has_gradients = options.compute_gradients;
 
 if (options.use_mex && model.mex_model_ptr~=0)
   if ~isnumeric(q)
     if isa(q, 'TaylorVar')
+      if options.compute_gradients
+        error('can only compute first order gradients using mex')
+      end
       options.compute_gradients = true;
     end
   end
