@@ -188,6 +188,8 @@ if compute_gradient
   dnet_wrenchesdv{1} = zeros(twist_size, nv);
 end
 
+has_f_ext = numel(f_ext) ~= 0;
+
 for i = 2 : nBodies
   twist = kinsol.twists{i};
   spatial_accel = root_accel + JdotV{i};
@@ -219,7 +221,7 @@ for i = 2 : nBodies
       + dcrf(twist, I_times_twist, dtwistdv, dI_times_twistdv);
   end
   
-  if ~isempty(f_ext)
+  if has_f_ext
     external_wrench = f_ext(:, i);
     
     % external wrenches are expressed in body frame. Transform from body to world:

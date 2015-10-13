@@ -69,17 +69,19 @@ if (kinsol.mex)
   x = forwardKinmex(obj.mex_model_ptr, kinsol.mex_ptr, points, body_or_frame_id - 1, base_or_frame_id - 1, rotation_type);
   if kinsol.has_gradients
     [x, J] = eval(x);
+    nq = length(kinsol.q);
     if nargout > 2 || ~in_terms_of_qdot
       J = forwardKinJacobianmex(obj.mex_model_ptr, kinsol.mex_ptr, points, body_or_frame_id - 1, base_or_frame_id - 1, rotation_type, in_terms_of_qdot, 0);
       [J, dJ] = eval(J);
-      nq = length(kinsol.q);
       if isempty(dJ)
         dJ = zeros(numel(J), nq);
       else
         dJ = reshape(dJ, numel(J), []);
-        dJ = dJ(:, 1 : nq);
+        dJ = dJ(:, 1 : nq); % gradient only w.r.t q
       end
       dJ = reshape(dJ, size(J, 1), []); % convert to strange second derivative output format
+    else
+      J = J(:, 1 : nq); % gradient only w.r.t q
     end
   else
     if nargout > 1
