@@ -104,15 +104,19 @@ if (options.use_mex && model.mex_model_ptr~=0)
   else
     kinsol.mex_ptr = options.kinematics_cache_ptr_to_use;
   end
-  
-  if options.compute_gradients && isnumeric(q)
-    if isempty(v)
-      v = double.empty(0, 1);
-    end
+
+  if options.compute_gradients
     nq = length(q);
     nv = length(v);
-    q = TaylorVar(q, {[eye(nq), zeros(nq, nv)]});
-    v = TaylorVar(v, {[zeros(nv, nq), eye(nv)]});
+    if isnumeric(q)
+      q = TaylorVar(q, {[eye(nq), zeros(nq, nv)]});
+    end
+    if isnumeric(v)
+      if isempty(v)
+        v = double.empty(0, 1);
+      end
+      v = TaylorVar(v, {[zeros(nv, nq), eye(nv)]});
+    end
   end
   
   doKinematicsmex(model.mex_model_ptr, kinsol.mex_ptr, q, v, options.compute_JdotV);
