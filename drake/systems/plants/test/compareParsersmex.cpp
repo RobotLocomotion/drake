@@ -75,7 +75,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 		KinematicsCache<double> cpp_cache = cpp_model->doKinematics(cpp_q, cpp_v, 1);
 
 		{ // compare H, C, and B
-		  unordered_map<RigidBody const *, GradientVar<double, TWIST_SIZE, 1> > f_ext;
+			eigen_aligned_unordered_map<RigidBody const *, GradientVar<double, TWIST_SIZE, 1> > f_ext;
 
 		  auto matlab_H = matlab_model->massMatrix(matlab_cache);
 		  auto cpp_H = cpp_model->massMatrix(cpp_cache);
