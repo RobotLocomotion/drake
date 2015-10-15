@@ -17,9 +17,9 @@ function [x,J,dJ] = forwardKin(obj, kinsol, body_or_frame_id, points, options)
 %                -- 0, no rotation included
 %                -- 1, output Euler angle
 %                -- 2, output quaternion
-% @option base_or_frame_id an integer ID for a RigidBody or RigidBodyFrame
+% @param options.base_or_frame_id an integer ID for a RigidBody or RigidBodyFrame
 % (obtained via e.g., findLinkInd or findFrameInd) @default 1 (world).
-% @option in_terms_of_qdot boolean specifying whether to return the mapping
+% @param in_terms_of_qdot boolean specifying whether to return the mapping
 % from qdot to xdot (i.e. the gradient dx/dq) or v to xdot.
 %
 % @retval x a matrix with m columns, such that column i is
@@ -65,14 +65,14 @@ if (kinsol.mex)
   if (obj.mex_model_ptr==0)
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
   end
+  % base 1 to base 0 for body_or_frame_ids:
   if nargout > 2
-    [x, J, dJ] = forwardKinmex(obj.mex_model_ptr, kinsol.mex_ptr, body_or_frame_id, points, rotation_type, base_or_frame_id, in_terms_of_qdot);
+    [J, dJ] = forwardKinJacobianmex(obj.mex_model_ptr, kinsol.mex_ptr, points, body_or_frame_id - 1, base_or_frame_id - 1, rotation_type, in_terms_of_qdot, 1);
     dJ = reshape(dJ, size(J, 1), []); % convert to strange second derivative output format
   elseif nargout > 1
-    [x, J] = forwardKinmex(obj.mex_model_ptr, kinsol.mex_ptr, body_or_frame_id, points, rotation_type, base_or_frame_id, in_terms_of_qdot);
-  else
-    x = forwardKinmex(obj.mex_model_ptr, kinsol.mex_ptr, body_or_frame_id, points, rotation_type, base_or_frame_id, in_terms_of_qdot);
+    J = forwardKinJacobianmex(obj.mex_model_ptr, kinsol.mex_ptr, points, body_or_frame_id - 1, base_or_frame_id - 1, rotation_type, in_terms_of_qdot, 0);
   end
+  x = forwardKinmex(obj.mex_model_ptr, kinsol.mex_ptr, points, body_or_frame_id - 1, base_or_frame_id - 1, rotation_type);
 else
   nq = obj.getNumPositions();
   nv = obj.getNumVelocities();

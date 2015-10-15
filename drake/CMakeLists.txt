@@ -77,6 +77,8 @@ elseif (MSVC)
   # the constructors are callable in your program.
 
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4996") # disable sprintf security warning
+
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj") # after receiving RigidBodyManipulator.cpp : fatal error C1128: number of sections exceeded object file format limit: compile with /bigobj
 endif()
 
 # set up matlab build

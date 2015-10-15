@@ -5,15 +5,15 @@ function addpath_drake
 % directing you to their location.
 %
 
-root = pwd;
+root = fileparts(mfilename('fullpath'));
 
 if ~exist('pods_get_base_path','file')
   % search up to 4 directories up for a build/matlab directory
   pfx='';
   for i=1:4
-    if exist(fullfile(pwd,pfx,'build','matlab'),'file')
-      disp(['Adding ', fullfile(pwd,pfx,'build','matlab'), ' to the matlab path']);
-      addpath(fullfile(pwd,pfx,'build','matlab'));
+    if exist(fullfile(root,pfx,'build','matlab'),'file')
+      disp(['Adding ', fullfile(root,pfx,'build','matlab'), ' to the matlab path']);
+      addpath(fullfile(root,pfx,'build','matlab'));
       break;
     end
     pfx = fullfile('..',pfx);

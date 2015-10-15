@@ -275,9 +275,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
   }
 
-  std::map<int, std::unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
+  eigen_aligned_unordered_map<RigidBody const *, GradientVar<double, TWIST_SIZE, 1> > f_ext;
   pdata->H = pdata->r->massMatrix(cache).value();
-  pdata->C = pdata->r->inverseDynamics(cache, f_ext).value();
+  pdata->C = pdata->r->dynamicsBiasTerm(cache, f_ext).value();
 
   pdata->H_float = pdata->H.topRows(6);
   pdata->H_act = pdata->H.bottomRows(nu);
@@ -295,9 +295,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   // consider making all J's into row-major
 
-  auto com_gradientvar = pdata->r->centerOfMass(cache, 1);
-  Vector3d xcom = com_gradientvar.value();
-  pdata->J = com_gradientvar.gradient().value();
+  Vector3d xcom = pdata->r->centerOfMass(cache);
+  pdata->J = pdata->r->centerOfMassJacobian(cache, 0).value();
   pdata->Jdotv = pdata->r->centerOfMassJacobianDotTimesV(cache, 0).value();
   pdata->J_xy = pdata->J.topRows(2);
   pdata->Jdotv_xy = pdata->Jdotv.head<2>();

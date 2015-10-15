@@ -202,7 +202,7 @@ double averageContactPointHeight(RigidBodyManipulator* r, const KinematicsCache<
     const SupportStateElement& support = *support_it;
     for (auto contact_position_it = support.contact_pts.begin(); contact_position_it != support.contact_pts.end(); ++contact_position_it) {
       Vector3d contact_point = contact_position_it->head<3>(); // copy, ah well
-      contact_positions_world.col(col++) = r->forwardKin(cache, contact_point, support.body_idx, 0, 0, 0).value();
+      contact_positions_world.col(col++) = r->forwardKin(cache, contact_point, support.body_idx, 0, 0);
     }
   }
   double average_contact_point_height = contact_positions_world.row(2).mean();
@@ -302,7 +302,7 @@ void checkCentroidalMomentumMatchesTotalWrench(RigidBodyManipulator* r, Kinemati
     const auto& Bj = B.middleCols(beta_start, active_support_length);
     const auto& betaj = beta.segment(beta_start, active_support_length);
     Vector6d wrench_for_body_in_body_frame = Vector6d::Zero();
-    auto body_xyzquat = r->forwardKin(cache, Vector3d::Zero().eval(), 0, active_support.body_idx, 2, 0).value();
+    auto body_xyzquat = r->forwardKin(cache, Vector3d::Zero().eval(), 0, active_support.body_idx, 2);
     Matrix3d R_world_to_body = quat2rotmat(body_xyzquat.tail<4>().eval());
 
     for (size_t k = 0; k < contact_pts.size(); k++) {
@@ -324,7 +324,7 @@ void checkCentroidalMomentumMatchesTotalWrench(RigidBodyManipulator* r, Kinemati
   double mass = r->getMass();
   Vector6d gravitational_wrench_in_com = r->a_grav * mass;
   Isometry3d com_to_world = Isometry3d::Identity();
-  com_to_world.translation() = r->centerOfMass(cache, 0).value();
+  com_to_world.translation() = r->centerOfMass(cache);
   Vector6d gravitational_wrench_in_world = transformSpatialForce(com_to_world, gravitational_wrench_in_com);
   total_wrench_in_world += gravitational_wrench_in_world;
 
@@ -480,17 +480,18 @@ int setupAndSolveQP(
 
   // handle external wrenches to compensate for
   typedef GradientVar<double, TWIST_SIZE, 1> WrenchGradientVarType;
-  std::map<int, std::unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
+  eigen_aligned_unordered_map<RigidBody const *, GradientVar<double, TWIST_SIZE, 1> > f_ext;
   for (auto it = qp_input->body_wrench_data.begin(); it != qp_input->body_wrench_data.end(); ++it) {
     const drake::lcmt_body_wrench_data& body_wrench_data = *it;
     int body_id = body_wrench_data.body_id - 1;
-    f_ext[body_id] = std::unique_ptr<WrenchGradientVarType>(new WrenchGradientVarType(TWIST_SIZE, 1, nq, 0));
-    f_ext[body_id]->value() = Map<const Matrix<double, TWIST_SIZE, 1> >(body_wrench_data.wrench);
+    auto f_ext_i = WrenchGradientVarType(TWIST_SIZE, 1, nq, 0);
+    f_ext_i.value() = Map<const Matrix<double, TWIST_SIZE, 1> >(body_wrench_data.wrench);
+    f_ext.insert({pdata->r->bodies[body_id].get(), f_ext_i});
   }
 
   auto& cache = pdata->cache;
   pdata->H = pdata->r->massMatrix(cache).value();
-  pdata->C = pdata->r->inverseDynamics(cache, f_ext).value();
+  pdata->C = pdata->r->dynamicsBiasTerm(cache, f_ext).value();
 
   pdata->H_float = pdata->H.topRows(6);
   pdata->H_act = pdata->H.bottomRows(nu);
@@ -508,9 +509,8 @@ int setupAndSolveQP(
   Vector3d xcom;
   // consider making all J's into row-major
 
-  GradientVar<double,3,1> xcom_grad = pdata->r->centerOfMass(cache, 1);
-  xcom = xcom_grad.value();
-  pdata->J = xcom_grad.gradient().value();
+  xcom = pdata->r->centerOfMass(cache);
+  pdata->J = pdata->r->centerOfMassJacobian(cache, 0).value();
   GradientVar<double,3,1> comdotv_grad = pdata->r->centerOfMassJacobianDotTimesV(cache, 0);
   pdata->Jdotv = comdotv_grad.value();
   pdata->J_xy = pdata->J.topRows(2);

@@ -98,9 +98,8 @@ void QuasiStaticConstraint::eval(const double* t, KinematicsCache<double>& cache
   {
     int nq = this->robot->num_positions;
     dc.resize(2,nq+this->num_pts);
-    auto com_gradientvar = robot->centerOfMass(cache, 1, m_robotnumset);
-    const auto& com = com_gradientvar.value();
-    const auto& dcom = com_gradientvar.gradient().value();
+    auto com = robot->centerOfMass(cache, m_robotnumset);
+    auto dcom = robot->centerOfMassJacobian(cache, 0, m_robotnumset, true).value();
     MatrixXd contact_pos(3,this->num_pts);
     MatrixXd dcontact_pos(3*this->num_pts,nq);
     int num_accum_pts = 0;
@@ -108,9 +107,8 @@ void QuasiStaticConstraint::eval(const double* t, KinematicsCache<double>& cache
     MatrixXd dcenter_pos = MatrixXd::Zero(3,nq);
     for(int i = 0;i<this->num_bodies;i++)
     {
-      auto body_contact_pos_gradientvar = robot->forwardKin(cache, body_pts[i], bodies[i], 0, 0, 1);
-      const auto& body_contact_pos = body_contact_pos_gradientvar.value();
-      const auto& dbody_contact_pos = body_contact_pos_gradientvar.gradient().value();
+      auto body_contact_pos = robot->forwardKin(cache, body_pts[i], bodies[i], 0, 0);
+      auto dbody_contact_pos = robot->forwardKinJacobian(cache, body_pts[i], bodies[i], 0, 0, true, 0).value();
 
       contact_pos.block(0,num_accum_pts,3,this->num_body_pts[i]) = body_contact_pos;
       dcontact_pos.block(3*num_accum_pts,0,3*this->num_body_pts[i],nq) = dbody_contact_pos;
@@ -804,9 +802,8 @@ WorldPositionConstraint::WorldPositionConstraint(RigidBodyManipulator *robot, in
 
 void WorldPositionConstraint::evalPositions(KinematicsCache<double>& cache, Matrix3Xd &pos, MatrixXd &J) const
 {
-  auto pos_gradientvar = robot->forwardKin(cache, pts, body, 0, 0, 1);
-  pos = pos_gradientvar.value();
-  J = pos_gradientvar.gradient().value();
+  pos = robot->forwardKin(cache, pts, body, 0, 0);
+  J = robot->forwardKinJacobian(cache, pts, body, 0, 0, true, 0).value();
 }
 
 void WorldPositionConstraint::evalNames(const double* t, std::vector<std::string>& cnst_names) const
@@ -849,9 +846,8 @@ WorldCoMConstraint::WorldCoMConstraint(RigidBodyManipulator *robot, Vector3d lb,
 
 void WorldCoMConstraint::evalPositions(KinematicsCache<double>& cache, Matrix3Xd &pos, MatrixXd &J) const
 {
-  auto com_gradientvar = robot->centerOfMass(cache, 1, m_robotnum);
-  pos = com_gradientvar.value();
-  J = com_gradientvar.gradient().value();
+  pos = robot->centerOfMass(cache, m_robotnum);
+  J = robot->centerOfMassJacobian(cache, 0, m_robotnum, true).value();
 }
 
 
@@ -900,13 +896,11 @@ void RelativePositionConstraint::evalPositions(KinematicsCache<double>& cache, M
 {
   int nq = this->robot->num_positions;
 
-  auto bodyA_pos_gradientvar = robot->forwardKin(cache, pts, bodyA_idx, 0, 0, 1);
-  const auto& bodyA_pos = bodyA_pos_gradientvar.value();
-  const auto& JA = bodyA_pos_gradientvar.gradient().value();
+  auto bodyA_pos = robot->forwardKin(cache, pts, bodyA_idx, 0, 0);
+  auto JA = robot->forwardKinJacobian(cache, pts, bodyA_idx, 0, 0, true, 0).value();
 
-  auto wTb_gradientvar = robot->forwardKin(cache, Vector3d::Zero().eval(), bodyB_idx, 0, 2, 1);
-  const auto& wTb = wTb_gradientvar.value();
-  const auto& dwTb = wTb_gradientvar.gradient().value();
+  auto wTb = robot->forwardKin(cache, Vector3d::Zero().eval(), bodyB_idx, 0, 2);
+  auto dwTb = robot->forwardKinJacobian(cache, Vector3d::Zero().eval(), bodyB_idx, 0, 2, true, 0).value();
 
   Vector4d bTw_quat = quatConjugate(wTb.block(3,0,4,1));
   Matrix4d dbTw_quat = dquatConjugate();
@@ -1025,9 +1019,8 @@ WorldQuatConstraint::WorldQuatConstraint(RigidBodyManipulator *robot, int body, 
 void WorldQuatConstraint::evalOrientationProduct(const KinematicsCache<double>& cache, double &prod, MatrixXd &dprod) const
 {
   Vector3d pts = Vector3d::Zero();
-  auto x_gradientvar = robot->forwardKin(cache, pts, body, 0, 2, 1);
-  const auto& x = x_gradientvar.value();
-  const auto& J = x_gradientvar.gradient().value();
+  auto x = robot->forwardKin(cache, pts, body, 0, 2);
+  auto J = robot->forwardKinJacobian(cache, pts, body, 0, 2, true, 0).value();
 
   Vector4d quat = x.tail(4);
   prod = (quat.transpose()*this->quat_des);
@@ -1076,12 +1069,10 @@ void RelativeQuatConstraint::evalOrientationProduct(const KinematicsCache<double
 {
   int nq = this->robot->num_positions;
   Vector3d origin_pt = Vector3d::Zero();
-  auto pos_a_gradientvar = robot->forwardKin(cache, origin_pt, bodyA_idx, 0, 2, 1);
-  const auto& pos_a = pos_a_gradientvar.value();
-  const auto& J_a = pos_a_gradientvar.gradient().value();
-  auto pos_b_gradientvar = robot->forwardKin(cache, origin_pt, bodyB_idx, 0, 2, 1);
-  const auto& pos_b = pos_b_gradientvar.value();
-  const auto& J_b = pos_b_gradientvar.gradient().value();
+  auto pos_a = robot->forwardKin(cache, origin_pt, bodyA_idx, 0, 2);
+  auto J_a = robot->forwardKinJacobian(cache, origin_pt, bodyA_idx, 0, 2, true, 0).value();
+  auto pos_b = robot->forwardKin(cache, origin_pt, bodyB_idx, 0, 2);
+  auto J_b = robot->forwardKinJacobian(cache, origin_pt, bodyB_idx, 0, 2, true, 0).value();
 
   Vector4d quat_a2w = pos_a.block(3,0,4,1);
   MatrixXd dquat_a2w = J_a.block(3,0,4,nq);
@@ -1242,9 +1233,8 @@ WorldEulerConstraint::WorldEulerConstraint(RigidBodyManipulator *robot, int body
 
 void WorldEulerConstraint::evalrpy(const KinematicsCache<double>& cache, Vector3d &rpy,MatrixXd &J) const
 {
-  auto x_gradientvar = robot->forwardKin(cache, Vector3d::Zero().eval(), body, 0, 1, 1);
-  const auto& x = x_gradientvar.value();
-  const auto& dx = x_gradientvar.gradient().value();
+  auto x = robot->forwardKin(cache, Vector3d::Zero().eval(), body, 0, 1);
+  auto dx = robot->forwardKinJacobian(cache, Vector3d::Zero().eval(), body, 0, 1, true, 0).value();
 
   rpy = x.tail(3);
   J = dx.block(3,0,3,this->robot->num_positions);
@@ -1389,9 +1379,8 @@ WorldGazeOrientConstraint::WorldGazeOrientConstraint(RigidBodyManipulator* robot
 
 void WorldGazeOrientConstraint::evalOrientation(const KinematicsCache<double>& cache, Vector4d &quat, MatrixXd &dquat_dq) const
 {
-  auto x_gradientvar = robot->forwardKin(cache, Vector3d::Zero().eval(), body, 0, 2, 1);
-  const auto& x = x_gradientvar.value();
-  const auto& J = x_gradientvar.gradient().value();
+  auto x = robot->forwardKin(cache, Vector3d::Zero().eval(), body, 0, 2);
+  auto J = robot->forwardKinJacobian(cache, Vector3d::Zero().eval(), body, 0, 2, true, 0).value();
   quat = x.tail(4);
   dquat_dq = J.block(3,0,4,this->robot->num_positions);
 }
@@ -1401,25 +1390,15 @@ void WorldGazeOrientConstraint::name(const double* t, std::vector<std::string> &
 {
   if(this->isTimeValid(t))
   {
-    char cnst_name_str_buffer[500];
-    std::string cnst_name_str;
     if(t == nullptr)
     {
-      sprintf(cnst_name_str_buffer,"%s conic gaze orientation constraint",this->body_name.c_str());
-      cnst_name_str = std::string(cnst_name_str_buffer);
-      name_str.push_back(cnst_name_str);
-      sprintf(cnst_name_str_buffer,"%s revolute gaze orientation constraint",this->body_name.c_str());
-      cnst_name_str = std::string(cnst_name_str_buffer);
-      name_str.push_back(cnst_name_str);
+      name_str.push_back(this->body_name + " conic gaze orientation constraint");
+      name_str.push_back(this->body_name + " revolute gaze orientation constraint");
     }
     else
     {
-      sprintf(cnst_name_str_buffer,"%s conic gaze orientation constraint at time %10.4f",this->body_name.c_str(),*t);
-      cnst_name_str = std::string(cnst_name_str_buffer);
-      name_str.push_back(cnst_name_str);
-      sprintf(cnst_name_str_buffer,"%s revolute gaze orientation constraint at time %10.4f",this->body_name.c_str(),*t);
-      cnst_name_str = std::string(cnst_name_str_buffer);
-      name_str.push_back(cnst_name_str);
+      name_str.push_back(this->body_name + " conic gaze orientation constraint at time " + std::to_string(*t));
+      name_str.push_back(this->body_name + " revolute gaze orientation constraint at time " + std::to_string(*t));
     }
   }
 }
@@ -1465,9 +1444,8 @@ void WorldGazeDirConstraint::eval(const double* t, KinematicsCache<double>& cach
     body_axis_ends.col(0).setZero();
     body_axis_ends.col(1) = this->axis;
     int nq = this->robot->num_positions;
-    auto axis_pos_gradientvar = robot->forwardKin(cache, body_axis_ends, body, 0, 0, 1);
-    const auto &axis_pos = axis_pos_gradientvar.value();
-    const auto &daxis_pos = axis_pos_gradientvar.gradient().value();
+    auto axis_pos = robot->forwardKin(cache, body_axis_ends, body, 0, 0);
+    auto daxis_pos = robot->forwardKinJacobian(cache, body_axis_ends, body, 0, 0, true, 0).value();
     Vector3d axis_world = axis_pos.col(1) - axis_pos.col(0);
     MatrixXd daxis_world = daxis_pos.block(3, 0, 3, nq) - daxis_pos.block(0, 0, 3, nq);
     c.resize(1);
@@ -1537,9 +1515,8 @@ void WorldGazeTargetConstraint::eval(const double* t, KinematicsCache<double>& c
     body_axis_ends.col(0) = this->gaze_origin;
     body_axis_ends.col(1) = this->gaze_origin + this->axis;
     int nq = this->robot->num_positions;
-    auto axis_ends_gradientvar = robot->forwardKin(cache, body_axis_ends, body, 0, 0, 1);
-    const auto &axis_ends = axis_ends_gradientvar.value();
-    const auto &daxis_ends = axis_ends_gradientvar.gradient().value();
+    auto axis_ends = robot->forwardKin(cache, body_axis_ends, body, 0, 0);
+    auto daxis_ends = robot->forwardKinJacobian(cache, body_axis_ends, body, 0, 0, true, 0).value();
 
     Vector3d world_axis = axis_ends.col(1) - axis_ends.col(0);
     MatrixXd dworld_axis = daxis_ends.block(3, 0, 3, nq) - daxis_ends.block(0, 0, 3, nq);
@@ -1591,22 +1568,18 @@ void RelativeGazeTargetConstraint::eval(const double* t, KinematicsCache<double>
   if(this->isTimeValid(t))
   {
     int nq = this->robot->num_positions;
-    auto target_pos_gradientvar = robot->forwardKin(cache, target, bodyB_idx, 0, 0, 1);
-    const auto& target_pos = target_pos_gradientvar.value();
-    const auto& dtarget_pos = target_pos_gradientvar.gradient().value();
+    auto target_pos = robot->forwardKin(cache, target, bodyB_idx, 0, 0);
+    auto dtarget_pos = robot->forwardKinJacobian(cache, target, bodyB_idx, 0, 0, true, 0).value();
 
-    auto origin_pos_gradientvar = robot->forwardKin(cache, gaze_origin, bodyA_idx, 0, 0, 1);
-    const auto& origin_pos = origin_pos_gradientvar.value();
-    const auto& dorigin_pos = origin_pos_gradientvar.gradient().value();
+    auto origin_pos = robot->forwardKin(cache, gaze_origin, bodyA_idx, 0, 0);
+    auto dorigin_pos = robot->forwardKinJacobian(cache, gaze_origin, bodyA_idx, 0, 0, true, 0).value();
 
-    auto axis_pos_gradientvar = robot->forwardKin(cache, axis, bodyA_idx, 0, 0, 1);
-    auto& axis_pos = axis_pos_gradientvar.value();
-    auto& daxis_pos = axis_pos_gradientvar.gradient().value();
+    auto axis_pos = robot->forwardKin(cache, axis, bodyA_idx, 0, 0);
+    auto daxis_pos = robot->forwardKinJacobian(cache, axis, bodyA_idx, 0, 0, true, 0).value();
 
     Vector3d axis_origin = Vector3d::Zero();
-    auto axis_origin_pos_gradientvar = robot->forwardKin(cache, axis_origin, bodyA_idx, 0, 0, 1);
-    const auto& axis_origin_pos = axis_origin_pos_gradientvar.value();
-    const auto& daxis_origin_pos = axis_origin_pos_gradientvar.gradient().value();
+    auto axis_origin_pos = robot->forwardKin(cache, axis_origin, bodyA_idx, 0, 0);
+    auto daxis_origin_pos = robot->forwardKinJacobian(cache, axis_origin, bodyA_idx, 0, 0, true, 0).value();
 
     axis_pos -= axis_origin_pos;
     daxis_pos -= daxis_origin_pos;
@@ -1671,12 +1644,11 @@ void RelativeGazeDirConstraint::eval(const double* t, KinematicsCache<double>& c
     body_dir_ends.block(0,1,3,1) = this->dir;
     int nq = this->robot->num_positions;
 
-    auto axis_pos_gradientvar = robot->forwardKin(cache, body_axis_ends, bodyA_idx, 0, 0, 1);
-    const auto& axis_pos = axis_pos_gradientvar.value();
-    const auto& daxis_pos = axis_pos_gradientvar.gradient().value();
-    auto dir_pos_gradientvar = robot->forwardKin(cache, body_dir_ends, bodyB_idx, 0, 0, 1);
-    const auto& dir_pos = dir_pos_gradientvar.value();
-    const auto& ddir_pos = dir_pos_gradientvar.gradient().value();
+    auto axis_pos = robot->forwardKin(cache, body_axis_ends, bodyA_idx, 0, 0);
+    auto daxis_pos = robot->forwardKinJacobian(cache, body_axis_ends, bodyA_idx, 0, 0, true, 0).value();
+
+    auto dir_pos = robot->forwardKin(cache, body_dir_ends, bodyB_idx, 0, 0);
+    auto ddir_pos = robot->forwardKinJacobian(cache, body_dir_ends, bodyB_idx, 0, 0, true, 0).value();
 
     Vector3d axis_world = axis_pos.col(1)-axis_pos.col(0);
     MatrixXd daxis_world = daxis_pos.block(3,0,3,nq)-daxis_pos.block(0,0,3,nq);
@@ -1734,9 +1706,8 @@ void Point2PointDistanceConstraint::eval(const double* t, KinematicsCache<double
     MatrixXd dposA(3*this->ptA.cols(),this->robot->num_positions);
     if(this->bodyA != 0)
     {
-      auto posA_gradientvar = robot->forwardKin(cache, ptA, bodyA, 0, 0, 1);
-      posA = posA_gradientvar.value();
-      dposA = posA_gradientvar.gradient().value();
+      posA = robot->forwardKin(cache, ptA, bodyA, 0, 0);
+      dposA = robot->forwardKinJacobian(cache, ptA, bodyA, 0, 0, true, 0).value();
     }
     else
     {
@@ -1747,9 +1718,8 @@ void Point2PointDistanceConstraint::eval(const double* t, KinematicsCache<double
     MatrixXd dposB(3*this->ptB.cols(),this->robot->num_positions);
     if(this->bodyB != 0)
     {
-      auto posB_gradientvar = robot->forwardKin(cache, ptB, bodyB, 0, 0, 1);
-      posB = posB_gradientvar.value();
-      dposB = posB_gradientvar.gradient().value();
+      posB = robot->forwardKin(cache, ptB, bodyB, 0, 0);
+      dposB = robot->forwardKinJacobian(cache, ptB, bodyB, 0, 0, true, 0).value();
     }
     else
     {
@@ -1842,13 +1812,11 @@ void Point2LineSegDistConstraint::eval(const double* t, KinematicsCache<double>&
   {
     int nq = this->robot->num_positions;
 
-    auto pt_pos_gradientvar = robot->forwardKin(cache, pt, pt_body, 0, 0, 1);
-    const auto& pt_pos = pt_pos_gradientvar.value();
-    const auto& J_pt = pt_pos_gradientvar.gradient().value();
+    auto pt_pos = robot->forwardKin(cache, pt, pt_body, 0, 0);
+    auto J_pt = robot->forwardKinJacobian(cache, pt, pt_body, 0, 0, true, 0).value();
 
-    auto line_pos_gradientvar = robot->forwardKin(cache, line_ends, line_body, 0, 0, 1);
-    const auto& line_pos = line_pos_gradientvar.value();
-    const auto& J_line = line_pos_gradientvar.gradient().value();
+    auto line_pos = robot->forwardKin(cache, line_ends, line_body, 0, 0);
+    auto J_line = robot->forwardKinJacobian(cache, line_ends, line_body, 0, 0, true, 0).value();
 
     Vector3d x0 = pt_pos;
     Vector3d x1 = line_pos.col(0);
@@ -1946,9 +1914,8 @@ void WorldFixedPositionConstraint::eval_valid(const double* valid_t, int num_val
   {
     KinematicsCache<double> cache = robot->doKinematics(valid_q.col(i), 0);
     pos[i].resize(3,n_pts);
-    auto pos_gradientvar = robot->forwardKin(cache, pts, body, 0, 0, 1);
-    pos[i] = pos_gradientvar.value();
-    dpos[i] = pos_gradientvar.gradient().value();
+    pos[i] = robot->forwardKin(cache, pts, body, 0, 0);
+    dpos[i] = robot->forwardKinJacobian(cache, pts, body, 0, 0, true, 0).value();
   }
   int* next_idx = new int[num_valid_t];
   int* prev_idx = new int[num_valid_t];
@@ -2037,9 +2004,8 @@ void WorldFixedOrientConstraint::eval_valid(const double* valid_t, int num_valid
   for(int i = 0;i<num_valid_t;i++)
   {
     KinematicsCache<double> cache = robot->doKinematics(valid_q.col(i), 0);
-    auto tmp_pos_gradientvar = robot->forwardKin(cache, Vector3d::Zero().eval(), body, 0, 2, 1);
-    const auto& tmp_pos = tmp_pos_gradientvar.value();
-    const auto& dtmp_pos = tmp_pos_gradientvar.gradient().value();
+    auto tmp_pos = robot->forwardKin(cache, Vector3d::Zero().eval(), body, 0, 2);
+    auto dtmp_pos = robot->forwardKinJacobian(cache, Vector3d::Zero().eval(), body, 0, 2, true, 0).value();
     quat[i] = tmp_pos.tail(4);
     dquat[i].resize(4,nq);
     dquat[i] = dtmp_pos.block(3,0,4,nq);
@@ -2127,9 +2093,8 @@ void WorldFixedBodyPoseConstraint::eval_valid(const double* valid_t, int num_val
   for(int i = 0;i<num_valid_t;i++)
   {
     KinematicsCache<double> cache = robot->doKinematics(valid_q.col(i), 0);
-    auto pos_tmp_gradientvar = robot->forwardKin(cache, Vector3d::Zero().eval(), body, 0, 2, 1);
-    const auto& pos_tmp = pos_tmp_gradientvar.value();
-    const auto& J_tmp = pos_tmp_gradientvar.gradient().value();
+    auto pos_tmp = robot->forwardKin(cache, Vector3d::Zero().eval(), body, 0, 2);
+    auto J_tmp = robot->forwardKinJacobian(cache, Vector3d::Zero().eval(), body, 0, 2, true, 0).value();
 
     pos[i] = pos_tmp.head(3);
     quat[i] = pos_tmp.tail(4);
@@ -2692,8 +2657,8 @@ void GravityCompensationTorqueConstraint::eval(const double* t, KinematicsCache<
 {
   VectorXd qd = VectorXd::Zero(robot->num_velocities);
   KinematicsCache<double> cache_zero_velocity = robot->doKinematics(cache.getQ(), qd, 1);
-  std::map<int, std::unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
-  auto G_gradientvar = robot->inverseDynamics(cache_zero_velocity, f_ext, (GradientVar<double, Eigen::Dynamic, 1>*) nullptr, 1);
+  eigen_aligned_unordered_map<RigidBody const *, GradientVar<double, TWIST_SIZE, 1> > f_ext;
+  auto G_gradientvar = robot->dynamicsBiasTerm(cache_zero_velocity, f_ext, 1);
 
   c.resize(num_constraint);
   dc.resize(num_constraint, robot->num_positions);

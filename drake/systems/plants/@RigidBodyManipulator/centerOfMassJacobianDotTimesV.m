@@ -1,7 +1,7 @@
 function [com_Jacobian_dot_times_v, dcom_Jacobian_dot_times_v] = ...
   centerOfMassJacobianDotTimesV(obj,kinsol,robotnum)
-% computes the quantity Jd * v == d(dcom/dq) * qd, where J is the
-% second output of centerOfMassJacobianV.
+% computes the quantity Jd * v, where J is the center of mass Jacobian in terms of v,
+% i.e. the matrix that maps v to CoM velocity
 %
 % @see centroidalMOmentumMatrixDotTimesV
 %
@@ -9,7 +9,7 @@ function [com_Jacobian_dot_times_v, dcom_Jacobian_dot_times_v] = ...
 % @param robotnum an int array. Jdot * v for the bodies that belong to
 % robot(robotnum) is computed. Default is 1.
 %
-% @retval com_Jacobian_dot_times_v Jdot * v == d(dcom/dq) * qdot
+% @retval com_Jacobian_dot_times_v Jdot * v
 % @retval dcom_Jacobian_dot_times_v gradient with respect to q
 
 compute_gradients = nargout > 1;
@@ -19,9 +19,9 @@ end
 
 if (kinsol.mex)
   if compute_gradients
-    [com_Jacobian_dot_times_v, dcom_Jacobian_dot_times_v] = centerOfMassJacobianDotTimesVmex(obj.mex_model_ptr, kinsol.mex_ptr, robotnum);
+    [com_Jacobian_dot_times_v, dcom_Jacobian_dot_times_v] = centerOfMassJacobianDotTimesVmex(obj.mex_model_ptr, kinsol.mex_ptr, 1, robotnum);
   else
-    [com_Jacobian_dot_times_v] = centerOfMassJacobianDotTimesVmex(obj.mex_model_ptr, kinsol.mex_ptr, robotnum);
+    [com_Jacobian_dot_times_v] = centerOfMassJacobianDotTimesVmex(obj.mex_model_ptr, kinsol.mex_ptr, 0, robotnum);
   end
 else
   total_mass = getMass(obj, robotnum);

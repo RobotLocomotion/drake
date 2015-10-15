@@ -208,7 +208,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         vn = wvn;
       else
         vn = Mvn*z + wvn;
-        [obj2,z2,Mvn2,wvn2] = solveMexLCP(obj,t,x,u);
       end      
       
       vToqdot = obj.manip.vToqdot(q);

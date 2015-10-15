@@ -22,16 +22,16 @@ bool isMxArrayVector( const mxArray* array )
 
 template <typename Derived>
 void setDynamics(const mxArray *pBodies, int i, FixedAxisOneDoFJoint<Derived>* fixed_axis_one_dof_joint) {
-  double damping = mxGetScalar(mxGetProperty(pBodies, i, "damping"));
-  double coulomb_friction = mxGetScalar(mxGetProperty(pBodies, i, "coulomb_friction"));
-  double coulomb_window = mxGetScalar(mxGetProperty(pBodies, i, "coulomb_window"));
+  double damping = mxGetScalar(mxGetPropertySafe(pBodies, i, "damping"));
+  double coulomb_friction = mxGetScalar(mxGetPropertySafe(pBodies, i, "coulomb_friction"));
+  double coulomb_window = mxGetScalar(mxGetPropertySafe(pBodies, i, "coulomb_window"));
   fixed_axis_one_dof_joint->setDynamics(damping, coulomb_friction, coulomb_window);
 }
 
 template <typename Derived>
 void setLimits(const mxArray *pBodies, int i, FixedAxisOneDoFJoint<Derived>* fixed_axis_one_dof_joint) {
-  double joint_limit_min = mxGetScalar(mxGetProperty(pBodies,i,"joint_limit_min"));
-  double joint_limit_max = mxGetScalar(mxGetProperty(pBodies,i,"joint_limit_max"));
+  double joint_limit_min = mxGetScalar(mxGetPropertySafe(pBodies,i,"joint_limit_min"));
+  double joint_limit_max = mxGetScalar(mxGetPropertySafe(pBodies,i,"joint_limit_max"));
   fixed_axis_one_dof_joint->setJointLimits(joint_limit_min,joint_limit_max);
 }
 
@@ -41,7 +41,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   //DEBUG
   //mexPrintf("constructModelmex: START\n");
   //END_DEBUG
-  char buf[100];
   mxArray *pm;
 
   if (nrhs!=1) {
@@ -57,124 +56,119 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   RigidBodyManipulator *model=new RigidBodyManipulator();
   model->bodies.clear();  // a little gross:  the default constructor makes a body "world".  zap it because we will construct one again below
 
-//  model->robot_name = get_strings(mxGetProperty(pRBM,0,"name"));
+//  model->robot_name = get_strings(mxGetPropertySafe(pRBM,0,"name"));
 
-  const mxArray* pBodies = mxGetProperty(pRBM,0,"body");
+  const mxArray* pBodies = mxGetPropertySafe(pRBM,0,"body");
   if (!pBodies) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","the body array is invalid");
   int num_bodies = static_cast<int>(mxGetNumberOfElements(pBodies));
 
-  const mxArray* pFrames = mxGetProperty(pRBM,0,"frame");
+  const mxArray* pFrames = mxGetPropertySafe(pRBM,0,"frame");
   if (!pFrames) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","the frame array is invalid");
   int num_frames = static_cast<int>(mxGetNumberOfElements(pFrames));
-  
-  for (int i=0; i<num_bodies; i++) {
+
+  for (int i = 0; i < num_bodies; i++) {
     //DEBUG
     //mexPrintf("constructModelmex: body %d\n",i);
     //END_DEBUG
-    shared_ptr<RigidBody> b = make_shared<RigidBody>();
+    shared_ptr<RigidBody> b(new RigidBody());
     b->body_index = i;
 
-    pm = mxGetProperty(pBodies,i,"linkname");
-    mxGetString(pm,buf,100);
-    b->linkname.assign(buf,strlen(buf));
+    b->linkname = mxGetStdString(mxGetPropertySafe(pBodies, i, "linkname"));
 
-    pm = mxGetProperty(pBodies,i,"robotnum");
+	  pm = mxGetPropertySafe(pBodies,i,"robotnum");
     b->robotnum = (int) mxGetScalar(pm)-1;
 
-    pm = mxGetProperty(pBodies,i,"mass");
+    pm = mxGetPropertySafe(pBodies,i,"mass");
     b->mass = mxGetScalar(pm);
 
-    pm = mxGetProperty(pBodies,i,"com");
+    pm = mxGetPropertySafe(pBodies,i,"com");
     if (!mxIsEmpty(pm)) memcpy(b->com.data(),mxGetPrSafe(pm),sizeof(double)*3);
 
-    pm = mxGetProperty(pBodies,i,"I");
+    pm = mxGetPropertySafe(pBodies,i,"I");
     if (!mxIsEmpty(pm)) memcpy(b->I.data(),mxGetPrSafe(pm),sizeof(double)*6*6);
 
-    pm = mxGetProperty(pBodies,i,"position_num");
+    pm = mxGetPropertySafe(pBodies,i,"position_num");
     b->position_num_start = (int) mxGetScalar(pm) - 1;  //zero-indexed
 
-    pm = mxGetProperty(pBodies,i,"velocity_num");
+    pm = mxGetPropertySafe(pBodies,i,"velocity_num");
     b->velocity_num_start = (int) mxGetScalar(pm) - 1;  //zero-indexed
 
-    pm = mxGetProperty(pBodies,i,"parent");
+    pm = mxGetPropertySafe(pBodies,i,"parent");
     if (!pm || mxIsEmpty(pm))
       b->parent = nullptr;
     else {
       int parent_ind = static_cast<int>(mxGetScalar(pm))-1;
       if (parent_ind >= static_cast<int>(model->bodies.size()))
         mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","bad body.parent %d (only have %d bodies)",parent_ind,model->bodies.size());
-      if (parent_ind>=0)
-        b->parent = model->bodies[parent_ind];
+	  if (parent_ind >= 0)
+		  b->parent = model->bodies[parent_ind];
     }
 
-    {
-      mxGetString(mxGetProperty(pBodies, i, "jointname"), buf, 100);
-      string joint_name;
-      joint_name.assign(buf, strlen(buf));
+  	if (b->hasParent()) {
+  	  string joint_name = mxGetStdString(mxGetPropertySafe(pBodies, i, "jointname"));
+  	  //mexPrintf("adding joint %s\n", joint_name.c_str());
 
-      pm = mxGetProperty(pBodies, i, "Ttree");
+      pm = mxGetPropertySafe(pBodies, i, "Ttree");
       // todo: check that the size is 4x4
       Isometry3d transform_to_parent_body;
       memcpy(transform_to_parent_body.data(), mxGetPrSafe(pm), sizeof(double) * 4 * 4);
 
-      int floating = (int) mxGetScalar(mxGetProperty(pBodies, i, "floating"));
+      int floating = (int) mxGetScalar(mxGetPropertySafe(pBodies, i, "floating"));
 
       Eigen::Vector3d joint_axis;
-      pm = mxGetProperty(pBodies, i, "joint_axis");
+      pm = mxGetPropertySafe(pBodies, i, "joint_axis");
       memcpy(joint_axis.data(), mxGetPrSafe(pm), sizeof(double) * 3);
 
-      double pitch = mxGetScalar(mxGetProperty(pBodies, i, "pitch"));
+      double pitch = mxGetScalar(mxGetPropertySafe(pBodies, i, "pitch"));
 
-      if (b->hasParent()) {
-        std::unique_ptr<DrakeJoint> joint;
-        switch (floating) {
-          case 0: {
-            if (pitch == 0.0) {
-              RevoluteJoint *revolute_joint = new RevoluteJoint(joint_name, transform_to_parent_body, joint_axis);
-              joint = std::unique_ptr<RevoluteJoint>(revolute_joint);
-              setLimits(pBodies, i, revolute_joint);
-              setDynamics(pBodies, i, revolute_joint);
-            } else if (std::isinf(static_cast<double>(pitch))) {
-              PrismaticJoint *prismatic_joint = new PrismaticJoint(joint_name, transform_to_parent_body, joint_axis);
-              joint = std::unique_ptr<PrismaticJoint>(prismatic_joint);
-              setLimits(pBodies, i, prismatic_joint);
-              setDynamics(pBodies, i, prismatic_joint);
-            } else {
-              joint = std::unique_ptr<HelicalJoint>(new HelicalJoint(joint_name, transform_to_parent_body, joint_axis, pitch));
-            }
-            break;
-          }
-          case 1: {
-            joint = std::unique_ptr<RollPitchYawFloatingJoint>(new RollPitchYawFloatingJoint(joint_name, transform_to_parent_body));
-            break;
-          }
-          case 2: {
-            joint = std::unique_ptr<QuaternionFloatingJoint>(new QuaternionFloatingJoint(joint_name, transform_to_parent_body));
-            break;
-          }
-          default: {
-            std::ostringstream stream;
-            stream << "floating type " << floating << " not recognized.";
-            throw std::runtime_error(stream.str());
-          }
+  	  std::unique_ptr<DrakeJoint> joint;
+  	  switch (floating) {
+    		case 0: {
+    			if (pitch == 0.0) {
+    				RevoluteJoint *revolute_joint = new RevoluteJoint(joint_name, transform_to_parent_body, joint_axis);
+    				joint = std::unique_ptr<RevoluteJoint>(revolute_joint);
+    				setLimits(pBodies, i, revolute_joint);
+    				setDynamics(pBodies, i, revolute_joint);
+    			} else if (std::isinf(static_cast<double>(pitch))) {
+    				PrismaticJoint *prismatic_joint = new PrismaticJoint(joint_name, transform_to_parent_body, joint_axis);
+    				joint = std::unique_ptr<PrismaticJoint>(prismatic_joint);
+    				setLimits(pBodies, i, prismatic_joint);
+    				setDynamics(pBodies, i, prismatic_joint);
+    			} else {
+    				joint = std::unique_ptr<HelicalJoint>(new HelicalJoint(joint_name, transform_to_parent_body, joint_axis, pitch));
+    			}
+    			break;
         }
-
-        b->setJoint(move(joint));
+        case 1: {
+    			joint = std::unique_ptr<RollPitchYawFloatingJoint>(new RollPitchYawFloatingJoint(joint_name, transform_to_parent_body));
+    			break;
+        }
+        case 2: {
+    			joint = std::unique_ptr<QuaternionFloatingJoint>(new QuaternionFloatingJoint(joint_name, transform_to_parent_body));
+    			break;
+        }
+        default: {
+    			std::ostringstream stream;
+    			stream << "floating type " << floating << " not recognized.";
+    			throw std::runtime_error(stream.str());
+        }
       }
+
+  		b->setJoint(move(joint));
     }
 
     //DEBUG
     //mexPrintf("constructModelmex: About to parse collision geometry\n");
     //END_DEBUG
-    pm = mxGetProperty(pBodies,i,"collision_geometry");
+    pm = mxGetPropertySafe(pBodies,i,"collision_geometry");
     Matrix4d T;
-    if (!mxIsEmpty(pm)){
+    if (!mxIsEmpty(pm)) {
       for (int j=0; j<mxGetNumberOfElements(pm); j++) {
         //DEBUG
         //cout << "constructModelmex: Body " << i << ", Element " << j << endl;
         //END_DEBUG
         mxArray* pShape = mxGetCell(pm,j);
-        char* group_name_cstr = mxArrayToString(mxGetProperty(pShape,0,"name"));
+        char* group_name_cstr = mxArrayToString(mxGetPropertySafe(pShape,0,"name"));
         string group_name;
         if (group_name_cstr) {
           group_name = group_name_cstr;
@@ -183,33 +177,33 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         }
 
         // Get element-to-link transform from MATLAB object
-        memcpy(T.data(), mxGetPrSafe(mxGetProperty(pShape,0,"T")), sizeof(double)*4*4);
-        auto shape = (DrakeShapes::Shape)static_cast<int>(mxGetScalar(mxGetProperty(pShape,0,"drake_shape_id")));
+        memcpy(T.data(), mxGetPrSafe(mxGetPropertySafe(pShape,0,"T")), sizeof(double)*4*4);
+        auto shape = (DrakeShapes::Shape)static_cast<int>(mxGetScalar(mxGetPropertySafe(pShape,0,"drake_shape_id")));
         vector<double> params_vec;
         RigidBody::CollisionElement element(T, b);
         switch (shape) {
           case DrakeShapes::BOX:
           {
-            double* params = mxGetPrSafe(mxGetProperty(pShape,0,"size"));
+            double* params = mxGetPrSafe(mxGetPropertySafe(pShape,0,"size"));
             element.setGeometry(DrakeShapes::Box(Vector3d(params[0],params[1],params[2])));
           }
             break;
           case DrakeShapes::SPHERE:
           {
-            double r(*mxGetPrSafe(mxGetProperty(pShape,0,"radius")));
+            double r(*mxGetPrSafe(mxGetPropertySafe(pShape,0,"radius")));
             element.setGeometry(DrakeShapes::Sphere(r));
           }
             break;
           case DrakeShapes::CYLINDER:
           {
-            double r(*mxGetPrSafe(mxGetProperty(pShape,0,"radius")));
-            double l(*mxGetPrSafe(mxGetProperty(pShape,0,"len")));
+            double r(*mxGetPrSafe(mxGetPropertySafe(pShape,0,"radius")));
+            double l(*mxGetPrSafe(mxGetPropertySafe(pShape,0,"len")));
             element.setGeometry(DrakeShapes::Cylinder(r, l));
           }
             break;
           case DrakeShapes::MESH:
           {
-            string filename(mxArrayToString(mxGetProperty(pShape,0,"filename")));
+            string filename(mxArrayToString(mxGetPropertySafe(pShape,0,"filename")));
             element.setGeometry(DrakeShapes::Mesh(filename, filename));
           }
             break;
@@ -228,14 +222,14 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
             break;
           case DrakeShapes::CAPSULE:
           {
-            double r(*mxGetPrSafe(mxGetProperty(pShape,0,"radius")));
-            double l(*mxGetPrSafe(mxGetProperty(pShape,0,"len")));
+            double r(*mxGetPrSafe(mxGetPropertySafe(pShape,0,"radius")));
+            double l(*mxGetPrSafe(mxGetPropertySafe(pShape,0,"len")));
             element.setGeometry(DrakeShapes::Capsule(r, l));
           }
             break;
           default:
             // intentionally do nothing..
-            
+
             //DEBUG
             //cout << "constructModelmex: SHOULD NOT GET HERE" << endl;
             //END_DEBUG
@@ -252,7 +246,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 //      }
 
       // Set collision filtering bitmasks
-      pm = mxGetProperty(pBodies,i,"collision_filter");
+      pm = mxGetPropertySafe(pBodies,i,"collision_filter");
       DrakeCollision::bitmask group, mask;
 
       mxArray* belongs_to = mxGetField(pm,0,"belongs_to");
@@ -302,11 +296,11 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   // THIS IS UGLY: I'm sending the terrain contact points into the
   // contact_pts field of the cpp RigidBody objects
   //DEBUG
-  //mexPrintf("constructModelmex: Parsing contact points\n");
+  //mexPrintf("constructModelmex: Parsing contact points (calling getTerrainContactPoints)\n");
   //cout << "constructModelmex: Get struct" << endl;
   //END_DEBUG
   mxArray* contact_pts_struct[1];
-  if (~mexCallMATLAB(1,contact_pts_struct,1,const_cast<mxArray**>(&pRBM),"getTerrainContactPoints")) {
+  if (!mexCallMATLAB(1,contact_pts_struct,1,const_cast<mxArray**>(&pRBM),"getTerrainContactPoints")) {
     //DEBUG
     //mexPrintf("constructModelmex: Got terrain contact points struct\n");
     //if (contact_pts_struct) {
@@ -346,6 +340,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       Map<Matrix3Xd> pts(mxGetPrSafe(pPts),3,n_pts);
       model->bodies[body_idx]->contact_pts = pts;
       //DEBUG
+      //mexPrintf("constructModelmex: created %d contact points for body %d\n", n_pts, body_idx);
       //cout << "constructModelmex: Contact_pts of body: " << endl;
       //cout << model->bodies[body_idx]->contact_pts << endl;
       //END_DEBUG
@@ -356,24 +351,22 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   //DEBUG
   //mexPrintf("constructModelmex: Parsing frames\n");
   //END_DEBUG
-  for (int i=0; i<num_frames; i++) {
-    shared_ptr<RigidBodyFrame> fr = make_shared<RigidBodyFrame>();
+  for (int i = 0; i < num_frames; i++) {
+    shared_ptr<RigidBodyFrame> fr(new RigidBodyFrame());
 
-    pm = mxGetProperty(pFrames,i,"name");
-    mxGetString(pm,buf,100);
-    fr->name.assign(buf,strlen(buf));
+	fr->name = mxGetStdString(mxGetPropertySafe(pFrames, i, "name"));
 
-    pm = mxGetProperty(pFrames,i,"body_ind");
+    pm = mxGetPropertySafe(pFrames,i,"body_ind");
     fr->body = model->bodies[(int) mxGetScalar(pm)-1];
 
-    pm = mxGetProperty(pFrames,i,"T");
+    pm = mxGetPropertySafe(pFrames,i,"T");
     memcpy(fr->transform_to_body.data(),mxGetPrSafe(pm),sizeof(double)*4*4);
 
     fr->frame_index = -i-2;
     model->frames.push_back(fr);
   }
 
-  const mxArray* a_grav_array = mxGetProperty(pRBM,0,"gravity");
+  const mxArray* a_grav_array = mxGetPropertySafe(pRBM,0,"gravity");
   if (a_grav_array && mxGetNumberOfElements(a_grav_array)==3) {
     double* p = mxGetPrSafe(a_grav_array);
     model->a_grav[3] = p[0];
@@ -387,20 +380,20 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   //DEBUG
   //mexPrintf("constructModelmex: Parsing loop constraints\n");
   //END_DEBUG
-  const mxArray* pLoops = mxGetProperty(pRBM,0,"loop");
+  const mxArray* pLoops = mxGetPropertySafe(pRBM,0,"loop");
   int num_loops = static_cast<int>(mxGetNumberOfElements(pLoops));
   model->loops.clear();
   for (int i=0; i<num_loops; i++)
   {
-    pm = mxGetProperty(pLoops,i,"frameA");
+    pm = mxGetPropertySafe(pLoops,i,"frameA");
     int frame_A_ind = static_cast<int>(-mxGetScalar(pm)-1);
     if (frame_A_ind<0 || frame_A_ind>=model->frames.size())
       mexErrMsgIdAndTxt("Drake:constructModelmex:BadFrameNumber","Something is wrong, this doesn't point to a valid frame");
-    pm = mxGetProperty(pLoops,i,"frameB");
+    pm = mxGetPropertySafe(pLoops,i,"frameB");
     int frame_B_ind = static_cast<int>(-mxGetScalar(pm)-1);
     if (frame_B_ind<0 || frame_B_ind>=model->frames.size())
       mexErrMsgIdAndTxt("Drake:constructModelmex:BadFrameNumber","Something is wrong, this doesn't point to a valid frame");
-    pm = mxGetProperty(pLoops,i,"axis");
+    pm = mxGetPropertySafe(pLoops,i,"axis");
     Vector3d axis;
     memcpy(axis.data(), mxGetPrSafe(pm), 3*sizeof(double));
 //    cout << "loop " << i << ": frame_A = " << model->frames[frame_A_ind]->name << ", frame_B = " << model->frames[frame_B_ind]->name << endl;
@@ -412,17 +405,16 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   //DEBUG
   //mexPrintf("constructModelmex: Parsing actuators\n");
   //END_DEBUG
-  const mxArray* pActuators = mxGetProperty(pRBM,0,"actuator");
+  const mxArray* pActuators = mxGetPropertySafe(pRBM,0,"actuator");
   int num_actuators = static_cast<int>(mxGetNumberOfElements(pActuators));
   model->actuators.clear();
   for (int i=0; i<num_actuators; i++)
   {
-    pm = mxGetProperty(pActuators,i,"name");
-    mxGetString(pm,buf,100);
-    pm = mxGetProperty(pActuators,i,"joint");
+    string name = mxGetStdString(mxGetPropertySafe(pActuators,i,"name"));
+    pm = mxGetPropertySafe(pActuators,i,"joint");
     int joint = static_cast<int>(mxGetScalar(pm)-1);
-    pm = mxGetProperty(pActuators,i, "reduction");
-    model->actuators.push_back(RigidBodyActuator(std::string(buf), model->bodies[joint], static_cast<double>(mxGetScalar(pm))));
+    pm = mxGetPropertySafe(pActuators,i, "reduction");
+    model->actuators.push_back(RigidBodyActuator(name, model->bodies[joint], static_cast<double>(mxGetScalar(pm))));
   }
 
   //  LOOP CONSTRAINTS
@@ -431,6 +423,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   //END_DEBUG
   model->compile();
 
+  //mexPrintf("constructModelmex: Creating DrakeMexPointer\n");
   plhs[0] = createDrakeMexPointer((void*)model,"RigidBodyManipulator");
   //DEBUG
   //mexPrintf("constructModelmex: END\n");
