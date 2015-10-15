@@ -21,7 +21,7 @@ Date: Nov 12 2013
 #include <mex.h>
 #include <math.h>
 #include <matrix.h>
-
+#include <drakeMexUtil.h>
 
 // Internal access to bullet
 #include "LinearMath/btTransform.h"
@@ -85,9 +85,9 @@ double ptToPolyBullet(double *vertsPr, size_t nRows, size_t nCols){
 double *shiftAndTransform(double *verts, double *vertsT, const mxArray *x, mxArray *x0, int k, mxArray *cSk, size_t nRows, size_t nCols)
 {
     /* This can and maybe should be sped up. For example, we know that cSk is upper triangular.*/
-    double *dcSk = mxGetPr(cSk);
-    double *dx0 = mxGetPr(x0);
-    double *dx = mxGetPr(x);
+    double *dcSk = mxGetPrSafe(cSk);
+    double *dx0 = mxGetPrSafe(x0);
+    double *dx = mxGetPrSafe(x);
     
     for(int i=0;i<nRows;i++){
         for(int j=0;j<nCols;j++){
@@ -129,11 +129,11 @@ bool isCollisionFree(int funnelIdx, const mxArray *x, const mxArray *funnelLibra
         {
             // Get vertices of this obstacle
             obstacle = mxGetCell(forest, jForest);
-            verts = mxGetPr(mxGetCell(forest, jForest)); // Get vertices
+            verts = mxGetPrSafe(mxGetCell(forest, jForest)); // Get vertices
             nCols = mxGetN(obstacle);
             nRows = mxGetM(obstacle);
             
-            double *vertsT = mxGetPr(mxCreateDoubleMatrix(nRows, nCols, mxREAL));
+            double *vertsT = mxGetPrSafe(mxCreateDoubleMatrix(nRows, nCols, mxREAL));
                 
             // Shift vertices so that point on trajectory is at origin and transform by cholesky of S
             vertsT = shiftAndTransform(verts, vertsT, x, x0, k, cSk, nRows, nCols);

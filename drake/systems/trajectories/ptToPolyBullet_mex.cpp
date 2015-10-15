@@ -26,7 +26,7 @@ Date: Nov 8 2013
 #include "LinearMath/btTransformUtil.h"
 
 #include <mex.h>
-
+#include <drakeMexUtil.h>
 
 using namespace std;
 
@@ -53,7 +53,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
 	// Get inputs
 	  double *vertsPr;
-	  vertsPr = mxGetPr(prhs[0]);
+	  vertsPr = mxGetPrSafe(prhs[0]);
 	  const int nRows = mxGetM(prhs[0]); // number of rows
 	  const int nCols = mxGetN(prhs[0]); // number of columns
 
