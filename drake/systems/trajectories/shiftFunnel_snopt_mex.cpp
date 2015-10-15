@@ -27,7 +27,8 @@
 #include <math.h>
 #include <matrix.h>
 #include <drakeMexUtil.h>
-
+#include <memory>
+#include <algorithm>
 
 // Snopt stuff
 namespace snopt {
@@ -71,6 +72,17 @@ static double *dx_current;
 static const mxArray *forest; // Cell array containing forest (pointer)
 static double min_dist_snopt;
 
+// lenrw, leniw, lencw
+static unique_ptr<snopt::doublereal []> rw;
+static unique_ptr<snopt::integer []> iw;
+static unique_ptr<char []> cw;
+static snopt::integer lenrw=0;
+static snopt::integer leniw=0;
+static snopt::integer lencw=0;
+
+const int DEFAULT_LENRW = 500000;
+const int DEFAULT_LENIW = 500000;
+const int DEFAULT_LENCW = 500;
 
 /* Constraint to make sure current state is in inlet of shifted funnel
  */
@@ -473,41 +485,28 @@ bool shiftFunnel(int funnelIdx, const mxArray *funnelLibrary, const mxArray *for
     snopt::integer nS,nInf;
     snopt::doublereal sInf;
     
-    // lenrw, leniw, lencw
-    const int DEFAULT_LENRW = 500000;
-    const int DEFAULT_LENIW = 500000;
-    const int DEFAULT_LENCW = 500;
-    
     snopt::integer lenrw = DEFAULT_LENRW, leniw = DEFAULT_LENIW, lencw = DEFAULT_LENCW;
-    
-    // cw, iw, rw
-    snopt::doublereal rw_static[DEFAULT_LENRW];
-    snopt::integer iw_static[DEFAULT_LENIW];
-    char cw_static[8*DEFAULT_LENCW];
-    snopt::doublereal *rw = rw_static;
-    snopt::integer *iw = iw_static;
-    char* cw = cw_static;
     
     // Memory allocation
     snopt::integer iSumm = -1; // 1
     snopt::integer iPrint = -1; // 9
     
-    snopt::sninit_(&iPrint,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*lencw);
-    snopt::snmema_(&INFO_snopt,&nF,&nx,&nxname,&nFname,&lenA,&lenG,&mincw,&miniw,&minrw,cw,&lencw,iw,&leniw,rw,&lenrw,8*lencw);
+    snopt::sninit_(&iPrint,&iSumm,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw,8*lencw);
+    snopt::snmema_(&INFO_snopt,&nF,&nx,&nxname,&nFname,&lenA,&lenG,&mincw,&miniw,&minrw,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw,8*lencw);
     if (minrw>lenrw) {
         lenrw = minrw;
-        rw = new snopt::doublereal[lenrw];
+        rw.reset(new snopt::doublereal[lenrw]);
     }
     if (miniw>leniw) {
         leniw = miniw;
-        iw = new snopt::integer[leniw];
+        iw.reset(new snopt::integer[leniw]);
     }
     if (mincw>lencw) {
         lencw = mincw;
-        cw = new char[8*lencw];
+        cw.reset(new char[8*lencw]);
     }
     
-    snopt::sninit_(&iPrint,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*lencw);
+    snopt::sninit_(&iPrint,&iSumm,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw,8*lencw);
     
     snopt::snopta_
             ( &Cold, &nF, &nx, &nxname, &nFname,
@@ -518,8 +517,8 @@ bool shiftFunnel(int funnelIdx, const mxArray *funnelLibrary, const mxArray *for
             x_guess, xstate, xmul, F, Fstate, Fmul,
             &INFO_snopt, &mincw, &miniw, &minrw,
             &nS, &nInf, &sInf,
-            cw, &lencw, iw, &leniw, rw, &lenrw,
-            cw, &lencw, iw, &leniw, rw, &lenrw,
+            cw.get(), &lencw, iw.get(), &leniw, rw.get(), &lenrw,
+            cw.get(), &lencw, iw.get(), &leniw, rw.get(), &lenrw,
             npname, 8*nxname, 8*nFname,
             8*lencw,8*lencw);
     
@@ -548,10 +547,6 @@ bool shiftFunnel(int funnelIdx, const mxArray *funnelLibrary, const mxArray *for
     delete[] Fmul;
     delete[] Fstate;
     
-    if (rw != rw_static) { delete[] rw; }
-    if (iw != iw_static) { delete[] iw; }
-    if (cw != cw_static) { delete[] cw; }
-    
     // Set min distance
     *min_dist = min_dist_snopt;
     
@@ -572,7 +567,14 @@ bool shiftFunnel(int funnelIdx, const mxArray *funnelLibrary, const mxArray *for
 /* Main mex funtion*/
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
-    
+    if (lenrw==0) { // then initialize (sninit needs some default allocation)
+        lenrw = DEFAULT_LENRW;
+        rw.reset(new snopt::doublereal[lenrw]);
+        leniw = DEFAULT_LENIW;
+        iw.reset(new snopt::integer[leniw]);
+        lencw = DEFAULT_LENCW;
+        cw.reset(new char[8*lencw]);
+    }
     // Get current state (from which nominal/unshifted funnel would be executed)
     // const mxArray *x_current;
     x_current = prhs[0];
