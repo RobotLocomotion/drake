@@ -103,7 +103,11 @@ if ~isempty(obj.force)
     end
   end
 else
-  f_ext = q(1) * double.empty(6, 0);
+  if isempty(q)
+    f_ext = double.empty(6, 0);
+  else
+    f_ext = q(1) * double.empty(6, 0);
+  end
   if compute_gradients
     df_ext = [];
   end
