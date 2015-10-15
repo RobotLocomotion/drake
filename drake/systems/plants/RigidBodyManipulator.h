@@ -415,7 +415,8 @@ public:
   template<typename Scalar>
   GradientVar<Scalar, SPACE_DIMENSION + 1, SPACE_DIMENSION + 1> relativeTransform(const KinematicsCache<Scalar>& cache, int base_or_frame_ind, int body_or_frame_ind, int gradient_order) const;
 
-  void computeContactJacobians(const KinematicsCache<double>& cache, Eigen::VectorXi const & idxA, Eigen::VectorXi const & idxB, Eigen::Map<Eigen::Matrix3Xd> const & xA, Eigen::Map<Eigen::Matrix3Xd> const & xB, const bool compute_second_derivatives, Eigen::MatrixXd & J, Eigen::MatrixXd & dJ) const;
+  template <typename Scalar>
+  void computeContactJacobians(const KinematicsCache<Scalar>& cache, Eigen::Ref<const Eigen::VectorXi> const & idxA, Eigen::Ref<const Eigen::VectorXi> const & idxB, Eigen::Ref<const Eigen::Matrix3Xd> const & xA, Eigen::Ref<const Eigen::Matrix3Xd> const & xB, const bool compute_second_derivatives, Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> & J, Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> & dJ) const;
 
   DrakeCollision::ElementId addCollisionElement(const RigidBody::CollisionElement& element, const std::shared_ptr<RigidBody>& body, std::string group_name);
 
@@ -589,8 +590,13 @@ public:
 
 private:
   //helper functions for contactConstraints
-  void accumulateContactJacobian(const KinematicsCache<double>& cache, const int bodyInd, Eigen::Matrix3Xd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, Eigen::MatrixXd & J) const;
-  void accumulateSecondOrderContactJacobian(const KinematicsCache<double>& cache, const int bodyInd, Eigen::Matrix3Xd const & bodyPoints, std::vector<size_t> const & cindA, std::vector<size_t> const & cindB, Eigen::MatrixXd & dJ) const;
+  template <typename Scalar>
+  void accumulateContactJacobian(const KinematicsCache<Scalar> &cache, const int bodyInd, Eigen::Matrix3Xd const &bodyPoints, std::vector<size_t> const &cindA, std::vector<size_t> const &cindB,
+                                 Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> &J) const;
+
+  template <typename Scalar>
+  void accumulateSecondOrderContactJacobian(const KinematicsCache<Scalar> &cache, const int bodyInd, Eigen::Matrix3Xd const &bodyPoints, std::vector<size_t> const &cindA,
+                                            std::vector<size_t> const &cindB, Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> &dJ) const;
 
   template <typename Scalar>
   void updateCompositeRigidBodyInertias(KinematicsCache<Scalar>& cache, int gradient_order) const;

@@ -5,8 +5,9 @@
 #ifndef DRAKE_STANDARDMEXCONVERSIONS_H
 #define DRAKE_STANDARDMEXCONVERSIONS_H
 
-#include "drakeMexUtil.h"
 #include <string>
+#include "drakeMexUtil.h"
+#include "GradientVar.h"
 
 /**
  * fromMex specializations
@@ -24,6 +25,16 @@ bool fromMex(const mxArray* source, bool*) {
   return mxGetLogicals(source)[0];
 }
 
+std::set<int> fromMex(const mxArray *source, std::set<int> *) {
+  std::set<int> ret;
+  int num_robot = static_cast<int>(mxGetNumberOfElements(source));
+  double *data = mxGetPrSafe(source);
+  for (int i = 0; i < num_robot; i++) {
+    ret.insert((int) data[i]);
+  }
+  return ret;
+}
+
 /*
  * note: leaving Options, MaxRows, and MaxCols out as template parameters (leaving them to their defaults)
  * results in an internal compiler error on MSVC. See https://connect.microsoft.com/VisualStudio/feedback/details/1847159
@@ -34,6 +45,33 @@ Eigen::Map<const Eigen::Matrix<double, Rows, Cols, Options, MaxRows, MaxCols>> f
     throw MexToCppConversionError("Expected a numeric array");
   }
   return matlabToEigenMap<Rows, Cols>(mex);
+}
+
+// quick version for VectorXi.
+// TODO: generalize to arbitrary matrices
+Eigen::Map<const Eigen::VectorXi> fromMex(const mxArray *source, Eigen::MatrixBase<Eigen::Map<const Eigen::VectorXi> > *) {
+  if (!mxIsInt32(source))
+    throw MexToCppConversionError("Expected an int32 array");
+  if (mxGetM(source) != 1 && mxGetN(source) != 1)
+    throw MexToCppConversionError("Expected a 1 x n or n x 1 int32 array");
+  auto num_elements = mxGetNumberOfElements(source);
+  return Eigen::Map<const Eigen::VectorXi>(reinterpret_cast<int*>(mxGetData(source)), num_elements);
+}
+
+template <typename T>
+std::vector<T> fromMex(const mxArray* source, std::vector<T>*) {
+  if (!mxIsCell(source))
+    throw MexToCppConversionError("Expected a cell array");
+  if (mxGetM(source) != 1 && mxGetN(source) != 1)
+    throw MexToCppConversionError("Expected a 1 x n or n x 1 cell array");
+
+  auto num_elements = mxGetNumberOfElements(source);
+  std::vector<T> ret;
+  ret.reserve(num_elements);
+  for (size_t i = 0; i < num_elements; i++) {
+    ret.push_back(fromMex(mxGetCell(source, i), static_cast<T*>(nullptr)));
+  }
+  return ret;
 }
 
 template<typename DerType, int Rows, int Cols, int Options, int MaxRows, int MaxCols>
@@ -89,8 +127,9 @@ Eigen::Matrix<Eigen::AutoDiffScalar<DerType>, Rows, Cols, Options, MaxRows, MaxC
  * toMex specializations
  */
 
-void toMex(const bool& source, mxArray* dest[], int nlhs) {
+int toMex(const bool& source, mxArray* dest[], int nlhs) {
   dest[0] = mxCreateLogicalScalar(source);
+  return 1;
 }
 
 /*
@@ -98,13 +137,14 @@ void toMex(const bool& source, mxArray* dest[], int nlhs) {
  * results in an internal compiler error on MSVC. See https://connect.microsoft.com/VisualStudio/feedback/details/1847159
  */
 template <typename Scalar, int Rows, int Cols, int Options, int MaxRows, int MaxCols>
-void toMex(const Eigen::Matrix<Scalar, Rows, Cols, Options, MaxRows, MaxCols> &source, mxArray *dest[], int nlhs) {
+int toMex(const Eigen::Matrix<Scalar, Rows, Cols, Options, MaxRows, MaxCols> &source, mxArray *dest[], int nlhs) {
   if (nlhs > 0)
     dest[0] = eigenToMatlabGeneral(source);
+  return 1;
 };
 
 template<typename Scalar, int Rows, int Cols>
-void toMex(const GradientVar<Scalar, Rows, Cols> &source, mxArray *dest[], int nlhs, bool top_level = true) {
+int toMex(const GradientVar<Scalar, Rows, Cols> &source, mxArray *dest[], int nlhs, bool top_level = true) {
   if (top_level) {
     // check number of output arguments
     if (nlhs > source.maxOrder() + 1) {
@@ -114,15 +154,38 @@ void toMex(const GradientVar<Scalar, Rows, Cols> &source, mxArray *dest[], int n
     }
   }
 
+  int outputs = 0;
   if (nlhs != 0) {
     // set an output argument
-    toMex(source.value(), dest, nlhs);
+    outputs += toMex(source.value(), dest, nlhs);
 
     // recurse
     if (source.hasGradient()) {
-      toMex(source.gradient(), &dest[1], nlhs - 1, false);
+      outputs += toMex(source.gradient(), &dest[1], nlhs - outputs, false);
     }
   }
+  return outputs;
 };
+
+template <typename A, typename B>
+int toMex(const std::pair<A, B>& source, mxArray* dest[], int nlhs) {
+  int num_outputs = 0;
+  num_outputs += toMex(source.first, dest, nlhs - num_outputs);
+  num_outputs += toMex(source.second, &dest[num_outputs], nlhs - num_outputs);
+  return num_outputs;
+}
+
+template <typename T>
+int toMex(const std::vector<T>& source, mxArray* dest[], int nlhs) {
+  mwSize dims[] = {source.size()};
+  dest[0] = mxCreateCellArray(1, dims);
+  for (size_t i = 0; i < source.size(); i++) {
+    mxArray *cell[1];
+    toMex(source.at(i), cell, 1);
+    mxSetCell(dest[0], i, cell[0]);
+  }
+
+  return 1;
+}
 
 #endif //DRAKE_STANDARDMEXCONVERSIONS_H

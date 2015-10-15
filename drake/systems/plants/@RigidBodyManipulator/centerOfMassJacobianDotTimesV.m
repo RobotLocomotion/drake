@@ -18,7 +18,7 @@ if(nargin < 3)
 end
 
 if (kinsol.mex)
-  com_Jacobian_dot_times_v = centerOfMassJacobianDotTimesVmex(obj.mex_model_ptr, kinsol.mex_ptr, 0, robotnum);
+  com_Jacobian_dot_times_v = centerOfMassJacobianDotTimesVmex(obj.mex_model_ptr, kinsol.mex_ptr, 0, robotnum - 1);
   if kinsol.has_gradients
     [com_Jacobian_dot_times_v, dcom_Jacobian_dot_times_v] = eval(com_Jacobian_dot_times_v);
     nq = length(kinsol.q);

@@ -37,9 +37,9 @@
  *
  * toMex functions should be of the form
  *
- *   void toMex(const SourceType& source, mxArray* dest[], int nlhs)
+ *   int toMex(const SourceType& source, mxArray* dest[], int nlhs)
  *
- * where SourceType is such that the return type of the std::function can be converted to it.
+ * where SourceType is such that the return type of the std::function can be converted to it. The toMex function should return the number of output arguments it has set.
  */
 
 class MexToCppConversionError : public std::runtime_error {

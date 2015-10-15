@@ -1,7 +1,8 @@
+#include <typeinfo>
+#include <Eigen/Sparse>
 #include "rigidBodyManipulatorMexFunctions.h"
 #include "RigidBodyManipulator.h"
 #include "standardMexConversions.h"
-#include <typeinfo>
 
 using namespace std;
 using namespace Eigen;
@@ -11,17 +12,6 @@ using namespace Eigen;
  */
 RigidBodyManipulator &fromMex(const mxArray *source, RigidBodyManipulator *) {
   return *static_cast<RigidBodyManipulator *>(getDrakeMexPointer(source));
-}
-
-std::set<int> fromMex(const mxArray *source, std::set<int> *) {
-  // for robotnum. this is kind of a weird one, but OK for now
-  std::set<int> robotnum_set;
-  int num_robot = static_cast<int>(mxGetNumberOfElements(source));
-  double *robotnum = mxGetPrSafe(source);
-  for (int i = 0; i < num_robot; i++) {
-    robotnum_set.insert((int) robotnum[i] - 1);
-  }
-  return robotnum_set;
 }
 
 template<typename Scalar>
@@ -228,5 +218,62 @@ void dynamicsBiasTermmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
   auto func_autodiff_fixed_max = make_function(&dynamicsBiasTermTemp<AutoDiffFixedMaxSize, Matrix<AutoDiffFixedMaxSize, 6, Dynamic> >);
   auto func_autodiff_dynamic = make_function(&dynamicsBiasTermTemp<AutoDiffDynamicSize, Matrix<AutoDiffDynamicSize, 6, Dynamic> >);
 
+  mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, func_double, func_autodiff_fixed_max, func_autodiff_dynamic);
+}
+
+// TODO: move to a better place
+inline void buildSparseMatrixForContactConstraints(Map<const Matrix3Xd> const &pts, SparseMatrix<double> &sparse) // TODO rename to something more specific
+{
+  typedef SparseMatrix<double>::Index SparseIndex;
+  const SparseIndex m = static_cast<SparseIndex>(pts.cols());
+  const SparseIndex numNonZero = 3 * m;
+
+  sparse.resize(m, numNonZero);
+  sparse.reserve(VectorXi::Constant(numNonZero, 1));
+
+  SparseIndex j = 0;
+  for (SparseIndex i = 0; i < m; i++) {
+    for (SparseIndex k = 0; k < 3; k++) {
+      sparse.insert(i, j) = pts(j); // yes, no reference to k
+      j++;
+    }
+  }
+}
+
+// TODO: move to a better place
+template<typename Scalar>
+using MatrixX = Matrix<Scalar, Dynamic, Dynamic>;
+
+// TODO: move to a better place
+template<typename Scalar>
+pair<MatrixX<Scalar>, vector<MatrixX<Scalar> > > contactConstraintsTemp(const RigidBodyManipulator &model, const KinematicsCache<Scalar> &cache, const Map<const Matrix3Xd> &normals, const Map<const VectorXi>& idxA,
+                                                                    const Map<const VectorXi>& idxB, const Map<const Matrix3Xd> &xA, const Map<const Matrix3Xd> &xB, const vector<Map<const Matrix3Xd>> &d) {
+
+  Matrix<Scalar, Dynamic, Dynamic> J;
+  Matrix<Scalar, Dynamic, Dynamic> dJ;
+  model.computeContactJacobians(cache, idxA, idxB, xA, xB, false, J, dJ);
+
+  SparseMatrix<double> sparseNormals;
+  buildSparseMatrixForContactConstraints(normals, sparseNormals);
+  auto n = (sparseNormals.cast<Scalar>() * J).eval(); //dphi/dq
+
+  size_t num_tangent_vectors = d.size();
+  vector<MatrixX<Scalar> > D(2 * num_tangent_vectors, MatrixX<Scalar>(d.at(0).rows(), J.cols()));
+  for (int k = 0; k < num_tangent_vectors; k++) { //for each friction cone basis vector
+    const auto &dk = d.at(k);
+    SparseMatrix<double> sparseTangents;
+    buildSparseMatrixForContactConstraints(dk, sparseTangents);
+    auto sparseTangents_cast = (sparseTangents.cast<Scalar>()).eval();
+    D.at(k) = (sparseTangents_cast * J).eval(); //dd/dq;
+    D.at(k + num_tangent_vectors) = -D.at(k);
+  }
+
+  return make_pair(n, D);
+}
+
+void contactConstraintsmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+  auto func_double = make_function(&contactConstraintsTemp<double>);
+  auto func_autodiff_fixed_max = make_function(&contactConstraintsTemp<AutoDiffFixedMaxSize>);
+  auto func_autodiff_dynamic = make_function(&contactConstraintsTemp<AutoDiffDynamicSize>);
   mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, func_double, func_autodiff_fixed_max, func_autodiff_dynamic);
 }
