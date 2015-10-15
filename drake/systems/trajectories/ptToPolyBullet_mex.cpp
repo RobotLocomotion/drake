@@ -44,10 +44,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
 	 // Check for proper number of arguments.
  	 if(nrhs!=1) {
-	   mexErrMsgIdAndTxt( "MATLAB:ptToPolyDist:invalidNumInputs",
+	   mexErrMsgIdAndTxt( "Drake:ptToPolyDist:invalidNumInputs",
   	  "One input required.");
 	 } else if(nlhs>1) {
- 	  mexErrMsgIdAndTxt( "MATLAB:ptToPolyDist:maxlhs",
+ 	  mexErrMsgIdAndTxt( "Drake:ptToPolyDist:maxlhs",
  	          "Too many output arguments.");
 	 }
 
@@ -59,7 +59,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
 	  // Check to see if number of rows of vertices is 3
 	  if(nRows != 3){
-	    mexErrMsgIdAndTxt( "MATLAB:ptToPolyDist:invalidInputs",
+	    mexErrMsgIdAndTxt( "Drake:ptToPolyDist:invalidInputs",
 		    "Input should be 3 x N");
 	  }
 
