@@ -1,4 +1,4 @@
-function [phat,estimated_delay] = parameterEstimation(obj,data,options)
+function [phat,estimated_delay] = parameterEstimation(obj,data,varargin)
 %
 % Parameter estimation algorithm for manipulators
 %
@@ -25,7 +25,19 @@ function [phat,estimated_delay] = parameterEstimation(obj,data,options)
 % @param data an instance of iddata (from the system identification 
 % toolbox; see 'help iddata' for more info) containing the data to 
 % be used for estimation.
+% 
+% @option print_result determines if the function will print the results
+% 0 = no print, 1 = print estimated and original, 2 = only print estimated
 %
+
+%% handle options
+if (nargin>2 && isstruct(varargin{1})) options=varargin{1};
+else options=struct(); end
+if (~isfield(options,'print_result')) 
+  options.print_result=0; 
+end
+
+
 
 if (getOutputFrame(obj)~=getStateFrame(obj))
   error('Only full-state feedback is implemented so far');
@@ -180,13 +192,24 @@ end
 
 phat = Point(getParamFrame(obj),exp(log_p_est));
 
-% print out results  (todo: make this an option?)
-coords = getCoordinateNames(getParamFrame(obj));
-fprintf('\nParameter estimation results:\n\n');
-fprintf('  Param  \tOriginal\tEstimated\n');
-fprintf('  -----  \t--------\t---------\n');
-for i=1:length(coords)
-  fprintf('%7s  \t%8.2f\t%8.2f\n',coords{i},p_orig(i),phat(i));
+
+if options.print_result == 1
+    coords = getCoordinateNames(getParamFrame(obj));
+    fprintf('\nParameter estimation results:\n\n');
+    fprintf('  Param  \tOriginal\tEstimated\n');
+    fprintf('  -----  \t--------\t---------\n');
+    for i=1:length(coords)
+      fprintf('%7s  \t%8.2f\t%8.2f\n',coords{i},p_orig(i),phat(i));
+    end
+elseif options.print_result == 2
+    coords = getCoordinateNames(getParamFrame(obj));
+    fprintf('\nParameter estimation results:\n\n');
+    fprintf('  Param  \tEstimated\n');
+    fprintf('  -----  \t---------\n');
+    for i=1:length(coords)
+      fprintf('%7s  \t%8.2f\n',coords{i},phat(i));
+    end
 end
+
 
 end
