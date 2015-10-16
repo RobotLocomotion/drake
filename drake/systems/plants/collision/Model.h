@@ -97,6 +97,20 @@ namespace DrakeCollision
           std::vector<PointPair>& closest_points)
       { return false; };
 
+
+      /** \brief Compute closest distance from each point to a surface in the
+       * collision model.
+       * \param points Matrix of points computing distance from.
+       * \param use_margins flag indicating whether or not to use the version
+       * of this model with collision margins
+       * \param[out] closest_points a vector of PointPair objects containing 
+       * the signed distances
+       */
+      virtual void signedDistances(const Eigen::Matrix3Xd& points,
+                                           bool use_margins,
+                                           std::vector<PointPair>& closest_points)
+      { };
+
       /** \brief Compute the set of potential collision points for all
        * eligible pairs of collision geometries in this model. This includes
        * the points of closest approach, but may also include additional points

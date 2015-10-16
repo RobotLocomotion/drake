@@ -487,7 +487,81 @@ namespace DrakeCollision
     return (c->pts.size() > 0);
   }
 
+
+
+
+
+
+  void BulletModel::signedDistances(const Matrix3Xd& points,
+                                     bool use_margins,
+                                     std::vector<PointPair>& closest_points)
+  {
+    closest_points.resize(points.cols(), PointPair(0, 0, Vector3d(), Vector3d(), Vector3d(), 0.0));
+    VectorXd phi(points.cols());
+
+    btSphereShape shapeA(0.0);
+    btConvexShape* shapeB;
+    btGjkPairDetector::ClosestPointInput input;
+
+    BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
+
+    // do collision check against all bodies for each point using bullet's
+    // internal getclosestpoitns solver
+    for (int i=0; i<points.cols(); i++){
+      bool got_one = false;
+      for (auto bt_objB_iter = bt_world.bt_collision_objects.begin();
+         bt_objB_iter != bt_world.bt_collision_objects.end();
+         bt_objB_iter++){
+        unique_ptr<btCollisionObject>& bt_objB = bt_objB_iter->second;
+        btPointCollector gjkOutput;
+
+        shapeB = (btConvexShape*) bt_objB->getCollisionShape();
+
+        btGjkEpaPenetrationDepthSolver epa;
+        btVoronoiSimplexSolver sGjkSimplexSolver;
+        sGjkSimplexSolver.setEqualVertexThreshold(0.f);
+        btGjkPairDetector convexConvex(&shapeA,shapeB,&sGjkSimplexSolver,&epa);
+
+        input.m_transformA = btTransform(btQuaternion(1,0,0,0), btVector3(points(0,i),points(1,i),points(2,i)));
+        input.m_transformB = bt_objB->getWorldTransform();
+
+        convexConvex.getClosestPoints(input ,gjkOutput,0);
+
+        btVector3 pointOnAinWorld(points(0,i), points(1,i), points(2,i));
+        btVector3 pointOnBinWorld = gjkOutput.m_pointInWorld;
+
+        btScalar distance = gjkOutput.m_normalOnBInWorld.dot(pointOnAinWorld-pointOnBinWorld);
+
+/*
+        cout << "Point " << i << ": has result " << gjkOutput.m_hasResult << ", dist " << distance << endl;
+        cout << "\tA in world: " << pointOnAinWorld.x() << "," << pointOnAinWorld.y() << "," << pointOnAinWorld.z() << endl;
+        cout << "\tB in world: " << pointOnBinWorld.x() << "," << pointOnBinWorld.y() << "," << pointOnBinWorld.z() << endl;
+        cout << "\tB normal: " << gjkOutput.m_normalOnBInWorld.x() << "," << gjkOutput.m_normalOnBInWorld.y() << "," << gjkOutput.m_normalOnBInWorld.z() << endl;
+        cout << "\tBobj in world: " << input.m_transformB.getOrigin().x() << "," << input.m_transformB.getOrigin().y() << "," << input.m_transformB.getOrigin().z() << endl;
+*/
+        if (gjkOutput.m_hasResult && (!got_one || distance < phi[i])){
+          btVector3 pointOnElemB = input.m_transformB.invXform(pointOnBinWorld);
+          phi[i] = distance;
+          got_one = true;
+          closest_points[i] = PointPair(
+                bt_objB_iter->first, bt_objB_iter->first,
+                toVector3d(pointOnElemB), toVector3d(pointOnBinWorld),
+                toVector3d(gjkOutput.m_normalOnBInWorld), distance);
+        }
+      }
+    }
+  }
   
+
+
+
+
+
+
+
+
+
+
   bool BulletModel::collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, bool use_margins, VectorXd &distances, Matrix3Xd &normals)
   {
     

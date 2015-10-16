@@ -75,6 +75,11 @@ namespace DrakeCollision
                                                 const bool use_margins,
                                                 std::unique_ptr<ResultCollector>& c);
 
+
+      virtual void signedDistances(const Eigen::Matrix3Xd& points,
+                                           bool use_margins,
+                                           std::vector<PointPair>& closest_points);
+
       virtual bool collisionRaycast(const Eigen::Matrix3Xd &origins, 
               const Eigen::Matrix3Xd &ray_endpoints, bool use_margins, 
               Eigen::VectorXd &distances, Eigen::Matrix3Xd &normals);

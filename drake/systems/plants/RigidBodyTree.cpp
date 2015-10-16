@@ -280,6 +280,39 @@ void RigidBodyTree::getTerrainContactPoints(const RigidBody& body, Eigen::Matrix
   }
 }
 
+
+void RigidBodyTree::signedDistances(const KinematicsCache<double>& cache,
+                                           const Matrix3Xd& points,
+                                           VectorXd& phi,
+                                           Matrix3Xd& normal,
+                                           Matrix3Xd& x,
+                                           Matrix3Xd& body_x,
+                                           vector<int>& body_idx,
+                                           bool use_margins)
+{
+  updateDynamicCollisionElements(cache);
+
+  vector<DrakeCollision::PointPair> closest_points;
+
+  collision_model->signedDistances(points, use_margins, closest_points);
+  x.resize(3,closest_points.size());
+  body_x.resize(3,closest_points.size());
+  normal.resize(3,closest_points.size());
+  phi.resize(closest_points.size());
+
+  Vector3d ptA, ptB, n;
+  double distance;
+  for (int i=0; i<closest_points.size(); ++i) {
+    closest_points[i].getResults(ptA, ptB, n, distance);
+    x.col(i) = ptB;
+    body_x.col(i) = ptA;
+    normal.col(i) = n;
+    phi[i] = distance;
+    const RigidBody::CollisionElement* elementB = dynamic_cast<const RigidBody::CollisionElement*>(collision_model->readElement(closest_points[i].getIdB()));
+    body_idx.push_back(elementB->getBody()->body_index);
+  }
+}
+
 bool RigidBodyTree::collisionRaycast(const KinematicsCache<double>& cache,
                                             const Matrix3Xd &origins,
                                             const Matrix3Xd &ray_endpoints,
