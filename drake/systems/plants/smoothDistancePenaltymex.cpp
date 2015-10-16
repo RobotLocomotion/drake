@@ -3,6 +3,7 @@
 #include "drakeMexUtil.h"
 #include "RigidBodyManipulator.h"
 #include "math.h"
+#include "rigidBodyManipulatorMexConversions.h"
 
 using namespace Eigen;
 using namespace std;
@@ -154,7 +155,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
   int arg_num = 0;
   RigidBodyManipulator *model = static_cast<RigidBodyManipulator*>(getDrakeMexPointer(prhs[arg_num++]));
-  KinematicsCache<double>* cache = static_cast<KinematicsCache<double>*>(getDrakeMexPointer(prhs[arg_num++]));
+  KinematicsCache<double>& cache = fromMex(prhs[arg_num++], static_cast<KinematicsCache<double>*>(nullptr));
 
   // Get the minimum allowable distance
   double min_distance = mxGetScalar(prhs[arg_num++]);
@@ -205,22 +206,22 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   VectorXd dist;
   if (active_bodies_idx.size() > 0) {
     if (active_group_names.size() > 0) {
-      model->collisionDetect(*cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
+      model->collisionDetect(cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
                               active_bodies_idx,active_group_names);
     } else {
-      model->collisionDetect(*cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
+      model->collisionDetect(cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
                               active_bodies_idx);
     }
   } else {
     if (active_group_names.size() > 0) {
-      model->collisionDetect(*cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
+      model->collisionDetect(cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
                              active_group_names);
     } else {
-      model->collisionDetect(*cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx);
+      model->collisionDetect(cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx);
     }
   }
 
-  smoothDistancePenalty(penalty, dpenalty, model, *cache, min_distance, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx);
+  smoothDistancePenalty(penalty, dpenalty, model, cache, min_distance, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx);
 
   vector<int32_T> idxA(bodyA_idx.size());
   transform(bodyA_idx.begin(),bodyA_idx.end(),idxA.begin(),

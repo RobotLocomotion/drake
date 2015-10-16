@@ -6,6 +6,7 @@
 #include "math.h"
 #include "fastQP.h"
 #include <sstream>
+#include "rigidBodyManipulatorMexConversions.h"
 
 using namespace Eigen;
 using namespace std;
@@ -196,8 +197,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
 
   int arg_num = 0;
   RigidBodyManipulator *model = static_cast<RigidBodyManipulator*>(getDrakeMexPointer(prhs[arg_num++]));
-  KinematicsCache<double>* cache = static_cast<KinematicsCache<double>*>(getDrakeMexPointer(prhs[arg_num++]));
-  cache->checkCachedKinematicsSettings(false, true, true, "solveLCPmex");
+  KinematicsCache<double>& cache = fromMex(prhs[arg_num++], static_cast<KinematicsCache<double>*>(nullptr));
+  cache.checkCachedKinematicsSettings(false, true, true, "solveLCPmex");
 
   const int nq = model->num_positions;
   const int nv = model->num_velocities;
@@ -220,8 +221,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   const size_t mC = mxGetNumberOfElements(D_array);
   const double z_inactive_guess_tol = mxGetScalar(inactive_guess_array);
   const double h = mxGetScalar(h_array);
-  const auto& q = cache->getQ();
-  const auto& v = cache->getV();
+  const auto& q = cache.getQ();
+  const auto& v = cache.getV();
   const Map<VectorXd> u(mxGetPrSafe(u_array), mxGetNumberOfElements(u_array));
   const Map<VectorXd> phiC(mxGetPrSafe(phiC_array), num_contact_pairs);
   const Map<MatrixXd> n(mxGetPrSafe(n_array), num_contact_pairs, nq);
@@ -235,7 +236,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   VectorXd phiL, phiL_possible, phiC_possible, phiL_check, phiC_check;
   MatrixXd JL, JL_possible, n_possible, JL_check, n_check;
 
-  auto phiPgrad = model->positionConstraints<double>(*cache,1);
+  auto phiPgrad = model->positionConstraints<double>(cache,1);
   auto phiP = phiPgrad.value();
   auto JP = phiPgrad.gradient().value();
   model->jointLimitConstraints(q, phiL, JL);  
@@ -243,9 +244,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   const size_t nP = phiP.size();
   
   //Convert jacobians to velocity mappings
-  const MatrixXd n_velocity = model->transformPositionDotMappingToVelocityMapping(*cache,n);
-  const MatrixXd JL_velocity = model->transformPositionDotMappingToVelocityMapping(*cache,JL);
-  const auto JP_velocity = model->transformPositionDotMappingToVelocityMapping(*cache,JP);
+  const MatrixXd n_velocity = model->transformPositionDotMappingToVelocityMapping(cache,n);
+  const MatrixXd JL_velocity = model->transformPositionDotMappingToVelocityMapping(cache,JL);
+  const auto JP_velocity = model->transformPositionDotMappingToVelocityMapping(cache,JP);
   
   plhs[2] = mxCreateDoubleMatrix(nv, 1, mxREAL);
   Map<VectorXd> wvn(mxGetPrSafe(plhs[2]), nv);
@@ -296,7 +297,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
       Map<MatrixXd> D_i(mxGetPrSafe(mxGetCell(D_array, i)), num_contact_pairs , nq);
       MatrixXd D_i_possible, D_i_exclude;
       filterByIndices(possible_contact_indices, D_i, D_i_possible);
-      D_possible.block(nC * i, 0, nC, nv) = model->transformPositionDotMappingToVelocityMapping(*cache,D_i_possible);
+      D_possible.block(nC * i, 0, nC, nv) = model->transformPositionDotMappingToVelocityMapping(cache,D_i_possible);
     }
 
     // J in velocity coordinates
