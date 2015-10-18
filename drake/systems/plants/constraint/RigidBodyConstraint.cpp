@@ -1038,7 +1038,7 @@ void RelativeQuatConstraint::name(const double* t, std::vector<std::string> &nam
   if(this->isTimeValid(t))
   {
     std::string time_str = this->getTimeString(t);
-    std::string tmp_name = this->bodyA_name+" reltative to "+this->bodyB_name+" quaternion constraint"+time_str;
+    std::string tmp_name = this->bodyA_name+" relative to "+this->bodyB_name+" quaternion constraint"+time_str;
     for(int i = 0;i<this->num_constraint;i++)
     {
       name_str.push_back(tmp_name);
