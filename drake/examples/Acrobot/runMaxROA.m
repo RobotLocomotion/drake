@@ -7,13 +7,8 @@ p = AcrobotPlant;
 p = setInputLimits(p,-inf,inf);
 
 % Do lqr
-Q = diag([10 10 1 1]);
-R=0.1;
-
-x0 = [pi;0;0;0];
-u0 = 0;
-[c,V] = tilqr(p,x0,u0,Q,R);
-
+[c,V] = balanceLQR(p);
+V = extractQuadraticLyapunovFunction(V);
 clf;
 
 % Do Taylor expansions
