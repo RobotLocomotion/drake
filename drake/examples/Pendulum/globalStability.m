@@ -18,25 +18,25 @@ x = [s;c;thetadot];
 % s,c, and thetadot
 p = PendulumPlant();
 f = [ c*thetadot; -s*thetadot; (-p.b*thetadot - p.m*p.g*p.l*s)/(p.m*p.l.^2) ];
+x0 = [0;1;0];
+eps = 1e-4;
 
 prog = spotsosprog;
 prog = prog.withIndeterminate(x);
 
 deg_V = 2;
-[prog,V] = prog.newSOSPoly(monomials(x,0:deg_V));
+[prog,V] = prog.newFreePoly(monomials(x,0:deg_V));
+prog = prog.withSOS(V - eps*(x-x0)'*(x-x0));  % V is strictly positive away from x0
 Vdot = diff(V,x)*f; 
 
 deg_lambda = 2;
-lambda_monom = monomials(x,0:deg_lambda);
-[prog,lambda] = prog.newFreePoly(lambda_monom);
+[prog,lambda] = prog.newFreePoly(monomials(x,0:deg_lambda));
 
+% Vdot is strictly negative away from x0 (but make an exception for the
+% upright fixed point by multipling by s^2)
+prog = prog.withSOS( -Vdot - lambda*(s^2+c^2-1) - eps*(x-x0)'*(x-x0)*s^2 );  
 
-%prog = prog.withSOS( -Vdot - lambda*(s^2+c^2-1) );  % asympotic stability
-prog = prog.withSOS( -Vdot - lambda*(s^2+c^2-1) - .01*s^2*V );  % exponential stability
-% note: thought I might need s^2*Vdot but didn't actually need to leave out the
-% upright
-
-prog = prog.withEqs( subs(V,x,[0;1;0]) );  % V(0) = 0
+prog = prog.withEqs( subs(V,x,x0) );  % V(0) = 0
 
 solver = @spot_mosek;
 %solver = @spot_sedumi;
