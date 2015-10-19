@@ -12,6 +12,7 @@
 #include "KinematicPath.h"
 #include "ForceTorqueMeasurement.h"
 #include "GradientVar.h"
+#include "drakeUtil.h"
 #include <stdexcept>
 
 
@@ -358,10 +359,10 @@ public:
   GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> massMatrix(KinematicsCache<Scalar>& cache, int gradient_order = 0) const;
 
   template <typename Scalar>
-  GradientVar<Scalar, Eigen::Dynamic, 1> dynamicsBiasTerm(KinematicsCache<Scalar>& cache, const std::unordered_map<RigidBody const *, GradientVar<Scalar, TWIST_SIZE, 1> >& f_ext, int gradient_order = 0) const;
+  GradientVar<Scalar, Eigen::Dynamic, 1> dynamicsBiasTerm(KinematicsCache<Scalar>& cache, const eigen_aligned_unordered_map<RigidBody const *, GradientVar<Scalar, TWIST_SIZE, 1> >& f_ext, int gradient_order = 0) const;
 
   template <typename Scalar>
-  GradientVar<Scalar, Eigen::Dynamic, 1> inverseDynamics(KinematicsCache<Scalar>& cache, const std::unordered_map<RigidBody const *, GradientVar<Scalar, TWIST_SIZE, 1> >& f_ext, const GradientVar<Scalar, Eigen::Dynamic, 1>& vd, int gradient_order = 0) const;
+  GradientVar<Scalar, Eigen::Dynamic, 1> inverseDynamics(KinematicsCache<Scalar>& cache, const eigen_aligned_unordered_map<RigidBody const *, GradientVar<Scalar, TWIST_SIZE, 1> >& f_ext, const GradientVar<Scalar, Eigen::Dynamic, 1>& vd, int gradient_order = 0) const;
 
   template <typename DerivedV>
   GradientVar<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorques(Eigen::MatrixBase<DerivedV> const & v, int gradient_order = 0) const;

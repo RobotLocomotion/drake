@@ -33,8 +33,6 @@ if kinsol.mex
     else
       dJdot_times_v = dJdot_times_v(:, 1 : nq);
     end
-  else
-    
   end
 else
   [point_size, npoints] = size(points);

@@ -275,7 +275,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
   }
 
-  std::unordered_map<RigidBody const *, GradientVar<double, TWIST_SIZE, 1> > f_ext;
+  eigen_aligned_unordered_map<RigidBody const *, GradientVar<double, TWIST_SIZE, 1> > f_ext;
   pdata->H = pdata->r->massMatrix(cache).value();
   pdata->C = pdata->r->dynamicsBiasTerm(cache, f_ext).value();
 

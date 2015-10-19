@@ -32,8 +32,6 @@ if kinsol.mex
     [A, dA] = eval(A);
     nq = length(kinsol.q);
     dA = dA(:, 1 : nq);
-  else
-    
   end
 else
   if compute_gradients

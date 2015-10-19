@@ -38,7 +38,7 @@ if (use_mex && obj.mex_model_ptr~=0)
   if compute_gradients
     f_ext = TaylorVar(f_ext, {df_ext});
   end
-  
+
   H = massMatrixmex(obj.mex_model_ptr, kinsol.mex_ptr, 0);
   C = dynamicsBiasTermmex(obj.mex_model_ptr, kinsol.mex_ptr, f_ext);
   if kinsol.has_gradients

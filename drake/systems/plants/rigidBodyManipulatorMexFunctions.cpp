@@ -164,7 +164,7 @@ template <typename Scalar, typename DerivedF>
 GradientVar<Scalar, Eigen::Dynamic, 1>  dynamicsBiasTermTemp(const RigidBodyManipulator &model, KinematicsCache<Scalar> &cache, const MatrixBase<DerivedF> &f_ext_value) {
   // temporary solution. GradientVar will disappear, obviating the need for the extra argument. integer body indices will be handled differently.
 
-  unordered_map<const RigidBody *, GradientVar<Scalar, 6, 1> > f_ext;
+  eigen_aligned_unordered_map<const RigidBody *, GradientVar<Scalar, 6, 1> > f_ext;
 
   if (f_ext_value.size() > 0) {
     assert(f_ext_value.cols() == model.bodies.size());
