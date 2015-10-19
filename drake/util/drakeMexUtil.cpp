@@ -151,8 +151,8 @@ std::vector<std::string> mxGetVectorOfStdStrings(const mxArray* array) {
     throw runtime_error("the input is not a cell array");
 
   std::vector<std::string> strings;
-  int numel = mxGetNumberOfElements(array);
-  for (int i=0; i<numel; i++) {
+  size_t numel = mxGetNumberOfElements(array);
+  for (size_t i=0; i<numel; i++) {
     strings.push_back(mxGetStdString(mxGetCell(array,i)));
   }
   return strings;

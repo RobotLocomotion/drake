@@ -35,13 +35,13 @@ if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(v))
   f_ext = full(f_ext);  % makes the mex implementation simpler (for now)
   if compute_gradients
     df_ext = full(df_ext);
-    [H, dH] = massMatrixmex(obj.mex_model_ptr, kinsol.mex_ptr);
+    [H, dH] = massMatrixmex(obj.mex_model_ptr, kinsol.mex_ptr, 1);
     nv = obj.num_velocities;
     dH = [dH, zeros(numel(H), nv)];
-    [C, dC] = inverseDynamicsmex(obj.mex_model_ptr, kinsol.mex_ptr, f_ext, [], df_ext);
+    [C, dC] = dynamicsBiasTermmex(obj.mex_model_ptr, kinsol.mex_ptr, f_ext, df_ext, 1);
   else
-    H = massMatrixmex(obj.mex_model_ptr, kinsol.mex_ptr);
-    C = inverseDynamicsmex(obj.mex_model_ptr, kinsol.mex_ptr, f_ext);
+    H = massMatrixmex(obj.mex_model_ptr, kinsol.mex_ptr, 0);
+    C = dynamicsBiasTermmex(obj.mex_model_ptr, kinsol.mex_ptr, f_ext, [], 0);
   end
 else
   if compute_gradients

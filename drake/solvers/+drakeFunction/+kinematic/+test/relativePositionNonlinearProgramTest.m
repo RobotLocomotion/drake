@@ -1,7 +1,7 @@
 function relativePositionNonlinearProgramTest(visualize)
   % fmincon doesn't solve this problem in a timely manner, so check that
   % we can use snopt here.
-  checkDependency('snopt');
+  checkDependency('NonlinearProgramsnoptmex');
 
   import drakeFunction.*
   import drakeFunction.euclidean.*

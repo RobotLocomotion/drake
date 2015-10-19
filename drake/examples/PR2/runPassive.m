@@ -1,7 +1,7 @@
 function runPassive
 
 options.ignore_self_collisions = true;
-options.floating = true;
+options.floating = 'quat';
 options.terrain = RigidBodyFlatTerrain();
 
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
@@ -14,6 +14,7 @@ warning(w);
 
 r = setSimulinkParam(r,'MinStep','0.001');
 x0 = Point(r.getStateFrame);
+x0(4) = 1;  % make it a valid quaternion
 
 v = r.constructVisualizer;
 v.display_dt = .05;

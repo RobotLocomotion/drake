@@ -11,12 +11,9 @@ classdef PendulumVisualizer < Visualizer
     
     function draw(obj,t,x)
       % Draw the pendulum.  
-      persistent hFig base a1 a2 ac1 ac2 raarm t0;
+      persistent base a1 a2 ac1 ac2 raarm t0;
 
-      if (isempty(hFig))
-        hFig = sfigure(25);
-        set(hFig,'DoubleBuffer', 'on');
-        
+      if (isempty(a1))
         a1 = 0.75;  ac1 = 0.75; %415;
         av = pi*[0:.05:1];
         rb = .03; hb=.07;
@@ -27,7 +24,6 @@ classdef PendulumVisualizer < Visualizer
         raarm = [(arm(:,1).^2+arm(:,2).^2).^.5, atan2(arm(:,2),arm(:,1))];
       end
             
-      sfigure(hFig); cla; hold on; view(0,90);
       patch(base(:,1), base(:,2),1+0*base(:,1),'b','FaceColor',[.3 .6 .4])
       patch(raarm(:,1).*sin(raarm(:,2)+x(1)-pi),...
         -raarm(:,1).*cos(raarm(:,2)+x(1)-pi), ...

@@ -2,9 +2,13 @@ classdef Quadrotor < RigidBodyManipulator
   
   methods
     
-    function obj = Quadrotor(sensor)
+    function obj = Quadrotor(sensor,floating_base_type)
       if nargin<1, sensor=''; end
-      options.floating = true;
+      if (nargin<2) 
+        options.floating = true; 
+      else
+        options.floating = floating_base_type;
+      end
       options.terrain = RigidBodyFlatTerrain();
       w = warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
       warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
@@ -113,13 +117,14 @@ classdef Quadrotor < RigidBodyManipulator
   methods (Static)
     
     function runOpenLoop
-      r = Quadrotor('lidar');
+      r = Quadrotor('lidar','quat');
       r = addTrees(r); 
       sys = TimeSteppingRigidBodyManipulator(r,.01);
       
       v = sys.constructVisualizer();
 
-      x0 = [0;0;.5;zeros(9,1)];
+      x0 = [getRandomConfiguration(r);zeros(6,1)];
+      x0(3) = .5;
       u0 = nominalThrust(r);
       
       sys = cascade(ConstantTrajectory(u0),sys);
@@ -128,7 +133,7 @@ classdef Quadrotor < RigidBodyManipulator
 %      simulate(sys,[0 2],double(x0)+.1*randn(12,1));
       
       options.capture_lcm_channels = 'LCMGL';
-      [ytraj,xtraj,lcmlog] = simulate(sys,[0 2],double(x0)+.1*randn(12,1),options);
+      [ytraj,xtraj,lcmlog] = simulate(sys,[0 2],double(x0),options);
       lcmlog
       v.playback(xtraj,struct('lcmlog',lcmlog));
 %      figure(1); clf; fnplt(ytraj);

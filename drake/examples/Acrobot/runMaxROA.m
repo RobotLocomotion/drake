@@ -3,15 +3,13 @@ function runMaxROA
 p = AcrobotPlant;
 
 % Set input limits
-p = setInputLimits(p,-20,20);
+%p = setInputLimits(p,-20,20);
+p = setInputLimits(p,-inf,inf);
 
 % Do lqr
-Q = diag([10 10 1 1]);
-R=0.1;
-
-x0 = [pi;0;0;0];
-u0 = 0;
-[c,V] = tilqr(p,x0,u0,Q,R);
+[c,V] = balanceLQR(p);
+V = extractQuadraticLyapunovFunction(V);
+clf;
 
 % Do Taylor expansions
 x0 = Point(p.getStateFrame,[pi;0;0;0]);
@@ -24,7 +22,7 @@ options.controller_deg = 1; % Degree of polynomial controller to search for
 options.max_iterations = 10; % Maximum number of iterations (3 steps per iteration)
 options.converged_tol = 1e-3; % Tolerance for checking convergence
 
-options.rho0 = 0.01; % Initial guess for rho
+options.rho0 = 0.001; % Initial guess for rho
 
 options.clean_tol = 1e-6; % tolerance for cleaning small terms
 options.backoff_percent = 5; % 1 percent backing off
@@ -38,7 +36,18 @@ options.degLum = 2;
 
 % Perform controller design and verification
 disp('Starting verification...')
-[c,V] = maxROAFeedback(sys,c,V,options);
+[c,Vmax] = maxROAFeedback(sys,c,V,options);
+
+figure(1); clf;
+options.color = 'b';
+plotFunnel(Vmax,options);  % theta1 vs theta2
+xlabel('theta1');
+ylabel('theta2');
+hold on;
+options.color = 'r';
+plotFunnel(V,options);
+
+V = Vmax;
 
 % V = V.inFrame(sys.getStateFrame());
 

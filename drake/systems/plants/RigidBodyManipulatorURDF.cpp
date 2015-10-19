@@ -713,7 +713,7 @@ bool parseLoop(RigidBodyManipulator* model, TiXmlElement* node)
     cerr << "ERROR parsing loop joint rpy" << endl;
     return false;
   }
-  std::shared_ptr<RigidBodyFrame> frameA = make_shared<RigidBodyFrame>(name+"FrameA",body,xyz,rpy);
+  std::shared_ptr<RigidBodyFrame> frameA = allocate_shared<RigidBodyFrame>(Eigen::aligned_allocator<RigidBodyFrame>(), name+"FrameA",body,xyz,rpy);
 
   link_node = node->FirstChildElement("link2");
   linkname = link_node->Attribute("link");
@@ -732,7 +732,7 @@ bool parseLoop(RigidBodyManipulator* model, TiXmlElement* node)
     cerr << "ERROR parsing loop joint rpy" << endl;
     return false;
   }
-  std::shared_ptr<RigidBodyFrame> frameB = make_shared<RigidBodyFrame>(name+"FrameB",body,xyz,rpy);
+  std::shared_ptr<RigidBodyFrame> frameB = allocate_shared<RigidBodyFrame>(Eigen::aligned_allocator<RigidBodyFrame>(), name+"FrameB",body,xyz,rpy);
 
   TiXmlElement* axis_node = node->FirstChildElement("axis");
   if (axis_node && !parseVectorAttribute(axis_node, "xyz", axis)) {
@@ -778,7 +778,7 @@ bool parseFrame(RigidBodyManipulator* model, TiXmlElement* node)
   Matrix4d T;
   T << rpy2rotmat(rpy), xyz, 0,0,0,1;
 
-  std::shared_ptr<RigidBodyFrame> frame = make_shared<RigidBodyFrame>(frame_name,body,T);
+  std::shared_ptr<RigidBodyFrame> frame = allocate_shared<RigidBodyFrame>(Eigen::aligned_allocator<RigidBodyFrame>(), frame_name,body,T);
   model->addFrame(frame);
 
 

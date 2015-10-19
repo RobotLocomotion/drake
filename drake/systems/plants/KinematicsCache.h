@@ -53,13 +53,16 @@ public:
   {
     // empty
   }
+
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 template <typename Scalar>
 class KinematicsCache
 {
 private:
-  std::unordered_map<RigidBody const *, KinematicsCacheElement<Scalar>> elements;
+  std::unordered_map<RigidBody const *, KinematicsCacheElement<Scalar>, std::hash<RigidBody const *>, std::equal_to<RigidBody const *>, Eigen::aligned_allocator<std::pair<RigidBody const* const, KinematicsCacheElement<Scalar> > > > elements;
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> q;
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> v;
   bool velocity_vector_valid;
@@ -193,6 +196,9 @@ private:
     };
     return std::accumulate(bodies.begin(), bodies.end(), 0, add_num_velocities);
   }
+
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 
