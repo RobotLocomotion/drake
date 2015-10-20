@@ -93,6 +93,9 @@ classdef DoubleIntegrator < LinearSystem
       discrete_time_system = LinearSystem([],[],Ad,Bd,eye(2),[]);
       
       for N = 50:100 % increase N until i find a feasible solution
+        % note: bisection search would be a lot more efficient, but it's in
+        % the noise here...
+        
         [prog,x_inds,u_inds] = dirtranModelPredictiveControl(discrete_time_system,N);
 
         % add initial value constraint:
