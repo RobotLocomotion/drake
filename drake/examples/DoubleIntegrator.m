@@ -98,6 +98,7 @@ classdef DoubleIntegrator < LinearSystem
         % note: bisection search would be a lot more efficient, but it's in
         % the noise here...
         
+        % constructs a QP with constraints x[n+1] = Ad*x[n] + Bd*u[n] set up
         [prog,x_inds,u_inds] = dirtranModelPredictiveControl(discrete_time_system,N);
 
         % add initial value constraint:
