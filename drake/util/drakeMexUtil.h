@@ -275,9 +275,8 @@ mxArray* eigenToTaylorVar(const Eigen::MatrixBase<Derived>& m, int num_variables
   return plhs[0];
 }
 
-template<typename DerType, int RowsAtCompileTime, int ColsAtCompileTime>
-mxArray *eigenToMatlabGeneral(
-        const Eigen::MatrixBase<Eigen::Matrix<Eigen::AutoDiffScalar<DerType>, RowsAtCompileTime, ColsAtCompileTime>>& mat)
+template<int RowsAtCompileTime, int ColsAtCompileTime, typename DerType>
+mxArray *eigenToMatlabGeneral(const Eigen::MatrixBase<Eigen::Matrix<Eigen::AutoDiffScalar<DerType>, RowsAtCompileTime, ColsAtCompileTime>>& mat)
 {
   return eigenToTaylorVar(mat);
 };
