@@ -31,7 +31,7 @@ options.compute_JdotV = true;
 kinsol = doKinematics(obj, q, v, options);
 
 a_grav = [zeros(3, 1); obj.gravity];
-if (use_mex && obj.mex_model_ptr~=0)
+if (use_mex && obj.mex_model_ptr~=0 && kinsol.mex)
   if isnumeric(f_ext)
     f_ext = full(f_ext); % makes the mex implementation simpler (for now)
   end
@@ -192,7 +192,7 @@ if compute_gradient
   dnet_wrenchesdv{1} = zeros(twist_size, nv);
 end
 
-has_f_ext = numel(f_ext) ~= 0;
+has_f_ext = ~isempty(f_ext);
 
 for i = 2 : nBodies
   twist = kinsol.twists{i};

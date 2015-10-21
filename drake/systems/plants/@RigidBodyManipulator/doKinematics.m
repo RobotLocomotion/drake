@@ -90,7 +90,7 @@ kinsol.q = q;
 kinsol.v = v;
 kinsol.has_gradients = options.compute_gradients;
 
-if (options.use_mex && model.mex_model_ptr~=0)
+if options.use_mex && model.mex_model_ptr~=0 && ((isnumeric(q) && isnumeric(v)) || isa(q, 'TaylorVar')) % relying on short circuiting here
   if ~isnumeric(q)
     if isa(q, 'TaylorVar')
       if options.compute_gradients
