@@ -117,8 +117,16 @@ Eigen::Matrix<Eigen::AutoDiffScalar<DerType>, Rows, Cols, Options, MaxRows, MaxC
 
     typedef typename Gradient<ValueMatrixType, DerType::RowsAtCompileTime>::type GradientType;
     typedef Matrix<NormalScalar, GradientType::RowsAtCompileTime, GradientType::ColsAtCompileTime, 0, GradientType::RowsAtCompileTime, DerType::MaxRowsAtCompileTime> GradientTypeFixedMaxSize;
-    auto gradient_matrix = Map<GradientTypeFixedMaxSize>(mxGetPrSafe(df), mxGetM(df), num_derivs);
-    gradientMatrixToAutoDiff(gradient_matrix, ret);
+
+    if (mxIsSparse(df)) {
+      auto gradient_matrix = GradientTypeFixedMaxSize(matlabToEigenSparse(df)); // TODO: inefficient
+      gradientMatrixToAutoDiff(gradient_matrix, ret);
+    }
+    else {
+      auto gradient_matrix = Map<GradientTypeFixedMaxSize>(mxGetPrSafe(df), mxGetM(df), num_derivs); // FIXME: handle sparse case
+      gradientMatrixToAutoDiff(gradient_matrix, ret);
+    }
+
   }
   return ret;
 }
