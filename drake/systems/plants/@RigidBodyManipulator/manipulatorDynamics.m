@@ -192,7 +192,7 @@ if compute_gradient
   dnet_wrenchesdv{1} = zeros(twist_size, nv);
 end
 
-has_f_ext = ~isempty(f_ext);
+has_f_ext = ~isempty(f_ext) && numel(f_ext) > 0; % need both to cover both TaylorVar and TrigPoly
 
 for i = 2 : nBodies
   twist = kinsol.twists{i};
