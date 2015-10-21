@@ -66,7 +66,7 @@ mu = ones(nC,1);
 
 d = obj.surfaceTangents(normal);
 
-if obj.mex_model_ptr ~= 0
+if obj.mex_model_ptr ~= 0 && kinsol.mex
   [n, D] =  contactConstraintsmex(obj.mex_model_ptr, kinsol.mex_ptr, normal, int32(idxA - 1), int32(idxB - 1), xA, xB, d);
   if kinsol.has_gradients
     [n, dn] = eval(n);
