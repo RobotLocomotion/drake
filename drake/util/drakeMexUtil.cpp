@@ -147,11 +147,11 @@ Eigen::SparseMatrix<double> matlabToEigenSparse(const mxArray* mex)
   triplets.reserve(num_non_zero);
 
   for (mwSize col = 0; col < cols; col++) {
-    auto val_index_start = jc[col];
-    auto val_index_end = jc[col + 1];
+    const auto& val_index_start = jc[col];
+    const auto& val_index_end = jc[col + 1];
     for (auto val_index = val_index_start; val_index < val_index_end; val_index++) {
-      double val = pr[val_index];
-      auto row = ir[val_index];
+      const double& val = pr[val_index];
+      const auto& row = ir[val_index];
       triplets.push_back(Triplet<double>(row, col, val));
     }
   }
