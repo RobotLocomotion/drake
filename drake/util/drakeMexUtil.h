@@ -4,6 +4,7 @@
 #include "mex.h"
 #include <vector>
 #include <Eigen/Core>
+#include <Eigen/Sparse>
 #include "TrigPoly.h"
 #include "unsupported/Eigen/AutoDiff"
 
@@ -15,6 +16,7 @@
  * See http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1057
  */
 #include <unsupported/Eigen/AutoDiff>
+#include <eigen3/Eigen/src/SparseCore/SparseMatrix.h>
 #include "drakeGradientUtil.h"
 
 #undef DLLEXPORT
@@ -122,6 +124,8 @@ Eigen::Map<const Eigen::Matrix<double, Rows, Cols>> matlabToEigenMap(const mxArr
   double* data = rows * cols == 0 ? nullptr : mxGetPrSafe(mex);
   return Map<const Matrix<double, Rows, Cols>>(data, rows, cols);
 }
+
+DLLEXPORT Eigen::SparseMatrix<double> matlabToEigenSparse(const mxArray* mex);
 
 DLLEXPORT std::string mxGetStdString(const mxArray* array);
 DLLEXPORT std::vector<std::string> mxGetVectorOfStdStrings(const mxArray* array);

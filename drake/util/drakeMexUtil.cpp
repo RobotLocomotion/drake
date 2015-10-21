@@ -129,6 +129,35 @@ void* getDrakeMexPointer(const mxArray* mx)
   return ptr;
 }
 
+Eigen::SparseMatrix<double> matlabToEigenSparse(const mxArray* mex)
+{
+  using namespace Eigen;
+
+  auto ir = mxGetIr(mex);
+  auto jc = mxGetJc(mex);
+  auto pr = mxGetPr(mex);
+
+  auto rows = mxGetM(mex);
+  auto cols = mxGetN(mex);
+//  auto num_non_zero_max = mxGetNzmax(mex);
+  auto num_non_zero = jc[cols]; // from mxgetnzmax.c example
+
+  SparseMatrix<double> ret(rows, cols);
+  std::vector<Triplet<double>> triplets;
+  triplets.reserve(num_non_zero);
+
+  for (mwSize col = 0; col < cols; col++) {
+    auto val_index_start = jc[col];
+    auto val_index_end = jc[col + 1];
+    for (auto val_index = val_index_start; val_index < val_index_end; val_index++) {
+      double val = pr[val_index];
+      auto row = ir[val_index];
+      triplets.push_back(Triplet<double>(row, col, val));
+    }
+  }
+  ret.setFromTriplets(triplets.begin(), triplets.end());
+  return ret;
+}
 
 std::string mxGetStdString(const mxArray* array) {
   mwSize buffer_length = mxGetNumberOfElements(array) + 1;
