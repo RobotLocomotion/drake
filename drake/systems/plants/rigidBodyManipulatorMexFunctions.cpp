@@ -142,9 +142,9 @@ void geometricJacobianDotTimesVmex(int nlhs, mxArray *plhs[], int nrhs, const mx
 }
 
 template <typename Scalar>
-GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> geometricJacobianTemp(const RigidBodyManipulator &model, const KinematicsCache<Scalar> &cache, int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, int gradient_order, bool in_terms_of_qdot) {
+Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> geometricJacobianTemp(const RigidBodyManipulator &model, const KinematicsCache<Scalar> &cache, int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, bool in_terms_of_qdot) {
   // temporary solution. Gross v_or_qdot_indices pointer will be gone soon.
-  return model.geometricJacobian(cache, base_body_or_frame_ind, end_effector_body_or_frame_ind, expressed_in_body_or_frame_ind, gradient_order, in_terms_of_qdot, nullptr);
+  return model.geometricJacobian(cache, base_body_or_frame_ind, end_effector_body_or_frame_ind, expressed_in_body_or_frame_ind, in_terms_of_qdot, nullptr);
 };
 
 void geometricJacobianmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
@@ -162,21 +162,19 @@ void massMatrixmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 }
 
 template <typename Scalar, typename DerivedF>
-GradientVar<Scalar, Eigen::Dynamic, 1>  dynamicsBiasTermTemp(const RigidBodyManipulator &model, KinematicsCache<Scalar> &cache, const MatrixBase<DerivedF> &f_ext_value) {
-  // temporary solution. GradientVar will disappear, obviating the need for the extra argument. integer body indices will be handled differently.
+Matrix<Scalar, Eigen::Dynamic, 1>  dynamicsBiasTermTemp(const RigidBodyManipulator &model, KinematicsCache<Scalar> &cache, const MatrixBase<DerivedF> &f_ext_value) {
+  // temporary solution.
 
-  eigen_aligned_unordered_map<const RigidBody *, GradientVar<Scalar, 6, 1> > f_ext;
+  eigen_aligned_unordered_map<const RigidBody *, Matrix<Scalar, 6, 1> > f_ext;
 
   if (f_ext_value.size() > 0) {
     assert(f_ext_value.cols() == model.bodies.size());
     for (DenseIndex i = 0; i < f_ext_value.cols(); i++) {
-      GradientVar<Scalar, TWIST_SIZE, 1> f_ext_gradientvar(TWIST_SIZE, 1, model.num_positions + model.num_velocities, 0);
-      f_ext_gradientvar.value() = f_ext_value.col(i);
-      f_ext.insert({model.bodies[i].get(), f_ext_gradientvar});
+      f_ext.insert({model.bodies[i].get(), f_ext_value.col(i)});
     }
   }
 
-  return model.dynamicsBiasTerm(cache, f_ext, 0);
+  return model.dynamicsBiasTerm(cache, f_ext);
 };
 
 void dynamicsBiasTermmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {

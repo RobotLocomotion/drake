@@ -134,7 +134,7 @@ void RigidBodyManipulator::accumulateContactJacobian(const KinematicsCache<Scala
   const size_t numCB = cindB.size();
   const size_t offset = 3*numCA;
 
-  auto J_tmp = forwardKinJacobian(cache, bodyPoints, bodyInd, 0, 0, true, 0).value();
+  auto J_tmp = forwardKinJacobian(cache, bodyPoints, bodyInd, 0, 0, true, 0);
 
   //add contributions from points in xA
   for (int x = 0 ; x < numCA ; x++) {
@@ -144,34 +144,6 @@ void RigidBodyManipulator::accumulateContactJacobian(const KinematicsCache<Scala
   //subtract contributions from points in xB
   for (int x = 0 ; x < numCB ; x++) {
     J.block(3*cindB[x], 0, 3, nq) -= J_tmp.block(offset + 3*x, 0, 3, nq);
-  }
-}
-
-// Same as above but computes the second order contact Jacobian
-// OUTPUTS:
-//  dJ: (3m x nq^2) Second order contact Jacobian
-// TODO: change output to be 3m * nq x nq (or possibly 3m * nv x nq)
-template <typename Scalar>
-void RigidBodyManipulator::accumulateSecondOrderContactJacobian(const KinematicsCache<Scalar> &cache, const int bodyInd, Matrix3Xd const &bodyPoints, std::vector<size_t> const &cindA,
-                                                                std::vector<size_t> const &cindB, Matrix<Scalar, Dynamic, Dynamic> &dJ) const
-{
-  const size_t dJCols = dJ.cols(); //nq^2 instead of nq
-  const size_t numPts = bodyPoints.cols();
-  const size_t numCA = cindA.size();
-  const size_t numCB = cindB.size();
-  const size_t offset = 3*numCA;
-  Matrix<Scalar, Dynamic, Dynamic> dJ_tmp(3*numPts, dJCols);
-  auto J_gradientvar = forwardKinJacobian(cache, bodyPoints, bodyInd, 0, 0, true, 1);
-  dJ_tmp = Map<Matrix<Scalar, Dynamic, Dynamic>>(J_gradientvar.gradient().value().data(), dJ_tmp.rows(), dJ_tmp.cols());
-
-  //add contributions from points in xA
-  for (size_t x = 0 ; x < numCA ; x++) {
-    dJ.block(3*cindA[x], 0, 3, dJCols) += dJ_tmp.block(3*x, 0, 3, dJCols);
-  }
-
-  //subtract contributions from points in xB
-  for (size_t x = 0 ; x < numCB ; x++) {
-    dJ.block(3*cindB[x], 0, 3, dJCols) -= dJ_tmp.block(offset + 3*x, 0, 3, dJCols);
   }
 }
 
@@ -192,7 +164,7 @@ void RigidBodyManipulator::accumulateSecondOrderContactJacobian(const Kinematics
 
 template <typename Scalar>
 void RigidBodyManipulator::computeContactJacobians(const KinematicsCache<Scalar> &cache, Ref<const VectorXi> const &idxA, Ref<const VectorXi> const &idxB, Ref<const Matrix3Xd> const &xA, Ref<const Matrix3Xd> const &xB,
-                                                   const bool compute_second_derivatives, Matrix<Scalar, Dynamic, Dynamic> &J, Matrix<Scalar, Dynamic, Dynamic> &dJ) const
+                                                   Matrix<Scalar, Dynamic, Dynamic> &J) const
 {
   std::vector<int> bodyInds;
   const size_t nq = num_positions;
@@ -201,8 +173,7 @@ void RigidBodyManipulator::computeContactJacobians(const KinematicsCache<Scalar>
   typedef Matrix<Scalar, Dynamic, Dynamic> MatrixX;
 
   J = MatrixX::Zero(3*numContactPairs, nq);
-  dJ = MatrixX::Zero(3*numContactPairs, nq*nq);
-  
+
   getUniqueBodiesSorted(idxA, idxB, bodyInds);
   
   const size_t numUniqueBodies = bodyInds.size();
@@ -215,9 +186,6 @@ void RigidBodyManipulator::computeContactJacobians(const KinematicsCache<Scalar>
     findContactIndexes(idxB, bodyInd, cindB);
     getBodyPoints(cindA, cindB, xA, xB, bodyPoints);
     accumulateContactJacobian(cache, bodyInd, bodyPoints, cindA, cindB, J);
-    if (compute_second_derivatives) {
-      accumulateSecondOrderContactJacobian(cache, bodyInd, bodyPoints, cindA, cindB, dJ);
-    }
   } 
 }
 
@@ -241,7 +209,3 @@ void RigidBodyManipulator::surfaceTangents(Map<Matrix3Xd> const & normals, std::
     }
   }
 }
-
-template DLLEXPORT_RBM void RigidBodyManipulator::computeContactJacobians<double>(KinematicsCache<double> const&, Eigen::Ref<Eigen::Matrix<int, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const&, Eigen::Ref<Eigen::Matrix<int, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const&, Eigen::Ref<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::OuterStride<-1> > const&, Eigen::Ref<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::OuterStride<-1> > const&, bool, Eigen::Matrix<double, -1, -1, 0, -1, -1>&, Eigen::Matrix<double, -1, -1, 0, -1, -1>&) const;
-template DLLEXPORT_RBM void RigidBodyManipulator::computeContactJacobians<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, Eigen::Ref<Eigen::Matrix<int, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const&, Eigen::Ref<Eigen::Matrix<int, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const&, Eigen::Ref<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::OuterStride<-1> > const&, Eigen::Ref<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::OuterStride<-1> > const&, bool, Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, -1, 0, -1, -1>&, Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, -1, 0, -1, -1>&) const;
-template DLLEXPORT_RBM void RigidBodyManipulator::computeContactJacobians<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, Eigen::Ref<Eigen::Matrix<int, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const&, Eigen::Ref<Eigen::Matrix<int, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const&, Eigen::Ref<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::OuterStride<-1> > const&, Eigen::Ref<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::OuterStride<-1> > const&, bool, Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, -1, 0, -1, -1>&, Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, -1, 0, -1, -1>&) const;

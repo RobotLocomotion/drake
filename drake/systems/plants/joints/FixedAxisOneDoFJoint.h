@@ -84,19 +84,14 @@ public:
   };
 
   template <typename DerivedV>
-  GradientVar<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorque(const Eigen::MatrixBase<DerivedV> & v, int gradient_order) const {
+  Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorque(const Eigen::MatrixBase<DerivedV> & v) const {
     typedef typename DerivedV::Scalar Scalar;
-    GradientVar<Scalar, Eigen::Dynamic, 1> ret(getNumVelocities(), 1, getNumVelocities(), gradient_order);
+    Eigen::Matrix<Scalar, Eigen::Dynamic, 1> ret(getNumVelocities(), 1);
     using std::abs;
-    ret.value()[0] = damping * v[0];
+    ret[0] = damping * v[0];
     Scalar coulomb_window_fraction = v[0] / coulomb_window;
     Scalar coulomb = std::min(Scalar(1), std::max(Scalar(-1), coulomb_window_fraction)) * coulomb_friction;
-    ret.value()[0] += coulomb;
-    if (gradient_order > 0) {
-      ret.gradient().value()(0, 0) = damping;
-      if (abs(v[0]) < coulomb_window)
-        ret.gradient().value()(0, 0) += sign(v[0]) * (coulomb_friction / coulomb_window);
-    }
+    ret[0] += coulomb;
     return ret;
   }
 
