@@ -9,9 +9,6 @@ int main()
 {
   RigidBodyManipulator model("examples/Atlas/urdf/atlas_minimal_contact.urdf");
 
-  int nq = model.num_positions;
-  int nv = model.num_velocities;
-
   VectorXd q = VectorXd::Random(model.num_positions);
   VectorXd v = VectorXd::Random(model.num_velocities);
   KinematicsCache<double> cache = model.doKinematics(q, v);
