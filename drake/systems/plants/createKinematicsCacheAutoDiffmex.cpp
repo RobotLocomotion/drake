@@ -7,7 +7,7 @@ using namespace std;
 
 template <typename Scalar>
 mxArray* createKinematicsCache(RigidBodyManipulator& model) {
-  KinematicsCache<Scalar>* cache = new KinematicsCache<Scalar>(model.bodies, 0);
+  KinematicsCache<Scalar>* cache = new KinematicsCache<Scalar>(model.bodies);
   return createDrakeMexPointer((void*)cache, typeid(KinematicsCache<Scalar>).name());
 }
 

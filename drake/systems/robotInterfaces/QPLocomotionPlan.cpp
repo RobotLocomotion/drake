@@ -91,7 +91,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
     support_index++;
 
   // do kinematics
-  KinematicsCache<double> cache = robot.doKinematics(q, 0);
+  KinematicsCache<double> cache = robot.doKinematics(q);
 
   RigidBodySupportState& support_state = settings.supports[support_index];
   bool is_last_support = support_index == settings.supports.size() - 1;
@@ -441,7 +441,7 @@ void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body
 
   // first knot point from current position
   auto x0_xyzquat = robot.forwardKin(cache, (Vector3d::Zero()).eval(), body_motion_data.getBodyOrFrameId(), 0, 2);
-  auto J = robot.forwardKinJacobian(cache, (Vector3d::Zero()).eval(), body_motion_data.getBodyOrFrameId(), 0, 2, true, 0).value();
+  auto J = robot.forwardKinJacobian(cache, (Vector3d::Zero()).eval(), body_motion_data.getBodyOrFrameId(), 0, 2, true);
   auto xd0_xyzquat = (J * v).eval(); // TODO: doesn't work for qd != v
   Vector4d x0_quat = x0_xyzquat.tail<4>(); // copying to Vector4d for quatRotateVec later on.
   auto x0_expmap = quat2expmap(x0_quat, 1);

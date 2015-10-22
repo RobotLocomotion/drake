@@ -134,7 +134,7 @@ void RigidBodyManipulator::accumulateContactJacobian(const KinematicsCache<Scala
   const size_t numCB = cindB.size();
   const size_t offset = 3*numCA;
 
-  auto J_tmp = forwardKinJacobian(cache, bodyPoints, bodyInd, 0, 0, true, 0);
+  auto J_tmp = forwardKinJacobian(cache, bodyPoints, bodyInd, 0, 0, true);
 
   //add contributions from points in xA
   for (int x = 0 ; x < numCA ; x++) {
@@ -209,3 +209,7 @@ void RigidBodyManipulator::surfaceTangents(Map<Matrix3Xd> const & normals, std::
     }
   }
 }
+
+template DLLEXPORT_RBM void RigidBodyManipulator::computeContactJacobians<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, Eigen::Ref<Eigen::Matrix<int, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const&, Eigen::Ref<Eigen::Matrix<int, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const&, Eigen::Ref<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::OuterStride<-1> > const&, Eigen::Ref<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::OuterStride<-1> > const&, Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, -1, 0, -1, -1>&) const;
+template DLLEXPORT_RBM void RigidBodyManipulator::computeContactJacobians<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, Eigen::Ref<Eigen::Matrix<int, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const&, Eigen::Ref<Eigen::Matrix<int, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const&, Eigen::Ref<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::OuterStride<-1> > const&, Eigen::Ref<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::OuterStride<-1> > const&, Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, -1, 0, -1, -1>&) const;
+template DLLEXPORT_RBM void RigidBodyManipulator::computeContactJacobians<double>(KinematicsCache<double> const&, Eigen::Ref<Eigen::Matrix<int, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const&, Eigen::Ref<Eigen::Matrix<int, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const&, Eigen::Ref<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::OuterStride<-1> > const&, Eigen::Ref<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::OuterStride<-1> > const&, Eigen::Matrix<double, -1, -1, 0, -1, -1>&) const;

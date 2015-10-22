@@ -96,7 +96,7 @@ smoothDistancePenalty(double& c, MatrixXd& dc,
       //END_DEBUG
       x_k.col(l) = xB.col(orig_idx_of_pt_on_bodyB.at(k).at(l-numA));
     }
-    auto J_k = robot->forwardKinJacobian(cache, x_k, k, 0, 0, true, 0).value();
+    auto J_k = robot->forwardKinJacobian(cache, x_k, k, 0, 0, true);
     l = 0;
     for (; l < numA; ++l) {
       //DEBUG

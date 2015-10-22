@@ -401,6 +401,9 @@ public:
   template <typename Scalar>
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> positionConstraints(const KinematicsCache<Scalar>& cache) const;
 
+  template<typename Scalar>
+  Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> positionConstraintsJacobian(const KinematicsCache<Scalar> &cache) const;
+
   size_t getNumPositionConstraints() const;
 
   template <typename Derived>
@@ -425,7 +428,7 @@ Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynam
     if (body.hasParent()) {
       const DrakeJoint& joint = body.getJoint();
       const auto& element = cache.getElement(body);
-      ret.middleCols(ret_col_start, joint.getNumVelocities()).noalias() = mat.middleCols(mat_col_start, joint.getNumPositions()) * element.v_to_qdot.value();
+      ret.middleCols(ret_col_start, joint.getNumVelocities()).noalias() = mat.middleCols(mat_col_start, joint.getNumPositions()) * element.v_to_qdot;
       ret_col_start += joint.getNumVelocities();
       mat_col_start += joint.getNumPositions();
     }

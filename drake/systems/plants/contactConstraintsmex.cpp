@@ -41,8 +41,7 @@ pair<MatrixX<Scalar>, vector<MatrixX<Scalar> > > contactConstraints(const RigidB
                                                                         const Map<const VectorXi>& idxB, const Map<const Matrix3Xd> &xA, const Map<const Matrix3Xd> &xB, const vector<Map<const Matrix3Xd>> &d) {
 
   Matrix<Scalar, Dynamic, Dynamic> J;
-  Matrix<Scalar, Dynamic, Dynamic> dJ;
-  model.computeContactJacobians(cache, idxA, idxB, xA, xB, false, J, dJ);
+  model.computeContactJacobians(cache, idxA, idxB, xA, xB, J);
 
   SparseMatrix<double> sparseNormals;
   buildSparseMatrixForContactConstraints(normals, sparseNormals);

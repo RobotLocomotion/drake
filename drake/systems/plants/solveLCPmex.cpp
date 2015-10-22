@@ -236,9 +236,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   VectorXd phiL, phiL_possible, phiC_possible, phiL_check, phiC_check;
   MatrixXd JL, JL_possible, n_possible, JL_check, n_check;
 
-  auto phiPgrad = model->positionConstraints<double>(cache,1);
-  auto phiP = phiPgrad.value();
-  auto JP = phiPgrad.gradient().value();
+  auto phiP = model->positionConstraints(cache);
+  auto JP = model->positionConstraintsJacobian(cache);
   model->jointLimitConstraints(q, phiL, JL);  
   
   const size_t nP = phiP.size();

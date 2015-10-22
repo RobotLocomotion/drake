@@ -28,12 +28,9 @@ void scenario1(const RigidBodyManipulator &model, KinematicsCache<Scalar>& cache
     cache.initialize(q);
     model.doKinematics(cache, false);
     for (const auto& pair : body_fixed_points) {
-      auto J = model.forwardKinJacobian(cache, pair.second, pair.first, 0, 2, false, cache.getGradientOrder());
+      auto J = model.forwardKinJacobian(cache, pair.second, pair.first, 0, 2, false);
       if (uniform(generator) < 1e-15) {
-        printMatrix(J.value()); // print with some probability to avoid optimizing away
-        if (cache.getGradientOrder() > 0) {
-          printMatrix(J.gradient().value());
-        }
+        printMatrix(J); // print with some probability to avoid optimizing away
       }
     }
   }
@@ -41,19 +38,15 @@ void scenario1(const RigidBodyManipulator &model, KinematicsCache<Scalar>& cache
 
 template <typename Scalar>
 void scenario2(const RigidBodyManipulator &model, KinematicsCache<Scalar>& cache, const vector<pair<Matrix<Scalar, Dynamic, 1>, Matrix<Scalar, Dynamic, 1>>>& states) {
-  const eigen_aligned_unordered_map<RigidBody const *, GradientVar<Scalar, TWIST_SIZE, 1> > f_ext;
+  const eigen_aligned_unordered_map<RigidBody const *, Matrix<Scalar, TWIST_SIZE, 1> > f_ext;
   for (const auto& state : states) {
     cache.initialize(state.first, state.second);
     model.doKinematics(cache, true);
-    auto H = model.massMatrix(cache, cache.getGradientOrder());
-    auto C = model.dynamicsBiasTerm(cache, f_ext, cache.getGradientOrder());
+    auto H = model.massMatrix(cache);
+    auto C = model.dynamicsBiasTerm(cache, f_ext);
     if (uniform(generator) < 1e-15) { // print with some probability to avoid optimizing away
-      printMatrix(H.value());
-      printMatrix(C.value());
-      if (cache.getGradientOrder() > 0) {
-        printMatrix(H.gradient().value());
-        printMatrix(C.gradient().value());
-      }
+      printMatrix(H);
+      printMatrix(C);
     }
   }
 }
@@ -96,14 +89,12 @@ void testScenario1(const RigidBodyManipulator& model) {
   int head_id = model.findLinkId("head");
   body_fixed_points.insert(make_pair(head_id, Matrix3Xd::Random(3, npoints_head)));
 
-  KinematicsCache<double> cache_double_no_gradients(model.bodies, 0);
-  KinematicsCache<double> cache_double_gradients(model.bodies, 1);
-  KinematicsCache<AutoDiffFixedMaxSize> cache_autodiff_fixed(model.bodies, 0);
-  KinematicsCache<AutoDiffDynamicSize> cache_autodiff_dynamic(model.bodies, 0);
+  KinematicsCache<double> cache_double(model.bodies);
+  KinematicsCache<AutoDiffFixedMaxSize> cache_autodiff_fixed(model.bodies);
+  KinematicsCache<AutoDiffDynamicSize> cache_autodiff_dynamic(model.bodies);
 
   cout << "scenario 1:" << endl;
-  cout << "no gradients: " << measure<>::execution(scenario1<double>, model, cache_double_no_gradients, qs_double, body_fixed_points) / static_cast<double>(ntests) << " ms" << endl;
-  cout << "user gradients: " << measure<>::execution(scenario1<double>, model, cache_double_gradients, qs_double, body_fixed_points) / static_cast<double>(ntests) << " ms" << endl;
+  cout << "no gradients: " << measure<>::execution(scenario1<double>, model, cache_double, qs_double, body_fixed_points) / static_cast<double>(ntests) << " ms" << endl;
   cout << "autodiff fixed max size: " << measure<>::execution(scenario1<AutoDiffFixedMaxSize>, model, cache_autodiff_fixed, qs_autodiff_fixed, body_fixed_points) / static_cast<double>(ntests) << " ms" << endl;
   cout << "autodiff dynamic size: " << measure<>::execution(scenario1<AutoDiffDynamicSize>, model, cache_autodiff_dynamic, qs_autodiff_dynamic, body_fixed_points) / static_cast<double>(ntests) << " ms" << endl;
   cout << endl;
@@ -138,14 +129,12 @@ void testScenario2(const RigidBodyManipulator& model) {
     states_autodiff_dynamic.push_back(make_pair(q_autodiff_dynamic, v_autodiff_dynamic));
   }
 
-  KinematicsCache<double> cache_double_no_gradients(model.bodies, 0);
-  KinematicsCache<double> cache_double_gradients(model.bodies, 1);
-  KinematicsCache<AutoDiffFixedMaxSize> cache_autodiff_fixed(model.bodies, 0);
-  KinematicsCache<AutoDiffDynamicSize> cache_autodiff_dynamic(model.bodies, 0);
+  KinematicsCache<double> cache_double(model.bodies);
+  KinematicsCache<AutoDiffFixedMaxSize> cache_autodiff_fixed(model.bodies);
+  KinematicsCache<AutoDiffDynamicSize> cache_autodiff_dynamic(model.bodies);
 
   cout << "scenario 2:" << endl;
-  cout << "no gradients: " << measure<>::execution(scenario2<double>, model, cache_double_no_gradients, states_double) / static_cast<double>(ntests) << " ms" << endl;
-  cout << "user gradients: " << measure<>::execution(scenario2<double>, model, cache_double_gradients, states_double) / static_cast<double>(ntests) << " ms" << endl;
+  cout << "no gradients: " << measure<>::execution(scenario2<double>, model, cache_double, states_double) / static_cast<double>(ntests) << " ms" << endl;
   cout << "autodiff fixed max size: " << measure<>::execution(scenario2<AutoDiffFixedMaxSize>, model, cache_autodiff_fixed, states_autodiff_fixed) / static_cast<double>(ntests) << " ms" << endl;
   cout << "autodiff dynamic size: " << measure<>::execution(scenario2<AutoDiffDynamicSize>, model, cache_autodiff_dynamic, states_autodiff_dynamic) / static_cast<double>(ntests) << " ms" << endl;
   cout << endl;
