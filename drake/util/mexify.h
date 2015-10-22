@@ -11,6 +11,12 @@
 #include "mex.h"
 #include "drakeMexUtil.h"
 
+#ifndef _MSC_VER
+#define NOEXCEPT noexcept
+#else
+#define NOEXCEPT
+#endif
+
 /**
  * Functions that make it easy to create a mex function given a C++ function signature in the form of a std::function.
  *
@@ -122,7 +128,7 @@ public:
     errors.push_back(error);
   }
 
-  virtual const char* what() const noexcept
+  virtual const char* what() const NOEXCEPT
   {
     std::ostringstream buf;
     std::string functions = errors.size() == 1 ? "function" : "functions";

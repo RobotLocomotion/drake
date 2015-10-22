@@ -913,8 +913,8 @@ Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJacobi
     col_start += ncols_block;
   }
 
-  auto T_world_to_frame = relativeTransform(cache, expressed_in_body_or_frame_ind, 0);
   if (expressed_in_body_or_frame_ind != 0) {
+    auto T_world_to_frame = relativeTransform(cache, expressed_in_body_or_frame_ind, 0);
     J = transformSpatialMotion(T_world_to_frame, J);
   }
 
