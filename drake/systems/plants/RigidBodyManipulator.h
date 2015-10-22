@@ -147,15 +147,14 @@ public:
             element.twist_in_world = parent_element.twist_in_world;
             if (compute_JdotV) {
               element.motion_subspace_in_world_dot_times_v = parent_element.motion_subspace_in_world_dot_times_v;
-
             }
           } else {
             // twist
             auto v_body = v.middleRows(body.velocity_num_start, joint.getNumVelocities());
 
-            Eigen::Matrix<Scalar, TWIST_SIZE, 1> joint_twist;
+            Eigen::Matrix<Scalar, TWIST_SIZE, 1> joint_twist = element.motion_subspace_in_world * v_body;
             element.twist_in_world = parent_element.twist_in_world;
-            element.twist_in_world.noalias() += element.motion_subspace_in_world * v_body;
+            element.twist_in_world.noalias() += joint_twist;
 
             if (compute_JdotV) {
               // Sdotv

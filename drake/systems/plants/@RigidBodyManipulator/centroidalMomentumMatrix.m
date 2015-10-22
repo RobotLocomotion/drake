@@ -27,7 +27,7 @@ if ~isstruct(kinsol)
 end
 
 if kinsol.mex
-  A = centroidalMomentumMatrixmex(robot.mex_model_ptr, kinsol.mex_ptr, 0, robotnum - 1, in_terms_of_qdot);
+  A = centroidalMomentumMatrixmex(robot.mex_model_ptr, kinsol.mex_ptr, robotnum - 1, in_terms_of_qdot);
   if kinsol.has_gradients
     [A, dA] = eval(A);
     nq = length(kinsol.q);

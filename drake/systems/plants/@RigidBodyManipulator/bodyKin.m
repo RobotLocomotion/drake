@@ -16,10 +16,6 @@ function [x,P,J,dP,dJ] = bodyKin(obj,kinsol,body_or_frame_ind,pts)
 %  will be a ((3*m)x(nq^2)) matrix, with [dJ1,dJ2,...,dJq] where
 %  dJj = dJdqj
 
-compute_P                   = (nargout > 1);
-compute_first_derivatives   = (nargout > 2);
-compute_second_derivatives  = (nargout > 3);
-
 compute_P = nargout > 1;
 compute_J = nargout > 2;
 compute_dP = nargout > 3;
@@ -40,7 +36,7 @@ if (kinsol.mex)
   if (obj.mex_model_ptr==0)
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
   end
-  P = forwardKinPositionGradientmex(obj.mex_model_ptr, kinsol.mex_ptr, m, body_or_frame_ind - 1, 0, 0);
+  P = forwardKinPositionGradientmex(obj.mex_model_ptr, kinsol.mex_ptr, m, body_or_frame_ind - 1, 0);
   if kinsol.has_gradients
     [P, dP] = eval(P);
   end

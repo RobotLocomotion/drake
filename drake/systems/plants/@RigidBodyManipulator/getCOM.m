@@ -33,7 +33,7 @@ if kinsol.mex
   if kinsol.has_gradients
     [com, J] = eval(com);
     if nargout > 2 || ~in_terms_of_qdot
-      J = centerOfMassJacobianmex(model.mex_model_ptr, kinsol.mex_ptr, 0, robotnum - 1, in_terms_of_qdot);
+      J = centerOfMassJacobianmex(model.mex_model_ptr, kinsol.mex_ptr, robotnum - 1, in_terms_of_qdot);
       [J, dJ] = eval(J);
       nq = length(kinsol.q);
       dJ = reshape(dJ, numel(J), []); % convert to format where cols correspond to variables
@@ -42,7 +42,7 @@ if kinsol.mex
     end
   else
     if nargout > 1
-      J = centerOfMassJacobianmex(model.mex_model_ptr, kinsol.mex_ptr, 0, robotnum - 1, in_terms_of_qdot);
+      J = centerOfMassJacobianmex(model.mex_model_ptr, kinsol.mex_ptr, robotnum - 1, in_terms_of_qdot);
     end
   end
 else

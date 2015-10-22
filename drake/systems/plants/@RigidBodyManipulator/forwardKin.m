@@ -71,7 +71,7 @@ if (kinsol.mex)
     [x, J] = eval(x);
     nq = length(kinsol.q);
     if nargout > 2 || ~in_terms_of_qdot
-      J = forwardKinJacobianmex(obj.mex_model_ptr, kinsol.mex_ptr, points, body_or_frame_id - 1, base_or_frame_id - 1, rotation_type, in_terms_of_qdot, 0);
+      J = forwardKinJacobianmex(obj.mex_model_ptr, kinsol.mex_ptr, points, body_or_frame_id - 1, base_or_frame_id - 1, rotation_type, in_terms_of_qdot);
       [J, dJ] = eval(J);
       if isempty(dJ)
         dJ = zeros(numel(J), nq);
@@ -85,7 +85,7 @@ if (kinsol.mex)
     end
   else
     if nargout > 1
-      J = forwardKinJacobianmex(obj.mex_model_ptr, kinsol.mex_ptr, points, body_or_frame_id - 1, base_or_frame_id - 1, rotation_type, in_terms_of_qdot, 0);
+      J = forwardKinJacobianmex(obj.mex_model_ptr, kinsol.mex_ptr, points, body_or_frame_id - 1, base_or_frame_id - 1, rotation_type, in_terms_of_qdot);
     end
   end
 else
