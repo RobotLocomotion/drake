@@ -147,7 +147,7 @@ int toMex(const bool& source, mxArray* dest[], int nlhs) {
 template <typename Scalar, int Rows, int Cols, int Options, int MaxRows, int MaxCols>
 int toMex(const Eigen::Matrix<Scalar, Rows, Cols, Options, MaxRows, MaxCols> &source, mxArray *dest[], int nlhs) {
   if (nlhs > 0)
-    dest[0] = eigenToMatlabGeneral(source);
+    dest[0] = eigenToMatlabGeneral<Rows, Cols>(source);
   return 1;
 };
 
