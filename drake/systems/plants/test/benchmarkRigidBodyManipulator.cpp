@@ -30,7 +30,8 @@ void scenario1(const RigidBodyManipulator &model, KinematicsCache<Scalar>& cache
     for (const auto& pair : body_fixed_points) {
       auto J = model.forwardKinJacobian(cache, pair.second, pair.first, 0, 2, false);
       if (uniform(generator) < 1e-15) {
-        printMatrix(J); // print with some probability to avoid optimizing away
+        // print with some probability to avoid optimizing away
+        printMatrix<decltype(J)::RowsAtCompileTime, decltype(J)::ColsAtCompileTime>(J); // MSVC 2013 can't infer rows and cols (ICE)
       }
     }
   }
@@ -45,8 +46,8 @@ void scenario2(const RigidBodyManipulator &model, KinematicsCache<Scalar>& cache
     auto H = model.massMatrix(cache);
     auto C = model.dynamicsBiasTerm(cache, f_ext);
     if (uniform(generator) < 1e-15) { // print with some probability to avoid optimizing away
-      printMatrix(H);
-      printMatrix(C);
+      printMatrix<decltype(H)::RowsAtCompileTime, decltype(H)::ColsAtCompileTime>(H); // MSVC 2013 can't infer rows and cols (ICE)
+      printMatrix<decltype(C)::RowsAtCompileTime, decltype(C)::ColsAtCompileTime>(C); // MSVC 2013 can't infer rows and cols (ICE)
     }
   }
 }
