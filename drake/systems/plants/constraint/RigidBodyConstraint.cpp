@@ -49,6 +49,13 @@ RigidBodyConstraint::RigidBodyConstraint(const RigidBodyConstraint &rhs):categor
 
 RigidBodyConstraint::~RigidBodyConstraint(void){};
 
+std::string RigidBodyConstraint::getTimeString(const double *t) const{
+  std::string time_str;
+  if(t != nullptr) {
+    time_str = " at time "+std::to_string(*t);
+  }
+  return time_str;
+}
 
 const int QuasiStaticDefaultRobotNum[1] = {0};
 const std::set<int> QuasiStaticConstraint::defaultRobotNumSet(QuasiStaticDefaultRobotNum,QuasiStaticDefaultRobotNum+1);
@@ -159,26 +166,9 @@ void QuasiStaticConstraint::bounds(const double* t,VectorXd &lb, VectorXd &ub) c
 
 void QuasiStaticConstraint::name(const double* t,std::vector<std::string> &name_str) const
 {
-  if(t == nullptr)
-  {
-    char cnst_name_str_buffer[500];
-    sprintf(cnst_name_str_buffer,"QuasiStaticConstraint x");
-    std::string cnst_name_str1(cnst_name_str_buffer);
-    name_str.push_back(cnst_name_str1);
-    sprintf(cnst_name_str_buffer,"QuasiStaticConstraint y");
-    std::string cnst_name_str2(cnst_name_str_buffer);
-    name_str.push_back(cnst_name_str2);
-  }
-  else
-  {
-    char cnst_name_str_buffer[500];
-    sprintf(cnst_name_str_buffer,"QuasiStaticConstraint x at time %10.4f",*t);
-    std::string cnst_name_str1(cnst_name_str_buffer);
-    name_str.push_back(cnst_name_str1);
-    sprintf(cnst_name_str_buffer,"QuasiStaticConstraint y at time %10.4f",*t);
-    std::string cnst_name_str2(cnst_name_str_buffer);
-    name_str.push_back(cnst_name_str2);
-  }
+  std::string time_str = getTimeString(t);
+  name_str.push_back("QuasiStaticConstraint x" + time_str);
+  name_str.push_back("QuasiStaticConstraint y" + time_str);
 }
 
 static bool compare3Dvector(const Vector3d& a, const Vector3d& b)
@@ -529,19 +519,10 @@ void SingleTimeLinearPostureConstraint::name(const double* t, std::vector<std::s
 {
   if(this->isTimeValid(t))
   {
-    char cnst_name_buffer[100];
+    std::string time_str = this->getTimeString(t);
     for(int i = 0;i<this->num_constraint;i++)
     {
-      if(t == nullptr)
-      {
-        sprintf(cnst_name_buffer,"SingleTimeLinearPostureConstraint row %d\n",i);
-      }
-      else
-      {
-        sprintf(cnst_name_buffer,"SingleTimeLinearPostureConstraint row %d at time %6.3f\n",i,*t);
-      }
-      std::string cnst_name_str(cnst_name_buffer);
-      name_str.push_back(cnst_name_str);
+      name_str.push_back("SingleTimeLinearPostureConstraint row " + std::to_string(i)+time_str);
     }
   }
 }
@@ -808,22 +789,12 @@ void WorldPositionConstraint::evalPositions(KinematicsCache<double>& cache, Matr
 
 void WorldPositionConstraint::evalNames(const double* t, std::vector<std::string>& cnst_names) const
 {
-  std::string time_str;
-  if(t!=nullptr)
-  {
-    char time_str_buffer[20];
-    sprintf(time_str_buffer,"at time %5.2f",*t);
-    time_str+=std::string(time_str_buffer);
-  }
-  char cnst_name_str_buffer[500];
+  std::string time_str = this->getTimeString(t);
   for(int i = 0;i<this->n_pts;i++)
   {
-    sprintf(cnst_name_str_buffer,"%s pts(:,%d) x %s",this->body_name.c_str(),i+1,time_str.c_str());
-    cnst_names.push_back(std::string(cnst_name_str_buffer));
-    sprintf(cnst_name_str_buffer,"%s pts(:,%d) y %s",this->body_name.c_str(),i+1,time_str.c_str());
-    cnst_names.push_back(std::string(cnst_name_str_buffer));
-    sprintf(cnst_name_str_buffer,"%s pts(:,%d) z %s",this->body_name.c_str(),i+1,time_str.c_str());
-    cnst_names.push_back(std::string(cnst_name_str_buffer));
+    cnst_names.push_back(this->body_name+" pts(:,"+std::to_string(i+1)+") x"+time_str);
+    cnst_names.push_back(this->body_name+" pts(:,"+std::to_string(i+1)+") y"+time_str);
+    cnst_names.push_back(this->body_name+" pts(:,"+std::to_string(i+1)+") z"+time_str);
   }
 }
 
@@ -853,20 +824,10 @@ void WorldCoMConstraint::evalPositions(KinematicsCache<double>& cache, Matrix3Xd
 
 void WorldCoMConstraint::evalNames(const double* t, std::vector<std::string> &cnst_names) const
 {
-  std::string time_str;
-  if(t!=nullptr)
-  {
-    char time_str_buffer[20];
-    sprintf(time_str_buffer,"at time %5.2f",*t);
-    time_str+=std::string(time_str_buffer);
-  }
-  char cnst_name_str_buffer[500];
-  sprintf(cnst_name_str_buffer,"CoM x %s",time_str.c_str());
-  cnst_names.push_back(std::string(cnst_name_str_buffer));
-  sprintf(cnst_name_str_buffer,"CoM y %s",time_str.c_str());
-  cnst_names.push_back(std::string(cnst_name_str_buffer));
-  sprintf(cnst_name_str_buffer,"CoM z %s",time_str.c_str());
-  cnst_names.push_back(std::string(cnst_name_str_buffer));
+  std::string time_str = this->getTimeString(t);
+  cnst_names.push_back("CoM x "+time_str);
+  cnst_names.push_back("CoM y "+time_str);
+  cnst_names.push_back("CoM z "+time_str);
 }
 
 
@@ -936,22 +897,12 @@ void RelativePositionConstraint::evalPositions(KinematicsCache<double>& cache, M
 
 void RelativePositionConstraint::evalNames(const double* t, std::vector<std::string> &cnst_names) const
 {
-  std::string time_str;
-  if(t!=nullptr)
-  {
-    char time_str_buffer[20];
-    sprintf(time_str_buffer,"at time %5.2f",*t);
-    time_str+=std::string(time_str_buffer);
-  }
-  char cnst_name_str_buffer[500];
+  std::string time_str = this->getTimeString(t);
   for(int i = 0;i<this->n_pts;i++)
   {
-    sprintf(cnst_name_str_buffer,"%s pts(:,%d) in %s x %s",this->bodyA_name.c_str(),i+1,this->bodyB_name.c_str(),time_str.c_str());
-    cnst_names.push_back(std::string(cnst_name_str_buffer));
-    sprintf(cnst_name_str_buffer,"%s pts(:,%d) in %s y %s",this->bodyA_name.c_str(),i+1,this->bodyB_name.c_str(),time_str.c_str());
-    cnst_names.push_back(std::string(cnst_name_str_buffer));
-    sprintf(cnst_name_str_buffer,"%s pts(:,%d) in %s z %s",this->bodyA_name.c_str(),i+1,this->bodyB_name.c_str(),time_str.c_str());
-    cnst_names.push_back(std::string(cnst_name_str_buffer));
+    cnst_names.push_back(this->bodyA_name+" pts(:,"+std::to_string(i+1)+") in "+this->bodyB_name+" x"+time_str);
+    cnst_names.push_back(this->bodyA_name+" pts(:,"+std::to_string(i+1)+") in "+this->bodyB_name+" y"+time_str);
+    cnst_names.push_back(this->bodyA_name+" pts(:,"+std::to_string(i+1)+") in "+this->bodyB_name+" z"+time_str);
   }
 }
 
@@ -1032,19 +983,10 @@ void WorldQuatConstraint::name(const double* t, std::vector<std::string> &name_s
 {
   if(this->isTimeValid(t))
   {
-    char cnst_name_str_buffer[500];
-    std::string time_str;
-    char time_str_buffer[30];
-    if(t != nullptr)
-    {
-      sprintf(time_str_buffer,"at time %5.2f",*t);
-      time_str+= std::string(time_str_buffer);
-    }
-    sprintf(cnst_name_str_buffer,"%s quaternion constraint %s",this->body_name.c_str(),time_str.c_str());
-    std::string cnst_name_str(cnst_name_str_buffer);
+    std::string time_str = this->getTimeString(t);
     for(int i = 0;i<this->num_constraint;i++)
     {
-      name_str.push_back(cnst_name_str);
+      name_str.push_back(this->body_name+" quaternion constraint"+time_str);
     }
   }
 }
@@ -1095,19 +1037,11 @@ void RelativeQuatConstraint::name(const double* t, std::vector<std::string> &nam
 {
   if(this->isTimeValid(t))
   {
-    char cnst_name_str_buffer[500];
-    std::string time_str;
-    char time_str_buffer[30];
-    if(t != nullptr)
-    {
-      sprintf(time_str_buffer,"at time %5.2f",*t);
-      time_str+= std::string(time_str_buffer);
-    }
-    sprintf(cnst_name_str_buffer,"%s relative to %s quaternion constraint %s",this->bodyA_name.c_str(),this->bodyB_name.c_str(),time_str.c_str());
-    std::string cnst_name_str(cnst_name_str_buffer);
+    std::string time_str = this->getTimeString(t);
+    std::string tmp_name = this->bodyA_name+" relative to "+this->bodyB_name+" quaternion constraint"+time_str;
     for(int i = 0;i<this->num_constraint;i++)
     {
-      name_str.push_back(cnst_name_str);
+      name_str.push_back(tmp_name);
     }
   }
 
@@ -1244,48 +1178,21 @@ void WorldEulerConstraint::name(const double* t, std::vector<std::string> &name_
 {
   if(this->isTimeValid(t))
   {
-    char cnst_name_str_buffer[500];
+    std::string time_str = this->getTimeString(t);
     int constraint_idx = 0;
     if(!this->null_constraint_rows[0])
     {
-      if(t == nullptr)
-      {
-        sprintf(cnst_name_str_buffer,"%s roll",this->body_name.c_str());
-      }
-      else
-      {
-        sprintf(cnst_name_str_buffer,"%s roll at time %10.4f",this->body_name.c_str(),*t);
-      }
-      std::string cnst_name_str(cnst_name_str_buffer);
-      name_str.push_back(cnst_name_str);
+      name_str.push_back(this->body_name+" roll"+time_str);
       constraint_idx++;
     }
     if(!this->null_constraint_rows[1])
     {
-      if(t == nullptr)
-      {
-        sprintf(cnst_name_str_buffer,"%s pitch",this->body_name.c_str());
-      }
-      else
-      {
-        sprintf(cnst_name_str_buffer,"%s pitch at time %10.4f",this->body_name.c_str(),*t);
-      }
-      std::string cnst_name_str(cnst_name_str_buffer);
-      name_str.push_back(cnst_name_str);
+      name_str.push_back(this->body_name+" pitch"+time_str);
       constraint_idx++;
     }
     if(!this->null_constraint_rows[2])
     {
-      if(t == nullptr)
-      {
-        sprintf(cnst_name_str_buffer,"%s yaw",this->body_name.c_str());
-      }
-      else
-      {
-        sprintf(cnst_name_str_buffer,"%s yaw at time %10.4f",this->body_name.c_str(),*t);
-      }
-      std::string cnst_name_str(cnst_name_str_buffer);
-      name_str.push_back(cnst_name_str);
+      name_str.push_back(this->body_name+" yaw"+time_str);
       constraint_idx++;
     }
   }
@@ -1390,16 +1297,9 @@ void WorldGazeOrientConstraint::name(const double* t, std::vector<std::string> &
 {
   if(this->isTimeValid(t))
   {
-    if(t == nullptr)
-    {
-      name_str.push_back(this->body_name + " conic gaze orientation constraint");
-      name_str.push_back(this->body_name + " revolute gaze orientation constraint");
-    }
-    else
-    {
-      name_str.push_back(this->body_name + " conic gaze orientation constraint at time " + std::to_string(*t));
-      name_str.push_back(this->body_name + " revolute gaze orientation constraint at time " + std::to_string(*t));
-    }
+    std::string time_str = this->getTimeString(t);
+    name_str.push_back(this->body_name + " conic gaze orientation constraint at time" + time_str);
+    name_str.push_back(this->body_name + " revolute gaze orientation constraint at time" + time_str);
   }
 }
 
@@ -1463,17 +1363,8 @@ void WorldGazeDirConstraint::name(const double* t, std::vector<std::string> &nam
 {
   if(this->isTimeValid(t))
   {
-    char cnst_name_str_buffer[500];
-    if(t == nullptr)
-    {
-      sprintf(cnst_name_str_buffer,"%s conic gaze direction constraint",this->body_name.c_str());
-    }
-    else
-    {
-      sprintf(cnst_name_str_buffer,"%s conic gaze direction constraint at time %10.4f",this->body_name.c_str(),*t);
-    }
-    std::string cnst_name_str(cnst_name_str_buffer);
-    name_str.push_back(cnst_name_str);
+    std::string time_str = this->getTimeString(t);
+    name_str.push_back(this->body_name+" conic gaze direction constraint"+time_str);
   }
 }
 
@@ -1539,17 +1430,8 @@ void WorldGazeTargetConstraint::name(const double* t, std::vector<std::string> &
 {
   if(this->isTimeValid(t))
   {
-    char cnst_name_str_buffer[500];
-    if(t == nullptr)
-    {
-      sprintf(cnst_name_str_buffer,"%s conic gaze target constraint",this->body_name.c_str());
-    }
-    else
-    {
-      sprintf(cnst_name_str_buffer,"%s conic gaze target constraint at time %10.4f",this->body_name.c_str(),*t);
-    }
-    std::string cnst_name_str(cnst_name_str_buffer);
-    name_str.push_back(cnst_name_str);
+    std::string time_str = this->getTimeString(t);
+    name_str.push_back(this->body_name+" conic gaze target constraint"+time_str);
   }
 }
 
@@ -1605,17 +1487,8 @@ void RelativeGazeTargetConstraint::name(const double* t, std::vector<std::string
 {
   if(this->isTimeValid(t))
   {
-    char cnst_name_str_buffer[1000];
-    if(t == nullptr)
-    {
-      sprintf(cnst_name_str_buffer,"%s relative to %s conic gaze constraint",this->bodyA_name.c_str(),this->bodyB_name.c_str());
-    }
-    else
-    {
-      sprintf(cnst_name_str_buffer,"%s relative to %s conic gaze constraint at time %10.4f",this->bodyA_name.c_str(),this->bodyB_name.c_str(),*t);
-    }
-    std::string cnst_name_str(cnst_name_str_buffer);
-    name_str.push_back(cnst_name_str);
+    std::string time_str = this->getTimeString(t);
+    name_str.push_back(this->bodyA_name+" relative to "+this->bodyB_name+" conic gaze constraint"+time_str);
   }
 }
 
@@ -1669,17 +1542,8 @@ void RelativeGazeDirConstraint::name(const double* t, std::vector<std::string> &
 {
   if(this->isTimeValid(t))
   {
-    char cnst_name_str_buffer[1000];
-    if(t == nullptr)
-    {
-      sprintf(cnst_name_str_buffer,"%s relative to %s conic gaze constraint",this->bodyA_name.c_str(),this->bodyB_name.c_str());
-    }
-    else
-    {
-      sprintf(cnst_name_str_buffer,"%s relative to %s conic gaze constraint at time %10.4f",this->bodyA_name.c_str(),this->bodyB_name.c_str(),*t);
-    }
-    std::string cnst_name_str(cnst_name_str_buffer);
-    name_str.push_back(cnst_name_str);
+    std::string time_str = this->getTimeString(t);
+    name_str.push_back(this->bodyA_name+" relative to "+this->bodyB_name+" conic gaze constraint"+time_str);
   }
 }
 
@@ -1750,9 +1614,9 @@ void Point2PointDistanceConstraint::name(const double* t, std::vector<std::strin
   if(this->isTimeValid(t))
   {
     int num_cnst = this->getNumConstraint(t);
+    std::string time_str = this->getTimeString(t);
     for(int i = 0;i<num_cnst;i++)
     {
-      char cnst_name_buffer[1000];
       std::string bodyA_name;
       if(this->bodyA != 0)
       {
@@ -1771,9 +1635,7 @@ void Point2PointDistanceConstraint::name(const double* t, std::vector<std::strin
       {
         bodyB_name = "World";
       }
-      sprintf(cnst_name_buffer,"Distance from %s pt %d to %s pt %d",bodyA_name.c_str(),i,bodyB_name.c_str(),i);
-      std::string cnst_name_str(cnst_name_buffer);
-      name_str.push_back(cnst_name_str);
+      name_str.push_back("Distance from "+bodyA_name+" pt "+std::to_string(i)+" to "+bodyB_name+" pt "+std::to_string(i)+time_str);
     }
   }
 }
@@ -1867,14 +1729,9 @@ void Point2LineSegDistConstraint::name(const double* t, std::vector<std::string>
 {
   if(this->isTimeValid(t))
   {
-    char cnst_name_buffer1[2000];
-    sprintf(cnst_name_buffer1,"Distance from %s pt to a line on %s",this->robot->bodies[this->pt_body]->linkname.c_str(),this->robot->bodies[this->line_body]->linkname.c_str());
-    std::string cnst_name_str1(cnst_name_buffer1);
-    name_str.push_back(cnst_name_str1);
-    char cnst_name_buffer2[100];
-    sprintf(cnst_name_buffer2,"Fraction of point projection onto line segment");
-    std::string cnst_name_str2(cnst_name_buffer2);
-    name_str.push_back(cnst_name_str2);
+    std::string time_str = this->getTimeString(t);
+    name_str.push_back("Distance from "+this->robot->bodies[this->pt_body]->linkname+" pt to a line on "+this->robot->bodies[this->line_body]->linkname+time_str);
+    name_str.push_back("Fraction of point projection onto line segment "+time_str);
   }
 }
 
@@ -1971,10 +1828,7 @@ void WorldFixedPositionConstraint::name(const double* t, int n_breaks,std::vecto
     int n_pts = static_cast<int>(this->pts.cols());
     for(int i = 0;i<n_pts;i++)
     {
-      char cnst_name_buffer[500];
-      sprintf(cnst_name_buffer,"World fixed position constraint for %s %ds point",this->body_name.c_str(),i);
-      std::string cnst_name_str(cnst_name_buffer);
-      name_str.push_back(cnst_name_str);
+      name_str.push_back("World fixed position constraint for "+this->body_name+" "+std::to_string(i)+ " point");
     }
   }
 }
@@ -2055,10 +1909,7 @@ void WorldFixedOrientConstraint::name(const double* t, int n_breaks, std::vector
   int num_valid_t = this->numValidTime(t,n_breaks);
   if(num_valid_t>=2)
   {
-    char cnst_name_buffer[500];
-    sprintf(cnst_name_buffer,"World fixed orientation constraint for %s",this->body_name.c_str());
-    std::string cnst_name_str(cnst_name_buffer);
-    name_str.push_back(cnst_name_str);
+    name_str.push_back("World fixed orientation constraint for "+this->body_name);
   }
 }
 
@@ -2154,14 +2005,8 @@ void WorldFixedBodyPoseConstraint::name(const double* t, int n_breaks, std::vect
   int num_valid_t = this->numValidTime(t,n_breaks);
   if(num_valid_t>=2)
   {
-    char cnst_name_buffer1[500];
-    sprintf(cnst_name_buffer1,"World fixed body pose constraint for %s position",this->body_name.c_str());
-    std::string cnst_name_str1(cnst_name_buffer1);
-    name_str.push_back(cnst_name_str1);
-    char cnst_name_buffer2[500];
-    sprintf(cnst_name_buffer2,"World fixed body pose constraint for %s orientation",this->body_name.c_str());
-    std::string cnst_name_str2(cnst_name_buffer2);
-    name_str.push_back(cnst_name_str2);
+    name_str.push_back("World fixed body pose constraint for "+this->body_name+" position");
+    name_str.push_back("World fixed body pose constraint for "+this->body_name+" orientation");
   }
 }
 
@@ -2267,17 +2112,8 @@ void AllBodiesClosestDistanceConstraint::name(const double* t, std::vector<std::
 {
   if(this->isTimeValid(t))
   {
-    char cnst_name_buffer[100];
-    if(t == nullptr)
-    {
-      sprintf(cnst_name_buffer,"All-to-all closest distance constraint");
-    }
-    else
-    {
-      sprintf(cnst_name_buffer,
-          "All-to-all closest distance constraint at time %10.4f",*t);
-    }
-    std::string cnst_name(cnst_name_buffer);
+    std::string time_str = this->getTimeString(t);
+    std::string cnst_name = "All-to-all closest distance constraint"+time_str;
     for(int i = 0;i<this->num_constraint;i++)
     {
       name.push_back(cnst_name);
@@ -2442,17 +2278,8 @@ void MinDistanceConstraint::name(const double* t, std::vector<std::string> &name
 {
   if(this->isTimeValid(t))
   {
-    char cnst_name_buffer[100];
-    if(t == nullptr)
-    {
-      sprintf(cnst_name_buffer,"Minimum distance constraint");
-    }
-    else
-    {
-      sprintf(cnst_name_buffer,
-          "Minimum distance constraint at time %10.4f",*t);
-    }
-    std::string cnst_name(cnst_name_buffer);
+    std::string time_str = this->getTimeString(t);
+    std::string cnst_name("Minimum distance constraint"+time_str);
     name.push_back(cnst_name);
   }
   else
@@ -2482,22 +2309,12 @@ void WorldPositionInFrameConstraint::evalPositions(KinematicsCache<double>& cach
 
 void WorldPositionInFrameConstraint::evalNames(const double* t, std::vector<std::string>& cnst_names) const
 {
-  std::string time_str;
-  if(t!=nullptr)
-  {
-    char time_str_buffer[20];
-    sprintf(time_str_buffer,"at time %5.2f",*t);
-    time_str+=std::string(time_str_buffer);
-  }
-  char cnst_name_str_buffer[500];
+  std::string time_str = this->getTimeString(t);
   for(int i = 0;i<this->n_pts;i++)
   {
-    sprintf(cnst_name_str_buffer,"%s pts(:,%d) x in frame %s",this->body_name.c_str(),i+1,time_str.c_str());
-    cnst_names.push_back(std::string(cnst_name_str_buffer));
-    sprintf(cnst_name_str_buffer,"%s pts(:,%d) y in frame %s",this->body_name.c_str(),i+1,time_str.c_str());
-    cnst_names.push_back(std::string(cnst_name_str_buffer));
-    sprintf(cnst_name_str_buffer,"%s pts(:,%d) z in frame %s",this->body_name.c_str(),i+1,time_str.c_str());
-    cnst_names.push_back(std::string(cnst_name_str_buffer));
+    cnst_names.push_back(this->body_name+" pts(:,"+std::to_string(i+1)+") x in frame "+time_str);
+    cnst_names.push_back(this->body_name+" pts(:,"+std::to_string(i+1)+") y in frame "+time_str);
+    cnst_names.push_back(this->body_name+" pts(:,"+std::to_string(i+1)+") z in frame "+time_str);
   }
 }
 
@@ -2612,10 +2429,7 @@ void PostureChangeConstraint::name(const double* t, int n_breaks, std::vector<st
     {
       for(int j = 0;j<this->joint_ind.size();j++)
       {
-        char cnst_name_buffer[200];
-        sprintf(cnst_name_buffer,"Posture change for joint %d at time %5.3f",this->joint_ind[j]+1,t[valid_t_ind(i)]);
-        std::string cnst_name(cnst_name_buffer);
-        name_str.push_back(cnst_name);
+        name_str.push_back("Posture change for joint "+std::to_string(this->joint_ind[j]+1)+" at time "+std::to_string(t[valid_t_ind(i)]));
       }
     }
   }
@@ -2673,17 +2487,8 @@ void GravityCompensationTorqueConstraint::name(const double* t, std::vector<std:
 {
   if(this->isTimeValid(t))
   {
-    char cnst_name_buffer[100];
-    if(t == nullptr)
-    {
-      sprintf(cnst_name_buffer,"Gravity compensation torque constraint");
-    }
-    else
-    {
-      sprintf(cnst_name_buffer,
-          "Gravity compensation torque constraint at time %10.4f",*t);
-    }
-    std::string cnst_name(cnst_name_buffer);
+    std::string time_str = this->getTimeString(t);
+    std::string cnst_name = "Gravity compensation torque constraint"+time_str;
     for(int i = 0;i<this->num_constraint;i++)
     {
       name.push_back(cnst_name);
