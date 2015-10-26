@@ -6,33 +6,39 @@
 #define DRAKE_STANDARDMEXCONVERSIONS_H
 
 #include <string>
-#include "drakeMexUtil.h"
+#include "mexify.h"
 #include "GradientVar.h"
 
 /**
  * fromMex specializations
  */
 
-int fromMex(const mxArray* source, int*) {
-  if (mxGetM(source) != 1 || mxGetN(source) != 1)
-    throw MexToCppConversionError("Expected scalar.");
+
+bool isConvertibleFromMex(const mxArray* source, int*, std::ostream* log) NOEXCEPT {
+  if (mxGetM(source) != 1 || mxGetN(source) != 1) {
+    if (log)
+      *log << "Expected scalar.";
+    return false;
+  }
+  return true;
+}
+
+
+int fromMexUnsafe(const mxArray* source, int*) {
   return static_cast<int>(mxGetScalar(source));
 }
 
-bool fromMex(const mxArray* source, bool*) {
-  if (!mxIsLogicalScalar(source))
-    throw MexToCppConversionError("Expected logical.");
-  return mxGetLogicals(source)[0];
+bool isConvertibleFromMex(const mxArray* source, bool*, std::ostream* log) NOEXCEPT {
+  if (!mxIsLogicalScalar(source)) {
+    if (log)
+      *log << "Expected logical scalar.";
+    return false;
+  }
+  return true;
 }
 
-std::set<int> fromMex(const mxArray *source, std::set<int> *) {
-  std::set<int> ret;
-  int num_robot = static_cast<int>(mxGetNumberOfElements(source));
-  double *data = mxGetPrSafe(source);
-  for (int i = 0; i < num_robot; i++) {
-    ret.insert((int) data[i]);
-  }
-  return ret;
+bool fromMexUnsafe(const mxArray* source, bool*) {
+  return mxGetLogicals(source)[0];
 }
 
 /*
@@ -40,74 +46,129 @@ std::set<int> fromMex(const mxArray *source, std::set<int> *) {
  * results in an internal compiler error on MSVC. See https://connect.microsoft.com/VisualStudio/feedback/details/1847159
  */
 template <int Rows, int Cols, int Options, int MaxRows, int MaxCols>
-Eigen::Map<const Eigen::Matrix<double, Rows, Cols, Options, MaxRows, MaxCols>> fromMex(const mxArray *mex, Eigen::MatrixBase<Eigen::Map<const Eigen::Matrix<double, Rows, Cols, Options, MaxRows, MaxCols>>> *) {
+bool isConvertibleFromMex(const mxArray *mex, Eigen::MatrixBase<Eigen::Map<const Eigen::Matrix<double, Rows, Cols, Options, MaxRows, MaxCols>>> *, std::ostream* log) NOEXCEPT {
+  // TODO: size checks?
   if (!mxIsNumeric(mex)) {
-    throw MexToCppConversionError("Expected a numeric array");
+    if (log)
+      *log << "Expected a numeric array";
+    return false;
   }
+  return true;
+}
+
+template <int Rows, int Cols, int Options, int MaxRows, int MaxCols>
+Eigen::Map<const Eigen::Matrix<double, Rows, Cols, Options, MaxRows, MaxCols>> fromMexUnsafe(const mxArray *mex, Eigen::MatrixBase<Eigen::Map<const Eigen::Matrix<double, Rows, Cols, Options, MaxRows, MaxCols>>> *) {
   return matlabToEigenMap<Rows, Cols>(mex);
 }
 
 // quick version for VectorXi.
-// TODO: generalize to arbitrary matrices
-Eigen::Map<const Eigen::VectorXi> fromMex(const mxArray *source, Eigen::MatrixBase<Eigen::Map<const Eigen::VectorXi> > *) {
-  if (!mxIsInt32(source))
-    throw MexToCppConversionError("Expected an int32 array");
-  if (mxGetM(source) != 1 && mxGetN(source) != 1)
-    throw MexToCppConversionError("Expected a 1 x n or n x 1 int32 array");
+// TODO: generalize to arbitrary matrices of integers
+bool isConvertibleFromMex(const mxArray *source, Eigen::MatrixBase<Eigen::Map<const Eigen::VectorXi> > *, std::ostream* log) NOEXCEPT {
+  if (!mxIsInt32(source)) {
+    if (log)
+      *log << "Expected an int32 array";
+    return false;
+  }
+  if (mxGetM(source) != 1 && mxGetN(source) != 1) {
+    if (log)
+      *log << "Expected a 1 x n or n x 1 int32 array";
+    return false;
+  }
+  return true;
+}
+
+Eigen::Map<const Eigen::VectorXi> fromMexUnsafe(const mxArray *source, Eigen::MatrixBase<Eigen::Map<const Eigen::VectorXi> > *) {
   auto num_elements = mxGetNumberOfElements(source);
   return Eigen::Map<const Eigen::VectorXi>(reinterpret_cast<int*>(mxGetData(source)), num_elements);
 }
 
 template <typename T>
-std::vector<T> fromMex(const mxArray* source, std::vector<T>*) {
-  if (!mxIsCell(source))
-    throw MexToCppConversionError("Expected a cell array");
-  if (mxGetM(source) != 1 && mxGetN(source) != 1)
-    throw MexToCppConversionError("Expected a 1 x n or n x 1 cell array");
+bool isConvertibleFromMex(const mxArray* source, std::vector<T>*, std::ostream* log) NOEXCEPT {
+  if (!mxIsCell(source)) {
+    if (log)
+      *log << "Expected a cell array";
+    return false;
+  }
+  if (mxGetM(source) != 1 && mxGetN(source) != 1) {
+    if (log)
+      *log << "Expected a 1 x n or n x 1 cell array";
+    return false;
+  }
+  return true;
+}
 
+template <typename T>
+std::vector<T> fromMexUnsafe(const mxArray* source, std::vector<T>*) {
   auto num_elements = mxGetNumberOfElements(source);
   std::vector<T> ret;
   ret.reserve(num_elements);
   for (size_t i = 0; i < num_elements; i++) {
-    ret.push_back(fromMex(mxGetCell(source, i), static_cast<T*>(nullptr)));
+    ret.push_back(fromMexUnsafe(mxGetCell(source, i), static_cast<T*>(nullptr)));
   }
   return ret;
 }
 
 template<typename DerType, int Rows, int Cols, int Options, int MaxRows, int MaxCols>
-Eigen::Matrix<Eigen::AutoDiffScalar<DerType>, Rows, Cols, Options, MaxRows, MaxCols> fromMex(
-    const mxArray *mex, Eigen::MatrixBase<Eigen::Matrix<Eigen::AutoDiffScalar<DerType>, Rows, Cols, Options, MaxRows, MaxCols>> *) {
-  if (!mxIsClass(mex, "TaylorVar"))
-    throw MexToCppConversionError("Expected an array of TaylorVar");
-
-  if (mxIsEmpty(mex)) {
-    throw std::runtime_error("Can't parse empty TaylorVar arrays");
-  }
-
+bool isConvertibleFromMex(const mxArray *mex, Eigen::MatrixBase<Eigen::Matrix<Eigen::AutoDiffScalar<DerType>, Rows, Cols, Options, MaxRows, MaxCols>> *, std::ostream* log) NOEXCEPT {
   using namespace Eigen;
   using namespace std;
 
-  typedef AutoDiffScalar<DerType> ADScalar;
-  auto f = mxGetPropertySafe(mex, "f");
+  if (!mxIsClass(mex, "TaylorVar")) {
+    if (log)
+      *log << "Expected an array of TaylorVar";
+    return false;
+  }
+  if (mxIsEmpty(mex)) {
+    if (log)
+      *log << "Can't parse empty TaylorVar arrays";
+    return false;
+  }
   auto derivs = mxGetPropertySafe(mex, "df");
-  if (mxGetNumberOfElements(derivs) > 1)
-    throw std::runtime_error("TaylorVars of order higher than 1 currently not supported");
+  if (mxGetNumberOfElements(derivs) > 1) {
+    if (log)
+      *log << "TaylorVars of order higher than 1 currently not supported";
+    return false;
+  }
   auto df = mxGetCell(derivs, 0);
-
   auto dim = mxGetPrSafe(mxGetPropertySafe(mex, "dim"));
   auto rows = static_cast<int>(dim[0]); // note: apparently not always the same as mxGetM(f)
   auto cols = static_cast<int>(dim[1]); // note: apparently not always the same as mxGetN(f)
 
   if ((MaxRows != Dynamic && rows > MaxRows) || (Rows != Dynamic && rows != Rows)) {
-    throw MexToCppConversionError("Row size mismatch. rows: " + to_string(rows) +  ", rows at compile time: " + to_string(Rows) +  ", max rows at compile time: " + to_string(MaxRows));
+    if (log)
+      *log << "Row size mismatch. rows: " << to_string(rows) <<  ", rows at compile time: " << to_string(Rows) <<  ", max rows at compile time: " << to_string(MaxRows);
+    return false;
   }
 
-  if ((MaxCols != Dynamic && cols > MaxCols) || (Cols != Dynamic && cols != Cols))
-    throw MexToCppConversionError("Col size mismatch. cols: " + to_string(cols) +  ", cols at compile time: " + to_string(Cols) +  ", max cols at compile time: " + to_string(MaxCols));
+  if ((MaxCols != Dynamic && cols > MaxCols) || (Cols != Dynamic && cols != Cols)) {
+    if (log)
+      *log << "Col size mismatch. cols: " << to_string(cols) <<  ", cols at compile time: " << to_string(Cols) <<  ", max cols at compile time: " << to_string(MaxCols);
+    return false;
+  }
 
   auto num_derivs = mxGetN(df);
-  if ((DerType::MaxRowsAtCompileTime != Dynamic && num_derivs > DerType::MaxRowsAtCompileTime) || (DerType::RowsAtCompileTime != Dynamic && num_derivs != DerType::RowsAtCompileTime))
-    throw MexToCppConversionError("Derivative size mismatch. num_derivs: " + to_string(num_derivs) +  ", num_derivs at compile time: " + to_string(DerType::RowsAtCompileTime) +  ", max num_derivs at compile time: " + to_string(DerType::MaxRowsAtCompileTime));
+  if ((DerType::MaxRowsAtCompileTime != Dynamic && num_derivs > DerType::MaxRowsAtCompileTime) || (DerType::RowsAtCompileTime != Dynamic && num_derivs != DerType::RowsAtCompileTime)) {
+    if (log)
+      *log << "Derivative size mismatch. num_derivs: " << to_string(num_derivs) <<  ", num_derivs at compile time: " << to_string(DerType::RowsAtCompileTime) <<  ", max num_derivs at compile time: " << to_string(DerType::MaxRowsAtCompileTime);
+    return false;
+  }
+
+  return true;
+}
+
+template<typename DerType, int Rows, int Cols, int Options, int MaxRows, int MaxCols>
+Eigen::Matrix<Eigen::AutoDiffScalar<DerType>, Rows, Cols, Options, MaxRows, MaxCols> fromMexUnsafe(
+    const mxArray *mex, Eigen::MatrixBase<Eigen::Matrix<Eigen::AutoDiffScalar<DerType>, Rows, Cols, Options, MaxRows, MaxCols>> *) {
+  using namespace Eigen;
+
+  typedef AutoDiffScalar<DerType> ADScalar;
+  auto f = mxGetPropertySafe(mex, "f");
+  auto derivs = mxGetPropertySafe(mex, "df");
+  auto df = mxGetCell(derivs, 0);
+
+  auto dim = mxGetPrSafe(mxGetPropertySafe(mex, "dim"));
+  auto rows = static_cast<int>(dim[0]); // note: apparently not always the same as mxGetM(f)
+  auto cols = static_cast<int>(dim[1]); // note: apparently not always the same as mxGetN(f)
 
   Matrix<ADScalar, Rows, Cols, Options, MaxRows, MaxCols> ret(rows, cols);
   if (!mxIsEmpty(mex)) {
@@ -123,7 +184,8 @@ Eigen::Matrix<Eigen::AutoDiffScalar<DerType>, Rows, Cols, Options, MaxRows, MaxC
       gradientMatrixToAutoDiff(gradient_matrix, ret);
     }
     else {
-      auto gradient_matrix = Map<GradientTypeFixedMaxSize>(mxGetPrSafe(df), mxGetM(df), num_derivs); // FIXME: handle sparse case
+      auto num_derivs = mxGetN(df);
+      auto gradient_matrix = Map<GradientTypeFixedMaxSize>(mxGetPrSafe(df), mxGetM(df), num_derivs);
       gradientMatrixToAutoDiff(gradient_matrix, ret);
     }
 

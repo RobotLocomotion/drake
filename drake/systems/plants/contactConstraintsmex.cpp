@@ -65,5 +65,5 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   auto func_double = make_function(&contactConstraints<double>);
   auto func_autodiff_fixed_max = make_function(&contactConstraints<AutoDiffFixedMaxSize>);
   auto func_autodiff_dynamic = make_function(&contactConstraints<AutoDiffDynamicSize>);
-  mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, func_double, func_autodiff_fixed_max, func_autodiff_dynamic);
+  mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double, func_autodiff_fixed_max, func_autodiff_dynamic);
 }
