@@ -3,7 +3,7 @@
 Inputs:
 x: state from which funnel is executed (only the cyclic dimensions matter, really)
 
-forest: cell array containing vertices of obstacles
+obstacles: cell array containing vertices of obstacles
 
 funnelLibrary: struct containing funnel library
 	funnelLibrary(*).xyz: xyz positions at time points (double 3 X N)
@@ -101,7 +101,7 @@ double *shiftAndTransform(double *verts, double *vertsT, const mxArray *x, mxArr
 
 /* Checks if a given funnel number funnelIdx is collision free if executed beginning at state x. Returns a boolean (true if collision free, false if not).
 */
-bool isCollisionFree(int funnelIdx, const mxArray *x, const mxArray *funnelLibrary, const mxArray *forest, mwSize numObs, double *min_dist)
+bool isCollisionFree(int funnelIdx, const mxArray *x, const mxArray *funnelLibrary, const mxArray *obstacles, mwSize numObs, double *min_dist)
 {
 
     // Initialize some variables
@@ -125,11 +125,11 @@ bool isCollisionFree(int funnelIdx, const mxArray *x, const mxArray *funnelLibra
     {    
         // Get pointer to cholesky factorization of S at this time
         cSk = mxGetCell(cS,k);
-        for(mwIndex jForest=0;jForest<numObs;jForest++)
+        for(mwIndex obstacleIndex = 0; obstacleIndex < numObs; obstacleIndex++)
         {
             // Get vertices of this obstacle
-            obstacle = mxGetCell(forest, jForest);
-            verts = mxGetPrSafe(mxGetCell(forest, jForest)); // Get vertices
+            obstacle = mxGetCell(obstacles, obstacleIndex);
+            verts = mxGetPrSafe(mxGetCell(obstacles, obstacleIndex)); // Get vertices
             nCols = mxGetN(obstacle);
             nRows = mxGetM(obstacle);
             
@@ -163,11 +163,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     const mxArray *x;
     x = prhs[0];
 
-    // Deal with forest cell (second input)
-    const mxArray *forest; // Cell array containing forest (pointer)
+    // Deal with obstacles cell (second input)
+    const mxArray *obstacles; // Cell array containing obstacles (pointer)
 
-    forest = prhs[1]; // Get forest cell (second input)
-    mwSize numObs = mxGetNumberOfElements(forest); // Number of obstacles
+    obstacles = prhs[1]; // Get obstacles cell (second input)
+    mwSize numObs = mxGetNumberOfElements(obstacles); // Number of obstacles
 
     // Now deal with funnel library object (third input)
     const mxArray *funnelLibrary; // Funnel library (pointer)
@@ -183,7 +183,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     double min_dist = 1000000.0;
 
     // Initialize next funnel (output of this function)
-    bool collFree = isCollisionFree(funnelIdx, x, funnelLibrary, forest, numObs, &min_dist);
+    bool collFree = isCollisionFree(funnelIdx, x, funnelLibrary, obstacles, numObs, &min_dist);
 
     plhs[0] = mxCreateLogicalScalar(collFree);
 
