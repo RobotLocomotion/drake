@@ -2,7 +2,7 @@
  *
  * Inputs:
  * x: current state
- * forest: cell array containing vertices of obstacles
+ * obstacles: cell array containing vertices of obstacles
  * funnelLibrary: struct containing funnel library
  * funnelLibrary(*).xyz: xyz positions at time points (double 3 X N)
  * funnelLibrary(*).cS: cholesky factorization of projection of S matrix (cell array)
@@ -64,12 +64,12 @@ static btGjkEpaPenetrationDepthSolver epaSolver;
 static const double g_radius = 1.0;
 static btSphereShape* g_point = new btSphereShape(g_radius);
 
-// Make funnel library, funnelIdx, x_current, forest global variables
+// Make funnel library, funnelIdx, x_current, obstacles global variables
 static const mxArray *funnelLibrary; // Funnel library (pointer)
 static int funnelIdx;
 static  const mxArray *x_current;
 static double *dx_current;
-static const mxArray *forest; // Cell array containing forest (pointer)
+static const mxArray *obstacles; // Cell array containing obstacles (pointer)
 static double min_dist_snopt;
 
 // lenrw, leniw, lencw
@@ -229,7 +229,7 @@ bool penetrationCost(snopt::doublereal x[], double *min_dist, double *normal_vec
     
     
     // Get number of obstacles
-    mwSize numObs = mxGetNumberOfElements(forest); // Number of obstacles
+    mwSize numObs = mxGetNumberOfElements(obstacles); // Number of obstacles
     
     
     // Initialize some variables
@@ -267,12 +267,12 @@ bool penetrationCost(snopt::doublereal x[], double *min_dist, double *normal_vec
         // Get pointer to cholesky factorization of S at this time
         cSk = mxGetCell(cS,k);
         
-        for(mwIndex jForest=0;jForest<numObs;jForest++)
+        for(mwIndex obstacleIndex=0 ; obstacleIndex < numObs ; obstacleIndex++)
         {
             
             // Get vertices of this obstacle
-            obstacle = mxGetCell(forest, jForest);
-            verts = mxGetPrSafe(mxGetCell(forest, jForest)); // Get vertices
+            obstacle = mxGetCell(obstacles, obstacleIndex);
+            verts = mxGetPrSafe(mxGetCell(obstacles, obstacleIndex)); // Get vertices
             nCols = mxGetN(obstacle);
             nRows = mxGetM(obstacle);
             
@@ -378,7 +378,7 @@ int snopt_userfun( snopt::integer    *Status, snopt::integer *n,    snopt::doubl
 }
 
 // Shift funnel using snopt
-bool shiftFunnel(int funnelIdx, const mxArray *funnelLibrary, const mxArray *forest, mwSize numObs, double *min_dist, double *x_opt)
+bool shiftFunnel(int funnelIdx, const mxArray *funnelLibrary, const mxArray *obstacles, mwSize numObs, double *min_dist, double *x_opt)
 {
     
     // Number of decision variables (3 in our case: we're searching for shifted x,y,z)
@@ -581,9 +581,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     dx_current = mxGetPrSafe(x_current);
     
     
-    // Deal with forest cell (second input)    
-    forest = prhs[1]; // Get forest cell (second input)
-    mwSize numObs = mxGetNumberOfElements(forest); // Number of obstacles
+    // Deal with obstacles cell (second input)    
+    obstacles = prhs[1]; // Get obstacles cell (second input)
+    mwSize numObs = mxGetNumberOfElements(obstacles); // Number of obstacles
     
     funnelLibrary = prhs[2]; // Get funnel library (third input)
     
@@ -601,7 +601,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     
     
     // Initialize next funnel (output of this function)
-    bool collFree = shiftFunnel(funnelIdx, funnelLibrary, forest, numObs, &min_dist, x_opt_d);
+    bool collFree = shiftFunnel(funnelIdx, funnelLibrary, obstacles, numObs, &min_dist, x_opt_d);
     
     // Add in x_current to get SHIFTED position of funnel
     x_opt_d[0] = x_opt_d[0] + dx_current[0];
