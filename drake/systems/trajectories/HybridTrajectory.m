@@ -58,6 +58,42 @@ classdef HybridTrajectory < Trajectory
       end
     end
     
+    function c = mtimes(a,b)
+      if any([size(a,1) size(b,2)]==0)  % handle the empty case
+        c = ConstantTrajectory(zeros(size(a,1),size(b,2)));
+        return;
+      end
+      if isa(a,'ConstantTrajectory') a=double(a); end
+      if isa(b,'ConstantTrajectory') b=double(b); end
+
+      if isnumeric(a)  % then only b is a HybridTrajectory
+        for i=1:length(b.traj)
+          traj{i} = a*b.traj{i};
+          if i>1
+            traj{i} = setOutputFrame(traj{i},getOutputFrame(traj{1}));
+          end
+        end
+        c = HybridTrajectory(traj);        
+      else
+        error('not implemented (yet)');
+      end
+        
+    end    
+    
+    function varargout = subsref(a,s)
+      if (length(s)==1 && strcmp(s(1).type,'()'))
+        for i=1:length(a.traj)
+          traj{i} = subsref(a.traj{i},s);
+          if i>1
+            traj{i} = setOutputFrame(traj{i},getOutputFrame(traj{1}));
+          end
+        end
+        varargout{1} = HybridTrajectory(traj);
+      else % use builtin
+        varargout=cell(1,max(nargout,1));
+        [varargout{:}] = builtin('subsref',a,s);
+      end
+    end    
     function y = eval(obj,t)
       % look into and evaluate correct trajectory based on the time
       if (any(t<obj.tspan(1)) || any(t>obj.tspan(end)))

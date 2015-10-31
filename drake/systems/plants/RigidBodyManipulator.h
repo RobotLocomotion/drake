@@ -4,7 +4,7 @@
 #include <Eigen/Dense>
 #include <Eigen/LU>
 #include <set>
-#include <map>
+#include <unordered_map>
 #include <Eigen/StdVector>
 
 #include "collision/DrakeCollision.h"
@@ -12,6 +12,7 @@
 #include "KinematicPath.h"
 #include "ForceTorqueMeasurement.h"
 #include "GradientVar.h"
+#include "drakeUtil.h"
 #include <stdexcept>
 
 
@@ -45,11 +46,6 @@ public:
   std::string name;
   std::shared_ptr<RigidBody> body;
   double reduction;
-
-public:
-#ifndef SWIG 
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
 };
 
 class DLLEXPORT_RBM RigidBodyLoop
@@ -61,10 +57,11 @@ public:
   std::shared_ptr<RigidBodyFrame> frameA, frameB;
   Eigen::Vector3d axis;
 
+  friend std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj);
+
 public:
 #ifndef SWIG 
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-	friend std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj);
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 #endif
 };
 
@@ -310,28 +307,28 @@ public:
 
   bool isBodyPartOfRobot(const RigidBody& body, const std::set<int>& robotnum) const;
 
-  double getMass(const std::set<int>& robotnum = RigidBody::defaultRobotNumSet) const;
+  double getMass(const std::set<int>& robotnum = default_robot_num_set) const;
 
   template <typename Scalar>
-  GradientVar<Scalar, SPACE_DIMENSION, 1> centerOfMass(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet) const;
+  Eigen::Matrix<Scalar, SPACE_DIMENSION, 1> centerOfMass(KinematicsCache<Scalar> &cache, const std::set<int> &robotnum = default_robot_num_set) const;
 
   template <typename Scalar>
-  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> worldMomentumMatrix(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet, bool in_terms_of_qdot = false) const;
+  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> worldMomentumMatrix(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum = default_robot_num_set, bool in_terms_of_qdot = false) const;
 
   template <typename Scalar>
-  GradientVar<Scalar, TWIST_SIZE, 1> worldMomentumMatrixDotTimesV(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet) const;
+  GradientVar<Scalar, TWIST_SIZE, 1> worldMomentumMatrixDotTimesV(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum = default_robot_num_set) const;
 
   template <typename Scalar>
-  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> centroidalMomentumMatrix(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet, bool in_terms_of_qdot = false) const;
+  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic> centroidalMomentumMatrix(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum = default_robot_num_set, bool in_terms_of_qdot = false) const;
 
   template <typename Scalar>
-  GradientVar<Scalar, TWIST_SIZE, 1> centroidalMomentumMatrixDotTimesV(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet) const;
+  GradientVar<Scalar, TWIST_SIZE, 1> centroidalMomentumMatrixDotTimesV(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum = default_robot_num_set) const;
 
   template <typename Scalar>
-  GradientVar<Scalar, SPACE_DIMENSION, Eigen::Dynamic> centerOfMassJacobian(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet, bool in_terms_of_qdot = false) const;
+  GradientVar<Scalar, SPACE_DIMENSION, Eigen::Dynamic> centerOfMassJacobian(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum = default_robot_num_set, bool in_terms_of_qdot = false) const;
 
   template <typename Scalar>
-  GradientVar<Scalar, SPACE_DIMENSION, 1> centerOfMassJacobianDotTimesV(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum = RigidBody::defaultRobotNumSet) const;
+  GradientVar<Scalar, SPACE_DIMENSION, 1> centerOfMassJacobianDotTimesV(KinematicsCache<Scalar>& cache, int gradient_order, const std::set<int>& robotnum = default_robot_num_set) const;
 
   template <typename DerivedA, typename DerivedB, typename DerivedC>
   void jointLimitConstraints(Eigen::MatrixBase<DerivedA> const & q, Eigen::MatrixBase<DerivedB> &phi, Eigen::MatrixBase<DerivedC> &J) const;
@@ -364,13 +361,39 @@ public:
   GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic> massMatrix(KinematicsCache<Scalar>& cache, int gradient_order = 0) const;
 
   template <typename Scalar>
-  GradientVar<Scalar, Eigen::Dynamic, 1> inverseDynamics(KinematicsCache<Scalar>& cache, std::map<int, std::unique_ptr< GradientVar<Scalar, TWIST_SIZE, 1> > >& f_ext, GradientVar<Scalar, Eigen::Dynamic, 1>* vd = nullptr, int gradient_order = 0) const;
+  GradientVar<Scalar, Eigen::Dynamic, 1> dynamicsBiasTerm(KinematicsCache<Scalar>& cache, const eigen_aligned_unordered_map<RigidBody const *, GradientVar<Scalar, TWIST_SIZE, 1> >& f_ext, int gradient_order = 0) const;
+
+  template <typename Scalar>
+  GradientVar<Scalar, Eigen::Dynamic, 1> inverseDynamics(KinematicsCache<Scalar>& cache, const eigen_aligned_unordered_map<RigidBody const *, GradientVar<Scalar, TWIST_SIZE, 1> >& f_ext, const GradientVar<Scalar, Eigen::Dynamic, 1>& vd, int gradient_order = 0) const;
 
   template <typename DerivedV>
   GradientVar<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorques(Eigen::MatrixBase<DerivedV> const & v, int gradient_order = 0) const;
 
   template <typename DerivedPoints>
-  GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> forwardKin(const KinematicsCache<typename DerivedPoints::Scalar>& cache, const Eigen::MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, int gradient_order) const;
+  Eigen::Matrix<typename DerivedPoints::Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> forwardKin(
+      const KinematicsCache<typename DerivedPoints::Scalar> &cache, const Eigen::MatrixBase<DerivedPoints> &points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type) const
+  {
+    cache.checkCachedKinematicsSettings(false, false, false, "forwardKin"); // rely on forwardJac for gradient cache check
+
+    int npoints = static_cast<int>(points.cols());
+    typedef typename DerivedPoints::Scalar Scalar;
+
+    // compute rotation and translation
+    auto T = relativeTransform(cache, new_body_or_frame_ind, current_body_or_frame_ind, 0).value();
+    auto R = T.template topLeftCorner<SPACE_DIMENSION, SPACE_DIMENSION>();
+    auto p = T.template topRightCorner<SPACE_DIMENSION, 1>();
+
+    // transform points to new frame
+    Eigen::Matrix<Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> x(SPACE_DIMENSION + rotationRepresentationSize(rotation_type), npoints);
+    x.template topRows<SPACE_DIMENSION>().colwise() = p;
+    x.template topRows<SPACE_DIMENSION>().noalias() += R * points;
+
+    // convert rotation representation
+    auto qrot = rotmat2Representation(R, rotation_type);
+    x.bottomRows(qrot.rows()).colwise() = qrot;
+
+    return x;
+  };
 
   template <typename DerivedPoints>
   GradientVar<typename DerivedPoints::Scalar, Eigen::Dynamic, Eigen::Dynamic> forwardKinJacobian(const KinematicsCache<typename DerivedPoints::Scalar>& cache, const Eigen::MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, bool in_terms_of_qdot, int gradient_order) const;
@@ -497,6 +520,32 @@ public:
   template <typename Derived>
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> transformVelocityMappingToPositionDotMapping(
       const KinematicsCache<typename Derived::Scalar>& cache, const Eigen::MatrixBase<Derived>& mat) const;
+  
+  /*
+  template <typename Derived>
+  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> transformPositionDotMappingToVelocityMapping(
+      const KinematicsCache<typename Derived::Scalar>& cache, const Eigen::MatrixBase<Derived>& mat) const;
+  */
+  
+  template <typename Derived>
+Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> transformPositionDotMappingToVelocityMapping(
+    const KinematicsCache<typename Derived::Scalar>& cache, const Eigen::MatrixBase<Derived>& mat) const
+{
+  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> ret(mat.rows(), num_velocities);
+  int ret_col_start = 0;
+  int mat_col_start = 0;
+  for (auto it = bodies.begin(); it != bodies.end(); ++it) {
+    RigidBody& body = **it;
+    if (body.hasParent()) {
+      const DrakeJoint& joint = body.getJoint();
+      const auto& element = cache.getElement(body);
+      ret.middleCols(ret_col_start, joint.getNumVelocities()).noalias() = mat.middleCols(mat_col_start, joint.getNumPositions()) * element.v_to_qdot.value();
+      ret_col_start += joint.getNumVelocities();
+      mat_col_start += joint.getNumPositions();
+    }
+  }
+  return ret;
+};
 
   template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> compactToFull(
@@ -518,6 +567,8 @@ Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynam
   return full;
 };
 public:
+  static const std::set<int> default_robot_num_set;
+
   std::vector<std::string> robot_name;
 
   int num_positions;

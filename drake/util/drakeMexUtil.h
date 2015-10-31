@@ -1,3 +1,6 @@
+#ifndef DRAKE_MEX_UTIL_H_
+#define DRAKE_MEX_UTIL_H_
+
 #include "mex.h"
 #include <vector>
 #include <Eigen/Core>
@@ -7,12 +10,10 @@
  * TrigPoly.h includes LLDT.h via Eigenvalues, PolynomialSolver, and our Polynomial.h
  * MSVC versions up to and including 2013 have trouble with the rankUpdate method in LLDT.h
  * For some reason there is a bad interaction with AutoDiff, even though LLDT.h still gets included if TrigPoly.h is included before AutoDiff.
+ * See http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1057
  */
 #include <unsupported/Eigen/AutoDiff>
 #include "drakeGradientUtil.h"
-
-#ifndef DRAKE_MEX_UTIL_H_
-#define DRAKE_MEX_UTIL_H_
 
 #undef DLLEXPORT
 #if defined(WIN32) || defined(WIN64)

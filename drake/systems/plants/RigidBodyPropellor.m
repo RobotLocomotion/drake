@@ -33,10 +33,11 @@ classdef RigidBodyPropellor < RigidBodyForceElement
       force = sparse(6,getNumBodies(manip))*q(1);
       B_mod = manip.B*0*q(1); %initialize B_mod
 
+      options.in_terms_of_qdot = false;
       if (nargout>2)  % then compute gradients
         % thrust
         kinsol = doKinematics(manip,q,true);
-        [x,J,dJ] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1));
+        [x,J,dJ] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1),options);
         [axis_world,Jaxis_world] = forwardKin(manip,kinsol,obj.kinframe,obj.axis);
         daxis_world = Jaxis_world-J;
         axis_world = axis_world-x;
@@ -51,12 +52,12 @@ classdef RigidBodyPropellor < RigidBodyForceElement
         N = null(obj.axis');
         n1 = N(:,1);
         n2 = N(:,2);
-        [x1,J1,dJ1] = forwardKin(manip,kinsol,obj.kinframe,n1);
+        [x1,J1,dJ1] = forwardKin(manip,kinsol,obj.kinframe,n1,options);
         [axis_world_m1,Jaxis_world_m1] = forwardKin(manip,kinsol,obj.kinframe,n2+n1);
         daxis_world_m1 = Jaxis_world_m1 - J1;
         axis_world_m1 = axis_world_m1 - x1;
         
-        [x2,J2,dJ2] = forwardKin(manip,kinsol,obj.kinframe,-n1);
+        [x2,J2,dJ2] = forwardKin(manip,kinsol,obj.kinframe,-n1,options);
         [axis_world_m2,Jaxis_world_m2] = forwardKin(manip,kinsol,obj.kinframe,-n2-n1);
         daxis_world_m2 = Jaxis_world_m2 - J2;
         axis_world_m2 = axis_world_m2 - x2;  
@@ -73,7 +74,7 @@ classdef RigidBodyPropellor < RigidBodyForceElement
       else
         % thrust
         kinsol = doKinematics(manip,q);
-        [x,J] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1));
+        [x,J] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1),options);
         axis_world = forwardKin(manip,kinsol,obj.kinframe,obj.axis);
         axis_world = axis_world-x;
         
@@ -81,11 +82,11 @@ classdef RigidBodyPropellor < RigidBodyForceElement
         N = null(obj.axis');
         n1 = N(:,1);
         n2 = N(:,2);
-        [x1,J1] = forwardKin(manip,kinsol,obj.kinframe,n1);
+        [x1,J1] = forwardKin(manip,kinsol,obj.kinframe,n1,options);
         axis_world_m1 = forwardKin(manip,kinsol,obj.kinframe,n2+n1);
         axis_world_m1 = axis_world_m1 - x1;
         
-        [x2,J2] = forwardKin(manip,kinsol,obj.kinframe,-n1);
+        [x2,J2] = forwardKin(manip,kinsol,obj.kinframe,-n1,options);
         axis_world_m2 = forwardKin(manip,kinsol,obj.kinframe,-n2-n1);
         axis_world_m2 = axis_world_m2 - x2;        
                 

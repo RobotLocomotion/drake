@@ -82,6 +82,8 @@ class DLLEXPORT RigidBodyConstraint
     static const int RelativeGazeDirConstraintType              = 25;
     static const int MinDistanceConstraintType                  = 26;
     static const int GravityCompensationTorqueConstraintType    = 27;
+  protected:
+    std::string getTimeString(const double *t) const;
 };
 
 /**

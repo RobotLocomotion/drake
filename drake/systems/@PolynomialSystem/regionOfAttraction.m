@@ -228,6 +228,9 @@ function [L1,sigma1] = findL1(x,f,V,Lxmonom,options)
   options = spot_sdp_default_options();
   sol = prog.minimize(-sigma1,solver,options);
   
+  if sol.status == spotsolstatus.STATUS_SOLVER_ERROR
+    error('The solver threw an internal error.');
+  end
    if ~sol.isPrimalFeasible
       error('Problem looks primal infeasible');
   end

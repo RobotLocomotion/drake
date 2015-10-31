@@ -57,7 +57,7 @@ elseif (MSVC)
    if (NOT ${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER 18.00.40628)
      # version number decoder ring at https://en.wikipedia.org/wiki/Visual_C%2B%2B 
      # at least one user hit a compiler crash with VC++ 12.0, which was resolved by installing the latest service packs.  I don't know that 40629 is required, but know that 00 is not sufficient.
-     message(FATAL_ERROR "requires MS VC++ 12.0 or greater (Visual Studio >= 2013).  download for free at http://visualstudio.com")
+     message(FATAL_ERROR "requires MS VC++ 12.0 update 5 or greater (Visual Studio >= 2013).  download for free at http://visualstudio.com")
    endif()
 
 #  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /arch:SSE2 /openmp")
@@ -84,6 +84,8 @@ elseif (MSVC)
   # the constructors are callable in your program.
 
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4996") # disable sprintf security warning
+
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj") # after receiving RigidBodyManipulator.cpp : fatal error C1128: number of sections exceeded object file format limit: compile with /bigobj
 endif()
 
 # set up matlab build

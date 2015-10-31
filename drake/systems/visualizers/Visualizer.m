@@ -191,14 +191,17 @@ classdef Visualizer < DrakeSystem
         function timer_draw(timerobj,event)
           t=t0+obj.playback_speed*toc;
           if (t>tspan(end))
-            stop(timerobj);
-            return;
+            t = tspan(end)
           end
           if (ts(1)>0) t = round((t-ts(2))/ts(1))*ts(1) + ts(2); end  % align with sample times if necessary
           x = xtraj.eval(t);
           set(time_slider, 'Value', t)
           update_time_display(time_slider, [])
           if ~get(play_button, 'UserData')
+            stop(timerobj);
+            return;
+          end
+          if (t == tspan(end))
             stop(timerobj);
             return;
           end

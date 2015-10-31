@@ -2,13 +2,15 @@ cmake_minimum_required(VERSION 2.8.0)
 project(drake-superbuild)
 
 # PODs out-of-source build logic
-if (CMAKE_INSTALL_PREFIX STREQUAL "/usr/local" OR CMAKE_INSTALL_PREFIX STREQUAL "C:/Program Files/${PROJECT_NAME}")
+if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 	find_file(_build_dir build PATHS ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/.. ${PROJECT_SOURCE_DIR}/../.. ${PROJECT_SOURCE_DIR}/../../.. ${PROJECT_SOURCE_DIR}/../../../..)
 	if (_build_dir)
-	    set(CMAKE_INSTALL_PREFIX "${_build_dir}")
+		set(CMAKE_INSTALL_PREFIX "${_build_dir}" CACHE STRING
+		"install prefix" FORCE)
 	else()
 		execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/build)
-		set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/build)
+		set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/build
+		CACHE STRING "install prefix" FORCE)
 	endif()
 endif()
 message(STATUS CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
@@ -33,40 +35,43 @@ option(REMOVE_UNUSED_EXTERNALS "enable this to remove those projects from disk" 
 option(WITH_EIGEN		"required c++ matrix library.  only disable if you have it already."    ON)
 option(WITH_SWIGMAKE    "helper tools to build python & MATLAB wrappers for C++ libraries with Eigen" ON)
 option(WITH_SWIG_MATLAB "A version of SWIG with MATLAB support" ON)
-option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" ON)
 if (WIN32)
-  option(WITH_GTK 		"precompiled gtk binaries/headers for Windows"  ON)  # needed for lcm on windows
+   if (CMAKE_SIZEOF_VOID_P EQUAL 8)  # gtk only compiles on win64 right now
+	option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" ON)
+	option(WITH_GTK 		"precompiled gtk binaries/headers for Windows"  ON)  # needed for lcm on windows
+   endif()
 else()
-  option(WITH_DIRECTOR	"vtk-based visualization tool and robot user interface"   ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
-  option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	ON) # there is hope, but i spent a long time cleaning up c/c++ language errors trying to make msvc happy.. and still had a long way to go.
-  option(WITH_BULLET 		"used for collision detection" 	ON) # almost works.  just one remaining link error..?
+	option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" ON)
+	option(WITH_DIRECTOR	"vtk-based visualization tool and robot user interface"   ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
+	option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	ON) # there is hope, but i spent a long time cleaning up c/c++ language errors trying to make msvc happy.. and still had a long way to go.
+	option(WITH_BULLET 		"used for collision detection" 	ON) # almost works.  just one remaining link error..?
 endif()
 find_program(matlab matlab)
 if (matlab)
-  option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"  ON)
+	option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"  ON)
 endif()
 
+option(WITH_SNOPT_PRECOMPILED "precompiled binaries only for snopt; the source requires a license (will be disabled if WITH_SNOPT=ON)"  ON)
 
 # OFF by default:
 option(WITH_SNOPT 		"nonlinear optimization solver; requires access to RobotLocomotion/snopt-pod")
+
 if (NOT WIN32) # many of these might work on win32 with little or no work... they just haven't been tried
-  option(WITH_SIGNALSCOPE	"live plotting tool for lcm messages")
-  option(WITH_IRIS		"fast approximate convex segmentation")
-  option(WITH_OCTOMAP 	"provides oct-tree data structures")
-  option(WITH_GUROBI 		"convex/integer optimization solver; free for academics (will prompt you for login bits)")
-  option(WITH_MOSEK 		"convex optimization solver; free for academics")
-  option(WITH_YALMIP 		"free optimization front-end for MATLAB")
-  option(WITH_GLOPTIPOLY 	"free global polynomial optimization tooblox")
-  option(WITH_BERTINI 	"solve polynomial equations; free but pod requires permissions (can't redistribute)")
-  option(WITH_SEDUMI		"semi-definite programming solver")
-#  include(CMakeDetermineFortranCompiler) # this didn't do the trick, and enable_language(Fortran OPTIONAL) simply fails if not found (optional is a placeholder option that doesn't work yet)
-#  if (CMAKE_Fortran_COMPILER)
-    option(WITH_AVL			"use w/ XFOIL to compute aerodynamic coefficients for airfoils")
-    option(WITH_XFOIL		"use w/ AVL to compute aerodynamic coefficients for airfoils")
-#  endif()
-  option(WITH_MESHCONVERTERS "uses vcglib to convert a few standard filetypes")
-  # todo: make this on by default once it's tested:
-  option(WITH_SNOPT_PRECOMPILED "precompiled binaries only for snopt; the source requires a license (will be disabled if WITH_SNOPT=ON)"  OFF)
+	option(WITH_SIGNALSCOPE	"live plotting tool for lcm messages")
+	option(WITH_IRIS		"fast approximate convex segmentation")
+	option(WITH_OCTOMAP 	"provides oct-tree data structures")
+	option(WITH_GUROBI 		"convex/integer optimization solver; free for academics (will prompt you for login bits)")
+	option(WITH_MOSEK 		"convex optimization solver; free for academics")
+	option(WITH_YALMIP 		"free optimization front-end for MATLAB")
+	option(WITH_GLOPTIPOLY 	"free global polynomial optimization tooblox")
+	option(WITH_BERTINI 	"solve polynomial equations; free but pod requires permissions (can't redistribute)")
+	option(WITH_SEDUMI		"semi-definite programming solver")
+	#  include(CMakeDetermineFortranCompiler) # this didn't do the trick, and enable_language(Fortran OPTIONAL) simply fails if not found (optional is a placeholder option that doesn't work yet)
+	#  if (CMAKE_Fortran_COMPILER)
+	option(WITH_AVL			"use w/ XFOIL to compute aerodynamic coefficients for airfoils")
+	option(WITH_XFOIL		"use w/ AVL to compute aerodynamic coefficients for airfoils")
+	#  endif()
+	option(WITH_MESHCONVERTERS "uses vcglib to convert a few standard filetypes")
 endif()
 
 
@@ -90,17 +95,17 @@ set(bullet_GIT_TAG 4319ffd7e9251066d93064f5a8dab12e33dbe5e2)
 set(bullet_IS_PUBLIC TRUE)
 set(bullet_IS_CMAKE_POD TRUE)
 set(cmake_GIT_REPOSITORY https://github.com/RobotLocomotion/cmake.git)
-set(cmake_GIT_TAG 3ca531594097919f0c9784585ecb32fe0df15404)
+set(cmake_GIT_TAG 7f3d95b5928b61cd84302838732d97104464d001)
 set(cmake_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/drake/cmake")
-set(cmake_BUILD_COMMAND "")
+set(cmake_NO_BUILD TRUE)
 set(cmake_IS_PUBLIC TRUE)
 set(director_GIT_REPOSITORY https://github.com/RobotLocomotion/director.git)
-set(director_GIT_TAG 2bbd3cbbd4c06268b75263aca5056e9022c91bce)
+set(director_GIT_TAG d8bb50aaacf776f684853235377913d077bb7c19)
 set(director_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/director/distro/pods/drake-distro)
 set(director_IS_PUBLIC TRUE)
 set(drake_ADDITIONAL_BUILD_ARGS CMAKE_ARGS -DWITH_PYTHON_3=${WITH_PYTHON_3})
 set(eigen_GIT_REPOSITORY https://github.com/RobotLocomotion/eigen-pod.git)
-set(eigen_GIT_TAG a8b67df79535fede971d333b6edb6e27e89287fc)
+set(eigen_GIT_TAG 9061e9d5481fe0fdf55d5de322dfb1ed9d380a1c)
 set(eigen_IS_CMAKE_POD TRUE)
 set(eigen_IS_PUBLIC TRUE)
 set(gtk_GIT_REPOSITORY https://github.com/RobotLocomotion/gtk-pod.git)
@@ -111,8 +116,8 @@ set(gloptipoly_GIT_REPOSITORY git@github.com:RobotLocomotion/gloptipoly3.git)  #
 set(gloptipoly_GIT_TAG c9e796e99c584ecf78317348c4162a2ed4121156)
 set(gloptipoly_IS_PUBLIC FALSE)
 set(gurobi_GIT_REPOSITORY https://github.com/RobotLocomotion/gurobi.git)
-set(gurobi_GIT_TAG beb0a84a1bcca1eb81a1b87d9fa140f2134d97e9)
-set(gurobi_IS_PUBLIC TRUE)
+set(gurobi_GIT_TAG 9699ec6091f3d9d8013c6f0acaea229c84a189a5)
+set(gurobi_IS_PUBLIC FALSE)
 set(iris_GIT_REPOSITORY https://github.com/rdeits/iris-distro.git)
 set(iris_GIT_TAG a17bdb4a20a8195363b629c47fd1b6251b44c95e)
 set(iris_ADDITIONAL_BUILD_ARGS PATCH_COMMAND make configure-cdd-only)
@@ -123,7 +128,7 @@ set(lcm_IS_CMAKE_POD TRUE)
 set(lcm_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/lcm/lcm-1.0.0)
 set(lcm_IS_PUBLIC TRUE)
 set(libbot_GIT_REPOSITORY https://github.com/RobotLocomotion/libbot.git)
-set(libbot_GIT_TAG c328b73f3b48008d04468031e26f48468a7e3cc0)
+set(libbot_GIT_TAG 94fe5290329646959e1c27896d529abba81e6d93)
 set(libbot_IS_PUBLIC TRUE)
 set(meshconverters_GIT_REPOSITORY https://github.com/RobotLocomotion/meshConverters.git)
 set(meshconverters_GIT_TAG d50a79b80d74dd7a924daba7bd2011e03d9e66b4)
@@ -138,7 +143,7 @@ set(sedumi_GIT_REPOSITORY git@github.com:RobotLocomotion/sedumi.git)
 set(sedumi_GIT_TAG 8263577d4ab375524060c19369ccf410133bb9eb)
 set(sedumi_IS_PUBLIC FALSE)
 set(signalscope_GIT_REPOSITORY https://github.com/mitdrc/signal-scope.git)
-set(signalscope_GIT_TAG bd891bb2a8284a969086b7f286462572e5698855)
+set(signalscope_GIT_TAG dfbcfd80d381525deb91ed0a1c19bd6928a5eacd)
 set(signalscope_IS_PUBLIC TRUE)
 set(snopt_GIT_REPOSITORY git@github.com:RobotLocomotion/snopt.git)
 set(snopt_GIT_TAG 95d908275156f2665ef3941f08cb89c767480a6e)
@@ -150,7 +155,7 @@ set(swigmake_GIT_TAG ea83b06be3bc84dffe461c897d92c92b24774813)
 set(swig_matlab_GIT_REPOSITORY https://github.com/rdeits/swig-matlab-pod.git)
 set(swig_matlab_GIT_TAG c41b5b6a89130cc498d42b97555bd0501ef84c00)
 set(swig_matlab_IS_CMAKE_POD TRUE)
-set(spotless_GIT_TAG 91e1e3970e62b8dd8d74bbc4446504b11990f598)
+set(spotless_GIT_TAG 4fda9f17de9819ea70f076a59306608aebbd6899)
 set(spotless_IS_CMAKE_POD TRUE)
 set(spotless_IS_PUBLIC TRUE)
 set(yalmip_GIT_REPOSITORY https://github.com/RobotLocomotion/yalmip.git)
@@ -204,16 +209,16 @@ foreach(proj IN ITEMS
 		drake)
 	string(TOUPPER ${proj} proj_upper)
 	if ( ${proj} STREQUAL "drake" OR
-		 ${proj} STREQUAL "cmake" OR
-		 WITH_${proj_upper} OR
-		 (WITH_ALL_SUPPORTED_EXTERNALS AND DEFINED WITH_${proj_upper}) OR
-		 (WITH_ALL_PUBLIC_EXTERNALS AND ${proj}_IS_PUBLIC AND DEFINED WITH_${proj_upper}) )
+			${proj} STREQUAL "cmake" OR
+			WITH_${proj_upper} OR
+	(WITH_ALL_SUPPORTED_EXTERNALS AND DEFINED WITH_${proj_upper}) OR
+	(WITH_ALL_PUBLIC_EXTERNALS AND ${proj}_IS_PUBLIC AND DEFINED WITH_${proj_upper}) )
 		list(APPEND EXTERNAL_PROJECTS ${proj})
 	elseif(REMOVE_UNUSED_EXTERNALS AND IS_DIRECTORY ${proj})
 		message(STATUS "removing unused project: ${proj}")
 		if (NOT ${proj}_NO_BUILD)
 			execute_process(COMMAND ${MAKE_EXECUTABLE} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE} clean
-							WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/${proj})
+					WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/${proj})
 		endif()
 		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory "${PROJECT_SOURCE_DIR}/${proj}")
 	endif()
@@ -236,16 +241,18 @@ foreach (proj ${EXTERNAL_PROJECTS})
 		if (NOT ${proj}_SOURCE_DIR)
 			set(${proj}_SOURCE_DIR ${${proj}_GIT_CLONE_DIR})
 		endif()
-    if (NOT DEFINED ${proj}_CONFIGURE_COMMAND AND ${proj}_IS_CMAKE_POD)
-      set(${proj}_CONFIGURE_COMMAND ${CMAKE_COMMAND} -E make_directory ${${proj}_SOURCE_DIR}/pod-build
-        COMMAND ${CMAKE_COMMAND} -E chdir ${${proj}_SOURCE_DIR}/pod-build ${CMAKE_COMMAND} -G${CMAKE_GENERATOR} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} ..)
-    endif()
+		if (NOT DEFINED ${proj}_CONFIGURE_COMMAND AND ${proj}_IS_CMAKE_POD)
+			set(${proj}_CONFIGURE_COMMAND ${CMAKE_COMMAND} -E make_directory ${${proj}_SOURCE_DIR}/pod-build
+					COMMAND ${CMAKE_COMMAND} -E chdir ${${proj}_SOURCE_DIR}/pod-build ${CMAKE_COMMAND} -G${CMAKE_GENERATOR} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} ..)
+		endif()
 		if (NOT DEFINED ${proj}_BUILD_COMMAND)
-      if (${proj}_IS_CMAKE_POD)
-        set(${proj}_BUILD_COMMAND ${CMAKE_COMMAND} -E chdir ${${proj}_SOURCE_DIR} ${CMAKE_COMMAND} --build pod-build --config ${CMAKE_BUILD_TYPE} --target install)
-      else() # then use the PODS gnu make system
-		    set(${proj}_BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE})
-      endif()
+			if (${proj}_IS_CMAKE_POD)
+				set(${proj}_BUILD_COMMAND ${CMAKE_COMMAND} -E chdir ${${proj}_SOURCE_DIR} ${CMAKE_COMMAND} --build pod-build --config ${CMAKE_BUILD_TYPE} --target install)
+			elseif(${proj}_NO_BUILD)
+				set(${proj}_BUILD_COMMAND "")
+			else()# then use the PODS gnu make system
+				set(${proj}_BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE})
+			endif()
 		endif()
 		set(EXTERNAL_SOURCE_DIRS ${EXTERNAL_SOURCE_DIRS} ${${proj}_SOURCE_DIR} "\n")
 
@@ -255,69 +262,69 @@ foreach (proj ${EXTERNAL_PROJECTS})
 		#   http://comments.gmane.org/gmane.comp.programming.tools.cmake.user/53002
 		if (AUTO_UPDATE_EXTERNALS)
 			ExternalProject_Add(download-${proj}
-				DOWNLOAD_DIR ${${proj}_GIT_CLONE_DIR}
-				SOURCE_DIR ${${proj}_GIT_CLONE_DIR}
-				GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
-				GIT_TAG ${${proj}_GIT_TAG}
-				CONFIGURE_COMMAND ""
-				BUILD_COMMAND ""
-				INSTALL_COMMAND ""
-				)
+					DOWNLOAD_DIR ${${proj}_GIT_CLONE_DIR}
+					SOURCE_DIR ${${proj}_GIT_CLONE_DIR}
+					GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
+					GIT_TAG ${${proj}_GIT_TAG}
+					CONFIGURE_COMMAND ""
+					BUILD_COMMAND ""
+					INSTALL_COMMAND ""
+					)
 		else()
 			ExternalProject_Add(download-${proj}
-				DOWNLOAD_DIR ${${proj}_GIT_CLONE_DIR}
-				SOURCE_DIR ${${proj}_GIT_CLONE_DIR}
-				GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
-				GIT_TAG ${${proj}_GIT_TAG}
-				UPDATE_COMMAND ""
-				CONFIGURE_COMMAND ""
-				BUILD_COMMAND ""
-				INSTALL_COMMAND ""
-				)
+					DOWNLOAD_DIR ${${proj}_GIT_CLONE_DIR}
+					SOURCE_DIR ${${proj}_GIT_CLONE_DIR}
+					GIT_REPOSITORY ${${proj}_GIT_REPOSITORY}
+					GIT_TAG ${${proj}_GIT_TAG}
+					UPDATE_COMMAND ""
+					CONFIGURE_COMMAND ""
+					BUILD_COMMAND ""
+					INSTALL_COMMAND ""
+					)
 		endif()
 
 		# now the actual project
 		ExternalProject_Add(${proj}
-			SOURCE_DIR ${${proj}_SOURCE_DIR}
-#      BINARY_DIR ${${proj}_SOURCE_DIR}/pod-build
-			DOWNLOAD_COMMAND ""
-			UPDATE_COMMAND ""
-			CONFIGURE_COMMAND "${${proj}_CONFIGURE_COMMAND}"
-      BUILD_IN_SOURCE 1
-			BUILD_COMMAND "${${proj}_BUILD_COMMAND}"
-			INSTALL_COMMAND ""
-			DEPENDS download-${proj} ${deps}
-			${${proj}_ADDITIONAL_BUILD_ARGS}
-			)
-#    message(STATUS "${proj}_BUILD_COMMAND: ${${proj}_BUILD_COMMAND}")
+				SOURCE_DIR ${${proj}_SOURCE_DIR}
+				#      BINARY_DIR ${${proj}_SOURCE_DIR}/pod-build
+				DOWNLOAD_COMMAND ""
+				UPDATE_COMMAND ""
+				CONFIGURE_COMMAND "${${proj}_CONFIGURE_COMMAND}"
+				BUILD_IN_SOURCE 1
+				BUILD_COMMAND "${${proj}_BUILD_COMMAND}"
+				INSTALL_COMMAND ""
+				DEPENDS download-${proj} ${deps}
+				${${proj}_ADDITIONAL_BUILD_ARGS}
+				)
+		#    message(STATUS "${proj}_BUILD_COMMAND: ${${proj}_BUILD_COMMAND}")
 
 	else()
 		message(STATUS "Preparing to build ${proj} with dependencies: ${deps}")
 
 		ExternalProject_Add(${proj}
-			SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake"
-			DOWNLOAD_COMMAND ""
-			UPDATE_COMMAND ""
-#      CONFIGURE_COMMAND ""
-#      BUILD_IN_SOURCE 1
-#      BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE}
-	  		CONFIGURE_COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/drake/pod-build
-	    		COMMAND ${CMAKE_COMMAND} -E chdir ${PROJECT_SOURCE_DIR}/drake/pod-build ${CMAKE_COMMAND} -G${CMAKE_GENERATOR} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DWITH_PYTHON_3=${WITH_PYTHON_3} ..
-			BUILD_COMMAND ${CMAKE_COMMAND} --build ${PROJECT_SOURCE_DIR}/drake/pod-build --config ${CMAKE_BUILD_TYPE} --target install
-			INSTALL_COMMAND ""
-			DEPENDS ${deps}
-			${${proj}_ADDITIONAL_BUILD_ARGS}
-	#		BUILD_ALWAYS 1
-			)
+				SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake"
+				DOWNLOAD_COMMAND ""
+				UPDATE_COMMAND ""
+				#      CONFIGURE_COMMAND ""
+				#      BUILD_IN_SOURCE 1
+				#      BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE}
+				CONFIGURE_COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/drake/pod-build
+				COMMAND ${CMAKE_COMMAND} -E chdir ${PROJECT_SOURCE_DIR}/drake/pod-build ${CMAKE_COMMAND} -G${CMAKE_GENERATOR} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} ..
+				BUILD_COMMAND ${CMAKE_COMMAND} --build ${PROJECT_SOURCE_DIR}/drake/pod-build --config ${CMAKE_BUILD_TYPE} --target install
+				INSTALL_COMMAND ""
+				DEPENDS ${deps}
+				${${proj}_ADDITIONAL_BUILD_ARGS}
+				#		BUILD_ALWAYS 1
+				)
 	endif(NOT ${proj} STREQUAL "drake")
 
 
 	# once we require cmake version >= 3.1, then we can zap this and just use the BUILD_ALWAYS flags above
- 	ExternalProject_Add_Step(${proj} forceconfigure
- 		COMMAND ${CMAKE_COMMAND} -E echo "Force configure of ${proj}"
- 		DEPENDEES update
- 		DEPENDERS configure
- 		ALWAYS 1)
+	ExternalProject_Add_Step(${proj} forceconfigure
+			COMMAND ${CMAKE_COMMAND} -E echo "Force configure of ${proj}"
+			DEPENDEES update
+			DEPENDERS configure
+			ALWAYS 1)
 
 endforeach()
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/drake_external_source_dirs.txt ${EXTERNAL_SOURCE_DIRS})
@@ -333,16 +340,16 @@ foreach (proj ${EXTERNAL_PROJECTS})
 		add_dependencies(download-all download-${proj})
 		ExternalProject_Get_Property(download-${proj} SOURCE_DIR)
 		add_custom_target(status-${proj}
-			COMMAND ${GIT_EXECUTABLE} status
-			WORKING_DIRECTORY ${SOURCE_DIR})
+				COMMAND ${GIT_EXECUTABLE} status
+				WORKING_DIRECTORY ${SOURCE_DIR})
 		add_dependencies(status status-${proj})
 	endif()
 
 	ExternalProject_Get_Property(${proj} SOURCE_DIR)
 	if (NOT ${proj}_NO_BUILD)
 		add_custom_target(clean-${proj}
-			COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE} clean
-			WORKING_DIRECTORY ${SOURCE_DIR})
+				COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE} clean
+				WORKING_DIRECTORY ${SOURCE_DIR})
 		add_dependencies(clean-all clean-${proj})
 	endif()
 	list(APPEND PROJECT_LIST ${SOURCE_DIR})
@@ -350,42 +357,42 @@ endforeach()
 
 # process optional examples
 foreach (example IN ITEMS
-    LittleDog)
-    string(TOUPPER ${example} example_upper)
-  	if (EXAMPLES_${example_upper})
-      message(STATUS "Installation will include extra example: ${example}")
-      ExternalProject_Add(download-${example}
-        DOWNLOAD_DIR ${PROJECT_SOURCE_DIR}/drake/examples/${example}
-        SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake/examples/${example}
-        GIT_REPOSITORY ${${example}_GIT_REPOSITORY}
-        GIT_TAG ${${example}_GIT_TAG}
-        CONFIGURE_COMMAND ""
-        BUILD_COMMAND ""
-        INSTALL_COMMAND ""
-        )
-      add_dependencies(drake download-${example})
-      add_dependencies(download-all download-${example})
-    endif()
+		LittleDog)
+	string(TOUPPER ${example} example_upper)
+	if (EXAMPLES_${example_upper})
+		message(STATUS "Installation will include extra example: ${example}")
+		ExternalProject_Add(download-${example}
+				DOWNLOAD_DIR ${PROJECT_SOURCE_DIR}/drake/examples/${example}
+				SOURCE_DIR ${PROJECT_SOURCE_DIR}/drake/examples/${example}
+				GIT_REPOSITORY ${${example}_GIT_REPOSITORY}
+				GIT_TAG ${${example}_GIT_TAG}
+				CONFIGURE_COMMAND ""
+				BUILD_COMMAND ""
+				INSTALL_COMMAND ""
+				)
+		add_dependencies(drake download-${example})
+		add_dependencies(download-all download-${example})
+	endif()
 endforeach()
 
 string(REPLACE ";" " " PROJECT_LIST "${PROJECT_LIST}")
 add_custom_target(list-project-dirs COMMAND echo "${PROJECT_LIST}")
 
 ## grab and install precompiled snopt
-if (NOT WIN32)  # just have to add the win libs to the zip to re-enable this support
-  # todo: look for snopt_c
-  if (snopt_c_FOUND OR WITH_SNOPT)
-    set(WITH_SNOPT_PRECOMPILED OFF)
-  endif()
-  if (WITH_SNOPT_PRECOMPILED)
-    message(STATUS "Preparing to install precompiled snopt")
-    ExternalProject_Add(download-snopt-precompiled
-      URL "http://drake002.csail.mit.edu/drake/drakeSnopt-2592a9e4e7666c6c3aafc49def9dc726f4942cea.tgz"  # todo: host this someplace better?
-      SOURCE_DIR "${CMAKE_BINARY_DIR}/snopt-precompiled"
-      CONFIGURE_COMMAND ""
-      BUILD_COMMAND cmake -E copy_directory ${CMAKE_BINARY_DIR}/snopt-precompiled/ ${PROJECT_SOURCE_DIR}/drake/solvers/
-      INSTALL_COMMAND "")
-    add_dependencies(download-all download-snopt-precompiled)
-    add_dependencies(drake download-snopt-precompiled) # just in case: make sure any compiled drake version happens after precompiled install
-  endif()
+
+# todo: look for snopt_c
+if (snopt_c_FOUND OR WITH_SNOPT)
+  set(WITH_SNOPT_PRECOMPILED OFF)
 endif()
+if (WITH_SNOPT_PRECOMPILED)
+  message(STATUS "Preparing to install precompiled snopt")
+  ExternalProject_Add(download-snopt-precompiled
+		URL "http://drake002.csail.mit.edu/drake/drakeSnopt.zip"
+		SOURCE_DIR "${CMAKE_BINARY_DIR}/snopt-precompiled"
+		CONFIGURE_COMMAND ""
+		BUILD_COMMAND cmake -E copy_directory ${CMAKE_BINARY_DIR}/snopt-precompiled/ ${PROJECT_SOURCE_DIR}/drake/solvers/
+		INSTALL_COMMAND "")
+  add_dependencies(download-all download-snopt-precompiled)
+  add_dependencies(drake download-snopt-precompiled) # just in case: make sure any compiled drake version happens after precompiled install
+endif()
+

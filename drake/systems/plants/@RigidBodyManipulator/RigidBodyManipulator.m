@@ -22,10 +22,13 @@ classdef RigidBodyManipulator < Manipulator
     contact_options; % struct containing options for contact/collision handling
     contact_constraint_id=[];
 
+    
     % struct containing the output of 'obj.getTerrainContactPoints()'.
     % That output does not change between compilations, and is requested
     % at every simulation dt, so storing it can speed things up.
     cached_terrain_contact_points_struct=[];
+    
+    quat_norm_constraint_id=[];  % indices of state constraints asserting that the quaternion coordinates have norm=1
     
     % default kinematics caches; temporary way to make it easy to avoid creating
     % and destroying DrakeMexPointers to KinematicsCache every time
@@ -317,6 +320,47 @@ classdef RigidBodyManipulator < Manipulator
       sizecheck(grav,size(obj.gravity));
       obj.gravity = grav;
       obj.dirty = true;
+    end
+    
+    function q0 = getRandomConfiguration(obj)
+      q0 = zeros(getNumPositions(obj),1);
+      for i=1:getNumBodies(obj)
+        if any(obj.body(i).position_num>0)
+          q0(obj.body(i).position_num) = getRandomConfiguration(obj.body(i));
+        end
+      end
+    end
+    
+    function x0 = getInitialState(obj)
+      if ~isempty(obj.initial_state)
+        x0 = obj.initial_state;
+        return;
+      end
+      
+      x0 = [ getRandomConfiguration(obj); .01*randn(getNumVelocities(obj),1)];
+      if ~isempty(obj.state_constraints)
+        attempts=0;
+        success=false;
+        while (~success)
+          attempts=attempts+1;
+          try
+            [x0,success] = resolveConstraints(obj,x0);
+          catch ex
+            if strcmp(ex.identifier,'Drake:DrakeSystem:FailedToResolveConstraints');
+              success=false;
+            else
+              rethrow(ex);
+            end
+          end
+          if (~success)
+            x0 = randn(obj.num_xd+obj.num_xc,1);
+            if (attempts>=10)
+              error('Drake:DrakeSystem:FailedToResolveConstraints','Failed to resolve state constraints on initial conditions after 10 tries');
+            end
+          end
+        end
+      end
+      x0 = double(x0);      
     end
 
     function obj = setJointLimits(obj,jl_min,jl_max)
@@ -834,6 +878,25 @@ classdef RigidBodyManipulator < Manipulator
         end
       elseif ~isempty(model.contact_constraint_id)
         model = updateStateConstraint(model,model.contact_constraint_id,NullConstraint(model.getNumPositions),1:model.getNumPositions);
+      end
+      
+      quat_inds = find([model.body.floating]==2);
+      for j=1:length(quat_inds)
+        bind = quat_inds(j);
+        quat_norm_constraint = QuadraticConstraint(1,1,2*eye(4),zeros(4,1));
+        quat_norm_constraint = quat_norm_constraint.setName({[model.body(bind).jointname,' quat norm = 1']});
+        if length(model.quat_norm_constraint_id)<j
+          % note: these could be PositionEqualityConstraints, but then they
+          % would be evaluated in the lcp solution.  But we currently 
+          % special case the normalization in the lcp. 
+          [model,id] = addStateConstraint(model,quat_norm_constraint,model.body(bind).position_num(4:7));
+          model.quat_norm_constraint_id(j) = id;
+        else
+          model = updateStateConstraint(model,model.quat_norm_constraint_id(j),quat_norm_constraint,model.body(bind).position_num(4:7));
+        end
+      end
+      for j=(length(quat_inds)+1):length(model.quat_norm_constraint_id)
+        model = updateStateConstraint(model,model.quat_norm_constraint_id(j),NullConstraint(0),1);
       end
 
       for j=1:length(model.loop)

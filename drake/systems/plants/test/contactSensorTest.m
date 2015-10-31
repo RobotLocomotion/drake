@@ -14,8 +14,8 @@ p = addSensor(p,ContactForceTorqueSensor(p,frame));
 p = compile(p);
 
 T = 2;
-
-[ytraj,xtraj] = simulate(p,[0 T]);
+x0 = p.resolveConstraints(.01*randn(getNumStates(p),1));
+[ytraj,xtraj] = simulate(p,[0 T],x0);
 
 %v = p.constructVisualizer();
 %v.playback(ytraj,struct('slider',true));
@@ -37,7 +37,8 @@ p = addFrame(p,frame);
 p = addSensor(p,ContactForceTorqueSensor(p,frame));
 p = compile(p);
 
-[ytraj,xtraj] = simulate(p,[0 T]);
+x0 = p.resolveConstraints(.01*randn(getNumStates(p),1));
+[ytraj,xtraj] = simulate(p,[0 T],x0);
 
 %v = p.constructVisualizer();
 %v.playback(ytraj,struct('slider',true));
