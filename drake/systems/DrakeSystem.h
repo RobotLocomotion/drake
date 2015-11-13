@@ -22,6 +22,16 @@
 ///   - algebraic constraints (c++ support coming soon)
 ///   - zero-crossings (c++ support coming soon) to inform the tools of discontinuities in the dynamics
 
+// simulation options
+struct SimulationOptions {
+  double realtime_factor;  // 1 means try to run at realtime speed, < 0 is run as fast as possible
+  double initial_step_size;
+
+  SimulationOptions() :
+          realtime_factor(-1.0),
+          initial_step_size(0.01)
+  {};
+};
 
 class DLLEXPORT DrakeSystem : public std::enable_shared_from_this<DrakeSystem> {
 public:
@@ -67,16 +77,6 @@ public:
   virtual Eigen::VectorXd getRandomState();
   virtual Eigen::VectorXd getInitialState();
 
-  // simulation options
-  struct SimulationOptions {
-    double realtime_factor;  // 1 means try to run at realtime speed, < 0 is run as fast as possible
-    double initial_step_size;
-
-    SimulationOptions() :
-            realtime_factor(-1.0),
-            initial_step_size(0.01)
-    {};
-  };
   SimulationOptions default_simulation_options;
 
   virtual void simulate(double t0, double tf, const Eigen::VectorXd& x0, const SimulationOptions& options) const;
@@ -94,6 +94,7 @@ public:
 
   virtual bool isTimeInvariant() const { return false; }    // are the dynamics,update, and output methods independent of t?  set to true if possible!
   virtual bool isDirectFeedthrough() const { return true; } // does the output method depend (directly) on the input u?  set to false if possible!
+
 
 private:
 

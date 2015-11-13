@@ -17,6 +17,13 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+if(WITH_PYTHON_3)
+  set(Python_ADDITIONAL_VERSIONS 3.5)
+  find_package(PythonInterp 3 REQUIRED)
+else()
+  find_package(PythonInterp 2 REQUIRED)
+endif()
+
 # set up pods
 set(POD_NAME drake)
 include(cmake/pods.cmake)
@@ -174,6 +181,7 @@ add_subdirectory(systems)
 add_subdirectory(thirdParty/GetFullPath)
 add_subdirectory(thirdParty/spruce)
 add_subdirectory(examples)
+add_subdirectory(bindings)
 
 # setup matlab pods-compliance
 include(cmake/matlab_pods.cmake)

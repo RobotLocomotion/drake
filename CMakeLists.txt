@@ -23,6 +23,9 @@ option(EXAMPLES_LITTLEDOG "planning and control for a small quadruped robot" OFF
 ## External dependencies
 option(AUTO_UPDATE_EXTERNALS "external projects are updated to their tag revision on compile" ON)
 
+# Choose your python (major) version
+option(WITH_PYTHON_3 "Build extensions for python 3 instead of python 2" OFF)
+
 # menu of external projects
 option(WITH_ALL_PUBLIC_EXTERNALS "enable all externals available to public academic users" OFF)
 option(WITH_ALL_SUPPORTED_EXTERNALS "enable all externals available for your platform (includes private git repositories)" OFF)
@@ -30,6 +33,8 @@ option(REMOVE_UNUSED_EXTERNALS "enable this to remove those projects from disk" 
 
 # ON by default:
 option(WITH_EIGEN		"required c++ matrix library.  only disable if you have it already."    ON)
+option(WITH_SWIGMAKE    "helper tools to build python & MATLAB wrappers for C++ libraries with Eigen" ON)
+option(WITH_SWIG_MATLAB "A version of SWIG with MATLAB support" ON)
 if (WIN32)
    if (CMAKE_SIZEOF_VOID_P EQUAL 8)  # gtk only compiles on win64 right now
 	option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" ON)
@@ -76,7 +81,7 @@ set(libbot_dependencies lcm)
 set(director_dependencies lcm libbot)
 set(iris_dependencies eigen mosek)
 set(signalscope_dependencies director)
-set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi)
+set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi swig_matlab swigmake)
 
 # download information, in alphabetical order
 set(avl_GIT_REPOSITORY https://github.com/RobotLocomotion/avl.git)
@@ -98,6 +103,7 @@ set(director_GIT_REPOSITORY https://github.com/RobotLocomotion/director.git)
 set(director_GIT_TAG d8bb50aaacf776f684853235377913d077bb7c19)
 set(director_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/director/distro/pods/drake-distro)
 set(director_IS_PUBLIC TRUE)
+set(drake_ADDITIONAL_BUILD_ARGS CMAKE_ARGS -DWITH_PYTHON_3=${WITH_PYTHON_3})
 set(eigen_GIT_REPOSITORY https://github.com/RobotLocomotion/eigen-pod.git)
 set(eigen_GIT_TAG 9061e9d5481fe0fdf55d5de322dfb1ed9d380a1c)
 set(eigen_IS_CMAKE_POD TRUE)
@@ -144,6 +150,10 @@ set(snopt_GIT_TAG 95d908275156f2665ef3941f08cb89c767480a6e)
 set(snopt_IS_CMAKE_POD TRUE)
 set(snopt_IS_PUBLIC FALSE)
 set(spotless_GIT_REPOSITORY https://github.com/RobotLocomotion/spotless-pod.git)
+set(swigmake_GIT_REPOSITORY https://github.com/rdeits/swigmake.git)
+set(swigmake_GIT_TAG a01cc58f1b8b19e28d5ca0ef137868ae0a808184)
+set(swig_matlab_GIT_REPOSITORY https://github.com/rdeits/swig-matlab-pod.git)
+set(swig_matlab_GIT_TAG 8df42c9a13113113f49922af76a69f258123873a)
 set(spotless_GIT_TAG 4fda9f17de9819ea70f076a59306608aebbd6899)
 set(spotless_IS_CMAKE_POD TRUE)
 set(spotless_IS_PUBLIC TRUE)
@@ -193,6 +203,8 @@ foreach(proj IN ITEMS
 		avl
 		xfoil
 		meshconverters
+		swigmake
+		swig_matlab
 		drake)
 	string(TOUPPER ${proj} proj_upper)
 	if ( ${proj} STREQUAL "drake" OR

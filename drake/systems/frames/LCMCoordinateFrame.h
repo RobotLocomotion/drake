@@ -100,7 +100,7 @@ protected:
 };
 
 // todo:  can I send in only a const DrakeSystem& instead?
-extern void runLCM(const DrakeSystemPtr& sys, lcm::LCM& lcm, double t0, double tf, const Eigen::VectorXd& x0, const DrakeSystem::SimulationOptions* options=nullptr);
+extern void runLCM(const DrakeSystemPtr& sys, lcm::LCM& lcm, double t0, double tf, const Eigen::VectorXd& x0, const SimulationOptions* options=nullptr);
 
 
 #endif //DRAKE_LCMCOORDINATEFRAME_H
