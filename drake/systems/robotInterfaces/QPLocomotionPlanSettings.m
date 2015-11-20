@@ -46,7 +46,8 @@ classdef QPLocomotionPlanSettings
 
     duration = inf;
     start_time = 0;
-    default_qp_input = atlasControllers.QPInputConstantHeight;
+    %mfallon_fix_me default_qp_input = atlasControllers.QPInputConstantHeight;
+    default_qp_input;
     gain_set = 'standing';
   end
 
@@ -54,10 +55,25 @@ classdef QPLocomotionPlanSettings
     function obj = QPLocomotionPlanSettings(robot)
       obj.robot = robot;
       S = load(obj.robot.fixed_point_file);
-      rpc = atlasUtil.propertyCache(obj.robot);
+
+      %mfallon_fix_me rpc = atlasUtil.propertyCache(obj.robot);
+      keyboard
+      if strcmp(robot.name,'atlas')
+        rpc = atlasUtil.propertyCache(obj.robot);
+      else
+        rpc = valkyrieUtil.propertyCache(obj.robot);
+      end
+
       obj.contact_groups = rpc.contact_groups;
       obj.qtraj = S.xstar(1:obj.robot.getNumPositions());
-      obj.default_qp_input = atlasControllers.QPInputConstantHeight();
+
+      %mfallon_fix_me obj.default_qp_input = atlasControllers.QPInputConstantHeight();
+      if strcmp(robot.name,'atlas')
+        obj.default_qp_input = atlasControllers.QPInputConstantHeight();
+      else
+        obj.default_qp_input = valkyrieControllers.QPInputConstantHeight();
+      end
+
       obj.default_qp_input.whole_body_data.q_des = zeros(obj.robot.getNumPositions(), 1);
       obj.constrained_dofs = [findPositionIndices(obj.robot,'arm');findPositionIndices(obj.robot,'neck');findPositionIndices(obj.robot,'back_bkz');findPositionIndices(obj.robot,'back_bky')];
       obj.untracked_joint_inds = [];
