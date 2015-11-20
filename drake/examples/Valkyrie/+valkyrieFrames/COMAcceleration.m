@@ -4,7 +4,7 @@ classdef COMAcceleration < SingletonCoordinateFrame
       if nargin < 1
         dim = 3;
       end
-      obj = obj@SingletonCoordinateFrame('atlasFrames.COMAcceleration',dim,'c');
+      obj = obj@SingletonCoordinateFrame('valkyrieFrames.COMAcceleration',dim,'c');
     end
   end
 end

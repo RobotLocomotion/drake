@@ -3,9 +3,9 @@ function prop_cache = propertyCache(r)
 % Functions like findLinkId, getTerrainContactPoints, etc. can be too slow to call
 % in the inner loop of our controller or planner, so we cache some useful information
 % at setup time. 
-% @param r an Atlas
+% @param r an Valkyrie
 
-typecheck(r, 'Atlas');
+typecheck(r, 'Valkyrie');
 prop_cache = struct('contact_groups', [],...
                     'body_ids', struct(),...
                     'position_indices', struct(),...

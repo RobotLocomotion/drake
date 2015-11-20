@@ -1,5 +1,5 @@
 classdef Base 
-  % Metaclass for storing gains for the Atlas controller and other parameters which
+  % Metaclass for storing gains for the Valkyrie controller and other parameters which
   % are fixed at compile time for a particular type of plan (walking, manipulating,
   % standing, recovery, etc.) but which can be switched out for a different set when
   % the plan type changes. 
@@ -23,7 +23,7 @@ classdef Base
 
   methods 
     function obj = Base(r)
-      typecheck(r, 'Atlas');
+      typecheck(r, 'Valkyrie');
       nbod = r.getManipulator().getNumBodies();
       obj.body_motion = struct('Kp', mat2cell(12 * ones(6, nbod), 6, ones(1, nbod)),...
                                'damping_ratio', 0.7,...

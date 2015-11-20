@@ -1,7 +1,7 @@
-classdef AtlasForceTorque < SingletonCoordinateFrame
+classdef ValkyrieForceTorque < SingletonCoordinateFrame
   
   methods
-    function obj=AtlasForceTorque()
+    function obj=ValkyrieForceTorque()
 
       coordinates = {'l_foot_fz','l_foot_tx','l_foot_ty',...
                 'r_foot_fz','r_foot_tx','r_foot_ty',...
@@ -10,7 +10,7 @@ classdef AtlasForceTorque < SingletonCoordinateFrame
                 'r_hand_fx','r_hand_fy','r_hand_fz',...
                 'r_hand_tx','r_hand_ty','r_hand_tz'};
 
-      obj = obj@SingletonCoordinateFrame('atlasFrames.AtlasForceTorque',length(coordinates),'f',coordinates);              
+      obj = obj@SingletonCoordinateFrame('valkyrieFrames.ValkyrieForceTorque',length(coordinates),'f',coordinates);              
     end
   end
 end

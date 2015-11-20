@@ -1,11 +1,11 @@
-classdef AtlasCoordinates < SingletonCoordinateFrame
-  % atlas q
+classdef ValkyrieCoordinates < SingletonCoordinateFrame
+  % valkyrie q
   methods
-    function obj=AtlasCoordinates(r)
+    function obj=ValkyrieCoordinates(r)
       typecheck(r,'TimeSteppingRigidBodyManipulator');
       nq = r.getNumPositions();
       coords = r.getStateFrame().getCoordinateNames();
-      obj = obj@SingletonCoordinateFrame('atlasFrames.AtlasCoordinates',nq,'x',coords(1:nq));
+      obj = obj@SingletonCoordinateFrame('valkyrieFrames.ValkyrieCoordinates',nq,'x',coords(1:nq));
     end
   end
 end

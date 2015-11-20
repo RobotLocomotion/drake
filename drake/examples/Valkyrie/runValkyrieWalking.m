@@ -1,4 +1,4 @@
-function runAtlasWalking(robot_options, walking_options)
+function runValkyrieWalking(robot_options, walking_options)
 % Run the new split QP controller, which consists of separate PlanEval
 % and InstantaneousQPController objects. The controller will also
 % automatically transition to standing when it reaches the end of its walking
@@ -22,7 +22,7 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints')
 warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits')
 
 % construct robot model
-r = Valkyrie(fullfile(getDrakePath,'examples','Valkyrie','urdf','atlas_minimal_contact.urdf'),robot_options);
+r = Valkyrie(fullfile(getDrakePath,'examples','Valkyrie','urdf','valkyrie_minimal_contact.urdf'),robot_options);
 r = r.removeCollisionGroupsExcept({'heel','toe'});
 r = compile(r);
 
@@ -65,7 +65,7 @@ end
 % Generate a dynamic walking plan
 walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
 
-[ytraj, com, rms_com] = atlasUtil.simulateWalking(r, walking_plan_data);
+[ytraj, com, rms_com] = valkyrieUtil.simulateWalking(r, walking_plan_data);
 
 v.playback(ytraj, struct('slider', true));
 

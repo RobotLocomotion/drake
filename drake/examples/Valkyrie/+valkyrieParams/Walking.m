@@ -1,8 +1,8 @@
-classdef Walking < atlasParams.Base
+classdef Walking < valkyrieParams.Base
   methods
     function obj = Walking(r)
-      typecheck(r, 'Atlas');
-      obj = obj@atlasParams.Base(r);
+      typecheck(r, 'Valkyrie');
+      obj = obj@valkyrieParams.Base(r);
       obj.contact_threshold = 0.001;
       obj.whole_body.w_qdd = zeros(r.getNumVelocities(), 1);
       if (r.getNumVelocities() ~= r.getNumPositions())

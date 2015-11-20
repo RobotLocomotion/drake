@@ -127,39 +127,39 @@ classdef Valkyrie < TimeSteppingRigidBodyManipulator & Biped
       % Construct state vector itself -- start by replacing the
       % atlasPosition and atlasVelocity frames with a single
       % larger state frame
-      if (strcmp(obj.manip.getStateFrame().getFrameByNum(1).name, 'atlasPosition'))
-        atlas_state_frame = valkyrieFrames.AtlasState(obj);
+      if (strcmp(obj.manip.getStateFrame().getFrameByNum(1).name, 'valkyriePosition'))
+        valkyrie_state_frame = valkyrieFrames.ValkyrieState(obj);
       else
-        atlas_state_frame = obj.manip.getStateFrame();
-        atlas_state_frame = replaceFrameNum(atlas_state_frame,1,valkyrieFrames.AtlasState(obj));
+        valkyrie_state_frame = obj.manip.getStateFrame();
+        valkyrie_state_frame = replaceFrameNum(valkyrie_state_frame,1,valkyrieFrames.ValkyrieState(obj));
       end
 
       % Sub in handstates for the hands
       % If we sub in the order that they are added
       % we should get this in the right order
       if (obj.hand_right > 0)
-        id = atlas_state_frame.getFrameNumByName('s-model_articulatedPosition+s-model_articulatedVelocity');
+        id = valkyrie_state_frame.getFrameNumByName('s-model_articulatedPosition+s-model_articulatedVelocity');
         if (length(id) > 1)
           id = id(1);
         end
-        atlas_state_frame = replaceFrameNum(atlas_state_frame,id,valkyrieFrames.HandState(obj,id,'right_valkyrieFrames.HandState'));
+        valkyrie_state_frame = replaceFrameNum(valkyrie_state_frame,id,valkyrieFrames.HandState(obj,id,'right_valkyrieFrames.HandState'));
       end
       if (obj.hand_left > 0)
-        id = atlas_state_frame.getFrameNumByName('s-model_articulatedPosition+s-model_articulatedVelocity');
+        id = valkyrie_state_frame.getFrameNumByName('s-model_articulatedPosition+s-model_articulatedVelocity');
         if (length(id) > 1)
           id = id(1);
         end
-        atlas_state_frame = replaceFrameNum(atlas_state_frame,id,valkyrieFrames.HandState(obj,id,'left_valkyrieFrames.HandState'));
+        valkyrie_state_frame = replaceFrameNum(valkyrie_state_frame,id,valkyrieFrames.HandState(obj,id,'left_valkyrieFrames.HandState'));
       end
 
       tsmanip_state_frame = obj.getStateFrame();
-      if tsmanip_state_frame.dim>atlas_state_frame.dim
-        tsmanip_state_frame.frame{1} = atlas_state_frame;
+      if tsmanip_state_frame.dim>valkyrie_state_frame.dim
+        tsmanip_state_frame.frame{1} = valkyrie_state_frame;
         state_frame = tsmanip_state_frame;
       else
-        state_frame = atlas_state_frame;
+        state_frame = valkyrie_state_frame;
       end
-      obj.manip = obj.manip.setStateFrame(atlas_state_frame);
+      obj.manip = obj.manip.setStateFrame(valkyrie_state_frame);
       obj = obj.setStateFrame(state_frame);
 
       % Same bit of complexity for input frame to get hand inputs
@@ -167,7 +167,7 @@ classdef Valkyrie < TimeSteppingRigidBodyManipulator & Biped
         input_frame = getInputFrame(obj);
         input_frame  = replaceFrameNum(input_frame,1,valkyrieFrames.AtlasInput(obj));
       else
-        input_frame = valkyrieFrames.AtlasInput(obj);
+        input_frame = valkyrieFrames.ValkyrieInput(obj);
       end
       if (obj.hand_right > 0)
         id = input_frame.getFrameNumByName('s-model_articulatedInput');
@@ -189,23 +189,23 @@ classdef Valkyrie < TimeSteppingRigidBodyManipulator & Biped
 
       % Construct output frame, which comes from state plus sensor
       % info
-      atlas_output_frame = atlas_state_frame;
+      valkyrie_output_frame = valkyrie_state_frame;
       if (~isempty(obj.manip.sensor))
         for i=1:length(obj.manip.sensor)
           % If it's not a full state feedback sensor (we have already
           % got the state for that above in the state frame
           if (~isa(obj.manip.sensor{i}, 'FullStateFeedbackSensor'))
-            if (isa(atlas_output_frame, 'MultiCoordinateFrame'))
-              atlas_output_frame = atlas_output_frame.appendFrame(obj.manip.sensor{i}.constructFrame(obj.manip));
+            if (isa(valkyrie_output_frame, 'MultiCoordinateFrame'))
+              valkyrie_output_frame = valkyrie_output_frame.appendFrame(obj.manip.sensor{i}.constructFrame(obj.manip));
             else
-              atlas_output_frame = MultiCoordinateFrame({atlas_output_frame, obj.manip.sensor{i}.constructFrame(obj.manip)});
+              valkyrie_output_frame = MultiCoordinateFrame({valkyrie_output_frame, obj.manip.sensor{i}.constructFrame(obj.manip)});
             end
           end
         end
       end
       % The output function of a TSRBM appends the TS sensors to the
       % output of the RBM. So get ready for that:
-      output_frame = atlas_output_frame;
+      output_frame = valkyrie_output_frame;
       if (~isempty(obj.sensor))
         for i=1:length(obj.sensor)
           if (~isa(obj.sensor{i}, 'FullStateFeedbackSensor'))
@@ -218,9 +218,9 @@ classdef Valkyrie < TimeSteppingRigidBodyManipulator & Biped
         end
       end
 
-      if ~isequal_modulo_transforms(atlas_output_frame,getOutputFrame(obj.manip))
-        obj.manip = obj.manip.setNumOutputs(atlas_output_frame.dim);
-        obj.manip = obj.manip.setOutputFrame(atlas_output_frame);
+      if ~isequal_modulo_transforms(valkyrie_output_frame,getOutputFrame(obj.manip))
+        obj.manip = obj.manip.setNumOutputs(valkyrie_output_frame.dim);
+        obj.manip = obj.manip.setOutputFrame(valkyrie_output_frame);
       end
 
       if ~isequal_modulo_transforms(output_frame,getOutputFrame(obj))

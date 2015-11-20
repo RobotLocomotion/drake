@@ -1,5 +1,5 @@
-classdef AtlasPlanEval < PlanEval
-% A PlanEval which includes some Atlas-specific tweaks. Specifically, it
+classdef ValkyriePlanEval < PlanEval
+% A PlanEval which includes some Valkyrie-specific tweaks. Specifically, it
 % calls its plans' getQPControllerInput method with an additional argument
 % (contact_force_detected)
 
@@ -8,7 +8,7 @@ classdef AtlasPlanEval < PlanEval
   end
 
   methods
-    function obj = AtlasPlanEval(r, varargin)
+    function obj = ValkyriePlanEval(r, varargin)
       obj = obj@PlanEval(varargin{:});
       obj.robot = r;
     end

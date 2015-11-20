@@ -4,7 +4,7 @@ classdef COMState < SingletonCoordinateFrame
       if nargin < 1
         dof = 3;
       end
-      obj = obj@SingletonCoordinateFrame('atlasFrames.COMState',2*dof,'x');
+      obj = obj@SingletonCoordinateFrame('valkyrieFrames.COMState',2*dof,'x');
     end
   end
 end

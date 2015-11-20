@@ -1,7 +1,7 @@
-classdef AtlasInput < SingletonCoordinateFrame
-  % atlas input coordinate frame
+classdef ValkyrieInput < SingletonCoordinateFrame
+  % valkyrie input coordinate frame
   methods
-    function obj=AtlasInput(r)
+    function obj=ValkyrieInput(r)
       typecheck(r,'TimeSteppingRigidBodyManipulator');
 
       manipInputFrame = r.getManipulator().getInputFrame();
@@ -11,7 +11,7 @@ classdef AtlasInput < SingletonCoordinateFrame
       input_names = manipInputFrame.getCoordinateNames();
       input_names = regexprep(input_names,'_motor',''); % remove motor suffix     
       
-      obj = obj@SingletonCoordinateFrame('atlasFrames.AtlasInput',length(input_names),'x',input_names);
+      obj = obj@SingletonCoordinateFrame('valkyrieFrames.ValkyrieInput',length(input_names),'x',input_names);
     end
   end
 end

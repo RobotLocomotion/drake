@@ -26,7 +26,7 @@ classdef QTrajEvalBlock < MIMODrakeSystem
         typecheck(options.use_error_integrator,'logical');
         if options.use_error_integrator
           sizecheck(controller_data.integral_gains,[getNumPositions(r) 1]);
-          typecheck(controller_data,{'AtlasManipControllerData','AtlasQPControllerData'});
+          typecheck(controller_data,{'ValkyrieManipControllerData','ValkyrieQPControllerData'});
         end
       else
         options.use_error_integrator = false;
@@ -40,12 +40,12 @@ classdef QTrajEvalBlock < MIMODrakeSystem
         options.use_actuator_coordinates = false;
       end
      
-      atlas_state = getStateFrame(r);
-      input_frame = atlas_state;
+      valkyrie_state = getStateFrame(r);
+      input_frame = valkyrie_state;
       if options.use_actuator_coordinates
-        output_frame = MultiCoordinateFrame({atlasFrames.AtlasInput(r),atlas_state});
+        output_frame = MultiCoordinateFrame({valkyrieFrames.ValkyrieInput(r),valkyrie_state});
       else
-        output_frame = MultiCoordinateFrame({atlasFrames.AtlasCoordinates(r),atlas_state});
+        output_frame = MultiCoordinateFrame({valkyrieFrames.ValkyrieCoordinates(r),valkyrie_state});
       end
       
       obj = obj@MIMODrakeSystem(0,0,input_frame,output_frame,true,true);
@@ -76,7 +76,7 @@ classdef QTrajEvalBlock < MIMODrakeSystem
     end
        
     function [qdes,x]=mimoOutput(obj,t,~,x)
-      % % for profiling the entire atlas controller system (see AtlasQPController.m)
+      % % for profiling the entire valkyrie controller system (see ValkyrieQPController.m)
       % global qtraj_eval_start_time
       % qtraj_eval_start_time = tic();
       

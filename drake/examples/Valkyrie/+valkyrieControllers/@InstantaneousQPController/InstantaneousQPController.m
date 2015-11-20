@@ -1,11 +1,11 @@
 classdef InstantaneousQPController 
 % A QP-based balancing and walking controller that exploits TV-LQR solutions
 % for (time-varing) linear COM/ZMP dynamics. Includes logic specific to
-% atlas/bipeds for raising the heel while walking. This differs from
-% AtlasQPController in that it contains no stateful information about the
+% valkyrie/bipeds for raising the heel while walking. This differs from
+% ValkyrieQPController in that it contains no stateful information about the
 % currently executed plan. Instead, it is designed to be fully general for a
 % variety of plan types (standing, walking, manipulating, etc.). The
-% AtlasPlanEval class now handles the state of the current plan.
+% ValkyriePlanEval class now handles the state of the current plan.
   properties(SetAccess=private, GetAccess=public);
     debug;
     debug_pub;
@@ -30,7 +30,7 @@ classdef InstantaneousQPController
         options = struct();
       end
       if nargin < 2 || isempty(param_sets)
-        param_sets = atlasParams.getDefaults(r);
+        param_sets = valkyrieParams.getDefaults(r);
       end
       options = applyDefaults(options,...
         struct('debug', false,...
@@ -46,9 +46,9 @@ classdef InstantaneousQPController
       end
       obj.robot = r;
       obj.param_sets = param_sets;
-      obj.robot_property_cache = atlasUtil.propertyCache(r);
-      import atlasControllers.*;
-      import atlasFrames.*;
+      obj.robot_property_cache = valkyrieUtil.propertyCache(r);
+      import valkyrieControllers.*;
+      import valkyrieFrames.*;
 
       if obj.debug
         obj.debug_pub = ControllerDebugPublisher('CONTROLLER_DEBUG');
@@ -75,7 +75,7 @@ classdef InstantaneousQPController
       state_coordinates = obj.robot.getStateFrame().getCoordinateNames();
       coordinate_names = struct(...
         'state', {state_coordinates(1:obj.robot.getNumPositions())},...
-        'input', struct('robot', {atlasUtil.getHardwareJointNames(obj.robot)}, ...
+        'input', struct('robot', {valkyrieUtil.getHardwareJointNames(obj.robot)}, ...
                       'drake', {obj.robot.getInputFrame().getCoordinateNames()}));
 
 
@@ -140,10 +140,10 @@ classdef InstantaneousQPController
       else
         ctrl_data.infocount = 0;
       end
-      if ctrl_data.infocount > 10 && exist('AtlasBehaviorModePublisher','class')
-        % kill atlas
-        disp('freezing atlas!');
-        behavior_pub = AtlasBehaviorModePublisher('ATLAS_BEHAVIOR_COMMAND');
+      if ctrl_data.infocount > 10 && exist('ValkyrieBehaviorModePublisher','class')
+        % kill valkyrie
+        disp('freezing valkyrie!');
+        behavior_pub = ValkyrieBehaviorModePublisher('ATLAS_BEHAVIOR_COMMAND');
         d.utime = 0;
         d.command = 'freeze';
         behavior_pub.publish(d);

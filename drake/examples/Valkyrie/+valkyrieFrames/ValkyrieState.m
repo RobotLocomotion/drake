@@ -1,7 +1,7 @@
-classdef AtlasState < SingletonCoordinateFrame
+classdef ValkyrieState < SingletonCoordinateFrame
   
   methods
-    function obj=AtlasState(r)
+    function obj=ValkyrieState(r)
       typecheck(r,'TimeSteppingRigidBodyManipulator');
       manipStateFrame = r.getManipulator().getStateFrame();
       % sanity check for stateless hands
@@ -9,7 +9,7 @@ classdef AtlasState < SingletonCoordinateFrame
         manipStateFrame = manipStateFrame.getFrameByNum(1);
       end
       coordinates = manipStateFrame.getCoordinateNames();
-      obj = obj@SingletonCoordinateFrame('atlasFrames.AtlasState',length(coordinates),'x',coordinates);
+      obj = obj@SingletonCoordinateFrame('valkyrieFrames.ValkyrieState',length(coordinates),'x',coordinates);
       positionFrame = r.getManipulator().getPositionFrame();
       if getNumFrames(positionFrame)==1 && isempty(findTransform(obj,positionFrame))
         obj.addProjectionTransformByCoordinateNames(positionFrame);

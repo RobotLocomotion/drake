@@ -1,8 +1,8 @@
-classdef AtlasJointConfig < SingletonCoordinateFrame
-  % atlas joint position frame (coordinate ordering from atlas state frame, 
+classdef ValkyrieJointConfig < SingletonCoordinateFrame
+  % valkyrie joint position frame (coordinate ordering from valkyrie state frame, 
   % not input frame)
   methods
-    function obj=AtlasJointConfig(r,floating)
+    function obj=ValkyrieJointConfig(r,floating)
       typecheck(r,'TimeSteppingRigidBodyManipulator');
       if nargin>1
         typecheck(floating,'logical');
