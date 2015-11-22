@@ -1,6 +1,6 @@
 %> @mainpage
 %>
-%> 
+%>
 %> <span style="font-weight:bold; font-size:larger">First time?  Check out the <a href="inherits.html">Class Hierarchy</a></span>.
 %> <br />
 %> <p>
@@ -11,8 +11,6 @@
 %> <li><a href="class_drake_system.html">DrakeSystem</a></li>
 %> <li><a href="class_rigid_body_manipulator.html">RigidBodyManipulator</a></li>
 %> <li><a href="https://github.com/RobotLocomotion/drake/wiki/Documentation">Drake documentation main page</a></li>
-%> <li><a href="https://github.com/RobotLocomotion/drake/raw/master/doc/drake.pdf">Conceptual overview (pdf)</a></li>
-%> <li><a href="http://rusty-drake.csail.mit.edu/docs/drakedocs/urdf/drakeURDF.html">URDF reference</a></li>
 %> </ul>
 %> </p>
 %>
@@ -34,7 +32,7 @@
 %> 	<li><b>\@option</b>: describe an option parameter.</li>
 %> 	<li><b>\@default</b>: list the default for an option.</li>
 %> </ul>
-%> 
+%>
 %> <p>
 %> Doxygen also supports most HTML tags including <b>\<pre\></b>, <b>\<b\></b>, <b>\<i\></b>, and more.  Take a look at <a href="http://www.stack.nl/~dimitri/doxygen/commands.html">the full command list</a>.
 %>
