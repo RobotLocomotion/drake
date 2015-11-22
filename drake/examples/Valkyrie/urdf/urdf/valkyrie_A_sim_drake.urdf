@@ -80,7 +80,7 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
   </link>
-  <joint name="torsoYaw" type="revolute">
+  <joint name="back_bkz" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     <axis xyz="0 0 1"/>
     <parent link="pelvis"/>
@@ -89,11 +89,11 @@
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
-  <gazebo reference="torsoYaw">
+  <gazebo reference="back_bkz">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
-  <joint name="torsoPitch" type="revolute">
+  <joint name="back_bky" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.04191 0.0 0.0"/>
     <axis xyz="0 1 0"/>
     <parent link="ltorso"/>
@@ -102,11 +102,11 @@
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
-  <gazebo reference="torsoPitch">
+  <gazebo reference="back_bky">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
-  <joint name="torsoRoll" type="revolute">
+  <joint name="back_bkx" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0203"/>
     <axis xyz="1 0 0"/>
     <parent link="mtorso"/>
@@ -115,7 +115,7 @@
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
-  <gazebo reference="torsoRoll">
+  <gazebo reference="back_bkx">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
@@ -291,7 +291,7 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
   </link>
-  <joint name="rightShoulderPitch" type="revolute">
+  <joint name="r_arm_shz" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="-0.0316 0.0 0.2984"/>
     <axis xyz="0 1 0"/>
     <parent link="utorso"/>
@@ -300,11 +300,11 @@
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
-  <gazebo reference="rightShoulderPitch">
+  <gazebo reference="r_arm_shz">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
-  <joint name="rightShoulderRoll" type="revolute">
+  <joint name="r_arm_shx" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.2499 0.0"/>
     <axis xyz="1 0 0"/>
     <parent link="r_clav"/>
@@ -313,11 +313,11 @@
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
-  <gazebo reference="rightShoulderRoll">
+  <gazebo reference="r_arm_shx">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
-  <joint name="rightShoulderYaw" type="revolute">
+  <joint name="r_arm_ely" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     <axis xyz="0 1 0"/>
     <parent link="r_scap"/>
@@ -326,11 +326,11 @@
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
-  <gazebo reference="rightShoulderYaw">
+  <gazebo reference="r_arm_ely">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
-  <joint name="rightElbowPitch" type="revolute">
+  <joint name="r_arm_elx" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0254 -0.33 0.0"/>
     <axis xyz="0 0 1"/>
     <parent link="r_uarm"/>
@@ -339,7 +339,7 @@
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
-  <gazebo reference="rightElbowPitch">
+  <gazebo reference="r_arm_elx">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
@@ -400,7 +400,7 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
   </link>
-  <joint name="rightForearmYaw" type="revolute">
+  <joint name="r_arm_uwyYaw" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="-0.0254 0 0"/>
     <axis xyz="0 1 0"/>
     <parent link="r_larm"/>
@@ -409,11 +409,11 @@
     <controller_gains Kd="0" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
-  <gazebo reference="rightForearmYaw">
+  <gazebo reference="r_arm_uwyYaw">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
-  <joint name="rightWristRoll" type="revolute">
+  <joint name="r_arm_mwx" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.2871 0.0"/>
     <axis xyz="1 0 0"/>
     <parent link="r_farm"/>
@@ -422,11 +422,11 @@
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
-  <gazebo reference="rightWristRoll">
+  <gazebo reference="r_arm_mwx">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
-  <joint name="rightWristPitch" type="revolute">
+  <joint name="r_arm_lwy" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     <axis xyz="0 0 1"/>
     <parent link="r_uhand"/>
@@ -435,7 +435,7 @@
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
-  <gazebo reference="rightWristPitch">
+  <gazebo reference="r_arm_lwy">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
@@ -879,7 +879,7 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
   </link>
-  <joint name="leftShoulderPitch" type="revolute">
+  <joint name="l_arm_shz" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="-0.0316 0.0 0.2984"/>
     <axis xyz="0 1 0"/>
     <parent link="utorso"/>
@@ -888,11 +888,11 @@
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
-  <gazebo reference="leftShoulderPitch">
+  <gazebo reference="l_arm_shz">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
-  <joint name="leftShoulderRoll" type="revolute">
+  <joint name="l_arm_shx" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.2499 0.0"/>
     <axis xyz="1 0 0"/>
     <parent link="l_clav"/>
@@ -901,11 +901,11 @@
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
-  <gazebo reference="leftShoulderRoll">
+  <gazebo reference="l_arm_shx">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
-  <joint name="leftShoulderYaw" type="revolute">
+  <joint name="l_arm_ely" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     <axis xyz="0 1 0"/>
     <parent link="l_scap"/>
@@ -914,11 +914,11 @@
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
-  <gazebo reference="leftShoulderYaw">
+  <gazebo reference="l_arm_ely">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
-  <joint name="leftElbowPitch" type="revolute">
+  <joint name="l_arm_elx" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0254 0.33 0.0"/>
     <axis xyz="0 0 1"/>
     <parent link="l_uarm"/>
@@ -927,7 +927,7 @@
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
-  <gazebo reference="leftElbowPitch">
+  <gazebo reference="l_arm_elx">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
@@ -988,7 +988,7 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
   </link>
-  <joint name="leftForearmYaw" type="revolute">
+  <joint name="l_arm_uwyYaw" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="-0.0254 0 0"/>
     <axis xyz="0 1 0"/>
     <parent link="l_larm"/>
@@ -997,11 +997,11 @@
     <controller_gains Kd="0" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
-  <gazebo reference="leftForearmYaw">
+  <gazebo reference="l_arm_uwyYaw">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
-  <joint name="leftWristRoll" type="revolute">
+  <joint name="l_arm_mwx" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.2871 0.0"/>
     <axis xyz="1 0 0"/>
     <parent link="l_farm"/>
@@ -1010,11 +1010,11 @@
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
-  <gazebo reference="leftWristRoll">
+  <gazebo reference="l_arm_mwx">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
-  <joint name="leftWristPitch" type="revolute">
+  <joint name="l_arm_lwy" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     <axis xyz="0 0 1"/>
     <parent link="l_uhand"/>
@@ -1023,7 +1023,7 @@
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
-  <gazebo reference="leftWristPitch">
+  <gazebo reference="l_arm_lwy">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
@@ -1601,7 +1601,7 @@
       </geometry>
     </visual>
   </link>
-  <joint name="rightHipYaw" type="revolute">
+  <joint name="r_leg_hpz" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.1016 -0.1853"/>
     <axis xyz="0 0 1"/>
     <parent link="pelvis"/>
@@ -1610,11 +1610,11 @@
     <controller_gains Kd="500" Kp="15000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
-  <gazebo reference="rightHipYaw">
+  <gazebo reference="r_leg_hpz">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
-  <joint name="rightHipRoll" type="revolute">
+  <joint name="r_leg_hpx" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     <axis xyz="1 0 0"/>
     <parent link="r_uglut"/>
@@ -1623,11 +1623,11 @@
     <controller_gains Kd="500" Kp="15000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
-  <gazebo reference="rightHipRoll">
+  <gazebo reference="r_leg_hpx">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
-  <joint name="rightHipPitch" type="revolute">
+  <joint name="r_leg_hpy" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 -0.0609"/>
     <axis xyz="0 1 0"/>
     <parent link="r_lglut"/>
@@ -1636,11 +1636,11 @@
     <controller_gains Kd="500" Kp="15000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
-  <gazebo reference="rightHipPitch">
+  <gazebo reference="r_leg_hpy">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
-  <joint name="rightKneePitch" type="revolute">
+  <joint name="r_leg_kny" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.000112225 -0.0361046 -0.430959"/>
     <axis xyz="0 1 0"/>
     <parent link="r_uleg"/>
@@ -1649,11 +1649,11 @@
     <controller_gains Kd="500" Kp="15000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
-  <gazebo reference="rightKneePitch">
+  <gazebo reference="r_leg_kny">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
-  <joint name="rightAnklePitch" type="revolute">
+  <joint name="r_leg_aky" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="-0.0102381 0.0 -0.40627"/>
     <axis xyz="0 1 0"/>
     <parent link="r_lleg"/>
@@ -1662,11 +1662,11 @@
     <controller_gains Kd="400" Kp="15000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
-  <gazebo reference="rightAnklePitch">
+  <gazebo reference="r_leg_aky">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
-  <joint name="rightAnkleRoll" type="revolute">
+  <joint name="r_leg_akx" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     <axis xyz="1 0 0"/>
     <parent link="r_talus"/>
@@ -1675,7 +1675,7 @@
     <controller_gains Kd="400" Kp="15000"/>
     <dynamics damping="0.3" friction="0.0"/>
   </joint>
-  <gazebo reference="rightAnkleRoll">
+  <gazebo reference="r_leg_akx">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
@@ -1889,7 +1889,7 @@
       </geometry>
     </visual>
   </link>
-  <joint name="leftHipYaw" type="revolute">
+  <joint name="l_leg_hpz" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.1016 -0.1853"/>
     <axis xyz="0 0 1"/>
     <parent link="pelvis"/>
@@ -1898,11 +1898,11 @@
     <controller_gains Kd="500" Kp="15000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
-  <gazebo reference="leftHipYaw">
+  <gazebo reference="l_leg_hpz">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
-  <joint name="leftHipRoll" type="revolute">
+  <joint name="l_leg_hpx" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     <axis xyz="1 0 0"/>
     <parent link="l_uglut"/>
@@ -1911,11 +1911,11 @@
     <controller_gains Kd="500" Kp="15000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
-  <gazebo reference="leftHipRoll">
+  <gazebo reference="l_leg_hpx">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
-  <joint name="leftHipPitch" type="revolute">
+  <joint name="l_leg_hpy" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 -0.0609"/>
     <axis xyz="0 1 0"/>
     <parent link="l_lglut"/>
@@ -1924,11 +1924,11 @@
     <controller_gains Kd="500" Kp="15000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
-  <gazebo reference="leftHipPitch">
+  <gazebo reference="l_leg_hpy">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
-  <joint name="leftKneePitch" type="revolute">
+  <joint name="l_leg_kny" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.000112225 0.0361046 -0.430959"/>
     <axis xyz="0 1 0"/>
     <parent link="l_uleg"/>
@@ -1937,11 +1937,11 @@
     <controller_gains Kd="500" Kp="15000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
-  <gazebo reference="leftKneePitch">
+  <gazebo reference="l_leg_kny">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
-  <joint name="leftAnklePitch" type="revolute">
+  <joint name="l_leg_aky" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="-0.0102381 0.0 -0.40627"/>
     <axis xyz="0 1 0"/>
     <parent link="l_lleg"/>
@@ -1950,11 +1950,11 @@
     <controller_gains Kd="400" Kp="15000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
-  <gazebo reference="leftAnklePitch">
+  <gazebo reference="l_leg_aky">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
-  <joint name="leftAnkleRoll" type="revolute">
+  <joint name="l_leg_akx" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     <axis xyz="1 0 0"/>
     <parent link="l_talus"/>
@@ -1963,7 +1963,7 @@
     <controller_gains Kd="400" Kp="15000"/>
     <dynamics damping="0.3" friction="0.0"/>
   </joint>
-  <gazebo reference="leftAnkleRoll">
+  <gazebo reference="l_leg_akx">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
@@ -2278,19 +2278,19 @@
   <gazebo reference="leftHazardCamera_Offset">
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
-  <transmission name="torsoYawTransmission">
+  <transmission name="back_bkzTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="torsoYaw">
+    <joint name="back_bkz">
       </joint>
-    <actuator name="torsoYaw">
+    <actuator name="back_bkz">
       <node name="/trunk/j1"/>
       <mechanicalReduction>1</mechanicalReduction>
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="torsoPitchTransmission">
+  <transmission name="back_bkyTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="torsoPitch">
+    <joint name="back_bky">
       </joint>
     <actuator name="waistLeftActuator">
       <node name="/trunk/waist/left_actuator"/>
@@ -2298,9 +2298,9 @@
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="torsoRollTransmission">
+  <transmission name="back_bkxTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="torsoRoll">
+    <joint name="back_bkx">
       </joint>
     <actuator name="waistRightActuator">
       <node name="/trunk/waist/right_actuator"/>
@@ -2308,49 +2308,49 @@
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="leftHipYawTransmission">
+  <transmission name="l_leg_hpzTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="leftHipYaw">
+    <joint name="l_leg_hpz">
       </joint>
-    <actuator name="leftHipYaw">
+    <actuator name="l_leg_hpz">
       <node name="/left_leg/j1"/>
       <mechanicalReduction>1</mechanicalReduction>
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="leftHipRollTransmission">
+  <transmission name="l_leg_hpxTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="leftHipRoll">
+    <joint name="l_leg_hpx">
       </joint>
-    <actuator name="leftHipRoll">
+    <actuator name="l_leg_hpx">
       <node name="/left_leg/j2"/>
       <mechanicalReduction>1</mechanicalReduction>
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="leftHipPitchTransmission">
+  <transmission name="l_leg_hpyTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="leftHipPitch">
+    <joint name="l_leg_hpy">
       </joint>
-    <actuator name="leftHipPitch">
+    <actuator name="l_leg_hpy">
       <node name="/left_leg/j3"/>
       <mechanicalReduction>1</mechanicalReduction>
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="leftKneePitchTransmission">
+  <transmission name="l_leg_knyTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="leftKneePitch">
+    <joint name="l_leg_kny">
       </joint>
-    <actuator name="leftKneePitch">
+    <actuator name="l_leg_kny">
       <node name="/left_leg/j4"/>
       <mechanicalReduction>1</mechanicalReduction>
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="leftAnklePitchTransmission">
+  <transmission name="l_leg_akyTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="leftAnklePitch">
+    <joint name="l_leg_aky">
       </joint>
     <actuator name="leftAnkleInsideActuator">
       <node name="/left_leg/ankle/left_actuator"/>
@@ -2358,9 +2358,9 @@
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="leftAnkleRollTransmission">
+  <transmission name="l_leg_akxTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="leftAnkleRoll">
+    <joint name="l_leg_akx">
       </joint>
     <actuator name="leftAnkleOutsideActuator">
       <node name="/left_leg/ankle/right_actuator"/>
@@ -2368,49 +2368,49 @@
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="rightHipYawTransmission">
+  <transmission name="r_leg_hpzTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="rightHipYaw">
+    <joint name="r_leg_hpz">
       </joint>
-    <actuator name="rightHipYaw">
+    <actuator name="r_leg_hpz">
       <node name="/right_leg/j1"/>
       <mechanicalReduction>1</mechanicalReduction>
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="rightHipRollTransmission">
+  <transmission name="r_leg_hpxTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="rightHipRoll">
+    <joint name="r_leg_hpx">
       </joint>
-    <actuator name="rightHipRoll">
+    <actuator name="r_leg_hpx">
       <node name="/right_leg/j2"/>
       <mechanicalReduction>1</mechanicalReduction>
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="rightHipPitchTransmission">
+  <transmission name="r_leg_hpyTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="rightHipPitch">
+    <joint name="r_leg_hpy">
       </joint>
-    <actuator name="rightHipPitch">
+    <actuator name="r_leg_hpy">
       <node name="/right_leg/j3"/>
       <mechanicalReduction>1</mechanicalReduction>
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="rightKneePitchTransmission">
+  <transmission name="r_leg_knyTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="rightKneePitch">
+    <joint name="r_leg_kny">
       </joint>
-    <actuator name="rightKneePitch">
+    <actuator name="r_leg_kny">
       <node name="/right_leg/j4"/>
       <mechanicalReduction>1</mechanicalReduction>
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="rightAnklePitchTransmission">
+  <transmission name="r_leg_akyTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="rightAnklePitch">
+    <joint name="r_leg_aky">
       </joint>
     <actuator name="rightAnkleInsideActuator">
       <node name="/right_leg/ankle/left_actuator"/>
@@ -2418,9 +2418,9 @@
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="rightAnkleRollTransmission">
+  <transmission name="r_leg_akxTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="rightAnkleRoll">
+    <joint name="r_leg_akx">
       </joint>
     <actuator name="rightAnkleOutsideActuator">
       <node name="/right_leg/ankle/right_actuator"/>
@@ -2428,59 +2428,59 @@
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="leftShoulderPitchTransmission">
+  <transmission name="l_arm_shzTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="leftShoulderPitch">
+    <joint name="l_arm_shz">
       </joint>
-    <actuator name="leftShoulderPitch">
+    <actuator name="l_arm_shz">
       <node name="/left_arm/j1"/>
       <mechanicalReduction>1</mechanicalReduction>
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="leftShoulderRollTransmission">
+  <transmission name="l_arm_shxTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="leftShoulderRoll">
+    <joint name="l_arm_shx">
       </joint>
-    <actuator name="leftShoulderRoll">
+    <actuator name="l_arm_shx">
       <node name="/left_arm/j2"/>
       <mechanicalReduction>1</mechanicalReduction>
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="leftShoulderYawTransmission">
+  <transmission name="l_arm_elyTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="leftShoulderYaw">
+    <joint name="l_arm_ely">
       </joint>
-    <actuator name="leftShoulderYaw">
+    <actuator name="l_arm_ely">
       <node name="/left_arm/j3"/>
       <mechanicalReduction>1</mechanicalReduction>
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="leftElbowPitchTransmission">
+  <transmission name="l_arm_elxTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="leftElbowPitch">
+    <joint name="l_arm_elx">
       </joint>
-    <actuator name="leftElbowPitch">
+    <actuator name="l_arm_elx">
       <node name="/left_arm/j4"/>
       <mechanicalReduction>1</mechanicalReduction>
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="leftForearmYawTransmission">
+  <transmission name="l_arm_uwyYawTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="leftForearmYaw">
+    <joint name="l_arm_uwyYaw">
       </joint>
-    <actuator name="leftForearmYaw">
+    <actuator name="l_arm_uwyYaw">
       <node name="/left_arm/j5"/>
       <mechanicalReduction>1</mechanicalReduction>
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="leftWristRollTransmission">
+  <transmission name="l_arm_mwxTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="leftWristRoll">
+    <joint name="l_arm_mwx">
       </joint>
     <actuator name="leftWristTopActuator">
       <node name="/left_arm/wrist/top_actautor"/>
@@ -2488,9 +2488,9 @@
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="leftWristPitchTransmission">
+  <transmission name="l_arm_lwyTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="leftWristPitch">
+    <joint name="l_arm_lwy">
       </joint>
     <actuator name="leftWristBottomActuator">
       <node name="/left_arm/wrist/bottom_actuator"/>
@@ -2498,59 +2498,59 @@
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="rightShoulderPitchTransmission">
+  <transmission name="r_arm_shzTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="rightShoulderPitch">
+    <joint name="r_arm_shz">
       </joint>
-    <actuator name="rightShoulderPitch">
+    <actuator name="r_arm_shz">
       <node name="/right_arm/j1"/>
       <mechanicalReduction>1</mechanicalReduction>
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="rightShoulderRollTransmission">
+  <transmission name="r_arm_shxTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="rightShoulderRoll">
+    <joint name="r_arm_shx">
       </joint>
-    <actuator name="rightShoulderRoll">
+    <actuator name="r_arm_shx">
       <node name="/right_arm/j2"/>
       <mechanicalReduction>1</mechanicalReduction>
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="rightShoulderYawTransmission">
+  <transmission name="r_arm_elyTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="rightShoulderYaw">
+    <joint name="r_arm_ely">
       </joint>
-    <actuator name="rightShoulderYaw">
+    <actuator name="r_arm_ely">
       <node name="/right_arm/j3"/>
       <mechanicalReduction>1</mechanicalReduction>
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="rightElbowPitchTransmission">
+  <transmission name="r_arm_elxTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="rightElbowPitch">
+    <joint name="r_arm_elx">
       </joint>
-    <actuator name="rightElbowPitch">
+    <actuator name="r_arm_elx">
       <node name="/right_arm/j4"/>
       <mechanicalReduction>1</mechanicalReduction>
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="rightForearmYawTransmission">
+  <transmission name="r_arm_uwyYawTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="rightForearmYaw">
+    <joint name="r_arm_uwyYaw">
       </joint>
-    <actuator name="rightForearmYaw">
+    <actuator name="r_arm_uwyYaw">
       <node name="/right_arm/j5"/>
       <mechanicalReduction>1</mechanicalReduction>
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="rightWristRollTransmission">
+  <transmission name="r_arm_mwxTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="rightWristRoll">
+    <joint name="r_arm_mwx">
       </joint>
     <actuator name="rightWristTopActuator">
       <node name="/right_arm/wrist/top_actautor"/>
@@ -2558,9 +2558,9 @@
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="rightWristPitchTransmission">
+  <transmission name="r_arm_lwyTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="rightWristPitch">
+    <joint name="r_arm_lwy">
       </joint>
     <actuator name="rightWristBottomActuator">
       <node name="/right_arm/wrist/bottom_actuator"/>
