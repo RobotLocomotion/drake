@@ -57,7 +57,6 @@ classdef QPLocomotionPlanSettings
       S = load(obj.robot.fixed_point_file);
 
       %mfallon_fix_me rpc = atlasUtil.propertyCache(obj.robot);
-      keyboard
       if strcmp(robot.name,'atlas')
         rpc = atlasUtil.propertyCache(obj.robot);
       else
