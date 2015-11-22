@@ -34,15 +34,19 @@ classdef QPLocomotionPlanSettings
     % controller can use if it senses force on that body
     early_contact_allowed_fraction = 0.75; 
 
-    pelvis_name = 'pelvis';
-    r_foot_name = 'r_foot';
-    l_foot_name = 'l_foot';
+    %pelvis_name = 'pelvis';
+    %r_foot_name = 'r_foot';
+    %l_foot_name = 'l_foot';
+    r_foot_name = 'r_foot+rightLegSixAxis_Frame+rightCOP_Frame';
+    l_foot_name = 'l_foot+leftLegSixAxis_Frame+leftCOP_Frame';
+    pelvis_name = 'pelvis+leftPelvisIMU_Frame+rightPelvisIMU_Frame';
     r_knee_name = 'r_leg_kny';
     l_knee_name = 'l_leg_kny';
     l_akx_name = 'l_leg_akx';
     r_akx_name = 'r_leg_akx';
     r_aky_name = 'r_leg_aky';
     l_aky_name = 'l_leg_aky';
+
 
     duration = inf;
     start_time = 0;

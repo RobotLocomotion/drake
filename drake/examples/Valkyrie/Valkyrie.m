@@ -304,11 +304,11 @@ classdef Valkyrie < TimeSteppingRigidBodyManipulator & Biped
                                     'drake_instep_shift', 0.0,... % Distance to shift ZMP trajectory inward toward the instep from the center of the foot (m)
                                     'mu', 1.0,... % friction coefficient
                                     'constrain_full_foot_pose', true,... % whether to constrain the swing foot roll and pitch
-                                    'pelvis_height_above_foot_sole', 0.83,... % default pelvis height when walking
+                                    'pelvis_height_above_foot_sole', 0.98,... % default pelvis height when walking
                                     'support_contact_groups', {{'heel', 'toe'}},... % which contact groups are available for support when walking
                                     'prevent_swing_undershoot', false,... % prevent the first phase of the swing from going backwards while moving to the first knot point
                                     'prevent_swing_overshoot', false,... % prevent the final phase of the swing from moving forward of the last knot point
-                                    'nominal_LIP_COM_height', 0.80); % nominal height used to construct D_ls for our linear inverted pendulum model
+                                    'nominal_LIP_COM_height', 1.01); % nominal height used to construct D_ls for our linear inverted pendulum model
   end
 
 end
