@@ -215,7 +215,7 @@
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
-  <link name="rightShoulderPitchLink">
+  <link name="r_clav">
     <inertial>
       <mass value="2.65"/>
       <origin rpy="0 0 0" xyz="-0.012000 -0.251 0.000000"/>
@@ -234,7 +234,7 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
   </link>
-  <link name="rightShoulderRollLink">
+  <link name="r_scap">
     <inertial>
       <mass value="3.97"/>
       <origin rpy="0 0 0" xyz="-0.008513 -0.02068 0.001088"/>
@@ -253,7 +253,7 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
   </link>
-  <link name="rightShoulderYawLink">
+  <link name="r_uarm">
     <inertial>
       <mass value="3.085"/>
       <origin rpy="0 0 0" xyz="-0.004304 -0.209832 -0.007295"/>
@@ -272,7 +272,7 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
   </link>
-  <link name="rightElbowPitchLink">
+  <link name="r_larm">
     <inertial>
       <mass value="1.83"/>
       <origin rpy="0 0 0" xyz="-0.020344 -0.014722 -0.022300"/>
@@ -295,7 +295,7 @@
     <origin rpy="0.0 0.0 0.0" xyz="-0.0316 0.0 0.2984"/>
     <axis xyz="0 1 0"/>
     <parent link="utorso"/>
-    <child link="rightShoulderPitchLink"/>
+    <child link="r_clav"/>
     <limit effort="190" lower="-2.85" upper="2.0" velocity="5.89"/>
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
@@ -307,8 +307,8 @@
   <joint name="rightShoulderRoll" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.2499 0.0"/>
     <axis xyz="1 0 0"/>
-    <parent link="rightShoulderPitchLink"/>
-    <child link="rightShoulderRollLink"/>
+    <parent link="r_clav"/>
+    <child link="r_scap"/>
     <limit effort="190" lower="-1.266" upper="1.519" velocity="5.89"/>
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
@@ -320,8 +320,8 @@
   <joint name="rightShoulderYaw" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     <axis xyz="0 1 0"/>
-    <parent link="rightShoulderRollLink"/>
-    <child link="rightShoulderYawLink"/>
+    <parent link="r_scap"/>
+    <child link="r_uarm"/>
     <limit effort="65" lower="-3.1" upper="2.18" velocity="11.5"/>
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
@@ -333,8 +333,8 @@
   <joint name="rightElbowPitch" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0254 -0.33 0.0"/>
     <axis xyz="0 0 1"/>
-    <parent link="rightShoulderYawLink"/>
-    <child link="rightElbowPitchLink"/>
+    <parent link="r_uarm"/>
+    <child link="r_larm"/>
     <limit effort="65" lower="-0.12" upper="2.174" velocity="11.5"/>
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
@@ -343,7 +343,7 @@
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
-  <link name="rightForearmLink">
+  <link name="r_farm">
     <inertial>
       <mass value="2.476"/>
       <origin rpy="0 0 0" xyz="0.015000 -0.13 0.019564"/>
@@ -362,7 +362,7 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
   </link>
-  <link name="rightWristRollLink">
+  <link name="r_uhand">
     <inertial>
       <mass value="0.14"/>
       <origin rpy="0 0 0" xyz="0 -0.0 0"/>
@@ -381,7 +381,7 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
   </link>
-  <link name="rightPalm">
+  <link name="r_hand">
     <inertial>
       <mass value="0.712"/>
       <origin rpy="0 0 0" xyz="0.002954 -0.052034 -0.000236"/>
@@ -403,8 +403,8 @@
   <joint name="rightForearmYaw" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="-0.0254 0 0"/>
     <axis xyz="0 1 0"/>
-    <parent link="rightElbowPitchLink"/>
-    <child link="rightForearmLink"/>
+    <parent link="r_larm"/>
+    <child link="r_farm"/>
     <limit effort="26" lower="-2.019" upper="3.14" velocity="5"/>
     <controller_gains Kd="0" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
@@ -416,8 +416,8 @@
   <joint name="rightWristRoll" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.2871 0.0"/>
     <axis xyz="1 0 0"/>
-    <parent link="rightForearmLink"/>
-    <child link="rightWristRollLink"/>
+    <parent link="r_farm"/>
+    <child link="r_uhand"/>
     <limit effort="14" lower="-0.625" upper="0.62" velocity="1"/>
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
@@ -429,8 +429,8 @@
   <joint name="rightWristPitch" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     <axis xyz="0 0 1"/>
-    <parent link="rightWristRollLink"/>
-    <child link="rightPalm"/>
+    <parent link="r_uhand"/>
+    <child link="r_hand"/>
     <limit effort="14" lower="-0.49" upper="0.36" velocity="1"/>
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
@@ -518,7 +518,7 @@
   <joint name="rightThumbRoll" type="fixed">
     <origin rpy="0.3491 0.0 0.0" xyz="0.0049 -0.0351 0.0228"/>
     <axis xyz="0 0 1"/>
-    <parent link="rightPalm"/>
+    <parent link="r_hand"/>
     <child link="rightThumbRollLink"/>
   </joint>
   <gazebo reference="rightThumbRoll">
@@ -611,7 +611,7 @@
   <joint name="rightIndexFingerPitch1" type="fixed">
     <origin rpy="-0.1745 0.0 0.0" xyz="0.0022 -0.0976 0.0235"/>
     <axis xyz="0 0 1"/>
-    <parent link="rightPalm"/>
+    <parent link="r_hand"/>
     <child link="rightIndexFingerPitch1Link"/>
   </joint>
   <gazebo reference="rightIndexFingerPitch1">
@@ -695,7 +695,7 @@
   <joint name="rightMiddleFingerPitch1" type="fixed">
     <origin rpy="0.1222 0.0 0.0" xyz="0.0022 -0.097 -0.0119"/>
     <axis xyz="0 0 1"/>
-    <parent link="rightPalm"/>
+    <parent link="r_hand"/>
     <child link="rightMiddleFingerPitch1Link"/>
   </joint>
   <gazebo reference="rightMiddleFingerPitch1">
@@ -779,7 +779,7 @@
   <joint name="rightPinkyPitch1" type="fixed">
     <origin rpy="0.1222 0.0 0.0" xyz="0.0022 -0.0838 -0.041"/>
     <axis xyz="0 0 1"/>
-    <parent link="rightPalm"/>
+    <parent link="r_hand"/>
     <child link="rightPinkyPitch1Link"/>
   </joint>
   <gazebo reference="rightPinkyPitch1">
@@ -803,7 +803,7 @@
   <gazebo reference="rightPinkyPitch3">
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
-  <link name="leftShoulderPitchLink">
+  <link name="l_clav">
     <inertial>
       <mass value="2.65"/>
       <origin rpy="0 0 0" xyz="-0.012000 0.251 0.000000"/>
@@ -822,7 +822,7 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
   </link>
-  <link name="leftShoulderRollLink">
+  <link name="l_scap">
     <inertial>
       <mass value="3.97"/>
       <origin rpy="0 0 0" xyz="-0.008513 0.02068 0.001088"/>
@@ -841,7 +841,7 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
   </link>
-  <link name="leftShoulderYawLink">
+  <link name="l_uarm">
     <inertial>
       <mass value="3.085"/>
       <origin rpy="0 0 0" xyz="-0.004304 0.209832 -0.007295"/>
@@ -860,7 +860,7 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
   </link>
-  <link name="leftElbowPitchLink">
+  <link name="l_larm">
     <inertial>
       <mass value="1.83"/>
       <origin rpy="0 0 0" xyz="-0.020344 0.014722 -0.022300"/>
@@ -883,7 +883,7 @@
     <origin rpy="0.0 0.0 0.0" xyz="-0.0316 0.0 0.2984"/>
     <axis xyz="0 1 0"/>
     <parent link="utorso"/>
-    <child link="leftShoulderPitchLink"/>
+    <child link="l_clav"/>
     <limit effort="190" lower="-2.85" upper="2.0" velocity="5.89"/>
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
@@ -895,8 +895,8 @@
   <joint name="leftShoulderRoll" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.2499 0.0"/>
     <axis xyz="1 0 0"/>
-    <parent link="leftShoulderPitchLink"/>
-    <child link="leftShoulderRollLink"/>
+    <parent link="l_clav"/>
+    <child link="l_scap"/>
     <limit effort="190" lower="-1.519" upper="1.266" velocity="5.89"/>
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
@@ -908,8 +908,8 @@
   <joint name="leftShoulderYaw" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     <axis xyz="0 1 0"/>
-    <parent link="leftShoulderRollLink"/>
-    <child link="leftShoulderYawLink"/>
+    <parent link="l_scap"/>
+    <child link="l_uarm"/>
     <limit effort="65" lower="-3.1" upper="2.18" velocity="11.5"/>
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
@@ -921,8 +921,8 @@
   <joint name="leftElbowPitch" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0254 0.33 0.0"/>
     <axis xyz="0 0 1"/>
-    <parent link="leftShoulderYawLink"/>
-    <child link="leftElbowPitchLink"/>
+    <parent link="l_uarm"/>
+    <child link="l_larm"/>
     <limit effort="65" lower="-2.174" upper="0.12" velocity="11.5"/>
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
@@ -931,7 +931,7 @@
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
-  <link name="leftForearmLink">
+  <link name="l_farm">
     <inertial>
       <mass value="2.476"/>
       <origin rpy="0 0 0" xyz="0.015000 0.13 0.019564"/>
@@ -950,7 +950,7 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
   </link>
-  <link name="leftWristRollLink">
+  <link name="l_uhand">
     <inertial>
       <mass value="0.14"/>
       <origin rpy="0 0 0" xyz="0 0.0 0"/>
@@ -969,7 +969,7 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
   </link>
-  <link name="leftPalm">
+  <link name="l_hand">
     <inertial>
       <mass value="0.712"/>
       <origin rpy="0 0 0" xyz="0.002954 0.052034 -0.000236"/>
@@ -991,8 +991,8 @@
   <joint name="leftForearmYaw" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="-0.0254 0 0"/>
     <axis xyz="0 1 0"/>
-    <parent link="leftElbowPitchLink"/>
-    <child link="leftForearmLink"/>
+    <parent link="l_larm"/>
+    <child link="l_farm"/>
     <limit effort="26" lower="-2.019" upper="3.14" velocity="5"/>
     <controller_gains Kd="0" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
@@ -1004,8 +1004,8 @@
   <joint name="leftWristRoll" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.2871 0.0"/>
     <axis xyz="1 0 0"/>
-    <parent link="leftForearmLink"/>
-    <child link="leftWristRollLink"/>
+    <parent link="l_farm"/>
+    <child link="l_uhand"/>
     <limit effort="14" lower="-0.62" upper="0.625" velocity="1"/>
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
@@ -1017,8 +1017,8 @@
   <joint name="leftWristPitch" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     <axis xyz="0 0 1"/>
-    <parent link="leftWristRollLink"/>
-    <child link="leftPalm"/>
+    <parent link="l_uhand"/>
+    <child link="l_hand"/>
     <limit effort="14" lower="-0.36" upper="0.49" velocity="1"/>
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
@@ -1106,7 +1106,7 @@
   <joint name="leftThumbRoll" type="fixed">
     <origin rpy="-0.3491 0.0 0.0" xyz="0.0049 0.0351 0.0228"/>
     <axis xyz="0 0 1"/>
-    <parent link="leftPalm"/>
+    <parent link="l_hand"/>
     <child link="leftThumbRollLink"/>
   </joint>
   <gazebo reference="leftThumbRoll">
@@ -1199,7 +1199,7 @@
   <joint name="leftIndexFingerPitch1" type="fixed">
     <origin rpy="0.1745 0.0 0.0" xyz="0.0022 0.0976 0.0235"/>
     <axis xyz="0 0 1"/>
-    <parent link="leftPalm"/>
+    <parent link="l_hand"/>
     <child link="leftIndexFingerPitch1Link"/>
   </joint>
   <gazebo reference="leftIndexFingerPitch1">
@@ -1283,7 +1283,7 @@
   <joint name="leftMiddleFingerPitch1" type="fixed">
     <origin rpy="-0.1222 0.0 0.0" xyz="0.0022 0.097 -0.0119"/>
     <axis xyz="0 0 1"/>
-    <parent link="leftPalm"/>
+    <parent link="l_hand"/>
     <child link="leftMiddleFingerPitch1Link"/>
   </joint>
   <gazebo reference="leftMiddleFingerPitch1">
@@ -1367,7 +1367,7 @@
   <joint name="leftPinkyPitch1" type="fixed">
     <origin rpy="-0.1222 0.0 0.0" xyz="0.0022 0.0838 -0.041"/>
     <axis xyz="0 0 1"/>
-    <parent link="leftPalm"/>
+    <parent link="l_hand"/>
     <child link="leftPinkyPitch1Link"/>
   </joint>
   <gazebo reference="leftPinkyPitch1">
@@ -2955,7 +2955,7 @@
   </link>
   <joint name="l_hand_force_torque_joint" type="fixed">
     <origin rpy="-1.57079632679 0 1.57079632679" xyz="0 0 0"/>
-    <parent link="leftPalm"/>
+    <parent link="l_hand"/>
     <child link="l_hand_force_torque"/>
   </joint>
   <link name="left_palm">
@@ -3005,7 +3005,7 @@
   </link>
   <joint name="r_hand_force_torque_joint" type="fixed">
     <origin rpy="-1.57079632679 0 -1.57079632679" xyz="0 0 0"/>
-    <parent link="rightPalm"/>
+    <parent link="r_hand"/>
     <child link="r_hand_force_torque"/>
   </joint>
   <link name="right_palm">
@@ -3057,10 +3057,10 @@
     <ignored_collision_filter_group collision_filter_group="core"/>
   </collision_filter_group>
   <collision_filter_group name="ignore_core">
-    <member link="rightShoulderRollLink"/>
-    <member link="leftShoulderRollLink"/>
-    <member link="rightShoulderPitchLink"/>
-    <member link="leftShoulderPitchLink"/>
+    <member link="r_scap"/>
+    <member link="l_scap"/>
+    <member link="r_clav"/>
+    <member link="l_clav"/>
     <ignored_collision_filter_group collision_filter_group="core"/>
   </collision_filter_group>
   <collision_filter_group name="r_uleg">
@@ -3094,23 +3094,23 @@
     <ignored_collision_filter_group collision_filter_group="l_uleg"/>
   </collision_filter_group>
   <collision_filter_group name="r_arm">
-    <member link="rightShoulderPitchLink"/>
-    <member link="rightShoulderRollLink"/>
-    <member link="rightShoulderYawLink"/>
-    <member link="rightElbowPitchLink"/>
-    <member link="rightForearmLink"/>
-    <member link="rightWristRollLink"/>
-    <member link="rightPalm"/>
+    <member link="r_clav"/>
+    <member link="r_scap"/>
+    <member link="r_uarm"/>
+    <member link="r_larm"/>
+    <member link="r_farm"/>
+    <member link="r_uhand"/>
+    <member link="r_hand"/>
     <ignored_collision_filter_group collision_filter_group="r_arm"/>
   </collision_filter_group>
   <collision_filter_group name="l_arm">
-    <member link="leftShoulderPitchLink"/>
-    <member link="leftShoulderRollLink"/>
-    <member link="leftShoulderYawLink"/>
-    <member link="leftElbowPitchLink"/>
-    <member link="leftForearmLink"/>
-    <member link="leftWristRollLink"/>
-    <member link="leftPalm"/>
+    <member link="l_clav"/>
+    <member link="l_scap"/>
+    <member link="l_uarm"/>
+    <member link="l_larm"/>
+    <member link="l_farm"/>
+    <member link="l_uhand"/>
+    <member link="l_hand"/>
     <ignored_collision_filter_group collision_filter_group="l_arm"/>
   </collision_filter_group>
   <!-- end drake collision free groups-->
