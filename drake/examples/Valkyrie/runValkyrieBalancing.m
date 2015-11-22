@@ -14,14 +14,16 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits')
 
 options.floating = true;
 options.dt = 0.002;
-%r = Atlas('urdf/atlas_minimal_contact.urdf',options);
-r = Valkyrie('urdf/valkyrie_minimal_contact.urdf',options);
 
-fixed_point_file = fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat');
+%r = Valkyrie('urdf/valkyrie_minimal_contact.urdf',options);
+%fixed_point_file = fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat');
+
+r = Valkyrie(fullfile(getDrakePath,'examples','Valkyrie','urdf','urdf','valkyrie_A_sim_drake.urdf'),options);
 %fixed_point_file = '/home/mfallon/main-distro/software/control/matlab/data/val_description/valkyrie_fp_june2015.mat';
-r.fixed_point_file = fixed_point_file;
+fixed_point_file = '/home/mfallon/main-distro/software/control/matlab/data/val_description/valkyrie_fp_june2015_30joints_one_neck.mat';
 
 r = r.removeCollisionGroupsExcept({'heel','toe'});
+r.fixed_point_file = fixed_point_file;
 r = compile(r);
 
 nq = getNumPositions(r);
@@ -42,6 +44,11 @@ com = getCOM(r,kinsol);
 % Construct plan
 settings = QPLocomotionPlanSettings.fromStandingState(x0, r);
 % settings.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed; % Only use supports when in contact
+
+settings.r_foot_name = 'r_foot+rightLegSixAxis_Frame+rightCOP_Frame';
+settings.l_foot_name = 'l_foot+leftLegSixAxis_Frame+leftCOP_Frame';
+settings.pelvis_name = 'pelvis+leftPelvisIMU_Frame+rightPelvisIMU_Frame';
+
 standing_plan = QPLocomotionPlanCPPWrapper(settings);
 
 param_sets = valkyrieParams.getDefaults(r);

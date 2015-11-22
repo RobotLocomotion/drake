@@ -176,7 +176,7 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
   </link>
-  <joint name="lowerNeckPitch" type="revolute">
+  <joint name="neck_ay" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0203518 0.0 0.33845"/>
     <axis xyz="0 1 0"/>
     <parent link="utorso"/>
@@ -185,11 +185,11 @@
     <controller_gains Kd="0" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
-  <gazebo reference="lowerNeckPitch">
+  <gazebo reference="neck_ay">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
-  <joint name="neckYaw" type="revolute">
+  <joint name="neckYaw" type="fixed">
     <origin rpy="0.0 0.0 0.0" xyz="-0.051924 0.0 0.0"/>
     <axis xyz="0 0 1"/>
     <parent link="lowerNeckPitchLink"/>
@@ -202,7 +202,7 @@
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
-  <joint name="upperNeckPitch" type="revolute">
+  <joint name="upperNeckPitch" type="fixed">
     <origin rpy="0.0 0.0 0.0" xyz="-0.06 0 0.195997"/>
     <axis xyz="0 1 0"/>
     <parent link="neckYawLink"/>
@@ -400,7 +400,7 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
   </link>
-  <joint name="r_arm_uwyYaw" type="revolute">
+  <joint name="r_arm_uwy" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="-0.0254 0 0"/>
     <axis xyz="0 1 0"/>
     <parent link="r_larm"/>
@@ -409,7 +409,7 @@
     <controller_gains Kd="0" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
-  <gazebo reference="r_arm_uwyYaw">
+  <gazebo reference="r_arm_uwy">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
@@ -988,7 +988,7 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
   </link>
-  <joint name="l_arm_uwyYaw" type="revolute">
+  <joint name="l_arm_uwy" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="-0.0254 0 0"/>
     <axis xyz="0 1 0"/>
     <parent link="l_larm"/>
@@ -997,7 +997,7 @@
     <controller_gains Kd="0" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
-  <gazebo reference="l_arm_uwyYaw">
+  <gazebo reference="l_arm_uwy">
     <provideFeedback>1</provideFeedback>
     <implicitSpringDamper>1</implicitSpringDamper>
   </gazebo>
@@ -2468,11 +2468,11 @@
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="l_arm_uwyYawTransmission">
+  <transmission name="l_arm_uwyTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="l_arm_uwyYaw">
+    <joint name="l_arm_uwy">
       </joint>
-    <actuator name="l_arm_uwyYaw">
+    <actuator name="l_arm_uwy">
       <node name="/left_arm/j5"/>
       <mechanicalReduction>1</mechanicalReduction>
       <api name="TurboDriverDRC_v4"/>
@@ -2538,11 +2538,11 @@
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="r_arm_uwyYawTransmission">
+  <transmission name="r_arm_uwyTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="r_arm_uwyYaw">
+    <joint name="r_arm_uwy">
       </joint>
-    <actuator name="r_arm_uwyYaw">
+    <actuator name="r_arm_uwy">
       <node name="/right_arm/j5"/>
       <mechanicalReduction>1</mechanicalReduction>
       <api name="TurboDriverDRC_v4"/>
@@ -2568,16 +2568,17 @@
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
-  <transmission name="lowerNeckPitchTransmission">
+  <transmission name="neck_ayTransmission">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="lowerNeckPitch">
+    <joint name="neck_ay">
       </joint>
-    <actuator name="lowerNeckPitch">
+    <actuator name="neck_ay">
       <node name="/neck/j1"/>
       <mechanicalReduction>1</mechanicalReduction>
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
+<!--
   <transmission name="neckYawTransmission">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="neckYaw">
@@ -2588,6 +2589,8 @@
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
+-->
+<!--
   <transmission name="upperNeckPitchTransmission">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="upperNeckPitch">
@@ -2598,6 +2601,7 @@
       <api name="TurboDriverDRC_v4"/>
     </actuator>
   </transmission>
+-->
   <!-- Head Link Simple Collision Meshes -->
   <link name="head">
     <inertial>
