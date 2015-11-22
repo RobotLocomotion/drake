@@ -23,7 +23,7 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
   </link>
-  <link name="torsoYawLink">
+  <link name="ltorso">
     <inertial>
       <mass value="0.5"/>
       <origin rpy="0 0 0" xyz="0.000000 0.000000 -0.010000"/>
@@ -42,7 +42,7 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
   </link>
-  <link name="torsoPitchLink">
+  <link name="mtorso">
     <inertial>
       <mass value="0.1"/>
       <origin rpy="0 0 0" xyz="0.000000 0.000000  0.005000"/>
@@ -61,7 +61,7 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
     </collision>
   </link>
-  <link name="torso">
+  <link name="utorso">
     <inertial>
       <mass value="39.47"/>
       <origin rpy="0 0 0" xyz="-0.095548 -0.003337 0.243098"/>
@@ -84,7 +84,7 @@
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
     <axis xyz="0 0 1"/>
     <parent link="pelvis"/>
-    <child link="torsoYawLink"/>
+    <child link="ltorso"/>
     <limit effort="190" lower="-1.329" upper="1.181" velocity="5.89"/>
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
@@ -96,8 +96,8 @@
   <joint name="torsoPitch" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.04191 0.0 0.0"/>
     <axis xyz="0 1 0"/>
-    <parent link="torsoYawLink"/>
-    <child link="torsoPitchLink"/>
+    <parent link="ltorso"/>
+    <child link="mtorso"/>
     <limit effort="150" lower="-0.13" upper="0.666" velocity="9"/>
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
@@ -109,8 +109,8 @@
   <joint name="torsoRoll" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0203"/>
     <axis xyz="1 0 0"/>
-    <parent link="torsoPitchLink"/>
-    <child link="torso"/>
+    <parent link="mtorso"/>
+    <child link="utorso"/>
     <limit effort="150" lower="-0.23" upper="0.255" velocity="9"/>
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
@@ -179,7 +179,7 @@
   <joint name="lowerNeckPitch" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="0.0203518 0.0 0.33845"/>
     <axis xyz="0 1 0"/>
-    <parent link="torso"/>
+    <parent link="utorso"/>
     <child link="lowerNeckPitchLink"/>
     <limit effort="26" lower="0" upper="1.162" velocity="5"/>
     <controller_gains Kd="0" Kp="20000"/>
@@ -294,7 +294,7 @@
   <joint name="rightShoulderPitch" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="-0.0316 0.0 0.2984"/>
     <axis xyz="0 1 0"/>
-    <parent link="torso"/>
+    <parent link="utorso"/>
     <child link="rightShoulderPitchLink"/>
     <limit effort="190" lower="-2.85" upper="2.0" velocity="5.89"/>
     <controller_gains Kd="400" Kp="20000"/>
@@ -882,7 +882,7 @@
   <joint name="leftShoulderPitch" type="revolute">
     <origin rpy="0.0 0.0 0.0" xyz="-0.0316 0.0 0.2984"/>
     <axis xyz="0 1 0"/>
-    <parent link="torso"/>
+    <parent link="utorso"/>
     <child link="leftShoulderPitchLink"/>
     <limit effort="190" lower="-2.85" upper="2.0" velocity="5.89"/>
     <controller_gains Kd="400" Kp="20000"/>
@@ -2141,7 +2141,7 @@
   <joint name="rightTorsoIMU_Offset" type="fixed">
     <origin rpy="-1.57 0.0 3.14" xyz="-0.047 -0.134 0.363"/>
     <axis xyz="0 0 1"/>
-    <parent link="torso"/>
+    <parent link="utorso"/>
     <child link="rightTorsoIMU_Frame"/>
   </joint>
   <gazebo reference="rightTorsoIMU_Offset">
@@ -2181,7 +2181,7 @@
   <joint name="leftTorsoIMU_Offset" type="fixed">
     <origin rpy="1.57 0.0 3.14" xyz="-0.047 0.134 0.363"/>
     <axis xyz="0 0 1"/>
-    <parent link="torso"/>
+    <parent link="utorso"/>
     <child link="leftTorsoIMU_Frame"/>
   </joint>
   <gazebo reference="leftTorsoIMU_Offset">
@@ -2238,7 +2238,7 @@
   <joint name="rightHazardCamera_Offset" type="fixed">
     <origin rpy="1.57 0.0 1.57" xyz="0.0345 -0.0406 0.1135"/>
     <axis xyz="0 0 1"/>
-    <parent link="torso"/>
+    <parent link="utorso"/>
     <child link="rightHazardCamera_Frame"/>
   </joint>
   <gazebo reference="rightHazardCamera_Offset">
@@ -2272,7 +2272,7 @@
   <joint name="leftHazardCamera_Offset" type="fixed">
     <origin rpy="1.57 0.0 1.57" xyz="0.0345 0.0406 0.1135"/>
     <axis xyz="0 0 1"/>
-    <parent link="torso"/>
+    <parent link="utorso"/>
     <child link="leftHazardCamera_Frame"/>
   </joint>
   <gazebo reference="leftHazardCamera_Offset">
@@ -3046,9 +3046,9 @@
     <ignored_collision_filter_group collision_filter_group="feet"/>
   </collision_filter_group>
   <collision_filter_group name="core">
-    <member link="torso"/>
-    <member link="torsoYawLink"/>
-    <member link="torsoPitchLink"/>
+    <member link="utorso"/>
+    <member link="ltorso"/>
+    <member link="mtorso"/>
     <member link="pelvis"/>
     <member link="lowerNeckPitchLink"/>
     <member link="neckYawLink"/>
