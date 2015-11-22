@@ -1,4 +1,4 @@
-function runAtlasBalancing(use_mex)
+function runValkyrieBalancing(use_mex)
 % put robot in a random x,y,yaw position and balance for 2 seconds
 
 checkDependency('gurobi')
@@ -14,14 +14,20 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits')
 
 options.floating = true;
 options.dt = 0.002;
-r = Atlas('urdf/atlas_minimal_contact.urdf',options);
+%r = Atlas('urdf/atlas_minimal_contact.urdf',options);
+r = Valkyrie('urdf/valkyrie_minimal_contact.urdf',options);
+
+fixed_point_file = fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat');
+%fixed_point_file = '/home/mfallon/main-distro/software/control/matlab/data/val_description/valkyrie_fp_june2015.mat';
+r.fixed_point_file = fixed_point_file;
+
 r = r.removeCollisionGroupsExcept({'heel','toe'});
 r = compile(r);
 
 nq = getNumPositions(r);
 
 % set initial state to fixed point
-load('data/atlas_fp.mat');
+load(fixed_point_file);
 xstar(1) = 0.1*randn();
 xstar(2) = 0.1*randn();
 xstar(6) = pi*randn();
@@ -38,7 +44,7 @@ settings = QPLocomotionPlanSettings.fromStandingState(x0, r);
 % settings.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed; % Only use supports when in contact
 standing_plan = QPLocomotionPlanCPPWrapper(settings);
 
-param_sets = atlasParams.getDefaults(r);
+param_sets = valkyrieParams.getDefaults(r);
 
 if use_angular_momentum
   param_sets.standing.Kp_ang = 1.0; % angular momentum proportunal feedback gain
@@ -46,9 +52,9 @@ if use_angular_momentum
 end
 
 % Construct our control blocks
-planeval = atlasControllers.AtlasPlanEval(r, standing_plan);
-control = atlasControllers.InstantaneousQPController(r, param_sets);
-plancontroller = atlasControllers.AtlasPlanEvalAndControlSystem(r, control, planeval);
+planeval = valkyrieControllers.ValkyriePlanEval(r, standing_plan);
+control = valkyrieControllers.InstantaneousQPController(r, param_sets);
+plancontroller = valkyrieControllers.ValkyriePlanEvalAndControlSystem(r, control, planeval);
 
 sys = feedback(r, plancontroller);
 

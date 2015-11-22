@@ -23,8 +23,12 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits')
 
 % construct robot model
 %r = Valkyrie(fullfile(getDrakePath,'examples','Atlas','urdf','atlas_minimal_contact.urdf'),robot_options);
-r = Valkyrie(fullfile(getDrakePath,'examples','Valkyrie','urdf','valkyrie_minimal_contact.urdf'),robot_options);
-%r = Valkyrie(fullfile(getDrakePath,'examples','Valkyrie','urdf','urdf','valkyrie_A_sim_drake.urdf'),robot_options);
+%r = Valkyrie(fullfile(getDrakePath,'examples','Valkyrie','urdf','valkyrie_minimal_contact.urdf'),robot_options);
+%fixed_point_file = fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat');
+r = Valkyrie(fullfile(getDrakePath,'examples','Valkyrie','urdf','urdf','valkyrie_A_sim_drake.urdf'),robot_options);
+fixed_point_file = '/home/mfallon/main-distro/software/control/matlab/data/val_description/valkyrie_fp_june2015.mat';
+r.fixed_point_file = fixed_point_file;
+
 r = r.removeCollisionGroupsExcept({'heel','toe'});
 r = compile(r);
 
@@ -36,8 +40,7 @@ walking_options = applyDefaults(walking_options, r.default_footstep_params);
 walking_options = applyDefaults(walking_options, r.default_walking_params);
 
 % set initial state to fixed point
-load(fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat'));
-%load('/home/mfallon/main-distro/software/control/matlab/data/val_description/valkyrie_fp_june2015.mat');
+load(fixed_point_file);
 if ~isempty(walking_options.initial_pose), xstar(1:6) = walking_options.initial_pose; end
 xstar = r.resolveConstraints(xstar);
 r = r.setInitialState(xstar);
