@@ -283,7 +283,8 @@ classdef Valkyrie < TimeSteppingRigidBodyManipulator & Biped
   end
 
   properties
-    fixed_point_file = fullfile(getDrakePath(), 'examples', 'Atlas', 'data', 'atlas_fp.mat');
+    %fixed_point_file = fullfile(getDrakePath(), 'examples', 'Atlas', 'data', 'atlas_fp.mat');
+    fixed_point_file = '/home/mfallon/main-distro/software/control/matlab/data/val_description/valkyrie_fp_june2015.mat';
     default_footstep_params = struct('nom_forward_step', 0.25,... % m
                                       'max_forward_step', 0.35,...% m
                                       'max_backward_step', 0.2,...% m
