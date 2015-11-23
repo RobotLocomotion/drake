@@ -1,4 +1,5 @@
 function testIK
+% TIMEOUT 600
 w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
 warning('off','Drake:RigidBody:NonPositiveInertiaMatrix');
 warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
