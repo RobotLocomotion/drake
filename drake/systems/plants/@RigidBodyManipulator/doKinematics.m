@@ -89,14 +89,9 @@ kinsol.q = q;
 kinsol.v = v;
 kinsol.has_gradients = options.compute_gradients;
 
-if options.use_mex && model.mex_model_ptr~=0 && ((isnumeric(q) && isnumeric(v)) || (isa(q, 'TaylorVar') && getOrder(q) < 2)) % relying on short circuiting here
-  if ~isnumeric(q)
-    if isa(q, 'TaylorVar')
-      if options.compute_gradients
-        error('can only compute first order gradients using mex')
-      end
-      options.compute_gradients = true;
-    end
+if options.use_mex && model.mex_model_ptr~=0 && ((isnumeric(q) && isnumeric(v)) || (isa(q, 'TaylorVar') && (getOrder(q) < 2 && ~options.compute_gradients))) % relying on short circuiting here
+  if ~isnumeric(q) && isa(q, 'TaylorVar')
+    options.compute_gradients = true;
   end
   if isempty(options.kinematics_cache_ptr_to_use)
     if options.compute_gradients
