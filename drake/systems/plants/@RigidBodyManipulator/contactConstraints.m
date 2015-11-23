@@ -70,10 +70,12 @@ if obj.mex_model_ptr ~= 0 && kinsol.mex
   [n, D] =  contactConstraintsmex(obj.mex_model_ptr, kinsol.mex_ptr, normal, int32(idxA - 1), int32(idxB - 1), xA, xB, d);
   if kinsol.has_gradients
     [n, dn] = eval(n);
+    dn = dn(:, 1 : obj.num_positions); % only return gradients w.r.t. positions
     num_D = numel(D);
     dD = cell(1, num_D);
     for i = 1:numel(D)
       [D{i}, dD{i}] = eval(D{i});
+      dD{i} = dD{i}(:, 1 : obj.num_positions); % only return gradients w.r.t. positions
     end
   end
 else %MATLAB implementation
