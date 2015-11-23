@@ -1,4 +1,4 @@
-#include "atlasUtil.h"
+#include "valkyrieUtil.h"
 #include <Eigen/Core>
 #include <stdexcept>
 
