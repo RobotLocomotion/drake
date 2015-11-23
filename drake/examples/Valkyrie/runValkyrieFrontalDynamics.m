@@ -1,11 +1,11 @@
-function runAtlasFrontalDynamics
+function runValkyrieFrontalDynamics
 % just runs it as a passive system
 
 options.view = 'front';
 options.twoD = true;
 options.floating = true;
 options.terrain = RigidBodyFlatTerrain();
-s = 'urdf/atlas_minimal_contact.urdf';
+s = 'urdf/urdf/valkyrie_A_sim_drake.urdf';
 dt = 0.005;
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 r = TimeSteppingRigidBodyManipulator(s,dt,options);

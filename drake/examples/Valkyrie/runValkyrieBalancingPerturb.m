@@ -1,4 +1,4 @@
-function runAtlasBalancingPerturb(example_options) 
+function runValkyrieBalancingPerturb(example_options) 
 % Run the new split QP controller, which consists of separate PlanEval
 % and InstantaneousQPController objects. Perturbs a supplied amount at
 % a specified time.
@@ -29,18 +29,29 @@ options.ignore_friction = true;
 options.dt = 0.001;
 options.terrain = example_options.terrain;
 options.use_bullet = example_options.use_bullet;
-r = Atlas(fullfile(getDrakePath,'examples','Atlas','urdf','atlas_convex_hull.urdf'),options);
-r = r.removeCollisionGroupsExcept({'heel','toe'});
-r = compile(r);
 
 options_complete = options;
 options_complete.external_force = example_options.perturb_body;
-r_complete = Atlas(fullfile(getDrakePath,'examples','Atlas','urdf','atlas_convex_hull.urdf'),options_complete);
+
+%r = Valkyrie(fullfile(getDrakePath,'examples','Atlas','urdf','atlas_convex_hull.urdf'),options);
+%r_complete = Valkyrie(fullfile(getDrakePath,'examples','Atlas','urdf','atlas_convex_hull.urdf'),options_complete);
+%load(fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat'));
+
+r = Valkyrie(fullfile(getDrakePath,'examples','Valkyrie','urdf','urdf','valkyrie_A_sim_drake.urdf'),options);
+r_complete = Valkyrie(fullfile(getDrakePath,'examples','Valkyrie','urdf','urdf','valkyrie_A_sim_drake.urdf'),options_complete);
+fixed_point_file = '/home/mfallon/main-distro/software/control/matlab/data/val_description/valkyrie_fp_june2015_30joints_one_neck.mat';
+
+r.fixed_point_file = fixed_point_file;
+r_complete.fixed_point_file = fixed_point_file;
+load(fixed_point_file);
+
+r = r.removeCollisionGroupsExcept({'heel','toe'});
+r = compile(r);
+
 r_complete = r_complete.removeCollisionGroupsExcept({'heel','toe'});
 r_complete = compile(r_complete);
 
 % set initial state to fixed point
-load(fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat'));
 if isfield(options,'initial_pose'), xstar(1:6) = options.initial_pose; end
 xstar(3) = xstar(3)+.05;
 xstar = r.resolveConstraints(xstar);
@@ -60,10 +71,10 @@ settings = QPLocomotionPlanSettings.fromStandingState(x0, r);
 % settings.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed; % Only use supports when in contact
 standing_plan = QPLocomotionPlanCPPWrapper(settings);
 
-control = atlasControllers.InstantaneousQPController(r, [], struct());
-planeval = atlasControllers.AtlasPlanEval(r, standing_plan);
+control = valkyrieControllers.InstantaneousQPController(r, [], struct());
+planeval = valkyrieControllers.ValkyriePlanEval(r, standing_plan);
 
-plancontroller = atlasControllers.AtlasPlanEvalAndControlSystem(r, control, planeval);
+plancontroller = valkyrieControllers.ValkyriePlanEvalAndControlSystem(r, control, planeval);
 
 T = 6;
 ts = example_options.perturb_timing;

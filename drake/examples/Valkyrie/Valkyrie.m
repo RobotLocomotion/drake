@@ -165,7 +165,7 @@ classdef Valkyrie < TimeSteppingRigidBodyManipulator & Biped
       % Same bit of complexity for input frame to get hand inputs
       if (obj.hand_right > 0 || obj.hand_left > 0 || obj.external_force > 0)
         input_frame = getInputFrame(obj);
-        input_frame  = replaceFrameNum(input_frame,1,valkyrieFrames.AtlasInput(obj));
+        input_frame  = replaceFrameNum(input_frame,1,valkyrieFrames.ValkyrieInput(obj));
       else
         input_frame = valkyrieFrames.ValkyrieInput(obj);
       end
