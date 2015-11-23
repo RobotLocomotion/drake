@@ -39,41 +39,23 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   const mxArray* collision_threshold_mx = prhs[arg_num++];
   
   int n_points;
-  Vector3d* points;
+  vector<Vector3d> points;
   double collision_threshold = *(double*)mxGetData(collision_threshold_mx);
   
   n_points = mxGetN(points_mx);
-  //points.resize(3, n_points);
   cout << mxGetDimensions(points_mx)[1] << "\n";
-  Vector3d* points_p;
   double* points_mx_p = (double*)mxGetData(points_mx);
   
-  //cout << points_mx_p[3];
-  *points << points_mx_p[3];
-  //memcpy(points, points_mx_p, sizeof(double)*3);
+  for (int i=0; i<n_points; ++i){
+    Vector3d point(points_mx_p[3*i+0], points_mx_p[3*i+1], points_mx_p[3*i+2]);
+    points.push_back(point);
+  }
   
-  //memcpy(points_p, points_mx_p, sizeof(double)*3*n_points);
-  
-  /*for (int i=0; i<n_points; ++i){
-    //memcpy(points_p,points_mx_p,sizeof(double)*3);
-    cout << *points_mx_p << "\n";
-    //points_p++;
-    points_mx_p = points_mx_p+3;
-  }  
-  
-  /*Vector3d* p = points.data();
-  for (int i=0; i<points.size(); ++i){
-    cout << *p;
-    p++;
-  }*/
-  
-  //vector<size_t> colliding_points = model->collidingPoints(*cache, points, collision_threshold);
-  //memcpy(mxGetPrSafe(test[0]),colliding_points.data(),sizeof(size_t)*n_points);
-  
+  vector<size_t> colliding_points = model->collidingPoints(*cache, points, collision_threshold);  
 
-  //if (nlhs>0) {
-    //plhs[0] = mxCreateDoubleMatrix(1,n_points,mxREAL);
+  if (nlhs>0) {
+    plhs[0] = mxCreateDoubleMatrix(1,n_points,mxREAL);
   //  plhs[0] = mxCreateDoubleMatrix(3,static_cast<int>(colliding_points.cols()),mxREAL);
-  //  memcpy(mxGetPrSafe(plhs[0]),colliding_points.data(),sizeof(double)*3*colliding_points.cols());
-  //}
+    memcpy(mxGetPrSafe(plhs[0]),colliding_points.data(),sizeof(size_t)*n_points);
+  }
 }
