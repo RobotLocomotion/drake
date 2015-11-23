@@ -22,12 +22,9 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints')
 warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits')
 
 % construct robot model
-%r = Valkyrie(fullfile(getDrakePath,'examples','Atlas','urdf','atlas_minimal_contact.urdf'),robot_options);
-%r = Valkyrie(fullfile(getDrakePath,'examples','Valkyrie','urdf','valkyrie_minimal_contact.urdf'),robot_options);
-%fixed_point_file = fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat');
 r = Valkyrie(fullfile(getDrakePath,'examples','Valkyrie','urdf','urdf','valkyrie_A_sim_drake.urdf'),robot_options);
-%fixed_point_file = '/home/mfallon/main-distro/software/control/matlab/data/val_description/valkyrie_fp_june2015.mat';
-fixed_point_file = '/home/mfallon/main-distro/software/control/matlab/data/val_description/valkyrie_fp_june2015_30joints_one_neck.mat';
+fixed_point_file = fullfile(getDrakePath,'examples','Valkyrie','data','valkyrie_fp_june2015_30joints_one_neck.mat');
+
 
 
 r.fixed_point_file = fixed_point_file;
