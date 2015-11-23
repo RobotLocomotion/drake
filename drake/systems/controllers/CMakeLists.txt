@@ -1,5 +1,6 @@
 include_directories(${PROJECT_SOURCE_DIR}/systems/robotInterfaces)
 include_directories(${PROJECT_SOURCE_DIR}/util/test)
+include_directories(${PROJECT_SOURCE_DIR}/systems/trajectories )
 
 add_library(drakeControlUtil SHARED controlUtil.cpp)
 target_link_libraries(drakeControlUtil drakeRBM drakeUtil drakeTrajectories)
@@ -12,7 +13,6 @@ pods_install_pkg_config_file(drake-control-util
 
 pods_find_pkg_config(gurobi)
 if (gurobi_FOUND AND LCM_FOUND)
-  include_directories (${PROJECT_SOURCE_DIR}/systems/trajectories )
   include_directories (${PROJECT_SOURCE_DIR}/systems/plants )
   include_directories (${PROJECT_SOURCE_DIR}/solvers )
   add_library(drakeQPCommon SHARED QPCommon.cpp)

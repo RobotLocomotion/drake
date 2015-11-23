@@ -28,6 +28,7 @@ endif()
 pods_find_pkg_config(snopt_c)
 
 if(MATLAB_FOUND)
+  include_directories(${PROJECT_SOURCE_DIR}/util)
   add_mex(lqrmex lqrmex.cpp)
   target_link_libraries(lqrmex drakeUtil)
 endif()
