@@ -75,7 +75,6 @@ end
 if ~isfield(options, 'use_mex'), options.use_mex = true; end
 if ~isfield(options, 'compute_gradients'), options.compute_gradients = false; end
 if ~isfield(options, 'compute_JdotV'), options.compute_JdotV = ~isempty(v); end
-if ~isfield(options, 'force_new_kinsol'), options.force_new_kinsol = false; end
 if ~isfield(options, 'kinematics_cache_ptr_to_use'), options.kinematics_cache_ptr_to_use = []; end
 
 if warn_signature_changed
