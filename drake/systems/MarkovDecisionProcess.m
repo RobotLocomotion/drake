@@ -83,6 +83,10 @@ classdef MarkovDecisionProcess < DrakeSystem
       % @option wrap_flag boolean vector the same size as x which causes the
       % resulting controller to wrap around for the dimensions where
       % wrap_flag is true. @default false
+      % @option vectorized_x whether the dynamics of sys and the cost
+      % function specified in costfun can accept vectorized input for the
+      % state. Use sys and costfun that can accept vectorized input, if 
+      % possible, since it improves runtime considerably. @default false
 
       typecheck(sys,'DynamicalSystem');
       
@@ -99,6 +103,7 @@ classdef MarkovDecisionProcess < DrakeSystem
       if nargin<4, options=struct(); end
       if ~isfield(options,'dt') options.dt = 1; end
       if ~isfield(options,'wrap_flag') options.wrap_flag = false(num_x,1); end
+      if ~isfield(options,'vectorized_x') options.vectorized_x = false; end
       
       xmin = reshape(cellfun(@(a)a(1),xbins),[],1);
       xmax = reshape(cellfun(@(a)a(end),xbins),[],1);
@@ -136,29 +141,56 @@ classdef MarkovDecisionProcess < DrakeSystem
       
       waitbar_h = waitbar(0,'Computing one-step dynamics and transition matrix...');
       waitbar_cleanup = onCleanup(@()close(waitbar_h));  % doesn't seem to catch ctrl-c, despite the documentation
-      waitbar_lastupdate = 0;
-      for ai=1:na
-        for si=1:ns
-          if is_ct
-            % todo: better than just forward euler here?
-            xn = S(:,si) + options.dt*dynamics(sys,0,S(:,si),A(:,ai));
-            C(si,ai) = options.dt*costfun(sys,S(:,si),A(:,ai));
-          else % is dt
-            xn = update(sys,0,S(:,si),A(:,ai));
-            C(si,ai) = costfun(sys,S(:,si),A(:,ai));
+      
+      % TODO: right now, we only have code that takes advantage of
+      % vectorized computations on state, but not vectorized computations
+      % on the actions. 
+      if ~options.vectorized_x
+          waitbar_lastupdate = 0;
+          for ai=1:na
+            for si=1:ns
+              if is_ct
+                % todo: better than just forward euler here?
+                xn = S(:,si) + options.dt*dynamics(sys,0,S(:,si),A(:,ai));
+                C(si,ai) = options.dt*costfun(sys,S(:,si),A(:,ai));
+              else % is dt
+                xn = update(sys,0,S(:,si),A(:,ai));
+                C(si,ai) = costfun(sys,S(:,si),A(:,ai));
+              end
+
+              % wrap coordinates
+              xn(options.wrap_flag) = mod(xn(options.wrap_flag)-xmin(options.wrap_flag),xmax(options.wrap_flag)-xmin(options.wrap_flag)) + xmin(options.wrap_flag);
+
+              [idx,coef] = barycentricInterpolation(xbins,xn);
+              T{ai}(si,idx) = coef;
+            end
+
+            if ai/na>waitbar_lastupdate+.025 % don't call the gui too much
+              waitbar(ai/na,waitbar_h);
+              waitbar_lastupdate = ai/na;
+            end
           end
-          
-          % wrap coordinates
-          xn(options.wrap_flag) = mod(xn(options.wrap_flag)-xmin(options.wrap_flag),xmax(options.wrap_flag)-xmin(options.wrap_flag)) + xmin(options.wrap_flag);
-          
-          [idx,coef] = barycentricInterpolation(xbins,xn);
-          T{ai}(si,idx) = coef;
-        end
-        
-        if ai/na>waitbar_lastupdate+.025 % don't call the gui too much
-          waitbar(ai/na,waitbar_h);
-          waitbar_lastupdate = ai/na;
-        end
+      elseif options.vectorized_x
+          C_vectorized = zeros(ns,na);
+          [T_vectorized{1:na}] = deal(sparse(ns,ns));
+          for ai=1:na
+              size(S)
+              size(S(:,1))
+              size(dynamics(sys,0,S,A(:,ai)))
+              size(dynamics(sys,0,S(:,1),A(:,ai)))
+              Xnew = S + options.dt*dynamics(sys,0,S,A(:,ai));
+              C_vectorized(:,ai) = options.dt*costfun(sys,S,A(:,ai));
+              numx_dimensions = size(options.wrap_flag);
+              counter = 1:numx_dimensions;
+              whichIdxs = counter(options.wrap_flag)';
+              Idxs = repmat(whichIdxs,1,ns);
+              Xnew(options.wrap_flag,:) = mod(Xnew(options.wrap_flag,:)-xmin(Idxs),xmax(Idxs)-xmin(Idxs)) + xmin(Idxs);
+              [idx, coef] = barycentricInterpolation(xbins, Xnew);
+              numrows = size(idx,1);
+              T_vectorized{ai} = sparse(repmat(1:ns,numrows,1), double(idx), coef, ns, ns);
+          end
+          C = C_vectorized
+          T = T_vectorized
       end
       
       mdp = MarkovDecisionProcess(S,A,T,C,options.gamma,options.dt);
