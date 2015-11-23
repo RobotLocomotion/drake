@@ -66,7 +66,7 @@ classdef CoordinateFrame < handle
         ind=ind+1;
       end
       if (nargin<4 || isempty(coordinates))
-%         obj.coordinates=cellfun(@coordinateName,cell(dim,1),'UniformOutput',false);
+        obj.coordinates=cellfun(@coordinateName,cell(dim,1),'UniformOutput',false);
       else
         typecheck(coordinates,'cell');
         sizecheck(coordinates,dim);

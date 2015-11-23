@@ -12,8 +12,8 @@ classdef DubinsPlant < DrakeSystem
     end
     
     function [xdot, df, d2f, d3f] = dynamics(obj,t,x,u)      
-        theta = x(3);
-        xdot = [obj.v*cos(theta);  obj.v*sin(theta); u(1)];
+        theta = x(3,:);
+        xdot = [obj.v*cos(theta);  obj.v*sin(theta); u(1)*ones(size(theta))];
         
         if (nargout>1)
             [df,d2f,d3f]= dynamicsGradients(obj,t,x,u,nargout-1);

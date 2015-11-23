@@ -94,7 +94,7 @@ classdef MarkovDecisionProcess < DrakeSystem
       if ~is_ct && ~isDT(sys)
         error('Drake:MarkovDecisionProcess:discretizeSystem:UnsupportedSystem','only systems that are purely CT or purely DT are implemented so far');
       end      
-      assert(isTI(sys),'Drake:MarkovDecisionProcess:discretizeSystem:UnsupportedSystem','only support time-invariant systems');
+%       assert(isTI(sys),'Drake:MarkovDecisionProcess:discretizeSystem:UnsupportedSystem','only support time-invariant systems');
       
       num_x = getNumStates(sys);
       num_u = getNumInputs(sys);
@@ -173,11 +173,10 @@ classdef MarkovDecisionProcess < DrakeSystem
       elseif options.vectorized_x
           C_vectorized = zeros(ns,na);
           [T_vectorized{1:na}] = deal(sparse(ns,ns));
+          
+          waitbar_lastupdate = 0;
+          
           for ai=1:na
-              size(S)
-              size(S(:,1))
-              size(dynamics(sys,0,S,A(:,ai)))
-              size(dynamics(sys,0,S(:,1),A(:,ai)))
               Xnew = S + options.dt*dynamics(sys,0,S,A(:,ai));
               C_vectorized(:,ai) = options.dt*costfun(sys,S,A(:,ai));
               numx_dimensions = size(options.wrap_flag);
@@ -188,9 +187,16 @@ classdef MarkovDecisionProcess < DrakeSystem
               [idx, coef] = barycentricInterpolation(xbins, Xnew);
               numrows = size(idx,1);
               T_vectorized{ai} = sparse(repmat(1:ns,numrows,1), double(idx), coef, ns, ns);
+                   
+              if ai/na>waitbar_lastupdate+.025 % don't call the gui too much
+                  waitbar(ai/na,waitbar_h);
+                  waitbar_lastupdate = ai/na;
+              end
+          
           end
-          C = C_vectorized
-          T = T_vectorized
+          
+          C = C_vectorized;
+          T = T_vectorized;
       end
       
       mdp = MarkovDecisionProcess(S,A,T,C,options.gamma,options.dt);
