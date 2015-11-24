@@ -18,7 +18,7 @@ options.dt = 0.002;
 %r = Valkyrie('urdf/valkyrie_minimal_contact.urdf',options);
 %fixed_point_file = fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat');
 
-r = Valkyrie(fullfile(getDrakePath,'examples','Valkyrie','urdf','urdf','valkyrie_A_sim_drake.urdf'),options);
+r = Valkyrie(fullfile(getDrakePath,'examples','Valkyrie','urdf','urdf','valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf'),options);
 %fixed_point_file = '/home/mfallon/main-distro/software/control/matlab/data/val_description/valkyrie_fp_june2015.mat';
 fixed_point_file = fullfile(getDrakePath,'examples','Valkyrie','data','valkyrie_fp_june2015_30joints_one_neck.mat');
 

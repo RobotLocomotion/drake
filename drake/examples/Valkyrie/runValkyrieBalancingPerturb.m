@@ -37,8 +37,8 @@ options_complete.external_force = example_options.perturb_body;
 %r_complete = Valkyrie(fullfile(getDrakePath,'examples','Atlas','urdf','atlas_convex_hull.urdf'),options_complete);
 %load(fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat'));
 
-r = Valkyrie(fullfile(getDrakePath,'examples','Valkyrie','urdf','urdf','valkyrie_A_sim_drake.urdf'),options);
-r_complete = Valkyrie(fullfile(getDrakePath,'examples','Valkyrie','urdf','urdf','valkyrie_A_sim_drake.urdf'),options_complete);
+r = Valkyrie(fullfile(getDrakePath,'examples','Valkyrie','urdf','urdf','valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf'),options);
+r_complete = Valkyrie(fullfile(getDrakePath,'examples','Valkyrie','urdf','urdf','valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf'),options_complete);
 fixed_point_file = fullfile(getDrakePath,'examples','Valkyrie','data','valkyrie_fp_june2015_30joints_one_neck.mat');
 
 
