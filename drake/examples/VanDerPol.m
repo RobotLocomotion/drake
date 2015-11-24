@@ -114,7 +114,7 @@ classdef VanDerPol < PolynomialSystem
       vdp = VanDerPol();
       sys = DrakeSystemWGaussianNoise(vdp,noise_covariance,[],zeros(2),.1);
 
-      tspan = 0:.1:500;
+      tspan = [0:.04:20,20.1:.1:300];
       num_particles = 5000;
       figure(1); clf; 
       
@@ -126,7 +126,8 @@ classdef VanDerPol < PolynomialSystem
       hold on; axis([-2.5,2.5,-3,3]);
       
       function draw_function(t,x)
-        h = plot(x(1,:),x(2,:),'b.','MarkerSize',20)
+        h = plot(x(1,:),x(2,:),'b.','MarkerSize',20);
+        title(t);
         drawnow;
         delete(h);
       end
