@@ -1,6 +1,7 @@
 include_directories(${PROJECT_SOURCE_DIR}/systems/robotInterfaces)
+include_directories(${PROJECT_SOURCE_DIR}/systems/trajectories)
+include_directories(${PROJECT_SOURCE_DIR}/systems/plants)
 include_directories(${PROJECT_SOURCE_DIR}/util/test)
-include_directories(${PROJECT_SOURCE_DIR}/systems/trajectories )
 
 add_library(drakeControlUtil SHARED controlUtil.cpp)
 target_link_libraries(drakeControlUtil drakeRBM drakeUtil drakeTrajectories)
