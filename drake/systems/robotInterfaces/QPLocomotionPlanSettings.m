@@ -68,9 +68,15 @@ classdef QPLocomotionPlanSettings
       if strcmp(robot.name,'atlas')
 
       else
-        obj.r_foot_name = 'r_foot+rightLegSixAxis_Frame+rightCOP_Frame';
-        obj.l_foot_name = 'l_foot+leftLegSixAxis_Frame+leftCOP_Frame';
+        obj.r_foot_name = 'rightFoot+rightLegSixAxis_Frame+rightCOP_Frame';
+        obj.l_foot_name = 'leftFoot+leftLegSixAxis_Frame+leftCOP_Frame';
         obj.pelvis_name = 'pelvis+leftPelvisIMU_Frame+rightPelvisIMU_Frame';
+        obj.r_knee_name = 'rightKneePitch';
+        obj.l_knee_name = 'leftKneePitch';
+        obj.l_akx_name = 'leftAnkleRoll';
+        obj.r_akx_name = 'rightAnkleRoll';
+        obj.r_aky_name = 'rightAnklePitch';
+        obj.l_aky_name = 'leftAnklePitch';
       end
 
 

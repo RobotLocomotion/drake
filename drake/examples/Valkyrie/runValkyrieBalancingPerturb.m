@@ -13,7 +13,7 @@ checkDependency('lcmgl');
 
 if nargin<1, example_options=struct(); end
 example_options = applyDefaults(example_options, struct('use_bullet', false,...
-                                                        'perturb_body', 'mtorso',...
+                                                        'perturb_body', 'torsoPitchLink',...
                                                         'perturb_amount', [250;0;0],...
                                                         'perturb_timing', [1.0 1.1],...
                                                         'terrain', RigidBodyFlatTerrain));
@@ -39,7 +39,8 @@ options_complete.external_force = example_options.perturb_body;
 
 r = Valkyrie(fullfile(getDrakePath,'examples','Valkyrie','urdf','urdf','valkyrie_A_sim_drake.urdf'),options);
 r_complete = Valkyrie(fullfile(getDrakePath,'examples','Valkyrie','urdf','urdf','valkyrie_A_sim_drake.urdf'),options_complete);
-fixed_point_file = '/home/mfallon/main-distro/software/control/matlab/data/val_description/valkyrie_fp_june2015_30joints_one_neck.mat';
+fixed_point_file = fullfile(getDrakePath,'examples','Valkyrie','data','valkyrie_fp_june2015_30joints_one_neck.mat');
+
 
 r.fixed_point_file = fixed_point_file;
 r_complete.fixed_point_file = fixed_point_file;

@@ -51,8 +51,8 @@ classdef Base
       obj.vref_integrator = struct('zero_ankles_on_contact', 0,...
                                       'eta', 0.001,...
                                       'delta_max', 10.0);
-      obj.whole_body.w_qdd(r.findPositionIndices('back_bkx')) = 0.1;
-      obj.whole_body.Kp(r.findPositionIndices('back_bkx')) = 50;
+      obj.whole_body.w_qdd(r.findPositionIndices('torsoRoll')) = 0.1; % back_bkx
+      obj.whole_body.Kp(r.findPositionIndices('torsoRoll')) = 50; % back_bkx
 
       % Soft joint limits enforced by a sigmoid weight on q(i) - q_des(i)
       % The sigmoid is defined as:
@@ -72,12 +72,13 @@ classdef Base
                                      'weight', num2cell(repmat(1e-5, 1, r.getNumPositions())),...
                                      'disable_when_body_in_support', num2cell(zeros(1, r.getNumPositions)),...
                                      'k_logistic', num2cell(repmat(20, 1, r.getNumPositions())));
-      obj.joint_soft_limits(r.findPositionIndices('r_leg_kny')).enabled = true;
-      obj.joint_soft_limits(r.findPositionIndices('r_leg_kny')).lb = 0.5;
-      obj.joint_soft_limits(r.findPositionIndices('r_leg_kny')).disable_when_body_in_support = r.foot_body_id.right;
-      obj.joint_soft_limits(r.findPositionIndices('l_leg_kny')).enabled = true;
-      obj.joint_soft_limits(r.findPositionIndices('l_leg_kny')).lb = 0.5;
-      obj.joint_soft_limits(r.findPositionIndices('l_leg_kny')).disable_when_body_in_support = r.foot_body_id.left;
+      % was r_leg_kny, l_leg_kny
+      obj.joint_soft_limits(r.findPositionIndices('rightKneePitch')).enabled = true;
+      obj.joint_soft_limits(r.findPositionIndices('rightKneePitch')).lb = 0.5;
+      obj.joint_soft_limits(r.findPositionIndices('rightKneePitch')).disable_when_body_in_support = r.foot_body_id.right;
+      obj.joint_soft_limits(r.findPositionIndices('leftKneePitch')).enabled = true;
+      obj.joint_soft_limits(r.findPositionIndices('leftKneePitch')).lb = 0.5;
+      obj.joint_soft_limits(r.findPositionIndices('leftKneePitch')).disable_when_body_in_support = r.foot_body_id.left;
 
       nu = r.getNumInputs();
       obj.hardware = struct('gains', struct(...

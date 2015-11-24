@@ -8,10 +8,29 @@ classdef Walking < valkyrieParams.Base
       if (r.getNumVelocities() ~= r.getNumPositions())
         error('this code calls findPositionIndices, which is no longer equivalent to findVelocityIndices');
       end
-      obj.whole_body.w_qdd(findPositionIndices(r, 'leg')) = 1e-6;
-      obj.whole_body.w_qdd(findPositionIndices(r, 'arm')) = .0001;
-      obj.whole_body.w_qdd(findPositionIndices(r, 'back')) = .0001;
-      obj.whole_body.w_qdd(r.findPositionIndices('back_bkx')) = 0.1;
+
+      %obj.whole_body.w_qdd(findPositionIndices(r, 'leg')) = 1e-6;
+      obj.whole_body.w_qdd(findPositionIndices(r, 'Hip')) = 1e-6;
+      obj.whole_body.w_qdd(findPositionIndices(r, 'Knee')) = 1e-6;
+      obj.whole_body.w_qdd(findPositionIndices(r, 'Ankle')) = 1e-6;
+
+      %obj.whole_body.w_qdd(findPositionIndices(r, 'arm')) = .0001;
+      obj.whole_body.w_qdd(findPositionIndices(r, 'Shoulder')) = .0001;
+      obj.whole_body.w_qdd(findPositionIndices(r, 'Elbow')) = .0001;
+      obj.whole_body.w_qdd(findPositionIndices(r, 'Forearm')) = .0001;
+      obj.whole_body.w_qdd(findPositionIndices(r, 'Wrist')) = .0001;
+
+      %obj.whole_body.w_qdd(findPositionIndices(r, 'back')) = .0001;
+      obj.whole_body.w_qdd(findPositionIndices(r, 'torso')) = .0001;
+
+      %obj.whole_body.w_qdd(r.findPositionIndices('back_bkx')) = 0.1;
+      obj.whole_body.w_qdd(r.findPositionIndices('torsoRoll')) = 0.1;
+
+      %This gain was added specifically for Valkyrie (when using the
+      %original joint names). There must be something else going on as 
+      %it shouldn't be needed. mfallon
+      obj.whole_body.w_qdd(findPositionIndices(r, 'lowerNeckPitch')) = .0001;
+      
       obj.whole_body.damping_ratio = 0.5;
       obj.body_motion(r.findLinkId('pelvis')).Kp = [0; 0; 150; 200; 200; 200];
       obj.body_motion(r.findLinkId('pelvis')).damping_ratio = 0.6;

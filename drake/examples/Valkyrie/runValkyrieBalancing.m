@@ -20,7 +20,7 @@ options.dt = 0.002;
 
 r = Valkyrie(fullfile(getDrakePath,'examples','Valkyrie','urdf','urdf','valkyrie_A_sim_drake.urdf'),options);
 %fixed_point_file = '/home/mfallon/main-distro/software/control/matlab/data/val_description/valkyrie_fp_june2015.mat';
-fixed_point_file = '/home/mfallon/main-distro/software/control/matlab/data/val_description/valkyrie_fp_june2015_30joints_one_neck.mat';
+fixed_point_file = fullfile(getDrakePath,'examples','Valkyrie','data','valkyrie_fp_june2015_30joints_one_neck.mat');
 
 r = r.removeCollisionGroupsExcept({'heel','toe'});
 r.fixed_point_file = fixed_point_file;
@@ -45,9 +45,18 @@ com = getCOM(r,kinsol);
 settings = QPLocomotionPlanSettings.fromStandingState(x0, r);
 % settings.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed; % Only use supports when in contact
 
-settings.r_foot_name = 'r_foot+rightLegSixAxis_Frame+rightCOP_Frame';
-settings.l_foot_name = 'l_foot+leftLegSixAxis_Frame+leftCOP_Frame';
+settings.r_foot_name = 'rightFoot+rightLegSixAxis_Frame+rightCOP_Frame';
+settings.l_foot_name = 'leftFoot+leftLegSixAxis_Frame+leftCOP_Frame';
 settings.pelvis_name = 'pelvis+leftPelvisIMU_Frame+rightPelvisIMU_Frame';
+
+settings.r_knee_name = 'rightKneePitch';
+settings.l_knee_name = 'leftKneePitch';
+
+settings.r_akx_name = 'rightAnkleRoll';
+settings.l_akx_name = 'leftAnkleRoll';
+
+settings.r_aky_name = 'rightAnklePitch';
+settings.l_aky_name = 'leftAnklePitch';
 
 standing_plan = QPLocomotionPlanCPPWrapper(settings);
 
