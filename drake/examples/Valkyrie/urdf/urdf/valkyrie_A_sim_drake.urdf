@@ -85,7 +85,7 @@
     <axis xyz="0 0 1"/>
     <parent link="pelvis"/>
     <child link="torsoYawLink"/>
-    <limit effort="800" lower="-1.329" upper="1.181" velocity="5.89"/>
+    <limit effort="190" lower="-1.329" upper="1.181" velocity="5.89"/>
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
@@ -98,7 +98,7 @@
     <axis xyz="0 1 0"/>
     <parent link="torsoYawLink"/>
     <child link="torsoPitchLink"/>
-    <limit effort="800" lower="-0.13" upper="0.666" velocity="9"/>
+    <limit effort="150" lower="-0.13" upper="0.666" velocity="9"/>
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
@@ -111,7 +111,7 @@
     <axis xyz="1 0 0"/>
     <parent link="torsoPitchLink"/>
     <child link="torso"/>
-    <limit effort="800" lower="-0.23" upper="0.255" velocity="9"/>
+    <limit effort="150" lower="-0.23" upper="0.255" velocity="9"/>
     <controller_gains Kd="400" Kp="20000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
@@ -1606,7 +1606,7 @@
     <axis xyz="0 0 1"/>
     <parent link="pelvis"/>
     <child link="rightHipYawLink"/>
-    <limit effort="840" lower="-1.1" upper="0.4141" velocity="5.89"/>
+    <limit effort="190" lower="-1.1" upper="0.4141" velocity="5.89"/>
     <controller_gains Kd="500" Kp="15000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
@@ -1619,7 +1619,7 @@
     <axis xyz="1 0 0"/>
     <parent link="rightHipYawLink"/>
     <child link="rightHipRollLink"/>
-    <limit effort="840" lower="-0.5515" upper="0.467" velocity="7"/>
+    <limit effort="350" lower="-0.5515" upper="0.467" velocity="7"/>
     <controller_gains Kd="500" Kp="15000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
@@ -1632,7 +1632,7 @@
     <axis xyz="0 1 0"/>
     <parent link="rightHipRollLink"/>
     <child link="rightHipPitchLink"/>
-    <limit effort="840" lower="-2.42" upper="1.619" velocity="6.11"/>
+    <limit effort="350" lower="-2.42" upper="1.619" velocity="6.11"/>
     <controller_gains Kd="500" Kp="15000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
@@ -1645,7 +1645,7 @@
     <axis xyz="0 1 0"/>
     <parent link="rightHipPitchLink"/>
     <child link="rightKneePitchLink"/>
-    <limit effort="950" lower="-0.083" upper="2.057" velocity="6.11"/>
+    <limit effort="350" lower="-0.083" upper="2.057" velocity="6.11"/>
     <controller_gains Kd="500" Kp="15000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
@@ -1658,7 +1658,7 @@
     <axis xyz="0 1 0"/>
     <parent link="rightKneePitchLink"/>
     <child link="rightAnklePitchLink"/>
-    <limit effort="805" lower="-1.8644" upper="1.875" velocity="11"/>
+    <limit effort="205" lower="-1.8644" upper="1.875" velocity="11"/>
     <controller_gains Kd="400" Kp="15000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
@@ -1671,7 +1671,7 @@
     <axis xyz="1 0 0"/>
     <parent link="rightAnklePitchLink"/>
     <child link="rightFoot"/>
-    <limit effort="805" lower="-1.349" upper="1.348" velocity="11"/>
+    <limit effort="205" lower="-1.349" upper="1.348" velocity="11"/>
     <controller_gains Kd="400" Kp="15000"/>
     <dynamics damping="0.3" friction="0.0"/>
   </joint>
@@ -1894,7 +1894,7 @@
     <axis xyz="0 0 1"/>
     <parent link="pelvis"/>
     <child link="leftHipYawLink"/>
-    <limit effort="840" lower="-0.4141" upper="1.1" velocity="5.89"/>
+    <limit effort="190" lower="-0.4141" upper="1.1" velocity="5.89"/>
     <controller_gains Kd="500" Kp="15000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
@@ -1907,7 +1907,7 @@
     <axis xyz="1 0 0"/>
     <parent link="leftHipYawLink"/>
     <child link="leftHipRollLink"/>
-    <limit effort="840" lower="-0.467" upper="0.5515" velocity="7"/>
+    <limit effort="350" lower="-0.467" upper="0.5515" velocity="7"/>
     <controller_gains Kd="500" Kp="15000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
@@ -1920,7 +1920,7 @@
     <axis xyz="0 1 0"/>
     <parent link="leftHipRollLink"/>
     <child link="leftHipPitchLink"/>
-    <limit effort="840" lower="-2.42" upper="1.619" velocity="6.11"/>
+    <limit effort="350" lower="-2.42" upper="1.619" velocity="6.11"/>
     <controller_gains Kd="500" Kp="15000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
@@ -1933,7 +1933,7 @@
     <axis xyz="0 1 0"/>
     <parent link="leftHipPitchLink"/>
     <child link="leftKneePitchLink"/>
-    <limit effort="950" lower="-0.083" upper="2.057" velocity="6.11"/>
+    <limit effort="350" lower="-0.083" upper="2.057" velocity="6.11"/>
     <controller_gains Kd="500" Kp="15000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
@@ -1946,7 +1946,7 @@
     <axis xyz="0 1 0"/>
     <parent link="leftKneePitchLink"/>
     <child link="leftAnklePitchLink"/>
-    <limit effort="805" lower="-1.8644" upper="1.875" velocity="11"/>
+    <limit effort="205" lower="-1.8644" upper="1.875" velocity="11"/>
     <controller_gains Kd="400" Kp="15000"/>
     <dynamics damping="0.1" friction="0.0"/>
   </joint>
@@ -1959,7 +1959,7 @@
     <axis xyz="1 0 0"/>
     <parent link="leftAnklePitchLink"/>
     <child link="leftFoot"/>
-    <limit effort="805" lower="-1.349" upper="1.348" velocity="11"/>
+    <limit effort="205" lower="-1.349" upper="1.348" velocity="11"/>
     <controller_gains Kd="400" Kp="15000"/>
     <dynamics damping="0.3" friction="0.0"/>
   </joint>
