@@ -46,7 +46,8 @@ classdef MarkovDecisionProcess < DrakeSystem
     
     function [J,PI]=valueIteration(mdp,converged,drawfun)
       if (nargin<2) converged=.1; end
-      nS = size(mdp.S,2); nA = size(mdp.A,2);
+      nS = size(mdp.S,2); % nS is number of discretized states
+      nA = size(mdp.A,2); % nA is number of discretized actions
       J = zeros(nS,1);
       err = inf;
       
@@ -92,8 +93,8 @@ classdef MarkovDecisionProcess < DrakeSystem
       end      
       assert(isTI(sys),'Drake:MarkovDecisionProcess:discretizeSystem:UnsupportedSystem','only support time-invariant systems');
       
-      num_x = getNumStates(sys);
-      num_u = getNumInputs(sys);
+      num_x = getNumStates(sys); % num_x is the number of state variables
+      num_u = getNumInputs(sys); % num_u is the number of control inputs
       if ~iscell(xbins) && num_x==1, xbins = {xbins}; end
       if ~iscell(ubins) && num_u==1, ubins = {ubins}; end
       if nargin<4, options=struct(); end
@@ -103,21 +104,30 @@ classdef MarkovDecisionProcess < DrakeSystem
       xmin = reshape(cellfun(@(a)a(1),xbins),[],1);
       xmax = reshape(cellfun(@(a)a(end),xbins),[],1);
       
-      % construct the grids
+      % construct the grids S and A
       assert(iscell(xbins));
+      assert(iscell(ubins));
+      
       Sgrid = cell(1,num_x);
       [Sgrid{:}] = ndgrid(xbins{:});
+      % Sgrid{j}(i_1,i_2,...,i_{num_x}) = xbins{j}(i_j)
       S = cellfun(@(a)reshape(a,1,[]),Sgrid,'UniformOutput',false);
       S = vertcat(S{:});
+      % S is a num_x by ns array, with each row corresponding to the 
+      % value of the state variables for a specific possible (discretized) 
+      % state of the world.
 
-      assert(iscell(ubins));
       Agrid = cell(1,num_u);
       [Agrid{:}] = ndgrid(ubins{:});
+      % Similarly, Agrid{j}(i_1,i_2,...,i_{num_u}) = ubins{j}(i_j)
       A = cellfun(@(a)reshape(a,1,[]),Agrid,'UniformOutput',false);
       A = vertcat(A{:});
+      % A is a num_u by na array, with each row corresponding to the value
+      % of the control inputs for a specific possible (discretized) action
+      % that the robot can take.
       
-      ns = size(S,2);
-      na = size(A,2);
+      ns = size(S,2); % number of discretized states
+      na = size(A,2); % number of discretized actions
 
       % offsets for inline sub2ind
       nskip = [1,cumprod(cellfun(@length,xbins(1:end-1)))];
@@ -126,6 +136,7 @@ classdef MarkovDecisionProcess < DrakeSystem
       end
       
       % initialize transition matrix
+      % T{a_i} is the transition matrix corresponding to action a_i
       [T{1:na}] = deal(sparse(ns,ns));
       
       % initialize cost
