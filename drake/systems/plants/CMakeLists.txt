@@ -5,7 +5,8 @@ include_directories (${PROJECT_SOURCE_DIR}/util tinyxml)
 
 include_directories(joints)
 include_directories(${PROJECT_SOURCE_DIR}/solvers)
-
+include_directories(${PROJECT_SOURCE_DIR}/systems/controllers)
+include_directories(${PROJECT_SOURCE_DIR}/systems/trajectories)
 add_library(drakeRBM SHARED RigidBodyManipulator.cpp RigidBody.cpp RigidBodyManipulatorURDF.cpp RigidBodyManipulatorContact.cpp tinyxml/tinyxml.cpp tinyxml/tinyxmlparser.cpp tinyxml/tinyxmlerror.cpp)
 target_link_libraries(drakeRBM drakeCollision drakeJoints spruce drakeUtil)
 pods_install_libraries(drakeRBM)
