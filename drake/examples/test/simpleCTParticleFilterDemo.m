@@ -1,21 +1,26 @@
 function simpleCTParticleFilterDemo
 
-tmppath = addpathTemporary(fullfile(getDrakePath,'examples'));
-
+% some options/parameters
+plot_histogram = true;
+time_reversed_system = false;
 noise_covariance = .1;  % pretty robust stationary distribution
 noise_covariance = 1.2;   % should see some "escape attempts"
 %noise_covariance = 2;   % see definite particle loss nominal system
 
-sys = SimpleCTExample;
 
-% the time-reversed system is interesting, too
-sys = FunctionHandleSystem(1,0,0,1,false,true,@(t,x,u) x-x.^3,[],@(t,x,u)x);
+tmppath = addpathTemporary(fullfile(getDrakePath,'examples'));
+
+if (time_reversed_system)
+  % the time-reversed system is interesting, too
+  sys = FunctionHandleSystem(1,0,0,1,false,true,@(t,x,u) x-x.^3,[],@(t,x,u)x);
+else
+  sys = SimpleCTExample;
+end
 
 sys = DrakeSystemWGaussianNoise(sys,noise_covariance,[],0,.1);
 
 tspan = 0:.1:30;
 
-plot_histogram = true;
 if (plot_histogram)
   num_particles = 100000;
   figure(1); clf; hold on;  xs = -1.5:.1:1.5; plot(xs,2500*dynamics(sys,0,xs,[]),'Color','k','LineWidth',4); % for histogram
