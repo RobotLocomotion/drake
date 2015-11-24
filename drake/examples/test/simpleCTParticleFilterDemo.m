@@ -5,7 +5,12 @@ tmppath = addpathTemporary(fullfile(getDrakePath,'examples'));
 noise_covariance = .1;  % pretty robust stationary distribution
 %noise_covariance = 2;   % should see some "escapes"
 
-sys = DrakeSystemWGaussianNoise(SimpleCTExample,noise_covariance,[],0,.1);
+sys = SimpleCTExample;
+
+% the time-reversed system is interesting, too
+%sys = FunctionHandleSystem(1,0,0,1,false,true,@(t,x,u) x-x.^3,[],@(t,x,u)x);
+
+sys = DrakeSystemWGaussianNoise(sys,noise_covariance,[],0,.1);
 
 tspan = 0:.1:30;
 
