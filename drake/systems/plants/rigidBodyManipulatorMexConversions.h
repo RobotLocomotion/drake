@@ -29,8 +29,18 @@ bool isConvertibleFromMex(const mxArray *mex, KinematicsCache<Scalar>*, std::ost
       *log << "Expected DrakeMexPointer containing KinematicsCache";
     return false;
   }
-  auto name = mxGetStdString(mxGetPropertySafe(mex, "name"));
-  if (name != typeid(KinematicsCache<Scalar>).name()) {
+  mxArray* name_mex = mxGetProperty(mex, 0, "name");
+
+  const int buffer_length = 200;
+  char name[buffer_length]; // unfortunately, needs to be stack allocated because this needs to be fast.
+  int status = mxGetString(name_mex, name, buffer_length);
+  if (status != 0) {
+    if (log)
+      *log << "Could not get the name property of the DrakeMexPointer";
+    return false;
+  }
+
+  if (strcmp(name, typeid(KinematicsCache<Scalar>).name()) != 0) {
     if (log)
       *log << "Expected KinematicsCache of type " << typeid(KinematicsCache<Scalar>).name() << ", but got " << name;
     return false;
