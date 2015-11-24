@@ -6,16 +6,37 @@
 #include "KinematicPath.h"
 #include "mexify.h"
 
-/**
- * fromMex specializations
- */
-bool isConvertibleFromMex(const mxArray *source, RigidBodyManipulator*, std::ostream* log) NOEXCEPT {
+template <typename T>
+struct DrakeMexPointerTypeId {
+  enum { value = -1 };
+};
+template <> struct DrakeMexPointerTypeId<RigidBodyManipulator> { enum { value = 1 }; };
+template <> struct DrakeMexPointerTypeId<KinematicsCache<double>> { enum { value = 2 }; };
+template <> struct DrakeMexPointerTypeId<KinematicsCache<Eigen::AutoDiffScalar<Eigen::VectorXd> > > { enum { value = 3 }; };
+template <> struct DrakeMexPointerTypeId<KinematicsCache<DrakeJoint::AutoDiffFixedMaxSize> > { enum { value = 4 }; };
+
+
+template <typename T>
+bool isDrakeMexPointerOfCorrectType(const mxArray *source, T*, std::ostream *log) NOEXCEPT {
   if (!mxIsClass(source, "DrakeMexPointer")) {
     if (log)
-      *log << "Expected DrakeMexPointer containing RigidBodyManipulator";
+      *log << "Expected DrakeMexPointer";
+    return false;
+  }
+  int type_id = static_cast<int>(mxGetScalar(mxGetProperty(source, 0, "type_id")));
+  if (type_id != DrakeMexPointerTypeId<T>::value) {
+    if (log)
+      *log << "Expected DrakeMexPointer to " << typeid(T).name() << ".";
     return false;
   }
   return true;
+}
+
+/**
+ * fromMex specializations
+ */
+bool isConvertibleFromMex(const mxArray *source, RigidBodyManipulator* ptr, std::ostream* log) NOEXCEPT {
+  return isDrakeMexPointerOfCorrectType(source, ptr, log);
 }
 
 RigidBodyManipulator &fromMexUnsafe(const mxArray *source, RigidBodyManipulator *) {
@@ -23,29 +44,8 @@ RigidBodyManipulator &fromMexUnsafe(const mxArray *source, RigidBodyManipulator 
 }
 
 template<typename Scalar>
-bool isConvertibleFromMex(const mxArray *mex, KinematicsCache<Scalar>*, std::ostream* log) NOEXCEPT {
-  if (!mxIsClass(mex, "DrakeMexPointer")) {
-    if (log)
-      *log << "Expected DrakeMexPointer containing KinematicsCache";
-    return false;
-  }
-  mxArray* name_mex = mxGetProperty(mex, 0, "name");
-
-  const int buffer_length = 200;
-  char name[buffer_length]; // unfortunately, needs to be stack allocated because this needs to be fast.
-  int status = mxGetString(name_mex, name, buffer_length);
-  if (status != 0) {
-    if (log)
-      *log << "Could not get the name property of the DrakeMexPointer";
-    return false;
-  }
-
-  if (strcmp(name, typeid(KinematicsCache<Scalar>).name()) != 0) {
-    if (log)
-      *log << "Expected KinematicsCache of type " << typeid(KinematicsCache<Scalar>).name() << ", but got " << name;
-    return false;
-  }
-  return true;
+bool isConvertibleFromMex(const mxArray *mex, KinematicsCache<Scalar>* ptr, std::ostream* log) NOEXCEPT {
+  return isDrakeMexPointerOfCorrectType(mex, ptr, log);
 }
 
 template<typename Scalar>

@@ -47,7 +47,7 @@ DLLEXPORT mxArray* mxGetFieldOrPropertySafe(const mxArray* array, size_t index, 
 // Mex pointers shared through matlab
 // Note: the same mex function which calls this method will be called with the syntax mexFunction(drake_mex_ptr) as the destructor
 
-DLLEXPORT mxArray* createDrakeMexPointer(void* ptr, const std::string& name="", int num_additional_inputs=0, mxArray *delete_fcn_additional_inputs[] = NULL, const std::string& subclass_name="", const std::string& mex_function_name_prefix="");  // increments lock count
+DLLEXPORT mxArray* createDrakeMexPointer(void* ptr, const std::string& name="", int type_id = -1, int num_additional_inputs=0, mxArray *delete_fcn_additional_inputs[] = NULL, const std::string& subclass_name="", const std::string& mex_function_name_prefix="");  // increments lock count
 DLLEXPORT void* getDrakeMexPointer(const mxArray* mx);
 
 template <typename Derived> inline void destroyDrakeMexPointer(const mxArray* mx)

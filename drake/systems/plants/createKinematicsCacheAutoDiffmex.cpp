@@ -1,6 +1,5 @@
 #include "drakeMexUtil.h"
-#include "RigidBodyManipulator.h"
-#include <typeinfo>
+#include "rigidBodyManipulatorMexConversions.h"
 
 using namespace Eigen;
 using namespace std;
@@ -8,7 +7,7 @@ using namespace std;
 template <typename Scalar>
 mxArray* createKinematicsCache(RigidBodyManipulator& model) {
   KinematicsCache<Scalar>* cache = new KinematicsCache<Scalar>(model.bodies);
-  return createDrakeMexPointer((void*)cache, typeid(KinematicsCache<Scalar>).name());
+  return createDrakeMexPointer((void*)cache, typeid(KinematicsCache<Scalar>).name(), DrakeMexPointerTypeId<KinematicsCache<Scalar>>::value);
 }
 
 template <typename Scalar>
@@ -25,15 +24,18 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
   if (nlhs == 0 && nrhs == 1) {
     // if a KinematicsCache is passed in, then assume the destructor is being called
-    auto name = mxGetStdString(mxGetPropertySafe(prhs[0], "name"));
-    if (name == typeid(KinematicsCache<AutoDiffScalar<VectorXd>>).name()) {
-      destructKinematicsCache<AutoDiffScalar<VectorXd>>(prhs[0]);
+    int type_id = static_cast<int>(mxGetScalar(mxGetProperty(prhs[0], 0, "type_id")));
+
+    switch (type_id) {
+      case DrakeMexPointerTypeId<KinematicsCache<AutoDiffScalar<VectorXd>>>::value:
+        destructKinematicsCache<AutoDiffScalar<VectorXd>>(prhs[0]);
+        break;
+      case DrakeMexPointerTypeId<KinematicsCache<DrakeJoint::AutoDiffFixedMaxSize>>::value:
+        destructKinematicsCache<typename DrakeJoint::AutoDiffFixedMaxSize>(prhs[0]);
+        break;
+      default:
+        mexErrMsgTxt("unrecognized KinematicsCache type");
     }
-    else if (name == typeid(KinematicsCache<typename DrakeJoint::AutoDiffFixedMaxSize>).name()) {
-      destructKinematicsCache<typename DrakeJoint::AutoDiffFixedMaxSize>(prhs[0]);
-    }
-    else
-      mexErrMsgTxt("unrecognized KinematicsCache type");
   }
   else if (nlhs == 1 && nrhs == 2) {
     RigidBodyManipulator *model = static_cast<RigidBodyManipulator*>(getDrakeMexPointer(prhs[0]));

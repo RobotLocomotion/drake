@@ -53,14 +53,14 @@ bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs, mxArray* prhs[], con
  * your matlab code), then you can pass in the alternative name here.  The constructor
  * for this class must take the same inputs as the DrakeMexPointer constructor.
  */
-mxArray* createDrakeMexPointer(void* ptr, const std::string&  name, int num_additional_inputs, mxArray* delete_fcn_additional_inputs[], const std::string&  subclass_name, const std::string& mex_function_name_prefix)
+mxArray* createDrakeMexPointer(void* ptr, const std::string&  name, int type_id, int num_additional_inputs, mxArray* delete_fcn_additional_inputs[], const std::string&  subclass_name, const std::string& mex_function_name_prefix)
 {
   mxClassID cid;
   if (sizeof(ptr) == 4) cid = mxUINT32_CLASS;
   else if (sizeof(ptr) == 8) cid = mxUINT64_CLASS;
   else mexErrMsgIdAndTxt("Drake:constructDrakeMexPointer:PointerSize", "Are you on a 32-bit machine or 64-bit machine??");
 
-  int nrhs = 3 + num_additional_inputs;
+  int nrhs = 4 + num_additional_inputs;
   mxArray *plhs[1];
   mxArray **prhs;  
   prhs = new mxArray*[nrhs];
@@ -72,8 +72,11 @@ mxArray* createDrakeMexPointer(void* ptr, const std::string&  name, int num_addi
 
   prhs[2] = mxCreateString(name.c_str());
 
+  prhs[3] = mxCreateNumericMatrix(1, 1, cid, mxREAL);
+  memcpy(mxGetData(prhs[3]), &type_id, sizeof(type_id));
+
   for (int i = 0; i < num_additional_inputs; i++)
-    prhs[3+i] = delete_fcn_additional_inputs[i];
+    prhs[4+i] = delete_fcn_additional_inputs[i];
 
 //  mexPrintf("deleteMethod = %s\n name =%s\n", deleteMethod,name);
 
