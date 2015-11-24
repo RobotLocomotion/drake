@@ -112,7 +112,7 @@ classdef (InferiorClasses = {?DrakeSystem}) StochasticDrakeSystem < DrakeSystem
       sys = feedback(sys1,sys2);
     end
     
-    function particleFilterDemo(obj,initial_particles,tspan,draw_function)
+    function particleDemo(obj,initial_particles,tspan,draw_function)
       % just intended as a simple (classroom) demonstration for now
       % uses Euler integration and assumes that the dynamics methods are
       % vectorized (for speed)

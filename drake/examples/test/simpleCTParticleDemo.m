@@ -1,10 +1,10 @@
-function simpleCTParticleFilterDemo
+function simpleCTParticleDemo
 
 % some options/parameters
 plot_histogram = true;
-time_reversed_system = false;
+time_reversed_system = true;
 noise_covariance = .1;  % pretty robust stationary distribution
-noise_covariance = 1.2;   % should see some "escape attempts"
+%noise_covariance = 1.2;   % should see some "escape attempts"
 %noise_covariance = 2;   % see definite particle loss nominal system
 
 
@@ -29,7 +29,7 @@ else % plot time
   figure(1); clf; hold on; axis([tspan(1) tspan(end) -2 2]);
 end
 
-particleFilterDemo(sys,randn(1,num_particles),tspan,@draw_function);
+particleDemo(sys,randn(1,num_particles),tspan,@draw_function);
 
 function draw_function(t,x)
 

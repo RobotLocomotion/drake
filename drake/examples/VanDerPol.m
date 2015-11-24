@@ -109,7 +109,7 @@ classdef VanDerPol < PolynomialSystem
       prog.solveTraj(2*pi,initial_guess);
     end
     
-    function particleFilterDemo
+    function particleDemo
       noise_covariance = .1*eye(2);
       vdp = VanDerPol();
       sys = DrakeSystemWGaussianNoise(vdp,noise_covariance,[],zeros(2),.1);
@@ -132,7 +132,7 @@ classdef VanDerPol < PolynomialSystem
         delete(h);
       end
       
-      particleFilterDemo(sys,repmat(x0,1,num_particles)+.01*randn(2,num_particles),tspan,@draw_function);
+      particleDemo(sys,repmat(x0,1,num_particles)+.01*randn(2,num_particles),tspan,@draw_function);
     end
   end
 end
