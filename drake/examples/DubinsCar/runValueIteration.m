@@ -7,7 +7,7 @@ function [J, PI] = runValueIteration
     options.dt = 1e-2;
     options.gamma = .999; % we have a discount factor to allow for convergence
     options.wrap_flag = [true;true;true];
-    options.vectorized_x = true;
+    options.vectorized_x = false;
     % we have the controller wrap around for all three state variables.
 
     % wrapping around in x([1, 2]) = (x, y) allows us to simulate a infinite
