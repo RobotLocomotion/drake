@@ -13,7 +13,7 @@ function idx = collidingPoints(obj, kinsol, points, collision_threshold)
 % manipulator
 
 if ~isstruct(kinsol)
-  % treat input as collisionDetect(obj,q)
+  % treat input as collidingPoints(obj,q)
   kinsol = doKinematics(obj,kinsol);
 elseif kinsol.mex == 0
   % doKinematics with mex
