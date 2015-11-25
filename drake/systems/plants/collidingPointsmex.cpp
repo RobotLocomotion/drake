@@ -50,7 +50,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     points.push_back(point);
   }
   
-  vector<uint64_T> colliding_points = model->collidingPoints(*cache, points, collision_threshold);
+  vector<uint64_T> colliding_points = (vector<uint64_T>)(model->collidingPoints(*cache, points, collision_threshold));
   transform(colliding_points.begin(), colliding_points.end(), colliding_points.begin(), bind2nd(plus<int>(), 1));
 
   if (nlhs>0) {
