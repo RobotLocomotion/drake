@@ -66,14 +66,11 @@ if (kinsol.mex)
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
   end
   % base 1 to base 0 for body_or_frame_ids:
+  x = forwardKinmex(obj.mex_model_ptr, kinsol.mex_ptr, points, body_or_frame_id - 1, base_or_frame_id - 1, rotation_type);
   if kinsol.has_gradients
+    [x, J] = eval(x);
     nq = length(kinsol.q);
-
-    if nargout > 2
-       % avoid computing gradients twice:
-      kinsol_no_gradients = obj.doKinematics(kinsol.q);
-      x = forwardKinmex(obj.mex_model_ptr, kinsol_no_gradients.mex_ptr, points, body_or_frame_id - 1, base_or_frame_id - 1, rotation_type);
-      
+    if nargout > 2 || ~in_terms_of_qdot
       J = forwardKinJacobianmex(obj.mex_model_ptr, kinsol.mex_ptr, points, body_or_frame_id - 1, base_or_frame_id - 1, rotation_type, in_terms_of_qdot);
       [J, dJ] = eval(J);
       if isempty(dJ)
@@ -83,16 +80,10 @@ if (kinsol.mex)
         dJ = dJ(:, 1 : nq); % gradient only w.r.t q
       end
       dJ = reshape(dJ, size(J, 1), []); % convert to strange second derivative output format
-    elseif nargout > 1 && in_terms_of_qdot
-      x = forwardKinmex(obj.mex_model_ptr, kinsol.mex_ptr, points, body_or_frame_id - 1, base_or_frame_id - 1, rotation_type);
-      [x, J] = eval(x);
-      J = J(:, 1 : nq); % gradient only w.r.t q
     else
-      kinsol_no_gradients = obj.doKinematics(kinsol.q);
-      x = forwardKinmex(obj.mex_model_ptr, kinsol_no_gradients.mex_ptr, points, body_or_frame_id - 1, base_or_frame_id - 1, rotation_type);
+      J = J(:, 1 : nq); % gradient only w.r.t q
     end
   else
-    x = forwardKinmex(obj.mex_model_ptr, kinsol.mex_ptr, points, body_or_frame_id - 1, base_or_frame_id - 1, rotation_type);
     if nargout > 1
       J = forwardKinJacobianmex(obj.mex_model_ptr, kinsol.mex_ptr, points, body_or_frame_id - 1, base_or_frame_id - 1, rotation_type, in_terms_of_qdot);
     end
