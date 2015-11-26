@@ -1,16 +1,23 @@
-function simpleCTParticleDemo
+function simpleCTParticleDemo(options)
 
 % some options/parameters
-plot_histogram = true;
-time_reversed_system = true;
+if nargin<1, options = struct(); end
+if ~isfield(options,'plot_histogram'), options.plot_histogram = true; end
+if ~isfield(options,'time_reversed_system'), options.time_reversed_system = true; end
+
+if (options.plot_histogram && verLessThan('matlab','8.4'))
+  warning('the histogram method I use here was only introduced in 2014b')
+  options.plot_histogram = false;
+end
+
 noise_covariance = .1;  % pretty robust stationary distribution
 %noise_covariance = 1.2;   % should see some "escape attempts"
 %noise_covariance = 2;   % see definite particle loss nominal system
-
+if isfield(options,'noise_covariance'), noise_covariance = options.noise_covariance; end
 
 tmppath = addpathTemporary(fullfile(getDrakePath,'examples'));
 
-if (time_reversed_system)
+if (options.time_reversed_system)
   % the time-reversed system is interesting, too
   sys = FunctionHandleSystem(1,0,0,1,false,true,@(t,x,u) x-x.^3,[],@(t,x,u)x);
 else
@@ -21,7 +28,7 @@ sys = DrakeSystemWGaussianNoise(sys,noise_covariance,[],0,.1);
 
 tspan = 0:.1:30;
 
-if (plot_histogram)
+if (options.plot_histogram)
   num_particles = 100000;
   figure(1); clf; hold on;  xs = -1.5:.1:1.5; plot(xs,2500*dynamics(sys,0,xs,[]),'Color','k','LineWidth',4); % for histogram
 else % plot time
@@ -33,7 +40,7 @@ particleDemo(sys,randn(1,num_particles),tspan,@draw_function);
 
 function draw_function(t,x)
 
-if (plot_histogram)
+if (options.plot_histogram)
   h = histogram(x,[-1.5:.05:1.5]); axis([-1.5 1.5 -5000 15000]);
   set(h,'FaceColor','r');
   drawnow;
