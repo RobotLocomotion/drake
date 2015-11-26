@@ -46,7 +46,7 @@ int main()
   int nq = model->num_positions;
   VectorXd qstar = VectorXd::Zero(nq);
   qstar(3) = 0.8;
-  KinematicsCache<double> cache = model->doKinematics(qstar, 0);
+  KinematicsCache<double> cache = model->doKinematics(qstar);
   Vector3d com0 = model->centerOfMass(cache);
 
   Vector3d r_hand_pt = Vector3d::Zero();

@@ -3,6 +3,8 @@
 #include "drakeMexUtil.h"
 #include "RigidBodyManipulator.h"
 #include "math.h"
+#include "rigidBodyManipulatorMexConversions.h"
+
 
 using namespace Eigen;
 using namespace std;
@@ -20,7 +22,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
   int arg_num = 0;
   RigidBodyManipulator *model = static_cast<RigidBodyManipulator*>(getDrakeMexPointer(prhs[arg_num++]));
-  KinematicsCache<double>* cache = static_cast<KinematicsCache<double>*>(getDrakeMexPointer(prhs[arg_num++]));
+  KinematicsCache<double>& cache = fromMex(prhs[arg_num++], static_cast<KinematicsCache<double>*>(nullptr));
 
   // Now get the list of body indices for which to compute distances
   vector<int> active_bodies_idx;
@@ -50,7 +52,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
   vector<int> bodyA_idx, bodyB_idx;
   Matrix3Xd ptsA, ptsB;
-  model->allCollisions(*cache, bodyA_idx,bodyB_idx,ptsA,ptsB);
+  model->allCollisions(cache, bodyA_idx,bodyB_idx,ptsA,ptsB);
   vector<int32_T> idxA(bodyA_idx.size());
   transform(bodyA_idx.begin(),bodyA_idx.end(),idxA.begin(),
       [](int i){return ++i;});

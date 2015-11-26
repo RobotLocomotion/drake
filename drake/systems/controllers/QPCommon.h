@@ -211,7 +211,7 @@ public:
   QPControllerState state;
 
   NewQPControllerData(RigidBodyManipulator* r) :
-      r(r), cache(r->bodies, 0)
+      r(r), cache(r->bodies)
   {
     // empty
   }

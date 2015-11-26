@@ -31,17 +31,19 @@ options.compute_JdotV = true;
 kinsol = doKinematics(obj, q, v, options);
 
 a_grav = [zeros(3, 1); obj.gravity];
-if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(v))
-  f_ext = full(f_ext);  % makes the mex implementation simpler (for now)
+if (use_mex && obj.mex_model_ptr~=0 && kinsol.mex)
+  if isnumeric(f_ext)
+    f_ext = full(f_ext); % makes the mex implementation simpler (for now)
+  end
   if compute_gradients
-    df_ext = full(df_ext);
-    [H, dH] = massMatrixmex(obj.mex_model_ptr, kinsol.mex_ptr, 1);
-    nv = obj.num_velocities;
-    dH = [dH, zeros(numel(H), nv)];
-    [C, dC] = dynamicsBiasTermmex(obj.mex_model_ptr, kinsol.mex_ptr, f_ext, df_ext, 1);
-  else
-    H = massMatrixmex(obj.mex_model_ptr, kinsol.mex_ptr, 0);
-    C = dynamicsBiasTermmex(obj.mex_model_ptr, kinsol.mex_ptr, f_ext, [], 0);
+    f_ext = TaylorVar(f_ext, {df_ext});
+  end
+
+  H = massMatrixmex(obj.mex_model_ptr, kinsol.mex_ptr);
+  C = dynamicsBiasTermmex(obj.mex_model_ptr, kinsol.mex_ptr, f_ext);
+  if kinsol.has_gradients
+    [H, dH] = eval(H);
+    [C, dC] = eval(C);
   end
 else
   if compute_gradients
@@ -72,7 +74,7 @@ end
 
 if ~isempty(obj.force)
   NB = obj.getNumBodies();
-  f_ext = zeros(6,NB);
+  f_ext = q(1) * zeros(6,NB);
   if compute_gradients
     df_ext = zeros(numel(f_ext), nq + nv);
   end
@@ -101,7 +103,11 @@ if ~isempty(obj.force)
     end
   end
 else
-  f_ext = [];
+  if isempty(q)
+    f_ext = double.empty(6, 0);
+  else
+    f_ext = q(1) * double.empty(6, 0);
+  end
   if compute_gradients
     df_ext = [];
   end
@@ -186,6 +192,8 @@ if compute_gradient
   dnet_wrenchesdv{1} = zeros(twist_size, nv);
 end
 
+has_f_ext = ~isempty(f_ext) && numel(f_ext) > 0; % need both to cover both TaylorVar and TrigPoly
+
 for i = 2 : nBodies
   twist = kinsol.twists{i};
   spatial_accel = root_accel + JdotV{i};
@@ -217,7 +225,7 @@ for i = 2 : nBodies
       + dcrf(twist, I_times_twist, dtwistdv, dI_times_twistdv);
   end
   
-  if ~isempty(f_ext)
+  if has_f_ext
     external_wrench = f_ext(:, i);
     
     % external wrenches are expressed in body frame. Transform from body to world:

@@ -108,7 +108,7 @@ public:
     draw_msg.timestamp = static_cast<int64_t>(t*1000.0);
 
     auto q = u.head(manip.num_positions);
-    KinematicsCache<double> cache = manip.doKinematics(q, 0);
+    KinematicsCache<double> cache = manip.doKinematics(q);
 
     Eigen::Vector3d points = Eigen::Vector3d::Zero();
     int i,j;

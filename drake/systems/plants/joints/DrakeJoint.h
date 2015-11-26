@@ -6,7 +6,6 @@
 #include <unsupported/Eigen/AutoDiff>
 #include <random>
 #include "drakeGeometryUtil.h"
-#include "GradientVar.h"
 
 #undef DLLEXPORT_DRAKEJOINT
 #if defined(WIN32) || defined(WIN64)
@@ -26,7 +25,7 @@
   virtual void motionSubspaceDotTimesV(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>> &q, const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>> &v, Eigen::Matrix<Scalar, 6, 1> &motion_subspace_dot_times_v, Gradient<Eigen::Matrix<Scalar, 6, 1>, Eigen::Dynamic>::type *dmotion_subspace_dot_times_vdq = nullptr, Gradient<Eigen::Matrix<Scalar, 6, 1>, Eigen::Dynamic>::type *dmotion_subspace_dot_times_vdv = nullptr) const = 0; \
   virtual void qdot2v(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> > &q, Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, 0, MAX_NUM_VELOCITIES, MAX_NUM_POSITIONS> &qdot_to_v, Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> *dqdot_to_v) const = 0; \
   virtual void v2qdot(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>> &q, Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, 0, MAX_NUM_POSITIONS, MAX_NUM_VELOCITIES> &v_to_qdot, Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> *dv_to_qdot) const = 0; \
-  virtual GradientVar<Scalar, Eigen::Dynamic, 1> frictionTorque(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>& v, int gradient_order) const = 0;
+  virtual Eigen::Matrix<Scalar, Eigen::Dynamic, 1> frictionTorque(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>& v) const = 0;
 
 class RigidBody;
 
@@ -44,6 +43,7 @@ public:
   };
   static const int MAX_NUM_POSITIONS = 7;
   static const int MAX_NUM_VELOCITIES = 6;
+  typedef Eigen::AutoDiffScalar<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73, 1>> AutoDiffFixedMaxSize; // 73 is number of states of quat-parameterized Atlas
 
 private:
   const Eigen::Isometry3d transform_to_parent_body;
@@ -81,6 +81,8 @@ public:
   virtual const Eigen::VectorXd& getJointLimitMax() const;
 
   POSITION_AND_VELOCITY_DEPENDENT_METHODS(double)
+
+  POSITION_AND_VELOCITY_DEPENDENT_METHODS(AutoDiffFixedMaxSize)
 
   POSITION_AND_VELOCITY_DEPENDENT_METHODS(Eigen::AutoDiffScalar<Eigen::VectorXd>)
 

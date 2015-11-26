@@ -2,7 +2,7 @@
 #include <iostream>
 #include <cmath>
 #include "drakeMexUtil.h"
-#include "RigidBodyManipulator.h"
+#include "rigidBodyManipulatorMexConversions.h"
 #include <stdexcept>
 #include <RevoluteJoint.h>
 #include <PrismaticJoint.h>
@@ -424,7 +424,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   model->compile();
 
   //mexPrintf("constructModelmex: Creating DrakeMexPointer\n");
-  plhs[0] = createDrakeMexPointer((void*)model,"RigidBodyManipulator");
+  plhs[0] = createDrakeMexPointer((void*)model,"RigidBodyManipulator", DrakeMexPointerTypeId<RigidBodyManipulator>::value);
   //DEBUG
   //mexPrintf("constructModelmex: END\n");
   //END_DEBUG
