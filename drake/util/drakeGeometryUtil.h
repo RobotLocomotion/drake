@@ -736,9 +736,9 @@ void rpydot2angularvel(const Eigen::MatrixBase<DerivedRPY>& rpy,
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedRPYdot>, RPY_SIZE);
   EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedOMEGA>, RPY_SIZE, 1);
 
-  Eigen::Matrix3d E;
+  Eigen::Matrix<typename DerivedOMEGA::Scalar, 3, 3> E;
   if (domega) {
-    Eigen::Matrix<double, 9, 3> dE;
+    Eigen::Matrix<typename DerivedOMEGA::Scalar, 9, 3> dE;
     rpydot2angularvelMatrix(rpy, E, &dE);
     (*domega) << matGradMult(dE, rpydot), E;
   }
