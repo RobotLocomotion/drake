@@ -465,6 +465,10 @@ public:
                            bool use_margins = true);
   //bool closestDistanceAllBodies(VectorXd& distance, MatrixXd& Jd);
 
+  virtual bool collidingPointsCheckOnly(const KinematicsCache<double>& cache,
+                                        const std::vector<Eigen::Vector3d>& points,
+                                        double collision_threshold);
+
   virtual std::vector<size_t> collidingPoints(const KinematicsCache<double>& cache,
                                               const std::vector<Eigen::Vector3d>& points,
         double collision_threshold);

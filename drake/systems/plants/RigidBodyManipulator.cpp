@@ -453,6 +453,14 @@ void RigidBodyManipulator::potentialCollisions(const KinematicsCache<double>& ca
   }
 }
 
+bool RigidBodyManipulator::collidingPointsCheckOnly(const KinematicsCache<double>& cache,
+                                                    const vector<Vector3d>& points,
+                                                    double collision_threshold)
+{
+  updateDynamicCollisionElements(cache);
+  return collision_model->collidingPointsCheckOnly(points, collision_threshold);
+}
+
 vector<size_t> RigidBodyManipulator::collidingPoints(const KinematicsCache<double>& cache,
     const vector<Vector3d>& points,
     double collision_threshold)
