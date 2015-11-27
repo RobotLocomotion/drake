@@ -97,6 +97,8 @@ classdef Visualizer < DrakeSystem
       end
       f = sfigure(89);
       set(f, 'Visible', 'off');
+      set(f, 'MenuBar', 'none');
+      set(f, 'Resize', 'off');
       set(f, 'Position', [position(1:2), 560, 70]);
 
       tspan = xtraj.getBreaks();
