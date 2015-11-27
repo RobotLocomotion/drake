@@ -110,7 +110,7 @@ classdef VanDerPol < PolynomialSystem
     end
     
     function particleDemo
-      noise_covariance = .1*eye(2);
+      noise_covariance = diag([0, .5]);
       vdp = VanDerPol();
       sys = DrakeSystemWGaussianNoise(vdp,noise_covariance,[],zeros(2),.1);
 
@@ -124,10 +124,12 @@ classdef VanDerPol < PolynomialSystem
       ts=x_limit_cycle.getBreaks(); xlim=eval(x_limit_cycle,ts);
       plot(xlim(1,:),xlim(2,:),'k','LineWidth',2);
       hold on; axis([-2.5,2.5,-3,3]);
-      
+      xlabel('$q$','interpreter','latex');
+      ylabel('$\dot{q}$','interpreter','latex');
+
       function draw_function(t,x)
         h = plot(x(1,:),x(2,:),'b.','MarkerSize',20);
-        title(t);
+        title(['t=',num2str(t)]);
         drawnow;
         delete(h);
       end
