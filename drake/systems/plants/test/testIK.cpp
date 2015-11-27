@@ -35,8 +35,8 @@ int main()
   {
     return 1;
   }
-  KinematicsCache<double> cache = model.doKinematics(q_sol, 0);
-  Vector3d com = model.centerOfMass(cache, 0).value();
+  KinematicsCache<double> cache = model.doKinematics(q_sol);
+  Vector3d com = model.centerOfMass(cache);
   printf("%5.2f\n%5.2f\n%5.2f\n",com(0),com(1),com(2));
   /*MATFile *presultmat;
   presultmat = matOpen("q_sol.mat","w");

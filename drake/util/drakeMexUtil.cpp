@@ -53,14 +53,14 @@ bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs, mxArray* prhs[], con
  * your matlab code), then you can pass in the alternative name here.  The constructor
  * for this class must take the same inputs as the DrakeMexPointer constructor.
  */
-mxArray* createDrakeMexPointer(void* ptr, const std::string&  name, int num_additional_inputs, mxArray* delete_fcn_additional_inputs[], const std::string&  subclass_name, const std::string& mex_function_name_prefix)
+mxArray* createDrakeMexPointer(void* ptr, const std::string&  name, int type_id, int num_additional_inputs, mxArray* delete_fcn_additional_inputs[], const std::string&  subclass_name, const std::string& mex_function_name_prefix)
 {
   mxClassID cid;
   if (sizeof(ptr) == 4) cid = mxUINT32_CLASS;
   else if (sizeof(ptr) == 8) cid = mxUINT64_CLASS;
   else mexErrMsgIdAndTxt("Drake:constructDrakeMexPointer:PointerSize", "Are you on a 32-bit machine or 64-bit machine??");
 
-  int nrhs = 3 + num_additional_inputs;
+  int nrhs = 4 + num_additional_inputs;
   mxArray *plhs[1];
   mxArray **prhs;  
   prhs = new mxArray*[nrhs];
@@ -72,8 +72,11 @@ mxArray* createDrakeMexPointer(void* ptr, const std::string&  name, int num_addi
 
   prhs[2] = mxCreateString(name.c_str());
 
+  prhs[3] = mxCreateNumericMatrix(1, 1, cid, mxREAL);
+  memcpy(mxGetData(prhs[3]), &type_id, sizeof(type_id));
+
   for (int i = 0; i < num_additional_inputs; i++)
-    prhs[3+i] = delete_fcn_additional_inputs[i];
+    prhs[4+i] = delete_fcn_additional_inputs[i];
 
 //  mexPrintf("deleteMethod = %s\n name =%s\n", deleteMethod,name);
 
@@ -129,6 +132,35 @@ void* getDrakeMexPointer(const mxArray* mx)
   return ptr;
 }
 
+Eigen::SparseMatrix<double> matlabToEigenSparse(const mxArray* mex)
+{
+  using namespace Eigen;
+
+  auto ir = mxGetIr(mex);
+  auto jc = mxGetJc(mex);
+  auto pr = mxGetPr(mex);
+
+  auto rows = mxGetM(mex);
+  auto cols = mxGetN(mex);
+//  auto num_non_zero_max = mxGetNzmax(mex);
+  auto num_non_zero = jc[cols]; // from mxgetnzmax.c example
+
+  SparseMatrix<double> ret(rows, cols);
+  std::vector<Triplet<double>> triplets;
+  triplets.reserve(num_non_zero);
+
+  for (mwSize col = 0; col < cols; col++) {
+    const auto& val_index_start = jc[col];
+    const auto& val_index_end = jc[col + 1];
+    for (auto val_index = val_index_start; val_index < val_index_end; val_index++) {
+      const double& val = pr[val_index];
+      const auto& row = ir[val_index];
+      triplets.push_back(Triplet<double>(row, col, val));
+    }
+  }
+  ret.setFromTriplets(triplets.begin(), triplets.end());
+  return ret;
+}
 
 std::string mxGetStdString(const mxArray* array) {
   mwSize buffer_length = mxGetNumberOfElements(array) + 1;
@@ -151,8 +183,8 @@ std::vector<std::string> mxGetVectorOfStdStrings(const mxArray* array) {
     throw runtime_error("the input is not a cell array");
 
   std::vector<std::string> strings;
-  int numel = mxGetNumberOfElements(array);
-  for (int i=0; i<numel; i++) {
+  size_t numel = mxGetNumberOfElements(array);
+  for (size_t i=0; i<numel; i++) {
     strings.push_back(mxGetStdString(mxGetCell(array,i)));
   }
   return strings;

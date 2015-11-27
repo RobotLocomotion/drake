@@ -6,9 +6,8 @@
 class DLLEXPORT_DRAKEJOINT PrismaticJoint: public FixedAxisOneDoFJoint<PrismaticJoint>
 {
   // disable copy construction and assignment
-  // not available in MSVC2010...
-  // PrismaticJoint(const PrismaticJoint&) = delete;
-  // PrismaticJoint& operator=(const PrismaticJoint&) = delete;
+  //PrismaticJoint(const PrismaticJoint&) = delete;
+  //PrismaticJoint& operator=(const PrismaticJoint&) = delete;
 
 private:
   Eigen::Vector3d translation_axis;
@@ -33,6 +32,9 @@ public:
 
 private:
   static Eigen::Matrix<double, TWIST_SIZE, 1> spatialJointAxis(const Eigen::Vector3d& translation_axis);
+
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 #endif /* PRISMATICJOINT_H_ */

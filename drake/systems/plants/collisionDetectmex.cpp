@@ -3,6 +3,7 @@
 #include "drakeMexUtil.h"
 #include "RigidBodyManipulator.h"
 #include "math.h"
+#include "rigidBodyManipulatorMexConversions.h"
 
 using namespace Eigen;
 using namespace std;
@@ -44,7 +45,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
 
   int arg_num = 0;
   RigidBodyManipulator *model = static_cast<RigidBodyManipulator*>(getDrakeMexPointer(prhs[arg_num++]));
-  KinematicsCache<double>* cache = static_cast<KinematicsCache<double>*>(getDrakeMexPointer(prhs[arg_num++]));
+
+  KinematicsCache<double>& cache = fromMex(prhs[arg_num++], static_cast<KinematicsCache<double>*>(nullptr));
 
   // Parse `active_collision_options`
   vector<int> active_bodies_idx;
@@ -86,21 +88,21 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
 
   if (active_bodies_idx.size() > 0) {
     if (active_group_names.size() > 0) {
-      model->collisionDetect(*cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
+      model->collisionDetect(cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
                               active_bodies_idx,active_group_names);
     } else {
-      model->collisionDetect(*cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
+      model->collisionDetect(cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
                               active_bodies_idx);
     }
   } else {
     const bool multiple_contacts = mxIsLogicalScalarTrue(allow_multiple_contacts);
     if(multiple_contacts) {
-      model->potentialCollisions(*cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx);
+      model->potentialCollisions(cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx);
     } else if (active_group_names.size() > 0) {
-      model->collisionDetect(*cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
+      model->collisionDetect(cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
                              active_group_names);
     } else {
-      model->collisionDetect(*cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx);
+      model->collisionDetect(cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx);
     }
   }
 
