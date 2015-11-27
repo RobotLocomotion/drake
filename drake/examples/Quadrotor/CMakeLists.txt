@@ -1,0 +1,12 @@
+include_directories(${PROJECT_SOURCE_DIR}/systems)
+include_directories(${PROJECT_SOURCE_DIR}/systems/frames)
+include_directories(${PROJECT_SOURCE_DIR}/systems/plants)
+include_directories(${PROJECT_SOURCE_DIR}/systems/plants/joints)
+include_directories(${PROJECT_SOURCE_DIR}/util)
+
+if (LCM_FOUND AND NOT WIN32)
+  include_directories(${PROJECT_SOURCE_DIR}/pod-build/lcmgen)
+  add_executable(runQuadrotorDynamics runDynamics.cpp)
+  target_link_libraries(runQuadrotorDynamics drakeSystem drakeRBM)
+  add_test(NAME runQuadrotorDynamics COMMAND runQuadrotorDynamics WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/examples/Quadrotor)
+endif()
