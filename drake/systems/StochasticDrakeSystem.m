@@ -112,6 +112,32 @@ classdef (InferiorClasses = {?DrakeSystem}) StochasticDrakeSystem < DrakeSystem
       sys = feedback(sys1,sys2);
     end
     
+    function particleDemo(obj,initial_particles,tspan,draw_function)
+      % just intended as a simple (classroom) demonstration for now
+      % uses Euler integration and assumes that the dynamics methods are
+      % vectorized (for speed)
+      % @param initial_particles should be an M-by-N matrix defining the initial states,
+      % where M is the number of states in the model and N is the number of particles.
+      % @param tspan should list all of the design times of visualization (dt is
+      % defined relative to the tspan)
+      % @param draw_function should be a function handle which takes (t,x)
+      % where x is the matrix of particles, one per column. @default []
+      
+      if nargin<4, draw_function = @(t,x) disp([]); end % do nothing
+      
+      assert(isCT(obj));
+      assert(size(initial_particles,1)==getNumStates(obj));
+      u = zeros(getNumInputs(obj),1);
+      num_particles = size(initial_particles,2);
+      x = initial_particles;
+      draw_function(tspan(1),x);
+      for i=2:length(tspan)
+        dt = tspan(i)-tspan(i-1);
+        w = randn(obj.num_w,num_particles);
+        x = x + dt*stochasticDynamics(obj,tspan(i-1),x,u,w);
+        draw_function(tspan(i),x);
+      end
+    end
   end
   
   properties (SetAccess=private, GetAccess=protected)
