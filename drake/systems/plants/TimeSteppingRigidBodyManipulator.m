@@ -208,7 +208,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         vn = wvn;
       else
         vn = Mvn*z + wvn;
-        [obj2,z2,Mvn2,wvn2] = solveMexLCP(obj,t,x,u);
       end      
       
       vToqdot = obj.manip.vToqdot(q);
@@ -312,7 +311,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         qd = vToqdot*v;
         h = obj.timestep;
 
-        kinsol = doKinematics(obj,q);
+        kinematics_options.compute_gradients = nargout > 4;
+        kinsol = doKinematics(obj, q, [], kinematics_options);
 
         if (nargout<5)
           [H,C,B] = manipulatorDynamics(obj.manip,q,v);
@@ -420,7 +420,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
               nC = sum(possible_contact_indices);
               mC = length(D);
 
-              J = zeros(nL + nP + (mC+2)*nC,num_q)*q(1); % *q(1) is for taylorvar
+              J_size = [nL + nP + (mC+2)*nC,num_q];
+              J = zeros(J_size)*q(1); % *q(1) is for taylorvar
               lb = zeros(nL+nP+(mC+2)*nC,1);
               ub = Big*ones(nL+nP+(mC+2)*nC,1);
               D = vertcat(D{:});
@@ -444,11 +445,23 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
               J(nL+nP+nC+(1:mC*nC),:) = D;
 
               if nargout>4
-                dJ = zeros(nL+nP+(mC+2)*nC,num_q^2);  % was sparse, but reshape trick for the transpose below didn't work
-                dJ(nL+nP+(1:nC),:) = reshape(dn(possible_contact_indices,:),nC,[]);
-                dD = cellfun(@(A)reshape(A(possible_contact_indices,:),size(D{1},1),size(D{1},2)*size(dD{1},2)),dD,'UniformOutput',false);
-                dD = vertcat(dD{:});
-                dJ(nL+nP+nC+(1:mC*nC),:) = dD;
+                dJ = zeros(prod(J_size), num_q); % was sparse, but reshape trick for the transpose below didn't work
+                possible_contact_indices_found = find(possible_contact_indices);
+                n_size = [numel(possible_contact_indices), num_q];
+                col_indices = 1 : num_q;
+                dn = getSubMatrixGradient(reshape(dn, [], num_q), possible_contact_indices_found, col_indices, n_size);
+                dJ = setSubMatrixGradient(dJ, dn, nL+nP+(1:nC), 1 : J_size(2), J_size);
+                D_size = size(D);
+                dD_matrix = zeros(prod(D_size), num_q);
+                row_start = 0;
+                for i = 1 : mC
+                  dD_possible_contact = getSubMatrixGradient(dD{i}, possible_contact_indices_found, col_indices, n_size);
+                  dD_matrix = setSubMatrixGradient(dD_matrix, dD_possible_contact, row_start + (1 : nC), col_indices, D_size);
+                  row_start = row_start + nC;
+                end 
+                dD = dD_matrix;
+                dJ = setSubMatrixGradient(dJ, dD, nL+nP+nC + (1 : mC * nC), col_indices, J_size);
+                dJ = reshape(dJ, [], num_q^2);
               end
 
               contact_data.normal = normal(:,possible_contact_indices);

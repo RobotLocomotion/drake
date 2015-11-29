@@ -3,6 +3,7 @@
 #include "drakeMexUtil.h"
 #include "RigidBodyManipulator.h"
 #include "math.h"
+#include "rigidBodyManipulatorMexConversions.h"
 
 using namespace Eigen;
 using namespace std;
@@ -19,8 +20,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
   int arg_num = 0;
   RigidBodyManipulator *model = static_cast<RigidBodyManipulator*>(getDrakeMexPointer(prhs[arg_num++]));
-  KinematicsCache<double>* cache = static_cast<KinematicsCache<double>*>(getDrakeMexPointer(prhs[arg_num++]));
-  
+  KinematicsCache<double>& cache = fromMex(prhs[arg_num++], static_cast<KinematicsCache<double>*>(nullptr));
+
   const mxArray* origin_vector_mex = prhs[arg_num++];
   const mxArray* ray_endpoint_mex = prhs[arg_num++];
   bool use_margins = (mxGetScalar(prhs[arg_num++])!=0.0);
@@ -49,7 +50,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   memcpy(ray_endpoints.data(), mxGetPrSafe(ray_endpoint_mex), sizeof(double)*mxGetNumberOfElements(ray_endpoint_mex));
   VectorXd distances;
   
-  model->collisionRaycast(*cache, origins, ray_endpoints, distances, use_margins);
+  model->collisionRaycast(cache, origins, ray_endpoints, distances, use_margins);
   
   if (nlhs>0) {
     plhs[0] = mxCreateDoubleMatrix(static_cast<int>(distances.size()),1,mxREAL);

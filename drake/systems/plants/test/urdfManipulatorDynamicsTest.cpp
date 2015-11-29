@@ -4,6 +4,7 @@
 #include "RigidBodyManipulator.h"
 
 using namespace std;
+using namespace Eigen;
 
 int main(int argc, char* argv[])
 {
@@ -24,8 +25,8 @@ int main(int argc, char* argv[])
     cout << model->bodies[i]->linkname << endl;
   }
 
-  Eigen::VectorXd q = Eigen::VectorXd::Zero(model->num_positions);
-  Eigen::VectorXd v = Eigen::VectorXd::Zero(model->num_velocities);
+  VectorXd q = VectorXd::Zero(model->num_positions);
+  VectorXd v = VectorXd::Zero(model->num_velocities);
   int i;
 
   if (argc >= 2 + model->num_positions) {
@@ -38,21 +39,22 @@ int main(int argc, char* argv[])
       sscanf(argv[2 + model->num_positions + i], "%lf", &v(i));
   }
 
-  KinematicsCache<double> cache = model->doKinematics(q, v, 1);
+  KinematicsCache<double> cache = model->doKinematics(q, v);
 
   auto H = model->massMatrix(cache);
-  cout << H.value() << endl;
+  cout << H << endl;
 
-  map<int, unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
-  auto C = model->inverseDynamics(cache, f_ext);
-  cout << C.value() << endl;
+  eigen_aligned_unordered_map<RigidBody const *, Matrix<double, TWIST_SIZE, 1> > f_ext;
+  auto C = model->dynamicsBiasTerm(cache, f_ext);
+  cout << C << endl;
 
   cout << model->B << endl;
 
   if (model->loops.size()>0) {
-    auto phi = model->positionConstraints(cache, 1);
-    cout << phi.value() << endl;
-    cout << phi.gradient().value() << endl;
+    auto phi = model->positionConstraints(cache);
+    cout << phi << endl;
+    auto dphi = model->positionConstraintsJacobian(cache);
+    cout << dphi << endl;
   }
 
   return 0;

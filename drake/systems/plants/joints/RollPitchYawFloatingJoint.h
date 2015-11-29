@@ -7,12 +7,12 @@ class DLLEXPORT_DRAKEJOINT RollPitchYawFloatingJoint: public DrakeJointImpl<Roll
 {
 public:
   // disable copy construction and assignment
-  // not available in MSVC2010...
-  // RollPitchYawFloatingJoint(const RollPitchYawFloatingJoint&) = delete;
-  // RollPitchYawFloatingJoint& operator=(const RollPitchYawFloatingJoint&) = delete;
+  //RollPitchYawFloatingJoint(const RollPitchYawFloatingJoint&) = delete;
+  //RollPitchYawFloatingJoint& operator=(const RollPitchYawFloatingJoint&) = delete;
 
 public:
-  RollPitchYawFloatingJoint(const std::string& name, const Eigen::Isometry3d& transform_to_parent_body) : DrakeJointImpl(*this, name, transform_to_parent_body, 6, 6) { };
+  RollPitchYawFloatingJoint(const std::string& name, const Eigen::Isometry3d& transform_to_parent_body) :
+	  DrakeJointImpl(*this, name, transform_to_parent_body, 6, 6) { };
 
   virtual ~RollPitchYawFloatingJoint() { };
 
@@ -156,19 +156,17 @@ public:
   };
 
   template <typename DerivedV>
-  GradientVar<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorque(const Eigen::MatrixBase<DerivedV> & v, int gradient_order) const
+  Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorque(const Eigen::MatrixBase<DerivedV> & v) const
   {
-    GradientVar<typename DerivedV::Scalar, Eigen::Dynamic, 1> ret(getNumVelocities(), 1, getNumVelocities(), gradient_order);
-    ret.value().setZero();
-    if (gradient_order > 0) {
-      ret.gradient().value().setZero();
-    }
-    return ret;
+    return Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1>::Zero(getNumVelocities(), 1);
   }
 
   virtual bool isFloating() const { return true; }
   virtual Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const; //override;
   virtual std::string getPositionName(int index) const;
+
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 #endif /* ROLLPITCHYAWFLOATINGJOINT_H_ */

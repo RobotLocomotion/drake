@@ -47,7 +47,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   int num_qsc_cnst = qsc->getNumConstraint(t_ptr);
   VectorXd c(num_qsc_cnst-1);
   MatrixXd dc = MatrixXd::Zero(num_qsc_cnst-1,nq+num_weights);
-  KinematicsCache<double> cache = model->doKinematics(q, 0);
+  KinematicsCache<double> cache = model->doKinematics(q);
   qsc->eval(t_ptr, cache, weights, c, dc);
   VectorXd lb,ub;
   lb.resize(num_qsc_cnst-1);

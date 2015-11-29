@@ -108,7 +108,7 @@ void approximateIK(RigidBodyManipulator* model, const MatrixBase<DerivedA> &q_se
   {
     allIndsData[j] = j;
   }  
-  KinematicsCache<double> cache = model->doKinematics(q_seed, 0); // TODO: pass this into the function?
+  KinematicsCache<double> cache = model->doKinematics(q_seed); // TODO: pass this into the function?
   int kc_idx,c_idx;
   for(kc_idx = 0;kc_idx<num_kc;kc_idx++)
   {

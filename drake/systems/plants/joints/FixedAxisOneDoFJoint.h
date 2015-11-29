@@ -14,9 +14,8 @@ template <typename Derived>
 class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived>
 {
   // disable copy construction and assignment
-  // not available in MSVC2010...
-  // FixedAxisOneDoFJoint(const DrakeJoint&) = delete;
-  // FixedAxisOneDoFJoint& operator=(const FixedAxisOneDoFJoint&) = delete;
+  //FixedAxisOneDoFJoint(const DrakeJoint&) = delete;
+  //FixedAxisOneDoFJoint& operator=(const FixedAxisOneDoFJoint&) = delete;
 
 private:
   Eigen::Matrix<double, TWIST_SIZE, 1> joint_axis;
@@ -25,18 +24,19 @@ private:
   double coulomb_window;
 
 protected:
-  FixedAxisOneDoFJoint(Derived& derived, const std::string& name, const Eigen::Isometry3d& transform_to_parent_body, const Eigen::Matrix<double, TWIST_SIZE, 1>& joint_axis) :
+  FixedAxisOneDoFJoint(Derived& derived, const std::string& name, const Eigen::Isometry3d& transform_to_parent_body, const Eigen::Matrix<double, TWIST_SIZE, 1>& _joint_axis) :
       DrakeJointImpl<Derived>(derived, name, transform_to_parent_body, 1, 1),
-      joint_axis(joint_axis),
+      joint_axis(_joint_axis),
       damping(0.0),
       coulomb_friction(0.0),
       coulomb_window(0.0) { };
 
 public:
+  virtual ~FixedAxisOneDoFJoint() {};
 
   using DrakeJoint::getNumPositions;
   using DrakeJoint::getNumVelocities;
-
+  
   template <typename DerivedQ, typename DerivedMS>
   void motionSubspace(const Eigen::MatrixBase<DerivedQ> & q,
                       Eigen::MatrixBase<DerivedMS>& motion_subspace,
@@ -84,22 +84,16 @@ public:
   };
 
   template <typename DerivedV>
-  GradientVar<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorque(const Eigen::MatrixBase<DerivedV> & v, int gradient_order) const {
-    GradientVar<typename DerivedV::Scalar, Eigen::Dynamic, 1> ret(getNumVelocities(), 1, getNumVelocities(), gradient_order);
-    using std::abs;
+  Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorque(const Eigen::MatrixBase<DerivedV> & v) const {
     typedef typename DerivedV::Scalar Scalar;
-    ret.value()[0] = damping * v[0];
+    Eigen::Matrix<Scalar, Eigen::Dynamic, 1> ret(getNumVelocities(), 1);
+    using std::abs;
+    ret[0] = damping * v[0];
     Scalar coulomb_window_fraction = v[0] / coulomb_window;
-    ret.value()[0] += std::min(static_cast<Scalar>(1.0), std::max(static_cast<Scalar>(-1.0), coulomb_window_fraction)) * coulomb_friction;
-    if (gradient_order > 0) {
-      ret.gradient().value()(0, 0) = damping;
-      if (abs(v[0]) < coulomb_window)
-        ret.gradient().value()(0, 0) += sign(v[0]) * (coulomb_friction / coulomb_window);
-    }
+    Scalar coulomb = std::min(Scalar(1), std::max(Scalar(-1), coulomb_window_fraction)) * coulomb_friction;
+    ret[0] += coulomb;
     return ret;
   }
-
-  virtual ~FixedAxisOneDoFJoint() { } ;
 
   void setJointLimits(double joint_limit_min, double joint_limit_max)
   {
@@ -153,6 +147,8 @@ public:
 
   virtual std::string getPositionName(int index) const { if (index!=0) throw std::runtime_error("bad index"); return DrakeJoint::name; }
 
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 #endif /* ONEDOFJOINT_H_ */

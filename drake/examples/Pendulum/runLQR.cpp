@@ -9,7 +9,7 @@ int main(int argc, char* argv[]) {
   if(!lcm->good())
     return 1;
 
-  std::shared_ptr<PendulumWithBotVis> pendulum = make_shared<PendulumWithBotVis>(lcm);
+  std::shared_ptr<PendulumWithBotVis> pendulum(new PendulumWithBotVis(lcm));
   DrakeSystemPtr controller = pendulum->balanceLQR();
 
   DrakeSystemPtr sys = feedback(pendulum,controller);
