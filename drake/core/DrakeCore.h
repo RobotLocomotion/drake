@@ -48,11 +48,18 @@ public:
 
 // useful refs on generic programming: http://www.generic-programming.org/languages/cpp/techniques.php
 
-
-template <template<typename> class InputVector, template<typename> class OutputVector >
+// note: uses CRTP
+template <typename Derived, template<typename> class InputVector, template<typename> class OutputVector >
 class Function {
 public:
-//  virtual OutputVector<double> operator()(const InputVector<double>& x) const = 0;
+  virtual OutputVector<double> operator()(const InputVector<double>& x)  { // todo: add const (w/o compile error)?
+    return static_cast<Derived*>(this)->eval(x);
+  };
+
+  // derived classes must implement, e.g.
+  // template <typename ScalarType>
+  // OutputVector<ScalarType> eval(const InputVector<ScalarType>& u) const;
+
   // sparsity
 };
 

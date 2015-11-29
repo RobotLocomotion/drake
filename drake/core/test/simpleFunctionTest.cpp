@@ -46,6 +46,7 @@ public:
   ScalarType tau;
 };
 
+/*
 template <typename ScalarType, template<typename> class StateVector, template<typename> class InputVector>
 class SystemVector : Vector<ScalarType,-1> // todo: get size from state and input vector template args
 {
@@ -71,9 +72,10 @@ public:
   StateVector<ScalarType> x;
   InputVector<ScalarType> u;
 };
+ */
 
 
-class PendulumPassiveDynamics : public Function<PendulumState,PendulumState> {
+class PendulumPassiveDynamics : public Function<PendulumPassiveDynamics,PendulumState,PendulumState> {
 public:
   template <typename ScalarType>
   PendulumState<ScalarType> eval(const PendulumState<ScalarType>& x) const {
@@ -84,6 +86,31 @@ public:
   }
 };
 
+// note: uses CRTP
+template <typename Derived, template<typename> class StateVector, template<typename> class InputVector, template<typename> class OutputVector >
+class SystemFunction { // todo: implement Function interface, too (will require a helper type or template syntax magic)
+public:
+  virtual OutputVector<double> operator()(const double t, const StateVector<double>& x, const InputVector<double>& u)  { // todo: add const (w/o compile error)?
+    return static_cast<Derived*>(this)->eval(t,x,u);
+  };
+
+  // derived classes must implement, e.g.
+  // template <typename ScalarType>
+  // OutputVector<ScalarType> eval(const ScalarType t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const;
+
+  // sparsity
+};
+
+class PendulumDynamics : public SystemFunction<PendulumDynamics,PendulumState,PendulumInput,PendulumState> {
+public:
+  template <typename ScalarType>
+  PendulumState<ScalarType> eval(const ScalarType t, const PendulumState<ScalarType>& x, const PendulumInput<ScalarType>& u) const {
+    PendulumState<ScalarType> xdot;
+    xdot.theta = x.thetadot;
+    xdot.thetadot = u.tau+sin(x.theta);
+    return xdot;
+  }
+};
 
 
 int main(int argc, char* argv[])
@@ -94,15 +121,13 @@ int main(int argc, char* argv[])
   cout << "x = " << endl << state << endl;
 
   PendulumInput<double> input;
-  input.tau = 0.0;
+  input.tau = 0.2;
 
   PendulumPassiveDynamics passiveDynamics;
-  cout << "xdot = " << endl << passiveDynamics.eval(state) << endl;
+  cout << "xdot (passive) = " << endl << passiveDynamics(state) << endl;
 
-  SystemVector<double,PendulumState,PendulumInput> txu;
-  txu.t = (double) 0.0;
-  txu.x = state;
-  txu.u = input;
+  PendulumDynamics dynamics;
+  cout << "xdot = " << endl << dynamics(0.0,state,input) << endl;
 
   return 0;
 }
