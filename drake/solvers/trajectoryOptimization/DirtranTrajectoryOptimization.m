@@ -104,21 +104,21 @@ classdef DirtranTrajectoryOptimization < DirectTrajectoryOptimization
   methods (Access=protected)
     function [f,df] = forward_constraint_fun(obj,h,x0,x1,u)
       nX = obj.plant.getNumStates();
-      [xdot,dxdot] = obj.plant.dynamics(0,x0,u);
+      [xdot,dxdot] = geval(@dynamics, obj.plant, 0,x0,u);
       f = x1 - x0 - h*xdot;
       df = [-xdot (-eye(nX) - h*dxdot(:,2:1+nX)) eye(nX) -h*dxdot(:,nX+2:end)];
     end
     
     function [f,df] = backward_constraint_fun(obj,h,x0,x1,u)
       nX = obj.plant.getNumStates();
-      [xdot,dxdot] = obj.plant.dynamics(0,x1,u);
+      [xdot,dxdot] = geval(@dynamics, obj.plant, 0,x1,u);
       f = x1 - x0 - h*xdot;
       df = [-xdot -eye(nX) (eye(nX) - h*dxdot(:,2:1+nX)) -h*dxdot(:,nX+2:end)];
     end
     
     function [f,df] = midpoint_constraint_fun(obj,h,x0,x1,u0,u1)
       nX = obj.plant.getNumStates();
-      [xdot,dxdot] = obj.plant.dynamics(0,.5*(x0+x1),.5*(u0+u1));
+      [xdot,dxdot] = geval(@dynamics, obj.plant, 0,.5*(x0+x1),.5*(u0+u1));
       f = x1 - x0 - h*xdot;
       df = [-xdot (-eye(nX) - .5*h*dxdot(:,2:1+nX)) (eye(nX)- .5*h*dxdot(:,2:1+nX)) -.5*h*dxdot(:,nX+2:end) -.5*h*dxdot(:,nX+2:end)];
     end
@@ -126,7 +126,7 @@ classdef DirtranTrajectoryOptimization < DirectTrajectoryOptimization
     function [f,df] = midpoint_running_fun(obj,running_handle,h,x0,x1,u0,u1)
       nX = obj.plant.getNumStates();
       nU = obj.plant.getNumInputs();
-      [f,dg] = running_handle(h,.5*(x0+x1),.5*(u0+u1));
+      [f,dg] = geval(running_handle, h,.5*(x0+x1),.5*(u0+u1));
       
       df = [dg(:,1) .5*dg(:,2:1+nX) .5*dg(:,2:1+nX) .5*dg(:,2+nX:1+nX+nU) .5*dg(:,2+nX:1+nX+nU)];
     end
