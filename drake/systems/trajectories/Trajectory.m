@@ -254,6 +254,7 @@ classdef Trajectory < DrakeSystem
       breaks(breaks>newtspan(2))=[];
       breaks = unique([newtspan(1),breaks,newtspan(2)]);
       traj = FunctionHandleTrajectory(@(t) eval(obj,t), obj.dim, breaks);
+      traj = setOutputFrame(traj, obj.getOutputFrame);
     end
     
     function tf = valuecheck(traj,desired_traj,tol,belementwise)
