@@ -102,9 +102,9 @@ classdef Trajectory < DrakeSystem
     end
     
     function [a,b,breaks] = setupTrajectoryPair(a,b)
-        if (isnumeric(a)) a = ConstantTrajectory(a); end
-        typecheck(a,'Trajectory'); 
-        if (isnumeric(b)) b = ConstantTrajectory(b); end
+        if (isnumeric(a) || isa(a,'Point')) a = ConstantTrajectory(a); end
+        typecheck(a,'Trajectory');
+        if (isnumeric(b) || isa(b,'Point')) b = ConstantTrajectory(b); end
         typecheck(b,'Trajectory');
         tspan = [max(a.tspan(1),b.tspan(1)),min(a.tspan(2),b.tspan(2))];
         if (tspan(2)<tspan(1))
