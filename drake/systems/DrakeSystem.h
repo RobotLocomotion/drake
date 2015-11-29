@@ -10,11 +10,11 @@
 #include "drakeGradientUtil.h"
 
 
-/// A DrakeSystem is a dynamical system that is compatible with most of our tools for design and analysis.
+/// A Drake::System is a dynamical system that is compatible with most of our tools for design and analysis.
 /// It must have:
 ///   - a real-vector-valued input, state, and output
 ///   - deterministic dynamics and outputs given the input and state
-///   - no more than one discrete time-step (in addition to continuous dynamics)
+///   - continuous dynamics [ coming soon: no more than one discrete time-step (in addition to continuous dynamics) ]
 ///  The input, state, and output coordinate systems are all described by CoordinateSystem objects
 ///  In addition, it MAY have
 ///   - time-varying dynamics and outputs
@@ -22,6 +22,79 @@
 ///   - algebraic constraints (c++ support coming soon)
 ///   - zero-crossings (c++ support coming soon) to inform the tools of discontinuities in the dynamics
 
+
+namespace Drake {
+
+  template <typename CRTP, template<typename> class StateVector, template<typename> class InputVector, template<typename> class OutputVector >
+  class System {
+  public:
+    /// dynamics
+    /// @param t time in seconds
+    /// @param x state vector
+    /// @param u input vector
+    ///
+    /// derived classes must implement, e.g.
+    /// private:
+    ///   template <typename ScalarType>
+    ///   StateVector<ScalarType> dynamicsImplementation(ScalarType t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const;
+    ///
+    virtual StateVector<double> dynamics(double t, const StateVector<double>& x, const InputVector<double>& u) const {
+      return static_cast<const CRTP*>(this)->dynamicsImplementation(t,x,u);
+    };
+
+    // todo: add update method (and in general support for DT or mixed CT/DT systems)
+
+    /// output
+    /// @param t time in seconds
+    /// @param x state vector
+    /// @param u input vector
+    ///
+    /// derived classes must implement, e.g.
+    /// private:
+    ///   template <typename ScalarType>
+    ///   OutputVector<ScalarType> outputImplementation(ScalarType t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const;
+    ///
+    virtual OutputVector<double> output(double t, const StateVector<double>& x, const InputVector<double>& u) const {
+      return static_cast<const CRTP*>(this)->outputImplementation(t,x,u);
+    };
+
+    // todo: add sparsity information about dynamics, update, and output methods
+
+    // simulation options
+    struct SimulationOptions {
+      double realtime_factor;  // 1 means try to run at realtime speed, < 0 is run as fast as possible
+      double initial_step_size;
+
+      SimulationOptions() :
+              realtime_factor(-1.0),
+              initial_step_size(0.01)
+      {};
+    };
+    SimulationOptions default_simulation_options;
+
+    virtual void simulate(double t0, double tf, const Eigen::VectorXd& x0, const SimulationOptions& options) const {
+      double t = t0, dt;
+      std::cout << "x0 = " << x0.transpose() << std::endl;
+      Eigen::VectorXd x = x0;
+      Eigen::VectorXd xdot;
+      Eigen::VectorXd u(InputVector<double>::size()); u.setConstant(0);
+      Eigen::VectorXd y(OutputVector<double>::size());
+      while (t<tf) {
+        std::cout << "t=" << t << ", x = " << x.transpose() << std::endl;
+        dt = (std::min)(options.initial_step_size,tf-t);
+        y = output(t,x,u);
+        xdot = dynamics(t,x,u);
+        x += dt * xdot;
+        t += dt;
+      }
+    }
+
+    virtual void simulate(double t0, double tf, const Eigen::VectorXd& x0) const {
+      simulate(t0,tf,x0,default_simulation_options);
+    }
+
+  };
+}
 
 class DLLEXPORT DrakeSystem : public std::enable_shared_from_this<DrakeSystem> {
 public:
@@ -100,6 +173,8 @@ private:
   void ode1(double t0, double tf, const Eigen::VectorXd& x0, const SimulationOptions& options) const;
 //  void ode45(double t0, double tf, const VectorXs& x0, double initial_step_size, double relative_error_tolerance, double absolute_error_tolerance);
 // c.f. https://www.google.com/search?q=Runge-Kutta-Fehlberg and edit ode45.m in matlab.
+
+
 };
 
 class DLLEXPORT CascadeSystem : public DrakeSystem {

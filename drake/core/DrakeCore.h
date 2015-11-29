@@ -51,7 +51,8 @@ public:
 //
 // Concept: Vector<ScalarType>.
 // Requirements:
-//  - castable to and from an Eigen::Matrix<ScalarType,Dim,1> where Dim is the appropriate size
+//  - implements size()
+//  - castable to and from an Eigen::Matrix<ScalarType,Dim,1> where Dim is both the current fixed-size() and Eigen::Dynamic
 //  - implements std::ostream& operator<<(std::ostream& os, const Vector& x)
 
 // note: uses CRTP
