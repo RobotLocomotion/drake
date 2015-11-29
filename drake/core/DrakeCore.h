@@ -12,7 +12,7 @@ namespace Drake
  * A vector who's type defines the coordinate system.
  * Can have named coordinates, but must also provide it's value as an Eigen::Vector
  */
-
+/*
 template <typename ScalarType, int Dim = Eigen::Dynamic>
 class Vector {
 public:
@@ -45,8 +45,14 @@ public:
     return x.print(os);
   }
 };
+*/
 
 // useful refs on generic programming: http://www.generic-programming.org/languages/cpp/techniques.php
+//
+// Concept: Vector<ScalarType>.
+// Requirements:
+//  - castable to and from an Eigen::Matrix<ScalarType,Dim,1> where Dim is the appropriate size
+//  - implements std::ostream& operator<<(std::ostream& os, const Vector& x)
 
 // note: uses CRTP
 template <typename Derived, template<typename> class InputVector, template<typename> class OutputVector >
@@ -60,7 +66,7 @@ public:
   // template <typename ScalarType>
   // OutputVector<ScalarType> eval(const InputVector<ScalarType>& u) const;
 
-  // sparsity
+  // sparsity (aka input/output dependencies in https://github.com/RussTedrake/drake/blob/drake_function/drake/solvers/DrakeFunction.h)
 };
 
 /*
