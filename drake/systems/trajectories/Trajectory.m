@@ -115,6 +115,27 @@ classdef Trajectory < DrakeSystem
         breaks = breaks(breaks>=tspan(1) & breaks<=tspan(2));
         breaks = breaks';
     end
+    function [a,b,breaks,thandover] = setupTrajectoryChain(a,b)
+        if (isnumeric(a) || isa(a,'Point')) a = ConstantTrajectory(a); end
+        typecheck(a,'Trajectory');
+        if (isnumeric(b) || isa(b,'Point')) b = ConstantTrajectory(b); end
+        typecheck(b,'Trajectory');
+        if(b.tspan(1) ~= -Inf)
+          thandover = b.tspan(1);
+          if (thandover > a.tspan(2))
+            error('Drake:Trajectory:IncompatibleTimesForConcatenation','concatenated trajectories do not overlap in time');
+          end
+        elseif(a.tspan(2) ~= Inf)
+          thandover = a.tspan(2);
+        else
+          error('cannot concatenate trajectories that extend to infinity at the overlap')
+        end
+        abreaks = a.getBreaks;
+        bbreaks = b.getBreaks;
+        breaks = unique([reshape(abreaks(abreaks <= thandover),1,[]),reshape(bbreaks,1,[])]);
+        breaks = breaks';
+    end
+    
     
     function b = ctranspose(a)
       s = size(a);
@@ -154,6 +175,25 @@ classdef Trajectory < DrakeSystem
       end
     end
 
+    function c = trajcat(a, varargin)
+      function x = doeval(a, b, thandover, t)
+        if t < thandover
+          x = a.eval(t);
+        else
+          x = b.eval(t);
+        end
+      end
+
+      c = a;
+      for i=1:length(varargin)
+        [c,b,breaks,thandover]=setupTrajectoryChain(c,varargin{i});
+        cdim=size(c);
+        if c.getOutputFrame ~= b.getOutputFrame
+          error('output frames must match')
+        end
+
+        c = FunctionHandleTrajectory(@(t) doeval(c, b, thandover, t),cdim,breaks);
+        c = setOutputFrame(c,getOutputFrame(b));
       end
     end
     
@@ -222,7 +262,7 @@ classdef Trajectory < DrakeSystem
     end
     
     function obj = shiftTime(obj,offset)
-      error('not implemented yet');
+      obj = FunctionHandleTrajectory(@(t) a.eval(t-offset), size(a), breaks + offset);
     end
     
     function s = size(obj,dim)
