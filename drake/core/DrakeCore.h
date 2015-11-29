@@ -8,52 +8,16 @@
 namespace Drake
 {
 
-/***
- * A vector who's type defines the coordinate system.
- * Can have named coordinates, but must also provide it's value as an Eigen::Vector
- */
-/*
-template <typename ScalarType, int Dim = Eigen::Dynamic>
-class Vector {
-public:
-  typedef Eigen::Matrix<ScalarType,Dim,1> EigenType;
-  virtual EigenType eigen() const = 0;
-
-  virtual unsigned int size() const {
-//    static_assert(Dim>=0,"CoordinateSystem classes with dynamic (runtime) dimension specification must overload size()");
-    return static_cast<int>(Dim);
-  };
-  virtual std::string getCoordinateName(unsigned int i) const { return "x"+std::to_string(i); };
-  virtual std::vector<std::string> getCoordinateNames() const {
-    std::vector<std::string> coordinates;
-    for (int i=0; i<size(); i++) {
-      coordinates.push_back(getCoordinateName(i));
-    }
-    return coordinates;
-  };
-
-  virtual std::ostream& print(std::ostream& os) const {
-    auto val = eigen();
-    for (int i=0; i<size(); i++) {
-      os << "  " << getCoordinateName(i) << " = " << val(i) << std::endl;
-    }
-    return os;
-  }
-
-  friend std::ostream& operator<<(std::ostream& os, const Vector& x)
-  {
-    return x.print(os);
-  }
-};
-*/
-
 // useful refs on generic programming: http://www.generic-programming.org/languages/cpp/techniques.php
 //
 // Concept: Vector<ScalarType>.
 // Requirements:
-//  - implements size()
-//  - castable to and from an Eigen::Matrix<ScalarType,Dim,1> where Dim is both the current fixed-size() and Eigen::Dynamic
+//  - has a static const size_t size_at_compile (with -1 for DYNAMIC)
+//  - implements size_t size(), which equals size_at_compile except when DYNAMIC
+//  - implements the copy constructor from Eigen::Matrix<ScalarType,size_at_compile,1>
+//  - implements the typecast method operator Eigen::Matrix<ScalarType,size_at_compile,1>()
 //  - implements std::ostream& operator<<(std::ostream& os, const Vector& x)
+// (Note that the Eigen::Vector_d classes do all of these (by
 
 // note: uses CRTP
 template <typename Derived, template<typename> class InputVector, template<typename> class OutputVector >

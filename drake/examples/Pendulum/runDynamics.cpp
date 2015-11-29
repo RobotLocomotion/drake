@@ -19,10 +19,12 @@ int main(int argc, char* argv[]) {
   x0.theta = 1;
   x0.thetadot = 0;
   cout << "PendulumState::x0 = " << x0 << endl;
-  Eigen::VectorXd ex0(x0);
-  cout << "VectorXd::x0 = " << ex0.transpose() << endl;
   Eigen::Vector2d e2x0(x0);
   cout << "Vector2d::x0 = " << e2x0.transpose() << endl;
 
   p.simulate(0,.1,e2x0);
+
+  cout << "rows at compile time: " << traits<PendulumState>::RowsAtCompileTime << endl;
+  using Eigen::internal::traits;
+  cout << "rows at compile time: " << traits<Eigen::Matrix<double,2,1> >::RowsAtCompileTime << endl;
 }

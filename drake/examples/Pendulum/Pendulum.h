@@ -13,17 +13,12 @@ template <typename ScalarType = double>
 class PendulumState  { // models the Drake::Vector concept
 public:
   PendulumState(void) : theta(0), thetadot(0) {};
-  PendulumState(const Eigen::Matrix<ScalarType,-1,1>& x) : theta(x(0)), thetadot(x(1)) {};
   PendulumState(const Eigen::Matrix<ScalarType,2,1>& x) : theta(x(0)), thetadot(x(1)) {};
 
   operator Eigen::Matrix<ScalarType,2,1> () const {
     Eigen::Matrix<ScalarType,2,1> x;
     x << theta, thetadot;
     return x;
-  }
-
-  operator Eigen::Matrix<ScalarType,-1,1> () const {
-    return Eigen::Matrix<ScalarType,2,1>();
   }
 
   friend std::ostream& operator<<(std::ostream& os, const PendulumState& x)
@@ -33,27 +28,31 @@ public:
     return os;
   }
 
-  static unsigned int size() { return 2; }
+  static std::size_t size() { return 2; }
+  static const std::size_t size_at_compile = 2;
 
   ScalarType theta;
   ScalarType thetadot;
+};
+
+template <template<typename> class Vector>
+struct traits
+{
+  enum {
+    RowsAtCompileTime = 2
+  };
 };
 
 template <typename ScalarType = double>
 class PendulumInput {
 public:
   PendulumInput(void) : tau(0) {};
-  PendulumInput(const Eigen::Matrix<ScalarType,-1,1>& x) : tau(x(0)) {};
   PendulumInput(const Eigen::Matrix<ScalarType,1,1>& x) : tau(x(0)) {};
 
   operator Eigen::Matrix<ScalarType,1,1> () const {
     Eigen::Matrix<ScalarType,1,1> x;
     x << tau;
     return x;
-  }
-
-  operator Eigen::Matrix<ScalarType,-1,1> () const {
-    return Eigen::Matrix<ScalarType,1,1>();
   }
 
   friend std::ostream& operator<<(std::ostream& os, const PendulumInput& x)
@@ -63,6 +62,7 @@ public:
   }
 
   static unsigned int size() { return 1; }
+  static const std::size_t size_at_compile = 1;
 
   ScalarType tau;
 };
