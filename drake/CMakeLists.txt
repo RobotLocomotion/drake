@@ -167,7 +167,7 @@ endif()
 
 include_directories(thirdParty/spruce/include)
 
-
+add_subdirectory(core)
 add_subdirectory(util)
 add_subdirectory(solvers)
 add_subdirectory(systems)

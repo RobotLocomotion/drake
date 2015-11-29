@@ -1,0 +1,4 @@
+
+add_executable(simpleFunctionTest simpleFunctionTest.cpp)
+
+add_test(NAME simpleFunctionTest COMMAND simpleFunctionTest)
