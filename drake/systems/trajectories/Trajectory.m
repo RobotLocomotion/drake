@@ -148,8 +148,9 @@ classdef Trajectory < DrakeSystem
         if (length(cdim)~=length(bdim) || any(cdim([1,3:end])~=bdim([1,3:end])))
           error('dimensions 1 and 3:end must match');
         end
+        fr = getOutputFrame(c);
         c = FunctionHandleTrajectory(@(t) horzcat(c.eval(t),b.eval(t)),[cdim(1),cdim(2)+bdim(2),cdim(3:end)],breaks);
-        c = setOutputFrame(c,MultiCoordinateFrame({getOutputFrame(c),getOutputFrame(b)}));
+        c = setOutputFrame(c,MultiCoordinateFrame({fr,getOutputFrame(b)}));
       end
     end
     
