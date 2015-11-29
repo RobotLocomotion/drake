@@ -133,7 +133,6 @@ classdef Trajectory < DrakeSystem
         abreaks = a.getBreaks;
         bbreaks = b.getBreaks;
         breaks = unique([reshape(abreaks(abreaks <= thandover),1,[]),reshape(bbreaks,1,[])]);
-        breaks = breaks';
     end
     
     
