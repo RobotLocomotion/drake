@@ -198,7 +198,7 @@ classdef Visualizer < DrakeSystem
         function timer_draw(timerobj,event)
           t=t0+obj.playback_speed*(cputime() - playback_start_time);
           if (t>tspan(end))
-            t = tspan(end)
+            t = tspan(end);
           end
           if (ts(1)>0) t = round((t-ts(2))/ts(1))*ts(1) + ts(2); end  % align with sample times if necessary
           x = xtraj.eval(t);
