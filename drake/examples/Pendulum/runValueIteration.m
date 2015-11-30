@@ -11,7 +11,9 @@ ubins = linspace(-ulimit,ulimit,9);
 mdp = MarkovDecisionProcess.discretizeSystem(plant,cost,xbins,ubins,options);
 
 function drawfun(J,PI)
-  figure(2); clf;
+  fig = sfigure(2); 
+  set(fig, 'units', 'normalized', 'position', [.4 .1 .2 .75]);
+  clf;
   n1=length(xbins{1});
   n2=length(xbins{2});
   subplot(2,1,1);imagesc(xbins{1},xbins{2},reshape(ubins(PI),n1,n2)');
