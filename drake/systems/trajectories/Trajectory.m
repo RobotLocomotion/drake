@@ -116,10 +116,14 @@ classdef Trajectory < DrakeSystem
         breaks = breaks';
     end
     function [a,b,breaks,thandover] = setupTrajectoryChain(a,b)
-        if (isnumeric(a) || isa(a,'Point')) a = ConstantTrajectory(a); end
+        if (isnumeric(a) && isa(b, 'Trajectory')) a = Point(b.getOutputFrame, a); end
+        if (isa(a,'Point'))                       a = ConstantTrajectory(a);      end
         typecheck(a,'Trajectory');
-        if (isnumeric(b) || isa(b,'Point')) b = ConstantTrajectory(b); end
+
+        if (isnumeric(b))   b = Point(a.getOutputFrame, b); end
+        if (isa(b,'Point')) b = ConstantTrajectory(b);      end
         typecheck(b,'Trajectory');
+
         if(b.tspan(1) ~= -Inf)
           thandover = b.tspan(1);
           if (thandover > a.tspan(2))
