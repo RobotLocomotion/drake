@@ -8,11 +8,15 @@ classdef CoordinateFrame < handle
     name='';        % string name for this coordinate system
     dim=0;          % scalar dimension of this coordinate system
     transforms={};  % handles to CoordinateTransform objects
-    prefix;         % a vector character prefix used for the msspoly variables, or a vector of size dim listing prefixes for each variable
+    prefix;         % a vector character prefix used for the
+                    % msspoly variables, or a vector of size dim
+                    % listing prefixes for each variable
   end
   properties (Access=private)
     coordinates={}; % list of coordinate names. must be kept
-                    % private to ensure that lazy generation is safe.
+                    % private to ensure that lazy generation is
+                    % safe. furthermore, never access coordinates
+                    % directly, but rather use getCoordinateNames.
     poly=[];        % optional msspoly variables for this frame
   end
   
@@ -115,7 +119,7 @@ classdef CoordinateFrame < handle
       % C, but A does not.
       tf = isequal(a.name,b.name) && ...
         isequal(a.dim,b.dim) && ...
-        isequal(a.coordinates,b.coordinates) && ...
+        isequal(a.getCoordinateNames,b.getCoordinateNames) && ...
         isequal(a.prefix,b.prefix);
     end
     
@@ -191,7 +195,7 @@ classdef CoordinateFrame < handle
         error('default values must be in the fr2 frame');
       end
       
-      [lia,locb] = ismember(fr2.coordinates,fr.coordinates);
+      [lia,locb] = ismember(fr2.getCoordinateNames,fr.getCoordinateNames);
       T = sparse(find(lia),locb(locb>0),1,fr2.dim,fr.dim);
       b = double(fr2_defaultvals); b(lia)=0;
       tf = AffineTransform(fr,fr2,T,b);
