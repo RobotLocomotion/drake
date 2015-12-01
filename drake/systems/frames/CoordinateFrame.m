@@ -44,31 +44,26 @@ classdef CoordinateFrame < handle
       if (nargin<3 || isempty(prefix))
         ind = strfind(name,':');
         if isempty(ind)
-          prefix = name(1);
+          obj.prefix = repmat(name(1),dim,1);
         else
-          prefix = name(ind(end)+[1:2]);
+          obj.prefix = name(ind(end)+[1:2]);
         end
       else
         typecheck(prefix,'char');
-        if ~isscalar(prefix)
+        if isscalar(prefix)
+          obj.prefix = repmat(prefix,dim,1);
+        else
           sizecheck(prefix,dim);
-          prefix = prefix(:);
+          obj.prefix = prefix(:);
         end
       end
-      if isscalar(prefix)
-        prefix = repmat(prefix,dim,1);
-      end
-      obj.prefix = prefix;
-
-      ind=1;
-      function str=coordinateName(~)
-        str=[prefix(ind),sprintf('%d',sum(prefix(1:ind)==prefix(ind)))];
-        ind=ind+1;
-      end
-      if (nargin<4 || isempty(coordinates))
-        obj.coordinates=cellfun(@coordinateName,cell(dim,1),'UniformOutput',false);
+               
+      if (nargin < 4 || isempty(coordinates))
+        obj.coordinates=CoordinateFrame.generateDefaultCoordinates(obj.prefix);
       else
         typecheck(coordinates,'cell');
+        % check that user-specified coordinates match the required
+        % dimensions
         sizecheck(coordinates,dim);
         for i=1:dim
           typecheck(coordinates{i},'char');
@@ -76,7 +71,7 @@ classdef CoordinateFrame < handle
         obj.coordinates = {coordinates{:}}';
       end
     end
-    
+       
     function tf = hasSamePrefix(frame1,frame2)
       % useful for alarming on a possible prefix clash between two polys
       tf = any(any(bsxfun(@eq,frame1.prefix,frame2.prefix')));
@@ -524,5 +519,19 @@ classdef CoordinateFrame < handle
     function s=stripSpecialChars(s)
       s=regexprep(s,'\\','');
     end
+  end
+  
+  methods (Static)
+      function coordinates = generateDefaultCoordinates(prefix)
+          % generates the default coordinate labels for a coordinate Frame
+          % when no value is passed in, based on the prefixes provided.
+      ind=1;
+      [dim, ~] = size(prefix);
+      function str=coordinateName(~)
+          str=[prefix(ind),sprintf('%d',sum(prefix(1:ind)==prefix(ind)))];
+          ind=ind+1;
+      end
+      coordinates = cellfun(@coordinateName,cell(dim,1),'UniformOutput',false);
+      end
   end
 end
