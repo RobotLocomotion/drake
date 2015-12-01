@@ -307,7 +307,6 @@ namespace DrakeCollision
 
     // Create Bullet collision object
     btCollisionObject bt_obj;
-    btCollisionObject* bt_obj_ptr = static_cast<btCollisionObject*>(&bt_obj);
     bt_obj.setCollisionShape(static_cast<btCollisionShape*>(&bt_shape));
 
     btTransform btT;
@@ -323,7 +322,7 @@ namespace DrakeCollision
       btT.setOrigin(pos);
       bt_obj.setWorldTransform(btT);
 
-      bt_world.bt_collision_world->contactTest(bt_obj_ptr, c);
+      bt_world.bt_collision_world->contactTest(&bt_obj, c);
 
       if (c.isInCollision()) {
         return true;
@@ -341,7 +340,6 @@ namespace DrakeCollision
 
     // Create Bullet collision object
     btCollisionObject bt_obj;
-    btCollisionObject* bt_obj_ptr = static_cast<btCollisionObject*>(&bt_obj);
     bt_obj.setCollisionShape(static_cast<btCollisionShape*>(&bt_shape));
 
     btTransform btT;
@@ -358,7 +356,7 @@ namespace DrakeCollision
       btT.setOrigin(pos);
       bt_obj.setWorldTransform(btT);
 
-      bt_world.bt_collision_world->contactTest(bt_obj_ptr, c);
+      bt_world.bt_collision_world->contactTest(&bt_obj, c);
 
       if (c.isInCollision()) {
         in_collision_indices.push_back(i);
