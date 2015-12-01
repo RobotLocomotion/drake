@@ -11,7 +11,8 @@ classdef CoordinateFrame < handle
     prefix;         % a vector character prefix used for the msspoly variables, or a vector of size dim listing prefixes for each variable
   end
   properties (Access=private)
-    coordinates={}; % list of coordinate names
+    coordinates={}; % list of coordinate names. must be kept
+                    % private to ensure that lazy generation is safe.
     poly=[];        % optional msspoly variables for this frame
   end
   
@@ -58,10 +59,14 @@ classdef CoordinateFrame < handle
           obj.prefix = prefix(:);
         end
       end
-      
-      % generating object coordinates (i.e. list of coordinate names)
+           
       if (nargin < 4 || isempty(coordinates))
-        obj.coordinates=CoordinateFrame.generateDefaultCoordinates(obj.prefix);
+        % we do not generate the default coordinate values here;
+        % the values are only generated if the coordinate values
+        % are accessed by the user directly or indirectly through
+        % obj.getCoordinateNames. This is safe since
+        % obj.coordinates is private.
+        obj.coordinates = {};
       else
         typecheck(coordinates,'cell');
         % check that user-specified coordinates match the required
@@ -302,7 +307,7 @@ classdef CoordinateFrame < handle
     
     function strs = getCoordinateNames(obj)
       if isempty(obj.coordinates)
-        obj.coordinates = generateDefaultCoordinates(obj.prefix);
+        obj.coordinates = CoordinateFrame.generateDefaultCoordinates(obj.prefix);
       end
       strs = obj.coordinates;
     end
@@ -323,9 +328,9 @@ classdef CoordinateFrame < handle
     
     function fr=subFrame(obj,dims)
       % Extracts a new frame with a subset of the original variables, so that
-      % fr.coordinates = obj.getCoordinateName(dims)
+      % fr.coordinates = obj.coordinates(dims)
       %
-      % @param dims a numeric vector of index values such that fr.coordinates = obj.getCoordinateName(dims)
+      % @param dims a numeric vector of index values such that fr.coordinates = obj.coordinates(dims)
       %
       % @retval the newly constructed frame
       %
@@ -333,7 +338,8 @@ classdef CoordinateFrame < handle
       if ~isnumeric(dims) || ~isvector(dims) error('dims must be a numeric vector'); end
       if (any(dims>obj.dim | dims<1)) error(['dims must be between 1 and ',obj.dim]); end
       fr = CoordinateFrame([obj.name,mat2str(dims)], length(dims), obj.prefix(dims));
-      fr.coordinates = obj.getCoordinateName(dims);
+      coordinates = obj.getCoordinateNames;
+      fr.coordinates = coordinates(dims);
       if ~isempty(fr.poly)
         fr.poly = obj.poly(dims);
       end
