@@ -12,6 +12,8 @@ mdp = MarkovDecisionProcess.discretizeSystem(plant,cost,xbins,ubins,options);
 
 function drawfun(J,PI)
   fig = sfigure(2); 
+  % figure size is hard-coded simply so that it is aesthetically pleasing.
+  % parameters for position set through trial-and-error.
   set(fig, 'units', 'normalized', 'position', [.4 .1 .2 .75]);
   clf;
   n1=length(xbins{1});
