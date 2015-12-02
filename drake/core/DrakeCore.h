@@ -11,12 +11,12 @@ namespace Drake {
 //
 // Concept: Vector<ScalarType>.
 // Requirements:
-//  - Defines a VectorTraits<VectorType> with a static constant (or enum) RowsAtCompileTime (see Pendulum.h for an example)
+//  - Defines a VectorTraits<VectorType> with a static constant (or enum) RowsAtCompileTime (see Pendulum.h for an example).  Can be Eigen::DYNAMIC
 //  - implements size_t size(), which equals size_at_compile except when DYNAMIC
 //  - implements the copy constructor from Eigen::Matrix<ScalarType,size_at_compile,1>
 //  - implements the typecast method operator Eigen::Matrix<ScalarType,size_at_compile,1>()
 //  - implements std::ostream& operator<<(std::ostream& os, const Vector& x)
-// (Note that the Eigen::Vector_d classes model this concept, and are therefore valid Vectors for use throughout Drake)
+// (The methods/defs below make it possible (and hopefully easy) to simply use Eigen::Matrix types to model this concept)
 
   template<typename T>
   struct VectorTraits;
