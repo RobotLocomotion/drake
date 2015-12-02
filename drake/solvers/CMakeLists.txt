@@ -58,3 +58,4 @@ if(snopt_c_FOUND AND MATLAB_FOUND)
 endif()
 
 add_subdirectory(qpSpline)
+add_subdirectory(test)

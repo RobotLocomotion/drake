@@ -3,6 +3,7 @@
 #include "Pendulum.h"
 
 using namespace std;
+using namespace Drake;
 
 int main(int argc, char* argv[]) {
 /*
@@ -24,7 +25,6 @@ int main(int argc, char* argv[]) {
 
   p.simulate(0,.1,e2x0);
 
-  cout << "rows at compile time: " << traits<PendulumState>::RowsAtCompileTime << endl;
-  using Eigen::internal::traits;
-  cout << "rows at compile time: " << traits<Eigen::Matrix<double,2,1> >::RowsAtCompileTime << endl;
+  cout << "rows at compile time: " << VectorTraits<PendulumState<double> >::RowsAtCompileTime << endl;
+  cout << "rows at compile time: " << VectorTraits<Eigen::Matrix<double,2,1> >::RowsAtCompileTime << endl;
 }

@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <Eigen/Core>
 #include <Eigen/Dense>
+#include "DrakeCore.h"
 #include "CoordinateFrame.h"
 #include "drakeGradientUtil.h"
 
@@ -75,10 +76,10 @@ namespace Drake {
     virtual void simulate(double t0, double tf, const Eigen::VectorXd& x0, const SimulationOptions& options) const {
       double t = t0, dt;
       std::cout << "x0 = " << x0.transpose() << std::endl;
-      Eigen::Matrix<double,StateVector<double>::size_at_compile,1> x = x0;
-      Eigen::Matrix<double,StateVector<double>::size_at_compile,1> xdot;
-      Eigen::Matrix<double,InputVector<double>::size_at_compile,1> u(InputVector<double>::size()); u.setConstant(0);
-      Eigen::Matrix<double,OutputVector<double>::size_at_compile,1> y;
+      Eigen::Matrix<double,Drake::VectorTraits<StateVector<double> >::RowsAtCompileTime,1> x = x0;
+      Eigen::Matrix<double,Drake::VectorTraits<StateVector<double> >::RowsAtCompileTime,1> xdot;
+      Eigen::Matrix<double,Drake::VectorTraits<InputVector<double> >::RowsAtCompileTime,1> u(InputVector<double>::size()); u.setConstant(0);
+      Eigen::Matrix<double,Drake::VectorTraits<OutputVector<double> >::RowsAtCompileTime,1> y;
       while (t<tf) {
         std::cout << "t=" << t << ", x = " << x.transpose() << std::endl;
         dt = (std::min)(options.initial_step_size,tf-t);

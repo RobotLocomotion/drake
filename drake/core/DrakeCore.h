@@ -5,51 +5,39 @@
 #include <vector>
 #include <Eigen/Dense>
 
-namespace Drake
-{
+namespace Drake {
 
 // useful refs on generic programming: http://www.generic-programming.org/languages/cpp/techniques.php
 //
 // Concept: Vector<ScalarType>.
 // Requirements:
-//  - has a static const size_t size_at_compile (with -1 for DYNAMIC)
+//  - Defines a VectorTraits<VectorType> with a static constant (or enum) RowsAtCompileTime (see Pendulum.h for an example)
 //  - implements size_t size(), which equals size_at_compile except when DYNAMIC
 //  - implements the copy constructor from Eigen::Matrix<ScalarType,size_at_compile,1>
 //  - implements the typecast method operator Eigen::Matrix<ScalarType,size_at_compile,1>()
 //  - implements std::ostream& operator<<(std::ostream& os, const Vector& x)
-// (Note that the Eigen::Vector_d classes do all of these (by
+// (Note that the Eigen::Vector_d classes model this concept, and are therefore valid Vectors for use throughout Drake)
 
-// note: uses CRTP
-template <typename Derived, template<typename> class InputVector, template<typename> class OutputVector >
-class Function {
-public:
-  virtual OutputVector<double> operator()(const InputVector<double>& x)  { // todo: add const (w/o compile error)?
-    return static_cast<Derived*>(this)->eval(x);
+  template<typename T>
+  struct VectorTraits;
+
+  template<typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols>
+  struct VectorTraits<Eigen::Matrix<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols> > {
+    enum {
+      RowsAtCompileTime = _Rows
+    };
   };
 
-  // derived classes must implement, e.g.
-  // template <typename ScalarType>
-  // OutputVector<ScalarType> eval(const InputVector<ScalarType>& u) const;
+// really want GenericVector<Rows> to result in a template <typename ScalarType> Eigen::Matrix<ScalarType,Rows,1>
+#define GenericVector(Rows) template<typename ScalarType> using GenericVector##Rows = Eigen::Matrix<ScalarType,Rows,1>
 
-  // sparsity (aka input/output dependencies in https://github.com/RussTedrake/drake/blob/drake_function/drake/solvers/DrakeFunction.h)
-};
-
-/*
-template <template<typename> class InputVector, template<typename> class OutputVector >
-class DifferentiableFunction : public Function {
-public:
-//  OutputVector<> operator()(InputVector<double> x);  // adds autodiff (size is known from the Vector template argument
-};
-*/
-
-// class TrigPolyFunction : public DifferentiableFunction
-// class PolynomialFunction : public TrigPolyFunction
-// class QuadraticFunction : public PolynomialFunction
-// class AffineFunction : public QuadraticFunction
-// class LinearFunction :  public AffineFunction
-// class ConstantFunction : public AffineFunction
+  template <typename ScalarType> using EmptyVector = Eigen::Matrix<ScalarType,0,1>;
+  GenericVector(0);
+  GenericVector(1);
+  GenericVector(2);
+  GenericVector(3);
+  GenericVector(4);
 
 }
-
 
 #endif //DRAKE_DRAKECORE_H

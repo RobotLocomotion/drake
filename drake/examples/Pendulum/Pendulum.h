@@ -29,19 +29,11 @@ public:
   }
 
   static std::size_t size() { return 2; }
-  static const std::size_t size_at_compile = 2;
 
   ScalarType theta;
   ScalarType thetadot;
 };
 
-template <template<typename> class Vector>
-struct traits
-{
-  enum {
-    RowsAtCompileTime = 2
-  };
-};
 
 template <typename ScalarType = double>
 class PendulumInput {
@@ -62,10 +54,34 @@ public:
   }
 
   static unsigned int size() { return 1; }
-  static const std::size_t size_at_compile = 1;
 
   ScalarType tau;
 };
+
+namespace Drake {
+
+  template <typename ScalarType>
+  struct VectorTraits<PendulumState<ScalarType> > {
+    enum {
+      RowsAtCompileTime = 2
+    };
+  };
+
+  template <typename ScalarType>
+  struct VectorTraits<PendulumInput<ScalarType> > {
+    enum {
+      RowsAtCompileTime = 1
+    };
+  };
+
+}
+
+/*
+template <typename ScalarType>
+class VanillaPendulum : public Drake::System<VanillaPendulum<ScalarType>, Eigen::Matrix<ScalarType,2,1>, Eigen::Matrix<ScalarType,1,1>, Eigen::Matrix<ScalarType,2,1> > {
+
+};
+*/
 
 class Pendulum : public Drake::System<Pendulum,PendulumState,PendulumInput,PendulumState> {
 public:

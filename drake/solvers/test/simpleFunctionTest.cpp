@@ -1,5 +1,6 @@
 
-#include "../DrakeCore.h"
+#include "DrakeCore.h"
+#include "DrakeFunction.h"
 #include <iostream>
 
 using namespace Drake;
