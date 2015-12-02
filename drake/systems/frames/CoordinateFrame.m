@@ -15,8 +15,11 @@ classdef CoordinateFrame < handle
   properties (Access=private)
     coordinates={}; % list of coordinate names. must be kept
                     % private to ensure that lazy generation is
-                    % safe. furthermore, never access coordinates
-                    % directly, but rather use getCoordinateNames.
+                    % safe. 
+                    % WARNING: since coordinates are generated
+                    % lazily, never access coordinates
+                    % directly even from within the class. 
+                    % Use getCoordinateNames instead.
     poly=[];        % optional msspoly variables for this frame
   end
   
@@ -310,6 +313,9 @@ classdef CoordinateFrame < handle
     end
     
     function strs = getCoordinateNames(obj)
+      % getCoordinateNames encapsulates the lazy generation of the default
+      % coordinates. It may be worth considering making lazy values a
+      % separate class, but we're not doing this in this instance. 
       if isempty(obj.coordinates)
         obj.coordinates = CoordinateFrame.generateDefaultCoordinates(obj.prefix);
       end
