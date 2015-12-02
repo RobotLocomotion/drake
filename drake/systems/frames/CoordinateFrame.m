@@ -315,7 +315,12 @@ classdef CoordinateFrame < handle
     function strs = getCoordinateNames(obj)
       % getCoordinateNames encapsulates the lazy generation of the default
       % coordinates. It may be worth considering making lazy values a
-      % separate class, but we're not doing this in this instance. 
+      % separate class; this would be advantageous in terms of making 
+      % access to obj.coordinates even safer, rather than relying on future
+      % programmers to be careful enough to get the value of 
+      % obj.coordinates only via getCoordinateNames. 
+      % I'm not doing this in this instance since it's unclear how useful
+      % lazy values would be.
       if isempty(obj.coordinates)
         obj.coordinates = CoordinateFrame.generateDefaultCoordinates(obj.prefix);
       end
