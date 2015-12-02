@@ -1,7 +1,7 @@
 classdef CoordinateFrameCoordinatesTest < matlab.unittest.TestCase
   %NOTEST
   
-  % Tests that functions that touch the Coordinates property of
+  % Tests that functions that touch the coordinates property of
   % CoordinateFrame work.
   
   properties
