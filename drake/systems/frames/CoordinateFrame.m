@@ -154,7 +154,7 @@ classdef CoordinateFrame < handle
         error('Drake:CoordinateFrame:ExistingTransform','i already have a transform that gets me to that frame');
       end
       obj.transforms{end+1}=transform;
-      %      drawFrameGraph(obj); keyboard;
+%      drawFrameGraph(obj); keyboard;
     end
 
     function updateTransform(obj,newtransform)
@@ -269,7 +269,7 @@ classdef CoordinateFrame < handle
 
           % add my children to the queue
           options.queue = horzcat(options.queue,struct('frame',cellfun(@getOutputFrame,obj.transforms,'UniformOutput',false),'tf_from_parent',obj.transforms));
-  
+
           % now check the queue for a match
           while isempty(tf) && ~isempty(options.queue)
             a = options.queue(1);
@@ -282,7 +282,7 @@ classdef CoordinateFrame < handle
             options.tf_from_parent = a.tf_from_parent;
             [tf,options] = findTransform(a.frame,target,options);
           end
-  
+
           if ~isempty(tf)  % then reconstruct tf chain
             parent = options.tf_from_parent;
             while ~isempty(parent)
@@ -403,7 +403,7 @@ classdef CoordinateFrame < handle
       fname = [typename,'.lcm'];
       if strcmpi(input(['About to write file ',fname,' .  Should I proceed (y/n)? '],'s'),'y')
         fptr=fopen(fname,'w');
-  
+
         fprintf(fptr,'// Note: this file was automatically generated using the\n// CoordinateFrame.generateLCMType() method.\n\n');
         fprintf(fptr,'struct %s\n{\n  int64_t timestamp;\n\n',typename);
         for i=1:obj.dim
@@ -415,7 +415,7 @@ classdef CoordinateFrame < handle
       end
     end
   end
-  
+
   methods  % some functions which help operations MultiCoordinateFrames
     function n = getNumFrames(obj)
       n = 1;
@@ -505,9 +505,9 @@ classdef CoordinateFrame < handle
         end
       end
     end
-  
+
   end
-  
+
   methods (Access=protected)
     function [tf,loc]=ismember(obj,cell_of_frames)
       % helper method for searching transforms
@@ -516,7 +516,7 @@ classdef CoordinateFrame < handle
       tf = ~isempty(loc);
     end
   end
-  
+
   methods (Access=protected)
     function [A,fr] = extractFrameGraph(obj)
       A = 0;
@@ -540,7 +540,7 @@ classdef CoordinateFrame < handle
       end
     end
   end
-  
+
   methods (Static=true,Hidden=true)
     function s=stripSpecialChars(s)
       s=regexprep(s,'\\','');
