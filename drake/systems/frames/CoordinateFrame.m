@@ -1,9 +1,9 @@
 classdef CoordinateFrame < handle
-  % Every input, state, and output in a DynamicalSystem has a coordinate frame
-  % attached to it.  Many bugs can be avoided by forcing developers to be
-  % explicit about these coordinate systems when they make combinations of
-  % systems.
-  
+% Every input, state, and output in a DynamicalSystem has a coordinate frame
+% attached to it.  Many bugs can be avoided by forcing developers to be
+% explicit about these coordinate systems when they make combinations of
+% systems.
+
   properties (SetAccess=private,GetAccess=public)
     name='';        % string name for this coordinate system
     dim=0;          % scalar dimension of this coordinate system
@@ -22,7 +22,7 @@ classdef CoordinateFrame < handle
                     % Use getCoordinateNames instead.
     poly=[];        % optional msspoly variables for this frame
   end
-  
+
   methods
     function obj=CoordinateFrame(name,dim,prefix,coordinates)
       % Constructs a new coordinate frame.
@@ -41,14 +41,14 @@ classdef CoordinateFrame < handle
       % where x is the prefix
       %
       % @retval obj the newly constructed CoordinateFrame
-      
+
       typecheck(name,'char');
       obj.name = name;
-      
+
       typecheck(dim,'double');
       sizecheck(dim,[1 1]);
       obj.dim = dim;
-      
+
       % generating object prefix
       if (nargin<3 || isempty(prefix))
         ind = strfind(name,':');
@@ -66,7 +66,7 @@ classdef CoordinateFrame < handle
           obj.prefix = prefix(:);
         end
       end
-           
+
       if (nargin < 4 || isempty(coordinates))
         % we do not generate the default coordinate values here;
         % the values are only generated if the coordinate values
@@ -85,12 +85,12 @@ classdef CoordinateFrame < handle
         obj.coordinates = {coordinates{:}}';
       end
     end
-    
+
     function tf = hasSamePrefix(frame1,frame2)
       % useful for alarming on a possible prefix clash between two polys
       tf = any(any(bsxfun(@eq,frame1.prefix,frame2.prefix')));
     end
-    
+
     function p = getPoly(obj)
       % create the poly now if it hasn't been created yet
       if obj.dim>0 && isempty(obj.poly)
@@ -107,14 +107,14 @@ classdef CoordinateFrame < handle
       end
       p = obj.poly;
     end
-    
+
     function disp(obj)
       fprintf(1,'Coordinate Frame: %s (%d elements)\n',obj.name,obj.dim);
       for i=1:obj.dim
         fprintf(1,'  %s\n',obj.getCoordinateName(i));
       end
     end
-    
+
     function tf = isequal_modulo_transforms(a,b)
       % returns true if the two coordinate frames are the same.
       % the "modulo transforms" refers to the fact that two identical
@@ -125,13 +125,13 @@ classdef CoordinateFrame < handle
         isequal(a.getCoordinateNames,b.getCoordinateNames) && ...
         isequal(a.prefix,b.prefix);
     end
-    
+
     function s = getSym(obj)
       for i=1:length(obj.dim)
         s(1) = sym(obj.getCoordinateName(i),'real');
       end
     end
-    
+
     function addTransform(obj,transform,bforce)
       % Attaches a new coordinate transform from the current frame to a
       % different frame. An error is throw if there already exists any
@@ -144,7 +144,7 @@ classdef CoordinateFrame < handle
       % search for existing transforms).  This was added to optimize
       % transform addition for the case when we are sure that no transform
       % already exists.  Use with caution.
-      
+
       typecheck(transform,'CoordinateTransform');
       if (nargin<3) bforce = false; end
       if (getInputFrame(transform) ~= obj || getOutputFrame(transform) == obj)
@@ -156,13 +156,13 @@ classdef CoordinateFrame < handle
       obj.transforms{end+1}=transform;
       %      drawFrameGraph(obj); keyboard;
     end
-    
+
     function updateTransform(obj,newtransform)
       % find a current transform with the same target frame and replace it
       % with the new transform.  this only searches simple transforms (from
       % the current frame to the output frame), not multi-hop transforms
       % through multiple frames.
-      
+
       typecheck(newtransform,'CoordinateTransform');
       ind=find(cellfun(@(a)getOutputFrame(a)==newtransform.getOutputFrame,obj.transforms));
       if (isempty(ind))
@@ -173,7 +173,7 @@ classdef CoordinateFrame < handle
         obj.transforms{ind}=newtransform;
       end
     end
-    
+
     function addProjectionTransformByCoordinateNames(fr,fr2,fr2_defaultvals)
       % adds a transform from fr to fr2 which copies over the dimensions
       % with matching coordinate names, and sets the remaining elements of
@@ -184,7 +184,7 @@ classdef CoordinateFrame < handle
       % @param fr2_defaultvals a double vector or Point which specifies the
       % constant values of the elements in fr2 which do not get mapped from
       % fr
-      
+
       typecheck(fr2,'CoordinateFrame');
       if (nargin<3)
         fr2_defaultvals = Point(fr2);
@@ -197,29 +197,29 @@ classdef CoordinateFrame < handle
       if (fr2_defaultvals.getFrame()~=fr2)
         error('default values must be in the fr2 frame');
       end
-      
+
       [lia,locb] = ismember(fr2.getCoordinateNames,fr.getCoordinateNames);
       T = sparse(find(lia),locb(locb>0),1,fr2.dim,fr.dim);
       b = double(fr2_defaultvals); b(lia)=0;
       tf = AffineTransform(fr,fr2,T,b);
-      
+
       addTransform(fr,tf);
     end
-    
+
     function drawFrameGraph(obj)
       % Calls graphviz to visualize this frame plus all other frames that
       % are reachable by some (potentially multi-hop) transform.
       %
       % Note: requires that graphviz dot is installed on the system
-      
+
       [A,fr] = extractFrameGraph(obj);
-      
+
       if (size(A,1)<length(A)) A(length(A),end)=0; end
       if (size(A,2)<length(A)) A(end,length(A))=0; end
       drawGraph(A,cellfun(@(a) a.name,fr,'UniformOutput',false));
     end
-    
-    
+
+
     function [tf,options]=findTransform(obj,target,options)
       % Performs a simple breadth-first search of all available multi-hop
       % transforms for a transformation from the current frame to the
@@ -238,7 +238,7 @@ classdef CoordinateFrame < handle
       % this output enables recursive calls to the function, and is
       % intended only for internal use.
       %
-      
+
       if (obj==target)
         % note: it's tempting to replace this with
         % isequal_modulo_transforms, but I think it's more appropriate to
@@ -248,10 +248,10 @@ classdef CoordinateFrame < handle
         tf = ConstOrPassthroughSystem(repmat(nan,obj.dim,1),obj.dim);
         return;
       end
-      
+
       if (nargin<3) options=struct(); end
       if ~isfield(options,'throw_error_if_fail') options.throw_error_if_fail = false; end
-      
+
       typecheck(target,'CoordinateFrame');
       ind=find(cellfun(@(a)getOutputFrame(a)==target,obj.transforms));
       if isempty(ind)
@@ -259,30 +259,30 @@ classdef CoordinateFrame < handle
         if ~isfield(options,'dirty_list') options.dirty_list=[]; end
         if ~isfield(options,'queue') options.queue=[]; end
         if ~isfield(options,'tf_from_parent') options.tf_from_parent=[]; end
-        
+
         tf=[];
         if (options.depth>1)
           options.depth = options.depth-1;
-          
+
           % add myself to the dirty list
           options.dirty_list = horzcat(options.dirty_list, struct('frame',obj,'tf_from_parent',options.tf_from_parent));
-          
+
           % add my children to the queue
           options.queue = horzcat(options.queue,struct('frame',cellfun(@getOutputFrame,obj.transforms,'UniformOutput',false),'tf_from_parent',obj.transforms));
-          
+  
           % now check the queue for a match
           while isempty(tf) && ~isempty(options.queue)
             a = options.queue(1);
             options.queue = options.queue(2:end);
-            
+
             if ismember(a.frame,{options.dirty_list(:).frame})
               continue;
             end
-            
+
             options.tf_from_parent = a.tf_from_parent;
             [tf,options] = findTransform(a.frame,target,options);
           end
-          
+  
           if ~isempty(tf)  % then reconstruct tf chain
             parent = options.tf_from_parent;
             while ~isempty(parent)
@@ -293,7 +293,7 @@ classdef CoordinateFrame < handle
             return;
           end
         end
-        
+
         if (nargin>2 && options.throw_error_if_fail)
           error(['Could not find any transform between ',obj.name,' and ', target.name]);
         end
@@ -303,15 +303,15 @@ classdef CoordinateFrame < handle
         tf=obj.transforms{ind};
       end
     end
-    
+
     function str = getCoordinateName(obj,i)
       str = obj.getCoordinateNames{i};
     end
-    
+
     function ind = findCoordinateIndex(obj,varname)
       ind = find(strcmp(varname,obj.getCoordinateNames));
     end
-    
+
     function strs = getCoordinateNames(obj)
       % getCoordinateNames encapsulates the lazy generation of the default
       % coordinates. It may be worth considering making lazy values a
@@ -326,21 +326,21 @@ classdef CoordinateFrame < handle
       end
       strs = obj.coordinates;
     end
-    
+
     function setCoordinateNames(obj,cnames)
       % Updates the coordinate names
       %
       % @param cnames must be a cell array vector of length dim populated
       % with strings
       %
-      
+
       if (iscellstr(cnames) && isvector(cnames) && length(cnames)==obj.dim)
         obj.coordinates=cnames;
       else
         error('cnames must be a cell vector of length dim populated with strings');
       end
     end
-    
+
     function fr=subFrame(obj,dims)
       % Extracts a new frame with a subset of the original variables, so that
       % fr.coordinates = obj.coordinates(dims)
@@ -349,7 +349,7 @@ classdef CoordinateFrame < handle
       %
       % @retval the newly constructed frame
       %
-      
+
       if ~isnumeric(dims) || ~isvector(dims) error('dims must be a numeric vector'); end
       if (any(dims>obj.dim | dims<1)) error(['dims must be between 1 and ',obj.dim]); end
       fr = CoordinateFrame([obj.name,mat2str(dims)], length(dims), obj.prefix(dims));
@@ -359,7 +359,7 @@ classdef CoordinateFrame < handle
         fr.poly = obj.poly(dims);
       end
     end
-    
+
     function fr=constructFrameWithAnglesWrapped(obj,angle_flag,q0)
       % produces a copy of the current frame, but with a transform placed
       % between them that wraps the angles around 2pi.  The transform wraps all
@@ -371,9 +371,9 @@ classdef CoordinateFrame < handle
       % @param q0 double vector of with the default angle around which to
       % perform the wrapping.  it should be the length of the number of
       % wrapped angles (e.g., so that x(angle_flags) = q0).
-      
+
       fr = CoordinateFrame([obj.name,'Wrapped'],obj.dim,obj.prefix,obj.getCoordinateNames);
-      
+
       if (nargin>2)
         obj.addTransform(AngleWrappingTransform(obj,fr,angle_flag,q0));
       else
@@ -381,7 +381,7 @@ classdef CoordinateFrame < handle
       end
       fr.addTransform(AffineTransform(fr,obj,eye(obj.dim),zeros(obj.dim,1)));
     end
-    
+
     function scope(obj,t,val,options)
       % publishes coordinate information to the lcm scope
       if (nargin<4) options=struct(); end
@@ -389,11 +389,11 @@ classdef CoordinateFrame < handle
         scope(obj.name,obj.getCoordinateName(i),t,val(i),options);
       end
     end
-    
+
     function generateLCMType(obj,robot_name,signal_name)
       % writes an lcm type specification to file from the coordinate frame
       % description. not to be used frequently.
-      
+
       if (nargin<3)
         name = lower(obj.name);
       else
@@ -403,7 +403,7 @@ classdef CoordinateFrame < handle
       fname = [typename,'.lcm'];
       if strcmpi(input(['About to write file ',fname,' .  Should I proceed (y/n)? '],'s'),'y')
         fptr=fopen(fname,'w');
-        
+  
         fprintf(fptr,'// Note: this file was automatically generated using the\n// CoordinateFrame.generateLCMType() method.\n\n');
         fprintf(fptr,'struct %s\n{\n  int64_t timestamp;\n\n',typename);
         for i=1:obj.dim
@@ -420,24 +420,24 @@ classdef CoordinateFrame < handle
     function n = getNumFrames(obj)
       n = 1;
     end
-    
+
     function fr = getFrameByNum(obj,n)
       if (n==1) fr = obj; else error('bad frame num'); end
     end
-    
+
     function id = getFrameNum(obj,fr)
       if (fr==obj) id=1;
       else error('Drake:CoordinateFrame:NoFrame', 'can''t find frame %s',fr.name); end
     end
-    
+
     function insys=setupMultiInput(obj,mdl,subsys)
       insys=subsys;
     end
-    
+
     function outsys=setupMultiOutput(obj,mdl,subsys)
       outsys=subsys;
     end
-    
+
     function setupLCMInputs(obj,mdl,subsys,subsys_portnum,options)
       typecheck(mdl,{'char','SimulinkModelHandle'});
       typecheck(subsys,'char');
@@ -447,7 +447,7 @@ classdef CoordinateFrame < handle
       add_block('simulink3/Sources/In1',[mdl,'/in',uid]);
       add_line(mdl,['in',uid,'/1'],[subsys,'/',num2str(subsys_portnum)]);
     end
-    
+
     function setupLCMOutputs(obj,mdl,subsys,subsys_portnum,options)
       typecheck(mdl,{'char','SimulinkModelHandle'});
       typecheck(subsys,'char');
@@ -457,13 +457,13 @@ classdef CoordinateFrame < handle
       add_block('simulink3/Sources/Terminator',[mdl,'/terminator',uid]);
       add_line(mdl,[subsys,'/',num2str(subsys_portnum)],['terminator',uid,'/1']);
     end
-    
+
     function connection = autoConnect(fr1,fr2,connection)
       % populates the connection structure as used in mimoCascade and
       % mimoFeedback
       % if connection is passed in, then it simply attempts to validate the
       % connection.
-      
+
       if nargin>2 && ~isempty(connection)
         typecheck(connection,'struct');
         if ~isempty(setxor(fieldnames(connection),{'from_output','to_input'}))
@@ -505,7 +505,7 @@ classdef CoordinateFrame < handle
         end
       end
     end
-    
+  
   end
   
   methods (Access=protected)
@@ -522,7 +522,7 @@ classdef CoordinateFrame < handle
       A = 0;
       fr = {obj};
       [A,fr]=recurseTFs(obj,A,fr);
-      
+
       function [A,fr]=recurseTFs(obj,A,fr)
         [~,ind]=ismember(obj,fr);
         children = cellfun(@getOutputFrame,obj.transforms,'UniformOutput',false);
@@ -545,7 +545,7 @@ classdef CoordinateFrame < handle
     function s=stripSpecialChars(s)
       s=regexprep(s,'\\','');
     end
-    
+
     function coordinates = generateDefaultCoordinates(prefix)
       % generates the default coordinate labels for a coordinate Frame
       % when no value is passed in, based on the prefixes provided.
