@@ -5,6 +5,7 @@
 using namespace std;
 
 int main(int argc, char* argv[]) {
+/*
   shared_ptr<lcm::LCM> lcm(new lcm::LCM);
   if(!lcm->good())
     return 1;
@@ -13,5 +14,10 @@ int main(int argc, char* argv[]) {
   DrakeSystemPtr controller = make_shared<PendulumEnergyShaping>(p);
 
   runLCM(controller,*lcm,0,5,Eigen::VectorXd::Zero(0));
+*/
+  Pendulum p;
+  PendulumEnergyShaping c(p);
+
+  auto sys = feedback(p,c);
 }
 

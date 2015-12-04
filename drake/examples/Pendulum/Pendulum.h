@@ -76,13 +76,6 @@ namespace Drake {
 
 }
 
-/*
-template <typename ScalarType>
-class VanillaPendulum : public Drake::System<VanillaPendulum<ScalarType>, Eigen::Matrix<ScalarType,2,1>, Eigen::Matrix<ScalarType,1,1>, Eigen::Matrix<ScalarType,2,1> > {
-
-};
-*/
-
 class Pendulum : public Drake::System<Pendulum,PendulumState,PendulumInput,PendulumState,false,false> {
 public:
   Pendulum() :
@@ -94,9 +87,6 @@ public:
           g(9.81) // m/s^2
   {}
   virtual ~Pendulum(void) {};
-
-//  virtual bool isTimeInvariant() const override { return true; }
-//  virtual bool isDirectFeedthrough() const override { return false; }
 
 /*
   DrakeSystemPtr balanceLQR() {
@@ -123,7 +113,7 @@ public:
     return x;
   }
 
-private:
+public:
   double m,l,b,lc,I,g;  // pendulum parameters (initialized in the constructor)
 };
 
@@ -139,32 +129,26 @@ public:
 
   BotVisualizer botvis;
 };
+*/
 
-class PendulumEnergyShaping : public DrakeSystem {
+class PendulumEnergyShaping : public Drake::System<PendulumEnergyShaping,Drake::UnusedVector,PendulumState,PendulumInput,false,true> {
 public:
   PendulumEnergyShaping(const Pendulum& pendulum)
-          : DrakeSystem("PendulumEnergyShaping"),
-            m(pendulum.m),
+          : m(pendulum.m),
             l(pendulum.l),
             b(pendulum.b),
             g(pendulum.g)
-  {
-    input_frame = pendulum.output_frame;
-    output_frame = pendulum.input_frame;
-  };
+  {};
 
-  virtual Eigen::VectorXd output(double t, const Eigen::VectorXd& unused, const Eigen::VectorXd& u) const override {
-    double Etilde = .5 * m*l*l*u(1)*u(1) - m*g*l*cos(u(0)) - 1.1*m*g*l;
-    Eigen::VectorXd y(1);
-    y << b*u(1) - .1*u(1)*Etilde;
-    return y;
+  template <typename ScalarType>
+  PendulumInput<ScalarType> outputImplementation(const Eigen::Vector0<ScalarType>& unused, const PendulumState<ScalarType>& x) const {
+    ScalarType Etilde = .5 * m*l*l*x.thetadot*x.thetadot - m*g*l*cos(x.theta) - 1.1*m*g*l;
+    PendulumInput<ScalarType> u;
+    u.tau = b*x.thetadot - .1*x.thetadot*Etilde;
+    return u;
   }
-
-  virtual bool isTimeInvariant() const override { return true; }
-  virtual bool isDirectFeedthrough() const override { return true; }
 
   double m,l,b,g;  // pendulum parameters (initialized in the constructor)
 };
-*/
 
 #endif // _PENDULUM_H_

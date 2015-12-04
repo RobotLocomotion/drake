@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
   Eigen::Vector3<double> test;
   cout << test.transpose() << endl;
 
-  p.simulate(0,.1,e2x0);
+  simulate(p,0,.1,e2x0);
 
   cout << "rows at compile time: " << VectorTraits<PendulumState<double> >::RowsAtCompileTime << endl;
   cout << "rows at compile time: " << VectorTraits<Eigen::Matrix<double,2,1> >::RowsAtCompileTime << endl;

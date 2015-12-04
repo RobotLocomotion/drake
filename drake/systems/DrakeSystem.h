@@ -103,9 +103,7 @@ namespace Drake {
     }
 
   public:
-    ///   template <typename ScalarType>
-    ///   OutputVector<ScalarType> outputImplementation(ScalarType t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const;
-    ///
+//  todo: implemented the templated forms here. (need to help compiler figure out the instantiation for casting to Eigen::Matrix<double>)
 //    template <typename ScalarType>
     OutputVector<double> output(const double& t, const StateVector<double>& x, const InputVector<double>& u) const {
       return output(t,x,u,Int2Type<isTimeVarying>(),Int2Type<isDirectFeedthrough>());
@@ -127,40 +125,42 @@ namespace Drake {
 
     // todo: add sparsity information about dynamics, update, and output methods
 
-    // simulation options
-    struct SimulationOptions {
-      double realtime_factor;  // 1 means try to run at realtime speed, < 0 is run as fast as possible
-      double initial_step_size;
-
-      SimulationOptions() :
-              realtime_factor(-1.0),
-              initial_step_size(0.01)
-      {};
-    };
-    SimulationOptions default_simulation_options;
-
-    virtual void simulate(double t0, double tf, const Eigen::VectorXd& x0, const SimulationOptions& options) const {
-      double t = t0, dt;
-      std::cout << "x0 = " << x0.transpose() << std::endl;
-      Eigen::Matrix<double,Drake::VectorTraits<StateVector<double> >::RowsAtCompileTime,1> x = x0;
-      Eigen::Matrix<double,Drake::VectorTraits<StateVector<double> >::RowsAtCompileTime,1> xdot;
-      Eigen::Matrix<double,Drake::VectorTraits<InputVector<double> >::RowsAtCompileTime,1> u(InputVector<double>::size()); u.setConstant(0);
-      Eigen::Matrix<double,Drake::VectorTraits<OutputVector<double> >::RowsAtCompileTime,1> y;
-      while (t<tf) {
-        std::cout << "t=" << t << ", x = " << x.transpose() << std::endl;
-        dt = (std::min)(options.initial_step_size,tf-t);
-        y = output(t,x,u);
-        xdot = dynamics(t,x,u);
-        x += dt * xdot;
-        t += dt;
-      }
-    }
-
-    virtual void simulate(double t0, double tf, const Eigen::VectorXd& x0) const {
-      simulate(t0,tf,x0,default_simulation_options);
-    }
-
   };
+
+  // simulation options
+  struct SimulationOptions {
+    double realtime_factor;  // 1 means try to run at realtime speed, < 0 is run as fast as possible
+    double initial_step_size;
+
+    SimulationOptions() :
+            realtime_factor(-1.0),
+            initial_step_size(0.01)
+    {};
+  };
+  const static SimulationOptions default_simulation_options;
+
+  template <typename Derived, template<typename> class StateVector, template<typename> class InputVector, template<typename> class OutputVector, bool isTimeVarying = true, bool isDirectFeedthrough = true >
+  void simulate(const System<Derived,StateVector,InputVector,OutputVector,isTimeVarying,isDirectFeedthrough>& sys, double t0, double tf, const Eigen::VectorXd& x0, const SimulationOptions& options) {
+    double t = t0, dt;
+    std::cout << "x0 = " << x0.transpose() << std::endl;
+    Eigen::Matrix<double,Drake::VectorTraits<StateVector<double> >::RowsAtCompileTime,1> x = x0;
+    Eigen::Matrix<double,Drake::VectorTraits<StateVector<double> >::RowsAtCompileTime,1> xdot;
+    Eigen::Matrix<double,Drake::VectorTraits<InputVector<double> >::RowsAtCompileTime,1> u(InputVector<double>::size()); u.setConstant(0);
+    Eigen::Matrix<double,Drake::VectorTraits<OutputVector<double> >::RowsAtCompileTime,1> y;
+    while (t<tf) {
+      std::cout << "t=" << t << ", x = " << x.transpose() << std::endl;
+      dt = (std::min)(options.initial_step_size,tf-t);
+      y = sys.output(t,x,u);
+      xdot = sys.dynamics(t,x,u);
+      x += dt * xdot;
+      t += dt;
+    }
+  }
+
+  template <typename Derived, template<typename> class StateVector, template<typename> class InputVector, template<typename> class OutputVector, bool isTimeVarying = true, bool isDirectFeedthrough = true >
+  void simulate(const System<Derived,StateVector,InputVector,OutputVector,isTimeVarying,isDirectFeedthrough>& sys, double t0, double tf, const Eigen::VectorXd& x0)  {
+    simulate(sys,t0,tf,x0,default_simulation_options);
+  }
 }
 
 

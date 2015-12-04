@@ -28,6 +28,8 @@ namespace Drake {
     };
   };
 
+  template <typename ScalarType> using UnusedVector = Eigen::Matrix<ScalarType,0,1>;
+
 
   // a few tools/tricks from Modern C++ Design (by Alexandrescu)
 
