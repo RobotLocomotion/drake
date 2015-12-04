@@ -26,21 +26,40 @@
 
 namespace Drake {
 
-  template <typename CRTP, template<typename> class StateVector, template<typename> class InputVector, template<typename> class OutputVector >
+  template <typename Derived, template<typename> class StateVector, template<typename> class InputVector, template<typename> class OutputVector, bool isTimeVarying = true, bool isDirectFeedthrough = true >
   class System {
-  public:
     /// dynamics
     /// @param t time in seconds
     /// @param x state vector
     /// @param u input vector
     ///
-    /// derived classes must implement, e.g.
-    /// private:
+    /// derived classes must implement one of the following
+    /// if isTimeVarying == true
     ///   template <typename ScalarType>
-    ///   StateVector<ScalarType> dynamicsImplementation(ScalarType t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const;
-    ///
-    virtual StateVector<double> dynamics(double t, const StateVector<double>& x, const InputVector<double>& u) const {
-      return static_cast<const CRTP*>(this)->dynamicsImplementation(t,x,u);
+    ///   StateVector<ScalarType> dynamicsImplementation(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const;
+    /// else
+    ///   template <typename ScalarType>
+    ///   StateVector<ScalarType> dynamicsImplementation(const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const;
+
+  private:
+    /// handle time-varying and time-invariant cases separately using overloading trick from Alexandrescu section 2.4
+    template <typename ScalarType>
+    StateVector<ScalarType> dynamics(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u, Int2Type<true>) const {
+      return static_cast<const Derived*>(this)->dynamicsImplementation(t,x,u);
+    }
+    template <typename ScalarType>
+    StateVector<ScalarType> dynamics(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u, Int2Type<false>) const {
+      return static_cast<const Derived*>(this)->dynamicsImplementation(x,u);
+    }
+
+  public:
+//    template <typename ScalarType>
+    StateVector<double> dynamics(const double& t, const StateVector<double>& x, const InputVector<double>& u) const {
+      return dynamics(t,x,u,Int2Type<isTimeVarying>());
+    };
+    StateVector<double> dynamics(const StateVector<double>& x, const InputVector<double>& u) const {
+      static_assert(!isTimeVarying,"You must set the isTimeVarying template parameter to false to use this method");
+      return static_cast<const Derived*>(this)->dynamicsImplementation(x,u);
     };
 
     // todo: add update method (and in general support for DT or mixed CT/DT systems)
@@ -51,13 +70,60 @@ namespace Drake {
     /// @param u input vector
     ///
     /// derived classes must implement, e.g.
-    /// private:
+    /// if isTimeVarying == true && isDirectFeedthrough == true
+    ///   template <typename ScalarType>
+    ///   OutputVector<ScalarType> outputImplementation(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const;
+    /// elseif isTimeVarying == false && isDirectFeedthrough == true
+    ///   template <typename ScalarType>
+    ///   OutputVector<ScalarType> outputImplementation(const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const;
+    /// elseif isTimeVarying == true && isDirectFeedthrough == false
+    ///   template <typename ScalarType>
+    ///   OutputVector<ScalarType> outputImplementation(const ScalarType& t, const StateVector<ScalarType>& x) const;
+    /// elseif isTimeVarying == false && isDirectFeedthrough == false
+    ///   template <typename ScalarType>
+    ///   OutputVector<ScalarType> outputImplementation(const StateVector<ScalarType>& x) const;
+
+  private:
+    /// handle isTimeVarying and isDirectFeedthrough cases separately using overloading trick from Alexandrescu section 2.4
+    template <typename ScalarType>
+    OutputVector<ScalarType> output(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u, Int2Type<true>, Int2Type<true>) const {
+      return static_cast<const Derived*>(this)->outputImplementation(t,x,u);
+    }
+    template <typename ScalarType>
+    OutputVector<ScalarType> output(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u, Int2Type<true>, Int2Type<false>) const {
+      return static_cast<const Derived*>(this)->outputImplementation(t,x);
+    }
+    template <typename ScalarType>
+    OutputVector<ScalarType> output(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u, Int2Type<false>, Int2Type<true>) const {
+      return static_cast<const Derived*>(this)->outputImplementation(x,u);
+    }
+    template <typename ScalarType>
+    OutputVector<ScalarType> output(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u, Int2Type<false>, Int2Type<false>) const {
+      return static_cast<const Derived*>(this)->outputImplementation(x);
+    }
+
+  public:
     ///   template <typename ScalarType>
     ///   OutputVector<ScalarType> outputImplementation(ScalarType t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const;
     ///
-    virtual OutputVector<double> output(double t, const StateVector<double>& x, const InputVector<double>& u) const {
-      return static_cast<const CRTP*>(this)->outputImplementation(t,x,u);
+//    template <typename ScalarType>
+    OutputVector<double> output(const double& t, const StateVector<double>& x, const InputVector<double>& u) const {
+      return output(t,x,u,Int2Type<isTimeVarying>(),Int2Type<isDirectFeedthrough>());
     };
+    OutputVector<double> output(const StateVector<double>& x, const InputVector<double>& u) const {
+      static_assert(!isTimeVarying,"You must set the isTimeVarying template parameter to false to use this method");
+      return static_cast<const Derived*>(this)->outputImplementation(x,u);
+    };
+    OutputVector<double> output(const double& t, const StateVector<double>& x) const {
+      static_assert(!isDirectFeedthrough,"You must set the isDirectFeedthrough template parameter to false to use this method");
+      return static_cast<const Derived*>(this)->outputImplementation(t,x);
+    };
+    OutputVector<double> output(const StateVector<double>& x) const {
+      static_assert(!isTimeVarying,"You must set the isTimeVarying template parameter to false to use this method");
+      static_assert(!isDirectFeedthrough,"You must set the isDirectFeedthrough template parameter to false to use this method");
+      return static_cast<const Derived*>(this)->outputImplementation(x);
+    };
+
 
     // todo: add sparsity information about dynamics, update, and output methods
 
@@ -96,6 +162,8 @@ namespace Drake {
 
   };
 }
+
+
 
 class DLLEXPORT DrakeSystem : public std::enable_shared_from_this<DrakeSystem> {
 public:

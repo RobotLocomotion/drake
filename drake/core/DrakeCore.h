@@ -28,16 +28,26 @@ namespace Drake {
     };
   };
 
-// really want GenericVector<Rows> to result in a template <typename ScalarType> Eigen::Matrix<ScalarType,Rows,1>
-#define GenericVector(Rows) template<typename ScalarType> using GenericVector##Rows = Eigen::Matrix<ScalarType,Rows,1>
 
-  template <typename ScalarType> using EmptyVector = Eigen::Matrix<ScalarType,0,1>;
-  GenericVector(0);
-  GenericVector(1);
-  GenericVector(2);
-  GenericVector(3);
-  GenericVector(4);
+  // a few tools/tricks from Modern C++ Design (by Alexandrescu)
+
+  template <int v>
+  struct Int2Type
+  {
+    enum { value = v };
+  };
 
 }
+
+// really want GenericVector<Rows> to result in a template <typename ScalarType> Eigen::Matrix<ScalarType,Rows,1>
+#define EigenVector(Rows) namespace Eigen { template<typename ScalarType> using Vector##Rows = Eigen::Matrix<ScalarType,Rows,1>; }
+
+EigenVector(0)
+EigenVector(1)
+EigenVector(2)
+EigenVector(3)
+EigenVector(4)
+
+
 
 #endif //DRAKE_DRAKECORE_H

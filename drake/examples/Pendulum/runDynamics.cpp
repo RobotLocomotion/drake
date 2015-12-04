@@ -23,6 +23,9 @@ int main(int argc, char* argv[]) {
   Eigen::Vector2d e2x0(x0);
   cout << "Vector2d::x0 = " << e2x0.transpose() << endl;
 
+  Eigen::Vector3<double> test;
+  cout << test.transpose() << endl;
+
   p.simulate(0,.1,e2x0);
 
   cout << "rows at compile time: " << VectorTraits<PendulumState<double> >::RowsAtCompileTime << endl;

@@ -83,7 +83,7 @@ class VanillaPendulum : public Drake::System<VanillaPendulum<ScalarType>, Eigen:
 };
 */
 
-class Pendulum : public Drake::System<Pendulum,PendulumState,PendulumInput,PendulumState> {
+class Pendulum : public Drake::System<Pendulum,PendulumState,PendulumInput,PendulumState,false,false> {
 public:
   Pendulum() :
           m(1.0), // kg
@@ -110,7 +110,7 @@ public:
 */
 
   template <typename ScalarType>
-  PendulumState<ScalarType> dynamicsImplementation(ScalarType t, const PendulumState<ScalarType>& x, const PendulumInput<ScalarType>& u) const {
+  PendulumState<ScalarType> dynamicsImplementation(const PendulumState<ScalarType>& x, const PendulumInput<ScalarType>& u) const {
     PendulumState<ScalarType> dot;
     dot.theta = x.thetadot;
     dot.thetadot = (u.tau - m*g*lc*sin(x.theta) - b*x.thetadot)/I;
@@ -119,7 +119,7 @@ public:
 
 
   template <typename ScalarType>
-  PendulumState<ScalarType> outputImplementation(ScalarType t, const PendulumState<ScalarType>& x, const PendulumInput<ScalarType>& u) const {
+  PendulumState<ScalarType> outputImplementation(const PendulumState<ScalarType>& x) const {
     return x;
   }
 
