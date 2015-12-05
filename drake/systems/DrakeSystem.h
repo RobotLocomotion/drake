@@ -40,16 +40,14 @@ namespace Drake {
     /// @param u input vector
     ///
     /// derived classes with non-empty (at compile time) state vectors must implement one of the following
-    /// if isTimeVarying == true
     ///   template <typename ScalarType>
     ///   StateVector<ScalarType> dynamicsImplementation(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const;
-    /// else
-    ///   template <typename ScalarType>
-    ///   StateVector<ScalarType> dynamicsImplementation(const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const;
+    /// but where the t argument must be left out if the system is time-invariant
+    ///           the u argument must be left out if the system has no inputs (RowsAtCompileTime==0)
 
-//    template <typename ScalarType>
-    StateVector<double> dynamics(const double& t, const StateVector<double>& x, const InputVector<double>& u) const {
-      return DynamicsDispatch< isTimeVarying, (num_states != 0), (num_inputs != 0), double, Derived, StateVector, InputVector>::eval(static_cast<const Derived*>(this),t,x,u);
+    template <typename ScalarType>
+    StateVector<ScalarType> dynamics(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {
+      return DynamicsDispatch< isTimeVarying, (num_states != 0), (num_inputs != 0), ScalarType, Derived, StateVector, InputVector>::eval(static_cast<const Derived*>(this),t,x,u);
     };
 /*
  * // todo: allow people to access the dynamics with minimal calls, too
@@ -69,13 +67,13 @@ namespace Drake {
     ///   template <typename ScalarType>
     ///   OutputVector<ScalarType> outputImplementation(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const;
     /// but where the t argument must be left out if the system is time-invariant
-    ///           the x argument must be left out if the system has zero state (RowsAtCompileTime)
+    ///           the x argument must be left out if the system has zero state (RowsAtCompileTime==0)
     ///           the u argument must be left out if the system has no inputs or if the system is labeled as not direct feedthrough
 
 //  todo: implemented the templated forms here. (need to help compiler figure out the instantiation for casting to Eigen::Matrix<double>)
-//    template <typename ScalarType>
-    OutputVector<double> output(const double& t, const StateVector<double>& x, const InputVector<double>& u) const {
-      return OutputDispatch< (num_outputs!=0), isTimeVarying, (num_states != 0), ((num_inputs != 0) && isDirectFeedthrough), double, Derived, StateVector, InputVector, OutputVector>::eval(static_cast<const Derived*>(this),t,x,u);
+    template <typename ScalarType>
+    OutputVector<ScalarType> output(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {
+      return OutputDispatch< (num_outputs!=0), isTimeVarying, (num_states != 0), ((num_inputs != 0) && isDirectFeedthrough), ScalarType, Derived, StateVector, InputVector, OutputVector>::eval(static_cast<const Derived*>(this),t,x,u);
     };
 /*
     OutputVector<double> output(const StateVector<double>& x, const InputVector<double>& u) const {
@@ -138,8 +136,8 @@ namespace Drake {
     while (t<tf) {
       std::cout << "t=" << t << ", x = " << x.transpose() << std::endl;
       dt = (std::min)(options.initial_step_size,tf-t);
-      y = sys.output(t,x,u);
-      xdot = sys.dynamics(t,x,u);
+      y = sys.template output<double>(t,x,u);
+      xdot = sys.template dynamics<double>(t,x,u);
       x += dt * xdot;
       t += dt;
     }
