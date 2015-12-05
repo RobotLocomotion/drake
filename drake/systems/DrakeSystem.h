@@ -26,6 +26,34 @@
 
 namespace Drake {
 
+  // required method changes signature based on the template parameters.  this trick helps the compiler only look for the method it actually needs
+  template <bool hasTime, bool hasDynamics, bool hasInput, typename ScalarType, typename Derived, template <typename> class StateVector, template <typename>  class InputVector>
+  struct DynamicsDispatch {
+    static StateVector<ScalarType> eval(const Derived* sys, const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u)
+    {
+      return sys->dynamicsImplementation(t,x,u);
+    }
+  };
+  template <typename ScalarType, typename Derived, template <typename> class StateVector, template <typename>  class InputVector>
+  struct DynamicsDispatch<false,true,true,ScalarType,Derived,StateVector,InputVector> { // specialization time-invariant dynamics w/ input
+    static StateVector<ScalarType> eval(const Derived* sys, const ScalarType& t, const StateVector<ScalarType> &x, const InputVector<ScalarType> &u) {
+      return sys->dynamicsImplementation(x,u);
+    }
+  };
+  template <typename ScalarType, typename Derived, template <typename> class StateVector, template <typename>  class InputVector>
+  struct DynamicsDispatch<false,true,false,ScalarType,Derived,StateVector,InputVector> { // specialization time-invariant dynamics w/ input
+    static StateVector<ScalarType> eval(const Derived* sys, const ScalarType& t, const StateVector<ScalarType> &x, const InputVector<ScalarType> &u) {
+      return sys->dynamicsImplementation(x);
+    }
+  };
+  template <bool hasTime, bool hasInput,typename ScalarType, typename Derived, template <typename> class StateVector, template <typename>  class InputVector>
+  struct DynamicsDispatch<hasTime, false, hasInput,ScalarType,Derived,StateVector,InputVector> { // specialization for no dynamics.  should probably never get called, but needs to compile
+    static StateVector<ScalarType> eval(const Derived* sys, const ScalarType& t, const StateVector<ScalarType> &x, const InputVector<ScalarType> &u) {
+      StateVector<ScalarType> empty;
+      return empty;
+    }
+  };
+
   template <typename Derived, template<typename> class StateVector, template<typename> class InputVector, template<typename> class OutputVector, bool isTimeVarying = true, bool isDirectFeedthrough = true >
   class System {
     /// dynamics
@@ -41,27 +69,18 @@ namespace Drake {
     ///   template <typename ScalarType>
     ///   StateVector<ScalarType> dynamicsImplementation(const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const;
 
-  private:
-    /// handle time-varying and time-invariant cases separately using overloading trick from Alexandrescu section 2.4
-    template <typename ScalarType>
-    StateVector<ScalarType> dynamics(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u, Int2Type<true>) const {
-      return static_cast<const Derived*>(this)->dynamicsImplementation(t,x,u);
-    }
-    template <typename ScalarType>
-    StateVector<ScalarType> dynamics(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u, Int2Type<false>) const {
-      return static_cast<const Derived*>(this)->dynamicsImplementation(x,u);
-    }
-
   public:
 //    template <typename ScalarType>
     StateVector<double> dynamics(const double& t, const StateVector<double>& x, const InputVector<double>& u) const {
-      return dynamics(t,x,u,Int2Type<isTimeVarying>());
+      return DynamicsDispatch< isTimeVarying, (VectorTraits<StateVector<double> >::RowsAtCompileTime != 0), (VectorTraits<InputVector<double> >::RowsAtCompileTime != 0), double, Derived, StateVector, InputVector>::eval(static_cast<const Derived*>(this),t,x,u);
     };
+/*
+ * // todo: allow people to access the dynamics with minimal calls, too
     StateVector<double> dynamics(const StateVector<double>& x, const InputVector<double>& u) const {
       static_assert(!isTimeVarying,"You must set the isTimeVarying template parameter to false to use this method");
       return static_cast<const Derived*>(this)->dynamicsImplementation(x,u);
     };
-
+*/
     // todo: add update method (and in general support for DT or mixed CT/DT systems)
 
     /// output
@@ -128,6 +147,7 @@ namespace Drake {
   };
 
 
+/*
   template <typename Derived1, template<typename> class StateVector1,
             typename Derived2, template<typename> class StateVector2,
             template<typename> class InputVector, template<typename> class OutputVector,
@@ -135,9 +155,14 @@ namespace Drake {
             bool isTimeVarying2 = true, bool isDirectFeedthrough2 = true>
   class FeedbackSystem : public System<FeedbackSystem<Derived1,StateVector1,Derived2,StateVector2,InputVector,OutputVector,isTimeVarying1,isDirectFeedthrough1,isTimeVarying2,isDirectFeedthrough2>,
           StateVector1,InputVector,OutputVector,isTimeVarying1||isTimeVarying2,isDirectFeedthrough1> {
-    //CombinedVectorBuilder<StateVector1,StateVector2>::VecType
-  };
+  public:
+//    template <typename ScalarType> using StateVector = CombinedVectorBuilder<StateVector1,StateVector2>::template VecType<ScalarType>;
 
+    CombinedVectorBuilder<StateVector1,StateVector2>::VecType<double> outputImplementation(const double& t, const StateVector<double>& x, const InputVector<double>& u) {
+
+    }
+  };
+*/
 
     // simulation options
   struct SimulationOptions {

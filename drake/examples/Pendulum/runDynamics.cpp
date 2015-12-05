@@ -28,6 +28,7 @@ int main(int argc, char* argv[]) {
 
   simulate(p,0,.1,e2x0);
 
+  // todo: move these to core/test
   cout << "rows at compile time: " << VectorTraits<PendulumState<double> >::RowsAtCompileTime << endl;
   cout << "rows at compile time: " << VectorTraits<Eigen::Matrix<double,2,1> >::RowsAtCompileTime << endl;
 }
