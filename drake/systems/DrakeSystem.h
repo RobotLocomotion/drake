@@ -7,6 +7,7 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include "DrakeCore.h"
+#include "DrakeSystemSpecializations.h"
 #include "CoordinateFrame.h"
 #include "drakeGradientUtil.h"
 
@@ -26,42 +27,19 @@
 
 namespace Drake {
 
-  // required method changes signature based on the template parameters.  this trick helps the compiler only look for the method it actually needs
-  template <bool hasTime, bool hasDynamics, bool hasInput, typename ScalarType, typename Derived, template <typename> class StateVector, template <typename>  class InputVector>
-  struct DynamicsDispatch {
-    static StateVector<ScalarType> eval(const Derived* sys, const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u)
-    {
-      return sys->dynamicsImplementation(t,x,u);
-    }
-  };
-  template <typename ScalarType, typename Derived, template <typename> class StateVector, template <typename>  class InputVector>
-  struct DynamicsDispatch<false,true,true,ScalarType,Derived,StateVector,InputVector> { // specialization time-invariant dynamics w/ input
-    static StateVector<ScalarType> eval(const Derived* sys, const ScalarType& t, const StateVector<ScalarType> &x, const InputVector<ScalarType> &u) {
-      return sys->dynamicsImplementation(x,u);
-    }
-  };
-  template <typename ScalarType, typename Derived, template <typename> class StateVector, template <typename>  class InputVector>
-  struct DynamicsDispatch<false,true,false,ScalarType,Derived,StateVector,InputVector> { // specialization time-invariant dynamics w/ input
-    static StateVector<ScalarType> eval(const Derived* sys, const ScalarType& t, const StateVector<ScalarType> &x, const InputVector<ScalarType> &u) {
-      return sys->dynamicsImplementation(x);
-    }
-  };
-  template <bool hasTime, bool hasInput,typename ScalarType, typename Derived, template <typename> class StateVector, template <typename>  class InputVector>
-  struct DynamicsDispatch<hasTime, false, hasInput,ScalarType,Derived,StateVector,InputVector> { // specialization for no dynamics.  should probably never get called, but needs to compile
-    static StateVector<ScalarType> eval(const Derived* sys, const ScalarType& t, const StateVector<ScalarType> &x, const InputVector<ScalarType> &u) {
-      StateVector<ScalarType> empty;
-      return empty;
-    }
-  };
-
   template <typename Derived, template<typename> class StateVector, template<typename> class InputVector, template<typename> class OutputVector, bool isTimeVarying = true, bool isDirectFeedthrough = true >
   class System {
+  public:
+    const static unsigned int num_states = VectorTraits<StateVector<double> >::RowsAtCompileTime;
+    const static unsigned int num_inputs = VectorTraits<InputVector<double> >::RowsAtCompileTime;
+    const static unsigned int num_outputs = VectorTraits<OutputVector<double> >::RowsAtCompileTime;
+
     /// dynamics
     /// @param t time in seconds
     /// @param x state vector
     /// @param u input vector
     ///
-    /// derived classes must implement one of the following
+    /// derived classes with non-empty (at compile time) state vectors must implement one of the following
     /// if isTimeVarying == true
     ///   template <typename ScalarType>
     ///   StateVector<ScalarType> dynamicsImplementation(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const;
@@ -69,10 +47,9 @@ namespace Drake {
     ///   template <typename ScalarType>
     ///   StateVector<ScalarType> dynamicsImplementation(const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const;
 
-  public:
 //    template <typename ScalarType>
     StateVector<double> dynamics(const double& t, const StateVector<double>& x, const InputVector<double>& u) const {
-      return DynamicsDispatch< isTimeVarying, (VectorTraits<StateVector<double> >::RowsAtCompileTime != 0), (VectorTraits<InputVector<double> >::RowsAtCompileTime != 0), double, Derived, StateVector, InputVector>::eval(static_cast<const Derived*>(this),t,x,u);
+      return DynamicsDispatch< isTimeVarying, (num_states != 0), (num_inputs != 0), double, Derived, StateVector, InputVector>::eval(static_cast<const Derived*>(this),t,x,u);
     };
 /*
  * // todo: allow people to access the dynamics with minimal calls, too
@@ -89,44 +66,18 @@ namespace Drake {
     /// @param u input vector
     ///
     /// derived classes must implement, e.g.
-    /// if isTimeVarying == true && isDirectFeedthrough == true
     ///   template <typename ScalarType>
     ///   OutputVector<ScalarType> outputImplementation(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const;
-    /// elseif isTimeVarying == false && isDirectFeedthrough == true
-    ///   template <typename ScalarType>
-    ///   OutputVector<ScalarType> outputImplementation(const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const;
-    /// elseif isTimeVarying == true && isDirectFeedthrough == false
-    ///   template <typename ScalarType>
-    ///   OutputVector<ScalarType> outputImplementation(const ScalarType& t, const StateVector<ScalarType>& x) const;
-    /// elseif isTimeVarying == false && isDirectFeedthrough == false
-    ///   template <typename ScalarType>
-    ///   OutputVector<ScalarType> outputImplementation(const StateVector<ScalarType>& x) const;
+    /// but where the t argument must be left out if the system is time-invariant
+    ///           the x argument must be left out if the system has zero state (RowsAtCompileTime)
+    ///           the u argument must be left out if the system has no inputs or if the system is labeled as not direct feedthrough
 
-  private:
-    /// handle isTimeVarying and isDirectFeedthrough cases separately using overloading trick from Alexandrescu section 2.4
-    template <typename ScalarType>
-    OutputVector<ScalarType> output(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u, Int2Type<true>, Int2Type<true>) const {
-      return static_cast<const Derived*>(this)->outputImplementation(t,x,u);
-    }
-    template <typename ScalarType>
-    OutputVector<ScalarType> output(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u, Int2Type<true>, Int2Type<false>) const {
-      return static_cast<const Derived*>(this)->outputImplementation(t,x);
-    }
-    template <typename ScalarType>
-    OutputVector<ScalarType> output(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u, Int2Type<false>, Int2Type<true>) const {
-      return static_cast<const Derived*>(this)->outputImplementation(x,u);
-    }
-    template <typename ScalarType>
-    OutputVector<ScalarType> output(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u, Int2Type<false>, Int2Type<false>) const {
-      return static_cast<const Derived*>(this)->outputImplementation(x);
-    }
-
-  public:
 //  todo: implemented the templated forms here. (need to help compiler figure out the instantiation for casting to Eigen::Matrix<double>)
 //    template <typename ScalarType>
     OutputVector<double> output(const double& t, const StateVector<double>& x, const InputVector<double>& u) const {
-      return output(t,x,u,Int2Type<isTimeVarying>(),Int2Type<isDirectFeedthrough>());
+      return OutputDispatch< (num_outputs!=0), isTimeVarying, (num_states != 0), ((num_inputs != 0) && isDirectFeedthrough), double, Derived, StateVector, InputVector, OutputVector>::eval(static_cast<const Derived*>(this),t,x,u);
     };
+/*
     OutputVector<double> output(const StateVector<double>& x, const InputVector<double>& u) const {
       static_assert(!isTimeVarying,"You must set the isTimeVarying template parameter to false to use this method");
       return static_cast<const Derived*>(this)->outputImplementation(x,u);
@@ -140,7 +91,7 @@ namespace Drake {
       static_assert(!isDirectFeedthrough,"You must set the isDirectFeedthrough template parameter to false to use this method");
       return static_cast<const Derived*>(this)->outputImplementation(x);
     };
-
+*/
 
     // todo: add sparsity information about dynamics, update, and output methods
 
