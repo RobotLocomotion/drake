@@ -13,7 +13,7 @@ namespace Drake {
 // Requirements:
 //  - Defines a VectorTraits<VectorType> with a static constant (or enum) RowsAtCompileTime (see Pendulum.h for an example).  Can be Eigen::DYNAMIC
 //  - implements size_t size(), which equals size_at_compile except when DYNAMIC
-//  - implements the copy constructor from Eigen::Matrix<ScalarType,size_at_compile,1>
+//  - implements the copy constructor and the assignment operator= from Eigen::Matrix<ScalarType,size_at_compile,1> (e.g. using "copy and swap")
 //  - implements the typecast method operator Eigen::Matrix<ScalarType,size_at_compile,1>()
 //  - implements std::ostream& operator<<(std::ostream& os, const Vector& x)
 // (The methods/defs below make it possible (and hopefully easy) to simply use Eigen::Matrix types to model this concept)
@@ -46,6 +46,12 @@ namespace Drake {
                         vec2_rows = VectorTraits<Vector2<ScalarType> >::RowsAtCompileTime;
     CombinedVector() {};  // allow use of default constructors for vec1 and vec2, also
     CombinedVector(const Eigen::Matrix<ScalarType,vec1_rows + vec2_rows,1>& x) : vec1(x.topRows(vec1_rows)), vec2(x.bottomRows(vec2_rows)) {};
+
+    CombinedVector& operator=(const Eigen::Matrix<ScalarType,vec1_rows + vec2_rows,1>& x) {
+      vec1 = x.topRows(vec1_rows);
+      vec2 = x.bottomRows(vec2_rows);
+      return *this;
+    }
 
     operator Eigen::Matrix<ScalarType,vec1_rows + vec2_rows,1> () const {
       Eigen::Matrix<ScalarType,vec1_rows + vec2_rows,1> x;

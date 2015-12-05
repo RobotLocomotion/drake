@@ -18,11 +18,20 @@ int main(int argc, char* argv[]) {
   Pendulum p;
   PendulumEnergyShaping c(p);
 
-  Drake::CombinedVector<double,PendulumState,PendulumInput> test;
-  Drake::CombinedVectorBuilder<PendulumState,PendulumInput>::VecType<double> test2;
-  Drake::VectorBuilder<2>::VecType<double> test3;
-
-  cout << "test: " << test3.transpose() << endl;
+  // todo: move these to core/test
+  Eigen::Vector3d abc;  abc << 1,2,3;
+  {
+    Drake::CombinedVector<double, PendulumState, PendulumInput> test(abc);
+    cout << test << endl;
+    test=2*abc;
+    cout << test << endl;
+  }
+  {
+    Drake::CombinedVectorBuilder<PendulumState,PendulumInput>::VecType<double> test(abc);
+    cout << test << endl;
+    test=2*abc;
+    cout << test << endl;
+  }
 
 //  auto sys = feedback(p,c);
 }

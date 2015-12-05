@@ -15,6 +15,12 @@ public:
   PendulumState(void) : theta(0), thetadot(0) {};
   PendulumState(const Eigen::Matrix<ScalarType,2,1>& x) : theta(x(0)), thetadot(x(1)) {};
 
+  PendulumState& operator=(const Eigen::Matrix<ScalarType,2,1>& x) {
+    theta = x(0);
+    thetadot = x(1);
+    return *this;
+  }
+
   operator Eigen::Matrix<ScalarType,2,1> () const {
     Eigen::Matrix<ScalarType,2,1> x;
     x << theta, thetadot;
@@ -40,6 +46,11 @@ class PendulumInput {
 public:
   PendulumInput(void) : tau(0) {};
   PendulumInput(const Eigen::Matrix<ScalarType,1,1>& x) : tau(x(0)) {};
+
+  PendulumInput& operator=(const Eigen::Matrix<ScalarType,1,1>& x) {
+    tau = x(0);
+    return *this;
+  }
 
   operator Eigen::Matrix<ScalarType,1,1> () const {
     Eigen::Matrix<ScalarType,1,1> x;
