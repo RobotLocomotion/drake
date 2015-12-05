@@ -127,7 +127,19 @@ namespace Drake {
 
   };
 
-  // simulation options
+
+  template <typename Derived1, template<typename> class StateVector1,
+            typename Derived2, template<typename> class StateVector2,
+            template<typename> class InputVector, template<typename> class OutputVector,
+            bool isTimeVarying1 = true, bool isDirectFeedthrough1 = true,
+            bool isTimeVarying2 = true, bool isDirectFeedthrough2 = true>
+  class FeedbackSystem : public System<FeedbackSystem<Derived1,StateVector1,Derived2,StateVector2,InputVector,OutputVector,isTimeVarying1,isDirectFeedthrough1,isTimeVarying2,isDirectFeedthrough2>,
+          StateVector1,InputVector,OutputVector,isTimeVarying1||isTimeVarying2,isDirectFeedthrough1> {
+    //CombinedVectorBuilder<StateVector1,StateVector2>::VecType
+  };
+
+
+    // simulation options
   struct SimulationOptions {
     double realtime_factor;  // 1 means try to run at realtime speed, < 0 is run as fast as possible
     double initial_step_size;
@@ -280,7 +292,7 @@ public:
   virtual Eigen::VectorXd output(double t, const Eigen::VectorXd& x, const Eigen::VectorXd& u) const override;
 
   virtual bool isTimeInvariant() const override { return sys1->isTimeInvariant() && sys2->isTimeInvariant(); }
-  virtual bool isDirectFeedthrough() const override { return sys1->isDirectFeedthrough() && sys2->isDirectFeedthrough(); }
+  virtual bool isDirectFeedthrough() const override { return sys1->isDirectFeedthrough(); } // && sys2->isDirectFeedthrough(); }
 
 private:
   Eigen::VectorXd getX1(const Eigen::VectorXd& x) const;

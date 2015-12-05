@@ -18,6 +18,12 @@ int main(int argc, char* argv[]) {
   Pendulum p;
   PendulumEnergyShaping c(p);
 
-  auto sys = feedback(p,c);
+  Drake::CombinedVector<double,PendulumState,PendulumInput> test;
+  Drake::CombinedVectorBuilder<PendulumState,PendulumInput>::VecType<double> test2;
+  Drake::VectorBuilder<2>::VecType<double> test3;
+
+  cout << "test: " << test3.transpose() << endl;
+
+//  auto sys = feedback(p,c);
 }
 

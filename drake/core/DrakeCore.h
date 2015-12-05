@@ -28,7 +28,48 @@ namespace Drake {
     };
   };
 
+  // In order to use Eigen types to model the Drake::Vector concept, they must accept only a single template parameter (ScalarType)
+  // The following structures provide a means for doing it.
+
+  template <int Rows>
+  struct VectorBuilder {
+    template <typename ScalarType> using VecType = Eigen::Matrix<ScalarType,Rows,1>;
+  };
+  template <typename ScalarType> using EmptyVector = Eigen::Matrix<ScalarType,0,1>;
   template <typename ScalarType> using UnusedVector = Eigen::Matrix<ScalarType,0,1>;
+
+
+  template <typename ScalarType, template <typename> class Vector1, template <typename> class Vector2>
+  class CombinedVector {
+  public:
+    const static size_t vec1_rows = VectorTraits<Vector1<ScalarType> >::RowsAtCompileTime,
+                        vec2_rows = VectorTraits<Vector2<ScalarType> >::RowsAtCompileTime;
+    CombinedVector() {};  // allow use of default constructors for vec1 and vec2, also
+    CombinedVector(const Eigen::Matrix<ScalarType,vec1_rows + vec2_rows,1>& x) : vec1(x.topRows(vec1_rows)), vec2(x.bottomRows(vec2_rows)) {};
+
+    operator Eigen::Matrix<ScalarType,vec1_rows + vec2_rows,1> () const {
+      Eigen::Matrix<ScalarType,vec1_rows + vec2_rows,1> x;
+      x << vec1, vec2;
+      return x;
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, const CombinedVector& x)
+    {
+      os << x.vec1 << std::endl;
+      os << x.vec2 << std::endl;
+      return os;
+    }
+
+    std::size_t size() { return vec1.size()+vec2.size(); }
+
+    Vector1<ScalarType> vec1;
+    Vector2<ScalarType> vec2;
+  };
+
+  template <template <typename> class Vector1, template <typename> class Vector2>
+  struct CombinedVectorBuilder {
+    template <typename ScalarType> using VecType = CombinedVector<ScalarType,Vector1,Vector2>;
+  };
 
 
   // a few tools/tricks from Modern C++ Design (by Alexandrescu)
@@ -40,16 +81,6 @@ namespace Drake {
   };
 
 }
-
-// really want GenericVector<Rows> to result in a template <typename ScalarType> Eigen::Matrix<ScalarType,Rows,1>
-#define EigenVector(Rows) namespace Eigen { template<typename ScalarType> using Vector##Rows = Eigen::Matrix<ScalarType,Rows,1>; }
-
-EigenVector(0)
-EigenVector(1)
-EigenVector(2)
-EigenVector(3)
-EigenVector(4)
-
 
 
 #endif //DRAKE_DRAKECORE_H
