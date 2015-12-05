@@ -334,7 +334,7 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
         if length(d)<2, d=[d 1]; elseif length(d)>2, error('mtimes is not defined for ND arrays'); end
         if isscalar(a), cd = d; elseif isscalar(b), cd = size(a); else cd = [size(a,1),d(2)]; end
         coefs = full(reshape(coefs,[d,l,k])); a=full(a);
-        c = zeros([size(coefs, 1), size(coefs, 2), l, k]);
+        c = zeros([cd, l, k]);
         for i=1:l, for j=1:k,
           c(:,:,i,j)=a*coefs(:,:,i,j);
         end, end
@@ -345,7 +345,7 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
         if length(d)<2, d=[d 1]; elseif length(d)>2, error('mtimes is not defined for ND arrays'); end
         if isscalar(a), cd = d; elseif isscalar(b), cd = size(a); else cd = [size(a,1),d(2)]; end
         coefs = full(reshape(coefs,[d,l,k])); b=full(b);
-        c = zeros([size(coefs, 1), size(coefs, 2), l, k]);
+        c = zeros([cd, l, k]);
         for i=1:l, for j=1:k,
           c(:,:,i,j)=coefs(:,:,i,j)*b;
         end, end
