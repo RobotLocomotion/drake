@@ -39,7 +39,7 @@ namespace Drake {
     /// @param x state vector
     /// @param u input vector
     ///
-    /// derived classes with non-empty (at compile time) state vectors must implement one of the following
+    /// derived classes with non-empty state vectors (RowsAtCompileTime!=0) must implement
     ///   template <typename ScalarType>
     ///   StateVector<ScalarType> dynamicsImplementation(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const;
     /// but where the t argument must be left out if the system is time-invariant
@@ -63,7 +63,7 @@ namespace Drake {
     /// @param x state vector
     /// @param u input vector
     ///
-    /// derived classes must implement, e.g.
+    /// derived classes with non-empty output vectors (RowsAtCompileTime!=0) must implement
     ///   template <typename ScalarType>
     ///   OutputVector<ScalarType> outputImplementation(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const;
     /// but where the t argument must be left out if the system is time-invariant
@@ -96,22 +96,51 @@ namespace Drake {
   };
 
 
-/*
   template <typename Derived1, template<typename> class StateVector1,
             typename Derived2, template<typename> class StateVector2,
             template<typename> class InputVector, template<typename> class OutputVector,
             bool isTimeVarying1 = true, bool isDirectFeedthrough1 = true,
             bool isTimeVarying2 = true, bool isDirectFeedthrough2 = true>
   class FeedbackSystem : public System<FeedbackSystem<Derived1,StateVector1,Derived2,StateVector2,InputVector,OutputVector,isTimeVarying1,isDirectFeedthrough1,isTimeVarying2,isDirectFeedthrough2>,
+//          CombinedVectorBuilder<StateVector1,StateVector2>::VecType,InputVector,OutputVector,isTimeVarying1||isTimeVarying2,isDirectFeedthrough1> {
           StateVector1,InputVector,OutputVector,isTimeVarying1||isTimeVarying2,isDirectFeedthrough1> {
   public:
-//    template <typename ScalarType> using StateVector = CombinedVectorBuilder<StateVector1,StateVector2>::template VecType<ScalarType>;
+    template <typename ScalarType> using StateVector = CombinedVector<ScalarType,StateVector1,StateVector2>;
+    typedef System<Derived1,StateVector1,InputVector,OutputVector,isTimeVarying1,isDirectFeedthrough1> System1Type;
+    typedef System<Derived2,StateVector2,OutputVector,InputVector,isTimeVarying2,isDirectFeedthrough2> System2Type;
+    typedef std::shared_ptr<System1Type> System1Ptr;
+    typedef std::shared_ptr<System2Type> System2Ptr;
 
-    CombinedVectorBuilder<StateVector1,StateVector2>::VecType<double> outputImplementation(const double& t, const StateVector<double>& x, const InputVector<double>& u) {
+    FeedbackSystem(const System1Ptr& _sys1, const System2Ptr& _sys2) : sys1(_sys1),sys2(_sys2) {};
 
+    template <typename ScalarType>
+    //StateVector<ScalarType> dynamicsImplementation(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {
+    StateVector1<ScalarType> dynamicsImplementation(const ScalarType& t, const StateVector1<ScalarType>& x, const InputVector<ScalarType>& u) const {
+      return sys1->dynamics(t,x,u);
     }
+    template <typename ScalarType>
+    //StateVector<ScalarType> dynamicsImplementation(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {
+    StateVector1<ScalarType> dynamicsImplementation(const StateVector1<ScalarType>& x, const InputVector<ScalarType>& u) const {
+      ScalarType t;
+      return dynamicsImplementation(t,x,u);
+    }
+
+    template <typename ScalarType>
+    //OutputVector<ScalarType> outputImplementation(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {
+    OutputVector<ScalarType> outputImplementation(const ScalarType& t, const StateVector1<ScalarType>& x, const InputVector<ScalarType>& u) const {
+      return sys1->output(t,x,u);
+    }
+    template <typename ScalarType>
+//    OutputVector<ScalarType> outputImplementation(const StateVector<ScalarType>& x) const {
+    OutputVector<ScalarType> outputImplementation(const StateVector1<ScalarType>& x) const {
+      ScalarType t;
+      InputVector<ScalarType> u;
+      return outputImplementation(t,x,u);
+    }
+
+    System1Ptr sys1;
+    System2Ptr sys2;
   };
-*/
 
     // simulation options
   struct SimulationOptions {
@@ -147,7 +176,10 @@ namespace Drake {
   void simulate(const System<Derived,StateVector,InputVector,OutputVector,isTimeVarying,isDirectFeedthrough>& sys, double t0, double tf, const Eigen::VectorXd& x0)  {
     simulate(sys,t0,tf,x0,default_simulation_options);
   }
-}
+
+
+
+} // end namespace Drake
 
 
 

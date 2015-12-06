@@ -15,8 +15,6 @@ int main(int argc, char* argv[]) {
 
   runLCM(controller,*lcm,0,5,Eigen::VectorXd::Zero(0));
 */
-  Pendulum p;
-  PendulumEnergyShaping c(p);
 
   // todo: move these to core/test
   Eigen::Vector3d abc;  abc << 1,2,3;
@@ -33,6 +31,18 @@ int main(int argc, char* argv[]) {
     cout << test << endl;
   }
 
-//  auto sys = feedback(p,c);
+  auto p = std::make_shared<Pendulum>();
+  auto c = std::make_shared<PendulumEnergyShaping>(*p);
+
+  cout << "p has " << p->num_states << " states" << endl;
+  cout << "c has " << c->num_states << " states" << endl;
+
+  // todo: make this syntax less painful!
+  Drake::FeedbackSystem<Pendulum,PendulumState,PendulumEnergyShaping,Drake::UnusedVector,
+          PendulumInput,PendulumState,false,false,false,true> sys(p,c);
+
+  Eigen::Vector2d x0; x0 << 0.1, 0.2;
+  simulate(sys,0,10.0,x0);
+
 }
 

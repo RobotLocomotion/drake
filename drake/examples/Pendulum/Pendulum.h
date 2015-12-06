@@ -152,7 +152,7 @@ public:
   {};
 
   template <typename ScalarType>
-  PendulumInput<ScalarType> outputImplementation(const Drake::UnusedVector<ScalarType>& unused, const PendulumState<ScalarType>& x) const {
+  PendulumInput<ScalarType> outputImplementation(const PendulumState<ScalarType>& x) const {
     ScalarType Etilde = .5 * m*l*l*x.thetadot*x.thetadot - m*g*l*cos(x.theta) - 1.1*m*g*l;
     PendulumInput<ScalarType> u;
     u.tau = b*x.thetadot - .1*x.thetadot*Etilde;
