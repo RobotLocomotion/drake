@@ -5,9 +5,6 @@ classdef ValkyrieInput < SingletonCoordinateFrame
       typecheck(r,'TimeSteppingRigidBodyManipulator');
 
       manipInputFrame = r.getManipulator().getInputFrame();
-      if (r.hand_left > 0 || r.hand_right > 0 || r.external_force ~= 0)
-        manipInputFrame = manipInputFrame.getFrameByNum(1);
-      end
       input_names = manipInputFrame.getCoordinateNames();
       input_names = regexprep(input_names,'_motor',''); % remove motor suffix
 
