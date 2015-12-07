@@ -16,17 +16,8 @@ classdef Valkyrie < TimeSteppingRigidBodyManipulator & Biped
       if ~isfield(options,'terrain')
         options.terrain = RigidBodyFlatTerrain;
       end
-      if ~isfield(options,'hand_right')
-        options.hand_right = 'none';
-      end
-      if ~isfield(options,'hand_left')
-        options.hand_left = 'none';
-      end
       if ~isfield(options,'external_force')
         options.external_force = [];
-      end
-      if ~isfield(options,'atlas_version')
-        options.atlas_version = 5;
       end
 
       w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
@@ -34,58 +25,6 @@ classdef Valkyrie < TimeSteppingRigidBodyManipulator & Biped
       obj = obj@TimeSteppingRigidBodyManipulator(urdf,options.dt,options);
       obj = obj@Biped('r_foot_sole', 'l_foot_sole');
       warning(w);
-
-      if options.atlas_version == 3
-        hand_position_right = [0; -0.195; -0.01];
-        hand_position_left = [0; 0.195; 0.01];
-        hand_orientation_right = [0; -pi/2; pi];
-        hand_orientation_left = [0; -pi/2; 0];
-      elseif options.atlas_version == 4
-        hand_position_right = [0; -0.195; -0.01];
-        hand_position_left = hand_position_right;
-        hand_orientation_right = [0; -pi/2; pi];
-        hand_orientation_left = [0; pi/2; pi];
-      elseif options.atlas_version == 5
-        hand_position_right = [0; -0.195; 0.0];
-        hand_orientation_right = [0; -pi/2; pi];
-        hand_position_left = [0; -0.195; 0.0];
-        hand_orientation_left = [0; -pi/2; pi];
-      end
-
-      hand=options.hand_right;
-      if (~strcmp(hand, 'none'))
-        clear options_hand;
-        if (strcmp(hand, 'robotiq') || strcmp(hand, 'robotiq_tendons') || strcmp(hand, 'robotiq_simple'))
-          options_hand.weld_to_link = findLinkId(obj,'r_hand');
-          obj.hand_right = 1;
-          obj.hand_right_kind = hand;
-          obj = obj.addRobotFromURDF(getFullPathFromRelativePath(['urdf/', hand, '.urdf']), hand_position_right, hand_orientation_right, options_hand);
-        elseif (strcmp(hand, 'robotiq_weight_only'))
-          % Adds a box with weight roughly approximating the hands, so that
-          % the controllers know what's up
-          options_hand.weld_to_link = findLinkId(obj,'r_hand');
-          obj = obj.addRobotFromURDF(getFullPathFromRelativePath('urdf/robotiq_box.urdf'), hand_position_right, hand_orientation_right, options_hand);
-        else
-          error('unsupported hand type');
-        end
-      end
-      hand=options.hand_left;
-      if (~strcmp(hand, 'none'))
-        clear options_hand;
-        if (strcmp(hand, 'robotiq') || strcmp(hand, 'robotiq_tendons') || strcmp(hand, 'robotiq_simple'))
-          options_hand.weld_to_link = findLinkId(obj,'l_hand');
-          obj.hand_left = 1;
-          obj.hand_left_kind = hand;
-          obj = obj.addRobotFromURDF(getFullPathFromRelativePath(['urdf/', hand, '.urdf']), hand_position_left,hand_orientation_left, options_hand);
-        elseif (strcmp(hand, 'robotiq_weight_only'))
-          % Adds a box with weight roughly approximating the hands, so that
-          % the controllers know what's up
-          options_hand.weld_to_link = findLinkId(obj,'l_hand');
-          obj = obj.addRobotFromURDF(getFullPathFromRelativePath('urdf/robotiq_box.urdf'), hand_position_left,hand_orientation_left, options_hand);
-        else
-          error('unsupported hand type');
-        end
-      end
 
       % Add a force on a specified link if we want!
       if ~isempty(options.external_force)
@@ -106,9 +45,6 @@ classdef Valkyrie < TimeSteppingRigidBodyManipulator & Biped
         obj.manip = compile(obj.manip);
         obj = obj.setInitialState(zeros(obj.getNumStates(),1));
       end
-      if isfield(options, 'atlas_version')
-        obj.atlas_version = options.atlas_version;
-      end
 
       lastwarn = warning('off', 'Drake:RigidBodySupportState:NoSupportSurface');
       obj.left_full_support = RigidBodySupportState(obj,obj.foot_body_id.left);
@@ -125,31 +61,13 @@ classdef Valkyrie < TimeSteppingRigidBodyManipulator & Biped
       obj = compile@TimeSteppingRigidBodyManipulator(obj);
 
       % Construct state vector itself -- start by replacing the
-      % atlasPosition and atlasVelocity frames with a single
+      % valkyriePosition and valkyrieVelocity frames with a single
       % larger state frame
       if (strcmp(obj.manip.getStateFrame().getFrameByNum(1).name, 'valkyriePosition'))
         valkyrie_state_frame = valkyrieFrames.ValkyrieState(obj);
       else
         valkyrie_state_frame = obj.manip.getStateFrame();
         valkyrie_state_frame = replaceFrameNum(valkyrie_state_frame,1,valkyrieFrames.ValkyrieState(obj));
-      end
-
-      % Sub in handstates for the hands
-      % If we sub in the order that they are added
-      % we should get this in the right order
-      if (obj.hand_right > 0)
-        id = valkyrie_state_frame.getFrameNumByName('s-model_articulatedPosition+s-model_articulatedVelocity');
-        if (length(id) > 1)
-          id = id(1);
-        end
-        valkyrie_state_frame = replaceFrameNum(valkyrie_state_frame,id,valkyrieFrames.HandState(obj,id,'right_valkyrieFrames.HandState'));
-      end
-      if (obj.hand_left > 0)
-        id = valkyrie_state_frame.getFrameNumByName('s-model_articulatedPosition+s-model_articulatedVelocity');
-        if (length(id) > 1)
-          id = id(1);
-        end
-        valkyrie_state_frame = replaceFrameNum(valkyrie_state_frame,id,valkyrieFrames.HandState(obj,id,'left_valkyrieFrames.HandState'));
       end
 
       tsmanip_state_frame = obj.getStateFrame();
@@ -161,31 +79,6 @@ classdef Valkyrie < TimeSteppingRigidBodyManipulator & Biped
       end
       obj.manip = obj.manip.setStateFrame(valkyrie_state_frame);
       obj = obj.setStateFrame(state_frame);
-
-      % Same bit of complexity for input frame to get hand inputs
-      if (obj.hand_right > 0 || obj.hand_left > 0 || obj.external_force > 0)
-        input_frame = getInputFrame(obj);
-        input_frame  = replaceFrameNum(input_frame,1,valkyrieFrames.ValkyrieInput(obj));
-      else
-        input_frame = valkyrieFrames.ValkyrieInput(obj);
-      end
-      if (obj.hand_right > 0)
-        id = input_frame.getFrameNumByName('s-model_articulatedInput');
-        if (length(id) > 1)
-          id = id(1);
-        end
-        input_frame = replaceFrameNum(input_frame,id,valkyrieFrames.HandInput(obj,id,'right_valkyrieFrames.HandInput'));
-      end
-      if (obj.hand_left > 0)
-        id = input_frame.getFrameNumByName('s-model_articulatedInput');
-        if (length(id) > 1)
-          id = id(1);
-        end
-        input_frame = replaceFrameNum(input_frame,id,valkyrieFrames.HandInput(obj,id,'left_valkyrieFrames.HandInput'));
-      end
-
-      obj = obj.setInputFrame(input_frame);
-      obj.manip = obj.manip.setInputFrame(input_frame);
 
       % Construct output frame, which comes from state plus sensor
       % info
@@ -266,10 +159,6 @@ classdef Valkyrie < TimeSteppingRigidBodyManipulator & Biped
 
   properties (SetAccess = protected, GetAccess = public)
     x0
-    hand_right = 0;
-    hand_right_kind = 'none';
-    hand_left = 0;
-    hand_left_kind = 'none';
     % preconstructing these for efficiency
     left_full_support
     left_toe_support
@@ -278,13 +167,11 @@ classdef Valkyrie < TimeSteppingRigidBodyManipulator & Biped
     left_full_right_full_support
     left_toe_right_full_support
     left_full_right_toe_support
-    atlas_version = [];
     external_force = 0; % if nonzero, body id where force is being exerted
   end
 
   properties
-    %fixed_point_file = fullfile(getDrakePath(), 'examples', 'Atlas', 'data', 'atlas_fp.mat');
-    fixed_point_file;% = '/home/mfallon/main-distro/software/control/matlab/data/val_description/valkyrie_fp_june2015.mat';
+    fixed_point_file;
     default_footstep_params = struct('nom_forward_step', 0.25,... % m
                                       'max_forward_step', 0.35,...% m
                                       'max_backward_step', 0.2,...% m
