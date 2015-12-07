@@ -42,7 +42,7 @@ int main(int argc, char* argv[]) {
           PendulumInput,PendulumState,false,false,false,true> sys(p,c);
 
   Eigen::Vector2d x0; x0 << 0.1, 0.2;
-  simulate(sys,0,10.0,x0);
+  simulate(sys,0,.1,x0);
 
 }
 

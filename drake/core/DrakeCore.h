@@ -77,7 +77,6 @@ namespace Drake {
     template <typename ScalarType> using VecType = CombinedVector<ScalarType,Vector1,Vector2>;
   };
 
-
   // a few tools/tricks from Modern C++ Design (by Alexandrescu)
 
   template <int v>
