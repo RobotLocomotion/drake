@@ -76,12 +76,16 @@ robotnum = length(model.name);
 
 materials = node.getElementsByTagName('material');
 for i=0:(materials.getLength()-1)
-  [~,options] = model.parseMaterial(materials.item(i),options);
+  if strcmp(model.name, materials.item(i).getParentNode.getAttribute('name'))
+    [~,options] = model.parseMaterial(materials.item(i),options);
+  end
 end
 
 parameters = node.getElementsByTagName('parameter');
 for i=0:(parameters.getLength()-1)
-  model = parseParameter(model,robotnum,parameters.item(i),options);
+  if strcmp(model.name, parameters.item(i).getParentNode.getAttribute('name'))
+    model = parseParameter(model,robotnum,parameters.item(i),options);
+  end
 end
 % set the parameter frame immediately so that I can use the indices in my
 % parameter parsing
@@ -92,48 +96,66 @@ end
 
 links = node.getElementsByTagName('link');
 for i=0:(links.getLength()-1)
-  model = parseLink(model,robotnum,links.item(i),options);
+  if strcmp(model.name, links.item(i).getParentNode.getAttribute('name'))
+    model = parseLink(model,robotnum,links.item(i),options);
+  end
 end
 
 collision_filter_groups = node.getElementsByTagName('collision_filter_group');
 for i=0:(collision_filter_groups.getLength()-1)
-  model = parseCollisionFilterGroup(model,robotnum,collision_filter_groups.item(i),options);
+  if strcmp(model.name, collision_filter_groups.item(i).getParentNode.getAttribute('name'))
+    model = parseCollisionFilterGroup(model,robotnum,collision_filter_groups.item(i),options);
+  end
 end
 
 joints = node.getElementsByTagName('joint');
 for i=0:(joints.getLength()-1)
-  model = parseJoint(model,robotnum,joints.item(i),options);
+  if strcmp(model.name, joints.item(i).getParentNode.getAttribute('name'))
+    model = parseJoint(model,robotnum,joints.item(i),options);
+  end
 end
 
 loopjoints = node.getElementsByTagName('loop_joint');
 for i=0:(loopjoints.getLength()-1)
-  [model,loop] = RigidBodyLoop.parseURDFNode(model,robotnum,loopjoints.item(i),options);
-  model.loop=[model.loop,loop];
+  if strcmp(model.name, loopjoints.item(i).getParentNode.getAttribute('name'))
+    [model,loop] = RigidBodyLoop.parseURDFNode(model,robotnum,loopjoints.item(i),options);
+    model.loop=[model.loop,loop];
+  end
 end
 
 forces = node.getElementsByTagName('force_element');
 for i=0:(forces.getLength()-1)
-  model = parseForceElement(model,robotnum,forces.item(i),options);
+  if strcmp(model.name, forces.item(i).getParentNode.getAttribute('name'))
+    model = parseForceElement(model,robotnum,forces.item(i),options);
+  end
 end
 
 transmissions = node.getElementsByTagName('transmission');
 for i=0:(transmissions.getLength()-1)
-  model = parseTransmission(model,robotnum,transmissions.item(i),options);
+  if strcmp(model.name, transmissions.item(i).getParentNode.getAttribute('name'))
+    model = parseTransmission(model,robotnum,transmissions.item(i),options);
+  end
 end
 
 gazebos = node.getElementsByTagName('gazebo');
 for i=0:(gazebos.getLength()-1)
-  model = parseGazebo(model,robotnum,gazebos.item(i),options);
+  if strcmp(model.name, gazebos.item(i).getParentNode.getAttribute('name'))
+    model = parseGazebo(model,robotnum,gazebos.item(i),options);
+  end
 end
 
 frames = node.getElementsByTagName('frame');
 for i=0:(frames.getLength()-1)
-  model = parseFrame(model,robotnum,frames.item(i),options);
+  if strcmp(model.name, frames.item(i).getParentNode.getAttribute('name'))
+    model = parseFrame(model,robotnum,frames.item(i),options);
+  end
 end
 
 cables = node.getElementsByTagName('cable');
 for i=0:(cables.getLength()-1)
-  model = parseCable(model,robotnum,cables.item(i),options);
+  if strcmp(model.name, cables.item(i).getParentNode.getAttribute('name'))
+    model = parseCable(model,robotnum,cables.item(i),options);
+  end
 end
 
 % weld the root link of this robot to the world link
