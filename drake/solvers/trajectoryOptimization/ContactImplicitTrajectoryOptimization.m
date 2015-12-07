@@ -282,10 +282,9 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
     
     function obj = setupVariables(obj,N)
       obj = setupVariables@DirectTrajectoryOptimization(obj,N);
-      obj.nC = obj.plant.getNumContactPairs;
-      [~,normal,d] = obj.plant.contactConstraints(zeros(obj.plant.getNumPositions,1));
+      [~,normal,d] = obj.plant.contactConstraints(zeros(obj.plant.getNumPositions,1), false, obj.options.active_collision_options);
+      obj.nC = size(normal, 2);
       obj.nD = 2*length(d);
-      assert(size(normal,2) == obj.nC); % just a double check
       
       nContactForces = obj.nC*(2 + obj.nD);    
       
