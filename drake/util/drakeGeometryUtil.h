@@ -728,6 +728,28 @@ void quatdot2angularvelMatrix(const Eigen::MatrixBase<DerivedQ>& q,
   M *= 2.0;
 };
 
+template<typename DerivedRPY, typename DerivedRPYdot, typename DerivedOMEGA>
+void rpydot2angularvel(const Eigen::MatrixBase<DerivedRPY>& rpy,
+                       const Eigen::MatrixBase<DerivedRPYdot>& rpydot,
+                             Eigen::MatrixBase<DerivedOMEGA>& omega,
+                             typename Gradient<DerivedOMEGA, RPY_SIZE,1>::type* domega = nullptr)
+{
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedRPY>, RPY_SIZE);
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedRPYdot>, RPY_SIZE);
+  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedOMEGA>, RPY_SIZE, 1);
+
+  Eigen::Matrix<typename DerivedOMEGA::Scalar, 3, 3> E;
+  if (domega) {
+    Eigen::Matrix<typename DerivedOMEGA::Scalar, 9, 3> dE;
+    rpydot2angularvelMatrix(rpy, E, &dE);
+    (*domega) << matGradMult(dE, rpydot), E;
+  }
+  else {
+    rpydot2angularvelMatrix(rpy, E);
+  }
+  omega = E * rpydot;
+}
+
 template<typename Scalar>
  void cylindrical2cartesian(const Eigen::Matrix<Scalar,3,1> &m_cylinder_axis, const Eigen::Matrix<Scalar,3,1> &m_cylinder_x_dir, const Eigen::Matrix<Scalar,3,1> & cylinder_origin, const Eigen::Matrix<Scalar,6,1> &x_cylinder, const Eigen::Matrix<Scalar,6,1> &v_cylinder, Eigen::Matrix<Scalar,6,1> &x_cartesian, Eigen::Matrix<Scalar,6,1> &v_cartesian, Eigen::Matrix<Scalar,6,6> &J, Eigen::Matrix<Scalar,6,1> &Jdotv ) {
   Eigen::Matrix<Scalar,3,1> cylinder_axis = m_cylinder_axis/m_cylinder_axis.norm();
