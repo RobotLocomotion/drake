@@ -76,9 +76,16 @@ classdef MarkovDecisionProcess < DrakeSystem
     function mdp = discretizeSystem(sys,costfun,xbins,ubins,options)
       % @param sys the DynamicalSystem that should be discretized
       % @param costfun is a function handle with costdot = costfun(sys,x,u)
-      % @param xbins a cell array defining the (uniform) state distribution
-      % @param ubins a cell array defining the (uniform) input
-      % discretization
+      % @param xbins a cell array defining the (uniform) state
+      % distribution. 
+      % each cell within xbins corresponds to a dimension in
+      % the state space, and the contents of the cell is an array that must
+      % be sorted in increasing order with the value of the element 
+      % corresponding to the discretized value of that state variable.
+      % @param ubins a cell array defining the (uniform) input. 
+      % similar to xbins, where each cell corresponds to a dimension in the
+      % control input space and the contents of each cell must be sorted in
+      % increasing order.
       % @option gamma @default 1;
       % @option dt timestep.  @default 1
       % @option wrap_flag boolean vector the same size as x which causes the
@@ -101,8 +108,8 @@ classdef MarkovDecisionProcess < DrakeSystem
       if ~isfield(options,'dt') options.dt = 1; end
       if ~isfield(options,'wrap_flag') options.wrap_flag = false(num_x,1); end
       
-      xmin = reshape(cellfun(@(a)a(1),xbins),[],1);
-      xmax = reshape(cellfun(@(a)a(end),xbins),[],1);
+      xmin = reshape(cellfun(@(a)min(a),xbins),[],1);
+      xmax = reshape(cellfun(@(a)max(a),xbins),[],1);
       
       % construct the grids S and A
       assert(iscell(xbins));
