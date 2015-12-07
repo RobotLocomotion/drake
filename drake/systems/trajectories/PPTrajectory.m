@@ -343,7 +343,7 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       elseif isnumeric(b) % then only a is a PPTrajectory
         [breaks,coefs,l,k,d] = unmkpp(a.pp);
         if length(d)<2, d=[d 1]; elseif length(d)>2, error('mtimes is not defined for ND arrays'); end
-        if isscalar(a), cd = d; elseif isscalar(b), cd = size(a); else cd = [size(a,1),d(2)]; end
+        if isscalar(a), cd = d; elseif isscalar(b), cd = size(a); else cd = [d(1), size(b, 2)]; end
         coefs = full(reshape(coefs,[d,l,k])); b=full(b);
         c = zeros([cd, l, k]);
         for i=1:l, for j=1:k,
