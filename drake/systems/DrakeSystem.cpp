@@ -254,7 +254,7 @@ VectorXd FeedbackSystem::output(double t, const VectorXd& x, const VectorXd& u) 
     y1 = sys1->output(t,getX1(x),u);  // output does not depend on u (so it's ok that we're not passing u+y2)
   } else {
     const VectorXd& y2 = sys2->output(t,getX2(x),y1); // y1 might be uninitialized junk, but has to be ok
-    y1 = sys1->output(t,getX2(x),y2+u);
+    y1 = sys1->output(t,getX1(x),y2+u);
   }
   return y1;
 }

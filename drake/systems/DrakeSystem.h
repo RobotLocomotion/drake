@@ -95,41 +95,40 @@ namespace Drake {
 
   };
 
+//  template <typename ScalarType> using TestType = Eigen::Matrix<ScalarType,2,1>;
 
-  template <typename Derived1, template<typename ST> class StateVector1,
-            typename Derived2, template<typename ST> class StateVector2,
+  template <typename Derived1, template <typename> class StateVector1,
+            typename Derived2, template <typename> class StateVector2,
+          template<typename> class StateVector, // todo: get rid of this (generate it internally)
+           // for some reason, I had to take this from outside (which works)
+           // using CombinedVectorBuilder<TestType,TestType>::VecType worked fine is TestType is defined outside of this class, but
+           // using CombinedVectorBuilder<StateVector1,StateVector2>::VecType failed
             template<typename> class InputVector, template<typename> class OutputVector,
             bool isTimeVarying1 = true, bool isDirectFeedthrough1 = true,
             bool isTimeVarying2 = true, bool isDirectFeedthrough2 = true>
-  class FeedbackSystem : public System<FeedbackSystem<Derived1,StateVector1,Derived2,StateVector2,InputVector,OutputVector,isTimeVarying1,isDirectFeedthrough1,isTimeVarying2,isDirectFeedthrough2>,
-//          CombinedVectorBuilder<StateVector1,StateVector2>::VecType,InputVector,OutputVector,isTimeVarying1||isTimeVarying2,isDirectFeedthrough1> {
-          StateVector1,InputVector,OutputVector,isTimeVarying1||isTimeVarying2,isDirectFeedthrough1> {
-//          StateVector,InputVector,OutputVector,isTimeVarying1||isTimeVarying2,isDirectFeedthrough1> {
-//          VectorBuilder<2>::VecType,InputVector,OutputVector,isTimeVarying1||isTimeVarying2,isDirectFeedthrough1> {
+  class FeedbackSystem : public System<FeedbackSystem<Derived1,StateVector1,Derived2,StateVector2,StateVector,InputVector,OutputVector,isTimeVarying1,isDirectFeedthrough1,isTimeVarying2,isDirectFeedthrough2>,
+            StateVector,InputVector,OutputVector,isTimeVarying1||isTimeVarying2,isDirectFeedthrough1> {
 
   public:
-//    template <typename ScalarType> using StateVector = Eigen::Matrix<ScalarType,2,1>;
 //    template <typename ScalarType> using StateVector = CombinedVector<ScalarType,StateVector1,StateVector2>;
-    template <typename ScalarType> using StateVector = StateVector1<ScalarType>;
     typedef System<Derived1,StateVector1,InputVector,OutputVector,isTimeVarying1,isDirectFeedthrough1> System1Type;
     typedef System<Derived2,StateVector2,OutputVector,InputVector,isTimeVarying2,isDirectFeedthrough2> System2Type;
+    template <typename ScalarType> using EigenInput = Eigen::Matrix<ScalarType,System1Type::num_inputs,1>;
     typedef std::shared_ptr<System1Type> System1Ptr;
     typedef std::shared_ptr<System2Type> System2Ptr;
 
-    FeedbackSystem(const System1Ptr& _sys1, const System2Ptr& _sys2) : sys1(_sys1),sys2(_sys2) {};
+    FeedbackSystem(const System1Ptr& _sys1, const System2Ptr& _sys2) : sys1(_sys1),sys2(_sys2) {
+      static_assert(!isDirectFeedthrough1 || !isDirectFeedthrough2,"Algebraic Loop: cannot feedback combine two systems that are both direct feedthrough");
+    };
 
     template <typename ScalarType>
     StateVector<ScalarType> dynamicsImplementation(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {
-      unsigned int num_xc1 = sys1->continuous_state_frame->getDim(),
-              num_xc2 = sys2->continuous_state_frame->getDim();
+      OutputVector<ScalarType> y1;
+      InputVector<ScalarType> y2;
+      subsystemOutputs(t,x.first(),x.second(),u,y1,y2);
 
-      const VectorXd& x1 = getX1(x), x2 = getX2(x);
-      VectorXd y1(sys1->output_frame->getDim()), y2(sys2->output_frame->getDim());
-      subsystemOutputs(t,x1,x2,u,y1,y2);
-
-      VectorXd xdot(continuous_state_frame->getDim());
-      if (num_xc1>0) xdot.head(num_xc1) = sys1->dynamics(t,x1,y2+u);
-      if (num_xc2>0) xdot.tail(num_xc2) = sys2->dynamics(t,x2,y1);
+      StateVector<ScalarType> xdot(sys1->dynamics(t,x.first(),static_cast<InputVector<ScalarType> >( static_cast<EigenInput<ScalarType> >(y2)+static_cast<EigenInput<ScalarType> >(u))),
+                                   sys2->dynamics(t,x.second(),y1));
       return xdot;
     }
     template <typename ScalarType>
@@ -140,7 +139,15 @@ namespace Drake {
 
     template <typename ScalarType>
     OutputVector<ScalarType> outputImplementation(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {
-      return sys1->output(t,x,u);
+      OutputVector<ScalarType> y1;
+      if (!isDirectFeedthrough1) {
+        y1 = sys1->output(t,x.first(),u);
+      } else {
+        InputVector<ScalarType> y2;
+        y2 = sys2->output(t,x.second(),y1); // y1 might be uninitialized junk, but has to be ok
+        y1 = sys1->output(t,x.first(),static_cast<InputVector<ScalarType> >( static_cast<EigenInput<ScalarType> >(y2)+static_cast<EigenInput<ScalarType> >(u)));
+      }
+      return y1;
     }
     template <typename ScalarType>
     OutputVector<ScalarType> outputImplementation(const StateVector<ScalarType>& x) const {
@@ -150,33 +157,22 @@ namespace Drake {
     }
 
     template <typename ScalarType>
-    StateVector1<ScalarType> getX1(const StateVector<ScalarType>& x) const {
-      return x.topRows(VectorTraits<StateVector1<ScalarType> >::RowsAtCompileTime);
-    }
-
-    template <typename ScalarType>
-    StateVector2<ScalarType> getX2(const StateVector<ScalarType>& x) const {
-      return x.bottomRows(VectorTraits<StateVector2<ScalarType> >::RowsAtCompileTime);
-    }
-
-    template <ScalarType>
     void subsystemOutputs(const ScalarType& t, const StateVector1<ScalarType>& x1, const StateVector2<ScalarType>& x2, const InputVector<ScalarType> &u,
                                           OutputVector<ScalarType> &y1, InputVector<ScalarType> &y2) const {
       if (!isDirectFeedthrough1) {
         y1 = sys1->output(t,x1,u);  // output does not depend on u (so it's ok that we're not passing u+y2)
         y2 = sys2->output(t,x2,y1);
       } else {
-        y2 = sys1->output(t,x2,y1); // y1 might be uninitialized junk, but has to be ok
-        y1 = sys2->output(t,x1,y2+u);
+        y2 = sys2->output(t,x2,y1); // y1 might be uninitialized junk, but has to be ok
+        y1 = sys1->output(t,x1,static_cast<InputVector<ScalarType> >( static_cast<EigenInput<ScalarType> >(y2)+static_cast<EigenInput<ScalarType> >(u)));
       }
     }
-
 
     System1Ptr sys1;
     System2Ptr sys2;
   };
 
-    // simulation options
+          // simulation options
   struct SimulationOptions {
     double realtime_factor;  // 1 means try to run at realtime speed, < 0 is run as fast as possible
     double initial_step_size;

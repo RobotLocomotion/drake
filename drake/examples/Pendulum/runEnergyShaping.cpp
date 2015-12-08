@@ -31,6 +31,8 @@ int main(int argc, char* argv[]) {
     cout << test << endl;
   }
 
+
+
   auto p = std::make_shared<Pendulum>();
   auto c = std::make_shared<PendulumEnergyShaping>(*p);
 
@@ -39,10 +41,10 @@ int main(int argc, char* argv[]) {
 
   // todo: make this syntax less painful!
   Drake::FeedbackSystem<Pendulum,PendulumState,PendulumEnergyShaping,Drake::UnusedVector,
+          Drake::CombinedVectorBuilder<PendulumState,Drake::UnusedVector>::VecType,
           PendulumInput,PendulumState,false,false,false,true> sys(p,c);
 
   Eigen::Vector2d x0; x0 << 0.1, 0.2;
-  simulate(sys,0,.1,x0);
-
+  simulate(sys,0,10,x0);
 }
 

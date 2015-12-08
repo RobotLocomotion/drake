@@ -46,6 +46,7 @@ namespace Drake {
                         vec2_rows = VectorTraits<Vector2<ScalarType> >::RowsAtCompileTime;
     CombinedVector() {};  // allow use of default constructors for vec1 and vec2, also
     CombinedVector(const Eigen::Matrix<ScalarType,vec1_rows + vec2_rows,1>& x) : vec1(x.topRows(vec1_rows)), vec2(x.bottomRows(vec2_rows)) {};
+    CombinedVector(const Eigen::Matrix<ScalarType,vec1_rows,1>& x1, const Eigen::Matrix<ScalarType,vec2_rows,1>& x2) : vec1(x1), vec2(x2) {};
 
     CombinedVector& operator=(const Eigen::Matrix<ScalarType,vec1_rows + vec2_rows,1>& x) {
       vec1 = x.topRows(vec1_rows);
@@ -53,9 +54,12 @@ namespace Drake {
       return *this;
     }
 
+    Vector1<ScalarType> first(void) const { return vec1; }
+    Vector2<ScalarType> second(void) const { return vec2; }
+
     operator Eigen::Matrix<ScalarType,vec1_rows + vec2_rows,1> () const {
       Eigen::Matrix<ScalarType,vec1_rows + vec2_rows,1> x;
-      x << vec1, vec2;
+      x << static_cast<Eigen::Matrix<ScalarType,vec1_rows,1> >(vec1), static_cast<Eigen::Matrix<ScalarType,vec2_rows,1> >(vec2);
       return x;
     }
 
@@ -68,6 +72,7 @@ namespace Drake {
 
     std::size_t size() { return vec1.size()+vec2.size(); }
 
+  private:
     Vector1<ScalarType> vec1;
     Vector2<ScalarType> vec2;
   };
@@ -76,6 +81,14 @@ namespace Drake {
   struct CombinedVectorBuilder {
     template <typename ScalarType> using VecType = CombinedVector<ScalarType,Vector1,Vector2>;
   };
+
+  template <typename ScalarType, template <typename> class Vector1, template <typename> class Vector2>
+  struct VectorTraits<CombinedVector<ScalarType, Vector1, Vector2> > {
+    enum {
+      RowsAtCompileTime = VectorTraits< Vector1<ScalarType> >::RowsAtCompileTime + VectorTraits< Vector2<ScalarType> >::RowsAtCompileTime
+    };
+  };
+
 
   // a few tools/tricks from Modern C++ Design (by Alexandrescu)
 
