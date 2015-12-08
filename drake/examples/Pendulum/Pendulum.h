@@ -5,7 +5,7 @@
 #include <cmath>
 #include "DrakeSystem.h"
 //#include "LCMCoordinateFrame.h"
-//#include "BotVisualizer.h"
+#include "BotVisualizer.h"
 
 using namespace std;
 

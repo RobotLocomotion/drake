@@ -27,9 +27,15 @@
 
 namespace Drake {
 
-  template <typename Derived, template<typename> class StateVector, template<typename> class InputVector, template<typename> class OutputVector, bool isTimeVarying = true, bool isDirectFeedthrough = true >
+  template <typename Derived, template<typename> class StateVector, template<typename> class InputVector, template<typename> class OutputVector, bool _isTimeVarying = true, bool _isDirectFeedthrough = true >
   class System {
   public:
+    typedef Derived Type;
+    template <typename ScalarType> using StateVectorType = StateVector<ScalarType>;
+    template <typename ScalarType> using InputVectorType = InputVector<ScalarType>;
+    template <typename ScalarType> using OutputVectorType = OutputVector<ScalarType>;
+    const static bool isTimeVarying = _isTimeVarying;
+    const static bool isDirectFeedthrough = _isDirectFeedthrough;
     const static unsigned int num_states = VectorTraits<StateVector<double> >::RowsAtCompileTime;
     const static unsigned int num_inputs = VectorTraits<InputVector<double> >::RowsAtCompileTime;
     const static unsigned int num_outputs = VectorTraits<OutputVector<double> >::RowsAtCompileTime;
@@ -95,30 +101,32 @@ namespace Drake {
 
   };
 
-//  template <typename ScalarType> using TestType = Eigen::Matrix<ScalarType,2,1>;
+// This is the class design that I want.  But it seems that recursive templates in the inheritance line don't work (more discussion in the git history)
+//
+//  template <class System1, class System2>
+//  class FeedbackSystem : public System<FeedbackSystem<System1,System2>,
+//          CombinedVectorBuilder<System1::StateVectorType , System2::StateVectorType>::VecType, System1::InputVectorType, System1::OutputVectorType, System1::isTimeVarying||System2::isTimeVarying, System1::isDirectFeedthrough> {
+//
+// So I'm getting around it with this helper macro (which makes the call outside of the template class, so it's not recursive)
+#define FeedbackSystemType(System1,System2) Drake::FeedbackSystem<System1,System2,System1::StateVectorType,System2::StateVectorType,Drake::CombinedVectorBuilder<System1::StateVectorType,System2::StateVectorType>::VecType,System1::InputVectorType,System1::OutputVectorType,System1::isTimeVarying||System2::isTimeVarying,System1::isDirectFeedthrough>
 
-  template <typename Derived1, template <typename> class StateVector1,
-            typename Derived2, template <typename> class StateVector2,
-          template<typename> class StateVector, // todo: get rid of this (generate it internally)
-           // for some reason, I had to take this from outside (which works)
-           // using CombinedVectorBuilder<TestType,TestType>::VecType worked fine is TestType is defined outside of this class, but
-           // using CombinedVectorBuilder<StateVector1,StateVector2>::VecType failed
-            template<typename> class InputVector, template<typename> class OutputVector,
-            bool isTimeVarying1 = true, bool isDirectFeedthrough1 = true,
-            bool isTimeVarying2 = true, bool isDirectFeedthrough2 = true>
-  class FeedbackSystem : public System<FeedbackSystem<Derived1,StateVector1,Derived2,StateVector2,StateVector,InputVector,OutputVector,isTimeVarying1,isDirectFeedthrough1,isTimeVarying2,isDirectFeedthrough2>,
-            StateVector,InputVector,OutputVector,isTimeVarying1||isTimeVarying2,isDirectFeedthrough1> {
-
+  template <typename System1, typename System2,
+          template <typename> class StateVector1, template <typename> class StateVector2, template<typename> class StateVector,
+          template<typename> class InputVector, template<typename> class OutputVector,
+          bool isTimeVarying, bool isDirectFeedthrough>
+  class FeedbackSystem : public System<FeedbackSystem<System1,System2,StateVector1,StateVector2,StateVector,InputVector,OutputVector,isTimeVarying,isDirectFeedthrough> ,
+          StateVector, InputVector, OutputVector, isTimeVarying, isDirectFeedthrough> {
   public:
-//    template <typename ScalarType> using StateVector = CombinedVector<ScalarType,StateVector1,StateVector2>;
-    typedef System<Derived1,StateVector1,InputVector,OutputVector,isTimeVarying1,isDirectFeedthrough1> System1Type;
-    typedef System<Derived2,StateVector2,OutputVector,InputVector,isTimeVarying2,isDirectFeedthrough2> System2Type;
-    template <typename ScalarType> using EigenInput = Eigen::Matrix<ScalarType,System1Type::num_inputs,1>;
-    typedef std::shared_ptr<System1Type> System1Ptr;
-    typedef std::shared_ptr<System2Type> System2Ptr;
+    template <typename ScalarType> using EigenInput = Eigen::Matrix<ScalarType,System1::num_inputs,1>;
+    typedef std::shared_ptr<System1> System1Ptr;
+    typedef std::shared_ptr<System2> System2Ptr;
+
+    static_assert(!System1::isDirectFeedthrough || !System2::isDirectFeedthrough,"Algebraic Loop: cannot feedback combine two systems that are both direct feedthrough");
+//    static_assert(System1::OutputVectorType == System2::InputVectorType,"System 2 input vector must match System 1 output vector");
+//    static_assert(System2::OutputVectorType == System1::InputVectorType,"System 1 input vector must match System 2 output vector");
+    // todo: assert that StateVector is indeed a CombinedVector<...,StateVector1,StateVector2>
 
     FeedbackSystem(const System1Ptr& _sys1, const System2Ptr& _sys2) : sys1(_sys1),sys2(_sys2) {
-      static_assert(!isDirectFeedthrough1 || !isDirectFeedthrough2,"Algebraic Loop: cannot feedback combine two systems that are both direct feedthrough");
     };
 
     template <typename ScalarType>
@@ -140,8 +148,8 @@ namespace Drake {
     template <typename ScalarType>
     OutputVector<ScalarType> outputImplementation(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {
       OutputVector<ScalarType> y1;
-      if (!isDirectFeedthrough1) {
-        y1 = sys1->output(t,x.first(),u);
+      if (!System1::isDirectFeedthrough) {
+        y1 = sys1->output(t,x.first(),u);   // then don't need u+y2 here, u will be ignored
       } else {
         InputVector<ScalarType> y2;
         y2 = sys2->output(t,x.second(),y1); // y1 might be uninitialized junk, but has to be ok
@@ -159,7 +167,7 @@ namespace Drake {
     template <typename ScalarType>
     void subsystemOutputs(const ScalarType& t, const StateVector1<ScalarType>& x1, const StateVector2<ScalarType>& x2, const InputVector<ScalarType> &u,
                                           OutputVector<ScalarType> &y1, InputVector<ScalarType> &y2) const {
-      if (!isDirectFeedthrough1) {
+      if (!System1::isDirectFeedthrough) {
         y1 = sys1->output(t,x1,u);  // output does not depend on u (so it's ok that we're not passing u+y2)
         y2 = sys2->output(t,x2,y1);
       } else {
@@ -172,7 +180,8 @@ namespace Drake {
     System2Ptr sys2;
   };
 
-          // simulation options
+
+    // simulation options
   struct SimulationOptions {
     double realtime_factor;  // 1 means try to run at realtime speed, < 0 is run as fast as possible
     double initial_step_size;

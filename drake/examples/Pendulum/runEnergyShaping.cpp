@@ -39,10 +39,9 @@ int main(int argc, char* argv[]) {
   cout << "p has " << p->num_states << " states" << endl;
   cout << "c has " << c->num_states << " states" << endl;
 
-  // todo: make this syntax less painful!
-  Drake::FeedbackSystem<Pendulum,PendulumState,PendulumEnergyShaping,Drake::UnusedVector,
-          Drake::CombinedVectorBuilder<PendulumState,Drake::UnusedVector>::VecType,
-          PendulumInput,PendulumState,false,false,false,true> sys(p,c);
+  Pendulum::StateVectorType<double> test;
+
+  FeedbackSystemType(Pendulum,PendulumEnergyShaping) sys(p,c);
 
   Eigen::Vector2d x0; x0 << 0.1, 0.2;
   simulate(sys,0,10,x0);
