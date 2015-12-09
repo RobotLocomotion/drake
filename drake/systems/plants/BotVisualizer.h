@@ -112,7 +112,7 @@ namespace Drake {
       draw_msg.timestamp = static_cast<int64_t>(t * 1000.0);
 
       Eigen::Matrix<double,VectorTraits<InputVector<double> >::RowsAtCompileTime,1> uvec(u);
-      auto q = u.head(manip.num_positions);
+      auto q = uvec.head(manip.num_positions);
       KinematicsCache<double> cache = manip.doKinematics(q);
 
       Eigen::Vector3d points = Eigen::Vector3d::Zero();

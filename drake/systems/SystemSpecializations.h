@@ -43,7 +43,7 @@ namespace Drake {
     }
   };
 
-  template<bool hasOutput, bool hasTime, bool hasDynamics, bool hasInput, typename ScalarType, typename Derived, template<typename> class StateVector,
+  template<bool hasTime, bool hasDynamics, bool hasInput, typename ScalarType, typename Derived, template<typename> class StateVector,
           template<typename> class InputVector,
           template<typename> class OutputVector>
   struct OutputDispatch {
@@ -53,32 +53,22 @@ namespace Drake {
     }
   };
 
-#define OutputDispatchSpecialization(output, time, state, input, func_call) \
+#define OutputDispatchSpecialization(time, state, input, func_call) \
   template <typename ScalarType, typename Derived, template <typename> class StateVector, template <typename> class InputVector, template <typename> class OutputVector> \
-  struct OutputDispatch<output,time,state,input,ScalarType,Derived,StateVector,InputVector,OutputVector>   { \
+  struct OutputDispatch<time,state,input,ScalarType,Derived,StateVector,InputVector,OutputVector>   { \
     static OutputVector<ScalarType> eval(const Derived* sys, const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) \
     { \
       return func_call; \
     } \
   };
 
-  OutputDispatchSpecialization(true, true, true, false, sys->outputImplementation(t,x))
-  OutputDispatchSpecialization(true, true, false, true, sys->outputImplementation(t,u))
-  OutputDispatchSpecialization(true, true, false, false, sys->outputImplementation(t))
-  OutputDispatchSpecialization(true, false, true, true, sys->outputImplementation(x,u))
-  OutputDispatchSpecialization(true, false, true, false, sys->outputImplementation(x))
-  OutputDispatchSpecialization(true, false, false, true, sys->outputImplementation(u))
-
-  template<bool hasTime, bool hasDynamics, bool hasInput, typename ScalarType, typename Derived, template<typename> class StateVector,
-          template<typename> class InputVector,
-          template<typename> class OutputVector>
-  struct OutputDispatch<false, hasTime, hasDynamics, hasInput, ScalarType, Derived, StateVector, InputVector, OutputVector> {
-    static OutputVector<ScalarType> eval(const Derived *sys, const ScalarType &t, const StateVector<ScalarType> &x,
-                                         const InputVector<ScalarType> &u) {
-      OutputVector<ScalarType> empty;
-      return empty;
-    }
-  };
+  OutputDispatchSpecialization(true, true, false, sys->outputImplementation(t,x))
+  OutputDispatchSpecialization(true, false, true, sys->outputImplementation(t,u))
+  OutputDispatchSpecialization(true, false, false, sys->outputImplementation(t))
+  OutputDispatchSpecialization(false, true, true, sys->outputImplementation(x,u))
+  OutputDispatchSpecialization(false, true, false, sys->outputImplementation(x))
+  OutputDispatchSpecialization(false, false, true, sys->outputImplementation(u))
+  OutputDispatchSpecialization(false, false, false, sys->outputImplementation())
 
 };
 

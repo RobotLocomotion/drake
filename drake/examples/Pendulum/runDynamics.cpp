@@ -13,7 +13,7 @@ int main(int argc, char* argv[]) {
    return 1;
 
   auto p = make_shared<Pendulum>();
-  auto v = make_shared<BotVisualizer<PendulumState> >(lcm,"Pendulum.urdf",DrakeJoint::FIXED);
+  auto v = make_shared<BotVisualizer<PendulumState> >(lcm,getDrakePath()+"/examples/Pendulum/Pendulum.urdf",DrakeJoint::FIXED);
 
   PendulumState<double> x0;
   x0.theta = 1;
@@ -22,5 +22,8 @@ int main(int argc, char* argv[]) {
 
   CascadeSystemType(Pendulum,BotVisualizer<PendulumState> ) sys(p,v);
 
-  simulate(sys,0,.1,static_cast<Eigen::Vector2d>(x0));
+  SimulationOptions options;
+  options.realtime_factor=1.0;
+
+  simulate(sys,0,100,static_cast<Eigen::Vector2d>(x0),options);
 }

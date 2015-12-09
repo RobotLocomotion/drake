@@ -70,11 +70,12 @@ namespace Drake {
     /// but where the t argument must be left out if the system is time-invariant
     ///           the x argument must be left out if the system has zero state (RowsAtCompileTime==0)
     ///           the u argument must be left out if the system has no inputs or if the system is labeled as not direct feedthrough
+    /// Note that (by convention) the output method is called even if there is no output for the system. (e.g. for Visualizers)
 
 //  todo: implemented the templated forms here. (need to help compiler figure out the instantiation for casting to Eigen::Matrix<double>)
     template <typename ScalarType>
     OutputVector<ScalarType> output(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {
-      return OutputDispatch< (num_outputs!=0), isTimeVarying, (num_states != 0), ((num_inputs != 0) && isDirectFeedthrough), ScalarType, Derived, StateVector, InputVector, OutputVector>::eval(static_cast<const Derived*>(this),t,x,u);
+      return OutputDispatch< isTimeVarying, (num_states != 0), ((num_inputs != 0) && isDirectFeedthrough), ScalarType, Derived, StateVector, InputVector, OutputVector>::eval(static_cast<const Derived*>(this),t,x,u);
     };
 /*
     OutputVector<double> output(const StateVector<double>& x, const InputVector<double>& u) const {
@@ -215,6 +216,11 @@ namespace Drake {
       System1OutputVector<ScalarType> y1 = sys1->output(t,x.first(),u);
       OutputVector<ScalarType> y2 = sys2->output(t,x.second(),y1);
       return y2;
+    }
+    template <typename ScalarType>
+    OutputVector<ScalarType> outputImplementation(const ScalarType& t, const StateVector<ScalarType>& x) const {
+      InputVector<ScalarType> u;
+      return outputImplementation(t,x,u);
     }
     template <typename ScalarType>
     OutputVector<ScalarType> outputImplementation(const StateVector<ScalarType>& x) const {

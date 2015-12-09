@@ -2,21 +2,11 @@
 #include "Pendulum.h"
 #include "LCMCoordinateFrame.h"
 #include "Simulation.h"
+#include "BotVisualizer.h"
 
 using namespace std;
 
 int main(int argc, char* argv[]) {
-/*
-  shared_ptr<lcm::LCM> lcm(new lcm::LCM);
-  if(!lcm->good())
-    return 1;
-
-  Pendulum p(lcm);
-  DrakeSystemPtr controller = make_shared<PendulumEnergyShaping>(p);
-
-  runLCM(controller,*lcm,0,5,Eigen::VectorXd::Zero(0));
-*/
-
   // todo: move these to core/test
   Eigen::Vector3d abc;  abc << 1,2,3;
   {
@@ -33,18 +23,19 @@ int main(int argc, char* argv[]) {
   }
 
 
+  shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
+  if(!lcm->good())
+    return 1;
+
 
   auto p = std::make_shared<Pendulum>();
   auto c = std::make_shared<PendulumEnergyShaping>(*p);
+  auto v = std::make_shared<Drake::BotVisualizer<PendulumState> >(lcm,"Pendulum.urdf",DrakeJoint::FIXED);
 
-  cout << "p has " << p->num_states << " states" << endl;
-  cout << "c has " << c->num_states << " states" << endl;
-
-  Pendulum::StateVectorType<double> test;
-
-  FeedbackSystemType(Pendulum,PendulumEnergyShaping) sys(p,c);
+  auto sys = std::make_shared<FeedbackSystemType(Pendulum,PendulumEnergyShaping)>(p,c);
+  CascadeSystemType(FeedbackSystemType(Pendulum,PendulumEnergyShaping), Drake::BotVisualizer<PendulumState>) sys_w_vis(sys,v);
 
   Eigen::Vector2d x0; x0 << 0.1, 0.2;
-  simulate(sys,0,10,x0);
+  simulate(sys_w_vis,0,10,x0);
 }
 
