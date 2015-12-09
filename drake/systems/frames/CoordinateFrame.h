@@ -21,6 +21,7 @@
 
 class DrakeSystem;
 typedef std::shared_ptr<DrakeSystem> DrakeSystemPtr;
+typedef std::shared_ptr<const DrakeSystem> ConstDrakeSystemPtr;
 
 /// Every input, state, and output in a DynamicalSystem has a coordinate frame
 /// attached to it.  Many bugs can be avoided by forcing developers to be
