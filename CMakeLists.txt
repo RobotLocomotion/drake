@@ -47,7 +47,7 @@ if (matlab)
 endif()
 
 option(WITH_SNOPT_PRECOMPILED "precompiled binaries only for snopt; the source requires a license (will be disabled if WITH_SNOPT=ON)"  ON)
-option(WITH_ODEINT ON)
+option(WITH_ODEINT "Adds support for pure C++ simulation" ON)
 
 # OFF by default:
 option(WITH_SNOPT 		"nonlinear optimization solver; requires access to RobotLocomotion/snopt-pod")
