@@ -30,12 +30,15 @@ int main(int argc, char* argv[]) {
 
   auto p = std::make_shared<Pendulum>();
   auto c = std::make_shared<PendulumEnergyShaping>(*p);
-  auto v = std::make_shared<Drake::BotVisualizer<PendulumState> >(lcm,"Pendulum.urdf",DrakeJoint::FIXED);
+  auto v = std::make_shared<Drake::BotVisualizer<PendulumState> >(lcm,Drake::getDrakePath()+"/examples/Pendulum/Pendulum.urdf",DrakeJoint::FIXED);
 
   auto sys = std::make_shared<FeedbackSystemType(Pendulum,PendulumEnergyShaping)>(p,c);
   CascadeSystemType(FeedbackSystemType(Pendulum,PendulumEnergyShaping), Drake::BotVisualizer<PendulumState>) sys_w_vis(sys,v);
 
+  Drake::SimulationOptions options;
+  options.realtime_factor=1.0;
+
   Eigen::Vector2d x0; x0 << 0.1, 0.2;
-  simulate(sys_w_vis,0,10,x0);
+  simulate(sys_w_vis,0,10,x0,options);
 }
 

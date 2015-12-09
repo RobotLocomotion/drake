@@ -25,5 +25,5 @@ int main(int argc, char* argv[]) {
   SimulationOptions options;
   options.realtime_factor=1.0;
 
-  simulate(sys,0,100,static_cast<Eigen::Vector2d>(x0),options);
+  simulate(sys,0,10,static_cast<Eigen::Vector2d>(x0),options);
 }
