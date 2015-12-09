@@ -7,6 +7,8 @@
 
 namespace Drake {
 
+#include "Path.h"
+
 // useful refs on generic programming: http://www.generic-programming.org/languages/cpp/techniques.php
 //
 // Concept: Vector<ScalarType>.
@@ -29,7 +31,7 @@ namespace Drake {
   };
 
   // In order to use Eigen types to model the Drake::Vector concept, they must accept only a single template parameter (ScalarType)
-  // The following structures provide a means for doing it.
+  // The following structures provide a means for doing it. (e.g. via Drake::VectorBuilder<Rows>::VecType )
 
   template <int Rows>
   struct VectorBuilder {
