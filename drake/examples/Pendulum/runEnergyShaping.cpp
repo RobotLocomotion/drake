@@ -1,6 +1,7 @@
 #include <iostream>
 #include "Pendulum.h"
 #include "LCMCoordinateFrame.h"
+#include "Simulation.h"
 
 using namespace std;
 

@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <cmath>
-#include "DrakeSystem.h"
+#include "System.h"
 //#include "LCMCoordinateFrame.h"
 #include "BotVisualizer.h"
 
@@ -128,19 +128,6 @@ public:
   double m,l,b,lc,I,g;  // pendulum parameters (initialized in the constructor)
 };
 
-/*
-class PendulumWithBotVis : public Pendulum {
-public:
-  PendulumWithBotVis(const std::shared_ptr<lcm::LCM>& lcm) : Pendulum(lcm), botvis(lcm,"Pendulum.urdf",DrakeJoint::FIXED) {}
-
-  virtual Eigen::VectorXd output(double t, const Eigen::VectorXd& x, const Eigen::VectorXd& u) const override {
-    botvis.output(t,Eigen::VectorXd::Zero(0),x);
-    return Pendulum::output(t,x,u);
-  }
-
-  BotVisualizer botvis;
-};
-*/
 
 class PendulumEnergyShaping : public Drake::System<PendulumEnergyShaping,Drake::UnusedVector,PendulumState,PendulumInput,false,true> {
 public:
