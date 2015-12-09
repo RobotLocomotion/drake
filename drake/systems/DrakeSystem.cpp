@@ -84,7 +84,7 @@ DrakeSystemPtr DrakeSystem::timeInvariantLQR(const Eigen::VectorXd& x0, const Ei
 
 
 void DrakeSystem::simulate(double t0, double tf, const VectorXd &x0, const SimulationOptions& options) const {
-  Drake::ODESolver<VectorXd> solver(shared_from_this(), options);
+  Drake::ODESolver<VectorXd, VectorXd, VectorXd, Drake::ode45<VectorXd> > solver(shared_from_this(), options);
   solver.solve(t0, tf, x0);
 }
 
