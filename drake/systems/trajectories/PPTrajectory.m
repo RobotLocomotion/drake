@@ -1,4 +1,4 @@
-classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
+classdef (InferiorClasses = {?ConstantTrajectory, ?Point}) PPTrajectory < Trajectory
   
   properties
     pp
