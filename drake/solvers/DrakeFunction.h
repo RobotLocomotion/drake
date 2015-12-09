@@ -1,7 +1,7 @@
 #ifndef DRAKEFUNCTION_H
 #define DRAKEFUNCTION_H
 
-#include "DrakeCore.h"
+#include "Core.h"
 
 namespace Drake {
 
