@@ -16,7 +16,7 @@
  * See http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1057
  */
 #include <unsupported/Eigen/AutoDiff>
-#include <eigen3/Eigen/src/SparseCore/SparseMatrix.h>
+#include <Eigen/src/SparseCore/SparseMatrix.h>
 #include "drakeGradientUtil.h"
 
 #undef DLLEXPORT
