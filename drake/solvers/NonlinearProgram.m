@@ -1360,6 +1360,10 @@ classdef NonlinearProgram
       
       grad_pattern = sparse([iGfun_free;iAfun],[jGvar_free;jAvar],[ones(length(iGfun_free),1);Avals],length(lb),length(x_lb_free));
       empty_grad_row = all(grad_pattern == 0,2);
+      empty_grad_cin = [];
+      empty_grad_ceq = [];
+      empty_grad_Ain = [];
+      empty_grad_Aeq = [];
       if(any(empty_grad_row))
         empty_grad_row = find(empty_grad_row);
         empty_grad_cin = empty_grad_row(empty_grad_row>1 & empty_grad_row<=1+obj.num_cin)-1;
