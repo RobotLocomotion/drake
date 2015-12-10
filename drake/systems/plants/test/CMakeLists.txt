@@ -40,6 +40,7 @@ endif()
 
 if (snopt_c_FOUND)
   add_ik_cpp(testIK)
+  add_ik_cpp(testIKMoreConstraints)
   add_ik_cpp(testIKpointwise)
   add_ik_cpp(testIKtraj)
 endif()

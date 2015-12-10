@@ -29,6 +29,7 @@ if (size(ydot_plus,2)~=(length(t)-1)) error('ydot_plus is the wrong size'); end
 dt = diff(t);
 
 coefficients = zeros(n,4);
+coefs = zeros(n, length(t) - 1, 4);
 for i=1:(length(t)-1)
   % solve the following vector equations:
   %   y(:,i) = c4
