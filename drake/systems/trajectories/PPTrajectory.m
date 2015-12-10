@@ -11,15 +11,16 @@ classdef (InferiorClasses = {?ConstantTrajectory, ?Point}) PPTrajectory < Trajec
       if isnumeric(ppform)
         ppform = ConstantTrajectory(ppform);
       end
+      obj = obj@Trajectory(ppform.dim);
       if isa(ppform,'ConstantTrajectory')
+        obj = setOutputFrame(obj, ppform.getOutputFrame);
         ppform = mkpp([-inf,inf],eval(ppform,0),ppform.dim);
       end
-      obj = obj@Trajectory(ppform.dim);
       obj.pp = PPTrajectory.minimalOrder(ppform);
       obj.tspan = [min(obj.pp.breaks) max(obj.pp.breaks)];
       if exist('PPTmex')
         obj.mex_ptr = SharedDataHandle(PPTmex(obj.pp.breaks, obj.pp.coefs, obj.pp.order, obj.pp.dim));
-      end      
+      end
     end
   end
   methods (Static)
