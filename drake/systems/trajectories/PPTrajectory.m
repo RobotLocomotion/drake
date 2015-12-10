@@ -569,17 +569,32 @@ classdef (InferiorClasses = {?ConstantTrajectory, ?Point}) PPTrajectory < Trajec
       % @param trajAtEnd trajectory to append
       % @retval newtraj new PPTrajectory object that is the combination of
       % both trajectories
-      
+
       if ~isa(obj,'PPTrajectory')
+        objRaw = obj;
         obj = PPTrajectory(obj);
         obj.tspan = [-10^8,trajAtEnd.tspan(1)];
         obj.pp.breaks = obj.tspan;
+        % set the output frame if we didn't start with one
+        if ~isa(objRaw, 'Point') && ~isa(objRaw, 'Trajectory')
+          obj = setOutputFrame(obj, trajAtEnd.getOutputFrame);
+        end
       end
       if ~isa(trajAtEnd,'PPTrajectory')
+        trajAtEndRaw = trajAtEnd;
         trajAtEnd = PPTrajectory(trajAtEnd);
         trajAtEnd.tspan = [obj.tspan(2),10^8];
         trajAtEnd.pp.breaks = trajAtEnd.tspan;
-      end      
+        % set the output frame if we didn't start with one
+        if ~isa(trajAtEndRaw, 'Point') && ~isa(trajAtEndRaw, 'Trajectory')
+          trajAtEnd = setOutputFrame(trajAtEnd, obj.getOutputFrame);
+        end
+      end
+
+      % check trajectories are in the same frame
+      if obj.getOutputFrame ~= trajAtEnd.getOutputFrame
+        error('Drake:PPTrajectory:MismatchingFrames', 'Cannot append trajectories with different coordinate frames');
+      end
       
       % check for time condition
       firstEnd = obj.pp.breaks(end);
