@@ -577,7 +577,7 @@ classdef (InferiorClasses = {?ConstantTrajectory, ?Point}) PPTrajectory < Trajec
       if ~isa(trajAtEnd,'PPTrajectory')
         trajAtEnd = PPTrajectory(trajAtEnd);
         trajAtEnd.tspan = [obj.tspan(2),10^8];
-        obj.pp.breaks = obj.tspan;
+        trajAtEnd.pp.breaks = trajAtEnd.tspan;
       end      
       
       % check for time condition
