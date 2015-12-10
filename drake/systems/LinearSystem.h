@@ -13,11 +13,12 @@ namespace Drake {
 template <template<typename> class StateVector, template<typename> class InputVector, template<typename> class OutputVector, bool _isDirectFeedthrough = true >
 class AffineSystem : public System< AffineSystem<StateVector,InputVector,OutputVector,_isDirectFeedthrough>, StateVector, InputVector, OutputVector, false, _isDirectFeedthrough> {
 public:
-  const static unsigned int num_states = VectorTraits<StateVector<double> >::RowsAtCompileTime;
+  typedef System< AffineSystem<StateVector,InputVector,OutputVector,_isDirectFeedthrough>, StateVector, InputVector, OutputVector, false, _isDirectFeedthrough> BaseType;
+  const static unsigned int num_states = BaseType::num_states; //VectorTraits<StateVector<double> >::RowsAtCompileTime;
   const static unsigned int num_inputs = VectorTraits<InputVector<double> >::RowsAtCompileTime;
   const static unsigned int num_outputs = VectorTraits<OutputVector<double> >::RowsAtCompileTime;
 
-  AffineSystem(const Eigen::Matrix<double,num_states,num_states>& A,const Eigen::Matrix<double,num_states,num_inputs>& B,const Eigen::Matrix<double,num_states,1>& xdot0,
+  AffineSystem(const Eigen::Matrix<double,BaseType::num_states,BaseType::num_states>& A,const Eigen::Matrix<double,num_states,num_inputs>& B,const Eigen::Matrix<double,num_states,1>& xdot0,
                const Eigen::Matrix<double,num_outputs,num_states>& C,const Eigen::Matrix<double,num_outputs,num_inputs>& D,const Eigen::Matrix<double,num_outputs,1>& y0)
           : A(A),B(B),C(C),D(D),xdot0(xdot0),y0(y0) {
     assert(_isDirectFeedthrough || D.isZero() );

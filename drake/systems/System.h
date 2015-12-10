@@ -98,22 +98,16 @@ namespace Drake {
 
   };
 
-// This is the class design that I want.  But it seems that recursive templates in the inheritance line don't work (more discussion in the git history)
-//
-//  template <class System1, class System2>
-//  class FeedbackSystem : public System<FeedbackSystem<System1,System2>,
-//          CombinedVectorBuilder<System1::StateVectorType , System2::StateVectorType>::VecType, System1::InputVectorType, System1::OutputVectorType, System1::isTimeVarying||System2::isTimeVarying, System1::isDirectFeedthrough> {
-//
-// So I'm getting around it with this helper macro (which makes the call outside of the template class, so it's not recursive)
-#define FeedbackSystemType(System1,System2) Drake::FeedbackSystem<System1,System2,System1::StateVectorType,System2::StateVectorType,Drake::CombinedVectorBuilder<System1::StateVectorType,System2::StateVectorType>::VecType,System1::InputVectorType,System1::OutputVectorType,System1::isTimeVarying||System2::isTimeVarying,System1::isDirectFeedthrough>
-
-  template <typename System1, typename System2,
-          template <typename> class StateVector1, template <typename> class StateVector2, template<typename> class StateVector,
-          template<typename> class InputVector, template<typename> class OutputVector,
-          bool isTimeVarying, bool isDirectFeedthrough>
-  class FeedbackSystem : public System<FeedbackSystem<System1,System2,StateVector1,StateVector2,StateVector,InputVector,OutputVector,isTimeVarying,isDirectFeedthrough> ,
-          StateVector, InputVector, OutputVector, isTimeVarying, isDirectFeedthrough> {
+  template <class System1, class System2>
+  class FeedbackSystem : public System<FeedbackSystem<System1,System2>,
+          CombinedVectorBuilder<System1::template StateVectorType , System2::template StateVectorType>::template VecType, System1::template InputVectorType, System1::template OutputVectorType, System1::isTimeVarying||System2::isTimeVarying, System1::isDirectFeedthrough> {
   public:
+    template <typename ScalarType> using StateVector = CombinedVector<ScalarType, System1::template StateVectorType , System2::template StateVectorType>;
+    template <typename ScalarType> using StateVector1 = typename System1::template StateVectorType<ScalarType>;
+    template <typename ScalarType> using StateVector2 = typename System2::template StateVectorType<ScalarType>;
+    template <typename ScalarType> using InputVector = typename System1::template InputVectorType<ScalarType>;
+    template <typename ScalarType> using OutputVector = typename System1::template OutputVectorType<ScalarType>;
+
     template <typename ScalarType> using EigenInput = Eigen::Matrix<ScalarType,System1::num_inputs,1>;
     typedef std::shared_ptr<System1> System1Ptr;
     typedef std::shared_ptr<System2> System2Ptr;
