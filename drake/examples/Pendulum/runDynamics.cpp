@@ -2,6 +2,7 @@
 #include <iostream>
 #include "Pendulum.h"
 #include "Simulation.h"
+#include "BotVisualizer.h"
 
 using namespace std;
 using namespace Drake;

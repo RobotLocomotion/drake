@@ -4,8 +4,7 @@
 #include <iostream>
 #include <cmath>
 #include "System.h"
-//#include "LCMCoordinateFrame.h"
-#include "BotVisualizer.h"
+#include "LQR.h"
 
 using namespace std;
 
@@ -98,17 +97,6 @@ public:
           g(9.81) // m/s^2
   {}
   virtual ~Pendulum(void) {};
-
-/*
-  DrakeSystemPtr balanceLQR() {
-    Eigen::MatrixXd Q(2,2);  Q << 10, 0, 0, 1;
-    Eigen::MatrixXd R(1,1);  R << 1;
-    Eigen::VectorXd xG(2);   xG << M_PI, 0;
-    Eigen::VectorXd uG(1);   uG << 0;
-
-    return timeInvariantLQR(xG,uG,Q,R);
-  }
-*/
 
   template <typename ScalarType>
   PendulumState<ScalarType> dynamicsImplementation(const PendulumState<ScalarType>& x, const PendulumInput<ScalarType>& u) const {

@@ -61,43 +61,6 @@ VectorXd DrakeSystem::getInitialState() {
   return getRandomState();
 }
 
-DrakeSystemPtr DrakeSystem::timeInvariantLQR(const Eigen::VectorXd& x0, const Eigen::VectorXd& u0, const Eigen::MatrixXd& Q, const Eigen::MatrixXd& R) {
-  if (!isTimeInvariant())
-  throw runtime_error("DrakeSystem::timeInvariantLQR.  Time-invariant LQR only makes sense for time invariant systems.");
-
-  if (discrete_state_frame->getDim()>0)
-  throw runtime_error("DrakeSystem::timeInvariantLQR.  Discrete-time LQR is not implemented yet (but would be easy).");
-  if (continuous_state_frame->getDim()<1)
-  throw runtime_error("DrakeSystem::timeInvariantLQR.  This system has no continuous states.");
-
-  int num_x = continuous_state_frame->getDim(),
-      num_u = input_frame->getDim();
-
-  Eigen::VectorXd xu(num_x+num_u);
-  xu << x0, u0;
-  Drake::TaylorVecX xu_taylor = Drake::initTaylorVecX(xu);
-
-  auto xdot = autoDiffToGradientMatrix(dynamics(0*xu_taylor(1),xu_taylor.head(num_x),xu_taylor.tail(num_u)));
-  auto A = xdot.leftCols(continuous_state_frame->getDim());
-  auto B = xdot.rightCols(input_frame->getDim());
-
-  Eigen::MatrixXd K(num_u,num_x), S(num_x,num_x);
-  lqr(A, B, Q, R, K, S);
-
-  // todo: return the linear system with the affine transform.  But for now, just give the affine controller:
-  // u = u0 - K(x-x0)
-  MatrixXd nullmat(0, 0);
-  VectorXd nullvec((Eigen::DenseIndex)0);
-
-  DrakeSystemPtr controller =  make_shared<AffineSystem>(name+"LQR",
-                                   nullmat,MatrixXd::Zero(0,num_x),nullvec,
-                                   nullmat,MatrixXd::Zero(0,num_x),nullvec,
-                                   MatrixXd::Zero(num_u,0),-K,u0+K*x0);
-  controller->input_frame = output_frame;
-  controller->output_frame = input_frame;
-  return controller;
-}
-
 
 void DrakeSystem::simulate(double t0, double tf, const VectorXd &x0, const SimulationOptions& options) const {
   ode1(t0,tf,x0,options);

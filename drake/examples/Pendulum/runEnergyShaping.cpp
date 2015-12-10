@@ -21,12 +21,11 @@ int main(int argc, char* argv[]) {
     test=2*abc;
     cout << test << endl;
   }
-
+  // end core tests
 
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
   if(!lcm->good())
     return 1;
-
 
   auto p = std::make_shared<Pendulum>();
   auto c = std::make_shared<PendulumEnergyShaping>(*p);

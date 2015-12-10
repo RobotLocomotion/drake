@@ -9,16 +9,22 @@ include_directories(${PROJECT_SOURCE_DIR}/util)
 if (LCM_FOUND AND NOT WIN32)  # win32 won't be hard... just have to add declspecs
   include_directories(${PROJECT_SOURCE_DIR}/pod-build/lcmgen)
   add_executable(runPendulumDynamics runDynamics.cpp)
-  target_link_libraries(runPendulumDynamics drakeSystem drakeRBM)
+  target_link_libraries(runPendulumDynamics drakeRBM)
+  add_dependencies(runPendulumDynamics drake_lcmtypes lcmtype_agg_hpp)
+  pods_use_pkg_config_packages(runPendulumDynamics lcm)
   add_test(NAME runPendulumDynamics COMMAND runPendulumDynamics WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/examples/Pendulum)
 
   add_executable(runPendulumEnergyShaping runEnergyShaping.cpp)
-  target_link_libraries(runPendulumEnergyShaping drakeSystem drakeRBM)
+  target_link_libraries(runPendulumEnergyShaping drakeRBM)
+  add_dependencies(runPendulumEnergyShaping drake_lcmtypes lcmtype_agg_hpp)
+  pods_use_pkg_config_packages(runPendulumEnergyShaping lcm)
   add_test(NAME runPendulumEnergyShaping COMMAND runPendulumEnergyShaping)
 
-#  add_executable(runPendulumLQR runLQR.cpp)
-#  target_link_libraries(runPendulumLQR drakeSystem drakeRBM)
-#  add_test(NAME runPendulumLQR COMMAND runPendulumLQR WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/examples/Pendulum)
+  add_executable(runPendulumLQR runLQR.cpp)
+  target_link_libraries(runPendulumLQR drakeRBM)
+  add_dependencies(runPendulumLQR drakeUtil drake_lcmtypes lcmtype_agg_hpp)
+  pods_use_pkg_config_packages(runPendulumLQR lcm)
+  add_test(NAME runPendulumLQR COMMAND runPendulumLQR WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/examples/Pendulum)
 
 #  write_procman(Pendulum.pmd
 #      GROUP "Simulate"

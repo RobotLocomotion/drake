@@ -1,27 +1,40 @@
 #include <iostream>
 #include "Pendulum.h"
-#include "LCMCoordinateFrame.h"
+#include "Simulation.h"
+#include "LQR.h"
+#include "BotVisualizer.h"
 
 using namespace std;
 
 int main(int argc, char* argv[]) {
-  shared_ptr<lcm::LCM> lcm(new lcm::LCM);
+  shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
   if(!lcm->good())
     return 1;
 
-  std::shared_ptr<PendulumWithBotVis> pendulum(new PendulumWithBotVis(lcm));
-  DrakeSystemPtr controller = pendulum->balanceLQR();
+  auto p = std::make_shared<Pendulum>();
+  Eigen::MatrixXd Q(2,2);  Q << 10, 0, 0, 1;
+  Eigen::MatrixXd R(1,1);  R << 1;
+  PendulumState<double> xG;
+  xG.theta = M_PI;
+  xG.thetadot = 0;
+  PendulumInput<double> uG;
+  uG.tau = 0;
 
-  DrakeSystemPtr sys = feedback(pendulum,controller);
+  auto c = timeInvariantLQR(*p,xG,uG,Q,R);
 
-  Eigen::VectorXd x0(2);
-  x0 << M_PI, 0;
+  auto v = std::make_shared<Drake::BotVisualizer<PendulumState> >(lcm,Drake::getDrakePath()+"/examples/Pendulum/Pendulum.urdf",DrakeJoint::FIXED);
 
-  DrakeSystem::SimulationOptions options = sys->default_simulation_options;
-  options.realtime_factor = 1.0;
+  typedef Drake::AffineSystem<Drake::UnusedVector,PendulumState,PendulumInput,true> LQRType;
+  auto sys = std::make_shared<FeedbackSystemType(Pendulum,LQRType)>(p,c);
+  CascadeSystemType(FeedbackSystemType(Pendulum,LQRType), Drake::BotVisualizer<PendulumState>) sys_w_vis(sys,v);
+
+  Drake::SimulationOptions options;
+  options.realtime_factor=1.0;
 
   for (int i=0; i<5; i++) {
-    sys->simulate(0, 5, x0+pendulum->getRandomState(), options);
+    Eigen::Vector2d x0 = xG;
+    x0 += Eigen::Vector2d::Random();
+    simulate(sys_w_vis,0,5,x0,options);
   }
 }
 

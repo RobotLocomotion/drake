@@ -50,13 +50,14 @@ namespace Drake {
     StateVector<ScalarType> dynamics(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {
       return DynamicsDispatch< isTimeVarying, (num_states != 0), (num_inputs != 0), ScalarType, Derived, StateVector, InputVector>::eval(static_cast<const Derived*>(this),t,x,u);
     };
-/*
- * // todo: allow people to access the dynamics with minimal calls, too
-    StateVector<double> dynamics(const StateVector<double>& x, const InputVector<double>& u) const {
+   // todo: allow people to access the dynamics with minimal calls, too
+    template <typename ScalarType>
+    StateVector<ScalarType> dynamics(const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {
       static_assert(!isTimeVarying,"You must set the isTimeVarying template parameter to false to use this method");
-      return static_cast<const Derived*>(this)->dynamicsImplementation(x,u);
+      ScalarType t;
+      return dynamics(t,x,u);
     };
-*/
+
     // todo: add update method (and in general support for DT or mixed CT/DT systems)
 
     /// output

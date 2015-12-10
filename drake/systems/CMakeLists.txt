@@ -14,19 +14,6 @@ add_subdirectory(trajectories)
 add_subdirectory(controllers)
 add_subdirectory(robotInterfaces)
 
-set(coordinate_frame_files)
-if (LCM_FOUND)
-  include_directories(${PROJECT_SOURCE_DIR}/pod-build/lcmgen)
-  list(APPEND coordinate_frame_files frames/LCMCoordinateFrame.cpp)
-endif()
-add_library(drakeSystem DrakeSystem.cpp LinearSystem.cpp ${coordinate_frame_files})
-target_link_libraries(drakeSystem drakeUtil)
-
-pods_install_headers(DrakeSystem.h LinearSystem.h DESTINATION drake)
-
-if (LCM_FOUND)
-  add_dependencies(drakeSystem drake_lcmtypes lcmtype_agg_hpp)
-  pods_use_pkg_config_packages(drakeSystem lcm)
-endif()
+pods_install_headers(System.h LinearSystem.h Simulation.h LQR.h DESTINATION drake)
 
 add_subdirectory(test)
