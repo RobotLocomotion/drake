@@ -8,7 +8,7 @@ classdef (InferiorClasses = {?ConstantTrajectory, ?Point}) PPTrajectory < Trajec
   
   methods
     function obj = PPTrajectory(ppform)
-      if isnumeric(ppform)
+      if isnumeric(ppform) || isa(ppform, 'Point')
         ppform = ConstantTrajectory(ppform);
       end
       obj = obj@Trajectory(ppform.dim);
