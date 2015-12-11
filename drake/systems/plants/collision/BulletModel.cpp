@@ -299,6 +299,39 @@ namespace DrakeCollision
     return c.getResults();
   }
 
+  bool BulletModel::collidingPointsCheckOnly(const vector<Vector3d>& points,
+                                             double collision_threshold)
+  {
+    // Create sphere geometry
+    btSphereShape bt_shape(collision_threshold);
+
+    // Create Bullet collision object
+    btCollisionObject bt_obj;
+    bt_obj.setCollisionShape(static_cast<btCollisionShape*>(&bt_shape));
+
+    btTransform btT;
+    btT.setIdentity();
+    BulletCollisionWorldWrapper& bt_world = getBulletWorld(false);
+
+    for (size_t i = 0; i < points.size(); ++i) {
+      BinaryContactResultCallback c;
+
+      btVector3 pos(static_cast<btScalar>(points[i](0)),
+                    static_cast<btScalar>(points[i](1)),
+                    static_cast<btScalar>(points[i](2)));
+      btT.setOrigin(pos);
+      bt_obj.setWorldTransform(btT);
+
+      bt_world.bt_collision_world->contactTest(&bt_obj, c);
+
+      if (c.isInCollision()) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   vector<size_t> BulletModel::collidingPoints(const vector<Vector3d>& points, 
                                               double collision_threshold)
   {
@@ -307,7 +340,6 @@ namespace DrakeCollision
 
     // Create Bullet collision object
     btCollisionObject bt_obj;
-    btCollisionObject* bt_obj_ptr = static_cast<btCollisionObject*>(&bt_obj);
     bt_obj.setCollisionShape(static_cast<btCollisionShape*>(&bt_shape));
 
     btTransform btT;
@@ -324,7 +356,7 @@ namespace DrakeCollision
       btT.setOrigin(pos);
       bt_obj.setWorldTransform(btT);
 
-      bt_world.bt_collision_world->contactTest(bt_obj_ptr, c);
+      bt_world.bt_collision_world->contactTest(&bt_obj, c);
 
       if (c.isInCollision()) {
         in_collision_indices.push_back(i);
