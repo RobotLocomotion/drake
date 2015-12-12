@@ -182,24 +182,12 @@ public:
     return x;
   }
 
-  /*
-  DrakeSystemPtr balanceLQR() {
-    const int num_positions = num_states/2;
-    Eigen::MatrixXd Q = Eigen::MatrixXd::Identity(num_states, num_states);
-    Q.topLeftCorner(num_positions, num_positions) = 10.0 * Eigen::MatrixXd::Identity(num_positions, num_positions);
-    Eigen::MatrixXd R = 0.1*Eigen::MatrixXd::Identity(num_inputs, num_inputs);
-    Eigen::VectorXd xG(num_states);   xG << 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0;
-    Eigen::VectorXd uG = Eigen::VectorXd::Ones(num_inputs) * m * g * 0.25;
-    return timeInvariantLQR(xG,uG,Q,R);
-  }
-  */
-
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-private:
   double g, L, m;
   Eigen::Matrix3d I;
 
+private:
   const double kf = 1;
   const double km = 0.0245;
 };

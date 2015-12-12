@@ -86,6 +86,16 @@ namespace Drake {
     template <typename ScalarType> using VecType = CombinedVector<ScalarType,Vector1,Vector2>;
   };
 
+  template <template <typename> class Vector1>
+  struct CombinedVectorBuilder<Vector1,UnusedVector> {
+    template <typename ScalarType> using VecType = Vector1<ScalarType>;
+  };
+
+  template <template <typename> class Vector2>
+  struct CombinedVectorBuilder<UnusedVector,Vector2> {
+    template <typename ScalarType> using VecType = Vector2<ScalarType>;
+  };
+
   template <typename ScalarType, template <typename> class Vector1, template <typename> class Vector2>
   struct VectorTraits<CombinedVector<ScalarType, Vector1, Vector2> > {
     enum {

@@ -7,22 +7,6 @@
 using namespace std;
 
 int main(int argc, char* argv[]) {
-  // todo: move these to core/test
-  Eigen::Vector3d abc;  abc << 1,2,3;
-  {
-    Drake::CombinedVector<double, PendulumState, PendulumInput> test(abc);
-    cout << test << endl;
-    test=2*abc;
-    cout << test << endl;
-  }
-  {
-    Drake::CombinedVectorBuilder<PendulumState,PendulumInput>::VecType<double> test(abc);
-    cout << test << endl;
-    test=2*abc;
-    cout << test << endl;
-  }
-  // end core tests
-
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
   if(!lcm->good())
     return 1;
