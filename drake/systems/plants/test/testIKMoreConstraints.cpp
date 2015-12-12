@@ -1,5 +1,5 @@
 #include "RigidBodyIK.h"
-#include "RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 #include "../constraint/RigidBodyConstraint.h"
 #include "../IKoptions.h"
 #include <iostream>
@@ -11,7 +11,7 @@ using namespace std;
 using namespace Eigen;
 
 // Find the joint position indices corresponding to 'name'
-vector<int> getJointPositionVectorIndices(const RigidBodyManipulator &model, const std::string &name) {
+vector<int> getJointPositionVectorIndices(const RigidBodyTree &model, const std::string &name) {
   shared_ptr<RigidBody> joint_parent_body = model.findJoint(name);
   int num_positions = joint_parent_body->getJoint().getNumPositions();
   vector<int> ret(static_cast<size_t>(num_positions));
@@ -21,7 +21,7 @@ vector<int> getJointPositionVectorIndices(const RigidBodyManipulator &model, con
   return ret;
 }
 
-void findJointAndInsert(const RigidBodyManipulator &model, const std::string &name, vector<int> &position_list) {
+void findJointAndInsert(const RigidBodyTree &model, const std::string &name, vector<int> &position_list) {
   auto position_indices = getJointPositionVectorIndices(model, name);
 
   position_list.insert(position_list.end(), position_indices.begin(), position_indices.end());
@@ -29,7 +29,7 @@ void findJointAndInsert(const RigidBodyManipulator &model, const std::string &na
 
 
 int main() {
-  RigidBodyManipulator model("examples/Atlas/urdf/atlas_minimal_contact.urdf");
+  RigidBodyTree model("examples/Atlas/urdf/atlas_minimal_contact.urdf");
 
   Vector2d tspan;
   tspan << 0, 1;
