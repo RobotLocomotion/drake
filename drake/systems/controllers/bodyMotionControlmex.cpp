@@ -7,7 +7,7 @@
  using namespace Eigen;
 
 struct BodyMotionControlData {
-  RigidBodyManipulator* r;
+  RigidBodyTree * r;
   Vector6d Kp;
   Vector6d Kd;
   int body_index;

@@ -1,7 +1,7 @@
-#ifndef DRAKE_RIGIDBODYMANIPULATORMEXCONVERSIONS_H
-#define DRAKE_RIGIDBODYMANIPULATORMEXCONVERSIONS_H
+#ifndef DRAKE_RIGIDBODYTREEMEXCONVERSIONS_H
+#define DRAKE_RIGIDBODYTREEMEXCONVERSIONS_H
 
-#include "RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 #include "KinematicsCache.h"
 #include "KinematicPath.h"
 #include "mexify.h"
@@ -10,7 +10,7 @@ template <typename T>
 struct DrakeMexPointerTypeId {
   enum { value = -1 };
 };
-template <> struct DrakeMexPointerTypeId<RigidBodyManipulator> { enum { value = 1 }; };
+template <> struct DrakeMexPointerTypeId<RigidBodyTree> { enum { value = 1 }; };
 template <> struct DrakeMexPointerTypeId<KinematicsCache<double>> { enum { value = 2 }; };
 template <> struct DrakeMexPointerTypeId<KinematicsCache<Eigen::AutoDiffScalar<Eigen::VectorXd> > > { enum { value = 3 }; };
 template <> struct DrakeMexPointerTypeId<KinematicsCache<DrakeJoint::AutoDiffFixedMaxSize> > { enum { value = 4 }; };
@@ -35,12 +35,12 @@ bool isDrakeMexPointerOfCorrectType(const mxArray *source, T*, std::ostream *log
 /**
  * fromMex specializations
  */
-bool isConvertibleFromMex(const mxArray *source, RigidBodyManipulator* ptr, std::ostream* log) NOEXCEPT {
+bool isConvertibleFromMex(const mxArray *source, RigidBodyTree* ptr, std::ostream* log) NOEXCEPT {
   return isDrakeMexPointerOfCorrectType(source, ptr, log);
 }
 
-RigidBodyManipulator &fromMexUnsafe(const mxArray *source, RigidBodyManipulator *) {
-  return *static_cast<RigidBodyManipulator *>(getDrakeMexPointer(source));
+RigidBodyTree &fromMexUnsafe(const mxArray *source, RigidBodyTree *) {
+  return *static_cast<RigidBodyTree *>(getDrakeMexPointer(source));
 }
 
 template<typename Scalar>
@@ -83,4 +83,4 @@ void toMex(const KinematicPath &path, mxArray *dest[], int nlhs) {
   }
 }
 
-#endif //DRAKE_RIGIDBODYMANIPULATORMEXCONVERSIONS_H
+#endif //DRAKE_RIGIDBODYTREEMEXCONVERSIONS_H

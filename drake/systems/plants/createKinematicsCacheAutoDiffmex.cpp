@@ -1,11 +1,11 @@
 #include "drakeMexUtil.h"
-#include "rigidBodyManipulatorMexConversions.h"
+#include "rigidBodyTreeMexConversions.h"
 
 using namespace Eigen;
 using namespace std;
 
 template <typename Scalar>
-mxArray* createKinematicsCache(RigidBodyManipulator& model) {
+mxArray* createKinematicsCache(RigidBodyTree & model) {
   KinematicsCache<Scalar>* cache = new KinematicsCache<Scalar>(model.bodies);
   return createDrakeMexPointer((void*)cache, typeid(KinematicsCache<Scalar>).name(), DrakeMexPointerTypeId<KinematicsCache<Scalar>>::value);
 }
@@ -38,7 +38,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
   }
   else if (nlhs == 1 && nrhs == 2) {
-    RigidBodyManipulator *model = static_cast<RigidBodyManipulator*>(getDrakeMexPointer(prhs[0]));
+    RigidBodyTree *model = static_cast<RigidBodyTree *>(getDrakeMexPointer(prhs[0]));
     int num_derivs = static_cast<int>(mxGetScalar(prhs[1]));
     if (num_derivs <= DrakeJoint::AutoDiffFixedMaxSize::DerType::MaxRowsAtCompileTime) {
       plhs[0] = createKinematicsCache<typename DrakeJoint::AutoDiffFixedMaxSize>(*model);

@@ -694,7 +694,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
 
   if (nlhs>14) {
-    RigidBodyManipulator* r = pdata->r;
+    RigidBodyTree * r = pdata->r;
 
     VectorXd individual_cops = individualSupportCOPs(r, cache, active_supports, normals, B, beta);
     plhs[14] = eigenToMatlab(individual_cops);

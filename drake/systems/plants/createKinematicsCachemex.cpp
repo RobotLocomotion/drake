@@ -1,5 +1,5 @@
 #include "drakeMexUtil.h"
-#include "rigidBodyManipulatorMexConversions.h"
+#include "rigidBodyTreeMexConversions.h"
 
 using namespace Eigen;
 using namespace std;
@@ -16,7 +16,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     destroyDrakeMexPointer<KinematicsCache<double>*>(prhs[0]);
   }
   else if (nlhs == 1 && nrhs == 1) {
-    RigidBodyManipulator *model = static_cast<RigidBodyManipulator*>(getDrakeMexPointer(prhs[0]));
+    RigidBodyTree *model = static_cast<RigidBodyTree *>(getDrakeMexPointer(prhs[0]));
     KinematicsCache<double>* cache = new KinematicsCache<double>(model->bodies);
     plhs[0] = createDrakeMexPointer((void*)cache, typeid(KinematicsCache<double>).name(), DrakeMexPointerTypeId<KinematicsCache<double>>::value);
   }

@@ -1,9 +1,9 @@
 #include <Eigen/Sparse>
 #include "mexify.h"
-#include "RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 #include "KinematicsCache.h"
 #include "standardMexConversions.h"
-#include "rigidBodyManipulatorMexConversions.h"
+#include "rigidBodyTreeMexConversions.h"
 
 using namespace std;
 using namespace Eigen;
@@ -37,8 +37,8 @@ inline void buildSparseMatrixForContactConstraints(Map<const Matrix3Xd> const &p
 }
 
 template<typename Scalar>
-pair<MatrixX<Scalar>, vector<MatrixX<Scalar> > > contactConstraints(const RigidBodyManipulator &model, const KinematicsCache<Scalar> &cache, const Map<const Matrix3Xd> &normals, const Map<const VectorXi>& idxA,
-                                                                        const Map<const VectorXi>& idxB, const Map<const Matrix3Xd> &xA, const Map<const Matrix3Xd> &xB, const vector<Map<const Matrix3Xd>> &d) {
+pair<MatrixX<Scalar>, vector<MatrixX<Scalar> > > contactConstraints(const RigidBodyTree &model, const KinematicsCache<Scalar> &cache, const Map<const Matrix3Xd> &normals, const Map<const VectorXi>& idxA,
+                                                                    const Map<const VectorXi>& idxB, const Map<const Matrix3Xd> &xA, const Map<const Matrix3Xd> &xB, const vector<Map<const Matrix3Xd>> &d) {
 
   Matrix<Scalar, Dynamic, Dynamic> J;
   model.computeContactJacobians(cache, idxA, idxB, xA, xB, J);

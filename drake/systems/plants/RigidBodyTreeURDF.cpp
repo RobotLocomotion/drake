@@ -5,7 +5,7 @@
 #include "spruce.hh"
 
 #include "tinyxml.h"
-#include "RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 #include "joints/FixedJoint.h"
 #include "joints/HelicalJoint.h"
 #include "joints/PrismaticJoint.h"
@@ -118,7 +118,7 @@ string resolveFilename(const string& filename, const map<string,string>& package
 }
 
 // todo: rectify this with findLinkId in the class (which makes more assumptions)
-int findLinkIndex(RigidBodyManipulator* model, string linkname)
+int findLinkIndex(RigidBodyTree * model, string linkname)
 {
   int index = -1;
   for (unsigned int i = 0; i < model->bodies.size(); i++) {
@@ -130,7 +130,7 @@ int findLinkIndex(RigidBodyManipulator* model, string linkname)
   return index;
 }
 
-int findLinkIndexByJointName(RigidBodyManipulator* model, string jointname)
+int findLinkIndexByJointName(RigidBodyTree * model, string jointname)
 {
   int index = -1;
   for (unsigned int i = 0; i < model->bodies.size(); i++) {
@@ -207,7 +207,7 @@ void poseAttributesToTransform(TiXmlElement* node, Matrix4d& T)
       pitch), cos(pitch) * sin(roll), cos(pitch) * cos(roll), z, 0, 0, 0, 1;
 }
 
-bool parseInertial(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyManipulator* model)
+bool parseInertial(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyTree * model)
 {
   Isometry3d T = Isometry3d::Identity();
 
@@ -368,7 +368,7 @@ bool parseGeometry(TiXmlElement* node, const map<string,string>& package_map, co
   return true;
 }
 
-bool parseVisual(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyManipulator* model, const map<string, Vector4d, less<string>, aligned_allocator<pair<string, Vector4d> > >& materials, const map<string,string>& package_map, const string& root_dir)
+bool parseVisual(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyTree * model, const map<string, Vector4d, less<string>, aligned_allocator<pair<string, Vector4d> > >& materials, const map<string,string>& package_map, const string& root_dir)
 {
   // DEBUG
   //cout << "parseVisual: START" << endl;
@@ -426,7 +426,7 @@ bool parseVisual(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyManipu
   return true;
 }
 
-bool parseCollision(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyManipulator* model, const map<string,string>& package_map, const string& root_dir)
+bool parseCollision(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyTree * model, const map<string,string>& package_map, const string& root_dir)
 {
   Matrix4d T_element_to_link = Matrix4d::Identity();
   TiXmlElement* origin = node->FirstChildElement("origin");
@@ -462,7 +462,7 @@ bool parseCollision(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyMan
   return true;
 }
 
-bool parseLink(RigidBodyManipulator* model, TiXmlElement* node, const map<string, Vector4d, less<string>, aligned_allocator<pair<string, Vector4d> > >& materials, const map<string,string>& package_map, const string& root_dir)
+bool parseLink(RigidBodyTree * model, TiXmlElement* node, const map<string, Vector4d, less<string>, aligned_allocator<pair<string, Vector4d> > >& materials, const map<string,string>& package_map, const string& root_dir)
 {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0)
@@ -515,7 +515,7 @@ void setLimits(TiXmlElement *node, FixedAxisOneDoFJoint<JointType> *fjoint) {
 }
 
 template <typename JointType>
-void setDynamics(RigidBodyManipulator *model, TiXmlElement *node, FixedAxisOneDoFJoint<JointType> *fjoint) {
+void setDynamics(RigidBodyTree *model, TiXmlElement *node, FixedAxisOneDoFJoint<JointType> *fjoint) {
   TiXmlElement* dynamics_node = node->FirstChildElement("dynamics");
   if (fjoint != nullptr && dynamics_node) {
     model->warnOnce("joint_dynamics", "Warning: joint dynamics xml tag is parsed, but not included in the dynamics methods yet.");
@@ -527,7 +527,7 @@ void setDynamics(RigidBodyManipulator *model, TiXmlElement *node, FixedAxisOneDo
   }
 }
 
-bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
+bool parseJoint(RigidBodyTree * model, TiXmlElement* node)
 {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0)
@@ -633,7 +633,7 @@ bool parseJoint(RigidBodyManipulator* model, TiXmlElement* node)
   return true;
 }
 
-bool parseTransmission(RigidBodyManipulator* model, TiXmlElement* node)
+bool parseTransmission(RigidBodyTree * model, TiXmlElement* node)
 {
   const char* attr = nullptr;
   TiXmlElement* type_node = node->FirstChildElement("type");
@@ -686,7 +686,7 @@ bool parseTransmission(RigidBodyManipulator* model, TiXmlElement* node)
   return true;
 }
 
-bool parseLoop(RigidBodyManipulator* model, TiXmlElement* node)
+bool parseLoop(RigidBodyTree * model, TiXmlElement* node)
 {
   Vector3d xyz=Vector3d::Zero(),rpy=Vector3d::Zero(),axis;
   axis << 1.0, 0.0, 0.0;
@@ -748,7 +748,7 @@ bool parseLoop(RigidBodyManipulator* model, TiXmlElement* node)
   return true;
 }
 
-bool parseFrame(RigidBodyManipulator* model, TiXmlElement* node)
+bool parseFrame(RigidBodyTree * model, TiXmlElement* node)
 {
   Vector3d xyz=Vector3d::Zero(), rpy=Vector3d::Zero();
 
@@ -785,7 +785,7 @@ bool parseFrame(RigidBodyManipulator* model, TiXmlElement* node)
   return true;
 }
 
-bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const map<string,string> package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
+bool parseRobot(RigidBodyTree * model, TiXmlElement* node, const map<string,string> package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
 {
   if (!node->Attribute("name")) {
     cerr << "Error: your robot must have a name attribute" << endl;
@@ -864,7 +864,7 @@ bool parseRobot(RigidBodyManipulator* model, TiXmlElement* node, const map<strin
   return true;
 }
 
-bool parseURDF(RigidBodyManipulator* model, TiXmlDocument * xml_doc, map<string,string>& package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
+bool parseURDF(RigidBodyTree * model, TiXmlDocument * xml_doc, map<string,string>& package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
 {
   populatePackageMap(package_map);
   TiXmlElement *node = xml_doc->FirstChildElement("robot");
@@ -880,26 +880,26 @@ bool parseURDF(RigidBodyManipulator* model, TiXmlDocument * xml_doc, map<string,
   return true;
 }
 
-bool RigidBodyManipulator::addRobotFromURDFString(const string &xml_string, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
+bool RigidBodyTree::addRobotFromURDFString(const string &xml_string, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
 {
   map<string,string> package_map;
   return addRobotFromURDFString(xml_string, package_map, root_dir, floating_base_type);
 }
 
-bool RigidBodyManipulator::addRobotFromURDFString(const string &xml_string, map<string, string>& package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
+bool RigidBodyTree::addRobotFromURDFString(const string &xml_string, map<string, string>& package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
 {
   TiXmlDocument xml_doc;
   xml_doc.Parse(xml_string.c_str());
   return parseURDF(this,&xml_doc,package_map,root_dir,floating_base_type);
 }
 
-bool RigidBodyManipulator::addRobotFromURDF(const string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type)
+bool RigidBodyTree::addRobotFromURDF(const string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type)
 {
   map<string,string> package_map;
   return addRobotFromURDF(urdf_filename, package_map, floating_base_type);
 }
 
-bool RigidBodyManipulator::addRobotFromURDF(const string &urdf_filename, map<string,string>& package_map, const DrakeJoint::FloatingBaseType floating_base_type)
+bool RigidBodyTree::addRobotFromURDF(const string &urdf_filename, map<string,string>& package_map, const DrakeJoint::FloatingBaseType floating_base_type)
 {
   TiXmlDocument xml_doc(urdf_filename);
   if (!xml_doc.LoadFile()) {
