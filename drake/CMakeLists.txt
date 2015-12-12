@@ -36,8 +36,10 @@ function(add_library_with_exports)
 
   add_library(${parsed_args_LIB_NAME} SHARED ${parsed_args_SOURCE_FILES})
   generate_export_header(${parsed_args_LIB_NAME} EXPORT_FILE_NAME ${PROJECT_BINARY_DIR}/exports/${parsed_args_LIB_NAME}_export.h)
-  target_include_directories(${parsed_args_LIB_NAME} PUBLIC ${PROJECT_BINARY_DIR}/exports)
+  # TODO: enable when 2.8.11 is required
+#  target_include_directories(${parsed_args_LIB_NAME} PUBLIC ${PROJECT_BINARY_DIR}/exports)
 endfunction()
+include_directories(${PROJECT_BINARY_DIR}/exports)
 
 if (CMAKE_COMPILER_IS_GNUCC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wreturn-type -Wuninitialized -Wunused-variable") # -Wunused-parameter")
