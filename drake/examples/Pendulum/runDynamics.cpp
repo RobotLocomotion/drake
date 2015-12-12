@@ -21,10 +21,10 @@ int main(int argc, char* argv[]) {
   x0.thetadot = 0;
   cout << "PendulumState::x0 = " << x0 << endl;
 
-  CascadeSystemType(Pendulum,BotVisualizer<PendulumState> ) sys(p,v);
+  auto sys = cascade(p,v);
 
   SimulationOptions options;
   options.realtime_factor=1.0;
 
-  simulate(sys,0,10,static_cast<Eigen::Vector2d>(x0),options);
+  simulate(*sys,0,10,static_cast<Eigen::Vector2d>(x0),options);
 }

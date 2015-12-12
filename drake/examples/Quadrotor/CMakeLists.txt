@@ -1,3 +1,4 @@
+include_directories(${PROJECT_SOURCE_DIR}/core)
 include_directories(${PROJECT_SOURCE_DIR}/systems)
 include_directories(${PROJECT_SOURCE_DIR}/systems/frames)
 include_directories(${PROJECT_SOURCE_DIR}/systems/plants)

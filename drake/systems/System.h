@@ -100,7 +100,11 @@ namespace Drake {
 
   template <class System1, class System2>
   class FeedbackSystem : public System<FeedbackSystem<System1,System2>,
-          CombinedVectorBuilder<System1::template StateVectorType , System2::template StateVectorType>::template VecType, System1::template InputVectorType, System1::template OutputVectorType, System1::isTimeVarying||System2::isTimeVarying, System1::isDirectFeedthrough> {
+          CombinedVectorBuilder<System1::template StateVectorType , System2::template StateVectorType>::template VecType,
+          System1::template InputVectorType,
+          System1::template OutputVectorType,
+          System1::isTimeVarying||System2::isTimeVarying,
+          System1::isDirectFeedthrough> {
   public:
     template <typename ScalarType> using StateVector = CombinedVector<ScalarType, System1::template StateVectorType , System2::template StateVectorType>;
     template <typename ScalarType> using StateVector1 = typename System1::template StateVectorType<ScalarType>;
@@ -173,16 +177,28 @@ namespace Drake {
     System2Ptr sys2;
   };
 
+  template <typename System1, typename System2>
+  std::shared_ptr<FeedbackSystem<System1,System2>> feedback(const std::shared_ptr<System1>& sys1, const std::shared_ptr<System2>& sys2)
+  {
+    return std::make_shared<FeedbackSystem<System1,System2> >(sys1,sys2);
+  };
 
-#define CascadeSystemType(System1,System2) Drake::CascadeSystem<System1,System2,System1::StateVectorType,System2::StateVectorType,Drake::CombinedVectorBuilder<System1::StateVectorType,System2::StateVectorType>::VecType,System1::InputVectorType,System2::OutputVectorType,System1::OutputVectorType,System1::isTimeVarying||System2::isTimeVarying,System1::isDirectFeedthrough&&System2::isDirectFeedthrough>
 
-  template <class System1, class System2,
-          template <typename> class StateVector1, template <typename> class StateVector2, template<typename> class StateVector,
-          template<typename> class InputVector, template<typename> class OutputVector, template <typename> class System1OutputVector,
-          bool isTimeVarying, bool isDirectFeedthrough>
-  class CascadeSystem : public System<CascadeSystem<System1,System2,StateVector1,StateVector2,StateVector,InputVector,OutputVector,System1OutputVector,isTimeVarying,isDirectFeedthrough> ,
-          StateVector, InputVector, OutputVector, isTimeVarying, isDirectFeedthrough> {
+#define CascadeSystemType(System1,System2) Drake::CascadeSystem<System1,System2,System1::StateVectorType,System2::StateVectorType,,>
+
+  template <class System1, class System2>
+  class CascadeSystem : public System<CascadeSystem<System1,System2>,
+          CombinedVectorBuilder<System1::template StateVectorType , System2::template StateVectorType>::template VecType,
+          System1::template InputVectorType,System2::template OutputVectorType,
+          System1::isTimeVarying||System2::isTimeVarying,
+          System1::isDirectFeedthrough&&System2::isDirectFeedthrough> {
   public:
+    template <typename ScalarType> using StateVector = CombinedVector<ScalarType, System1::template StateVectorType , System2::template StateVectorType>;
+    template <typename ScalarType> using StateVector1 = typename System1::template StateVectorType<ScalarType>;
+    template <typename ScalarType> using StateVector2 = typename System2::template StateVectorType<ScalarType>;
+    template <typename ScalarType> using InputVector = typename System1::template InputVectorType<ScalarType>;
+    template <typename ScalarType> using System1OutputVector = typename System1::template OutputVectorType<ScalarType>;
+    template <typename ScalarType> using OutputVector = typename System2::template OutputVectorType<ScalarType>;
     typedef std::shared_ptr<System1> System1Ptr;
     typedef std::shared_ptr<System2> System2Ptr;
 
@@ -228,6 +244,13 @@ namespace Drake {
     System1Ptr sys1;
     System2Ptr sys2;
   };
+
+  template <typename System1, typename System2>
+  std::shared_ptr<CascadeSystem<System1,System2>> cascade(const std::shared_ptr<System1>& sys1, const std::shared_ptr<System2>& sys2)
+  {
+    return std::make_shared<CascadeSystem<System1,System2> >(sys1,sys2);
+  };
+
 
 
 } // end namespace Drake
