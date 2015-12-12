@@ -96,6 +96,12 @@ namespace Drake {
 
     // todo: add sparsity information about dynamics, update, and output methods
 
+    template <typename ScalarType>
+    StateVector<ScalarType> getRandomState() {
+      // todo: handle the dynamic size case
+      StateVector<ScalarType> x(Eigen::Matrix<ScalarType,num_states,1>::Random());
+      return x;
+    }
   };
 
   template <class System1, class System2>
@@ -170,7 +176,6 @@ namespace Drake {
         y1 = sys1->output(t,x1,static_cast<InputVector<ScalarType> >( static_cast<EigenInput<ScalarType> >(y2)+static_cast<EigenInput<ScalarType> >(u)));
       }
     }
-
 
   private:
     System1Ptr sys1;

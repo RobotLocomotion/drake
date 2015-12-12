@@ -41,6 +41,8 @@ namespace Drake {
   template <typename ScalarType> using UnusedVector = Eigen::Matrix<ScalarType,0,1>;
 
 
+  // Methods for building complicated vectors out of simpler vectors
+
   template <typename ScalarType, template <typename> class Vector1, template <typename> class Vector2>
   class CombinedVector {
   public:

@@ -1,5 +1,8 @@
 #include <iostream>
 #include "Quadrotor.h"
+#include "Simulation.h"
+#include "LQR.h"
+#include "BotVisualizer.h"
 
 using namespace std;
 using namespace Eigen;
