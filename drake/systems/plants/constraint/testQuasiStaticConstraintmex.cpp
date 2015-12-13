@@ -1,7 +1,7 @@
 #include "mex.h"
 #include "RigidBodyConstraint.h"
 #include "drakeMexUtil.h"
-#include "../RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 #include <cstring>
 /*
  * [active_flag, num_weights,constraint,dconstraint,lower_bound,upper_bound] = testQuasiStaticConstraintmex(quasiStaticConstraint_ptr,q,weights,t)
@@ -38,7 +38,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
   QuasiStaticConstraint* qsc = (QuasiStaticConstraint*) getDrakeMexPointer(prhs[0]);
   bool active = qsc->isActive();
-  RigidBodyManipulator* model = qsc->getRobotPointer();
+  RigidBodyTree * model = qsc->getRobotPointer();
   int nq = model->num_positions;
   Map<VectorXd> q(mxGetPrSafe(prhs[1]), nq);
   int num_weights = qsc->getNumWeights();

@@ -194,7 +194,7 @@ void applyJointPDOverride(const std::vector<drake::lcmt_joint_pd_override> &join
   }
 }
 
-double averageContactPointHeight(RigidBodyManipulator* r, const KinematicsCache<double>& cache, std::vector<SupportStateElement, Eigen::aligned_allocator<SupportStateElement> >& active_supports, int nc)
+double averageContactPointHeight(RigidBodyTree * r, const KinematicsCache<double>& cache, std::vector<SupportStateElement, Eigen::aligned_allocator<SupportStateElement> >& active_supports, int nc)
 {
   Eigen::Matrix3Xd contact_positions_world(3, nc);
   int col = 0;
@@ -209,7 +209,7 @@ double averageContactPointHeight(RigidBodyManipulator* r, const KinematicsCache<
   return average_contact_point_height;
 }
 
-Vector2d computeCoP(RigidBodyManipulator* r, const KinematicsCache<double>& cache, const std::map<Side, ForceTorqueMeasurement>& foot_force_torque_measurements, Vector3d point_on_contact_plane, Eigen::Vector3d normal)
+Vector2d computeCoP(RigidBodyTree * r, const KinematicsCache<double>& cache, const std::map<Side, ForceTorqueMeasurement>& foot_force_torque_measurements, Vector3d point_on_contact_plane, Eigen::Vector3d normal)
 {
   std::vector<ForceTorqueMeasurement> force_torque_measurements;
   for (auto it = foot_force_torque_measurements.begin(); it != foot_force_torque_measurements.end(); ++it) {
@@ -284,7 +284,7 @@ void estimateCoMBasedOnMeasuredZMP(NewQPControllerData* pdata, AtlasParams* para
   }
 }
 
-void checkCentroidalMomentumMatchesTotalWrench(RigidBodyManipulator* r, KinematicsCache<double>& cache, const VectorXd& qdd, const std::vector<SupportStateElement, Eigen::aligned_allocator<SupportStateElement> >& active_supports, const MatrixXd& B, const VectorXd& beta)
+void checkCentroidalMomentumMatchesTotalWrench(RigidBodyTree * r, KinematicsCache<double>& cache, const VectorXd& qdd, const std::vector<SupportStateElement, Eigen::aligned_allocator<SupportStateElement> >& active_supports, const MatrixXd& B, const VectorXd& beta)
 {
   std::map<int, Side> foot_body_index_to_side;
   foot_body_index_to_side[r->findLinkId("l_foot")] = Side::LEFT;

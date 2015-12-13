@@ -1,5 +1,5 @@
 #include "RigidBodyIK.h"
-#include "RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 #include "constraint/RigidBodyConstraint.h"
 #include "IKoptions.h"
 #include <math.h>
@@ -10,7 +10,7 @@ using namespace std;
 using namespace Eigen;
 
 template <typename DerivedA, typename DerivedB, typename DerivedC>
-void approximateIK(RigidBodyManipulator* model, const MatrixBase<DerivedA> &q_seed, const MatrixBase<DerivedB> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, MatrixBase<DerivedC> &q_sol, int &INFO, const IKoptions &ikoptions)
+void approximateIK(RigidBodyTree * model, const MatrixBase<DerivedA> &q_seed, const MatrixBase<DerivedB> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, MatrixBase<DerivedC> &q_sol, int &INFO, const IKoptions &ikoptions)
 {
   int num_kc = 0;
   int nq = model->num_positions;
@@ -223,5 +223,5 @@ void approximateIK(RigidBodyManipulator* model, const MatrixBase<DerivedA> &q_se
   return;
 }
 
-template void approximateIK(RigidBodyManipulator* , const MatrixBase<Map<VectorXd>>&, const MatrixBase<Map<VectorXd>> &, const int, RigidBodyConstraint** const, MatrixBase<Map<VectorXd>> &, int &, const IKoptions &);
-template void approximateIK(RigidBodyManipulator* , const MatrixBase<VectorXd>&, const MatrixBase<VectorXd> &, const int, RigidBodyConstraint** const, MatrixBase<VectorXd> &, int &, const IKoptions &);
+template void approximateIK(RigidBodyTree * , const MatrixBase<Map<VectorXd>>&, const MatrixBase<Map<VectorXd>> &, const int, RigidBodyConstraint** const, MatrixBase<Map<VectorXd>> &, int &, const IKoptions &);
+template void approximateIK(RigidBodyTree * , const MatrixBase<VectorXd>&, const MatrixBase<VectorXd> &, const int, RigidBodyConstraint** const, MatrixBase<VectorXd> &, int &, const IKoptions &);

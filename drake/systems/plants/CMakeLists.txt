@@ -7,10 +7,10 @@ include_directories(joints)
 include_directories(${PROJECT_SOURCE_DIR}/solvers)
 include_directories(${PROJECT_SOURCE_DIR}/systems/controllers)
 include_directories(${PROJECT_SOURCE_DIR}/systems/trajectories)
-add_library(drakeRBM SHARED RigidBodyManipulator.cpp RigidBody.cpp RigidBodyManipulatorURDF.cpp RigidBodyManipulatorContact.cpp tinyxml/tinyxml.cpp tinyxml/tinyxmlparser.cpp tinyxml/tinyxmlerror.cpp)
+add_library(drakeRBM SHARED RigidBodyTree.cpp RigidBody.cpp RigidBodyTreeURDF.cpp RigidBodyTreeContact.cpp tinyxml/tinyxml.cpp tinyxml/tinyxmlparser.cpp tinyxml/tinyxmlerror.cpp)
 target_link_libraries(drakeRBM drakeCollision drakeJoints spruce drakeUtil)
 pods_install_libraries(drakeRBM)
-pods_install_headers(RigidBodyManipulator.h RigidBody.h RigidBodyFrame.h KinematicPath.h KinematicsCache.h ForceTorqueMeasurement.h DESTINATION drake)
+pods_install_headers(RigidBodyTree.h RigidBody.h RigidBodyFrame.h KinematicPath.h KinematicsCache.h ForceTorqueMeasurement.h DESTINATION drake)
 pods_install_pkg_config_file(drake-rbm
   LIBS -ldrakeRBM -ldrakeCollision -ldrakeJoints -lspruce -ldrakeUtil
   REQUIRES
@@ -24,7 +24,7 @@ add_subdirectory(constraint)
 add_subdirectory(joints)
 
 if (MATLAB_FOUND)
-  add_mex(rbmMexFunctions SHARED rigidBodyManipulatorMexFunctions.cpp)
+  add_mex(rbmMexFunctions SHARED rigidBodyTreeMexFunctions.cpp)
   target_link_libraries(rbmMexFunctions drakeRBM drakeMexUtil)
 
   macro(add_rbm_mex)

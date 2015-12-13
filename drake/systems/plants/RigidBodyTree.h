@@ -1,5 +1,5 @@
-#ifndef __RigidBodyManipulator_H__
-#define __RigidBodyManipulator_H__
+#ifndef DRAKE_RIGIDBODYTREE_H
+#define DRAKE_RIGIDBODYTREE_H
 
 #include <Eigen/Dense>
 #include <Eigen/LU>
@@ -62,12 +62,12 @@ public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-class DLLEXPORT_RBM RigidBodyManipulator
+class DLLEXPORT_RBM RigidBodyTree
 {
 public:
-  RigidBodyManipulator(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
-  RigidBodyManipulator(void);
-  virtual ~RigidBodyManipulator(void);
+  RigidBodyTree(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
+  RigidBodyTree(void);
+  virtual ~RigidBodyTree(void);
 
   bool addRobotFromURDFString(const std::string &xml_string, const std::string &root_dir = ".", const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
   bool addRobotFromURDFString(const std::string &xml_string, std::map<std::string,std::string>& package_map, const std::string &root_dir = ".", const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
@@ -112,7 +112,7 @@ public:
 
     const auto& q = cache.getQ();
     if (!initialized)
-      throw runtime_error("RigidBodyManipulator::doKinematics: call compile first.");
+      throw runtime_error("RigidBodyTree::doKinematics: call compile first.");
 
     compute_JdotV = compute_JdotV && cache.hasV(); // no sense in computing Jdot times v if v is not passed in
 
@@ -509,8 +509,8 @@ public:
 // The following was required for building w/ DLLEXPORT_RBM on windows (due to the unique_ptrs).  See
 // http://stackoverflow.com/questions/8716824/cannot-access-private-member-error-only-when-class-has-export-linkage
 private:
-  RigidBodyManipulator(const RigidBodyManipulator&);
-  RigidBodyManipulator& operator=(const RigidBodyManipulator&) { return *this; }
+  RigidBodyTree(const RigidBodyTree &);
+  RigidBodyTree & operator=(const RigidBodyTree &) { return *this; }
 
   std::set<std::string> already_printed_warnings;
 };

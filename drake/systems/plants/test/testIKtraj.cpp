@@ -1,5 +1,5 @@
 #include "RigidBodyIK.h"
-#include "RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 #include "../constraint/RigidBodyConstraint.h"
 
 #include "../IKoptions.h"
@@ -11,8 +11,8 @@ using namespace std;
 using namespace Eigen;
 int main()
 {
-  RigidBodyManipulator rbm("examples/Atlas/urdf/atlas_minimal_contact.urdf");
-  RigidBodyManipulator* model = &rbm;
+  RigidBodyTree rbm("examples/Atlas/urdf/atlas_minimal_contact.urdf");
+  RigidBodyTree * model = &rbm;
 
   if(!model)
   {

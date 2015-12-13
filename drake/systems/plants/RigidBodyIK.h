@@ -6,7 +6,7 @@
 #include "RigidBodyConstraint.h"
 #include "IKoptions.h"
 
-class RigidBodyManipulator;
+class RigidBodyTree;
 
 #if defined(WIN32) || defined(WIN64)
   #if defined(drakeIK_EXPORTS)
@@ -20,7 +20,7 @@ class RigidBodyManipulator;
 
 
 template <typename DerivedA, typename DerivedB, typename DerivedC>
-drakeIK_DLLEXPORT void inverseKin(RigidBodyManipulator* model, const Eigen::MatrixBase<DerivedA> &q_seed, const Eigen::MatrixBase<DerivedB> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, Eigen::MatrixBase<DerivedC> &q_sol, int &INFO, std::vector<std::string> &infeasible_constraint, const IKoptions &ikoptions); 
+drakeIK_DLLEXPORT void inverseKin(RigidBodyTree * model, const Eigen::MatrixBase<DerivedA> &q_seed, const Eigen::MatrixBase<DerivedB> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, Eigen::MatrixBase<DerivedC> &q_sol, int &INFO, std::vector<std::string> &infeasible_constraint, const IKoptions &ikoptions);
 /*
  * inverseKin solves the inverse kinematics problem
  * min_q (q-q_nom)'*Q*(q-q_nom)
@@ -46,7 +46,7 @@ drakeIK_DLLEXPORT void inverseKin(RigidBodyManipulator* model, const Eigen::Matr
  */
 
 template <typename DerivedA, typename DerivedB, typename DerivedC>
-drakeIK_DLLEXPORT void approximateIK(RigidBodyManipulator* model, const Eigen::MatrixBase<DerivedA> &q_seed, const Eigen::MatrixBase<DerivedB> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, Eigen::MatrixBase<DerivedC> &q_sol, int &INFO, const IKoptions &ikoptions); 
+drakeIK_DLLEXPORT void approximateIK(RigidBodyTree * model, const Eigen::MatrixBase<DerivedA> &q_seed, const Eigen::MatrixBase<DerivedB> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, Eigen::MatrixBase<DerivedC> &q_sol, int &INFO, const IKoptions &ikoptions);
 /*
  * approximateIK solves the same problem as inverseKin. But for speed reason, it linearizes all constraints around q_seed, and solve a quadratic problem instead of a nonlinear problem.
  * @param q_seed    an nq x 1 double vector. The initial guess. Also where to linearize the constraints
@@ -60,7 +60,7 @@ drakeIK_DLLEXPORT void approximateIK(RigidBodyManipulator* model, const Eigen::M
  */
 
 template <typename DerivedA, typename DerivedB, typename DerivedC>
-drakeIK_DLLEXPORT void inverseKinPointwise(RigidBodyManipulator* model, const int nT, const double* t, const Eigen::MatrixBase<DerivedA> &q_seed, const Eigen::MatrixBase<DerivedB> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, Eigen::MatrixBase<DerivedC> &q_sol, int* INFO, std::vector<std::string> &infeasible_constraint, const IKoptions &ikoptions); 
+drakeIK_DLLEXPORT void inverseKinPointwise(RigidBodyTree * model, const int nT, const double* t, const Eigen::MatrixBase<DerivedA> &q_seed, const Eigen::MatrixBase<DerivedB> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, Eigen::MatrixBase<DerivedC> &q_sol, int* INFO, std::vector<std::string> &infeasible_constraint, const IKoptions &ikoptions);
 /*
  * inverseKinPointwise   solves inverse kinematics problem at each t[i] individually
  * @param nT        The length of time samples
@@ -77,7 +77,7 @@ drakeIK_DLLEXPORT void inverseKinPointwise(RigidBodyManipulator* model, const in
  *                    if ikoptions.sequentialSeedFlag = false, then q_seed.col(i) would always be used as the seed at t[i]
  */
 template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF>
-drakeIK_DLLEXPORT void inverseKinTraj(RigidBodyManipulator* model, const int nT, const double* t, const Eigen::MatrixBase<DerivedA> &qdot0_seed, const Eigen::MatrixBase<DerivedB> &q_seed, const Eigen::MatrixBase<DerivedC> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, Eigen::MatrixBase<DerivedD> &q_sol, Eigen::MatrixBase<DerivedE> &qdot_sol, Eigen::MatrixBase<DerivedF> &qddot_sol, int &INFO, std::vector<std::string> &infeasible_constraint, IKoptions ikoptions); 
+drakeIK_DLLEXPORT void inverseKinTraj(RigidBodyTree * model, const int nT, const double* t, const Eigen::MatrixBase<DerivedA> &qdot0_seed, const Eigen::MatrixBase<DerivedB> &q_seed, const Eigen::MatrixBase<DerivedC> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, Eigen::MatrixBase<DerivedD> &q_sol, Eigen::MatrixBase<DerivedE> &qdot_sol, Eigen::MatrixBase<DerivedF> &qddot_sol, int &INFO, std::vector<std::string> &infeasible_constraint, IKoptions ikoptions);
 /*
  * inverseKinTraj  solves the inverse kinematics problem at all time together. Try to generate a smooth trajectory by assuming cubic spline for the posture, and minimize the acceleration of the interpolated trajectory
  * min_(q,qdot,qddot) sum(q(t(i))-q_nom(t(i)))'*Q*(q(t(i))-q_nom(t(i)))+qdot(t(i))'*Qv*qdot(t(i))+qddot(t(i))'*Qa*qddot(t(i))

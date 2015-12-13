@@ -8,7 +8,7 @@
 #include <Eigen/Geometry>
 #include "PiecewisePolynomial.h"
 #include "ExponentialPlusPiecewisePolynomial.h"
-#include "RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 #include "lcmtypes/drake/lcmt_qp_controller_input.hpp"
 #include "BodyMotionData.h"
 #include "Side.h"
@@ -127,7 +127,7 @@ struct QPLocomotionPlanSettings {
   }
 
   // may be useful later in setting up constrained_position_indices
-  static std::vector<int> findPositionIndices(RigidBodyManipulator& robot, const std::vector<std::string>& joint_name_substrings)
+  static std::vector<int> findPositionIndices(RigidBodyTree & robot, const std::vector<std::string>& joint_name_substrings)
   {
     std::vector<int> ret;
     for (auto body_it = robot.bodies.begin(); body_it != robot.bodies.end(); ++body_it) {
@@ -152,7 +152,7 @@ struct QPLocomotionPlanSettings {
 class QPLocomotionPlan
 {
 private:
-  RigidBodyManipulator& robot; // TODO: const correctness
+  RigidBodyTree & robot; // TODO: const correctness
   QPLocomotionPlanSettings settings;
   const std::map<Side, int> foot_body_ids;
   const std::map<Side, int> knee_indices;
@@ -180,7 +180,7 @@ private:
   const static std::map<SupportLogicType, std::vector<bool> > support_logic_maps;
 
 public:
-  QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomotionPlanSettings& settings, const std::string& lcm_channel);
+  QPLocomotionPlan(RigidBodyTree & robot, const QPLocomotionPlanSettings& settings, const std::string& lcm_channel);
 
   /*
    * Get the input structure which can be passed to the stateless QP control loop
@@ -204,7 +204,7 @@ public:
 
   drake::lcmt_qp_controller_input getLastQPInput() const;
 
-  const RigidBodyManipulator& getRobot() const;
+  const RigidBodyTree & getRobot() const;
 
 private:
   drake::lcmt_zmp_data createZMPData(double t_plan) const;
@@ -231,9 +231,9 @@ private:
 
   static const std::map<SupportLogicType, std::vector<bool> > createSupportLogicMaps();
 
-  static const std::map<Side, int> createFootBodyIdMap(RigidBodyManipulator& robot, const std::map<Side, std::string>& foot_names);
+  static const std::map<Side, int> createFootBodyIdMap(RigidBodyTree & robot, const std::map<Side, std::string>& foot_names);
 
-  static const std::map<Side, int> createJointIndicesMap(RigidBodyManipulator& robot, const std::map<Side, std::string>& foot_body_ids);
+  static const std::map<Side, int> createJointIndicesMap(RigidBodyTree & robot, const std::map<Side, std::string>& foot_body_ids);
 };
 
 #endif /* SYSTEMS_ROBOTINTERFACES_QPLOCOMOTIONPLAN_H_ */

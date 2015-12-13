@@ -1,7 +1,7 @@
 #include "mex.h"
 #include "RigidBodyConstraint.h"
 #include "drakeMexUtil.h"
-#include "../RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 #include <cstring>
 /* 
  * [type,num_constraint,constraint_val,dconstraint_val,constraint_name,lower_bound,upper_bound] = testSingleTimeKinCnstmex(kinCnst_ptr,q,t)

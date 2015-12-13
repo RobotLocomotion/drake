@@ -1,4 +1,4 @@
-#include "RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 #include <iostream>
 
 using namespace Eigen;
@@ -127,8 +127,8 @@ void getBodyPoints(std::vector<size_t> const & cindA, std::vector<size_t> const 
 //  After one call to the function, the n rows of the Jacobian matrix corresponding to bodyInd will be completed
 //  This function must be called with all bodyInds to finish the total accumulation of the contact Jacobian
 template <typename Scalar>
-void RigidBodyManipulator::accumulateContactJacobian(const KinematicsCache<Scalar> &cache, const int bodyInd, Matrix3Xd const &bodyPoints, std::vector<size_t> const &cindA,
-                                                     std::vector<size_t> const &cindB, Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> &J) const {
+void RigidBodyTree::accumulateContactJacobian(const KinematicsCache<Scalar> &cache, const int bodyInd, Matrix3Xd const &bodyPoints, std::vector<size_t> const &cindA,
+                                              std::vector<size_t> const &cindB, Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> &J) const {
   const auto nq = J.cols();
   const size_t numCA = cindA.size();
   const size_t numCB = cindB.size();
@@ -163,8 +163,8 @@ void RigidBodyManipulator::accumulateContactJacobian(const KinematicsCache<Scala
 // TODO: change output to be 3m * nq x nq (or possibly 3m * nv x nq)
 
 template <typename Scalar>
-void RigidBodyManipulator::computeContactJacobians(const KinematicsCache<Scalar> &cache, Ref<const VectorXi> const &idxA, Ref<const VectorXi> const &idxB, Ref<const Matrix3Xd> const &xA, Ref<const Matrix3Xd> const &xB,
-                                                   Matrix<Scalar, Dynamic, Dynamic> &J) const
+void RigidBodyTree::computeContactJacobians(const KinematicsCache<Scalar> &cache, Ref<const VectorXi> const &idxA, Ref<const VectorXi> const &idxB, Ref<const Matrix3Xd> const &xA, Ref<const Matrix3Xd> const &xB,
+                                            Matrix<Scalar, Dynamic, Dynamic> &J) const
 {
   std::vector<int> bodyInds;
   const size_t nq = num_positions;
@@ -198,7 +198,7 @@ void RigidBodyManipulator::computeContactJacobians(const KinematicsCache<Scalar>
 // NOTE:
 //  k = BASIS_VECTOR_HALF_COUNT is defined as a preprocessor directive so that 
 //      Eigen templates can be optimized at compile time
-void RigidBodyManipulator::surfaceTangents(Map<Matrix3Xd> const & normals, std::vector< Map<Matrix3Xd> > & tangents) const
+void RigidBodyTree::surfaceTangents(Map<Matrix3Xd> const & normals, std::vector< Map<Matrix3Xd> > & tangents) const
 {
   const size_t numContactPairs = normals.cols();
   for (size_t curNormal = 0 ; curNormal < numContactPairs; curNormal++) {
@@ -210,6 +210,6 @@ void RigidBodyManipulator::surfaceTangents(Map<Matrix3Xd> const & normals, std::
   }
 }
 
-template DLLEXPORT_RBM void RigidBodyManipulator::computeContactJacobians<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, Eigen::Ref<Eigen::Matrix<int, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const&, Eigen::Ref<Eigen::Matrix<int, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const&, Eigen::Ref<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::OuterStride<-1> > const&, Eigen::Ref<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::OuterStride<-1> > const&, Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, -1, 0, -1, -1>&) const;
-template DLLEXPORT_RBM void RigidBodyManipulator::computeContactJacobians<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, Eigen::Ref<Eigen::Matrix<int, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const&, Eigen::Ref<Eigen::Matrix<int, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const&, Eigen::Ref<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::OuterStride<-1> > const&, Eigen::Ref<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::OuterStride<-1> > const&, Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, -1, 0, -1, -1>&) const;
-template DLLEXPORT_RBM void RigidBodyManipulator::computeContactJacobians<double>(KinematicsCache<double> const&, Eigen::Ref<Eigen::Matrix<int, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const&, Eigen::Ref<Eigen::Matrix<int, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const&, Eigen::Ref<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::OuterStride<-1> > const&, Eigen::Ref<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::OuterStride<-1> > const&, Eigen::Matrix<double, -1, -1, 0, -1, -1>&) const;
+template DLLEXPORT_RBM void RigidBodyTree::computeContactJacobians<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, Eigen::Ref<Eigen::Matrix<int, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const&, Eigen::Ref<Eigen::Matrix<int, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const&, Eigen::Ref<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::OuterStride<-1> > const&, Eigen::Ref<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::OuterStride<-1> > const&, Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, -1, 0, -1, -1>&) const;
+template DLLEXPORT_RBM void RigidBodyTree::computeContactJacobians<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, Eigen::Ref<Eigen::Matrix<int, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const&, Eigen::Ref<Eigen::Matrix<int, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const&, Eigen::Ref<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::OuterStride<-1> > const&, Eigen::Ref<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::OuterStride<-1> > const&, Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, -1, 0, -1, -1>&) const;
+template DLLEXPORT_RBM void RigidBodyTree::computeContactJacobians<double>(KinematicsCache<double> const&, Eigen::Ref<Eigen::Matrix<int, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const&, Eigen::Ref<Eigen::Matrix<int, -1, 1, 0, -1, 1> const, 0, Eigen::InnerStride<1> > const&, Eigen::Ref<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::OuterStride<-1> > const&, Eigen::Ref<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::OuterStride<-1> > const&, Eigen::Matrix<double, -1, -1, 0, -1, -1>&) const;

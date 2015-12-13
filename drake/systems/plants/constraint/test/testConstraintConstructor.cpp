@@ -1,5 +1,5 @@
 #include <iostream>
-#include "RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 
 #include "../RigidBodyConstraint.h"
 
@@ -7,7 +7,7 @@ using namespace std;
 
 int main()
 {
-  RigidBodyManipulator* model = new RigidBodyManipulator("../../../../examples/Atlas/urdf/atlas_minimal_contact.urdf");
+  RigidBodyTree * model = new RigidBodyTree("../../../../examples/Atlas/urdf/atlas_minimal_contact.urdf");
   if(!model)
   {
     cerr << "ERROR: Failed to load model"<<endl;

@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "drakeGeometryUtil.h"
-#include "RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 #include "DrakeJoint.h"
 #include "FixedJoint.h"
 #include "drakeUtil.h"
@@ -16,7 +16,7 @@
 using namespace std;
 using namespace Eigen;
 
-const set<int> RigidBodyManipulator::default_robot_num_set = {0};
+const set<int> RigidBodyTree::default_robot_num_set = {0};
 
 template <typename T>
 void getFiniteIndexes(T const & v, std::vector<int> &finite_indexes)
@@ -37,7 +37,7 @@ std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj)
   return os;
 }
 
-RigidBodyManipulator::RigidBodyManipulator(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type)
+RigidBodyTree::RigidBodyTree(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type)
   :  collision_model(DrakeCollision::newModel())
 {
   a_grav << 0, 0, 0, 0, 0, -9.81;
@@ -54,7 +54,7 @@ RigidBodyManipulator::RigidBodyManipulator(const std::string &urdf_filename, con
   addRobotFromURDF(urdf_filename,floating_base_type);
 }
 
-RigidBodyManipulator::RigidBodyManipulator(void) :
+RigidBodyTree::RigidBodyTree(void) :
     collision_model(DrakeCollision::newModel())
 {
   a_grav << 0, 0, 0, 0, 0, -9.81;
@@ -68,12 +68,12 @@ RigidBodyManipulator::RigidBodyManipulator(void) :
   initialized = false;
 }
 
-RigidBodyManipulator::~RigidBodyManipulator(void)
+RigidBodyTree::~RigidBodyTree(void)
 {
 }
 
 
-void RigidBodyManipulator::compile(void)
+void RigidBodyTree::compile(void)
 {
   // reorder body list to make sure that parents before children in the list
   size_t i = 0;
@@ -164,7 +164,7 @@ void RigidBodyManipulator::compile(void)
   initialized = true;
 }
 
-void RigidBodyManipulator::getRandomConfiguration(Eigen::VectorXd& q, std::default_random_engine& generator) const
+void RigidBodyTree::getRandomConfiguration(Eigen::VectorXd& q, std::default_random_engine& generator) const
 {
 	for (int i=0; i<bodies.size(); i++) {
 		if (bodies[i]->hasParent()) {
@@ -174,7 +174,7 @@ void RigidBodyManipulator::getRandomConfiguration(Eigen::VectorXd& q, std::defau
 	}
 }
 
-string RigidBodyManipulator::getPositionName(int position_num) const
+string RigidBodyTree::getPositionName(int position_num) const
 {
 	if (position_num<0 || position_num>=num_positions)
 		throw std::runtime_error("position_num is out of range");
@@ -185,7 +185,7 @@ string RigidBodyManipulator::getPositionName(int position_num) const
 	return bodies[body_index]->getJoint().getPositionName(position_num-bodies[body_index]->position_num_start);
 }
 
-string RigidBodyManipulator::getVelocityName(int velocity_num) const
+string RigidBodyTree::getVelocityName(int velocity_num) const
 {
 	if (velocity_num<0 || velocity_num>=num_velocities)
 		throw std::runtime_error("velocity_num is out of range");
@@ -196,7 +196,7 @@ string RigidBodyManipulator::getVelocityName(int velocity_num) const
 	return bodies[body_index]->getJoint().getVelocityName(velocity_num-bodies[body_index]->velocity_num_start);
 }
 
-string RigidBodyManipulator::getStateName(int state_num) const
+string RigidBodyTree::getStateName(int state_num) const
 {
 	if (state_num<num_positions)
 		return getPositionName(state_num);
@@ -204,7 +204,7 @@ string RigidBodyManipulator::getStateName(int state_num) const
 		return getVelocityName(state_num - num_positions);
 }
 
-map<string, int> RigidBodyManipulator::computePositionNameToIndexMap() const
+map<string, int> RigidBodyTree::computePositionNameToIndexMap() const
 {
   map<string, int> name_to_index_map;
 
@@ -214,7 +214,7 @@ map<string, int> RigidBodyManipulator::computePositionNameToIndexMap() const
   return name_to_index_map;
 }
 
-DrakeCollision::ElementId RigidBodyManipulator::addCollisionElement(const RigidBody::CollisionElement& element, const shared_ptr<RigidBody>& body, string group_name)
+DrakeCollision::ElementId RigidBodyTree::addCollisionElement(const RigidBody::CollisionElement& element, const shared_ptr<RigidBody>& body, string group_name)
 {
   DrakeCollision::ElementId id(collision_model->addElement(element));
   if (id != 0) {
@@ -224,14 +224,14 @@ DrakeCollision::ElementId RigidBodyManipulator::addCollisionElement(const RigidB
   return id;
 }
 
-void RigidBodyManipulator::updateCollisionElements(const RigidBody& body, const Eigen::Transform<double, 3, Eigen::Isometry>& transform_to_world)
+void RigidBodyTree::updateCollisionElements(const RigidBody& body, const Eigen::Transform<double, 3, Eigen::Isometry>& transform_to_world)
 {
   for (auto id_iter = body.collision_element_ids.begin(); id_iter != body.collision_element_ids.end(); ++id_iter) {
     collision_model->updateElementWorldTransform(*id_iter, transform_to_world.matrix());
   }
 }
 
-void RigidBodyManipulator::updateStaticCollisionElements()
+void RigidBodyTree::updateStaticCollisionElements()
 {
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     RigidBody& body = **it;
@@ -241,7 +241,7 @@ void RigidBodyManipulator::updateStaticCollisionElements()
   }
 }
 
-void RigidBodyManipulator::updateDynamicCollisionElements(const KinematicsCache<double>& cache)
+void RigidBodyTree::updateDynamicCollisionElements(const KinematicsCache<double>& cache)
 {
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     const RigidBody& body = **it;
@@ -252,7 +252,7 @@ void RigidBodyManipulator::updateDynamicCollisionElements(const KinematicsCache<
   collision_model->updateModel();
 }
 
-void RigidBodyManipulator::getTerrainContactPoints(const RigidBody& body, Eigen::Matrix3Xd &terrain_points) const
+void RigidBodyTree::getTerrainContactPoints(const RigidBody& body, Eigen::Matrix3Xd &terrain_points) const
 {
   // clear matrix before filling it again
   size_t num_points = 0;
@@ -268,36 +268,36 @@ void RigidBodyManipulator::getTerrainContactPoints(const RigidBody& body, Eigen:
   }
 }
 
-bool RigidBodyManipulator::collisionRaycast(const KinematicsCache<double>& cache,
-                                            const Matrix3Xd &origins,
-                                            const Matrix3Xd &ray_endpoints,
-                                            VectorXd &distances,
-                                            bool use_margins )
+bool RigidBodyTree::collisionRaycast(const KinematicsCache<double>& cache,
+                                     const Matrix3Xd &origins,
+                                     const Matrix3Xd &ray_endpoints,
+                                     VectorXd &distances,
+                                     bool use_margins )
 {
   updateDynamicCollisionElements(cache);
   return collision_model->collisionRaycast(origins, ray_endpoints, use_margins, distances);
 }
 
 
-bool RigidBodyManipulator::collisionDetect(const KinematicsCache<double>& cache,
-                                           VectorXd& phi,
-                                           Matrix3Xd& normal,
-                                           Matrix3Xd& xA,
-                                           Matrix3Xd& xB,
-                                           vector<int>& bodyA_idx,
-                                           vector<int>& bodyB_idx,
-                                           const vector<DrakeCollision::ElementId>& ids_to_check,
-                                           bool use_margins)
+bool RigidBodyTree::collisionDetect(const KinematicsCache<double>& cache,
+                                    VectorXd& phi,
+                                    Matrix3Xd& normal,
+                                    Matrix3Xd& xA,
+                                    Matrix3Xd& xB,
+                                    vector<int>& bodyA_idx,
+                                    vector<int>& bodyB_idx,
+                                    const vector<DrakeCollision::ElementId>& ids_to_check,
+                                    bool use_margins)
 {
   updateDynamicCollisionElements(cache);
 
   vector<DrakeCollision::PointPair> points;
   //DEBUG
-  //cout << "RigidBodyManipulator::collisionDetect: calling collision_model->closestPointsAllToAll" << endl;
+  //cout << "RigidBodyTree::collisionDetect: calling collision_model->closestPointsAllToAll" << endl;
   //END_DEBUG
   bool points_found = collision_model->closestPointsAllToAll(ids_to_check, use_margins, points);
   //DEBUG
-  //cout << "RigidBodyManipulator::collisionDetect: points.size() = " << points.size() << endl;
+  //cout << "RigidBodyTree::collisionDetect: points.size() = " << points.size() << endl;
   //END_DEBUG
 
   xA = MatrixXd::Zero(3,points.size());
@@ -315,10 +315,10 @@ bool RigidBodyManipulator::collisionDetect(const KinematicsCache<double>& cache,
     phi[i] = distance;
     const RigidBody::CollisionElement* elementA = dynamic_cast<const RigidBody::CollisionElement*>(collision_model->readElement(points[i].getIdA()));
     //DEBUG
-    //cout << "RigidBodyManipulator::collisionDetect: points[i].getIdA() = " << points[i].getIdA() << endl;
-    //cout << "RigidBodyManipulator::collisionDetect: collision_model->readElement(points[i].getIdA()) = " << collision_model->readElement(points[i].getIdA()) << endl;
-    //cout << "RigidBodyManipulator::collisionDetect: collision_model->readElement(points[i].getIdA())->getId() = " << collision_model->readElement(points[i].getIdA())->getId() << endl;
-    //cout << "RigidBodyManipulator::collisionDetect: elementA = " << elementA << endl;
+    //cout << "RigidBodyTree::collisionDetect: points[i].getIdA() = " << points[i].getIdA() << endl;
+    //cout << "RigidBodyTree::collisionDetect: collision_model->readElement(points[i].getIdA()) = " << collision_model->readElement(points[i].getIdA()) << endl;
+    //cout << "RigidBodyTree::collisionDetect: collision_model->readElement(points[i].getIdA())->getId() = " << collision_model->readElement(points[i].getIdA())->getId() << endl;
+    //cout << "RigidBodyTree::collisionDetect: elementA = " << elementA << endl;
     //END_DEBUG
     bodyA_idx.push_back(elementA->getBody()->body_index);
     const RigidBody::CollisionElement* elementB = dynamic_cast<const RigidBody::CollisionElement*>(collision_model->readElement(points[i].getIdB()));
@@ -327,16 +327,16 @@ bool RigidBodyManipulator::collisionDetect(const KinematicsCache<double>& cache,
   return points_found;
 }
 
-bool RigidBodyManipulator::collisionDetect(const KinematicsCache<double>& cache,
-                                           VectorXd& phi,
-                                           Matrix3Xd& normal,
-                                           Matrix3Xd& xA,
-                                           Matrix3Xd& xB,
-                                           vector<int>& bodyA_idx,
-                                           vector<int>& bodyB_idx,
-                                           const vector<int>& bodies_idx,
-                                           const set<string>& active_element_groups,
-                                           bool use_margins)
+bool RigidBodyTree::collisionDetect(const KinematicsCache<double>& cache,
+                                    VectorXd& phi,
+                                    Matrix3Xd& normal,
+                                    Matrix3Xd& xA,
+                                    Matrix3Xd& xB,
+                                    vector<int>& bodyA_idx,
+                                    vector<int>& bodyB_idx,
+                                    const vector<int>& bodies_idx,
+                                    const set<string>& active_element_groups,
+                                    bool use_margins)
 {
   vector<DrakeCollision::ElementId> ids_to_check;
   for (auto body_idx_iter = bodies_idx.begin();
@@ -353,15 +353,15 @@ bool RigidBodyManipulator::collisionDetect(const KinematicsCache<double>& cache,
   return collisionDetect(cache, phi, normal, xA, xB, bodyA_idx, bodyB_idx, ids_to_check, use_margins);
 }
 
-bool RigidBodyManipulator::collisionDetect(const KinematicsCache<double>& cache,
-                                           VectorXd& phi,
-                                           Matrix3Xd& normal,
-                                           Matrix3Xd& xA,
-                                           Matrix3Xd& xB,
-                                           vector<int>& bodyA_idx,
-                                           vector<int>& bodyB_idx,
-                                           const vector<int>& bodies_idx,
-                                           bool use_margins)
+bool RigidBodyTree::collisionDetect(const KinematicsCache<double>& cache,
+                                    VectorXd& phi,
+                                    Matrix3Xd& normal,
+                                    Matrix3Xd& xA,
+                                    Matrix3Xd& xB,
+                                    vector<int>& bodyA_idx,
+                                    vector<int>& bodyB_idx,
+                                    const vector<int>& bodies_idx,
+                                    bool use_margins)
 {
   vector<DrakeCollision::ElementId> ids_to_check;
   for (auto body_idx_iter = bodies_idx.begin();
@@ -374,15 +374,15 @@ bool RigidBodyManipulator::collisionDetect(const KinematicsCache<double>& cache,
   return collisionDetect(cache, phi, normal, xA, xB, bodyA_idx, bodyB_idx, ids_to_check, use_margins);
 }
 
-bool RigidBodyManipulator::collisionDetect(const KinematicsCache<double>& cache,
-                                           VectorXd& phi,
-                                           Matrix3Xd& normal,
-                                           Matrix3Xd& xA,
-                                           Matrix3Xd& xB,
-                                           vector<int>& bodyA_idx,
-                                           vector<int>& bodyB_idx,
-                                           const set<string>& active_element_groups,
-                                           bool use_margins)
+bool RigidBodyTree::collisionDetect(const KinematicsCache<double>& cache,
+                                    VectorXd& phi,
+                                    Matrix3Xd& normal,
+                                    Matrix3Xd& xA,
+                                    Matrix3Xd& xB,
+                                    vector<int>& bodyA_idx,
+                                    vector<int>& bodyB_idx,
+                                    const set<string>& active_element_groups,
+                                    bool use_margins)
 {
   vector<DrakeCollision::ElementId> ids_to_check;
   for (auto body_iter = bodies.begin();
@@ -397,14 +397,14 @@ bool RigidBodyManipulator::collisionDetect(const KinematicsCache<double>& cache,
   return collisionDetect(cache, phi, normal, xA, xB, bodyA_idx, bodyB_idx, ids_to_check, use_margins);
 }
 
-bool RigidBodyManipulator::collisionDetect(const KinematicsCache<double>& cache,
-                                           VectorXd& phi,
-                                           Matrix3Xd& normal,
-                                           Matrix3Xd& xA,
-                                           Matrix3Xd& xB,
-                                           vector<int>& bodyA_idx,
-                                           vector<int>& bodyB_idx,
-                                           bool use_margins)
+bool RigidBodyTree::collisionDetect(const KinematicsCache<double>& cache,
+                                    VectorXd& phi,
+                                    Matrix3Xd& normal,
+                                    Matrix3Xd& xA,
+                                    Matrix3Xd& xB,
+                                    vector<int>& bodyA_idx,
+                                    vector<int>& bodyB_idx,
+                                    bool use_margins)
 {
   vector<DrakeCollision::ElementId> ids_to_check;
   for (auto body_iter = bodies.begin();
@@ -415,13 +415,13 @@ bool RigidBodyManipulator::collisionDetect(const KinematicsCache<double>& cache,
   return collisionDetect(cache, phi, normal, xA, xB, bodyA_idx, bodyB_idx, ids_to_check, use_margins);
 }
 
-void RigidBodyManipulator::potentialCollisions(const KinematicsCache<double>& cache, VectorXd& phi,
-                                               Matrix3Xd& normal,
-                                               Matrix3Xd& xA,
-                                               Matrix3Xd& xB,
-                                               vector<int>& bodyA_idx,
-                                               vector<int>& bodyB_idx,
-                                               bool use_margins)
+void RigidBodyTree::potentialCollisions(const KinematicsCache<double>& cache, VectorXd& phi,
+                                        Matrix3Xd& normal,
+                                        Matrix3Xd& xA,
+                                        Matrix3Xd& xB,
+                                        vector<int>& bodyA_idx,
+                                        vector<int>& bodyB_idx,
+                                        bool use_margins)
 {
   updateDynamicCollisionElements(cache);
   vector<DrakeCollision::PointPair> potential_collisions;
@@ -452,18 +452,18 @@ void RigidBodyManipulator::potentialCollisions(const KinematicsCache<double>& ca
   }
 }
 
-vector<size_t> RigidBodyManipulator::collidingPoints(const KinematicsCache<double>& cache,
-    const vector<Vector3d>& points,
-    double collision_threshold)
+vector<size_t> RigidBodyTree::collidingPoints(const KinematicsCache<double>& cache,
+                                              const vector<Vector3d>& points,
+                                              double collision_threshold)
 {
   updateDynamicCollisionElements(cache);
   return collision_model->collidingPoints(points, collision_threshold);
 }
 
-bool RigidBodyManipulator::allCollisions(const KinematicsCache<double>& cache, vector<int>& bodyA_idx,
-                                         vector<int>& bodyB_idx,
-                                         Matrix3Xd& xA_in_world, Matrix3Xd& xB_in_world,
-                                         bool use_margins)
+bool RigidBodyTree::allCollisions(const KinematicsCache<double>& cache, vector<int>& bodyA_idx,
+                                  vector<int>& bodyB_idx,
+                                  Matrix3Xd& xA_in_world, Matrix3Xd& xB_in_world,
+                                  bool use_margins)
 {
   updateDynamicCollisionElements(cache);
 
@@ -488,7 +488,7 @@ bool RigidBodyManipulator::allCollisions(const KinematicsCache<double>& cache, v
   return points_found;
 }
 
-void RigidBodyManipulator::warnOnce(const string& id, const string& msg)
+void RigidBodyTree::warnOnce(const string& id, const string& msg)
 {
   auto print_warning_iter = already_printed_warnings.find(id);
   if (print_warning_iter == already_printed_warnings.end()) {
@@ -497,20 +497,20 @@ void RigidBodyManipulator::warnOnce(const string& id, const string& msg)
   }
 }
 
-//bool RigidBodyManipulator::closestDistanceAllBodies(VectorXd& distance,
+//bool RigidBodyTree::closestDistanceAllBodies(VectorXd& distance,
                                                         //MatrixXd& Jd)
 //{
   //MatrixXd ptsA, ptsB, normal, JA, JB;
   //vector<int> bodyA_idx, bodyB_idx;
   //bool return_val = closestPointsAllBodies(bodyA_idx,bodyB_idx,ptsA,ptsB,normal,distance, JA,JB,Jd);
   //DEBUG
-  //cout << "RigidBodyManipulator::closestDistanceAllBodies: distance.size() = " << distance.size() << endl;
+  //cout << "RigidBodyTree::closestDistanceAllBodies: distance.size() = " << distance.size() << endl;
   //END_DEBUG
   //return return_val;
 //};
 
 template <typename Scalar>
-void RigidBodyManipulator::updateCompositeRigidBodyInertias(KinematicsCache<Scalar>& cache) const {
+void RigidBodyTree::updateCompositeRigidBodyInertias(KinematicsCache<Scalar>& cache) const {
   cache.checkCachedKinematicsSettings(false, false, "updateCompositeRigidBodyInertias");
 
   if (!cache.areInertiasCached()) {
@@ -534,8 +534,8 @@ void RigidBodyManipulator::updateCompositeRigidBodyInertias(KinematicsCache<Scal
 }
 
 template <typename Scalar>
-Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::worldMomentumMatrix(KinematicsCache<Scalar>& cache,
-    const std::set<int>& robotnum, bool in_terms_of_qdot) const
+Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyTree::worldMomentumMatrix(KinematicsCache<Scalar>& cache,
+                                                                              const std::set<int>& robotnum, bool in_terms_of_qdot) const
 {
   cache.checkCachedKinematicsSettings(false, false, "worldMomentumMatrix");
   updateCompositeRigidBodyInertias(cache);
@@ -572,8 +572,8 @@ Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::worldMomentumMa
 }
 
 template <typename Scalar>
-Matrix<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::worldMomentumMatrixDotTimesV(KinematicsCache<Scalar>& cache,
-    const std::set<int>& robotnum) const
+Matrix<Scalar, TWIST_SIZE, 1> RigidBodyTree::worldMomentumMatrixDotTimesV(KinematicsCache<Scalar>& cache,
+                                                                          const std::set<int>& robotnum) const
 {
   cache.checkCachedKinematicsSettings(true, true, "worldMomentumMatrixDotTimesV");
   updateCompositeRigidBodyInertias(cache);
@@ -596,7 +596,7 @@ Matrix<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::worldMomentumMatrixDotTimesV
 }
 
 template <typename Scalar>
-Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::centroidalMomentumMatrix(KinematicsCache<Scalar>& cache, const std::set<int>& robotnum, bool in_terms_of_qdot) const
+Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyTree::centroidalMomentumMatrix(KinematicsCache<Scalar>& cache, const std::set<int>& robotnum, bool in_terms_of_qdot) const
 {
   // kinematics cache checks already being done in worldMomentumMatrix.
   auto ret = worldMomentumMatrix(cache, robotnum, in_terms_of_qdot);
@@ -615,7 +615,7 @@ Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::centroidalMomen
 }
 
 template <typename Scalar>
-Matrix<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::centroidalMomentumMatrixDotTimesV(KinematicsCache<Scalar>& cache, const std::set<int>& robotnum) const
+Matrix<Scalar, TWIST_SIZE, 1> RigidBodyTree::centroidalMomentumMatrixDotTimesV(KinematicsCache<Scalar>& cache, const std::set<int>& robotnum) const
 {
   // kinematics cache checks already being done in worldMomentumMatrixDotTimesV
   auto ret = worldMomentumMatrixDotTimesV(cache, robotnum);
@@ -633,7 +633,7 @@ Matrix<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::centroidalMomentumMatrixDotT
   return ret;
 }
 
-bool RigidBodyManipulator::isBodyPartOfRobot(const RigidBody& body, const std::set<int>& robotnum) const
+bool RigidBodyTree::isBodyPartOfRobot(const RigidBody& body, const std::set<int>& robotnum) const
 {
   for (std::set<int>::const_iterator it = robotnum.begin(); it != robotnum.end(); ++it) {
     if (*it < -1) {
@@ -644,7 +644,7 @@ bool RigidBodyManipulator::isBodyPartOfRobot(const RigidBody& body, const std::s
   return robotnum.find(body.robotnum) != robotnum.end();
 }
 
-double RigidBodyManipulator::getMass(const std::set<int>& robotnum) const
+double RigidBodyTree::getMass(const std::set<int>& robotnum) const
 {
   double total_mass = 0.0;
   for (int i = 0; i < bodies.size(); i++) {
@@ -658,7 +658,7 @@ double RigidBodyManipulator::getMass(const std::set<int>& robotnum) const
 }
 
 template <typename Scalar>
-Eigen::Matrix<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(KinematicsCache<Scalar> &cache, const std::set<int> &robotnum) const
+Eigen::Matrix<Scalar, SPACE_DIMENSION, 1> RigidBodyTree::centerOfMass(KinematicsCache<Scalar> &cache, const std::set<int> &robotnum) const
 {
   cache.checkCachedKinematicsSettings(false, false, "centerOfMass"); // don't check for gradients, that will be done in centerOfMassJacobian below.
 
@@ -684,7 +684,7 @@ Eigen::Matrix<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMass(Kin
 }
 
 template <typename Scalar>
-Matrix<Scalar, SPACE_DIMENSION, Eigen::Dynamic> RigidBodyManipulator::centerOfMassJacobian(KinematicsCache<Scalar>& cache, const std::set<int>& robotnum, bool in_terms_of_qdot) const
+Matrix<Scalar, SPACE_DIMENSION, Eigen::Dynamic> RigidBodyTree::centerOfMassJacobian(KinematicsCache<Scalar>& cache, const std::set<int>& robotnum, bool in_terms_of_qdot) const
 {
   cache.checkCachedKinematicsSettings(false, false, "centerOfMassJacobian");
   auto A = worldMomentumMatrix(cache, robotnum, in_terms_of_qdot);
@@ -693,7 +693,7 @@ Matrix<Scalar, SPACE_DIMENSION, Eigen::Dynamic> RigidBodyManipulator::centerOfMa
 }
 
 template <typename Scalar>
-Matrix<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMassJacobianDotTimesV(KinematicsCache<Scalar>& cache, const std::set<int>& robotnum) const
+Matrix<Scalar, SPACE_DIMENSION, 1> RigidBodyTree::centerOfMassJacobianDotTimesV(KinematicsCache<Scalar>& cache, const std::set<int>& robotnum) const
 {
   // kinematics cache checks are already being done in centroidalMomentumMatrixDotTimesV
   auto cmm_dot_times_v = centroidalMomentumMatrixDotTimesV(cache, robotnum);
@@ -702,7 +702,7 @@ Matrix<Scalar, SPACE_DIMENSION, 1> RigidBodyManipulator::centerOfMassJacobianDot
 }
 
 template <typename DerivedNormal, typename DerivedPoint>
-std::pair<Eigen::Vector3d, double> RigidBodyManipulator::resolveCenterOfPressure(const KinematicsCache<double>& cache, const std::vector<ForceTorqueMeasurement> & force_torque_measurements, const Eigen::MatrixBase<DerivedNormal> & normal, const Eigen::MatrixBase<DerivedPoint> & point_on_contact_plane) const
+std::pair<Eigen::Vector3d, double> RigidBodyTree::resolveCenterOfPressure(const KinematicsCache<double>& cache, const std::vector<ForceTorqueMeasurement> & force_torque_measurements, const Eigen::MatrixBase<DerivedNormal> & normal, const Eigen::MatrixBase<DerivedPoint> & point_on_contact_plane) const
 {
   // kinematics cache checks are already being done in relativeTransform
   typedef typename DerivedNormal::Scalar Scalar;
@@ -715,7 +715,7 @@ std::pair<Eigen::Vector3d, double> RigidBodyManipulator::resolveCenterOfPressure
   return ::resolveCenterOfPressure(total_wrench.template head<3>(), total_wrench.template tail<3>(), normal, point_on_contact_plane);
 }
 
-int RigidBodyManipulator::getNumContacts(const set<int> &body_idx) const
+int RigidBodyTree::getNumContacts(const set<int> &body_idx) const
 {
   size_t n=0,nb=body_idx.size(),bi;
   if (nb==0) nb=bodies.size();
@@ -730,7 +730,7 @@ int RigidBodyManipulator::getNumContacts(const set<int> &body_idx) const
 
 
 template<typename Derived>
-void RigidBodyManipulator::getContactPositions(const KinematicsCache<typename Derived::Scalar>& cache, MatrixBase<Derived> &pos, const set<int> &body_idx) const {
+void RigidBodyTree::getContactPositions(const KinematicsCache<typename Derived::Scalar>& cache, MatrixBase<Derived> &pos, const set<int> &body_idx) const {
   // kinematics cache checks are already being done in forwardKin
   int n = 0, nc, nb = static_cast<int>(body_idx.size()), bi;
   if (nb == 0) nb = static_cast<int>(bodies.size());
@@ -747,7 +747,7 @@ void RigidBodyManipulator::getContactPositions(const KinematicsCache<typename De
 }
 
 template<typename Derived>
-void RigidBodyManipulator::getContactPositionsJac(const KinematicsCache<typename Derived::Scalar>& cache, MatrixBase<Derived> &J, const set<int> &body_idx) const {
+void RigidBodyTree::getContactPositionsJac(const KinematicsCache<typename Derived::Scalar>& cache, MatrixBase<Derived> &J, const set<int> &body_idx) const {
   // kinematics cache checks are already being done in forwardKinJacobian
   int n = 0, nc, nb = static_cast<int>(body_idx.size()), bi;
   if (nb == 0) nb = static_cast<int>(bodies.size());
@@ -767,7 +767,7 @@ void RigidBodyManipulator::getContactPositionsJac(const KinematicsCache<typename
 
 /* [body_ind,Tframe] = parseBodyOrFrameID(body_or_frame_id) */
 template <typename Scalar>
-int RigidBodyManipulator::parseBodyOrFrameID(const int body_or_frame_id, Eigen::Transform<Scalar, 3, Isometry>* Tframe) const {
+int RigidBodyTree::parseBodyOrFrameID(const int body_or_frame_id, Eigen::Transform<Scalar, 3, Isometry>* Tframe) const {
 
   int body_ind=0;
   if (body_or_frame_id == -1) {
@@ -792,12 +792,12 @@ int RigidBodyManipulator::parseBodyOrFrameID(const int body_or_frame_id, Eigen::
   return body_ind;
 }
 
-int RigidBodyManipulator::parseBodyOrFrameID(const int body_or_frame_id) const
+int RigidBodyTree::parseBodyOrFrameID(const int body_or_frame_id) const
 {
   return parseBodyOrFrameID<double>(body_or_frame_id, nullptr);
 }
 
-void RigidBodyManipulator::findAncestorBodies(std::vector<int>& ancestor_bodies, int body_idx) const
+void RigidBodyTree::findAncestorBodies(std::vector<int>& ancestor_bodies, int body_idx) const
 {
   const RigidBody* current_body = bodies[body_idx].get();
   while (current_body->hasParent())
@@ -807,7 +807,7 @@ void RigidBodyManipulator::findAncestorBodies(std::vector<int>& ancestor_bodies,
   }
 }
 
-KinematicPath RigidBodyManipulator::findKinematicPath(int start_body_or_frame_idx, int end_body_or_frame_idx) const
+KinematicPath RigidBodyTree::findKinematicPath(int start_body_or_frame_idx, int end_body_or_frame_idx) const
 {
   // find all ancestors of start_body and end_body
   int start_body = parseBodyOrFrameID(start_body_or_frame_idx);
@@ -865,8 +865,8 @@ KinematicPath RigidBodyManipulator::findKinematicPath(int start_body_or_frame_id
 }
 
 template<typename Scalar>
-Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJacobian(const KinematicsCache<Scalar>& cache,
-    int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, bool in_terms_of_qdot, std::vector<int>* v_or_qdot_indices) const
+Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyTree::geometricJacobian(const KinematicsCache<Scalar>& cache,
+                                                                            int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, bool in_terms_of_qdot, std::vector<int>* v_or_qdot_indices) const
 {
   cache.checkCachedKinematicsSettings(false, false, "geometricJacobian");
 
@@ -922,8 +922,8 @@ Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyManipulator::geometricJacobi
 }
 
 template <typename Scalar>
-Matrix<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::geometricJacobianDotTimesV(const KinematicsCache<Scalar>& cache,
-    int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind) const
+Matrix<Scalar, TWIST_SIZE, 1> RigidBodyTree::geometricJacobianDotTimesV(const KinematicsCache<Scalar>& cache,
+                                                                        int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind) const
 {
   cache.checkCachedKinematicsSettings(true, true, "geometricJacobianDotTimesV");
 
@@ -942,8 +942,8 @@ Matrix<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::geometricJacobianDotTimesV(c
 }
 
 template <typename Scalar>
-Matrix<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::relativeTwist(const KinematicsCache<Scalar>& cache,
-    int base_or_frame_ind, int body_or_frame_ind, int expressed_in_body_or_frame_ind) const
+Matrix<Scalar, TWIST_SIZE, 1> RigidBodyTree::relativeTwist(const KinematicsCache<Scalar>& cache,
+                                                           int base_or_frame_ind, int body_or_frame_ind, int expressed_in_body_or_frame_ind) const
 {
   cache.checkCachedKinematicsSettings(true, false, "relativeTwist");
 
@@ -959,8 +959,8 @@ Matrix<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::relativeTwist(const Kinemati
 }
 
 template <typename Scalar>
-Matrix<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::transformSpatialAcceleration(const KinematicsCache<Scalar>& cache,
-    const Matrix<Scalar, TWIST_SIZE, 1>& spatial_acceleration, int base_ind, int body_ind, int old_expressed_in_body_or_frame_ind, int new_expressed_in_body_or_frame_ind) const
+Matrix<Scalar, TWIST_SIZE, 1> RigidBodyTree::transformSpatialAcceleration(const KinematicsCache<Scalar>& cache,
+                                                                          const Matrix<Scalar, TWIST_SIZE, 1>& spatial_acceleration, int base_ind, int body_ind, int old_expressed_in_body_or_frame_ind, int new_expressed_in_body_or_frame_ind) const
 {
   cache.checkCachedKinematicsSettings(true, true, "transformSpatialAcceleration");
 
@@ -978,8 +978,8 @@ Matrix<Scalar, TWIST_SIZE, 1> RigidBodyManipulator::transformSpatialAcceleration
 }
 
 template<typename Scalar>
-Transform<Scalar, 3, Isometry> RigidBodyManipulator::relativeTransform(const KinematicsCache<Scalar>& cache,
-    int base_or_frame_ind, int body_or_frame_ind) const
+Transform<Scalar, 3, Isometry> RigidBodyTree::relativeTransform(const KinematicsCache<Scalar>& cache,
+                                                                int base_or_frame_ind, int body_or_frame_ind) const
 {
   cache.checkCachedKinematicsSettings(false, false, "relativeTransform");
 
@@ -998,7 +998,7 @@ Transform<Scalar, 3, Isometry> RigidBodyManipulator::relativeTransform(const Kin
 }
 
 template<typename Scalar>
-Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMatrix(KinematicsCache<Scalar>& cache) const
+Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::massMatrix(KinematicsCache<Scalar>& cache) const
 {
   cache.checkCachedKinematicsSettings(false, false, "massMatrix");
 
@@ -1043,7 +1043,7 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::massMatrix(
  * Note that the wrenches in f_ext are expressed in body frame.
  */
 template <typename Scalar>
-Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::dynamicsBiasTerm(KinematicsCache<Scalar>& cache, const eigen_aligned_unordered_map<RigidBody const *, Matrix<Scalar, TWIST_SIZE, 1> >& f_ext) const
+Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::dynamicsBiasTerm(KinematicsCache<Scalar>& cache, const eigen_aligned_unordered_map<RigidBody const *, Matrix<Scalar, TWIST_SIZE, 1> >& f_ext) const
 {
   Matrix<Scalar, Eigen::Dynamic, 1> vd(num_velocities, 1);
   vd.setZero();
@@ -1054,9 +1054,9 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::dynamicsBiasTerm(Kinemat
  * Note that the wrenches in f_ext are expressed in body frame.
  */
 template <typename Scalar>
-Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(KinematicsCache<Scalar>& cache,
-    const eigen_aligned_unordered_map<RigidBody const *, Matrix<Scalar, TWIST_SIZE, 1> >& f_ext,
-    const Matrix<Scalar, Eigen::Dynamic, 1>& vd) const
+Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(KinematicsCache<Scalar>& cache,
+                                                                 const eigen_aligned_unordered_map<RigidBody const *, Matrix<Scalar, TWIST_SIZE, 1> >& f_ext,
+                                                                 const Matrix<Scalar, Eigen::Dynamic, 1>& vd) const
 {
   cache.checkCachedKinematicsSettings(true, true, "inverseDynamics");
 
@@ -1110,7 +1110,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::inverseDynamics(Kinemati
 }
 
 template <typename DerivedV>
-Matrix<typename DerivedV::Scalar, Dynamic, 1> RigidBodyManipulator::frictionTorques(Eigen::MatrixBase<DerivedV> const & v) const {
+Matrix<typename DerivedV::Scalar, Dynamic, 1> RigidBodyTree::frictionTorques(Eigen::MatrixBase<DerivedV> const & v) const {
   typedef typename DerivedV::Scalar Scalar;
   Matrix<Scalar, Dynamic, 1> ret(num_velocities, 1);
 
@@ -1129,8 +1129,8 @@ Matrix<typename DerivedV::Scalar, Dynamic, 1> RigidBodyManipulator::frictionTorq
 }
 
 template <typename Scalar, typename DerivedPoints>
-Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinJacobian(const KinematicsCache<Scalar>& cache,
-    const MatrixBase<DerivedPoints> &points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, bool in_terms_of_qdot) const
+Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::forwardKinJacobian(const KinematicsCache<Scalar>& cache,
+                                                                                 const MatrixBase<DerivedPoints> &points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, bool in_terms_of_qdot) const
 {
   cache.checkCachedKinematicsSettings(false, false, "forwardKinJacobian");
 
@@ -1188,8 +1188,8 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinJ
 }
 
 template <typename Scalar>
-Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinPositionGradient(const KinematicsCache<Scalar>& cache,
-  int npoints, int current_body_or_frame_ind, int new_body_or_frame_ind) const
+Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::forwardKinPositionGradient(const KinematicsCache<Scalar>& cache,
+                                                                                         int npoints, int current_body_or_frame_ind, int new_body_or_frame_ind) const
 {
   cache.checkCachedKinematicsSettings(false, false, "forwardKinPositionGradient");
 
@@ -1203,8 +1203,8 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::forwardKinP
 }
 
 template <typename Scalar, typename DerivedPoints>
-Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::forwardJacDotTimesV(const KinematicsCache<Scalar>& cache, const MatrixBase<DerivedPoints>& points,
-    int body_or_frame_ind, int base_or_frame_ind, int rotation_type) const
+Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::forwardJacDotTimesV(const KinematicsCache<Scalar>& cache, const MatrixBase<DerivedPoints>& points,
+                                                                     int body_or_frame_ind, int base_or_frame_ind, int rotation_type) const
 {
   cache.checkCachedKinematicsSettings(true, true, "forwardJacDotTimesV");
 
@@ -1247,7 +1247,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::forwardJacDotTimesV(cons
   return ret;
 }
 
-shared_ptr<RigidBody> RigidBodyManipulator::findLink(std::string linkname, int robot) const
+shared_ptr<RigidBody> RigidBodyTree::findLink(std::string linkname, int robot) const
 {
   std::transform(linkname.begin(), linkname.end(), linkname.begin(), ::tolower); // convert to lower case
 
@@ -1276,7 +1276,7 @@ shared_ptr<RigidBody> RigidBodyManipulator::findLink(std::string linkname, int r
   return nullptr;
 }
 
-int RigidBodyManipulator::findLinkId(const std::string& name, int robot) const
+int RigidBodyTree::findLinkId(const std::string& name, int robot) const
 {
 	shared_ptr<RigidBody> link = findLink(name,robot);
 	if (link == nullptr)
@@ -1284,7 +1284,7 @@ int RigidBodyManipulator::findLinkId(const std::string& name, int robot) const
 	return link->body_index;
 }
 
-shared_ptr<RigidBody> RigidBodyManipulator::findJoint(std::string jointname, int robot) const
+shared_ptr<RigidBody> RigidBodyTree::findJoint(std::string jointname, int robot) const
 {
   std::transform(jointname.begin(), jointname.end(), jointname.begin(), ::tolower); // convert to lower case
 
@@ -1337,7 +1337,7 @@ shared_ptr<RigidBody> RigidBodyManipulator::findJoint(std::string jointname, int
   }
 }
 
-int RigidBodyManipulator::findJointId(const std::string& name, int robot) const
+int RigidBodyTree::findJointId(const std::string& name, int robot) const
 {
 	shared_ptr<RigidBody> link = findJoint(name,robot);
 	if (link == nullptr)
@@ -1345,7 +1345,7 @@ int RigidBodyManipulator::findJointId(const std::string& name, int robot) const
 	return link->body_index;
 }
 
-std::string RigidBodyManipulator::getBodyOrFrameName(int body_or_frame_id) const
+std::string RigidBodyTree::getBodyOrFrameName(int body_or_frame_id) const
 {
   if (body_or_frame_id>=0) {
     return bodies[body_or_frame_id]->linkname;
@@ -1357,7 +1357,7 @@ std::string RigidBodyManipulator::getBodyOrFrameName(int body_or_frame_id) const
 }
 
 template <typename Scalar>
-Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints(const KinematicsCache<Scalar>& cache) const
+Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::positionConstraints(const KinematicsCache<Scalar>& cache) const
 {
   Matrix<Scalar, Eigen::Dynamic, 1> ret(6*loops.size(), 1);
   for (size_t i = 0; i < loops.size(); i++) {
@@ -1374,7 +1374,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyManipulator::positionConstraints(cons
 }
 
 template<typename Scalar>
-Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::positionConstraintsJacobian(const KinematicsCache<Scalar> &cache) const {
+Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::positionConstraintsJacobian(const KinematicsCache<Scalar> &cache) const {
   Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> ret(6 * loops.size(), num_positions);
 
   for (size_t i = 0; i < loops.size(); i++) {
@@ -1387,7 +1387,7 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyManipulator::positionCon
 }
 
 template <typename DerivedA, typename DerivedB, typename DerivedC>
-void RigidBodyManipulator::jointLimitConstraints(MatrixBase<DerivedA> const & q, MatrixBase<DerivedB> &phi, MatrixBase<DerivedC> &J) const
+void RigidBodyTree::jointLimitConstraints(MatrixBase<DerivedA> const & q, MatrixBase<DerivedB> &phi, MatrixBase<DerivedC> &J) const
 {
   std::vector<int> finite_min_index;
   std::vector<int> finite_max_index;
@@ -1415,7 +1415,7 @@ void RigidBodyManipulator::jointLimitConstraints(MatrixBase<DerivedA> const & q,
   }
 }
 
-size_t RigidBodyManipulator::getNumJointLimitConstraints() const
+size_t RigidBodyTree::getNumJointLimitConstraints() const
 {
   std::vector<int> finite_min_index;
   std::vector<int> finite_max_index;
@@ -1427,7 +1427,7 @@ size_t RigidBodyManipulator::getNumJointLimitConstraints() const
 }
 
 template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> RigidBodyManipulator::transformVelocityMappingToPositionDotMapping(
+Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> RigidBodyTree::transformVelocityMappingToPositionDotMapping(
     const KinematicsCache<typename Derived::Scalar>& cache, const Eigen::MatrixBase<Derived>& mat) const
 {
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> ret(mat.rows(), num_positions);
@@ -1445,72 +1445,72 @@ Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynam
   }
   return ret;
 }
-size_t RigidBodyManipulator::getNumPositionConstraints() const
+size_t RigidBodyTree::getNumPositionConstraints() const
 {
   return loops.size()*6;
 }
 
 
-void RigidBodyManipulator::addFrame(const std::shared_ptr<RigidBodyFrame>& frame)
+void RigidBodyTree::addFrame(const std::shared_ptr<RigidBodyFrame>& frame)
 {
   frames.push_back(frame);
   frame->frame_index=-(static_cast<int>(frames.size())-1)-2; // yuck!!
 }
 
 
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, -1, 0, -1, -1> RigidBodyManipulator::massMatrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >&) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, -1, 0, -1, -1> RigidBodyManipulator::massMatrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyManipulator::massMatrix<double>(KinematicsCache<double>&) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 3, 1, 0, 3, 1> RigidBodyManipulator::centerOfMass<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >&, set<int, less<int>, allocator<int> > const&) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 3, 1, 0, 3, 1> RigidBodyManipulator::centerOfMass<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&, set<int, less<int>, allocator<int> > const&) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, 3, 1, 0, 3, 1> RigidBodyManipulator::centerOfMass<double>(KinematicsCache<double>&, set<int, less<int>, allocator<int> > const&) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, 1, 0, -1, 1> RigidBodyManipulator::dynamicsBiasTerm<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >&, unordered_map<RigidBody const*, Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 6, 1, 0, 6, 1>, hash<RigidBody const*>, equal_to<RigidBody const*>, Eigen::aligned_allocator<pair<RigidBody const* const, Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 6, 1, 0, 6, 1> > > > const&) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, 1, 0, -1, 1> RigidBodyManipulator::dynamicsBiasTerm<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&, unordered_map<RigidBody const*, Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 6, 1, 0, 6, 1>, hash<RigidBody const*>, equal_to<RigidBody const*>, Eigen::aligned_allocator<pair<RigidBody const* const, Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 6, 1, 0, 6, 1> > > > const&) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, -1, 1, 0, -1, 1> RigidBodyManipulator::dynamicsBiasTerm<double>(KinematicsCache<double>&, unordered_map<RigidBody const*, Eigen::Matrix<double, 6, 1, 0, 6, 1>, hash<RigidBody const*>, equal_to<RigidBody const*>, Eigen::aligned_allocator<pair<RigidBody const* const, Eigen::Matrix<double, 6, 1, 0, 6, 1> > > > const&) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 6, -1, 0, 6, -1> RigidBodyManipulator::geometricJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, int, int, int, bool, vector<int, allocator<int> >*) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 6, -1, 0, 6, -1> RigidBodyManipulator::geometricJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, int, int, int, bool, vector<int, allocator<int> >*) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, 6, -1, 0, 6, -1> RigidBodyManipulator::geometricJacobian<double>(KinematicsCache<double> const&, int, int, int, bool, vector<int, allocator<int> >*) const;
-template DLLEXPORT_RBM Eigen::Transform<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 3, 1, 0> RigidBodyManipulator::relativeTransform<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, int, int) const;
-template DLLEXPORT_RBM Eigen::Transform<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 3, 1, 0> RigidBodyManipulator::relativeTransform<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, int, int) const;
-template DLLEXPORT_RBM Eigen::Transform<double, 3, 1, 0> RigidBodyManipulator::relativeTransform<double>(KinematicsCache<double> const&, int, int) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, -1, 0, -1, -1> RigidBodyManipulator::forwardKinJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > > const&, int, int, int, bool) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, -1, 0, -1, -1> RigidBodyManipulator::forwardKinJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > > const&, int, int, int, bool) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyManipulator::forwardKinJacobian<double, Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > >(KinematicsCache<double> const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > > const&, int, int, int, bool) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, 1, 0, -1, 1> RigidBodyManipulator::forwardJacDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > > const&, int, int, int) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, 1, 0, -1, 1> RigidBodyManipulator::forwardJacDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > > const&, int, int, int) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, -1, 1, 0, -1, 1> RigidBodyManipulator::forwardJacDotTimesV<double, Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > >(KinematicsCache<double> const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > > const&, int, int, int) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 3, -1, 0, 3, -1> RigidBodyManipulator::centerOfMassJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >&, set<int, less<int>, allocator<int> > const&, bool) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 3, -1, 0, 3, -1> RigidBodyManipulator::centerOfMassJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&, set<int, less<int>, allocator<int> > const&, bool) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, 3, -1, 0, 3, -1> RigidBodyManipulator::centerOfMassJacobian<double>(KinematicsCache<double>&, set<int, less<int>, allocator<int> > const&, bool) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 6, -1, 0, 6, -1> RigidBodyManipulator::centroidalMomentumMatrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >&, set<int, less<int>, allocator<int> > const&, bool) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 6, -1, 0, 6, -1> RigidBodyManipulator::centroidalMomentumMatrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&, set<int, less<int>, allocator<int> > const&, bool) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, 6, -1, 0, 6, -1> RigidBodyManipulator::centroidalMomentumMatrix<double>(KinematicsCache<double>&, set<int, less<int>, allocator<int> > const&, bool) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, -1, 0, -1, -1> RigidBodyManipulator::forwardKinPositionGradient<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, int, int, int) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, -1, 0, -1, -1> RigidBodyManipulator::forwardKinPositionGradient<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, int, int, int) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyManipulator::forwardKinPositionGradient<double>(KinematicsCache<double> const&, int, int, int) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 6, 1, 0, 6, 1> RigidBodyManipulator::geometricJacobianDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, int, int, int) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 6, 1, 0, 6, 1> RigidBodyManipulator::geometricJacobianDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, int, int, int) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, 6, 1, 0, 6, 1> RigidBodyManipulator::geometricJacobianDotTimesV<double>(KinematicsCache<double> const&, int, int, int) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 3, 1, 0, 3, 1> RigidBodyManipulator::centerOfMassJacobianDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >&, set<int, less<int>, allocator<int> > const&) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 3, 1, 0, 3, 1> RigidBodyManipulator::centerOfMassJacobianDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&, set<int, less<int>, allocator<int> > const&) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, 3, 1, 0, 3, 1> RigidBodyManipulator::centerOfMassJacobianDotTimesV<double>(KinematicsCache<double>&, set<int, less<int>, allocator<int> > const&) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 6, 1, 0, 6, 1> RigidBodyManipulator::centroidalMomentumMatrixDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >&, set<int, less<int>, allocator<int> > const&) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 6, 1, 0, 6, 1> RigidBodyManipulator::centroidalMomentumMatrixDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&, set<int, less<int>, allocator<int> > const&) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, 6, 1, 0, 6, 1> RigidBodyManipulator::centroidalMomentumMatrixDotTimesV<double>(KinematicsCache<double>&, set<int, less<int>, allocator<int> > const&) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, -1, 1, 0, -1, 1> RigidBodyManipulator::positionConstraints<double>(KinematicsCache<double> const&) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyManipulator::positionConstraintsJacobian<double>(KinematicsCache<double> const&) const;
-template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints<Eigen::Matrix<double, -1, 1, 0, -1, 1>, Eigen::Matrix<double, -1, 1, 0, -1, 1>, Eigen::Matrix<double, -1, -1, 0, -1, -1> >(Eigen::MatrixBase<Eigen::Matrix<double, -1, 1, 0, -1, 1> > const&, Eigen::MatrixBase<Eigen::Matrix<double, -1, 1, 0, -1, 1> >&, Eigen::MatrixBase<Eigen::Matrix<double, -1, -1, 0, -1, -1> >&) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, 6, 1, 0, 6, 1> RigidBodyManipulator::relativeTwist<double>(KinematicsCache<double> const&, int, int, int) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyManipulator::forwardKinJacobian<double, Eigen::Matrix<double, 3, -1, 0, 3, -1> >(KinematicsCache<double> const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, -1, 0, 3, -1> > const&, int, int, int, bool) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, -1, 1, 0, -1, 1> RigidBodyManipulator::forwardJacDotTimesV<double, Eigen::Matrix<double, 3, -1, 0, 3, -1> >(KinematicsCache<double> const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, -1, 0, 3, -1> > const&, int, int, int) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, 6, -1, 0, 6, -1> RigidBodyManipulator::worldMomentumMatrix<double>(KinematicsCache<double>&, set<int, less<int>, allocator<int> > const&, bool) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, 6, 1, 0, 6, 1> RigidBodyManipulator::transformSpatialAcceleration<double>(KinematicsCache<double> const&, Eigen::Matrix<double, 6, 1, 0, 6, 1> const&, int, int, int, int) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, 6, 1, 0, 6, 1> RigidBodyManipulator::worldMomentumMatrixDotTimesV<double>(KinematicsCache<double>&, set<int, less<int>, allocator<int> > const&) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyManipulator::forwardKinJacobian<double, Eigen::Matrix<double, 3, 1, 0, 3, 1> >(KinematicsCache<double> const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&, int, int, int, bool) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, -1, 1, 0, -1, 1> RigidBodyManipulator::forwardJacDotTimesV<double, Eigen::Matrix<double, 3, 1, 0, 3, 1> >(KinematicsCache<double> const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&, int, int, int) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, -1, 1, 0, -1, 1> RigidBodyManipulator::inverseDynamics<double>(KinematicsCache<double>&, unordered_map<RigidBody const*, Eigen::Matrix<double, 6, 1, 0, 6, 1>, hash<RigidBody const*>, equal_to<RigidBody const*>, Eigen::aligned_allocator<pair<RigidBody const* const, Eigen::Matrix<double, 6, 1, 0, 6, 1> > > > const&, Eigen::Matrix<double, -1, 1, 0, -1, 1> const&) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, -1, 0, -1, -1> RigidBodyManipulator::forwardKinJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, Eigen::Matrix<double, 3, -1, 0, 3, -1> >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, -1, 0, 3, -1> > const&, int, int, int, bool) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, -1, 0, -1, -1> RigidBodyManipulator::forwardKinJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, Eigen::Matrix<double, 3, -1, 0, 3, -1> >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, -1, 0, 3, -1> > const&, int, int, int, bool) const;
-template DLLEXPORT_RBM void RigidBodyManipulator::jointLimitConstraints<Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 0, Eigen::Stride<0, 0> >, Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 0, Eigen::Stride<0, 0> >, Eigen::Map<Eigen::Matrix<double, -1, -1, 0, -1, -1>, 0, Eigen::Stride<0, 0> > >(Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 0, Eigen::Stride<0, 0> > > const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 0, Eigen::Stride<0, 0> > >&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, -1, -1, 0, -1, -1>, 0, Eigen::Stride<0, 0> > >&) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyManipulator::forwardKinJacobian<double, Eigen::Block<Eigen::Matrix<double, 3, -1, 0, 3, -1>, 3, 1, true> >(KinematicsCache<double> const&, Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 3, -1, 0, 3, -1>, 3, 1, true> > const&, int, int, int, bool) const;
-template DLLEXPORT_RBM pair<Eigen::Matrix<double, 3, 1, 0, 3, 1>, double> RigidBodyManipulator::resolveCenterOfPressure<Eigen::Matrix<double, 3, 1, 0, 3, 1>, Eigen::Matrix<double, 3, 1, 0, 3, 1> >(KinematicsCache<double> const&, vector<ForceTorqueMeasurement, allocator<ForceTorqueMeasurement> > const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&) const;
+template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, -1, 0, -1, -1> RigidBodyTree::massMatrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >&) const;
+template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, -1, 0, -1, -1> RigidBodyTree::massMatrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&) const;
+template DLLEXPORT_RBM Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyTree::massMatrix<double>(KinematicsCache<double>&) const;
+template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 3, 1, 0, 3, 1> RigidBodyTree::centerOfMass<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >&, set<int, less<int>, allocator<int> > const&) const;
+template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 3, 1, 0, 3, 1> RigidBodyTree::centerOfMass<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&, set<int, less<int>, allocator<int> > const&) const;
+template DLLEXPORT_RBM Eigen::Matrix<double, 3, 1, 0, 3, 1> RigidBodyTree::centerOfMass<double>(KinematicsCache<double>&, set<int, less<int>, allocator<int> > const&) const;
+template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, 1, 0, -1, 1> RigidBodyTree::dynamicsBiasTerm<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >&, unordered_map<RigidBody const*, Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 6, 1, 0, 6, 1>, hash<RigidBody const*>, equal_to<RigidBody const*>, Eigen::aligned_allocator<pair<RigidBody const* const, Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 6, 1, 0, 6, 1> > > > const&) const;
+template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, 1, 0, -1, 1> RigidBodyTree::dynamicsBiasTerm<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&, unordered_map<RigidBody const*, Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 6, 1, 0, 6, 1>, hash<RigidBody const*>, equal_to<RigidBody const*>, Eigen::aligned_allocator<pair<RigidBody const* const, Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 6, 1, 0, 6, 1> > > > const&) const;
+template DLLEXPORT_RBM Eigen::Matrix<double, -1, 1, 0, -1, 1> RigidBodyTree::dynamicsBiasTerm<double>(KinematicsCache<double>&, unordered_map<RigidBody const*, Eigen::Matrix<double, 6, 1, 0, 6, 1>, hash<RigidBody const*>, equal_to<RigidBody const*>, Eigen::aligned_allocator<pair<RigidBody const* const, Eigen::Matrix<double, 6, 1, 0, 6, 1> > > > const&) const;
+template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 6, -1, 0, 6, -1> RigidBodyTree::geometricJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, int, int, int, bool, vector<int, allocator<int> >*) const;
+template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 6, -1, 0, 6, -1> RigidBodyTree::geometricJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, int, int, int, bool, vector<int, allocator<int> >*) const;
+template DLLEXPORT_RBM Eigen::Matrix<double, 6, -1, 0, 6, -1> RigidBodyTree::geometricJacobian<double>(KinematicsCache<double> const&, int, int, int, bool, vector<int, allocator<int> >*) const;
+template DLLEXPORT_RBM Eigen::Transform<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 3, 1, 0> RigidBodyTree::relativeTransform<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, int, int) const;
+template DLLEXPORT_RBM Eigen::Transform<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 3, 1, 0> RigidBodyTree::relativeTransform<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, int, int) const;
+template DLLEXPORT_RBM Eigen::Transform<double, 3, 1, 0> RigidBodyTree::relativeTransform<double>(KinematicsCache<double> const&, int, int) const;
+template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > > const&, int, int, int, bool) const;
+template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > > const&, int, int, int, bool) const;
+template DLLEXPORT_RBM Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinJacobian<double, Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > >(KinematicsCache<double> const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > > const&, int, int, int, bool) const;
+template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, 1, 0, -1, 1> RigidBodyTree::forwardJacDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > > const&, int, int, int) const;
+template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, 1, 0, -1, 1> RigidBodyTree::forwardJacDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > > const&, int, int, int) const;
+template DLLEXPORT_RBM Eigen::Matrix<double, -1, 1, 0, -1, 1> RigidBodyTree::forwardJacDotTimesV<double, Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > >(KinematicsCache<double> const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > > const&, int, int, int) const;
+template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 3, -1, 0, 3, -1> RigidBodyTree::centerOfMassJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >&, set<int, less<int>, allocator<int> > const&, bool) const;
+template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 3, -1, 0, 3, -1> RigidBodyTree::centerOfMassJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&, set<int, less<int>, allocator<int> > const&, bool) const;
+template DLLEXPORT_RBM Eigen::Matrix<double, 3, -1, 0, 3, -1> RigidBodyTree::centerOfMassJacobian<double>(KinematicsCache<double>&, set<int, less<int>, allocator<int> > const&, bool) const;
+template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 6, -1, 0, 6, -1> RigidBodyTree::centroidalMomentumMatrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >&, set<int, less<int>, allocator<int> > const&, bool) const;
+template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 6, -1, 0, 6, -1> RigidBodyTree::centroidalMomentumMatrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&, set<int, less<int>, allocator<int> > const&, bool) const;
+template DLLEXPORT_RBM Eigen::Matrix<double, 6, -1, 0, 6, -1> RigidBodyTree::centroidalMomentumMatrix<double>(KinematicsCache<double>&, set<int, less<int>, allocator<int> > const&, bool) const;
+template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinPositionGradient<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, int, int, int) const;
+template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinPositionGradient<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, int, int, int) const;
+template DLLEXPORT_RBM Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinPositionGradient<double>(KinematicsCache<double> const&, int, int, int) const;
+template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 6, 1, 0, 6, 1> RigidBodyTree::geometricJacobianDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, int, int, int) const;
+template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 6, 1, 0, 6, 1> RigidBodyTree::geometricJacobianDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, int, int, int) const;
+template DLLEXPORT_RBM Eigen::Matrix<double, 6, 1, 0, 6, 1> RigidBodyTree::geometricJacobianDotTimesV<double>(KinematicsCache<double> const&, int, int, int) const;
+template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 3, 1, 0, 3, 1> RigidBodyTree::centerOfMassJacobianDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >&, set<int, less<int>, allocator<int> > const&) const;
+template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 3, 1, 0, 3, 1> RigidBodyTree::centerOfMassJacobianDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&, set<int, less<int>, allocator<int> > const&) const;
+template DLLEXPORT_RBM Eigen::Matrix<double, 3, 1, 0, 3, 1> RigidBodyTree::centerOfMassJacobianDotTimesV<double>(KinematicsCache<double>&, set<int, less<int>, allocator<int> > const&) const;
+template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 6, 1, 0, 6, 1> RigidBodyTree::centroidalMomentumMatrixDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >&, set<int, less<int>, allocator<int> > const&) const;
+template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 6, 1, 0, 6, 1> RigidBodyTree::centroidalMomentumMatrixDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&, set<int, less<int>, allocator<int> > const&) const;
+template DLLEXPORT_RBM Eigen::Matrix<double, 6, 1, 0, 6, 1> RigidBodyTree::centroidalMomentumMatrixDotTimesV<double>(KinematicsCache<double>&, set<int, less<int>, allocator<int> > const&) const;
+template DLLEXPORT_RBM Eigen::Matrix<double, -1, 1, 0, -1, 1> RigidBodyTree::positionConstraints<double>(KinematicsCache<double> const&) const;
+template DLLEXPORT_RBM Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyTree::positionConstraintsJacobian<double>(KinematicsCache<double> const&) const;
+template DLLEXPORT_RBM void RigidBodyTree::jointLimitConstraints<Eigen::Matrix<double, -1, 1, 0, -1, 1>, Eigen::Matrix<double, -1, 1, 0, -1, 1>, Eigen::Matrix<double, -1, -1, 0, -1, -1> >(Eigen::MatrixBase<Eigen::Matrix<double, -1, 1, 0, -1, 1> > const&, Eigen::MatrixBase<Eigen::Matrix<double, -1, 1, 0, -1, 1> >&, Eigen::MatrixBase<Eigen::Matrix<double, -1, -1, 0, -1, -1> >&) const;
+template DLLEXPORT_RBM Eigen::Matrix<double, 6, 1, 0, 6, 1> RigidBodyTree::relativeTwist<double>(KinematicsCache<double> const&, int, int, int) const;
+template DLLEXPORT_RBM Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinJacobian<double, Eigen::Matrix<double, 3, -1, 0, 3, -1> >(KinematicsCache<double> const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, -1, 0, 3, -1> > const&, int, int, int, bool) const;
+template DLLEXPORT_RBM Eigen::Matrix<double, -1, 1, 0, -1, 1> RigidBodyTree::forwardJacDotTimesV<double, Eigen::Matrix<double, 3, -1, 0, 3, -1> >(KinematicsCache<double> const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, -1, 0, 3, -1> > const&, int, int, int) const;
+template DLLEXPORT_RBM Eigen::Matrix<double, 6, -1, 0, 6, -1> RigidBodyTree::worldMomentumMatrix<double>(KinematicsCache<double>&, set<int, less<int>, allocator<int> > const&, bool) const;
+template DLLEXPORT_RBM Eigen::Matrix<double, 6, 1, 0, 6, 1> RigidBodyTree::transformSpatialAcceleration<double>(KinematicsCache<double> const&, Eigen::Matrix<double, 6, 1, 0, 6, 1> const&, int, int, int, int) const;
+template DLLEXPORT_RBM Eigen::Matrix<double, 6, 1, 0, 6, 1> RigidBodyTree::worldMomentumMatrixDotTimesV<double>(KinematicsCache<double>&, set<int, less<int>, allocator<int> > const&) const;
+template DLLEXPORT_RBM Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinJacobian<double, Eigen::Matrix<double, 3, 1, 0, 3, 1> >(KinematicsCache<double> const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&, int, int, int, bool) const;
+template DLLEXPORT_RBM Eigen::Matrix<double, -1, 1, 0, -1, 1> RigidBodyTree::forwardJacDotTimesV<double, Eigen::Matrix<double, 3, 1, 0, 3, 1> >(KinematicsCache<double> const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&, int, int, int) const;
+template DLLEXPORT_RBM Eigen::Matrix<double, -1, 1, 0, -1, 1> RigidBodyTree::inverseDynamics<double>(KinematicsCache<double>&, unordered_map<RigidBody const*, Eigen::Matrix<double, 6, 1, 0, 6, 1>, hash<RigidBody const*>, equal_to<RigidBody const*>, Eigen::aligned_allocator<pair<RigidBody const* const, Eigen::Matrix<double, 6, 1, 0, 6, 1> > > > const&, Eigen::Matrix<double, -1, 1, 0, -1, 1> const&) const;
+template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, Eigen::Matrix<double, 3, -1, 0, 3, -1> >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, -1, 0, 3, -1> > const&, int, int, int, bool) const;
+template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, Eigen::Matrix<double, 3, -1, 0, 3, -1> >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, -1, 0, 3, -1> > const&, int, int, int, bool) const;
+template DLLEXPORT_RBM void RigidBodyTree::jointLimitConstraints<Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 0, Eigen::Stride<0, 0> >, Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 0, Eigen::Stride<0, 0> >, Eigen::Map<Eigen::Matrix<double, -1, -1, 0, -1, -1>, 0, Eigen::Stride<0, 0> > >(Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 0, Eigen::Stride<0, 0> > > const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 0, Eigen::Stride<0, 0> > >&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, -1, -1, 0, -1, -1>, 0, Eigen::Stride<0, 0> > >&) const;
+template DLLEXPORT_RBM Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinJacobian<double, Eigen::Block<Eigen::Matrix<double, 3, -1, 0, 3, -1>, 3, 1, true> >(KinematicsCache<double> const&, Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 3, -1, 0, 3, -1>, 3, 1, true> > const&, int, int, int, bool) const;
+template DLLEXPORT_RBM pair<Eigen::Matrix<double, 3, 1, 0, 3, 1>, double> RigidBodyTree::resolveCenterOfPressure<Eigen::Matrix<double, 3, 1, 0, 3, 1>, Eigen::Matrix<double, 3, 1, 0, 3, 1> >(KinematicsCache<double> const&, vector<ForceTorqueMeasurement, allocator<ForceTorqueMeasurement> > const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&) const;
