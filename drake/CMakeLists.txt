@@ -26,6 +26,23 @@ find_package(Java REQUIRED)
 include(UseJava)
 set(CMAKE_JAVA_COMPILE_FLAGS ${CMAKE_JAVA_COMPILE_FLAGS} -source 6 -target 6)
 
+# set up automatic export header generation
+include(GenerateExportHeader)
+function(add_library_with_exports)
+#  set(options)
+  set(oneValueArgs LIB_NAME)
+  set(multiValueArgs SOURCE_FILES)
+  cmake_parse_arguments(parsed_args "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+
+  add_library(${parsed_args_LIB_NAME} SHARED ${parsed_args_SOURCE_FILES})
+  # work around https://cmake.org/Bug/view.php?id=12645 (fixed in 2.8.8):
+  file(RELATIVE_PATH exports_rel_path ${CMAKE_CURRENT_BINARY_DIR}/ ${PROJECT_BINARY_DIR}/exports/${parsed_args_LIB_NAME}_export.h)
+  generate_export_header(${parsed_args_LIB_NAME} EXPORT_FILE_NAME ${exports_rel_path})
+  # TODO: enable when 2.8.11 is required
+#  target_include_directories(${parsed_args_LIB_NAME} PUBLIC ${PROJECT_BINARY_DIR}/exports)
+endfunction()
+include_directories(${PROJECT_BINARY_DIR}/exports)
+
 if (CMAKE_COMPILER_IS_GNUCC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wreturn-type -Wuninitialized -Wunused-variable") # -Wunused-parameter")
 
