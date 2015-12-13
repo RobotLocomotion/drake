@@ -308,6 +308,8 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
                                     'prevent_swing_undershoot', false,... % prevent the first phase of the swing from going backwards while moving to the first knot point
                                     'prevent_swing_overshoot', false,... % prevent the final phase of the swing from moving forward of the last knot point
                                     'nominal_LIP_COM_height', 0.80); % nominal height used to construct D_ls for our linear inverted pendulum model
+
+    default_qp_input;
   end
 
 end
