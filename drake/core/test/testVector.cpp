@@ -12,22 +12,17 @@ int main(int argc, char* argv[])
   PendulumState<double> state;
   state.theta = 0.2;
   state.thetadot = .3;
-  cout << "state = " << endl << state << endl;
 
   state = x;
-  cout << "state = " << endl << state << endl;
+  assert(state.thetadot == 0.4);
 
-  state.theta = 0.4;
+  state.theta = 0.5;
   x = state;
-  cout << "x = " << x.transpose() << endl << endl;
+  assert(x(0) = 0.5);
 
   {
-  Eigen::Vector2d y = state;
-  cout << "y = " << y.transpose() << endl << endl;
-  }
-  {
-  Eigen::VectorXd y = static_cast<Eigen::Vector2d>(state);
-  cout << "y = " << y.transpose() << endl << endl;
+    Eigen::VectorXd y = state;
+    assert((x - y).isZero());
   }
 
   PendulumInput<double> input;
@@ -36,16 +31,17 @@ int main(int argc, char* argv[])
   Eigen::Vector3d abc;  abc << 1,2,3;
   {
     Drake::CombinedVector<double, PendulumState, PendulumInput> test(abc);
-    cout << test << endl;
     test=2*abc;
-    cout << test << endl;
-    cout << "type: " << typeid(test).name() << endl;
+    assert(test.first().theta == 2);
+    assert(test.first().thetadot == 4);
+    assert(test.second().tau == 6);
   }
   {
     Drake::CombinedVectorBuilder<PendulumState,PendulumInput>::VecType<double> test(abc);
-    cout << test << endl;
     test=2*abc;
-    cout << test << endl;
+    assert(test.first().theta == 2);
+    assert(test.first().thetadot == 4);
+    assert(test.second().tau == 6);
   }
   {
     // combining a vector with an unused or empty vector should return the original type

@@ -12,7 +12,7 @@ int main(int argc, char* argv[]) {
     return 1;
 
   auto p = std::make_shared<Pendulum>();
-  auto c = std::make_shared<PendulumEnergyShaping>(*p);
+  auto c = std::make_shared<PendulumEnergyShapingController>(*p);
   auto v = std::make_shared<Drake::BotVisualizer<PendulumState> >(lcm,Drake::getDrakePath()+"/examples/Pendulum/Pendulum.urdf",DrakeJoint::FIXED);
 
   auto sys = cascade(feedback(p,c),v);

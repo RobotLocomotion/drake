@@ -16,7 +16,7 @@ namespace Drake {
 //  - Defines a static constant (or enum) RowsAtCompileTime (see Pendulum.h for an example).  Can be Eigen::DYNAMIC
 //  - implements size_t size(), which equals RowsAtCompileTime except when DYNAMIC
 //  - implements the copy constructor and the assignment operator= from const Eigen::MatrixBase<Derived>& (e.g. using "copy and swap")
-//  - implements the typecast method operator Eigen::Matrix<ScalarType,RowsAtCompileTime,1>()
+//  - implements the typecast method to convert back to an Eigen Vector (e.g.  template <int Rows> operator Eigen::Matrix<ScalarType,Rows,1>())
 //  - implements std::ostream& operator<<(std::ostream& os, const Vector& x)
 // (The methods/defs below make it possible (and hopefully easy) to simply use Eigen::Matrix types to model this concept)
 

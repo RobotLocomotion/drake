@@ -12,15 +12,18 @@ template <typename ScalarType = double>
 class PendulumState  { // models the Drake::Vector concept
 public:
   PendulumState(void) : theta(0), thetadot(0) {};
-  PendulumState(const Eigen::Matrix<ScalarType,2,1>& x) : theta(x(0)), thetadot(x(1)) {};
+  template <typename Derived>
+  PendulumState(const Eigen::MatrixBase<Derived>& x) : theta(x(0)), thetadot(x(1)) {};
 
-  PendulumState& operator=(const Eigen::Matrix<ScalarType,2,1>& x) {
+  template <typename Derived>
+  PendulumState& operator=(const Eigen::MatrixBase<Derived>& x) {
     theta = x(0);
     thetadot = x(1);
     return *this;
   }
 
-  operator Eigen::Matrix<ScalarType,2,1> () const {
+  template <int Rows>
+  operator Eigen::Matrix<ScalarType,Rows,1> () const {
     Eigen::Matrix<ScalarType,2,1> x;
     x << theta, thetadot;
     return x;
@@ -106,9 +109,9 @@ public:
 };
 
 
-class PendulumEnergyShaping : public Drake::System<PendulumEnergyShaping,Drake::UnusedVector,PendulumState,PendulumInput,false,true> {
+class PendulumEnergyShapingController : public Drake::System<PendulumEnergyShapingController,Drake::UnusedVector,PendulumState,PendulumInput,false,true> {
 public:
-  PendulumEnergyShaping(const Pendulum& pendulum)
+  PendulumEnergyShapingController(const Pendulum& pendulum)
           : m(pendulum.m),
             l(pendulum.l),
             b(pendulum.b),

@@ -10,10 +10,13 @@ template <typename ScalarType = double>
 class QuadrotorState  { // models the Drake::Vector concept
 public:
   QuadrotorState(void) : x(0), y(0), z(0), roll(0), pitch(0), yaw(0), xdot(0), ydot(0), zdot(0), rolldot(0), pitchdot(0), yawdot(0) {};
-  QuadrotorState(const Eigen::Matrix<ScalarType,12,1>& x) : x(x(0)), y(x(1)), z(x(2)), roll(x(3)), pitch(x(4)), yaw(x(5)),
+
+  template <typename Derived>
+  QuadrotorState(const Eigen::MatrixBase<Derived>& x) : x(x(0)), y(x(1)), z(x(2)), roll(x(3)), pitch(x(4)), yaw(x(5)),
                                                            xdot(x(6)), ydot(x(7)), zdot(x(8)), rolldot(x(9)), pitchdot(x(10)), yawdot(x(11)) {};
 
-  QuadrotorState& operator=(const Eigen::Matrix<ScalarType,12,1>& state) {
+  template <typename Derived>
+  QuadrotorState& operator=(const Eigen::MatrixBase<Derived>& state) {
     x = state(0);
     y = state(1);
     z = state(2);
