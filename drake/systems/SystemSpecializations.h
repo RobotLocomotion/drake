@@ -53,7 +53,7 @@ namespace Drake {
     }
   };
 
-#define OutputDispatchSpecialization(time, state, input, func_call) \
+#define DrakeOutputDispatchSpecialization(time, state, input, func_call) \
   template <typename ScalarType, typename Derived, template <typename> class StateVector, template <typename> class InputVector, template <typename> class OutputVector> \
   struct OutputDispatch<time,state,input,ScalarType,Derived,StateVector,InputVector,OutputVector>   { \
     static OutputVector<ScalarType> eval(const Derived* sys, const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) \
@@ -62,14 +62,15 @@ namespace Drake {
     } \
   };
 
-  OutputDispatchSpecialization(true, true, false, sys->outputImplementation(t,x))
-  OutputDispatchSpecialization(true, false, true, sys->outputImplementation(t,u))
-  OutputDispatchSpecialization(true, false, false, sys->outputImplementation(t))
-  OutputDispatchSpecialization(false, true, true, sys->outputImplementation(x,u))
-  OutputDispatchSpecialization(false, true, false, sys->outputImplementation(x))
-  OutputDispatchSpecialization(false, false, true, sys->outputImplementation(u))
-  OutputDispatchSpecialization(false, false, false, sys->outputImplementation())
+  DrakeOutputDispatchSpecialization(true, true, false, sys->outputImplementation(t,x))
+  DrakeOutputDispatchSpecialization(true, false, true, sys->outputImplementation(t,u))
+  DrakeOutputDispatchSpecialization(true, false, false, sys->outputImplementation(t))
+  DrakeOutputDispatchSpecialization(false, true, true, sys->outputImplementation(x,u))
+  DrakeOutputDispatchSpecialization(false, true, false, sys->outputImplementation(x))
+  DrakeOutputDispatchSpecialization(false, false, true, sys->outputImplementation(u))
+  DrakeOutputDispatchSpecialization(false, false, false, sys->outputImplementation())
 
+#undef DrakeOutputDispatchSpecialization
 };
 
 #endif //DRAKE_SYSTEMSPECIALIZATIONS_H

@@ -31,9 +31,9 @@ namespace Drake {
     template <typename ScalarType> using OutputVectorType = OutputVector<ScalarType>;
     const static bool isTimeVarying = _isTimeVarying;
     const static bool isDirectFeedthrough = _isDirectFeedthrough;
-    const static unsigned int num_states = StateVector<double>::RowsAtCompileTime;
-    const static unsigned int num_inputs = InputVector<double>::RowsAtCompileTime;
-    const static unsigned int num_outputs = OutputVector<double>::RowsAtCompileTime;
+    const static int num_states = StateVector<double>::RowsAtCompileTime;
+    const static int num_inputs = InputVector<double>::RowsAtCompileTime;
+    const static int num_outputs = OutputVector<double>::RowsAtCompileTime;
 
     /// dynamics
     /// @param t time in seconds
