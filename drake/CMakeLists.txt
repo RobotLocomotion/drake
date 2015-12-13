@@ -35,7 +35,9 @@ function(add_library_with_exports)
   cmake_parse_arguments(parsed_args "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
   add_library(${parsed_args_LIB_NAME} SHARED ${parsed_args_SOURCE_FILES})
-  generate_export_header(${parsed_args_LIB_NAME} EXPORT_FILE_NAME ${PROJECT_BINARY_DIR}/exports/${parsed_args_LIB_NAME}_export.h)
+  # work around https://cmake.org/Bug/view.php?id=12645 (fixed in 2.8.8):
+  file(RELATIVE_PATH exports_rel_path ${CMAKE_CURRENT_BINARY_DIR}/ ${PROJECT_BINARY_DIR}/exports/${parsed_args_LIB_NAME}_export.h)
+  generate_export_header(${parsed_args_LIB_NAME} EXPORT_FILE_NAME ${exports_rel_path})
   # TODO: enable when 2.8.11 is required
 #  target_include_directories(${parsed_args_LIB_NAME} PUBLIC ${PROJECT_BINARY_DIR}/exports)
 endfunction()
