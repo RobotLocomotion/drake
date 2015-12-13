@@ -143,7 +143,7 @@ classdef InstantaneousQPController
       if ctrl_data.infocount > 10 && exist('ValkyrieBehaviorModePublisher','class')
         % kill valkyrie
         disp('freezing valkyrie!');
-        behavior_pub = ValkyrieBehaviorModePublisher('ATLAS_BEHAVIOR_COMMAND');
+        behavior_pub = ValkyrieBehaviorModePublisher('VALKYRIE_BEHAVIOR_COMMAND');
         d.utime = 0;
         d.command = 'freeze';
         behavior_pub.publish(d);

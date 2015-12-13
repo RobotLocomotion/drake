@@ -38,10 +38,6 @@ prop_cache.body_ids.('pelvis') = r.findLinkId('pelvis');
 prop_cache.body_ids.('r_foot') = r.findLinkId('rightFoot');
 prop_cache.body_ids.('l_foot') = r.findLinkId('leftFoot');
 
-%for b = {'pelvis', 'rightFoot', 'leftFoot'}
-%  prop_cache.body_ids.(b{1}) = r.findLinkId(b{1});
-%end
-
 prop_cache.position_indices.('neck') = r.findPositionIndices('lowerNeckPitch');
 prop_cache.position_indices.('r_leg_ak') = [r.findPositionIndices('rightAnklePitch'); r.findPositionIndices('rightAnkleRoll')];
 prop_cache.position_indices.('l_leg_ak') = [r.findPositionIndices('leftAnklePitch'); r.findPositionIndices('leftAnkleRoll')];
@@ -57,10 +53,6 @@ prop_cache.position_indices.('arm') = [r.findPositionIndices('leftShoulderPitch'
 prop_cache.position_indices.('back_bkz') = r.findPositionIndices('torsoYaw');
 prop_cache.position_indices.('back_bky') = r.findPositionIndices('torsoPitch');
 prop_cache.position_indices.('neck') = r.findPositionIndices('lowerNeckPitch');
-
-%for j = {'neck', 'r_leg_ak', 'l_leg_ak', 'r_leg', 'l_leg', 'r_leg_kny', 'l_leg_kny', 'arm', 'back_bkz', 'back_bky', 'neck'}
-%  prop_cache.position_indices.(j{1}) = r.findPositionIndices(j{1});
-%end
 
 prop_cache.actuated_indices = r.getActuatedJoints();
 
