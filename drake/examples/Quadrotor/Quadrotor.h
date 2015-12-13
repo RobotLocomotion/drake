@@ -55,6 +55,9 @@ public:
     return os;
   }
 
+  enum {
+    RowsAtCompileTime = 12
+  };
   static std::size_t size() { return 12; }
 
   ScalarType x, y, z, roll, pitch, yaw, xdot, ydot, zdot, rolldot, pitchdot, yawdot;
@@ -91,29 +94,13 @@ public:
     return os;
   }
 
+  enum {
+    RowsAtCompileTime = 4
+  };
   static unsigned int size() { return 4; }
 
   ScalarType w1,w2,w3,w4;
 };
-
-namespace Drake {
-
-  template <typename ScalarType>
-  struct VectorTraits<QuadrotorState<ScalarType> > {
-    enum {
-      RowsAtCompileTime = 12
-    };
-  };
-
-  template <typename ScalarType>
-  struct VectorTraits<QuadrotorInput<ScalarType> > {
-    enum {
-      RowsAtCompileTime = 4
-    };
-  };
-
-}
-
 
 class Quadrotor : public Drake::System<Quadrotor,QuadrotorState,QuadrotorInput,QuadrotorState,false,false> {
 public:

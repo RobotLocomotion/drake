@@ -33,6 +33,9 @@ public:
     return os;
   }
 
+  enum {
+    RowsAtCompileTime = 2
+  };
   static std::size_t size() { return 2; }
 
   ScalarType theta;
@@ -46,7 +49,8 @@ public:
   PendulumInput(void) : tau(0) {};
   PendulumInput(const Eigen::Matrix<ScalarType,1,1>& x) : tau(x(0)) {};
 
-  PendulumInput& operator=(const Eigen::Matrix<ScalarType,1,1>& x) {
+  template <typename Derived>
+  PendulumInput& operator=(const Eigen::MatrixBase<Derived>& x) {
     tau = x(0);
     return *this;
   }
@@ -63,28 +67,13 @@ public:
     return os;
   }
 
+  enum {
+    RowsAtCompileTime = 1
+  };
   static unsigned int size() { return 1; }
 
   ScalarType tau;
 };
-
-namespace Drake {
-
-  template <typename ScalarType>
-  struct VectorTraits<PendulumState<ScalarType> > {
-    enum {
-      RowsAtCompileTime = 2
-    };
-  };
-
-  template <typename ScalarType>
-  struct VectorTraits<PendulumInput<ScalarType> > {
-    enum {
-      RowsAtCompileTime = 1
-    };
-  };
-
-}
 
 class Pendulum : public Drake::System<Pendulum,PendulumState,PendulumInput,PendulumState,false,false> {
 public:

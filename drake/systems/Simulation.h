@@ -40,10 +40,10 @@ namespace Drake {
     double t = t0, dt;
 //    std::cout << "x0 = " << x0.transpose() << std::endl;
     TimePoint start = TimeClock::now();
-    Eigen::Matrix<double,VectorTraits<StateVector<double> >::RowsAtCompileTime,1> x = x0;
-    Eigen::Matrix<double,VectorTraits<StateVector<double> >::RowsAtCompileTime,1> xdot;
-    Eigen::Matrix<double,VectorTraits<InputVector<double> >::RowsAtCompileTime,1> u(InputVector<double>::size()); u.setConstant(0);
-    Eigen::Matrix<double,VectorTraits<OutputVector<double> >::RowsAtCompileTime,1> y;
+    Eigen::Matrix<double,StateVector<double>::RowsAtCompileTime,1> x = x0;
+    Eigen::Matrix<double,StateVector<double>::RowsAtCompileTime,1> xdot;
+    Eigen::Matrix<double,InputVector<double>::RowsAtCompileTime,1> u(InputVector<double>::size()); u.setConstant(0);
+    Eigen::Matrix<double,OutputVector<double>::RowsAtCompileTime,1> y;
     while (t<tf) {
       handle_realtime_factor(start, t, options.realtime_factor);
 

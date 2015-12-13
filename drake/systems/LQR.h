@@ -10,8 +10,8 @@ namespace Drake {
 
   template <typename Derived, template<typename> class StateVector, template<typename> class InputVector, template<typename> class OutputVector, bool isTimeVarying, bool isDirectFeedthrough>
   std::shared_ptr<AffineSystem<UnusedVector,StateVector,InputVector> > timeInvariantLQR(const System<Derived,StateVector,InputVector,OutputVector,isTimeVarying,isDirectFeedthrough>& sys, const StateVector<double>& x0, const InputVector<double>& u0, const Eigen::MatrixXd& Q, const Eigen::MatrixXd& R) {
-    const unsigned int num_states = VectorTraits<StateVector<double> >::RowsAtCompileTime;
-    const unsigned int num_inputs = VectorTraits<InputVector<double> >::RowsAtCompileTime;
+    const unsigned int num_states = StateVector<double>::RowsAtCompileTime;
+    const unsigned int num_inputs = InputVector<double>::RowsAtCompileTime;
     static_assert(!isTimeVarying,"timeInvariantLQR only makes sense for time-invariant systems");
     static_assert(num_states != 0,"This system has no continuous states");
     using namespace std;

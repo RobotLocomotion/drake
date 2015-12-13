@@ -64,5 +64,8 @@ int main(int argc, char* argv[])
     }
   }
 
+  static_assert(Eigen::Matrix<double,2,1>::RowsAtCompileTime == 2,"failed to evaluate RowsAtCompileTime");
+
+
   return 0;
 }

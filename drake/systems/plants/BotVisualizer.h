@@ -111,7 +111,7 @@ namespace Drake {
     UnusedVector<double> outputImplementation(const double& t, const InputVector<double> &u) const {
       draw_msg.timestamp = static_cast<int64_t>(t * 1000.0);
 
-      Eigen::Matrix<double,VectorTraits<InputVector<double> >::RowsAtCompileTime,1> uvec(u);
+      Eigen::Matrix<double,InputVector<double>::RowsAtCompileTime,1> uvec(u);
       auto q = uvec.head(manip.num_positions);
       KinematicsCache<double> cache = manip.doKinematics(q);
 

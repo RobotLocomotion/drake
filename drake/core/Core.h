@@ -13,22 +13,13 @@ namespace Drake {
 //
 // Concept: Vector<ScalarType>.
 // Requirements:
-//  - Defines a VectorTraits<VectorType> with a static constant (or enum) RowsAtCompileTime (see Pendulum.h for an example).  Can be Eigen::DYNAMIC
-//  - implements size_t size(), which equals size_at_compile except when DYNAMIC
-//  - implements the copy constructor and the assignment operator= from Eigen::Matrix<ScalarType,size_at_compile,1> (e.g. using "copy and swap")
-//  - implements the typecast method operator Eigen::Matrix<ScalarType,size_at_compile,1>()
+//  - Defines a static constant (or enum) RowsAtCompileTime (see Pendulum.h for an example).  Can be Eigen::DYNAMIC
+//  - implements size_t size(), which equals RowsAtCompileTime except when DYNAMIC
+//  - implements the copy constructor and the assignment operator= from const Eigen::MatrixBase<Derived>& (e.g. using "copy and swap")
+//  - implements the typecast method operator Eigen::Matrix<ScalarType,RowsAtCompileTime,1>()
 //  - implements std::ostream& operator<<(std::ostream& os, const Vector& x)
 // (The methods/defs below make it possible (and hopefully easy) to simply use Eigen::Matrix types to model this concept)
 
-  template<typename T>
-  struct VectorTraits;
-
-  template<typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols>
-  struct VectorTraits<Eigen::Matrix<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols> > {
-    enum {
-      RowsAtCompileTime = _Rows
-    };
-  };
 
   // In order to use Eigen types to model the Drake::Vector concept, they must accept only a single template parameter (ScalarType)
   // The following structures provide a means for doing it. (e.g. via Drake::VectorBuilder<Rows>::VecType )
@@ -37,8 +28,8 @@ namespace Drake {
   struct VectorBuilder {
     template <typename ScalarType> using VecType = Eigen::Matrix<ScalarType,Rows,1>;
   };
-  template <typename ScalarType> using EmptyVector = Eigen::Matrix<ScalarType,0,1>;
   template <typename ScalarType> using UnusedVector = Eigen::Matrix<ScalarType,0,1>;
+#define EmptyVector UnusedVector
 
 
   // Methods for building complicated vectors out of simpler vectors
@@ -46,8 +37,8 @@ namespace Drake {
   template <typename ScalarType, template <typename> class Vector1, template <typename> class Vector2>
   class CombinedVector {
   public:
-    const static size_t vec1_rows = VectorTraits<Vector1<ScalarType> >::RowsAtCompileTime,
-                        vec2_rows = VectorTraits<Vector2<ScalarType> >::RowsAtCompileTime;
+    const static size_t vec1_rows = Vector1<ScalarType>::RowsAtCompileTime,
+                        vec2_rows = Vector2<ScalarType>::RowsAtCompileTime;
     CombinedVector() {};  // allow use of default constructors for vec1 and vec2, also
     CombinedVector(const Eigen::Matrix<ScalarType,vec1_rows + vec2_rows,1>& x) : vec1(x.topRows(vec1_rows)), vec2(x.bottomRows(vec2_rows)) {};
     CombinedVector(const Eigen::Matrix<ScalarType,vec1_rows,1>& x1, const Eigen::Matrix<ScalarType,vec2_rows,1>& x2) : vec1(x1), vec2(x2) {};
@@ -58,8 +49,8 @@ namespace Drake {
       return *this;
     }
 
-    Vector1<ScalarType> first(void) const { return vec1; }
-    Vector2<ScalarType> second(void) const { return vec2; }
+    const Vector1<ScalarType>& first(void) const { return vec1; }
+    const Vector2<ScalarType>& second(void) const { return vec2; }
 
     operator Eigen::Matrix<ScalarType,vec1_rows + vec2_rows,1> () const {
       Eigen::Matrix<ScalarType,vec1_rows + vec2_rows,1> x;
@@ -74,6 +65,9 @@ namespace Drake {
       return os;
     }
 
+    enum {
+      RowsAtCompileTime = vec1_rows + vec2_rows
+    };
     std::size_t size() { return vec1.size()+vec2.size(); }
 
   private:
@@ -95,23 +89,6 @@ namespace Drake {
   struct CombinedVectorBuilder<UnusedVector,Vector2> {
     template <typename ScalarType> using VecType = Vector2<ScalarType>;
   };
-
-  template <typename ScalarType, template <typename> class Vector1, template <typename> class Vector2>
-  struct VectorTraits<CombinedVector<ScalarType, Vector1, Vector2> > {
-    enum {
-      RowsAtCompileTime = VectorTraits< Vector1<ScalarType> >::RowsAtCompileTime + VectorTraits< Vector2<ScalarType> >::RowsAtCompileTime
-    };
-  };
-
-
-  // a few tools/tricks from Modern C++ Design (by Alexandrescu)
-
-  template <int v>
-  struct Int2Type
-  {
-    enum { value = v };
-  };
-
 }
 
 
