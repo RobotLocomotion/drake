@@ -38,6 +38,8 @@ kinsol = doKinematics(r,q0);
 com = getCOM(r,kinsol);
 
 % Construct plan
+r.default_qp_input = valkyrieControllers.QPInputConstantHeight();
+r.rpc = valkyrieUtil.propertyCache(r);
 settings = QPLocomotionPlanSettings.fromStandingState(x0, r);
 % settings.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed; % Only use supports when in contact
 

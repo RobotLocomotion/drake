@@ -54,15 +54,7 @@ classdef QPLocomotionPlanSettings
     function obj = QPLocomotionPlanSettings(robot)
       obj.robot = robot;
       S = load(obj.robot.fixed_point_file);
-
-      %mfallon_fix_me rpc = atlasUtil.propertyCache(obj.robot);
-      if strcmp(robot.name,'atlas')
-        rpc = atlasUtil.propertyCache(obj.robot);
-      else
-        rpc = valkyrieUtil.propertyCache(obj.robot);
-      end
-
-      obj.contact_groups = rpc.contact_groups;
+      obj.contact_groups = robot.rpc.contact_groups;
       obj.qtraj = S.xstar(1:obj.robot.getNumPositions());
       obj.default_qp_input = obj.robot.default_qp_input;
       obj.default_qp_input.whole_body_data.q_des = zeros(obj.robot.getNumPositions(), 1);
