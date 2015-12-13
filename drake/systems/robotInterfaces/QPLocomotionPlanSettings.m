@@ -56,7 +56,7 @@ classdef QPLocomotionPlanSettings
       S = load(obj.robot.fixed_point_file);
       obj.contact_groups = robot.rpc.contact_groups;
       obj.qtraj = S.xstar(1:obj.robot.getNumPositions());
-      obj.default_qp_input = obj.robot.default_qp_input;
+      obj.default_qp_input = robot.default_qp_input;
       obj.default_qp_input.whole_body_data.q_des = zeros(obj.robot.getNumPositions(), 1);
       obj.constrained_dofs = [findPositionIndices(obj.robot,'arm');findPositionIndices(obj.robot,'neck');findPositionIndices(obj.robot,'back_bkz');findPositionIndices(obj.robot,'back_bky')];
       obj.untracked_joint_inds = [];
