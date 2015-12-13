@@ -1,6 +1,5 @@
 #include <iostream>
 #include "Pendulum.h"
-#include "LCMCoordinateFrame.h"
 #include "Simulation.h"
 #include "BotVisualizer.h"
 
