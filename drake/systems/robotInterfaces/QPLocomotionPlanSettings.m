@@ -51,7 +51,7 @@ classdef QPLocomotionPlanSettings
   end
 
   methods
-    function obj = QPLocomotionPlanSettings(robot, qp_input)
+    function obj = QPLocomotionPlanSettings(robot)
       obj.robot = robot;
       S = load(obj.robot.fixed_point_file);
 
@@ -62,26 +62,9 @@ classdef QPLocomotionPlanSettings
         rpc = valkyrieUtil.propertyCache(obj.robot);
       end
 
-
-      if strcmp(robot.name,'atlas')
-
-      else
-        obj.r_foot_name = 'rightFoot+rightLegSixAxis_Frame+rightCOP_Frame';
-        obj.l_foot_name = 'leftFoot+leftLegSixAxis_Frame+leftCOP_Frame';
-        obj.pelvis_name = 'pelvis+leftPelvisIMU_Frame+rightPelvisIMU_Frame';
-        obj.r_knee_name = 'rightKneePitch';
-        obj.l_knee_name = 'leftKneePitch';
-        obj.l_akx_name = 'leftAnkleRoll';
-        obj.r_akx_name = 'rightAnkleRoll';
-        obj.r_aky_name = 'rightAnklePitch';
-        obj.l_aky_name = 'leftAnklePitch';
-      end
-
-
       obj.contact_groups = rpc.contact_groups;
       obj.qtraj = S.xstar(1:obj.robot.getNumPositions());
-
-      obj.default_qp_input = qp_input;
+      obj.default_qp_input = obj.robot.default_qp_input;
       obj.default_qp_input.whole_body_data.q_des = zeros(obj.robot.getNumPositions(), 1);
       obj.constrained_dofs = [findPositionIndices(obj.robot,'arm');findPositionIndices(obj.robot,'neck');findPositionIndices(obj.robot,'back_bkz');findPositionIndices(obj.robot,'back_bky')];
       obj.untracked_joint_inds = [];
@@ -162,17 +145,17 @@ classdef QPLocomotionPlanSettings
   end
 
   methods(Static)
-    function obj = fromStandingState(x0, biped, qp_input, support_state, options)
+    function obj = fromStandingState(x0, biped, support_state, options)
 
-      if nargin < 4 || isempty(support_state)
+      if nargin < 3 || isempty(support_state)
         support_state = RigidBodySupportState(biped, [biped.foot_body_id.right, biped.foot_body_id.left], struct('contact_groups', {{{'heel', 'toe'}, {'heel', 'toe'}}}));
       end
-      if nargin < 5
+      if nargin < 4
         options = struct();
       end
       options = applyDefaults(options, struct('center_pelvis', true));
 
-      obj = QPLocomotionPlanSettings(biped, qp_input);
+      obj = QPLocomotionPlanSettings(biped);
       obj.x0 = x0;
       obj.support_times = [0, inf];
       obj.duration = inf;

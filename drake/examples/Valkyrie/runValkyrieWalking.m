@@ -69,7 +69,19 @@ for j = 1:length(footstep_plan.footsteps)
 end
 
 % Generate a dynamic walking plan
-walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
+r.default_qp_input = valkyrieControllers.QPInputConstantHeight();
+
+qp_link_names.r_foot_name = 'rightFoot+rightLegSixAxis_Frame+rightCOP_Frame';
+qp_link_names.l_foot_name = 'leftFoot+leftLegSixAxis_Frame+leftCOP_Frame';
+qp_link_names.pelvis_name = 'pelvis+leftPelvisIMU_Frame+rightPelvisIMU_Frame';
+qp_link_names.r_knee_name = 'rightKneePitch';
+qp_link_names.l_knee_name = 'leftKneePitch';
+qp_link_names.l_akx_name = 'leftAnkleRoll';
+qp_link_names.r_akx_name = 'rightAnkleRoll';
+qp_link_names.r_aky_name = 'rightAnklePitch';
+qp_link_names.l_aky_name = 'leftAnklePitch';
+
+walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan, qp_link_names);
 
 [ytraj, com, rms_com] = valkyrieUtil.simulateWalking(r, walking_plan_data);
 

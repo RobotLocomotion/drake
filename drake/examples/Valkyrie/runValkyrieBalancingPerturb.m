@@ -62,10 +62,20 @@ v.display_dt = 0.01;
 nq = getNumPositions(r);
 x0 = xstar;
 
-
 % Construct plan
-qp_input = valkyrieControllers.QPInputConstantHeight();
-settings = QPLocomotionPlanSettings.fromStandingState(x0, r, qp_input);
+r.default_qp_input = valkyrieControllers.QPInputConstantHeight();
+settings = QPLocomotionPlanSettings.fromStandingState(x0, r);
+
+settings.r_foot_name = 'rightFoot+rightLegSixAxis_Frame+rightCOP_Frame';
+settings.l_foot_name = 'leftFoot+leftLegSixAxis_Frame+leftCOP_Frame';
+settings.pelvis_name = 'pelvis+leftPelvisIMU_Frame+rightPelvisIMU_Frame';
+settings.r_knee_name = 'rightKneePitch';
+settings.l_knee_name = 'leftKneePitch';
+settings.l_akx_name = 'leftAnkleRoll';
+settings.r_akx_name = 'rightAnkleRoll';
+settings.r_aky_name = 'rightAnklePitch';
+settings.l_aky_name = 'leftAnklePitch';
+
 % settings.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed; % Only use supports when in contact
 standing_plan = QPLocomotionPlanCPPWrapper(settings);
 

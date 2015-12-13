@@ -56,8 +56,8 @@ x0 = xstar;
 
 
 % Construct plan
-qp_input = atlasControllers.QPInputConstantHeight();
-settings = QPLocomotionPlanSettings.fromStandingState(x0, r, qp_input);
+r.default_qp_input = atlasControllers.QPInputConstantHeight();
+settings = QPLocomotionPlanSettings.fromStandingState(x0, r);
 % settings.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed; % Only use supports when in contact
 standing_plan = QPLocomotionPlanCPPWrapper(settings);
 
