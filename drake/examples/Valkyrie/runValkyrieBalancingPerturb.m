@@ -64,6 +64,7 @@ x0 = xstar;
 
 % Construct plan
 r.default_qp_input = valkyrieControllers.QPInputConstantHeight();
+r.rpc = valkyrieUtil.propertyCache(r);
 settings = QPLocomotionPlanSettings.fromStandingState(x0, r);
 
 settings.r_foot_name = 'rightFoot+rightLegSixAxis_Frame+rightCOP_Frame';

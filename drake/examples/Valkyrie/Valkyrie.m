@@ -209,6 +209,7 @@ classdef Valkyrie < TimeSteppingRigidBodyManipulator & Biped
                                     'nominal_LIP_COM_height', 1.01); % nominal height used to construct D_ls for our linear inverted pendulum model
 
     default_qp_input;
+    rpc;
   end
 
 end

@@ -34,6 +34,7 @@ kinsol = doKinematics(r,q0);
 com = getCOM(r,kinsol);
 
 % Construct plan
+r.rpc = atlasUtil.propertyCache(r);
 settings = QPLocomotionPlanSettings.fromStandingState(x0, r);
 % settings.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed; % Only use supports when in contact
 standing_plan = QPLocomotionPlanCPPWrapper(settings);
