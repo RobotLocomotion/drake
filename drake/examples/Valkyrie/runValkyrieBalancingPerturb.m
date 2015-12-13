@@ -64,7 +64,8 @@ x0 = xstar;
 
 
 % Construct plan
-settings = QPLocomotionPlanSettings.fromStandingState(x0, r);
+qp_input = valkyrieControllers.QPInputConstantHeight();
+settings = QPLocomotionPlanSettings.fromStandingState(x0, r, qp_input);
 % settings.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed; % Only use supports when in contact
 standing_plan = QPLocomotionPlanCPPWrapper(settings);
 

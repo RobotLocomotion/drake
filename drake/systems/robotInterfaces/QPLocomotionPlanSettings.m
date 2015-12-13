@@ -46,13 +46,12 @@ classdef QPLocomotionPlanSettings
 
     duration = inf;
     start_time = 0;
-    %mfallon_fix_me default_qp_input = atlasControllers.QPInputConstantHeight;
-    default_qp_input;
+    default_qp_input; % = atlasControllers.QPInputConstantHeight;
     gain_set = 'standing';
   end
 
   methods
-    function obj = QPLocomotionPlanSettings(robot)
+    function obj = QPLocomotionPlanSettings(robot, qp_input)
       obj.robot = robot;
       S = load(obj.robot.fixed_point_file);
 
@@ -82,13 +81,7 @@ classdef QPLocomotionPlanSettings
       obj.contact_groups = rpc.contact_groups;
       obj.qtraj = S.xstar(1:obj.robot.getNumPositions());
 
-      %mfallon_fix_me obj.default_qp_input = atlasControllers.QPInputConstantHeight();
-      if strcmp(robot.name,'atlas')
-        obj.default_qp_input = atlasControllers.QPInputConstantHeight();
-      else
-        obj.default_qp_input = valkyrieControllers.QPInputConstantHeight();
-      end
-
+      obj.default_qp_input = qp_input;
       obj.default_qp_input.whole_body_data.q_des = zeros(obj.robot.getNumPositions(), 1);
       obj.constrained_dofs = [findPositionIndices(obj.robot,'arm');findPositionIndices(obj.robot,'neck');findPositionIndices(obj.robot,'back_bkz');findPositionIndices(obj.robot,'back_bky')];
       obj.untracked_joint_inds = [];
@@ -169,17 +162,17 @@ classdef QPLocomotionPlanSettings
   end
 
   methods(Static)
-    function obj = fromStandingState(x0, biped, support_state, options)
+    function obj = fromStandingState(x0, biped, qp_input, support_state, options)
 
-      if nargin < 3 || isempty(support_state)
+      if nargin < 4 || isempty(support_state)
         support_state = RigidBodySupportState(biped, [biped.foot_body_id.right, biped.foot_body_id.left], struct('contact_groups', {{{'heel', 'toe'}, {'heel', 'toe'}}}));
       end
-      if nargin < 4
+      if nargin < 5
         options = struct();
       end
       options = applyDefaults(options, struct('center_pelvis', true));
 
-      obj = QPLocomotionPlanSettings(biped);
+      obj = QPLocomotionPlanSettings(biped, qp_input);
       obj.x0 = x0;
       obj.support_times = [0, inf];
       obj.duration = inf;
