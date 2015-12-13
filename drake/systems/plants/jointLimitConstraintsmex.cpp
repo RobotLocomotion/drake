@@ -1,6 +1,6 @@
 #include "mex.h"
 #include "drakeMexUtil.h"
-#include "RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 
 using namespace Eigen;
 using namespace std;
@@ -11,7 +11,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     mexErrMsgIdAndTxt("Drake:jointLimitConstraintsmex:InvalidCall","Usage: [phi, J] = jointLimitConstraintsmex(mex_model_ptr, q) ");
   }
 
-  RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+  RigidBodyTree *model= (RigidBodyTree *) getDrakeMexPointer(prhs[0]);
   
   if (mxGetNumberOfElements(prhs[1]) != model->num_positions) {
     mexErrMsgIdAndTxt("Drake:jointLimitConstraintsmex:InvalidPositionVectorLength", "q contains the wrong number of elements");

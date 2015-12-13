@@ -1,4 +1,4 @@
-#include "RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 #include "testUtil.h"
 #include <cmath>
 
@@ -23,7 +23,7 @@ void printMatrix(const MatrixBase<Matrix<AutoDiffScalar<DerType>, Rows, Cols>>& 
 };
 
 template <typename Scalar>
-void scenario1(const RigidBodyManipulator &model, KinematicsCache<Scalar>& cache, const vector<Matrix<Scalar, Dynamic, 1>>& qs, const map<int, Matrix3Xd>& body_fixed_points) {
+void scenario1(const RigidBodyTree &model, KinematicsCache<Scalar>& cache, const vector<Matrix<Scalar, Dynamic, 1>>& qs, const map<int, Matrix3Xd>& body_fixed_points) {
   for (const auto& q : qs) {
     cache.initialize(q);
     model.doKinematics(cache, false);
@@ -38,7 +38,7 @@ void scenario1(const RigidBodyManipulator &model, KinematicsCache<Scalar>& cache
 }
 
 template <typename Scalar>
-void scenario2(const RigidBodyManipulator &model, KinematicsCache<Scalar>& cache, const vector<pair<Matrix<Scalar, Dynamic, 1>, Matrix<Scalar, Dynamic, 1>>>& states) {
+void scenario2(const RigidBodyTree &model, KinematicsCache<Scalar>& cache, const vector<pair<Matrix<Scalar, Dynamic, 1>, Matrix<Scalar, Dynamic, 1>>>& states) {
   const eigen_aligned_unordered_map<RigidBody const *, Matrix<Scalar, TWIST_SIZE, 1> > f_ext;
   for (const auto& state : states) {
     cache.initialize(state.first, state.second);
@@ -52,7 +52,7 @@ void scenario2(const RigidBodyManipulator &model, KinematicsCache<Scalar>& cache
   }
 }
 
-void testScenario1(const RigidBodyManipulator& model) {
+void testScenario1(const RigidBodyTree & model) {
 
   int ntests = 1000;
 
@@ -102,7 +102,7 @@ void testScenario1(const RigidBodyManipulator& model) {
 }
 
 
-void testScenario2(const RigidBodyManipulator& model) {
+void testScenario2(const RigidBodyTree & model) {
   int ntests = 1000;
 
   vector<pair<VectorXd, VectorXd>> states_double;
@@ -142,7 +142,7 @@ void testScenario2(const RigidBodyManipulator& model) {
 }
 
 int main() {
-  RigidBodyManipulator model("examples/Atlas/urdf/atlas_minimal_contact.urdf");
+  RigidBodyTree model("examples/Atlas/urdf/atlas_minimal_contact.urdf");
   testScenario1(model);
   testScenario2(model);
 

@@ -1,5 +1,5 @@
 #include "RigidBodyIK.h"
-#include "RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 #include "../constraint/RigidBodyConstraint.h"
 #include "../IKoptions.h"
 #include <iostream>
@@ -10,7 +10,7 @@ using namespace std;
 using namespace Eigen;
 int main()
 {
-  RigidBodyManipulator model("examples/Atlas/urdf/atlas_minimal_contact.urdf");
+  RigidBodyTree model("examples/Atlas/urdf/atlas_minimal_contact.urdf");
 
   Vector2d tspan;
   tspan<<0,1;

@@ -1,4 +1,4 @@
-#include "RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 #include <iostream>
 #include <cstdlib>
 #include <memory>
@@ -7,7 +7,7 @@ using namespace std;
 using namespace Eigen;
 int main()
 {
-  RigidBodyManipulator model("examples/Atlas/urdf/atlas_minimal_contact.urdf");
+  RigidBodyTree model("examples/Atlas/urdf/atlas_minimal_contact.urdf");
 
   VectorXd q = VectorXd::Random(model.num_positions);
   VectorXd v = VectorXd::Random(model.num_velocities);

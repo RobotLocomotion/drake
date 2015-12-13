@@ -50,8 +50,8 @@ include_directories( .. )
 target_link_libraries(debugManipulatorDynamics drakeRBM)
 
 include_directories(${PROJECT_SOURCE_DIR}/util/test)
-add_executable(benchmarkRigidBodyManipulator benchmarkRigidBodyManipulator.cpp)
-target_link_libraries(benchmarkRigidBodyManipulator drakeRBM)
+add_executable(benchmarkRigidBodyTree benchmarkRigidBodyTree.cpp)
+target_link_libraries(benchmarkRigidBodyTree drakeRBM)
 
 if (MATLAB_FOUND)
   macro(add_ikoptions_mex)

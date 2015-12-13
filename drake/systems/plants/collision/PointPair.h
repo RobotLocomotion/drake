@@ -5,12 +5,11 @@
 #include <Eigen/StdVector>
 
 #include "Element.h"
-
-#include "drakeCollisionMacros.h"
+#include "drakeCollision_export.h"
 
 namespace DrakeCollision
 {
-  class DLLEXPORT_drakeCollision PointPair {
+  class DRAKECOLLISION_EXPORT PointPair {
     public:
       PointPair(const ElementId idA, const ElementId idB,
                 const Eigen::Vector3d ptA, const Eigen::Vector3d ptB,

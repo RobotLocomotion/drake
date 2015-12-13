@@ -2,11 +2,11 @@
 #include <iostream>
 #include "drakeMexUtil.h"
 #include "MexWrapper.h"
-#include "RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 #include "math.h"
 #include "fastQP.h"
 #include <sstream>
-#include "rigidBodyManipulatorMexConversions.h"
+#include "rigidBodyTreeMexConversions.h"
 
 using namespace Eigen;
 using namespace std;
@@ -196,7 +196,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   static unique_ptr<MexWrapper> lcp_mex = unique_ptr<MexWrapper>(new MexWrapper(PATHLCP_MEXFILE));
 
   int arg_num = 0;
-  RigidBodyManipulator *model = static_cast<RigidBodyManipulator*>(getDrakeMexPointer(prhs[arg_num++]));
+  RigidBodyTree *model = static_cast<RigidBodyTree *>(getDrakeMexPointer(prhs[arg_num++]));
   KinematicsCache<double>& cache = fromMex(prhs[arg_num++], static_cast<KinematicsCache<double>*>(nullptr));
   cache.checkCachedKinematicsSettings(true, true, "solveLCPmex");
 

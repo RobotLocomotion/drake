@@ -1,9 +1,9 @@
 #include "mex.h"
 #include <iostream>
 #include "drakeMexUtil.h"
-#include "RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 #include "math.h"
-#include "rigidBodyManipulatorMexConversions.h"
+#include "rigidBodyTreeMexConversions.h"
 
 using namespace Eigen;
 using namespace std;
@@ -44,7 +44,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   }
 
   int arg_num = 0;
-  RigidBodyManipulator *model = static_cast<RigidBodyManipulator*>(getDrakeMexPointer(prhs[arg_num++]));
+  RigidBodyTree *model = static_cast<RigidBodyTree *>(getDrakeMexPointer(prhs[arg_num++]));
 
   KinematicsCache<double>& cache = fromMex(prhs[arg_num++], static_cast<KinematicsCache<double>*>(nullptr));
 

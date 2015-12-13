@@ -2,7 +2,7 @@
 #include <iostream>
 #include "testUtil.h"
 #include "drakeMexUtil.h"
-#include "RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 #include "math.h"
 
 using namespace Eigen;
@@ -19,7 +19,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   }
 
   // first get the model_ptr back from matlab
-  RigidBodyManipulator *matlab_model = (RigidBodyManipulator *) getDrakeMexPointer(prhs[0]);
+  RigidBodyTree *matlab_model = (RigidBodyTree *) getDrakeMexPointer(prhs[0]);
 
   char urdf_file[1000];
   mxGetString(prhs[1], urdf_file, 1000);
@@ -35,7 +35,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   else
     mexErrMsgIdAndTxt("Drake:compareParsersmex:BadInputs", "Unknown floating base type.  must be 'fixed', 'rpy', or 'quat'");
 
-  RigidBodyManipulator *cpp_model = new RigidBodyManipulator(urdf_file, floating_base_type);
+  RigidBodyTree *cpp_model = new RigidBodyTree(urdf_file, floating_base_type);
 
   // Compute coordinate transform between the two models (in case they are not identical)
   MatrixXd P = MatrixXd::Zero(cpp_model->num_positions, matlab_model->num_positions);  // projection from the coordinates of matlab_model to cpp_model

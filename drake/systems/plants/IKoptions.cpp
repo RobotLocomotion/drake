@@ -1,9 +1,9 @@
-#include "RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 #include "IKoptions.h"
 using namespace std;
 using namespace Eigen;
 
-IKoptions::IKoptions(RigidBodyManipulator* robot)
+IKoptions::IKoptions(RigidBodyTree * robot)
 {
   // It is important to make sure these default values are consistent with the MATLAB IKoptions
   this->setDefaultParams(robot);
@@ -36,7 +36,7 @@ IKoptions::~IKoptions()
 {
 }
 
-void IKoptions::setDefaultParams(RigidBodyManipulator* robot)
+void IKoptions::setDefaultParams(RigidBodyTree * robot)
 {
   this->robot = robot;
   this->nq = this->robot->num_positions;
@@ -60,7 +60,7 @@ void IKoptions::setDefaultParams(RigidBodyManipulator* robot)
   this->qdf_lb = VectorXd::Zero(this->nq);
 }
 
-RigidBodyManipulator* IKoptions::getRobotPtr() const
+RigidBodyTree * IKoptions::getRobotPtr() const
 {
   return this->robot;
 }
@@ -328,7 +328,7 @@ void IKoptions::getAdditionaltSamples(RowVectorXd &t_samples) const
   t_samples = this->additional_tSamples;
 }
 
-void IKoptions::updateRobot(RigidBodyManipulator* new_robot)
+void IKoptions::updateRobot(RigidBodyTree * new_robot)
 {
   this->robot = new_robot;
   int nq_cache = this->nq;
