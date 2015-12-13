@@ -80,6 +80,17 @@ classdef Valkyrie < TimeSteppingRigidBodyManipulator & Biped
       obj.manip = obj.manip.setStateFrame(valkyrie_state_frame);
       obj = obj.setStateFrame(state_frame);
 
+      % Same bit of complexity for input frame to get hand inputs
+      if (obj.external_force > 0)
+        input_frame = getInputFrame(obj);
+        input_frame  = replaceFrameNum(input_frame,1,valkyrieFrames.ValkyrieInput(obj));
+      else
+        input_frame = valkyrieFrames.ValkyrieInput(obj);
+      end
+
+      obj = obj.setInputFrame(input_frame);
+      obj.manip = obj.manip.setInputFrame(input_frame);
+
       % Construct output frame, which comes from state plus sensor
       % info
       valkyrie_output_frame = valkyrie_state_frame;
