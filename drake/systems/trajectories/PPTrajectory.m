@@ -593,7 +593,7 @@ classdef (InferiorClasses = {?ConstantTrajectory, ?Point}) PPTrajectory < Trajec
 
       % check trajectories are in the same frame
       if obj.getOutputFrame ~= trajAtEnd.getOutputFrame
-        error('Drake:PPTrajectory:MismatchingFrames', 'Cannot append trajectories with different coordinate frames');
+        warning('Drake:PPTrajectory:MismatchingFrames', 'Shouldn''t append trajectories with different coordinate frames');
       end
       
       % check for time condition
