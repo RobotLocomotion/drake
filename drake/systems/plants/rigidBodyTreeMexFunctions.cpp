@@ -188,3 +188,29 @@ void dynamicsBiasTermmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
 
   mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double, func_autodiff_fixed_max, func_autodiff_dynamic);
 }
+
+template <typename Scalar>
+Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> velocityToPositionDotMapping(const KinematicsCache<Scalar>& cache) {
+  auto nv = cache.getNumVelocities();
+  return cache.transformVelocityMappingToPositionDotMapping(Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>::Identity(nv, nv));
+}
+
+template <typename Scalar>
+Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> positionDotToVelocityMapping(const KinematicsCache<Scalar>& cache) {
+  auto nq = cache.getNumPositions();
+  return cache.transformVelocityMappingToPositionDotMapping(Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>::Identity(nq, nq));
+}
+
+void velocityToPositionDotMappingmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+  auto func_double = make_function(&velocityToPositionDotMapping<double>);
+  auto func_autodiff_fixed_max = make_function(&velocityToPositionDotMapping<AutoDiffFixedMaxSize>);
+  auto func_autodiff_dynamic = make_function(&velocityToPositionDotMapping<AutoDiffDynamicSize>);
+  mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double, func_autodiff_fixed_max, func_autodiff_dynamic);
+}
+
+void positionDotToVelocityMappingmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+  auto func_double = make_function(&positionDotToVelocityMapping<double>);
+  auto func_autodiff_fixed_max = make_function(&positionDotToVelocityMapping<AutoDiffFixedMaxSize>);
+  auto func_autodiff_dynamic = make_function(&positionDotToVelocityMapping<AutoDiffDynamicSize>);
+  mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double, func_autodiff_fixed_max, func_autodiff_dynamic);
+}

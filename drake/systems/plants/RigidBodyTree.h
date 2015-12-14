@@ -405,36 +405,12 @@ public:
 
   size_t getNumPositionConstraints() const;
 
-  template <typename Derived>
-  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> transformVelocityMappingToPositionDotMapping(
-      const KinematicsCache<typename Derived::Scalar>& cache, const Eigen::MatrixBase<Derived>& mat) const;
-  
   /*
   template <typename Derived>
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> transformPositionDotMappingToVelocityMapping(
       const KinematicsCache<typename Derived::Scalar>& cache, const Eigen::MatrixBase<Derived>& mat) const;
   */
   
-  template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> transformPositionDotMappingToVelocityMapping(
-    const KinematicsCache<typename Derived::Scalar>& cache, const Eigen::MatrixBase<Derived>& mat) const
-{
-  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> ret(mat.rows(), num_velocities);
-  int ret_col_start = 0;
-  int mat_col_start = 0;
-  for (auto it = bodies.begin(); it != bodies.end(); ++it) {
-    RigidBody& body = **it;
-    if (body.hasParent()) {
-      const DrakeJoint& joint = body.getJoint();
-      const auto& element = cache.getElement(body);
-      ret.middleCols(ret_col_start, joint.getNumVelocities()).noalias() = mat.middleCols(mat_col_start, joint.getNumPositions()) * element.v_to_qdot;
-      ret_col_start += joint.getNumVelocities();
-      mat_col_start += joint.getNumPositions();
-    }
-  }
-  return ret;
-};
-
   template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> compactToFull(
     const Eigen::MatrixBase<Derived>& compact, const std::vector<int>& joint_path, bool in_terms_of_qdot) const {

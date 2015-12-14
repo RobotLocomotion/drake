@@ -56,6 +56,8 @@ class KinematicsCache
 {
 private:
   std::unordered_map<RigidBody const *, KinematicsCacheElement<Scalar>, std::hash<RigidBody const *>, std::equal_to<RigidBody const *>, Eigen::aligned_allocator<std::pair<RigidBody const* const, KinematicsCacheElement<Scalar> > > > elements;
+  const int num_positions;
+  const int num_velocities;
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> q;
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> v;
   bool velocity_vector_valid;
@@ -65,8 +67,10 @@ private:
 
 public:
   KinematicsCache(const std::vector<std::shared_ptr<RigidBody>>& bodies) :
-      q(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(getNumPositions(bodies), 1)),
-      v(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(getNumVelocities(bodies), 1)),
+      num_positions(getNumPositions(bodies)),
+      num_velocities(getNumVelocities(bodies)),
+      q(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(num_positions)),
+      v(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(num_velocities)),
       velocity_vector_valid(false)
   {
     for (const auto& body_shared_ptr : bodies) {
@@ -121,6 +125,44 @@ public:
     }
   }
 
+  template <typename Derived>
+  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> transformVelocityMappingToPositionDotMapping(const Eigen::MatrixBase<Derived>& mat) const
+  {
+    Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> ret(mat.rows(), q.size());
+    int ret_col_start = 0;
+    int mat_col_start = 0;
+    for (auto it = elements.begin(); it != elements.end(); ++it) {
+      const RigidBody& body = *(it->first);
+      if (body.hasParent()) {
+        const DrakeJoint& joint = body.getJoint();
+        const auto& element = getElement(body);
+        ret.middleCols(ret_col_start, joint.getNumPositions()).noalias() = mat.middleCols(mat_col_start, joint.getNumVelocities()) * element.qdot_to_v;
+        ret_col_start += joint.getNumPositions();
+        mat_col_start += joint.getNumVelocities();
+      }
+    }
+    return ret;
+  }
+
+  template <typename Derived>
+  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> transformPositionDotMappingToVelocityMapping(const Eigen::MatrixBase<Derived>& mat) const
+  {
+    Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> ret(mat.rows(), v.size());
+    int ret_col_start = 0;
+    int mat_col_start = 0;
+    for (auto it = elements.begin(); it != elements.end(); ++it) {
+      const RigidBody& body = *(it->first);
+      if (body.hasParent()) {
+        const DrakeJoint& joint = body.getJoint();
+        const auto& element = getElement(body);
+        ret.middleCols(ret_col_start, joint.getNumVelocities()).noalias() = mat.middleCols(mat_col_start, joint.getNumPositions()) * element.v_to_qdot;
+        ret_col_start += joint.getNumVelocities();
+        mat_col_start += joint.getNumPositions();
+      }
+    }
+    return ret;
+  }
+
 
   const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& getQ() const
   {
@@ -154,6 +196,14 @@ public:
 
   void setJdotVCached(bool jdotV_cached) {
     this->jdotV_cached = jdotV_cached;
+  }
+
+  int getNumPositions() const {
+    return num_positions;
+  }
+
+  int getNumVelocities() const {
+    return num_velocities;
   }
 
 private:

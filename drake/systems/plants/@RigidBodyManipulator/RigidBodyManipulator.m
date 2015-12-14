@@ -131,6 +131,24 @@ classdef RigidBodyManipulator < Manipulator
 
   methods
     function [Vq, dVq] = qdotToV(obj, q)
+      if obj.mex_model_ptr ~= 0
+        if nargout == 1
+          if isnumeric(q) || isa(q, 'TaylorVar')
+            kinsol = obj.doKinematics(q);
+            Vq = velocityToPositionDotMappingmex(kinsol.mex_ptr);
+            return;
+          end
+        elseif nargout == 2
+          if isnumeric(q)
+            q_taylor = TaylorVar(q);
+            kinsol = obj.doKinematics(q_taylor);
+            Vq = velocityToPositionDotMappingmex(kinsol.mex_ptr);
+            [Vq, dVq] = VqInv.eval();
+            return;
+          end
+        end
+      end
+
       compute_gradient = nargout > 1;
 
       bodies = obj.body;
@@ -156,6 +174,24 @@ classdef RigidBodyManipulator < Manipulator
     end
 
     function [VqInv, dVqInv] = vToqdot(obj, q)
+      if obj.mex_model_ptr ~= 0
+        if nargout == 1
+          if isnumeric(q) || isa(q, 'TaylorVar')
+            kinsol = obj.doKinematics(q);
+            VqInv = positionDotToVelocityMappingmex(kinsol.mex_ptr);
+            return;
+          end
+        elseif nargout == 2
+          if isnumeric(q)
+            q_taylor = TaylorVar(q);
+            kinsol = obj.doKinematics(q_taylor);
+            VqInv = positionDotToVelocityMappingmex(kinsol.mex_ptr);
+            [VqInv, dVqInv] = VqInv.eval();
+            return;
+          end
+        end
+      end
+
       compute_gradient = nargout > 1;
 
       bodies = obj.body;
