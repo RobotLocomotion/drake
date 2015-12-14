@@ -6,6 +6,7 @@
 #include "drakeGradientUtil.h"
 #include "drakeUtil.h"
 #include "LinearSystem.h"
+#include "odeSolver.h"
 
 using namespace std;
 using namespace Eigen;
@@ -83,44 +84,9 @@ DrakeSystemPtr DrakeSystem::timeInvariantLQR(const Eigen::VectorXd& x0, const Ei
 
 
 void DrakeSystem::simulate(double t0, double tf, const VectorXd &x0, const SimulationOptions& options) const {
-  ode1(t0,tf,x0,options);
+  Drake::ODESolver<VectorXd, VectorXd, VectorXd, Drake::ode45<VectorXd> > solver(shared_from_this(), options);
+  solver.solve(t0, tf, x0);
 }
-
-typedef chrono::system_clock TimeClock;  // would love to use steady_clock, but it seems to not compile on all platforms (e.g. MSVC 2013 Win64)
-typedef chrono::duration<double> TimeDuration;
-typedef chrono::time_point<TimeClock,TimeDuration> TimePoint;
-
-inline void handle_realtime_factor(const TimePoint& wall_clock_start_time, double sim_time, double realtime_factor)
-{
-  if (realtime_factor>0.0) {
-    TimePoint wall_time = TimeClock::now();
-    TimePoint desired_time = wall_clock_start_time + TimeDuration(sim_time/realtime_factor);
-    if (desired_time>wall_time) { // could probably just call sleep_until, but just in case
-      this_thread::sleep_until(desired_time);
-    } else if (wall_time>desired_time+TimeDuration(1.0/realtime_factor)) {
-      throw runtime_error("Simulation is not keeping up with desired real-time factor -- behind by more than 1 (scaled) second at simulation time " + to_string(sim_time));
-    }
-  }
-}
-
-
-void DrakeSystem::ode1(double t0, double tf, const VectorXd& x0, const SimulationOptions& options) const {
-  double t = t0, dt;
-  TimePoint start = TimeClock::now();
-  VectorXd x = x0;
-  VectorXd u = VectorXd::Zero(input_frame->getDim());
-  VectorXd y(output_frame->getDim());
-  while (t<tf) {
-    handle_realtime_factor(start, t, options.realtime_factor);
-
-    dt = (std::min)(options.initial_step_size,tf-t);
-    y = output(t,x,u);
-    x += dt * dynamics(t, x, u);
-    t += dt;
-  }
-}
-
-
 
 CascadeSystem::CascadeSystem(const DrakeSystemPtr& _sys1, const DrakeSystemPtr& _sys2)
   : DrakeSystem("CascadeSystem"), sys1(_sys1), sys2(_sys2) {

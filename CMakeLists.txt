@@ -47,6 +47,7 @@ if (matlab)
 endif()
 
 option(WITH_SNOPT_PRECOMPILED "precompiled binaries only for snopt; the source requires a license (will be disabled if WITH_SNOPT=ON)"  ON)
+option(WITH_ODEINT "Adds support for pure C++ simulation" ON)
 
 # OFF by default:
 option(WITH_SNOPT 		"nonlinear optimization solver; requires access to RobotLocomotion/snopt-pod")
@@ -76,7 +77,7 @@ set(libbot_dependencies lcm)
 set(director_dependencies lcm libbot)
 set(iris_dependencies eigen mosek)
 set(signalscope_dependencies director)
-set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi)
+set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi odeint)
 
 # download information, in alphabetical order
 set(avl_GIT_REPOSITORY https://github.com/RobotLocomotion/avl.git)
@@ -133,6 +134,10 @@ set(mosek_IS_PUBLIC TRUE)
 set(octomap_GIT_REPOSITORY https://github.com/RobotLocomotion/octomap-pod.git)
 set(octomap_GIT_TAG 00b28215d19580f9e964bc5d126ce55a9253671a)
 set(octomap_IS_PUBLIC TRUE)
+set(odeint_GIT_REPOSITORY https://github.com/psiorx/odeint-v2.git)
+set(odeint_GIT_TAG b82e5bb9f90b1a31be5dd06d41709a59ef13660c)
+set(odeint_IS_CMAKE_POD TRUE)
+set(odeint_IS_PUBLIC TRUE)
 set(sedumi_GIT_REPOSITORY git@github.com:RobotLocomotion/sedumi.git)
 set(sedumi_GIT_TAG 8263577d4ab375524060c19369ccf410133bb9eb)
 set(sedumi_IS_PUBLIC FALSE)
@@ -193,6 +198,7 @@ foreach(proj IN ITEMS
 		avl
 		xfoil
 		meshconverters
+		odeint
 		drake)
 	string(TOUPPER ${proj} proj_upper)
 	if ( ${proj} STREQUAL "drake" OR
