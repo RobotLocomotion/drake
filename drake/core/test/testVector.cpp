@@ -21,7 +21,7 @@ int main(int argc, char* argv[])
   assert(x(0) = 0.5);
 
   {
-    Eigen::VectorXd y = state;
+    Eigen::VectorXd y = static_cast<Eigen::Vector2d>(state);
     assert((x - y).isZero());
   }
 

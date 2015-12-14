@@ -22,8 +22,7 @@ public:
     return *this;
   }
 
-  template <int Rows>
-  operator Eigen::Matrix<ScalarType,Rows,1> () const {
+  operator Eigen::Matrix<ScalarType,2,1> () const {
     Eigen::Matrix<ScalarType,2,1> x;
     x << theta, thetadot;
     return x;
