@@ -1,6 +1,6 @@
 function collidingPointsTest(visualize)
   
-  checkDependency('bullet')
+  checkDependency('bullet');
   options.floating = true;
   urdf = fullfile('../../../examples/Atlas/urdf/atlas_convex_hull.urdf');
   robot = RigidBodyManipulator(urdf);
@@ -31,7 +31,7 @@ function collidingPointsTest(visualize)
   
   if nargin < 1, visualize = false; end;
   if visualize
-    checkDependency('lcmgl')
+    checkDependency('lcmgl');
     v = robot.constructVisualizer();
     v.draw(0,q)
     
