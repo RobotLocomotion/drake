@@ -35,6 +35,9 @@ namespace Drake {
     const static int num_states = StateVector<double>::RowsAtCompileTime;
     const static int num_inputs = InputVector<double>::RowsAtCompileTime;
     const static int num_outputs = OutputVector<double>::RowsAtCompileTime;
+    static_assert(num_states>=0,"still need to handle the variable-size case");
+    static_assert(num_inputs>=0,"still need to handle the variable-size case");
+    static_assert(num_outputs>=0,"still need to handle the variable-size case");
 
     /// dynamics
     /// @param t time in seconds
@@ -189,8 +192,6 @@ namespace Drake {
     return std::make_shared<FeedbackSystem<System1,System2> >(sys1,sys2);
   };
 
-
-#define CascadeSystemType(System1,System2) Drake::CascadeSystem<System1,System2,System1::StateVectorType,System2::StateVectorType,,>
 
   template <class System1, class System2>
   class CascadeSystem : public System<CascadeSystem<System1,System2>,

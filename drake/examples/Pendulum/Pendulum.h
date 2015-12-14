@@ -38,7 +38,7 @@ public:
   enum {
     RowsAtCompileTime = 2
   };
-  static std::size_t size() { return 2; }
+  std::size_t size() { return 2; }
 
   ScalarType theta;
   ScalarType thetadot;
@@ -72,7 +72,7 @@ public:
   enum {
     RowsAtCompileTime = 1
   };
-  static unsigned int size() { return 1; }
+  std::size_t size() { return 1; }
 
   ScalarType tau;
 };

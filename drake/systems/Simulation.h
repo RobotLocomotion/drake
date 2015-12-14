@@ -42,7 +42,7 @@ namespace Drake {
     TimePoint start = TimeClock::now();
     Eigen::Matrix<double,StateVector<double>::RowsAtCompileTime,1> x = x0;
     Eigen::Matrix<double,StateVector<double>::RowsAtCompileTime,1> xdot;
-    Eigen::Matrix<double,InputVector<double>::RowsAtCompileTime,1> u(InputVector<double>::size()); u.setConstant(0);
+    Eigen::Matrix<double,InputVector<double>::RowsAtCompileTime,1> u(sys.num_states); u.setConstant(0);
     Eigen::Matrix<double,OutputVector<double>::RowsAtCompileTime,1> y;
     while (t<tf) {
       handle_realtime_factor(start, t, options.realtime_factor);

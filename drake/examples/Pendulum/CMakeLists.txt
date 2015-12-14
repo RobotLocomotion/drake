@@ -22,7 +22,7 @@ if (LCM_FOUND AND NOT WIN32)  # win32 won't be hard... just have to add declspec
 
   add_executable(runPendulumLQR runLQR.cpp)
   target_link_libraries(runPendulumLQR drakeRBM)
-  add_dependencies(runPendulumLQR drakeUtil drake_lcmtypes lcmtype_agg_hpp)
+  add_dependencies(runPendulumLQR drake_lcmtypes lcmtype_agg_hpp)
   pods_use_pkg_config_packages(runPendulumLQR lcm)
   add_test(NAME runPendulumLQR COMMAND runPendulumLQR WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/examples/Pendulum)
 
