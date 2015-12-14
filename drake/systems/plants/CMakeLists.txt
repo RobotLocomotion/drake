@@ -89,7 +89,7 @@ if (MATLAB_FOUND)
   endmacro()
 endif(MATLAB_FOUND)
 
-set(drakeIK_SRC_FILES "")
+set(drakeIK_SRC_FILES IKoptions.cpp) #FIXME: why are we compiling this twice?
 set(drakeIK_PODS_PKG )
 if(gurobi_FOUND)
   set(drakeIK_SRC_FILES ${drakeIK_SRC_FILES} approximateIK.cpp)
