@@ -1,4 +1,5 @@
 #include "Polynomial.h"
+#include <stdexcept>
 
 using namespace std;
 using namespace Eigen;

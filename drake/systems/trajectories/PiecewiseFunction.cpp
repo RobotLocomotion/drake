@@ -1,4 +1,5 @@
 #include "PiecewiseFunction.h"
+#include <stdexcept>
 
 using namespace std;
 
