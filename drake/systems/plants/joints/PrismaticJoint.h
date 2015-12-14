@@ -3,7 +3,7 @@
 
 #include "FixedAxisOneDoFJoint.h"
 
-class DLLEXPORT_DRAKEJOINT PrismaticJoint: public FixedAxisOneDoFJoint<PrismaticJoint>
+class DRAKEJOINTS_EXPORT PrismaticJoint: public FixedAxisOneDoFJoint<PrismaticJoint>
 {
   // disable copy construction and assignment
   //PrismaticJoint(const PrismaticJoint&) = delete;

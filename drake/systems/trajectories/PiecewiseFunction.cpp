@@ -1,7 +1,4 @@
 #include "PiecewiseFunction.h"
-#include <stdexcept>
-#include <sstream>
-#include <cmath>
 
 using namespace std;
 

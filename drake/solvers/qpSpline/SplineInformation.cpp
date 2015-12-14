@@ -1,7 +1,5 @@
 #include "SplineInformation.h"
-#include <numeric>
 #include <cassert>
-#include <stdexcept>
 
 using namespace std;
 

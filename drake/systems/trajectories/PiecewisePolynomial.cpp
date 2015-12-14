@@ -1,8 +1,5 @@
 #include "PiecewisePolynomial.h"
-#include <stdexcept>
 #include <cassert>
-#include <algorithm>
-#include <complex>
 
 using namespace std;
 using namespace Eigen;
@@ -275,5 +272,5 @@ PiecewisePolynomial<CoefficientType> PiecewisePolynomial<CoefficientType>::rando
   return PiecewisePolynomial<CoefficientType>(polynomials, segment_times);
 }
 
-template class DLLEXPORT PiecewisePolynomial<double>;
-//template class DLLEXPORT PiecewisePolynomial<std::complex<double>>; // doesn't work yet
+template class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial<double>;
+//template class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial<std::complex<double>>; // doesn't work yet

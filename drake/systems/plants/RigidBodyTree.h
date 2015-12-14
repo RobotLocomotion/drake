@@ -13,22 +13,10 @@
 #include "ForceTorqueMeasurement.h"
 #include "drakeUtil.h"
 #include <stdexcept>
-
-
-#undef DLLEXPORT_RBM
-#if defined(WIN32) || defined(WIN64)
-  #if defined(drakeRBM_EXPORTS)
-    #define DLLEXPORT_RBM __declspec( dllexport )
-  #else
-    #define DLLEXPORT_RBM __declspec( dllimport )
-  #endif
-#else
-  #define DLLEXPORT_RBM
-#endif
-
 #include "RigidBody.h"
 #include "RigidBodyFrame.h"
 #include "KinematicsCache.h"
+#include <drakeRBM_export.h>
 
 #define BASIS_VECTOR_HALF_COUNT 2  //number of basis vectors over 2 (i.e. 4 basis vectors in this case)
 #define EPSILON 10e-8
@@ -36,7 +24,7 @@
 
 typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 
-class DLLEXPORT_RBM RigidBodyActuator
+class DRAKERBM_EXPORT RigidBodyActuator
 {
 public:
   RigidBodyActuator(std::string _name, std::shared_ptr<RigidBody> _body, double _reduction = 1.0) :
@@ -47,7 +35,7 @@ public:
   double reduction;
 };
 
-class DLLEXPORT_RBM RigidBodyLoop
+class DRAKERBM_EXPORT RigidBodyLoop
 {
 public:
   RigidBodyLoop(const std::shared_ptr<RigidBodyFrame>& _frameA, const std::shared_ptr<RigidBodyFrame>& _frameB, const Eigen::Vector3d& _axis) :
@@ -62,7 +50,7 @@ public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-class DLLEXPORT_RBM RigidBodyTree
+class DRAKERBM_EXPORT RigidBodyTree
 {
 public:
   RigidBodyTree(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
@@ -506,7 +494,7 @@ private:
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-// The following was required for building w/ DLLEXPORT_RBM on windows (due to the unique_ptrs).  See
+// The following was required for building w/ DRAKERBM_EXPORT on windows (due to the unique_ptrs).  See
 // http://stackoverflow.com/questions/8716824/cannot-access-private-member-error-only-when-class-has-export-linkage
 private:
   RigidBodyTree(const RigidBodyTree &);

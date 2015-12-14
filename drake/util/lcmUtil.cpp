@@ -1,7 +1,5 @@
 #include "lcmUtil.h"
-#include <Eigen/Core>
 #include "drakeUtil.h"
-#include <sstream>
 
 using namespace Eigen;
 

@@ -211,7 +211,7 @@ Eigen::Vector3d uniformlyRandomRPY(std::default_random_engine& generator)
   return axis2rpy(uniformlyRandomAxisAngle(generator));
 }
 
-DLLEXPORT int rotationRepresentationSize(int rotation_type)
+DRAKEGEOMETRYUTIL_EXPORT int rotationRepresentationSize(int rotation_type)
 {
   switch (rotation_type) {
     case 0:
@@ -248,7 +248,7 @@ void rotz(double theta, Matrix3d &M, Matrix3d &dM, Matrix3d &ddM)
   ddM << -c,s,0, -s,-c,0, 0,0,0;
 }
 
-DLLEXPORT GradientVar<double,3,1> quat2expmap(const Ref<const Vector4d> &q, int gradient_order)
+DRAKEGEOMETRYUTIL_EXPORT GradientVar<double,3,1> quat2expmap(const Ref<const Vector4d> &q, int gradient_order)
 {
   double t = sqrt(1-q(0)*q(0));
   bool is_degenerate=(t*t<std::numeric_limits<double>::epsilon());
@@ -269,7 +269,7 @@ DLLEXPORT GradientVar<double,3,1> quat2expmap(const Ref<const Vector4d> &q, int 
   return ret;
 }
 
-DLLEXPORT GradientVar<double,3,1> flipExpmap(const Ref<const Vector3d> &expmap, int gradient_order)
+DRAKEGEOMETRYUTIL_EXPORT GradientVar<double,3,1> flipExpmap(const Ref<const Vector3d> &expmap, int gradient_order)
 {
   if(gradient_order>1)
   {
@@ -298,7 +298,7 @@ DLLEXPORT GradientVar<double,3,1> flipExpmap(const Ref<const Vector3d> &expmap, 
   return ret;
 }
 
-DLLEXPORT GradientVar<double, 3,1> unwrapExpmap(const Ref<const Vector3d> & expmap1, const Ref<const Vector3d> &expmap2, int gradient_order)
+DRAKEGEOMETRYUTIL_EXPORT GradientVar<double, 3,1> unwrapExpmap(const Ref<const Vector3d> & expmap1, const Ref<const Vector3d> &expmap2, int gradient_order)
 {
   auto expmap2_flip = flipExpmap(expmap2,gradient_order);
   double distance1 = (expmap1-expmap2).squaredNorm();
@@ -343,7 +343,7 @@ void quat2expmapSequence(const Ref<const Matrix<double,4,Dynamic>> &quat, const 
   }
 }
 
-DLLEXPORT GradientVar<double, 3,1> closestExpmap(const Ref<const Vector3d> & expmap1, const Ref<const Vector3d> &expmap2, int gradient_order)
+DRAKEGEOMETRYUTIL_EXPORT GradientVar<double, 3,1> closestExpmap(const Ref<const Vector3d> & expmap1, const Ref<const Vector3d> &expmap2, int gradient_order)
 {
   if (gradient_order>1) {
     throw std::runtime_error("closestExpmap only supports first order gradient");

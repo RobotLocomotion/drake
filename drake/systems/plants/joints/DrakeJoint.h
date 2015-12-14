@@ -6,17 +6,7 @@
 #include <unsupported/Eigen/AutoDiff>
 #include <random>
 #include "drakeGeometryUtil.h"
-
-#undef DLLEXPORT_DRAKEJOINT
-#if defined(WIN32) || defined(WIN64)
-  #if defined(drakeJoints_EXPORTS)
-    #define DLLEXPORT_DRAKEJOINT __declspec( dllexport )
-  #else
-    #define DLLEXPORT_DRAKEJOINT __declspec( dllimport )
-  #endif
-#else
-  #define DLLEXPORT_DRAKEJOINT
-#endif
+#include <drakeJoints_export.h>
 
 
 #define POSITION_AND_VELOCITY_DEPENDENT_METHODS(Scalar) \
@@ -29,7 +19,7 @@
 
 class RigidBody;
 
-class DLLEXPORT_DRAKEJOINT DrakeJoint
+class DRAKEJOINTS_EXPORT DrakeJoint
 {
   // disable copy construction and assignment
   //DrakeJoint(const DrakeJoint&) = delete;

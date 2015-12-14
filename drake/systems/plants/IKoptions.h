@@ -1,24 +1,12 @@
 #ifndef __IKOPTIONS_H__
 #define __IKOPTIONS_H__
-//#include "RigidBodyTree.h"
 #include <Eigen/Dense>
+#include <drakeIKoptions_export.h>
 
-#undef drakeIKoptions_DLLEXPORT
-#if defined(WIN32) || defined(WIN64)
-  #if defined(drakeIKoptions_EXPORTS)
-    #define drakeIKoptions_DLLEXPORT __declspec( dllexport )
-  #elif defined(drakeIK_EXPORTS) // because this gets built in both the drakeIKoptions target and the drakeIK target...
-    #define drakeIKoptions_DLLEXPORT __declspec( dllexport )
-  #else
-    #define drakeIKoptions_DLLEXPORT __declspec( dllimport )
-  #endif  
-#else
-  #define drakeIKoptions_DLLEXPORT
-#endif
 
 class RigidBodyTree;
 
-class drakeIKoptions_DLLEXPORT IKoptions
+class DRAKEIKOPTIONS_EXPORT IKoptions
 {
   private:
     RigidBodyTree * robot;

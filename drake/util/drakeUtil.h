@@ -5,26 +5,17 @@
  *      Author: russt
  */
 
+#ifndef DRAKE_UTIL_H_
+#define DRAKE_UTIL_H_
+
 #include <stdexcept>
 #include <vector>
 #include <utility>
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <unordered_map>
+#include <drakeUtil_export.h>
 
-#ifndef DRAKE_UTIL_H_
-#define DRAKE_UTIL_H_
-
-#undef DLLEXPORT
-#if defined(WIN32) || defined(WIN64)
-  #if defined(drakeUtil_EXPORTS)
-    #define DLLEXPORT __declspec( dllexport )
-  #else
-    #define DLLEXPORT __declspec( dllimport )
-  #endif
-#else
-    #define DLLEXPORT
-#endif
 
 template <typename Key, typename T>
 using eigen_aligned_unordered_map = std::unordered_map<Key, T, std::hash<Key>, std::equal_to<Key>, Eigen::aligned_allocator<std::pair<Key const, T > > >;
@@ -92,12 +83,12 @@ void addOffset(std::vector<T>& v, const T& offset)
   std::transform(v.begin(), v.end(), v.begin(), std::bind2nd(std::plus<double>(), offset));
 }
 
-DLLEXPORT void baseZeroToBaseOne(std::vector<int>& vec);
+DRAKEUTIL_EXPORT void baseZeroToBaseOne(std::vector<int>& vec);
 
-DLLEXPORT double angleAverage(double theta1, double theta2);
+DRAKEUTIL_EXPORT double angleAverage(double theta1, double theta2);
 
 template <typename DerivedTorque, typename DerivedForce, typename DerivedNormal, typename DerivedPoint>
-DLLEXPORT std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(const Eigen::MatrixBase<DerivedTorque> & torque, const Eigen::MatrixBase<DerivedForce> & force, const Eigen::MatrixBase<DerivedNormal> & normal, const Eigen::MatrixBase<DerivedPoint> & point_on_contact_plane);
+DRAKEUTIL_EXPORT std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(const Eigen::MatrixBase<DerivedTorque> & torque, const Eigen::MatrixBase<DerivedForce> & force, const Eigen::MatrixBase<DerivedNormal> & normal, const Eigen::MatrixBase<DerivedPoint> & point_on_contact_plane);
 
 
 //Based on the Matrix Sign Function method outlined in this paper:

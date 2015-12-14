@@ -1,18 +1,9 @@
 #ifndef DRAKE_SOLVERS_QPSPLINE_VALUECONSTRAINT_H_
 #define DRAKE_SOLVERS_QPSPLINE_VALUECONSTRAINT_H_
 
-#undef DLLEXPORT
-#if defined(WIN32) || defined(WIN64)
-  #if defined(drakeSplineGeneration_EXPORTS)
-    #define DLLEXPORT __declspec( dllexport )
-  #else
-    #define DLLEXPORT __declspec( dllimport )
-  #endif
-#else
-  #define DLLEXPORT
-#endif
+#include <drakeSplineGeneration_export.h>
 
-class DLLEXPORT ValueConstraint
+class DRAKESPLINEGENERATION_EXPORT ValueConstraint
 {
 private:
   int derivative_order;

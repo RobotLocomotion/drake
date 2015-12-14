@@ -4,7 +4,7 @@
 #include "FixedAxisOneDoFJoint.h"
 #include <Eigen/Geometry>
 
-class DLLEXPORT_DRAKEJOINT RevoluteJoint : public FixedAxisOneDoFJoint<RevoluteJoint>
+class DRAKEJOINTS_EXPORT RevoluteJoint : public FixedAxisOneDoFJoint<RevoluteJoint>
 {
   // disable copy construction and assignment
   //RevoluteJoint(const RevoluteJoint&) = delete;

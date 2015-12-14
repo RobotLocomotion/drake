@@ -3,7 +3,7 @@
 
 #include "FixedAxisOneDoFJoint.h"
 
-class DLLEXPORT_DRAKEJOINT HelicalJoint: public FixedAxisOneDoFJoint<HelicalJoint>
+class DRAKEJOINTS_EXPORT HelicalJoint: public FixedAxisOneDoFJoint<HelicalJoint>
 {
   // disable copy construction and assignment
   //HelicalJoint(const HelicalJoint&) = delete;

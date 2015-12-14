@@ -5,8 +5,6 @@
 #include <stdexcept>
 #include <limits>
 
-#include <iostream> // just for debugging
-
 using namespace std;
 using namespace Eigen;
 
@@ -454,6 +452,6 @@ void Polynomial<CoefficientType>::makeMonomialsUnique(void)
 }
 
 
-template class DLLEXPORT Polynomial<double>;
+template class DRAKEPOLYNOMIAL_EXPORT Polynomial<double>;
 
-//template class DLLEXPORT Polynomial<std::complex<double>>; // doesn't work yet because the roots solver can't handle it
+//template class DRAKEPOLYNOMIAL_EXPORT Polynomial<std::complex<double>>; // doesn't work yet because the roots solver can't handle it

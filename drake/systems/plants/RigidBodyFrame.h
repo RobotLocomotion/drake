@@ -1,7 +1,7 @@
 #ifndef _RIGIDBODYFRAME_H_
 #define _RIGIDBODYFRAME_H_
 
-class DLLEXPORT_RBM RigidBodyFrame {
+class DRAKERBM_EXPORT RigidBodyFrame {
 public:
   RigidBodyFrame(const std::string& _name, const std::shared_ptr<RigidBody>& _body, const Eigen::Matrix4d& _transform_to_body)
    : name(_name), body(_body), transform_to_body(_transform_to_body), frame_index(0) {}

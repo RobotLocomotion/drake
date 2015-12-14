@@ -8,17 +8,7 @@
 #include "drakeGradientUtil.h"
 #include "GradientVar.h"
 #include "expmap2quat.h"
-
-#undef DLLEXPORT
-#if defined(WIN32) || defined(WIN64)
-#if defined(drakeGeometryUtil_EXPORTS)
-    #define DLLEXPORT __declspec( dllexport )
-  #else
-    #define DLLEXPORT __declspec( dllimport )
-  #endif
-#else
-#define DLLEXPORT
-#endif
+#include <drakeGeometryUtil_export.h>
 
 const int TWIST_SIZE = 6;
 const int QUAT_SIZE = 4;
@@ -29,27 +19,27 @@ const int SPACE_DIMENSION = 3;
 const int RotmatSize = SPACE_DIMENSION * SPACE_DIMENSION;
 const int RPY_SIZE = 3;
 
-DLLEXPORT double angleDiff(double phi1, double phi2);
+DRAKEGEOMETRYUTIL_EXPORT double angleDiff(double phi1, double phi2);
 
 /*
  * quaternion methods
  */
-DLLEXPORT Eigen::Vector4d quatConjugate(const Eigen::Vector4d &q);
-DLLEXPORT Eigen::Matrix4d dquatConjugate();
-DLLEXPORT Eigen::Vector4d quatProduct(const Eigen::Vector4d &q1, const Eigen::Vector4d &q2);
-DLLEXPORT Eigen::Matrix<double, 4, 8> dquatProduct(const Eigen::Vector4d &q1,const Eigen::Vector4d &q2);
-DLLEXPORT Eigen::Vector3d quatRotateVec(const Eigen::Vector4d &q, const Eigen::Vector3d &v);
-DLLEXPORT Eigen::Matrix<double, 3, 7> dquatRotateVec(const Eigen::Vector4d &q, const Eigen::Vector3d &v);
-DLLEXPORT Eigen::Vector4d quatDiff(const Eigen::Vector4d &q1, const Eigen::Vector4d &q2);
-DLLEXPORT Eigen::Matrix<double, 4, 8> dquatDiff(const Eigen::Vector4d &q1, const Eigen::Vector4d &q2);
-DLLEXPORT double quatDiffAxisInvar(const Eigen::Vector4d &q1, const Eigen::Vector4d &q2, const Eigen::Vector3d &u);
-DLLEXPORT Eigen::Matrix<double, 1, 11> dquatDiffAxisInvar(const Eigen::Vector4d &q1, const Eigen::Vector4d &q2, const Eigen::Vector3d &u);
-DLLEXPORT double quatNorm(const Eigen::Vector4d& q);
-DLLEXPORT Eigen::Vector4d slerp(const Eigen::Vector4d& q1, const Eigen::Vector4d& q2, double interpolation_parameter);
-DLLEXPORT Eigen::Vector4d uniformlyRandomAxisAngle(std::default_random_engine& generator);
-DLLEXPORT Eigen::Vector4d uniformlyRandomQuat(std::default_random_engine& generator);
-DLLEXPORT Eigen::Matrix3d uniformlyRandomRotmat(std::default_random_engine& generator);
-DLLEXPORT Eigen::Vector3d uniformlyRandomRPY(std::default_random_engine& generator);
+DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector4d quatConjugate(const Eigen::Vector4d &q);
+DRAKEGEOMETRYUTIL_EXPORT Eigen::Matrix4d dquatConjugate();
+DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector4d quatProduct(const Eigen::Vector4d &q1, const Eigen::Vector4d &q2);
+DRAKEGEOMETRYUTIL_EXPORT Eigen::Matrix<double, 4, 8> dquatProduct(const Eigen::Vector4d &q1,const Eigen::Vector4d &q2);
+DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector3d quatRotateVec(const Eigen::Vector4d &q, const Eigen::Vector3d &v);
+DRAKEGEOMETRYUTIL_EXPORT Eigen::Matrix<double, 3, 7> dquatRotateVec(const Eigen::Vector4d &q, const Eigen::Vector3d &v);
+DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector4d quatDiff(const Eigen::Vector4d &q1, const Eigen::Vector4d &q2);
+DRAKEGEOMETRYUTIL_EXPORT Eigen::Matrix<double, 4, 8> dquatDiff(const Eigen::Vector4d &q1, const Eigen::Vector4d &q2);
+DRAKEGEOMETRYUTIL_EXPORT double quatDiffAxisInvar(const Eigen::Vector4d &q1, const Eigen::Vector4d &q2, const Eigen::Vector3d &u);
+DRAKEGEOMETRYUTIL_EXPORT Eigen::Matrix<double, 1, 11> dquatDiffAxisInvar(const Eigen::Vector4d &q1, const Eigen::Vector4d &q2, const Eigen::Vector3d &u);
+DRAKEGEOMETRYUTIL_EXPORT double quatNorm(const Eigen::Vector4d& q);
+DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector4d slerp(const Eigen::Vector4d& q1, const Eigen::Vector4d& q2, double interpolation_parameter);
+DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector4d uniformlyRandomAxisAngle(std::default_random_engine& generator);
+DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector4d uniformlyRandomQuat(std::default_random_engine& generator);
+DRAKEGEOMETRYUTIL_EXPORT Eigen::Matrix3d uniformlyRandomRotmat(std::default_random_engine& generator);
+DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector3d uniformlyRandomRPY(std::default_random_engine& generator);
 
 
 // NOTE: not reshaping second derivative to Matlab geval output format!
@@ -329,7 +319,7 @@ Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, 1> rotmat2Representation
   }
 };
 
-DLLEXPORT int rotationRepresentationSize(int rotation_type);
+DRAKEGEOMETRYUTIL_EXPORT int rotationRepresentationSize(int rotation_type);
 
 template<typename Scalar>
 GradientVar<Scalar, Eigen::Dynamic, 1> rotmat2Representation(const GradientVar<Scalar, SPACE_DIMENSION, SPACE_DIMENSION>& R, int rotation_type) {
@@ -564,8 +554,8 @@ Eigen::Matrix<typename Derived::Scalar, 9, 3> drpy2rotmat(const Eigen::MatrixBas
   return dR;
 };
 
-DLLEXPORT Eigen::Matrix3d rotz(double theta);
-DLLEXPORT void rotz(double theta, Eigen::Matrix3d &M, Eigen::Matrix3d &dM, Eigen::Matrix3d &ddM);
+DRAKEGEOMETRYUTIL_EXPORT Eigen::Matrix3d rotz(double theta);
+DRAKEGEOMETRYUTIL_EXPORT void rotz(double theta, Eigen::Matrix3d &M, Eigen::Matrix3d &dM, Eigen::Matrix3d &ddM);
 /*
  * cross product related
  */
@@ -1138,15 +1128,15 @@ typename DHomogTrans<DerivedDT>::type dHomogTransInv(
   return ret;
 }
 
-DLLEXPORT GradientVar<double,3,1> quat2expmap(const Eigen::Ref<const Eigen::Vector4d> &q, int gradient_order);
+DRAKEGEOMETRYUTIL_EXPORT GradientVar<double,3,1> quat2expmap(const Eigen::Ref<const Eigen::Vector4d> &q, int gradient_order);
 
-DLLEXPORT GradientVar<double,3,1> flipExpmap(const Eigen::Ref<const Eigen::Vector3d> &expmap, int gradient_order);
+DRAKEGEOMETRYUTIL_EXPORT GradientVar<double,3,1> flipExpmap(const Eigen::Ref<const Eigen::Vector3d> &expmap, int gradient_order);
 
-DLLEXPORT GradientVar<double,3,1> unwrapExpmap(const Eigen::Ref<const Eigen::Vector3d> &expmap1, const Eigen::Ref<const Eigen::Vector3d> &expmap2, int gradient_order);
+DRAKEGEOMETRYUTIL_EXPORT GradientVar<double,3,1> unwrapExpmap(const Eigen::Ref<const Eigen::Vector3d> &expmap1, const Eigen::Ref<const Eigen::Vector3d> &expmap2, int gradient_order);
 
-DLLEXPORT void quat2expmapSequence(const Eigen::Ref<const Eigen::Matrix<double,4,Eigen::Dynamic>> &quat, const Eigen::Ref<const Eigen::Matrix<double,4,Eigen::Dynamic>> &quat_dot, Eigen::Ref<Eigen::Matrix<double,3,Eigen::Dynamic>> expmap, Eigen::Ref<Eigen::Matrix<double,3,Eigen::Dynamic>> expmap_dot);
+DRAKEGEOMETRYUTIL_EXPORT void quat2expmapSequence(const Eigen::Ref<const Eigen::Matrix<double,4,Eigen::Dynamic>> &quat, const Eigen::Ref<const Eigen::Matrix<double,4,Eigen::Dynamic>> &quat_dot, Eigen::Ref<Eigen::Matrix<double,3,Eigen::Dynamic>> expmap, Eigen::Ref<Eigen::Matrix<double,3,Eigen::Dynamic>> expmap_dot);
 
-DLLEXPORT GradientVar<double,3,1> closestExpmap(const Eigen::Ref<const Eigen::Vector3d> &expmap1, const Eigen::Ref<const Eigen::Vector3d> &expmap2, int gradient_order);
+DRAKEGEOMETRYUTIL_EXPORT GradientVar<double,3,1> closestExpmap(const Eigen::Ref<const Eigen::Vector3d> &expmap1, const Eigen::Ref<const Eigen::Vector3d> &expmap2, int gradient_order);
 
 
 #endif
