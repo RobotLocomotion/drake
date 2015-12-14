@@ -50,11 +50,11 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     points.push_back(point);
   }
   
-  vector<uint64_T> colliding_points = (vector<uint64_T>)(model->collidingPoints(*cache, points, collision_threshold));
+  vector<size_t> colliding_points = model->collidingPoints(*cache, points, collision_threshold);
   transform(colliding_points.begin(), colliding_points.end(), colliding_points.begin(), bind2nd(plus<int>(), 1));
 
   if (nlhs>0) {
     plhs[0] = mxCreateNumericMatrix(1,static_cast<int>(colliding_points.size()),mxUINT64_CLASS,mxREAL);
-    memcpy(mxGetData(plhs[0]),colliding_points.data(),sizeof(int64_T)*static_cast<int>(colliding_points.size()));
+    memcpy(mxGetData(plhs[0]),colliding_points.data(),sizeof(size_t)*static_cast<int>(colliding_points.size()));
   }
 }
