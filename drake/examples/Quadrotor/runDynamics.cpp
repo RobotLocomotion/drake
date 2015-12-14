@@ -13,7 +13,7 @@ int main(int argc, char* argv[]) {
     return 1;
 
   auto quad = make_shared<Quadrotor>();
-  auto v = make_shared<BotVisualizer<QuadrotorState> >(lcm,getDrakePath()+"/examples/Quadrotor/Quadrotor.urdf",DrakeJoint::ROLLPITCHYAW);
+  auto v = make_shared<BotVisualizer<QuadrotorState> >(lcm,getDrakePath()+"/examples/Quadrotor/quadrotor.urdf",DrakeJoint::ROLLPITCHYAW);
 
   auto sys = cascade(quad,v);
 
