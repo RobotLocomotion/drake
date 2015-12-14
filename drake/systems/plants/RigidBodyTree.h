@@ -237,10 +237,10 @@ public:
   Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> massMatrix(KinematicsCache<Scalar>& cache) const;
 
   template <typename Scalar>
-  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> dynamicsBiasTerm(KinematicsCache<Scalar>& cache, const eigen_aligned_unordered_map<RigidBody const *, Eigen::Matrix<Scalar, TWIST_SIZE, 1> >& f_ext) const;
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> dynamicsBiasTerm(KinematicsCache<Scalar>& cache, const eigen_aligned_unordered_map<RigidBody const *, Eigen::Matrix<Scalar, TWIST_SIZE, 1> >& f_ext, bool include_velocity_terms = true) const;
 
   template <typename Scalar>
-  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> inverseDynamics(KinematicsCache<Scalar>& cache, const eigen_aligned_unordered_map<RigidBody const *, Eigen::Matrix<Scalar, TWIST_SIZE, 1> >& f_ext, const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& vd) const;
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> inverseDynamics(KinematicsCache<Scalar>& cache, const eigen_aligned_unordered_map<RigidBody const *, Eigen::Matrix<Scalar, TWIST_SIZE, 1> >& f_ext, const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& vd, bool include_velocity_terms = true) const;
 
   template <typename DerivedV>
   Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorques(Eigen::MatrixBase<DerivedV> const & v) const;
