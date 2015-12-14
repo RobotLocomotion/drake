@@ -1,6 +1,7 @@
 #ifndef DRAKE_SYSTEM_H
 #define DRAKE_SYSTEM_H
 
+#include <memory>
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include "Core.h"
