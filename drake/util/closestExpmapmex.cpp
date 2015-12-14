@@ -1,6 +1,5 @@
 #include "mex.h"
 #include "drakeMexUtil.h"
-#include "drakeGradientUtil.h"
 #include "drakeGeometryUtil.h"
 
 using namespace std;

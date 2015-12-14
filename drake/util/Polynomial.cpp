@@ -1,9 +1,4 @@
 #include "Polynomial.h"
-#include <algorithm>
-#include <cmath>
-#include <string.h>
-#include <stdexcept>
-#include <limits>
 
 using namespace std;
 using namespace Eigen;

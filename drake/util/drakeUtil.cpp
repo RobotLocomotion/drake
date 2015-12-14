@@ -6,13 +6,7 @@
  */
 
 #include "drakeUtil.h"
-#include <string>
-#include <math.h>
-#include <limits>
 #include <Eigen/Dense>
-#include <stdexcept>
-#include <algorithm>
-#include <functional>
 
 using namespace std;
 using namespace Eigen;

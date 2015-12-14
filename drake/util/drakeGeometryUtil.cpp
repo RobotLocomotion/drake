@@ -1,8 +1,4 @@
 #include "drakeGeometryUtil.h"
-#include <iostream>
-#include <cmath>
-#include <limits>
-#include <stdexcept>
 #include <Eigen/Sparse>
 
 using namespace Eigen;

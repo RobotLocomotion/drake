@@ -1,8 +1,5 @@
 #include <Eigen/Core>
 #include "GradientVar.h"
-#include "testUtil.h"
-#include <iostream>
-#include <cmath>
 
 using namespace Eigen;
 using namespace std;
