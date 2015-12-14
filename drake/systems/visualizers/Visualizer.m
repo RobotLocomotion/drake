@@ -127,12 +127,13 @@ classdef Visualizer < DrakeSystem
 
       % set up continuous slider feedback:
       time_slider_listener = addlistener(time_slider,'ContinuousValueChange',@update_time_display);
+      playback_timer = tic;
       playback_start_time = 0;
       function update_speed(source, eventdata)
         new_playback_speed = 10 ^ get(speed_slider, 'Value');
 
         % adjust the start time to prevent simulation time changing
-        currtime = cputime();
+        currtime = toc(playback_timer);
         playback_start_time = currtime - (obj.playback_speed / new_playback_speed) *(currtime - playback_start_time);
 
         obj.playback_speed = new_playback_speed;
@@ -140,7 +141,7 @@ classdef Visualizer < DrakeSystem
       end
       function rewind_vis(source, eventdata)
         set(time_slider, 'Value', get(time_slider, 'Min'));
-        playback_start_time = cputime();
+        playback_start_time = toc(playback_timer);
         update_time_display(time_slider, []);
       end
       function update_time_display(source, eventdata)
@@ -172,7 +173,7 @@ classdef Visualizer < DrakeSystem
         if get(time_slider, 'Value') >= (tspan(end) - 0.02)
           set(time_slider, 'Value', get(time_slider, 'Min'));
         end
-        playback_start_time = cputime();
+        playback_start_time = toc(playback_timer);
         t0 = get(time_slider, 'Value');
         if (obj.playback_speed<=0)  % then playback as quickly as possible
           t = t0;
@@ -196,7 +197,7 @@ classdef Visualizer < DrakeSystem
         end
         set(play_button, 'UserData', 0, 'String', 'Play');
         function timer_draw(timerobj,event)
-          t=t0+obj.playback_speed*(cputime() - playback_start_time);
+          t=t0+obj.playback_speed*(toc(playback_timer) - playback_start_time);
           if (t>tspan(end))
             t = tspan(end);
           end
