@@ -40,7 +40,8 @@ for t=0:0.05:T
   end
   q = x(1:nq);
   v = x(nq+(1:nv));
-  qd = manipulator.vToqdot(q)*v;
+  kinsol = doKinematics(r, q, v);
+  qd = manipulator.vToqdot(kinsol)*v;
   
   % test derivative
   [A,dAdq] = geval(@myfun,q);
@@ -49,7 +50,6 @@ for t=0:0.05:T
     Adot_tv = Adot_tv + reshape(dAdq(:,jj),size(A)) * qd(jj);
   end
   
-  kinsol = doKinematics(r, q, v);
   A = centroidalMomentumMatrix(r, kinsol);
   Adot_times_v = centroidalMomentumMatrixDotTimesV(r, kinsol);
   valuecheck(Adot_times_v,Adot_tv * v);

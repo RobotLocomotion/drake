@@ -140,7 +140,8 @@ classdef HybridRigidBodyManipulator < HybridDrakeSystem
         % was: inds = phi<=lb | phi>=ub; % todo: add some tolerance here?
         inds = abs(constraint_state)>0.5;
         
-        J = J(inds,:)*vToqdot(obj.model, q);
+        kinsol = obj.model.doKinematics(q);
+        J = J(inds,:)*vToqdot(obj.model, kinsol);
         
         vn = (eye(obj.model.num_velocities)-Hinv*J'*pinv(J*Hinv*J')*J)*v;
         xn = [constraint_state;q;vn];

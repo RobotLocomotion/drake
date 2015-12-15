@@ -210,7 +210,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         vn = Mvn*z + wvn;
       end      
       
-      vToqdot = obj.manip.vToqdot(q);
+      kinsol = obj.manip.doKinematics(q);
+      vToqdot = obj.manip.vToqdot(kinsol);
       qdn = vToqdot*vn;
       qn = q+ h*qdn;
       % Find quaternion indices
@@ -307,12 +308,12 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         num_q = obj.manip.getNumPositions;
         num_v = obj.manip.getNumVelocities;
         q=x(1:num_q); v=x(num_q+(1:num_v));
-        vToqdot = obj.manip.vToqdot(q);
-        qd = vToqdot*v;
-        h = obj.timestep;
 
         kinematics_options.compute_gradients = nargout > 4;
         kinsol = doKinematics(obj, q, [], kinematics_options);
+        vToqdot = obj.manip.vToqdot(kinsol);
+        qd = vToqdot*v;
+        h = obj.timestep;
 
         if (nargout<5)
           [H,C,B] = manipulatorDynamics(obj.manip,q,v);

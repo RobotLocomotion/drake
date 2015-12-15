@@ -130,25 +130,23 @@ classdef RigidBodyManipulator < Manipulator
   end
 
   methods
-    function [Vq, dVq] = qdotToV(obj, q)
-      if obj.mex_model_ptr ~= 0
-        if nargout == 1
-          if isnumeric(q) || isa(q, 'TaylorVar')
-            kinsol = obj.doKinematics(q);
-            Vq = velocityToPositionDotMappingmex(kinsol.mex_ptr);
-            return;
-          end
-        elseif nargout == 2
-          if isnumeric(q)
-            q_taylor = TaylorVar(q);
-            kinsol = obj.doKinematics(q_taylor);
-            Vq = velocityToPositionDotMappingmex(kinsol.mex_ptr);
-            [Vq, dVq] = VqInv.eval();
-            return;
+    function [Vq, dVq] = qdotToV(obj, kinsol)
+      if obj.mex_model_ptr ~= 0 && kinsol.mex_ptr ~= 0
+        VqInv = velocityToPositionDotMappingmex(kinsol.mex_ptr);
+        if ~isnumeric(VqInv)
+          typecheck(VqInv, 'TaylorVar');
+          [VqInv, dVqInv] = VqInv.eval();
+          return
+        else
+          if nargout == 1
+            return
+          elseif nargout == 2
+            error('Drake:RigidBodyManipulator:TooManyOutputs', 'dVq was requested, but the kinsol input does not have gradients');
           end
         end
       end
 
+      %% Otherwise, fall back to the Matlab version:
       compute_gradient = nargout > 1;
 
       bodies = obj.body;
@@ -173,24 +171,23 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
 
-    function [VqInv, dVqInv] = vToqdot(obj, q)
-      if obj.mex_model_ptr ~= 0
-        if nargout == 1
-          if isnumeric(q) || isa(q, 'TaylorVar')
-            kinsol = obj.doKinematics(q);
-            VqInv = positionDotToVelocityMappingmex(kinsol.mex_ptr);
-            return;
-          end
-        elseif nargout == 2
-          if isnumeric(q)
-            q_taylor = TaylorVar(q);
-            kinsol = obj.doKinematics(q_taylor);
-            VqInv = positionDotToVelocityMappingmex(kinsol.mex_ptr);
-            [VqInv, dVqInv] = VqInv.eval();
-            return;
+    function [VqInv, dVqInv] = vToqdot(obj, kinsol)
+      if obj.mex_model_ptr ~= 0 && kinsol.mex_ptr ~= 0
+        VqInv = positionDotToVelocityMappingmex(kinsol.mex_ptr);
+        if ~isnumeric(VqInv)
+          typecheck(VqInv, 'TaylorVar');
+          [VqInv, dVqInv] = VqInv.eval();
+          return
+        else
+          if nargout == 1
+            return
+          elseif nargout == 2
+            error('Drake:RigidBodyManipulator:TooManyOutputs', 'dVqInv was requested, but the kinsol input does not have gradients');
           end
         end
       end
+
+      %% Otherwise, fall back to the Matlab version:
 
       compute_gradient = nargout > 1;
 
@@ -198,14 +195,14 @@ classdef RigidBodyManipulator < Manipulator
       nb = length(bodies);
       nv = obj.num_velocities;
       nq = obj.num_positions;
-      VqInv = zeros(nq, nv) * q(1); % to make TaylorVar work better
+      VqInv = zeros(nq, nv) * kinsol.q(1); % to make TaylorVar work better
 
       if compute_gradient
-        dVqInv = zeros(numel(VqInv), nq) * q(1);
+        dVqInv = zeros(numel(VqInv), nq) * kinsol.q(1);
       end
       for i = 2 : nb
         bodyI = bodies(i);
-        q_body = q(bodyI.position_num);
+        q_body = kinsol.q(bodyI.position_num);
         if compute_gradient
           [VqInvJoint, dVqInvJoint] = jointV2qdot(bodyI, q_body);
           dVqInv = setSubMatrixGradient(dVqInv, dVqInvJoint, bodyI.position_num, bodyI.velocity_num, size(VqInv), bodyI.position_num);

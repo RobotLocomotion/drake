@@ -111,7 +111,7 @@ walking_plan = r.planWalkingZMP(x0(1:nq), footstep_plan);
 
 v.playback(ytraj, struct('slider', true));
 
-if ~rangecheck(rms_com, 0, 0.005);
+if ~rangecheck(rms_com, 0, 0.008);
   error('Drake:runAtlasWalkingTiltedBlocks:BadCoMTracking', 'Center-of-mass during execution differs substantially from the plan.');
 end
 

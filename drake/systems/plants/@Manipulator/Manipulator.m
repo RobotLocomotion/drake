@@ -69,7 +69,8 @@ classdef Manipulator < DrakeSystem
             Hinv*(-dC(:,obj.num_positions+1:end))];
         end
 
-        [VqInv,dVqInv] = vToqdot(obj,q);
+        kinsol = obj.doKinematics(q);
+        [VqInv,dVqInv] = vToqdot(obj,kinsol);
         xdot = [VqInv*v;vdot];
         dxdot = [...
           zeros(obj.num_positions,1), matGradMult(dVqInv, v), VqInv, zeros(obj.num_positions,obj.num_u);
@@ -85,24 +86,25 @@ classdef Manipulator < DrakeSystem
         %   vdot = H\tau
         % but I already have and use Hinv, so use it again here
 
-        xdot = [vToqdot(obj,q)*v; vdot];
+        kinsol = obj.doKinematics(q);
+        xdot = [vToqdot(obj,kinsol)*v; vdot];
       end
 
     end
 
-    function [Vq,dVq] = qdotToV(obj, q)
+    function [Vq,dVq] = qdotToV(obj, kinsol)
       % defines the linear map v = Vq * qdot
       % default relationship is that v = qdot
       assert(obj.num_positions==obj.num_velocities);
-      Vq = eye(length(q));
+      Vq = eye(length(kinsol.q));
       dVq = zeros(numel(Vq), obj.num_positions);
     end
 
-    function [VqInv,dVqInv] = vToqdot(obj, q)
+    function [VqInv,dVqInv] = vToqdot(obj, kinsol)
       % defines the linear map qdot = Vqinv * v
       % default relationship is that v = qdot
       assert(obj.num_positions==obj.num_velocities);
-      VqInv = eye(length(q));
+      VqInv = eye(length(kinsol.q));
       dVqInv = zeros(numel(VqInv), obj.num_positions);
     end
 
@@ -122,7 +124,8 @@ classdef Manipulator < DrakeSystem
       beta = 0;    % 1/time constant of velocity constraint satisfaction
 
       phi=[]; psi=[];
-      qd = vToqdot(obj, q) * v;
+      kinsol = obj.doKinematics(q);
+      qd = vToqdot(obj, kinsol) * v;
       if ~isempty(obj.position_constraints) && ~isempty(obj.velocity_constraints)
         [phi,J,dJ] = obj.positionConstraints(q);
         Jdotqd = dJ*reshape(qd*qd',obj.num_positions^2,1);
@@ -354,7 +357,8 @@ classdef Manipulator < DrakeSystem
         q=x(1:obj.num_positions); v=x((obj.num_positions+1):end);
         [~,C,B] = manipulatorDynamics(obj,q,v);
         if (obj.num_u>0) tau=B*u; else tau=zeros(obj.num_u,1); end
-        rhs = [vToqdot(obj,q)*v;tau - C];
+        kinsol = obj.doKinematics(q);
+        rhs = [vToqdot(obj,kinsol)*v;tau - C];
       end
       function lhs = dynamics_lhs(obj,x)
         q=x(1:obj.num_positions); v=x((obj.num_positions+1):end);
