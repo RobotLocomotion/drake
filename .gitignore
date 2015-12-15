@@ -55,3 +55,4 @@ results_testRunning.mat
 drake/doc/DoxygenCPP
 *.bak
 Pendulum.pmd
+Path.h

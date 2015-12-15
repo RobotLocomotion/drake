@@ -11,7 +11,7 @@ classdef FeedbackSystem < DrakeSystem
     function obj = FeedbackSystem(sys1,sys2)
       obj = obj@DrakeSystem(sys1.getNumContStates()+sys2.getNumContStates(),...
         sys1.getNumDiscStates()+sys2.getNumDiscStates(),...
-        sys1.getNumInputs(), sys1.getNumOutputs(), false, sys1.isTI() & sys2.isTI());
+        sys1.getNumInputs(), sys1.getNumOutputs(), sys1.isDirectFeedthrough(), sys1.isTI() & sys2.isTI());
       typecheck(sys1,'DrakeSystem');
       typecheck(sys2,'DrakeSystem');
 
@@ -33,14 +33,14 @@ classdef FeedbackSystem < DrakeSystem
 
       obj = setSampleTime(obj,[sys1.getSampleTime(),sys2.getSampleTime()]);
       obj = setNumZeroCrossings(obj,sys1.getNumZeroCrossings()+sys2.getNumZeroCrossings()+sum(~isinf([sys1.umin;sys1.umax;sys2.umin;sys2.umax])));
-      
+
       for i=1:numel(sys1.state_constraints)
         obj = addStateConstraint(obj,sys1.state_constraints{i},obj.sys1ind(sys1.state_constraint_xind{i}));
       end
       for i=1:numel(sys2.state_constraints)
         obj = addStateConstraint(obj,sys2.state_constraints{i},obj.sys2ind(sys2.state_constraint_xind{i}));
       end
-      
+
       obj = setInputFrame(obj,sys1.getInputFrame());
       obj = setOutputFrame(obj,sys1.getOutputFrame());
 
@@ -55,7 +55,7 @@ classdef FeedbackSystem < DrakeSystem
       if ~isempty(sys1.state_constraints) || ~isempty(sys2.state_constraints)
         obj.warning_manager.warnOnce('Drake:FeedbackSystem:Todo','todo: still need to add state constriants for the feedback system');
       end
-      
+
       obj.sys1=sys1;
       obj.sys2=sys2;
     end
@@ -92,7 +92,7 @@ classdef FeedbackSystem < DrakeSystem
         x0 = obj.initial_state;
         return;
       end
-     
+
       x0=encodeX(obj,getInitialState(obj.sys1),getInitialState(obj.sys2));
     end
 
