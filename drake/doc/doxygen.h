@@ -8,8 +8,8 @@ If you want to make your own doxygen, run <b><i>make doxygen</i></b> in the root
 <p>
 Other useful pages:
 <ul>
-<li><a href="class_drake_system.html">DrakeSystem</a></li>
-<li><a href="class_rigid_body_manipulator.html">RigidBodyManipulator</a></li>
+<li><a href="class_drake_1_1_system.html">Drake::System</a></li>
+<li><a href="class_rigid_body_tree.html">RigidBodyTree</a></li>
 <li><a href="https://github.com/RobotLocomotion/drake/wiki/Documentation">Drake documentation main page</a></li>
 </ul>
 </p>
