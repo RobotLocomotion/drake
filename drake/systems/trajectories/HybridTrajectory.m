@@ -23,8 +23,7 @@ classdef HybridTrajectory < Trajectory
         for i=2:length(trajectories)
           t = trajectories{i}.getBreaks();
           if (abs(t(1)-te(end))>1e-8) 
-            keyboard;
-            error('trajectories must line up in time'); 
+            error('trajectories must line up in time');
           end
           if (trajectories{i}.getOutputFrame~=obj.getOutputFrame)
             error('trajectories must all be in the same frame'); 

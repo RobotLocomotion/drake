@@ -1,7 +1,7 @@
 #include "mex.h"
 #include "drakeMexUtil.h"
 #include "IKoptions.h"
-#include "RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 
 using namespace std;
 using namespace Eigen;
@@ -24,10 +24,10 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   {
     case 1:
       {
-        RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[1]);
+        RigidBodyTree * robot = (RigidBodyTree *) getDrakeMexPointer(prhs[1]);
         IKoptions* ikoptions = new IKoptions(robot);
         mxArray* additional_argument = mxCreateDoubleScalar(2);
-        plhs[0] = createDrakeMexPointer((void*) ikoptions,"IKoptions",1,&additional_argument);
+        plhs[0] = createDrakeMexPointer((void*) ikoptions,"IKoptions",-1,1,&additional_argument);
       }
       break;
     case 2:
@@ -223,7 +223,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
         }
         else if(field_str == "robot")
         {
-          RigidBodyManipulator* new_robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[3]);
+          RigidBodyTree * new_robot = (RigidBodyTree *) getDrakeMexPointer(prhs[3]);
           ikoptions_new->updateRobot(new_robot);
         }
         else
@@ -231,7 +231,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
           mexErrMsgIdAndTxt("Drake:updatePtrIKoptionsmex:BadInputs","Unsupported field");
         }
         mxArray* additional_argument = mxCreateDoubleScalar(2);
-        plhs[0] = createDrakeMexPointer((void*) ikoptions_new,"IKoptions",1,&additional_argument);
+        plhs[0] = createDrakeMexPointer((void*) ikoptions_new,"IKoptions",-1,1,&additional_argument);
         delete[] field;
       }
       break;

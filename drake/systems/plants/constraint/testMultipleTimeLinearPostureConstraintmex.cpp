@@ -1,7 +1,7 @@
 #include "mex.h"
 #include "RigidBodyConstraint.h"
 #include "drakeMexUtil.h"
-#include "../RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 #include <cstring>
 /* 
  * [num_constraint,constraint_val,iAfun,jAvar,A ,constraint_name,lower_bound,upper_bound] = testMultipleTimeLinearPostureConstraintmex(kinCnst_ptr,q,t)

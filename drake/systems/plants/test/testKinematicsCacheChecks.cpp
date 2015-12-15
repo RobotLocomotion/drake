@@ -1,5 +1,5 @@
-#include "RigidBodyManipulator.h"
-#include "RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
+#include "RigidBodyTree.h"
 #include "drakeGeometryUtil.h"
 #include "GradientVar.h"
 #include <iostream>
@@ -19,12 +19,11 @@ struct CheckSettings {
 };
 
 template<typename O, typename F, typename ...Args>
-void checkForErrors(bool expect_error, O& object, F function, Args&&... arguments)
-{
+void checkForErrors(bool expect_error, O &object, F function, Args &&... arguments) {
   try {
     (object.*function)(std::forward<Args>(arguments)...);
   }
-  catch (runtime_error& e) {
+  catch (runtime_error &e) {
     if (expect_error)
       return;
     else
@@ -34,8 +33,7 @@ void checkForErrors(bool expect_error, O& object, F function, Args&&... argument
     throw std::runtime_error("Expected a runtime error, but did not catch one.");
 }
 
-void performChecks(RigidBodyManipulator& model, KinematicsCache<double>& cache, int gradient_order, const CheckSettings& settings)
-{
+void performChecks(RigidBodyTree &model, KinematicsCache<double> &cache, const CheckSettings &settings) {
   auto points = Matrix<double, 3, Eigen::Dynamic>::Random(3, 5).eval();
   typedef decltype(points) PointsType;
   int body_or_frame_ind = 8;
@@ -47,117 +45,78 @@ void performChecks(RigidBodyManipulator& model, KinematicsCache<double>& cache, 
   bool in_terms_of_qdot = false;
   std::vector<int> v_or_qdot_indices;
   int npoints = 3;
-  int nq = model.num_positions;
-  GradientVar<double, TWIST_SIZE, 1> spatial_acceleration(TWIST_SIZE, 1, nq, gradient_order);
-  spatial_acceleration.value().setRandom();
-  if (gradient_order > 0)
-    spatial_acceleration.gradient().value().setRandom();
-  eigen_aligned_unordered_map<RigidBody const *, GradientVar<double, TWIST_SIZE, 1> > f_ext;
+  Matrix<double, TWIST_SIZE, 1> spatial_acceleration;
+  spatial_acceleration.setRandom();
+  eigen_aligned_unordered_map<RigidBody const *, Matrix<double, TWIST_SIZE, 1> > f_ext;
 
-  if (gradient_order == 0) {
-    checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::centerOfMass<double>, cache, RigidBodyManipulator::default_robot_num_set);
-    checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::forwardKin<PointsType>, cache, points, body_or_frame_ind, base_or_frame_ind, rotation_type);
-  }
+  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyTree::centerOfMass<double>, cache, RigidBodyTree::default_robot_num_set);
+  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyTree::forwardKin<double, PointsType>, cache, points, body_or_frame_ind, base_or_frame_ind, rotation_type);
+  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyTree::worldMomentumMatrix<double>, cache, RigidBodyTree::default_robot_num_set, in_terms_of_qdot);
+  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyTree::centroidalMomentumMatrix<double>, cache, RigidBodyTree::default_robot_num_set, in_terms_of_qdot);
+  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyTree::centerOfMassJacobian<double>, cache, RigidBodyTree::default_robot_num_set, in_terms_of_qdot);
+  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyTree::geometricJacobian<double>, cache, base_or_frame_ind, body_or_frame_ind, expressed_in_frame_ind,
+                 in_terms_of_qdot, &v_or_qdot_indices);
+  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyTree::relativeTransform<double>, cache, base_or_frame_ind, body_or_frame_ind);
+  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyTree::massMatrix<double>, cache);
+  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyTree::forwardKinPositionGradient<double>, cache, npoints, body_or_frame_ind, base_or_frame_ind);
+  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyTree::forwardKinJacobian<double, PointsType>, cache, points, body_or_frame_ind, base_or_frame_ind,
+                 rotation_type, in_terms_of_qdot);
 
-  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::worldMomentumMatrix<double>, cache, gradient_order, RigidBodyManipulator::default_robot_num_set, in_terms_of_qdot);
-  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::centroidalMomentumMatrix<double>, cache, gradient_order, RigidBodyManipulator::default_robot_num_set, in_terms_of_qdot);
-  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::centerOfMassJacobian<double>, cache, gradient_order, RigidBodyManipulator::default_robot_num_set, in_terms_of_qdot);
-  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::geometricJacobian<double>, cache, base_or_frame_ind, body_or_frame_ind, expressed_in_frame_ind, gradient_order, in_terms_of_qdot, &v_or_qdot_indices);
-  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::relativeTransform<double>, cache, base_or_frame_ind, body_or_frame_ind, gradient_order);
-  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::massMatrix<double>, cache, gradient_order);
-  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::forwardKinPositionGradient<double>, cache, npoints, body_or_frame_ind, base_or_frame_ind, gradient_order);
-  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyManipulator::forwardKinJacobian<PointsType>, cache, points, body_or_frame_ind, base_or_frame_ind, rotation_type, in_terms_of_qdot,
-                 gradient_order);
+  checkForErrors(settings.expect_error_on_velocity_methods, model, &RigidBodyTree::relativeTwist<double>, cache, base_or_frame_ind, body_or_frame_ind, expressed_in_frame_ind);
 
-  checkForErrors(settings.expect_error_on_velocity_methods, model, &RigidBodyManipulator::relativeTwist<double>, cache, base_or_frame_ind, body_or_frame_ind, expressed_in_frame_ind, gradient_order);
-
-  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model, &RigidBodyManipulator::geometricJacobianDotTimesV<double>, cache, base_or_frame_ind, body_or_frame_ind, expressed_in_frame_ind, gradient_order);
-  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model, &RigidBodyManipulator::worldMomentumMatrixDotTimesV<double>, cache, gradient_order, RigidBodyManipulator::default_robot_num_set);
-  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model, &RigidBodyManipulator::centroidalMomentumMatrixDotTimesV<double>, cache, gradient_order, RigidBodyManipulator::default_robot_num_set);
-  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model, &RigidBodyManipulator::centerOfMassJacobianDotTimesV<double>, cache, gradient_order, RigidBodyManipulator::default_robot_num_set);
-  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model, &RigidBodyManipulator::forwardJacDotTimesV<PointsType>, cache, points, body_or_frame_ind, base_or_frame_ind, rotation_type, gradient_order);
-  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model, &RigidBodyManipulator::transformSpatialAcceleration<double>, cache, spatial_acceleration, base_or_frame_ind, body_or_frame_ind, old_expressed_in_body_or_frame_ind, new_expressed_in_body_or_frame_ind);
-  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model, &RigidBodyManipulator::dynamicsBiasTerm<double>, cache, f_ext, gradient_order);
+  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model, &RigidBodyTree::geometricJacobianDotTimesV<double>, cache, base_or_frame_ind, body_or_frame_ind, expressed_in_frame_ind);
+  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model, &RigidBodyTree::worldMomentumMatrixDotTimesV<double>, cache, RigidBodyTree::default_robot_num_set);
+  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model, &RigidBodyTree::centroidalMomentumMatrixDotTimesV<double>, cache, RigidBodyTree::default_robot_num_set);
+  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model, &RigidBodyTree::centerOfMassJacobianDotTimesV<double>, cache, RigidBodyTree::default_robot_num_set);
+  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model, &RigidBodyTree::forwardJacDotTimesV<double, PointsType>, cache, points, body_or_frame_ind, base_or_frame_ind,
+                 rotation_type);
+  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model, &RigidBodyTree::transformSpatialAcceleration<double>, cache, spatial_acceleration, base_or_frame_ind, body_or_frame_ind,
+                 old_expressed_in_body_or_frame_ind, new_expressed_in_body_or_frame_ind);
+  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model, &RigidBodyTree::dynamicsBiasTerm<double>, cache, f_ext);
 }
 
-int main()
-{
-  std::unique_ptr<RigidBodyManipulator> model(new RigidBodyManipulator("examples/Atlas/urdf/atlas_minimal_contact.urdf"));
-  if (model == nullptr)
-  {
-    cerr<<"ERROR: Failed to load model"<<endl;
+int main() {
+  std::unique_ptr<RigidBodyTree> model(new RigidBodyTree("examples/Atlas/urdf/atlas_minimal_contact.urdf"));
+  if (model == nullptr) {
+    cerr << "ERROR: Failed to load model" << endl;
   }
   CheckSettings settings;
-  int max_gradient_order = 2;
 
   VectorXd q = VectorXd::Random(model->num_positions);
   VectorXd v = VectorXd::Random(model->num_velocities);
 
   // check before calling doKinematics
   {
-    KinematicsCache<double> cache(model->bodies, 1);
+    KinematicsCache<double> cache(model->bodies);
     settings.expect_error_on_configuration_methods = true;
     settings.expect_error_on_velocity_methods = true;
     settings.expect_error_on_jdot_times_v_methods = true;
-    for (int gradient_order = 0; gradient_order < max_gradient_order; gradient_order++)
-      performChecks(*model, cache, gradient_order, settings);
+    performChecks(*model, cache, settings);
   }
 
   // q only, no gradients
   {
-    KinematicsCache<double> cache = model->doKinematics(q, 0);
-    for (int gradient_order = 1; gradient_order < max_gradient_order; gradient_order++)
-      performChecks(*model, cache, gradient_order, settings); // still expect everything to fail for gradient_order > 0
+    KinematicsCache<double> cache = model->doKinematics(q);
     settings.expect_error_on_configuration_methods = false;
-    performChecks(*model, cache, 0, settings);
-  }
-
-  // q only, with gradients
-  {
-    KinematicsCache<double> cache = model->doKinematics(q, 1);
-    for (int gradient_order = 0; gradient_order < max_gradient_order; gradient_order++)
-      performChecks(*model, cache, gradient_order, settings);
+    performChecks(*model, cache, settings);
   }
 
   // q and v, no gradients, no jdot_times_v
   {
-    KinematicsCache<double> cache = model->doKinematics(q, v, 0, false);
-    settings.expect_error_on_configuration_methods = true;
-    settings.expect_error_on_velocity_methods = true;
+    KinematicsCache<double> cache = model->doKinematics(q, v, false);
     settings.expect_error_on_jdot_times_v_methods = true;
-    for (int gradient_order = 1; gradient_order < max_gradient_order; gradient_order++)
-      performChecks(*model, cache, gradient_order, settings); // still expect everything to fail for gradient_order > 0
     settings.expect_error_on_configuration_methods = false;
     settings.expect_error_on_velocity_methods = false;
-    performChecks(*model, cache, 0, settings);
-  }
-
-  // q and v, with gradients, no jdot_times_v
-  {
-    KinematicsCache<double> cache = model->doKinematics(q, v, 1, false);
-    for (int gradient_order = 0; gradient_order < max_gradient_order; gradient_order++)
-      performChecks(*model, cache, gradient_order, settings);
+    performChecks(*model, cache, settings);
   }
 
   // q and v, no gradients, with jdot_times_v
   {
-    KinematicsCache<double> cache = model->doKinematics(q, v, 0, true);
-    settings.expect_error_on_configuration_methods = true;
-    settings.expect_error_on_velocity_methods = true;
-    settings.expect_error_on_jdot_times_v_methods = true;
-    for (int gradient_order = 1; gradient_order < max_gradient_order; gradient_order++)
-      performChecks(*model, cache, gradient_order, settings); // still expect everything to fail for gradient_order > 0
+    KinematicsCache<double> cache = model->doKinematics(q, v, true);
     settings.expect_error_on_configuration_methods = false;
     settings.expect_error_on_velocity_methods = false;
     settings.expect_error_on_jdot_times_v_methods = false;
-    performChecks(*model, cache, 0, settings);
-  }
-
-  // q and v, with gradients, with jdot_times_v
-  {
-    KinematicsCache<double> cache = model->doKinematics(q, v, 1, true);
-    for (int gradient_order = 0; gradient_order < max_gradient_order; gradient_order++)
-      performChecks(*model, cache, gradient_order, settings);
+    performChecks(*model, cache, settings);
   }
 
   return 0;

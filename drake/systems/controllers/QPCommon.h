@@ -15,7 +15,7 @@ const double REG = 1e-8;
 
 struct QPControllerData {
   GRBenv *env;
-  RigidBodyManipulator* r;
+  RigidBodyTree * r;
   double slack_limit; // maximum absolute magnitude of acceleration slack variable values
   Eigen::VectorXd umin,umax;
   void* map_ptr;
@@ -177,7 +177,7 @@ struct AtlasParams {
 class NewQPControllerData {
 public:
   GRBenv *env;
-  RigidBodyManipulator* r;
+  RigidBodyTree * r;
   std::map<std::string,AtlasParams> param_sets;
   RobotPropertyCache rpc;
   void* map_ptr;
@@ -210,8 +210,8 @@ public:
   // and which must persist to the next iteration
   QPControllerState state;
 
-  NewQPControllerData(RigidBodyManipulator* r) :
-      r(r), cache(r->bodies, 0)
+  NewQPControllerData(RigidBodyTree * r) :
+      r(r), cache(r->bodies)
   {
     // empty
   }

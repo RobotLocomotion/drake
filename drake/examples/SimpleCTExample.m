@@ -11,7 +11,7 @@ classdef SimpleCTExample < DrakeSystem
          true);  % because the dynamics and output do not depend on t
     end
     function xdot = dynamics(obj,t,x,u)
-      xdot = -x+x^3;
+      xdot = -x+x.^3;
     end
     function y=output(obj,t,x,u)
       y=x;

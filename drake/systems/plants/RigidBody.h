@@ -59,7 +59,7 @@ public:
 public:
   std::string linkname;
   int robotnum; // uses 0-index. starts from 0
-// note: it's very ugly, but parent,dofnum,and pitch also exist currently (independently) at the rigidbodymanipulator level to represent the featherstone structure.  this version is for the kinematics.
+// note: it's very ugly, but parent,dofnum,and pitch also exist currently (independently) at the RigidBodyTree level to represent the featherstone structure.  this version is for the kinematics.
   std::shared_ptr<RigidBody> parent;
   int body_index;
   int position_num_start;

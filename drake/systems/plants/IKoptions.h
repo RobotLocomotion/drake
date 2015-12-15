@@ -1,6 +1,6 @@
 #ifndef __IKOPTIONS_H__
 #define __IKOPTIONS_H__
-//#include "RigidBodyManipulator.h"
+//#include "RigidBodyTree.h"
 #include <Eigen/Dense>
 
 #undef drakeIKoptions_DLLEXPORT
@@ -16,12 +16,12 @@
   #define drakeIKoptions_DLLEXPORT
 #endif
 
-class RigidBodyManipulator;
+class RigidBodyTree;
 
 class drakeIKoptions_DLLEXPORT IKoptions
 {
   private:
-    RigidBodyManipulator* robot;
+    RigidBodyTree * robot;
     int nq;
     Eigen::MatrixXd Q;
     Eigen::MatrixXd Qa;
@@ -42,12 +42,12 @@ class drakeIKoptions_DLLEXPORT IKoptions
     Eigen::VectorXd qdf_lb;
     Eigen::VectorXd qdf_ub;
   protected:
-    void setDefaultParams(RigidBodyManipulator* robot);
+    void setDefaultParams(RigidBodyTree * robot);
   public:
-    IKoptions(RigidBodyManipulator* robot);
+    IKoptions(RigidBodyTree * robot);
     IKoptions(const IKoptions &rhs);
     ~IKoptions(void);
-    RigidBodyManipulator* getRobotPtr() const;
+    RigidBodyTree * getRobotPtr() const;
     void setQ(const Eigen::MatrixXd &Q);
     void setQa(const Eigen::MatrixXd &Qa);
     void setQv(const Eigen::MatrixXd &Qv);
@@ -63,7 +63,7 @@ class drakeIKoptions_DLLEXPORT IKoptions
     void setqd0(const Eigen::VectorXd &lb, const Eigen::VectorXd &ub);
     void setqdf(const Eigen::VectorXd &lb, const Eigen::VectorXd &ub);
     void setAdditionaltSamples(const Eigen::RowVectorXd &t_samples);
-    void updateRobot(const RigidBodyManipulator* robot);
+    void updateRobot(const RigidBodyTree * robot);
     void getQ(Eigen::MatrixXd &Q) const;
     void getQa(Eigen::MatrixXd &Qa) const;
     void getQv(Eigen::MatrixXd &Qv) const;
@@ -79,7 +79,7 @@ class drakeIKoptions_DLLEXPORT IKoptions
     void getq0(Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     void getqd0(Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     void getqdf(Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
-    void updateRobot(RigidBodyManipulator* new_robot);
+    void updateRobot(RigidBodyTree * new_robot);
 };
 #endif
 
