@@ -425,6 +425,8 @@ classdef Trajectory < DrakeSystem
       error('parameters are not implemented for this type of trajetory'); 
     end
     
-    
+    function new_traj = append(obj, other)
+      error('Appending this type of trajectory is not (yet) supported'); 
+    end
   end
 end
