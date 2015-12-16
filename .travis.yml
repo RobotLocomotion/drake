@@ -1,5 +1,5 @@
 os:
-  - linux
+  # - linux
   - osx
 
 language: cpp
@@ -30,7 +30,7 @@ script:
 # The compiler and env:matrix options create an matrix of build configurations (gcc + Release, gcc + Debug, clang + Release, clang + Debug)
 
 compiler:
-  - gcc
+  # - gcc
   - clang
 
 python:
@@ -43,6 +43,6 @@ env:
     - BUILD_TYPE=Release
     # - BUILD_TYPE=Debug
 
-matrix:
-  allow_failures:
-    - compiler: gcc
+# matrix:
+#   allow_failures:
+#     - compiler: gcc
