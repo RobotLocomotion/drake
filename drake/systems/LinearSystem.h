@@ -2,8 +2,6 @@
 #define DRAKE_LINEARSYSTEM_H
 
 #include "System.h"
-#include <drakeSystem_export.h>
-// TODO: exports
 
 namespace Drake {
 
