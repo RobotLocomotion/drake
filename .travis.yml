@@ -16,6 +16,8 @@ branches:
 
 before_install:
   - source travis_pre_build.sh
+
+install:
   - make
 
 script:
