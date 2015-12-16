@@ -15,13 +15,7 @@ branches:
     - stable
 
 before_install:
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y && sudo apt-get update -qq && sudo apt-get install gcc-4.8 g++-4.8; fi
-  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
-  - if ["$TRAVIS_OS_NAME" = "osx" ]; then export CMAKE_FLAGS="-DWITH_SPOTLESS:BOOL=OFF -DWITH_LIBBOT:BOOL=ON -DWITH_DIRECTOR:BOOL=OFF -DWITH_IRIS:BOOL=ON -DWITH_OCTOMAP:BOOL=ON -DWITH_MOSEK:BOOL=ON -DWITH_AVL:BOOL=ON -DWITH_XFOIL:BOOL=ON"; fi
-  - mkdir build
-  - make download-all > download.log || (cat download.log && exit 1)
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo ./install_prereqs.sh ubuntu; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update > brew_update.log && ./install_prereqs.sh homebrew; fi
+  - source travis_pre_build.sh
   - make
 
 script:
