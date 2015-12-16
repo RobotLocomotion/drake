@@ -1,5 +1,5 @@
 os:
-  # - linux
+  - linux
   - osx
 
 language: cpp
@@ -25,19 +25,17 @@ script:
 # The compiler and env:matrix options create an matrix of build configurations (gcc + Release, gcc + Debug, clang + Release, clang + Debug)
 
 compiler:
-  # - gcc
+  - gcc
   - clang
 
 python:
   - '2.7'
 
 env:
-  global:
-    - CMAKE_FLAGS="-DWITH_SPOTLESS:BOOL=OFF -DWITH_LIBBOT:BOOL=ON -DWITH_DIRECTOR:BOOL=ON -DWITH_IRIS:BOOL=ON -DWITH_OCTOMAP:BOOL=ON -DWITH_MOSEK:BOOL=ON -DWITH_AVL:BOOL=ON -DWITH_XFOIL:BOOL=ON"
   matrix:
     - BUILD_TYPE=Release
     # - BUILD_TYPE=Debug
 
-# matrix:
-#   allow_failures:
-#     - compiler: gcc
+matrix:
+  allow_failures:
+    - compiler: gcc
