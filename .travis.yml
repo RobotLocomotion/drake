@@ -25,7 +25,7 @@ before_install:
   -   brew install g++
   -   brew install cmake
   - else
-  -   echo "WARNING: TRAVIS_OS_NAME not recognized: $TRAVIS_OS_NAME"
+  -   echo "WARNING: TRAVIS_OS_NAME $TRAVIS_OS_NAME not recognized "
   - fi
   - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
   - mkdir build
