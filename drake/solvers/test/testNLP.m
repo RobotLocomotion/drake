@@ -113,7 +113,8 @@ if(x(2)+x(3)>10+1e-5)
 end
 
 display('test addDecisionVar');
-nlp1 = nlp1.addDecisionVariable(2);
+[nlp1,new_var_idx] = nlp1.addDecisionVariable(2);
+valuecheck(new_var_idx,(nlp1.num_vars-1:nlp1.num_vars)');
 [x,F,info] = testAllSolvers(nlp1,[x0;randn(2,1)]);
 
 display('test replaceCost');
