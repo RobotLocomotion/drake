@@ -20,7 +20,7 @@ before_install:
   - mkdir build
   - make download-all
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo ./install_prereqs.sh ubuntu; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then ./install_prereqs.sh homebrew > homebrew.log; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew install openblas && ./install_prereqs.sh homebrew > homebrew.log || cat homebrew.log; fi
   - make
 
 script:
