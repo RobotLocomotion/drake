@@ -128,7 +128,7 @@ public:
   template <typename Derived>
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> transformVelocityMappingToPositionDotMapping(const Eigen::MatrixBase<Derived>& mat) const
   {
-    Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> ret(mat.rows(), q.size());
+    Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> ret(mat.rows(), getNumPositions());
     int ret_col_start = 0;
     int mat_col_start = 0;
     for (auto it = elements.begin(); it != elements.end(); ++it) {
@@ -147,7 +147,7 @@ public:
   template <typename Derived>
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> transformPositionDotMappingToVelocityMapping(const Eigen::MatrixBase<Derived>& mat) const
   {
-    Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> ret(mat.rows(), v.size());
+    Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> ret(mat.rows(), getNumVelocities()));
     int ret_col_start = 0;
     int mat_col_start = 0;
     for (auto it = elements.begin(); it != elements.end(); ++it) {
