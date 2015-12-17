@@ -36,8 +36,15 @@ python:
 env:
   matrix:
     - BUILD_TYPE=Release
-    # - BUILD_TYPE=Debug
+    - BUILD_TYPE=Debug
 
 matrix:
+  exclude:
+    - os: osx
+      env: BUILD_TYPE=Debug
+    - os: linux
+      compiler: gcc
+      env: BUILD_TYPE=Debug
   # allow_failures:
   #   - compiler: gcc
+
