@@ -14,8 +14,11 @@
 namespace Drake {
 
   template <template <typename> class InputVector>
-  class BotVisualizer : public System<BotVisualizer<InputVector>,UnusedVector,InputVector,UnusedVector,true,true> {
+  class BotVisualizer {
   public:
+    template <typename ScalarType> using StateVector = UnusedVector<ScalarType>;
+    template <typename ScalarType> using OutputVector = UnusedVector<ScalarType>;
+
     BotVisualizer(const std::shared_ptr<lcm::LCM> &_lcm, const std::string &urdf_filename,
                   const DrakeJoint::FloatingBaseType floating_base_type) :
             manip(urdf_filename, floating_base_type),

@@ -35,15 +35,20 @@ namespace Drake {
     }
   }
 
-  template <typename Derived, template<typename> class StateVector, template<typename> class InputVector, template<typename> class OutputVector, bool isTimeVarying, bool isDirectFeedthrough>
-  void simulate(const System<Derived,StateVector,InputVector,OutputVector,isTimeVarying,isDirectFeedthrough>& sys, double t0, double tf, const Eigen::VectorXd& x0, const SimulationOptions& options) {
+  template <typename System>
+  void simulate(const System& sys, double t0, double tf, const typename System::template StateVector<double>& x0, const SimulationOptions& options) {
+    const static int num_states = SystemTraits<System>::num_states;
+    const static int num_inputs = SystemTraits<System>::num_inputs;
+    const static int num_outputs = SystemTraits<System>::num_outputs;
+
+
     double t = t0, dt;
 //    std::cout << "x0 = " << x0.transpose() << std::endl;
     TimePoint start = TimeClock::now();
-    Eigen::Matrix<double,StateVector<double>::RowsAtCompileTime,1> x = x0;
-    Eigen::Matrix<double,StateVector<double>::RowsAtCompileTime,1> xdot;
-    Eigen::Matrix<double,InputVector<double>::RowsAtCompileTime,1> u(sys.num_states); u.setConstant(0);
-    Eigen::Matrix<double,OutputVector<double>::RowsAtCompileTime,1> y;
+    Eigen::Matrix<double,num_states,1> x = toEigen(x0);
+    Eigen::Matrix<double,num_states,1> xdot;
+    Eigen::Matrix<double,num_inputs,1> u; u.setConstant(0);
+    Eigen::Matrix<double,num_outputs,1> y;
     while (t<tf) {
       handle_realtime_factor(start, t, options.realtime_factor);
 
@@ -57,7 +62,7 @@ namespace Drake {
   }
 
   template <typename System>
-  void simulate(const System& sys, double t0, double tf, const Eigen::VectorXd& x0)  {
+  void simulate(const System& sys, double t0, double tf, const typename System::template StateVectorType<double>& x0)  {
     simulate(sys,t0,tf,x0,default_simulation_options);
   }
 

@@ -17,11 +17,11 @@ int main(int argc, char* argv[])
   assert(state.thetadot == 0.4);
 
   state.theta = 0.5;
-  x = state;
+  x = toEigen(state);
   assert(x(0) = 0.5);
 
   {
-    Eigen::VectorXd y = static_cast<Eigen::Vector2d>(state);
+    Eigen::VectorXd y = toEigen(state);
     assert((x - y).isZero());
   }
 

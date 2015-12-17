@@ -16,10 +16,15 @@ namespace Drake {
 //  - Defines a static constant (or enum) RowsAtCompileTime (see Pendulum.h for an example).  Can be Eigen::DYNAMIC
 //  - implements size_t size(), which equals RowsAtCompileTime except when DYNAMIC
 //  - implements the copy constructor and the assignment operator= from const Eigen::MatrixBase<Derived>& (e.g. using "copy and swap")
-//  - implements the typecast method to convert back to an Eigen Vector (e.g.  template <int Rows> operator Eigen::Matrix<ScalarType,Rows,1>())
-//  - implements std::ostream& operator<<(std::ostream& os, const Vector& x)
+//  - overload the (non-class) method
+//        template <typename ScalarType> Eigen::Matrix<ScalarType,YourVectorType::RowsAtCompileTime,1> toEigen(const YourVectorType& vec);
+//    with the appropriate Rows filled in.
+// Optional:
+//  - overload the (non-class) method
+//       template <> const std::string& getCoordinateName<YourVectorType>(const Vector& vec, int index)
 // (The methods/defs below make it possible (and hopefully easy) to simply use Eigen::Matrix types to model this concept)
 
+template <typename ScalarType, int Rows> Eigen::Matrix<ScalarType,Rows,1> toEigen(const Eigen::Matrix<ScalarType,Rows,1>& vec) { return vec; }
 
   // In order to use Eigen types to model the Drake::Vector concept, they must accept only a single template parameter (ScalarType)
   // The following structures provide a means for doing it. (e.g. via Drake::VectorBuilder<Rows>::VecType )
@@ -52,12 +57,6 @@ namespace Drake {
     const Vector1<ScalarType>& first(void) const { return vec1; }
     const Vector2<ScalarType>& second(void) const { return vec2; }
 
-    operator Eigen::Matrix<ScalarType,vec1_rows + vec2_rows,1> () const {
-      Eigen::Matrix<ScalarType,vec1_rows + vec2_rows,1> x;
-      x << static_cast<Eigen::Matrix<ScalarType,vec1_rows,1> >(vec1), static_cast<Eigen::Matrix<ScalarType,vec2_rows,1> >(vec2);
-      return x;
-    }
-
     friend std::ostream& operator<<(std::ostream& os, const CombinedVector& x)
     {
       os << x.vec1 << std::endl;
@@ -79,6 +78,13 @@ namespace Drake {
   struct CombinedVectorBuilder {
     template <typename ScalarType> using VecType = CombinedVector<ScalarType,Vector1,Vector2>;
   };
+
+  template <typename ScalarType, typename Vector1, typename Vector2>
+  Eigen::Matrix<ScalarType,Vector1::RowsAtCompileTime + Vector2::RowsAtCompileTime,1> toEigen(const CombinedVector<ScalarType,Vector1,Vector2>& vec) {
+    Eigen::Matrix<ScalarType,Vector1::RowsAtCompileTime + Vector2::RowsAtCompileTime,1> x;
+    x << toEigen(vec.vec1), toEigen(vec.vec2);
+    return x;
+  }
 
   template <template <typename> class Vector1>
   struct CombinedVectorBuilder<Vector1,UnusedVector> {

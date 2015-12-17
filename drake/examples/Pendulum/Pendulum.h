@@ -4,7 +4,7 @@
 #include <iostream>
 #include <cmath>
 #include "System.h"
-#include "LQR.h"
+//#include "LQR.h"
 
 using namespace std;
 
@@ -20,12 +20,6 @@ public:
     theta = x(0);
     thetadot = x(1);
     return *this;
-  }
-
-  operator Eigen::Matrix<ScalarType,2,1> () const {
-    Eigen::Matrix<ScalarType,2,1> x;
-    x << theta, thetadot;
-    return x;
   }
 
   friend std::ostream& operator<<(std::ostream& os, const PendulumState& x)
@@ -44,6 +38,14 @@ public:
   ScalarType thetadot;
 };
 
+template <typename ScalarType>
+Eigen::Matrix<ScalarType,2,1> toEigen(const PendulumState<ScalarType>& vec) {
+  Eigen::Matrix<ScalarType,2,1> x;
+  x << vec.theta, vec.thetadot;
+  return x;
+};
+
+
 
 template <typename ScalarType = double>
 class PendulumInput {
@@ -55,12 +57,6 @@ public:
   PendulumInput& operator=(const Eigen::MatrixBase<Derived>& x) {
     tau = x(0);
     return *this;
-  }
-
-  operator Eigen::Matrix<ScalarType,1,1> () const {
-    Eigen::Matrix<ScalarType,1,1> x;
-    x << tau;
-    return x;
   }
 
   friend std::ostream& operator<<(std::ostream& os, const PendulumInput& x)
@@ -77,8 +73,21 @@ public:
   ScalarType tau;
 };
 
-class Pendulum : public Drake::System<Pendulum,PendulumState,PendulumInput,PendulumState,false,false> {
+template <typename ScalarType>
+Eigen::Matrix<ScalarType,1,1> toEigen(const PendulumInput<ScalarType>& vec) {
+  Eigen::Matrix<ScalarType,1,1> x;
+  x << vec.tau;
+  return x;
+};
+
+
+
+class Pendulum {
 public:
+  template <typename ScalarType> using InputVector = PendulumInput<ScalarType>;
+  template <typename ScalarType> using StateVector = PendulumState<ScalarType>;
+  template <typename ScalarType> using OutputVector = PendulumState<ScalarType>;
+
   Pendulum() :
           m(1.0), // kg
           l(.5),  // m
@@ -108,7 +117,7 @@ public:
 };
 
 
-class PendulumEnergyShapingController : public Drake::System<PendulumEnergyShapingController,Drake::UnusedVector,PendulumState,PendulumInput,false,true> {
+class PendulumEnergyShapingController {
 public:
   PendulumEnergyShapingController(const Pendulum& pendulum)
           : m(pendulum.m),
