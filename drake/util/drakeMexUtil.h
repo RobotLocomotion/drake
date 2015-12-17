@@ -4,7 +4,10 @@
 #include "mex.h"
 #include <vector>
 #include <Eigen/Core>
+#include <Eigen/Sparse>
 #include "TrigPoly.h"
+#include "unsupported/Eigen/AutoDiff"
+
 /*
  * NOTE: include AutoDiff AFTER TrigPoly.h. 
  * TrigPoly.h includes LLDT.h via Eigenvalues, PolynomialSolver, and our Polynomial.h
@@ -13,6 +16,7 @@
  * See http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1057
  */
 #include <unsupported/Eigen/AutoDiff>
+#include <Eigen/src/SparseCore/SparseMatrix.h>
 #include "drakeGradientUtil.h"
 
 #undef DLLEXPORT
@@ -43,7 +47,7 @@ DLLEXPORT mxArray* mxGetFieldOrPropertySafe(const mxArray* array, size_t index, 
 // Mex pointers shared through matlab
 // Note: the same mex function which calls this method will be called with the syntax mexFunction(drake_mex_ptr) as the destructor
 
-DLLEXPORT mxArray* createDrakeMexPointer(void* ptr, const std::string& name="", int num_additional_inputs=0, mxArray *delete_fcn_additional_inputs[] = NULL, const std::string& subclass_name="", const std::string& mex_function_name_prefix="");  // increments lock count
+DLLEXPORT mxArray* createDrakeMexPointer(void* ptr, const std::string& name="", int type_id = -1, int num_additional_inputs=0, mxArray *delete_fcn_additional_inputs[] = NULL, const std::string& subclass_name="", const std::string& mex_function_name_prefix="");  // increments lock count
 DLLEXPORT void* getDrakeMexPointer(const mxArray* mx);
 
 template <typename Derived> inline void destroyDrakeMexPointer(const mxArray* mx)
@@ -120,6 +124,8 @@ Eigen::Map<const Eigen::Matrix<double, Rows, Cols>> matlabToEigenMap(const mxArr
   double* data = rows * cols == 0 ? nullptr : mxGetPrSafe(mex);
   return Map<const Matrix<double, Rows, Cols>>(data, rows, cols);
 }
+
+DLLEXPORT Eigen::SparseMatrix<double> matlabToEigenSparse(const mxArray* mex);
 
 DLLEXPORT std::string mxGetStdString(const mxArray* array);
 DLLEXPORT std::vector<std::string> mxGetVectorOfStdStrings(const mxArray* array);
@@ -245,6 +251,9 @@ mxArray* eigenToTrigPoly(const Eigen::Matrix<TrigPolyd,_Rows,_Cols> & trigpoly_m
 
 template<int Rows, int Cols>
 Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>, Rows, Cols> taylorVarToEigen(const mxArray* taylor_var) {
+  if (mxIsEmpty(taylor_var)) {
+    return Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>, Rows, Cols>(mxGetM(taylor_var), mxGetN(taylor_var));
+  }
   auto f = mxGetPropertySafe(taylor_var, "f");
   auto df = mxGetPropertySafe(taylor_var, "df");
   if (mxGetNumberOfElements(df) > 1)
@@ -270,11 +279,10 @@ mxArray* eigenToTaylorVar(const Eigen::MatrixBase<Derived>& m, int num_variables
   return plhs[0];
 }
 
-template<int RowsAtCompileTime, int ColsAtCompileTime>
-mxArray *eigenToMatlabGeneral(
-        const Eigen::MatrixBase<Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::VectorXd>, RowsAtCompileTime, ColsAtCompileTime>>& mat)
+template<int RowsAtCompileTime, int ColsAtCompileTime, typename DerType>
+mxArray *eigenToMatlabGeneral(const Eigen::MatrixBase<Eigen::Matrix<Eigen::AutoDiffScalar<DerType>, RowsAtCompileTime, ColsAtCompileTime>>& mat)
 {
-return eigenToTaylorVar(mat);
+  return eigenToTaylorVar(mat);
 };
 
 template<int RowsAtCompileTime, int ColsAtCompileTime>

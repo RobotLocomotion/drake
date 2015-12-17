@@ -40,6 +40,7 @@ endif()
 
 if (snopt_c_FOUND)
   add_ik_cpp(testIK)
+  add_ik_cpp(testIKMoreConstraints)
   add_ik_cpp(testIKpointwise)
   add_ik_cpp(testIKtraj)
 endif()
@@ -49,8 +50,8 @@ include_directories( .. )
 target_link_libraries(debugManipulatorDynamics drakeRBM)
 
 include_directories(${PROJECT_SOURCE_DIR}/util/test)
-add_executable(benchmarkAutoDiffScalar benchmarkAutoDiffScalar.cpp)
-target_link_libraries(benchmarkAutoDiffScalar drakeRBM)
+add_executable(benchmarkRigidBodyTree benchmarkRigidBodyTree.cpp)
+target_link_libraries(benchmarkRigidBodyTree drakeRBM)
 
 if (MATLAB_FOUND)
   macro(add_ikoptions_mex)

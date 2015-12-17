@@ -11,35 +11,32 @@ end
 
 %random initial pose
 q = getRandomConfiguration(robot);
-kinsol = robot.doKinematics(q, [], struct('compute_gradients', true));
 
 %get collision data
-[~,normal,xA,xB,idxA,idxB] = robot.collisionDetect(kinsol);
+kinsol_no_gradients = robot.doKinematics(q);
+[~,normal,xA,xB,idxA,idxB] = robot.collisionDetect(kinsol_no_gradients);
 idxA = idxA';
 idxB = idxB';
 
 d = robot.surfaceTangents(normal);
 
 %get the results from the mexed version
-[n_mex, D_mex, dn_mex, dD_mex] =  contactConstraintsmex(robot.mex_model_ptr, kinsol.mex_ptr, normal, int32(idxA), int32(idxB), xA, xB, d);
+kinsol = robot.doKinematics(q, [], struct('compute_gradients', true));
+[n_mex, D_mex] =  contactConstraintsmex(robot.mex_model_ptr, kinsol.mex_ptr, normal, int32(idxA - 1), int32(idxB - 1), xA, xB, d);
+[n_mex, dn_mex] = eval(n_mex);
 
 %get the results from the matlab version
 [n, D, dn, dD] = robot.contactConstraintDerivatives(normal, kinsol, idxA, idxB, xA, xB, d);
 
 %compare n
 valuecheck(n_mex, n);
+valuecheck(dn_mex, dn);
 
 %compare D
 for i = 1:size(D,2)
-  valuecheck(D_mex{i}, D{i});
-end
-
-%compare dn
-valuecheck(dn_mex, dn);
-
-%compare dD
-for i = 1:size(dD,2)
-  valuecheck(dD_mex{i}, dD{i});
+  [D_mexi, dD_mexi] = eval(D_mex{i});
+  valuecheck(D_mexi, D{i});
+  valuecheck(dD_mexi, dD{i});
 end
 
 end

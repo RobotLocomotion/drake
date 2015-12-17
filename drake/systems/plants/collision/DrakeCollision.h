@@ -13,22 +13,21 @@
 #include "PointPair.h"
 #include "Element.h"
 #include "Model.h"
-
-#include "drakeCollisionMacros.h"
+#include "drakeCollision_export.h"
 
 static const int MAX_NUM_COLLISION_FILTER_GROUPS = 128;
 
 namespace DrakeCollision
 {
 
-  DLLEXPORT_drakeCollision std::unique_ptr<Model> newModel();
+  DRAKECOLLISION_EXPORT std::unique_ptr<Model> newModel();
 
   typedef std::bitset<MAX_NUM_COLLISION_FILTER_GROUPS> bitmask;
 
   // Constants
-  extern const DLLEXPORT_drakeCollision bitmask ALL_MASK;
-  extern const DLLEXPORT_drakeCollision bitmask NONE_MASK;
-  extern const DLLEXPORT_drakeCollision bitmask DEFAULT_GROUP;
+  extern const DRAKECOLLISION_EXPORT bitmask ALL_MASK;
+  extern const DRAKECOLLISION_EXPORT bitmask NONE_MASK;
+  extern const DRAKECOLLISION_EXPORT bitmask DEFAULT_GROUP;
 
 }
 #endif

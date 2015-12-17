@@ -2,7 +2,7 @@
 #include <iostream>
 #include <cmath>
 #include "drakeMexUtil.h"
-#include "RigidBodyManipulator.h"
+#include "rigidBodyTreeMexConversions.h"
 #include <stdexcept>
 #include <RevoluteJoint.h>
 #include <PrismaticJoint.h>
@@ -48,12 +48,12 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   }
 
   if (isa(prhs[0],"DrakeMexPointer")) {  // then it's calling the destructor
-    destroyDrakeMexPointer<RigidBodyManipulator*>(prhs[0]);
+    destroyDrakeMexPointer<RigidBodyTree *>(prhs[0]);
     return;
   }
 
   const mxArray* pRBM = prhs[0];
-  RigidBodyManipulator *model=new RigidBodyManipulator();
+  RigidBodyTree *model=new RigidBodyTree();
   model->bodies.clear();  // a little gross:  the default constructor makes a body "world".  zap it because we will construct one again below
 
 //  model->robot_name = get_strings(mxGetPropertySafe(pRBM,0,"name"));
@@ -240,7 +240,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         //END_DEBUG
         model->addCollisionElement(element, b, group_name);
       }
-      // NOTE: the following should not be necessary since the same thing is being done in RigidBodyManipulator::compile, which is called below.
+      // NOTE: the following should not be necessary since the same thing is being done in RigidBodyTree::compile, which is called below.
 //      if (!model->bodies[i]->hasParent()) {
 //        model->updateCollisionElements(model->bodies[i], cache);  // update static objects only once - right here on load
 //      }
@@ -424,7 +424,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   model->compile();
 
   //mexPrintf("constructModelmex: Creating DrakeMexPointer\n");
-  plhs[0] = createDrakeMexPointer((void*)model,"RigidBodyManipulator");
+  plhs[0] = createDrakeMexPointer((void*)model,"RigidBodyTree", DrakeMexPointerTypeId<RigidBodyTree>::value);
   //DEBUG
   //mexPrintf("constructModelmex: END\n");
   //END_DEBUG

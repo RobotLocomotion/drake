@@ -1,7 +1,7 @@
 #include "mex.h"
 #include "RigidBodyConstraint.h"
 #include "drakeMexUtil.h"
-#include "../RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 #include <cstring>
 /*
  * [lower_bound,upper_bound] = testPostureConstraintmex(postureConstraint_ptr,t)

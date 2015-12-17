@@ -3,7 +3,7 @@
 #include "drakeMexUtil.h"
 #include "math.h"
 #include <vector>
-#include "drake/zmpUtil.h"
+#include "zmpUtil.h"
 #include <stdexcept>
 
 using namespace Eigen;

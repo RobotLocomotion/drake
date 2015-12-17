@@ -37,6 +37,8 @@ addpath(fullfile(root,'systems','plants','constraint'));
 addpath(fullfile(root,'systems','controllers'));
 addpath(fullfile(root,'systems','observers'));
 addpath(fullfile(root,'systems','trajectories'));
+addpath(fullfile(root,'systems','trajectories','TrajectoryLibraries'));
+addpath(fullfile(root,'systems','trajectories','FunnelLibraries'));
 addpath(fullfile(root,'systems','frames'));
 addpath(fullfile(root,'systems','visualizers'));
 addpath(fullfile(root,'systems','robotInterfaces'));
@@ -56,6 +58,7 @@ addpath(fullfile(root,'thirdParty','polytopes'));
 addpath(fullfile(root,'solvers','BMI'));
 addpath(fullfile(root,'solvers','BMI','util'));
 addpath(fullfile(root,'solvers','BMI','kinematics'));
+addpath(fullfile(root,'solvers','qpSpline'));
 
 
 % OSX platform-specific

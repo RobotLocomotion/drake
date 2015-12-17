@@ -13,11 +13,9 @@ pods_install_pkg_config_file(drakeSplineGeneration
 if (MATLAB_FOUND)
   add_mex(nWaypointCubicSplinemex nWaypointCubicSplinemex.cpp)
   target_link_libraries(nWaypointCubicSplinemex drakeSplineGeneration drakeMexUtil)
-  install(TARGETS nWaypointCubicSplinemex DESTINATION matlab)
 
   add_mex(nWaypointCubicSplineFreeKnotTimesmex nWaypointCubicSplineFreeKnotTimesmex.cpp)
   target_link_libraries(nWaypointCubicSplineFreeKnotTimesmex drakeSplineGeneration drakeMexUtil)
-  install(TARGETS nWaypointCubicSplineFreeKnotTimesmex DESTINATION matlab)
 endif()
 
 add_subdirectory(test)

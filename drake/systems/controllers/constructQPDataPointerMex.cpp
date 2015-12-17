@@ -25,7 +25,7 @@ void parseIntegratorParams(const mxArray *params_obj, IntegratorParams &params) 
   return;
 }
 
-void parseJointSoftLimits(const mxArray *params_obj, RigidBodyManipulator *r, JointSoftLimitParams *params) {
+void parseJointSoftLimits(const mxArray *params_obj, RigidBodyTree *r, JointSoftLimitParams *params) {
   int nq = r->num_positions;
 
   if (mxGetNumberOfElements(params_obj) != nq)
@@ -53,7 +53,7 @@ void parseJointSoftLimits(const mxArray *params_obj, RigidBodyManipulator *r, Jo
   return;
 }
 
-void parseWholeBodyParams(const mxArray *params_obj, RigidBodyManipulator *r, WholeBodyParams *params) {
+void parseWholeBodyParams(const mxArray *params_obj, RigidBodyTree *r, WholeBodyParams *params) {
   const mxArray *int_obj = myGetField(params_obj, "integrator");
   const mxArray *qddbound_obj = myGetField(params_obj, "qdd_bounds");
   int nq = r->num_positions;
@@ -135,7 +135,7 @@ void parseVRefIntegratorParams(const mxArray *params_obj, VRefIntegratorParams *
   return;
 }
 
-void parseHardwareGains(const mxArray *params_obj, RigidBodyManipulator *r, AtlasHardwareGains *params) {
+void parseHardwareGains(const mxArray *params_obj, RigidBodyTree *r, AtlasHardwareGains *params) {
   const mxArray *pobj;
   int nu = r->num_velocities - 6;
 
@@ -181,7 +181,7 @@ void parseHardwareGains(const mxArray *params_obj, RigidBodyManipulator *r, Atla
   return;
 }
 
-void parseHardwareParams(const mxArray *params_obj, RigidBodyManipulator *r, AtlasHardwareParams *params) {
+void parseHardwareParams(const mxArray *params_obj, RigidBodyTree *r, AtlasHardwareParams *params) {
   const mxArray *pobj;
 
   parseHardwareGains(myGetField(params_obj, "gains"), r, &(params->gains));
@@ -205,7 +205,7 @@ void parseHardwareParams(const mxArray *params_obj, RigidBodyManipulator *r, Atl
   return;
 }
 
-void parseAtlasParams(const mxArray *params_obj, RigidBodyManipulator *r, AtlasParams *params) {
+void parseAtlasParams(const mxArray *params_obj, RigidBodyTree *r, AtlasParams *params) {
   const mxArray *pobj;
 
   pobj = myGetProperty(params_obj, "W_kdot");
@@ -264,7 +264,7 @@ void parseAtlasParams(const mxArray *params_obj, RigidBodyManipulator *r, AtlasP
   return;
 }
 
-void parseAtlasParamSets(const mxArray *pobj, RigidBodyManipulator *r, map<string,AtlasParams> *param_sets) {
+void parseAtlasParamSets(const mxArray *pobj, RigidBodyTree *r, map<string,AtlasParams> *param_sets) {
   int num_fields = mxGetNumberOfFields(pobj);
   if (num_fields == 0) mexErrMsgTxt("could not get any field names from the param_sets object\n"); 
 
@@ -305,7 +305,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   int narg = 0;
   
   // robot_obj
-  NewQPControllerData* pdata = new NewQPControllerData(static_cast<RigidBodyManipulator*>(getDrakeMexPointer(prhs[narg])));
+  NewQPControllerData* pdata = new NewQPControllerData(static_cast<RigidBodyTree *>(getDrakeMexPointer(prhs[narg])));
   narg++;
 
   // param_sets

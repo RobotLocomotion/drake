@@ -225,7 +225,7 @@ function [L1f,Lu1f,Lu2f,Lpf,Lupf,Lmf,Lumf] = findLwithSats(V,rho,x,u,f,f_umax,f_
    % keyboard;
     % Solve SOS program  
     pars = struct();
-    pars.fid = 1;
+    pars.fid = 0;
     [prog,dummy] = new(prog,1,'pos');
     % keyboard;
     [prog,info] = sedumi(prog,dummy,1,pars,0) 
@@ -278,7 +278,7 @@ function [L1f,uf] = findLU(V,rho,x,f,u,options)
             
     % Solve SOS program  
     pars = struct();
-    pars.fid = 1;
+    pars.fid = 0;
     [prog,dummy] = new(prog,1,'free');
     [prog,info] = sedumi(prog,dummy,1,pars,0) 
     
@@ -324,7 +324,7 @@ function [uf,rho] = findURhowithSats(V,x,u,f,f_umax,f_umin,umax,umin,L1,Lu1,Lu2,
     prog.sos = -Vdotm + Lm*(V-rho) + Lum*(uf - umin);
              
     % Solve SOS program
-    pars.fid = 1;
+    pars.fid = 0;
     [prog,info] = sedumi(prog,-rho,1,pars,1)   
     
     if info.numerr == 2 || info.pinf == 1 || info.dinf == 1
@@ -386,7 +386,7 @@ function [uf,rho] = findURho(V,x,u,f,L1,options)
     prog.sos = -Vdot + L1*(V-rho);
              
     % Solve SOS program
-    pars.fid = 1;
+    pars.fid = 0;
     [prog,info] = sedumi(prog,-rho,1,pars,1)   
     
     if info.numerr == 2 || info.pinf == 1 || info.dinf == 1
@@ -487,7 +487,7 @@ function [V,rho,Phi] = findVRhowithSats(x,u,uf,f,f_umax,f_umin,umax,umin,L1,Lp,L
             
     % Solve SOS program  
     pars = struct();
-    pars.fid = 1;
+    pars.fid = 0;
     [prog,info] = sedumi(prog,-rho,1,pars,1) 
             
     disp('Backing off now...')
@@ -541,7 +541,7 @@ function [V,rho,Phi] = findVRho(x,u,uf,f,L1,S0,options)
             
     % Solve SOS program  
     pars = struct();
-    pars.fid = 1;
+    pars.fid = 0;
     [prog,info] = sedumi(prog,-rho,1,pars,1) 
         
     disp('Backing off now...')

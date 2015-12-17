@@ -61,7 +61,9 @@ function [x_in_world, J, dJ] = terrainContactPositions(obj, ...
   end
 
   if ~isstruct(kinsol)
-    kinsol = doKinematics(obj,kinsol,compute_second_derivative);
+    q = kinsol;
+    options.compute_gradients = nargout > 2;
+    kinsol = doKinematics(obj, q, [], options);
   end
 
   if numel(varargin) > 0 &&  isstruct(varargin{1})

@@ -249,21 +249,22 @@ Eigen::Matrix<typename Derived::Scalar, 4, 1> rotmat2quat(const Eigen::MatrixBas
   EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3, 3);
   using namespace std;
 
-  Eigen::Matrix<typename Derived::Scalar, 4, 3> A;
+  typedef typename Derived::Scalar Scalar;
+  Eigen::Matrix<Scalar, 4, 3> A;
   A.row(0) << 1.0, 1.0, 1.0;
   A.row(1) << 1.0, -1.0, -1.0;
   A.row(2) << -1.0, 1.0, -1.0;
   A.row(3) << -1.0, -1.0, 1.0;
-  Eigen::Matrix<typename Derived::Scalar, 4, 1> B = A * M.diagonal();
-  typename Eigen::Matrix<typename Derived::Scalar, 4, 1>::Index ind, max_col;
-  typename Derived::Scalar val = B.maxCoeff(&ind, &max_col);
+  Eigen::Matrix<Scalar, 4, 1> B = A * M.diagonal();
+  typename Eigen::Matrix<Scalar, 4, 1>::Index ind, max_col;
+  Scalar val = B.maxCoeff(&ind, &max_col);
 
-  typename Derived::Scalar w, x, y, z;
+  Scalar w, x, y, z;
   switch (ind) {
     case 0: {
       // val = trace(M)
       w = sqrt(1.0 + val) / 2.0;
-      typename Derived::Scalar w4 = w * 4.0;
+      Scalar w4 = w * 4.0;
       x = (M(2, 1) - M(1, 2)) / w4;
       y = (M(0, 2) - M(2, 0)) / w4;
       z = (M(1, 0) - M(0, 1)) / w4;
@@ -271,7 +272,7 @@ Eigen::Matrix<typename Derived::Scalar, 4, 1> rotmat2quat(const Eigen::MatrixBas
     }
     case 1: {
       // val = M(1,1) - M(2,2) - M(3,3)
-      double s = 2.0 * sqrt(1.0 + val);
+      Scalar s = 2.0 * sqrt(1.0 + val);
       w = (M(2, 1) - M(1, 2)) / s;
       x = 0.25 * s;
       y = (M(0, 1) + M(1, 0)) / s;
@@ -280,7 +281,7 @@ Eigen::Matrix<typename Derived::Scalar, 4, 1> rotmat2quat(const Eigen::MatrixBas
     }
     case 2: {
       //  % val = M(2,2) - M(1,1) - M(3,3)
-      double s = 2.0 * (sqrt(1.0 + val));
+      Scalar s = 2.0 * (sqrt(1.0 + val));
       w = (M(0, 2) - M(2, 0)) / s;
       x = (M(0, 1) + M(1, 0)) / s;
       y = 0.25 * s;
@@ -289,7 +290,7 @@ Eigen::Matrix<typename Derived::Scalar, 4, 1> rotmat2quat(const Eigen::MatrixBas
     }
     default: {
       // val = M(3,3) - M(2,2) - M(1,1)
-      double s = 2.0 * (sqrt(1.0 + val));
+      Scalar s = 2.0 * (sqrt(1.0 + val));
       w = (M(1, 0) - M(0, 1)) / s;
       x = (M(0, 2) + M(2, 0)) / s;
       y = (M(1, 2) + M(2, 1)) / s;
@@ -298,7 +299,7 @@ Eigen::Matrix<typename Derived::Scalar, 4, 1> rotmat2quat(const Eigen::MatrixBas
     }
   }
 
-  Eigen::Matrix<typename Derived::Scalar, 4, 1> q;
+  Eigen::Matrix<Scalar, 4, 1> q;
   q << w, x, y, z;
   return q;
 };
@@ -649,7 +650,8 @@ template<typename Derived>
 GradientVar<typename Derived::Scalar, Eigen::Dynamic, SPACE_DIMENSION> angularvel2RepresentationDotMatrix(
     int rotation_type, const Eigen::MatrixBase<Derived>& qrot, int gradient_order) {
   // note: gradients w.r.t. qrot
-  GradientVar<typename Derived::Scalar, Eigen::Dynamic, SPACE_DIMENSION> ret(qrot.rows(), SPACE_DIMENSION, qrot.rows(), gradient_order);
+  typedef typename Derived::Scalar Scalar;
+  GradientVar<Scalar, Eigen::Dynamic, SPACE_DIMENSION> ret(qrot.rows(), SPACE_DIMENSION, qrot.rows(), gradient_order);
   switch (rotation_type) {
     case 0:
       // done
@@ -659,10 +661,10 @@ GradientVar<typename Derived::Scalar, Eigen::Dynamic, SPACE_DIMENSION> angularve
         angularvel2rpydotMatrix(qrot, ret.value(), &ret.gradient().value(), &ret.gradient().gradient().value());
       }
       else if (gradient_order > 0) {
-        angularvel2rpydotMatrix(qrot, ret.value(), &ret.gradient().value(), (Eigen::MatrixXd*) nullptr);
+        angularvel2rpydotMatrix(qrot, ret.value(), &ret.gradient().value(), (Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>*) nullptr);
       }
       else {
-        angularvel2rpydotMatrix(qrot, ret.value(), (Eigen::MatrixXd*) nullptr, (Eigen::MatrixXd*) nullptr);
+        angularvel2rpydotMatrix(qrot, ret.value(), (Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>*) nullptr, (Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>*) nullptr);
       }
       break;
     }
@@ -674,7 +676,7 @@ GradientVar<typename Derived::Scalar, Eigen::Dynamic, SPACE_DIMENSION> angularve
         angularvel2quatdotMatrix(qrot, ret.value(), &ret.gradient().value());
       }
       else {
-        angularvel2quatdotMatrix(qrot, ret.value(), (Eigen::MatrixXd*) nullptr);
+        angularvel2quatdotMatrix(qrot, ret.value(), (Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>*) nullptr);
       }
       break;
     }
@@ -725,6 +727,28 @@ void quatdot2angularvelMatrix(const Eigen::MatrixBase<DerivedQ>& q,
   M << -qtilde(1), qtilde(0), -qtilde(3), qtilde(2), -qtilde(2), qtilde(3), qtilde(0), -qtilde(1), -qtilde(3), -qtilde(2), qtilde(1), qtilde(0);
   M *= 2.0;
 };
+
+template<typename DerivedRPY, typename DerivedRPYdot, typename DerivedOMEGA>
+void rpydot2angularvel(const Eigen::MatrixBase<DerivedRPY>& rpy,
+                       const Eigen::MatrixBase<DerivedRPYdot>& rpydot,
+                             Eigen::MatrixBase<DerivedOMEGA>& omega,
+                             typename Gradient<DerivedOMEGA, RPY_SIZE,1>::type* domega = nullptr)
+{
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedRPY>, RPY_SIZE);
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedRPYdot>, RPY_SIZE);
+  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedOMEGA>, RPY_SIZE, 1);
+
+  Eigen::Matrix<typename DerivedOMEGA::Scalar, 3, 3> E;
+  if (domega) {
+    Eigen::Matrix<typename DerivedOMEGA::Scalar, 9, 3> dE;
+    rpydot2angularvelMatrix(rpy, E, &dE);
+    (*domega) << matGradMult(dE, rpydot), E;
+  }
+  else {
+    rpydot2angularvelMatrix(rpy, E);
+  }
+  omega = E * rpydot;
+}
 
 template<typename Scalar>
  void cylindrical2cartesian(const Eigen::Matrix<Scalar,3,1> &m_cylinder_axis, const Eigen::Matrix<Scalar,3,1> &m_cylinder_x_dir, const Eigen::Matrix<Scalar,3,1> & cylinder_origin, const Eigen::Matrix<Scalar,6,1> &x_cylinder, const Eigen::Matrix<Scalar,6,1> &v_cylinder, Eigen::Matrix<Scalar,6,1> &x_cartesian, Eigen::Matrix<Scalar,6,1> &v_cartesian, Eigen::Matrix<Scalar,6,6> &J, Eigen::Matrix<Scalar,6,1> &Jdotv ) {
