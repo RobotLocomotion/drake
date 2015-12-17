@@ -54,8 +54,8 @@ namespace Drake {
 
 //      std::cout << "t=" << t << ", x = " << x.transpose() << std::endl;
       dt = (std::min)(options.initial_step_size,tf-t);
-      y = sys.template output<double>(t,x,u);
-      xdot = sys.template dynamics<double>(t,x,u);
+      y = toEigen(output<System,double>(sys,t,x,u));   // todo: can I get rid of the explicit template parameter specifications?
+      xdot = toEigen(dynamics<System,double>(sys,t,x,u));
       x += dt * xdot;
       t += dt;
     }

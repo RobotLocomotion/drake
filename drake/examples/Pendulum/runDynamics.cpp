@@ -26,5 +26,5 @@ int main(int argc, char* argv[]) {
   SimulationOptions options;
   options.realtime_factor=1.0;
 
-  simulate(*sys,0,10,toEigen(x0),options);
+  simulate(*sys,0,10,toEigen(x0),options); // todo: should not have to use toEigen here...
 }

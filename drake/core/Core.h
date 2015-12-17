@@ -69,22 +69,22 @@ template <typename ScalarType, int Rows> Eigen::Matrix<ScalarType,Rows,1> toEige
     };
     std::size_t size() { return vec1.size()+vec2.size(); }
 
-  private:
+//  private:
     Vector1<ScalarType> vec1;
     Vector2<ScalarType> vec2;
   };
+
+  template <typename ScalarType, template <typename> class Vector1, template <typename> class Vector2>
+  Eigen::Matrix<ScalarType,Vector1<ScalarType>::RowsAtCompileTime + Vector2<ScalarType>::RowsAtCompileTime,1> toEigen(const CombinedVector<ScalarType,Vector1,Vector2>& vec) {
+    Eigen::Matrix<ScalarType,Vector1<ScalarType>::RowsAtCompileTime + Vector2<ScalarType>::RowsAtCompileTime,1> x;
+    x << toEigen(vec.vec1), toEigen(vec.vec2);
+    return x;
+  }
 
   template <template <typename> class Vector1, template <typename> class Vector2>
   struct CombinedVectorBuilder {
     template <typename ScalarType> using VecType = CombinedVector<ScalarType,Vector1,Vector2>;
   };
-
-  template <typename ScalarType, typename Vector1, typename Vector2>
-  Eigen::Matrix<ScalarType,Vector1::RowsAtCompileTime + Vector2::RowsAtCompileTime,1> toEigen(const CombinedVector<ScalarType,Vector1,Vector2>& vec) {
-    Eigen::Matrix<ScalarType,Vector1::RowsAtCompileTime + Vector2::RowsAtCompileTime,1> x;
-    x << toEigen(vec.vec1), toEigen(vec.vec2);
-    return x;
-  }
 
   template <template <typename> class Vector1>
   struct CombinedVectorBuilder<Vector1,UnusedVector> {

@@ -35,11 +35,23 @@ namespace Drake {
     static_assert(num_outputs>=0,"still need to handle the variable-size case");
 
     // todo: assign these by looking at the implementations of update,dynamics, and output methods
-    // hasUpdate
-    // hasDynamics
-    // isTimeVarying
+    const static bool hasUpdate = false;
+    const static bool hasDynamics = true;
+    const static bool isTimeVarying = false;
     const static bool isDirectFeedthrough = false;
   };
+
+  // provide consistent access methods for dynamics and output
+
+  template <typename System, typename ScalarType>
+  typename System::template StateVector<ScalarType> dynamics(const System& sys, const ScalarType& t, const typename System::template StateVector<ScalarType>& x, const typename System::template InputVector<ScalarType>& u) {
+    return DynamicsDispatch<System, ScalarType, SystemTraits<System>::isTimeVarying, (SystemTraits<System>::num_states != 0), (SystemTraits<System>::num_inputs != 0)>::eval(sys,t,x,u);
+  }
+
+  template <typename System, typename ScalarType>
+  typename System::template OutputVector<ScalarType> output(const System& sys, const ScalarType& t, const typename System::template StateVector<ScalarType>& x, const typename System::template InputVector<ScalarType>& u) {
+    return OutputDispatch<System, ScalarType, SystemTraits<System>::isTimeVarying, (SystemTraits<System>::num_states != 0), ((SystemTraits<System>::num_inputs != 0) && SystemTraits<System>::isDirectFeedthrough)>::eval(sys, t, x, u);
+  }
 
 
   template <class System1, class System2>
@@ -116,7 +128,7 @@ namespace Drake {
   template <class System1, class System2>
   class CascadeSystem {
   public:
-    template <typename ScalarType> using StateVector = CombinedVector<ScalarType, System1::template StateVector , System2::template StateVector>;
+    template <typename ScalarType> using StateVector = typename CombinedVectorBuilder<System1::template StateVector , System2::template StateVector>::template VecType<ScalarType>;
     template <typename ScalarType> using StateVector1 = typename System1::template StateVector<ScalarType>;
     template <typename ScalarType> using StateVector2 = typename System2::template StateVector<ScalarType>;
     template <typename ScalarType> using InputVector = typename System1::template InputVector<ScalarType>;
@@ -134,16 +146,16 @@ namespace Drake {
     template <typename ScalarType>
     StateVector<ScalarType> dynamics(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {
 //      System1::OutputVectorType<ScalarType> y1;  // don't understand why this doesn't work (then could get rid of System1OutputVector)
-      System1OutputVector<ScalarType> y1 = sys1->output(t,x.first(),u);
-      StateVector<ScalarType> xdot(sys1->dynamics(t,x.first(),u),
-                                   sys2->dynamics(t,x.second(),y1));
+      System1OutputVector<ScalarType> y1 = output(*sys1,t,x.first(),u);
+      StateVector<ScalarType> xdot(dynamics(*sys1,t,x.first(),u),
+                                   dynamics(*sys2,t,x.second(),y1));
       return xdot;
     }
 
     template <typename ScalarType>
     OutputVector<ScalarType> output(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {
-      System1OutputVector<ScalarType> y1 = sys1->output(t,x.first(),u);
-      OutputVector<ScalarType> y2 = sys2->output(t,x.second(),y1);
+      System1OutputVector<ScalarType> y1 = output(*sys1,t,x.first(),u);
+      OutputVector<ScalarType> y2 = output(*sys2,t,x.second(),y1);
       return y2;
     }
 
