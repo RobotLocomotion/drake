@@ -132,10 +132,14 @@ classdef RigidBodyManipulator < Manipulator
   methods
     function [Vq, dVq] = qdotToV(obj, kinsol)
       if obj.mex_model_ptr ~= 0 && kinsol.mex_ptr ~= 0
-        VqInv = velocityToPositionDotMappingmex(kinsol.mex_ptr);
-        if ~isnumeric(VqInv)
-          typecheck(VqInv, 'TaylorVar');
-          [VqInv, dVqInv] = VqInv.eval();
+        Vq = velocityToPositionDotMappingmex(kinsol.mex_ptr);
+        if ~isnumeric(Vq)
+          typecheck(Vq, 'TaylorVar');
+          if nargout == 1
+            Vq = Vq.eval();
+          else
+            [Vq, dVq] = Vq.eval();
+          end
           return
         else
           if nargout == 1
@@ -176,7 +180,11 @@ classdef RigidBodyManipulator < Manipulator
         VqInv = positionDotToVelocityMappingmex(kinsol.mex_ptr);
         if ~isnumeric(VqInv)
           typecheck(VqInv, 'TaylorVar');
-          [VqInv, dVqInv] = VqInv.eval();
+          if nargout == 1
+            VqInv = VqInv.eval();
+          else
+            [VqInv, dVqInv] = VqInv.eval();
+          end
           return
         else
           if nargout == 1
