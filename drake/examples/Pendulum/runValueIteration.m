@@ -27,7 +27,7 @@ function drawfun(J,PI)
   drawnow;
 end
 
-[J,PI] = valueIteration(mdp,0.001);
+[J,PI] = valueIteration(mdp,0.001,@drawfun);
 
 sys = feedback(plant,PI);
 v = PendulumVisualizer();

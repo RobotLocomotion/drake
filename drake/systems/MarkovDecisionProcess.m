@@ -94,7 +94,7 @@ classdef MarkovDecisionProcess < DrakeSystem
       if ~is_ct && ~isDT(sys)
         error('Drake:MarkovDecisionProcess:discretizeSystem:UnsupportedSystem','only systems that are purely CT or purely DT are implemented so far');
       end      
-%       assert(isTI(sys),'Drake:MarkovDecisionProcess:discretizeSystem:UnsupportedSystem','only support time-invariant systems');
+      assert(isTI(sys),'Drake:MarkovDecisionProcess:discretizeSystem:UnsupportedSystem','only support time-invariant systems');
       
       num_x = getNumStates(sys);
       num_u = getNumInputs(sys);
