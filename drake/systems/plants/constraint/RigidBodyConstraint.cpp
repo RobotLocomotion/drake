@@ -673,7 +673,7 @@ PositionConstraint::PositionConstraint(RigidBodyTree *robot, const Matrix3Xd &pt
       {
         std::cerr<<"Drake:PositionConstraint:BadInputs: lb must be no larger than ub"<<std::endl;
       }
-      if(isinf(lb(i,j))&&isinf(ub(i,j)))
+      if(std::isinf(lb(i,j)) && std::isinf(ub(i,j)))
       {
         this->null_constraint_rows[idx] = true;
       }
