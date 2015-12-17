@@ -204,7 +204,7 @@ foreach(proj IN ITEMS
 	elseif(REMOVE_UNUSED_EXTERNALS AND IS_DIRECTORY ${proj})
 		message(STATUS "removing unused project: ${proj}")
 		if (NOT ${proj}_NO_BUILD)
-			execute_process(COMMAND ${MAKE_EXECUTABLE} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE} clean
+			execute_process(COMMAND ${MAKE_EXECUTABLE} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=$<CONFIGURATION> clean
 					WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/${proj})
 		endif()
 		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory "${PROJECT_SOURCE_DIR}/${proj}")
@@ -297,7 +297,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 				#      BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE}
 				CONFIGURE_COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/drake/pod-build
 				COMMAND ${CMAKE_COMMAND} -E chdir ${PROJECT_SOURCE_DIR}/drake/pod-build ${CMAKE_COMMAND} -G${CMAKE_GENERATOR} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} ..
-				BUILD_COMMAND ${CMAKE_COMMAND} --build ${PROJECT_SOURCE_DIR}/drake/pod-build --config ${CMAKE_BUILD_TYPE} --target install
+				BUILD_COMMAND ${CMAKE_COMMAND} --build ${PROJECT_SOURCE_DIR}/drake/pod-build --config $<CONFIGURATION> --target install
 				INSTALL_COMMAND ""
 				DEPENDS ${deps}
 				${${proj}_ADDITIONAL_BUILD_ARGS}
@@ -335,7 +335,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 	ExternalProject_Get_Property(${proj} SOURCE_DIR)
 	if (NOT ${proj}_NO_BUILD)
 		add_custom_target(clean-${proj}
-				COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE} clean
+				COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=$<CONFIGURATION> clean
 				WORKING_DIRECTORY ${SOURCE_DIR})
 		add_dependencies(clean-all clean-${proj})
 	endif()
