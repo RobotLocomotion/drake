@@ -191,14 +191,14 @@ void dynamicsBiasTermmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
 
 template <typename Scalar>
 Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> velocityToPositionDotMapping(const KinematicsCache<Scalar>& cache) {
-  auto nv = cache.getNumVelocities();
-  return cache.transformVelocityMappingToPositionDotMapping(Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>::Identity(nv, nv));
+  auto nq = cache.getNumPositions();
+  return cache.transformPositionDotMappingToVelocityMapping(Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>::Identity(nq, nq));
 }
 
 template <typename Scalar>
 Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> positionDotToVelocityMapping(const KinematicsCache<Scalar>& cache) {
-  auto nq = cache.getNumPositions();
-  return cache.transformVelocityMappingToPositionDotMapping(Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>::Identity(nq, nq));
+  auto nv = cache.getNumVelocities();
+  return cache.transformVelocityMappingToPositionDotMapping(Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>::Identity(nv, nv));
 }
 
 void velocityToPositionDotMappingmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {

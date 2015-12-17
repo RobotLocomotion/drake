@@ -56,6 +56,7 @@ class KinematicsCache
 {
 private:
   std::unordered_map<RigidBody const *, KinematicsCacheElement<Scalar>, std::hash<RigidBody const *>, std::equal_to<RigidBody const *>, Eigen::aligned_allocator<std::pair<RigidBody const* const, KinematicsCacheElement<Scalar> > > > elements;
+  std::vector<RigidBody const *> bodies;
   const int num_positions;
   const int num_velocities;
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> q;
@@ -78,6 +79,7 @@ public:
       int num_positions_joint = body.hasParent() ? body.getJoint().getNumPositions() : 0;
       int num_velocities_joint = body.hasParent() ? body.getJoint().getNumVelocities() : 0;
       elements.insert({&body, KinematicsCacheElement<Scalar>(num_positions_joint, num_velocities_joint)});
+      this->bodies.push_back(&body);
     }
     invalidate();
   }
@@ -131,8 +133,8 @@ public:
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> ret(mat.rows(), getNumPositions());
     int ret_col_start = 0;
     int mat_col_start = 0;
-    for (auto it = elements.begin(); it != elements.end(); ++it) {
-      const RigidBody& body = *(it->first);
+    for (auto it = bodies.begin(); it != bodies.end(); ++it) {
+      const RigidBody& body = **it;
       if (body.hasParent()) {
         const DrakeJoint& joint = body.getJoint();
         const auto& element = getElement(body);
@@ -150,8 +152,8 @@ public:
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> ret(mat.rows(), getNumVelocities());
     int ret_col_start = 0;
     int mat_col_start = 0;
-    for (auto it = elements.begin(); it != elements.end(); ++it) {
-      const RigidBody& body = *(it->first);
+    for (auto it = bodies.begin(); it != bodies.end(); ++it) {
+      const RigidBody& body = **it;
       if (body.hasParent()) {
         const DrakeJoint& joint = body.getJoint();
         const auto& element = getElement(body);
