@@ -138,7 +138,7 @@ classdef RigidBodyManipulator < Manipulator
           if nargout == 1
             Vq = Vq.eval();
           else
-            [Vq, dVq] = Vq.eval();
+            [Vq, dVq] = eval(Vq);
           end
           return
         else
@@ -183,7 +183,7 @@ classdef RigidBodyManipulator < Manipulator
           if nargout == 1
             VqInv = VqInv.eval();
           else
-            [VqInv, dVqInv] = VqInv.eval();
+            [VqInv, dVqInv] = eval(VqInv);
           end
           return
         else

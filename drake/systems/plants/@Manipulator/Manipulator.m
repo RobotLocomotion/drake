@@ -69,7 +69,7 @@ classdef Manipulator < DrakeSystem
             Hinv*(-dC(:,obj.num_positions+1:end))];
         end
 
-        kinsol = obj.doKinematics(q);
+        kinsol = obj.doKinematics(q, [], struct('compute_gradients', true));
         [VqInv,dVqInv] = vToqdot(obj,kinsol);
         xdot = [VqInv*v;vdot];
         dxdot = [...
