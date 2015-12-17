@@ -1,6 +1,8 @@
 #ifndef DRAKE_SYSTEMSPECIALIZATIONS_H
 #define DRAKE_SYSTEMSPECIALIZATIONS_H
 
+#include <type_traits>
+
 namespace Drake {
 
   // Use class template specialization trick to enable the method signature of the System::dynamicsImplementation to change based on the template parameters
@@ -49,8 +51,8 @@ namespace Drake {
     static const bool hasStateArgument = sizeof(txu_check<T>(0)) == sizeof(char);
     static const bool hasInputArgument = sizeof(txu_check<T>(0)) == sizeof(char);
   };
-
-  template <typename System>
+*/
+  template <typename System, typename Enable = void>
   struct SystemOutputMethodTraits {
     static const bool hasTimeArgument = false;
     static const bool hasStateArgument = false;
@@ -58,12 +60,17 @@ namespace Drake {
   };
 
   template <typename System>
-  struct SystemOutputMethodTraits<System, typename std::enable_if<!std::is_void<decltype(std::declval<System>().output())>{}>::type> {
-    static const bool hasTimeArgument = false;
+  struct SystemOutputMethodTraits<System, typename std::enable_if<std::is_same<decltype(&System::template output<double>), typename System::template OutputVector<double> (System::*)(const double& t)>::value >::type> {
+    static const bool hasTimeArgument = true;
     static const bool hasStateArgument = false;
     static const bool hasInputArgument = false;
   };
-*/
+    template <typename System>
+    struct SystemOutputMethodTraits<System, typename std::enable_if<std::is_same<decltype(&System::output), typename System::template OutputVector<double> (System::*)(const double& t)>::value >::type> {
+        static const bool hasTimeArgument = true;
+        static const bool hasStateArgument = false;
+        static const bool hasInputArgument = false;
+    };
 
   template<typename System, typename ScalarType, bool hasTime, bool hasDynamics, bool hasInput>
   struct OutputDispatch {

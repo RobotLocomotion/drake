@@ -1,5 +1,6 @@
 
 #include <iostream>
+#include <Polynomial.h>
 #include "Pendulum.h"
 #include "Simulation.h"
 #include "BotVisualizer.h"
@@ -26,5 +27,14 @@ int main(int argc, char* argv[]) {
   SimulationOptions options;
   options.realtime_factor=1.0;
 
-  simulate(*sys,0,10,toEigen(x0),options); // todo: should not have to use toEigen here...
+/*
+  { // test for a polynomial-based algorithm
+    static_assert(isPolynomial<Pendulum>,"requires polynomial dynamics");
+
+    PendulumState<Polynomial<double>> x;
+    PendulumInput<Polynomial<double>> u;
+    auto out = p->dynamicsImplementation(x,u);
+  }
+*/
+//  simulate(*sys,0,10,toEigen(x0),options); // todo: should not have to use toEigen here...
 }

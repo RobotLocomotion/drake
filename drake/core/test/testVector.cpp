@@ -5,6 +5,19 @@
 using namespace std;
 using namespace Drake;
 
+struct OutputTest {
+    template <typename ScalarType> using OutputVector = VectorBuilder<2>::VecType<ScalarType>;
+
+    template <typename ScalarType>
+    OutputVector<ScalarType> output(const ScalarType& t);
+};
+
+struct OutputTestTwo {
+    template <typename ScalarType> using OutputVector = VectorBuilder<2>::VecType<ScalarType>;
+
+    OutputVector<double> output(const double& t);
+};
+
 int main(int argc, char* argv[])
 {
   Eigen::Vector2d x;  x << 0.2, 0.4;
@@ -61,6 +74,12 @@ int main(int argc, char* argv[])
   }
 
   static_assert(Eigen::Matrix<double,2,1>::RowsAtCompileTime == 2,"failed to evaluate RowsAtCompileTime");
+
+
+//  decltype(&OutputTest::output) z = 1;  // will produce an error with (hopefully) a useful error message
+
+  static_assert(SystemOutputMethodTraits<OutputTest>::hasTimeArgument==true,"should be true");
+  static_assert(SystemOutputMethodTraits<OutputTestTwo>::hasTimeArgument==true,"should be true");
 
 
   return 0;

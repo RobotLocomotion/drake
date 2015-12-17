@@ -111,7 +111,7 @@ namespace Drake {
       lcm->publish("DRAKE_VIEWER_LOAD_ROBOT", &vr);
     }
 
-    UnusedVector<double> outputImplementation(const double& t, const InputVector<double> &u) const {
+    UnusedVector<double> output(const double& t, const InputVector<double> &u) const {
       draw_msg.timestamp = static_cast<int64_t>(t * 1000.0);
 
       Eigen::Matrix<double,InputVector<double>::RowsAtCompileTime,1> uvec(u);
