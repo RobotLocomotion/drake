@@ -39,6 +39,32 @@ namespace Drake {
     }
   };
 
+/*
+  template <typename System>
+  struct SystemOutputMethodTraits {
+    static char txu_check(typename System::template OutputVector<double> (System::*)(const double&, const typename System::template StateVector<double>&, const typename System::template InputVector<double>&) *);
+    static int txu_check(typename System::template OutputVector<double> (System::*)(const double&, const typename System::template StateVector<double>&, const typename System::template InputVector<double>&) *);
+  public:
+    static const bool hasTimeArgument = sizeof(txu_check<T>(0)) == sizeof(char);
+    static const bool hasStateArgument = sizeof(txu_check<T>(0)) == sizeof(char);
+    static const bool hasInputArgument = sizeof(txu_check<T>(0)) == sizeof(char);
+  };
+
+  template <typename System>
+  struct SystemOutputMethodTraits {
+    static const bool hasTimeArgument = false;
+    static const bool hasStateArgument = false;
+    static const bool hasInputArgument = false;
+  };
+
+  template <typename System>
+  struct SystemOutputMethodTraits<System, typename std::enable_if<!std::is_void<decltype(std::declval<System>().output())>{}>::type> {
+    static const bool hasTimeArgument = false;
+    static const bool hasStateArgument = false;
+    static const bool hasInputArgument = false;
+  };
+*/
+
   template<typename System, typename ScalarType, bool hasTime, bool hasDynamics, bool hasInput>
   struct OutputDispatch {
     static typename System::template OutputVector<ScalarType> eval(const System& sys, const ScalarType &t, const typename System::template StateVector<ScalarType> &x,
