@@ -21,5 +21,5 @@ int main(int argc, char* argv[]) {
   options.realtime_factor = 1.0;
   options.initial_step_size = 0.005;
 
-  simulate(*sys, 0, 50, static_cast<Eigen::Matrix<double,12,1>>(quad->getRandomState<double>()), options);
+  simulate(*sys, 0, 50, toEigen(getRandomVector<QuadrotorState>()), options);
 }

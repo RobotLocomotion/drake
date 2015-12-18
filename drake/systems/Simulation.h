@@ -37,9 +37,9 @@ namespace Drake {
 
   template <typename System>
   void simulate(const System& sys, double t0, double tf, const typename System::template StateVector<double>& x0, const SimulationOptions& options) {
-    const static int num_states = SystemTraits<System>::num_states;
-    const static int num_inputs = SystemTraits<System>::num_inputs;
-    const static int num_outputs = SystemTraits<System>::num_outputs;
+    const static int num_states = SystemSizeTraits<System>::num_states;
+    const static int num_inputs = SystemSizeTraits<System>::num_inputs;
+    const static int num_outputs = SystemSizeTraits<System>::num_outputs;
 
 
     double t = t0, dt;

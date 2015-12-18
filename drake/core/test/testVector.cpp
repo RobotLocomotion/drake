@@ -9,13 +9,13 @@ struct OutputTest {
     template <typename ScalarType> using OutputVector = VectorBuilder<2>::VecType<ScalarType>;
 
     template <typename ScalarType>
-    OutputVector<ScalarType> output(const ScalarType& t);
+    OutputVector<ScalarType> output(const ScalarType& t) const;
 };
 
 struct OutputTestTwo {
     template <typename ScalarType> using OutputVector = VectorBuilder<2>::VecType<ScalarType>;
 
-    OutputVector<double> output(const double& t);
+    OutputVector<double> output(const double& t) const;
 };
 
 int main(int argc, char* argv[])
@@ -60,15 +60,11 @@ int main(int argc, char* argv[])
     // combining a vector with an unused or empty vector should return the original type
     PendulumState<double> ps;
     {
-      Drake::CombinedVectorBuilder<PendulumState, UnusedVector>::VecType<double> test;
+      Drake::CombinedVectorBuilder<PendulumState, NullVector>::VecType<double> test;
       assert(typeid(ps).hash_code() == typeid(test).hash_code());
     }
     {
-      Drake::CombinedVectorBuilder<UnusedVector, PendulumState>::VecType<double> test;
-      assert(typeid(ps).hash_code() == typeid(test).hash_code());
-    }
-    {
-      Drake::CombinedVectorBuilder<EmptyVector, PendulumState>::VecType<double> test;
+      Drake::CombinedVectorBuilder<NullVector, PendulumState>::VecType<double> test;
       assert(typeid(ps).hash_code() == typeid(test).hash_code());
     }
   }
@@ -80,7 +76,6 @@ int main(int argc, char* argv[])
 
   static_assert(SystemOutputMethodTraits<OutputTest>::hasTimeArgument==true,"should be true");
   static_assert(SystemOutputMethodTraits<OutputTestTwo>::hasTimeArgument==true,"should be true");
-
 
   return 0;
 }

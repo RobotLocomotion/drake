@@ -33,12 +33,6 @@ public:
     return *this;
   }
 
-  operator Eigen::Matrix<ScalarType,12,1> () const {
-    Eigen::Matrix<ScalarType,12,1> state;
-    state << x, y, z, roll, pitch, yaw, xdot, ydot, zdot, rolldot, pitchdot, yawdot;
-    return state;
-  }
-
   friend std::ostream& operator<<(std::ostream& os, const QuadrotorState& state)
   {
     using namespace std;
@@ -66,6 +60,14 @@ public:
   ScalarType x, y, z, roll, pitch, yaw, xdot, ydot, zdot, rolldot, pitchdot, yawdot;
 };
 
+template <typename ScalarType>
+Eigen::Matrix<ScalarType,12,1> toEigen(const QuadrotorState<ScalarType>& vec) {
+  Eigen::Matrix<ScalarType,12,1> state;
+  state << vec.x, vec.y, vec.z, vec.roll, vec.pitch, vec.yaw, vec.xdot, vec.ydot, vec.zdot, vec.rolldot, vec.pitchdot, vec.yawdot;
+  return state;
+}
+
+
 
 template <typename ScalarType = double>
 class QuadrotorInput {
@@ -79,12 +81,6 @@ public:
     w3 = input(2);
     w4 = input(3);
     return *this;
-  }
-
-  operator Eigen::Matrix<ScalarType,4,1> () const {
-    Eigen::Matrix<ScalarType,4,1> input;
-    input << w1,w2,w3,w4;
-    return input;
   }
 
   friend std::ostream& operator<<(std::ostream& os, const QuadrotorInput& u)
@@ -105,8 +101,22 @@ public:
   ScalarType w1,w2,w3,w4;
 };
 
-class Quadrotor : public Drake::System<Quadrotor,QuadrotorState,QuadrotorInput,QuadrotorState,false,false> {
+template <typename ScalarType>
+Eigen::Matrix<ScalarType,4,1> toEigen(const QuadrotorInput<ScalarType>& vec) {
+  Eigen::Matrix<ScalarType,4,1> input;
+  input << vec.w1,vec.w2,vec.w3,vec.w4;
+  return input;
+}
+
+
+
+
+class Quadrotor  {
 public:
+  template <typename ScalarType> using StateVector = QuadrotorState<ScalarType>;
+  template <typename ScalarType> using OutputVector = QuadrotorState<ScalarType>;
+  template <typename ScalarType> using InputVector = QuadrotorInput<ScalarType>;
+
   Quadrotor() :
             m(0.5),
             g(9.81),

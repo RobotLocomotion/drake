@@ -33,9 +33,15 @@ template <typename ScalarType, int Rows> Eigen::Matrix<ScalarType,Rows,1> toEige
   struct VectorBuilder {
     template <typename ScalarType> using VecType = Eigen::Matrix<ScalarType,Rows,1>;
   };
-  template <typename ScalarType> using UnusedVector = Eigen::Matrix<ScalarType,0,1>;
-#define EmptyVector UnusedVector
+  template <typename ScalarType> using NullVector = Eigen::Matrix<ScalarType,0,1>;
 
+
+  template <template <typename> class VecType>
+  VecType<double> getRandomVector(void) {
+    static_assert(VecType<double>::RowsAtCompileTime>=0,"still need to handle dynamic case");
+    VecType<double> rand(Eigen::Matrix<double,VecType<double>::RowsAtCompileTime,1>::Random());
+    return rand;
+  }
 
   // Methods for building complicated vectors out of simpler vectors
 
@@ -87,14 +93,24 @@ template <typename ScalarType, int Rows> Eigen::Matrix<ScalarType,Rows,1> toEige
   };
 
   template <template <typename> class Vector1>
-  struct CombinedVectorBuilder<Vector1,UnusedVector> {
+  struct CombinedVectorBuilder<Vector1,NullVector> {
     template <typename ScalarType> using VecType = Vector1<ScalarType>;
   };
 
   template <template <typename> class Vector2>
-  struct CombinedVectorBuilder<UnusedVector,Vector2> {
+  struct CombinedVectorBuilder<NullVector,Vector2> {
     template <typename ScalarType> using VecType = Vector2<ScalarType>;
   };
+
+  namespace FunctionalForm {
+    // these are meant as tags which can be used to inform algorithms about underlying structure in a function (or system)
+    // e.g., linear, affine, polynomial, analytic, differentiable, continuous, measurable, and -- lastly -- arbritrary
+    struct Arbitrary {};
+    struct Polynomial : public Arbitrary {};
+    struct Affine : public Polynomial {};
+    struct Linear : public Affine {};
+  }
+
 }
 
 

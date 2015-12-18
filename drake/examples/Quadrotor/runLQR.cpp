@@ -16,14 +16,16 @@ int main(int argc, char* argv[]) {
 
   auto quad = std::make_shared<Quadrotor>();
 
-  const int num_positions = quad->num_states/2;
-  Eigen::MatrixXd Q = Eigen::MatrixXd::Identity(quad->num_states, quad->num_states);
+  const int num_states = SystemSizeTraits<Quadrotor>::num_states;
+  const int num_positions = num_states/2;
+  const int num_inputs = SystemSizeTraits<Quadrotor>::num_inputs;
+  Eigen::MatrixXd Q = Eigen::MatrixXd::Identity(num_states, num_states);
   Q.topLeftCorner(num_positions, num_positions) = 10.0 * Eigen::MatrixXd::Identity(num_positions, num_positions);
-  Eigen::MatrixXd R = 0.1*Eigen::MatrixXd::Identity(quad->num_inputs, quad->num_inputs);
+  Eigen::MatrixXd R = 0.1*Eigen::MatrixXd::Identity(num_inputs, num_inputs);
   QuadrotorState<double> xG;  xG.z = 1;
   QuadrotorInput<double> uG;  uG.w1 = quad->m * quad->g * 0.25; uG.w2 = uG.w1; uG.w3 = uG.w1; uG.w4 = uG.w1;
   auto c = timeInvariantLQR(*quad,xG,uG,Q,R);
-  auto v = std::make_shared<Drake::BotVisualizer<QuadrotorState> >(lcm,Drake::getDrakePath()+"/examples/Quadrotor/quadrotor.urdf",DrakeJoint::ROLLPITCHYAW);
+  auto v = std::make_shared<BotVisualizer<QuadrotorState> >(lcm,getDrakePath()+"/examples/Quadrotor/quadrotor.urdf",DrakeJoint::ROLLPITCHYAW);
 
   auto sys = cascade(feedback(quad,c),v);
 
@@ -32,8 +34,8 @@ int main(int argc, char* argv[]) {
   options.initial_step_size = 0.005;
 
   for (int i=0; i<5; i++) {
-    Eigen::Matrix<double,12,1> x0 = xG;
-    x0 += static_cast<Eigen::Matrix<double,12,1> >(quad->getRandomState<double>());
+    Eigen::Matrix<double,12,1> x0 = toEigen(xG);
+    x0 += toEigen(getRandomVector<QuadrotorState>());
     simulate(*sys,0,10,x0,options);
   }
 

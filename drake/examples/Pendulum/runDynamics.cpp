@@ -23,6 +23,8 @@ int main(int argc, char* argv[]) {
   cout << "PendulumState::x0 = " << x0 << endl;
 
   auto sys = cascade(p,v);
+//  decltype(*sys) z = 1;
+  static_assert(SystemStructureTraits<CascadeSystem<Pendulum,BotVisualizer<PendulumState>>>::isTimeVarying==true,"does this work?");
 
   SimulationOptions options;
   options.realtime_factor=1.0;

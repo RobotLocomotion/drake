@@ -26,54 +26,56 @@ namespace Drake {
   // todo: document description of the System concept
 
   template <typename System>
-  struct SystemTraits {
+  struct SystemSizeTraits {
     const static int num_states = System::template StateVector<double>::RowsAtCompileTime;
     const static int num_inputs = System::template InputVector<double>::RowsAtCompileTime;
     const static int num_outputs = System::template OutputVector<double>::RowsAtCompileTime;
-    static_assert(num_states>=0,"still need to handle the variable-size case");
-    static_assert(num_inputs>=0,"still need to handle the variable-size case");
-    static_assert(num_outputs>=0,"still need to handle the variable-size case");
+    static_assert(num_states >= 0, "still need to handle the variable-size case");
+    static_assert(num_inputs >= 0, "still need to handle the variable-size case");
+    static_assert(num_outputs >= 0, "still need to handle the variable-size case");
+  };
 
-    // todo: assign these by looking at the implementations of update,dynamics, and output methods
-    const static bool hasUpdate = false;
-    const static bool hasDynamics = true;
-    const static bool isTimeVarying = false;
-    const static bool isDirectFeedthrough = false;
+  template <typename System>
+  struct SystemStructureTraits {
+//    const static bool hasUpdate = false;
+//    const static bool hasDynamics = SystemDynamicsMethodTraits<System>::hasDynamicsMethod;
+    const static bool isTimeVarying = SystemDynamicsMethodTraits<System>::hasTimeArgument || SystemOutputMethodTraits<System>::hasTimeArgument;
+    const static bool isDirectFeedthrough = SystemOutputMethodTraits<System>::hasInputArgument;
   };
 
   // provide consistent access methods for dynamics and output
 
   template <typename System, typename ScalarType>
   typename System::template StateVector<ScalarType> dynamics(const System& sys, const ScalarType& t, const typename System::template StateVector<ScalarType>& x, const typename System::template InputVector<ScalarType>& u) {
-    return DynamicsDispatch<System, ScalarType, SystemTraits<System>::isTimeVarying, (SystemTraits<System>::num_states != 0), (SystemTraits<System>::num_inputs != 0)>::eval(sys,t,x,u);
+    return DynamicsDispatch<System, ScalarType, SystemStructureTraits<System>::isTimeVarying, (SystemSizeTraits<System>::num_states != 0), (SystemSizeTraits<System>::num_inputs != 0)>::eval(sys,t,x,u);
   }
 
   template <typename System, typename ScalarType>
   typename System::template OutputVector<ScalarType> output(const System& sys, const ScalarType& t, const typename System::template StateVector<ScalarType>& x, const typename System::template InputVector<ScalarType>& u) {
-    return OutputDispatch<System, ScalarType, SystemTraits<System>::isTimeVarying, (SystemTraits<System>::num_states != 0), ((SystemTraits<System>::num_inputs != 0) && SystemTraits<System>::isDirectFeedthrough)>::eval(sys, t, x, u);
+    return OutputDispatch<System, ScalarType, SystemStructureTraits<System>::isTimeVarying, (SystemSizeTraits<System>::num_states != 0), ((SystemSizeTraits<System>::num_inputs != 0) && SystemStructureTraits<System>::isDirectFeedthrough)>::eval(sys, t, x, u);
   }
 
 
   template <class System1, class System2>
   class FeedbackSystem {
   public:
-    template <typename ScalarType> using StateVector = CombinedVector<ScalarType, System1::template StateVectorType , System2::template StateVectorType>;
-    template <typename ScalarType> using InputVector = typename System1::template InputVectorType<ScalarType>;
-    template <typename ScalarType> using OutputVector = typename System1::template OutputVectorType<ScalarType>;
+    template <typename ScalarType> using StateVector = typename CombinedVectorBuilder<System1::template StateVector , System2::template StateVector>::template VecType<ScalarType>;
+    template <typename ScalarType> using InputVector = typename System1::template InputVector<ScalarType>;
+    template <typename ScalarType> using OutputVector = typename System1::template OutputVector<ScalarType>;
+    const static int num_inputs = SystemSizeTraits<System1>::num_inputs;
 
-    template <typename ScalarType> using StateVector1 = typename System1::template StateVectorType<ScalarType>;
-    template <typename ScalarType> using StateVector2 = typename System2::template StateVectorType<ScalarType>;
-    template <typename ScalarType> using EigenInput = Eigen::Matrix<ScalarType,System1::num_inputs,1>;
+    template <typename ScalarType> using StateVector1 = typename System1::template StateVector<ScalarType>;
+    template <typename ScalarType> using StateVector2 = typename System2::template StateVector<ScalarType>;
+    template <typename ScalarType> using EigenInput = Eigen::Matrix<ScalarType,num_inputs,1>;
     typedef std::shared_ptr<System1> System1Ptr;
     typedef std::shared_ptr<System2> System2Ptr;
 
-    static_assert(!SystemTraits<System1>::isDirectFeedthrough || !SystemTraits<System2>::isDirectFeedthrough,"Algebraic Loop: cannot feedback combine two systems that are both direct feedthrough");
+    static_assert(!SystemStructureTraits<System1>::isDirectFeedthrough || !SystemStructureTraits<System2>::isDirectFeedthrough,"Algebraic Loop: cannot feedback combine two systems that are both direct feedthrough");
 //    static_assert(System1::OutputVectorType == System2::InputVectorType,"System 2 input vector must match System 1 output vector");
 //    static_assert(System2::OutputVectorType == System1::InputVectorType,"System 1 input vector must match System 2 output vector");
     // todo: assert that StateVector is indeed a CombinedVector<...,StateVector1,StateVector2>
 
-    FeedbackSystem(const System1Ptr& _sys1, const System2Ptr& _sys2) : sys1(_sys1),sys2(_sys2) {
-    };
+    FeedbackSystem(const System1Ptr& _sys1, const System2Ptr& _sys2) : sys1(_sys1),sys2(_sys2) { };
 
 // todo: implement only the correct dynamics signature based on the system traits of System1 and System2
 
@@ -101,6 +103,8 @@ namespace Drake {
       return y1;
     }
 
+
+  private:
     template <typename ScalarType>
     void subsystemOutputs(const ScalarType& t, const StateVector1<ScalarType>& x1, const StateVector2<ScalarType>& x2, const InputVector<ScalarType> &u,
                           OutputVector<ScalarType> &y1, InputVector<ScalarType> &y2) const {
@@ -113,7 +117,6 @@ namespace Drake {
       }
     }
 
-  private:
     System1Ptr sys1;
     System2Ptr sys2;
   };
@@ -122,6 +125,15 @@ namespace Drake {
   std::shared_ptr<FeedbackSystem<System1,System2>> feedback(const std::shared_ptr<System1>& sys1, const std::shared_ptr<System2>& sys2)
   {
     return std::make_shared<FeedbackSystem<System1,System2> >(sys1,sys2);
+  };
+
+  template <typename System1, typename System2>
+  struct SystemStructureTraits<FeedbackSystem<System1,System2>> {
+  // todo: assign these by looking at the implementations of update,dynamics, and output methods
+//    const static bool hasUpdate = false;
+//    const static bool hasDynamics = System1::StateVector<double;
+    const static bool isTimeVarying = SystemStructureTraits<System1>::isTimeVarying || SystemStructureTraits<System2>::isTimeVarying;
+    const static bool isDirectFeedthrough = SystemStructureTraits<System1>::isDirectFeedthrough;
   };
 
 
@@ -170,6 +182,14 @@ namespace Drake {
     return std::make_shared<CascadeSystem<System1,System2> >(sys1,sys2);
   };
 
+  template <typename System1, typename System2>
+  struct SystemStructureTraits<CascadeSystem<System1,System2>> {
+    // todo: assign these by looking at the implementations of update,dynamics, and output methods
+//    const static bool hasUpdate = false;
+//    const static bool hasDynamics = System1::StateVector<double;
+    const static bool isTimeVarying = SystemStructureTraits<System1>::isTimeVarying || SystemStructureTraits<System2>::isTimeVarying;
+    const static bool isDirectFeedthrough = SystemStructureTraits<System1>::isDirectFeedthrough && SystemStructureTraits<System2>::isDirectFeedthrough;
+  };
 
 
 } // end namespace Drake

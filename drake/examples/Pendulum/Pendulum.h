@@ -99,7 +99,7 @@ public:
   virtual ~Pendulum(void) {};
 
   template <typename ScalarType>
-  PendulumState<ScalarType> dynamicsImplementation(const PendulumState<ScalarType>& x, const PendulumInput<ScalarType>& u) const {
+  PendulumState<ScalarType> dynamics(const PendulumState<ScalarType>& x, const PendulumInput<ScalarType>& u) const {
     PendulumState<ScalarType> dot;
     dot.theta = x.thetadot;
     dot.thetadot = (u.tau - m*g*lc*sin(x.theta) - b*x.thetadot)/I;
@@ -108,7 +108,7 @@ public:
 
 
   template <typename ScalarType>
-  PendulumState<ScalarType> outputImplementation(const PendulumState<ScalarType>& x) const {
+  PendulumState<ScalarType> output(const PendulumState<ScalarType>& x) const {
     return x;
   }
 
@@ -119,6 +119,10 @@ public:
 
 class PendulumEnergyShapingController {
 public:
+  template <typename ScalarType> using InputVector = PendulumState<ScalarType>;
+  template <typename ScalarType> using StateVector = Drake::NullVector<ScalarType>;
+  template <typename ScalarType> using OutputVector = PendulumInput<ScalarType>;
+
   PendulumEnergyShapingController(const Pendulum& pendulum)
           : m(pendulum.m),
             l(pendulum.l),
@@ -127,7 +131,7 @@ public:
   {};
 
   template <typename ScalarType>
-  PendulumInput<ScalarType> outputImplementation(const PendulumState<ScalarType>& x) const {
+  PendulumInput<ScalarType> output(const PendulumState<ScalarType>& x) const {
     ScalarType Etilde = .5 * m*l*l*x.thetadot*x.thetadot - m*g*l*cos(x.theta) - 1.1*m*g*l;
     PendulumInput<ScalarType> u;
     u.tau = b*x.thetadot - .1*x.thetadot*Etilde;

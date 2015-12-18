@@ -41,36 +41,41 @@ namespace Drake {
     }
   };
 
-/*
-  template <typename System>
-  struct SystemOutputMethodTraits {
-    static char txu_check(typename System::template OutputVector<double> (System::*)(const double&, const typename System::template StateVector<double>&, const typename System::template InputVector<double>&) *);
-    static int txu_check(typename System::template OutputVector<double> (System::*)(const double&, const typename System::template StateVector<double>&, const typename System::template InputVector<double>&) *);
-  public:
-    static const bool hasTimeArgument = sizeof(txu_check<T>(0)) == sizeof(char);
-    static const bool hasStateArgument = sizeof(txu_check<T>(0)) == sizeof(char);
-    static const bool hasInputArgument = sizeof(txu_check<T>(0)) == sizeof(char);
-  };
-*/
   template <typename System, typename Enable = void>
-  struct SystemOutputMethodTraits {
+  struct SystemDynamicsMethodTraits {
+    static const bool hasDynamicsMethod = false;
     static const bool hasTimeArgument = false;
     static const bool hasStateArgument = false;
     static const bool hasInputArgument = false;
   };
 
-  template <typename System>
-  struct SystemOutputMethodTraits<System, typename std::enable_if<std::is_same<decltype(&System::template output<double>), typename System::template OutputVector<double> (System::*)(const double& t)>::value >::type> {
-    static const bool hasTimeArgument = true;
-    static const bool hasStateArgument = false;
-    static const bool hasInputArgument = false;
+#define DrakeDynamicsMethodTraitsSpecialization(time, state, input, ...) \
+  template <typename System> \
+  struct SystemDynamicsMethodTraits<System, typename std::enable_if<std::is_same<decltype(&System::template dynamics<double>), typename System::template StateVector<double> (System::*)( __VA_ARGS__ )>::value >::type> { \
+    static const bool hasDynamicsMethod = true; \
+    static const bool hasTimeArgument = time; \
+    static const bool hasStateArgument = state; \
+    static const bool hasInputArgument = input; \
+  }; \
+  template <typename System> \
+  struct SystemDynamicsMethodTraits<System, typename std::enable_if<std::is_same<decltype(&System::dynamics), typename System::template StateVector<double> (System::*)( __VA_ARGS__ )>::value >::type> { \
+      static const bool hasDynamicsMethod = true; \
+      static const bool hasTimeArgument = time; \
+      static const bool hasStateArgument = state; \
+      static const bool hasInputArgument = input; \
   };
-    template <typename System>
-    struct SystemOutputMethodTraits<System, typename std::enable_if<std::is_same<decltype(&System::output), typename System::template OutputVector<double> (System::*)(const double& t)>::value >::type> {
-        static const bool hasTimeArgument = true;
-        static const bool hasStateArgument = false;
-        static const bool hasInputArgument = false;
-    };
+
+  DrakeDynamicsMethodTraitsSpecialization(true,true,true,const double&, const typename System::template StateVector<double>&, const typename System::template InputVector<double>&)
+  DrakeDynamicsMethodTraitsSpecialization(true,true,false,const double&, const typename System::template StateVector<double>&)
+  DrakeDynamicsMethodTraitsSpecialization(true,false,true,const double&, const typename System::template InputVector<double>&)
+  DrakeDynamicsMethodTraitsSpecialization(true,false,false,const double&)
+  DrakeDynamicsMethodTraitsSpecialization(false,true,true,const typename System::template StateVector<double>&, const typename System::template InputVector<double>&)
+  DrakeDynamicsMethodTraitsSpecialization(false,true,false,const typename System::template StateVector<double>&)
+  DrakeDynamicsMethodTraitsSpecialization(false,false,true,const typename System::template InputVector<double>&)
+  DrakeDynamicsMethodTraitsSpecialization(false,false,false)
+
+#undef DrakeOutputMethodTraitsSpecialization
+
 
   template<typename System, typename ScalarType, bool hasTime, bool hasDynamics, bool hasInput>
   struct OutputDispatch {
@@ -98,6 +103,38 @@ namespace Drake {
   DrakeOutputDispatchSpecialization(false, false, false, sys.output())
 
 #undef DrakeOutputDispatchSpecialization
+
+
+  template <typename System, typename Enable = void>
+  struct SystemOutputMethodTraits {
+    static const bool hasTimeArgument = true;
+    static const bool hasStateArgument = true;
+    static const bool hasInputArgument = true;
+  };
+
+#define DrakeOutputMethodTraitsSpecialization(time, state, input, ...) \
+  template <typename System> \
+  struct SystemOutputMethodTraits<System, typename std::enable_if<std::is_same<decltype(&System::template output<double>), typename System::template OutputVector<double> (System::*)( __VA_ARGS__ )>::value >::type> { \
+    static const bool hasTimeArgument = time; \
+    static const bool hasStateArgument = state; \
+    static const bool hasInputArgument = input; \
+  }; \
+  template <typename System> \
+  struct SystemOutputMethodTraits<System, typename std::enable_if<std::is_same<decltype(&System::output), typename System::template OutputVector<double> (System::*)( __VA_ARGS__ )>::value >::type> { \
+      static const bool hasTimeArgument = time; \
+      static const bool hasStateArgument = state; \
+      static const bool hasInputArgument = input; \
+  };
+
+  DrakeOutputMethodTraitsSpecialization(true,true,false,const double&, const typename System::template StateVector<double>&)
+  DrakeOutputMethodTraitsSpecialization(true,false,true,const double&, const typename System::template InputVector<double>&)
+  DrakeOutputMethodTraitsSpecialization(true,false,false,const double&)
+  DrakeOutputMethodTraitsSpecialization(false,true,true,const typename System::template StateVector<double>&, const typename System::template InputVector<double>&)
+  DrakeOutputMethodTraitsSpecialization(false,true,false,const typename System::template StateVector<double>&)
+  DrakeOutputMethodTraitsSpecialization(false,false,true,const typename System::template InputVector<double>&)
+  DrakeOutputMethodTraitsSpecialization(false,false,false)
+
+#undef DrakeOutputMethodTraitsSpecialization
 };
 
 #endif //DRAKE_SYSTEMSPECIALIZATIONS_H
