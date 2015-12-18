@@ -315,4 +315,30 @@ void gradientMatrixToAutoDiff(const Eigen::MatrixBase<DerivedGradient>& gradient
   }
 }
 
+namespace internal {
+  template <typename Derived, typename Scalar>
+  struct ResizeDerivativesToMatchScalarImpl {
+    static void run(Eigen::MatrixBase<Derived>& mat, const Scalar& scalar) {};
+  };
+
+  template <typename Derived, typename DerivType>
+  struct ResizeDerivativesToMatchScalarImpl<Derived, Eigen::AutoDiffScalar<DerivType> > {
+    using Scalar = Eigen::AutoDiffScalar<DerivType>;
+    static void run(Eigen::MatrixBase<Derived>& mat, const Scalar& scalar) {
+      for (int i = 0; i < mat.size(); i++) {
+        auto& derivs = mat(i).derivatives();
+        if (derivs.size() == 0) {
+          derivs.resize(scalar.derivatives().size());
+          derivs.setZero();
+        }
+      }
+    };
+  };
+}
+
+template <typename Derived>
+void resizeDerivativesToMatchScalar(Eigen::MatrixBase<Derived>& mat, const typename Derived::Scalar& scalar) {
+  internal::ResizeDerivativesToMatchScalarImpl<Derived, typename Derived::Scalar>::run(mat, scalar);
+}
+
 #endif /* DRAKEGRADIENTUTIL_H_ */
