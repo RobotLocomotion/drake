@@ -89,7 +89,7 @@ if (MATLAB_FOUND)
   endmacro()
 endif(MATLAB_FOUND)
 
-set(drakeIK_SRC_FILES IKoptions.cpp) #FIXME: why are we compiling this twice?
+set(drakeIK_SRC_FILES )
 set(drakeIK_PODS_PKG )
 if(gurobi_FOUND)
   set(drakeIK_SRC_FILES ${drakeIK_SRC_FILES} approximateIK.cpp)
@@ -99,17 +99,20 @@ if(snopt_c_FOUND)
   set(drakeIK_SRC_FILES ${drakeIK_SRC_FILES} inverseKin.cpp inverseKinPointwise.cpp inverseKinTraj.cpp inverseKinBackend.cpp)
   set(drakeIK_PODS_PKG ${drakeIK_PODS_PKG} snopt_c)
 endif()
-add_library_with_exports(LIB_NAME drakeIK SOURCE_FILES ${drakeIK_SRC_FILES})
-pods_use_pkg_config_packages(drakeIK ${drakeIK_PODS_PKG})
-target_link_libraries(drakeIK drakeRBM drakeRigidBodyConstraint drakeIKoptions)
-set_target_properties(drakeIK PROPERTIES COMPILE_FLAGS -fPIC)
-pods_install_libraries(drakeIK)
-pods_install_libraries(drakeIKoptions)
-pods_install_headers(RigidBodyIK.h IKoptions.h DESTINATION drake)
-pods_install_pkg_config_file(drake-ik
-  LIBS -ldrakeIK -ldrakeRigidBodyConstraint -ldrakeIKoptions
-  REQUIRES drake-rbm
-  VERSION 0.0.1)
+
+if (drakeIK_SRC_FILES)
+  add_library_with_exports(LIB_NAME drakeIK SOURCE_FILES ${drakeIK_SRC_FILES})
+  pods_use_pkg_config_packages(drakeIK ${drakeIK_PODS_PKG})
+  target_link_libraries(drakeIK drakeRBM drakeRigidBodyConstraint drakeIKoptions)
+  set_target_properties(drakeIK PROPERTIES COMPILE_FLAGS -fPIC)
+  pods_install_libraries(drakeIK)
+  pods_install_libraries(drakeIKoptions)
+  pods_install_headers(RigidBodyIK.h IKoptions.h DESTINATION drake)
+  pods_install_pkg_config_file(drake-ik
+    LIBS -ldrakeIK -ldrakeRigidBodyConstraint -ldrakeIKoptions
+    REQUIRES drake-rbm
+    VERSION 0.0.1)
+endif()
 
 if (MATLAB_FOUND)
   if (gurobi_FOUND)

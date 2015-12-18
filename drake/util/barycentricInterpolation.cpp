@@ -1,4 +1,6 @@
 #include <mex.h>
+#include <stdlib.h> // for win
+#include <stdint.h> // for win
 
 /* barycentricInterpolation
  *  Looks up the indices and weighted coefficients for a barycentric
