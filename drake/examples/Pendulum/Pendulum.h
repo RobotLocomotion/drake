@@ -4,7 +4,6 @@
 #include <iostream>
 #include <cmath>
 #include "System.h"
-//#include "LQR.h"
 
 using namespace std;
 
