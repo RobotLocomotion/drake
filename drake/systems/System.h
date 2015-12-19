@@ -46,10 +46,9 @@ namespace Drake {
 
   template <typename System>
   struct SystemStructureTraits {
-//    const static bool hasUpdate = false;
-//    const static bool hasDynamics = SystemDynamicsMethodTraits<System>::hasDynamicsMethod;
     const static bool isTimeVarying = SystemDynamicsMethodTraits<System>::hasTimeArgument || SystemOutputMethodTraits<System>::hasTimeArgument;
     const static bool isDirectFeedthrough = SystemOutputMethodTraits<System>::hasInputArgument;
+    static_assert(SystemOutputMethodTraits<System>::hasOutputMethod,"Could not find the output method for your system.  Also, make sure it's mark const");
   };
 
   // provide consistent access methods for dynamics and output
@@ -60,7 +59,20 @@ namespace Drake {
   }
 
   template <typename System, typename ScalarType>
+  typename System::template StateVector<ScalarType> dynamics(const System& sys, const typename System::template StateVector<ScalarType>& x, const typename System::template InputVector<ScalarType>& u) {
+    static_assert(!SystemStructureTraits<System>::isTimeVarying,"Called dynamics(sys,x,u) for a time-varying system");
+    ScalarType t;
+    return dynamics(sys,t,x,u);
+  }
+
+  template <typename System, typename ScalarType>
   typename System::template OutputVector<ScalarType> output(const System& sys, const ScalarType& t, const typename System::template StateVector<ScalarType>& x, const typename System::template InputVector<ScalarType>& u) {
+    return OutputDispatch<System, ScalarType, SystemStructureTraits<System>::isTimeVarying, (SystemSizeTraits<System>::num_states != 0), ((SystemSizeTraits<System>::num_inputs != 0) && SystemStructureTraits<System>::isDirectFeedthrough)>::eval(sys, t, x, u);
+  }
+  template <typename System, typename ScalarType>
+  typename System::template OutputVector<ScalarType> output(const System& sys, const ScalarType& t, const typename System::template StateVector<ScalarType>& x) {
+    static_assert(!SystemStructureTraits<System>::isDirectFeedthrough,"Called output(sys,t,x) for a direct feedthrough system");
+    typename System::template InputVector<ScalarType> u;
     return OutputDispatch<System, ScalarType, SystemStructureTraits<System>::isTimeVarying, (SystemSizeTraits<System>::num_states != 0), ((SystemSizeTraits<System>::num_inputs != 0) && SystemStructureTraits<System>::isDirectFeedthrough)>::eval(sys, t, x, u);
   }
 
@@ -138,9 +150,6 @@ namespace Drake {
 
   template <typename System1, typename System2>
   struct SystemStructureTraits<FeedbackSystem<System1,System2>> {
-  // todo: assign these by looking at the implementations of update,dynamics, and output methods
-//    const static bool hasUpdate = false;
-//    const static bool hasDynamics = System1::StateVector<double;
     const static bool isTimeVarying = SystemStructureTraits<System1>::isTimeVarying || SystemStructureTraits<System2>::isTimeVarying;
     const static bool isDirectFeedthrough = SystemStructureTraits<System1>::isDirectFeedthrough;
   };
@@ -179,6 +188,15 @@ namespace Drake {
       OutputVector<ScalarType> y2 = output(*sys2,t,x.second(),y1);
       return y2;
     }
+    template <typename ScalarType>
+    OutputVector<ScalarType> output(const ScalarType& t, const StateVector<ScalarType>& x) const {
+      if (SystemStructureTraits<System2>::isDirectFeedthrough) {
+        static_assert(!SystemStructureTraits<System1>::isDirectFeedthrough,"if I get here, then system 1 had better not be direct feedthrough");
+        return output<System2,ScalarType>(*sys2, t, x.second(), output<System1,ScalarType>(*sys1, t, x.first()));
+      } else {
+        return output<System2,ScalarType>(*sys2, t, x.second());
+      }
+    }
 
   private:
     System1Ptr sys1;
@@ -193,9 +211,6 @@ namespace Drake {
 
   template <typename System1, typename System2>
   struct SystemStructureTraits<CascadeSystem<System1,System2>> {
-    // todo: assign these by looking at the implementations of update,dynamics, and output methods
-//    const static bool hasUpdate = false;
-//    const static bool hasDynamics = System1::StateVector<double;
     const static bool isTimeVarying = SystemStructureTraits<System1>::isTimeVarying || SystemStructureTraits<System2>::isTimeVarying;
     const static bool isDirectFeedthrough = SystemStructureTraits<System1>::isDirectFeedthrough && SystemStructureTraits<System2>::isDirectFeedthrough;
   };

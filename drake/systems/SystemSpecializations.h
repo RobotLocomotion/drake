@@ -107,23 +107,26 @@ namespace Drake {
 
   template <typename System, typename Enable = void>
   struct SystemOutputMethodTraits {
-    static const bool hasTimeArgument = true;
-    static const bool hasStateArgument = true;
-    static const bool hasInputArgument = true;
+    static const bool hasOutputMethod = false;
+    static const bool hasTimeArgument = false;
+    static const bool hasStateArgument = false;
+    static const bool hasInputArgument = false;
   };
 
 #define DrakeOutputMethodTraitsSpecialization(time, state, input, ...) \
   template <typename System> \
-  struct SystemOutputMethodTraits<System, typename std::enable_if<std::is_same<decltype(&System::template output<double>), typename System::template OutputVector<double> (System::*)( __VA_ARGS__ )>::value >::type> { \
+  struct SystemOutputMethodTraits<System, typename std::enable_if<std::is_same<decltype(&System::template output<double>), typename System::template OutputVector<double> (System::*)( __VA_ARGS__ ) const>::value >::type> { \
+    static const bool hasOutputMethod = true; \
     static const bool hasTimeArgument = time; \
     static const bool hasStateArgument = state; \
     static const bool hasInputArgument = input; \
   }; \
   template <typename System> \
-  struct SystemOutputMethodTraits<System, typename std::enable_if<std::is_same<decltype(&System::output), typename System::template OutputVector<double> (System::*)( __VA_ARGS__ )>::value >::type> { \
-      static const bool hasTimeArgument = time; \
-      static const bool hasStateArgument = state; \
-      static const bool hasInputArgument = input; \
+  struct SystemOutputMethodTraits<System, typename std::enable_if<std::is_same<decltype(&System::output), typename System::template OutputVector<double> (System::*)( __VA_ARGS__ ) const>::value >::type> { \
+    static const bool hasOutputMethod = true; \
+    static const bool hasTimeArgument = time; \
+    static const bool hasStateArgument = state; \
+    static const bool hasInputArgument = input; \
   };
 
   DrakeOutputMethodTraitsSpecialization(true,true,false,const double&, const typename System::template StateVector<double>&)

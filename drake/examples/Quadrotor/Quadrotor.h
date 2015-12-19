@@ -130,7 +130,7 @@ public:
   virtual ~Quadrotor(void) {};
 
   template <typename Scalar>
-  QuadrotorState<Scalar> dynamicsImplementation(const QuadrotorState<Scalar>& x, const QuadrotorInput<Scalar>& u) const {
+  QuadrotorState<Scalar> dynamics(const QuadrotorState<Scalar>& x, const QuadrotorInput<Scalar>& u) const {
     Eigen::Matrix<Scalar, 12, 1> xvec = x;
     Eigen::Matrix<Scalar, 3, 1> rpy(x.roll, x.pitch, x.yaw);
     Eigen::Matrix<Scalar, 3, 3> R = rpy2rotmat(rpy);
@@ -178,7 +178,7 @@ public:
   }
 
   template <typename ScalarType>
-  QuadrotorState<ScalarType> outputImplementation(const QuadrotorState<ScalarType>& x) const {
+  QuadrotorState<ScalarType> output(const QuadrotorState<ScalarType>& x) const {
     return x;
   }
 

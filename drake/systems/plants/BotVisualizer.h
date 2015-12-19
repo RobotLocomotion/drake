@@ -13,11 +13,12 @@
 
 namespace Drake {
 
-  template <template <typename> class InputVector>
+  template <template <typename> class InputVectorType>
   class BotVisualizer {
   public:
     template <typename ScalarType> using StateVector = NullVector<ScalarType>;
     template <typename ScalarType> using OutputVector = NullVector<ScalarType>;
+    template <typename ScalarType> using InputVector = InputVectorType<ScalarType>;
 
     BotVisualizer(const std::shared_ptr<lcm::LCM> &_lcm, const std::string &urdf_filename,
                   const DrakeJoint::FloatingBaseType floating_base_type) :
@@ -111,7 +112,7 @@ namespace Drake {
       lcm->publish("DRAKE_VIEWER_LOAD_ROBOT", &vr);
     }
 
-    NullVector<double> output(const double& t, const InputVector<double> &u) const {
+    OutputVector<double> output(const double& t, const InputVector<double>& u) const {
       draw_msg.timestamp = static_cast<int64_t>(t * 1000.0);
 
       Eigen::Matrix<double,InputVector<double>::RowsAtCompileTime,1> uvec(u);

@@ -81,5 +81,8 @@ int main(int argc, char* argv[])
   static_assert(SystemOutputMethodTraits<OutputTestTwo>::hasStateArgument==false,"output traits test");
   static_assert(SystemOutputMethodTraits<OutputTestTwo>::hasInputArgument==false,"output traits test");
 
+  static_assert(SystemStructureTraits<Pendulum>::isDirectFeedthrough==false,"pendulum should not be direct feedthrough");
+  static_assert(SystemStructureTraits<Pendulum>::isTimeVarying==false,"pendulum should be time-invariant");
+
   return 0;
 }

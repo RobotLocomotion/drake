@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
 
   auto sys = cascade(p,v);
 //  decltype(*sys) z = 1;
-  static_assert(SystemStructureTraits<CascadeSystem<Pendulum,BotVisualizer<PendulumState>>>::isTimeVarying==true,"does this work?");
+  static_assert(SystemStructureTraits<CascadeSystem<Pendulum,BotVisualizer<PendulumState>>>::isTimeVarying==true,"BotVisualizer should be time-varying");
 
   SimulationOptions options;
   options.realtime_factor=1.0;

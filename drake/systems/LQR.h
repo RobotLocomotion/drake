@@ -25,7 +25,7 @@ namespace Drake {
     typename System::template StateVector<AutoDiffType> x_taylor(xu_taylor.head(num_states));
     typename System::template InputVector<AutoDiffType> u_taylor(xu_taylor.tail(num_inputs));
 
-    auto xdot = autoDiffToGradientMatrix(toEigen(dynamics(sys,x_taylor,u_taylor)));
+    auto xdot = autoDiffToGradientMatrix(toEigen(dynamics<System,AutoDiffType>(sys,x_taylor,u_taylor)));
     auto A = xdot.leftCols(num_states);
     auto B = xdot.rightCols(num_inputs);
 

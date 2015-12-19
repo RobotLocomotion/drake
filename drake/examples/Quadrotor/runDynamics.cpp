@@ -12,6 +12,9 @@ int main(int argc, char* argv[]) {
   if(!lcm->good())
     return 1;
 
+  static_assert(!SystemStructureTraits<Quadrotor>::isDirectFeedthrough,"Quadrotor should not be direct feedthrough");
+  static_assert(!SystemStructureTraits<Quadrotor>::isTimeVarying,"Quadrotor should be time invariant");
+
   auto quad = make_shared<Quadrotor>();
   auto v = make_shared<BotVisualizer<QuadrotorState> >(lcm,getDrakePath()+"/examples/Quadrotor/quadrotor.urdf",DrakeJoint::ROLLPITCHYAW);
 
