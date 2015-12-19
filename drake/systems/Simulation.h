@@ -37,26 +37,18 @@ namespace Drake {
 
   template <typename System>
   void simulate(const System& sys, double t0, double tf, const typename System::template StateVector<double>& x0, const SimulationOptions& options) {
-    const static int num_states = SystemSizeTraits<System>::num_states;
-    const static int num_inputs = SystemSizeTraits<System>::num_inputs;
-    const static int num_outputs = SystemSizeTraits<System>::num_outputs;
-
-
     double t = t0, dt;
-//    std::cout << "x0 = " << x0.transpose() << std::endl;
+
     TimePoint start = TimeClock::now();
-    Eigen::Matrix<double,num_states,1> x = toEigen(x0);
-    Eigen::Matrix<double,num_states,1> xdot;
-    Eigen::Matrix<double,num_inputs,1> u; u.setConstant(0);
-    Eigen::Matrix<double,num_outputs,1> y;
+    typename System::template StateVector<double> x(x0), xdot;
+    typename System::template InputVector<double> u(Eigen::Matrix<double,SystemSizeTraits<System>::num_inputs,1>::Zero());
+    typename System::template OutputVector<double> y;
     while (t<tf) {
       handle_realtime_factor(start, t, options.realtime_factor);
-
-//      std::cout << "t=" << t << ", x = " << x.transpose() << std::endl;
       dt = (std::min)(options.initial_step_size,tf-t);
-      y = toEigen(output<System,double>(sys,t,x,u));   // todo: can I get rid of the explicit template parameter specifications?
-      xdot = toEigen(dynamics<System,double>(sys,t,x,u));
-      x += dt * xdot;
+      y = sys.output(t,x,u);
+      xdot = sys.dynamics(t,x,u);
+      x = toEigen(x) + dt * toEigen(xdot);
       t += dt;
     }
   }

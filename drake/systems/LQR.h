@@ -12,7 +12,7 @@ namespace Drake {
   std::shared_ptr<AffineSystem<NullVector,System::template StateVector,System::template InputVector>> timeInvariantLQR(const System& sys, const typename System::template StateVector<double>& x0, const typename System::template InputVector<double>& u0, const Eigen::MatrixXd& Q, const Eigen::MatrixXd& R) {
     const int num_states = System::template StateVector<double>::RowsAtCompileTime;
     const int num_inputs = System::template InputVector<double>::RowsAtCompileTime;
-    static_assert(!SystemStructureTraits<System>::isTimeVarying,"timeInvariantLQR only makes sense for time-invariant systems");
+    assert(!sys.isTimeVarying());
     static_assert(num_states != 0,"This system has no continuous states");
     using namespace std;
     using namespace Eigen;
@@ -25,7 +25,7 @@ namespace Drake {
     typename System::template StateVector<AutoDiffType> x_taylor(xu_taylor.head(num_states));
     typename System::template InputVector<AutoDiffType> u_taylor(xu_taylor.tail(num_inputs));
 
-    auto xdot = autoDiffToGradientMatrix(toEigen(dynamics<System,AutoDiffType>(sys,x_taylor,u_taylor)));
+    auto xdot = autoDiffToGradientMatrix(toEigen(sys.dynamics(AutoDiffType(0),x_taylor,u_taylor)));
     auto A = xdot.leftCols(num_states);
     auto B = xdot.rightCols(num_inputs);
 

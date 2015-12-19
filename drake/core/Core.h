@@ -43,6 +43,19 @@ template <typename ScalarType, int Rows> Eigen::Matrix<ScalarType,Rows,1> toEige
     return rand;
   }
 
+  namespace internal {
+    template<typename VecType, bool Enable = false>
+    struct SizeDispatch {
+      static std::size_t eval(const VecType &vec) { return VecType::RowsAtCompileTime; }
+    };
+
+    template<typename VecType>
+    struct SizeDispatch<VecType,true > {
+      static std::size_t eval(const VecType &vec) { return vec.size(); }
+    };
+  }
+  template <typename VecType> std::size_t size(const VecType& vec) { return internal::SizeDispatch<VecType,VecType::RowsAtCompileTime==-1>::eval(vec); }
+
   // Methods for building complicated vectors out of simpler vectors
 
   template <typename ScalarType, template <typename> class Vector1, template <typename> class Vector2>
@@ -51,6 +64,7 @@ template <typename ScalarType, int Rows> Eigen::Matrix<ScalarType,Rows,1> toEige
     const static size_t vec1_rows = Vector1<ScalarType>::RowsAtCompileTime,
                         vec2_rows = Vector2<ScalarType>::RowsAtCompileTime;
     CombinedVector() {};  // allow use of default constructors for vec1 and vec2, also
+    CombinedVector(const Vector1<ScalarType>& first, const Vector2<ScalarType>& second) : vec1(first), vec2(second) {};
     CombinedVector(const Eigen::Matrix<ScalarType,vec1_rows + vec2_rows,1>& x) : vec1(x.topRows(vec1_rows)), vec2(x.bottomRows(vec2_rows)) {};
     CombinedVector(const Eigen::Matrix<ScalarType,vec1_rows,1>& x1, const Eigen::Matrix<ScalarType,vec2_rows,1>& x2) : vec1(x1), vec2(x2) {};
 

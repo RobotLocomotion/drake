@@ -10,8 +10,8 @@ namespace Drake {
 ///   xdn = Ad*x + Bd*u + xdn0
 ///   y = C*x + D*u + y0
 
-template <template<typename> class StateVec, template<typename> class InputVec, template<typename> class OutputVec, bool isDirectFeedthrough=true>
-class AffineSystem {
+template <template<typename> class StateVec, template<typename> class InputVec, template<typename> class OutputVec>
+class AffineSystem : public System {
 public:
   template <typename ScalarType> using StateVector = StateVec<ScalarType>;
   template <typename ScalarType> using OutputVector = OutputVec<ScalarType>;
@@ -22,23 +22,22 @@ public:
 
   AffineSystem(const Eigen::Matrix<double,num_states,num_states>& A,const Eigen::Matrix<double,num_states,num_inputs>& B,const Eigen::Matrix<double,num_states,1>& xdot0,
                const Eigen::Matrix<double,num_outputs,num_states>& C,const Eigen::Matrix<double,num_outputs,num_inputs>& D,const Eigen::Matrix<double,num_outputs,1>& y0)
-          : A(A),B(B),C(C),D(D),xdot0(xdot0),y0(y0) {
-    assert(isDirectFeedthrough || D.isZero() );
-  }
+          : A(A),B(B),C(C),D(D),xdot0(xdot0),y0(y0) { }
 
   template <typename ScalarType>
-  StateVector<ScalarType> dynamics(const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {
+  StateVector<ScalarType> dynamics(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {
     StateVector<ScalarType> xdot = A*toEigen(x) + B*toEigen(u) + xdot0;
     return xdot;
   }
 
   template <typename ScalarType>
-  OutputVector<ScalarType> output(const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const  {
+  OutputVector<ScalarType> output(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const  {
     OutputVector<ScalarType> y = C*toEigen(x) + D*toEigen(u) + y0;
     return y;
   }
 
-  // todo: assign direct feedthrough
+  virtual bool isTimeVarying() const override { return false; }
+  virtual bool isDirectFeedthrough() const override { return !D.isZero(); }
 
 private:
   Eigen::Matrix<double,num_states,num_states> A;
@@ -47,12 +46,6 @@ private:
   Eigen::Matrix<double,num_outputs,num_inputs> D;
   Eigen::Matrix<double,num_states,1> xdot0;
   Eigen::Matrix<double,num_outputs,1> y0;
-};
-
-template <template <typename> class StateVec, template <typename> class OutputVec, template <typename> class InputVec, bool _isDirectFeedthrough>
-struct SystemStructureTraits<AffineSystem<StateVec,OutputVec,InputVec,_isDirectFeedthrough>> {
-  const static bool isTimeVarying = false;
-  const static bool isDirectFeedthrough = _isDirectFeedthrough;
 };
 
 

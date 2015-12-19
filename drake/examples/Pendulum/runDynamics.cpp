@@ -23,20 +23,9 @@ int main(int argc, char* argv[]) {
   cout << "PendulumState::x0 = " << x0 << endl;
 
   auto sys = cascade(p,v);
-//  decltype(*sys) z = 1;
-  static_assert(SystemStructureTraits<CascadeSystem<Pendulum,BotVisualizer<PendulumState>>>::isTimeVarying==true,"BotVisualizer should be time-varying");
 
   SimulationOptions options;
   options.realtime_factor=1.0;
 
-/*
-  { // test for a polynomial-based algorithm
-    static_assert(isPolynomial<Pendulum>,"requires polynomial dynamics");
-
-    PendulumState<Polynomial<double>> x;
-    PendulumInput<Polynomial<double>> u;
-    auto out = p->dynamicsImplementation(x,u);
-  }
-*/
-//  simulate(*sys,0,10,toEigen(x0),options); // todo: should not have to use toEigen here...
+  simulate(*sys,0,10,toEigen(x0),options); // todo: should not have to use toEigen here...
 }

@@ -14,7 +14,7 @@
 namespace Drake {
 
   template <template <typename> class InputVectorType>
-  class BotVisualizer {
+  class BotVisualizer : public System {
   public:
     template <typename ScalarType> using StateVector = NullVector<ScalarType>;
     template <typename ScalarType> using OutputVector = NullVector<ScalarType>;
@@ -112,10 +112,13 @@ namespace Drake {
       lcm->publish("DRAKE_VIEWER_LOAD_ROBOT", &vr);
     }
 
-    OutputVector<double> output(const double& t, const InputVector<double>& u) const {
+    StateVector<double> dynamics(const double& t, const StateVector<double>& x, const InputVector<double>& u) const { return StateVector<double>(); };
+
+
+    OutputVector<double> output(const double& t, const StateVector<double>& x, const InputVector<double>& u) const {
       draw_msg.timestamp = static_cast<int64_t>(t * 1000.0);
 
-      Eigen::Matrix<double,InputVector<double>::RowsAtCompileTime,1> uvec(u);
+      auto uvec = toEigen(u);
       auto q = uvec.head(manip.num_positions);
       KinematicsCache<double> cache = manip.doKinematics(q);
 

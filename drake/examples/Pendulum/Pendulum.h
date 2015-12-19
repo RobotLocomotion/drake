@@ -29,10 +29,7 @@ public:
     return os;
   }
 
-  enum {
-    RowsAtCompileTime = 2
-  };
-  std::size_t size() { return 2; }
+  const static int RowsAtCompileTime = 2;
 
   ScalarType theta;
   ScalarType thetadot;
@@ -51,7 +48,8 @@ template <typename ScalarType = double>
 class PendulumInput {
 public:
   PendulumInput(void) : tau(0) {};
-  PendulumInput(const Eigen::Matrix<ScalarType,1,1>& x) : tau(x(0)) {};
+  template <typename Derived>
+  PendulumInput(const Eigen::MatrixBase<Derived>& x) : tau(x(0)) {};
 
   template <typename Derived>
   PendulumInput& operator=(const Eigen::MatrixBase<Derived>& x) {
@@ -65,10 +63,7 @@ public:
     return os;
   }
 
-  enum {
-    RowsAtCompileTime = 1
-  };
-  std::size_t size() { return 1; }
+  const static int RowsAtCompileTime = 1;
 
   ScalarType tau;
 };
@@ -82,7 +77,7 @@ Eigen::Matrix<ScalarType,1,1> toEigen(const PendulumInput<ScalarType>& vec) {
 
 
 
-class Pendulum {
+class Pendulum : public Drake::System {
 public:
   template <typename ScalarType> using InputVector = PendulumInput<ScalarType>;
   template <typename ScalarType> using StateVector = PendulumState<ScalarType>;
@@ -99,7 +94,7 @@ public:
   virtual ~Pendulum(void) {};
 
   template <typename ScalarType>
-  PendulumState<ScalarType> dynamics(const PendulumState<ScalarType>& x, const PendulumInput<ScalarType>& u) const {
+  PendulumState<ScalarType> dynamics(const ScalarType& t, const PendulumState<ScalarType>& x, const PendulumInput<ScalarType>& u) const {
     PendulumState<ScalarType> dot;
     dot.theta = x.thetadot;
     dot.thetadot = (u.tau - m*g*lc*sin(x.theta) - b*x.thetadot)/I;
@@ -108,16 +103,19 @@ public:
 
 
   template <typename ScalarType>
-  PendulumState<ScalarType> output(const PendulumState<ScalarType>& x) const {
+  PendulumState<ScalarType> output(const ScalarType& t, const PendulumState<ScalarType>& x, const PendulumInput<ScalarType>& u) const {
     return x;
   }
+
+  virtual bool isTimeVarying() const override { return false; }
+  virtual bool isDirectFeedthrough() const override { return false; }
 
 public:
   double m,l,b,lc,I,g;  // pendulum parameters (initialized in the constructor)
 };
 
 
-class PendulumEnergyShapingController {
+class PendulumEnergyShapingController : public Drake::System {
 public:
   template <typename ScalarType> using InputVector = PendulumState<ScalarType>;
   template <typename ScalarType> using StateVector = Drake::NullVector<ScalarType>;
@@ -131,12 +129,17 @@ public:
   {};
 
   template <typename ScalarType>
-  PendulumInput<ScalarType> output(const PendulumState<ScalarType>& x) const {
-    ScalarType Etilde = .5 * m*l*l*x.thetadot*x.thetadot - m*g*l*cos(x.theta) - 1.1*m*g*l;
-    PendulumInput<ScalarType> u;
-    u.tau = b*x.thetadot - .1*x.thetadot*Etilde;
-    return u;
+  StateVector<ScalarType> dynamics(const ScalarType& t, const StateVector<ScalarType>& x, const PendulumState<ScalarType>& u) const { return StateVector<ScalarType>(); }
+
+  template <typename ScalarType>
+  PendulumInput<ScalarType> output(const ScalarType& t, const StateVector<ScalarType>& x, const PendulumState<ScalarType>& u) const {
+    ScalarType Etilde = .5 * m*l*l*u.thetadot*u.thetadot - m*g*l*cos(u.theta) - 1.1*m*g*l;
+    PendulumInput<ScalarType> y;
+    y.tau = b*u.thetadot - .1*u.thetadot*Etilde;
+    return y;
   }
+
+  virtual bool isTimeVarying() const override { return false; }
 
   double m,l,b,g;  // pendulum parameters (initialized in the constructor)
 };

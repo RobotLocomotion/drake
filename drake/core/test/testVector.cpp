@@ -26,6 +26,8 @@ int main(int argc, char* argv[])
   state.theta = 0.2;
   state.thetadot = .3;
 
+  assert(size(state)==2);
+
   state = x;
   assert(state.thetadot == 0.4);
 
@@ -71,18 +73,17 @@ int main(int argc, char* argv[])
 
   static_assert(Eigen::Matrix<double,2,1>::RowsAtCompileTime == 2,"failed to evaluate RowsAtCompileTime");
 
+/*
+  { // test for a polynomial-based algorithm
+    static_assert(isPolynomial<Pendulum>,"requires polynomial dynamics");
 
-//  decltype(&OutputTest::output) z = 1;  // will produce an error with (hopefully) a useful error message
+    PendulumState<Polynomial<double>> x;
+    PendulumInput<Polynomial<double>> u;
+    auto out = p->dynamicsImplementation(x,u);
+  }
+*/
 
-  static_assert(SystemOutputMethodTraits<OutputTest>::hasTimeArgument==true,"output traits test");
-  static_assert(SystemOutputMethodTraits<OutputTest>::hasStateArgument==false,"output traits test");
-  static_assert(SystemOutputMethodTraits<OutputTest>::hasInputArgument==false,"output traits test");
-  static_assert(SystemOutputMethodTraits<OutputTestTwo>::hasTimeArgument==true,"output traits test");
-  static_assert(SystemOutputMethodTraits<OutputTestTwo>::hasStateArgument==false,"output traits test");
-  static_assert(SystemOutputMethodTraits<OutputTestTwo>::hasInputArgument==false,"output traits test");
 
-  static_assert(SystemStructureTraits<Pendulum>::isDirectFeedthrough==false,"pendulum should not be direct feedthrough");
-  static_assert(SystemStructureTraits<Pendulum>::isTimeVarying==false,"pendulum should be time-invariant");
 
   return 0;
 }

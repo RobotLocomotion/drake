@@ -12,9 +12,6 @@ int main(int argc, char* argv[]) {
   if(!lcm->good())
     return 1;
 
-  static_assert(!SystemStructureTraits<Quadrotor>::isDirectFeedthrough,"Quadrotor should not be direct feedthrough");
-  static_assert(!SystemStructureTraits<Quadrotor>::isTimeVarying,"Quadrotor should be time invariant");
-
   auto quad = make_shared<Quadrotor>();
   auto v = make_shared<BotVisualizer<QuadrotorState> >(lcm,getDrakePath()+"/examples/Quadrotor/quadrotor.urdf",DrakeJoint::ROLLPITCHYAW);
 
@@ -24,5 +21,5 @@ int main(int argc, char* argv[]) {
   options.realtime_factor = 1.0;
   options.initial_step_size = 0.005;
 
-  simulate(*sys, 0, 50, toEigen(getRandomVector<QuadrotorState>()), options);
+  simulate(*sys, 0, 5, toEigen(getRandomVector<QuadrotorState>()), options);
 }

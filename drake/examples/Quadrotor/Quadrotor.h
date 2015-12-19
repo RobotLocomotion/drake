@@ -73,9 +73,11 @@ template <typename ScalarType = double>
 class QuadrotorInput {
 public:
   QuadrotorInput(void) : w1(0),w2(0),w3(0),w4(0) {};
-  QuadrotorInput(const Eigen::Matrix<ScalarType,4,1>& x) : w1(x(0)), w2(x(1)), w3(x(2)), w4(x(3)) {};
+  template <typename Derived>
+  QuadrotorInput(const Eigen::MatrixBase<Derived>& x) : w1(x(0)), w2(x(1)), w3(x(2)), w4(x(3)) {};
 
-  QuadrotorInput& operator=(const Eigen::Matrix<ScalarType,4,1>& input) {
+  template <typename Derived>
+  QuadrotorInput& operator=(const Eigen::MatrixBase<Derived>& input) {
     w1 = input(0);
     w2 = input(1);
     w3 = input(2);
@@ -111,7 +113,7 @@ Eigen::Matrix<ScalarType,4,1> toEigen(const QuadrotorInput<ScalarType>& vec) {
 
 
 
-class Quadrotor  {
+class Quadrotor : public Drake::System {
 public:
   template <typename ScalarType> using StateVector = QuadrotorState<ScalarType>;
   template <typename ScalarType> using OutputVector = QuadrotorState<ScalarType>;
@@ -130,8 +132,8 @@ public:
   virtual ~Quadrotor(void) {};
 
   template <typename Scalar>
-  QuadrotorState<Scalar> dynamics(const QuadrotorState<Scalar>& x, const QuadrotorInput<Scalar>& u) const {
-    Eigen::Matrix<Scalar, 12, 1> xvec = x;
+  QuadrotorState<Scalar> dynamics(const Scalar& t, const QuadrotorState<Scalar>& x, const QuadrotorInput<Scalar>& u) const {
+    Eigen::Matrix<Scalar, 12, 1> xvec = toEigen(x);
     Eigen::Matrix<Scalar, 3, 1> rpy(x.roll, x.pitch, x.yaw);
     Eigen::Matrix<Scalar, 3, 3> R = rpy2rotmat(rpy);
 
@@ -178,9 +180,12 @@ public:
   }
 
   template <typename ScalarType>
-  QuadrotorState<ScalarType> output(const QuadrotorState<ScalarType>& x) const {
+  QuadrotorState<ScalarType> output(const ScalarType& t, const QuadrotorState<ScalarType>& x, const QuadrotorInput<ScalarType>& u) const {
     return x;
   }
+
+  virtual bool isTimeVarying() const override { return false; }
+  virtual bool isDirectFeedthrough() const override { return false; }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
