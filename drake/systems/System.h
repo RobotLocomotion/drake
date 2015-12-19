@@ -7,19 +7,28 @@
 #include "Core.h"
 #include "SystemSpecializations.h"
 
+/** Modeling API:
+ *
+ *  System concept
+ *  feedback
+ *  cascade
+ *
+ */
 
-/// A Drake::System is a dynamical system that is compatible with most of our tools for design and analysis.
-/// It must have:
-///   - a real-vector-valued input, state, and output
-///   - deterministic dynamics and outputs given the input and state
-///   - continuous dynamics [ coming soon: no more than one discrete time-step (in addition to continuous dynamics) ]
-///  The input, state, and output coordinate systems are all described by CoordinateSystem objects
-///  In addition, it MAY have
-///   - time-varying dynamics and outputs
-///   - input limits (c++ support coming soon)
-///   - algebraic constraints (c++ support coming soon)
-///   - zero-crossings (c++ support coming soon) to inform the tools of discontinuities in the dynamics
 
+
+/** A Drake::System is a dynamical system that is compatible with most of our tools for design and analysis.
+ * It must have:
+ *   - a real-vector-valued input, state, and output
+ *   - deterministic dynamics and outputs given the input and state
+ *   - continuous dynamics [ coming soon: no more than one discrete time-step (in addition to continuous dynamics) ]
+ *  The input, state, and output coordinate systems are all described by CoordinateSystem objects
+ *  In addition, it MAY have
+ *   - time-varying dynamics and outputs
+ *   - input limits (c++ support coming soon)
+ *   - algebraic constraints (c++ support coming soon)
+ *  - zero-crossings (c++ support coming soon) to inform the tools of discontinuities in the dynamics
+ */
 
 namespace Drake {
 

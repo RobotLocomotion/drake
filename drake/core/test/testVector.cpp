@@ -74,8 +74,12 @@ int main(int argc, char* argv[])
 
 //  decltype(&OutputTest::output) z = 1;  // will produce an error with (hopefully) a useful error message
 
-  static_assert(SystemOutputMethodTraits<OutputTest>::hasTimeArgument==true,"should be true");
-  static_assert(SystemOutputMethodTraits<OutputTestTwo>::hasTimeArgument==true,"should be true");
+  static_assert(SystemOutputMethodTraits<OutputTest>::hasTimeArgument==true,"output traits test");
+  static_assert(SystemOutputMethodTraits<OutputTest>::hasStateArgument==false,"output traits test");
+  static_assert(SystemOutputMethodTraits<OutputTest>::hasInputArgument==false,"output traits test");
+  static_assert(SystemOutputMethodTraits<OutputTestTwo>::hasTimeArgument==true,"output traits test");
+  static_assert(SystemOutputMethodTraits<OutputTestTwo>::hasStateArgument==false,"output traits test");
+  static_assert(SystemOutputMethodTraits<OutputTestTwo>::hasInputArgument==false,"output traits test");
 
   return 0;
 }
