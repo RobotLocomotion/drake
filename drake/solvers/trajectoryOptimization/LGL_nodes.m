@@ -18,7 +18,6 @@
 % Urbana-Champaign
 % Date: 06/04/2015
 %--------------------------------------------------------------------------
-function tau = LGL_nodes(obj)
     % See Page 99 of the book: J. Shen, T. Tang and L. Wang, Spectral Methods:
     % Algorithms, Analysis and Applications, Springer Series in Compuational
     % Mathematics, 41, Springer, 2011. 
@@ -27,6 +26,8 @@ function tau = LGL_nodes(obj)
     % http://www1.spms.ntu.edu.sg/~lilian/bookcodes/legen/legslb.m
 
     % Compute the initial guess of the interior LGL points
+function tau = LGL_nodes(obj)
+
     N=obj.N-1;
     thetak = (4*[1:N]-1)*pi/(4*N+2);
     sigmak = -(1-(N-1)/(8*N^3)-(39-28./sin(thetak).^2)/(384*N^4)).*cos(thetak);
