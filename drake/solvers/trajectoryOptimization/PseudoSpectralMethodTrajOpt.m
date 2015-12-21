@@ -102,47 +102,26 @@ classdef PseudoSpectralMethodTrajOpt <DirectTrajectoryOptimization
 
 
       %subscript p indicates the parameters are from the psm method,f indicates they're from the dynamics
-      %from dynamics:
-      xdot_f=sparse(nX*N,1);
-      dxdh_f=sparse(nX*N,1);
-      dxdot_f=sparse(nX*N,nX*N);
-      udot_f=sparse(nX*N,N*nU);
-      dxandudot_f=sparse(N*(nX+nU),N*(nX+nU)+1);
-
-      %from psm
-      xdot_p_pre=sparse(nX,N);
-      xdot_p=sparse(nX*N,1);
-      dD_p=sparse(N*(nX+nU),N*(nX+nU));
-      dDxx_p=sparse(nX*N,nX*N);
-      dDxu_p=sparse(nX*N,nU*N);
-
-      dynamics=cell2mat(varargin);
+      dynamics=cell2mat(varargin);% all dynamics data
       xdot_all_knots=vertcat(dynamics.xdot);
-      xdot_f=xdot_all_knots*scale;
-      dxdh_f=xdot_all_knots/initial_h1;
+      xdot_f=xdot_all_knots*scale;% xdot from the dynamics
+      dxdotdh1_f=xdot_all_knots/initial_h1;% dxdot/dh1, also from dynamics
 
-      % dxdot_all_knots=vertcat(dynamics.dxdot);
-      % dxdotdx_all_knots=dxdot_all_knots(:,2:1+nX);
-      % dxdotdx_all_knots_tomatrix=reshape(full(dxdotdx_all_knots),nX,nX,N);
-      % dxdotdu_all_knots=dxdot_all_knots(:,2+nX:end);
+      dxdot_all_knots=vertcat(dynamics.dxdot);
+      dxdotdx_all_knots=dxdot_all_knots(:,2:1+nX);
+      dxdotdu_all_knots=dxdot_all_knots(:,2+nX:end);
+      dxdotdx_f=(repmat(dxdotdx_all_knots,1,N)).*kron(eye(N),ones(nX,nX))*scale;
+      dxdotdu_f=(repmat(dxdotdu_all_knots,1,N)).*kron(eye(N),ones(nX,nU))*scale;
 
-      
-      for k=1:N,
-        dxdot_f((k-1)*nX+1:k*nX,(k-1)*nX+1:k*nX) = varargin{k}.dxdot(:,2:1+nX)*scale;%%df/dx, with scaling
-        udot_f((k-1)*nX+1:k*nX,(k-1)*nU+1:k*nU) = varargin{k}.dxdot(:,2+nX:end)*scale; %%df/du 
-        D_k=repmat(D(k,:),nX,1);
-        xdot_p_pre(:,k)=sum(D_k.*x,2);
-        xdot_p_p=reshape(xdot_p_pre,N*nX,1);
-      end
-
-      dDxx_p=kron(D,eye(nX));
+      xdot_p=sum((kron(D,ones(nX,1))).*(repmat(x,N,1)),2);% xdot from PS approximation
+      dxdotdx_p=kron(D,eye(nX));% d(xdot_p)/dx 
 
       % difference between the dynamic and time-derivative of the psm fitting curve
-      g=[xdot_p_p]-[xdot_f];
+      g=[xdot_p]-[xdot_f];
       % gradient of such difference
-      dxandudot_f=[dxdh_f,dxdot_f,udot_f];
-      dD_p=[sparse(N*nX,1),dDxx_p,dDxu_p];
-      dg=dD_p-dxandudot_f;      
+      d_p=[sparse(N*nX,1),dxdotdx_p,sparse(nX*N,nU*N)]; % [dxdot_p/dh1, dxdot_p/dx,dxdot_p/du]
+      d_f=[dxdotdh1_f,dxdotdx_f,dxdotdu_f]; % dynamics gradient 
+      dg=d_p-d_f;      
     end
     
     
