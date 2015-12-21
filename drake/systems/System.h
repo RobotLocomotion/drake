@@ -13,7 +13,7 @@
 namespace Drake {
 
 /**
- * @defgroup system_concept System
+ * @defgroup system_concept System Concept
  * @ingroup concepts
  * @{
  * @brief Describes a dynamical system that is compatible with most of our tools for design and analysis
@@ -25,15 +25,12 @@ namespace Drake {
  * | X::StateVector     | type for the internal state of the system, which models the Vector<ScalarType> concept |
  * | X::InputVector     | type for the input to the system, which models the Vector<ScalarType> concept |
  * | X::OutputVector    | type for the output from the system, which models the Vector<ScalarType> concept |
- * | template <ScalarType> StateVector<ScalarType> X::dynamics(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) | $\dot{x} = dynamics(t,x,u)$ |
- * | template <ScalarType> OutputVector<ScalarType> X::output(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) | $y = output(t,x,u)$  |
+ * | template <ScalarType> StateVector<ScalarType> X::dynamics(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) | @f$ \dot{x} = \text{dynamics}(t,x,u) @f$ |
+ * | template <ScalarType> OutputVector<ScalarType> X::output(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) | @f$ y = \text{output}(t,x,u) @f$  |
+ * | bool isTimeVarying()  | should return false if output() and dynamics() methods do not depend on time.  @default true |
+ * | bool isDirectFeedthrough() | should return false if output() does not depend directly on the input u.  @default true |
  *
- * @nbsp
- *
- * | Models may overload the methods |  |
- * ---------------------|------------------------------------------------------------|
- * | virtual bool isTimeVarying() const override  | should return false if output() and dynamics() methods do not depend on time.  @default true |
- * | virtual bool isDirectFeedthrough() const override  | should return false if output() does not depend directly on the input u.  @default true |
+ * (always try to label your methods with const if possible)
  *
  * @nbsp
  *
@@ -52,12 +49,6 @@ namespace Drake {
  * @}
  */
 
-  class System {  // todo: consider renaming this (it's just part of the System interface)
-  public:
-    virtual bool isTimeVarying() const { return true;};  //  should return false if output() and dynamics() methods do not depend on time
-    virtual bool isDirectFeedthrough() const { return true; }; //  should return false if output() does not depend directly on the input u
-  };
-
   template <typename System>
   struct SystemSizeTraits {
     const static int num_states = System::template StateVector<double>::RowsAtCompileTime;
@@ -74,12 +65,12 @@ namespace Drake {
  * |-----------------------|-------------------------|
  * | auto feedback(const std::shared_ptr<System1>&, const std::shared_ptr<System2>&) | implements the feedback combination of two systems |
  * | auto cascade(const std::shared_ptr<System1>&, const std::shared_ptr<System2>&)  | implements the cascade combination of two systems |
- *@}
+ * @}
  */
 
 
   template <class System1, class System2>
-  class FeedbackSystem : public System {
+  class FeedbackSystem {
   public:
     template <typename ScalarType> using StateVector1 = typename System1::template StateVector<ScalarType>;
     template <typename ScalarType> using StateVector2 = typename System2::template StateVector<ScalarType>;
@@ -120,8 +111,8 @@ namespace Drake {
       return y1;
     }
 
-    virtual bool isTimeVarying() { return sys1->isTimeVarying() || sys2->isTimeVarying(); }
-    virtual bool isDirectFeedthrough() { return sys1->isDirectFeedthrough(); }
+    bool isTimeVarying() const { return sys1->isTimeVarying() || sys2->isTimeVarying(); }
+    bool isDirectFeedthrough() const { return sys1->isDirectFeedthrough(); }
 
   private:
     template <typename ScalarType>
@@ -147,7 +138,7 @@ namespace Drake {
   };
 
   template <class System1, class System2>
-  class CascadeSystem : public System {
+  class CascadeSystem {
   public:
     template <typename ScalarType> using StateVector = typename CombinedVectorBuilder<System1::template StateVector, System2::template StateVector>::template type<ScalarType>;
     template <typename ScalarType> using StateVector1 = typename System1::template StateVector<ScalarType>;
@@ -178,8 +169,8 @@ namespace Drake {
       return y2;
     }
 
-    virtual bool isTimeVarying() { return sys1->isTimeVarying() || sys2->isTimeVarying(); }
-    virtual bool isDirectFeedthrough() { return sys1->isDirectFeedthrough() && sys2->isDirectFeedthrough(); }
+    bool isTimeVarying() const { return sys1->isTimeVarying() || sys2->isTimeVarying(); }
+    bool isDirectFeedthrough() const { return sys1->isDirectFeedthrough() && sys2->isDirectFeedthrough(); }
 
   private:
     System1Ptr sys1;

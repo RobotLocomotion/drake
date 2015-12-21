@@ -76,7 +76,7 @@ Eigen::Matrix<ScalarType,1,1> toEigen(const PendulumInput<ScalarType>& vec) {
 
 
 
-class Pendulum : public Drake::System {
+class Pendulum {
 public:
   template <typename ScalarType> using InputVector = PendulumInput<ScalarType>;
   template <typename ScalarType> using StateVector = PendulumState<ScalarType>;
@@ -106,15 +106,15 @@ public:
     return x;
   }
 
-  virtual bool isTimeVarying() const override { return false; }
-  virtual bool isDirectFeedthrough() const override { return false; }
+  bool isTimeVarying() const  { return false; }
+  bool isDirectFeedthrough() const { return false; }
 
 public:
   double m,l,b,lc,I,g;  // pendulum parameters (initialized in the constructor)
 };
 
 
-class PendulumEnergyShapingController : public Drake::System {
+class PendulumEnergyShapingController {
 public:
   template <typename ScalarType> using InputVector = PendulumState<ScalarType>;
   template <typename ScalarType> using StateVector = Drake::NullVector<ScalarType>;
@@ -138,7 +138,8 @@ public:
     return y;
   }
 
-  virtual bool isTimeVarying() const override { return false; }
+  bool isTimeVarying() const { return false; }
+  bool isDirectFeedthrough() const { return true; }
 
   double m,l,b,g;  // pendulum parameters (initialized in the constructor)
 };

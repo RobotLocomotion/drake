@@ -14,7 +14,7 @@
 namespace Drake {
 
   template <template <typename> class InputVectorType>
-  class BotVisualizer : public System {
+  class BotVisualizer {
   public:
     template <typename ScalarType> using StateVector = NullVector<ScalarType>;
     template <typename ScalarType> using OutputVector = NullVector<ScalarType>;
@@ -137,6 +137,8 @@ namespace Drake {
       return Eigen::VectorXd::Zero(0);
     }
 
+    bool isTimeVarying() const { return true; }
+    bool isDirectFeedthrough() const { return true; }
 
   private:
     mutable RigidBodyTree manip;  // todo: remove mutable tag after RBM cleanup

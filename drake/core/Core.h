@@ -8,7 +8,7 @@
 namespace Drake {
   #include "Path.h"
 
-  /** @defgroup vector_concept Vector<ScalarType>
+  /** @defgroup vector_concept Vector<ScalarType> Concept
    * @ingroup concepts
    * @{
    * @brief Describes a (potentially structured) data which can be operated on as a (finite-dimensional) column vector

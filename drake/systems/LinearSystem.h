@@ -11,7 +11,7 @@ namespace Drake {
 ///   y = C*x + D*u + y0
 
 template <template<typename> class StateVec, template<typename> class InputVec, template<typename> class OutputVec>
-class AffineSystem : public System {
+class AffineSystem  {
 public:
   template <typename ScalarType> using StateVector = StateVec<ScalarType>;
   template <typename ScalarType> using OutputVector = OutputVec<ScalarType>;
@@ -36,8 +36,8 @@ public:
     return y;
   }
 
-  virtual bool isTimeVarying() const override { return false; }
-  virtual bool isDirectFeedthrough() const override { return !D.isZero(); }
+  bool isTimeVarying() const { return false; }
+  bool isDirectFeedthrough() const { return !D.isZero(); }
 
 private:
   Eigen::Matrix<double,num_states,num_states> A;

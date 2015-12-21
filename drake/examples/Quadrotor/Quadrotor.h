@@ -113,7 +113,7 @@ Eigen::Matrix<ScalarType,4,1> toEigen(const QuadrotorInput<ScalarType>& vec) {
 
 
 
-class Quadrotor : public Drake::System {
+class Quadrotor {
 public:
   template <typename ScalarType> using StateVector = QuadrotorState<ScalarType>;
   template <typename ScalarType> using OutputVector = QuadrotorState<ScalarType>;
@@ -184,8 +184,8 @@ public:
     return x;
   }
 
-  virtual bool isTimeVarying() const override { return false; }
-  virtual bool isDirectFeedthrough() const override { return false; }
+  bool isTimeVarying() const  { return false; }
+  bool isDirectFeedthrough() const  { return false; }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
