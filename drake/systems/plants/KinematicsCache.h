@@ -48,7 +48,9 @@ public:
   }
 
 public:
+#ifndef SWIG
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 template <typename Scalar>
@@ -179,7 +181,9 @@ private:
   }
 
 public:
+#ifndef SWIG
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 
