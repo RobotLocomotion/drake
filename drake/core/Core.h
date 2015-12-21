@@ -83,6 +83,9 @@ namespace Drake {
                         vec2_rows = Vector2<ScalarType>::RowsAtCompileTime;
     CombinedVector() {};  // allow use of default constructors for vec1 and vec2, also
     CombinedVector(const Vector1<ScalarType>& first, const Vector2<ScalarType>& second) : vec1(first), vec2(second) {};
+    CombinedVector(const Vector1<ScalarType>& first) : vec1(first) {}; // uses the default constructor for vec2
+    CombinedVector(const Vector2<ScalarType>& second) : vec2(second) {}; // uses the default constructor for vec1 (but could cause problems if they are the same type?)
+
     template <typename Derived> CombinedVector(const Eigen::MatrixBase<Derived>& x) : vec1(x.topRows(vec1_rows)), vec2(x.bottomRows(vec2_rows)) {};
     template <typename Derived1, typename Derived2> CombinedVector(const Eigen::MatrixBase<Derived1>& x1, const Eigen::MatrixBase<Derived2>& x2) : vec1(x1), vec2(x2) {};
 

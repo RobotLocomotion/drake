@@ -21,5 +21,5 @@ int main(int argc, char* argv[]) {
   options.realtime_factor = 1.0;
   options.initial_step_size = 0.005;
 
-  simulate(*sys, 0, 5, toEigen(getRandomVector<QuadrotorState>()), options);
+  simulate(*sys, 0, 5, getRandomVector<QuadrotorState>(), options);
 }
