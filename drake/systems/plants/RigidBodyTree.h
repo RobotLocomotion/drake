@@ -47,7 +47,9 @@ public:
   friend std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj);
 
 public:
+#ifndef SWIG 
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 class DRAKERBM_EXPORT RigidBodyTree
@@ -220,7 +222,7 @@ public:
   void getContactPositionsJac(const KinematicsCache<typename Derived::Scalar>& cache, Eigen::MatrixBase<Derived> &J, const std::set<int> &body_idx) const;// = emptyIntSet);
 
 //  template <typename Derived>
-//  void getContactPositionsJacDot(MatrixBase<Derived> &Jdot, const std::set<int> &body_idx);// = emptyIntSet);
+//  void getContactPositionsJacDot(Eigen::MatrixBase<Derived> &Jdot, const std::set<int> &body_idx);// = emptyIntSet);
 //
 
   /**
@@ -513,7 +515,9 @@ private:
   std::unique_ptr< DrakeCollision::Model > collision_model;
   //std::shared_ptr< DrakeCollision::Model > collision_model_no_margins;
 public:
+#ifndef SWIG 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 
 // The following was required for building w/ DRAKERBM_EXPORT on windows (due to the unique_ptrs).  See
 // http://stackoverflow.com/questions/8716824/cannot-access-private-member-error-only-when-class-has-export-linkage
