@@ -24,7 +24,7 @@ option(EXAMPLES_LITTLEDOG "planning and control for a small quadruped robot" OFF
 option(AUTO_UPDATE_EXTERNALS "external projects are updated to their tag revision on compile" ON)
 
 # Choose your python (major) version
-option(WITH_PYTHON_3 "Build extensions for python 3 instead of python 2" OFF)
+option(WITH_PYTHON_3 "Force Drake to use python 3 instead of python 2" OFF)
 
 # menu of external projects
 option(WITH_ALL_PUBLIC_EXTERNALS "enable all externals available to public academic users" OFF)
