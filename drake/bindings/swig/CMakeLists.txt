@@ -28,6 +28,12 @@ add_swig_python_module(lcmPython lcm.i
 #                        SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/python
 #                        DESTINATION ${python_install_subdir})
 
+add_swig_python_module(autodiffPython autodiff_utils.i
+                       CPLUSPLUS
+                       INCLUDE_DIRS 
+                       SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/python ${DRAKE_SWIG_FILES}/common
+                       DESTINATION ${python_install_subdir})
+
 add_swig_python_module(rbmPython rbm.i
                        CPLUSPLUS
                        INCLUDE_DIRS 
@@ -35,7 +41,7 @@ add_swig_python_module(rbmPython rbm.i
                          ${CMAKE_CURRENT_SOURCE_DIR}/../../util
                          ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants/joints 
                        LINK_LIBRARIES drakeRBM 
-                       SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/python
+                       SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/python ${DRAKE_SWIG_FILES}/common
                        DESTINATION ${python_install_subdir})
 
 add_swig_python_module(ikPython ik.i
@@ -69,6 +75,6 @@ if (MATLAB_FOUND)
 	                       INCLUDE_DIRS 
 	                         ${CMAKE_CURRENT_SOURCE_DIR}/..//../systems/plants 
 	                       LINK_LIBRARIES drakeRBM 
-	                       SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/matlab
+	                       SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/matlab ${DRAKE_SWIG_FILES}/common
 	                       DESTINATION matlab)
 endif()
