@@ -12,9 +12,17 @@
 
 namespace Drake {
 
+/** @defgroup modeling Modeling Dynamical Systems
+ * @{
+ * @brief Algorithms for combining sub-systems into a (potentially complex) system
+ * @}
+ */
+
+
 /**
  * @defgroup system_concept System Concept
  * @ingroup concepts
+ * @ingroup modeling
  * @{
  * @brief Describes a dynamical system that is compatible with most of our tools for design and analysis
  *
@@ -59,15 +67,14 @@ namespace Drake {
     static_assert(num_outputs >= 0, "still need to handle the variable-size case");
   };
 
-/**
- * @{
- * | Modeling | |
- * |-----------------------|-------------------------|
- * | auto feedback(const std::shared_ptr<System1>&, const std::shared_ptr<System2>&) | implements the feedback combination of two systems |
- * | auto cascade(const std::shared_ptr<System1>&, const std::shared_ptr<System2>&)  | implements the cascade combination of two systems |
- * @}
- */
 
+/** FeedbackSystem<System1,System2>
+ * @brief Builds a new system from the feedback connection of two simpler systems
+ * @concept{system_concept}
+ *
+ * ![Feedback combination of two systems](http://underactuated.csail.mit.edu/figures/feedback_system.svg)
+ *
+ */
 
   template <class System1, class System2>
   class FeedbackSystem {
@@ -131,12 +138,23 @@ namespace Drake {
     System2Ptr sys2;
   };
 
+  /** feedback(sys1, sys2)
+   * @brief Convenience method to create a feedback combination of two systems
+   * @ingroup modeling
+   */
   template <typename System1, typename System2>
   std::shared_ptr<FeedbackSystem<System1,System2>> feedback(const std::shared_ptr<System1>& sys1, const std::shared_ptr<System2>& sys2)
   {
     return std::make_shared<FeedbackSystem<System1,System2> >(sys1,sys2);
   };
 
+/** FeedbackSystem<System1,System2>
+ * @brief Builds a new system from the cascade connection of two simpler systems
+ * @concept{system_concept}
+ *
+ * ![Cascade combination of two systems](http://underactuated.csail.mit.edu/figures/cascade_system.svg)
+ *
+ */
   template <class System1, class System2>
   class CascadeSystem {
   public:
@@ -177,6 +195,10 @@ namespace Drake {
     System2Ptr sys2;
   };
 
+  /** cascade(sys1, sys2)
+   * @brief Convenience method to create a cascade combination of two systems
+   * @ingroup modeling
+   */
   template <typename System1, typename System2>
   std::shared_ptr<CascadeSystem<System1,System2>> cascade(const std::shared_ptr<System1>& sys1, const std::shared_ptr<System2>& sys2)
   {

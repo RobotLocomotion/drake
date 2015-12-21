@@ -5,10 +5,16 @@
 
 namespace Drake {
 
-/// Implements
-///   xcdot = Ac*x + Bc*u + xcdot0
-///   xdn = Ad*x + Bd*u + xdn0
-///   y = C*x + D*u + y0
+
+/** AffineSystem<StateVector,InputVector,OutputVector>
+ * @brief Builds an affine system from it's state-space matrix coefficients
+ * @concept{system_concept}
+ *
+ * Implements @f[
+ *   \dot{x} = Ax + B*u + \dot{x}_0 \\
+ *   y = Cx + Du + y_0
+ *  @f]
+ */
 
 template <template<typename> class StateVec, template<typename> class InputVec, template<typename> class OutputVec>
 class AffineSystem  {

@@ -13,12 +13,20 @@
 
 namespace Drake {
 
-  template <template <typename> class InputVectorType>
+  /** BotVisualizer<RobotStateVector>
+   * @brief A system which takes the robot state as input and publishes an lcm draw command to the drake visualizer
+   * @concept{system_concept}
+   *
+   * The resulting system has no internal state nor outputs, but the publish command is executed on every call to the output method.
+   *
+   */
+
+  template <template <typename> class RobotStateVector>
   class BotVisualizer {
   public:
     template <typename ScalarType> using StateVector = NullVector<ScalarType>;
     template <typename ScalarType> using OutputVector = NullVector<ScalarType>;
-    template <typename ScalarType> using InputVector = InputVectorType<ScalarType>;
+    template <typename ScalarType> using InputVector = RobotStateVector<ScalarType>;
 
     BotVisualizer(const std::shared_ptr<lcm::LCM> &_lcm, const std::string &urdf_filename,
                   const DrakeJoint::FloatingBaseType floating_base_type) :
