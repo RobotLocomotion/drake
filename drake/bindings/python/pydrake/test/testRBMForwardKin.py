@@ -2,10 +2,11 @@ from __future__ import print_function
 import unittest
 import numpy as np
 import pydrake
+import os.path
 
 class TestRBMForwardKin(unittest.TestCase):
     def testFK0(self):
-        r = pydrake.rbm.RigidBodyTree("../../examples/Pendulum/Pendulum.urdf")
+        r = pydrake.rbm.RigidBodyTree(os.path.join(pydrake.getDrakePath(), "examples/Pendulum/Pendulum.urdf"))
 
         kinsol = r.doKinematics(np.zeros((7,1)), np.zeros((7,1)))
 
@@ -13,7 +14,7 @@ class TestRBMForwardKin(unittest.TestCase):
         print(p)
 
     def testFK1(self):
-        r = pydrake.rbm.RigidBodyTree("../../examples/Pendulum/Pendulum.urdf")
+        r = pydrake.rbm.RigidBodyTree(os.path.join(pydrake.getDrakePath(), "examples/Pendulum/Pendulum.urdf"))
 
         kinsol = r.doKinematics(np.zeros((7,1)), np.zeros((7,1)))
 
