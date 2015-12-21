@@ -6,14 +6,14 @@ using namespace std;
 using namespace Drake;
 
 struct OutputTest {
-    template <typename ScalarType> using OutputVector = VectorBuilder<2>::VecType<ScalarType>;
+    template <typename ScalarType> using OutputVector = EigenVector<2>::type<ScalarType>;
 
     template <typename ScalarType>
     OutputVector<ScalarType> output(const ScalarType& t) const;
 };
 
 struct OutputTestTwo {
-    template <typename ScalarType> using OutputVector = VectorBuilder<2>::VecType<ScalarType>;
+    template <typename ScalarType> using OutputVector = EigenVector<2>::type<ScalarType>;
 
     OutputVector<double> output(const double& t) const;
 };

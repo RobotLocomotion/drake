@@ -6,35 +6,49 @@
 #include <Eigen/Dense>
 
 namespace Drake {
+  #include "Path.h"
 
-#include "Path.h"
+  /** @defgroup vector_concept Vector<ScalarType>
+   * @ingroup concepts
+   * @{
+   * @brief Describes a (potentially structured) data which can be operated on as a (finite-dimensional) column vector
+   *
+   * @nbsp
+   *
+   * | Valid Expressions (which must be implemented) |  |
+   * ------------------|-------------------------------------------------------------|
+   * | RowsAtCompileTime  | defined as a static constant int (or enum).  Can be Eigen::DYNAMIC. |
+   * | size_t size()      | only required if RowsAtCompileTime==Eigen::DYNAMIC |
+   * | template<Derived> Vector(const Eigen::MatrixBase<Derived>&)  | constructor taking an Eigen object |
+   * | template<Derived> Vector& operator=(const Eigen::MatrixBase<Derived>&)   | assignment operator from an Eigen object |
+   * | Eigen::Matrix<ScalarType,RowsAtCompileTime,1> toEigen(const Vector<ScalarType>&) | non-member namespace method which converts to the Eigen type |
+   *
+   * @nbsp
+   *
+   * | Valid Expressions (which may be overloaded) |   |
+   * |-----------------------|-------------------------|
+   * | const std::string& getCoordinateName(const Vector& vec, int index) | returns a textual name for the index coordinate |
+   * | Vector<double> getRandomVector() | returns a random vector |
+   *
+   * @}
+   */
 
-// useful refs on generic programming: http://www.generic-programming.org/languages/cpp/techniques.php
-//
-// Concept: Vector<ScalarType>.
-// Requirements:
-//  - Defines a static constant (or enum) RowsAtCompileTime (see Pendulum.h for an example).  Can be Eigen::DYNAMIC
-//  - implements size_t size(), which equals RowsAtCompileTime except when DYNAMIC
-//  - implements the copy constructor and the assignment operator= from const Eigen::MatrixBase<Derived>& (e.g. using "copy and swap")
-//  - overload the (non-class) method
-//        template <typename ScalarType> Eigen::Matrix<ScalarType,YourVectorType::RowsAtCompileTime,1> toEigen(const YourVectorType& vec);
-//    with the appropriate Rows filled in.
-// Optional:
-//  - overload the (non-class) method
-//       template <> const std::string& getCoordinateName<YourVectorType>(const Vector& vec, int index)
-// (The methods/defs below make it possible (and hopefully easy) to simply use Eigen::Matrix types to model this concept)
-
-template <typename ScalarType, int Rows> Eigen::Matrix<ScalarType,Rows,1> toEigen(const Eigen::Matrix<ScalarType,Rows,1>& vec) { return vec; }
-
-  // In order to use Eigen types to model the Drake::Vector concept, they must accept only a single template parameter (ScalarType)
-  // The following structures provide a means for doing it. (e.g. via Drake::VectorBuilder<Rows>::VecType )
-
+  /** EigenVector<Rows>::type<ScalarType>
+   * @brief provides an alias for Eigen::Matrix<ScalarType,Rows,1> which is templated on only a single argument (the ScalarType)
+   * @concept{vector_concept}
+   */
   template <int Rows>
-  struct VectorBuilder {
-    template <typename ScalarType> using VecType = Eigen::Matrix<ScalarType,Rows,1>;
+  struct EigenVector {
+    template <typename ScalarType> using type = Eigen::Matrix<ScalarType,Rows,1>;
   };
+
+  /** NullVector<ScalarType>
+   * @brief provides the empty vector (templated by ScalarType)
+   * @concept{vector_concept}
+   */
   template <typename ScalarType> using NullVector = Eigen::Matrix<ScalarType,0,1>;
 
+  template <typename ScalarType, int Rows> Eigen::Matrix<ScalarType,Rows,1> toEigen(const Eigen::Matrix<ScalarType,Rows,1>& vec) { return vec; }
 
   template <template <typename> class VecType>
   VecType<double> getRandomVector(void) {
@@ -56,8 +70,12 @@ template <typename ScalarType, int Rows> Eigen::Matrix<ScalarType,Rows,1> toEige
   }
   template <typename VecType> std::size_t size(const VecType& vec) { return internal::SizeDispatch<VecType,VecType::RowsAtCompileTime==-1>::eval(vec); }
 
-  // Methods for building complicated vectors out of simpler vectors
 
+
+  /** CombinedVector<ScalarType,Vector1,Vector2>
+   *
+   * @brief produces a new vector type which is the columnwise composition of vector1 and vector2
+   */
   template <typename ScalarType, template <typename> class Vector1, template <typename> class Vector2>
   class CombinedVector {
   public:
@@ -100,10 +118,16 @@ template <typename ScalarType, int Rows> Eigen::Matrix<ScalarType,Rows,1> toEige
     Vector2<ScalarType> vec2;
   };
 
-
+  /** CombinedVectorBuilder<Vector1,Vector2>::type<ScalarType>
+   * @brief Provides an alias to use the CombinedVector class as a model of the Vector concept
+   *
+   * Uses template aliasing so that combining a vector with the NullVector simply returns the orginal vector type.
+   *
+   * @concept{vector_concept}
+   */
   template <template <typename> class Vector1, template <typename> class Vector2>
   struct CombinedVectorBuilder {
-    template <typename ScalarType> using VecType = CombinedVector<ScalarType,Vector1,Vector2>;
+    template <typename ScalarType> using type = CombinedVector<ScalarType,Vector1,Vector2>;
   };
 
   template <template <typename> class Vector1>

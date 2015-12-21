@@ -7,32 +7,50 @@
 #include "Core.h"
 #include "SystemSpecializations.h"
 
-/** Modeling API:
- *
- *  System concept
- *  feedback
- *  cascade
- *
- */
 
 
-
-/** A Drake::System is a dynamical system that is compatible with most of our tools for design and analysis.
- * It must have:
- *   - a real-vector-valued input, state, and output
- *   - deterministic dynamics and outputs given the input and state
- *   - continuous dynamics [ coming soon: no more than one discrete time-step (in addition to continuous dynamics) ]
- *  The input, state, and output coordinate systems are all described by CoordinateSystem objects
- *  In addition, it MAY have
- *   - time-varying dynamics and outputs
- *   - input limits (c++ support coming soon)
- *   - algebraic constraints (c++ support coming soon)
- *  - zero-crossings (c++ support coming soon) to inform the tools of discontinuities in the dynamics
- */
 
 namespace Drake {
 
-  // todo: document description of the System concept
+/** @defgroup system_concept System
+ * @ingroup concepts
+ * @{
+ * @brief Describes a dynamical system that is compatible with most of our tools for design and analysis
+ *
+ * @nbsp
+ *
+ * | Every model of this concept must implement |  |
+ * ---------------------|------------------------------------------------------------|
+ * | X::StateVector     | type for the internal state of the system, which models the Vector<ScalarType> concept |
+ * | X::InputVector     | type for the input to the system, which models the Vector<ScalarType> concept |
+ * | X::OutputVector    | type for the output from the system, which models the Vector<ScalarType> concept |
+ * | template <ScalarType> StateVector<ScalarType> X::dynamics(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) | $\dot{x} = dynamics(t,x,u)$ |
+ * | template <ScalarType> OutputVector<ScalarType> X::output(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) | $y = output(t,x,u)$  |
+ *
+ * @nbsp
+ *
+ * | Models may overload the methods |  |
+ * ---------------------|------------------------------------------------------------|
+ * | virtual bool isTimeVarying() const override  | should return false if output() and dynamics() methods do not depend on time.  @default true |
+ * | virtual bool isDirectFeedthrough() const override  | should return false if output() does not depend directly on the input u.  @default true |
+ *
+ * @nbsp
+ *
+ * | Valid Expressions (which may be overloaded) |   |
+ * |-----------------------|-------------------------|
+ * | auto feedback(const std::shared_ptr<System1>&, const std::shared_ptr<System2>&) | implements the feedback combination of two systems |
+ * | auto cascade(const std::shared_ptr<System1>&, const std::shared_ptr<System2>&)  | implements the cascade combination of two systems |
+ *
+ * @nbsp
+ *
+ * Coming soon.  Support for:
+ *   - deterministic discrete update
+ *   - input limits
+ *   - state constraints
+ *   - zero-crossings (to inform the tools of discontinuities in the dynamics)
+ *
+ * @}
+ */
 
   class System {
   public:

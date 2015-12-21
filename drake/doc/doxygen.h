@@ -1,13 +1,12 @@
 
 /**
 @mainpage
-<span style="font-weight:bold; font-size:larger">First time?  Check out the <a href="inherits.html">Class Hierarchy</a></span>.
-<br />
 <p>
 If you want to make your own doxygen, run <b><i>make doxygen</i></b> in the root drake directory.  You may need to install doxygen (<i>sudo apt-get install doxygen</i>).</p>
 <p>
 Other useful pages:
 <ul>
+<li><a href="modules.html">Drake Metaprogramming Concepts</a></li> (<a href="http://www.generic-programming.org/languages/cpp/techniques.php">learn about generic programming</a>)
 <li><a href="class_drake_1_1_system.html">Drake::System</a></li>
 <li><a href="class_rigid_body_tree.html">RigidBodyTree</a></li>
 <li><a href="https://github.com/RobotLocomotion/drake/wiki/Documentation">Drake documentation main page</a></li>
