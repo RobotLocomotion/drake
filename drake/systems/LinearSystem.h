@@ -11,11 +11,11 @@ namespace Drake {
 ///   y = C*x + D*u + y0
 
 template <template<typename> class StateVec, template<typename> class InputVec, template<typename> class OutputVec>
-class AffineSystem : public System {
+class AffineSystem : public System<StateVec,InputVec,OutputVec> {
 public:
   template <typename ScalarType> using StateVector = StateVec<ScalarType>;
-  template <typename ScalarType> using OutputVector = OutputVec<ScalarType>;
   template <typename ScalarType> using InputVector = InputVec<ScalarType>;
+  template <typename ScalarType> using OutputVector = OutputVec<ScalarType>;
   const static int num_states = StateVector<double>::RowsAtCompileTime;
   const static int num_inputs = InputVector<double>::RowsAtCompileTime;
   const static int num_outputs = OutputVector<double>::RowsAtCompileTime;

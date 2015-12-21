@@ -113,11 +113,8 @@ Eigen::Matrix<ScalarType,4,1> toEigen(const QuadrotorInput<ScalarType>& vec) {
 
 
 
-class Quadrotor : public Drake::System {
+class Quadrotor : public Drake::System<QuadrotorState,QuadrotorInput,QuadrotorState> {
 public:
-  template <typename ScalarType> using StateVector = QuadrotorState<ScalarType>;
-  template <typename ScalarType> using OutputVector = QuadrotorState<ScalarType>;
-  template <typename ScalarType> using InputVector = QuadrotorInput<ScalarType>;
 
   Quadrotor() :
             m(0.5),

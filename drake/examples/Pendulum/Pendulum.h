@@ -76,11 +76,8 @@ Eigen::Matrix<ScalarType,1,1> toEigen(const PendulumInput<ScalarType>& vec) {
 
 
 
-class Pendulum : public Drake::System {
+class Pendulum : public Drake::System<PendulumState,PendulumInput,PendulumState> {
 public:
-  template <typename ScalarType> using InputVector = PendulumInput<ScalarType>;
-  template <typename ScalarType> using StateVector = PendulumState<ScalarType>;
-  template <typename ScalarType> using OutputVector = PendulumState<ScalarType>;
 
   Pendulum() :
           m(1.0), // kg
@@ -114,12 +111,8 @@ public:
 };
 
 
-class PendulumEnergyShapingController : public Drake::System {
+class PendulumEnergyShapingController : public Drake::System<Drake::NullVector,PendulumState,PendulumInput> {
 public:
-  template <typename ScalarType> using InputVector = PendulumState<ScalarType>;
-  template <typename ScalarType> using StateVector = Drake::NullVector<ScalarType>;
-  template <typename ScalarType> using OutputVector = PendulumInput<ScalarType>;
-
   PendulumEnergyShapingController(const Pendulum& pendulum)
           : m(pendulum.m),
             l(pendulum.l),
@@ -128,10 +121,10 @@ public:
   {};
 
   template <typename ScalarType>
-  StateVector<ScalarType> dynamics(const ScalarType& t, const StateVector<ScalarType>& x, const PendulumState<ScalarType>& u) const { return StateVector<ScalarType>(); }
+  Drake::NullVector<ScalarType> dynamics(const ScalarType& t, const Drake::NullVector<ScalarType>& x, const PendulumState<ScalarType>& u) const { return Drake::NullVector<ScalarType>(); }
 
   template <typename ScalarType>
-  PendulumInput<ScalarType> output(const ScalarType& t, const StateVector<ScalarType>& x, const PendulumState<ScalarType>& u) const {
+  PendulumInput<ScalarType> output(const ScalarType& t, const Drake::NullVector<ScalarType>& x, const PendulumState<ScalarType>& u) const {
     ScalarType Etilde = .5 * m*l*l*u.thetadot*u.thetadot - m*g*l*cos(u.theta) - 1.1*m*g*l;
     PendulumInput<ScalarType> y;
     y.tau = b*u.thetadot - .1*u.thetadot*Etilde;

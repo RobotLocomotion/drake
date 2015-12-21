@@ -52,7 +52,7 @@ int main(int argc, char* argv[])
     assert(test.second().tau == 6);
   }
   {
-    Drake::CombinedVectorBuilder<PendulumState,PendulumInput>::VecType<double> test(abc);
+    Drake::CombinedVectorBuilder<PendulumState,PendulumInput>::type<double> test(abc);
     test=2*abc;
     assert(test.first().theta == 2);
     assert(test.first().thetadot == 4);
@@ -62,11 +62,11 @@ int main(int argc, char* argv[])
     // combining a vector with an unused or empty vector should return the original type
     PendulumState<double> ps;
     {
-      Drake::CombinedVectorBuilder<PendulumState, NullVector>::VecType<double> test;
+      Drake::CombinedVectorBuilder<PendulumState, NullVector>::type<double> test;
       assert(typeid(ps).hash_code() == typeid(test).hash_code());
     }
     {
-      Drake::CombinedVectorBuilder<NullVector, PendulumState>::VecType<double> test;
+      Drake::CombinedVectorBuilder<NullVector, PendulumState>::type<double> test;
       assert(typeid(ps).hash_code() == typeid(test).hash_code());
     }
   }

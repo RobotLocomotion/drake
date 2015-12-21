@@ -12,50 +12,30 @@
 
 namespace Drake {
 
-/** @defgroup system_concept System
- * @ingroup concepts
- * @{
+/** System<StateVector,InputVector,OutputVector>
+ *
  * @brief Describes a dynamical system that is compatible with most of our tools for design and analysis
  *
- * @nbsp
- *
- * | Every model of this concept must implement |  |
- * ---------------------|------------------------------------------------------------|
- * | X::StateVector     | type for the internal state of the system, which models the Vector<ScalarType> concept |
- * | X::InputVector     | type for the input to the system, which models the Vector<ScalarType> concept |
- * | X::OutputVector    | type for the output from the system, which models the Vector<ScalarType> concept |
- * | template <ScalarType> StateVector<ScalarType> X::dynamics(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) | $\dot{x} = dynamics(t,x,u)$ |
- * | template <ScalarType> OutputVector<ScalarType> X::output(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) | $y = output(t,x,u)$  |
- *
- * @nbsp
- *
- * | Models may overload the methods |  |
- * ---------------------|------------------------------------------------------------|
- * | virtual bool isTimeVarying() const override  | should return false if output() and dynamics() methods do not depend on time.  @default true |
- * | virtual bool isDirectFeedthrough() const override  | should return false if output() does not depend directly on the input u.  @default true |
- *
- * @nbsp
- *
- * | Valid Expressions (which may be overloaded) |   |
- * |-----------------------|-------------------------|
- * | auto feedback(const std::shared_ptr<System1>&, const std::shared_ptr<System2>&) | implements the feedback combination of two systems |
- * | auto cascade(const std::shared_ptr<System1>&, const std::shared_ptr<System2>&)  | implements the cascade combination of two systems |
- *
- * @nbsp
+ * @param StateVector type for the internal state of the system, which models the Vector<ScalarType> concept
+ * @param InputVector type for the input to the system, which models the Vector<ScalarType> concept
+ * @param OutputVector type for the output from the system, which models the Vector<ScalarType> concept
  *
  * Coming soon.  Support for:
  *   - deterministic discrete update
  *   - input limits
  *   - state constraints
  *   - zero-crossings (to inform the tools of discontinuities in the dynamics)
- *
- * @}
  */
 
+  template <template<typename> class StateVectorType, template<typename> class InputVectorType, template<typename> class OutputVectorType>
   class System {
   public:
-    virtual bool isTimeVarying() const { return true;};
-    virtual bool isDirectFeedthrough() const { return true; };
+    template <typename ScalarType> using StateVector = StateVectorType<ScalarType>;
+    template <typename ScalarType> using InputVector = InputVectorType<ScalarType>;
+    template <typename ScalarType> using OutputVector = OutputVectorType<ScalarType>;
+
+    virtual bool isTimeVarying() const { return true;};  //  should return false if output() and dynamics() methods do not depend on time
+    virtual bool isDirectFeedthrough() const { return true; }; //  should return false if output() does not depend directly on the input u
   };
 
   template <typename System>
@@ -68,17 +48,30 @@ namespace Drake {
     static_assert(num_outputs >= 0, "still need to handle the variable-size case");
   };
 
+/**
+ * @{
+ * | Modeling | |
+ * |-----------------------|-------------------------|
+ * | auto feedback(const std::shared_ptr<System1>&, const std::shared_ptr<System2>&) | implements the feedback combination of two systems |
+ * | auto cascade(const std::shared_ptr<System1>&, const std::shared_ptr<System2>&)  | implements the cascade combination of two systems |
+ *@}
+ */
+
 
   template <class System1, class System2>
-  class FeedbackSystem : public System {
+  class FeedbackSystem : public System<
+          CombinedVectorBuilder<System1::template StateVector , System2::template StateVector>::template type,
+          System1::template InputVector,
+          System1::template OutputVector>
+  {
   public:
-    template <typename ScalarType> using StateVector = typename CombinedVectorBuilder<System1::template StateVector , System2::template StateVector>::template VecType<ScalarType>;
+    template <typename ScalarType> using StateVector1 = typename System1::template StateVector<ScalarType>;
+    template <typename ScalarType> using StateVector2 = typename System2::template StateVector<ScalarType>;
+    template <typename ScalarType> using StateVector = typename CombinedVectorBuilder<System1::template StateVector, System2::template StateVector>::template type<ScalarType>;
     template <typename ScalarType> using InputVector = typename System1::template InputVector<ScalarType>;
     template <typename ScalarType> using OutputVector = typename System1::template OutputVector<ScalarType>;
     const static int num_inputs = SystemSizeTraits<System1>::num_inputs;
 
-    template <typename ScalarType> using StateVector1 = typename System1::template StateVector<ScalarType>;
-    template <typename ScalarType> using StateVector2 = typename System2::template StateVector<ScalarType>;
     typedef std::shared_ptr<System1> System1Ptr;
     typedef std::shared_ptr<System2> System2Ptr;
 
@@ -138,9 +131,13 @@ namespace Drake {
   };
 
   template <class System1, class System2>
-  class CascadeSystem : public System {
+  class CascadeSystem : public System<
+          CombinedVectorBuilder<System1::template StateVector , System2::template StateVector>::template type,
+          System1::template InputVector,
+          System2::template OutputVector >
+  {
   public:
-    template <typename ScalarType> using StateVector = typename CombinedVectorBuilder<System1::template StateVector , System2::template StateVector>::template VecType<ScalarType>;
+    template <typename ScalarType> using StateVector = typename CombinedVectorBuilder<System1::template StateVector, System2::template StateVector>::template type<ScalarType>;
     template <typename ScalarType> using StateVector1 = typename System1::template StateVector<ScalarType>;
     template <typename ScalarType> using StateVector2 = typename System2::template StateVector<ScalarType>;
     template <typename ScalarType> using InputVector = typename System1::template InputVector<ScalarType>;
@@ -151,8 +148,7 @@ namespace Drake {
 
     static_assert(std::is_same<typename System1::template OutputVector<double>,typename System2::template InputVector<double>>::value,"System 2 input vector must match System 1 output vector");
 
-    CascadeSystem(const System1Ptr& _sys1, const System2Ptr& _sys2) : sys1(_sys1),sys2(_sys2) {
-    };
+    CascadeSystem(const System1Ptr& _sys1, const System2Ptr& _sys2) : sys1(_sys1),sys2(_sys2) { };
 
     template <typename ScalarType>
     StateVector<ScalarType> dynamics(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {

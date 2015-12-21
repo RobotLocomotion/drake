@@ -83,10 +83,11 @@ namespace Drake {
                         vec2_rows = Vector2<ScalarType>::RowsAtCompileTime;
     CombinedVector() {};  // allow use of default constructors for vec1 and vec2, also
     CombinedVector(const Vector1<ScalarType>& first, const Vector2<ScalarType>& second) : vec1(first), vec2(second) {};
-    CombinedVector(const Eigen::Matrix<ScalarType,vec1_rows + vec2_rows,1>& x) : vec1(x.topRows(vec1_rows)), vec2(x.bottomRows(vec2_rows)) {};
-    CombinedVector(const Eigen::Matrix<ScalarType,vec1_rows,1>& x1, const Eigen::Matrix<ScalarType,vec2_rows,1>& x2) : vec1(x1), vec2(x2) {};
+    template <typename Derived> CombinedVector(const Eigen::MatrixBase<Derived>& x) : vec1(x.topRows(vec1_rows)), vec2(x.bottomRows(vec2_rows)) {};
+    template <typename Derived1, typename Derived2> CombinedVector(const Eigen::MatrixBase<Derived1>& x1, const Eigen::MatrixBase<Derived2>& x2) : vec1(x1), vec2(x2) {};
 
-    CombinedVector& operator=(const Eigen::Matrix<ScalarType,vec1_rows + vec2_rows,1>& x) {
+    template <typename Derived>
+    CombinedVector& operator=(const Eigen::MatrixBase<Derived>& x) {
       vec1 = x.topRows(vec1_rows);
       vec2 = x.bottomRows(vec2_rows);
       return *this;
@@ -121,24 +122,27 @@ namespace Drake {
   /** CombinedVectorBuilder<Vector1,Vector2>::type<ScalarType>
    * @brief Provides an alias to use the CombinedVector class as a model of the Vector concept
    *
-   * Uses template aliasing so that combining a vector with the NullVector simply returns the orginal vector type.
-   *
    * @concept{vector_concept}
    */
-  template <template <typename> class Vector1, template <typename> class Vector2>
+
+  template <template <typename> class Vector1, template <typename> class Vector2, typename Enable = void>
   struct CombinedVectorBuilder {
     template <typename ScalarType> using type = CombinedVector<ScalarType,Vector1,Vector2>;
   };
-
-  template <template <typename> class Vector1>
-  struct CombinedVectorBuilder<Vector1,NullVector> {
-    template <typename ScalarType> using VecType = Vector1<ScalarType>;
+/*
+  * Uses template aliasing so that combining a vector with the NullVector simply returns the orginal vector type.
+  *
+  // note: if I decide to leave out this the template aliasing trick, then this type could potentially go right into the CombinedVector class
+  template <template <typename> class Vector1, template <typename> class Vector2>
+  struct CombinedVectorBuilder<Vector1,Vector2,typename std::enable_if<Vector2<double>::RowsAtCompileTime==0>::type > {
+    template <typename ScalarType> using type = Vector1<ScalarType>;
   };
 
-  template <template <typename> class Vector2>
-  struct CombinedVectorBuilder<NullVector,Vector2> {
-    template <typename ScalarType> using VecType = Vector2<ScalarType>;
+  template <template <typename> class Vector1, template <typename> class Vector2>
+  struct CombinedVectorBuilder<Vector1,Vector2,typename std::enable_if<Vector1<double>::RowsAtCompileTime==0>::type > {
+    template <typename ScalarType> using type = Vector2<ScalarType>;
   };
+*/
 
   namespace FunctionalForm {
     // these are meant as tags which can be used to inform algorithms about underlying structure in a function (or system)
