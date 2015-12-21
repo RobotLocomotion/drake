@@ -5,9 +5,9 @@
 
 <p>Drake's C++ library is divided into data-structures (Vectors, Dynamical Systems, ...) and algorithms which operate on those structures.  Those algorithms are grouped into the following categories:</p>
 <ul>
-<li><a href="group__modeling.html.html">Modeling Dynamical Systems</a></li>
-<li><a href="class_rigid_body_tree.html">Algorithms for Rigid-Body Systems</a></li>
-<li>Simulation</li>
+<li><a href="group__modeling.html">Modeling Dynamical Systems</a></li>
+<li><a href="class_rigid_body_tree.html">Rigid-Body Kinematics and Dynamics</a></li>
+<li><a href="group__simulation.html">Simulation</a></li>
 <li>Analysis</li>
 <li>Planning</li>
 <li>Feedback Control Design</li>

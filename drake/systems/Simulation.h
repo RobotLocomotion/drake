@@ -6,6 +6,13 @@
 
 namespace Drake {
 
+  /** @defgroup simulation Simulation
+ * @{
+ * @brief Algorithms for simulating dynamical systems
+ * @}
+ */
+
+
   // simulation options
   struct SimulationOptions {
     double realtime_factor;  // 1 means try to run at realtime speed, < 0 is run as fast as possible
@@ -35,6 +42,11 @@ namespace Drake {
     }
   }
 
+  /** simulate
+   * @brief Runs a simulation given a model, it's initial conditions, and a number of simulation parameters
+   * @ingroup simulation
+   *
+   */
   template <typename System>
   void simulate(const System& sys, double t0, double tf, const typename System::template StateVector<double>& x0, const SimulationOptions& options) {
     double t = t0, dt;
@@ -53,6 +65,11 @@ namespace Drake {
     }
   }
 
+  /** simulate
+   * @brief Runs a simulation using the default simulation options
+   * @ingroup simulation
+   *
+   */
   template <typename System>
   void simulate(const System& sys, double t0, double tf, const typename System::template StateVectorType<double>& x0)  {
     simulate(sys,t0,tf,x0,default_simulation_options);
