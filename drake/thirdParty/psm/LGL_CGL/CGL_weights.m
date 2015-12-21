@@ -11,13 +11,14 @@
 % Urbana-Champaign
 % Date: 06/04/2015
 %--------------------------------------------------------------------------
+function w = CGL_weights(tau)
+    % number of nodes
+    N = length(tau)-1;
+
     % p. 128, Spectral Methods in MATLAB, Lloyd N. Trefethen
     % CLENCURT nodes x (Chebyshev points) and weights w
     % for Clenshaw-Curtis quadrature
     % function [x,w] = clencurt(N)
-function w = CGL_weights(tau)
-    % number of nodes
-    N = length(tau)-1;
     theta = pi*(0:N)'/N; x = cos(theta);
     w = zeros(1,N+1); ii = 2:N; v = ones(N-1,1);
     if mod(N,2)==0

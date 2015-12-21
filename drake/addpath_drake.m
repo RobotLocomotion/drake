@@ -50,6 +50,8 @@ addpath(fullfile(root,'util','geometry'));
 addpath(fullfile(root,'util','visualization'));
 addpath(fullfile(root,'thirdParty'));
 addpath(fullfile(root,'thirdParty','path'));
+addpath(fullfile(root,'thirdParty','psm','Lagrange'));
+addpath(fullfile(root,'thirdParty','psm','LGL_CGL'));
 addpath(fullfile(root,'thirdParty','spatial'));
 addpath(fullfile(root,'thirdParty','cprintf'));
 addpath(fullfile(root,'thirdParty','GetFullPath'));

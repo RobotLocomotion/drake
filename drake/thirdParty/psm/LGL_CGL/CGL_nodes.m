@@ -21,10 +21,7 @@
 function tau = CGL_nodes(obj)
 
 	N=obj.N-1;
-    syms n
     % calculate node locations
-    for k = 0:N
-        tau(k+1,1) = -cos(pi*k/n); % symbolically to maintain precision
-    end
-    tau = double(subs(tau,'n',N));
+    k=0:N;
+    tau=(-cos(pi*k/N))';
 end

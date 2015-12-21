@@ -3,22 +3,24 @@
 % determines approximate differentiation matrix for Legendre-based method
 % with LGL nodes
 %--------------------------------------------------------------------------
+% D = LGL_Dmatrix(tau)
+% tau: LGL nodes
+%   D: differentiation matrix
+%--------------------------------------------------------------------------
 % Author: Daniel R. Herber, Graduate Student, University of Illinois at
 % Urbana-Champaign
 % Date: 06/04/2015
 %--------------------------------------------------------------------------
+function D = LGL_Dmatrix(tau)
+    % number of nodes
+    N = length(tau)-1;
+
     % See Page 110 of the book: J. Shen, T. Tang and L. Wang, Spectral Methods:
     % Algorithms, Analysis and Applications, Springer Series in Compuational
     % Mathematics, 41, Springer, 2011. 
     % Uses the function: lepoly()
     % Original function: D = legslbdiff(n,x) located at
     % http://www1.spms.ntu.edu.sg/~lilian/bookcodes/legen/legslbdiff.m
-
-function D = LGL_Dmatrix(tau)
-    % number of nodes
-    N = length(tau)-1;
-
-
     n = N + 1;
     if n==0, D = []; return; end;   % null differentiation matrix
     xx = tau; y = lepoly(n-1,xx);
