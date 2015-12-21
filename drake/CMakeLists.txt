@@ -21,7 +21,7 @@ if(WITH_PYTHON_3)
   set(Python_ADDITIONAL_VERSIONS 3.5)
   find_package(PythonInterp 3 REQUIRED)
 else()
-  find_package(PythonInterp 2 MINIMUM)
+  find_package(PythonInterp REQUIRED)
 endif()
 
 # set up pods

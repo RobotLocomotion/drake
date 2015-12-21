@@ -6,7 +6,7 @@ from pydrake.solvers import ik
 
 class TestRBMIK(unittest.TestCase):
     def testPostureConstraint(self):
-        r = pydrake.rbm.RigidBodyManipulator("../../examples/Pendulum/Pendulum.urdf")
+        r = pydrake.rbm.RigidBodyTree("../../examples/Pendulum/Pendulum.urdf")
         q = -0.9
         posture_constraint = ik.PostureConstraint(r)
         posture_constraint.setJointLimits(np.array([[6]], dtype=np.int32),
