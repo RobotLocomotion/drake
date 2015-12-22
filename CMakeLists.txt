@@ -34,7 +34,6 @@ option(REMOVE_UNUSED_EXTERNALS "enable this to remove those projects from disk" 
 # ON by default:
 option(WITH_EIGEN		"required c++ matrix library.  only disable if you have it already."    ON)
 option(WITH_SWIGMAKE    "helper tools to build python & MATLAB wrappers for C++ libraries with Eigen" ON)
-option(WITH_SWIG_MATLAB "A version of SWIG with MATLAB support" OFF)
 if (WIN32)
    if (CMAKE_SIZEOF_VOID_P EQUAL 8)  # gtk only compiles on win64 right now
 	option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" ON)
@@ -45,6 +44,7 @@ else()
 	option(WITH_DIRECTOR	"vtk-based visualization tool and robot user interface"   ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
 	option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	ON) # there is hope, but i spent a long time cleaning up c/c++ language errors trying to make msvc happy.. and still had a long way to go.
 	option(WITH_BULLET 		"used for collision detection" 	ON) # almost works.  just one remaining link error..?
+	option(WITH_SWIG_MATLAB "A version of SWIG with MATLAB support" OFF)
 endif()
 find_program(matlab matlab)
 if (matlab)
