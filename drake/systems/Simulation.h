@@ -3,6 +3,7 @@
 
 #include <thread>
 #include <chrono>
+#include <stdexcept>
 
 namespace Drake {
 
