@@ -48,7 +48,9 @@ public:
   }
 
 public:
+#ifndef SWIG
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 template <typename Scalar>
@@ -64,7 +66,7 @@ private:
   bool inertias_cached;
 
 public:
-  KinematicsCache(const std::vector<std::shared_ptr<RigidBody>>& bodies) :
+  KinematicsCache(const std::vector<std::shared_ptr<RigidBody> >& bodies) :
       q(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(getNumPositions(bodies), 1)),
       v(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(getNumVelocities(bodies), 1)),
       velocity_vector_valid(false)
@@ -164,14 +166,14 @@ private:
     inertias_cached = false;
   }
 
-  static int getNumPositions(const std::vector<std::shared_ptr<RigidBody>>& bodies) {
+  static int getNumPositions(const std::vector<std::shared_ptr<RigidBody> >& bodies) {
     auto add_num_positions = [] (int result, std::shared_ptr<RigidBody> body_ptr) -> int {
       return body_ptr->hasParent() ? result + body_ptr->getJoint().getNumPositions() : result;
     };
     return std::accumulate(bodies.begin(), bodies.end(), 0, add_num_positions);
   }
 
-  static int getNumVelocities(const std::vector<std::shared_ptr<RigidBody>>& bodies) {
+  static int getNumVelocities(const std::vector<std::shared_ptr<RigidBody> >& bodies) {
     auto add_num_velocities = [] (int result, std::shared_ptr<RigidBody> body_ptr) -> int {
       return body_ptr->hasParent() ? result + body_ptr->getJoint().getNumVelocities() : result;
     };
@@ -179,7 +181,9 @@ private:
   }
 
 public:
+#ifndef SWIG
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 
