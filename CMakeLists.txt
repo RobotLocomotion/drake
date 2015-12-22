@@ -34,7 +34,6 @@ option(REMOVE_UNUSED_EXTERNALS "enable this to remove those projects from disk" 
 # ON by default:
 option(WITH_EIGEN		"required c++ matrix library.  only disable if you have it already."    ON)
 option(WITH_SWIGMAKE    "helper tools to build python & MATLAB wrappers for C++ libraries with Eigen" ON)
-option(WITH_SWIG_MATLAB "A version of SWIG with MATLAB support" ON)
 if (WIN32)
    if (CMAKE_SIZEOF_VOID_P EQUAL 8)  # gtk only compiles on win64 right now
 	option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" ON)
@@ -81,7 +80,7 @@ set(libbot_dependencies lcm)
 set(director_dependencies lcm libbot)
 set(iris_dependencies eigen mosek)
 set(signalscope_dependencies director)
-set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi swig_matlab swigmake)
+set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi swigmake)
 
 # download information, in alphabetical order
 set(avl_GIT_REPOSITORY https://github.com/RobotLocomotion/avl.git)
@@ -152,8 +151,6 @@ set(snopt_IS_PUBLIC FALSE)
 set(spotless_GIT_REPOSITORY https://github.com/RobotLocomotion/spotless-pod.git)
 set(swigmake_GIT_REPOSITORY https://github.com/rdeits/swigmake.git)
 set(swigmake_GIT_TAG 99d1e020f926620a0055dc2680c8970ed95ee8b4)
-set(swig_matlab_GIT_REPOSITORY https://github.com/rdeits/swig-matlab-pod.git)
-set(swig_matlab_GIT_TAG 340e6e071c6293e8e687959652341551175e6a86)
 set(spotless_GIT_TAG 2b0c25ebb1733950284c7e0be55a1a84304f7543)
 set(spotless_IS_CMAKE_POD TRUE)
 set(spotless_IS_PUBLIC TRUE)
@@ -204,7 +201,6 @@ foreach(proj IN ITEMS
 		xfoil
 		meshconverters
 		swigmake
-		swig_matlab
 		drake)
 	string(TOUPPER ${proj} proj_upper)
 	if ( ${proj} STREQUAL "drake" OR
