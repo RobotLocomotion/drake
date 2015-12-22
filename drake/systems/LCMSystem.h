@@ -16,7 +16,7 @@ namespace Drake {
    * | Valid Expressions (which must be implemented) |  |
    * ------------------|-------------------------------------------------------------|
    * | LCMMessageType  | defined with a typedef                                      |
-   * | channel         | defined as a const static std::string                       |
+   * | std::string channel() const         | return the name of the channel to subscribe to/ publish on      |
    * | bool encode(const double& t, const Vector<double>& x, LCMMessageType& msg) | define the mapping from your LCM type to your Vector type |
    * | bool decode(const LCMMessageType& msg, double& t, Vector<double>& x)  | define the mapping from your Vector type to your LCM type |
    */
