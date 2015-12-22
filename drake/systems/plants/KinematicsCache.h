@@ -166,14 +166,14 @@ private:
     inertias_cached = false;
   }
 
-  static int getNumPositions(const std::vector<std::shared_ptr<RigidBody>>& bodies) {
+  static int getNumPositions(const std::vector<std::shared_ptr<RigidBody> >& bodies) {
     auto add_num_positions = [] (int result, std::shared_ptr<RigidBody> body_ptr) -> int {
       return body_ptr->hasParent() ? result + body_ptr->getJoint().getNumPositions() : result;
     };
     return std::accumulate(bodies.begin(), bodies.end(), 0, add_num_positions);
   }
 
-  static int getNumVelocities(const std::vector<std::shared_ptr<RigidBody>>& bodies) {
+  static int getNumVelocities(const std::vector<std::shared_ptr<RigidBody> >& bodies) {
     auto add_num_velocities = [] (int result, std::shared_ptr<RigidBody> body_ptr) -> int {
       return body_ptr->hasParent() ? result + body_ptr->getJoint().getNumVelocities() : result;
     };
