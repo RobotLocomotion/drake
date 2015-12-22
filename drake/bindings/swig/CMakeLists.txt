@@ -44,16 +44,18 @@ add_swig_python_module(rbmPython rbm.i
                        SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/python ${DRAKE_SWIG_FILES}/common
                        DESTINATION ${python_install_subdir})
 
-add_swig_python_module(ikPython ik.i
-                       CPLUSPLUS
-                       INCLUDE_DIRS 
-                         ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants 
-                         ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants/constraint 
-                         ${CMAKE_CURRENT_SOURCE_DIR}/../../util
-                         ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants/joints 
-                       LINK_LIBRARIES drakeIK 
-                       SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/python
-                       DESTINATION ${python_install_subdir})
+if (snopt_c_FOUND)
+  add_swig_python_module(ikPython ik.i
+                         CPLUSPLUS
+                         INCLUDE_DIRS 
+                           ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants 
+                           ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants/constraint 
+                           ${CMAKE_CURRENT_SOURCE_DIR}/../../util
+                           ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants/joints 
+                         LINK_LIBRARIES drakeIK 
+                         SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/python
+                         DESTINATION ${python_install_subdir})
+endif()
 
 # add_swig_python_module(pendulumPython pendulum.i
 #                        CPLUSPLUS
