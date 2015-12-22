@@ -57,28 +57,11 @@ drakeIK_DLLEXPORT void inverseKin(RigidBodyTree * model, const Eigen::MatrixBase
  * @param ikoptions    The options to set parameters of IK problem.
  */
 
-inline IKResults inverseKinSimple(RigidBodyTree* model, 
+IKResults inverseKinSimple(RigidBodyTree* model, 
   const Eigen::VectorXd &q_seed,
   const Eigen::VectorXd &q_nom,
   const std::vector<RigidBodyConstraint*> &constraint_array,
-  const IKoptions &ikoptions) {
-  auto results = IKResults();
-  results.q_sol.resize(q_nom.size());
-  int num_constraints = constraint_array.size();
-  RigidBodyConstraint** const constraint_array_ptr = (RigidBodyConstraint** const) &constraint_array[0];
-  inverseKin<Eigen::VectorXd, Eigen::VectorXd, Eigen::VectorXd>(model,
-    q_seed,
-    q_nom,
-    num_constraints,
-    constraint_array_ptr,
-    results.q_sol,
-    results.INFO,
-    results.infeasible_constraint,
-    ikoptions);
-
-  return results;
-}
-
+  const IKoptions &ikoptions);
 
 template <typename DerivedA, typename DerivedB, typename DerivedC>
 drakeIK_DLLEXPORT void approximateIK(RigidBodyTree * model, const Eigen::MatrixBase<DerivedA> &q_seed, const Eigen::MatrixBase<DerivedB> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, Eigen::MatrixBase<DerivedC> &q_sol, int &INFO, const IKoptions &ikoptions);
