@@ -17,7 +17,8 @@ namespace Drake {
    * @brief A system which takes the robot state as input and publishes an lcm draw command to the drake visualizer
    * @concept{system_concept}
    *
-   * The resulting system has no internal state nor outputs, but the publish command is executed on every call to the output method.
+   * The resulting system has no internal state; the publish command is executed on every call to the output method.
+   * For convenience, the input is passed directly through as an output.
    *
    */
 
