@@ -5,6 +5,19 @@
 using namespace std;
 using namespace Drake;
 
+struct OutputTest {
+    template <typename ScalarType> using OutputVector = EigenVector<2>::type<ScalarType>;
+
+    template <typename ScalarType>
+    OutputVector<ScalarType> output(const ScalarType& t) const;
+};
+
+struct OutputTestTwo {
+    template <typename ScalarType> using OutputVector = EigenVector<2>::type<ScalarType>;
+
+    OutputVector<double> output(const double& t) const;
+};
+
 int main(int argc, char* argv[])
 {
   Eigen::Vector2d x;  x << 0.2, 0.4;
@@ -13,15 +26,17 @@ int main(int argc, char* argv[])
   state.theta = 0.2;
   state.thetadot = .3;
 
+  assert(size(state)==2);
+
   state = x;
   assert(state.thetadot == 0.4);
 
   state.theta = 0.5;
-  x = state;
+  x = toEigen(state);
   assert(x(0) = 0.5);
 
   {
-    Eigen::VectorXd y = static_cast<Eigen::Vector2d>(state);
+    Eigen::VectorXd y = toEigen(state);
     assert((x - y).isZero());
   }
 
@@ -37,7 +52,7 @@ int main(int argc, char* argv[])
     assert(test.second().tau == 6);
   }
   {
-    Drake::CombinedVectorBuilder<PendulumState,PendulumInput>::VecType<double> test(abc);
+    Drake::CombinedVectorBuilder<PendulumState,PendulumInput>::type<double> test(abc);
     test=2*abc;
     assert(test.first().theta == 2);
     assert(test.first().thetadot == 4);
@@ -47,20 +62,27 @@ int main(int argc, char* argv[])
     // combining a vector with an unused or empty vector should return the original type
     PendulumState<double> ps;
     {
-      Drake::CombinedVectorBuilder<PendulumState, UnusedVector>::VecType<double> test;
+      Drake::CombinedVectorBuilder<PendulumState, NullVector>::type<double> test;
       assert(typeid(ps).hash_code() == typeid(test).hash_code());
     }
     {
-      Drake::CombinedVectorBuilder<UnusedVector, PendulumState>::VecType<double> test;
-      assert(typeid(ps).hash_code() == typeid(test).hash_code());
-    }
-    {
-      Drake::CombinedVectorBuilder<EmptyVector, PendulumState>::VecType<double> test;
+      Drake::CombinedVectorBuilder<NullVector, PendulumState>::type<double> test;
       assert(typeid(ps).hash_code() == typeid(test).hash_code());
     }
   }
 
   static_assert(Eigen::Matrix<double,2,1>::RowsAtCompileTime == 2,"failed to evaluate RowsAtCompileTime");
+
+/*
+  { // test for a polynomial-based algorithm
+    static_assert(isPolynomial<Pendulum>,"requires polynomial dynamics");
+
+    PendulumState<Polynomial<double>> x;
+    PendulumInput<Polynomial<double>> u;
+    auto out = p->dynamicsImplementation(x,u);
+  }
+*/
+
 
 
   return 0;

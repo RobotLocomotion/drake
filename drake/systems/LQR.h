@@ -8,11 +8,11 @@
 
 namespace Drake {
 
-  template <typename Derived, template<typename> class StateVector, template<typename> class InputVector, template<typename> class OutputVector, bool isTimeVarying, bool isDirectFeedthrough>
-  std::shared_ptr<AffineSystem<UnusedVector,StateVector,InputVector> > timeInvariantLQR(const System<Derived,StateVector,InputVector,OutputVector,isTimeVarying,isDirectFeedthrough>& sys, const StateVector<double>& x0, const InputVector<double>& u0, const Eigen::MatrixXd& Q, const Eigen::MatrixXd& R) {
-    const int num_states = StateVector<double>::RowsAtCompileTime;
-    const int num_inputs = InputVector<double>::RowsAtCompileTime;
-    static_assert(!isTimeVarying,"timeInvariantLQR only makes sense for time-invariant systems");
+  template <typename System>
+  std::shared_ptr<AffineSystem<NullVector,System::template StateVector,System::template InputVector>> timeInvariantLQR(const System& sys, const typename System::template StateVector<double>& x0, const typename System::template InputVector<double>& u0, const Eigen::MatrixXd& Q, const Eigen::MatrixXd& R) {
+    const int num_states = System::template StateVector<double>::RowsAtCompileTime;
+    const int num_inputs = System::template InputVector<double>::RowsAtCompileTime;
+    assert(!sys.isTimeVarying());
     static_assert(num_states != 0,"This system has no continuous states");
     using namespace std;
     using namespace Eigen;
@@ -20,12 +20,12 @@ namespace Drake {
     // todo: clean this up
     typedef TaylorVar<-1> AutoDiffType;
     VectorXd xu(num_states+num_inputs);
-    xu << static_cast<Eigen::Matrix<double,num_states,1> >(x0), static_cast<Eigen::Matrix<double,num_inputs,1> >(u0);
+    xu << toEigen(x0), toEigen(u0);
     TaylorVecX xu_taylor = initTaylorVecX(xu);
-    StateVector<AutoDiffType> x_taylor(xu_taylor.head(num_states));
-    InputVector<AutoDiffType> u_taylor(xu_taylor.tail(num_inputs));
+    typename System::template StateVector<AutoDiffType> x_taylor(xu_taylor.head(num_states));
+    typename System::template InputVector<AutoDiffType> u_taylor(xu_taylor.tail(num_inputs));
 
-    auto xdot = autoDiffToGradientMatrix(static_cast< Matrix<AutoDiffType,num_states,1> >(sys.dynamics(x_taylor,u_taylor)));
+    auto xdot = autoDiffToGradientMatrix(toEigen(sys.dynamics(AutoDiffType(0),x_taylor,u_taylor)));
     auto A = xdot.leftCols(num_states);
     auto B = xdot.rightCols(num_inputs);
 
@@ -41,9 +41,9 @@ namespace Drake {
     Matrix<double,0,0> nullmat;
     Matrix<double,0,1> nullvec;
 
-    return std::make_shared<AffineSystem<UnusedVector,StateVector,InputVector> >(
+    return std::make_shared<AffineSystem<NullVector,System::template StateVector,System::template InputVector> >(
                                                            nullmat,Matrix<double,0,num_states>::Zero(),nullvec,
-                                                           Matrix<double,num_inputs,0>::Zero(),-K,static_cast<Matrix<double,num_inputs,1> >(u0)+K*static_cast<Matrix<double,num_states,1> >(x0));
+                                                           Matrix<double,num_inputs,0>::Zero(),-K,toEigen(u0)+K*toEigen(x0));
   }
 
 }

@@ -3,8 +3,16 @@
 
 #include <thread>
 #include <chrono>
+#include <stdexcept>
 
 namespace Drake {
+
+  /** @defgroup simulation Simulation
+ * @{
+ * @brief Algorithms for simulating dynamical systems
+ * @}
+ */
+
 
   // simulation options
   struct SimulationOptions {
@@ -35,29 +43,36 @@ namespace Drake {
     }
   }
 
-  template <typename Derived, template<typename> class StateVector, template<typename> class InputVector, template<typename> class OutputVector, bool isTimeVarying, bool isDirectFeedthrough>
-  void simulate(const System<Derived,StateVector,InputVector,OutputVector,isTimeVarying,isDirectFeedthrough>& sys, double t0, double tf, const Eigen::VectorXd& x0, const SimulationOptions& options) {
+  /** simulate
+   * @brief Runs a simulation given a model, it's initial conditions, and a number of simulation parameters
+   * @ingroup simulation
+   *
+   */
+  template <typename System>
+  void simulate(const System& sys, double t0, double tf, const typename System::template StateVector<double>& x0, const SimulationOptions& options) {
     double t = t0, dt;
-//    std::cout << "x0 = " << x0.transpose() << std::endl;
+
     TimePoint start = TimeClock::now();
-    Eigen::Matrix<double,StateVector<double>::RowsAtCompileTime,1> x = x0;
-    Eigen::Matrix<double,StateVector<double>::RowsAtCompileTime,1> xdot;
-    Eigen::Matrix<double,InputVector<double>::RowsAtCompileTime,1> u(sys.num_states); u.setConstant(0);
-    Eigen::Matrix<double,OutputVector<double>::RowsAtCompileTime,1> y;
+    typename System::template StateVector<double> x(x0), xdot;
+    typename System::template InputVector<double> u(Eigen::Matrix<double,SystemSizeTraits<System>::num_inputs,1>::Zero());
+    typename System::template OutputVector<double> y;
     while (t<tf) {
       handle_realtime_factor(start, t, options.realtime_factor);
-
-//      std::cout << "t=" << t << ", x = " << x.transpose() << std::endl;
       dt = (std::min)(options.initial_step_size,tf-t);
-      y = sys.template output<double>(t,x,u);
-      xdot = sys.template dynamics<double>(t,x,u);
-      x += dt * xdot;
+      y = sys.output(t,x,u);
+      xdot = sys.dynamics(t,x,u);
+      x = toEigen(x) + dt * toEigen(xdot);
       t += dt;
     }
   }
 
+  /** simulate
+   * @brief Runs a simulation using the default simulation options
+   * @ingroup simulation
+   *
+   */
   template <typename System>
-  void simulate(const System& sys, double t0, double tf, const Eigen::VectorXd& x0)  {
+  void simulate(const System& sys, double t0, double tf, const typename System::template StateVectorType<double>& x0)  {
     simulate(sys,t0,tf,x0,default_simulation_options);
   }
 

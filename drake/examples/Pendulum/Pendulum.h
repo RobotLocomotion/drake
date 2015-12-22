@@ -4,7 +4,6 @@
 #include <iostream>
 #include <cmath>
 #include "System.h"
-#include "LQR.h"
 
 using namespace std;
 
@@ -22,12 +21,6 @@ public:
     return *this;
   }
 
-  operator Eigen::Matrix<ScalarType,2,1> () const {
-    Eigen::Matrix<ScalarType,2,1> x;
-    x << theta, thetadot;
-    return x;
-  }
-
   friend std::ostream& operator<<(std::ostream& os, const PendulumState& x)
   {
     os << "  theta = " << x.theta << endl;
@@ -35,32 +28,32 @@ public:
     return os;
   }
 
-  enum {
-    RowsAtCompileTime = 2
-  };
-  std::size_t size() { return 2; }
+  const static int RowsAtCompileTime = 2;
 
   ScalarType theta;
   ScalarType thetadot;
 };
+
+template <typename ScalarType>
+Eigen::Matrix<ScalarType,2,1> toEigen(const PendulumState<ScalarType>& vec) {
+  Eigen::Matrix<ScalarType,2,1> x;
+  x << vec.theta, vec.thetadot;
+  return x;
+};
+
 
 
 template <typename ScalarType = double>
 class PendulumInput {
 public:
   PendulumInput(void) : tau(0) {};
-  PendulumInput(const Eigen::Matrix<ScalarType,1,1>& x) : tau(x(0)) {};
+  template <typename Derived>
+  PendulumInput(const Eigen::MatrixBase<Derived>& x) : tau(x(0)) {};
 
   template <typename Derived>
   PendulumInput& operator=(const Eigen::MatrixBase<Derived>& x) {
     tau = x(0);
     return *this;
-  }
-
-  operator Eigen::Matrix<ScalarType,1,1> () const {
-    Eigen::Matrix<ScalarType,1,1> x;
-    x << tau;
-    return x;
   }
 
   friend std::ostream& operator<<(std::ostream& os, const PendulumInput& x)
@@ -69,16 +62,26 @@ public:
     return os;
   }
 
-  enum {
-    RowsAtCompileTime = 1
-  };
-  std::size_t size() { return 1; }
+  const static int RowsAtCompileTime = 1;
 
   ScalarType tau;
 };
 
-class Pendulum : public Drake::System<Pendulum,PendulumState,PendulumInput,PendulumState,false,false> {
+template <typename ScalarType>
+Eigen::Matrix<ScalarType,1,1> toEigen(const PendulumInput<ScalarType>& vec) {
+  Eigen::Matrix<ScalarType,1,1> x;
+  x << vec.tau;
+  return x;
+};
+
+
+
+class Pendulum {
 public:
+  template <typename ScalarType> using InputVector = PendulumInput<ScalarType>;
+  template <typename ScalarType> using StateVector = PendulumState<ScalarType>;
+  template <typename ScalarType> using OutputVector = PendulumState<ScalarType>;
+
   Pendulum() :
           m(1.0), // kg
           l(.5),  // m
@@ -90,7 +93,7 @@ public:
   virtual ~Pendulum(void) {};
 
   template <typename ScalarType>
-  PendulumState<ScalarType> dynamicsImplementation(const PendulumState<ScalarType>& x, const PendulumInput<ScalarType>& u) const {
+  PendulumState<ScalarType> dynamics(const ScalarType& t, const PendulumState<ScalarType>& x, const PendulumInput<ScalarType>& u) const {
     PendulumState<ScalarType> dot;
     dot.theta = x.thetadot;
     dot.thetadot = (u.tau - m*g*lc*sin(x.theta) - b*x.thetadot)/I;
@@ -99,17 +102,24 @@ public:
 
 
   template <typename ScalarType>
-  PendulumState<ScalarType> outputImplementation(const PendulumState<ScalarType>& x) const {
+  PendulumState<ScalarType> output(const ScalarType& t, const PendulumState<ScalarType>& x, const PendulumInput<ScalarType>& u) const {
     return x;
   }
+
+  bool isTimeVarying() const  { return false; }
+  bool isDirectFeedthrough() const { return false; }
 
 public:
   double m,l,b,lc,I,g;  // pendulum parameters (initialized in the constructor)
 };
 
 
-class PendulumEnergyShapingController : public Drake::System<PendulumEnergyShapingController,Drake::UnusedVector,PendulumState,PendulumInput,false,true> {
+class PendulumEnergyShapingController {
 public:
+  template <typename ScalarType> using InputVector = PendulumState<ScalarType>;
+  template <typename ScalarType> using StateVector = Drake::NullVector<ScalarType>;
+  template <typename ScalarType> using OutputVector = PendulumInput<ScalarType>;
+
   PendulumEnergyShapingController(const Pendulum& pendulum)
           : m(pendulum.m),
             l(pendulum.l),
@@ -118,12 +128,18 @@ public:
   {};
 
   template <typename ScalarType>
-  PendulumInput<ScalarType> outputImplementation(const PendulumState<ScalarType>& x) const {
-    ScalarType Etilde = .5 * m*l*l*x.thetadot*x.thetadot - m*g*l*cos(x.theta) - 1.1*m*g*l;
-    PendulumInput<ScalarType> u;
-    u.tau = b*x.thetadot - .1*x.thetadot*Etilde;
-    return u;
+  StateVector<ScalarType> dynamics(const ScalarType& t, const StateVector<ScalarType>& x, const PendulumState<ScalarType>& u) const { return StateVector<ScalarType>(); }
+
+  template <typename ScalarType>
+  PendulumInput<ScalarType> output(const ScalarType& t, const StateVector<ScalarType>& x, const PendulumState<ScalarType>& u) const {
+    ScalarType Etilde = .5 * m*l*l*u.thetadot*u.thetadot - m*g*l*cos(u.theta) - 1.1*m*g*l;
+    PendulumInput<ScalarType> y;
+    y.tau = b*u.thetadot - .1*u.thetadot*Etilde;
+    return y;
   }
+
+  bool isTimeVarying() const { return false; }
+  bool isDirectFeedthrough() const { return true; }
 
   double m,l,b,g;  // pendulum parameters (initialized in the constructor)
 };

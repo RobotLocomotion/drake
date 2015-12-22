@@ -13,9 +13,21 @@
 
 namespace Drake {
 
-  template <template <typename> class InputVector>
-  class BotVisualizer : public System<BotVisualizer<InputVector>,UnusedVector,InputVector,UnusedVector,true,true> {
+  /** BotVisualizer<RobotStateVector>
+   * @brief A system which takes the robot state as input and publishes an lcm draw command to the drake visualizer
+   * @concept{system_concept}
+   *
+   * The resulting system has no internal state nor outputs, but the publish command is executed on every call to the output method.
+   *
+   */
+
+  template <template <typename> class RobotStateVector>
+  class BotVisualizer {
   public:
+    template <typename ScalarType> using StateVector = NullVector<ScalarType>;
+    template <typename ScalarType> using OutputVector = NullVector<ScalarType>;
+    template <typename ScalarType> using InputVector = RobotStateVector<ScalarType>;
+
     BotVisualizer(const std::shared_ptr<lcm::LCM> &_lcm, const std::string &urdf_filename,
                   const DrakeJoint::FloatingBaseType floating_base_type) :
             manip(urdf_filename, floating_base_type),
@@ -108,10 +120,13 @@ namespace Drake {
       lcm->publish("DRAKE_VIEWER_LOAD_ROBOT", &vr);
     }
 
-    UnusedVector<double> outputImplementation(const double& t, const InputVector<double> &u) const {
+    StateVector<double> dynamics(const double& t, const StateVector<double>& x, const InputVector<double>& u) const { return StateVector<double>(); };
+
+
+    OutputVector<double> output(const double& t, const StateVector<double>& x, const InputVector<double>& u) const {
       draw_msg.timestamp = static_cast<int64_t>(t * 1000.0);
 
-      Eigen::Matrix<double,InputVector<double>::RowsAtCompileTime,1> uvec(u);
+      auto uvec = toEigen(u);
       auto q = uvec.head(manip.num_positions);
       KinematicsCache<double> cache = manip.doKinematics(q);
 
@@ -130,6 +145,8 @@ namespace Drake {
       return Eigen::VectorXd::Zero(0);
     }
 
+    bool isTimeVarying() const { return true; }
+    bool isDirectFeedthrough() const { return true; }
 
   private:
     mutable RigidBodyTree manip;  // todo: remove mutable tag after RBM cleanup

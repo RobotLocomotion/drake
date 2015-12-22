@@ -333,7 +333,7 @@ const Polynomial<CoefficientType> Polynomial<CoefficientType>::operator-() const
 }
 
 template <typename CoefficientType>
-const Polynomial<CoefficientType> Polynomial<CoefficientType>::operator*(const Polynomial& other) const {
+const Polynomial<CoefficientType> Polynomial<CoefficientType>::operator*(const Polynomial<CoefficientType>& other) const {
   Polynomial<CoefficientType> ret = *this;
   ret *= other;
   return ret;
