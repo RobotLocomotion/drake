@@ -28,6 +28,11 @@ class TestRBMForwardKin(unittest.TestCase):
         print(p)
         print(p.value())
         print(p.derivatives())
+        self.assertTrue(np.allclose(p.value(), np.ones((3,1))))
+        self.assertTrue(np.allclose(p.derivatives(),
+                                    np.array([[1, 0, 0, 0, 1, -1, 1],
+                                              [0, 1, 0, -1, 0, 1, 0],
+                                              [0, 0, 1, 1, -1, 0, -1]])))
 
 if __name__ == '__main__':
     unittest.main()
