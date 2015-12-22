@@ -4,6 +4,7 @@
 #include "Pendulum.h"
 #include "Simulation.h"
 #include "BotVisualizer.h"
+#include "LCMSystem.h"
 
 using namespace std;
 using namespace Drake;
@@ -20,12 +21,15 @@ int main(int argc, char* argv[]) {
   PendulumState<double> x0;
   x0.theta = 1;
   x0.thetadot = 0;
-  cout << "PendulumState::x0 = " << x0 << endl;
+//  cout << "PendulumState::x0 = " << x0 << endl;
 
   auto sys = cascade(p,v);
+
+  cout << "coords:" << getCoordinateName(x0,0) << ", " << getCoordinateName(x0,1) << endl;
 
   SimulationOptions options;
   options.realtime_factor=1.0;
 
-  simulate(*sys,0,10,x0,options);
+//  simulate(*sys,0,10,x0,options);
+  runLCM(p,lcm,0,10,x0,options);
 }

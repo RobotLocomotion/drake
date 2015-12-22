@@ -23,13 +23,6 @@ namespace Drake {
    * | template<Derived> Vector& operator=(const Eigen::MatrixBase<Derived>&)   | assignment operator from an Eigen object |
    * | Eigen::Matrix<ScalarType,RowsAtCompileTime,1> toEigen(const Vector<ScalarType>&) | non-member namespace method which converts to the Eigen type |
    *
-   * @nbsp
-   *
-   * | Valid Expressions (which may be overloaded) |   |
-   * |-----------------------|-------------------------|
-   * | const std::string& getCoordinateName(const Vector& vec, int index) | returns a textual name for the index coordinate |
-   * | Vector<double> getRandomVector() | returns a random vector |
-   *
    * @}
    */
 
@@ -50,6 +43,10 @@ namespace Drake {
 
   template <typename ScalarType, int Rows> Eigen::Matrix<ScalarType,Rows,1> toEigen(const Eigen::Matrix<ScalarType,Rows,1>& vec) { return vec; }
 
+  /** getRandomVector()
+   * @brief Returns a random vector of the desired type using Eigen::Random()
+   * @concept{vector_concept}
+   */
   template <template <typename> class VecType>
   VecType<double> getRandomVector(void) {
     static_assert(VecType<double>::RowsAtCompileTime>=0,"still need to handle dynamic case");
@@ -68,10 +65,34 @@ namespace Drake {
       static std::size_t eval(const VecType &vec) { return vec.size(); }
     };
   }
+  /** size()
+   * @brief Evaluate the size of a Vector
+   * @concept{vector_concept}
+   *
+   * @retval RowsAtCompileTime or the result of size() for dynamically sized vectors
+   */
   template <typename VecType> std::size_t size(const VecType& vec) { return internal::SizeDispatch<VecType,VecType::RowsAtCompileTime==-1>::eval(vec); }
 
+  /** getCoordinateName()
+   * @brief Implements default coordinate names for a generic vector.  Overload this to name your coordinates.
+   * @concept{vector_concept}
+   */
+  template <typename Vector>
+  std::string getCoordinateName(const Vector& vec, unsigned int index) { return "x"+std::to_string(index); }
 
-
+  /** operator<<()
+   * @brief Implements the ostream operator for your vector types.
+   * @concept{vector_concept}
+   */
+/*
+  template <typename Vector>  // warning: this will match almost anything!
+  std::ostream& operator<<(std::ostream& os, const Vector& vec)
+  {
+    for (int i=0; i<=size(vec); i++)
+      os << getCoordinateName(vec,i) << " = " << vec(i) << std::endl;
+    return os;
+  }
+*/
   /** CombinedVector<ScalarType,Vector1,Vector2>
    *
    * @brief produces a new vector type which is the columnwise composition of vector1 and vector2

@@ -8,8 +8,6 @@
 #include "SystemSpecializations.h"
 
 
-
-
 namespace Drake {
 
 /** @defgroup modeling Modeling Dynamical Systems
@@ -39,13 +37,6 @@ namespace Drake {
  * | bool isDirectFeedthrough() | should return false if output() does not depend directly on the input u.  @default true |
  *
  * (always try to label your methods with const if possible)
- *
- * @nbsp
- *
- * | Valid Expressions (which may be overloaded) |   |
- * |-----------------------|-------------------------|
- * | auto feedback(const std::shared_ptr<System1>&, const std::shared_ptr<System2>&) | implements the feedback combination of two systems |
- * | auto cascade(const std::shared_ptr<System1>&, const std::shared_ptr<System2>&)  | implements the cascade combination of two systems |
  *
  * @nbsp
  *

@@ -3,13 +3,16 @@
 
 #include <iostream>
 #include <cmath>
-#include "System.h"
+#include "LCMSystem.h"
 
 using namespace std;
 
 template <typename ScalarType = double>
 class PendulumState  { // models the Drake::Vector concept
 public:
+  typedef drake::lcmt_drake_signal LCMMessageType;
+  std::string channel() const { return "PendulumState"; };
+
   PendulumState(void) : theta(0), thetadot(0) {};
   template <typename Derived>
   PendulumState(const Eigen::MatrixBase<Derived>& x) : theta(x(0)), thetadot(x(1)) {};
@@ -21,27 +24,24 @@ public:
     return *this;
   }
 
-  friend std::ostream& operator<<(std::ostream& os, const PendulumState& x)
-  {
-    os << "  theta = " << x.theta << endl;
-    os << "  thetadot = " << x.thetadot << endl;
-    return os;
+  friend std::string getCoordinateName(const PendulumState<ScalarType>& vec, unsigned int index) {
+    switch (index) {
+      case 0: return "theta";
+      case 1: return "thetadot";
+    }
+    return "error";
   }
+  friend Eigen::Matrix<ScalarType,2,1> toEigen(const PendulumState<ScalarType>& vec) {
+    Eigen::Matrix<ScalarType,2,1> x;
+    x << vec.theta, vec.thetadot;
+    return x;
+  };
 
   const static int RowsAtCompileTime = 2;
 
   ScalarType theta;
   ScalarType thetadot;
 };
-
-template <typename ScalarType>
-Eigen::Matrix<ScalarType,2,1> toEigen(const PendulumState<ScalarType>& vec) {
-  Eigen::Matrix<ScalarType,2,1> x;
-  x << vec.theta, vec.thetadot;
-  return x;
-};
-
-
 
 template <typename ScalarType = double>
 class PendulumInput {
