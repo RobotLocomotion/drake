@@ -126,8 +126,10 @@ file(WRITE ${PROJECT_SOURCE_DIR}/core/Path.h
 
 find_package( Perl )
 if ( PERL_FOUND )
-   file(WRITE ${CMAKE_BINARY_DIR}/CTestCustom.cmake 
+  if (MATLAB_FOUND)
+    file(WRITE ${CMAKE_BINARY_DIR}/CTestCustom.cmake 
    	      "set(CTEST_CUSTOM_PRE_TEST \"${PERL_EXECUTABLE} ${PROJECT_SOURCE_DIR}/cmake/add_matlab_unit_tests.pl ${PROJECT_SOURCE_DIR}\")\n")
+  endif()
 endif()
 
 enable_testing()
