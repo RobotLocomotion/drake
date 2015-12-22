@@ -11,7 +11,7 @@ template <typename ScalarType = double>
 class PendulumState  { // models the Drake::Vector concept
 public:
   typedef drake::lcmt_drake_signal LCMMessageType;
-  std::string channel() const { return "PendulumState"; };
+  static std::string channel() { return "PendulumState"; };
 
   PendulumState(void) : theta(0), thetadot(0) {};
   template <typename Derived>
