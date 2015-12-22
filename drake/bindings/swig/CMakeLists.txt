@@ -70,13 +70,13 @@ endif()
 #                        DESTINATION ${python_install_subdir})
 
 
-if (MATLAB_FOUND)
-  include(SwigMatlab)
-	add_swig_matlab_module(rbmMatlab rbm.i
-	                       CPLUSPLUS
-	                       INCLUDE_DIRS 
-	                         ${CMAKE_CURRENT_SOURCE_DIR}/..//../systems/plants 
-	                       LINK_LIBRARIES drakeRBM 
-	                       SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/matlab ${DRAKE_SWIG_FILES}/common
-	                       DESTINATION matlab)
-endif()
+# if (MATLAB_FOUND)
+#   include(SwigMatlab)
+# 	add_swig_matlab_module(rbmMatlab rbm.i
+# 	                       CPLUSPLUS
+# 	                       INCLUDE_DIRS 
+# 	                         ${CMAKE_CURRENT_SOURCE_DIR}/..//../systems/plants 
+# 	                       LINK_LIBRARIES drakeRBM 
+# 	                       SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/matlab ${DRAKE_SWIG_FILES}/common
+# 	                       DESTINATION matlab)
+# endif()
