@@ -66,7 +66,7 @@ private:
   bool inertias_cached;
 
 public:
-  KinematicsCache(const std::vector<std::shared_ptr<RigidBody>>& bodies) :
+  KinematicsCache(const std::vector<std::shared_ptr<RigidBody> >& bodies) :
       q(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(getNumPositions(bodies), 1)),
       v(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(getNumVelocities(bodies), 1)),
       velocity_vector_valid(false)
