@@ -2,6 +2,7 @@
 #define DRAKE_LCMSYSTEM_H
 
 #include <unordered_map>
+#include <mutex>
 #include <thread>
 #include <stdexcept>
 #include <lcm/lcm-cpp.hpp>
