@@ -33,7 +33,7 @@ bool waitForLCM(lcm::LCM& lcm, double timeout) {
   return (status > 0 && FD_ISSET(lcmFd, &fds));
 }
 
-void internal::LCMLoop::loopWithSelect() {
+void Drake::internal::LCMLoop::loopWithSelect() {
   //    cout << "starting lcm handler thread " << this_thread::get_id() << endl;
 
   while (!this->stop)
