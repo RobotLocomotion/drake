@@ -48,6 +48,7 @@ namespace Drake {
     for (int i=0; i<msg.dim; i++) {
       xvec(i) = m[getCoordinateName(x,i)];
     }
+    x = xvec;
     return true;
   }
 
@@ -185,6 +186,8 @@ namespace Drake {
       // then this is really a static function, not a dynamical system.
       // block on receiving lcm input and process the output exactly when a new input message is received.
       // note: this will never return (unless there is an lcm error)
+
+//      std::cout << "LCM output will be triggered on receipt of an LCM Input" << std::endl;
 
       double t = 0.0;
       typename System::template StateVector<double> x;
