@@ -30,4 +30,3 @@
 %include "IKoptions.h"
 %include "RigidBodyIK.h"
 %include "RigidBodyConstraint.h"
-
