@@ -8,3 +8,4 @@ file(WRITE ${CMAKE_INSTALL_PREFIX}/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VE
 	"def getDrakePath():\n"
 	"    return os.path.realpath(os.path.join(os.path.dirname(__file__), '${path_from_python_install_to_drake}'))\n")
 
+add_subdirectory(python)
