@@ -51,7 +51,7 @@ add_swig_python_module(ikPython ik.i
                          ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants/constraint 
                          ${CMAKE_CURRENT_SOURCE_DIR}/../../util
                          ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants/joints 
-                       LINK_LIBRARIES drakeRBM drakeRigidBodyConstraint drakeIK 
+                       LINK_LIBRARIES drakeRBM drakeRigidBodyConstraint drakeIK drakeIKoptions 
                        SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/python
                        DESTINATION ${python_install_subdir})
 
