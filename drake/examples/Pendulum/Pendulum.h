@@ -46,6 +46,9 @@ public:
 template <typename ScalarType = double>
 class PendulumInput {
 public:
+  typedef drake::lcmt_drake_signal LCMMessageType;
+  static std::string channel() { return "PendulumInput"; };
+
   PendulumInput(void) : tau(0) {};
   template <typename Derived>
   PendulumInput(const Eigen::MatrixBase<Derived>& x) : tau(x(0)) {};

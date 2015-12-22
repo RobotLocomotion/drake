@@ -25,7 +25,7 @@ namespace Drake {
   class BotVisualizer {
   public:
     template <typename ScalarType> using StateVector = NullVector<ScalarType>;
-    template <typename ScalarType> using OutputVector = NullVector<ScalarType>;
+    template <typename ScalarType> using OutputVector = RobotStateVector<ScalarType>;
     template <typename ScalarType> using InputVector = RobotStateVector<ScalarType>;
 
     BotVisualizer(const std::shared_ptr<lcm::LCM> &_lcm, const std::string &urdf_filename,
@@ -142,7 +142,7 @@ namespace Drake {
 
       lcm->publish("DRAKE_VIEWER_DRAW", &draw_msg);
 
-      return Eigen::VectorXd::Zero(0);
+      return u; // pass the output through
     }
 
     bool isTimeVarying() const { return true; }

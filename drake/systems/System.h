@@ -75,6 +75,7 @@ namespace Drake {
     template <typename ScalarType> using InputVector = typename System1::template InputVector<ScalarType>;
     template <typename ScalarType> using OutputVector = typename System1::template OutputVector<ScalarType>;
     const static int num_inputs = SystemSizeTraits<System1>::num_inputs;
+    typedef CombinedVectorUtil<StateVector1,StateVector2> util;
 
     typedef std::shared_ptr<System1> System1Ptr;
     typedef std::shared_ptr<System2> System2Ptr;
@@ -88,11 +89,11 @@ namespace Drake {
     StateVector<ScalarType> dynamics(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {
       OutputVector<ScalarType> y1;
       InputVector<ScalarType> y2;
-      auto x1 = CombinedVectorUtil<StateVector1,StateVector2>::first(x);
-      auto x2 = CombinedVectorUtil<StateVector1,StateVector2>::second(x);
+      auto x1 = util::first(x);
+      auto x2 = util::second(x);
       subsystemOutputs(t,x1,x2,u,y1,y2);
 
-      StateVector<ScalarType> xdot(sys1->dynamics(t,x1,static_cast<InputVector<ScalarType> >(toEigen(y2)+toEigen(u))),
+      StateVector<ScalarType> xdot = util::combine(sys1->dynamics(t,x1,static_cast<InputVector<ScalarType> >(toEigen(y2)+toEigen(u))),
                                    sys2->dynamics(t,x2,y1));
       return xdot;
     }
@@ -100,12 +101,12 @@ namespace Drake {
     template <typename ScalarType>
     OutputVector<ScalarType> output(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {
       OutputVector<ScalarType> y1;
-      auto x1 = CombinedVectorUtil<StateVector1,StateVector2>::first(x);
+      auto x1 = util::first(x);
       if (!sys1->isDirectFeedthrough()) {
         y1 = sys1->output(t,x1,u);   // then don't need u+y2 here, u will be ignored
       } else {
         InputVector<ScalarType> y2;
-        auto x2 = CombinedVectorUtil<StateVector1,StateVector2>::second(x);
+        auto x2 = util::second(x);
         y2 = sys2->output(t,x2,y1); // y1 might be uninitialized junk, but has to be ok
         y1 = sys1->output(t,x1,static_cast<InputVector<ScalarType> >(toEigen(y2)+toEigen(u)));
       }

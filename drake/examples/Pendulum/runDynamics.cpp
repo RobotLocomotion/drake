@@ -31,5 +31,5 @@ int main(int argc, char* argv[]) {
   options.realtime_factor=1.0;
 
 //  simulate(*sys,0,10,x0,options);
-  runLCM(p,lcm,0,10,x0,options);
+  runLCM(sys,lcm,0,1000,x0,options);
 }
