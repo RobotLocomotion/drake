@@ -12,7 +12,7 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]
 			export CXX="g++-4.8" CC="gcc-4.8"
 		fi
 	else
-		sudo apt-get install -y gfortran
+		sudo apt-get install -y gfortran-4.9
 	fi
 
 	export CMAKE_FLAGS="-DWITH_SPOTLESS:BOOL=OFF -DWITH_LIBBOT:BOOL=ON -DWITH_DIRECTOR:BOOL=ON -DWITH_IRIS:BOOL=ON -DWITH_OCTOMAP:BOOL=ON -DWITH_MOSEK:BOOL=ON -DWITH_AVL:BOOL=ON -DWITH_XFOIL:BOOL=ON"
