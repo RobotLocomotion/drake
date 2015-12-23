@@ -12,8 +12,9 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]
 			export CXX="g++-4.8" CC="gcc-4.8"
 		fi
 	else
+		sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
 		sudo apt-get update -qq
-		sudo apt-get install -y gcc-4.9 g++-4.9
+		sudo apt-get install -y gfortran-4.9
 	fi
 
 	export CMAKE_FLAGS="-DWITH_SPOTLESS:BOOL=OFF -DWITH_LIBBOT:BOOL=ON -DWITH_DIRECTOR:BOOL=ON -DWITH_IRIS:BOOL=ON -DWITH_OCTOMAP:BOOL=ON -DWITH_MOSEK:BOOL=ON -DWITH_AVL:BOOL=ON -DWITH_XFOIL:BOOL=ON"
