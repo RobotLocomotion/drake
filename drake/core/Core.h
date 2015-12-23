@@ -17,8 +17,8 @@ namespace Drake {
    *
    * | Valid Expressions (which must be implemented) |  |
    * ------------------|-------------------------------------------------------------|
-   * | RowsAtCompileTime  | defined as a static constant int (or enum).  Can be Eigen::DYNAMIC. |
-   * | size_t size()      | only required if RowsAtCompileTime==Eigen::DYNAMIC |
+   * | RowsAtCompileTime  | defined as a static constant int (or enum).  Can be Eigen::Dynamic. |
+   * | size_t size()      | only required if RowsAtCompileTime==Eigen::Dynamic |
    * | template<Derived> Vector(const Eigen::MatrixBase<Derived>&)  | constructor taking an Eigen object |
    * | template<Derived> Vector& operator=(const Eigen::MatrixBase<Derived>&)   | assignment operator from an Eigen object |
    * | Eigen::Matrix<ScalarType,RowsAtCompileTime,1> toEigen(const Vector<ScalarType>&) | non-member namespace method which converts to the Eigen type |

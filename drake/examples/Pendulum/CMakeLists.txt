@@ -4,6 +4,7 @@ include_directories(${PROJECT_SOURCE_DIR}/systems)
 include_directories(${PROJECT_SOURCE_DIR}/systems/frames)
 include_directories(${PROJECT_SOURCE_DIR}/systems/plants)
 include_directories(${PROJECT_SOURCE_DIR}/systems/plants/joints)
+include_directories(${PROJECT_SOURCE_DIR}/systems/controllers)
 include_directories(${PROJECT_SOURCE_DIR}/util)
 
 if (LCM_FOUND AND NOT WIN32)  # win32 won't be hard... just have to add declspecs
@@ -35,3 +36,5 @@ if (LCM_FOUND AND NOT WIN32)  # win32 won't be hard... just have to add declspec
 #      NAME "viewer" COMMAND "${CMAKE_INSTALL_PREFIX}/bin/ddConsoleApp -m ddapp.drakevisualizer"
 #  )
 endif()
+
+add_subdirectory(test)
