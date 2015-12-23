@@ -88,7 +88,7 @@ namespace Drake {
 
       void handleMessage(const lcm::ReceiveBuffer* rbuf, const std::string& chan, const typename Vector<double>::LCMMessageType* msg) {
         data_mutex.lock();
-        decode(*msg,timestamp,data);
+        decode<Vector>(*msg,timestamp,data);
         data_mutex.unlock();
       }
 
