@@ -14,7 +14,9 @@ if (LCM_FOUND AND NOT WIN32)  # win32 won't be hard... just have to add declspec
 
   add_executable(runPendulumEnergyShaping runEnergyShaping.cpp)
   target_link_libraries(runPendulumEnergyShaping drakeRBM drakeLCMSystem)
-  add_test(NAME runPendulumEnergyShaping COMMAND runPendulumEnergyShaping)
+#  add_test(NAME runPendulumEnergyShaping COMMAND runPendulumEnergyShaping)
+#  set_tests_properties(runPendulumEnergyShaping PROPERTIES TIMEOUT 10)
+    # disabled for now since it's not a good test, since it will always timeout
 
   add_executable(runPendulumLQR runLQR.cpp)
   target_link_libraries(runPendulumLQR drakeRBM drakeLCMSystem)
