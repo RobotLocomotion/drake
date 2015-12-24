@@ -131,7 +131,7 @@ classdef RigidBodyManipulator < Manipulator
 
   methods
     function [Vq, dVq] = qdotToV(obj, kinsol)
-      if obj.mex_model_ptr ~= 0 && kinsol.mex_ptr ~= 0
+      if obj.mex_model_ptr ~= 0 && kinsol.mex
         Vq = velocityToPositionDotMappingmex(kinsol.mex_ptr);
         if kinsol.has_gradients
           [Vq, dVq] = eval(Vq);
@@ -169,7 +169,7 @@ classdef RigidBodyManipulator < Manipulator
     end
 
     function [VqInv, dVqInv] = vToqdot(obj, kinsol)
-      if obj.mex_model_ptr ~= 0 && kinsol.mex_ptr ~= 0
+      if obj.mex_model_ptr ~= 0 && kinsol.mex
         VqInv = velocityToPositionDotMappingmex(kinsol.mex_ptr);
         if kinsol.has_gradients
           [VqInv, dVqInv] = eval(VqInv);
