@@ -1,16 +1,23 @@
 set -e
 
-if [ "$CXX" = "g++" ]
-	then 
-	export CXX="g++-4.8" CC="gcc-4.8"
-fi
-
 if [ "$TRAVIS_OS_NAME" = "linux" ]
 	then
-	sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-	sudo apt-get update -qq
-	sudo apt-get install gcc-4.8 g++-4.8
-    export CMAKE_FLAGS="-DWITH_SPOTLESS:BOOL=OFF -DWITH_LIBBOT:BOOL=ON -DWITH_DIRECTOR:BOOL=ON -DWITH_IRIS:BOOL=ON -DWITH_OCTOMAP:BOOL=ON -DWITH_MOSEK:BOOL=ON -DWITH_AVL:BOOL=ON -DWITH_XFOIL:BOOL=ON"
+	if [ `lsb_release -r | sed "s/Release:\s*//"` \< 14.04 ]
+		then 
+		sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+		sudo apt-get update -qq
+		sudo apt-get install -y gcc-4.8 g++-4.8
+		if [ "$CXX" = "g++" ]
+			then 
+			export CXX="g++-4.8" CC="gcc-4.8"
+		fi
+	else
+		sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+		sudo apt-get update -qq
+		sudo apt-get install -y gfortran-4.9
+	fi
+
+	export CMAKE_FLAGS="-DWITH_SPOTLESS:BOOL=OFF -DWITH_LIBBOT:BOOL=ON -DWITH_DIRECTOR:BOOL=ON -DWITH_IRIS:BOOL=ON -DWITH_OCTOMAP:BOOL=ON -DWITH_MOSEK:BOOL=ON -DWITH_AVL:BOOL=ON -DWITH_XFOIL:BOOL=ON"
 	mkdir build
 	make download-all
 	sudo ./install_prereqs.sh ubuntu
