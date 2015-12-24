@@ -69,7 +69,7 @@ classdef HolonomicDrivePlant < SecondOrderSystem
       end
 
       theta = q(3);
-      rotation = [[cos(theta); sin(theta)] [-sin(theta); cos(theta)]];
+      rotation = rotmat(theta);
 
       bodyvel = rotation' * qd(1:2);
 

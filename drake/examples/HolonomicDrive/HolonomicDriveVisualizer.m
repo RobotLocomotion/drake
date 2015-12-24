@@ -31,8 +31,9 @@ classdef HolonomicDriveVisualizer < Visualizer
 
       if length(x) == 6
         theta = x(3);
-        rotation = [[cos(theta); sin(theta)] [-sin(theta); cos(theta)]];
+        rotation = rotmat(theta);
       else
+        % for trigPolySystem
         rotation = [[x(3); x(4)] [-x(4); x(3)]];
       end
 
