@@ -54,7 +54,7 @@ namespace Drake {
 
     TimePoint start = TimeClock::now();
     typename System::template StateVector<double> x(x0), xdot;
-    typename System::template InputVector<double> u(Eigen::Matrix<double,SystemSizeTraits<System>::num_inputs,1>::Zero());
+    typename System::template InputVector<double> u(Eigen::VectorXd::Zero(getNumInputs(sys)));
     typename System::template OutputVector<double> y;
     while (t<tf) {
       handle_realtime_factor(start, t, options.realtime_factor);

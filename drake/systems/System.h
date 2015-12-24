@@ -35,6 +35,9 @@ namespace Drake {
  * | template <ScalarType> OutputVector<ScalarType> X::output(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) | @f$ y = \text{output}(t,x,u) @f$  |
  * | bool isTimeVarying()  | should return false if output() and dynamics() methods do not depend on time.  @default true |
  * | bool isDirectFeedthrough() | should return false if output() does not depend directly on the input u.  @default true |
+ * | size_t getNumStates() | only required if the state vector is dynamically-sized |
+ * | size_t getNumInputs() | only required if the input vector is dynamically-sized |
+ * | size_t getNumOutputs() | only required if the output vector is dynamically-sized |
  *
  * (always try to label your methods with const if possible)
  *
@@ -48,15 +51,63 @@ namespace Drake {
  * @}
  */
 
-  template <typename System>
-  struct SystemSizeTraits {
-    const static int num_states = System::template StateVector<double>::RowsAtCompileTime;
-    const static int num_inputs = System::template InputVector<double>::RowsAtCompileTime;
-    const static int num_outputs = System::template OutputVector<double>::RowsAtCompileTime;
-    static_assert(num_states >= 0, "still need to handle the variable-size case");
-    static_assert(num_inputs >= 0, "still need to handle the variable-size case");
-    static_assert(num_outputs >= 0, "still need to handle the variable-size case");
-  };
+  namespace internal {
+    template<typename System, bool Enable = false>
+    struct NumStatesDispatch {
+      static std::size_t eval(const System &sys) { return System::template StateVector<double>::RowsAtCompileTime; }
+    };
+
+    template<typename System>
+    struct NumStatesDispatch<System,true > {
+      static std::size_t eval(const System &sys) { return sys.getNumStates(); }
+    };
+  }
+  /** getNumStates()
+   * @brief Retrieve the size of the state vector
+   * @concept{system_concept}
+   *
+   * @retval RowsAtCompileTime or the result of getNumStates() for dynamically sized vectors
+   */
+  template <typename System> std::size_t getNumStates(const System& sys) { return internal::NumStatesDispatch<System,System::template StateVector<double>::RowsAtCompileTime==-1>::eval(sys); }
+
+  namespace internal {
+    template<typename System, bool Enable = false>
+    struct NumInputsDispatch {
+      static std::size_t eval(const System &sys) { return System::template InputVector<double>::RowsAtCompileTime; }
+    };
+
+    template<typename System>
+    struct NumInputsDispatch<System,true > {
+      static std::size_t eval(const System &sys) { return sys.getNumInputs(); }
+    };
+  }
+  /** getNumInputs()
+   * @brief Retrieve the size of the input vector
+   * @concept{system_concept}
+   *
+   * @retval RowsAtCompileTime or the result of getNumInputs() for dynamically sized vectors
+   */
+  template <typename System> std::size_t getNumInputs(const System& sys) { return internal::NumInputsDispatch<System,System::template InputVector<double>::RowsAtCompileTime==-1>::eval(sys); }
+
+  namespace internal {
+    template<typename System, bool Enable = false>
+    struct NumOutputsDispatch {
+      static std::size_t eval(const System &sys) { return System::template OutputVector<double>::RowsAtCompileTime; }
+    };
+
+    template<typename System>
+    struct NumOutputsDispatch<System,true > {
+      static std::size_t eval(const System &sys) { return sys.getNumOutputs(); }
+    };
+  }
+  /** getNumOutputs()
+   * @brief Retrieve the size of the output vector
+   * @concept{system_concept}
+   *
+   * @retval RowsAtCompileTime or the result of getNumOutputs() for dynamically sized vectors
+   */
+  template <typename System> std::size_t getNumOutputs(const System& sys) { return internal::NumOutputsDispatch<System,System::template OutputVector<double>::RowsAtCompileTime==-1>::eval(sys); }
+
 
 /** FeedbackSystem<System1,System2>
  * @brief Builds a new system from the feedback connection of two simpler systems
@@ -74,7 +125,6 @@ namespace Drake {
     template <typename ScalarType> using StateVector = typename CombinedVectorBuilder<System1::template StateVector, System2::template StateVector>::template type<ScalarType>;
     template <typename ScalarType> using InputVector = typename System1::template InputVector<ScalarType>;
     template <typename ScalarType> using OutputVector = typename System1::template OutputVector<ScalarType>;
-    const static int num_inputs = SystemSizeTraits<System1>::num_inputs;
     typedef CombinedVectorUtil<StateVector1,StateVector2> util;
 
     typedef std::shared_ptr<System1> System1Ptr;

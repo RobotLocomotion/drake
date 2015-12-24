@@ -131,4 +131,8 @@ if (MATLAB_FOUND)
   endif()
 endif(MATLAB_FOUND)
 
+add_executable(urdfLCMNode urdfLCMNode.cpp)
+target_link_libraries(urdfLCMNode drakeRBM drakeLCMSystem)
+pods_install_executables(urdfLCMNode)
+
 add_subdirectory(test)
