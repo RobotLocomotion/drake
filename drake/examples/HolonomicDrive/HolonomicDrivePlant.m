@@ -17,6 +17,7 @@ classdef HolonomicDrivePlant < SecondOrderSystem
       %   tauMax:   motor stall-torque
       % I: moment of inertia of entire robot about vertical axis
       % m: total mass of robot
+      assert(isrow(wheels), 'Wheels must be a row vector');
       n = length(wheels);
 
       obj = obj@SecondOrderSystem(3, n, true);
