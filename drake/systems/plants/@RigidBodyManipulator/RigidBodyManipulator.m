@@ -132,92 +132,76 @@ classdef RigidBodyManipulator < Manipulator
   methods
     function [Vq, dVq] = qdotToV(obj, kinsol)
       if obj.mex_model_ptr ~= 0 && kinsol.mex_ptr ~= 0
-        Vq = positionDotToVelocityMappingmex(kinsol.mex_ptr);
-        if ~isnumeric(Vq)
-          typecheck(Vq, 'TaylorVar');
-          if nargout == 1
-            Vq = Vq.eval();
+        Vq = velocityToPositionDotMappingmex(kinsol.mex_ptr);
+        if kinsol.has_gradients
+          [Vq, dVq] = eval(Vq);
+          nq = length(kinsol.q);
+          if isempty(dVq)
+            dVq = zeros(numel(Vq), nq);
           else
-            [Vq, dVq] = eval(Vq);
-          end
-          return
-        else
-          if nargout == 1
-            return
-          elseif nargout == 2
-            error('Drake:RigidBodyManipulator:TooManyOutputs', 'dVq was requested, but the kinsol input does not have gradients');
+            dVq = dVq(:, 1 : nq);
           end
         end
-      end
-
-      %% Otherwise, fall back to the Matlab version:
-      compute_gradient = nargout > 1;
-
-      bodies = obj.body;
-      nb = length(bodies);
-      nv = obj.num_velocities;
-      nq = obj.num_positions;
-      Vq = zeros(nv, nq) * q(1); % to make TaylorVar work better
-
-      if compute_gradient
-        dVq = zeros(numel(Vq), nq) * q(1);
-      end
-      for i = 2 : nb
-        bodyI = bodies(i);
-        q_body = q(bodyI.position_num);
+      else % fall back to the Matlab version:
+        compute_gradient = nargout > 1;
+        
+        bodies = obj.body;
+        nb = length(bodies);
+        nv = obj.num_velocities;
+        nq = obj.num_positions;
+        Vq = zeros(nv, nq) * q(1); % to make TaylorVar work better
+        
         if compute_gradient
-          [VqJoint, dVqJoint] = jointQdot2v(bodyI, q_body);
-          dVq = setSubMatrixGradient(dVq, dVqJoint, bodyI.velocity_num, bodyI.position_num, size(Vq), bodyI.position_num);
-        else
-          VqJoint = jointQdot2v(bodyI, q_body);
+          dVq = zeros(numel(Vq), nq) * q(1);
         end
-        Vq(bodyI.velocity_num, bodyI.position_num) = VqJoint;
+        for i = 2 : nb
+          bodyI = bodies(i);
+          q_body = q(bodyI.position_num);
+          if compute_gradient
+            [VqJoint, dVqJoint] = jointQdot2v(bodyI, q_body);
+            dVq = setSubMatrixGradient(dVq, dVqJoint, bodyI.velocity_num, bodyI.position_num, size(Vq), bodyI.position_num);
+          else
+            VqJoint = jointQdot2v(bodyI, q_body);
+          end
+          Vq(bodyI.velocity_num, bodyI.position_num) = VqJoint;
+        end
       end
     end
 
     function [VqInv, dVqInv] = vToqdot(obj, kinsol)
       if obj.mex_model_ptr ~= 0 && kinsol.mex_ptr ~= 0
         VqInv = velocityToPositionDotMappingmex(kinsol.mex_ptr);
-        if ~isnumeric(VqInv)
-          typecheck(VqInv, 'TaylorVar');
-          if nargout == 1
-            VqInv = VqInv.eval();
+        if kinsol.has_gradients
+          [VqInv, dVqInv] = eval(VqInv);
+          nq = length(kinsol.q);
+          if isempty(dVqInv)
+            dVqInv = zeros(numel(VqInv), nq);
           else
-            [VqInv, dVqInv] = eval(VqInv);
-          end
-          return
-        else
-          if nargout == 1
-            return
-          elseif nargout == 2
-            error('Drake:RigidBodyManipulator:TooManyOutputs', 'dVqInv was requested, but the kinsol input does not have gradients');
+            dVqInv = dVqInv(:, 1 : nq);
           end
         end
-      end
-
-      %% Otherwise, fall back to the Matlab version:
-
-      compute_gradient = nargout > 1;
-
-      bodies = obj.body;
-      nb = length(bodies);
-      nv = obj.num_velocities;
-      nq = obj.num_positions;
-      VqInv = zeros(nq, nv) * kinsol.q(1); % to make TaylorVar work better
-
-      if compute_gradient
-        dVqInv = zeros(numel(VqInv), nq) * kinsol.q(1);
-      end
-      for i = 2 : nb
-        bodyI = bodies(i);
-        q_body = kinsol.q(bodyI.position_num);
+      else % fall back to the Matlab version:
+        compute_gradient = nargout > 1;
+        bodies = obj.body;
+        nb = length(bodies);
+        nv = obj.num_velocities;
+        nq = obj.num_positions;
+        VqInv = zeros(nq, nv) * kinsol.q(1); % to make TaylorVar work better
+        
         if compute_gradient
-          [VqInvJoint, dVqInvJoint] = jointV2qdot(bodyI, q_body);
-          dVqInv = setSubMatrixGradient(dVqInv, dVqInvJoint, bodyI.position_num, bodyI.velocity_num, size(VqInv), bodyI.position_num);
-        else
-          VqInvJoint = jointV2qdot(bodyI, q_body);
+          dVqInv = zeros(numel(VqInv), nq) * kinsol.q(1);
         end
-        VqInv(bodyI.position_num, bodyI.velocity_num) = VqInvJoint;
+        for i = 2 : nb
+          bodyI = bodies(i);
+          q_body = kinsol.q(bodyI.position_num);
+          if compute_gradient
+            [VqInvJoint, dVqInvJoint] = jointV2qdot(bodyI, q_body);
+            dVqInv = setSubMatrixGradient(dVqInv, dVqInvJoint, bodyI.position_num, bodyI.velocity_num, size(VqInv), bodyI.position_num);
+          else
+            VqInvJoint = jointV2qdot(bodyI, q_body);
+          end
+          VqInv(bodyI.position_num, bodyI.velocity_num) = VqInvJoint;
+        end
       end
     end
 
