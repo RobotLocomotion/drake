@@ -1,9 +1,6 @@
 #include "Polynomial.h"
-#include <Eigen/Core>
-#include <random>
 #include "testUtil.h"
 #include <iostream>
-#include <typeinfo>
 
 using namespace Eigen;
 using namespace std;
