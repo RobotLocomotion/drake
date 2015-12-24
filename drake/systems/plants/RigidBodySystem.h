@@ -16,7 +16,20 @@ namespace Drake {
 
     template <typename ScalarType>
     StateVector<ScalarType> dynamics(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {
-      StateVector<ScalarType> dot(2);
+      const eigen_aligned_unordered_map<const RigidBody *, Eigen::Matrix<ScalarType, 6, 1> > f_ext;
+
+      // todo: make kinematics cache once and re-use it (but have to make one per type)
+      auto kinsol = tree->doKinematics(x.topRows(tree->num_positions),x.bottomRows(tree->num_velocities));
+
+      auto H = tree->massMatrix(kinsol);
+      Eigen::VectorXd tau = -tree->dynamicsBiasTerm(kinsol,f_ext);
+      if (size(u)>0) tau += tree->B*u;
+
+      Eigen::VectorXd vdot = H.fullPivHouseholderQr().solve(tau);
+
+      StateVector<ScalarType> dot(tree->num_positions+tree->num_velocities);
+      assert(tree->num_positions == tree->num_velocities);  // need to call vToQdot below once it's merged in
+      dot << x.bottomRows(tree->num_velocities),vdot;
       return dot;
     }
 
@@ -30,6 +43,7 @@ namespace Drake {
 
   private:
     std::shared_ptr<RigidBodyTree> tree;
+
   };
 
 } // end namespace Drake

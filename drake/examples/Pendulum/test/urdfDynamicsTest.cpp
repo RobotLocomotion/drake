@@ -13,13 +13,16 @@ int main(int argc, char* argv[])
   auto p = Pendulum();
 
   for (int i=0; i<1000; i++) {
-
     auto x0 = getRandomVector<PendulumState>();
     auto u0 = getRandomVector<PendulumInput>();
 
     RigidBodySystem::StateVector<double> x0_rb = toEigen(x0);
     RigidBodySystem::InputVector<double> u0_rb = toEigen(u0);
 
-    assert((rbsys.dynamics(0.0,x0_rb,u0_rb) - toEigen(p.dynamics(0.0,x0,u0))).isZero());
+    auto xdot = toEigen(p.dynamics(0.0,x0,u0));
+    auto xdot_rb = rbsys.dynamics(0.0,x0_rb,u0_rb);
+//    cout << "xdot = " << xdot.transpose() << endl;
+//    cout << "xdot_rb = " << xdot_rb.transpose() << endl;
+    assert((xdot_rb - xdot).isZero());
   }
 }
