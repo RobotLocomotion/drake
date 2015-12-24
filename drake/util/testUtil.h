@@ -36,10 +36,11 @@ std::string to_string(const Eigen::MatrixBase<Derived> & a)
 }
 
 template <typename T>
-void valuecheck(const T& a, const T& b)
+void valuecheck(const T& a, const T& b, std::string error_msg = "")
 {
   if (a != b) {
     std::ostringstream stream;
+    stream << error_msg;
     stream << "Expected:\n" << a << "\nbut got:" << b << "\n";
     throw std::runtime_error(stream.str());
   }

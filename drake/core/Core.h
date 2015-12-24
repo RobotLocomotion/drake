@@ -4,9 +4,9 @@
 #include <string>
 #include <vector>
 #include <Eigen/Dense>
+#include "Path.h"
 
 namespace Drake {
-  #include "Path.h"
 
   /** @defgroup vector_concept Vector<ScalarType> Concept
    * @ingroup concepts
