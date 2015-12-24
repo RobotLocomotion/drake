@@ -50,6 +50,7 @@ option(WITH_SNOPT_PRECOMPILED "precompiled binaries only for snopt; the source r
 
 # OFF by default:
 option(WITH_SNOPT 		"nonlinear optimization solver; requires access to RobotLocomotion/snopt-pod")
+option(WITH_TEXTBOOK "pull in the Underactuated Robotics textbook and its examples")
 
 if (NOT WIN32) # many of these might work on win32 with little or no work... they just haven't been tried
 	option(WITH_SIGNALSCOPE	"live plotting tool for lcm messages")
@@ -69,6 +70,9 @@ if (NOT WIN32) # many of these might work on win32 with little or no work... the
 	option(WITH_MESHCONVERTERS "uses vcglib to convert a few standard filetypes")
 endif()
 
+if (WITH_TEXTBOOK OR WITH_ALL_SUPPORTED_EXTERNALS OR WITH_ALL_PUBLIC_EXTERNALS)
+	find_package(PythonInterp REQUIRED)
+endif()
 
 # list *compilation* dependencies, in alphabetical order by target (note: dependencies must come first in my foreach above)
 set(lcm_dependencies gtk)
@@ -147,6 +151,11 @@ set(spotless_GIT_REPOSITORY https://github.com/RobotLocomotion/spotless-pod.git)
 set(spotless_GIT_TAG 2b0c25ebb1733950284c7e0be55a1a84304f7543)
 set(spotless_IS_CMAKE_POD TRUE)
 set(spotless_IS_PUBLIC TRUE)
+set(textbook_GIT_REPOSITORY https://github.com/RussTedrake/underactuated.git)
+set(textbook_GIT_TAG master)  # for now, let's always pull the latest and greatest
+set(textbook_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/drake/doc/textbook")
+set(textbook_BUILD_COMMAND python extract_examples.py underactuated.html ./examples)
+set(textbook_IS_PUBLIC TRUE)
 set(yalmip_GIT_REPOSITORY https://github.com/RobotLocomotion/yalmip.git)
 set(yalmip_GIT_TAG c071fb7b7193491f8eefadba3bfff26160ad6cd4)
 set(yalmip_IS_PUBLIC TRUE)
@@ -173,6 +182,7 @@ endif()
 set(EXTERNAL_PROJECTS)
 foreach(proj IN ITEMS
 		cmake
+		textbook
 		eigen
 		gtk
 		lcm
