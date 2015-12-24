@@ -7,14 +7,17 @@ x0 = getInitialState(p);
 x0 = [-3.5 0.1 0 0 7 0 0]';
 tf0 = 1.0;
 xf = p.xd;
-N=21
-
-options.ps_method=1; the default choice of LGL_PS method can be omitted
-%options.ps_method=2; CGL_PS method option
+N=21;
 
 
+options.ps_method=PseudoSpectralMethodTrajOpt.LGL;
+%default choice of LGL_PS method, can be omitted
+
+%options.ps_method=PseudoSpectralMethodTrajOpt.CGL;
+%set the CGL_PS method option
 prog = PseudoSpectralMethodTrajOpt(p,N,[0 2],options);
 % prog = prog.setCheckGrad(true);
+
 
 prog = prog.addStateConstraint(BoundingBoxConstraint([-4,-1,-pi/2,p.phi_lo_limit,-inf,-inf,-inf]',[1,1,pi/2,p.phi_up_limit,inf,inf,inf]'),1:N);
 prog = prog.addStateConstraint(ConstantConstraint(x0),1);
@@ -39,11 +42,11 @@ if info~=1, error('Failed to find a trajectory'); end
    fnplt(xtraj)
    
    figure(3)
-  fnplt(utraj)  
+  % fnplt(utraj)  
     fnplt(xtraj,4)
    
    fnplt(xtraj,3)   
-  save('glider_trajs','xtraj','utraj');
+  % save('glider_trajs','xtraj','utraj');
    
    v = GliderVisualizer(p);
    v.playback(xtraj);

@@ -56,7 +56,8 @@ classdef PseudoSpectralMethodTrajOpt <DirectTrajectoryOptimization
       nX = obj.plant.getNumStates();
       nU = obj.plant.getNumInputs();
       options=obj.options;
-      %%set up psudospectral method parameters
+      
+      % set up psudospectral method parameters
        switch options.ps_method
         case PseudoSpectralMethodTrajOpt.LGL 
           obj.tau=LGL_nodes(obj);
@@ -69,11 +70,11 @@ classdef PseudoSpectralMethodTrajOpt <DirectTrajectoryOptimization
       end
 
       % collocation at each and every knot point requires the states and input values at all knot points. Hnce n_vars has this N*(nx+nU) part
-      % also requires one of the time steps to keep the ratio correct, arbitrarily chooses h1, so total n_vars=N*(nx+nU)+1
+      % also requires one of the time consteps to keep the ratio correct, arbitrarily chooses h1, so total n_vars=N*(nx+nU)+1
       n_vars = 1+(N)*(nX+nU);
       cnstr = FunctionHandleConstraint(zeros(N*(nX),1),zeros(N*(nX),1),n_vars,@obj.constraint_fun);
-      % sparse_Row=[1:N,]; 
-      % sparse_Col=[ones(N),];
+      % sparse_Row=repmat((nX+1:N*nX,1,nX)); 
+      % sparse_Col=[kron(2:N*nX,ones(N*nX-nX,1))];
       % cnstr = setSparseStructure(cnstr,sparse_Row,sparse_Col)
       cnstr = setName(cnstr,'PSMcollocation');
       % system dynamics passed to collocation as sharedDataFunction
@@ -87,11 +88,12 @@ classdef PseudoSpectralMethodTrajOpt <DirectTrajectoryOptimization
     
     function [g,dg] = constraint_fun(obj,h1,x,u,varargin)
       % dynamic constraint
-      % @param h1, the first time step, used for keeping time-derivative of PSM approximation at the right scale
-      % @param x, state, at knot number i, where i is wraped in from line 79
-      % @param u, input 
-      % @param varargin, a cell of system dynamics at all knot points, i.e., size(varagin)=obj.N
-      %initilize parameters
+      % @param h1, the first time step, used for keeping time-derivative from dynamics at the right scale
+      % @param x, state, at the current knot of consideration
+      % @param u, input, at the current knot of consideration
+      % @param varargin, a cell of system dynamics and their derivatives at all knot points, i.e., size(varagin)=obj.N
+      
+      % initilize parameters
       N=obj.N;
       nX = obj.plant.getNumStates();
       nU = obj.plant.getNumInputs();
@@ -100,23 +102,37 @@ classdef PseudoSpectralMethodTrajOpt <DirectTrajectoryOptimization
       scale=h1/(initial_h1);%comes from the time domain affine transformation
       x=reshape(x,nX,N);
 
-
-      %subscript p indicates the parameters are from the psm method,f indicates they're from the dynamics
-      dynamics=cell2mat(varargin);% all dynamics data
+      % the collocation
+      % subscript p indicates the parameters are from the psm method,f indicates they're from the dynamics
+      % all dynamics data
+      dynamics=cell2mat(varargin);
+      % raw data of xdot (f) obtained at all knot points
       xdot_all_knots=vertcat(dynamics.xdot);
-      xdot_f=xdot_all_knots*scale;% xdot from the dynamics
-      dxdotdh1_f=xdot_all_knots/initial_h1;% dxdot/dh1, also from dynamics
+      % xdot from the dynamics, with scaling
+      xdot_f=xdot_all_knots*scale;
+      % xdot from PS approximation
+      xdot_p=sum((kron(D,ones(nX,1))).*(repmat(x,N,1)),2);
 
+
+      % the gradients
+      % dxdot/dh1, from dynamics, in essense comes from the scaling. Not to be confused with dxdot/dt,
+      % which describes the time derivative
+      dxdotdh1_f=xdot_all_knots/initial_h1;
+      % raw data of dxdot, which contains [dxdot/dt, dxdot/dx, dxdot/du]. For time-invariant systems,
+      % the dxdot/dt part is always 0, and thus omitted
       dxdot_all_knots=vertcat(dynamics.dxdot);
+      % raw data of dxdot/dx
       dxdotdx_all_knots=dxdot_all_knots(:,2:1+nX);
+      % processing of the raw data, essentially transformed the raw data into a block diagonal matrix
+      dxdotdx_f=(repmat(dxdotdx_all_knots,1,N)).*kron(eye(N),ones(nX,nX))*scale; 
+      % raw data of dxdot/du
       dxdotdu_all_knots=dxdot_all_knots(:,2+nX:end);
-      dxdotdx_f=(repmat(dxdotdx_all_knots,1,N)).*kron(eye(N),ones(nX,nX))*scale;
+      % similar processing procedure
       dxdotdu_f=(repmat(dxdotdu_all_knots,1,N)).*kron(eye(N),ones(nX,nU))*scale;
+      % d(xdot_p)/dx
+      dxdotdx_p=kron(D,speye(nX)); 
 
-      xdot_p=sum((kron(D,ones(nX,1))).*(repmat(x,N,1)),2);% xdot from PS approximation
-      dxdotdx_p=kron(D,eye(nX));% d(xdot_p)/dx 
-
-      % difference between the dynamic and time-derivative of the psm fitting curve
+      % difference between the dynamic and the psm fitting curve
       g=[xdot_p]-[xdot_f];
       % gradient of such difference
       d_p=[sparse(N*nX,1),dxdotdx_p,sparse(nX*N,nU*N)]; % [dxdot_p/dh1, dxdot_p/dx,dxdot_p/du]
@@ -138,7 +154,8 @@ classdef PseudoSpectralMethodTrajOpt <DirectTrajectoryOptimization
 
       nX = obj.plant.getNumStates();
       nU = obj.plant.getNumInputs();
-      w=obj.w; %wight vector
+      % the weight vector
+      w=obj.w;
 
       % add running cost at the first node
       running_cost_end = FunctionHandleObjective(nX+nU,@(x,u) obj.running_fun_end(running_cost_function,x,u));
@@ -151,10 +168,12 @@ classdef PseudoSpectralMethodTrajOpt <DirectTrajectoryOptimization
     end
     function [utraj,xtraj] = reconstructInputTrajectory(obj,z)
       %%todo
-      %%fix the foh with global Lagrange interpolation
+      %%fixed the foh with global Lagrange interpolation
+      %%somehow it doesn't work well with fnplt...? needs fix either in this class or in the function call, to re-write the plot function
       t = [0; cumsum(z(obj.h_inds))];
       u = reshape(z(obj.u_inds),[],obj.N);
-      utraj = PPTrajectory(foh(t,u));
+      coeffs=LagrangeInter(t,u);
+      utraj = PPTrajectory(mkpp([0,t(end)],coeffs));
       utraj = utraj.setOutputFrame(obj.plant.getInputFrame);
     end
     
@@ -171,9 +190,6 @@ classdef PseudoSpectralMethodTrajOpt <DirectTrajectoryOptimization
       end
       xtraj = PPTrajectory(pchipDeriv(t,x,xdot));
       xtraj = xtraj.setOutputFrame(obj.plant.getStateFrame);
-
-
-
     end
   end
   
@@ -195,7 +211,6 @@ classdef PseudoSpectralMethodTrajOpt <DirectTrajectoryOptimization
       [g,dg] = running_handle(h/weight,x,u);
       f=g*weight;
       df = [dg(:,1), weight*dg(:,2:end)];
-    end
-    
+    end  
   end
 end
