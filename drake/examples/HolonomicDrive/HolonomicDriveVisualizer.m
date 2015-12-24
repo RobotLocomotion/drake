@@ -5,7 +5,7 @@ classdef HolonomicDriveVisualizer < Visualizer
     radius
 
 
-      fade_percent = 0;
+    fade_percent = 0;
   end
 
   methods
