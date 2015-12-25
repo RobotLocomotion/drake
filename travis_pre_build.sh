@@ -20,7 +20,8 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]
 	export CMAKE_FLAGS="-DWITH_SPOTLESS:BOOL=OFF -DWITH_LIBBOT:BOOL=ON -DWITH_DIRECTOR:BOOL=ON -DWITH_IRIS:BOOL=ON -DWITH_OCTOMAP:BOOL=ON -DWITH_MOSEK:BOOL=ON -DWITH_AVL:BOOL=ON -DWITH_XFOIL:BOOL=ON"
 	mkdir build
 	make download-all
-	yes | sudo ./install_prereqs.sh ubuntu
+	sudo echo 'APT::Get::Assume-Yes "true";' > /etc/apt/apt.conf.d/90forceyes
+	sudo ./install_prereqs.sh ubuntu
 elif [ "$TRAVIS_OS_NAME" = "osx" ]
 	then 
 	brew update > brew_update.log
