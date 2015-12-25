@@ -16,16 +16,17 @@
 %include <typemaps.i>
 %include <std_vector.i>
 %include <eigen.i>
+%import <rbm.i>
 
-%template(vectorVectorXd) std::vector<Eigen::VectorXd>;
-%template(vectorMatrixXd) std::vector<Eigen::MatrixXd>;
-%template(vectorString) std::vector<std::string>;
+// %template(vectorVectorXd) std::vector<Eigen::VectorXd>;
+// %template(vectorMatrixXd) std::vector<Eigen::MatrixXd>;
+// %template(vectorString) std::vector<std::string>;
 %template(vectorConstraintPtr) std::vector<RigidBodyConstraint *>;
 
-%eigen_typemaps(Eigen::VectorXd)
-%eigen_typemaps(Eigen::MatrixXd)
-%eigen_typemaps(Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>)
-%eigen_typemaps(Eigen::VectorXi)
+// %eigen_typemaps(Eigen::VectorXd)
+// %eigen_typemaps(Eigen::MatrixXd)
+// %eigen_typemaps(Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>)
+// %eigen_typemaps(Eigen::VectorXi)
 
 %include "IKoptions.h"
 %include "RigidBodyIK.h"
