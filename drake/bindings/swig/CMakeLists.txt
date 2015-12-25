@@ -55,7 +55,7 @@ if (snopt_c_FOUND)
                            ${CMAKE_CURRENT_SOURCE_DIR}/../../util
                            ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants/joints 
                          LINK_LIBRARIES drakeIK 
-                         SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/python
+                         SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/python ${DRAKE_SWIG_FILES}/common
                          DESTINATION ${python_install_subdir})
 endif()
 
