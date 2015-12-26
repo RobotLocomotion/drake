@@ -10,6 +10,7 @@
 #include "ForceTorqueMeasurement.h"
 #include "Side.h"
 #include "gurobiQP.h"
+#include <drakeQP_export.h> // TODO: do exports
 
 const double REG = 1e-8;
 

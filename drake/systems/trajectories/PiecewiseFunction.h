@@ -4,19 +4,9 @@
 #include <Eigen/Core>
 #include <vector>
 #include <random>
+#include <drakeTrajectories_export.h>
 
-#undef DLLEXPORT
-#if defined(WIN32) || defined(WIN64)
-  #if defined(drakeTrajectories_EXPORTS)
-    #define DLLEXPORT __declspec( dllexport )
-  #else
-    #define DLLEXPORT __declspec( dllimport )
-  #endif
-#else
-  #define DLLEXPORT
-#endif
-
-class DLLEXPORT PiecewiseFunction
+class DRAKETRAJECTORIES_EXPORT PiecewiseFunction
 {
 protected:
   std::vector<double> segment_times;

@@ -8,12 +8,12 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-#include "drakeShapesMacros.h"
 #include "Geometry.h"
+#include <drakeShapes_export.h>
 
 namespace DrakeShapes
 {
-  class DLLEXPORT_drakeShapes Element {
+  class DRAKESHAPES_EXPORT Element {
     public:
       Element(const Geometry& geometry, 
           const Eigen::Matrix4d& T_element_to_local = Eigen::Matrix4d::Identity())

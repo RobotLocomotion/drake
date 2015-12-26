@@ -8,23 +8,13 @@
 #include <vector>
 #include <random>
 #include <stdexcept>
-
-#undef DLLEXPORT
-#if defined(WIN32) || defined(WIN64)
-#if defined(drakePolynomial_EXPORTS)
-#define DLLEXPORT __declspec( dllexport )
-#else
-#define DLLEXPORT __declspec( dllimport )
-#endif
-#else
-#define DLLEXPORT
-#endif
+#include <drakePolynomial_export.h>
 
 // represents a scalar multi-variate polynomial
 // modeled after the msspoly in spotless 
 
 template <typename _CoefficientType = double>
-class DLLEXPORT Polynomial
+class DRAKEPOLYNOMIAL_EXPORT Polynomial
 {
 public:
   typedef _CoefficientType CoefficientType;
