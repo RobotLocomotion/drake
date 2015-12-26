@@ -23,6 +23,6 @@ int main(int argc, char* argv[])
     auto xdot_rb = rbsys.dynamics(0.0,x0_rb,u0_rb);
 //    cout << "xdot = " << xdot.transpose() << endl;
 //    cout << "xdot_rb = " << xdot_rb.transpose() << endl;
-    assert((xdot_rb - xdot).isZero());
+    valuecheckMatrix(xdot_rb,xdot,1e-8);
   }
 }

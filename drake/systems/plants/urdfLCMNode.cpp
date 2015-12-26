@@ -8,7 +8,7 @@ using namespace std;
 using namespace Eigen;
 using namespace Drake;
 
-/** urdfLCMNode Application
+/** @page urdfLCMNode urdfLCMNode Application
  * @ingroup simulation
  * @brief Loads a urdf and simulates it, subscribing to LCM inputs and publishing LCM outputs
  *
@@ -16,9 +16,12 @@ using namespace Drake;
  * with an LCM type defined subscribed to the associated LCM channels, and every
  * output with an LCM type defined publishing on the associate channels.  See @ref lcm_vector_concept.
  *
- * Usage:  urdfLCMNode [options] full_path_to_urdf_file
- *   with (case sensitive) options:
- *     --base [floating_type]  // can be "FIXED, ROLLPITCHYAW,or QUATERNION" (default: QUATERNION)
+ *
+@verbatim
+Usage:  urdfLCMNode [options] full_path_to_urdf_file
+  with (case sensitive) options:
+    --base [floating_type]  // can be "FIXED, ROLLPITCHYAW,or QUATERNION" (default: QUATERNION)
+@endverbatim
  */
 
 int main(int argc, char* argv[]) {
@@ -32,7 +35,7 @@ int main(int argc, char* argv[]) {
   char* floating_base_option = getCommandLineOption(argv,argc+argv,"--base");
   if (floating_base_option) {
     if (strcmp(floating_base_option,"FIXED")==0) { floating_base_type = DrakeJoint::FIXED; }
-    else if (strcmp(floating_base_option,"RPY")==0) { floating_base_type = DrakeJoint::ROLLPITCHYAW }
+    else if (strcmp(floating_base_option,"RPY")==0) { floating_base_type = DrakeJoint::ROLLPITCHYAW; }
   }
 
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
@@ -41,6 +44,8 @@ int main(int argc, char* argv[]) {
   auto rigid_body_sys = make_shared<RigidBodySystem>(tree);
   auto visualizer = make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm,argv[argc-1],floating_base_type);
   auto sys = cascade(rigid_body_sys, visualizer);
+
+  cout << "num_positions: " << tree->num_positions << endl;
 
   VectorXd x0 = VectorXd::Random(tree->num_positions+tree->num_velocities);
 
