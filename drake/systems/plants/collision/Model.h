@@ -7,15 +7,15 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-#include "drakeCollisionMacros.h"
 #include "Element.h"
 #include "PointPair.h"
+#include "drakeCollision_export.h"
 
 namespace DrakeCollision
 {
   typedef std::pair<ElementId, ElementId> ElementIdPair;
 
-  class DLLEXPORT_drakeCollision Model {
+  class DRAKECOLLISION_EXPORT Model {
     public:
       Model() {}
 

@@ -218,8 +218,14 @@ methods(Access=protected)
     result = gurobi(model,params);
     
     info = strcmp(result.status,'OPTIMAL');
-    x = result.x;
-    objval = result.objval;
+    if (info)
+      x = result.x;
+      objval = result.objval;
+    else
+      x=[];
+      objval=[];
+      return
+    end
     
     if (size(obj.Ain,1)>0 || ~isempty(obj.x_lb) || ~isempty(obj.x_ub))
       % note: result.slack(for Ain indices) = bin-Ain*x

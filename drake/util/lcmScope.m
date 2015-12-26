@@ -41,7 +41,7 @@ while true
   
   channel = char(msg.channel);
   varname = channel((strfind(channel,'_scope_')+7):end);
-  data = drake.util.lcmt_scope_data(msg.data);
+  data = drake.lcmt_scope_data(msg.data);
 
   breset = false;
   if (isempty(scope_data) || ~isfield(scope_data,varname))

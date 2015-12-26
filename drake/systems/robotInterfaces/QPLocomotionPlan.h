@@ -8,7 +8,7 @@
 #include <Eigen/Geometry>
 #include "PiecewisePolynomial.h"
 #include "ExponentialPlusPiecewisePolynomial.h"
-#include "RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 #include "lcmtypes/drake/lcmt_qp_controller_input.hpp"
 #include "BodyMotionData.h"
 #include "Side.h"
@@ -28,7 +28,7 @@ public:
   QuadraticLyapunovFunction() { }
 
   template<typename DerivedS>
-  QuadraticLyapunovFunction(const MatrixBase<DerivedS>& S, const ExponentialPlusPiecewisePolynomial<double>& s1) :
+  QuadraticLyapunovFunction(const Eigen::MatrixBase<DerivedS>& S, const ExponentialPlusPiecewisePolynomial<double>& s1) :
       S(S), s1(s1) { }
 
   const Eigen::MatrixXd& getS() const
@@ -127,7 +127,7 @@ struct QPLocomotionPlanSettings {
   }
 
   // may be useful later in setting up constrained_position_indices
-  static std::vector<int> findPositionIndices(RigidBodyManipulator& robot, const std::vector<std::string>& joint_name_substrings)
+  static std::vector<int> findPositionIndices(RigidBodyTree & robot, const std::vector<std::string>& joint_name_substrings)
   {
     std::vector<int> ret;
     for (auto body_it = robot.bodies.begin(); body_it != robot.bodies.end(); ++body_it) {
@@ -152,7 +152,7 @@ struct QPLocomotionPlanSettings {
 class QPLocomotionPlan
 {
 private:
-  RigidBodyManipulator& robot; // TODO: const correctness
+  RigidBodyTree & robot; // TODO: const correctness
   QPLocomotionPlanSettings settings;
   const std::map<Side, int> foot_body_ids;
   const std::map<Side, int> knee_indices;
@@ -164,8 +164,8 @@ private:
   std::string lcm_channel;
 
   double start_time;
-  Vector3d plan_shift;
-  std::map<Side,Vector3d> foot_shifts;
+  Eigen::Vector3d plan_shift;
+  std::map<Side,Eigen::Vector3d> foot_shifts;
   double last_foot_shift_time;
   drake::lcmt_qp_controller_input last_qp_input;
   std::map<Side, bool> toe_off_active;
@@ -180,7 +180,7 @@ private:
   const static std::map<SupportLogicType, std::vector<bool> > support_logic_maps;
 
 public:
-  QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomotionPlanSettings& settings, const std::string& lcm_channel);
+  QPLocomotionPlan(RigidBodyTree & robot, const QPLocomotionPlanSettings& settings, const std::string& lcm_channel);
 
   /*
    * Get the input structure which can be passed to the stateless QP control loop
@@ -204,7 +204,7 @@ public:
 
   drake::lcmt_qp_controller_input getLastQPInput() const;
 
-  const RigidBodyManipulator& getRobot() const;
+  const RigidBodyTree & getRobot() const;
 
 private:
   drake::lcmt_zmp_data createZMPData(double t_plan) const;
@@ -215,7 +215,7 @@ private:
 
   std::vector<Side> getSupportSides(const RigidBodySupportState &support_state) const;
 
-  void updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const KinematicsCache<double>& cache, const VectorXd& v);
+  void updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const KinematicsCache<double>& cache, const Eigen::VectorXd& v);
 
   void updatePlanShift(const KinematicsCache<double>& cache, double t_plan, const std::vector<bool>& contact_force_detected, int support_index);
 
@@ -231,9 +231,9 @@ private:
 
   static const std::map<SupportLogicType, std::vector<bool> > createSupportLogicMaps();
 
-  static const std::map<Side, int> createFootBodyIdMap(RigidBodyManipulator& robot, const std::map<Side, std::string>& foot_names);
+  static const std::map<Side, int> createFootBodyIdMap(RigidBodyTree & robot, const std::map<Side, std::string>& foot_names);
 
-  static const std::map<Side, int> createJointIndicesMap(RigidBodyManipulator& robot, const std::map<Side, std::string>& foot_body_ids);
+  static const std::map<Side, int> createJointIndicesMap(RigidBodyTree & robot, const std::map<Side, std::string>& foot_body_ids);
 };
 
 #endif /* SYSTEMS_ROBOTINTERFACES_QPLOCOMOTIONPLAN_H_ */

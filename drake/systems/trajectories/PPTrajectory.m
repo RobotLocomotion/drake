@@ -1,4 +1,4 @@
-classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
+classdef (InferiorClasses = {?ConstantTrajectory, ?Point}) PPTrajectory < Trajectory
   
   properties
     pp
@@ -8,18 +8,19 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
   
   methods
     function obj = PPTrajectory(ppform)
-      if isnumeric(ppform)
+      if isnumeric(ppform) || isa(ppform, 'Point')
         ppform = ConstantTrajectory(ppform);
       end
+      obj = obj@Trajectory(ppform.dim);
       if isa(ppform,'ConstantTrajectory')
+        obj = setOutputFrame(obj, ppform.getOutputFrame);
         ppform = mkpp([-inf,inf],eval(ppform,0),ppform.dim);
       end
-      obj = obj@Trajectory(ppform.dim);
       obj.pp = PPTrajectory.minimalOrder(ppform);
       obj.tspan = [min(obj.pp.breaks) max(obj.pp.breaks)];
       if exist('PPTmex')
         obj.mex_ptr = SharedDataHandle(PPTmex(obj.pp.breaks, obj.pp.coefs, obj.pp.order, obj.pp.dim));
-      end      
+      end
     end
   end
   methods (Static)
@@ -334,6 +335,7 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
         if length(d)<2, d=[d 1]; elseif length(d)>2, error('mtimes is not defined for ND arrays'); end
         if isscalar(a), cd = d; elseif isscalar(b), cd = size(a); else cd = [size(a,1),d(2)]; end
         coefs = full(reshape(coefs,[d,l,k])); a=full(a);
+        c = zeros([cd, l, k]);
         for i=1:l, for j=1:k,
           c(:,:,i,j)=a*coefs(:,:,i,j);
         end, end
@@ -342,8 +344,9 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       elseif isnumeric(b) % then only a is a PPTrajectory
         [breaks,coefs,l,k,d] = unmkpp(a.pp);
         if length(d)<2, d=[d 1]; elseif length(d)>2, error('mtimes is not defined for ND arrays'); end
-        if isscalar(a), cd = d; elseif isscalar(b), cd = size(a); else cd = [size(a,1),d(2)]; end
+        if isscalar(a), cd = d; elseif isscalar(b), cd = size(a); else cd = [d(1), size(b, 2)]; end
         coefs = full(reshape(coefs,[d,l,k])); b=full(b);
+        c = zeros([cd, l, k]);
         for i=1:l, for j=1:k,
           c(:,:,i,j)=coefs(:,:,i,j)*b;
         end, end
@@ -566,17 +569,32 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       % @param trajAtEnd trajectory to append
       % @retval newtraj new PPTrajectory object that is the combination of
       % both trajectories
-      
+
       if ~isa(obj,'PPTrajectory')
+        objRaw = obj;
         obj = PPTrajectory(obj);
         obj.tspan = [-10^8,trajAtEnd.tspan(1)];
         obj.pp.breaks = obj.tspan;
+        % set the output frame if we didn't start with one
+        if ~isa(objRaw, 'Point') && ~isa(objRaw, 'Trajectory')
+          obj = setOutputFrame(obj, trajAtEnd.getOutputFrame);
+        end
       end
       if ~isa(trajAtEnd,'PPTrajectory')
+        trajAtEndRaw = trajAtEnd;
         trajAtEnd = PPTrajectory(trajAtEnd);
         trajAtEnd.tspan = [obj.tspan(2),10^8];
-        obj.pp.breaks = obj.tspan;
-      end      
+        trajAtEnd.pp.breaks = trajAtEnd.tspan;
+        % set the output frame if we didn't start with one
+        if ~isa(trajAtEndRaw, 'Point') && ~isa(trajAtEndRaw, 'Trajectory')
+          trajAtEnd = setOutputFrame(trajAtEnd, obj.getOutputFrame);
+        end
+      end
+
+      % check trajectories are in the same frame
+      if obj.getOutputFrame ~= trajAtEnd.getOutputFrame
+        warning('Drake:PPTrajectory:MismatchingFrames', 'Shouldn''t append trajectories with different coordinate frames');
+      end
       
       % check for time condition
       firstEnd = obj.pp.breaks(end);

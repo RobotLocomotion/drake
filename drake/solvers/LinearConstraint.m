@@ -27,18 +27,6 @@ classdef LinearConstraint < Constraint
       obj = obj.setSparseStructure(iAfun,jAvar);
       obj.A = sparse(A);
     end
-
-    function obj = setName(obj,name)
-      % @param name   -- A cell array, name{i} is the name string of i'th constraint
-      if(~iscell(name))
-        error('Drake:LinearConstraint:name should be a cell array');
-      end
-      sizecheck(name,[obj.num_cnstr,1]);
-      if(~all(cellfun(@ischar,name)))
-        error('Drake:LinearConstraint:name should be a cell array of strings');
-      end
-      obj.name = name;
-    end
   end
 
   methods (Access = protected)
@@ -51,5 +39,5 @@ classdef LinearConstraint < Constraint
         ddc = sparse(size(obj.A,1),obj.xdim^2);
       end
     end
-end
+  end
 end

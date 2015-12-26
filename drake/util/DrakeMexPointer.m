@@ -7,6 +7,7 @@ classdef DrakeMexPointer < handle
   properties (SetAccess=private,GetAccess=public)
     ptr
     name = '';
+    type_id = -1;
   end
   properties (SetAccess=private,GetAccess=private)
     delete_fcn='';
@@ -14,11 +15,12 @@ classdef DrakeMexPointer < handle
   end
 
   methods
-    function obj = DrakeMexPointer(ptr, delete_fcn, name, varargin)
+    function obj = DrakeMexPointer(ptr, delete_fcn, name, type_id, varargin)
       obj.ptr = ptr;
       if (nargin>1) obj.delete_fcn = delete_fcn; end
       if (nargin>2) obj.name = name; end
-      if (nargin>3)
+      if (nargin>3) obj.type_id = type_id; end
+      if (nargin>4)
         obj.delete_fcn_additional_inputs=varargin;
       end
     end

@@ -1,7 +1,5 @@
 language: cpp
 
-sudo: required
-
 notifications:
   email: false
 
@@ -11,13 +9,9 @@ branches:
     - stable
 
 before_install:
-  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-  - sudo apt-get update -qq
-  - sudo apt-get install gcc-4.8 g++-4.8
-  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
-  - mkdir build
-  - make download-all
-  - sudo ./install_prereqs.sh ubuntu
+  - source travis_pre_build.sh
+
+install:
   - make
 
 script:
@@ -26,16 +20,33 @@ script:
 
 # The compiler and env:matrix options create an matrix of build configurations (gcc + Release, gcc + Debug, clang + Release, clang + Debug)
 
-compiler:
-  - gcc
-  - clang
-
 python:
   - '2.7'
 
-env:
-  global:
-    - CMAKE_FLAGS="-DWITH_SPOTLESS:BOOL=OFF -DWITH_LIBBOT:BOOL=ON -DWITH_GTK:BOOL=ON -DWITH_DIRECTOR:BOOL=ON -DWITH_IRIS:BOOL=ON -DWITH_OCTOMAP:BOOL=ON -DWITH_MOSEK:BOOL=ON -DWITH_AVL:BOOL=ON -DWITH_XFOIL:BOOL=ON"
-  matrix:
-    - BUILD_TYPE=Release
-    # - BUILD_TYPE=Debug
+matrix:
+  include:
+    - sudo: required
+      os: linux
+      dist: precise
+      compiler: clang
+      env: BUILD_TYPE=Release
+    - sudo: required
+      os: linux
+      dist: precise
+      compiler: gcc
+      env: BUILD_TYPE=Release
+    - sudo: required
+      os: linux
+      dist: precise
+      compiler: clang
+      env: BUILD_TYPE=Debug
+    - sudo: required
+      os: linux
+      dist: trusty
+      compiler: gcc
+      env: BUILD_TYPE=Release
+    - sudo: required
+      os: osx
+      compiler: clang
+      env: BUILD_TYPE=Release
+

@@ -52,6 +52,11 @@ classdef Reduction < DynamicalSystem
       % system
     end
     function x0 = getInitialState(obj)
+      if ~isempty(obj.initial_state)
+        x0 = obj.initial_state;
+        return;
+      end
+
       x0 = obj.reduced_sys.getInitialState();
     end
 

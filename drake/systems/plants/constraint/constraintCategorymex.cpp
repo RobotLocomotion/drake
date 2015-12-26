@@ -8,7 +8,7 @@
 #include "drakeMexUtil.h"
 #include <Eigen/Dense>
 #include "RigidBodyConstraint.h"
-#include "RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 #include <cstdio>
 
 using namespace Eigen;

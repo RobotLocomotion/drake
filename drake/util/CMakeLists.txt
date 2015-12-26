@@ -6,6 +6,8 @@ endif()
 add_mex(barycentricInterpolation barycentricInterpolation.cpp)
 
 if (LCM_FOUND AND MATLAB_FOUND)
+  include_directories(${PROJECT_SOURCE_DIR}/pod-build/lcmgen)
+
   if (simulink_FOUND)
     add_mex(lcmLogger lcmLogger.cpp)
     pods_use_pkg_config_packages(lcmLogger lcm)
@@ -16,7 +18,7 @@ if (LCM_FOUND AND MATLAB_FOUND)
 endif()
 
 include_directories(.)
-add_library(drakePolynomial Polynomial.cpp)
+add_library_with_exports(LIB_NAME drakePolynomial SOURCE_FILES Polynomial.cpp)
 pods_install_libraries(drakePolynomial)
 pods_install_headers(Polynomial.h DESTINATION drake)
 pods_install_pkg_config_file(drakePolynomial
@@ -24,7 +26,7 @@ LIBS -ldrakePolynomial
 REQUIRES
 VERSION 0.0.2)
 
-add_library(drakeUtil SHARED drakeUtil.cpp)
+add_library_with_exports(LIB_NAME drakeUtil SOURCE_FILES drakeUtil.cpp)
 pods_install_headers(drakeUtil.h  DESTINATION drake)
 pods_install_libraries(drakeUtil)
 pods_install_pkg_config_file(drake-util
@@ -49,9 +51,11 @@ endif()
 if (LCM_FOUND)
   # note: requires drakeUtil header file, but not linking against it because
   # we only need methods that are templated and defined in the header
+  include_directories(${PROJECT_SOURCE_DIR}/pod-build/lcmgen)
   include_directories (${PROJECT_SOURCE_DIR}/systems/trajectories )
-  add_library(drakeLCMUtil SHARED lcmUtil.cpp)
-  add_dependencies(drakeLCMUtil ${LCMTYPES_C_LIBRARY})
+
+  add_library_with_exports(LIB_NAME drakeLCMUtil SOURCE_FILES lcmUtil.cpp)
+  add_dependencies(drakeLCMUtil drake_lcmtypes lcmtype_agg_hpp)
   target_link_libraries(drakeLCMUtil drakeTrajectories)
   pods_install_headers(lcmUtil.h DESTINATION drake)
   pods_install_libraries(drakeLCMUtil)
@@ -59,7 +63,7 @@ endif()
 
 pods_install_headers(drakeGradientUtil.h DESTINATION drake)
 
-add_library(drakeGeometryUtil SHARED drakeGeometryUtil.cpp expmap2quat.cpp)
+add_library_with_exports(LIB_NAME drakeGeometryUtil SOURCE_FILES drakeGeometryUtil.cpp expmap2quat.cpp)
 pods_install_libraries(drakeGeometryUtil)
 pods_install_headers(drakeGeometryUtil.h expmap2quat.h DESTINATION drake)
 pods_install_pkg_config_file(drake-geometry-util
@@ -67,7 +71,7 @@ pods_install_pkg_config_file(drake-geometry-util
   REQUIRES
   VERSION 0.0.1)
 
-add_library(drakeConvexHull SHARED convexHull.cpp)
+add_library_with_exports(LIB_NAME drakeConvexHull SOURCE_FILES convexHull.cpp)
 pods_install_libraries(drakeConvexHull)
 pods_install_headers(convexHull.h DESTINATION drake)
 pods_install_pkg_config_file(drake-convex-hull

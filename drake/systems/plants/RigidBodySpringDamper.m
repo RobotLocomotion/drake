@@ -11,23 +11,24 @@ classdef RigidBodySpringDamper < RigidBodyForceElement
   end
   
   methods
-    function [f_ext, df_ext] = computeSpatialForce(obj,manip,q,qd)
+    function [f_ext, df_ext] = computeSpatialForce(obj,manip,q,v)
       % todo: re-enable mex for planar version when i write mex the planer
       % bodykin
       
       nq = size(q,1);
 
+      forward_kin_options.in_terms_of_qdot = false;
       if (obj.b~=0)
         if (nargout>1)
-          kinsol = doKinematics(manip,q,qd,struct('compute_gradients', true));
-          [x1,J1,dJ1] = forwardKin(manip,kinsol,obj.body1,obj.pos1);
-          J1dot = reshape(reshape(dJ1, 3 * nq, nq) * qd, 3, nq);
-          v1 = J1*qd;
+          kinsol = doKinematics(manip,q,v,struct('compute_gradients', true));
+          [x1,J1,dJ1] = forwardKin(manip,kinsol,obj.body1,obj.pos1,forward_kin_options);
+          J1dot = reshape(reshape(dJ1, 3 * nq, nq) * v, 3, nq);
+          v1 = J1*v;
           dv1dq = J1dot;
           dv1dqd = J1;
-          [x2,J2,dJ2] = forwardKin(manip,kinsol,obj.body2,obj.pos2);
-          J2dot = reshape(reshape(dJ2, 3 * nq, nq) * qd, 3, nq);
-          v2 = J2*qd;
+          [x2,J2,dJ2] = forwardKin(manip,kinsol,obj.body2,obj.pos2,forward_kin_options);
+          J2dot = reshape(reshape(dJ2, 3 * nq, nq) * v, 3, nq);
+          v2 = J2*v;
           dv2dq = J2dot;
           dv2dqd = J2;
           % r = x1-x2; l=sqrt(r'r); ldot=(r'rdot)/sqrt(r'r);
@@ -38,10 +39,10 @@ classdef RigidBodySpringDamper < RigidBodyForceElement
           dveldqd = (((x1-x2)'*(dv1dqd-dv2dqd))*(length+eps))/(length+eps)^2;
         else
           kinsol = doKinematics(manip,q);
-          [x1,J1] = forwardKin(manip,kinsol,obj.body1,obj.pos1);
-          v1 = J1*qd;
-          [x2,J2] = forwardKin(manip,kinsol,obj.body2,obj.pos2);
-          v2 = J2*qd;
+          [x1,J1] = forwardKin(manip,kinsol,obj.body1,obj.pos1,forward_kin_options);
+          v1 = J1*v;
+          [x2,J2] = forwardKin(manip,kinsol,obj.body2,obj.pos2,forward_kin_options);
+          v2 = J2*v;
           % r = x1-x2; l=sqrt(r'r); ldot=(r'rdot)/sqrt(r'r);
           length = norm(x1-x2);
           vel = ((x1-x2)'*(v1-v2))/(length+eps);
@@ -49,16 +50,16 @@ classdef RigidBodySpringDamper < RigidBodyForceElement
       else
         kinsol = doKinematics(manip,q);
         if (nargout>1)
-          [x1,J1] = forwardKin(manip,kinsol,obj.body1,obj.pos1);
-          [x2,J2] = forwardKin(manip,kinsol,obj.body2,obj.pos2);
+          [x1,J1] = forwardKin(manip,kinsol,obj.body1,obj.pos1,forward_kin_options);
+          [x2,J2] = forwardKin(manip,kinsol,obj.body2,obj.pos2,forward_kin_options);
           length = norm(x1-x2);
           dlengthdq = ((x1-x2)'/(length+eps))*(J1-J2);
           vel = 0;
           dveldq = zeros(1,nq);
           dveldqd = zeros(1,nq);
         else
-          x1 = forwardKin(manip,kinsol,obj.body1,obj.pos1);
-          x2 = forwardKin(manip,kinsol,obj.body2,obj.pos2);
+          x1 = forwardKin(manip,kinsol,obj.body1,obj.pos1,forward_kin_options);
+          x2 = forwardKin(manip,kinsol,obj.body2,obj.pos2,forward_kin_options);
           length = norm(x1-x2);
           vel=0;
         end

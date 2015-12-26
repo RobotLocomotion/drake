@@ -5,7 +5,7 @@ pods_find_pkg_config(gurobi)
 
 if (gurobi_FOUND)
 
-  add_library(drakeQP QP.cpp)
+  add_library_with_exports(LIB_NAME drakeQP SOURCE_FILES QP.cpp)
   set_target_properties(drakeQP PROPERTIES COMPILE_FLAGS -fPIC)
   pods_use_pkg_config_packages(drakeQP gurobi)
 
@@ -28,6 +28,7 @@ endif()
 pods_find_pkg_config(snopt_c)
 
 if(MATLAB_FOUND)
+  include_directories(${PROJECT_SOURCE_DIR}/util)
   add_mex(lqrmex lqrmex.cpp)
   target_link_libraries(lqrmex drakeUtil)
 endif()
@@ -57,3 +58,4 @@ if(snopt_c_FOUND AND MATLAB_FOUND)
 endif()
 
 add_subdirectory(qpSpline)
+add_subdirectory(test)

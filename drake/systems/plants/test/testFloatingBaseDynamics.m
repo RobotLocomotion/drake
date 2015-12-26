@@ -35,11 +35,7 @@ valuecheck(x0,x02(xind),1e-4);
 
 w = warning('off','Drake:RigidBodyManipulator:collisionDetect:doKinematicsMex');
 for i=1:100
-  q = [];
-  while isempty(q) || abs(abs(q(5)) - pi / 2) < 0.15 % avoid singularity
-    q = randn(nq,1);
-  end
-  
+  q = getRandomConfiguration(getManipulator(m_rpy));
   qd = rand(nq,1)-.5; u = rand(getNumInputs(m_rpy),1)-.5;
 
   kinsol = doKinematics(m_rpy,q,true,false,qd);

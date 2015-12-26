@@ -23,65 +23,57 @@ public:
    * Configuration dependent
    */
   Eigen::Transform<Scalar, SPACE_DIMENSION, Eigen::Isometry> transform_to_world;
-  typename Gradient<typename Eigen::Transform<Scalar, SPACE_DIMENSION, Eigen::Isometry>::MatrixType, Eigen::Dynamic>::type dtransform_to_world_dq;
-  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic, TWIST_SIZE, DrakeJoint::MAX_NUM_VELOCITIES> motion_subspace_in_body; // gradient w.r.t. q_i only
-  GradientVar<Scalar, TWIST_SIZE, Eigen::Dynamic, TWIST_SIZE, DrakeJoint::MAX_NUM_VELOCITIES> motion_subspace_in_world; // gradient w.r.t. q
-  GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic, DrakeJoint::MAX_NUM_VELOCITIES, DrakeJoint::MAX_NUM_POSITIONS> qdot_to_v; // gradient w.r.t. q
-  GradientVar<Scalar, Eigen::Dynamic, Eigen::Dynamic, DrakeJoint::MAX_NUM_POSITIONS, DrakeJoint::MAX_NUM_VELOCITIES> v_to_qdot; // gradient w.r.t. q
-  GradientVar<Scalar, TWIST_SIZE, TWIST_SIZE> inertia_in_world;
-  GradientVar<Scalar, TWIST_SIZE, TWIST_SIZE> crb_in_world;
+  Eigen::Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic, 0, TWIST_SIZE, DrakeJoint::MAX_NUM_VELOCITIES> motion_subspace_in_body; // gradient w.r.t. q_i only
+  Eigen::Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic, 0, TWIST_SIZE, DrakeJoint::MAX_NUM_VELOCITIES> motion_subspace_in_world; // gradient w.r.t. q
+  Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, 0, DrakeJoint::MAX_NUM_VELOCITIES, DrakeJoint::MAX_NUM_POSITIONS> qdot_to_v; // gradient w.r.t. q
+  Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, 0, DrakeJoint::MAX_NUM_POSITIONS, DrakeJoint::MAX_NUM_VELOCITIES> v_to_qdot; // gradient w.r.t. q
+  Eigen::Matrix<Scalar, TWIST_SIZE, TWIST_SIZE> inertia_in_world;
+  Eigen::Matrix<Scalar, TWIST_SIZE, TWIST_SIZE> crb_in_world;
 
   /*
    * Configuration and velocity dependent
    */
-  GradientVar<Scalar, TWIST_SIZE, 1> twist_in_world; // gradient w.r.t. q only; gradient w.r.t. v is motion_subspace_in_world
-  GradientVar<Scalar, TWIST_SIZE, 1> motion_subspace_in_body_dot_times_v; // gradient w.r.t. q_i and v_i only
-  GradientVar<Scalar, TWIST_SIZE, 1> motion_subspace_in_world_dot_times_v; // gradient w.r.t. q and v
+  Eigen::Matrix<Scalar, TWIST_SIZE, 1> twist_in_world; // gradient w.r.t. q only; gradient w.r.t. v is motion_subspace_in_world
+  Eigen::Matrix<Scalar, TWIST_SIZE, 1> motion_subspace_in_body_dot_times_v; // gradient w.r.t. q_i and v_i only
+  Eigen::Matrix<Scalar, TWIST_SIZE, 1> motion_subspace_in_world_dot_times_v; // gradient w.r.t. q and v
 
 public:
-  KinematicsCacheElement(Eigen::DenseIndex num_positions_robot, Eigen::DenseIndex num_velocities_robot, int num_positions_joint, int num_velocities_joint, int gradient_order) :
-      dtransform_to_world_dq(HOMOGENEOUS_TRANSFORM_SIZE, num_positions_robot),
-      motion_subspace_in_body(TWIST_SIZE, num_velocities_joint, num_positions_joint, gradient_order),
-      motion_subspace_in_world(TWIST_SIZE, num_velocities_joint, num_positions_robot, gradient_order),
-      qdot_to_v(num_velocities_joint, num_positions_joint, num_positions_robot, gradient_order),
-      v_to_qdot(num_positions_joint, num_velocities_joint, num_positions_robot, gradient_order),
-      inertia_in_world(TWIST_SIZE, TWIST_SIZE, num_positions_robot, gradient_order),
-      crb_in_world(TWIST_SIZE, TWIST_SIZE, num_positions_robot, gradient_order),
-      twist_in_world(TWIST_SIZE, 1, num_positions_robot, gradient_order),
-      motion_subspace_in_body_dot_times_v(TWIST_SIZE, 1, num_positions_joint + num_velocities_joint, gradient_order),
-      motion_subspace_in_world_dot_times_v(TWIST_SIZE, 1, num_positions_robot + num_velocities_robot, gradient_order)
+  KinematicsCacheElement(int num_positions_joint, int num_velocities_joint) :
+      motion_subspace_in_body(TWIST_SIZE, num_velocities_joint),
+      motion_subspace_in_world(TWIST_SIZE, num_velocities_joint),
+      qdot_to_v(num_velocities_joint, num_positions_joint),
+      v_to_qdot(num_positions_joint, num_velocities_joint)
   {
     // empty
   }
+
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 template <typename Scalar>
 class KinematicsCache
 {
 private:
-  std::unordered_map<RigidBody const *, KinematicsCacheElement<Scalar>> elements;
+  std::unordered_map<RigidBody const *, KinematicsCacheElement<Scalar>, std::hash<RigidBody const *>, std::equal_to<RigidBody const *>, Eigen::aligned_allocator<std::pair<RigidBody const* const, KinematicsCacheElement<Scalar> > > > elements;
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> q;
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> v;
   bool velocity_vector_valid;
-  const int gradient_order;
   bool position_kinematics_cached;
   bool jdotV_cached;
-  int cached_inertia_gradients_order;
+  bool inertias_cached;
 
 public:
-  KinematicsCache(const std::vector<std::shared_ptr<RigidBody>>& bodies, int gradient_order) :
+  KinematicsCache(const std::vector<std::shared_ptr<RigidBody>>& bodies) :
       q(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(getNumPositions(bodies), 1)),
       v(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(getNumVelocities(bodies), 1)),
-      velocity_vector_valid(false),
-      gradient_order(gradient_order)
+      velocity_vector_valid(false)
   {
-    assert(gradient_order == 0 || gradient_order == 1);
-
     for (const auto& body_shared_ptr : bodies) {
       const RigidBody& body = *body_shared_ptr;
       int num_positions_joint = body.hasParent() ? body.getJoint().getNumPositions() : 0;
       int num_velocities_joint = body.hasParent() ? body.getJoint().getNumVelocities() : 0;
-      elements.insert({&body, KinematicsCacheElement<Scalar>(q.size(), v.size(), num_positions_joint, num_velocities_joint, gradient_order)});
+      elements.insert({&body, KinematicsCacheElement<Scalar>(num_positions_joint, num_velocities_joint)});
     }
     invalidate();
   }
@@ -116,13 +108,10 @@ public:
     velocity_vector_valid = true;
   }
 
-  void checkCachedKinematicsSettings(bool kinematics_gradients_required, bool velocity_kinematics_required, bool jdot_times_v_required, const std::string& method_name) const
+  void checkCachedKinematicsSettings(bool velocity_kinematics_required, bool jdot_times_v_required, const std::string& method_name) const
   {
     if (!position_kinematics_cached) {
       throw std::runtime_error(method_name + " requires position kinematics, which have not been cached. Please call doKinematics.");
-    }
-    if (kinematics_gradients_required && gradient_order < 1) {
-      throw std::runtime_error(method_name + " requires kinematics gradients, which have not been cached. Please call doKinematics with compute_gradients set to true.");
     }
     if (velocity_kinematics_required && !hasV()) {
       throw std::runtime_error(method_name + " requires velocity kinematics, which have not been cached. Please call doKinematics with a velocity vector.");
@@ -151,17 +140,12 @@ public:
     return velocity_vector_valid;
   }
 
-
-  const int getGradientOrder() const {
-    return gradient_order;
+  void setInertiasCached() {
+    inertias_cached = true;
   }
 
-  int getCachedInertiaGradientsOrder() const {
-    return cached_inertia_gradients_order;
-  }
-
-  void setCachedInertiaGradientsOrder(int cached_inertia_gradients_order) {
-    this->cached_inertia_gradients_order = cached_inertia_gradients_order;
+  bool areInertiasCached() {
+    return inertias_cached;
   }
 
   void setPositionKinematicsCached() {
@@ -177,7 +161,7 @@ private:
   {
     position_kinematics_cached = false;
     jdotV_cached = false;
-    cached_inertia_gradients_order = -1;
+    inertias_cached = false;
   }
 
   static int getNumPositions(const std::vector<std::shared_ptr<RigidBody>>& bodies) {
@@ -193,6 +177,9 @@ private:
     };
     return std::accumulate(bodies.begin(), bodies.end(), 0, add_num_velocities);
   }
+
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 

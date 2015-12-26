@@ -1,7 +1,7 @@
 #include "RigidBodyIK.h"
-#include "RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 #include "../constraint/RigidBodyConstraint.h"
-#include "RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 #include "../IKoptions.h"
 #include <iostream>
 #include <cstdlib>
@@ -11,7 +11,7 @@ using namespace std;
 using namespace Eigen;
 int main()
 {
-  RigidBodyManipulator* model = new RigidBodyManipulator("examples/Atlas/urdf/atlas_minimal_contact.urdf");
+  RigidBodyTree * model = new RigidBodyTree("examples/Atlas/urdf/atlas_minimal_contact.urdf");
   if(!model)
   {
     cerr<<"ERROR: Failed to load model"<<endl;

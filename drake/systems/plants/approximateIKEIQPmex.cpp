@@ -1,11 +1,11 @@
 /*
- * A c++ version of @RigidBodyManipulator/approximateIK.m
+ * A c++ version of @RigidBodyTree/approximateIK.m
  */
 #include <math.h>
 #include <set>
 #include <mex.h>
 #include <Eigen/Dense>
-#include "RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 #include <iostream>
 #include <Eigen/Cholesky>
 #include <Eigen/LU>
@@ -68,11 +68,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nlhs<1) return;
   
   // first get the model_ptr back from matlab
-  RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+  RigidBodyTree *model= (RigidBodyTree*) getDrakeMexPointer(prhs[0]);
 
   int i, j, error, nq = model->num_positions;
   
-  static RigidBodyManipulator* lastModel=NULL;
+  static RigidBodyTree* lastModel=NULL;
   static int lastNumJointLimits = 0;
   
   int equality_ind = 0;

@@ -19,7 +19,7 @@ namespace snopt {
 #undef min
 
 #include "RigidBodyIK.h"
-#include "RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 #include "constraint/RigidBodyConstraint.h"
 #include "IKoptions.h"
 #include "inverseKinBackend.h"
@@ -41,7 +41,7 @@ static snopt::integer lenrw=0;
 static snopt::integer leniw=0;
 static snopt::integer lencw=0;
 
-static RigidBodyManipulator* model = nullptr;
+static RigidBodyTree * model = nullptr;
 static SingleTimeKinematicConstraint** st_kc_array = nullptr;
 static MultipleTimeKinematicConstraint** mt_kc_array = nullptr;
 static QuasiStaticConstraint* qsc_ptr = nullptr;
@@ -191,7 +191,7 @@ static int snoptIKfun(snopt::integer *Status, snopt::integer *n, snopt::doublere
     snopt::doublereal ru[], snopt::integer *lenru)
 {
   Map<VectorXd> q(x, nq);
-  KinematicsCache<double> cache = model->doKinematics(q, 0); // TODO: pass this into the function?
+  KinematicsCache<double> cache = model->doKinematics(q); // TODO: pass this into the function?
   IK_cost_fun(x,F[0],G);
   IK_constraint_fun(cache, x, &F[1], &G[nq]);
   return 0;
@@ -293,7 +293,7 @@ static int snoptIKtrajfun(snopt::integer *Status, snopt::integer *n, snopt::doub
       qi = x+(i-qstart_idx)*nq;
     }
     Map<VectorXd> qvec(qi, nq);
-    KinematicsCache<double> cache = model->doKinematics(qvec, 0);
+    KinematicsCache<double> cache = model->doKinematics(qvec);
     ti = &t[i];
     IK_constraint_fun(cache, qi, F + nf_cum, G + nG_cum);
     nf_cum += nc_array[i];
@@ -315,7 +315,7 @@ static int snoptIKtrajfun(snopt::integer *Status, snopt::integer *n, snopt::doub
       double t_j = t_inbetween[i](j)+t[i];
       double* qi = q_inbetween.data()+(inbetween_idx+j)*nq;
       Map<VectorXd> qvec(qi, nq);
-      KinematicsCache<double> cache = model->doKinematics(qvec, 0);
+      KinematicsCache<double> cache = model->doKinematics(qvec);
       for(int k = 0;k<num_st_kc;k++)
       {
         if(st_kc_array[k]->isTimeValid(&t_j))
@@ -429,7 +429,7 @@ static void snoptIKtraj_fevalfun(const VectorXd &x, VectorXd &c)
 }
 
 template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE>
-void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const int nT_input, const double* t_input, const MatrixBase<DerivedA> &q_seed, const MatrixBase<DerivedB> &q_nom_input, const int num_constraints, RigidBodyConstraint** const constraint_array, MatrixBase<DerivedC> &q_sol, MatrixBase<DerivedD> &qdot_sol, MatrixBase<DerivedE> &qddot_sol, int* INFO, vector<string> &infeasible_constraint, const IKoptions &ikoptions)
+void inverseKinBackend(RigidBodyTree * model_input, const int mode, const int nT_input, const double* t_input, const MatrixBase<DerivedA> &q_seed, const MatrixBase<DerivedB> &q_nom_input, const int num_constraints, RigidBodyConstraint** const constraint_array, MatrixBase<DerivedC> &q_sol, MatrixBase<DerivedD> &qdot_sol, MatrixBase<DerivedE> &qddot_sol, int* INFO, vector<string> &infeasible_constraint, const IKoptions &ikoptions)
 {
   model = model_input;
   nT = nT_input;
@@ -2225,9 +2225,9 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
   delete[] st_lpc_array;
   delete[] mt_lpc_array;
 }
-template void inverseKinBackend(RigidBodyManipulator* model, const int mode, const int nT, const double* t, const MatrixBase<Map<MatrixXd>> &q_seed, const MatrixBase<Map<MatrixXd>> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, MatrixBase<Map<MatrixXd>> &q_sol, MatrixBase<Map<MatrixXd>> &qdot_sol, MatrixBase<Map<MatrixXd>> &qddot_sol, int* INFO, vector<string> &infeasible_constraint, const IKoptions &ikoptions);
-template void inverseKinBackend(RigidBodyManipulator* model, const int mode, const int nT, const double* t, const MatrixBase<MatrixXd> &q_seed, const MatrixBase<MatrixXd> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, MatrixBase<MatrixXd> &q_sol, MatrixBase<MatrixXd> &qdot_sol, MatrixBase<MatrixXd> &qddot_sol, int* INFO, vector<string> &infeasible_constraint, const IKoptions &ikoptions);
-template void inverseKinBackend(RigidBodyManipulator* model, const int mode, const int nT, const double* t, const MatrixBase<Map<MatrixXd>> &q_seed, const MatrixBase<Map<MatrixXd>> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, MatrixBase<Map<MatrixXd>> &q_sol, MatrixBase<MatrixXd> &qdot_sol, MatrixBase<MatrixXd> &qddot_sol, int* INFO, vector<string> &infeasible_constraint, const IKoptions &ikoptions);
-template void inverseKinBackend(RigidBodyManipulator* model, const int mode, const int nT, const double* t, const MatrixBase<Map<VectorXd>> &q_seed, const MatrixBase<Map<VectorXd>> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, MatrixBase<Map<VectorXd>> &q_sol, MatrixBase<Map<VectorXd>> &qdot_sol, MatrixBase<Map<VectorXd>> &qddot_sol, int* INFO, vector<string> &infeasible_constraint, const IKoptions &ikoptions);
-template void inverseKinBackend(RigidBodyManipulator* model, const int mode, const int nT, const double* t, const MatrixBase<VectorXd> &q_seed, const MatrixBase<VectorXd> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, MatrixBase<VectorXd> &q_sol, MatrixBase<VectorXd> &qdot_sol, MatrixBase<VectorXd> &qddot_sol, int* INFO, vector<string> &infeasible_constraint, const IKoptions &ikoptions);
-template void inverseKinBackend(RigidBodyManipulator* model, const int mode, const int nT, const double* t, const MatrixBase<Map<VectorXd>> &q_seed, const MatrixBase<Map<VectorXd>> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, MatrixBase<Map<VectorXd>> &q_sol, MatrixBase<VectorXd> &qdot_sol, MatrixBase<VectorXd> &qddot_sol, int* INFO, vector<string> &infeasible_constraint, const IKoptions &ikoptions);
+template void inverseKinBackend(RigidBodyTree * model, const int mode, const int nT, const double* t, const MatrixBase<Map<MatrixXd>> &q_seed, const MatrixBase<Map<MatrixXd>> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, MatrixBase<Map<MatrixXd>> &q_sol, MatrixBase<Map<MatrixXd>> &qdot_sol, MatrixBase<Map<MatrixXd>> &qddot_sol, int* INFO, vector<string> &infeasible_constraint, const IKoptions &ikoptions);
+template void inverseKinBackend(RigidBodyTree * model, const int mode, const int nT, const double* t, const MatrixBase<MatrixXd> &q_seed, const MatrixBase<MatrixXd> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, MatrixBase<MatrixXd> &q_sol, MatrixBase<MatrixXd> &qdot_sol, MatrixBase<MatrixXd> &qddot_sol, int* INFO, vector<string> &infeasible_constraint, const IKoptions &ikoptions);
+template void inverseKinBackend(RigidBodyTree * model, const int mode, const int nT, const double* t, const MatrixBase<Map<MatrixXd>> &q_seed, const MatrixBase<Map<MatrixXd>> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, MatrixBase<Map<MatrixXd>> &q_sol, MatrixBase<MatrixXd> &qdot_sol, MatrixBase<MatrixXd> &qddot_sol, int* INFO, vector<string> &infeasible_constraint, const IKoptions &ikoptions);
+template void inverseKinBackend(RigidBodyTree * model, const int mode, const int nT, const double* t, const MatrixBase<Map<VectorXd>> &q_seed, const MatrixBase<Map<VectorXd>> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, MatrixBase<Map<VectorXd>> &q_sol, MatrixBase<Map<VectorXd>> &qdot_sol, MatrixBase<Map<VectorXd>> &qddot_sol, int* INFO, vector<string> &infeasible_constraint, const IKoptions &ikoptions);
+template void inverseKinBackend(RigidBodyTree * model, const int mode, const int nT, const double* t, const MatrixBase<VectorXd> &q_seed, const MatrixBase<VectorXd> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, MatrixBase<VectorXd> &q_sol, MatrixBase<VectorXd> &qdot_sol, MatrixBase<VectorXd> &qddot_sol, int* INFO, vector<string> &infeasible_constraint, const IKoptions &ikoptions);
+template void inverseKinBackend(RigidBodyTree * model, const int mode, const int nT, const double* t, const MatrixBase<Map<VectorXd>> &q_seed, const MatrixBase<Map<VectorXd>> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, MatrixBase<Map<VectorXd>> &q_sol, MatrixBase<VectorXd> &qdot_sol, MatrixBase<VectorXd> &qddot_sol, int* INFO, vector<string> &infeasible_constraint, const IKoptions &ikoptions);

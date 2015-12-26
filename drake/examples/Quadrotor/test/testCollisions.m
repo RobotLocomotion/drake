@@ -2,7 +2,7 @@ function testCollisions
 
 tmp = addpathTemporary(fullfile(pwd,'..'));
 
-r = Quadrotor();
+r = Quadrotor('','quat');
 r = r.setTerrain([]);
 r = addTrees(r, 25);
 % The important trees to create swerving path
@@ -16,7 +16,9 @@ r = addTree(r, [.75,.9,1.75], [2;4.4], -pi/5);
 x0 = Point(getStateFrame(r));  % initial conditions: all-zeros
 x0.base_y = -1.5;
 x0.base_z = .8;
-x0.base_ydot = 5;
+x0.base_qw = 1;
+x0.base_vy = 5;
+x0 = resolveConstraints(r,x0);
 u0 = double(nominalThrust(r));
 
 v = constructVisualizer(r);%,struct('use_collision_geometry',true));

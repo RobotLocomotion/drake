@@ -306,6 +306,19 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
       end
     end
 
+    function a=mldivide(a,b)
+      if (isa(a,'TrigPoly'))
+        if (isa(b,'TrigPoly'))
+          a.p=mldivide(a.p,b.p);
+        else
+          a.p=mldivide(a.p,b);
+        end
+      else % only b is a TrigPoly
+        b.p=mldivide(a,b.p);
+        a=b;
+      end
+    end
+
     function a=mtimes(a,b)
       if (isa(a,'TrigPoly'))
         if (isa(b,'TrigPoly'))

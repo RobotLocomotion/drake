@@ -97,6 +97,8 @@ classdef Visualizer < DrakeSystem
       end
       f = sfigure(89);
       set(f, 'Visible', 'off');
+      set(f, 'MenuBar', 'none');
+      set(f, 'Resize', 'off');
       set(f, 'Position', [position(1:2), 560, 70]);
 
       tspan = xtraj.getBreaks();
@@ -127,13 +129,21 @@ classdef Visualizer < DrakeSystem
 
       % set up continuous slider feedback:
       time_slider_listener = addlistener(time_slider,'ContinuousValueChange',@update_time_display);
-
+      playback_timer = tic;
+      playback_start_time = 0;
       function update_speed(source, eventdata)
-        obj.playback_speed = 10 ^ (get(speed_slider, 'Value'));
+        new_playback_speed = 10 ^ get(speed_slider, 'Value');
+
+        % adjust the start time to prevent simulation time changing
+        currtime = toc(playback_timer);
+        playback_start_time = currtime - (obj.playback_speed / new_playback_speed) *(currtime - playback_start_time);
+
+        obj.playback_speed = new_playback_speed;
         set(speed_display, 'String', sprintf(speed_format, obj.playback_speed));
       end
       function rewind_vis(source, eventdata)
         set(time_slider, 'Value', get(time_slider, 'Min'));
+        playback_start_time = toc(playback_timer);
         update_time_display(time_slider, []);
       end
       function update_time_display(source, eventdata)
@@ -161,11 +171,11 @@ classdef Visualizer < DrakeSystem
         else
           set(play_button, 'UserData', 1, 'String', 'Pause');
         end
-%         set(stop_button, 'UserData', 0);
+        % set(stop_button, 'UserData', 0);
         if get(time_slider, 'Value') >= (tspan(end) - 0.02)
           set(time_slider, 'Value', get(time_slider, 'Min'));
         end
-        tic;
+        playback_start_time = toc(playback_timer);
         t0 = get(time_slider, 'Value');
         if (obj.playback_speed<=0)  % then playback as quickly as possible
           t = t0;
@@ -189,16 +199,19 @@ classdef Visualizer < DrakeSystem
         end
         set(play_button, 'UserData', 0, 'String', 'Play');
         function timer_draw(timerobj,event)
-          t=t0+obj.playback_speed*toc;
+          t=t0+obj.playback_speed*(toc(playback_timer) - playback_start_time);
           if (t>tspan(end))
-            stop(timerobj);
-            return;
+            t = tspan(end);
           end
           if (ts(1)>0) t = round((t-ts(2))/ts(1))*ts(1) + ts(2); end  % align with sample times if necessary
           x = xtraj.eval(t);
           set(time_slider, 'Value', t)
           update_time_display(time_slider, [])
           if ~get(play_button, 'UserData')
+            stop(timerobj);
+            return;
+          end
+          if (t == tspan(end))
             stop(timerobj);
             return;
           end

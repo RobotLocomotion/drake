@@ -88,7 +88,7 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
       kinsol_dataind = zeros(obj.N,1);
       obj.kinematics_cache_ptrs = cell(obj.N, 1);
       for i=1:obj.N,
-        obj.kinematics_cache_ptrs{i} = createKinematicsCachemex(robot.mex_model_ptr, true);
+        obj.kinematics_cache_ptrs{i} = createKinematicsCacheAutoDiffmex(robot.mex_model_ptr, robot.getNumPositions() + robot.getNumVelocities());
         [obj,kinsol_dataind(i)] = obj.addSharedDataFunction(@(q) obj.kinematicsData(q, obj.kinematics_cache_ptrs{i}),{obj.q_inds(:,i)});
       end
       obj.kinsol_dataind = kinsol_dataind;

@@ -1,5 +1,5 @@
 #include "mex.h"
-#include "RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 #include "constraint/RigidBodyConstraint.h"
 #include "IKoptions.h"
 #include "RigidBodyIK.h"
@@ -15,7 +15,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   {
     mexErrMsgIdAndTxt("Drake:inverseKinTrajmex:NotEnoughInputs","Usage inverseKinPointwisemex(model_ptr,t,qdot0_seed,q_seed,q_nom,constraint1,constraint2,...,ikoptions");
   }
-  RigidBodyManipulator* model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+  RigidBodyTree * model = (RigidBodyTree *) getDrakeMexPointer(prhs[0]);
   int nq = model->num_positions;
   int nT = static_cast<int>(mxGetNumberOfElements(prhs[1]));
   double* t = mxGetPrSafe(prhs[1]);

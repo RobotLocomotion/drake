@@ -1,24 +1,16 @@
 function runLQR
 
-r = Quadrotor();
+%r = Quadrotor();
+r = QuadPlantPenn();  % sim is faster with this
 v = r.constructVisualizer();
 
 x0 = [0;0;1;zeros(9,1)];
 u0 = double(nominalThrust(r));
 
-%c = tilqr(r,x0,u0,diag([10*ones(5,1);0;ones(5,1);0]),eye(4));
-
-% the linearized system 
-[A,B] = linearize(r,0,x0,double(u0));
-
 Q = diag([10*ones(6,1); ones(6,1)]);
 R = .1*eye(4);
-K = lqr(full(A),full(B),Q,R);
 
-% u = u0 - K*(x-x0)
-c = AffineSystem([],[],[],[],[],[],[],-K,u0 + K*x0);
-c = setInputFrame(c,getStateFrame(r));
-c = setOutputFrame(c,getInputFrame(r));
+c = tilqr(r,x0,u0,Q,R);
 
 sys = feedback(r,c);
 

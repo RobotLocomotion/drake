@@ -2,9 +2,10 @@
 #include "drakeMexUtil.h"
 
 using namespace std;
+using namespace Eigen;
 
 struct SupportDetectData {
-  RigidBodyManipulator* r;
+  RigidBodyTree * r;
   void* map_ptr;
 };
 

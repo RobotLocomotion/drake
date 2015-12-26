@@ -40,18 +40,18 @@ classdef DrakeSystemWGaussianNoise < StochasticDrakeSystem
     end
     
     function xcdot = stochasticDynamics(obj,t,x,u,w)
-      xcdot = dynamics(obj.sys,t,x,u) + obj.Wc*w(1:getNumContStates(obj));
+      xcdot = dynamics(obj.sys,t,x,u) + obj.Wc*w(1:getNumContStates(obj),:);
     end
     
     function xdn = stochasticUpdate(obj,t,x,u,w)
-      xdn = update(obj.sys,t,x,u) + obj.Wd*w(getNumContStates(obj)+(1:getNumDiscStates(obj)));
+      xdn = update(obj.sys,t,x,u) + obj.Wd*w(getNumContStates(obj)+(1:getNumDiscStates(obj)),:);
     end
     
     function y = stochasticOutput(obj,t,x,u,w)
       if isDirectFeedthrough(obj)
-        y = output(obj.sys,t,x,u) + obj.V*w(getNumStates(obj)+1:end);
+        y = output(obj.sys,t,x,u) + obj.V*w(getNumStates(obj)+1:end,:);
       else
-        y = output(obj.sys,t,x) + obj.V*w(getNumStates(obj)+1:end);
+        y = output(obj.sys,t,x) + obj.V*w(getNumStates(obj)+1:end,:);
       end
     end    
   end

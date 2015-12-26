@@ -9,14 +9,13 @@
 #include <Eigen/StdVector>
 
 #include "../shapes/DrakeShapes.h"
-
-#include "drakeCollisionMacros.h"
+#include "drakeCollision_export.h"
 
 namespace DrakeCollision
 {
   typedef uintptr_t ElementId;
 
-  class DLLEXPORT_drakeCollision Element : public DrakeShapes::Element {
+  class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
     public:
       Element(const Eigen::Matrix4d& T_element_to_local = Eigen::Matrix4d::Identity());
 

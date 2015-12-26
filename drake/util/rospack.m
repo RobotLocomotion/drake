@@ -27,6 +27,8 @@ if isempty(packages)  % cache packages
   end
   packages{end+1} = 'Atlas';
   package_paths{end+1} = [getDrakePath,'/examples/Atlas'];
+  packages{end+1} = 'Valkyrie';
+  package_paths{end+1} = [getDrakePath,'/examples/Valkyrie'];
   packages{end+1} = 'IRB140';
   package_paths{end+1} = [getDrakePath,'/examples/IRB140'];
 end

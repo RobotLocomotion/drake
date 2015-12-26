@@ -10,6 +10,8 @@
 const bool CHECK_CENTROIDAL_MOMENTUM_RATE_MATCHES_TOTAL_WRENCH = false;
 const bool PUBLISH_ZMP_COM_OBSERVER_STATE = true;
 
+using namespace Eigen;
+
 #define LEG_INTEGRATOR_DEACTIVATION_MARGIN 0.07
 
 #define MU_VERY_SMALL 0.001
@@ -192,7 +194,7 @@ void applyJointPDOverride(const std::vector<drake::lcmt_joint_pd_override> &join
   }
 }
 
-double averageContactPointHeight(RigidBodyManipulator* r, const KinematicsCache<double>& cache, std::vector<SupportStateElement, Eigen::aligned_allocator<SupportStateElement> >& active_supports, int nc)
+double averageContactPointHeight(RigidBodyTree * r, const KinematicsCache<double>& cache, std::vector<SupportStateElement, Eigen::aligned_allocator<SupportStateElement> >& active_supports, int nc)
 {
   Eigen::Matrix3Xd contact_positions_world(3, nc);
   int col = 0;
@@ -200,14 +202,14 @@ double averageContactPointHeight(RigidBodyManipulator* r, const KinematicsCache<
     const SupportStateElement& support = *support_it;
     for (auto contact_position_it = support.contact_pts.begin(); contact_position_it != support.contact_pts.end(); ++contact_position_it) {
       Vector3d contact_point = contact_position_it->head<3>(); // copy, ah well
-      contact_positions_world.col(col++) = r->forwardKin(cache, contact_point, support.body_idx, 0, 0, 0).value();
+      contact_positions_world.col(col++) = r->forwardKin(cache, contact_point, support.body_idx, 0, 0);
     }
   }
   double average_contact_point_height = contact_positions_world.row(2).mean();
   return average_contact_point_height;
 }
 
-Vector2d computeCoP(RigidBodyManipulator* r, const KinematicsCache<double>& cache, const std::map<Side, ForceTorqueMeasurement>& foot_force_torque_measurements, Vector3d point_on_contact_plane, Eigen::Vector3d normal)
+Vector2d computeCoP(RigidBodyTree * r, const KinematicsCache<double>& cache, const std::map<Side, ForceTorqueMeasurement>& foot_force_torque_measurements, Vector3d point_on_contact_plane, Eigen::Vector3d normal)
 {
   std::vector<ForceTorqueMeasurement> force_torque_measurements;
   for (auto it = foot_force_torque_measurements.begin(); it != foot_force_torque_measurements.end(); ++it) {
@@ -282,7 +284,7 @@ void estimateCoMBasedOnMeasuredZMP(NewQPControllerData* pdata, AtlasParams* para
   }
 }
 
-void checkCentroidalMomentumMatchesTotalWrench(RigidBodyManipulator* r, KinematicsCache<double>& cache, const VectorXd& qdd, const std::vector<SupportStateElement, Eigen::aligned_allocator<SupportStateElement> >& active_supports, const MatrixXd& B, const VectorXd& beta)
+void checkCentroidalMomentumMatchesTotalWrench(RigidBodyTree * r, KinematicsCache<double>& cache, const VectorXd& qdd, const std::vector<SupportStateElement, Eigen::aligned_allocator<SupportStateElement> >& active_supports, const MatrixXd& B, const VectorXd& beta)
 {
   std::map<int, Side> foot_body_index_to_side;
   foot_body_index_to_side[r->findLinkId("l_foot")] = Side::LEFT;
@@ -300,7 +302,7 @@ void checkCentroidalMomentumMatchesTotalWrench(RigidBodyManipulator* r, Kinemati
     const auto& Bj = B.middleCols(beta_start, active_support_length);
     const auto& betaj = beta.segment(beta_start, active_support_length);
     Vector6d wrench_for_body_in_body_frame = Vector6d::Zero();
-    auto body_xyzquat = r->forwardKin(cache, Vector3d::Zero().eval(), 0, active_support.body_idx, 2, 0).value();
+    auto body_xyzquat = r->forwardKin(cache, Vector3d::Zero().eval(), 0, active_support.body_idx, 2);
     Matrix3d R_world_to_body = quat2rotmat(body_xyzquat.tail<4>().eval());
 
     for (size_t k = 0; k < contact_pts.size(); k++) {
@@ -314,7 +316,7 @@ void checkCentroidalMomentumMatchesTotalWrench(RigidBodyManipulator* r, Kinemati
       wrench_for_body_in_body_frame.tail<3>() += point_force;
     }
 
-    Isometry3d transform_to_world(r->relativeTransform(cache, 0, active_support.body_idx, 0).value());
+    Isometry3d transform_to_world = r->relativeTransform(cache, 0, active_support.body_idx);
     total_wrench_in_world += transformSpatialForce(transform_to_world, wrench_for_body_in_body_frame);
     beta_start += active_support_length;
   }
@@ -322,12 +324,12 @@ void checkCentroidalMomentumMatchesTotalWrench(RigidBodyManipulator* r, Kinemati
   double mass = r->getMass();
   Vector6d gravitational_wrench_in_com = r->a_grav * mass;
   Isometry3d com_to_world = Isometry3d::Identity();
-  com_to_world.translation() = r->centerOfMass(cache, 0).value();
+  com_to_world.translation() = r->centerOfMass(cache);
   Vector6d gravitational_wrench_in_world = transformSpatialForce(com_to_world, gravitational_wrench_in_com);
   total_wrench_in_world += gravitational_wrench_in_world;
 
-  auto world_momentum_matrix = r->worldMomentumMatrix(cache, 0).value();
-  auto world_momentum_matrix_dot_times_v = r->worldMomentumMatrixDotTimesV(cache, 0).value();
+  auto world_momentum_matrix = r->worldMomentumMatrix(cache);
+  auto world_momentum_matrix_dot_times_v = r->worldMomentumMatrixDotTimesV(cache);
   Vector6d momentum_rate_of_change = world_momentum_matrix * qdd + world_momentum_matrix_dot_times_v;
 
   valuecheckMatrix(total_wrench_in_world, momentum_rate_of_change, 1e-6);
@@ -427,7 +429,7 @@ int setupAndSolveQP(
     if (qp_input->body_motion_data[i].body_id == 0)
       throw std::runtime_error("Body motion data with body id 0\n");
     int body_or_frame_id0 = qp_input->body_motion_data[i].body_id - 1;
-    int true_body_id0 = pdata->r->parseBodyOrFrameID(body_or_frame_id0, NULL);
+    int true_body_id0 = pdata->r->parseBodyOrFrameID(body_or_frame_id0);
     double weight = params->body_motion[true_body_id0].weight;
     desired_body_accelerations[i].body_or_frame_id0 = body_or_frame_id0;
     Map<Vector4d> quat_task_to_world(qp_input->body_motion_data[i].quat_task_to_world);
@@ -439,7 +441,7 @@ int setupAndSolveQP(
     double expmap_kp_multiplier = qp_input->body_motion_data[i].expmap_kp_multiplier;
     double expmap_damping_ratio_multiplier = qp_input->body_motion_data[i].expmap_damping_ratio_multiplier;
     memcpy(desired_body_accelerations[i].weight_multiplier.data(),qp_input->body_motion_data[i].weight_multiplier,sizeof(double)*6);
-    pdata->r->findKinematicPath(desired_body_accelerations[i].body_path,0,desired_body_accelerations[i].body_or_frame_id0);
+    desired_body_accelerations[i].body_path = pdata->r->findKinematicPath(0, desired_body_accelerations[i].body_or_frame_id0);
 
     auto spline = decodePiecewisePolynomial(qp_input->body_motion_data[i].spline);
     evaluateXYZExpmapCubicSpline(robot_state.t, spline, body_pose_des, body_v_des, body_vdot_des);
@@ -477,18 +479,17 @@ int setupAndSolveQP(
   }
 
   // handle external wrenches to compensate for
-  typedef GradientVar<double, TWIST_SIZE, 1> WrenchGradientVarType;
-  std::map<int, std::unique_ptr<GradientVar<double, TWIST_SIZE, 1>> > f_ext;
+  eigen_aligned_unordered_map<RigidBody const *, Matrix<double, TWIST_SIZE, 1> > f_ext;
   for (auto it = qp_input->body_wrench_data.begin(); it != qp_input->body_wrench_data.end(); ++it) {
     const drake::lcmt_body_wrench_data& body_wrench_data = *it;
     int body_id = body_wrench_data.body_id - 1;
-    f_ext[body_id] = std::unique_ptr<WrenchGradientVarType>(new WrenchGradientVarType(TWIST_SIZE, 1, nq, 0));
-    f_ext[body_id]->value() = Map<const Matrix<double, TWIST_SIZE, 1> >(body_wrench_data.wrench);
+    auto f_ext_i = Map<const Matrix<double, TWIST_SIZE, 1> >(body_wrench_data.wrench);
+    f_ext.insert({pdata->r->bodies[body_id].get(), f_ext_i});
   }
 
   auto& cache = pdata->cache;
-  pdata->H = pdata->r->massMatrix(cache).value();
-  pdata->C = pdata->r->inverseDynamics(cache, f_ext).value();
+  pdata->H = pdata->r->massMatrix(cache);
+  pdata->C = pdata->r->dynamicsBiasTerm(cache, f_ext);
 
   pdata->H_float = pdata->H.topRows(6);
   pdata->H_act = pdata->H.bottomRows(nu);
@@ -498,19 +499,17 @@ int setupAndSolveQP(
   bool include_angular_momentum = (params->W_kdot.array().maxCoeff() > 1e-10);
 
   if (include_angular_momentum) {
-    pdata->Ag = pdata->r->centroidalMomentumMatrix(cache, 0).value();
-    pdata->Agdot_times_v = pdata->r->centroidalMomentumMatrixDotTimesV(cache, 0).value();
+    pdata->Ag = pdata->r->centroidalMomentumMatrix(cache);
+    pdata->Agdot_times_v = pdata->r->centroidalMomentumMatrixDotTimesV(cache);
     pdata->Ak = pdata->Ag.topRows<3>();
     pdata->Akdot_times_v = pdata->Agdot_times_v.topRows<3>();
   }
   Vector3d xcom;
   // consider making all J's into row-major
 
-  GradientVar<double,3,1> xcom_grad = pdata->r->centerOfMass(cache, 1);
-  xcom = xcom_grad.value();
-  pdata->J = xcom_grad.gradient().value();
-  GradientVar<double,3,1> comdotv_grad = pdata->r->centerOfMassJacobianDotTimesV(cache, 0);
-  pdata->Jdotv = comdotv_grad.value();
+  xcom = pdata->r->centerOfMass(cache);
+  pdata->J = pdata->r->centerOfMassJacobian(cache);
+  pdata->Jdotv = pdata->r->centerOfMassJacobianDotTimesV(cache);
   pdata->J_xy = pdata->J.topRows(2);
   pdata->Jdotv_xy = pdata->Jdotv.head<2>();
 
@@ -639,13 +638,11 @@ int setupAndSolveQP(
   Vector6d Jbdotv;	
   for (int i=0; i<desired_body_accelerations.size(); i++) {
     if (desired_body_accelerations[i].weight < 0) { // negative implies constraint
-      int body_id0 = pdata->r->parseBodyOrFrameID(desired_body_accelerations[i].body_or_frame_id0,(Matrix4d*)nullptr);
+      int body_id0 = pdata->r->parseBodyOrFrameID(desired_body_accelerations[i].body_or_frame_id0);
       if (desired_body_accelerations[i].control_pose_when_in_contact || !inSupport(active_supports,body_id0)) {
-        auto J_geometric = pdata->r->geometricJacobian(cache, 0,desired_body_accelerations[i].body_or_frame_id0, desired_body_accelerations[i].body_or_frame_id0, 0, true, (std::vector<int> *) nullptr);
-        auto J_geometric_dot_times_v = pdata->r->geometricJacobianDotTimesV(cache, 0,desired_body_accelerations[i].body_or_frame_id0,desired_body_accelerations[i].body_or_frame_id0,0);
-        Matrix<double,6,Dynamic> Jb_compact = J_geometric.value();
+        Matrix<double,6,Dynamic> Jb_compact = pdata->r->geometricJacobian(cache, 0,desired_body_accelerations[i].body_or_frame_id0, desired_body_accelerations[i].body_or_frame_id0, true);
         Jb = pdata->r->compactToFull<Matrix<double,6,Dynamic>>(Jb_compact,desired_body_accelerations[i].body_path.joint_path,true);
-        Jbdotv = J_geometric_dot_times_v.value();
+        Jbdotv = pdata->r->geometricJacobianDotTimesV(cache, 0,desired_body_accelerations[i].body_or_frame_id0,desired_body_accelerations[i].body_or_frame_id0);
 
         if (qp_input->body_motion_data[i].in_floating_base_nullspace) {
           Jb.block(0,0,6,6) = MatrixXd::Zero(6,6);
@@ -685,11 +682,9 @@ int setupAndSolveQP(
 
   int constraint_start_index = 2*nu;
   for (int i=0; i<desired_body_accelerations.size(); i++) {
-    auto J_geometric = pdata->r->geometricJacobian(cache, 0,desired_body_accelerations[i].body_or_frame_id0, desired_body_accelerations[i].body_or_frame_id0, 0, true, (std::vector<int> *) nullptr);
-    auto J_geometric_dot_times_v = pdata->r->geometricJacobianDotTimesV(cache, 0,desired_body_accelerations[i].body_or_frame_id0,desired_body_accelerations[i].body_or_frame_id0,0);
-    Matrix<double,6,Dynamic>Jb_compact = J_geometric.value();
+    Matrix<double,6,Dynamic>Jb_compact = pdata->r->geometricJacobian(cache, 0,desired_body_accelerations[i].body_or_frame_id0, desired_body_accelerations[i].body_or_frame_id0, true);
     Jb = pdata->r->compactToFull<Matrix<double,6,Dynamic>>(Jb_compact,desired_body_accelerations[i].body_path.joint_path,true);
-    Jbdotv = J_geometric_dot_times_v.value();
+    Jbdotv = pdata->r->geometricJacobianDotTimesV(cache, 0,desired_body_accelerations[i].body_or_frame_id0,desired_body_accelerations[i].body_or_frame_id0);
 
     if (qp_input->body_motion_data[i].in_floating_base_nullspace) {
       Jb.block(0,0,6,6) = MatrixXd::Zero(6,6);
@@ -814,13 +809,11 @@ int setupAndSolveQP(
     // add in body spatial acceleration cost terms
     for (int i=0; i<desired_body_accelerations.size(); i++) {
       if (desired_body_accelerations[i].weight > 0) {
-        int body_id0 = pdata->r->parseBodyOrFrameID(desired_body_accelerations[i].body_or_frame_id0,(Matrix4d*)nullptr);
+        int body_id0 = pdata->r->parseBodyOrFrameID(desired_body_accelerations[i].body_or_frame_id0);
         if (desired_body_accelerations[i].control_pose_when_in_contact || !inSupport(active_supports,body_id0)) {
-          auto J_geometric = pdata->r->geometricJacobian(cache, 0,desired_body_accelerations[i].body_or_frame_id0,desired_body_accelerations[i].body_or_frame_id0,0,true,(std::vector<int>*)nullptr);
-          auto J_geometric_dot_times_v = pdata->r->geometricJacobianDotTimesV(cache, 0, desired_body_accelerations[i].body_or_frame_id0, desired_body_accelerations[i].body_or_frame_id0, 0);
-          Matrix<double,6,Dynamic> Jb_compact = J_geometric.value();
+          Matrix<double,6,Dynamic> Jb_compact = pdata->r->geometricJacobian(cache, 0,desired_body_accelerations[i].body_or_frame_id0,desired_body_accelerations[i].body_or_frame_id0,true);
           Jb = pdata->r->compactToFull<Matrix<double,6,Dynamic>>(Jb_compact,desired_body_accelerations[i].body_path.joint_path,true);
-          Jbdotv = J_geometric_dot_times_v.value();
+          Jbdotv = pdata->r->geometricJacobianDotTimesV(cache, 0, desired_body_accelerations[i].body_or_frame_id0, desired_body_accelerations[i].body_or_frame_id0);
 
           if (qp_input->body_motion_data[i].in_floating_base_nullspace) {
             Jb.block(0,0,6,6) = MatrixXd::Zero(6,6);

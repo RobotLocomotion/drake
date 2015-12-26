@@ -1,7 +1,7 @@
 #include "mex.h"
 #include "RigidBodyConstraint.h"
 #include "drakeMexUtil.h"
-#include "../RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 #include <cstring>
 /* 
  * [type,num_constraint,constraint_val,dconstraint_val,constraint_name,lower_bound,upper_bound] = testSingleTimeKinCnstmex(kinCnst_ptr,q,t)
@@ -48,14 +48,14 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   int num_cnst = cnst->getNumConstraint(t_ptr);
   //mexPrintf("num_cnst = %d\n",num_cnst);
   int nq = cnst->getRobotPointer()->num_positions;
-  Map<VectorXd> q(mxGetPrSafe(prhs[1]), nq);
-  KinematicsCache<double> cache = cnst->getRobotPointer()->doKinematics(q, 0);
-  VectorXd c(num_cnst);
-  MatrixXd dc(num_cnst,nq);
+  Eigen::Map<Eigen::VectorXd> q(mxGetPrSafe(prhs[1]), nq);
+  KinematicsCache<double> cache = cnst->getRobotPointer()->doKinematics(q);
+  Eigen::VectorXd c(num_cnst);
+  Eigen::MatrixXd dc(num_cnst,nq);
   cnst->eval(t_ptr, cache, c, dc);
   //mexPrintf("get c,dc\n");
-  VectorXd lb(num_cnst);
-  VectorXd ub(num_cnst);
+  Eigen::VectorXd lb(num_cnst);
+  Eigen::VectorXd ub(num_cnst);
   cnst->bounds(t_ptr,lb,ub);
   //mexPrintf("get lb, ub\n");
   std::vector<std::string> cnst_names;

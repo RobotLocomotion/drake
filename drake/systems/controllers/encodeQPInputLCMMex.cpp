@@ -4,6 +4,7 @@
 #include "controlMexUtil.h"
 
 using namespace std;
+using namespace Eigen;
 
 template<int M, int N>
 void checkAndCopy(const mxArray *source, const int idx, const char *fieldname, double *destination)  {

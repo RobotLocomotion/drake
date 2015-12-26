@@ -1,8 +1,9 @@
 #include "mex.h"
 #include <iostream>
 #include "drakeMexUtil.h"
-#include "RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 #include "math.h"
+#include "rigidBodyTreeMexConversions.h"
 
 using namespace Eigen;
 using namespace std;
@@ -25,7 +26,7 @@ vector<string> get_strings(const mxArray *rhs) {
 
 void 
 smoothDistancePenalty(double& c, MatrixXd& dc,
-                      RigidBodyManipulator* robot,
+                      RigidBodyTree * robot,
                       const KinematicsCache<double>& cache,
                       const double min_distance,
                       const VectorXd& dist,
@@ -95,7 +96,7 @@ smoothDistancePenalty(double& c, MatrixXd& dc,
       //END_DEBUG
       x_k.col(l) = xB.col(orig_idx_of_pt_on_bodyB.at(k).at(l-numA));
     }
-    auto J_k = robot->forwardKinJacobian(cache, x_k, k, 0, 0, true, 0).value();
+    auto J_k = robot->forwardKinJacobian(cache, x_k, k, 0, 0, true);
     l = 0;
     for (; l < numA; ++l) {
       //DEBUG
@@ -153,8 +154,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   }
 
   int arg_num = 0;
-  RigidBodyManipulator *model = static_cast<RigidBodyManipulator*>(getDrakeMexPointer(prhs[arg_num++]));
-  KinematicsCache<double>* cache = static_cast<KinematicsCache<double>*>(getDrakeMexPointer(prhs[arg_num++]));
+  RigidBodyTree *model = static_cast<RigidBodyTree *>(getDrakeMexPointer(prhs[arg_num++]));
+  KinematicsCache<double>& cache = fromMex(prhs[arg_num++], static_cast<KinematicsCache<double>*>(nullptr));
 
   // Get the minimum allowable distance
   double min_distance = mxGetScalar(prhs[arg_num++]);
@@ -205,22 +206,22 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   VectorXd dist;
   if (active_bodies_idx.size() > 0) {
     if (active_group_names.size() > 0) {
-      model->collisionDetect(*cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
+      model->collisionDetect(cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
                               active_bodies_idx,active_group_names);
     } else {
-      model->collisionDetect(*cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
+      model->collisionDetect(cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
                               active_bodies_idx);
     }
   } else {
     if (active_group_names.size() > 0) {
-      model->collisionDetect(*cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
+      model->collisionDetect(cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
                              active_group_names);
     } else {
-      model->collisionDetect(*cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx);
+      model->collisionDetect(cache, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx);
     }
   }
 
-  smoothDistancePenalty(penalty, dpenalty, model, *cache, min_distance, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx);
+  smoothDistancePenalty(penalty, dpenalty, model, cache, min_distance, dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx);
 
   vector<int32_T> idxA(bodyA_idx.size());
   transform(bodyA_idx.begin(),bodyA_idx.end(),idxA.begin(),

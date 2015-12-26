@@ -25,7 +25,27 @@ end
 typecheck(tspan,'double');
 if (length(tspan)<2) error('length(tspan) must be > 1'); end
 if (nargin<4) options=struct(); end
-mdl = getModel(obj);
+pstruct = obj.simulink_params;
+
+if (nargin>2 && ~isempty(x0)) % handle initial conditions
+  if (isa(x0,'Point'))
+    x0 = double(x0.inFrame(obj.getStateFrame));
+  else
+    typecheck(x0,'double');
+    sizecheck(x0,[obj.getStateFrame.dim,1]);
+  end
+  obj.initial_state = x0;
+  mdl = getModel(obj);
+  x0 = stateVectorToStructure(obj,x0,mdl);
+  pstruct.InitialState = registerParameter(mdl,x0,'x0');
+  pstruct.LoadInitialState = 'on';
+
+  if (~isempty(find_system(mdl,'ClassName','InitialCondition')))
+    warning('Your model appears to have an initial conditions block in it (e.g., from SimMechanics).  That block will overwrite any initial conditions that you pass in to simulate.');
+  end
+else
+  mdl = getModel(obj);
+end
 
 if (strcmp(get_param(mdl,'SimulationStatus'),'paused'))
   feval(mdl,[],[],[],'term');  % terminate model, in case it was still running before
@@ -49,7 +69,6 @@ if options.gui_control_interface || ~isempty(options.lcm_control_interface)
     'parameters',registerParameter(mdl,SimulationControlBlock(mdl,options.gui_control_interface,options.lcm_control_interface),'control'));
 end
 
-pstruct = obj.simulink_params;
 if ~isfield(pstruct,'Solver')
   % set the default solver if it's clear what to do (because someone might
   % have manually changed their default simulink solver)
@@ -59,21 +78,6 @@ if ~isfield(pstruct,'Solver')
 end
 pstruct.StartTime = num2str(tspan(1));
 pstruct.StopTime = num2str(tspan(end));
-if (nargin>2 && ~isempty(x0)) % handle initial conditions
-  if (isa(x0,'Point'))
-    x0 = double(x0.inFrame(obj.getStateFrame));
-  else
-    typecheck(x0,'double');
-    sizecheck(x0,[obj.getStateFrame.dim,1]);
-  end
-  x0 = stateVectorToStructure(obj,x0,mdl);
-  pstruct.InitialState = registerParameter(mdl,x0,'x0');
-  pstruct.LoadInitialState = 'on';
-
-  if (~isempty(find_system(mdl,'ClassName','InitialCondition')))
-    warning('Your model appears to have an initial conditions block in it (e.g., from SimMechanics).  That block will overwrite any initial conditions that you pass in to simulate.');
-  end
-end
 
 pstruct.SaveFormat = 'StructureWithTime';
 pstruct.SaveTime = 'on';

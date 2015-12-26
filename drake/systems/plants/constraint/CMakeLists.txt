@@ -11,7 +11,7 @@ macro(add_constraint_mex)
   target_link_libraries(${ARGV} drakeRBM drakeMexUtil drakeRigidBodyConstraint drakeConstructRigidBodyConstraint)
 endmacro()
 
-add_library(drakeRigidBodyConstraint SHARED RigidBodyConstraint.cpp)
+add_library_with_exports(LIB_NAME drakeRigidBodyConstraint SOURCE_FILES RigidBodyConstraint.cpp)
 target_link_libraries(drakeRigidBodyConstraint drakeRBM drakeGeometryUtil)
 if (NOT MSVC)
   set_target_properties(drakeRigidBodyConstraint PROPERTIES COMPILE_FLAGS -fPIC )

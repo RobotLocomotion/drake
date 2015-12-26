@@ -78,6 +78,50 @@ classdef DoubleIntegrator < LinearSystem
       subplot(2,1,2); colorbar;
     end
     
+    function runConvexDirtran
+      % Solve the min-time problem as a bisection search of 
+      % linear programs
+      
+      x0 = [-2; -2];
+      xf = zeros(2,1);
+      dt = .1;
+      
+      A = [ 0, 1; 0 0]; B = [0 ; 1];
+      % x[n+1] = Ax[n] + Bu[n]
+      Ad = eye(2)+dt*A; Bd = dt*B;
+      % Ad = expm(A*dt); Bd = ... % would be slightly better...
+      discrete_time_system = LinearSystem([],[],Ad,Bd,eye(2),[]);
+      
+      warning('off','optim:quadprog:NullHessian');  % I know I'm using QP to solve an LP...
+      
+      for N = 50:100 % increase N until i find a feasible solution
+        % note: bisection search would be a lot more efficient, but it's in
+        % the noise here...
+        
+        % constructs a QP with constraints x[n+1] = Ad*x[n] + Bd*u[n] set up
+        [prog,x_inds,u_inds] = dirtranModelPredictiveControl(discrete_time_system,N);
+
+        % add initial value constraint:
+        prog = addLinearConstraint(prog,LinearConstraint(x0,x0,eye(2)),x_inds(:,1));
+        
+        % add final value constraint:
+        prog = addLinearConstraint(prog,LinearConstraint(xf,xf,eye(2)),x_inds(:,end));
+        
+        % add input limit constraints
+        prog = addBoundingBoxConstraint(prog,BoundingBoxConstraint(-1*ones(N,1),1*ones(N,1)),u_inds);
+
+        prog = prog.setSolver('quadprog');
+        [x,objval,exitflag]=prog.solve();
+        if (exitflag>0)
+          N
+          plot(x(x_inds(1,:)),x(x_inds(2,:)),'b',x(x_inds(1,:)),x(x_inds(2,:)),'b.','LineWidth',2,'MarkerSize',15);
+          u = x(u_inds)
+          return
+        end
+      end
+      
+    end
+    
     function runDirtran
       % Simple example of Direct Transcription trajectory optimization
 

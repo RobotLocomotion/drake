@@ -1,14 +1,16 @@
 function terrainInterpTest
 
-
-options.floating = true;
+options.floating = 'quat';
 options.terrain = RigidBodyHeightMapTerrain([-7,7],[-3,3],5*[0 0; 0 1]);
 %options.viewer='RigidBodyWRLVisualizer';
 r = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,options);
 
 if (1)
+%  v = RigidBodyWRLVisualizer(r.getManipulator(),options);
   v = r.constructVisualizer(options);
-  x0 = .1*rand(12,1)+[6*rand(2,1)-3;4;zeros(9,1)];
+  x0 = [getRandomConfiguration(r.getManipulator());zeros(6,1)];
+  x0(3) = 5;
+  x0 = resolveConstraints(r,x0);
   v.draw(0,x0);
   [X,Y] = meshgrid(linspace(-9,9,31),linspace(-9,9,31));
   [~,normal,pos]=collisionDetectTerrain(r,[X(:),Y(:),0*X(:)]');
@@ -21,8 +23,22 @@ if (1)
   xlabel('x');ylabel('y');zlabel('z');
   axis equal;
 
-  traj = simulate(r,[0 5],x0);
+  tf = 10;
+  traj = simulate(r,[0 tf],x0);
   v.playback(traj);
+  
+  xf = traj.eval(tf);
+  kinsol = doKinematics(r,xf(1:getNumPositions(r)));
+  [phi,~,~,~,~,~,~,~,dphidq] = contactConstraints(r,kinsol);
+  phidot = dphidq*vToqdot(r.getManipulator(),xf(1:getNumPositions(r)))*xf((getNumPositions(r)+1):end);
+  if (max(abs(phidot))<0.001) % then I've stopped moving
+    phi = sort(phi);
+    if phi(1)<-0.1 || phi(3)>0.1
+      phi
+      % note: only 3 because I could land part on the slant and part on the flat
+      error('should have three corners on the terrain, but I don''t');
+    end
+  end
 end
 
 

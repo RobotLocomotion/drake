@@ -386,6 +386,42 @@ classdef AffineSystem < PolynomialSystem
 
       sys = setSampleTime(sys,obj.getSampleTime);
     end
+    
+    
+    function [prog,x_inds,u_inds] = dirtranModelPredictiveControl(obj,N)
+      % sets up a Quadratic Program with the dynamics constraints
+      % x[n+1] = Ad*x[n] + Bd*u[n] + xdn0;
+      if ~isDT(obj)
+        error('not implemented yet');
+      end
+      
+      % decision variables:
+      % x[0],x[1],...,x[N], u[0],...,u[N-1]
+      num_x = obj.num_xd;
+      x_inds = reshape(1:num_x*(N+1),num_x,N+1);
+      u_inds = numel(x_inds) + reshape(1:obj.num_u*N,obj.num_u,N);
+
+      num_vars = numel(x_inds)+numel(u_inds);
+      
+      Aeq = zeros(num_x*N,num_vars);
+      beq = zeros(num_x*N,1);
+      
+      for i=1:N % todo: vectorize this
+        c_inds = num_x*(i-1)+(1:num_x);
+
+        % x[n+1]
+        Aeq(c_inds,x_inds(:,i+1)) = eye(num_x);
+        % -Ad*x[n]
+        Aeq(c_inds,x_inds(:,i)) = -obj.Ad;
+        % -Bd*u[n]
+        Aeq(c_inds,u_inds(:,i)) = -obj.Bd;
+        
+        % xdn0
+        beq(c_inds) = obj.xdn0;
+      end
+      
+      prog = QuadraticProgram(zeros(num_vars),zeros(num_vars,1),[],[],Aeq,beq);
+    end
   end
 
   properties

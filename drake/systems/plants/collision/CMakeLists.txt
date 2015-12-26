@@ -9,7 +9,8 @@ if (bullet_FOUND)
   set(bullet "yes" CACHE STRING "yes" )
 endif()
 
-add_library(drakeCollision SHARED ${drakeCollision_SRC_FILES})
+add_library_with_exports(LIB_NAME drakeCollision SOURCE_FILES ${drakeCollision_SRC_FILES})
+
 if (bullet_FOUND)
   pods_use_pkg_config_packages(drakeCollision bullet)
 endif()
@@ -19,5 +20,5 @@ enable_testing()
 add_subdirectory(test)
 
 pods_install_libraries(drakeCollision)
-pods_install_headers(DrakeCollision.h PointPair.h Element.h Model.h drakeCollisionMacros.h DESTINATION drake/collision)
+pods_install_headers(DrakeCollision.h PointPair.h Element.h Model.h DESTINATION drake/collision)
   

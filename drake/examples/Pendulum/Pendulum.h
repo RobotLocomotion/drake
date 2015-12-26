@@ -3,18 +3,83 @@
 
 #include <iostream>
 #include <cmath>
-#include "DrakeSystem.h"
-#include "LCMCoordinateFrame.h"
-#include "BotVisualizer.h"
+#include "System.h"
+#include "LQR.h"
 
-class Pendulum : public DrakeSystem {
+using namespace std;
+
+template <typename ScalarType = double>
+class PendulumState  { // models the Drake::Vector concept
 public:
-  Pendulum(const std::shared_ptr<lcm::LCM>& lcm) :
-          DrakeSystem("Pendulum",
-                  std::make_shared<CoordinateFrame>("PendulumContState",std::vector<std::string>({"theta","thetadot"})),
-                  nullptr,
-                  std::make_shared<LCMCoordinateFrame<drake::lcmt_drake_signal> >("PendulumInput",std::vector<std::string>({"tau"}),lcm),
-                  std::make_shared<LCMCoordinateFrame<drake::lcmt_drake_signal> >("PendulumState",std::vector<std::string>({"theta","thetadot"}),lcm)),
+  PendulumState(void) : theta(0), thetadot(0) {};
+  template <typename Derived>
+  PendulumState(const Eigen::MatrixBase<Derived>& x) : theta(x(0)), thetadot(x(1)) {};
+
+  template <typename Derived>
+  PendulumState& operator=(const Eigen::MatrixBase<Derived>& x) {
+    theta = x(0);
+    thetadot = x(1);
+    return *this;
+  }
+
+  operator Eigen::Matrix<ScalarType,2,1> () const {
+    Eigen::Matrix<ScalarType,2,1> x;
+    x << theta, thetadot;
+    return x;
+  }
+
+  friend std::ostream& operator<<(std::ostream& os, const PendulumState& x)
+  {
+    os << "  theta = " << x.theta << endl;
+    os << "  thetadot = " << x.thetadot << endl;
+    return os;
+  }
+
+  enum {
+    RowsAtCompileTime = 2
+  };
+  std::size_t size() { return 2; }
+
+  ScalarType theta;
+  ScalarType thetadot;
+};
+
+
+template <typename ScalarType = double>
+class PendulumInput {
+public:
+  PendulumInput(void) : tau(0) {};
+  PendulumInput(const Eigen::Matrix<ScalarType,1,1>& x) : tau(x(0)) {};
+
+  template <typename Derived>
+  PendulumInput& operator=(const Eigen::MatrixBase<Derived>& x) {
+    tau = x(0);
+    return *this;
+  }
+
+  operator Eigen::Matrix<ScalarType,1,1> () const {
+    Eigen::Matrix<ScalarType,1,1> x;
+    x << tau;
+    return x;
+  }
+
+  friend std::ostream& operator<<(std::ostream& os, const PendulumInput& x)
+  {
+    os << "  tau = " << x.tau << endl;
+    return os;
+  }
+
+  enum {
+    RowsAtCompileTime = 1
+  };
+  std::size_t size() { return 1; }
+
+  ScalarType tau;
+};
+
+class Pendulum : public Drake::System<Pendulum,PendulumState,PendulumInput,PendulumState,false,false> {
+public:
+  Pendulum() :
           m(1.0), // kg
           l(.5),  // m
           b(0.1), // kg m^2 /s
@@ -24,78 +89,41 @@ public:
   {}
   virtual ~Pendulum(void) {};
 
-  virtual Eigen::VectorXd dynamics(double t, const Eigen::VectorXd& x, const Eigen::VectorXd& u) const override {
-    return dynamics_implementation(t,x,u);
-  }
-  virtual Drake::TaylorVecX dynamics(Drake::TaylorVarX t, const Drake::TaylorVecX& x, const Drake::TaylorVecX& u) const override {
-    return dynamics_implementation(t,x,u);
+  template <typename ScalarType>
+  PendulumState<ScalarType> dynamicsImplementation(const PendulumState<ScalarType>& x, const PendulumInput<ScalarType>& u) const {
+    PendulumState<ScalarType> dot;
+    dot.theta = x.thetadot;
+    dot.thetadot = (u.tau - m*g*lc*sin(x.theta) - b*x.thetadot)/I;
+    return dot;
   }
 
-  virtual Eigen::VectorXd output(double t, const Eigen::VectorXd& x, const Eigen::VectorXd& u) const override {
+
+  template <typename ScalarType>
+  PendulumState<ScalarType> outputImplementation(const PendulumState<ScalarType>& x) const {
     return x;
   }
 
-  virtual bool isTimeInvariant() const override { return true; }
-  virtual bool isDirectFeedthrough() const override { return false; }
-
-
-  DrakeSystemPtr balanceLQR() {
-    Eigen::MatrixXd Q(2,2);  Q << 10, 0, 0, 1;
-    Eigen::MatrixXd R(1,1);  R << 1;
-    Eigen::VectorXd xG(2);   xG << M_PI, 0;
-    Eigen::VectorXd uG(1);   uG << 0;
-
-    return timeInvariantLQR(xG,uG,Q,R);
-  }
-
-
+public:
   double m,l,b,lc,I,g;  // pendulum parameters (initialized in the constructor)
-
-private:
-  template <typename Scalar,typename Vector>
-  Vector dynamics_implementation(Scalar t, const Vector& x, const Vector& u) const {
-    Vector xdot(2);
-    xdot(0) = x(1);
-    xdot(1) = (u(0) - m*g*lc*sin(x(0)) - b*x(1))/I;
-    return xdot;
-  }
-
 };
 
-class PendulumWithBotVis : public Pendulum {
+
+class PendulumEnergyShapingController : public Drake::System<PendulumEnergyShapingController,Drake::UnusedVector,PendulumState,PendulumInput,false,true> {
 public:
-  PendulumWithBotVis(const std::shared_ptr<lcm::LCM>& lcm) : Pendulum(lcm), botvis(lcm,"Pendulum.urdf",DrakeJoint::FIXED) {}
-
-  virtual Eigen::VectorXd output(double t, const Eigen::VectorXd& x, const Eigen::VectorXd& u) const override {
-    botvis.output(t,Eigen::VectorXd::Zero(0),x);
-    return Pendulum::output(t,x,u);
-  }
-
-  BotVisualizer botvis;
-};
-
-class PendulumEnergyShaping : public DrakeSystem {
-public:
-  PendulumEnergyShaping(const Pendulum& pendulum)
-          : DrakeSystem("PendulumEnergyShaping"),
-            m(pendulum.m),
+  PendulumEnergyShapingController(const Pendulum& pendulum)
+          : m(pendulum.m),
             l(pendulum.l),
             b(pendulum.b),
             g(pendulum.g)
-  {
-    input_frame = pendulum.output_frame;
-    output_frame = pendulum.input_frame;
-  };
+  {};
 
-  virtual Eigen::VectorXd output(double t, const Eigen::VectorXd& unused, const Eigen::VectorXd& u) const override {
-    double Etilde = .5 * m*l*l*u(1)*u(1) - m*g*l*cos(u(0)) - 1.1*m*g*l;
-    Eigen::VectorXd y(1);
-    y << b*u(1) - .1*u(1)*Etilde;
-    return y;
+  template <typename ScalarType>
+  PendulumInput<ScalarType> outputImplementation(const PendulumState<ScalarType>& x) const {
+    ScalarType Etilde = .5 * m*l*l*x.thetadot*x.thetadot - m*g*l*cos(x.theta) - 1.1*m*g*l;
+    PendulumInput<ScalarType> u;
+    u.tau = b*x.thetadot - .1*x.thetadot*Etilde;
+    return u;
   }
-
-  virtual bool isTimeInvariant() const override { return true; }
-  virtual bool isDirectFeedthrough() const override { return true; }
 
   double m,l,b,g;  // pendulum parameters (initialized in the constructor)
 };

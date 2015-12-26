@@ -1,6 +1,6 @@
 #include "mex.h"
 #include "drakeMexUtil.h"
-#include "RigidBodyManipulator.h"
+#include "RigidBodyTree.h"
 
 using namespace Eigen;
 using namespace std;
@@ -11,7 +11,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     mexErrMsgIdAndTxt("Drake:positionConstraintsmex:InvalidCall","Usage: [phi, J] = positionConstraintsmex(mex_model_ptr, q) ");
   }
 
-  RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+  RigidBodyTree *model= (RigidBodyTree *) getDrakeMexPointer(prhs[0]);
   
   const size_t nq = model->num_positions;
   
@@ -21,10 +21,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   Map<VectorXd> q(mxGetPrSafe(prhs[1]),nq);
 
-  KinematicsCache<double> cache = model->doKinematics(q, 0); // FIXME: KinematicsCache should be passed in!
+  KinematicsCache<double> cache = model->doKinematics(q); // FIXME: KinematicsCache should be passed in!
 
-  auto phi = model->positionConstraints<double>(cache,1);
-  plhs[0] = eigenToMatlab(phi.value());
-  plhs[1] = eigenToMatlab(phi.gradient().value());
+  auto phi = model->positionConstraints(cache);
+  plhs[0] = eigenToMatlab(phi);
+
+  auto dphi = model->positionConstraintsJacobian(cache);
+  plhs[1] = eigenToMatlab(dphi);
 }
 

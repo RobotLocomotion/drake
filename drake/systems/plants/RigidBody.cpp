@@ -1,12 +1,10 @@
 
-#include "RigidBodyManipulator.h"
+#include "RigidBody.h"
 #include <stdexcept>
 
 using namespace std;
 using namespace Eigen;
 
-const int defaultRobotNum[1] = {0};
-const set<int> RigidBody::defaultRobotNumSet(defaultRobotNum,defaultRobotNum+1);
 
 RigidBody::RigidBody() :
     parent(nullptr),

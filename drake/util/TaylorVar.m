@@ -67,6 +67,10 @@ classdef TaylorVar
         p=p+reshape(obj.df{o}*x,obj.dim(1),obj.dim(2));
       end
     end
+    
+    function o = getOrder(obj)
+      o = length(obj.df);
+    end
 
     function classname=superiorfloat(varargin)
       classname='double';

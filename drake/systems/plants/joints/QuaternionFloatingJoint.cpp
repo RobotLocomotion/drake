@@ -1,8 +1,6 @@
 #include "QuaternionFloatingJoint.h"
 #include <random>
 
-#include "RigidBodyManipulator.h" // todo: remove this when I remove setupOldKinematicTree
-
 using namespace Eigen;
 using namespace std;
 

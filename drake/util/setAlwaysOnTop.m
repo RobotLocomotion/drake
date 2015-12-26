@@ -55,6 +55,10 @@ fJFrame = get(hFig,'JavaFrame');
 % Set JavaFrame Always-On-Top-Setting.
 try 
   fJFrame.fFigureClient.getWindow.setAlwaysOnTop(bool);
-catch
+end
+try
   fJFrame.fHG1Client.getWindow.setAlwaysOnTop(bool);
+end
+try
+  fJFrame.fHG2Client.getWindow.setAlwaysOnTop(bool);  
 end

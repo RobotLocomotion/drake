@@ -8,7 +8,7 @@ using namespace Eigen;
 
 mxArray* createDrakeConstraintMexPointer(void* ptr, const char* name)
 {
-  return createDrakeMexPointer(ptr,name,0,NULL,"DrakeConstraintMexPointer");
+  return createDrakeMexPointer(ptr,name,-1,0,NULL,"DrakeConstraintMexPointer");
 }
 
 void rigidBodyConstraintParseTspan(const mxArray* pm,Eigen::Vector2d &tspan)

@@ -1,4 +1,5 @@
 function testIK
+% TIMEOUT 600
 w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
 warning('off','Drake:RigidBody:NonPositiveInertiaMatrix');
 warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
@@ -54,7 +55,7 @@ q_seed = q_nom+1e-2*randn(nq,1);
 ikoptions = IKoptions(robot);
 ikoptions = ikoptions.setDebug(true);
 ikoptions = ikoptions.setMex(false);
-ikoptions = ikoptions.setMajorIterationsLimit(3000);
+ikoptions = ikoptions.setMajorIterationsLimit(5000);
 ikmexoptions = ikoptions;
 ikmexoptions = ikmexoptions.setMex(true);
 
