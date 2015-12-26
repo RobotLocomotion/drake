@@ -17,7 +17,8 @@ namespace Drake {
    * @brief A system which takes the robot state as input and publishes an lcm draw command to the drake visualizer
    * @concept{system_concept}
    *
-   * The resulting system has no internal state nor outputs, but the publish command is executed on every call to the output method.
+   * The resulting system has no internal state; the publish command is executed on every call to the output method.
+   * For convenience, the input is passed directly through as an output.
    *
    */
 
@@ -25,7 +26,7 @@ namespace Drake {
   class BotVisualizer {
   public:
     template <typename ScalarType> using StateVector = NullVector<ScalarType>;
-    template <typename ScalarType> using OutputVector = NullVector<ScalarType>;
+    template <typename ScalarType> using OutputVector = RobotStateVector<ScalarType>;
     template <typename ScalarType> using InputVector = RobotStateVector<ScalarType>;
 
     BotVisualizer(const std::shared_ptr<lcm::LCM> &_lcm, const std::string &urdf_filename,
@@ -142,7 +143,7 @@ namespace Drake {
 
       lcm->publish("DRAKE_VIEWER_DRAW", &draw_msg);
 
-      return Eigen::VectorXd::Zero(0);
+      return u; // pass the output through
     }
 
     bool isTimeVarying() const { return true; }

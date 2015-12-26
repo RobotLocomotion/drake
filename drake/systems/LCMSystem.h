@@ -2,10 +2,14 @@
 #define DRAKE_LCMSYSTEM_H
 
 #include <unordered_map>
+#include <mutex>
+#include <thread>
+#include <stdexcept>
 #include <lcm/lcm-cpp.hpp>
 #include "lcmtypes/drake/lcmt_drake_signal.hpp"
 #include "System.h"
 #include "Simulation.h"
+
 
 namespace Drake {
 
@@ -16,7 +20,7 @@ namespace Drake {
    * | Valid Expressions (which must be implemented) |  |
    * ------------------|-------------------------------------------------------------|
    * | LCMMessageType  | defined with a typedef                                      |
-   * | std::string channel() const         | return the name of the channel to subscribe to/ publish on      |
+   * | static std::string channel() const         | return the name of the channel to subscribe to/ publish on      |
    * | bool encode(const double& t, const Vector<double>& x, LCMMessageType& msg) | define the mapping from your LCM type to your Vector type |
    * | bool decode(const LCMMessageType& msg, double& t, Vector<double>& x)  | define the mapping from your Vector type to your LCM type |
    */
@@ -45,56 +49,120 @@ namespace Drake {
     for (int i=0; i<msg.dim; i++) {
       xvec(i) = m[getCoordinateName(x,i)];
     }
+    x = xvec;
     return true;
   }
 
-  // If Vector implements the LCMPublisher interface, then this system will call the publish command on output
-  template <template<typename> class Vector, typename Enable = void>
-  class LCMOutputSystem
-  {
-  public:
-    template <typename ScalarType> using StateVector = NullVector<ScalarType>;
-    template <typename ScalarType> using InputVector = Vector<ScalarType>;
-    template <typename ScalarType> using OutputVector = NullVector<ScalarType>;
+  namespace internal {
+    template<template<typename> class Vector, typename Enable = void>
+    class LCMInputSystem {
+    public:
+      template<typename ScalarType> using StateVector = NullVector<ScalarType>;
+      template<typename ScalarType> using InputVector = NullVector<ScalarType>;
+      template<typename ScalarType> using OutputVector = Vector<ScalarType>;
+      const static bool has_lcm_input = false;
 
-    LCMOutputSystem(const std::shared_ptr<lcm::LCM>& lcm) {};
+      LCMInputSystem(const std::shared_ptr<lcm::LCM> &lcm) { };
 
-    StateVector<double> dynamics(const double& t, const StateVector<double>& x, const InputVector<double>& u) const
-    { return StateVector<double>(); }
+      StateVector<double> dynamics(const double &t, const StateVector<double> &x,
+                                   const InputVector<double> &u) const { return StateVector<double>(); }
 
-    OutputVector<double> output(const double& t, const StateVector<double>& x, const InputVector<double>& u) const
-    {
-      return OutputVector<double>();
-    }
-  };
+      OutputVector<double> output(const double &t, const StateVector<double> &x, const InputVector<double> &u) const {
+        return OutputVector<double>();
+      }
+    };
 
-  template <template<typename> class Vector>
-  class LCMOutputSystem<Vector,typename std::enable_if<!std::is_void<typename Vector<double>::LCMMessageType>::value>::type>
-  {
-  public:
-    template <typename ScalarType> using StateVector = NullVector<ScalarType>;
-    template <typename ScalarType> using InputVector = Vector<ScalarType>;
-    template <typename ScalarType> using OutputVector = NullVector<ScalarType>;
+    template<template<typename> class Vector>
+    class LCMInputSystem<Vector, typename std::enable_if<!std::is_void<typename Vector<double>::LCMMessageType>::value>::type> {
+    public:
+      template<typename ScalarType> using StateVector = NullVector<ScalarType>;
+      template<typename ScalarType> using InputVector = NullVector<ScalarType>;
+      template<typename ScalarType> using OutputVector = Vector<ScalarType>;
+      const static bool has_lcm_input = true;
 
-    LCMOutputSystem(const std::shared_ptr<lcm::LCM>& lcm) : lcm(lcm) {};
+      LCMInputSystem(const std::shared_ptr<lcm::LCM> &lcm) {
+        lcm::Subscription* sub = lcm->subscribe(Vector<double>::channel(),&LCMInputSystem<Vector>::handleMessage,this);
+        sub->setQueueCapacity(1);
+      };
+      virtual ~LCMInputSystem() {};
 
-    StateVector<double> dynamics(const double& t, const StateVector<double>& x, const InputVector<double>& u) const
-    { return StateVector<double>(); }
+      void handleMessage(const lcm::ReceiveBuffer* rbuf, const std::string& chan, const typename Vector<double>::LCMMessageType* msg) {
+        data_mutex.lock();
+        decode<Vector>(*msg,timestamp,data);
+        data_mutex.unlock();
+      }
 
-    OutputVector<double> output(const double& t, const StateVector<double>& x, const InputVector<double>& u) const
-    {
-      typename Vector<double>::LCMMessageType msg;
-      if (!encode(t,u,msg))
-        throw std::runtime_error(std::string("failed to encode")+msg.getTypeName());
-      lcm->publish(u.channel(),&msg);
-      return OutputVector<double>();
-    }
-  private:
-    std::shared_ptr<lcm::LCM> lcm;
-  };
+      StateVector<double> dynamics(const double &t, const StateVector<double> &x,
+                                   const InputVector<double> &u) const { return StateVector<double>(); }
 
-  // todo: template specialization for the CombinedVector case
+      OutputVector<double> output(const double &t, const StateVector<double> &x, const InputVector<double> &u) const {
+        data_mutex.lock();
+        OutputVector<double> y = data;  // make a copy of the data
+        data_mutex.unlock();
+        return y;
+      }
 
+    private:
+      mutable std::mutex data_mutex;
+      double timestamp;
+      OutputVector<double> data;
+    };
+
+    template<template<typename> class Vector, typename Enable = void>
+    class LCMOutputSystem {
+    public:
+      template<typename ScalarType> using StateVector = NullVector<ScalarType>;
+      template<typename ScalarType> using InputVector = Vector<ScalarType>;
+      template<typename ScalarType> using OutputVector = NullVector<ScalarType>;
+
+      LCMOutputSystem(const std::shared_ptr<lcm::LCM> &lcm) { };
+
+      StateVector<double> dynamics(const double &t, const StateVector<double> &x,
+                                   const InputVector<double> &u) const { return StateVector<double>(); }
+
+      OutputVector<double> output(const double &t, const StateVector<double> &x, const InputVector<double> &u) const {
+        return OutputVector<double>();
+      }
+    };
+
+    template<template<typename> class Vector>
+    class LCMOutputSystem<Vector, typename std::enable_if<!std::is_void<typename Vector<double>::LCMMessageType>::value>::type> {
+    public:
+      template<typename ScalarType> using StateVector = NullVector<ScalarType>;
+      template<typename ScalarType> using InputVector = Vector<ScalarType>;
+      template<typename ScalarType> using OutputVector = NullVector<ScalarType>;
+
+      LCMOutputSystem(const std::shared_ptr<lcm::LCM> &lcm) : lcm(lcm) { };
+
+      StateVector<double> dynamics(const double &t, const StateVector<double> &x,
+                                   const InputVector<double> &u) const { return StateVector<double>(); }
+
+      OutputVector<double> output(const double &t, const StateVector<double> &x, const InputVector<double> &u) const {
+        typename Vector<double>::LCMMessageType msg;
+        if (!encode(t, u, msg))
+          throw std::runtime_error(std::string("failed to encode") + msg.getTypeName());
+        lcm->publish(u.channel(), &msg);
+        return OutputVector<double>();
+      }
+
+    private:
+      std::shared_ptr<lcm::LCM> lcm;
+    };
+
+    // todo: template specialization for the CombinedVector case
+
+    class LCMLoop {
+    public:
+      bool stop;
+      lcm::LCM& lcm;
+
+      LCMLoop(lcm::LCM& _lcm) : lcm(_lcm), stop(false) {}
+
+      void loopWithSelect();
+    };
+
+
+  } //  end namespace internal
 
   /** runLCM
    * @brief Simulates the system with the (exposed) inputs being read from LCM and the output being published to LCM.
@@ -104,12 +172,50 @@ namespace Drake {
    */
 
   template <typename System>
-  void runLCM(const std::shared_ptr<System>& sys, const std::shared_ptr<lcm::LCM>& lcm, double t0, double tf, const typename System::template StateVector<double>& x0, const SimulationOptions& options) {
-//    typename System::template OutputVector<double> x = 1;  // useful for debugging
-    auto lcm_output = std::make_shared<LCMOutputSystem<System::template OutputVector> >(lcm);
-    auto lcm_sys = cascade(sys,lcm_output);
+  void runLCM(const std::shared_ptr<System>& sys, const std::shared_ptr<lcm::LCM>& lcm, double t0, double tf, const typename System::template StateVector<double>& x0, const SimulationOptions& options = default_simulation_options) {
+    if(!lcm->good())
+      throw std::runtime_error("bad LCM reference");
 
-    simulate(*lcm_sys,t0,tf,x0,options);
+//    typename System::template OutputVector<double> x = 1;  // useful for debugging
+    auto lcm_input = std::make_shared<internal::LCMInputSystem<System::template InputVector> >(lcm);
+    auto lcm_output = std::make_shared<internal::LCMOutputSystem<System::template OutputVector> >(lcm);
+    auto lcm_sys = cascade(lcm_input,cascade(sys,lcm_output));
+
+    bool has_lcm_input = internal::LCMInputSystem<System::template InputVector>::has_lcm_input;
+
+    if (has_lcm_input && size(x0)==0 && !sys->isTimeVarying()) {
+      // then this is really a static function, not a dynamical system.
+      // block on receiving lcm input and process the output exactly when a new input message is received.
+      // note: this will never return (unless there is an lcm error)
+
+//      std::cout << "LCM output will be triggered on receipt of an LCM Input" << std::endl;
+
+      double t = 0.0;
+      typename System::template StateVector<double> x;
+      NullVector<double> u;
+
+      while (1) {
+        if (lcm->handle() != 0) { throw std::runtime_error("something went wrong in lcm.handle"); }
+        lcm_sys->output(t, x, u);
+      }
+    } else {
+      internal::LCMLoop lcm_loop(*lcm);
+      std::thread lcm_thread;
+      if (has_lcm_input) {
+        // only start up the listener thread if I actually have inputs to listen to
+        lcm_thread = std::thread(&internal::LCMLoop::loopWithSelect, &lcm_loop);
+      }
+
+      SimulationOptions lcm_options = options;
+      lcm_options.realtime_factor = 1.0;
+      simulate(*lcm_sys, t0, tf, x0, lcm_options);
+
+      if (has_lcm_input) {
+        // shutdown the lcm thread
+        lcm_loop.stop = true;
+        lcm_thread.join();
+      }
+    }
   }
 
 

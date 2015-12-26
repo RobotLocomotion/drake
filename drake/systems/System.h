@@ -58,7 +58,6 @@ namespace Drake {
     static_assert(num_outputs >= 0, "still need to handle the variable-size case");
   };
 
-
 /** FeedbackSystem<System1,System2>
  * @brief Builds a new system from the feedback connection of two simpler systems
  * @concept{system_concept}
@@ -76,6 +75,7 @@ namespace Drake {
     template <typename ScalarType> using InputVector = typename System1::template InputVector<ScalarType>;
     template <typename ScalarType> using OutputVector = typename System1::template OutputVector<ScalarType>;
     const static int num_inputs = SystemSizeTraits<System1>::num_inputs;
+    typedef CombinedVectorUtil<StateVector1,StateVector2> util;
 
     typedef std::shared_ptr<System1> System1Ptr;
     typedef std::shared_ptr<System2> System2Ptr;
@@ -89,22 +89,26 @@ namespace Drake {
     StateVector<ScalarType> dynamics(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {
       OutputVector<ScalarType> y1;
       InputVector<ScalarType> y2;
-      subsystemOutputs(t,x.first(),x.second(),u,y1,y2);
+      auto x1 = util::first(x);
+      auto x2 = util::second(x);
+      subsystemOutputs(t,x1,x2,u,y1,y2);
 
-      StateVector<ScalarType> xdot(sys1->dynamics(t,x.first(),static_cast<InputVector<ScalarType> >(toEigen(y2)+toEigen(u))),
-                                   sys2->dynamics(t,x.second(),y1));
+      StateVector<ScalarType> xdot = util::combine(sys1->dynamics(t,x1,static_cast<InputVector<ScalarType> >(toEigen(y2)+toEigen(u))),
+                                   sys2->dynamics(t,x2,y1));
       return xdot;
     }
 
     template <typename ScalarType>
     OutputVector<ScalarType> output(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {
       OutputVector<ScalarType> y1;
+      auto x1 = util::first(x);
       if (!sys1->isDirectFeedthrough()) {
-        y1 = sys1->output(t,x.first(),u);   // then don't need u+y2 here, u will be ignored
+        y1 = sys1->output(t,x1,u);   // then don't need u+y2 here, u will be ignored
       } else {
         InputVector<ScalarType> y2;
-        y2 = sys2->output(t,x.second(),y1); // y1 might be uninitialized junk, but has to be ok
-        y1 = sys1->output(t,x.first(),static_cast<InputVector<ScalarType> >(toEigen(y2)+toEigen(u)));
+        auto x2 = util::second(x);
+        y2 = sys2->output(t,x2,y1); // y1 might be uninitialized junk, but has to be ok
+        y1 = sys1->output(t,x1,static_cast<InputVector<ScalarType> >(toEigen(y2)+toEigen(u)));
       }
       return y1;
     }
@@ -157,6 +161,7 @@ namespace Drake {
     template <typename ScalarType> using OutputVector = typename System2::template OutputVector<ScalarType>;
     typedef std::shared_ptr<System1> System1Ptr;
     typedef std::shared_ptr<System2> System2Ptr;
+    typedef CombinedVectorUtil<StateVector1,StateVector2> util;
 
     static_assert(std::is_same<typename System1::template OutputVector<double>,typename System2::template InputVector<double>>::value,"System 2 input vector must match System 1 output vector");
 
@@ -164,17 +169,20 @@ namespace Drake {
 
     template <typename ScalarType>
     StateVector<ScalarType> dynamics(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {
-//      System1::OutputVectorType<ScalarType> y1;  // don't understand why this doesn't work (then could get rid of System1OutputVector)
-      System1OutputVector<ScalarType> y1 = sys1->output(t,x.first(),u);
-      StateVector<ScalarType> xdot(sys1->dynamics(t,x.first(),u),
-                                   sys2->dynamics(t,x.second(),y1));
+      auto x1 = util::first(x);
+      auto x2 = util::second(x);
+      System1OutputVector<ScalarType> y1 = sys1->output(t,x1,u);
+      StateVector<ScalarType> xdot = util::combine(sys1->dynamics(t,x1,u),
+                                                   sys2->dynamics(t,x2,y1));
       return xdot;
     }
 
     template <typename ScalarType>
     OutputVector<ScalarType> output(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {
-      System1OutputVector<ScalarType> y1 = sys1->output(t,x.first(),u);
-      OutputVector<ScalarType> y2 = sys2->output(t,x.second(),y1);
+      auto x1 = util::first(x);
+      auto x2 = util::second(x);
+      System1OutputVector<ScalarType> y1 = sys1->output(t,x1,u);
+      OutputVector<ScalarType> y2 = sys2->output(t,x2,y1);
       return y2;
     }
 

@@ -10,7 +10,6 @@ using namespace std;
 using namespace Drake;
 
 int main(int argc, char* argv[]) {
-
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
   if(!lcm->good())
    return 1;
@@ -31,5 +30,5 @@ int main(int argc, char* argv[]) {
   options.realtime_factor=1.0;
 
 //  simulate(*sys,0,10,x0,options);
-  runLCM(p,lcm,0,10,x0,options);
+  runLCM(sys,lcm,0,10,x0,options);
 }

@@ -11,7 +11,7 @@ template <typename ScalarType = double>
 class PendulumState  { // models the Drake::Vector concept
 public:
   typedef drake::lcmt_drake_signal LCMMessageType;
-  std::string channel() const { return "PendulumState"; };
+  static std::string channel() { return "PendulumState"; };
 
   PendulumState(void) : theta(0), thetadot(0) {};
   template <typename Derived>
@@ -46,6 +46,9 @@ public:
 template <typename ScalarType = double>
 class PendulumInput {
 public:
+  typedef drake::lcmt_drake_signal LCMMessageType;
+  static std::string channel() { return "PendulumInput"; };
+
   PendulumInput(void) : tau(0) {};
   template <typename Derived>
   PendulumInput(const Eigen::MatrixBase<Derived>& x) : tau(x(0)) {};
