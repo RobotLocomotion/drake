@@ -154,7 +154,7 @@ set(spotless_IS_PUBLIC TRUE)
 set(textbook_GIT_REPOSITORY https://github.com/RussTedrake/underactuated.git)
 set(textbook_GIT_TAG master)  # for now, let's always pull the latest and greatest
 set(textbook_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/drake/doc/textbook")
-set(textbook_BUILD_COMMAND python extract_examples.py underactuated.html ./examples)
+set(textbook_BUILD_COMMAND ${PYTHON_EXECUTABLE} extract_examples.py underactuated.html ./examples)
 set(textbook_IS_PUBLIC TRUE)
 set(yalmip_GIT_REPOSITORY https://github.com/RobotLocomotion/yalmip.git)
 set(yalmip_GIT_TAG c071fb7b7193491f8eefadba3bfff26160ad6cd4)
@@ -392,4 +392,3 @@ if (WITH_SNOPT_PRECOMPILED)
   add_dependencies(download-all download-snopt-precompiled)
   add_dependencies(drake download-snopt-precompiled) # just in case: make sure any compiled drake version happens after precompiled install
 endif()
-
