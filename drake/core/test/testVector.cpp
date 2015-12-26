@@ -20,6 +20,7 @@ struct OutputTestTwo {
 
 int main(int argc, char* argv[])
 {
+  try {
   Eigen::Vector2d x;  x << 0.2, 0.4;
 
   PendulumState<double> state;
@@ -60,14 +61,15 @@ int main(int argc, char* argv[])
   }
   {
     // combining a vector with an unused or empty vector should return the original type
-    PendulumState<double> ps;
     {
       Drake::CombinedVectorBuilder<PendulumState, NullVector>::type<double> test;
-      assert(typeid(ps).hash_code() == typeid(test).hash_code());
+      if (!is_same<PendulumState<double>,decltype(test)>::value)
+	throw std::runtime_error("combined vector builder returned " + static_cast<string>(typeid(test).name()));
     }
     {
       Drake::CombinedVectorBuilder<NullVector, PendulumState>::type<double> test;
-      assert(typeid(ps).hash_code() == typeid(test).hash_code());
+      if (!is_same<PendulumState<double>,decltype(test)>::value)
+	throw std::runtime_error("combined vector builder returned " + static_cast<string>(typeid(test).name()));
     }
   }
 
@@ -82,8 +84,11 @@ int main(int argc, char* argv[])
     auto out = p->dynamicsImplementation(x,u);
   }
 */
+  } catch (const exception& e) {
+    cout << "ERROR: " << e.what() << endl;
+    return -1;
+  }
 
-
-
+  cout << "all tests passed" << endl;
   return 0;
 }
