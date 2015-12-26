@@ -9,7 +9,7 @@
 #include "lcmtypes/drake/lcmt_drake_signal.hpp"
 #include "System.h"
 #include "Simulation.h"
-
+#include <drakeLCMSystem_export.h>
 
 namespace Drake {
 
@@ -151,7 +151,7 @@ namespace Drake {
 
     // todo: template specialization for the CombinedVector case
 
-    class LCMLoop {
+    class DRAKELCMSYSTEM_EXPORT LCMLoop {
     public:
       bool stop;
       lcm::LCM& lcm;

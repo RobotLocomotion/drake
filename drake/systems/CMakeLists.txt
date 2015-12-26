@@ -9,7 +9,7 @@ include_directories(${PROJECT_SOURCE_DIR}/systems)
 include_directories(${PROJECT_SOURCE_DIR}/systems/frames)
 
 if (LCM_FOUND)
-  add_library(drakeLCMSystem SHARED LCMSystem.cpp)
+  add_library_with_exports(LIB_NAME drakeLCMSystem SOURCE_FILES LCMSystem.cpp)
   add_dependencies(drakeLCMSystem drake_lcmtypes lcmtype_agg_hpp)
   pods_use_pkg_config_packages(drakeLCMSystem lcm)
 
