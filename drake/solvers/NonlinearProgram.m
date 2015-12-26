@@ -599,12 +599,14 @@ classdef NonlinearProgram
 %      end
     end
 
-    function obj = addDecisionVariable(obj,num_new_vars,var_name)
+    function [obj,new_variable_idx] = addDecisionVariable(obj,num_new_vars,var_name)
       % appending new decision variables to the end of the current decision variables
       % @param num_new_vars      -- An integer. The newly added decision variable is an
       % num_new_vars x 1 double vector.
       % @param var_name       -- An optional argument. A cell of strings containing the
       % name of the new decision variables
+      % @retval new_variable_idx  -- A num_new_vars x 1 vector.
+      % x(new_variable_idx) is the newly added variables
       if(nargin<3)
         var_name = cellfun(@(i) sprintf('x%d',i),num2cell(obj.num_vars+(1:num_new_vars)'),'UniformOutput',false);
       else
@@ -613,6 +615,7 @@ classdef NonlinearProgram
         end
         var_name = var_name(:);
       end
+      new_variable_idx = obj.num_vars + (1:num_new_vars)';
       obj.num_vars = obj.num_vars+num_new_vars;
       obj.x_name = [obj.x_name;var_name];
       obj.x_lb = [obj.x_lb;-inf(num_new_vars,1)];

@@ -1,7 +1,7 @@
 include_directories (${PROJECT_SOURCE_DIR}/util)
 include_directories (${PROJECT_SOURCE_DIR}/systems/trajectories)
 
-add_library(drakeSplineGeneration splineGeneration.cpp SplineInformation.cpp ValueConstraint.cpp ContinuityConstraint.cpp)
+add_library_with_exports(LIB_NAME drakeSplineGeneration SOURCE_FILES splineGeneration.cpp SplineInformation.cpp ValueConstraint.cpp ContinuityConstraint.cpp)
 target_link_libraries(drakeSplineGeneration drakeTrajectories)
 pods_install_libraries(drakeSplineGeneration)
 pods_install_headers(splineGeneration.h ValueConstraint.h ContinuityConstraint.h SplineInformation.h DESTINATION drake)

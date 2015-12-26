@@ -4,7 +4,7 @@
 #include "DrakeJointImpl.h"
 #include "drakeGeometryUtil.h"
 
-class DLLEXPORT_DRAKEJOINT QuaternionFloatingJoint: public DrakeJointImpl<QuaternionFloatingJoint>
+class DRAKEJOINTS_EXPORT QuaternionFloatingJoint: public DrakeJointImpl<QuaternionFloatingJoint>
 {
   // disable copy construction and assignment
   //QuaternionFloatingJoint(const QuaternionFloatingJoint&) = delete;
