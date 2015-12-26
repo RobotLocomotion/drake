@@ -71,7 +71,7 @@ namespace Drake {
   public:
     template <typename ScalarType> using StateVector1 = typename System1::template StateVector<ScalarType>;
     template <typename ScalarType> using StateVector2 = typename System2::template StateVector<ScalarType>;
-    template <typename ScalarType> using StateVector = typename CombinedVectorBuilder<System1::template StateVector, System2::template StateVector>::template type<ScalarType>;
+    template <typename ScalarType> using StateVector = typename CombinedVectorUtil<System1::template StateVector, System2::template StateVector>::template type<ScalarType>;
     template <typename ScalarType> using InputVector = typename System1::template InputVector<ScalarType>;
     template <typename ScalarType> using OutputVector = typename System1::template OutputVector<ScalarType>;
     const static int num_inputs = SystemSizeTraits<System1>::num_inputs;
@@ -153,7 +153,7 @@ namespace Drake {
   template <class System1, class System2>
   class CascadeSystem {
   public:
-    template <typename ScalarType> using StateVector = typename CombinedVectorBuilder<System1::template StateVector, System2::template StateVector>::template type<ScalarType>;
+    template <typename ScalarType> using StateVector = typename CombinedVectorUtil<System1::template StateVector, System2::template StateVector>::template type<ScalarType>;
     template <typename ScalarType> using StateVector1 = typename System1::template StateVector<ScalarType>;
     template <typename ScalarType> using StateVector2 = typename System2::template StateVector<ScalarType>;
     template <typename ScalarType> using InputVector = typename System1::template InputVector<ScalarType>;

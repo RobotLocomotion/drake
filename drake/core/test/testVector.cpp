@@ -47,14 +47,14 @@ int main(int argc, char* argv[])
 
   Eigen::Vector3d abc;  abc << 1,2,3;
   {
-    Drake::CombinedVector<double, PendulumState, PendulumInput> test(abc);
+    CombinedVector<double, PendulumState, PendulumInput> test(abc);
     test=2*abc;
     valuecheck(test.first().theta,2.0);
     valuecheck(test.first().thetadot,4.0);
     valuecheck(test.second().tau,6.0);
   }
   {
-    Drake::CombinedVectorBuilder<PendulumState,PendulumInput>::type<double> test(abc);
+    CombinedVectorUtil<PendulumState,PendulumInput>::type<double> test(abc);
     test=2*abc;
     valuecheck(test.first().theta,2.0);
     valuecheck(test.first().thetadot,4.0);
@@ -63,12 +63,12 @@ int main(int argc, char* argv[])
   {
     // combining a vector with an unused or empty vector should return the original type
     {
-      Drake::CombinedVectorBuilder<PendulumState, NullVector>::type<double> test;
+      CombinedVectorUtil<PendulumState, NullVector>::type<double> test;
       if (!is_same<PendulumState<double>,decltype(test)>::value)
 	throw std::runtime_error("combined vector builder returned " + static_cast<string>(typeid(test).name()));
     }
     {
-      Drake::CombinedVectorBuilder<NullVector, PendulumState>::type<double> test;
+      CombinedVectorUtil<NullVector, PendulumState>::type<double> test;
       if (!is_same<PendulumState<double>,decltype(test)>::value)
 	throw std::runtime_error("combined vector builder returned " + static_cast<string>(typeid(test).name()));
     }
