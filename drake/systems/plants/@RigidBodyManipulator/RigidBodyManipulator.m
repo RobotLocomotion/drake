@@ -384,10 +384,12 @@ classdef RigidBodyManipulator < Manipulator
       compute_gradient = nargout > 1;
 
       nv = model.getNumVelocities();
-      damping = v(1)*zeros(nv, 1);
-      coulomb_friction = v(1)*zeros(nv, 1);
-      static_friction = v(1)*zeros(nv, 1);
-      coulomb_window = v(1)*zeros(nv, 1);
+      % Note: this will fail if damping is a trigpoly (we could handle this case, but need to do it carefully to not hurt performance)
+      damping = zeros(nv, 1);
+      % Note: this will fail if friction is a trigpoly (as it should)
+      coulomb_friction = zeros(nv, 1);
+      static_friction = zeros(nv, 1);
+      coulomb_window = zeros(nv, 1);
 
       for i = 2 : model.getNumBodies()
         b = model.body(i);
