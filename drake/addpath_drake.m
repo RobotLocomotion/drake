@@ -5,15 +5,15 @@ function addpath_drake
 % directing you to their location.
 %
 
-root = fileparts(mfilename('fullpath'));
+root = pwd;
 
 if ~exist('pods_get_base_path','file')
   % search up to 4 directories up for a build/matlab directory
   pfx='';
   for i=1:4
-    if exist(fullfile(root,pfx,'build','matlab'),'file')
-      disp(['Adding ', fullfile(root,pfx,'build','matlab'), ' to the matlab path']);
-      addpath(fullfile(root,pfx,'build','matlab'));
+    if exist(fullfile(pwd,pfx,'build','matlab'),'file')
+      disp(['Adding ', fullfile(pwd,pfx,'build','matlab'), ' to the matlab path']);
+      addpath(fullfile(pwd,pfx,'build','matlab'));
       break;
     end
     pfx = fullfile('..',pfx);
@@ -37,8 +37,6 @@ addpath(fullfile(root,'systems','plants','constraint'));
 addpath(fullfile(root,'systems','controllers'));
 addpath(fullfile(root,'systems','observers'));
 addpath(fullfile(root,'systems','trajectories'));
-addpath(fullfile(root,'systems','trajectories','TrajectoryLibraries'));
-addpath(fullfile(root,'systems','trajectories','FunnelLibraries'));
 addpath(fullfile(root,'systems','frames'));
 addpath(fullfile(root,'systems','visualizers'));
 addpath(fullfile(root,'systems','robotInterfaces'));
@@ -49,9 +47,8 @@ addpath(fullfile(root,'util'));
 addpath(fullfile(root,'util','geometry'));
 addpath(fullfile(root,'util','visualization'));
 addpath(fullfile(root,'thirdParty'));
+addpath(fullfile(root,'thirdParty','psm'));
 addpath(fullfile(root,'thirdParty','path'));
-addpath(fullfile(root,'thirdParty','psm','Lagrange'));
-addpath(fullfile(root,'thirdParty','psm','LGL_CGL'));
 addpath(fullfile(root,'thirdParty','spatial'));
 addpath(fullfile(root,'thirdParty','cprintf'));
 addpath(fullfile(root,'thirdParty','GetFullPath'));
@@ -60,7 +57,6 @@ addpath(fullfile(root,'thirdParty','polytopes'));
 addpath(fullfile(root,'solvers','BMI'));
 addpath(fullfile(root,'solvers','BMI','util'));
 addpath(fullfile(root,'solvers','BMI','kinematics'));
-addpath(fullfile(root,'solvers','qpSpline'));
 
 
 % OSX platform-specific

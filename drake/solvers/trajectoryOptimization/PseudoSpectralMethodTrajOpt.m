@@ -73,10 +73,15 @@ classdef PseudoSpectralMethodTrajOpt <DirectTrajectoryOptimization
       % also requires one of the time consteps to keep the ratio correct, arbitrarily chooses h1, so total n_vars=N*(nx+nU)+1
       n_vars = 1+(N)*(nX+nU);
       cnstr = FunctionHandleConstraint(zeros(N*(nX),1),zeros(N*(nX),1),n_vars,@obj.constraint_fun);
-      % sparse_Row=repmat((nX+1:N*nX,1,nX)); 
-      % sparse_Col=[kron(2:N*nX,ones(N*nX-nX,1))];
-      % cnstr = setSparseStructure(cnstr,sparse_Row,sparse_Col)
       cnstr = setName(cnstr,'PSMcollocation');
+
+      % set up sparse structure
+      % the gradient matrix always have this following general structure
+      gradient_structure=[ones(N*nX,1),kron(ones(N,N),ones(nX,nX)),kron(ones(N,N),ones(nX,nU))];
+      % find the spasity indices
+      [sparse_Row,sparse_Col] = find(gradient_structure~=0); 
+      cnstr = setSparseStructure(cnstr,sparse_Row,sparse_Col);
+
       % system dynamics passed to collocation as sharedDataFunction
       for i=1:obj.N,
         obj = obj.addSharedDataFunction(@obj.dynamics_data,{obj.x_inds(:,i);obj.u_inds(:,i)});      
@@ -112,7 +117,6 @@ classdef PseudoSpectralMethodTrajOpt <DirectTrajectoryOptimization
       xdot_f=xdot_all_knots*scale;
       % xdot from PS approximation
       xdot_p=sum((kron(D,ones(nX,1))).*(repmat(x,N,1)),2);
-
 
       % the gradients
       % dxdot/dh1, from dynamics, in essense comes from the scaling. Not to be confused with dxdot/dt,
@@ -167,28 +171,23 @@ classdef PseudoSpectralMethodTrajOpt <DirectTrajectoryOptimization
       end
     end
     function [utraj,xtraj] = reconstructInputTrajectory(obj,z)
-      %%todo
-      %%fixed the foh with global Lagrange interpolation
-      %%somehow it doesn't work well with fnplt...? needs fix either in this class or in the function call, to re-write the plot function
-      t = [0; cumsum(z(obj.h_inds))];
+      % Interpolate between knot points to reconstruct a trajectory using
+      % Lagrange interpolation
+      nU = obj.plant.getNumInputs();
       u = reshape(z(obj.u_inds),[],obj.N);
-      coeffs=LagrangeInter(t,u);
-      utraj = PPTrajectory(mkpp([0,t(end)],coeffs));
+      % a degenerated PPTrajectory, in the sense that there's only one break
+      utraj=PPTrajectory(LagrangeInterpolation(obj.tau,u,nU));
+      utraj = utraj.scaleTime(sum(z(obj.h_inds))/2);
       utraj = utraj.setOutputFrame(obj.plant.getInputFrame);
     end
     
     function xtraj = reconstructStateTrajectory(obj,z)
-      %%todo
-      %%fix the pchipDeriv with global Lagrange interpolation
-      t = [0; cumsum(z(obj.h_inds))];
-      u = reshape(z(obj.u_inds),[],obj.N);
-
+      % Interpolate between knot points to reconstruct a trajectory using
+      % Lagrange interpolation
+      nX = obj.plant.getNumStates();
       x = reshape(z(obj.x_inds),[],obj.N);
-      xdot = zeros(size(x,1),obj.N);
-      for i=1:obj.N,
-        xdot(:,i) = obj.plant.dynamics(t(i),x(:,i),u(:,i));
-      end
-      xtraj = PPTrajectory(pchipDeriv(t,x,xdot));
+      xtraj=PPTrajectory(LagrangeInterpolation(obj.tau,x,nX));
+      xtraj = xtraj.scaleTime(sum(z(obj.h_inds))/2);
       xtraj = xtraj.setOutputFrame(obj.plant.getStateFrame);
     end
   end
