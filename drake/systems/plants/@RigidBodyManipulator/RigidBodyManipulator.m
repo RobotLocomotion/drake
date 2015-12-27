@@ -1120,9 +1120,11 @@ classdef RigidBodyManipulator < Manipulator
     function p = getParams(model)
       p = [];
       for i=1:min(numel(model.name),numel(model.param_db))
-        pn = fieldnames(model.param_db{i});
-        for j=1:numel(pn)
-          p = vertcat(p,model.param_db{i}.(pn{j}).value);
+        if ~isempty(model.param_db{i})
+          pn = fieldnames(model.param_db{i});
+          for j=1:numel(pn)
+            p = vertcat(p,model.param_db{i}.(pn{j}).value);
+          end
         end
       end
       p = Point(getParamFrame(model),p);
