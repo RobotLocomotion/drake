@@ -7,11 +7,11 @@
 
 #include "Element.h"
 
-#include "drakeShapesMacros.h"
+#include <drakeShapes_export.h>
 
 namespace DrakeShapes
 {
-  class DLLEXPORT_drakeShapes VisualElement : public Element
+  class DRAKESHAPES_EXPORT VisualElement : public Element
   {
     public:
       VisualElement(const Eigen::Matrix4d& T_element_to_local)

@@ -8,8 +8,10 @@
 #include <Eigen/StdVector>
 #include <memory>
 #include "DrakeJoint.h"
+#include <drakeRBM_export.h>
+#include <plants/collision/DrakeCollision.h>
 
-class DLLEXPORT_RBM RigidBody {
+class DRAKERBM_EXPORT RigidBody {
 private:
   std::unique_ptr<DrakeJoint> joint;
   DrakeCollision::bitmask collision_filter_group;
@@ -79,7 +81,7 @@ public:
   friend std::ostream& operator<<( std::ostream &out, const RigidBody &b);
 
   // FIXME: move to a better place:
-  class DLLEXPORT_RBM CollisionElement : public DrakeCollision::Element
+  class DRAKERBM_EXPORT CollisionElement : public DrakeCollision::Element
   {
     public:
       CollisionElement(const CollisionElement& other);
