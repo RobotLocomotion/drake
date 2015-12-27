@@ -31,11 +31,13 @@ int main(int argc, char* argv[]) {
   }
 
   // todo: consider moving this logic into the RigidBodySystem class so it can be reused
-  DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
+  DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::FIXED;  // todo: switch default to QUATERNION after they are supported again
   char* floating_base_option = getCommandLineOption(argv,argc+argv,"--base");
   if (floating_base_option) {
     if (strcmp(floating_base_option,"FIXED")==0) { floating_base_type = DrakeJoint::FIXED; }
     else if (strcmp(floating_base_option,"RPY")==0) { floating_base_type = DrakeJoint::ROLLPITCHYAW; }
+    else if (strcmp(floating_base_option,"QUAT")==0) { floating_base_type = DrakeJoint::QUATERNION; }
+    else { throw std::runtime_error(string("Unknown base type") + floating_base_option + "; must be FIXED,RPY, or QUAT"); }
   }
 
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();

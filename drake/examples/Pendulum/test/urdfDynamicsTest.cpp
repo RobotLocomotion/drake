@@ -1,6 +1,7 @@
 
 #include "../Pendulum.h"
 #include "RigidBodySystem.h"
+#include "testUtil.h"
 
 using namespace std;
 using namespace Eigen;
