@@ -63,6 +63,8 @@ if (MATLAB_FOUND)
   add_rbm_mex(computeS1Trajmex)
   add_rbm_mex(createKinematicsCachemex)
   add_rbm_mex(createKinematicsCacheAutoDiffmex)
+  add_rbm_mex(velocityToPositionDotMappingmex)
+  add_rbm_mex(positionDotToVelocityMappingmex)
   target_link_libraries(computeS1Trajmex drakeZMPUtil)
 
   if(gurobi_FOUND)

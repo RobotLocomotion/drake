@@ -1426,25 +1426,6 @@ size_t RigidBodyTree::getNumJointLimitConstraints() const
   return finite_min_index.size() + finite_max_index.size();
 }
 
-template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> RigidBodyTree::transformVelocityMappingToPositionDotMapping(
-    const KinematicsCache<typename Derived::Scalar>& cache, const Eigen::MatrixBase<Derived>& mat) const
-{
-  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> ret(mat.rows(), num_positions);
-  int ret_col_start = 0;
-  int mat_col_start = 0;
-  for (auto it = bodies.begin(); it != bodies.end(); ++it) {
-    RigidBody& body = **it;
-    if (body.hasParent()) {
-      const DrakeJoint& joint = body.getJoint();
-      const auto& element = cache.getElement(body);
-      ret.middleCols(ret_col_start, joint.getNumPositions()).noalias() = mat.middleCols(mat_col_start, joint.getNumVelocities()) * element.qdot_to_v;
-      ret_col_start += joint.getNumPositions();
-      mat_col_start += joint.getNumVelocities();
-    }
-  }
-  return ret;
-}
 size_t RigidBodyTree::getNumPositionConstraints() const
 {
   return loops.size()*6;

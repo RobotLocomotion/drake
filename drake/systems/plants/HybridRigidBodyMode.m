@@ -91,7 +91,8 @@ classdef HybridRigidBodyMode < DrakeSystem
       obj = mode_obj.model;
       q = x(1:obj.num_positions);
       v = x(obj.num_positions+1:end);
-      qd = vToqdot(obj, q) * v;
+      kinsol = obj.doKinematics(q);
+      qd = vToqdot(obj, kinsol) * v;
 
       [H,C,B] = manipulatorDynamics(obj,q,v);
       Hinv = inv(H);
@@ -99,7 +100,7 @@ classdef HybridRigidBodyMode < DrakeSystem
 
       if ~any(constraint_state)  % short-circuit the computation below for the trivial (unconstrained) case
         vdot = Hinv*tau;
-        xdot = [vToqdot(obj,q)*v; vdot];
+        xdot = [vToqdot(obj,kinsol)*v; vdot];
         return;
       end
 
@@ -163,7 +164,7 @@ classdef HybridRigidBodyMode < DrakeSystem
 %         phiddot_ub = M(ub_inds,:)*f+w(ub_inds)
 %       end
 
-      xdot = [vToqdot(obj,q)*v; vdot];
+      xdot = [vToqdot(obj,kinsol)*v; vdot];
     end
   end
 
