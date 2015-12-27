@@ -149,7 +149,8 @@ nv = robot.getNumVelocities();
 q = getRandomConfiguration(robot);
 v = randn(nv, 1);
 
-vToqdot = robot.vToqdot(q);
+kinsol = robot.doKinematics(q);
+vToqdot = robot.vToqdot(kinsol);
 if nq ~= nv || any(any(vToqdot - eye(nv)))
   error('Hdot - 2Q is only skew symmetric if v = qdot')
 end
