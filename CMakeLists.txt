@@ -71,7 +71,11 @@ if (NOT WIN32) # many of these might work on win32 with little or no work... the
 endif()
 
 if (WITH_TEXTBOOK OR WITH_ALL_SUPPORTED_EXTERNALS OR WITH_ALL_PUBLIC_EXTERNALS)
-	find_package(PythonInterp REQUIRED)
+#  find_package(PythonInterp)
+  find_program(PYTHON_EXECUTABLE NAMES python2.7 python2.6) # PythonInterp finds a symlink on cygwin, which then fails in the execute process below
+	if (NOT PYTHON_EXECUTABLE)
+		message(FATAL_ERROR "could not find python, which is required for the the textbook examples")
+	endif()
 endif()
 
 # list *compilation* dependencies, in alphabetical order by target (note: dependencies must come first in my foreach above)
