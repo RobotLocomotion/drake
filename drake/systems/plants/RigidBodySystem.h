@@ -28,8 +28,7 @@ namespace Drake {
       Eigen::VectorXd vdot = H.fullPivHouseholderQr().solve(tau);
 
       StateVector<ScalarType> dot(tree->num_positions+tree->num_velocities);
-      assert(tree->num_positions == tree->num_velocities);  // need to call vToQdot below once it's merged in
-      dot << x.bottomRows(tree->num_velocities),vdot;
+      dot << kinsol.transformVelocityMappingToPositionDotMapping(x.bottomRows(tree->num_velocities).transpose()).transpose(),vdot;
       return dot;
     }
 
