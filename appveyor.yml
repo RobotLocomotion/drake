@@ -2,8 +2,9 @@ version: 1.0.{build}
 os: Visual Studio 2015
 clone_depth: 5
 install:
-- cinst: gnuwin32-make.portable
-before_build:
+  - ps: (new-object net.webclient).DownloadFile('https://dl.dropboxusercontent.com/u/3432353/pkg-config.exe', 'pkg-config.exe')
+fore_build:
+- cmd: PATH
 - cmd: cmake -E make_directory pod-build
 - cmd: cd pod-build && cmake .. && cd ..
 build_script:
