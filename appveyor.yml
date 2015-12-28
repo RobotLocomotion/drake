@@ -1,0 +1,11 @@
+version: 1.0.{build}
+os: Visual Studio 2015
+clone_depth: 5
+install:
+- cinst: gnuwin32-make.portable
+before_build:
+- cmd: >-
+    cmake -E make_directory pod-build
+    cd pod-build && cmake ..
+build:
+  verbosity: minimal
