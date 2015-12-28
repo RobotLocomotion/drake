@@ -203,6 +203,18 @@ namespace Drake {
 
     bool isTimeVarying() const { return sys1->isTimeVarying() || sys2->isTimeVarying(); }
     bool isDirectFeedthrough() const { return sys1->isDirectFeedthrough(); }
+    size_t getNumStates() const {return Drake::getNumStates(*sys1) + Drake::getNumStates(*sys2); };
+    size_t getNumInputs() const {return Drake::getNumInputs(*sys1); };
+    size_t getNumOutputs() const {return Drake::getNumOutputs(*sys1); };
+
+
+    const System1Ptr& getSys1() const {
+      return sys1;
+    }
+
+    const System2Ptr& getSys2() const {
+      return sys2;
+    }
 
   private:
     template <typename ScalarType>
