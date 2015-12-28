@@ -12,7 +12,7 @@ before_build:
   # note: this is building as 32-bit right now.  could add the -G arguments above to build 64-bit
   # todo: pass in WITH_* options to enable more externals
 build_script:
-  - cmd: cmake --build pod-build
+  - cmd: cmake --build pod-build --config Release
 test_script:
   - cmd: cd drake\pod-build
   - cmd: ctest -j 1 -M Experimental -T Test -T Submit -C Release --output-on-failure --timeout 1000 --track Continuous
