@@ -4,9 +4,9 @@ clone_depth: 5
 install:
   - ps: (new-object net.webclient).DownloadFile('https://dl.dropboxusercontent.com/u/3432353/pkg-config.exe', 'c:\pkg-config.exe')
 before_build:
+  - cmd: set PATH=%PATH%;c:\;c:\projects\drake\build\bin
   - cmd: PATH
   - cmd: cmake -E make_directory pod-build
   - cmd: cd pod-build && cmake .. && cd ..
-  - cmd: set PATH=%PATH%;c:\;c:\projects\drake\build\bin
 build_script:
   - cmd: cmake --build pod-build
