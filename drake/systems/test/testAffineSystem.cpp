@@ -26,8 +26,6 @@ createRandomAffineSystem(size_t num_states, size_t num_inputs, size_t num_output
   return make_shared<ReturnType>(A, B, xdot0, C, D, y0);
 };
 
-template <typename Scalar>
-using NonEigenStateVectorType = std::vector<Scalar>;
 
 template <int StatesAtCompileTime, int InputsAtCompileTime, int OutputsAtCompileTime>
 void testSizes(size_t num_states, size_t num_inputs, size_t num_outputs) {
