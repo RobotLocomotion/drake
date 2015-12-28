@@ -6,6 +6,7 @@ install:
 before_build:
 - cmd: >-
     cmake -E make_directory pod-build
+
     cd pod-build && cmake ..
 build:
   verbosity: minimal
