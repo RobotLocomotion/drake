@@ -22,9 +22,9 @@ public:
   template <typename ScalarType> using StateVector = StateVec<ScalarType>;
   template <typename ScalarType> using OutputVector = OutputVec<ScalarType>;
   template <typename ScalarType> using InputVector = InputVec<ScalarType>;
-  const static int num_states;
-  const static int num_inputs;
-  const static int num_outputs;
+  constexpr const static int num_states = StateVec<double>::RowsAtCompileTime;
+  constexpr const static int num_inputs = OutputVector<double>::RowsAtCompileTime;
+  constexpr const static int num_outputs = InputVector<double>::RowsAtCompileTime;
 
   AffineSystem(const Eigen::Matrix<double,num_states,num_states>& A,const Eigen::Matrix<double,num_states,num_inputs>& B,const Eigen::Matrix<double,num_states,1>& xdot0,
                const Eigen::Matrix<double,num_outputs,num_states>& C,const Eigen::Matrix<double,num_outputs,num_inputs>& D,const Eigen::Matrix<double,num_outputs,1>& y0)
@@ -62,15 +62,6 @@ private:
   Eigen::Matrix<double,num_states,1> xdot0;
   Eigen::Matrix<double,num_outputs,1> y0;
 };
-
-template <template<typename> class StateVec, template<typename> class InputVec, template<typename> class OutputVec>
-const int AffineSystem<StateVec, InputVec, OutputVec>::num_states = StateVec<double>::RowsAtCompileTime;
-
-template <template<typename> class StateVec, template<typename> class InputVec, template<typename> class OutputVec>
-const int AffineSystem<StateVec, InputVec, OutputVec>::num_inputs = InputVec<double>::RowsAtCompileTime;
-
-template <template<typename> class StateVec, template<typename> class InputVec, template<typename> class OutputVec>
-const int AffineSystem<StateVec, InputVec, OutputVec>::num_outputs = OutputVec<double>::RowsAtCompileTime;
 
 /*
 class LinearSystem : public AffineSystem {
