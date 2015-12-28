@@ -1,8 +1,6 @@
 #include <testUtil.h>
 #include "LinearSystem.h"
 #include <iostream>
-#include <typeinfo>
-#include <vector>
 
 using namespace std;
 using namespace Drake;
@@ -28,12 +26,6 @@ createRandomAffineSystem(size_t num_states, size_t num_inputs, size_t num_output
   return ReturnType(A, B, xdot0, C, D, y0);
 };
 
-template <template <typename> class StateVector>
-struct is_eigen_vector : public std::false_type {};
-
-template <int Rows>
-struct is_eigen_vector<EigenVector<Rows>::template type> : public std::true_type {};
-
 template <typename Scalar>
 using NonEigenStateVectorType = std::vector<Scalar>;
 
@@ -56,8 +48,8 @@ int main(int argc, char* argv[]) {
   valuecheck(num_inputs, getNumInputs(sys1));
   valuecheck(num_outputs, getNumOutputs(sys1));
 
-  cout << boolalpha << is_eigen_vector<NonEigenStateVectorType>::value << endl;
-  cout << boolalpha << is_eigen_vector<EigenVector<3>::type>::value << endl;
+  cout << boolalpha << is_eigen_vector<NonEigenStateVectorType<double>>::value << endl;
+  cout << boolalpha << is_eigen_vector<EigenVector<3>::type<double>>::value << endl;
 
 
 

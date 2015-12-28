@@ -43,6 +43,15 @@ namespace Drake {
 
   template <typename ScalarType, int Rows> Eigen::Matrix<ScalarType,Rows,1> toEigen(const Eigen::Matrix<ScalarType,Rows,1>& vec) { return vec; }
 
+  /**
+   * @brief whether or not the given type is an Eigen column vector
+   */
+  template <typename StateVector>
+  struct is_eigen_vector : public std::false_type {};
+
+  template <typename Scalar, int Rows, int Options, int MaxRows>
+  struct is_eigen_vector<Eigen::Matrix<Scalar, Rows, 1, Options, MaxRows, 1>> : public std::true_type {};
+
   /** getRandomVector()
    * @brief Returns a random vector of the desired type using Eigen::Random()
    * @concept{vector_concept}
