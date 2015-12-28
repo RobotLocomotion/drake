@@ -48,13 +48,8 @@ int main(int argc, char* argv[]) {
   valuecheck(num_inputs, getNumInputs(sys1));
   valuecheck(num_outputs, getNumOutputs(sys1));
 
-  cout << boolalpha << is_eigen_vector<NonEigenStateVectorType<double>>::value << endl;
-  cout << boolalpha << is_eigen_vector<EigenVector<3>::type<double>>::value << endl;
-
-
-
-//  auto x = createStateVector<double>(sys1);
-//  valuecheck(num_states, static_cast<size_t>(x.rows()));
+  auto x = createStateVector<double>(sys1);
+  valuecheck(num_states, static_cast<size_t>(x.rows()));
 
   return 0;
 }

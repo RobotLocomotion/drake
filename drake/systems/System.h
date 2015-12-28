@@ -108,6 +108,31 @@ namespace Drake {
    */
   template <typename System> std::size_t getNumOutputs(const System& sys) { return internal::NumOutputsDispatch<System,System::template OutputVector<double>::RowsAtCompileTime==-1>::eval(sys); }
 
+  namespace internal {
+    template <typename System, typename Scalar, class Enable = void>
+    struct CreateStateVectorDispatch {
+      static typename System::template StateVector<Scalar> eval(const System& sys) {
+        return System::template StateVector<Scalar>;
+      }
+    };
+
+    // case: Eigen vector
+    template <typename System, typename Scalar>
+    struct CreateStateVectorDispatch<System, Scalar, typename std::enable_if<is_eigen_vector<typename System::template StateVector<Scalar>>::value>::type >{
+      static typename System::template StateVector<Scalar> eval(const System& sys) {
+        return typename System::template StateVector<Scalar>(sys.getNumStates());
+      }
+    };
+  }
+
+  /** @brief Create a new, uninitialized state vector for the system.
+   * @concept{system_concept}
+   * @return a new, uninitialized state vector for the system.
+   */
+  template <typename Scalar, typename System>
+  typename System::template StateVector<Scalar> createStateVector(const System& sys) {
+    return internal::CreateStateVectorDispatch<System, Scalar>::eval(sys);
+  };
 
 /** FeedbackSystem<System1,System2>
  * @brief Builds a new system from the feedback connection of two simpler systems
