@@ -154,6 +154,15 @@ namespace Drake {
     Vector2<ScalarType> vec2;
   };
 
+  /**
+ * @brief whether or not the given type is a CombinedVector
+ */
+  template <typename StateVector>
+  struct is_combined_vector : public std::false_type {};
+
+  template <typename Scalar, template <typename> class Vector1, template <typename> class Vector2>
+  struct is_combined_vector<CombinedVector<Scalar, Vector1, Vector2> > : public std::true_type {};
+
   namespace internal {
     template <template <typename> class Vector1, template <typename> class Vector2, bool Vec2IsNull = false>
     struct CombinedVectorHelper {

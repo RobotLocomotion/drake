@@ -108,6 +108,13 @@ namespace Drake {
    */
   template <typename System> std::size_t getNumOutputs(const System& sys) { return internal::NumOutputsDispatch<System,System::template OutputVector<double>::RowsAtCompileTime==-1>::eval(sys); }
 
+  /** @brief Create a new, uninitialized state vector for the system.
+   * @concept{system_concept}
+   * @return a new, uninitialized state vector for the system.
+   */
+  template <typename Scalar, typename System>
+  typename System::template StateVector<Scalar> createStateVector(const System &sys);
+
   namespace internal {
     template <typename System, typename Scalar, class Enable = void>
     struct CreateStateVectorDispatch {
@@ -123,12 +130,18 @@ namespace Drake {
         return typename System::template StateVector<Scalar>(sys.getNumStates());
       }
     };
+
+    // case: Combined vector
+    template<typename System, typename Scalar>
+    struct CreateStateVectorDispatch<System, Scalar, typename std::enable_if< is_combined_vector<typename System::template StateVector<Scalar>>::value>::type > {
+      static typename System::template StateVector<Scalar> eval(const System& sys) {
+        auto x1 = createStateVector<Scalar>(*sys.getSys1());
+        auto x2 = createStateVector<Scalar>(*sys.getSys2());
+        return typename System::template StateVector<Scalar>(x1, x2);
+      }
+    };
   }
 
-  /** @brief Create a new, uninitialized state vector for the system.
-   * @concept{system_concept}
-   * @return a new, uninitialized state vector for the system.
-   */
   template <typename Scalar, typename System>
   typename System::template StateVector<Scalar> createStateVector(const System& sys) {
     return internal::CreateStateVectorDispatch<System, Scalar>::eval(sys);
@@ -263,6 +276,18 @@ namespace Drake {
 
     bool isTimeVarying() const { return sys1->isTimeVarying() || sys2->isTimeVarying(); }
     bool isDirectFeedthrough() const { return sys1->isDirectFeedthrough() && sys2->isDirectFeedthrough(); }
+    size_t getNumStates() const {return Drake::getNumStates(*sys1) + Drake::getNumStates(*sys2); };
+    size_t getNumInputs() const {return Drake::getNumInputs(*sys1); };
+    size_t getNumOutputs() const {return Drake::getNumOutputs(*sys2); };
+
+  public:
+    const System1Ptr& getSys1() const {
+      return sys1;
+    }
+
+    const System2Ptr& getSys2() const {
+      return sys2;
+    }
 
   private:
     System1Ptr sys1;
