@@ -337,6 +337,13 @@ namespace Drake {
     };
   }
 
+  /** Resize derivatives vector of each element of a matrix to to match the size of the derivatives vector of a given scalar.
+   * \brief If the mat and scalar inputs are AutoDiffScalars, resize the derivatives vector of each element of the matrix mat to match
+   * the number of derivatives of the scalar. This is useful in functions that return matrices that do not depend on an AutoDiffScalar
+   * argument (e.g. a function with a constant output), while it is desired that information about the number of derivatives is preserved.
+   * \param mat matrix, for which the derivative vectors of the elements will be resized
+   * \param scalar scalar to match the derivative size vector against.
+   */
   template <typename Derived>
   void resizeDerivativesToMatchScalar(Eigen::MatrixBase<Derived>& mat, const typename Derived::Scalar& scalar) {
     internal::ResizeDerivativesToMatchScalarImpl<Derived, typename Derived::Scalar>::run(mat, scalar);
