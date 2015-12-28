@@ -9,4 +9,4 @@ before_build:
 
     cd pod-build && cmake ..
 build:
-  verbosity: minimal
+  verbosity: detailed
