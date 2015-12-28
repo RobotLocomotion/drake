@@ -15,4 +15,5 @@ build_script:
   - cmd: cmake --build pod-build --config Release
 test_script:
   - cmd: cd drake\pod-build
+  - cmd: cmake -DBUILDNAME="appveyor-win32" .. || true
   - cmd: ctest -j 1 -M Experimental -T Test -T Submit -C Release --output-on-failure --timeout 1000 --track Continuous
