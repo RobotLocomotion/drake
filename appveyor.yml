@@ -7,6 +7,10 @@ before_build:
 - cmd: >-
     cmake -E make_directory pod-build
 
-    cd pod-build && cmake ..
+    cd pod-build
+
+    cmake ..
+
+    cd ..
 build_script:
 - cmd: cmake --build pod-build
