@@ -4,13 +4,7 @@ clone_depth: 5
 install:
 - cinst: gnuwin32-make.portable
 before_build:
-- cmd: >-
-    cmake -E make_directory pod-build
-
-    cd pod-build
-
-    cmake ..
-
-    cd ..
+- cmd: cmake -E make_directory pod-build
+- cmd: cd pod-build && cmake .. && cd ..
 build_script:
 - cmd: cmake --build pod-build
