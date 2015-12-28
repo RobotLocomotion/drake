@@ -29,20 +29,18 @@ createRandomAffineSystem(size_t num_states, size_t num_inputs, size_t num_output
 template <typename Scalar>
 using NonEigenStateVectorType = std::vector<Scalar>;
 
-int main(int argc, char* argv[]) {
-  size_t num_states = 3;
-  size_t num_inputs = 4;
-  size_t num_outputs = 5;
-  auto sys1 = createRandomAffineSystem<Dynamic, Dynamic, Dynamic>(num_states, num_inputs, num_outputs);
+template <int StatesAtCompileTime, int InputsAtCompileTime, int OutputsAtCompileTime>
+void testSizes(size_t num_states, size_t num_inputs, size_t num_outputs) {
+  auto sys1 = createRandomAffineSystem<StatesAtCompileTime, InputsAtCompileTime, OutputsAtCompileTime>(num_states, num_inputs, num_outputs);
   using Sys1Type = decltype(sys1);
 
   valuecheck(num_states, sys1.getNumStates(), "Wrong number of states.");
   valuecheck(num_inputs, sys1.getNumInputs(), "Wrong number of inputs.");
   valuecheck(num_outputs, sys1.getNumOutputs(), "Wrong number of outputs.");
 
-  static_assert(Sys1Type::num_states == Dynamic, "Wrong number of states at compile time");
-  static_assert(Sys1Type::num_inputs == Dynamic, "Wrong number of inputs at compile time");
-  static_assert(Sys1Type::num_outputs == Dynamic, "Wrong number of outputs at compile time");
+  static_assert(Sys1Type::num_states == StatesAtCompileTime, "Wrong number of states at compile time");
+  static_assert(Sys1Type::num_inputs == InputsAtCompileTime, "Wrong number of inputs at compile time");
+  static_assert(Sys1Type::num_outputs == OutputsAtCompileTime, "Wrong number of outputs at compile time");
 
   valuecheck(num_states, getNumStates(sys1));
   valuecheck(num_inputs, getNumInputs(sys1));
@@ -50,6 +48,11 @@ int main(int argc, char* argv[]) {
 
   auto x = createStateVector<double>(sys1);
   valuecheck(num_states, static_cast<size_t>(x.rows()));
+};
+
+int main(int argc, char* argv[]) {
+  testSizes<Dynamic, Dynamic, Dynamic>(3, 4, 5);
+  testSizes<3, 4, 5>(3, 4, 5);
 
   return 0;
 }
