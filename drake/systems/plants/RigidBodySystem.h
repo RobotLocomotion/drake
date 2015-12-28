@@ -19,7 +19,9 @@ namespace Drake {
       const eigen_aligned_unordered_map<const RigidBody *, Eigen::Matrix<ScalarType, 6, 1> > f_ext;
 
       // todo: make kinematics cache once and re-use it (but have to make one per type)
-      auto kinsol = tree->doKinematics(x.topRows(tree->num_positions),x.bottomRows(tree->num_velocities));
+      auto nq = tree->num_positions;
+      auto nv = tree->num_velocities;
+      auto kinsol = tree->doKinematics(x.topRows(nq),x.bottomRows(nv));
 
       auto H = tree->massMatrix(kinsol);
       Eigen::VectorXd tau = -tree->dynamicsBiasTerm(kinsol,f_ext);
@@ -27,8 +29,8 @@ namespace Drake {
 
       Eigen::VectorXd vdot = H.fullPivHouseholderQr().solve(tau);
 
-      StateVector<ScalarType> dot(tree->num_positions+tree->num_velocities);
-      dot << kinsol.transformVelocityMappingToPositionDotMapping(x.bottomRows(tree->num_velocities).transpose()).transpose(),vdot;
+      StateVector<ScalarType> dot(nq+nv);
+      dot << kinsol.transformPositionDotMappingToVelocityMapping(Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic>::Identity(nq, nq))*x.bottomRows(nv),vdot;
       return dot;
     }
 
