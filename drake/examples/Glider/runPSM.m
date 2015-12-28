@@ -4,24 +4,21 @@ if (nargin<1)
   p = GliderPlant();
 end
 
-N=21;
+N=21; % the number of knot points
 
+% use N=50 to see an example of PS method 'fail'
+% notice that the solver will be able solve for the knot points correctly, 
+% but the utraj or xtraj plot will have zig-zag shapes near the end of the trajectory
+% or the entire trajectory will look weird, and the glider will fly off and not end up at the goal! 
 
-% use N=75 to see an example of PS method failing
-% the method will be able set up the NLP solver and solve for the 75 knot points values correctly,
-% but the utraj or xtraj plot will have zig-zag near the end of the trajectory or the entire trajectory looks weird
-% and the glider will fly off and not end up at the goal! 
-
-% things go south at the reconstrunction stage, and it is due to the Runge phenomenon. 
-% PS method reconstructs the entire trajectory by Lagrange interpolating these 75 knot points, and
-% despite the effort of choosing knot points at Gauss quadrature (strongest immunity to Runge phenomenon), 
-% 75 knot points are by nature too clustering and Runge phenomenon is unavoidable. One good sign of Runge
-% phenomenon happening is 'polyfit' giving 'bad conditioned' warning.
+% the 'fail' is due to Runge's phenomenon, which is inherent in Lagrange interpolating technique 
+% that the PS method uses to reconstruct the trajectory.
+% while the PS method tries to minimize the effect of Runge's phenomenon by interpolating at Gauss quadratures,
+% the remedy only works well for smaller N, and isn't very effective when N is big.
 
 % be alert that similar disastrous result can happen to other plants when
-% using very high N, it might be wise to stay away from PS method when in doubt. 
-
-
+% using big N. The sign of Runge's phenomenon happening is when 
+% 'polyfit' gives 'bad conditioned' warning.
 
 x0 = getInitialState(p);
 x0 = [-3.5 0.1 0 0 7 0 0]';
@@ -29,7 +26,7 @@ tf0 = 1.0;
 xf = p.xd;
 
 options.ps_method=PseudoSpectralMethodTrajOpt.LGL;
-%default choice of LGL_PS method, can be omitted
+% default choice, use LGL_PS method
 
 % options.ps_method=PseudoSpectralMethodTrajOpt.CGL;
 % set the CGL_PS method option

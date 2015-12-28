@@ -6,11 +6,13 @@ classdef PseudoSpectralMethodTrajOpt <DirectTrajectoryOptimization
   % Gauss quadratures 
 
   % this class offers two specifications of the PS method family
-  % to sue Legendre polynomials at Lengendre-Gauss-Lobatto quadratures (LGL), set option.ps_method=1
+  % to use Legendre polynomials at Lengendre-Gauss-Lobatto quadratures (LGL), set option.ps_method=PseudoSpectralMethodTrajOpt.LGL
   % see Elnagar et al., 'The Pseudospectral Legendre Method for Discretizing Optimal Control Problems', 1995, for the underlying math formulation for LGL method,
 
-  % to use Chebyshev polynomials at Chebyshev-Gauss-Lobatto quadratures (CGL), set option.ps_method=2.
+  % to use Chebyshev polynomials at Chebyshev-Gauss-Lobatto quadratures (CGL), set option.ps_method=PseudoSpectralMethodTrajOpt.CGL
   % and see Fahroo et al., 'Direct Trajectory Optimization by a Chebyshev Pseudospectral Method', 2002, for the math formulation for CGL method
+  
+  % see runPSM in /drake/examples/glider for an example call of this method
   properties(SetAccess = protected)
     tau % Gauss node points, distributed between [-1,1] (linked with h(i) by affine transformation)
     D % differentiation matrix of the chosen Lagrange interpolation methods
@@ -33,8 +35,8 @@ classdef PseudoSpectralMethodTrajOpt <DirectTrajectoryOptimization
         options.ps_method = PseudoSpectralMethodTrajOpt.LGL;
       end
       if ~isfield(options,'time_option')| options.time_option ~= 3
-         % force time_option to skip option 1 and 2, to not add no time constraint from superclass
-         % time constraint will be added in this class.
+         % force time_option to skip option 1 and 2, so to not add time constraint from the superclass
+         % time constraint will be added later in this class as it is unique to PS method
         options.time_option = 3;
       end
 
@@ -42,11 +44,11 @@ classdef PseudoSpectralMethodTrajOpt <DirectTrajectoryOptimization
 
       % add time constraint
       % all timesteps are affine transformations from Gauss quadratures
-      % only used for PS, so the superclass is not overwriteen
+      % only used for PS, so superclass is not overwriteen
       initial_h=diff(obj.tau);
       ratio=initial_h/initial_h(1);
-      A_time = ones(1,N-1); % so the sum of all time steps will be bounded between durations bounds
-      S_time=[ratio,zeros(N-1,N-2)]-eye(N-1); % so the time steps will keep the inter-point ratio as the initial one obtained from Gauss quadatures
+      A_time = ones(1,N-1); % so that the sum of all time steps will be bounded between durations bounds
+      S_time=[ratio,zeros(N-1,N-2)]-eye(N-1); % so that the time steps will keep the inter-point ratio as the initial one obtained from Gauss quadatures
       scale_constaint = LinearConstraint([durations(1);-inf; zeros(N-2,1)],[durations(2);inf;zeros(N-2,1)], [A_time;S_time]);
       obj = obj.addConstraint(scale_constaint,obj.h_inds);  
     end
@@ -57,7 +59,7 @@ classdef PseudoSpectralMethodTrajOpt <DirectTrajectoryOptimization
       nU = obj.plant.getNumInputs();
       options=obj.options;
       
-      % set up psudospectral method parameters
+      % set up PS method parameters
        switch options.ps_method
         case PseudoSpectralMethodTrajOpt.LGL 
           obj.tau=LGL_nodes(obj);
@@ -69,14 +71,14 @@ classdef PseudoSpectralMethodTrajOpt <DirectTrajectoryOptimization
           obj.w=CGL_weights(obj.tau);
       end
 
-      % collocation at each and every knot point requires the states and input values at all knot points. Hnce n_vars has this N*(nx+nU) part
-      % also requires one of the time consteps to keep the ratio correct, arbitrarily chooses h1, so total n_vars=N*(nx+nU)+1
+      % collocation at each and every knot point requires the states and input values at all knot points. Hence n_vars has this N*(nx+nU) part
+      % it also requires one of the time steps to keep the ratio correct, here arbitrarily chooses h1, so total n_vars=N*(nx+nU)+1
       n_vars = 1+(N)*(nX+nU);
       cnstr = FunctionHandleConstraint(zeros(N*(nX),1),zeros(N*(nX),1),n_vars,@obj.constraint_fun);
       cnstr = setName(cnstr,'PSMcollocation');
 
       % set up sparse structure
-      % the gradient matrix always have this following general structure
+      % the constraint gradient matrix always have this general structure
       gradient_structure=[ones(N*nX,1),kron(ones(N,N),ones(nX,nX)),kron(ones(N,N),ones(nX,nU))];
       % find the spasity indices
       [sparse_Row,sparse_Col] = find(gradient_structure~=0); 
@@ -104,7 +106,7 @@ classdef PseudoSpectralMethodTrajOpt <DirectTrajectoryOptimization
       nU = obj.plant.getNumInputs();
       D=obj.D;
       initial_h1=obj.tau(2)-obj.tau(1);
-      scale=h1/(initial_h1);%comes from the time domain affine transformation
+      scale=h1/(initial_h1);% comes from the time domain affine transformation
       x=reshape(x,nX,N);
 
       % the collocation
@@ -171,30 +173,34 @@ classdef PseudoSpectralMethodTrajOpt <DirectTrajectoryOptimization
       end
     end
     function [utraj,xtraj] = reconstructInputTrajectory(obj,z)
-      % Interpolate between knot points to reconstruct a trajectory using
+      % Interpolate all knot points to reconstruct a trajectory using
       % Lagrange interpolation
       nU = obj.plant.getNumInputs();
       u = reshape(z(obj.u_inds),[],obj.N);
-      % a degenerated PPTrajectory, in the sense that there's only one break
+      % it is tempting to interpolate at the physical time domain nodes as it is the most convenient, but to minimize the effect of Runge phenomenon, 
+      % do the Lagrange interpolation at tau (Gauss quadratures). The shifting will be taken care of in LagrangeInterpolation method.
+      % note that, while this remedy does minimize the effect, it unfortunately doesn't gurantee the Runge phenomenon won't happen. Polyfit call will give warning
+      % when Runge phenomenon is unavoidable.
       utraj=PPTrajectory(LagrangeInterpolation(obj.tau,u,nU));
+      % scale from [0,2] to the physical time domain
       utraj = utraj.scaleTime(sum(z(obj.h_inds))/2);
       utraj = utraj.setOutputFrame(obj.plant.getInputFrame);
     end
     
     function xtraj = reconstructStateTrajectory(obj,z)
-      % Interpolate between knot points to reconstruct a trajectory using
+      % Interpolate all knot points to reconstruct a trajectory using
       % Lagrange interpolation
       nX = obj.plant.getNumStates();
       x = reshape(z(obj.x_inds),[],obj.N);
+      % similar reason as in reconstructInputTrajectory() for the choice of interpolating times
       xtraj=PPTrajectory(LagrangeInterpolation(obj.tau,x,nX));
+      % scale from [0,2] to te physical time domain.
       xtraj = xtraj.scaleTime(sum(z(obj.h_inds))/2);
       xtraj = xtraj.setOutputFrame(obj.plant.getStateFrame);
     end
   end
   
   methods (Access = protected)
-    % psm-specific running cost handler.
-
     function [f,df] = running_fun_end(obj,running_handle,x,u)
     % running cost at the first node, which has the subtlety that is this knot point is implicity assosiated with the time step h=0
     % so feed the running_handle with a constant 0 as the time step instead of passing a variable
