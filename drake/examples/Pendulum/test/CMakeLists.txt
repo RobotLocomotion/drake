@@ -7,7 +7,8 @@ include_directories(${PROJECT_SOURCE_DIR}/systems/plants/joints)
 include_directories(${PROJECT_SOURCE_DIR}/systems/controllers)
 include_directories(${PROJECT_SOURCE_DIR}/util)
 
-add_executable(pendulumURDFDynamicsTest urdfDynamicsTest.cpp)
-target_link_libraries(pendulumURDFDynamicsTest drakeRBM)
-add_test(NAME pendulumURDFDynamicsTest COMMAND pendulumURDFDynamicsTest)
-
+if (LCM_FOUND)
+  add_executable(pendulumURDFDynamicsTest urdfDynamicsTest.cpp)
+  target_link_libraries(pendulumURDFDynamicsTest drakeRBM)
+  add_test(NAME pendulumURDFDynamicsTest COMMAND pendulumURDFDynamicsTest)
+endif(LCM_FOUND)
