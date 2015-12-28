@@ -1005,9 +1005,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
 
     function varargout = resolveConstraints(obj,x0,varargin)
       varargout=cell(1,nargout);
-      if isnumeric(x0)
-        x0 = Point(obj.getStateFrame(),x0);
-      end
       [varargout{:}] = resolveConstraints(obj.manip,x0,varargin{:});
       varargout{1} = varargout{1}.inFrame(obj.getStateFrame());
     end

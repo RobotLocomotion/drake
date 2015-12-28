@@ -8,8 +8,8 @@ include_directories(${PROJECT_SOURCE_DIR}/util)
 include_directories(${PROJECT_SOURCE_DIR}/systems)
 include_directories(${PROJECT_SOURCE_DIR}/systems/frames)
 
-if (LCM_FOUND AND NOT WIN32)  # win32 won't be hard... just have to add declspecs
-  add_library(drakeLCMSystem SHARED LCMSystem.cpp)
+if (LCM_FOUND)
+  add_library_with_exports(LIB_NAME drakeLCMSystem SOURCE_FILES LCMSystem.cpp)
   add_dependencies(drakeLCMSystem drake_lcmtypes lcmtype_agg_hpp)
   pods_use_pkg_config_packages(drakeLCMSystem lcm)
 

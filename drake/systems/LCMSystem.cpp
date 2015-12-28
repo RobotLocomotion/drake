@@ -2,7 +2,7 @@
 #include <iostream>
 #include "LCMSystem.h"
 
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_WIN32)
 #include <Winsock2.h>
 #else
 #include <sys/select.h>

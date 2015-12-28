@@ -1,4 +1,10 @@
+os:
+  - linux
+  - osx
+
 language: cpp
+
+sudo: required
 
 notifications:
   email: false
@@ -20,33 +26,18 @@ script:
 
 # The compiler and env:matrix options create an matrix of build configurations (gcc + Release, gcc + Debug, clang + Release, clang + Debug)
 
+compiler:
+  - gcc
+  - clang
+
 python:
   - '2.7'
 
-matrix:
-  include:
-    - sudo: required
-      os: linux
-      dist: precise
-      compiler: clang
-      env: BUILD_TYPE=Release
-    - sudo: required
-      os: linux
-      dist: precise
-      compiler: gcc
-      env: BUILD_TYPE=Release
-    - sudo: required
-      os: linux
-      dist: precise
-      compiler: clang
-      env: BUILD_TYPE=Debug
-    - sudo: required
-      os: linux
-      dist: trusty
-      compiler: gcc
-      env: BUILD_TYPE=Release
-    - sudo: required
-      os: osx
-      compiler: clang
-      env: BUILD_TYPE=Release
+env:
+  matrix:
+    - BUILD_TYPE=Release
+    # - BUILD_TYPE=Debug
 
+matrix:
+  # allow_failures:
+  #   - compiler: gcc

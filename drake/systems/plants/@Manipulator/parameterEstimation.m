@@ -1,4 +1,4 @@
-function [phat,estimated_delay] = parameterEstimation(obj,data,options)
+function [phat,estimated_delay] = parameterEstimation(obj,data,varargin)
 %
 % Parameter estimation algorithm for manipulators
 %
@@ -25,20 +25,54 @@ function [phat,estimated_delay] = parameterEstimation(obj,data,options)
 % @param data an instance of iddata (from the system identification 
 % toolbox; see 'help iddata' for more info) containing the data to 
 % be used for estimation.
-%
+% 
+% @option print_result determines if the function will print the results
+% 'noprint'     = no print, 
+% 'printEst'    = only print estimated
+% 'printAll'	= print estimated and original
+% 
+% @option model determines which model to use for estimation
+% 'dynamic'     = use dynamic model - requires qdd
+% 'energetic'   = use energetic model - doesn't require qdd
+% 
+% @option method determines which method to use for estimation
+% 'nonlinprog'    = nonlinear least squares (LS) to solve problem
+% 'linprog'       = linear LS on lumped params then nonlinear LS to recover
+%                 original parameters
+% 'simerr'      = minimize simulation error
+% 'lsqnonlin'   = use MATLAB's built-in nonlinear least squares solver (debugging)
 
+%% handle options
+if (nargin>2 && isstruct(varargin{1})) options=varargin{1};
+else options=struct(); end
+if (~isfield(options,'print_result')) 
+  options.print_result='noprint'; 
+end
+if (~isfield(options,'model')) 
+  options.model='dynamic'; 
+end
+if (~isfield(options,'method')) 
+  options.method='nonlinprog'; 
+end
+
+%% Initialize
 if (getOutputFrame(obj)~=getStateFrame(obj))
   error('Only full-state feedback is implemented so far');
 end
-
 checkDependency('spotless');
 
 nq = obj.num_positions;
 nu = obj.num_u;
 p_orig = double(getParams(obj));  % probably only for testing
+np = length(p_orig);
+
+[pmin,pmax] = getParamLimits(obj);
+assert(all(pmin>=0));  % otherwise I'll have to subtract it out from the coordinates
+%  not hard, just not implmented yet.
+
 
 %%   Step 1: Extract lumped-parameters 
-
+% Initialize Variables
 q=msspoly('q',nq);
 s=msspoly('s',nq);
 c=msspoly('c',nq);
@@ -46,41 +80,50 @@ qt=TrigPoly(q,s,c);
 qd=msspoly('qd',nq);
 qdd=msspoly('qdd',nq);
 u=msspoly('u',nu);
+
+% Set up known parameters
 p=obj.getParamFrame.getPoly;
 pobj = setParams(obj,p);
+
 [H,C,B] = manipulatorDynamics(pobj,qt,qd);
-err = H*qdd + C - B*u;
-
-[a,b,M]=decomp(getmsspoly(err),[q;s;c;qd;qdd;u]);
-coeff = msspoly(ones(size(b,1),1));
-deg_zero_ind=-1;
-for i=1:size(b,1)
-  % would use prod(a'.^b(i,:)) if msspoly implemented prod (bug 1712)
-  for k=find(b(i,:))
-    coeff(i) = coeff(i).*(a(k)^b(i,k));
-  end
-  if (deg(coeff(i))==0) 
-    if (deg_zero_ind>0) error('should only get a single degree zero term'); end
-    deg_zero_ind = i;
-  end
-end
-
-if (deg_zero_ind>0)
-  Mb = M(:,deg_zero_ind)*double(coeff(deg_zero_ind));
-  M = M(:,[1:deg_zero_ind-1,deg_zero_ind+1:end]);
-  lp = coeff([1:deg_zero_ind-1,deg_zero_ind+1:end]);
+if strcmp(options.model,'dynamic')
+    % Formulate equations of motion
+    err = H*qdd + C - B*u;
+elseif strcmp(options.model,'energetic')
+    dt=msspoly('dt',1);
+    q1=msspoly('qo',nq);
+    q2=msspoly('qf',nq);
+    s1=msspoly('so',nq);
+    s2=msspoly('sf',nq);
+    c1=msspoly('co',nq);
+    c2=msspoly('cf',nq);
+    qt1=TrigPoly(q1,s1,c1);
+    qt2=TrigPoly(q2,s2,c2);
+    qd1=msspoly('qdto',nq);
+    qd2=msspoly('qdtf',nq);
+    % Formulate energy equations
+    [T1,U1] = energy(pobj,[qt1;qd1]);
+    [T2,U2] = energy(pobj,[qt2;qd2]);
+    % Need to formulate energy dissipation from AcrobotPlant class
+    dE = (B*u-[p(1);p(2)].*qd1)'*qd1*dt; % Under cursory testing, this works better
+%     dE = (B*u-[p(1);p(2)].*qd1)'*(q2-q1);
+    err = (T1+U1)-(T2+U2)+dE;
 else
-  Mb = zeros(size(err,1));
-  lp = coeff;
+    error('Model not recognized')
 end
 
-np = length(p_orig);
+[lp,M,Mb,lin_params,beta] = identifiableParameters(getmsspoly(err),p); % posynomial lumped params
+% [lp, M, Mb] = linearParameters(getmsspoly(err),p); % monomial lumped params
+
 nlp = length(lp);
 lp_orig = double(subs(lp,p,p_orig));
-lumped_params = msspoly('lp',nlp);
+lumped_params = msspoly('lp',nlp); 
 % now err=M*lp+Mb and lperr=M*lumped_params+Mb;
 
-%%   Step 2: Least-squares estimation
+
+%%   Step 2: Nonlinear least-squares estimation
+% 
+% Perform least squares on observable matrices: M_data*lp_est + Mb_data = 0
 
 if (nargin>1)
   % populate A and b matrices from iddata
@@ -90,103 +133,124 @@ if (nargin>1)
   x_data = get(data,'OutputData')';
   q_data = x_data(1:nq,:);
   qd_data = x_data(nq+(1:nq),:);
+  if strcmp(options.model,'dynamic')
+    qdd_data = x_data(2*nq+(1:nq),:); 
+  end
   u_data = get(data,'InputData')';
-  
-  qdd_data = diff(qd_data,1,2)/Ts;
-  t_data = t_data(:,1:end-1);
-  q_data = q_data(:,1:end-1);
-  qd_data = qd_data(:,1:end-1);
-  u_data = u_data(:,1:end-1);
-else  % temporary... just for debugging
-  n = 1000;
-  t_data = .01*(0:n-1);
-  q_data = randn(nq,n);
-  qd_data = randn(nq,n);
-  u_data = randn(nu,n);
-end
-
-% just for debugging
-for i=1:length(t_data)
-  [H,C,B] = manipulatorDynamics(obj,q_data(:,i),qd_data(:,i));
-  qdd_data(:,i) = (H\(B*u_data(:,i) - C)) + .01*randn(nq,1);
 end
 
 s_data = sin(q_data);
 c_data = cos(q_data);
+dt_data = diff(t_data);
 
-ndata = length(t_data);
-M_data = reshape(msubs(M(:),[q;s;c;qd;qdd;u],[q_data;s_data;c_data;qd_data;qdd_data;u_data])',nq*ndata,nlp);
-Mb_data = reshape(msubs(Mb,[q;s;c;qd;qdd;u],[q_data;s_data;c_data;qd_data;qdd_data;u_data])',nq*ndata,1);
+% % Debugging the energy model
+% E1 = getmsspoly(T1+U1);
+% E = subs(E1,p,p_orig);
+% E_data = msubs(E,[q1;s1;c1;qd1;u;dt],[q_data;s_data;c_data;qd_data;u_data;t_data]);
+% diffE_data = diff(E_data);
+% dE1 = subs(dE,p,p_orig);
+% dE_data = msubs(dE1,[q1;qd1;q2;qd2;u;dt],[q_data(:,1:end-1);qd_data(:,1:end-1);...
+%     q_data(:,2:end);qd_data(:,2:end);u_data(:,1:end-1);dt_data]);
+% figure;plot(diffE_data,'-g'); hold on; plot(dE_data,'-r');
+% title(['True \DeltaE vs. Estimated \DeltaE']);
+% xlabel('Sample Time')
+% ylabel({'\DeltaE Magnitude' '(Joules)/sample'})
+% legend('True \DeltaE','Estimated \DeltaE');
 
-lp_est = -M_data\Mb_data;
-err_orig = M_data*lp_orig + Mb_data;
 
-err_est = M_data*lp_est + Mb_data;
-sqerr_orig = sum(err_orig'*err_orig);
-sqerr_est = sum(err_est'*err_est);
-
-%keyboard;
-
-
-%%   Step 3: Geometric program to back out original parameters.
-%
-% Note: Now this is actually solved as a QP
-%
-% min | log(p) - log(p_orig) |_2^2 
-%  s.t. forall i, lp_i = lp_est_i
-%                 pmin <= p <= pman
-%
-% decision variables y_i, p_i = e^y_i, log(p_i) = y_i
-%   allows me to write this as 
-% min | y - log(p_orig) |_2^2 
-%  s.t.   lp_i(p) = lp_est_i, 
-%  s.t.   log(pmin) <= p <= log(pmax)
-%  where lp_i is a monomial in p (with coeff = 1)
-%  and taking the log of this constraint gives the equivalent constraint
-%         A y = log(lp_est_i) where
-%  A(i,j) is the power of the monomial in parameter j
-
-A = sparse(nlp,np);
-for i=1:nlp  % todo:  there must be a better way to do this with spotless
-  [a,b,M] = decomp(lp(i));
-  assert(isscalar(M));
-  assert(M==1);
-  for j=1:length(a)
-    ind = find(match(a(j),p));
-    A(i,ind) = b(j);
-  end
+if strcmp(options.model,'dynamic')
+    ndata = length(t_data);
+    variables = [q;s;c;qd;qdd;u];
+    data_variables = [q_data;s_data;c_data;qd_data;qdd_data;u_data];
+    M_data = reshape(msubs(M(:),variables,data_variables)',nq*ndata,nlp);
+    Mb_data = reshape(msubs(Mb,variables,data_variables)',nq*ndata,1);
+elseif strcmp(options.model,'energetic')
+    variables = [q1;s1;c1;qd1;q2;s2;c2;qd2;u;dt];
+    data_variables = [q_data(:,1:end-1);s_data(:,1:end-1);c_data(:,1:end-1);qd_data(:,1:end-1);...
+        q_data(:,2:end);s_data(:,2:end);c_data(:,2:end);qd_data(:,2:end);u_data(:,1:end-1);dt_data];
+    M_data = msubs(M(:),variables,data_variables)';
+    Mb_data = msubs(Mb,variables,data_variables)';
 end
 
-irrelevant_params = find(~any(A));
-if ~isempty(irrelevant_params)
-  for i=1:length(irrelevant_params)
-    warning(['Parameter ',getCoordinateName(getParamFrame(obj),irrelevant_params(i)),' does not impact the dynamics in any way.  Consider removing it from the parameter list']);
-  end
-%  A(:,irrelevant_params) = [];
-%  p_map = find(any(A));
-%else
-%  p_map = 1:np;
+if strcmp(options.method,'nonlinprog') || strcmp(options.method,'linprog')
+    % Nonlinear least-squares solver
+    prog = NonlinearProgram(np);
+    prog=prog.addConstraint(BoundingBoxConstraint(pmin,pmax),1:np);
+    
+    if strcmp(options.method,'nonlinprog')
+        % % Only nonlinear least squares
+        % nonlinfun = @(x) nonlinerr(x,lp,p,M_data,Mb_data);
+        % prog=prog.addCost(FunctionHandleObjective(np,nonlinfun),1:np);
+    end
+    if strcmp(options.method,'linprog')
+        % Least squares -> Nonlinear least squares on lumped parameter solution
+        lp_est = -pinv(full(M_data))*Mb_data;
+        prog=prog.addQuadraticCost(eye(np),p_orig,1:np);
+        lpconstraint_handle = @(x) lpconstraint_fun(x,lp,p);
+        lpconstraint = FunctionHandleConstraint(lp_est,lp_est,nlp,lpconstraint_handle);
+        prog=prog.addConstraint(lpconstraint,1:np);
+    end
+    [x,F,info] = prog.solve(p_orig);
+    if(info ~= 1)
+    	error('failed to solve the problem');
+    end
+elseif strcmp(options.method,'lsqnonlin')
+    % Using MATLAB built-in nonlinear least squares solver
+    % [x, sqerr_est] = lsqnonlin(nonlinfun,p_orig,pmin,pmax);
+else
+    error('Parameter estimation method not recognized')
 end
 
-[pmin,pmax] = getParamLimits(obj);
-assert(all(pmin>=0));  % otherwise I'll have to subtract it out from the coordinates
-%  not hard, just not implmented yet.
-qpopt = optimset('Display','off');
-[log_p_est,~,exitflag] = quadprog(eye(np),-log(p_orig),[],[],A,log(lp_est),log(pmin),log(pmax),log(p_orig),qpopt);
+phat = Point(getParamFrame(obj),x);
 
-if (exitflag~=1)
-  warning('quadprog exitflag = %d',exitflag);
+% % Computing the error rate
+% err_orig = M_data*lp_orig + Mb_data;
+% sqerr_orig = sum(err_orig'*err_orig);
+
+
+%%   Step 4: Print Results.
+% 
+
+if strcmp(options.print_result,'printest')
+    coords = getCoordinateNames(getParamFrame(obj));
+    fprintf('\nParameter estimation results:\n\n');
+    fprintf('  Param  \tEstimated\n');
+    fprintf('  -----  \t---------\n');
+    for i=1:length(coords)
+      fprintf('%7s  \t%8.2f\n',coords{i},phat(i));
+    end
+elseif strcmp(options.print_result,'printall')
+    coords = getCoordinateNames(getParamFrame(obj));
+    fprintf('\nParameter estimation results:\n\n');
+    fprintf('  Param  \tOriginal\tEstimated\n');
+    fprintf('  -----  \t--------\t---------\n');
+    for i=1:length(coords)
+      fprintf('%7s  \t%8.2f\t%8.2f\n',coords{i},p_orig(i),phat(i));
+    end
+end
+%TODO: calculate estimated_delay
+estimated_delay = 0;
+
 end
 
-phat = Point(getParamFrame(obj),exp(log_p_est));
-
-% print out results  (todo: make this an option?)
-coords = getCoordinateNames(getParamFrame(obj));
-fprintf('\nParameter estimation results:\n\n');
-fprintf('  Param  \tOriginal\tEstimated\n');
-fprintf('  -----  \t--------\t---------\n');
-for i=1:length(coords)
-  fprintf('%7s  \t%8.2f\t%8.2f\n',coords{i},p_orig(i),phat(i));
+function [f,df] = lpconstraint_fun(x,lp,p)
+    f = msubs(lp,p,x);
+    dlpdp = diff(lp,p);
+    % There must be a better way to msubs a matrix with spotless
+    df = zeros(size(dlpdp,2));
+    for i=1:size(dlpdp,2)
+        df(:,i) = msubs(dlpdp(:,i),p,x);
+    end
 end
 
+function [f,df] = nonlinerr(x,lp,p,M_data,Mb_data)
+    sqrterr = M_data*(msubs(lp,p,x))+Mb_data;
+    f = sqrterr'*sqrterr;
+    dlpdp = diff(lp,p);
+    % There must be a better way to msubs a matrix with spotless
+    dlpdp_val = zeros(size(dlpdp,2));
+    for i=1:size(dlpdp,2)
+        dlpdp_val(:,i) = msubs(dlpdp(:,i),p,x);
+    end
+    df = 2*(M_data*(msubs(lp,p,x))+Mb_data)'*M_data*dlpdp_val;
 end

@@ -144,7 +144,7 @@ set(snopt_GIT_TAG 95d908275156f2665ef3941f08cb89c767480a6e)
 set(snopt_IS_CMAKE_POD TRUE)
 set(snopt_IS_PUBLIC FALSE)
 set(spotless_GIT_REPOSITORY https://github.com/RobotLocomotion/spotless-pod.git)
-set(spotless_GIT_TAG 2b0c25ebb1733950284c7e0be55a1a84304f7543)
+set(spotless_GIT_TAG 86275d25eecebe5e85d33e1074cdb274a1b32d49)
 set(spotless_IS_CMAKE_POD TRUE)
 set(spotless_IS_PUBLIC TRUE)
 set(yalmip_GIT_REPOSITORY https://github.com/RobotLocomotion/yalmip.git)
@@ -382,4 +382,3 @@ if (WITH_SNOPT_PRECOMPILED)
   add_dependencies(download-all download-snopt-precompiled)
   add_dependencies(drake download-snopt-precompiled) # just in case: make sure any compiled drake version happens after precompiled install
 endif()
-
