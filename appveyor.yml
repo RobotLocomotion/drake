@@ -11,4 +11,5 @@ before_build:
 build_script:
   - cmd: cmake --build pod-build
 test_script:
+  - cmd: cd drake\pod-build
   - cmd: ctest -j 1 -D Experimental -C Release --output-on-failure --timeout 1000 --track Continuous
