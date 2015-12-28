@@ -1036,11 +1036,6 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::massMatrix(Kinemat
   return ret;
 }
 
-/**
- * note that this method can also be used to compute the gravitational term only by calling doKinematics with a zero joint velocity vector.
- * To compute only the Coriolis term, pass in nullptr for vd and set gravity to zero.
- * Note that the wrenches in f_ext are expressed in body frame.
- */
 template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::dynamicsBiasTerm(
     KinematicsCache<Scalar> &cache, const eigen_aligned_unordered_map<RigidBody const *, Matrix<Scalar, TWIST_SIZE, 1> > &f_ext, bool include_velocity_terms) const
@@ -1050,9 +1045,6 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::dynamicsBiasTerm(
   return inverseDynamics(cache, f_ext, vd, include_velocity_terms);
 };
 
-/*
- * Note that the wrenches in f_ext are expressed in body frame.
- */
 template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(KinematicsCache<Scalar>& cache,
                                                                  const eigen_aligned_unordered_map<RigidBody const *, Matrix<Scalar, TWIST_SIZE, 1> >& f_ext,

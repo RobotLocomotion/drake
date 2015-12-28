@@ -233,12 +233,50 @@ public:
 
   KinematicPath findKinematicPath(int start_body_or_frame_idx, int end_body_or_frame_idx) const;
 
+  /** \brief Compute the positive definite mass (configuration space) matrix \f$ H(q) \f$, defined by \f$T = \frac{1}{2} v^T H(q) v \f$, where \f$ T \f$ is kinetic energy.
+   *
+   * The mass matrix also appears in the manipulator equations
+   *  \f[
+   *  H(q) \dot{v} + C(q, v, f_\text{ext}) = B(q) u
+   * \f]
+   *
+   * \param cache a KinematicsCache constructed given \f$ q \f$
+   * \return the mass matrix \f$ H(q) \f$
+   */
   template <typename Scalar>
   Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> massMatrix(KinematicsCache<Scalar>& cache) const;
 
+  /** \brief Compute the term \f$ C(q, v, f_\text{ext}) \f$ in the manipulator equations
+  *  \f[
+  *  H(q) \dot{v} + C(q, v, f_\text{ext}) = B(q) u
+  * \f]
+  *
+  * Convenience method that calls inverseDynamics with \f$ \dot{v} = 0 \f$. See inverseDynamics for argument descriptions.
+  * \see inverseDynamics
+  */
   template <typename Scalar>
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> dynamicsBiasTerm(KinematicsCache<Scalar>& cache, const eigen_aligned_unordered_map<RigidBody const *, Eigen::Matrix<Scalar, TWIST_SIZE, 1> >& f_ext, bool include_velocity_terms = true) const;
 
+  /** \brief Compute
+  * \f[
+  *  H(q) \dot{v} + C(q, v, f_\text{ext})
+  * \f]
+  * that is, the left hand side of the manipulator equations
+  *  \f[
+  *  H(q) \dot{v} + C(q, v, f_\text{ext}) = B(q) u
+  * \f]
+  *
+  * Note that the 'dynamics bias term' \f$ C(q, v, f_\text{ext}) \f$ can be computed by simply setting \f$ \dot{v} = 0\f$.
+  * Note also that if only the gravitational terms contained in \f$ C(q, v, f_\text{ext}) \f$ are required, one can set \a include_velocity_terms to false.
+  * Alternatively, one can pass in a KinematicsCache created with \f$ v = 0\f$ or without specifying the velocity vector.
+  *
+  * Algorithm: recursive Newton-Euler. Does not explicitly compute mass matrix.
+  * \param cache a KinematicsCache constructed given \f$ q \f$ and \f$ v \f$
+  * \param f_ext external wrenches exerted upon bodies. Expressed in body frame.
+  * \param vd \f$ \dot{v} \f$
+  * \param include_velocity_terms whether to include velocity-dependent terms in \f$ C(q, v, f_\text{ext}) \f$. Setting \a include_velocity_terms to false is Equivalent to setting \f$ v = 0 \f$
+  * \return \f$ H(q) \dot{v} + C(q, v, f_\text{ext}) \f$
+  */
   template <typename Scalar>
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> inverseDynamics(KinematicsCache<Scalar>& cache, const eigen_aligned_unordered_map<RigidBody const *, Eigen::Matrix<Scalar, TWIST_SIZE, 1> >& f_ext, const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& vd, bool include_velocity_terms = true) const;
 
