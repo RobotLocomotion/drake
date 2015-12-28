@@ -7,6 +7,6 @@ before_build:
   - cmd: set PATH=%PATH%;c:\;c:\projects\drake\build\bin
   - cmd: PATH
   - cmd: cmake -E make_directory pod-build
-  - cmd: cd pod-build && cmake .. && cd ..
+  - cmd: cd pod-build && cmake .. 
 build_script:
-  - cmd: cmake --build pod-build
+  - cmd: ctest -j 1 -D Experimental -C Release --output-on-failure --timeout 1000 --track Continuous
