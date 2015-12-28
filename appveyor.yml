@@ -8,5 +8,5 @@ before_build:
     cmake -E make_directory pod-build
 
     cd pod-build && cmake ..
-build:
-  verbosity: detailed
+build_script:
+- cmd: cmake --build pod-build
