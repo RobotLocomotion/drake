@@ -160,7 +160,7 @@ set(LittleDog_GIT_TAG a21aef548c33386243c40e315b1c70d83c122430)
 
 find_program(MAKE_EXECUTABLE make)
 if (NOT MAKE_EXECUTABLE)
-	message(FATAL_ERROR "couldn't find gnu make")
+	message(WARNING "couldn't find gnu make")
 endif()
 if (${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
 	set(PODS_MAKE_COMMAND "$(MAKE)")   # so we can pass through commandline arguments.
