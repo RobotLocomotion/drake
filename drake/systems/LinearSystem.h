@@ -61,6 +61,9 @@ private:
   Eigen::Matrix<double,num_outputs,num_inputs> D;
   Eigen::Matrix<double,num_states,1> xdot0;
   Eigen::Matrix<double,num_outputs,1> y0;
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // the num_states, etc can cause alignment issues if they are one of the known fixed sizes.
 };
 
 /*
