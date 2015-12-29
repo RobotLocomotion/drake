@@ -45,7 +45,9 @@ function makeGrads(n)
 
   fprintf(fp, '%% Compute gradient\n');
   write_symbolic_matrix(fp, qddot_dx, 'df')
-  fprintf(fp,'end\n');
+  fprintf(fp, 'end\n');
+  fprintf(fp, '\n');
+  fprintf(fp, '%% NOTEST\n');
 
   % close file
   fclose(fp);

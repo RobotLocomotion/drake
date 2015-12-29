@@ -41,3 +41,5 @@ df(3,6) = -(wheel_tauMax*(wheel_slipDir_1*cos(q_3) - wheel_slipDir_2*sin(q_3))*(
 df(3,7) = -(wheel_tauMax*(wheel_pos_1*wheel_slipDir_1 + wheel_pos_2*wheel_slipDir_2)^2)/(I*wheel_r^2*wheel_omegaMax*(wheel_slipDir_1*wheel_driveDir_2 - wheel_slipDir_2*wheel_driveDir_1)^2);
 df(3,8) = (wheel_tauMax*(wheel_pos_1*wheel_slipDir_1 + wheel_pos_2*wheel_slipDir_2))/(I*wheel_r*(wheel_slipDir_1*wheel_driveDir_2 - wheel_slipDir_2*wheel_driveDir_1));
 end
+
+% NOTEST
