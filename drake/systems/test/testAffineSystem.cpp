@@ -23,7 +23,7 @@ createRandomAffineSystem(size_t num_states, size_t num_inputs, size_t num_output
   auto D = Matrix<double, OutputsAtCompileTime, InputsAtCompileTime>::Random(num_outputs, num_inputs).eval();
   auto xdot0 = Matrix<double, StatesAtCompileTime, 1>::Random(num_states, 1).eval();
   auto y0 = Matrix<double, OutputsAtCompileTime, 1>::Random(num_outputs, 1).eval();
-  return make_shared<ReturnType>(A, B, xdot0, C, D, y0);
+  return allocate_shared<ReturnType>(aligned_allocator<ReturnType>(), A, B, xdot0, C, D, y0);
 };
 
 
