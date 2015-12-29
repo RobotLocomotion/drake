@@ -4,6 +4,7 @@ include_directories(${PROJECT_SOURCE_DIR}/systems)
 include_directories(${PROJECT_SOURCE_DIR}/systems/frames)
 include_directories(${PROJECT_SOURCE_DIR}/systems/plants)
 include_directories(${PROJECT_SOURCE_DIR}/systems/plants/joints)
+include_directories(${PROJECT_SOURCE_DIR}/systems/plants/constraint)
 include_directories(${PROJECT_SOURCE_DIR}/systems/controllers)
 include_directories(${PROJECT_SOURCE_DIR}/util)
 

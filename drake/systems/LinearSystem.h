@@ -22,9 +22,9 @@ public:
   template <typename ScalarType> using StateVector = StateVec<ScalarType>;
   template <typename ScalarType> using OutputVector = OutputVec<ScalarType>;
   template <typename ScalarType> using InputVector = InputVec<ScalarType>;
-  constexpr const static int num_states = StateVec<double>::RowsAtCompileTime;
-  constexpr const static int num_inputs = InputVector<double>::RowsAtCompileTime;
-  constexpr const static int num_outputs = OutputVector<double>::RowsAtCompileTime;
+  constexpr static int num_states = StateVec<double>::RowsAtCompileTime;
+  constexpr static int num_inputs = InputVector<double>::RowsAtCompileTime;
+  constexpr static int num_outputs = OutputVector<double>::RowsAtCompileTime;
 
   AffineSystem(const Eigen::Matrix<double,num_states,num_states>& A,const Eigen::Matrix<double,num_states,num_inputs>& B,const Eigen::Matrix<double,num_states,1>& xdot0,
                const Eigen::Matrix<double,num_outputs,num_states>& C,const Eigen::Matrix<double,num_outputs,num_inputs>& D,const Eigen::Matrix<double,num_outputs,1>& y0)
