@@ -28,7 +28,7 @@ namespace Drake {
       auto kinsol = tree->doKinematics(q,v);
 
       auto H = tree->massMatrix(kinsol);
-      auto Hinv = H.inverse();  // ldlt().solve(MatrixXd::Identity(nv,nv));
+      MatrixXd Hinv = H.ldlt().solve(MatrixXd::Identity(nv,nv));
       VectorXd tau = -tree->dynamicsBiasTerm(kinsol,f_ext);
       if (size(u)>0) tau += tree->B*u;
 
@@ -37,13 +37,12 @@ namespace Drake {
         const double alpha = 5.0;  // 1/time constant of position constraint satisfaction (see my latex rigid body notes)
 
         // then compute the constraint force
-        VectorXd phi = tree->positionConstraints(kinsol);
-        MatrixXd J = tree->positionConstraintsJacobian(kinsol,false);
-        VectorXd Jdotv = tree->positionConstraintsJacDotTimesV(kinsol);
+        auto phi = tree->positionConstraints(kinsol);
+        auto J = tree->positionConstraintsJacobian(kinsol,false);
+        auto Jdotv = tree->positionConstraintsJacDotTimesV(kinsol);
 
         MatrixXd tmp = JacobiSVD<MatrixXd>(J*Hinv*J.transpose(),ComputeThinU | ComputeThinV).solve(MatrixXd::Identity(nc,nc));  // computes the pseudo-inverse per the discussion at http://eigen.tuxfamily.org/bz/show_bug.cgi?id=257
-        VectorXd constraint_force = -J.transpose()*tmp*(J*Hinv*tau + Jdotv + 2*alpha*J*v + alpha*alpha*phi);  // adds in the computed constraint forces
-        tau += constraint_force;
+        tau.noalias() += -J.transpose()*tmp*(J*Hinv*tau + Jdotv + 2*alpha*J*v + alpha*alpha*phi);  // adds in the computed constraint forces
       }
       VectorXd vdot = Hinv*tau;
 
