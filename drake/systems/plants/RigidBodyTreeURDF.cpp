@@ -207,7 +207,7 @@ void poseAttributesToTransform(TiXmlElement* node, Matrix4d& T)
       pitch), cos(pitch) * sin(roll), cos(pitch) * cos(roll), z, 0, 0, 0, 1;
 }
 
-bool parseInertial(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyTree * model)
+void parseInertial(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyTree * model)
 {
   Isometry3d T = Isometry3d::Identity();
 
@@ -239,8 +239,6 @@ bool parseInertial(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyTree
 
   auto bodyI = transformSpatialInertia(T, static_cast<Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type*>(NULL), I);
   body->I = bodyI.value();
-
-  return true;
 }
 
 bool parseMaterial(TiXmlElement* node, map<string, Vector4d, less<string>, aligned_allocator<pair<string, Vector4d> > > & materials)
@@ -368,7 +366,7 @@ bool parseGeometry(TiXmlElement* node, const map<string,string>& package_map, co
   return true;
 }
 
-bool parseVisual(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyTree * model, const map<string, Vector4d, less<string>, aligned_allocator<pair<string, Vector4d> > >& materials, const map<string,string>& package_map, const string& root_dir)
+void parseVisual(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyTree * model, const map<string, Vector4d, less<string>, aligned_allocator<pair<string, Vector4d> > >& materials, const map<string,string>& package_map, const string& root_dir)
 {
   // DEBUG
   //cout << "parseVisual: START" << endl;
@@ -381,16 +379,11 @@ bool parseVisual(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyTree *
   string group_name;
 
   TiXmlElement* geometry_node = node->FirstChildElement("geometry");
-  if (!geometry_node) {
-    cerr << "ERROR: Link " << body->linkname << " has a visual element without geometry." << endl;
-    return false;
-  }
+  if (!geometry_node) throw runtime_error("ERROR: Link " + body->linkname + " has a visual element without geometry.");
 
   DrakeShapes::VisualElement element(T_element_to_link);
-  if (!parseGeometry(geometry_node, package_map, root_dir, element)) {
-    cerr << "ERROR: Failed to parse visual element in link " << body->linkname << "." << endl;
-    return false;
-  }
+  if (!parseGeometry(geometry_node, package_map, root_dir, element))
+    throw runtime_error("ERROR: Failed to parse visual element in link " + body->linkname + ".");
 
   TiXmlElement* material_node = node->FirstChildElement("material");
   if (material_node) {
@@ -423,10 +416,9 @@ bool parseVisual(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyTree *
   // DEBUG
   //cout << "parseVisual: END" << endl;
   // END_DEBUG
-  return true;
 }
 
-bool parseCollision(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyTree * model, const map<string,string>& package_map, const string& root_dir)
+void parseCollision(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyTree * model, const map<string,string>& package_map, const string& root_dir)
 {
   Matrix4d T_element_to_link = Matrix4d::Identity();
   TiXmlElement* origin = node->FirstChildElement("origin");
@@ -444,63 +436,43 @@ bool parseCollision(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyTre
   }
 
   TiXmlElement* geometry_node = node->FirstChildElement("geometry");
-  if (!geometry_node) {
-    cerr << "ERROR: Link " << body->linkname << " has a collision element without geometry" << endl;
-    return false;
-  }
+  if (!geometry_node) throw runtime_error("ERROR: Link " + body->linkname + " has a collision element without geometry");
 
   RigidBody::CollisionElement element(T_element_to_link, body);
-  if (!parseGeometry(geometry_node, package_map, root_dir, element)) {
-    cerr << "ERROR: Failed to parse collision element in link " << body->linkname << "." << endl;
-    return false;
-  }
+  if (!parseGeometry(geometry_node, package_map, root_dir, element))
+    throw runtime_error("ERROR: Failed to parse collision element in link " + body->linkname + ".");
 
   if (element.hasGeometry()) {
     model->addCollisionElement(element, body, group_name);
   }
-
-  return true;
 }
 
-bool parseLink(RigidBodyTree * model, TiXmlElement* node, const map<string, Vector4d, less<string>, aligned_allocator<pair<string, Vector4d> > >& materials, const map<string,string>& package_map, const string& root_dir)
+void parseLink(RigidBodyTree * model, TiXmlElement* node, const map<string, Vector4d, less<string>, aligned_allocator<pair<string, Vector4d> > >& materials, const map<string,string>& package_map, const string& root_dir)
 {
   const char* attr = node->Attribute("drake_ignore");
-  if (attr && strcmp(attr, "true") == 0)
-    return true;
+  if (attr && strcmp(attr, "true") == 0) return;
+
   shared_ptr<RigidBody> body(new RigidBody());
 
   attr = node->Attribute("name");
-  if (!attr) {
-    cerr << "ERROR: link tag is missing name attribute" << endl;
-    return false;
-  }
+  if (!attr) throw runtime_error("ERROR: link tag is missing name attribute");
+
   body->linkname = attr;
-  if (body->linkname == "world")
-    throw runtime_error("ERROR: do not name a link 'world', it is a reserved name");
+  if (body->linkname == "world") throw runtime_error("ERROR: do not name a link 'world', it is a reserved name");
 
   TiXmlElement* inertial_node = node->FirstChildElement("inertial");
-  if (inertial_node)
-    if (!parseInertial(body, inertial_node, model))
-      return false;
+  if (inertial_node) parseInertial(body, inertial_node, model);
 
   for (TiXmlElement* visual_node = node->FirstChildElement("visual"); visual_node; visual_node = visual_node->NextSiblingElement("visual")) {
-    if (!parseVisual(body, visual_node, model, materials, package_map, root_dir)) {
-      printf("error parsing visual\n");
-      return false;
-    }
+    parseVisual(body, visual_node, model, materials, package_map, root_dir);
   }
 
   for (TiXmlElement* collision_node = node->FirstChildElement("collision"); collision_node; collision_node = collision_node->NextSiblingElement("collision")) {
-    if (!parseCollision(body, collision_node, model, package_map, root_dir)) {
-      printf("error parsing collision\n");
-      return false;
-    }
+    parseCollision(body, collision_node, model, package_map, root_dir);
   }
 
   model->bodies.push_back(body);
   body->body_index = static_cast<int>(model->bodies.size()) - 1;
-
-  return true;
 }
 
 template <typename JointType>
@@ -543,10 +515,10 @@ void parseJoint(RigidBodyTree * model, TiXmlElement* node)
 
   // parse parent
   TiXmlElement* parent_node = node->FirstChildElement("parent");
-  if (!parent_node) throw runtime_error("ERROR: joint " << name << " doesn't have a parent node");
+  if (!parent_node) throw runtime_error("ERROR: joint " + name + " doesn't have a parent node");
 
   attr = parent_node->Attribute("link");
-  if (!attr) throw runtime_error("ERROR: joint " << name << " parent does not have a link attribute");
+  if (!attr) throw runtime_error("ERROR: joint " + name + " parent does not have a link attribute");
   string parent_name(attr);
 
   int parent_index = findLinkIndex(model, parent_name);
@@ -690,7 +662,7 @@ void parseFrame(RigidBodyTree * model, TiXmlElement* node)
   if (!frame_link) throw runtime_error("ERROR parsing Drake frame linkname");
 
   const std::shared_ptr<RigidBody> body = model->findLink(frame_link);
-  if (!body) throw runtime_error("ERROR parsing Drake frame: couldn't find link " + frame_link);
+  if (!body) throw runtime_error("ERROR parsing Drake frame: couldn't find link " + string(frame_link));
 
   const char* frame_name = node->Attribute("name");
   if (!frame_name) throw runtime_error("ERROR parsing Drake frame name");
@@ -781,9 +753,7 @@ void parseURDF(RigidBodyTree * model, TiXmlDocument * xml_doc, map<string,string
     throw std::runtime_error("ERROR: This urdf does not contain a robot tag");
   }
 
-  if (!parseRobot(model, node, package_map, root_dir, floating_base_type)) {
-    throw std::runtime_error("ERROR: Failed to parse robot");
-  }
+  parseRobot(model, node, package_map, root_dir, floating_base_type);
 
   model->compile();
 }
@@ -791,7 +761,7 @@ void parseURDF(RigidBodyTree * model, TiXmlDocument * xml_doc, map<string,string
 void RigidBodyTree::addRobotFromURDFString(const string &xml_string, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
 {
   map<string,string> package_map;
-  void addRobotFromURDFString(xml_string, package_map, root_dir, floating_base_type);
+  addRobotFromURDFString(xml_string, package_map, root_dir, floating_base_type);
 }
 
 void RigidBodyTree::addRobotFromURDFString(const string &xml_string, map<string, string>& package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
