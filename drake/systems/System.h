@@ -108,10 +108,20 @@ namespace Drake {
    */
   template <typename System> std::size_t getNumOutputs(const System& sys) { return internal::NumOutputsDispatch<System,System::template OutputVector<double>::RowsAtCompileTime==-1>::eval(sys); }
 
+  namespace internal {
+    template <typename System, typename Enable = void>
+    struct RandomVectorDispatch {
+      static typename System::template StateVector<double> getRandomState(const System& sys) { return getRandomVector<System::template StateVector>(); }
+    };
+    template <typename System>
+    struct RandomVectorDispatch<System, typename std::enable_if<System::template StateVector<double>::RowsAtCompileTime==Eigen::Dynamic>::type> {
+      static typename System::template StateVector<double> getRandomState(const System& sys) { return System::template StateVector<double>(Eigen::VectorXd::Random(getNumStates(sys))); }
+    };
+  }
   /** getInitialState()
    * @brief Returns a random feasible initial condition
     */
-  template <typename System> typename System::template StateVector<double> getInitialState(const System& sys) { return getRandomVector<System::template StateVector>(); }
+  template <typename System> typename System::template StateVector<double> getInitialState(const System& sys) { return internal::RandomVectorDispatch<System>::getRandomState(sys); };
 
   /** @brief Create a new, uninitialized state vector for the system.
    * @concept{system_concept}

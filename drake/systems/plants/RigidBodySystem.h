@@ -28,9 +28,7 @@ namespace Drake {
       auto kinsol = tree->doKinematics(q,v);
 
       auto H = tree->massMatrix(kinsol);
-      auto Hqr = H.fullPivHouseholderQr();
-      assert(Hqr.isInvertible());
-      auto Hinv = Hqr.inverse();
+      auto Hinv = H.inverse();  // ldlt().solve(MatrixXd::Identity(nv,nv));
       VectorXd tau = -tree->dynamicsBiasTerm(kinsol,f_ext);
       if (size(u)>0) tau += tree->B*u;
 
