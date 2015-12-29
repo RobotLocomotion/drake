@@ -9,6 +9,6 @@ include_directories(${PROJECT_SOURCE_DIR}/util)
 
 if (LCM_FOUND AND snopt_c_FOUND)
   add_executable(pendulumURDFDynamicsTest urdfDynamicsTest.cpp)
-  target_link_libraries(pendulumURDFDynamicsTest drakeRBM)
+  target_link_libraries(pendulumURDFDynamicsTest drakeRBSystem)
   add_test(NAME pendulumURDFDynamicsTest COMMAND pendulumURDFDynamicsTest)
 endif(LCM_FOUND AND snopt_c_FOUND)
