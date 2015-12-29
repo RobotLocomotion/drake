@@ -527,63 +527,40 @@ void setDynamics(RigidBodyTree *model, TiXmlElement *node, FixedAxisOneDoFJoint<
   }
 }
 
-bool parseJoint(RigidBodyTree * model, TiXmlElement* node)
+void parseJoint(RigidBodyTree * model, TiXmlElement* node)
 {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0)
-    return true;
+    return;
 
   attr = node->Attribute("name");
-  if (!attr) {
-    cerr << "ERROR: joint tag is missing name attribute" << endl;
-    return false;
-  }
+  if (!attr) throw runtime_error("ERROR: joint tag is missing name attribute");
   string name(attr);
 
   attr = node->Attribute("type");
-  if (!attr) {
-    cerr << "ERROR: joint " << name << " is missing the type attribute" << endl;
-    return false;
-  }
+  if (!attr) throw runtime_error("ERROR: joint " + name + " is missing the type attribute");
   string type(attr);
 
   // parse parent
   TiXmlElement* parent_node = node->FirstChildElement("parent");
-  if (!parent_node) {
-    cerr << "ERROR: joint " << name << " doesn't have a parent node" << endl;
-    return false;
-  }
+  if (!parent_node) throw runtime_error("ERROR: joint " << name << " doesn't have a parent node");
+
   attr = parent_node->Attribute("link");
-  if (!attr) {
-    cerr << "ERROR: joint " << name << " parent does not have a link attribute" << endl;
-    return false;
-  }
+  if (!attr) throw runtime_error("ERROR: joint " << name << " parent does not have a link attribute");
   string parent_name(attr);
 
   int parent_index = findLinkIndex(model, parent_name);
-  if (parent_index < 0) {
-    cerr << "ERROR: could not find parent link named " << parent_name << endl;
-    return false;
-  }
+  if (parent_index < 0) throw runtime_error("ERROR: could not find parent link named " + parent_name);
 
   // parse child
   TiXmlElement* child_node = node->FirstChildElement("child");
-  if (!child_node) {
-    cerr << "ERROR: joint " << name << " doesn't have a child node" << endl;
-    return false;
-  }
+  if (!child_node) throw runtime_error("ERROR: joint " + name + " doesn't have a child node");
   attr = child_node->Attribute("link");
-  if (!attr) {
-    cerr << "ERROR: joint " << name << " child does not have a link attribute" << endl;
-    return false;
-  }
+  if (!attr) throw runtime_error("ERROR: joint " + name + " child does not have a link attribute");
   string child_name(attr);
 
   int child_index = findLinkIndex(model, child_name);
-  if (child_index < 0) {
-    cerr << "ERROR: could not find child link named " << child_name << endl;
-    return false;
-  }
+  if (child_index < 0) throw runtime_error("ERROR: could not find child link named " + child_name);
 
   Isometry3d Ttree = Isometry3d::Identity();
   TiXmlElement* origin = node->FirstChildElement("origin");
@@ -596,10 +573,7 @@ bool parseJoint(RigidBodyTree * model, TiXmlElement* node)
   TiXmlElement* axis_node = node->FirstChildElement("axis");
   if (axis_node) {
     parseVectorAttribute(axis_node, "xyz", axis);
-    if (axis.norm()<1e-8) {
-      cerr << "ERROR: axis is zero.  don't do that" << endl;
-      return false;
-    }
+    if (axis.norm()<1e-8) throw runtime_error("ERROR: axis is zero.  don't do that");
     axis.normalize();
   }
 
@@ -621,98 +595,68 @@ bool parseJoint(RigidBodyTree * model, TiXmlElement* node)
   } else if (type.compare("floating") == 0) {
     joint = new RollPitchYawFloatingJoint(name, Ttree);
   } else {
-    cerr << "ERROR: Unrecognized joint type: " << type << endl;
-    return false;
+    throw runtime_error("ERROR: Unrecognized joint type: " + type);
   }
-
 
   unique_ptr<DrakeJoint> joint_unique_ptr(joint);
   model->bodies[child_index]->setJoint(move(joint_unique_ptr));
   model->bodies[child_index]->parent = model->bodies[parent_index];
-
-  return true;
 }
 
-bool parseTransmission(RigidBodyTree * model, TiXmlElement* node)
-{
-  const char* attr = nullptr;
-  TiXmlElement* type_node = node->FirstChildElement("type");
-  if ( type_node ) {
+void parseTransmission(RigidBodyTree * model, TiXmlElement* node) {
+  const char *attr = nullptr;
+  TiXmlElement *type_node = node->FirstChildElement("type");
+  if (type_node) {
     attr = type_node->GetText();
   }
 
   if (!attr) {
     attr = node->Attribute("type"); // old URDF format, kept for convenience
-
-    if (!attr) {
-      cerr << "ERROR: transmission element is missing the type child" << endl;
-      return false;
-    }
+    if (!attr) throw runtime_error("ERROR: transmission element is missing the type child");
   }
   string type(attr);
-  if (type.find("SimpleTransmission")==string::npos) {
+  if (type.find("SimpleTransmission") == string::npos) {
     cerr << "WARNING: only SimpleTransmissions are supported right now.  this element will be skipped." << endl;
-    return true;
+    return;
   }
 
-  TiXmlElement* actuator_node = node->FirstChildElement("actuator");
-  if (!actuator_node || !actuator_node->Attribute("name"))  {
-    cerr << "ERROR: transmission is missing an actuator element" << endl;
-    return false;
-  }
+  TiXmlElement *actuator_node = node->FirstChildElement("actuator");
+  if (!actuator_node || !actuator_node->Attribute("name")) throw runtime_error("ERROR: transmission is missing an actuator element");
   string actuator_name(actuator_node->Attribute("name"));
 
-
-  TiXmlElement* joint_node = node->FirstChildElement("joint");
-  if (!joint_node || !joint_node->Attribute("name"))  {
-    cerr << "ERROR: transmission is missing a joint element" << endl;
-    return false;
-  }
+  TiXmlElement *joint_node = node->FirstChildElement("joint");
+  if (!joint_node || !joint_node->Attribute("name")) throw runtime_error("ERROR: transmission is missing a joint element");
   string joint_name(joint_node->Attribute("name"));
 
-  int body_index = findLinkIndexByJointName(model,joint_name);
+  int body_index = findLinkIndexByJointName(model, joint_name);
 
   if (model->bodies[body_index]->getJoint().getNumPositions() == 0) {
     cerr << "WARNING: Skipping transmission since it's attached to a fixed joint: " << joint_name << endl;
-    return true;
+    return;
   }
 
-  TiXmlElement* reduction_node = node->FirstChildElement("mechanicalReduction");
+  TiXmlElement *reduction_node = node->FirstChildElement("mechanicalReduction");
   double gain = 1.0;
   if (reduction_node) parseScalarValue(reduction_node, gain);
 
-  RigidBodyActuator a(actuator_name,model->bodies[body_index],gain);
+  RigidBodyActuator a(actuator_name, model->bodies[body_index], gain);
   model->actuators.push_back(a);
-  return true;
 }
 
-bool parseLoop(RigidBodyTree * model, TiXmlElement* node)
+void parseLoop(RigidBodyTree * model, TiXmlElement* node)
 {
   Vector3d xyz=Vector3d::Zero(),rpy=Vector3d::Zero(),axis;
   axis << 1.0, 0.0, 0.0;
 
-  if (!node || !node->Attribute("name"))  {
-    cerr << "ERROR: loop is missing a name element" << endl;
-    return false;
-  }
+  if (!node || !node->Attribute("name")) throw runtime_error("ERROR: loop is missing a name element");
   string name(node->Attribute("name"));
-
 
   TiXmlElement* link_node = node->FirstChildElement("link1");
   string linkname = link_node->Attribute("link");
   std::shared_ptr<RigidBody> body = model->findLink(linkname);
-  if (!body) {
-    cerr << "couldn't find link %s referenced in loop joint " << linkname << endl;
-    return false;
-  }
-  if (!parseVectorAttribute(link_node, "xyz", xyz)) {
-    cerr << "ERROR parsing loop joint xyz" << endl;
-    return false;
-  }
-  if (!parseVectorAttribute(link_node, "rpy", rpy)) {
-    cerr << "ERROR parsing loop joint rpy" << endl;
-    return false;
-  }
+  if (!body) throw runtime_error("couldn't find link %s referenced in loop joint " + linkname);
+  if (!parseVectorAttribute(link_node, "xyz", xyz)) throw runtime_error("ERROR parsing loop joint xyz");
+  if (!parseVectorAttribute(link_node, "rpy", rpy)) throw runtime_error("ERROR parsing loop joint rpy");
   std::shared_ptr<RigidBodyFrame> frameA = allocate_shared<RigidBodyFrame>(Eigen::aligned_allocator<RigidBodyFrame>(), name+"FrameA",body,xyz,rpy);
 
   link_node = node->FirstChildElement("link2");
@@ -720,35 +664,22 @@ bool parseLoop(RigidBodyTree * model, TiXmlElement* node)
   xyz=Vector3d::Zero();
   rpy=Vector3d::Zero();
   body = model->findLink(linkname);
-  if (!body) {
-    cerr << "couldn't find link %s referenced in loop joint " << linkname << endl;
-    return false;
-  }
-  if (!parseVectorAttribute(link_node, "xyz", xyz)) {
-    cerr << "ERROR parsing loop joint xyz" << endl;
-    return false;
-  }
-  if (!parseVectorAttribute(link_node, "rpy", rpy)) {
-    cerr << "ERROR parsing loop joint rpy" << endl;
-    return false;
-  }
+  if (!body) throw runtime_error("couldn't find link %s referenced in loop joint " + linkname);
+  if (!parseVectorAttribute(link_node, "xyz", xyz)) throw runtime_error("ERROR parsing loop joint xyz");
+  if (!parseVectorAttribute(link_node, "rpy", rpy)) throw runtime_error("ERROR parsing loop joint rpy");
+
   std::shared_ptr<RigidBodyFrame> frameB = allocate_shared<RigidBodyFrame>(Eigen::aligned_allocator<RigidBodyFrame>(), name+"FrameB",body,xyz,rpy);
 
   TiXmlElement* axis_node = node->FirstChildElement("axis");
-  if (axis_node && !parseVectorAttribute(axis_node, "xyz", axis)) {
-    cerr << "ERROR parsing loop joint axis" << endl;
-    return false;
-  }
+  if (axis_node && !parseVectorAttribute(axis_node, "xyz", axis)) throw runtime_error("ERROR parsing loop joint axis");
 
   model->addFrame(frameA);
   model->addFrame(frameB);
   RigidBodyLoop l(frameA,frameB,axis);
   model->loops.push_back(l);
-
-  return true;
 }
 
-bool parseFrame(RigidBodyTree * model, TiXmlElement* node)
+void parseFrame(RigidBodyTree * model, TiXmlElement* node)
 {
   Vector3d xyz=Vector3d::Zero(), rpy=Vector3d::Zero();
 
@@ -756,54 +687,37 @@ bool parseFrame(RigidBodyTree * model, TiXmlElement* node)
   parseVectorAttribute(node, "rpy", rpy);
 
   const char* frame_link = node->Attribute("link");
+  if (!frame_link) throw runtime_error("ERROR parsing Drake frame linkname");
 
-  if (!frame_link) {
-    cerr << "ERROR parsing Drake frame linkname" << endl;
-    return false;
-  }
   const std::shared_ptr<RigidBody> body = model->findLink(frame_link);
-  if (!body) {
-    cerr << "ERROR parsing Drake frame: couldn't find link " << frame_link << endl;
-    return false;
-  }
+  if (!body) throw runtime_error("ERROR parsing Drake frame: couldn't find link " + frame_link);
 
   const char* frame_name = node->Attribute("name");
-
-  if (!frame_name) {
-    cerr << "ERROR parsing Drake frame name" << endl;
-    return false;
-  }
-
+  if (!frame_name) throw runtime_error("ERROR parsing Drake frame name");
 
   Matrix4d T;
   T << rpy2rotmat(rpy), xyz, 0,0,0,1;
 
   std::shared_ptr<RigidBodyFrame> frame = allocate_shared<RigidBodyFrame>(Eigen::aligned_allocator<RigidBodyFrame>(), frame_name,body,T);
   model->addFrame(frame);
-
-
-  return true;
 }
 
-bool parseRobot(RigidBodyTree * model, TiXmlElement* node, const map<string,string> package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
+void parseRobot(RigidBodyTree * model, TiXmlElement* node, const map<string,string> package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
 {
-  if (!node->Attribute("name")) {
-    cerr << "Error: your robot must have a name attribute" << endl;
-    return false;
-  }
+  if (!node->Attribute("name"))
+    throw runtime_error("Error: your robot must have a name attribute");
+
   string robotname = node->Attribute("name");
 
   // parse material elements
   map<string, Vector4d, less<string>, aligned_allocator<pair<string, Vector4d> > > materials;
-  for (TiXmlElement* link_node = node->FirstChildElement("material"); link_node; link_node = link_node->NextSiblingElement("material")) {
+  for (TiXmlElement* link_node = node->FirstChildElement("material"); link_node; link_node = link_node->NextSiblingElement("material"))
     parseMaterial(link_node, materials);  // accept failed material parsing
-  }
 
   // parse link elements
   for (TiXmlElement* link_node = node->FirstChildElement("link"); link_node; link_node = link_node->NextSiblingElement("link"))
-    if (!parseLink(model, link_node, materials, package_map, root_dir)) {
-      return false;
-    }
+    parseLink(model, link_node, materials, package_map, root_dir);
+
   //DEBUG
     //else {
       //cout << "Parsed link" << endl;
@@ -816,23 +730,19 @@ bool parseRobot(RigidBodyTree * model, TiXmlElement* node, const map<string,stri
 
   // parse joints
   for (TiXmlElement* joint_node = node->FirstChildElement("joint"); joint_node; joint_node = joint_node->NextSiblingElement("joint"))
-    if (!parseJoint(model, joint_node))
-      return false;
+    parseJoint(model, joint_node);
 
   // parse transmission elements
   for (TiXmlElement* transmission_node = node->FirstChildElement("transmission"); transmission_node; transmission_node = transmission_node->NextSiblingElement("transmission"))
-    if (!parseTransmission(model, transmission_node))
-      return false;
+    parseTransmission(model, transmission_node);
 
   // parse loop joints
   for (TiXmlElement* loop_node = node->FirstChildElement("loop_joint"); loop_node; loop_node = loop_node->NextSiblingElement("loop_joint"))
-    if (!parseLoop(model, loop_node))
-      return false;
+    parseLoop(model, loop_node);
 
   // parse Drake frames
   for (TiXmlElement* frame_node = node->FirstChildElement("frame"); frame_node; frame_node = frame_node->NextSiblingElement("frame"))
-    if (!parseFrame(model, frame_node))
-      return false;
+    parseFrame(model, frame_node);
 
   for (unsigned int i = 1; i < model->bodies.size(); i++) {
     if (model->bodies[i]->parent == nullptr) {  // attach the root nodes to the world with a floating base joint
@@ -861,10 +771,9 @@ bool parseRobot(RigidBodyTree * model, TiXmlElement* node, const map<string,stri
     	}
     }
   }
-  return true;
 }
 
-bool parseURDF(RigidBodyTree * model, TiXmlDocument * xml_doc, map<string,string>& package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
+void parseURDF(RigidBodyTree * model, TiXmlDocument * xml_doc, map<string,string>& package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
 {
   populatePackageMap(package_map);
   TiXmlElement *node = xml_doc->FirstChildElement("robot");
@@ -877,33 +786,31 @@ bool parseURDF(RigidBodyTree * model, TiXmlDocument * xml_doc, map<string,string
   }
 
   model->compile();
-  return true;
 }
 
-bool RigidBodyTree::addRobotFromURDFString(const string &xml_string, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
+void RigidBodyTree::addRobotFromURDFString(const string &xml_string, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
 {
   map<string,string> package_map;
-  return addRobotFromURDFString(xml_string, package_map, root_dir, floating_base_type);
+  void addRobotFromURDFString(xml_string, package_map, root_dir, floating_base_type);
 }
 
-bool RigidBodyTree::addRobotFromURDFString(const string &xml_string, map<string, string>& package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
+void RigidBodyTree::addRobotFromURDFString(const string &xml_string, map<string, string>& package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
 {
   TiXmlDocument xml_doc;
   xml_doc.Parse(xml_string.c_str());
-  return parseURDF(this,&xml_doc,package_map,root_dir,floating_base_type);
+  parseURDF(this,&xml_doc,package_map,root_dir,floating_base_type);
 }
 
-bool RigidBodyTree::addRobotFromURDF(const string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type)
+void RigidBodyTree::addRobotFromURDF(const string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type)
 {
   map<string,string> package_map;
-  return addRobotFromURDF(urdf_filename, package_map, floating_base_type);
+  addRobotFromURDF(urdf_filename, package_map, floating_base_type);
 }
 
-bool RigidBodyTree::addRobotFromURDF(const string &urdf_filename, map<string,string>& package_map, const DrakeJoint::FloatingBaseType floating_base_type)
+void RigidBodyTree::addRobotFromURDF(const string &urdf_filename, map<string,string>& package_map, const DrakeJoint::FloatingBaseType floating_base_type)
 {
   TiXmlDocument xml_doc(urdf_filename);
   if (!xml_doc.LoadFile()) {
-    
     throw std::runtime_error("failed to parse xml in file " + urdf_filename + "\n" + xml_doc.ErrorDesc());
   }
 
@@ -913,5 +820,5 @@ bool RigidBodyTree::addRobotFromURDF(const string &urdf_filename, map<string,str
     root_dir = urdf_filename.substr(0, found);
   }
 
-  return parseURDF(this,&xml_doc,package_map,root_dir,floating_base_type);
+  parseURDF(this,&xml_doc,package_map,root_dir,floating_base_type);
 }
