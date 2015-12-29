@@ -2,9 +2,31 @@
 #define DRAKE_RIGIDBODYSYSTEM_H
 
 #include "RigidBodyTree.h"
+#include "tinyxml.h"
 
 namespace Drake {
 
+  /** RigidBodyPropellor
+   * @concept{system_concept}
+   * @brief System to model the forces and moments produced by a simple propellor
+   */
+  class RigidBodyPropellor {
+  public:
+    RigidBodyPropellor(RigidBodySystem* psys, TiXmlElement* node);
+
+  private:
+    RigidBodySystem* psys;
+    RigidBodyFrame* pframe;
+    Eigen::Vector3d axis;
+
+  public:
+    EIGEN_ALIGNED_ALLOCATOR_NEW
+  };
+
+  /** RigidBodySystem
+   * @brief implements the System concept by wrapping the RigidBodyTree algorithms with additional sensors and actuators/forces
+   * @concept{system_concept}
+   */
   class RigidBodySystem {
   public:
     template <typename ScalarType> using InputVector = Eigen::Matrix<ScalarType,Eigen::Dynamic,1>;
@@ -12,12 +34,23 @@ namespace Drake {
     template <typename ScalarType> using OutputVector = Eigen::Matrix<ScalarType,Eigen::Dynamic,1>;
 
     RigidBodySystem(const std::shared_ptr<RigidBodyTree>& rigid_body_tree) : tree(rigid_body_tree) {};
+    RigidBodySystem(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION) {
+      tree = std::allocate_shared<RigidBodyTree>(Eigen::aligned_allocator<RigidBodyTree>());
+      addRobotFromURDF(urdf_filename, floating_base_type);
+    }
     virtual ~RigidBodySystem() {};
+
+    void addRobotFromURDFString(const std::string &xml_string, const std::string &root_dir = ".", const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
+    void addRobotFromURDF(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION);
 
     template <typename ScalarType>
     StateVector<ScalarType> dynamics(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {
       using namespace Eigen;
-      const eigen_aligned_unordered_map<const RigidBody *, Matrix<ScalarType, 6, 1> > f_ext;
+      eigen_aligned_unordered_map<const RigidBody *, Matrix<ScalarType, 6, 1> > f_ext;
+
+      { // loop through rigid body force elements and accumulate f_ext
+
+      }
 
       // todo: make kinematics cache once and re-use it (but have to make one per type)
       auto nq = tree->num_positions;
