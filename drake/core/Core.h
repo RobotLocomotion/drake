@@ -17,8 +17,8 @@ namespace Drake {
    *
    * | Valid Expressions (which must be implemented) |  |
    * ------------------|-------------------------------------------------------------|
-   * | RowsAtCompileTime  | defined as a static constant int (or enum).  Can be Eigen::DYNAMIC. |
-   * | size_t size()      | only required if RowsAtCompileTime==Eigen::DYNAMIC |
+   * | RowsAtCompileTime  | defined as a static constant int (or enum).  Can be Eigen::Dynamic. |
+   * | size_t size()      | only required if RowsAtCompileTime==Eigen::Dynamic |
    * | template<Derived> Vector(const Eigen::MatrixBase<Derived>&)  | constructor taking an Eigen object |
    * | template<Derived> Vector& operator=(const Eigen::MatrixBase<Derived>&)   | assignment operator from an Eigen object |
    * | Eigen::Matrix<ScalarType,RowsAtCompileTime,1> toEigen(const Vector<ScalarType>&) | non-member namespace method which converts to the Eigen type |
@@ -43,6 +43,15 @@ namespace Drake {
 
   template <typename ScalarType, int Rows> Eigen::Matrix<ScalarType,Rows,1> toEigen(const Eigen::Matrix<ScalarType,Rows,1>& vec) { return vec; }
 
+  /**
+   * @brief whether or not the given type is an Eigen column vector
+   */
+  template <typename StateVector>
+  struct is_eigen_vector : public std::false_type {};
+
+  template <typename Scalar, int Rows, int Options, int MaxRows>
+  struct is_eigen_vector<Eigen::Matrix<Scalar, Rows, 1, Options, MaxRows, 1>> : public std::true_type {};
+
   /** getRandomVector()
    * @brief Returns a random vector of the desired type using Eigen::Random()
    * @concept{vector_concept}
@@ -55,13 +64,13 @@ namespace Drake {
   }
 
   namespace internal {
-    template<typename VecType, bool Enable = false>
+    template<typename VecType, class Enable = void>
     struct SizeDispatch {
       static std::size_t eval(const VecType &vec) { return VecType::RowsAtCompileTime; }
     };
 
     template<typename VecType>
-    struct SizeDispatch<VecType,true > {
+    struct SizeDispatch<VecType, typename std::enable_if<VecType::RowsAtCompileTime == Eigen::Dynamic>::type > {
       static std::size_t eval(const VecType &vec) { return vec.size(); }
     };
   }
@@ -71,7 +80,7 @@ namespace Drake {
    *
    * @retval RowsAtCompileTime or the result of size() for dynamically sized vectors
    */
-  template <typename VecType> std::size_t size(const VecType& vec) { return internal::SizeDispatch<VecType,VecType::RowsAtCompileTime==-1>::eval(vec); }
+  template <typename VecType> std::size_t size(const VecType& vec) { return internal::SizeDispatch<VecType>::eval(vec); }
 
   /** getCoordinateName()
    * @brief Implements default coordinate names for a generic vector.  Overload this to name your coordinates.
@@ -100,18 +109,19 @@ namespace Drake {
   template <typename ScalarType, template <typename> class Vector1, template <typename> class Vector2>
   class CombinedVector {
   public:
-    const static size_t vec1_rows = Vector1<ScalarType>::RowsAtCompileTime,
-                        vec2_rows = Vector2<ScalarType>::RowsAtCompileTime;
     CombinedVector() {};  // allow use of default constructors for vec1 and vec2, also
     CombinedVector(const Vector1<ScalarType>& first, const Vector2<ScalarType>& second) : vec1(first), vec2(second) {};
 
-    template <typename Derived> CombinedVector(const Eigen::MatrixBase<Derived>& x) : vec1(x.topRows(vec1_rows)), vec2(x.bottomRows(vec2_rows)) {};
+    template <typename Derived> CombinedVector(const Eigen::MatrixBase<Derived>& x) : vec1(x.topRows(Vector1<ScalarType>::RowsAtCompileTime)), vec2(x.bottomRows(Vector2<ScalarType>::RowsAtCompileTime)) {
+      static_assert(RowsAtCompileTime != Eigen::Dynamic, "Cannot determine sizes of subvectors because sizes are not known at compile time."); // TODO: could handle cases where only one of the subvectors has dynamic size
+    };
+
     template <typename Derived1, typename Derived2> CombinedVector(const Eigen::MatrixBase<Derived1>& x1, const Eigen::MatrixBase<Derived2>& x2) : vec1(x1), vec2(x2) {};
 
     template <typename Derived>
     CombinedVector& operator=(const Eigen::MatrixBase<Derived>& x) {
-      vec1 = x.topRows(vec1_rows);
-      vec2 = x.bottomRows(vec2_rows);
+      vec1 = x.topRows(Drake::size(vec1));
+      vec2 = x.bottomRows(Drake::size(vec2));
       return *this;
     }
 
@@ -126,12 +136,15 @@ namespace Drake {
     }
 
     enum {
-      RowsAtCompileTime = vec1_rows + vec2_rows
+      RowsAtCompileTime = (Vector1<ScalarType>::RowsAtCompileTime == Eigen::Dynamic || Vector2<ScalarType>::RowsAtCompileTime == Eigen::Dynamic) ? Eigen::Dynamic : Vector1<ScalarType>::RowsAtCompileTime + Vector2<ScalarType>::RowsAtCompileTime
     };
-    std::size_t size() { return vec1.size()+vec2.size(); }
 
-    friend Eigen::Matrix<ScalarType,Vector1<ScalarType>::RowsAtCompileTime + Vector2<ScalarType>::RowsAtCompileTime,1> toEigen(const CombinedVector<ScalarType,Vector1,Vector2>& vec) {
-      Eigen::Matrix<ScalarType,Vector1<ScalarType>::RowsAtCompileTime + Vector2<ScalarType>::RowsAtCompileTime,1> x;
+    std::size_t size() const {
+      return Drake::size(vec1) + Drake::size(vec2);
+    }
+
+    friend Eigen::Matrix<ScalarType,RowsAtCompileTime,1> toEigen(const CombinedVector<ScalarType,Vector1,Vector2>& vec) {
+      Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> x(vec.size());
       x << toEigen(vec.vec1), toEigen(vec.vec2);
       return x;
     }
@@ -140,6 +153,15 @@ namespace Drake {
     Vector1<ScalarType> vec1;
     Vector2<ScalarType> vec2;
   };
+
+  /**
+ * @brief whether or not the given type is a CombinedVector
+ */
+  template <typename StateVector>
+  struct is_combined_vector : public std::false_type {};
+
+  template <typename Scalar, template <typename> class Vector1, template <typename> class Vector2>
+  struct is_combined_vector<CombinedVector<Scalar, Vector1, Vector2> > : public std::true_type {};
 
   namespace internal {
     template <template <typename> class Vector1, template <typename> class Vector2, bool Vec2IsNull = false>

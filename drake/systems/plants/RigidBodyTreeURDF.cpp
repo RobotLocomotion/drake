@@ -852,7 +852,7 @@ bool parseRobot(RigidBodyTree * model, TiXmlElement* node, const map<string,stri
 				break;
 			case DrakeJoint::QUATERNION:
         {
-          unique_ptr<DrakeJoint> joint(new FixedJoint("base", Isometry3d::Identity()));
+          unique_ptr<DrakeJoint> joint(new QuaternionFloatingJoint("base", Isometry3d::Identity()));
           model->bodies[i]->setJoint(move(joint));
         }
 				break;

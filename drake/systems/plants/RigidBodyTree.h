@@ -427,7 +427,10 @@ public:
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> positionConstraints(const KinematicsCache<Scalar>& cache) const;
 
   template<typename Scalar>
-  Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> positionConstraintsJacobian(const KinematicsCache<Scalar> &cache) const;
+  Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> positionConstraintsJacobian(const KinematicsCache<Scalar> &cache, bool in_terms_of_qdot = true) const;
+
+  template<typename Scalar>
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> positionConstraintsJacDotTimesV(const KinematicsCache<Scalar> &cache) const;
 
   size_t getNumPositionConstraints() const;
 

@@ -1363,25 +1363,38 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::positionConstraints(const Kinem
   for (size_t i = 0; i < loops.size(); i++) {
     { // position constraint
       auto ptA_in_B = forwardKin(cache, Vector3d::Zero(), loops[i].frameA->frame_index, loops[i].frameB->frame_index, 0);
-      ret.middleRows(6 * i, 3) = ptA_in_B;
+      ret.template middleRows<3>(6 * i) = ptA_in_B;
     }
     { // second position constraint (to constrain orientation)
       auto axis_A_end_in_B = forwardKin(cache, loops[i].axis, loops[i].frameA->frame_index, loops[i].frameB->frame_index, 0);
-      ret.middleRows(6 * i + 3, 3) = axis_A_end_in_B - loops[i].axis;
+      ret.template middleRows<3>(6 * i + 3) = axis_A_end_in_B - loops[i].axis;
     }
   }
   return ret;
 }
 
 template<typename Scalar>
-Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::positionConstraintsJacobian(const KinematicsCache<Scalar> &cache) const {
-  Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> ret(6 * loops.size(), num_positions);
+Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::positionConstraintsJacobian(const KinematicsCache<Scalar> &cache, bool in_terms_of_qdot) const {
+  Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> ret(6 * loops.size(), in_terms_of_qdot ? num_positions : num_velocities);
 
   for (size_t i = 0; i < loops.size(); i++) {
     // position constraint
-    ret.template middleRows<3>(6 * i) = forwardKinJacobian(cache, Vector3d::Zero(), loops[i].frameA->frame_index, loops[i].frameB->frame_index, 0, true);
+    ret.template middleRows<3>(6 * i) = forwardKinJacobian(cache, Vector3d::Zero(), loops[i].frameA->frame_index, loops[i].frameB->frame_index, 0, in_terms_of_qdot);
     // second position constraint (to constrain orientation)
-    ret.template middleRows<3>(6 * i + 3) = forwardKinJacobian(cache, loops[i].axis, loops[i].frameA->frame_index, loops[i].frameB->frame_index, 0, true);
+    ret.template middleRows<3>(6 * i + 3) = forwardKinJacobian(cache, loops[i].axis, loops[i].frameA->frame_index, loops[i].frameB->frame_index, 0, in_terms_of_qdot);
+  }
+  return ret;
+}
+
+template<typename Scalar>
+Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::positionConstraintsJacDotTimesV(const KinematicsCache<Scalar> &cache) const {
+  Matrix<Scalar, Eigen::Dynamic, 1> ret(6 * loops.size(), 1);
+
+  for (size_t i = 0; i < loops.size(); i++) {
+    // position constraint
+    ret.template middleRows<3>(6 * i) = forwardJacDotTimesV(cache, Vector3d::Zero(), loops[i].frameA->frame_index, loops[i].frameB->frame_index, 0);
+    // second position constraint (to constrain orientation)
+    ret.template middleRows<3>(6 * i + 3) = forwardJacDotTimesV(cache, loops[i].axis, loops[i].frameA->frame_index, loops[i].frameB->frame_index, 0);
   }
   return ret;
 }
@@ -1479,7 +1492,8 @@ template DRAKERBM_EXPORT Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<doubl
 template DRAKERBM_EXPORT Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 6, 1, 0, 6, 1> RigidBodyTree::centroidalMomentumMatrixDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&, set<int, less<int>, allocator<int> > const&) const;
 template DRAKERBM_EXPORT Eigen::Matrix<double, 6, 1, 0, 6, 1> RigidBodyTree::centroidalMomentumMatrixDotTimesV<double>(KinematicsCache<double>&, set<int, less<int>, allocator<int> > const&) const;
 template DRAKERBM_EXPORT Eigen::Matrix<double, -1, 1, 0, -1, 1> RigidBodyTree::positionConstraints<double>(KinematicsCache<double> const&) const;
-template DRAKERBM_EXPORT Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyTree::positionConstraintsJacobian<double>(KinematicsCache<double> const&) const;
+template DRAKERBM_EXPORT Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyTree::positionConstraintsJacobian<double>(KinematicsCache<double> const&, bool) const;
+template DRAKERBM_EXPORT Eigen::Matrix<double, -1, 1, 0, -1, 1> RigidBodyTree::positionConstraintsJacDotTimesV<double>(KinematicsCache<double> const&) const;
 template DRAKERBM_EXPORT void RigidBodyTree::jointLimitConstraints<Eigen::Matrix<double, -1, 1, 0, -1, 1>, Eigen::Matrix<double, -1, 1, 0, -1, 1>, Eigen::Matrix<double, -1, -1, 0, -1, -1> >(Eigen::MatrixBase<Eigen::Matrix<double, -1, 1, 0, -1, 1> > const&, Eigen::MatrixBase<Eigen::Matrix<double, -1, 1, 0, -1, 1> >&, Eigen::MatrixBase<Eigen::Matrix<double, -1, -1, 0, -1, -1> >&) const;
 template DRAKERBM_EXPORT Eigen::Matrix<double, 6, 1, 0, 6, 1> RigidBodyTree::relativeTwist<double>(KinematicsCache<double> const&, int, int, int) const;
 template DRAKERBM_EXPORT Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinJacobian<double, Eigen::Matrix<double, 3, -1, 0, 3, -1> >(KinematicsCache<double> const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, -1, 0, 3, -1> > const&, int, int, int, bool) const;

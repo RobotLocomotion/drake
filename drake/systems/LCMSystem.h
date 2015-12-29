@@ -218,7 +218,9 @@ namespace Drake {
     }
   }
 
+  template <typename System>
+  void runLCM(const std::shared_ptr<System>& sys, const std::shared_ptr<lcm::LCM>& lcm, double t0, double tf) { runLCM(sys,lcm,t0,tf,getInitialState(*sys)); }
 
-} // end namespace Drake
+  } // end namespace Drake
 
 #endif //DRAKE_LCMSYSTEM_H

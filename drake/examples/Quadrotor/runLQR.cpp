@@ -16,9 +16,9 @@ int main(int argc, char* argv[]) {
 
   auto quad = std::make_shared<Quadrotor>();
 
-  const int num_states = SystemSizeTraits<Quadrotor>::num_states;
+  const int num_states = getNumStates(*quad);
   const int num_positions = num_states/2;
-  const int num_inputs = SystemSizeTraits<Quadrotor>::num_inputs;
+  const int num_inputs = getNumInputs(*quad);
   Eigen::MatrixXd Q = Eigen::MatrixXd::Identity(num_states, num_states);
   Q.topLeftCorner(num_positions, num_positions) = 10.0 * Eigen::MatrixXd::Identity(num_positions, num_positions);
   Eigen::MatrixXd R = 0.1*Eigen::MatrixXd::Identity(num_inputs, num_inputs);

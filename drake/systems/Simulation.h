@@ -54,7 +54,7 @@ namespace Drake {
 
     TimePoint start = TimeClock::now();
     typename System::template StateVector<double> x(x0), xdot;
-    typename System::template InputVector<double> u(Eigen::Matrix<double,SystemSizeTraits<System>::num_inputs,1>::Zero());
+    typename System::template InputVector<double> u(Eigen::VectorXd::Zero(getNumInputs(sys)));
     typename System::template OutputVector<double> y;
     while (t<tf) {
       handle_realtime_factor(start, t, options.realtime_factor);
@@ -74,6 +74,17 @@ namespace Drake {
   template <typename System>
   void simulate(const System& sys, double t0, double tf, const typename System::template StateVectorType<double>& x0)  {
     simulate(sys,t0,tf,x0,default_simulation_options);
+  }
+
+  /** simulate
+   * @brief Runs a simulation using the default simulation options
+   * @ingroup simulation
+   *
+   */
+  template <typename System>
+  void simulate(const System& sys, double t0, double tf)  {
+    auto x0 = getInitialState(sys);
+    simulate(sys,t0,tf,x0);
   }
 
 }  // end namespace Drake
