@@ -134,7 +134,7 @@ namespace Drake {
     template <typename System, typename Scalar, class Enable = void>
     struct CreateStateVectorDispatch {
       static typename System::template StateVector<Scalar> eval(const System& sys) {
-        return System::template StateVector<Scalar>;
+        return typename System::template StateVector<Scalar>();
       }
     };
 
@@ -142,7 +142,7 @@ namespace Drake {
     template <typename System, typename Scalar>
     struct CreateStateVectorDispatch<System, Scalar, typename std::enable_if<is_eigen_vector<typename System::template StateVector<Scalar>>::value>::type >{
       static typename System::template StateVector<Scalar> eval(const System& sys) {
-        return typename System::template StateVector<Scalar>(sys.getNumStates());
+        return typename System::template StateVector<Scalar>(Drake::getNumStates(sys));
       }
     };
 
