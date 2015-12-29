@@ -13,7 +13,9 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <sstream>
+#include <plants/KinematicsCache.h>
 #include <drakeRigidBodyConstraint_export.h>
+#include <drakeUtil.h>
 
 
 template <typename Scalar> class KinematicsCache;
