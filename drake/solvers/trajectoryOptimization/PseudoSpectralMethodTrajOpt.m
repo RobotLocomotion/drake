@@ -6,7 +6,6 @@ classdef PseudoSpectralMethodTrajOpt <DirectTrajectoryOptimization
   % Gauss quadratures 
 
   % this class offers two specifications of the PS method family
-  % to use Legendre polynomials at Lengendre-Gauss-Lobatto quadratures (LGL), set option.ps_method=PseudoSpectralMethodTrajOpt.LGL
   % see Elnagar et al., 'The Pseudospectral Legendre Method for Discretizing Optimal Control Problems', 1995, for the underlying math formulation for LGL method,
 
   % to use Chebyshev polynomials at Chebyshev-Gauss-Lobatto quadratures (CGL), set option.ps_method=PseudoSpectralMethodTrajOpt.CGL
@@ -35,8 +34,6 @@ classdef PseudoSpectralMethodTrajOpt <DirectTrajectoryOptimization
         options.ps_method = PseudoSpectralMethodTrajOpt.LGL;
       end
       if ~isfield(options,'time_option')| options.time_option ~= 3
-         % force time_option to skip option 1 and 2, so to not add time constraint from the superclass
-         % time constraint will be added later in this class as it is unique to PS method
         options.time_option = 3;
       end
 
@@ -47,8 +44,6 @@ classdef PseudoSpectralMethodTrajOpt <DirectTrajectoryOptimization
       % only used for PS, so superclass is not overwriteen
       initial_h=diff(obj.tau);
       ratio=initial_h/initial_h(1);
-      A_time = ones(1,N-1); % so that the sum of all time steps will be bounded between durations bounds
-      S_time=[ratio,zeros(N-1,N-2)]-eye(N-1); % so that the time steps will keep the inter-point ratio as the initial one obtained from Gauss quadatures
       scale_constaint = LinearConstraint([durations(1);-inf; zeros(N-2,1)],[durations(2);inf;zeros(N-2,1)], [A_time;S_time]);
       obj = obj.addConstraint(scale_constaint,obj.h_inds);  
     end
@@ -57,10 +52,6 @@ classdef PseudoSpectralMethodTrajOpt <DirectTrajectoryOptimization
       N = obj.N;
       nX = obj.plant.getNumStates();
       nU = obj.plant.getNumInputs();
-      options=obj.options;
-      
-      % set up PS method parameters
-       switch options.ps_method
         case PseudoSpectralMethodTrajOpt.LGL 
           obj.tau=LGL_nodes(obj);
           obj.D=LGL_Dmatrix(obj.tau);
@@ -72,7 +63,6 @@ classdef PseudoSpectralMethodTrajOpt <DirectTrajectoryOptimization
       end
 
       % collocation at each and every knot point requires the states and input values at all knot points. Hence n_vars has this N*(nx+nU) part
-      % it also requires one of the time steps to keep the ratio correct, here arbitrarily chooses h1, so total n_vars=N*(nx+nU)+1
       n_vars = 1+(N)*(nX+nU);
       cnstr = FunctionHandleConstraint(zeros(N*(nX),1),zeros(N*(nX),1),n_vars,@obj.constraint_fun);
       cnstr = setName(cnstr,'PSMcollocation');
@@ -194,7 +184,6 @@ classdef PseudoSpectralMethodTrajOpt <DirectTrajectoryOptimization
       x = reshape(z(obj.x_inds),[],obj.N);
       % similar reason as in reconstructInputTrajectory() for the choice of interpolating times
       xtraj=PPTrajectory(LagrangeInterpolation(obj.tau,x,nX));
-      % scale from [0,2] to te physical time domain.
       xtraj = xtraj.scaleTime(sum(z(obj.h_inds))/2);
       xtraj = xtraj.setOutputFrame(obj.plant.getStateFrame);
     end
