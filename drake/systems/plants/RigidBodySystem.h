@@ -31,24 +31,22 @@ namespace Drake {
       auto Hqr = H.fullPivHouseholderQr();
       assert(Hqr.isInvertible());
       auto Hinv = Hqr.inverse();
-      Eigen::VectorXd tau = -tree->dynamicsBiasTerm(kinsol,f_ext);
+      VectorXd tau = -tree->dynamicsBiasTerm(kinsol,f_ext);
       if (size(u)>0) tau += tree->B*u;
 
       if (tree->getNumPositionConstraints()) {
         int nc = tree->getNumPositionConstraints();
-        const double alpha = 0;//5;  // 1/time constant of position constraint satisfaction (see my latex rigid body notes)
+        const double alpha = 5.0;  // 1/time constant of position constraint satisfaction (see my latex rigid body notes)
 
         // then compute the constraint force
-        auto phi = tree->positionConstraints(kinsol);
-        auto J = tree->positionConstraintsJacobian(kinsol,false);
-        auto Jdotv = tree->positionConstraintsJacDotTimesV(kinsol);
+        VectorXd phi = tree->positionConstraints(kinsol);
+        MatrixXd J = tree->positionConstraintsJacobian(kinsol,false);
+        VectorXd Jdotv = tree->positionConstraintsJacDotTimesV(kinsol);
 
-        auto tmp = JacobiSVD<MatrixXd>(J*Hinv*J.transpose(),ComputeThinU | ComputeThinV).solve(MatrixXd::Identity(nc,nc));  // computes the pseudo-inverse per the discussion at http://eigen.tuxfamily.org/bz/show_bug.cgi?id=257
-        auto constraint_force = -J.transpose()*tmp*(J*Hinv*tau + Jdotv + 2*alpha*J*v + alpha*alpha*phi);  // adds in the computed constraint forces
-        std::cout << "constraint force = " << constraint_force.transpose() << std::endl;
+        MatrixXd tmp = JacobiSVD<MatrixXd>(J*Hinv*J.transpose(),ComputeThinU | ComputeThinV).solve(MatrixXd::Identity(nc,nc));  // computes the pseudo-inverse per the discussion at http://eigen.tuxfamily.org/bz/show_bug.cgi?id=257
+        VectorXd constraint_force = -J.transpose()*tmp*(J*Hinv*tau + Jdotv + 2*alpha*J*v + alpha*alpha*phi);  // adds in the computed constraint forces
         tau += constraint_force;
       }
-
       VectorXd vdot = Hinv*tau;
 
       StateVector<ScalarType> dot(nq+nv);
@@ -105,7 +103,7 @@ namespace Drake {
           for (int i=0; i<limit; i++)
             cout << infeasible_constraint[i] << endl;
         }
-        x0.topRows(nq) = q;
+        x0 << q, VectorXd::Zero(sys.tree->num_velocities);
 
         for (int i=0; i<num_constraints; i++) {
           delete constraint_array[i];
