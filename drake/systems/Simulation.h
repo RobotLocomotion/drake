@@ -76,6 +76,17 @@ namespace Drake {
     simulate(sys,t0,tf,x0,default_simulation_options);
   }
 
+  /** simulate
+   * @brief Runs a simulation using the default simulation options
+   * @ingroup simulation
+   *
+   */
+  template <typename System>
+  void simulate(const System& sys, double t0, double tf)  {
+    auto x0 = getInitialState(sys);
+    simulate(sys,t0,tf,x0);
+  }
+
 }  // end namespace Drake
 
 #endif //DRAKE_SIMULATION_H

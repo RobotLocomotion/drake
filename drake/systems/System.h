@@ -108,6 +108,10 @@ namespace Drake {
    */
   template <typename System> std::size_t getNumOutputs(const System& sys) { return internal::NumOutputsDispatch<System,System::template OutputVector<double>::RowsAtCompileTime==-1>::eval(sys); }
 
+  /** getInitialState()
+   * @brief Returns a random feasible initial condition
+    */
+  template <typename System> typename System::template StateVector<double> getInitialState(const System& sys) { return getRandomVector<System::template StateVector>(); }
 
 /** FeedbackSystem<System1,System2>
  * @brief Builds a new system from the feedback connection of two simpler systems
@@ -165,6 +169,10 @@ namespace Drake {
 
     bool isTimeVarying() const { return sys1->isTimeVarying() || sys2->isTimeVarying(); }
     bool isDirectFeedthrough() const { return sys1->isDirectFeedthrough(); }
+
+    friend StateVector<double> getInitialState(const FeedbackSystem<System1,System2>& sys) {
+      return util::combine( getInitialState(*(sys.sys1)), getInitialState(*(sys.sys2)));
+    }
 
   private:
     template <typename ScalarType>
@@ -238,6 +246,10 @@ namespace Drake {
 
     bool isTimeVarying() const { return sys1->isTimeVarying() || sys2->isTimeVarying(); }
     bool isDirectFeedthrough() const { return sys1->isDirectFeedthrough() && sys2->isDirectFeedthrough(); }
+
+    friend StateVector<double> getInitialState(const CascadeSystem<System1,System2>& sys) {
+      return util::combine( getInitialState(*(sys.sys1)), getInitialState(*(sys.sys2)));
+    }
 
   private:
     System1Ptr sys1;

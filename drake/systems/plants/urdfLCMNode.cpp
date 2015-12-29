@@ -47,11 +47,7 @@ int main(int argc, char* argv[]) {
   auto visualizer = make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm,argv[argc-1],floating_base_type);
   auto sys = cascade(rigid_body_sys, visualizer);
 
-  cout << "num_positions: " << tree->num_positions << endl;
-
-  VectorXd x0 = VectorXd::Random(tree->num_positions+tree->num_velocities);
-
-  runLCM(sys,lcm,0,std::numeric_limits<double>::max(),x0);
+  runLCM(sys,lcm,0,std::numeric_limits<double>::max());
 
   return 0;
 }

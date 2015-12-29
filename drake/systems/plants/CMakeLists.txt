@@ -136,10 +136,10 @@ if (MATLAB_FOUND)
   endif()
 endif(MATLAB_FOUND)
 
-if (LCM_FOUND)
+if (LCM_FOUND AND snopt_c_FOUND)
   add_executable(urdfLCMNode urdfLCMNode.cpp)
-  target_link_libraries(urdfLCMNode drakeRBM drakeLCMSystem)
+  target_link_libraries(urdfLCMNode drakeRBM drakeLCMSystem drakeIK)
   pods_install_executables(urdfLCMNode)
-endif (LCM_FOUND)
+endif (LCM_FOUND AND snopt_c_FOUND)
 
 add_subdirectory(test)
