@@ -70,7 +70,8 @@ namespace Drake {
 
     RigidBodySystem(const std::shared_ptr<RigidBodyTree>& rigid_body_tree) : tree(rigid_body_tree) {};
     RigidBodySystem(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION) {
-      tree = std::allocate_shared<RigidBodyTree>(Eigen::aligned_allocator<RigidBodyTree>());
+      //tree = std::allocate_shared<RigidBodyTree>(Eigen::aligned_allocator<RigidBodyTree>()); // this crashed g++-4.7
+      tree = std::shared_ptr<RigidBodyTree>(new RigidBodyTree());
       addRobotFromURDF(urdf_filename, floating_base_type);
     }
     virtual ~RigidBodySystem() {};
@@ -131,7 +132,6 @@ namespace Drake {
         MatrixXd tmp = JacobiSVD<MatrixXd>(J*Hinv*J.transpose(),ComputeThinU | ComputeThinV).solve(MatrixXd::Identity(nc,nc));  // computes the pseudo-inverse per the discussion at http://eigen.tuxfamily.org/bz/show_bug.cgi?id=257
         tau.noalias() += -J.transpose()*tmp*(J*Hinv*tau + Jdotv + 2*alpha*J*v + alpha*alpha*phi);  // adds in the computed constraint forces
       }
-
       StateVector<ScalarType> dot(nq+nv);
       dot << kinsol.transformPositionDotMappingToVelocityMapping(Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic>::Identity(nq, nq))*v, Hinv*tau;
       return dot;
@@ -154,7 +154,6 @@ namespace Drake {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
-
 
 } // end namespace Drake
 

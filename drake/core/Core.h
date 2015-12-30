@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <stdexcept>
 #include <Eigen/Dense>
 #include "Path.h"
 
