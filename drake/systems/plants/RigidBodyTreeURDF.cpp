@@ -144,6 +144,20 @@ int findLinkIndexByJointName(RigidBodyTree * model, string jointname)
   return index;
 }
 
+RigidBodyFrame::RigidBodyFrame(RigidBodyTree* tree, TiXmlElement* link_reference, TiXmlElement* pose, std::string name)
+  : name(name), frame_index(0)
+{
+  string linkname = link_reference->Attribute("link");
+  body = tree->findLink(linkname);
+  if (!body) throw runtime_error("couldn't find link %s referenced in frame " + name);
+
+  Vector3d xyz=Vector3d::Zero(),rpy=Vector3d::Zero();
+  if (pose) {
+    parseVectorAttribute(pose, "xyz", xyz);
+    parseVectorAttribute(pose, "rpy", rpy);
+  }
+  transform_to_body.matrix() << rpy2rotmat(rpy), xyz, 0,0,0,1;
+}
 
 
 void parseInertial(shared_ptr<RigidBody> body, TiXmlElement* node, RigidBodyTree * model)
@@ -556,30 +570,17 @@ void parseTransmission(RigidBodyTree * model, TiXmlElement* node) {
 
 void parseLoop(RigidBodyTree * model, TiXmlElement* node)
 {
-  Vector3d xyz=Vector3d::Zero(),rpy=Vector3d::Zero(),axis;
+  Vector3d axis;
   axis << 1.0, 0.0, 0.0;
 
   if (!node || !node->Attribute("name")) throw runtime_error("ERROR: loop is missing a name element");
   string name(node->Attribute("name"));
 
   TiXmlElement* link_node = node->FirstChildElement("link1");
-  string linkname = link_node->Attribute("link");
-  std::shared_ptr<RigidBody> body = model->findLink(linkname);
-  if (!body) throw runtime_error("couldn't find link %s referenced in loop joint " + linkname);
-  if (!parseVectorAttribute(link_node, "xyz", xyz)) throw runtime_error("ERROR parsing loop joint xyz");
-  if (!parseVectorAttribute(link_node, "rpy", rpy)) throw runtime_error("ERROR parsing loop joint rpy");
-  std::shared_ptr<RigidBodyFrame> frameA = allocate_shared<RigidBodyFrame>(Eigen::aligned_allocator<RigidBodyFrame>(), name+"FrameA",body,xyz,rpy);
+  std::shared_ptr<RigidBodyFrame> frameA = allocate_shared<RigidBodyFrame>(Eigen::aligned_allocator<RigidBodyFrame>(),model,link_node,link_node,name+"FrameA");
 
   link_node = node->FirstChildElement("link2");
-  linkname = link_node->Attribute("link");
-  xyz=Vector3d::Zero();
-  rpy=Vector3d::Zero();
-  body = model->findLink(linkname);
-  if (!body) throw runtime_error("couldn't find link %s referenced in loop joint " + linkname);
-  if (!parseVectorAttribute(link_node, "xyz", xyz)) throw runtime_error("ERROR parsing loop joint xyz");
-  if (!parseVectorAttribute(link_node, "rpy", rpy)) throw runtime_error("ERROR parsing loop joint rpy");
-
-  std::shared_ptr<RigidBodyFrame> frameB = allocate_shared<RigidBodyFrame>(Eigen::aligned_allocator<RigidBodyFrame>(), name+"FrameB",body,xyz,rpy);
+  std::shared_ptr<RigidBodyFrame> frameB = allocate_shared<RigidBodyFrame>(Eigen::aligned_allocator<RigidBodyFrame>(),model,link_node,link_node,name+"FrameB");
 
   TiXmlElement* axis_node = node->FirstChildElement("axis");
   if (axis_node && !parseVectorAttribute(axis_node, "xyz", axis)) throw runtime_error("ERROR parsing loop joint axis");
@@ -592,24 +593,10 @@ void parseLoop(RigidBodyTree * model, TiXmlElement* node)
 
 void parseFrame(RigidBodyTree * model, TiXmlElement* node)
 {
-  Vector3d xyz=Vector3d::Zero(), rpy=Vector3d::Zero();
-
-  parseVectorAttribute(node, "xyz", xyz);
-  parseVectorAttribute(node, "rpy", rpy);
-
-  const char* frame_link = node->Attribute("link");
-  if (!frame_link) throw runtime_error("ERROR parsing Drake frame linkname");
-
-  const std::shared_ptr<RigidBody> body = model->findLink(frame_link);
-  if (!body) throw runtime_error("ERROR parsing Drake frame: couldn't find link " + string(frame_link));
-
   const char* frame_name = node->Attribute("name");
   if (!frame_name) throw runtime_error("ERROR parsing Drake frame name");
 
-  Matrix4d T;
-  T << rpy2rotmat(rpy), xyz, 0,0,0,1;
-
-  std::shared_ptr<RigidBodyFrame> frame = allocate_shared<RigidBodyFrame>(Eigen::aligned_allocator<RigidBodyFrame>(), frame_name,body,T);
+  std::shared_ptr<RigidBodyFrame> frame = allocate_shared<RigidBodyFrame>(Eigen::aligned_allocator<RigidBodyFrame>(),model,node,node,frame_name);
   model->addFrame(frame);
 }
 

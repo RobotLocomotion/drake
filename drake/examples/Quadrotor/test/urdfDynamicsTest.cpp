@@ -14,7 +14,7 @@ int main(int argc, char* argv[])
 
   for (int i=0; i<1000; i++) {
     auto x0 = getRandomVector<QuadrotorState>();
-    auto u0 = QuadrotorInput<double>(Vector4d::Zero()); //getRandomVector<QuadrotorInput>();
+    auto u0 = getRandomVector<QuadrotorInput>();
 
     RigidBodySystem::StateVector<double> x0_rb = toEigen(x0);
     RigidBodySystem::InputVector<double> u0_rb = toEigen(u0);

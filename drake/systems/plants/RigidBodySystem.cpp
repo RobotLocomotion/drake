@@ -56,22 +56,33 @@ RigidBodySystem::StateVector<double> Drake::getInitialState(const RigidBodySyste
   return x0;
 }
 
-RigidBodyPropellor::RigidBodyPropellor(RigidBodySystem *sys, TiXmlElement *node, std::string name) : sys(sys), name(name) {
-  Vector3d xyz=Vector3d::Zero(),rpy=Vector3d::Zero(),axis;
-  axis << 1.0, 0.0, 0.0;
-  Isometry3d Ttree = Isometry3d::Identity();
-
+RigidBodyPropellor::RigidBodyPropellor(RigidBodySystem *sys, TiXmlElement *node, std::string name) :
+        sys(sys), name(name),
+        scale_factor_thrust(1.0), scale_factor_moment(1.0),
+        lower_limit(-numeric_limits<double>::infinity()),
+        upper_limit(numeric_limits<double>::infinity())
+{
   auto tree = sys->getRigidBodyTree();
 
   TiXmlElement* parent_node = node->FirstChildElement("parent");
   if (!parent_node) throw runtime_error("propellor " + name + " is missing the parent node");
-  auto parent = tree->findLink(parent_node->Attribute("link"));
+  frame = allocate_shared<RigidBodyFrame>(aligned_allocator<RigidBodyFrame>(),tree.get(),parent_node,node->FirstChildElement("origin"),name+"Frame");
+  tree->addFrame(frame);
 
-  if (TiXmlElement* origin = node->FirstChildElement("origin")) {
-    poseAttributesToTransform(origin, Ttree.matrix());
+  axis << 1.0, 0.0, 0.0;
+  TiXmlElement* axis_node = node->FirstChildElement("axis");
+  if (axis_node) {
+    parseVectorAttribute(axis_node, "xyz", axis);
+    if (axis.norm()<1e-8) throw runtime_error("ERROR: axis is zero.  don't do that");
+    axis.normalize();
   }
-  cout << "found propellor: " << name << endl;
 
+  parseScalarAttribute(node,"scale_factor_thrust",scale_factor_thrust);
+  parseScalarAttribute(node,"scale_factor_moment",scale_factor_moment);
+  parseScalarAttribute(node,"lower_limit",lower_limit);
+  parseScalarAttribute(node,"upper_limit",upper_limit);
+
+  // todo: parse visual info?
 }
 
 void parseForceElement(RigidBodySystem *sys, TiXmlElement* node) {
