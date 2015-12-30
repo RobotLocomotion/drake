@@ -23,6 +23,12 @@ classdef FixedPointProgram < NonlinearProgram
       
       obj = sys.addStateConstraintsToProgram(obj,1:num_x);
       obj = sys.addInputConstraintsToProgram(obj,num_x+(1:num_u));
+      
+      % Set tolerances tighter than default with snopt, to match tolerance
+      % requirements in tilyap (for finding RoA).
+      obj = obj.setSolverOptions('snopt','MajorOptimalityTolerance',1e-10);
+      obj = obj.setSolverOptions('snopt','MajorFeasibilityTolerance',1e-10);
+      obj = obj.setSolverOptions('snopt','MinorFeasibilityTolerance',1e-10);
     end
     
     function obj = addDynamicConstraints(obj,x_dimensions_to_ignore)
