@@ -13,30 +13,23 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <sstream>
+#include <plants/KinematicsCache.h>
+#include <drakeRigidBodyConstraint_export.h>
+#include <drakeUtil.h>
 
-#undef DLLEXPORT 
-#if defined(WIN32) || defined(WIN64)
-  #if defined(drakeRigidBodyConstraint_EXPORTS)
-    #define DLLEXPORT __declspec( dllexport )
-  #else
-    #define DLLEXPORT __declspec( dllimport )
-  #endif
-#else
-  #define DLLEXPORT
-#endif
 
 template <typename Scalar> class KinematicsCache;
 class RigidBodyTree;
 
 namespace DrakeRigidBodyConstraint{
-  extern DLLEXPORT Eigen::Vector3d com_pts;
-  extern DLLEXPORT const int WorldCoMDefaultRobotNum[1];
-  extern DLLEXPORT Eigen::Vector2d default_tspan;
+  extern DRAKERIGIDBODYCONSTRAINT_EXPORT Eigen::Vector3d com_pts;
+  extern DRAKERIGIDBODYCONSTRAINT_EXPORT const int WorldCoMDefaultRobotNum[1];
+  extern DRAKERIGIDBODYCONSTRAINT_EXPORT Eigen::Vector2d default_tspan;
 }
 
-DLLEXPORT void drakePrintMatrix(const Eigen::MatrixXd &mat);
+DRAKERIGIDBODYCONSTRAINT_EXPORT void drakePrintMatrix(const Eigen::MatrixXd &mat);
 
-class DLLEXPORT RigidBodyConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT RigidBodyConstraint
 {
   protected:
     int category;
@@ -111,7 +104,7 @@ class DLLEXPORT RigidBodyConstraint
  *    @param body_pts            -- body_pts[i] are the contact points on body[i]
  */
 
-class DLLEXPORT QuasiStaticConstraint: public RigidBodyConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT QuasiStaticConstraint: public RigidBodyConstraint
 {
   protected:
     std::set<int> m_robotnumset;
@@ -153,7 +146,7 @@ class DLLEXPORT QuasiStaticConstraint: public RigidBodyConstraint
  *   @param lb         lb[i] is the lower bound of the joint joint_idx[i]
  *   @param ub         ub[i] is the upper bound of the joint joint_idx[i]
  */
-class DLLEXPORT PostureConstraint: public RigidBodyConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT PostureConstraint: public RigidBodyConstraint
 {
   protected:
     Eigen::VectorXd lb;
@@ -186,7 +179,7 @@ class DLLEXPORT PostureConstraint: public RigidBodyConstraint
  *   @return jAvar    The column index of the non-zero entries in the gradient matrix
  *   @return A        The value of the non-zero entries in the gradient matrix
  */
-class DLLEXPORT MultipleTimeLinearPostureConstraint: public RigidBodyConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT MultipleTimeLinearPostureConstraint: public RigidBodyConstraint
 {
   protected:
     int numValidTime(const std::vector<bool> &valid_flag) const;
@@ -229,7 +222,7 @@ class DLLEXPORT MultipleTimeLinearPostureConstraint: public RigidBodyConstraint
  *   @return jAvar    The column index of the non-zero entries in the gradient matrix
  *   @return A        The value of the non-zero entries in the gradient matrix
  */
-class DLLEXPORT SingleTimeLinearPostureConstraint: public RigidBodyConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT SingleTimeLinearPostureConstraint: public RigidBodyConstraint
 {
   protected:
     Eigen::VectorXi iAfun;
@@ -255,7 +248,7 @@ class DLLEXPORT SingleTimeLinearPostureConstraint: public RigidBodyConstraint
 /*
  * class SingleTimeKinematicConstraint   An abstract class that constrain the kinematics of the robot at individual time. Need to call doKinematics first for the robot and then evaulate this constraint.
  */
-class DLLEXPORT SingleTimeKinematicConstraint: public RigidBodyConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT SingleTimeKinematicConstraint: public RigidBodyConstraint
 {
   protected:
     int num_constraint;
@@ -271,7 +264,7 @@ class DLLEXPORT SingleTimeKinematicConstraint: public RigidBodyConstraint
     virtual ~SingleTimeKinematicConstraint(){};
 };
 
-class DLLEXPORT MultipleTimeKinematicConstraint : public RigidBodyConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT MultipleTimeKinematicConstraint : public RigidBodyConstraint
 {
   protected:
     int numValidTime(const double* t,int n_breaks) const;
@@ -288,7 +281,7 @@ class DLLEXPORT MultipleTimeKinematicConstraint : public RigidBodyConstraint
     virtual ~MultipleTimeKinematicConstraint(){};
 };
 
-class DLLEXPORT PositionConstraint : public SingleTimeKinematicConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT PositionConstraint : public SingleTimeKinematicConstraint
 {
   protected:
     Eigen::VectorXd lb;
@@ -307,7 +300,7 @@ class DLLEXPORT PositionConstraint : public SingleTimeKinematicConstraint
     virtual ~PositionConstraint(void) {};
 };
 
-class DLLEXPORT WorldPositionConstraint: public PositionConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldPositionConstraint: public PositionConstraint
 {
   protected:
     int body;
@@ -319,7 +312,7 @@ class DLLEXPORT WorldPositionConstraint: public PositionConstraint
     virtual ~WorldPositionConstraint();
 };
 
-class DLLEXPORT WorldCoMConstraint: public PositionConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldCoMConstraint: public PositionConstraint
 {
   protected:
     std::set<int> m_robotnum;
@@ -334,7 +327,7 @@ class DLLEXPORT WorldCoMConstraint: public PositionConstraint
     virtual ~WorldCoMConstraint();
 };
 
-class DLLEXPORT RelativePositionConstraint: public PositionConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT RelativePositionConstraint: public PositionConstraint
 {
   protected:
     int bodyA_idx;
@@ -350,7 +343,7 @@ class DLLEXPORT RelativePositionConstraint: public PositionConstraint
     virtual ~RelativePositionConstraint();
 };
 
-class DLLEXPORT QuatConstraint: public SingleTimeKinematicConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT QuatConstraint: public SingleTimeKinematicConstraint
 {
   protected:
     double tol;
@@ -362,7 +355,7 @@ class DLLEXPORT QuatConstraint: public SingleTimeKinematicConstraint
     virtual ~QuatConstraint();
 };
 
-class DLLEXPORT WorldQuatConstraint: public QuatConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldQuatConstraint: public QuatConstraint
 {
   protected:
     int body;
@@ -378,7 +371,7 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-class DLLEXPORT RelativeQuatConstraint: public QuatConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT RelativeQuatConstraint: public QuatConstraint
 {
   protected:
     int bodyA_idx;
@@ -396,7 +389,7 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-class DLLEXPORT EulerConstraint: public SingleTimeKinematicConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT EulerConstraint: public SingleTimeKinematicConstraint
 {
   protected:
     Eigen::VectorXd ub;
@@ -412,7 +405,7 @@ class DLLEXPORT EulerConstraint: public SingleTimeKinematicConstraint
     virtual ~EulerConstraint(void) {};
 };
 
-class DLLEXPORT WorldEulerConstraint: public EulerConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldEulerConstraint: public EulerConstraint
 {
   protected:
     int body;
@@ -424,7 +417,7 @@ class DLLEXPORT WorldEulerConstraint: public EulerConstraint
     virtual ~WorldEulerConstraint();
 };
 
-class DLLEXPORT GazeConstraint : public SingleTimeKinematicConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT GazeConstraint : public SingleTimeKinematicConstraint
 {
   protected:
     Eigen::Vector3d axis;
@@ -437,7 +430,7 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-class DLLEXPORT GazeOrientConstraint : public GazeConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT GazeOrientConstraint : public GazeConstraint
 {
   protected:
     double threshold;
@@ -452,7 +445,7 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-class DLLEXPORT WorldGazeOrientConstraint: public GazeOrientConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldGazeOrientConstraint: public GazeOrientConstraint
 {
   protected:
     int body;
@@ -464,7 +457,7 @@ class DLLEXPORT WorldGazeOrientConstraint: public GazeOrientConstraint
     virtual ~WorldGazeOrientConstraint(){};
 };
 
-class DLLEXPORT GazeDirConstraint: public GazeConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT GazeDirConstraint: public GazeConstraint
 {
   protected:
     Eigen::Vector3d dir;
@@ -476,7 +469,7 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-class DLLEXPORT WorldGazeDirConstraint: public GazeDirConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldGazeDirConstraint: public GazeDirConstraint
 {
   protected:
     int body;
@@ -488,7 +481,7 @@ class DLLEXPORT WorldGazeDirConstraint: public GazeDirConstraint
     virtual ~WorldGazeDirConstraint(void){};
 };
 
-class DLLEXPORT GazeTargetConstraint: public GazeConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT GazeTargetConstraint: public GazeConstraint
 {
   protected:
     Eigen::Vector3d target;
@@ -501,7 +494,7 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-class DLLEXPORT WorldGazeTargetConstraint: public GazeTargetConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldGazeTargetConstraint: public GazeTargetConstraint
 {
   protected:
     int body;
@@ -513,7 +506,7 @@ class DLLEXPORT WorldGazeTargetConstraint: public GazeTargetConstraint
     virtual ~WorldGazeTargetConstraint(void){};
 };
 
-class DLLEXPORT RelativeGazeTargetConstraint: public GazeTargetConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT RelativeGazeTargetConstraint: public GazeTargetConstraint
 {
   protected:
     int bodyA_idx;
@@ -527,7 +520,7 @@ class DLLEXPORT RelativeGazeTargetConstraint: public GazeTargetConstraint
     virtual ~RelativeGazeTargetConstraint(void){};
 };
 
-class DLLEXPORT RelativeGazeDirConstraint: public GazeDirConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT RelativeGazeDirConstraint: public GazeDirConstraint
 {
   protected:
     int bodyA_idx;
@@ -541,7 +534,7 @@ class DLLEXPORT RelativeGazeDirConstraint: public GazeDirConstraint
     virtual ~RelativeGazeDirConstraint(void){};
 };
 
-class DLLEXPORT Point2PointDistanceConstraint: public SingleTimeKinematicConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT Point2PointDistanceConstraint: public SingleTimeKinematicConstraint
 {
   protected:
     int bodyA;
@@ -558,7 +551,7 @@ class DLLEXPORT Point2PointDistanceConstraint: public SingleTimeKinematicConstra
     virtual ~Point2PointDistanceConstraint(void){};
 };
 
-class DLLEXPORT Point2LineSegDistConstraint: public SingleTimeKinematicConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT Point2LineSegDistConstraint: public SingleTimeKinematicConstraint
 {
   protected:
     int pt_body;
@@ -577,7 +570,7 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-class DLLEXPORT WorldFixedPositionConstraint: public MultipleTimeKinematicConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldFixedPositionConstraint: public MultipleTimeKinematicConstraint
 {
   protected:
     int body;
@@ -592,7 +585,7 @@ class DLLEXPORT WorldFixedPositionConstraint: public MultipleTimeKinematicConstr
     virtual ~WorldFixedPositionConstraint(void){};
 };
 
-class DLLEXPORT WorldFixedOrientConstraint: public MultipleTimeKinematicConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldFixedOrientConstraint: public MultipleTimeKinematicConstraint
 {
   protected:
     int body;
@@ -606,7 +599,7 @@ class DLLEXPORT WorldFixedOrientConstraint: public MultipleTimeKinematicConstrai
     virtual ~WorldFixedOrientConstraint(void){};
 };
 
-class DLLEXPORT WorldFixedBodyPoseConstraint: public MultipleTimeKinematicConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldFixedBodyPoseConstraint: public MultipleTimeKinematicConstraint
 {
   protected:
     int body;
@@ -620,7 +613,7 @@ class DLLEXPORT WorldFixedBodyPoseConstraint: public MultipleTimeKinematicConstr
     virtual ~WorldFixedBodyPoseConstraint(void){};
 };
 
-class DLLEXPORT AllBodiesClosestDistanceConstraint : public SingleTimeKinematicConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT AllBodiesClosestDistanceConstraint : public SingleTimeKinematicConstraint
 {
   protected:
     double ub;
@@ -641,7 +634,7 @@ class DLLEXPORT AllBodiesClosestDistanceConstraint : public SingleTimeKinematicC
     virtual ~AllBodiesClosestDistanceConstraint(){};
 };
 
-class DLLEXPORT MinDistanceConstraint : public SingleTimeKinematicConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT MinDistanceConstraint : public SingleTimeKinematicConstraint
 {
   protected:
     double min_distance;
@@ -661,7 +654,7 @@ class DLLEXPORT MinDistanceConstraint : public SingleTimeKinematicConstraint
     virtual ~MinDistanceConstraint(){};
 };
 
-class DLLEXPORT WorldPositionInFrameConstraint: public WorldPositionConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldPositionInFrameConstraint: public WorldPositionConstraint
 {
   protected:
     Eigen::Matrix4d T_world_to_frame;
@@ -677,7 +670,7 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-class DLLEXPORT PostureChangeConstraint: public MultipleTimeLinearPostureConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT PostureChangeConstraint: public MultipleTimeLinearPostureConstraint
 {
   protected:
     Eigen::VectorXi joint_ind;
@@ -694,7 +687,7 @@ class DLLEXPORT PostureChangeConstraint: public MultipleTimeLinearPostureConstra
     virtual ~PostureChangeConstraint(){};
 };
 
-class DLLEXPORT GravityCompensationTorqueConstraint: public SingleTimeKinematicConstraint
+class DRAKERIGIDBODYCONSTRAINT_EXPORT GravityCompensationTorqueConstraint: public SingleTimeKinematicConstraint
 {
   public:
     GravityCompensationTorqueConstraint(RigidBodyTree * model,

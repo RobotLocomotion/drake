@@ -6,7 +6,6 @@
 #include <algorithm>
 #include <vector>
 #include <iostream>
-#include <limits>
 #include "convexHull.h"
 
 using namespace std;

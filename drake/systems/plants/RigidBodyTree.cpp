@@ -10,7 +10,6 @@
 #include <string>
 #include <regex>
 #include <limits>
-#include "RigidBodyConstraint.h"
 #include "KinematicsCache.h"
 
 using namespace std;
@@ -1037,28 +1036,21 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::massMatrix(Kinemat
   return ret;
 }
 
-/**
- * note that this method can also be used to compute the gravitational term only by calling doKinematics with a zero joint velocity vector.
- * To compute only the Coriolis term, pass in nullptr for vd and set gravity to zero.
- * Note that the wrenches in f_ext are expressed in body frame.
- */
 template <typename Scalar>
-Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::dynamicsBiasTerm(KinematicsCache<Scalar>& cache, const eigen_aligned_unordered_map<RigidBody const *, Matrix<Scalar, TWIST_SIZE, 1> >& f_ext) const
+Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::dynamicsBiasTerm(
+    KinematicsCache<Scalar> &cache, const eigen_aligned_unordered_map<RigidBody const *, Matrix<Scalar, TWIST_SIZE, 1> > &f_ext, bool include_velocity_terms) const
 {
   Matrix<Scalar, Eigen::Dynamic, 1> vd(num_velocities, 1);
   vd.setZero();
-  return inverseDynamics(cache, f_ext, vd);
+  return inverseDynamics(cache, f_ext, vd, include_velocity_terms);
 };
 
-/*
- * Note that the wrenches in f_ext are expressed in body frame.
- */
 template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(KinematicsCache<Scalar>& cache,
                                                                  const eigen_aligned_unordered_map<RigidBody const *, Matrix<Scalar, TWIST_SIZE, 1> >& f_ext,
-                                                                 const Matrix<Scalar, Eigen::Dynamic, 1>& vd) const
+                                                                 const Matrix<Scalar, Eigen::Dynamic, 1>& vd, bool include_velocity_terms) const
 {
-  cache.checkCachedKinematicsSettings(true, true, "inverseDynamics");
+  cache.checkCachedKinematicsSettings(include_velocity_terms, include_velocity_terms, "inverseDynamics");
 
   updateCompositeRigidBodyInertias(cache);
 
@@ -1072,14 +1064,20 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(KinematicsCache
     RigidBody& body = *bodies[i];
     if (body.hasParent()) {
       const auto& element = cache.getElement(body);
-      Vector6 spatial_accel = root_accel + element.motion_subspace_in_world_dot_times_v;
+
+      Vector6 spatial_accel = root_accel;
+      if (include_velocity_terms)
+        spatial_accel += element.motion_subspace_in_world_dot_times_v;
+
       int nv_joint = body.getJoint().getNumVelocities();
       auto vdJoint = vd.middleRows(body.velocity_num_start, nv_joint);
       spatial_accel.noalias() += element.motion_subspace_in_world * vdJoint;
 
-      auto I_times_twist = (element.inertia_in_world * element.twist_in_world).eval();
       net_wrenches.col(i).noalias() = element.inertia_in_world * spatial_accel;
-      net_wrenches.col(i).noalias() += crossSpatialForce(element.twist_in_world, I_times_twist);
+      if (include_velocity_terms) {
+        auto I_times_twist = (element.inertia_in_world * element.twist_in_world).eval();
+        net_wrenches.col(i).noalias() += crossSpatialForce(element.twist_in_world, I_times_twist);
+      }
 
       auto f_ext_iterator = f_ext.find(bodies[i].get());
       if (f_ext_iterator != f_ext.end()) {
@@ -1105,7 +1103,9 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(KinematicsCache
     }
   }
 
-  ret += frictionTorques(cache.getV());
+  if (include_velocity_terms)
+    ret += frictionTorques(cache.getV());
+
   return ret;
 }
 
@@ -1363,25 +1363,38 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::positionConstraints(const Kinem
   for (size_t i = 0; i < loops.size(); i++) {
     { // position constraint
       auto ptA_in_B = forwardKin(cache, Vector3d::Zero(), loops[i].frameA->frame_index, loops[i].frameB->frame_index, 0);
-      ret.middleRows(6 * i, 3) = ptA_in_B;
+      ret.template middleRows<3>(6 * i) = ptA_in_B;
     }
     { // second position constraint (to constrain orientation)
       auto axis_A_end_in_B = forwardKin(cache, loops[i].axis, loops[i].frameA->frame_index, loops[i].frameB->frame_index, 0);
-      ret.middleRows(6 * i + 3, 3) = axis_A_end_in_B - loops[i].axis;
+      ret.template middleRows<3>(6 * i + 3) = axis_A_end_in_B - loops[i].axis;
     }
   }
   return ret;
 }
 
 template<typename Scalar>
-Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::positionConstraintsJacobian(const KinematicsCache<Scalar> &cache) const {
-  Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> ret(6 * loops.size(), num_positions);
+Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::positionConstraintsJacobian(const KinematicsCache<Scalar> &cache, bool in_terms_of_qdot) const {
+  Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> ret(6 * loops.size(), in_terms_of_qdot ? num_positions : num_velocities);
 
   for (size_t i = 0; i < loops.size(); i++) {
     // position constraint
-    ret.template middleRows<3>(6 * i) = forwardKinJacobian(cache, Vector3d::Zero(), loops[i].frameA->frame_index, loops[i].frameB->frame_index, 0, true);
+    ret.template middleRows<3>(6 * i) = forwardKinJacobian(cache, Vector3d::Zero(), loops[i].frameA->frame_index, loops[i].frameB->frame_index, 0, in_terms_of_qdot);
     // second position constraint (to constrain orientation)
-    ret.template middleRows<3>(6 * i + 3) = forwardKinJacobian(cache, loops[i].axis, loops[i].frameA->frame_index, loops[i].frameB->frame_index, 0, true);
+    ret.template middleRows<3>(6 * i + 3) = forwardKinJacobian(cache, loops[i].axis, loops[i].frameA->frame_index, loops[i].frameB->frame_index, 0, in_terms_of_qdot);
+  }
+  return ret;
+}
+
+template<typename Scalar>
+Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::positionConstraintsJacDotTimesV(const KinematicsCache<Scalar> &cache) const {
+  Matrix<Scalar, Eigen::Dynamic, 1> ret(6 * loops.size(), 1);
+
+  for (size_t i = 0; i < loops.size(); i++) {
+    // position constraint
+    ret.template middleRows<3>(6 * i) = forwardJacDotTimesV(cache, Vector3d::Zero(), loops[i].frameA->frame_index, loops[i].frameB->frame_index, 0);
+    // second position constraint (to constrain orientation)
+    ret.template middleRows<3>(6 * i + 3) = forwardJacDotTimesV(cache, loops[i].axis, loops[i].frameA->frame_index, loops[i].frameB->frame_index, 0);
   }
   return ret;
 }
@@ -1426,25 +1439,6 @@ size_t RigidBodyTree::getNumJointLimitConstraints() const
   return finite_min_index.size() + finite_max_index.size();
 }
 
-template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> RigidBodyTree::transformVelocityMappingToPositionDotMapping(
-    const KinematicsCache<typename Derived::Scalar>& cache, const Eigen::MatrixBase<Derived>& mat) const
-{
-  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> ret(mat.rows(), num_positions);
-  int ret_col_start = 0;
-  int mat_col_start = 0;
-  for (auto it = bodies.begin(); it != bodies.end(); ++it) {
-    RigidBody& body = **it;
-    if (body.hasParent()) {
-      const DrakeJoint& joint = body.getJoint();
-      const auto& element = cache.getElement(body);
-      ret.middleCols(ret_col_start, joint.getNumPositions()).noalias() = mat.middleCols(mat_col_start, joint.getNumVelocities()) * element.qdot_to_v;
-      ret_col_start += joint.getNumPositions();
-      mat_col_start += joint.getNumVelocities();
-    }
-  }
-  return ret;
-}
 size_t RigidBodyTree::getNumPositionConstraints() const
 {
   return loops.size()*6;
@@ -1458,59 +1452,60 @@ void RigidBodyTree::addFrame(const std::shared_ptr<RigidBodyFrame>& frame)
 }
 
 
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, -1, 0, -1, -1> RigidBodyTree::massMatrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >&) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, -1, 0, -1, -1> RigidBodyTree::massMatrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyTree::massMatrix<double>(KinematicsCache<double>&) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 3, 1, 0, 3, 1> RigidBodyTree::centerOfMass<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >&, set<int, less<int>, allocator<int> > const&) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 3, 1, 0, 3, 1> RigidBodyTree::centerOfMass<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&, set<int, less<int>, allocator<int> > const&) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, 3, 1, 0, 3, 1> RigidBodyTree::centerOfMass<double>(KinematicsCache<double>&, set<int, less<int>, allocator<int> > const&) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, 1, 0, -1, 1> RigidBodyTree::dynamicsBiasTerm<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >&, unordered_map<RigidBody const*, Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 6, 1, 0, 6, 1>, hash<RigidBody const*>, equal_to<RigidBody const*>, Eigen::aligned_allocator<pair<RigidBody const* const, Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 6, 1, 0, 6, 1> > > > const&) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, 1, 0, -1, 1> RigidBodyTree::dynamicsBiasTerm<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&, unordered_map<RigidBody const*, Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 6, 1, 0, 6, 1>, hash<RigidBody const*>, equal_to<RigidBody const*>, Eigen::aligned_allocator<pair<RigidBody const* const, Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 6, 1, 0, 6, 1> > > > const&) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, -1, 1, 0, -1, 1> RigidBodyTree::dynamicsBiasTerm<double>(KinematicsCache<double>&, unordered_map<RigidBody const*, Eigen::Matrix<double, 6, 1, 0, 6, 1>, hash<RigidBody const*>, equal_to<RigidBody const*>, Eigen::aligned_allocator<pair<RigidBody const* const, Eigen::Matrix<double, 6, 1, 0, 6, 1> > > > const&) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 6, -1, 0, 6, -1> RigidBodyTree::geometricJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, int, int, int, bool, vector<int, allocator<int> >*) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 6, -1, 0, 6, -1> RigidBodyTree::geometricJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, int, int, int, bool, vector<int, allocator<int> >*) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, 6, -1, 0, 6, -1> RigidBodyTree::geometricJacobian<double>(KinematicsCache<double> const&, int, int, int, bool, vector<int, allocator<int> >*) const;
-template DLLEXPORT_RBM Eigen::Transform<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 3, 1, 0> RigidBodyTree::relativeTransform<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, int, int) const;
-template DLLEXPORT_RBM Eigen::Transform<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 3, 1, 0> RigidBodyTree::relativeTransform<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, int, int) const;
-template DLLEXPORT_RBM Eigen::Transform<double, 3, 1, 0> RigidBodyTree::relativeTransform<double>(KinematicsCache<double> const&, int, int) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > > const&, int, int, int, bool) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > > const&, int, int, int, bool) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinJacobian<double, Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > >(KinematicsCache<double> const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > > const&, int, int, int, bool) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, 1, 0, -1, 1> RigidBodyTree::forwardJacDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > > const&, int, int, int) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, 1, 0, -1, 1> RigidBodyTree::forwardJacDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > > const&, int, int, int) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, -1, 1, 0, -1, 1> RigidBodyTree::forwardJacDotTimesV<double, Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > >(KinematicsCache<double> const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > > const&, int, int, int) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 3, -1, 0, 3, -1> RigidBodyTree::centerOfMassJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >&, set<int, less<int>, allocator<int> > const&, bool) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 3, -1, 0, 3, -1> RigidBodyTree::centerOfMassJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&, set<int, less<int>, allocator<int> > const&, bool) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, 3, -1, 0, 3, -1> RigidBodyTree::centerOfMassJacobian<double>(KinematicsCache<double>&, set<int, less<int>, allocator<int> > const&, bool) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 6, -1, 0, 6, -1> RigidBodyTree::centroidalMomentumMatrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >&, set<int, less<int>, allocator<int> > const&, bool) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 6, -1, 0, 6, -1> RigidBodyTree::centroidalMomentumMatrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&, set<int, less<int>, allocator<int> > const&, bool) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, 6, -1, 0, 6, -1> RigidBodyTree::centroidalMomentumMatrix<double>(KinematicsCache<double>&, set<int, less<int>, allocator<int> > const&, bool) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinPositionGradient<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, int, int, int) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinPositionGradient<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, int, int, int) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinPositionGradient<double>(KinematicsCache<double> const&, int, int, int) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 6, 1, 0, 6, 1> RigidBodyTree::geometricJacobianDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, int, int, int) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 6, 1, 0, 6, 1> RigidBodyTree::geometricJacobianDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, int, int, int) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, 6, 1, 0, 6, 1> RigidBodyTree::geometricJacobianDotTimesV<double>(KinematicsCache<double> const&, int, int, int) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 3, 1, 0, 3, 1> RigidBodyTree::centerOfMassJacobianDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >&, set<int, less<int>, allocator<int> > const&) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 3, 1, 0, 3, 1> RigidBodyTree::centerOfMassJacobianDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&, set<int, less<int>, allocator<int> > const&) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, 3, 1, 0, 3, 1> RigidBodyTree::centerOfMassJacobianDotTimesV<double>(KinematicsCache<double>&, set<int, less<int>, allocator<int> > const&) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 6, 1, 0, 6, 1> RigidBodyTree::centroidalMomentumMatrixDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >&, set<int, less<int>, allocator<int> > const&) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 6, 1, 0, 6, 1> RigidBodyTree::centroidalMomentumMatrixDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&, set<int, less<int>, allocator<int> > const&) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, 6, 1, 0, 6, 1> RigidBodyTree::centroidalMomentumMatrixDotTimesV<double>(KinematicsCache<double>&, set<int, less<int>, allocator<int> > const&) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, -1, 1, 0, -1, 1> RigidBodyTree::positionConstraints<double>(KinematicsCache<double> const&) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyTree::positionConstraintsJacobian<double>(KinematicsCache<double> const&) const;
-template DLLEXPORT_RBM void RigidBodyTree::jointLimitConstraints<Eigen::Matrix<double, -1, 1, 0, -1, 1>, Eigen::Matrix<double, -1, 1, 0, -1, 1>, Eigen::Matrix<double, -1, -1, 0, -1, -1> >(Eigen::MatrixBase<Eigen::Matrix<double, -1, 1, 0, -1, 1> > const&, Eigen::MatrixBase<Eigen::Matrix<double, -1, 1, 0, -1, 1> >&, Eigen::MatrixBase<Eigen::Matrix<double, -1, -1, 0, -1, -1> >&) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, 6, 1, 0, 6, 1> RigidBodyTree::relativeTwist<double>(KinematicsCache<double> const&, int, int, int) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinJacobian<double, Eigen::Matrix<double, 3, -1, 0, 3, -1> >(KinematicsCache<double> const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, -1, 0, 3, -1> > const&, int, int, int, bool) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, -1, 1, 0, -1, 1> RigidBodyTree::forwardJacDotTimesV<double, Eigen::Matrix<double, 3, -1, 0, 3, -1> >(KinematicsCache<double> const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, -1, 0, 3, -1> > const&, int, int, int) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, 6, -1, 0, 6, -1> RigidBodyTree::worldMomentumMatrix<double>(KinematicsCache<double>&, set<int, less<int>, allocator<int> > const&, bool) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, 6, 1, 0, 6, 1> RigidBodyTree::transformSpatialAcceleration<double>(KinematicsCache<double> const&, Eigen::Matrix<double, 6, 1, 0, 6, 1> const&, int, int, int, int) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, 6, 1, 0, 6, 1> RigidBodyTree::worldMomentumMatrixDotTimesV<double>(KinematicsCache<double>&, set<int, less<int>, allocator<int> > const&) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinJacobian<double, Eigen::Matrix<double, 3, 1, 0, 3, 1> >(KinematicsCache<double> const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&, int, int, int, bool) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, -1, 1, 0, -1, 1> RigidBodyTree::forwardJacDotTimesV<double, Eigen::Matrix<double, 3, 1, 0, 3, 1> >(KinematicsCache<double> const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&, int, int, int) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, -1, 1, 0, -1, 1> RigidBodyTree::inverseDynamics<double>(KinematicsCache<double>&, unordered_map<RigidBody const*, Eigen::Matrix<double, 6, 1, 0, 6, 1>, hash<RigidBody const*>, equal_to<RigidBody const*>, Eigen::aligned_allocator<pair<RigidBody const* const, Eigen::Matrix<double, 6, 1, 0, 6, 1> > > > const&, Eigen::Matrix<double, -1, 1, 0, -1, 1> const&) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, Eigen::Matrix<double, 3, -1, 0, 3, -1> >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, -1, 0, 3, -1> > const&, int, int, int, bool) const;
-template DLLEXPORT_RBM Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, Eigen::Matrix<double, 3, -1, 0, 3, -1> >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, -1, 0, 3, -1> > const&, int, int, int, bool) const;
-template DLLEXPORT_RBM void RigidBodyTree::jointLimitConstraints<Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 0, Eigen::Stride<0, 0> >, Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 0, Eigen::Stride<0, 0> >, Eigen::Map<Eigen::Matrix<double, -1, -1, 0, -1, -1>, 0, Eigen::Stride<0, 0> > >(Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 0, Eigen::Stride<0, 0> > > const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 0, Eigen::Stride<0, 0> > >&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, -1, -1, 0, -1, -1>, 0, Eigen::Stride<0, 0> > >&) const;
-template DLLEXPORT_RBM Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinJacobian<double, Eigen::Block<Eigen::Matrix<double, 3, -1, 0, 3, -1>, 3, 1, true> >(KinematicsCache<double> const&, Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 3, -1, 0, 3, -1>, 3, 1, true> > const&, int, int, int, bool) const;
-template DLLEXPORT_RBM pair<Eigen::Matrix<double, 3, 1, 0, 3, 1>, double> RigidBodyTree::resolveCenterOfPressure<Eigen::Matrix<double, 3, 1, 0, 3, 1>, Eigen::Matrix<double, 3, 1, 0, 3, 1> >(KinematicsCache<double> const&, vector<ForceTorqueMeasurement, allocator<ForceTorqueMeasurement> > const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&) const;
+template DRAKERBM_EXPORT Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, -1, 0, -1, -1> RigidBodyTree::massMatrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >&) const;
+template DRAKERBM_EXPORT Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, -1, 0, -1, -1> RigidBodyTree::massMatrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&) const;
+template DRAKERBM_EXPORT Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyTree::massMatrix<double>(KinematicsCache<double>&) const;
+template DRAKERBM_EXPORT Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 3, 1, 0, 3, 1> RigidBodyTree::centerOfMass<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >&, set<int, less<int>, allocator<int> > const&) const;
+template DRAKERBM_EXPORT Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 3, 1, 0, 3, 1> RigidBodyTree::centerOfMass<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&, set<int, less<int>, allocator<int> > const&) const;
+template DRAKERBM_EXPORT Eigen::Matrix<double, 3, 1, 0, 3, 1> RigidBodyTree::centerOfMass<double>(KinematicsCache<double>&, set<int, less<int>, allocator<int> > const&) const;
+template DRAKERBM_EXPORT Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, 1, 0, -1, 1> RigidBodyTree::dynamicsBiasTerm<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >&, unordered_map<RigidBody const*, Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 6, 1, 0, 6, 1>, hash<RigidBody const*>, equal_to<RigidBody const*>, Eigen::aligned_allocator<pair<RigidBody const* const, Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 6, 1, 0, 6, 1> > > > const&, bool) const;
+template DRAKERBM_EXPORT Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, 1, 0, -1, 1> RigidBodyTree::dynamicsBiasTerm<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&, unordered_map<RigidBody const*, Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 6, 1, 0, 6, 1>, hash<RigidBody const*>, equal_to<RigidBody const*>, Eigen::aligned_allocator<pair<RigidBody const* const, Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 6, 1, 0, 6, 1> > > > const&, bool) const;
+template DRAKERBM_EXPORT Eigen::Matrix<double, -1, 1, 0, -1, 1> RigidBodyTree::dynamicsBiasTerm<double>(KinematicsCache<double>&, unordered_map<RigidBody const*, Eigen::Matrix<double, 6, 1, 0, 6, 1>, hash<RigidBody const*>, equal_to<RigidBody const*>, Eigen::aligned_allocator<pair<RigidBody const* const, Eigen::Matrix<double, 6, 1, 0, 6, 1> > > > const&, bool) const;
+template DRAKERBM_EXPORT Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 6, -1, 0, 6, -1> RigidBodyTree::geometricJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, int, int, int, bool, vector<int, allocator<int> >*) const;
+template DRAKERBM_EXPORT Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 6, -1, 0, 6, -1> RigidBodyTree::geometricJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, int, int, int, bool, vector<int, allocator<int> >*) const;
+template DRAKERBM_EXPORT Eigen::Matrix<double, 6, -1, 0, 6, -1> RigidBodyTree::geometricJacobian<double>(KinematicsCache<double> const&, int, int, int, bool, vector<int, allocator<int> >*) const;
+template DRAKERBM_EXPORT Eigen::Transform<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 3, 1, 0> RigidBodyTree::relativeTransform<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, int, int) const;
+template DRAKERBM_EXPORT Eigen::Transform<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 3, 1, 0> RigidBodyTree::relativeTransform<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, int, int) const;
+template DRAKERBM_EXPORT Eigen::Transform<double, 3, 1, 0> RigidBodyTree::relativeTransform<double>(KinematicsCache<double> const&, int, int) const;
+template DRAKERBM_EXPORT Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > > const&, int, int, int, bool) const;
+template DRAKERBM_EXPORT Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > > const&, int, int, int, bool) const;
+template DRAKERBM_EXPORT Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinJacobian<double, Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > >(KinematicsCache<double> const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > > const&, int, int, int, bool) const;
+template DRAKERBM_EXPORT Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, 1, 0, -1, 1> RigidBodyTree::forwardJacDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > > const&, int, int, int) const;
+template DRAKERBM_EXPORT Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, 1, 0, -1, 1> RigidBodyTree::forwardJacDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > > const&, int, int, int) const;
+template DRAKERBM_EXPORT Eigen::Matrix<double, -1, 1, 0, -1, 1> RigidBodyTree::forwardJacDotTimesV<double, Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > >(KinematicsCache<double> const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, 3, -1, 0, 3, -1> const, 0, Eigen::Stride<0, 0> > > const&, int, int, int) const;
+template DRAKERBM_EXPORT Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 3, -1, 0, 3, -1> RigidBodyTree::centerOfMassJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >&, set<int, less<int>, allocator<int> > const&, bool) const;
+template DRAKERBM_EXPORT Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 3, -1, 0, 3, -1> RigidBodyTree::centerOfMassJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&, set<int, less<int>, allocator<int> > const&, bool) const;
+template DRAKERBM_EXPORT Eigen::Matrix<double, 3, -1, 0, 3, -1> RigidBodyTree::centerOfMassJacobian<double>(KinematicsCache<double>&, set<int, less<int>, allocator<int> > const&, bool) const;
+template DRAKERBM_EXPORT Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 6, -1, 0, 6, -1> RigidBodyTree::centroidalMomentumMatrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >&, set<int, less<int>, allocator<int> > const&, bool) const;
+template DRAKERBM_EXPORT Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 6, -1, 0, 6, -1> RigidBodyTree::centroidalMomentumMatrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&, set<int, less<int>, allocator<int> > const&, bool) const;
+template DRAKERBM_EXPORT Eigen::Matrix<double, 6, -1, 0, 6, -1> RigidBodyTree::centroidalMomentumMatrix<double>(KinematicsCache<double>&, set<int, less<int>, allocator<int> > const&, bool) const;
+template DRAKERBM_EXPORT Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinPositionGradient<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, int, int, int) const;
+template DRAKERBM_EXPORT Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinPositionGradient<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, int, int, int) const;
+template DRAKERBM_EXPORT Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinPositionGradient<double>(KinematicsCache<double> const&, int, int, int) const;
+template DRAKERBM_EXPORT Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 6, 1, 0, 6, 1> RigidBodyTree::geometricJacobianDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, int, int, int) const;
+template DRAKERBM_EXPORT Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 6, 1, 0, 6, 1> RigidBodyTree::geometricJacobianDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, int, int, int) const;
+template DRAKERBM_EXPORT Eigen::Matrix<double, 6, 1, 0, 6, 1> RigidBodyTree::geometricJacobianDotTimesV<double>(KinematicsCache<double> const&, int, int, int) const;
+template DRAKERBM_EXPORT Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 3, 1, 0, 3, 1> RigidBodyTree::centerOfMassJacobianDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >&, set<int, less<int>, allocator<int> > const&) const;
+template DRAKERBM_EXPORT Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 3, 1, 0, 3, 1> RigidBodyTree::centerOfMassJacobianDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&, set<int, less<int>, allocator<int> > const&) const;
+template DRAKERBM_EXPORT Eigen::Matrix<double, 3, 1, 0, 3, 1> RigidBodyTree::centerOfMassJacobianDotTimesV<double>(KinematicsCache<double>&, set<int, less<int>, allocator<int> > const&) const;
+template DRAKERBM_EXPORT Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, 6, 1, 0, 6, 1> RigidBodyTree::centroidalMomentumMatrixDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > >&, set<int, less<int>, allocator<int> > const&) const;
+template DRAKERBM_EXPORT Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, 6, 1, 0, 6, 1> RigidBodyTree::centroidalMomentumMatrixDotTimesV<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > >&, set<int, less<int>, allocator<int> > const&) const;
+template DRAKERBM_EXPORT Eigen::Matrix<double, 6, 1, 0, 6, 1> RigidBodyTree::centroidalMomentumMatrixDotTimesV<double>(KinematicsCache<double>&, set<int, less<int>, allocator<int> > const&) const;
+template DRAKERBM_EXPORT Eigen::Matrix<double, -1, 1, 0, -1, 1> RigidBodyTree::positionConstraints<double>(KinematicsCache<double> const&) const;
+template DRAKERBM_EXPORT Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyTree::positionConstraintsJacobian<double>(KinematicsCache<double> const&, bool) const;
+template DRAKERBM_EXPORT Eigen::Matrix<double, -1, 1, 0, -1, 1> RigidBodyTree::positionConstraintsJacDotTimesV<double>(KinematicsCache<double> const&) const;
+template DRAKERBM_EXPORT void RigidBodyTree::jointLimitConstraints<Eigen::Matrix<double, -1, 1, 0, -1, 1>, Eigen::Matrix<double, -1, 1, 0, -1, 1>, Eigen::Matrix<double, -1, -1, 0, -1, -1> >(Eigen::MatrixBase<Eigen::Matrix<double, -1, 1, 0, -1, 1> > const&, Eigen::MatrixBase<Eigen::Matrix<double, -1, 1, 0, -1, 1> >&, Eigen::MatrixBase<Eigen::Matrix<double, -1, -1, 0, -1, -1> >&) const;
+template DRAKERBM_EXPORT Eigen::Matrix<double, 6, 1, 0, 6, 1> RigidBodyTree::relativeTwist<double>(KinematicsCache<double> const&, int, int, int) const;
+template DRAKERBM_EXPORT Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinJacobian<double, Eigen::Matrix<double, 3, -1, 0, 3, -1> >(KinematicsCache<double> const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, -1, 0, 3, -1> > const&, int, int, int, bool) const;
+template DRAKERBM_EXPORT Eigen::Matrix<double, -1, 1, 0, -1, 1> RigidBodyTree::forwardJacDotTimesV<double, Eigen::Matrix<double, 3, -1, 0, 3, -1> >(KinematicsCache<double> const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, -1, 0, 3, -1> > const&, int, int, int) const;
+template DRAKERBM_EXPORT Eigen::Matrix<double, 6, -1, 0, 6, -1> RigidBodyTree::worldMomentumMatrix<double>(KinematicsCache<double>&, set<int, less<int>, allocator<int> > const&, bool) const;
+template DRAKERBM_EXPORT Eigen::Matrix<double, 6, 1, 0, 6, 1> RigidBodyTree::transformSpatialAcceleration<double>(KinematicsCache<double> const&, Eigen::Matrix<double, 6, 1, 0, 6, 1> const&, int, int, int, int) const;
+template DRAKERBM_EXPORT Eigen::Matrix<double, 6, 1, 0, 6, 1> RigidBodyTree::worldMomentumMatrixDotTimesV<double>(KinematicsCache<double>&, set<int, less<int>, allocator<int> > const&) const;
+template DRAKERBM_EXPORT Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinJacobian<double, Eigen::Matrix<double, 3, 1, 0, 3, 1> >(KinematicsCache<double> const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&, int, int, int, bool) const;
+template DRAKERBM_EXPORT Eigen::Matrix<double, -1, 1, 0, -1, 1> RigidBodyTree::forwardJacDotTimesV<double, Eigen::Matrix<double, 3, 1, 0, 3, 1> >(KinematicsCache<double> const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&, int, int, int) const;
+template DRAKERBM_EXPORT Eigen::Matrix<double, -1, 1, 0, -1, 1> RigidBodyTree::inverseDynamics<double>(KinematicsCache<double>&, unordered_map<RigidBody const*, Eigen::Matrix<double, 6, 1, 0, 6, 1>, hash<RigidBody const*>, equal_to<RigidBody const*>, Eigen::aligned_allocator<pair<RigidBody const* const, Eigen::Matrix<double, 6, 1, 0, 6, 1> > > > const&, Eigen::Matrix<double, -1, 1, 0, -1, 1> const&, bool) const;
+template DRAKERBM_EXPORT Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> >, Eigen::Matrix<double, 3, -1, 0, 3, -1> >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1> > > const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, -1, 0, 3, -1> > const&, int, int, int, bool) const;
+template DRAKERBM_EXPORT Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinJacobian<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> >, Eigen::Matrix<double, 3, -1, 0, 3, -1> >(KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, -1, 1> > > const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, -1, 0, 3, -1> > const&, int, int, int, bool) const;
+template DRAKERBM_EXPORT void RigidBodyTree::jointLimitConstraints<Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 0, Eigen::Stride<0, 0> >, Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 0, Eigen::Stride<0, 0> >, Eigen::Map<Eigen::Matrix<double, -1, -1, 0, -1, -1>, 0, Eigen::Stride<0, 0> > >(Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 0, Eigen::Stride<0, 0> > > const&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, -1, 1, 0, -1, 1>, 0, Eigen::Stride<0, 0> > >&, Eigen::MatrixBase<Eigen::Map<Eigen::Matrix<double, -1, -1, 0, -1, -1>, 0, Eigen::Stride<0, 0> > >&) const;
+template DRAKERBM_EXPORT Eigen::Matrix<double, -1, -1, 0, -1, -1> RigidBodyTree::forwardKinJacobian<double, Eigen::Block<Eigen::Matrix<double, 3, -1, 0, 3, -1>, 3, 1, true> >(KinematicsCache<double> const&, Eigen::MatrixBase<Eigen::Block<Eigen::Matrix<double, 3, -1, 0, 3, -1>, 3, 1, true> > const&, int, int, int, bool) const;
+template DRAKERBM_EXPORT pair<Eigen::Matrix<double, 3, 1, 0, 3, 1>, double> RigidBodyTree::resolveCenterOfPressure<Eigen::Matrix<double, 3, 1, 0, 3, 1>, Eigen::Matrix<double, 3, 1, 0, 3, 1> >(KinematicsCache<double> const&, vector<ForceTorqueMeasurement, allocator<ForceTorqueMeasurement> > const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&, Eigen::MatrixBase<Eigen::Matrix<double, 3, 1, 0, 3, 1> > const&) const;

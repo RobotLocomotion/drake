@@ -324,8 +324,13 @@ classdef Trajectory < DrakeSystem
     function h=fnplt(obj,plotdims)
       if (nargin>1 && ~isempty(plotdims) && any(plotdims>prod(obj.dim) | plotdims<1)) error('plotdims out of range'); end
       breaks=obj.getBreaks();
-      if iscolumn(breaks) breaks = breaks'; end 
-      m=5; t=linspace(0,1,m)'; n=length(breaks)-1;
+      if iscolumn(breaks) breaks = breaks'; end
+      if size(breaks)<5,
+        m=200; % such that the plot has relatively high fidelity/resolution when there are very few breaks (such as in PseudoSpectralMethodTrajOpt)
+      else,
+        m=5;
+      end
+      t=linspace(0,1,m)'; n=length(breaks)-1;
       ts = repmat(1-t,1,n).*repmat(breaks(1:end-1),m,1) + repmat(t,1,n).*repmat(breaks(2:end),m,1);
       ts = ts(:);
       pts = obj.eval(ts);
@@ -425,6 +430,8 @@ classdef Trajectory < DrakeSystem
       error('parameters are not implemented for this type of trajetory'); 
     end
     
-    
+    function new_traj = append(obj, other)
+      error('Appending this type of trajectory is not (yet) supported'); 
+    end
   end
 end

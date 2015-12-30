@@ -29,5 +29,7 @@ DLLEXPORT void geometricJacobianDotTimesVmex(int nlhs, mxArray *plhs[], int nrhs
 DLLEXPORT void geometricJacobianmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]);
 DLLEXPORT void massMatrixmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]);
 DLLEXPORT void dynamicsBiasTermmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]);
+DLLEXPORT void velocityToPositionDotMappingmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]);
+DLLEXPORT void positionDotToVelocityMappingmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]);
 
 #endif //DRAKE_DRAKEMEXFUNCTIONS_H

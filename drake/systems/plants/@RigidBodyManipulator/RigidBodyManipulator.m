@@ -130,53 +130,78 @@ classdef RigidBodyManipulator < Manipulator
   end
 
   methods
-    function [Vq, dVq] = qdotToV(obj, q)
-      compute_gradient = nargout > 1;
-
-      bodies = obj.body;
-      nb = length(bodies);
-      nv = obj.num_velocities;
-      nq = obj.num_positions;
-      Vq = zeros(nv, nq) * q(1); % to make TaylorVar work better
-
-      if compute_gradient
-        dVq = zeros(numel(Vq), nq) * q(1);
-      end
-      for i = 2 : nb
-        bodyI = bodies(i);
-        q_body = q(bodyI.position_num);
-        if compute_gradient
-          [VqJoint, dVqJoint] = jointQdot2v(bodyI, q_body);
-          dVq = setSubMatrixGradient(dVq, dVqJoint, bodyI.velocity_num, bodyI.position_num, size(Vq), bodyI.position_num);
-        else
-          VqJoint = jointQdot2v(bodyI, q_body);
+    function [Vq, dVq] = qdotToV(obj, kinsol)
+      if obj.mex_model_ptr ~= 0 && kinsol.mex
+        Vq = velocityToPositionDotMappingmex(kinsol.mex_ptr);
+        if kinsol.has_gradients
+          [Vq, dVq] = eval(Vq);
+          nq = length(kinsol.q);
+          if isempty(dVq)
+            dVq = zeros(numel(Vq), nq);
+          else
+            dVq = dVq(:, 1 : nq);
+          end
         end
-        Vq(bodyI.velocity_num, bodyI.position_num) = VqJoint;
+      else % fall back to the Matlab version:
+        compute_gradient = nargout > 1;
+        
+        bodies = obj.body;
+        nb = length(bodies);
+        nv = obj.num_velocities;
+        nq = obj.num_positions;
+        Vq = zeros(nv, nq) * q(1); % to make TaylorVar work better
+        
+        if compute_gradient
+          dVq = zeros(numel(Vq), nq) * q(1);
+        end
+        for i = 2 : nb
+          bodyI = bodies(i);
+          q_body = q(bodyI.position_num);
+          if compute_gradient
+            [VqJoint, dVqJoint] = jointQdot2v(bodyI, q_body);
+            dVq = setSubMatrixGradient(dVq, dVqJoint, bodyI.velocity_num, bodyI.position_num, size(Vq), bodyI.position_num);
+          else
+            VqJoint = jointQdot2v(bodyI, q_body);
+          end
+          Vq(bodyI.velocity_num, bodyI.position_num) = VqJoint;
+        end
       end
     end
 
-    function [VqInv, dVqInv] = vToqdot(obj, q)
-      compute_gradient = nargout > 1;
-
-      bodies = obj.body;
-      nb = length(bodies);
-      nv = obj.num_velocities;
-      nq = obj.num_positions;
-      VqInv = zeros(nq, nv) * q(1); % to make TaylorVar work better
-
-      if compute_gradient
-        dVqInv = zeros(numel(VqInv), nq) * q(1);
-      end
-      for i = 2 : nb
-        bodyI = bodies(i);
-        q_body = q(bodyI.position_num);
-        if compute_gradient
-          [VqInvJoint, dVqInvJoint] = jointV2qdot(bodyI, q_body);
-          dVqInv = setSubMatrixGradient(dVqInv, dVqInvJoint, bodyI.position_num, bodyI.velocity_num, size(VqInv), bodyI.position_num);
-        else
-          VqInvJoint = jointV2qdot(bodyI, q_body);
+    function [VqInv, dVqInv] = vToqdot(obj, kinsol)
+      if obj.mex_model_ptr ~= 0 && kinsol.mex
+        VqInv = velocityToPositionDotMappingmex(kinsol.mex_ptr);
+        if kinsol.has_gradients
+          [VqInv, dVqInv] = eval(VqInv);
+          nq = length(kinsol.q);
+          if isempty(dVqInv)
+            dVqInv = zeros(numel(VqInv), nq);
+          else
+            dVqInv = dVqInv(:, 1 : nq);
+          end
         end
-        VqInv(bodyI.position_num, bodyI.velocity_num) = VqInvJoint;
+      else % fall back to the Matlab version:
+        compute_gradient = nargout > 1;
+        bodies = obj.body;
+        nb = length(bodies);
+        nv = obj.num_velocities;
+        nq = obj.num_positions;
+        VqInv = zeros(nq, nv) * kinsol.q(1); % to make TaylorVar work better
+        
+        if compute_gradient
+          dVqInv = zeros(numel(VqInv), nq) * kinsol.q(1);
+        end
+        for i = 2 : nb
+          bodyI = bodies(i);
+          q_body = kinsol.q(bodyI.position_num);
+          if compute_gradient
+            [VqInvJoint, dVqInvJoint] = jointV2qdot(bodyI, q_body);
+            dVqInv = setSubMatrixGradient(dVqInv, dVqInvJoint, bodyI.position_num, bodyI.velocity_num, size(VqInv), bodyI.position_num);
+          else
+            VqInvJoint = jointV2qdot(bodyI, q_body);
+          end
+          VqInv(bodyI.position_num, bodyI.velocity_num) = VqInvJoint;
+        end
       end
     end
 
@@ -384,7 +409,9 @@ classdef RigidBodyManipulator < Manipulator
       compute_gradient = nargout > 1;
 
       nv = model.getNumVelocities();
+      % Note: this will fail if damping is a trigpoly (we could handle this case, but need to do it carefully to not hurt performance)
       damping = zeros(nv, 1);
+      % Note: this will fail if friction is a trigpoly (as it should)
       coulomb_friction = zeros(nv, 1);
       static_friction = zeros(nv, 1);
       coulomb_window = zeros(nv, 1);
@@ -1118,9 +1145,11 @@ classdef RigidBodyManipulator < Manipulator
     function p = getParams(model)
       p = [];
       for i=1:min(numel(model.name),numel(model.param_db))
-        pn = fieldnames(model.param_db{i});
-        for j=1:numel(pn)
-          p = vertcat(p,model.param_db{i}.(pn{j}).value);
+        if ~isempty(model.param_db{i})
+          pn = fieldnames(model.param_db{i});
+          for j=1:numel(pn)
+            p = vertcat(p,model.param_db{i}.(pn{j}).value);
+          end
         end
       end
       p = Point(getParamFrame(model),p);
@@ -2134,7 +2163,7 @@ classdef RigidBodyManipulator < Manipulator
     end
 
     function obj = createMexPointer(obj)
-      if (exist('constructModelmex')==3)
+      if (exist('constructModelmex')==3 && isnumeric(getParams(obj))) % note that this getParams call could be somewhat expensive to be putting here, but it seems like it does need to be there for symbolic parameters (which are not supported in the c++ version yet)
 %        obj.mex_model_ptr = debugMexEval('constructModelmex',obj);
         obj.mex_model_ptr = constructModelmex(obj);
         obj.default_kinematics_cache_ptr_no_gradients = createKinematicsCachemex(obj.mex_model_ptr);

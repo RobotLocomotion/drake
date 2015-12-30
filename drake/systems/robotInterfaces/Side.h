@@ -3,21 +3,11 @@
 
 #include <array>
 #include <string>
-
-#undef DLLEXPORT_DRAKESIDE
-#if defined(WIN32) || defined(WIN64)
-  #if defined(drakeSide_EXPORTS)
-    #define DLLEXPORT_DRAKESIDE __declspec( dllexport )
-  #else
-    #define DLLEXPORT_DRAKESIDE __declspec( dllimport )
-  #endif
-#else
-  #define DLLEXPORT_DRAKESIDE
-#endif
-
+#include <drakeSide_export.h>
 
 // adapted from https://en.wikibooks.org/wiki/More_C%2B%2B_Idioms/Type_Safe_Enum
-class DLLEXPORT_DRAKESIDE Side
+// TODO: replace with enum class
+class DRAKESIDE_EXPORT Side
 {
 public:
   enum SideEnum {LEFT, RIGHT};

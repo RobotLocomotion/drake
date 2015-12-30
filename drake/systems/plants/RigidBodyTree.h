@@ -13,22 +13,10 @@
 #include "ForceTorqueMeasurement.h"
 #include "drakeUtil.h"
 #include <stdexcept>
-
-
-#undef DLLEXPORT_RBM
-#if defined(WIN32) || defined(WIN64)
-  #if defined(drakeRBM_EXPORTS)
-    #define DLLEXPORT_RBM __declspec( dllexport )
-  #else
-    #define DLLEXPORT_RBM __declspec( dllimport )
-  #endif
-#else
-  #define DLLEXPORT_RBM
-#endif
-
 #include "RigidBody.h"
 #include "RigidBodyFrame.h"
 #include "KinematicsCache.h"
+#include <drakeRBM_export.h>
 
 #define BASIS_VECTOR_HALF_COUNT 2  //number of basis vectors over 2 (i.e. 4 basis vectors in this case)
 #define EPSILON 10e-8
@@ -36,7 +24,7 @@
 
 typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 
-class DLLEXPORT_RBM RigidBodyActuator
+class DRAKERBM_EXPORT RigidBodyActuator
 {
 public:
   RigidBodyActuator(std::string _name, std::shared_ptr<RigidBody> _body, double _reduction = 1.0) :
@@ -47,7 +35,7 @@ public:
   double reduction;
 };
 
-class DLLEXPORT_RBM RigidBodyLoop
+class DRAKERBM_EXPORT RigidBodyLoop
 {
 public:
   RigidBodyLoop(const std::shared_ptr<RigidBodyFrame>& _frameA, const std::shared_ptr<RigidBodyFrame>& _frameB, const Eigen::Vector3d& _axis) :
@@ -62,7 +50,7 @@ public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-class DLLEXPORT_RBM RigidBodyTree
+class DRAKERBM_EXPORT RigidBodyTree
 {
 public:
   RigidBodyTree(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
@@ -245,14 +233,52 @@ public:
 
   KinematicPath findKinematicPath(int start_body_or_frame_idx, int end_body_or_frame_idx) const;
 
+  /** \brief Compute the positive definite mass (configuration space) matrix \f$ H(q) \f$, defined by \f$T = \frac{1}{2} v^T H(q) v \f$, where \f$ T \f$ is kinetic energy.
+   *
+   * The mass matrix also appears in the manipulator equations
+   *  \f[
+   *  H(q) \dot{v} + C(q, v, f_\text{ext}) = B(q) u
+   * \f]
+   *
+   * \param cache a KinematicsCache constructed given \f$ q \f$
+   * \return the mass matrix \f$ H(q) \f$
+   */
   template <typename Scalar>
   Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> massMatrix(KinematicsCache<Scalar>& cache) const;
 
+  /** \brief Compute the term \f$ C(q, v, f_\text{ext}) \f$ in the manipulator equations
+  *  \f[
+  *  H(q) \dot{v} + C(q, v, f_\text{ext}) = B(q) u
+  * \f]
+  *
+  * Convenience method that calls inverseDynamics with \f$ \dot{v} = 0 \f$. See inverseDynamics for argument descriptions.
+  * \see inverseDynamics
+  */
   template <typename Scalar>
-  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> dynamicsBiasTerm(KinematicsCache<Scalar>& cache, const eigen_aligned_unordered_map<RigidBody const *, Eigen::Matrix<Scalar, TWIST_SIZE, 1> >& f_ext) const;
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> dynamicsBiasTerm(KinematicsCache<Scalar>& cache, const eigen_aligned_unordered_map<RigidBody const *, Eigen::Matrix<Scalar, TWIST_SIZE, 1> >& f_ext, bool include_velocity_terms = true) const;
 
+  /** \brief Compute
+  * \f[
+  *  H(q) \dot{v} + C(q, v, f_\text{ext})
+  * \f]
+  * that is, the left hand side of the manipulator equations
+  *  \f[
+  *  H(q) \dot{v} + C(q, v, f_\text{ext}) = B(q) u
+  * \f]
+  *
+  * Note that the 'dynamics bias term' \f$ C(q, v, f_\text{ext}) \f$ can be computed by simply setting \f$ \dot{v} = 0\f$.
+  * Note also that if only the gravitational terms contained in \f$ C(q, v, f_\text{ext}) \f$ are required, one can set \a include_velocity_terms to false.
+  * Alternatively, one can pass in a KinematicsCache created with \f$ v = 0\f$ or without specifying the velocity vector.
+  *
+  * Algorithm: recursive Newton-Euler. Does not explicitly compute mass matrix.
+  * \param cache a KinematicsCache constructed given \f$ q \f$ and \f$ v \f$
+  * \param f_ext external wrenches exerted upon bodies. Expressed in body frame.
+  * \param vd \f$ \dot{v} \f$
+  * \param include_velocity_terms whether to include velocity-dependent terms in \f$ C(q, v, f_\text{ext}) \f$. Setting \a include_velocity_terms to false is Equivalent to setting \f$ v = 0 \f$
+  * \return \f$ H(q) \dot{v} + C(q, v, f_\text{ext}) \f$
+  */
   template <typename Scalar>
-  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> inverseDynamics(KinematicsCache<Scalar>& cache, const eigen_aligned_unordered_map<RigidBody const *, Eigen::Matrix<Scalar, TWIST_SIZE, 1> >& f_ext, const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& vd) const;
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> inverseDynamics(KinematicsCache<Scalar>& cache, const eigen_aligned_unordered_map<RigidBody const *, Eigen::Matrix<Scalar, TWIST_SIZE, 1> >& f_ext, const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& vd, bool include_velocity_terms = true) const;
 
   template <typename DerivedV>
   Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorques(Eigen::MatrixBase<DerivedV> const & v) const;
@@ -401,40 +427,19 @@ public:
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> positionConstraints(const KinematicsCache<Scalar>& cache) const;
 
   template<typename Scalar>
-  Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> positionConstraintsJacobian(const KinematicsCache<Scalar> &cache) const;
+  Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> positionConstraintsJacobian(const KinematicsCache<Scalar> &cache, bool in_terms_of_qdot = true) const;
+
+  template<typename Scalar>
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> positionConstraintsJacDotTimesV(const KinematicsCache<Scalar> &cache) const;
 
   size_t getNumPositionConstraints() const;
 
-  template <typename Derived>
-  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> transformVelocityMappingToPositionDotMapping(
-      const KinematicsCache<typename Derived::Scalar>& cache, const Eigen::MatrixBase<Derived>& mat) const;
-  
   /*
   template <typename Derived>
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> transformPositionDotMappingToVelocityMapping(
       const KinematicsCache<typename Derived::Scalar>& cache, const Eigen::MatrixBase<Derived>& mat) const;
   */
   
-  template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> transformPositionDotMappingToVelocityMapping(
-    const KinematicsCache<typename Derived::Scalar>& cache, const Eigen::MatrixBase<Derived>& mat) const
-{
-  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> ret(mat.rows(), num_velocities);
-  int ret_col_start = 0;
-  int mat_col_start = 0;
-  for (auto it = bodies.begin(); it != bodies.end(); ++it) {
-    RigidBody& body = **it;
-    if (body.hasParent()) {
-      const DrakeJoint& joint = body.getJoint();
-      const auto& element = cache.getElement(body);
-      ret.middleCols(ret_col_start, joint.getNumVelocities()).noalias() = mat.middleCols(mat_col_start, joint.getNumPositions()) * element.v_to_qdot;
-      ret_col_start += joint.getNumVelocities();
-      mat_col_start += joint.getNumPositions();
-    }
-  }
-  return ret;
-};
-
   template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> compactToFull(
     const Eigen::MatrixBase<Derived>& compact, const std::vector<int>& joint_path, bool in_terms_of_qdot) const {
@@ -506,7 +511,7 @@ private:
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-// The following was required for building w/ DLLEXPORT_RBM on windows (due to the unique_ptrs).  See
+// The following was required for building w/ DRAKERBM_EXPORT on windows (due to the unique_ptrs).  See
 // http://stackoverflow.com/questions/8716824/cannot-access-private-member-error-only-when-class-has-export-linkage
 private:
   RigidBodyTree(const RigidBodyTree &);

@@ -113,7 +113,7 @@ set(gurobi_GIT_REPOSITORY https://github.com/RobotLocomotion/gurobi.git)
 set(gurobi_GIT_TAG 9699ec6091f3d9d8013c6f0acaea229c84a189a5)
 set(gurobi_IS_PUBLIC FALSE)
 set(iris_GIT_REPOSITORY https://github.com/rdeits/iris-distro.git)
-set(iris_GIT_TAG a17bdb4a20a8195363b629c47fd1b6251b44c95e)
+set(iris_GIT_TAG 7442fbca7a456f5564296902d8e2130a751bf3e3)
 set(iris_ADDITIONAL_BUILD_ARGS PATCH_COMMAND make configure-cdd-only)
 set(iris_IS_PUBLIC TRUE)
 set(lcm_GIT_REPOSITORY https://github.com/RobotLocomotion/lcm-pod.git)
@@ -144,7 +144,7 @@ set(snopt_GIT_TAG 95d908275156f2665ef3941f08cb89c767480a6e)
 set(snopt_IS_CMAKE_POD TRUE)
 set(snopt_IS_PUBLIC FALSE)
 set(spotless_GIT_REPOSITORY https://github.com/RobotLocomotion/spotless-pod.git)
-set(spotless_GIT_TAG 2b0c25ebb1733950284c7e0be55a1a84304f7543)
+set(spotless_GIT_TAG 86275d25eecebe5e85d33e1074cdb274a1b32d49)
 set(spotless_IS_CMAKE_POD TRUE)
 set(spotless_IS_PUBLIC TRUE)
 set(yalmip_GIT_REPOSITORY https://github.com/RobotLocomotion/yalmip.git)
@@ -160,7 +160,7 @@ set(LittleDog_GIT_TAG a21aef548c33386243c40e315b1c70d83c122430)
 
 find_program(MAKE_EXECUTABLE make)
 if (NOT MAKE_EXECUTABLE)
-	message(FATAL_ERROR "couldn't find gnu make")
+	message(WARNING "couldn't find gnu make")
 endif()
 if (${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
 	set(PODS_MAKE_COMMAND "$(MAKE)")   # so we can pass through commandline arguments.
@@ -204,7 +204,7 @@ foreach(proj IN ITEMS
 	elseif(REMOVE_UNUSED_EXTERNALS AND IS_DIRECTORY ${proj})
 		message(STATUS "removing unused project: ${proj}")
 		if (NOT ${proj}_NO_BUILD)
-			execute_process(COMMAND ${MAKE_EXECUTABLE} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE} clean
+			execute_process(COMMAND ${MAKE_EXECUTABLE} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=$<CONFIGURATION> clean
 					WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/${proj})
 		endif()
 		execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory "${PROJECT_SOURCE_DIR}/${proj}")
@@ -234,11 +234,11 @@ foreach (proj ${EXTERNAL_PROJECTS})
 		endif()
 		if (NOT DEFINED ${proj}_BUILD_COMMAND)
 			if (${proj}_IS_CMAKE_POD)
-				set(${proj}_BUILD_COMMAND ${CMAKE_COMMAND} -E chdir ${${proj}_SOURCE_DIR} ${CMAKE_COMMAND} --build pod-build --config ${CMAKE_BUILD_TYPE} --target install)
+				set(${proj}_BUILD_COMMAND ${CMAKE_COMMAND} -E chdir ${${proj}_SOURCE_DIR} ${CMAKE_COMMAND} --build pod-build --config $<CONFIGURATION> --target install)
 			elseif(${proj}_NO_BUILD)
 				set(${proj}_BUILD_COMMAND "")
 			else()# then use the PODS gnu make system
-				set(${proj}_BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE})
+				set(${proj}_BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=$<CONFIGURATION>)
 			endif()
 		endif()
 		set(EXTERNAL_SOURCE_DIRS ${EXTERNAL_SOURCE_DIRS} ${${proj}_SOURCE_DIR} "\n")
@@ -297,7 +297,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 				#      BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE}
 				CONFIGURE_COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/drake/pod-build
 				COMMAND ${CMAKE_COMMAND} -E chdir ${PROJECT_SOURCE_DIR}/drake/pod-build ${CMAKE_COMMAND} -G${CMAKE_GENERATOR} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} ..
-				BUILD_COMMAND ${CMAKE_COMMAND} --build ${PROJECT_SOURCE_DIR}/drake/pod-build --config ${CMAKE_BUILD_TYPE} --target install
+				BUILD_COMMAND ${CMAKE_COMMAND} --build ${PROJECT_SOURCE_DIR}/drake/pod-build --config $<CONFIGURATION> --target install
 				INSTALL_COMMAND ""
 				DEPENDS ${deps}
 				${${proj}_ADDITIONAL_BUILD_ARGS}
@@ -335,7 +335,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 	ExternalProject_Get_Property(${proj} SOURCE_DIR)
 	if (NOT ${proj}_NO_BUILD)
 		add_custom_target(clean-${proj}
-				COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE} clean
+				COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=$<CONFIGURATION> clean
 				WORKING_DIRECTORY ${SOURCE_DIR})
 		add_dependencies(clean-all clean-${proj})
 	endif()
@@ -382,4 +382,3 @@ if (WITH_SNOPT_PRECOMPILED)
   add_dependencies(download-all download-snopt-precompiled)
   add_dependencies(drake download-snopt-precompiled) # just in case: make sure any compiled drake version happens after precompiled install
 endif()
-

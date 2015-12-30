@@ -673,7 +673,7 @@ PositionConstraint::PositionConstraint(RigidBodyTree *robot, const Matrix3Xd &pt
       {
         std::cerr<<"Drake:PositionConstraint:BadInputs: lb must be no larger than ub"<<std::endl;
       }
-      if(isinf(lb(i,j))&&isinf(ub(i,j)))
+      if(std::isinf(lb(i,j)) && std::isinf(ub(i,j)))
       {
         this->null_constraint_rows[idx] = true;
       }
@@ -2473,10 +2473,9 @@ void GravityCompensationTorqueConstraint::eval(const double* t, KinematicsCache<
   typedef AutoDiffScalar<VectorXd> Scalar;
   auto q = cache.getQ().cast<Scalar>().eval();
   gradientMatrixToAutoDiff(MatrixXd::Identity(robot->num_positions, robot->num_positions), q);
-  auto qd = Matrix<Scalar, Dynamic, 1>::Zero(robot->num_velocities).eval();
-  KinematicsCache<Scalar> cache_zero_velocity = robot->doKinematics(q, qd);
+  KinematicsCache<Scalar> cache_with_gradients = robot->doKinematics(q);
   eigen_aligned_unordered_map<RigidBody const *, Matrix<Scalar, TWIST_SIZE, 1> > f_ext;
-  auto G_autodiff = robot->dynamicsBiasTerm(cache_zero_velocity, f_ext);
+  auto G_autodiff = robot->dynamicsBiasTerm(cache_with_gradients, f_ext, false);
   auto G = autoDiffToValueMatrix(G_autodiff);
   auto dG = autoDiffToGradientMatrix(G_autodiff);
 
