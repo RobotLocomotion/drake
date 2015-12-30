@@ -77,6 +77,10 @@ classdef AcrobotPlant < Manipulator
       end
     end
     
+    function [xdot,dxdot,ps,qs,qds,us,ts] = dynamicsSym(obj,x,u,t)
+      [xdot,dxdot,ps,qs,qds,us,ts] = dynamicsSym@Manipulator(obj,x,u,t);
+    end
+    
     function x = getInitialState(obj)
       x = .1*randn(4,1);
     end
