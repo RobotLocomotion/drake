@@ -1,4 +1,5 @@
 
+#include <stdexcept>
 #include "RigidBodySystem.h"
 #include "RigidBodyIK.h"  // required for resolving initial conditions
 #include "urdfParsingUtil.h"
