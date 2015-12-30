@@ -76,11 +76,7 @@ classdef AcrobotPlant < Manipulator
         [df,d2f,d3f]= dynamicsGradients(obj,t,x,u,nargout-1);
       end
     end
-    
-    function [xdot,dxdot,ps,qs,qds,us,ts] = dynamicsSym(obj,x,u,t)
-      [xdot,dxdot,ps,qs,qds,us,ts] = dynamicsSym@Manipulator(obj,x,u,t);
-    end
-    
+
     function x = getInitialState(obj)
       x = .1*randn(4,1);
     end
