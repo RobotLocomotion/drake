@@ -56,16 +56,29 @@ RigidBodySystem::StateVector<double> Drake::getInitialState(const RigidBodySyste
   return x0;
 }
 
-void parseForceElement(RigidBodySystem *sys, TiXmlElement* node) {
+RigidBodyPropellor::RigidBodyPropellor(RigidBodySystem *sys, TiXmlElement *node, std::string name) : sys(sys), name(name) {
   Vector3d xyz=Vector3d::Zero(),rpy=Vector3d::Zero(),axis;
   axis << 1.0, 0.0, 0.0;
   Isometry3d Ttree = Isometry3d::Identity();
 
+  auto tree = sys->getRigidBodyTree();
+
+  TiXmlElement* parent_node = node->FirstChildElement("parent");
+  if (!parent_node) throw runtime_error("propellor " + name + " is missing the parent node");
+  auto parent = tree->findLink(parent_node->Attribute("link"));
+
+  if (TiXmlElement* origin = node->FirstChildElement("origin")) {
+    poseAttributesToTransform(origin, Ttree.matrix());
+  }
+  cout << "found propellor: " << name << endl;
+
+}
+
+void parseForceElement(RigidBodySystem *sys, TiXmlElement* node) {
+  string name = node->Attribute("name");
+
   if (TiXmlElement* propellor_node = node->FirstChildElement("propellor")) {
-    if (TiXmlElement* origin = propellor_node->FirstChildElement("origin")) {
-      poseAttributesToTransform(origin, Ttree.matrix());
-    }
-    cout << "found propellor" << endl;
+    sys->addForceElement(allocate_shared<RigidBodyPropellor>(Eigen::aligned_allocator<RigidBodyPropellor>(),sys,propellor_node,name));
   }
 }
 

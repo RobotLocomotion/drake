@@ -2,9 +2,12 @@
 #define DRAKE_RIGIDBODYSYSTEM_H
 
 #include "RigidBodyTree.h"
-#include "tinyxml.h"
+
+class TiXmlElement;
 
 namespace Drake {
+
+  class RigidBodySystem; // forward declaration
 
   /** RigidBodyPropellor
    * @concept{system_concept}
@@ -12,15 +15,18 @@ namespace Drake {
    */
   class RigidBodyPropellor {
   public:
-    RigidBodyPropellor(RigidBodySystem* psys, TiXmlElement* node);
+    RigidBodyPropellor(RigidBodySystem* sys, TiXmlElement* node, std::string name);
 
   private:
-    RigidBodySystem* psys;
-    RigidBodyFrame* pframe;
+    RigidBodySystem* sys;
+    std::shared_ptr<RigidBodyFrame> frame;
     Eigen::Vector3d axis;
+    double scale_factor_thrust; // scale factor between input and thrust
+    double scale_factor_moment; // scale factor between input and moment due to aerodynamic drag
+    std::string name;
 
   public:
-    EIGEN_ALIGNED_ALLOCATOR_NEW
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
   /** RigidBodySystem
@@ -42,6 +48,10 @@ namespace Drake {
 
     void addRobotFromURDFString(const std::string &xml_string, const std::string &root_dir = ".", const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
     void addRobotFromURDF(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION);
+
+    void addForceElement(const std::shared_ptr<RigidBodyPropellor>& prop) { props.push_back(prop); }
+
+    const std::shared_ptr<RigidBodyTree>& getRigidBodyTree(void) { return tree; }
 
     template <typename ScalarType>
     StateVector<ScalarType> dynamics(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {
@@ -94,7 +104,10 @@ namespace Drake {
 
   private:
     std::shared_ptr<RigidBodyTree> tree;
+    std::vector<std::shared_ptr<RigidBodyPropellor> > props;
 
+  public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
 
