@@ -92,7 +92,6 @@ classdef Manipulator < DrakeSystem
 
     end
 
-<<<<<<< HEAD
     function [xdot,dxdot,ps,qs,qds,us,ts] = dynamicsSym(obj,x,u,t)
     % Provides the DrakeSystem interface to the manipulatorDynamics.
         nq = obj.num_positions;
