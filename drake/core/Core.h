@@ -227,8 +227,10 @@ case when the combined vector builder could have returned the original type
     Form form;
     // todo: add sparsity info
 
+    InputOutputRelation(Form f) : form(f) {};
+
     static bool isa(const Form& f, const Form& base) {
-      if (base == ARBITRARY) return true;
+      if (f==base || base == ARBITRARY) return true;
       if (f == ARBITRARY) return false;
       return isa(derivesFrom(f), base);
     }
@@ -236,7 +238,7 @@ case when the combined vector builder could have returned the original type
 
     static Form leastCommonAncestor(const Form& f1, const Form& f2) {
       if (f1==ARBITRARY || f2==ARBITRARY) return ARBITRARY;
-      if (isa(f1,f2)) return f2;
+      if (isa(f2,f1)) return f1;
       return leastCommonAncestor(derivesFrom(f1),f2);
     }
     static Form leastCommonAncestor(std::initializer_list<Form> forms) {
@@ -252,14 +254,14 @@ case when the combined vector builder could have returned the original type
     }
 
     static InputOutputRelation composeWith(const InputOutputRelation& g, const InputOutputRelation& f) { // composition of functions y = g(f(x))
-      InputOutputRelation rel;  rel.form = leastCommonAncestor(g.form,f.form);
-      return rel;
+      return InputOutputRelation(leastCommonAncestor(g.form,f.form));
     }
+    /*
     static InputOutputRelation linearCombination(const InputOutputRelation& g, const InputOutputRelation& f) {
-      InputOutputRelation rel;  rel.form = leastCommonAncestor({g.form,f.form,LINEAR});
-    }
+      return InputOutputRelation(leastCommonAncestor({g.form,f.form,LINEAR}));
+    }*/
     static InputOutputRelation combine(const InputOutputRelation& a, const InputOutputRelation& b) { // vertical concatenation
-      InputOutputRelation rel;  rel.form = leastCommonAncestor(a.form,b.form);
+      return InputOutputRelation(leastCommonAncestor(a.form,b.form));
     }
     static InputOutputRelation combine(std::initializer_list<InputOutputRelation> args) {
       if (args.size()<1) throw std::runtime_error("combine requires at least one argument");
