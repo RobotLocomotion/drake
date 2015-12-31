@@ -460,7 +460,6 @@ classdef RigidBodyManipulator < Manipulator
         ftmp=bodyKin(obj,kinsol,body_ind,[force,zeros(3,1)]);
       end
 
-      % try to do it the Xtree way
       force = ftmp(:,1)-ftmp(:,2);
       f = [ cross(point,force,1); force ];  % spatial force in body coordinates
 
@@ -514,11 +513,6 @@ classdef RigidBodyManipulator < Manipulator
 %      axis = quat2rotmat(rpy2quat(rpy))*axis;  % axis is specified in joint frame
 
       child.Ttree = [rpy2rotmat(rpy), xyz; 0,0,0,1];
-      child.Xtree = transformAdjoint(homogTransInv(child.Ttree)); % +++TK: should really be named XtreeInv...
-
-      % note that I only now finally understand that my Ttree*[x;1] is
-      % *ALMOST* (up to translation?? need to resolve this!) the same as inv(Xtree)*[x;zeros(3,1)].  sigh.
-%      valuecheck([eye(3),zeros(3,1)]*child.Ttree*ones(4,1),[eye(3),zeros(3)]*inv(child.Xtree)*[ones(3,1);zeros(3,1)]);
 
       if ~any(strcmp(lower(type),{'fixed','floating_rpy','floating_quat'})) && dot(axis,[0;0;1])<1-1e-4
         % featherstone dynamics treats all joints as operating around the
@@ -2306,7 +2300,10 @@ classdef RigidBodyManipulator < Manipulator
           end
 
           % same as the composite inertia calculation in HandC.m
-          parent = setInertial(parent,parent.I + body.Xtree' * body.I * body.Xtree);
+          T_joint_predecessor_frame_to_parent_body = body.Ttree;
+          Ad_T_parent_body_to_joint_predecessor_frame = transformAdjoint(homogTransInv(T_joint_predecessor_frame_to_parent_body));
+          I_body_in_parent = Ad_T_parent_body_to_joint_predecessor_frame' * body.I * Ad_T_parent_body_to_joint_predecessor_frame;
+          parent = setInertial(parent,parent.I + I_body_in_parent);
         end
 
         for j=1:length(body.visual_geometry)
@@ -2356,7 +2353,6 @@ classdef RigidBodyManipulator < Manipulator
             end
             model.body(j).parent = body.parent;
             model.body(j).Ttree = body.Ttree*model.body(j).Ttree;
-            model.body(j).Xtree = model.body(j).Xtree*body.Xtree;
           end
         end
         model.body(body.parent) = parent;

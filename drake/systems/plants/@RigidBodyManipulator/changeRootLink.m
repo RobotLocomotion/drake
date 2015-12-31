@@ -52,11 +52,9 @@ while (true)
     current_body.jointname = ''; 
     current_body.pitch = 0;
     current_body.floating = 0;
-    current_body.Xtree = eye(6); 
     current_body.Ttree = eye(4);
     current_body.T_body_to_joint = eye(4);
 
-    X_old_body_to_new_body = Xrotx(rpy(1))*Xroty(rpy(2))*Xrotz(rpy(3))*Xtrans(xyz);
     T_old_body_to_new_body = inv([rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1)),xyz; 0,0,0,1]);
   else
     old_child_new_parent_body = getBody(rbm,parent_ind);
@@ -65,14 +63,11 @@ while (true)
     current_body.pitch = old_child_new_parent_body.pitch;
     current_body.floating = old_child_new_parent_body.floating;
 
-    X_old_body_to_new_body = inv(old_child_new_parent_body.Xtree);
-    T_old_body_to_new_body = inv(old_child_new_parent_body.Ttree); 
+    T_old_body_to_new_body = inv(old_child_new_parent_body.Ttree);
     if (grandparent_ind == 0) % then my parent is the root
-      current_body.Xtree = inv(Xrotx(rpy(1))*Xroty(rpy(2))*Xrotz(rpy(3))*Xtrans(xyz));
       current_body.Ttree = inv([rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1)),xyz; 0,0,0,1]); 
     else
       grandparent_old_body = getBody(rbm,grandparent_ind);
-      current_body.Xtree = inv(grandparent_old_body.Xtree);
       current_body.Ttree = inv(grandparent_old_body.Ttree);
     end
     
@@ -111,6 +106,7 @@ while (true)
   
   % todo: consider moving these into RigidBody.updateTransform, but only if
   % it gets *everything* correct
+  X_old_body_to_new_body = transformAdjoint(homogTransInv(T_old_body_to_new_body));
   current_body = setInertial(current_body,X_old_body_to_new_body'*current_body.I*X_old_body_to_new_body);
 
   for i=1:length(current_body.visual_geometry)
