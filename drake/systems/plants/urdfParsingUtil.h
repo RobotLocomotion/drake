@@ -53,22 +53,12 @@ bool parseVectorAttribute(TiXmlElement* node, const char* attribute_name, Eigen:
 
 void poseAttributesToTransform(TiXmlElement* node, Eigen::Matrix4d& T)
 {
-  double x = 0.0, y = 0.0, z = 0.0, roll = 0.0, pitch = 0.0, yaw = 0.0;
+  Eigen::Vector3d rpy=Eigen::Vector3d::Zero(), xyz=Eigen::Vector3d::Zero();
 
-  const char* attr = node->Attribute("xyz");
-  if (attr) {
-    std::stringstream s(attr);
-    s >> x >> y >> z;
-  }
+  parseVectorAttribute(node,"xyz",xyz);
+  parseVectorAttribute(node,"rpy",rpy);
 
-  attr = node->Attribute("rpy");
-  if (attr) {
-    std::stringstream s(attr);
-    s >> roll >> pitch >> yaw;
-  }
-
-  T << cos(yaw) * cos(pitch), cos(yaw) * sin(pitch) * sin(roll) - sin(yaw) * cos(roll), cos(yaw) * sin(pitch) * cos(roll) + sin(yaw) * sin(roll), x, sin(yaw) * cos(pitch), sin(yaw) * sin(pitch) * sin(roll) + cos(yaw) * cos(roll), sin(yaw) * sin(pitch) * cos(roll) - cos(yaw) * sin(roll), y, -sin(
-          pitch), cos(pitch) * sin(roll), cos(pitch) * cos(roll), z, 0, 0, 0, 1;
+  T << rpy2rotmat(rpy), xyz, 0,0,0,1;
 }
 
 #endif //DRAKE_URDFPARSINGUTIL_H_H

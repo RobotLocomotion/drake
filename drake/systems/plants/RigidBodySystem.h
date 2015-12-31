@@ -83,6 +83,9 @@ namespace Drake {
     void addForceElement(const std::shared_ptr<RigidBodyPropellor>& prop) { props.push_back(prop); }
 
     const std::shared_ptr<RigidBodyTree>& getRigidBodyTree(void) { return tree; }
+    size_t getNumStates(void) { return tree->num_positions + tree->num_velocities; }
+    size_t getNumInputs(void) { return tree->actuators.size() + props.size(); }
+    size_t getNumOutputs(void) { return getNumStates(); }
 
     template <typename ScalarType>
     StateVector<ScalarType> dynamics(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {
