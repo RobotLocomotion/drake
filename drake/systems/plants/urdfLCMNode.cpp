@@ -40,6 +40,10 @@ int main(int argc, char* argv[]) {
     else { throw std::runtime_error(string("Unknown base type") + floating_base_option + "; must be FIXED,RPY, or QUAT"); }
   }
 
+  if (commandLineOptionExists(argv,argc+argv,"--add_flat_terrain")) {
+    // todo : add flat terrain
+  }
+
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
 
   auto tree = make_shared<RigidBodyTree>(argv[argc-1],floating_base_type);

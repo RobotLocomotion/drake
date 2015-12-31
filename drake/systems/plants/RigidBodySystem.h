@@ -83,12 +83,13 @@ namespace Drake {
     void addForceElement(const std::shared_ptr<RigidBodyPropellor>& prop) { props.push_back(prop); }
 
     const std::shared_ptr<RigidBodyTree>& getRigidBodyTree(void) { return tree; }
-    size_t getNumStates(void) { return tree->num_positions + tree->num_velocities; }
-    size_t getNumInputs(void) { return tree->actuators.size() + props.size(); }
-    size_t getNumOutputs(void) { return getNumStates(); }
+    size_t getNumStates(void) const { return tree->num_positions + tree->num_velocities; }
+    size_t getNumInputs(void) const { return tree->actuators.size() + props.size(); }
+    size_t getNumOutputs(void) const { return getNumStates(); }
 
     template <typename ScalarType>
     StateVector<ScalarType> dynamics(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {
+      using namespace std;
       using namespace Eigen;
       eigen_aligned_unordered_map<const RigidBody *, Matrix<ScalarType, 6, 1> > f_ext;
 
@@ -101,7 +102,6 @@ namespace Drake {
       auto kinsol = tree->doKinematics(q,v);
 
       auto H = tree->massMatrix(kinsol);
-      MatrixXd Hinv = H.ldlt().solve(MatrixXd::Identity(nv,nv));
 
       const NullVector<ScalarType> force_state;  // todo:  will have to handle this case
 
@@ -120,8 +120,25 @@ namespace Drake {
         }
       }
 
+      MatrixXd Hinv = H.ldlt().solve(MatrixXd::Identity(nv,nv));
       VectorXd tau = -tree->dynamicsBiasTerm(kinsol,f_ext);
       if (num_actuators > 0) tau += tree->B*u.topRows(num_actuators);
+
+      // Formulate the forward dynamics as an optimization
+      //   find vdot, f  (feasibility problem ok for now => implicit objective is min norm solution)
+      //   subject to
+      //       position equality constraints (differentiated twice):   A vdot = b
+      //       velocity equality constraints (differentiated once):   A vdot = b
+      //       contact force constraints on vdot,f.  can be linear, nonlinear, even complementarity.  may have inequalities
+      //   important (common) special case of all linear equality constraints can be solved with a pseudo-inverse
+
+      { // contact dynamics
+        VectorXd phi;
+        Matrix3Xd normal, xA, xB;
+        vector<int> bodyA_idx, bodyB_idx, bodies_idx;
+        tree->collisionDetect(kinsol,phi,normal,xA,xB,bodyA_idx,bodyB_idx,bodies_idx);
+      }
+
 
       if (tree->getNumPositionConstraints()) {
         int nc = tree->getNumPositionConstraints();
