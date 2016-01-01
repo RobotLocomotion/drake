@@ -22,12 +22,13 @@ classdef RigidBodyTorsionalSpring < RigidBodyForceElement
          df_ext = sparse(6*getNumBodies(manip),size(q,1)+size(qd,1));
       end
 
-      f_ext(:,obj.child_body) = [manip.body(obj.child_body).joint_axis * torque; zeros(3, 1)];
+      wrench_on_child_in_child_frame = [manip.body(obj.child_body).joint_axis * torque; zeros(3, 1)];
+      f_ext(:,obj.child_body) = wrench_on_child_in_child_frame;
 
       if obj.parent_body ~= 0 % don't apply force to world body
         T_parent_to_child_joint_predecessor = homogTransInv(manip.body(obj.child_body).Ttree);
         AdT_parent_to_child_joint_predecessor = transformAdjoint(T_parent_to_child_joint_predecessor);
-        f_ext(:,obj.parent_body) = -AdT_parent_to_child_joint_predecessor' * wrench_on_child_in_child_joint_frame; 
+        f_ext(:,obj.parent_body) = -AdT_parent_to_child_joint_predecessor' * wrench_on_child_in_child_frame; 
       end
       if (nargout>1)
         df_ext((obj.child_body-1)*6+1:obj.child_body*6,1:size(q,1)) = [manip.body(obj.child_body).joint_axis * dtorquedq; zeros(3,size(q,1))];
