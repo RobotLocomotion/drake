@@ -2,6 +2,7 @@
 #define DRAKE_OPTIMIZATION_H
 
 #include "Core.h"
+#include <list>
 
 namespace Drake {
 
@@ -127,6 +128,18 @@ namespace Drake {
 //  void addConstraint(const BoundingBoxConstraint& constraint, const std::vector<const DecisionVariable&>& vars);
 
     template <typename DerivedA,typename DerivedB>
+    void addLinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& _Aeq,const Eigen::MatrixBase<DerivedB>& _beq) {
+      assert(_Aeq.cols()==num_vars);
+      assert(_Aeq.rows()==_beq.rows());
+      problem_type.reset(problem_type->addLinearEqualityConstraint());
+      size_t num_con = Aeq.rows();
+      Aeq.conservativeResize(num_con+_Aeq.rows(),Eigen::NoChange);
+      Aeq.bottomRows(_Aeq.rows()) = _Aeq;
+      beq.conservativeResize(num_con+_beq.rows());
+      beq.bottomRows(_beq.rows()) = _beq;
+    }
+
+    template <typename DerivedA,typename DerivedB>
     void addLinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& _Aeq,const Eigen::MatrixBase<DerivedB>& _beq, const DecisionVariable& var) {
       assert(_Aeq.cols()==var.value.rows());
       assert(_Aeq.rows()==_beq.rows());
@@ -176,7 +189,7 @@ namespace Drake {
       }
     }
 
-    std::vector<DecisionVariable> variables;
+    std::list<DecisionVariable> variables; // prefer list to vector because realloc in vector (when adding new decision variables) invalidates the old references
     size_t num_vars;
 
   public:

@@ -22,5 +22,5 @@ int main(int argc, char* argv[])
   prog.addLinearEqualityConstraint(2*Matrix2d::Identity(),b.topRows(2),y);
   prog.solve();
   assert((b.topRows(2)/2 - y.value).isZero());
-
+  assert((b - x.value).isZero());
 }

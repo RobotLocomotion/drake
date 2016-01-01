@@ -138,9 +138,30 @@ namespace Drake {
         }
       }
 
-//      MatrixXd Hinv = H.ldlt().solve(MatrixXd::Identity(nv,nv));
       VectorXd C = tree->dynamicsBiasTerm(kinsol,f_ext);
       if (num_actuators > 0) C -= tree->B*u.topRows(num_actuators);
+
+      // todo: lots of code performance optimization possible here... I'm doing an exhorbitant amount of identical allocations on every function evaluation.  Just keeping it simple at first.
+      OptimizationProblem prog;
+      auto const & vdot = prog.addContinuousVariables(nv,"vdot");
+
+      Eigen::MatrixXd H_and_neg_JT = H;
+      if (tree->getNumPositionConstraints()) {
+        int nc = tree->getNumPositionConstraints();
+        const double alpha = 5.0;  // 1/time constant of position constraint satisfaction (see my latex rigid body notes)
+
+        prog.addContinuousVariables(nc,"position constraint force");  // don't actually need to use the decision variable reference that would be returned...
+
+        // then compute the constraint force
+        auto phi = tree->positionConstraints(kinsol);
+        auto J = tree->positionConstraintsJacobian(kinsol,false);
+        auto Jdotv = tree->positionConstraintsJacDotTimesV(kinsol);
+
+        // phiddot = -2 alpha phidot - alpha^2 phi  (0 + critically damped stabilization term)
+        prog.addLinearEqualityConstraint(J,-(Jdotv + 2*alpha*J*v + alpha*alpha*phi),vdot);
+        H_and_neg_JT.conservativeResize(NoChange,H_and_neg_JT.cols()+J.rows());
+        H_and_neg_JT.rightCols(J.rows()) = -J.transpose();
+      }
 
 /*
       { // contact dynamics
@@ -151,31 +172,11 @@ namespace Drake {
       }
 */
 
-      OptimizationProblem prog;
-      auto vdot = prog.addContinuousVariables(nv,"vdot");
-
-/*
-      Eigen::MatrixXd J_constraint_force = Eigen::MatrixXd::Zero(nv,0);
-      if (tree->getNumPositionConstraints()) {
-        int nc = tree->getNumPositionConstraints();
-        const double alpha = 5.0;  // 1/time constant of position constraint satisfaction (see my latex rigid body notes)
-
-        auto f = prog.addContinuousVariables(nc,"position constraint force");
-
-        // then compute the constraint force
-        auto phi = tree->positionConstraints(kinsol);
-        auto J = tree->positionConstraintsJacobian(kinsol,false);
-        auto Jdotv = tree->positionConstraintsJacDotTimesV(kinsol);
-
-        MatrixXd tmp = JacobiSVD<MatrixXd>(J*Hinv*J.transpose(),ComputeThinU | ComputeThinV).solve(MatrixXd::Identity(nc,nc));  // computes the pseudo-inverse per the discussion at http://eigen.tuxfamily.org/bz/show_bug.cgi?id=257
-        tau.noalias() += -J.transpose()*tmp*(J*Hinv*tau + Jdotv + 2*alpha*J*v + alpha*alpha*phi);  // adds in the computed constraint forces
-      }
-*/
-
-      // todo: add J^T f to this constraint
-      prog.addLinearEqualityConstraint(H,-C,vdot);
+      // add [H,-J^T]*[vdot;f] = -C
+      prog.addLinearEqualityConstraint(H_and_neg_JT,-C);
 
       prog.solve();
+//      prog.printSolution();
 
       StateVector<ScalarType> dot(nq+nv);
       dot << kinsol.transformPositionDotMappingToVelocityMapping(Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic>::Identity(nq, nq))*v, vdot.value;

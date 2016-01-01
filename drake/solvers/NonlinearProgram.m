@@ -909,7 +909,8 @@ classdef NonlinearProgram
       % solver
       % @retval objval  A double scalar. The value of the objective function after running the
       % solver
-      % @retval exitflag   An integer scalar.
+      % @retval exitflag   An exit
+      integer scalar.
       %                    1  -- Solved successful
       %                    *********************
       %                    If the solver is SNOPT, then exitflag is the same as the INFO returned by
