@@ -2,6 +2,7 @@
 #define DRAKE_RIGIDBODYSYSTEM_H
 
 #include "System.h"
+#include "Optimization.h"
 #include "RigidBodyTree.h"
 #include "KinematicsCache.h"
 
@@ -87,6 +88,23 @@ namespace Drake {
     size_t getNumInputs(void) const { return tree->actuators.size() + props.size(); }
     size_t getNumOutputs(void) const { return getNumStates(); }
 
+    /** dynamics
+     * Formulates the forward dynamics of the rigid body system as an optimization
+     *   find vdot, f  (feasibility problem ok for now => implicit objective is min norm solution)
+     *   subject to
+     *       joint limit constraints (differentiated twice + stabilization term):    A vdot = b
+     *       position equality constraints (differentiated twice + stabilization):   A vdot = b
+     *       velocity equality constraints (differentiated once + stabilization):    A vdot = b
+     *       contact force constraints on vdot,f.  can be linear, nonlinear, even complementarity.  may have inequalities
+     *   the trick is that each new constraint can add decision variables (the new constraint forces and/or slack variables)
+     *   to the problem, so the last constraint to add is
+     *       equations of motion: H vdot + C(q,qdot,u,f_ext) = J^T(q,qdot) f
+     *   where J is accumulated through the constraint logic
+     *
+     * The solver will then dispatch to the right tool for the job.  Note that for many systems, especially those
+     * without any contact constraints (or with simple friction models), the formulation is linear and can be solved
+     * with least-squares.
+     */
     template <typename ScalarType>
     StateVector<ScalarType> dynamics(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {
       using namespace std;
@@ -120,29 +138,29 @@ namespace Drake {
         }
       }
 
-      MatrixXd Hinv = H.ldlt().solve(MatrixXd::Identity(nv,nv));
-      VectorXd tau = -tree->dynamicsBiasTerm(kinsol,f_ext);
-      if (num_actuators > 0) tau += tree->B*u.topRows(num_actuators);
+//      MatrixXd Hinv = H.ldlt().solve(MatrixXd::Identity(nv,nv));
+      VectorXd C = tree->dynamicsBiasTerm(kinsol,f_ext);
+      if (num_actuators > 0) C -= tree->B*u.topRows(num_actuators);
 
-      // Formulate the forward dynamics as an optimization
-      //   find vdot, f  (feasibility problem ok for now => implicit objective is min norm solution)
-      //   subject to
-      //       position equality constraints (differentiated twice):   A vdot = b
-      //       velocity equality constraints (differentiated once):   A vdot = b
-      //       contact force constraints on vdot,f.  can be linear, nonlinear, even complementarity.  may have inequalities
-      //   important (common) special case of all linear equality constraints can be solved with a pseudo-inverse
-
+/*
       { // contact dynamics
         VectorXd phi;
         Matrix3Xd normal, xA, xB;
         vector<int> bodyA_idx, bodyB_idx, bodies_idx;
         tree->collisionDetect(kinsol,phi,normal,xA,xB,bodyA_idx,bodyB_idx,bodies_idx);
       }
+*/
 
+      OptimizationProblem prog;
+      auto vdot = prog.addContinuousVariables(nv,"vdot");
 
+/*
+      Eigen::MatrixXd J_constraint_force = Eigen::MatrixXd::Zero(nv,0);
       if (tree->getNumPositionConstraints()) {
         int nc = tree->getNumPositionConstraints();
         const double alpha = 5.0;  // 1/time constant of position constraint satisfaction (see my latex rigid body notes)
+
+        auto f = prog.addContinuousVariables(nc,"position constraint force");
 
         // then compute the constraint force
         auto phi = tree->positionConstraints(kinsol);
@@ -152,8 +170,15 @@ namespace Drake {
         MatrixXd tmp = JacobiSVD<MatrixXd>(J*Hinv*J.transpose(),ComputeThinU | ComputeThinV).solve(MatrixXd::Identity(nc,nc));  // computes the pseudo-inverse per the discussion at http://eigen.tuxfamily.org/bz/show_bug.cgi?id=257
         tau.noalias() += -J.transpose()*tmp*(J*Hinv*tau + Jdotv + 2*alpha*J*v + alpha*alpha*phi);  // adds in the computed constraint forces
       }
+*/
+
+      // todo: add J^T f to this constraint
+      prog.addLinearEqualityConstraint(H,-C,vdot);
+
+      prog.solve();
+
       StateVector<ScalarType> dot(nq+nv);
-      dot << kinsol.transformPositionDotMappingToVelocityMapping(Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic>::Identity(nq, nq))*v, Hinv*tau;
+      dot << kinsol.transformPositionDotMappingToVelocityMapping(Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic>::Identity(nq, nq))*v, vdot.value;
       return dot;
     }
 
