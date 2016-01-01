@@ -29,16 +29,20 @@ namespace Drake {
     template <typename ScalarType> using OutputVector = RobotStateVector<ScalarType>;
     template <typename ScalarType> using InputVector = RobotStateVector<ScalarType>;
 
+    BotVisualizer(const std::shared_ptr<lcm::LCM> &_lcm, const std::shared_ptr<RigidBodyTree>& tree) :
+            tree(tree), lcm(_lcm) { init(); }
+
     BotVisualizer(const std::shared_ptr<lcm::LCM> &_lcm, const std::string &urdf_filename,
                   const DrakeJoint::FloatingBaseType floating_base_type) :
-            manip(urdf_filename, floating_base_type),
-            lcm(_lcm)
-    {
+            tree(new RigidBodyTree(urdf_filename, floating_base_type)),
+            lcm(_lcm) { init(); }
+
+    void init() {
       publishLoadRobot();
 
-      draw_msg.num_links = manip.bodies.size();
+      draw_msg.num_links = tree->bodies.size();
       std::vector<float> position = {0, 0, 0}, quaternion = {0, 0, 0, 1};
-      for (const auto &body : manip.bodies) {
+      for (const auto &body : tree->bodies) {
         draw_msg.link_name.push_back(body->linkname);
         draw_msg.robot_num.push_back(body->robotnum);
         draw_msg.position.push_back(position);
@@ -48,8 +52,8 @@ namespace Drake {
 
     void publishLoadRobot() const {
       drake::lcmt_viewer_load_robot vr;
-      vr.num_links = manip.bodies.size();
-      for (const auto &body : manip.bodies) {
+      vr.num_links = tree->bodies.size();
+      for (const auto &body : tree->bodies) {
         drake::lcmt_viewer_link_data link;
         link.name = body->linkname;
         link.robot_num = body->robotnum;
@@ -128,13 +132,13 @@ namespace Drake {
       draw_msg.timestamp = static_cast<int64_t>(t * 1000.0);
 
       auto uvec = toEigen(u);
-      auto q = uvec.head(manip.num_positions);
-      KinematicsCache<double> cache = manip.doKinematics(q);
+      auto q = uvec.head(tree->num_positions);
+      KinematicsCache<double> cache = tree->doKinematics(q);
 
       Eigen::Vector3d points = Eigen::Vector3d::Zero();
       int i, j;
-      for (i = 0; i < manip.bodies.size(); i++) {
-        auto pose = manip.forwardKin(cache, points, i, 0, 2);
+      for (i = 0; i < tree->bodies.size(); i++) {
+        auto pose = tree->forwardKin(cache, points, i, 0, 2);
         std::vector<float> &position = draw_msg.position[i];
         for (j = 0; j < 3; j++) position[j] = static_cast<float>(pose(j));
         std::vector<float> &quaternion = draw_msg.quaternion[i];
@@ -150,7 +154,7 @@ namespace Drake {
     bool isDirectFeedthrough() const { return true; }
 
   private:
-    mutable RigidBodyTree manip;  // todo: remove mutable tag after RBM cleanup
+    mutable std::shared_ptr<RigidBodyTree> tree;  // todo: remove mutable tag after RBM cleanup
     std::shared_ptr<lcm::LCM> lcm;
     mutable drake::lcmt_viewer_draw draw_msg;
   };

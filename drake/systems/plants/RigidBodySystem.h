@@ -125,7 +125,7 @@ namespace Drake {
 
       { // loop through rigid body force elements and accumulate f_ext
         int u_index = 0;
-        for (auto prop : props) {
+        for (auto const & prop : props) {
           RigidBodyFrame* frame = prop->getFrame();
           RigidBody* body = frame->body.get();
           int num_inputs = 1;  // todo: generalize this
@@ -140,6 +140,34 @@ namespace Drake {
 
       VectorXd C = tree->dynamicsBiasTerm(kinsol,f_ext);
       if (num_actuators > 0) C -= tree->B*u.topRows(num_actuators);
+
+      { // apply contact forces
+        VectorXd phi;
+        Matrix3Xd normal, xA, xB;
+        vector<int> bodyA_idx, bodyB_idx;
+        tree->potentialCollisions(kinsol,phi,normal,xA,xB,bodyA_idx,bodyB_idx);  // note: can replace with collisionDetect for (faster) single point per collision pair
+
+        for (int i=0; i<phi.rows(); i++) {
+          if (phi(i)<0.0) { // then i have contact
+            // spring law for normal force:  fA = (-k*phi - b*phidot)*normal
+            double k = 500, b = k/10;  // todo: put these somewhere better... or make them parameters?
+            auto JA = tree->forwardKinJacobian(kinsol,xA.col(i),bodyA_idx[i],0,0,false);
+            auto JB = tree->forwardKinJacobian(kinsol,xB.col(i),bodyB_idx[i],0,0,false);
+            auto relative_velocity = (JA-JB)*v;
+            auto phidot = relative_velocity.dot(normal.col(i));
+            auto fA_normal = -k*phi(i) - b*phidot;
+
+            // Coulomb sliding friction (no static friction yet, because it is a complementarity problem):
+            auto tangential_velocity = relative_velocity-phidot*normal.col(i);
+            double mu = 1.0; // todo: make this a parameter
+            auto fA = fA_normal*normal.col(i)- mu*fA_normal*tangential_velocity/(tangential_velocity.norm() + 1e-12);  // 1e-12 to avoid divide by zero
+
+            // equal and opposite: fB = -fA.
+            // tau = JA^T fA + JB^fB
+            C -= JA.transpose()*fA - JB.transpose()*fA;
+          }
+        }
+      }
 
       // todo: lots of code performance optimization possible here... I'm doing an exhorbitant amount of identical allocations on every function evaluation.  Just keeping it simple at first.
       OptimizationProblem prog;
@@ -162,15 +190,6 @@ namespace Drake {
         H_and_neg_JT.conservativeResize(NoChange,H_and_neg_JT.cols()+J.rows());
         H_and_neg_JT.rightCols(J.rows()) = -J.transpose();
       }
-
-/*
-      { // contact dynamics
-        VectorXd phi;
-        Matrix3Xd normal, xA, xB;
-        vector<int> bodyA_idx, bodyB_idx, bodies_idx;
-        tree->collisionDetect(kinsol,phi,normal,xA,xB,bodyA_idx,bodyB_idx,bodies_idx);
-      }
-*/
 
       // add [H,-J^T]*[vdot;f] = -C
       prog.addLinearEqualityConstraint(H_and_neg_JT,-C);
