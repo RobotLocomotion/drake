@@ -93,8 +93,9 @@ while (true)
   
   % todo: consider moving these into RigidBody.updateTransform, but only if
   % it gets *everything* correct
-  X_old_body_to_new_body = transformAdjoint(homogTransInv(T_old_body_to_new_body));
-  current_body = setInertial(current_body,X_old_body_to_new_body'*current_body.I*X_old_body_to_new_body);
+  AdT_new_body_to_old_body = transformAdjoint(homogTransInv(T_old_body_to_new_body));
+  I_in_new_body = AdT_new_body_to_old_body'*current_body.I*AdT_new_body_to_old_body;
+  current_body = setInertial(current_body, I_in_new_body);
 
   for i=1:length(current_body.visual_geometry)
     current_body.visual_geometry{i}.T = current_body.visual_geometry{i}.T*T_old_body_to_new_body;
