@@ -510,25 +510,7 @@ classdef RigidBodyManipulator < Manipulator
       rangecheck(parent_ind,1,getNumBodies(model));
       child.parent = parent_ind;
 
-%      axis = quat2rotmat(rpy2quat(rpy))*axis;  % axis is specified in joint frame
-
       child.Ttree = [rpy2rotmat(rpy), xyz; 0,0,0,1];
-
-      if ~any(strcmp(lower(type),{'fixed','floating_rpy','floating_quat'})) && dot(axis,[0;0;1])<1-1e-4
-        % featherstone dynamics treats all joints as operating around the
-        % z-axis.  so I have to add a transform from the origin of this
-        % link to align the joint axis with the z-axis, update the spatial
-        % inertia of this joint, and then rotate back to keep the child
-        % frames intact.  this happens in extractFeatherstone
-        axis_angle = [cross(axis,[0;0;1]); acos(dot(axis,[0;0;1]))]; % both are already normalized
-        if all(abs(axis_angle(1:3))<1e-4)
-          % then it's a scaling of the z axis.
-          valuecheck(sin(axis_angle(4)),0,1e-4);
-          axis_angle(1:3)=[0;1;0];
-        end
-        child.T_body_to_joint = [axis2rotmat(axis_angle), zeros(3,1); 0,0,0,1];
-        valuecheck(child.T_body_to_joint*[axis;1],[0;0;1;1],1e-6);
-      end
 
       child.floating = 0;
       switch lower(type)
@@ -855,8 +837,6 @@ classdef RigidBodyManipulator < Manipulator
       for i=1:length(model.body)
         valuecheck(model.body(i).Ttree(end,1:end-1),0);
         valuecheck(model.body(i).Ttree(end,end),1);
-        valuecheck(model.body(i).T_body_to_joint(end,1:end-1),0);
-        valuecheck(model.body(i).T_body_to_joint(end,end),1);
       end
 
       model = adjustCollisionGeometry(model);

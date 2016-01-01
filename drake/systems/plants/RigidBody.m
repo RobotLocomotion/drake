@@ -23,7 +23,6 @@ classdef RigidBody < RigidBodyElement
     floating=0; % 0 = not floating base, 1 = rpy floating base, 2 = quaternion floating base
     joint_axis=[1;0;0]; 
     Ttree=eye(4);   % homogeneous transform from joint predecessor frame to parent body, so that the transform from this body to its parent is body.Ttree * jointTransform(body, q_body)
-    T_body_to_joint=eye(4);
     damping=0; % viscous friction term
     coulomb_friction=0; 
     static_friction=0; % currently not used for simulation
