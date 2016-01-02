@@ -63,8 +63,8 @@ int main(int argc, char* argv[]) {
   SimulationOptions options = default_simulation_options;
   options.initial_step_size = 5e-3;
 
-//  runLCM(sys,lcm,0,std::numeric_limits<double>::max(),getInitialState(*sys),options);
-  simulate(*sys,0,std::numeric_limits<double>::max(),getInitialState(*sys),options);
+  runLCM(sys,lcm,0,std::numeric_limits<double>::max(),getInitialState(*sys),options);
+//  simulate(*sys,0,std::numeric_limits<double>::max(),getInitialState(*sys),options);
 
   return 0;
 }

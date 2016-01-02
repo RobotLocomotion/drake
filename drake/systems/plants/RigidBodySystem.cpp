@@ -50,7 +50,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
     vector<int> bodyA_idx, bodyB_idx;
     tree->collisionDetect(kinsol,phi,normal,xA,xB,bodyA_idx,bodyB_idx);
 //    tree->potentialCollisions(kinsol,phi,normal,xA,xB,bodyA_idx,bodyB_idx);
-    std::cout << "phi = " << phi.transpose() << std::endl;
+//    std::cout << "phi = " << phi.transpose() << std::endl;
 
     for (int i=0; i<phi.rows(); i++) {
       if (phi(i)<0.0) { // then i have contact
@@ -65,7 +65,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
         // Coulomb sliding friction (no static friction yet, because it is a complementarity problem):
         auto tangential_velocity = relative_velocity-phidot*normal.col(i);
         double mu = 1.0; // todo: make this a parameter
-        auto fA = fA_normal*normal.col(i)- mu*fA_normal*tangential_velocity/(tangential_velocity.norm() + 1e-12);  // 1e-12 to avoid divide by zero
+        auto fA = fA_normal*normal.col(i)- std::min(b,mu*fA_normal/(tangential_velocity.norm() + 1e-12))*tangential_velocity;  // 1e-12 to avoid divide by zero
 
         // equal and opposite: fB = -fA.
         // tau = JA^T fA + JB^fB
