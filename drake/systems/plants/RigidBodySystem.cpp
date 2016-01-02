@@ -22,12 +22,20 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
   auto v = x.bottomRows(nv);
   auto kinsol = tree->doKinematics(q,v);
 
-  auto H = tree->massMatrix(kinsol);
+  // todo: lots of code performance optimization possible here... I'm doing an exorbitant amount of identical allocations on every function evaluation.  Just keeping it simple at first.
+  OptimizationProblem prog;
+  auto const & vdot = prog.addContinuousVariables(nv,"vdot");
 
-  const NullVector<double> force_state;  // todo:  will have to handle this case
+  auto H = tree->massMatrix(kinsol);
+  Eigen::MatrixXd H_and_neg_JT = H;
 
   { // loop through rigid body force elements and accumulate f_ext
+
+    // todo: distinguish between AppliedForce and ConstraintForce
+    // todo: have AppliedForce output tau (instead of f_ext).  it's more direct, and just as easy to compute.
+
     int u_index = 0;
+    const NullVector<double> force_state;  // todo:  will have to handle this case
     for (auto const & prop : props) {
       RigidBodyFrame* frame = prop->getFrame();
       RigidBody* body = frame->body.get();
@@ -54,31 +62,45 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
 
     for (int i=0; i<phi.rows(); i++) {
       if (phi(i)<0.0) { // then i have contact
-        // spring law for normal force:  fA = (-k*phi - b*phidot)*normal
-        double k = 500, b = k/10;  // todo: put these somewhere better... or make them parameters?
-        auto JA = tree->forwardKinJacobian(kinsol,xA.col(i),bodyA_idx[i],0,0,false);
-        auto JB = tree->forwardKinJacobian(kinsol,xB.col(i),bodyB_idx[i],0,0,false);
-        auto relative_velocity = (JA-JB)*v;
-        auto phidot = relative_velocity.dot(normal.col(i));
-        auto fA_normal = -k*phi(i) - b*phidot;
-
-        // Coulomb sliding friction (no static friction yet, because it is a complementarity problem):
-        auto tangential_velocity = relative_velocity-phidot*normal.col(i);
         double mu = 1.0; // todo: make this a parameter
-        auto fA = fA_normal*normal.col(i)- std::min(b,mu*fA_normal/(tangential_velocity.norm() + 1e-12))*tangential_velocity;  // 1e-12 to avoid divide by zero
 
-        // equal and opposite: fB = -fA.
-        // tau = JA^T fA + JB^fB
-        C -= JA.transpose()*fA - JB.transpose()*fA;
+        auto JA = tree->forwardKinJacobian(kinsol, xA.col(i), bodyA_idx[i], 0, 0, false);
+        auto JB = tree->forwardKinJacobian(kinsol, xB.col(i), bodyB_idx[i], 0, 0, false);
+        auto relative_velocity = (JA - JB) * v;
+        double phidot = relative_velocity.dot(normal.col(i));
+        auto tangential_velocity = relative_velocity - phidot * normal.col(i);
+
+        if (true) { // spring law for normal force:  fA = (-k*phi - b*phidot)*normal
+          double k = 500, b = k / 10;  // todo: put these somewhere better... or make them parameters?
+          auto fA_normal = -k * phi(i) - b * phidot;
+
+          // Coulomb sliding friction (no static friction yet, because it is a complementarity problem):
+          auto fA = fA_normal * normal.col(i) - std::min(b, mu * fA_normal / (tangential_velocity.norm() + 1e-12)) *
+                                                tangential_velocity;  // 1e-12 to avoid divide by zero
+
+          // equal and opposite: fB = -fA.
+          // tau = JA^T fA + JB^fB
+          C -= JA.transpose() * fA - JB.transpose() * fA;
+        } else { // linear acceleration constraints (more expensive, but less tuning required for robot mass, etc)
+          // phiddot = normal.dot((JA-JB)*vdot + (JAdot-JBdot)*v) = -k*phi - b*phidot
+          // tangential_velocity_dot = -b*tangential_velocity
+
+          assert(false);  // doesn't work yet
+
+          double alpha = 5;  // todo: put this somewhere better... or make them parameters?
+
+          prog.addContinuousVariables(3,"contact normal force");  // don't actually need to use the decision variable reference that would be returned...
+          auto JdotvA = tree->forwardJacDotTimesV(kinsol, xA.col(i).eval(), bodyA_idx[i], 0, 0);
+          auto JdotvB = tree->forwardJacDotTimesV(kinsol, xB.col(i).eval(), bodyB_idx[i], 0, 0);
+
+          prog.addLinearEqualityConstraint(normal.col(i).transpose()*(JA-JB),Matrix<double,1,1>(-normal.col(i).dot(JdotvA - JdotvB) - 2*alpha*phidot - alpha*alpha*phi(i)),vdot);
+          H_and_neg_JT.conservativeResize(NoChange,H_and_neg_JT.cols()+3);
+          H_and_neg_JT.rightCols(3) = -(JA-JB).transpose();
+        }
       }
     }
   }
 
-  // todo: lots of code performance optimization possible here... I'm doing an exorbitant amount of identical allocations on every function evaluation.  Just keeping it simple at first.
-  OptimizationProblem prog;
-  auto const & vdot = prog.addContinuousVariables(nv,"vdot");
-
-  Eigen::MatrixXd H_and_neg_JT = H;
   if (tree->getNumPositionConstraints()) {
     int nc = tree->getNumPositionConstraints();
     const double alpha = 5.0;  // 1/time constant of position constraint satisfaction (see my latex rigid body notes)

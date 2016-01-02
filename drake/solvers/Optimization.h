@@ -34,6 +34,12 @@ namespace Drake {
    */
 
   /*
+   * some thoughts: a constraint is a function + lower and upper bounds.  it should support evaluating the constraint, adding it to an optimization problem,
+   * and have support for constraints that require slack variables (adding additional decision variables to the problem).  There
+   * should also be some notion of parameterized constraints:  e.g. the acceleration constraints in the rigid body dynamics are constraints
+   * on vdot and f, but are "parameterized" by q and v.
+   */
+  /*
   class Constraint {
   public:
     Constraint(const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>& func, const Eigen::MatrixBase<DerivedA>& lb, const Eigen::MatrixBase<DerivedB>& ub)
@@ -160,7 +166,7 @@ namespace Drake {
 //    void addBoundingBoxConstraint(const Eigen::MatrixBase<DerivedLB>& lower_bound, const Eigen::MatrixBase<DerivedUB>& upper_bound, const DecisionVariable& var) {  }
 
 
-    bool solve() { return problem_type->solve(*this); }; // todo: options parameter
+    bool solve() { return problem_type->solve(*this); }; // todo: add argument for options
 
 //    template <typename Derived>
 //    bool solve(const Eigen::MatrixBase<Derived>& x0);
@@ -169,7 +175,7 @@ namespace Drake {
 //    getExitFlag();
 //    getInfeasibleConstraintNames();
 
-    void printSolution() {
+    void printSolution() {  // todo: overload the ostream operator instead?
       for (const auto& v : variables) {
         std::cout << v.name << " = " << v.value.transpose() << std::endl;
       }
@@ -192,8 +198,9 @@ namespace Drake {
     std::list<DecisionVariable> variables; // prefer list to vector because realloc in vector (when adding new decision variables) invalidates the old references
     size_t num_vars;
 
-  public:
-    // capture the problem type hierarchy with dynamic dispatch
+  private:
+    // uses virtual methods to crawl up the complexity hiearchy as new decision variables and constraints are added to the program
+    // note that there is dynamic allocation happening in here, but on a structure of negligible size.  (is there a better way?)
     struct MathematicalProgram {
       virtual MathematicalProgram* addNonlinearConstraint() { return new MathematicalProgram; };
       virtual MathematicalProgram* addLinearInequalityConstraint() { return new MathematicalProgram; };
