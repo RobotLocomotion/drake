@@ -81,6 +81,9 @@ namespace DrakeCollision
 
       virtual std::vector<PointPair> potentialCollisionPoints(bool use_margins);
 
+      virtual bool collidingPointsCheckOnly(const std::vector<Eigen::Vector3d>& points, 
+                                            double collision_threshold);
+
       virtual std::vector<size_t> collidingPoints(
           const std::vector<Eigen::Vector3d>& points, 
           double collision_threshold);
