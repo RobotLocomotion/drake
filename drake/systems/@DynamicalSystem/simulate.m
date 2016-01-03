@@ -76,8 +76,8 @@ if ~isfield(pstruct,'Solver')
     pstruct.Solver='ode45';
   end
 end
-pstruct.StartTime = num2str(tspan(1));
-pstruct.StopTime = num2str(tspan(end));
+pstruct.StartTime = num2str(tspan(1),32);
+pstruct.StopTime = num2str(tspan(end),32);
 
 pstruct.SaveFormat = 'StructureWithTime';
 pstruct.SaveTime = 'on';
@@ -114,7 +114,7 @@ if(isfield(options,'OutputOption'))
   pstruct.OutputOption=options.OutputOption;
 end
 if(isfield(options,'OutputTimes'))
-  pstruct.OutputTimes=['[',num2str(options.OutputTimes),']'];
+  pstruct.OutputTimes=['[',num2str(options.OutputTimes,32),']'];
 end
 
 simout = sim(mdl,pstruct);
