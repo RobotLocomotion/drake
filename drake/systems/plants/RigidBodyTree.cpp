@@ -451,9 +451,9 @@ void RigidBodyTree::potentialCollisions(const KinematicsCache<double>& cache, Ve
   }
 }
 
-bool RigidBodyManipulator::collidingPointsCheckOnly(const KinematicsCache<double>& cache,
-                                                    const vector<Vector3d>& points,
-                                                    double collision_threshold)
+bool RigidBodyTree::collidingPointsCheckOnly(const KinematicsCache<double>& cache,
+                                             const vector<Vector3d>& points,
+                                             double collision_threshold)
 {
   updateDynamicCollisionElements(cache);
   return collision_model->collidingPointsCheckOnly(points, collision_threshold);
