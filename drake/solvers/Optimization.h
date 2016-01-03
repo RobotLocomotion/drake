@@ -235,16 +235,45 @@ namespace Drake {
     // uses virtual methods to crawl up the complexity hiearchy as new decision variables and constraints are added to the program
     // note that there is dynamic allocation happening in here, but on a structure of negligible size.  (is there a better way?)
     struct MathematicalProgram {
+    /* these would be used to fill out the optimization hierarchy prototyped below
+      virtual MathematicalProgram* addIntegerVariable() { return new MathematicalProgram; };
+
+      virtual MathematicalProgram* addLinearCost() { return new MathematicalProgram; };
+      virtual MathematicalProgram* addQuadraticCost() { return new MathematicalProgram; };
+      virtual MathematicalProgram* addNonlinearCost() { return new MathematicalProgram; };
+
+      virtual MathematicalProgram* addSumsOfSquaresConstraint() { return new MathematicalProgram; };
+      virtual MathematicalProgram* addLinearMatrixInequalityConstraint() { return new MathematicalProgram; };
+      virtual MathematicalProgram* addSecondOrderConeConstraint() { return new MathematicalProgram; };
+      virtual MathematicalProgram* addComplementarityConstraint() { return new MathematicalProgram; };
       virtual MathematicalProgram* addNonlinearConstraint() { return new MathematicalProgram; };
       virtual MathematicalProgram* addLinearInequalityConstraint() { return new MathematicalProgram; };
+     */
       virtual MathematicalProgram* addLinearEqualityConstraint() { return new MathematicalProgram; };
+
       virtual bool solve(OptimizationProblem& prog) { throw std::runtime_error("not implemented yet"); }
     };
-    struct LinearProgram : public MathematicalProgram {
+
+/*  // Prototype of the more complete optimization problem class hiearchy (to be implemented only as needed)
+    struct MixedIntegerNonlinearProgram : public MathematicalProgram {};
+    struct MixedIntegerSemidefiniteProgram : public MixedIntegerNonlinearProgram {};
+    struct MixedIntegerSecondOrderConeProgram : public MixedIntegerSemidefiniteProgram {};
+    struct MixedIntegerQuadraticProgram : public MixedIntegerSecondOrderConeProgram {};
+    struct MixedIntegerLinearProgram : public MixedIntegerQuadraticProgram {};
+
+    struct NonlinearProgram : public MixedIntegerNonlinearProgram {};
+    struct SemidefiniteProgram : public NonlinearProgram, public MixedIntegerSemidefiniteProgram {};
+    struct SecondOrderConeProgram : public SemidefiniteProgram, public MixedIntegerSecondOrderConeProgram {};
+    struct QuadraticProgram : public SecondOrderConeProgram, public MixedIntegerQuadraticProgram {};
+    struct LinearProgram : public QuadraticProgram, public MixedIntegerLinearProgram {
       virtual MathematicalProgram* addLinearEqualityConstraint() { return new LinearProgram; };
       virtual MathematicalProgram* addLinearInequalityConstraint() { return new LinearProgram; };
     };
-    struct LeastSquares : public LinearProgram {
+
+    struct NonlinearComplementarityProblem : public NonlinearProgram {};
+    struct LinearComplementarityProblem : public NonlinearComplementarityProblem {};
+*/
+    struct LeastSquares : public MathematicalProgram { //public LinearProgram, public LinearComplementarityProblem {
       virtual MathematicalProgram* addLinearEqualityConstraint() { return new LeastSquares; };
       virtual bool solve(OptimizationProblem& prog) {
         // least-squares solution
