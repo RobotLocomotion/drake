@@ -125,7 +125,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
   //      prog.printSolution();
 
   StateVector<double> dot(nq+nv);
-  dot << kinsol.transformPositionDotMappingToVelocityMapping(Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Identity(nq, nq))*v, vdot->value;
+  dot << kinsol.transformPositionDotMappingToVelocityMapping(Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Identity(nq, nq))*v, vdot.value();
   return dot;
 }
 

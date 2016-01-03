@@ -98,8 +98,6 @@ namespace Drake {
   public:
     OptimizationProblem() : problem_type(new LeastSquares), num_vars(0) {};
 
-    // todo: add methods that allow one to get a reference into a subset of each decision variable
-    // e.g. var.block(3,2) returns a new structure which maps back into the original, but can be passed into the constraint methods below
     struct DecisionVariable {
       enum VarType {
         CONTINUOUS,
@@ -111,8 +109,29 @@ namespace Drake {
       Eigen::VectorXd value;
       size_t start_index;
     };
+    class DecisionVariableView {  // enables users to access pieces of the decision variables like they would any other eigen vector
+    public:
+      DecisionVariableView(const DecisionVariable& var) : var(var), start_index(0), length(var.value.rows()) {}
+      DecisionVariableView(const DecisionVariable& var, size_t start, size_t n) : var(var), start_index(start), length(n) {
+        assert(start+n<var.value.rows());
+      }
 
-    const DecisionVariable* addContinuousVariables(std::size_t num_new_vars, std::string name = "x") {
+      Eigen::VectorBlock<const Eigen::VectorXd,-1> value() const { return var.value.segment(start_index,length); };
+
+      const DecisionVariableView operator()(size_t i) const { assert(i<=length); return DecisionVariableView(var,start_index+i,1);}
+      const DecisionVariableView row(size_t i) const { assert(i<=length); return DecisionVariableView(var,start_index+i,1); }
+      const DecisionVariableView head(size_t n) const { assert(n<=length); return DecisionVariableView(var,start_index,n); }
+      const DecisionVariableView tail(size_t n) const { assert(n<=length); return DecisionVariableView(var,start_index+length-n,n); }
+      const DecisionVariableView segment(size_t start, size_t n) const { assert(start+n<=length); return DecisionVariableView(var,start_index+start,n); }
+
+      friend class OptimizationProblem;
+
+    private:
+      const DecisionVariable& var;
+      size_t start_index, length;
+    };
+
+    const DecisionVariableView addContinuousVariables(std::size_t num_new_vars, std::string name = "x") {
       DecisionVariable v;
       v.type = DecisionVariable::CONTINUOUS;
       v.name = name;
@@ -124,19 +143,14 @@ namespace Drake {
       Aeq.conservativeResize(Eigen::NoChange,num_vars);
       Aeq.rightCols(num_new_vars).setZero();
 
-      return &variables.back();
+      return DecisionVariableView(variables.back());
     }
 //    const DecisionVariable& addIntegerVariables(size_t num_new_vars, std::string name);
 //  ...
 
- // template <typename FunctionType>
- // void addCost(std::function..);
- // void addLinearCost(const Eigen::MatrixBase<Derived>& c,const vector<const DecisionVariable&>& vars)
- // void addQuadraticCost ...
-
-//    void addConstraint(const LinearConstraint& constraint, const std::vector<const DecisionVariable&>& vars);
-//  void addConstraint(const BoundingBoxConstraint& constraint, const std::vector<const DecisionVariable&>& vars);
-
+    /** addLinearEqualityConstraint
+     * @brief adds linear equality constraints to the program for all variables
+     */
     template <typename DerivedA,typename DerivedB>
     void addLinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& _Aeq,const Eigen::MatrixBase<DerivedB>& _beq) {
       assert(_Aeq.cols()==num_vars);
@@ -149,8 +163,15 @@ namespace Drake {
       beq.tail(_beq.rows()) = _beq;
     }
 
+  /** addLinearEqualityConstraint
+   * @brief adds linear equality constraints referencing potentially a subset of the decision variables.
+   * Example: to add and equality constraint which only depends on two of the elements of x, you could use
+   *   auto x = prog.addContinuousDecisionVariable(6,"myvar");
+   *   prog.addLinearEqualityConstraint(Aeq,beq,{x.row(2),x.row(5)});
+   * where Aeq has exactly two columns.
+   */
     template <typename DerivedA,typename DerivedB>
-    void addLinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& _Aeq,const Eigen::MatrixBase<DerivedB>& _beq, std::initializer_list<const DecisionVariable*> vars) {
+    void addLinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& _Aeq,const Eigen::MatrixBase<DerivedB>& _beq, std::initializer_list<const DecisionVariableView> vars) {
       assert(_Aeq.rows() == _beq.rows());
       problem_type.reset(problem_type->addLinearEqualityConstraint());
       size_t num_con = Aeq.rows();
@@ -159,17 +180,20 @@ namespace Drake {
       beq.conservativeResize(num_con + _beq.rows());
       beq.bottomRows(_beq.rows()) = _beq;
       size_t index = 0;
-      for (const DecisionVariable* v : vars) {
-        assert(v!=nullptr);
-        Aeq.block(num_con, v->start_index, _Aeq.rows(), v->value.rows()) = _Aeq.middleCols(index,v->value.rows());
-        index += v->value.rows();
+      for (const DecisionVariableView v : vars) {
+        Aeq.block(num_con, v.var.start_index, _Aeq.rows(), v.var.value.rows()) = _Aeq.middleCols(index,v.var.value.rows());
+        index += v.var.value.rows();
       }
       assert(_Aeq.cols() == index);  // make sure we ended in the right place
     }
-//    template <typename DerivedA,typename DerivedB>
-//    void addLinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,const Eigen::MatrixBase<DerivedB>& beq, const std::vector<const DecisionVariable&>& vars) {
-//      problem_type.reset(problem_type->addLinearEqualityConstraint());
-//    }
+
+    // template <typename FunctionType>
+    // void addCost(std::function..);
+    // void addLinearCost(const Eigen::MatrixBase<Derived>& c,const vector<const DecisionVariable&>& vars)
+    // void addQuadraticCost ...
+
+//    void addConstraint(const LinearConstraint& constraint, const std::vector<const DecisionVariable&>& vars);
+//  void addConstraint(const BoundingBoxConstraint& constraint, const std::vector<const DecisionVariable&>& vars);
 
 //    template <typename DerivedLB,typename DerivedUB>
 //    void addBoundingBoxConstraint(const Eigen::MatrixBase<DerivedLB>& lower_bound, const Eigen::MatrixBase<DerivedUB>& upper_bound, const DecisionVariable& var) {  }
