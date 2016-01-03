@@ -52,11 +52,8 @@ while (true)
     current_body.jointname = ''; 
     current_body.pitch = 0;
     current_body.floating = 0;
-    current_body.Xtree = eye(6); 
     current_body.Ttree = eye(4);
-    current_body.T_body_to_joint = eye(4);
 
-    X_old_body_to_new_body = Xrotx(rpy(1))*Xroty(rpy(2))*Xrotz(rpy(3))*Xtrans(xyz);
     T_old_body_to_new_body = inv([rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1)),xyz; 0,0,0,1]);
   else
     old_child_new_parent_body = getBody(rbm,parent_ind);
@@ -65,32 +62,17 @@ while (true)
     current_body.pitch = old_child_new_parent_body.pitch;
     current_body.floating = old_child_new_parent_body.floating;
 
-    X_old_body_to_new_body = inv(old_child_new_parent_body.Xtree);
-    T_old_body_to_new_body = inv(old_child_new_parent_body.Ttree); 
+    T_old_body_to_new_body = inv(old_child_new_parent_body.Ttree);
     if (grandparent_ind == 0) % then my parent is the root
-      current_body.Xtree = inv(Xrotx(rpy(1))*Xroty(rpy(2))*Xrotz(rpy(3))*Xtrans(xyz));
       current_body.Ttree = inv([rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1)),xyz; 0,0,0,1]); 
     else
       grandparent_old_body = getBody(rbm,grandparent_ind);
-      current_body.Xtree = inv(grandparent_old_body.Xtree);
       current_body.Ttree = inv(grandparent_old_body.Ttree);
     end
     
     % note: flip joint axis here to keep the joint direction the same (and
     % avoid flipping joint limits, etc)
     current_body.joint_axis = T_old_body_to_new_body(1:3,1:3) * (-old_child_new_parent_body.joint_axis);
-    
-    if dot(current_body.joint_axis,[0;0;1])<1-1e-4
-      % see RigidBodyManipulator/addJoint
-      axis_angle = [cross(current_body.joint_axis,[0;0;1]); acos(dot(current_body.joint_axis,[0;0;1]))]; % both are already normalized
-      if all(abs(axis_angle(1:3))<1e-4)
-        % then it's a scaling of the z axis.
-        valuecheck(sin(axis_angle(4)),0,1e-4);
-        axis_angle(1:3)=[0;1;0];
-      end
-      child.T_body_to_joint = [axis2rotmat(axis_angle), zeros(3,1); 0,0,0,1];
-      valuecheck(current_body.T_body_to_joint*[current_body.joint_axis;1],[0;0;1;1],1e-6);
-    end
     
     current_body.damping = old_child_new_parent_body.damping; 
     current_body.coulomb_friction = old_child_new_parent_body.coulomb_friction; 
@@ -111,7 +93,9 @@ while (true)
   
   % todo: consider moving these into RigidBody.updateTransform, but only if
   % it gets *everything* correct
-  current_body = setInertial(current_body,X_old_body_to_new_body'*current_body.I*X_old_body_to_new_body);
+  AdT_new_body_to_old_body = transformAdjoint(homogTransInv(T_old_body_to_new_body));
+  I_in_new_body = AdT_new_body_to_old_body'*current_body.I*AdT_new_body_to_old_body;
+  current_body = setInertial(current_body, I_in_new_body);
 
   for i=1:length(current_body.visual_geometry)
     current_body.visual_geometry{i}.T = current_body.visual_geometry{i}.T*T_old_body_to_new_body;

@@ -40,7 +40,7 @@ for i = 1:p.getNumBodies
       end
     else
       T_base = [rotmatFromQuatBilinear(body_Quat{i}) body_pos(:,i);0 0 0 1];
-      TJ = (bodyi.T_body_to_joint)/bodyi.Ttree*T_base/bodyi.T_body_to_joint;
+      TJ = bodyi.Ttree*T_base;
       if(norm(rotmat2rpy(TJ(1:3,1:3))-q(4:6))>1e-3)
         error('The rpy for the floating base is not correct');
       end
