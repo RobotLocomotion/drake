@@ -3,6 +3,7 @@
 
 #include "Core.h"
 #include <list>
+#include <memory>
 
 namespace Drake {
 
@@ -96,6 +97,8 @@ namespace Drake {
   public:
     OptimizationProblem() : problem_type(new LeastSquares), num_vars(0) {};
 
+    // todo: add methods that allow one to get a reference into a subset of each decision variable
+    // e.g. var.block(3,2) returns a new structure which maps back into the original, but can be passed into the constraint methods below
     struct DecisionVariable {
       enum Type {
         CONTINUOUS,
@@ -145,6 +148,7 @@ namespace Drake {
       beq.bottomRows(_beq.rows()) = _beq;
     }
 
+    // todo: take in an initializer_list<const DecisionVariable&> instead
     template <typename DerivedA,typename DerivedB>
     void addLinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& _Aeq,const Eigen::MatrixBase<DerivedB>& _beq, const DecisionVariable& var) {
       assert(_Aeq.cols()==var.value.rows());
