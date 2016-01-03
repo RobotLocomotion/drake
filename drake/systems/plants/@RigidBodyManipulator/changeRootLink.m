@@ -55,6 +55,12 @@ while (true)
     current_body.Ttree = eye(4);
 
     T_old_body_to_new_body = inv([rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1)),xyz; 0,0,0,1]);
+    
+    current_body.joint_limit_min = [];
+    current_body.joint_limit_max = [];
+    current_body.effort_min = [];
+    current_body.effort_max = [];
+    current_body.velocity_limit = [];
   else
     old_child_new_parent_body = getBody(rbm,parent_ind);
     current_body.robotnum = old_child_new_parent_body.robotnum;
@@ -80,7 +86,8 @@ while (true)
     current_body.coulomb_window = old_child_new_parent_body.coulomb_window;
     current_body.joint_limit_min = old_child_new_parent_body.joint_limit_min;
     current_body.joint_limit_max = old_child_new_parent_body.joint_limit_max;
-    current_body.effort_limit = old_child_new_parent_body.effort_limit;
+    current_body.effort_min = old_child_new_parent_body.effort_min;
+    current_body.effort_max = old_child_new_parent_body.effort_max;
     current_body.velocity_limit = old_child_new_parent_body.velocity_limit;
     current_body.has_position_sensor = old_child_new_parent_body.has_position_sensor;
   end
