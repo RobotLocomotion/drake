@@ -4,6 +4,7 @@
 #include "Core.h"
 #include <list>
 #include <memory>
+#include <initializer_list>
 
 namespace Drake {
 
@@ -100,18 +101,18 @@ namespace Drake {
     // todo: add methods that allow one to get a reference into a subset of each decision variable
     // e.g. var.block(3,2) returns a new structure which maps back into the original, but can be passed into the constraint methods below
     struct DecisionVariable {
-      enum Type {
+      enum VarType {
         CONTINUOUS,
         INTEGER,
         BINARY
       };
-      Type type;
+      VarType type;
       std::string name;
       Eigen::VectorXd value;
       size_t start_index;
     };
 
-    const DecisionVariable& addContinuousVariables(std::size_t num_new_vars, std::string name = "x") {
+    const DecisionVariable* addContinuousVariables(std::size_t num_new_vars, std::string name = "x") {
       DecisionVariable v;
       v.type = DecisionVariable::CONTINUOUS;
       v.name = name;
@@ -123,7 +124,7 @@ namespace Drake {
       Aeq.conservativeResize(Eigen::NoChange,num_vars);
       Aeq.rightCols(num_new_vars).setZero();
 
-      return variables.back();
+      return &variables.back();
     }
 //    const DecisionVariable& addIntegerVariables(size_t num_new_vars, std::string name);
 //  ...
@@ -145,21 +146,25 @@ namespace Drake {
       Aeq.conservativeResize(num_con+_Aeq.rows(),Eigen::NoChange);
       Aeq.bottomRows(_Aeq.rows()) = _Aeq;
       beq.conservativeResize(num_con+_beq.rows());
-      beq.bottomRows(_beq.rows()) = _beq;
+      beq.tail(_beq.rows()) = _beq;
     }
 
-    // todo: take in an initializer_list<const DecisionVariable&> instead
     template <typename DerivedA,typename DerivedB>
-    void addLinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& _Aeq,const Eigen::MatrixBase<DerivedB>& _beq, const DecisionVariable& var) {
-      assert(_Aeq.cols()==var.value.rows());
-      assert(_Aeq.rows()==_beq.rows());
+    void addLinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& _Aeq,const Eigen::MatrixBase<DerivedB>& _beq, std::initializer_list<const DecisionVariable*> vars) {
+      assert(_Aeq.rows() == _beq.rows());
       problem_type.reset(problem_type->addLinearEqualityConstraint());
       size_t num_con = Aeq.rows();
-      Aeq.conservativeResize(num_con+_Aeq.rows(),Eigen::NoChange);
+      Aeq.conservativeResize(num_con + _Aeq.rows(), Eigen::NoChange);
       Aeq.bottomRows(_Aeq.rows()).setZero();
-      Aeq.block(num_con,var.start_index,_Aeq.rows(),var.value.rows()) = _Aeq;
-      beq.conservativeResize(num_con+_beq.rows());
+      beq.conservativeResize(num_con + _beq.rows());
       beq.bottomRows(_beq.rows()) = _beq;
+      size_t index = 0;
+      for (const DecisionVariable* v : vars) {
+        assert(v!=nullptr);
+        Aeq.block(num_con, v->start_index, _Aeq.rows(), v->value.rows()) = _Aeq.middleCols(index,v->value.rows());
+        index += v->value.rows();
+      }
+      assert(_Aeq.cols() == index);  // make sure we ended in the right place
     }
 //    template <typename DerivedA,typename DerivedB>
 //    void addLinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,const Eigen::MatrixBase<DerivedB>& beq, const std::vector<const DecisionVariable&>& vars) {

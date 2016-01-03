@@ -93,7 +93,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
           auto JdotvA = tree->forwardJacDotTimesV(kinsol, xA.col(i).eval(), bodyA_idx[i], 0, 0);
           auto JdotvB = tree->forwardJacDotTimesV(kinsol, xB.col(i).eval(), bodyB_idx[i], 0, 0);
 
-          prog.addLinearEqualityConstraint(normal.col(i).transpose()*(JA-JB),Matrix<double,1,1>(-normal.col(i).dot(JdotvA - JdotvB) - 2*alpha*phidot - alpha*alpha*phi(i)),vdot);
+          prog.addLinearEqualityConstraint(normal.col(i).transpose()*(JA-JB),Matrix<double,1,1>(-normal.col(i).dot(JdotvA - JdotvB) - 2*alpha*phidot - alpha*alpha*phi(i)),{vdot});
           H_and_neg_JT.conservativeResize(NoChange,H_and_neg_JT.cols()+3);
           H_and_neg_JT.rightCols(3) = -(JA-JB).transpose();
         }
@@ -113,7 +113,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
     auto Jdotv = tree->positionConstraintsJacDotTimesV(kinsol);
 
     // phiddot = -2 alpha phidot - alpha^2 phi  (0 + critically damped stabilization term)
-    prog.addLinearEqualityConstraint(J,-(Jdotv + 2*alpha*J*v + alpha*alpha*phi),vdot);
+    prog.addLinearEqualityConstraint(J,-(Jdotv + 2*alpha*J*v + alpha*alpha*phi),{vdot});
     H_and_neg_JT.conservativeResize(NoChange,H_and_neg_JT.cols()+J.rows());
     H_and_neg_JT.rightCols(J.rows()) = -J.transpose();
   }
@@ -125,7 +125,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
   //      prog.printSolution();
 
   StateVector<double> dot(nq+nv);
-  dot << kinsol.transformPositionDotMappingToVelocityMapping(Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Identity(nq, nq))*v, vdot.value;
+  dot << kinsol.transformPositionDotMappingToVelocityMapping(Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Identity(nq, nq))*v, vdot->value;
   return dot;
 }
 
