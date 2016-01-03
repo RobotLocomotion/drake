@@ -22,6 +22,7 @@ int main(int argc, char* argv[])
   valuecheckMatrix(b,x.value(),1e-10);
   valuecheck(b(2),x2.value()(0),1e-10);
   valuecheckMatrix(b.head(3),xhead.value(),1e-10);
+  valuecheck(b(2),xhead(2).value()(0),1e-10); // a segment of a segment
 
   auto const& y = prog.addContinuousVariables(2);
   prog.addLinearEqualityConstraint(2*Matrix2d::Identity(),b.topRows(2),{y});
