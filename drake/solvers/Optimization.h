@@ -67,10 +67,10 @@ namespace Drake {
 
   // DifferentiableConstraint, PolynomialConstraint, QuadraticConstraint, ComplementarityConstraint, IntegerConstraint, ...
 */
+
   /** LinearConstraint
    * @brief Implements a constraint of the form @f lb \le Ax \le ub @f
    */
-/*
   class LinearConstraint { // : public Constraint {
   public:
     template <typename DerivedA,typename DerivedLB,typename DerivedUB>
@@ -81,18 +81,17 @@ namespace Drake {
     }
 //    template <typename FunctionType> LinearConstraint(lb,ub);  // construct using autodiff
 
-    const Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> & getMatrix() { return A; }
-    const Eigen::Matrix<double,Eigen::Dynamic,1>& getLowerBound() { return lb; }
-    const Eigen::Matrix<double,Eigen::Dynamic,1>& getUpperBound() { return ub; }
+    bool isEqualityConstraint(void) { return (ub-lb).isZero(); }
+
+    const Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> & getMatrix() const { return A; }
+    const Eigen::Matrix<double,Eigen::Dynamic,1>& getLowerBound() const { return lb; }
+    const Eigen::Matrix<double,Eigen::Dynamic,1>& getUpperBound() const { return ub; }
 
   private:
     Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic>  A;
     Eigen::Matrix<double,Eigen::Dynamic,1> lb, ub;
-
-  public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
-*/
+
 
   class OptimizationProblem {
   public:
@@ -116,7 +115,8 @@ namespace Drake {
         assert(start+n<var.value.rows());
       }
 
-      Eigen::VectorBlock<const Eigen::VectorXd,-1> value() const { return var.value.segment(start_index,length); };
+      size_t index() const { return var.start_index + start_index; }
+      Eigen::VectorBlock<const Eigen::VectorXd,-1> value() const { return var.value.segment(start_index,length); }
 
       const DecisionVariableView operator()(size_t i) const { assert(i<=length); return DecisionVariableView(var,start_index+i,1);}
       const DecisionVariableView row(size_t i) const { assert(i<=length); return DecisionVariableView(var,start_index+i,1); }
@@ -140,27 +140,40 @@ namespace Drake {
       variables.push_back(v);
       num_vars += num_new_vars;
 
-      Aeq.conservativeResize(Eigen::NoChange,num_vars);
-      Aeq.rightCols(num_new_vars).setZero();
-
       return DecisionVariableView(variables.back());
     }
 //    const DecisionVariable& addIntegerVariables(size_t num_new_vars, std::string name);
 //  ...
 
+    typedef std::list<const DecisionVariableView> VariableList;
+
+    // todo: consider putting the variable list into the constraint.  otherwise it's possible to update the constraint without updating (or even checking) the variable list
+    template <typename ConstraintType>
+    struct ConstraintContainer {
+      ConstraintContainer(const std::shared_ptr<ConstraintType>& con) : constraint(con) {};
+      ConstraintContainer(const std::shared_ptr<ConstraintType>& con, const std::list<const DecisionVariableView> vars) : constraint(con), variable_list(vars) {};
+      std::shared_ptr<ConstraintType> constraint;
+      VariableList variable_list;
+    };
+
+    /** addConstraint
+     * @brief adds a constraint to the program.  method specializations ensure that the constraint gets added in the right way
+     */
+//    void addConstraint(const std::shared_ptr<LinearConstraint>& con, const VariableList& vars) {}
+
     /** addLinearEqualityConstraint
-     * @brief adds linear equality constraints to the program for all variables
+     * @brief adds linear equality constraints to the program for all (currently existing) variables
      */
     template <typename DerivedA,typename DerivedB>
-    void addLinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& _Aeq,const Eigen::MatrixBase<DerivedB>& _beq) {
-      assert(_Aeq.cols()==num_vars);
-      assert(_Aeq.rows()==_beq.rows());
+    void addLinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,const Eigen::MatrixBase<DerivedB>& beq) {
+      assert(Aeq.cols() == num_vars);
+      ConstraintContainer<LinearConstraint> c(std::make_shared<LinearConstraint>(Aeq,beq,beq));
+      for (auto const& v : variables) {
+        c.variable_list.push_back(DecisionVariableView(v));
+      }
+
       problem_type.reset(problem_type->addLinearEqualityConstraint());
-      size_t num_con = Aeq.rows();
-      Aeq.conservativeResize(num_con+_Aeq.rows(),Eigen::NoChange);
-      Aeq.bottomRows(_Aeq.rows()) = _Aeq;
-      beq.conservativeResize(num_con+_beq.rows());
-      beq.tail(_beq.rows()) = _beq;
+      linear_equality_constraints.push_back(c);
     }
 
   /** addLinearEqualityConstraint
@@ -171,20 +184,18 @@ namespace Drake {
    * where Aeq has exactly two columns.
    */
     template <typename DerivedA,typename DerivedB>
-    void addLinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& _Aeq,const Eigen::MatrixBase<DerivedB>& _beq, std::initializer_list<const DecisionVariableView> vars) {
-      assert(_Aeq.rows() == _beq.rows());
-      problem_type.reset(problem_type->addLinearEqualityConstraint());
-      size_t num_con = Aeq.rows();
-      Aeq.conservativeResize(num_con + _Aeq.rows(), Eigen::NoChange);
-      Aeq.bottomRows(_Aeq.rows()).setZero();
-      beq.conservativeResize(num_con + _beq.rows());
-      beq.bottomRows(_beq.rows()) = _beq;
-      size_t index = 0;
+    void addLinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,const Eigen::MatrixBase<DerivedB>& beq, const VariableList& vars) {
+      ConstraintContainer<LinearConstraint> c(std::make_shared<LinearConstraint>(Aeq,beq,beq),vars);
+
+      // todo: only do this loop if debug mode (only used for assert)
+      int num_referenced_vars = 0;
       for (const DecisionVariableView v : vars) {
-        Aeq.block(num_con, v.var.start_index, _Aeq.rows(), v.var.value.rows()) = _Aeq.middleCols(index,v.var.value.rows());
-        index += v.var.value.rows();
+        num_referenced_vars += v.length;
       }
-      assert(_Aeq.cols() == index);  // make sure we ended in the right place
+      assert(Aeq.cols() == num_referenced_vars);
+
+      problem_type.reset(problem_type->addLinearEqualityConstraint());
+      linear_equality_constraints.push_back(c);
     }
 
     // template <typename FunctionType>
@@ -216,9 +227,6 @@ namespace Drake {
 
 
   private:
-    Eigen::MatrixXd Aeq;
-    Eigen::VectorXd beq;
-
     template <typename Derived>
     void setSolution(const Eigen::MatrixBase<Derived>& x) {
       size_t index=0;
@@ -228,7 +236,9 @@ namespace Drake {
       }
     }
 
-    std::list<DecisionVariable> variables; // prefer list to vector because realloc in vector (when adding new decision variables) invalidates the old references
+    // note: use std::list instead of std::vector because realloc in std::vector invalidates existing references to the elements
+    std::list<DecisionVariable> variables;
+    std::list<ConstraintContainer<LinearConstraint>> linear_equality_constraints;
     size_t num_vars;
 
   private:
@@ -276,8 +286,27 @@ namespace Drake {
     struct LeastSquares : public MathematicalProgram { //public LinearProgram, public LinearComplementarityProblem {
       virtual MathematicalProgram* addLinearEqualityConstraint() { return new LeastSquares; };
       virtual bool solve(OptimizationProblem& prog) {
+        size_t num_constraints = 0;
+        for (auto const& cc : prog.linear_equality_constraints) {
+          num_constraints += cc.constraint->getMatrix().rows();
+        }
+
+        Eigen::MatrixXd Aeq = Eigen::MatrixXd::Zero(num_constraints,prog.num_vars);  // todo: use a sparse matrix here?
+        Eigen::VectorXd beq(num_constraints);
+
+        size_t constraint_index = 0;
+        for (auto const& cc : prog.linear_equality_constraints) {
+          const LinearConstraint& con = *cc.constraint;
+          for (const DecisionVariableView& v : cc.variable_list ) {
+            size_t n = con.getMatrix().rows();
+            Aeq.block(constraint_index, v.index(), n, v.length) = con.getMatrix();
+            beq.segment(constraint_index, n) = con.getLowerBound();  // = con.getUpperBound() since it's an equality constraint
+            constraint_index += n;
+          }
+        }
+
         // least-squares solution
-        prog.setSolution(prog.Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(prog.beq));
+        prog.setSolution(Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beq));
         return true;
       }
     };

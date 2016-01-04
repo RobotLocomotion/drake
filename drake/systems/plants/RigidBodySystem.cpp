@@ -22,7 +22,9 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
   auto v = x.bottomRows(nv);
   auto kinsol = tree->doKinematics(q,v);
 
-  // todo: lots of code performance optimization possible here... I'm doing an exorbitant amount of identical allocations on every function evaluation.  Just keeping it simple at first.
+  // todo: preallocate the optimization problem and constraints, and simply update them then solve on each function eval.
+  // happily, this clunkier version seems fast enough for now
+  // the optimization framework should mostly support this.
   OptimizationProblem prog;
   auto const & vdot = prog.addContinuousVariables(nv,"vdot");
 
