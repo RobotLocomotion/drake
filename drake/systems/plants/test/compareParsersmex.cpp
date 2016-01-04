@@ -25,7 +25,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   mxGetString(prhs[1], urdf_file, 1000);
   char floating_base_type_str[100] = "rpy";
   if (nrhs > 2) mxGetString(prhs[2], floating_base_type_str, 100);
-  DrakeJoint::FloatingBaseType floating_base_type;
+  DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
   if (strcmp(floating_base_type_str, "fixed") == 0)
     floating_base_type = DrakeJoint::FIXED;
   else if (strcmp(floating_base_type_str, "rpy") == 0)

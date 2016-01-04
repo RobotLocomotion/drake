@@ -57,10 +57,10 @@ public:
   RigidBodyTree(void);
   virtual ~RigidBodyTree(void);
 
-  bool addRobotFromURDFString(const std::string &xml_string, const std::string &root_dir = ".", const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
-  bool addRobotFromURDFString(const std::string &xml_string, std::map<std::string,std::string>& package_map, const std::string &root_dir = ".", const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
-  bool addRobotFromURDF(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
-  bool addRobotFromURDF(const std::string &urdf_filename, std::map<std::string,std::string>& package_map, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
+  void addRobotFromURDFString(const std::string &xml_string, const std::string &root_dir = ".", const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
+  void addRobotFromURDFString(const std::string &xml_string, std::map<std::string,std::string>& package_map, const std::string &root_dir = ".", const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
+  void addRobotFromURDF(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
+  void addRobotFromURDF(const std::string &urdf_filename, std::map<std::string,std::string>& package_map, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
 
   void addFrame(const std::shared_ptr<RigidBodyFrame>& frame);
 
@@ -402,6 +402,10 @@ public:
                            std::vector<int>& bodyB_idx,
                            bool use_margins = true);
   //bool closestDistanceAllBodies(VectorXd& distance, MatrixXd& Jd);
+
+  virtual bool collidingPointsCheckOnly(const KinematicsCache<double>& cache,
+                                        const std::vector<Eigen::Vector3d>& points,
+                                        double collision_threshold);
 
   virtual std::vector<size_t> collidingPoints(const KinematicsCache<double>& cache,
                                               const std::vector<Eigen::Vector3d>& points,
