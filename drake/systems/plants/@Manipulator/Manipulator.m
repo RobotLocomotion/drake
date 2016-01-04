@@ -54,7 +54,7 @@ classdef Manipulator < DrakeSystem
         % want to raise for this method, stating that not all outputs were
         % assigned.  (since I can't write dxdot anymore)
         [H,C,B,dH,dC,dB] = obj.manipulatorDynamics(q,v);
-        Hinv = inv(H);
+        Hinv = pinv(H);
 
         if (obj.num_u>0)
           vdot = Hinv*(B*u-C);
@@ -77,7 +77,10 @@ classdef Manipulator < DrakeSystem
           dvdot];
       else
         [H,C,B] = manipulatorDynamics(obj,q,v);
-        Hinv = inv(H);
+            if any(isnan(H)) 
+                pause;
+            end
+        Hinv = pinv(H);
         if (obj.num_u>0) tau=B*u - C; else tau=-C; end
         tau = tau + computeConstraintForce(obj,q,v,H,tau,Hinv);
 
