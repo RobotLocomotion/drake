@@ -43,7 +43,7 @@ namespace Drake {
     size_t start_index, length;
   };
 
-  typedef std::list<const DecisionVariableView> VariableList;
+  typedef std::list<DecisionVariableView> VariableList;
 
   // Quick notes about this design:
   // need to have lists of constraints (if not functions), so I want a (non-templated) base class.
@@ -116,7 +116,7 @@ namespace Drake {
       assert(A.rows()==b.rows());
       // todo: only do this loop if debug mode (only used for assert)
       int num_referenced_vars = 0;
-      for (const DecisionVariableView v : vars) {
+      for (const DecisionVariableView& v : vars) {
         num_referenced_vars += v.size();
       }
       assert(A.cols() == num_referenced_vars);
