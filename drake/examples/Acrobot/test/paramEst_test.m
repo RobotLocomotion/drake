@@ -84,26 +84,6 @@ usamples = eval(utraj,tsamples)';
 % Produce observations through forward euler method
 xsamples = computeTraj(rtrue,eval(xtraj,T0),usamples',tsamples)';
 
-% FOR DEBUGGING TRAJECTORIES
-% vtrue = AcrobotVisualizer(rtrue);
-% vtrue.playback(xtraj);
-% xtraj2pp = PPTrajectory(zoh(tsamples,xtraj2));
-% xtraj2pp = xtraj2pp.setOutputFrame(xtraj.getOutputFrame);
-% vtrue.playback(xtraj2pp);
-% xtraj3 = computeTraj(r,xsamples(1,:)',usamples',tsamples);
-% xtraj3pp = PPTrajectory(zoh(tsamples,xtraj3));
-% xtraj3pp = xtraj3pp.setOutputFrame(xtraj.getOutputFrame);
-% vtrue.playback(xtraj3pp);
-% % figure; comet(xtraj2(1,:),xtraj2(2,:));
-% % hold on; comet(xsamples(:,1)',xsamples(:,2)');
-% figure; plot(xsamples(:,1));
-% figure; plot(xsamples(:,2));
-% figure; plot(xsamples(:,1)',xsamples(:,2)');
-% hold on; plot(xtraj2(1,:),xtraj2(2,:));
-% figure; plot(xsamples(:,1)',xsamples(:,2)');
-% hold on; plot(xtraj2(1,:),xtraj2(2,:));
-% plot(xtraj3(1,:),xtraj3(2,:));
-
 %% Generate second derivative
 if ~strcmp(parameterEstimationOptions.model,'energetic')
     if strcmp(qddmode,'manipul')
@@ -140,9 +120,12 @@ models = {'dynamic','simerr','energetic'};
 mlen = length(models);
 estimated_parameters = zeros(length(p_true),mlen);
 simerror = zeros(1,mlen);
+simtime = zeros(1,mlen);
 for i=1:mlen
     parameterEstimationOptions.model = models{i};
-    [estimated_parameters(:,i),simerror(i)] = parameterEstimation(r,data,parameterEstimationOptions);
+    tic;
+    [estimated_parameters(:,i),simerror(:,i)] = parameterEstimation(r,data,parameterEstimationOptions);
+    simtime(:,i) = toc;
     %% Print out results
     fprintf('\nParameter estimation results for %s:\n\n',models{i});
     fprintf('  Param  \tTrue    \t Initial\tEstimated\n');
@@ -164,32 +147,3 @@ function xtraj = computeTraj(obj,x0,utraj,t)
         xtraj(:,i+1) = xtraj(:,i)+f*dt(i);
     end
 end
-
-%% Debugging purposes
-
-% function simerr = computeErr(obj,p,xobs,utraj,t,O)
-%     newobj = obj.setParams(p);
-%     x0 = xobs(:,1);
-%     xtraj = computeTraj(newobj,x0,utraj,t);
-%     xdiff = xtraj - xobs;
-%     simerr = sum(sum(xdiff.*(O*xdiff),1),2);
-% end
-% 
-
-
-%     qddTrue = qdd;
-%     qdd = deriv(xtraj,T0:Ts:Tf)'; qdd = qdd(:,nq+(1:nq));
-%     figure;plot(qddTrue(:,1),'-g'); hold on; plot(qdd(:,1),'-r')
-%     title(['q_1 True Acceleration vs. Derivative of Velocity']);
-%     xlabel('Sample Time')
-%     ylabel({'Acceleration Magnitude' '(m/s)/sample'})
-%     legend('True Acceleration','Derivative of Vel');
-
-% v = AcrobotVisualizer(r);
-% vtrue = AcrobotVisualizer(rtrue);
-% vtrue.playback(xtraj);
-% 
-% % plot(xsamples(:,1)); hold on; plot(xsamplesfinal(:,1));
-% plot(xsamples); hold on; plot(xsamplesfinal);
-% % Testing to see if estimate is produced by local minima
-% r = rtrue;
