@@ -17,7 +17,7 @@ int main(int argc, char* argv[])
   auto xhead = x.head(3);
 
   Vector4d b = Vector4d::Random();
-  prog.addLinearEqualityConstraint(Matrix4d::Identity(),b,{x});
+  auto con = prog.addLinearEqualityConstraint(Matrix4d::Identity(),b,{x});
   prog.solve();
   valuecheckMatrix(b,x.value(),1e-10);
   valuecheck(b(2),x2.value()(0),1e-10);
@@ -29,4 +29,9 @@ int main(int argc, char* argv[])
   prog.solve();
   valuecheckMatrix(b.topRows(2)/2,y.value(),1e-10);
   valuecheckMatrix(b,x.value(),1e-10);
+
+  con->updateConstraint(3*Matrix4d::Identity(),b);
+  prog.solve();
+  valuecheckMatrix(b.topRows(2)/2,y.value(),1e-10);
+  valuecheckMatrix(b/3,x.value(),1e-10);
 }

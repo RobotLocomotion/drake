@@ -24,7 +24,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
 
   // todo: preallocate the optimization problem and constraints, and simply update them then solve on each function eval.
   // happily, this clunkier version seems fast enough for now
-  // the optimization framework should mostly support this.
+  // the optimization framework should support this (though it has not been tested thoroughly yet)
   OptimizationProblem prog;
   auto const & vdot = prog.addContinuousVariables(nv,"vdot");
 
