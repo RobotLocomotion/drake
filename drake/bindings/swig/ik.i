@@ -1,7 +1,6 @@
 %module(package="pydrake.solvers") ik
 
-
-%include <std_except.i>
+%include "exception_helper.i"
 %include <std_string.i>
 %include <windows.i>
 #define DRAKEIK_EXPORT

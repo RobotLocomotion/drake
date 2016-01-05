@@ -1,5 +1,7 @@
 %module(package="pydrake") autodiffutils
 
+
+%include "exception_helper.i"
 %include <eigen.i>
 %include <autodiff.i>
 
