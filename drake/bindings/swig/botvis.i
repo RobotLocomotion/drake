@@ -1,4 +1,4 @@
-%module(package="pydrake.systems.plants") botvis
+%module(package="dragon.systems.plants") botvis
 
 %include <eigen.i>
 %import "systems.i"

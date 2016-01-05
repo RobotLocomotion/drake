@@ -1,9 +1,12 @@
-%module(package="pydrake.solvers") ik
+%module(package="dragon.solvers") ik
 
 
 %include <std_except.i>
 %include <std_string.i>
 %include <windows.i>
+#define DRAKEIK_EXPORT
+#define DRAKEIKOPTIONS_EXPORT
+#define DRAKERIGIDBODYCONSTRAINT_EXPORT
 
 %{
 #ifdef SWIGPYTHON
@@ -16,17 +19,9 @@
 %include <typemaps.i>
 %include <std_vector.i>
 %include <eigen.i>
-%import <rbm.i>
+%import <rbtree.i>
 
-// %template(vectorVectorXd) std::vector<Eigen::VectorXd>;
-// %template(vectorMatrixXd) std::vector<Eigen::MatrixXd>;
-// %template(vectorString) std::vector<std::string>;
 %template(vectorConstraintPtr) std::vector<RigidBodyConstraint *>;
-
-// %eigen_typemaps(Eigen::VectorXd)
-// %eigen_typemaps(Eigen::MatrixXd)
-// %eigen_typemaps(Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>)
-// %eigen_typemaps(Eigen::VectorXi)
 
 %include "IKoptions.h"
 %include "RigidBodyIK.h"

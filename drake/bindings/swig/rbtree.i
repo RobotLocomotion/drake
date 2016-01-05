@@ -1,8 +1,9 @@
-%module(package="pydrake") rbm
+%module(package="dragon") rbtree
 
 %include "exception_helper.i"
 %include <std_string.i>
 %include <windows.i>
+#define DRAKERBM_EXPORT
 
 %{
 #ifdef SWIGPYTHON

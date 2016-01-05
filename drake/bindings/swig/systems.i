@@ -1,4 +1,4 @@
-%module(package="pydrake.systems") drakesystem
+%module(package="dragon.systems") drakesystem
 
 %include <std_except.i>
 %include <std_string.i>

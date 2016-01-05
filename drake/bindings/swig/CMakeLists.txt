@@ -5,11 +5,12 @@ endif()
 set(DRAKE_SWIG_FILES ${CMAKE_INSTALL_PREFIX}/share/swig)
 include(DrakeUseSWIG)
 include(SwigPython)
+set(CMAKE_SWIG_FLAGS ${CMAKE_SWIG_FLAGS} "-w315")
 
-add_swig_python_module(lcmPython lcm.i
-                       CPLUSPLUS
-                       LINK_LIBRARIES lcm
-                       DESTINATION ${python_install_subdir})
+# add_swig_python_module(lcmPython lcm.i
+#                        CPLUSPLUS
+#                        LINK_LIBRARIES lcm
+#                        DESTINATION ${python_install_subdir})
 
 # add_swig_python_module(systemsPython systems.i
 #                        CPLUSPLUS
@@ -36,11 +37,11 @@ add_swig_python_module(autodiffPython autodiff_utils.i
                        SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/python ${DRAKE_SWIG_FILES}/common
                        DESTINATION ${python_install_subdir})
 
-add_swig_python_module(rbmPython rbm.i
+add_swig_python_module(rbtPython rbtree.i
                        CPLUSPLUS
                        INCLUDE_DIRS 
-                         ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants 
                          ${CMAKE_CURRENT_SOURCE_DIR}/../../util
+                         ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants
                          ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants/joints 
                        LINK_LIBRARIES drakeRBM 
                        SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/python ${DRAKE_SWIG_FILES}/common
@@ -50,7 +51,7 @@ if (snopt_c_FOUND)
   add_swig_python_module(ikPython ik.i
                          CPLUSPLUS
                          INCLUDE_DIRS 
-                           ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants 
+                           ${CMAKE_CURRENT_SOURCE_DIR}/../../systems
                            ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants/constraint 
                            ${CMAKE_CURRENT_SOURCE_DIR}/../../util
                            ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants/joints 
@@ -72,13 +73,35 @@ endif()
 #                        DESTINATION ${python_install_subdir})
 
 
-# if (MATLAB_FOUND)
-#   include(SwigMatlab)
-# 	add_swig_matlab_module(rbmMatlab rbm.i
-# 	                       CPLUSPLUS
-# 	                       INCLUDE_DIRS 
-# 	                         ${CMAKE_CURRENT_SOURCE_DIR}/..//../systems/plants 
-# 	                       LINK_LIBRARIES drakeRBM 
-# 	                       SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/matlab ${DRAKE_SWIG_FILES}/common
-# 	                       DESTINATION matlab)
-# endif()
+if (MATLAB_FOUND)
+  include(SwigMatlab)
+
+  add_swig_matlab_module(autodiffMatlab autodiff_utils.i
+                         CPLUSPLUS
+                         INCLUDE_DIRS 
+                         SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/matlab ${DRAKE_SWIG_FILES}/common
+                         DESTINATION matlab)
+
+	add_swig_matlab_module(rbtMatlab rbtree.i
+	                       CPLUSPLUS
+	                       INCLUDE_DIRS 
+                         ${CMAKE_CURRENT_SOURCE_DIR}/../../util
+                         ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants
+                         ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants/joints 
+                       LINK_LIBRARIES drakeRBM 
+                       SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/matlab ${DRAKE_SWIG_FILES}/common
+                       DESTINATION matlab)
+
+  if (snopt_c_FOUND)
+    add_swig_matlab_module(ikMatlab ik.i
+                           CPLUSPLUS
+                           INCLUDE_DIRS 
+                             ${CMAKE_CURRENT_SOURCE_DIR}/../../systems
+                             ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants/constraint 
+                             ${CMAKE_CURRENT_SOURCE_DIR}/../../util
+                             ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants/joints 
+                           LINK_LIBRARIES drakeIK 
+                           SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/matlab ${DRAKE_SWIG_FILES}/common
+                           DESTINATION matlab)
+  endif()
+endif()

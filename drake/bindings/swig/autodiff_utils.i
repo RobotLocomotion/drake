@@ -1,4 +1,4 @@
-%module(package="pydrake") autodiff_utils
+%module(package="dragon") autodiff_utils
 
 %include <eigen.i>
 %include <autodiff.i>

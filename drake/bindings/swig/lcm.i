@@ -1,4 +1,4 @@
-%module(package="pydrake.wrappers") lcm
+%module(package="dragon.wrappers") lcm
 
 %include <std_shared_ptr.i>
 
