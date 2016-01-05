@@ -5,31 +5,11 @@ endif()
 set(DRAKE_SWIG_FILES ${CMAKE_INSTALL_PREFIX}/share/swig)
 include(DrakeUseSWIG)
 include(SwigPython)
-set(CMAKE_SWIG_FLAGS ${CMAKE_SWIG_FLAGS} "-w315")
 
-# add_swig_python_module(lcmPython lcm.i
-#                        CPLUSPLUS
-#                        LINK_LIBRARIES lcm
-#                        DESTINATION ${python_install_subdir})
-
-# add_swig_python_module(systemsPython systems.i
-#                        CPLUSPLUS
-#                        INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../../examples/Pendulum 
-#                          ${CMAKE_CURRENT_SOURCE_DIR}/../../systems 
-#                          ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/frames 
-#                          ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants 
-#                          ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants/joints 
-#                          ${CMAKE_CURRENT_SOURCE_DIR}/../../util
-#                        LINK_LIBRARIES drakeSystem
-#                        SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/python
-#                        DESTINATION ${python_install_subdir})
-
-# add_swig_python_module(botvisPython botvis.i
-#                        CPLUSPLUS
-#                        INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants
-#                        LINK_LIBRARIES drakeSystem
-#                        SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/python
-#                        DESTINATION ${python_install_subdir})
+# Ignore SWIG errors about unknown base types
+set(CMAKE_SWIG_FLAGS ${CMAKE_SWIG_FLAGS} "-w315,-401")
+# Ignore SWIG errors about not being able to wrap operator <<
+set(CMAKE_SWIG_FLAGS ${CMAKE_SWIG_FLAGS} "-w503")
 
 add_swig_python_module(autodiffPython autodiff_utils.i
                        CPLUSPLUS
@@ -59,19 +39,6 @@ if (snopt_c_FOUND)
                          SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/python ${DRAKE_SWIG_FILES}/common
                          DESTINATION ${python_install_subdir})
 endif()
-
-# add_swig_python_module(pendulumPython pendulum.i
-#                        CPLUSPLUS
-#                        INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../../examples/Pendulum 
-# 	                       ${CMAKE_CURRENT_SOURCE_DIR}/../../systems 
-# 	                       ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/frames 
-# 	                       ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants 
-# 	                       ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants/joints 
-# 	                       ${CMAKE_CURRENT_SOURCE_DIR}/../../util
-#                        LINK_LIBRARIES drakeSystem drakeGeometryUtil drakeRBM
-#                        SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/python
-#                        DESTINATION ${python_install_subdir})
-
 
 if (MATLAB_FOUND)
   include(SwigMatlab)
