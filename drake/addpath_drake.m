@@ -60,6 +60,7 @@ addpath(fullfile(root,'solvers','BMI'));
 addpath(fullfile(root,'solvers','BMI','util'));
 addpath(fullfile(root,'solvers','BMI','kinematics'));
 addpath(fullfile(root,'solvers','qpSpline'));
+addpath(fullfile(root,'bindings','matlab'));
 
 
 % OSX platform-specific

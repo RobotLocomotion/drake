@@ -33,9 +33,5 @@ def newAutoDiff(value, derivatives=None):
     else:
         return AutoDiffMatrixDynamic(value, derivatives)
 
-def newAutoDiffLike(template, value):
-    value = numpy.asarray(value, dtype=numpy.float64).reshape((template.rows(), template.cols()), order='F')
-    derivatives = numpy.zeros_like(template.derivatives())
-    return newAutoDiff(value, derivatives)
 %}
 #endif
