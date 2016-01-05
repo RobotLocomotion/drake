@@ -110,9 +110,22 @@ namespace Drake {
    */
   class LinearEqualityConstraint { // : public LinearConstraint {
   public:
+    LinearEqualityConstraint(const VariableList& vars) : variable_list(vars) {};
+
+    virtual const Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> & getMatrix() const = 0;
+    virtual const Eigen::Matrix<double,Eigen::Dynamic,1>& getVector() const = 0;
+
+    const VariableList& getVariableList() const { return variable_list; }
+
+  protected:
+    VariableList variable_list;
+  };
+
+  class LinearEqualityConstraintImpl : public LinearEqualityConstraint {
+  public:
     template <typename DerivedA,typename DerivedB>
-    LinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& Aeq, const Eigen::MatrixBase<DerivedB>& beq, const VariableList& vars)
-            : A(Aeq), b(beq), variable_list(vars) {
+    LinearEqualityConstraintImpl(const VariableList& vars, const Eigen::MatrixBase<DerivedA>& Aeq, const Eigen::MatrixBase<DerivedB>& beq)
+            : A(Aeq), b(beq), LinearEqualityConstraint(vars) {
       assert(A.rows()==b.rows());
       // todo: only do this loop if debug mode (only used for assert)
       int num_referenced_vars = 0;
@@ -123,9 +136,8 @@ namespace Drake {
     }
 //    template <typename FunctionType> LinearConstraint(lb,ub);  // construct using autodiff
 
-    const Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> & getMatrix() const { return A; }
-    const Eigen::Matrix<double,Eigen::Dynamic,1>& getVector() const { return b; }
-    const VariableList& getVariableList() const { return variable_list; }
+    const Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> & getMatrix() const override { return A; }
+    const Eigen::Matrix<double,Eigen::Dynamic,1>& getVector() const override { return b; }
 
     /* updateConstraint
      * @brief change the parameters of the constraint (A and b), but not the variable associations
@@ -146,7 +158,6 @@ namespace Drake {
   private:
     Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> A;
     Eigen::Matrix<double,Eigen::Dynamic,1> b;
-    VariableList variable_list;
   };
 
 
@@ -177,7 +188,7 @@ namespace Drake {
      * @brief adds linear equality constraints to the program for all (currently existing) variables
      */
     template <typename DerivedA,typename DerivedB>
-    std::shared_ptr<LinearEqualityConstraint> addLinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,const Eigen::MatrixBase<DerivedB>& beq) {
+    std::shared_ptr<LinearEqualityConstraintImpl> addLinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,const Eigen::MatrixBase<DerivedB>& beq) {
       assert(Aeq.cols() == num_vars);
       VariableList vars;
       for (auto const& v : variables) {
@@ -194,10 +205,10 @@ namespace Drake {
    * where Aeq has exactly two columns.
    */
     template <typename DerivedA,typename DerivedB>
-    std::shared_ptr<LinearEqualityConstraint> addLinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,const Eigen::MatrixBase<DerivedB>& beq, const VariableList& vars) {
+    std::shared_ptr<LinearEqualityConstraintImpl> addLinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,const Eigen::MatrixBase<DerivedB>& beq, const VariableList& vars) {
       problem_type.reset(problem_type->addLinearEqualityConstraint());
 
-      auto constraint = std::make_shared<LinearEqualityConstraint>(Aeq,beq,vars);
+      auto constraint = std::make_shared<LinearEqualityConstraintImpl>(vars,Aeq,beq);
       linear_equality_constraints.push_back(constraint);
       return constraint;
     }

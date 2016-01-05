@@ -59,6 +59,32 @@ namespace Drake {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
+  namespace RigidBodyConstraints {
+    /** @defgroup rigid_body_constraint RigidBodyConstraint Concept
+     * @ingroup concepts
+     * @{
+     * @brief A constraint that can be updated using the state of the rigid body system
+     * @nbsp
+     *
+     * | Valid Expressions (which must be implemented) |  |
+     * ------------------|-------------------------------------------------------------|
+     * | template <typename ScalarType> updateConstraint(const KinematicCache<ScalarType>& kinsol)  | Updates the parameters of the constraint |
+     * | Eigen::MatrixXd constraintForceJacobian() | returns the J used in J^T force for any constraint forces implied
+     * | size_t getNumConstraintForces() |
+     * @}
+     */
+
+    /* RigidBodyConstraint::LoopConstraint
+     * @brief Implements Hvdot = C
+     * @concept{rigid_body_constraint}
+     */
+    /*
+    class LoopConstraint : public LinearEqualityConstraint {
+
+    };
+*/
+  }
+
   /** RigidBodySystem
    * @brief implements the System concept by wrapping the RigidBodyTree algorithms with additional sensors and actuators/forces
    * @concept{system_concept}
@@ -121,6 +147,11 @@ namespace Drake {
     std::shared_ptr<RigidBodyTree> tree;
     std::vector<std::shared_ptr<RigidBodyPropellor> > props;  // note: will generalize this soon
 
+    /*
+    mutable OptimizationProblem dynamics_program;
+    std::list<std::shared_ptr<LinearEqualityConstraint>> dynamics_program_constraints;  // each must also implement the RigidBodyConstraint Concept
+    std::list<std::shared_ptr<LinearEqualityConstraint>> conditional_dynamics_program_constraints;  // each must also implement the RigidBodyConstraint Concept
+*/
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
