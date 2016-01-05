@@ -19,7 +19,7 @@ class TestRBTIK(unittest.TestCase):
                        0.))
 
         options = ik.IKoptions(r)
-        results = pydrake.solvers.ik.inverseKinSimple(r,
+        results = ik.inverseKinSimple(r,
                                       q_seed,
                                       q_nom,
                                       [posture_constraint],

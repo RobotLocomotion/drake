@@ -1,3 +1,5 @@
+from . import rbtree
+
 import warnings
 warnings.warn("This API is completely experimental and likely to change very soon. Use with caution.", FutureWarning)
 

@@ -1,7 +1,7 @@
 from __future__ import print_function
 import unittest
 import numpy as np
-import pydrake.rbtree
+import pydrake
 import os.path
 
 class TestRBTCoM(unittest.TestCase):
