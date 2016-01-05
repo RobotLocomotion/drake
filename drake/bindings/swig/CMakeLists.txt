@@ -13,7 +13,6 @@ set(CMAKE_SWIG_FLAGS ${CMAKE_SWIG_FLAGS} "-w503")
 
 add_swig_python_module(autodiffPython autodiffutils.i
                        CPLUSPLUS
-                       INCLUDE_DIRS 
                        SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/python ${DRAKE_SWIG_FILES}/common
                        DESTINATION ${python_install_subdir})
 
@@ -21,6 +20,7 @@ add_swig_python_module(rbtPython rbtree.i
                        CPLUSPLUS
                        INCLUDE_DIRS 
                          ${CMAKE_CURRENT_SOURCE_DIR}/../../util
+                         ${CMAKE_CURRENT_SOURCE_DIR}/../../systems
                          ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants
                          ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants/joints 
                        LINK_LIBRARIES drakeRBM 
@@ -31,9 +31,9 @@ if (snopt_c_FOUND)
   add_swig_python_module(ikPython ik.i
                          CPLUSPLUS
                          INCLUDE_DIRS 
+                           ${CMAKE_CURRENT_SOURCE_DIR}/../../util
                            ${CMAKE_CURRENT_SOURCE_DIR}/../../systems
                            ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants/constraint 
-                           ${CMAKE_CURRENT_SOURCE_DIR}/../../util
                            ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants/joints 
                          LINK_LIBRARIES drakeIK 
                          SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/python ${DRAKE_SWIG_FILES}/common
@@ -53,6 +53,7 @@ if (MATLAB_FOUND)
 	                       CPLUSPLUS
 	                       INCLUDE_DIRS 
                          ${CMAKE_CURRENT_SOURCE_DIR}/../../util
+                         ${CMAKE_CURRENT_SOURCE_DIR}/../../systems
                          ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants
                          ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants/joints 
                        LINK_LIBRARIES drakeRBM 
@@ -63,9 +64,9 @@ if (MATLAB_FOUND)
     add_swig_matlab_module(ikMatlab ik_matlab.i
                            CPLUSPLUS
                            INCLUDE_DIRS 
+                             ${CMAKE_CURRENT_SOURCE_DIR}/../../util
                              ${CMAKE_CURRENT_SOURCE_DIR}/../../systems
                              ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants/constraint 
-                             ${CMAKE_CURRENT_SOURCE_DIR}/../../util
                              ${CMAKE_CURRENT_SOURCE_DIR}/../../systems/plants/joints 
                            LINK_LIBRARIES drakeIK 
                            SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/matlab ${DRAKE_SWIG_FILES}/common
