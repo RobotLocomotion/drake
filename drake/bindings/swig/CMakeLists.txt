@@ -93,7 +93,7 @@ if (MATLAB_FOUND)
                        DESTINATION matlab)
 
   if (snopt_c_FOUND)
-    add_swig_matlab_module(ikMatlab ik.i
+    add_swig_matlab_module(ikMatlab ik_matlab.i
                            CPLUSPLUS
                            INCLUDE_DIRS 
                              ${CMAKE_CURRENT_SOURCE_DIR}/../../systems
