@@ -4,7 +4,7 @@ import dragon
 from dragon.solvers import ik
 import os.path
 
-class TestRBMIK(unittest.TestCase):
+class TestRBTIK(unittest.TestCase):
     def testPostureConstraint(self):
         r = dragon.rbtree.RigidBodyTree(os.path.join(dragon.getDrakePath(), "examples/Pendulum/Pendulum.urdf"))
         q = -0.9
@@ -14,7 +14,7 @@ class TestRBMIK(unittest.TestCase):
                                           np.array([[q]]))
         # Choose a seed configuration (randomly) and a nominal configuration (at 0)
         q_seed = np.vstack((np.zeros((6,1)),
-                            np.random.rand()))
+                            0.8147))
         q_nom = np.vstack((np.zeros((6,1)),
                        0.))
 
