@@ -1,4 +1,4 @@
-%module(package="dragon") rbtree
+%module(package="pydrake") rbtree
 
 %include "exception_helper.i"
 %include <std_string.i>
@@ -17,7 +17,7 @@
 %include <std_vector.i>
 %include <eigen.i>
 %include <autodiff.i>
-%import <autodiff_utils.i>
+%import <autodiffutils.i>
 
 %template(vectorVectorXd) std::vector<Eigen::VectorXd>;
 %template(vectorMatrixXd) std::vector<Eigen::MatrixXd>;

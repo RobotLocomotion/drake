@@ -5,9 +5,9 @@ if nargin < 2
 end
 
 if size(value, 2) == 1
-  obj = dragon.AutoDiffVectorDynamic(value, derivatives);
+  obj = autodiffutils.AutoDiffVectorDynamic(value, derivatives);
 else
-  obj = dragon.AutoDiffMatrixDynamic(value, derivatives);
+  obj = autodiffutils.AutoDiffMatrixDynamic(value, derivatives);
 end
 
 end

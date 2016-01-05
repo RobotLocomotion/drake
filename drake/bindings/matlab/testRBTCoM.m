@@ -1,5 +1,5 @@
 function testRBTCoM()
-r = dragon.RigidBodyTree(fullfile(getDrakePath(), 'examples/Pendulum/Pendulum.urdf'));
+r = rbtree.RigidBodyTree(fullfile(getDrakePath(), 'examples/Pendulum/Pendulum.urdf'));
 
 kinsol = r.doKinematics(zeros(7,1), zeros(7,1));
 

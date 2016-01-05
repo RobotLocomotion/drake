@@ -1,12 +1,12 @@
 import unittest
 import numpy as np
-import dragon
-from dragon.solvers import ik
+import pydrake
+from pydrake.solvers import ik
 import os.path
 
 class TestRBTIK(unittest.TestCase):
     def testPostureConstraint(self):
-        r = dragon.rbtree.RigidBodyTree(os.path.join(dragon.getDrakePath(), "examples/Pendulum/Pendulum.urdf"))
+        r = pydrake.rbtree.RigidBodyTree(os.path.join(pydrake.getDrakePath(), "examples/Pendulum/Pendulum.urdf"))
         q = -0.9
         posture_constraint = ik.PostureConstraint(r)
         posture_constraint.setJointLimits(np.array([[6]], dtype=np.int32),
@@ -19,7 +19,7 @@ class TestRBTIK(unittest.TestCase):
                        0.))
 
         options = ik.IKoptions(r)
-        results = dragon.solvers.ik.inverseKinSimple(r,
+        results = pydrake.solvers.ik.inverseKinSimple(r,
                                       q_seed,
                                       q_nom,
                                       [posture_constraint],

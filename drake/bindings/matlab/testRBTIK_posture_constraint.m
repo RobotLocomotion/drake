@@ -1,6 +1,6 @@
 function testRBTIK_posture_constraint()
 
-r = dragon.RigidBodyTree(fullfile(getDrakePath(), 'examples/Pendulum/Pendulum.urdf'));
+r = rbtree.RigidBodyTree(fullfile(getDrakePath(), 'examples/Pendulum/Pendulum.urdf'));
 q = -0.9;
 posture_constraint = ik.PostureConstraint(r);
 posture_constraint.setJointLimits(int32(6), q, q);

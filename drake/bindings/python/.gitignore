@@ -1,4 +1,4 @@
 *.so
-dragon/rbtree.py
-dragon/autodiff_utils.py
-dragon/solvers/ik.py
+pydrake/rbtree.py
+pydrake/autodiffutils.py
+pydrake/solvers/ik.py

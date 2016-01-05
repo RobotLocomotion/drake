@@ -1,12 +1,12 @@
 from __future__ import print_function
 import unittest
 import numpy as np
-import dragon.rbtree
+import pydrake.rbtree
 import os.path
 
 class TestRBTCoM(unittest.TestCase):
     def testCoM0(self):
-        r = dragon.rbtree.RigidBodyTree(os.path.join(dragon.getDrakePath(), "examples/Pendulum/Pendulum.urdf"))
+        r = pydrake.rbtree.RigidBodyTree(os.path.join(pydrake.getDrakePath(), "examples/Pendulum/Pendulum.urdf"))
 
         kinsol = r.doKinematics(np.zeros((7,1)), np.zeros((7,1)))
 

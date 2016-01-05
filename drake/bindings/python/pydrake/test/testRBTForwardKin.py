@@ -1,13 +1,13 @@
 from __future__ import print_function
 import unittest
 import numpy as np
-import dragon
-from dragon.autodiff_utils import newAutoDiff
+import pydrake
+from pydrake.autodiffutils import newAutoDiff
 import os.path
 
 class TestRBMForwardKin(unittest.TestCase):
     def testFK_value(self):
-        r = dragon.rbtree.RigidBodyTree(os.path.join(dragon.getDrakePath(), "examples/Pendulum/Pendulum.urdf"))
+        r = pydrake.rbtree.RigidBodyTree(os.path.join(pydrake.getDrakePath(), "examples/Pendulum/Pendulum.urdf"))
         self.assertEqual(r.num_positions, 7)
         self.assertEqual(r.num_velocities, 7)
 
@@ -17,7 +17,7 @@ class TestRBMForwardKin(unittest.TestCase):
         self.assertTrue(np.allclose(p, np.zeros((3,1))))
 
     def testFK_gradient(self):
-        r = dragon.rbtree.RigidBodyTree(os.path.join(dragon.getDrakePath(), "examples/Pendulum/Pendulum.urdf"))
+        r = pydrake.rbtree.RigidBodyTree(os.path.join(pydrake.getDrakePath(), "examples/Pendulum/Pendulum.urdf"))
 
         q = newAutoDiff(np.zeros((7,1)), np.eye(7, 7))
         v = newAutoDiff(np.zeros((7,1)), np.zeros((7, 7)))

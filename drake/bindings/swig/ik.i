@@ -1,4 +1,4 @@
-%module(package="dragon.solvers") ik
+%module(package="pydrake.solvers") ik
 
 
 %include <std_except.i>
