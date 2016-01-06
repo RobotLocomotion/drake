@@ -44,7 +44,7 @@ else()
 	option(WITH_DIRECTOR	"vtk-based visualization tool and robot user interface"   ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
 	option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	ON) # there is hope, but i spent a long time cleaning up c/c++ language errors trying to make msvc happy.. and still had a long way to go.
 	option(WITH_BULLET 		"used for collision detection" 	ON) # almost works.  just one remaining link error..?
-	option(WITH_SWIG_MATLAB "A version of SWIG with MATLAB support" OFF)
+	option(WITH_SWIG_MATLAB "A version of SWIG with MATLAB support" ON)
 endif()
 find_program(matlab matlab)
 if (matlab)
