@@ -1,4 +1,6 @@
 function testRBTForwardKin_value()
+checkDependency('cpp_bindings');
+
 r = rbtree.RigidBodyTree(fullfile(getDrakePath(), 'examples/Pendulum/Pendulum.urdf'));
 
 valuecheck(r.num_positions, 7);
