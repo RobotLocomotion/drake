@@ -1,5 +1,5 @@
 function testRBTCoM()
-checkDependency('cpp_bindings);
+checkDependency('cpp_bindings');
 
 r = rbtree.RigidBodyTree(fullfile(getDrakePath(), 'examples/Pendulum/Pendulum.urdf'));
 
