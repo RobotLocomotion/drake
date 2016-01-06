@@ -223,20 +223,20 @@ classdef HybridTrajectoryOptimization < NonlinearProgram
         
         if i == obj.M,
           transition_ind = -1;
-        elseif any(obj.plant.target_mode{i} == 0)
-          if length(obj.plant.target_mode{i}) > 1
+        elseif any(obj.plant.target_mode{obj.mode_sequence(i)} == 0)
+          if length(obj.plant.target_mode{obj.mode_sequence(i)}) > 1
             error('Not handling this case right now, better to specify the target modes of all transitions')
           end
           transition_ind = 1;
         else
-          transition_ind = find(obj.plant.target_mode{i} == obj.mode_sequence(i+1));
+          transition_ind = find(obj.plant.target_mode{obj.mode_sequence(i)} == obj.mode_sequence(i+1));
         end
         
-        if i < obj.M          
+        if i < obj.M
           mode_out = obj.plant.modes{obj.mode_sequence(i+1)};
           
           % add transition constraint, xp = transition(xm,u)
-          transition_fun = @(xm,u,xp) transition_constraint_fun(obj.plant,obj.plant.transition{i}{transition_ind}, ...
+          transition_fun = @(xm,u,xp) transition_constraint_fun(obj.plant,obj.plant.transition{obj.mode_sequence(i)}{transition_ind}, ...
             obj.mode_sequence(i),xm,u,xp);
           
           jump_con = FunctionHandleConstraint(zeros(mode_out.getNumStates,1), zeros(mode_out.getNumStates,1), ...
@@ -251,7 +251,7 @@ classdef HybridTrajectoryOptimization < NonlinearProgram
         
         % add guard constraints, 0 = guard(xm,u) for the transition and
         % 0 >= guard(xm,u) for everything else
-        for j=1:length(obj.plant.guard{i}),
+        for j=1:length(obj.plant.guard{obj.mode_sequence(i)}),
           for k=1:obj.N(i),
             if k==obj.N(i) && j==transition_ind,
               guard_ub = 0;
@@ -259,7 +259,7 @@ classdef HybridTrajectoryOptimization < NonlinearProgram
               guard_ub = inf;
             end
             
-            guard_fun = @(x,u) guard_constraint_fun(obj.plant,obj.plant.guard{i}{j},x,u);
+            guard_fun = @(x,u) guard_constraint_fun(obj.plant,obj.plant.guard{obj.mode_sequence(i)}{j},x,u);
             guard_con = FunctionHandleConstraint(0,guard_ub,mode_in.getNumStates + mode_in.getNumInputs, guard_fun);
             guard_xind{1} = obj.mode_opt{i}.x_inds(:,k) + obj.var_offset(i); % xm
             guard_xind{2} = obj.mode_opt{i}.u_inds(:,k) + obj.var_offset(i); % u
