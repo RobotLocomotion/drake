@@ -7,6 +7,7 @@ install:
 before_build:
   - cmd: set PATH=%PATH%;c:\;c:\projects\drake\build\bin;c:\projects\drake\build\lib;c:\projects\drake\drake\pod-build\lib\Release
   - cmd: PATH
+  - cmd: choco install swig
   - cmd: cmake -E make_directory pod-build
   - cmd: cd pod-build && cmake .. && cd ..
   # note: this is building as 32-bit right now.  could add the -G arguments above to build 64-bit
