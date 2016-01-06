@@ -1,6 +1,6 @@
 set(python_install_subdir lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/dist-packages ${CMAKE_CURRENT_SOURCE_DIR}/python)
 if (MATLAB_FOUND)
-	set(matlab_install_subdir ${CMAKE_BINARY_DIR}/matlab)
+	set(matlab_install_subdir ${CMAKE_BINARY_DIR}/bindings/matlab)
 endif()
 
 add_subdirectory(swig)
