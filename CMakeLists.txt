@@ -74,6 +74,38 @@ if (NOT WIN32) # many of these might work on win32 with little or no work... the
 	option(WITH_MESHCONVERTERS "uses vcglib to convert a few standard filetypes")
 endif()
 
+if (APPLE)
+	if (WITH_PYTHON_3)
+		# Cmake on the mac build servers insists on using /usr/bin/python even
+		# though /usr/local/bin/python is first on the path. So I'm attempting to
+		# work around this by setting PYTHON_EXECUTABLE to whatever the path gives
+		# me.
+	    execute_process(COMMAND which python3
+	                    OUTPUT_VARIABLE python_from_path
+	                    RESULT_VARIABLE python_path_result
+	                    ERROR_QUIET)
+	else()
+	    execute_process(COMMAND which python
+	                    OUTPUT_VARIABLE python_from_path
+	                    RESULT_VARIABLE python_path_result
+	                    ERROR_QUIET)
+	endif()
+    if (python_path_result EQUAL 0)
+    	message("Overriding mac python executable to: ${python_from_path}")
+      set(PYTHON_EXECUTABLE ${python_from_path})
+	else()
+		message("Could NOT override mac python executable from PATH")
+
+    endif()
+endif()
+if (NOT PYTHON_EXECUTABLE)
+	if(WITH_PYTHON_3)
+		set(Python_ADDITIONAL_VERSIONS 3.5)
+		find_package(PythonInterp 3 REQUIRED)
+	else()
+		find_package(PythonInterp REQUIRED)
+	endif()
+endif()
 
 # list *compilation* dependencies, in alphabetical order by target (note: dependencies must come first in my foreach above)
 set(lcm_dependencies gtk)
@@ -297,6 +329,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 				BUILD_COMMAND "${${proj}_BUILD_COMMAND}"
 				INSTALL_COMMAND ""
 				DEPENDS download-${proj} ${deps}
+				CMAKE_CACHE_ARGS -DPYTHON_EXECUTABLE:string=${PYTHON_EXECUTABLE}
 				${${proj}_ADDITIONAL_BUILD_ARGS}
 				)
 		#    message(STATUS "${proj}_BUILD_COMMAND: ${${proj}_BUILD_COMMAND}")
@@ -316,6 +349,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 				BUILD_COMMAND ${CMAKE_COMMAND} --build ${PROJECT_SOURCE_DIR}/drake/pod-build --config $<CONFIGURATION> --target install
 				INSTALL_COMMAND ""
 				DEPENDS ${deps}
+				CMAKE_CACHE_ARGS -DPYTHON_EXECUTABLE:string=${PYTHON_EXECUTABLE}
 				${${proj}_ADDITIONAL_BUILD_ARGS}
 				#		BUILD_ALWAYS 1
 				)
