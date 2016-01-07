@@ -163,14 +163,27 @@ void RigidBodyTree::compile(void)
   initialized = true;
 }
 
-void RigidBodyTree::getRandomConfiguration(Eigen::VectorXd& q, std::default_random_engine& generator) const
+Eigen::VectorXd RigidBodyTree::getZeroConfiguration() const {
+  Eigen::VectorXd q(num_positions);
+  for (const auto& body_ptr : bodies) {
+    if (body_ptr->hasParent()) {
+      const DrakeJoint& joint = body_ptr->getJoint();
+      q.middleRows(body_ptr->position_num_start, joint.getNumPositions()) = joint.zeroConfiguration();
+    }
+  }
+  return q;
+}
+
+Eigen::VectorXd RigidBodyTree::getRandomConfiguration(std::default_random_engine& generator) const
 {
-	for (int i=0; i<bodies.size(); i++) {
-		if (bodies[i]->hasParent()) {
-			const DrakeJoint& joint = bodies[i]->getJoint();
-			q.middleRows(bodies[i]->position_num_start,joint.getNumPositions()) = joint.randomConfiguration(generator);
+  Eigen::VectorXd q(num_positions);
+  for (const auto& body_ptr : bodies) {
+    if (body_ptr->hasParent()) {
+      const DrakeJoint& joint = body_ptr->getJoint();
+			q.middleRows(body_ptr->position_num_start,joint.getNumPositions()) = joint.randomConfiguration(generator);
 		}
 	}
+  return q;
 }
 
 string RigidBodyTree::getPositionName(int position_num) const

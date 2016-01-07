@@ -70,7 +70,9 @@ public:
 
   void compile(void);  // call me after the model is loaded
 
-  void getRandomConfiguration(Eigen::VectorXd& q, std::default_random_engine& generator) const;
+  Eigen::VectorXd getZeroConfiguration() const;
+
+  Eigen::VectorXd getRandomConfiguration(std::default_random_engine& generator) const;
 
   // akin to the coordinateframe names in matlab
   std::string getPositionName(int position_num) const;
