@@ -52,7 +52,6 @@ classdef BotVisualizer < RigidBodyVisualizer
             
       obj = updateManipulator(obj,manip);
       
-      nq = getNumPositions(manip);
       obj.draw_msg = drake.lcmt_viewer_draw();
       nb = getNumBodies(manip);
       obj.draw_msg.num_links = nb;
@@ -61,7 +60,7 @@ classdef BotVisualizer < RigidBodyVisualizer
       obj.draw_msg.position = single(zeros(nb,3));
       obj.draw_msg.quaternion = single(zeros(nb,4));
       
-      draw(obj,0,zeros(getNumPositions(manip),1));
+      draw(obj,0,getZeroConfiguration(manip));
     end
     
     function obj = updateManipulator(obj,manip)

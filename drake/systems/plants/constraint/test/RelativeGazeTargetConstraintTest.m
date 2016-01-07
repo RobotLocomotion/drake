@@ -6,7 +6,7 @@ function RelativeGazeTargetConstraintTest()
   warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
   r = RigidBodyManipulator(fullfile(getDrakePath(),'examples','PR2','pr2.urdf'));
   warning(w);
-  q_nom = zeros(r.getNumPositions(),1);
+  q_nom = getZeroConfiguration(r);
   constraintTester('RelativeGazeTargetConstraintTest', r, @makeCon, @(r) q_nom, @(r) q_nom, [],[],[],[],false);
 end
 

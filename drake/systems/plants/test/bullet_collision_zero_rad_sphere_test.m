@@ -65,7 +65,7 @@ problem.options=optimset('GradObj','on','GradConstr','on','Algorithm','interior-
 
 tic;
 for i=1:10
-  q0 = 3*(rand(r.getNumPositions(),1)-0.5);
+  q0 = getRandomConfiguration(r);
   v.draw(0,[q0;0*q0]);
   problem.x0 = q0;
 

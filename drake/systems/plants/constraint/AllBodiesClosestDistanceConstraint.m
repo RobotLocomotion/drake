@@ -13,7 +13,7 @@ classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
 
   methods(Access=protected)
     function obj = setNumConstraint(obj)
-      kinsol = doKinematics(obj.robot,zeros(obj.robot.getNumPositions(),1));
+      kinsol = doKinematics(obj.robot, getZeroConfiguration(obj.robot));
       phi = evalValidTime(obj,kinsol);
       obj.num_constraint = numel(phi);
     end

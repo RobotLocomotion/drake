@@ -185,7 +185,7 @@ classdef InverseKinematicsBMI < BMIspotless
           sol_bilinear.body_Quat{1} = zeros(4,4);
           sol_bilinear.body_Quat{1}(1,1) = 1;
         end
-        sol.q = zeros(obj.robot.getNumPositions,1);
+        sol.q = getZeroConfiguration(obj.robot);
         [joint_lb,joint_ub] = obj.robot.getJointLimits();
         for i = 1:obj.num_bodies
           if(obj.robot.getBody(i).parent ~= 0) % not world

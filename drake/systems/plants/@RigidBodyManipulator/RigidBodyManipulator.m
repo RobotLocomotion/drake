@@ -857,7 +857,7 @@ classdef RigidBodyManipulator < Manipulator
 
       % collisionDetect may require the mex version of the manipulator,
       % so it should go after createMexPointer
-      [phi,~,~,~,idxA,idxB] = model.collisionDetect(zeros(model.getNumPositions,1));
+      [phi,~,~,~,idxA,idxB] = model.collisionDetect(getZeroConfiguration(model));
       model.num_contact_pairs = length(phi);
 
       % cache the full set of terrain contact points
