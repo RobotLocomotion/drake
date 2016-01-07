@@ -80,6 +80,17 @@ classdef Valkyrie < TimeSteppingRigidBodyManipulator & Biped
       obj.manip = obj.manip.setStateFrame(valkyrie_state_frame);
       obj = obj.setStateFrame(state_frame);
 
+      % Same bit of complexity for input frame to get hand inputs
+      if (obj.external_force > 0)
+        input_frame = getInputFrame(obj);
+        input_frame  = replaceFrameNum(input_frame,1,valkyrieFrames.ValkyrieInput(obj));
+      else
+        input_frame = valkyrieFrames.ValkyrieInput(obj);
+      end
+
+      obj = obj.setInputFrame(input_frame);
+      obj.manip = obj.manip.setInputFrame(input_frame);
+
       % Construct output frame, which comes from state plus sensor
       % info
       valkyrie_output_frame = valkyrie_state_frame;
@@ -196,6 +207,9 @@ classdef Valkyrie < TimeSteppingRigidBodyManipulator & Biped
                                     'prevent_swing_undershoot', false,... % prevent the first phase of the swing from going backwards while moving to the first knot point
                                     'prevent_swing_overshoot', false,... % prevent the final phase of the swing from moving forward of the last knot point
                                     'nominal_LIP_COM_height', 1.01); % nominal height used to construct D_ls for our linear inverted pendulum model
+
+    default_qp_input;
+    rpc;
   end
 
 end

@@ -1,4 +1,4 @@
-function runAtlasBalancing(use_mex)
+function runValkyrieBalancing(use_mex)
 % put robot in a random x,y,yaw position and balance for 2 seconds
 
 checkDependency('gurobi')
@@ -14,14 +14,18 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits')
 
 options.floating = true;
 options.dt = 0.002;
-r = Atlas('urdf/atlas_minimal_contact.urdf',options);
+
+r = Valkyrie(fullfile(getDrakePath,'examples','Valkyrie','urdf','urdf','valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf'),options);
+fixed_point_file = fullfile(getDrakePath,'examples','Valkyrie','data','valkyrie_fp_june2015_30joints_one_neck.mat');
+
 r = r.removeCollisionGroupsExcept({'heel','toe'});
+r.fixed_point_file = fixed_point_file;
 r = compile(r);
 
 nq = getNumPositions(r);
 
 % set initial state to fixed point
-load('data/atlas_fp.mat');
+load(fixed_point_file);
 xstar(1) = 0.1*randn();
 xstar(2) = 0.1*randn();
 xstar(6) = pi*randn();
@@ -34,12 +38,24 @@ kinsol = doKinematics(r,q0);
 com = getCOM(r,kinsol);
 
 % Construct plan
-r.rpc = atlasUtil.propertyCache(r);
+r.default_qp_input = valkyrieControllers.QPInputConstantHeight();
+r.rpc = valkyrieUtil.propertyCache(r);
 settings = QPLocomotionPlanSettings.fromStandingState(x0, r);
 % settings.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed; % Only use supports when in contact
+
+settings.r_foot_name = 'rightFoot+rightLegSixAxis_Frame+rightCOP_Frame';
+settings.l_foot_name = 'leftFoot+leftLegSixAxis_Frame+leftCOP_Frame';
+settings.pelvis_name = 'pelvis+leftPelvisIMU_Frame+rightPelvisIMU_Frame';
+settings.r_knee_name = 'rightKneePitch';
+settings.l_knee_name = 'leftKneePitch';
+settings.l_akx_name = 'leftAnkleRoll';
+settings.r_akx_name = 'rightAnkleRoll';
+settings.r_aky_name = 'rightAnklePitch';
+settings.l_aky_name = 'leftAnklePitch';
+
 standing_plan = QPLocomotionPlanCPPWrapper(settings);
 
-param_sets = atlasParams.getDefaults(r);
+param_sets = valkyrieParams.getDefaults(r);
 
 if use_angular_momentum
   param_sets.standing.Kp_ang = 1.0; % angular momentum proportunal feedback gain
@@ -47,9 +63,9 @@ if use_angular_momentum
 end
 
 % Construct our control blocks
-planeval = atlasControllers.AtlasPlanEval(r, standing_plan);
-control = atlasControllers.InstantaneousQPController(r, param_sets);
-plancontroller = atlasControllers.AtlasPlanEvalAndControlSystem(r, control, planeval);
+planeval = valkyrieControllers.ValkyriePlanEval(r, standing_plan);
+control = valkyrieControllers.InstantaneousQPController(r, param_sets);
+plancontroller = valkyrieControllers.ValkyriePlanEvalAndControlSystem(r, control, planeval);
 
 sys = feedback(r, plancontroller);
 

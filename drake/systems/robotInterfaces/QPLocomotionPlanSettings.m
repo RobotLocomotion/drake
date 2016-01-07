@@ -46,7 +46,7 @@ classdef QPLocomotionPlanSettings
 
     duration = inf;
     start_time = 0;
-    default_qp_input = atlasControllers.QPInputConstantHeight;
+    default_qp_input; % = atlasControllers.QPInputConstantHeight;
     gain_set = 'standing';
   end
 
@@ -54,10 +54,9 @@ classdef QPLocomotionPlanSettings
     function obj = QPLocomotionPlanSettings(robot)
       obj.robot = robot;
       S = load(obj.robot.fixed_point_file);
-      rpc = atlasUtil.propertyCache(obj.robot);
-      obj.contact_groups = rpc.contact_groups;
+      obj.contact_groups = robot.rpc.contact_groups;
       obj.qtraj = S.xstar(1:obj.robot.getNumPositions());
-      obj.default_qp_input = atlasControllers.QPInputConstantHeight();
+      obj.default_qp_input = robot.default_qp_input;
       obj.default_qp_input.whole_body_data.q_des = zeros(obj.robot.getNumPositions(), 1);
       obj.constrained_dofs = [findPositionIndices(obj.robot,'arm');findPositionIndices(obj.robot,'neck');findPositionIndices(obj.robot,'back_bkz');findPositionIndices(obj.robot,'back_bky')];
       obj.untracked_joint_inds = [];
