@@ -75,9 +75,6 @@ if (NOT WIN32) # many of these might work on win32 with little or no work... the
 endif()
 
 # The Drake mac build servers don't appear to have /usr/local/bin on their path, which causes lots of python problems. 
-if (APPLE)
-	set(ENV{PATH} "/usr/local/bin:$ENV{PATH}")
-endif()
 message("PATH: $ENV{PATH}")
 
 # list *compilation* dependencies, in alphabetical order by target (note: dependencies must come first in my foreach above)
