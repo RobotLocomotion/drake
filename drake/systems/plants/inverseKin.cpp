@@ -33,7 +33,7 @@ IKResults inverseKinSimple(RigidBodyTree* model,
     constraint_array_ptr,
     results.q_sol,
     results.INFO,
-    results.infeasible_constraint,
+    results.infeasible_constraints,
     ikoptions);
 
   return results;

@@ -13,7 +13,7 @@ class IKResults {
 public:
   Eigen::VectorXd q_sol;
   int INFO;
-  std::vector<std::string> infeasible_constraint;
+  std::vector<std::string> infeasible_constraints;
 
   const Eigen::VectorXd& getQSol() const {
     return q_sol;
