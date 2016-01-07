@@ -19,8 +19,34 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 if(WITH_PYTHON_3)
   set(Python_ADDITIONAL_VERSIONS 3.5)
+  if (APPLE)
+    # Cmake on the mac build servers insists on using /usr/bin/python even
+    # though /usr/local/bin/python is first on the path. So I'm attempting to
+    # work around this by setting PYTHON_EXECUTABLE to whatever the path gives
+    # me.
+    execute_process(COMMAND which python3
+                    OUTPUT_VARIABLE python3_from_path
+                    RESULT_VARIABLE python3_path_result
+                    ERROR_QUIET)
+    if (python3_path_result EQUAL 0)
+      set(PYTHON_EXECUTABLE python3_from_path)
+    endif()
+  endif()
   find_package(PythonInterp 3 REQUIRED)
 else()
+  if (APPLE)
+    # Cmake on the mac build servers insists on using /usr/bin/python even
+    # though /usr/local/bin/python is first on the path. So I'm attempting to
+    # work around this by setting PYTHON_EXECUTABLE to whatever the path gives
+    # me.
+    execute_process(COMMAND which python
+                    OUTPUT_VARIABLE python_from_path
+                    RESULT_VARIABLE python_path_result
+                    ERROR_QUIET)
+    if (python_path_result EQUAL 0)
+      set(PYTHON_EXECUTABLE python_from_path)
+    endif()
+  endif()
   find_package(PythonInterp REQUIRED)
 endif()
 
@@ -128,7 +154,7 @@ file(WRITE ${PROJECT_SOURCE_DIR}/core/Path.h
 find_package( Perl )
 if ( PERL_FOUND )
   if (MATLAB_FOUND)
-    file(WRITE ${CMAKE_BINARY_DIR}/CTestCustom.cmake 
+    file(WRITE ${CMAKE_BINARY_DIR}/CTestCustom.cmake
    	      "set(CTEST_CUSTOM_PRE_TEST \"${PERL_EXECUTABLE} ${PROJECT_SOURCE_DIR}/cmake/add_matlab_unit_tests.pl ${PROJECT_SOURCE_DIR}\")\n")
   endif()
 endif()
