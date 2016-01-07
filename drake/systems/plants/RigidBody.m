@@ -87,7 +87,7 @@ classdef RigidBody < RigidBodyElement
       if body.floating == 2
         q_body = [zeros(3, 1); 1; 0; 0; 0];
       else
-        q_body = zeros(length(body.position_num));
+        q_body = zeros(length(body.position_num), 1);
       end
     end
     
