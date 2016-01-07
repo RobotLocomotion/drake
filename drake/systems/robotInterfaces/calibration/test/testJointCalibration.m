@@ -100,7 +100,10 @@ num_measured_markers = 3;
 s = rng(215615, 'twister');
 
 % actual ('perfect') joint configurations
-q_actual = getRandomConfiguration(r);
+q_actual = zeros(r.getNumPositions(), num_poses);
+for i = 1 : num_poses
+  q_actual(:, i) = getRandomConfiguration(r);
+end
 % make sure pitch is not close to +/- pi / 2
 epsilon = 0.1;
 for i = 1 : num_poses
