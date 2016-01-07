@@ -78,6 +78,7 @@ endif()
 if (APPLE)
 	set(ENV{PATH} "/usr/local/bin:$ENV{PATH}")
 endif()
+message("PATH: $ENV{PATH}")
 
 # list *compilation* dependencies, in alphabetical order by target (note: dependencies must come first in my foreach above)
 set(lcm_dependencies gtk)
