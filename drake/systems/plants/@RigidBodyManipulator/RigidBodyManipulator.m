@@ -356,6 +356,15 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
     
+    function q = getZeroConfiguration(obj)
+      q = zeros(getNumPositions(obj),1);
+      for i=1:getNumBodies(obj)
+        if any(obj.body(i).position_num>0)
+          q(obj.body(i).position_num) = getZeroConfiguration(obj.body(i));
+        end
+      end
+    end
+    
     function x0 = getInitialState(obj)
       if ~isempty(obj.initial_state)
         x0 = obj.initial_state;

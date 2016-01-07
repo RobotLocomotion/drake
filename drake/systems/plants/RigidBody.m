@@ -83,6 +83,14 @@ classdef RigidBody < RigidBodyElement
       end
     end
     
+    function q_body = getZeroConfiguration(body)
+      if body.floating == 2
+        q_body = [zeros(3, 1); 1; 0; 0; 0];
+      else
+        q_body = zeros(length(body.position_num));
+      end
+    end
+    
     function varargout = forwardKin(varargin)
       error('forwardKin(body,...) has been replaced by forwardKin(model,body_num,...), because it has a mex version.  please update your kinematics calls');
     end
