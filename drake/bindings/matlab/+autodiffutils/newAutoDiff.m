@@ -5,7 +5,11 @@ if nargin < 2
 end
 
 if size(value, 2) == 1
-  obj = autodiffutils.AutoDiffVectorDynamic(value, derivatives);
+  if size(value, 1) <= 73
+    obj = autodiffutils.AutoDiffVectorMax73(value, derivatives);
+  else
+    obj = autodiffutils.AutoDiffVectorDynamic(value, derivatives);
+  end
 else
   obj = autodiffutils.AutoDiffMatrixDynamic(value, derivatives);
 end

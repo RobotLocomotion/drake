@@ -28,10 +28,10 @@ def newAutoDiff(value, derivatives=None):
     if value.ndim == 0:
         value = value.reshape((1,))
     if value.ndim < 2 or value.shape[1] == 1:
-        # if derivatives.shape[1] <= 73:
-        #     return AutoDiffVectorMax73(value, derivatives)
-        # else:
-        return AutoDiffVectorDynamic(value, derivatives)
+        if derivatives.shape[1] <= 73:
+            return AutoDiffVectorMax73(value, derivatives)
+        else:
+            return AutoDiffVectorDynamic(value, derivatives)
     else:
         return AutoDiffMatrixDynamic(value, derivatives)
 

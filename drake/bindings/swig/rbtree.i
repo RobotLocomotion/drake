@@ -32,6 +32,7 @@
 %include "KinematicsCache.h"
 %template(KinematicsCache_d) KinematicsCache<double>;
 %template(KinematicsCache_adVectorDynamic) KinematicsCache<Eigen::AutoDiffScalar<Eigen::VectorXd> >;
+%template(KinematicsCache_adVectorMax73) KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73> > >;
 
 %include "RigidBodyTree.h"
 %extend RigidBodyTree {
@@ -43,6 +44,10 @@
     return $self->doKinematics(q, v);
   }
 
+  KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73> > > doKinematics(const AutoDiffWrapper<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73>, Eigen::Dynamic, 1>& q, const AutoDiffWrapper<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73>, Eigen::Dynamic, 1>& v) {
+    return $self->doKinematics(q, v);
+  }
+
   Eigen::VectorXd forwardKin(
       const KinematicsCache<double> &cache, const Eigen::Matrix<double, SPACE_DIMENSION, 1> &points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type) const
   {
@@ -51,6 +56,12 @@
 
   AutoDiffWrapper<Eigen::VectorXd, Eigen::Dynamic, 1> forwardKin(
       const KinematicsCache<Eigen::AutoDiffScalar<Eigen::VectorXd> > &cache, const Eigen::Matrix<double, SPACE_DIMENSION, 1> &points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type) const
+  {
+    return $self->forwardKin(cache, points, current_body_or_frame_ind, new_body_or_frame_ind, rotation_type);
+  }
+
+  AutoDiffWrapper<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73>, Eigen::Dynamic, 1> forwardKin(
+      const KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73> > > &cache, const Eigen::Matrix<double, SPACE_DIMENSION, 1> &points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type) const
   {
     return $self->forwardKin(cache, points, current_body_or_frame_ind, new_body_or_frame_ind, rotation_type);
   }
