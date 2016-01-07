@@ -27,9 +27,10 @@ if(WITH_PYTHON_3)
     execute_process(COMMAND which python3
                     OUTPUT_VARIABLE python3_from_path
                     RESULT_VARIABLE python3_path_result
-                    ERROR_QUIET)
+                    ERROR_QUIET
+                    OUTPUT_STRIP_TRAILING_WHITESPACE)
     if (python3_path_result EQUAL 0)
-      set(PYTHON_EXECUTABLE python3_from_path)
+      set(PYTHON_EXECUTABLE ${python3_from_path})
     endif()
   endif()
   find_package(PythonInterp 3 REQUIRED)
@@ -42,9 +43,10 @@ else()
     execute_process(COMMAND which python
                     OUTPUT_VARIABLE python_from_path
                     RESULT_VARIABLE python_path_result
-                    ERROR_QUIET)
+                    ERROR_QUIET
+                    OUTPUT_STRIP_TRAILING_WHITESPACE)
     if (python_path_result EQUAL 0)
-      set(PYTHON_EXECUTABLE python_from_path)
+      set(PYTHON_EXECUTABLE ${python_from_path})
     endif()
   endif()
   find_package(PythonInterp REQUIRED)
