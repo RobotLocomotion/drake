@@ -52,7 +52,7 @@ finger_2_link_1 = hand.findLinkId('finger_2_link_1');
 finger_3_link_1 = hand.findLinkId('finger_middle_link_1');
 palm = hand.findLinkId('palm');
 
-q0 = zeros(hand.getNumPositions(),1);
+q0 = getZeroConfiguration(hand);
 kinsol0 = hand.doKinematics(q0,0*q0,struct('use_mex',false));
 palm_pos0 = hand.forwardKin(kinsol0,palm,[0;0;0]);
 

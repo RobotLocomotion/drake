@@ -2,7 +2,7 @@ function testKin2
 
 options.floating = true;
 r = RigidBodyManipulator('../urdf/atlas_minimal_contact.urdf',options);
-q=zeros(getNumPositions(r),1);
+q = getZeroConfiguration(r);
 pelvis = findLinkId(r,'pelvis');
 
 for i=1:100

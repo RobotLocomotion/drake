@@ -52,7 +52,7 @@ warning(warn_state.state, 'Drake:RigidBodyManipulator:UnsupportedContactPoints')
 
 zheight = 0;
 
-q0 = rand(rb.getNumPositions(), 1);
+q0 = getRandomConfiguration(rb);
 q0(2) = 10;
 q0(3) = 10; % the block shouldn't be in the sensor's view for a 2D sweep
 x0 = [q0; rand(rb.getNumVelocities(), 1)]; % full state (positions, velocities)

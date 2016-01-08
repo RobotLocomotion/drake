@@ -52,7 +52,7 @@ for i=1:10
   %q0(1:6:end) = 5*cos(theta);
   %q0(2:6:end) = 5*sin(theta);
   %q0(3:6:end) = 0;
-  q0 = rand(r.getNumPositions(),1);
+  q0 = getRandomConfiguration(r);
   v.draw(0,[q0;0*q0]);
   problem.x0 = q0;
 
