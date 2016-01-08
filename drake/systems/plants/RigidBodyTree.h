@@ -331,6 +331,9 @@ public:
   template<typename Scalar>
   Eigen::Transform<Scalar, SPACE_DIMENSION, Eigen::Isometry> relativeTransform(const KinematicsCache<Scalar>& cache, int base_or_frame_ind, int body_or_frame_ind) const;
 
+  /** computeContactJacobians
+   * @brief Computes the jacobian for many points in the format currently used by matlab.  (possibly should be scheduled for deletion, taking accumulateContactJacobians with it)
+   */
   template <typename Scalar>
   void computeContactJacobians(const KinematicsCache<Scalar>& cache, Eigen::Ref<const Eigen::VectorXi> const & idxA, Eigen::Ref<const Eigen::VectorXi> const & idxB, Eigen::Ref<const Eigen::Matrix3Xd> const & xA, Eigen::Ref<const Eigen::Matrix3Xd> const & xB, Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> & J) const;
 
