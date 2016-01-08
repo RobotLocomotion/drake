@@ -78,47 +78,28 @@ namespace Drake {
    * should also be some notion of parameterized constraints:  e.g. the acceleration constraints in the rigid body dynamics are constraints
    * on vdot and f, but are "parameterized" by q and v.
    */
-  /*
   class Constraint {
   public:
-    Constraint(const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>& func, const Eigen::MatrixBase<DerivedA>& lb, const Eigen::MatrixBase<DerivedB>& ub)
-      : eval(func), lower_bound(lb), upper_bound(ub)
-    {};
+    Constraint(const VariableList& vars) : variable_list(vars) {}
+    virtual ~Constraint() {}
 
-    template <typename FunctionType, typename DerivedA, typename DerivedB>
-    Constraint(const FunctionType& func, const Eigen::MatrixBase<DerivedA>& lb, const Eigen::MatrixBase<DerivedB>& ub)
-      : eval([=] (const Eigen::VectorXd& x) {return func(x);}),
-        lower_bound(lb), upper_bound(ub)
-    {};
-
-    isEqualityConstraint(void) { return (upper_bound-lower_bound).isZero(); }
-
-    std::function<Eigen::VectorXd(const Eigen::VectorXd&)> eval;
-//    InputOutputRelation structure;
-
-    Eigen::VectorXd lower_bound, upper_bound;
-
-  public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    const VariableList& getVariableList() const { return variable_list; }
+  protected:
+    VariableList variable_list;
   };
 
   // DifferentiableConstraint, PolynomialConstraint, QuadraticConstraint, ComplementarityConstraint, IntegerConstraint, ...
-*/
 
   /** LinearEqualityConstraint
    * @brief Implements a constraint of the form @f Ax = b @f
    */
-  class LinearEqualityConstraint { // : public LinearConstraint {
+  class LinearEqualityConstraint : public Constraint {
   public:
-    LinearEqualityConstraint(const VariableList& vars) : variable_list(vars) {};
+    LinearEqualityConstraint(const VariableList& vars) : Constraint(vars) {}
+    virtual ~LinearEqualityConstraint() {}
 
     virtual const Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> & getMatrix() const = 0;
     virtual const Eigen::Matrix<double,Eigen::Dynamic,1>& getVector() const = 0;
-
-    const VariableList& getVariableList() const { return variable_list; }
-
-  protected:
-    VariableList variable_list;
   };
 
   class LinearEqualityConstraintImpl : public LinearEqualityConstraint {
@@ -134,7 +115,7 @@ namespace Drake {
       }
       assert(A.cols() == num_referenced_vars);
     }
-//    template <typename FunctionType> LinearConstraint(lb,ub);  // construct using autodiff
+    virtual ~LinearEqualityConstraintImpl() {}
 
     const Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> & getMatrix() const override { return A; }
     const Eigen::Matrix<double,Eigen::Dynamic,1>& getVector() const override { return b; }

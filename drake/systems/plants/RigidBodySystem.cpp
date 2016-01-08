@@ -55,49 +55,73 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
   if (num_actuators > 0) C -= tree->B*u.topRows(num_actuators);
 
   { // apply contact forces
+    const bool use_multi_contact = false;
     VectorXd phi;
     Matrix3Xd normal, xA, xB;
     vector<int> bodyA_idx, bodyB_idx;
-    tree->collisionDetect(kinsol,phi,normal,xA,xB,bodyA_idx,bodyB_idx);
-//    tree->potentialCollisions(kinsol,phi,normal,xA,xB,bodyA_idx,bodyB_idx);
-//    std::cout << "phi = " << phi.transpose() << std::endl;
+    if (use_multi_contact)
+      tree->potentialCollisions(kinsol,phi,normal,xA,xB,bodyA_idx,bodyB_idx);
+    else
+      tree->collisionDetect(kinsol,phi,normal,xA,xB,bodyA_idx,bodyB_idx);
 
     for (int i=0; i<phi.rows(); i++) {
       if (phi(i)<0.0) { // then i have contact
         double mu = 1.0; // todo: make this a parameter
 
+        // todo: move this entire block to a shared an updated "contactJacobian" method in RigidBodyTree
         auto JA = tree->forwardKinJacobian(kinsol, xA.col(i), bodyA_idx[i], 0, 0, false);
         auto JB = tree->forwardKinJacobian(kinsol, xB.col(i), bodyB_idx[i], 0, 0, false);
-        auto relative_velocity = (JA - JB) * v;
-        double phidot = relative_velocity.dot(normal.col(i));
-        auto tangential_velocity = relative_velocity - phidot * normal.col(i);
+        Vector3d this_normal = normal.col(i);
 
-        if (true) { // spring law for normal force:  fA = (-k*phi - b*phidot)*normal
-          double k = 500, b = k / 10;  // todo: put these somewhere better... or make them parameters?
-          auto fA_normal = -k * phi(i) - b * phidot;
+        // compute the surface tangent basis
+        Vector3d tangent1;
+        if (1.0 - this_normal(2) < EPSILON) { // handle the unit-normal case (since it's unit length, just check z)
+          tangent1 << 1.0, 0.0, 0.0;
+        } else if (1 + this_normal(2) < EPSILON) {
+          tangent1 << -1.0, 0.0, 0.0;  //same for the reflected case
+        } else {// now the general case
+          tangent1 << this_normal(1), -this_normal(0), 0.0;
+          tangent1 /= sqrt(this_normal(1)*this_normal(1) + this_normal(0)*this_normal(0));
+        }
+        Vector3d tangent2 = tangent1.cross(this_normal);
+        Matrix3d R;  // rotation into normal coordinates
+        R << tangent1, tangent2, this_normal;
+        auto J = R*(JA-JB);  // J = [ D1; D2; n ]
+        auto relative_velocity = J*v;  // [ tangent1dot; tangent2dot; phidot ]
 
-          // Coulomb sliding friction (no static friction yet, because it is a complementarity problem):
-          auto fA = fA_normal * normal.col(i) - std::min(b, mu * fA_normal / (tangential_velocity.norm() + 1e-12)) *
-                                                tangential_velocity;  // 1e-12 to avoid divide by zero
+        if (false) {
+          // spring law for normal force:  fA_normal = -k*phi - b*phidot
+          // and damping for tangential force:  fA_tangent = -b*tangentdot (bounded by the friction cone)
+          double k = 150, b = k / 10;  // todo: put these somewhere better... or make them parameters?
+          Vector3d fA;
+          fA(2) = -k * phi(i) - b * relative_velocity(2);
+          fA.head(2) = -std::min(b, mu*fA(2)/(relative_velocity.head(2).norm()+EPSILON)) * relative_velocity.head(2);  // epsilon to avoid divide by zero
 
           // equal and opposite: fB = -fA.
-          // tau = JA^T fA + JB^fB
-          C -= JA.transpose() * fA - JB.transpose() * fA;
+          // tau = (R*JA)^T fA + (R*JB)^T fB = J^T fA
+          C -= J.transpose()*fA;
         } else { // linear acceleration constraints (more expensive, but less tuning required for robot mass, etc)
-          // phiddot = normal.dot((JA-JB)*vdot + (JAdot-JBdot)*v) = -k*phi - b*phidot
-          // tangential_velocity_dot = -b*tangential_velocity
+          // note: this does not work for the multi-contact case (it overly constrains the motion of the link).  Perhaps if I made them inequality constraints...
+          static_assert(!use_multi_contact, "The acceleration contact constraints do not play well with multi-contact");
 
-          assert(false);  // doesn't work yet
+          // phiddot = -2*alpha*phidot - alpha^2*phi   // critically damped response
+          // tangential_velocity_dot = -2*alpha*tangential_velocity
+          double alpha = 20;  // todo: put this somewhere better... or make them parameters?
+          Vector3d desired_relative_acceleration = -2*alpha*relative_velocity;
+          desired_relative_acceleration(2) += -alpha*alpha*phi(i);
+          // relative_acceleration = J*vdot + R*(JAdotv - JBdotv) // uses the standard dnormal/dq = 0 assumption
 
-          double alpha = 5;  // todo: put this somewhere better... or make them parameters?
+          cout << "phi = " << phi << endl;
+          cout << "desired acceleration = " << desired_relative_acceleration.transpose() << endl;
+//          cout << "acceleration = " << (J*vdot + R*(JAdotv - JBdotv)).transpose() << endl;
 
-          prog.addContinuousVariables(3,"contact normal force");  // don't actually need to use the decision variable reference that would be returned...
-          auto JdotvA = tree->forwardJacDotTimesV(kinsol, xA.col(i).eval(), bodyA_idx[i], 0, 0);
-          auto JdotvB = tree->forwardJacDotTimesV(kinsol, xB.col(i).eval(), bodyB_idx[i], 0, 0);
+          prog.addContinuousVariables(3,"contact normal force");
+          auto JAdotv = tree->forwardJacDotTimesV(kinsol, xA.col(i).eval(), bodyA_idx[i], 0, 0);
+          auto JBdotv = tree->forwardJacDotTimesV(kinsol, xB.col(i).eval(), bodyB_idx[i], 0, 0);
 
-          prog.addLinearEqualityConstraint(normal.col(i).transpose()*(JA-JB),Matrix<double,1,1>(-normal.col(i).dot(JdotvA - JdotvB) - 2*alpha*phidot - alpha*alpha*phi(i)),{vdot});
+          prog.addLinearEqualityConstraint(J,desired_relative_acceleration - R*(JAdotv - JBdotv),{vdot});
           H_and_neg_JT.conservativeResize(NoChange,H_and_neg_JT.cols()+3);
-          H_and_neg_JT.rightCols(3) = -(JA-JB).transpose();
+          H_and_neg_JT.rightCols(3) = -J.transpose();
         }
       }
     }
