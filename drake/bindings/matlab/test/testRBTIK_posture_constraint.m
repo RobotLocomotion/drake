@@ -1,5 +1,6 @@
 function testRBTIK_posture_constraint()
 checkDependency('cpp_bindings');
+checkDependency('snopt');
 
 r = rbtree.RigidBodyTree(fullfile(getDrakePath(), 'examples/Pendulum/Pendulum.urdf'));
 q = -0.9;
