@@ -412,8 +412,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       body_idx = (int)(body_accel_inputs[i][0])-1;
 
       if (!inSupport(active_supports,body_idx)) {
-        auto Jb = pdata->r->forwardKinJacobian(cache, origin, body_idx, 0, 1, false);
-        auto Jbdot_times_v = pdata->r->forwardJacDotTimesV(cache, origin, body_idx, 0, 1);
+        // TODO: should use geometric Jacobians instead
+        Matrix<double, 6, Dynamic> Jb(6, pdata->r->num_velocities);
+        Jb.topRows<3>() = pdata->r->transformPointsJacobian(cache, origin, body_idx, 0, false);
+        Jb.bottomRows<3>() = pdata->r->relativeRollPitchYawJacobian(cache, body_idx, 0, false);
+
+        Matrix<double, 6, 1> Jbdot_times_v;
+        Jbdot_times_v.topRows<3>() = pdata->r->transformPointsJacobianDotTimesV(cache, origin, body_idx, 0);
+        Jbdot_times_v.bottomRows<3>() = pdata->r->relativeRollPitchYawJacobianDotTimesV(cache, body_idx, 0);
 
         for (int j=0; j<6; j++) {
           if (!std::isnan(body_vdot[j])) {
@@ -450,9 +456,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   int body_index;
   int constraint_start_index = 2*nu;
   for (int i=0; i<pdata->n_body_accel_bounds; i++) {
+    // TODO: should use geometric Jacobians instead
     body_index = pdata->accel_bound_body_idx[i];
-    auto Jb = pdata->r->forwardKinJacobian(cache, origin, body_index, 0, 1, false);
-    auto Jbdot_times_v = pdata->r->forwardJacDotTimesV(cache, origin, body_index, 0, 1);
+
+    Matrix<double, 6, Dynamic> Jb(6, pdata->r->num_velocities);
+    Jb.topRows<3>() = pdata->r->transformPointsJacobian(cache, origin, body_idx, 0, false);
+    Jb.bottomRows<3>() = pdata->r->relativeRollPitchYawJacobian(cache, body_idx, 0, false);
+
+    Matrix<double, 6, 1> Jbdot_times_v;
+    Jbdot_times_v.topRows<3>() = pdata->r->transformPointsJacobianDotTimesV(cache, origin, body_idx, 0);
+    Jbdot_times_v.bottomRows<3>() = pdata->r->relativeRollPitchYawJacobianDotTimesV(cache, body_idx, 0);
 
     Ain.block(constraint_start_index,0,6,pdata->r->num_positions) = Jb;
     bin.segment(constraint_start_index,6) = -Jbdot_times_v + pdata->max_body_acceleration[i];
@@ -561,8 +574,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         body_idx = (int)(body_accel_inputs[i][0])-1;
         
         if (!inSupport(active_supports,body_idx)) {
-          auto Jb = pdata->r->forwardKinJacobian(cache, origin, body_idx, 0, 1, false);
-          auto Jbdot_times_v = pdata->r->forwardJacDotTimesV(cache, origin, body_idx, 0, 1);
+          // TODO: should use geometric Jacobians instead
+          Matrix<double, 6, Dynamic> Jb(6, pdata->r->num_velocities);
+          Jb.topRows<3>() = pdata->r->transformPointsJacobian(cache, origin, body_idx, 0, false);
+          Jb.bottomRows<3>() = pdata->r->relativeRollPitchYawJacobian(cache, body_idx, 0, false);
+
+          Matrix<double, 6, 1> Jbdot_times_v;
+          Jbdot_times_v.topRows<3>() = pdata->r->transformPointsJacobianDotTimesV(cache, origin, body_idx, 0);
+          Jbdot_times_v.bottomRows<3>() = pdata->r->relativeRollPitchYawJacobianDotTimesV(cache, body_idx, 0);
 
           for (int j=0; j<6; j++) {
             if (!std::isnan(body_vdot[j])) {

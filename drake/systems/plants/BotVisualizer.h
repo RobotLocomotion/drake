@@ -135,14 +135,14 @@ namespace Drake {
       auto q = uvec.head(tree->num_positions);
       KinematicsCache<double> cache = tree->doKinematics(q);
 
-      Eigen::Vector3d points = Eigen::Vector3d::Zero();
       int i, j;
       for (i = 0; i < tree->bodies.size(); i++) {
-        auto pose = tree->forwardKin(cache, points, i, 0, 2);
+        auto transform = tree->relativeTransform(cache, i, 0);
+        auto quat = rotmat2quat(transform.linear());
         std::vector<float> &position = draw_msg.position[i];
-        for (j = 0; j < 3; j++) position[j] = static_cast<float>(pose(j));
+        for (j = 0; j < 3; j++) position[j] = static_cast<float>(transform.translation()(j));
         std::vector<float> &quaternion = draw_msg.quaternion[i];
-        for (j = 0; j < 4; j++) quaternion[j] = static_cast<float>(pose(j + 3));
+        for (j = 0; j < 4; j++) quaternion[j] = static_cast<float>(quat(j));
       }
 
       lcm->publish("DRAKE_VIEWER_DRAW", &draw_msg);

@@ -162,7 +162,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
           } else {
             pts = support_state_element.contact_points;
           }
-          Matrix3Xd pts_in_world = robot.forwardKin(cache, pts, support_state_element.body, 0, 0);
+          Matrix3Xd pts_in_world = robot.transformPoints(cache, pts, support_state_element.body, 0);
           reduced_support_pts.conservativeResize(2, reduced_support_pts.cols() + pts.cols());
           reduced_support_pts.block(0, reduced_support_pts.cols() - pts_in_world.cols(), 2, pts_in_world.cols()) = pts_in_world.topRows<2>();
         }
@@ -441,17 +441,21 @@ void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body
   VectorXd xf = trajectory.value(trajectory.getEndTime(takeoff_segment_index + 2));
 
   // first knot point from current position
-  auto x0_xyzquat = robot.forwardKin(cache, (Vector3d::Zero()).eval(), body_motion_data.getBodyOrFrameId(), 0, 2);
-  auto J = robot.forwardKinJacobian(cache, (Vector3d::Zero()).eval(), body_motion_data.getBodyOrFrameId(), 0, 2, true);
-  auto xd0_xyzquat = (J * v).eval(); // TODO: doesn't work for qd != v
-  Vector4d x0_quat = x0_xyzquat.tail<4>(); // copying to Vector4d for quatRotateVec later on.
+  auto x0_pose = robot.relativeTransform(cache, body_motion_data.getBodyOrFrameId(), 0);
+  auto x0_twist = robot.relativeTwist(cache, 0, body_motion_data.getBodyOrFrameId(), 0);
+
+  Vector4d x0_quat = rotmat2quat(x0_pose.linear());
   auto x0_expmap = quat2expmap(x0_quat, 1);
-  Vector3d xd0_expmap = x0_expmap.gradient().value() * xd0_xyzquat.tail<4>();
+
+  Matrix<double, QUAT_SIZE, SPACE_DIMENSION> Phi;
+  angularvel2quatdotMatrix(x0_quat, Phi, static_cast<Gradient<decltype(Phi), Dynamic>::type*>(nullptr));
+  auto quatdot = (Phi *  x0_twist.topRows<3>()).eval();
+  Vector3d xd0_expmap = x0_expmap.gradient().value() * quatdot;
   // std::cout << "x0: " << x0_expmap.value()(2) << " x1: " << x1(5) << " x2: " << x2(5) << " xf: " << xf(5) << std::endl;
 
   typedef Matrix<double, 6, 1> Vector6d;
   Vector6d x0;
-  x0.head<3>() = x0_xyzquat.head<3>();
+  x0.head<3>() = x0_pose.translation();
   if (settings.use_plan_shift) {
     for (auto it = settings.plan_shift_body_motion_indices.begin(); it != settings.plan_shift_body_motion_indices.end(); ++it) {
       x0(*it) += plan_shift(*it);
@@ -667,9 +671,7 @@ void QPLocomotionPlan::updatePlanShift(const KinematicsCache<double>& cache, dou
           for (auto body_motion_it = settings.body_motions.begin(); body_motion_it != settings.body_motions.end(); ++body_motion_it) {
             int body_motion_body_id = robot.parseBodyOrFrameID(body_motion_it->getBodyOrFrameId());
             if (body_motion_body_id == side_it->second) {
-              int world = 0;
-              int rotation_type = 0;
-              Vector3d foot_frame_origin_actual = robot.forwardKin(cache, Vector3d::Zero().eval(), body_motion_it->getBodyOrFrameId(), world, rotation_type);
+              Vector3d foot_frame_origin_actual = robot.relativeTransform(cache, body_motion_it->getBodyOrFrameId(), 0).translation();
               Vector3d foot_frame_origin_planned = body_motion_it->getTrajectory().value(t_plan).topRows<3>();
               // std::cout << "actual: " << foot_frame_origin_actual.transpose() << " planned: " << foot_frame_origin_planned.transpose() << std::endl;
               foot_shifts[side_it->first] = foot_frame_origin_planned - foot_frame_origin_actual;

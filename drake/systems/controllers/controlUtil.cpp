@@ -83,7 +83,7 @@ int contactPhi(RigidBodyTree * r, const KinematicsCache<double>& cache, SupportS
 
   int i=0;
   for (auto pt_iter = supp.contact_pts.begin(); pt_iter != supp.contact_pts.end(); pt_iter++) {
-    Vector3d contact_pos = r->forwardKin(cache, *pt_iter, supp.body_idx, 0, 0);
+    Vector3d contact_pos = r->transformPoints(cache, *pt_iter, supp.body_idx, 0);
     phi(i) = supp.support_surface.head<3>().dot(contact_pos) + supp.support_surface(3);
     i++;
   }
@@ -109,8 +109,8 @@ int contactConstraintsBV(RigidBodyTree *r, const KinematicsCache<double>& cache,
     double norm = sqrt(1+mu*mu); // because normals and ds are orthogonal, the norm has a simple form
     if (nc>0) {
       for (auto pt_iter=iter->contact_pts.begin(); pt_iter!=iter->contact_pts.end(); pt_iter++) {
-        contact_pos = r->forwardKin(cache, *pt_iter, iter->body_idx, 0, 0);
-        J = r->forwardKinJacobian(cache, *pt_iter, iter->body_idx, 0, 0, true);
+        contact_pos = r->transformPoints(cache, *pt_iter, iter->body_idx, 0);
+        J = r->transformPointsJacobian(cache, *pt_iter, iter->body_idx, 0, true);
 
         normal = iter->support_surface.head(3);
         surfaceTangents(normal,d);
@@ -126,7 +126,7 @@ int contactConstraintsBV(RigidBodyTree *r, const KinematicsCache<double>& cache,
         // NOTE: I'm cheating and using a slightly different ordering of J and Jdot here
         Jp.block(3*k,0,3,nq) = J;
         Vector3d pt = (*pt_iter).head(3);
-        Jpdotv.block(3*k,0,3,1) = r->forwardJacDotTimesV(cache, pt,iter->body_idx,0,0);
+        Jpdotv.block(3*k,0,3,1) = r->transformPointsJacobianDotTimesV(cache, pt,iter->body_idx,0);
         normals.col(k) = normal;
         
         k++;
@@ -180,7 +180,7 @@ MatrixXd individualSupportCOPs(RigidBodyTree * r, const KinematicsCache<double>&
 
       Vector3d point_on_contact_plane = contact_positions.col(0);
       std::pair<Vector3d, double> cop_and_normal_torque = resolveCenterOfPressure(torque, force, normal, point_on_contact_plane);
-      Vector3d cop_world = r->forwardKin(cache, cop_and_normal_torque.first, active_support.body_idx, 0, 0);
+      Vector3d cop_world = r->transformPoints(cache, cop_and_normal_torque.first, active_support.body_idx, 0);
       individual_cops.col(j) = cop_world;
     }
 
@@ -275,11 +275,10 @@ Vector6d bodySpatialMotionPD(RigidBodyTree *r, DrakeRobotState &robot_state, con
   Isometry3d T_world_to_task = T_task_to_world.inverse();
   KinematicsCache<double> cache = r->doKinematics(robot_state.q, robot_state.qd);
 
-  Vector3d origin = Vector3d::Zero();
-  auto body_pose = r->forwardKin(cache, origin, body_index, 0, 2);
-  Vector3d body_xyz = body_pose.head<3>();
-  Vector3d body_xyz_task = T_world_to_task * body_xyz.colwise().homogeneous();
-  Vector4d body_quat = body_pose.tail<4>();
+  auto body_pose = r->relativeTransform(cache, body_index, 0);
+  const auto& body_xyz = body_pose.translation();
+  Vector3d body_xyz_task = T_world_to_task * body_xyz;
+  Vector4d body_quat = rotmat2quat(body_pose.linear());
   std::vector<int> v_indices;
   auto J_geometric = r->geometricJacobian(cache, 0, body_index, body_index, true, &v_indices);
   VectorXd v_compact(v_indices.size());

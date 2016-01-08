@@ -36,10 +36,11 @@ int main(int argc, char* argv[])
 
   for (i=0; i<model->bodies.size(); i++) {
 //    model->forwardKin(i,zero,1,pt);
-		auto pt = model->forwardKin(cache, zero, i, 0, 1);
+		auto pt = model->transformPoints(cache, zero, i, 0);
+    auto rpy = model->relativeRollPitchYaw(cache, i, 0);
 //    cout << i << ": forward kin: " << model->bodies[i].linkname << " is at " << pt.transpose() << endl;
     cout << model->bodies[i]->linkname << " ";
-		cout << pt.transpose() << endl;
+		cout << pt.transpose() << ", " << rpy.transpose() << endl;
 //    for (int j=0; j<pt.size(); j++)
 //    	cout << pt(j) << " ";
   }
