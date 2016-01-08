@@ -8,27 +8,55 @@
 
 namespace Drake {
 
-  struct DecisionVariable {
+  class DecisionVariable {
     enum VarType {
       CONTINUOUS,
       INTEGER,
       BINARY
     };
+
+    /** index()
+     * @brief returns the first index of this variable in the entire variable vector for the program
+     */
+    size_t index() const { return start_index; }
+    /** size()
+     * @brief returns the number of elements in the decision variable vector
+     */
+    size_t size() const { return data.size(); }
+    /** value()
+     * @brief returns the actual stored value; which is only meaningful after calling solve() in the program.
+     */
+    const Eigen::VectorXd& value() const { return data; }
+
     VarType type;
-    std::string name;
-    Eigen::VectorXd value;
+    std::string name;     // todo: make this a vector of strings
+
+    friend class OptimizationProblem;
+    friend class DecisionVariableView;
+
+  private:
+    Eigen::VectorXd data;
     size_t start_index;
   };
   class DecisionVariableView {  // enables users to access pieces of the decision variables like they would any other eigen vector
   public:
-    DecisionVariableView(const DecisionVariable& var) : var(var), start_index(0), length(var.value.rows()) {}
+    DecisionVariableView(const DecisionVariable& var) : var(var), start_index(0), length(var.data.rows()) {}
     DecisionVariableView(const DecisionVariable& var, size_t start, size_t n) : var(var), start_index(start), length(n) {
-      assert(start+n<var.value.rows());
+      assert(start+n<var.data.rows());
     }
 
+    /** index()
+     * @brief returns the first index of this variable in the entire variable vector for the program
+     */
     size_t index() const { return var.start_index + start_index; }
-    Eigen::VectorBlock<const Eigen::VectorXd,-1> value() const { return var.value.segment(start_index,length); }
+    /** size()
+     * @brief returns the number of elements in the decision variable vector
+     */
     size_t size() const { return length; }
+    /** value()
+     * @brief returns the actual stored value; which is only meaningful after calling solve() in the program.
+     */
+    Eigen::VectorBlock<const Eigen::VectorXd,-1> value() const { return var.data.segment(start_index,length); }
 
     const DecisionVariableView operator()(size_t i) const { assert(i<=length); return DecisionVariableView(var,start_index+i,1);}
     const DecisionVariableView row(size_t i) const { assert(i<=length); return DecisionVariableView(var,start_index+i,1); }
@@ -150,7 +178,7 @@ namespace Drake {
       DecisionVariable v;
       v.type = DecisionVariable::CONTINUOUS;
       v.name = name;
-      v.value = Eigen::VectorXd::Zero(num_new_vars);
+      v.data = Eigen::VectorXd::Zero(num_new_vars);
       v.start_index = num_vars;
       variables.push_back(v);
       num_vars += num_new_vars;
@@ -215,23 +243,24 @@ namespace Drake {
 //    getExitFlag();
 //    getInfeasibleConstraintNames();
 
-    void printSolution() {  // todo: overload the ostream operator instead?
+    void setDecisionVariableValues() {  // todo: overload the ostream operator instead?
       for (const auto& v : variables) {
-        std::cout << v.name << " = " << v.value.transpose() << std::endl;
+        std::cout << v.name << " = " << v.data.transpose() << std::endl;
       }
     }
 
 
-  private:
     template <typename Derived>
-    void setSolution(const Eigen::MatrixBase<Derived>& x) {
+    void setDecisionVariableValues(const Eigen::MatrixBase<Derived>& x) {
+      assert(x.rows()==num_vars);
       size_t index=0;
       for (auto &v : variables) {
-        v.value = x.middleRows(index,v.value.rows());
-        index += v.value.rows();
+        v.data = x.middleRows(index,v.data.rows());
+        index += v.data.rows();
       }
     }
 
+  private:
     // note: use std::list instead of std::vector because realloc in std::vector invalidates existing references to the elements
     std::list<DecisionVariable> variables;
     std::list<std::shared_ptr<LinearEqualityConstraint>> linear_equality_constraints;
@@ -303,7 +332,7 @@ namespace Drake {
         }
 
         // least-squares solution
-        prog.setSolution(Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beq));
+        prog.setDecisionVariableValues(Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beq));
         return true;
       }
     };
