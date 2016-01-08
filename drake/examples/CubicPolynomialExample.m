@@ -135,7 +135,6 @@ classdef CubicPolynomialExample < PolynomialSystem
         % If S is not positive-definite, the found fixed-point was not
         % stable. Try another guess for x0
  
-        
         if nargin < 1
             x0 = 0.02;
         end
@@ -147,10 +146,9 @@ classdef CubicPolynomialExample < PolynomialSystem
         
         % First, try to find a fixpoint near x0        
         prog = FixedPointProgram(p); % (sys, dim_to_ignore)
-%         prog = prog.setSolverOptions('snopt','MajorFeasibilityTolerance',1e-10);
-        [xstar,~,info] = findFixedPoint(prog,x0,[]); % (obj,x0,u0)
+        [xstar,~,info] = findFixedPoint(prog,x0,[],1e-10); %(prog,x0,u0,tol=1e-6)
         % note: this can be called as
-%         xstar = findFixedPoint(p,x0,[])
+        % xstar = findFixedPoint(p,x0,[])
         
         % compute region of attraction
         % the levelset V<1 is the region of attraction
