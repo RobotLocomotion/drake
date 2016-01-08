@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
+#include <iostream>
 #include <Eigen/Dense>
 #include "Path.h"
 
@@ -289,27 +290,7 @@ case when the combined vector builder could have returned the original type
     }
   };
 
-/**
- * @defgroup function_concept Function Concept
- * @ingroup concepts
- * @{
- * @brief Describes a mapping from one Vector to another Vector y = f(x)
- *
- * @nbsp
- *
- * | Every model of this concept must implement |  |
- * ---------------------|------------------------------------------------------------|
- * | X::InputVector     | type for the input to the system, which models the Vector<ScalarType> concept |
- * | X::OutputVector    | type for the output from the system, which models the Vector<ScalarType> concept |
- * | template <ScalarType> OutputVector<ScalarType> operator()(const InputVector<ScalarType>& x) | the actual function |
- * | InputOutputRelation getProperties() | |
- * | size_t getNumInputs() | only required if the input vector is dynamically-sized |
- * | size_t getNumOutputs() | only required if the output vector is dynamically-sized |
- *
- * (always try to label your methods with const if possible)
- *
- * @}
- */
+
 
 
 

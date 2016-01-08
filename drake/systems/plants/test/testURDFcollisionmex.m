@@ -33,7 +33,7 @@ checkDependency('bullet');
     r = compile(r);
     warning(w);
 
-    q = 0*rand(getNumPositions(r),1);
+    q = getZeroConfiguration(r);
     kinsol = doKinematics(r,q);
 
     [phi,normal,xA,xB,idxA,idxB] = collisionDetect(r,kinsol);

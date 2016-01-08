@@ -12,7 +12,10 @@ r_leg_kny = find(strcmp(r.getStateFrame.getCoordinateNames(),'r_leg_kny'));
 
 tspan0 = [0,1];
 t = [-1 0 0.2 0.4 0.7 1 2];
-q = randn(nq,length(t));
+q = zeros(nq,length(t));
+for i = 1 : length(t)
+  q(:, i) = getRandomConfiguration(r);
+end
 
 display('Check posture change constraint');
 testMTLPC_userfun(t,q,RigidBodyConstraint.PostureChangeConstraintType,r,[l_leg_kny;r_leg_kny],[-0.1;-0.2],[0.2;0],tspan0);

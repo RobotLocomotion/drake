@@ -64,6 +64,8 @@ public:
 
   virtual bool isFloating() const { return false; }
 
+  virtual Eigen::VectorXd zeroConfiguration() const = 0;
+
   virtual Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const = 0;
 
   virtual const Eigen::VectorXd& getJointLimitMin() const;

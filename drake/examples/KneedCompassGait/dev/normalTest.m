@@ -2,7 +2,7 @@ options.terrain = RigidBodyFlatTerrain();
 options.floating = true;
 options.ignore_self_collisions = true;
 p = RigidBodyManipulator('../KneedCompassGait.urdf',options);
-q = zeros(p.getNumPositions,1);
+q = getZeroConfiguration(p);
 q(3) = 1;
 
 q2 = q;

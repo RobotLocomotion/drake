@@ -18,7 +18,7 @@ A = [1;-1;1;-1;1;-1;1;-1];
 lb = [0;0;0;-0.1*pi];
 ub = [0;0;0;0.1*pi];
 tspan = [0 1];
-q = randn(robot.getNumPositions,1);
+q = getRandomConfiguration(robot);
 stlpc = SingleTimeLinearPostureConstraint(robot,iAfun,jAvar,A,lb,ub,tspan);
 
 % todo: move this farther down, so that more tests are included when this

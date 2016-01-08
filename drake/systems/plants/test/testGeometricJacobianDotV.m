@@ -12,7 +12,7 @@ end
 
 function testVersusNumericalDifferentiation(robot)
 dt = 1e-8;
-nq = robot.getNumPositions();
+
 nv = robot.getNumVelocities();
 
 nTests = 50;
@@ -25,7 +25,7 @@ while testNumber <= nTests
   expressedIn = randi(bodyRange);
   if base ~= endEffector
     % random state
-    q = randn(nq, 1);
+    q = getRandomConfiguration(robot);
     v = randn(nv, 1);
     
     % compute Jacobian, JDotV
