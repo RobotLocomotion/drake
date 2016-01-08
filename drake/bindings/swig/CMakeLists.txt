@@ -2,6 +2,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_INSTALL_PREFIX}/share/cmake ${CMAKE_MODULE_PATH})
 if (EXISTS "${CMAKE_INSTALL_PREFIX}/bin/swig")
   set(SWIG_EXECUTABLE ${CMAKE_INSTALL_PREFIX}/bin/swig)
 endif()
+find_package(SWIG REQUIRED)
 set(DRAKE_SWIG_FILES ${CMAKE_INSTALL_PREFIX}/share/swig)
 include(DrakeUseSWIG)
 include(SwigPython)
@@ -43,22 +44,8 @@ endif()
 
 if (MATLAB_FOUND)
   # TODO: we can remove this check when mainline swig gets matlab support someday, or when we figure out how to build swig-matlab on windows
-  message("SWIG_EXECUTABLE: ${SWIG_EXECUTABLE}")
-  execute_process(COMMAND ${SWIG_EXECUTABLE} -E -matlab dummy.i
-                  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                  RESULT_VARIABLE swig_matlab_return_code
-                  OUTPUT_QUIET
-                  ERROR_QUIET)
-  message("swig_matlab_return_code ${swig_matlab_return_code}")
-  if (swig_matlab_return_code EQUAL 0)
+  if (SWIG_HAS_MATLAB_SUPPORT)
     message("Found Swig with Matlab support")
-    set(swig_has_matlab_support TRUE)
-  else()
-    message("Could NOT find Swig with Matlab support; not generating Matlab bindings")
-    set(swig_has_matlab_support FALSE)
-  endif()
-
-  if (swig_has_matlab_support)
     include(SwigMatlab)
 
     add_swig_matlab_module(autodiffMatlab autodiffutils_matlab.i
@@ -90,5 +77,7 @@ if (MATLAB_FOUND)
                              SWIG_INCLUDE_DIRS ${DRAKE_SWIG_FILES}/matlab ${DRAKE_SWIG_FILES}/common
                              DESTINATION ${matlab_install_subdir})
     endif()
+  else()
+    message("Could NOT find Swig with Matlab support; not generating Matlab bindings")
   endif()
 endif()
