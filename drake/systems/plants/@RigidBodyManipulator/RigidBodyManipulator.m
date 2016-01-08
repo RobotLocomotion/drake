@@ -356,6 +356,15 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
     
+    function q = getZeroConfiguration(obj)
+      q = zeros(getNumPositions(obj),1);
+      for i=1:getNumBodies(obj)
+        if any(obj.body(i).position_num>0)
+          q(obj.body(i).position_num) = getZeroConfiguration(obj.body(i));
+        end
+      end
+    end
+    
     function x0 = getInitialState(obj)
       if ~isempty(obj.initial_state)
         x0 = obj.initial_state;
@@ -460,7 +469,6 @@ classdef RigidBodyManipulator < Manipulator
         ftmp=bodyKin(obj,kinsol,body_ind,[force,zeros(3,1)]);
       end
 
-      % try to do it the Xtree way
       force = ftmp(:,1)-ftmp(:,2);
       f = [ cross(point,force,1); force ];  % spatial force in body coordinates
 
@@ -511,30 +519,7 @@ classdef RigidBodyManipulator < Manipulator
       rangecheck(parent_ind,1,getNumBodies(model));
       child.parent = parent_ind;
 
-%      axis = quat2rotmat(rpy2quat(rpy))*axis;  % axis is specified in joint frame
-
       child.Ttree = [rpy2rotmat(rpy), xyz; 0,0,0,1];
-      child.Xtree = transformAdjoint(homogTransInv(child.Ttree)); % +++TK: should really be named XtreeInv...
-
-      % note that I only now finally understand that my Ttree*[x;1] is
-      % *ALMOST* (up to translation?? need to resolve this!) the same as inv(Xtree)*[x;zeros(3,1)].  sigh.
-%      valuecheck([eye(3),zeros(3,1)]*child.Ttree*ones(4,1),[eye(3),zeros(3)]*inv(child.Xtree)*[ones(3,1);zeros(3,1)]);
-
-      if ~any(strcmp(lower(type),{'fixed','floating_rpy','floating_quat'})) && dot(axis,[0;0;1])<1-1e-4
-        % featherstone dynamics treats all joints as operating around the
-        % z-axis.  so I have to add a transform from the origin of this
-        % link to align the joint axis with the z-axis, update the spatial
-        % inertia of this joint, and then rotate back to keep the child
-        % frames intact.  this happens in extractFeatherstone
-        axis_angle = [cross(axis,[0;0;1]); acos(dot(axis,[0;0;1]))]; % both are already normalized
-        if all(abs(axis_angle(1:3))<1e-4)
-          % then it's a scaling of the z axis.
-          valuecheck(sin(axis_angle(4)),0,1e-4);
-          axis_angle(1:3)=[0;1;0];
-        end
-        child.T_body_to_joint = [axis2rotmat(axis_angle), zeros(3,1); 0,0,0,1];
-        valuecheck(child.T_body_to_joint*[axis;1],[0;0;1;1],1e-6);
-      end
 
       child.floating = 0;
       switch lower(type)
@@ -861,8 +846,6 @@ classdef RigidBodyManipulator < Manipulator
       for i=1:length(model.body)
         valuecheck(model.body(i).Ttree(end,1:end-1),0);
         valuecheck(model.body(i).Ttree(end,end),1);
-        valuecheck(model.body(i).T_body_to_joint(end,1:end-1),0);
-        valuecheck(model.body(i).T_body_to_joint(end,end),1);
       end
 
       model = adjustCollisionGeometry(model);
@@ -874,7 +857,7 @@ classdef RigidBodyManipulator < Manipulator
 
       % collisionDetect may require the mex version of the manipulator,
       % so it should go after createMexPointer
-      [phi,~,~,~,idxA,idxB] = model.collisionDetect(zeros(model.getNumPositions,1));
+      [phi,~,~,~,idxA,idxB] = model.collisionDetect(getZeroConfiguration(model));
       model.num_contact_pairs = length(phi);
 
       % cache the full set of terrain contact points
@@ -2306,7 +2289,10 @@ classdef RigidBodyManipulator < Manipulator
           end
 
           % same as the composite inertia calculation in HandC.m
-          parent = setInertial(parent,parent.I + body.Xtree' * body.I * body.Xtree);
+          T_joint_predecessor_frame_to_parent_body = body.Ttree;
+          Ad_T_parent_body_to_joint_predecessor_frame = transformAdjoint(homogTransInv(T_joint_predecessor_frame_to_parent_body));
+          I_body_in_parent = Ad_T_parent_body_to_joint_predecessor_frame' * body.I * Ad_T_parent_body_to_joint_predecessor_frame;
+          parent = setInertial(parent,parent.I + I_body_in_parent);
         end
 
         for j=1:length(body.visual_geometry)
@@ -2356,7 +2342,6 @@ classdef RigidBodyManipulator < Manipulator
             end
             model.body(j).parent = body.parent;
             model.body(j).Ttree = body.Ttree*model.body(j).Ttree;
-            model.body(j).Xtree = model.body(j).Xtree*body.Xtree;
           end
         end
         model.body(body.parent) = parent;

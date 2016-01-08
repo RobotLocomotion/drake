@@ -23,6 +23,10 @@ std::string RollPitchYawFloatingJoint::getPositionName(int index) const
 	}
 }
 
+VectorXd RollPitchYawFloatingJoint::zeroConfiguration() const {
+	return Eigen::VectorXd::Zero(getNumPositions());
+}
+
 VectorXd RollPitchYawFloatingJoint::randomConfiguration(std::default_random_engine& generator) const
 {
 	VectorXd q(6);

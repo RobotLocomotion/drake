@@ -19,3 +19,11 @@ for i=1:100
   valuecheck(xdot(2),theta_ddot_desired);
 end
 
+torsional_spring = r.force{1};
+q = getRandomConfiguration(r);
+qd = rand(r.getNumVelocities());
+
+geval_options.grad_method = {'user', 'taylorvar'};
+[~, ~] = geval(1, @(q, qd) torsional_spring.computeSpatialForce(r, q, qd), q, qd, geval_options);
+
+end

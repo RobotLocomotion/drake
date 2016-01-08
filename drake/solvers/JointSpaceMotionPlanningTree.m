@@ -19,7 +19,7 @@ classdef JointSpaceMotionPlanningTree < CartesianMotionPlanningTree
       obj.sampling_ub(isinf(obj.sampling_ub)) = 10;
       %obj.v = obj.rbm.constructVisualizer(struct('use_collision_geometry',true));
       obj.ikoptions = IKoptions(rbm);
-      obj.q_nom = zeros(obj.rbm.getNumPositions(),1);
+      obj.q_nom = getZeroConfiguration(obj.rbm);
     end
 
     function obj = compile(obj)

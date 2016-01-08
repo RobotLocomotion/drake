@@ -16,7 +16,7 @@ int main(int argc, char* argv[])
   cout << "=======" << endl;
 
   // run kinematics with second derivatives 100 times
-  Eigen::VectorXd q = Eigen::VectorXd::Zero(model->num_positions);
+  Eigen::VectorXd q = model->getZeroConfiguration();
   Eigen::VectorXd v = Eigen::VectorXd::Zero(model->num_velocities);
   int i;
 

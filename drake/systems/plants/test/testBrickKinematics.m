@@ -7,7 +7,7 @@ for fb = {'rpy','RPY'};%,'quat'};
   
   nq=getNumPositions(m);
   for i=1:25
-    q = randn(nq,1); qd = randn(nq,1);
+    q = getRandomConfiguration(m); qd = randn(getNumVelocities(m),1);
     options.grad_method = {'user','taylorvar'};
     [x,J] = geval(1,@terrainContactPositions,m,q,options);
     

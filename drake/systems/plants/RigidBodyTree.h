@@ -70,7 +70,9 @@ public:
 
   void compile(void);  // call me after the model is loaded
 
-  void getRandomConfiguration(Eigen::VectorXd& q, std::default_random_engine& generator) const;
+  Eigen::VectorXd getZeroConfiguration() const;
+
+  Eigen::VectorXd getRandomConfiguration(std::default_random_engine& generator) const;
 
   // akin to the coordinateframe names in matlab
   std::string getPositionName(int position_num) const;
@@ -405,6 +407,10 @@ public:
                            std::vector<int>& bodyB_idx,
                            bool use_margins = true);
   //bool closestDistanceAllBodies(VectorXd& distance, MatrixXd& Jd);
+
+  virtual bool collidingPointsCheckOnly(const KinematicsCache<double>& cache,
+                                        const std::vector<Eigen::Vector3d>& points,
+                                        double collision_threshold);
 
   virtual std::vector<size_t> collidingPoints(const KinematicsCache<double>& cache,
                                               const std::vector<Eigen::Vector3d>& points,

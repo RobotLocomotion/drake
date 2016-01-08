@@ -9,14 +9,13 @@ end
 
 function testVersusNumericalDifferentiation(robot)
 dt = 1e-8;
-nq = robot.getNumPositions();
 nv = robot.getNumVelocities();
 
 nBodies = length(robot.body);
 
 nTests = 50;
 for i = 1 : nTests
-  q = randn(nq, 1);
+  q = getRandomConfiguration(robot);
   v = randn(nv, 1);
   options.use_mex = false;
   kinsol = robot.doKinematics(q, v, options);

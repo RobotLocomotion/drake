@@ -21,7 +21,7 @@ nv = r.getNumVelocities();
 
 for i = 1 : 100
   t = rand();
-  q = randn(nq, 1); % TODO: use getRandomConfiguration once floatingBase branch is merged in so that it also works for quat parameterized robots
+  q = getRandomConfiguration(r);
   v = randn(nv, 1);
   x = [q; v];
   u = randn(r.getNumInputs(), 1);
@@ -88,7 +88,7 @@ nv = r2d.getNumVelocities();
 nu = r2d.getNumInputs();
 for i = 1 : 100
   t = rand();
-  q = randn(nq, 1); % TODO: use getRandomConfiguration once floatingBase branch is merged in so that it also works for quat parameterized robots
+  q = getRandomConfiguration(r2d);
   v = randn(nv, 1);
   x = [q; v];
   u = randn(nu, 1);

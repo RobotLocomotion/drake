@@ -9,7 +9,8 @@ int main()
 {
   RigidBodyTree model("examples/Atlas/urdf/atlas_minimal_contact.urdf");
 
-  VectorXd q = VectorXd::Random(model.num_positions);
+  default_random_engine generator;
+  VectorXd q = model.getRandomConfiguration(generator);
   VectorXd v = VectorXd::Random(model.num_velocities);
   KinematicsCache<double> cache = model.doKinematics(q, v);
 

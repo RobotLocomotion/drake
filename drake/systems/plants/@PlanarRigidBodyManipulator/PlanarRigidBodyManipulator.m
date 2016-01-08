@@ -91,7 +91,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       warning(w);
       
       if ~isfield(options,'q_nominal') 
-        options.q_nominal = zeros(getNumPositions(model),1); 
+        options.q_nominal = getZeroConfiguration(model);
       else
         error('not quite implemented yet.  need removeFixedJoint logic to reason about the non-zero joint transform instead of just Ttree for propagating points to the parent'); 
       end
@@ -104,16 +104,16 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
         if ~body.parent, continue; end
         assert(body.floating == 0,'Drake:PlanarRigidBodyManipulator','Shouldn''t get here.  Planar models should only have RPY floating bases, which are added as individual joints');
         
-        view_axis_in_joint_frame = body.T_body_to_joint * [bodyKin(model,kinsol,i,[model.view_axis,zeros(3,1)]); 1,1];
-        view_axis_in_joint_frame = view_axis_in_joint_frame(1:3,1)-view_axis_in_joint_frame(1:3,2);
+        view_axis_in_body_frame = bodyKin(model,kinsol,i,[model.view_axis,zeros(3,1)]);
+        view_axis_in_body_frame = view_axis_in_body_frame(:,1)-view_axis_in_body_frame(:,2);
 
         if isinf(body.pitch) % then it's a prismatic joint
-          if abs(dot(view_axis_in_joint_frame,[0;0;1]))>1e-6
+          if abs(dot(view_axis_in_body_frame, body.joint_axis))>1e-6
             model.body(i).pitch = nan;  % weld joint
           end
         else % then it's a revolute joint
           % todo: handle joint sign logic here
-          if abs(dot(view_axis_in_joint_frame,[0;0;1]))<1-1e-6
+          if abs(dot(view_axis_in_body_frame, body.joint_axis))<1-1e-6
             model.body(i).pitch = nan;  % weld joint
           end
         end  

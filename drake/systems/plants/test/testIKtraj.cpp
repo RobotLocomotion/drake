@@ -43,8 +43,7 @@ int main()
     //  r_foot = i;
     //}
   }
-  int nq = model->num_positions;
-  VectorXd qstar = VectorXd::Zero(nq);
+  VectorXd qstar = model->getZeroConfiguration();
   qstar(3) = 0.8;
   KinematicsCache<double> cache = model->doKinematics(qstar);
   Vector3d com0 = model->centerOfMass(cache);

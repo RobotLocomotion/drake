@@ -83,7 +83,8 @@ int main() {
   }
   CheckSettings settings;
 
-  VectorXd q = VectorXd::Random(model->num_positions);
+  default_random_engine generator;
+  VectorXd q = model->getRandomConfiguration(generator);
   VectorXd v = VectorXd::Random(model->num_velocities);
 
   // check before calling doKinematics

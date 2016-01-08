@@ -150,7 +150,9 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
 
 RigidBodySystem::StateVector<double> Drake::getInitialState(const RigidBodySystem& sys) {
 
-  VectorXd x0 = Matrix<double,Dynamic,1>::Random(sys.tree->num_positions+sys.tree->num_velocities);
+  VectorXd x0(sys.tree->num_positions + sys.tree->num_velocities);
+  default_random_engine generator;
+  x0 << sys.tree->getRandomConfiguration(generator), VectorXd::Random(sys.tree->num_velocities);
 
   if (sys.tree->getNumPositionConstraints()) {
     // todo: move this up to the system level?
