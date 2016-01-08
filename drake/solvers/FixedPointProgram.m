@@ -74,7 +74,7 @@ classdef FixedPointProgram < NonlinearProgram
         u0 = double(u0.inFrame(obj.getInputFrame));
       end
       w0 = [x0;u0];
-      [wstar,info] = solve(obj,w0);
+      [wstar,~,info] = solve(obj,w0);
       xstar = Point(obj.sys.getStateFrame,wstar(1:length(x0)));
       ustar = Point(obj.sys.getInputFrame,wstar(length(x0)+(1:length(u0))));
     end
