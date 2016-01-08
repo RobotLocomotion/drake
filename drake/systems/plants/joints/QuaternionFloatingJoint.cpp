@@ -46,6 +46,12 @@ std::string QuaternionFloatingJoint::getVelocityName(int index) const
 	}
 }
 
+VectorXd QuaternionFloatingJoint::zeroConfiguration() const {
+	Eigen::VectorXd ret(getNumPositions());
+	ret << 0, 0, 0, 1, 0, 0, 0;
+	return ret;
+}
+
 VectorXd QuaternionFloatingJoint::randomConfiguration(std::default_random_engine& generator) const
 {
 	VectorXd q(7);

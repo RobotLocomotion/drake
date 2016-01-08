@@ -107,6 +107,10 @@ public:
     this->DrakeJoint::joint_limit_max[0] = joint_limit_max;
   }
 
+  Eigen::VectorXd zeroConfiguration() const {
+    return Eigen::VectorXd::Zero(1);
+  }
+
   Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const
   {
     Eigen::VectorXd q(1);

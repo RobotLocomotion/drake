@@ -57,8 +57,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   std::normal_distribution<double> distribution(0.0, 1.0);
   for (int trial = 0; trial < 1; trial++) {
     // generate random q
-    VectorXd matlab_q(matlab_model->num_positions), cpp_q(cpp_model->num_positions);
-    matlab_model->getRandomConfiguration(matlab_q, generator);
+    VectorXd matlab_q = matlab_model->getRandomConfiguration(generator);
+    VectorXd cpp_q(cpp_model->num_positions);
     cpp_q.noalias() = P * matlab_q;
 
     if ((matlab_model->num_positions != matlab_model->num_velocities) ||

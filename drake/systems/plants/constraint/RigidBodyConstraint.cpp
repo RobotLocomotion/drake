@@ -2023,7 +2023,7 @@ AllBodiesClosestDistanceConstraint::AllBodiesClosestDistanceConstraint(
   double t = 0;
 
   // FIXME: hack to determine num_constraint
-  VectorXd q = VectorXd::Zero(robot->num_positions);
+  VectorXd q = robot->getZeroConfiguration();
   KinematicsCache<double> cache = robot->doKinematics(q);
   eval(&t, cache, c, dc);
   //DEBUG
@@ -2054,7 +2054,7 @@ void AllBodiesClosestDistanceConstraint::updateRobot(RigidBodyTree * robot)
   MatrixXd dc;
 
   // FIXME: hack to determine num_constraint
-  VectorXd q = VectorXd::Zero(robot->num_positions);
+  VectorXd q = robot->getZeroConfiguration();
   KinematicsCache<double> cache = robot->doKinematics(q);
   eval(&t, cache, c, dc);
 

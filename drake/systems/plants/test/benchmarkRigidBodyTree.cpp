@@ -59,9 +59,10 @@ void testScenario1(const RigidBodyTree & model) {
   vector<VectorXd> qs_double;
   vector<Matrix<AutoDiffFixedMaxSize, Dynamic, 1>> qs_autodiff_fixed;
   vector<Matrix<AutoDiffDynamicSize, Dynamic, 1>> qs_autodiff_dynamic;
+  default_random_engine generator;
 
   for (int i = 0; i < ntests; i++) {
-    auto q = VectorXd::Random(model.num_positions).eval();
+    auto q = model.getRandomConfiguration(generator);
     qs_double.push_back(q);
 
     MatrixXd grad = MatrixXd::Identity(model.num_positions, model.num_positions);
@@ -108,11 +109,13 @@ void testScenario2(const RigidBodyTree & model) {
   vector<pair<VectorXd, VectorXd>> states_double;
   vector<pair<Matrix<AutoDiffFixedMaxSize, Dynamic, 1>, Matrix<AutoDiffFixedMaxSize, Dynamic, 1>>> states_autodiff_fixed;
   vector<pair<Matrix<AutoDiffDynamicSize, Dynamic, 1>, Matrix<AutoDiffDynamicSize, Dynamic, 1>>> states_autodiff_dynamic;
+  default_random_engine generator;
 
   for (int i = 0; i < ntests; i++) {
-    auto x = VectorXd::Random(model.num_positions + model.num_velocities).eval();
-    VectorXd q = x.topRows(model.num_positions);
-    VectorXd v = x.bottomRows(model.num_velocities);
+    VectorXd q = model.getRandomConfiguration(generator);
+    VectorXd v = VectorXd::Random(model.num_velocities);
+    VectorXd x(q.rows() + v.rows());
+    x << q, v;
     states_double.push_back(make_pair(q, v));
 
     MatrixXd grad = MatrixXd::Identity(x.size(), x.size());
