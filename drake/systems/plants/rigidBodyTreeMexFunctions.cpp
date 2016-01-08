@@ -105,15 +105,34 @@ template <typename Scalar, typename DerivedPoints>
 Matrix<Scalar, Dynamic, DerivedPoints::ColsAtCompileTime> forwardJacDotTimesVTemp(
     const RigidBodyTree &tree, const KinematicsCache<Scalar> &cache, const MatrixBase<DerivedPoints> &points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type) {
 
-  Matrix<Scalar, Dynamic, DerivedPoints::ColsAtCompileTime> ret(3 + rotationRepresentationSize(rotation_type), points.cols());
-  ret.template topRows<3>() = tree.transformPointsJacobianDotTimesV(cache, points, current_body_or_frame_ind, new_body_or_frame_ind);
-  if (rotation_type == 1) {
-    ret.template bottomRows<3>().colwise() = tree.relativeRollPitchYawJacobianDotTimesV(cache, current_body_or_frame_ind, new_body_or_frame_ind);
+  auto Jtransdot_times_v = tree.transformPointsJacobianDotTimesV(cache, points, current_body_or_frame_ind, new_body_or_frame_ind);
+  if (rotation_type == 0) {
+    return Jtransdot_times_v;
   }
-  else if (rotation_type == 2) {
-    ret.template bottomRows<4>().colwise() = tree.relativeQuaternionJacobianDotTimesV(cache, current_body_or_frame_ind, new_body_or_frame_ind);
+  else {
+    Matrix<Scalar, Dynamic, 1> Jrotdot_times_v(rotationRepresentationSize(rotation_type));
+    if (rotation_type == 1) {
+      Jrotdot_times_v = tree.relativeRollPitchYawJacobianDotTimesV(cache, current_body_or_frame_ind, new_body_or_frame_ind);
+    }
+    else if (rotation_type == 2) {
+      Jrotdot_times_v = tree.relativeQuaternionJacobianDotTimesV(cache, current_body_or_frame_ind, new_body_or_frame_ind);
+    }
+    else {
+      throw runtime_error("rotation type not recognized");
+    }
+
+    Matrix<Scalar, Dynamic, 1> Jdot_times_v((3 + rotationRepresentationSize(rotation_type)) * points.cols(), 1);
+
+    int row_start = 0;
+    for (int i = 0; i < points.cols(); i++) {
+      Jdot_times_v.template middleRows<3>(row_start) = Jtransdot_times_v.template middleRows<3>(3 * i);
+      row_start += 3;
+
+      Jdot_times_v.middleRows(row_start, Jrotdot_times_v.rows()) = Jrotdot_times_v;
+      row_start += Jrotdot_times_v.rows();
+    }
+    return Jdot_times_v;
   }
-  return ret;
 };
 
 void forwardJacDotTimesVmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
