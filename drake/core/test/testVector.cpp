@@ -85,10 +85,31 @@ int main(int argc, char* argv[])
     auto out = p->dynamicsImplementation(x,u);
   }
 */
+    if (!InputOutputRelation::isa(InputOutputRelation::LINEAR,InputOutputRelation::POLYNOMIAL))
+      throw runtime_error("linear is polynomial");
+
+    if (!InputOutputRelation::isa(InputOutputRelation::ZERO,InputOutputRelation::ARBITRARY))
+      throw runtime_error("linear is arbitrary");
+
+    if (InputOutputRelation::leastCommonAncestor({InputOutputRelation::AFFINE,InputOutputRelation::LINEAR,InputOutputRelation::POLYNOMIAL})!=InputOutputRelation::POLYNOMIAL)
+      throw runtime_error("lca should be poly");
+
+    {
+      InputOutputRelation g(InputOutputRelation::LINEAR);
+      InputOutputRelation f(InputOutputRelation::POLYNOMIAL);
+      if (InputOutputRelation::composeWith(g,f).form != InputOutputRelation::POLYNOMIAL)
+        throw runtime_error("should be poly");
+      if (InputOutputRelation::composeWith(f,g).form != InputOutputRelation::POLYNOMIAL)
+        throw runtime_error("should be poly");
+      if (InputOutputRelation::combine(g,f).form != InputOutputRelation::POLYNOMIAL)
+        throw runtime_error("should be poly");
+    }
+
   } catch (const exception& e) {
     cout << "ERROR: " << e.what() << endl;
     return -1;
   }
+
 
   cout << "all tests passed" << endl;
   return 0;

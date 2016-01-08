@@ -20,3 +20,5 @@ if (LCM_FOUND AND NOT WIN32)
   pods_use_pkg_config_packages(runQuadrotorLQR lcm)
   add_test(NAME runQuadrotorLQR COMMAND runQuadrotorLQR WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/examples/Quadrotor)
 endif()
+
+add_subdirectory(test)

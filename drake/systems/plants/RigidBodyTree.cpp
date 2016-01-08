@@ -32,7 +32,7 @@ void getFiniteIndexes(T const & v, std::vector<int> &finite_indexes)
 
 std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj)
 {
-  os << "loop connects pt " << obj.frameA->transform_to_body.topRightCorner(3,1).transpose() << " on " << obj.frameA->body->linkname << " to pt " << obj.frameB->transform_to_body.topRightCorner(3,1).transpose() << " on " << obj.frameB->body->linkname << std::endl;
+  os << "loop connects pt " << obj.frameA->transform_to_body.matrix().topRightCorner(3,1).transpose() << " on " << obj.frameA->body->linkname << " to pt " << obj.frameB->transform_to_body.matrix().topRightCorner(3,1).transpose() << " on " << obj.frameB->body->linkname << std::endl;
   return os;
 }
 
@@ -449,6 +449,14 @@ void RigidBodyTree::potentialCollisions(const KinematicsCache<double>& cache, Ve
     bodyA_idx.push_back(elementA->getBody()->body_index);
     bodyB_idx.push_back(elementB->getBody()->body_index);
   }
+}
+
+bool RigidBodyTree::collidingPointsCheckOnly(const KinematicsCache<double>& cache,
+                                             const vector<Vector3d>& points,
+                                             double collision_threshold)
+{
+  updateDynamicCollisionElements(cache);
+  return collision_model->collidingPointsCheckOnly(points, collision_threshold);
 }
 
 vector<size_t> RigidBodyTree::collidingPoints(const KinematicsCache<double>& cache,
