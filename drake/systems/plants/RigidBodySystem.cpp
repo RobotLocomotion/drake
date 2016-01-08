@@ -55,7 +55,6 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
   if (num_actuators > 0) C -= tree->B*u.topRows(num_actuators);
 
   { // apply contact forces
-    const bool use_multi_contact = false;
     VectorXd phi;
     Matrix3Xd normal, xA, xB;
     vector<int> bodyA_idx, bodyB_idx;
@@ -66,8 +65,6 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
 
     for (int i=0; i<phi.rows(); i++) {
       if (phi(i)<0.0) { // then i have contact
-        double mu = 1.0; // todo: make this a parameter
-
         // todo: move this entire block to a shared an updated "contactJacobian" method in RigidBodyTree
         auto JA = tree->forwardKinJacobian(kinsol, xA.col(i), bodyA_idx[i], 0, 0, false);
         auto JB = tree->forwardKinJacobian(kinsol, xB.col(i), bodyB_idx[i], 0, 0, false);
@@ -89,20 +86,19 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
         auto J = R*(JA-JB);  // J = [ D1; D2; n ]
         auto relative_velocity = J*v;  // [ tangent1dot; tangent2dot; phidot ]
 
-        if (false) {
+        if (true) {
           // spring law for normal force:  fA_normal = -k*phi - b*phidot
           // and damping for tangential force:  fA_tangent = -b*tangentdot (bounded by the friction cone)
-          double k = 150, b = k / 10;  // todo: put these somewhere better... or make them parameters?
           Vector3d fA;
-          fA(2) = -k * phi(i) - b * relative_velocity(2);
-          fA.head(2) = -std::min(b, mu*fA(2)/(relative_velocity.head(2).norm()+EPSILON)) * relative_velocity.head(2);  // epsilon to avoid divide by zero
+          fA(2) = -penetration_stiffness * phi(i) - penetration_damping * relative_velocity(2);
+          fA.head(2) = -std::min(penetration_damping, friction_coefficient*fA(2)/(relative_velocity.head(2).norm()+EPSILON)) * relative_velocity.head(2);  // epsilon to avoid divide by zero
 
           // equal and opposite: fB = -fA.
           // tau = (R*JA)^T fA + (R*JB)^T fB = J^T fA
           C -= J.transpose()*fA;
         } else { // linear acceleration constraints (more expensive, but less tuning required for robot mass, etc)
           // note: this does not work for the multi-contact case (it overly constrains the motion of the link).  Perhaps if I made them inequality constraints...
-          static_assert(!use_multi_contact, "The acceleration contact constraints do not play well with multi-contact");
+          assert(!use_multi_contact && "The acceleration contact constraints do not play well with multi-contact");
 
           // phiddot = -2*alpha*phidot - alpha^2*phi   // critically damped response
           // tangential_velocity_dot = -2*alpha*tangential_velocity
@@ -110,10 +106,6 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
           Vector3d desired_relative_acceleration = -2*alpha*relative_velocity;
           desired_relative_acceleration(2) += -alpha*alpha*phi(i);
           // relative_acceleration = J*vdot + R*(JAdotv - JBdotv) // uses the standard dnormal/dq = 0 assumption
-
-          cout << "phi = " << phi << endl;
-          cout << "desired acceleration = " << desired_relative_acceleration.transpose() << endl;
-//          cout << "acceleration = " << (J*vdot + R*(JAdotv - JBdotv)).transpose() << endl;
 
           prog.addContinuousVariables(3,"contact normal force");
           auto JAdotv = tree->forwardJacDotTimesV(kinsol, xA.col(i).eval(), bodyA_idx[i], 0, 0);

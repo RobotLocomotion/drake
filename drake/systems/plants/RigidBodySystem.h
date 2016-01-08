@@ -95,8 +95,17 @@ namespace Drake {
     template <typename ScalarType> using StateVector = Eigen::Matrix<ScalarType,Eigen::Dynamic,1>;
     template <typename ScalarType> using OutputVector = Eigen::Matrix<ScalarType,Eigen::Dynamic,1>;
 
-    RigidBodySystem(const std::shared_ptr<RigidBodyTree>& rigid_body_tree) : tree(rigid_body_tree) {};
-    RigidBodySystem(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION) {
+    RigidBodySystem(const std::shared_ptr<RigidBodyTree>& rigid_body_tree) : tree(rigid_body_tree),
+                                                                             use_multi_contact(false),
+                                                                             penetration_stiffness(150.0),
+                                                                             penetration_damping(penetration_stiffness/10.0),
+                                                                             friction_coefficient(1.0) {};
+    RigidBodySystem(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION) :
+            use_multi_contact(false),
+            penetration_stiffness(150.0),
+            penetration_damping(penetration_stiffness/10.0),
+            friction_coefficient(1.0)
+    {
       //tree = std::allocate_shared<RigidBodyTree>(Eigen::aligned_allocator<RigidBodyTree>()); // this crashed g++-4.7
       tree = std::shared_ptr<RigidBodyTree>(new RigidBodyTree());
       addRobotFromURDF(urdf_filename, floating_base_type);
@@ -142,6 +151,12 @@ namespace Drake {
     bool isDirectFeedthrough() const { return false; }
 
     friend StateVector<double> getInitialState(const RigidBodySystem& sys);
+
+    // some parameters defining the contact
+    bool use_multi_contact;
+    double penetration_stiffness;   // k
+    double penetration_damping;     // b
+    double friction_coefficient;    // mu
 
   private:
     std::shared_ptr<RigidBodyTree> tree;
