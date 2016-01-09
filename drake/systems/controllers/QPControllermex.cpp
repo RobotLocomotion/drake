@@ -460,12 +460,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     body_index = pdata->accel_bound_body_idx[i];
 
     Matrix<double, 6, Dynamic> Jb(6, pdata->r->num_velocities);
-    Jb.topRows<3>() = pdata->r->transformPointsJacobian(cache, origin, body_idx, 0, false);
-    Jb.bottomRows<3>() = pdata->r->relativeRollPitchYawJacobian(cache, body_idx, 0, false);
+    Jb.topRows<3>() = pdata->r->transformPointsJacobian(cache, origin, body_index, 0, false);
+    Jb.bottomRows<3>() = pdata->r->relativeRollPitchYawJacobian(cache, body_index, 0, false);
 
     Matrix<double, 6, 1> Jbdot_times_v;
-    Jbdot_times_v.topRows<3>() = pdata->r->transformPointsJacobianDotTimesV(cache, origin, body_idx, 0);
-    Jbdot_times_v.bottomRows<3>() = pdata->r->relativeRollPitchYawJacobianDotTimesV(cache, body_idx, 0);
+    Jbdot_times_v.topRows<3>() = pdata->r->transformPointsJacobianDotTimesV(cache, origin, body_index, 0);
+    Jbdot_times_v.bottomRows<3>() = pdata->r->relativeRollPitchYawJacobianDotTimesV(cache, body_index, 0);
 
     Ain.block(constraint_start_index,0,6,pdata->r->num_positions) = Jb;
     bin.segment(constraint_start_index,6) = -Jbdot_times_v + pdata->max_body_acceleration[i];
