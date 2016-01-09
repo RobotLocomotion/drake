@@ -1,28 +1,56 @@
 
 #include "LCMSystem.h"
 #include "RigidBodySystem.h"
+#include "LinearSystem.h"
 #include "BotVisualizer.h"
 #include "drakeAppUtil.h"
+#include "lcmtypes/drake/lcmt_driving_control_cmd_t.hpp"
 
 using namespace std;
 using namespace Eigen;
 using namespace Drake;
 
-/** @page urdfLCMNode urdfLCMNode Application
- * @ingroup simulation
- * @brief Loads a urdf and simulates it, subscribing to LCM inputs and publishing LCM outputs
- *
- * This application loads a robot from urdf and runs a simulation, with every input
- * with an LCM type defined subscribed to the associated LCM channels, and every
- * output with an LCM type defined publishing on the associate channels.  See @ref lcm_vector_concept.
- *
- *
-@verbatim
-Usage:  urdfLCMNode [options] full_path_to_urdf_file
-  with (case sensitive) options:
-    --base [floating_type]  // can be "FIXED, ROLLPITCHYAW,or QUATERNION" (default: QUATERNION)
-@endverbatim
- */
+template <typename ScalarType = double>
+class DrivingCommand {
+public:
+  typedef drake::lcmt_driving_control_cmd_t LCMMessageType;
+  static std::string channel() { return "DRIVING_COMMAND"; };
+
+  DrivingCommand(void) : throttle(0), brake(0), steering_angle(0) {};
+  template <typename Derived>
+  DrivingCommand(const Eigen::MatrixBase<Derived>& x) : steering_angle(x(0)), throttle(x(1)), brake(x(2)) {};
+
+  template <typename Derived>
+  DrivingCommand& operator=(const Eigen::MatrixBase<Derived>& x) {
+    steering_angle = x(0);
+    throttle = x(1);
+    brake = x(2);
+    return *this;
+  }
+
+  friend std::string getCoordinateName(const DrivingCommand<ScalarType>& vec, unsigned int index) {
+    switch (index) {
+      case 0: return "steering_angle";
+      case 1: return "throttle";
+      case 2: return "brake";
+    }
+    return "error";
+  }
+  const static int RowsAtCompileTime = 3;
+
+  ScalarType steering_angle;
+  ScalarType throttle;
+  ScalarType brake;
+};
+
+bool decode(const drake::lcmt_driving_control_cmd_t& msg, double& t, DrivingCommand<double>& x) {
+  t = double(msg.timestamp)/1000.0;
+  x.steering_angle = msg.steering_angle;
+  x.throttle = msg.throttle_value;
+  x.brake = msg.brake_value;
+  return true;
+}
+
 
 int main(int argc, char* argv[]) {
   if (argc < 2) {
@@ -50,6 +78,23 @@ int main(int argc, char* argv[]) {
 
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
   auto rigid_body_sys = make_shared<RigidBodySystem>(tree);
+
+  MatrixXd D(getNumInputs(*rigid_body_sys),DrivingCommand<double>::RowsAtCompileTime+getNumStates(*rigid_body_sys));
+  { // setup PD controller for throttle and steering
+    double kp = 100, kd = 20, kThrottle = 100;
+    D.setZero();
+/*
+    D(1,controlInput.findCoordinateIndex('steering')) = -kp; % Steering
+            D(1,controlInput.findCoordinateIndex('steeringdot')) = -kd; % Steering Dot
+    D(1,controlInput.findCoordinateIndex('steering_angle')) = kp; % Steering Desired
+    D(2,controlInput.findCoordinateIndex('throttle_value')) = kThrottle; % Gas
+            D(2,controlInput.findCoordinateIndex('brake_value')) = -kThrottle; % Brake
+            D(3,controlInput.findCoordinateIndex('throttle_value')) = kThrottle; % Gas
+            D(3,controlInput.findCoordinateIndex('brake_value')) = -kThrottle; % Brake
+*/
+  }
+  auto pd_controller = make_shared<Gain<CombinedVectorUtil<DrivingCommand,RigidBodySystem::StateVector>::type,RigidBodySystem::InputVector>>(D);
+
   auto visualizer = make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm,tree);
   auto sys = cascade(rigid_body_sys, visualizer);
 
