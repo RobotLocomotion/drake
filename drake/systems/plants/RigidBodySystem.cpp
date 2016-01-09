@@ -43,7 +43,8 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
       RigidBody* body = frame->body.get();
       int num_inputs = 1;  // todo: generalize this
       RigidBodyPropellor::InputVector<double> u_i(u.middleRows(u_index,num_inputs));
-      // todo: push the frame to body transform into the dynamicsBias method?
+
+      // todo: push the frame to body transform into the dynamicsBias method?  (could use the relativeTransform method)
       Matrix<double,6,1> f_ext_i = transformSpatialForce(frame->transform_to_body,prop->output(t,force_state,u_i,kinsol));
       if (f_ext.find(body)==f_ext.end()) f_ext[body] = f_ext_i;
       else f_ext[body] = f_ext[body]+f_ext_i;
@@ -55,7 +56,18 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
   if (num_actuators > 0) C -= tree->B*u.topRows(num_actuators);
 
   { // apply joint limit forces
-    
+    for (auto const& b : tree->bodies) {
+      if (!b->hasParent()) continue;
+      auto const& joint = b->getJoint();
+      if (joint.getNumPositions()==1 && joint.getNumVelocities()==1) {  // taking advantage of only single-axis joints having joint limits makes things easier/faster here
+        double qmin = joint.getJointLimitMin()(0), qmax = joint.getJointLimitMax()(0);
+        // tau = k*(qlimit-q) - b(qdot)
+        if (q(b->position_num_start)<qmin)
+          C(b->velocity_num_start) -= penetration_stiffness*(qmin-q(b->position_num_start)) - penetration_damping*v(b->velocity_num_start);
+        if (q(b->position_num_start)>qmax)
+          C(b->velocity_num_start) -= penetration_stiffness*(qmax-q(b->position_num_start)) - penetration_damping*v(b->velocity_num_start);
+      }
+    }
   }
 
   { // apply contact forces
