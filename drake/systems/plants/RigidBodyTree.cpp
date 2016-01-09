@@ -1256,7 +1256,7 @@ Eigen::Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::relativeQuaternionJacobi
   auto omega_twist = twist.template topRows<SPACE_DIMENSION>();
   auto quatdot = (Phi * omega_twist).eval();
 
-  using ADScalar = AutoDiffScalar<Matrix<Scalar, 1, 1>>;
+  using ADScalar = AutoDiffScalar<Matrix<Scalar, Dynamic, 1>>; // would prefer to use 1 instead of Dynamic, but this causes issues related to http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1006 on MSVC 32 bit
   auto quat_autodiff = quat.template cast<ADScalar>().eval();
   gradientMatrixToAutoDiff(quatdot, quat_autodiff);
   Matrix<ADScalar, QUAT_SIZE, SPACE_DIMENSION> Phi_autodiff;
