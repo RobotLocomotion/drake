@@ -92,7 +92,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
     support_index++;
 
   // do kinematics
-  KinematicsCache<double> cache = robot.doKinematics(q);
+  KinematicsCache<double> cache = robot.doKinematics(q, v);
 
   RigidBodySupportState& support_state = settings.supports[support_index];
   bool is_last_support = support_index == settings.supports.size() - 1;
@@ -186,7 +186,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
         if (!isSupportingBody(body_id, support_state)) {
           toe_off_active[side] = false;
           knee_pd_active[side] = false;
-          updateSwingTrajectory(t_plan, body_motion, body_motion_segment_index - 1, cache, v);
+          updateSwingTrajectory(t_plan, body_motion, body_motion_segment_index - 1, cache);
         }
       }
 
@@ -210,7 +210,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
         this->applyKneePD(side, qp_input);
       }
       if (body_motion.isToeOffAllowed(body_motion_segment_index)) {
-        updateSwingTrajectory(t_plan, body_motion, body_motion_segment_index, cache, v);
+        updateSwingTrajectory(t_plan, body_motion, body_motion_segment_index, cache);
       }
     }
 
@@ -429,7 +429,7 @@ drake::lcmt_support_data QPLocomotionPlan::createSupportDataElement(const RigidB
   return support_data_element_lcm;
 }
 
-void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const KinematicsCache<double>& cache, const VectorXd& v) {
+void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const KinematicsCache<double>& cache) {
   int takeoff_segment_index = body_motion_segment_index + 1; // this function is called before takeoff
   int num_swing_segments = 3;
   int landing_segment_index = takeoff_segment_index + num_swing_segments - 1;
