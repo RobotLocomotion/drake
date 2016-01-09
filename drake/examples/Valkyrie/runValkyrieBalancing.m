@@ -43,7 +43,7 @@ settings = QPLocomotionPlanSettings.fromStandingState(x0, r);
 
 standing_plan = QPLocomotionPlanCPPWrapper(settings);
 
-param_sets = valkyrieParams.getDefaults(r);
+param_sets = r.getDefaultParams();
 
 if use_angular_momentum
   param_sets.standing.Kp_ang = 1.0; % angular momentum proportunal feedback gain

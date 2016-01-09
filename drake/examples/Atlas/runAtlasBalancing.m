@@ -38,7 +38,7 @@ settings = QPLocomotionPlanSettings.fromStandingState(x0, r);
 % settings.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed; % Only use supports when in contact
 standing_plan = QPLocomotionPlanCPPWrapper(settings);
 
-param_sets = atlasParams.getDefaults(r);
+param_sets = r.getDefaultParams();
 
 if use_angular_momentum
   param_sets.standing.Kp_ang = 1.0; % angular momentum proportunal feedback gain
