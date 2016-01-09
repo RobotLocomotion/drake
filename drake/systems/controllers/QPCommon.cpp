@@ -220,7 +220,7 @@ Vector2d computeCoP(RigidBodyTree * r, const KinematicsCache<double>& cache, con
   return zmp_from_force_sensors;
 }
 
-void estimateCoMBasedOnMeasuredZMP(NewQPControllerData* pdata, AtlasParams* params, std::vector<SupportStateElement, Eigen::aligned_allocator<SupportStateElement> >& active_supports, int num_contact_points, const std::map<Side, ForceTorqueMeasurement>& foot_force_torque_measurements, double dt,
+void estimateCoMBasedOnMeasuredZMP(NewQPControllerData* pdata, QPControllerParams* params, std::vector<SupportStateElement, Eigen::aligned_allocator<SupportStateElement> >& active_supports, int num_contact_points, const std::map<Side, ForceTorqueMeasurement>& foot_force_torque_measurements, double dt,
     Vector3d& xcom, Vector3d& xcomdot)
 {
   /*
@@ -348,8 +348,8 @@ int setupAndSolveQP(
   }
 
   // look up the param set by name
-  AtlasParams *params; 
-  std::map<string,AtlasParams>::iterator it;
+  QPControllerParams *params; 
+  std::map<string,QPControllerParams>::iterator it;
   it = pdata->param_sets.find(qp_input->param_set_name);
   if (it == pdata->param_sets.end()) {
     std::cout<<"Got a param set I don't recognize! Using standing params instead";
