@@ -71,7 +71,7 @@ end
 % Generate a dynamic walking plan
 walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
 
-[ytraj, com, rms_com] = valkyrieUtil.simulateWalking(r, walking_plan_data);
+[ytraj, com, rms_com] = bipedUtil.simulateWalking(r, walking_plan_data);
 
 v.playback(ytraj, struct('slider', true));
 
