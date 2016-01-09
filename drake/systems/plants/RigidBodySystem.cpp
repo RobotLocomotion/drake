@@ -54,6 +54,10 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
   VectorXd C = tree->dynamicsBiasTerm(kinsol,f_ext);
   if (num_actuators > 0) C -= tree->B*u.topRows(num_actuators);
 
+  { // apply joint limit forces
+    
+  }
+
   { // apply contact forces
     VectorXd phi;
     Matrix3Xd normal, xA, xB;
