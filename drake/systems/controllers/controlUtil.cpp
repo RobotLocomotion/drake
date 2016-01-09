@@ -275,7 +275,7 @@ Vector6d bodySpatialMotionPD(RigidBodyTree *r, DrakeRobotState &robot_state, con
   Isometry3d T_world_to_task = T_task_to_world.inverse();
   KinematicsCache<double> cache = r->doKinematics(robot_state.q, robot_state.qd);
 
-  auto body_pose = r->relativeTransform(cache, body_index, 0);
+  auto body_pose = r->relativeTransform(cache, 0, body_index);
   const auto& body_xyz = body_pose.translation();
   Vector3d body_xyz_task = T_world_to_task * body_xyz;
   Vector4d body_quat = rotmat2quat(body_pose.linear());

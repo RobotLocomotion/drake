@@ -302,7 +302,7 @@ void checkCentroidalMomentumMatchesTotalWrench(RigidBodyTree * r, KinematicsCach
     const auto& Bj = B.middleCols(beta_start, active_support_length);
     const auto& betaj = beta.segment(beta_start, active_support_length);
     Vector6d wrench_for_body_in_body_frame = Vector6d::Zero();
-    Matrix3d R_world_to_body = r->relativeTransform(cache, 0, active_support.body_idx).linear();
+    Matrix3d R_world_to_body = r->relativeTransform(cache, active_support.body_idx, 0).linear();
 
     for (size_t k = 0; k < contact_pts.size(); k++) {
       // for (auto k = contact_pts.begin(); k!= contact_pts.end(); k++) {

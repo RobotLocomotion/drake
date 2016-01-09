@@ -1707,7 +1707,7 @@ int WorldFixedPositionConstraint::getNumConstraint(const double* t, int n_breaks
 
 void WorldFixedPositionConstraint::eval_valid(const double* valid_t, int num_valid_t, const MatrixXd &valid_q, VectorXd &c, MatrixXd &dc_valid) const
 {
-  // TODO: fix unnecessary heap allocations, raw pointers
+  // TODO: don't use raw pointers
   int n_pts = static_cast<int>(this->pts.cols());
   int nq = this->robot->num_positions;
   MatrixXd *pos = new MatrixXd[num_valid_t];

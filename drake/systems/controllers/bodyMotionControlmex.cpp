@@ -75,7 +75,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   KinematicsCache<double> cache = pdata->r->doKinematics(q, qd); // FIXME: pass this into the mex function instead
 
   // TODO: this must be updated to use quaternions/spatial velocity
-  auto transform = pdata->r->relativeTransform(cache, pdata->body_index, 0);
+  auto transform = pdata->r->relativeTransform(cache, 0, pdata->body_index);
 
   Vector6d body_error;
   body_error.head<3>()= body_pose_des.head<3>() - transform.translation();
@@ -86,11 +86,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   angleDiff(pose_rpy,des_rpy,error_rpy);
   body_error.tail<3>() = error_rpy;
 
-  auto J_pos = pdata->r->transformPointsJacobian(cache, Vector3d::Zero().eval(), pdata->body_index, 0, true);
-  auto J_rpy = pdata->r->relativeRollPitchYawJacobian(cache, pdata->body_index, 0, true);
-  Matrix<double, 6, Dynamic> J(6, J_pos.cols());
-  J.topRows<3>() = J_pos;
-  J.bottomRows<3>() = J_rpy;
+  Matrix<double, 6, Dynamic> J(6, pdata->r->num_positions);
+  J.topRows<3>() = pdata->r->transformPointsJacobian(cache, Vector3d::Zero().eval(), pdata->body_index, 0, true);
+  J.bottomRows<3>() = pdata->r->relativeRollPitchYawJacobian(cache, pdata->body_index, 0, true);
 
   Vector6d body_vdot = (pdata->Kp.array() * body_error.array()).matrix() + (pdata->Kd.array() * (body_v_des - J * qd).array()).matrix() + body_vdot_des;
   

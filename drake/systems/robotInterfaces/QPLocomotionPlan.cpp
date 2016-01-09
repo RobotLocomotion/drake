@@ -441,7 +441,7 @@ void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body
   VectorXd xf = trajectory.value(trajectory.getEndTime(takeoff_segment_index + 2));
 
   // first knot point from current position
-  auto x0_pose = robot.relativeTransform(cache, body_motion_data.getBodyOrFrameId(), 0);
+  auto x0_pose = robot.relativeTransform(cache, 0, body_motion_data.getBodyOrFrameId());
   auto x0_twist = robot.relativeTwist(cache, 0, body_motion_data.getBodyOrFrameId(), 0);
 
   Vector4d x0_quat = rotmat2quat(x0_pose.linear());
@@ -671,7 +671,7 @@ void QPLocomotionPlan::updatePlanShift(const KinematicsCache<double>& cache, dou
           for (auto body_motion_it = settings.body_motions.begin(); body_motion_it != settings.body_motions.end(); ++body_motion_it) {
             int body_motion_body_id = robot.parseBodyOrFrameID(body_motion_it->getBodyOrFrameId());
             if (body_motion_body_id == side_it->second) {
-              Vector3d foot_frame_origin_actual = robot.relativeTransform(cache, body_motion_it->getBodyOrFrameId(), 0).translation();
+              Vector3d foot_frame_origin_actual = robot.relativeTransform(cache, 0, body_motion_it->getBodyOrFrameId()).translation();
               Vector3d foot_frame_origin_planned = body_motion_it->getTrajectory().value(t_plan).topRows<3>();
               // std::cout << "actual: " << foot_frame_origin_actual.transpose() << " planned: " << foot_frame_origin_planned.transpose() << std::endl;
               foot_shifts[side_it->first] = foot_frame_origin_planned - foot_frame_origin_actual;
