@@ -842,21 +842,25 @@ WorldCoMConstraint::~WorldCoMConstraint()
 
 RelativePositionConstraint::RelativePositionConstraint(RigidBodyTree * robot, const Matrix3Xd &pts, const MatrixXd &lb, const MatrixXd &ub, int bodyA_idx, int bodyB_idx, const Matrix<double,7,1> &bTbp, const Vector2d &tspan): PositionConstraint(robot, pts, lb, ub, tspan)
 {
-  this->bTbp = bTbp;
   this->bodyA_idx = bodyA_idx;
   this->bodyB_idx = bodyB_idx;
   bodyA_name = robot->getBodyOrFrameName(bodyA_idx);
   bodyB_name = robot->getBodyOrFrameName(bodyB_idx);
-  Vector4d bpTb_quat = quatConjugate(bTbp.block(3,0,4,1));
-  Vector3d bpTb_trans = quatRotateVec(bpTb_quat,-bTbp.block(0,0,3,1));
-  this->bpTb << bpTb_trans, bpTb_quat;
+  Isometry3d bTbp_isometry;
+  bTbp_isometry.translation() = bTbp.topRows<3>();
+  bTbp_isometry.linear() = quat2rotmat(bTbp.bottomRows<4>());
+  bTbp_isometry.makeAffine();
+  this->bpTb = bTbp_isometry.inverse();
   this->type = RigidBodyConstraint::RelativePositionConstraintType;
 }
 
 void RelativePositionConstraint::evalPositions(KinematicsCache<double>& cache, Matrix3Xd &pos, MatrixXd &J) const
 {
-  pos = robot->transformPoints(cache, pts, bodyA_idx, bodyB_idx);
+  pos = bpTb * robot->transformPoints(cache, pts, bodyA_idx, bodyB_idx);
   J = robot->transformPointsJacobian(cache, pts, bodyA_idx, bodyB_idx, true);
+  for (int i = 0; i < pos.cols(); i++) {
+    J.middleRows<3>(3 * i) = bpTb.linear() * J.middleRows<3>(3 * i);
+  }
 }
 
 void RelativePositionConstraint::evalNames(const double* t, std::vector<std::string> &cnst_names) const
