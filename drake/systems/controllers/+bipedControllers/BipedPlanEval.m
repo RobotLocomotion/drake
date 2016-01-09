@@ -1,5 +1,5 @@
-classdef ValkyriePlanEval < PlanEval
-% A PlanEval which includes some Valkyrie-specific tweaks. Specifically, it
+classdef BipedPlanEval < PlanEval
+% A PlanEval which includes some biped-specific tweaks. Specifically, it
 % calls its plans' getQPControllerInput method with an additional argument
 % (contact_force_detected)
 
@@ -8,7 +8,7 @@ classdef ValkyriePlanEval < PlanEval
   end
 
   methods
-    function obj = ValkyriePlanEval(r, varargin)
+    function obj = BipedPlanEval(r, varargin)
       obj = obj@PlanEval(varargin{:});
       obj.robot = r;
     end

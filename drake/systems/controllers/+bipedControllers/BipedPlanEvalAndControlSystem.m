@@ -1,14 +1,14 @@
-classdef ValkyriePlanEvalAndControlSystem < DrakeSystem
+classdef BipedPlanEvalAndControlSystem < DrakeSystem
 % Neither PlanEval nor InstantaneousQPController implements the DrakeSystem
 % interface. Instead, we wrap a PlanEval and an InstantaneousQPController inside
 % this class, which behaves as a drake system by taking in state, calling the
-% PlanEval and Controller in order, and outputting the valkyrieInput. In
+% PlanEval and Controller in order, and outputting the atlasInput. In
 % addition, you can also chose to omit the PlanEval or Controller, in which
 % case the missing data will be sent or recieved through LCM in the
 % background. That might look something like the following:
 % 
-% sys1 = ValkyriePlanEvalAndControlSystem(r, [], planEval);
-% sys2 = ValkyriePlanEvalAndControlSystem(r, control, []);
+% sys1 = BipedPlanEvalAndControlSystem(r, [], planEval);
+% sys2 = BipedPlanEvalAndControlSystem(r, control, []);
 % plancontroller = cascade(sys1, sys2);
 % sys = feedback(r, plancontroller);
 % 
@@ -31,10 +31,10 @@ classdef ValkyriePlanEvalAndControlSystem < DrakeSystem
   end
 
   methods
-    function obj = ValkyriePlanEvalAndControlSystem(r, control, plan_eval, options)
+    function obj = BipedPlanEvalAndControlSystem(r, control, plan_eval, options)
       checkDependency('lcmgl');
-      if ~isempty(control), typecheck(control, 'valkyrieControllers.InstantaneousQPController'); end
-      if ~isempty(plan_eval), typecheck(plan_eval, 'valkyrieControllers.ValkyriePlanEval'); end
+      if ~isempty(control), typecheck(control, 'bipedControllers.InstantaneousQPController'); end
+      if ~isempty(plan_eval), typecheck(plan_eval, 'bipedControllers.BipedPlanEval'); end
       if nargin < 4
         options = struct();
       end
@@ -71,7 +71,7 @@ classdef ValkyriePlanEvalAndControlSystem < DrakeSystem
           t0 = tic();
         end
         qp_input_obj = obj.plan_eval.getQPControllerInput(t, x);
-        if isa(qp_input_obj, 'valkyrieControllers.QPInputConstantHeight')
+        if isa(qp_input_obj, 'bipedControllers.QPInputConstantHeight')
           qp_input_msg_data = encodeQPInputLCMMex(qp_input_obj, false);
           qp_input_msg = drake.lcmt_qp_controller_input(qp_input_msg_data);
         elseif isnumeric(qp_input_obj)

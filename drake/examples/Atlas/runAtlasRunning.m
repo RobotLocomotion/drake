@@ -5,8 +5,6 @@ if ~checkDependency('gurobi')
   return;
 end
 
-import atlasControllers.*;
-
 if (nargin<1); use_mex = true; end
 if (nargin<2); use_angular_momentum = false; end
 

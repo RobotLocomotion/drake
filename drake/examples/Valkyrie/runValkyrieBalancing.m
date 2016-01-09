@@ -38,20 +38,8 @@ kinsol = doKinematics(r,q0);
 com = getCOM(r,kinsol);
 
 % Construct plan
-r.default_qp_input = valkyrieControllers.QPInputConstantHeight();
-r.rpc = valkyrieUtil.propertyCache(r);
 settings = QPLocomotionPlanSettings.fromStandingState(x0, r);
 % settings.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed; % Only use supports when in contact
-
-settings.r_foot_name = 'rightFoot+rightLegSixAxis_Frame+rightCOP_Frame';
-settings.l_foot_name = 'leftFoot+leftLegSixAxis_Frame+leftCOP_Frame';
-settings.pelvis_name = 'pelvis+leftPelvisIMU_Frame+rightPelvisIMU_Frame';
-settings.r_knee_name = 'rightKneePitch';
-settings.l_knee_name = 'leftKneePitch';
-settings.l_akx_name = 'leftAnkleRoll';
-settings.r_akx_name = 'rightAnkleRoll';
-settings.r_aky_name = 'rightAnklePitch';
-settings.l_aky_name = 'leftAnklePitch';
 
 standing_plan = QPLocomotionPlanCPPWrapper(settings);
 
@@ -63,9 +51,9 @@ if use_angular_momentum
 end
 
 % Construct our control blocks
-planeval = valkyrieControllers.ValkyriePlanEval(r, standing_plan);
-control = valkyrieControllers.InstantaneousQPController(r, param_sets);
-plancontroller = valkyrieControllers.ValkyriePlanEvalAndControlSystem(r, control, planeval);
+planeval = bipedControllers.BipedPlanEval(r, standing_plan);
+control = bipedControllers.InstantaneousQPController(r, param_sets);
+plancontroller = bipedControllers.BipedPlanEvalAndControlSystem(r, control, planeval);
 
 sys = feedback(r, plancontroller);
 

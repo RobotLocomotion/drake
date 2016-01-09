@@ -55,16 +55,14 @@ x0 = xstar;
 
 
 % Construct plan
-r.default_qp_input = atlasControllers.QPInputConstantHeight();
-r.rpc = atlasUtil.propertyCache(r);
 settings = QPLocomotionPlanSettings.fromStandingState(x0, r);
 % settings.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed; % Only use supports when in contact
 standing_plan = QPLocomotionPlanCPPWrapper(settings);
 
-control = atlasControllers.InstantaneousQPController(r, [], struct());
-planeval = atlasControllers.AtlasPlanEval(r, standing_plan);
+control = bipedControllers.InstantaneousQPController(r, [], struct());
+planeval = bipedControllers.BipedPlanEval(r, standing_plan);
 
-plancontroller = atlasControllers.AtlasPlanEvalAndControlSystem(r, control, planeval);
+plancontroller = bipedControllers.BipedPlanEvalAndControlSystem(r, control, planeval);
 
 T = 6;
 ts = example_options.perturb_timing;

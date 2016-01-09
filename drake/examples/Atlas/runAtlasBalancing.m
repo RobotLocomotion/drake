@@ -34,7 +34,6 @@ kinsol = doKinematics(r,q0);
 com = getCOM(r,kinsol);
 
 % Construct plan
-r.rpc = atlasUtil.propertyCache(r);
 settings = QPLocomotionPlanSettings.fromStandingState(x0, r);
 % settings.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed; % Only use supports when in contact
 standing_plan = QPLocomotionPlanCPPWrapper(settings);
@@ -47,9 +46,9 @@ if use_angular_momentum
 end
 
 % Construct our control blocks
-planeval = atlasControllers.AtlasPlanEval(r, standing_plan);
-control = atlasControllers.InstantaneousQPController(r, param_sets);
-plancontroller = atlasControllers.AtlasPlanEvalAndControlSystem(r, control, planeval);
+planeval = bipedControllers.BipedPlanEval(r, standing_plan);
+control = bipedControllers.InstantaneousQPController(r, param_sets);
+plancontroller = bipedControllers.BipedPlanEvalAndControlSystem(r, control, planeval);
 
 sys = feedback(r, plancontroller);
 

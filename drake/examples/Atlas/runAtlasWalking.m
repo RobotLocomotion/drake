@@ -63,11 +63,9 @@ for j = 1:length(footstep_plan.footsteps)
 end
 
 % Generate a dynamic walking plan
-r.default_qp_input = atlasControllers.QPInputConstantHeight();
-r.rpc = atlasUtil.propertyCache(r);
 walking_plan_data = r.planWalkingZMP(x0(1:r.getNumPositions()), footstep_plan);
 
-[ytraj, com, rms_com] = atlasUtil.simulateWalking(r, walking_plan_data);
+[ytraj, com, rms_com] = bipedUtil.simulateWalking(r, walking_plan_data);
 
 v.playback(ytraj, struct('slider', true));
 

@@ -77,9 +77,9 @@ plan_settings.gain_set = 'walking';
 plan = QPLocomotionPlanCPPWrapper(plan_settings);
 
 % Build our controller and plan eval objects
-control = atlasControllers.InstantaneousQPController(r, []);
-planeval = atlasControllers.AtlasPlanEval(r, plan);
-plancontroller = atlasControllers.AtlasPlanEvalAndControlSystem(r, control, planeval);
+control = bipedControllers.InstantaneousQPController(r, []);
+planeval = bipedControllers.BipedPlanEval(r, plan);
+plancontroller = bipedControllers.BipedPlanEvalAndControlSystem(r, control, planeval);
 sys = feedback(r, plancontroller);
 
 % Add a visualizer

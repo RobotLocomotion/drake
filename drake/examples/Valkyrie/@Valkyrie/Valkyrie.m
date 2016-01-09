@@ -166,6 +166,62 @@ classdef Valkyrie < TimeSteppingRigidBodyManipulator & Biped
                        'relative_final', [10;10;10;0;0;2],...
                        'goal', [100;100;0;0;0;10]);
     end
+
+    function prop_cache = getRobotPropertyCache(obj)
+      % Functions like findLinkId, getTerrainContactPoints, etc. can be too slow to call
+      % in the inner loop of our controller or planner, so we cache some useful information
+      % at setup time. 
+
+      prop_cache = struct('contact_groups', [],...
+                          'body_ids', struct(),...
+                          'position_indices', struct(),...
+                          'actuated_indices', [],...
+                          'nq', 0,...
+                          'nv', 0,...
+                          'num_bodies', 0);
+
+      % getTerrainContactPoints is pretty expensive, so we'll just call it
+      % for all the bodies and cache the results
+      nbod = length(obj.getManipulator().body);
+      contact_group_cache = cell(1, nbod);
+      for j = 1:nbod
+        contact_group_cache{j} = struct();
+        for f = 1:length(obj.getBody(j).collision_geometry_group_names)
+          name = obj.getBody(j).collision_geometry_group_names{f};
+          if obj.getBody(j).robotnum == 1
+            contact_group_cache{j}.(name) = obj.getBody(j).getTerrainContactPoints(name);
+          end
+        end
+      end
+
+      prop_cache.contact_groups = contact_group_cache;
+
+      prop_cache.nq = obj.getNumPositions();
+      prop_cache.nv = obj.getNumVelocities();
+      prop_cache.num_bodies = length(obj.getManipulator().body);
+
+      prop_cache.body_ids.('pelvis') = obj.findLinkId('pelvis');
+      prop_cache.body_ids.('r_foot') = obj.findLinkId('rightFoot');
+      prop_cache.body_ids.('l_foot') = obj.findLinkId('leftFoot');
+
+      prop_cache.position_indices.('neck') = obj.findPositionIndices('lowerNeckPitch');
+      prop_cache.position_indices.('r_leg_ak') = [obj.findPositionIndices('rightAnklePitch'); obj.findPositionIndices('rightAnkleRoll')];
+      prop_cache.position_indices.('l_leg_ak') = [obj.findPositionIndices('leftAnklePitch'); obj.findPositionIndices('leftAnkleRoll')];
+
+      prop_cache.position_indices.('r_leg') = [obj.findPositionIndices('rightHipYaw'); obj.findPositionIndices('rightHipRoll'); obj.findPositionIndices('rightHipPitch'); obj.findPositionIndices('rightKneePitch'); obj.findPositionIndices('rightAnklePitch'); obj.findPositionIndices('rightAnkleRoll')];
+      prop_cache.position_indices.('l_leg') = [obj.findPositionIndices('leftHipYaw'); obj.findPositionIndices('leftHipRoll'); obj.findPositionIndices('leftHipPitch'); obj.findPositionIndices('leftKneePitch'); obj.findPositionIndices('leftAnklePitch'); obj.findPositionIndices('leftAnkleRoll')];
+
+      prop_cache.position_indices.('r_leg_kny') = obj.findPositionIndices('rightKneePitch');
+      prop_cache.position_indices.('l_leg_kny') = obj.findPositionIndices('leftKneePitch');
+
+      prop_cache.position_indices.('arm') = [obj.findPositionIndices('leftShoulderPitch'); obj.findPositionIndices('leftShoulderRoll'); obj.findPositionIndices('leftShoulderYaw'); obj.findPositionIndices('leftElbowPitch'); obj.findPositionIndices('leftForearm'); obj.findPositionIndices('leftWristRoll'); obj.findPositionIndices('leftWristPitch'); obj.findPositionIndices('rightShoulderPitch'); obj.findPositionIndices('rightShoulderRoll'); obj.findPositionIndices('rightShoulderYaw'); obj.findPositionIndices('rightElbowPitch'); obj.findPositionIndices('rightForearm'); obj.findPositionIndices('rightWristRoll'); obj.findPositionIndices('rightWristPitch')];
+
+      prop_cache.position_indices.('back_bkz') = obj.findPositionIndices('torsoYaw');
+      prop_cache.position_indices.('back_bky') = obj.findPositionIndices('torsoPitch');
+      prop_cache.position_indices.('neck') = obj.findPositionIndices('lowerNeckPitch');
+
+      prop_cache.actuated_indices = obj.getActuatedJoints();
+    end
   end
 
   properties (SetAccess = protected, GetAccess = public)
@@ -207,9 +263,15 @@ classdef Valkyrie < TimeSteppingRigidBodyManipulator & Biped
                                     'prevent_swing_undershoot', false,... % prevent the first phase of the swing from going backwards while moving to the first knot point
                                     'prevent_swing_overshoot', false,... % prevent the final phase of the swing from moving forward of the last knot point
                                     'nominal_LIP_COM_height', 1.01); % nominal height used to construct D_ls for our linear inverted pendulum model
-
-    default_qp_input;
-    rpc;
+    r_foot_name = 'rightFoot+rightLegSixAxis_Frame+rightCOP_Frame';
+    l_foot_name = 'leftFoot+leftLegSixAxis_Frame+leftCOP_Frame';
+    pelvis_name = 'pelvis+leftPelvisIMU_Frame+rightPelvisIMU_Frame';
+    r_knee_name = 'rightKneePitch';
+    l_knee_name = 'leftKneePitch';
+    l_akx_name = 'leftAnkleRoll';
+    r_akx_name = 'rightAnkleRoll';
+    r_aky_name = 'rightAnklePitch';
+    l_aky_name = 'leftAnklePitch';
   end
 
 end
