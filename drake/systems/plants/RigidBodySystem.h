@@ -127,9 +127,9 @@ namespace Drake {
      * Formulates the forward dynamics of the rigid body system as an optimization
      *   find vdot, f  (feasibility problem ok for now => implicit objective is min norm solution)
      *   subject to
-     *       joint limit constraints (differentiated twice + stabilization term):    A vdot = b
      *       position equality constraints (differentiated twice + stabilization):   A vdot = b
      *       velocity equality constraints (differentiated once + stabilization):    A vdot = b
+     *       forces from joint limits and contact OR
      *       contact force constraints on vdot,f.  can be linear, nonlinear, even complementarity.  may have inequalities
      *   the trick is that each new constraint can add decision variables (the new constraint forces and/or slack variables)
      *   to the problem, so the last constraint to add is
