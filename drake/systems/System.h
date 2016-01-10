@@ -353,8 +353,8 @@ namespace Drake {
   class PDControlSystem {
   public:
     template <typename ScalarType> using StateVector = typename System::template StateVector<ScalarType>;
-    template <typename ScalarType> using InputVector = Eigen::Matrix<ScalarType,Eigen::Dynamic,1>;
-    template <typename ScalarType> using OutputVector = Eigen::Matrix<ScalarType,Eigen::Dynamic,1>;
+    template <typename ScalarType> using InputVector = typename System::template StateVector<ScalarType>;
+    template <typename ScalarType> using OutputVector = typename System::template OutputVector<ScalarType>;
     typedef std::shared_ptr<System> SystemPtr;
 
     template <typename DerivedA, typename DerivedB>

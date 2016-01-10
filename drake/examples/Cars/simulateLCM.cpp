@@ -107,10 +107,7 @@ int main(int argc, char* argv[]) {
         map_driving_cmd_to_x_d(tree->num_positions+b->velocity_num_start,2) = -1; // braking (velocity) command
       }
     }
-    cout << "Kp = " << Kp << endl;
-    cout << "Kd = " << Kd << endl;
-    cout << "map = " << map_driving_cmd_to_x_d << endl;
-  }
+    }
   auto vehicle_with_pd = make_shared<PDControlSystem<RigidBodySystem>>(rigid_body_sys,Kp,Kd);
   auto vehicle_sys = cascade(make_shared<Gain<DrivingCommand,PDControlSystem<RigidBodySystem>::InputVector>>(map_driving_cmd_to_x_d),vehicle_with_pd);
   auto visualizer = make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm,tree);
@@ -120,6 +117,7 @@ int main(int argc, char* argv[]) {
   rigid_body_sys->penetration_stiffness = 5000.0;
   rigid_body_sys->penetration_damping = rigid_body_sys->penetration_stiffness/10.0;
   options.initial_step_size = 5e-3;
+  options.timeout_seconds = numeric_limits<double>::infinity();
 
   VectorXd x0(rigid_body_sys->getNumStates());
   x0.head(tree->num_positions) = tree->getZeroConfiguration();
