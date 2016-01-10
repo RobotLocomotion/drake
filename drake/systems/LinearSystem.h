@@ -36,7 +36,8 @@ public:
 
   template <typename ScalarType>
   StateVector<ScalarType> dynamics(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {
-    StateVector<ScalarType> xdot = A*toEigen(x) + B*toEigen(u) + xdot0;
+    if (A.rows() == 0) return StateVector<ScalarType>();
+    StateVector<ScalarType> xdot = A * toEigen(x) + B * toEigen(u) + xdot0;
     return xdot;
   }
 
@@ -86,7 +87,7 @@ public:
 
   template<typename Derived>
   Gain(const Eigen::MatrixBase<Derived> &D)
-          : LinearSystem<NullVector,InputVec,OutputVec>(Eigen::Matrix<double,0,0>(), Eigen::Matrix<double,0,0>(), Eigen::Matrix<double,0,0>(), D) { }
+          : LinearSystem<NullVector,InputVec,OutputVec>(Eigen::Matrix<double,0,0>(), Eigen::Matrix<double,0,0>(), Eigen::Matrix<double,Eigen::Dynamic,0>(D.rows(),0), D) { }
 };
 
 

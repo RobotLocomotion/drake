@@ -28,6 +28,12 @@ public:
     return *this;
   }
 
+  friend Eigen::Vector3d toEigen(const DrivingCommand<ScalarType>& vec) {
+    Eigen::Vector3d x;
+    x << vec.steering_angle, vec.throttle, vec.brake;
+    return x;
+  }
+
   friend std::string getCoordinateName(const DrivingCommand<ScalarType>& vec, unsigned int index) {
     switch (index) {
       case 0: return "steering_angle";
@@ -79,24 +85,36 @@ int main(int argc, char* argv[]) {
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
   auto rigid_body_sys = make_shared<RigidBodySystem>(tree);
 
-  MatrixXd D(getNumInputs(*rigid_body_sys),DrivingCommand<double>::RowsAtCompileTime+getNumStates(*rigid_body_sys));
+  MatrixXd Kp(getNumInputs(*rigid_body_sys),tree->num_positions),
+      Kd(getNumInputs(*rigid_body_sys),tree->num_velocities);
+  Matrix<double,Eigen::Dynamic,3> map_driving_cmd_to_x_d(tree->num_positions+tree->num_velocities,3);
   { // setup PD controller for throttle and steering
-    double kp = 100, kd = 20, kThrottle = 100;
-    D.setZero();
-/*
-    D(1,controlInput.findCoordinateIndex('steering')) = -kp; % Steering
-            D(1,controlInput.findCoordinateIndex('steeringdot')) = -kd; % Steering Dot
-    D(1,controlInput.findCoordinateIndex('steering_angle')) = kp; % Steering Desired
-    D(2,controlInput.findCoordinateIndex('throttle_value')) = kThrottle; % Gas
-            D(2,controlInput.findCoordinateIndex('brake_value')) = -kThrottle; % Brake
-            D(3,controlInput.findCoordinateIndex('throttle_value')) = kThrottle; % Gas
-            D(3,controlInput.findCoordinateIndex('brake_value')) = -kThrottle; % Brake
-*/
-  }
-  auto pd_controller = make_shared<Gain<CombinedVectorUtil<DrivingCommand,RigidBodySystem::StateVector>::type,RigidBodySystem::InputVector>>(D);
+    double kpSteering = 100, kdSteering = 20, kThrottle = 100;
+    Kp.setZero();
+    Kd.setZero();
+    map_driving_cmd_to_x_d.setZero();
 
+    for (int actuator_idx=0; actuator_idx<tree->actuators.size(); actuator_idx++) {
+      if (strcmp(tree->actuators[actuator_idx].name.c_str(),"steering_angle")==0) {
+        auto const &b = tree->actuators[actuator_idx].body;
+        Kp(actuator_idx,b->position_num_start) = kpSteering;   // steering
+        Kd(actuator_idx,b->velocity_num_start) = kdSteering;   // steeringdot
+        map_driving_cmd_to_x_d(b->position_num_start,0) = 1;   // steering command
+      } else if (strncmp(tree->actuators[actuator_idx].name.c_str(),"throttle",8)==0) { // intentionally match all throttle_ inputs
+        auto const &b = tree->actuators[actuator_idx].body;
+        Kd(actuator_idx,b->velocity_num_start) = kThrottle;   // throttle
+        map_driving_cmd_to_x_d(tree->num_positions+b->velocity_num_start,1) = 1;  // throttle (velocity) command
+        map_driving_cmd_to_x_d(tree->num_positions+b->velocity_num_start,2) = -1; // braking (velocity) command
+      }
+    }
+    cout << "Kp = " << Kp << endl;
+    cout << "Kd = " << Kd << endl;
+    cout << "map = " << map_driving_cmd_to_x_d << endl;
+  }
+  auto vehicle_with_pd = make_shared<PDControlSystem<RigidBodySystem>>(rigid_body_sys,Kp,Kd);
+  auto vehicle_sys = cascade(make_shared<Gain<DrivingCommand,PDControlSystem<RigidBodySystem>::InputVector>>(map_driving_cmd_to_x_d),vehicle_with_pd);
   auto visualizer = make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm,tree);
-  auto sys = cascade(rigid_body_sys, visualizer);
+  auto sys = cascade(vehicle_sys, visualizer);
 
   SimulationOptions options = default_simulation_options;
   rigid_body_sys->penetration_stiffness = 5000.0;
@@ -106,8 +124,8 @@ int main(int argc, char* argv[]) {
   VectorXd x0(rigid_body_sys->getNumStates());
   x0.head(tree->num_positions) = tree->getZeroConfiguration();
 
-//  runLCM(sys,lcm,0,std::numeric_limits<double>::max(),getInitialState(*sys),options);
-  simulate(*sys,0,std::numeric_limits<double>::max(),x0,options);
+  runLCM(sys,lcm,0,std::numeric_limits<double>::max(),x0,options);
+//  simulate(*sys,0,std::numeric_limits<double>::max(),x0,options);
 
   return 0;
 }
