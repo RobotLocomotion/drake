@@ -48,8 +48,8 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
       if (f_ext.find(body) == f_ext.end()) {
         f_ext.insert({body, f_ext_i});
       } else {
-        f_ext.insert({body, f_ext.at(body) + f_ext_i});
-      } 
+        f_ext.at(body) = f_ext.at(body) + f_ext_i;
+      }
       u_index += num_inputs;
     }
   }
