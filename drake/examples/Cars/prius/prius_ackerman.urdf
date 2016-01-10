@@ -134,7 +134,7 @@
         <cylinder length=".215" radius="0.323342"/>
       </geometry>
       <material name="">
-        <color rgba=".2 .2 .2 .2" />
+        <color rgba=".2 .2 .2 1" />
       </material>
     </visual>  
     <collision>
@@ -147,7 +147,7 @@
     <visual>
       <origin xyz="0 0.1075 0" rpy="0 0 1.5708"/>
       <material>
-        <color rgba=".9 .9 .9 0"/>
+        <color rgba=".9 .9 .9 1"/>
       </material>
       <geometry>
         <box size=".0025 .0025 .25"/>
@@ -156,7 +156,7 @@
     <visual>
       <origin xyz="0 0.1075 0" rpy="0 1.5708 0"/>
       <material>
-        <color rgba=".9 .9 .9 0"/>
+        <color rgba=".9 .9 .9 1"/>
       </material>
       <geometry>
         <box size=".0025 .0025 .25"/>
@@ -175,7 +175,7 @@
         <cylinder length=".215" radius="0.323342"/>
       </geometry>
       <material name="">
-        <color rgba=".2 .2 .2 .2" />
+        <color rgba=".2 .2 .2 1" />
       </material>
     </visual>
     <collision>
@@ -188,7 +188,7 @@
     <visual>
       <origin xyz="0 -.1075 0" rpy="0 0 1.5708"/>
       <material>
-        <color rgba=".9 .9 .9 0"/>
+        <color rgba=".9 .9 .9 1"/>
       </material>
       <geometry>
         <box size=".0025 .0025 .25"/>
@@ -197,7 +197,7 @@
     <visual>
       <origin xyz="0 -.1075 0" rpy="0 1.5708 0"/>
       <material>
-        <color rgba=".9 .9 .9 0"/>
+        <color rgba=".9 .9 .9 1"/>
       </material>
       <geometry>
         <box size=".0025 .0025 .25"/>
@@ -216,7 +216,7 @@
         <cylinder length=".215" radius="0.323342"/>
       </geometry>
       <material name="">
-        <color rgba=".2 .2 .2 .2" />
+        <color rgba=".2 .2 .2 1" />
       </material>
     </visual> 
     <collision>
@@ -229,7 +229,7 @@
     <visual>
       <origin xyz="0 0.1075 0" rpy="0 0 1.5708"/>
       <material>
-        <color rgba=".9 .9 .9 0"/>
+        <color rgba=".9 .9 .9 1"/>
       </material>
       <geometry>
         <box size=".0025 .0025 .25"/>
@@ -238,7 +238,7 @@
     <visual>
       <origin xyz="0 0.1075 0" rpy="0 1.5708 0"/>
       <material>
-        <color rgba=".9 .9 .9 0"/>
+        <color rgba=".9 .9 .9 1"/>
       </material>
       <geometry>
         <box size=".0025 .0025 .25"/>
@@ -257,7 +257,7 @@
         <cylinder length=".215" radius="0.323342"/>
       </geometry>
       <material name="">
-        <color rgba=".2 .2 .2 .2" />
+        <color rgba=".2 .2 .2 1" />
       </material>
     </visual>
     <collision>
@@ -270,7 +270,7 @@
     <visual>
       <origin xyz="0 -0.1075 0" rpy="0 0 1.5708"/>
       <material>
-        <color rgba=".9 .9 .9 0"/>
+        <color rgba=".9 .9 .9 1"/>
       </material>
       <geometry>
         <box size=".0025 .0025 .25"/>
@@ -279,7 +279,7 @@
     <visual>
       <origin xyz="0 -0.1075 0" rpy="0 1.5708 0"/>
       <material>
-        <color rgba=".9 .9 .9 0"/>
+        <color rgba=".9 .9 .9 1"/>
       </material>
       <geometry>
         <box size=".0025 .0025 .25"/>
