@@ -969,34 +969,55 @@ typename Gradient<DerivedX, DerivedDX::ColsAtCompileTime>::type dTransformSpatia
 };
 
 template<typename DerivedI>
-GradientVar<typename DerivedI::Scalar, TWIST_SIZE, TWIST_SIZE> transformSpatialInertia(
-    const Eigen::Transform<typename DerivedI::Scalar, SPACE_DIMENSION, Eigen::Isometry>& T_current_to_new,
-    const typename Gradient<typename Eigen::Transform<typename DerivedI::Scalar, SPACE_DIMENSION, Eigen::Isometry>::MatrixType, Eigen::Dynamic>::type* dT_current_to_new,
-    const Eigen::MatrixBase<DerivedI>& I) {
-  int gradient_order;
-  typename DerivedI::Index nq;
-  if (dT_current_to_new) {
-    gradient_order = 1;
-    nq = dT_current_to_new->cols();
-  }
-  else {
-    nq = 0;
-    gradient_order = 0;
-  }
+Eigen::Matrix<typename DerivedI::Scalar, TWIST_SIZE, TWIST_SIZE> transformSpatialInertia(
+    const Eigen::Transform<typename DerivedI::Scalar, SPACE_DIMENSION, Eigen::Isometry> &T_current_to_new,
+    const Eigen::MatrixBase<DerivedI> &I) {
+  using namespace Eigen;
+  using Scalar = typename DerivedI::Scalar;
 
-  GradientVar<typename DerivedI::Scalar, TWIST_SIZE, TWIST_SIZE> ret(TWIST_SIZE, TWIST_SIZE, nq, gradient_order);
-  auto I_half_transformed = transformSpatialForce(T_current_to_new, I);
+  const auto &R = T_current_to_new.linear();
+  const auto &p = T_current_to_new.translation();
 
-  ret.value() = transformSpatialForce(T_current_to_new, I_half_transformed.transpose());
+  auto J = I.template topLeftCorner<3, 3>();
+  Matrix<Scalar, 3, 1> c;
+  c << I(2, 4), I(0, 5), I(1, 3);
+  const auto &m = I(3, 3);
 
-  if (gradient_order > 0) {
-    auto dI = Eigen::Matrix<typename DerivedI::Scalar, DerivedI::SizeAtCompileTime, Eigen::Dynamic>::Zero(I.size(), nq).eval(); // TODO: would be better not to evaluate and make another explicit instantiation
-    auto dI_half_transformed = dTransformSpatialForce(T_current_to_new, I, *dT_current_to_new, dI);
-    auto dI_half_transformed_transpose = transposeGrad(dI_half_transformed, I_half_transformed.rows());
-    ret.gradient().value() = dTransformSpatialForce(T_current_to_new, I_half_transformed.transpose(), *dT_current_to_new, dI_half_transformed_transpose);
-  }
-  return ret;
-};
+  auto vectorToSkewSymmetricSquared = [](const Matrix<Scalar, 3, 1> &a) {
+    Matrix<Scalar, 3, 3> ret;
+    auto a0_2 = a(0) * a(0);
+    auto a1_2 = a(1) * a(1);
+    auto a2_2 = a(2) * a(2);
+
+    ret(0, 0) = -a1_2 - a2_2;
+    ret(0, 1) = a(0) * a(1);
+    ret(0, 2) = a(0) * a(2);
+
+    ret(1, 0) = ret(0, 1);
+    ret(1, 1) = -a0_2 - a2_2;
+    ret(1, 2) = a(1) * a(2);
+
+    ret(2, 0) = ret(0, 2);
+    ret(2, 1) = ret(1, 2);
+    ret(2, 2) = -a0_2 - a1_2;
+    return ret;
+  };
+
+  Matrix<Scalar, TWIST_SIZE, TWIST_SIZE> I_new;
+  auto c_new = (R * c).eval();
+  auto J_new = I_new.template topLeftCorner<3, 3>();
+  J_new = vectorToSkewSymmetricSquared(c_new);
+  c_new.noalias() += m * p;
+  J_new -= vectorToSkewSymmetricSquared(c_new);
+  J_new /= m;
+  J_new.noalias() += R * J * R.transpose();
+
+  I_new.template topRightCorner<3, 3>() = vectorToSkewSymmetric(c_new);
+  I_new.template bottomLeftCorner<3, 3>() = -I_new.template topRightCorner<3, 3>();
+  I_new.template bottomRightCorner<3, 3>() = I.template bottomRightCorner<3, 3>();
+
+  return I_new;
+}
 
 template<typename DerivedA, typename DerivedB>
 typename TransformSpatial<DerivedB>::type crossSpatialMotion(
