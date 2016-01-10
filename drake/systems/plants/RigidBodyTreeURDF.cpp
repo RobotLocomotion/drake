@@ -496,7 +496,7 @@ void parseJoint(RigidBodyTree * model, TiXmlElement* node)
   Vector3d axis;
   axis << 1, 0, 0;
   TiXmlElement* axis_node = node->FirstChildElement("axis");
-  if (axis_node) {
+  if (axis_node && type.compare("fixed")!=0 && type.compare("floating")!=0) {
     parseVectorAttribute(axis_node, "xyz", axis);
     if (axis.norm()<1e-8) throw runtime_error("ERROR: axis is zero.  don't do that");
     axis.normalize();

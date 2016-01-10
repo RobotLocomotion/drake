@@ -58,16 +58,22 @@ bool decode(const drake::lcmt_driving_control_cmd_t& msg, double& t, DrivingComm
 }
 
 
+/** Driving Simulator
+ * Usage:  simulateLCM vehicle_urdf [world_urdf files ...]
+ */
+
 int main(int argc, char* argv[]) {
   if (argc < 2) {
-    std::cerr << "Usage: " << argv[0] << " [options] full_path_to_urdf_file" << std::endl;
+    std::cerr << "Usage: " << argv[0] << " vehicle_urdf [world_urdf files ...]" << std::endl;
     return 1;
   }
 
   // todo: consider moving this logic into the RigidBodySystem class so it can be reused
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
 
-  auto tree = make_shared<RigidBodyTree>(argv[argc-1],floating_base_type);
+  auto tree = make_shared<RigidBodyTree>(argv[1],floating_base_type);
+  for (int i=2; i<argc; i++)
+    tree->addRobotFromURDF(argv[i],DrakeJoint::FIXED);  // add environment
 
   { // add flat terrain
     double box_width = 1000;
