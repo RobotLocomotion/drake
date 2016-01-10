@@ -1006,10 +1006,16 @@ Eigen::Matrix<typename DerivedI::Scalar, TWIST_SIZE, TWIST_SIZE> transformSpatia
   Matrix<Scalar, TWIST_SIZE, TWIST_SIZE> I_new;
   auto c_new = (R * c).eval();
   auto J_new = I_new.template topLeftCorner<3, 3>();
-  J_new = vectorToSkewSymmetricSquared(c_new);
-  c_new.noalias() += m * p;
-  J_new -= vectorToSkewSymmetricSquared(c_new);
-  J_new /= m;
+
+  if (m > NumTraits<Scalar>::epsilon()) {
+    J_new = vectorToSkewSymmetricSquared(c_new);
+    c_new.noalias() += m * p;
+    J_new -= vectorToSkewSymmetricSquared(c_new);
+    J_new /= m;
+  }
+  else {
+    J_new.setZero();
+  }
   J_new.noalias() += R * J * R.transpose();
 
   I_new.template topRightCorner<3, 3>() = vectorToSkewSymmetric(c_new);
