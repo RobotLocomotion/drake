@@ -45,8 +45,11 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
       RigidBodyPropellor::InputVector<double> u_i(u.middleRows(u_index,num_inputs));
       // todo: push the frame to body transform into the dynamicsBias method?
       Matrix<double,6,1> f_ext_i = transformSpatialForce(frame->transform_to_body,prop->output(t,force_state,u_i,kinsol));
-      if (f_ext.find(body)==f_ext.end()) f_ext[body] = f_ext_i;
-      else f_ext[body] = f_ext[body]+f_ext_i;
+      if (f_ext.find(body) == f_ext.end()) {
+        f_ext.insert({body, f_ext_i});
+      } else {
+        f_ext.at(body) = f_ext.at(body) + f_ext_i;
+      }
       u_index += num_inputs;
     }
   }
