@@ -25,6 +25,7 @@
 
 %eigen_typemaps(Eigen::VectorXd)
 %eigen_typemaps(Eigen::Matrix<double, SPACE_DIMENSION, 1>)
+%eigen_typemaps(Eigen::Matrix<double, SPACE_DIMENSION, Eigen::Dynamic>)
 %eigen_typemaps(Eigen::MatrixXd)
 %eigen_typemaps(Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>)
 %eigen_typemaps(Eigen::VectorXi)
@@ -33,6 +34,8 @@
 %template(KinematicsCache_d) KinematicsCache<double>;
 %template(KinematicsCache_adVectorDynamic) KinematicsCache<Eigen::AutoDiffScalar<Eigen::VectorXd> >;
 %template(KinematicsCache_adVectorMax73) KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73> > >;
+%template(AutoDiff3XDynamic) AutoDiffWrapper<Eigen::VectorXd, SPACE_DIMENSION, Eigen::Dynamic>;
+%template(AutoDiff3XMax73) AutoDiffWrapper<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73>, SPACE_DIMENSION, Eigen::Dynamic>;
 
 %include "RigidBodyTree.h"
 %extend RigidBodyTree {
@@ -48,22 +51,22 @@
     return $self->doKinematics(q, v);
   }
 
-  Eigen::VectorXd forwardKin(
-      const KinematicsCache<double> &cache, const Eigen::Matrix<double, SPACE_DIMENSION, 1> &points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type) const
+  Eigen::Matrix<double, SPACE_DIMENSION, Eigen::Dynamic> transformPoints(
+      const KinematicsCache<double> &cache, const Eigen::Matrix<double, SPACE_DIMENSION, Eigen::Dynamic> &points, int current_body_or_frame_ind, int new_body_or_frame_ind) const
   {
-    return $self->forwardKin(cache, points, current_body_or_frame_ind, new_body_or_frame_ind, rotation_type);
+    return $self->transformPoints(cache, points, current_body_or_frame_ind, new_body_or_frame_ind);
   }
 
-  AutoDiffWrapper<Eigen::VectorXd, Eigen::Dynamic, 1> forwardKin(
-      const KinematicsCache<Eigen::AutoDiffScalar<Eigen::VectorXd> > &cache, const Eigen::Matrix<double, SPACE_DIMENSION, 1> &points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type) const
+  AutoDiffWrapper<Eigen::VectorXd, SPACE_DIMENSION, Eigen::Dynamic> transformPoints(
+      const KinematicsCache<Eigen::AutoDiffScalar<Eigen::VectorXd> > &cache, const Eigen::Matrix<double, SPACE_DIMENSION, Eigen::Dynamic> &points, int current_body_or_frame_ind, int new_body_or_frame_ind) const
   {
-    return $self->forwardKin(cache, points, current_body_or_frame_ind, new_body_or_frame_ind, rotation_type);
+    return $self->transformPoints(cache, points, current_body_or_frame_ind, new_body_or_frame_ind);
   }
 
-  AutoDiffWrapper<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73>, Eigen::Dynamic, 1> forwardKin(
-      const KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73> > > &cache, const Eigen::Matrix<double, SPACE_DIMENSION, 1> &points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type) const
+  AutoDiffWrapper<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73>, SPACE_DIMENSION, Eigen::Dynamic> transformPoints(
+      const KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73> > > &cache, const Eigen::Matrix<double, SPACE_DIMENSION, Eigen::Dynamic> &points, int current_body_or_frame_ind, int new_body_or_frame_ind) const
   {
-    return $self->forwardKin(cache, points, current_body_or_frame_ind, new_body_or_frame_ind, rotation_type);
+    return $self->transformPoints(cache, points, current_body_or_frame_ind, new_body_or_frame_ind);
   }
 
   Eigen::Matrix<double, SPACE_DIMENSION, 1> centerOfMass(KinematicsCache<double> &cache, const std::set<int> &robotnum = default_robot_num_set) const {
