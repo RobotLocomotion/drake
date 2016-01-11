@@ -158,13 +158,16 @@ namespace Drake {
     // and that I want a more general way to specify the input-output relationships for miso functions
 
     virtual Eigen::VectorXd output(const double& t, /* todo: add force state here */ const Eigen::VectorXd& u, const KinematicsCache<double>& rigid_body_state) const override {
-      Eigen::Matrix<double,6,1> f_ext;
+      using namespace Eigen;
+      Matrix<double,6,1> f_ext;
+      const auto & tree = sys->getRigidBodyTree();
 
       f_ext << scale_factor_moment*u(0)*axis, scale_factor_thrust*u(0)*axis;
-      auto J = sys->getRigidBodyTree()->geometricJacobian(rigid_body_state, 0, frame->frame_index, frame->frame_index);
-      KinematicPath path = sys->getRigidBodyTree()->findKinematicPath(0, frame->frame_index);
-      auto J_full = sys->getRigidBodyTree()->compactToFull(J, path.joint_path, false);
-      return J_full.transpose()*f_ext;
+      std::vector<int> v_indices;
+      auto J = tree->geometricJacobian(rigid_body_state, 0, frame->frame_index, frame->frame_index, false, &v_indices);
+      VectorXd tau = VectorXd::Zero(tree->num_velocities);
+      for (auto const& ind : v_indices) tau(ind) = J.col(ind).dot(f_ext);
+      return tau;
     }
 
   private:
