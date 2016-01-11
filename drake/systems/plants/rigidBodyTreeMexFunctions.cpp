@@ -101,30 +101,105 @@ void findKinematicPathmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *pr
   mexCallFunction(nlhs, plhs, nrhs, prhs, true, func);
 }
 
+template <typename Scalar, typename DerivedPoints>
+Matrix<Scalar, Dynamic, DerivedPoints::ColsAtCompileTime> forwardJacDotTimesVTemp(
+    const RigidBodyTree &tree, const KinematicsCache<Scalar> &cache, const MatrixBase<DerivedPoints> &points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type) {
+
+  auto Jtransdot_times_v = tree.transformPointsJacobianDotTimesV(cache, points, current_body_or_frame_ind, new_body_or_frame_ind);
+  if (rotation_type == 0) {
+    return Jtransdot_times_v;
+  }
+  else {
+    Matrix<Scalar, Dynamic, 1> Jrotdot_times_v(rotationRepresentationSize(rotation_type));
+    if (rotation_type == 1) {
+      Jrotdot_times_v = tree.relativeRollPitchYawJacobianDotTimesV(cache, current_body_or_frame_ind, new_body_or_frame_ind);
+    }
+    else if (rotation_type == 2) {
+      Jrotdot_times_v = tree.relativeQuaternionJacobianDotTimesV(cache, current_body_or_frame_ind, new_body_or_frame_ind);
+    }
+    else {
+      throw runtime_error("rotation type not recognized");
+    }
+
+    Matrix<Scalar, Dynamic, 1> Jdot_times_v((3 + rotationRepresentationSize(rotation_type)) * points.cols(), 1);
+
+    int row_start = 0;
+    for (int i = 0; i < points.cols(); i++) {
+      Jdot_times_v.template middleRows<3>(row_start) = Jtransdot_times_v.template middleRows<3>(3 * i);
+      row_start += 3;
+
+      Jdot_times_v.middleRows(row_start, Jrotdot_times_v.rows()) = Jrotdot_times_v;
+      row_start += Jrotdot_times_v.rows();
+    }
+    return Jdot_times_v;
+  }
+};
+
 void forwardJacDotTimesVmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   typedef Map<const Matrix3Xd> DerivedPoints;
-  auto func_double = make_function(&RigidBodyTree::forwardJacDotTimesV<double, DerivedPoints>);
-  auto func_autodiff_fixed_max = make_function(&RigidBodyTree::forwardJacDotTimesV<AutoDiffFixedMaxSize, DerivedPoints>);
-  auto func_autodiff_dynamic = make_function(&RigidBodyTree::forwardJacDotTimesV<AutoDiffDynamicSize, DerivedPoints>);
+  auto func_double = make_function(&forwardJacDotTimesVTemp<double, DerivedPoints>);
+  auto func_autodiff_fixed_max = make_function(&forwardJacDotTimesVTemp<AutoDiffFixedMaxSize, DerivedPoints>);
+  auto func_autodiff_dynamic = make_function(&forwardJacDotTimesVTemp<AutoDiffDynamicSize, DerivedPoints>);
 
   mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double, func_autodiff_fixed_max, func_autodiff_dynamic);
 }
 
+template <typename Scalar, typename DerivedPoints>
+Matrix<Scalar, Dynamic, DerivedPoints::ColsAtCompileTime> forwardKinTemp(const RigidBodyTree& tree,
+    const KinematicsCache<Scalar> &cache, const MatrixBase<DerivedPoints> &points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type) {
+
+  Matrix<Scalar, Dynamic, DerivedPoints::ColsAtCompileTime> ret(3 + rotationRepresentationSize(rotation_type), points.cols());
+  ret.template topRows<3>() = tree.transformPoints(cache, points, current_body_or_frame_ind, new_body_or_frame_ind);
+  if (rotation_type == 1) {
+    ret.template bottomRows<3>().colwise() = tree.relativeRollPitchYaw(cache, current_body_or_frame_ind, new_body_or_frame_ind);
+  }
+  else if (rotation_type == 2) {
+    ret.template bottomRows<4>().colwise() = tree.relativeQuaternion(cache, current_body_or_frame_ind, new_body_or_frame_ind);
+  }
+  return ret;
+};
+
 void forwardKinmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
-  auto func_double = make_function(&RigidBodyTree::forwardKin<double, Map<const Matrix3Xd>>);
-  auto func_autodiff_fixed_max_double_points = make_function(&RigidBodyTree::forwardKin<AutoDiffFixedMaxSize, Map<const Matrix3Xd>>);
-  auto func_autodiff_fixed_max_autodiff_points = make_function(&RigidBodyTree::forwardKin<AutoDiffFixedMaxSize, Matrix<AutoDiffFixedMaxSize, 3, Dynamic>>);
-  auto func_autodiff_dynamic_double_points = make_function(&RigidBodyTree::forwardKin<AutoDiffDynamicSize, Map<const Matrix3Xd>>);
-  auto func_autodiff_dynamic_autodiff_points = make_function(&RigidBodyTree::forwardKin<AutoDiffDynamicSize, Matrix<AutoDiffDynamicSize, 3, Dynamic>>);
+  auto func_double = make_function(&forwardKinTemp<double, Map<const Matrix3Xd>>);
+  auto func_autodiff_fixed_max_double_points = make_function(&forwardKinTemp<AutoDiffFixedMaxSize, Map<const Matrix3Xd>>);
+  auto func_autodiff_fixed_max_autodiff_points = make_function(&forwardKinTemp<AutoDiffFixedMaxSize, Matrix<AutoDiffFixedMaxSize, 3, Dynamic>>);
+  auto func_autodiff_dynamic_double_points = make_function(&forwardKinTemp<AutoDiffDynamicSize, Map<const Matrix3Xd>>);
+  auto func_autodiff_dynamic_autodiff_points = make_function(&forwardKinTemp<AutoDiffDynamicSize, Matrix<AutoDiffDynamicSize, 3, Dynamic>>);
 
   mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double, func_autodiff_fixed_max_double_points, func_autodiff_fixed_max_autodiff_points, func_autodiff_dynamic_double_points, func_autodiff_dynamic_autodiff_points);
 }
 
+template <typename Scalar, typename DerivedPoints>
+Matrix<Scalar, Dynamic, Dynamic> forwardKinJacobianTemp(const RigidBodyTree& tree, const KinematicsCache<Scalar>& cache, const MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, bool in_terms_of_qdot) {
+  auto Jtrans = tree.transformPointsJacobian(cache, points, current_body_or_frame_ind, new_body_or_frame_ind, in_terms_of_qdot);
+  if (rotation_type == 0)
+    return Jtrans;
+  else {
+    Matrix<Scalar, Dynamic, Dynamic> Jrot(rotationRepresentationSize(rotation_type), Jtrans.cols());
+    if (rotation_type == 1)
+      Jrot = tree.relativeRollPitchYawJacobian(cache, current_body_or_frame_ind, new_body_or_frame_ind, in_terms_of_qdot);
+    else if (rotation_type == 2)
+      Jrot = tree.relativeQuaternionJacobian(cache, current_body_or_frame_ind, new_body_or_frame_ind, in_terms_of_qdot);
+    else
+      throw runtime_error("rotation_type not recognized");
+    Matrix<Scalar, Dynamic, Dynamic> J((3 + Jrot.rows()) * points.cols(), Jtrans.cols());
+    int row_start = 0;
+    for (int i = 0; i < points.cols(); i++) {
+      J.template middleRows<3>(row_start) = Jtrans.template middleRows<3>(3 * i);
+      row_start += 3;
+
+      J.middleRows(row_start, Jrot.rows()) = Jrot;
+      row_start += Jrot.rows();
+    }
+    return J;
+  }
+};
+
 void forwardKinJacobianmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   typedef Map<const Matrix3Xd> DerivedPoints;
-  auto func_double = make_function(&RigidBodyTree::forwardKinJacobian<double, DerivedPoints>);
-  auto func_autodiff_fixed_max = make_function(&RigidBodyTree::forwardKinJacobian<AutoDiffFixedMaxSize, DerivedPoints>);
-  auto func_autodiff_dynamic = make_function(&RigidBodyTree::forwardKinJacobian<AutoDiffDynamicSize, DerivedPoints>);
+  auto func_double = make_function(&forwardKinJacobianTemp<double, DerivedPoints>);
+  auto func_autodiff_fixed_max = make_function(&forwardKinJacobianTemp<AutoDiffFixedMaxSize, DerivedPoints>);
+  auto func_autodiff_dynamic = make_function(&forwardKinJacobianTemp<AutoDiffDynamicSize, DerivedPoints>);
 
   mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double, func_autodiff_fixed_max, func_autodiff_dynamic);
 }
@@ -146,7 +221,7 @@ void geometricJacobianDotTimesVmex(int nlhs, mxArray *plhs[], int nrhs, const mx
 }
 
 template <typename Scalar>
-Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> geometricJacobianTemp(const RigidBodyTree &model, const KinematicsCache<Scalar> &cache, int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, bool in_terms_of_qdot) {
+Matrix<Scalar, TWIST_SIZE, Dynamic> geometricJacobianTemp(const RigidBodyTree &model, const KinematicsCache<Scalar> &cache, int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, bool in_terms_of_qdot) {
   // temporary solution. Gross v_or_qdot_indices pointer will be gone soon.
   return model.geometricJacobian(cache, base_body_or_frame_ind, end_effector_body_or_frame_ind, expressed_in_body_or_frame_ind, in_terms_of_qdot, nullptr);
 };
@@ -166,7 +241,7 @@ void massMatrixmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 }
 
 template <typename Scalar, typename DerivedF>
-Matrix<Scalar, Eigen::Dynamic, 1>  dynamicsBiasTermTemp(const RigidBodyTree &model, KinematicsCache<Scalar> &cache, const MatrixBase<DerivedF> &f_ext_value) {
+Matrix<Scalar, Dynamic, 1>  dynamicsBiasTermTemp(const RigidBodyTree &model, KinematicsCache<Scalar> &cache, const MatrixBase<DerivedF> &f_ext_value) {
   // temporary solution.
 
   eigen_aligned_unordered_map<const RigidBody *, Matrix<Scalar, 6, 1> > f_ext;
@@ -190,15 +265,15 @@ void dynamicsBiasTermmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
 }
 
 template <typename Scalar>
-Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> velocityToPositionDotMapping(const KinematicsCache<Scalar>& cache) {
+Matrix<Scalar, Dynamic, Dynamic> velocityToPositionDotMapping(const KinematicsCache<Scalar>& cache) {
   auto nq = cache.getNumPositions();
-  return cache.transformPositionDotMappingToVelocityMapping(Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>::Identity(nq, nq));
+  return cache.transformPositionDotMappingToVelocityMapping(Matrix<Scalar, Dynamic, Dynamic>::Identity(nq, nq));
 }
 
 template <typename Scalar>
-Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> positionDotToVelocityMapping(const KinematicsCache<Scalar>& cache) {
+Matrix<Scalar, Dynamic, Dynamic> positionDotToVelocityMapping(const KinematicsCache<Scalar>& cache) {
   auto nv = cache.getNumVelocities();
-  return cache.transformVelocityMappingToPositionDotMapping(Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>::Identity(nv, nv));
+  return cache.transformVelocityMappingToPositionDotMapping(Matrix<Scalar, Dynamic, Dynamic>::Identity(nv, nv));
 }
 
 void velocityToPositionDotMappingmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {

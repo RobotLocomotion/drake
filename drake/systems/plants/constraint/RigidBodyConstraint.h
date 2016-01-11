@@ -334,8 +334,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT RelativePositionConstraint: public Positio
     int bodyB_idx;
     std::string bodyA_name;
     std::string bodyB_name;
-    Eigen::Matrix<double,7,1> bpTb;
-    Eigen::Matrix<double,7,1> bTbp;
+    Eigen::Isometry3d bpTb;
     virtual void evalPositions(KinematicsCache<double>& cache, Eigen::Matrix3Xd &pos, Eigen::MatrixXd &J) const;
     virtual void evalNames(const double* t,std::vector<std::string> &cnst_names) const;
   public:
