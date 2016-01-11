@@ -17,4 +17,4 @@ r = Atlas('urdf/atlas_minimal_contact.urdf',options);
 r = r.removeCollisionGroupsExcept({'heel','toe'});
 r = compile(r);
 
-r.runBalancingDemo(sim_options;
+r.runBalancingDemo(sim_options);
