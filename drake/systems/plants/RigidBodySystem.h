@@ -6,7 +6,9 @@
 #include "RigidBodyTree.h"
 #include "KinematicsCache.h"
 
-class TiXmlElement;
+namespace tinyxml2 {
+  class XMLElement;
+}
 
 namespace Drake {
 
@@ -25,7 +27,7 @@ namespace Drake {
     template <typename ScalarType> using InputVector = Eigen::Matrix<ScalarType,1,1>;
     template <typename ScalarType> using OutputVector = Eigen::Matrix<ScalarType,6,1>;
 
-    RigidBodyPropellor(RigidBodySystem* sys, TiXmlElement* node, std::string name);
+    RigidBodyPropellor(RigidBodySystem* sys, tinyxml2::XMLElement* node, std::string name);
 
     // some quick thoughts:
     // might want to be nonlinear in the robot state, but linear in the prop input.
