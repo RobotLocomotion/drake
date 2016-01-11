@@ -12,10 +12,10 @@ nq = r.getNumPositions();
 nom_data = load('../../../examples/Atlas/data/atlas_fp.mat');
 q_nom = nom_data.xstar(1:nq);
 q_seed = q_nom+0.1*randn(nq,1);
-qdot = randn(nq,1);
+v = randn(r.getNumVelocities(),1);
 
 display('Check the CoM with robot only');
-kinsol = doKinematics(r,q_seed,true,true,qdot);
+kinsol = doKinematics(r,q_seed,true,true,v);
 [com_mex,J_mex,dJ_mex] = r.getCOM(kinsol);
 [com_mex1,J_mex1,dJ_mex1] = r.getCOM(kinsol,1);
 valuecheck(com_mex,com_mex1);
@@ -24,7 +24,7 @@ valuecheck(dJ_mex,dJ_mex1);
 valuecheck(J_mex(1:3,1:3),eye(3),1e-6);
 
 display('Check if MATLAB and mex are consistent for robot only');
-kinsol = doKinematics(r,q_seed,true,false,qdot);
+kinsol = doKinematics(r,q_seed,true,false,v);
 [com,J,dJ] = r.getCOM(kinsol);
 [com1,J1,dJ1] = r.getCOM(kinsol,1);
 
@@ -44,10 +44,10 @@ warning(w);
 nq_aff = length(r.getStateFrame.frame{2}.getCoordinateNames())/2;
 q_seed_aff = zeros(nq_aff,1);
 nq = r.getNumPositions();
-qdot = randn(nq,1);
+v = randn(r.getNumVelocities(),1);
 
 display('Check if MATLAB and mex are consistent for robot and affordance together');
-kinsol = doKinematics(r,[q_seed;q_seed_aff],true,true,qdot);
+kinsol = doKinematics(r,[q_seed;q_seed_aff],true,true,v);
 [com_mex,J_mex,dJ_mex] = r.getCOM(kinsol);
 [com_mex1,J_mex1,dJ_mex1] = r.getCOM(kinsol,1);
 [com_mex2,J_mex2,dJ_mex2] = r.getCOM(kinsol,2);
@@ -58,7 +58,7 @@ valuecheck(J_mex,J_mex1);
 valuecheck(dJ_mex,dJ_mex1);
 valuecheck(J_mex(1:3,1:3),eye(3),1e-6);
 
-kinsol = doKinematics(r,[q_seed;q_seed_aff],true,false,qdot);
+kinsol = doKinematics(r,[q_seed;q_seed_aff],true,false,v);
 [com,J,dJ] = r.getCOM(kinsol);
 [com1,J1,dJ1] = r.getCOM(kinsol,1);
 [com2,J2,dJ2] = r.getCOM(kinsol,2);

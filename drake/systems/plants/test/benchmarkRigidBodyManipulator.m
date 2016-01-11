@@ -39,7 +39,7 @@ for scenario = [1 2]
 
     tic
     for i = 1 : iters
-      q = randn(robot.getNumPositions(), 1);
+      q = getRandomConfiguration(robot);
 
       if scenario == 1
         kinsol = robot.doKinematics(q, [], kinsol_options);

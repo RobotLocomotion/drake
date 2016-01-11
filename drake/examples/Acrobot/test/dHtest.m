@@ -1,6 +1,6 @@
 function dHtest
 p = RigidBodyManipulator('../Acrobot.urdf',struct('floating',true));
-q = randn(p.getNumPositions,1);
+q = getRandomConfiguration(p);
 v = randn(p.getNumPositions,1);
 
 [H_tv,dH_tv] = geval(@getH,q,v,struct('grad_method','taylorvar'));

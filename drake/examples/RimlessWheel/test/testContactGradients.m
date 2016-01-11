@@ -19,7 +19,7 @@ options.tol = 1e-4;
 [n,D,dn,dD] = geval(2,@contactConstraintsWrapper,p,x0(1:p.getNumPositions()),options);
 
 for i=1:100
-  q = randn(p.getNumPositions,1); 
+  q = getRandomConfiguration(p);
   [n,D,dn,dD] = geval(2,@contactConstraintsWrapper,p,q,options);
 end
 

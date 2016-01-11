@@ -36,7 +36,7 @@ valuecheck(x0,x02(xind),1e-4);
 w = warning('off','Drake:RigidBodyManipulator:collisionDetect:doKinematicsMex');
 for i=1:100
   q = getRandomConfiguration(getManipulator(m_rpy));
-  qd = rand(nq,1)-.5; u = rand(getNumInputs(m_rpy),1)-.5;
+  qd = rand(getNumVelocities(m_rpy),1)-.5; u = rand(getNumInputs(m_rpy),1)-.5;
 
   kinsol = doKinematics(m_rpy,q,true,false,qd);
   [pt,J,dJ] = terrainContactPositions(m_rpy,kinsol);

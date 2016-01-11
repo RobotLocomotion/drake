@@ -74,8 +74,9 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
       
       n_vars = 2*nX + nU + 1 + obj.nC*(2+obj.nD) + obj.nJL;
       cnstr = FunctionHandleConstraint(zeros(nX,1),zeros(nX,1),n_vars,@obj.dynamics_constraint_fun);
-      
-      [~,~,~,~,~,~,~,mu] = obj.plant.contactConstraints(zeros(nq,1),false,obj.options.active_collision_options);
+      q0 = getZeroConfiguration(obj.plant);
+
+      [~,~,~,~,~,~,~,mu] = obj.plant.contactConstraints(q0,false,obj.options.active_collision_options);
       
       for i=1:obj.N-1,
 %         dyn_inds{i} = [obj.h_inds(i);obj.x_inds(:,i);obj.x_inds(:,i+1);obj.u_inds(:,i);obj.l_inds(:,i);obj.ljl_inds(:,i)];
@@ -83,7 +84,7 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
         constraints{i} = cnstr;
         
         obj = obj.addConstraint(constraints{i}, dyn_inds{i});
-        
+
         if obj.nC > 0
           % indices for (i) gamma
           gamma_inds = obj.l_inds(obj.nD+2:obj.nD+2:end,i);
@@ -118,7 +119,7 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
           % joint limit linear complementarity constraint
           % lambda_jl /perp [q - lb_jl; -q + ub_jl]
           W_jl = zeros(obj.nJL);
-          [r_jl,M_jl] = jointLimitConstraints(obj.plant,zeros(nq,1));
+          [r_jl,M_jl] = jointLimitConstraints(obj.plant,q0);
           jlcompl_constraints{i} = LinearComplementarityConstraint(W_jl,r_jl,M_jl,obj.options.lincc_mode,obj.options.jlcompl_slack);
           
           obj = obj.addConstraint(jlcompl_constraints{i},[obj.x_inds(1:nq,i+1);obj.ljl_inds(:,i)]);
@@ -282,7 +283,7 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
     
     function obj = setupVariables(obj,N)
       obj = setupVariables@DirectTrajectoryOptimization(obj,N);
-      [~,normal,d] = obj.plant.contactConstraints(zeros(obj.plant.getNumPositions,1), false, obj.options.active_collision_options);
+      [~,normal,d] = obj.plant.contactConstraints(getZeroConfiguration(obj.plant), false, obj.options.active_collision_options);
       obj.nC = size(normal, 2);
       obj.nD = 2*length(d);
       
