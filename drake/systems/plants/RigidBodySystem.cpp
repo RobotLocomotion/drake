@@ -266,6 +266,8 @@ void parseForceElement(RigidBodySystem *sys, TiXmlElement* node) {
 
   if (TiXmlElement* propellor_node = node->FirstChildElement("propellor")) {
     sys->addForceElement(allocate_shared<RigidBodyPropellor>(Eigen::aligned_allocator<RigidBodyPropellor>(),sys,propellor_node,name));
+  } else if (TiXmlElement* spring_damper_node = node->FirstChildElement("linear_spring_damper")) {
+    sys->addForceElement(allocate_shared<RigidBodySpringDamper>(Eigen::aligned_allocator<RigidBodySpringDamper>(),sys,spring_damper_node,name));
   }
 }
 

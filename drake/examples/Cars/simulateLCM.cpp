@@ -71,7 +71,8 @@ int main(int argc, char* argv[]) {
   // todo: consider moving this logic into the RigidBodySystem class so it can be reused
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
 
-  auto tree = make_shared<RigidBodyTree>(argv[1],floating_base_type);
+  auto rigid_body_sys = make_shared<RigidBodySystem>(argv[1],floating_base_type);
+  auto const & tree = rigid_body_sys->getRigidBodyTree();
   for (int i=2; i<argc; i++)
     tree->addRobotFromURDF(argv[i],DrakeJoint::FIXED);  // add environment
 
@@ -89,7 +90,6 @@ int main(int argc, char* argv[]) {
   }
 
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
-  auto rigid_body_sys = make_shared<RigidBodySystem>(tree);
 
   MatrixXd Kp(getNumInputs(*rigid_body_sys),tree->num_positions),
       Kd(getNumInputs(*rigid_body_sys),tree->num_velocities);
