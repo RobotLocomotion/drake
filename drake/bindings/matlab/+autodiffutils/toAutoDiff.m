@@ -1,4 +1,4 @@
-function obj = newAutoDiff(value, derivatives)
+function obj = toAutoDiff(value, derivatives)
 
 if nargin < 2
   derivatives = eye(numel(value));

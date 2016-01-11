@@ -17,7 +17,7 @@
 %pythoncode %{
 import numpy
 
-def newAutoDiff(value, derivatives=None):
+def toAutoDiff(value, derivatives=None):
     value = numpy.asarray(value)
     if derivatives is None:
         derivatives = numpy.eye(value.size, value.size)

@@ -2,7 +2,7 @@ from __future__ import print_function
 import unittest
 import numpy as np
 import pydrake
-from pydrake.autodiffutils import newAutoDiff
+from pydrake.autodiffutils import toAutoDiff
 import os.path
 
 class TestRBMForwardKin(unittest.TestCase):
@@ -19,8 +19,8 @@ class TestRBMForwardKin(unittest.TestCase):
     def testFK_gradient(self):
         r = pydrake.rbtree.RigidBodyTree(os.path.join(pydrake.getDrakePath(), "examples/Pendulum/Pendulum.urdf"))
 
-        q = newAutoDiff(np.zeros((7,1)), np.eye(7, 7))
-        v = newAutoDiff(np.zeros((7,1)), np.zeros((7, 7)))
+        q = toAutoDiff(np.zeros((7,1)), np.eye(7, 7))
+        v = toAutoDiff(np.zeros((7,1)), np.zeros((7, 7)))
         kinsol = r.doKinematics(q, v)
 
         point = np.ones((3,1))

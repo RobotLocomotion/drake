@@ -6,8 +6,8 @@ r = rbtree.RigidBodyTree(fullfile(getDrakePath(), 'examples/Pendulum/Pendulum.ur
 valuecheck(r.num_positions, 7);
 valuecheck(r.num_velocities, 7);
 
-q = autodiffutils.newAutoDiff(zeros(7,1), eye(7));
-v = autodiffutils.newAutoDiff(zeros(7,1), zeros(7, 7));
+q = autodiffutils.toAutoDiff(zeros(7,1), eye(7));
+v = autodiffutils.toAutoDiff(zeros(7,1), zeros(7, 7));
 kinsol = r.doKinematics(q, v);
 point = ones(3,1);
 p = r.forwardKin(kinsol, point, 2, 0, 0);
