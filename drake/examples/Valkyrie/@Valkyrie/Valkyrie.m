@@ -238,7 +238,7 @@ classdef Valkyrie < TimeSteppingRigidBodyManipulator & Biped
   end
 
   properties
-    fixed_point_file;
+    fixed_point_file = fullfile(getDrakePath,'examples','Valkyrie','data','valkyrie_fp_june2015_30joints_one_neck.mat');
     default_footstep_params = struct('nom_forward_step', 0.25,... % m
                                       'max_forward_step', 0.35,...% m
                                       'max_backward_step', 0.2,...% m

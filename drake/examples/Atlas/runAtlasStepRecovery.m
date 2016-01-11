@@ -115,7 +115,7 @@ for iter = 1:3
 
   x0 = traj.eval(tsample(end));
 
-  bipedUtil.plotWalkingTraj(r, traj, walking_plan_data);
+  r.plotWalkingTraj(traj, walking_plan_data);
 
   % keyboard();
 

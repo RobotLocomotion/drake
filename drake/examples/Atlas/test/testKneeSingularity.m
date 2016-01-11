@@ -90,7 +90,7 @@ sys = mimoCascade(sys,v,[],[],output_select);
 % Simulate and draw the result
 T = plan.duration + 1;
 ytraj = simulate(sys, [0, T], x0, struct('gui_control_interface', true));
-[com, rms_com] = bipedUtil.plotWalkingTraj(r, ytraj, plan);
+[com, rms_com] = r.plotWalkingTraj(ytraj, plan);
 
 v.playback(ytraj, struct('slider', true));
 
