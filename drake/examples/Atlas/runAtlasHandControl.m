@@ -8,6 +8,8 @@ if ~checkDependency('gurobi')
   return;
 end
 
+import bipedControllers.*
+
 path_handle = addpathTemporary(fullfile(getDrakePath(), 'examples', 'ZMP'));
 
 % put robot in a random x,y,yaw position and balance for 2 seconds
@@ -94,9 +96,9 @@ manip_plan_data = QPLocomotionPlanSettings.fromQuasistaticQTraj(r,PPTrajectory(q
 r_arm_idx = r.findPositionIndices('r_arm');
 
 manip_plan_data.untracked_joint_inds = r_arm_idx;
-control = bipedControllers.InstantaneousQPController(r, []);
-planeval = bipedControllers.BipedPlanEval(r, QPLocomotionPlanCPPWrapper(manip_plan_data));
-plancontroller = bipedControllers.BipedPlanEvalAndControlSystem(r, control, planeval);
+control = InstantaneousQPController(r, []);
+planeval = BipedPlanEval(r, QPLocomotionPlanCPPWrapper(manip_plan_data));
+plancontroller = BipedPlanEvalAndControlSystem(r, control, planeval);
 
 ins(1).system = 2;
 ins(1).input = 2;
