@@ -161,17 +161,10 @@ namespace Drake {
       Eigen::Matrix<double,6,1> f_ext;
 
       f_ext << scale_factor_moment*u(0)*axis, scale_factor_thrust*u(0)*axis;
-      auto J = sys->getRigidBodyTree()->geometricJacobian(rigid_body_state, 0, frame->frame_index, 0);
-      return J.transpose()*f_ext;
-//      auto J = sys->getRigidBodyTree()->geometricJacobian(rigid_body_state, 0, frame->body->body_index, 0);
-//      return J.transpose()*transformSpatialForce(frame->transform_to_body,f_ext);
-
-      /*
-      f_ext << scale_factor_thrust*u(0)*axis, scale_factor_moment*u(0)*axis;
-      const Eigen::Vector3d origin = Eigen::Vector3d::Zero();
-      auto J = sys->getRigidBodyTree()->forwardKinJacobian(rigid_body_state,origin,frame->frame_index,0,1,false);
-      return J.transpose()*f_ext;
-       */
+      auto J = sys->getRigidBodyTree()->geometricJacobian(rigid_body_state, 0, frame->frame_index, frame->frame_index);
+      KinematicPath path = sys->getRigidBodyTree()->findKinematicPath(0, frame->frame_index);
+      auto J_full = sys->getRigidBodyTree()->compactToFull(J, path.joint_path, false);
+      return J_full.transpose()*f_ext;
     }
 
   private:
@@ -198,6 +191,7 @@ namespace Drake {
       const Eigen::Vector3d origin = Eigen::Vector3d::Zero();
       auto xA_in_B = sys->getRigidBodyTree()->forwardKin(rigid_body_state,origin,frameA->frame_index,frameB->frame_index,0);
       auto JA_in_B = sys->getRigidBodyTree()->forwardKinJacobian(rigid_body_state,origin,frameA->frame_index,frameB->frame_index,0,false);
+       // todo: use transformPointsJacobian
 
       double length = xA_in_B.norm() + EPSILON;
       double vel = (JA_in_B*rigid_body_state.getV()).norm();
