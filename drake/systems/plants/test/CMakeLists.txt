@@ -60,3 +60,7 @@ if (MATLAB_FOUND)
   endmacro()
   add_ikoptions_mex(testIKoptionsmex)
 endif()
+
+add_executable(testMassSpringDamper testMassSpringDamper.cpp)
+target_link_libraries(testMassSpringDamper drakeRBSystem)
+add_test(NAME testMassSpringDamper COMMAND testMassSpringDamper)

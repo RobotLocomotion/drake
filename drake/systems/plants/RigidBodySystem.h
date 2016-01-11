@@ -140,6 +140,22 @@ namespace Drake {
     std::string name;
   };
 
+  /** spatialForceInFrameToJointTorque
+   * @brief helper function for rigid body force elements.  todo: move this into RigidBodyTree?
+   */
+  Eigen::VectorXd spatialForceInFrameToJointTorque(const RigidBodyTree* tree, const KinematicsCache<double>& rigid_body_state, const RigidBodyFrame* frame, const Eigen::Matrix<double,6,1>& force) {
+    auto T_frame_to_world = tree->relativeTransform(rigid_body_state, 0, frame->frame_index);
+    auto force_in_world = transformSpatialForce(T_frame_to_world, force);
+    std::vector<int> v_indices;
+    auto J = tree->geometricJacobian(rigid_body_state, 0, frame->frame_index, 0, false, &v_indices);
+    Eigen::VectorXd tau = Eigen::VectorXd::Zero(tree->num_velocities);
+    for (int i=0; i<v_indices.size(); i++) {
+      tau(v_indices[i]) = J.col(i).dot(force_in_world);
+//      std::cout << " f_" << tree->getVelocityName(v_indices[i]) << " = " << tau(v_indices[i]) << std::endl;
+    }
+    return tau;
+  }
+
   // todo: insert a RigidBodyForceImpl with CRTP here once I go back and template these methods
 
   /** RigidBodyPropellor
@@ -158,16 +174,9 @@ namespace Drake {
     // and that I want a more general way to specify the input-output relationships for miso functions
 
     virtual Eigen::VectorXd output(const double& t, /* todo: add force state here */ const Eigen::VectorXd& u, const KinematicsCache<double>& rigid_body_state) const override {
-      using namespace Eigen;
-      Matrix<double,6,1> f_ext;
-      const auto & tree = sys->getRigidBodyTree();
-
-      f_ext << scale_factor_moment*u(0)*axis, scale_factor_thrust*u(0)*axis;
-      std::vector<int> v_indices;
-      auto J = tree->geometricJacobian(rigid_body_state, 0, frame->frame_index, frame->frame_index, false, &v_indices);
-      VectorXd tau = VectorXd::Zero(tree->num_velocities);
-      for (auto const& ind : v_indices) tau(ind) = J.col(ind).dot(f_ext);
-      return tau;
+      Eigen::Matrix<double,6,1> force;
+      force << scale_factor_moment*u(0)*axis, scale_factor_thrust*u(0)*axis;
+      return spatialForceInFrameToJointTorque(sys->getRigidBodyTree().get(),rigid_body_state,frame.get(),force);
     }
 
   private:
@@ -191,19 +200,30 @@ namespace Drake {
     virtual ~RigidBodySpringDamper() {}
 
     virtual Eigen::VectorXd output(const double& t, /* todo: add force state here */ const Eigen::VectorXd& u, const KinematicsCache<double>& rigid_body_state) const override {
-      const Eigen::Vector3d origin = Eigen::Vector3d::Zero();
-      auto xA_in_B = sys->getRigidBodyTree()->forwardKin(rigid_body_state,origin,frameA->frame_index,frameB->frame_index,0);
+      using namespace Eigen;
+      const Vector3d origin = Vector3d::Zero();
+      Vector3d xA_in_B = sys->getRigidBodyTree()->forwardKin(rigid_body_state,origin,frameA->frame_index,frameB->frame_index,0);
+      Vector3d xB_in_A = sys->getRigidBodyTree()->forwardKin(rigid_body_state,origin,frameB->frame_index,frameA->frame_index,0);
       auto JA_in_B = sys->getRigidBodyTree()->forwardKinJacobian(rigid_body_state,origin,frameA->frame_index,frameB->frame_index,0,false);
        // todo: use transformPointsJacobian
 
-      double length = xA_in_B.norm() + EPSILON;
-      double vel = (JA_in_B*rigid_body_state.getV()).norm();
-      double force_magnitude = stiffness*(rest_length - length) - damping*vel;
+      double length = xA_in_B.norm();
+      double vel = (JA_in_B*rigid_body_state.getV()).dot(xA_in_B)/(length+EPSILON);
+      double force_magnitude = stiffness*(length - rest_length) + damping*vel;
+
+//      std::cout << "l=" << length << ", v=" << vel << ", f=" << force_magnitude << std::endl;
+
+      Matrix<double,6,1> force = Matrix<double,6,1>::Zero();
 
       // apply (force_magnitude/length)*xA_in_B to B
-      // apply (force_magnitude/length)*xB_in_A to A
+      force.tail<3>() = (force_magnitude/(length+EPSILON))*xA_in_B;
+      auto tau = spatialForceInFrameToJointTorque(sys->getRigidBodyTree().get(),rigid_body_state,frameB.get(),force);
 
-      return Eigen::VectorXd::Zero(sys->getRigidBodyTree()->num_velocities);
+      // apply (force_magnitude/length)*xB_in_A to A
+      force.tail<3>() = (force_magnitude/(length+EPSILON))*xB_in_A;
+      tau += spatialForceInFrameToJointTorque(sys->getRigidBodyTree().get(),rigid_body_state,frameA.get(),force);
+
+      return tau;
     }
 
   private:

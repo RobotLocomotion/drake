@@ -16,7 +16,7 @@ namespace Drake {
 
   // simulation options
   struct SimulationOptions {
-    double realtime_factor;  // 1 means try to run at realtime speed, < 0 is run as fast as possible
+    double realtime_factor;  // 1 means try to run at realtime speed, 0 is run as fast as possible, < 0 means use default
     double initial_step_size;
     double timeout_seconds;
 
@@ -51,8 +51,9 @@ namespace Drake {
    *
    */
   template <typename System>
-  void simulate(const System& sys, double t0, double tf, const typename System::template StateVector<double>& x0, const SimulationOptions& options) {
+  void simulate(const System& sys, double t0, double tf, const typename System::template StateVector<double>& x0, SimulationOptions& options) {
     double t = t0, dt;
+    if (options.realtime_factor < 0.0) options.realtime_factor = 0.0;
 
     TimePoint start = TimeClock::now();
     typename System::template StateVector<double> x(x0), xdot;

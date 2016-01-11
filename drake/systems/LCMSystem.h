@@ -212,7 +212,7 @@ namespace Drake {
       }
 
       SimulationOptions lcm_options = options;
-      lcm_options.realtime_factor = 1.0;
+      if (lcm_options.realtime_factor<0.0) lcm_options.realtime_factor = 1.0;
       simulate(*lcm_sys, t0, tf, x0, lcm_options);
 
       if (has_lcm_input) {
