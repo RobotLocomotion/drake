@@ -79,8 +79,8 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
     for (int i=0; i<phi.rows(); i++) {
       if (phi(i)<0.0) { // then i have contact
         // todo: move this entire block to a shared an updated "contactJacobian" method in RigidBodyTree
-        auto JA = tree->forwardKinJacobian(kinsol, xA.col(i), bodyA_idx[i], 0, 0, false);
-        auto JB = tree->forwardKinJacobian(kinsol, xB.col(i), bodyB_idx[i], 0, 0, false);
+        auto JA = tree->transformPointsJacobian(kinsol, xA.col(i), bodyA_idx[i], 0, false);
+        auto JB = tree->transformPointsJacobian(kinsol, xB.col(i), bodyB_idx[i], 0, false);
         Vector3d this_normal = normal.col(i);
 
         // compute the surface tangent basis
@@ -121,8 +121,8 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
           // relative_acceleration = J*vdot + R*(JAdotv - JBdotv) // uses the standard dnormal/dq = 0 assumption
 
           prog.addContinuousVariables(3,"contact normal force");
-          auto JAdotv = tree->forwardJacDotTimesV(kinsol, xA.col(i).eval(), bodyA_idx[i], 0, 0);
-          auto JBdotv = tree->forwardJacDotTimesV(kinsol, xB.col(i).eval(), bodyB_idx[i], 0, 0);
+          auto JAdotv = tree->transformPointsJacobianDotTimesV(kinsol, xA.col(i).eval(), bodyA_idx[i], 0);
+          auto JBdotv = tree->transformPointsJacobianDotTimesV(kinsol, xB.col(i).eval(), bodyB_idx[i], 0);
 
           prog.addLinearEqualityConstraint(J,desired_relative_acceleration - R*(JAdotv - JBdotv),{vdot});
           H_and_neg_JT.conservativeResize(NoChange,H_and_neg_JT.cols()+3);
