@@ -156,7 +156,7 @@ set(spotless_GIT_TAG 2b0c25ebb1733950284c7e0be55a1a84304f7543)
 set(spotless_IS_CMAKE_POD TRUE)
 set(spotless_IS_PUBLIC TRUE)
 set(textbook_GIT_REPOSITORY https://github.com/RussTedrake/underactuated.git)
-set(textbook_GIT_TAG master)  # for now, let's always pull the latest and greatest
+set(textbook_GIT_TAG 75248cc30d1575460b838de71cc9a0472c551a7e)  # todo: always pull master? (but was having problems on the update step on drake003)
 set(textbook_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/drake/doc/textbook")
 set(textbook_BUILD_COMMAND ${PYTHON_EXECUTABLE} extract_examples.py underactuated.html ./examples)
 set(textbook_IS_PUBLIC TRUE)
