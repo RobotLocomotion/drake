@@ -202,10 +202,9 @@ namespace Drake {
     virtual Eigen::VectorXd output(const double& t, /* todo: add force state here */ const Eigen::VectorXd& u, const KinematicsCache<double>& rigid_body_state) const override {
       using namespace Eigen;
       const Vector3d origin = Vector3d::Zero();
-      Vector3d xA_in_B = sys->getRigidBodyTree()->forwardKin(rigid_body_state,origin,frameA->frame_index,frameB->frame_index,0);
-      Vector3d xB_in_A = sys->getRigidBodyTree()->forwardKin(rigid_body_state,origin,frameB->frame_index,frameA->frame_index,0);
-      auto JA_in_B = sys->getRigidBodyTree()->forwardKinJacobian(rigid_body_state,origin,frameA->frame_index,frameB->frame_index,0,false);
-       // todo: use transformPointsJacobian
+      Vector3d xA_in_B = sys->getRigidBodyTree()->transformPoints(rigid_body_state,origin,frameA->frame_index,frameB->frame_index);
+      Vector3d xB_in_A = sys->getRigidBodyTree()->transformPoints(rigid_body_state,origin,frameB->frame_index,frameA->frame_index);
+      auto JA_in_B = sys->getRigidBodyTree()->transformPointsJacobian(rigid_body_state,origin,frameA->frame_index,frameB->frame_index,false);
 
       double length = xA_in_B.norm();
       double vel = (JA_in_B*rigid_body_state.getV()).dot(xA_in_B)/(length+EPSILON);

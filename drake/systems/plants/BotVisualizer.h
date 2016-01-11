@@ -137,10 +137,11 @@ namespace Drake {
 
       int i, j;
       for (i = 0; i < tree->bodies.size(); i++) {
-        auto transform = tree->relativeTransform(cache, i, 0);
+        auto transform = tree->relativeTransform(cache, 0, i);
         auto quat = rotmat2quat(transform.linear());
         std::vector<float> &position = draw_msg.position[i];
-        for (j = 0; j < 3; j++) position[j] = static_cast<float>(transform.translation()(j));
+        auto translation = transform.translation();
+        for (j = 0; j < 3; j++) position[j] = static_cast<float>(translation(j));
         std::vector<float> &quaternion = draw_msg.quaternion[i];
         for (j = 0; j < 4; j++) quaternion[j] = static_cast<float>(quat(j));
       }
