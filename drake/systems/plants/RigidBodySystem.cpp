@@ -8,6 +8,11 @@ using namespace std;
 using namespace Eigen;
 using namespace Drake;
 
+size_t RigidBodySystem::getNumInputs(void) const {
+  size_t num = tree->actuators.size();
+  for (auto const & f : force_elements) { num += f->getNumInputs(); }
+  return num;
+}
 
 RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, const RigidBodySystem::StateVector<double>& x, const RigidBodySystem::InputVector<double>& u) const {
   using namespace std;
@@ -31,29 +36,21 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
   auto H = tree->massMatrix(kinsol);
   Eigen::MatrixXd H_and_neg_JT = H;
 
-  { // loop through rigid body force elements and accumulate f_ext
+  VectorXd C = tree->dynamicsBiasTerm(kinsol,f_ext);
+  if (num_actuators > 0) C -= tree->B*u.topRows(num_actuators);
+
+  { // loop through rigid body force elements
 
     // todo: distinguish between AppliedForce and ConstraintForce
-    // todo: have AppliedForce output tau (instead of f_ext).  it's more direct, and just as easy to compute.
 
-    int u_index = 0;
-    const NullVector<double> force_state;  // todo:  will have to handle this case
-    for (auto const & prop : props) {
-      RigidBodyFrame* frame = prop->getFrame();
-      RigidBody* body = frame->body.get();
-      int num_inputs = 1;  // todo: generalize this
-      RigidBodyPropellor::InputVector<double> u_i(u.middleRows(u_index,num_inputs));
-
-      // todo: push the frame to body transform into the dynamicsBias method?  (could use the relativeTransform method)
-      Matrix<double,6,1> f_ext_i = transformSpatialForce(frame->transform_to_body,prop->output(t,force_state,u_i,kinsol));
-      if (f_ext.find(body)==f_ext.end()) f_ext[body] = f_ext_i;
-      else f_ext[body] = f_ext[body]+f_ext_i;
+    size_t u_index = 0;
+    for (auto const & f : force_elements) {
+      size_t num_inputs = f->getNumInputs();
+      VectorXd force_input(u.middleRows(u_index,num_inputs));
+      C -= f->output(t,force_input,kinsol);
       u_index += num_inputs;
     }
   }
-
-  VectorXd C = tree->dynamicsBiasTerm(kinsol,f_ext);
-  if (num_actuators > 0) C -= tree->B*u.topRows(num_actuators);
 
   { // apply joint limit forces
     for (auto const& b : tree->bodies) {
@@ -215,7 +212,7 @@ RigidBodySystem::StateVector<double> Drake::getInitialState(const RigidBodySyste
 }
 
 RigidBodyPropellor::RigidBodyPropellor(RigidBodySystem *sys, TiXmlElement *node, std::string name) :
-        sys(sys), name(name),
+        RigidBodyForceElement(sys,name),
         scale_factor_thrust(1.0), scale_factor_moment(1.0),
         lower_limit(-numeric_limits<double>::infinity()),
         upper_limit(numeric_limits<double>::infinity())
@@ -241,6 +238,27 @@ RigidBodyPropellor::RigidBodyPropellor(RigidBodySystem *sys, TiXmlElement *node,
   parseScalarAttribute(node,"upper_limit",upper_limit);
 
   // todo: parse visual info?
+}
+
+RigidBodySpringDamper::RigidBodySpringDamper(RigidBodySystem *sys, TiXmlElement *node, std::string name) :
+        RigidBodyForceElement(sys,name),
+        stiffness(0.0), damping(0.0), rest_length(0.0)
+{
+  auto tree = sys->getRigidBodyTree();
+
+  parseScalarAttribute(node,"rest_length",rest_length);
+  parseScalarAttribute(node,"stiffness",stiffness);
+  parseScalarAttribute(node,"damping",damping);
+
+  TiXmlElement* link_ref_node = node->FirstChildElement("link1");
+  if (!link_ref_node) throw runtime_error("linear_spring_damper " + name + " is missing the link1 node");
+  frameA = allocate_shared<RigidBodyFrame>(aligned_allocator<RigidBodyFrame>(),tree.get(),link_ref_node,link_ref_node,name+"FrameA");
+  tree->addFrame(frameA);
+
+  link_ref_node = node->FirstChildElement("link2");
+  if (!link_ref_node) throw runtime_error("linear_spring_damper " + name + " is missing the link2 node");
+  frameB = allocate_shared<RigidBodyFrame>(aligned_allocator<RigidBodyFrame>(),tree.get(),link_ref_node,link_ref_node,name+"FrameB");
+  tree->addFrame(frameB);
 }
 
 void parseForceElement(RigidBodySystem *sys, TiXmlElement* node) {
