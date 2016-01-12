@@ -436,6 +436,14 @@ void setLimits(TiXmlElement *node, FixedAxisOneDoFJoint<JointType> *fjoint) {
     parseScalarAttribute(limit_node,"lower",lower);
     parseScalarAttribute(limit_node,"upper",upper);
     fjoint->setJointLimits(lower,upper);
+
+    double effort = numeric_limits<double>::infinity();
+    parseScalarAttribute(limit_node,"effort",effort);
+    fjoint->setEffortLimit(effort);
+
+    double velocity = numeric_limits<double>::infinity();
+    parseScalarAttribute(limit_node,"velocity",velocity);
+    fjoint->setVelocityLimit(velocity);
   }
 }
 
