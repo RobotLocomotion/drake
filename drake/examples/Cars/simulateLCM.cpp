@@ -109,8 +109,8 @@ int main(int argc, char* argv[]) {
       } else if (strncmp(tree->actuators[actuator_idx].name.c_str(),"throttle",8)==0) { // intentionally match all throttle_ inputs
         auto const &b = tree->actuators[actuator_idx].body;
         Kd(actuator_idx,b->velocity_num_start) = kThrottle;   // throttle
-        map_driving_cmd_to_x_d(tree->num_positions+b->velocity_num_start,1) = 1;  // throttle (velocity) command
-        map_driving_cmd_to_x_d(tree->num_positions+b->velocity_num_start,2) = -1; // braking (velocity) command
+        map_driving_cmd_to_x_d(tree->num_positions+b->velocity_num_start,1) = 20;  // throttle (velocity) command
+        map_driving_cmd_to_x_d(tree->num_positions+b->velocity_num_start,2) = -20; // braking (velocity) command
       }
     }
     }
