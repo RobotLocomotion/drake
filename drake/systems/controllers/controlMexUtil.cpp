@@ -251,43 +251,12 @@ void parsePositionIndices(const mxArray *pobj, std::map<std::string, VectorXi> &
   return;
 }
 
-void parseContactGroups(const mxArray* pobj, std::vector<RobotPropertyCache::ContactGroupNameToContactPointsMap> &contact_groups) {
-  const int num_groups = mxGetNumberOfElements(pobj);
-  contact_groups.reserve(num_groups);
-
-  for (int i=0; i < num_groups; ++i) {
-    RobotPropertyCache::ContactGroupNameToContactPointsMap groups;
-    const mxArray* cell_obj = mxGetCell(pobj, i);
-    int num_fields = mxGetNumberOfFields(cell_obj);
-    for (int j=0; j < num_fields; ++j) {
-      const mxArray* pfield = mxGetFieldByNumber(cell_obj, 0, j);
-      if (mxGetM(pfield) != 3) {
-        mexErrMsgTxt("expected contact points of size 3xN");
-      }
-      Map<Matrix<double, 3, Dynamic>> pts(mxGetPrSafe(pfield), 3, mxGetN(pfield));
-      groups[std::string(mxGetFieldNameByNumber(cell_obj, j))] = pts;
-    }
-    contact_groups.push_back(groups);
-  }
-  return;
-}
-
 void parseRobotPropertyCache(const mxArray *rpc_obj, RobotPropertyCache *rpc) {
-  const mxArray *pobj;
-
   parsePositionIndices(mxGetFieldSafe(rpc_obj, "position_indices"), rpc->position_indices);
-  parseContactGroups(mxGetFieldSafe(rpc_obj, "contact_groups"), rpc->contact_groups);
 
   rpc->body_ids.r_foot = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "r_foot")) - 1;
   rpc->body_ids.l_foot = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "l_foot")) - 1;
-  rpc->body_ids.pelvis = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "pelvis")) - 1;
-
-  pobj = myGetField(rpc_obj, "actuated_indices");
-  Map<VectorXd>actuated_indices(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj));
-  rpc->actuated_indices = actuated_indices.cast<int>().array() - 1;
-
-  pobj = myGetField(rpc_obj, "num_bodies");
-  rpc->num_bodies = (int) mxGetScalar(pobj);
+  (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "pelvis")) - 1;
 
   return;
 }

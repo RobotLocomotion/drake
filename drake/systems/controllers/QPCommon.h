@@ -83,16 +83,11 @@ struct QPControllerState {
 struct BodyIdsCache {
   int r_foot;
   int l_foot;
-  int pelvis;
 };
    
 struct RobotPropertyCache {
-  typedef std::map<std::string, Eigen::Matrix3Xd> ContactGroupNameToContactPointsMap;
-  std::vector<ContactGroupNameToContactPointsMap> contact_groups; // one for each support
   std::map<std::string, Eigen::VectorXi> position_indices;
   BodyIdsCache body_ids;
-  Eigen::VectorXi actuated_indices;
-  int num_bodies;
 };
 
 struct VRefIntegratorParams {
