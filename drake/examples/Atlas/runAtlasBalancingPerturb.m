@@ -51,7 +51,6 @@ r_complete = r_complete.setInitialState(xstar_complete);
 r = r.setInitialState(xstar);
 v = r_complete.constructVisualizer;
 v.display_dt = 0.01;
-nq = getNumPositions(r);
 x0 = xstar;
 
 
@@ -93,6 +92,7 @@ ytraj = simulate(sys, [0, T], xstar_complete, struct('gui_control_interface', tr
 v.playback(ytraj, struct('slider', true));
 
 xf = ytraj.eval(ytraj.tspan(end));
+nq = getNumPositions(r);
 kinsol = doKinematics(r, xf(1:nq));
 comf = getCOM(r, kinsol);
 

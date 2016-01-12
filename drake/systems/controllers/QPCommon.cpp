@@ -202,7 +202,7 @@ double averageContactPointHeight(RigidBodyTree * r, const KinematicsCache<double
     const SupportStateElement& support = *support_it;
     for (auto contact_position_it = support.contact_pts.begin(); contact_position_it != support.contact_pts.end(); ++contact_position_it) {
       Vector3d contact_point = contact_position_it->head<3>(); // copy, ah well
-      contact_positions_world.col(col++) = r->forwardKin(cache, contact_point, support.body_idx, 0, 0);
+      contact_positions_world.col(col++) = r->transformPoints(cache, contact_point, support.body_idx, 0);
     }
   }
   double average_contact_point_height = contact_positions_world.row(2).mean();
@@ -302,8 +302,7 @@ void checkCentroidalMomentumMatchesTotalWrench(RigidBodyTree * r, KinematicsCach
     const auto& Bj = B.middleCols(beta_start, active_support_length);
     const auto& betaj = beta.segment(beta_start, active_support_length);
     Vector6d wrench_for_body_in_body_frame = Vector6d::Zero();
-    auto body_xyzquat = r->forwardKin(cache, Vector3d::Zero().eval(), 0, active_support.body_idx, 2);
-    Matrix3d R_world_to_body = quat2rotmat(body_xyzquat.tail<4>().eval());
+    Matrix3d R_world_to_body = r->relativeTransform(cache, active_support.body_idx, 0).linear();
 
     for (size_t k = 0; k < contact_pts.size(); k++) {
       // for (auto k = contact_pts.begin(); k!= contact_pts.end(); k++) {

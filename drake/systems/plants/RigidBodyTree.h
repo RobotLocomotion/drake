@@ -70,7 +70,9 @@ public:
 
   void compile(void);  // call me after the model is loaded
 
-  void getRandomConfiguration(Eigen::VectorXd& q, std::default_random_engine& generator) const;
+  Eigen::VectorXd getZeroConfiguration() const;
+
+  Eigen::VectorXd getRandomConfiguration(std::default_random_engine& generator) const;
 
   // akin to the coordinateframe names in matlab
   std::string getPositionName(int position_num) const;
@@ -284,35 +286,44 @@ public:
   Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorques(Eigen::MatrixBase<DerivedV> const & v) const;
 
   template <typename Scalar, typename DerivedPoints> // not necessarily any relation between the two; a major use case is having an AutoDiff KinematicsCache, but double points matrix
-  Eigen::Matrix<Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> forwardKin(
-      const KinematicsCache<Scalar> &cache, const Eigen::MatrixBase<DerivedPoints> &points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type) const
+  Eigen::Matrix<Scalar, 3, DerivedPoints::ColsAtCompileTime> transformPoints(
+      const KinematicsCache<Scalar> &cache, const Eigen::MatrixBase<DerivedPoints> &points, int from_body_or_frame_ind, int to_body_or_frame_ind) const
   {
-    cache.checkCachedKinematicsSettings(false, false, "forwardKin"); // rely on forwardJac for gradient cache check
+    static_assert(DerivedPoints::RowsAtCompileTime == 3 || DerivedPoints::RowsAtCompileTime == Eigen::Dynamic, "points argument has wrong number of rows");
+    auto T = relativeTransform(cache, to_body_or_frame_ind, from_body_or_frame_ind);
+    return T * points.template cast<Scalar>();
+  };
 
-    int npoints = static_cast<int>(points.cols());
+  template <typename Scalar>
+  Eigen::Matrix<Scalar, 4, 1> relativeQuaternion(const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind, int to_body_or_frame_ind) const {
+    return rotmat2quat(relativeTransform(cache, to_body_or_frame_ind, from_body_or_frame_ind).linear());
+  };
 
-    // compute rotation and translation
-    auto T = relativeTransform(cache, new_body_or_frame_ind, current_body_or_frame_ind);
-
-    // transform points to new frame
-    Eigen::Matrix<Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> x(SPACE_DIMENSION + rotationRepresentationSize(rotation_type), npoints);
-    x.template topRows<SPACE_DIMENSION>().noalias() = T * points.template cast<Scalar>();
-
-    // convert rotation representation
-    auto qrot = rotmat2Representation(T.linear(), rotation_type);
-    x.bottomRows(qrot.rows()).colwise() = qrot;
-
-    return x;
+  template <typename Scalar>
+  Eigen::Matrix<Scalar, 3, 1> relativeRollPitchYaw(const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind, int to_body_or_frame_ind) const {
+    return rotmat2rpy(relativeTransform(cache, to_body_or_frame_ind, from_body_or_frame_ind).linear());
   };
 
   template <typename Scalar, typename DerivedPoints>
-  Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> forwardKinJacobian(const KinematicsCache<Scalar>& cache, const Eigen::MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, bool in_terms_of_qdot) const;
+  Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> transformPointsJacobian(const KinematicsCache<Scalar>& cache, const Eigen::MatrixBase<DerivedPoints>& points, int from_body_or_frame_ind, int to_body_or_frame_ind, bool in_terms_of_qdot) const;
 
   template <typename Scalar>
-  Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> forwardKinPositionGradient(const KinematicsCache<Scalar>& cache, int npoints, int current_body_or_frame_ind, int new_body_or_frame_ind) const;
+  Eigen::Matrix<Scalar, QUAT_SIZE, Eigen::Dynamic> relativeQuaternionJacobian(const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind, int to_body_or_frame_ind, bool in_terms_of_qdot) const;
+
+  template <typename Scalar>
+  Eigen::Matrix<Scalar, RPY_SIZE, Eigen::Dynamic> relativeRollPitchYawJacobian(const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind, int to_body_or_frame_ind, bool in_terms_of_qdot) const;
+
+  template <typename Scalar>
+  Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> forwardKinPositionGradient(const KinematicsCache<Scalar>& cache, int npoints, int from_body_or_frame_ind, int to_body_or_frame_ind) const;
 
   template <typename Scalar, typename DerivedPoints>
-  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> forwardJacDotTimesV(const KinematicsCache<Scalar>& cache, const Eigen::MatrixBase<DerivedPoints>& points, int body_or_frame_ind, int base_or_frame_ind, int rotation_type) const;
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> transformPointsJacobianDotTimesV(const KinematicsCache<Scalar>& cache, const Eigen::MatrixBase<DerivedPoints>& points, int from_body_or_frame_ind, int to_body_or_frame_ind) const;
+
+  template <typename Scalar>
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> relativeQuaternionJacobianDotTimesV(const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind, int to_body_or_frame_ind) const;
+
+  template <typename Scalar>
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> relativeRollPitchYawJacobianDotTimesV(const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind, int to_body_or_frame_ind) const;
 
   template<typename Scalar>
   Eigen::Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> geometricJacobian(const KinematicsCache<Scalar>& cache, int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, bool in_terms_of_qdot = false, std::vector<int>* v_indices = nullptr) const;
@@ -329,6 +340,9 @@ public:
   template<typename Scalar>
   Eigen::Transform<Scalar, SPACE_DIMENSION, Eigen::Isometry> relativeTransform(const KinematicsCache<Scalar>& cache, int base_or_frame_ind, int body_or_frame_ind) const;
 
+  /** computeContactJacobians
+   * @brief Computes the jacobian for many points in the format currently used by matlab.  (possibly should be scheduled for deletion, taking accumulateContactJacobians with it)
+   */
   template <typename Scalar>
   void computeContactJacobians(const KinematicsCache<Scalar>& cache, Eigen::Ref<const Eigen::VectorXi> const & idxA, Eigen::Ref<const Eigen::VectorXi> const & idxB, Eigen::Ref<const Eigen::Matrix3Xd> const & xA, Eigen::Ref<const Eigen::Matrix3Xd> const & xB, Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> & J) const;
 

@@ -1,10 +1,8 @@
 function testKinematics
 % test if my kinematics computation is the same as the one in doKinematics
 p = RigidBodyManipulator([getDrakePath,'/examples/IRB140/urdf/irb_140_robotiq_simple_ati.urdf'],struct('floating',true));
-nq = p.getNumPositions();
-nv = p.getNumVelocities();
-q = randn(nq,1);
-v = randn(nv,1);
+q = getRandomConfiguration(p);
+v = randn(p.getNumVelocities(),1);
 q(1:6) = 0;
 v(1:6) = 0;
 kinsol = p.doKinematics(q,v,struct('use_mex',false));

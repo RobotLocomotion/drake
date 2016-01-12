@@ -62,14 +62,18 @@ namespace Drake {
       template<typename ScalarType> using OutputVector = Vector<ScalarType>;
       const static bool has_lcm_input = false;
 
-      LCMInputSystem(const std::shared_ptr<lcm::LCM> &lcm) { };
+      template <typename System>
+      LCMInputSystem(const System& wrapped_sys, const std::shared_ptr<lcm::LCM> &lcm) : all_zeros(Eigen::VectorXd::Zero(getNumInputs(wrapped_sys))) { };
 
       StateVector<double> dynamics(const double &t, const StateVector<double> &x,
                                    const InputVector<double> &u) const { return StateVector<double>(); }
 
       OutputVector<double> output(const double &t, const StateVector<double> &x, const InputVector<double> &u) const {
-        return OutputVector<double>();
+        return all_zeros;
       }
+
+    private:
+      OutputVector<double> all_zeros;
     };
 
     template<template<typename> class Vector>
@@ -80,7 +84,8 @@ namespace Drake {
       template<typename ScalarType> using OutputVector = Vector<ScalarType>;
       const static bool has_lcm_input = true;
 
-      LCMInputSystem(const std::shared_ptr<lcm::LCM> &lcm) {
+      template <typename System>
+      LCMInputSystem(const System& sys, const std::shared_ptr<lcm::LCM> &lcm) {
         lcm::Subscription* sub = lcm->subscribe(Vector<double>::channel(),&LCMInputSystem<Vector>::handleMessage,this);
         sub->setQueueCapacity(1);
       };
@@ -177,7 +182,7 @@ namespace Drake {
       throw std::runtime_error("bad LCM reference");
 
 //    typename System::template OutputVector<double> x = 1;  // useful for debugging
-    auto lcm_input = std::make_shared<internal::LCMInputSystem<System::template InputVector> >(lcm);
+    auto lcm_input = std::make_shared<internal::LCMInputSystem<System::template InputVector> >(*sys,lcm);
     auto lcm_output = std::make_shared<internal::LCMOutputSystem<System::template OutputVector> >(lcm);
     auto lcm_sys = cascade(lcm_input,cascade(sys,lcm_output));
 

@@ -54,8 +54,6 @@ r = r.setInitialState(xstar);
 v = r.constructVisualizer;
 v.display_dt = 0.01;
 
-nq = getNumPositions(r);
-
 x0 = xstar;
 
 % Construct plan

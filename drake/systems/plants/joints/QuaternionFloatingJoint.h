@@ -128,10 +128,11 @@ public:
     return Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1>::Zero(getNumVelocities(), 1);
   }
 
-  virtual bool isFloating() const { return true; };
-  virtual std::string getPositionName(int index) const;
-  virtual std::string getVelocityName(int index) const;
-  virtual Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const; //override;
+  virtual bool isFloating() const override { return true; };
+  virtual std::string getPositionName(int index) const override;
+  virtual std::string getVelocityName(int index) const override;
+  virtual Eigen::VectorXd zeroConfiguration() const override;
+  virtual Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const override;
 
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW

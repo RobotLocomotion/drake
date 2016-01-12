@@ -2,7 +2,7 @@ function RelativeGazeDirConstraintTest(varargin)
 % NOTEST
 % Andres would update the RelativeGazeDirConstraint
   r = RigidBodyManipulator(strcat(getDrakePath(),'/examples/PR2/pr2.urdf'));
-  q_nom = zeros(r.getNumPositions(),1);
+  q_nom = getZeroConfiguration(r);
   constraintTester('RelativeGazeDirConstraintTest', r, @makeCon, @(r) q_nom, @(r) q_nom, varargin{:});
 end
 
