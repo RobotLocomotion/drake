@@ -7,6 +7,7 @@
 using namespace std;
 using namespace Eigen;
 using namespace Drake;
+using namespace tinyxml2;
 
 
 RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, const RigidBodySystem::StateVector<double>& x, const RigidBodySystem::InputVector<double>& u) const {
@@ -156,7 +157,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
 }
 
 
-RigidBodySystem::StateVector<double> Drake::getInitialState(const RigidBodySystem& sys) {
+DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double> Drake::getInitialState(const RigidBodySystem& sys) {
 
   VectorXd x0(sys.tree->num_positions + sys.tree->num_velocities);
   default_random_engine generator;
@@ -206,7 +207,7 @@ RigidBodySystem::StateVector<double> Drake::getInitialState(const RigidBodySyste
   return x0;
 }
 
-RigidBodyPropellor::RigidBodyPropellor(RigidBodySystem *sys, TiXmlElement *node, std::string name) :
+RigidBodyPropellor::RigidBodyPropellor(RigidBodySystem *sys, XMLElement *node, std::string name) :
         sys(sys), name(name),
         scale_factor_thrust(1.0), scale_factor_moment(1.0),
         lower_limit(-numeric_limits<double>::infinity()),
@@ -214,13 +215,13 @@ RigidBodyPropellor::RigidBodyPropellor(RigidBodySystem *sys, TiXmlElement *node,
 {
   auto tree = sys->getRigidBodyTree();
 
-  TiXmlElement* parent_node = node->FirstChildElement("parent");
+  XMLElement* parent_node = node->FirstChildElement("parent");
   if (!parent_node) throw runtime_error("propellor " + name + " is missing the parent node");
   frame = allocate_shared<RigidBodyFrame>(aligned_allocator<RigidBodyFrame>(),tree.get(),parent_node,node->FirstChildElement("origin"),name+"Frame");
   tree->addFrame(frame);
 
   axis << 1.0, 0.0, 0.0;
-  TiXmlElement* axis_node = node->FirstChildElement("axis");
+  XMLElement* axis_node = node->FirstChildElement("axis");
   if (axis_node) {
     parseVectorAttribute(axis_node, "xyz", axis);
     if (axis.norm()<1e-8) throw runtime_error("ERROR: axis is zero.  don't do that");
@@ -235,28 +236,28 @@ RigidBodyPropellor::RigidBodyPropellor(RigidBodySystem *sys, TiXmlElement *node,
   // todo: parse visual info?
 }
 
-void parseForceElement(RigidBodySystem *sys, TiXmlElement* node) {
+void parseForceElement(RigidBodySystem *sys, XMLElement* node) {
   string name = node->Attribute("name");
 
-  if (TiXmlElement* propellor_node = node->FirstChildElement("propellor")) {
+  if (XMLElement* propellor_node = node->FirstChildElement("propellor")) {
     sys->addForceElement(allocate_shared<RigidBodyPropellor>(Eigen::aligned_allocator<RigidBodyPropellor>(),sys,propellor_node,name));
   }
 }
 
-void parseRobot(RigidBodySystem *sys, TiXmlElement* node)
+void parseRobot(RigidBodySystem *sys, XMLElement* node)
 {
   if (!node->Attribute("name"))
     throw runtime_error("Error: your robot must have a name attribute");
   string robotname = node->Attribute("name");
 
   // parse force elements
-  for (TiXmlElement* force_node = node->FirstChildElement("force_element"); force_node; force_node = force_node->NextSiblingElement("force_element"))
+  for (XMLElement* force_node = node->FirstChildElement("force_element"); force_node; force_node = force_node->NextSiblingElement("force_element"))
     parseForceElement(sys, force_node);
 }
 
-void parseURDF(RigidBodySystem *sys, TiXmlDocument *xml_doc)
+void parseURDF(RigidBodySystem *sys, XMLDocument *xml_doc)
 {
-  TiXmlElement *node = xml_doc->FirstChildElement("robot");
+  XMLElement *node = xml_doc->FirstChildElement("robot");
   if (!node) throw std::runtime_error("ERROR: This urdf does not contain a robot tag");
 
   parseRobot(sys, node);
@@ -268,7 +269,7 @@ void RigidBodySystem::addRobotFromURDFString(const string &xml_string, const str
   tree->addRobotFromURDFString(xml_string, root_dir, floating_base_type);
 
   // now parse additional tags understood by rigid body system (actuators, sensors, etc)
-  TiXmlDocument xml_doc;
+  XMLDocument xml_doc;
   xml_doc.Parse(xml_string.c_str());
   parseURDF(this,&xml_doc);
 }
@@ -280,9 +281,10 @@ void RigidBodySystem::addRobotFromURDF(const string &urdf_filename, const DrakeJ
   tree->addRobotFromURDF(urdf_filename, floating_base_type);
 
   // now parse additional tags understood by rigid body system (actuators, sensors, etc)
-  TiXmlDocument xml_doc(urdf_filename);
-  if (!xml_doc.LoadFile()) {
-    throw std::runtime_error("failed to parse xml in file " + urdf_filename + "\n" + xml_doc.ErrorDesc());
+  XMLDocument xml_doc;
+  xml_doc.LoadFile(urdf_filename.data());
+  if (xml_doc.ErrorID() != XML_SUCCESS) {
+    throw std::runtime_error("failed to parse xml in file " + urdf_filename + "\n" + xml_doc.ErrorName());
   }
   parseURDF(this,&xml_doc);
 }

@@ -209,6 +209,7 @@ add_subdirectory(solvers)
 add_subdirectory(systems)
 add_subdirectory(thirdParty/GetFullPath)
 add_subdirectory(thirdParty/spruce)
+add_subdirectory(thirdParty/tinyxml2)
 add_subdirectory(examples)
 add_subdirectory(bindings)
 
