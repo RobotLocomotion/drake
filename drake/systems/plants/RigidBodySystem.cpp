@@ -157,7 +157,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
 }
 
 
-RigidBodySystem::StateVector<double> Drake::getInitialState(const RigidBodySystem& sys) {
+DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double> Drake::getInitialState(const RigidBodySystem& sys) {
 
   VectorXd x0(sys.tree->num_positions + sys.tree->num_velocities);
   default_random_engine generator;

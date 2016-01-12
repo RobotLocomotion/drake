@@ -5,6 +5,7 @@
 #include "Optimization.h"
 #include "RigidBodyTree.h"
 #include "KinematicsCache.h"
+#include <drakeRBSystem_export.h>
 
 namespace tinyxml2 {
   class XMLElement;
@@ -21,7 +22,7 @@ namespace Drake {
    * note that some of this logic will move to a base class (or concept) for RigidBodyForceElements,
    * but I've chosen to handle the single type case before writing the general one
    */
-  class RigidBodyPropellor {
+  class DRAKERBSYSTEM_EXPORT RigidBodyPropellor {
   public:
     template <typename ScalarType> using StateVector = NullVector<ScalarType>;
     template <typename ScalarType> using InputVector = Eigen::Matrix<ScalarType,1,1>;
@@ -91,7 +92,7 @@ namespace Drake {
    * @brief implements the System concept by wrapping the RigidBodyTree algorithms with additional sensors and actuators/forces
    * @concept{system_concept}
    */
-  class RigidBodySystem {
+  class DRAKERBSYSTEM_EXPORT RigidBodySystem {
   public:
     template <typename ScalarType> using InputVector = Eigen::Matrix<ScalarType,Eigen::Dynamic,1>;
     template <typename ScalarType> using StateVector = Eigen::Matrix<ScalarType,Eigen::Dynamic,1>;
@@ -143,7 +144,7 @@ namespace Drake {
     bool isTimeVarying() const  { return false; }
     bool isDirectFeedthrough() const { return false; }
 
-    friend StateVector<double> getInitialState(const RigidBodySystem& sys);
+    friend DRAKERBSYSTEM_EXPORT StateVector<double> getInitialState(const RigidBodySystem& sys);
 
   private:
     std::shared_ptr<RigidBodyTree> tree;
