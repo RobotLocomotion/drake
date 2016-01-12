@@ -251,7 +251,7 @@ RigidBodySpringDamper::RigidBodySpringDamper(RigidBodySystem *sys, XMLElement *n
   parseScalarAttribute(node,"stiffness",stiffness);
   parseScalarAttribute(node,"damping",damping);
 
-  TiXmlElement* link_ref_node = node->FirstChildElement("link1");
+  XMLElement* link_ref_node = node->FirstChildElement("link1");
   if (!link_ref_node) throw runtime_error("linear_spring_damper " + name + " is missing the link1 node");
   frameA = allocate_shared<RigidBodyFrame>(aligned_allocator<RigidBodyFrame>(),tree.get(),link_ref_node,link_ref_node,name+"FrameA");
   tree->addFrame(frameA);
@@ -267,7 +267,7 @@ void parseForceElement(RigidBodySystem *sys, XMLElement* node) {
 
   if (XMLElement* propellor_node = node->FirstChildElement("propellor")) {
     sys->addForceElement(allocate_shared<RigidBodyPropellor>(Eigen::aligned_allocator<RigidBodyPropellor>(),sys,propellor_node,name));
-  } else if (TiXmlElement* spring_damper_node = node->FirstChildElement("linear_spring_damper")) {
+  } else if (XMLElement* spring_damper_node = node->FirstChildElement("linear_spring_damper")) {
     sys->addForceElement(allocate_shared<RigidBodySpringDamper>(Eigen::aligned_allocator<RigidBodySpringDamper>(),sys,spring_damper_node,name));
   }
 }

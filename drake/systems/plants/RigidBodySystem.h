@@ -166,7 +166,7 @@ namespace Drake {
    */
   class DRAKERBSYSTEM_EXPORT RigidBodyPropellor : public RigidBodyForceElement {
   public:
-    RigidBodyPropellor(RigidBodySystem* sys, TiXmlElement* node, std::string name);
+    RigidBodyPropellor(RigidBodySystem* sys, tinyxml2::XMLElement* node, std::string name);
     virtual ~RigidBodyPropellor() {}
 
     virtual size_t getNumInputs() const override { return 1; }
@@ -199,7 +199,7 @@ namespace Drake {
    */
   class DRAKERBSYSTEM_EXPORT RigidBodySpringDamper : public RigidBodyForceElement {
   public:
-    RigidBodySpringDamper(RigidBodySystem* sys, TiXmlElement* node, std::string name);
+    RigidBodySpringDamper(RigidBodySystem* sys, tinyxml2::XMLElement* node, std::string name);
     virtual ~RigidBodySpringDamper() {}
 
     virtual Eigen::VectorXd output(const double& t, /* todo: add force state here */ const Eigen::VectorXd& u, const KinematicsCache<double>& rigid_body_state) const override {
