@@ -1,4 +1,3 @@
-include_directories (${PROJECT_SOURCE_DIR}/util tinyxml)
 # IMPORTANT NOTE!!
 # matlab has it's own boost libraries.  DO NOT let any mex file depend
 # on the system boost (directly nor indirectly), or you're asking for trouble.
@@ -7,8 +6,9 @@ include_directories(joints)
 include_directories(${PROJECT_SOURCE_DIR}/solvers)
 include_directories(${PROJECT_SOURCE_DIR}/systems/controllers)
 include_directories(${PROJECT_SOURCE_DIR}/systems/trajectories)
-add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES RigidBodyTree.cpp RigidBody.cpp RigidBodyTreeURDF.cpp RigidBodyTreeContact.cpp tinyxml/tinyxml.cpp tinyxml/tinyxmlparser.cpp tinyxml/tinyxmlerror.cpp)
-target_link_libraries(drakeRBM drakeCollision drakeJoints spruce drakeUtil)
+include_directories(${PROJECT_SOURCE_DIR}/thirdParty/tinyxml2)
+add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES RigidBodyTree.cpp RigidBody.cpp RigidBodyTreeURDF.cpp RigidBodyTreeContact.cpp)
+target_link_libraries(drakeRBM drakeCollision drakeJoints spruce drakeUtil tinyxml2)
 pods_install_libraries(drakeRBM)
 pods_install_headers(RigidBodyTree.h RigidBody.h RigidBodyFrame.h KinematicPath.h KinematicsCache.h ForceTorqueMeasurement.h DESTINATION drake)
 pods_install_pkg_config_file(drake-rbm

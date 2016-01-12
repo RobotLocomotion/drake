@@ -5,8 +5,11 @@
 #include "Optimization.h"
 #include "RigidBodyTree.h"
 #include "KinematicsCache.h"
+#include <drakeRBSystem_export.h>
 
-class TiXmlElement;
+namespace tinyxml2 {
+  class XMLElement;
+}
 
 namespace Drake {
 
@@ -42,7 +45,7 @@ namespace Drake {
    * @brief implements the System concept by wrapping the RigidBodyTree algorithms with additional sensors and actuators/forces
    * @concept{system_concept}
    */
-  class RigidBodySystem {
+  class DRAKERBSYSTEM_EXPORT RigidBodySystem {
   public:
     template <typename ScalarType> using InputVector = Eigen::Matrix<ScalarType,Eigen::Dynamic,1>;
     template <typename ScalarType> using StateVector = Eigen::Matrix<ScalarType,Eigen::Dynamic,1>;
@@ -103,7 +106,7 @@ namespace Drake {
     bool isTimeVarying() const  { return false; }
     bool isDirectFeedthrough() const { return false; }
 
-    friend StateVector<double> getInitialState(const RigidBodySystem& sys);
+    friend DRAKERBSYSTEM_EXPORT StateVector<double> getInitialState(const RigidBodySystem& sys);
 
     // some parameters defining the contact
     bool use_multi_contact;
@@ -127,7 +130,7 @@ namespace Drake {
   /** RigidBodyForceElement
    * @brief interface class for elements which define a generalized force acting on the rigid body system
    */
-  class RigidBodyForceElement {
+  class DRAKERBSYSTEM_EXPORT RigidBodyForceElement {
   public:
     RigidBodyForceElement(RigidBodySystem* sys, std::string name) : sys(sys), name(name) {}
     virtual ~RigidBodyForceElement() {}
@@ -161,7 +164,7 @@ namespace Drake {
   /** RigidBodyPropellor
    * @brief Models the forces and moments produced by a simple propellor
    */
-  class RigidBodyPropellor : public RigidBodyForceElement {
+  class DRAKERBSYSTEM_EXPORT RigidBodyPropellor : public RigidBodyForceElement {
   public:
     RigidBodyPropellor(RigidBodySystem* sys, TiXmlElement* node, std::string name);
     virtual ~RigidBodyPropellor() {}
@@ -194,7 +197,7 @@ namespace Drake {
   /** RigidBodySpringDamper
    * @brief Models the forces produced by a linear spring-damper
    */
-  class RigidBodySpringDamper : public RigidBodyForceElement {
+  class DRAKERBSYSTEM_EXPORT RigidBodySpringDamper : public RigidBodyForceElement {
   public:
     RigidBodySpringDamper(RigidBodySystem* sys, TiXmlElement* node, std::string name);
     virtual ~RigidBodySpringDamper() {}

@@ -83,9 +83,9 @@ manip_plan_data = QPLocomotionPlanCPPWrapper(plan_settings);
 %         'translation_task_to_world',randn(3,2),...
 %         'track_com_traj',true));
 
-control = atlasControllers.InstantaneousQPController(r, []);
-planeval = atlasControllers.AtlasPlanEval(r, manip_plan_data);
-plancontroller = atlasControllers.AtlasPlanEvalAndControlSystem(r, control, planeval);
+control = bipedControllers.InstantaneousQPController(r, []);
+planeval = bipedControllers.BipedPlanEval(r, manip_plan_data);
+plancontroller = bipedControllers.BipedPlanEvalAndControlSystem(r, control, planeval);
 sys = feedback(r, plancontroller);
 output_select(1).system=1;
 output_select(1).output=1;
