@@ -13,6 +13,7 @@
 #include "joints/QuaternionFloatingJoint.h"
 #include "joints/RollPitchYawFloatingJoint.h"
 
+#include "Path.h"
 #include "urdfParsingUtil.h"
 
 // from http://stackoverflow.com/questions/478898/how-to-execute-a-command-and-get-output-of-command-within-c
@@ -41,12 +42,9 @@ string exec(string cmd)
 	return result;
 }
 
-void searchenvvar(map<string,string> &package_map, string envvar)
+void searchDirectory(map<string,string> &package_map, string path)
 {
-	char* cstrpath = getenv(envvar.c_str());
-	if (!cstrpath) return;
-
-	string path(cstrpath), token, t;
+	string token, t;
 	istringstream iss(path);
 
 	while (getline(iss,token,':')) {
@@ -69,8 +67,13 @@ void searchenvvar(map<string,string> &package_map, string envvar)
 
 void populatePackageMap(map<string,string>& package_map)
 {
-  searchenvvar(package_map,"ROS_ROOT");
-  searchenvvar(package_map,"ROS_PACKAGE_PATH");
+  searchDirectory(package_map,Drake::getDrakePath());
+
+  char* cstrpath = getenv("ROS_ROOT");
+  if (cstrpath) searchDirectory(package_map,cstrpath);
+
+  cstrpath = getenv("ROS_PACKAGE_PATH");
+  if (cstrpath) searchDirectory(package_map,cstrpath);
 }
 
 bool rospack(const string& package, const map<string,string>& package_map, string& package_path)

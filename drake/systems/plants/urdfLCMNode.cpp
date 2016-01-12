@@ -40,7 +40,8 @@ int main(int argc, char* argv[]) {
     else { throw std::runtime_error(string("Unknown base type") + floating_base_option + "; must be FIXED,RPY, or QUAT"); }
   }
 
-  auto tree = make_shared<RigidBodyTree>(argv[argc-1],floating_base_type);
+  auto rigid_body_sys = make_shared<RigidBodySystem>(argv[argc-1],floating_base_type);
+  auto const & tree = rigid_body_sys->getRigidBodyTree();
 
   if (commandLineOptionExists(argv,argc+argv,"--add_flat_terrain")) {
     double box_width = 1000;

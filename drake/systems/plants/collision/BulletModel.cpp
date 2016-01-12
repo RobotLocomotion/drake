@@ -483,7 +483,10 @@ namespace DrakeCollision
             Vector3d::Zero(), 
             Vector3d::Zero(),
             Vector3d::Zero(),1.0);
-      cerr << "In BulletModel::findClosestPointsBtwElements: No closest point found between " << idA << " and " << idB << endl;
+      static bool alreadyWarned = false;
+      if (!alreadyWarned)
+        cerr << "In BulletModel::findClosestPointsBtwElements: No closest point found between " << idA << " and " << idB << endl;
+      alreadyWarned = true;
     }
 
     return (c->pts.size() > 0);
