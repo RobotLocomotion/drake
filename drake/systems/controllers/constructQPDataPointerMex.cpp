@@ -371,8 +371,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   // umin
   int nq = pdata->r->num_positions, nu = pdata->r->B.cols();
+
   pdata->umin.resize(nu);
   pdata->umax.resize(nu);
+  for (const auto& body_ptr : pdata->r->bodies) {
+
+  }
+
   memcpy(pdata->umin.data(),mxGetPrSafe(prhs[narg++]),sizeof(double)*nu);
 
   // umax
@@ -392,6 +397,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   narg++;
 
   // Done parsing inputs
+
 
   pdata->qdd_lb = VectorXd::Zero(nq).array() - numeric_limits<double>::infinity();
   pdata->qdd_ub = VectorXd::Zero(nq).array() + numeric_limits<double>::infinity();
