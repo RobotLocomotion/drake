@@ -61,6 +61,7 @@ int main(int argc, char* argv[]) {
   auto sys = cascade(rigid_body_sys, visualizer);
 
   SimulationOptions options = default_simulation_options;
+  options.realtime_factor = 0.0;
   options.initial_step_size = 5e-3;
 
   runLCM(sys,lcm,0,std::numeric_limits<double>::max(),getInitialState(*sys),options);
