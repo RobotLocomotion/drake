@@ -26,8 +26,8 @@ namespace Drake {
    */
 
 
-  template <template <typename> class Vector>
-  bool encode(const double& t, const Vector<double>& x, drake::lcmt_drake_signal& msg) {
+  template <class Vector>
+  bool encode(const double& t, const Vector& x, drake::lcmt_drake_signal& msg) {
     msg.timestamp = static_cast<int64_t>(t*1000);
     msg.dim = size(x);
     auto xvec = toEigen(x);
@@ -38,14 +38,14 @@ namespace Drake {
     return true;
   }
 
-  template <template <typename> class Vector>
-  bool decode(const drake::lcmt_drake_signal& msg, double& t, Vector<double>& x) {
+  template <class Vector>
+  bool decode(const drake::lcmt_drake_signal& msg, double& t, Vector& x) {
     t = double(msg.timestamp)/1000.0;
     std::unordered_map<std::string,double> m;
     for (int i=0; i<msg.dim; i++) {
       m[msg.coord[i]] = msg.val[i];
     }
-    Eigen::Matrix<double,Vector<double>::RowsAtCompileTime,1> xvec(msg.dim);
+    Eigen::Matrix<double,Vector::RowsAtCompileTime,1> xvec(msg.dim);
     for (int i=0; i<msg.dim; i++) {
       xvec(i) = m[getCoordinateName(x,i)];
     }
