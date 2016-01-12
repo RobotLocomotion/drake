@@ -290,6 +290,9 @@ public:
 };
 
 struct DesiredBodyAcceleration {
+  DesiredBodyAcceleration():
+    accel_bounds(Eigen::VectorXd(6), Eigen::VectorXd(6)) {}
+    
   int body_or_frame_id0;
   Vector6d body_vdot;
   double weight;

@@ -135,7 +135,7 @@ void parseVRefIntegratorParams(const mxArray *params_obj, VRefIntegratorParams *
   return;
 }
 
-void parseHardwareGains(const mxArray *params_obj, RigidBodyTree *r, AtlasHardwareGains *params) {
+void parseHardwareGains(const mxArray *params_obj, RigidBodyTree *r, HardwareGains *params) {
   const mxArray *pobj;
   int nu = r->num_velocities - 6;
 
@@ -181,7 +181,7 @@ void parseHardwareGains(const mxArray *params_obj, RigidBodyTree *r, AtlasHardwa
   return;
 }
 
-void parseHardwareParams(const mxArray *params_obj, RigidBodyTree *r, AtlasHardwareParams *params) {
+void parseHardwareParams(const mxArray *params_obj, RigidBodyTree *r, HardwareParams *params) {
   const mxArray *pobj;
 
   parseHardwareGains(myGetField(params_obj, "gains"), r, &(params->gains));
@@ -268,7 +268,7 @@ void parseQPControllerParamSets(const mxArray *pobj, RigidBodyTree *r, map<strin
   int num_fields = mxGetNumberOfFields(pobj);
   if (num_fields == 0) mexErrMsgTxt("could not get any field names from the param_sets object\n"); 
 
-  QPControllerParams params;
+  QPControllerParams params(*r);
   const char* fieldname;
   for (int i=0; i < num_fields; i++) {
     fieldname = mxGetFieldNameByNumber(pobj, i);

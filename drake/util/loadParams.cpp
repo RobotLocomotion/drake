@@ -91,6 +91,6 @@ int main(int argc, char** argv) {
   loadBodyMotionParams(params, config["body_motion"], *robot);
 
   std::cout << "base_x Kp: " << params.whole_body.Kp(position_name_to_index["base_x"]) << " w_qdd: " << params.whole_body.w_qdd(position_name_to_index["base_x"]) << std::endl;
-  std::cout << "body 0 linkanme: " << robot->bodies[0]->linkname << " Kp: " << params.body_motion[0].Kp.transpose() << " accel_max: " << params.body_motion[0].accel_bounds.max.transpose() << std::endl;
+  std::cout << "body 5 linkanme: " << robot->bodies[5]->linkname << " Kp: " << params.body_motion[5].Kp.transpose() << " accel_max: " << params.body_motion[5].accel_bounds.max.transpose() << std::endl;
   return 0;
 }
