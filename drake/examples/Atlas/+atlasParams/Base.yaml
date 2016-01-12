@@ -1,0 +1,35 @@
+body_motion:
+    .*: &BODY_MOTION_DEFAULT
+        Kp: {x: 12, y: 12, z: 12, wx: 12, wy: 12, wz: 12}
+        damping_ratio: 0.7
+        accel_bounds:
+                min: {x: -100, y: -100, z: -100, wx: -50, wy: -50, wz: -50}
+                max: {x: 100, y: 100, z: 100, wx: 50, wy: 50, wz: 50}
+        weight: 0.0
+    pelvis:
+        <<: *BODY_MOTION_DEFAULT
+        Kp: {x: 150, y: 150, z: 150, wx: 200, wy: 200, wz: 200}
+        weight: 0.01
+        damping_ratio: 0.6
+    r_foot:
+        <<: *BODY_MOTION_DEFAULT
+        weight: 0.01
+    l_foot:
+        <<: *BODY_MOTION_DEFAULT
+        weight: 0.01
+
+whole_body:
+    .*: &WHOLE_BODY_DEFAULT
+        Kp: 150
+        damping_ratio: 0.6
+        w_qdd: 0.001
+        integrator:
+            gains: 0
+            clamps: 0
+            eta: 0
+        qdd_bounds:
+            min: -100
+            max: 100
+    base.*:
+        <<: *WHOLE_BODY_DEFAULT
+        w_qdd: 0

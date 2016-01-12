@@ -50,6 +50,7 @@ find_program(matlab matlab)
 if (matlab)
 	option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"  ON)
 endif()
+option(WITH_YAML_CPP "library for reading and writing yaml configuration files" ON)
 
 option(WITH_SNOPT_PRECOMPILED "precompiled binaries only for snopt; the source requires a license (will be disabled if WITH_SNOPT=ON)"  ON)
 
@@ -80,7 +81,7 @@ set(libbot_dependencies lcm)
 set(director_dependencies lcm libbot)
 set(iris_dependencies eigen mosek)
 set(signalscope_dependencies director)
-set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi swig_matlab swigmake)
+set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi swig_matlab swigmake yaml_cpp)
 
 # download information, in alphabetical order
 set(avl_GIT_REPOSITORY https://github.com/RobotLocomotion/avl.git)
@@ -163,6 +164,10 @@ set(swig_matlab_IS_CMAKE_POD TRUE)
 set(yalmip_GIT_REPOSITORY https://github.com/RobotLocomotion/yalmip.git)
 set(yalmip_GIT_TAG c071fb7b7193491f8eefadba3bfff26160ad6cd4)
 set(yalmip_IS_PUBLIC TRUE)
+set(yaml_cpp_GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git)
+set(yaml_cpp_GIT_TAG release-0.5.2)
+set(yaml_cpp_IS_PUBLIC TRUE)
+set(yaml_cpp_IS_CMAKE_POD TRUE)
 set(xfoil_GIT_REPOSITORY https://github.com/RobotLocomotion/xfoil.git)
 set(xfoil_GIT_TAG fde0a9368dd451c93604051fc5704e120073800c)
 set(xfoil_IS_PUBLIC TRUE)
@@ -208,6 +213,7 @@ foreach(proj IN ITEMS
 		meshconverters
 		swigmake
 		swig_matlab
+		yaml_cpp
 		drake)
 	string(TOUPPER ${proj} proj_upper)
 	if ( ${proj} STREQUAL "drake" OR

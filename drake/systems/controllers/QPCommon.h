@@ -96,23 +96,47 @@ struct RobotPropertyCache {
 };
 
 struct VRefIntegratorParams {
+  VRefIntegratorParams():
+    zero_ankles_on_contact(false),
+    eta(0.0),
+    delta_max(0.0) {}
+
   bool zero_ankles_on_contact;
   double eta;
   double delta_max;
 };
 
 struct IntegratorParams {
+  IntegratorParams(const RigidBodyTree &robot):
+    gains(Eigen::VectorXd::Zero(robot.num_positions)),
+    clamps(Eigen::VectorXd::Zero(robot.num_positions)),
+    eta(0.0) {}
+
   Eigen::VectorXd gains;
   Eigen::VectorXd clamps;
   double eta;
 };
 
 struct Bounds {
+  Bounds(const Eigen::Ref<const Eigen::VectorXd> &min_, const Eigen::Ref<const Eigen::VectorXd> &max_):
+    min(min_),
+    max(max_) {}
+
   Eigen::VectorXd min;
   Eigen::VectorXd max;
 };
 
 struct JointSoftLimitParams {
+  JointSoftLimitParams(const RigidBodyTree &robot):
+    enabled(Eigen::Matrix<bool, Eigen::Dynamic, 1>::Zero(robot.num_positions)),
+    disable_when_body_in_support(Eigen::VectorXi::Zero(robot.num_positions)),
+    lb(Eigen::VectorXd::Zero(robot.num_positions)),
+    ub(Eigen::VectorXd::Zero(robot.num_positions)),
+    kp(Eigen::VectorXd::Zero(robot.num_positions)),
+    kd(Eigen::VectorXd::Zero(robot.num_positions)),
+    weight(Eigen::VectorXd::Zero(robot.num_positions)),
+    k_logistic(Eigen::VectorXd::Zero(robot.num_positions)) {}
+
   Eigen::Matrix<bool, Eigen::Dynamic, 1> enabled;
   Eigen::VectorXi disable_when_body_in_support;
   Eigen::VectorXd lb;
@@ -124,23 +148,47 @@ struct JointSoftLimitParams {
 };
 
 struct WholeBodyParams {
+  WholeBodyParams(const RigidBodyTree &robot):
+    Kp(Eigen::VectorXd::Zero(robot.num_positions)),
+    Kd(Eigen::VectorXd::Zero(robot.num_positions)),
+    w_qdd(Eigen::VectorXd::Zero(robot.num_velocities)),
+    integrator(robot),
+    qdd_bounds(Eigen::VectorXd::Zero(robot.num_velocities), Eigen::VectorXd::Zero(robot.num_velocities))
+     {}
+
   Eigen::VectorXd Kp;
   Eigen::VectorXd Kd;
   Eigen::VectorXd w_qdd;
 
-  double damping_ratio;
+  // double damping_ratio;
   IntegratorParams integrator;
   Bounds qdd_bounds;
 };
 
 struct BodyMotionParams {
-  Eigen::VectorXd Kp;
-  Eigen::VectorXd Kd;
+  BodyMotionParams():
+    Kp(Vector6d::Zero()),
+    Kd(Vector6d::Zero()),
+    accel_bounds(Eigen::VectorXd::Zero(6), Eigen::VectorXd::Zero(6)),
+    weight(0.0) {}
+
+  Vector6d Kp;
+  Vector6d Kd;
   Bounds accel_bounds;
   double weight;
 };
 
-struct AtlasHardwareGains {
+struct HardwareGains {
+  HardwareGains(const RigidBodyTree &robot):
+    k_f_p(Eigen::VectorXd::Zero(robot.num_positions)),
+    k_q_p(Eigen::VectorXd::Zero(robot.num_positions)),
+    k_q_i(Eigen::VectorXd::Zero(robot.num_positions)),
+    k_qd_p(Eigen::VectorXd::Zero(robot.num_positions)),
+    ff_qd(Eigen::VectorXd::Zero(robot.num_positions)),
+    ff_f_d(Eigen::VectorXd::Zero(robot.num_positions)),
+    ff_const(Eigen::VectorXd::Zero(robot.num_positions)),
+    ff_qd_d(Eigen::VectorXd::Zero(robot.num_positions)) {}
+
   Eigen::VectorXd k_f_p;
   Eigen::VectorXd k_q_p;
   Eigen::VectorXd k_q_i;
@@ -151,18 +199,41 @@ struct AtlasHardwareGains {
   Eigen::VectorXd ff_qd_d;
 };
 
-struct AtlasHardwareParams {
-  AtlasHardwareGains gains;
+struct HardwareParams {
+  HardwareParams(const RigidBodyTree &robot):
+    gains(robot),
+    joint_is_force_controlled(Eigen::Matrix<bool, Eigen::Dynamic, 1>::Zero(robot.num_positions)),
+    joint_is_position_controlled(Eigen::Matrix<bool, Eigen::Dynamic, 1>::Zero(robot.num_positions)) {}
+
+  HardwareGains gains;
   Eigen::Matrix<bool, Eigen::Dynamic, 1> joint_is_force_controlled;
   Eigen::Matrix<bool, Eigen::Dynamic, 1> joint_is_position_controlled;
 };
 
-struct QPControllerParams {
+class QPControllerParams {
+public:
+  QPControllerParams(const RigidBodyTree &robot):
+    whole_body(robot),
+    body_motion(robot.bodies.size()),
+    vref_integrator(),
+    joint_soft_limits(robot),
+    hardware(robot),
+    W_kdot(Eigen::Matrix3d::Zero()),
+    Kp_ang(0.0),
+    w_slack(0.0),
+    slack_limit(0.0),
+    w_grf(0.0),
+    Kp_accel(0.0),
+    contact_threshold(0.0),
+    min_knee_angle(0.0),
+    use_center_of_mass_observer(false),
+    center_of_mass_observer_gain(Eigen::Matrix4d::Zero()) {}
+
   WholeBodyParams whole_body;
   std::vector<BodyMotionParams> body_motion;
   VRefIntegratorParams vref_integrator;
   JointSoftLimitParams joint_soft_limits;
-  AtlasHardwareParams hardware;
+  HardwareParams hardware;
   Eigen::Matrix3d W_kdot;
   double Kp_ang;
   double w_slack;
