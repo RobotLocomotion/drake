@@ -272,6 +272,6 @@ classdef Valkyrie < TimeSteppingRigidBodyManipulator & Biped
     r_akx_name = 'rightAnkleRoll';
     r_aky_name = 'rightAnklePitch';
     l_aky_name = 'leftAnklePitch';
+    kinematic_tree_metadata_file = fullfile(fileparts(mfilename('fullpath')), '..', 'config', 'KinematicTreeMetadata.yaml');
   end
-
 end
