@@ -57,7 +57,6 @@ int main(int argc, char* argv[]) {
   }
 
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
-  auto rigid_body_sys = make_shared<RigidBodySystem>(tree);
   auto visualizer = make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm,tree);
   auto sys = cascade(rigid_body_sys, visualizer);
 
