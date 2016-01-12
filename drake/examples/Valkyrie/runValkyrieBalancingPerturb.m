@@ -1,4 +1,4 @@
-function runAtlasBalancingPerturb(example_options) 
+function runValkyrieBalancingPerturb(example_options) 
 % Run the new split QP controller, which consists of separate PlanEval
 % and InstantaneousQPController objects. Perturbs a supplied amount at
 % a specified time.
@@ -13,7 +13,7 @@ checkDependency('lcmgl');
 
 if nargin<1, example_options=struct(); end
 example_options = applyDefaults(example_options, struct('use_bullet', false,...
-                                                        'perturb_body', 'mtorso',...
+                                                        'perturb_body', 'torsoPitchLink',...
                                                         'perturb_amount', [250;0;0],...
                                                         'perturb_timing', [1.0 1.1],...
                                                         'terrain', RigidBodyFlatTerrain));
@@ -29,18 +29,26 @@ options.ignore_friction = true;
 options.dt = 0.001;
 options.terrain = example_options.terrain;
 options.use_bullet = example_options.use_bullet;
-r = Atlas(fullfile(getDrakePath,'examples','Atlas','urdf','atlas_convex_hull.urdf'),options);
-r = r.removeCollisionGroupsExcept({'heel','toe'});
-r = compile(r);
 
 options_complete = options;
 options_complete.external_force = example_options.perturb_body;
-r_complete = Atlas(fullfile(getDrakePath,'examples','Atlas','urdf','atlas_convex_hull.urdf'),options_complete);
+
+r = Valkyrie(fullfile(getDrakePath,'examples','Valkyrie','urdf','urdf','valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf'),options);
+r_complete = Valkyrie(fullfile(getDrakePath,'examples','Valkyrie','urdf','urdf','valkyrie_A_sim_drake_one_neck_dof_wide_ankle_rom.urdf'),options_complete);
+fixed_point_file = fullfile(getDrakePath,'examples','Valkyrie','data','valkyrie_fp_june2015_30joints_one_neck.mat');
+
+
+r.fixed_point_file = fixed_point_file;
+r_complete.fixed_point_file = fixed_point_file;
+load(fixed_point_file);
+
+r = r.removeCollisionGroupsExcept({'heel','toe'});
+r = compile(r);
+
 r_complete = r_complete.removeCollisionGroupsExcept({'heel','toe'});
 r_complete = compile(r_complete);
 
 % set initial state to fixed point
-load(fullfile(getDrakePath,'examples','Atlas','data','atlas_fp.mat'));
 if isfield(options,'initial_pose'), xstar(1:6) = options.initial_pose; end
 xstar(3) = xstar(3)+.05;
 xstar = r.resolveConstraints(xstar);
@@ -51,17 +59,17 @@ r_complete = r_complete.setInitialState(xstar_complete);
 r = r.setInitialState(xstar);
 v = r_complete.constructVisualizer;
 v.display_dt = 0.01;
+nq = getNumPositions(r);
 x0 = xstar;
-
 
 % Construct plan
 settings = QPLocomotionPlanSettings.fromStandingState(x0, r);
+
 % settings.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed; % Only use supports when in contact
 standing_plan = QPLocomotionPlanCPPWrapper(settings);
 
 control = bipedControllers.InstantaneousQPController(r, [], struct());
 planeval = bipedControllers.BipedPlanEval(r, standing_plan);
-
 plancontroller = bipedControllers.BipedPlanEvalAndControlSystem(r, control, planeval);
 
 T = 6;
@@ -92,7 +100,6 @@ ytraj = simulate(sys, [0, T], xstar_complete, struct('gui_control_interface', tr
 v.playback(ytraj, struct('slider', true));
 
 xf = ytraj.eval(ytraj.tspan(end));
-nq = getNumPositions(r);
 kinsol = doKinematics(r, xf(1:nq));
 comf = getCOM(r, kinsol);
 

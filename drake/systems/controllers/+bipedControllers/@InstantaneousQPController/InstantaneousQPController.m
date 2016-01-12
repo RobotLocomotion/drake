@@ -30,7 +30,7 @@ classdef InstantaneousQPController
         options = struct();
       end
       if nargin < 2 || isempty(param_sets)
-        param_sets = atlasParams.getDefaults(r);
+        param_sets = r.getDefaultParams();
       end
       options = applyDefaults(options,...
         struct('debug', false,...
@@ -46,8 +46,7 @@ classdef InstantaneousQPController
       end
       obj.robot = r;
       obj.param_sets = param_sets;
-      obj.robot_property_cache = atlasUtil.propertyCache(r);
-      import atlasControllers.*;
+      obj.robot_property_cache = r.getRobotPropertyCache();
       import atlasFrames.*;
 
       if obj.debug
@@ -75,7 +74,7 @@ classdef InstantaneousQPController
       state_coordinates = obj.robot.getStateFrame().getCoordinateNames();
       coordinate_names = struct(...
         'state', {state_coordinates(1:obj.robot.getNumPositions())},...
-        'input', struct('robot', {atlasUtil.getHardwareJointNames(obj.robot)}, ...
+        'input', struct('robot', {obj.robot.getHardwareJointNames()}, ...
                       'drake', {obj.robot.getInputFrame().getCoordinateNames()}));
 
 

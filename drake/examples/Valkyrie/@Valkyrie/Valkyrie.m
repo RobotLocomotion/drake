@@ -1,7 +1,7 @@
-classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
+classdef Valkyrie < TimeSteppingRigidBodyManipulator & Biped
   methods
 
-    function obj=Atlas(urdf,options)
+    function obj=Valkyrie(urdf,options)
       typecheck(urdf,'char');
 
       if nargin < 2
@@ -16,17 +16,8 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       if ~isfield(options,'terrain')
         options.terrain = RigidBodyFlatTerrain;
       end
-      if ~isfield(options,'hand_right')
-        options.hand_right = 'none';
-      end
-      if ~isfield(options,'hand_left')
-        options.hand_left = 'none';
-      end
       if ~isfield(options,'external_force')
         options.external_force = [];
-      end
-      if ~isfield(options,'atlas_version') 
-        options.atlas_version = 5; 
       end
 
       w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
@@ -34,58 +25,6 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       obj = obj@TimeSteppingRigidBodyManipulator(urdf,options.dt,options);
       obj = obj@Biped('r_foot_sole', 'l_foot_sole');
       warning(w);
-
-      if options.atlas_version == 3
-        hand_position_right = [0; -0.195; -0.01];
-        hand_position_left = [0; 0.195; 0.01];
-        hand_orientation_right = [0; -pi/2; pi];
-        hand_orientation_left = [0; -pi/2; 0];
-      elseif options.atlas_version == 4
-        hand_position_right = [0; -0.195; -0.01];
-        hand_position_left = hand_position_right;
-        hand_orientation_right = [0; -pi/2; pi];
-        hand_orientation_left = [0; pi/2; pi];
-      elseif options.atlas_version == 5
-        hand_position_right = [0; -0.195; 0.0];
-        hand_orientation_right = [0; -pi/2; pi];
-        hand_position_left = [0; -0.195; 0.0];
-        hand_orientation_left = [0; -pi/2; pi];
-      end
-
-      hand=options.hand_right;
-      if (~strcmp(hand, 'none'))
-        clear options_hand;
-        if (strcmp(hand, 'robotiq') || strcmp(hand, 'robotiq_tendons') || strcmp(hand, 'robotiq_simple'))
-          options_hand.weld_to_link = findLinkId(obj,'r_hand');
-          obj.hand_right = 1;
-          obj.hand_right_kind = hand;
-          obj = obj.addRobotFromURDF(getFullPathFromRelativePath(['urdf/', hand, '.urdf']), hand_position_right, hand_orientation_right, options_hand);
-        elseif (strcmp(hand, 'robotiq_weight_only'))
-          % Adds a box with weight roughly approximating the hands, so that
-          % the controllers know what's up
-          options_hand.weld_to_link = findLinkId(obj,'r_hand');
-          obj = obj.addRobotFromURDF(getFullPathFromRelativePath('urdf/robotiq_box.urdf'), hand_position_right, hand_orientation_right, options_hand);
-        else
-          error('unsupported hand type');
-        end
-      end
-      hand=options.hand_left;
-      if (~strcmp(hand, 'none'))
-        clear options_hand;
-        if (strcmp(hand, 'robotiq') || strcmp(hand, 'robotiq_tendons') || strcmp(hand, 'robotiq_simple'))
-          options_hand.weld_to_link = findLinkId(obj,'l_hand');
-          obj.hand_left = 1;
-          obj.hand_left_kind = hand;
-          obj = obj.addRobotFromURDF(getFullPathFromRelativePath(['urdf/', hand, '.urdf']), hand_position_left,hand_orientation_left, options_hand);
-        elseif (strcmp(hand, 'robotiq_weight_only'))
-          % Adds a box with weight roughly approximating the hands, so that
-          % the controllers know what's up
-          options_hand.weld_to_link = findLinkId(obj,'l_hand');
-          obj = obj.addRobotFromURDF(getFullPathFromRelativePath('urdf/robotiq_box.urdf'), hand_position_left,hand_orientation_left, options_hand);
-        else
-          error('unsupported hand type');
-        end
-      end
 
       % Add a force on a specified link if we want!
       if ~isempty(options.external_force)
@@ -106,9 +45,6 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         obj.manip = compile(obj.manip);
         obj = obj.setInitialState(zeros(obj.getNumStates(),1));
       end
-      if isfield(options, 'atlas_version')
-        obj.atlas_version = options.atlas_version;
-      end
 
       lastwarn = warning('off', 'Drake:RigidBodySupportState:NoSupportSurface');
       obj.left_full_support = RigidBodySupportState(obj,obj.foot_body_id.left);
@@ -125,63 +61,31 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       obj = compile@TimeSteppingRigidBodyManipulator(obj);
 
       % Construct state vector itself -- start by replacing the
-      % atlasPosition and atlasVelocity frames with a single
+      % valkyriePosition and valkyrieVelocity frames with a single
       % larger state frame
-      if (strcmp(obj.manip.getStateFrame().getFrameByNum(1).name, 'atlasPosition'))
-        atlas_state_frame = atlasFrames.AtlasState(obj);
+      if (strcmp(obj.manip.getStateFrame().getFrameByNum(1).name, 'valkyriePosition'))
+        valkyrie_state_frame = valkyrieFrames.ValkyrieState(obj);
       else
-        atlas_state_frame = obj.manip.getStateFrame();
-        atlas_state_frame = replaceFrameNum(atlas_state_frame,1,atlasFrames.AtlasState(obj));
-      end
-
-      % Sub in handstates for the hands
-      % If we sub in the order that they are added
-      % we should get this in the right order
-      if (obj.hand_right > 0)
-        id = atlas_state_frame.getFrameNumByName('s-model_articulatedPosition+s-model_articulatedVelocity');
-        if (length(id) > 1)
-          id = id(1);
-        end
-        atlas_state_frame = replaceFrameNum(atlas_state_frame,id,atlasFrames.HandState(obj,id,'right_atlasFrames.HandState'));
-      end
-      if (obj.hand_left > 0)
-        id = atlas_state_frame.getFrameNumByName('s-model_articulatedPosition+s-model_articulatedVelocity');
-        if (length(id) > 1)
-          id = id(1);
-        end
-        atlas_state_frame = replaceFrameNum(atlas_state_frame,id,atlasFrames.HandState(obj,id,'left_atlasFrames.HandState'));
+        valkyrie_state_frame = obj.manip.getStateFrame();
+        valkyrie_state_frame = replaceFrameNum(valkyrie_state_frame,1,valkyrieFrames.ValkyrieState(obj));
       end
 
       tsmanip_state_frame = obj.getStateFrame();
-      if tsmanip_state_frame.dim>atlas_state_frame.dim
-        tsmanip_state_frame.frame{1} = atlas_state_frame;
+      if tsmanip_state_frame.dim>valkyrie_state_frame.dim
+        tsmanip_state_frame.frame{1} = valkyrie_state_frame;
         state_frame = tsmanip_state_frame;
       else
-        state_frame = atlas_state_frame;
+        state_frame = valkyrie_state_frame;
       end
-      obj.manip = obj.manip.setStateFrame(atlas_state_frame);
+      obj.manip = obj.manip.setStateFrame(valkyrie_state_frame);
       obj = obj.setStateFrame(state_frame);
 
       % Same bit of complexity for input frame to get hand inputs
-      if (obj.hand_right > 0 || obj.hand_left > 0 || obj.external_force > 0)
+      if (obj.external_force > 0)
         input_frame = getInputFrame(obj);
-        input_frame  = replaceFrameNum(input_frame,1,atlasFrames.AtlasInput(obj));
+        input_frame  = replaceFrameNum(input_frame,1,valkyrieFrames.ValkyrieInput(obj));
       else
-        input_frame = atlasFrames.AtlasInput(obj);
-      end
-      if (obj.hand_right > 0)
-        id = input_frame.getFrameNumByName('s-model_articulatedInput');
-        if (length(id) > 1)
-          id = id(1);
-        end
-        input_frame = replaceFrameNum(input_frame,id,atlasFrames.HandInput(obj,id,'right_atlasFrames.HandInput'));
-      end
-      if (obj.hand_left > 0)
-        id = input_frame.getFrameNumByName('s-model_articulatedInput');
-        if (length(id) > 1)
-          id = id(1);
-        end
-        input_frame = replaceFrameNum(input_frame,id,atlasFrames.HandInput(obj,id,'left_atlasFrames.HandInput'));
+        input_frame = valkyrieFrames.ValkyrieInput(obj);
       end
 
       obj = obj.setInputFrame(input_frame);
@@ -189,23 +93,23 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
 
       % Construct output frame, which comes from state plus sensor
       % info
-      atlas_output_frame = atlas_state_frame;
+      valkyrie_output_frame = valkyrie_state_frame;
       if (~isempty(obj.manip.sensor))
         for i=1:length(obj.manip.sensor)
           % If it's not a full state feedback sensor (we have already
           % got the state for that above in the state frame
           if (~isa(obj.manip.sensor{i}, 'FullStateFeedbackSensor'))
-            if (isa(atlas_output_frame, 'MultiCoordinateFrame'))
-              atlas_output_frame = atlas_output_frame.appendFrame(obj.manip.sensor{i}.constructFrame(obj.manip));
+            if (isa(valkyrie_output_frame, 'MultiCoordinateFrame'))
+              valkyrie_output_frame = valkyrie_output_frame.appendFrame(obj.manip.sensor{i}.constructFrame(obj.manip));
             else
-              atlas_output_frame = MultiCoordinateFrame({atlas_output_frame, obj.manip.sensor{i}.constructFrame(obj.manip)});
+              valkyrie_output_frame = MultiCoordinateFrame({valkyrie_output_frame, obj.manip.sensor{i}.constructFrame(obj.manip)});
             end
           end
         end
       end
       % The output function of a TSRBM appends the TS sensors to the
       % output of the RBM. So get ready for that:
-      output_frame = atlas_output_frame;
+      output_frame = valkyrie_output_frame;
       if (~isempty(obj.sensor))
         for i=1:length(obj.sensor)
           if (~isa(obj.sensor{i}, 'FullStateFeedbackSensor'))
@@ -218,9 +122,9 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
         end
       end
 
-      if ~isequal_modulo_transforms(atlas_output_frame,getOutputFrame(obj.manip))
-        obj.manip = obj.manip.setNumOutputs(atlas_output_frame.dim);
-        obj.manip = obj.manip.setOutputFrame(atlas_output_frame);
+      if ~isequal_modulo_transforms(valkyrie_output_frame,getOutputFrame(obj.manip))
+        obj.manip = obj.manip.setNumOutputs(valkyrie_output_frame.dim);
+        obj.manip = obj.manip.setOutputFrame(valkyrie_output_frame);
       end
 
       if ~isequal_modulo_transforms(output_frame,getOutputFrame(obj))
@@ -262,14 +166,66 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
                        'relative_final', [10;10;10;0;0;2],...
                        'goal', [100;100;0;0;0;10]);
     end
+
+    function prop_cache = getRobotPropertyCache(obj)
+      % Functions like findLinkId, getTerrainContactPoints, etc. can be too slow to call
+      % in the inner loop of our controller or planner, so we cache some useful information
+      % at setup time. 
+
+      prop_cache = struct('contact_groups', [],...
+                          'body_ids', struct(),...
+                          'position_indices', struct(),...
+                          'actuated_indices', [],...
+                          'nq', 0,...
+                          'nv', 0,...
+                          'num_bodies', 0);
+
+      % getTerrainContactPoints is pretty expensive, so we'll just call it
+      % for all the bodies and cache the results
+      nbod = length(obj.getManipulator().body);
+      contact_group_cache = cell(1, nbod);
+      for j = 1:nbod
+        contact_group_cache{j} = struct();
+        for f = 1:length(obj.getBody(j).collision_geometry_group_names)
+          name = obj.getBody(j).collision_geometry_group_names{f};
+          if obj.getBody(j).robotnum == 1
+            contact_group_cache{j}.(name) = obj.getBody(j).getTerrainContactPoints(name);
+          end
+        end
+      end
+
+      prop_cache.contact_groups = contact_group_cache;
+
+      prop_cache.nq = obj.getNumPositions();
+      prop_cache.nv = obj.getNumVelocities();
+      prop_cache.num_bodies = length(obj.getManipulator().body);
+
+      prop_cache.body_ids.('pelvis') = obj.findLinkId('pelvis');
+      prop_cache.body_ids.('r_foot') = obj.findLinkId('rightFoot');
+      prop_cache.body_ids.('l_foot') = obj.findLinkId('leftFoot');
+
+      prop_cache.position_indices.('neck') = obj.findPositionIndices('lowerNeckPitch');
+      prop_cache.position_indices.('r_leg_ak') = [obj.findPositionIndices('rightAnklePitch'); obj.findPositionIndices('rightAnkleRoll')];
+      prop_cache.position_indices.('l_leg_ak') = [obj.findPositionIndices('leftAnklePitch'); obj.findPositionIndices('leftAnkleRoll')];
+
+      prop_cache.position_indices.('r_leg') = [obj.findPositionIndices('rightHipYaw'); obj.findPositionIndices('rightHipRoll'); obj.findPositionIndices('rightHipPitch'); obj.findPositionIndices('rightKneePitch'); obj.findPositionIndices('rightAnklePitch'); obj.findPositionIndices('rightAnkleRoll')];
+      prop_cache.position_indices.('l_leg') = [obj.findPositionIndices('leftHipYaw'); obj.findPositionIndices('leftHipRoll'); obj.findPositionIndices('leftHipPitch'); obj.findPositionIndices('leftKneePitch'); obj.findPositionIndices('leftAnklePitch'); obj.findPositionIndices('leftAnkleRoll')];
+
+      prop_cache.position_indices.('r_leg_kny') = obj.findPositionIndices('rightKneePitch');
+      prop_cache.position_indices.('l_leg_kny') = obj.findPositionIndices('leftKneePitch');
+
+      prop_cache.position_indices.('arm') = [obj.findPositionIndices('leftShoulderPitch'); obj.findPositionIndices('leftShoulderRoll'); obj.findPositionIndices('leftShoulderYaw'); obj.findPositionIndices('leftElbowPitch'); obj.findPositionIndices('leftForearm'); obj.findPositionIndices('leftWristRoll'); obj.findPositionIndices('leftWristPitch'); obj.findPositionIndices('rightShoulderPitch'); obj.findPositionIndices('rightShoulderRoll'); obj.findPositionIndices('rightShoulderYaw'); obj.findPositionIndices('rightElbowPitch'); obj.findPositionIndices('rightForearm'); obj.findPositionIndices('rightWristRoll'); obj.findPositionIndices('rightWristPitch')];
+
+      prop_cache.position_indices.('back_bkz') = obj.findPositionIndices('torsoYaw');
+      prop_cache.position_indices.('back_bky') = obj.findPositionIndices('torsoPitch');
+      prop_cache.position_indices.('neck') = obj.findPositionIndices('lowerNeckPitch');
+
+      prop_cache.actuated_indices = obj.getActuatedJoints();
+    end
   end
 
   properties (SetAccess = protected, GetAccess = public)
     x0
-    hand_right = 0;
-    hand_right_kind = 'none';
-    hand_left = 0;
-    hand_left_kind = 'none';
     % preconstructing these for efficiency
     left_full_support
     left_toe_support
@@ -278,12 +234,11 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
     left_full_right_full_support
     left_toe_right_full_support
     left_full_right_toe_support
-    atlas_version = [];
     external_force = 0; % if nonzero, body id where force is being exerted
   end
 
   properties
-    fixed_point_file = fullfile(getDrakePath(), 'examples', 'Atlas', 'data', 'atlas_fp.mat');
+    fixed_point_file = fullfile(getDrakePath,'examples','Valkyrie','data','valkyrie_fp_june2015_30joints_one_neck.mat');
     default_footstep_params = struct('nom_forward_step', 0.25,... % m
                                       'max_forward_step', 0.35,...% m
                                       'max_backward_step', 0.2,...% m
@@ -303,11 +258,20 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
                                     'drake_instep_shift', 0.0,... % Distance to shift ZMP trajectory inward toward the instep from the center of the foot (m)
                                     'mu', 1.0,... % friction coefficient
                                     'constrain_full_foot_pose', true,... % whether to constrain the swing foot roll and pitch
-                                    'pelvis_height_above_foot_sole', 0.83,... % default pelvis height when walking
+                                    'pelvis_height_above_foot_sole', 0.98,... % default pelvis height when walking
                                     'support_contact_groups', {{'heel', 'toe'}},... % which contact groups are available for support when walking
                                     'prevent_swing_undershoot', false,... % prevent the first phase of the swing from going backwards while moving to the first knot point
                                     'prevent_swing_overshoot', false,... % prevent the final phase of the swing from moving forward of the last knot point
-                                    'nominal_LIP_COM_height', 0.80); % nominal height used to construct D_ls for our linear inverted pendulum model
+                                    'nominal_LIP_COM_height', 1.01); % nominal height used to construct D_ls for our linear inverted pendulum model
+    r_foot_name = 'rightFoot+rightLegSixAxis_Frame+rightCOP_Frame';
+    l_foot_name = 'leftFoot+leftLegSixAxis_Frame+leftCOP_Frame';
+    pelvis_name = 'pelvis+leftPelvisIMU_Frame+rightPelvisIMU_Frame';
+    r_knee_name = 'rightKneePitch';
+    l_knee_name = 'leftKneePitch';
+    l_akx_name = 'leftAnkleRoll';
+    r_akx_name = 'rightAnkleRoll';
+    r_aky_name = 'rightAnklePitch';
+    l_aky_name = 'leftAnklePitch';
   end
 
 end

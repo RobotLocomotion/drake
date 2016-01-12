@@ -81,9 +81,9 @@ for iter = 1:3
   lcmgl.switchBuffers();
   % keyboard()
 
-  planeval = atlasControllers.AtlasPlanEval(r, walking_plan_data);
-  control = atlasControllers.InstantaneousQPController(r, []);
-  plancontroller = atlasControllers.AtlasPlanEvalAndControlSystem(r, control, planeval);
+  planeval = bipedControllers.BipedPlanEval(r, walking_plan_data);
+  control = bipedControllers.InstantaneousQPController(r, []);
+  plancontroller = bipedControllers.BipedPlanEvalAndControlSystem(r, control, planeval);
   sys = feedback(r, plancontroller);
 
   output_select(1).system=1;
@@ -115,7 +115,7 @@ for iter = 1:3
 
   x0 = traj.eval(tsample(end));
 
-  atlasUtil.plotWalkingTraj(r, traj, walking_plan_data);
+  r.plotWalkingTraj(traj, walking_plan_data);
 
   % keyboard();
 
