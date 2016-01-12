@@ -69,16 +69,16 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<Vecto
 
   VectorXd qdd_limited = qdd;
   // Do not wind the vref integrator up against the joint limits for the legs
-  for (i=0; i < rpc->position_indices.at("r_leg").size(); i++) {
-    int pos_ind = rpc->position_indices.at("r_leg")(i);
+  for (i=0; i < rpc->position_indices.legs.at(Side::RIGHT).size(); i++) {
+    int pos_ind = rpc->position_indices.legs.at(Side::RIGHT)[i];
     if (q(pos_ind) <= pdata->r->joint_limit_min(pos_ind) + LEG_INTEGRATOR_DEACTIVATION_MARGIN) {
       qdd_limited(pos_ind) = std::max(qdd(pos_ind), 0.0);
     } else if (q(pos_ind) >= pdata->r->joint_limit_max(pos_ind) - LEG_INTEGRATOR_DEACTIVATION_MARGIN) {
       qdd_limited(pos_ind) = std::min(qdd(pos_ind), 0.0);
     }
   }
-  for (i=0; i < rpc->position_indices.at("l_leg").size(); i++) {
-    int pos_ind = rpc->position_indices.at("l_leg")(i);
+  for (i=0; i < rpc->position_indices.legs.at(Side::LEFT).size(); i++) {
+    int pos_ind = rpc->position_indices.legs.at(Side::LEFT)[i];
     if (q(pos_ind) <= pdata->r->joint_limit_min(pos_ind) + LEG_INTEGRATOR_DEACTIVATION_MARGIN) {
       qdd_limited(pos_ind) = std::max(qdd(pos_ind), 0.0);
     } else if (q(pos_ind) >= pdata->r->joint_limit_max(pos_ind) - LEG_INTEGRATOR_DEACTIVATION_MARGIN) {
@@ -89,25 +89,25 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<Vecto
   pdata->state.vref_integrator_state = (1-params->eta)*pdata->state.vref_integrator_state + params->eta*qd + qdd_limited*dt;
 
   if (params->zero_ankles_on_contact && foot_contact[0] == 1) {
-    for (i=0; i < rpc->position_indices.at("l_leg_ak").size(); i++) {
-      pdata->state.vref_integrator_state(rpc->position_indices.at("l_leg_ak")(i)) = 0;
+    for (i=0; i < rpc->position_indices.ankles.at(Side::LEFT).size(); i++) {
+      pdata->state.vref_integrator_state(rpc->position_indices.ankles.at(Side::LEFT)[i]) = 0;
     }
   }
   if (params->zero_ankles_on_contact && foot_contact[1] == 1) {
-    for (i=0; i < rpc->position_indices.at("r_leg_ak").size(); i++) {
-      pdata->state.vref_integrator_state(rpc->position_indices.at("r_leg_ak")(i)) = 0;
+    for (i=0; i < rpc->position_indices.ankles.at(Side::RIGHT).size(); i++) {
+      pdata->state.vref_integrator_state(rpc->position_indices.ankles.at(Side::RIGHT)[i]) = 0;
     }
   }
   if (pdata->state.foot_contact_prev[0] != foot_contact[0]) {
     // contact state changed, reset integrated velocities
-    for (i=0; i < rpc->position_indices.at("l_leg").size(); i++) {
-      pdata->state.vref_integrator_state(rpc->position_indices.at("l_leg")(i)) = qd(rpc->position_indices.at("l_leg")(i));
+    for (i=0; i < rpc->position_indices.legs.at(Side::LEFT).size(); i++) {
+      pdata->state.vref_integrator_state(rpc->position_indices.legs.at(Side::LEFT)[i]) = qd(rpc->position_indices.legs.at(Side::LEFT)[i]);
     }
   }
   if (pdata->state.foot_contact_prev[1] != foot_contact[1]) {
     // contact state changed, reset integrated velocities
-    for (i=0; i < rpc->position_indices.at("r_leg").size(); i++) {
-      pdata->state.vref_integrator_state(rpc->position_indices.at("r_leg")(i)) = qd(rpc->position_indices.at("r_leg")(i));
+    for (i=0; i < rpc->position_indices.legs.at(Side::RIGHT).size(); i++) {
+      pdata->state.vref_integrator_state(rpc->position_indices.legs.at(Side::RIGHT)[i]) = qd(rpc->position_indices.legs.at(Side::RIGHT)[i]);
     }
   }
 
@@ -118,13 +118,13 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<Vecto
 
   // do not velocity control ankles when in contact
   if (params->zero_ankles_on_contact && foot_contact[0] == 1) {
-    for (i=0; i < rpc->position_indices.at("l_leg_ak").size(); i++) {
-      qd_err(rpc->position_indices.at("l_leg_ak")(i)) = 0;
+    for (i=0; i < rpc->position_indices.ankles.at(Side::LEFT).size(); i++) {
+      qd_err(rpc->position_indices.ankles.at(Side::LEFT)[i]) = 0;
     }
   }
   if (params->zero_ankles_on_contact && foot_contact[1] == 1) {
-    for (i=0; i < rpc->position_indices.at("r_leg_ak").size(); i++) {
-      qd_err(rpc->position_indices.at("r_leg_ak")(i)) = 0;
+    for (i=0; i < rpc->position_indices.ankles.at(Side::RIGHT).size(); i++) {
+      qd_err(rpc->position_indices.ankles.at(Side::RIGHT)[i]) = 0;
     }
   }
 
@@ -533,7 +533,7 @@ int setupAndSolveQP(
   // std::cout << "adjusted mu: ";
   for (int i=0; i < active_supports.size(); ++i) {
     int body_id = active_supports[i].body_idx;
-    if ((body_id == pdata->rpc.body_ids.l_foot || body_id == pdata->rpc.body_ids.r_foot) && !b_contact_force(active_supports[i].body_idx)) {
+    if ((body_id == pdata->rpc.foot_ids.at(Side::RIGHT) || body_id == pdata->rpc.foot_ids.at(Side::LEFT)) && !b_contact_force(active_supports[i].body_idx)) {
       adjusted_mus[i] = MU_VERY_SMALL;
     } else {
       adjusted_mus[i] = mu;
@@ -896,8 +896,8 @@ int setupAndSolveQP(
   //y = pdata->B_act.jacobiSvd(ComputeThinU|ComputeThinV).solve(pdata->H_act*qdd + pdata->C_act - Jz_act.transpose()*lambda - D_act*beta);
 
   bool foot_contact[2];
-  foot_contact[0] = b_contact_force(pdata->rpc.body_ids.l_foot) == 1;
-  foot_contact[1] = b_contact_force(pdata->rpc.body_ids.r_foot) == 1;
+  foot_contact[0] = b_contact_force(pdata->rpc.foot_ids.at(Side::LEFT)) == 1;
+  foot_contact[1] = b_contact_force(pdata->rpc.foot_ids.at(Side::RIGHT)) == 1;
   qp_output->qd_ref = velocityReference(pdata, robot_state.t, robot_state.q, robot_state.qd, qp_output->qdd, foot_contact, &(params->vref_integrator), &(pdata->rpc));
 
   // Remember t for next time around

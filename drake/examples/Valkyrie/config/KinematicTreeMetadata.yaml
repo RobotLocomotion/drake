@@ -1,0 +1,22 @@
+body_names:
+  feet:
+    r: "rightFoot+rightLegSixAxis_Frame+rightCOP_Frame"
+    l: "leftFoot+leftLegSixAxis_Frame+leftCOP_Frame"
+
+joint_group_names:
+  legs:
+    r: [rightHipYaw, rightHipRoll, rightHipPitch, rightKneePitch, rightAnklePitch, rightAnkleRoll]
+    l: [leftHipYaw, leftHipRoll, leftHipPitch, leftKneePitch, leftAnklePitch, leftAnkleRoll]
+  knees:
+    r: rightKneePitch
+    l: leftKneePitch
+  ankles:
+    r: [rightAnklePitch, leftAnkleRoll]
+    l: [leftAnklePitch, rightAnkleRoll]
+  arms:
+    r: [rightShoulderPitch, rightShoulderRoll, rightShoulderYaw, rightElbowPitch, rightForearmYaw, rightWristRoll, rightWristPitch]
+    l: [leftShoulderPitch, leftShoulderRoll, leftShoulderYaw, leftElbowPitch, leftForearmYaw, leftWristRoll, leftWristPitch]
+  
+  neck: [lowerNeckPitch]
+  back_bkz: torsoYaw
+  back_bky: torsoPitch
