@@ -251,16 +251,6 @@ void parsePositionIndices(const mxArray *pobj, std::map<std::string, VectorXi> &
   return;
 }
 
-void parseRobotPropertyCache(const mxArray *rpc_obj, RobotPropertyCache *rpc) {
-  parsePositionIndices(mxGetFieldSafe(rpc_obj, "position_indices"), rpc->position_indices);
-
-  rpc->body_ids.r_foot = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "r_foot")) - 1;
-  rpc->body_ids.l_foot = (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "l_foot")) - 1;
-  (int) mxGetScalar(myGetField(myGetField(rpc_obj, "body_ids"), "pelvis")) - 1;
-
-  return;
-}
-
 mxArray* myGetProperty(const mxArray* pobj, const char* propname)
 {
   mxArray* pm = mxGetProperty(pobj,0,propname);
