@@ -478,7 +478,7 @@ namespace DrakeCollision
     if (gjkOutput.m_hasResult) {
       c->addSingleResult(idA,idB,pointOnA,pointOnB, toVector3d(gjkOutput.m_normalOnBInWorld),(double) distance);
     } else {
-      throw std::runtime_error("In BulletModel::findClosestPointsBtwElements: No closest point found between " + idA + " and " + idB);
+      throw std::runtime_error("In BulletModel::findClosestPointsBtwElements: No closest point found between " + to_string(idA) + " and " + to_string(idB));
     }
 
     return (c->pts.size() > 0);
