@@ -17,6 +17,13 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+if(WITH_PYTHON_3)
+  set(Python_ADDITIONAL_VERSIONS 3.5)
+  find_package(PythonInterp 3 REQUIRED)
+else()
+  find_package(PythonInterp REQUIRED)
+endif()
+
 # set up pods
 set(POD_NAME drake)
 include(cmake/pods.cmake)
@@ -120,8 +127,10 @@ file(WRITE ${PROJECT_SOURCE_DIR}/core/Path.h
 
 find_package( Perl )
 if ( PERL_FOUND )
-   file(WRITE ${CMAKE_BINARY_DIR}/CTestCustom.cmake
+  if (MATLAB_FOUND)
+    file(WRITE ${CMAKE_BINARY_DIR}/CTestCustom.cmake
    	      "set(CTEST_CUSTOM_PRE_TEST \"${PERL_EXECUTABLE} ${PROJECT_SOURCE_DIR}/cmake/add_matlab_unit_tests.pl ${PROJECT_SOURCE_DIR}\")\n")
+  endif()
 endif()
 
 enable_testing()
@@ -201,6 +210,7 @@ add_subdirectory(systems)
 add_subdirectory(thirdParty/GetFullPath)
 add_subdirectory(thirdParty/spruce)
 add_subdirectory(examples)
+add_subdirectory(bindings)
 
 # setup matlab pods-compliance
 include(cmake/matlab_pods.cmake)

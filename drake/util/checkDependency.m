@@ -427,6 +427,14 @@ else % then try to evaluate the dependency now...
         disp(' ');
       end
 
+    case 'cpp_bindings'
+      conf.cpp_bindings_enabled = logical(exist('+rbtree/RigidBodyTree.m','file'));
+      if ~conf.cpp_bindings_enabled && nargout < 1
+        disp(' ');
+        disp(' C++ bindings in matlab are disabled. These bindings require a version of SWIG which is compiled with matlab support. You can enable it by turning on the WITH_SWIG_MATLAB option when running `make options` in drake-distro.');
+        disp(' ');
+      end
+
     otherwise
 
       % todo: call ver(dep) here?
