@@ -4,6 +4,23 @@
 #include "QPCommon.h"
 #include "RigidBodyTree.h"
 
+std::regex globToRegex(const std::string &glob) {
+  // Convert simple glob expressions (using * as wildcard) to regex by:
+  //    1. Prefixing each regex special chars EXCEPT * with \
+  //    2. Converting * to .*
+  std::cout << "glob: " << glob << std::endl;
+  auto re_escape_pattern = std::regex("[.^$|()\\[\\]{}+?\\\\]");
+  std::string re_escape_replacement = "\\\\$&";
+  std::string escaped_pattern = std::regex_replace(glob, re_escape_pattern, re_escape_replacement);
+  std::cout << "regex 1: " << escaped_pattern << std::endl;
+  auto re_star_pattern = std::regex("\\*");
+  std::string re_star_replacement = ".*";
+  escaped_pattern = std::regex_replace(escaped_pattern, re_star_pattern, re_star_replacement);
+  std::cout << "regex 2: " << escaped_pattern << std::endl;
+  return std::regex(escaped_pattern);
+}
+
+
 double dampingGain(double Kp, double damping_ratio) {
   return 2 * damping_ratio * sqrt(Kp);
 }
@@ -59,10 +76,10 @@ void loadSingleBodyMotionParams(BodyMotionParams &params, const YAML::Node & con
 
 void loadBodyMotionParams(QPControllerParams &params, const YAML::Node &config, const RigidBodyTree &robot) {
   for (auto config_it = config.begin(); config_it != config.end(); ++config_it) {
-    auto body_regex = std::regex(config_it->first.as<std::string>());
+    std::regex body_regex = globToRegex((*config_it)["name"].as<std::string>());
     for (auto body_it = robot.bodies.begin(); body_it != robot.bodies.end(); ++body_it) {
       if (std::regex_match((*body_it)->linkname.begin(), (*body_it)->linkname.end(), body_regex)) {
-        loadSingleBodyMotionParams(params.body_motion[body_it - robot.bodies.begin()], config_it->second);
+        loadSingleBodyMotionParams(params.body_motion[body_it - robot.bodies.begin()], (*config_it)["params"]);
       }
     }
   }
@@ -80,10 +97,10 @@ int main(int argc, char** argv) {
 
   YAML::Node whole_body_config = config["whole_body"];
   for (auto config_it = whole_body_config.begin(); config_it != whole_body_config.end(); ++config_it) {
-    auto joint_regex = std::regex(config_it->first.as<std::string>());
+    std::regex joint_regex = globToRegex((*config_it)["name"].as<std::string>());
     for (auto position_it = position_name_to_index.begin(); position_it != position_name_to_index.end(); ++position_it) {
       if (std::regex_match(position_it->first.begin(), position_it->first.end(), joint_regex)) {
-        loadSingleJointParams(params.whole_body, position_it->second, config_it->second);
+        loadSingleJointParams(params.whole_body, position_it->second, (*config_it)["params"]);
       }
     }
   }
