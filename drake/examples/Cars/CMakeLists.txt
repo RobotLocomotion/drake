@@ -7,7 +7,7 @@ include_directories(${PROJECT_SOURCE_DIR}/systems/plants/joints)
 include_directories(${PROJECT_SOURCE_DIR}/systems/controllers)
 include_directories(${PROJECT_SOURCE_DIR}/util)
 
-if (LCM_FOUND and snopt_c_FOUND)
+if (LCM_FOUND AND snopt_c_FOUND)
   include_directories(${PROJECT_SOURCE_DIR}/pod-build/lcmgen)
   add_executable(carSimLCM simulateLCM.cpp)
   target_link_libraries(carSimLCM drakeRBSystem drakeLCMSystem)
