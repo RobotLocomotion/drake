@@ -40,7 +40,6 @@ namespace Drake {
     void init() {
       publishLoadRobot();
 
-      draw_msg.timestamp = 1000;
       draw_msg.num_links = tree->bodies.size();
       std::vector<float> position = {0, 0, 0}, quaternion = {0, 0, 0, 1};
       for (const auto &body : tree->bodies) {
@@ -130,9 +129,7 @@ namespace Drake {
 
 
     OutputVector<double> output(const double& t, const StateVector<double>& x, const InputVector<double>& u) const {
-      int64_t timestamp = static_cast<int64_t>(t * 1000.0);
-      if (draw_msg.timestamp==timestamp) return u;  // this gets called multiple times when it's in a cascade system
-      draw_msg.timestamp = timestamp;
+      draw_msg.timestamp = static_cast<int64_t>(t * 1000.0);
 
       auto uvec = toEigen(u);
       auto q = uvec.head(tree->num_positions);
