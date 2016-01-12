@@ -240,17 +240,6 @@ PiecewisePolynomial<double> matlabToPiecewisePolynomial(const mxArray* pobj, int
   return PiecewisePolynomial<double>(poly_matrices, ts);
 }
 
-void parsePositionIndices(const mxArray *pobj, std::map<std::string, VectorXi> &position_indices) {
-  int num_fields = mxGetNumberOfFields(pobj);
-  for (int i=0; i < num_fields; ++i) {
-    const mxArray* pfield = mxGetFieldByNumber(pobj, 0, i);
-    Map<VectorXd> indices_double(mxGetPrSafe(pfield), mxGetNumberOfElements(pfield));
-    VectorXi indices = indices_double.cast<int> ();
-    position_indices[std::string(mxGetFieldNameByNumber(pobj, i))] = indices.array() - 1;
-  }
-  return;
-}
-
 mxArray* myGetProperty(const mxArray* pobj, const char* propname)
 {
   mxArray* pm = mxGetProperty(pobj,0,propname);
