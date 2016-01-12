@@ -19,8 +19,13 @@ classdef CubicPolynomialExample < PolynomialSystem
     function obj = CubicPolynomialExample()
       obj = obj@PolynomialSystem(1,0,0,1,false,true,false);
     end
-    function xdot = dynamicsRHS(obj,t,x,u)
-      xdot = -x+x^3;
+    function [xdot, df] = dynamicsRHS(obj,t,x,u)
+      xdot = -(x)+(x)^3;
+      
+      if nargout>1
+          df = [0, 3*x^2-1];
+      end
+      
     end
     function y=output(obj,t,x,u)
       y=x;
