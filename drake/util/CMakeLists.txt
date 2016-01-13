@@ -162,14 +162,5 @@ install(FILES ${CMAKE_BINARY_DIR}/bin/drake_debug_mex.sh
         PERMISSIONS OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 endif(0) #NOT WIN32)
 
-
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../solvers)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../systems)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../systems/robotInterfaces)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../systems/controllers)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../systems/plants)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../systems/plants/joints)
-add_executable(loadParams loadParams.cpp)
-pods_use_pkg_config_packages(loadParams yaml-cpp)
-target_link_libraries(loadParams drakeRBM)
+add_subdirectory(yaml)
 

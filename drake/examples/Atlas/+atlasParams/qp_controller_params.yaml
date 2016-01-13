@@ -1,0 +1,346 @@
+base: &BASE
+  body_specific:
+    - name: "*"
+      params: &BODY_DEFAULTS
+        Kp: {x: 12, y: 12, z: 12, wx: 12, wy: 12, wz: 12}
+        damping_ratio: 0.7
+        accel_bounds:
+          min: {x: -100, y: -100, z: -100, wx: -50, wy: -50, wz: -50}
+          max: {x: 100, y: 100, z: 100, wx: 50, wy: 50, wz: 50}
+        weight: 0.0
+    - name: pelvis*
+      params:
+        <<: *BODY_DEFAULTS
+        Kp: {x: 150, y: 150, z: 150, wx: 200, wy: 200, wz: 200}
+        weight: 0.01
+        damping_ratio: 0.6
+    - name: r_foot*
+      params:
+        <<: *BODY_DEFAULTS
+        weight: 0.01
+    - name: l_foot*
+      params:
+        <<: *BODY_DEFAULTS
+        weight: 0.01
+
+  position_specific:
+    - name: "*"
+      params: &POSITION_DEFAULTS
+        Kp: 150
+        damping_ratio: 0.6
+        w_qdd: 0.001
+        integrator:
+          gains: 0
+          clamps: 0
+        qdd_bounds:
+          min: -100
+          max: 100
+        joint_soft_limits:
+          enabled: false
+          lb: -.inf
+          ub: .inf
+          kp: 150
+          damping_ratio: 0.6
+          weight: 1e-5
+          disable_when_body_in_support: ""
+          k_logistic: 20
+    - name: base*
+      params:
+        <<: *POSITION_DEFAULTS
+        w_qdd: 0
+    - name: r_leg_kny*
+      params:
+        <<: *POSITION_DEFAULTS
+        joint_soft_limits:
+          enabled: true
+          lb: 0.5
+          ub: .inf
+          kp: 150
+          damping_ratio: 0.6
+          weight: 1e-5
+          disable_when_body_in_support: "r_foot*"
+          k_logistic: 20
+    - name: l_leg_kny*
+      params:
+        <<: *POSITION_DEFAULTS
+        joint_soft_limits:
+          enabled: true
+          lb: 0.5
+          ub: .inf
+          kp: 150
+          damping_ratio: 0.6
+          weight: 1e-5
+          disable_when_body_in_support: "l_foot*"
+          k_logistic: 20
+    - name: back_bkx*
+      params:
+        <<: *POSITION_DEFAULTS
+        w_qdd: 0.1
+        Kp: 50
+
+  input_specific:
+    - name: "*"
+      params: &INPUT_DEFAULTS
+        hardware:
+          joint_is_force_controlled: true
+          joint_is_position_controlled: false
+          k_f_p: 0
+          k_q_p: 0
+          k_q_i: 0
+          k_qd_p: 0
+          ff_qd: 0
+          ff_f_d: 0
+          ff_const: 0
+          ff_qd_d: 0
+
+  vref_integrator:
+    zero_ankles_on_contact: false
+    eta: 0.001
+    delta_max: 10
+  integrator: 
+    eta: 0.0
+  W_kdot: 0
+  Kp_ang: 0
+  w_slack: 0.05
+  slack_limit: 100
+  w_grf: 0
+  Kp_accel: 1
+  contact_threshold: 0.002
+  min_knee_angle: 0.7
+  center_of_mass_observer:
+    enabled: false
+    l_zmp: 10
+    l_com: 6.324555320336759 # 2 * sqrt(l_zmp)
+
+walking:
+  <<: *BASE
+  body_specific:
+    - name: "*"
+      params:
+        <<: *BODY_DEFAULTS
+        weight: 0.001
+    - name: "pelvis*"
+      params:
+        <<: *BODY_DEFAULTS
+        Kp: {x: 0, y: 0, z: 150, wx: 200, wy: 200, wz: 200}
+        damping_ratio: 0.6
+        weight: 0.075
+    - name: "r_foot*"
+      params:
+        <<: *BODY_DEFAULTS
+        Kp: {x: 100, y: 100, z: 100, wx: 150, wy: 150, wz: 150}
+        damping_ratio: 0.5
+        weight: 0.001
+    - name: "l_foot*"
+      params:
+        <<: *BODY_DEFAULTS
+        Kp: {x: 100, y: 100, z: 100, wx: 150, wy: 150, wz: 150}
+        damping_ratio: 0.5
+        weight: 0.001
+  position_specific:
+    - name: "*"
+      params: 
+        <<: *POSITION_DEFAULTS
+        w_qdd: 0
+        damping_ratio: 0.5
+    - name: "*leg*"
+      params: 
+        <<: *POSITION_DEFAULTS
+        w_qdd: 1e-6
+        damping_ratio: 0.5
+    - name: r_leg_kny*
+      params:
+        <<: *POSITION_DEFAULTS
+        joint_soft_limits:
+          enabled: true
+          lb: 0.5
+          ub: .inf
+          kp: 150
+          damping_ratio: 0.6
+          weight: 1e-5
+          disable_when_body_in_support: "r_foot*"
+          k_logistic: 20
+        w_qdd: 1e-6
+        damping_ratio: 0.5
+    - name: l_leg_kny*
+      params:
+        <<: *POSITION_DEFAULTS
+        joint_soft_limits:
+          enabled: true
+          lb: 0.5
+          ub: .inf
+          kp: 150
+          damping_ratio: 0.6
+          weight: 1e-5
+          disable_when_body_in_support: "l_foot*"
+          k_logistic: 20
+        w_qdd: 1e-6
+        damping_ratio: 0.5
+    - name: "*arm*"
+      params: 
+        <<: *POSITION_DEFAULTS
+        w_qdd: 1e-4
+        damping_ratio: 0.5
+    - name: "back*"
+      params: 
+        <<: *POSITION_DEFAULTS
+        w_qdd: 1e-4
+        damping_ratio: 0.5
+    - name: "back_bkx"
+      params: 
+        <<: *POSITION_DEFAULTS
+        w_qdd: 0.1
+        Kp: 50
+        damping_ratio: 0.5
+  contact_threshold: 0.001
+  Kp_accel: 0
+
+standing:
+  <<: *BASE
+
+manip:
+  <<: *BASE
+  body_specific:
+    - name: "*"
+      params:
+        <<: *BODY_DEFAULTS
+    - name: pelvis*
+      params:
+        <<: *BODY_DEFAULTS
+        Kp: {x: 150, y: 150, z: 150, wx: 200, wy: 200, wz: 200}
+        weight: 0.01
+        damping_ratio: 0.6
+    - name: r_foot*
+      params:
+        <<: *BODY_DEFAULTS
+        weight: 0.01
+    - name: l_foot*
+      params:
+        <<: *BODY_DEFAULTS
+        weight: 0.01
+    - name: "l_hand*"
+      params:
+        <<: *BODY_DEFAULTS
+        weight: 0.001
+    - name: "r_hand*"
+      params: 
+        <<: *BODY_DEFAULTS
+        weight: 0.001
+
+position_control:
+  <<: *BASE
+  position_specific:
+    - name: "*"
+      params: 
+        <<: *POSITION_DEFAULTS
+    - name: r_leg_kny*
+      params:
+        <<: *POSITION_DEFAULTS
+        joint_soft_limits:
+          enabled: true
+          lb: 0.5
+          ub: .inf
+          kp: 150
+          damping_ratio: 0.6
+          weight: 1e-5
+          disable_when_body_in_support: "r_foot*"
+          k_logistic: 20
+    - name: l_leg_kny*
+      params:
+        <<: *POSITION_DEFAULTS
+        joint_soft_limits:
+          enabled: true
+          lb: 0.5
+          ub: .inf
+          kp: 150
+          damping_ratio: 0.6
+          weight: 1e-5
+          disable_when_body_in_support: "l_foot*"
+          k_logistic: 20
+    - name: back_bkx*
+      params:
+        <<: *POSITION_DEFAULTS
+        Kp: 50
+
+recovery:
+  <<: *BASE
+  body_specific:
+    - name: "*"
+      params:
+        <<: *BODY_DEFAULTS
+        weight: 0.001
+    - name: "pelvis*"
+      params:
+        <<: *BODY_DEFAULTS
+        Kp: {x: 0, y: 0, z: 150, wx: 200, wy: 200, wz: 200}
+        damping_ratio: 0.6
+        weight: 0.075
+    - name: "r_foot*"
+      params:
+        <<: *BODY_DEFAULTS
+        Kp: {x: 1000, y: 1000, z: 1000, wx: 1500, wy: 1500, wz: 1500}
+        damping_ratio: 0.5
+        weight: 0.001
+    - name: "l_foot*"
+      params:
+        <<: *BODY_DEFAULTS
+        Kp: {x: 1000, y: 1000, z: 1000, wx: 1500, wy: 1500, wz: 1500}
+        damping_ratio: 0.5
+        weight: 0.001
+  position_specific:
+    - name: "*"
+      params: 
+        <<: *POSITION_DEFAULTS
+        w_qdd: 0
+        damping_ratio: 0.5
+    - name: "*leg*"
+      params: 
+        <<: *POSITION_DEFAULTS
+        w_qdd: 1e-6
+        damping_ratio: 0.5
+    - name: r_leg_kny*
+      params:
+        <<: *POSITION_DEFAULTS
+        joint_soft_limits:
+          enabled: true
+          lb: 0.5
+          ub: .inf
+          kp: 150
+          damping_ratio: 0.6
+          weight: 1e-5
+          disable_when_body_in_support: "r_foot*"
+          k_logistic: 20
+        w_qdd: 1e-6
+        damping_ratio: 0.5
+    - name: l_leg_kny*
+      params:
+        <<: *POSITION_DEFAULTS
+        joint_soft_limits:
+          enabled: true
+          lb: 0.5
+          ub: .inf
+          kp: 150
+          damping_ratio: 0.6
+          weight: 1e-5
+          disable_when_body_in_support: "l_foot*"
+          k_logistic: 20
+        w_qdd: 1e-6
+        damping_ratio: 0.5
+    - name: "*arm*"
+      params: 
+        <<: *POSITION_DEFAULTS
+        w_qdd: 1e-4
+        damping_ratio: 0.5
+    - name: "back*"
+      params: 
+        <<: *POSITION_DEFAULTS
+        w_qdd: 1e-4
+        damping_ratio: 0.5
+    - name: "back_bkx"
+      params: 
+        <<: *POSITION_DEFAULTS
+        w_qdd: 0.1
+        Kp: 50
+        damping_ratio: 0.5
+  contact_threshold: 0.001
+  Kp_accel: 0
