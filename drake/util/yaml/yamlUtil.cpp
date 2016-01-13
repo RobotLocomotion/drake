@@ -4,7 +4,7 @@ double dampingGain(double Kp, double damping_ratio) {
   return 2 * damping_ratio * sqrt(Kp);
 }
 
-std::regex globToRegex(const std::string &glob) {
+std::regex globToRegex(const std::string& glob) {
   auto re_escape_pattern = std::regex("[.^$|()\\[\\]{}+?\\\\]");
   std::string re_escape_replacement = "\\\\$&";
   std::string escaped_pattern = std::regex_replace(glob, re_escape_pattern, re_escape_replacement);
@@ -15,7 +15,7 @@ std::regex globToRegex(const std::string &glob) {
 }
 
 
-YAML::Node get(YAML::Node parent, std::string key) {
+YAML::Node get(const YAML::Node& parent, const std::string& key) {
   auto result = parent[key];
   if (result) {
     return result;
