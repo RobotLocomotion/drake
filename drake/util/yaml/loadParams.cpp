@@ -28,7 +28,7 @@
 int main(int argc, char** argv) {
   YAML::Node config = YAML::LoadFile(Drake::getDrakePath() + "/examples/Atlas/+atlasParams/defaults.yaml");
 
-  findAndApplyDefaults(config);
+  config = expandDefaults(config);
 
   std::ofstream out_file;
   out_file.open (Drake::getDrakePath() + "/examples/Atlas/+atlasParams/defaults_out.yaml");

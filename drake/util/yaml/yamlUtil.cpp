@@ -2,24 +2,21 @@
 
 YAML::Node applyDefaults(const YAML::Node& node, const YAML::Node& default_node) {
   YAML::Node result = YAML::Clone(node);
-  // std::cout << "in applyDefaults, node: " << node << std::endl;
   if (!default_node.IsMap()) {
     throw std::runtime_error("map node expected");
   }
   for (auto field = default_node.begin(); field != default_node.end(); ++field) {
     std::string fieldname = field->first.as<std::string>();
     if (!result[fieldname]) {
-      // std::cout << "copying " << field->second << " to key: " << field->first << std::endl;
       result[fieldname] = YAML::Clone(field->second);
     } else if (field->second.IsMap()) {
-      // std::cout << "recursively applying " << field->second << " to key: " << field->first << std::endl;
       result[fieldname] = applyDefaults(result[fieldname], field->second);
     }
   }
   return result;
 }
 
-YAML::Node findAndApplyDefaults(const YAML::Node& node) {
+YAML::Node expandDefaults(const YAML::Node& node) {
   YAML::Node result = YAML::Clone(node);
   if (node.IsMap() && node["="]) {
     // std::cout << "finding defaults for node: " << node << std::endl;
@@ -27,16 +24,14 @@ YAML::Node findAndApplyDefaults(const YAML::Node& node) {
     for (auto field = result.begin(); field != result.end(); ++field) {
       std::string fieldname = field->first.as<std::string>();
       if (fieldname != "=") {
-        // std::cout << "about to apply defaults: " << default_node << " to node: " << result[fieldname] << std::endl;
         result[fieldname] = applyDefaults(result[fieldname], default_node);
-        // std::cout << "done" << std::endl;
       }
     }
   }
   if (result.IsMap() || result.IsSequence()) {
     for (auto child = result.begin(); child != result.end(); ++child) {
       std::string child_name = child->first.as<std::string>();
-      result[child_name] = findAndApplyDefaults(child->second);
+      result[child_name] = expandDefaults(child->second);
     }
   }
   return result;
@@ -252,14 +247,21 @@ QPControllerParams loadSingleParamSet(const YAML::Node& config, const RigidBodyT
   return params;
 }
 
+std::map<std::string, QPControllerParams> loadAllParamSets(std::ifstream input_file, const RigidBodyTree &robot, std::ofstream* debug_output_file) {
+
+  YAML::Node config = YAML::Load(input_file);
+  input_file.close();
+  config = expandDefaults(config);
+
+  if (debug_output_file) {
+    (*debug_output_file) << config;
+    debug_output_file->close();
+  }
+
+  return loadAllParamSets(config, robot);
+}
+
 std::map<std::string, QPControllerParams> loadAllParamSets(YAML::Node config, const RigidBodyTree &robot) {
-
-  config = findAndApplyDefaults(config);
-  std::ofstream out_file;
-  out_file.open ("/Users/rdeits/locomotion/drake-distro/drake/examples/Atlas/+atlasParams/params_defaults_out.yaml");
-  out_file << config;
-  out_file.close();
-
   auto param_sets = std::map<std::string, QPControllerParams>();
   for (auto config_it = config.begin(); config_it != config.end(); ++config_it) {
     std::cout << "loading param set with name: " << config_it->first << std::endl;
