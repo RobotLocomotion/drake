@@ -369,19 +369,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   pdata->rpc = parseKinematicTreeMetadata(mxGetStdString(prhs[narg]), *(pdata->r));
   narg++;
 
-  // B
-  pdata->B.resize(mxGetM(prhs[narg]),mxGetN(prhs[narg]));
-  memcpy(pdata->B.data(),mxGetPrSafe(prhs[narg]),sizeof(double)*mxGetM(prhs[narg])*mxGetN(prhs[narg]));
-  narg++;
-
   // umin
-  int nq = pdata->r->num_positions, nu = pdata->B.cols();
+  int nq = pdata->r->num_positions, nu = static_cast<int>(pdata->r->actuators.size());
+
   pdata->umin.resize(nu);
   pdata->umax.resize(nu);
-  memcpy(pdata->umin.data(),mxGetPrSafe(prhs[narg++]),sizeof(double)*nu);
-
-  // umax
-  memcpy(pdata->umax.data(),mxGetPrSafe(prhs[narg++]),sizeof(double)*nu);
+  for (int i = 0; i < pdata->r->actuators.size(); i++) {
+    pdata->umin(i) = pdata->r->actuators.at(i).effort_limit_min;
+    pdata->umax(i) = pdata->r->actuators.at(i).effort_limit_max;
+  }
 
   // use_fast_qp
   pdata->use_fast_qp = (int) mxGetScalar(prhs[narg]);
@@ -398,8 +394,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   // Done parsing inputs
 
-  pdata->B_act.resize(nu,nu);
-  pdata->B_act = pdata->B.bottomRows(nu);
 
   pdata->qdd_lb = VectorXd::Zero(nq).array() - numeric_limits<double>::infinity();
   pdata->qdd_ub = VectorXd::Zero(nq).array() + numeric_limits<double>::infinity();

@@ -27,12 +27,18 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 class DRAKERBM_EXPORT RigidBodyActuator
 {
 public:
-  RigidBodyActuator(std::string _name, std::shared_ptr<RigidBody> _body, double _reduction = 1.0) :
-    name(_name), body(_body), reduction(_reduction) {};
+  RigidBodyActuator(const std::string&name,
+                    std::shared_ptr<RigidBody> body,
+                    double reduction = 1.0,
+                    double effort_limit_min = -std::numeric_limits<double>::infinity(),
+                    double effort_limit_max = std::numeric_limits<double>::infinity()) :
+      name(name), body(body), reduction(reduction), effort_limit_min(effort_limit_min), effort_limit_max(effort_limit_max) {};
 
-  std::string name;
-  std::shared_ptr<RigidBody> body;
-  double reduction;
+  const std::string name;
+  const std::shared_ptr<RigidBody> body;
+  const double reduction;
+  const double effort_limit_min;
+  const double effort_limit_max;
 };
 
 class DRAKERBM_EXPORT RigidBodyLoop
@@ -41,8 +47,8 @@ public:
   RigidBodyLoop(const std::shared_ptr<RigidBodyFrame>& _frameA, const std::shared_ptr<RigidBodyFrame>& _frameB, const Eigen::Vector3d& _axis) :
     frameA(_frameA), frameB(_frameB), axis(_axis) {};
 
-  std::shared_ptr<RigidBodyFrame> frameA, frameB;
-  Eigen::Vector3d axis;
+  const std::shared_ptr<RigidBodyFrame> frameA, frameB;
+  const Eigen::Vector3d axis;
 
   friend std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj);
 
