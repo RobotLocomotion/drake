@@ -433,7 +433,6 @@ namespace DrakeCollision
       btScalar radiusA, radiusB;
       shapeA->getBoundingSphere(centerA, radiusA);
       shapeB->getBoundingSphere(centerB, radiusB);
-      cout << "radiusA = " << radiusA << ", radiusB = " << radiusB << endl;
       if (radiusA <= DrakeShapes::MIN_RADIUS && radiusB <= DrakeShapes::MIN_RADIUS) {
         c->addSingleResult(idA,
                            idB,
