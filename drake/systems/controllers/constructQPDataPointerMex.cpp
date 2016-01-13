@@ -322,10 +322,15 @@ void parseQPControllerParamSets(const mxArray *pobj, RigidBodyTree *r, map<strin
   return;
 }
 
-void parseRobotJointNames(const mxArray *input_names, JointNames *joint_names) {
-  joint_names->robot = get_strings(myGetField(input_names, "robot"));
-  joint_names->drake = get_strings(myGetField(input_names, "drake"));
-  return;
+JointNames parseRobotJointNames(const string& hardware_data_file_name, const RigidBodyTree& tree) {
+  JointNames ret;
+  ret.drake.resize(tree.actuators.size());
+  transform(tree.actuators.begin(), tree.actuators.end(), ret.drake.begin(),
+            [](const RigidBodyActuator &actuator) { return actuator.body->getJoint().getName(); });
+  Node hardware_data = LoadFile(hardware_data_file_name);
+  ret.robot = hardware_data["joint_names"].as<vector<string>>();
+
+  return ret;
 }
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
@@ -388,8 +393,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   narg++;
 
   // input_coordinate_names
-  parseRobotJointNames(myGetField(prhs[narg], "input"), &(pdata->input_joint_names));
-  pdata->state_coordinate_names = get_strings(myGetField(prhs[narg], "state"));
+  pdata->input_joint_names = parseRobotJointNames(mxGetStdString(prhs[narg]), *(pdata->r));
   narg++;
 
   // Done parsing inputs
