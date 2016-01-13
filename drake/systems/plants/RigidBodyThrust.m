@@ -29,10 +29,11 @@ classdef RigidBodyThrust < RigidBodyForceElement
       force = sparse(6,getNumBodies(manip))*q(1);
       B_mod = manip.B*0*q(1); %initialize B_mod
 
+      options.in_terms_of_qdot = false;
       if (nargout>2)  % then compute gradients
         kinsol = doKinematics(manip,q,true);
-        [x,J,dJ] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1));
-        [axis_world,Jaxis_world] = forwardKin(manip,kinsol,obj.kinframe,obj.axis);
+        [x,J,dJ] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1),options);
+        [axis_world,Jaxis_world] = forwardKin(manip,kinsol,obj.kinframe,obj.axis,options);
         daxis_world = Jaxis_world-J;
         axis_world = axis_world-x;
 
@@ -43,7 +44,7 @@ classdef RigidBodyThrust < RigidBodyForceElement
         dB_mod((obj.input_num-1)*nq + (1:nq),1:nq) = obj.scale_factor*(J'*daxis_world + reshape(dJ'*axis_world,nq,nq));
       else
         kinsol = doKinematics(manip,q);
-        [x,J] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1));
+        [x,J] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1),options);
         axis_world = forwardKin(manip,kinsol,obj.kinframe,obj.axis);
         axis_world = axis_world-x;
       end
