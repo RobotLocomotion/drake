@@ -407,6 +407,22 @@ namespace DrakeCollision
                                                  const bool use_margins,
                                                  std::unique_ptr<ResultCollector>& c)
   {
+    // special case: two spheres (because we need to handle the zero-radius sphere case)
+    if (elements[idA]->getShape() == DrakeShapes::SPHERE && elements[idB]->getShape() == DrakeShapes::SPHERE)
+    {       auto xA_world = elements[idA]->getWorldTransform().block<3,1>(0,3);
+      auto xB_world = elements[idB]->getWorldTransform().block<3,1>(0,3);
+      double radiusA = dynamic_cast<const DrakeShapes::Sphere&>(elements[idA]->getGeometry()).radius;
+      double radiusB = dynamic_cast<const DrakeShapes::Sphere&>(elements[idB]->getGeometry()).radius;
+      double distance = (xA_world-xB_world).norm();
+      c->addSingleResult(idA,
+                         idB,
+                         Vector3d::Zero(),
+                         Vector3d::Zero(),
+                         (xA_world-xB_world)/distance,
+                         distance-radiusA-radiusB);
+      return true;
+    }
+
     btConvexShape* shapeA;
     btConvexShape* shapeB;
     btGjkPairDetector::ClosestPointInput input;
@@ -427,21 +443,6 @@ namespace DrakeCollision
 
     shapeA = (btConvexShape*) bt_objA->getCollisionShape();
     shapeB = (btConvexShape*) bt_objB->getCollisionShape();
-
-    if (elements[idA]->getShape() == DrakeShapes::SPHERE && elements[idB]->getShape() == DrakeShapes::SPHERE)
-    { // special case: two spheres (because we need to handle the zero-radius sphere case)
-      btVector3 centerA, centerB;
-      btScalar radiusA, radiusB;
-      shapeA->getBoundingSphere(centerA, radiusA);
-      shapeB->getBoundingSphere(centerB, radiusB);
-      c->addSingleResult(idA,
-                         idB,
-                         Vector3d::Zero(),
-                         Vector3d::Zero(),
-                         toVector3d(centerA-centerB),
-                         (centerA - centerB).length());
-      return true;
-    }
 
     btGjkEpaPenetrationDepthSolver epa;
     btVoronoiSimplexSolver sGjkSimplexSolver;
