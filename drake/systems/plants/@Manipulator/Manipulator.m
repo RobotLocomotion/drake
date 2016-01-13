@@ -59,7 +59,7 @@ classdef Manipulator < DrakeSystem
         if (obj.num_u>0)
           vdot = Hinv*(B*u-C);
           dtau = matGradMult(dB,u) - dC;
-          dvdot = [zeros(obj.num_positions,1),...
+          dvdot = [zeros(obj.num_velocities,1),...
             -Hinv*matGradMult(dH(:,1:obj.num_positions),vdot) + Hinv*dtau(:,1:obj.num_positions),...
             +Hinv*dtau(:,1+obj.num_positions:end), Hinv*B];
         else
@@ -154,7 +154,7 @@ classdef Manipulator < DrakeSystem
 
         constraint_force = -dpsidqd'*pinv(dpsidqd*Hinv*dpsidqd')*(dpsidq*qd + dpsidqd*Hinv*tau+beta*psi);
       else
-        constraint_force = 0*q;
+        constraint_force = 0*v;
       end
     end
   end
