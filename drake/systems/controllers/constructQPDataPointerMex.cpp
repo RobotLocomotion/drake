@@ -2,6 +2,8 @@
 #include <Eigen/StdVector>
 #include "drakeMexUtil.h"
 #include "controlMexUtil.h"
+#include "yamlUtil.h"
+#include "Path.h"
 // #include <limits>
 // #include <cmath>
 // #include "drakeUtil.h"
@@ -311,6 +313,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // param_sets
   parseQPControllerParamSets(prhs[narg], pdata->r, &(pdata->param_sets));
   narg++;
+
+
+  YAML::Node config_yaml = YAML::LoadFile(Drake::getDrakePath() + "/examples/Atlas/+atlasParams/qp_controller_params.yaml");
+  std::map<std::string, QPControllerParams> params_from_yaml = loadAllParamSets(config_yaml, *(pdata->r));
+  for (auto param_set_it = pdata->param_sets.begin(); param_set_it != pdata->param_sets.end(); ++param_set_it) {
+    std::cout << "============================" << std::endl << "Checking param set: " << param_set_it->first << std::endl;
+    if (!(params_from_yaml.at(param_set_it->first) == param_set_it->second)) {
+      throw std::runtime_error("not equal");
+    }
+  }
 
   // robot_property_cache
   parseRobotPropertyCache(prhs[narg], &(pdata->rpc));
