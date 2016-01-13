@@ -44,8 +44,6 @@ protected:
   const std::string name;
   Eigen::VectorXd joint_limit_min;
   Eigen::VectorXd joint_limit_max;
-  Eigen::VectorXd effort_limit;
-  Eigen::VectorXd velocity_limit;
 
 public:
   DrakeJoint(const std::string& name, const Eigen::Isometry3d& transform_to_parent_body, int num_positions, int num_velocities);
@@ -70,13 +68,9 @@ public:
 
   virtual Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const = 0;
 
-  const Eigen::VectorXd& getJointLimitMin() const;
+  virtual const Eigen::VectorXd& getJointLimitMin() const;
 
-  const Eigen::VectorXd& getJointLimitMax() const;
-
-  const Eigen::VectorXd& getEffortLimit() const;
-
-  const Eigen::VectorXd& getVelocityLimit() const;
+  virtual const Eigen::VectorXd& getJointLimitMax() const;
 
   POSITION_AND_VELOCITY_DEPENDENT_METHODS(double)
 

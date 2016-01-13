@@ -412,11 +412,11 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   {
     string name = mxGetStdString(mxGetPropertySafe(pActuators,i,"name"));
     pm = mxGetPropertySafe(pActuators,i,"joint");
-    size_t joint = static_cast<size_t>(mxGetScalar(pm)-1);
+    size_t joint_index = static_cast<size_t>(mxGetScalar(pm) - 1);
     double reduction = mxGetScalar(mxGetPropertySafe(pActuators,i, "reduction"));
-    double effort_min = mxGetScalar(mxGetPropertySafe(pBodies, joint, "effort_min"));
-    double effort_max = mxGetScalar(mxGetPropertySafe(pBodies, joint, "effort_max"));
-    model->actuators.push_back(RigidBodyActuator(name, model->bodies[joint], reduction, effort_min, effort_max));
+    double effort_min = mxGetScalar(mxGetPropertySafe(pBodies, joint_index, "effort_min"));
+    double effort_max = mxGetScalar(mxGetPropertySafe(pBodies, joint_index, "effort_max"));
+    model->actuators.push_back(RigidBodyActuator(name, model->bodies[joint_index], reduction, effort_min, effort_max));
   }
 
   //  LOOP CONSTRAINTS

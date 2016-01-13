@@ -9,9 +9,7 @@ DrakeJoint::DrakeJoint(
         name(_name), transform_to_parent_body(_transform_to_parent_body), num_positions(_num_positions),
         num_velocities(_num_velocities),
         joint_limit_min(VectorXd::Constant(_num_positions, -std::numeric_limits<double>::infinity())),
-        joint_limit_max(VectorXd::Constant(_num_positions, std::numeric_limits<double>::infinity())),
-        effort_limit(VectorXd::Constant(_num_velocities, std::numeric_limits<double>::infinity())),
-        velocity_limit(VectorXd::Constant(_num_velocities, std::numeric_limits<double>::infinity()))
+        joint_limit_max(VectorXd::Constant(_num_positions, std::numeric_limits<double>::infinity()))
 {
   assert(num_positions <= MAX_NUM_POSITIONS);
   assert(num_velocities <= MAX_NUM_VELOCITIES);
@@ -51,12 +49,3 @@ const Eigen::VectorXd& DrakeJoint::getJointLimitMax() const
 {
   return joint_limit_max;
 }
-
-const Eigen::VectorXd& DrakeJoint::getEffortLimit() const {
-  return effort_limit;
-}
-
-const Eigen::VectorXd& DrakeJoint::getVelocityLimit() const {
-  return velocity_limit;
-}
-

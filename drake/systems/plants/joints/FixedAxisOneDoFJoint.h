@@ -107,20 +107,6 @@ public:
     this->DrakeJoint::joint_limit_max[0] = joint_limit_max;
   }
 
-  void setEffortLimit(double effort_limit) {
-    if (effort_limit < 0) {
-      throw std::logic_error("effort limit must be nonnegative");
-    }
-    this->DrakeJoint::effort_limit[0] = effort_limit;
-  }
-
-  void setVelocityLimit(double velocity_limit) {
-    if (velocity_limit < 0) {
-      throw std::logic_error("velocity limit must be nonnegative");
-    }
-    this->DrakeJoint::velocity_limit[0] = velocity_limit;
-  }
-
   Eigen::VectorXd zeroConfiguration() const {
     return Eigen::VectorXd::Zero(1);
   }
