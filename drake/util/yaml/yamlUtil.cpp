@@ -1,5 +1,47 @@
 #include "yamlUtil.h"
 
+YAML::Node applyDefaults(const YAML::Node& node, const YAML::Node& default_node) {
+  YAML::Node result = YAML::Clone(node);
+  // std::cout << "in applyDefaults, node: " << node << std::endl;
+  if (!default_node.IsMap()) {
+    throw std::runtime_error("map node expected");
+  }
+  for (auto field = default_node.begin(); field != default_node.end(); ++field) {
+    std::string fieldname = field->first.as<std::string>();
+    if (!result[fieldname]) {
+      // std::cout << "copying " << field->second << " to key: " << field->first << std::endl;
+      result[fieldname] = YAML::Clone(field->second);
+    } else if (field->second.IsMap()) {
+      // std::cout << "recursively applying " << field->second << " to key: " << field->first << std::endl;
+      result[fieldname] = applyDefaults(result[fieldname], field->second);
+    }
+  }
+  return result;
+}
+
+YAML::Node findAndApplyDefaults(const YAML::Node& node) {
+  YAML::Node result = YAML::Clone(node);
+  if (node.IsMap() && node["="]) {
+    // std::cout << "finding defaults for node: " << node << std::endl;
+    const YAML::Node& default_node = result["="];
+    for (auto field = result.begin(); field != result.end(); ++field) {
+      std::string fieldname = field->first.as<std::string>();
+      if (fieldname != "=") {
+        // std::cout << "about to apply defaults: " << default_node << " to node: " << result[fieldname] << std::endl;
+        result[fieldname] = applyDefaults(result[fieldname], default_node);
+        // std::cout << "done" << std::endl;
+      }
+    }
+  }
+  if (result.IsMap() || result.IsSequence()) {
+    for (auto child = result.begin(); child != result.end(); ++child) {
+      std::string child_name = child->first.as<std::string>();
+      result[child_name] = findAndApplyDefaults(child->second);
+    }
+  }
+  return result;
+}
+
 double dampingGain(double Kp, double damping_ratio) {
   return 2 * damping_ratio * sqrt(Kp);
 }
@@ -20,9 +62,10 @@ YAML::Node get(const YAML::Node& parent, const std::string& key) {
   if (result) {
     return result;
   } else {
-    auto default_node = parent["<<"];
-    if (default_node) {
-      return get(default_node, key);
+    if (parent["<<"]) {
+      return get(parent["<<"], key);
+    } else if (parent["="]) {
+      return parent["="];
     } else {
       // No key, and no default, so return the null node as expected
       return result;
@@ -31,19 +74,27 @@ YAML::Node get(const YAML::Node& parent, const std::string& key) {
 }
 
 void loadBodyMotionParams(QPControllerParams &params, const YAML::Node &config, const RigidBodyTree &robot) {
-  for (auto config_it = config.begin(); config_it != config.end(); ++config_it) {
-    std::regex body_regex = globToRegex((*config_it)["name"].as<std::string>());
-    for (auto body_it = robot.bodies.begin(); body_it != robot.bodies.end(); ++body_it) {
-      if (std::regex_match((*body_it)->linkname, body_regex)) {
-        params.body_motion[body_it - robot.bodies.begin()] = get(*config_it, "params").as<BodyMotionParams>();
-        // loadSingleBodyMotionParams(params.body_motion[body_it - robot.bodies.begin()], (*config_it)["params"]);
-      }
-    }
+  for (auto body_it = robot.bodies.begin(); body_it != robot.bodies.end(); ++body_it) {
+    std::cout << (*body_it)->linkname << std::endl;
+    params.body_motion[body_it - robot.bodies.begin()] = get(config, (*body_it)->linkname).as<BodyMotionParams>();
   }
+
+  // for (auto config_it = config.begin(); config_it != config.end(); ++config_it) {
+  //   std::regex body_regex = globToRegex((*config_it)["name"].as<std::string>());
+  //   for (auto body_it = robot.bodies.begin(); body_it != robot.bodies.end(); ++body_it) {
+  //     if (std::regex_match((*body_it)->linkname, body_regex)) {
+  //       params.body_motion[body_it - robot.bodies.begin()] = get(*config_it, "params").as<BodyMotionParams>();
+  //       // loadSingleBodyMotionParams(params.body_motion[body_it - robot.bodies.begin()], (*config_it)["params"]);
+  //     }
+  //   }
+  // }
 }
 
-void loadSingleJointParams(QPControllerParams &params, Eigen::DenseIndex position_index, YAML::Node config, const RigidBodyTree &robot) {
+void loadSingleJointParams(QPControllerParams &params, Eigen::DenseIndex position_index, const YAML::Node &config, const RigidBodyTree &robot) {
+  // std::cout << "loading single joint from config: " << config << std::endl;
   params.whole_body.Kp(position_index) = get(config, "Kp").as<double>();
+  // std::cout << "config: " << config << std::endl;
+  std::cout << "damping_ratio: " << get(config, "damping_ratio") << " value: " << get(config, "damping_ratio").as<double>() << std::endl;
   params.whole_body.Kd(position_index) = dampingGain(get(config, "Kp").as<double>(), get(config, "damping_ratio").as<double>());
   params.whole_body.w_qdd(position_index) = get(config, "w_qdd").as<double>();
 
@@ -77,15 +128,21 @@ void loadSingleJointParams(QPControllerParams &params, Eigen::DenseIndex positio
 
 void loadJointParams(QPControllerParams &params, const YAML::Node &config, const RigidBodyTree &robot) {
   std::map<std::string, int> position_name_to_index = robot.computePositionNameToIndexMap();
-  for (auto config_it = config.begin(); config_it != config.end(); ++config_it) {
-    std::regex joint_regex = globToRegex(get(*config_it, "name").as<std::string>());
-    for (auto position_it = position_name_to_index.begin(); position_it != position_name_to_index.end(); ++position_it) {
-      if (std::regex_match(position_it->first, joint_regex)) {
-        // std::cout << get(*config_it, "name").as<std::string>() << " matches " << position_it->first << std::endl;
-        loadSingleJointParams(params, position_it->second, get(*config_it, "params"), robot);
-      }
-    }
+  for (auto position_it = position_name_to_index.begin(); position_it != position_name_to_index.end(); ++position_it) {
+    std::cout << "loading position id: " << position_it->second << " name: " << position_it->first << std::endl;
+    // std::cout << "config: " << config[position_it->first] << std::endl;
+    loadSingleJointParams(params, position_it->second, get(config, position_it->first), robot);
   }
+
+  // for (auto config_it = config.begin(); config_it != config.end(); ++config_it) {
+  //   std::regex joint_regex = globToRegex(get(*config_it, "name").as<std::string>());
+  //   for (auto position_it = position_name_to_index.begin(); position_it != position_name_to_index.end(); ++position_it) {
+  //     if (std::regex_match(position_it->first, joint_regex)) {
+  //       // std::cout << get(*config_it, "name").as<std::string>() << " matches " << position_it->first << std::endl;
+  //       loadSingleJointParams(params, position_it->second, get(*config_it, "params"), robot);
+  //     }
+  //   }
+  // }
 }
 
 void loadSingleInputParams(QPControllerParams &params, Eigen::DenseIndex position_index, YAML::Node config, const RigidBodyTree &robot) {
@@ -102,16 +159,20 @@ void loadSingleInputParams(QPControllerParams &params, Eigen::DenseIndex positio
   params.hardware.joint_is_position_controlled(position_index) = get(hardware_config, "joint_is_position_controlled").as<bool>();
 }
 
-void loadInputParams(QPControllerParams& params, YAML::Node config, const RigidBodyTree& robot) {
-  for (auto config_it = config.begin(); config_it != config.end(); ++config_it) {
-    std::regex input_regex = globToRegex(get(*config_it, "name").as<std::string>());
-    for (auto actuator_it = robot.actuators.begin(); actuator_it != robot.actuators.end(); ++actuator_it) {
-      if (std::regex_match((*actuator_it).name, input_regex)) {
-        // std::cout << get(*config_it, "name").as<std::string>() << " matches " << (*actuator_it).name << std::endl;
-        loadSingleInputParams(params, actuator_it - robot.actuators.begin(), get(*config_it, "params"), robot);
-      }
-    }
+void loadInputParams(QPControllerParams& params, const YAML::Node &config, const RigidBodyTree& robot) {
+  for (auto actuator_it = robot.actuators.begin(); actuator_it != robot.actuators.end(); ++actuator_it) {
+    loadSingleInputParams(params, actuator_it - robot.actuators.begin(), get(config, actuator_it->name), robot);
   }
+
+  // for (auto config_it = config.begin(); config_it != config.end(); ++config_it) {
+  //   std::regex input_regex = globToRegex(get(*config_it, "name").as<std::string>());
+  //   for (auto actuator_it = robot.actuators.begin(); actuator_it != robot.actuators.end(); ++actuator_it) {
+  //     if (std::regex_match((*actuator_it).name, input_regex)) {
+  //       // std::cout << get(*config_it, "name").as<std::string>() << " matches " << (*actuator_it).name << std::endl;
+  //       loadSingleInputParams(params, actuator_it - robot.actuators.begin(), get(*config_it, "params"), robot);
+  //     }
+  //   }
+  // }
 
 }
 
@@ -162,7 +223,7 @@ namespace YAML {
   };
 }
 
-QPControllerParams loadSingleParamSet(YAML::Node config, const RigidBodyTree &robot) {
+QPControllerParams loadSingleParamSet(const YAML::Node& config, const RigidBodyTree &robot) {
   QPControllerParams params(robot);
 
   loadJointParams(params, get(config, "position_specific"), robot);
@@ -192,6 +253,13 @@ QPControllerParams loadSingleParamSet(YAML::Node config, const RigidBodyTree &ro
 }
 
 std::map<std::string, QPControllerParams> loadAllParamSets(YAML::Node config, const RigidBodyTree &robot) {
+
+  config = findAndApplyDefaults(config);
+  std::ofstream out_file;
+  out_file.open ("/Users/rdeits/locomotion/drake-distro/drake/examples/Atlas/+atlasParams/params_defaults_out.yaml");
+  out_file << config;
+  out_file.close();
+
   auto param_sets = std::map<std::string, QPControllerParams>();
   for (auto config_it = config.begin(); config_it != config.end(); ++config_it) {
     std::cout << "loading param set with name: " << config_it->first << std::endl;

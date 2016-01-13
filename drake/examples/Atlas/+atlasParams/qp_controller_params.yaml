@@ -1,5 +1,6 @@
 base: &BASE
   body_specific:
+    =: &BODY_DEFAULTS
     - name: "*"
       params: &BODY_DEFAULTS
         Kp: {x: 12, y: 12, z: 12, wx: 12, wy: 12, wz: 12}

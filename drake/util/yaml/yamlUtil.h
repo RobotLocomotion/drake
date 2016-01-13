@@ -9,11 +9,12 @@
 //    2. Converting * to .*
 std::regex globToRegex(const std::string& glob);
 
+YAML::Node applyDefaults(const YAML::Node& node, const YAML::Node& default_node);
+YAML::Node findAndApplyDefaults(const YAML::Node& node);
 
-// yaml-cpp has a bug, in which it does not use the <<: syntax to merge in
-// the contents of a default node. See: https://github.com/jbeder/yaml-cpp/issues/353 
-// So, instead, we implement our own get() function which also checks for
-// the << key and uses it to supply any missing fields.
+// yaml-cpp does not understand the =: syntax for a default value or the <<:
+// syntax to merge the contents of a node. This function wraps the map lookup
+// to provide the correct behavior.
 YAML::Node get(const YAML::Node& parent, const std::string& key);
 
 // 
@@ -21,7 +22,7 @@ YAML::Node get(const YAML::Node& parent, const std::string& key);
 //
 void loadSingleBodyMotionParams(BodyMotionParams &params, const YAML::Node & config);
 void loadBodyMotionParams(QPControllerParams &params, const YAML::Node &config, const RigidBodyTree &robot);
-void loadSingleJointParams(QPControllerParams &params, Eigen::DenseIndex position_index, YAML::Node config, const RigidBodyTree &robot);
+void loadSingleJointParams(QPControllerParams &params, Eigen::DenseIndex position_index, const YAML::Node &config, const RigidBodyTree &robot);
 void loadJointParams(QPControllerParams &params, const YAML::Node &config, const RigidBodyTree &robot);
-QPControllerParams loadSingleParamSet(YAML::Node config, const RigidBodyTree &robot);
+QPControllerParams loadSingleParamSet(const YAML::Node &config, const RigidBodyTree &robot);
 std::map<std::string, QPControllerParams> loadAllParamSets(YAML::Node config, const RigidBodyTree &robot);

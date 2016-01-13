@@ -1,18 +1,47 @@
 #include <iostream>
+#include <fstream>
 #include <regex>
 #include "yamlUtil.h"
 #include "Path.h"
 
+// void applyDefaults(YAML::Node& parent) {
+//   if (parent.IsMap() && parent["DEFAULT"]) {
+//     for (auto child : parent) {
+//       if (child->first != "DEFAULT) {
+
+
+// template <typename T>
+// YAML::Node getDefault(const YAML::Node& parent, std::initializer_list<T> fields) {
+//   YAML::Node& child;
+//   for (auto field : fields) {
+//     child = parent[child];
+//     if (!child) {
+//       break;
+//     }
+//   }
+//   if (child) {
+//     return child;
+//   }
+//   for (auto field 
+
+
 int main(int argc, char** argv) {
-  YAML::Node config = YAML::LoadFile(Drake::getDrakePath() + "/examples/Atlas/+atlasParams/qp_controller_params.yaml");
+  YAML::Node config = YAML::LoadFile(Drake::getDrakePath() + "/examples/Atlas/+atlasParams/defaults.yaml");
 
-  auto robot = std::make_shared<RigidBodyTree>(Drake::getDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf");
+  findAndApplyDefaults(config);
 
-  std::map<std::string, QPControllerParams> params_from_yaml = loadAllParamSets(config, *robot);
-  // QPControllerParams params = loadSingleParamSet(get(config, "walking"), *robot);
+  std::ofstream out_file;
+  out_file.open (Drake::getDrakePath() + "/examples/Atlas/+atlasParams/defaults_out.yaml");
+  out_file << config;
+  out_file.close();
 
-  // std::map<std::string, int> position_name_to_index = robot->computePositionNameToIndexMap();
-  // std::cout << "base_x Kp: " << params.whole_body.Kp(position_name_to_index["base_x"]) << " w_qdd: " << params.whole_body.w_qdd(position_name_to_index["base_x"]) << std::endl;
-  // std::cout << "body 5 linkanme: " << robot->bodies[5]->linkname << " Kp: " << params.body_motion[5].Kp.transpose() << " accel_max: " << params.body_motion[5].accel_bounds.max.transpose() << std::endl;
+  // std::cout << "c: " << get(get(config, "body_specific"), "c") << std::endl;
+  std::cout << "manip body c: " << get(get(get(config, "manip"), "body_specific"), "c") << std::endl;
+
+  // auto robot = std::make_shared<RigidBodyTree>(Drake::getDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf");
+
+  // YAML::Node config_yaml = YAML::LoadFile(Drake::getDrakePath() + "/examples/Atlas/+atlasParams/params_defaults.yaml");
+  // std::map<std::string, QPControllerParams> params_from_yaml = loadAllParamSets(config_yaml, *robot);
+
   return 0;
 }
