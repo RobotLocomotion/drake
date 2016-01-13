@@ -361,7 +361,7 @@ int setupAndSolveQP(
   params = &(it->second);
   // mexPrintf("Kp_accel: %f, ", params->Kp_accel);
 
-  int nu = pdata->B.cols();
+  int nu = pdata->r->B.cols();
   int nq = pdata->r->num_positions;
 
   // zmp_data
@@ -669,15 +669,17 @@ int setupAndSolveQP(
   MatrixXd Ain = MatrixXd::Zero(n_ineq,nparams);  // note: obvious sparsity here
   VectorXd bin = VectorXd::Zero(n_ineq);
 
+  auto B_act = pdata->r->B.bottomRows(pdata->r->B.cols());
+
   // linear input saturation constraints
   // u=B_act'*(H_act*qdd + C_act - Jz_act'*z - Dbar_act*beta)
   // using transpose instead of inverse because B is orthogonal
-  Ain.topLeftCorner(nu,nq) = pdata->B_act.transpose()*pdata->H_act;
-  Ain.block(0,nq,nu,nc*nd) = -pdata->B_act.transpose()*D_act;
-  bin.head(nu) = -pdata->B_act.transpose()*pdata->C_act + pdata->umax;
+  Ain.topLeftCorner(nu,nq) = B_act.transpose()*pdata->H_act;
+  Ain.block(0,nq,nu,nc*nd) = -B_act.transpose()*D_act;
+  bin.head(nu) = -B_act.transpose()*pdata->C_act + pdata->umax;
 
   Ain.block(nu,0,nu,nparams) = -1*Ain.block(0,0,nu,nparams);
-  bin.segment(nu,nu) = pdata->B_act.transpose()*pdata->C_act - pdata->umin;
+  bin.segment(nu,nu) = B_act.transpose()*pdata->C_act - pdata->umin;
 
   int constraint_start_index = 2*nu;
   for (int i=0; i<desired_body_accelerations.size(); i++) {
@@ -889,7 +891,7 @@ int setupAndSolveQP(
   }
 
   // use transpose because B_act is orthogonal
-  qp_output->u = pdata->B_act.transpose()*(pdata->H_act*qp_output->qdd + pdata->C_act - D_act*beta);
+  qp_output->u = B_act.transpose()*(pdata->H_act*qp_output->qdd + pdata->C_act - D_act*beta);
   for (int i=0; i < qp_output->u.size(); i++) {
       if (std::isnan(qp_output->u(i))) qp_output->u(i) = 0;
   }

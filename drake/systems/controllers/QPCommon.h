@@ -411,7 +411,6 @@ public:
   KinematicsCache<double> cache;
   Eigen::MatrixXd H, H_float, H_act;
   Eigen::VectorXd C, C_float, C_act;
-  Eigen::MatrixXd B, B_act;
   Eigen::MatrixXd J;
   Eigen::Vector3d Jdotv;
   Eigen::MatrixXd J_xy;

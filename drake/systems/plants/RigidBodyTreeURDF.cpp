@@ -433,9 +433,9 @@ void setLimits(TiXmlElement *node, FixedAxisOneDoFJoint<JointType> *fjoint) {
   TiXmlElement* limit_node = node->FirstChildElement("limit");
   if (fjoint != nullptr && limit_node) {
     double lower = -numeric_limits<double>::infinity(), upper = numeric_limits<double>::infinity();
-    parseScalarAttribute(limit_node,"lower",lower);
-    parseScalarAttribute(limit_node,"upper",upper);
-    fjoint->setJointLimits(lower,upper);
+    parseScalarAttribute(limit_node, "lower", lower);
+    parseScalarAttribute(limit_node, "upper", upper);
+    fjoint->setJointLimits(lower, upper);
   }
 }
 
@@ -564,8 +564,21 @@ void parseTransmission(RigidBodyTree * model, TiXmlElement* node) {
   double gain = 1.0;
   if (reduction_node) parseScalarValue(reduction_node, gain);
 
-  RigidBodyActuator a(actuator_name, model->bodies[body_index], gain);
-  model->actuators.push_back(a);
+  TiXmlElement *limit_node = joint_node->FirstChildElement("limit");
+  double effort_min = -numeric_limits<double>::infinity();
+  double effort_max = numeric_limits<double>::infinity();
+  if (limit_node) {
+    bool effort_min_or_max_specified = false;
+    effort_min_or_max_specified = effort_min_or_max_specified || parseScalarAttribute(limit_node, "effort_min", effort_min);
+    effort_min_or_max_specified = effort_min_or_max_specified || parseScalarAttribute(limit_node, "effort_max", effort_max);
+
+    if (!effort_min_or_max_specified) {
+      parseScalarAttribute(limit_node, "effort_min", effort_max);
+      effort_min = -effort_max;
+    }
+  }
+
+  model->actuators.push_back(RigidBodyActuator(actuator_name, model->bodies[body_index], gain, effort_min, effort_max));
 }
 
 void parseLoop(RigidBodyTree * model, TiXmlElement* node)
