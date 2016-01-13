@@ -428,18 +428,19 @@ namespace DrakeCollision
     shapeA = (btConvexShape*) bt_objA->getCollisionShape();
     shapeB = (btConvexShape*) bt_objB->getCollisionShape();
 
-    { // special case: two zero-radius spheres
+    if (elements[idA]->getShape() == DrakeShapes::SPHERE && elements[idB]->getShape() == DrakeShapes::SPHERE)
+    { // special case: two spheres (because we need to handle the zero-radius sphere case)
       btVector3 centerA, centerB;
       btScalar radiusA, radiusB;
       shapeA->getBoundingSphere(centerA, radiusA);
       shapeB->getBoundingSphere(centerB, radiusB);
-      if (radiusA <= DrakeShapes::MIN_RADIUS && radiusB <= DrakeShapes::MIN_RADIUS) {
-        c->addSingleResult(idA,
-                           idB,
-                           Vector3d::Zero(),
-                           Vector3d::Zero(),
-                           Vector3d::Zero(), (centerA - centerB).length());
-      }
+      c->addSingleResult(idA,
+                         idB,
+                         Vector3d::Zero(),
+                         Vector3d::Zero(),
+                         toVector3d(centerA-centerB),
+                         (centerA - centerB).length());
+      return true;
     }
 
     btGjkEpaPenetrationDepthSolver epa;
