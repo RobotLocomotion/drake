@@ -157,7 +157,7 @@ struct AtlasHardwareParams {
   Eigen::Matrix<bool, Eigen::Dynamic, 1> joint_is_position_controlled;
 };
 
-struct AtlasParams {
+struct QPControllerParams {
   WholeBodyParams whole_body;
   std::vector<BodyMotionParams> body_motion;
   VRefIntegratorParams vref_integrator;
@@ -179,7 +179,7 @@ class NewQPControllerData {
 public:
   GRBenv *env;
   RigidBodyTree * r;
-  std::map<std::string,AtlasParams> param_sets;
+  std::map<std::string,QPControllerParams> param_sets;
   RobotPropertyCache rpc;
   void* map_ptr;
   Eigen::VectorXd umin,umax;

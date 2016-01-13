@@ -8,7 +8,7 @@ end
 if (nargin<1); use_mex = true; end
 if (nargin<2); use_angular_momentum = false; end
 
-import atlasControllers.*;
+import bipedControllers.*;
 
 % silence some warnings
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints')

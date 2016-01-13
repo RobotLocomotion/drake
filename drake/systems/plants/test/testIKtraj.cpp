@@ -49,7 +49,7 @@ int main()
   Vector3d com0 = model->centerOfMass(cache);
 
   Vector3d r_hand_pt = Vector3d::Zero();
-  Vector3d rhand_pos0 = model->forwardKin(cache, r_hand_pt, r_hand, 0, 0);
+  Vector3d rhand_pos0 = model->transformPoints(cache, r_hand_pt, r_hand, 0);
 
   int nT = 4;
   double* t = new double[nT];

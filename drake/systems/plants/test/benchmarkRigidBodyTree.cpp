@@ -28,7 +28,7 @@ void scenario1(const RigidBodyTree &model, KinematicsCache<Scalar>& cache, const
     cache.initialize(q);
     model.doKinematics(cache, false);
     for (const auto& pair : body_fixed_points) {
-      auto J = model.forwardKinJacobian(cache, pair.second, pair.first, 0, 2, false);
+      auto J = model.transformPointsJacobian(cache, pair.second, pair.first, 0, false);
       if (uniform(generator) < 1e-15) {
         // print with some probability to avoid optimizing away
         printMatrix<decltype(J)::RowsAtCompileTime, decltype(J)::ColsAtCompileTime>(J); // MSVC 2013 can't infer rows and cols (ICE)

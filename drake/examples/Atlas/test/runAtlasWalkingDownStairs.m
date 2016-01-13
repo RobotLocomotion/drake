@@ -99,7 +99,7 @@ lcmgl.switchBuffers();
 % v.playback(ytraj, struct('slider', true));
 % keyboard()
 
-[ytraj, com, rms_com] = atlasUtil.simulateWalking(r, walking_plan);
+[ytraj, com, rms_com] = r.simulateWalking(walking_plan);
 
 v.playback(ytraj, struct('slider', true));
 
