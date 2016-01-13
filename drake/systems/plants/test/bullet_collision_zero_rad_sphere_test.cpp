@@ -1,5 +1,5 @@
 
-#include "RigidBodySystem.h"
+#include "RigidBodyTree.h"
 #include "testUtil.h"
 
 using namespace std;
