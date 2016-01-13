@@ -4,12 +4,53 @@
 #include "controlMexUtil.h"
 #include "yamlUtil.h"
 #include "Path.h"
+
 // #include <limits>
 // #include <cmath>
 // #include "drakeUtil.h"
 
 using namespace std;
 using namespace Eigen;
+using namespace YAML;
+
+
+vector<int> findPositionIndices(const RigidBodyTree &robot, const vector<string> &joint_names) {
+  vector<int> position_indices;
+  position_indices.reserve(joint_names.size());
+  for (const auto& joint_name : joint_names) {
+    const RigidBody &body = *robot.findJoint(joint_name);
+    for (int i = 0; i < body.getJoint().getNumPositions(); i++) {
+      position_indices.push_back(body.position_num_start + i);
+    }
+  }
+  return position_indices;
+}
+
+RobotPropertyCache parseKinematicTreeMetadata(const string& yaml_file, const RigidBodyTree& robot) {
+  Node metadata = LoadFile(yaml_file);
+  RobotPropertyCache ret;
+  map<Side, string> side_identifiers = { {Side::RIGHT, "r"}, {Side::LEFT, "l"} };
+
+  Node body_names = metadata["body_names"];
+  Node feet = body_names["feet"];
+  for (const auto& side : Side::values) {
+    ret.foot_ids[side] = robot.findLinkId(feet[side_identifiers[side]].as<string>());
+  }
+
+  Node joint_group_names = metadata["joint_group_names"];
+  for (const auto& side : Side::values) {
+    auto side_id = side_identifiers.at(side);
+    ret.position_indices.legs[side] = findPositionIndices(robot, joint_group_names["legs"][side_id].as<vector<string>>());
+    ret.position_indices.knees[side] = robot.findJoint(joint_group_names["knees"][side_id].as<string>())->position_num_start;
+    ret.position_indices.ankles[side] = findPositionIndices(robot, joint_group_names["ankles"][side_id].as<vector<string>>());
+    ret.position_indices.arms[side] = findPositionIndices(robot, joint_group_names["arms"][side_id].as<vector<string>>());
+  }
+  ret.position_indices.neck = findPositionIndices(robot, joint_group_names["neck"].as<vector<string>>());
+  ret.position_indices.back_bkz = robot.findJoint(joint_group_names["back_bkz"].as<string>())->position_num_start;
+  ret.position_indices.back_bky = robot.findJoint(joint_group_names["back_bky"].as<string>())->position_num_start;
+
+  return ret;
+}
 
 void parseIntegratorParams(const mxArray *params_obj, IntegratorParams &params) {
   const mxArray *pobj;
@@ -324,8 +365,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
   }
 
-  // robot_property_cache
-  parseRobotPropertyCache(prhs[narg], &(pdata->rpc));
+  // kinematic tree metadata
+  pdata->rpc = parseKinematicTreeMetadata(mxGetStdString(prhs[narg]), *(pdata->r));
   narg++;
 
   // B
