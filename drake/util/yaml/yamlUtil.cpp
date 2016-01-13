@@ -107,7 +107,7 @@ void loadInputParams(QPControllerParams& params, YAML::Node config, const RigidB
     std::regex input_regex = globToRegex(get(*config_it, "name").as<std::string>());
     for (auto actuator_it = robot.actuators.begin(); actuator_it != robot.actuators.end(); ++actuator_it) {
       if (std::regex_match((*actuator_it).name, input_regex)) {
-        std::cout << get(*config_it, "name").as<std::string>() << " matches " << (*actuator_it).name << std::endl;
+        // std::cout << get(*config_it, "name").as<std::string>() << " matches " << (*actuator_it).name << std::endl;
         loadSingleInputParams(params, actuator_it - robot.actuators.begin(), get(*config_it, "params"), robot);
       }
     }
