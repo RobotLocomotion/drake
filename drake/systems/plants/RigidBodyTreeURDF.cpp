@@ -256,7 +256,7 @@ bool parseGeometry(XMLElement* node, const map<string,string>& package_map, cons
       cerr << "ERROR parsing sphere element radius" << endl;
       return false;
     }
-    element.setGeometry(DrakeShapes::Sphere(max(MIN_RADIUS, r)));
+    element.setGeometry(DrakeShapes::Sphere(max(DrakeShapes::MIN_RADIUS, r)));
   } else if ((shape_node = node->FirstChildElement("cylinder"))) {
     double r = 0, l = 0;
     attr = shape_node->Attribute("radius");

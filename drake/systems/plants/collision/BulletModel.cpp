@@ -428,6 +428,21 @@ namespace DrakeCollision
     shapeA = (btConvexShape*) bt_objA->getCollisionShape();
     shapeB = (btConvexShape*) bt_objB->getCollisionShape();
 
+    { // special case: two zero-radius spheres
+      btVector3 centerA, centerB;
+      btScalar radiusA, radiusB;
+      shapeA->getBoundingSphere(centerA, radiusA);
+      shapeB->getBoundingSphere(centerB, radiusB);
+      cout << "radiusA = " << radiusA << ", radiusB = " << radiusB << endl;
+      if (radiusA <= DrakeShapes::MIN_RADIUS && radiusB <= DrakeShapes::MIN_RADIUS) {
+        c->addSingleResult(idA,
+                           idB,
+                           Vector3d::Zero(),
+                           Vector3d::Zero(),
+                           Vector3d::Zero(), (centerA - centerB).length());
+      }
+    }
+
     btGjkEpaPenetrationDepthSolver epa;
     btVoronoiSimplexSolver sGjkSimplexSolver;
     sGjkSimplexSolver.setEqualVertexThreshold(0.f);
@@ -474,9 +489,8 @@ namespace DrakeCollision
 
     btScalar distance = gjkOutput.m_normalOnBInWorld.dot(pointOnAinWorld-pointOnBinWorld);
     
-
     if (gjkOutput.m_hasResult) {
-      c->addSingleResult(idA,idB,pointOnA,pointOnB, toVector3d(gjkOutput.m_normalOnBInWorld),(double) distance);
+      c->addSingleResult(idA, idB, pointOnA, pointOnB, toVector3d(gjkOutput.m_normalOnBInWorld), (double) distance);
     } else {
       throw std::runtime_error("In BulletModel::findClosestPointsBtwElements: No closest point found between " + to_string(idA) + " and " + to_string(idB));
     }
