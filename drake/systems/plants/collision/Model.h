@@ -96,15 +96,31 @@ namespace DrakeCollision
       virtual std::vector<PointPair> potentialCollisionPoints(const bool use_margins) 
       { return std::vector<PointPair>(); };
 
-      virtual bool collidingPointsCheckOnly(
-          const std::vector<Eigen::Vector3d>& points, 
-          double collision_threshold)
-      { return false; };
-
+      /** \brief Given a vector of points in world coordinates, returns the
+       * indices of those points within a specified distance of any collision
+       * geometry in the model.
+       * \param points a vector of points in world coordinates
+       * \param collision_threshold points are considered "in collision" if
+       * they lie within this distance of any collision geometry
+       * \return a vector containing the indices of those points that are "in
+       * collision" with the model.
+       */
       virtual std::vector<size_t> collidingPoints(
           const std::vector<Eigen::Vector3d>& points, 
           double collision_threshold)
       { return std::vector<size_t>(); };
+
+      /** \brief Returns true if any of the given points are within a specified
+       * distance of the collision geometries in this model.
+       * \param points a vector of points in world coordinates
+       * \param collision_threshold points are considered "in collision" if
+       * they lie within this distance of any collision geometry
+       * \return a boolean value indicating if any points are "in collision"
+       */
+      virtual bool collidingPointsCheckOnly(
+          const std::vector<Eigen::Vector3d>& points, 
+          double collision_threshold)
+      { return false; };
 
       //
       // Performs raycasting collision detecting (like a LIDAR / laser rangefinder)
