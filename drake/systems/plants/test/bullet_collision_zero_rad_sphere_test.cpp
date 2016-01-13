@@ -1,4 +1,5 @@
 
+#include "Path.h"
 #include "RigidBodyTree.h"
 #include "testUtil.h"
 
