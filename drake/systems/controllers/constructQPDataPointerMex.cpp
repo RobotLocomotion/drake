@@ -370,18 +370,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   narg++;
 
   // umin
-  int nq = pdata->r->num_positions, nu = pdata->r->B.cols();
+  int nq = pdata->r->num_positions, nu = static_cast<int>(pdata->r->actuators.size());
 
   pdata->umin.resize(nu);
   pdata->umax.resize(nu);
-  for (const auto& body_ptr : pdata->r->bodies) {
-
+  for (int i = 0; i < pdata->r->actuators.size(); i++) {
+    pdata->umin(i) = pdata->r->actuators.at(i).effort_limit_min;
+    pdata->umax(i) = pdata->r->actuators.at(i).effort_limit_max;
   }
-
-  memcpy(pdata->umin.data(),mxGetPrSafe(prhs[narg++]),sizeof(double)*nu);
-
-  // umax
-  memcpy(pdata->umax.data(),mxGetPrSafe(prhs[narg++]),sizeof(double)*nu);
 
   // use_fast_qp
   pdata->use_fast_qp = (int) mxGetScalar(prhs[narg]);
