@@ -39,9 +39,9 @@ classdef RigidBodyThrust < RigidBodyForceElement
 
         dforce = sparse(6*getNumBodies(manip),getNumStates(manip));
 
-        nq = getNumPositions(manip); nu = getNumInputs(manip);
-        dB_mod = sparse(nq*nu,getNumStates(manip));
-        dB_mod((obj.input_num-1)*nq + (1:nq),1:nq) = obj.scale_factor*(J'*daxis_world + reshape(dJ'*axis_world,nq,nq));
+        nq = getNumPositions(manip); nv = getNumVelocities(manip); nu = getNumInputs(manip);
+        dB_mod = sparse(nv*nu,getNumStates(manip));
+        dB_mod((obj.input_num-1)*nv + (1:nv),1:nq) = obj.scale_factor*(J'*daxis_world + reshape(dJ'*axis_world,nv,nv));
       else
         kinsol = doKinematics(manip,q);
         [x,J] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1),options);

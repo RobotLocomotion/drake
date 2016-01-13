@@ -154,7 +154,7 @@ classdef Manipulator < DrakeSystem
 
         constraint_force = -dpsidqd'*pinv(dpsidqd*Hinv*dpsidqd')*(dpsidq*qd + dpsidqd*Hinv*tau+beta*psi);
       else
-        constraint_force = 0*q;
+        constraint_force = 0*v;
       end
     end
   end
