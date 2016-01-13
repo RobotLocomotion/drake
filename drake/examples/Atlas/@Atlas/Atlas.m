@@ -361,5 +361,6 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
     r_aky_name = 'r_leg_aky';
     l_aky_name = 'l_leg_aky';
     kinematic_tree_metadata_file = fullfile(fileparts(mfilename('fullpath')), '..', 'config', 'KinematicTreeMetadata.yaml');
+    hardware_data_file = fullfile(fileparts(mfilename('fullpath')), '..', 'config', 'HardwareData.yaml');
   end
 end

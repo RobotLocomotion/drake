@@ -405,7 +405,6 @@ public:
   Eigen::VectorXd umin,umax;
   int use_fast_qp;
   JointNames input_joint_names;
-  std::vector<std::string> state_coordinate_names;
 
   // preallocate memory
   KinematicsCache<double> cache;
