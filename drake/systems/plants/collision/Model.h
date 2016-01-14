@@ -28,12 +28,28 @@ namespace DrakeCollision
       */
       virtual ElementId addElement(const Element& element);
 
+      /** \brief Get a read-only pointer to a collision element in this model.
+       * \param id an ElementId corresponding to the desired collision element
+       * \return a read-only pointer to the collision element corresponding to
+       * the given id or nullptr if no such collision element is present in the
+       * model.
+       */
       virtual const Element* readElement(ElementId id);
       
       virtual void getTerrainContactPoints(ElementId id0, Eigen::Matrix3Xd &terrain_points);
 
+      /** \brief Perform any operations needed to bring the model up-to-date
+       * after making changes to its collision elements
+       */
       virtual void updateModel() {};
 
+      /** \brief Change the element-to-world transform of a specified collision
+       * element.
+       * \param id an ElementId corresponding to the element to be updated
+       * \param T_local_to_world the new value for the element-to-world
+       * transform
+       */
+      //TODO: Change T_local_to_world to an Eigen::Isometry3d
       virtual bool updateElementWorldTransform(const ElementId id, 
           const Eigen::Matrix4d& T_local_to_world);
 
@@ -122,13 +138,17 @@ namespace DrakeCollision
           double collision_threshold)
       { return false; };
 
-      //
-      // Performs raycasting collision detecting (like a LIDAR / laser rangefinder)
-      //
-      // @param origin Vector3d specifying the position of the ray's origin
-      // @param ray_endpoint Vector3d specifying a second point on the ray in world coordinates
-      // @param distance to the first collision, or -1 on no collision
-      //
+     /** Performs raycasting collision detecting (like a LIDAR / laser rangefinder)
+      *
+      * \param origin 3 x N matrix in which each column specifies the position
+      * of a ray's origin in world coordinates
+      * \param ray_endpoint 3 x N matrix in which each column specifies a
+      * second point on the corresponding ray
+      * \param use_margins flag indicating whether or not to use the version
+      * of this model with collision margins
+      * \param[out] distance to the first collision, or -1 on no collision
+      * \return true if this method ran successfully
+      */
       virtual bool collisionRaycast(const Eigen::Matrix3Xd &origin, const Eigen::Matrix3Xd &ray_endpoint, bool use_margins, Eigen::VectorXd &distances) { return false; };
 
     protected:
