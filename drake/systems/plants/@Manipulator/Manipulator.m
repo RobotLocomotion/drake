@@ -77,9 +77,6 @@ classdef Manipulator < DrakeSystem
           dvdot];
       else
         [H,C,B] = manipulatorDynamics(obj,q,v);
-            if any(isnan(H)) 
-                pause;
-            end
         Hinv = pinv(H);
         if (obj.num_u>0) tau=B*u - C; else tau=-C; end
         tau = tau + computeConstraintForce(obj,q,v,H,tau,Hinv);

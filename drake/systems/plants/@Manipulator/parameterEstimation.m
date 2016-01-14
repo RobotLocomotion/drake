@@ -1,4 +1,4 @@
-function [phat,simulation_error,estimated_delay] = parameterEstimation(obj,data,varargin)
+function [phat,simulation_error,estimated_delay,exitflag] = parameterEstimation(obj,data,varargin)
 %
 % Parameter estimation algorithm for manipulators
 %
@@ -41,10 +41,13 @@ function [phat,simulation_error,estimated_delay] = parameterEstimation(obj,data,
 % 'linprog'       = linear LS on lumped params then nonlinear LS to recover
 %                 original parameters
 
+% % DEBUGGING VARIABLES
 % global numran 
 % numran = 0;
-% global pp
-% global ppp
+% global TRAJFIG
+% global PERRFIG;global PERR;global PERRMIN
+% global PDIFFFIG;global PTRUE;global PDIFF
+
 
 %% handle options
 if (nargin>2 && isstruct(varargin{1})) options=varargin{1};
@@ -60,7 +63,9 @@ end
 if (~isfield(options,'method')) 
   options.method='nonlinprog'; 
 end
-
+if (~isfield(options,'C'))
+  options.C=eye(2*obj.num_positions);
+end
 if ~(strcmp(options.model,'dynamic') ||...
    strcmp(options.model,'energetic') ||...
    strcmp(options.model,'simerr'))
@@ -79,17 +84,16 @@ checkDependency('spotless');
 
 nq = obj.num_positions;
 nu = obj.num_u;
-p_orig = double(getParams(obj));  % probably only for testing
+p_orig = double(getParams(obj));
 np = length(p_orig);
 
-% Should be passed into as function param
-O = diag([1 1 1 1]);
-
 [pmin,pmax] = getParamLimits(obj);
-pmin = pmin + 1e-3;
-assert(all(pmin>0));  % otherwise I'll have to subtract it out from the coordinates
+assert(all(pmin>=0));  % otherwise I'll have to subtract it out from the coordinates
 %  not hard, just not implmented yet.
 
+% Used often
+isDynamic = strcmp(options.model,'dynamic');
+isEnergetic = strcmp(options.model,'energetic');
 
 %%   Step 1: Extract data
 if (nargin>1)
@@ -102,7 +106,7 @@ if (nargin>1)
   qd_data = x_data(nq+(1:nq),:);
   u_data = get(data,'InputData')';
   dt_data = diff(t_data);
-  if strcmp(options.model,'dynamic')
+  if isDynamic
     qdd_data = x_data(2*nq+(1:nq),:); 
   end
   s_data = sin(q_data);
@@ -127,8 +131,7 @@ p=obj.getParamFrame.getPoly;
 pobj = setParams(obj,p);
 
 [H,C,B] = manipulatorDynamics(pobj,qt,qd);
-isDynamic = strcmp(options.model,'dynamic');
-isEnergetic = strcmp(options.model,'energetic');
+
 if isDynamic || isEnergetic
     if isDynamic
         % Formulate equation error from equations of motion
@@ -138,27 +141,29 @@ if isDynamic || isEnergetic
         % this is just a bit more readable
         % Initialize msspoly variables for expressing dE = E(t_2)-E(t_1)
         dt=msspoly('dt',1);
+        
         q1=msspoly('qo',nq);
-        q2=msspoly('qf',nq);
         s1=msspoly('so',nq);
-        s2=msspoly('sf',nq);
         c1=msspoly('co',nq);
-        c2=msspoly('cf',nq);
         qt1=TrigPoly(q1,s1,c1);
-        qt2=TrigPoly(q2,s2,c2);
         qd1=msspoly('qdto',nq);
+        
+        q2=msspoly('qf',nq);
+        s2=msspoly('sf',nq);
+        c2=msspoly('cf',nq);
+        qt2=TrigPoly(q2,s2,c2);
         qd2=msspoly('qdtf',nq);
+        
         % Formulate energy equations
         [T1,U1] = energy(pobj,[qt1;qd1]);
         [T2,U2] = energy(pobj,[qt2;qd2]);
         
         % ACROBOT-SPECIFIC FORMULATION - MUST CHANGE
         % Need to formulate energy dissipation from AcrobotPlant class
-        dE = (B*u-[p(1);p(2)].*qd1)'*qd1*dt; % Under cursory testing, this works better
-        % dE = (B*u-[p(1);p(2)].*qd1)'*(q2-q1); % than this
+        dE = (B*u-[p(1);p(2)].*qd1)'*qd1*dt;
         err = (T1+U1)-(T2+U2)+dE;
         
-        % % Debugging the energy model
+        % % DEBUGGING the energy model
         % E1 = getmsspoly(T1+U1);
         % E = subs(E1,p,p_orig);
         % E_data = msubs(E,[q1;s1;c1;qd1;u;dt],[q_data;s_data;c_data;qd_data;u_data;t_data]);
@@ -205,16 +210,20 @@ end
 % Nonlinear least-squares solver
 prog = NonlinearProgram(np);
 prog=prog.addConstraint(BoundingBoxConstraint(pmin,pmax),1:np);
+nx = length(xobs(:,1));
 
 if strcmp(options.model,'simerr')    
     dfdx = matlabFunction(jacobian(f*ts,[qs;qds]),'Vars',[ps;qs;qds;us;ts]);
     dfdp = matlabFunction(jacobian(f*ts,ps),'Vars',[ps;qs;qds;us;ts]);
-    nonlinfun = @(px) simerr(obj,xobs,u_data,px,t_data,O,dfdx,dfdp);
+    nonlinfun = @(px) simerr(obj,xobs,u_data,px,t_data,options.C,dfdx,dfdp);
     prog=prog.addCost(FunctionHandleObjective(np,nonlinfun),1:np);
+    prog=prog.setSolverOptions('snopt','IterationsLimit',50000);
+    prog=prog.setSolverOptions('snopt','MajorIterationsLimit',50000);
+    prog=prog.setSolverOptions('snopt','MajorOptimalityTolerance',1.0e-5);
 %     % FOR DEBUGGING SIMERR
-%     pp = ppp-p_orig;
-%     figure; hold off;
-%     figure; plot(xobs(1,:),xobs(2,:));drawnow;hold on;
+%     if exist('TRAJFIG','var'),TRAJFIG = figure;end
+%     if exist('PERRFIG','var'),PERRFIG = figure; PERR = 10^30*ones(1,100); PERRMIN = min(PERR);end
+%     if exist('PDIFFFIG','var'),PDIFFFIG = figure; PDIFF = PTRUE-p_orig;end
 elseif strcmp(options.method,'nonlinprog')
     % Only nonlinear least squares
     nonlinfun = @(x) nonlinerr(x,lp,p,M_data,Mb_data);
@@ -227,31 +236,28 @@ elseif strcmp(options.method,'linprog')
     lpconstraint = FunctionHandleConstraint(lp_est,lp_est,nlp,lpconstraint_handle);
     prog=prog.addConstraint(lpconstraint,1:np);
 end
-[x,Fsym,info] = prog.solve(p_orig);
-if(info ~= 1)
-    % Use MATLAB built-in nonlinear least squares solver if prog fails
-    if strcmp(options.method,'linprog'); error('linprog failed'); end
-    warning('NonlinearProgram failed - trying lsqnonlin')
-    [x,sqerr_est,~,flag] = lsqnonlin(nonlinfun,p_orig,pmin,pmax);
-    if(flag ~= 1)
-        error('lsqnonlin failed');
-    end
-end
+[x,simulation_error,exitflag] = prog.solve(p_orig);
+% if(exitflag ~= 1)
+%     % Use MATLAB built-in nonlinear least squares solver if prog fails
+%     % lsqnonlin doesn't work for either scenarios
+%     if strcmp(options.method,'linprog'); error('linprog failed'); end
+%     if strcmp(options.method,'simerr'); error('simerr failed'); end %
+%     
+%     warning('NonlinearProgram failed - trying lsqnonlin')
+%     [x,sqerr_est,~,flag] = lsqnonlin(nonlinfun,p_orig,pmin,pmax);
+%     if(flag ~= 1), error('lsqnonlin failed');end
+% end
 
 phat = Point(getParamFrame(obj),x);
 
 %% Computing the simulation error
 % err_orig = M_data*lp_orig + Mb_data;
 % sqerr_orig = sum(err_orig'*err_orig);
-if strcmp(options.model,'simerr')    
-    simulation_error = Fsym;
-elseif strcmp(options.method,'nonlinprog') || strcmp(options.method,'linprog')
-    simulation_error = simerr(obj,xobs,u_data,x,t_data,O);
+if strcmp(options.method,'nonlinprog') || strcmp(options.method,'linprog')
+    simulation_error = simerr(obj,xobs,u_data,x,t_data,options.C);
 end
 
 %%   Step 4: Print Results.
-% 
-
 if strcmp(options.print_result,'printest')
     coords = getCoordinateNames(getParamFrame(obj));
     fprintf('\nParameter estimation results:\n\n');
@@ -296,39 +302,71 @@ function [f,df] = nonlinerr(x,lp,p,M_data,Mb_data)
     df = 2*(M_data*(msubs(lp,p,x))+Mb_data)'*M_data*dlpdp_val;
 end
 
-function [F,dF] = simerr(obj,xobs,utraj,p,t,O,varargin)
+function [F,dF] = simerr(obj,xobs,utraj,p,t,C,varargin)
 %     global numran; numran = numran+1;
-%     global pp;global ppp
+%     global TRAJFIG; 
+%     global PERRFIG; global PERR; global PERRMIN; 
+%     global PDIFFFIG;global PTRUE;global PDIFF;
+    
     newobj = obj.setParams(p);
     x0 = xobs(:,1);
-    xtraj = computeTraj(newobj,x0,utraj,t);
-    xdiff = xtraj - xobs;
-%     % ACROBOT-SPECIFIC - MUST CHANGE
-%     xdiff(1,:) = mod(xdiff(1,:)+pi,2*pi)-pi;
-%     xdiff(2,:) = mod(xdiff(2,:)+pi,2*pi)-pi;
-
-    F = sum(sum(xdiff.*(O*xdiff),1),2);
+    error = false;
+    try
+        xtraj = computeTraj(newobj,x0,utraj,t);
+        xdiff = xtraj - xobs;
+        F = sum(sum(xdiff.*(C*xdiff),1),2);
+    catch err
+        % The system parameters are unstable, output infinite error
+        if strcmp(err.identifier,'MATLAB:svd:matrixWithNaNInf')
+            error = true;
+            F = Inf;
+        else rethrow(err);end
+    end
     if (nargout>1)
-        if ~(nargin>7); error('Requires input dfdx and dfdp'); end
-        dfdx = varargin{1};
-        dfdp = varargin{2};
-        dt = diff(t);
-        N = length(dt);
-        I = eye(length(x0));
-        args = num2cell([p;x0;utraj(:,1);dt(1)]');
-        dx = cell(1,N);dx{1} = dfdp(args{:});
-        dF = xdiff(:,2)'*O*dx{1};
-        for i=2:(N)
-            args = num2cell([p;xtraj(:,i);utraj(:,i);dt(i)]');
-            dx{i} = (I+dfdx(args{:}))*dx{i-1}+dfdp(args{:});
-            dF = dF + xdiff(:,i+1)'*O*dx{i};
+        if ~error
+            if ~(nargin>7); error('Requires input dfdx and dfdp'); end
+            dfdx = varargin{1};
+            dfdp = varargin{2};
+            dt = diff(t);
+            N = length(dt);
+            I = eye(length(x0));
+            args = num2cell([p;x0;utraj(:,1);dt(1)]');
+            dx = cell(1,N);dx{1} = dfdp(args{:});
+            dF = xdiff(:,2)'*C*dx{1};
+            for i=2:(N)
+                args = num2cell([p;xtraj(:,i);utraj(:,i);dt(i)]');
+                dx{i} = (I+dfdx(args{:}))*dx{i-1}+dfdp(args{:});
+                dF = dF + xdiff(:,i+1)'*C*dx{i};
+            end
+            dF = 2*dF;
+        else
+            dF = -Inf(1,length(p));
         end
-        dF = 2*dF;
-%         % FOR DEBUGGING SIMERR
-%         if mod(numran,1) == 0
-%             disp(numran);disp(F);disp(dF);disp(p')
-%             disp(ppp'-p');pp = [pp ppp-p];plot(0:numran,pp')
-%             plot(xtraj(1,:),xtraj(2,:)); drawnow;
+% %       % FOR DEBUGGING SIMERR
+%         if error
+%             xtraj = zeros(size(xobs));
+%         end
+%         if mod(numran,100) == 0
+%             fprintf('%i ',numran);
+%         end
+%         if exist('TRAJFIG','var') 
+%             figure(TRAJFIG);
+%             hold off;plot(xobs(1,:),xobs(2,:)); 
+%             ax = gca; xlim = ax.XLim; ylim = ax.YLim;
+%             hold on; plot(xtraj(1,:),xtraj(2,:)); 
+%             set(gca,'XLim',xlim,'YLim',ylim); drawnow; 
+%         end
+%         if exist('PERRFIG','var') 
+%             figure(PERRFIG);
+%             PERRMIN = min([PERRMIN F]); 
+%             PERR = [PERR PERRMIN];
+%             hold off;plot((numran+1-100):numran,PERR((end+1-100):end)');drawnow;
+%         end
+%         if exist('PDIFFFIG','var') 
+%             figure(PDIFFFIG); 
+%             PDIFF = [PDIFF PTRUE-p];
+%             try
+%             hold off;plot(0:numran,PDIFF');drawnow;
 %         end
     end
 end
