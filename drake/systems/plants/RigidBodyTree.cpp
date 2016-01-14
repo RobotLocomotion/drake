@@ -226,11 +226,10 @@ map<string, int> RigidBodyTree::computePositionNameToIndexMap() const
   return name_to_index_map;
 }
 
-DrakeCollision::ElementId RigidBodyTree::addCollisionElement(const RigidBody::CollisionElement& element, const shared_ptr<RigidBody>& body, string group_name)
+DrakeCollision::ElementId RigidBodyTree::addCollisionElement(const RigidBody::CollisionElement& element, const shared_ptr<RigidBody>& body, const string& group_name)
 {
-  DrakeCollision::ElementId id(collision_model->addElement(element));
+  DrakeCollision::ElementId id = collision_model->addElement(element);
   if (id != 0) {
-    body->collision_element_ids.push_back(id);
     body->collision_element_groups[group_name].push_back(id);
   }
   return id;
@@ -238,8 +237,10 @@ DrakeCollision::ElementId RigidBodyTree::addCollisionElement(const RigidBody::Co
 
 void RigidBodyTree::updateCollisionElements(const RigidBody& body, const Eigen::Transform<double, 3, Eigen::Isometry>& transform_to_world)
 {
-  for (auto id_iter = body.collision_element_ids.begin(); id_iter != body.collision_element_ids.end(); ++id_iter) {
-    collision_model->updateElementWorldTransform(*id_iter, transform_to_world.matrix());
+  for (const auto& group : body.collision_element_groups) {
+    for (const DrakeCollision::ElementId& element_id: group.second) {
+      collision_model->updateElementWorldTransform(element_id, transform_to_world.matrix());
+    }
   }
 }
 
@@ -270,13 +271,14 @@ void RigidBodyTree::getTerrainContactPoints(const RigidBody& body, Eigen::Matrix
   size_t num_points = 0;
   terrain_points.resize(Eigen::NoChange,0);
 
-  for (auto id_iter = body.collision_element_ids.begin(); id_iter != body.collision_element_ids.end();++id_iter) {
-
-    Matrix3Xd element_points;
-    collision_model->getTerrainContactPoints(*id_iter, element_points);
-    terrain_points.conservativeResize(Eigen::NoChange, terrain_points.cols() + element_points.cols());
-    terrain_points.block(0, num_points, terrain_points.rows(), element_points.cols()) = element_points;
-    num_points += element_points.cols();
+  for (const auto& group : body.collision_element_groups) {
+    for (const DrakeCollision::ElementId &element_id: group.second) {
+      Matrix3Xd element_points;
+      collision_model->getTerrainContactPoints(element_id, element_points);
+      terrain_points.conservativeResize(Eigen::NoChange, terrain_points.cols() + element_points.cols());
+      terrain_points.block(0, num_points, terrain_points.rows(), element_points.cols()) = element_points;
+      num_points += element_points.cols();
+    }
   }
 }
 

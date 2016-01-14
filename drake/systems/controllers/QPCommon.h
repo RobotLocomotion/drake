@@ -398,7 +398,7 @@ struct QPControllerParams {
 class NewQPControllerData {
 public:
   GRBenv *env;
-  RigidBodyTree * r;
+  std::unique_ptr<RigidBodyTree> r;
   std::map<std::string,QPControllerParams> param_sets;
   RobotPropertyCache rpc;
   void* map_ptr;
@@ -429,8 +429,8 @@ public:
   // and which must persist to the next iteration
   QPControllerState state;
 
-  NewQPControllerData(RigidBodyTree * r) :
-      r(r), cache(r->bodies)
+  NewQPControllerData(std::unique_ptr<RigidBodyTree> r) :
+      r(std::move(r)), cache(this->r->bodies)
   {
     // empty
   }

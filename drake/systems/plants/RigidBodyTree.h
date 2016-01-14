@@ -96,7 +96,7 @@ public:
   }
 
   template <typename DerivedQ, typename DerivedV>
-  KinematicsCache<typename DerivedQ::Scalar> doKinematics(const Eigen::MatrixBase<DerivedQ>& q, const Eigen::MatrixBase<DerivedV>& v, bool compute_JdotV = true) {
+  KinematicsCache<typename DerivedQ::Scalar> doKinematics(const Eigen::MatrixBase<DerivedQ>& q, const Eigen::MatrixBase<DerivedV>& v, bool compute_JdotV = true) const {
     KinematicsCache<typename DerivedQ::Scalar> ret(bodies);
     ret.initialize(q, v);
     doKinematics(ret, compute_JdotV);
@@ -354,7 +354,26 @@ public:
   template <typename Scalar>
   void computeContactJacobians(const KinematicsCache<Scalar>& cache, Eigen::Ref<const Eigen::VectorXi> const & idxA, Eigen::Ref<const Eigen::VectorXi> const & idxB, Eigen::Ref<const Eigen::Matrix3Xd> const & xA, Eigen::Ref<const Eigen::Matrix3Xd> const & xB, Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> & J) const;
 
-  DrakeCollision::ElementId addCollisionElement(const RigidBody::CollisionElement& element, const std::shared_ptr<RigidBody>& body, std::string group_name);
+  DrakeCollision::ElementId addCollisionElement(const RigidBody::CollisionElement& element, const std::shared_ptr<RigidBody>& body, const std::string& group_name);
+
+  template <class UnaryPredicate>
+  void removeCollisionGroupsIf(UnaryPredicate test) {
+    for (const auto& body_ptr : bodies) {
+      std::vector<std::string> to_delete;
+      for (const auto &group : body_ptr->collision_element_groups) {
+        const std::string &group_name = group.first;
+        if (test(group_name)) {
+          for (const auto& id : group.second) {
+            collision_model->removeElement(id);
+          }
+          to_delete.push_back(group_name);
+        }
+      }
+      for (const auto& group_name : to_delete) {
+        body_ptr->collision_element_groups.erase(group_name);
+      }
+    }
+  }
 
   void updateCollisionElements(const RigidBody& body, const Eigen::Transform<double, 3, Eigen::Isometry>& transform_to_world);
 

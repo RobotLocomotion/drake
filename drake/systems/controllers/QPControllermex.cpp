@@ -316,7 +316,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   MatrixXd B,JB,Jp,normals;
   VectorXd Jpdotv;
   std::vector<double> support_mus(active_supports.size(), mu);
-  int nc = contactConstraintsBV(pdata->r, cache, num_active_contact_pts, support_mus, active_supports, B, JB, Jp, Jpdotv, normals);
+  int nc = contactConstraintsBV(*pdata->r, cache, num_active_contact_pts, support_mus, active_supports, B, JB, Jp, Jpdotv, normals);
   int neps = nc*dim;
 
   VectorXd x_bar,xlimp;
@@ -713,9 +713,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
 
   if (nlhs>14) {
-    RigidBodyTree * r = pdata->r;
-
-    VectorXd individual_cops = individualSupportCOPs(r, cache, active_supports, normals, B, beta);
+    VectorXd individual_cops = individualSupportCOPs(*pdata->r, cache, active_supports, normals, B, beta);
     plhs[14] = eigenToMatlab(individual_cops);
   }
 
