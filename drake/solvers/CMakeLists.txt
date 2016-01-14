@@ -35,8 +35,14 @@ endif()
 
 if(snopt_c_FOUND AND MATLAB_FOUND)
   add_mex(NonlinearProgramSnoptmex NonlinearProgramSnoptmex.cpp)
+  add_executable(TestSnoptC NPCPP/testSnoptC.cpp)
+  add_executable(TestNonlinearProgram NPCPP/testNonlinearProgram.cpp NPCPP/NonlinearProgram.cpp NPCPP/LinearConstraint.cpp NPCPP/QuadraticConstraint.cpp NPCPP/Constraint.cpp)
   pods_use_pkg_config_packages(NonlinearProgramSnoptmex snopt_c)
+  pods_use_pkg_config_packages(TestSnoptC snopt_c)
+  pods_use_pkg_config_packages(TestNonlinearProgram snopt_c)
   set_target_properties(NonlinearProgramSnoptmex PROPERTIES COMPILE_FLAGS -fPIC)
+  set_target_properties(TestSnoptC PROPERTIES COMPILE_FLAGS -fPIC)
+  set_target_properties(TestNonlinearProgram PROPERTIES COMPILE_FLAGS -fPIC)
 
   # link against matlab's copy of the gfortran library, if possible
   find_library(GFORTRAN_LIBRARY NAMES gfortran libgfortran
@@ -54,6 +60,8 @@ if(snopt_c_FOUND AND MATLAB_FOUND)
 
   if (GFORTRAN_LIBRARY)
     target_link_libraries(NonlinearProgramSnoptmex ${GFORTRAN_LIBRARY})
+    target_link_libraries(TestSnoptC ${GFORTRAN_LIBRARY})
+    target_link_libraries(TestNonlinearProgram ${GFORTRAN_LIBRARY})
   endif()
 endif()
 
