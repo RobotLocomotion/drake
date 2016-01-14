@@ -7,6 +7,8 @@
 #include "LinearConstraint.h"
 #include "QuadraticConstraint.h"
 #include "FunctionHandleConstraint.h"
+#include "BoundingBoxConstraint.h"
+#include "ConstantConstraint.h"
 #include "Constraint.h"
 
 namespace snopt {
@@ -31,16 +33,14 @@ void testNonlinearProgram_linearFunction() {
   integer n = 2;
   NonlinearProgram np(n);
 
-  vector<pair<integer, doublereal>> A_cost(1, make_pair(2, 1.0));
-  unique_ptr<Constraint> cost(new LinearConstraint(-INF, INF, n, A_cost));
+  unique_ptr<Constraint> cost(new BoundingBoxConstraint(-INF, INF, n, 2));
 
   vector<pair<integer, doublereal>> A_constr1(2);
   A_constr1[0] = make_pair(1, 1.0);
   A_constr1[1] = make_pair(2, 1.0);
   unique_ptr<Constraint> constr1(new LinearConstraint(10, 10, n, A_constr1));
 
-  vector<pair<integer, doublereal>> A_constr2(1, make_pair(1, 1.0));
-  unique_ptr<Constraint> constr2(new LinearConstraint(1, 9, n, A_constr2));
+  unique_ptr<Constraint> constr2(new BoundingBoxConstraint(1, 9, n, 1));
 
   np.setCost(cost);
   np.addConstraint(constr1);
@@ -68,8 +68,7 @@ void testNonlinearProgram_quadraticFunction() {
   integer n = 2;
   NonlinearProgram np(n);
 
-  vector<pair<integer, doublereal>> A_cost(1, make_pair(2, 1.0));
-  unique_ptr<Constraint> cost(new LinearConstraint(-INF, INF, n, A_cost));
+  unique_ptr<Constraint> cost(new BoundingBoxConstraint(-INF, INF, n, 2));
 
   vector<pair<integer, doublereal>> Q_constr(1, make_pair(1, 1.0));
   vector<pair<integer, doublereal>> b_constr(1, make_pair(1, -6.0));
@@ -101,8 +100,7 @@ void testNonlinearProgram_exponentialFunction() {
   integer n = 2;
   NonlinearProgram np(n);
 
-  vector<pair<integer, doublereal>> A_cost(1, make_pair(2, 1.0));
-  unique_ptr<Constraint> cost(new LinearConstraint(-INF, INF, n, A_cost));
+  unique_ptr<Constraint> cost(new BoundingBoxConstraint(-INF, INF, n, 2));
 
   vector<pair<integer, doublereal>> A_constr1(1, make_pair(2, -1.0));
   function<void(doublereal[],bool,bool,doublereal*,std::vector<doublereal>*)> fun_constr1;
@@ -122,8 +120,7 @@ void testNonlinearProgram_exponentialFunction() {
   vector<integer> jGvar_constr1(1, 1);
   unique_ptr<Constraint> constr1(new FunctionHandleConstraint(0, 0, n, A_constr1, jGvar_constr1, fun_constr1));
 
-  vector<pair<integer, doublereal>> A_constr2(1, make_pair(1, 1.0));
-  unique_ptr<Constraint> constr2(new LinearConstraint(-1, 1, n, A_constr2));
+  unique_ptr<Constraint> constr2(new BoundingBoxConstraint(-1, 1, n, 1));
 
   np.setCost(cost);
   np.addConstraint(constr1);
