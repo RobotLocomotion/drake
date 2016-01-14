@@ -41,7 +41,7 @@ DRAKECONTROLUTIL_EXPORT bool isSupportElementActive(SupportStateElement* se, boo
 
 DRAKECONTROLUTIL_EXPORT Eigen::Matrix<bool, Eigen::Dynamic, 1> getActiveSupportMask(RigidBodyTree * r, Eigen::VectorXd q, Eigen::VectorXd qd, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &available_supports, const Eigen::Ref<const Eigen::Matrix<bool, Eigen::Dynamic, 1>> &contact_force_detected, double contact_threshold);
 
-DRAKECONTROLUTIL_EXPORT std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> getActiveSupports(RigidBodyTree * r, Eigen::VectorXd q, Eigen::VectorXd qd, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &available_supports, const Eigen::Ref<const Eigen::Matrix<bool, Eigen::Dynamic, 1>> &contact_force_detected, double contact_threshold);
+DRAKECONTROLUTIL_EXPORT std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> getActiveSupports(const RigidBodyTree& r, const Eigen::VectorXd& q, const Eigen::VectorXd& qd, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &available_supports, const Eigen::Ref<const Eigen::Matrix<bool, Eigen::Dynamic, 1>> &contact_force_detected, double contact_threshold);
 
 template <typename DerivedA, typename DerivedB>
 DRAKECONTROLUTIL_EXPORT void getRows(std::set<int> &rows, Eigen::MatrixBase<DerivedA> const &M, Eigen::MatrixBase<DerivedB> &Msub);
@@ -54,10 +54,10 @@ DRAKECONTROLUTIL_EXPORT void angleDiff(Eigen::MatrixBase<DerivedPhi1> const &phi
 
 DRAKECONTROLUTIL_EXPORT bool inSupport(std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &supports, int body_idx);
 DRAKECONTROLUTIL_EXPORT void surfaceTangents(const Eigen::Vector3d & normal, Eigen::Matrix<double,3,m_surface_tangents> & d);
-DRAKECONTROLUTIL_EXPORT int contactPhi(RigidBodyTree * r, const KinematicsCache<double>& cache, SupportStateElement& supp, Eigen::VectorXd &phi);
-DRAKECONTROLUTIL_EXPORT int contactConstraintsBV(RigidBodyTree *r, const KinematicsCache<double>& cache, int nc, std::vector<double> support_mus, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>& supp, Eigen::MatrixXd &B, Eigen::MatrixXd &JB, Eigen::MatrixXd &Jp, Eigen::VectorXd &Jpdotv, Eigen::MatrixXd &normals);
-DRAKECONTROLUTIL_EXPORT Eigen::MatrixXd individualSupportCOPs(RigidBodyTree * r, const KinematicsCache<double>& cache, const std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>& active_supports, const Eigen::MatrixXd& normals, const Eigen::MatrixXd& B, const Eigen::VectorXd& beta);
-DRAKECONTROLUTIL_EXPORT Vector6d bodySpatialMotionPD(RigidBodyTree *r, DrakeRobotState &robot_state, const int body_index, const Eigen::Isometry3d &body_pose_des, const Eigen::Ref<const Vector6d> &body_v_des, const Eigen::Ref<const Vector6d> &body_vdot_des, const Eigen::Ref<const Vector6d> &Kp, const Eigen::Ref<const Vector6d> &Kd, const Eigen::Isometry3d &T_task_to_world=Eigen::Isometry3d::Identity());
+DRAKECONTROLUTIL_EXPORT int contactPhi(const RigidBodyTree& r, const KinematicsCache<double>& cache, SupportStateElement& supp, Eigen::VectorXd &phi);
+DRAKECONTROLUTIL_EXPORT int contactConstraintsBV(const RigidBodyTree& r, const KinematicsCache<double>& cache, int nc, std::vector<double> support_mus, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>& supp, Eigen::MatrixXd &B, Eigen::MatrixXd &JB, Eigen::MatrixXd &Jp, Eigen::VectorXd &Jpdotv, Eigen::MatrixXd &normals);
+DRAKECONTROLUTIL_EXPORT Eigen::MatrixXd individualSupportCOPs(const RigidBodyTree& r, const KinematicsCache<double>& cache, const std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>& active_supports, const Eigen::MatrixXd& normals, const Eigen::MatrixXd& B, const Eigen::VectorXd& beta);
+DRAKECONTROLUTIL_EXPORT Vector6d bodySpatialMotionPD(const RigidBodyTree& r, DrakeRobotState &robot_state, const int body_index, const Eigen::Isometry3d &body_pose_des, const Eigen::Ref<const Vector6d> &body_v_des, const Eigen::Ref<const Vector6d> &body_vdot_des, const Eigen::Ref<const Vector6d> &Kp, const Eigen::Ref<const Vector6d> &Kd, const Eigen::Isometry3d &T_task_to_world=Eigen::Isometry3d::Identity());
 
 DRAKECONTROLUTIL_EXPORT void evaluateXYZExpmapCubicSpline(double t, const PiecewisePolynomial<double> &spline, Eigen::Isometry3d &body_pose_des, Vector6d &xyzdot_angular_vel, Vector6d &xyzddot_angular_accel);
 

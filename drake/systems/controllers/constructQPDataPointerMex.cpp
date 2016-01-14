@@ -68,8 +68,8 @@ void parseIntegratorParams(const mxArray *params_obj, IntegratorParams &params) 
   return;
 }
 
-void parseJointSoftLimits(const mxArray *params_obj, RigidBodyTree *r, JointSoftLimitParams *params) {
-  int nq = r->num_positions;
+void parseJointSoftLimits(const mxArray *params_obj, const RigidBodyTree& r, JointSoftLimitParams *params) {
+  int nq = r.num_positions;
 
   if (mxGetNumberOfElements(params_obj) != nq)
     mexErrMsgTxt("Joint soft limits should be of size nq");
@@ -96,11 +96,11 @@ void parseJointSoftLimits(const mxArray *params_obj, RigidBodyTree *r, JointSoft
   return;
 }
 
-void parseWholeBodyParams(const mxArray *params_obj, RigidBodyTree *r, WholeBodyParams *params) {
+void parseWholeBodyParams(const mxArray *params_obj, const RigidBodyTree& r, WholeBodyParams *params) {
   const mxArray *int_obj = myGetField(params_obj, "integrator");
   const mxArray *qddbound_obj = myGetField(params_obj, "qdd_bounds");
-  int nq = r->num_positions;
-  int nv = r->num_velocities;
+  int nq = r.num_positions;
+  int nv = r.num_velocities;
 
   if (mxGetNumberOfElements(myGetField(params_obj, "Kp")) != nq) mexErrMsgTxt("Kp should be of size nq");
   if (mxGetNumberOfElements(myGetField(params_obj, "Kd")) != nq) mexErrMsgTxt("Kd should be of size nq");
@@ -178,9 +178,9 @@ void parseVRefIntegratorParams(const mxArray *params_obj, VRefIntegratorParams *
   return;
 }
 
-void parseHardwareGains(const mxArray *params_obj, RigidBodyTree *r, HardwareGains *params) {
+void parseHardwareGains(const mxArray *params_obj, const RigidBodyTree& r, HardwareGains *params) {
   const mxArray *pobj;
-  int nu = r->num_velocities - 6;
+  int nu = r.num_velocities - 6;
 
   pobj = myGetField(params_obj, "k_f_p");
   sizecheck(pobj, nu, 1);
@@ -224,12 +224,12 @@ void parseHardwareGains(const mxArray *params_obj, RigidBodyTree *r, HardwareGai
   return;
 }
 
-void parseHardwareParams(const mxArray *params_obj, RigidBodyTree *r, HardwareParams *params) {
+void parseHardwareParams(const mxArray *params_obj, const RigidBodyTree& r, HardwareParams *params) {
   const mxArray *pobj;
 
   parseHardwareGains(myGetField(params_obj, "gains"), r, &(params->gains));
 
-  int nu = r->num_velocities - 6;
+  int nu = r.num_velocities - 6;
   params->joint_is_force_controlled = Matrix<bool, Dynamic, 1>::Zero(nu);
   params->joint_is_position_controlled = Matrix<bool, Dynamic, 1>::Zero(nu);
 
@@ -248,7 +248,7 @@ void parseHardwareParams(const mxArray *params_obj, RigidBodyTree *r, HardwarePa
   return;
 }
 
-void parseQPControllerParams(const mxArray *params_obj, RigidBodyTree *r, QPControllerParams *params) {
+void parseQPControllerParams(const mxArray *params_obj, const RigidBodyTree& r, QPControllerParams *params) {
   const mxArray *pobj;
 
   pobj = myGetProperty(params_obj, "W_kdot");
@@ -307,11 +307,11 @@ void parseQPControllerParams(const mxArray *params_obj, RigidBodyTree *r, QPCont
   return;
 }
 
-void parseQPControllerParamSets(const mxArray *pobj, RigidBodyTree *r, map<string,QPControllerParams> *param_sets) {
+void parseQPControllerParamSets(const mxArray *pobj, const RigidBodyTree& r, map<string,QPControllerParams> *param_sets) {
   int num_fields = mxGetNumberOfFields(pobj);
   if (num_fields == 0) mexErrMsgTxt("could not get any field names from the param_sets object\n"); 
 
-  QPControllerParams params(*r);
+  QPControllerParams params(r);
   const char* fieldname;
   for (int i=0; i < num_fields; i++) {
     fieldname = mxGetFieldNameByNumber(pobj, i);
@@ -351,24 +351,24 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   if (nlhs<1) mexErrMsgTxt("take at least one output... please.");
 
   int narg = 0;
-  
-  // robot_obj
-  NewQPControllerData* pdata = new NewQPControllerData(static_cast<RigidBodyTree *>(getDrakeMexPointer(prhs[narg])));
-  narg++;
+
+  auto urdf_filename = mxGetStdString(prhs[narg++]);
+  unique_ptr<RigidBodyTree> robot_ptr(new RigidBodyTree(urdf_filename));
+  set<string> collision_groups_to_keep = {"heel", "toe"};
+  auto filter = [&](const string &group_name) { return collision_groups_to_keep.find(group_name) == collision_groups_to_keep.end(); };
+  robot_ptr->removeCollisionGroupsIf(filter);
+  robot_ptr->compile();
+
+  NewQPControllerData* pdata = new NewQPControllerData(move(robot_ptr));
 
   // param_sets
-  parseQPControllerParamSets(prhs[narg], pdata->r, &(pdata->param_sets));
+  std::map<std::string, QPControllerParams> params_from_matlab;
+  parseQPControllerParamSets(prhs[narg], *pdata->r, &params_from_matlab);
   narg++;
 
-
   YAML::Node config_yaml = YAML::LoadFile(Drake::getDrakePath() + "/examples/Atlas/+atlasParams/qp_controller_params.yaml");
-  std::map<std::string, QPControllerParams> params_from_yaml = loadAllParamSets(config_yaml, *(pdata->r));
-  for (auto param_set_it = pdata->param_sets.begin(); param_set_it != pdata->param_sets.end(); ++param_set_it) {
-    std::cout << "============================" << std::endl << "Checking param set: " << param_set_it->first << std::endl;
-    if (!(params_from_yaml.at(param_set_it->first) == param_set_it->second)) {
-      throw std::runtime_error("not equal");
-    }
-  }
+  auto params_from_yaml = loadAllParamSets(config_yaml, *(pdata->r));
+  pdata->param_sets = params_from_yaml;
 
   // kinematic tree metadata
   pdata->rpc = parseKinematicTreeMetadata(mxGetStdString(prhs[narg]), *(pdata->r));

@@ -112,11 +112,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         if (contact_sensor(i)!=0) { // no sensor info, or sensor says yes contact
           active_supports.push_back(se);
           num_active_contact_pts += nc;
-          contact_bodies.insert((int)se.body_idx); 
+          contact_bodies.insert(se.body_idx);
         }
       } 
       else {
-        contactPhi(pdata->r, cache, se, phi);
+        contactPhi(*pdata->r, cache, se, phi);
         bool in_contact = true;
         if (contact_logic_AND) { // plan is true, now check contact sensor/kinematics
           in_contact =  (phi.minCoeff()<=contact_threshold || contact_sensor(i)==1); // any contact below threshold (kinematically) OR contact sensor says yes contact
