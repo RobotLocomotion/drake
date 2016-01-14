@@ -47,8 +47,8 @@ int main(int argc, char* argv[]) {
     double box_width = 1000;
     double box_depth = 10;
     DrakeShapes::Box geom(Vector3d(box_width, box_width, box_depth));
-    Matrix4d T_element_to_link = Matrix4d::Identity();
-    T_element_to_link(2,3) = -box_depth/2;  // top of the box is at z=0
+    Isometry3d T_element_to_link = Isometry3d::Identity();
+    T_element_to_link.translation() << 0,0,-box_depth/2;  // top of the box is at z=0
     auto & world = tree->bodies[0];
     Vector4d color;  color <<  0.9297, 0.7930, 0.6758, 1;  // was hex2dec({'ee','cb','ad'})'/256 in matlab
     world->addVisualElement(DrakeShapes::VisualElement(geom,T_element_to_link,color));

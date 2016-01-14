@@ -16,11 +16,11 @@ namespace DrakeShapes
   class DRAKESHAPES_EXPORT Element {
     public:
       Element(const Geometry& geometry, 
-          const Eigen::Matrix4d& T_element_to_local = Eigen::Matrix4d::Identity())
+          const Eigen::Isometry3d& T_element_to_local = Eigen::Isometry3d::Identity())
         : geometry(geometry.clone()), T_element_to_local(T_element_to_local)
       {};
 
-      Element(const Eigen::Matrix4d& T_element_to_local = Eigen::Matrix4d::Identity())
+      Element(const Eigen::Isometry3d& T_element_to_local = Eigen::Isometry3d::Identity())
         : geometry(), T_element_to_local(T_element_to_local)
       {};
 
@@ -28,11 +28,11 @@ namespace DrakeShapes
 
       virtual Element* clone() const;
 
-      const Eigen::Matrix4d& getWorldTransform() const; 
+      const Eigen::Isometry3d& getWorldTransform() const;
 
-      const Eigen::Matrix4d& getLocalTransform() const; 
+      const Eigen::Isometry3d& getLocalTransform() const;
 
-      virtual void updateWorldTransform(const Eigen::Matrix4d& T_local_to_world);
+      virtual void updateWorldTransform(const Eigen::Isometry3d& T_local_to_world);
 
       const Shape getShape() const;
 
@@ -46,9 +46,9 @@ namespace DrakeShapes
 
     protected:
 
-      virtual void setWorldTransform(const Eigen::Matrix4d& T_elem_to_world);
-      Eigen::Matrix4d T_element_to_world;
-      const Eigen::Matrix4d T_element_to_local;
+      virtual void setWorldTransform(const Eigen::Isometry3d& T_elem_to_world);
+      Eigen::Isometry3d T_element_to_world;
+      const Eigen::Isometry3d T_element_to_local;
       std::unique_ptr<Geometry> geometry;
 
       Element(const Element&);

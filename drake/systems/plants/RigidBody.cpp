@@ -81,12 +81,12 @@ CollisionElement( const CollisionElement& other)
   : DrakeCollision::Element(other), body(other.getBody()) {}
 
   RigidBody::CollisionElement::
-CollisionElement( const Matrix4d& T_element_to_link, std::shared_ptr<RigidBody> body)
+CollisionElement( const Isometry3d& T_element_to_link, std::shared_ptr<RigidBody> body)
   : DrakeCollision::Element(T_element_to_link), body(body) {}
 
   RigidBody::CollisionElement::
 CollisionElement(const DrakeShapes::Geometry& geometry,
-    const Matrix4d& T_element_to_link, std::shared_ptr<RigidBody> body)
+    const Isometry3d& T_element_to_link, std::shared_ptr<RigidBody> body)
   : DrakeCollision::Element(geometry, T_element_to_link), body(body) {}
 
 RigidBody::CollisionElement* RigidBody::CollisionElement::clone() const

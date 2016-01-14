@@ -108,11 +108,11 @@ namespace Drake {
             }
           }
 
-          Eigen::Matrix4d T = v.getLocalTransform();
+          Eigen::Isometry3d T = v.getLocalTransform();
           Eigen::Map<Eigen::Vector3f> position(gdata.position);
-          position = T.topRightCorner<3, 1>().cast<float>();
+          position = T.translation().cast<float>();
           Eigen::Map<Eigen::Vector4f> quaternion(gdata.quaternion);
-          quaternion = rotmat2quat(T.topLeftCorner<3, 3>()).cast<float>();
+          quaternion = rotmat2quat(T.rotation()).cast<float>();
 
           Eigen::Map<Eigen::Vector4f> color(gdata.color);
           color = v.getMaterial().template cast<float>();

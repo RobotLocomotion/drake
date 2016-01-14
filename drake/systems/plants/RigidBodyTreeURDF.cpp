@@ -170,7 +170,7 @@ void parseInertial(shared_ptr<RigidBody> body, XMLElement* node, RigidBodyTree *
 
   XMLElement* origin = node->FirstChildElement("origin");
   if (origin)
-    poseAttributesToTransform(origin, T.matrix());
+    poseAttributesToTransform(origin, T);
 
   XMLElement* mass = node->FirstChildElement("mass");
   if (mass)
@@ -328,7 +328,7 @@ void parseVisual(shared_ptr<RigidBody> body, XMLElement* node, RigidBodyTree * m
   // DEBUG
   //cout << "parseVisual: START" << endl;
   // END_DEBUG
-  Matrix4d T_element_to_link = Matrix4d::Identity();
+  Isometry3d T_element_to_link = Isometry3d::Identity();
   XMLElement* origin = node->FirstChildElement("origin");
   if (origin)
     poseAttributesToTransform(origin, T_element_to_link);
@@ -377,7 +377,7 @@ void parseVisual(shared_ptr<RigidBody> body, XMLElement* node, RigidBodyTree * m
 
 void parseCollision(shared_ptr<RigidBody> body, XMLElement* node, RigidBodyTree * model, const map<string,string>& package_map, const string& root_dir)
 {
-  Matrix4d T_element_to_link = Matrix4d::Identity();
+  Isometry3d T_element_to_link = Isometry3d::Identity();
   XMLElement* origin = node->FirstChildElement("origin");
   if (origin)
     poseAttributesToTransform(origin, T_element_to_link);
@@ -494,7 +494,7 @@ void parseJoint(RigidBodyTree * model, XMLElement* node)
   Isometry3d Ttree = Isometry3d::Identity();
   XMLElement* origin = node->FirstChildElement("origin");
   if (origin) {
-    poseAttributesToTransform(origin, Ttree.matrix());
+    poseAttributesToTransform(origin, Ttree);
   }
 
   Vector3d axis;

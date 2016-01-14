@@ -34,7 +34,7 @@ namespace DrakeCollision
     }
   }
 
-  bool Model::updateElementWorldTransform(const ElementId id, const Matrix4d& T_elem_to_world)
+  bool Model::updateElementWorldTransform(const ElementId id, const Isometry3d& T_elem_to_world)
   {
     auto elem_itr = elements.find(id);
     if (elem_itr != elements.end()) {
