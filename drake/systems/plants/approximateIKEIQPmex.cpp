@@ -265,7 +265,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   cout << "c is " << c.rows() << endl;
   cout << "Aeq is " << Aeq.rows() << " by " << Aeq.cols() << endl;
 
-  VectorXd q = VectorXd::Zero(nq);
+  VectorXd q = model->getZeroConfiguration();
 //   double result = solve_quadprog(Q, c, -Aeq, beq, -Ain, bin, q);
   
   VectorXd Qdiag = Q.diagonal();

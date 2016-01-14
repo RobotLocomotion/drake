@@ -34,19 +34,9 @@ classdef QPLocomotionPlanSettings
     % controller can use if it senses force on that body
     early_contact_allowed_fraction = 0.75; 
 
-    pelvis_name = 'pelvis';
-    r_foot_name = 'r_foot';
-    l_foot_name = 'l_foot';
-    r_knee_name = 'r_leg_kny';
-    l_knee_name = 'l_leg_kny';
-    l_akx_name = 'l_leg_akx';
-    r_akx_name = 'r_leg_akx';
-    r_aky_name = 'r_leg_aky';
-    l_aky_name = 'l_leg_aky';
-
     duration = inf;
     start_time = 0;
-    default_qp_input = atlasControllers.QPInputConstantHeight;
+    default_qp_input = bipedControllers.QPInputConstantHeight;
     gain_set = 'standing';
   end
 
@@ -54,12 +44,11 @@ classdef QPLocomotionPlanSettings
     function obj = QPLocomotionPlanSettings(robot)
       obj.robot = robot;
       S = load(obj.robot.fixed_point_file);
-      rpc = atlasUtil.propertyCache(obj.robot);
-      obj.contact_groups = rpc.contact_groups;
-      obj.qtraj = S.xstar(1:obj.robot.getNumPositions());
-      obj.default_qp_input = atlasControllers.QPInputConstantHeight();
-      obj.default_qp_input.whole_body_data.q_des = zeros(obj.robot.getNumPositions(), 1);
-      obj.constrained_dofs = [findPositionIndices(obj.robot,'arm');findPositionIndices(obj.robot,'neck');findPositionIndices(obj.robot,'back_bkz');findPositionIndices(obj.robot,'back_bky')];
+      prop_cache = robot.getRobotPropertyCache();
+      obj.contact_groups = prop_cache.contact_groups;
+      obj.qtraj = S.xstar(1:prop_cache.nq);
+      obj.default_qp_input.whole_body_data.q_des = getZeroConfiguration(obj.robot.getManipulator);
+      obj.constrained_dofs = [prop_cache.position_indices.arm; prop_cache.position_indices.neck; prop_cache.position_indices.back_bkz; prop_cache.position_indices.back_bky];
       obj.untracked_joint_inds = [];
       obj.zmp_data = QPLocomotionPlanSettings.defaultZMPData();
     end

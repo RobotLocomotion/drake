@@ -74,8 +74,9 @@ public:
     return Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1>(getNumVelocities(), 1);
   }
 
-    virtual std::string getPositionName(int index) const;
-    virtual Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const;
+    virtual std::string getPositionName(int index) const override;
+    virtual Eigen::VectorXd zeroConfiguration() const override;
+    virtual Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const override;
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

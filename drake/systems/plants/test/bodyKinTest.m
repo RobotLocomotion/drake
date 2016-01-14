@@ -10,7 +10,7 @@ m = 1;
 pts = ones(3,m);
 body_ind = 4;
 
-q = rand*ones(r.getNumPositions(),1);
+q = getRandomConfiguration(r);
 
 geval_options.grad_method = {'user','taylorvar'};
 [x,J,dJ] = geval(@(q)bodyKinWrapper(q,r,body_ind,pts),q,geval_options);

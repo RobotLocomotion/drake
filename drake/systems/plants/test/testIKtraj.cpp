@@ -43,14 +43,13 @@ int main()
     //  r_foot = i;
     //}
   }
-  int nq = model->num_positions;
-  VectorXd qstar = VectorXd::Zero(nq);
+  VectorXd qstar = model->getZeroConfiguration();
   qstar(3) = 0.8;
   KinematicsCache<double> cache = model->doKinematics(qstar);
   Vector3d com0 = model->centerOfMass(cache);
 
   Vector3d r_hand_pt = Vector3d::Zero();
-  Vector3d rhand_pos0 = model->forwardKin(cache, r_hand_pt, r_hand, 0, 0);
+  Vector3d rhand_pos0 = model->transformPoints(cache, r_hand_pt, r_hand, 0);
 
   int nT = 4;
   double* t = new double[nT];

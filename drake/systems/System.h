@@ -262,7 +262,7 @@ namespace Drake {
     return std::make_shared<FeedbackSystem<System1,System2> >(sys1,sys2);
   };
 
-/** FeedbackSystem<System1,System2>
+/** CascadeSystem<System1,System2>
  * @brief Builds a new system from the cascade connection of two simpler systems
  * @concept{system_concept}
  *

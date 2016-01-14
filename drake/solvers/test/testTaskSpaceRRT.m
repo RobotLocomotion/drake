@@ -17,7 +17,7 @@ r = RigidBodyManipulator(urdf,options);
 nq = r.getNumPositions();
 S = load([getDrakePath(), '/examples/Atlas/data/atlas_fp.mat']);
 q_nom = S.xstar(1:nq);
-q_zero = zeros(nq, 1);
+q_zero = getZeroConfiguration(r);
 
 world = r.findLinkId('world');
 l_foot = r.findLinkId('l_foot');

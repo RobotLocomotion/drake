@@ -4,9 +4,9 @@
 #include <string>
 #include <fstream>
 #include <sstream>
-#include "tinyxml.h"
+#include "tinyxml2.h"
 
-bool parseScalarValue(TiXmlElement* node, double &val)
+bool parseScalarValue(tinyxml2::XMLElement* node, double &val)
 {
   const char* strval = node->FirstChild()->Value();
   if (strval) {
@@ -17,7 +17,7 @@ bool parseScalarValue(TiXmlElement* node, double &val)
   return false;
 }
 
-bool parseScalarAttribute(TiXmlElement* node, const char* attribute_name, double& val)
+bool parseScalarAttribute(tinyxml2::XMLElement* node, const char* attribute_name, double& val)
 {
   const char* attr = node->Attribute(attribute_name);
   if (attr) {
@@ -29,7 +29,7 @@ bool parseScalarAttribute(TiXmlElement* node, const char* attribute_name, double
 }
 
 // only writes values if they exist
-bool parseVectorAttribute(TiXmlElement* node, const char* attribute_name, Eigen::Vector3d &val)
+bool parseVectorAttribute(tinyxml2::XMLElement* node, const char* attribute_name, Eigen::Vector3d &val)
 {
   const char* attr = node->Attribute(attribute_name);
   if (attr) {
@@ -40,7 +40,7 @@ bool parseVectorAttribute(TiXmlElement* node, const char* attribute_name, Eigen:
   return false;
 }
 
-bool parseVectorAttribute(TiXmlElement* node, const char* attribute_name, Eigen::Vector4d &val)
+bool parseVectorAttribute(tinyxml2::XMLElement* node, const char* attribute_name, Eigen::Vector4d &val)
 {
   const char* attr = node->Attribute(attribute_name);
   if (attr) {
@@ -51,7 +51,7 @@ bool parseVectorAttribute(TiXmlElement* node, const char* attribute_name, Eigen:
   return false;
 }
 
-void poseAttributesToTransform(TiXmlElement* node, Eigen::Matrix4d& T)
+void poseAttributesToTransform(tinyxml2::XMLElement* node, Eigen::Matrix4d& T)
 {
   Eigen::Vector3d rpy=Eigen::Vector3d::Zero(), xyz=Eigen::Vector3d::Zero();
 
