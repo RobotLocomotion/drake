@@ -7,17 +7,16 @@ function collisionDetectGradTest(visualize,n_debris)
     visualize = false;
   end
   if nargin < 2
-    n_debris = 1;
+    n_debris = 5;
   end
   options.floating = true;
   S = warning('OFF','Drake:RigidBodyManipulator:UnsupportedContactPoints');
   warning('OFF','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
-%  r = RigidBodyManipulator([getDrakePath(),'/examples/Atlas/urdf/atlas_minimal_contact.urdf'],options);
-  r = RigidBodyManipulator();
+  r = RigidBodyManipulator([getDrakePath(),'/examples/Atlas/urdf/atlas_convex_hull.urdf'],options);
   for i = 1:n_debris
-    r = r.addRobotFromURDF('FallingBrickContactPoints.urdf',3*(2*rand(3,1)-1),2*pi*rand(3,1),options);
+    r = r.addRobotFromURDF('FallingBrick.urdf',3*(2*rand(3,1)-1),2*pi*rand(3,1));
     r = r.addRobotFromURDF('ball.urdf',3*(2*rand(3,1)-1),2*pi*rand(3,1));
-%    r = r.addRobotFromURDF('Capsule.urdf',3*(2*rand(3,1)-1),2*pi*rand(3,1));
+    r = r.addRobotFromURDF('Capsule.urdf',3*(2*rand(3,1)-1),2*pi*rand(3,1));
   end
   warning(S);
 

@@ -412,8 +412,8 @@ namespace DrakeCollision
       double distance = (xA_world-xB_world).norm();
       c->addSingleResult(idA,
                          idB,
-                         elements[idA]->getLocalTransform() * TA_world.inverse() * xB_world * radiusA/distance, // ptA (in body A coords)
-                         elements[idB]->getLocalTransform() * TB_world.inverse() * xA_world * radiusB/distance, // ptB (in body B coords)
+                         elements[idA]->getLocalTransform() * TA_world.inverse() * (xA_world + (xB_world-xA_world)*radiusA/distance), // ptA (in body A coords)
+                         elements[idB]->getLocalTransform() * TB_world.inverse() * (xB_world + (xA_world-xB_world)*radiusB/distance), // ptB (in body B coords)
                          (xA_world-xB_world)/distance,
                          distance-radiusA-radiusB);
       return true;

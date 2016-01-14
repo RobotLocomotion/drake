@@ -38,7 +38,7 @@ namespace DrakeCollision
   {
     auto elem_itr = elements.find(id);
     if (elem_itr != elements.end()) {
-      elem_itr->second->updateWorldTransform(T_elem_to_world);
+      elem_itr->second->updateWorldTransform(T_elem_to_world);  // fixme: this is taking T_local_to_world, not T_elem_to_world.  so this method name is wrong
       return true;
     } else {
       return false;

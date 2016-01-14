@@ -66,18 +66,20 @@ int testPointPair(PointPair point, double distance, Vector3d normal, ElementId i
  */
 int main()
 {
-  Isometry3d T_body1_to_world, T_body2_to_world, T_body3_to_world;
+  Isometry3d T_body1_to_world, T_body2_to_world, T_body3_to_world, T_elem2_to_body;
   T_body1_to_world.setIdentity();
   T_body2_to_world.setIdentity();
   T_body3_to_world.setIdentity();
-  T_body2_to_world.translation() << 2,0,0;
+  T_body2_to_world.translation() << 1,0,0;
+  T_elem2_to_body.setIdentity();
+  T_elem2_to_body.translation() << 1,0,0;
   T_body3_to_world.translation() << 2,2,0;
   T_body3_to_world.matrix().block<2,2>(0,0) << 0, -1, 1, 0; // rotate 90 deg in z
 
   shared_ptr<Model> model = newModel();
   ElementId id1, id2, id3;
   id1 = model->addElement(Element(DrakeShapes::Box(Vector3d(1,1,1))));
-  id2 = model->addElement(Element(DrakeShapes::Sphere(0.5)));
+  id2 = model->addElement(Element(DrakeShapes::Sphere(0.5), T_elem2_to_body));
   id3 = model->addElement(Element(DrakeShapes::Sphere(0.5)));
   model->updateElementWorldTransform(id1, T_body1_to_world);
   model->updateElementWorldTransform(id2, T_body2_to_world);
@@ -97,14 +99,14 @@ int main()
   }
   int out;
   cout << "Check points[0] ..." << endl;
-  out = testPointPair(points[0], 1.0, Vector3d(-1, 0, 0), id1, id2, Vector3d(0.5,0,0), Vector3d(-.5,0,0));
+  out = testPointPair(points[0], 1.0, Vector3d(-1, 0, 0), id1, id2, Vector3d(0.5,0,0), Vector3d(.5,0,0));
   if (out == 0) {
     cout << "Check points[1] ..." << endl;
     out = testPointPair(points[1], 1.6213203435596428, Vector3d(-sqrt(2)/2, -sqrt(2)/2, 0), id1, id3, Vector3d(.5,.5,0), Vector3d(-sqrt(2)/4,sqrt(2)/4,0));
   }
   if (out == 0) {
     cout << "Check points[2] ..." << endl;
-    out = testPointPair(points[2], 1.0, Vector3d(0, -1, 0), id2, id3, Vector3d(0,.5,0), Vector3d(-.5,0,0));
+    out = testPointPair(points[2], 1.0, Vector3d(0, -1, 0), id2, id3, Vector3d(1,.5,0), Vector3d(-.5,0,0));
   }
   cout << out << endl;
   return out;
