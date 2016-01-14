@@ -26,7 +26,7 @@ classdef InstantaneousQPController
 
   methods
     function obj = InstantaneousQPController(r, options)
-      if nargin < 3
+      if nargin < 2
         options = struct();
       end
       options = applyDefaults(options,...

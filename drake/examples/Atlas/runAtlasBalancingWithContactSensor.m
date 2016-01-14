@@ -61,7 +61,7 @@ kinsol = doKinematics(r,q0);
 standing_plan = QPLocomotionPlanSettings.fromStandingState(x0, r);
 % standing_plan.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed;
 
-control = bipedControllers.InstantaneousQPController(r_pure, [], struct());
+control = bipedControllers.InstantaneousQPController(r_pure);
 planeval = bipedControllers.BipedPlanEval(r_pure, QPLocomotionPlanCPPWrapper(standing_plan));
 plancontroller = bipedControllers.BipedPlanEvalAndControlSystem(r_pure, control, planeval);
 
