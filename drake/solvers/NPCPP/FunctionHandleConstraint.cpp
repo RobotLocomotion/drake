@@ -5,8 +5,8 @@ namespace snopt {
 }
 
 namespace drake {
-FunctionHandleConstraint::FunctionHandleConstraint(snopt::integer lb,
-    snopt::integer ub,
+FunctionHandleConstraint::FunctionHandleConstraint(snopt::doublereal lb,
+    snopt::doublereal ub,
     snopt::integer xdim,
     std::vector<std::pair<snopt::integer, snopt::doublereal>> A_row,
     std::vector<snopt::integer> jGvar_row,

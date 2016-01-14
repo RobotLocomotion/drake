@@ -17,7 +17,9 @@ protected:
   std::function<void(snopt::doublereal[],bool,bool,snopt::doublereal*,std::vector<snopt::doublereal>*)> m_fun;
 
 public:
-  FunctionHandleConstraint(snopt::integer lb, snopt::integer ub, snopt::integer xdim,
+  FunctionHandleConstraint(snopt::doublereal lb,
+      snopt::doublereal ub,
+      snopt::integer xdim,
       std::vector<std::pair<snopt::integer, snopt::doublereal>> A_row,
       std::vector<snopt::integer> jGvar_row,
       std::function<void(snopt::doublereal[],bool,bool,snopt::doublereal*,std::vector<snopt::doublereal>*)> nonlinearEval);
