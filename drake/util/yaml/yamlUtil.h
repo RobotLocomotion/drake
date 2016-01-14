@@ -1,4 +1,3 @@
-#include <regex>
 #include <map>
 #include <fstream>
 #include "yaml-cpp/yaml.h"
@@ -8,7 +7,7 @@
 // Convert simple glob expressions (using * as wildcard) to regex by:
 //    1. Prefixing each regex special chars EXCEPT * with \
 //    2. Converting * to .*
-std::regex globToRegex(const std::string& glob);
+// std::regex globToRegex(const std::string& glob);
 
 YAML::Node applyDefaults(const YAML::Node& node, const YAML::Node& default_node);
 YAML::Node expandDefaults(const YAML::Node& node);
@@ -19,5 +18,4 @@ YAML::Node expandDefaults(const YAML::Node& node);
 YAML::Node get(const YAML::Node& parent, const std::string& key);
 
 QPControllerParams loadSingleParamSet(const YAML::Node &config, const RigidBodyTree &robot);
-std::map<std::string, QPControllerParams> loadAllParamSets(YAML::Node config, const RigidBodyTree &robot);
-std::map<std::string, QPControllerParams> loadAllParamSets(std::ifstream input_file, const RigidBodyTree &robot, std::ofstream* debug_output_file=nullptr);
+std::map<std::string, QPControllerParams> loadAllParamSets(YAML::Node config, const RigidBodyTree &robot, std::ofstream* debug_output_file=nullptr);

@@ -25,12 +25,9 @@ classdef InstantaneousQPController
   end
 
   methods
-    function obj = InstantaneousQPController(r, param_sets, options)
+    function obj = InstantaneousQPController(r, options)
       if nargin < 3
         options = struct();
-      end
-      if nargin < 2 || isempty(param_sets)
-        param_sets = r.getDefaultParams();
       end
       options = applyDefaults(options,...
         struct('debug', false,...
@@ -45,7 +42,6 @@ classdef InstantaneousQPController
         error('Drake:NonQuaternionFloatingBaseAssumption', 'this code assumes a 6-dof XYZRPY floating base, and will need to be updated for quaternions');
       end
       obj.robot = r;
-      obj.param_sets = param_sets;
       obj.robot_property_cache = r.getRobotPropertyCache();
       import atlasFrames.*;
 
@@ -79,8 +75,7 @@ classdef InstantaneousQPController
 
       obj.data_mex_ptr = ...
              constructQPDataPointerMex(obj.robot.getMexModelPtr(),...
-                                       obj.param_sets,...
-                                       obj.robot.kinematic_tree_metadata_file,...
+                                       obj.robot.control_config_file,...
                                        obj.solver==0,...
                                        obj.gurobi_options,...
                                        obj.robot.hardware_data_file);

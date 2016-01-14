@@ -26,17 +26,16 @@
 
 
 int main(int argc, char** argv) {
-  YAML::Node config = YAML::LoadFile(Drake::getDrakePath() + "/examples/Atlas/+atlasParams/defaults.yaml");
+  YAML::Node config = YAML::LoadFile(Drake::getDrakePath() + "/examples/Valkyrie/config/config.yaml")["qp_controller_params"];
 
   config = expandDefaults(config);
 
   std::ofstream out_file;
-  out_file.open (Drake::getDrakePath() + "/examples/Atlas/+atlasParams/defaults_out.yaml");
+  out_file.open (Drake::getDrakePath() + "/examples/Valkyrie/defaults_out.yaml");
   out_file << config;
   out_file.close();
 
   // std::cout << "c: " << get(get(config, "body_specific"), "c") << std::endl;
-  std::cout << "manip body c: " << get(get(get(config, "manip"), "body_specific"), "c") << std::endl;
 
   // auto robot = std::make_shared<RigidBodyTree>(Drake::getDrakePath() + "/examples/Atlas/urdf/atlas_minimal_contact.urdf");
 

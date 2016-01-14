@@ -26,8 +26,7 @@ vector<int> findPositionIndices(const RigidBodyTree &robot, const vector<string>
   return position_indices;
 }
 
-RobotPropertyCache parseKinematicTreeMetadata(const string& yaml_file, const RigidBodyTree& robot) {
-  Node metadata = LoadFile(yaml_file);
+RobotPropertyCache parseKinematicTreeMetadata(const YAML::Node& metadata, const RigidBodyTree& robot) {
   RobotPropertyCache ret;
   map<Side, string> side_identifiers = { {Side::RIGHT, "r"}, {Side::LEFT, "l"} };
 
@@ -335,7 +334,7 @@ JointNames parseRobotJointNames(const string& hardware_data_file_name, const Rig
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
-  if (nrhs<1) mexErrMsgTxt("usage: ptr = constructQPDataPointerMex(robot_obj, params_sets, robot_property_cache, B, umin, umax, gurobi_opts);");
+  if (nrhs<1) mexErrMsgTxt("usage: ptr = constructQPDataPointerMex(robot_obj, control_config_filename, B, umin, umax, gurobi_opts);");
 
   if (nrhs == 1) {
     // By convention, calling the constructor with just one argument (the pointer) should delete the pointer
@@ -356,22 +355,25 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   NewQPControllerData* pdata = new NewQPControllerData(static_cast<RigidBodyTree *>(getDrakeMexPointer(prhs[narg])));
   narg++;
 
-  // param_sets
-  parseQPControllerParamSets(prhs[narg], pdata->r, &(pdata->param_sets));
-  narg++;
+  // // param_sets
+  // parseQPControllerParamSets(prhs[narg], pdata->r, &(pdata->param_sets));
+  // narg++;
 
 
-  YAML::Node config_yaml = YAML::LoadFile(Drake::getDrakePath() + "/examples/Atlas/+atlasParams/params_defaults.yaml");
-  std::map<std::string, QPControllerParams> params_from_yaml = loadAllParamSets(config_yaml, *(pdata->r));
-  for (auto param_set_it = pdata->param_sets.begin(); param_set_it != pdata->param_sets.end(); ++param_set_it) {
-    std::cout << "============================" << std::endl << "Checking param set: " << param_set_it->first << std::endl;
-    if (!(params_from_yaml.at(param_set_it->first) == param_set_it->second)) {
-      throw std::runtime_error("not equal");
-    }
-  }
+  // YAML::Node config_yaml = YAML::LoadFile(Drake::getDrakePath() + "/examples/Atlas/config/control_config.yaml");
+  // std::map<std::string, QPControllerParams> params_from_yaml = loadAllParamSets(config_yaml["qp_controller_params"], *(pdata->r));
+  // for (auto param_set_it = pdata->param_sets.begin(); param_set_it != pdata->param_sets.end(); ++param_set_it) {
+  //   std::cout << "============================" << std::endl << "Checking param set: " << param_set_it->first << std::endl;
+  //   if (!(params_from_yaml.at(param_set_it->first) == param_set_it->second)) {
+  //     throw std::runtime_error("not equal");
+  //   }
+  // }
 
-  // kinematic tree metadata
-  pdata->rpc = parseKinematicTreeMetadata(mxGetStdString(prhs[narg]), *(pdata->r));
+  // kinematic tree metadata & param sets
+  std::string control_config_filename = mxGetStdString(prhs[narg]);
+  YAML::Node control_config = LoadFile(control_config_filename);
+  pdata->param_sets = loadAllParamSets(control_config["qp_controller_params"], *(pdata->r)); 
+  pdata->rpc = parseKinematicTreeMetadata(control_config["kinematic_tree_metadata"], *(pdata->r));
   narg++;
 
   // umin
