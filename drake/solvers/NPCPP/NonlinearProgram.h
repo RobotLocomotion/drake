@@ -13,6 +13,7 @@ namespace snopt {
 namespace drake {
 class NonlinearProgram {
 private:
+  bool m_debug_print;
   void debugPrint(snopt::integer const& n,
       snopt::integer const& nf,
       snopt::integer const& lena,
@@ -58,6 +59,7 @@ public:
   void solve(std::vector<snopt::doublereal>* x,
       snopt::doublereal* objval,
       snopt::integer* info) const;
+  void setDebugPrint(bool debug_print);
 };
 } // namespace drake
 

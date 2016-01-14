@@ -51,6 +51,7 @@ void testNonlinearProgram_linearFunction() {
   integer info;
   np.solve(&x, &objval, &info);
 
+  printf("%s", "==========\nLinear Problem\n\n");
   printf("Value of x: %e\nValue of y: %e\nObjective Value: %e\nInfo: %ld\n", x[0], x[1], objval, info);
 }
 
@@ -84,6 +85,7 @@ void testNonlinearProgram_quadraticFunction() {
   integer info;
   np.solve(&x, &objval, &info);
 
+  printf("%s", "==========\nQuadratic Problem\n\n");
   printf("Value of x: %e\nValue of y: %e\nObjective Value: %e\nInfo: %ld\n", x[0], x[1], objval, info);
 }
 
@@ -132,6 +134,7 @@ void testNonlinearProgram_exponentialFunction() {
   integer info;
   np.solve(&x, &objval, &info);
 
+  printf("%s", "==========\nExponential Problem\n\n");
   printf("Value of x: %e\nValue of y: %e\nObjective Value: %e\nInfo: %ld\n", x[0], x[1], objval, info);
 }
 

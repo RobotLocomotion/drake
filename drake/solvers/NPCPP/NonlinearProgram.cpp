@@ -13,7 +13,8 @@ using namespace std;
 namespace drake {
 const NonlinearProgram* thisNP;
 
-NonlinearProgram::NonlinearProgram(snopt::integer num_vars) : m_num_vars(num_vars) {}
+NonlinearProgram::NonlinearProgram(snopt::integer num_vars)
+  : m_num_vars(num_vars), m_debug_print(false) {}
 
 void NonlinearProgram::addConstraint(unique_ptr<Constraint>& cnstr) {
   m_constraints.push_back(move(cnstr));
@@ -165,7 +166,7 @@ void NonlinearProgram::solve(vector<snopt::doublereal>* x,
   snopt::integer nfname = 1;
   snopt::doublereal objadd = 0;
   snopt::integer objrow = 1;
-  char prob[] = "";
+  char prob[] = "snopt";
   snopt::integer mincw;
   snopt::integer miniw;
   snopt::integer minrw;
@@ -190,7 +191,7 @@ void NonlinearProgram::solve(vector<snopt::doublereal>* x,
 
   snopt::integer iPrint = 9;
   snopt::integer prnt_len;
-  snopt::integer iSumm = 6;
+  snopt::integer iSumm = 0;
 
   char printname[200];
   sprintf(printname, "%s", "snopt.out");
@@ -207,7 +208,6 @@ void NonlinearProgram::solve(vector<snopt::doublereal>* x,
   vector<snopt::integer> javar;
   vector<snopt::doublereal> a;
   generateA(&lena, &nea, &iafun, &javar, &a);
-  printf("lena: %ld\nnea: %ld\n", lena, nea); 
 
   // Generate G
   snopt::integer leng = 0;
@@ -237,7 +237,12 @@ void NonlinearProgram::solve(vector<snopt::doublereal>* x,
   // HACKY
   thisNP = this;
 
-  debugPrint(n, nf, lena, nea, iafun, javar, a, leng, neg, igfun, jgvar, xlow, xupp, flow, fupp);
+  if (m_debug_print) {
+    debugPrint(n, nf,
+      lena, nea, iafun, javar, a,
+      leng, neg, igfun, jgvar,
+      xlow, xupp, flow, fupp);
+  }
 
   // Solve
   snopt::snopta_(&start, &nf, &n,
