@@ -253,6 +253,8 @@ void NonlinearProgram::solve(vector<snopt::doublereal>* x,
     cu.data(), &lencu, iu.data(), &leniu, ru.data(), &lenru,
     cw.data(), &lencw, iw.data(), &leniw, rw.data(), &lenrw,
     name_len, xnames_len, fnames_len, lencu, lencw);
+
+  *objval = f[0];
 }
 
 void NonlinearProgram::debugPrint(snopt::integer const& n,
