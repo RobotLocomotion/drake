@@ -8,8 +8,8 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-#include "systems/plants/RigidBodyTree.h"
-#include "systems/trajectories/PiecewisePolynomial.h"
+#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include "drakeControlUtil_export.h"
 
 

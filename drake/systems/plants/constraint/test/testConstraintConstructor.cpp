@@ -1,5 +1,5 @@
 #include <iostream>
-#include "systems/plants/RigidBodyTree.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 
 #include "../RigidBodyConstraint.h"
 

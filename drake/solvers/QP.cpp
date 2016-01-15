@@ -4,8 +4,8 @@
 #include <Eigen/LU>
 #include <Eigen/SVD>
 
-#include "solvers/fastQP.h"
-#include "solvers/gurobiQP.h"
+#include "drake/solvers/fastQP.h"
+#include "drake/solvers/gurobiQP.h"
 
 #define _USE_MATH_DEFINES
 

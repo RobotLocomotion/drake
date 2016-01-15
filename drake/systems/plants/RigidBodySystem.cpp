@@ -1,7 +1,7 @@
 
 #include <stdexcept>
-#include "systems/plants/RigidBodySystem.h"
-#include "systems/plants/RigidBodyIK.h"  // required for resolving initial conditions
+#include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/systems/plants/RigidBodyIK.h"  // required for resolving initial conditions
 #include "urdfParsingUtil.h"
 
 using namespace std;

@@ -1,7 +1,7 @@
 
 #include "../Pendulum.h"
-#include "systems/plants/RigidBodySystem.h"
-#include "util/testUtil.h"
+#include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/util/testUtil.h"
 
 using namespace std;
 using namespace Eigen;

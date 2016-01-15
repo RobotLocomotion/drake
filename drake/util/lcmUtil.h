@@ -3,7 +3,7 @@
 
 #include <Eigen/Core>
 #include <iostream>
-#include "systems/trajectories/PiecewisePolynomial.h"
+#include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include "lcmtypes/drake/lcmt_polynomial.hpp"
 #include "lcmtypes/drake/lcmt_polynomial_matrix.hpp"
 #include "lcmtypes/drake/lcmt_piecewise_polynomial.hpp"

@@ -1,7 +1,7 @@
 #ifndef DRAKE_OPTIMIZATION_H
 #define DRAKE_OPTIMIZATION_H
 
-#include "core/Core.h"
+#include "drake/core/Core.h"
 #include <list>
 #include <memory>
 #include <initializer_list>

@@ -1,4 +1,4 @@
-#include "systems/plants/joints/DrakeJoints.h"
+#include "drake/systems/plants/joints/DrakeJoints.h"
 #include <memory>
 #include <vector>
 #include <string>
@@ -6,7 +6,7 @@
 #include <Eigen/Core>
 #include "mex.h"
 #include "matrix.h"
-#include "util/drakeMexUtil.h"
+#include "drake/util/drakeMexUtil.h"
 
 using namespace Eigen;
 using namespace std;

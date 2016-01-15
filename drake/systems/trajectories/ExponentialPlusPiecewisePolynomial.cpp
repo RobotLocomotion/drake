@@ -1,4 +1,4 @@
-#include "systems/trajectories/ExponentialPlusPiecewisePolynomial.h"
+#include "drake/systems/trajectories/ExponentialPlusPiecewisePolynomial.h"
 #include <unsupported/Eigen/MatrixFunctions>
 #include <stdexcept>
 

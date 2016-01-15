@@ -1,4 +1,4 @@
-#include "util/drakeMexUtil.h"
+#include "drake/util/drakeMexUtil.h"
 #include <stdexcept>
 
 using namespace std;

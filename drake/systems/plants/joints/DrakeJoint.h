@@ -5,7 +5,7 @@
 #include <Eigen/Geometry>
 #include <unsupported/Eigen/AutoDiff>
 #include <random>
-#include "util/drakeGeometryUtil.h"
+#include "drake/util/drakeGeometryUtil.h"
 #include "drakeJoints_export.h"
 
 

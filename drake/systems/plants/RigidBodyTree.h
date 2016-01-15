@@ -10,8 +10,8 @@
 #include "collision/DrakeCollision.h"
 #include "shapes/DrakeShapes.h"
 #include "KinematicPath.h"
-#include "systems/plants/ForceTorqueMeasurement.h"
-#include "util/drakeUtil.h"
+#include "drake/systems/plants/ForceTorqueMeasurement.h"
+#include "drake/util/drakeUtil.h"
 #include <stdexcept>
 #include "RigidBody.h"
 #include "RigidBodyFrame.h"

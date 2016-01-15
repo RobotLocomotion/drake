@@ -1,7 +1,7 @@
 #include "mex.h"
 #include <iostream>
-#include "util/drakeMexUtil.h"
-#include "systems/plants/RigidBodyTree.h"
+#include "drake/util/drakeMexUtil.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include "math.h"
 #include "rigidBodyTreeMexConversions.h"
 

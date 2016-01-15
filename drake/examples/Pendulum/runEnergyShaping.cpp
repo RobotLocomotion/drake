@@ -1,7 +1,7 @@
 #include <iostream>
-#include "examples/Pendulum/Pendulum.h"
-#include "systems/Simulation.h"
-#include "systems/plants/BotVisualizer.h"
+#include "drake/examples/Pendulum/Pendulum.h"
+#include "drake/systems/Simulation.h"
+#include "drake/systems/plants/BotVisualizer.h"
 
 using namespace std;
 using namespace Drake;

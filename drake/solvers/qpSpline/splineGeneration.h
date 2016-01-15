@@ -2,7 +2,7 @@
 #define DRAKE_SOLVERS_QPSPLINE_SPLINEGENERATION_H_
 
 #include "SplineInformation.h"
-#include "systems/trajectories/PiecewisePolynomial.h"
+#include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include <stdexcept>
 #include "drakeSplineGeneration_export.h"
 

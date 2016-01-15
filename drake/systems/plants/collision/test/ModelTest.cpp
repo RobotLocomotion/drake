@@ -1,7 +1,7 @@
 #include <iostream>
 #include <math.h>
 
-#include "systems/plants/collision/DrakeCollision.h"
+#include "drake/systems/plants/collision/DrakeCollision.h"
 
 using namespace DrakeCollision;
 using namespace std;

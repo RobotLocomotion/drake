@@ -5,8 +5,8 @@
 #include <cstring>
 #include <cmath>
 #include <random>
-#include "util/drakeGradientUtil.h"
-#include "util/GradientVar.h"
+#include "drake/util/drakeGradientUtil.h"
+#include "drake/util/GradientVar.h"
 #include "expmap2quat.h"
 #include "drakeGeometryUtil_export.h"
 

@@ -1,4 +1,4 @@
-#include "examples/Atlas/atlasUtil.h"
+#include "drake/examples/Atlas/atlasUtil.h"
 #include <Eigen/Core>
 #include <stdexcept>
 

@@ -1,7 +1,7 @@
 
 #include <typeinfo>
-#include "solvers/Optimization.h"
-#include "util/testUtil.h"
+#include "drake/solvers/Optimization.h"
+#include "drake/util/testUtil.h"
 
 using namespace std;
 using namespace Eigen;

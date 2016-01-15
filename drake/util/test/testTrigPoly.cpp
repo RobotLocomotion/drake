@@ -1,4 +1,4 @@
-#include "util/TrigPoly.h"
+#include "drake/util/TrigPoly.h"
 #include <iostream>
 
 using namespace Eigen;

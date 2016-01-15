@@ -3,7 +3,7 @@
 
 #include <Eigen/Core>
 #include <vector>
-#include "systems/trajectories/PiecewisePolynomial.h"
+#include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include "drakeTrajectories_export.h"
 
 

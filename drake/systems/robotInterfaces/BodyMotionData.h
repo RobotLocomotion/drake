@@ -4,7 +4,7 @@
 #include <vector>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include "systems/trajectories/PiecewisePolynomial.h"
+#include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include "drakeQPLocomotionPlan_export.h" // TODO: exports
 
 class BodyMotionData

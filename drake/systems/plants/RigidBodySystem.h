@@ -1,9 +1,9 @@
 #ifndef DRAKE_RIGIDBODYSYSTEM_H
 #define DRAKE_RIGIDBODYSYSTEM_H
 
-#include "systems/System.h"
-#include "solvers/Optimization.h"
-#include "systems/plants/RigidBodyTree.h"
+#include "drake/systems/System.h"
+#include "drake/solvers/Optimization.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include "KinematicsCache.h"
 #include "drakeRBSystem_export.h"
 

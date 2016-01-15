@@ -1,5 +1,5 @@
-#include "util/lcmUtil.h"
-#include "util/testUtil.h"
+#include "drake/util/lcmUtil.h"
+#include "drake/util/testUtil.h"
 
 using namespace std;
 using namespace Eigen;

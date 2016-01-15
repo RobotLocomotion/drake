@@ -2,8 +2,8 @@
 #define DRAKE_SYSTEMS_TRAJECTORIES_PIECEWISEPOLYNOMIAL_H_
 
 #include <Eigen/Core>
-#include "systems/trajectories/PiecewisePolynomialBase.h"
-#include "util/Polynomial.h"
+#include "drake/systems/trajectories/PiecewisePolynomialBase.h"
+#include "drake/util/Polynomial.h"
 #include <vector>
 #include <random>
 #include <limits>

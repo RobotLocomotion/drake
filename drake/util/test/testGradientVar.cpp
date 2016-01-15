@@ -1,5 +1,5 @@
 #include <Eigen/Core>
-#include "util/GradientVar.h"
+#include "drake/util/GradientVar.h"
 
 using namespace Eigen;
 using namespace std;

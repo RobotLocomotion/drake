@@ -5,14 +5,14 @@
 #include <set>
 #include <mex.h>
 #include <Eigen/Dense>
-#include "systems/plants/RigidBodyTree.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include <iostream>
 #include <Eigen/Cholesky>
 #include <Eigen/LU>
 #include <Eigen/SVD>
 
-#include "util/drakeUtil.h"
-#include "solvers/fastQP.h"
+#include "drake/util/drakeUtil.h"
+#include "drake/solvers/fastQP.h"
 
 #define USE_EIQUADPROG_BACKUP 1
 

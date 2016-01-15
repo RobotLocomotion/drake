@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <vector>
 #include <iostream>
-#include "util/convexHull.h"
+#include "drake/util/convexHull.h"
 
 using namespace std;
 using namespace Eigen;

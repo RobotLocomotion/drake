@@ -17,10 +17,10 @@
  */
 #include "mex.h"
 #include <iostream>
-#include "util/drakeMexUtil.h"
+#include "drake/util/drakeMexUtil.h"
 #include <Eigen/Dense>
-#include "systems/plants/constraint/RigidBodyConstraint.h"
-#include "systems/plants/RigidBodyTree.h"
+#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include <cstdio>
 
 using namespace Eigen;

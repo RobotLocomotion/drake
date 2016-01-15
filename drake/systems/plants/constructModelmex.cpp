@@ -1,10 +1,10 @@
 #include "mex.h"
 #include <iostream>
 #include <cmath>
-#include "util/drakeMexUtil.h"
+#include "drake/util/drakeMexUtil.h"
 #include "rigidBodyTreeMexConversions.h"
 #include <stdexcept>
-#include "systems/plants/joints/DrakeJoints.h"
+#include "drake/systems/plants/joints/DrakeJoints.h"
 
 using namespace Eigen;
 using namespace std;

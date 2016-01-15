@@ -1,6 +1,6 @@
 #include "mex.h"
-#include "util/drakeGeometryUtil.h"
-#include "util/drakeMexUtil.h"
+#include "drake/util/drakeGeometryUtil.h"
+#include "drake/util/drakeMexUtil.h"
 
 using namespace Eigen;
 using namespace std;

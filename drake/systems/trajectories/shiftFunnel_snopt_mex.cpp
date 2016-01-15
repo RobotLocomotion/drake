@@ -26,7 +26,7 @@
 #include <blas.h>
 #include <math.h>
 #include <matrix.h>
-#include "util/drakeMexUtil.h"
+#include "drake/util/drakeMexUtil.h"
 #include <memory>
 #include <algorithm>
 

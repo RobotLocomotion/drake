@@ -1,5 +1,5 @@
-#include "util/Polynomial.h"
-#include "util/testUtil.h"
+#include "drake/util/Polynomial.h"
+#include "drake/util/testUtil.h"
 #include <iostream>
 
 using namespace Eigen;

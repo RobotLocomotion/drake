@@ -1,7 +1,7 @@
-#include "systems/plants/RigidBodyIK.h"
-#include "systems/plants/RigidBodyTree.h"
+#include "drake/systems/plants/RigidBodyIK.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include "constraint/RigidBodyConstraint.h"
-#include "systems/plants/IKoptions.h"
+#include "drake/systems/plants/IKoptions.h"
 #include <math.h>
 #include <set>
 #include <gurobi_c++.h>

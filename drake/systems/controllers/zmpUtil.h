@@ -1,5 +1,5 @@
 #include <Eigen/Core>
-#include "systems/trajectories/ExponentialPlusPiecewisePolynomial.h"
+#include "drake/systems/trajectories/ExponentialPlusPiecewisePolynomial.h"
 #include "drakeZMPUtil_export.h"
 
 struct DRAKEZMPUTIL_EXPORT TVLQRData {

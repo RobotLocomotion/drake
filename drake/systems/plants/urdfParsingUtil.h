@@ -4,7 +4,7 @@
 #include <string>
 #include <fstream>
 #include <sstream>
-#include "thirdParty/tinyxml2/tinyxml2.h"
+#include "drake/thirdParty/tinyxml2/tinyxml2.h"
 
 bool parseScalarValue(tinyxml2::XMLElement* node, double &val)
 {

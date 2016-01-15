@@ -10,7 +10,7 @@
 #include <type_traits>
 #include <stdexcept>
 #include <utility>
-#include "util/drakeGradientUtil.h"
+#include "drake/util/drakeGradientUtil.h"
 #include "RigidBody.h"
 
 

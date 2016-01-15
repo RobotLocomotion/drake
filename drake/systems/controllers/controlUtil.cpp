@@ -1,5 +1,5 @@
-#include "systems/controllers/controlUtil.h"
-#include "util/drakeUtil.h"
+#include "drake/systems/controllers/controlUtil.h"
+#include "drake/util/drakeUtil.h"
 
 using namespace Eigen;
 
