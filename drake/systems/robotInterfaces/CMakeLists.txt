@@ -12,7 +12,7 @@ if (LCM_FOUND)
   target_link_libraries(drakeQPLocomotionPlan drakeSplineGeneration drakeRBM drakeLCMUtil drakeSide drakeConvexHull drakeAtlasUtil drakeZMPUtil)
   pods_use_pkg_config_packages(drakeQPLocomotionPlan lcm)
   pods_install_libraries(drakeQPLocomotionPlan)
-  drake_install_headers(QPLocomotionPlan.h)
+  drake_install_headers(QPLocomotionPlan.h BodyMotionData.h)
   pods_install_pkg_config_file(drake-qp-locomotion-plan
   LIBS -ldrakeQPLocomotionPlan
   CFLAGS -I\${prefix}/include/lcmtypes
