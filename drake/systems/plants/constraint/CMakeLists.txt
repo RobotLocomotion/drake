@@ -17,7 +17,7 @@ if (NOT MSVC)
   set_target_properties(drakeRigidBodyConstraint PROPERTIES COMPILE_FLAGS -fPIC )
 endif()
 pods_install_libraries(drakeRigidBodyConstraint)
-pods_install_headers(RigidBodyConstraint.h DESTINATION drake)
+drake_install_headers(RigidBodyConstraint.h)
 
 
 if (MATLAB_FOUND)

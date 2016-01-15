@@ -33,6 +33,11 @@ find_package(Java REQUIRED)
 include(UseJava)
 set(CMAKE_JAVA_COMPILE_FLAGS ${CMAKE_JAVA_COMPILE_FLAGS} -source 6 -target 6)
 
+function(drake_install_headers)
+  file(RELATIVE_PATH rel_path ${PROJECT_SOURCE_DIR}/ ${CMAKE_CURRENT_SOURCE_DIR})
+  pods_install_headers(${ARGV} DESTINATION drake/${rel_path})
+endfunction()
+
 # set up automatic export header generation
 include(GenerateExportHeader)
 function(add_library_with_exports)

@@ -17,7 +17,7 @@ if (gurobi_FOUND)
   endif()
 
   pods_install_libraries(drakeQP)
-  pods_install_headers(fastQP.h gurobiQP.h DESTINATION drake)
+  drake_install_headers(fastQP.h gurobiQP.h)
   pods_install_pkg_config_file(drake-qp
     LIBS -ldrakeQP
     REQUIRES gurobi

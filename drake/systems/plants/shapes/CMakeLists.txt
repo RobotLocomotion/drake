@@ -7,5 +7,5 @@ target_link_libraries(drakeShapes spruce)
 #add_subdirectory(test)
 
 pods_install_libraries(drakeShapes)
-pods_install_headers(DrakeShapes.h Geometry.h Element.h VisualElement.h DESTINATION drake/shapes)
+drake_install_headers(DrakeShapes.h Geometry.h Element.h VisualElement.h)
   

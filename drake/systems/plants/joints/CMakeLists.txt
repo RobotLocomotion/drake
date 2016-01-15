@@ -6,6 +6,6 @@ add_library_with_exports(LIB_NAME drakeJoints SOURCE_FILES DrakeJoint.cpp FixedJ
 target_link_libraries(drakeJoints drakeGeometryUtil)
 
 pods_install_libraries(drakeJoints)
-pods_install_headers(DrakeJoint.h DrakeJointImpl.h FixedAxisOneDoFJoint.h HelicalJoint.h PrismaticJoint.h QuaternionFloatingJoint.h RevoluteJoint.h RollPitchYawFloatingJoint.h FixedJoint.h DESTINATION drake)
+drake_install_headers(DrakeJoint.h DrakeJointImpl.h FixedAxisOneDoFJoint.h HelicalJoint.h PrismaticJoint.h QuaternionFloatingJoint.h RevoluteJoint.h RollPitchYawFloatingJoint.h FixedJoint.h)
   
 add_subdirectory(test)

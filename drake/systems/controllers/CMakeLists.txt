@@ -4,12 +4,12 @@ include_directories(${PROJECT_SOURCE_DIR}/systems/plants)
 include_directories(${PROJECT_SOURCE_DIR}/util/test)
 include_directories(${PROJECT_SOURCE_DIR}/systems/plants/joints )
 
-pods_install_headers(LQR.h DESTINATION drake)
+drake_install_headers(LQR.h)
 
 add_library_with_exports(LIB_NAME drakeControlUtil SOURCE_FILES controlUtil.cpp)
 target_link_libraries(drakeControlUtil drakeRBM drakeUtil drakeTrajectories)
 pods_install_libraries(drakeControlUtil)
-pods_install_headers(controlUtil.h DESTINATION drake)
+drake_install_headers(controlUtil.h)
 pods_install_pkg_config_file(drake-control-util
   LIBS -ldrakeControlUtil
   REQUIRES
@@ -22,7 +22,7 @@ if (gurobi_FOUND AND LCM_FOUND)
   target_link_libraries(drakeQPCommon drakeControlUtil drakeQP drakeTrajectories drakeLCMUtil drakeSide)
   pods_use_pkg_config_packages(drakeQPCommon lcm)
   pods_install_libraries(drakeQPCommon)
-  pods_install_headers(QPCommon.h DESTINATION drake)
+  drake_install_headers(QPCommon.h)
   pods_install_pkg_config_file(drake-qp-common
     LIBS -ldrakeQPCommon
     CFLAGS -I\${prefix}/include/lcmtypes
@@ -51,7 +51,7 @@ if (MATLAB_FOUND)
     add_mex(drakeControlMexUtil SHARED controlMexUtil.cpp)
     target_link_libraries(drakeControlMexUtil drakeRBM drakeMexUtil drakeTrajectories drakeControlUtil drakeLCMUtil)
     pods_install_libraries(drakeControlMexUtil)
-    pods_install_headers(controlMexUtil.h DESTINATION drake)
+    drake_install_headers(controlMexUtil.h)
     pods_install_pkg_config_file(drake-control-mex-util
       LIBS -ldrakeControlMexUtil
       REQUIRES
@@ -89,7 +89,7 @@ endif(MATLAB_FOUND)
 add_library_with_exports(LIB_NAME drakeZMPUtil SOURCE_FILES zmpUtil.cpp)
 target_link_libraries(drakeZMPUtil drakeTrajectories)
 pods_install_libraries(drakeZMPUtil)
-pods_install_headers(zmpUtil.h DESTINATION drake)
+drake_install_headers(zmpUtil.h)
 
 
 add_subdirectory(test)

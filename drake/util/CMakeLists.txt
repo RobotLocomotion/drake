@@ -20,14 +20,14 @@ endif()
 include_directories(.)
 add_library_with_exports(LIB_NAME drakePolynomial SOURCE_FILES Polynomial.cpp)
 pods_install_libraries(drakePolynomial)
-pods_install_headers(Polynomial.h DESTINATION drake)
+drake_install_headers(Polynomial.h)
 pods_install_pkg_config_file(drakePolynomial
 LIBS -ldrakePolynomial
 REQUIRES
 VERSION 0.0.2)
 
 add_library_with_exports(LIB_NAME drakeUtil SOURCE_FILES drakeUtil.cpp)
-pods_install_headers(drakeUtil.h  DESTINATION drake)
+drake_install_headers(drakeUtil.h )
 pods_install_libraries(drakeUtil)
 pods_install_pkg_config_file(drake-util
   LIBS -ldrakeUtil
@@ -40,7 +40,7 @@ if (MATLAB_FOUND)
   # todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
   #add_mex(drakeUtil OBJECT drakeUtil.cpp)
 
-  pods_install_headers(drakeMexUtil.h MexWrapper.h TrigPoly.h DESTINATION drake)
+  drake_install_headers(drakeMexUtil.h MexWrapper.h TrigPoly.h)
   pods_install_libraries(drakeMexUtil)
   pods_install_pkg_config_file(drake-mex-util
     LIBS -ldrakeMexUtil
@@ -57,15 +57,15 @@ if (LCM_FOUND)
   add_library_with_exports(LIB_NAME drakeLCMUtil SOURCE_FILES lcmUtil.cpp)
   add_dependencies(drakeLCMUtil drake_lcmtypes lcmtype_agg_hpp)
   target_link_libraries(drakeLCMUtil drakeTrajectories)
-  pods_install_headers(lcmUtil.h DESTINATION drake)
+  drake_install_headers(lcmUtil.h)
   pods_install_libraries(drakeLCMUtil)
 endif()
 
-pods_install_headers(drakeGradientUtil.h DESTINATION drake)
+drake_install_headers(drakeGradientUtil.h)
 
 add_library_with_exports(LIB_NAME drakeGeometryUtil SOURCE_FILES drakeGeometryUtil.cpp expmap2quat.cpp)
 pods_install_libraries(drakeGeometryUtil)
-pods_install_headers(drakeGeometryUtil.h expmap2quat.h DESTINATION drake)
+drake_install_headers(drakeGeometryUtil.h expmap2quat.h)
 pods_install_pkg_config_file(drake-geometry-util
   LIBS -ldrakeGeometryUtil
   REQUIRES
@@ -73,13 +73,13 @@ pods_install_pkg_config_file(drake-geometry-util
 
 add_library_with_exports(LIB_NAME drakeConvexHull SOURCE_FILES convexHull.cpp)
 pods_install_libraries(drakeConvexHull)
-pods_install_headers(convexHull.h DESTINATION drake)
+drake_install_headers(convexHull.h)
 pods_install_pkg_config_file(drake-convex-hull
   LIBS -ldrakeConvexHull
   REQUIRES
   VERSION 0.0.1)
 
-pods_install_headers(GradientVar.h DESTINATION drake)
+drake_install_headers(GradientVar.h)
 
 if (MATLAB_FOUND)
   add_mex(cylindrical2cartesianmex cylindrical2cartesianmex.cpp)

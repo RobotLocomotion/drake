@@ -10,7 +10,7 @@ include_directories(${PROJECT_SOURCE_DIR}/thirdParty/tinyxml2)
 add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES RigidBodyTree.cpp RigidBody.cpp RigidBodyTreeURDF.cpp RigidBodyTreeContact.cpp)
 target_link_libraries(drakeRBM drakeCollision drakeJoints spruce drakeUtil tinyxml2)
 pods_install_libraries(drakeRBM)
-pods_install_headers(RigidBodyTree.h RigidBody.h RigidBodyFrame.h KinematicPath.h KinematicsCache.h ForceTorqueMeasurement.h DESTINATION drake)
+drake_install_headers(RigidBodyTree.h RigidBody.h RigidBodyFrame.h KinematicPath.h KinematicsCache.h ForceTorqueMeasurement.h)
 pods_install_pkg_config_file(drake-rbm
   LIBS -ldrakeRBM -ldrakeCollision -ldrakeJoints -lspruce -ldrakeUtil
   REQUIRES
@@ -111,7 +111,7 @@ if (drakeIK_SRC_FILES)
   set_target_properties(drakeIK PROPERTIES COMPILE_FLAGS -fPIC)
   pods_install_libraries(drakeIK)
   pods_install_libraries(drakeIKoptions)
-  pods_install_headers(RigidBodyIK.h IKoptions.h DESTINATION drake)
+  drake_install_headers(RigidBodyIK.h IKoptions.h)
   pods_install_pkg_config_file(drake-ik
     LIBS -ldrakeIK -ldrakeRigidBodyConstraint -ldrakeIKoptions
     REQUIRES drake-rbm
