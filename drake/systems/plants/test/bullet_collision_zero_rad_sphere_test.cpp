@@ -1,7 +1,7 @@
 
-#include "Path.h"
-#include "RigidBodyTree.h"
-#include "testUtil.h"
+#include "drake/Path.h"
+#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/util/testUtil.h"
 
 using namespace std;
 using namespace Eigen;
