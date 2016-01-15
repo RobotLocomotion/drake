@@ -57,7 +57,7 @@ namespace DrakeCollision
       virtual ElementId addElement(const Element& element);
 
       virtual bool updateElementWorldTransform(const ElementId, 
-                                               const Eigen::Matrix4d& T_local_to_world);
+                                               const Eigen::Isometry3d& T_local_to_world);
 
       virtual bool closestPointsAllToAll(const std::vector<ElementId>& ids_to_check, 
                                          const bool use_margins,

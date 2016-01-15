@@ -16,12 +16,12 @@ namespace DrakeShapes
     return new Element(*this);
   }
 
-  const Matrix4d& Element::getWorldTransform() const
+  const Isometry3d& Element::getWorldTransform() const
   {
     return T_element_to_world;
   }
 
-  const Matrix4d& Element::getLocalTransform() const
+  const Isometry3d& Element::getLocalTransform() const
   {
     return T_element_to_local;
   }
@@ -56,16 +56,15 @@ namespace DrakeShapes
     Eigen::Matrix3Xd points;
     geometry->getTerrainContactPoints(points);
 
-    Eigen::Matrix4Xd transformed_points = T_element_to_local * points.colwise().homogeneous();
-    local_points = transformed_points.colwise().hnormalized();
+    local_points = T_element_to_local*points;
   }
   
-  void Element::updateWorldTransform(const Eigen::Matrix4d& T_local_to_world)
+  void Element::updateWorldTransform(const Eigen::Isometry3d& T_local_to_world)
   {
     setWorldTransform(T_local_to_world*(this->T_element_to_local));
   }
 
-  void Element::setWorldTransform(const Matrix4d& T_element_to_world)
+  void Element::setWorldTransform(const Isometry3d& T_element_to_world)
   {
     this->T_element_to_world = T_element_to_world;
   }

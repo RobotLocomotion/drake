@@ -85,9 +85,9 @@ public:
   {
     public:
       CollisionElement(const CollisionElement& other);
-      CollisionElement(const Eigen::Matrix4d& T_element_to_link, std::shared_ptr<RigidBody> body);
+      CollisionElement(const Eigen::Isometry3d& T_element_to_link, std::shared_ptr<RigidBody> body);
       CollisionElement(const DrakeShapes::Geometry& geometry,
-                       const Eigen::Matrix4d& T_element_to_link, std::shared_ptr<RigidBody> body);
+                       const Eigen::Isometry3d& T_element_to_link, std::shared_ptr<RigidBody> body);
       virtual ~CollisionElement(){};
 
       virtual CollisionElement* clone() const;

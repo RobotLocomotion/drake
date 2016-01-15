@@ -13,6 +13,7 @@
 #include "joints/QuaternionFloatingJoint.h"
 #include "joints/RollPitchYawFloatingJoint.h"
 
+#include "Path.h"
 #include "urdfParsingUtil.h"
 
 // from http://stackoverflow.com/questions/478898/how-to-execute-a-command-and-get-output-of-command-within-c
@@ -42,12 +43,9 @@ string exec(string cmd)
 	return result;
 }
 
-void searchenvvar(map<string,string> &package_map, string envvar)
+void searchDirectory(map<string,string> &package_map, string path)
 {
-	char* cstrpath = getenv(envvar.c_str());
-	if (!cstrpath) return;
-
-	string path(cstrpath), token, t;
+	string token, t;
 	istringstream iss(path);
 
 	while (getline(iss,token,':')) {
@@ -70,8 +68,13 @@ void searchenvvar(map<string,string> &package_map, string envvar)
 
 void populatePackageMap(map<string,string>& package_map)
 {
-  searchenvvar(package_map,"ROS_ROOT");
-  searchenvvar(package_map,"ROS_PACKAGE_PATH");
+  searchDirectory(package_map,Drake::getDrakePath());
+
+  char* cstrpath = getenv("ROS_ROOT");
+  if (cstrpath) searchDirectory(package_map,cstrpath);
+
+  cstrpath = getenv("ROS_PACKAGE_PATH");
+  if (cstrpath) searchDirectory(package_map,cstrpath);
 }
 
 bool rospack(const string& package, const map<string,string>& package_map, string& package_path)
@@ -167,7 +170,7 @@ void parseInertial(shared_ptr<RigidBody> body, XMLElement* node, RigidBodyTree *
 
   XMLElement* origin = node->FirstChildElement("origin");
   if (origin)
-    poseAttributesToTransform(origin, T.matrix());
+    poseAttributesToTransform(origin, T);
 
   XMLElement* mass = node->FirstChildElement("mass");
   if (mass)
@@ -253,7 +256,7 @@ bool parseGeometry(XMLElement* node, const map<string,string>& package_map, cons
       cerr << "ERROR parsing sphere element radius" << endl;
       return false;
     }
-    element.setGeometry(DrakeShapes::Sphere(max(MIN_RADIUS, r)));
+    element.setGeometry(DrakeShapes::Sphere(max(DrakeShapes::MIN_RADIUS, r)));
   } else if ((shape_node = node->FirstChildElement("cylinder"))) {
     double r = 0, l = 0;
     attr = shape_node->Attribute("radius");
@@ -325,7 +328,7 @@ void parseVisual(shared_ptr<RigidBody> body, XMLElement* node, RigidBodyTree * m
   // DEBUG
   //cout << "parseVisual: START" << endl;
   // END_DEBUG
-  Matrix4d T_element_to_link = Matrix4d::Identity();
+  Isometry3d T_element_to_link = Isometry3d::Identity();
   XMLElement* origin = node->FirstChildElement("origin");
   if (origin)
     poseAttributesToTransform(origin, T_element_to_link);
@@ -374,7 +377,7 @@ void parseVisual(shared_ptr<RigidBody> body, XMLElement* node, RigidBodyTree * m
 
 void parseCollision(shared_ptr<RigidBody> body, XMLElement* node, RigidBodyTree * model, const map<string,string>& package_map, const string& root_dir)
 {
-  Matrix4d T_element_to_link = Matrix4d::Identity();
+  Isometry3d T_element_to_link = Isometry3d::Identity();
   XMLElement* origin = node->FirstChildElement("origin");
   if (origin)
     poseAttributesToTransform(origin, T_element_to_link);
@@ -491,13 +494,13 @@ void parseJoint(RigidBodyTree * model, XMLElement* node)
   Isometry3d Ttree = Isometry3d::Identity();
   XMLElement* origin = node->FirstChildElement("origin");
   if (origin) {
-    poseAttributesToTransform(origin, Ttree.matrix());
+    poseAttributesToTransform(origin, Ttree);
   }
 
   Vector3d axis;
   axis << 1, 0, 0;
   XMLElement* axis_node = node->FirstChildElement("axis");
-  if (axis_node) {
+  if (axis_node && type.compare("fixed")!=0 && type.compare("floating")!=0) {
     parseVectorAttribute(axis_node, "xyz", axis);
     if (axis.norm()<1e-8) throw runtime_error("ERROR: axis is zero.  don't do that");
     axis.normalize();

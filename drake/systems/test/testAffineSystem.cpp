@@ -37,10 +37,6 @@ void testSizes(size_t num_states, size_t num_inputs, size_t num_outputs) {
   valuecheck(num_inputs, sys.getNumInputs(), "Wrong number of inputs.");
   valuecheck(num_outputs, sys.getNumOutputs(), "Wrong number of outputs.");
 
-  static_assert(SysType::num_states == StatesAtCompileTime, "Wrong number of states at compile time");
-  static_assert(SysType::num_inputs == InputsAtCompileTime, "Wrong number of inputs at compile time");
-  static_assert(SysType::num_outputs == OutputsAtCompileTime, "Wrong number of outputs at compile time");
-
   valuecheck(num_states, getNumStates(sys));
   valuecheck(num_inputs, getNumInputs(sys));
   valuecheck(num_outputs, getNumOutputs(sys));
