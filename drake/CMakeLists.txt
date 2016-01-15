@@ -47,7 +47,7 @@ function(add_library_with_exports)
   cmake_parse_arguments(parsed_args "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
   add_library(${parsed_args_LIB_NAME} SHARED ${parsed_args_SOURCE_FILES})
-  set(exports_abs_path ${PROJECT_BINARY_DIR}/exports/${parsed_args_LIB_NAME}_export.h)
+  set(exports_abs_path ${PROJECT_BINARY_DIR}/exports/drake/${parsed_args_LIB_NAME}_export.h)
   # work around https://cmake.org/Bug/view.php?id=12645 (fixed in 2.8.8):
   file(RELATIVE_PATH exports_rel_path ${CMAKE_CURRENT_BINARY_DIR}/ ${exports_abs_path})
   generate_export_header(${parsed_args_LIB_NAME} EXPORT_FILE_NAME ${exports_rel_path})

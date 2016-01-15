@@ -5,7 +5,7 @@
 #include <Eigen/StdVector>
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/IKoptions.h"
-#include "drakeIK_export.h"
+#include "drake/drakeIK_export.h"
 
 class RigidBodyTree;
 

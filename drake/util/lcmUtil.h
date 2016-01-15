@@ -8,7 +8,7 @@
 #include "lcmtypes/drake/lcmt_polynomial_matrix.hpp"
 #include "lcmtypes/drake/lcmt_piecewise_polynomial.hpp"
 #include "lcmtypes/drake/lcmt_qp_controller_input.hpp"
-#include "drakeLCMUtil_export.h"
+#include "drake/drakeLCMUtil_export.h"
 
 DRAKELCMUTIL_EXPORT void encodePolynomial(const Polynomial<double>& polynomial, drake::lcmt_polynomial& msg);
 

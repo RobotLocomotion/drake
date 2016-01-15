@@ -14,7 +14,7 @@
 #include <Eigen/Sparse>
 #include <sstream>
 #include "drake/systems/plants/KinematicsCache.h"
-#include "drakeRigidBodyConstraint_export.h"
+#include "drake/drakeRigidBodyConstraint_export.h"
 #include "drake/util/drakeUtil.h"
 
 

@@ -6,7 +6,7 @@
 #include <unsupported/Eigen/AutoDiff>
 #include <random>
 #include "drake/util/drakeGeometryUtil.h"
-#include "drakeJoints_export.h"
+#include "drake/drakeJoints_export.h"
 
 
 #define POSITION_AND_VELOCITY_DEPENDENT_METHODS(Scalar) \

@@ -1,6 +1,6 @@
 #include <Eigen/Core>
 #include "drake/systems/trajectories/ExponentialPlusPiecewisePolynomial.h"
-#include "drakeZMPUtil_export.h"
+#include "drake/drakeZMPUtil_export.h"
 
 struct DRAKEZMPUTIL_EXPORT TVLQRData {
   // TODO: move into its own file

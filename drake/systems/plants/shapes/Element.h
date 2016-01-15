@@ -9,7 +9,7 @@
 #include <Eigen/StdVector>
 
 #include "Geometry.h"
-#include "drakeShapes_export.h"
+#include "drake/drakeShapes_export.h"
 
 namespace DrakeShapes
 {

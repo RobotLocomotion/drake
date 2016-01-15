@@ -16,7 +16,7 @@
 #include "RigidBody.h"
 #include "RigidBodyFrame.h"
 #include "KinematicsCache.h"
-#include "drakeRBM_export.h"
+#include "drake/drakeRBM_export.h"
 
 #define BASIS_VECTOR_HALF_COUNT 2  //number of basis vectors over 2 (i.e. 4 basis vectors in this case)
 #define EPSILON 10e-8

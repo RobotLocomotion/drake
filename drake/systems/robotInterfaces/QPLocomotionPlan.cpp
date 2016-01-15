@@ -10,7 +10,7 @@
 #include <string>
 #include "drake/util/convexHull.h"
 #include "drake/examples/Atlas/atlasUtil.h"
-#include "drakeQPLocomotionPlan_export.h" // TODO: exports
+#include "drake/drakeQPLocomotionPlan_export.h" // TODO: exports
 
 // TODO: discuss possibility of chatter in knee control
 // TODO: make body_motions a map from RigidBody* to BodyMotionData, remove body_id from BodyMotionData?

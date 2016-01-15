@@ -5,7 +5,7 @@
 #include "drake/solvers/Optimization.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "KinematicsCache.h"
-#include "drakeRBSystem_export.h"
+#include "drake/drakeRBSystem_export.h"
 
 namespace tinyxml2 {
   class XMLElement;

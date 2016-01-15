@@ -7,7 +7,7 @@
 #include <vector>
 #include <random>
 #include <limits>
-#include "drakeTrajectories_export.h"
+#include "drake/drakeTrajectories_export.h"
 
 template<typename CoefficientType = double>
 class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial: public PiecewisePolynomialBase

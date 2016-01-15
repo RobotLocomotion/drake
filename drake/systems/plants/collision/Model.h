@@ -9,7 +9,7 @@
 
 #include "Element.h"
 #include "PointPair.h"
-#include "drakeCollision_export.h"
+#include "drake/drakeCollision_export.h"
 
 namespace DrakeCollision
 {

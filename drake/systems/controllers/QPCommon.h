@@ -10,7 +10,7 @@
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
 #include "drake/systems/robotInterfaces/Side.h"
 #include "drake/solvers/gurobiQP.h"
-#include "drakeQP_export.h" // TODO: do exports
+#include "drake/drakeQP_export.h" // TODO: do exports
 
 const double REG = 1e-8;
 
