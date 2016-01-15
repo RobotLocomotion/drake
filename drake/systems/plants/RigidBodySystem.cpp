@@ -62,7 +62,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
         // tau = k*(qlimit-q) - b(qdot)
         if (q(b->position_num_start)<qmin)
           C(b->velocity_num_start) -= penetration_stiffness*(qmin-q(b->position_num_start)) - penetration_damping*v(b->velocity_num_start);
-        if (q(b->position_num_start)>qmax)
+        else if (q(b->position_num_start)>qmax)
           C(b->velocity_num_start) -= penetration_stiffness*(qmax-q(b->position_num_start)) - penetration_damping*v(b->velocity_num_start);
       }
     }
@@ -316,4 +316,3 @@ void RigidBodySystem::addRobotFromURDF(const string &urdf_filename, const DrakeJ
   }
   parseURDF(this,&xml_doc);
 }
-

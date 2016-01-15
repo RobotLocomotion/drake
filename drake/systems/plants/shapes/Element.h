@@ -15,12 +15,15 @@ namespace DrakeShapes
 {
   class DRAKESHAPES_EXPORT Element {
     public:
-      Element(const Geometry& geometry, 
-          const Eigen::Isometry3d& T_element_to_local = Eigen::Isometry3d::Identity())
+      Element(const Geometry& geometry, const Eigen::Isometry3d& T_element_to_local)
         : geometry(geometry.clone()), T_element_to_local(T_element_to_local)
       {};
 
-      Element(const Eigen::Isometry3d& T_element_to_local = Eigen::Isometry3d::Identity())
+	  Element(const Geometry& geometry)
+		  : geometry(geometry.clone()), T_element_to_local(Eigen::Isometry3d::Identity())
+	  {};
+	  
+	  Element(const Eigen::Isometry3d& T_element_to_local)
         : geometry(), T_element_to_local(T_element_to_local)
       {};
 
