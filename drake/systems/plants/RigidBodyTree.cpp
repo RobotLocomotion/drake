@@ -239,7 +239,7 @@ DrakeCollision::ElementId RigidBodyTree::addCollisionElement(const RigidBody::Co
 void RigidBodyTree::updateCollisionElements(const RigidBody& body, const Eigen::Transform<double, 3, Eigen::Isometry>& transform_to_world)
 {
   for (auto id_iter = body.collision_element_ids.begin(); id_iter != body.collision_element_ids.end(); ++id_iter) {
-    collision_model->updateElementWorldTransform(*id_iter, transform_to_world.matrix());
+    collision_model->updateElementWorldTransform(*id_iter, transform_to_world);
   }
 }
 

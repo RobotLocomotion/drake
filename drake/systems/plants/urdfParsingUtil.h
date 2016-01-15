@@ -51,14 +51,14 @@ bool parseVectorAttribute(tinyxml2::XMLElement* node, const char* attribute_name
   return false;
 }
 
-void poseAttributesToTransform(tinyxml2::XMLElement* node, Eigen::Matrix4d& T)
+void poseAttributesToTransform(tinyxml2::XMLElement* node, Eigen::Isometry3d& T)
 {
   Eigen::Vector3d rpy=Eigen::Vector3d::Zero(), xyz=Eigen::Vector3d::Zero();
 
   parseVectorAttribute(node,"xyz",xyz);
   parseVectorAttribute(node,"rpy",rpy);
 
-  T << rpy2rotmat(rpy), xyz, 0,0,0,1;
+  T.matrix() << rpy2rotmat(rpy), xyz, 0,0,0,1;
 }
 
 #endif //DRAKE_URDFPARSINGUTIL_H_H

@@ -20,6 +20,8 @@ namespace DrakeShapes
     CAPSULE     = 6
   };
 
+  const double MIN_RADIUS = 1e-7;
+
   class DRAKESHAPES_EXPORT Geometry {
     public:
       Geometry();
