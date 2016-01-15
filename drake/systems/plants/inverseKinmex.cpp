@@ -1,10 +1,10 @@
 #include "mex.h"
-#include "RigidBodyTree.h"
+#include "systems/plants/RigidBodyTree.h"
 #include "constraint/RigidBodyConstraint.h"
-#include "IKoptions.h"
-#include "RigidBodyIK.h"
+#include "systems/plants/IKoptions.h"
+#include "systems/plants/RigidBodyIK.h"
 #include <Eigen/Dense>
-#include "drakeMexUtil.h"
+#include "util/drakeMexUtil.h"
 
 using namespace std;
 using namespace Eigen;

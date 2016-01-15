@@ -1,4 +1,4 @@
-#include "atlasUtil.h"
+#include "examples/Atlas/atlasUtil.h"
 #include <Eigen/Core>
 #include <stdexcept>
 

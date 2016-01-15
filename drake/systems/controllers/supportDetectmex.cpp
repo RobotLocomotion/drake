@@ -1,5 +1,5 @@
-#include "controlUtil.h"
-#include "drakeMexUtil.h"
+#include "systems/controllers/controlUtil.h"
+#include "util/drakeMexUtil.h"
 
 using namespace std;
 using namespace Eigen;

@@ -1,10 +1,10 @@
 #include <iostream>
 
-#include "drakeGeometryUtil.h"
-#include "RigidBodyTree.h"
-#include "DrakeJoint.h"
-#include "FixedJoint.h"
-#include "drakeUtil.h"
+#include "util/drakeGeometryUtil.h"
+#include "systems/plants/RigidBodyTree.h"
+#include "systems/plants/joints/DrakeJoint.h"
+#include "systems/plants/joints/FixedJoint.h"
+#include "util/drakeUtil.h"
 
 #include <algorithm>
 #include <string>

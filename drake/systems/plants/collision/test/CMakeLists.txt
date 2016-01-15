@@ -1,5 +1,3 @@
-include_directories ( .. )
-
 if (bullet_FOUND)
   add_executable( model_test ModelTest.cpp)
   target_link_libraries(model_test drakeCollision)

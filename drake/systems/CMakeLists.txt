@@ -3,11 +3,6 @@ if (simulink_FOUND)
   add_mex(DCSFunction DCSFunction.cpp)
 endif()
 
-include_directories(${PROJECT_SOURCE_DIR}/core)
-include_directories(${PROJECT_SOURCE_DIR}/util)
-include_directories(${PROJECT_SOURCE_DIR}/systems)
-include_directories(${PROJECT_SOURCE_DIR}/systems/frames)
-
 if (LCM_FOUND)
   add_library_with_exports(LIB_NAME drakeLCMSystem SOURCE_FILES LCMSystem.cpp)
   add_dependencies(drakeLCMSystem drake_lcmtypes lcmtype_agg_hpp)

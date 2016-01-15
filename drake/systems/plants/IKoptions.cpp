@@ -1,5 +1,5 @@
-#include "RigidBodyTree.h"
-#include "IKoptions.h"
+#include "systems/plants/RigidBodyTree.h"
+#include "systems/plants/IKoptions.h"
 
 using namespace std;
 using namespace Eigen;

@@ -1,5 +1,5 @@
-#include "RigidBodyConstraint.h"
-#include "RigidBodyTree.h"
+#include "systems/plants/constraint/RigidBodyConstraint.h"
+#include "systems/plants/RigidBodyTree.h"
 
 #include <map>
 #include "../../../util/drakeGeometryUtil.h"

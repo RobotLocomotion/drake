@@ -1,9 +1,9 @@
 #include "mex.h"
 #include <iostream>
-#include "drakeMexUtil.h"
+#include "util/drakeMexUtil.h"
 #include "math.h"
 #include <vector>
-#include "zmpUtil.h"
+#include "systems/controllers/zmpUtil.h"
 #include <stdexcept>
 
 using namespace Eigen;

@@ -1,6 +1,6 @@
 #include <iostream>
 #include <cstdio>
-#include "drakeMexUtil.h"
+#include "util/drakeMexUtil.h"
 #include "constructPtrRigidBodyConstraint.h"
 
 using namespace std;

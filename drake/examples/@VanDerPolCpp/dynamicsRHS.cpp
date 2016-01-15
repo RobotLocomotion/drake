@@ -2,8 +2,8 @@
 #include <Eigen/Dense>
 #include <cmath>
 #include <iostream>
-#include "drakeMexUtil.h"
-#include "Polynomial.h"
+#include "util/drakeMexUtil.h"
+#include "util/Polynomial.h"
 
 using namespace Eigen;
 using namespace std;

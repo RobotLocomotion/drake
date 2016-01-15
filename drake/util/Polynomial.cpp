@@ -1,4 +1,4 @@
-#include "Polynomial.h"
+#include "util/Polynomial.h"
 #include <stdexcept>
 
 using namespace std;

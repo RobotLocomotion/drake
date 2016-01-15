@@ -1,6 +1,6 @@
 
 #include <iostream>
-#include "LCMSystem.h"
+#include "systems/LCMSystem.h"
 
 #if defined(_WIN32)
 #include <Winsock2.h>

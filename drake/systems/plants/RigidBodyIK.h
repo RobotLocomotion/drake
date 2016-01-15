@@ -3,9 +3,9 @@
 #include <string>
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
-#include "RigidBodyConstraint.h"
-#include "IKoptions.h"
-#include <drakeIK_export.h>
+#include "systems/plants/constraint/RigidBodyConstraint.h"
+#include "systems/plants/IKoptions.h"
+#include "drakeIK_export.h"
 
 class RigidBodyTree;
 

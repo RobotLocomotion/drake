@@ -1,16 +1,16 @@
-#include "QPLocomotionPlan.h"
+#include "systems/robotInterfaces/QPLocomotionPlan.h"
 #include <stdexcept>
 #include <algorithm>
 #include <cmath>
 #include <limits>
-#include "drakeGeometryUtil.h"
-#include "splineGeneration.h"
-#include "drakeUtil.h"
-#include "lcmUtil.h"
+#include "util/drakeGeometryUtil.h"
+#include "solvers/qpSpline/splineGeneration.h"
+#include "util/drakeUtil.h"
+#include "util/lcmUtil.h"
 #include <string>
-#include "convexHull.h"
-#include "atlasUtil.h"
-#include <drakeQPLocomotionPlan_export.h> // TODO: exports
+#include "util/convexHull.h"
+#include "examples/Atlas/atlasUtil.h"
+#include "drakeQPLocomotionPlan_export.h" // TODO: exports
 
 // TODO: discuss possibility of chatter in knee control
 // TODO: make body_motions a map from RigidBody* to BodyMotionData, remove body_id from BodyMotionData?

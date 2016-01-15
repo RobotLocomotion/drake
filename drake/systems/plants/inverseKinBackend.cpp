@@ -18,10 +18,10 @@ namespace snopt {
 #undef max
 #undef min
 
-#include "RigidBodyIK.h"
-#include "RigidBodyTree.h"
+#include "systems/plants/RigidBodyIK.h"
+#include "systems/plants/RigidBodyTree.h"
 #include "constraint/RigidBodyConstraint.h"
-#include "IKoptions.h"
+#include "systems/plants/IKoptions.h"
 #include "inverseKinBackend.h"
 
 #include <Eigen/LU>

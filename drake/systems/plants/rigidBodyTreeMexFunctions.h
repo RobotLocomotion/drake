@@ -1,4 +1,4 @@
-#include "mexify.h"
+#include "util/mexify.h"
 
 #ifndef DRAKE_DRAKEMEXFUNCTIONS_H
 #define DRAKE_DRAKEMEXFUNCTIONS_H

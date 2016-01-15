@@ -1,5 +1,5 @@
-#include <testUtil.h>
-#include "LinearSystem.h"
+#include "util/testUtil.h"
+#include "systems/LinearSystem.h"
 #include <iostream>
 
 using namespace std;

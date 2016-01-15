@@ -1,4 +1,4 @@
-#include "RigidBodyTree.h"
+#include "systems/plants/RigidBodyTree.h"
 #include <iostream>
 
 using namespace Eigen;

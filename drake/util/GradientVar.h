@@ -3,7 +3,7 @@
 
 #include <stdexcept>
 #include <Eigen/Core>
-#include "drakeGradientUtil.h"
+#include "util/drakeGradientUtil.h"
 #include <iostream>
 #include <cstdint>
 

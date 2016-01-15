@@ -1,7 +1,7 @@
 
 #include "../Quadrotor.h"
-#include "RigidBodySystem.h"
-#include "testUtil.h"
+#include "systems/plants/RigidBodySystem.h"
+#include "util/testUtil.h"
 
 using namespace std;
 using namespace Eigen;

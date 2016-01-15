@@ -7,7 +7,7 @@
 
 #include "Element.h"
 
-#include <drakeShapes_export.h>
+#include "drakeShapes_export.h"
 
 namespace DrakeShapes
 {

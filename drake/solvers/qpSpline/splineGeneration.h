@@ -2,9 +2,9 @@
 #define DRAKE_SOLVERS_QPSPLINE_SPLINEGENERATION_H_
 
 #include "SplineInformation.h"
-#include "PiecewisePolynomial.h"
+#include "systems/trajectories/PiecewisePolynomial.h"
 #include <stdexcept>
-#include <drakeSplineGeneration_export.h>
+#include "drakeSplineGeneration_export.h"
 
 class ConstraintMatrixSingularError : public std::runtime_error {
 public:

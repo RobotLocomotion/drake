@@ -1,7 +1,7 @@
 
 #include <iostream>
 #include <Eigen/Dense>
-#include "RigidBodyTree.h"
+#include "systems/plants/RigidBodyTree.h"
 
 using namespace std;
 using namespace Eigen;

@@ -1,7 +1,7 @@
-#include "RigidBodyIK.h"
-#include "RigidBodyTree.h"
+#include "systems/plants/RigidBodyIK.h"
+#include "systems/plants/RigidBodyTree.h"
 #include "constraint/RigidBodyConstraint.h"
-#include "IKoptions.h"
+#include "systems/plants/IKoptions.h"
 #include <math.h>
 #include <set>
 #include <gurobi_c++.h>

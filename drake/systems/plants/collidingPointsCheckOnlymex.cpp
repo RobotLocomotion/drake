@@ -1,7 +1,7 @@
 #include "mex.h"
 #include <iostream>
-#include "drakeMexUtil.h"
-#include "RigidBodyTree.h"
+#include "util/drakeMexUtil.h"
+#include "systems/plants/RigidBodyTree.h"
 #include "math.h"
 
 using namespace Eigen;

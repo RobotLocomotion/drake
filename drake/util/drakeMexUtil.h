@@ -5,7 +5,7 @@
 #include <vector>
 #include <Eigen/Core>
 #include <Eigen/Sparse>
-#include "TrigPoly.h"
+#include "util/TrigPoly.h"
 #include "unsupported/Eigen/AutoDiff"
 
 /*
@@ -17,7 +17,7 @@
  */
 #include <unsupported/Eigen/AutoDiff>
 #include <Eigen/src/SparseCore/SparseMatrix.h>
-#include "drakeGradientUtil.h"
+#include "util/drakeGradientUtil.h"
 
 #undef DLLEXPORT
 #if defined(WIN32) || defined(WIN64)

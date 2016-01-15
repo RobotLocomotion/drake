@@ -1,11 +1,11 @@
 #ifndef DRAKE_RIGIDBODYSYSTEM_H
 #define DRAKE_RIGIDBODYSYSTEM_H
 
-#include "System.h"
-#include "Optimization.h"
-#include "RigidBodyTree.h"
+#include "systems/System.h"
+#include "solvers/Optimization.h"
+#include "systems/plants/RigidBodyTree.h"
 #include "KinematicsCache.h"
-#include <drakeRBSystem_export.h>
+#include "drakeRBSystem_export.h"
 
 namespace tinyxml2 {
   class XMLElement;

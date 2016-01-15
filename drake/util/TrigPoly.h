@@ -1,7 +1,7 @@
 #ifndef DRAKE_UTIL_TRIGPOLY_H_
 #define DRAKE_UTIL_TRIGPOLY_H_
 
-#include "Polynomial.h"
+#include "util/Polynomial.h"
 #include <map>
 //#include <iostream>  // just for debugging
 

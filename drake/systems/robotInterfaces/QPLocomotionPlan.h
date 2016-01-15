@@ -6,14 +6,14 @@
 #include <string>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include "PiecewisePolynomial.h"
-#include "ExponentialPlusPiecewisePolynomial.h"
-#include "RigidBodyTree.h"
+#include "systems/trajectories/PiecewisePolynomial.h"
+#include "systems/trajectories/ExponentialPlusPiecewisePolynomial.h"
+#include "systems/plants/RigidBodyTree.h"
 #include "lcmtypes/drake/lcmt_qp_controller_input.hpp"
 #include "BodyMotionData.h"
-#include "Side.h"
+#include "systems/robotInterfaces/Side.h"
 #include <lcm/lcm-cpp.hpp>
-#include "zmpUtil.h"
+#include "systems/controllers/zmpUtil.h"
  
 
 class QuadraticLyapunovFunction {

@@ -1,4 +1,4 @@
-#include "zmpUtil.h"
+#include "systems/controllers/zmpUtil.h"
 #include <Eigen/Dense>
 #include <unsupported/Eigen/MatrixFunctions>
 

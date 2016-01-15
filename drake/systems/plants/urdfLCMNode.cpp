@@ -1,8 +1,8 @@
 
-#include "LCMSystem.h"
-#include "RigidBodySystem.h"
-#include "BotVisualizer.h"
-#include "drakeAppUtil.h"
+#include "systems/LCMSystem.h"
+#include "systems/plants/RigidBodySystem.h"
+#include "systems/plants/BotVisualizer.h"
+#include "util/drakeAppUtil.h"
 
 using namespace std;
 using namespace Eigen;

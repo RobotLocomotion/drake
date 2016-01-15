@@ -1,6 +1,6 @@
 #include "mex.h"
-#include "drakeMexUtil.h"
-#include "RigidBodyTree.h"
+#include "util/drakeMexUtil.h"
+#include "systems/plants/RigidBodyTree.h"
 
 using namespace Eigen;
 using namespace std;

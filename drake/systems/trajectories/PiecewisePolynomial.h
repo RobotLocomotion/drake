@@ -2,12 +2,12 @@
 #define DRAKE_SYSTEMS_TRAJECTORIES_PIECEWISEPOLYNOMIAL_H_
 
 #include <Eigen/Core>
-#include "PiecewisePolynomialBase.h"
-#include "Polynomial.h"
+#include "systems/trajectories/PiecewisePolynomialBase.h"
+#include "util/Polynomial.h"
 #include <vector>
 #include <random>
 #include <limits>
-#include <drakeTrajectories_export.h>
+#include "drakeTrajectories_export.h"
 
 template<typename CoefficientType = double>
 class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial: public PiecewisePolynomialBase

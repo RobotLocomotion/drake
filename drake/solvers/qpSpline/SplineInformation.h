@@ -2,10 +2,10 @@
 #define DRAKE_SOLVERS_QPSPLINE_SPLINEINFORMATION_H_
 
 #include <vector>
-#include "PiecewisePolynomialBase.h"
+#include "systems/trajectories/PiecewisePolynomialBase.h"
 #include "ValueConstraint.h"
 #include "ContinuityConstraint.h"
-#include <drakeSplineGeneration_export.h>
+#include "drakeSplineGeneration_export.h"
 
 class DRAKESPLINEGENERATION_EXPORT SplineInformation : public PiecewisePolynomialBase
 {

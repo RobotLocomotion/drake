@@ -4,8 +4,8 @@
 
 #include "spruce.hh"
 
-#include "tinyxml2.h"
-#include "RigidBodyTree.h"
+#include "thirdParty/tinyxml2/tinyxml2.h"
+#include "systems/plants/RigidBodyTree.h"
 #include "joints/FixedJoint.h"
 #include "joints/HelicalJoint.h"
 #include "joints/PrismaticJoint.h"

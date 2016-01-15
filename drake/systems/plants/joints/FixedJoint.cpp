@@ -1,4 +1,4 @@
-#include "FixedJoint.h"
+#include "systems/plants/joints/FixedJoint.h"
 
 std::string FixedJoint::getPositionName(int index) const { 
   throw std::runtime_error("bad index"); 

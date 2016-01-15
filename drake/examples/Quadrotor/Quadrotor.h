@@ -3,8 +3,8 @@
 
 #include <iostream>
 #include <cmath>
-#include "System.h"
-#include "drakeGeometryUtil.h"
+#include "systems/System.h"
+#include "util/drakeGeometryUtil.h"
 
 template <typename ScalarType = double>
 class QuadrotorState  { // models the Drake::Vector concept

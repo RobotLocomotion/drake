@@ -2,11 +2,6 @@
 # matlab has it's own boost libraries.  DO NOT let any mex file depend
 # on the system boost (directly nor indirectly), or you're asking for trouble.
 
-include_directories(joints)
-include_directories(${PROJECT_SOURCE_DIR}/solvers)
-include_directories(${PROJECT_SOURCE_DIR}/systems/controllers)
-include_directories(${PROJECT_SOURCE_DIR}/systems/trajectories)
-include_directories(${PROJECT_SOURCE_DIR}/thirdParty/tinyxml2)
 add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES RigidBodyTree.cpp RigidBody.cpp RigidBodyTreeURDF.cpp RigidBodyTreeContact.cpp)
 target_link_libraries(drakeRBM drakeCollision drakeJoints spruce drakeUtil tinyxml2)
 pods_install_libraries(drakeRBM)
@@ -76,7 +71,6 @@ if (MATLAB_FOUND)
   endif()
 endif(MATLAB_FOUND)
 
-include_directories( constraint )
 add_library_with_exports(LIB_NAME drakeIKoptions SOURCE_FILES IKoptions.cpp)
 target_link_libraries(drakeIKoptions drakeRBM)
 
@@ -143,7 +137,7 @@ if (LCM_FOUND AND snopt_c_FOUND)
   target_link_libraries(drakeRBSystem drakeRBM drakeLCMSystem drakeIK)
   pods_install_libraries(drakeRBSystem)
 
-  add_executable(urdfLCMNode urdfLCMNode.cpp)
+  add_executable(urdfLCMNode urdfLCMNode.cpp joints/DrakeJoints.h)
   target_link_libraries(urdfLCMNode drakeRBSystem)
   pods_install_executables(urdfLCMNode)
 endif (LCM_FOUND AND snopt_c_FOUND)

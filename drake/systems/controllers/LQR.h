@@ -1,10 +1,10 @@
 #ifndef DRAKE_LQR_H
 #define DRAKE_LQR_H
 
-#include "Core.h"
-#include "LinearSystem.h"
-#include "drakeGradientUtil.h"
-#include "drakeUtil.h"
+#include "core/Core.h"
+#include "systems/LinearSystem.h"
+#include "util/drakeGradientUtil.h"
+#include "util/drakeUtil.h"
 
 namespace Drake {
 

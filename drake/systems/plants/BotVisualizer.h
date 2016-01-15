@@ -3,13 +3,13 @@
 
 #include <lcm/lcm-cpp.hpp>
 #include <Eigen/Dense>
-#include "System.h"
-#include "RigidBodyTree.h"
+#include "systems/System.h"
+#include "systems/plants/RigidBodyTree.h"
 
 // these could all go in the cpp file:
 #include "lcmtypes/drake/lcmt_viewer_load_robot.hpp"
 #include "lcmtypes/drake/lcmt_viewer_draw.hpp"
-#include "drakeGeometryUtil.h"
+#include "util/drakeGeometryUtil.h"
 
 namespace Drake {
 

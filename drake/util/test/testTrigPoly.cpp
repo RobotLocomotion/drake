@@ -1,4 +1,4 @@
-#include "TrigPoly.h"
+#include "util/TrigPoly.h"
 #include <iostream>
 
 using namespace Eigen;

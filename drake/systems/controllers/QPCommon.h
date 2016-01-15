@@ -1,16 +1,16 @@
 #ifndef _QPCOMMON_H_
 #define _QPCOMMON_H_
 
-#include "controlUtil.h"
-#include "drakeUtil.h"
-#include "fastQP.h"
+#include "systems/controllers/controlUtil.h"
+#include "util/drakeUtil.h"
+#include "solvers/fastQP.h"
 #include "lcmtypes/drake/lcmt_qp_controller_input.hpp"
-#include "ExponentialPlusPiecewisePolynomial.h"
+#include "systems/trajectories/ExponentialPlusPiecewisePolynomial.h"
 #include <vector>
-#include "ForceTorqueMeasurement.h"
-#include "Side.h"
-#include "gurobiQP.h"
-#include <drakeQP_export.h> // TODO: do exports
+#include "systems/plants/ForceTorqueMeasurement.h"
+#include "systems/robotInterfaces/Side.h"
+#include "solvers/gurobiQP.h"
+#include "drakeQP_export.h" // TODO: do exports
 
 const double REG = 1e-8;
 

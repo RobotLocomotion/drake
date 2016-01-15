@@ -4,8 +4,8 @@
 #include <memory>
 #include <Eigen/Core>
 #include <Eigen/Dense>
-#include "Core.h"
-#include "SystemSpecializations.h"
+#include "core/Core.h"
+#include "systems/SystemSpecializations.h"
 
 
 namespace Drake {

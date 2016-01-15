@@ -7,9 +7,9 @@
 #include <stdexcept>
 #include <lcm/lcm-cpp.hpp>
 #include "lcmtypes/drake/lcmt_drake_signal.hpp"
-#include "System.h"
-#include "Simulation.h"
-#include <drakeLCMSystem_export.h>
+#include "systems/System.h"
+#include "systems/Simulation.h"
+#include "drakeLCMSystem_export.h"
 
 namespace Drake {
 

@@ -1,14 +1,10 @@
 #include "mex.h"
 #include <iostream>
 #include <cmath>
-#include "drakeMexUtil.h"
+#include "util/drakeMexUtil.h"
 #include "rigidBodyTreeMexConversions.h"
 #include <stdexcept>
-#include <RevoluteJoint.h>
-#include <PrismaticJoint.h>
-#include <HelicalJoint.h>
-#include <RollPitchYawFloatingJoint.h>
-#include <QuaternionFloatingJoint.h>
+#include "systems/plants/joints/DrakeJoints.h"
 
 using namespace Eigen;
 using namespace std;

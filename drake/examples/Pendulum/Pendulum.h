@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <cmath>
-#include "LCMSystem.h"
+#include "systems/LCMSystem.h"
 
 using namespace std;
 

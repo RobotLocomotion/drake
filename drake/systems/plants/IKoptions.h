@@ -1,7 +1,7 @@
 #ifndef __IKOPTIONS_H__
 #define __IKOPTIONS_H__
 #include <Eigen/Dense>
-#include <drakeIKoptions_export.h>
+#include "drakeIKoptions_export.h"
 
 
 class RigidBodyTree;

@@ -1,10 +1,10 @@
 #include "QPCommon.h"
-#include "controlUtil.h"
+#include "systems/controllers/controlUtil.h"
 #include <map>
 #include <memory>
 #include <lcm/lcm-cpp.hpp>
-#include "lcmUtil.h"
-#include "testUtil.h"
+#include "util/lcmUtil.h"
+#include "util/testUtil.h"
 #include "lcmtypes/drake/lcmt_zmp_com_observer_state.hpp"
 
 const bool CHECK_CENTROIDAL_MOMENTUM_RATE_MATCHES_TOTAL_WRENCH = false;

@@ -6,7 +6,7 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-#include <drakeShapes_export.h>
+#include "drakeShapes_export.h"
 
 namespace DrakeShapes
 {

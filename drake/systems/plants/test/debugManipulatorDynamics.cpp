@@ -1,4 +1,4 @@
-#include "RigidBodyTree.h"
+#include "systems/plants/RigidBodyTree.h"
 #include <iostream>
 #include <cstdlib>
 #include <memory>

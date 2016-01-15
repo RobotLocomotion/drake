@@ -1,10 +1,10 @@
-#include "splineGeneration.h"
+#include "solvers/qpSpline/splineGeneration.h"
 #include <random>
 #include <cmath>
 #include <stdexcept>
 #include <sstream>
 #include <iostream>
-#include "testUtil.h"
+#include "util/testUtil.h"
 
 using namespace std;
 

@@ -1,6 +1,6 @@
 #include <iostream>
-#include "convexHull.h"
-#include "testUtil.h"
+#include "util/convexHull.h"
+#include "util/testUtil.h"
 
 using namespace Eigen;
 

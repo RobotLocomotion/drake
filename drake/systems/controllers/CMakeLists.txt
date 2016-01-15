@@ -1,9 +1,3 @@
-include_directories(${PROJECT_SOURCE_DIR}/systems/robotInterfaces)
-include_directories(${PROJECT_SOURCE_DIR}/systems/trajectories)
-include_directories(${PROJECT_SOURCE_DIR}/systems/plants)
-include_directories(${PROJECT_SOURCE_DIR}/util/test)
-include_directories(${PROJECT_SOURCE_DIR}/systems/plants/joints )
-
 drake_install_headers(LQR.h)
 
 add_library_with_exports(LIB_NAME drakeControlUtil SOURCE_FILES controlUtil.cpp)
@@ -17,7 +11,6 @@ pods_install_pkg_config_file(drake-control-util
 
 pods_find_pkg_config(gurobi)
 if (gurobi_FOUND AND LCM_FOUND)
-  include_directories (${PROJECT_SOURCE_DIR}/solvers )
   add_library_with_exports(LIB_NAME drakeQPCommon SOURCE_FILES QPCommon.cpp)
   target_link_libraries(drakeQPCommon drakeControlUtil drakeQP drakeTrajectories drakeLCMUtil drakeSide)
   pods_use_pkg_config_packages(drakeQPCommon lcm)
@@ -38,9 +31,6 @@ if (gurobi_FOUND AND LCM_FOUND)
 endif()
 
 if (MATLAB_FOUND)
-  include_directories (${PROJECT_SOURCE_DIR}/util )
-  include_directories (${PROJECT_SOURCE_DIR}/solvers )
-  include_directories (${PROJECT_SOURCE_DIR}/solvers/qpSpline )
   pods_find_pkg_config(gurobi)
 
   if (gurobi_FOUND AND LCM_FOUND)

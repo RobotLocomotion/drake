@@ -1,10 +1,10 @@
 
 #include <iostream>
-#include <Polynomial.h>
-#include "Pendulum.h"
-#include "Simulation.h"
-#include "BotVisualizer.h"
-#include "LCMSystem.h"
+#include "util/Polynomial.h"
+#include "examples/Pendulum/Pendulum.h"
+#include "systems/Simulation.h"
+#include "systems/plants/BotVisualizer.h"
+#include "systems/LCMSystem.h"
 
 using namespace std;
 using namespace Drake;

@@ -12,7 +12,7 @@
 #include "QPCommon.h"
 #include <limits>
 #include <cmath>
-#include "drakeMexUtil.h"
+#include "util/drakeMexUtil.h"
 
 using namespace std;
 using namespace Eigen;

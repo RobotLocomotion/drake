@@ -1,9 +1,9 @@
-#include "RigidBodyIK.h"
+#include "systems/plants/RigidBodyIK.h"
 #include <mex.h>
-#include "RigidBodyTree.h"
+#include "systems/plants/RigidBodyTree.h"
 #include "constraint/RigidBodyConstraint.h"
-#include "IKoptions.h"
-#include "drakeMexUtil.h"
+#include "systems/plants/IKoptions.h"
+#include "util/drakeMexUtil.h"
 
 using namespace std;
 using namespace Eigen;

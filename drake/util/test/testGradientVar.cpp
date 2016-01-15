@@ -1,5 +1,5 @@
 #include <Eigen/Core>
-#include "GradientVar.h"
+#include "util/GradientVar.h"
 
 using namespace Eigen;
 using namespace std;

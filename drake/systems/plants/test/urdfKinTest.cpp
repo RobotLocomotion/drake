@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include <cstdlib>
-#include "RigidBodyTree.h"
+#include "systems/plants/RigidBodyTree.h"
 
 using namespace std;
 

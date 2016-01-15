@@ -1,8 +1,8 @@
 #include <typeinfo>
 #include <Eigen/Sparse>
 #include "rigidBodyTreeMexFunctions.h"
-#include "RigidBodyTree.h"
-#include "standardMexConversions.h"
+#include "systems/plants/RigidBodyTree.h"
+#include "util/standardMexConversions.h"
 #include "rigidBodyTreeMexConversions.h"
 
 using namespace std;

@@ -2,7 +2,7 @@
 #define QUATERNIONFLOATINGJOINT_H_
 
 #include "DrakeJointImpl.h"
-#include "drakeGeometryUtil.h"
+#include "util/drakeGeometryUtil.h"
 
 class DRAKEJOINTS_EXPORT QuaternionFloatingJoint: public DrakeJointImpl<QuaternionFloatingJoint>
 {

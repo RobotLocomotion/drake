@@ -1,8 +1,8 @@
 #include <Eigen/Sparse>
-#include "mexify.h"
-#include "RigidBodyTree.h"
+#include "util/mexify.h"
+#include "systems/plants/RigidBodyTree.h"
 #include "KinematicsCache.h"
-#include "standardMexConversions.h"
+#include "util/standardMexConversions.h"
 #include "rigidBodyTreeMexConversions.h"
 
 using namespace std;

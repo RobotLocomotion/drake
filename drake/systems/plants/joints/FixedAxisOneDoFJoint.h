@@ -7,7 +7,7 @@
 #include <limits>
 #include <exception>
 #include <stdexcept>
-#include "drakeGradientUtil.h"
+#include "util/drakeGradientUtil.h"
 
 
 template <typename Derived>

@@ -1,5 +1,5 @@
 #include "mex.h"
-#include <drakeUtil.h>
+#include "util/drakeUtil.h"
 #include <Eigen/Dense>
 
 using namespace Eigen;

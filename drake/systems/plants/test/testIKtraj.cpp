@@ -1,5 +1,5 @@
-#include "RigidBodyIK.h"
-#include "RigidBodyTree.h"
+#include "systems/plants/RigidBodyIK.h"
+#include "systems/plants/RigidBodyTree.h"
 #include "../constraint/RigidBodyConstraint.h"
 
 #include "../IKoptions.h"
