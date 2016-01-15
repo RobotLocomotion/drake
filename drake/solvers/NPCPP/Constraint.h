@@ -9,6 +9,15 @@ namespace snopt {
 }
 
 namespace drake {
+/**
+ * Abstract constraint class.
+ * Subclasses must implement nonlinearEval and must specify:
+ *   m_A: a vector containing index, value pairs denoting the linear part of the constraint.
+ *        No decision variable may be included in m_A that also has a nonlinear component,
+ *        instead, both linear and nonlinear parts must be calculated in nonlinearEval
+ *   m_jGvar: a vector containing the indices of decision variables whose gradients are
+ *            calculated in nonlinearEval.
+ */
 class Constraint {
 protected:
   snopt::doublereal m_lb;

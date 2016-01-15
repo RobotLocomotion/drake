@@ -11,6 +11,9 @@ namespace snopt {
 }
 
 namespace drake {
+/**
+ * Linear constraint, where: lb <= A_row dot x <= ub
+ */
 class LinearConstraint : public Constraint {
 public:
   LinearConstraint(snopt::doublereal lb,

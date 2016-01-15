@@ -12,6 +12,9 @@ namespace snopt {
 }
 
 namespace drake {
+/**
+ * A constraint implementation where the constraint is given as a function handle
+ */
 class FunctionHandleConstraint : public Constraint {
 protected:
   std::function<void(snopt::doublereal[],bool,bool,snopt::doublereal*,std::vector<snopt::doublereal>*)> m_fun;

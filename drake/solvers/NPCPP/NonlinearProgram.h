@@ -11,6 +11,11 @@ namespace snopt {
 }
 
 namespace drake {
+/**
+ * minimize cost(x)
+ * subject to
+ *            lb_i <= constraint_i(x) <= ub_i  for i in [1, num_constraints]
+ */
 class NonlinearProgram {
 private:
   bool m_debug_print;

@@ -8,6 +8,10 @@ namespace snopt {
 }
 
 namespace drake {
+/**
+ * Enforces an equality constraint: x[jAvar] = desired_value
+ * where jAvar in [1,  xdim]
+ */
 class ConstantConstraint : public BoundingBoxConstraint {
 public:
   ConstantConstraint(snopt::doublereal desired_value,

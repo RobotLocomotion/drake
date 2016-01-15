@@ -11,6 +11,12 @@ namespace snopt {
 }
 
 namespace drake {
+/**
+ * A quadratic constraint, where: lb <= .5 * Q * x'*eye(xdim)*x + b*x <= ub
+ * where:
+ *   Q: a vector of index, value pairs (sparse 1 x xdim vector)
+ *   b: a vector of index, value pairs (sparse 1 x xdim vector)
+ */
 class QuadraticConstraint : public Constraint {
 private:
   void findIfVarInQAndB(std::vector<bool>* varInQ, std::vector<bool>* varInB) const;

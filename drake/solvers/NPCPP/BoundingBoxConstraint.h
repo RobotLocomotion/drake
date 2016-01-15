@@ -8,6 +8,10 @@ namespace snopt {
 }
 
 namespace drake {
+/**
+ * Enforces a bounding box constraint: lb <= x[jAvar] <= ub
+ * where jAvar in [1, xdim]
+ */
 class BoundingBoxConstraint : public LinearConstraint {
 public:
   BoundingBoxConstraint(snopt::doublereal lb,
