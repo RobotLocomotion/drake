@@ -1,12 +1,12 @@
 kinematic_tree_metadata:
   body_names:
     feet:
-      r: &R_FOOT_NAME "rightFoot+rightLegSixAxis_Frame+rightCOP_Frame"
-      l: &L_FOOT_NAME "leftFoot+leftLegSixAxis_Frame+leftCOP_Frame"
-    pelvis: &PELVIS_NAME pelvis+leftPelvisIMU_Frame+rightPelvisIMU_Frame
+      r: &R_FOOT_NAME "rightFoot"
+      l: &L_FOOT_NAME "leftFoot"
+    pelvis: &PELVIS_NAME pelvis
     hands:
-      r: &R_HAND_NAME rightPalm+r_hand_force_torque+r_hand_face+right_palm+rightPinkyPitch1Link+rightPinkyPitch2Link+rightPinkyPitch3Link+rightMiddleFingerPitch1Link+rightMiddleFingerPitch2Link+rightMiddleFingerPitch3Link+rightIndexFingerPitch1Link+rightIndexFingerPitch2Link+rightIndexFingerPitch3Link+rightThumbRollLink+rightThumbPitch1Link+rightThumbPitch2Link+rightThumbPitch3Link
-      l: &L_HAND_NAME leftPalm+l_hand_force_torque+l_hand_face+left_palm+leftPinkyPitch1Link+leftPinkyPitch2Link+leftPinkyPitch3Link+leftMiddleFingerPitch1Link+leftMiddleFingerPitch2Link+leftMiddleFingerPitch3Link+leftIndexFingerPitch1Link+leftIndexFingerPitch2Link+leftIndexFingerPitch3Link+leftThumbRollLink+leftThumbPitch1Link+leftThumbPitch2Link+leftThumbPitch3Link
+      r: &R_HAND_NAME rightPalm
+      l: &L_HAND_NAME leftPalm
 
   joint_group_names:
     legs:

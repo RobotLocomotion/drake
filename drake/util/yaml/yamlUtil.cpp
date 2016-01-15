@@ -152,6 +152,7 @@ void loadSingleInputParams(QPControllerParams &params, Eigen::DenseIndex positio
 
 void loadInputParams(QPControllerParams& params, const YAML::Node &config, const RigidBodyTree& robot) {
   for (auto actuator_it = robot.actuators.begin(); actuator_it != robot.actuators.end(); ++actuator_it) {
+    std::cout << "loading input params: " << actuator_it->name << std::endl;
     loadSingleInputParams(params, actuator_it - robot.actuators.begin(), get(config, actuator_it->name), robot);
   }
 
@@ -246,21 +247,24 @@ QPControllerParams loadSingleParamSet(const YAML::Node& config, const RigidBodyT
 std::map<std::string, QPControllerParams> loadAllParamSetsFromExpandedConfig(YAML::Node config, const RigidBodyTree &robot) {
   auto param_sets = std::map<std::string, QPControllerParams>();
   for (auto config_it = config.begin(); config_it != config.end(); ++config_it) {
+    std::cout << "loading param set: " << config_it->first << std::endl;
     QPControllerParams params = loadSingleParamSet(config_it->second, robot);
     param_sets.insert(std::pair<std::string, QPControllerParams>(config_it->first.as<std::string>(), params));
   }
   return param_sets;
 }
 
-std::map<std::string, QPControllerParams> loadAllParamSets(YAML::Node config, const RigidBodyTree &robot, std::ofstream* debug_output_file) {
+std::map<std::string, QPControllerParams> loadAllParamSets(YAML::Node config, const RigidBodyTree &robot) {
 
   config = expandDefaults(config);
+  return loadAllParamSetsFromExpandedConfig(config, robot);
+}
 
-  if (debug_output_file) {
-    (*debug_output_file) << config;
-    debug_output_file->close();
-  }
 
+std::map<std::string, QPControllerParams> loadAllParamSets(YAML::Node config, const RigidBodyTree &robot, std::ofstream debug_output_file) {
+
+  config = expandDefaults(config);
+  debug_output_file << config;
   return loadAllParamSetsFromExpandedConfig(config, robot);
 }
 

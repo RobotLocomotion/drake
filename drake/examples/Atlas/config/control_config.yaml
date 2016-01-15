@@ -4,8 +4,8 @@ kinematic_tree_metadata:
       r: &R_FOOT_NAME r_foot
       l: &L_FOOT_NAME l_foot
     hands:
-      r: &R_HAND_NAME r_hand+r_hand_force_torque
-      l: &L_HAND_NAME l_hand+l_hand_force_torque
+      r: &R_HAND_NAME r_hand
+      l: &L_HAND_NAME l_hand
 
   joint_group_names:
     legs:
@@ -271,3 +271,159 @@ qp_controller_params:
         w_qdd: 0.001
       back_bkx:
         w_qdd: 0.001
+
+  bracing:
+    position_specific:
+      =:
+        Kp: 170
+        damping_ratio: 1.1
+        w_qdd: 1
+        integrator:
+          gains: 0
+          clamps: 0
+      base_x: 
+        Kp: 0
+        w_qdd: 1
+      base_y:
+        Kp: 0
+        w_qdd: 1
+      base_z:
+        Kp: 0
+        w_qdd: 1
+      base_roll:
+        Kp: 0
+        w_qdd: 1
+      base_pitch:
+        Kp: 0
+        w_qdd: 1
+      base_yaw:
+        Kp: 0
+        w_qdd: 1
+      back_bkx:
+        Kp: 170
+        w_qdd: 1
+    body_specific:
+      =:
+        Kp: {x: 0, y: 0, z: 0, wx: 0, wy: 0, wz: 0}
+        damping_ratio: 0
+    input_specific:
+      =:
+        hardware:
+          joint_is_force_controlled: false
+          joint_is_position_controlled: true
+      back_bkx_motor:
+        hardware: 
+          k_q_p: 20
+          k_qd_p: 2.5
+      back_bky_motor:
+        hardware:
+          k_q_p: 20
+          k_qd_p: 2.5
+      back_bkz_motor:
+        hardware:
+          k_q_p: 10
+          k_qd_p: 1
+      l_leg_hpx_motor:
+        hardware:
+          k_q_p: 10
+          k_qd_p: 0.1
+      l_leg_hpy_motor:
+        hardware:
+          k_q_p: 10
+          k_qd_p: 0.2
+      l_leg_hpz_motor:
+        hardware:
+          k_q_p: 10
+          k_qd_p: 0.1
+      l_leg_kny_motor:
+        hardware: 
+          k_q_p: 10
+          k_qd_p: 0.2
+      l_leg_akx_motor:
+        hardware:
+          k_q_p: 100
+          k_qd_p: 0.1
+      l_leg_aky_motor:
+        hardware:
+          k_q_p: 100
+          k_qd_p: 2.5
+      r_leg_hpx_motor:
+        hardware:
+          k_q_p: 10
+          k_qd_p: 0.1
+      r_leg_hpy_motor:
+        hardware:
+          k_q_p: 10
+          k_qd_p: 0.2
+      r_leg_hpz_motor:
+        hardware:
+          k_q_p: 10
+          k_qd_p: 0.1
+      r_leg_kny_motor:
+        hardware: 
+          k_q_p: 10
+          k_qd_p: 0.2
+      r_leg_akx_motor:
+        hardware:
+          k_q_p: 100
+          k_qd_p: 0.1
+      r_leg_aky_motor:
+        hardware:
+          k_q_p: 100
+          k_qd_p: 2.5
+      l_arm_shx_motor:
+        hardware:
+          k_q_p: 2
+          k_qd_p: 0.5
+      l_arm_shz_motor:
+        hardware:
+          k_q_p: 2
+          k_qd_p: 0.5
+      l_arm_elx_motor:
+        hardware:
+          k_q_p: 2
+          k_qd_p: 0.5
+      l_arm_ely_motor:
+        hardware:
+          k_q_p: 2
+          k_qd_p: 0.5
+      l_arm_uwy_motor:
+        hardware:
+          k_q_p: 10
+          k_qd_p: 0.25
+      l_arm_mwx_motor:
+        hardware:
+          k_q_p: 10
+          k_qd_p: 0.25
+      l_arm_lwy_motor:
+        hardware:
+          k_q_p: 10
+          k_qd_p: 0.25
+      r_arm_shx_motor:
+        hardware:
+          k_q_p: 2
+          k_qd_p: 0.5
+      r_arm_shz_motor:
+        hardware:
+          k_q_p: 2
+          k_qd_p: 0.5
+      r_arm_elx_motor:
+        hardware:
+          k_q_p: 2
+          k_qd_p: 0.5
+      r_arm_ely_motor:
+        hardware:
+          k_q_p: 2
+          k_qd_p: 0.5
+      r_arm_uwy_motor:
+        hardware:
+          k_q_p: 10
+          k_qd_p: 0.25
+      r_arm_mwx_motor:
+        hardware:
+          k_q_p: 10
+          k_qd_p: 0.25
+      r_arm_lwy_motor:
+        hardware:
+          k_q_p: 10
+          k_qd_p: 0.25
