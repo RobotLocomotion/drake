@@ -19,9 +19,9 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 if(WITH_PYTHON_3)
   set(Python_ADDITIONAL_VERSIONS 3.5)
-  find_package(PythonInterp 3 REQUIRED)
+  find_package(PythonInterp 3)
 else()
-  find_package(PythonInterp REQUIRED)
+  find_package(PythonInterp)
 endif()
 
 # set up pods
