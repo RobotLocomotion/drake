@@ -1,33 +1,51 @@
 classdef AccelConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimization
-  % Direct colocation approach
-  % Over each interval, f(x(k),u(k)) and f(x(k+1),u(k+1)) are evaluated to
-  % determine d/dt x(k) and d/dt x(k+1). A cubic spline is fit over the
-  % interval x and d/dt x at the end points.
-  % x(k+.5) and d/dt x(k+.5) are determined based on this spline.
-  % Then, the dynamics constraint is:
-  % d/dt x(k+.5) = f(x(k+.5),.5*u(k) + .5*u(k+1))
+  % Implementation of the DIRCON algorithm found in
+  % "Optimization and stabilization of trajectories for constrained
+  %  dynamical systems" by Posa, Kuindersma and Tedrake 2016.
+  % 
+  % This is a direct collocation based algorithm that handles kinematic
+  % constraints, using Drake's position constraint functionality.
+  % 
+  % Extracts these constraints automatically and incorporates them into
+  % the optimization.
   %
-  %  integrated cost is: .5*h(1)*g(x(1),u(1)) + .5*h(N-1)*g(x(N),u(N)) +
-  %                   sum((.5*h(i)+.5*h(i-1))*g(x(i),u(i))
-  %  more simply stated, integrated as a zoh with half of each time
-  %  interval on either side of the knot point
-  % this might be the wrong thing for the cost function...
+  % Use the constructor:
+  % obj = AccelConstrainedDircolTrajectoryOptimization(plant,N,duration,options)
+  % which accepts the default Dircol arguments as well as some additional o
+  % options:
+  %   options.active_inds : A subset of the position constraints to
+  %     incorproate, default = all
+  %   options.relative_constraints : Can be either a single boolean or a
+  %     vector of boolean corresponding to the active cosntraints. If true,
+  %     adds a slack variable to treat constraints as having no *absolute* 
+  %     true value. phi(q_i) = phi(q_j) instead of phi(q_i) = 0. Defaults
+  %     to false.
+  %   options.constrain_start : Constraint for i=1, Defaults to true.
+  %   options.constrain_end : Constraint for i=N, Defaults to true.
+  %   options.constrain_phi_start : Only active if constrain_start is true.
+  %     Controls whether phi(q_1) is constrained. If false, constraints
+  %     phidot only.
+  %   options.constrain_phi_end : see constrain_phi_start
+  %   options.accel_cost : Adds a cost term equal to sum(accel_cost *
+  %   qddot^2).  This is useful for as a small regularizing term. Defaults
+  %   to 0.
+  
+  
   properties
-    l_inds
-    lc_inds
-    vc_inds
-    cstrval_inds
+    l_inds       % Indices into the knot point contact forces
+    lc_inds      % Indices into the collocation point contact forces (accel slack)
+    vc_inds      % Indices into the collocation point position slack
+    cstrval_inds % indices into position constraint offsets
     cstr_to_val_map  % maps relative constraint indices to their respective variables above
-    nC
-    active_inds
+    nC  % total number of constraints
+    active_inds % subset of the plants constraints that are active
   end
   
   methods
     function obj = AccelConstrainedDircolTrajectoryOptimization(plant,N,duration,options)
       if nargin < 4
         options = struct();
-      end
-      
+      end      
             
       if ~isfield(options,'active_inds')
         options.active_inds = 1:plant.num_position_constraints;
@@ -57,21 +75,20 @@ classdef AccelConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimiza
         options.constrain_phi_end = true;
       end      
       
-      if ~isfield(options,'test_bound')
-        options.test_bound = false;
-      end
-
       if ~isfield(options,'accel_cost')
         options.accel_cost = 0;
       end
-%       if ~isfield(options,'start_active_inds')
-%         options.start_active_inds = options.active_inds;
-%       end
       
       obj = obj@DircolTrajectoryOptimization(plant,N,duration,options);
     end
         
     function obj = addDynamicConstraints(obj)
+      % Main function that generates constraints for the optimization
+      % program. Summary of constraints added:
+      %  - collocation constraints for the dynamics between knot points
+      %  - phi,phidot constraints at the knot points
+      %  - phiddot constraints at the knot points
+      %  - (optional) qddot cost at the knot points
       N = obj.N;
       nq = obj.plant.getNumPositions();
       nv = obj.plant.getNumVelocities();
@@ -149,38 +166,12 @@ classdef AccelConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimiza
     end
     
     function [f,df] = accel_cost_fun(obj,x,u,lambda,data)
+      % Cost function on qddot^2
       nq = obj.plant.getNumPositions;
       qddot = data.xdot(nq+1:end);
       dqddot = data.dxdot(nq+1:end,2:end);
       f = obj.options.accel_cost*(qddot'*qddot);
       df = 2*obj.options.accel_cost*qddot'*dqddot;
-%       f=0;
-%       
-%          nq = obj.plant.getNumPositions;
-%       nC = obj.nC;
-%       nU = obj.plant.getNumInputs();
-% 
-%       q = x(1:nq);
-%       v = x(nq+1:end);
-%       
-%       [H,C,B,dH,dC,dB] = obj.plant.manipulatorDynamics(q,v);
-%       Hinv = inv(H);
-% %       if nC > 0      
-%         [phi,J,dJ,Jdotqd,dJdotqd] = obj.plant.positionConstraintslWithJdot(q,v);
-% %         phi = phi(obj.active_inds,:);  
-% %         J = J(obj.active_inds,:);      
-% %         dJ = dJ(obj.active_inds,:);
-%         dJ = reshape(dJ,[],nq);
-%         Jdot = matGradMult(dJ,v);      
-%         vdot = Hinv*(B*u - C + J'*lambda);
-%         dtau = matGradMult(dB,u) - dC + [matGradMult(dJ,lambda,true), zeros(nq,nq)];
-% 
-%         dvdot = [zeros(nq,1),...
-%           -Hinv*matGradMult(dH(:,1:nq),vdot) + Hinv*dtau(:,1:nq),...
-%           +Hinv*dtau(:,1+nq:end), Hinv*B, Hinv*J'];
-%         
-%         f = obj.options.accel_cost*vdot'*vdot;
-%         df = 2*obj.options.accel_cost*vdot'*dvdot(:,2:end);
     end
     
     function [f,df] = constraint_fun(obj,h,x0,x1,u0,u1,lambda0,lambda1,lambdac,vc,data0,data1)
@@ -231,11 +222,17 @@ classdef AccelConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimiza
     end
     
     function [f,df] = phiddot_constraint(obj,x,u,lambda,data)
+      % A constraint on phiddot
+      % Uses values computed in dynamcis_data
       f = data.phiddot;
       df = data.dphiddot(:,2:end);
     end
     
     function [f,df] = position_constraint_fun(obj,x,offset,phidot_only,data)
+      % A constraint on phi and phidot
+      %  phi(q) = offset
+      %  phidot(q,qdot) = 0
+      % Uses values computed in dynamcis_data
       nq = obj.plant.getNumPositions;
       nActive = length(obj.active_inds);
       q = x(1:nq);
@@ -259,6 +256,16 @@ classdef AccelConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimiza
     end
     
     function data = dynamics_data(obj,x,u,lambda)
+      % The bulk of the computation is performed here and cached for later
+      % At knot points, computes:
+      %   xdot
+      %   phi
+      %   J=dphi/dq
+      %   Jdot = dJ/dt
+      %   Jdotqqd = Jdot*qd
+      %   dJotqd = [d/dx d/du d/dlambda]Jdotqd
+      %   phiddot = d^2/dt^2 phi
+      %   dphiddot = [d/dx d/du d/dlambda]phiddot
       nq = obj.plant.getNumPositions;
       nC = obj.nC;
       nU = obj.plant.getNumInputs();
@@ -270,9 +277,6 @@ classdef AccelConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimiza
       Hinv = inv(H);
       if nC > 0      
         [phi,J,dJ,Jdotqd,dJdotqd] = obj.plant.positionConstraintslWithJdot(q,v);
-%         phi = phi(obj.active_inds,:);  
-%         J = J(obj.active_inds,:);      
-%         dJ = dJ(obj.active_inds,:);
         dJ = reshape(dJ,[],nq);
         Jdot = matGradMult(dJ,v);      
         vdot = Hinv*(B*u - C + J'*lambda);
@@ -298,8 +302,6 @@ classdef AccelConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimiza
         data.phiddot = Jdotqd + J*vdot;
         data.dphiddot = [zeros(nC,1) (dJdotqd + [matGradMult(dJ,vdot) zeros(nC,nq)]) zeros(nC,nU+nC)] + J*dvdot;
         
-%         data.phiddot  = J*vdot;
-%         data.dphiddot = J*dvdot;
       else
         vdot = Hinv*(B*u - C);
         dtau = matGradMult(dB,u) - dC;
@@ -328,9 +330,10 @@ classdef AccelConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimiza
     end
     
     function obj = setupVariables(obj,N)
+      % Adds appropriate variables to NonlinearProgram and stores their
+      % indices
       obj = setupVariables@DircolTrajectoryOptimization(obj,N);
-      
-      
+            
       nActive = length(obj.active_inds);
       nC = obj.plant.num_position_constraints;
       obj.nC = nC;
@@ -355,22 +358,20 @@ classdef AccelConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimiza
     end
     
     function [xtraj,utraj,ltraj,z,F,info,infeasible_constraint_name] = solveTrajFromZ(obj,z0)
+      % Solve given an initial value for all variables, z0
       [xtraj,utraj,z,F,info,infeasible_constraint_name] = solveTrajFromZ@DircolTrajectoryOptimization(obj,z0);
-      t_l = zeros(obj.N*2-1,1);
-      lambda = zeros(size(obj.l_inds,1),obj.N*2 -1);
-      
-      lambda(:,1:2:end) = z(obj.l_inds);
-      lambda(:,2:2:end) = z(obj.lc_inds);
-      ltraj = PPTrajectory(foh(t_l,lambda));
+      ltraj = obj.reconstructForceTrajectory(z);
     end
     
     function [xtraj,utraj,ltraj,z,F,info,infeasible_constraint_name] = solveTraj(obj,varargin)
-      [xtraj,utraj,z,F,info,infeasible_constraint_name] = solveTraj@DircolTrajectoryOptimization(obj,varargin{:});      
-      
+      % Default solve method, akin to parent classes.
+      [xtraj,utraj,z,F,info,infeasible_constraint_name] = solveTraj@DircolTrajectoryOptimization(obj,varargin{:});            
       ltraj = obj.reconstructForceTrajectory(z);
     end
     
     function ltraj = reconstructForceTrajectory(obj,z)
+      % Piecewise linear interpretation of forces. Use collocation forces
+      % at collocation points, so a total of 2N-1 points.
       t_l = zeros(obj.N*2-1,1);
       lambda = zeros(size(obj.l_inds,1),obj.N*2 -1);
       lambda(:,1:2:end) = z(obj.l_inds);
@@ -404,6 +405,9 @@ classdef AccelConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimiza
     end
     
     function xdot = constrainedDynamics(obj,t,x,u,lambda)
+      % xdot = constrainedDynamics(obj,t,x,u,lambda)
+      %  Compute the constrained manipulator dynamics
+      %   qddot  = inv(H)*(-C + B*u + J^T*lambda)
       nq = obj.plant.getNumPositions;
       nU = obj.plant.getNumInputs();
 
@@ -412,7 +416,6 @@ classdef AccelConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimiza
       
       [H,C,B] = obj.plant.manipulatorDynamics(q,v);
       [~,J] = obj.plant.positionConstraints(q);     
-%       J = J(obj.active_inds,:);  
       
       if ~isempty(lambda)
         vdot = H\(B*u - C + J'*lambda);
