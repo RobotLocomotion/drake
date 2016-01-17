@@ -9,15 +9,15 @@ int main()
 {
   RigidBodyTree model("examples/Atlas/urdf/atlas_minimal_contact.urdf");
 
-  VectorXd q = VectorXd::Random(model.num_positions);
+  default_random_engine generator;
+  VectorXd q = model.getRandomConfiguration(generator);
   VectorXd v = VectorXd::Random(model.num_velocities);
   KinematicsCache<double> cache = model.doKinematics(q, v);
 
   auto points = Matrix<double, 3, Eigen::Dynamic>::Random(3, 5).eval();
   int body_or_frame_ind = 8;
   int base_or_frame_ind = 0;
-  int rotation_type = 0;
-  model.forwardJacDotTimesV(cache, points, body_or_frame_ind, base_or_frame_ind, rotation_type);
+  model.transformPointsJacobianDotTimesV(cache, points, body_or_frame_ind, base_or_frame_ind);
 
   auto M = model.massMatrix<double>(cache);
   cout << M << endl << endl;

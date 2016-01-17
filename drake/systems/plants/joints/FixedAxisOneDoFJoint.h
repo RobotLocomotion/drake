@@ -68,6 +68,7 @@ public:
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic, 0, DrakeJoint::MAX_NUM_VELOCITIES, DrakeJoint::MAX_NUM_POSITIONS> &qdot_to_v,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic> *dqdot_to_v) const {
     qdot_to_v.setIdentity(getNumVelocities(), getNumPositions());
+    Drake::resizeDerivativesToMatchScalar(qdot_to_v, q(0));
     if (dqdot_to_v) {
       dqdot_to_v->setZero(qdot_to_v.size(), getNumPositions());
     }
@@ -78,6 +79,7 @@ public:
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic, 0, DrakeJoint::MAX_NUM_POSITIONS, DrakeJoint::MAX_NUM_VELOCITIES> &v_to_qdot,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic> *dv_to_qdot) const {
     v_to_qdot.setIdentity(getNumPositions(), getNumVelocities());
+    Drake::resizeDerivativesToMatchScalar(v_to_qdot, q(0));
     if (dv_to_qdot) {
       dv_to_qdot->setZero(v_to_qdot.size(), getNumPositions());
     }
@@ -103,6 +105,10 @@ public:
 
     this->DrakeJoint::joint_limit_min[0] = joint_limit_min;
     this->DrakeJoint::joint_limit_max[0] = joint_limit_max;
+  }
+
+  Eigen::VectorXd zeroConfiguration() const {
+    return Eigen::VectorXd::Zero(1);
   }
 
   Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const

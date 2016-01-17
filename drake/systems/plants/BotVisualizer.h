@@ -13,19 +13,36 @@
 
 namespace Drake {
 
-  template <template <typename> class InputVector>
-  class BotVisualizer : public System<BotVisualizer<InputVector>,UnusedVector,InputVector,UnusedVector,true,true> {
+  /** BotVisualizer<RobotStateVector>
+   * @brief A system which takes the robot state as input and publishes an lcm draw command to the drake visualizer
+   * @concept{system_concept}
+   *
+   * The resulting system has no internal state; the publish command is executed on every call to the output method.
+   * For convenience, the input is passed directly through as an output.
+   *
+   */
+
+  template <template <typename> class RobotStateVector>
+  class BotVisualizer {
   public:
+    template <typename ScalarType> using StateVector = NullVector<ScalarType>;
+    template <typename ScalarType> using OutputVector = RobotStateVector<ScalarType>;
+    template <typename ScalarType> using InputVector = RobotStateVector<ScalarType>;
+
+    BotVisualizer(const std::shared_ptr<lcm::LCM> &_lcm, const std::shared_ptr<RigidBodyTree>& tree) :
+            tree(tree), lcm(_lcm) { init(); }
+
     BotVisualizer(const std::shared_ptr<lcm::LCM> &_lcm, const std::string &urdf_filename,
                   const DrakeJoint::FloatingBaseType floating_base_type) :
-            manip(urdf_filename, floating_base_type),
-            lcm(_lcm)
-    {
+            tree(new RigidBodyTree(urdf_filename, floating_base_type)),
+            lcm(_lcm) { init(); }
+
+    void init() {
       publishLoadRobot();
 
-      draw_msg.num_links = manip.bodies.size();
+      draw_msg.num_links = tree->bodies.size();
       std::vector<float> position = {0, 0, 0}, quaternion = {0, 0, 0, 1};
-      for (const auto &body : manip.bodies) {
+      for (const auto &body : tree->bodies) {
         draw_msg.link_name.push_back(body->linkname);
         draw_msg.robot_num.push_back(body->robotnum);
         draw_msg.position.push_back(position);
@@ -35,8 +52,8 @@ namespace Drake {
 
     void publishLoadRobot() const {
       drake::lcmt_viewer_load_robot vr;
-      vr.num_links = manip.bodies.size();
-      for (const auto &body : manip.bodies) {
+      vr.num_links = tree->bodies.size();
+      for (const auto &body : tree->bodies) {
         drake::lcmt_viewer_link_data link;
         link.name = body->linkname;
         link.robot_num = body->robotnum;
@@ -91,11 +108,11 @@ namespace Drake {
             }
           }
 
-          Eigen::Matrix4d T = v.getLocalTransform();
+          Eigen::Isometry3d T = v.getLocalTransform();
           Eigen::Map<Eigen::Vector3f> position(gdata.position);
-          position = T.topRightCorner<3, 1>().cast<float>();
+          position = T.translation().cast<float>();
           Eigen::Map<Eigen::Vector4f> quaternion(gdata.quaternion);
-          quaternion = rotmat2quat(T.topLeftCorner<3, 3>()).cast<float>();
+          quaternion = rotmat2quat(T.rotation()).cast<float>();
 
           Eigen::Map<Eigen::Vector4f> color(gdata.color);
           color = v.getMaterial().template cast<float>();
@@ -108,31 +125,37 @@ namespace Drake {
       lcm->publish("DRAKE_VIEWER_LOAD_ROBOT", &vr);
     }
 
-    UnusedVector<double> outputImplementation(const double& t, const InputVector<double> &u) const {
+    StateVector<double> dynamics(const double& t, const StateVector<double>& x, const InputVector<double>& u) const { return StateVector<double>(); };
+
+
+    OutputVector<double> output(const double& t, const StateVector<double>& x, const InputVector<double>& u) const {
       draw_msg.timestamp = static_cast<int64_t>(t * 1000.0);
 
-      Eigen::Matrix<double,InputVector<double>::RowsAtCompileTime,1> uvec(u);
-      auto q = uvec.head(manip.num_positions);
-      KinematicsCache<double> cache = manip.doKinematics(q);
+      auto uvec = toEigen(u);
+      auto q = uvec.head(tree->num_positions);
+      KinematicsCache<double> cache = tree->doKinematics(q);
 
-      Eigen::Vector3d points = Eigen::Vector3d::Zero();
       int i, j;
-      for (i = 0; i < manip.bodies.size(); i++) {
-        auto pose = manip.forwardKin(cache, points, i, 0, 2);
+      for (i = 0; i < tree->bodies.size(); i++) {
+        auto transform = tree->relativeTransform(cache, 0, i);
+        auto quat = rotmat2quat(transform.linear());
         std::vector<float> &position = draw_msg.position[i];
-        for (j = 0; j < 3; j++) position[j] = static_cast<float>(pose(j));
+        auto translation = transform.translation();
+        for (j = 0; j < 3; j++) position[j] = static_cast<float>(translation(j));
         std::vector<float> &quaternion = draw_msg.quaternion[i];
-        for (j = 0; j < 4; j++) quaternion[j] = static_cast<float>(pose(j + 3));
+        for (j = 0; j < 4; j++) quaternion[j] = static_cast<float>(quat(j));
       }
 
       lcm->publish("DRAKE_VIEWER_DRAW", &draw_msg);
 
-      return Eigen::VectorXd::Zero(0);
+      return u; // pass the output through
     }
 
+    bool isTimeVarying() const { return true; }
+    bool isDirectFeedthrough() const { return true; }
 
   private:
-    mutable RigidBodyTree manip;  // todo: remove mutable tag after RBM cleanup
+    mutable std::shared_ptr<RigidBodyTree> tree;  // todo: remove mutable tag after RBM cleanup
     std::shared_ptr<lcm::LCM> lcm;
     mutable drake::lcmt_viewer_draw draw_msg;
   };

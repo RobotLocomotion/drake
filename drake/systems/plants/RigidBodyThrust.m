@@ -23,33 +23,35 @@ classdef RigidBodyThrust < RigidBodyForceElement
       end
     end %constructor
     
-    function [force, B_mod, dforce, dB_mod] = computeSpatialForce(obj,manip,q,qd)
+    function [force, B_mod, dforce, dB_mod] = computeSpatialForce(obj,manip,q,v)
       %B_mod maps the input to generalized forces.
       
       force = sparse(6,getNumBodies(manip))*q(1);
       B_mod = manip.B*0*q(1); %initialize B_mod
 
+      options.in_terms_of_qdot = false;
       if (nargout>2)  % then compute gradients
         kinsol = doKinematics(manip,q,true);
-        [x,J,dJ] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1));
-        [axis_world,Jaxis_world] = forwardKin(manip,kinsol,obj.kinframe,obj.axis);
-        daxis_world = Jaxis_world-J;
+        [x,J_geometric,dJ_geometric_dq] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1),options);
+        [~,dx_dq] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1),struct('in_terms_of_qdot',true));
+        [axis_world,daxis_world_dq] = forwardKin(manip,kinsol,obj.kinframe,obj.axis,struct('in_terms_of_qdot',true));
+        daxis_world_dq = daxis_world_dq-dx_dq;
         axis_world = axis_world-x;
 
         dforce = sparse(6*getNumBodies(manip),getNumStates(manip));
 
-        nq = getNumPositions(manip); nu = getNumInputs(manip);
-        dB_mod = sparse(nq*nu,getNumStates(manip));
-        dB_mod((obj.input_num-1)*nq + (1:nq),1:nq) = obj.scale_factor*(J'*daxis_world + reshape(dJ'*axis_world,nq,nq));
+        nq = getNumPositions(manip); nv = getNumVelocities(manip); nu = getNumInputs(manip);
+        dB_mod = sparse(nv*nu,getNumStates(manip));
+        dB_mod((obj.input_num-1)*nv + (1:nv),1:nq) = obj.scale_factor*(J_geometric'*daxis_world_dq + reshape(dJ_geometric_dq'*axis_world,nv,nq));
       else
         kinsol = doKinematics(manip,q);
-        [x,J] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1));
+        [x,J_geometric] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1),options);
         axis_world = forwardKin(manip,kinsol,obj.kinframe,obj.axis);
         axis_world = axis_world-x;
       end
       
       % apply force along the z-axis of the reference frame
-      B_mod(:,obj.input_num) = obj.scale_factor*J'*axis_world;
+      B_mod(:,obj.input_num) = obj.scale_factor*J_geometric'*axis_world;
     end
     
   end

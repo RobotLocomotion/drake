@@ -3,13 +3,13 @@
 
 case $1 in
   ("homebrew")
-    brew install cmake pkg-config gtk+ ;;
+    brew install cmake pkg-config gtk+ swig ;;
   ("macports")
-    port install cmake gtk2 ;;
+    port install cmake gtk2 swig ;;
   ("ubuntu")
-    apt-get install cmake openjdk-6-jdk build-essential ;;
+    apt-get install cmake openjdk-6-jdk build-essential swig ;;
   ("cygwin")
-    cygwin-setup -q -P make pkg-config ;;
+    cygwin-setup -q -P make pkg-config swig ;;
   (*)
     echo "Usage: ./install_prereqs.sh package_manager"
     echo "where package_manager is one of the following: "

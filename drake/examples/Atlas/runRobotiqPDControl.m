@@ -17,7 +17,7 @@ kd = 0.1;
 %build reference trajectory
 ts = 0:0.01:12;
 q_closed = [1.2427, 1.0864, -0.1336, 1.2427, 1.0864,-0.1336, 1.2427, 0.9114, 0.0000]';
-q_open = zeros(robot.getNumPositions, 1);
+q_open = getZeroConfiguration(robot.getManipulator);
 qdes_traj = PPTrajectory(spline(ts, spline([0 3 6 9 12],[q_open, q_closed, q_open, q_closed, q_open],ts)));
 
 %wire up closed loop system and simulate

@@ -30,7 +30,7 @@ if (1)
   xf = traj.eval(tf);
   kinsol = doKinematics(r,xf(1:getNumPositions(r)));
   [phi,~,~,~,~,~,~,~,dphidq] = contactConstraints(r,kinsol);
-  phidot = dphidq*vToqdot(r.getManipulator(),xf(1:getNumPositions(r)))*xf((getNumPositions(r)+1):end);
+  phidot = dphidq*vToqdot(r.getManipulator(),kinsol)*xf((getNumPositions(r)+1):end);
   if (max(abs(phidot))<0.001) % then I've stopped moving
     phi = sort(phi);
     if phi(1)<-0.1 || phi(3)>0.1

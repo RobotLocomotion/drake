@@ -11,7 +11,7 @@ end
 % lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'contact_points');
 
 %q = randn(getNumPositions(r),1);
-q = zeros(getNumPositions(r),1);
+q = getZeroConfiguration(r);
 
 kinsol = doKinematics(r,q);
 pts = terrainContactPositions(r,kinsol);

@@ -4,6 +4,8 @@ include_directories(${PROJECT_SOURCE_DIR}/systems/plants)
 include_directories(${PROJECT_SOURCE_DIR}/util/test)
 include_directories(${PROJECT_SOURCE_DIR}/systems/plants/joints )
 
+pods_install_headers(LQR.h DESTINATION drake)
+
 add_library_with_exports(LIB_NAME drakeControlUtil SOURCE_FILES controlUtil.cpp)
 target_link_libraries(drakeControlUtil drakeRBM drakeUtil drakeTrajectories)
 pods_install_libraries(drakeControlUtil)

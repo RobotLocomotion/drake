@@ -22,9 +22,7 @@ classdef RigidBody < RigidBodyElement
     pitch=0;        % for featherstone 3D models
     floating=0; % 0 = not floating base, 1 = rpy floating base, 2 = quaternion floating base
     joint_axis=[1;0;0]; 
-    Xtree=eye(6);   % velocity space coordinate transform *from parent to this node*
-    Ttree=eye(4);   % position space coordinate transform *from this node to parent*
-    T_body_to_joint=eye(4);
+    Ttree=eye(4);   % homogeneous transform from joint predecessor frame to parent body, so that the transform from this body to its parent is body.Ttree * jointTransform(body, q_body)
     damping=0; % viscous friction term
     coulomb_friction=0; 
     static_friction=0; % currently not used for simulation
@@ -82,6 +80,14 @@ classdef RigidBody < RigidBodyElement
         else
           error('floating joint type not recognized');
         end
+      end
+    end
+    
+    function q_body = getZeroConfiguration(body)
+      if body.floating == 2
+        q_body = [zeros(3, 1); 1; 0; 0; 0];
+      else
+        q_body = zeros(length(body.position_num), 1);
       end
     end
     
@@ -332,7 +338,11 @@ classdef RigidBody < RigidBodyElement
       for i=1:length(pn)
         if isa(body.(pn{i}),'msspoly')
           body.param_bindings.(pn{i}) = body.(pn{i});
-          body.(pn{i}) = double(subs(body.(pn{i}),fr.getPoly,pval));
+          if isnumeric(pval)
+            body.(pn{i}) = double(subs(body.(pn{i}),fr.getPoly,pval));
+          else
+            body.(pn{i}) = subs(body.(pn{i}),fr.getPoly,pval);
+          end            
         end
       end
       for i=1:length(body.visual_geometry)

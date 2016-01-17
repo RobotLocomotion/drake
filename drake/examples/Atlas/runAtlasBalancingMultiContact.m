@@ -54,8 +54,6 @@ r = r.setInitialState(xstar);
 v = r.constructVisualizer;
 v.display_dt = 0.01;
 
-nq = getNumPositions(r);
-
 x0 = xstar;
 
 % Construct plan
@@ -63,11 +61,11 @@ settings = QPLocomotionPlanSettings.fromStandingState(x0, r);
 settings.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed; % Only use supports when in contact
 standing_plan = QPLocomotionPlanCPPWrapper(settings);
 
-control = atlasControllers.InstantaneousQPController(r, [], struct());
+control = bipedControllers.InstantaneousQPController(r, [], struct());
 control.quiet = example_options.quiet;
-planeval = atlasControllers.AtlasPlanEval(r, standing_plan);
+planeval = bipedControllers.BipedPlanEval(r, standing_plan);
 
-plancontroller = atlasControllers.AtlasPlanEvalAndControlSystem(r, control, planeval);
+plancontroller = bipedControllers.BipedPlanEvalAndControlSystem(r, control, planeval);
 plancontroller.quiet = example_options.quiet;
 
 sys = feedback(r, plancontroller);

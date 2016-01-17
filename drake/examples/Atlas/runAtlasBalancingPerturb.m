@@ -51,7 +51,6 @@ r_complete = r_complete.setInitialState(xstar_complete);
 r = r.setInitialState(xstar);
 v = r_complete.constructVisualizer;
 v.display_dt = 0.01;
-nq = getNumPositions(r);
 x0 = xstar;
 
 
@@ -60,10 +59,10 @@ settings = QPLocomotionPlanSettings.fromStandingState(x0, r);
 % settings.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed; % Only use supports when in contact
 standing_plan = QPLocomotionPlanCPPWrapper(settings);
 
-control = atlasControllers.InstantaneousQPController(r, [], struct());
-planeval = atlasControllers.AtlasPlanEval(r, standing_plan);
+control = bipedControllers.InstantaneousQPController(r, [], struct());
+planeval = bipedControllers.BipedPlanEval(r, standing_plan);
 
-plancontroller = atlasControllers.AtlasPlanEvalAndControlSystem(r, control, planeval);
+plancontroller = bipedControllers.BipedPlanEvalAndControlSystem(r, control, planeval);
 
 T = 6;
 ts = example_options.perturb_timing;
@@ -93,6 +92,7 @@ ytraj = simulate(sys, [0, T], xstar_complete, struct('gui_control_interface', tr
 v.playback(ytraj, struct('slider', true));
 
 xf = ytraj.eval(ytraj.tspan(end));
+nq = getNumPositions(r);
 kinsol = doKinematics(r, xf(1:nq));
 comf = getCOM(r, kinsol);
 

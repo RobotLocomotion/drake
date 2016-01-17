@@ -470,6 +470,9 @@ classdef TaylorVar
       a=reshape(a.f,a.dim);
       l=not(a)
     end
+    function b=any(a)
+      b=any(a.f);
+    end
 
     function a=ctranspose(a)
       if (~any(imag(a.f)))  % strictly real

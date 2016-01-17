@@ -20,7 +20,6 @@
 
 #define BASIS_VECTOR_HALF_COUNT 2  //number of basis vectors over 2 (i.e. 4 basis vectors in this case)
 #define EPSILON 10e-8
-#define MIN_RADIUS 1e-7
 
 typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 
@@ -47,7 +46,9 @@ public:
   friend std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj);
 
 public:
-	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#ifndef SWIG 
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 class DRAKERBM_EXPORT RigidBodyTree
@@ -57,10 +58,10 @@ public:
   RigidBodyTree(void);
   virtual ~RigidBodyTree(void);
 
-  bool addRobotFromURDFString(const std::string &xml_string, const std::string &root_dir = ".", const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
-  bool addRobotFromURDFString(const std::string &xml_string, std::map<std::string,std::string>& package_map, const std::string &root_dir = ".", const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
-  bool addRobotFromURDF(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
-  bool addRobotFromURDF(const std::string &urdf_filename, std::map<std::string,std::string>& package_map, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
+  void addRobotFromURDFString(const std::string &xml_string, const std::string &root_dir = ".", const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
+  void addRobotFromURDFString(const std::string &xml_string, std::map<std::string,std::string>& package_map, const std::string &root_dir = ".", const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
+  void addRobotFromURDF(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
+  void addRobotFromURDF(const std::string &urdf_filename, std::map<std::string,std::string>& package_map, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
 
   void addFrame(const std::shared_ptr<RigidBodyFrame>& frame);
 
@@ -70,7 +71,9 @@ public:
 
   void compile(void);  // call me after the model is loaded
 
-  void getRandomConfiguration(Eigen::VectorXd& q, std::default_random_engine& generator) const;
+  Eigen::VectorXd getZeroConfiguration() const;
+
+  Eigen::VectorXd getRandomConfiguration(std::default_random_engine& generator) const;
 
   // akin to the coordinateframe names in matlab
   std::string getPositionName(int position_num) const;
@@ -220,7 +223,7 @@ public:
   void getContactPositionsJac(const KinematicsCache<typename Derived::Scalar>& cache, Eigen::MatrixBase<Derived> &J, const std::set<int> &body_idx) const;// = emptyIntSet);
 
 //  template <typename Derived>
-//  void getContactPositionsJacDot(MatrixBase<Derived> &Jdot, const std::set<int> &body_idx);// = emptyIntSet);
+//  void getContactPositionsJacDot(Eigen::MatrixBase<Derived> &Jdot, const std::set<int> &body_idx);// = emptyIntSet);
 //
 
   /**
@@ -233,48 +236,95 @@ public:
 
   KinematicPath findKinematicPath(int start_body_or_frame_idx, int end_body_or_frame_idx) const;
 
+  /** \brief Compute the positive definite mass (configuration space) matrix \f$ H(q) \f$, defined by \f$T = \frac{1}{2} v^T H(q) v \f$, where \f$ T \f$ is kinetic energy.
+   *
+   * The mass matrix also appears in the manipulator equations
+   *  \f[
+   *  H(q) \dot{v} + C(q, v, f_\text{ext}) = B(q) u
+   * \f]
+   *
+   * \param cache a KinematicsCache constructed given \f$ q \f$
+   * \return the mass matrix \f$ H(q) \f$
+   */
   template <typename Scalar>
   Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> massMatrix(KinematicsCache<Scalar>& cache) const;
 
+  /** \brief Compute the term \f$ C(q, v, f_\text{ext}) \f$ in the manipulator equations
+  *  \f[
+  *  H(q) \dot{v} + C(q, v, f_\text{ext}) = B(q) u
+  * \f]
+  *
+  * Convenience method that calls inverseDynamics with \f$ \dot{v} = 0 \f$. See inverseDynamics for argument descriptions.
+  * \see inverseDynamics
+  */
   template <typename Scalar>
-  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> dynamicsBiasTerm(KinematicsCache<Scalar>& cache, const eigen_aligned_unordered_map<RigidBody const *, Eigen::Matrix<Scalar, TWIST_SIZE, 1> >& f_ext) const;
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> dynamicsBiasTerm(KinematicsCache<Scalar>& cache, const eigen_aligned_unordered_map<RigidBody const *, Eigen::Matrix<Scalar, TWIST_SIZE, 1> >& f_ext, bool include_velocity_terms = true) const;
 
+  /** \brief Compute
+  * \f[
+  *  H(q) \dot{v} + C(q, v, f_\text{ext})
+  * \f]
+  * that is, the left hand side of the manipulator equations
+  *  \f[
+  *  H(q) \dot{v} + C(q, v, f_\text{ext}) = B(q) u
+  * \f]
+  *
+  * Note that the 'dynamics bias term' \f$ C(q, v, f_\text{ext}) \f$ can be computed by simply setting \f$ \dot{v} = 0\f$.
+  * Note also that if only the gravitational terms contained in \f$ C(q, v, f_\text{ext}) \f$ are required, one can set \a include_velocity_terms to false.
+  * Alternatively, one can pass in a KinematicsCache created with \f$ v = 0\f$ or without specifying the velocity vector.
+  *
+  * Algorithm: recursive Newton-Euler. Does not explicitly compute mass matrix.
+  * \param cache a KinematicsCache constructed given \f$ q \f$ and \f$ v \f$
+  * \param f_ext external wrenches exerted upon bodies. Expressed in body frame.
+  * \param vd \f$ \dot{v} \f$
+  * \param include_velocity_terms whether to include velocity-dependent terms in \f$ C(q, v, f_\text{ext}) \f$. Setting \a include_velocity_terms to false is Equivalent to setting \f$ v = 0 \f$
+  * \return \f$ H(q) \dot{v} + C(q, v, f_\text{ext}) \f$
+  */
   template <typename Scalar>
-  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> inverseDynamics(KinematicsCache<Scalar>& cache, const eigen_aligned_unordered_map<RigidBody const *, Eigen::Matrix<Scalar, TWIST_SIZE, 1> >& f_ext, const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& vd) const;
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> inverseDynamics(KinematicsCache<Scalar>& cache, const eigen_aligned_unordered_map<RigidBody const *, Eigen::Matrix<Scalar, TWIST_SIZE, 1> >& f_ext, const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& vd, bool include_velocity_terms = true) const;
 
   template <typename DerivedV>
   Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorques(Eigen::MatrixBase<DerivedV> const & v) const;
 
   template <typename Scalar, typename DerivedPoints> // not necessarily any relation between the two; a major use case is having an AutoDiff KinematicsCache, but double points matrix
-  Eigen::Matrix<Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> forwardKin(
-      const KinematicsCache<Scalar> &cache, const Eigen::MatrixBase<DerivedPoints> &points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type) const
+  Eigen::Matrix<Scalar, 3, DerivedPoints::ColsAtCompileTime> transformPoints(
+      const KinematicsCache<Scalar> &cache, const Eigen::MatrixBase<DerivedPoints> &points, int from_body_or_frame_ind, int to_body_or_frame_ind) const
   {
-    cache.checkCachedKinematicsSettings(false, false, "forwardKin"); // rely on forwardJac for gradient cache check
+    static_assert(DerivedPoints::RowsAtCompileTime == 3 || DerivedPoints::RowsAtCompileTime == Eigen::Dynamic, "points argument has wrong number of rows");
+    auto T = relativeTransform(cache, to_body_or_frame_ind, from_body_or_frame_ind);
+    return T * points.template cast<Scalar>();
+  };
 
-    int npoints = static_cast<int>(points.cols());
+  template <typename Scalar>
+  Eigen::Matrix<Scalar, 4, 1> relativeQuaternion(const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind, int to_body_or_frame_ind) const {
+    return rotmat2quat(relativeTransform(cache, to_body_or_frame_ind, from_body_or_frame_ind).linear());
+  };
 
-    // compute rotation and translation
-    auto T = relativeTransform(cache, new_body_or_frame_ind, current_body_or_frame_ind);
-
-    // transform points to new frame
-    Eigen::Matrix<Scalar, Eigen::Dynamic, DerivedPoints::ColsAtCompileTime> x(SPACE_DIMENSION + rotationRepresentationSize(rotation_type), npoints);
-    x.template topRows<SPACE_DIMENSION>().noalias() = T * points.template cast<Scalar>();
-
-    // convert rotation representation
-    auto qrot = rotmat2Representation(T.linear(), rotation_type);
-    x.bottomRows(qrot.rows()).colwise() = qrot;
-
-    return x;
+  template <typename Scalar>
+  Eigen::Matrix<Scalar, 3, 1> relativeRollPitchYaw(const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind, int to_body_or_frame_ind) const {
+    return rotmat2rpy(relativeTransform(cache, to_body_or_frame_ind, from_body_or_frame_ind).linear());
   };
 
   template <typename Scalar, typename DerivedPoints>
-  Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> forwardKinJacobian(const KinematicsCache<Scalar>& cache, const Eigen::MatrixBase<DerivedPoints>& points, int current_body_or_frame_ind, int new_body_or_frame_ind, int rotation_type, bool in_terms_of_qdot) const;
+  Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> transformPointsJacobian(const KinematicsCache<Scalar>& cache, const Eigen::MatrixBase<DerivedPoints>& points, int from_body_or_frame_ind, int to_body_or_frame_ind, bool in_terms_of_qdot) const;
 
   template <typename Scalar>
-  Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> forwardKinPositionGradient(const KinematicsCache<Scalar>& cache, int npoints, int current_body_or_frame_ind, int new_body_or_frame_ind) const;
+  Eigen::Matrix<Scalar, QUAT_SIZE, Eigen::Dynamic> relativeQuaternionJacobian(const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind, int to_body_or_frame_ind, bool in_terms_of_qdot) const;
+
+  template <typename Scalar>
+  Eigen::Matrix<Scalar, RPY_SIZE, Eigen::Dynamic> relativeRollPitchYawJacobian(const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind, int to_body_or_frame_ind, bool in_terms_of_qdot) const;
+
+  template <typename Scalar>
+  Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> forwardKinPositionGradient(const KinematicsCache<Scalar>& cache, int npoints, int from_body_or_frame_ind, int to_body_or_frame_ind) const;
 
   template <typename Scalar, typename DerivedPoints>
-  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> forwardJacDotTimesV(const KinematicsCache<Scalar>& cache, const Eigen::MatrixBase<DerivedPoints>& points, int body_or_frame_ind, int base_or_frame_ind, int rotation_type) const;
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> transformPointsJacobianDotTimesV(const KinematicsCache<Scalar>& cache, const Eigen::MatrixBase<DerivedPoints>& points, int from_body_or_frame_ind, int to_body_or_frame_ind) const;
+
+  template <typename Scalar>
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> relativeQuaternionJacobianDotTimesV(const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind, int to_body_or_frame_ind) const;
+
+  template <typename Scalar>
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> relativeRollPitchYawJacobianDotTimesV(const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind, int to_body_or_frame_ind) const;
 
   template<typename Scalar>
   Eigen::Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> geometricJacobian(const KinematicsCache<Scalar>& cache, int base_body_or_frame_ind, int end_effector_body_or_frame_ind, int expressed_in_body_or_frame_ind, bool in_terms_of_qdot = false, std::vector<int>* v_indices = nullptr) const;
@@ -291,6 +341,9 @@ public:
   template<typename Scalar>
   Eigen::Transform<Scalar, SPACE_DIMENSION, Eigen::Isometry> relativeTransform(const KinematicsCache<Scalar>& cache, int base_or_frame_ind, int body_or_frame_ind) const;
 
+  /** computeContactJacobians
+   * @brief Computes the jacobian for many points in the format currently used by matlab.  (possibly should be scheduled for deletion, taking accumulateContactJacobians with it)
+   */
   template <typename Scalar>
   void computeContactJacobians(const KinematicsCache<Scalar>& cache, Eigen::Ref<const Eigen::VectorXi> const & idxA, Eigen::Ref<const Eigen::VectorXi> const & idxB, Eigen::Ref<const Eigen::Matrix3Xd> const & xA, Eigen::Ref<const Eigen::Matrix3Xd> const & xB, Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> & J) const;
 
@@ -365,6 +418,10 @@ public:
                            bool use_margins = true);
   //bool closestDistanceAllBodies(VectorXd& distance, MatrixXd& Jd);
 
+  virtual bool collidingPointsCheckOnly(const KinematicsCache<double>& cache,
+                                        const std::vector<Eigen::Vector3d>& points,
+                                        double collision_threshold);
+
   virtual std::vector<size_t> collidingPoints(const KinematicsCache<double>& cache,
                                               const std::vector<Eigen::Vector3d>& points,
         double collision_threshold);
@@ -389,40 +446,19 @@ public:
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> positionConstraints(const KinematicsCache<Scalar>& cache) const;
 
   template<typename Scalar>
-  Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> positionConstraintsJacobian(const KinematicsCache<Scalar> &cache) const;
+  Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> positionConstraintsJacobian(const KinematicsCache<Scalar> &cache, bool in_terms_of_qdot = true) const;
+
+  template<typename Scalar>
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> positionConstraintsJacDotTimesV(const KinematicsCache<Scalar> &cache) const;
 
   size_t getNumPositionConstraints() const;
 
-  template <typename Derived>
-  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> transformVelocityMappingToPositionDotMapping(
-      const KinematicsCache<typename Derived::Scalar>& cache, const Eigen::MatrixBase<Derived>& mat) const;
-  
   /*
   template <typename Derived>
   Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> transformPositionDotMappingToVelocityMapping(
       const KinematicsCache<typename Derived::Scalar>& cache, const Eigen::MatrixBase<Derived>& mat) const;
   */
   
-  template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> transformPositionDotMappingToVelocityMapping(
-    const KinematicsCache<typename Derived::Scalar>& cache, const Eigen::MatrixBase<Derived>& mat) const
-{
-  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> ret(mat.rows(), num_velocities);
-  int ret_col_start = 0;
-  int mat_col_start = 0;
-  for (auto it = bodies.begin(); it != bodies.end(); ++it) {
-    RigidBody& body = **it;
-    if (body.hasParent()) {
-      const DrakeJoint& joint = body.getJoint();
-      const auto& element = cache.getElement(body);
-      ret.middleCols(ret_col_start, joint.getNumVelocities()).noalias() = mat.middleCols(mat_col_start, joint.getNumPositions()) * element.v_to_qdot;
-      ret_col_start += joint.getNumVelocities();
-      mat_col_start += joint.getNumPositions();
-    }
-  }
-  return ret;
-};
-
   template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> compactToFull(
     const Eigen::MatrixBase<Derived>& compact, const std::vector<int>& joint_path, bool in_terms_of_qdot) const {
@@ -492,7 +528,9 @@ private:
   std::unique_ptr< DrakeCollision::Model > collision_model;
   //std::shared_ptr< DrakeCollision::Model > collision_model_no_margins;
 public:
+#ifndef SWIG 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 
 // The following was required for building w/ DRAKERBM_EXPORT on windows (due to the unique_ptrs).  See
 // http://stackoverflow.com/questions/8716824/cannot-access-private-member-error-only-when-class-has-export-linkage

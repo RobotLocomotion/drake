@@ -3,20 +3,21 @@ function testMex
 options.floating=true;
 p = PlanarRigidBodyManipulator('../urdf/atlas_minimal_contact.urdf',options);
 nq = getNumPositions(p);
+nv = getNumVelocities(p);
 
 for i=1:100
-  q = randn(nq,1);
-  qd = randn(nq,1);
+  q = getRandomConfiguration(p);
+  v = randn(nv,1);
 
-  [Hm,Cm,Bm] = p.manipulatorDynamics(q,qd,true);
-  [H,C,B] = p.manipulatorDynamics(q,qd,false);
+  [Hm,Cm,Bm] = p.manipulatorDynamics(q,v,true);
+  [H,C,B] = p.manipulatorDynamics(q,v,false);
 
   valuecheck(H,Hm,1e-8);
   valuecheck(C,Cm,1e-8);
   valuecheck(B,Bm,1e-8);
   
-  [Hm,Cm,Bm,dHm,dCm,dBm] = p.manipulatorDynamics(q,qd,true);
-  [H,C,B,dH,dC,dB] = p.manipulatorDynamics(q,qd,false);
+  [Hm,Cm,Bm,dHm,dCm,dBm] = p.manipulatorDynamics(q,v,true);
+  [H,C,B,dH,dC,dB] = p.manipulatorDynamics(q,v,false);
 
   valuecheck(H,Hm,1e-8);
   valuecheck(C,Cm,1e-8);
@@ -45,20 +46,21 @@ end
 options.floating=true;
 p = RigidBodyManipulator('../urdf/atlas_minimal_contact.urdf',options);
 nq = getNumPositions(p);
+nv = getNumVelocities(p);
 
 for i=1:25
-  q = randn(nq,1);
-  qd = randn(nq,1);
+  q = getRandomConfiguration(p);
+  v = randn(nv,1);
   
-  [Hm,Cm,Bm] = p.manipulatorDynamics(q,qd,true);
-  [H,C,B] = p.manipulatorDynamics(q,qd,false);
+  [Hm,Cm,Bm] = p.manipulatorDynamics(q,v,true);
+  [H,C,B] = p.manipulatorDynamics(q,v,false);
 
   valuecheck(Hm,H,1e-8);
   valuecheck(Cm,C,1e-8);
   valuecheck(Bm,B,1e-8);
 
-  [Hm,Cm,Bm,dHm,dCm,dBm] = p.manipulatorDynamics(q,qd,true);
-  [H,C,B,dH,dC,dB] = p.manipulatorDynamics(q,qd,false);
+  [Hm,Cm,Bm,dHm,dCm,dBm] = p.manipulatorDynamics(q,v,true);
+  [H,C,B,dH,dC,dB] = p.manipulatorDynamics(q,v,false);
 
   valuecheck(Hm,H,1e-8);
   valuecheck(Cm,C,1e-8);
@@ -69,7 +71,7 @@ for i=1:25
   valuecheck(dBm,dB,1e-8);
 
   % test mex kinematics
-  rq = rand(nq,1);
+  rq = getRandomConfiguration(p);
   kinsol=p.doKinematics(rq,true,true);
   rb = randi(3);
   rp = rand(3,1);

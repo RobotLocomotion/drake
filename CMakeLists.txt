@@ -23,6 +23,9 @@ option(EXAMPLES_LITTLEDOG "planning and control for a small quadruped robot" OFF
 ## External dependencies
 option(AUTO_UPDATE_EXTERNALS "external projects are updated to their tag revision on compile" ON)
 
+# Choose your python (major) version
+option(WITH_PYTHON_3 "Force Drake to use python 3 instead of python 2" OFF)
+
 # menu of external projects
 option(WITH_ALL_PUBLIC_EXTERNALS "enable all externals available to public academic users" OFF)
 option(WITH_ALL_SUPPORTED_EXTERNALS "enable all externals available for your platform (includes private git repositories)" OFF)
@@ -30,6 +33,7 @@ option(REMOVE_UNUSED_EXTERNALS "enable this to remove those projects from disk" 
 
 # ON by default:
 option(WITH_EIGEN		"required c++ matrix library.  only disable if you have it already."    ON)
+option(WITH_SWIGMAKE    "helper tools to build python & MATLAB wrappers for C++ libraries with Eigen" ON)
 if (WIN32)
    if (CMAKE_SIZEOF_VOID_P EQUAL 8)  # gtk only compiles on win64 right now
 	option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" ON)
@@ -40,7 +44,7 @@ else()
 	option(WITH_DIRECTOR	"vtk-based visualization tool and robot user interface"   ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
 	option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	ON) # there is hope, but i spent a long time cleaning up c/c++ language errors trying to make msvc happy.. and still had a long way to go.
 	option(WITH_BULLET 		"used for collision detection" 	ON) # almost works.  just one remaining link error..?
-	option(WITH_TEXTBOOK "pull in the Underactuated Robotics textbook and its examples")  # almost works.  the update step call to git was complaining about local modifications on drake003
+	option(WITH_SWIG_MATLAB "A version of SWIG with MATLAB support" ON)
 endif()
 find_program(matlab matlab)
 if (matlab)
@@ -62,6 +66,7 @@ if (NOT WIN32) # many of these might work on win32 with little or no work... the
 	option(WITH_GLOPTIPOLY 	"free global polynomial optimization tooblox")
 	option(WITH_BERTINI 	"solve polynomial equations; free but pod requires permissions (can't redistribute)")
 	option(WITH_SEDUMI		"semi-definite programming solver")
+	option(WITH_TEXTBOOK "pull in the Underactuated Robotics textbook and its examples")  # almost works on windows.  the update step call to git was complaining about local modifications on drake003
 	#  include(CMakeDetermineFortranCompiler) # this didn't do the trick, and enable_language(Fortran OPTIONAL) simply fails if not found (optional is a placeholder option that doesn't work yet)
 	#  if (CMAKE_Fortran_COMPILER)
 	option(WITH_AVL			"use w/ XFOIL to compute aerodynamic coefficients for airfoils")
@@ -84,7 +89,7 @@ set(libbot_dependencies lcm)
 set(director_dependencies lcm libbot)
 set(iris_dependencies eigen mosek)
 set(signalscope_dependencies director)
-set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi)
+set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi swig_matlab swigmake)
 
 # download information, in alphabetical order
 set(avl_GIT_REPOSITORY https://github.com/RobotLocomotion/avl.git)
@@ -106,6 +111,7 @@ set(director_GIT_REPOSITORY https://github.com/RobotLocomotion/director.git)
 set(director_GIT_TAG 7ca7d5758aabf9485ec7ad8e4194ab9cd90ae429)
 set(director_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/director/distro/pods/drake-distro)
 set(director_IS_PUBLIC TRUE)
+set(drake_ADDITIONAL_BUILD_ARGS CMAKE_ARGS -DWITH_PYTHON_3=${WITH_PYTHON_3})
 set(eigen_GIT_REPOSITORY https://github.com/RobotLocomotion/eigen-pod.git)
 set(eigen_GIT_TAG ceba39500b89a77a8649b3e8b421b10a3d74d42b)
 set(eigen_IS_CMAKE_POD TRUE)
@@ -152,11 +158,19 @@ set(snopt_GIT_TAG 95d908275156f2665ef3941f08cb89c767480a6e)
 set(snopt_IS_CMAKE_POD TRUE)
 set(snopt_IS_PUBLIC FALSE)
 set(spotless_GIT_REPOSITORY https://github.com/RobotLocomotion/spotless-pod.git)
-set(spotless_GIT_TAG 2b0c25ebb1733950284c7e0be55a1a84304f7543)
+set(spotless_GIT_TAG 86275d25eecebe5e85d33e1074cdb274a1b32d49)
 set(spotless_IS_CMAKE_POD TRUE)
 set(spotless_IS_PUBLIC TRUE)
+set(swigmake_GIT_REPOSITORY https://github.com/rdeits/swigmake.git)
+set(swigmake_GIT_TAG ab03741a0627e99589ecbc1c088a4db05755e3c2)
+set(swigmake_IS_PUBLIC TRUE)
+set(swigmake_IS_CMAKE_POD TRUE)
+set(swig_matlab_GIT_REPOSITORY https://github.com/rdeits/swig-matlab-pod.git)
+set(swig_matlab_GIT_TAG fb2d752c0367a4104a2ad00a77cd4a9e0255d6f3)
+set(swig_matlab_IS_PUBLIC TRUE)
+set(swig_matlab_IS_CMAKE_POD TRUE)
 set(textbook_GIT_REPOSITORY https://github.com/RussTedrake/underactuated.git)
-set(textbook_GIT_TAG master)  
+set(textbook_GIT_TAG master)
 set(textbook_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/drake/doc/textbook")
 set(textbook_BUILD_COMMAND ${PYTHON_EXECUTABLE} extract_examples.py underactuated.html ./examples)
 set(textbook_IS_PUBLIC TRUE)
@@ -173,7 +187,7 @@ set(LittleDog_GIT_TAG a21aef548c33386243c40e315b1c70d83c122430)
 
 find_program(MAKE_EXECUTABLE make)
 if (NOT MAKE_EXECUTABLE)
-	message(FATAL_ERROR "couldn't find gnu make")
+	message(WARNING "couldn't find gnu make")
 endif()
 if (${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
 	set(PODS_MAKE_COMMAND "$(MAKE)")   # so we can pass through commandline arguments.
@@ -207,6 +221,8 @@ foreach(proj IN ITEMS
 		avl
 		xfoil
 		meshconverters
+		swigmake
+		swig_matlab
 		drake)
 	string(TOUPPER ${proj} proj_upper)
 	if ( ${proj} STREQUAL "drake" OR

@@ -10,8 +10,7 @@
 #include <type_traits>
 #include <stdexcept>
 #include <utility>
-#include "GradientVar.h"
-#include "drakeGeometryUtil.h"
+#include "drakeGradientUtil.h"
 #include "RigidBody.h"
 
 
@@ -48,7 +47,9 @@ public:
   }
 
 public:
-	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#ifndef SWIG
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 template <typename Scalar>
@@ -56,6 +57,9 @@ class KinematicsCache
 {
 private:
   std::unordered_map<RigidBody const *, KinematicsCacheElement<Scalar>, std::hash<RigidBody const *>, std::equal_to<RigidBody const *>, Eigen::aligned_allocator<std::pair<RigidBody const* const, KinematicsCacheElement<Scalar> > > > elements;
+  std::vector<RigidBody const *> bodies;
+  const int num_positions;
+  const int num_velocities;
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> q;
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> v;
   bool velocity_vector_valid;
@@ -64,9 +68,11 @@ private:
   bool inertias_cached;
 
 public:
-  KinematicsCache(const std::vector<std::shared_ptr<RigidBody>>& bodies) :
-      q(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(getNumPositions(bodies), 1)),
-      v(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(getNumVelocities(bodies), 1)),
+  KinematicsCache(const std::vector<std::shared_ptr<RigidBody> > & bodies) :
+      num_positions(getNumPositions(bodies)),
+      num_velocities(getNumVelocities(bodies)),
+      q(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(num_positions)),
+      v(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(num_velocities)),
       velocity_vector_valid(false)
   {
     for (const auto& body_shared_ptr : bodies) {
@@ -74,6 +80,7 @@ public:
       int num_positions_joint = body.hasParent() ? body.getJoint().getNumPositions() : 0;
       int num_velocities_joint = body.hasParent() ? body.getJoint().getNumVelocities() : 0;
       elements.insert({&body, KinematicsCacheElement<Scalar>(num_positions_joint, num_velocities_joint)});
+      this->bodies.push_back(&body);
     }
     invalidate();
   }
@@ -121,6 +128,44 @@ public:
     }
   }
 
+  template <typename Derived>
+  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> transformVelocityMappingToPositionDotMapping(const Eigen::MatrixBase<Derived>& mat) const
+  {
+    Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> ret(mat.rows(), getNumPositions());
+    int ret_col_start = 0;
+    int mat_col_start = 0;
+    for (auto it = bodies.begin(); it != bodies.end(); ++it) {
+      const RigidBody& body = **it;
+      if (body.hasParent()) {
+        const DrakeJoint& joint = body.getJoint();
+        const auto& element = getElement(body);
+        ret.middleCols(ret_col_start, joint.getNumPositions()).noalias() = mat.middleCols(mat_col_start, joint.getNumVelocities()) * element.qdot_to_v;
+        ret_col_start += joint.getNumPositions();
+        mat_col_start += joint.getNumVelocities();
+      }
+    }
+    return ret;
+  }
+
+  template <typename Derived>
+  Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> transformPositionDotMappingToVelocityMapping(const Eigen::MatrixBase<Derived>& mat) const
+  {
+    Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Eigen::Dynamic> ret(mat.rows(), getNumVelocities());
+    int ret_col_start = 0;
+    int mat_col_start = 0;
+    for (auto it = bodies.begin(); it != bodies.end(); ++it) {
+      const RigidBody& body = **it;
+      if (body.hasParent()) {
+        const DrakeJoint& joint = body.getJoint();
+        const auto& element = getElement(body);
+        ret.middleCols(ret_col_start, joint.getNumVelocities()).noalias() = mat.middleCols(mat_col_start, joint.getNumPositions()) * element.v_to_qdot;
+        ret_col_start += joint.getNumVelocities();
+        mat_col_start += joint.getNumPositions();
+      }
+    }
+    return ret;
+  }
+
 
   const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& getQ() const
   {
@@ -156,6 +201,14 @@ public:
     this->jdotV_cached = jdotV_cached;
   }
 
+  int getNumPositions() const {
+    return num_positions;
+  }
+
+  int getNumVelocities() const {
+    return num_velocities;
+  }
+
 private:
   void invalidate()
   {
@@ -164,14 +217,14 @@ private:
     inertias_cached = false;
   }
 
-  static int getNumPositions(const std::vector<std::shared_ptr<RigidBody>>& bodies) {
+  static int getNumPositions(const std::vector<std::shared_ptr<RigidBody> >& bodies) {
     auto add_num_positions = [] (int result, std::shared_ptr<RigidBody> body_ptr) -> int {
       return body_ptr->hasParent() ? result + body_ptr->getJoint().getNumPositions() : result;
     };
     return std::accumulate(bodies.begin(), bodies.end(), 0, add_num_positions);
   }
 
-  static int getNumVelocities(const std::vector<std::shared_ptr<RigidBody>>& bodies) {
+  static int getNumVelocities(const std::vector<std::shared_ptr<RigidBody> >& bodies) {
     auto add_num_velocities = [] (int result, std::shared_ptr<RigidBody> body_ptr) -> int {
       return body_ptr->hasParent() ? result + body_ptr->getJoint().getNumVelocities() : result;
     };
@@ -179,7 +232,9 @@ private:
   }
 
 public:
+#ifndef SWIG
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 

@@ -587,17 +587,18 @@ void angularvel2quatdotMatrix(const Eigen::MatrixBase<DerivedQ>& q,
                               Eigen::MatrixBase<DerivedM>& M,
                               Eigen::MatrixBase<DerivedDM>* dM = nullptr) {
   // note: not normalizing to match MATLAB implementation
+  using Scalar = typename DerivedQ::Scalar;
   M.resize(QUAT_SIZE, SPACE_DIMENSION);
   M.row(0) << -q(1), -q(2), -q(3);
   M.row(1) << q(0), q(3), -q(2);
   M.row(2) << -q(3), q(0), q(1);
   M.row(3) << q(2), -q(1), q(0);
-  M *= 0.5;
+  M *= Scalar(0.5);
 
   if (dM) {
-    (*dM) << 0.0, -0.5, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0,
-        -0.5, 0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.0, 0.0, 0.0, 0.0, -0.5, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5, 0.0,
-        0.0, -0.5, 0.0, 0.0, 0.5, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0;
+    (*dM) << Scalar(0), Scalar(-0.5), Scalar(0), Scalar(0), Scalar(0.5), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(-0.5), Scalar(0), Scalar(0), Scalar(0.5), Scalar(0), Scalar(0), Scalar(0),
+        Scalar(-0.5), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0.5), Scalar(0.5), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(-0.5), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(-0.5), Scalar(0),
+        Scalar(0), Scalar(-0.5), Scalar(0), Scalar(0), Scalar(0.5), Scalar(0), Scalar(0), Scalar(0.5), Scalar(0), Scalar(0), Scalar(0);
   }
 };
 
@@ -619,19 +620,19 @@ void angularvel2rpydotMatrix(const Eigen::MatrixBase<DerivedRPY>& rpy,
   Scalar cp = cos(p);
   Scalar tp = sp / cp;
 
-  phi << cy / cp, sy / cp, 0.0, -sy, cy, 0.0, cy * tp, tp * sy, 1.0;
+  phi << cy / cp, sy / cp, Scalar(0), -sy, cy, Scalar(0), cy * tp, tp * sy, Scalar(1);
   if (dphi) {
     dphi->resize(phi.size(), RPY_SIZE);
     Scalar sp2 = sp * sp;
     Scalar cp2 = cp * cp;
-    (*dphi) << 0.0, (cy * sp) / cp2, -sy / cp, 0.0, 0.0, -cy, 0.0, cy + (cy * sp2) / cp2, -(sp * sy) / cp, 0.0, (sp * sy) / cp2, cy / cp, 0.0, 0.0, -sy, 0.0, sy + (sp2 * sy) / cp2, (cy * sp) / cp, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+    (*dphi) << Scalar(0), (cy * sp) / cp2, -sy / cp, Scalar(0), Scalar(0), -cy, Scalar(0), cy + (cy * sp2) / cp2, -(sp * sy) / cp, Scalar(0), (sp * sy) / cp2, cy / cp, Scalar(0), Scalar(0), -sy, Scalar(0), sy + (sp2 * sy) / cp2, (cy * sp) / cp, Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0);
 
     if (ddphi) {
       ddphi->resize(dphi->size(), RPY_SIZE);
       Scalar cp3 = cp2 * cp;
-      (*ddphi) << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -(cy * (cp2 - 2.0)) / cp3, (sp * sy) / (sp2 - 1.0), 0.0, 0.0, 0.0, 0.0, (2.0 * cy * sp) / cp3, sy / (sp2 - 1.0), 0.0, (2.0 * sy - cp2 * sy)
-                                                                                                                                                                                                                                                                                    / cp3, (cy * sp) / cp2, 0.0, 0.0, 0.0, 0.0, (2.0 * sp * sy) / cp3, cy / cp2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, (sp * sy) / (sp2 - 1.0), -cy / cp, 0.0, 0.0, sy, 0.0, sy / (sp2 - 1.0), -(cy * sp) / cp, 0.0, (cy * sp) / cp2, -sy / cp, 0.0, 0.0, -cy, 0.0, cy / cp2, -(sp * sy)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          / cp, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+      (*ddphi) << Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), -(cy * (cp2 - Scalar(2))) / cp3, (sp * sy) / (sp2 - Scalar(1)), Scalar(0), Scalar(0), Scalar(0), Scalar(0), (Scalar(2) * cy * sp) / cp3, sy / (sp2 - Scalar(1)), Scalar(0), (Scalar(2) * sy - cp2 * sy)
+                                                                                                                                                                                                                                                                                    / cp3, (cy * sp) / cp2, Scalar(0), Scalar(0), Scalar(0), Scalar(0), (Scalar(2) * sp * sy) / cp3, cy / cp2, Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), (sp * sy) / (sp2 - Scalar(1)), -cy / cp, Scalar(0), Scalar(0), sy, Scalar(0), sy / (sp2 - Scalar(1)), -(cy * sp) / cp, Scalar(0), (cy * sp) / cp2, -sy / cp, Scalar(0), Scalar(0), -cy, Scalar(0), cy / cp2, -(sp * sy)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          / cp, Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0);
     }
   }
 };

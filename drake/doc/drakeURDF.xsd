@@ -379,6 +379,12 @@ Reynolds number around which we design the aerodynamic coefficients.</xs:documen
 
     <xs:complexType name="propellor">
         <xs:all>
+            <xs:element name="parent" type="link_reference">
+                <xs:annotation>
+                    <xs:documentation>String naming the link on which
+                        this propellor is attached.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
             <xs:element name="axis" type="axis" minOccurs="0" maxOccurs="1">
                 <xs:annotation>
                     <xs:documentation>Axis the thrust element acts on.  For example a propellor facing forward would point in the X-axis and you'd use: xyz="1 0 0". </xs:documentation>

@@ -8,10 +8,18 @@ classdef CoordinateFrame < handle
     name='';        % string name for this coordinate system
     dim=0;          % scalar dimension of this coordinate system
     transforms={};  % handles to CoordinateTransform objects
-    prefix;         % a vector character prefix used for the msspoly variables, or a vector of size dim listing prefixes for each variable
+    prefix;         % a vector character prefix used for the
+                    % msspoly variables, or a vector of size dim
+                    % listing prefixes for each variable
   end
   properties (Access=private)
-    coordinates={}; % list of coordinate names
+    coordinates={}; % list of coordinate names. must be kept
+                    % private to ensure that lazy generation is
+                    % safe. 
+                    % WARNING: since coordinates are generated
+                    % lazily, never access coordinates
+                    % directly even from within the class. 
+                    % Use getCoordinateNames instead.
     poly=[];        % optional msspoly variables for this frame
   end
 
@@ -41,34 +49,35 @@ classdef CoordinateFrame < handle
       sizecheck(dim,[1 1]);
       obj.dim = dim;
 
+      % generating object prefix
       if (nargin<3 || isempty(prefix))
         ind = strfind(name,':');
         if isempty(ind)
-          prefix = name(1);
+          obj.prefix = repmat(name(1),dim,1);
         else
-          prefix = name(ind(end)+[1:2]);
+          obj.prefix = name(ind(end)+[1:2]);
         end
       else
         typecheck(prefix,'char');
-        if ~isscalar(prefix)
+        if isscalar(prefix)
+          obj.prefix = repmat(prefix,dim,1);
+        else
           sizecheck(prefix,dim);
-          prefix = prefix(:);
+          obj.prefix = prefix(:);
         end
       end
-      if isscalar(prefix)
-        prefix = repmat(prefix,dim,1);
-      end
-      obj.prefix = prefix;
 
-      ind=1;
-      function str=coordinateName(~)
-        str=[prefix(ind),sprintf('%d',sum(prefix(1:ind)==prefix(ind)))];
-        ind=ind+1;
-      end
-      if (nargin<4 || isempty(coordinates))
-        obj.coordinates=cellfun(@coordinateName,cell(dim,1),'UniformOutput',false);
+      if (nargin < 4 || isempty(coordinates))
+        % we do not generate the default coordinate values here;
+        % the values are only generated if the coordinate values
+        % are accessed by the user directly or indirectly through
+        % obj.getCoordinateNames. This is safe since
+        % obj.coordinates is private.
+        obj.coordinates = {};
       else
         typecheck(coordinates,'cell');
+        % check that user-specified coordinates match the required
+        % dimensions
         sizecheck(coordinates,dim);
         for i=1:dim
           typecheck(coordinates{i},'char');
@@ -76,7 +85,7 @@ classdef CoordinateFrame < handle
         obj.coordinates = {coordinates{:}}';
       end
     end
-    
+
     function tf = hasSamePrefix(frame1,frame2)
       % useful for alarming on a possible prefix clash between two polys
       tf = any(any(bsxfun(@eq,frame1.prefix,frame2.prefix')));
@@ -102,7 +111,7 @@ classdef CoordinateFrame < handle
     function disp(obj)
       fprintf(1,'Coordinate Frame: %s (%d elements)\n',obj.name,obj.dim);
       for i=1:obj.dim
-        fprintf(1,'  %s\n',obj.coordinates{i});
+        fprintf(1,'  %s\n',obj.getCoordinateName(i));
       end
     end
 
@@ -113,13 +122,13 @@ classdef CoordinateFrame < handle
       % C, but A does not.
       tf = isequal(a.name,b.name) && ...
         isequal(a.dim,b.dim) && ...
-        isequal(a.coordinates,b.coordinates) && ...
+        isequal(a.getCoordinateNames,b.getCoordinateNames) && ...
         isequal(a.prefix,b.prefix);
     end
 
     function s = getSym(obj)
       for i=1:length(obj.dim)
-        s(1) = sym(obj.coordinates{i},'real');
+        s(1) = sym(obj.getCoordinateName(i),'real');
       end
     end
 
@@ -189,7 +198,7 @@ classdef CoordinateFrame < handle
         error('default values must be in the fr2 frame');
       end
 
-      [lia,locb] = ismember(fr2.coordinates,fr.coordinates);
+      [lia,locb] = ismember(fr2.getCoordinateNames,fr.getCoordinateNames);
       T = sparse(find(lia),locb(locb>0),1,fr2.dim,fr.dim);
       b = double(fr2_defaultvals); b(lia)=0;
       tf = AffineTransform(fr,fr2,T,b);
@@ -296,14 +305,25 @@ classdef CoordinateFrame < handle
     end
 
     function str = getCoordinateName(obj,i)
-      str = obj.coordinates{i};
+      str = obj.getCoordinateNames{i};
     end
 
     function ind = findCoordinateIndex(obj,varname)
-      ind = find(strcmp(varname,obj.coordinates));
+      ind = find(strcmp(varname,obj.getCoordinateNames));
     end
 
     function strs = getCoordinateNames(obj)
+      % getCoordinateNames encapsulates the lazy generation of the default
+      % coordinates. It may be worth considering making lazy values a
+      % separate class; this would be advantageous in terms of making 
+      % access to obj.coordinates even safer, rather than relying on future
+      % programmers to be careful enough to get the value of 
+      % obj.coordinates only via getCoordinateNames. 
+      % I'm not doing this in this instance since it's unclear how useful
+      % lazy values would be.
+      if isempty(obj.coordinates)
+        obj.coordinates = CoordinateFrame.generateDefaultCoordinates(obj.prefix);
+      end
       strs = obj.coordinates;
     end
 
@@ -333,7 +353,8 @@ classdef CoordinateFrame < handle
       if ~isnumeric(dims) || ~isvector(dims) error('dims must be a numeric vector'); end
       if (any(dims>obj.dim | dims<1)) error(['dims must be between 1 and ',obj.dim]); end
       fr = CoordinateFrame([obj.name,mat2str(dims)], length(dims), obj.prefix(dims));
-      fr.coordinates = obj.coordinates(dims);
+      current_frame_coordinates = obj.getCoordinateNames;
+      fr.coordinates = current_frame_coordinates(dims);
       if ~isempty(fr.poly)
         fr.poly = obj.poly(dims);
       end
@@ -351,7 +372,7 @@ classdef CoordinateFrame < handle
       % perform the wrapping.  it should be the length of the number of
       % wrapped angles (e.g., so that x(angle_flags) = q0).
 
-      fr = CoordinateFrame([obj.name,'Wrapped'],obj.dim,obj.prefix,obj.coordinates);
+      fr = CoordinateFrame([obj.name,'Wrapped'],obj.dim,obj.prefix,obj.getCoordinateNames);
 
       if (nargin>2)
         obj.addTransform(AngleWrappingTransform(obj,fr,angle_flag,q0));
@@ -365,7 +386,7 @@ classdef CoordinateFrame < handle
       % publishes coordinate information to the lcm scope
       if (nargin<4) options=struct(); end
       for i=1:length(obj.dim)
-        scope(obj.name,obj.coordinates{i},t,val(i),options);
+        scope(obj.name,obj.getCoordinateName(i),t,val(i),options);
       end
     end
 
@@ -386,7 +407,7 @@ classdef CoordinateFrame < handle
         fprintf(fptr,'// Note: this file was automatically generated using the\n// CoordinateFrame.generateLCMType() method.\n\n');
         fprintf(fptr,'struct %s\n{\n  int64_t timestamp;\n\n',typename);
         for i=1:obj.dim
-          fprintf(fptr,'  double %s;\n',CoordinateFrame.stripSpecialChars(obj.coordinates{i}));
+          fprintf(fptr,'  double %s;\n',CoordinateFrame.stripSpecialChars(obj.getCoordinateName(i)));
         end
         fprintf(fptr,'}\n\n');
         fclose(fptr);
@@ -523,6 +544,18 @@ classdef CoordinateFrame < handle
   methods (Static=true,Hidden=true)
     function s=stripSpecialChars(s)
       s=regexprep(s,'\\','');
+    end
+
+    function coordinates = generateDefaultCoordinates(prefix)
+      % generates the default coordinate labels for a coordinate Frame
+      % when no value is passed in, based on the prefixes provided.
+      ind=1;
+      [dim, ~] = size(prefix);
+      function str=coordinateName(~)
+        str=[prefix(ind),sprintf('%d',sum(prefix(1:ind)==prefix(ind)))];
+        ind=ind+1;
+      end
+      coordinates = cellfun(@coordinateName,cell(dim,1),'UniformOutput',false);
     end
   end
 end

@@ -161,7 +161,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     //mexPrintf("constructModelmex: About to parse collision geometry\n");
     //END_DEBUG
     pm = mxGetPropertySafe(pBodies,i,"collision_geometry");
-    Matrix4d T;
+    Isometry3d T;
     if (!mxIsEmpty(pm)) {
       for (int j=0; j<mxGetNumberOfElements(pm); j++) {
         //DEBUG

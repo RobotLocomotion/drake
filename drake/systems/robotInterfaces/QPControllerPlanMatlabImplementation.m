@@ -2,7 +2,7 @@ classdef QPControllerPlanMatlabImplementation < QPControllerPlan
   properties (SetAccess = protected)
     duration_ = inf;
     start_time_ = 0;
-    default_qp_input_ = atlasControllers.QPInputConstantHeight;
+    default_qp_input_ = bipedControllers.QPInputConstantHeight;
     gain_set_ = 'standing';
   end
 

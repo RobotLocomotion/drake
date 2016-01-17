@@ -130,53 +130,78 @@ classdef RigidBodyManipulator < Manipulator
   end
 
   methods
-    function [Vq, dVq] = qdotToV(obj, q)
-      compute_gradient = nargout > 1;
-
-      bodies = obj.body;
-      nb = length(bodies);
-      nv = obj.num_velocities;
-      nq = obj.num_positions;
-      Vq = zeros(nv, nq) * q(1); % to make TaylorVar work better
-
-      if compute_gradient
-        dVq = zeros(numel(Vq), nq) * q(1);
-      end
-      for i = 2 : nb
-        bodyI = bodies(i);
-        q_body = q(bodyI.position_num);
-        if compute_gradient
-          [VqJoint, dVqJoint] = jointQdot2v(bodyI, q_body);
-          dVq = setSubMatrixGradient(dVq, dVqJoint, bodyI.velocity_num, bodyI.position_num, size(Vq), bodyI.position_num);
-        else
-          VqJoint = jointQdot2v(bodyI, q_body);
+    function [Vq, dVq] = qdotToV(obj, kinsol)
+      if obj.mex_model_ptr ~= 0 && kinsol.mex
+        Vq = velocityToPositionDotMappingmex(kinsol.mex_ptr);
+        if kinsol.has_gradients
+          [Vq, dVq] = eval(Vq);
+          nq = length(kinsol.q);
+          if isempty(dVq)
+            dVq = zeros(numel(Vq), nq);
+          else
+            dVq = dVq(:, 1 : nq);
+          end
         end
-        Vq(bodyI.velocity_num, bodyI.position_num) = VqJoint;
+      else % fall back to the Matlab version:
+        compute_gradient = nargout > 1;
+        
+        bodies = obj.body;
+        nb = length(bodies);
+        nv = obj.num_velocities;
+        nq = obj.num_positions;
+        Vq = zeros(nv, nq) * q(1); % to make TaylorVar work better
+        
+        if compute_gradient
+          dVq = zeros(numel(Vq), nq) * q(1);
+        end
+        for i = 2 : nb
+          bodyI = bodies(i);
+          q_body = q(bodyI.position_num);
+          if compute_gradient
+            [VqJoint, dVqJoint] = jointQdot2v(bodyI, q_body);
+            dVq = setSubMatrixGradient(dVq, dVqJoint, bodyI.velocity_num, bodyI.position_num, size(Vq), bodyI.position_num);
+          else
+            VqJoint = jointQdot2v(bodyI, q_body);
+          end
+          Vq(bodyI.velocity_num, bodyI.position_num) = VqJoint;
+        end
       end
     end
 
-    function [VqInv, dVqInv] = vToqdot(obj, q)
-      compute_gradient = nargout > 1;
-
-      bodies = obj.body;
-      nb = length(bodies);
-      nv = obj.num_velocities;
-      nq = obj.num_positions;
-      VqInv = zeros(nq, nv) * q(1); % to make TaylorVar work better
-
-      if compute_gradient
-        dVqInv = zeros(numel(VqInv), nq) * q(1);
-      end
-      for i = 2 : nb
-        bodyI = bodies(i);
-        q_body = q(bodyI.position_num);
-        if compute_gradient
-          [VqInvJoint, dVqInvJoint] = jointV2qdot(bodyI, q_body);
-          dVqInv = setSubMatrixGradient(dVqInv, dVqInvJoint, bodyI.position_num, bodyI.velocity_num, size(VqInv), bodyI.position_num);
-        else
-          VqInvJoint = jointV2qdot(bodyI, q_body);
+    function [VqInv, dVqInv] = vToqdot(obj, kinsol)
+      if obj.mex_model_ptr ~= 0 && kinsol.mex
+        VqInv = velocityToPositionDotMappingmex(kinsol.mex_ptr);
+        if kinsol.has_gradients
+          [VqInv, dVqInv] = eval(VqInv);
+          nq = length(kinsol.q);
+          if isempty(dVqInv)
+            dVqInv = zeros(numel(VqInv), nq);
+          else
+            dVqInv = dVqInv(:, 1 : nq);
+          end
         end
-        VqInv(bodyI.position_num, bodyI.velocity_num) = VqInvJoint;
+      else % fall back to the Matlab version:
+        compute_gradient = nargout > 1;
+        bodies = obj.body;
+        nb = length(bodies);
+        nv = obj.num_velocities;
+        nq = obj.num_positions;
+        VqInv = zeros(nq, nv) * kinsol.q(1); % to make TaylorVar work better
+        
+        if compute_gradient
+          dVqInv = zeros(numel(VqInv), nq) * kinsol.q(1);
+        end
+        for i = 2 : nb
+          bodyI = bodies(i);
+          q_body = kinsol.q(bodyI.position_num);
+          if compute_gradient
+            [VqInvJoint, dVqInvJoint] = jointV2qdot(bodyI, q_body);
+            dVqInv = setSubMatrixGradient(dVqInv, dVqInvJoint, bodyI.position_num, bodyI.velocity_num, size(VqInv), bodyI.position_num);
+          else
+            VqInvJoint = jointV2qdot(bodyI, q_body);
+          end
+          VqInv(bodyI.position_num, bodyI.velocity_num) = VqInvJoint;
+        end
       end
     end
 
@@ -331,6 +356,15 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
     
+    function q = getZeroConfiguration(obj)
+      q = zeros(getNumPositions(obj),1);
+      for i=1:getNumBodies(obj)
+        if any(obj.body(i).position_num>0)
+          q(obj.body(i).position_num) = getZeroConfiguration(obj.body(i));
+        end
+      end
+    end
+    
     function x0 = getInitialState(obj)
       if ~isempty(obj.initial_state)
         x0 = obj.initial_state;
@@ -384,7 +418,9 @@ classdef RigidBodyManipulator < Manipulator
       compute_gradient = nargout > 1;
 
       nv = model.getNumVelocities();
+      % Note: this will fail if damping is a trigpoly (we could handle this case, but need to do it carefully to not hurt performance)
       damping = zeros(nv, 1);
+      % Note: this will fail if friction is a trigpoly (as it should)
       coulomb_friction = zeros(nv, 1);
       static_friction = zeros(nv, 1);
       coulomb_window = zeros(nv, 1);
@@ -433,7 +469,6 @@ classdef RigidBodyManipulator < Manipulator
         ftmp=bodyKin(obj,kinsol,body_ind,[force,zeros(3,1)]);
       end
 
-      % try to do it the Xtree way
       force = ftmp(:,1)-ftmp(:,2);
       f = [ cross(point,force,1); force ];  % spatial force in body coordinates
 
@@ -484,30 +519,7 @@ classdef RigidBodyManipulator < Manipulator
       rangecheck(parent_ind,1,getNumBodies(model));
       child.parent = parent_ind;
 
-%      axis = quat2rotmat(rpy2quat(rpy))*axis;  % axis is specified in joint frame
-
       child.Ttree = [rpy2rotmat(rpy), xyz; 0,0,0,1];
-      child.Xtree = transformAdjoint(homogTransInv(child.Ttree)); % +++TK: should really be named XtreeInv...
-
-      % note that I only now finally understand that my Ttree*[x;1] is
-      % *ALMOST* (up to translation?? need to resolve this!) the same as inv(Xtree)*[x;zeros(3,1)].  sigh.
-%      valuecheck([eye(3),zeros(3,1)]*child.Ttree*ones(4,1),[eye(3),zeros(3)]*inv(child.Xtree)*[ones(3,1);zeros(3,1)]);
-
-      if ~any(strcmp(lower(type),{'fixed','floating_rpy','floating_quat'})) && dot(axis,[0;0;1])<1-1e-4
-        % featherstone dynamics treats all joints as operating around the
-        % z-axis.  so I have to add a transform from the origin of this
-        % link to align the joint axis with the z-axis, update the spatial
-        % inertia of this joint, and then rotate back to keep the child
-        % frames intact.  this happens in extractFeatherstone
-        axis_angle = [cross(axis,[0;0;1]); acos(dot(axis,[0;0;1]))]; % both are already normalized
-        if all(abs(axis_angle(1:3))<1e-4)
-          % then it's a scaling of the z axis.
-          valuecheck(sin(axis_angle(4)),0,1e-4);
-          axis_angle(1:3)=[0;1;0];
-        end
-        child.T_body_to_joint = [axis2rotmat(axis_angle), zeros(3,1); 0,0,0,1];
-        valuecheck(child.T_body_to_joint*[axis;1],[0;0;1;1],1e-6);
-      end
 
       child.floating = 0;
       switch lower(type)
@@ -834,8 +846,6 @@ classdef RigidBodyManipulator < Manipulator
       for i=1:length(model.body)
         valuecheck(model.body(i).Ttree(end,1:end-1),0);
         valuecheck(model.body(i).Ttree(end,end),1);
-        valuecheck(model.body(i).T_body_to_joint(end,1:end-1),0);
-        valuecheck(model.body(i).T_body_to_joint(end,end),1);
       end
 
       model = adjustCollisionGeometry(model);
@@ -847,7 +857,7 @@ classdef RigidBodyManipulator < Manipulator
 
       % collisionDetect may require the mex version of the manipulator,
       % so it should go after createMexPointer
-      [phi,~,~,~,idxA,idxB] = model.collisionDetect(zeros(model.getNumPositions,1));
+      [phi,~,~,~,idxA,idxB] = model.collisionDetect(getZeroConfiguration(model));
       model.num_contact_pairs = length(phi);
 
       % cache the full set of terrain contact points
@@ -1118,9 +1128,11 @@ classdef RigidBodyManipulator < Manipulator
     function p = getParams(model)
       p = [];
       for i=1:min(numel(model.name),numel(model.param_db))
-        pn = fieldnames(model.param_db{i});
-        for j=1:numel(pn)
-          p = vertcat(p,model.param_db{i}.(pn{j}).value);
+        if ~isempty(model.param_db{i})
+          pn = fieldnames(model.param_db{i});
+          for j=1:numel(pn)
+            p = vertcat(p,model.param_db{i}.(pn{j}).value);
+          end
         end
       end
       p = Point(getParamFrame(model),p);
@@ -2134,7 +2146,7 @@ classdef RigidBodyManipulator < Manipulator
     end
 
     function obj = createMexPointer(obj)
-      if (exist('constructModelmex')==3)
+      if (exist('constructModelmex')==3 && isnumeric(getParams(obj))) % note that this getParams call could be somewhat expensive to be putting here, but it seems like it does need to be there for symbolic parameters (which are not supported in the c++ version yet)
 %        obj.mex_model_ptr = debugMexEval('constructModelmex',obj);
         obj.mex_model_ptr = constructModelmex(obj);
         obj.default_kinematics_cache_ptr_no_gradients = createKinematicsCachemex(obj.mex_model_ptr);
@@ -2277,7 +2289,10 @@ classdef RigidBodyManipulator < Manipulator
           end
 
           % same as the composite inertia calculation in HandC.m
-          parent = setInertial(parent,parent.I + body.Xtree' * body.I * body.Xtree);
+          T_joint_predecessor_frame_to_parent_body = body.Ttree;
+          Ad_T_parent_body_to_joint_predecessor_frame = transformAdjoint(homogTransInv(T_joint_predecessor_frame_to_parent_body));
+          I_body_in_parent = Ad_T_parent_body_to_joint_predecessor_frame' * body.I * Ad_T_parent_body_to_joint_predecessor_frame;
+          parent = setInertial(parent,parent.I + I_body_in_parent);
         end
 
         for j=1:length(body.visual_geometry)
@@ -2327,7 +2342,6 @@ classdef RigidBodyManipulator < Manipulator
             end
             model.body(j).parent = body.parent;
             model.body(j).Ttree = body.Ttree*model.body(j).Ttree;
-            model.body(j).Xtree = model.body(j).Xtree*body.Xtree;
           end
         end
         model.body(body.parent) = parent;

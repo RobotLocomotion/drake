@@ -20,12 +20,6 @@ manipulator = r.getManipulator();
 x0 = [getRandomConfiguration(manipulator); randn(manipulator.getNumVelocities(), 1)];
 x0(3) = 15;
 
-  function A = myfun(q)
-    % for derivative check
-    kinsol = doKinematics(r,q,false);
-    A = centroidalMomentumMatrix(r, kinsol);
-  end
-
 T = 3.0;
 xtraj = r.simulate([0 T],x0);
 
@@ -40,16 +34,16 @@ for t=0:0.05:T
   end
   q = x(1:nq);
   v = x(nq+(1:nv));
-  qd = manipulator.vToqdot(q)*v;
+  kinsol = doKinematics(r, q, v);
+  qd = manipulator.vToqdot(kinsol)*v;
   
   % test derivative
-  [A,dAdq] = geval(@myfun,q);
+  [A,dAdq] = geval(@(q) gevalFun(r, q) ,q);
   Adot_tv = 0*A;
   for jj=1:nq
     Adot_tv = Adot_tv + reshape(dAdq(:,jj),size(A)) * qd(jj);
   end
   
-  kinsol = doKinematics(r, q, v);
   A = centroidalMomentumMatrix(r, kinsol);
   Adot_times_v = centroidalMomentumMatrixDotTimesV(r, kinsol);
   valuecheck(Adot_times_v,Adot_tv * v);
@@ -207,4 +201,10 @@ linear_momentum = R_body_to_world * body.mass * v(4:6);
 
 valuecheck(h(1:3),angular_momentum);
 valuecheck(h(4:6),linear_momentum);
+end
+
+function A = gevalFun(r, q)
+% for derivative check
+kinsol = doKinematics(r,q,false);
+A = centroidalMomentumMatrix(r, kinsol);
 end
