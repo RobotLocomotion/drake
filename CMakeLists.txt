@@ -66,12 +66,21 @@ if (NOT WIN32) # many of these might work on win32 with little or no work... the
 	option(WITH_GLOPTIPOLY 	"free global polynomial optimization tooblox")
 	option(WITH_BERTINI 	"solve polynomial equations; free but pod requires permissions (can't redistribute)")
 	option(WITH_SEDUMI		"semi-definite programming solver")
+	option(WITH_TEXTBOOK "pull in the Underactuated Robotics textbook and its examples")  # almost works on windows.  the update step call to git was complaining about local modifications on drake003
 	#  include(CMakeDetermineFortranCompiler) # this didn't do the trick, and enable_language(Fortran OPTIONAL) simply fails if not found (optional is a placeholder option that doesn't work yet)
 	#  if (CMAKE_Fortran_COMPILER)
 	option(WITH_AVL			"use w/ XFOIL to compute aerodynamic coefficients for airfoils")
 	option(WITH_XFOIL		"use w/ AVL to compute aerodynamic coefficients for airfoils")
 	#  endif()
 	option(WITH_MESHCONVERTERS "uses vcglib to convert a few standard filetypes")
+endif()
+
+if (WITH_TEXTBOOK OR WITH_ALL_SUPPORTED_EXTERNALS OR WITH_ALL_PUBLIC_EXTERNALS)
+#  find_package(PythonInterp)
+  find_program(PYTHON_EXECUTABLE NAMES python2.7 python2.6) # PythonInterp finds a symlink on cygwin, which then fails in the execute process below
+	if (NOT PYTHON_EXECUTABLE)
+		message(FATAL_ERROR "could not find python, which is required for the the textbook examples")
+	endif()
 endif()
 
 # list *compilation* dependencies, in alphabetical order by target (note: dependencies must come first in my foreach above)
@@ -160,6 +169,11 @@ set(swig_matlab_GIT_REPOSITORY https://github.com/rdeits/swig-matlab-pod.git)
 set(swig_matlab_GIT_TAG fb2d752c0367a4104a2ad00a77cd4a9e0255d6f3)
 set(swig_matlab_IS_PUBLIC TRUE)
 set(swig_matlab_IS_CMAKE_POD TRUE)
+set(textbook_GIT_REPOSITORY https://github.com/RussTedrake/underactuated.git)
+set(textbook_GIT_TAG master)
+set(textbook_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/drake/doc/textbook")
+set(textbook_BUILD_COMMAND ${PYTHON_EXECUTABLE} extract_examples.py underactuated.html ./examples)
+set(textbook_IS_PUBLIC TRUE)
 set(yalmip_GIT_REPOSITORY https://github.com/RobotLocomotion/yalmip.git)
 set(yalmip_GIT_TAG c071fb7b7193491f8eefadba3bfff26160ad6cd4)
 set(yalmip_IS_PUBLIC TRUE)
@@ -186,6 +200,7 @@ endif()
 set(EXTERNAL_PROJECTS)
 foreach(proj IN ITEMS
 		cmake
+		textbook
 		eigen
 		gtk
 		lcm
