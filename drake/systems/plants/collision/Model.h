@@ -49,8 +49,7 @@ namespace DrakeCollision
        * \param T_local_to_world the new value for the element-to-world
        * transform
        */
-      //TODO: Change T_local_to_world to an Eigen::Isometry3d
-      virtual bool updateElementWorldTransform(const ElementId id, 
+      virtual bool updateElementWorldTransform(const ElementId id,
           const Eigen::Isometry3d& T_local_to_world);
 
       /** \brief Compute the points of closest approach between all eligible
