@@ -72,6 +72,11 @@ namespace Drake {
   };
 
   typedef std::list<DecisionVariableView> VariableList;
+  size_t size(const VariableList& var_list) {
+    size_t s = 0;
+    for (const auto& var : var_list) s+= var.size();
+    return s;
+  }
 
   // Quick notes about this design:
   // need to have lists of constraints (if not functions), so I want a (non-templated) base class.
@@ -108,12 +113,23 @@ namespace Drake {
    */
   class Constraint {
   public:
-    Constraint(const VariableList& vars) : variable_list(vars) {}
+    Constraint(const VariableList& vars) : variable_list(vars), lower_bound(size(vars)), upper_bound(size(vars)) {
+      lower_bound.setConstant(-std::numeric_limits<double>::infinity());
+      upper_bound.setConstant(std::numeric_limits<double>::infinity());
+    }
+
+    template <typename DerivedLB, typename DerivedUB>
+    Constraint(const VariableList& vars, const Eigen::MatrixBase<DerivedLB>& lb, const Eigen::MatrixBase<DerivedUB>& ub) : variable_list(vars), lower_bound(lb), upper_bound(ub)
+    {
+      assert(size(vars) == size(lower_bound) && "Lower bound must have exactly one element for every variable");
+      assert(size(vars) == size(upper_bound) && "Upper bound must have exaclty one element for every variable");
+    }
     virtual ~Constraint() {}
 
     const VariableList& getVariableList() const { return variable_list; }
   protected:
     VariableList variable_list;
+    Eigen::VectorXd lower_bound, upper_bound;
   };
 
   // DifferentiableConstraint, PolynomialConstraint, QuadraticConstraint, ComplementarityConstraint, IntegerConstraint, ...
@@ -126,8 +142,8 @@ namespace Drake {
     LinearEqualityConstraint(const VariableList& vars) : Constraint(vars) {}
     virtual ~LinearEqualityConstraint() {}
 
-    virtual const Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> & getMatrix() const = 0;
-    virtual const Eigen::Matrix<double,Eigen::Dynamic,1>& getVector() const = 0;
+    virtual const Eigen::MatrixXd& getMatrix() const = 0;
+    virtual const Eigen::VectorXd& getVector() const = 0;
   };
 
   class LinearEqualityConstraintImpl : public LinearEqualityConstraint {
@@ -167,6 +183,18 @@ namespace Drake {
   private:
     Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> A;
     Eigen::Matrix<double,Eigen::Dynamic,1> b;
+  };
+
+  /** BoundingBoxConstraint
+ * @brief Implements a constraint of the form @f lb <= x <= ub @f
+ * Note: the base Constraint class (as implemented at the moment) could play this role.  But this class enforces
+ * that it is ONLY a bounding box constraint, and not something more general.
+ */
+  class BoundingBoxConstraint : public Constraint {  // todo: derive from LinearConstraint (when it exists)
+  public:
+    template <typename DerivedLB, typename DerivedUB>
+    BoundingBoxConstraint(const VariableList& vars, const Eigen::MatrixBase<DerivedLB>& lb, const Eigen::MatrixBase<DerivedUB>& ub) : Constraint(vars,lb,ub) {}
+    virtual ~BoundingBoxConstraint() {}
   };
 
 
