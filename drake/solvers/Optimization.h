@@ -5,6 +5,7 @@
 #include <list>
 #include <memory>
 #include <initializer_list>
+#include "drake/drakeGradientUtil.h"
 
 namespace Drake {
 
@@ -29,7 +30,7 @@ namespace Drake {
     const Eigen::VectorXd& value() const { return data; }
 
     VarType type;
-    std::string name;     // todo: make this a vector of strings
+    std::string name;
 
     friend class OptimizationProblem;
     friend class DecisionVariableView;
@@ -57,6 +58,7 @@ namespace Drake {
      * @brief returns the actual stored value; which is only meaningful after calling solve() in the program.
      */
     Eigen::VectorBlock<const Eigen::VectorXd,-1> value() const { return var.data.segment(start_index,length); }
+    std::string getName() const { if (start_index==0 && length==var.data.size())  { return var.name; } else { return var.name + "(" + std::to_string(start_index) + ":" + std::to_string(start_index+length) + ")"; }  }
 
     const DecisionVariableView operator()(size_t i) const { assert(i<=length); return DecisionVariableView(var,start_index+i,1);}
     const DecisionVariableView row(size_t i) const { assert(i<=length); return DecisionVariableView(var,start_index+i,1); }
@@ -126,24 +128,30 @@ namespace Drake {
     }
     virtual ~Constraint() {}
 
+    virtual Eigen::VectorXd eval(const Eigen::Ref<const Eigen::VectorXd>& x) const = 0;
+    virtual TaylorVecX evalWithGradient(const Eigen::Ref<const Eigen::VectorXd>& x) const = 0;  // move this to DifferentiableConstraint derived class if/when we need to support non-differentiable functions
+
     const VariableList& getVariableList() const { return variable_list; }
   protected:
     VariableList variable_list;
     Eigen::VectorXd lower_bound, upper_bound;
   };
 
-  // DifferentiableConstraint, PolynomialConstraint, QuadraticConstraint, ComplementarityConstraint, IntegerConstraint, ...
+  // todo: consider implementing DifferentiableConstraint, TwiceDifferentiableConstraint, PolynomialConstraint, QuadraticConstraint, ComplementarityConstraint, IntegerConstraint, ...
 
   /** LinearEqualityConstraint
    * @brief Implements a constraint of the form @f Ax = b @f
    */
   class LinearEqualityConstraint : public Constraint {
   public:
-    LinearEqualityConstraint(const VariableList& vars) : Constraint(vars) {}
+    LinearEqualityConstraint(const VariableList& vars) : Constraint(vars, Eigen::VectorXd::Zero(size(vars)), Eigen::VectorXd::Zero(size(vars))) { }
     virtual ~LinearEqualityConstraint() {}
 
-    virtual const Eigen::MatrixXd& getMatrix() const = 0;
-    virtual const Eigen::VectorXd& getVector() const = 0;
+    virtual Eigen::VectorXd eval(const Eigen::Ref<const Eigen::VectorXd>& x) const override { return getMatrix()*x - getVector(); }
+    virtual TaylorVecX evalWithGradient(const Eigen::Ref<const Eigen::VectorXd>& x) const override { return getMatrix().cast<TaylorVarX>()*initTaylorVecX(x) - getVector().cast<TaylorVarX>(); };
+
+    virtual Eigen::MatrixXd getMatrix() const = 0;
+    virtual Eigen::VectorXd getVector() const = 0;
   };
 
   class LinearEqualityConstraintImpl : public LinearEqualityConstraint {
@@ -152,17 +160,12 @@ namespace Drake {
     LinearEqualityConstraintImpl(const VariableList& vars, const Eigen::MatrixBase<DerivedA>& Aeq, const Eigen::MatrixBase<DerivedB>& beq)
             : A(Aeq), b(beq), LinearEqualityConstraint(vars) {
       assert(A.rows()==b.rows());
-      // todo: only do this loop if debug mode (only used for assert)
-      int num_referenced_vars = 0;
-      for (const DecisionVariableView& v : vars) {
-        num_referenced_vars += v.size();
-      }
-      assert(A.cols() == num_referenced_vars);
+      assert(A.cols() == size(vars));
     }
     virtual ~LinearEqualityConstraintImpl() {}
 
-    const Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> & getMatrix() const override { return A; }
-    const Eigen::Matrix<double,Eigen::Dynamic,1>& getVector() const override { return b; }
+    Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> getMatrix() const override { return A; }
+    Eigen::Matrix<double,Eigen::Dynamic,1> getVector() const override { return b; }
 
     /* updateConstraint
      * @brief change the parameters of the constraint (A and b), but not the variable associations
@@ -190,11 +193,14 @@ namespace Drake {
  * Note: the base Constraint class (as implemented at the moment) could play this role.  But this class enforces
  * that it is ONLY a bounding box constraint, and not something more general.
  */
-  class BoundingBoxConstraint : public Constraint {  // todo: derive from LinearConstraint (when it exists)
+  class BoundingBoxConstraint : public Constraint {
   public:
     template <typename DerivedLB, typename DerivedUB>
     BoundingBoxConstraint(const VariableList& vars, const Eigen::MatrixBase<DerivedLB>& lb, const Eigen::MatrixBase<DerivedUB>& ub) : Constraint(vars,lb,ub) {}
     virtual ~BoundingBoxConstraint() {}
+
+    virtual Eigen::VectorXd eval(const Eigen::Ref<const Eigen::VectorXd>& x) const override { return x; }
+    virtual TaylorVecX evalWithGradient(const Eigen::Ref<const Eigen::VectorXd>& x) const override { return initTaylorVecX(x); }
   };
 
 
@@ -209,9 +215,10 @@ namespace Drake {
       v.data = Eigen::VectorXd::Zero(num_new_vars);
       v.start_index = num_vars;
       variables.push_back(v);
+      variable_views.push_back(DecisionVariableView(v));
       num_vars += num_new_vars;
 
-      return DecisionVariableView(variables.back());
+      return variables.back();
     }
 //    const DecisionVariable& addIntegerVariables(size_t num_new_vars, std::string name);
 //  ...
@@ -219,19 +226,23 @@ namespace Drake {
     /** addConstraint
      * @brief adds a constraint to the program.  method specializations ensure that the constraint gets added in the right way
      */
-//    void addConstraint(const std::shared_ptr<LinearConstraint>& con, const VariableList& vars) {}
+    void addConstraint(const std::shared_ptr<Constraint>& con) {
+      checkVariables(con);
+      problem_type.reset(problem_type->addGenericConstraint());
+      generic_constraints.push_back(con);
+    }
+    void addConstraint(const std::shared_ptr<LinearEqualityConstraint>& con) {
+      checkVariables(con);
+      problem_type.reset(problem_type->addLinearEqualityConstraint());
+      linear_equality_constraints.push_back(con);
+    }
 
     /** addLinearEqualityConstraint
      * @brief adds linear equality constraints to the program for all (currently existing) variables
      */
     template <typename DerivedA,typename DerivedB>
     std::shared_ptr<LinearEqualityConstraintImpl> addLinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,const Eigen::MatrixBase<DerivedB>& beq) {
-      assert(Aeq.cols() == num_vars);
-      VariableList vars;
-      for (auto const& v : variables) {
-        vars.push_back(DecisionVariableView(v));
-      }
-      return addLinearEqualityConstraint(Aeq,beq,vars);
+      return addLinearEqualityConstraint(Aeq,beq,variable_views);
     }
 
   /** addLinearEqualityConstraint
@@ -271,7 +282,7 @@ namespace Drake {
 //    getExitFlag();
 //    getInfeasibleConstraintNames();
 
-    void setDecisionVariableValues() {  // todo: overload the ostream operator instead?
+    void printSolution() {  // todo: overload the ostream operator instead?
       for (const auto& v : variables) {
         std::cout << v.name << " = " << v.data.transpose() << std::endl;
       }
@@ -291,10 +302,21 @@ namespace Drake {
   private:
     // note: use std::list instead of std::vector because realloc in std::vector invalidates existing references to the elements
     std::list<DecisionVariable> variables;
+    VariableList variable_views;
+    std::list<std::shared_ptr<Constraint>> generic_constraints;
     std::list<std::shared_ptr<LinearEqualityConstraint>> linear_equality_constraints;
     size_t num_vars;
 
   private:
+
+    void checkVariables(const std::shared_ptr<Constraint>& con) {
+      assert(checkVariablesImpl(con) && "Constraint depends on variables that are not associated with this OptimizationProblem");
+    }
+    bool checkVariablesImpl(const std::shared_ptr<Constraint>& con) {
+      // todo: implement this
+      return true;
+    }
+
     // uses virtual methods to crawl up the complexity hiearchy as new decision variables and constraints are added to the program
     // note that there is dynamic allocation happening in here, but on a structure of negligible size.  (is there a better way?)
     struct MathematicalProgram {
@@ -303,18 +325,24 @@ namespace Drake {
 
       virtual MathematicalProgram* addLinearCost() { return new MathematicalProgram; };
       virtual MathematicalProgram* addQuadraticCost() { return new MathematicalProgram; };
-      virtual MathematicalProgram* addNonlinearCost() { return new MathematicalProgram; };
+      virtual MathematicalProgram* addCost() { return new MathematicalProgram; };
 
       virtual MathematicalProgram* addSumsOfSquaresConstraint() { return new MathematicalProgram; };
       virtual MathematicalProgram* addLinearMatrixInequalityConstraint() { return new MathematicalProgram; };
       virtual MathematicalProgram* addSecondOrderConeConstraint() { return new MathematicalProgram; };
       virtual MathematicalProgram* addComplementarityConstraint() { return new MathematicalProgram; };
-      virtual MathematicalProgram* addNonlinearConstraint() { return new MathematicalProgram; };
       virtual MathematicalProgram* addLinearInequalityConstraint() { return new MathematicalProgram; };
-     */
+      */
+      virtual MathematicalProgram* addGenericConstraint() { return new MathematicalProgram; };
       virtual MathematicalProgram* addLinearEqualityConstraint() { return new MathematicalProgram; };
+      virtual bool solve(OptimizationProblem& prog) const { throw std::runtime_error("not implemented yet"); }
+    };
 
-      virtual bool solve(OptimizationProblem& prog) { throw std::runtime_error("not implemented yet"); }
+    struct NonlinearProgram : public MathematicalProgram {
+      virtual MathematicalProgram *addGenericConstraint() override { return new NonlinearProgram; };
+      virtual MathematicalProgram *addLinearEqualityConstraint() override { return new NonlinearProgram; };
+
+      virtual bool solve(OptimizationProblem &prog) const override;
     };
 
 /*  // Prototype of the more complete optimization problem class hiearchy (to be implemented only as needed)
@@ -337,8 +365,8 @@ namespace Drake {
     struct LinearComplementarityProblem : public NonlinearComplementarityProblem {};
 */
     struct LeastSquares : public MathematicalProgram { //public LinearProgram, public LinearComplementarityProblem {
-      virtual MathematicalProgram* addLinearEqualityConstraint() { return new LeastSquares; };
-      virtual bool solve(OptimizationProblem& prog) {
+      virtual MathematicalProgram* addLinearEqualityConstraint() override { return new LeastSquares; };
+      virtual bool solve(OptimizationProblem& prog) const override {
         size_t num_constraints = 0;
         for (auto const& c : prog.linear_equality_constraints) {
           num_constraints += c->getMatrix().rows();
