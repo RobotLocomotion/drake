@@ -34,4 +34,8 @@ int main(int argc, char* argv[])
   prog.solve();
   valuecheckMatrix(b.topRows(2)/2,y.value(),1e-10);
   valuecheckMatrix(b/3,x.value(),1e-10);
+
+  std::shared_ptr<BoundingBoxConstraint> bbcon(new BoundingBoxConstraint({x.head(2)},MatrixXd::Constant(2,1,-2.0),MatrixXd::Constant(2,1,2.0)));
+  prog.addConstraint(bbcon);
+  prog.solve();  // should fail for the moment.
 }

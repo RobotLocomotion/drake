@@ -342,7 +342,14 @@ namespace Drake {
       virtual MathematicalProgram *addGenericConstraint() override { return new NonlinearProgram; };
       virtual MathematicalProgram *addLinearEqualityConstraint() override { return new NonlinearProgram; };
 
-      virtual bool solve(OptimizationProblem &prog) const override;
+      virtual bool solve(OptimizationProblem &prog) const override {
+        if (hasSNOPT()) return solveWithSNOPT(prog);
+        return MathematicalProgram::solve(prog);
+      }
+
+    protected:
+      bool solveWithSNOPT(OptimizationProblem& prog) const;
+      bool hasSNOPT() const;
     };
 
 /*  // Prototype of the more complete optimization problem class hiearchy (to be implemented only as needed)
@@ -364,7 +371,7 @@ namespace Drake {
     struct NonlinearComplementarityProblem : public NonlinearProgram {};
     struct LinearComplementarityProblem : public NonlinearComplementarityProblem {};
 */
-    struct LeastSquares : public MathematicalProgram { //public LinearProgram, public LinearComplementarityProblem {
+    struct LeastSquares : public NonlinearProgram { //public LinearProgram, public LinearComplementarityProblem {
       virtual MathematicalProgram* addLinearEqualityConstraint() override { return new LeastSquares; };
       virtual bool solve(OptimizationProblem& prog) const override {
         size_t num_constraints = 0;
