@@ -40,6 +40,7 @@ else()
 	option(WITH_DIRECTOR	"vtk-based visualization tool and robot user interface"   ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
 	option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	ON) # there is hope, but i spent a long time cleaning up c/c++ language errors trying to make msvc happy.. and still had a long way to go.
 	option(WITH_BULLET 		"used for collision detection" 	ON) # almost works.  just one remaining link error..?
+	option(WITH_TEXTBOOK "pull in the Underactuated Robotics textbook and its examples")  # almost works.  the update step call to git was complaining about local modifications on drake003
 endif()
 find_program(matlab matlab)
 if (matlab)
@@ -50,7 +51,6 @@ option(WITH_SNOPT_PRECOMPILED "precompiled binaries only for snopt; the source r
 
 # OFF by default:
 option(WITH_SNOPT 		"nonlinear optimization solver; requires access to RobotLocomotion/snopt-pod")
-option(WITH_TEXTBOOK "pull in the Underactuated Robotics textbook and its examples")
 
 if (NOT WIN32) # many of these might work on win32 with little or no work... they just haven't been tried
 	option(WITH_SIGNALSCOPE	"live plotting tool for lcm messages")
@@ -156,7 +156,7 @@ set(spotless_GIT_TAG 2b0c25ebb1733950284c7e0be55a1a84304f7543)
 set(spotless_IS_CMAKE_POD TRUE)
 set(spotless_IS_PUBLIC TRUE)
 set(textbook_GIT_REPOSITORY https://github.com/RussTedrake/underactuated.git)
-set(textbook_GIT_TAG 75248cc30d1575460b838de71cc9a0472c551a7e)  # todo: always pull master? (but was having problems on the update step on drake003)
+set(textbook_GIT_TAG master)  
 set(textbook_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/drake/doc/textbook")
 set(textbook_BUILD_COMMAND ${PYTHON_EXECUTABLE} extract_examples.py underactuated.html ./examples)
 set(textbook_IS_PUBLIC TRUE)
