@@ -13,6 +13,16 @@ if (LCM_FOUND)
   add_dependencies(drakeLCMSystem drake_lcmtypes lcmtype_agg_hpp)
   pods_use_pkg_config_packages(drakeLCMSystem lcm)
 
+  # from http://stackoverflow.com/a/29871891
+  find_package(Threads REQUIRED)
+  if (THREADS_HAVE_PTHREAD_ARG)
+    set_property(TARGET drakeLCMSystem PROPERTY COMPILE_OPTIONS "-pthread")
+    set_property(TARGET drakeLCMSystem PROPERTY INTERFACE_COMPILE_OPTIONS "-pthread")
+  endif()
+  if (CMAKE_THREAD_LIBS_INIT)
+    target_link_libraries(drakeLCMSystem "${CMAKE_THREAD_LIBS_INIT}")
+  endif()
+
   pods_install_headers(LCMSystem.h DESTINATION drake)
 endif()
 
