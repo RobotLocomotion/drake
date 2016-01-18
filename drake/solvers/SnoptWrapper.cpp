@@ -14,6 +14,13 @@ namespace snopt {
 //#include "snoptProblem.hh"
 }
 
+// todo:  implement objectives
+// todo:  implement nonlinear constraints
+// todo:  implement linear inequality constraints
+// todo:  special case bounding box constraints
+// todo:  handle initial conditions
+// todo:  handle snopt options
+// todo:  return more information that just the solution (INFO, infeasible constraints, ...)
 
 bool Drake::OptimizationProblem::NonlinearProgram::hasSNOPT() const { return true; }
 
