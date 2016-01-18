@@ -39,6 +39,8 @@ function(drake_install_headers)
 endfunction()
 
 # set up automatic export header generation
+# export headers will be installed to build/include/drake, but are created in ${PROJECT_BINARY_DIR}/exports/drake
+# This means that export headers can be included as drake/bla_export.h
 include(GenerateExportHeader)
 function(add_library_with_exports)
 #  set(options)
@@ -53,8 +55,8 @@ function(add_library_with_exports)
   generate_export_header(${parsed_args_LIB_NAME} EXPORT_FILE_NAME ${exports_rel_path})
   install(FILES ${exports_abs_path} DESTINATION include/drake/)
 endfunction()
-include_directories(${PROJECT_BINARY_DIR}/exports/)
-include_directories(${PROJECT_SOURCE_DIR}/..)
+include_directories(BEFORE ${PROJECT_BINARY_DIR}/exports/)
+include_directories(BEFORE ${PROJECT_SOURCE_DIR}/..)
 
 
 if (CMAKE_COMPILER_IS_GNUCC)
@@ -121,6 +123,8 @@ mex_setup()
 #   message("Setting CTEST Configuration Type to ${CTEST_CONFIGURATION_TYPE}")
 #endif()
 
+# similar to the export headers, any other generated headers will be installed to build/include/drake, but will be created in ${PROJECT_BINARY_DIR}/exports/drake
+# These headers can be included as drake/bla.h
 set(generated_dir ${PROJECT_BINARY_DIR}/generated)
 set(drake_path_header ${generated_dir}/drake/Path.h)
 file(WRITE ${drake_path_header}
@@ -136,7 +140,7 @@ file(WRITE ${drake_path_header}
     "} // end namespace Drake\n")
 set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${drake_path_header})
 install(FILES ${drake_path_header} DESTINATION include/drake/)
-include_directories(${generated_dir})
+include_directories(BEFORE ${generated_dir})
 
 find_package( Perl )
 if ( PERL_FOUND )
@@ -214,7 +218,7 @@ else()
    endif()
 endif()
 
-include_directories(thirdParty/spruce/include) # FIXME: should be in build/include
+include_directories(thirdParty/spruce/include)
 
 add_subdirectory(core)
 add_subdirectory(util)
