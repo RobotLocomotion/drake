@@ -35,7 +35,9 @@ int main(int argc, char* argv[])
   valuecheckMatrix(b.topRows(2)/2,y.value(),1e-10);
   valuecheckMatrix(b/3,x.value(),1e-10);
 
-  std::shared_ptr<BoundingBoxConstraint> bbcon(new BoundingBoxConstraint({x.head(2)},MatrixXd::Constant(2,1,-2.0),MatrixXd::Constant(2,1,2.0)));
+  std::shared_ptr<BoundingBoxConstraint> bbcon(new BoundingBoxConstraint({x.head(2)},MatrixXd::Constant(2,1,-1000.0),MatrixXd::Constant(2,1,1000.0)));
   prog.addConstraint(bbcon);
-  prog.solve();  // should fail for the moment.
+  prog.solve();  // now it will solve as a nonlinear program
+  valuecheckMatrix(b.topRows(2)/2,y.value(),1e-10);
+  valuecheckMatrix(b/3,x.value(),1e-10);
 }

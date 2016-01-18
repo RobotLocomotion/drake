@@ -39,7 +39,11 @@ static int snopt_userfun(snopt::integer *Status, snopt::integer *n, snopt::doubl
   VectorXd xvec(*n);
   for(snopt::integer i = 0;i<*n;i++) { xvec(i) = static_cast<double>(x[i]); }
 
+//  cout << "In snopt user fun" << endl;
+  snopt::integer i;
   // todo: evaluate the nonlinear constraints and populate F[] and G[] here
+  for (i=0; i<*neF; i++) { F[i]=0.0; }
+  for (i=0; i<*neG; i++) { G[i]=0.0; }
 
   return 0;
 }
@@ -100,14 +104,18 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   size_t constraint_index=0, grad_index=0;
   for (auto const& c : prog.generic_constraints) {
     size_t n = c->getNumConstraints();
-    memcpy(&Flow[constraint_index], c->getLowerBound().data(), n*sizeof(double));
-    memcpy(&Fupp[constraint_index], c->getUpperBound().data(), n*sizeof(double));
+
+    auto const & lb = c->getLowerBound(), ub = c->getUpperBound();
+    for (int i=0; i<n; i++) {
+      Flow[constraint_index+i] = static_cast<snopt::doublereal>(lb[i]);
+      Fupp[constraint_index+i] = static_cast<snopt::doublereal>(ub[i]);
+    }
 
     for (const DecisionVariableView& v : c->getVariableList() ) {
       for (size_t i=0; i<n; i++) {
         for (size_t j = 0; j < v.size(); j++) {
-          iGfun[grad_index] = constraint_index + i;  // column order
-          jGvar[grad_index] = v.index() + j;
+          iGfun[grad_index] = constraint_index + i + 1;  // column order
+          jGvar[grad_index] = v.index() + j + 1;
           grad_index++;
         }
       }
@@ -115,33 +123,45 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
     constraint_index += n;
   }
 
-  SparseMatrix<double> A_mat(num_linear_constraints,prog.num_vars);
+  // http://eigen.tuxfamily.org/dox/group__TutorialSparse.html
+  typedef Eigen::Triplet<double> T;
+  std::vector<T> tripletList;
+  tripletList.reserve(num_linear_constraints*prog.num_vars);
+
   size_t linear_constraint_index=0;
   for (auto const& c : prog.linear_equality_constraints) {
     size_t n = c->getNumConstraints();
     size_t var_index = 0;
+    SparseMatrix<double> A_constraint = c->getSparseMatrix();
     for (const DecisionVariableView& v : c->getVariableList() ) {
-//      A_mat.block(linear_constraint_index, v.index(), n, v.size()) = c->getSparseMatrix().middleCols(var_index, v.size());  // todo: populate this!
+      for (size_t k=0; k<v.size(); ++k) {
+        for (SparseMatrix<double>::InnerIterator it(A_constraint, var_index+k); it; ++it) {
+          tripletList.push_back(T(linear_constraint_index+it.col(),v.index()+k,it.value()));
+//          cout << "A(" << linear_constraint_index+it.col() << "," << v.index()+k << ") = " << it.value() << endl;
+        }
+      }
       var_index += v.size();
     }
-    memcpy(&Flow[constraint_index], c->getLowerBound().data(), n*sizeof(double));
-    memcpy(&Fupp[constraint_index], c->getUpperBound().data(), n*sizeof(double));
+
+    auto const & b = c->getVector();
+    for (int i=0; i<n; i++) {
+      Flow[constraint_index+i] = static_cast<snopt::doublereal>(b[i]);
+      Fupp[constraint_index+i] = static_cast<snopt::doublereal>(b[i]);
+    }
     constraint_index += n;
     linear_constraint_index += n;
   }
 
-  snopt::integer lenA = static_cast<snopt::integer>(A_mat.nonZeros());
+  snopt::integer lenA = static_cast<snopt::integer>(tripletList.size());
   snopt::doublereal* A     = new snopt::doublereal[lenA];
   snopt::integer*    iAfun = new snopt::integer[lenA];
   snopt::integer*    jAvar = new snopt::integer[lenA];
   size_t A_index = 0;
-  for (size_t k=0; k<A_mat.outerSize(); ++k) {
-    for (SparseMatrix<double>::InnerIterator it(A_mat, k); it; ++it) {
-      A[A_index] = it.value();
-      iAfun[A_index] = it.row()+num_nonlinear_constraints;
-      jAvar[A_index] = it.col();
-      A_index++;
-    }
+  for (auto const & it : tripletList) {
+    A[A_index] = it.value();
+    iAfun[A_index] = it.row()+num_nonlinear_constraints+1;
+    jAvar[A_index] = it.col()+1;
+    A_index++;
   }
 
   snopt::integer INFO_snopt;
@@ -199,7 +219,7 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   memset(Fstate,0,sizeof(snopt::integer)*nF);
 
   snopt::doublereal ObjAdd = 0.0;
-  snopt::integer ObjRow = 0;
+  snopt::integer ObjRow = 0; // feasibility problem (for now)
 
 /*
   mysnseti("Derivative option",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"DerivativeOption"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
@@ -232,9 +252,12 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
            npname, 8*nxname, 8*nFname,
             8*lencw,8*lencw);
 
+  cout << "SNOPT INFO: " << INFO_snopt << endl;
+
   VectorXd sol(nx);
   for (int i=0; i<nx; i++) { sol(i) = static_cast<double>( x[i] ); }
   prog.setDecisionVariableValues(sol);
+//  prog.printSolution();
 
   // todo: extract the other useful quantities, too.
 
