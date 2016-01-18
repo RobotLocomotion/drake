@@ -5,6 +5,7 @@
 #include <list>
 #include <memory>
 #include <initializer_list>
+#include <Eigen/SparseCore>
 #include "drake/drakeGradientUtil.h"
 
 namespace Drake {
@@ -115,21 +116,23 @@ namespace Drake {
    */
   class Constraint {
   public:
-    Constraint(const VariableList& vars) : variable_list(vars), lower_bound(size(vars)), upper_bound(size(vars)) {
+    Constraint(const VariableList& vars, size_t num_constraints) : variable_list(vars), lower_bound(num_constraints), upper_bound(num_constraints) {
+      assert(lower_bound.size() == upper_bound.size() && "Lower bound and upper bound must be the same size");
       lower_bound.setConstant(-std::numeric_limits<double>::infinity());
       upper_bound.setConstant(std::numeric_limits<double>::infinity());
     }
 
     template <typename DerivedLB, typename DerivedUB>
     Constraint(const VariableList& vars, const Eigen::MatrixBase<DerivedLB>& lb, const Eigen::MatrixBase<DerivedUB>& ub) : variable_list(vars), lower_bound(lb), upper_bound(ub)
-    {
-      assert(size(vars) == size(lower_bound) && "Lower bound must have exactly one element for every variable");
-      assert(size(vars) == size(upper_bound) && "Upper bound must have exaclty one element for every variable");
-    }
+    {}
     virtual ~Constraint() {}
 
     virtual Eigen::VectorXd eval(const Eigen::Ref<const Eigen::VectorXd>& x) const = 0;
     virtual TaylorVecX evalWithGradient(const Eigen::Ref<const Eigen::VectorXd>& x) const = 0;  // move this to DifferentiableConstraint derived class if/when we need to support non-differentiable functions
+
+    const Eigen::VectorXd& getLowerBound() const { return lower_bound; }
+    const Eigen::VectorXd& getUpperBound() const { return upper_bound; }
+    size_t getNumConstraints() { return lower_bound.size(); }
 
     const VariableList& getVariableList() const { return variable_list; }
   protected:
@@ -150,6 +153,7 @@ namespace Drake {
     virtual Eigen::VectorXd eval(const Eigen::Ref<const Eigen::VectorXd>& x) const override { return getMatrix()*x - getVector(); }
     virtual TaylorVecX evalWithGradient(const Eigen::Ref<const Eigen::VectorXd>& x) const override { return getMatrix().cast<TaylorVarX>()*initTaylorVecX(x) - getVector().cast<TaylorVarX>(); };
 
+    virtual Eigen::SparseMatrix<double> getSparseMatrix() const { return getMatrix().sparseView(); };
     virtual Eigen::MatrixXd getMatrix() const = 0;
     virtual Eigen::VectorXd getVector() const = 0;
   };
@@ -272,6 +276,11 @@ namespace Drake {
 //    template <typename DerivedLB,typename DerivedUB>
 //    void addBoundingBoxConstraint(const Eigen::MatrixBase<DerivedLB>& lower_bound, const Eigen::MatrixBase<DerivedUB>& upper_bound, const DecisionVariable& var) {  }
 
+    template <typename Derived>
+    void setInitialGuess(const DecisionVariableView& var, const Eigen::MatrixBase<Derived>& x0)
+    {
+      // todo: implement this
+    }
 
     bool solve() { return problem_type->solve(*this); }; // todo: add argument for options
 

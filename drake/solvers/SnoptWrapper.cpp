@@ -1,8 +1,6 @@
 
 #include "Optimization.h"
 
-#include "mex.h"
-#include "matrix.h"
 #include <cstdlib>
 #include <memory>
 #include <algorithm>
@@ -20,10 +18,10 @@ namespace snopt {
 bool Drake::OptimizationProblem::NonlinearProgram::hasSNOPT() const { return true; }
 
 using namespace std;
-
-static char* snopt_userfun_name;
+using namespace Eigen;
 
 // NOTE: all snopt calls will use this shared memory... so this code is NOT THREAD SAFE
+const Drake::OptimizationProblem* current_problem = NULL;
 static unique_ptr<snopt::doublereal []> rw;
 static unique_ptr<snopt::integer []> iw;
 static unique_ptr<char []> cw;
@@ -38,23 +36,11 @@ static int snopt_userfun(snopt::integer *Status, snopt::integer *n, snopt::doubl
                          snopt::integer iu[], snopt::integer *leniu,
                          snopt::doublereal ru[], snopt::integer *lenru)
 {
-  mxArray* snopt_userfun_plhs[2];
-  mxArray* snopt_userfun_prhs[1];
-  snopt_userfun_prhs[0] = mxCreateDoubleMatrix(*n,1,mxREAL);
-  for(snopt::integer i = 0;i<*n;i++)
-  {
-    *(mxGetPr(snopt_userfun_prhs[0])+i) = static_cast<double>(x[i]);
-  }
-  mexCallMATLAB(2,snopt_userfun_plhs,1,snopt_userfun_prhs,snopt_userfun_name);
-  for(snopt::integer i = 0;i<*neF;i++)
-  {
-    F[i] = static_cast<snopt::doublereal>( *(mxGetPr(snopt_userfun_plhs[0])+i));
-  }
-  for(snopt::integer i = 0;i<*neG;i++)
-  {
-    G[i] = static_cast<snopt::doublereal>( *(mxGetPr(snopt_userfun_plhs[1])+i));
-  }
-  mxDestroyArray(snopt_userfun_prhs[0]);
+  VectorXd xvec(*n);
+  for(snopt::integer i = 0;i<*n;i++) { xvec(i) = static_cast<double>(x[i]); }
+
+  // todo: evaluate the nonlinear constraints and populate F[] and G[] here
+
   return 0;
 }
 
@@ -70,6 +56,7 @@ void mysnsetr(const char* strOpt,snopt::doublereal val,snopt::integer* iPrint, s
 }
 
 bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationProblem &prog) const {
+  current_problem = &prog;
 
   if (lenrw==0) { // then initialize (sninit needs some default allocation)
     lenrw = 500000;
@@ -80,54 +67,83 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
     cw.reset(new char[8*lencw]);
   }
 
-/*
-  snopt::integer nx = static_cast<snopt::integer>(prog.num_vars);
-  snopt::integer nF = static_cast<snopt::integer>(mxGetM(prhs[3]));
+  snopt::integer nx = prog.num_vars;
   snopt::doublereal* x    = new snopt::doublereal[nx];
   snopt::doublereal* xlow = new snopt::doublereal[nx];
   snopt::doublereal* xupp = new snopt::doublereal[nx];
-  double* px = mxGetPr(prhs[0]), *pxlow = mxGetPr(prhs[1]), *pxupp = mxGetPr(prhs[2]);
-  for(int i = 0;i<nx;i++)
+  for(int i=0;i<nx;i++)
   {
-    x[i] = static_cast<snopt::doublereal>(*px++);
-    xlow[i] = static_cast<snopt::doublereal>(*pxlow++);
-    xupp[i] = static_cast<snopt::doublereal>(*pxupp++);
+    x[i] = static_cast<snopt::doublereal>(0.0);  // todo: pull from initial conditions (possibly w/ memcpy?)
+    xlow[i] = static_cast<snopt::doublereal>(-numeric_limits<double>::infinity());
+    xupp[i] = static_cast<snopt::doublereal>(numeric_limits<double>::infinity());
   }
+
+  size_t num_nonlinear_constraints=0, max_num_gradients=0;
+  for (auto const& c : prog.generic_constraints) {
+    size_t n = c->getNumConstraints();
+    for (const DecisionVariableView& v : c->getVariableList() ) {
+      max_num_gradients += n*v.size();
+    }
+    num_nonlinear_constraints += n;
+  }
+  size_t num_linear_constraints=0;
+  for (auto const& c : prog.linear_equality_constraints) { num_linear_constraints += c->getNumConstraints(); }
+
+  snopt::integer nF = num_nonlinear_constraints+num_linear_constraints;
   snopt::doublereal* Flow = new snopt::doublereal[nF];
   snopt::doublereal* Fupp = new snopt::doublereal[nF];
-  double* pFlow = mxGetPr(prhs[3]), *pFupp = mxGetPr(prhs[4]);
-  for(int i = 0;i<nF;i++)
-  {
-    Flow[i] = static_cast<snopt::doublereal>(*pFlow++);
-    Fupp[i] = static_cast<snopt::doublereal>(*pFupp++);
+
+  snopt::integer lenG = static_cast<snopt::integer>(max_num_gradients);
+  snopt::integer* iGfun = new snopt::integer[lenG];
+  snopt::integer* jGvar = new snopt::integer[lenG];
+
+  size_t constraint_index=0, grad_index=0;
+  for (auto const& c : prog.generic_constraints) {
+    size_t n = c->getNumConstraints();
+    memcpy(&Flow[constraint_index], c->getLowerBound().data(), n*sizeof(double));
+    memcpy(&Fupp[constraint_index], c->getUpperBound().data(), n*sizeof(double));
+
+    for (const DecisionVariableView& v : c->getVariableList() ) {
+      for (size_t i=0; i<n; i++) {
+        for (size_t j = 0; j < v.size(); j++) {
+          iGfun[grad_index] = constraint_index + i;  // column order
+          jGvar[grad_index] = v.index() + j;
+          grad_index++;
+        }
+      }
+    }
+    constraint_index += n;
   }
-  int snopt_userfun_name_len = static_cast<int>(mxGetNumberOfElements(prhs[5]))+1;
-  snopt_userfun_name = new char[snopt_userfun_name_len];
-  int userfun_name_status = mxGetString(prhs[5],snopt_userfun_name,snopt_userfun_name_len);
-  if(userfun_name_status != 0)
-  {
-    mexErrMsgIdAndTxt("Drake:NonlinearProgramSnoptmex:InvalidInputs","userfun should be a string for NonlinearProgramSnoptmex");
+
+  SparseMatrix<double> A_mat(num_linear_constraints,prog.num_vars);
+  size_t linear_constraint_index=0;
+  for (auto const& c : prog.linear_equality_constraints) {
+    size_t n = c->getNumConstraints();
+    size_t var_index = 0;
+    for (const DecisionVariableView& v : c->getVariableList() ) {
+//      A_mat.block(linear_constraint_index, v.index(), n, v.size()) = c->getSparseMatrix().middleCols(var_index, v.size());  // todo: populate this!
+      var_index += v.size();
+    }
+    memcpy(&Flow[constraint_index], c->getLowerBound().data(), n*sizeof(double));
+    memcpy(&Fupp[constraint_index], c->getUpperBound().data(), n*sizeof(double));
+    constraint_index += n;
+    linear_constraint_index += n;
   }
-  snopt::integer lenA = static_cast<snopt::integer>(mxGetNumberOfElements(prhs[8]));
+
+  snopt::integer lenA = static_cast<snopt::integer>(A_mat.nonZeros());
   snopt::doublereal* A     = new snopt::doublereal[lenA];
   snopt::integer*    iAfun = new snopt::integer[lenA];
   snopt::integer*    jAvar = new snopt::integer[lenA];
-  double* pA = mxGetPr(prhs[8]), *piAfun = mxGetPr(prhs[9]), *pjAvar = mxGetPr(prhs[10]);
-  for(snopt::integer i = 0;i<lenA;i++)
-  {
-    A[i] = static_cast<snopt::doublereal>(*pA++);
-    iAfun[i] = static_cast<snopt::integer>(*piAfun++);
-    jAvar[i] = static_cast<snopt::integer>(*pjAvar++);
+  size_t A_index = 0;
+  for (size_t k=0; k<A_mat.outerSize(); ++k) {
+    for (SparseMatrix<double>::InnerIterator it(A_mat, k); it; ++it) {
+      A[A_index] = it.value();
+      iAfun[A_index] = it.row()+num_nonlinear_constraints;
+      jAvar[A_index] = it.col();
+      A_index++;
+    }
   }
-  snopt::integer lenG = static_cast<snopt::integer>(mxGetNumberOfElements(prhs[11]));
-  snopt::integer* iGfun = new snopt::integer[lenG];
-  snopt::integer* jGvar = new snopt::integer[lenG];
-  double *piGfun = mxGetPr(prhs[11]), *pjGvar = mxGetPr(prhs[12]);
-  for(snopt::integer i = 0;i<lenG;i++)
-  {
-    iGfun[i] = static_cast<snopt::integer>(*piGfun++);
-    jGvar[i] = static_cast<snopt::integer>(*pjGvar++);
-  }
+
   snopt::integer INFO_snopt;
   snopt::integer nxname = 1, nFname = 1, npname = 0;
   char xnames[8*1];  // should match nxname
@@ -139,22 +155,22 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
 
   snopt::integer nS,nInf;
   snopt::doublereal sInf;
-  mxArray* pprint_name = mxGetField(prhs[13],0,"print");
-  snopt::integer print_file_name_len = static_cast<snopt::integer>(mxGetNumberOfElements(pprint_name))+1;
-  char* print_file_name = NULL;
-  if(print_file_name_len != 1) {
+  snopt::integer print_file_name_len = static_cast<snopt::integer>(1);
+  const char* print_file_name = NULL;
+  if(print_file_name_len != 1) { // todo: handle print file logic
+/*
     iPrint = 9;
     print_file_name = new char[print_file_name_len];
     mxGetString(pprint_name,print_file_name,print_file_name_len);
     snopt::snopenappend_(&iPrint,print_file_name,&INFO_snopt,print_file_name_len);
-
+*/
     //mysnseti("Major print level",static_cast<snopt::integer>(11),&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw);
     //mysnseti("Print file",iPrint,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw);
   }
 
   snopt::integer minrw,miniw,mincw;
   snopt::sninit_(&iPrint,&iSumm,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw,8*lencw);
-  snopt::snmema_(&INFO_snopt,&nF,&nx,&nxname,&nFname,&lenA,&lenG,&mincw,&miniw,&minrw,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw,8*lencw);
+  snopt::snmema_(&INFO_snopt, &nF, &nx, &nxname, &nFname, &lenA, &lenG, &mincw, &miniw, &minrw, cw.get(), &lencw, iw.get(), &leniw, rw.get(), &lenrw, 8 * lencw);
   if (minrw>lenrw) {
     //mexPrintf("reallocation rw with size %d\n",minrw);
     lenrw = minrw;
@@ -172,26 +188,20 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   }
   snopt::sninit_(&iPrint,&iSumm,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw,8*lencw);
 
-
   snopt::integer Cold = 0;
   snopt::doublereal *xmul = new snopt::doublereal[nx];
   snopt::integer *xstate = new snopt::integer[nx];
-  for(snopt::integer i = 0;i<nx;i++)
-  {
-    xstate[i] = 0;
-  }
+  memset(xstate,0,sizeof(snopt::integer)*nx);
 
   snopt::doublereal *F      = new snopt::doublereal[nF];
   snopt::doublereal *Fmul   = new snopt::doublereal[nF];
   snopt::integer    *Fstate = new snopt::integer[nF];
-  for(snopt::integer i = 0;i<nF;i++)
-  {
-    Fstate[i] = 0;
-  }
-  snopt::doublereal ObjAdd = static_cast<snopt::doublereal>(mxGetScalar(prhs[6]));
-  snopt::integer ObjRow = static_cast<snopt::integer>(mxGetScalar(prhs[7]));
+  memset(Fstate,0,sizeof(snopt::integer)*nF);
 
+  snopt::doublereal ObjAdd = 0.0;
+  snopt::integer ObjRow = 0;
 
+/*
   mysnseti("Derivative option",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"DerivativeOption"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
   mysnseti("Major iterations limit",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"MajorIterationsLimit"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
   mysnseti("Minor iterations limit",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"MinorIterationsLimit"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
@@ -206,41 +216,33 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   mysnseti("Old basis file",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"OldBasisFile"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
   mysnseti("Backup basis file",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"BackupBasisFile"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
   mysnsetr("Linesearch tolerance",static_cast<snopt::doublereal>(*mxGetPr(mxGetField(prhs[13],0,"LinesearchTolerance"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
+*/
 
   snopt::snopta_
-          ( &Cold, &nF, &nx, &nxname, &nFname,
-            &ObjAdd, &ObjRow, Prob, snopt_userfun,
-            iAfun, jAvar, &lenA, &lenA, A,
-            iGfun, jGvar, &lenG, &lenG,
-            xlow, xupp, xnames, Flow, Fupp, Fnames,
-            x, xstate, xmul, F, Fstate, Fmul,
-            &INFO_snopt, &mincw, &miniw, &minrw,
-            &nS, &nInf, &sInf,
-            cw.get(), &lencw, iw.get(), &leniw, rw.get(), &lenrw,
-            cw.get(), &lencw, iw.get(), &leniw, rw.get(), &lenrw,
-            npname, 8*nxname, 8*nFname,
+          (&Cold, &nF, &nx, &nxname, &nFname,
+           &ObjAdd, &ObjRow, Prob, snopt_userfun,
+           iAfun, jAvar, &lenA, &lenA, A,
+           iGfun, jGvar, &lenG, &lenG,
+           xlow, xupp, xnames, Flow, Fupp, Fnames,
+           x, xstate, xmul, F, Fstate, Fmul,
+           &INFO_snopt, &mincw, &miniw, &minrw,
+           &nS, &nInf, &sInf,
+           cw.get(), &lencw, iw.get(), &leniw, rw.get(), &lenrw,
+           cw.get(), &lencw, iw.get(), &leniw, rw.get(), &lenrw,
+           npname, 8*nxname, 8*nFname,
             8*lencw,8*lencw);
-  plhs[0] = mxCreateDoubleMatrix(nx,1,mxREAL);
-  plhs[3] = mxCreateDoubleMatrix(nx,1,mxREAL);
-  for(int i = 0;i<nx;i++)
-  {
-    *(mxGetPr(plhs[0])+i) = static_cast<double>(x[i]);
-    *(mxGetPr(plhs[3])+i) = static_cast<double>(xmul[i]);
-  }
-  plhs[1] = mxCreateDoubleMatrix(nF,1,mxREAL);
-  plhs[4] = mxCreateDoubleMatrix(nF,1,mxREAL);
-  for(int i = 0;i<nF;i++)
-  {
-    *(mxGetPr(plhs[1])+i) = static_cast<double>(F[i]);
-    *(mxGetPr(prhs[4])+i) = static_cast<double>(Fmul[i]);
-  }
-  plhs[2] = mxCreateDoubleScalar(static_cast<double>(INFO_snopt));
+
+  VectorXd sol(nx);
+  for (int i=0; i<nx; i++) { sol(i) = static_cast<double>( x[i] ); }
+  prog.setDecisionVariableValues(sol);
+
+  // todo: extract the other useful quantities, too.
+
   delete[] x;
   delete[] xlow;
   delete[] xupp;
   delete[] Flow;
   delete[] Fupp;
-  delete[] snopt_userfun_name;
   delete[] A;
   delete[] iAfun;
   delete[] jAvar;
@@ -252,12 +254,11 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   delete[] Fmul;
   delete[] Fstate;
 
-  if(print_file_name_len!= 1)
-  {
+  if(print_file_name_len!= 1) {
     snopt::snclose_(&iPrint);
     delete[] print_file_name;
   }
-*/
+
   return true;
 }
 
