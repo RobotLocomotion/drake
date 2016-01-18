@@ -1,7 +1,7 @@
 #ifndef DRAKE_LINEARSYSTEM_H
 #define DRAKE_LINEARSYSTEM_H
 
-#include "System.h"
+#include "drake/systems/System.h"
 
 namespace Drake {
 

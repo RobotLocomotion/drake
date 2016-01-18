@@ -4,15 +4,12 @@ pods_find_pkg_config(bullet)
 
 if (MATLAB_FOUND)
   add_rbm_mex(compareParsersmex)
-  include_directories(${PROJECT_SOURCE_DIR}/util/test)
 endif (MATLAB_FOUND)
 
 add_executable(urdfKinTest urdfKinTest.cpp)
-include_directories( .. )
 target_link_libraries(urdfKinTest drakeRBM)
 if (bullet_FOUND)
   add_executable(urdfCollisionTest urdfCollisionTest.cpp)
-  include_directories( .. )
   target_link_libraries(urdfCollisionTest drakeRBM)
 endif()
 
@@ -28,7 +25,6 @@ endif()
 
 macro(add_ik_cpp)
   add_executable(${ARGV} ${ARGV}.cpp)
-  include_directories( .. )
   set_target_properties(${ARGV} PROPERTIES COMPILE_FLAGS "-fPIC")
   target_link_libraries(${ARGV} drakeRigidBodyConstraint drakeIK)
   add_test( NAME ${ARGV} WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}" COMMAND ${ARGV})
@@ -46,10 +42,8 @@ if (snopt_c_FOUND)
 endif()
 
 add_executable(debugManipulatorDynamics debugManipulatorDynamics.cpp)
-include_directories( .. )
 target_link_libraries(debugManipulatorDynamics drakeRBM)
 
-include_directories(${PROJECT_SOURCE_DIR}/util/test)
 add_executable(benchmarkRigidBodyTree benchmarkRigidBodyTree.cpp)
 target_link_libraries(benchmarkRigidBodyTree drakeRBM)
 

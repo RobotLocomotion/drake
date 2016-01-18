@@ -5,7 +5,7 @@
 #include <Eigen/StdVector>
 
 #include "Element.h"
-#include "drakeCollision_export.h"
+#include "drake/drakeCollision_export.h"
 
 namespace DrakeCollision
 {

@@ -1,4 +1,4 @@
-#include "PiecewisePolynomial.h"
+#include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include <cassert>
 
 using namespace std;

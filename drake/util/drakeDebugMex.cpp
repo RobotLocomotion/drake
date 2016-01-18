@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "MexWrapper.h"
+#include "drake/util/MexWrapper.h"
 
 #include <matrix.h>
 #include <mat.h>

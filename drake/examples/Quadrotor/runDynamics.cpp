@@ -1,8 +1,8 @@
 
 #include <iostream>
 #include "Quadrotor.h"
-#include "Simulation.h"
-#include "BotVisualizer.h"
+#include "drake/systems/Simulation.h"
+#include "drake/systems/plants/BotVisualizer.h"
 
 using namespace std;
 using namespace Drake;

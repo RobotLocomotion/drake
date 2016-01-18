@@ -1,7 +1,7 @@
 #include <iostream>
 #include <btBulletCollisionCommon.h>
 
-#include "DrakeCollision.h"
+#include "drake/systems/plants/collision/DrakeCollision.h"
 #include "BulletResultCollector.h"
 
 using namespace std;

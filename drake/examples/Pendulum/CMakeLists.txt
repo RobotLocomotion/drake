@@ -1,15 +1,4 @@
-
-include_directories(${PROJECT_SOURCE_DIR}/core)
-include_directories(${PROJECT_SOURCE_DIR}/solvers)
-include_directories(${PROJECT_SOURCE_DIR}/systems)
-include_directories(${PROJECT_SOURCE_DIR}/systems/frames)
-include_directories(${PROJECT_SOURCE_DIR}/systems/plants)
-include_directories(${PROJECT_SOURCE_DIR}/systems/plants/joints)
-include_directories(${PROJECT_SOURCE_DIR}/systems/controllers)
-include_directories(${PROJECT_SOURCE_DIR}/util)
-
 if (LCM_FOUND)
-  include_directories(${PROJECT_SOURCE_DIR}/pod-build/lcmgen)
   add_executable(runPendulumDynamics runDynamics.cpp)
   target_link_libraries(runPendulumDynamics drakeRBM drakeLCMSystem)
   add_test(NAME runPendulumDynamics COMMAND runPendulumDynamics WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/examples/Pendulum)

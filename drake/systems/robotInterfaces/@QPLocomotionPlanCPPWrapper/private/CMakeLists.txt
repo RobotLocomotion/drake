@@ -1,5 +1,3 @@
-include_directories(../..)
-
 if (MATLAB_FOUND)
   if (LCM_FOUND)
     add_mex(setDuration setDuration.cpp)

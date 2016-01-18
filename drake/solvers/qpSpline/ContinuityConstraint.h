@@ -1,7 +1,7 @@
 #ifndef DRAKE_SOLVERS_QPSPLINE_CONTINUITYCONSTRAINT_H_
 #define DRAKE_SOLVERS_QPSPLINE_CONTINUITYCONSTRAINT_H_
 
-#include <drakeSplineGeneration_export.h>
+#include "drake/drakeSplineGeneration_export.h"
 
 class DRAKESPLINEGENERATION_EXPORT ContinuityConstraint
 {

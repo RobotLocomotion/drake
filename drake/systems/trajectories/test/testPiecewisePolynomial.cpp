@@ -1,8 +1,8 @@
-#include "PiecewisePolynomial.h"
+#include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include <Eigen/Core>
 #include <random>
 #include <vector>
-#include "testUtil.h"
+#include "drake/util/testUtil.h"
 #include <iostream>
 
 using namespace std;

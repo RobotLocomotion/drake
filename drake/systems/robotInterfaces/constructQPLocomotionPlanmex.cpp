@@ -1,6 +1,6 @@
-#include "drakeUtil.h"
-#include "drakeMexUtil.h"
-#include "QPLocomotionPlan.h"
+#include "drake/util/drakeUtil.h"
+#include "drake/util/drakeMexUtil.h"
+#include "drake/systems/robotInterfaces/QPLocomotionPlan.h"
 
 using namespace std;
 using namespace Eigen;

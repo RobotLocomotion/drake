@@ -33,7 +33,7 @@
 #include <blas.h>
 #include <math.h>
 #include <matrix.h>
-#include <drakeMexUtil.h>
+#include "drake/util/drakeMexUtil.h"
 
 // Snopt stuff
 namespace snopt {

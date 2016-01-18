@@ -1,8 +1,8 @@
 #include "constructPtrRigidBodyConstraint.h"
-#include "RigidBodyTree.h"
-#include "RigidBodyConstraint.h"
-#include "drakeMexUtil.h"
-#include "controlUtil.h"
+#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/util/drakeMexUtil.h"
+#include "drake/systems/controllers/controlUtil.h"
 using namespace Eigen;
 using namespace std;
 

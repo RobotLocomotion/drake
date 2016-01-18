@@ -1,7 +1,7 @@
 #include <mex.h>
 #include <Eigen/Core>
-#include "splineGeneration.h"
-#include "drakeMexUtil.h"
+#include "drake/solvers/qpSpline/splineGeneration.h"
+#include "drake/util/drakeMexUtil.h"
 #include <iostream>
 #include <limits>
 

@@ -7,9 +7,9 @@
 #include <map>
 #include <Eigen/StdVector>
 #include <memory>
-#include "DrakeJoint.h"
-#include <drakeRBM_export.h>
-#include <plants/collision/DrakeCollision.h>
+#include "drake/systems/plants/joints/DrakeJoint.h"
+#include "drake/systems/plants/collision/DrakeCollision.h"
+#include "drake/drakeRBM_export.h"
 
 class DRAKERBM_EXPORT RigidBody {
 private:

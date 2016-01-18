@@ -17,7 +17,7 @@ if (gurobi_FOUND)
   endif()
 
   pods_install_libraries(drakeQP)
-  pods_install_headers(fastQP.h gurobiQP.h DESTINATION drake)
+  drake_install_headers(fastQP.h gurobiQP.h)
   pods_install_pkg_config_file(drake-qp
     LIBS -ldrakeQP
     REQUIRES gurobi
@@ -28,7 +28,6 @@ endif()
 pods_find_pkg_config(snopt_c)
 
 if(MATLAB_FOUND)
-  include_directories(${PROJECT_SOURCE_DIR}/util)
   add_mex(lqrmex lqrmex.cpp)
   target_link_libraries(lqrmex drakeUtil)
 endif()
