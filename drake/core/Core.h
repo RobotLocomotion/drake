@@ -1,7 +1,7 @@
 #ifndef DRAKE_DRAKECORE_H
 #define DRAKE_DRAKECORE_H
 
-#include "Path.h"
+#include "drake/Path.h"
 #include "Vector.h"
 #include "Function.h"
 

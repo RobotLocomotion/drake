@@ -8,7 +8,7 @@
 #include <functional>
 #include <sstream>
 #include <stdexcept>
-#include "drakeMexUtil.h"
+#include "drake/util/drakeMexUtil.h"
 
 #if defined(_MSC_VER) && (_MSC_VER < 1900)
 #define NOEXCEPT

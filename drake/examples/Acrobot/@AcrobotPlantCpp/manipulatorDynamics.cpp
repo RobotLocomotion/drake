@@ -2,8 +2,8 @@
 #include <Eigen/Dense>
 #include <cmath>
 #include <iostream>
-#include "drakeMexUtil.h"
-#include <drakeGradientUtil.h>
+#include "drake/util/drakeMexUtil.h"
+#include "drake/util/drakeGradientUtil.h"
 
 using namespace Eigen;
 using namespace std;

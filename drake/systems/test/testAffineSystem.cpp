@@ -1,5 +1,5 @@
-#include <testUtil.h>
-#include "LinearSystem.h"
+#include "drake/util/testUtil.h"
+#include "drake/systems/LinearSystem.h"
 #include <iostream>
 
 using namespace std;

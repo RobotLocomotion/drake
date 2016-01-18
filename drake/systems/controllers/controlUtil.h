@@ -8,9 +8,9 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-#include "RigidBodyTree.h"
-#include "PiecewisePolynomial.h"
-#include <drakeControlUtil_export.h>
+#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/systems/trajectories/PiecewisePolynomial.h"
+#include "drake/drakeControlUtil_export.h"
 
 
 const int m_surface_tangents = 2;  // number of faces in the friction cone approx

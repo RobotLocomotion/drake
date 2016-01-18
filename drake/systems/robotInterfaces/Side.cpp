@@ -1,4 +1,4 @@
-#include "Side.h"
+#include "drake/systems/robotInterfaces/Side.h"
 #include <stdexcept>
 
 const std::array<Side::SideEnum, 2> Side::values = { { Side::LEFT, Side::RIGHT } };

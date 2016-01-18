@@ -1,4 +1,4 @@
-#include "splineGeneration.h"
+#include "drake/solvers/qpSpline/splineGeneration.h"
 
 #include <Eigen/Dense>
 #include <iostream>

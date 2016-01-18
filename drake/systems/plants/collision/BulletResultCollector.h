@@ -1,7 +1,7 @@
 #ifndef __DrakeCollisionBullletResultCollector_H__
 #define __DrakeCollisionBullletResultCollector_H__
 
-#include "DrakeCollision.h"
+#include "drake/systems/plants/collision/DrakeCollision.h"
 
 namespace DrakeCollision
 {

@@ -1,7 +1,7 @@
-#include "RigidBodyTree.h"
-#include "RigidBodyTree.h"
-#include "drakeGeometryUtil.h"
-#include "GradientVar.h"
+#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/util/drakeGeometryUtil.h"
+#include "drake/util/GradientVar.h"
 #include <iostream>
 #include <cstdlib>
 #include <random>

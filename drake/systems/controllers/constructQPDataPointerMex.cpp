@@ -1,10 +1,10 @@
 #include "QPCommon.h"
 #include <Eigen/StdVector>
-#include "drakeMexUtil.h"
+#include "drake/util/drakeMexUtil.h"
 #include "controlMexUtil.h"
 // #include <limits>
 // #include <cmath>
-// #include "drakeUtil.h"
+// #include "drake/util/drakeUtil.h"
 
 using namespace std;
 using namespace Eigen;

@@ -1,6 +1,6 @@
 #include <iostream>
-#include "convexHull.h"
-#include "testUtil.h"
+#include "drake/util/convexHull.h"
+#include "drake/util/testUtil.h"
 
 using namespace Eigen;
 

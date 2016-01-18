@@ -1,4 +1,4 @@
-#include "MexWrapper.h"
+#include "drake/util/MexWrapper.h"
 #if defined(WIN32) || defined(WIN64)
 #else
 #include <dlfcn.h>

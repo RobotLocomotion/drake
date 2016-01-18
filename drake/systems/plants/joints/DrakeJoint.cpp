@@ -1,4 +1,4 @@
-#include "DrakeJoint.h"
+#include "drake/systems/plants/joints/DrakeJoint.h"
 
 using namespace Eigen;
 

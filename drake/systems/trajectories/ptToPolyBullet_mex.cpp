@@ -26,7 +26,7 @@ Date: Nov 8 2013
 #include "LinearMath/btTransformUtil.h"
 
 #include <mex.h>
-#include <drakeMexUtil.h>
+#include "drake/util/drakeMexUtil.h"
 
 using namespace std;
 

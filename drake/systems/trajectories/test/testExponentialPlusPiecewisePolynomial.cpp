@@ -1,9 +1,9 @@
-#include "ExponentialPlusPiecewisePolynomial.h"
+#include "drake/systems/trajectories/ExponentialPlusPiecewisePolynomial.h"
 #include <Eigen/Core>
 #include <random>
 #include <iostream>
 #include <cmath>
-#include "testUtil.h"
+#include "drake/util/testUtil.h"
 
 using namespace std;
 using namespace Eigen;
