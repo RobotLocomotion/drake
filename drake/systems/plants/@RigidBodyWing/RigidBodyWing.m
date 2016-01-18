@@ -420,16 +420,16 @@ classdef RigidBodyWing < RigidBodyForceElement
 
     end %constructor
     
-    function [force, dforce] = computeSpatialForce(obj,manip,q,qd)
+    function [force, dforce] = computeSpatialForce(obj,manip,q,v)
       nq = size(q,1);
       frame = getFrame(manip,obj.kinframe);
       
       kin_options.compute_gradients = nargout > 1;
-      kinsol = doKinematics(manip, q, qd, kin_options);
+      kinsol = doKinematics(manip, q,v, kin_options);
 
       if (nargout > 1)
 
-        [ wingvel_struct, wingvel_dstruct ] = RigidBodyWing.computeWingVelocity(obj.kinframe, manip, q, qd, kinsol);
+        [ wingvel_struct, wingvel_dstruct ] = RigidBodyWing.computeWingVelocity(obj.kinframe, manip, q, v, kinsol);
         
         wingvel_world_xz = wingvel_struct.wingvel_world_xz;
         wingYunit = wingvel_struct.wingYunit;
@@ -496,6 +496,7 @@ classdef RigidBodyWing < RigidBodyForceElement
         ddrag_worlddqd = airspeed*-wingvel_world_xz*dCDdqd + CD*(-wingvel_world_xz*dairspeeddqd) + CD*airspeed*-dwingvel_worlddqd;
         dtorque_worlddq = -airspeed*airspeed*wingYunit*dCMdq + -CM*2*airspeed*(wingYunit*dairspeeddq) + -CM*airspeed*airspeed*dwingYunitdq;
         dtorque_worlddqd = -airspeed*airspeed*wingYunit*dCMdqd + -CM*2*airspeed*(wingYunit*dairspeeddqd);
+        %dtorque_worlddqd
       end
 
       if (nargout>1)
@@ -534,7 +535,14 @@ classdef RigidBodyWing < RigidBodyForceElement
         dforce = sparse(numel(force),2*nq)*q(1); % q(1) is for taylorvar
         dforce((frame.body_ind-1)*6+1:frame.body_ind*6,:) = [dbody_forcedq,dbody_forcedqd];
         dforce = reshape(dforce,6,[]);
+        dforce = sparse(6*getNumBodies(manip),getNumStates(manip));
+        % As for tmp has non zero value on only row 1 2 3
+        % I give it value to dforce only 1-3
+        tmp = ([dbody_forcedq,dbody_forcedqd]);
+        dforce((frame.body_ind-1)*6+1:frame.body_ind*6,1:3) = tmp(:,1:3);
       end
+      %force
+      %dforce
 
     end
 
@@ -658,14 +666,17 @@ classdef RigidBodyWing < RigidBodyForceElement
       %   wingvel_world_xzy
       %     velocity of the wing in world coordinates
       %   </pre>
-      
+      options.in_terms_of_qdot = false;
       if (nargout>1)
         
-        [~, J, dJ] = forwardKin(manip,kinsol,kinframe,zeros(3,1));
-        wingvel_world_xyz = J*qd; % assume still air. Air flow over the wing
+        %[~, J, dJ] = forwardKin(manip,kinsol,kinframe,zeros(3,1));
+        [x,J_geometric,dJ_geometric_dq] = forwardKin(manip,kinsol,kinframe,zeros(3,1),options);
+        [~,dx_dq] = forwardKin(manip,kinsol,kinframe,zeros(3,1),struct('in_terms_of_qdot',true));
+        
+        wingvel_world_xyz = J_geometric*qd; % assume still air. Air flow over the wing
         nq = length(q);
-        dwingvel_worlddq = matGradMult(reshape(dJ, numel(J), nq), qd);
-        dwingvel_worlddqd = J;
+        dwingvel_worlddq = matGradMult(reshape(dJ_geometric_dq, numel(J_geometric), nq), qd);
+        dwingvel_worlddqd = dx_dq;
       else
         kinsol = doKinematics(manip,q);
         [~,J] = forwardKin(manip,kinsol,kinframe,zeros(3,1));
@@ -717,6 +728,8 @@ classdef RigidBodyWing < RigidBodyForceElement
         wingvel_dstruct.dwingYunitdq = dwingYunitdq;
         wingvel_dstruct.dwingYunitdqd = dwingYunitdqd;
       end
+      %wingvel_struct
+      %wingvel_dstruct
       
     end
     
