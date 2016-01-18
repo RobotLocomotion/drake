@@ -128,7 +128,7 @@ namespace Drake {
     virtual ~Constraint() {}
 
     virtual Eigen::VectorXd eval(const Eigen::Ref<const Eigen::VectorXd>& x) const = 0;
-    virtual TaylorVecX evalWithGradient(const Eigen::Ref<const Eigen::VectorXd>& x) const = 0;  // move this to DifferentiableConstraint derived class if/when we need to support non-differentiable functions
+    virtual TaylorVecXd evalWithGradient(const Eigen::Ref<const Eigen::VectorXd>& x) const = 0;  // move this to DifferentiableConstraint derived class if/when we need to support non-differentiable functions
 
     const Eigen::VectorXd& getLowerBound() const { return lower_bound; }
     const Eigen::VectorXd& getUpperBound() const { return upper_bound; }
@@ -151,7 +151,7 @@ namespace Drake {
     virtual ~LinearEqualityConstraint() {}
 
     virtual Eigen::VectorXd eval(const Eigen::Ref<const Eigen::VectorXd>& x) const override { return getMatrix()*x - getVector(); }
-    virtual TaylorVecX evalWithGradient(const Eigen::Ref<const Eigen::VectorXd>& x) const override { return getMatrix().cast<TaylorVarX>()*initTaylorVecX(x) - getVector().cast<TaylorVarX>(); };
+    virtual TaylorVecXd evalWithGradient(const Eigen::Ref<const Eigen::VectorXd>& x) const override { return getMatrix().cast<TaylorVarXd>()*initTaylorVecXd(x) - getVector().cast<TaylorVarXd>(); };
 
     virtual Eigen::SparseMatrix<double> getSparseMatrix() const { return getMatrix().sparseView(); };
     virtual Eigen::MatrixXd getMatrix() const = 0;
@@ -204,9 +204,10 @@ namespace Drake {
     virtual ~BoundingBoxConstraint() {}
 
     virtual Eigen::VectorXd eval(const Eigen::Ref<const Eigen::VectorXd>& x) const override { return x; }
-    virtual TaylorVecX evalWithGradient(const Eigen::Ref<const Eigen::VectorXd>& x) const override { return initTaylorVecX(x); }
+    virtual TaylorVecXd evalWithGradient(const Eigen::Ref<const Eigen::VectorXd>& x) const override { return initTaylorVecXd(x); }
   };
 
+  class FunctionConstraint<
 
   class OptimizationProblem {
   public:

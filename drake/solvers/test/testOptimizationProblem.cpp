@@ -43,16 +43,21 @@ void trivialLeastSquares() {
 }
 
 
-template <typename Scalar>
-Scalar sixHumpCamelObjective(const Ref<Matrix<Scalar,2,1>>& x) {
-  return x(0)*x(0)*(4-2.1*x(0)*x(0) + x(0)*x(0)*x(0)*x(0)/3) + x(0)*x(1) + x(1)*x(1)*(-4+4*x(1)*x(1));
-}
+class SixHumpCamelObjective : public TemplatedDifferentiableFunction<SixHumpCamelObjective> {
+public:
+  SixHumpCamelObjective() : TemplatedDifferentiableFunction<SixHumpCamelObjective>(*this) {};
 
+  template<typename ScalarType>
+  Matrix<ScalarType,1,1> eval(const Ref<Matrix<ScalarType, 2, 1>> &x) {
+    return Matrix<ScalarType,1,1>::Constant(x(0) * x(0) * (4 - 2.1 * x(0) * x(0) + x(0) * x(0) * x(0) * x(0) / 3) + x(0) * x(1) +
+           x(1) * x(1) * (-4 + 4 * x(1) * x(1)));
+  }
+};
 
 void sixHumpCamel() {
   OptimizationProblem prog;
   auto x = prog.addContinuousVariables(2);
-  auto objective = make_shared<Drake::FunctionHandleConstraint>({x},sixHumpCamelObjective,2,1);
+  auto objective = make_shared<FunctionConstraint<SixHumpCamelObjective>({x});
   prog.addObjective(objective);
   prog.solve();
   prog.printSolution();

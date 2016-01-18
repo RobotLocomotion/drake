@@ -25,18 +25,18 @@ namespace Drake {
   // todo: recursive template to get arbitrary gradient order
 
   // note: tried using template default values (e.g. Eigen::Dynamic), but they didn't seem to work on my mac clang
-  template <int num_vars> using TaylorVar = Eigen::AutoDiffScalar< Eigen::Matrix<double,num_vars,1> >;
-  template <int num_vars, int rows> using TaylorVec = Eigen::Matrix< TaylorVar<num_vars>, rows, 1>;
-  template <int num_vars, int rows, int cols> using TaylorMat = Eigen::Matrix< TaylorVar<num_vars>, rows, cols>;
+  template <int num_vars> using TaylorVard = Eigen::AutoDiffScalar< Eigen::Matrix<double,num_vars,1> >;
+  template <int num_vars, int rows> using TaylorVecd = Eigen::Matrix< TaylorVard<num_vars>, rows, 1>;
+  template <int num_vars, int rows, int cols> using TaylorMatd = Eigen::Matrix< TaylorVard<num_vars>, rows, cols>;
 
-  typedef TaylorVar<Eigen::Dynamic> TaylorVarX;
-  typedef TaylorVec<Eigen::Dynamic,Eigen::Dynamic> TaylorVecX;
-  typedef TaylorMat<Eigen::Dynamic,Eigen::Dynamic,Eigen::Dynamic> TaylorMatX;
+  typedef TaylorVard<Eigen::Dynamic> TaylorVarXd;
+  typedef TaylorVecd<Eigen::Dynamic,Eigen::Dynamic> TaylorVecXd;
+  typedef TaylorMatd<Eigen::Dynamic,Eigen::Dynamic,Eigen::Dynamic> TaylorMatXd;
 
   // initializes the vector with x=val and dx=eye(numel(val))
   template <typename Derived>
-  TaylorVecX initTaylorVecX(const Eigen::MatrixBase<Derived>& val) {
-    TaylorVecX x(val.rows());
+  TaylorVecXd initTaylorVecXd(const Eigen::MatrixBase<Derived>& val) {
+    TaylorVecXd x(val.rows());
     Eigen::MatrixXd der = Eigen::MatrixXd::Identity(val.rows(),val.rows());
     for (int i=0; i<val.rows(); i++) {
       x(i).value() = val(i);

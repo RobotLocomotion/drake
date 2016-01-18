@@ -275,7 +275,7 @@ mxArray* eigenToTaylorVar(const Eigen::MatrixBase<Derived>& m, int num_variables
   prhs[1] = mxCreateCellArray(1, dims);
   mxArray *plhs[1];
   mxSetCell(prhs[1], 0, eigenToMatlab(autoDiffToGradientMatrix(m, num_variables)));
-  mexCallMATLABsafe(1, plhs, nrhs, prhs, "TaylorVar");
+  mexCallMATLABsafe(1, plhs, nrhs, prhs, "TaylorVard");
   return plhs[0];
 }
 
