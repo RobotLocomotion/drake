@@ -1,9 +1,17 @@
 classdef ConstrainedHybridTrajectoryOptimization < NonlinearProgram
-  % TODO: all the documentation here is for the basic hybrid class, needs
-  % updating.
   % ConstrainedHybridTrajectoryOptimization
   % 
-  % Trajectory optimization class for hybrid models
+  % Contact specific implementation of the hybrid DIRCON algorithm from
+  % "Optimization and stabilization of trajectories for constrained
+  %  dynamical systems" by Posa, Kuindersma and Tedrake 2016.
+  %
+  %  Utilizes the ContactConstrainedDircolTrajectoryOptimization class to
+  %  construct the optimizatino programs for each mode
+  % 
+  %  This class was constructed similarly to the
+  %  HybridTrajectoryOptimization class, but it does NOT derive from that
+  %  class.
+  %
   %  Works by constructing a series of trajectory optimization programs for
   %  each mode in the mode sequence. The trajectories of each mode are then
   %  constrained so that (1) The transitions between them align
@@ -24,6 +32,18 @@ classdef ConstrainedHybridTrajectoryOptimization < NonlinearProgram
   %  ...
   %  traj_opt = traj_opt.compile()
   %  traj_opt.solveTraj()
+  %
+  % Constructor: 
+  %  obj = ConstrainedHybridTrajectoryOptimization(plant,mode_indices,N,duration,options)
+  %   @param mode_indices : A cell array of vectors corresponding to
+  %   contact indices for ContactConstrainedDircolTrajectoryOptimization
+  %   options.periodic : Enforces a periodicity constraint between last and
+  %     first states, defaults to false
+  %   options.u_const_across_transitions : If true, control input must be
+  %     constant across hybrid transitions. Defaults to false
+  %   options.mode_options : A struct of options to pass along to each
+  %     suboptimization program.
+  
   properties %(SetAccess=protected)
     N
     M
@@ -40,17 +60,6 @@ classdef ConstrainedHybridTrajectoryOptimization < NonlinearProgram
   
   methods
     function obj = ConstrainedHybridTrajectoryOptimization(plant,mode_indices,N,duration,options)
-      % @param HybridDrakeSystem plant
-      % @param mode_sequence a mx1 struct of modes
-      %   each mode represents the point/body that's fixed
-      %   TDO: specify format
-      % @param N a mx1 vector of timesteps per mode
-      % @param duration a mx1 cell-array of durations
-      % @param options:
-      %    periodic - enforces that the first state/control of the first mode
-      %    equals the last state/control of the last mode
-      %    u_const_across_transitions - control input must be constant at
-      %    transition times
       if nargin < 5
         options = struct();
       end

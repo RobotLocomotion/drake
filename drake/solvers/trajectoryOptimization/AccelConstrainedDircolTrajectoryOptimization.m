@@ -1,5 +1,5 @@
 classdef AccelConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimization
-  % Implementation of the DIRCON algorithm found in
+  % Generic implementation of the DIRCON algorithm found in
   % "Optimization and stabilization of trajectories for constrained
   %  dynamical systems" by Posa, Kuindersma and Tedrake 2016.
   % 
@@ -11,7 +11,7 @@ classdef AccelConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimiza
   %
   % Use the constructor:
   % obj = AccelConstrainedDircolTrajectoryOptimization(plant,N,duration,options)
-  % which accepts the default Dircol arguments as well as some additional o
+  % which accepts the default Dircol arguments as well as some additional
   % options:
   %   options.active_inds : A subset of the position constraints to
   %     incorproate, default = all

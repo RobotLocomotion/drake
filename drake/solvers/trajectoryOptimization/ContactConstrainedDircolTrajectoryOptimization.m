@@ -1,4 +1,34 @@
 classdef ContactConstrainedDircolTrajectoryOptimization < AccelConstrainedDircolTrajectoryOptimization
+  % Contact specific implementation of the DIRCON algorithm found in
+  % "Optimization and stabilization of trajectories for constrained
+  %  dynamical systems" by Posa, Kuindersma and Tedrake 2016.
+  %
+  % Extends AccelConstrainedDircolTrajectoryOptimization by incorporating
+  % contact information as position constraints.
+  %
+  % Use the constructor:
+  %   obj = ContactConstrainedDircolTrajectoryOptimization(plant,N,duration,indices,options)
+  % which accepts the default Dircol arguments as well as some the contact
+  % indices and additional options
+  %   @param indices : a vector of indices into the list of possible
+  %   contacts coming from plant.contactConstraints()
+  %   options.contact_q0 : the position vector used to determine the
+  %     nominal contact position. Used for the normal direction nominally, and
+  %     the tangential direction only if relative_constraints=false.
+  %     Defaults to all zeros.
+  %   options.relative_constraints : Determines whether the tangential
+  %     directions are relative, or are fixed to the position given by
+  %     contact_q0. Defaults to TRUE, unlike superclass
+  %   options.friction_limits :  Activates friction constraints on contact
+  %     forces at knot points. Defaults to true.
+  %   options.collocation_friction_limits : Activates friction constraints
+  %     at collocation points. Defaults to true.
+  %   options.non_penetration : Enforces non-penetration constraints for
+  %     inactive contacts. Defaults to true.
+  %   options.additional_constraints : An additional set of position
+  %    constraints to be added to the plant, aside from those derived from
+  %    contact
+
   properties
   end
   
@@ -24,7 +54,7 @@ classdef ContactConstrainedDircolTrajectoryOptimization < AccelConstrainedDircol
       end
       
       if ~isfield(options,'relative_constraints')
-        options.relative_constraints = true; %defaults to true, unlike subclass
+        options.relative_constraints = true;
       end
       
       if ~isfield(options,'additional_constraints')
