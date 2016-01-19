@@ -36,7 +36,7 @@ qp_controller_params:
           max: {x: 100, y: 100, z: 100, wx: 50, wy: 50, wz: 50}
         weight: 0.0
       pelvis:
-        Kp: {x: 150, y: 150, z: 150, wx: 200, wy: 200, wz: 200}
+        Kp: {x: 40, y: 40, z: 40, wx: 40, wy: 40, wz: 40}
         weight: 0.01
         damping_ratio: 0.6
       *R_FOOT_NAME :
@@ -202,34 +202,42 @@ qp_controller_params:
         hardware:
           k_q_p: 60
           k_qd_p: 5
+          k_f_p: 0.02
       back_bkz_motor:
         hardware:
           k_q_p: 20
           k_qd_p: 1.95
+          k_f_p: 0.005
       l_arm_shx_motor:
         hardware:
           k_q_p: 10
           k_qd_p: 1.25
+          k_f_p: 0.125
       l_arm_shz_motor:
         hardware:
           k_q_p: 10.5
           k_qd_p: 0.85
+          k_f_p: 0.08
       l_arm_elx_motor:
         hardware:
           k_q_p: 30
           k_qd_p: 1.75
+          k_f_p: 0.135
       l_arm_ely_motor:
         hardware:
           k_q_p: 15
           k_qd_p: 0.25
+          k_f_p: 0.115
       l_arm_mwx_motor:
         hardware:
           k_q_p: 20
           k_qd_p: 0.5
+          k_f_p: 0.125
       l_arm_uwy_motor:
         hardware:
           k_q_p: 20
           k_qd_p: 0.5
+          k_f_p: 0.085
       l_arm_lwy_motor:
         hardware:
           k_q_p: 20
@@ -280,26 +288,32 @@ qp_controller_params:
         hardware:
           k_q_p: 10
           k_qd_p: 1.25
+          k_f_p: 0.125
       r_arm_shz_motor:
         hardware:
           k_q_p: 19
           k_qd_p: 1.5
+          k_f_p: 0.09
       r_arm_elx_motor:
         hardware:
           k_q_p: 20
           k_qd_p: 0.6
+          k_f_p: 0.125
       r_arm_ely_motor:
         hardware:
           k_q_p: 12
           k_qd_p: 0.25
+          k_f_p: 0.125
       r_arm_mwx_motor:
         hardware:
           k_q_p: 20
           k_qd_p: 0.5
+          k_f_p: 0.125
       r_arm_uwy_motor:
         hardware:
           k_q_p: 20
           k_qd_p: 0.5
+          k_f_p: 0.085
       r_arm_lwy_motor:
         hardware:
           k_q_p: 20
@@ -347,26 +361,14 @@ qp_controller_params:
           ff_qd_d: 100
           k_q_p: 2000
 
+######################## base #####################################
+  base: # automatically inherits from DEFAULT
 
-  ###################### base #####################################
-  base: # automatically inherits from the default
-  ###################### standing #################################
-  standing: # inherets automatically
-  ###################### manip ####################################
-  manip:
-    body_specific:
-      pelvis:
-        Kp: {x: 150, y: 150, z: 150, wx: 200, wy: 200, wz: 200}
-        weight: 0.01
-        damping_ratio: 0.6
-      *R_FOOT_NAME :
-        weight: 0.01
-      *L_FOOT_NAME : 
-        weight: 0.01
-      *L_HAND_NAME :
-        weight: 0.001
-      *R_HAND_NAME :
-        weight: 0.001
+######################## standing #################################
+  standing: # inherits automatically from DEFAULT
+
+######################## manip ####################################
+  manip: #inherits automatically from DEFAULT
 
 ##################### walking #####################################
   walking:
@@ -514,22 +516,6 @@ qp_controller_params:
       DEFAULT:
         Kp: 150
         damping_ratio: 0.6
-      l_arm_shx:
-        integrator:
-          gain: 1.75
-          clamp: 0.2
-      l_arm_shz:
-        integrator:
-          gain: 1.75
-          clamp: 0.2
-      l_arm_ely:
-        integrator:
-          gain: 1.75
-          clamp: 0.2
-      l_arm_elx:
-        integrator:
-          gain: 1.75
-          clamp: 0.2
       l_arm_uwy:
         integrator:
           gain: 0
@@ -542,22 +528,6 @@ qp_controller_params:
         integrator:
           gain: 0
           clamp: 0
-      r_arm_shx:
-        integrator:
-          gain: 1.75
-          clamp: 0.2
-      r_arm_shz:
-        integrator:
-          gain: 1.75
-          clamp: 0.2
-      r_arm_ely:
-        integrator:
-          gain: 1.75
-          clamp: 0.2
-      r_arm_elx:
-        integrator:
-          gain: 1.75
-          clamp: 0.2
       r_arm_uwy:
         integrator:
           gain: 0
@@ -771,197 +741,139 @@ qp_controller_params:
           joint_is_position_controlled: true
           k_q_p: 20
           k_qd_p: 2.5
-          k_f_p: 0
-          ff_qd_d: 0
       back_bky_motor:
         hardware:
           k_q_p: 20
           k_qd_p: 2.5
-          k_f_p: 0
-          ff_qd_d: 0
       back_bkz_motor:
         hardware:
           k_q_p: 10
           k_qd_p: 1
-          k_f_p: 0
-          ff_qd_d: 0
       l_leg_hpx_motor:
         hardware:
           joint_is_force_controlled: false
           joint_is_position_controlled: true
           k_q_p: 10
           k_qd_p: 0.1
-          k_f_p: 0
-          ff_qd_d: 0
       l_leg_hpy_motor:
         hardware:
           joint_is_force_controlled: false
           joint_is_position_controlled: true
           k_q_p: 10
           k_qd_p: 0.2
-          k_f_p: 0
-          ff_qd_d: 0
       l_leg_hpz_motor:
         hardware:
           joint_is_force_controlled: false
           joint_is_position_controlled: true
           k_q_p: 10
           k_qd_p: 0.1
-          k_f_p: 0
-          ff_qd_d: 0
       l_leg_kny_motor:
         hardware: 
           joint_is_force_controlled: false
           joint_is_position_controlled: true
           k_q_p: 10
           k_qd_p: 0.2
-          k_f_p: 0
-          ff_qd_d: 0
       l_leg_akx_motor:
         hardware:
           joint_is_force_controlled: false
           joint_is_position_controlled: true
           k_q_p: 100
           k_qd_p: 0.1
-          k_f_p: 0
-          ff_qd_d: 0
       l_leg_aky_motor:
         hardware:
           joint_is_force_controlled: false
           joint_is_position_controlled: true
           k_q_p: 100
           k_qd_p: 2.5
-          k_f_p: 0
-          ff_qd_d: 0
       r_leg_hpx_motor:
         hardware:
           joint_is_force_controlled: false
           joint_is_position_controlled: true
           k_q_p: 10
           k_qd_p: 0.1
-          k_f_p: 0
-          ff_qd_d: 0
       r_leg_hpy_motor:
         hardware:
           joint_is_force_controlled: false
           joint_is_position_controlled: true
           k_q_p: 10
           k_qd_p: 0.2
-          k_f_p: 0
-          ff_qd_d: 0
       r_leg_hpz_motor:
         hardware:
           joint_is_force_controlled: false
           joint_is_position_controlled: true
           k_q_p: 10
           k_qd_p: 0.1
-          k_f_p: 0
-          ff_qd_d: 0
       r_leg_kny_motor:
         hardware: 
           joint_is_force_controlled: false
           joint_is_position_controlled: true
           k_q_p: 10
           k_qd_p: 0.2
-          k_f_p: 0
-          ff_qd_d: 0
       r_leg_akx_motor:
         hardware:
           joint_is_force_controlled: false
           joint_is_position_controlled: true
           k_q_p: 100
           k_qd_p: 0.1
-          k_f_p: 0
-          ff_qd_d: 0
       r_leg_aky_motor:
         hardware:
           joint_is_force_controlled: false
           joint_is_position_controlled: true
           k_q_p: 100
           k_qd_p: 2.5
-          k_f_p: 0
-          ff_qd_d: 0
       l_arm_shx_motor:
         hardware:
           k_q_p: 2
           k_qd_p: 0.5
-          k_f_p: 0
-          ff_qd_d: 0
       l_arm_shz_motor:
         hardware:
           k_q_p: 2
           k_qd_p: 0.5
-          k_f_p: 0
-          ff_qd_d: 0
       l_arm_elx_motor:
         hardware:
           k_q_p: 2
           k_qd_p: 0.5
-          k_f_p: 0
-          ff_qd_d: 0
       l_arm_ely_motor:
         hardware:
           k_q_p: 2
           k_qd_p: 0.5
-          k_f_p: 0
-          ff_qd_d: 0
       l_arm_uwy_motor:
         hardware:
           k_q_p: 10
           k_qd_p: 0.25
-          k_f_p: 0
-          ff_qd_d: 0
       l_arm_mwx_motor:
         hardware:
           k_q_p: 10
           k_qd_p: 0.25
-          k_f_p: 0
-          ff_qd_d: 0
       l_arm_lwy_motor:
         hardware:
           k_q_p: 10
           k_qd_p: 0.25
-          k_f_p: 0
-          ff_qd_d: 0
       r_arm_shx_motor:
         hardware:
           k_q_p: 2
           k_qd_p: 0.5
-          k_f_p: 0
-          ff_qd_d: 0
       r_arm_shz_motor:
         hardware:
           k_q_p: 2
           k_qd_p: 0.5
-          k_f_p: 0
-          ff_qd_d: 0
       r_arm_elx_motor:
         hardware:
           k_q_p: 2
           k_qd_p: 0.5
-          k_f_p: 0
-          ff_qd_d: 0
       r_arm_ely_motor:
         hardware:
           k_q_p: 2
           k_qd_p: 0.5
-          k_f_p: 0
-          ff_qd_d: 0
       r_arm_uwy_motor:
         hardware:
           k_q_p: 10
           k_qd_p: 0.25
-          k_f_p: 0
-          ff_qd_d: 0
       r_arm_mwx_motor:
         hardware:
           k_q_p: 10
           k_qd_p: 0.25
-          k_f_p: 0
-          ff_qd_d: 0
       r_arm_lwy_motor:
         hardware:
           k_q_p: 10
           k_qd_p: 0.25
-          k_f_p: 0
-          ff_qd_d: 0
