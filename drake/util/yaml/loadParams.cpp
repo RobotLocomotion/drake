@@ -26,7 +26,7 @@
 
 
 int main(int argc, char** argv) {
-  YAML::Node config = YAML::LoadFile(Drake::getDrakePath() + "/examples/Atlas/config/control_config.yaml")["qp_controller_params"];
+  YAML::Node config = YAML::LoadFile(Drake::getDrakePath() + "/examples/Valkyrie/config/control_config_sim.yaml")["qp_controller_params"];
 
   config = expandDefaults(config);
   // std::cout << config << std::endl;

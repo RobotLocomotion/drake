@@ -272,7 +272,6 @@ classdef Valkyrie < TimeSteppingRigidBodyManipulator & Biped
     r_akx_name = 'rightAnkleRoll';
     r_aky_name = 'rightAnklePitch';
     l_aky_name = 'leftAnklePitch';
-    control_config_file = fullfile(fileparts(mfilename('fullpath')), '..', 'config', 'control_config.yaml');
-    hardware_data_file = fullfile(fileparts(mfilename('fullpath')), '..', 'config', 'HardwareData.yaml');
+    control_config_file = fullfile(fileparts(mfilename('fullpath')), '..', 'config', 'control_config_sim.yaml');
   end
 end

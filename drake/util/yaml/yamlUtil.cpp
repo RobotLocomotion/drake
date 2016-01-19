@@ -251,8 +251,11 @@ QPControllerParams loadSingleParamSet(const YAML::Node& config, const RigidBodyT
   params.whole_body.integrator.eta = get(get(config, "integrator"), "eta").as<double>();
   loadBodyMotionParams(params, get(config, "body_specific"), robot);
   loadInputParams(params, get(config, "input_specific"), robot);
+  std::cout << "loaded input params" << std::endl;
   params.vref_integrator = get(config, "vref_integrator").as<VRefIntegratorParams>();
+  std::cout << "loaded vref_integrator params" << std::endl;
   params.W_kdot = get(config, "W_kdot").as<double>() * Eigen::Matrix3d::Identity();
+  std::cout << "loaded W_kdot params" << std::endl;
   params.Kp_ang = get(config, "Kp_ang").as<double>();
   params.w_slack = get(config, "w_slack").as<double>();
   params.slack_limit = get(config, "slack_limit").as<double>();
@@ -269,6 +272,7 @@ QPControllerParams loadSingleParamSet(const YAML::Node& config, const RigidBodyT
   params.center_of_mass_observer_gain(1,1) = l_zmp;
   params.center_of_mass_observer_gain(2,2) = l_com;
   params.center_of_mass_observer_gain(3,3) = l_com;
+  std::cout << "loaded com_observer_config params" << std::endl;
 
   return params;
 }
