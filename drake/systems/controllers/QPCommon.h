@@ -177,8 +177,34 @@ struct JointSoftLimitParams {
   Eigen::VectorXd weight;
   Eigen::VectorXd k_logistic;
 
+  friend std::ostream& operator<<(std::ostream& os, const JointSoftLimitParams& params) {
+    os << "enabled: " << params.enabled.transpose() << std::endl
+       << "disable_when_body_in_support: " << params.disable_when_body_in_support.transpose() << std::endl
+       << "lb: " << params.lb.transpose() << std::endl
+       << "ub: " << params.ub.transpose() << std::endl
+       << "kp: " << params.kp.transpose() << std::endl
+       << "kd: " << params.kd.transpose() << std::endl
+       << "weight: " << params.weight.transpose() << std::endl
+       << "k_logistic: " << params.k_logistic.transpose() << std::endl;
+    return os;
+  }
+
   friend bool operator==(const JointSoftLimitParams& lhs, const JointSoftLimitParams& rhs) {
     std::cout << "comparing JointSoftLimitParams" << std::endl;
+    bool is_equal = lhs.enabled == rhs.enabled
+        && lhs.disable_when_body_in_support == rhs.disable_when_body_in_support
+        && lhs.lb == rhs.lb
+        && lhs.ub == rhs.ub
+        && lhs.kp.isApprox(rhs.kp)
+        && lhs.kd.isApprox(rhs.kd)
+        && lhs.weight.isApprox(rhs.weight)
+        && lhs.k_logistic.isApprox(rhs.k_logistic);
+
+    if (!is_equal) {
+      std::cout << "lhs: " << std::endl << lhs << std::endl;
+      std::cout << "rhs: " << std::endl << rhs << std::endl;
+    }
+    return is_equal;
     // std::cout << "lhs: " << std::endl;
     // std::cout << "enabled: " << lhs.enabled.transpose() << std::endl;
     // std::cout << "disable_when_body_in_support: " << lhs.disable_when_body_in_support.transpose() << std::endl;
@@ -204,15 +230,7 @@ struct JointSoftLimitParams {
     // std::cout << "weight: " << rhs.weight.transpose() << std::endl;
     // std::cout << lhs.weight.isApprox(rhs.weight) << std::endl;
     // std::cout << "k_logistic: " << rhs.k_logistic.transpose() << std::endl;
-    std::cout << lhs.k_logistic.isApprox(rhs.k_logistic) << std::endl;
-    return lhs.enabled == rhs.enabled
-        && lhs.disable_when_body_in_support == rhs.disable_when_body_in_support
-        && lhs.lb == rhs.lb
-        && lhs.ub == rhs.ub
-        && lhs.kp.isApprox(rhs.kp)
-        && lhs.kd.isApprox(rhs.kd)
-        && lhs.weight.isApprox(rhs.weight)
-        && lhs.k_logistic.isApprox(rhs.k_logistic);
+    // std::cout << lhs.k_logistic.isApprox(rhs.k_logistic) << std::endl;
   }
 };
 
@@ -323,23 +341,7 @@ struct HardwareGains {
 
   friend bool operator==(const HardwareGains& lhs, const HardwareGains& rhs) {
     std::cout << "comparing HardwareGains" << std::endl;
-    std::cout << (lhs.k_f_p.isApprox(rhs.k_f_p)) << std::endl;
-    std::cout << "lhs: " << lhs.k_f_p.transpose() << std::endl;
-    std::cout << "rhs: " << rhs.k_f_p.transpose() << std::endl;
-    std::cout << (lhs.k_q_p.isApprox(rhs.k_q_p)) << std::endl;
-    std::cout << "lhs: " << lhs.k_q_p.transpose() << std::endl;
-    std::cout << "rhs: " << rhs.k_q_p.transpose() << std::endl;
-    std::cout << (lhs.k_q_i.isApprox(rhs.k_q_i)) << std::endl;
-    std::cout << (lhs.k_qd_p.isApprox(rhs.k_qd_p)) << std::endl;
-    std::cout << "lhs: " << lhs.k_qd_p.transpose() << std::endl;
-    std::cout << "rhs: " << rhs.k_qd_p.transpose() << std::endl;
-    std::cout << (lhs.ff_qd.isApprox(rhs.ff_qd)) << std::endl;
-    std::cout << (lhs.ff_f_d.isApprox(rhs.ff_f_d)) << std::endl;
-    std::cout << (lhs.ff_const.isApprox(rhs.ff_const)) << std::endl;
-    std::cout << (lhs.ff_qd_d.isApprox(rhs.ff_qd_d)) << std::endl;
-    std::cout << "lhs: " << lhs.ff_qd_d.transpose() << std::endl;
-    std::cout << "rhs: " << rhs.ff_qd_d.transpose() << std::endl;
-    return lhs.k_f_p.isApprox(rhs.k_f_p)
+    bool is_equal = lhs.k_f_p.isApprox(rhs.k_f_p)
         && lhs.k_q_p.isApprox(rhs.k_q_p)
         && lhs.k_q_i.isApprox(rhs.k_q_i)
         && lhs.k_qd_p.isApprox(rhs.k_qd_p)
@@ -347,6 +349,26 @@ struct HardwareGains {
         && lhs.ff_f_d.isApprox(rhs.ff_f_d)
         && lhs.ff_const.isApprox(rhs.ff_const)
         && lhs.ff_qd_d.isApprox(rhs.ff_qd_d);
+
+    if (!is_equal) {
+      std::cout << (lhs.k_f_p.isApprox(rhs.k_f_p)) << std::endl;
+      std::cout << "lhs: " << lhs.k_f_p.transpose() << std::endl;
+      std::cout << "rhs: " << rhs.k_f_p.transpose() << std::endl;
+      std::cout << (lhs.k_q_p.isApprox(rhs.k_q_p)) << std::endl;
+      std::cout << "lhs: " << lhs.k_q_p.transpose() << std::endl;
+      std::cout << "rhs: " << rhs.k_q_p.transpose() << std::endl;
+      std::cout << (lhs.k_q_i.isApprox(rhs.k_q_i)) << std::endl;
+      std::cout << (lhs.k_qd_p.isApprox(rhs.k_qd_p)) << std::endl;
+      std::cout << "lhs: " << lhs.k_qd_p.transpose() << std::endl;
+      std::cout << "rhs: " << rhs.k_qd_p.transpose() << std::endl;
+      std::cout << (lhs.ff_qd.isApprox(rhs.ff_qd)) << std::endl;
+      std::cout << (lhs.ff_f_d.isApprox(rhs.ff_f_d)) << std::endl;
+      std::cout << (lhs.ff_const.isApprox(rhs.ff_const)) << std::endl;
+      std::cout << (lhs.ff_qd_d.isApprox(rhs.ff_qd_d)) << std::endl;
+      std::cout << "lhs: " << lhs.ff_qd_d.transpose() << std::endl;
+      std::cout << "rhs: " << rhs.ff_qd_d.transpose() << std::endl;
+    }
+    return is_equal;
   }
 };
 
@@ -430,7 +452,7 @@ struct QPControllerParams {
   friend bool operator==(const QPControllerParams& lhs, const QPControllerParams& rhs) {
     std::cout << "comparing QPControllerParams" << std::endl;
 
-    return lhs.whole_body == rhs.whole_body
+    bool is_equal = lhs.whole_body == rhs.whole_body
         // && lhs.body_motion == rhs.body_motion
         && lhs.vref_integrator == rhs.vref_integrator
         && lhs.joint_soft_limits == rhs.joint_soft_limits
@@ -445,6 +467,22 @@ struct QPControllerParams {
         && lhs.min_knee_angle == rhs.min_knee_angle
         && lhs.use_center_of_mass_observer == rhs.use_center_of_mass_observer
         && lhs.center_of_mass_observer_gain.isApprox(rhs.center_of_mass_observer_gain);
+
+
+    std::cout << (lhs.joint_soft_limits == rhs.joint_soft_limits) << std::endl;
+    std::cout << (lhs.hardware == rhs.hardware) << std::endl;
+    std::cout << (lhs.W_kdot.isApprox(rhs.W_kdot)) << std::endl;
+    std::cout << (lhs.Kp_ang == rhs.Kp_ang) << std::endl;
+    std::cout << (lhs.w_slack == rhs.w_slack) << std::endl;
+    std::cout << (lhs.slack_limit == rhs.slack_limit) << std::endl;
+    std::cout << (lhs.w_grf == rhs.w_grf) << std::endl;
+    std::cout << (lhs.Kp_accel == rhs.Kp_accel) << std::endl;
+    std::cout << (lhs.contact_threshold == rhs.contact_threshold) << std::endl;
+    std::cout << (lhs.min_knee_angle == rhs.min_knee_angle) << std::endl;
+    std::cout << (lhs.use_center_of_mass_observer == rhs.use_center_of_mass_observer) << std::endl;
+    std::cout << (lhs.center_of_mass_observer_gain.isApprox(rhs.center_of_mass_observer_gain)) << std::endl;
+
+    return is_equal;
   }
 };
 

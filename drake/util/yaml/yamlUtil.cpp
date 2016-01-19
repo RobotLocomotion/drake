@@ -138,16 +138,24 @@ void loadJointParams(QPControllerParams &params, const YAML::Node &config, const
 
 void loadSingleInputParams(QPControllerParams &params, Eigen::DenseIndex position_index, YAML::Node config, const RigidBodyTree &robot) {
   YAML::Node hardware_config = get(config, "hardware");
-  params.hardware.gains.k_f_p(position_index) = get(hardware_config, "k_f_p").as<double>();
-  params.hardware.gains.k_q_p(position_index) = get(hardware_config, "k_q_p").as<double>();
-  params.hardware.gains.k_q_i(position_index) = get(hardware_config, "k_q_i").as<double>();
-  params.hardware.gains.k_qd_p(position_index) = get(hardware_config, "k_qd_p").as<double>();
-  params.hardware.gains.ff_qd(position_index) = get(hardware_config, "ff_qd").as<double>();
-  params.hardware.gains.ff_f_d(position_index) = get(hardware_config, "ff_f_d").as<double>();
-  params.hardware.gains.ff_const(position_index) = get(hardware_config, "ff_const").as<double>();
-  params.hardware.gains.ff_qd_d(position_index) = get(hardware_config, "ff_qd_d").as<double>();
+
   params.hardware.joint_is_force_controlled(position_index) = get(hardware_config, "joint_is_force_controlled").as<bool>();
   params.hardware.joint_is_position_controlled(position_index) = get(hardware_config, "joint_is_position_controlled").as<bool>();
+
+  if (params.hardware.joint_is_position_controlled(position_index)) {
+    params.hardware.gains.k_q_p(position_index) = get(hardware_config, "k_q_p").as<double>();
+    params.hardware.gains.k_q_i(position_index) = get(hardware_config, "k_q_i").as<double>();
+    params.hardware.gains.k_qd_p(position_index) = get(hardware_config, "k_qd_p").as<double>();
+  }
+
+  if (params.hardware.joint_is_force_controlled(position_index)) {
+    params.hardware.gains.k_f_p(position_index) = get(hardware_config, "k_f_p").as<double>();
+    params.hardware.gains.ff_qd(position_index) = get(hardware_config, "ff_qd").as<double>();
+    params.hardware.gains.ff_f_d(position_index) = get(hardware_config, "ff_f_d").as<double>();
+    params.hardware.gains.ff_const(position_index) = get(hardware_config, "ff_const").as<double>();
+    params.hardware.gains.ff_qd_d(position_index) = get(hardware_config, "ff_qd_d").as<double>();
+  }
+
 }
 
 void loadInputParams(QPControllerParams& params, const YAML::Node &config, const RigidBodyTree& robot) {
