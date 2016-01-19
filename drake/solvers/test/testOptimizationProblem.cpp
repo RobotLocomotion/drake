@@ -53,9 +53,6 @@ public:
     y(0) = x(0) * x(0) * (4 - 2.1 * x(0) * x(0) + x(0) * x(0) * x(0) * x(0) / 3) + x(0) * x(1) +
            x(1) * x(1) * (-4 + 4 * x(1) * x(1));
   }
-
-  size_t getNumInputs() const { return 2; }
-  size_t getNumOutputs() const { return 1; }
 };
 
 void sixHumpCamel() {
@@ -65,7 +62,14 @@ void sixHumpCamel() {
   prog.addObjective(objective);
   prog.solve();
   prog.printSolution();
-  // todo: check that it's one of the six local minima?
+
+  // check (numerically) if it is a local minima
+  VectorXd ystar, y;
+  objective->eval(x.value(),ystar);
+  for (int i=0; i<10; i++) {
+    objective->eval(x.value() + .01 * Eigen::Matrix<double, 2, 1>::Random(), y);
+    if (y(0)<ystar(0)) throw std::runtime_error("not a local minima!");
+  }
 }
 
 int main(int argc, char* argv[])

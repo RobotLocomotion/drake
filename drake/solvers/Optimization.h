@@ -141,7 +141,7 @@ namespace Drake {
 
   class FunctionConstraint : public Constraint {
   public:
-    FunctionConstraint(const VariableList& vars, const std::shared_ptr<DifferentiableFunction>& func, size_t num_constraints) : Constraint(vars,num_constraints) {}
+    FunctionConstraint(const VariableList& vars, const std::shared_ptr<DifferentiableFunction>& func, size_t num_constraints) : Constraint(vars,num_constraints), func(func) {}
 
     template <typename DerivedLB, typename DerivedUB>
     FunctionConstraint(const VariableList& vars, const std::shared_ptr<DifferentiableFunction>& func, const Eigen::MatrixBase<DerivedLB>& lb, const Eigen::MatrixBase<DerivedUB>& ub) : Constraint(vars,lb,ub), func(func) {}
@@ -238,6 +238,8 @@ namespace Drake {
       variables.push_back(v);
       variable_views.push_back(DecisionVariableView(v));
       num_vars += num_new_vars;
+      x_initial_guess.conservativeResize(num_vars);
+      x_initial_guess.tail(num_vars) = 0.1*Eigen::VectorXd::Random(num_vars);
 
       return variables.back();
     }
@@ -302,7 +304,7 @@ namespace Drake {
     template <typename Derived>
     void setInitialGuess(const DecisionVariableView& var, const Eigen::MatrixBase<Derived>& x0)
     {
-      // todo: implement this
+      x_initial_guess.segment(var.index(),var.size()) = x0;
     }
 
     bool solve() { return problem_type->solve(*this); }; // todo: add argument for options
@@ -341,7 +343,7 @@ namespace Drake {
     std::list<std::shared_ptr<Constraint>> generic_constraints;
     std::list<std::shared_ptr<LinearEqualityConstraint>> linear_equality_constraints;
     size_t num_vars;
-
+    Eigen::VectorXd x_initial_guess;
   private:
 
     void checkVariables(const std::shared_ptr<Constraint>& con) {

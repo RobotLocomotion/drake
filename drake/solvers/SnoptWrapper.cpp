@@ -14,11 +14,9 @@ namespace snopt {
 //#include "snoptProblem.hh"
 }
 
-// todo:  implement objectives
 // todo:  implement nonlinear constraints
 // todo:  implement linear inequality constraints
 // todo:  special case bounding box constraints
-// todo:  handle initial conditions
 // todo:  handle snopt options
 // todo:  return more information that just the solution (INFO, infeasible constraints, ...)
 
@@ -49,14 +47,19 @@ static int snopt_userfun(snopt::integer *Status, snopt::integer *n, snopt::doubl
   for(i=0; i<*n; i++) { xvec(i) = static_cast<double>(x[i]); }
 
 //  cout << "In snopt user fun" << endl;
+  F[0] = 0.0;
+  memset(G,0,sizeof(*n)*sizeof(snopt::doublereal));
 
   // evaluate objective
   auto tx = initTaylorVecXd(xvec);
   TaylorVecXd ty(1);
   for (auto const& obj : current_problem->getGenericObjectives() ) {
     obj->eval(tx,ty);
-    F[0] += ty(0).value();
-    for (i=0; i<*n; i++) { G[i] = ty(0).derivatives()(i); }
+    F[0] += ty(0).value(); // cout << "F = " << F[0] << endl;
+    for (i=0; i<*n; i++) {
+      G[i] += ty(0).derivatives()(i);
+//      cout << "G[" << i << "] = " << G[i] << endl;
+    }
   }
 
   // todo: evaluate the nonlinear constraints and populate F[] and G[] here
@@ -95,12 +98,12 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   snopt::doublereal* xupp = new snopt::doublereal[nx];
   for(int i=0;i<nx;i++)
   {
-    x[i] = static_cast<snopt::doublereal>(0.0);  // todo: pull from initial conditions (possibly w/ memcpy?)
+    x[i] = static_cast<snopt::doublereal>(prog.x_initial_guess(i));
     xlow[i] = static_cast<snopt::doublereal>(-numeric_limits<double>::infinity());
     xupp[i] = static_cast<snopt::doublereal>(numeric_limits<double>::infinity());
   }
 
-  size_t num_nonlinear_constraints=0, max_num_gradients=0;
+  size_t num_nonlinear_constraints=0, max_num_gradients=nx;
   for (auto const& c : prog.generic_constraints) {
     size_t n = c->getNumConstraints();
     for (const DecisionVariableView& v : c->getVariableList() ) {
@@ -114,12 +117,18 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   snopt::integer nF = 1+num_nonlinear_constraints+num_linear_constraints;
   snopt::doublereal* Flow = new snopt::doublereal[nF];
   snopt::doublereal* Fupp = new snopt::doublereal[nF];
+  Flow[0] = static_cast<snopt::doublereal>(-std::numeric_limits<double>::infinity());
+  Fupp[0] = static_cast<snopt::doublereal>(std::numeric_limits<double>::infinity());
 
   snopt::integer lenG = static_cast<snopt::integer>(max_num_gradients);
   snopt::integer* iGfun = new snopt::integer[lenG];
   snopt::integer* jGvar = new snopt::integer[lenG];
+  for (snopt::integer i=0; i<nx; i++) {
+    iGfun[i]=1;
+    jGvar[i]=i+1;
+  }
 
-  size_t constraint_index=1, grad_index=0;  // constraint index starts at 1 because the objective is the first row
+  size_t constraint_index=1, grad_index=nx;  // constraint index starts at 1 because the objective is the first row
   for (auto const& c : prog.generic_constraints) {
     size_t n = c->getNumConstraints();
 
@@ -193,17 +202,13 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
 
   snopt::integer nS,nInf;
   snopt::doublereal sInf;
-  snopt::integer print_file_name_len = static_cast<snopt::integer>(1);
-  const char* print_file_name = NULL;
-  if(print_file_name_len != 1) { // todo: handle print file logic
-/*
+  if (true) { // print to output file (todo: make this an option)
     iPrint = 9;
-    print_file_name = new char[print_file_name_len];
-    mxGetString(pprint_name,print_file_name,print_file_name_len);
+    char print_file_name[50] = "snopt.out";
+    snopt::integer print_file_name_len = static_cast<snopt::integer>(strlen(print_file_name));
     snopt::snopenappend_(&iPrint,print_file_name,&INFO_snopt,print_file_name_len);
-*/
-    //mysnseti("Major print level",static_cast<snopt::integer>(11),&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw);
-    //mysnseti("Print file",iPrint,&iPrint,&iSumm,&INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw);
+    mysnseti("Major print level",static_cast<snopt::integer>(11),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
+    mysnseti("Print file",iPrint,&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
   }
 
   snopt::integer minrw,miniw,mincw;
@@ -295,9 +300,8 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   delete[] Fmul;
   delete[] Fstate;
 
-  if(print_file_name_len!= 1) {
+  if(iPrint>=0) {
     snopt::snclose_(&iPrint);
-    delete[] print_file_name;
   }
 
   return true;
