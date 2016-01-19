@@ -310,26 +310,26 @@ namespace Drake {
        * @param derived_ctor_args arguments to construct a Derived, if necessary to do so
        */
       template <typename Derived, typename... DerivedCtorArg>
-        MathematicalProgram* require_superclass_of(DerivedCtorArg&&... derived_ctor_arg) {
-          //If *this is a superclass of Derived, we won't be able to cast *this into a Derived.
-          //An exception is that *this may be of type Derived, so we have check for this case
-          //We use this logic since C++ can't directly check if a static type derives from a dynamic type
+      MathematicalProgram* require_superclass_of(DerivedCtorArg&&... derived_ctor_arg) {
+        //If *this is a superclass of Derived, we won't be able to cast *this into a Derived.
+        //An exception is that *this may be of type Derived, so we have check for this case
+        //We use this logic since C++ can't directly check if a static type derives from a dynamic type
 
-          bool this_is_superclass_of_derived =
+        bool this_is_superclass_of_derived =
                 (typeid(Derived) == typeid(*this)) //check if *this is a Derived
                 || (dynamic_cast<Derived*>(this) == nullptr); //check if we cannot cast this to Derived
 
-          if (this_is_superclass_of_derived)
-            return this;
-          else
-          {
-            //delete quad is safe IF quad is no longer used, as classes can delete themselves.
-            //however, perhaps this behaviour might be surprising to users?
-            //it's clean and concise, but potentially contains a serious pitfall
-            delete this;
-            return new Derived(std::forward<DerivedCtorArg>(derived_ctor_arg)...);
-          }
+        if (this_is_superclass_of_derived)
+          return this;
+        else
+        {
+          //delete quad is safe IF quad is no longer used, as classes can delete themselves.
+          //however, perhaps this behaviour might be surprising to users?
+          //it's clean and concise, but potentially contains a serious pitfall
+          delete this;
+          return new Derived(std::forward<DerivedCtorArg>(derived_ctor_arg)...);
         }
+      }
     };
 
 /*  // Prototype of the more complete optimization problem class hiearchy (to be implemented only as needed)
