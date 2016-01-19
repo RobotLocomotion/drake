@@ -12,7 +12,7 @@
   #define SWIG_FILE_WITH_INIT
   #include <Python.h>
 #endif
-#include "RigidBodyIK.h"
+#include "drake/systems/plants/RigidBodyIK.h"
 %}
 
 %include <typemaps.i>
@@ -22,6 +22,6 @@
 
 %template(vectorConstraintPtr) std::vector<RigidBodyConstraint *>;
 
-%include "IKoptions.h"
-%include "RigidBodyIK.h"
-%include "RigidBodyConstraint.h"
+%include "drake/systems/plants/IKoptions.h"
+%include "drake/systems/plants/RigidBodyIK.h"
+%include "drake/systems/plants/constraint/RigidBodyConstraint.h"
