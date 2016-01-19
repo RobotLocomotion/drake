@@ -486,6 +486,8 @@ struct QPControllerParams {
   }
 };
 
+std::unordered_map<std::string, int> computeBodyOrFrameNameToIdMap(const RigidBodyTree& robot);
+
 class NewQPControllerData {
 public:
   GRBenv *env;
@@ -516,12 +518,15 @@ public:
   Eigen::MatrixXd Ak; // centroidal angular momentum matrix
   Eigen::Vector3d Akdot_times_v; // centroidal angular momentum velocity-dependent bias
 
+  std::unordered_map<std::string, int> body_or_frame_name_to_id;
+
   // logical separation for the "state", that is, things we expect to change at every iteration
   // and which must persist to the next iteration
   QPControllerState state;
 
   NewQPControllerData(std::unique_ptr<RigidBodyTree> r) :
-      r(std::move(r)), cache(this->r->bodies)
+      r(std::move(r)), cache(this->r->bodies),
+      body_or_frame_name_to_id(computeBodyOrFrameNameToIdMap(*(this->r)))
   {
     // empty
   }

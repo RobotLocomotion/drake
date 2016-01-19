@@ -203,6 +203,8 @@ classdef Valkyrie < TimeSteppingRigidBodyManipulator & Biped
       prop_cache.body_ids.('pelvis') = obj.findLinkId('pelvis');
       prop_cache.body_ids.('r_foot') = obj.findLinkId('rightFoot');
       prop_cache.body_ids.('l_foot') = obj.findLinkId('leftFoot');
+      prop_cache.body_ids.('rightFoot') = obj.findLinkId('rightFoot');
+      prop_cache.body_ids.('leftFoot') = obj.findLinkId('leftFoot');
 
       prop_cache.position_indices.('neck') = obj.findPositionIndices('lowerNeckPitch');
       prop_cache.position_indices.('r_leg_ak') = [obj.findPositionIndices('rightAnklePitch'); obj.findPositionIndices('rightAnkleRoll')];

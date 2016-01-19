@@ -75,9 +75,9 @@ if (MATLAB_FOUND)
     add_mex(compareParamSetsmex compareParamSetsmex.cpp)
     target_link_libraries(compareParamSetsmex drakeQP drakeControlUtil drakeQPCommon drakeMexUtil drakeControlMexUtil drakeYAMLUtil)
 
-    add_mex(encodeQPInputLCMMex encodeQPInputLCMMex.cpp)
-    target_link_libraries(encodeQPInputLCMMex drakeControlUtil drakeQPCommon drakeMexUtil drakeControlMexUtil)
-    pods_use_pkg_config_packages(encodeQPInputLCMMex lcm)
+    # add_mex(encodeQPInputLCMMex encodeQPInputLCMMex.cpp)
+    # target_link_libraries(encodeQPInputLCMMex drakeControlUtil drakeQPCommon drakeMexUtil drakeControlMexUtil)
+    # pods_use_pkg_config_packages(encodeQPInputLCMMex lcm)
     
     macro(add_control_mex)
       add_mex(${ARGV} ${ARGV}.cpp)

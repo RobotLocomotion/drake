@@ -70,6 +70,7 @@ YAML::Node get(const YAML::Node& parent, const std::string& key) {
 
 void loadBodyMotionParams(QPControllerParams &params, const YAML::Node &config, const RigidBodyTree &robot) {
   for (auto body_it = robot.bodies.begin(); body_it != robot.bodies.end(); ++body_it) {
+    std::cout << "loading body with linkname: " << (*body_it)->linkname << " and params: " << get(config, (*body_it)->linkname) << std::endl;
     params.body_motion[body_it - robot.bodies.begin()] = get(config, (*body_it)->linkname).as<BodyMotionParams>();
   }
 

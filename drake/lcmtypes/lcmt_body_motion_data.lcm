@@ -4,7 +4,7 @@ struct lcmt_body_motion_data
 {
 	int64_t timestamp;
 
-	int32_t body_id;
+	string body_or_frame_name;
 
         lcmt_piecewise_polynomial spline;
 

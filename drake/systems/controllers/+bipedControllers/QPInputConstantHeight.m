@@ -82,9 +82,5 @@ classdef QPInputConstantHeight
                                      'weight', {});
       obj.param_set_name = 'walking';
     end
-
-    function msg = to_lcm(obj)
-      msg = drake.lcmt_qp_controller_input(encodeQPInputLCMMex(obj, false));
-    end
   end
 end
