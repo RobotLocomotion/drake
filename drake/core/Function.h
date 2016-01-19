@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <Eigen/Dense>
-#include "drakeGradientUtil.h"
+#include "Gradient.h"
 
 namespace Drake {
 
@@ -110,7 +110,7 @@ namespace Drake {
     Function(InputOutputRelation::Form f) : relation(f) {};
     virtual ~Function() {};
 
-    virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::Ref<const Eigen::VectorXd>& y) const = 0;
+    virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const = 0;
     virtual const InputOutputRelation& getInputOutputRelation() const { return relation; };
 
   protected:
@@ -122,7 +122,8 @@ namespace Drake {
     DifferentiableFunction() : Function(InputOutputRelation::DIFFERENTIABLE) {};
     virtual ~DifferentiableFunction() {};
 
-    virtual void eval(const Eigen::Ref<const TaylorVecXd>& x, Eigen::Ref<const TaylorVecXd>& y) const = 0;
+    virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const = 0;
+    virtual void eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const = 0;
   };
 
   template <typename Derived>
@@ -131,8 +132,8 @@ namespace Drake {
     TemplatedDifferentiableFunction(Derived& derived) : DifferentiableFunction(), derived(derived) {};
     virtual ~TemplatedDifferentiableFunction() {};
 
-    virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::Ref<const Eigen::VectorXd>& y) const override { derived.eval(x,y); }
-    virtual void eval(const Eigen::Ref<const TaylorVecXd>& x, Eigen::Ref<const TaylorVecXd>& y) const override { derived.eval(x,y); }
+    virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const override { derived.evalImpl(x,y); }
+    virtual void eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override { derived.evalImpl(x,y); }
 
   private:
     Derived& derived;

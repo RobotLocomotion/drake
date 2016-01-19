@@ -1,12 +1,11 @@
 #ifndef DRAKE_OPTIMIZATION_H
 #define DRAKE_OPTIMIZATION_H
 
-#include "drake/core/Core.h"
 #include <list>
 #include <memory>
 #include <initializer_list>
 #include <Eigen/SparseCore>
-#include "drake/drakeGradientUtil.h"
+#include "drake/core/Core.h"
 
 namespace Drake {
 
@@ -127,17 +126,36 @@ namespace Drake {
     {}
     virtual ~Constraint() {}
 
-    virtual Eigen::VectorXd eval(const Eigen::Ref<const Eigen::VectorXd>& x) const = 0;
-    virtual TaylorVecXd evalWithGradient(const Eigen::Ref<const Eigen::VectorXd>& x) const = 0;  // move this to DifferentiableConstraint derived class if/when we need to support non-differentiable functions
+    virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const = 0;
+    virtual void eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const = 0;  // move this to DifferentiableConstraint derived class if/when we need to support non-differentiable functions
 
     const Eigen::VectorXd& getLowerBound() const { return lower_bound; }
     const Eigen::VectorXd& getUpperBound() const { return upper_bound; }
-    size_t getNumConstraints() { return lower_bound.size(); }
+    size_t getNumConstraints() const { return lower_bound.size(); }
 
     const VariableList& getVariableList() const { return variable_list; }
   protected:
     VariableList variable_list;
     Eigen::VectorXd lower_bound, upper_bound;
+  };
+
+  class FunctionConstraint : public Constraint {
+  public:
+    FunctionConstraint(const VariableList& vars, const std::shared_ptr<DifferentiableFunction>& func, size_t num_constraints) : Constraint(vars,num_constraints) {}
+
+    template <typename DerivedLB, typename DerivedUB>
+    FunctionConstraint(const VariableList& vars, const std::shared_ptr<DifferentiableFunction>& func, const Eigen::MatrixBase<DerivedLB>& lb, const Eigen::MatrixBase<DerivedUB>& ub) : Constraint(vars,lb,ub), func(func) {}
+    virtual ~FunctionConstraint() {}
+
+    virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const override {
+      func->eval(x,y);
+    }
+    virtual void eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override {
+      func->eval(x,y);
+    }
+
+  private:
+    const std::shared_ptr<DifferentiableFunction> func;
   };
 
   // todo: consider implementing DifferentiableConstraint, TwiceDifferentiableConstraint, PolynomialConstraint, QuadraticConstraint, ComplementarityConstraint, IntegerConstraint, ...
@@ -150,8 +168,8 @@ namespace Drake {
     LinearEqualityConstraint(const VariableList& vars) : Constraint(vars, Eigen::VectorXd::Zero(size(vars)), Eigen::VectorXd::Zero(size(vars))) { }
     virtual ~LinearEqualityConstraint() {}
 
-    virtual Eigen::VectorXd eval(const Eigen::Ref<const Eigen::VectorXd>& x) const override { return getMatrix()*x - getVector(); }
-    virtual TaylorVecXd evalWithGradient(const Eigen::Ref<const Eigen::VectorXd>& x) const override { return getMatrix().cast<TaylorVarXd>()*initTaylorVecXd(x) - getVector().cast<TaylorVarXd>(); };
+    virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const override { y.resize(getNumConstraints()); y=getMatrix()*x - getVector(); }
+    virtual void eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override { y.resize(getNumConstraints()); y = getMatrix().cast<TaylorVarXd>()*x - getVector().cast<TaylorVarXd>(); };
 
     virtual Eigen::SparseMatrix<double> getSparseMatrix() const { return getMatrix().sparseView(); };
     virtual Eigen::MatrixXd getMatrix() const = 0;
@@ -203,11 +221,9 @@ namespace Drake {
     BoundingBoxConstraint(const VariableList& vars, const Eigen::MatrixBase<DerivedLB>& lb, const Eigen::MatrixBase<DerivedUB>& ub) : Constraint(vars,lb,ub) {}
     virtual ~BoundingBoxConstraint() {}
 
-    virtual Eigen::VectorXd eval(const Eigen::Ref<const Eigen::VectorXd>& x) const override { return x; }
-    virtual TaylorVecXd evalWithGradient(const Eigen::Ref<const Eigen::VectorXd>& x) const override { return initTaylorVecXd(x); }
+    virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const override { y.resize(getNumConstraints()); y=x; }
+    virtual void eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override { y.resize(getNumConstraints()); y=x; }
   };
-
-  class FunctionConstraint<
 
   class OptimizationProblem {
   public:
@@ -227,6 +243,12 @@ namespace Drake {
     }
 //    const DecisionVariable& addIntegerVariables(size_t num_new_vars, std::string name);
 //  ...
+
+    void addObjective(const std::shared_ptr<Constraint>& obj) {
+      checkVariables(obj);
+      problem_type.reset(problem_type->addGenericObjective());
+      generic_objectives.push_back(obj);
+    }
 
     /** addConstraint
      * @brief adds a constraint to the program.  method specializations ensure that the constraint gets added in the right way
@@ -309,10 +331,13 @@ namespace Drake {
       }
     }
 
+    const std::list<std::shared_ptr<Constraint>>& getGenericObjectives() const { return generic_objectives; } // e.g. for snopt_user_fun
+
   private:
     // note: use std::list instead of std::vector because realloc in std::vector invalidates existing references to the elements
     std::list<DecisionVariable> variables;
     VariableList variable_views;
+    std::list<std::shared_ptr<Constraint>> generic_objectives;
     std::list<std::shared_ptr<Constraint>> generic_constraints;
     std::list<std::shared_ptr<LinearEqualityConstraint>> linear_equality_constraints;
     size_t num_vars;
@@ -343,12 +368,14 @@ namespace Drake {
       virtual MathematicalProgram* addComplementarityConstraint() { return new MathematicalProgram; };
       virtual MathematicalProgram* addLinearInequalityConstraint() { return new MathematicalProgram; };
       */
+      virtual MathematicalProgram* addGenericObjective() { return new MathematicalProgram; };
       virtual MathematicalProgram* addGenericConstraint() { return new MathematicalProgram; };
       virtual MathematicalProgram* addLinearEqualityConstraint() { return new MathematicalProgram; };
       virtual bool solve(OptimizationProblem& prog) const { throw std::runtime_error("not implemented yet"); }
     };
 
     struct NonlinearProgram : public MathematicalProgram {
+      virtual MathematicalProgram* addGenericObjective() override { return new NonlinearProgram; };
       virtual MathematicalProgram *addGenericConstraint() override { return new NonlinearProgram; };
       virtual MathematicalProgram *addLinearEqualityConstraint() override { return new NonlinearProgram; };
 

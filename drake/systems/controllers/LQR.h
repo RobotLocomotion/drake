@@ -21,7 +21,7 @@ namespace Drake {
     typedef TaylorVard<-1> AutoDiffType;
     VectorXd xu(num_states+num_inputs);
     xu << toEigen(x0), toEigen(u0);
-    TaylorVecXd xu_taylor = initTaylorVecX(xu);
+    TaylorVecXd xu_taylor = initTaylorVecXd(xu);
     typename System::template StateVector<AutoDiffType> x_taylor(xu_taylor.head(num_states));
     typename System::template InputVector<AutoDiffType> u_taylor(xu_taylor.tail(num_inputs));
 

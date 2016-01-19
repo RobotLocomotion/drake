@@ -26,6 +26,7 @@ bool Drake::OptimizationProblem::NonlinearProgram::hasSNOPT() const { return tru
 
 using namespace std;
 using namespace Eigen;
+using namespace Drake;
 
 // NOTE: all snopt calls will use this shared memory... so this code is NOT THREAD SAFE
 const Drake::OptimizationProblem* current_problem = NULL;
@@ -43,14 +44,24 @@ static int snopt_userfun(snopt::integer *Status, snopt::integer *n, snopt::doubl
                          snopt::integer iu[], snopt::integer *leniu,
                          snopt::doublereal ru[], snopt::integer *lenru)
 {
+  snopt::integer i;
   VectorXd xvec(*n);
-  for(snopt::integer i = 0;i<*n;i++) { xvec(i) = static_cast<double>(x[i]); }
+  for(i=0; i<*n; i++) { xvec(i) = static_cast<double>(x[i]); }
 
 //  cout << "In snopt user fun" << endl;
-  snopt::integer i;
+
+  // evaluate objective
+  auto tx = initTaylorVecXd(xvec);
+  TaylorVecXd ty(1);
+  for (auto const& obj : current_problem->getGenericObjectives() ) {
+    obj->eval(tx,ty);
+    F[0] += ty(0).value();
+    for (i=0; i<*n; i++) { G[i] = ty(0).derivatives()(i); }
+  }
+
   // todo: evaluate the nonlinear constraints and populate F[] and G[] here
-  for (i=0; i<*neF; i++) { F[i]=0.0; }
-  for (i=0; i<*neG; i++) { G[i]=0.0; }
+  for (i=1; i<*neF; i++) { F[i]=0.0; }
+  for (i=*n; i<*neG; i++) { G[i]=0.0; }
 
   return 0;
 }
@@ -100,7 +111,7 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   size_t num_linear_constraints=0;
   for (auto const& c : prog.linear_equality_constraints) { num_linear_constraints += c->getNumConstraints(); }
 
-  snopt::integer nF = num_nonlinear_constraints+num_linear_constraints;
+  snopt::integer nF = 1+num_nonlinear_constraints+num_linear_constraints;
   snopt::doublereal* Flow = new snopt::doublereal[nF];
   snopt::doublereal* Fupp = new snopt::doublereal[nF];
 
@@ -108,7 +119,7 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   snopt::integer* iGfun = new snopt::integer[lenG];
   snopt::integer* jGvar = new snopt::integer[lenG];
 
-  size_t constraint_index=0, grad_index=0;
+  size_t constraint_index=1, grad_index=0;  // constraint index starts at 1 because the objective is the first row
   for (auto const& c : prog.generic_constraints) {
     size_t n = c->getNumConstraints();
 
@@ -166,7 +177,7 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   size_t A_index = 0;
   for (auto const & it : tripletList) {
     A[A_index] = it.value();
-    iAfun[A_index] = it.row()+num_nonlinear_constraints+1;
+    iAfun[A_index] = 1+num_nonlinear_constraints+it.row()+1;
     jAvar[A_index] = it.col()+1;
     A_index++;
   }
@@ -226,7 +237,7 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   memset(Fstate,0,sizeof(snopt::integer)*nF);
 
   snopt::doublereal ObjAdd = 0.0;
-  snopt::integer ObjRow = 0; // feasibility problem (for now)
+  snopt::integer ObjRow = 1; // feasibility problem (for now)
 
 /*
   mysnseti("Derivative option",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"DerivativeOption"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);

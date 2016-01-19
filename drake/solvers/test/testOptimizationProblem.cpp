@@ -48,16 +48,20 @@ public:
   SixHumpCamelObjective() : TemplatedDifferentiableFunction<SixHumpCamelObjective>(*this) {};
 
   template<typename ScalarType>
-  Matrix<ScalarType,1,1> eval(const Ref<Matrix<ScalarType, 2, 1>> &x) {
-    return Matrix<ScalarType,1,1>::Constant(x(0) * x(0) * (4 - 2.1 * x(0) * x(0) + x(0) * x(0) * x(0) * x(0) / 3) + x(0) * x(1) +
-           x(1) * x(1) * (-4 + 4 * x(1) * x(1)));
+  void evalImpl(const Ref<const Matrix<ScalarType, Dynamic, 1>>& x, Matrix<ScalarType,Dynamic,1>& y) {
+    y.resize(1);
+    y(0) = x(0) * x(0) * (4 - 2.1 * x(0) * x(0) + x(0) * x(0) * x(0) * x(0) / 3) + x(0) * x(1) +
+           x(1) * x(1) * (-4 + 4 * x(1) * x(1));
   }
+
+  size_t getNumInputs() const { return 2; }
+  size_t getNumOutputs() const { return 1; }
 };
 
 void sixHumpCamel() {
   OptimizationProblem prog;
   auto x = prog.addContinuousVariables(2);
-  auto objective = make_shared<FunctionConstraint<SixHumpCamelObjective>({x});
+  std::shared_ptr<FunctionConstraint> objective(new FunctionConstraint({x},make_shared<SixHumpCamelObjective>(),1));
   prog.addObjective(objective);
   prog.solve();
   prog.printSolution();
