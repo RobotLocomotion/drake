@@ -5,6 +5,8 @@
 #include <list>
 #include <memory>
 #include <initializer_list>
+#include <typeinfo>
+#include <utility>
 
 namespace Drake {
 
@@ -173,6 +175,9 @@ namespace Drake {
   class OptimizationProblem {
   public:
     OptimizationProblem() : problem_type(new LeastSquares), num_vars(0) {};
+    ~OptimizationProblem() {
+      delete problem_type;
+    }
 
     const DecisionVariableView addContinuousVariables(std::size_t num_new_vars, std::string name = "x") {
       DecisionVariable v;
@@ -215,7 +220,7 @@ namespace Drake {
    */
     template <typename DerivedA,typename DerivedB>
     std::shared_ptr<LinearEqualityConstraintImpl> addLinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,const Eigen::MatrixBase<DerivedB>& beq, const VariableList& vars) {
-      problem_type.reset(problem_type->addLinearEqualityConstraint());
+      problem_type = problem_type->addLinearEqualityConstraint();
 
       auto constraint = std::make_shared<LinearEqualityConstraintImpl>(vars,Aeq,beq);
       linear_equality_constraints.push_back(constraint);
@@ -267,8 +272,13 @@ namespace Drake {
     size_t num_vars;
 
   private:
-    // uses virtual methods to crawl up the complexity hiearchy as new decision variables and constraints are added to the program
-    // note that there is dynamic allocation happening in here, but on a structure of negligible size.  (is there a better way?)
+    // uses RTTI to crawl up the complexity hiearchy as new decision variables and constraints are added to the program
+    // dynamic allocation is unavoidable when changing the type of our program
+
+	//forward declare classes
+    struct MathematicalProgram;
+	struct LeastSquares;
+
     struct MathematicalProgram {
     /* these would be used to fill out the optimization hierarchy prototyped below
       virtual MathematicalProgram* addIntegerVariable() { return new MathematicalProgram; };
@@ -284,9 +294,43 @@ namespace Drake {
       virtual MathematicalProgram* addNonlinearConstraint() { return new MathematicalProgram; };
       virtual MathematicalProgram* addLinearInequalityConstraint() { return new MathematicalProgram; };
      */
-      virtual MathematicalProgram* addLinearEqualityConstraint() { return new MathematicalProgram; };
+      virtual MathematicalProgram* addLinearEqualityConstraint() {
+		  return require_superclass_of<LeastSquares>();
+	  };
 
       virtual bool solve(OptimizationProblem& prog) { throw std::runtime_error("not implemented yet"); }
+
+	private:
+		/**
+		 * Returns this if it's a superclass of Derived. Otherwise constructs a Derived from
+		 * provided arguments and deletes this.
+		 * Derived must be in the same inheritance tree as this.
+		 *
+		 * @tparam Derived Class to compare this to
+		 * @param derived_ctor_args arguments to construct a Derived, if necessary to do so
+		 */
+		template <typename Derived, typename... DerivedCtorArg>
+		MathematicalProgram* require_superclass_of(DerivedCtorArg&&... derived_ctor_arg) {
+			//If *this is a superclass of Derived, we won't be able to cast *this into a Derived.
+			//An exception is that *this may be of type Derived, so we have check for this case
+			//We use this logic since C++ can't directly check if a static type derives from a dynamic type
+
+			bool superclass_of_derived =
+				(typeid(Derived) == typeid(*this)) //check if *this is a Derived
+				|| (dynamic_cast<Derived*>(this) == nullptr); //check if we cannot cast this to Derived
+
+			if (superclass_of_derived)
+				return this;
+			else
+			{
+				//delete quad is safe IF quad is no longer used, as classes can delete themselves
+				//however, perhaps this behaviour might be surprising to users?
+				//it's clean and concise, but potentially contains a serious pitfall
+				delete this;
+				return new Derived(std::forward<DerivedCtorArg>(derived_ctor_arg)...);
+			}
+		}
+
     };
 
 /*  // Prototype of the more complete optimization problem class hiearchy (to be implemented only as needed)
@@ -309,8 +353,7 @@ namespace Drake {
     struct LinearComplementarityProblem : public NonlinearComplementarityProblem {};
 */
     struct LeastSquares : public MathematicalProgram { //public LinearProgram, public LinearComplementarityProblem {
-      virtual MathematicalProgram* addLinearEqualityConstraint() { return new LeastSquares; };
-      virtual bool solve(OptimizationProblem& prog) {
+      virtual bool solve(OptimizationProblem& prog) override {
         size_t num_constraints = 0;
         for (auto const& c : prog.linear_equality_constraints) {
           num_constraints += c->getMatrix().rows();
@@ -336,7 +379,7 @@ namespace Drake {
         return true;
       }
     };
-    std::shared_ptr<MathematicalProgram> problem_type;
+    MathematicalProgram* problem_type;
   };
 
 } // end namespace Drake
