@@ -299,7 +299,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
   std::string control_config_filename = mxGetStdString(prhs[narg]);
   YAML::Node control_config = LoadFile(control_config_filename);
-  auto param_sets_yaml = loadAllParamSets(control_config["qp_controller_params"], *robot_ptr, ofstream(regex_replace(control_config_filename, std::regex("\\.yaml"), ".out.yaml"))); 
+  auto param_sets_yaml = loadAllParamSets(control_config["qp_controller_params"], *robot_ptr, ofstream(regex_replace(control_config_filename, std::regex("\\.yaml"), ".debug.out.yaml"))); 
   narg++;
 
   for (auto param_set_it = param_sets_matlab.begin(); param_set_it != param_sets_matlab.end(); ++param_set_it) {

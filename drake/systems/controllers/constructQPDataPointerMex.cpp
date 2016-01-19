@@ -51,20 +51,22 @@ RobotPropertyCache parseKinematicTreeMetadata(const YAML::Node& metadata, const 
   return ret;
 }
 
-JointNames parseRobotJointNames(const string& hardware_data_file_name, const RigidBodyTree& tree) {
+JointNames parseRobotJointNames(const YAML::Node& joint_names, const RigidBodyTree& tree) {
+  std::cout << "parsing joint names: " << joint_names << std::endl;
+  // const string& hardware_data_file_name, const RigidBodyTree& tree) {
   JointNames ret;
   ret.drake.resize(tree.actuators.size());
   transform(tree.actuators.begin(), tree.actuators.end(), ret.drake.begin(),
             [](const RigidBodyActuator &actuator) { return actuator.body->getJoint().getName(); });
-  Node hardware_data = LoadFile(hardware_data_file_name);
-  ret.robot = hardware_data["joint_names"].as<vector<string>>();
+  // Node hardware_data = LoadFile(hardware_data_file_name);
+  ret.robot = joint_names.as<vector<string>>();
 
   return ret;
 }
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
-  if (nrhs<1) mexErrMsgTxt("usage: ptr = constructQPDataPointerMex(robot_obj, control_config_filename, B, umin, umax, gurobi_opts);");
+  if (nrhs<1) mexErrMsgTxt("usage: ptr = constructQPDataPointerMex(robot_obj, control_config_filename, use_fast_qp, gurobi_opts);");
 
   if (nrhs == 1) {
     // By convention, calling the constructor with just one argument (the pointer) should delete the pointer
@@ -117,7 +119,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   narg++;
 
   // input_coordinate_names
-  pdata->input_joint_names = parseRobotJointNames(mxGetStdString(prhs[narg]), *(pdata->r));
+  pdata->input_joint_names = parseRobotJointNames(control_config["joint_names"], *(pdata->r));
   narg++;
 
   // Done parsing inputs
