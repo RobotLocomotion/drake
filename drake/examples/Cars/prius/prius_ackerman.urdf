@@ -3,6 +3,10 @@
   an actuator.
   
   The rear two wheels are independently controlled.
+
+  The mesh file called out for the body of the vehicle is an .obj that includes texture information.
+  There is also a prius.dae that could be used as the mesh file. Neither the .obj nor the .dae seem
+  to render the actual textures.
 -->
 <robot name="car">
   
@@ -18,7 +22,7 @@
         <box size="0.061842105 1.051315789 0.030921" />
       </geometry>
       <material name="">
-        <color rgba="0 0 1 0" />
+        <color rgba="0 0 1 1" />
       </material>
     </visual>
   </link>
@@ -34,7 +38,7 @@
         <box size="0.061842105 0.140955396 0.030921" />
       </geometry>
       <material name="">
-        <color rgba="0 .5 0 0" />
+        <color rgba="0 .5 0 1" />
       </material>
     </visual>
     <visual>
@@ -43,7 +47,7 @@
         <box size="0.204636598 0.061842105 0.030921" />
       </geometry>
       <material name="">
-        <color rgba="0 .5 0 0" />
+        <color rgba="0 .5 0 1" />
       </material>
     </visual>     
   </link>
@@ -59,7 +63,7 @@
         <box size="0.061842105 0.140955396 0.030921" />
       </geometry>
       <material name="">
-        <color rgba="0 .5 0 0" />
+        <color rgba="0 .5 0 1" />
       </material>
     </visual>
     <visual>
@@ -68,7 +72,7 @@
         <box size="0.204636598 0.061842105 0.030921" />
       </geometry>
       <material name="">
-        <color rgba="0 .5 0 0" />
+        <color rgba="0 .5 0 1" />
       </material>
     </visual>  
   </link>
@@ -84,7 +88,7 @@
         <box size="0.061842105 0.878847118 0.030921" />
       </geometry>
       <material name="">
-        <color rgba="0 0 1 0" />
+        <color rgba="0 0 1 1" />
       </material>
     </visual>
   </link>
@@ -101,7 +105,7 @@
         <cylinder length="0.061842105" radius="0.015460526"/>
       </geometry>
       <material name="">
-        <color rgba="0 0 1 0" />
+        <color rgba="0 0 1 1" />
       </material>
     </visual>
   </link>
@@ -117,7 +121,7 @@
         <cylinder length="0.061842105" radius="0.015460526"/>
       </geometry>
       <material name="">
-        <color rgba="0 0 1 0" />
+        <color rgba="0 0 1 1" />
       </material>
     </visual>
   </link>
@@ -311,7 +315,7 @@
         <box size=".06184211 .75 0.030921" />
       </geometry>
       <material name="">
-        <color rgba="0 1 1 0" />
+        <color rgba="0 1 1 1" />
       </material>
     </visual>
     <visual>
@@ -320,7 +324,7 @@
         <box size=".06184211 .75 0.030921" />
       </geometry>
       <material name="">
-        <color rgba="0 1 1 0" />
+        <color rgba="0 1 1 1" />
       </material>
     </visual>
   </link>
@@ -338,7 +342,7 @@
         <box size=".06184211 1.388985 0.030921" />
       </geometry>
       <material name="">
-        <color rgba="0 0 1 0" />
+        <color rgba="0 0 1 1" />
       </material>
     </visual>
   </link>
@@ -391,9 +395,9 @@
       <inertia ixx="0.00216238" iyy="0.50037476" izz="0.50167219" />
     </inertial>
     <visual>
-      <origin xyz="-4.6 1.85 .3" rpy="1.5708 0 0" />
+      <origin xyz="-3.6725 -.9213945 .1666" rpy="0 0 0" />
       <geometry>
-        <mesh filename="prius.stl" scale=".3937" />
+        <mesh filename="prius.stl" scale="1" />
       </geometry>
     </visual>
 </link>
@@ -401,7 +405,7 @@
 <joint name="body" type="fixed">
     <parent link="front_axle" />
     <child link="body" />
-    <origin xyz=".97 -.92 0" />
+    <origin xyz="0 0 0" />
     <axis xyz="0 0 1" />
   </joint>
   
