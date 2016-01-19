@@ -34,11 +34,14 @@ namespace Drake {
     template<typename ScalarType> using type = Eigen::Matrix<ScalarType, Rows, 1>;
   };
 
+  typedef Eigen::Matrix<double,1,1> Vector1d;
+
   /** NullVector<ScalarType>
    * @brief provides the empty vector (templated by ScalarType)
    * @concept{vector_concept}
    */
   template<typename ScalarType> using NullVector = Eigen::Matrix<ScalarType, 0, 1>;
+
 
   template<typename ScalarType, int Rows>
   Eigen::Matrix<ScalarType, Rows, 1> toEigen(const Eigen::Matrix<ScalarType, Rows, 1> &vec) { return vec; }

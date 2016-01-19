@@ -14,9 +14,7 @@ namespace snopt {
 //#include "snoptProblem.hh"
 }
 
-// todo:  implement nonlinear constraints
-// todo:  implement linear inequality constraints
-// todo:  special case bounding box constraints
+// todo:  implement sparsity inside each constraint
 // todo:  handle snopt options
 // todo:  return more information that just the solution (INFO, infeasible constraints, ...)
 
@@ -102,6 +100,16 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
     xlow[i] = static_cast<snopt::doublereal>(-numeric_limits<double>::infinity());
     xupp[i] = static_cast<snopt::doublereal>(numeric_limits<double>::infinity());
   }
+  for (auto const& c : prog.bbox_constraints ) {
+    for (const DecisionVariableView& v : c->getVariableList() ) {
+      auto const lb = c->getLowerBound(), ub = c->getUpperBound();
+      for (int k=0; k<v.size(); k++) {
+        cout << v.index()+k << endl;
+        xlow[v.index()+k] = static_cast<snopt::doublereal>(lb(k));
+        xupp[v.index()+k] = static_cast<snopt::doublereal>(ub(k));
+      }
+    }
+  }
 
   size_t num_nonlinear_constraints=0, max_num_gradients=nx;
   for (auto const& c : prog.generic_constraints) {
@@ -132,10 +140,10 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   for (auto const& c : prog.generic_constraints) {
     size_t n = c->getNumConstraints();
 
-    auto const & lb = c->getLowerBound(), ub = c->getUpperBound();
+    auto const lb = c->getLowerBound(), ub = c->getUpperBound();
     for (int i=0; i<n; i++) {
-      Flow[constraint_index+i] = static_cast<snopt::doublereal>(lb[i]);
-      Fupp[constraint_index+i] = static_cast<snopt::doublereal>(ub[i]);
+      Flow[constraint_index+i] = static_cast<snopt::doublereal>(lb(i));
+      Fupp[constraint_index+i] = static_cast<snopt::doublereal>(ub(i));
     }
 
     for (const DecisionVariableView& v : c->getVariableList() ) {
@@ -170,10 +178,10 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
       var_index += v.size();
     }
 
-    auto const & b = c->getVector();
+    auto const lb = c->getLowerBound(), ub = c->getUpperBound();
     for (int i=0; i<n; i++) {
-      Flow[constraint_index+i] = static_cast<snopt::doublereal>(b[i]);
-      Fupp[constraint_index+i] = static_cast<snopt::doublereal>(b[i]);
+      Flow[constraint_index+i] = static_cast<snopt::doublereal>(lb(i));
+      Fupp[constraint_index+i] = static_cast<snopt::doublereal>(ub(i));
     }
     constraint_index += n;
     linear_constraint_index += n;

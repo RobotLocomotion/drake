@@ -72,9 +72,58 @@ void sixHumpCamel() {
   }
 }
 
+class GPCMObjective : public TemplatedDifferentiableFunction<GPCMObjective> {
+public:
+  GPCMObjective() : TemplatedDifferentiableFunction<GPCMObjective>(*this) {};
+
+  template<typename ScalarType>
+  void evalImpl(const Ref<const Matrix<ScalarType, Dynamic, 1>>& x, Matrix<ScalarType,Dynamic,1>& y) const {
+    y.resize(1);
+    y(0) = -2*x(0) + x(1) - x(2);
+  }
+};
+
+class GPCMConstraint : public Constraint {  // want to also support deriving directly from constraint without going through Drake::Function
+public:
+  GPCMConstraint(const VariableList& vars) : Constraint(vars,Vector1d::Constant(0),Vector1d::Constant(numeric_limits<double>::infinity())) {}
+
+  // for just these two types, implementing this locally is almost cleaner...
+  virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const override { evalImpl(x,y); }
+  virtual void eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override { evalImpl(x,y); }
+
+  template<typename ScalarType>
+  void evalImpl(const Ref<const Matrix<ScalarType, Dynamic, 1>>& x, Matrix<ScalarType,Dynamic,1>& y) const {
+    y.resize(1);
+    y(0) = 24 - 20*x(0) + 9*x(1) - 13*x(2) + 4*x(0)*x(0) - 4*x(0)*x(1) + 4*x(0)*x(2) + 2*x(1)*x(1) - 2*x(1)*x(2) + 2*x(2)*x(2);
+  }
+};
+
+/** gloptiPolyConstrainedMinimization
+ * @brief from section 5.8.2 of the gloptipoly3 documentation
+ *
+ * Which is from section 3.5 in
+ *   Handbook of Test Problems in Local and Global Optimization
+ */
+void gloptipolyConstrainedMinimization() {
+  OptimizationProblem prog;
+  auto x = prog.addContinuousVariables(3);
+  std::shared_ptr<FunctionConstraint> objective(new FunctionConstraint({x},make_shared<GPCMObjective>(),1));
+  prog.addObjective(objective);
+  std::shared_ptr<GPCMConstraint> qp_con(new GPCMConstraint({x}));
+  prog.addConstraint(qp_con);
+  prog.addLinearConstraint(Vector3d(1,1,1).transpose(),Vector1d::Constant(-numeric_limits<double>::infinity()),Vector1d::Constant(4));
+  prog.addLinearConstraint(Vector3d(0,3,1).transpose(),Vector1d::Constant(-numeric_limits<double>::infinity()),Vector1d::Constant(6));
+  prog.addBoundingBoxConstraint(Vector3d(0,0,0),Vector3d(2,numeric_limits<double>::infinity(),3));
+  prog.solve();
+  prog.printSolution();
+
+  valuecheckMatrix(x.value(),Vector3d(.5,0,3),1e-5);
+}
+
 int main(int argc, char* argv[])
 {
   trivialLeastSquares();
   sixHumpCamel();
+  gloptipolyConstrainedMinimization();
   return 0;
 }
