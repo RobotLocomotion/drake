@@ -19,11 +19,11 @@ YAML::Node applyDefaults(const YAML::Node& node, const YAML::Node& default_node)
 
 YAML::Node expandDefaults(const YAML::Node& node) {
   YAML::Node result = YAML::Clone(node);
-  if (node.IsMap() && node["="]) {
-    const YAML::Node& default_node = result["="];
+  if (node.IsMap() && node["DEFAULT"]) {
+    const YAML::Node& default_node = result["DEFAULT"];
     for (auto field = result.begin(); field != result.end(); ++field) {
       std::string fieldname = field->first.as<std::string>();
-      if (fieldname != "=") {
+      if (fieldname != "DEFAULT") {
         result[fieldname] = applyDefaults(result[fieldname], default_node);
       }
     }
@@ -59,8 +59,8 @@ YAML::Node get(const YAML::Node& parent, const std::string& key) {
   } else {
     if (parent["<<"]) {
       return get(parent["<<"], key);
-    } else if (parent["="]) {
-      return parent["="];
+    } else if (parent["DEFAULT"]) {
+      return parent["DEFAULT"];
     } else {
       // No key, and no default, so return the null node as expected
       return result;
@@ -90,8 +90,8 @@ void loadSingleJointParams(QPControllerParams &params, Eigen::DenseIndex positio
   params.whole_body.w_qdd(position_index) = get(config, "w_qdd").as<double>();
 
   const YAML::Node &integrator_config = get(config, "integrator");
-  params.whole_body.integrator.gains(position_index) = get(integrator_config, "gains").as<double>();
-  params.whole_body.integrator.clamps(position_index) = get(integrator_config, "clamps").as<double>();
+  params.whole_body.integrator.gains(position_index) = get(integrator_config, "gain").as<double>();
+  params.whole_body.integrator.clamps(position_index) = get(integrator_config, "clamp").as<double>();
 
   const YAML::Node &qdd_bounds_config = get(config, "qdd_bounds");
   params.whole_body.qdd_bounds.min(position_index) = get(qdd_bounds_config, "min").as<double>();
