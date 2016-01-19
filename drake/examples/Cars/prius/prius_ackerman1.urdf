@@ -393,7 +393,7 @@
     <visual>
       <origin xyz="-3.6725 -.9213945 .1666" rpy="0 0 0" />
       <geometry>
-        <mesh filename="prius.dae" scale="1" />
+        <mesh filename="prius.obj" scale="1" />
       </geometry>
     </visual>
 </link>
