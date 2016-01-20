@@ -114,10 +114,12 @@ void gloptipolyConstrainedMinimization() {
   prog.addLinearConstraint(Vector3d(1,1,1).transpose(),Vector1d::Constant(-numeric_limits<double>::infinity()),Vector1d::Constant(4));
   prog.addLinearConstraint(Vector3d(0,3,1).transpose(),Vector1d::Constant(-numeric_limits<double>::infinity()),Vector1d::Constant(6));
   prog.addBoundingBoxConstraint(Vector3d(0,0,0),Vector3d(2,numeric_limits<double>::infinity(),3));
+
+  prog.setInitialGuess({x},Vector3d(.5,0,3)+.1*Vector3d::Random());
   prog.solve();
   prog.printSolution();
 
-  valuecheckMatrix(x.value(),Vector3d(.5,0,3),1e-5);
+  valuecheckMatrix(x.value(),Vector3d(.5,0,3),1e-4);
 }
 
 int main(int argc, char* argv[])

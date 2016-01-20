@@ -73,7 +73,7 @@ namespace Drake {
     size_t start_index, length;
   };
 
-  typedef std::list<DecisionVariableView> VariableList;
+  typedef std::list<const DecisionVariableView> VariableList;
   size_t size(const VariableList& var_list) {
     size_t s = 0;
     for (const auto& var : var_list) s+= var.size();
@@ -257,7 +257,7 @@ namespace Drake {
 
   class OptimizationProblem {
   public:
-    OptimizationProblem() : problem_type(new LeastSquares), num_vars(0) {};
+    OptimizationProblem() : problem_type(new LeastSquares), num_vars(0), x_initial_guess(100) {};
 
     const DecisionVariableView addContinuousVariables(std::size_t num_new_vars, std::string name = "x") {
       DecisionVariable v;
@@ -265,13 +265,13 @@ namespace Drake {
       v.name = name;
       v.data = Eigen::VectorXd::Zero(num_new_vars);
       v.start_index = num_vars;
-      variables.push_back(v);
-      variable_views.push_back(DecisionVariableView(v));
       num_vars += num_new_vars;
+      variables.push_back(v);
+      variable_views.push_back(DecisionVariableView(variables.back()));
       x_initial_guess.conservativeResize(num_vars);
       x_initial_guess.tail(num_vars) = 0.1*Eigen::VectorXd::Random(num_vars);
 
-      return variables.back();
+      return variable_views.back();
     }
 //    const DecisionVariable& addIntegerVariables(size_t num_new_vars, std::string name);
 //  ...
@@ -357,7 +357,7 @@ namespace Drake {
     std::shared_ptr<BoundingBoxConstraint> addBoundingBoxConstraint(const Eigen::MatrixBase<DerivedLB>& lb, const Eigen::MatrixBase<DerivedUB>& ub, const VariableList& vars) {
       problem_type.reset(problem_type->addLinearConstraint());
 
-      auto constraint = std::make_shared<BoundingBoxConstraint>(vars,lb,ub);
+      std::shared_ptr<BoundingBoxConstraint> constraint(new BoundingBoxConstraint(vars,lb,ub));
       bbox_constraints.push_back(constraint);
       return constraint;
     }
@@ -395,7 +395,6 @@ namespace Drake {
 
     template <typename Derived>
     void setDecisionVariableValues(const Eigen::MatrixBase<Derived>& x) {
-      std::cout << "x=" << x.transpose() << std::endl;
       assert(x.rows()==num_vars);
       size_t index=0;
       for (auto &v : variables) {
@@ -405,6 +404,7 @@ namespace Drake {
     }
 
     const std::list<std::shared_ptr<Constraint>>& getGenericObjectives() const { return generic_objectives; } // e.g. for snopt_user_fun
+    const std::list<std::shared_ptr<Constraint>>& getGenericConstraints() const { return generic_constraints; } // e.g. for snopt_user_fun
     std::list<std::shared_ptr<LinearConstraint>> getAllLinearConstraints() const {
       std::list<std::shared_ptr<LinearConstraint>> conlist = linear_constraints;
       conlist.insert(conlist.end(),linear_equality_constraints.begin(),linear_equality_constraints.end());

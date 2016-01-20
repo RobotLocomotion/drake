@@ -14,7 +14,7 @@ namespace snopt {
 //#include "snoptProblem.hh"
 }
 
-// todo:  implement sparsity inside each constraint
+// todo:  implement sparsity inside each objective/constraint
 // todo:  handle snopt options
 // todo:  return more information that just the solution (INFO, infeasible constraints, ...)
 
@@ -40,6 +40,7 @@ static int snopt_userfun(snopt::integer *Status, snopt::integer *n, snopt::doubl
                          snopt::integer iu[], snopt::integer *leniu,
                          snopt::doublereal ru[], snopt::integer *lenru)
 {
+  size_t constraint_index=0, grad_index=0;  // constraint index starts at 1 because the objective is the first row
   snopt::integer i;
   VectorXd xvec(*n);
   for(i=0; i<*n; i++) { xvec(i) = static_cast<double>(x[i]); }
@@ -50,19 +51,44 @@ static int snopt_userfun(snopt::integer *Status, snopt::integer *n, snopt::doubl
 
   // evaluate objective
   auto tx = initTaylorVecXd(xvec);
-  TaylorVecXd ty(1);
+  TaylorVecXd ty(1), this_x(*n);
   for (auto const& obj : current_problem->getGenericObjectives() ) {
+    size_t index=0;
+    for (const DecisionVariableView& v : obj->getVariableList() ) {
+      this_x.segment(index, v.size()) = tx.segment(v.index(), v.size());
+      index += v.size();
+    }
+
     obj->eval(tx,ty);
-    F[0] += ty(0).value(); // cout << "F = " << F[0] << endl;
-    for (i=0; i<*n; i++) {
-      G[i] += ty(0).derivatives()(i);
-//      cout << "G[" << i << "] = " << G[i] << endl;
+
+    F[constraint_index++] += static_cast<snopt::doublereal>(ty(0).value()); // cout << "F = " << F[0] << endl;
+    for (const DecisionVariableView& v : obj->getVariableList() ) {
+      for (size_t j=v.index();j<v.index()+v.size();j++) {
+        G[grad_index+j] += static_cast<snopt::doublereal>(ty(0).derivatives()(j));
+//      cout << "G[" << j << "] = " << G[j] << endl;
+      }
     }
   }
+  grad_index += *n;
 
-  // todo: evaluate the nonlinear constraints and populate F[] and G[] here
-  for (i=1; i<*neF; i++) { F[i]=0.0; }
-  for (i=*n; i<*neG; i++) { G[i]=0.0; }
+  for (auto const& c : current_problem->getGenericConstraints()) {
+    size_t index=0, num_constraints = c->getNumConstraints();
+    for (const DecisionVariableView& v : c->getVariableList() ) {
+      this_x.segment(index, v.size()) = tx.segment(v.index(), v.size());
+      index += v.size();
+    }
+
+    c->eval(tx,ty);
+
+    for (i=0;i<num_constraints;i++) { F[constraint_index++] = static_cast<snopt::doublereal>(ty(i).value()); }
+    for (const DecisionVariableView& v : c->getVariableList() ) {
+      for (size_t j=v.index(); j<v.index()+v.size(); j++) {
+        for (i=0; i<num_constraints; i++) {
+          G[grad_index++] = static_cast<snopt::doublereal>(ty(i).derivatives()(j));
+        }
+      }
+    }
+  }
 
   return 0;
 }
@@ -104,7 +130,6 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
     for (const DecisionVariableView& v : c->getVariableList() ) {
       auto const lb = c->getLowerBound(), ub = c->getUpperBound();
       for (int k=0; k<v.size(); k++) {
-        cout << v.index()+k << endl;
         xlow[v.index()+k] = static_cast<snopt::doublereal>(lb(k));
         xupp[v.index()+k] = static_cast<snopt::doublereal>(ub(k));
       }
