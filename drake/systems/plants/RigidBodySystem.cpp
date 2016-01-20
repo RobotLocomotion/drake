@@ -1,7 +1,7 @@
 
 #include <stdexcept>
 #include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/systems/plants/RigidBodyIK.h"  // required for resolving initial conditions
+#include "drake/solvers/Optimization.h"
 #include "urdfParsingUtil.h"
 
 using namespace std;
@@ -168,9 +168,12 @@ DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double> Drake::getInitialState
   default_random_engine generator;
   x0 << sys.tree->getRandomConfiguration(generator), VectorXd::Random(sys.tree->num_velocities);
 
+  // todo: implement joint limits, etc.
+
   if (sys.tree->getNumPositionConstraints()) {
     // todo: move this up to the system level?
 
+    OptimizationProblem prog;
     std::vector<RigidBodyLoop,Eigen::aligned_allocator<RigidBodyLoop> > const& loops = sys.tree->loops;
 
     int nq = sys.tree->num_positions;

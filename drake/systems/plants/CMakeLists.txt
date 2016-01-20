@@ -132,15 +132,15 @@ if (MATLAB_FOUND)
   endif()
 endif(MATLAB_FOUND)
 
-if (LCM_FOUND AND snopt_c_FOUND) # todo: remove snopt_c_FOUND and drakeIK below as soon as I update the initial conditions code
+if (LCM_FOUND)
   add_library_with_exports(LIB_NAME drakeRBSystem SOURCE_FILES RigidBodySystem.cpp)
-  target_link_libraries(drakeRBSystem drakeRBM drakeLCMSystem drakeIK drakeOptimization)
+  target_link_libraries(drakeRBSystem drakeRBM drakeLCMSystem drakeOptimization)
 
   pods_install_libraries(drakeRBSystem)
 
-  add_executable(urdfLCMNode urdfLCMNode.cpp joints/DrakeJoints.h)
+  add_executable(urdfLCMNode urdfLCMNode.cpp)
   target_link_libraries(urdfLCMNode drakeRBSystem)
   pods_install_executables(urdfLCMNode)
-endif (LCM_FOUND AND snopt_c_FOUND)
+endif (LCM_FOUND)
 
 add_subdirectory(test)
