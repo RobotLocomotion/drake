@@ -13,7 +13,7 @@
 #include <Eigen/StdVector>
 #include <limits>
 #include <cmath>
-#include "drakeMexUtil.h"
+#include "drake/util/drakeMexUtil.h"
 #include "controlMexUtil.h"
 
 //#define TEST_FAST_QP

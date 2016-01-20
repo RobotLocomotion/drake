@@ -1,6 +1,6 @@
-#include "drakeGradientUtil.h"
-#include "drakeGeometryUtil.h"
-#include "testUtil.h"
+#include "drake/util/drakeGradientUtil.h"
+#include "drake/util/drakeGeometryUtil.h"
+#include "drake/util/testUtil.h"
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <unsupported/Eigen/KroneckerProduct> // unsupported...

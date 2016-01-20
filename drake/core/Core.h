@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <Eigen/Dense>
-#include "Path.h"
+#include "drake/Path.h"
 
 namespace Drake {
 

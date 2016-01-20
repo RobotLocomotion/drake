@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <cmath>
-#include "LCMSystem.h"
+#include "drake/systems/LCMSystem.h"
 
 using namespace std;
 

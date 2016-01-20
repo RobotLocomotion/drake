@@ -1,10 +1,10 @@
 #include "mex.h"
 #include <iostream>
-#include "drakeMexUtil.h"
-#include "MexWrapper.h"
-#include "RigidBodyTree.h"
+#include "drake/util/drakeMexUtil.h"
+#include "drake/util/MexWrapper.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include "math.h"
-#include "fastQP.h"
+#include "drake/solvers/fastQP.h"
 #include <sstream>
 #include "rigidBodyTreeMexConversions.h"
 

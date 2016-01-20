@@ -3,7 +3,7 @@
 
 #include <array>
 #include <string>
-#include <drakeSide_export.h>
+#include "drake/drakeSide_export.h"
 
 // adapted from https://en.wikibooks.org/wiki/More_C%2B%2B_Idioms/Type_Safe_Enum
 // TODO: replace with enum class

@@ -1,6 +1,6 @@
 #include <vector>
 #include <Eigen/Dense>
-#include <drakeConvexHull_export.h>
+#include "drake/drakeConvexHull_export.h"
 
 typedef double coord_t;         // coordinate type
 typedef double coord2_t;  // must be big enough to hold 2*max(|coordinate|)^2

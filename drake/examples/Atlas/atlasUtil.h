@@ -1,7 +1,7 @@
 #ifndef _ATLAS_UTIL_H_
 #define _ATLAS_UTIL_H_
 
-#include <drakeAtlasUtil_export.h>
+#include "drake/drakeAtlasUtil_export.h"
 
 /*
  * The ankle limits is specified by a set of halfspace constraint 

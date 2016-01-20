@@ -1,10 +1,10 @@
-#include "splineGeneration.h"
+#include "drake/solvers/qpSpline/splineGeneration.h"
 #include <random>
 #include <cmath>
 #include <stdexcept>
 #include <sstream>
 #include <iostream>
-#include "testUtil.h"
+#include "drake/util/testUtil.h"
 
 using namespace std;
 

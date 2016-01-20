@@ -1,5 +1,3 @@
-include_directories ( .. )
-
 set(drakeCollision_SRC_FILES DrakeCollision.cpp Element.cpp PointPair.cpp Model.cpp)
 pods_find_pkg_config(bullet)
 
@@ -20,5 +18,5 @@ enable_testing()
 add_subdirectory(test)
 
 pods_install_libraries(drakeCollision)
-pods_install_headers(DrakeCollision.h PointPair.h Element.h Model.h DESTINATION drake/collision)
+drake_install_headers(DrakeCollision.h PointPair.h Element.h Model.h)
   

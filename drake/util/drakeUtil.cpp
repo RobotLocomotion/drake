@@ -5,7 +5,7 @@
  *      Author: russt
  */
 
-#include "drakeUtil.h"
+#include "drake/util/drakeUtil.h"
 #include <Eigen/Dense>
 #include <stdexcept>
 

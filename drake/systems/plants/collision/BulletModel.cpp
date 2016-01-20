@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "DrakeCollision.h"
+#include "drake/systems/plants/collision/DrakeCollision.h"
 #include "BulletModel.h"
 
 using namespace std;

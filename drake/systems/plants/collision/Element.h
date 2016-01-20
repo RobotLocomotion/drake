@@ -9,7 +9,7 @@
 #include <Eigen/StdVector>
 
 #include "../shapes/DrakeShapes.h"
-#include "drakeCollision_export.h"
+#include "drake/drakeCollision_export.h"
 
 namespace DrakeCollision
 {

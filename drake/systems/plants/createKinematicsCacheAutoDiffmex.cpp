@@ -1,4 +1,4 @@
-#include "drakeMexUtil.h"
+#include "drake/util/drakeMexUtil.h"
 #include "rigidBodyTreeMexConversions.h"
 
 using namespace Eigen;

@@ -1,7 +1,7 @@
 #include "mex.h"
-#include "RigidBodyConstraint.h"
-#include "drakeMexUtil.h"
-#include "RigidBodyTree.h"
+#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/util/drakeMexUtil.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include <cstring>
 /*
  * [active_flag, num_weights,constraint,dconstraint,lower_bound,upper_bound] = testQuasiStaticConstraintmex(quasiStaticConstraint_ptr,q,weights,t)
