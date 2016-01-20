@@ -58,8 +58,7 @@ public:
 void sixHumpCamel() {
   OptimizationProblem prog;
   auto x = prog.addContinuousVariables(2);
-  std::shared_ptr<FunctionConstraint> objective(new FunctionConstraint({x},make_shared<SixHumpCamelObjective>(),1));
-  prog.addCost(objective);
+  auto objective = prog.addCost(make_shared<SixHumpCamelObjective>());
   prog.solve();
   prog.printSolution();
 

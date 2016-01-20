@@ -17,6 +17,7 @@ namespace snopt {
 // todo:  implement sparsity inside each objective/constraint
 // todo:  handle snopt options
 // todo:  return more information that just the solution (INFO, infeasible constraints, ...)
+// todo:  avoid all dynamic allocation
 
 bool Drake::OptimizationProblem::NonlinearProgram::hasSNOPT() const { return true; }
 
@@ -130,8 +131,8 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
     for (const DecisionVariableView& v : c->getVariableList() ) {
       auto const lb = c->getLowerBound(), ub = c->getUpperBound();
       for (int k=0; k<v.size(); k++) {
-        xlow[v.index()+k] = static_cast<snopt::doublereal>(lb(k));
-        xupp[v.index()+k] = static_cast<snopt::doublereal>(ub(k));
+        xlow[v.index()+k] = std::max<snopt::doublereal>(static_cast<snopt::doublereal>(lb(k)),xlow[v.index()+k]);
+        xupp[v.index()+k] = std::min<snopt::doublereal>(static_cast<snopt::doublereal>(ub(k)),xupp[v.index()+k]);
       }
     }
   }

@@ -300,27 +300,29 @@ namespace Drake {
       generic_objectives.push_back(obj);
     }
 
-    void addCost(const std::shared_ptr<DifferentiableFunction>& obj, const VariableList& vars) {
+    std::shared_ptr<FunctionConstraint> addCost(const std::shared_ptr<DifferentiableFunction>& obj, const VariableList& vars) {
       std::shared_ptr<FunctionConstraint> objective(new FunctionConstraint(vars,obj,1));
       addCost(objective);
+      return objective;
     }
 
-    void addCost(const std::shared_ptr<DifferentiableFunction>& obj) {
-      addCost(obj,variable_views);
+    std::shared_ptr<FunctionConstraint> addCost(const std::shared_ptr<DifferentiableFunction>& obj) {
+      return addCost(obj,variable_views);
     }
 
     /** addQuadraticCost
      * @brief adds a cost term of the form (x-x_desired)'*Q*(x-x_desired)
      */
     template <typename DerivedQ, typename Derivedb>
-    void addQuadraticCost(const Eigen::MatrixBase<DerivedQ>& Q, const Eigen::MatrixBase<Derivedb>& x_desired, const VariableList& vars) {
+    std::shared_ptr<QuadraticConstraint> addQuadraticCost(const Eigen::MatrixBase<DerivedQ>& Q, const Eigen::MatrixBase<Derivedb>& x_desired, const VariableList& vars) {
       std::shared_ptr<QuadraticConstraint> objective(new QuadraticConstraint(vars,2*Q,-2*Q*x_desired,-std::numeric_limits<double>::infinity(),std::numeric_limits<double>::infinity()));
       addCost(objective);
+      return objective;
     };
 
     template <typename DerivedQ, typename Derivedb>
-    void addQuadraticCost(const Eigen::MatrixBase<DerivedQ>& Q, const Eigen::MatrixBase<Derivedb>& x_desired) {
-      addQuadraticCost(Q,x_desired,variable_views);
+    std::shared_ptr<QuadraticConstraint> addQuadraticCost(const Eigen::MatrixBase<DerivedQ>& Q, const Eigen::MatrixBase<Derivedb>& x_desired) {
+      return addQuadraticCost(Q,x_desired,variable_views);
     };
 
     /** addConstraint
