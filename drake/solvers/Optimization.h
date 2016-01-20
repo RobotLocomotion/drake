@@ -139,6 +139,24 @@ namespace Drake {
     Eigen::VectorXd lower_bound, upper_bound;
   };
 
+  /** QuadraticConstraint
+   * @brief  lb <= .5 x'Qx + b'x <= ub
+   */
+  class QuadraticConstraint : public Constraint {
+  public:
+    template <typename DerivedQ, typename Derivedb>
+    QuadraticConstraint(const VariableList& vars, const Eigen::MatrixBase<DerivedQ>& Q, const Eigen::MatrixBase<Derivedb>& b, double lb, double ub)
+            : Constraint(vars,Vector1d::Constant(lb),Vector1d::Constant(ub)), Q(Q), b(b) {}
+    virtual ~QuadraticConstraint() {}
+
+    virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const override { y.resize(getNumConstraints()); y=.5*x.transpose()*Q*x + b*x; }
+    virtual void eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override { y.resize(getNumConstraints()); y = .5*x.transpose()*Q.cast<TaylorVarXd>()*x + b.cast<TaylorVarXd>()*x; };
+
+  private:
+    Eigen::MatrixXd Q;
+    Eigen::VectorXd b;
+  };
+
   class FunctionConstraint : public Constraint {
   public:
     FunctionConstraint(const VariableList& vars, const std::shared_ptr<DifferentiableFunction>& func, size_t num_constraints) : Constraint(vars,num_constraints), func(func) {}
@@ -276,11 +294,34 @@ namespace Drake {
 //    const DecisionVariable& addIntegerVariables(size_t num_new_vars, std::string name);
 //  ...
 
-    void addObjective(const std::shared_ptr<Constraint>& obj) {
+    void addCost(const std::shared_ptr<Constraint>& obj) {
       checkVariables(obj);
       problem_type.reset(problem_type->addGenericObjective());
       generic_objectives.push_back(obj);
     }
+
+    void addCost(const std::shared_ptr<DifferentiableFunction>& obj, const VariableList& vars) {
+      std::shared_ptr<FunctionConstraint> objective(new FunctionConstraint(vars,obj,1));
+      addCost(objective);
+    }
+
+    void addCost(const std::shared_ptr<DifferentiableFunction>& obj) {
+      addCost(obj,variable_views);
+    }
+
+    /** addQuadraticCost
+     * @brief adds a cost term of the form (x-x_desired)'*Q*(x-x_desired)
+     */
+    template <typename DerivedQ, typename Derivedb>
+    void addQuadraticCost(const Eigen::MatrixBase<DerivedQ>& Q, const Eigen::MatrixBase<Derivedb>& x_desired, const VariableList& vars) {
+      std::shared_ptr<QuadraticConstraint> objective(new QuadraticConstraint(vars,2*Q,-2*Q*x_desired,-std::numeric_limits<double>::infinity(),std::numeric_limits<double>::infinity()));
+      addCost(objective);
+    };
+
+    template <typename DerivedQ, typename Derivedb>
+    void addQuadraticCost(const Eigen::MatrixBase<DerivedQ>& Q, const Eigen::MatrixBase<Derivedb>& x_desired) {
+      addQuadraticCost(Q,x_desired,variable_views);
+    };
 
     /** addConstraint
      * @brief adds a constraint to the program.  method specializations ensure that the constraint gets added in the right way

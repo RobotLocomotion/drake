@@ -59,7 +59,7 @@ void sixHumpCamel() {
   OptimizationProblem prog;
   auto x = prog.addContinuousVariables(2);
   std::shared_ptr<FunctionConstraint> objective(new FunctionConstraint({x},make_shared<SixHumpCamelObjective>(),1));
-  prog.addObjective(objective);
+  prog.addCost(objective);
   prog.solve();
   prog.printSolution();
 
@@ -107,8 +107,7 @@ public:
 void gloptipolyConstrainedMinimization() {
   OptimizationProblem prog;
   auto x = prog.addContinuousVariables(3);
-  std::shared_ptr<FunctionConstraint> objective(new FunctionConstraint({x},make_shared<GPCMObjective>(),1));
-  prog.addObjective(objective);
+  prog.addCost(make_shared<GPCMObjective>());
   std::shared_ptr<GPCMConstraint> qp_con(new GPCMConstraint({x}));
   prog.addConstraint(qp_con);
   prog.addLinearConstraint(Vector3d(1,1,1).transpose(),Vector1d::Constant(-numeric_limits<double>::infinity()),Vector1d::Constant(4));
