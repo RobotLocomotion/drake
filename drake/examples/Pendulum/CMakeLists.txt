@@ -23,7 +23,7 @@ if (LCM_FOUND)
 #      GROUP "Controllers+Simulation In One"
 #        NAME "LQR (cpp)" COMMAND "bash -c 'cd ${CMAKE_CURRENT_SOURCE_DIR} && ${CMAKE_BINARY_DIR}/bin/runPendulumLQR'"
 #      ENDGROUP
-#      NAME "viewer" COMMAND "${CMAKE_INSTALL_PREFIX}/bin/ddConsoleApp -m ddapp.drakevisualizer"
+#      NAME "viewer" COMMAND "${CMAKE_INSTALL_PREFIX}/bin/drake-visualizer"
 #  )
 endif()
 

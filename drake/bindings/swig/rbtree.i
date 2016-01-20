@@ -10,7 +10,7 @@
   #define SWIG_FILE_WITH_INIT
   #include <Python.h>
 #endif
-#include "RigidBodyTree.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 %}
 
 %include <typemaps.i>
@@ -30,14 +30,14 @@
 %eigen_typemaps(Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>)
 %eigen_typemaps(Eigen::VectorXi)
 
-%include "KinematicsCache.h"
+%include "drake/systems/plants/KinematicsCache.h"
 %template(KinematicsCache_d) KinematicsCache<double>;
 %template(KinematicsCache_adVectorDynamic) KinematicsCache<Eigen::AutoDiffScalar<Eigen::VectorXd> >;
 %template(KinematicsCache_adVectorMax73) KinematicsCache<Eigen::AutoDiffScalar<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73> > >;
 %template(AutoDiff3XDynamic) AutoDiffWrapper<Eigen::VectorXd, SPACE_DIMENSION, Eigen::Dynamic>;
 %template(AutoDiff3XMax73) AutoDiffWrapper<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73>, SPACE_DIMENSION, Eigen::Dynamic>;
 
-%include "RigidBodyTree.h"
+%include "drake/systems/plants/RigidBodyTree.h"
 %extend RigidBodyTree {
   KinematicsCache<double> doKinematics(const Eigen::MatrixBase<Eigen::VectorXd>& q, const Eigen::MatrixBase<Eigen::VectorXd>& v) {
     return $self->doKinematics(q, v);

@@ -51,6 +51,28 @@ cnstr6 = BoundingBoxConstraint([0;1;2;3],[1;2;2;3]);
 valuecheck(cnstr6.lb,[0;1;2;3]);
 valuecheck(cnstr6.ub,[1;2;2;3]);
 
+display('Check QuadraticSumConstraint');
+x_des = [[0.5;1] [1;0.1]];
+cnstr = QuadraticSumConstraint(0,1,diag([1;10]),x_des);
+x = x_des;
+[val,dval] = cnstr.eval(x);
+if(val>cnstr.ub || val<cnstr.lb)
+  error('QuadraticSumConstraint is not imposed correctly');
+end
+valuecheck(dval,zeros(1,4));
+x = x_des;
+x(2,1) = x(2,1)+sqrt(1/10)*0.99;
+[val,dval] = cnstr.eval(x);
+if(val>cnstr.ub || val < cnstr.lb)
+  error('QuadraticSumConstraint is not imposed correctly');
+end
+valuecheck(dval,[0 2*(x(2,1)-x_des(2,1))*10 zeros(1,2)]);
+x = x_des;
+x(2,2) = x(2,2)+1;
+val = cnstr.eval(x);
+if(val<=cnstr.ub)
+  error('QuadraticSumConstraint is not imposed correctly');
+end
 
 display('Check setBounds')
 cnstr4 = cnstr4.setBounds([1;2],[3;2]);
