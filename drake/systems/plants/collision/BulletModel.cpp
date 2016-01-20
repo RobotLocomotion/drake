@@ -552,16 +552,6 @@ namespace DrakeCollision
     }
   }
   
-
-
-
-
-
-
-
-
-
-
   bool BulletModel::collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, bool use_margins, VectorXd &distances, Matrix3Xd &normals)
   {
     

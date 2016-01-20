@@ -314,10 +314,10 @@ void RigidBodyTree::signedDistances(const KinematicsCache<double>& cache,
 }
 
 bool RigidBodyTree::collisionRaycast(const KinematicsCache<double>& cache,
-                                            const Matrix3Xd &origins,
-                                            const Matrix3Xd &ray_endpoints,
-                                            VectorXd &distances,
-                                            bool use_margins )
+                                     const Matrix3Xd &origins,
+                                     const Matrix3Xd &ray_endpoints,
+                                     VectorXd &distances,
+                                     bool use_margins )
 {
   Matrix3Xd normals;
   updateDynamicCollisionElements(cache);
@@ -325,11 +325,11 @@ bool RigidBodyTree::collisionRaycast(const KinematicsCache<double>& cache,
 }
 
 bool RigidBodyTree::collisionRaycast(const KinematicsCache<double>& cache,
-                                            const Matrix3Xd &origins,
-                                            const Matrix3Xd &ray_endpoints,
-                                            VectorXd &distances,
-                                            Matrix3Xd &normals,
-                                            bool use_margins )
+                                     const Matrix3Xd &origins,
+                                     const Matrix3Xd &ray_endpoints,
+                                     VectorXd &distances,
+                                     Matrix3Xd &normals,
+                                     bool use_margins )
 {
   updateDynamicCollisionElements(cache);
   return collision_model->collisionRaycast(origins, ray_endpoints, use_margins, distances, normals);
