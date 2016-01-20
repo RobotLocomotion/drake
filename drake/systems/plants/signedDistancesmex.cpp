@@ -1,9 +1,9 @@
 #include <mex.h>
 #include <iostream>
 #include <memory>
-#include "drakeMexUtil.h"
-#include "RigidBodyManipulator.h"
-#include "drakeGeometryUtil.h"
+#include "drake/util/drakeMexUtil.h"
+#include "RigidBodyTree.h"
+#include "drake/util/drakeGeometryUtil.h"
 #include "math.h"
 
 using namespace Eigen;
@@ -24,7 +24,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
   }
 
   int arg_num = 0;
-  RigidBodyManipulator *model = static_cast<RigidBodyManipulator*>(getDrakeMexPointer(prhs[arg_num++]));
+  RigidBodyTree *model = static_cast<RigidBodyTree*>(getDrakeMexPointer(prhs[arg_num++]));
   KinematicsCache<double>* cache = static_cast<KinematicsCache<double>*>(getDrakeMexPointer(prhs[arg_num++]));
 
   auto points = matlabToEigen<SPACE_DIMENSION, Eigen::Dynamic>(prhs[arg_num++]);
