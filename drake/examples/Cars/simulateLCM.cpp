@@ -126,7 +126,7 @@ int main(int argc, char* argv[]) {
   options.timeout_seconds = numeric_limits<double>::infinity();
 
   VectorXd x0(rigid_body_sys->getNumStates());
-  x0.head(tree->num_positions) = tree->getZeroConfiguration();
+  x0.head(tree->num_positions) = tree->getZeroConfiguration();  // todo:  call getInitialState instead?  (but currently, that would require snopt)
 
   runLCM(sys,lcm,0,std::numeric_limits<double>::max(),x0,options);
 //  simulate(*sys,0,std::numeric_limits<double>::max(),x0,options);
