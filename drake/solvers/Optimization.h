@@ -6,6 +6,7 @@
 #include <initializer_list>
 #include <Eigen/SparseCore>
 #include "drake/core/Core.h"
+#include "drake/drakeOptimization_export.h"
 
 namespace Drake {
 
@@ -273,7 +274,7 @@ namespace Drake {
     virtual Eigen::MatrixXd getMatrix() const override { return Eigen::MatrixXd::Identity(getNumConstraints(),getNumConstraints()); }
   };
 
-  class OptimizationProblem {
+  class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   public:
     OptimizationProblem() : problem_type(new LeastSquares), num_vars(0), x_initial_guess(100) {};
 
