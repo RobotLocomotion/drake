@@ -73,7 +73,7 @@ namespace Drake {
     size_t start_index, length;
   };
 
-  typedef std::list<const DecisionVariableView> VariableList;
+  typedef std::list<DecisionVariableView> VariableList;
   size_t size(const VariableList& var_list) {
     size_t s = 0;
     for (const auto& var : var_list) s+= var.size();
