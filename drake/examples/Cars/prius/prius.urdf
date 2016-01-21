@@ -3,6 +3,10 @@
   an actuator.
   
   The rear two wheels are independently controlled.
+
+  The mesh file called out for the body of the vehicle is an .obj that includes texture information.
+  There is also a prius.dae that could be used as the mesh file. Neither the .obj nor the .dae seem
+  to render the actual textures.
 -->
 <robot name="car">
   
@@ -393,7 +397,7 @@
     <visual>
       <origin xyz="-3.6725 -.9213945 .1666" rpy="0 0 0" />
       <geometry>
-        <mesh filename="prius.obj" scale="1" />
+        <mesh filename="prius.dae" scale="1" />
       </geometry>
     </visual>
 </link>
