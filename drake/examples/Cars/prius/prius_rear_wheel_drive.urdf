@@ -2,7 +2,7 @@
   This prius model supports ackerman steering, which is controlled by
   an actuator.
   
-  This model is front-wheel-drive. The front two wheels are independently controlled.
+  This model is rear-wheel-drive. The rear two wheels are independently controlled.
 
 -->
 <robot name="car">
@@ -563,12 +563,12 @@
   </transmission>
   
   <transmission name="front_left_drive" type="SimpleTransmission">
-    <joint name="left_wheel_joint"/>
+    <joint name="rear_left_wheel_joint"/>
     <actuator name="throttle_left_value"/>
   </transmission>
   
   <transmission name="front_right_drive" type="SimpleTransmission">
-    <joint name="right_wheel_joint"/>
+    <joint name="rear_right_wheel_joint"/>
     <actuator name="throttle_right_value"/>
   </transmission>
   
