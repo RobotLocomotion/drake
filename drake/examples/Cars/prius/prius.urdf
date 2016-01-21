@@ -565,13 +565,13 @@
     <actuator name="steering_angle"/>
   </transmission>
   
-  <transmission name="rear_left_drive" type="SimpleTransmission">
-    <joint name="rear_left_wheel_joint"/>
+  <transmission name="front_left_drive" type="SimpleTransmission">
+    <joint name="left_wheel_joint"/>
     <actuator name="throttle_left_value"/>
   </transmission>
   
-  <transmission name="rear_right_drive" type="SimpleTransmission">
-    <joint name="rear_right_wheel_joint"/>
+  <transmission name="front_right_drive" type="SimpleTransmission">
+    <joint name="right_wheel_joint"/>
     <actuator name="throttle_right_value"/>
   </transmission>
   
