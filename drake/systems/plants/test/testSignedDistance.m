@@ -4,24 +4,45 @@ visualize = 0;
 options.floating = true;
 options.terrain = RigidBodyFlatTerrain();
 
-s = 'FallingBrick.urdf';
-p = TimeSteppingRigidBodyManipulator(s,.01,options);
-p = p.addRobotFromURDF(s,[],[],options);
-x0 = [randn;randn;1+randn;rpy2quat(randn(3,1));
-      randn;randn;1+randn;rpy2quat(randn(3,1));
-      zeros(13*2, 1)];
+p = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,options);
+p = p.addRobotFromURDF( 'FallingBrickContactPoints.urdf',[],[],options);
+x0 = [0.0; 0.5; 1; 0;0;0;
+      0.0; -0.5; 1; 0;0;0;
+      zeros(12*2, 1)];
 
 x0 = p.resolveConstraints(x0);
+
+%test it with just a few points that we know the answers for
+points = [0, 0.25, 1; % surface of the brick with proper collision geometry
+          0, 0, 1; % between bricks, 0.25 from each surface
+          0, -0.25, 1; % 0.5 from brick with proper collision geometry, and far from corners of the other brick
+          1,  -0.25, 1.75; %0.25 above a corner of the brick with zerorad points at corners
+          ].';
+kinsol = p.doKinematics(x0(1:p.getNumPositions));
+[phi, normal, x, body_x, body_idx] = p.getManipulator.signedDistances(kinsol, points, false);
+
+valuecheck(phi, [0; 0.25; .5; .25], 1E-6);
+valuecheck(body_idx, [2; 2; 2; 3;], 1E-6);
+valuecheck(x, [0, 0.25, 1;
+                0, 0.25, 1;
+                0, 0.25, 1;
+                1, -0.25, 1.5].', 1E-6);
+valuecheck(normal, [0, -1, 0;
+                    0, -1, 0;
+                    0, -1, 0;
+                    0, 0, 1].', 1E-6);
+                
+                
+                
+% test it with a ton of points
 N = 20000;
 points = [(rand(1, N)-0.5)*1.5; (rand(1,N)-0.5)*1.5; (rand(1,N)-0.1)*2.5];
 
-kinsol = p.doKinematics(x0(1:p.getNumPositions));
-
 t0 = tic();
-[phi, normal, x, body_idx] = p.getManipulator.signedDistances(kinsol, points, false);
+[phi, normal, x, body_x, body_idx] = p.getManipulator.signedDistances(kinsol, points, false);
 toc(t0)
 
-
+% pretty rendering
 if (visualize)
     v = p.constructVisualizer();
     v.drawWrapper(0,x0);
