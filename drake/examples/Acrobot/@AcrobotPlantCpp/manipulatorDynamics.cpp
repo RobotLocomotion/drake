@@ -57,7 +57,7 @@ void manipulatorDynamics(const mxArray *pobj, const MatrixBase<DerivedQ>& q, con
   C(1) += b2 * qd(1);
 
   // input matrix
-  // multiplying by q(0) just to get the size of the derivatives vector right; Matlab TaylorVard operations will complain otherwise. We could handle this case on the Matlab side instead.
+  // multiplying by q(0) just to get the size of the derivatives vector right; Matlab TaylorVar operations will complain otherwise. We could handle this case on the Matlab side instead.
   B << 0.0 * q(0), 1.0;
 
   plhs[0] = eigenToMatlabGeneral<2, 2>(H);
@@ -77,7 +77,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     auto q = trigPolyToEigen(prhs[1]);
     auto qd = trigPolyToEigen(prhs[2]);
     manipulatorDynamics(pobj, q, qd, plhs);
-  } else if (isa(prhs[1], "TaylorVard") && isa(prhs[2], "TaylorVard")) {
+  } else if (isa(prhs[1], "TaylorVar") && isa(prhs[2], "TaylorVar")) {
     auto q = taylorVarToEigen<Dynamic, 1>(prhs[1]);
     auto qd = taylorVarToEigen<Dynamic, 1>(prhs[2]);
     manipulatorDynamics(pobj, q, qd, plhs);
