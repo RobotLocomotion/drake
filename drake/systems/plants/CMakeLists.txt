@@ -134,7 +134,7 @@ endif(MATLAB_FOUND)
 
 if (LCM_FOUND)
   add_library_with_exports(LIB_NAME drakeRBSystem SOURCE_FILES RigidBodySystem.cpp)
-  target_link_libraries(drakeRBSystem drakeRBM drakeLCMSystem drakeOptimization)
+  target_link_libraries(drakeRBSystem drakeRBM drakeLCMSystem drakeOptimization drakeRigidBodyConstraint)
 
   pods_install_libraries(drakeRBSystem)
 

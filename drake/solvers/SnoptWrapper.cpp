@@ -83,8 +83,8 @@ static int snopt_userfun(snopt::integer *Status, snopt::integer *n, snopt::doubl
 
     for (i=0;i<num_constraints;i++) { F[constraint_index++] = static_cast<snopt::doublereal>(ty(i).value()); }
     for (const DecisionVariableView& v : c->getVariableList() ) {
-      for (size_t j=v.index(); j<v.index()+v.size(); j++) {
-        for (i=0; i<num_constraints; i++) {
+      for (i=0; i<num_constraints; i++) {
+        for (size_t j=v.index(); j<v.index()+v.size(); j++) {
           G[grad_index++] = static_cast<snopt::doublereal>(ty(i).derivatives()(j));
         }
       }
@@ -175,7 +175,7 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
     for (const DecisionVariableView& v : c->getVariableList() ) {
       for (size_t i=0; i<n; i++) {
         for (size_t j = 0; j < v.size(); j++) {
-          iGfun[grad_index] = constraint_index + i + 1;  // column order
+          iGfun[grad_index] = constraint_index + i + 1;  // row order
           jGvar[grad_index] = v.index() + j + 1;
           grad_index++;
         }
