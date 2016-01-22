@@ -25,18 +25,123 @@ DRAKEGEOMETRYUTIL_EXPORT double angleDiff(double phi1, double phi2);
 /*
  * quaternion methods
  */
-DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector4d quatConjugate(const Eigen::Vector4d &q);
-DRAKEGEOMETRYUTIL_EXPORT Eigen::Matrix4d dquatConjugate();
-DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector4d quatProduct(const Eigen::Vector4d &q1, const Eigen::Vector4d &q2);
-DRAKEGEOMETRYUTIL_EXPORT Eigen::Matrix<double, 4, 8> dquatProduct(const Eigen::Vector4d &q1,const Eigen::Vector4d &q2);
-DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector3d quatRotateVec(const Eigen::Vector4d &q, const Eigen::Vector3d &v);
-DRAKEGEOMETRYUTIL_EXPORT Eigen::Matrix<double, 3, 7> dquatRotateVec(const Eigen::Vector4d &q, const Eigen::Vector3d &v);
-DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector4d quatDiff(const Eigen::Vector4d &q1, const Eigen::Vector4d &q2);
-DRAKEGEOMETRYUTIL_EXPORT Eigen::Matrix<double, 4, 8> dquatDiff(const Eigen::Vector4d &q1, const Eigen::Vector4d &q2);
-DRAKEGEOMETRYUTIL_EXPORT double quatDiffAxisInvar(const Eigen::Vector4d &q1, const Eigen::Vector4d &q2, const Eigen::Vector3d &u);
-DRAKEGEOMETRYUTIL_EXPORT Eigen::Matrix<double, 1, 11> dquatDiffAxisInvar(const Eigen::Vector4d &q1, const Eigen::Vector4d &q2, const Eigen::Vector3d &u);
-DRAKEGEOMETRYUTIL_EXPORT double quatNorm(const Eigen::Vector4d& q);
-DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector4d slerp(const Eigen::Vector4d& q1, const Eigen::Vector4d& q2, double interpolation_parameter);
+template <typename Derived>
+Eigen::Matrix<typename Derived::Scalar, 4, 1> quatConjugate(const Eigen::MatrixBase<Derived>& q)
+{
+  using namespace Eigen;
+  static_assert(Derived::SizeAtCompileTime == 4, "Wrong size.");
+  Matrix<typename Derived::Scalar, 4, 1> q_conj;
+  q_conj << q(0), -q(1), -q(2), -q(3);
+  return q_conj;
+}
+
+template <typename Derived1, typename Derived2>
+Eigen::Matrix<typename Derived1::Scalar, 4, 1> quatProduct(const Eigen::MatrixBase<Derived1>& q1, const Eigen::MatrixBase<Derived2>& q2)
+{
+  using namespace Eigen;
+  using Scalar = typename Derived1::Scalar;
+  static_assert(Derived1::SizeAtCompileTime == 4, "Wrong size.");
+  static_assert(Derived2::SizeAtCompileTime == 4, "Wrong size.");
+
+  Scalar w1 = q1(0);
+  Scalar w2 = q2(0);
+  auto v1 = q1.template tail<3>();
+  auto v2 = q2.template tail<3>();
+  Matrix<typename Derived1::Scalar, 4, 1> r;
+  r << w1 * w2 - v1.dot(v2), v1.cross(v2) + w1 * v2 + w2 * v1;
+  return r;
+}
+
+template <typename DerivedQ, typename DerivedV>
+Eigen::Matrix<typename DerivedV::Scalar, 3, 1> quatRotateVec(const Eigen::MatrixBase<DerivedQ>& q, const Eigen::MatrixBase<DerivedV>& v)
+{
+  using namespace Eigen;
+  using Scalar = typename DerivedQ::Scalar;
+  static_assert(DerivedQ::SizeAtCompileTime == 4, "Wrong size.");
+  static_assert(DerivedV::SizeAtCompileTime == 3, "Wrong size.");
+
+  typedef Matrix<typename DerivedV::Scalar, 4, 1> Vector4;
+  typedef Matrix<typename DerivedV::Scalar, 3, 1> Vector3;
+
+  Vector4 v_quat;
+  v_quat << 0, v;
+  auto q_times_v = quatProduct(q, v_quat);
+  auto q_conj = quatConjugate(q);
+  auto v_rot = quatProduct(q_times_v, q_conj);
+  Vector3 r = v_rot.template bottomRows<3>();
+  return r;
+}
+
+template <typename Derived1, typename Derived2>
+Eigen::Matrix<typename Derived1::Scalar, 4, 1> quatDiff(const Eigen::MatrixBase<Derived1>& q1, const Eigen::MatrixBase<Derived2>& q2)
+{
+  return quatProduct(quatConjugate(q1), q2);
+}
+
+template <typename Derived1, typename Derived2, typename DerivedU>
+typename Derived1::Scalar quatDiffAxisInvar(const Eigen::MatrixBase<Derived1>& q1, const Eigen::MatrixBase<Derived2>& q2, const Eigen::MatrixBase<DerivedU>& u)
+{
+  static_assert(DerivedU::SizeAtCompileTime == 3, "Wrong size.");
+  auto r = quatDiff(q1, q2);
+  return -2.0 + 2 * r(0) * r(0) + 2 * pow(u(0) * r(1) + u(1) * r(2) + u(2) * r(3), 2);
+}
+
+template <typename Derived>
+typename Derived::Scalar quatNorm(const Eigen::MatrixBase<Derived>& q)
+{
+  return std::acos(q(0));
+}
+
+/*
+ * Q = slerp(q1, q2, f) Spherical linear interpolation between two quaternions
+ *   This function uses the implementation given in Algorithm 8 of [1].
+ *
+ * @param q1   Initial quaternion (w, x, y, z)
+ * @param q2   Final quaternion (w, x, y, z)
+ * @param f    Interpolation parameter between 0 and 1 (inclusive)
+ * @retval Q   Interpolated quaternion(s). 4-by-1 vector.
+ *
+ * [1] Kuffner, J.J., "Effective sampling and distance metrics for 3D rigid
+ * body path planning," Robotics and Automation, 2004. Proceedings. ICRA '04.
+ * 2004 IEEE International Conference on , vol.4, no., pp.3993,3998 Vol.4,
+ * April 26-May 1, 2004
+ * doi: 10.1109/ROBOT.2004.1308895
+ */
+template <typename Derived1, typename Derived2, typename Scalar>
+Eigen::Matrix<Scalar, 4, 1> slerp(const Eigen::MatrixBase<Derived1>& q1, const Eigen::MatrixBase<Derived2>& q2, const Scalar& interpolation_parameter)
+{
+  // Compute the quaternion inner product
+  auto lambda = (q1.transpose() * q2).value();
+  int q2_sign;
+  if (lambda < Scalar(0)) {
+    // The quaternions are pointing in opposite directions, so use the equivalent alternative representation for q2
+    lambda = -lambda;
+    q2_sign = -1;
+  }
+  else {
+    q2_sign = 1;
+  }
+
+  // Calculate interpolation factors
+  // TODO: do we really want an epsilon so small?
+  Scalar r, s;
+  if (std::abs(1.0 - lambda) < std::numeric_limits<double>::epsilon()) {
+    // The quaternions are nearly parallel, so use linear interpolation
+    r = 1.0 - interpolation_parameter;
+    s = interpolation_parameter;
+  }
+  else {
+    Scalar alpha = std::acos(lambda);
+    Scalar gamma = 1.0 / std::sin(alpha);
+    r = std::sin((1.0 - interpolation_parameter) * alpha) * gamma;
+    s = std::sin(interpolation_parameter * alpha) * gamma;
+  }
+
+  auto ret = q1 * r;
+  ret.noalias() += (q2_sign * s) * q2;
+  return ret;
+}
+
 DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector4d uniformlyRandomAxisAngle(std::default_random_engine& generator);
 DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector4d uniformlyRandomQuat(std::default_random_engine& generator);
 DRAKEGEOMETRYUTIL_EXPORT Eigen::Matrix3d uniformlyRandomRotmat(std::default_random_engine& generator);
