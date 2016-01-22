@@ -137,8 +137,8 @@ Eigen::Matrix<Scalar, 4, 1> slerp(const Eigen::MatrixBase<Derived1>& q1, const E
     s = std::sin(interpolation_parameter * alpha) * gamma;
   }
 
-  auto ret = q1 * r;
-  ret.noalias() += (q2_sign * s) * q2;
+  auto ret = (q1 * r).eval();
+  ret += q2 * (q2_sign * s);
   return ret;
 }
 
