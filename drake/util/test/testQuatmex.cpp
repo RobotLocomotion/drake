@@ -85,8 +85,6 @@ namespace drake {
     internal::InitializeAutoDiffTuples<sizeof...(args)>::eval(ret, values, dynamic_num_derivs, 0);
     return ret;
   }
-
-  // ideally: from tuple of rvalue references to arguments (constructed using forward_as_tuple) to tuple of autodiff matrices, properly initialized
 }
 
 
