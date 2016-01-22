@@ -14,7 +14,9 @@ classdef AccelConstrainedDircolTrajectoryOptimization < DircolTrajectoryOptimiza
   % which accepts the default Dircol arguments as well as some additional
   % options:
   %   options.active_inds : A subset of the position constraints to
-  %     incorproate, default = all
+  %     incorproate--note ALL constraint forces are always active. This
+  %     option is primarily for eliminating redundant constraints, but not
+  %     their associated forces.  Default = all
   %   options.relative_constraints : Can be either a single boolean or a
   %     vector of boolean corresponding to the active cosntraints. If true,
   %     adds a slack variable to treat constraints as having no *absolute* 
