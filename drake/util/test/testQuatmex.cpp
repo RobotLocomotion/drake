@@ -24,11 +24,6 @@ namespace drake {
     };
   }
 
-  template < typename... T>
-  std::tuple<const T &...> ctie(const T &... args) {
-    return std::tie(args...);
-  }
-
   template <typename ...Args>
   constexpr int totalSizeAtCompileTime() {
     return internal::TotalSizeAtCompileTime<Args...>::eval();
@@ -60,17 +55,18 @@ namespace drake {
 
 
   namespace internal {
-    template <int Index>
+    template <size_t Index>
     struct InitializeAutoDiffTuples {
       template <typename ...AutoDiffTypes, typename ...ValueTypes>
       static DenseIndex eval(tuple<AutoDiffTypes...>& ret, const tuple<ValueTypes...>& mat, DenseIndex num_derivatives, DenseIndex deriv_num_start) {
-        deriv_num_start += initializeAutoDiff(std::get<Index>(ret), std::get<Index>(mat), num_derivatives, deriv_num_start);
+        constexpr size_t tuple_index = sizeof...(AutoDiffTypes) - Index;
+        deriv_num_start = initializeAutoDiff(std::get<tuple_index>(ret), std::get<tuple_index>(mat), num_derivatives, deriv_num_start);
         return InitializeAutoDiffTuples<Index - 1>::eval(ret, mat, num_derivatives, deriv_num_start);
       }
     };
 
     template <>
-    struct InitializeAutoDiffTuples<-1> {
+    struct InitializeAutoDiffTuples<0> {
       template<typename ...AutoDiffTypes, typename ...ValueTypes>
       static DenseIndex eval(const tuple<AutoDiffTypes...> &ret, const tuple<ValueTypes...> &mat, DenseIndex num_derivatives, DenseIndex deriv_num_start) {
         return deriv_num_start;
@@ -79,13 +75,13 @@ namespace drake {
   }
 
   template <typename ...Args>
-  using InitializeAutoDiffReturnType = std::tuple<GradientType<Args, totalSizeAtCompileTime<Args>()>...>;
+  using InitializeAutoDiffArgsReturnType = std::tuple<GradientType<Args, totalSizeAtCompileTime<Args...>()>...>;
 
-  template <typename Head, typename ...Tail>
-  InitializeAutoDiffReturnType<Head, Tail...> initializeAutoDiffArgs(const Head& arg0, const Tail&... args) {
+  template <typename ...Args>
+  InitializeAutoDiffArgsReturnType<Args...> initializeAutoDiffArgs(const Args&... args) {
     DenseIndex dynamic_num_derivs = drake::totalSizeAtRunTime(args...);
-    InitializeAutoDiffReturnType<Head, Tail...> ret;
-    auto values = make_tuple(arg0, args...);
+    InitializeAutoDiffArgsReturnType<Args...> ret;
+    auto values = make_tuple(args...);
     internal::InitializeAutoDiffTuples<sizeof...(args)>::eval(ret, values, dynamic_num_derivs, 0);
     return ret;
   }
@@ -112,73 +108,51 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   memcpy(u.data(),mxGetPr(prhs[3]),sizeof(double)*3);
   memcpy(v.data(),mxGetPr(prhs[4]),sizeof(double)*3);
 
-  auto bla = drake::initializeAutoDiffArgs(q1, q2);
 
-//  {
-//    constexpr int static_num_derivs = drake::totalSizeAtCompileTime<decltype(q1), decltype(q2)>();
-//    DenseIndex dynamic_num_derivs = drake::totalSizeAtRunTime(q1, q2);
-//
-//    DenseIndex deriv_num = 0;
-//    auto q1_autodiff = drake::initializeAutoDiff<static_num_derivs>(q1, dynamic_num_derivs, deriv_num);
-//    auto q2_autodiff = drake::initializeAutoDiff<static_num_derivs>(q2, dynamic_num_derivs, deriv_num);
-//
-//    auto r_autodiff = quatDiff(q1_autodiff, q2_autodiff);
-//    auto r = autoDiffToValueMatrix(r_autodiff);
-//    auto dr = autoDiffToGradientMatrix(r_autodiff);
-//
-//    plhs[0] = mxCreateDoubleMatrix(4, 1, mxREAL);
-//    plhs[1] = mxCreateDoubleMatrix(4, 8, mxREAL);
-//    memcpy(mxGetPr(plhs[0]), r.data(), sizeof(double) * 4);
-//    memcpy(mxGetPr(plhs[1]), dr.data(), sizeof(double) * 4 * 8);
-//  }
-//
-//  {
-//    constexpr int static_num_derivs = drake::totalSizeAtCompileTime<decltype(q1), decltype(q2), decltype(axis)>();
-//    DenseIndex dynamic_num_derivs = drake::totalSizeAtRunTime(q1, q2, axis);
-//    DenseIndex deriv_num = 0;
-//    auto q1_autodiff = drake::initializeAutoDiff<static_num_derivs>(q1, dynamic_num_derivs, deriv_num);
-//    auto q2_autodiff = drake::initializeAutoDiff<static_num_derivs>(q2, dynamic_num_derivs, deriv_num);
-//    auto axis_autodiff = drake::initializeAutoDiff<static_num_derivs>(axis, dynamic_num_derivs, deriv_num);
-//    auto e_autodiff = quatDiffAxisInvar(q1_autodiff, q2_autodiff, axis_autodiff);
-//    auto e = e_autodiff.value();
-//    auto de = e_autodiff.derivatives().transpose().eval();
-//
-//    plhs[2] = mxCreateDoubleScalar(e);
-//    plhs[3] = mxCreateDoubleMatrix(1, 11, mxREAL);
-//    memcpy(mxGetPr(plhs[3]), de.data(), sizeof(double) * 11);
-//  }
-//
-//  {
-//    constexpr int static_num_derivs = drake::totalSizeAtCompileTime<decltype(q1), decltype(q2)>();
-//    DenseIndex dynamic_num_derivs = drake::totalSizeAtRunTime(q1, q2);
-//    DenseIndex deriv_num = 0;
-//    auto q1_autodiff = drake::initializeAutoDiff<static_num_derivs>(q1, dynamic_num_derivs, deriv_num);
-//    auto q2_autodiff = drake::initializeAutoDiff<static_num_derivs>(q2, dynamic_num_derivs, deriv_num);
-//
-//    auto q3_autodiff = quatProduct(q1_autodiff, q2_autodiff);
-//    auto q3 = autoDiffToValueMatrix(q3_autodiff);
-//    auto dq3 = autoDiffToGradientMatrix(q3_autodiff);
-//
-//    plhs[4] = mxCreateDoubleMatrix(4, 1, mxREAL);
-//    plhs[5] = mxCreateDoubleMatrix(4, 8, mxREAL);
-//    memcpy(mxGetPr(plhs[4]), q3.data(), sizeof(double) * 4);
-//    memcpy(mxGetPr(plhs[5]), dq3.data(), sizeof(double) * 4 * 8);
-//  }
-//
-//  {
-//    constexpr int static_num_derivs = drake::totalSizeAtCompileTime<decltype(q1), decltype(u)>();
-//    DenseIndex dynamic_num_derivs = drake::totalSizeAtRunTime(q1, u);
-//    DenseIndex deriv_num = 0;
-//    auto q1_autodiff = drake::initializeAutoDiff<static_num_derivs>(q1, dynamic_num_derivs, deriv_num);
-//    auto u_autodiff = drake::initializeAutoDiff<static_num_derivs>(u, dynamic_num_derivs, deriv_num);
-//
-//    auto w_autodiff = quatRotateVec(q1_autodiff, u_autodiff);
-//    auto w = autoDiffToValueMatrix(w_autodiff);
-//    auto dw = autoDiffToGradientMatrix(w_autodiff);
-//
-//    plhs[6] = mxCreateDoubleMatrix(3, 1, mxREAL);
-//    plhs[7] = mxCreateDoubleMatrix(3, 7, mxREAL);
-//    memcpy(mxGetPr(plhs[6]), w.data(), sizeof(double) * 3);
-//    memcpy(mxGetPr(plhs[7]), dw.data(), sizeof(double) * 3 * 7);
-//  }
+  {
+    auto autodiff_args = drake::initializeAutoDiffArgs(q1, q2);
+    auto r_autodiff = quatDiff(get<0>(autodiff_args), get<1>(autodiff_args));
+    auto r = autoDiffToValueMatrix(r_autodiff);
+    auto dr = autoDiffToGradientMatrix(r_autodiff);
+
+    plhs[0] = mxCreateDoubleMatrix(4, 1, mxREAL);
+    plhs[1] = mxCreateDoubleMatrix(4, 8, mxREAL);
+    memcpy(mxGetPr(plhs[0]), r.data(), sizeof(double) * 4);
+    memcpy(mxGetPr(plhs[1]), dr.data(), sizeof(double) * 4 * 8);
+  }
+
+  {
+    auto autodiff_args = drake::initializeAutoDiffArgs(q1, q2, axis);
+    auto e_autodiff = quatDiffAxisInvar(get<0>(autodiff_args), get<1>(autodiff_args), get<2>(autodiff_args));
+    auto e = e_autodiff.value();
+    auto de = e_autodiff.derivatives().transpose().eval();
+
+    plhs[2] = mxCreateDoubleScalar(e);
+    plhs[3] = mxCreateDoubleMatrix(1, 11, mxREAL);
+    memcpy(mxGetPr(plhs[3]), de.data(), sizeof(double) * 11);
+  }
+
+  {
+    auto autodiff_args = drake::initializeAutoDiffArgs(q1, q2);
+    auto q3_autodiff = quatProduct(get<0>(autodiff_args), get<1>(autodiff_args));
+    auto q3 = autoDiffToValueMatrix(q3_autodiff);
+    auto dq3 = autoDiffToGradientMatrix(q3_autodiff);
+
+    plhs[4] = mxCreateDoubleMatrix(4, 1, mxREAL);
+    plhs[5] = mxCreateDoubleMatrix(4, 8, mxREAL);
+    memcpy(mxGetPr(plhs[4]), q3.data(), sizeof(double) * 4);
+    memcpy(mxGetPr(plhs[5]), dq3.data(), sizeof(double) * 4 * 8);
+  }
+
+  {
+    auto autodiff_args = drake::initializeAutoDiffArgs(q1, u);
+    auto w_autodiff = quatRotateVec(get<0>(autodiff_args), get<1>(autodiff_args));
+    auto w = autoDiffToValueMatrix(w_autodiff);
+    auto dw = autoDiffToGradientMatrix(w_autodiff);
+
+    plhs[6] = mxCreateDoubleMatrix(3, 1, mxREAL);
+    plhs[7] = mxCreateDoubleMatrix(3, 7, mxREAL);
+    memcpy(mxGetPr(plhs[6]), w.data(), sizeof(double) * 3);
+    memcpy(mxGetPr(plhs[7]), dw.data(), sizeof(double) * 3 * 7);
+  }
 }
