@@ -133,7 +133,7 @@ for j = 1:jmax;
         Qfi = options.periodic_jump'*Qfi*options.periodic_jump;
       end
       Qfi = (Qfi+Qfi')/2 + 1e-6*eye(size(Qfi,1));
-      min(eig(Qfi))
+%       min(eig(Qfi))
     end
   end
 end
