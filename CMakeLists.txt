@@ -108,7 +108,7 @@ set(gloptipoly_GIT_REPOSITORY git@github.com:RobotLocomotion/gloptipoly3.git)  #
 set(gloptipoly_GIT_TAG c9e796e99c584ecf78317348c4162a2ed4121156)
 set(gloptipoly_IS_PUBLIC FALSE)
 set(gurobi_GIT_REPOSITORY https://github.com/RobotLocomotion/gurobi.git)
-set(gurobi_GIT_TAG beb0a84a1bcca1eb81a1b87d9fa140f2134d97e9)
+set(gurobi_GIT_TAG 8528e99cdd3ac147f1165acd29dcb45c3dd07f34)
 set(gurobi_IS_PUBLIC TRUE)
 set(iris_GIT_REPOSITORY https://github.com/rdeits/iris-distro.git)
 set(iris_GIT_TAG a17bdb4a20a8195363b629c47fd1b6251b44c95e)

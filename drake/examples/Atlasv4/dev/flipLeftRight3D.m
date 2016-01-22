@@ -58,7 +58,9 @@ R(nq+(13:18),nq+(7:12)) = diag([-1;-1;1;1;1;-1]); %leg joints w/symmetry
 % R(r_leg,l_leg) = eye(length(r_leg));
 % R(r_leg+nq,l_leg+nq) = eye(length(r_leg));
 
-xtraj_ = R*xtraj;
+for i=1:length(xtraj),
+  xtraj_{i} = R*xtraj{i};
+end
 
 for i=1:length(Straj)
   Straj_{i} = R*Straj{i}*R;
@@ -89,7 +91,9 @@ U(l_leg_kny,r_leg_kny) = 1; U(r_leg_kny,l_leg_kny) = 1;
 U(l_leg_aky,r_leg_aky) = 1; U(r_leg_aky,l_leg_aky) = 1;
 U(l_leg_akx,r_leg_akx) = -1; U(r_leg_akx,l_leg_akx) = -1;
 
-utraj_ = U*utraj;
+for i=1:length(utraj),
+  utraj_{i} = U*utraj{i};
+end
 
 for i=1:length(Btraj)
   Btraj_{i} = R*Btraj{i}*U;

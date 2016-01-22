@@ -90,24 +90,24 @@ classdef RelativePosition < drakeFunction.kinematic.Kinematic
           J = JB + P*JA;
           dJ = dJB + reshape(matGradMultMat(P,JA,dP,reshape(dJA,numel(JA),[])),size(dJB));
         else
-          if obj.rbm.use_new_kinsol
+%           if true || obj.rbm.use_new_kinsol
             [pts_in_B,J,dJ] = forwardKin(obj.rbm,kinsol,obj.frameA,obj.pts_in_A,options);
-          else
-            [pts_in_world,JA,dJA] = forwardKin(obj.rbm,kinsol,obj.frameA,obj.pts_in_A,0);
-            if obj.frameB == 1
-              nq = length(q);
-              pts_in_B = pts_in_world;
-              numelpts = numel(pts_in_B);
-              P = eye(numelpts);
-              JB = zeros(numelpts,nq);
-              dP = zeros(numelpts^2,nq);
-              dJB = zeros(numelpts,nq^2);
-            else
-              [pts_in_B,P,JB,dP,dJB] = obj.rbm.bodyKin(kinsol,obj.frameB,pts_in_world);
-            end
-            J = JB + P*JA;
-            dJ = dJB + reshape(matGradMultMat(P,JA,dP,reshape(dJA,numel(JA),[])),size(dJB));
-          end
+%           else
+%             [pts_in_world,JA,dJA] = forwardKin(obj.rbm,kinsol,obj.frameA,obj.pts_in_A,0);
+%             if obj.frameB == 1
+%               nq = length(q);
+%               pts_in_B = pts_in_world;
+%               numelpts = numel(pts_in_B);
+%               P = eye(numelpts);
+%               JB = zeros(numelpts,nq);
+%               dP = zeros(numelpts^2,nq);
+%               dJB = zeros(numelpts,nq^2);
+%             else
+%               [pts_in_B,P,JB,dP,dJB] = obj.rbm.bodyKin(kinsol,obj.frameB,pts_in_world);
+%             end
+%             J = JB + P*JA;
+%             dJ = dJB + reshape(matGradMultMat(P,JA,dP,reshape(dJA,numel(JA),[])),size(dJB));
+%           end
         end
       elseif (nargout>1)
         kinsol = obj.rbm.doKinematics(q,false,use_mex);
