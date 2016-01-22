@@ -10,7 +10,6 @@
 #include <cassert>
 #include <stdexcept>
 
-
 template<std::size_t Size>
 std::array<int, Size> intRange(int start)
 {
@@ -322,6 +321,103 @@ namespace Drake {
   template <typename Derived>
   void resizeDerivativesToMatchScalar(Eigen::MatrixBase<Derived>& mat, const typename Derived::Scalar& scalar) {
     internal::ResizeDerivativesToMatchScalarImpl<Derived, typename Derived::Scalar>::run(mat, scalar);
+  }
+
+
+  namespace internal {
+    /** \brief helper for totalSizeAtCompileTime function
+     */
+    template<typename Head, typename ...Tail>
+    struct TotalSizeAtCompileTime {
+      static constexpr int eval() {
+        return Head::SizeAtCompileTime == Eigen::Dynamic || TotalSizeAtCompileTime<Tail...>::eval() == Eigen::Dynamic ?
+               Eigen::Dynamic :
+               Head::SizeAtCompileTime + TotalSizeAtCompileTime<Tail...>::eval();
+      }
+    };
+
+    template<typename Head>
+    struct TotalSizeAtCompileTime<Head> {
+      static constexpr int eval() {
+        return Head::SizeAtCompileTime;
+      }
+    };
+  }
+
+  /** \brief determine the total size at compile time of a number of arguments based on their SizeAtCompileTime static members
+   */
+  template<typename ...Args>
+  constexpr int totalSizeAtCompileTime() {
+    return internal::TotalSizeAtCompileTime<Args...>::eval();
+  }
+
+  /** \brief determine the total size at runtime of a number of arguments using their size() methods
+   */
+  constexpr Eigen::DenseIndex totalSizeAtRunTime() {
+    return 0;
+  }
+
+  /** \brief determine the total size at runtime of a number of arguments using their size() methods
+  */
+  template<typename Head, typename ...Tail>
+  Eigen::DenseIndex totalSizeAtRunTime(const Eigen::MatrixBase<Head> &head, const Tail &... tail) {
+    return head.size() + totalSizeAtRunTime(tail...);
+  }
+
+  /** \brief The appropriate AutoDiffScalar gradient type given the value type and the number of derivatives at compile time
+   */
+  template<typename Derived, int Nq>
+  using GradientType = Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<typename Derived::Scalar, Nq, 1> >, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>;
+
+  /** \brief initialize a single autodiff matrix given the corresponding value matrix.
+   */
+  template<int Nq, typename Derived>
+  Eigen::DenseIndex initializeAutoDiff(GradientType<Derived, Nq> &ret, const Eigen::MatrixBase<Derived> &mat, Eigen::DenseIndex num_derivatives, Eigen::DenseIndex deriv_num_start) {
+    using ADScalar = typename GradientType<Derived, Nq>::Scalar;
+    ret.resize(mat.rows(), mat.cols());
+    Eigen::DenseIndex deriv_num = deriv_num_start;
+    for (int i = 0; i < mat.size(); i++) {
+      ret(i) = ADScalar(mat(i), num_derivatives, deriv_num++);
+    }
+    deriv_num_start += mat.size();
+    return deriv_num_start;
+  }
+
+
+  namespace internal {
+    /** \brief helper for initializeAutoDiffArgs function
+     */
+    template<size_t Index>
+    struct InitializeAutoDiffTuples {
+      template<typename ...AutoDiffTypes, typename ...ValueTypes>
+      static Eigen::DenseIndex eval(std::tuple<AutoDiffTypes...> &ret, const std::tuple<ValueTypes...> &mat, Eigen::DenseIndex num_derivatives, Eigen::DenseIndex deriv_num_start) {
+        constexpr size_t tuple_index = sizeof...(AutoDiffTypes) - Index;
+        deriv_num_start = initializeAutoDiff(std::get<tuple_index>(ret), std::get<tuple_index>(mat), num_derivatives, deriv_num_start);
+        return InitializeAutoDiffTuples<Index - 1>::eval(ret, mat, num_derivatives, deriv_num_start);
+      }
+    };
+
+    template<>
+    struct InitializeAutoDiffTuples<0> {
+      template<typename ...AutoDiffTypes, typename ...ValueTypes>
+      static Eigen::DenseIndex eval(const std::tuple<AutoDiffTypes...> &ret, const std::tuple<ValueTypes...> &mat, Eigen::DenseIndex num_derivatives, Eigen::DenseIndex deriv_num_start) {
+        return deriv_num_start;
+      }
+    };
+  }
+
+  /** \brief return type of initializeAutoDiffArgs function
+  */
+  template<typename ...Args>
+  using InitializeAutoDiffArgsReturnType = std::tuple<GradientType<Args, totalSizeAtCompileTime<Args...>()>...>;
+
+  template<typename ...Args>
+  InitializeAutoDiffArgsReturnType<Args...> initializeAutoDiffArgs(const Args &... args) {
+    Eigen::DenseIndex dynamic_num_derivs = totalSizeAtRunTime(args...);
+    InitializeAutoDiffArgsReturnType<Args...> ret;
+    auto values = std::make_tuple(args...);
+    internal::InitializeAutoDiffTuples<sizeof...(args)>::eval(ret, values, dynamic_num_derivs, 0);
+    return ret;
   }
 }
 

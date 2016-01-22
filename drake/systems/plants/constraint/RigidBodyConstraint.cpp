@@ -1186,6 +1186,9 @@ GazeOrientConstraint::GazeOrientConstraint(RigidBodyTree * robot, const Vector3d
 
 void GazeOrientConstraint::eval(const double* t, KinematicsCache<double>& cache, VectorXd &c, MatrixXd &dc) const
 {
+  using namespace std;
+  using namespace Drake;
+
   int num_constraint = this->getNumConstraint(t);
   c.resize(num_constraint);
   dc.resize(num_constraint,this->robot->num_positions);
@@ -1195,13 +1198,20 @@ void GazeOrientConstraint::eval(const double* t, KinematicsCache<double>& cache,
     int nq = this->robot->num_positions;
     MatrixXd dquat(4,nq);
     this->evalOrientation(cache, quat,dquat);
-    double axis_err = quatDiffAxisInvar(quat,this->quat_des,this->axis);
-    Matrix<double,1,11> daxis_err = dquatDiffAxisInvar(quat,this->quat_des,this->axis);
+
+
+    auto axis_err_autodiff_args = initializeAutoDiffArgs(quat, quat_des, axis);
+    auto e_autodiff = quatDiffAxisInvar(get<0>(axis_err_autodiff_args), get<1>(axis_err_autodiff_args), get<2>(axis_err_autodiff_args));
+    auto axis_err = e_autodiff.value();
+    auto daxis_err = e_autodiff.derivatives().transpose().eval();
 
     MatrixXd daxis_err_dq(1,nq);
     daxis_err_dq = daxis_err.block(0,0,1,4)*dquat;
-    Vector4d q_diff = quatDiff(quat,this->quat_des);
-    Matrix<double,4,8> dq_diff = dquatDiff(quat,this->quat_des);
+
+    auto quat_diff_autodiff_args = initializeAutoDiffArgs(quat, quat_des);
+    auto q_diff_autodiff = quatDiff(get<0>(quat_diff_autodiff_args), get<1>(quat_diff_autodiff_args));
+    auto q_diff = autoDiffToValueMatrix(q_diff_autodiff);
+    auto dq_diff = autoDiffToGradientMatrix(q_diff_autodiff);
 
     MatrixXd dq_diff_dq(4,nq);
     dq_diff_dq = dq_diff.block(0,0,4,4)*dquat;
