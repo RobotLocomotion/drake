@@ -32,6 +32,7 @@ option(WITH_ALL_SUPPORTED_EXTERNALS "enable all externals available for your pla
 option(REMOVE_UNUSED_EXTERNALS "enable this to remove those projects from disk" OFF)
 
 # ON by default:
+option(WITH_CIMG "allows parsing of images in C++" ON)
 option(WITH_EIGEN		"required c++ matrix library.  only disable if you have it already."    ON)
 option(WITH_SWIGMAKE    "helper tools to build python & MATLAB wrappers for C++ libraries with Eigen" ON)
 if (WIN32)
@@ -89,7 +90,7 @@ set(libbot_dependencies lcm)
 set(director_dependencies lcm libbot)
 set(iris_dependencies eigen mosek)
 set(signalscope_dependencies director)
-set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi swig_matlab swigmake)
+set(drake_dependencies cimg cmake eigen lcm libbot bullet octomap snopt gurobi swig_matlab swigmake)
 
 # download information, in alphabetical order
 set(avl_GIT_REPOSITORY https://github.com/RobotLocomotion/avl.git)
@@ -102,6 +103,10 @@ set(bullet_GIT_REPOSITORY https://github.com/RobotLocomotion/bullet-pod.git)
 set(bullet_GIT_TAG 4319ffd7e9251066d93064f5a8dab12e33dbe5e2)
 set(bullet_IS_PUBLIC TRUE)
 set(bullet_IS_CMAKE_POD TRUE)
+set(cimg_GIT_REPOSITORY https://github.com/crogers3/cimg.git)
+set(cimg_GIT_TAG 421d30fedc4e9b9207c56cb75b75fe04acc56b2a)
+set(cimg_IS_CMAKE_POD TRUE)
+set(cimg_IS_PUBLIC TRUE)
 set(cmake_GIT_REPOSITORY https://github.com/RobotLocomotion/cmake.git)
 set(cmake_GIT_TAG 0c7e3dc7c3d5b1391d1343d921eb421f1aad3d63)
 set(cmake_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/drake/cmake")
@@ -199,6 +204,7 @@ endif()
 # note: keep drake in this loop in case externals depend on drake (e.g. the director might in the near future)
 set(EXTERNAL_PROJECTS)
 foreach(proj IN ITEMS
+		cimg
 		cmake
 		textbook
 		eigen
