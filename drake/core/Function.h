@@ -16,7 +16,7 @@ namespace Drake {
    * was more of a pain than simply capturing the inheritance with the helper functions below.
    */
   struct InputOutputRelation {
-    enum Form {
+    enum class Form {
       ARBITRARY,
       DIFFERENTIABLE,
       POLYNOMIAL,
@@ -32,15 +32,15 @@ namespace Drake {
     InputOutputRelation(Form f) : form(f) { };
 
     static bool isA(const Form &f, const Form &base) {
-      if (f == base || base == ARBITRARY) return true;
-      if (f == ARBITRARY) return false;
+      if (f == base || base == Form::ARBITRARY) return true;
+      if (f == Form::ARBITRARY) return false;
       return isA(derivesFrom(f), base);
     }
 
     bool isA(Form base) { return isA(form, base); }
 
     static Form leastCommonAncestor(const Form &f1, const Form &f2) {
-      if (f1 == ARBITRARY || f2 == ARBITRARY) return ARBITRARY;
+      if (f1 == Form::ARBITRARY || f2 == Form::ARBITRARY) return Form::ARBITRARY;
       if (isA(f2, f1)) return f1;
       return leastCommonAncestor(derivesFrom(f1), f2);
     }
@@ -86,32 +86,33 @@ namespace Drake {
   private:
     static Form derivesFrom(const Form &f) { // capture the inheritance relationships (without resorting to using types)
       switch (f) {
-        case DIFFERENTIABLE :
-          return ARBITRARY;
-        case POLYNOMIAL:
-          return DIFFERENTIABLE;
-        case AFFINE:
-          return POLYNOMIAL;
-        case LINEAR:
-          return AFFINE;
-        case CONSTANT:
-          return AFFINE;
-        case ZERO:
-          return LINEAR; // note: really want multiple inheritance here, since it's also constant
+        case Form::DIFFERENTIABLE :
+          return Form::ARBITRARY;
+        case Form::POLYNOMIAL:
+          return Form::DIFFERENTIABLE;
+        case Form::AFFINE:
+          return Form::POLYNOMIAL;
+        case Form::LINEAR:
+          return Form::AFFINE;
+        case Form::CONSTANT:
+          return Form::AFFINE;
+        case Form::ZERO:
+          return Form::LINEAR; // note: really want multiple inheritance here, since it's also constant
         default:
-          return ARBITRARY;
+          return Form::ARBITRARY;
       }
     }
   };
 
   class Function {
   public:
-    Function() : relation(InputOutputRelation::ARBITRARY) {};
+    Function() : relation(InputOutputRelation::Form::ARBITRARY) {};
     Function(InputOutputRelation::Form f) : relation(f) {};
     virtual ~Function() {};
 
     virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const = 0;
     virtual const InputOutputRelation& getInputOutputRelation() const { return relation; };
+    // note: for multiple argument functions, this can be getInputOutputRelation(input_num,output_num)
 
   protected:
     InputOutputRelation relation;
@@ -119,7 +120,7 @@ namespace Drake {
 
   class DifferentiableFunction : public Function {
   public:
-    DifferentiableFunction() : Function(InputOutputRelation::DIFFERENTIABLE) {};
+    DifferentiableFunction() : Function(InputOutputRelation::Form::DIFFERENTIABLE) {};
     virtual ~DifferentiableFunction() {};
 
     virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const = 0;

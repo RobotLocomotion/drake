@@ -11,7 +11,7 @@
 namespace Drake {
 
   class DecisionVariable {
-    enum VarType {
+    enum class VarType {
       CONTINUOUS,
       INTEGER,
       BINARY
@@ -58,7 +58,7 @@ namespace Drake {
     /** value()
      * @brief returns the actual stored value; which is only meaningful after calling solve() in the program.
      */
-    Eigen::VectorBlock<const Eigen::VectorXd,-1> value() const { return var.data.segment(start_index,length); }
+    Eigen::VectorBlock<const Eigen::VectorXd,Eigen::Dynamic> value() const { return var.data.segment(start_index,length); }
     std::string getName() const { if (start_index==0 && length==var.data.size())  { return var.name; } else { return var.name + "(" + std::to_string(start_index) + ":" + std::to_string(start_index+length) + ")"; }  }
 
     const DecisionVariableView operator()(size_t i) const { assert(i<=length); return DecisionVariableView(var,start_index+i,1);}
@@ -160,13 +160,13 @@ namespace Drake {
     Eigen::VectorXd b;
   };
 
-  class FunctionConstraint : public Constraint {
+  class DifferentiableFunctionConstraint : public Constraint {
   public:
-    FunctionConstraint(const VariableList& vars, const std::shared_ptr<DifferentiableFunction>& func, size_t num_constraints) : Constraint(vars,num_constraints), func(func) {}
+    DifferentiableFunctionConstraint(const VariableList& vars, const std::shared_ptr<DifferentiableFunction>& func, size_t num_constraints) : Constraint(vars,num_constraints), func(func) {}
 
     template <typename DerivedLB, typename DerivedUB>
-    FunctionConstraint(const VariableList& vars, const std::shared_ptr<DifferentiableFunction>& func, const Eigen::MatrixBase<DerivedLB>& lb, const Eigen::MatrixBase<DerivedUB>& ub) : Constraint(vars,lb,ub), func(func) {}
-    virtual ~FunctionConstraint() {}
+    DifferentiableFunctionConstraint(const VariableList& vars, const std::shared_ptr<DifferentiableFunction>& func, const Eigen::MatrixBase<DerivedLB>& lb, const Eigen::MatrixBase<DerivedUB>& ub) : Constraint(vars,lb,ub), func(func) {}
+    virtual ~DifferentiableFunctionConstraint() {}
 
     virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const override {
       func->eval(x,y);
@@ -254,7 +254,7 @@ namespace Drake {
 
     const DecisionVariableView addContinuousVariables(std::size_t num_new_vars, std::string name = "x") {
       DecisionVariable v;
-      v.type = DecisionVariable::CONTINUOUS;
+      v.type = DecisionVariable::VarType::CONTINUOUS;
       v.name = name;
       v.data = Eigen::VectorXd::Zero(num_new_vars);
       v.start_index = num_vars;
@@ -275,13 +275,13 @@ namespace Drake {
       generic_objectives.push_back(obj);
     }
 
-    std::shared_ptr<FunctionConstraint> addCost(const std::shared_ptr<DifferentiableFunction>& obj, const VariableList& vars) {
-      std::shared_ptr<FunctionConstraint> objective(new FunctionConstraint(vars,obj,1));
+    std::shared_ptr<DifferentiableFunctionConstraint> addCost(const std::shared_ptr<DifferentiableFunction>& obj, const VariableList& vars) {
+      std::shared_ptr<DifferentiableFunctionConstraint> objective(new DifferentiableFunctionConstraint(vars,obj,1));
       addCost(objective);
       return objective;
     }
 
-    std::shared_ptr<FunctionConstraint> addCost(const std::shared_ptr<DifferentiableFunction>& obj) {
+    std::shared_ptr<DifferentiableFunctionConstraint> addCost(const std::shared_ptr<DifferentiableFunction>& obj) {
       return addCost(obj,variable_views);
     }
 
