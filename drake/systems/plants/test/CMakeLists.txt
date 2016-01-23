@@ -59,7 +59,7 @@ add_executable(bullet_collision_zero_rad_sphere_test bullet_collision_zero_rad_s
 target_link_libraries(bullet_collision_zero_rad_sphere_test drakeRBM)
 add_test(NAME bullet_collision_zero_rad_sphere_test COMMAND bullet_collision_zero_rad_sphere_test)
 
-if (LCM_FOUND AND snopt_c_FOUND)
+if (LCM_FOUND)
   add_executable(testMassSpringDamper testMassSpringDamper.cpp)
   target_link_libraries(testMassSpringDamper drakeRBSystem)
   add_test(NAME testMassSpringDamper COMMAND testMassSpringDamper)

@@ -32,28 +32,22 @@ if(MATLAB_FOUND)
   target_link_libraries(lqrmex drakeUtil)
 endif()
 
+set(optimization_files)
+if (snopt_c_FOUND)
+  list(APPEND optimization_files SNOPTWrapper.cpp)
+else()
+  list(APPEND optimization_files NoSNOPT.cpp)
+endif(snopt_c_FOUND)
+add_library_with_exports(LIB_NAME drakeOptimization SOURCE_FILES ${optimization_files})
+set_target_properties(drakeOptimization PROPERTIES COMPILE_FLAGS -fPIC)
+if (snopt_c_FOUND)
+  pods_use_pkg_config_packages(drakeOptimization snopt_c)
+endif(snopt_c_FOUND)
+
 if(snopt_c_FOUND AND MATLAB_FOUND)
   add_mex(NonlinearProgramSnoptmex NonlinearProgramSnoptmex.cpp)
   pods_use_pkg_config_packages(NonlinearProgramSnoptmex snopt_c)
   set_target_properties(NonlinearProgramSnoptmex PROPERTIES COMPILE_FLAGS -fPIC)
-
-  # link against matlab's copy of the gfortran library, if possible
-  find_library(GFORTRAN_LIBRARY NAMES gfortran libgfortran
-    PATHS "${MATLAB_ROOT}/sys/os/"
-    PATH_SUFFIXES glnxa64/ maci64/ NO_DEFAULT_PATH )
-  if (NOT GFORTRAN_LIBRARY)
-    # the above does not seem work on linux out of the box, because matlab
-    # symlinks to libgfortran.so.3 but not to libgfortran.so, and cmake isn't
-    # able to find it with the default CMAKE_FIND_LIBRARY_SUFFIXES.  Instead
-    # of setting that variable, here is the annoying work-around:
-    find_file(GFORTRAN_LIBRARY NAMES libgfortran.so.3
-      PATHS "${MATLAB_ROOT}/sys/os/"
-      PATH_SUFFIXES glnxa64/ maci64/ NO_DEFAULT_PATH)
-  endif()
-
-  if (GFORTRAN_LIBRARY)
-    target_link_libraries(NonlinearProgramSnoptmex ${GFORTRAN_LIBRARY})
-  endif()
 endif()
 
 add_subdirectory(qpSpline)
