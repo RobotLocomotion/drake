@@ -62,7 +62,7 @@ void sixHumpCamel() {
   prog.solve();
   prog.printSolution();
 
-  // check (numerically) if it is a local minima
+  // check (numerically) if it is a local minimum
   VectorXd ystar, y;
   objective->eval(x.value(),ystar);
   for (int i=0; i<10; i++) {
@@ -71,9 +71,10 @@ void sixHumpCamel() {
   }
 }
 
-class GPCMObjective : public TemplatedDifferentiableFunction<GPCMObjective> {
+class GloptipolyConstrainedExampleObjective
+        : public TemplatedDifferentiableFunction<GloptipolyConstrainedExampleObjective> {
 public:
-  GPCMObjective() : TemplatedDifferentiableFunction<GPCMObjective>(*this) {};
+  GloptipolyConstrainedExampleObjective() : TemplatedDifferentiableFunction<GloptipolyConstrainedExampleObjective>(*this) {};
 
   template<typename ScalarType>
   void evalImpl(const Ref<const Matrix<ScalarType, Dynamic, 1>>& x, Matrix<ScalarType,Dynamic,1>& y) const {
@@ -82,9 +83,9 @@ public:
   }
 };
 
-class GPCMConstraint : public Constraint {  // want to also support deriving directly from constraint without going through Drake::Function
+class GloptipolyConstrainedExampleConstraint : public Constraint {  // want to also support deriving directly from constraint without going through Drake::Function
 public:
-  GPCMConstraint(const VariableList& vars) : Constraint(vars,Vector1d::Constant(0),Vector1d::Constant(numeric_limits<double>::infinity())) {}
+  GloptipolyConstrainedExampleConstraint(const VariableList& vars) : Constraint(vars, Vector1d::Constant(0), Vector1d::Constant(numeric_limits<double>::infinity())) {}
 
   // for just these two types, implementing this locally is almost cleaner...
   virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const override { evalImpl(x,y); }
@@ -106,8 +107,8 @@ public:
 void gloptipolyConstrainedMinimization() {
   OptimizationProblem prog;
   auto x = prog.addContinuousVariables(3);
-  prog.addCost(make_shared<GPCMObjective>());
-  std::shared_ptr<GPCMConstraint> qp_con(new GPCMConstraint({x}));
+  prog.addCost(make_shared<GloptipolyConstrainedExampleObjective>());
+  std::shared_ptr<GloptipolyConstrainedExampleConstraint> qp_con(new GloptipolyConstrainedExampleConstraint({x}));
   prog.addConstraint(qp_con);
   prog.addLinearConstraint(Vector3d(1,1,1).transpose(),Vector1d::Constant(-numeric_limits<double>::infinity()),Vector1d::Constant(4));
   prog.addLinearConstraint(Vector3d(0,3,1).transpose(),Vector1d::Constant(-numeric_limits<double>::infinity()),Vector1d::Constant(6));

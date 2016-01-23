@@ -44,7 +44,7 @@ namespace Drake {
 
 
   template<typename ScalarType, int Rows>
-  Eigen::Matrix<ScalarType, Rows, 1> toEigen(const Eigen::Matrix<ScalarType, Rows, 1> &vec) { return vec; }
+  const Eigen::Matrix<ScalarType, Rows, 1>& toEigen(const Eigen::Matrix<ScalarType, Rows, 1> &vec) { return vec; }
 
   /**
    * @brief whether or not the given type is an Eigen column vector

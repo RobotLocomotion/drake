@@ -84,10 +84,10 @@ int main(int argc, char* argv[])
     auto out = p->dynamicsImplementation(x,u);
   }
 */
-    if (!InputOutputRelation::isa(InputOutputRelation::LINEAR,InputOutputRelation::POLYNOMIAL))
+    if (!InputOutputRelation::isA(InputOutputRelation::LINEAR,InputOutputRelation::POLYNOMIAL))
       throw runtime_error("linear is polynomial");
 
-    if (!InputOutputRelation::isa(InputOutputRelation::ZERO,InputOutputRelation::ARBITRARY))
+    if (!InputOutputRelation::isA(InputOutputRelation::ZERO,InputOutputRelation::ARBITRARY))
       throw runtime_error("linear is arbitrary");
 
     if (InputOutputRelation::leastCommonAncestor({InputOutputRelation::AFFINE,InputOutputRelation::LINEAR,InputOutputRelation::POLYNOMIAL})!=InputOutputRelation::POLYNOMIAL)

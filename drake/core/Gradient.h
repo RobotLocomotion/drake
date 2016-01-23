@@ -4,6 +4,7 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <unsupported/Eigen/AutoDiff>
+#include "drake/util/drakeGradientUtil.h" // todo: pull the core tools into this file and zap the old gradient util.
 
 namespace Drake {
   // todo: recursive template to get arbitrary gradient order
@@ -22,10 +23,8 @@ namespace Drake {
    */
   template <typename DerivedA, typename DerivedB>
   void initTaylorVecXd(const Eigen::MatrixBase<DerivedA>& val, Eigen::MatrixBase<DerivedB>& auto_diff_vec) {
-    Eigen::MatrixXd der = Eigen::MatrixXd::Identity(val.rows(),val.rows());
-    for (int i=0; i<val.rows(); i++) {
-      auto_diff_vec(i).value() = val(i);
-      auto_diff_vec(i).derivatives() = der.col(i);
+    for (int i=0; i<val.size(); i++) {
+      auto_diff_vec(i) = Eigen::AutoDiffScalar<typename DerivedB::Scalar::DerType>(val(i),val.size(),i);
     }
   }
 
@@ -33,6 +32,23 @@ namespace Drake {
   TaylorVecXd initTaylorVecXd(const Eigen::MatrixBase<Derived>& val) {
     TaylorVecXd auto_diff_vec(val.rows());
     initTaylorVecXd(val, auto_diff_vec);
+    return auto_diff_vec;
+  }
+
+  /** constantTaylorVecXd
+   * @brief initializes the vector with x=val and dx=zeros(numel(val))
+   */
+  template <typename DerivedA, typename DerivedB>
+  void constantTaylorVecXd(const Eigen::MatrixBase<DerivedA>& val, Eigen::MatrixBase<DerivedB>& auto_diff_vec) {
+    for (int i=0; i<val.size(); i++) {
+      auto_diff_vec(i) = Eigen::AutoDiffScalar<typename DerivedB::Scalar::DerType>(val(i));
+    }
+  }
+
+  template <typename Derived>
+  TaylorVecXd constantTaylorVecXd(const Eigen::MatrixBase<Derived>& val) {
+    TaylorVecXd auto_diff_vec(val.rows());
+    constantTaylorVecXd(val, auto_diff_vec);
     return auto_diff_vec;
   }
 
@@ -44,9 +60,9 @@ namespace Drake {
   void initTaylorVecXd(const Eigen::MatrixBase<Derived>& val, const Eigen::MatrixBase<DerivedGradient>& gradient, TaylorVecXd& auto_diff_vector)
   {
     typedef typename Eigen::MatrixBase<DerivedGradient>::Index Index;
-    auto_diff_vector.resize(gradient.rows(),1);
+    auto_diff_vector.resize(gradient.size(),1);
     auto nx = gradient.cols();
-    for (Index row = 0; row < auto_diff_vector.rows(); row++) {
+    for (Index row = 0; row < auto_diff_vector.size(); row++) {
       auto_diff_vector(row).value() = val(row);
       auto_diff_vector(row).derivatives().resize(nx,1);
       auto_diff_vector(row).derivatives() = gradient.row(row).transpose();

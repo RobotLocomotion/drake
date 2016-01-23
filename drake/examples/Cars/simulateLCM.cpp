@@ -130,8 +130,8 @@ int main(int argc, char* argv[]) {
   // todo:  call getInitialState instead?  (but currently, that would require snopt).  needs #1627
   // I'm getting away without it, but might be generating large internal forces initially as the ackerman constraint (hopefully) gets enforced by the stabilization terms.
 
-  runLCM(sys,lcm,0,std::numeric_limits<double>::max(),x0,options);
-//  simulate(*sys,0,std::numeric_limits<double>::max(),x0,options);
+  runLCM(sys,lcm,0,std::numeric_limits<double>::infinity(),x0,options);
+//  simulate(*sys,0,std::numeric_limits<double>::infinity(),x0,options);
 
   return 0;
 }

@@ -5,5 +5,4 @@ bool Drake::OptimizationProblem::NonlinearProgram::hasSNOPT() const { return fal
 
 bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationProblem &prog) const {
   throw std::runtime_error("The SNOPT bindings were not compiled.  You'll need to use a different solver.");
-  return false;
 }

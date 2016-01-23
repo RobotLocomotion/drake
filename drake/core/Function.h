@@ -31,17 +31,17 @@ namespace Drake {
 
     InputOutputRelation(Form f) : form(f) { };
 
-    static bool isa(const Form &f, const Form &base) {
+    static bool isA(const Form &f, const Form &base) {
       if (f == base || base == ARBITRARY) return true;
       if (f == ARBITRARY) return false;
-      return isa(derivesFrom(f), base);
+      return isA(derivesFrom(f), base);
     }
 
-    bool isa(Form base) { return isa(form, base); }
+    bool isA(Form base) { return isA(form, base); }
 
     static Form leastCommonAncestor(const Form &f1, const Form &f2) {
       if (f1 == ARBITRARY || f2 == ARBITRARY) return ARBITRARY;
-      if (isa(f2, f1)) return f1;
+      if (isA(f2, f1)) return f1;
       return leastCommonAncestor(derivesFrom(f1), f2);
     }
 

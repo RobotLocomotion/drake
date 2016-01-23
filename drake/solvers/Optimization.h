@@ -124,14 +124,16 @@ namespace Drake {
 
     template <typename DerivedLB, typename DerivedUB>
     Constraint(const VariableList& vars, const Eigen::MatrixBase<DerivedLB>& lb, const Eigen::MatrixBase<DerivedUB>& ub) : variable_list(vars), lower_bound(lb), upper_bound(ub)
-    {}
+    {
+      assert(lower_bound.size() == upper_bound.size() && "Lower bound and upper bound must be the same size");
+    }
     virtual ~Constraint() {}
 
     virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const = 0;
     virtual void eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const = 0;  // move this to DifferentiableConstraint derived class if/when we need to support non-differentiable functions
 
-    virtual Eigen::VectorXd getLowerBound() const { return lower_bound; }
-    virtual Eigen::VectorXd getUpperBound() const { return upper_bound; }
+    virtual const Eigen::VectorXd& getLowerBound() const { return lower_bound; }
+    virtual const Eigen::VectorXd& getUpperBound() const { return upper_bound; }
     size_t getNumConstraints() const { return lower_bound.size(); }
 
     const VariableList& getVariableList() const { return variable_list; }
@@ -151,7 +153,7 @@ namespace Drake {
     virtual ~QuadraticConstraint() {}
 
     virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const override { y.resize(getNumConstraints()); y=.5*x.transpose()*Q*x + b.transpose()*x; }
-    virtual void eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override { y.resize(getNumConstraints()); y = .5*x.transpose()*Q.cast<TaylorVarXd>()*x + b.cast<TaylorVarXd>().transpose()*x; };
+    virtual void eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override { y.resize(getNumConstraints()); y = .5*x.transpose()*constantTaylorVecXd(Q)*x + constantTaylorVecXd(b).transpose()*x; };
 
   private:
     Eigen::MatrixXd Q;
@@ -179,34 +181,24 @@ namespace Drake {
 
   // todo: consider implementing DifferentiableConstraint, TwiceDifferentiableConstraint, PolynomialConstraint, QuadraticConstraint, ComplementarityConstraint, IntegerConstraint, ...
   /** LinearConstraint
-   * @brief Implements a constraint of the form @f -lb <= Ax <= ub @f
+   * @brief Implements a constraint of the form @f lb <= Ax <= ub @f
    */
   class LinearConstraint : public Constraint {
   public:
     LinearConstraint(const VariableList& vars, size_t num_constraints) : Constraint(vars, num_constraints) {}
-    template <typename DerivedLB, typename DerivedUB>
-    LinearConstraint(const VariableList& vars, const Eigen::MatrixBase<DerivedLB>& lb, const Eigen::MatrixBase<DerivedUB>& ub) : Constraint(vars,lb,ub) {};
-    virtual ~LinearConstraint() {}
-
-    virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const override { y.resize(getNumConstraints()); y=getMatrix()*x; }
-    virtual void eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override { y.resize(getNumConstraints()); y = getMatrix().cast<TaylorVarXd>()*x; };
-
-    virtual Eigen::SparseMatrix<double> getSparseMatrix() const { return getMatrix().sparseView(); };
-    virtual Eigen::MatrixXd getMatrix() const = 0;
-  };
-
-  class LinearConstraintImpl : public LinearConstraint {
-  public:
     template <typename DerivedA,typename DerivedLB,typename DerivedUB>
-    LinearConstraintImpl(const VariableList& vars, const Eigen::MatrixBase<DerivedA>& A, const Eigen::MatrixBase<DerivedLB>& lb, const Eigen::MatrixBase<DerivedUB>& ub)
-            : A(A), LinearConstraint(vars,lb,ub) {
+    LinearConstraint(const VariableList& vars, const Eigen::MatrixBase<DerivedA>& A, const Eigen::MatrixBase<DerivedLB>& lb, const Eigen::MatrixBase<DerivedUB>& ub)
+            : Constraint(vars,lb,ub), A(A) {
       assert(A.rows()==lb.rows());
       assert(A.cols() == size(vars));
     }
-    virtual ~LinearConstraintImpl() {}
+    virtual ~LinearConstraint() {}
 
-    Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> getMatrix() const override { return A; }
+    virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const override { y.resize(getNumConstraints()); y=getMatrix()*x; }
+    virtual void eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override { y.resize(getNumConstraints()); y = constantTaylorVecXd(getMatrix())*x; };
 
+    virtual Eigen::SparseMatrix<double> getSparseMatrix() const { return getMatrix().sparseView(); };
+    virtual const Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic>& getMatrix() const { return A; }
   protected:
     Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> A;
   };
@@ -216,22 +208,10 @@ namespace Drake {
    */
   class LinearEqualityConstraint : public LinearConstraint {
   public:
-    LinearEqualityConstraint(const VariableList& vars, size_t num_constraints) : LinearConstraint(vars, num_constraints) { }
-    template <typename DerivedLB, typename DerivedUB>
-    LinearEqualityConstraint(const VariableList& vars, const Eigen::MatrixBase<DerivedLB>& lb, const Eigen::MatrixBase<DerivedUB>& ub) : LinearConstraint(vars,lb,ub) {};
-    virtual ~LinearEqualityConstraint() {}
-
-    virtual Eigen::VectorXd getVector() const = 0;
-    virtual Eigen::VectorXd getLowerBound() const override { return getVector(); }
-    virtual Eigen::VectorXd getUpperBound() const override { return getVector(); }
-  };
-
-  class LinearEqualityConstraintImpl : public LinearEqualityConstraint {
-  public:
     template <typename DerivedA,typename DerivedB>
-    LinearEqualityConstraintImpl(const VariableList& vars, const Eigen::MatrixBase<DerivedA>& Aeq, const Eigen::MatrixBase<DerivedB>& beq)
-            : LinearEqualityConstraint(vars,beq,beq), A(Aeq) {}
-    virtual ~LinearEqualityConstraintImpl() {}
+    LinearEqualityConstraint(const VariableList& vars, const Eigen::MatrixBase<DerivedA>& Aeq, const Eigen::MatrixBase<DerivedB>& beq)
+            : LinearConstraint(vars,Aeq,beq,beq) {}
+    virtual ~LinearEqualityConstraint() {}
 
     /* updateConstraint
      * @brief change the parameters of the constraint (A and b), but not the variable associations
@@ -243,18 +223,13 @@ namespace Drake {
     {
       assert(Aeq.rows()==beq.rows());
       if (Aeq.cols() != A.cols()) throw std::runtime_error("Can't change the number of decision variables");
-      A.conservativeResize(Aeq.rows(),Eigen::NoChange);
+      A.resize(Aeq.rows(),Eigen::NoChange);
       A = Aeq;
       lower_bound.conservativeResize(beq.rows());
       lower_bound = beq;
       upper_bound.conservativeResize(beq.rows());
       upper_bound = beq;
     };
-    virtual Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> getMatrix() const override { return A; }
-    virtual Eigen::VectorXd getVector() const override { return lower_bound; };
-
-  protected:
-    Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> A;
   };
 
   /** BoundingBoxConstraint
@@ -265,18 +240,17 @@ namespace Drake {
   class BoundingBoxConstraint : public LinearConstraint {
   public:
     template <typename DerivedLB, typename DerivedUB>
-    BoundingBoxConstraint(const VariableList& vars, const Eigen::MatrixBase<DerivedLB>& lb, const Eigen::MatrixBase<DerivedUB>& ub) : LinearConstraint(vars,lb,ub) {}
+    BoundingBoxConstraint(const VariableList& vars, const Eigen::MatrixBase<DerivedLB>& lb, const Eigen::MatrixBase<DerivedUB>& ub) : LinearConstraint(vars,Eigen::MatrixXd::Identity(size(vars),size(vars)),lb,ub) {}
     virtual ~BoundingBoxConstraint() {}
 
     virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const override { y.resize(getNumConstraints()); y=x; }
     virtual void eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override { y.resize(getNumConstraints()); y=x; }
-
-    virtual Eigen::MatrixXd getMatrix() const override { return Eigen::MatrixXd::Identity(getNumConstraints(),getNumConstraints()); }
   };
 
   class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   public:
-    OptimizationProblem() : problem_type(new LeastSquares), num_vars(0), x_initial_guess(100) {};
+    const static int INITIAL_VARIABLE_ALLOCATION_NUM = 100;
+    OptimizationProblem() : problem_type(new LeastSquares), num_vars(0), x_initial_guess(INITIAL_VARIABLE_ALLOCATION_NUM) {};
 
     const DecisionVariableView addContinuousVariables(std::size_t num_new_vars, std::string name = "x") {
       DecisionVariable v;
@@ -344,7 +318,7 @@ namespace Drake {
      * @brief adds linear constraints to the program for all (currently existing) variables
      */
     template <typename DerivedA,typename DerivedLB,typename DerivedUB>
-    std::shared_ptr<LinearConstraintImpl> addLinearConstraint(const Eigen::MatrixBase<DerivedA>& A,const Eigen::MatrixBase<DerivedLB>& lb,const Eigen::MatrixBase<DerivedUB>& ub) {
+    std::shared_ptr<LinearConstraint> addLinearConstraint(const Eigen::MatrixBase<DerivedA>& A,const Eigen::MatrixBase<DerivedLB>& lb,const Eigen::MatrixBase<DerivedUB>& ub) {
       return addLinearConstraint(A,lb,ub,variable_views);
     }
 
@@ -352,10 +326,10 @@ namespace Drake {
      * @brief adds linear constraints referencing potentially a subset of the decision variables.
      */
     template <typename DerivedA,typename DerivedLB,typename DerivedUB>
-    std::shared_ptr<LinearConstraintImpl> addLinearConstraint(const Eigen::MatrixBase<DerivedA>& A,const Eigen::MatrixBase<DerivedLB>& lb, const Eigen::MatrixBase<DerivedUB>& ub, const VariableList& vars) {
+    std::shared_ptr<LinearConstraint> addLinearConstraint(const Eigen::MatrixBase<DerivedA>& A,const Eigen::MatrixBase<DerivedLB>& lb, const Eigen::MatrixBase<DerivedUB>& ub, const VariableList& vars) {
       problem_type.reset(problem_type->addLinearConstraint());
 
-      auto constraint = std::make_shared<LinearConstraintImpl>(vars,A,lb,ub);
+      auto constraint = std::make_shared<LinearConstraint>(vars,A,lb,ub);
       linear_constraints.push_back(constraint);
       return constraint;
     }
@@ -365,7 +339,7 @@ namespace Drake {
      * @brief adds linear equality constraints to the program for all (currently existing) variables
      */
     template <typename DerivedA,typename DerivedB>
-    std::shared_ptr<LinearEqualityConstraintImpl> addLinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,const Eigen::MatrixBase<DerivedB>& beq) {
+    std::shared_ptr<LinearEqualityConstraint> addLinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,const Eigen::MatrixBase<DerivedB>& beq) {
       return addLinearEqualityConstraint(Aeq,beq,variable_views);
     }
 
@@ -377,10 +351,10 @@ namespace Drake {
    * where Aeq has exactly two columns.
    */
     template <typename DerivedA,typename DerivedB>
-    std::shared_ptr<LinearEqualityConstraintImpl> addLinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,const Eigen::MatrixBase<DerivedB>& beq, const VariableList& vars) {
+    std::shared_ptr<LinearEqualityConstraint> addLinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,const Eigen::MatrixBase<DerivedB>& beq, const VariableList& vars) {
       problem_type.reset(problem_type->addLinearEqualityConstraint());
 
-      auto constraint = std::make_shared<LinearEqualityConstraintImpl>(vars,Aeq,beq);
+      auto constraint = std::make_shared<LinearEqualityConstraint>(vars,Aeq,beq);
       linear_equality_constraints.push_back(constraint);
       return constraint;
     }
@@ -430,7 +404,7 @@ namespace Drake {
 //    getExitFlag();
 //    getInfeasibleConstraintNames();
 
-    void printSolution() {  // todo: overload the ostream operator instead?
+    void printSolution() {
       for (const auto& v : variables) {
         std::cout << v.name << " = " << v.data.transpose() << std::endl;
       }
@@ -552,7 +526,7 @@ namespace Drake {
             Aeq.block(constraint_index, v.index(), n, v.size()) = c->getMatrix().middleCols(var_index, v.size());
             var_index += v.size();
           }
-          beq.segment(constraint_index, n) = c->getVector();  // = c->getUpperBound() since it's an equality constraint
+          beq.segment(constraint_index, n) = c->getLowerBound();  // = c->getUpperBound() since it's an equality constraint
           constraint_index += n;
         }
 
