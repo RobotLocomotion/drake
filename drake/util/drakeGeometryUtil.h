@@ -427,33 +427,6 @@ Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, 1> rotmat2Representation
 
 DRAKEGEOMETRYUTIL_EXPORT int rotationRepresentationSize(int rotation_type);
 
-template<typename Scalar>
-GradientVar<Scalar, Eigen::Dynamic, 1> rotmat2Representation(const GradientVar<Scalar, SPACE_DIMENSION, SPACE_DIMENSION>& R, int rotation_type) {
-  GradientVar<Scalar, Eigen::Dynamic, 1> ret(rotationRepresentationSize(rotation_type), 1, R.getNumVariables(), R.maxOrder());
-  switch (rotation_type) {
-    case 0:
-      // empty matrix, already done
-      break;
-    case 1:
-      ret.value() = rotmat2rpy(R.value());
-      if (R.hasGradient()) {
-        ret.gradient().value() = drotmat2rpy(R.value(), R.gradient().value());
-      }
-      break;
-    case 2:
-      ret.value() = rotmat2quat(R.value());
-      if (R.hasGradient()) {
-        ret.gradient().value() = drotmat2quat(R.value(), R.gradient().value());
-      }
-      break;
-    default:
-      throw std::runtime_error("rotation representation type not recognized");
-  }
-  return ret;
-};
-
-
-
 /*
  * rpy2x
  */
@@ -741,46 +714,6 @@ void angularvel2rpydotMatrix(const Eigen::MatrixBase<DerivedRPY>& rpy,
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           / cp, Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0);
     }
   }
-};
-
-template<typename Derived>
-GradientVar<typename Derived::Scalar, Eigen::Dynamic, SPACE_DIMENSION> angularvel2RepresentationDotMatrix(
-    int rotation_type, const Eigen::MatrixBase<Derived>& qrot, int gradient_order) {
-  // note: gradients w.r.t. qrot
-  typedef typename Derived::Scalar Scalar;
-  GradientVar<Scalar, Eigen::Dynamic, SPACE_DIMENSION> ret(qrot.rows(), SPACE_DIMENSION, qrot.rows(), gradient_order);
-  switch (rotation_type) {
-    case 0:
-      // done
-      break;
-    case 1: {
-      if (gradient_order > 1) {
-        angularvel2rpydotMatrix(qrot, ret.value(), &ret.gradient().value(), &ret.gradient().gradient().value());
-      }
-      else if (gradient_order > 0) {
-        angularvel2rpydotMatrix(qrot, ret.value(), &ret.gradient().value(), (Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>*) nullptr);
-      }
-      else {
-        angularvel2rpydotMatrix(qrot, ret.value(), (Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>*) nullptr, (Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>*) nullptr);
-      }
-      break;
-    }
-    case 2: {
-      if (gradient_order > 1) {
-        ret.gradient().gradient().value().setZero();
-      }
-      if (gradient_order > 0) {
-        angularvel2quatdotMatrix(qrot, ret.value(), &ret.gradient().value());
-      }
-      else {
-        angularvel2quatdotMatrix(qrot, ret.value(), (Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>*) nullptr);
-      }
-      break;
-    }
-    default:
-      throw std::runtime_error("rotation representation type not recognized");
-  }
-  return ret;
 };
 
 template<typename DerivedRPY, typename DerivedE>
