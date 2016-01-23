@@ -81,35 +81,12 @@ namespace Drake {
     return s;
   }
 
-  // Quick notes about this design:
-  // need to have lists of constraints (if not functions), so I want a (non-templated) base class.
-  // would be nice to have templated types for specialized functions.  Not strictly required.
-  // approach: let functions be templated, and use lambda closures/std::function to wrap them into the constraint classes.
 
-  /**
-   * @defgroup function_concept Function Concept
-   * @ingroup concepts
-   * @{
-   * @brief Describes a mapping from one Vector to another Vector y = f(x)
+  /* Constraint
+   * @brief A constraint is a function + lower and upper bounds, and (currently) an association to decision variables of an optimization problem.
    *
-   * @nbsp
-   *
-   * | Every model of this concept must implement |  |
-   * ---------------------|------------------------------------------------------------|
-   * | X::InputVector     | type for the input to the system, which models the Vector<ScalarType> concept |
-   * | X::OutputVector    | type for the output from the system, which models the Vector<ScalarType> concept |
-   * | template <ScalarType> OutputVector<ScalarType> operator()(const InputVector<ScalarType>& x) | the actual function |
-   * | InputOutputRelation getProperties() | |
-   * | size_t getNumInputs() | only required if the input vector is dynamically-sized |
-   * | size_t getNumOutputs() | only required if the output vector is dynamically-sized |
-   *
-   * (always try to label your methods with const if possible)
-   *
-   * @}
-   */
-
-  /*
-   * some thoughts: a constraint is a function + lower and upper bounds.  it should support evaluating the constraint, adding it to an optimization problem,
+   * Some thoughts:
+   * It should support evaluating the constraint, adding it to an optimization problem,
    * and have support for constraints that require slack variables (adding additional decision variables to the problem).  There
    * should also be some notion of parameterized constraints:  e.g. the acceleration constraints in the rigid body dynamics are constraints
    * on vdot and f, but are "parameterized" by q and v.
