@@ -141,6 +141,7 @@ namespace Drake {
         constexpr size_t tuple_index = sizeof...(AutoDiffTypes) - Index;
         const auto& value = std::get<tuple_index>(values);
         auto& auto_diff = std::get<tuple_index>(auto_diffs);
+        auto_diff = typename std::remove_reference<decltype(auto_diff)>::type(value.rows(), value.cols());
         initializeAutoDiff(value, auto_diff, num_derivatives, deriv_num_start);
         InitializeAutoDiffTuplesHelper<Index - 1>::run(values, auto_diffs, num_derivatives, deriv_num_start + value.size());
       }
@@ -166,7 +167,7 @@ namespace Drake {
   InitializeAutoDiffArgsReturnType<Args...> initializeAutoDiffArgs(const Args &... args) {
     Eigen::DenseIndex dynamic_num_derivs = totalSizeAtRunTime(args...);
     InitializeAutoDiffArgsReturnType<Args...> ret;
-    auto values = std::make_tuple(args...);
+    auto values = std::forward_as_tuple(args...);
     internal::InitializeAutoDiffTuplesHelper<sizeof...(args)>::run(values, ret, dynamic_num_derivs, 0);
     return ret;
   }
