@@ -135,7 +135,7 @@ namespace Drake {
     /** \brief helper for initializeAutoDiffArgs function (recursive)
      */
     template<size_t Index>
-    struct InitializeAutoDiffTuplesHelper {
+    struct InitializeAutoDiffArgsHelper {
       template<typename ...ValueTypes, typename ...AutoDiffTypes>
       static void run(const std::tuple<ValueTypes...> &values, std::tuple<AutoDiffTypes...> &auto_diffs, Eigen::DenseIndex num_derivatives, Eigen::DenseIndex deriv_num_start) {
         constexpr size_t tuple_index = sizeof...(AutoDiffTypes) - Index;
@@ -143,14 +143,14 @@ namespace Drake {
         auto& auto_diff = std::get<tuple_index>(auto_diffs);
         auto_diff.resize(value.rows(), value.cols());
         initializeAutoDiff(value, auto_diff, num_derivatives, deriv_num_start);
-        InitializeAutoDiffTuplesHelper<Index - 1>::run(values, auto_diffs, num_derivatives, deriv_num_start + value.size());
+        InitializeAutoDiffArgsHelper<Index - 1>::run(values, auto_diffs, num_derivatives, deriv_num_start + value.size());
       }
     };
 
     /** \brief helper for initializeAutoDiffArgs function (base case)
      */
     template<>
-    struct InitializeAutoDiffTuplesHelper<0> {
+    struct InitializeAutoDiffArgsHelper<0> {
       template<typename ...ValueTypes, typename ...AutoDiffTypes>
       static void run(const std::tuple<ValueTypes...> &values, const std::tuple<AutoDiffTypes...> &auto_diffs, Eigen::DenseIndex num_derivatives, Eigen::DenseIndex deriv_num_start) {
         // empty
@@ -168,7 +168,7 @@ namespace Drake {
     Eigen::DenseIndex dynamic_num_derivs = totalSizeAtRunTime(args...);
     InitializeAutoDiffArgsReturnType<Args...> ret(AutoDiffMatrixType<Args, totalSizeAtCompileTime<Args...>()>(args.rows(), args.cols())...);
     auto values = std::forward_as_tuple(args...);
-    internal::InitializeAutoDiffTuplesHelper<sizeof...(args)>::run(values, ret, dynamic_num_derivs, 0);
+    internal::InitializeAutoDiffArgsHelper<sizeof...(args)>::run(values, ret, dynamic_num_derivs, 0);
     return ret;
   }
 }
