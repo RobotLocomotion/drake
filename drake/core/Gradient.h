@@ -18,54 +18,157 @@ namespace Drake {
   typedef TaylorVecd<Eigen::Dynamic,Eigen::Dynamic> TaylorVecXd;
   typedef TaylorMatd<Eigen::Dynamic,Eigen::Dynamic,Eigen::Dynamic> TaylorMatXd;
 
-  /** initTaylorVecXd
-   * @brief initializes the vector with x=val and dx=eye(numel(val))
+  /** \brief The appropriate AutoDiffScalar gradient type given the value type and the number of derivatives at compile time
    */
-  template <typename DerivedA, typename DerivedB>
-  void initTaylorVecXd(const Eigen::MatrixBase<DerivedA>& val, Eigen::MatrixBase<DerivedB>& auto_diff_vec) {
-    for (int i=0; i<val.size(); i++) {
-      auto_diff_vec(i) = Eigen::AutoDiffScalar<typename DerivedB::Scalar::DerType>(val(i),val.size(),i);
-    }
-  }
+  template<typename Derived, int Nq>
+  using AutoDiffMatrixType = Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<typename Derived::Scalar, Nq, 1> >, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>;
 
-  template <typename Derived>
-  TaylorVecXd initTaylorVecXd(const Eigen::MatrixBase<Derived>& val) {
-    TaylorVecXd auto_diff_vec(val.rows());
-    initTaylorVecXd(val, auto_diff_vec);
-    return auto_diff_vec;
-  }
 
-  /** constantTaylorVecXd
-   * @brief initializes the vector with x=val and dx=zeros(numel(val))
+  /** \brief initializes an autodiff matrix given a matrix of values and gradient matrix
+   * \param[in] val value matrix
+   * \param[in] gradient gradient matrix; the derivatives of val(j) are stored in row j of the gradient matrix.
+   * \param[out] autodiff_matrix matrix of AutoDiffScalars with the same size as
    */
-  template <typename DerivedA, typename DerivedB>
-  void constantTaylorVecXd(const Eigen::MatrixBase<DerivedA>& val, Eigen::MatrixBase<DerivedB>& auto_diff_vec) {
-    for (int i=0; i<val.size(); i++) {
-      auto_diff_vec(i) = Eigen::AutoDiffScalar<typename DerivedB::Scalar::DerType>(val(i));
-    }
-  }
-
-  template <typename Derived>
-  TaylorVecXd constantTaylorVecXd(const Eigen::MatrixBase<Derived>& val) {
-    TaylorVecXd auto_diff_vec(val.rows());
-    constantTaylorVecXd(val, auto_diff_vec);
-    return auto_diff_vec;
-  }
-
-
-  /** initTaylorVecXd
-   * @brief initializes the vector with x=value and dx=gradient
-   */
-  template<typename Derived, typename DerivedGradient>
-  void initTaylorVecXd(const Eigen::MatrixBase<Derived>& val, const Eigen::MatrixBase<DerivedGradient>& gradient, TaylorVecXd& auto_diff_vector)
+  template<typename Derived, typename DerivedGradient, typename DerivedAutoDiff>
+  void initializeAutoDiffGivenGradientMatrix(const Eigen::MatrixBase<Derived> &val, const Eigen::MatrixBase<DerivedGradient> &gradient, Eigen::MatrixBase<DerivedAutoDiff> &auto_diff_matrix)
   {
-    auto_diff_vector.resize(gradient.size(),1);
-    auto nx = gradient.cols();
-    for (Eigen::Index row = 0; row < auto_diff_vector.size(); row++) {
-      auto_diff_vector(row).value() = val(row);
-      auto_diff_vector(row).derivatives().resize(nx,1);
-      auto_diff_vector(row).derivatives() = gradient.row(row).transpose();
+    static_assert(Derived::SizeAtCompileTime == DerivedGradient::RowsAtCompileTime, "gradient has wrong number of rows at compile time");
+    assert(val.size() == gradient.rows() && "gradient has wrong number of rows at runtime");
+    typedef AutoDiffMatrixType<Derived, DerivedGradient::ColsAtCompileTime> ExpectedAutoDiffType;
+    static_assert(ExpectedAutoDiffType::RowsAtCompileTime == DerivedAutoDiff::RowsAtCompileTime, "auto diff matrix has wrong number of rows at compile time");
+    static_assert(ExpectedAutoDiffType::ColsAtCompileTime == DerivedAutoDiff::ColsAtCompileTime, "auto diff matrix has wrong number of columns at compile time");
+    static_assert(std::is_same<typename DerivedAutoDiff::Scalar, typename ExpectedAutoDiffType::Scalar>::value, "wrong auto diff scalar type");
+
+    typedef typename Eigen::MatrixBase<DerivedGradient>::Index Index;
+    auto_diff_matrix.resize(val.rows(), val.cols());
+    auto num_derivs = gradient.cols();
+    for (Index row = 0; row < auto_diff_matrix.size(); row++) {
+      auto_diff_matrix(row).value() = val(row);
+      auto_diff_matrix(row).derivatives().resize(num_derivs, 1);
+      auto_diff_matrix(row).derivatives() = gradient.row(row).transpose();
     }
+  }
+
+  /** \brief initialize a single autodiff matrix given the corresponding value matrix.
+   * @param[in] mat 'regular' matrix of values
+   * @param[out] ret AutoDiff matrix
+   * @param[in] num_derivatives the size of the derivatives vector @default the size of mat
+   * @param[in] deriv_num_start starting index into derivative vector (i.e. element deriv_num_start in derivative vector corresponds to mat(0, 0)). @default 0
+   */
+  template<typename Derived, typename DerivedAutoDiff>
+  void initializeAutoDiff(const Eigen::MatrixBase<Derived> &val, Eigen::MatrixBase<DerivedAutoDiff> &auto_diff_matrix, Eigen::DenseIndex num_derivatives = -1, Eigen::DenseIndex deriv_num_start = 0) {
+    using ADScalar = typename DerivedAutoDiff::Scalar;
+    static_assert(Derived::RowsAtCompileTime == DerivedAutoDiff::RowsAtCompileTime, "auto diff matrix has wrong number of rows at compile time");
+    static_assert(Derived::ColsAtCompileTime == DerivedAutoDiff::ColsAtCompileTime, "auto diff matrix has wrong number of columns at compile time");
+
+    if (num_derivatives == -1)
+      num_derivatives = val.size();
+
+    auto_diff_matrix.resize(val.rows(), val.cols());
+    Eigen::DenseIndex deriv_num = deriv_num_start;
+    for (int i = 0; i < val.size(); i++) {
+      auto_diff_matrix(i) = ADScalar(val(i), num_derivatives, deriv_num++);
+    }
+  }
+
+  /** \brief initialize a single autodiff matrix given the corresponding value matrix.
+   * @param[in] mat 'regular' matrix of values
+   * @param[in] num_derivatives the size of the derivatives vector @default the size of mat
+   * @param[in] deriv_num_start starting index into derivative vector (i.e. element deriv_num_start in derivative vector corresponds to mat(0, 0)). @default 0
+   * @return AutoDiff matrix
+   */
+  template<int Nq = Eigen::Dynamic, typename Derived>
+  AutoDiffMatrixType<Derived, Nq> initializeAutoDiff(const Eigen::MatrixBase<Derived> &mat, Eigen::DenseIndex num_derivatives = -1, Eigen::DenseIndex deriv_num_start = 0) {
+    if (num_derivatives == -1)
+      num_derivatives = mat.size();
+
+    AutoDiffMatrixType<Derived, Nq> ret(mat.rows(), mat.cols());
+    initializeAutoDiff(mat, ret, num_derivatives, deriv_num_start);
+    return ret;
+  }
+
+  // TODO begin: move to different location?
+  namespace internal {
+    /** \brief helper for totalSizeAtCompileTime function (recursive)
+     */
+    template<typename Head, typename ...Tail>
+    struct TotalSizeAtCompileTime {
+      static constexpr int eval() {
+        return Head::SizeAtCompileTime == Eigen::Dynamic || TotalSizeAtCompileTime<Tail...>::eval() == Eigen::Dynamic ?
+               Eigen::Dynamic :
+               Head::SizeAtCompileTime + TotalSizeAtCompileTime<Tail...>::eval();
+      }
+    };
+
+    /** \brief helper for totalSizeAtCompileTime function (base case)
+     */
+    template<typename Head>
+    struct TotalSizeAtCompileTime<Head> {
+      static constexpr int eval() {
+        return Head::SizeAtCompileTime;
+      }
+    };
+  }
+
+  /** \brief determine the total size at compile time of a number of arguments based on their SizeAtCompileTime static members
+   */
+  template<typename ...Args>
+  constexpr int totalSizeAtCompileTime() {
+    return internal::TotalSizeAtCompileTime<Args...>::eval();
+  }
+
+  /** \brief determine the total size at runtime of a number of arguments using their size() methods (base case).
+   */
+  constexpr Eigen::DenseIndex totalSizeAtRunTime() {
+    return 0;
+  }
+
+  /** \brief determine the total size at runtime of a number of arguments using their size() methods (recursive)
+   */
+  template<typename Head, typename ...Tail>
+  Eigen::DenseIndex totalSizeAtRunTime(const Eigen::MatrixBase<Head> &head, const Tail &... tail) {
+    return head.size() + totalSizeAtRunTime(tail...);
+  }
+  // TODO end: move to different location?
+
+  namespace internal {
+    /** \brief helper for initializeAutoDiffArgs function (recursive)
+     */
+    template<size_t Index>
+    struct InitializeAutoDiffTuplesHelper {
+      template<typename ...ValueTypes, typename ...AutoDiffTypes>
+      static void run(const std::tuple<ValueTypes...> &values, std::tuple<AutoDiffTypes...> &auto_diffs, Eigen::DenseIndex num_derivatives, Eigen::DenseIndex deriv_num_start) {
+        constexpr size_t tuple_index = sizeof...(AutoDiffTypes) - Index;
+        const auto& value = std::get<tuple_index>(values);
+        auto& auto_diff = std::get<tuple_index>(auto_diffs);
+        initializeAutoDiff(value, auto_diff, num_derivatives, deriv_num_start);
+        InitializeAutoDiffTuplesHelper<Index - 1>::run(values, auto_diffs, num_derivatives, deriv_num_start + value.size());
+      }
+    };
+
+    /** \brief helper for initializeAutoDiffArgs function (base case)
+     */
+    template<>
+    struct InitializeAutoDiffTuplesHelper<0> {
+      template<typename ...ValueTypes, typename ...AutoDiffTypes>
+      static void run(const std::tuple<ValueTypes...> &values, const std::tuple<AutoDiffTypes...> &auto_diffs, Eigen::DenseIndex num_derivatives, Eigen::DenseIndex deriv_num_start) {
+        // empty
+      }
+    };
+  }
+
+  /** \brief return type of initializeAutoDiffArgs function
+  */
+  template<typename ...Args>
+  using InitializeAutoDiffArgsReturnType = std::tuple<AutoDiffMatrixType<Args, totalSizeAtCompileTime<Args...>()>...>;
+
+  template<typename ...Args>
+  InitializeAutoDiffArgsReturnType<Args...> initializeAutoDiffArgs(const Args &... args) {
+    Eigen::DenseIndex dynamic_num_derivs = totalSizeAtRunTime(args...);
+    InitializeAutoDiffArgsReturnType<Args...> ret;
+    auto values = std::make_tuple(args...);
+    internal::InitializeAutoDiffTuplesHelper<sizeof...(args)>::run(values, ret, dynamic_num_derivs, 0);
+    return ret;
   }
 }
 

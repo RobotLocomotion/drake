@@ -1,6 +1,6 @@
 #include <tuple>
 #include "drake/util/drakeGeometryUtil.h"
-#include "drake/util/drakeGradientUtil.h"
+#include "drake/core/Gradient.h"
 #include "mex.h"
 using namespace Eigen;
 using namespace std;

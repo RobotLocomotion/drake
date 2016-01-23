@@ -3,6 +3,7 @@
 
 #include <map>
 #include "../../../util/drakeGeometryUtil.h"
+#include "drake/core/Gradient.h"
 
 using namespace Eigen;
 

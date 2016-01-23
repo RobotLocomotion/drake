@@ -130,7 +130,7 @@ namespace Drake {
     virtual ~QuadraticConstraint() {}
 
     virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const override { y.resize(getNumConstraints()); y=.5*x.transpose()*Q*x + b.transpose()*x; }
-    virtual void eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override { y.resize(getNumConstraints()); y = .5*x.transpose()*constantTaylorVecXd(Q)*x + constantTaylorVecXd(b).transpose()*x; };
+    virtual void eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override { y.resize(getNumConstraints()); y = .5*x.transpose()* Q.cast<TaylorVarXd>() * x + b.cast<TaylorVarXd>().transpose() * x; };
 
   private:
     Eigen::MatrixXd Q;
@@ -172,7 +172,7 @@ namespace Drake {
     virtual ~LinearConstraint() {}
 
     virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const override { y.resize(getNumConstraints()); y=getMatrix()*x; }
-    virtual void eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override { y.resize(getNumConstraints()); y = constantTaylorVecXd(getMatrix())*x; };
+    virtual void eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override { y.resize(getNumConstraints()); y = getMatrix().cast<TaylorVarXd>() * x; };
 
     virtual Eigen::SparseMatrix<double> getSparseMatrix() const { return getMatrix().sparseView(); };
     virtual const Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic>& getMatrix() const { return A; }
