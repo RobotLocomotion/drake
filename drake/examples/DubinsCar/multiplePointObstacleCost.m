@@ -11,7 +11,7 @@ function g = multiplePointObstacleCost(x, obstacle_positions)
   % @param x_obs Array of doubles of size (2, 1) representing the
   % horizontal and vertical coordinates of the obstacle.
     ns = size(x_plant,2); % number of discretized states
-    distance_along_axes = x_plant-repmat(x_obs,1,ns)
+    distance_along_axes = x_plant-repmat(x_obs,1,ns);
     l2_norm = sqrt(sum(abs(distance_along_axes).^2,1));
     c = exp(-l2_norm.^2);
   end
