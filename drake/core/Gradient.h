@@ -21,7 +21,7 @@ namespace Drake {
   /** \brief The appropriate AutoDiffScalar gradient type given the value type and the number of derivatives at compile time
    */
   template<typename Derived, int Nq>
-  using AutoDiffMatrixType = Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<typename Derived::Scalar, Nq, 1> >, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>;
+  using AutoDiffMatrixType = Eigen::Matrix<TaylorVard<Nq>, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime, Derived::Options, Derived::MaxRowsAtCompileTime, Derived::MaxColsAtCompileTime>;
 
 
   /** \brief initializes an autodiff matrix given a matrix of values and gradient matrix
@@ -56,17 +56,17 @@ namespace Drake {
    * @param[in] deriv_num_start starting index into derivative vector (i.e. element deriv_num_start in derivative vector corresponds to mat(0, 0)). @default 0
    */
   template<typename Derived, typename DerivedAutoDiff>
-  void initializeAutoDiff(const Eigen::MatrixBase<Derived> &val, Eigen::MatrixBase<DerivedAutoDiff> &auto_diff_matrix, Eigen::DenseIndex num_derivatives = -1, Eigen::DenseIndex deriv_num_start = 0) {
+  void initializeAutoDiff(const Eigen::MatrixBase<Derived> &val, Eigen::MatrixBase<DerivedAutoDiff> &auto_diff_matrix, Eigen::DenseIndex num_derivatives = Eigen::Dynamic, Eigen::DenseIndex deriv_num_start = 0) {
     using ADScalar = typename DerivedAutoDiff::Scalar;
     static_assert(Derived::RowsAtCompileTime == DerivedAutoDiff::RowsAtCompileTime, "auto diff matrix has wrong number of rows at compile time");
     static_assert(Derived::ColsAtCompileTime == DerivedAutoDiff::ColsAtCompileTime, "auto diff matrix has wrong number of columns at compile time");
 
-    if (num_derivatives == -1)
+    if (num_derivatives == Eigen::Dynamic)
       num_derivatives = val.size();
 
     auto_diff_matrix.resize(val.rows(), val.cols());
     Eigen::DenseIndex deriv_num = deriv_num_start;
-    for (int i = 0; i < val.size(); i++) {
+    for (DenseIndex i = 0; i < val.size(); i++) {
       auto_diff_matrix(i) = ADScalar(val(i), num_derivatives, deriv_num++);
     }
   }
@@ -158,15 +158,10 @@ namespace Drake {
     };
   }
 
-  /** \brief return type of initializeAutoDiffArgs function
-  */
   template<typename ...Args>
-  using InitializeAutoDiffArgsReturnType = std::tuple<AutoDiffMatrixType<Args, totalSizeAtCompileTime<Args...>()>...>;
-
-  template<typename ...Args>
-  InitializeAutoDiffArgsReturnType<Args...> initializeAutoDiffArgs(const Args &... args) {
+  std::tuple<AutoDiffMatrixType<Args, totalSizeAtCompileTime<Args...>()>...> initializeAutoDiffArgs(const Args &... args) {
     Eigen::DenseIndex dynamic_num_derivs = totalSizeAtRunTime(args...);
-    InitializeAutoDiffArgsReturnType<Args...> ret(AutoDiffMatrixType<Args, totalSizeAtCompileTime<Args...>()>(args.rows(), args.cols())...);
+    std::tuple<AutoDiffMatrixType<Args, totalSizeAtCompileTime<Args...>()>...> ret(AutoDiffMatrixType<Args, totalSizeAtCompileTime<Args...>()>(args.rows(), args.cols())...);
     auto values = std::forward_as_tuple(args...);
     internal::InitializeAutoDiffArgsHelper<sizeof...(args)>::run(values, ret, dynamic_num_derivs, 0);
     return ret;
