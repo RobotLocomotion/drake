@@ -2,9 +2,9 @@
 #define QUATERNIONFLOATINGJOINT_H_
 
 #include "DrakeJointImpl.h"
-#include "drakeGeometryUtil.h"
+#include "drake/util/drakeGeometryUtil.h"
 
-class DLLEXPORT_DRAKEJOINT QuaternionFloatingJoint: public DrakeJointImpl<QuaternionFloatingJoint>
+class DRAKEJOINTS_EXPORT QuaternionFloatingJoint: public DrakeJointImpl<QuaternionFloatingJoint>
 {
   // disable copy construction and assignment
   //QuaternionFloatingJoint(const QuaternionFloatingJoint&) = delete;
@@ -18,7 +18,8 @@ public:
 
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry> jointTransform(const Eigen::MatrixBase<DerivedQ> & q) const {
-    Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry> ret(Eigen::Quaternion<typename DerivedQ::Scalar>(q[3], q[4], q[5], q[6]));
+    Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry> ret;
+    ret.linear() = quat2rotmat(q.template bottomRows<4>());
     ret.translation() << q[0], q[1], q[2];
     ret.makeAffine();
     return ret;
@@ -122,20 +123,16 @@ public:
   };
 
   template <typename DerivedV>
-  GradientVar<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorque(const Eigen::MatrixBase<DerivedV> & v, int gradient_order) const
+  Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorque(const Eigen::MatrixBase<DerivedV> & v) const
   {
-    GradientVar<typename DerivedV::Scalar, Eigen::Dynamic, 1> ret(getNumVelocities(), 1, getNumVelocities(), gradient_order);
-    ret.value().setZero();
-    if (gradient_order > 0) {
-      ret.gradient().value().setZero();
-    }
-    return ret;
+    return Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1>::Zero(getNumVelocities(), 1);
   }
 
-  virtual bool isFloating() const { return true; };
-  virtual std::string getPositionName(int index) const;
-  virtual std::string getVelocityName(int index) const;
-  virtual Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const; //override;
+  virtual bool isFloating() const override { return true; };
+  virtual std::string getPositionName(int index) const override;
+  virtual std::string getVelocityName(int index) const override;
+  virtual Eigen::VectorXd zeroConfiguration() const override;
+  virtual Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const override;
 
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW

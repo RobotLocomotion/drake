@@ -1,6 +1,6 @@
 #include <Eigen/Core>
-#include "drakeGeometryUtil.h"
-#include "testUtil.h"
+#include "drake/util/drakeGeometryUtil.h"
+#include "drake/util/testUtil.h"
 #include <iostream>
 #include <cmath>
 

@@ -75,7 +75,6 @@ end
 if ~isfield(options, 'use_mex'), options.use_mex = true; end
 if ~isfield(options, 'compute_gradients'), options.compute_gradients = false; end
 if ~isfield(options, 'compute_JdotV'), options.compute_JdotV = ~isempty(v); end
-if ~isfield(options, 'force_new_kinsol'), options.force_new_kinsol = false; end
 if ~isfield(options, 'kinematics_cache_ptr_to_use'), options.kinematics_cache_ptr_to_use = []; end
 
 if warn_signature_changed
@@ -88,8 +87,12 @@ end
 % gradient computations.
 kinsol.q = q;
 kinsol.v = v;
+kinsol.has_gradients = options.compute_gradients;
 
-if (options.use_mex && model.mex_model_ptr~=0 && isnumeric(q))
+if options.use_mex && model.mex_model_ptr~=0 && ((isnumeric(q) && isnumeric(v)) || (isa(q, 'TaylorVar') && (getOrder(q) < 2 && ~options.compute_gradients))) % relying on short circuiting here
+  if ~isnumeric(q) && isa(q, 'TaylorVar')
+    options.compute_gradients = true;
+  end
   if isempty(options.kinematics_cache_ptr_to_use)
     if options.compute_gradients
       kinsol.mex_ptr = model.default_kinematics_cache_ptr_with_gradients;
@@ -98,6 +101,20 @@ if (options.use_mex && model.mex_model_ptr~=0 && isnumeric(q))
     end
   else
     kinsol.mex_ptr = options.kinematics_cache_ptr_to_use;
+  end
+
+  if options.compute_gradients
+    nq = length(q);
+    nv = length(v);
+    if isnumeric(q)
+      q = TaylorVar(q, {[eye(nq), zeros(nq, nv)]});
+    end
+    if isnumeric(v)
+      if isempty(v)
+        v = double.empty(0, 1);
+      end
+      v = TaylorVar(v, {[zeros(nv, nq), eye(nv)]});
+    end
   end
   
   doKinematicsmex(model.mex_model_ptr, kinsol.mex_ptr, q, v, options.compute_JdotV);

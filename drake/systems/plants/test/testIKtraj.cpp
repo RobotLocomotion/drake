@@ -1,5 +1,5 @@
-#include "RigidBodyIK.h"
-#include "RigidBodyManipulator.h"
+#include "drake/systems/plants/RigidBodyIK.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include "../constraint/RigidBodyConstraint.h"
 
 #include "../IKoptions.h"
@@ -11,8 +11,8 @@ using namespace std;
 using namespace Eigen;
 int main()
 {
-  RigidBodyManipulator rbm("examples/Atlas/urdf/atlas_minimal_contact.urdf");
-  RigidBodyManipulator* model = &rbm;
+  RigidBodyTree rbm("examples/Atlas/urdf/atlas_minimal_contact.urdf");
+  RigidBodyTree * model = &rbm;
 
   if(!model)
   {
@@ -43,14 +43,13 @@ int main()
     //  r_foot = i;
     //}
   }
-  int nq = model->num_positions;
-  VectorXd qstar = VectorXd::Zero(nq);
+  VectorXd qstar = model->getZeroConfiguration();
   qstar(3) = 0.8;
-  KinematicsCache<double> cache = model->doKinematics(qstar, 0);
+  KinematicsCache<double> cache = model->doKinematics(qstar);
   Vector3d com0 = model->centerOfMass(cache);
 
   Vector3d r_hand_pt = Vector3d::Zero();
-  Vector3d rhand_pos0 = model->forwardKin(cache, r_hand_pt, r_hand, 0, 0);
+  Vector3d rhand_pos0 = model->transformPoints(cache, r_hand_pt, r_hand, 0);
 
   int nT = 4;
   double* t = new double[nT];

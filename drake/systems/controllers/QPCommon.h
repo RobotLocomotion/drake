@@ -1,21 +1,22 @@
 #ifndef _QPCOMMON_H_
 #define _QPCOMMON_H_
 
-#include "controlUtil.h"
-#include "drakeUtil.h"
-#include "fastQP.h"
+#include "drake/systems/controllers/controlUtil.h"
+#include "drake/util/drakeUtil.h"
+#include "drake/solvers/fastQP.h"
 #include "lcmtypes/drake/lcmt_qp_controller_input.hpp"
-#include "ExponentialPlusPiecewisePolynomial.h"
+#include "drake/systems/trajectories/ExponentialPlusPiecewisePolynomial.h"
 #include <vector>
-#include "ForceTorqueMeasurement.h"
-#include "Side.h"
-#include "gurobiQP.h"
+#include "drake/systems/plants/ForceTorqueMeasurement.h"
+#include "drake/systems/robotInterfaces/Side.h"
+#include "drake/solvers/gurobiQP.h"
+#include "drake/drakeQP_export.h" // TODO: do exports
 
 const double REG = 1e-8;
 
 struct QPControllerData {
   GRBenv *env;
-  RigidBodyManipulator* r;
+  RigidBodyTree * r;
   double slack_limit; // maximum absolute magnitude of acceleration slack variable values
   Eigen::VectorXd umin,umax;
   void* map_ptr;
@@ -156,7 +157,7 @@ struct AtlasHardwareParams {
   Eigen::Matrix<bool, Eigen::Dynamic, 1> joint_is_position_controlled;
 };
 
-struct AtlasParams {
+struct QPControllerParams {
   WholeBodyParams whole_body;
   std::vector<BodyMotionParams> body_motion;
   VRefIntegratorParams vref_integrator;
@@ -177,8 +178,8 @@ struct AtlasParams {
 class NewQPControllerData {
 public:
   GRBenv *env;
-  RigidBodyManipulator* r;
-  std::map<std::string,AtlasParams> param_sets;
+  RigidBodyTree * r;
+  std::map<std::string,QPControllerParams> param_sets;
   RobotPropertyCache rpc;
   void* map_ptr;
   Eigen::VectorXd umin,umax;
@@ -210,8 +211,8 @@ public:
   // and which must persist to the next iteration
   QPControllerState state;
 
-  NewQPControllerData(RigidBodyManipulator* r) :
-      r(r), cache(r->bodies, 0)
+  NewQPControllerData(RigidBodyTree * r) :
+      r(r), cache(r->bodies)
   {
     // empty
   }

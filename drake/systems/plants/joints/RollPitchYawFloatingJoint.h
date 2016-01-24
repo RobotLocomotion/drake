@@ -3,7 +3,7 @@
 
 #include "DrakeJointImpl.h"
 
-class DLLEXPORT_DRAKEJOINT RollPitchYawFloatingJoint: public DrakeJointImpl<RollPitchYawFloatingJoint>
+class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint: public DrakeJointImpl<RollPitchYawFloatingJoint>
 {
 public:
   // disable copy construction and assignment
@@ -138,6 +138,7 @@ public:
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic, 0, DrakeJoint::MAX_NUM_VELOCITIES, DrakeJoint::MAX_NUM_POSITIONS> &qdot_to_v,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic> *dqdot_to_v) const {
     qdot_to_v.setIdentity(getNumVelocities(), getNumPositions());
+    Drake::resizeDerivativesToMatchScalar(qdot_to_v, q(0));
 
     if (dqdot_to_v) {
       dqdot_to_v->setZero(qdot_to_v.size(), getNumPositions());
@@ -149,6 +150,7 @@ public:
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic, 0, DrakeJoint::MAX_NUM_POSITIONS, DrakeJoint::MAX_NUM_VELOCITIES> &v_to_qdot,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic> *dv_to_qdot) const {
     v_to_qdot.setIdentity(getNumPositions(), getNumVelocities());
+    Drake::resizeDerivativesToMatchScalar(v_to_qdot, q(0));
 
     if (dv_to_qdot) {
       dv_to_qdot->setZero(v_to_qdot.size(), getNumPositions());
@@ -156,19 +158,15 @@ public:
   };
 
   template <typename DerivedV>
-  GradientVar<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorque(const Eigen::MatrixBase<DerivedV> & v, int gradient_order) const
+  Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorque(const Eigen::MatrixBase<DerivedV> & v) const
   {
-    GradientVar<typename DerivedV::Scalar, Eigen::Dynamic, 1> ret(getNumVelocities(), 1, getNumVelocities(), gradient_order);
-    ret.value().setZero();
-    if (gradient_order > 0) {
-      ret.gradient().value().setZero();
-    }
-    return ret;
+    return Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1>::Zero(getNumVelocities(), 1);
   }
 
-  virtual bool isFloating() const { return true; }
-  virtual Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const; //override;
-  virtual std::string getPositionName(int index) const;
+  virtual bool isFloating() const override { return true; }
+  virtual Eigen::VectorXd zeroConfiguration() const override;
+  virtual Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const override;
+  virtual std::string getPositionName(int index) const override;
 
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW

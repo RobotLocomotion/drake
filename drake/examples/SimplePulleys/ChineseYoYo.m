@@ -75,7 +75,8 @@ classdef ChineseYoYo < HybridDrakeSystem
         [phi,J] = obj.no_contact.position_constraints{1}.eval(q);
       end
       % solve zero post-transition velocities for all active constraints
-      J = J*vToqdot(obj.no_contact, q);  % note: this will be the same for both modes
+      kinsol = obj.no_contact.doKinematics(q);
+      J = J*vToqdot(obj.no_contact, kinsol);  % note: this will be the same for both modes
       vp = (eye(obj.no_contact.num_velocities)-Hinv*J'*pinv(J*Hinv*J')*J)*v;
       xp = [q;vp];
       

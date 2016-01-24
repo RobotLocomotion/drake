@@ -7,18 +7,18 @@
 
 #include "Element.h"
 
-#include "drakeShapesMacros.h"
+#include "drake/drakeShapes_export.h"
 
 namespace DrakeShapes
 {
-  class DLLEXPORT_drakeShapes VisualElement : public Element
+  class DRAKESHAPES_EXPORT VisualElement : public Element
   {
     public:
-      VisualElement(const Eigen::Matrix4d& T_element_to_local)
+      VisualElement(const Eigen::Isometry3d& T_element_to_local)
     : Element(T_element_to_local), material(Eigen::Vector4d(0.7, 0.7, 0.7, 1)) {};
 
       VisualElement(const Geometry& geometry,
-                    const Eigen::Matrix4d& T_element_to_local, 
+                    const Eigen::Isometry3d& T_element_to_local,
                     const Eigen::Vector4d& material)
     : Element(geometry, T_element_to_local), material(material) {};
 

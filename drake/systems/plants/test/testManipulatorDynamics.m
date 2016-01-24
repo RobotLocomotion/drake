@@ -45,9 +45,8 @@ end
 
 function testActuatedPendulum()
 m = RigidBodyManipulator('ActuatedPendulum.urdf');
-nq = m.getNumPositions();
 nv = m.getNumVelocities();
-q = randn(nq, 1);
+q = getRandomConfiguration(m);
 v = randn(nv, 1);
 [H,C,B] = manipulatorDynamics(m,q,v,false);
 
@@ -65,9 +64,6 @@ end
 function testAtlasRPY()
 
 r = createAtlas('rpy');
-nq = r.getNumPositions();
-nv = r.getNumVelocities();
-
 checkMex(r);
 
 end
@@ -149,7 +145,8 @@ nv = robot.getNumVelocities();
 q = getRandomConfiguration(robot);
 v = randn(nv, 1);
 
-vToqdot = robot.vToqdot(q);
+kinsol = robot.doKinematics(q);
+vToqdot = robot.vToqdot(kinsol);
 if nq ~= nv || any(any(vToqdot - eye(nv)))
   error('Hdot - 2Q is only skew symmetric if v = qdot')
 end

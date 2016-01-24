@@ -7,9 +7,11 @@
 #include <map>
 #include <Eigen/StdVector>
 #include <memory>
-#include "DrakeJoint.h"
+#include "drake/systems/plants/joints/DrakeJoint.h"
+#include "drake/systems/plants/collision/DrakeCollision.h"
+#include "drake/drakeRBM_export.h"
 
-class DLLEXPORT_RBM RigidBody {
+class DRAKERBM_EXPORT RigidBody {
 private:
   std::unique_ptr<DrakeJoint> joint;
   DrakeCollision::bitmask collision_filter_group;
@@ -59,7 +61,7 @@ public:
 public:
   std::string linkname;
   int robotnum; // uses 0-index. starts from 0
-// note: it's very ugly, but parent,dofnum,and pitch also exist currently (independently) at the rigidbodymanipulator level to represent the featherstone structure.  this version is for the kinematics.
+// note: it's very ugly, but parent,dofnum,and pitch also exist currently (independently) at the RigidBodyTree level to represent the featherstone structure.  this version is for the kinematics.
   std::shared_ptr<RigidBody> parent;
   int body_index;
   int position_num_start;
@@ -79,13 +81,13 @@ public:
   friend std::ostream& operator<<( std::ostream &out, const RigidBody &b);
 
   // FIXME: move to a better place:
-  class DLLEXPORT_RBM CollisionElement : public DrakeCollision::Element
+  class DRAKERBM_EXPORT CollisionElement : public DrakeCollision::Element
   {
     public:
       CollisionElement(const CollisionElement& other);
-      CollisionElement(const Eigen::Matrix4d& T_element_to_link, std::shared_ptr<RigidBody> body);
+      CollisionElement(const Eigen::Isometry3d& T_element_to_link, std::shared_ptr<RigidBody> body);
       CollisionElement(const DrakeShapes::Geometry& geometry,
-                       const Eigen::Matrix4d& T_element_to_link, std::shared_ptr<RigidBody> body);
+                       const Eigen::Isometry3d& T_element_to_link, std::shared_ptr<RigidBody> body);
       virtual ~CollisionElement(){};
 
       virtual CollisionElement* clone() const;

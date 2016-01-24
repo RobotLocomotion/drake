@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include <cstdlib>
-#include "RigidBodyManipulator.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 
 using namespace std;
 
@@ -12,15 +12,11 @@ int main(int argc, char* argv[])
 		cerr << "Usage: urdfKinTest urdf_filename" << endl;
 		exit(-1);
 	}
-  RigidBodyManipulator* model = new RigidBodyManipulator(argv[1]);
-  if (!model) {
-  	cerr << "ERROR: Failed to load model from " << argv[1] << endl;
-  	return -1;
-  }
+  RigidBodyTree * model = new RigidBodyTree(argv[1]);
   cout << "=======" << endl;
 
   // run kinematics with second derivatives 100 times
-  Eigen::VectorXd q = Eigen::VectorXd::Zero(model->num_positions);
+  Eigen::VectorXd q = model->getZeroConfiguration();
   Eigen::VectorXd v = Eigen::VectorXd::Zero(model->num_velocities);
   int i;
 
@@ -31,7 +27,7 @@ int main(int argc, char* argv[])
 
 // for (i=0; i<model->num_dof; i++)
 // 	 q(i)=(double)rand() / RAND_MAX;
-  KinematicsCache<double> cache = model->doKinematics(q, v, 0);
+  KinematicsCache<double> cache = model->doKinematics(q, v);
 //  }
 
 //  const Vector4d zero(0,0,0,1);
@@ -40,16 +36,19 @@ int main(int argc, char* argv[])
 
   for (i=0; i<model->bodies.size(); i++) {
 //    model->forwardKin(i,zero,1,pt);
-		auto pt = model->forwardKin(cache, zero, i, 0, 1);
+		auto pt = model->transformPoints(cache, zero, i, 0);
+    auto rpy = model->relativeRollPitchYaw(cache, i, 0);
+    Eigen::Matrix<double, 6, 1> x;
+    x << pt, rpy;
 //    cout << i << ": forward kin: " << model->bodies[i].linkname << " is at " << pt.transpose() << endl;
     cout << model->bodies[i]->linkname << " ";
-		cout << pt.transpose() << endl;
+		cout << x.transpose() << endl;
 //    for (int j=0; j<pt.size(); j++)
 //    	cout << pt(j) << " ";
   }
 
-  auto phi = model->positionConstraints<double>(cache,1);
-  cout << "phi = " << phi.value().transpose() << endl;
+  auto phi = model->positionConstraints<double>(cache);
+  cout << "phi = " << phi.transpose() << endl;
 
   delete model;
   return 0;

@@ -3,7 +3,7 @@
 
 #include <stdexcept>
 #include <Eigen/Core>
-#include "drakeGradientUtil.h"
+#include "drake/util/drakeGradientUtil.h"
 #include <iostream>
 #include <cstdint>
 
@@ -116,7 +116,9 @@ public:
   }
 
 public:
+#ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(bool(((DataType::SizeAtCompileTime)!=Eigen::Dynamic) && ((static_cast<int>(sizeof(Scalar))*(DataType::SizeAtCompileTime))%16==0)))
+#endif
 };
 
 #endif /* DRAKE_UTIL_GRADIENTVAR_H_ */

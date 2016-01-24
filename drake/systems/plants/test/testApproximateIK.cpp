@@ -1,7 +1,7 @@
-#include "RigidBodyIK.h"
-#include "RigidBodyManipulator.h"
+#include "drake/systems/plants/RigidBodyIK.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include "../constraint/RigidBodyConstraint.h"
-#include "RigidBodyManipulator.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include "../IKoptions.h"
 #include <iostream>
 #include <cstdlib>
@@ -11,14 +11,14 @@ using namespace std;
 using namespace Eigen;
 int main()
 {
-  RigidBodyManipulator* model = new RigidBodyManipulator("examples/Atlas/urdf/atlas_minimal_contact.urdf");
+  RigidBodyTree * model = new RigidBodyTree("examples/Atlas/urdf/atlas_minimal_contact.urdf");
   if(!model)
   {
     cerr<<"ERROR: Failed to load model"<<endl;
   }
   Vector2d tspan;
   tspan<<0,1;
-  VectorXd q0 = VectorXd::Zero(model->num_positions);
+  VectorXd q0 = model->getZeroConfiguration();
   q0(3) = 0.8;
   Vector3d com_des = Vector3d::Zero();
   com_des(2) = std::numeric_limits<double>::quiet_NaN();

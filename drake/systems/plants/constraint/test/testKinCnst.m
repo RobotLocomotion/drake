@@ -1,5 +1,5 @@
 function testKinCnst
-
+rng(0,'twister');
 checkDependency('rigidbodyconstraint_mex');
 
 urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
@@ -46,8 +46,7 @@ for i=1:nRPts,
   r_foot_pts(:,i) = robot.getBody(r_foot).getCollisionGeometry{i}.getPoints;
 end
 
-q = randn(nq,1);
-% q_aff = randn(nq_aff,1);
+q = getRandomConfiguration(robot);
 q_aff = [q;randn(length(robot_aff.getStateFrame.frame{2}.getCoordinateNames())/2,1)];
 tspan0 = [0,1];
 tspan1 = [];

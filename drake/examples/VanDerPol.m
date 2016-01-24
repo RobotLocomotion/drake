@@ -5,7 +5,7 @@ classdef VanDerPol < PolynomialSystem
       obj = obj@PolynomialSystem(2,0,0,2,false,true,false);
     end
     function [xdot,df] = dynamicsRHS(~,~,x,~)
-      xdot = [x(2); -x(1)-x(2)*(x(1)^2-1)];
+      xdot = [x(2,:); -x(1,:)-x(2,:).*(x(1,:).^2-1)];
       df = [zeros(2,1),[0 1; -1-2*x(1)*x(2), -(x(1)^2-1)]];
     end
     function [y,dy]=output(~,~,x,~)
@@ -107,6 +107,34 @@ classdef VanDerPol < PolynomialSystem
       ts = linspace(0,2*pi,10);
       initial_guess.x = PPTrajectory(foh(ts,2*[sin(ts);cos(ts)]));
       prog.solveTraj(2*pi,initial_guess);
+    end
+    
+    function particleDemo
+      noise_covariance = diag([0, .5]);
+      vdp = VanDerPol();
+      sys = DrakeSystemWGaussianNoise(vdp,noise_covariance,[],zeros(2),.1);
+
+      tspan = [0:.04:20,20.1:.1:300];
+      num_particles = 5000;
+      figure(1); clf; 
+      
+      x0 = [-0.1144;2.0578];
+      x_limit_cycle = simulate(vdp,[0 6.69],x0);
+      
+      ts=x_limit_cycle.getBreaks(); xlim=eval(x_limit_cycle,ts);
+      plot(xlim(1,:),xlim(2,:),'k','LineWidth',2);
+      hold on; axis([-2.5,2.5,-3,3]);
+      xlabel('$q$','interpreter','latex');
+      ylabel('$\dot{q}$','interpreter','latex');
+
+      function draw_function(t,x)
+        h = plot(x(1,:),x(2,:),'b.','MarkerSize',20);
+        title(['t=',num2str(t)]);
+        drawnow;
+        delete(h);
+      end
+      
+      particleDemo(sys,repmat(x0,1,num_particles)+.01*randn(2,num_particles),tspan,@draw_function);
     end
   end
 end

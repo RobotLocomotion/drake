@@ -7,7 +7,7 @@
 #include <limits>
 #include <exception>
 #include <stdexcept>
-#include "drakeGradientUtil.h"
+#include "drake/util/drakeGradientUtil.h"
 
 
 template <typename Derived>
@@ -68,6 +68,7 @@ public:
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic, 0, DrakeJoint::MAX_NUM_VELOCITIES, DrakeJoint::MAX_NUM_POSITIONS> &qdot_to_v,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic> *dqdot_to_v) const {
     qdot_to_v.setIdentity(getNumVelocities(), getNumPositions());
+    Drake::resizeDerivativesToMatchScalar(qdot_to_v, q(0));
     if (dqdot_to_v) {
       dqdot_to_v->setZero(qdot_to_v.size(), getNumPositions());
     }
@@ -78,24 +79,21 @@ public:
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic, 0, DrakeJoint::MAX_NUM_POSITIONS, DrakeJoint::MAX_NUM_VELOCITIES> &v_to_qdot,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic> *dv_to_qdot) const {
     v_to_qdot.setIdentity(getNumPositions(), getNumVelocities());
+    Drake::resizeDerivativesToMatchScalar(v_to_qdot, q(0));
     if (dv_to_qdot) {
       dv_to_qdot->setZero(v_to_qdot.size(), getNumPositions());
     }
   };
 
   template <typename DerivedV>
-  GradientVar<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorque(const Eigen::MatrixBase<DerivedV> & v, int gradient_order) const {
-    GradientVar<typename DerivedV::Scalar, Eigen::Dynamic, 1> ret(getNumVelocities(), 1, getNumVelocities(), gradient_order);
-    using std::abs;
+  Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorque(const Eigen::MatrixBase<DerivedV> & v) const {
     typedef typename DerivedV::Scalar Scalar;
-    ret.value()[0] = damping * v[0];
+    Eigen::Matrix<Scalar, Eigen::Dynamic, 1> ret(getNumVelocities(), 1);
+    using std::abs;
+    ret[0] = damping * v[0];
     Scalar coulomb_window_fraction = v[0] / coulomb_window;
-    ret.value()[0] += std::min(static_cast<Scalar>(1.0), std::max(static_cast<Scalar>(-1.0), coulomb_window_fraction)) * coulomb_friction;
-    if (gradient_order > 0) {
-      ret.gradient().value()(0, 0) = damping;
-      if (abs(v[0]) < coulomb_window)
-        ret.gradient().value()(0, 0) += sign(v[0]) * (coulomb_friction / coulomb_window);
-    }
+    Scalar coulomb = std::min(Scalar(1), std::max(Scalar(-1), coulomb_window_fraction)) * coulomb_friction;
+    ret[0] += coulomb;
     return ret;
   }
 
@@ -107,6 +105,10 @@ public:
 
     this->DrakeJoint::joint_limit_min[0] = joint_limit_min;
     this->DrakeJoint::joint_limit_max[0] = joint_limit_max;
+  }
+
+  Eigen::VectorXd zeroConfiguration() const {
+    return Eigen::VectorXd::Zero(1);
   }
 
   Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const

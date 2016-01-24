@@ -12,7 +12,7 @@
 #include "QPCommon.h"
 #include <limits>
 #include <cmath>
-#include "drakeMexUtil.h"
+#include "drake/util/drakeMexUtil.h"
 
 using namespace std;
 using namespace Eigen;
@@ -177,7 +177,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   narg++;
 
   if (nlhs>narg) {
-    RigidBodyManipulator* r = pdata->r;
+    RigidBodyTree * r = pdata->r;
 
     VectorXd individual_cops = individualSupportCOPs(r, pdata->cache, debug->active_supports, debug->normals, debug->B, debug->beta);
     plhs[narg] = eigenToMatlab(individual_cops);

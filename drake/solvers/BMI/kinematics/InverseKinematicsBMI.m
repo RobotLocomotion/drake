@@ -52,9 +52,6 @@ classdef InverseKinematicsBMI < BMIspotless
             [obj,obj.body_Theta{i-1}] = obj.newSym(2);
             % compute the position and orientation constraint between
             % adjacent bodies
-            if(any(bodyi.T_body_to_joint(1:3,4)~= 0))
-              error('Not implemented yet');
-            end
 
             if(parent_idx ~= 1) % parent link is not 'world'
               [obj,obj.body_QuatTheta{i-1}] = obj.newFree(4,2);
@@ -74,8 +71,8 @@ classdef InverseKinematicsBMI < BMIspotless
             r = bodyi.Ttree(1:3,4);
             pos_expr = parent_pos + rotmatFromQuatBilinear(parent_Quat)*r;
             tree_quat = rotmat2quat(bodyi.Ttree(1:3,1:3));
-            body2joint_quat = rotmat2quat(bodyi.T_body_to_joint(1:3,1:3));
-            quat_expr = clean(singleBodyQuatPropagation(parent_quat,tree_quat,body2joint_quat,obj.joint_cos(i-1),obj.joint_sin(i-1)),1e-7);
+            joint_axis = bodyi.joint_axis;
+            quat_expr = clean(singleBodyQuatPropagation(parent_quat,tree_quat,joint_axis,obj.joint_cos(i-1),obj.joint_sin(i-1)),1e-7);
 
             if(parent_idx ~= 1)
               wi = [obj.body_quat(:,parent_idx);obj.joint_cos(i-1);obj.joint_sin(i-1)];
@@ -188,13 +185,13 @@ classdef InverseKinematicsBMI < BMIspotless
           sol_bilinear.body_Quat{1} = zeros(4,4);
           sol_bilinear.body_Quat{1}(1,1) = 1;
         end
-        sol.q = zeros(obj.robot.getNumPositions,1);
+        sol.q = getZeroConfiguration(obj.robot);
         [joint_lb,joint_ub] = obj.robot.getJointLimits();
         for i = 1:obj.num_bodies
           if(obj.robot.getBody(i).parent ~= 0) % not world
             if(obj.robot.getBody(i).floating) %floating base
               T_base = [rotmatFromQuatBilinear(sol.body_quat(:,i)*sol.body_quat(:,i)') sol.body_pos(:,i);0 0 0 1];
-              TJ = (obj.robot.getBody(i).T_body_to_joint)/obj.robot.getBody(i).Ttree*T_base/obj.robot.getBody(i).T_body_to_joint;
+              TJ = obj.robot.getBody(i).Ttree\T_base;
               if(obj.robot.getBody(i).floating == 1) % eular angles
                 sol.q(obj.robot.getBody(i).position_num) = [TJ(1:3,4);rotmat2rpy(TJ(1:3,1:3))];
               else

@@ -1,6 +1,6 @@
-#include "drakeUtil.h"
-#include "drakeMexUtil.h"
-#include "QPLocomotionPlan.h"
+#include "drake/util/drakeUtil.h"
+#include "drake/util/drakeMexUtil.h"
+#include "drake/systems/robotInterfaces/QPLocomotionPlan.h"
 
 using namespace std;
 using namespace Eigen;
@@ -149,7 +149,7 @@ std::vector<RigidBodySupportState> setUpSupports(const mxArray* mex_supports)
   return ret;
 }
 
-std::vector<QPLocomotionPlanSettings::ContactNameToContactPointsMap> setUpContactGroups(RigidBodyManipulator* robot, const mxArray* mex_contact_groups)
+std::vector<QPLocomotionPlanSettings::ContactNameToContactPointsMap> setUpContactGroups(RigidBodyTree * robot, const mxArray* mex_contact_groups)
 {
   assert(mxGetNumberOfElements(mex_contact_groups) == robot->bodies.size());
   std::vector<QPLocomotionPlanSettings::ContactNameToContactPointsMap> contact_groups;
@@ -242,7 +242,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   const mxArray* mex_lcm_channel = prhs[2];
 
   // robot
-  RigidBodyManipulator *robot = (RigidBodyManipulator*) getDrakeMexPointer(mex_model);
+  RigidBodyTree *robot = (RigidBodyTree *) getDrakeMexPointer(mex_model);
 
   // settings
   QPLocomotionPlanSettings settings;
@@ -272,15 +272,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   settings.knee_settings.knee_kd = mxGetScalar(mxGetPropertySafe(mex_settings, "knee_kd"));
   settings.knee_settings.knee_weight = mxGetScalar(mxGetPropertySafe(mex_settings, "knee_weight"));
   settings.zmp_safety_margin = mxGetScalar(mxGetPropertySafe(mex_settings, "zmp_safety_margin"));
-  settings.pelvis_name = mxGetStdString(mxGetPropertySafe(mex_settings, "pelvis_name"));
-  settings.foot_names[Side::LEFT] = mxGetStdString(mxGetPropertySafe(mex_settings, "l_foot_name"));
-  settings.foot_names[Side::RIGHT] = mxGetStdString(mxGetPropertySafe(mex_settings, "r_foot_name"));
-  settings.knee_names[Side::LEFT] = mxGetStdString(mxGetPropertySafe(mex_settings, "l_knee_name"));
-  settings.knee_names[Side::RIGHT] = mxGetStdString(mxGetPropertySafe(mex_settings, "r_knee_name"));
-  settings.akx_names[Side::LEFT] = mxGetStdString(mxGetPropertySafe(mex_settings, "l_akx_name"));
-  settings.akx_names[Side::RIGHT] = mxGetStdString(mxGetPropertySafe(mex_settings, "r_akx_name"));
-  settings.aky_names[Side::LEFT] = mxGetStdString(mxGetPropertySafe(mex_settings, "l_aky_name"));
-  settings.aky_names[Side::RIGHT] = mxGetStdString(mxGetPropertySafe(mex_settings, "r_aky_name"));
+  settings.pelvis_name = mxGetStdString(mxGetPropertySafe(mxGetPropertySafe(mex_settings, "robot"), "pelvis_name"));
+  settings.foot_names[Side::LEFT] = mxGetStdString(mxGetPropertySafe(mxGetPropertySafe(mex_settings, "robot"), "l_foot_name"));
+  settings.foot_names[Side::RIGHT] = mxGetStdString(mxGetPropertySafe(mxGetPropertySafe(mex_settings, "robot"), "r_foot_name"));
+  settings.knee_names[Side::LEFT] = mxGetStdString(mxGetPropertySafe(mxGetPropertySafe(mex_settings, "robot"), "l_knee_name"));
+  settings.knee_names[Side::RIGHT] = mxGetStdString(mxGetPropertySafe(mxGetPropertySafe(mex_settings, "robot"), "r_knee_name"));
+  settings.akx_names[Side::LEFT] = mxGetStdString(mxGetPropertySafe(mxGetPropertySafe(mex_settings, "robot"), "l_akx_name"));
+  settings.akx_names[Side::RIGHT] = mxGetStdString(mxGetPropertySafe(mxGetPropertySafe(mex_settings, "robot"), "r_akx_name"));
+  settings.aky_names[Side::LEFT] = mxGetStdString(mxGetPropertySafe(mxGetPropertySafe(mex_settings, "robot"), "l_aky_name"));
+  settings.aky_names[Side::RIGHT] = mxGetStdString(mxGetPropertySafe(mxGetPropertySafe(mex_settings, "robot"), "r_aky_name"));
   settings.constrained_position_indices = matlabToStdVector<int>(mxGetPropertySafe(mex_settings, "constrained_dofs"));
   addOffset(settings.constrained_position_indices, -1); // base 1 to base 0
   settings.untracked_position_indices = matlabToStdVector<int>(mxGetPropertySafe(mex_settings, "untracked_joint_inds"));

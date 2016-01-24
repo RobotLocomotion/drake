@@ -1,11 +1,11 @@
-#include "controlUtil.h"
-#include "drakeMexUtil.h"
+#include "drake/systems/controllers/controlUtil.h"
+#include "drake/util/drakeMexUtil.h"
 
 using namespace std;
 using namespace Eigen;
 
 struct SupportDetectData {
-  RigidBodyManipulator* r;
+  RigidBodyTree * r;
   void* map_ptr;
 };
 

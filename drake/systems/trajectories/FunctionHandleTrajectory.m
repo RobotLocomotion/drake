@@ -1,5 +1,5 @@
-classdef FunctionHandleTrajectory < Trajectory
 % Constructs a proper trajectory object from a function handle.
+classdef  (InferiorClasses = {?Point}) FunctionHandleTrajectory < Trajectory
   
   properties
     handle  % the function handle

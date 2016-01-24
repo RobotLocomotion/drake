@@ -1,9 +1,9 @@
-#include "RigidBodyIK.h"
+#include "drake/systems/plants/RigidBodyIK.h"
 #include <mex.h>
-#include "RigidBodyManipulator.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include "constraint/RigidBodyConstraint.h"
-#include "IKoptions.h"
-#include "drakeMexUtil.h"
+#include "drake/systems/plants/IKoptions.h"
+#include "drake/util/drakeMexUtil.h"
 
 using namespace std;
 using namespace Eigen;
@@ -14,7 +14,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   {
     mexErrMsgIdAndTxt("Drake:approximateIKmex:NotEnoughInputs","Usage approximateIKmex(model_ptr,q_seed,q_nom,constraint1,constraint2,...,ikoptions)");
   }
-  RigidBodyManipulator *model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+  RigidBodyTree *model = (RigidBodyTree *) getDrakeMexPointer(prhs[0]);
   int nq = model->num_positions;
   Map<VectorXd> q_seed(mxGetPrSafe(prhs[1]),nq);
   Map<VectorXd> q_nom(mxGetPrSafe(prhs[2]),nq);

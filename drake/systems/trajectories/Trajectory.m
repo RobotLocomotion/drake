@@ -102,9 +102,9 @@ classdef Trajectory < DrakeSystem
     end
     
     function [a,b,breaks] = setupTrajectoryPair(a,b)
-        if (isnumeric(a)) a = ConstantTrajectory(a); end
-        typecheck(a,'Trajectory'); 
-        if (isnumeric(b)) b = ConstantTrajectory(b); end
+        if (isnumeric(a) || isa(a,'Point')) a = ConstantTrajectory(a); end
+        typecheck(a,'Trajectory');
+        if (isnumeric(b) || isa(b,'Point')) b = ConstantTrajectory(b); end
         typecheck(b,'Trajectory');
         tspan = [max(a.tspan(1),b.tspan(1)),min(a.tspan(2),b.tspan(2))];
         if (tspan(2)<tspan(1))
@@ -148,8 +148,9 @@ classdef Trajectory < DrakeSystem
         if (length(cdim)~=length(bdim) || any(cdim([1,3:end])~=bdim([1,3:end])))
           error('dimensions 1 and 3:end must match');
         end
+        fr = getOutputFrame(c);
         c = FunctionHandleTrajectory(@(t) horzcat(c.eval(t),b.eval(t)),[cdim(1),cdim(2)+bdim(2),cdim(3:end)],breaks);
-        c = setOutputFrame(c,MultiCoordinateFrame({getOutputFrame(c),getOutputFrame(b)}));
+        c = setOutputFrame(c,MultiCoordinateFrame({fr,getOutputFrame(b)}));
       end
     end
     
@@ -253,6 +254,7 @@ classdef Trajectory < DrakeSystem
       breaks(breaks>newtspan(2))=[];
       breaks = unique([newtspan(1),breaks,newtspan(2)]);
       traj = FunctionHandleTrajectory(@(t) eval(obj,t), obj.dim, breaks);
+      traj = setOutputFrame(traj, obj.getOutputFrame);
     end
     
     function tf = valuecheck(traj,desired_traj,tol,belementwise)
@@ -322,8 +324,13 @@ classdef Trajectory < DrakeSystem
     function h=fnplt(obj,plotdims)
       if (nargin>1 && ~isempty(plotdims) && any(plotdims>prod(obj.dim) | plotdims<1)) error('plotdims out of range'); end
       breaks=obj.getBreaks();
-      if iscolumn(breaks) breaks = breaks'; end 
-      m=5; t=linspace(0,1,m)'; n=length(breaks)-1;
+      if iscolumn(breaks) breaks = breaks'; end
+      if size(breaks)<5,
+        m=200; % such that the plot has relatively high fidelity/resolution when there are very few breaks (such as in PseudoSpectralMethodTrajOpt)
+      else,
+        m=5;
+      end
+      t=linspace(0,1,m)'; n=length(breaks)-1;
       ts = repmat(1-t,1,n).*repmat(breaks(1:end-1),m,1) + repmat(t,1,n).*repmat(breaks(2:end),m,1);
       ts = ts(:);
       pts = obj.eval(ts);
@@ -423,6 +430,8 @@ classdef Trajectory < DrakeSystem
       error('parameters are not implemented for this type of trajetory'); 
     end
     
-    
+    function new_traj = append(obj, other)
+      error('Appending this type of trajectory is not (yet) supported'); 
+    end
   end
 end

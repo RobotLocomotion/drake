@@ -1,5 +1,5 @@
-#include "controlUtil.h"
-#include "drake/drakeUtil.h"
+#include "drake/systems/controllers/controlUtil.h"
+#include "drake/util/drakeUtil.h"
 
 using namespace Eigen;
 
@@ -74,7 +74,7 @@ void surfaceTangents(const Vector3d & normal, Matrix<double,3,m_surface_tangents
   }
 }
 
-int contactPhi(RigidBodyManipulator* r, const KinematicsCache<double>& cache, SupportStateElement& supp, VectorXd &phi)
+int contactPhi(RigidBodyTree * r, const KinematicsCache<double>& cache, SupportStateElement& supp, VectorXd &phi)
 {
   int nc = static_cast<int>(supp.contact_pts.size());
   phi.resize(nc);
@@ -83,14 +83,14 @@ int contactPhi(RigidBodyManipulator* r, const KinematicsCache<double>& cache, Su
 
   int i=0;
   for (auto pt_iter = supp.contact_pts.begin(); pt_iter != supp.contact_pts.end(); pt_iter++) {
-    Vector3d contact_pos = r->forwardKin(cache, *pt_iter, supp.body_idx, 0, 0);
+    Vector3d contact_pos = r->transformPoints(cache, *pt_iter, supp.body_idx, 0);
     phi(i) = supp.support_surface.head<3>().dot(contact_pos) + supp.support_surface(3);
     i++;
   }
   return nc;
 }
 
-int contactConstraintsBV(RigidBodyManipulator *r, const KinematicsCache<double>& cache, int nc, std::vector<double> support_mus, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>& supp, MatrixXd &B, MatrixXd &JB, MatrixXd &Jp, VectorXd &Jpdotv, MatrixXd &normals)
+int contactConstraintsBV(RigidBodyTree *r, const KinematicsCache<double>& cache, int nc, std::vector<double> support_mus, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>& supp, MatrixXd &B, MatrixXd &JB, MatrixXd &Jp, VectorXd &Jpdotv, MatrixXd &normals)
 {
   int j, k=0, nq = r->num_positions;
 
@@ -109,8 +109,8 @@ int contactConstraintsBV(RigidBodyManipulator *r, const KinematicsCache<double>&
     double norm = sqrt(1+mu*mu); // because normals and ds are orthogonal, the norm has a simple form
     if (nc>0) {
       for (auto pt_iter=iter->contact_pts.begin(); pt_iter!=iter->contact_pts.end(); pt_iter++) {
-        contact_pos = r->forwardKin(cache, *pt_iter, iter->body_idx, 0, 0);
-        J = r->forwardKinJacobian(cache, *pt_iter, iter->body_idx, 0, 0, true, 0).value();
+        contact_pos = r->transformPoints(cache, *pt_iter, iter->body_idx, 0);
+        J = r->transformPointsJacobian(cache, *pt_iter, iter->body_idx, 0, true);
 
         normal = iter->support_surface.head(3);
         surfaceTangents(normal,d);
@@ -126,8 +126,7 @@ int contactConstraintsBV(RigidBodyManipulator *r, const KinematicsCache<double>&
         // NOTE: I'm cheating and using a slightly different ordering of J and Jdot here
         Jp.block(3*k,0,3,nq) = J;
         Vector3d pt = (*pt_iter).head(3);
-        auto Jpdotv_grad = r->forwardJacDotTimesV(cache, pt,iter->body_idx,0,0,0);
-        Jpdotv.block(3*k,0,3,1) = Jpdotv_grad.value();
+        Jpdotv.block(3*k,0,3,1) = r->transformPointsJacobianDotTimesV(cache, pt,iter->body_idx,0);
         normals.col(k) = normal;
         
         k++;
@@ -138,8 +137,8 @@ int contactConstraintsBV(RigidBodyManipulator *r, const KinematicsCache<double>&
   return k;
 }
 
-MatrixXd individualSupportCOPs(RigidBodyManipulator* r, const KinematicsCache<double>& cache, const std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>& active_supports,
-    const MatrixXd& normals, const MatrixXd& B, const VectorXd& beta)
+MatrixXd individualSupportCOPs(RigidBodyTree * r, const KinematicsCache<double>& cache, const std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>& active_supports,
+                               const MatrixXd& normals, const MatrixXd& B, const VectorXd& beta)
 {
   const int n_basis_vectors_per_contact = static_cast<int>(B.cols() / normals.cols());
   const int n = static_cast<int>(active_supports.size());
@@ -181,7 +180,7 @@ MatrixXd individualSupportCOPs(RigidBodyManipulator* r, const KinematicsCache<do
 
       Vector3d point_on_contact_plane = contact_positions.col(0);
       std::pair<Vector3d, double> cop_and_normal_torque = resolveCenterOfPressure(torque, force, normal, point_on_contact_plane);
-      Vector3d cop_world = r->forwardKin(cache, cop_and_normal_torque.first, active_support.body_idx, 0, 0);
+      Vector3d cop_world = r->transformPoints(cache, cop_and_normal_torque.first, active_support.body_idx, 0);
       individual_cops.col(j) = cop_world;
     }
 
@@ -208,7 +207,7 @@ bool isSupportElementActive(SupportStateElement* se, bool contact_force_detected
   return is_active;
 }
 
-Matrix<bool, Dynamic, 1> getActiveSupportMask(RigidBodyManipulator* r, VectorXd q, VectorXd qd, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &available_supports, const Ref<const Matrix<bool, Dynamic, 1>> &contact_force_detected, double contact_threshold) {
+Matrix<bool, Dynamic, 1> getActiveSupportMask(RigidBodyTree * r, VectorXd q, VectorXd qd, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &available_supports, const Ref<const Matrix<bool, Dynamic, 1>> &contact_force_detected, double contact_threshold) {
   KinematicsCache<double> cache = r->doKinematics(q, qd);
 
   size_t nsupp = available_supports.size();
@@ -249,7 +248,7 @@ Matrix<bool, Dynamic, 1> getActiveSupportMask(RigidBodyManipulator* r, VectorXd 
   return active_supp_mask;
 }
 
-std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> getActiveSupports(RigidBodyManipulator* r, VectorXd q, VectorXd qd, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &available_supports, const Ref<const Matrix<bool, Dynamic, 1>> &contact_force_detected, double contact_threshold) {
+std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> getActiveSupports(RigidBodyTree * r, VectorXd q, VectorXd qd, std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &available_supports, const Ref<const Matrix<bool, Dynamic, 1>> &contact_force_detected, double contact_threshold) {
 
   Matrix<bool, Dynamic, 1> active_supp_mask = getActiveSupportMask(r, q, qd, available_supports, contact_force_detected, contact_threshold);
 
@@ -263,7 +262,7 @@ std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> g
   return active_supports;
 }
 
-Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_state, const int body_index, const Isometry3d &body_pose_des, const Ref<const Vector6d> &body_v_des, const Ref<const Vector6d> &body_vdot_des, const Ref<const Vector6d> &Kp, const Ref<const Vector6d> &Kd, const Isometry3d &T_task_to_world)
+Vector6d bodySpatialMotionPD(RigidBodyTree *r, DrakeRobotState &robot_state, const int body_index, const Isometry3d &body_pose_des, const Ref<const Vector6d> &body_v_des, const Ref<const Vector6d> &body_vdot_des, const Ref<const Vector6d> &Kp, const Ref<const Vector6d> &Kd, const Isometry3d &T_task_to_world)
 {
   // @param body_pose_des  desired pose in the task frame, this is the homogeneous transformation from desired body frame to task frame 
   // @param body_v_des    desired [xyzdot;angular_velocity] in task frame
@@ -276,19 +275,18 @@ Vector6d bodySpatialMotionPD(RigidBodyManipulator *r, DrakeRobotState &robot_sta
   Isometry3d T_world_to_task = T_task_to_world.inverse();
   KinematicsCache<double> cache = r->doKinematics(robot_state.q, robot_state.qd);
 
-  Vector3d origin = Vector3d::Zero();
-  auto body_pose = r->forwardKin(cache, origin, body_index, 0, 2);
-  Vector3d body_xyz = body_pose.head<3>();
-  Vector3d body_xyz_task = T_world_to_task * body_xyz.colwise().homogeneous();
-  Vector4d body_quat = body_pose.tail<4>();
+  auto body_pose = r->relativeTransform(cache, 0, body_index);
+  const auto& body_xyz = body_pose.translation();
+  Vector3d body_xyz_task = T_world_to_task * body_xyz;
+  Vector4d body_quat = rotmat2quat(body_pose.linear());
   std::vector<int> v_indices;
-  auto J_geometric = r->geometricJacobian(cache, 0, body_index, body_index, 0, true, &v_indices);
+  auto J_geometric = r->geometricJacobian(cache, 0, body_index, body_index, true, &v_indices);
   VectorXd v_compact(v_indices.size());
   for(size_t i = 0;i<v_indices.size();i++)
   {
     v_compact(i) = robot_state.qd(v_indices[i]);
   }
-  Vector6d body_twist = J_geometric.value() * v_compact;
+  Vector6d body_twist = J_geometric * v_compact;
   Matrix3d R_body_to_world = quat2rotmat(body_quat);
   Matrix3d R_world_to_body = R_body_to_world.transpose();
   Matrix3d R_body_to_task = T_world_to_task.linear() * R_body_to_world;
@@ -377,7 +375,7 @@ void getRobotJointIndexMap(JointNames *joint_names, RobotJointIndexMap *joint_ma
   return;
 }
 
-template drakeControlUtilEXPORT void getRows(std::set<int> &, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
-template drakeControlUtilEXPORT void getCols(std::set<int> &, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
-template drakeControlUtilEXPORT void angleDiff(const MatrixBase<MatrixXd> &, const MatrixBase<MatrixXd> &, MatrixBase<MatrixXd> &);
-template drakeControlUtilEXPORT void angleDiff(const MatrixBase<Vector3d> &, const MatrixBase<Vector3d> &, MatrixBase<Vector3d> &);
+template DRAKECONTROLUTIL_EXPORT void getRows(std::set<int> &, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
+template DRAKECONTROLUTIL_EXPORT void getCols(std::set<int> &, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
+template DRAKECONTROLUTIL_EXPORT void angleDiff(const MatrixBase<MatrixXd> &, const MatrixBase<MatrixXd> &, MatrixBase<MatrixXd> &);
+template DRAKECONTROLUTIL_EXPORT void angleDiff(const MatrixBase<Vector3d> &, const MatrixBase<Vector3d> &, MatrixBase<Vector3d> &);

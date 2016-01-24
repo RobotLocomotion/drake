@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "DrakeCollision.h"
+#include "drake/systems/plants/collision/DrakeCollision.h"
 #include "BulletModel.h"
 
 using namespace std;
@@ -280,15 +280,8 @@ namespace DrakeCollision
         const btVector3 point_on_elemA = obA->getWorldTransform().invXform(point_on_A_in_world);
         const btVector3 point_on_elemB = obB->getWorldTransform().invXform(point_on_B_in_world);
 
-        Vector4d point_on_A_1, point_on_B_1;
-
-        point_on_A_1 << toVector3d(point_on_elemA), 1.0;
-        point_on_B_1 << toVector3d(point_on_elemB), 1.0;
-
-        Vector3d point_on_A, point_on_B;
-
-        point_on_A << elements[idA]->getLocalTransform().topRows(3) * point_on_A_1;
-        point_on_B << elements[idB]->getLocalTransform().topRows(3) * point_on_B_1;
+        auto point_on_A = elements[idA]->getLocalTransform() * toVector3d(point_on_elemA);
+        auto point_on_B = elements[idB]->getLocalTransform() * toVector3d(point_on_elemB);
 
         c.addSingleResult(idA, idB, point_on_A, point_on_B, toVector3d(normal_on_B), static_cast<double>(pt.getDistance()) + marginA + marginB);
       }
@@ -299,6 +292,39 @@ namespace DrakeCollision
     return c.getResults();
   }
 
+  bool BulletModel::collidingPointsCheckOnly(const vector<Vector3d>& points,
+                                             double collision_threshold)
+  {
+    // Create sphere geometry
+    btSphereShape bt_shape(collision_threshold);
+
+    // Create Bullet collision object
+    btCollisionObject bt_obj;
+    bt_obj.setCollisionShape(static_cast<btCollisionShape*>(&bt_shape));
+
+    btTransform btT;
+    btT.setIdentity();
+    BulletCollisionWorldWrapper& bt_world = getBulletWorld(false);
+
+    for (size_t i = 0; i < points.size(); ++i) {
+      BinaryContactResultCallback c;
+
+      btVector3 pos(static_cast<btScalar>(points[i](0)),
+                    static_cast<btScalar>(points[i](1)),
+                    static_cast<btScalar>(points[i](2)));
+      btT.setOrigin(pos);
+      bt_obj.setWorldTransform(btT);
+
+      bt_world.bt_collision_world->contactTest(&bt_obj, c);
+
+      if (c.isInCollision()) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   vector<size_t> BulletModel::collidingPoints(const vector<Vector3d>& points, 
                                               double collision_threshold)
   {
@@ -307,7 +333,6 @@ namespace DrakeCollision
 
     // Create Bullet collision object
     btCollisionObject bt_obj;
-    btCollisionObject* bt_obj_ptr = static_cast<btCollisionObject*>(&bt_obj);
     bt_obj.setCollisionShape(static_cast<btCollisionShape*>(&bt_shape));
 
     btTransform btT;
@@ -324,7 +349,7 @@ namespace DrakeCollision
       btT.setOrigin(pos);
       bt_obj.setWorldTransform(btT);
 
-      bt_world.bt_collision_world->contactTest(bt_obj_ptr, c);
+      bt_world.bt_collision_world->contactTest(&bt_obj, c);
 
       if (c.isInCollision()) {
         in_collision_indices.push_back(i);
@@ -335,11 +360,11 @@ namespace DrakeCollision
   }
 
   bool BulletModel::updateElementWorldTransform(const ElementId id, 
-                                                const Matrix4d& T_local_to_world)
+                                                const Isometry3d& T_local_to_world)
   {
     const bool element_exists(Model::updateElementWorldTransform(id, T_local_to_world));
     if (element_exists) {
-      const Matrix4d& T = elements[id]->getWorldTransform();
+      const Isometry3d& T = elements[id]->getWorldTransform();
       btMatrix3x3 rot;
       btVector3 pos;
       btTransform btT;
@@ -375,6 +400,25 @@ namespace DrakeCollision
                                                  const bool use_margins,
                                                  std::unique_ptr<ResultCollector>& c)
   {
+    // special case: two spheres (because we need to handle the zero-radius sphere case)
+    if (elements[idA]->getShape() == DrakeShapes::SPHERE && elements[idB]->getShape() == DrakeShapes::SPHERE)
+    {
+      const Isometry3d& TA_world = elements[idA]->getWorldTransform();
+      const Isometry3d& TB_world = elements[idB]->getWorldTransform();
+      auto xA_world = TA_world.translation();
+      auto xB_world = TB_world.translation();
+      double radiusA = dynamic_cast<const DrakeShapes::Sphere&>(elements[idA]->getGeometry()).radius;
+      double radiusB = dynamic_cast<const DrakeShapes::Sphere&>(elements[idB]->getGeometry()).radius;
+      double distance = (xA_world-xB_world).norm();
+      c->addSingleResult(idA,
+                         idB,
+                         elements[idA]->getLocalTransform() * TA_world.inverse() * (xA_world + (xB_world-xA_world)*radiusA/distance), // ptA (in body A coords)
+                         elements[idB]->getLocalTransform() * TB_world.inverse() * (xB_world + (xA_world-xB_world)*radiusB/distance), // ptB (in body B coords)
+                         (xA_world-xB_world)/distance,
+                         distance-radiusA-radiusB);
+      return true;
+    }
+
     btConvexShape* shapeA;
     btConvexShape* shapeB;
     btGjkPairDetector::ClosestPointInput input;
@@ -426,32 +470,18 @@ namespace DrakeCollision
       pointOnBinWorld = gjkOutput.m_pointInWorld;
     }
 
-    btVector3 pointOnElemA = input.m_transformA.invXform(pointOnAinWorld);
-    btVector3 pointOnElemB = input.m_transformB.invXform(pointOnBinWorld);
+    btVector3 point_on_elemA = input.m_transformA.invXform(pointOnAinWorld);
+    btVector3 point_on_elemB = input.m_transformB.invXform(pointOnBinWorld);
 
-    VectorXd pointOnA_1(4);
-    VectorXd pointOnB_1(4);
-    pointOnA_1 << toVector3d(pointOnElemA), 1;
-    pointOnB_1 << toVector3d(pointOnElemB), 1;
-
-    Vector3d pointOnA;
-    Vector3d pointOnB;
-
-    pointOnA << elements[idA]->getLocalTransform().topRows(3)*pointOnA_1;
-    pointOnB << elements[idB]->getLocalTransform().topRows(3)*pointOnB_1;
+    auto point_on_A = elements[idA]->getLocalTransform() * toVector3d(point_on_elemA);
+    auto point_on_B = elements[idB]->getLocalTransform() * toVector3d(point_on_elemB);
 
     btScalar distance = gjkOutput.m_normalOnBInWorld.dot(pointOnAinWorld-pointOnBinWorld);
     
-
     if (gjkOutput.m_hasResult) {
-      c->addSingleResult(idA,idB,pointOnA,pointOnB, toVector3d(gjkOutput.m_normalOnBInWorld),(double) distance);
+      c->addSingleResult(idA, idB, point_on_A, point_on_B, toVector3d(gjkOutput.m_normalOnBInWorld), (double) distance);
     } else {
-      c->addSingleResult(idA, 
-            idB, 
-            Vector3d::Zero(), 
-            Vector3d::Zero(),
-            Vector3d::Zero(),1.0);
-      cerr << "In BulletModel::findClosestPointsBtwElements: No closest point found between " << idA << " and " << idB << endl;
+      throw std::runtime_error("In BulletModel::findClosestPointsBtwElements: No closest point found between " + to_string(idA) + " and " + to_string(idB));
     }
 
     return (c->pts.size() > 0);

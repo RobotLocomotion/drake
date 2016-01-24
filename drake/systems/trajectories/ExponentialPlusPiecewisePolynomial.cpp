@@ -1,4 +1,4 @@
-#include "ExponentialPlusPiecewisePolynomial.h"
+#include "drake/systems/trajectories/ExponentialPlusPiecewisePolynomial.h"
 #include <unsupported/Eigen/MatrixFunctions>
 #include <stdexcept>
 
@@ -66,4 +66,4 @@ void ExponentialPlusPiecewisePolynomial<CoefficientType>::shiftRight(double offs
   piecewise_polynomial_part.shiftRight(offset);
 }
 
-template class DLLEXPORT ExponentialPlusPiecewisePolynomial<double>;
+template class DRAKETRAJECTORIES_EXPORT ExponentialPlusPiecewisePolynomial<double>;

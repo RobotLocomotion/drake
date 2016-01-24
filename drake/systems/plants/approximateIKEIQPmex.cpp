@@ -1,18 +1,18 @@
 /*
- * A c++ version of @RigidBodyManipulator/approximateIK.m
+ * A c++ version of @RigidBodyTree/approximateIK.m
  */
 #include <math.h>
 #include <set>
 #include <mex.h>
 #include <Eigen/Dense>
-#include "RigidBodyManipulator.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include <iostream>
 #include <Eigen/Cholesky>
 #include <Eigen/LU>
 #include <Eigen/SVD>
 
-#include "drakeUtil.h"
-#include "fastQP.h"
+#include "drake/util/drakeUtil.h"
+#include "drake/solvers/fastQP.h"
 
 #define USE_EIQUADPROG_BACKUP 1
 
@@ -68,11 +68,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nlhs<1) return;
   
   // first get the model_ptr back from matlab
-  RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+  RigidBodyTree *model= (RigidBodyTree*) getDrakeMexPointer(prhs[0]);
 
   int i, j, error, nq = model->num_positions;
   
-  static RigidBodyManipulator* lastModel=NULL;
+  static RigidBodyTree* lastModel=NULL;
   static int lastNumJointLimits = 0;
   
   int equality_ind = 0;
@@ -265,7 +265,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   cout << "c is " << c.rows() << endl;
   cout << "Aeq is " << Aeq.rows() << " by " << Aeq.cols() << endl;
 
-  VectorXd q = VectorXd::Zero(nq);
+  VectorXd q = model->getZeroConfiguration();
 //   double result = solve_quadprog(Q, c, -Aeq, beq, -Ain, bin, q);
   
   VectorXd Qdiag = Q.diagonal();

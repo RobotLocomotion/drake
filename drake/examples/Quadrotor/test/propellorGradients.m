@@ -4,7 +4,7 @@ p = RigidBodyManipulator('../quadrotor.urdf',struct('floating',true));
 prop = p.force{1};
 
 for k = 1:20
-    q = rand(p.getNumPositions,1);
+    q = getRandomConfiguration(p);
     v = rand(p.getNumVelocities,1);
 
     [~,~,~,dB_mod_numerical] = geval(2,@(q,v)prop.computeSpatialForce(p,q,v),q,v,struct('grad_method','numerical'));

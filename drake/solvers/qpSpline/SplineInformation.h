@@ -2,22 +2,12 @@
 #define DRAKE_SOLVERS_QPSPLINE_SPLINEINFORMATION_H_
 
 #include <vector>
-#include "PiecewisePolynomialBase.h"
+#include "drake/systems/trajectories/PiecewisePolynomialBase.h"
 #include "ValueConstraint.h"
 #include "ContinuityConstraint.h"
+#include "drake/drakeSplineGeneration_export.h"
 
-#undef DLLEXPORT
-#if defined(WIN32) || defined(WIN64)
-  #if defined(drakeSplineGeneration_EXPORTS)
-    #define DLLEXPORT __declspec( dllexport )
-  #else
-    #define DLLEXPORT __declspec( dllimport )
-  #endif
-#else
-  #define DLLEXPORT
-#endif
-
-class DLLEXPORT SplineInformation : public PiecewisePolynomialBase
+class DRAKESPLINEGENERATION_EXPORT SplineInformation : public PiecewisePolynomialBase
 {
 private:
   std::vector<int> segment_polynomial_degrees;

@@ -8,7 +8,7 @@ end
 if (nargin<1); use_mex = true; end
 if (nargin<2); use_angular_momentum = false; end
 
-import atlasControllers.*;
+import bipedControllers.*;
 
 % silence some warnings
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints')
@@ -172,7 +172,7 @@ ctrl_data = QPControllerData(true,struct(...
 
 % instantiate QP controller
 options.slack_limit = 1000;
-options.w_qdd = 1e-5*ones(nq,1);
+options.w_qdd = 1e-5*ones(getNumVelocities(r),1);
 % options.w_qdd(back_bky) = 0.01;
 options.w_qdd(1:6) = 0;
 options.w_grf = 0;

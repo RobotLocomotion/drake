@@ -1,5 +1,4 @@
 #include "PrismaticJoint.h"
-#include <Eigen/Geometry>
 
 using namespace Eigen;
 

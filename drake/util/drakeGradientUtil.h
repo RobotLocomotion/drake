@@ -21,31 +21,6 @@ std::array<int, Size> intRange(int start)
   return ret;
 }
 
-namespace Drake {
-  // todo: recursive template to get arbitrary gradient order
-
-  // note: tried using template default values (e.g. Eigen::Dynamic), but they didn't seem to work on my mac clang
-  template <int num_vars> using TaylorVar = Eigen::AutoDiffScalar< Eigen::Matrix<double,num_vars,1> >;
-  template <int num_vars, int rows> using TaylorVec = Eigen::Matrix< TaylorVar<num_vars>, rows, 1>;
-  template <int num_vars, int rows, int cols> using TaylorMat = Eigen::Matrix< TaylorVar<num_vars>, rows, cols>;
-
-  typedef TaylorVar<Eigen::Dynamic> TaylorVarX;
-  typedef TaylorVec<Eigen::Dynamic,Eigen::Dynamic> TaylorVecX;
-  typedef TaylorMat<Eigen::Dynamic,Eigen::Dynamic,Eigen::Dynamic> TaylorMatX;
-
-  // initializes the vector with x=val and dx=eye(numel(val))
-  template <typename Derived>
-  TaylorVecX initTaylorVecX(const Eigen::MatrixBase<Derived>& val) {
-    TaylorVecX x(val.rows());
-    Eigen::MatrixXd der = Eigen::MatrixXd::Identity(val.rows(),val.rows());
-    for (int i=0; i<val.rows(); i++) {
-      x(i).value() = val(i);
-      x(i).derivatives() = der.col(i);
-    }
-    return x;
-  }
-}
-
 /*
  * Recursively defined template specifying a matrix type of the correct size for a gradient of a matrix function with respect to Nq variables, of any order.
  */
@@ -312,6 +287,41 @@ void gradientMatrixToAutoDiff(const Eigen::MatrixBase<DerivedGradient>& gradient
       auto_diff_matrix(row, col).derivatives().resize(nx, 1);
       auto_diff_matrix(row, col).derivatives() = gradient.row(row + col * auto_diff_matrix.rows()).transpose();
     }
+  }
+}
+
+namespace Drake {
+  namespace internal {
+    template <typename Derived, typename Scalar>
+    struct ResizeDerivativesToMatchScalarImpl {
+      static void run(Eigen::MatrixBase<Derived>& mat, const Scalar& scalar) {};
+    };
+
+    template <typename Derived, typename DerivType>
+    struct ResizeDerivativesToMatchScalarImpl<Derived, Eigen::AutoDiffScalar<DerivType> > {
+      using Scalar = Eigen::AutoDiffScalar<DerivType>;
+      static void run(Eigen::MatrixBase<Derived>& mat, const Scalar& scalar) {
+        for (int i = 0; i < mat.size(); i++) {
+          auto& derivs = mat(i).derivatives();
+          if (derivs.size() == 0) {
+            derivs.resize(scalar.derivatives().size());
+            derivs.setZero();
+          }
+        }
+      };
+    };
+  }
+
+  /** Resize derivatives vector of each element of a matrix to to match the size of the derivatives vector of a given scalar.
+   * \brief If the mat and scalar inputs are AutoDiffScalars, resize the derivatives vector of each element of the matrix mat to match
+   * the number of derivatives of the scalar. This is useful in functions that return matrices that do not depend on an AutoDiffScalar
+   * argument (e.g. a function with a constant output), while it is desired that information about the number of derivatives is preserved.
+   * \param mat matrix, for which the derivative vectors of the elements will be resized
+   * \param scalar scalar to match the derivative size vector against.
+   */
+  template <typename Derived>
+  void resizeDerivativesToMatchScalar(Eigen::MatrixBase<Derived>& mat, const typename Derived::Scalar& scalar) {
+    internal::ResizeDerivativesToMatchScalarImpl<Derived, typename Derived::Scalar>::run(mat, scalar);
   }
 }
 

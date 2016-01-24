@@ -57,7 +57,7 @@ namespace DrakeCollision
       virtual ElementId addElement(const Element& element);
 
       virtual bool updateElementWorldTransform(const ElementId, 
-                                               const Eigen::Matrix4d& T_local_to_world);
+                                               const Eigen::Isometry3d& T_local_to_world);
 
       virtual bool closestPointsAllToAll(const std::vector<ElementId>& ids_to_check, 
                                          const bool use_margins,
@@ -79,7 +79,27 @@ namespace DrakeCollision
               const Eigen::Matrix3Xd &ray_endpoints, bool use_margins, 
               Eigen::VectorXd &distances);
 
+      /** \brief Compute the set of potential collision points for all
+       * eligible pairs of collision geometries in this model. This includes
+       * the points of closest approach, but may also include additional points
+       * that are "close" to being in contact. This can be useful when
+       * simulating scenarios in which two collision elements have more than
+       * one point of contact.
+       *
+       * This implementation uses Bullet's random perturbation approach to
+       * generate the additional contact points. Bullet performs discrete
+       * collision detection multiple times with small perturbations to the
+       * pose of each collision geometry. The potential collision points are
+       * the union of the closest points found in each of these perturbed runs.
+       * \param use_margins flag indicating whether or not to use the version
+       * of this model with collision margins
+       * \return a vector of PointPair objects containing the potential
+       * collision points
+       */
       virtual std::vector<PointPair> potentialCollisionPoints(bool use_margins);
+
+      virtual bool collidingPointsCheckOnly(const std::vector<Eigen::Vector3d>& points, 
+                                            double collision_threshold);
 
       virtual std::vector<size_t> collidingPoints(
           const std::vector<Eigen::Vector3d>& points, 

@@ -1,7 +1,7 @@
 #include "mex.h"
 #include <iostream>
-#include "drakeMexUtil.h"
-#include "RigidBodyManipulator.h"
+#include "drake/util/drakeMexUtil.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include <Eigen/Dense>
 
 using namespace std;
@@ -16,16 +16,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
   
   char buf[BUF_SIZE];
-  RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);  
+  RigidBodyTree *model= (RigidBodyTree *) getDrakeMexPointer(prhs[0]);
   mxGetString(prhs[1] ,buf, BUF_SIZE);
-  RigidBodyManipulator cpp_model(buf);
+  RigidBodyTree cpp_model(buf);
 
   if (cpp_model.frames.size() != model->frames.size()) {
   	mexErrMsgIdAndTxt("Drake:testFrameParsermex:FrameCountMismatch", "The manipulator frame counts did not match");
   }
 
   for (size_t x = 0; x < model->frames.size() ; x++) {
-  	double err = (model->frames[x]->transform_to_body - cpp_model.frames[x]->transform_to_body).norm();
+  	double err = (model->frames[x]->transform_to_body.matrix() - cpp_model.frames[x]->transform_to_body.matrix()).norm();
   	
   	if (err > FRAME_PARSER_EPSILON) {
   		mexErrMsgIdAndTxt("Drake:testFrameParsermex:FrameTransformMismatch", "The homogeneous frame transformation matrix did not match");		

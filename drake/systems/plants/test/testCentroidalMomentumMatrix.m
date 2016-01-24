@@ -19,8 +19,7 @@ end
 end
 
 function checkGradients(r)
-nq = r.getNumPositions();
-q = rand(nq,1);
+q = getRandomConfiguration(r);
 [~,~] = geval(@r.centroidalMomentumMatrix,q,struct('grad_method',{{'user','taylorvar'}}));
 [~,~] = geval(@r.centroidalMomentumMatrix,q, ...
   struct('grad_method',{{'user','numerical'}}, ...
@@ -28,9 +27,8 @@ q = rand(nq,1);
 end
 
 function checkMex(r)
-nq = r.getNumPositions();
 rng(1, 'twister');
-q = rand(nq,1);
+q = getRandomConfiguration(r);
 
 kinsol_options.use_mex = false;
 kinsol_options.compute_gradients = true;

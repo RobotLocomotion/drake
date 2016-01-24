@@ -1,15 +1,16 @@
-#include "QPLocomotionPlan.h"
+#include "drake/systems/robotInterfaces/QPLocomotionPlan.h"
 #include <stdexcept>
 #include <algorithm>
 #include <cmath>
 #include <limits>
-#include "drakeGeometryUtil.h"
-#include "splineGeneration.h"
-#include "drakeUtil.h"
-#include "lcmUtil.h"
+#include "drake/util/drakeGeometryUtil.h"
+#include "drake/solvers/qpSpline/splineGeneration.h"
+#include "drake/util/drakeUtil.h"
+#include "drake/util/lcmUtil.h"
 #include <string>
-#include "convexHull.h"
-#include "atlasUtil.h"
+#include "drake/util/convexHull.h"
+#include "drake/examples/Atlas/atlasUtil.h"
+#include "drake/drakeQPLocomotionPlan_export.h" // TODO: exports
 
 // TODO: discuss possibility of chatter in knee control
 // TODO: make body_motions a map from RigidBody* to BodyMotionData, remove body_id from BodyMotionData?
@@ -20,7 +21,7 @@ using namespace Eigen;
 
 const std::map<SupportLogicType, std::vector<bool> > QPLocomotionPlan::support_logic_maps = QPLocomotionPlan::createSupportLogicMaps();
 
-QPLocomotionPlan::QPLocomotionPlan(RigidBodyManipulator& robot, const QPLocomotionPlanSettings& settings, const std::string& lcm_channel) :
+QPLocomotionPlan::QPLocomotionPlan(RigidBodyTree & robot, const QPLocomotionPlanSettings& settings, const std::string& lcm_channel) :
     robot(robot),
     settings(settings),
     start_time(std::numeric_limits<double>::quiet_NaN()),
@@ -91,7 +92,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
     support_index++;
 
   // do kinematics
-  KinematicsCache<double> cache = robot.doKinematics(q, 0);
+  KinematicsCache<double> cache = robot.doKinematics(q, v);
 
   RigidBodySupportState& support_state = settings.supports[support_index];
   bool is_last_support = support_index == settings.supports.size() - 1;
@@ -161,7 +162,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
           } else {
             pts = support_state_element.contact_points;
           }
-          Matrix3Xd pts_in_world = robot.forwardKin(cache, pts, support_state_element.body, 0, 0);
+          Matrix3Xd pts_in_world = robot.transformPoints(cache, pts, support_state_element.body, 0);
           reduced_support_pts.conservativeResize(2, reduced_support_pts.cols() + pts.cols());
           reduced_support_pts.block(0, reduced_support_pts.cols() - pts_in_world.cols(), 2, pts_in_world.cols()) = pts_in_world.topRows<2>();
         }
@@ -185,7 +186,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
         if (!isSupportingBody(body_id, support_state)) {
           toe_off_active[side] = false;
           knee_pd_active[side] = false;
-          updateSwingTrajectory(t_plan, body_motion, body_motion_segment_index - 1, cache, v);
+          updateSwingTrajectory(t_plan, body_motion, body_motion_segment_index - 1, cache);
         }
       }
 
@@ -209,7 +210,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
         this->applyKneePD(side, qp_input);
       }
       if (body_motion.isToeOffAllowed(body_motion_segment_index)) {
-        updateSwingTrajectory(t_plan, body_motion, body_motion_segment_index, cache, v);
+        updateSwingTrajectory(t_plan, body_motion, body_motion_segment_index, cache);
       }
     }
 
@@ -358,7 +359,7 @@ bool QPLocomotionPlan::isFinished(double t) const
   }
 }
 
-const RigidBodyManipulator& QPLocomotionPlan::getRobot() const
+const RigidBodyTree & QPLocomotionPlan::getRobot() const
 {
   return robot;
 }
@@ -428,7 +429,7 @@ drake::lcmt_support_data QPLocomotionPlan::createSupportDataElement(const RigidB
   return support_data_element_lcm;
 }
 
-void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const KinematicsCache<double>& cache, const VectorXd& v) {
+void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body_motion_data, int body_motion_segment_index, const KinematicsCache<double>& cache) {
   int takeoff_segment_index = body_motion_segment_index + 1; // this function is called before takeoff
   int num_swing_segments = 3;
   int landing_segment_index = takeoff_segment_index + num_swing_segments - 1;
@@ -440,17 +441,21 @@ void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body
   VectorXd xf = trajectory.value(trajectory.getEndTime(takeoff_segment_index + 2));
 
   // first knot point from current position
-  auto x0_xyzquat = robot.forwardKin(cache, (Vector3d::Zero()).eval(), body_motion_data.getBodyOrFrameId(), 0, 2);
-  auto J = robot.forwardKinJacobian(cache, (Vector3d::Zero()).eval(), body_motion_data.getBodyOrFrameId(), 0, 2, true, 0).value();
-  auto xd0_xyzquat = (J * v).eval(); // TODO: doesn't work for qd != v
-  Vector4d x0_quat = x0_xyzquat.tail<4>(); // copying to Vector4d for quatRotateVec later on.
+  auto x0_pose = robot.relativeTransform(cache, 0, body_motion_data.getBodyOrFrameId());
+  auto x0_twist = robot.relativeTwist(cache, 0, body_motion_data.getBodyOrFrameId(), 0);
+
+  Vector4d x0_quat = rotmat2quat(x0_pose.linear());
   auto x0_expmap = quat2expmap(x0_quat, 1);
-  Vector3d xd0_expmap = x0_expmap.gradient().value() * xd0_xyzquat.tail<4>();
+
+  Matrix<double, QUAT_SIZE, SPACE_DIMENSION> Phi;
+  angularvel2quatdotMatrix(x0_quat, Phi, static_cast<Gradient<decltype(Phi), Dynamic>::type*>(nullptr));
+  auto quatdot = (Phi *  x0_twist.topRows<3>()).eval();
+  Vector3d xd0_expmap = x0_expmap.gradient().value() * quatdot;
   // std::cout << "x0: " << x0_expmap.value()(2) << " x1: " << x1(5) << " x2: " << x2(5) << " xf: " << xf(5) << std::endl;
 
   typedef Matrix<double, 6, 1> Vector6d;
   Vector6d x0;
-  x0.head<3>() = x0_xyzquat.head<3>();
+  x0.head<3>() = x0_pose.translation();
   if (settings.use_plan_shift) {
     for (auto it = settings.plan_shift_body_motion_indices.begin(); it != settings.plan_shift_body_motion_indices.end(); ++it) {
       x0(*it) += plan_shift(*it);
@@ -666,9 +671,7 @@ void QPLocomotionPlan::updatePlanShift(const KinematicsCache<double>& cache, dou
           for (auto body_motion_it = settings.body_motions.begin(); body_motion_it != settings.body_motions.end(); ++body_motion_it) {
             int body_motion_body_id = robot.parseBodyOrFrameID(body_motion_it->getBodyOrFrameId());
             if (body_motion_body_id == side_it->second) {
-              int world = 0;
-              int rotation_type = 0;
-              Vector3d foot_frame_origin_actual = robot.forwardKin(cache, Vector3d::Zero().eval(), body_motion_it->getBodyOrFrameId(), world, rotation_type);
+              Vector3d foot_frame_origin_actual = robot.relativeTransform(cache, 0, body_motion_it->getBodyOrFrameId()).translation();
               Vector3d foot_frame_origin_planned = body_motion_it->getTrajectory().value(t_plan).topRows<3>();
               // std::cout << "actual: " << foot_frame_origin_actual.transpose() << " planned: " << foot_frame_origin_planned.transpose() << std::endl;
               foot_shifts[side_it->first] = foot_frame_origin_planned - foot_frame_origin_actual;
@@ -700,7 +703,7 @@ const std::map<SupportLogicType, std::vector<bool> > QPLocomotionPlan::createSup
   return ret;
 }
 
-const std::map<Side, int> QPLocomotionPlan::createFootBodyIdMap(RigidBodyManipulator& robot, const std::map<Side, std::string>& foot_names)
+const std::map<Side, int> QPLocomotionPlan::createFootBodyIdMap(RigidBodyTree & robot, const std::map<Side, std::string>& foot_names)
 {
   std::map<Side, int> foot_body_ids;
   for (auto it = Side::values.begin(); it != Side::values.end(); ++it) {
@@ -709,7 +712,7 @@ const std::map<Side, int> QPLocomotionPlan::createFootBodyIdMap(RigidBodyManipul
   return foot_body_ids;
 }
 
-const std::map<Side, int> QPLocomotionPlan::createJointIndicesMap(RigidBodyManipulator& robot, const std::map<Side, std::string>& joint_names)
+const std::map<Side, int> QPLocomotionPlan::createJointIndicesMap(RigidBodyTree & robot, const std::map<Side, std::string>& joint_names)
 {
   std::map<Side, int> joint_indices;
   for (auto it = Side::values.begin(); it != Side::values.end(); ++it) {

@@ -1,4 +1,5 @@
 function testIKtraj()
+rng(0,'twister');
 options.floating = true;
 options.dt = 0.001;
 r = RigidBodyManipulator();
@@ -43,7 +44,6 @@ l_leg_hpz = find(strcmp(coords,'l_leg_hpz'));
 r_leg_hpz = find(strcmp(coords,'r_leg_hpz'));
 
 q0 = nom_data.xstar(1:nq);
-qdot0 = zeros(nq,1);
 kinsol0 = doKinematics(r,q0,false,false);
 r_foot_pos = forwardKin(r,kinsol0,r_foot,r_foot_pts,2);
 l_foot_pos = forwardKin(r,kinsol0,l_foot,l_foot_pts,2);

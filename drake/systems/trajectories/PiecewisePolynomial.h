@@ -2,25 +2,15 @@
 #define DRAKE_SYSTEMS_TRAJECTORIES_PIECEWISEPOLYNOMIAL_H_
 
 #include <Eigen/Core>
-#include "PiecewisePolynomialBase.h"
-#include "Polynomial.h"
+#include "drake/systems/trajectories/PiecewisePolynomialBase.h"
+#include "drake/util/Polynomial.h"
 #include <vector>
 #include <random>
 #include <limits>
-
-#undef DLLEXPORT
-#if defined(WIN32) || defined(WIN64)
-#if defined(drakeTrajectories_EXPORTS)
-#define DLLEXPORT __declspec( dllexport )
-#else
-#define DLLEXPORT __declspec( dllimport )
-#endif
-#else
-#define DLLEXPORT
-#endif
+#include "drake/drakeTrajectories_export.h"
 
 template<typename CoefficientType = double>
-class DLLEXPORT PiecewisePolynomial: public PiecewisePolynomialBase
+class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial: public PiecewisePolynomialBase
 {
 public:
   typedef Polynomial<CoefficientType> PolynomialType;

@@ -5,6 +5,10 @@ function export2svg(filename,varargin)
 
 % note: tried plot2svg from matlabcentral, but it didn't work nearly as well
 
+if strcmpi(filename(end-3:end),'.svg')
+  filename = filename(1:end-4);
+end
+
 tmp = tempname;
 export2pdf(tmp,varargin{:});
 

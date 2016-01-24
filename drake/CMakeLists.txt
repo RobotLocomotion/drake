@@ -17,6 +17,13 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+if(WITH_PYTHON_3)
+  set(Python_ADDITIONAL_VERSIONS 3.5)
+  find_package(PythonInterp 3)
+else()
+  find_package(PythonInterp)
+endif()
+
 # set up pods
 set(POD_NAME drake)
 include(cmake/pods.cmake)
@@ -25,6 +32,32 @@ include(cmake/pods.cmake)
 find_package(Java REQUIRED)
 include(UseJava)
 set(CMAKE_JAVA_COMPILE_FLAGS ${CMAKE_JAVA_COMPILE_FLAGS} -source 6 -target 6)
+
+function(drake_install_headers)
+  file(RELATIVE_PATH rel_path ${PROJECT_SOURCE_DIR}/ ${CMAKE_CURRENT_SOURCE_DIR})
+  pods_install_headers(${ARGV} DESTINATION drake/${rel_path})
+endfunction()
+
+# set up automatic export header generation
+# export headers will be installed to build/include/drake, but are created in ${PROJECT_BINARY_DIR}/exports/drake
+# This means that export headers can be included as drake/bla_export.h
+include(GenerateExportHeader)
+function(add_library_with_exports)
+#  set(options)
+  set(oneValueArgs LIB_NAME)
+  set(multiValueArgs SOURCE_FILES)
+  cmake_parse_arguments(parsed_args "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+
+  add_library(${parsed_args_LIB_NAME} SHARED ${parsed_args_SOURCE_FILES})
+  set(exports_abs_path ${PROJECT_BINARY_DIR}/exports/drake/${parsed_args_LIB_NAME}_export.h)
+  # work around https://cmake.org/Bug/view.php?id=12645 (fixed in 2.8.8):
+  file(RELATIVE_PATH exports_rel_path ${CMAKE_CURRENT_BINARY_DIR}/ ${exports_abs_path})
+  generate_export_header(${parsed_args_LIB_NAME} EXPORT_FILE_NAME ${exports_rel_path})
+  install(FILES ${exports_abs_path} DESTINATION include/drake/)
+endfunction()
+include_directories(BEFORE ${PROJECT_BINARY_DIR}/exports/)
+include_directories(BEFORE ${PROJECT_SOURCE_DIR}/..)
+
 
 if (CMAKE_COMPILER_IS_GNUCC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wreturn-type -Wuninitialized -Wunused-variable") # -Wunused-parameter")
@@ -47,10 +80,9 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
   endif()
 elseif (MSVC)
-   if (NOT ${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER 18.00.40628)
-     # version number decoder ring at https://en.wikipedia.org/wiki/Visual_C%2B%2B 
-     # at least one user hit a compiler crash with VC++ 12.0, which was resolved by installing the latest service packs.  I don't know that 40629 is required, but know that 00 is not sufficient.
-     message(FATAL_ERROR "requires MS VC++ 12.0 update 5 or greater (Visual Studio >= 2013).  download for free at http://visualstudio.com")
+   if (NOT ${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER 19.00.00)
+     # version number decoder ring at https://en.wikipedia.org/wiki/Visual_C%2B%2B
+     message(FATAL_ERROR "requires MS VC++ 14.0 or greater (Visual Studio >= 2015).  download for free at http://visualstudio.com")
    endif()
 
 #  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /arch:SSE2 /openmp")
@@ -78,7 +110,7 @@ elseif (MSVC)
 
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4996") # disable sprintf security warning
 
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj") # after receiving RigidBodyManipulator.cpp : fatal error C1128: number of sections exceeded object file format limit: compile with /bigobj
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj") # after receiving RigidBodyTree.cpp : fatal error C1128: number of sections exceeded object file format limit: compile with /bigobj
 endif()
 
 # set up matlab build
@@ -91,10 +123,20 @@ mex_setup()
 #   message("Setting CTEST Configuration Type to ${CTEST_CONFIGURATION_TYPE}")
 #endif()
 
+# similar to the export headers, any other generated headers will be installed to build/include/drake, but will be created in ${PROJECT_BINARY_DIR}/exports/drake
+# These headers can be included as drake/bla.h
+set(generated_dir ${PROJECT_BINARY_DIR}/generated)
+set(drake_path_header ${generated_dir}/drake/Path.h)
+configure_file(core/Path.h.in ${drake_path_header})
+install(FILES ${drake_path_header} DESTINATION include/drake/)
+include_directories(BEFORE ${generated_dir})
+
 find_package( Perl )
 if ( PERL_FOUND )
-   file(WRITE ${CMAKE_BINARY_DIR}/CTestCustom.cmake 
+  if (MATLAB_FOUND)
+    file(WRITE ${CMAKE_BINARY_DIR}/CTestCustom.cmake
    	      "set(CTEST_CUSTOM_PRE_TEST \"${PERL_EXECUTABLE} ${PROJECT_SOURCE_DIR}/cmake/add_matlab_unit_tests.pl ${PROJECT_SOURCE_DIR}\")\n")
+  endif()
 endif()
 
 enable_testing()
@@ -166,14 +208,17 @@ else()
 endif()
 
 include_directories(thirdParty/spruce/include)
+include_directories(thirdParty/cimg)
 
-
+add_subdirectory(core)
 add_subdirectory(util)
 add_subdirectory(solvers)
 add_subdirectory(systems)
 add_subdirectory(thirdParty/GetFullPath)
 add_subdirectory(thirdParty/spruce)
+add_subdirectory(thirdParty/tinyxml2)
 add_subdirectory(examples)
+add_subdirectory(bindings)
 
 # setup matlab pods-compliance
 include(cmake/matlab_pods.cmake)
@@ -199,6 +244,7 @@ file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/rmpath_drake.m
 	   "  rmpath_drake();\n"
 	   "  cd(wd);\n"
     )
+
 
 find_program(avl avl PATHS ${CMAKE_INSTALL_DIR}/bin )
 find_program(xfoil xfoil PATHS ${CMAKE_INSTALL_DIR}/bin )

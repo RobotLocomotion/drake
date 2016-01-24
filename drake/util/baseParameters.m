@@ -20,7 +20,7 @@ if isnumeric(W)
   beta_tmp = zeros(m);
   beta_tmp(e(independent_idx),:) = beta;
   beta_tmp(all(beta_tmp==0,2),:) = [];
-  beta = beta_tmp;
+  beta = beta_tmp; 
   independent_idx = sort(e(independent_idx));
 %  independent_idx = e(independent_idx);
 elseif isa(W,'msspoly')
@@ -32,7 +32,7 @@ elseif isa(W,'msspoly')
   r = 10*m;
   data = rand(length(vars),r);
   W_data = reshape(msubs(W',vars,data),m,r*r_orig)';
-  [beta, independent_idx] = getBaseParameters(W_data);
+  [beta, independent_idx] = baseParameters(W_data);
 elseif isa(W,'TrigPoly')
   q = getVar(W);
   s = getSin(W);
@@ -57,9 +57,9 @@ elseif isa(W,'TrigPoly')
     W_data(i,:) = msubs(getmsspoly(W(i)),[q;s;c;vars],data); % [r x 1]
   end
   W_data = reshape(W_data,m,r*r_orig)'; % [m x r*r_orig]
-  [beta, independent_idx] = getBaseParameters(W_data);
+  [beta, independent_idx] = baseParameters(W_data);
 else
-  error('getBaseParameters:invalidInput', ...
+  error('baseParameters:invalidInput', ...
     'Objects of class %s are not valid inputs for getBaseParameters.',class(W));
 end
 end

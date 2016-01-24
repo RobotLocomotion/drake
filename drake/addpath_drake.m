@@ -49,6 +49,7 @@ addpath(fullfile(root,'util'));
 addpath(fullfile(root,'util','geometry'));
 addpath(fullfile(root,'util','visualization'));
 addpath(fullfile(root,'thirdParty'));
+addpath(fullfile(root,'thirdParty','psm'));
 addpath(fullfile(root,'thirdParty','path'));
 addpath(fullfile(root,'thirdParty','spatial'));
 addpath(fullfile(root,'thirdParty','cprintf'));
@@ -58,6 +59,12 @@ addpath(fullfile(root,'thirdParty','polytopes'));
 addpath(fullfile(root,'solvers','BMI'));
 addpath(fullfile(root,'solvers','BMI','util'));
 addpath(fullfile(root,'solvers','BMI','kinematics'));
+addpath(fullfile(root,'solvers','qpSpline'));
+addpath(fullfile(root,'bindings','matlab'));
+bindings_dir = fullfile(root,'pod-build','bindings','matlab');
+if exist(bindings_dir, 'dir')
+  addpath(bindings_dir);
+end
 
 
 % OSX platform-specific

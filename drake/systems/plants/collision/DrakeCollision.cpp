@@ -1,8 +1,7 @@
 
 #include <iostream>
-#include <map>
 
-#include "DrakeCollision.h"
+#include "drake/systems/plants/collision/DrakeCollision.h"
 
 #ifdef BULLET_COLLISION
 #include "BulletModel.h"
@@ -18,7 +17,7 @@ namespace DrakeCollision
   const bitmask NONE_MASK(0);
   const bitmask DEFAULT_GROUP(1);
 
-  enum DLLEXPORT_drakeCollision ModelType {
+  enum DRAKECOLLISION_EXPORT ModelType {
     NONE,
     AUTO,
     BULLET

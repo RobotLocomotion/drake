@@ -1,4 +1,4 @@
-classdef (InferiorClasses = {?ConstantTrajectory,?FunctionHandleTrajectory,?PPTrajectory}) DTTrajectory < Trajectory
+classdef (InferiorClasses = {?ConstantTrajectory,?FunctionHandleTrajectory,?PPTrajectory,?Point}) DTTrajectory < Trajectory
   
   properties
     tt

@@ -1,4 +1,4 @@
-#include "PiecewisePolynomialBase.h"
+#include "drake/systems/trajectories/PiecewisePolynomialBase.h"
 #include <stdexcept>
 #include <sstream>
 #include <cmath>

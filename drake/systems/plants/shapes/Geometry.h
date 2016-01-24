@@ -6,11 +6,11 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-#include "drakeShapesMacros.h"
+#include "drake/drakeShapes_export.h"
 
 namespace DrakeShapes
 {
-  enum DLLEXPORT_drakeShapes Shape {
+  enum DRAKESHAPES_EXPORT Shape {
     UNKNOWN     = 0,
     BOX         = 1,
     SPHERE      = 2,
@@ -20,7 +20,9 @@ namespace DrakeShapes
     CAPSULE     = 6
   };
 
-  class DLLEXPORT_drakeShapes Geometry {
+  const double MIN_RADIUS = 1e-7;
+
+  class DRAKESHAPES_EXPORT Geometry {
     public:
       Geometry();
       Geometry(const Geometry& other);
@@ -43,7 +45,7 @@ namespace DrakeShapes
       static const int NUM_BBOX_POINTS = 8;      
   };
 
-  class DLLEXPORT_drakeShapes Sphere: public Geometry {
+  class DRAKESHAPES_EXPORT Sphere: public Geometry {
     public:
       Sphere(double radius);
       virtual ~Sphere() {}
@@ -56,7 +58,7 @@ namespace DrakeShapes
       static const int NUM_POINTS = 1;
   };
 
-  class DLLEXPORT_drakeShapes Box : public Geometry {
+  class DRAKESHAPES_EXPORT Box : public Geometry {
     public:
       Box(const Eigen::Vector3d& size);
       virtual ~Box() {}
@@ -69,7 +71,7 @@ namespace DrakeShapes
       
   };
 
-  class DLLEXPORT_drakeShapes Cylinder : public Geometry {
+  class DRAKESHAPES_EXPORT Cylinder : public Geometry {
     public:
       Cylinder(double radius, double length);
       virtual ~Cylinder() {}
@@ -81,7 +83,7 @@ namespace DrakeShapes
       double length;
   };
 
-  class DLLEXPORT_drakeShapes Capsule : public Geometry {
+  class DRAKESHAPES_EXPORT Capsule : public Geometry {
     public:
       Capsule(double radius, double length);
       virtual ~Capsule() {}
@@ -94,7 +96,7 @@ namespace DrakeShapes
       static const int NUM_POINTS = 2;
   };
 
-  class DLLEXPORT_drakeShapes Mesh : public Geometry {
+  class DRAKESHAPES_EXPORT Mesh : public Geometry {
     public:
       Mesh(const std::string& filename);
       Mesh(const std::string& filename, const std::string& resolved_filename);
@@ -111,7 +113,7 @@ namespace DrakeShapes
       std::string root_dir;
   };
 
-  class DLLEXPORT_drakeShapes MeshPoints : public Geometry {
+  class DRAKESHAPES_EXPORT MeshPoints : public Geometry {
     public:
       MeshPoints(const Eigen::Matrix3Xd& points);
       virtual ~MeshPoints() {}

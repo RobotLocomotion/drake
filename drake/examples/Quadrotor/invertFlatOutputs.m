@@ -96,7 +96,7 @@ function [x,u] = extractStateAndInput(plant,t,ytraj,ydtraj,yddtraj,ydddtraj,yddd
         kF(i) = abs(prop.scale_factor_thrust);
         kM(i) = abs(prop.scale_factor_moment);
         frame = getFrame(plant,prop.kinframe);
-        com = getCOM(plant,zeros(getNumPositions(plant),1));
+        com = getCOM(plant,getZeroConfiguration(plant));
         L(i) = norm(frame.T(1:3,4)-com);
     end
     omega_squared = [kF; 0, kF(2)*L(2), 0, -kF(4)*L(4); -kF(1)*L(1), 0, kF(3)*L(3), 0; kM(1), -kM(2), kM(3), -kM(4)]\mellinger_u;
