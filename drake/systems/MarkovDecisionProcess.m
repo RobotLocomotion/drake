@@ -199,17 +199,18 @@ classdef MarkovDecisionProcess < DrakeSystem
           for ai=1:na
               Xnew = S + options.dt*dynamics(sys,0,S,A(:,ai));
               C_vectorized(:,ai) = options.dt*costfun(sys,S,A(:,ai));
-              num_x_dimensions = size(options.wrap_flag);
-              counter = 1:num_x_dimensions;
-              whichIdxs = counter(options.wrap_flag)';
-              Idxs = repmat(whichIdxs,1,ns);
+              
+              % wrapped_x_indices are the indexes of the state variables
+              % that we are wrapping in.
+              wrapped_x_indices = find(options.wrap_flag);
+              W = repmat(wrapped_x_indices,1,ns);
               
               % wrap coordinates
-              Xnew(options.wrap_flag,:) = mod(Xnew(options.wrap_flag,:)-xmin(Idxs),xmax(Idxs)-xmin(Idxs)) + xmin(Idxs);
+              Xnew(options.wrap_flag,:) = mod(Xnew(options.wrap_flag,:)-xmin(W),xmax(W)-xmin(W)) + xmin(W);
               
               [idx, coef] = barycentricInterpolation(xbins, Xnew);
-              numrows = size(idx,1);
-              T_vectorized{ai} = sparse(repmat(1:ns,numrows,1), double(idx), coef, ns, ns);
+              num_interpolants = size(idx,1);
+              T_vectorized{ai} = sparse(repmat(1:ns,num_interpolants,1), double(idx), coef, ns, ns);
                    
               if ai/na>waitbar_lastupdate+.025 % don't call the gui too much
                   waitbar(ai/na,waitbar_h);
