@@ -93,7 +93,8 @@ classdef MarkovDecisionProcess < DrakeSystem
       % wrap_flag is true. @default false
       % @option vectorized_x whether the dynamics of sys and the cost
       % function specified in costfun can accept vectorized input for the
-      % state. Use sys and costfun that can accept vectorized input, if 
+      % state (that is multiple states as input). 
+      % Use sys and costfun that can accept vectorized input, if 
       % possible, since it improves runtime considerably. @default false
 
       typecheck(sys,'DynamicalSystem');
@@ -162,7 +163,8 @@ classdef MarkovDecisionProcess < DrakeSystem
       
       % TODO: right now, we only have code that takes advantage of
       % vectorized computations on state, but not vectorized computations
-      % on the actions. 
+      % on the actions. vectorized computations on actions might provide
+      % even more of a speed-up.
       if ~options.vectorized_x
           waitbar_lastupdate = 0;
           for ai=1:na
@@ -197,11 +199,14 @@ classdef MarkovDecisionProcess < DrakeSystem
           for ai=1:na
               Xnew = S + options.dt*dynamics(sys,0,S,A(:,ai));
               C_vectorized(:,ai) = options.dt*costfun(sys,S,A(:,ai));
-              numx_dimensions = size(options.wrap_flag);
-              counter = 1:numx_dimensions;
+              num_x_dimensions = size(options.wrap_flag);
+              counter = 1:num_x_dimensions;
               whichIdxs = counter(options.wrap_flag)';
               Idxs = repmat(whichIdxs,1,ns);
+              
+              % wrap coordinates
               Xnew(options.wrap_flag,:) = mod(Xnew(options.wrap_flag,:)-xmin(Idxs),xmax(Idxs)-xmin(Idxs)) + xmin(Idxs);
+              
               [idx, coef] = barycentricInterpolation(xbins, Xnew);
               numrows = size(idx,1);
               T_vectorized{ai} = sparse(repmat(1:ns,numrows,1), double(idx), coef, ns, ns);
