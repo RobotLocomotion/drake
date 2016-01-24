@@ -9,6 +9,7 @@ classdef DubinsPlant < DrakeSystem
     function obj = DubinsPlant()
       obj = obj@DrakeSystem(3,0,1,3,0,1);
       obj = setOutputFrame(obj,getStateFrame(obj));  % allow full state feedback
+      obj = setTIFlag(obj, true);
     end
     
     function [xdot, df, d2f, d3f] = dynamics(obj,t,x,u)      
