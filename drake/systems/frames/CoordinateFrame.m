@@ -50,6 +50,7 @@ classdef CoordinateFrame < handle
       obj.dim = dim;
 
       % generating object prefix
+      % note that, after these checks, obj.prefix is meant to be of size dim.
       if (nargin<3 || isempty(prefix))
         ind = strfind(name,':');
         if isempty(ind)
@@ -549,13 +550,39 @@ classdef CoordinateFrame < handle
     function coordinates = generateDefaultCoordinates(prefix)
       % generates the default coordinate labels for a coordinate Frame
       % when no value is passed in, based on the prefixes provided.
-      ind=1;
-      [dim, ~] = size(prefix);
-      function str=coordinateName(~)
-        str=[prefix(ind),sprintf('%d',sum(prefix(1:ind)==prefix(ind)))];
-        ind=ind+1;
+      
+      % specifically, we take the prefix string corresponding to an array of
+      % characteers, and create a cell array with a unique identifier
+      % appended to each string.
+      
+      % for example, if s='aabab', 
+      % coordinates = {'a1', 'a2', 'b1', 'a3', 'b2'}
+      
+      % initialize our empty cell array
+      n = length(s);
+      coordinates = cell(n,1);
+
+      % t is a copy of the string which we will incrementaly delete letters from to 
+      % find all unique characters in s
+      t = s;
+      while ~isempty(t)
+          % the first letter in t is a new unique character 
+          c = t(1);
+          % find all instances of this letter in the original string
+          idxs = strfind(s,c);
+          % create the string "1 2 ... k", where k is the # of instances of c
+          spacedString = num2str(1:length(idxs));
+          % split the string to get a cell array {'1','2',...,'k'}
+          splitString = strsplit(spacedString);
+          % then insert the coordinates into the cell array.
+          % (note that strcat(c, splitString) produces {'A1', 'A2', ... 'Ak'} if c='A')
+          coordinates(idxs) = strcat(c, splitString); 
+          % finally, delete all instances of c from t
+          idxt = strfind(t,c);
+          t(idxt) = '';
+          % code above is equivalent to t = strrep(t, c, '') and should probably
+          % be approximately the same speed.
       end
-      coordinates = cellfun(@coordinateName,cell(dim,1),'UniformOutput',false);
     end
   end
 end
