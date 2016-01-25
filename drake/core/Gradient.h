@@ -66,7 +66,7 @@ namespace Drake {
 
     auto_diff_matrix.resize(val.rows(), val.cols());
     Eigen::DenseIndex deriv_num = deriv_num_start;
-    for (DenseIndex i = 0; i < val.size(); i++) {
+    for (Eigen::DenseIndex i = 0; i < val.size(); i++) {
       auto_diff_matrix(i) = ADScalar(val(i), num_derivatives, deriv_num++);
     }
   }
