@@ -10,17 +10,16 @@
 #include "collision/DrakeCollision.h"
 #include "shapes/DrakeShapes.h"
 #include "KinematicPath.h"
-#include "ForceTorqueMeasurement.h"
-#include "drakeUtil.h"
+#include "drake/systems/plants/ForceTorqueMeasurement.h"
+#include "drake/util/drakeUtil.h"
 #include <stdexcept>
 #include "RigidBody.h"
 #include "RigidBodyFrame.h"
 #include "KinematicsCache.h"
-#include <drakeRBM_export.h>
+#include "drake/drakeRBM_export.h"
 
 #define BASIS_VECTOR_HALF_COUNT 2  //number of basis vectors over 2 (i.e. 4 basis vectors in this case)
 #define EPSILON 10e-8
-#define MIN_RADIUS 1e-7
 
 typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 
@@ -47,7 +46,9 @@ public:
   friend std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj);
 
 public:
-	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#ifndef SWIG 
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 class DRAKERBM_EXPORT RigidBodyTree
@@ -222,7 +223,7 @@ public:
   void getContactPositionsJac(const KinematicsCache<typename Derived::Scalar>& cache, Eigen::MatrixBase<Derived> &J, const std::set<int> &body_idx) const;// = emptyIntSet);
 
 //  template <typename Derived>
-//  void getContactPositionsJacDot(MatrixBase<Derived> &Jdot, const std::set<int> &body_idx);// = emptyIntSet);
+//  void getContactPositionsJacDot(Eigen::MatrixBase<Derived> &Jdot, const std::set<int> &body_idx);// = emptyIntSet);
 //
 
   /**
@@ -527,7 +528,9 @@ private:
   std::unique_ptr< DrakeCollision::Model > collision_model;
   //std::shared_ptr< DrakeCollision::Model > collision_model_no_margins;
 public:
+#ifndef SWIG 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 
 // The following was required for building w/ DRAKERBM_EXPORT on windows (due to the unique_ptrs).  See
 // http://stackoverflow.com/questions/8716824/cannot-access-private-member-error-only-when-class-has-export-linkage

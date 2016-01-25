@@ -14,7 +14,7 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <unordered_map>
-#include <drakeUtil_export.h>
+#include "drake/drakeUtil_export.h"
 
 
 template <typename Key, typename T>

@@ -3,7 +3,7 @@
 #include <mex.h>
 #include <vector>
 #include <set>
-#include "fastQP.h"
+#include "drake/solvers/fastQP.h"
 
 using namespace Eigen;
 using namespace std;

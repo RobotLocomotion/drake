@@ -1,7 +1,9 @@
 #ifndef _RIGIDBODYFRAME_H_
 #define _RIGIDBODYFRAME_H_
 
-class TiXmlElement;
+namespace tinyxml2 {
+  class XMLElement;
+}
 class RigidBodyTree;
 
 class DRAKERBM_EXPORT RigidBodyFrame {
@@ -12,7 +14,7 @@ public:
           : name(_name), body(_body), frame_index(0) {
     transform_to_body.matrix() << rpy2rotmat(rpy), xyz, 0,0,0,1;
   }
-  RigidBodyFrame(RigidBodyTree* tree, TiXmlElement* link_reference, TiXmlElement* pose=nullptr, std::string name=""); // parse from URDF
+  RigidBodyFrame(RigidBodyTree* tree, tinyxml2::XMLElement* link_reference, tinyxml2::XMLElement* pose=nullptr, std::string name=""); // parse from URDF
   RigidBodyFrame() : name(""), body(nullptr), transform_to_body(Eigen::Matrix4d::Identity()), frame_index(0) {}
 
   std::string name;

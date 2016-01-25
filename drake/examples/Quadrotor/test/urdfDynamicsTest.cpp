@@ -1,7 +1,7 @@
 
 #include "../Quadrotor.h"
-#include "RigidBodySystem.h"
-#include "testUtil.h"
+#include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/util/testUtil.h"
 
 using namespace std;
 using namespace Eigen;
@@ -21,7 +21,7 @@ int main(int argc, char* argv[])
 
     auto xdot = toEigen(p.dynamics(0.0,x0,u0));
     auto xdot_rb = rbsys.dynamics(0.0,x0_rb,u0_rb);
-//    cout << "xdot = " << xdot.transpose() << endl;
+//    cout << "xdot    = " << xdot.transpose() << endl;
 //    cout << "xdot_rb = " << xdot_rb.transpose() << endl;
     valuecheckMatrix(xdot_rb,xdot,1e-8);
   }

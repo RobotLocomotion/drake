@@ -13,9 +13,9 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <sstream>
-#include <plants/KinematicsCache.h>
-#include <drakeRigidBodyConstraint_export.h>
-#include <drakeUtil.h>
+#include "drake/systems/plants/KinematicsCache.h"
+#include "drake/drakeRigidBodyConstraint_export.h"
+#include "drake/util/drakeUtil.h"
 
 
 template <typename Scalar> class KinematicsCache;
@@ -158,6 +158,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT PostureConstraint: public RigidBodyConstra
     PostureConstraint(const PostureConstraint& rhs);
     bool isTimeValid(const double* t) const;
     void setJointLimits(int num_idx, const int* joint_idx, const Eigen::VectorXd& lb, const Eigen::VectorXd& ub);
+    void setJointLimits(const Eigen::VectorXi& joint_idx, const Eigen::VectorXd& lb, const Eigen::VectorXd& ub);
     void bounds(const double* t,Eigen::VectorXd& joint_min, Eigen::VectorXd& joint_max) const;
     virtual ~PostureConstraint(void) {};
 };
@@ -367,7 +368,9 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldQuatConstraint: public QuatConstraint
     virtual ~WorldQuatConstraint();
 
 public:
+#ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 class DRAKERIGIDBODYCONSTRAINT_EXPORT RelativeQuatConstraint: public QuatConstraint
@@ -385,7 +388,9 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT RelativeQuatConstraint: public QuatConstra
     virtual ~RelativeQuatConstraint();
 
 public:
+#ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 class DRAKERIGIDBODYCONSTRAINT_EXPORT EulerConstraint: public SingleTimeKinematicConstraint
@@ -426,7 +431,9 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT GazeConstraint : public SingleTimeKinemati
     virtual ~GazeConstraint(void){};
 
 public:
+#ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 class DRAKERIGIDBODYCONSTRAINT_EXPORT GazeOrientConstraint : public GazeConstraint
@@ -441,7 +448,9 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT GazeOrientConstraint : public GazeConstrai
     virtual void bounds(const double* t,Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     virtual ~GazeOrientConstraint(void){};
 public:
+#ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldGazeOrientConstraint: public GazeOrientConstraint
@@ -465,7 +474,9 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT GazeDirConstraint: public GazeConstraint
     virtual void bounds(const double* t, Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     virtual ~GazeDirConstraint(void){};
 public:
+#ifndef SWIG   
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldGazeDirConstraint: public GazeDirConstraint
@@ -490,7 +501,9 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT GazeTargetConstraint: public GazeConstrain
     virtual void bounds(const double* t, Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     virtual ~GazeTargetConstraint(void){};
 public:
+#ifndef SWIG   
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldGazeTargetConstraint: public GazeTargetConstraint
@@ -566,7 +579,9 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT Point2LineSegDistConstraint: public Single
     virtual void bounds(const double* t, Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     virtual ~Point2LineSegDistConstraint(void){};
 public:
+#ifndef SWIG   
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldFixedPositionConstraint: public MultipleTimeKinematicConstraint
@@ -666,7 +681,9 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldPositionInFrameConstraint: public Wor
                                    const Eigen::MatrixXd &lb, const Eigen::MatrixXd &ub, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual ~WorldPositionInFrameConstraint();
 public:
+#ifndef SWIG   
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 class DRAKERIGIDBODYCONSTRAINT_EXPORT PostureChangeConstraint: public MultipleTimeLinearPostureConstraint

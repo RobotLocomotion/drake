@@ -1,6 +1,6 @@
 #include <lcm/lcm-cpp.hpp>
 #include "QPCommon.h"
-#include "drakeMexUtil.h"
+#include "drake/util/drakeMexUtil.h"
 #include "controlMexUtil.h"
 
 using namespace std;

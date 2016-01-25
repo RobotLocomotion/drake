@@ -1,5 +1,5 @@
 function testKinCnst
-
+rng(0,'twister');
 checkDependency('rigidbodyconstraint_mex');
 
 urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];

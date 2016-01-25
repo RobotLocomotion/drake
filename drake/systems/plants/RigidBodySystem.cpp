@@ -1,13 +1,20 @@
 
 #include <stdexcept>
-#include "RigidBodySystem.h"
-#include "RigidBodyIK.h"  // required for resolving initial conditions
+#include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/solvers/Optimization.h"
+#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "urdfParsingUtil.h"
 
 using namespace std;
 using namespace Eigen;
 using namespace Drake;
+using namespace tinyxml2;
 
+size_t RigidBodySystem::getNumInputs(void) const {
+  size_t num = tree->actuators.size();
+  for (auto const & f : force_elements) { num += f->getNumInputs(); }
+  return num;
+}
 
 RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, const RigidBodySystem::StateVector<double>& x, const RigidBodySystem::InputVector<double>& u) const {
   using namespace std;
@@ -31,31 +38,38 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
   auto H = tree->massMatrix(kinsol);
   Eigen::MatrixXd H_and_neg_JT = H;
 
-  { // loop through rigid body force elements and accumulate f_ext
+  VectorXd C = tree->dynamicsBiasTerm(kinsol,f_ext);
+  if (num_actuators > 0) C -= tree->B*u.topRows(num_actuators);
+
+  { // loop through rigid body force elements
 
     // todo: distinguish between AppliedForce and ConstraintForce
-    // todo: have AppliedForce output tau (instead of f_ext).  it's more direct, and just as easy to compute.
 
-    int u_index = 0;
-    const NullVector<double> force_state;  // todo:  will have to handle this case
-    for (auto const & prop : props) {
-      RigidBodyFrame* frame = prop->getFrame();
-      RigidBody* body = frame->body.get();
-      int num_inputs = 1;  // todo: generalize this
-      RigidBodyPropellor::InputVector<double> u_i(u.middleRows(u_index,num_inputs));
-      // todo: push the frame to body transform into the dynamicsBias method?
-      Matrix<double,6,1> f_ext_i = transformSpatialForce(frame->transform_to_body,prop->output(t,force_state,u_i,kinsol));
-      if (f_ext.find(body)==f_ext.end()) f_ext[body] = f_ext_i;
-      else f_ext[body] = f_ext[body]+f_ext_i;
+    size_t u_index = 0;
+    for (auto const & f : force_elements) {
+      size_t num_inputs = f->getNumInputs();
+      VectorXd force_input(u.middleRows(u_index,num_inputs));
+      C -= f->output(t,force_input,kinsol);
       u_index += num_inputs;
     }
   }
 
-  VectorXd C = tree->dynamicsBiasTerm(kinsol,f_ext);
-  if (num_actuators > 0) C -= tree->B*u.topRows(num_actuators);
+  { // apply joint limit forces
+    for (auto const& b : tree->bodies) {
+      if (!b->hasParent()) continue;
+      auto const& joint = b->getJoint();
+      if (joint.getNumPositions()==1 && joint.getNumVelocities()==1) {  // taking advantage of only single-axis joints having joint limits makes things easier/faster here
+        double qmin = joint.getJointLimitMin()(0), qmax = joint.getJointLimitMax()(0);
+        // tau = k*(qlimit-q) - b(qdot)
+        if (q(b->position_num_start)<qmin)
+          C(b->velocity_num_start) -= penetration_stiffness*(qmin-q(b->position_num_start)) - penetration_damping*v(b->velocity_num_start);
+        else if (q(b->position_num_start)>qmax)
+          C(b->velocity_num_start) -= penetration_stiffness*(qmax-q(b->position_num_start)) - penetration_damping*v(b->velocity_num_start);
+      }
+    }
+  }
 
   { // apply contact forces
-    const bool use_multi_contact = false;
     VectorXd phi;
     Matrix3Xd normal, xA, xB;
     vector<int> bodyA_idx, bodyB_idx;
@@ -66,8 +80,6 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
 
     for (int i=0; i<phi.rows(); i++) {
       if (phi(i)<0.0) { // then i have contact
-        double mu = 1.0; // todo: make this a parameter
-
         // todo: move this entire block to a shared an updated "contactJacobian" method in RigidBodyTree
         auto JA = tree->transformPointsJacobian(kinsol, xA.col(i), bodyA_idx[i], 0, false);
         auto JB = tree->transformPointsJacobian(kinsol, xB.col(i), bodyB_idx[i], 0, false);
@@ -89,20 +101,19 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
         auto J = R*(JA-JB);  // J = [ D1; D2; n ]
         auto relative_velocity = J*v;  // [ tangent1dot; tangent2dot; phidot ]
 
-        if (false) {
+        if (true) {
           // spring law for normal force:  fA_normal = -k*phi - b*phidot
           // and damping for tangential force:  fA_tangent = -b*tangentdot (bounded by the friction cone)
-          double k = 150, b = k / 10;  // todo: put these somewhere better... or make them parameters?
           Vector3d fA;
-          fA(2) = -k * phi(i) - b * relative_velocity(2);
-          fA.head(2) = -std::min(b, mu*fA(2)/(relative_velocity.head(2).norm()+EPSILON)) * relative_velocity.head(2);  // epsilon to avoid divide by zero
+          fA(2) = -penetration_stiffness * phi(i) - penetration_damping * relative_velocity(2);
+          fA.head(2) = -std::min(penetration_damping, friction_coefficient*fA(2)/(relative_velocity.head(2).norm()+EPSILON)) * relative_velocity.head(2);  // epsilon to avoid divide by zero
 
           // equal and opposite: fB = -fA.
           // tau = (R*JA)^T fA + (R*JB)^T fB = J^T fA
           C -= J.transpose()*fA;
         } else { // linear acceleration constraints (more expensive, but less tuning required for robot mass, etc)
           // note: this does not work for the multi-contact case (it overly constrains the motion of the link).  Perhaps if I made them inequality constraints...
-          static_assert(!use_multi_contact, "The acceleration contact constraints do not play well with multi-contact");
+          assert(!use_multi_contact && "The acceleration contact constraints do not play well with multi-contact");
 
           // phiddot = -2*alpha*phidot - alpha^2*phi   // critically damped response
           // tangential_velocity_dot = -2*alpha*tangential_velocity
@@ -110,10 +121,6 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
           Vector3d desired_relative_acceleration = -2*alpha*relative_velocity;
           desired_relative_acceleration(2) += -alpha*alpha*phi(i);
           // relative_acceleration = J*vdot + R*(JAdotv - JBdotv) // uses the standard dnormal/dq = 0 assumption
-
-          cout << "phi = " << phi << endl;
-          cout << "desired acceleration = " << desired_relative_acceleration.transpose() << endl;
-//          cout << "acceleration = " << (J*vdot + R*(JAdotv - JBdotv)).transpose() << endl;
 
           prog.addContinuousVariables(3,"contact normal force");
           auto JAdotv = tree->transformPointsJacobianDotTimesV(kinsol, xA.col(i).eval(), bodyA_idx[i], 0);
@@ -156,71 +163,90 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
 }
 
 
-RigidBodySystem::StateVector<double> Drake::getInitialState(const RigidBodySystem& sys) {
+// todo: move this to a more central location
+class SingleTimeKinematicConstraintWrapper : public Constraint
+{
+public:
+  SingleTimeKinematicConstraintWrapper(const VariableList& vars, const shared_ptr<SingleTimeKinematicConstraint>& rigid_body_constraint)
+          : Constraint(vars,rigid_body_constraint->getNumConstraint(nullptr)), rigid_body_constraint(rigid_body_constraint), kinsol(rigid_body_constraint->getRobotPointer()->bodies) {
+    assert(rigid_body_constraint->getRobotPointer()->num_positions == size(vars) && "Number of decision variables must match the number of positions in the RigidBodyTree");
+    rigid_body_constraint->bounds(nullptr,lower_bound,upper_bound);
+  }
+  virtual ~SingleTimeKinematicConstraintWrapper() {}
+
+  virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& q, Eigen::VectorXd& y) const override {
+    kinsol.initialize(q);
+    rigid_body_constraint->getRobotPointer()->doKinematics(kinsol);
+    MatrixXd dy;
+    rigid_body_constraint->eval(nullptr,kinsol,y,dy);
+  }
+  virtual void eval(const Eigen::Ref<const TaylorVecXd>& tq, TaylorVecXd& ty) const override {
+    kinsol.initialize(autoDiffToValueMatrix(tq));
+    rigid_body_constraint->getRobotPointer()->doKinematics(kinsol);
+    VectorXd y; MatrixXd dy;
+    rigid_body_constraint->eval(nullptr,kinsol,y,dy);
+    initTaylorVecXd(y,dy*autoDiffToGradientMatrix(tq),ty);
+  }
+
+private:
+  shared_ptr<SingleTimeKinematicConstraint> rigid_body_constraint;
+  mutable KinematicsCache<double> kinsol;
+};
+
+
+DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double> Drake::getInitialState(const RigidBodySystem& sys) {
 
   VectorXd x0(sys.tree->num_positions + sys.tree->num_velocities);
   default_random_engine generator;
   x0 << sys.tree->getRandomConfiguration(generator), VectorXd::Random(sys.tree->num_velocities);
 
+  // todo: implement joint limits, etc.
+
   if (sys.tree->getNumPositionConstraints()) {
     // todo: move this up to the system level?
 
+    OptimizationProblem prog;
     std::vector<RigidBodyLoop,Eigen::aligned_allocator<RigidBodyLoop> > const& loops = sys.tree->loops;
 
     int nq = sys.tree->num_positions;
-    int num_constraints = 2*loops.size();
-    RigidBodyConstraint** constraint_array = new RigidBodyConstraint*[num_constraints];
+    auto qvar = prog.addContinuousVariables(nq);
 
     Matrix<double,7,1> bTbp = Matrix<double,7,1>::Zero();  bTbp(3)=1.0;
     Vector2d tspan; tspan<<-std::numeric_limits<double>::infinity(),std::numeric_limits<double>::infinity();
     Vector3d zero = Vector3d::Zero();
     for (int i=0; i<loops.size(); i++) {
-      constraint_array[2*i] = new RelativePositionConstraint(sys.tree.get(), zero, zero, zero, loops[i].frameA->frame_index, loops[i].frameB->frame_index,bTbp,tspan);
-      constraint_array[2*i+1] = new RelativePositionConstraint(sys.tree.get(), loops[i].axis, loops[i].axis, loops[i].axis, loops[i].frameA->frame_index, loops[i].frameB->frame_index,bTbp,tspan);
+      auto con1 = make_shared<RelativePositionConstraint>(sys.tree.get(), zero, zero, zero, loops[i].frameA->frame_index, loops[i].frameB->frame_index,bTbp,tspan);
+      std::shared_ptr<SingleTimeKinematicConstraintWrapper> con1wrapper(new SingleTimeKinematicConstraintWrapper({qvar},con1));
+      prog.addConstraint(con1wrapper);
+      auto con2 = make_shared<RelativePositionConstraint>(sys.tree.get(), loops[i].axis, loops[i].axis, loops[i].axis, loops[i].frameA->frame_index, loops[i].frameB->frame_index,bTbp,tspan);
+      std::shared_ptr<SingleTimeKinematicConstraintWrapper> con2wrapper(new SingleTimeKinematicConstraintWrapper({qvar},con2));
+      prog.addConstraint(con2wrapper);
     }
-
-    int info;
-    vector<string> infeasible_constraint;
-    IKoptions ikoptions(sys.tree.get());
 
     VectorXd q_guess = x0.topRows(nq);
-    VectorXd q(nq);
+    prog.addQuadraticCost(MatrixXd::Identity(nq,nq),q_guess);
+    prog.solve();
 
-    inverseKin(sys.tree.get(),q_guess,q_guess,num_constraints,constraint_array,q,info,infeasible_constraint,ikoptions);
-    if (info>=10) {
-      cout << "INFO = " << info << endl;
-      cout << infeasible_constraint.size() << " infeasible constraints:";
-      size_t limit = infeasible_constraint.size();
-      if (limit>5) { cout << " (only printing first 5)" << endl; limit=5; }
-      cout << endl;
-      for (int i=0; i<limit; i++)
-        cout << infeasible_constraint[i] << endl;
-    }
-    x0 << q, VectorXd::Zero(sys.tree->num_velocities);
-
-    for (int i=0; i<num_constraints; i++) {
-      delete constraint_array[i];
-    }
-    delete[] constraint_array;
+    x0 << qvar.value(), VectorXd::Zero(sys.tree->num_velocities);
   }
   return x0;
 }
 
-RigidBodyPropellor::RigidBodyPropellor(RigidBodySystem *sys, TiXmlElement *node, std::string name) :
-        sys(sys), name(name),
+RigidBodyPropellor::RigidBodyPropellor(RigidBodySystem *sys, XMLElement *node, std::string name) :
+        RigidBodyForceElement(sys,name),
         scale_factor_thrust(1.0), scale_factor_moment(1.0),
         lower_limit(-numeric_limits<double>::infinity()),
         upper_limit(numeric_limits<double>::infinity())
 {
   auto tree = sys->getRigidBodyTree();
 
-  TiXmlElement* parent_node = node->FirstChildElement("parent");
+  XMLElement* parent_node = node->FirstChildElement("parent");
   if (!parent_node) throw runtime_error("propellor " + name + " is missing the parent node");
   frame = allocate_shared<RigidBodyFrame>(aligned_allocator<RigidBodyFrame>(),tree.get(),parent_node,node->FirstChildElement("origin"),name+"Frame");
   tree->addFrame(frame);
 
   axis << 1.0, 0.0, 0.0;
-  TiXmlElement* axis_node = node->FirstChildElement("axis");
+  XMLElement* axis_node = node->FirstChildElement("axis");
   if (axis_node) {
     parseVectorAttribute(axis_node, "xyz", axis);
     if (axis.norm()<1e-8) throw runtime_error("ERROR: axis is zero.  don't do that");
@@ -235,28 +261,51 @@ RigidBodyPropellor::RigidBodyPropellor(RigidBodySystem *sys, TiXmlElement *node,
   // todo: parse visual info?
 }
 
-void parseForceElement(RigidBodySystem *sys, TiXmlElement* node) {
+RigidBodySpringDamper::RigidBodySpringDamper(RigidBodySystem *sys, XMLElement *node, std::string name) :
+        RigidBodyForceElement(sys,name),
+        stiffness(0.0), damping(0.0), rest_length(0.0)
+{
+  auto tree = sys->getRigidBodyTree();
+
+  parseScalarAttribute(node,"rest_length",rest_length);
+  parseScalarAttribute(node,"stiffness",stiffness);
+  parseScalarAttribute(node,"damping",damping);
+
+  XMLElement* link_ref_node = node->FirstChildElement("link1");
+  if (!link_ref_node) throw runtime_error("linear_spring_damper " + name + " is missing the link1 node");
+  frameA = allocate_shared<RigidBodyFrame>(aligned_allocator<RigidBodyFrame>(),tree.get(),link_ref_node,link_ref_node,name+"FrameA");
+  tree->addFrame(frameA);
+
+  link_ref_node = node->FirstChildElement("link2");
+  if (!link_ref_node) throw runtime_error("linear_spring_damper " + name + " is missing the link2 node");
+  frameB = allocate_shared<RigidBodyFrame>(aligned_allocator<RigidBodyFrame>(),tree.get(),link_ref_node,link_ref_node,name+"FrameB");
+  tree->addFrame(frameB);
+}
+
+void parseForceElement(RigidBodySystem *sys, XMLElement* node) {
   string name = node->Attribute("name");
 
-  if (TiXmlElement* propellor_node = node->FirstChildElement("propellor")) {
+  if (XMLElement* propellor_node = node->FirstChildElement("propellor")) {
     sys->addForceElement(allocate_shared<RigidBodyPropellor>(Eigen::aligned_allocator<RigidBodyPropellor>(),sys,propellor_node,name));
+  } else if (XMLElement* spring_damper_node = node->FirstChildElement("linear_spring_damper")) {
+    sys->addForceElement(allocate_shared<RigidBodySpringDamper>(Eigen::aligned_allocator<RigidBodySpringDamper>(),sys,spring_damper_node,name));
   }
 }
 
-void parseRobot(RigidBodySystem *sys, TiXmlElement* node)
+void parseRobot(RigidBodySystem *sys, XMLElement* node)
 {
   if (!node->Attribute("name"))
     throw runtime_error("Error: your robot must have a name attribute");
   string robotname = node->Attribute("name");
 
   // parse force elements
-  for (TiXmlElement* force_node = node->FirstChildElement("force_element"); force_node; force_node = force_node->NextSiblingElement("force_element"))
+  for (XMLElement* force_node = node->FirstChildElement("force_element"); force_node; force_node = force_node->NextSiblingElement("force_element"))
     parseForceElement(sys, force_node);
 }
 
-void parseURDF(RigidBodySystem *sys, TiXmlDocument *xml_doc)
+void parseURDF(RigidBodySystem *sys, XMLDocument *xml_doc)
 {
-  TiXmlElement *node = xml_doc->FirstChildElement("robot");
+  XMLElement *node = xml_doc->FirstChildElement("robot");
   if (!node) throw std::runtime_error("ERROR: This urdf does not contain a robot tag");
 
   parseRobot(sys, node);
@@ -268,7 +317,7 @@ void RigidBodySystem::addRobotFromURDFString(const string &xml_string, const str
   tree->addRobotFromURDFString(xml_string, root_dir, floating_base_type);
 
   // now parse additional tags understood by rigid body system (actuators, sensors, etc)
-  TiXmlDocument xml_doc;
+  XMLDocument xml_doc;
   xml_doc.Parse(xml_string.c_str());
   parseURDF(this,&xml_doc);
 }
@@ -280,10 +329,10 @@ void RigidBodySystem::addRobotFromURDF(const string &urdf_filename, const DrakeJ
   tree->addRobotFromURDF(urdf_filename, floating_base_type);
 
   // now parse additional tags understood by rigid body system (actuators, sensors, etc)
-  TiXmlDocument xml_doc(urdf_filename);
-  if (!xml_doc.LoadFile()) {
-    throw std::runtime_error("failed to parse xml in file " + urdf_filename + "\n" + xml_doc.ErrorDesc());
+  XMLDocument xml_doc;
+  xml_doc.LoadFile(urdf_filename.data());
+  if (xml_doc.ErrorID() != XML_SUCCESS) {
+    throw std::runtime_error("failed to parse xml in file " + urdf_filename + "\n" + xml_doc.ErrorName());
   }
   parseURDF(this,&xml_doc);
 }
-

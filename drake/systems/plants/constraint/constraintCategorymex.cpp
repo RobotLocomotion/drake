@@ -5,10 +5,10 @@
 
 #include "mex.h"
 #include <iostream>
-#include "drakeMexUtil.h"
+#include "drake/util/drakeMexUtil.h"
 #include <Eigen/Dense>
-#include "RigidBodyConstraint.h"
-#include "RigidBodyTree.h"
+#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include <cstdio>
 
 using namespace Eigen;

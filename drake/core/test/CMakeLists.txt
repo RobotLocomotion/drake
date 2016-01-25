@@ -1,9 +1,3 @@
-
-include_directories(${PROJECT_SOURCE_DIR}/core)
-include_directories(${PROJECT_SOURCE_DIR}/systems)
-include_directories(${PROJECT_SOURCE_DIR}/util)
-include_directories(${PROJECT_SOURCE_DIR}/examples/Pendulum)
-
 if (LCM_FOUND) # only needed because it's using Pendulum.h for examples...
   add_executable(testVector testVector.cpp)
   add_dependencies(testVector drake_lcmtypes lcmtype_agg_hpp)

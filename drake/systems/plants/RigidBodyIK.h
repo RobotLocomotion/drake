@@ -3,12 +3,24 @@
 #include <string>
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
-#include "RigidBodyConstraint.h"
-#include "IKoptions.h"
-#include <drakeIK_export.h>
+#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/systems/plants/IKoptions.h"
+#include "drake/drakeIK_export.h"
 
 class RigidBodyTree;
 
+class IKResults {
+public:
+  Eigen::VectorXd q_sol;
+  int INFO;
+  std::vector<std::string> infeasible_constraints;
+
+  const Eigen::VectorXd& getQSol() const {
+    return q_sol;
+  }
+
+  IKResults() {};
+};
 
 template <typename DerivedA, typename DerivedB, typename DerivedC>
 DRAKEIK_EXPORT void inverseKin(RigidBodyTree * model, const Eigen::MatrixBase<DerivedA> &q_seed, const Eigen::MatrixBase<DerivedB> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, Eigen::MatrixBase<DerivedC> &q_sol, int &INFO, std::vector<std::string> &infeasible_constraint, const IKoptions &ikoptions);
@@ -35,6 +47,12 @@ DRAKEIK_EXPORT void inverseKin(RigidBodyTree * model, const Eigen::MatrixBase<De
  * @return infeasible_constraint. When the problem is infeasible, infeasible_constraint contains the name of the infeasible constraints
  * @param ikoptions    The options to set parameters of IK problem.
  */
+
+IKResults inverseKinSimple(RigidBodyTree* model, 
+  const Eigen::VectorXd &q_seed,
+  const Eigen::VectorXd &q_nom,
+  const std::vector<RigidBodyConstraint*> &constraint_array,
+  const IKoptions &ikoptions);
 
 template <typename DerivedA, typename DerivedB, typename DerivedC>
 DRAKEIK_EXPORT void approximateIK(RigidBodyTree * model, const Eigen::MatrixBase<DerivedA> &q_seed, const Eigen::MatrixBase<DerivedB> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, Eigen::MatrixBase<DerivedC> &q_sol, int &INFO, const IKoptions &ikoptions);

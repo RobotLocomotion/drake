@@ -1,7 +1,7 @@
 #ifndef __IKOPTIONS_H__
 #define __IKOPTIONS_H__
 #include <Eigen/Dense>
-#include <drakeIKoptions_export.h>
+#include "drake/drakeIKoptions_export.h"
 
 
 class RigidBodyTree;
@@ -51,7 +51,7 @@ class DRAKEIKOPTIONS_EXPORT IKoptions
     void setqd0(const Eigen::VectorXd &lb, const Eigen::VectorXd &ub);
     void setqdf(const Eigen::VectorXd &lb, const Eigen::VectorXd &ub);
     void setAdditionaltSamples(const Eigen::RowVectorXd &t_samples);
-    void updateRobot(const RigidBodyTree * robot);
+    void updateRobot(RigidBodyTree * new_robot);
     void getQ(Eigen::MatrixXd &Q) const;
     void getQa(Eigen::MatrixXd &Qa) const;
     void getQv(Eigen::MatrixXd &Qv) const;
@@ -67,7 +67,6 @@ class DRAKEIKOPTIONS_EXPORT IKoptions
     void getq0(Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     void getqd0(Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     void getqdf(Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
-    void updateRobot(RigidBodyTree * new_robot);
 };
 #endif
 

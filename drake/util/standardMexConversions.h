@@ -6,8 +6,8 @@
 #define DRAKE_STANDARDMEXCONVERSIONS_H
 
 #include <string>
-#include "mexify.h"
-#include "GradientVar.h"
+#include "drake/util/mexify.h"
+#include "drake/util/GradientVar.h"
 
 /**
  * fromMex specializations

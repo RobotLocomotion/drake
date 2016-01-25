@@ -33,19 +33,4 @@ classdef QuadraticSumConstraint < QuadraticConstraint
     end
   end
   
-  methods (Access = protected)
-    function [c,dc,ddc] = constraintEval(obj,x)
-      x = reshape(x,obj.x_rows,obj.x_cols);
-      xv = x-obj.v;
-      Qxv = obj.Qa*xv;
-      c = sum(sum(xv.*Qxv));
-      if(nargout>1)
-        dc = 2*reshape(Qxv,1,[]);
-      end
-      if(nargout>2)
-        ddc = reshape(obj.Q,1,[]);
-      end
-    end
-  end
-  
 end

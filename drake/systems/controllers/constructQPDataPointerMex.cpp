@@ -1,10 +1,10 @@
 #include "QPCommon.h"
 #include <Eigen/StdVector>
-#include "drakeMexUtil.h"
+#include "drake/util/drakeMexUtil.h"
 #include "controlMexUtil.h"
 // #include <limits>
 // #include <cmath>
-// #include "drakeUtil.h"
+// #include "drake/util/drakeUtil.h"
 
 using namespace std;
 using namespace Eigen;
@@ -205,7 +205,7 @@ void parseHardwareParams(const mxArray *params_obj, RigidBodyTree *r, AtlasHardw
   return;
 }
 
-void parseAtlasParams(const mxArray *params_obj, RigidBodyTree *r, AtlasParams *params) {
+void parseQPControllerParams(const mxArray *params_obj, RigidBodyTree *r, QPControllerParams *params) {
   const mxArray *pobj;
 
   pobj = myGetProperty(params_obj, "W_kdot");
@@ -264,16 +264,16 @@ void parseAtlasParams(const mxArray *params_obj, RigidBodyTree *r, AtlasParams *
   return;
 }
 
-void parseAtlasParamSets(const mxArray *pobj, RigidBodyTree *r, map<string,AtlasParams> *param_sets) {
+void parseQPControllerParamSets(const mxArray *pobj, RigidBodyTree *r, map<string,QPControllerParams> *param_sets) {
   int num_fields = mxGetNumberOfFields(pobj);
   if (num_fields == 0) mexErrMsgTxt("could not get any field names from the param_sets object\n"); 
 
-  AtlasParams params;
+  QPControllerParams params;
   const char* fieldname;
   for (int i=0; i < num_fields; i++) {
     fieldname = mxGetFieldNameByNumber(pobj, i);
-    parseAtlasParams(myGetField(pobj, fieldname), r, &params);
-    param_sets->insert(pair<string,AtlasParams>(string(fieldname), params));
+    parseQPControllerParams(myGetField(pobj, fieldname), r, &params);
+    param_sets->insert(pair<string,QPControllerParams>(string(fieldname), params));
   }
 
   return;
@@ -309,7 +309,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   narg++;
 
   // param_sets
-  parseAtlasParamSets(prhs[narg], pdata->r, &(pdata->param_sets));
+  parseQPControllerParamSets(prhs[narg], pdata->r, &(pdata->param_sets));
   narg++;
 
   // robot_property_cache

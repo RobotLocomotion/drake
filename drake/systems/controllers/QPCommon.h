@@ -1,16 +1,16 @@
 #ifndef _QPCOMMON_H_
 #define _QPCOMMON_H_
 
-#include "controlUtil.h"
-#include "drakeUtil.h"
-#include "fastQP.h"
+#include "drake/systems/controllers/controlUtil.h"
+#include "drake/util/drakeUtil.h"
+#include "drake/solvers/fastQP.h"
 #include "lcmtypes/drake/lcmt_qp_controller_input.hpp"
-#include "ExponentialPlusPiecewisePolynomial.h"
+#include "drake/systems/trajectories/ExponentialPlusPiecewisePolynomial.h"
 #include <vector>
-#include "ForceTorqueMeasurement.h"
-#include "Side.h"
-#include "gurobiQP.h"
-#include <drakeQP_export.h> // TODO: do exports
+#include "drake/systems/plants/ForceTorqueMeasurement.h"
+#include "drake/systems/robotInterfaces/Side.h"
+#include "drake/solvers/gurobiQP.h"
+#include "drake/drakeQP_export.h" // TODO: do exports
 
 const double REG = 1e-8;
 
@@ -157,7 +157,7 @@ struct AtlasHardwareParams {
   Eigen::Matrix<bool, Eigen::Dynamic, 1> joint_is_position_controlled;
 };
 
-struct AtlasParams {
+struct QPControllerParams {
   WholeBodyParams whole_body;
   std::vector<BodyMotionParams> body_motion;
   VRefIntegratorParams vref_integrator;
@@ -179,7 +179,7 @@ class NewQPControllerData {
 public:
   GRBenv *env;
   RigidBodyTree * r;
-  std::map<std::string,AtlasParams> param_sets;
+  std::map<std::string,QPControllerParams> param_sets;
   RobotPropertyCache rpc;
   void* map_ptr;
   Eigen::VectorXd umin,umax;

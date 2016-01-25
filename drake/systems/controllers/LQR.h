@@ -1,10 +1,10 @@
 #ifndef DRAKE_LQR_H
 #define DRAKE_LQR_H
 
-#include "Core.h"
-#include "LinearSystem.h"
-#include "drakeGradientUtil.h"
-#include "drakeUtil.h"
+#include "drake/core/Core.h"
+#include "drake/systems/LinearSystem.h"
+#include "drake/util/drakeGradientUtil.h"
+#include "drake/util/drakeUtil.h"
 
 namespace Drake {
 
@@ -18,10 +18,10 @@ namespace Drake {
     using namespace Eigen;
 
     // todo: clean this up
-    typedef TaylorVar<-1> AutoDiffType;
+    typedef TaylorVard<-1> AutoDiffType;
     VectorXd xu(num_states+num_inputs);
     xu << toEigen(x0), toEigen(u0);
-    TaylorVecX xu_taylor = initTaylorVecX(xu);
+    TaylorVecXd xu_taylor = initTaylorVecXd(xu);
     typename System::template StateVector<AutoDiffType> x_taylor(xu_taylor.head(num_states));
     typename System::template InputVector<AutoDiffType> u_taylor(xu_taylor.tail(num_inputs));
 

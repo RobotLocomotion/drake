@@ -1,4 +1,4 @@
-#include "drakeGeometryUtil.h"
+#include "drake/util/drakeGeometryUtil.h"
 #include <Eigen/Sparse>
 #include <stdexcept>
 

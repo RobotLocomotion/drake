@@ -1,7 +1,7 @@
 #ifndef DRAKE_LINEARSYSTEM_H
 #define DRAKE_LINEARSYSTEM_H
 
-#include "System.h"
+#include "drake/systems/System.h"
 
 namespace Drake {
 
@@ -22,12 +22,10 @@ public:
   template <typename ScalarType> using StateVector = StateVec<ScalarType>;
   template <typename ScalarType> using OutputVector = OutputVec<ScalarType>;
   template <typename ScalarType> using InputVector = InputVec<ScalarType>;
-  constexpr static int num_states = StateVec<double>::RowsAtCompileTime;
-  constexpr static int num_inputs = InputVector<double>::RowsAtCompileTime;
-  constexpr static int num_outputs = OutputVector<double>::RowsAtCompileTime;
 
-  AffineSystem(const Eigen::Matrix<double,num_states,num_states>& A,const Eigen::Matrix<double,num_states,num_inputs>& B,const Eigen::Matrix<double,num_states,1>& xdot0,
-               const Eigen::Matrix<double,num_outputs,num_states>& C,const Eigen::Matrix<double,num_outputs,num_inputs>& D,const Eigen::Matrix<double,num_outputs,1>& y0)
+  template <typename DerivedA, typename DerivedB, typename Derivedxdot0, typename DerivedC, typename DerivedD, typename Derivedy0>
+  AffineSystem(const Eigen::MatrixBase<DerivedA>& A,const Eigen::MatrixBase<DerivedB>& B,const Eigen::MatrixBase<Derivedxdot0>& xdot0,
+               const Eigen::MatrixBase<DerivedC>& C,const Eigen::MatrixBase<DerivedD>& D,const Eigen::MatrixBase<Derivedy0>& y0)
           : A(A),B(B),C(C),D(D),xdot0(xdot0),y0(y0) {
     assert(A.rows() == A.cols());
     assert(B.rows() == A.cols());
@@ -38,7 +36,8 @@ public:
 
   template <typename ScalarType>
   StateVector<ScalarType> dynamics(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {
-    StateVector<ScalarType> xdot = A*toEigen(x) + B*toEigen(u) + xdot0;
+    if (A.rows() == 0) return StateVector<ScalarType>();
+    StateVector<ScalarType> xdot = A * toEigen(x) + B * toEigen(u) + xdot0;
     return xdot;
   }
 
@@ -55,26 +54,42 @@ public:
   size_t getNumOutputs() const {return static_cast<size_t>(C.rows()); };
 
 private:
-  Eigen::Matrix<double,num_states,num_states> A;
-  Eigen::Matrix<double,num_states,num_inputs> B;
-  Eigen::Matrix<double,num_outputs,num_states> C;
-  Eigen::Matrix<double,num_outputs,num_inputs> D;
-  Eigen::Matrix<double,num_states,1> xdot0;
-  Eigen::Matrix<double,num_outputs,1> y0;
+  Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> A;
+  Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> B;
+  Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> C;
+  Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> D;
+  Eigen::Matrix<double,Eigen::Dynamic,1> xdot0;
+  Eigen::Matrix<double,Eigen::Dynamic,1> y0;
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // the num_states, etc can cause alignment issues if they are one of the known fixed sizes.
 };
 
-/*
-class LinearSystem : public AffineSystem {
+template <template<typename> class StateVec, template<typename> class InputVec, template<typename> class OutputVec>
+class LinearSystem : public AffineSystem<StateVec,InputVec,OutputVec> {
 public:
-  LinearSystem(const std::string& name,
-               const Eigen::MatrixXd& _Ac,const Eigen::MatrixXd& _Bc,
-               const Eigen::MatrixXd& _Ad,const Eigen::MatrixXd& _Bd,
-               const Eigen::MatrixXd& _C,const Eigen::MatrixXd& _D);
+  template<typename ScalarType> using StateVector = StateVec<ScalarType>;
+  template<typename ScalarType> using OutputVector = OutputVec<ScalarType>;
+  template<typename ScalarType> using InputVector = InputVec<ScalarType>;
+
+  template<typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD>
+  LinearSystem(const Eigen::MatrixBase<DerivedA> &A, const Eigen::MatrixBase<DerivedB> &B,
+               const Eigen::MatrixBase<DerivedC> &C, const Eigen::MatrixBase<DerivedD> &D)
+          : AffineSystem<StateVec,InputVec,OutputVec>(A, B, Eigen::VectorXd::Zero(A.rows()), C, D, Eigen::VectorXd::Zero(C.rows())) { }
 };
-*/
+
+template <template<typename> class InputVec, template<typename> class OutputVec>
+class Gain : public LinearSystem<NullVector,InputVec,OutputVec> {
+public:
+  template<typename ScalarType> using StateVector = NullVector<ScalarType>;
+  template<typename ScalarType> using OutputVector = OutputVec<ScalarType>;
+  template<typename ScalarType> using InputVector = InputVec<ScalarType>;
+
+  template<typename Derived>
+  Gain(const Eigen::MatrixBase<Derived> &D)
+          : LinearSystem<NullVector,InputVec,OutputVec>(Eigen::Matrix<double,0,0>(), Eigen::Matrix<double,0,0>(), Eigen::Matrix<double,Eigen::Dynamic,0>(D.rows(),0), D) { }
+};
+
 
 } // end namespace Drake
 

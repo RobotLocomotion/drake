@@ -10,7 +10,7 @@
 #include <type_traits>
 #include <stdexcept>
 #include <utility>
-#include "drakeGradientUtil.h"
+#include "drake/util/drakeGradientUtil.h"
 #include "RigidBody.h"
 
 
@@ -47,7 +47,9 @@ public:
   }
 
 public:
-	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#ifndef SWIG
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 template <typename Scalar>
@@ -66,7 +68,7 @@ private:
   bool inertias_cached;
 
 public:
-  KinematicsCache(const std::vector<std::shared_ptr<RigidBody>>& bodies) :
+  KinematicsCache(const std::vector<std::shared_ptr<RigidBody> > & bodies) :
       num_positions(getNumPositions(bodies)),
       num_velocities(getNumVelocities(bodies)),
       q(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(num_positions)),
@@ -215,14 +217,14 @@ private:
     inertias_cached = false;
   }
 
-  static int getNumPositions(const std::vector<std::shared_ptr<RigidBody>>& bodies) {
+  static int getNumPositions(const std::vector<std::shared_ptr<RigidBody> >& bodies) {
     auto add_num_positions = [] (int result, std::shared_ptr<RigidBody> body_ptr) -> int {
       return body_ptr->hasParent() ? result + body_ptr->getJoint().getNumPositions() : result;
     };
     return std::accumulate(bodies.begin(), bodies.end(), 0, add_num_positions);
   }
 
-  static int getNumVelocities(const std::vector<std::shared_ptr<RigidBody>>& bodies) {
+  static int getNumVelocities(const std::vector<std::shared_ptr<RigidBody> >& bodies) {
     auto add_num_velocities = [] (int result, std::shared_ptr<RigidBody> body_ptr) -> int {
       return body_ptr->hasParent() ? result + body_ptr->getJoint().getNumVelocities() : result;
     };
@@ -230,7 +232,9 @@ private:
   }
 
 public:
+#ifndef SWIG
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 

@@ -1,4 +1,4 @@
-#include "zmpUtil.h"
+#include "drake/systems/controllers/zmpUtil.h"
 #include <Eigen/Dense>
 #include <unsupported/Eigen/MatrixFunctions>
 

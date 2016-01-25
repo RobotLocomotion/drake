@@ -3,9 +3,6 @@
 # debugMexTester.m and debugMexTest.cpp were moved to dev
 # add_mex(debugMexTest debugMexTest.cpp)
 
-include_directories(..)
-include_directories(${PROJECT_SOURCE_DIR}/systems/trajectories)
-
 add_executable(testDrakeGeometryUtil testDrakeGeometryUtil.cpp)
 target_link_libraries(testDrakeGeometryUtil drakeGeometryUtil)
 add_test(NAME testDrakeGeometryUtil COMMAND testDrakeGeometryUtil)

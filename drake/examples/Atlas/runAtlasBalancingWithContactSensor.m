@@ -5,7 +5,6 @@ if ~checkDependency('gurobi')
 end
 
 path_handle = addpathTemporary(fullfile(getDrakePath(), 'examples', 'ZMP'));
-import atlasControllers.*;
 
 % put robot in a random x,y,yaw position and balance for 2 seconds
 if nargin<1, example_options=struct(); end
@@ -62,10 +61,9 @@ kinsol = doKinematics(r,q0);
 standing_plan = QPLocomotionPlanSettings.fromStandingState(x0, r);
 % standing_plan.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed;
 
-control = atlasControllers.InstantaneousQPController(r_pure, [], struct());
-planeval = atlasControllers.AtlasPlanEval(r_pure, QPLocomotionPlanCPPWrapper(standing_plan));
-
-plancontroller = atlasControllers.AtlasPlanEvalAndControlSystem(r_pure, control, planeval);
+control = bipedControllers.InstantaneousQPController(r_pure, [], struct());
+planeval = bipedControllers.BipedPlanEval(r_pure, QPLocomotionPlanCPPWrapper(standing_plan));
+plancontroller = bipedControllers.BipedPlanEvalAndControlSystem(r_pure, control, planeval);
 
 % Pass through outputs from robot
 outs(1).system = 1;

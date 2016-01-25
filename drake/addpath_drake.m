@@ -60,6 +60,11 @@ addpath(fullfile(root,'solvers','BMI'));
 addpath(fullfile(root,'solvers','BMI','util'));
 addpath(fullfile(root,'solvers','BMI','kinematics'));
 addpath(fullfile(root,'solvers','qpSpline'));
+addpath(fullfile(root,'bindings','matlab'));
+bindings_dir = fullfile(root,'pod-build','bindings','matlab');
+if exist(bindings_dir, 'dir')
+  addpath(bindings_dir);
+end
 
 
 % OSX platform-specific

@@ -7,9 +7,9 @@
 #include <map>
 #include <Eigen/StdVector>
 #include <memory>
-#include "DrakeJoint.h"
-#include <drakeRBM_export.h>
-#include <plants/collision/DrakeCollision.h>
+#include "drake/systems/plants/joints/DrakeJoint.h"
+#include "drake/systems/plants/collision/DrakeCollision.h"
+#include "drake/drakeRBM_export.h"
 
 class DRAKERBM_EXPORT RigidBody {
 private:
@@ -85,9 +85,9 @@ public:
   {
     public:
       CollisionElement(const CollisionElement& other);
-      CollisionElement(const Eigen::Matrix4d& T_element_to_link, std::shared_ptr<RigidBody> body);
+      CollisionElement(const Eigen::Isometry3d& T_element_to_link, std::shared_ptr<RigidBody> body);
       CollisionElement(const DrakeShapes::Geometry& geometry,
-                       const Eigen::Matrix4d& T_element_to_link, std::shared_ptr<RigidBody> body);
+                       const Eigen::Isometry3d& T_element_to_link, std::shared_ptr<RigidBody> body);
       virtual ~CollisionElement(){};
 
       virtual CollisionElement* clone() const;

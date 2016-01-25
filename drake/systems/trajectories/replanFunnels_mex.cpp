@@ -25,15 +25,11 @@
  */
 
 // Mex stuff
-// BLAS
-#if !defined(_WIN32)
-#define dgemm dgemm_
-#endif
 #include <mex.h>
 #include <blas.h>
 #include <math.h>
 #include <matrix.h>
-#include <drakeMexUtil.h>
+#include "drake/util/drakeMexUtil.h"
 
 // Snopt stuff
 namespace snopt {
@@ -209,7 +205,7 @@ double containmentConstraint(snopt::doublereal x_shift[], double *containment_gr
     long int ione = 1;
     mxArray *S0xrel = mxCreateDoubleMatrix(dim,1,mxREAL);
     double *dS0xrel = mxGetPrSafe(S0xrel);
-    char *chn = "N";
+    char chn[] = "N";
     dgemm(chn, chn, &dim, &ione, &dim, &one, S0, &dim, dxrel, &dim, &zero, dS0xrel, &dim);
     
     // Use this to compute gradient: First 3 elements of 2*S0*xrel
@@ -220,7 +216,7 @@ double containmentConstraint(snopt::doublereal x_shift[], double *containment_gr
     // Now do xrel'*S0xrel
     mxArray *val = mxCreateDoubleScalar(mxREAL);
     double dval = *(mxGetPrSafe(val));
-    char *chnT = "T"; // since we want xrel transpose
+    char chnT[] = "T"; // since we want xrel transpose
     dgemm(chnT, chn, &ione, &ione, &dim, &one, dxrel, &dim, dS0xrel, &dim, &zero, &dval, &ione);
     
     mxDestroyArray(xrel);
@@ -309,7 +305,7 @@ bool penetrationCost(snopt::doublereal x[], double *min_dist, double *normal_vec
                 long int ione = 1;
                 long int dim = 3;
                 
-                char *chn = "N";
+                char chn[] = "N";
                 dgemm(chn, chn, &ione, &dim, &dim, &one, mxGetPrSafe(normal_vec), &ione, mxGetPrSafe(cSk), &dim, &zero, normal_vec_transformed, &ione);
                 
             }
@@ -610,9 +606,7 @@ bool isCollisionFree(int funnelIdx, const mxArray *x, const mxArray *funnelLibra
     normal_vec = mxCreateDoubleMatrix(1,3,mxREAL);
     
     mxArray *normal_vec_transformed_mx = mxCreateDoubleMatrix(1,3,mxREAL);
-    double *normal_vec_transformed = mxGetPrSafe(normal_vec_transformed_mx);
-    int rowNum = 0;
-    
+
     // Get number of time samples
     mwSize N = mxGetNumberOfElements(mxGetField(funnelLibrary, funnelIdx, "cS"));
     
@@ -711,14 +705,14 @@ bool isInsideInlet(int funnelIdx, const mxArray *x, const mxArray *funnelLibrary
     long int ione = 1;
     mxArray *S0xrel = mxCreateDoubleMatrix(dim,1,mxREAL);
     double *dS0xrel = mxGetPrSafe(S0xrel);
-    char *chn = "N";
+    char chn[] = "N";
     dgemm(chn, chn, &dim, &ione, &dim, &one, S0, &dim, dxrel, &dim, &zero, dS0xrel, &dim);
     
     
     // Now do xrel'*S0xrel
     mxArray *val = mxCreateDoubleScalar(mxREAL);
     double *dval = mxGetPrSafe(val);
-    char *chnT = "T"; // since we want xrel transpose
+    char chnT[] = "T"; // since we want xrel transpose
     dgemm(chnT, chn, &ione, &ione, &dim, &one, dxrel, &dim, dS0xrel, &dim, &zero, dval, &ione);
     
     
@@ -766,9 +760,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     // to shift stuff. If this is false, we try to shift any promising funnels on the
     // first pass.
     bool shift_later = false;
-    double *shift_later_ptr;
-    
-    // Penetraion threshold: used to decide if we should try shifting funnel.
+
+    // Penetration threshold: used to decide if we should try shifting funnel.
     // Should be less than 1.0.
     double *penetration_thresh_ptr;
     double penetration_thresh = 0.75; // Default
@@ -965,11 +958,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         mxArray *sorted_inds_mx = mxCreateDoubleMatrix(numFunnels,1,mxREAL);
         sorted_inds_mx = Out[1];
         double *sorted_inds_d = mxGetPrSafe(sorted_inds_mx);
-        
-        mxArray* penetrations_sorted_mx = Out[0];
-        double *penetrations_sorted_d = mxGetPrSafe(penetrations_sorted_mx);
 
-        
         for(int ii=0;ii<numFunnels;ii++)
         {
             

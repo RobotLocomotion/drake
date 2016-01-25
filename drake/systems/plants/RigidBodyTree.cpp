@@ -1,10 +1,10 @@
 #include <iostream>
 
-#include "drakeGeometryUtil.h"
-#include "RigidBodyTree.h"
-#include "DrakeJoint.h"
-#include "FixedJoint.h"
-#include "drakeUtil.h"
+#include "drake/util/drakeGeometryUtil.h"
+#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/systems/plants/joints/DrakeJoint.h"
+#include "drake/systems/plants/joints/FixedJoint.h"
+#include "drake/util/drakeUtil.h"
 
 #include <algorithm>
 #include <string>
@@ -239,7 +239,7 @@ DrakeCollision::ElementId RigidBodyTree::addCollisionElement(const RigidBody::Co
 void RigidBodyTree::updateCollisionElements(const RigidBody& body, const Eigen::Transform<double, 3, Eigen::Isometry>& transform_to_world)
 {
   for (auto id_iter = body.collision_element_ids.begin(); id_iter != body.collision_element_ids.end(); ++id_iter) {
-    collision_model->updateElementWorldTransform(*id_iter, transform_to_world.matrix());
+    collision_model->updateElementWorldTransform(*id_iter, transform_to_world);
   }
 }
 

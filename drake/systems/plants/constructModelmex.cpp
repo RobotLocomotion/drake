@@ -1,14 +1,10 @@
 #include "mex.h"
 #include <iostream>
 #include <cmath>
-#include "drakeMexUtil.h"
+#include "drake/util/drakeMexUtil.h"
 #include "rigidBodyTreeMexConversions.h"
 #include <stdexcept>
-#include <RevoluteJoint.h>
-#include <PrismaticJoint.h>
-#include <HelicalJoint.h>
-#include <RollPitchYawFloatingJoint.h>
-#include <QuaternionFloatingJoint.h>
+#include "drake/systems/plants/joints/DrakeJoints.h"
 
 using namespace Eigen;
 using namespace std;
@@ -161,7 +157,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     //mexPrintf("constructModelmex: About to parse collision geometry\n");
     //END_DEBUG
     pm = mxGetPropertySafe(pBodies,i,"collision_geometry");
-    Matrix4d T;
+    Isometry3d T;
     if (!mxIsEmpty(pm)) {
       for (int j=0; j<mxGetNumberOfElements(pm); j++) {
         //DEBUG

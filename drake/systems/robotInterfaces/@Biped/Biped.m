@@ -17,11 +17,22 @@ classdef Biped < LeggedRobot
     inner_foot_shape % see getInnerFootShape() below
     default_body_collision_slices % see getBodyCollisionSlices() below
     body_collision_slice_heights % see getBodyCollisionSlices() below
+
   end
 
   properties(Abstract)
     default_footstep_params
     default_walking_params
+    pelvis_name;
+    r_foot_name;
+    l_foot_name;
+    r_knee_name;
+    l_knee_name;
+    l_akx_name;
+    r_akx_name;
+    r_aky_name;
+    l_aky_name;
+
   end
 
   methods
