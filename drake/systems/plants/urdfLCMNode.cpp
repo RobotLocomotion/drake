@@ -61,10 +61,11 @@ int main(int argc, char* argv[]) {
   auto sys = cascade(rigid_body_sys, visualizer);
 
   SimulationOptions options = default_simulation_options;
-  options.realtime_factor = 0.0;
+  options.realtime_factor = 1.0;
+  options.timeout_seconds = std::numeric_limits<double>::infinity();
   options.initial_step_size = 5e-3;
 
-  runLCM(sys,lcm,0,std::numeric_limits<double>::max(),getInitialState(*sys),options);
+  runLCM(sys,lcm,0,std::numeric_limits<double>::infinity(),getInitialState(*sys),options);
 //  simulate(*sys,0,std::numeric_limits<double>::max(),getInitialState(*sys),options);
 
   return 0;

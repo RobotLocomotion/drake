@@ -1,10 +1,4 @@
 
-# if you haven't already, you should set your python path with e.g.
-# export PYTHONPATH="/path/to/drake-distro/build/lib/python2.7/dist-packages:/path/to/drake-distro/build/lib/python2.7/site-packages:$PYTHONPATH"
-# and install pygame (e.g., via brew install or apt-get)
-# then run
-#     python SteeringCommandDriver.py
-
 import copy, pygame, lcm, argparse, sys
 from lcmtypes.drake.lcmt_driving_control_cmd_t import lcmt_driving_control_cmd_t as lcm_msg
 

@@ -1,7 +1,8 @@
 
 #include <stdexcept>
 #include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/systems/plants/RigidBodyIK.h"  // required for resolving initial conditions
+#include "drake/solvers/Optimization.h"
+#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "urdfParsingUtil.h"
 
 using namespace std;
@@ -162,52 +163,71 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
 }
 
 
+// todo: move this to a more central location
+class SingleTimeKinematicConstraintWrapper : public Constraint
+{
+public:
+  SingleTimeKinematicConstraintWrapper(const VariableList& vars, const shared_ptr<SingleTimeKinematicConstraint>& rigid_body_constraint)
+          : Constraint(vars,rigid_body_constraint->getNumConstraint(nullptr)), rigid_body_constraint(rigid_body_constraint), kinsol(rigid_body_constraint->getRobotPointer()->bodies) {
+    assert(rigid_body_constraint->getRobotPointer()->num_positions == size(vars) && "Number of decision variables must match the number of positions in the RigidBodyTree");
+    rigid_body_constraint->bounds(nullptr,lower_bound,upper_bound);
+  }
+  virtual ~SingleTimeKinematicConstraintWrapper() {}
+
+  virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& q, Eigen::VectorXd& y) const override {
+    kinsol.initialize(q);
+    rigid_body_constraint->getRobotPointer()->doKinematics(kinsol);
+    MatrixXd dy;
+    rigid_body_constraint->eval(nullptr,kinsol,y,dy);
+  }
+  virtual void eval(const Eigen::Ref<const TaylorVecXd>& tq, TaylorVecXd& ty) const override {
+    kinsol.initialize(autoDiffToValueMatrix(tq));
+    rigid_body_constraint->getRobotPointer()->doKinematics(kinsol);
+    VectorXd y; MatrixXd dy;
+    rigid_body_constraint->eval(nullptr,kinsol,y,dy);
+    initTaylorVecXd(y,dy*autoDiffToGradientMatrix(tq),ty);
+  }
+
+private:
+  shared_ptr<SingleTimeKinematicConstraint> rigid_body_constraint;
+  mutable KinematicsCache<double> kinsol;
+};
+
+
 DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double> Drake::getInitialState(const RigidBodySystem& sys) {
 
   VectorXd x0(sys.tree->num_positions + sys.tree->num_velocities);
   default_random_engine generator;
   x0 << sys.tree->getRandomConfiguration(generator), VectorXd::Random(sys.tree->num_velocities);
 
+  // todo: implement joint limits, etc.
+
   if (sys.tree->getNumPositionConstraints()) {
     // todo: move this up to the system level?
 
+    OptimizationProblem prog;
     std::vector<RigidBodyLoop,Eigen::aligned_allocator<RigidBodyLoop> > const& loops = sys.tree->loops;
 
     int nq = sys.tree->num_positions;
-    int num_constraints = 2*loops.size();
-    RigidBodyConstraint** constraint_array = new RigidBodyConstraint*[num_constraints];
+    auto qvar = prog.addContinuousVariables(nq);
 
     Matrix<double,7,1> bTbp = Matrix<double,7,1>::Zero();  bTbp(3)=1.0;
     Vector2d tspan; tspan<<-std::numeric_limits<double>::infinity(),std::numeric_limits<double>::infinity();
     Vector3d zero = Vector3d::Zero();
     for (int i=0; i<loops.size(); i++) {
-      constraint_array[2*i] = new RelativePositionConstraint(sys.tree.get(), zero, zero, zero, loops[i].frameA->frame_index, loops[i].frameB->frame_index,bTbp,tspan);
-      constraint_array[2*i+1] = new RelativePositionConstraint(sys.tree.get(), loops[i].axis, loops[i].axis, loops[i].axis, loops[i].frameA->frame_index, loops[i].frameB->frame_index,bTbp,tspan);
+      auto con1 = make_shared<RelativePositionConstraint>(sys.tree.get(), zero, zero, zero, loops[i].frameA->frame_index, loops[i].frameB->frame_index,bTbp,tspan);
+      std::shared_ptr<SingleTimeKinematicConstraintWrapper> con1wrapper(new SingleTimeKinematicConstraintWrapper({qvar},con1));
+      prog.addConstraint(con1wrapper);
+      auto con2 = make_shared<RelativePositionConstraint>(sys.tree.get(), loops[i].axis, loops[i].axis, loops[i].axis, loops[i].frameA->frame_index, loops[i].frameB->frame_index,bTbp,tspan);
+      std::shared_ptr<SingleTimeKinematicConstraintWrapper> con2wrapper(new SingleTimeKinematicConstraintWrapper({qvar},con2));
+      prog.addConstraint(con2wrapper);
     }
-
-    int info;
-    vector<string> infeasible_constraint;
-    IKoptions ikoptions(sys.tree.get());
 
     VectorXd q_guess = x0.topRows(nq);
-    VectorXd q(nq);
+    prog.addQuadraticCost(MatrixXd::Identity(nq,nq),q_guess);
+    prog.solve();
 
-    inverseKin(sys.tree.get(),q_guess,q_guess,num_constraints,constraint_array,q,info,infeasible_constraint,ikoptions);
-    if (info>=10) {
-      cout << "INFO = " << info << endl;
-      cout << infeasible_constraint.size() << " infeasible constraints:";
-      size_t limit = infeasible_constraint.size();
-      if (limit>5) { cout << " (only printing first 5)" << endl; limit=5; }
-      cout << endl;
-      for (int i=0; i<limit; i++)
-        cout << infeasible_constraint[i] << endl;
-    }
-    x0 << q, VectorXd::Zero(sys.tree->num_velocities);
-
-    for (int i=0; i<num_constraints; i++) {
-      delete constraint_array[i];
-    }
-    delete[] constraint_array;
+    x0 << qvar.value(), VectorXd::Zero(sys.tree->num_velocities);
   }
   return x0;
 }
