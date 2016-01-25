@@ -1201,7 +1201,7 @@ void GazeOrientConstraint::eval(const double* t, KinematicsCache<double>& cache,
     this->evalOrientation(cache, quat,dquat);
 
 
-    auto axis_err_autodiff_args = initializeAutoDiffArgs(quat, quat_des, axis);
+    auto axis_err_autodiff_args = initializeAutoDiffTuple(quat, quat_des, axis);
     auto e_autodiff = quatDiffAxisInvar(get<0>(axis_err_autodiff_args), get<1>(axis_err_autodiff_args), get<2>(axis_err_autodiff_args));
     auto axis_err = e_autodiff.value();
     auto daxis_err = e_autodiff.derivatives().transpose().eval();
@@ -1209,7 +1209,7 @@ void GazeOrientConstraint::eval(const double* t, KinematicsCache<double>& cache,
     MatrixXd daxis_err_dq(1,nq);
     daxis_err_dq = daxis_err.block(0,0,1,4)*dquat;
 
-    auto quat_diff_autodiff_args = initializeAutoDiffArgs(quat, quat_des);
+    auto quat_diff_autodiff_args = initializeAutoDiffTuple(quat, quat_des);
     auto q_diff_autodiff = quatDiff(get<0>(quat_diff_autodiff_args), get<1>(quat_diff_autodiff_args));
     auto q_diff = autoDiffToValueMatrix(q_diff_autodiff);
     auto dq_diff = autoDiffToGradientMatrix(q_diff_autodiff);

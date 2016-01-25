@@ -17,7 +17,7 @@ namespace Drake {
     using namespace std;
     using namespace Eigen;
 
-    auto autodiff_args = initializeAutoDiffArgs(toEigen(x0), toEigen(u0));
+    auto autodiff_args = initializeAutoDiffTuple(toEigen(x0), toEigen(u0));
     typedef typename std::tuple_element<0, decltype(autodiff_args)>::type::Scalar AutoDiffType;
     typename System::template StateVector<AutoDiffType> x_taylor(std::get<0>(autodiff_args));
     typename System::template InputVector<AutoDiffType> u_taylor(std::get<1>(autodiff_args));

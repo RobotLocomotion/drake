@@ -25,7 +25,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 
 
   {
-    auto autodiff_args = initializeAutoDiffArgs(q1, q2);
+    auto autodiff_args = initializeAutoDiffTuple(q1, q2);
     auto r_autodiff = quatDiff(get<0>(autodiff_args), get<1>(autodiff_args));
     auto r = autoDiffToValueMatrix(r_autodiff);
     auto dr = autoDiffToGradientMatrix(r_autodiff);
@@ -37,7 +37,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   }
 
   {
-    auto autodiff_args = initializeAutoDiffArgs(q1, q2, axis);
+    auto autodiff_args = initializeAutoDiffTuple(q1, q2, axis);
     auto e_autodiff = quatDiffAxisInvar(get<0>(autodiff_args), get<1>(autodiff_args), get<2>(autodiff_args));
     auto e = e_autodiff.value();
     auto de = e_autodiff.derivatives().transpose().eval();
@@ -48,7 +48,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   }
 
   {
-    auto autodiff_args = initializeAutoDiffArgs(q1, q2);
+    auto autodiff_args = initializeAutoDiffTuple(q1, q2);
     auto q3_autodiff = quatProduct(get<0>(autodiff_args), get<1>(autodiff_args));
     auto q3 = autoDiffToValueMatrix(q3_autodiff);
     auto dq3 = autoDiffToGradientMatrix(q3_autodiff);
@@ -60,7 +60,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   }
 
   {
-    auto autodiff_args = initializeAutoDiffArgs(q1, u);
+    auto autodiff_args = initializeAutoDiffTuple(q1, u);
     auto w_autodiff = quatRotateVec(get<0>(autodiff_args), get<1>(autodiff_args));
     auto w = autoDiffToValueMatrix(w_autodiff);
     auto dw = autoDiffToGradientMatrix(w_autodiff);
