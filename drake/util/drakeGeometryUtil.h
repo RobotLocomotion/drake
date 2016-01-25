@@ -48,10 +48,10 @@ Eigen::Matrix<typename Derived1::Scalar, 4, 1> quatProduct(const Eigen::MatrixBa
   auto v1 = q1.template tail<3>();
   auto v2 = q2.template tail<3>();
   Matrix<typename Derived1::Scalar, 4, 1> r;
-  r(1) = w1 * w2 - v1.dot(v2);
-  r.template bottomRows<3>() = v1.cross(v2);
-  r.template bottomRows<3>() += w1 * v2;
-  r.template bottomRows<3>() += w2 * v1;
+  r(0) = w1 * w2 - v1.dot(v2);
+  r.template bottomRows<3>().noalias() = v1.cross(v2).eval();
+  r.template bottomRows<3>().noalias() += v2 * w1;
+  r.template bottomRows<3>().noalias() += v1 * w2;
 
   return r;
 }
