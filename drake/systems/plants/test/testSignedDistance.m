@@ -1,5 +1,7 @@
 function testSignedDistance
 
+checkDependency('bullet');
+
 visualize = 0;
 options.floating = true;
 options.terrain = RigidBodyFlatTerrain();
