@@ -1,8 +1,8 @@
 /* 
  * A simple PD control block for regulating a body pose given a desired position, velocity, and acceleration.   
  */
-#include "controlUtil.h"
-#include "drakeMexUtil.h"
+#include "drake/systems/controllers/controlUtil.h"
+#include "drake/util/drakeMexUtil.h"
 
  using namespace Eigen;
 

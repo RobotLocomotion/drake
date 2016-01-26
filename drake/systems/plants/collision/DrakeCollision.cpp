@@ -1,7 +1,7 @@
 
 #include <iostream>
 
-#include "DrakeCollision.h"
+#include "drake/systems/plants/collision/DrakeCollision.h"
 
 #ifdef BULLET_COLLISION
 #include "BulletModel.h"

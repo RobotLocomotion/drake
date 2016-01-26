@@ -1,11 +1,3 @@
-include_directories ( .. )
-include_directories (../constraint)
-include_directories (../../controllers)
-include_directories (${PROJECT_SOURCE_DIR}/systems/plants)
-include_directories (${PROJECT_SOURCE_DIR}/systems/plants/joints)
-include_directories (${PROJECT_SOURCE_DIR}/systems/trajectories)
-include_directories (${PROJECT_SOURCE_DIR}/util)
-
 macro(add_constraint_mex)
   add_mex(${ARGV} ${ARGV}.cpp)
   target_link_libraries(${ARGV} drakeRBM drakeMexUtil drakeRigidBodyConstraint drakeConstructRigidBodyConstraint)
@@ -17,7 +9,7 @@ if (NOT MSVC)
   set_target_properties(drakeRigidBodyConstraint PROPERTIES COMPILE_FLAGS -fPIC )
 endif()
 pods_install_libraries(drakeRigidBodyConstraint)
-pods_install_headers(RigidBodyConstraint.h DESTINATION drake)
+drake_install_headers(RigidBodyConstraint.h)
 
 
 if (MATLAB_FOUND)

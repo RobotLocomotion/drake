@@ -18,15 +18,11 @@
  */
 
 // Mex stuff
-// BLAS
-#if !defined(_WIN32)
-#define dgemm dgemm_
-#endif
 #include <mex.h>
 #include <blas.h>
 #include <math.h>
 #include <matrix.h>
-#include <drakeMexUtil.h>
+#include "drake/util/drakeMexUtil.h"
 #include <memory>
 #include <algorithm>
 
@@ -136,7 +132,7 @@ double containmentConstraint(snopt::doublereal x_shift[], double *containment_gr
     long int ione = 1;
     mxArray *S0xrel = mxCreateDoubleMatrix(dim,1,mxREAL);
     double *dS0xrel = mxGetPrSafe(S0xrel);
-    char *chn = "N";
+    char chn[] = "N";
     dgemm(chn, chn, &dim, &ione, &dim, &one, S0, &dim, dxrel, &dim, &zero, dS0xrel, &dim);
     
     // Use this to compute gradient: First 3 elements of 2*S0*xrel
@@ -149,7 +145,7 @@ double containmentConstraint(snopt::doublereal x_shift[], double *containment_gr
     // Now do xrel'*S0xrel
     mxArray *val = mxCreateDoubleScalar(mxREAL);
     double *dval = mxGetPrSafe(val);
-    char *chnT = "T"; // since we want xrel transpose
+    char chnT[] = "T"; // since we want xrel transpose
     dgemm(chnT, chn, &ione, &ione, &dim, &one, dxrel, &dim, dS0xrel, &dim, &zero, dval, &ione);
     
     // Return dval
@@ -292,7 +288,7 @@ bool penetrationCost(snopt::doublereal x[], double *min_dist, double *normal_vec
                 double one = 1.0, zero = 0.0; // Seriously?
                 long int ione = 1;
                 long int dim = 3;
-                char *chn = "N";
+                char chn[] = "N";
                 dgemm(chn, chn, &ione, &dim, &dim, &one, mxGetPrSafe(normal_vec), &ione, mxGetPrSafe(cSk), &dim, &zero, normal_vec_transformed, &ione);
                 
             }

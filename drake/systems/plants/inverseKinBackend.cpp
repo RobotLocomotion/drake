@@ -18,10 +18,10 @@ namespace snopt {
 #undef max
 #undef min
 
-#include "RigidBodyIK.h"
-#include "RigidBodyTree.h"
+#include "drake/systems/plants/RigidBodyIK.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include "constraint/RigidBodyConstraint.h"
-#include "IKoptions.h"
+#include "drake/systems/plants/IKoptions.h"
 #include "inverseKinBackend.h"
 
 #include <Eigen/LU>
@@ -58,6 +58,7 @@ static snopt::integer* nc_array;
 static snopt::integer* nG_array;
 static snopt::integer* nA_array;
 static int nq;
+static int nv;
 static double *t = nullptr;
 static double *t_samples = nullptr;
 static double* ti = nullptr;
@@ -435,6 +436,7 @@ void inverseKinBackend(RigidBodyTree * model_input, const int mode, const int nT
   nT = nT_input;
   t = const_cast<double*>(t_input);
   nq = model->num_positions;
+  nv = model->num_velocities;
   q_nom = q_nom_input;
   if(q_seed.rows() != nq || q_seed.cols() != nT || q_nom.rows() != nq || q_nom.cols() != nT)
   {
@@ -552,8 +554,8 @@ void inverseKinBackend(RigidBodyTree * model_input, const int mode, const int nT
     INFO_snopt[0] = 0;
   }
   q_sol.resize(nq,nT);
-  qdot_sol.resize(nq,nT);
-  qddot_sol.resize(nq,nT);
+  qdot_sol.resize(nv,nT);
+  qddot_sol.resize(nv,nT);
   VectorXi* iCfun_array = new VectorXi[nT];
   VectorXi* jCvar_array = new VectorXi[nT];
   nc_array = new snopt::integer[nT];

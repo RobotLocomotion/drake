@@ -1,10 +1,10 @@
 #ifndef DRAKE_RIGIDBODYTREEMEXCONVERSIONS_H
 #define DRAKE_RIGIDBODYTREEMEXCONVERSIONS_H
 
-#include "RigidBodyTree.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include "KinematicsCache.h"
 #include "KinematicPath.h"
-#include "mexify.h"
+#include "drake/util/mexify.h"
 
 template <typename T>
 struct DrakeMexPointerTypeId {

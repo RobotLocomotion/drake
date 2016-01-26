@@ -1,7 +1,7 @@
 #include "mex.h"
-#include "RigidBodyConstraint.h"
-#include "drakeMexUtil.h"
-#include "RigidBodyTree.h"
+#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/util/drakeMexUtil.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include <cstring>
 /* 
  * [type, num_constraint,constraint_val,iAfun,jAvar,A,constraint_name,lower_bound,upper_bound] = testSingleTimeLinearPostureConstraintmex(stlpc_ptr,q,t)

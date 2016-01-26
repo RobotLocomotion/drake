@@ -1,7 +1,6 @@
-
-include_directories(${PROJECT_SOURCE_DIR}/core)
-include_directories(${PROJECT_SOURCE_DIR}/solvers)
-include_directories(${PROJECT_SOURCE_DIR}/util)
-
 add_executable(testOptimizationProblem testOptimizationProblem.cpp)
-add_test(NAME testOptimizationProblem COMMAND testOptimizationProblem)
+target_link_libraries(testOptimizationProblem drakeOptimization)
+
+if (snopt_c_FOUND) # todo: run tests, but catch "snopt missing" errors?
+  add_test(NAME testOptimizationProblem COMMAND testOptimizationProblem)
+endif (snopt_c_FOUND)

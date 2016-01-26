@@ -1,8 +1,8 @@
 #include <map>
 #include <fstream>
 #include "yaml-cpp/yaml.h"
-#include "QPCommon.h"
-#include "RigidBodyTree.h"
+#include "drake/systems/controllers/QPCommon.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 
 // Convert simple glob expressions (using * as wildcard) to regex by:
 //    1. Prefixing each regex special chars EXCEPT * with \
@@ -19,4 +19,4 @@ YAML::Node get(const YAML::Node& parent, const std::string& key);
 
 QPControllerParams loadSingleParamSet(const YAML::Node &config, const RigidBodyTree &robot);
 std::map<std::string, QPControllerParams> loadAllParamSets(YAML::Node config, const RigidBodyTree &robot);
-std::map<std::string, QPControllerParams> loadAllParamSets(YAML::Node config, const RigidBodyTree &robot, std::ofstream debug_output_file);
+std::map<std::string, QPControllerParams> loadAllParamSets(YAML::Node config, const RigidBodyTree &robot, std::ofstream& debug_output_file);

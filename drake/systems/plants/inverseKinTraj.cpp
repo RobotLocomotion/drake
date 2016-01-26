@@ -1,5 +1,5 @@
-#include "RigidBodyIK.h"
-#include "RigidBodyTree.h"
+#include "drake/systems/plants/RigidBodyIK.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 #include "inverseKinBackend.h"
 
 using namespace std;

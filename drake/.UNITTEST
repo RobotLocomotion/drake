@@ -3,3 +3,4 @@ systems         TEST_DIRS_ONLY
 util            TEST_DIRS_ONLY
 bindings/matlab TEST_DIRS_ONLY
 examples
+doc

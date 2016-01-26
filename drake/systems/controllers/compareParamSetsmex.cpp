@@ -1,8 +1,8 @@
 #include "QPCommon.h"
 #include <Eigen/StdVector>
-#include "drakeMexUtil.h"
-#include "controlMexUtil.h"
-#include "yamlUtil.h"
+#include "drake/util/drakeMexUtil.h"
+#include "drake/systems/controllers/controlMexUtil.h"
+#include "drake/util/yaml/yamlUtil.h"
 #include <regex>
 #include <fstream>
 
@@ -298,8 +298,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   narg++;
 
   std::string control_config_filename = mxGetStdString(prhs[narg]);
+  std::string replacement = ".out.yaml";
   YAML::Node control_config = LoadFile(control_config_filename);
-  auto param_sets_yaml = loadAllParamSets(control_config["qp_controller_params"], *robot_ptr, ofstream(regex_replace(control_config_filename, std::regex("\\.yaml"), ".out.yaml"))); 
+  std::ofstream debug_file(regex_replace(control_config_filename, std::regex("\\.yaml"), replacement));
+  auto param_sets_yaml = loadAllParamSets(control_config["qp_controller_params"], *robot_ptr, debug_file); 
   narg++;
 
   for (auto param_set_it = param_sets_matlab.begin(); param_set_it != param_sets_matlab.end(); ++param_set_it) {

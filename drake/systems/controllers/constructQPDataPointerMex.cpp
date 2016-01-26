@@ -1,13 +1,13 @@
 #include "QPCommon.h"
 #include <Eigen/StdVector>
-#include "drakeMexUtil.h"
-#include "controlMexUtil.h"
-#include "yamlUtil.h"
+#include "drake/util/drakeMexUtil.h"
+#include "drake/systems/controllers/controlMexUtil.h"
+#include "drake/util/yaml/yamlUtil.h"
 #include "Path.h"
 
 // #include <limits>
 // #include <cmath>
-// #include "drakeUtil.h"
+// #include "drake/util/drakeUtil.h"
 
 using namespace std;
 using namespace Eigen;

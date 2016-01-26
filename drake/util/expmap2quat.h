@@ -1,5 +1,5 @@
 #include <Eigen/Dense>
-#include <drakeGeometryUtil_export.h>
+#include "drake/drakeGeometryUtil_export.h"
 
 DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector4d expmap2quatNonDegenerate(const Eigen::Ref<const Eigen::Vector3d>& v, double theta);
 DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector4d expmap2quatDegenerate(const Eigen::Ref<const Eigen::Vector3d>& v, double theta);

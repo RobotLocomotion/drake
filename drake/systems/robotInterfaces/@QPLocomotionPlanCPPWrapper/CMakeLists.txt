@@ -1,5 +1,3 @@
-include_directories(..)
-
 if (MATLAB_FOUND)
   if (LCM_FOUND)
     macro(add_qplocomotionplan_mex)

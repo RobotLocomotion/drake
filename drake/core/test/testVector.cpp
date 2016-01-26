@@ -1,7 +1,6 @@
 
-#include "Pendulum.h"  // to get some types
-#include <iostream>
-#include "testUtil.h"
+#include "drake/examples/Pendulum/Pendulum.h"  // to get some types
+#include "drake/util/testUtil.h"
 
 using namespace std;
 using namespace Drake;
@@ -85,23 +84,23 @@ int main(int argc, char* argv[])
     auto out = p->dynamicsImplementation(x,u);
   }
 */
-    if (!InputOutputRelation::isa(InputOutputRelation::LINEAR,InputOutputRelation::POLYNOMIAL))
+    if (!InputOutputRelation::isA(InputOutputRelation::Form::LINEAR,InputOutputRelation::Form::POLYNOMIAL))
       throw runtime_error("linear is polynomial");
 
-    if (!InputOutputRelation::isa(InputOutputRelation::ZERO,InputOutputRelation::ARBITRARY))
+    if (!InputOutputRelation::isA(InputOutputRelation::Form::ZERO,InputOutputRelation::Form::ARBITRARY))
       throw runtime_error("linear is arbitrary");
 
-    if (InputOutputRelation::leastCommonAncestor({InputOutputRelation::AFFINE,InputOutputRelation::LINEAR,InputOutputRelation::POLYNOMIAL})!=InputOutputRelation::POLYNOMIAL)
+    if (InputOutputRelation::leastCommonAncestor({InputOutputRelation::Form::AFFINE,InputOutputRelation::Form::LINEAR,InputOutputRelation::Form::POLYNOMIAL})!=InputOutputRelation::Form::POLYNOMIAL)
       throw runtime_error("lca should be poly");
 
     {
-      InputOutputRelation g(InputOutputRelation::LINEAR);
-      InputOutputRelation f(InputOutputRelation::POLYNOMIAL);
-      if (InputOutputRelation::composeWith(g,f).form != InputOutputRelation::POLYNOMIAL)
+      InputOutputRelation g(InputOutputRelation::Form::LINEAR);
+      InputOutputRelation f(InputOutputRelation::Form::POLYNOMIAL);
+      if (InputOutputRelation::composeWith(g,f).form != InputOutputRelation::Form::POLYNOMIAL)
         throw runtime_error("should be poly");
-      if (InputOutputRelation::composeWith(f,g).form != InputOutputRelation::POLYNOMIAL)
+      if (InputOutputRelation::composeWith(f,g).form != InputOutputRelation::Form::POLYNOMIAL)
         throw runtime_error("should be poly");
-      if (InputOutputRelation::combine(g,f).form != InputOutputRelation::POLYNOMIAL)
+      if (InputOutputRelation::combine(g,f).form != InputOutputRelation::Form::POLYNOMIAL)
         throw runtime_error("should be poly");
     }
 

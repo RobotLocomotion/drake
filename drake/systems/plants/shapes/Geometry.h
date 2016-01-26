@@ -6,7 +6,7 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-#include <drakeShapes_export.h>
+#include "drake/drakeShapes_export.h"
 
 namespace DrakeShapes
 {
@@ -19,6 +19,8 @@ namespace DrakeShapes
     MESH_POINTS = 5,
     CAPSULE     = 6
   };
+
+  const double MIN_RADIUS = 1e-7;
 
   class DRAKESHAPES_EXPORT Geometry {
     public:

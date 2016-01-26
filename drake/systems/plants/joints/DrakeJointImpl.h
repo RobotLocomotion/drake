@@ -1,7 +1,7 @@
 #ifndef DRAKE_DRAKEJOINTIMPL_H
 #define DRAKE_DRAKEJOINTIMPL_H
 
-#include "DrakeJoint.h"
+#include "drake/systems/plants/joints/DrakeJoint.h"
 
 #define POSITION_AND_VELOCITY_DEPENDENT_METHODS_IMPL(Scalar) \
   virtual Eigen::Transform<Scalar, 3, Eigen::Isometry> jointTransform(const Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> > &q) const override { return derived.jointTransform(q); }; \

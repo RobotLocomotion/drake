@@ -8,7 +8,7 @@
 #include <vector>
 #include <random>
 #include <stdexcept>
-#include <drakePolynomial_export.h>
+#include "drake/drakePolynomial_export.h"
 
 // represents a scalar multi-variate polynomial
 // modeled after the msspoly in spotless 

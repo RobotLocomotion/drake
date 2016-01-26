@@ -13,7 +13,7 @@
 #include "PointPair.h"
 #include "Element.h"
 #include "Model.h"
-#include "drakeCollision_export.h"
+#include "drake/drakeCollision_export.h"
 
 static const int MAX_NUM_COLLISION_FILTER_GROUPS = 128;
 

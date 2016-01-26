@@ -1,5 +1,5 @@
-#include "RigidBodyTree.h"
-#include "testUtil.h"
+#include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/util/testUtil.h"
 #include <cmath>
 
 using namespace std;

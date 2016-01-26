@@ -9,7 +9,7 @@
 #include <Eigen/StdVector>
 
 #include "../shapes/DrakeShapes.h"
-#include "drakeCollision_export.h"
+#include "drake/drakeCollision_export.h"
 
 namespace DrakeCollision
 {
@@ -17,10 +17,10 @@ namespace DrakeCollision
 
   class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
     public:
-      Element(const Eigen::Matrix4d& T_element_to_local = Eigen::Matrix4d::Identity());
+      Element(const Eigen::Isometry3d& T_element_to_local = Eigen::Isometry3d::Identity());
 
       Element(const DrakeShapes::Geometry& geometry, 
-              const Eigen::Matrix4d& T_element_to_local = Eigen::Matrix4d::Identity());
+              const Eigen::Isometry3d& T_element_to_local = Eigen::Isometry3d::Identity());
 
       virtual ~Element(){};
 

@@ -4,7 +4,7 @@
 #include <Eigen/Core>
 #include <vector>
 #include <random>
-#include <drakeTrajectories_export.h>
+#include "drake/drakeTrajectories_export.h"
 
 class DRAKETRAJECTORIES_EXPORT PiecewiseFunction
 {

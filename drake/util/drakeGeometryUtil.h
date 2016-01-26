@@ -5,10 +5,10 @@
 #include <cstring>
 #include <cmath>
 #include <random>
-#include "drakeGradientUtil.h"
-#include "GradientVar.h"
+#include "drake/util/drakeGradientUtil.h"
+#include "drake/util/GradientVar.h"
 #include "expmap2quat.h"
-#include <drakeGeometryUtil_export.h>
+#include "drake/drakeGeometryUtil_export.h"
 
 const int TWIST_SIZE = 6;
 const int QUAT_SIZE = 4;

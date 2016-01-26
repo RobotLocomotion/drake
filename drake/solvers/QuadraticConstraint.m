@@ -22,6 +22,7 @@ classdef QuadraticConstraint < Constraint
 
   methods (Access = protected)
     function [c,dc,ddc] = constraintEval(obj,x)
+      x = x(:);
       c = .5*x'*obj.Q*x + obj.b'*x;
       if nargout > 1
         dc = x'*obj.Q + obj.b';

@@ -1,6 +1,6 @@
 #include "controlMexUtil.h"
-#include "drakeMexUtil.h"
-#include "lcmUtil.h"
+#include "drake/util/drakeMexUtil.h"
+#include "drake/util/lcmUtil.h"
 
 using namespace std;
 using namespace Eigen;
