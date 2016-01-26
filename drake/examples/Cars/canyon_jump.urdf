@@ -1,0 +1,113 @@
+<!--
+  A simple world URDF composed of two cliffs with ramps on the ends.
+-->
+<robot name="canyon_jump">
+  <material name="terrain">
+    <color rgba="0.93333333333 0.79607843137 0.67843137254 1"/>
+  </material>
+
+  <link name="world_">
+  </link>
+
+  <link name="floor">
+    <visual>
+      <material name="terrain"/>
+      <geometry>
+        <origin xyz="0 0 -5"/>
+        <box size="1000 1000 10"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <origin xyz="0 0 -5"/>
+        <box size="1000 1000 10"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="cliff_1">
+    <visual>
+      <material name="terrain"/>
+      <geometry>
+        <box size="80 1000 50"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="80 1000 50"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="cliff_2">
+    <visual>
+      <material name="terrain"/>
+      <geometry>
+        <box size="80 1000 50"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="80 1000 50"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="ramp_1">
+    <visual>
+      <material name="terrain"/>
+      <origin rpy="0 -0.244978663 0"/>
+      <geometry>
+        <box size="12 1000 3"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 -0.244978663 0"/>
+      <geometry>
+        <box size="12 1000 3"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="ramp_2">
+    <visual>
+      <material name="terrain"/>
+      <origin rpy="0 0.244978663 0"/>
+      <geometry>
+        <box size="12 1000 3"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0.244978663 0"/>
+      <geometry>
+        <box size="12 1000 3"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="world_to_floor" type="fixed">
+    <parent link="world_"/>
+    <child link="floor"/>
+    <origin xyz="0 0 -50"/>
+  </joint>
+  <joint name="floor_to_cliff_1" type="fixed">
+    <parent link="floor"/>
+    <child link="cliff_1"/>
+    <origin xyz="35 0 25"/>
+  </joint>
+  <joint name="floor_to_cliff_2" type="fixed">
+    <parent link="floor"/>
+    <child link="cliff_2"/>
+    <origin xyz="140 0 25"/>
+  </joint>
+  <joint name="cliff_1_to_ramp_1" type="fixed">
+    <parent link="cliff_1"/>
+    <child link="ramp_1"/>
+    <origin xyz="35 0 25"/>
+  </joint>
+  <joint name="cliff_2_to_ramp_2" type="fixed">
+    <parent link="cliff_2"/>
+    <child link="ramp_2"/>
+    <origin xyz="-35 0 25"/>
+  </joint>
+</robot>
