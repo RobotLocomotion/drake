@@ -4,6 +4,7 @@
 YAML::Node applyDefaults(const YAML::Node& node, const YAML::Node& default_node) {
   YAML::Node result = YAML::Clone(node);
   if (!default_node.IsMap()) {
+    std::cerr << default_node << std::endl;
     throw std::runtime_error("map node expected");
   }
   for (auto field = default_node.begin(); field != default_node.end(); ++field) {
@@ -70,7 +71,14 @@ YAML::Node get(const YAML::Node& parent, const std::string& key) {
 
 void loadBodyMotionParams(QPControllerParams &params, const YAML::Node &config, const RigidBodyTree &robot) {
   for (auto body_it = robot.bodies.begin(); body_it != robot.bodies.end(); ++body_it) {
-    params.body_motion[body_it - robot.bodies.begin()] = get(config, (*body_it)->linkname).as<BodyMotionParams>();
+    try {
+      params.body_motion[body_it - robot.bodies.begin()] = get(config, (*body_it)->linkname).as<BodyMotionParams>();
+    } catch (...) {
+      std::cerr << "error converting node: " << get(config, (*body_it)->linkname) << " to BodyMotionParams" << std::endl;
+      std::cerr << "config: " << config << std::endl;
+      std::cerr << "linkname: " << (*body_it)->linkname << std::endl;
+      throw;
+    }
   }
 
   // for (auto config_it = config.begin(); config_it != config.end(); ++config_it) {
@@ -122,7 +130,14 @@ void loadSingleJointParams(QPControllerParams &params, Eigen::DenseIndex positio
 void loadJointParams(QPControllerParams &params, const YAML::Node &config, const RigidBodyTree &robot) {
   std::map<std::string, int> position_name_to_index = robot.computePositionNameToIndexMap();
   for (auto position_it = position_name_to_index.begin(); position_it != position_name_to_index.end(); ++position_it) {
-    loadSingleJointParams(params, position_it->second, get(config, position_it->first), robot);
+    try {
+      loadSingleJointParams(params, position_it->second, get(config, position_it->first), robot);
+    } catch (...) {
+      std::cerr << "error loading joint params from node: " << get(config, position_it->first) << std::endl;
+      std::cerr << "config: " << config << std::endl;
+      std::cerr << "position: " << position_it->first << std::endl;
+      throw;
+    }
   }
 
   // for (auto config_it = config.begin(); config_it != config.end(); ++config_it) {
@@ -160,8 +175,14 @@ void loadSingleInputParams(QPControllerParams &params, Eigen::DenseIndex positio
 
 void loadInputParams(QPControllerParams& params, const YAML::Node &config, const RigidBodyTree& robot) {
   for (auto actuator_it = robot.actuators.begin(); actuator_it != robot.actuators.end(); ++actuator_it) {
-    std::cout << "loading input params: " << actuator_it->name << std::endl;
-    loadSingleInputParams(params, actuator_it - robot.actuators.begin(), get(config, actuator_it->name), robot);
+    try {
+      loadSingleInputParams(params, actuator_it - robot.actuators.begin(), get(config, actuator_it->name), robot);
+    } catch (...) {
+      std::cerr << "error loading input params from node: " << get(config, actuator_it->name) << std::endl;
+      std::cerr << "config: " << config << std::endl;
+      std::cerr << "actuator: " << actuator_it->name << std::endl;
+      throw;
+    }
   }
 
   // for (auto config_it = config.begin(); config_it != config.end(); ++config_it) {

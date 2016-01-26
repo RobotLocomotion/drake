@@ -4,6 +4,7 @@
 #include "drake/systems/controllers/controlMexUtil.h"
 #include "drake/util/yaml/yamlUtil.h"
 #include "Path.h"
+#include <regex>
 
 // #include <limits>
 // #include <cmath>
@@ -94,7 +95,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   // kinematic tree metadata & param sets
   std::string control_config_filename = mxGetStdString(prhs[narg]);
   YAML::Node control_config = LoadFile(control_config_filename);
-  pdata->param_sets = loadAllParamSets(control_config["qp_controller_params"], *(pdata->r)); 
+  std::string replacement = ".out.yaml";
+  std::regex pattern("\\.yaml");
+  std::string debug_filename = regex_replace(control_config_filename, pattern, replacement);
+  std::ofstream debug_file(debug_filename);
+  pdata->param_sets = loadAllParamSets(control_config["qp_controller_params"], *(pdata->r), debug_file); 
   pdata->rpc = parseKinematicTreeMetadata(control_config["kinematic_tree_metadata"], *(pdata->r));
   narg++;
 
