@@ -1,8 +1,8 @@
 kinematic_tree_metadata:
   body_names:
     feet:
-      r: &R_FOOT_NAME "rightFoot"
-      l: &L_FOOT_NAME "leftFoot"
+      r: &R_FOOT_NAME rightFoot
+      l: &L_FOOT_NAME leftFoot
     pelvis: &PELVIS_NAME pelvis
     hands:
       r: &R_HAND_NAME rightPalm
@@ -21,16 +21,16 @@ kinematic_tree_metadata:
     arms:
       r: [rightShoulderPitch, rightShoulderRoll, rightShoulderYaw, rightElbowPitch, rightForearmYaw, rightWristRoll, rightWristPitch]
       l: [leftShoulderPitch, leftShoulderRoll, leftShoulderYaw, leftElbowPitch, leftForearmYaw, leftWristRoll, leftWristPitch]
-    
+
     neck: [lowerNeckPitch]
     back_bkz: torsoYaw
     back_bky: torsoPitch
 
 
 qp_controller_params:
-  =:
+  DEFAULT:
     body_specific:
-      =:
+      DEFAULT:
         Kp: {x: 12, y: 12, z: 12, wx: 12, wy: 12, wz: 12}
         damping_ratio: 0.7
         accel_bounds:
@@ -46,13 +46,13 @@ qp_controller_params:
       *L_FOOT_NAME :
         weight: 0.01
     position_specific:
-      =:
+      DEFAULT:
         Kp: 150
         damping_ratio: 0.6
         w_qdd: 0.001
         integrator:
-          gains: 0
-          clamps: 0
+          gain: 0
+          clamp: 0
         qdd_bounds:
           min: -100
           max: 100
@@ -91,7 +91,7 @@ qp_controller_params:
         w_qdd: 0.1
         Kp: 50
     input_specific:
-      =: 
+      DEFAULT:
         hardware:
           joint_is_force_controlled: true
           joint_is_position_controlled: false
@@ -107,7 +107,7 @@ qp_controller_params:
       zero_ankles_on_contact: false
       eta: 0.001
       delta_max: 10
-    integrator: 
+    integrator:
       eta: 0.0
     W_kdot: 0
     Kp_ang: 0
@@ -123,7 +123,7 @@ qp_controller_params:
       l_com: 6.324555320336759 # 2 * sqrt(l_zmp)
 
   base: # automatically inherits from the default =
-  standing: 
+  standing:
   manip:
     body_specific:
       *PELVIS_NAME :
@@ -132,7 +132,7 @@ qp_controller_params:
         damping_ratio: 0.6
       *R_FOOT_NAME :
         weight: 0.01
-      *L_FOOT_NAME : 
+      *L_FOOT_NAME :
         weight: 0.01
       *L_HAND_NAME :
         weight: 0.001
@@ -141,7 +141,7 @@ qp_controller_params:
 
   walking:
     body_specific:
-      =:
+      DEFAULT:
         weight: 0.001
       *PELVIS_NAME :
         Kp: {x: 0, y: 0, z: 150, wx: 200, wy: 200, wz: 200}
@@ -156,7 +156,7 @@ qp_controller_params:
         damping_ratio: 0.5
         weight: 0.001
     position_specific:
-      =: 
+      DEFAULT:
         w_qdd: 0
         damping_ratio: 0.5
       rightHipYaw: {w_qdd: 1e-6, damping_ratio: 0.5}
@@ -187,7 +187,7 @@ qp_controller_params:
       leftWristRoll: {w_qdd: 1e-4, damping_ratio: 0.5}
       leftWristPitch: {w_qdd: 1e-4, damping_ratio: 0.5}
 
-      torsoRoll: 
+      torsoRoll:
         w_qdd: 0.1
         Kp: 50
         damping_ratio: 0.5
@@ -204,7 +204,7 @@ qp_controller_params:
 
   recovery:
     body_specific:
-      =:
+      DEFAULT:
         weight: 0.001
       *PELVIS_NAME :
         Kp: {x: 0, y: 0, z: 150, wx: 200, wy: 200, wz: 200}
@@ -219,7 +219,7 @@ qp_controller_params:
         damping_ratio: 0.5
         weight: 0.001
     position_specific:
-      =: 
+      DEFAULT:
         w_qdd: 0
         damping_ratio: 0.5
       rightHipYaw: {w_qdd: 1e-6, damping_ratio: 0.5}
@@ -250,7 +250,7 @@ qp_controller_params:
       leftWristRoll: {w_qdd: 1e-4, damping_ratio: 0.5}
       leftWristPitch: {w_qdd: 1e-4, damping_ratio: 0.5}
 
-      torsoRoll: 
+      torsoRoll:
         w_qdd: 0.1
         Kp: 50
         damping_ratio: 0.5
