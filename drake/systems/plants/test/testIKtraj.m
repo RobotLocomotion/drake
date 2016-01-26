@@ -1,4 +1,5 @@
 function testIKtraj()
+% TIMEOUT 1200
 rng(0,'twister');
 options.floating = true;
 options.dt = 0.001;
