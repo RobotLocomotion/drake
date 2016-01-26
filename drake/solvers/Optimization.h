@@ -431,7 +431,7 @@ namespace Drake {
     // uses RTTI to crawl up the complexity hiearchy as new decision variables and constraints are added to the program
     // dynamic allocation is unavoidable when changing the type of our program
 
-	  //forward declare classes
+    //forward declare classes
     struct MathematicalProgram;
     struct LeastSquares;
 
