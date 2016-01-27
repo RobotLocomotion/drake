@@ -133,12 +133,12 @@ VectorXd velocityReference(NewQPControllerData *pdata, double t, const Ref<Vecto
   return qd_ref;
 }
 
-std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> loadAvailableSupports(std::shared_ptr<drake::lcmt_qp_controller_input> qp_input) {
+std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> loadAvailableSupports(const NewQPControllerData& pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input) {
   // Parse a qp_input LCM message to extract its available supports as a vector of SupportStateElements
   std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> available_supports;
   available_supports.resize(qp_input->num_support_data);
   for (int i=0; i < qp_input->num_support_data; i++) {
-    available_supports[i].body_idx = qp_input->support_data[i].body_id - 1;
+    available_supports[i].body_idx = pdata.body_or_frame_name_to_id.at(qp_input->support_data[i].body_name);
     for (int j=0; j < 4; j++) {
       available_supports[i].support_logic_map[j] = qp_input->support_data[i].support_logic_map[j];
       available_supports[i].support_surface[j] = qp_input->support_data[i].support_surface[j];
@@ -334,6 +334,22 @@ void checkCentroidalMomentumMatchesTotalWrench(const RigidBodyTree& r, Kinematic
   valuecheckMatrix(total_wrench_in_world, momentum_rate_of_change, 1e-6);
 }
 
+std::unordered_map<std::string, int> computeBodyOrFrameNameToIdMap(const RigidBodyTree& robot) {
+  std::cout << "computing body/frame to id map" << std::endl;
+  auto id_map = std::unordered_map<std::string, int>();
+  for (auto it = robot.bodies.begin(); it != robot.bodies.end(); ++it) {
+    std::cout << (*it)->linkname << std::endl;
+    id_map[(*it)->linkname] = it - robot.bodies.begin();
+  }
+
+  for (auto it = robot.frames.begin(); it != robot.frames.end(); ++it) {
+    std::cout << (*it)->name << std::endl;
+    id_map[(*it)->name] = -(it - robot.frames.begin()) - 2;
+  }
+  std::cout << "returning" << std::endl;
+  return id_map;
+}
+
 int setupAndSolveQP(
 		NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, DrakeRobotState &robot_state,
 		const Ref<Matrix<bool, Dynamic, 1>> &b_contact_force, const std::map<Side, ForceTorqueMeasurement>& foot_force_torque_measurements,
@@ -379,7 +395,7 @@ int setupAndSolveQP(
   Map<Matrix<double, 4, 1>> s1dot(&qp_input->zmp_data.s1dot[0][0]);
 
   // Active supports
-  std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> available_supports = loadAvailableSupports(qp_input);
+  std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> available_supports = loadAvailableSupports(*pdata, qp_input);
   std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> active_supports = getActiveSupports(*pdata->r, robot_state.q, robot_state.qd, available_supports, b_contact_force, params->contact_threshold);
 
 
@@ -425,9 +441,12 @@ int setupAndSolveQP(
   Isometry3d body_pose_des;
 
   for (int i=0; i < qp_input->num_tracked_bodies; i++) {
-    if (qp_input->body_motion_data[i].body_id == 0)
-      throw std::runtime_error("Body motion data with body id 0\n");
-    int body_or_frame_id0 = qp_input->body_motion_data[i].body_id - 1;
+    int body_or_frame_id0 = pdata->body_or_frame_name_to_id.at(qp_input->body_motion_data[i].body_or_frame_name);
+    if (body_or_frame_id0 == -1) {
+      std::cerr << "Body motion data with CoM as desired body is not allowed" << std::endl;
+      continue;
+    }
+
     int true_body_id0 = pdata->r->parseBodyOrFrameID(body_or_frame_id0);
     double weight = params->body_motion[true_body_id0].weight;
     desired_body_accelerations[i].body_or_frame_id0 = body_or_frame_id0;
@@ -481,7 +500,7 @@ int setupAndSolveQP(
   eigen_aligned_unordered_map<RigidBody const *, Matrix<double, TWIST_SIZE, 1> > f_ext;
   for (auto it = qp_input->body_wrench_data.begin(); it != qp_input->body_wrench_data.end(); ++it) {
     const drake::lcmt_body_wrench_data& body_wrench_data = *it;
-    int body_id = body_wrench_data.body_id - 1;
+    int body_id = pdata->body_or_frame_name_to_id.at(body_wrench_data.body_name);
     auto f_ext_i = Map<const Matrix<double, TWIST_SIZE, 1> >(body_wrench_data.wrench);
     f_ext.insert({pdata->r->bodies[body_id].get(), f_ext_i});
   }

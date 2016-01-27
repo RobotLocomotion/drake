@@ -298,7 +298,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   narg++;
 
   std::string control_config_filename = mxGetStdString(prhs[narg]);
-  std::string replacement = ".out.yaml";
+  std::string replacement = "debug.out.yaml";
   YAML::Node control_config = LoadFile(control_config_filename);
   std::ofstream debug_file(regex_replace(control_config_filename, std::regex("\\.yaml"), replacement));
   auto param_sets_yaml = loadAllParamSets(control_config["qp_controller_params"], *robot_ptr, debug_file); 

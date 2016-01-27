@@ -1,65 +1,60 @@
 kinematic_tree_metadata:
   body_names:
     feet:
-      r: &R_FOOT_NAME "rightFoot"
-      l: &L_FOOT_NAME "leftFoot"
-    pelvis: &PELVIS_NAME pelvis
+      r: &R_FOOT_NAME r_foot
+      l: &L_FOOT_NAME l_foot
     hands:
-      r: &R_HAND_NAME rightPalm
-      l: &L_HAND_NAME leftPalm
+      r: &R_HAND_NAME r_hand
+      l: &L_HAND_NAME l_hand
 
   joint_group_names:
     legs:
-      r: [rightHipYaw, rightHipRoll, rightHipPitch, rightKneePitch, rightAnklePitch, rightAnkleRoll]
-      l: [leftHipYaw, leftHipRoll, leftHipPitch, leftKneePitch, leftAnklePitch, leftAnkleRoll]
+      r: [r_leg_hpz, r_leg_hpx, r_leg_hpy, r_leg_kny, r_leg_aky, r_leg_akx]
+      l: [l_leg_hpz, l_leg_hpx, l_leg_hpy, l_leg_kny, l_leg_aky, l_leg_akx]
     knees:
-      r: rightKneePitch
-      l: leftKneePitch
+      r: r_leg_kny
+      l: l_leg_kny
     ankles:
-      r: [rightAnklePitch, leftAnkleRoll]
-      l: [leftAnklePitch, rightAnkleRoll]
+      r: [r_leg_aky, r_leg_akx]
+      l: [l_leg_aky, l_leg_akx]
     arms:
-      r: [rightShoulderPitch, rightShoulderRoll, rightShoulderYaw, rightElbowPitch, rightForearmYaw, rightWristRoll, rightWristPitch]
-      l: [leftShoulderPitch, leftShoulderRoll, leftShoulderYaw, leftElbowPitch, leftForearmYaw, leftWristRoll, leftWristPitch]
+      r: [r_arm_shz, r_arm_shx, r_arm_ely, r_arm_elx, r_arm_uwy, r_arm_mwx, r_arm_lwy]
+      l: [l_arm_shz, l_arm_shx, l_arm_ely, l_arm_elx, l_arm_uwy, l_arm_mwx, l_arm_lwy]
+    neck: [neck_ay]
+    back_bkz: back_bkz
+    back_bky: back_bky
     
-    neck: [lowerNeckPitch]
-    back_bkz: torsoYaw
-    back_bky: torsoPitch
-
 joint_names:
-  - torsoYaw
-  - torsoPitch
-  - torsoRoll
-  - lowerNeckPitch
-  - leftHipYaw
-  - leftHipRoll
-  - leftHipPitch
-  - leftKneePitch
-  - leftAnklePitch
-  - leftAnkleRoll
-  - rightHipYaw
-  - rightHipRoll
-  - rightHipPitch
-  - rightKneePitch
-  - rightAnklePitch
-  - rightAnkleRoll
-  - leftShoulderPitch
-  - leftShoulderRoll
-  - leftShoulderYaw
-  - leftElbowPitch
-  - leftForearm
-  - leftWristRoll
-  - leftWristPitch
-  - rightShoulderPitch
-  - rightShoulderRoll
-  - rightShoulderYaw
-  - rightElbowPitch
-  - rightForearm
-  - rightWristRoll
-  - rightWristPitch
-
-
-
+  - back_bkz
+  - back_bky
+  - back_bkx
+  - neck_ay
+  - l_leg_hpz
+  - l_leg_hpx
+  - l_leg_hpy
+  - l_leg_kny
+  - l_leg_aky
+  - l_leg_akx
+  - r_leg_hpz
+  - r_leg_hpx
+  - r_leg_hpy
+  - r_leg_kny
+  - r_leg_aky
+  - r_leg_akx
+  - l_arm_shz
+  - l_arm_shx
+  - l_arm_ely
+  - l_arm_elx
+  - l_arm_uwy
+  - l_arm_mwx
+  - l_arm_lwy
+  - r_arm_shz
+  - r_arm_shx
+  - r_arm_ely
+  - r_arm_elx
+  - r_arm_uwy
+  - r_arm_mwx
+  - r_arm_lwy
 
 qp_controller_params:
   DEFAULT:
@@ -111,17 +106,17 @@ qp_controller_params:
         w_qdd: 0
       base_yaw:
         w_qdd: 0
-      rightKneePitch:
+      r_leg_kny:
         joint_soft_limits:
           enabled: true
           lb: 0.5
           disable_when_body_in_support: *R_FOOT_NAME
-      leftKneePitch:
+      l_leg_kny:
         joint_soft_limits:
           enabled: true
           lb: 0.5
           disable_when_body_in_support: *L_FOOT_NAME
-      torsoRoll:
+      back_bkx:
         w_qdd: 0.1
         Kp: 50
     vref_integrator:
@@ -184,40 +179,40 @@ qp_controller_params:
       DEFAULT: 
         w_qdd: 0
         damping_ratio: 0.5
-      rightHipYaw: {w_qdd: 1e-6, damping_ratio: 0.5}
-      rightHipRoll: {w_qdd: 1e-6, damping_ratio: 0.5}
-      rightHipPitch: {w_qdd: 1e-6, damping_ratio: 0.5}
-      rightKneePitch: {w_qdd: 1e-6, damping_ratio: 0.5}
-      rightAnklePitch: {w_qdd: 1e-6, damping_ratio: 0.5}
-      rightAnkleRoll: {w_qdd: 1e-6, damping_ratio: 0.5}
-      leftHipYaw: {w_qdd: 1e-6, damping_ratio: 0.5}
-      leftHipRoll: {w_qdd: 1e-6, damping_ratio: 0.5}
-      leftHipPitch: {w_qdd: 1e-6, damping_ratio: 0.5}
-      leftKneePitch: {w_qdd: 1e-6, damping_ratio: 0.5}
-      leftAnklePitch: {w_qdd: 1e-6, damping_ratio: 0.5}
-      leftAnkleRoll: {w_qdd: 1e-6, damping_ratio: 0.5}
-      # r_arm_shz: {w_qdd: 1e-4, damping_ratio: 0.5}
-      # r_arm_shx: {w_qdd: 1e-4, damping_ratio: 0.5}
-      # r_arm_ely: {w_qdd: 1e-4, damping_ratio: 0.5}
-      # r_arm_elx: {w_qdd: 1e-4, damping_ratio: 0.5}
-      # r_arm_uwy: {w_qdd: 1e-4, damping_ratio: 0.5}
-      # r_arm_mwx: {w_qdd: 1e-4, damping_ratio: 0.5}
-      # r_arm_lwy: {w_qdd: 1e-4, damping_ratio: 0.5}
-      # l_arm_shz: {w_qdd: 1e-4, damping_ratio: 0.5}
-      # l_arm_shx: {w_qdd: 1e-4, damping_ratio: 0.5}
-      # l_arm_ely: {w_qdd: 1e-4, damping_ratio: 0.5}
-      # l_arm_elx: {w_qdd: 1e-4, damping_ratio: 0.5}
-      # l_arm_uwy: {w_qdd: 1e-4, damping_ratio: 0.5}
-      # l_arm_mwx: {w_qdd: 1e-4, damping_ratio: 0.5}
-      # l_arm_lwy: {w_qdd: 1e-4, damping_ratio: 0.5}
-      torsoRoll: 
+      r_leg_hpz: {w_qdd: 1e-6, damping_ratio: 0.5}
+      r_leg_hpx: {w_qdd: 1e-6, damping_ratio: 0.5}
+      r_leg_hpy: {w_qdd: 1e-6, damping_ratio: 0.5}
+      r_leg_kny: {w_qdd: 1e-6, damping_ratio: 0.5}
+      r_leg_aky: {w_qdd: 1e-6, damping_ratio: 0.5}
+      r_leg_akx: {w_qdd: 1e-6, damping_ratio: 0.5}
+      l_leg_hpz: {w_qdd: 1e-6, damping_ratio: 0.5}
+      l_leg_hpx: {w_qdd: 1e-6, damping_ratio: 0.5}
+      l_leg_hpy: {w_qdd: 1e-6, damping_ratio: 0.5}
+      l_leg_kny: {w_qdd: 1e-6, damping_ratio: 0.5}
+      l_leg_aky: {w_qdd: 1e-6, damping_ratio: 0.5}
+      l_leg_akx: {w_qdd: 1e-6, damping_ratio: 0.5}
+      r_arm_shz: {w_qdd: 1e-4, damping_ratio: 0.5}
+      r_arm_shx: {w_qdd: 1e-4, damping_ratio: 0.5}
+      r_arm_ely: {w_qdd: 1e-4, damping_ratio: 0.5}
+      r_arm_elx: {w_qdd: 1e-4, damping_ratio: 0.5}
+      r_arm_uwy: {w_qdd: 1e-4, damping_ratio: 0.5}
+      r_arm_mwx: {w_qdd: 1e-4, damping_ratio: 0.5}
+      r_arm_lwy: {w_qdd: 1e-4, damping_ratio: 0.5}
+      l_arm_shz: {w_qdd: 1e-4, damping_ratio: 0.5}
+      l_arm_shx: {w_qdd: 1e-4, damping_ratio: 0.5}
+      l_arm_ely: {w_qdd: 1e-4, damping_ratio: 0.5}
+      l_arm_elx: {w_qdd: 1e-4, damping_ratio: 0.5}
+      l_arm_uwy: {w_qdd: 1e-4, damping_ratio: 0.5}
+      l_arm_mwx: {w_qdd: 1e-4, damping_ratio: 0.5}
+      l_arm_lwy: {w_qdd: 1e-4, damping_ratio: 0.5}
+      back_bkx: 
         w_qdd: 0.1
         Kp: 50
         damping_ratio: 0.5
-      torsoPitch:
+      back_bky:
         w_qdd: 1e-4
         damping_ratio: 0.5
-      torsoYaw:
+      back_bkz:
         w_qdd: 1e-4
         damping_ratio: 0.5
     contact_threshold: 0.001
@@ -242,18 +237,18 @@ qp_controller_params:
       DEFAULT: 
         w_qdd: 0
         damping_ratio: 0.5
-      rightHipYaw: {w_qdd: 1e-6, damping_ratio: 0.5}
-      rightHipRoll: {w_qdd: 1e-6, damping_ratio: 0.5}
-      rightHipPitch: {w_qdd: 1e-6, damping_ratio: 0.5}
-      rightKneePitch: {w_qdd: 1e-6, damping_ratio: 0.5}
-      rightAnklePitch: {w_qdd: 1e-6, damping_ratio: 0.5}
-      rightAnkleRoll: {w_qdd: 1e-6, damping_ratio: 0.5}
-      leftHipYaw: {w_qdd: 1e-6, damping_ratio: 0.5}
-      leftHipRoll: {w_qdd: 1e-6, damping_ratio: 0.5}
-      leftHipPitch: {w_qdd: 1e-6, damping_ratio: 0.5}
-      leftKneePitch: {w_qdd: 1e-6, damping_ratio: 0.5}
-      leftAnklePitch: {w_qdd: 1e-6, damping_ratio: 0.5}
-      leftAnkleRoll: {w_qdd: 1e-6, damping_ratio: 0.5}
+      r_leg_hpz: {w_qdd: 1e-6, damping_ratio: 0.5}
+      r_leg_hpx: {w_qdd: 1e-6, damping_ratio: 0.5}
+      r_leg_hpy: {w_qdd: 1e-6, damping_ratio: 0.5}
+      r_leg_kny: {w_qdd: 1e-6, damping_ratio: 0.5}
+      r_leg_aky: {w_qdd: 1e-6, damping_ratio: 0.5}
+      r_leg_akx: {w_qdd: 1e-6, damping_ratio: 0.5}
+      l_leg_hpz: {w_qdd: 1e-6, damping_ratio: 0.5}
+      l_leg_hpx: {w_qdd: 1e-6, damping_ratio: 0.5}
+      l_leg_hpy: {w_qdd: 1e-6, damping_ratio: 0.5}
+      l_leg_kny: {w_qdd: 1e-6, damping_ratio: 0.5}
+      l_leg_aky: {w_qdd: 1e-6, damping_ratio: 0.5}
+      l_leg_akx: {w_qdd: 1e-6, damping_ratio: 0.5}
       r_arm_shz: {w_qdd: 1e-4, damping_ratio: 0.5}
       r_arm_shx: {w_qdd: 1e-4, damping_ratio: 0.5}
       r_arm_ely: {w_qdd: 1e-4, damping_ratio: 0.5}
@@ -268,14 +263,14 @@ qp_controller_params:
       l_arm_uwy: {w_qdd: 1e-4, damping_ratio: 0.5}
       l_arm_mwx: {w_qdd: 1e-4, damping_ratio: 0.5}
       l_arm_lwy: {w_qdd: 1e-4, damping_ratio: 0.5}
-      torsoRoll: 
+      back_bkx: 
         w_qdd: 0.1
         Kp: 50
         damping_ratio: 0.5
-      torsoPitch:
+      back_bky:
         w_qdd: 1e-4
         damping_ratio: 0.5
-      torsoYaw:
+      back_bkz:
         w_qdd: 1e-4
         damping_ratio: 0.5
     contact_threshold: 0.001
@@ -284,95 +279,95 @@ qp_controller_params:
 ######################## position control #########################
   position_control:
     position_specific:
-      torsoRoll:
+      back_bkx:
         integrator:
           gain: 0.3
           clamp: 0.2
-      torsoPitch:
+      back_bky:
         integrator:
           gain: 0.3
           clamp: 0.2
-      torsoYaw:
+      back_bkz:
         integrator:
           gain: 0.3
           clamp: 0.2
-      # l_arm_shx:
-      #   integrator:
-      #     gain: 1.75
-      #     clamp: 0.2
-      # l_arm_shz:
-      #   integrator:
-      #     gain: 1.75
-      #     clamp: 0.2
-      # l_arm_ely:
-      #   integrator:
-      #     gain: 1.75
-      #     clamp: 0.2
-      # l_arm_elx:
-      #   integrator:
-      #     gain: 1.75
-      #     clamp: 0.2
-      # r_arm_shx:
-      #   integrator:
-      #     gain: 1.75
-      #     clamp: 0.2
-      # r_arm_shz:
-      #   integrator:
-      #     gain: 1.75
-      #     clamp: 0.2
-      # r_arm_ely:
-      #   integrator:
-      #     gain: 1.75
-      #     clamp: 0.2
-      # r_arm_elx:
-      #   integrator:
-      #     gain: 1.75
-      #     clamp: 0.2
-      leftHipRoll:
+      l_arm_shx:
+        integrator:
+          gain: 1.75
+          clamp: 0.2
+      l_arm_shz:
+        integrator:
+          gain: 1.75
+          clamp: 0.2
+      l_arm_ely:
+        integrator:
+          gain: 1.75
+          clamp: 0.2
+      l_arm_elx:
+        integrator:
+          gain: 1.75
+          clamp: 0.2
+      r_arm_shx:
+        integrator:
+          gain: 1.75
+          clamp: 0.2
+      r_arm_shz:
+        integrator:
+          gain: 1.75
+          clamp: 0.2
+      r_arm_ely:
+        integrator:
+          gain: 1.75
+          clamp: 0.2
+      r_arm_elx:
+        integrator:
+          gain: 1.75
+          clamp: 0.2
+      l_leg_hpx:
         integrator:
           gain: 0.3
           clamp: 0.1
-      leftHipPitch:
+      l_leg_hpy:
         integrator:
           gain: 0.3
           clamp: 0.1
-      leftHipYaw:
+      l_leg_hpz:
         integrator:
           gain: 0.3
           clamp: 0.1
-      leftKneePitch:
+      l_leg_kny:
         integrator:
           gain: 0.3
           clamp: 0.1
-      leftAnkleRoll:
+      l_leg_akx:
         integrator:
           gain: 0.3
           clamp: 0.1
-      leftAnklePitch:
+      l_leg_aky:
         integrator:
           gain: 0.3
           clamp: 0.1
-      rightHipRoll:
+      r_leg_hpx:
         integrator:
           gain: 0.3
           clamp: 0.1
-      rightHipPitch:
+      r_leg_hpy:
         integrator:
           gain: 0.3
           clamp: 0.1
-      rightHipYaw:
+      r_leg_hpz:
         integrator:
           gain: 0.3
           clamp: 0.1
-      rightKneePitch:
+      r_leg_kny:
         integrator:
           gain: 0.3
           clamp: 0.1
-      rightAnkleRoll:
+      r_leg_akx:
         integrator:
           gain: 0.3
           clamp: 0.1
-      rightAnklePitch:
+      r_leg_aky:
         integrator:
           gain: 0.3
           clamp: 0.1
@@ -405,7 +400,7 @@ qp_controller_params:
       base_yaw:
         Kp: 0
         w_qdd: 1
-      torsoRoll:
+      back_bkx:
         Kp: 170
         w_qdd: 1
     body_specific:
