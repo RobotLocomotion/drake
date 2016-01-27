@@ -43,15 +43,21 @@ Eigen::Matrix<typename Derived1::Scalar, 4, 1> quatProduct(const Eigen::MatrixBa
   static_assert(Derived1::SizeAtCompileTime == 4, "Wrong size.");
   static_assert(Derived2::SizeAtCompileTime == 4, "Wrong size.");
 
-  Scalar w1 = q1(0);
-  Scalar w2 = q2(0);
-  auto v1 = q1.template tail<3>();
-  auto v2 = q2.template tail<3>();
-  Matrix<typename Derived1::Scalar, 4, 1> r;
-  r(0) = w1 * w2 - v1.dot(v2);
-  r.template bottomRows<3>().noalias() = v1.cross(v2).eval();
-  r.template bottomRows<3>().noalias() += v2 * w1;
-  r.template bottomRows<3>().noalias() += v1 * w2;
+  //Scalar w1 = q1(0);
+  //Scalar w2 = q2(0);
+  //auto v1 = q1.template tail<3>();
+  //auto v2 = q2.template tail<3>();
+  //Matrix<typename Derived1::Scalar, 4, 1> r;
+  //r(0) = w1 * w2 - v1.dot(v2);
+  //r.template bottomRows<3>().noalias() = v1.cross(v2);
+  //r.template bottomRows<3>().noalias() += (v2 * w1).eval();
+  //r.template bottomRows<3>().noalias() += (v1 * w2).eval();
+
+  Eigen::Quaternion<typename Derived1::Scalar> q1_eigen(q1(0), q1(1), q1(2), q1(3));
+  Eigen::Quaternion<typename Derived2::Scalar> q2_eigen(q2(0), q2(1), q2(2), q2(3));
+  auto ret_eigen = q1_eigen * q2_eigen;
+  Eigen::Matrix<typename Derived1::Scalar, 4, 1> r;
+  r << ret_eigen.w(), ret_eigen.x(), ret_eigen.y(), ret_eigen.z();
 
   return r;
 }
