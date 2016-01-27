@@ -113,7 +113,7 @@ set(director_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/director/distro/pods/dra
 set(director_IS_PUBLIC TRUE)
 set(drake_ADDITIONAL_BUILD_ARGS CMAKE_ARGS -DWITH_PYTHON_3=${WITH_PYTHON_3})
 set(eigen_GIT_REPOSITORY https://github.com/RobotLocomotion/eigen-pod.git)
-set(eigen_GIT_TAG 20a633e8f0a285edf9dcc5a06cc9e80774920a7f)
+set(eigen_GIT_TAG 65b9b2433f7d4dd8f9bb5c1327796080b8cea299)
 set(eigen_IS_CMAKE_POD TRUE)
 set(eigen_IS_PUBLIC TRUE)
 set(gtk_GIT_REPOSITORY https://github.com/RobotLocomotion/gtk-pod.git)
