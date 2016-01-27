@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
   for (int i=2; i<argc; i++)
     tree->addRobotFromURDF(argv[i],DrakeJoint::FIXED);  // add environment
 
-  if (argc < 2)
+  if (argc < 3)
   { // add flat terrain
     double box_width = 1000;
     double box_depth = 10;
