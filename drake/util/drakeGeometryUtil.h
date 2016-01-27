@@ -1,6 +1,7 @@
 #ifndef __DRAKE_GEOMETRY_UTIL_H__
 #define __DRAKE_GEOMETRY_UTIL_H__
 
+#define _USE_MATH_DEFINES
 #include <Eigen/Dense>
 #include <cstring>
 #include <cmath>

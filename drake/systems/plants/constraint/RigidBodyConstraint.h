@@ -4,6 +4,7 @@
  */
 #ifndef __RIGIDBODYCONSTRAINT_H__
 #define __RIGIDBODYCONSTRAINT_H__
+#define _USE_MATH_DEFINES
 #include <iostream>
 #include <Eigen/StdVector>
 #include <set>
