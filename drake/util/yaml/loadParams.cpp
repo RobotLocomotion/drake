@@ -2,7 +2,7 @@
 #include <fstream>
 #include <regex>
 #include "yamlUtil.h"
-#include "Path.h"
+#include "drake/Path.h"
 
 // void applyDefaults(YAML::Node& parent) {
 //   if (parent.IsMap() && parent["DEFAULT"]) {

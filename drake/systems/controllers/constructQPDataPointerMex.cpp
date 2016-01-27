@@ -3,7 +3,7 @@
 #include "drake/util/drakeMexUtil.h"
 #include "drake/systems/controllers/controlMexUtil.h"
 #include "drake/util/yaml/yamlUtil.h"
-#include "Path.h"
+#include "drake/Path.h"
 #include <regex>
 
 // #include <limits>
