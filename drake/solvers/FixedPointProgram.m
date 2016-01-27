@@ -67,9 +67,7 @@ classdef FixedPointProgram < NonlinearProgram
     end
     
     function [xstar,ustar,info] = findFixedPoint(obj,x0,u0,tol)
-      
-      obj.check_grad = true; % just for debugging, remember to remove
-      
+            
       if ~exist('tol','var')
           tol = [];
       end
@@ -90,8 +88,6 @@ classdef FixedPointProgram < NonlinearProgram
           % pass with the scaled tolerance.
           tf = valuecheck(obj.sys.dynamics(0,double(xstar),double(ustar)),zeros(size(obj.sys.getOutputFrame)),tol);
           if (~tf)
-              display('trying second pass') % just for debugging, remember to remove
-              obj.sys.dynamics(0,double(xstar),double(ustar)) % just for debugging
               obj = obj.setSolverOptions('snopt','MajorFeasibilityTolerance',tol*max(norm(wstar,inf),1));
               % nonlinear constraints are always normalized by the solution
               obj = obj.setSolverOptions('snopt','MinorFeasibilityTolerance',tol);
@@ -101,11 +97,9 @@ classdef FixedPointProgram < NonlinearProgram
               [wstar,~,info] = solve(obj,w0);
               xstar = Point(obj.sys.getStateFrame,wstar(1:length(x0)));
               ustar = Point(obj.sys.getInputFrame,wstar(length(x0)+(1:length(u0))));
-              obj.sys.dynamics(0,double(xstar),double(ustar)) % just for debugging
           end
+          
       end
-            
-      
     end
   end
 
