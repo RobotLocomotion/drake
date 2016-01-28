@@ -226,8 +226,8 @@ namespace Drake {
 
   class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   public:
-    const static int INITIAL_VARIABLE_ALLOCATION_NUM = 100;
-    OptimizationProblem() : problem_type(new LeastSquares), num_vars(0), x_initial_guess(INITIAL_VARIABLE_ALLOCATION_NUM) {};
+    enum { INITIAL_VARIABLE_ALLOCATION_NUM = 100 }; // not const static int because the VectorXd constructor takes a reference to int so it is odr-used (see https://gcc.gnu.org/wiki/VerboseDiagnostics#missing_static_const_definition)
+    OptimizationProblem() : problem_type(new LeastSquares), num_vars(0), x_initial_guess(static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)) {};
 
     const DecisionVariableView addContinuousVariables(std::size_t num_new_vars, std::string name = "x") {
       DecisionVariable v;

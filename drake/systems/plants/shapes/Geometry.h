@@ -42,7 +42,7 @@ namespace DrakeShapes
       void getBoundingBoxPoints(double x_half_width, double y_half_width, double z_half_width, Eigen::Matrix3Xd &points) const;
       
       Shape shape;
-      static const int NUM_BBOX_POINTS = 8;      
+      static const int NUM_BBOX_POINTS;
   };
 
   class DRAKESHAPES_EXPORT Sphere: public Geometry {
@@ -55,7 +55,7 @@ namespace DrakeShapes
       virtual void getTerrainContactPoints(Eigen::Matrix3Xd &points) const;
       
       double radius;
-      static const int NUM_POINTS = 1;
+      static const int NUM_POINTS;
   };
 
   class DRAKESHAPES_EXPORT Box : public Geometry {
@@ -93,7 +93,7 @@ namespace DrakeShapes
       double radius;
       double length;
       
-      static const int NUM_POINTS = 2;
+      static const int NUM_POINTS;
   };
 
   class DRAKESHAPES_EXPORT Mesh : public Geometry {
