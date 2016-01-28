@@ -274,7 +274,7 @@ std::map<std::string, QPControllerParams> loadAllParamSets(YAML::Node config, co
 }
 
 
-std::map<std::string, QPControllerParams> loadAllParamSets(YAML::Node config, const RigidBodyTree &robot, std::ofstream debug_output_file) {
+std::map<std::string, QPControllerParams> loadAllParamSets(YAML::Node config, const RigidBodyTree &robot, std::ofstream& debug_output_file) {
 
   config = expandDefaults(config);
   debug_output_file << config;

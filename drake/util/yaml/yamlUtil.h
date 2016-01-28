@@ -19,4 +19,4 @@ YAML::Node get(const YAML::Node& parent, const std::string& key);
 
 QPControllerParams loadSingleParamSet(const YAML::Node &config, const RigidBodyTree &robot);
 std::map<std::string, QPControllerParams> loadAllParamSets(YAML::Node config, const RigidBodyTree &robot);
-std::map<std::string, QPControllerParams> loadAllParamSets(YAML::Node config, const RigidBodyTree &robot, std::ofstream debug_output_file);
+std::map<std::string, QPControllerParams> loadAllParamSets(YAML::Node config, const RigidBodyTree &robot, std::ofstream& debug_output_file);
