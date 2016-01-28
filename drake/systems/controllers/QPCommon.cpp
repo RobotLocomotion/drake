@@ -352,7 +352,7 @@ std::unordered_map<std::string, int> computeBodyOrFrameNameToIdMap(const RigidBo
 
 int setupAndSolveQP(
 		NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, DrakeRobotState &robot_state,
-		const Ref<Matrix<bool, Dynamic, 1>> &b_contact_force, const std::map<Side, ForceTorqueMeasurement>& foot_force_torque_measurements,
+		const Ref<const Matrix<bool, Dynamic, 1> > &contact_detected, const std::map<Side, ForceTorqueMeasurement>& foot_force_torque_measurements,
 		QPControllerOutput *qp_output, std::shared_ptr<QPControllerDebugData> debug) {
   // The primary solve loop for our controller. This constructs and solves a Quadratic Program and produces the instantaneous desired torques, along with reference positions, velocities, and accelerations. It mirrors the Matlab implementation in atlasControllers.InstantaneousQPController.setupAndSolveQP(), and more documentation can be found there. 
   // Note: argument `debug` MAY be set to NULL, which signals that no debug information is requested.
@@ -396,7 +396,7 @@ int setupAndSolveQP(
 
   // Active supports
   std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> available_supports = loadAvailableSupports(*pdata, qp_input);
-  std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> active_supports = getActiveSupports(*pdata->r, robot_state.q, robot_state.qd, available_supports, b_contact_force, params->contact_threshold);
+  std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> active_supports = getActiveSupports(*pdata->r, robot_state.q, robot_state.qd, available_supports, contact_detected, params->contact_threshold);
 
 
   // // whole_body_data
@@ -548,11 +548,9 @@ int setupAndSolveQP(
   MatrixXd B,JB,Jp,normals;
   VectorXd Jpdotv;
   std::vector<double> adjusted_mus(active_supports.size());
-  // std::cout << "contact force: " << b_contact_force.transpose() << std::endl;
-  // std::cout << "adjusted mu: ";
   for (int i=0; i < active_supports.size(); ++i) {
     int body_id = active_supports[i].body_idx;
-    if ((body_id == pdata->rpc.foot_ids.at(Side::RIGHT) || body_id == pdata->rpc.foot_ids.at(Side::LEFT)) && !b_contact_force(active_supports[i].body_idx)) {
+    if ((body_id == pdata->rpc.foot_ids.at(Side::RIGHT) || body_id == pdata->rpc.foot_ids.at(Side::LEFT)) && (contact_detected(active_supports[i].body_idx) == 0)) {
       adjusted_mus[i] = MU_VERY_SMALL;
     } else {
       adjusted_mus[i] = mu;
@@ -917,8 +915,8 @@ int setupAndSolveQP(
   //y = pdata->B_act.jacobiSvd(ComputeThinU|ComputeThinV).solve(pdata->H_act*qdd + pdata->C_act - Jz_act.transpose()*lambda - D_act*beta);
 
   bool foot_contact[2];
-  foot_contact[0] = b_contact_force(pdata->rpc.foot_ids.at(Side::LEFT)) == 1;
-  foot_contact[1] = b_contact_force(pdata->rpc.foot_ids.at(Side::RIGHT)) == 1;
+  foot_contact[0] = contact_detected(pdata->rpc.foot_ids.at(Side::LEFT)) == 1;
+  foot_contact[1] = contact_detected(pdata->rpc.foot_ids.at(Side::RIGHT)) == 1;
   qp_output->qd_ref = velocityReference(pdata, robot_state.t, robot_state.q, robot_state.qd, qp_output->qdd, foot_contact, &(params->vref_integrator), &(pdata->rpc));
 
   // Remember t for next time around

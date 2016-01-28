@@ -43,7 +43,6 @@ classdef InstantaneousQPController
       end
       obj.robot = r;
       obj.robot_property_cache = r.getRobotPropertyCache();
-      import atlasFrames.*;
 
       if obj.debug
         obj.debug_pub = ControllerDebugPublisher('CONTROLLER_DEBUG');
@@ -67,12 +66,6 @@ classdef InstantaneousQPController
         obj.gurobi_options.barconvtol = 5e-4;
       end
 
-      state_coordinates = obj.robot.getStateFrame().getCoordinateNames();
-      coordinate_names = struct(...
-        'state', {state_coordinates(1:obj.robot.getNumPositions())},...
-        'input', struct('robot', {obj.robot.getHardwareJointNames()}, ...
-                      'drake', {obj.robot.getInputFrame().getCoordinateNames()}));
-
       obj.data_mex_ptr = ...
              constructQPDataPointerMex(obj.robot.getManipulator.urdf{1},...
                                        obj.robot.control_config_file,...
@@ -89,8 +82,6 @@ classdef InstantaneousQPController
       % @param foot_contact_sensor a 2x1 vector indicating whether contact force was
       %                            detected by the [left; right] foot
 
-
-      r = obj.robot;
 
       bodies_in_contact = {};
       if foot_contact_sensor(1) > 0.5
@@ -122,20 +113,6 @@ classdef InstantaneousQPController
                   bodies_in_contact);
       if ~obj.quiet
         fprintf(1, 'mex: %f, ', toc(t0));
-      end
-
-      if info_fqp < 0
-        ctrl_data.infocount = ctrl_data.infocount+1;
-      else
-        ctrl_data.infocount = 0;
-      end
-      if ctrl_data.infocount > 10 && exist('AtlasBehaviorModePublisher','class')
-        % kill atlas
-        disp('freezing atlas!');
-        behavior_pub = AtlasBehaviorModePublisher('ATLAS_BEHAVIOR_COMMAND');
-        d.utime = 0;
-        d.command = 'freeze';
-        behavior_pub.publish(d);
       end
       
       v_ref = qd_ref(obj.robot_property_cache.actuated_indices);

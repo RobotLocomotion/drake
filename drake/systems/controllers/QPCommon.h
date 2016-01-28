@@ -595,7 +595,7 @@ std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> l
 
 int setupAndSolveQP(
 		NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, DrakeRobotState &robot_state,
-		const Eigen::Ref<Eigen::Matrix<bool, Eigen::Dynamic, 1>> &b_contact_force, const std::map<Side, ForceTorqueMeasurement>& foot_force_torque_measurements,
+		const Eigen::Ref<const Eigen::Matrix<bool, Eigen::Dynamic, 1>> &contact_detected, const std::map<Side, ForceTorqueMeasurement>& foot_force_torque_measurements,
 		QPControllerOutput *qp_output, std::shared_ptr<QPControllerDebugData> debug);
 
 
