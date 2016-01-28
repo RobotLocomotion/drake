@@ -56,10 +56,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   // contact_sensor
   const mxArray *pobj = prhs[narg];
-  Map<VectorXd> contact_force_detected(mxGetPrSafe(pobj), mxGetNumberOfElements(pobj), 1);
-  Matrix<bool, Dynamic, 1> b_contact_force = Matrix<bool, Dynamic, 1>::Zero(contact_force_detected.size());
-  for (int i=0; i < b_contact_force.size(); i++) {
-    b_contact_force(i) = (contact_force_detected(i) != 0);
+  Matrix<bool, Dynamic, 1> b_contact_force = Matrix<bool, Dynamic, 1>::Zero(pdata->r->bodies.size()).array();
+  int num_bodies_in_contact = mxGetNumberOfElements(pobj);
+  for (int i=0; i < num_bodies_in_contact; i++) {
+    b_contact_force(pdata->body_or_frame_name_to_id.at(mxGetStdString(mxGetCell(pobj, i)))) = 1;
   }
   narg++;
 

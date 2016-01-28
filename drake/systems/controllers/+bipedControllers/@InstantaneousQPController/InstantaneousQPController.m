@@ -92,16 +92,16 @@ classdef InstantaneousQPController
 
       r = obj.robot;
 
-      contact_sensor = zeros(obj.robot_property_cache.num_bodies, 1);
+      bodies_in_contact = {};
       if foot_contact_sensor(1) > 0.5
-        contact_sensor(obj.robot_property_cache.body_ids.l_foot) = 1;
+        bodies_in_contact{end+1} = obj.robot.l_foot_name;
       end
       if foot_contact_sensor(2) > 0.5
-        contact_sensor(obj.robot_property_cache.body_ids.r_foot) = 1;
+        bodies_in_contact{end+1} = obj.robot.r_foot_name;
       end
       for j = 1:length(qp_input_msg.support_data)
         if all(qp_input_msg.support_data(j).support_logic_map)
-          contact_sensor(obj.robot_property_cache.body_ids.(char(qp_input_msg.support_data(j).body_name))) = 1;
+          bodies_in_contact{end+1} = char(qp_input_msg.support_data(j).body_name);
         end
       end
       ctrl_data = obj.controller_data;
@@ -119,7 +119,7 @@ classdef InstantaneousQPController
                   t,...
                   x,...
                   byte_array,...
-                  contact_sensor);
+                  bodies_in_contact);
       if ~obj.quiet
         fprintf(1, 'mex: %f, ', toc(t0));
       end
