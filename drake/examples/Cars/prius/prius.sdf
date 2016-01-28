@@ -1,0 +1,626 @@
+<!--
+  This prius model supports ackerman steering, which is controlled by
+  an actuator.
+  
+  This model is front-wheel-drive. The front two wheels are independently controlled.
+
+-->
+<?xml version="1.0" ?>
+<sdf version="1.5">
+  <model name="prius">
+  
+    <link name="front_axle">
+      <visual name="visual">
+        <pose>0 0 0.3302 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.061842105 1.051315789 0.030921</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0 0 1 1</diffuse> 
+        </material>
+      </visual>
+    </link>
+  
+    <link name="left_tie_rod_arm">
+      <visual name="v1">
+        <pose>0 0.02228556 0.299279 0 0 0</pose> 
+        <geometry>
+          <box>
+            <size>0.061842105 0.140955396 0.030921</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0 .5 0 1</diffuse>
+        </material>
+      </visual>
+      <visual name="v2">
+        <pose>-0.108367333 -0.054311782 0.299279 0 0 0.463647611</pose>
+        <geometry>
+          <box>
+            <size>0.204636598 0.061842105 0.030921</size>
+          </box> 
+        </geometry>
+        <material>
+          <diffuse>0 .5 0 1</diffuse>
+        </material>
+      </visual>     
+    </link>
+  
+    <link name="right_tie_rod_arm">
+      <visual name="v1">
+        <pose>0.172468672 -0.108519747 0.299279 0 0 0</pose> 
+        <geometry>
+          <box>
+            <size>0.061842105 0.140955396 0.030921</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0 .5 0 1</diffuse>
+        </material>
+      </visual>
+      <visual name="v2">
+        <pose>0.063859619 -0.031929809 0.299279 0 0 -0.463647611</pose>
+        <geometry>
+          <box>
+            <size>0.204636598 0.061842105 0.030921</size>
+          </box> 
+        </geometry>
+        <material>
+          <diffuse>0 .5 0 1</diffuse>
+        </material>
+      </visual>  
+    </link>
+  
+    <link name="tie_rod">
+      <visual name="visual">
+        <pose>0 -0.408502555 0.3302 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.061842105 0.878847118 0.030921</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0 0 1 1</diffuse>
+        </material>
+      </visual>
+    </link>
+    
+    <!-- Hubs -->
+    <link name="left_hub">
+      <visual name="visual">
+        <pose>0 0.61842105 0.299279 1.5708 0 0</pose> 
+        <geometry>
+          <cylinder>
+            <length>0.061842105</length>
+            <radius>0.015460526</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>0 0 1 1</diffuse>
+        </material>
+      </visual>
+    </link>
+  
+    <link name="right_hub">
+      <visual name="visual">
+        <pose>0 -0.61842105 0.299279 1.5708 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.061842105</length>
+            <radius>0.015460526</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>0 0 1 1</diffuse>
+        </material>
+      </visual>
+    </link>
+  
+    <!-- Wheels -->
+    <link name="left_wheel">
+      <inertial>
+        <mass>14.28</mass>
+        <inertia>
+          <ixx>.49991220</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>.77843904</iyy>
+          <iyz>0</iyz>
+          <izz>.49991220</izz>
+        </inertia> 
+      </inertial>
+      <visual name="wheel">
+        <pose>0 0 0 1.5708 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>.215</length>
+            <radius>0.323342</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>.2 .2 .2 1</diffuse>
+        </material>
+      </visual>  
+      <collision name="wheel">
+        <pose>0 0 0 1.5708 0 0</pose> 
+        <geometry>
+          <cylinder>
+            <length>.215</length>
+            <radius>0.323342</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <!-- Wheel Markings -->
+      <visual name="m1">
+        <pose>0 0.1075 0 0 0 1.5708</pose>
+        <material>
+          <diffuse>.9 .9 .9 1</diffuse>
+        </material>
+        <geometry>
+          <box>
+            <size>.0025 .0025 .25</size>
+          </box>
+        </geometry>
+      </visual>
+      <visual name="m2">
+        <pose>0 0.1075 0 0 1.5708 0</pose>
+        <material>
+          <diffuse>.9 .9 .9 1</diffuse>
+        </material>
+        <geometry>
+          <box>
+            <size>.0025 .0025 .25</size>
+          </box>
+        </geometry>
+      </visual>
+    </link>
+    
+    <link name="right_wheel">
+      <inertial>
+        <mass>14.28</mass>
+        <inertia>
+          <ixx>.49991220</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>.77843904</iyy>
+          <iyz>0</iyz>
+          <izz>.49991220</izz>
+        </inertia> 
+      </inertial>
+      <visual name="wheel">
+        <pose>0 0 0 1.5708 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>.215</length>
+            <radius>0.323342</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>.2 .2 .2 1</diffuse>
+        </material>
+      </visual>  
+      <collision name="wheel">
+        <pose>0 0 0 1.5708 0 0</pose> 
+        <geometry>
+          <cylinder>
+            <length>.215</length>
+            <radius>0.323342</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <!-- Wheel Markings -->
+      <visual name="m1">
+        <pose>0 -0.1075 0 0 0 1.5708</pose>
+        <material>
+          <diffuse>.9 .9 .9 1</diffuse>
+        </material>
+        <geometry>
+          <box>
+            <size>.0025 .0025 .25</size>
+          </box>
+        </geometry>
+      </visual>
+      <visual name="m2">
+        <pose>0 -0.1075 0 0 1.5708 0</pose>
+        <material>
+          <diffuse>.9 .9 .9 1</diffuse>
+        </material>
+        <geometry>
+          <box>
+            <size>.0025 .0025 .25</size>
+          </box>
+        </geometry>
+      </visual>
+    </link>
+    
+    <link name="left_wheel_rear">
+      <inertial>
+        <mass>16.78</mass>
+        <inertia>
+          <ixx>0.75264650</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>1.02355320</iyy>
+          <iyz>0</iyz>
+          <izz>0.75264650</izz>
+        </inertia> 
+      </inertial>
+      <visual name="wheel">
+        <pose>0 0 0 1.5708 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>.215</length>
+            <radius>0.323342</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>.2 .2 .2 1</diffuse>
+        </material>
+      </visual>  
+      <collision name="wheel">
+        <pose>0 0 0 1.5708 0 0</pose> 
+        <geometry>
+          <cylinder>
+            <length>.215</length>
+            <radius>0.323342</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <!-- Wheel Markings -->
+      <visual name="m1">
+        <pose>0 0.1075 0 0 0 1.5708</pose>
+        <material>
+          <diffuse>.9 .9 .9 1</diffuse>
+        </material>
+        <geometry>
+          <box>
+            <size>.0025 .0025 .25</size>
+          </box>
+        </geometry>
+      </visual>
+      <visual name="m2">
+        <pose>0 0.1075 0 0 1.5708 0</pose>
+        <material>
+          <diffuse>.9 .9 .9 1</diffuse>
+        </material>
+        <geometry>
+          <box>
+            <size>.0025 .0025 .25</size>
+          </box>
+        </geometry>
+      </visual>
+    </link>
+
+    <link name="right_wheel_rear">
+      <inertial>
+        <mass>16.78</mass>
+        <inertia>
+          <ixx>0.75264650</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>1.02355320</iyy>
+          <iyz>0</iyz>
+          <izz>0.75264650</izz>
+        </inertia> 
+      </inertial>
+      <visual name="wheel">
+        <pose>0 0 0 1.5708 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>.215</length>
+            <radius>0.323342</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>.2 .2 .2 1</diffuse>
+        </material>
+      </visual>  
+      <collision name="wheel">
+        <pose>0 0 0 1.5708 0 0</pose> 
+        <geometry>
+          <cylinder>
+            <length>.215</length>
+            <radius>0.323342</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <!-- Wheel Markings -->
+      <visual name="m1">
+        <pose>0 -0.1075 0 0 0 1.5708</pose>
+        <material>
+          <diffuse>.9 .9 .9 1</diffuse>
+        </material>
+        <geometry>
+          <box>
+            <size>.0025 .0025 .25</size>
+          </box>
+        </geometry>
+      </visual>
+      <visual name="m2">
+        <pose>0 -0.1075 0 0 1.5708 0</pose>
+        <material>
+          <diffuse>.9 .9 .9 1</diffuse>
+        </material>
+        <geometry>
+          <box>
+            <size>.0025 .0025 .25</size>
+          </box>
+        </geometry>
+      </visual>
+    </link>
+    
+    <!-- Main Chassis -->
+    <link name="chassis_floor">
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>57.833027175</mass>
+        <inertia>
+          <ixx>2.715531035</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>68.899955711</iyy>
+          <iyz>0</iyz>
+          <izz>71.606270974</izz>
+        </inertia>
+      </inertial>
+      <visual name="main">
+        <pose>0 0 0.3302 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>2.880802 .75 0.030921</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>1 1 1 1</diffuse>
+        </material>
+      </visual>
+   
+      <!-- spacers -->  
+      <visual name="spacer1">
+        <pose>1.409480 0 0.299279 0 0 0</pose> 
+        <geometry>
+          <box>
+            <size>.06184211 .75 0.030921</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0 1 1 1</diffuse>
+        </material>
+      </visual>
+      <visual name="spacer2">
+        <pose>-1.409480 0 0.299279 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>.06184211 .75 0.030921</size>
+          </box> 
+        </geometry>
+        <material>
+          <diffuse>0 1 1 1</diffuse> 
+        </material>
+      </visual>
+    </link>
+    
+    <!-- Rear_Axle -->
+    <link name="rear_axle">
+      <visual name="visual">
+        <pose>-1.409480 0 0 0 0 0</pose>
+        <geometry>
+          <box><size>.06184211 1.388985 0.030921</size></box>
+        </geometry>
+        <material>
+          <diffuse>0 0 1 1</diffuse>
+        </material>
+      </visual>
+    </link>
+  
+    <!-- note: didn't bother to port the "contact point" spheres over from the urdf -->
+
+    <link name="body">
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>5.42793634</mass>
+        <inertia>
+          <ixx>0.00216238</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.50037476</iyy>
+          <iyz>0</iyz>
+          <izz>0.50167219</izz> 
+        </inertia> 
+      </inertial>
+      <visual name="visual">
+        <pose>-3.6725 -.9213945 .1666 0 0 0</pose> 
+        <geometry>
+          <mesh><uri>prius.dae</uri></mesh>
+        </geometry>
+      </visual>
+    </link>
+
+    <!-- todo: joint pose and axes are now in the child frame, instead of the parents.  wtf. -->
+
+    <joint name="body" type="fixed">
+      <parent>front_axle</parent>
+      <child>body</child> 
+      <pose>0 0 0 0 0 0</pose>
+      <axis><xyz>0 0 1</xyz></axis> 
+    </joint>
+  
+    <joint name="steering" type="revolute">
+      <parent>front_axle</parent>
+      <child>left_tie_rod_arm</child>
+      <pose>0 0.494736842 0 0 0 0</pose>
+      <axis><xyz>0 0 1</xyz></axis> 
+      <limit>
+        <lower>-0.401425728</lower>
+        <upper>0.5</upper>
+      </limit> 
+    </joint>
+  
+    <joint name="left_pin" type="continuous">
+      <parent>left_tie_rod_arm</parent>
+      <child>tie_rod</child>
+      <pose>-0.172468672 -0.086234287 0 0 0 0</pose>
+      <axis><xyz>0 0 1</xyz></axis> 
+      <limit>
+        <lower>-3.1416</lower>
+        <upper>3.1416</upper>
+      </limit>
+    </joint>
+  
+    <joint name="right_pin" type="continuous">
+      <parent>tie_rod</parent>
+      <child>right_tie_rod_arm</child>
+      <pose>0 -0.817005012 0 0 0 0</pose> 
+      <axis><xyz>0 0 1</xyz></axis> 
+      <limit>
+        <lower>-3.1416</lower>
+        <upper>3.1416</upper>
+      </limit>
+    </joint>
+
+  <!-- todo: just a normal joint now, but have to not lose the second transforms -->
+  <loop_joint name="pin" type="continuous">
+    <axis><xyz>0 0 1</xyz></axis> 
+    <link1 link="right_tie_rod_arm" rpy="0 0 0" xyz="0.172468672 -0.086234287 0"/>
+    <link2 link="front_axle" rpy="0 0 0" xyz="0 -0.494736842 0"/>
+  </loop_joint>
+  
+  <joint name="left_hub" type="fixed">
+    <parent link="left_tie_rod_arm" />
+    <child link="left_hub" />
+    <origin xyz="0 -0.494736842 0" />
+    <axis><xyz>0 0 1</xyz></axis> 
+  </joint>
+  
+  <joint name="right_hub" type="fixed">
+    <parent link="right_tie_rod_arm" />
+    <child link="right_hub" />
+    <origin xyz="0.172468672 0.408502555 0" />
+  </joint>
+
+  <joint name="front_left_contact_sliding" type="prismatic">
+    <parent link="left_hub"/>
+    <child link="front_left_contact_point"/>
+    <origin xyz="0 .801993 0"/>
+    <axis><xyz>0 0 1</xyz></axis> 
+    <limit lower="0" upper=".323342"/>
+  </joint>
+  
+  <force_element name="front_left_spring">
+    <linear_spring_damper rest_length=".323342" stiffness="1000" damping="100">
+      <link1 link="left_hub" xyz="0 0.801993 .323342"/>
+      <link2 link="front_left_contact_point"/>
+    </linear_spring_damper>
+  </force_element>
+  
+  <joint name="left_wheel_joint" type="continuous">
+    <axis xyz="0 1 0"/>
+    <parent link="front_left_contact_point"/>
+    <child link="left_wheel"/>
+    <origin xyz="0 0 .323342"/>
+    <dynamics damping="0"/>
+  </joint>
+  
+  <joint name="front_right_contact_sliding" type="prismatic">
+    <parent link="right_hub"/>
+    <child link="front_right_contact_point"/>
+    <origin xyz="0 -0.801993 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="0" upper=".323342"/>
+  </joint>
+  
+  <force_element name="front_right_spring">
+    <linear_spring_damper rest_length=".323342" stiffness="1000" damping="100">
+      <link1 link="right_hub" xyz="0 -0.801993 .323342"/>
+      <link2 link="front_right_contact_point"/>
+    </linear_spring_damper>
+  </force_element>
+  
+  <joint name="right_wheel_joint" type="continuous">
+    <axis><xyz>0 1 0</xyz></axis> 
+    <parent link="front_right_contact_point"/>
+    <child link="right_wheel"/>
+    <origin xyz="0 0 .323342"/>
+    <dynamics damping="0"/>
+  </joint>
+  
+  <joint name="chassis_floor_axle" type="fixed">
+    <parent link="front_axle" />
+    <child link="chassis_floor" />
+    <origin xyz="-1.409480 0 0.061842" />
+    <axis><xyz>0 0 1</xyz></axis> 
+  </joint>
+  
+  <joint name="chassis_rear_axle" type="fixed">
+    <parent link="chassis_floor" />
+    <child link="rear_axle" />
+    <origin xyz="0 0 0.287408" />
+    <axis><xyz>0 0 1</xyz></axis> 
+  </joint>
+  
+   <joint name="rear_left_contact_sliding" type="prismatic">
+    <parent link="rear_axle"/>
+    <child link="rear_left_contact_point"/>
+    <origin xyz="-1.409480 .801993 -0.323342"/>
+    <axis><xyz>0 0 1</xyz></axis> 
+    <limit lower="0" upper="0.34925"/>
+  </joint>
+  
+  <force_element name="rear_left_spring">
+    <linear_spring_damper rest_length="0.323342" stiffness="1000" damping="100">
+      <link1 link="rear_axle" xyz="-1.409480 0.801993 0"/>
+      <link2 link="rear_left_contact_point"/>
+    </linear_spring_damper>
+  </force_element>
+  
+  <joint name="rear_left_wheel_joint" type="continuous">
+    <axis><xyz>0 1 0</xyz></axis> 
+    <parent link="rear_left_contact_point"/>
+    <child link="left_wheel_rear"/>
+    <origin xyz="0 0 0.323342"/>
+    <dynamics damping="0"/>
+  </joint>
+  
+  <joint name="rear_right_contact_sliding" type="prismatic">
+    <parent link="rear_axle"/>
+    <child link="rear_right_contact_point"/>
+    <origin xyz="-1.409480 -0.801993 -0.323342"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="0" upper="0.34925"/>
+  </joint>
+  
+  <force_element name="rear_right_spring">
+    <linear_spring_damper rest_length="0.323342" stiffness="1000" damping="100">
+      <link1 link="rear_axle" xyz="-1.409480 -0.801993 0"/>
+      <link2 link="rear_right_contact_point"/>
+    </linear_spring_damper>
+  </force_element>
+  
+  <joint name="rear_right_wheel_joint" type="continuous">
+    <axis xyz="0 1 0"/>
+    <parent link="rear_right_contact_point"/>
+    <child link="right_wheel_rear"/>
+    <origin xyz="0 0 0.323342"/>
+    <dynamics damping="0"/>
+  </joint>
+  
+  
+  <transmission name="steering_drive" type="SimpleTransmission">
+    <joint name="steering"/>
+    <actuator name="steering_angle"/>
+  </transmission>
+  
+  <transmission name="front_left_drive" type="SimpleTransmission">
+    <joint name="left_wheel_joint"/>
+    <actuator name="throttle_left_value"/>
+  </transmission>
+  
+  <transmission name="front_right_drive" type="SimpleTransmission">
+    <joint name="right_wheel_joint"/>
+    <actuator name="throttle_right_value"/>
+  </transmission>
+  
+  </model>
+</sdf>
