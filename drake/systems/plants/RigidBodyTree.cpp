@@ -536,10 +536,8 @@ void RigidBodyTree::updateCompositeRigidBodyInertias(KinematicsCache<Scalar>& ca
   if (!cache.areInertiasCached()) {
     for (int i = 0; i < bodies.size(); i++) {
       auto& element = cache.getElement(*bodies[i]);
-      typename Gradient<typename Transform<Scalar, 3, Isometry>::MatrixType, Dynamic>::type* dTdq = nullptr;
-      auto inertia_in_world = transformSpatialInertia(element.transform_to_world, dTdq, bodies[i]->I.cast<Scalar>());
-      element.inertia_in_world = inertia_in_world.value();
-      element.crb_in_world = inertia_in_world.value();
+      element.inertia_in_world = transformSpatialInertia(element.transform_to_world, bodies[i]->I.cast<Scalar>());
+      element.crb_in_world = element.inertia_in_world;
     }
 
     for (int i = static_cast<int>(bodies.size()) - 1; i >= 0; i--) {
