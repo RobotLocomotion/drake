@@ -50,9 +50,9 @@ public:
 
   ExponentialPlusPiecewisePolynomial derivative(int derivative_order = 1) const;
 
-  virtual Eigen::DenseIndex rows() const;
+  virtual Eigen::Index rows() const;
 
-  virtual Eigen::DenseIndex cols() const;
+  virtual Eigen::Index cols() const;
 
   void shiftRight(double offset);
 };

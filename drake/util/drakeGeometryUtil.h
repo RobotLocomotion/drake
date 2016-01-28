@@ -247,7 +247,7 @@ Eigen::Matrix<typename Derived::Scalar, 4, 1> rotmat2quat(const Eigen::MatrixBas
   A.row(2) << -1.0, 1.0, -1.0;
   A.row(3) << -1.0, -1.0, 1.0;
   Eigen::Matrix<Scalar, 4, 1> B = A * M.diagonal();
-  typename Eigen::Matrix<Scalar, 4, 1>::Index ind, max_col;
+  Eigen::Index ind, max_col;
   Scalar val = B.maxCoeff(&ind, &max_col);
 
   Scalar w, x, y, z;

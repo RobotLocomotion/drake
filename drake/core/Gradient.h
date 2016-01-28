@@ -59,10 +59,9 @@ namespace Drake {
   template<typename Derived, typename DerivedGradient>
   void initTaylorVecXd(const Eigen::MatrixBase<Derived>& val, const Eigen::MatrixBase<DerivedGradient>& gradient, TaylorVecXd& auto_diff_vector)
   {
-    typedef typename Eigen::MatrixBase<DerivedGradient>::Index Index;
     auto_diff_vector.resize(gradient.size(),1);
     auto nx = gradient.cols();
-    for (Index row = 0; row < auto_diff_vector.size(); row++) {
+    for (Eigen::Index row = 0; row < auto_diff_vector.size(); row++) {
       auto_diff_vector(row).value() = val(row);
       auto_diff_vector(row).derivatives().resize(nx,1);
       auto_diff_vector(row).derivatives() = gradient.row(row).transpose();

@@ -92,7 +92,7 @@ void testRoots() {
     VectorXd coeffs = VectorXd::Random(int_distribution(generator));
     Polynomial<CoefficientType> poly(coeffs);
     auto roots = poly.roots();
-    valuecheck<DenseIndex>(roots.rows(), poly.getDegree());
+    valuecheck<Eigen::Index>(roots.rows(), poly.getDegree());
     for (int i = 0; i < roots.size(); i++) {
       auto value = poly.value(roots[i]);
       valuecheck(std::abs(value), 0.0, 1e-8);

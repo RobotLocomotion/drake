@@ -58,7 +58,7 @@ Matrix3Xd getFrontTwoContactPoints(const Ref<const Matrix3Xd>& contact_points) {
     return contact_points;
   }
   Vector2d best_x(-std::numeric_limits<double>::infinity(), -std::numeric_limits<double>::infinity());
-  Matrix<DenseIndex, 2, 1> best_idx;
+  Matrix<Eigen::Index, 2, 1> best_idx;
   for (int j=0; j < contact_points.cols(); ++j) {
     for (int i=0; i < 2; ++i) {
       if (contact_points(0, j) > best_x(i)) {
@@ -384,20 +384,20 @@ drake::lcmt_zmp_data QPLocomotionPlan::createZMPData(double t_plan) const
     auto comdot_des = settings.com_traj.derivative().value(t_plan);
 
     size_t x0_row = 0;
-    for (DenseIndex i = 0; i < com_des.size(); ++i) {
+    for (Eigen::Index i = 0; i < com_des.size(); ++i) {
       zmp_data_lcm.x0[x0_row++][0] = com_des(i);
     }
-    for (DenseIndex i = 0; i < comdot_des.size(); ++i) {
+    for (Eigen::Index i = 0; i < comdot_des.size(); ++i) {
       zmp_data_lcm.x0[x0_row++][0] = comdot_des(i);
     }
     eigenToCArrayOfArrays(com_des, zmp_data_lcm.y0);
   } else {
     size_t x0_row = 0;
     Vector2d shifted_zmp_final = shifted_zmp_trajectory.value(shifted_zmp_trajectory.getEndTime());
-    for (DenseIndex i = 0; i < shifted_zmp_final.size(); ++i) {
+    for (Eigen::Index i = 0; i < shifted_zmp_final.size(); ++i) {
       zmp_data_lcm.x0[x0_row++][0] = shifted_zmp_final(i);
     }
-    for (DenseIndex i = 0; i < shifted_zmp_final.size(); ++i) {
+    for (Eigen::Index i = 0; i < shifted_zmp_final.size(); ++i) {
       zmp_data_lcm.x0[x0_row++][0] = 0.0;
     }
     auto zmp_des = shifted_zmp_trajectory.value(t_plan);
