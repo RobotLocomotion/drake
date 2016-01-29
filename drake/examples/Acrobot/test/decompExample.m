@@ -1,3 +1,4 @@
+function decompExample()
 % An example script to help clarify the msspoly function decomp(q,v)
 
 checkDependency('spotless');
@@ -15,7 +16,7 @@ h = [37*a^2*(x^2*y) a*b*(x^3*y+7*z^2); 3*a^4*(x^2*y) 7*a*b^2*(x^3*y+19*z^2)];
 display(h);
 display(A);
 display(full(B));
-display(full(C));
+display(C);
 
 % a_data = [1:4];
 % b_data = [1:4];

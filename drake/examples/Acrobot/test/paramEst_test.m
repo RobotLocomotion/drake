@@ -1,5 +1,5 @@
 function paramEst_test
-global PTRUE
+% global PTRUE
 tmp = addpathTemporary(fullfile(pwd,'..'));
 
 parameterEstimationOptions.method = 'nonlinprog'; % nonlinear least squares
@@ -14,7 +14,7 @@ mlen = length(models);
 
 rtrue = AcrobotPlant;
 p_true = double(rtrue.getParams);
-PTRUE = p_true;
+% PTRUE = p_true;
 
 %% Test on swingup up data
 [utraj,xtraj] = swingUpTrajectory(rtrue);
