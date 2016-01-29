@@ -10,7 +10,6 @@ classdef InstantaneousQPController
     debug;
     debug_pub;
     robot;
-    controller_data
     robot_property_cache
     data_mex_ptr;
     support_detect_mex_ptr;
@@ -30,10 +29,8 @@ classdef InstantaneousQPController
         options = struct();
       end
       options = applyDefaults(options,...
-        struct('debug', false,...
-               'solver', 0),...
-        struct('debug', @(x) typecheck(x, 'logical') && sizecheck(x, 1),...
-               'solver', @(x) x == 0 || x == 1));
+        struct('debug', false),...
+        struct('debug', @(x) typecheck(x, 'logical') && sizecheck(x, 1)));
       for f = fieldnames(options)'
         obj.(f{1}) = options.(f{1});
       end
@@ -48,29 +45,9 @@ classdef InstantaneousQPController
         obj.debug_pub = ControllerDebugPublisher('CONTROLLER_DEBUG');
       end
 
-      obj.controller_data = InstantaneousQPControllerData(struct('infocount', 0,...
-                                                     'qp_active_set', [],...
-                                                     'num_active_contact_pts', 0));
-      obj.gurobi_options.outputflag = 0; % not verbose
-      if obj.solver==0
-        obj.gurobi_options.method = 2; % -1=automatic, 0=primal simplex, 1=dual simplex, 2=barrier
-      else
-        obj.gurobi_options.method = 0; % -1=automatic, 0=primal simplex, 1=dual simplex, 2=barrier
-      end
-      obj.gurobi_options.presolve = 0;
-      % obj.gurobi_options.prepasses = 1;
-
-      if obj.gurobi_options.method == 2
-        obj.gurobi_options.bariterlimit = 20; % iteration limit
-        obj.gurobi_options.barhomogeneous = 0; % 0 off, 1 on
-        obj.gurobi_options.barconvtol = 5e-4;
-      end
-
       obj.data_mex_ptr = ...
              constructQPDataPointerMex(obj.robot.getManipulator.urdf{1},...
                                        obj.robot.control_config_file);
-                                       % obj.solver==0,...
-                                       % obj.gurobi_options);
     end
 
     function [y, v_ref] = updateAndOutput(obj, t, x, qp_input_msg, foot_contact_sensor)
@@ -95,8 +72,6 @@ classdef InstantaneousQPController
           bodies_in_contact{end+1} = char(qp_input_msg.support_data(j).body_name);
         end
       end
-      ctrl_data = obj.controller_data;
-
 
       if ~obj.quiet
         t0 = tic();
