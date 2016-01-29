@@ -43,7 +43,7 @@ void angleDiff(MatrixBase<DerivedPhi1> const &phi1, MatrixBase<DerivedPhi2> cons
   }
 }
 
-bool inSupport(std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &supports, int body_idx) {
+bool inSupport(const std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &supports, int body_idx) {
   // HANDLE IF BODY_IDX IS A FRAME ID?
   for (size_t i=0; i<supports.size(); i++) {
     if (supports[i].body_idx == body_idx)
@@ -262,7 +262,7 @@ std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> g
   return active_supports;
 }
 
-Vector6d bodySpatialMotionPD(const RigidBodyTree& r, DrakeRobotState &robot_state, const int body_index, const Isometry3d &body_pose_des, const Ref<const Vector6d> &body_v_des, const Ref<const Vector6d> &body_vdot_des, const Ref<const Vector6d> &Kp, const Ref<const Vector6d> &Kd, const Isometry3d &T_task_to_world)
+Vector6d bodySpatialMotionPD(const RigidBodyTree& r, const DrakeRobotState &robot_state, const int body_index, const Isometry3d &body_pose_des, const Ref<const Vector6d> &body_v_des, const Ref<const Vector6d> &body_vdot_des, const Ref<const Vector6d> &Kp, const Ref<const Vector6d> &Kd, const Isometry3d &T_task_to_world)
 {
   // @param body_pose_des  desired pose in the task frame, this is the homogeneous transformation from desired body frame to task frame 
   // @param body_v_des    desired [xyzdot;angular_velocity] in task frame

@@ -9,7 +9,7 @@
  *   some matrices might be better off using RowMajor
  */
 
-#include "QPCommon.h"
+#include "InstantaneousQPController.h"
 #include <limits>
 #include <cmath>
 #include "drake/util/drakeMexUtil.h"
@@ -27,7 +27,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   double* pr;
 
   // first get the ptr back from matlab
-  NewQPControllerData *pdata = (NewQPControllerData*) getDrakeMexPointer(prhs[0]);
+  InstantaneousQPController *controller = (InstantaneousQPController*) getDrakeMexPointer(prhs[0]);
 
   // now retrieve the runtime params from their matlab object
   int narg=1;
@@ -36,8 +36,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   double t = mxGetScalar(prhs[narg++]);
 
   // x
-  int nq = pdata->r->num_positions;
-  int nv = pdata->r->num_velocities;
+  int nq = controller->robot->num_positions;
+  int nv = controller->robot->num_velocities;
   if (mxGetNumberOfElements(prhs[narg]) != (nq + nv)) mexErrMsgTxt("size of x should be nq + nv\n");
   if (nq!=nv) mexErrMsgTxt("still assume nv==nq");
   double *q_ptr = mxGetPrSafe(prhs[narg]);
@@ -47,19 +47,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   narg++;
 
   // qp_input
-  shared_ptr<drake::lcmt_qp_controller_input> qp_input(new drake::lcmt_qp_controller_input());
+  drake::lcmt_qp_controller_input qp_input;
   const mxArray* lcm_message_mex = prhs[narg];
   if (!mxIsInt8(lcm_message_mex))
     mexErrMsgTxt("Expected an int8 array as the qp_input argument");
-  qp_input->decode(mxGetData(lcm_message_mex), 0, mxGetNumberOfElements(prhs[narg]));
+  qp_input.decode(mxGetData(lcm_message_mex), 0, mxGetNumberOfElements(prhs[narg]));
   narg++;
 
   // contact_sensor
   const mxArray *pobj = prhs[narg];
-  Matrix<bool, Dynamic, 1> b_contact_force = Matrix<bool, Dynamic, 1>::Zero(pdata->r->bodies.size()).array();
+  Matrix<bool, Dynamic, 1> b_contact_force = Matrix<bool, Dynamic, 1>::Zero(controller->robot->bodies.size()).array();
   int num_bodies_in_contact = mxGetNumberOfElements(pobj);
   for (int i=0; i < num_bodies_in_contact; i++) {
-    b_contact_force(pdata->body_or_frame_name_to_id.at(mxGetStdString(mxGetCell(pobj, i)))) = 1;
+    b_contact_force(controller->body_or_frame_name_to_id.at(mxGetStdString(mxGetCell(pobj, i)))) = 1;
   }
   narg++;
 
@@ -79,13 +79,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   if (nrhs > 5) {
     const mxArray* mex_foot_force_torque_measurements = prhs[narg++];
     if (!mxIsEmpty(mex_foot_force_torque_measurements)) {
-      foot_force_torque_measurements[Side::LEFT].frame_idx = pdata->r->findLinkId("l_foot");
+      foot_force_torque_measurements[Side::LEFT].frame_idx = controller->robot->findLinkId("l_foot");
       foot_force_torque_measurements[Side::LEFT].wrench = matlabToEigenMap<TWIST_SIZE, 1>(mxGetFieldSafe(mex_foot_force_torque_measurements, "left"));
-      foot_force_torque_measurements[Side::RIGHT].frame_idx = pdata->r->findLinkId("r_foot");
+      foot_force_torque_measurements[Side::RIGHT].frame_idx = controller->robot->findLinkId("r_foot");
       foot_force_torque_measurements[Side::RIGHT].wrench = matlabToEigenMap<TWIST_SIZE, 1>(mxGetFieldSafe(mex_foot_force_torque_measurements, "right"));
     }
   }
-  int info = setupAndSolveQP(pdata, qp_input, robot_state, b_contact_force, foot_force_torque_measurements, &qp_output, debug);
+  int info = controller->setupAndSolveQP(qp_input, robot_state, b_contact_force, foot_force_torque_measurements, qp_output, debug.get());
 
   // return to matlab
   narg = 0;
@@ -126,7 +126,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   narg++;
 
   if (nlhs>narg) {
-    plhs[narg] = eigenToMatlab(pdata->Hqp);
+    plhs[narg] = eigenToMatlab(controller->Hqp);
   }
   narg++;
 
@@ -177,7 +177,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   narg++;
 
   if (nlhs>narg) {
-    VectorXd individual_cops = individualSupportCOPs(*pdata->r, pdata->cache, debug->active_supports, debug->normals, debug->B, debug->beta);
+    VectorXd individual_cops = individualSupportCOPs(*controller->robot, controller->cache, debug->active_supports, debug->normals, debug->B, debug->beta);
     plhs[narg] = eigenToMatlab(individual_cops);
   }
   narg++;

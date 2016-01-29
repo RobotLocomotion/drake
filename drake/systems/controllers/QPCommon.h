@@ -488,50 +488,6 @@ struct QPControllerParams {
 
 std::unordered_map<std::string, int> computeBodyOrFrameNameToIdMap(const RigidBodyTree& robot);
 
-class NewQPControllerData {
-public:
-  GRBenv *env;
-  std::unique_ptr<RigidBodyTree> r;
-  std::map<std::string,QPControllerParams> param_sets;
-  RobotPropertyCache rpc;
-  void* map_ptr;
-  Eigen::VectorXd umin,umax;
-  int use_fast_qp;
-  JointNames input_joint_names;
-
-  // preallocate memory
-  KinematicsCache<double> cache;
-  Eigen::MatrixXd H, H_float, H_act;
-  Eigen::VectorXd C, C_float, C_act;
-  Eigen::MatrixXd J;
-  Eigen::Vector3d Jdotv;
-  Eigen::MatrixXd J_xy;
-  Eigen::Vector2d Jdotv_xy;
-  Eigen::MatrixXd Hqp;
-  Eigen::RowVectorXd fqp;
-  Eigen::VectorXd qdd_lb;
-  Eigen::VectorXd qdd_ub;
-  
-  // momentum controller-specific
-  Eigen::MatrixXd Ag; // centroidal momentum matrix
-  Vector6d Agdot_times_v; // centroidal momentum velocity-dependent bias
-  Eigen::MatrixXd Ak; // centroidal angular momentum matrix
-  Eigen::Vector3d Akdot_times_v; // centroidal angular momentum velocity-dependent bias
-
-  std::unordered_map<std::string, int> body_or_frame_name_to_id;
-
-  // logical separation for the "state", that is, things we expect to change at every iteration
-  // and which must persist to the next iteration
-  QPControllerState state;
-
-  NewQPControllerData(std::unique_ptr<RigidBodyTree> r) :
-      r(std::move(r)), cache(this->r->bodies),
-      body_or_frame_name_to_id(computeBodyOrFrameNameToIdMap(*(this->r)))
-  {
-    // empty
-  }
-};
-
 struct DesiredBodyAcceleration {
   DesiredBodyAcceleration():
     accel_bounds(Eigen::VectorXd(6), Eigen::VectorXd(6)) {}
@@ -585,18 +541,6 @@ struct PIDOutput {
 };
 
 //enum PlanShiftMode {NONE, XYZ, Z_ONLY, Z_AND_ZMP};
-
-
-PIDOutput wholeBodyPID(NewQPControllerData *pdata, double t, const Eigen::Ref<const Eigen::VectorXd> &q, const Eigen::Ref<const Eigen::VectorXd> &qd, const Eigen::Ref<const Eigen::VectorXd> &q_des, WholeBodyParams *params);
-
-Eigen::VectorXd velocityReference(NewQPControllerData *pdata, double t, const Eigen::Ref<Eigen::VectorXd> &q, const Eigen::Ref<Eigen::VectorXd> &qd, const Eigen::Ref<Eigen::VectorXd> &qdd, bool foot_contact[2], VRefIntegratorParams *params, RobotPropertyCache *rpc);
-
-std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> loadAvailableSupports(std::shared_ptr<drake::lcmt_qp_controller_input> qp_input);
-
-int setupAndSolveQP(
-		NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, DrakeRobotState &robot_state,
-		const Eigen::Ref<const Eigen::Matrix<bool, Eigen::Dynamic, 1>> &contact_detected, const std::map<Side, ForceTorqueMeasurement>& foot_force_torque_measurements,
-		QPControllerOutput *qp_output, std::shared_ptr<QPControllerDebugData> debug);
 
 
 #endif

@@ -11,11 +11,11 @@ pods_install_pkg_config_file(drake-control-util
 
 pods_find_pkg_config(gurobi)
 if (gurobi_FOUND AND LCM_FOUND)
-  add_library_with_exports(LIB_NAME drakeQPCommon SOURCE_FILES QPCommon.cpp)
+  add_library_with_exports(LIB_NAME drakeQPCommon SOURCE_FILES InstantaneousQPController.cpp)
   target_link_libraries(drakeQPCommon drakeControlUtil drakeQP drakeTrajectories drakeLCMUtil drakeSide)
   pods_use_pkg_config_packages(drakeQPCommon lcm)
   pods_install_libraries(drakeQPCommon)
-  drake_install_headers(QPCommon.h)
+  drake_install_headers(QPCommon.h InstantaneousQPController.h)
   pods_install_pkg_config_file(drake-qp-common
     LIBS -ldrakeQPCommon
     CFLAGS -I\${prefix}/include/lcmtypes
