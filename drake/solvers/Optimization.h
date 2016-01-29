@@ -484,7 +484,7 @@ namespace Drake {
     struct NonlinearComplementarityProblem : public NonlinearProgram {};
     struct LinearComplementarityProblem : public NonlinearComplementarityProblem {};
 */
-    struct LeastSquares : public NonlinearProgram { //public LinearProgram, public LinearComplementarityProblem {
+    struct LeastSquares : public NonlinearProgram { //public LinearProgram, public LinearComplementarityProblem
       virtual MathematicalProgram* addLinearEqualityConstraint() override { return new LeastSquares; };
       virtual bool solve(OptimizationProblem& prog) const override {
         size_t num_constraints = 0;
