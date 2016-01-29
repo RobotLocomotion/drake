@@ -6,14 +6,16 @@ function testParamEstimation
 tmp = addpathTemporary(fullfile(pwd,'..'));
 
 % Setting a fixed seed to avoid stochastic failures
-rng default
+rng(3);
+
+testThreshold = 5e-2;
 
 parameterEstimationOptions.method = 'nonlinprog'; % nonlinear programming
 parameterEstimationOptions.C = eye(4); % The symmetric positive definite cost matrix for simerr
-paramstd = 0.001; % Standard deviation of the parameter value percent error
+paramstd = 0.01; % Standard deviation of the parameter value percent error
 
 numTests = 1;
-models = {'dynamic','energetic','simerr'};
+models = {'energetic','dynamic','simerr'};
 mlen = length(models);
 
 rtrue = AcrobotPlant;
@@ -21,7 +23,7 @@ p_true = double(rtrue.getParams);
 
 %% Test on swingup up data
 [utraj,xtraj] = swingUpTrajectory(rtrue);
-Ts = .0075; breaks=getBreaks(utraj); T0 = breaks(1); Tf = breaks(end);
+Ts = .002; breaks=getBreaks(utraj); T0 = breaks(1); Tf = breaks(end);
 tsamples = T0:Ts:Tf;
 usamples = eval(utraj,tsamples)';
 xsamples = computeTraj(rtrue,eval(xtraj,T0),usamples',tsamples)'; % Produce state traj through forward euler method
@@ -70,12 +72,17 @@ for j=1:numTests
         [p_est{i}(:,j),simerror(i,j),~,simflag(i,j)] = parameterEstimation(r,data,parameterEstimationOptions);
         simtime(i,j) = toc;
 %         fprintf('n: %i \tModel: %10s \tTime: %f \tSim Error: %f\n',j,models{i},simtime(i,j),simerror(i,j));
-        %% Print out results
-        fprintf('\nParameter estimation results for %s:\n\n',models{i});
-        fprintf('  Param  \tTrue    \t Initial\tEstimated\n');
-        fprintf('  -----  \t--------\t--------\t---------\n');
-        for k=1:length(paramNames)
-          fprintf('%7s  \t%8.2f\t%8.2f\t%8.2f\n',paramNames{k},p_true(k),p_init(k),p_est{i}(k,j));
+%         %% Print out results
+%         fprintf('\nParameter estimation results for %s:\n\n',models{i});
+%         fprintf('  Param  \tTrue    \t Initial\tEstimated\n');
+%         fprintf('  -----  \t--------\t--------\t---------\n');
+%         for k=1:length(paramNames)
+%           fprintf('%7s  \t%8.2f\t%8.2f\t%8.2f\n',paramNames{k},p_true(k),p_init(k),p_est{i}(k,j));
+%         end
+        
+        if any(((p_true-p_est{i}(:,j))./p_true).^2 > testThreshold)
+            disp(((p_true-p_est{i}(:,j))./p_true).^2);
+            warning(char(strcat(models(i),' did not pass the test')));
         end
     end
 end
