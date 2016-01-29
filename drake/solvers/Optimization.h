@@ -406,6 +406,10 @@ namespace Drake {
       return conlist;
     }
 
+    // Base class for solver-specific data.  A solver implementation may derive
+    // a helper class from this for use with getSolverData.
+    struct SolverData { virtual ~SolverData() {} };
+
   private:
     // note: use std::list instead of std::vector because realloc in std::vector invalidates existing references to the elements
     std::list<DecisionVariable> variables;
@@ -417,7 +421,23 @@ namespace Drake {
     std::list<std::shared_ptr<BoundingBoxConstraint>> bbox_constraints;
     size_t num_vars;
     Eigen::VectorXd x_initial_guess;
+    std::shared_ptr<SolverData> solver_data;
   private:
+
+    // Call from solver implementations to get a persistently-stored
+    // helper structure of type T (derived from SolverData).  If no
+    // data of type T is already stored then a new one will be created
+    // and stored, replacing data from any other solver in this problem
+    // instance.
+    template <typename T>
+    std::shared_ptr<T> getSolverData() {
+      auto p = std::dynamic_pointer_cast<T>(solver_data);
+      if (!p) {
+        p = std::make_shared<T>();
+        solver_data = p;
+      }
+      return p;
+    }
 
     void checkVariables(const std::shared_ptr<Constraint>& con) {
       assert(checkVariablesImpl(con) && "Constraint depends on variables that are not associated with this OptimizationProblem");
