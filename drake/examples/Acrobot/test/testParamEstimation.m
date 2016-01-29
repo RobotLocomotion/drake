@@ -2,13 +2,14 @@ function testParamEstimation
 % Unit test to ensure functionality of parameter estimate
 % Perturbs the initial parameters guess by a random gaussian percentage error
 % Does not add measurement noise
+% Generally takes about 3 seconds for dynamics/energetic and 17 for simerr
 
 tmp = addpathTemporary(fullfile(pwd,'..'));
 
 % Setting a fixed seed to avoid stochastic failures
 rng(3);
 
-testThreshold = 5e-2;
+testThresholdSquared = 5e-2;
 
 parameterEstimationOptions.method = 'nonlinprog'; % nonlinear programming
 parameterEstimationOptions.C = eye(4); % The symmetric positive definite cost matrix for simerr
@@ -20,24 +21,36 @@ mlen = length(models);
 
 rtrue = AcrobotPlant;
 p_true = double(rtrue.getParams);
+r = AcrobotPlant;
 
 %% Test on swingup up data
 [utraj,xtraj] = swingUpTrajectory(rtrue);
-Ts = .002; breaks=getBreaks(utraj); T0 = breaks(1); Tf = breaks(end);
+Ts = .0005; breaks=getBreaks(utraj); T0 = breaks(1); Tf = breaks(end);
 tsamples = T0:Ts:Tf;
 usamples = eval(utraj,tsamples)';
 xsamples = computeTraj(rtrue,eval(xtraj,T0),usamples',tsamples)'; % Produce state traj through forward euler method
 
-r = AcrobotPlant;
+%% Generate second derivative
+% Differentiating to get the second derivative of the state variables
+dtsamples = diff(tsamples)';
 nq = r.num_positions;
+qdd = diff(xsamples(:,nq+(1:nq)),1,1)./repmat(dtsamples,1,nq);
+xsamples = [xsamples(1:length(qdd),:), qdd];
 outputFrameNames = [r.getOutputFrame.getCoordinateNames();'theta1doubledot';'theta2doubledot'];
-paramNames = getCoordinateNames(r.getParamFrame);
+data = iddata(xsamples,usamples(1:length(qdd),:),Ts,'InputName',r.getInputFrame.getCoordinateNames(),'OutputName',outputFrameNames);
+
+%% Since sim err needs less resolution, we can speed up test by increasing timestep size
+TsSim = .01;
+tsamplesSim = T0:TsSim:Tf;
+usamplesSim = eval(utraj,tsamplesSim)';
+xsamplesSim = computeTraj(rtrue,eval(xtraj,T0),usamplesSim',tsamplesSim)'; % Produce state traj through forward euler method
+dataSim = iddata(xsamplesSim,usamplesSim,TsSim,'InputName',r.getInputFrame.getCoordinateNames(),'OutputName',r.getOutputFrame.getCoordinateNames());
 pmin = [0.02; 0.02; 0.1; 0.1; 0.05; 0.1;];
 pmax = [1; 1; 2; 2; 1; 1;];
 r = r.setParamLimits(pmin,pmax);
 
+% Initialize output variables
 simerror = zeros(mlen,numTests);
-simtime = zeros(mlen,numTests);
 simflag = zeros(mlen,numTests);
 p_init = zeros(length(p_true),numTests);
 p_est = cell(1,mlen);
@@ -51,38 +64,25 @@ for j=1:numTests
     end
     r.b1  = r.b1 + r.b1*paramerr(1);
     r.b2  = r.b2 + r.b2*paramerr(2);
-    r.lc1 = r.lc1 + r.lc1*paramerr(3); 
-    r.lc2 = r.lc2 + r.lc2*paramerr(4); 
-    r.Ic1 = r.Ic1 + r.Ic1*paramerr(5);  
+    r.lc1 = r.lc1 + r.lc1*paramerr(3);
+    r.lc2 = r.lc2 + r.lc2*paramerr(4);
+    r.Ic1 = r.Ic1 + r.Ic1*paramerr(5);
     r.Ic2 = r.Ic2 + r.Ic2*paramerr(6);
 
     p_init(:,j) = double(r.getParams);
 
-    %% Generate second derivative
-    % Differentiating to get the second derivative of the state variables
-    dtsamples = diff(tsamples)';
-    qdd = diff(xsamples(:,nq+(1:nq)),1,1)./repmat(dtsamples,1,nq);
-    xsamples = [xsamples(1:length(qdd),:), qdd];
-    data = iddata(xsamples,usamples(1:length(qdd),:),Ts,'InputName',r.getInputFrame.getCoordinateNames(),'OutputName',outputFrameNames);
-
     %% Compute results from each model    
     for i=1:mlen
         parameterEstimationOptions.model = models{i};
-        tic;
-        [p_est{i}(:,j),simerror(i,j),~,simflag(i,j)] = parameterEstimation(r,data,parameterEstimationOptions);
-        simtime(i,j) = toc;
-%         fprintf('n: %i \tModel: %10s \tTime: %f \tSim Error: %f\n',j,models{i},simtime(i,j),simerror(i,j));
-%         %% Print out results
-%         fprintf('\nParameter estimation results for %s:\n\n',models{i});
-%         fprintf('  Param  \tTrue    \t Initial\tEstimated\n');
-%         fprintf('  -----  \t--------\t--------\t---------\n');
-%         for k=1:length(paramNames)
-%           fprintf('%7s  \t%8.2f\t%8.2f\t%8.2f\n',paramNames{k},p_true(k),p_init(k),p_est{i}(k,j));
-%         end
-        
-        if any(((p_true-p_est{i}(:,j))./p_true).^2 > testThreshold)
-            disp(((p_true-p_est{i}(:,j))./p_true).^2);
-            warning(char(strcat(models(i),' did not pass the test')));
+
+        if strcmp(models{i},'simerr')
+            [p_est{i}(:,j),simerror(i,j),~,simflag(i,j)] = parameterEstimation(r,dataSim,parameterEstimationOptions);
+        else
+            [p_est{i}(:,j),simerror(i,j),~,simflag(i,j)] = parameterEstimation(r,data,parameterEstimationOptions);
+        end
+
+        if any(((p_true-p_est{i}(:,j))./p_true).^2 > testThresholdSquared)
+            error(char(strcat(models(i),' did not pass the test')));
         end
     end
 end
