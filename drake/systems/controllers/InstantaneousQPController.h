@@ -67,6 +67,7 @@ public:
   Eigen::Vector3d Akdot_times_v; // centroidal angular momentum velocity-dependent bias
 
   std::unordered_map<std::string, int> body_or_frame_name_to_id;
+  std::map<std::string, int> position_name_to_index_map;
 
   // logical separation for the controller state, that is, things we expect to change at every iteration
   // and which must persist to the next iteration
@@ -80,6 +81,8 @@ private:
   Eigen::VectorXd velocityReference(double t, const Eigen::Ref<const Eigen::VectorXd> &q, const Eigen::Ref<const Eigen::VectorXd> &qd, const Eigen::Ref<const Eigen::VectorXd> &qdd, bool foot_contact[2], const VRefIntegratorParams& params);
 
   std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> loadAvailableSupports(const drake::lcmt_qp_controller_input& qp_input);
+
+  void addJointSoftLimits(const JointSoftLimitParams &params, const DrakeRobotState &robot_state, const Eigen::VectorXd &q_des, const std::vector<SupportStateElement, Eigen::aligned_allocator<SupportStateElement>> &supports, std::vector<drake::lcmt_joint_pd_override> &joint_pd_override);
 
   void estimateCoMBasedOnMeasuredZMP(const QPControllerParams& params, std::vector<SupportStateElement, Eigen::aligned_allocator<SupportStateElement> >& active_supports, int num_contact_points, const std::map<Side, ForceTorqueMeasurement>& foot_force_torque_measurements, double dt, Eigen::Vector3d& xcom, Eigen::Vector3d& xcomdot);
 

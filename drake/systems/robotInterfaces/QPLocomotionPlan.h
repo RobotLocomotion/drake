@@ -105,8 +105,8 @@ struct QPLocomotionPlanSettings {
   std::map<Side, std::string> aky_names;
   std::map<Side, std::string> akx_names;
   double zmp_safety_margin;
-  std::vector<int> constrained_position_indices;
-  std::vector<int> untracked_position_indices;
+  std::vector<std::string> constrained_position_names;
+  std::vector<std::string> untracked_position_names;
 
   void addSupport(const RigidBodySupportState& support_state, const ContactNameToContactPointsMap& contact_group_name_to_contact_points, double duration) {
     supports.push_back(support_state);

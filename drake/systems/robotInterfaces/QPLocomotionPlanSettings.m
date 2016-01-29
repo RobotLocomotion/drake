@@ -16,8 +16,8 @@ classdef QPLocomotionPlanSettings
     plan_shift_body_motion_inds = 3;
     g = 9.81; % gravity m/s^2
     is_quasistatic = false;
-    constrained_dofs = [];
-    untracked_joint_inds;
+    constrained_position_names = {};
+    untracked_position_names = {};
     x0;
 
     planned_support_command = QPControllerPlan.support_logic_maps.require_support; % when the plan says a given body is in support, require the controller to use that support. To allow the controller to use that support only if it thinks the body is in contact with the terrain, try QPControllerPlan.support_logic_maps.kinematic_or_sensed; 
@@ -48,8 +48,9 @@ classdef QPLocomotionPlanSettings
       obj.contact_groups = prop_cache.contact_groups;
       obj.qtraj = S.xstar(1:prop_cache.nq);
       obj.default_qp_input.whole_body_data.q_des = getZeroConfiguration(obj.robot.getManipulator);
-      obj.constrained_dofs = [prop_cache.position_indices.arm; prop_cache.position_indices.neck; prop_cache.position_indices.back_bkz; prop_cache.position_indices.back_bky];
-      obj.untracked_joint_inds = [];
+      state_coordinates = robot.getStateFrame().getCoordinateNames();
+      obj.constrained_position_names = state_coordinates([prop_cache.position_indices.arm; prop_cache.position_indices.neck; prop_cache.position_indices.back_bkz; prop_cache.position_indices.back_bky]);
+      obj.untracked_position_names = {};
       obj.zmp_data = QPLocomotionPlanSettings.defaultZMPData();
     end
 

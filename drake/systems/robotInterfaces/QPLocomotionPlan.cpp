@@ -125,9 +125,8 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
   qp_input.whole_body_data.timestamp = 0;
   qp_input.whole_body_data.num_positions = robot.num_positions;
   eigenVectorToStdVector(q_des, qp_input.whole_body_data.q_des);
-  qp_input.whole_body_data.constrained_dofs = settings.constrained_position_indices;
-  addOffset(qp_input.whole_body_data.constrained_dofs, 1); // use 1-indexing in LCM
-  qp_input.whole_body_data.num_constrained_dofs = qp_input.whole_body_data.constrained_dofs.size();
+  qp_input.whole_body_data.constrained_position_names = settings.constrained_position_names;
+  qp_input.whole_body_data.num_constrained_position_names = qp_input.whole_body_data.constrained_position_names.size();
   // apply plan shift
   if (settings.use_plan_shift) {
     for (auto direction_it = settings.plan_shift_body_motion_indices.begin(); direction_it != settings.plan_shift_body_motion_indices.end(); ++direction_it) {
@@ -296,23 +295,24 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
 
   qp_input.param_set_name = settings.gain_set;
 
-  for (auto it = settings.untracked_position_indices.begin(); it != settings.untracked_position_indices.end(); ++it) {
+  for (auto it = settings.untracked_position_names.begin(); it != settings.untracked_position_names.end(); ++it) {
+    int position_index = robot.findJointId(*it);
     drake::lcmt_joint_pd_override joint_pd_override;
     joint_pd_override.timestamp = 0;
-    joint_pd_override.position_ind = *it + 1; // use 1-indexing in LCM
-    joint_pd_override.qi_des = q[*it];
-    joint_pd_override.qdi_des = v[*it];
+    joint_pd_override.position_name = *it;
+    joint_pd_override.qi_des = q[position_index];
+    joint_pd_override.qdi_des = v[position_index];
     joint_pd_override.kp = 0.0;
     joint_pd_override.kd = 0.0;
     joint_pd_override.weight = 0.0;
     qp_input.joint_pd_override.push_back(joint_pd_override);
     qp_input.num_joint_pd_overrides++;
 
-    qp_input.whole_body_data.q_des[*it] = q[*it];
-    auto constrained_dofs_it = std::find(qp_input.whole_body_data.constrained_dofs.begin(), qp_input.whole_body_data.constrained_dofs.end(), *it + 1); // use 1-indexing in LCM
-    if (constrained_dofs_it != qp_input.whole_body_data.constrained_dofs.end()) {
-      qp_input.whole_body_data.constrained_dofs.erase(constrained_dofs_it);
-      qp_input.whole_body_data.num_constrained_dofs = qp_input.whole_body_data.constrained_dofs.size();
+    qp_input.whole_body_data.q_des[position_index] = q[position_index];
+    auto constrained_positions_it = std::find(qp_input.whole_body_data.constrained_position_names.begin(), qp_input.whole_body_data.constrained_position_names.end(), *it);
+    if (constrained_positions_it != qp_input.whole_body_data.constrained_position_names.end()) {
+      qp_input.whole_body_data.constrained_position_names.erase(constrained_positions_it);
+      qp_input.whole_body_data.num_constrained_position_names = qp_input.whole_body_data.constrained_position_names.size();
     }
   }
 
@@ -326,7 +326,7 @@ void QPLocomotionPlan::applyKneePD(Side side, drake::lcmt_qp_controller_input &q
   int knee_index = knee_indices.at(side);
   drake::lcmt_joint_pd_override joint_pd_override_for_support;
   joint_pd_override_for_support.timestamp = 0;
-  joint_pd_override_for_support.position_ind = static_cast<int32_t>(knee_index) + 1; // use 1-indexing in LCM
+  joint_pd_override_for_support.position_name = settings.knee_names.at(side);
   joint_pd_override_for_support.qi_des = knee_pd_settings.at(side).min_knee_angle;
   joint_pd_override_for_support.qdi_des = 0.0;
   joint_pd_override_for_support.kp = knee_pd_settings.at(side).knee_kp;

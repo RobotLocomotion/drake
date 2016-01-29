@@ -18,7 +18,8 @@ using namespace Eigen;
 #define MU_VERY_SMALL 0.001
 
 void InstantaneousQPController::initialize() {
-  body_or_frame_name_to_id = computeBodyOrFrameNameToIdMap(*(this->robot));
+  body_or_frame_name_to_id = computeBodyOrFrameNameToIdMap(*robot);
+  position_name_to_index_map = robot->computePositionNameToIndexMap();
   
   int nq = robot->num_positions;
   int nu = static_cast<int>(robot->actuators.size());
@@ -278,10 +279,10 @@ std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> I
   return available_supports;
 }
 
-void addJointSoftLimits(const JointSoftLimitParams &params, const DrakeRobotState &robot_state, const VectorXd &q_des, const std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &supports, std::vector<drake::lcmt_joint_pd_override> &joint_pd_override) {
+void InstantaneousQPController::addJointSoftLimits(const JointSoftLimitParams &params, const DrakeRobotState &robot_state, const VectorXd &q_des, const std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> &supports, std::vector<drake::lcmt_joint_pd_override> &joint_pd_override) {
   Matrix<bool, Dynamic, 1> has_joint_override = Matrix<bool, Dynamic, 1>::Zero(q_des.size());
   for (auto it = joint_pd_override.begin(); it != joint_pd_override.end(); ++it) {
-    has_joint_override(it->position_ind - 1) = true;
+    has_joint_override(position_name_to_index_map.at(it->position_name)) = true;
   }
   for (int i=0; i < params.lb.size(); i++) {
     if (!has_joint_override(i) && params.enabled(i)) {
@@ -297,7 +298,7 @@ void addJointSoftLimits(const JointSoftLimitParams &params, const DrakeRobotStat
         }
         double weight = std::max(w_ub, w_lb);
         drake::lcmt_joint_pd_override override;
-        override.position_ind = i + 1;
+        override.position_name = robot->getPositionName(i);
         override.qi_des = q_des(i);
         override.qdi_des = 0;
         override.kp = params.kp(i);
@@ -306,16 +307,6 @@ void addJointSoftLimits(const JointSoftLimitParams &params, const DrakeRobotStat
         joint_pd_override.push_back(override);
       }
     }
-  }
-}
-
-void applyJointPDOverride(const std::vector<drake::lcmt_joint_pd_override> &joint_pd_override, const DrakeRobotState &robot_state, PIDOutput &pid_out, VectorXd &w_qdd) {
-  for (std::vector<drake::lcmt_joint_pd_override>::const_iterator it = joint_pd_override.begin(); it != joint_pd_override.end(); ++it) {
-    int ind = it->position_ind - 1;
-    double err_q = it->qi_des - robot_state.q(ind);
-    double err_qd = it->qdi_des - robot_state.qd(ind);
-    pid_out.qddot_des(ind) = it->kp * err_q + it->kd * err_qd;
-    w_qdd(ind) = it->weight;
   }
 }
 
@@ -519,17 +510,26 @@ int InstantaneousQPController::setupAndSolveQP(const drake::lcmt_qp_controller_i
   // // whole_body_data
   if (qp_input.whole_body_data.num_positions != nq) throw std::runtime_error("number of positions doesn't match num_dof for this robot");
   Map<const VectorXd> q_des(qp_input.whole_body_data.q_des.data(), nq);
-  if (qp_input.whole_body_data.constrained_dofs.size() != qp_input.whole_body_data.num_constrained_dofs) {
-    throw std::runtime_error("size of constrained dofs does not match num_constrained_dofs");
+  if (qp_input.whole_body_data.constrained_position_names.size() != qp_input.whole_body_data.num_constrained_position_names) {
+    throw std::runtime_error("size of constrained positions does not match num_constrained_position_names");
   }
-  Map<const VectorXi> condof(qp_input.whole_body_data.constrained_dofs.data(), qp_input.whole_body_data.num_constrained_dofs);
+  VectorXi constrained_position_indices(qp_input.whole_body_data.num_constrained_position_names);
+  for (int i=0; i < qp_input.whole_body_data.num_constrained_position_names; i++) {
+    constrained_position_indices(i) = position_name_to_index_map.at(qp_input.whole_body_data.constrained_position_names[i]);
+  }
 
   PIDOutput pid_out = wholeBodyPID(robot_state.t, robot_state.q, robot_state.qd, q_des, params.whole_body);
   VectorXd w_qdd = params.whole_body.w_qdd;
 
   auto joint_pd_override = qp_input.joint_pd_override;
   addJointSoftLimits(params.joint_soft_limits, robot_state, q_des, active_supports, joint_pd_override);
-  applyJointPDOverride(joint_pd_override, robot_state, pid_out, w_qdd);
+  for (auto it = joint_pd_override.begin(); it != joint_pd_override.end(); ++it) {
+    int ind = position_name_to_index_map.at(it->position_name);
+    double err_q = it->qi_des - robot_state.q(ind);
+    double err_qd = it->qdi_des - robot_state.qd(ind);
+    pid_out.qddot_des(ind) = it->kp * err_q + it->kd * err_qd;
+    w_qdd(ind) = it->weight;
+  }
 
   qp_output.q_ref = pid_out.q_ref;
 
@@ -743,7 +743,7 @@ int InstantaneousQPController::setupAndSolveQP(const drake::lcmt_qp_controller_i
   }
   f.tail(nf+neps) = VectorXd::Zero(nf+neps);
 
-  int neq = 6+neps+6*n_body_accel_eq_constraints+qp_input.whole_body_data.num_constrained_dofs;
+  int neq = 6 + neps + 6*n_body_accel_eq_constraints + constrained_position_indices.size();
   MatrixXd Aeq = MatrixXd::Zero(neq,nparams);
   VectorXd beq = VectorXd::Zero(neq);
   
@@ -791,11 +791,11 @@ int InstantaneousQPController::setupAndSolveQP(const drake::lcmt_qp_controller_i
     }
   }
 
-  if (qp_input.whole_body_data.num_constrained_dofs>0) {
+  if (constrained_position_indices.size() > 0) {
     // add joint acceleration constraints
-    for (int i=0; i<qp_input.whole_body_data.num_constrained_dofs; i++) {
-      Aeq(equality_ind,(int)condof[i]-1) = 1;
-      beq[equality_ind++] = pid_out.qddot_des[(int)condof[i]-1];
+    for (int i=0; i < constrained_position_indices.size(); i++) {
+      Aeq(equality_ind, (int) constrained_position_indices[i]) = 1;
+      beq[equality_ind++] = pid_out.qddot_des[(int) constrained_position_indices[i]];
     }
   }  
   
