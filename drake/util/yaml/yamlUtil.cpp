@@ -42,17 +42,6 @@ double dampingGain(double Kp, double damping_ratio) {
   return 2 * damping_ratio * sqrt(Kp);
 }
 
-// std::regex globToRegex(const std::string& glob) {
-//   auto re_escape_pattern = std::regex("[.^$|()\\[\\]{}+?\\\\]");
-//   std::string re_escape_replacement = "\\\\$&";
-//   std::string escaped_pattern = std::regex_replace(glob, re_escape_pattern, re_escape_replacement);
-//   auto re_star_pattern = std::regex("\\*");
-//   std::string re_star_replacement = ".*";
-//   escaped_pattern = std::regex_replace(escaped_pattern, re_star_pattern, re_star_replacement);
-//   return std::regex(escaped_pattern);
-// }
-
-
 YAML::Node get(const YAML::Node& parent, const std::string& key) {
   auto result = parent[key];
   if (result) {
@@ -295,5 +284,57 @@ std::map<std::string, QPControllerParams> loadAllParamSets(YAML::Node config, co
   config = expandDefaults(config);
   debug_output_file << config;
   return loadAllParamSetsFromExpandedConfig(config, robot);
+}
+
+vector<int> findPositionIndices(const RigidBodyTree &robot, const vector<string> &joint_names) {
+  vector<int> position_indices;
+  position_indices.reserve(joint_names.size());
+  for (const auto& joint_name : joint_names) {
+    const RigidBody &body = *robot.findJoint(joint_name);
+    for (int i = 0; i < body.getJoint().getNumPositions(); i++) {
+      position_indices.push_back(body.position_num_start + i);
+    }
+  }
+  return position_indices;
+}
+
+RobotPropertyCache parseKinematicTreeMetadata(const YAML::Node& metadata, const RigidBodyTree& robot) {
+  RobotPropertyCache ret;
+  std::map<Side, string> side_identifiers = { {Side::RIGHT, "r"}, {Side::LEFT, "l"} };
+
+  YAML::Node body_names = metadata["body_names"];
+  YAML::Node feet = body_names["feet"];
+  YAML::Node hands = body_names["hands"];
+  for (const auto& side : Side::values) {
+    ret.foot_ids[side] = robot.findLinkId(feet[side_identifiers[side]].as<string>());
+    ret.hand_ids[side] = robot.findLinkId(hands[side_identifiers[side]].as<string>());
+  }
+
+  YAML::Node joint_group_names = metadata["joint_group_names"];
+  for (const auto& side : Side::values) {
+    auto side_id = side_identifiers.at(side);
+    ret.position_indices.legs[side] = findPositionIndices(robot, joint_group_names["legs"][side_id].as<vector<string>>());
+    ret.position_indices.knees[side] = robot.findJoint(joint_group_names["knees"][side_id].as<string>())->position_num_start;
+    ret.position_indices.ankles[side] = findPositionIndices(robot, joint_group_names["ankles"][side_id].as<vector<string>>());
+    ret.position_indices.arms[side] = findPositionIndices(robot, joint_group_names["arms"][side_id].as<vector<string>>());
+  }
+  ret.position_indices.neck = findPositionIndices(robot, joint_group_names["neck"].as<vector<string>>());
+  ret.position_indices.back_bkz = robot.findJoint(joint_group_names["back_bkz"].as<string>())->position_num_start;
+  ret.position_indices.back_bky = robot.findJoint(joint_group_names["back_bky"].as<string>())->position_num_start;
+
+  return ret;
+}
+
+JointNames parseRobotJointNames(const YAML::Node& joint_names, const RigidBodyTree& tree) {
+  std::cout << "parsing joint names: " << joint_names << std::endl;
+  // const string& hardware_data_file_name, const RigidBodyTree& tree) {
+  JointNames ret;
+  ret.drake.resize(tree.actuators.size());
+  transform(tree.actuators.begin(), tree.actuators.end(), ret.drake.begin(),
+            [](const RigidBodyActuator &actuator) { return actuator.body->getJoint().getName(); });
+  // Node hardware_data = LoadFile(hardware_data_file_name);
+  ret.robot = joint_names.as<vector<string>>();
+
+  return ret;
 }
 

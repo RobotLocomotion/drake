@@ -93,6 +93,7 @@ struct PositionIndices {
 struct RobotPropertyCache {
   PositionIndices position_indices;
   std::map<Side, int> foot_ids;
+  std::map<Side, int> hand_ids;
 };
 
 struct VRefIntegratorParams {

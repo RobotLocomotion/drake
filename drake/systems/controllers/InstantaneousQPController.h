@@ -27,17 +27,21 @@ public:
     initialize();
   }
 
-  InstantaneousQPController(const std::string& urdf_filename, const std::string& control_config_filename, const std::set<std::string>& collision_groups_to_keep={"heel", "toe"}):
-    robot(std::unique_ptr<RigidBodyTree>(new RigidBodyTree(urdf_filename))), 
+  InstantaneousQPController(std::unique_ptr<RigidBodyTree> robot_in, const std::string& control_config_filename):
+    robot(std::move(robot_in)), 
     cache(this->robot->bodies),
     use_fast_qp(USE_FASTQP) {
-    auto filter = [&](const string &group_name) { return collision_groups_to_keep.find(group_name) == collision_groups_to_keep.end(); };
-    robot->removeCollisionGroupsIf(filter);
-    robot->compile();
     loadConfigurationFromYAML(control_config_filename);
     initialize();
   }
 
+  InstantaneousQPController(const std::string& urdf_filename, const std::string& control_config_filename):
+    robot(std::unique_ptr<RigidBodyTree>(new RigidBodyTree(urdf_filename))), 
+    cache(this->robot->bodies),
+    use_fast_qp(USE_FASTQP) {
+    loadConfigurationFromYAML(control_config_filename);
+    initialize();
+  }
 
   GRBenv *env;
   std::unique_ptr<RigidBodyTree> robot;
