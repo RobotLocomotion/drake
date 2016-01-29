@@ -1,4 +1,5 @@
 #include "drake/util/drakeMexUtil.h"
+#include "drake/examples/Atlas/atlasUtil.h"
 #include "InstantaneousQPController.h"
 
 using namespace Eigen;
@@ -24,6 +25,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   auto urdf_filename = mxGetStdString(prhs[narg++]);
   std::string control_config_filename = mxGetStdString(prhs[narg++]);
+
   InstantaneousQPController* controller = new InstantaneousQPController(urdf_filename, control_config_filename);
   plhs[0] = createDrakeMexPointer((void*) controller, "InstantaneousQPController");
 

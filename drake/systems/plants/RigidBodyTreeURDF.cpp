@@ -660,6 +660,7 @@ void parseRobot(RigidBodyTree * model, XMLElement* node, const map<string,string
     weld_to_body = model->bodies[0];
     floating_joint_name = "base";
   } else {
+    throw std::runtime_error("TODO: implement transform from link to new robot. Or should we replace weld_to_body with weld_to_frame ? ");
     floating_joint_name = "weld";
   }
 

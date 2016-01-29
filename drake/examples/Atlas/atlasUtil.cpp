@@ -27,7 +27,7 @@ bool ankleCloseToLimits(double akx, double aky, double tol)
   return ((A*ankle-b).array() > -tol).any();
 }
 
-std::unique_ptr<RigidBodyTree> constructAtlasV5(std::unique_ptr<RigidBodyTree> robot, const RobotPropertyCache& rpc, const AtlasKinematicOptions& options=AtlasKinematicOptions()) {
+std::unique_ptr<RigidBodyTree> constructAtlas(std::unique_ptr<RigidBodyTree> robot, const RobotPropertyCache& rpc, const AtlasKinematicOptions& options=AtlasKinematicOptions()) {
 
   for (auto it = options.hands.begin(); it != options.hands.end(); ++it) {
     Side side = it->first;

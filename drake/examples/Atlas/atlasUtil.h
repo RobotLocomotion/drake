@@ -31,7 +31,7 @@ struct DRAKEATLASUTIL_EXPORT AtlasKinematicOptions {
   std::set<std::string> collision_groups_to_keep;
 };
 
-DRAKEATLASUTIL_EXPORT std::unique_ptr<RigidBodyTree> constructAtlasV5(std::unique_ptr<RigidBodyTree> robot, const RobotPropertyCache& rpc, const AtlasKinematicOptions& options=AtlasKinematicOptions());
-DRAKEATLASUTIL_EXPORT std::unique_ptr<RigidBodyTree> constructAtlasV5(const std::string& urdf_filename, const std::string& control_config_filename, const AtlasKinematicOptions& options=AtlasKinematicOptions());
+DRAKEATLASUTIL_EXPORT std::unique_ptr<RigidBodyTree> constructAtlas(std::unique_ptr<RigidBodyTree> robot, const RobotPropertyCache& rpc, const AtlasKinematicOptions& options=AtlasKinematicOptions());
+DRAKEATLASUTIL_EXPORT std::unique_ptr<RigidBodyTree> constructAtlas(const std::string& urdf_filename, const std::string& control_config_filename, const AtlasKinematicOptions& options=AtlasKinematicOptions());
 
 #endif
