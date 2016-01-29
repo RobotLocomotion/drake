@@ -2,10 +2,18 @@ function [phat,simulation_error,estimated_delay,exitflag] = parameterEstimation(
 %
 % Parameter estimation algorithm for manipulators
 %
-% Attempts to minimize the objective 
+% For the 'dynamic' mode attempts to minimize objective 
 %  \[ \min_p  | H(q,p)qddot - C(q,qd,p) - B(q,qd,p)*u |_2^2 \]
 % by extracting an affine representation using lumped-parameters and then
-% running least-squares.
+% running nonlinear least-squares.
+%
+% For the 'energetic' mode attempts to minimize objective 
+%  \[ \min_p  | Edot*dt + E(t1) - E(t2) |_2^2 \]
+% by extracting an affine representation using lumped-parameters and then
+% running nonlinear least-squares.
+%
+% For the 'energetic' mode attempts to minimize objective 
+% \[ \min_p \sum((qsim(i)-qobs(i))'C(qsim(i)-qobs(i))) \]
 %
 % Restrictions: 
 %   H,C,and B must be trig/poly in q,qd and polynomial in p.
@@ -14,13 +22,16 @@ function [phat,simulation_error,estimated_delay,exitflag] = parameterEstimation(
 %   so far, I require full-state feedback
 %
 % Algorithm:
-%   Step 1: Extract lumped-parameters 
+%   Step 1: Extract data
+%      Parse data object and save state as variables q,qd,qdd (if needed)
+%   Step 2: Extract lumped-parameters 
 %      Use TrigPoly + spotless to parse H,C,B and extract unique monomial
 %      coefficients in p.
-%   Step 2: Least-squares estimation of the lumped-parameters (more many
-%      candidate unit delays)
-%      Insert the data and do linear regression
-%   Step 3: Geometric program to back out original parameters.
+%   Step 3: Nonlinear Least-squares 
+%      Create a nonlinear least squares program to estimate the parameters 
+%      from either the lumped-parameter formulation (in the case of 
+%      'dynamic' and 'energetic') or the trajectory optimization ('simerr')
+%      
 %
 % @param data an instance of iddata (from the system identification 
 % toolbox; see 'help iddata' for more info) containing the data to 
@@ -32,22 +43,21 @@ function [phat,simulation_error,estimated_delay,exitflag] = parameterEstimation(
 % 'printAll'	= print estimated and original
 % 
 % @option model determines which model to use for estimation
-% 'dynamic'     = use dynamic model - requires qdd
-% 'energetic'   = use energetic model - doesn't require qdd
-% 'simerr'      = minimize simulation error
+% 'dynamic'     = Uses the manipulator equations to create an affine 
+%                 representation of the dynamics using lumped-parameters
+%                 uses the second derivative of position - requires qdd
+% 'energetic'   = Uses energy equation to estimate the evolution of kinetic
+%                 and potential energies based on input torques and damping
+%                 losses
+% 'simerr'      = minimize the sum of differences between simulated state
+%                 and observed state over all timesteps: 
+%                 \[ \min_p \sum((qsim(i)-qobs(i))'C(qsim(i)-qobs(i))) \]
+%                 given a cost matrix C
 % 
 % @option method determines which method to use for estimation
-% 'nonlinprog'    = nonlinear least squares (LS) to solve problem
-% 'linprog'       = linear LS on lumped params then nonlinear LS to recover
-%                 original parameters
-
-% % DEBUGGING VARIABLES
-% global numran 
-% numran = 0;
-% global TRAJFIG
-% global PERRFIG;global PERR;global PERRMIN
-% global PDIFFFIG;global PTRUE;global PDIFF
-
+% 'nonlinprog'  = nonlinear least squares (LS) to solve problem
+% 'lpprog'      = linear LS on lumped params then nonlinear LS to recover
+%                 original parameters (only for 'dynamic' and 'energetic')
 
 %% handle options
 if (nargin>2 && isstruct(varargin{1})) options=varargin{1};
@@ -163,19 +173,6 @@ if isDynamic || isEnergetic
         dE = (B*u-[p(1);p(2)].*qd1)'*qd1*dt;
         err = (T1+U1)-(T2+U2)+dE;
         
-        % % DEBUGGING the energy model
-        % E1 = getmsspoly(T1+U1);
-        % E = subs(E1,p,p_orig);
-        % E_data = msubs(E,[q1;s1;c1;qd1;u;dt],[q_data;s_data;c_data;qd_data;u_data;t_data]);
-        % diffE_data = diff(E_data);
-        % dE1 = subs(dE,p,p_orig);
-        % dE_data = msubs(dE1,[q1;qd1;q2;qd2;u;dt],[q_data(:,1:end-1);qd_data(:,1:end-1);...
-        %     q_data(:,2:end);qd_data(:,2:end);u_data(:,1:end-1);dt_data]);
-        % figure;plot(diffE_data,'-g'); hold on; plot(dE_data,'-r');
-        % title(['True \DeltaE vs. Estimated \DeltaE']);
-        % xlabel('Sample Time')
-        % ylabel({'\DeltaE Magnitude' '(Joules)/sample'})
-        % legend('True \DeltaE','Estimated \DeltaE');
     end
     % Isolate parameters from error equations
     [lp,M,Mb,lin_params,beta] = identifiableParameters(getmsspoly(err),p); % posynomial lumped params
@@ -201,7 +198,7 @@ if isDynamic || isEnergetic
 elseif strcmp(options.model,'simerr')
     % Using MATLAB sym because need to represent rational functions
     % Perhaps a better way?
-    [xdot,dxdot,ps,qs,qds,us,ts] = pobj.dynamicsSym([qt;qd],u,t);
+    [xdot,dxdot,ps,qs,qds,us,ts] = pobj.dynamicsSym(t,[qt;qd],u);
     f = [xdot;dxdot];
 end
 
@@ -220,10 +217,6 @@ if strcmp(options.model,'simerr')
     prog=prog.setSolverOptions('snopt','IterationsLimit',50000);
     prog=prog.setSolverOptions('snopt','MajorIterationsLimit',50000);
     prog=prog.setSolverOptions('snopt','MajorOptimalityTolerance',1.0e-5);
-%     % FOR DEBUGGING SIMERR
-%     if exist('TRAJFIG','var'),TRAJFIG = figure;end
-%     if exist('PERRFIG','var'),PERRFIG = figure; PERR = 10^30*ones(1,100); PERRMIN = min(PERR);end
-%     if exist('PDIFFFIG','var'),PDIFFFIG = figure; PDIFF = PTRUE-p_orig;end
 elseif strcmp(options.method,'nonlinprog')
     % Only nonlinear least squares
     nonlinfun = @(x) nonlinerr(x,lp,p,M_data,Mb_data);
@@ -237,16 +230,6 @@ elseif strcmp(options.method,'linprog')
     prog=prog.addConstraint(lpconstraint,1:np);
 end
 [x,simulation_error,exitflag] = prog.solve(p_orig);
-% if(exitflag ~= 1)
-%     % Use MATLAB built-in nonlinear least squares solver if prog fails
-%     % lsqnonlin doesn't work for either scenarios
-%     if strcmp(options.method,'linprog'); error('linprog failed'); end
-%     if strcmp(options.method,'simerr'); error('simerr failed'); end %
-%     
-%     warning('NonlinearProgram failed - trying lsqnonlin')
-%     [x,sqerr_est,~,flag] = lsqnonlin(nonlinfun,p_orig,pmin,pmax);
-%     if(flag ~= 1), error('lsqnonlin failed');end
-% end
 
 phat = Point(getParamFrame(obj),x);
 
@@ -303,11 +286,6 @@ function [f,df] = nonlinerr(x,lp,p,M_data,Mb_data)
 end
 
 function [F,dF] = simerr(obj,xobs,utraj,p,t,C,varargin)
-%     global numran; numran = numran+1;
-%     global TRAJFIG; 
-%     global PERRFIG; global PERR; global PERRMIN; 
-%     global PDIFFFIG;global PTRUE;global PDIFF;
-    
     newobj = obj.setParams(p);
     x0 = xobs(:,1);
     error = false;
@@ -342,32 +320,6 @@ function [F,dF] = simerr(obj,xobs,utraj,p,t,C,varargin)
         else
             dF = -Inf(1,length(p));
         end
-% %       % FOR DEBUGGING SIMERR
-%         if error
-%             xtraj = zeros(size(xobs));
-%         end
-%         if mod(numran,100) == 0
-%             fprintf('%i ',numran);
-%         end
-%         if exist('TRAJFIG','var') 
-%             figure(TRAJFIG);
-%             hold off;plot(xobs(1,:),xobs(2,:)); 
-%             ax = gca; xlim = ax.XLim; ylim = ax.YLim;
-%             hold on; plot(xtraj(1,:),xtraj(2,:)); 
-%             set(gca,'XLim',xlim,'YLim',ylim); drawnow; 
-%         end
-%         if exist('PERRFIG','var') 
-%             figure(PERRFIG);
-%             PERRMIN = min([PERRMIN F]); 
-%             PERR = [PERR PERRMIN];
-%             hold off;plot((numran+1-100):numran,PERR((end+1-100):end)');drawnow;
-%         end
-%         if exist('PDIFFFIG','var') 
-%             figure(PDIFFFIG); 
-%             PDIFF = [PDIFF PTRUE-p];
-%             try
-%             hold off;plot(0:numran,PDIFF');drawnow;
-%         end
     end
 end
 

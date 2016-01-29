@@ -92,7 +92,7 @@ classdef Manipulator < DrakeSystem
 
     end
 
-    function [xdot,dxdot,ps,qs,qds,us,ts] = dynamicsSym(obj,x,u,t)
+    function [xdot,dxdot,ps,qs,qds,us,ts] = dynamicsSym(obj,t,x,u)
     % Provides the DrakeSystem interface to the manipulatorDynamics.
         nq = obj.num_positions;
         p = obj.getParamFrame.getPoly;
