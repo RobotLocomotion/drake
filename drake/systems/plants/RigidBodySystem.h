@@ -13,7 +13,7 @@
  * Input: generalized forces (tau)
  * Output: generalized state (q,v)
  *
- * ConstraintForce  (isa Constraint)
+ * ContinuousTimeConstraintForce  (isa Constraint)
  * For forces that must be computed simultaneously with accelerations (not simply a function of state)
  * Described as a vector phi(q,v,vdot,f)>=0, and forceJacobian(q) in terms of vdot
  *    Note: tau_constraint = forceJacobian(q)^T*f.
@@ -44,7 +44,7 @@
  * same executable thanks to the kinematics cache.
  *
  * RigidBodySystem (isa System):
- * a RigidBodyTree + a list of Actuators and Sensors + list of ConstraintForces.  Limited to sensors/actuators w/o discrete dynamics.
+ * a RigidBodyTree + a list of Actuators and Sensors + list of ContinuousTimeConstraintForces.  Limited to sensors/actuators w/o discrete dynamics.
  * adds the additional constraints:
  * H(q) vdot + C(q,v) = \sum tau_actuators(q,v) + \sum tau_constraints(q,v,vdot,f).
  * then solves for vdot and f, then computes qdot = vToQdot*v
@@ -178,9 +178,7 @@ namespace Drake {
 
     /*
     mutable OptimizationProblem dynamics_program;
-    std::list<std::shared_ptr<LinearEqualityConstraint>> dynamics_program_constraints;  // each must also implement the RigidBodyConstraint Concept
-    std::list<std::shared_ptr<LinearEqualityConstraint>> conditional_dynamics_program_constraints;  // each must also implement the RigidBodyConstraint Concept
-*/
+    */
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };

@@ -49,7 +49,7 @@ namespace Drake {
  * @par Coming soon.  Support for:
  *   - deterministic discrete update
  *   - input limits
- *   - state constraints
+ *   - state constraints (must also allow for slack variables)
  *   - zero-crossings (to inform the tools of discontinuities in the dynamics)
  * @}
  */
