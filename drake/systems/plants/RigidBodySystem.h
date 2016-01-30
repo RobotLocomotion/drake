@@ -7,6 +7,61 @@
 #include "KinematicsCache.h"
 #include "drake/drakeRBSystem_export.h"
 
+/** Rigid Body Dynamics Engine Class Design  (still needs to be implemented below)
+ *
+ * RigidBodyTree (isa System)
+ * Input: generalized forces (tau)
+ * Output: generalized state (q,v)
+ *
+ * ConstraintForce  (isa Constraint)
+ * For forces that must be computed simultaneously with accelerations (not simply a function of state)
+ * Described as a vector phi(q,v,vdot,f)>=0, and forceJacobian(q) in terms of vdot
+ *    Note: tau_constraint = forceJacobian(q)^T*f.
+ * also exposes an interface to be evaluated as phi(vdot,f)>=0, with the kinsol set as a parameter.  Note that the complexity class of this constraint is likely to be simpler than of the original constraint.
+ * Example: position constraint:  J(q)*vdot + Jdot*v - stabilization terms = 0.  forceJacobian(q) = J // the jacobian of the position constraint
+ * Example: stick-slip frictional contact (as a set of nonlinear complementarity constraints imposing non-penetration + the friction cone)
+ *
+ * TimeSteppingConstraintForce (isa Constraint)
+ * Writable as a vector phi(q,v,qn,vn,f)>=0.
+ *    Note: tau_constraint = J^T(q)*f.
+ * Example: stick-slip frictional contact w/ a linearized friction code (as linear complementarity constraints)
+ *
+ * Sensor (isa System)
+ * Input: generalized state
+ * Output: sensor reading
+ * (can have internal dynamics/state)
+ * Examples: FullStateSensor, Encoder, IMU, Lidar, ...
+ *
+ * Actuator (isa System)    (anything that applies forces which can be computed from the current state)
+ * Input: generalized state, input command
+ * Output: generalized force, tau_actuator
+ * (can have internal dynamics/state)
+ * Examples: GeneralizedForce, TorqueSource, SpatialForce, Linear Spring/Dampers, Aerodynamic Forces, ...
+ * Example: (no-stick) frictional contact: f_normal = max(-k*phi(q) - b*phidot(q,v),0).  f_tangent = min(b*norm(tangential_velocity),mu*f_normal) * tangential_velocity/norm(tangential_velocity).  forceJacobian is the contact jacobian.
+ *
+ * The value/importance of thinking of sensors and actuators as systems is that they can be implemented in a separate
+ * executable using the signal abstraction. Note, however, that there is efficiency to be gained by keeping it in the
+ * same executable thanks to the kinematics cache.
+ *
+ * RigidBodySystem (isa System):
+ * a RigidBodyTree + a list of Actuators and Sensors + list of ConstraintForces.  Limited to sensors/actuators w/o discrete dynamics.
+ * adds the additional constraints:
+ * H(q) vdot + C(q,v) = \sum tau_actuators(q,v) + \sum tau_constraints(q,v,vdot,f).
+ * then solves for vdot and f, then computes qdot = vToQdot*v
+ * Input: Actuator inputs (only; does not include all generalized forces by default).
+ * Output: Sensor outputs (only; does not include the entire generalized state by default).
+ *
+ * TimeSteppingRigidBodySystem (isa System, with purely discrete-time dynamics):
+ * a RigidBodyTree + a list of Actuators and Sensors + a list of TimeSteppingConstraintForces.  Limited to sensors/actuators w/o continuous dynamics.
+ * adds the additional constraints:
+ * H(q) (vn-v)/h + C(q,v) = \sum tau_actuators(q,v) + \sum tau_constraints(q,v,qn,vn,f)
+ * then solves for vn and f using qn = q + h*vToQdot(q)*vn
+ * Input: Actuator inputs (only; does not include all generalized forces by default).
+ * Output: Sensor outputs (only; does not include the entire generalized state by default).
+ *
+ */
+
+
 namespace tinyxml2 {
   class XMLElement;
 }
@@ -40,6 +95,9 @@ namespace Drake {
     };
 */
   }
+
+
+
 
   /** RigidBodySystem
    * @brief implements the System concept by wrapping the RigidBodyTree algorithms with additional sensors and actuators/forces
