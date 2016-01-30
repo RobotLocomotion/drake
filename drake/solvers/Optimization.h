@@ -4,6 +4,8 @@
 #include <list>
 #include <memory>
 #include <initializer_list>
+#include <typeinfo>
+#include <utility>
 #include <Eigen/SparseCore>
 #include "drake/core/Core.h"
 #include "drake/drakeOptimization_export.h"
@@ -248,7 +250,7 @@ namespace Drake {
 
     void addCost(const std::shared_ptr<Constraint>& obj) {
       checkVariables(obj);
-      problem_type.reset(problem_type->addGenericObjective());
+      assign_problem(problem_type->addGenericObjective());
       generic_objectives.push_back(obj);
     }
 
@@ -282,12 +284,12 @@ namespace Drake {
      */
     void addConstraint(const std::shared_ptr<Constraint>& con) {
       checkVariables(con);
-      problem_type.reset(problem_type->addGenericConstraint());
+      assign_problem(problem_type->addGenericConstraint());
       generic_constraints.push_back(con);
     }
     void addConstraint(const std::shared_ptr<LinearEqualityConstraint>& con) {
       checkVariables(con);
-      problem_type.reset(problem_type->addLinearEqualityConstraint());
+      assign_problem(problem_type->addLinearEqualityConstraint());
       linear_equality_constraints.push_back(con);
     }
 
@@ -304,7 +306,7 @@ namespace Drake {
      */
     template <typename DerivedA,typename DerivedLB,typename DerivedUB>
     std::shared_ptr<LinearConstraint> addLinearConstraint(const Eigen::MatrixBase<DerivedA>& A,const Eigen::MatrixBase<DerivedLB>& lb, const Eigen::MatrixBase<DerivedUB>& ub, const VariableList& vars) {
-      problem_type.reset(problem_type->addLinearConstraint());
+      assign_problem(problem_type->addLinearConstraint());
 
       auto constraint = std::make_shared<LinearConstraint>(vars,A,lb,ub);
       linear_constraints.push_back(constraint);
@@ -329,7 +331,7 @@ namespace Drake {
    */
     template <typename DerivedA,typename DerivedB>
     std::shared_ptr<LinearEqualityConstraint> addLinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,const Eigen::MatrixBase<DerivedB>& beq, const VariableList& vars) {
-      problem_type.reset(problem_type->addLinearEqualityConstraint());
+      assign_problem(problem_type->addLinearEqualityConstraint());
 
       auto constraint = std::make_shared<LinearEqualityConstraint>(vars,Aeq,beq);
       linear_equality_constraints.push_back(constraint);
@@ -350,7 +352,7 @@ namespace Drake {
      */
     template <typename DerivedLB,typename DerivedUB>
     std::shared_ptr<BoundingBoxConstraint> addBoundingBoxConstraint(const Eigen::MatrixBase<DerivedLB>& lb, const Eigen::MatrixBase<DerivedUB>& ub, const VariableList& vars) {
-      problem_type.reset(problem_type->addLinearConstraint());
+      assign_problem(problem_type->addLinearConstraint());
 
       std::shared_ptr<BoundingBoxConstraint> constraint(new BoundingBoxConstraint(vars,lb,ub));
       bbox_constraints.push_back(constraint);
@@ -418,7 +420,6 @@ namespace Drake {
     size_t num_vars;
     Eigen::VectorXd x_initial_guess;
   private:
-
     void checkVariables(const std::shared_ptr<Constraint>& con) {
       assert(checkVariablesImpl(con) && "Constraint depends on variables that are not associated with this OptimizationProblem");
     }
@@ -427,8 +428,20 @@ namespace Drake {
       return true;
     }
 
-    // uses virtual methods to crawl up the complexity hiearchy as new decision variables and constraints are added to the program
-    // note that there is dynamic allocation happening in here, but on a structure of negligible size.  (is there a better way?)
+    // uses RTTI to crawl up the complexity hiearchy as new decision variables and constraints are added to the program
+    // dynamic allocation is unavoidable when changing the type of our program
+
+    //forward declare classes
+    struct MathematicalProgram;
+    struct LeastSquares;
+
+    void assign_problem(MathematicalProgram* const new_program) {
+      if (new_program == problem_type.get())
+        return; //no work to do here
+      else
+        problem_type.reset(new_program);
+    }
+    
     struct MathematicalProgram {
     /* these would be used to fill out the optimization hierarchy prototyped below
       virtual MathematicalProgram* addIntegerVariable() { return new MathematicalProgram; };
@@ -442,19 +455,50 @@ namespace Drake {
       virtual MathematicalProgram* addSecondOrderConeConstraint() { return new MathematicalProgram; };
       virtual MathematicalProgram* addComplementarityConstraint() { return new MathematicalProgram; };
       */
-      virtual MathematicalProgram* addGenericObjective() { return new MathematicalProgram; };
-      virtual MathematicalProgram* addGenericConstraint() { return new MathematicalProgram; };
-      virtual MathematicalProgram* addLinearConstraint() { return new MathematicalProgram; };
-      virtual MathematicalProgram* addLinearEqualityConstraint() { return new MathematicalProgram; };
+      virtual MathematicalProgram* addGenericObjective() {
+        return require_superclass_of<NonlinearProgram>();
+      };
+      virtual MathematicalProgram* addGenericConstraint() {
+        return require_superclass_of<NonlinearProgram>();
+      };
+      virtual MathematicalProgram* addLinearConstraint() {
+        return require_superclass_of<NonlinearProgram>();
+      };
+      virtual MathematicalProgram* addLinearEqualityConstraint() {
+        return require_superclass_of<LeastSquares>();
+      };
       virtual bool solve(OptimizationProblem& prog) const { throw std::runtime_error("not implemented yet"); }
+      
+      /**
+       * Returns this if *this is a superclass of Derived. Otherwise constructs a Derived from
+       * provided arguments returns this
+       * Derived must be in the same inheritance tree as this.
+       *
+       * @tparam Derived class to compare *this to
+       * @param derived_ctor_arg arguments to construct a Derived, if necessary to do so
+       */
+      template <typename Derived, typename... DerivedCtorArg>
+      MathematicalProgram* require_superclass_of(DerivedCtorArg&&... derived_ctor_arg) {
+        //If *this is a superclass of Derived, we won't be able to cast *this into a Derived.
+        //An exception is that *this may be of type Derived, so we have check for this case
+        //We use this logic since C++ can't directly check if a static type derives from a dynamic type
+
+        bool this_is_superclass_of_derived =
+                (typeid(Derived) == typeid(*this)) //check if *this is a Derived
+                || (dynamic_cast<Derived*>(this) == nullptr); //check if we cannot cast this to Derived
+
+        if (this_is_superclass_of_derived)
+          return this;
+        else
+        {
+          //the following line will delete this. It's safe to do so as long as nothing else uses *this afterwards
+          return new Derived(std::forward<DerivedCtorArg>(derived_ctor_arg)...);
+        }
+      }
+
     };
 
     struct NonlinearProgram : public MathematicalProgram {
-      virtual MathematicalProgram* addGenericObjective() override { return new NonlinearProgram; };
-      virtual MathematicalProgram* addGenericConstraint() override { return new NonlinearProgram; };
-      virtual MathematicalProgram* addLinearConstraint() override { return new NonlinearProgram; };
-      virtual MathematicalProgram* addLinearEqualityConstraint() override { return new NonlinearProgram; };
-
       virtual bool solve(OptimizationProblem &prog) const override {
         if (hasSNOPT()) return solveWithSNOPT(prog);
         return MathematicalProgram::solve(prog);
@@ -485,7 +529,6 @@ namespace Drake {
     struct LinearComplementarityProblem : public NonlinearComplementarityProblem {};
 */
     struct LeastSquares : public NonlinearProgram { //public LinearProgram, public LinearComplementarityProblem {
-      virtual MathematicalProgram* addLinearEqualityConstraint() override { return new LeastSquares; };
       virtual bool solve(OptimizationProblem& prog) const override {
         size_t num_constraints = 0;
         for (auto const& c : prog.linear_equality_constraints) {
@@ -512,7 +555,7 @@ namespace Drake {
         return true;
       }
     };
-    std::shared_ptr<MathematicalProgram> problem_type;
+    std::unique_ptr<MathematicalProgram> problem_type;
   };
 
 } // end namespace Drake
