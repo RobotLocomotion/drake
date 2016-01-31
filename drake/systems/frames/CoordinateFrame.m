@@ -552,7 +552,7 @@ classdef CoordinateFrame < handle
       % when no value is passed in, based on the prefixes provided.
       
       % specifically, we take the prefix string corresponding to an array of
-      % characteers, and create a cell array with a unique identifier
+      % characters, and create a cell array with a unique identifier
       % appended to each string.
       
       % for example, if s='aabab', 
