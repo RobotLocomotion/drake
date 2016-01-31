@@ -190,7 +190,7 @@ classdef MarkovDecisionProcess < DrakeSystem
               waitbar_lastupdate = ai/na;
             end
           end
-      elseif options.vectorized_x
+      else
           C_vectorized = zeros(ns,na);
           [T_vectorized{1:na}] = deal(sparse(ns,ns));
           

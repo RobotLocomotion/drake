@@ -1,6 +1,4 @@
 function g = multiplePointObstacleCost(x, obstacle_positions)
-%MULTIPLEPOINTOBSTACLECOST Summary of this function goes here
-%   Detailed explanation goes here
   
   function c = singlePointObstacleCost(x_plant, x_obs)
   % For 2-dimensions, calculates the cost an obstacle imposes on

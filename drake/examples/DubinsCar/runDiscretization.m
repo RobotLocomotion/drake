@@ -1,6 +1,4 @@
-function [] = runDiscretization
-%RUNDISCRETIZATION Summary of this function goes here
-%   Detailed explanation goes here
+function runDiscretization
 
   plant = DubinsPlant;
   options.dt = 1e-2;
