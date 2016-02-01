@@ -1,7 +1,7 @@
 #include "drake/examples/Atlas/atlasUtil.h"
 #include <stdexcept>
 #include <Eigen/Core>
-#include "drake/core/Path.h"
+#include "drake/Path.h"
 #include "drake/util/yaml/yamlUtil.h"
 
 namespace Atlas {

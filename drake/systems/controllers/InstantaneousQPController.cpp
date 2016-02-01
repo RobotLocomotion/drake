@@ -6,7 +6,7 @@
 #include "drake/util/lcmUtil.h"
 #include "drake/util/testUtil.h"
 #include "drake/util/yaml/yamlUtil.h"
-#include "drake/core/Path.h"
+#include "drake/Path.h"
 #include "lcmtypes/drake/lcmt_zmp_com_observer_state.hpp"
 
 const bool CHECK_CENTROIDAL_MOMENTUM_RATE_MATCHES_TOTAL_WRENCH = false;
