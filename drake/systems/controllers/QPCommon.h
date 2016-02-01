@@ -106,7 +106,6 @@ struct VRefIntegratorParams {
   double delta_max;
 
   friend bool operator==(const VRefIntegratorParams& lhs, const VRefIntegratorParams& rhs) {
-    // std::cout << "comparing VRefIntegratorParams" << std::endl;
     return lhs.zero_ankles_on_contact == rhs.zero_ankles_on_contact
         && lhs.eta == rhs.eta
         && lhs.delta_max == rhs.delta_max;
@@ -123,14 +122,7 @@ struct IntegratorParams {
   Eigen::VectorXd clamps;
   double eta;
 
-  friend std::ostream& operator<<(std::ostream& os, const IntegratorParams& params) {
-    os << "gains: " << params.gains.transpose() << std::endl
-      << "clamps: " << params.clamps.transpose() << std::endl
-      << "eta: " << params.eta << std::endl;
-      return os;
-  }
   friend bool operator==(const IntegratorParams& lhs, const IntegratorParams& rhs) {
-    // std::cout << "comparing IntegratorParams" << std::endl;
     return lhs.gains.isApprox(rhs.gains)
         && lhs.clamps.isApprox(rhs.clamps)
         && lhs.eta == rhs.eta;
@@ -145,13 +137,7 @@ struct Bounds {
   Eigen::VectorXd min;
   Eigen::VectorXd max;
 
-  friend std::ostream& operator<<(std::ostream& os, const Bounds& bounds) {
-    os << "min: " << bounds.min.transpose() << std::endl
-       << "max: " << bounds.max.transpose() << std::endl;
-    return os;
-   }
   friend bool operator==(const Bounds& lhs, const Bounds& rhs) {
-    // std::cout << "comparing Bounds" << std::endl;
     return lhs.min.isApprox(rhs.min)
         && lhs.max.isApprox(rhs.max);
   }
@@ -177,20 +163,7 @@ struct JointSoftLimitParams {
   Eigen::VectorXd weight;
   Eigen::VectorXd k_logistic;
 
-  friend std::ostream& operator<<(std::ostream& os, const JointSoftLimitParams& params) {
-    os << "enabled: " << params.enabled.transpose() << std::endl
-       << "disable_when_body_in_support: " << params.disable_when_body_in_support.transpose() << std::endl
-       << "lb: " << params.lb.transpose() << std::endl
-       << "ub: " << params.ub.transpose() << std::endl
-       << "kp: " << params.kp.transpose() << std::endl
-       << "kd: " << params.kd.transpose() << std::endl
-       << "weight: " << params.weight.transpose() << std::endl
-       << "k_logistic: " << params.k_logistic.transpose() << std::endl;
-    return os;
-  }
-
   friend bool operator==(const JointSoftLimitParams& lhs, const JointSoftLimitParams& rhs) {
-    std::cout << "comparing JointSoftLimitParams" << std::endl;
     bool is_equal = lhs.enabled == rhs.enabled
         && lhs.disable_when_body_in_support == rhs.disable_when_body_in_support
         && lhs.lb == rhs.lb
@@ -199,38 +172,7 @@ struct JointSoftLimitParams {
         && lhs.kd.isApprox(rhs.kd)
         && lhs.weight.isApprox(rhs.weight)
         && lhs.k_logistic.isApprox(rhs.k_logistic);
-
-    if (!is_equal) {
-      std::cout << "lhs: " << std::endl << lhs << std::endl;
-      std::cout << "rhs: " << std::endl << rhs << std::endl;
-    }
     return is_equal;
-    // std::cout << "lhs: " << std::endl;
-    // std::cout << "enabled: " << lhs.enabled.transpose() << std::endl;
-    // std::cout << "disable_when_body_in_support: " << lhs.disable_when_body_in_support.transpose() << std::endl;
-    // std::cout << "lb: " << lhs.lb.transpose() << std::endl;
-    // std::cout << "ub: " << lhs.ub.transpose() << std::endl;
-    // std::cout << "kp: " << lhs.kp.transpose() << std::endl;
-    // std::cout << "kd: " << lhs.kd.transpose() << std::endl;
-    // std::cout << "weight: " << lhs.weight.transpose() << std::endl;
-    // std::cout << "k_logistic: " << lhs.k_logistic.transpose() << std::endl;
-    // std::cout << "rhs: " << std::endl;
-    // std::cout << "enabled: " << rhs.enabled.transpose() << std::endl;
-    // std::cout << lhs.enabled.isApprox(rhs.enabled) << std::endl;
-    // std::cout << "disable_when_body_in_support: " << rhs.disable_when_body_in_support.transpose() << std::endl;
-    // std::cout << lhs.disable_when_body_in_support.isApprox(rhs.disable_when_body_in_support) << std::endl;
-    // std::cout << "lb: " << rhs.lb.transpose() << std::endl;
-    // std::cout << lhs.lb.isApprox(rhs.lb) << std::endl;
-    // std::cout << "ub: " << rhs.ub.transpose() << std::endl;
-    // std::cout << lhs.ub.isApprox(rhs.ub) << std::endl;
-    // std::cout << "kp: " << rhs.kp.transpose() << std::endl;
-    // std::cout << lhs.kp.isApprox(rhs.kp) << std::endl;
-    // std::cout << "kd: " << rhs.kd.transpose() << std::endl;
-    // std::cout << lhs.kd.isApprox(rhs.kd) << std::endl;
-    // std::cout << "weight: " << rhs.weight.transpose() << std::endl;
-    // std::cout << lhs.weight.isApprox(rhs.weight) << std::endl;
-    // std::cout << "k_logistic: " << rhs.k_logistic.transpose() << std::endl;
-    // std::cout << lhs.k_logistic.isApprox(rhs.k_logistic) << std::endl;
   }
 };
 
@@ -251,39 +193,7 @@ struct WholeBodyParams {
   IntegratorParams integrator;
   Bounds qdd_bounds;
 
-  friend std::ostream& operator<<(std::ostream& os, const WholeBodyParams& params) {
-    os << "Kp: " << params.Kp.transpose() << std::endl
-       << "Kd: " << params.Kd.transpose() << std::endl
-       << "w_qdd: " << params.w_qdd.transpose() << std::endl
-       << "integrator: " << std::endl << params.integrator << std::endl
-       << "qdd_bounds: " << std::endl << params.qdd_bounds << std::endl;
-    return os;
-  }
-
   friend bool operator==(const WholeBodyParams& lhs, const WholeBodyParams& rhs) {
-    std::cout << "comparing WholeBodyParams" << std::endl;
-    bool is_equal = lhs.Kp.isApprox(rhs.Kp)
-        && lhs.Kd.isApprox(rhs.Kd)
-        && lhs.w_qdd.isApprox(rhs.w_qdd)
-        && lhs.integrator == rhs.integrator
-        && lhs.qdd_bounds == rhs.qdd_bounds;
-    if (!is_equal) {
-      std::cout << "lhs: " << std::endl << lhs << std::endl
-        << "rhs: " << std::endl << rhs << std::endl;
-    }
-    // std::cout << "lhs: " << std::endl;
-    // std::cout << "Kp: " << lhs.Kp.transpose() << std::endl;
-    // std::cout << "Kd: " << lhs.Kd.transpose() << std::endl;
-    // std::cout << "w_qdd: " << lhs.w_qdd.transpose() << std::endl;
-    // std::cout << "rhs: " << std::endl;
-    // std::cout << "Kp: " << rhs.Kp.transpose() << std::endl;
-    // std::cout << "Kd: " << rhs.Kd.transpose() << std::endl;
-    // std::cout << "w_qdd: " << rhs.w_qdd.transpose() << std::endl;
-    // std::cout << (lhs.Kp.isApprox(rhs.Kp)) << std::endl;
-    // std::cout << (lhs.Kd.isApprox(rhs.Kd)) << std::endl;
-    // std::cout << (lhs.w_qdd.isApprox(rhs.w_qdd)) << std::endl;
-    // std::cout << (lhs.integrator == rhs.integrator) << std::endl;
-    // std::cout << (lhs.qdd_bounds == rhs.qdd_bounds) << std::endl;
     return lhs.Kp.isApprox(rhs.Kp)
         && lhs.Kd.isApprox(rhs.Kd)
         && lhs.w_qdd.isApprox(rhs.w_qdd)
@@ -305,13 +215,6 @@ struct BodyMotionParams {
   double weight;
 
   friend bool operator==(const BodyMotionParams& lhs, const BodyMotionParams& rhs) {
-    std::cout << "comparing BodyMotionParams" << std::endl;
-    // std::cout << "lhs: " << std::endl;
-    // std::cout << "Kp: " << lhs.Kp.transpose() << std::endl;
-    // std::cout << "Kd: " << lhs.Kd.transpose() << std::endl;
-    // std::cout << "rhs: " << std::endl;
-    // std::cout << "Kp: " << rhs.Kp.transpose() << std::endl;
-    // std::cout << "Kd: " << rhs.Kd.transpose() << std::endl;
     return lhs.Kp.isApprox(rhs.Kp)
         && lhs.Kd.isApprox(rhs.Kd)
         && lhs.accel_bounds == rhs.accel_bounds
@@ -340,7 +243,6 @@ struct HardwareGains {
   Eigen::VectorXd ff_qd_d;
 
   friend bool operator==(const HardwareGains& lhs, const HardwareGains& rhs) {
-    std::cout << "comparing HardwareGains" << std::endl;
     bool is_equal = lhs.k_f_p.isApprox(rhs.k_f_p)
         && lhs.k_q_p.isApprox(rhs.k_q_p)
         && lhs.k_q_i.isApprox(rhs.k_q_i)
@@ -349,25 +251,6 @@ struct HardwareGains {
         && lhs.ff_f_d.isApprox(rhs.ff_f_d)
         && lhs.ff_const.isApprox(rhs.ff_const)
         && lhs.ff_qd_d.isApprox(rhs.ff_qd_d);
-
-    if (!is_equal) {
-      std::cout << (lhs.k_f_p.isApprox(rhs.k_f_p)) << std::endl;
-      std::cout << "lhs: " << lhs.k_f_p.transpose() << std::endl;
-      std::cout << "rhs: " << rhs.k_f_p.transpose() << std::endl;
-      std::cout << (lhs.k_q_p.isApprox(rhs.k_q_p)) << std::endl;
-      std::cout << "lhs: " << lhs.k_q_p.transpose() << std::endl;
-      std::cout << "rhs: " << rhs.k_q_p.transpose() << std::endl;
-      std::cout << (lhs.k_q_i.isApprox(rhs.k_q_i)) << std::endl;
-      std::cout << (lhs.k_qd_p.isApprox(rhs.k_qd_p)) << std::endl;
-      std::cout << "lhs: " << lhs.k_qd_p.transpose() << std::endl;
-      std::cout << "rhs: " << rhs.k_qd_p.transpose() << std::endl;
-      std::cout << (lhs.ff_qd.isApprox(rhs.ff_qd)) << std::endl;
-      std::cout << (lhs.ff_f_d.isApprox(rhs.ff_f_d)) << std::endl;
-      std::cout << (lhs.ff_const.isApprox(rhs.ff_const)) << std::endl;
-      std::cout << (lhs.ff_qd_d.isApprox(rhs.ff_qd_d)) << std::endl;
-      std::cout << "lhs: " << lhs.ff_qd_d.transpose() << std::endl;
-      std::cout << "rhs: " << rhs.ff_qd_d.transpose() << std::endl;
-    }
     return is_equal;
   }
 };
@@ -383,10 +266,6 @@ struct HardwareParams {
   Eigen::Matrix<bool, Eigen::Dynamic, 1> joint_is_position_controlled;
 
   friend bool operator==(const HardwareParams& lhs, const HardwareParams& rhs) {
-    std::cout << "comparing HardwareParams" << std::endl;
-    return lhs.gains == rhs.gains
-        && lhs.joint_is_force_controlled == rhs.joint_is_force_controlled
-        && lhs.joint_is_position_controlled == rhs.joint_is_position_controlled;
     return lhs.gains == rhs.gains
         && lhs.joint_is_force_controlled == rhs.joint_is_force_controlled
         && lhs.joint_is_position_controlled == rhs.joint_is_position_controlled;
@@ -427,31 +306,7 @@ struct QPControllerParams {
   bool use_center_of_mass_observer;
   Eigen::Matrix4d center_of_mass_observer_gain;
 
-  // friend std::ostream& operator<<(std::ostream& os, const QPControllerParams& params) {
-  //   os << "whole_body: " << std::endl << params.whole_body << std::endl
-  //     << "body_motion: " << std::endl;
-  //   for (auto it = body_motion.begin(); it != body_motion.end(); ++it) {
-  //     os << it - body_motion.begin() << ": " << std::endl << *it << std::endl;
-  //   }
-  //   os << "vref_integrator: " << std::endl << params.vref_integrator << std::endl
-  //     << "joint_soft_limits: " << std::endl << params.joint_soft_limits << std::endl
-  //     << "hardware: " << std::endl << params.hardware << std::endl
-  //     << "W_kdot: " << std::endl << params.W_kdot << std::endl
-  //     << "Kp_ang: " << std::endl << params.Kp_ang << std::endl
-  //     << "w_slack: " << std::endl << params.w_slack << std::endl
-  //     << "slack_limit: " << std::endl << params.slack_limit << std::endl
-  //     << "w_grf: " << std::endl << params.w_grf << std::endl
-  //     << "Kp_accel: " << std::endl << params.Kp_accel << std::endl
-  //     << "contact_threshold: " << std::endl << params.contact_threshold << std::endl
-  //     << "min_knee_angle: " << std::endl << params.min_knee_angle << std::endl
-  //     << "use_center_of_mass_observer: " << std::endl << params.use_center_of_mass_observer << std::endl
-  //     << "center_of_mass_observer_gain: " << std::endl << params.center_of_mass_observer_gain << std::endl;
-  //   return os;
-  // }
-
   friend bool operator==(const QPControllerParams& lhs, const QPControllerParams& rhs) {
-    std::cout << "comparing QPControllerParams" << std::endl;
-
     bool is_equal = lhs.whole_body == rhs.whole_body
         // && lhs.body_motion == rhs.body_motion
         && lhs.vref_integrator == rhs.vref_integrator
@@ -467,21 +322,6 @@ struct QPControllerParams {
         && lhs.min_knee_angle == rhs.min_knee_angle
         && lhs.use_center_of_mass_observer == rhs.use_center_of_mass_observer
         && lhs.center_of_mass_observer_gain.isApprox(rhs.center_of_mass_observer_gain);
-
-
-    std::cout << (lhs.joint_soft_limits == rhs.joint_soft_limits) << std::endl;
-    std::cout << (lhs.hardware == rhs.hardware) << std::endl;
-    std::cout << (lhs.W_kdot.isApprox(rhs.W_kdot)) << std::endl;
-    std::cout << (lhs.Kp_ang == rhs.Kp_ang) << std::endl;
-    std::cout << (lhs.w_slack == rhs.w_slack) << std::endl;
-    std::cout << (lhs.slack_limit == rhs.slack_limit) << std::endl;
-    std::cout << (lhs.w_grf == rhs.w_grf) << std::endl;
-    std::cout << (lhs.Kp_accel == rhs.Kp_accel) << std::endl;
-    std::cout << (lhs.contact_threshold == rhs.contact_threshold) << std::endl;
-    std::cout << (lhs.min_knee_angle == rhs.min_knee_angle) << std::endl;
-    std::cout << (lhs.use_center_of_mass_observer == rhs.use_center_of_mass_observer) << std::endl;
-    std::cout << (lhs.center_of_mass_observer_gain.isApprox(rhs.center_of_mass_observer_gain)) << std::endl;
-
     return is_equal;
   }
 };
