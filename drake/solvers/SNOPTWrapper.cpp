@@ -27,12 +27,15 @@ using namespace Drake;
 
 // NOTE: all snopt calls will use this shared memory... so this code is NOT THREAD SAFE
 const Drake::OptimizationProblem* current_problem = NULL;
-static unique_ptr<snopt::doublereal []> rw;
-static unique_ptr<snopt::integer []> iw;
-static unique_ptr<char []> cw;
-static snopt::integer lenrw=0;
-static snopt::integer leniw=0;
-static snopt::integer lencw=0;
+
+struct SNOPTData: public Drake::OptimizationProblem::SolverData {
+  unique_ptr<snopt::doublereal []> rw;
+  unique_ptr<snopt::integer []> iw;
+  unique_ptr<char []> cw;
+  snopt::integer lenrw=0;
+  snopt::integer leniw=0;
+  snopt::integer lencw=0;
+};
 
 static int snopt_userfun(snopt::integer *Status, snopt::integer *n, snopt::doublereal x[],
                          snopt::integer *needF, snopt::integer *neF, snopt::doublereal F[],
@@ -106,15 +109,15 @@ void mysnsetr(const char* strOpt,snopt::doublereal val,snopt::integer* iPrint, s
 }
 
 bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationProblem &prog) const {
+  auto d = prog.getSolverData<SNOPTData>();
   current_problem = &prog;
-
-  if (lenrw==0) { // then initialize (sninit needs some default allocation)
-    lenrw = 500000;
-    rw.reset(new snopt::doublereal[lenrw]);
-    leniw = 500000;
-    iw.reset(new snopt::integer[leniw]);
-    lencw = 500;
-    cw.reset(new char[8*lencw]);
+  if (d->lenrw==0) { // then initialize (sninit needs some default allocation)
+    d->lenrw = 500000;
+    d->rw.reset(new snopt::doublereal[d->lenrw]);
+    d->leniw = 500000;
+    d->iw.reset(new snopt::integer[d->leniw]);
+    d->lencw = 500;
+    d->cw.reset(new char[8*d->lencw]);
   }
 
   snopt::integer nx = prog.num_vars;
@@ -241,29 +244,29 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
     char print_file_name[50] = "snopt.out";
     snopt::integer print_file_name_len = static_cast<snopt::integer>(strlen(print_file_name));
     snopt::snopenappend_(&iPrint,print_file_name,&INFO_snopt,print_file_name_len);
-    mysnseti("Major print level",static_cast<snopt::integer>(11),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
-    mysnseti("Print file",iPrint,&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
+    mysnseti("Major print level",static_cast<snopt::integer>(11),&iPrint,&iSumm,&INFO_snopt,d->cw.get(),&d->lencw,d->iw.get(),&d->leniw,d->rw.get(),&d->lenrw);
+    mysnseti("Print file",iPrint,&iPrint,&iSumm,&INFO_snopt,d->cw.get(),&d->lencw,d->iw.get(),&d->leniw,d->rw.get(),&d->lenrw);
   }
 
   snopt::integer minrw,miniw,mincw;
-  snopt::sninit_(&iPrint,&iSumm,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw,8*lencw);
-  snopt::snmema_(&INFO_snopt, &nF, &nx, &nxname, &nFname, &lenA, &lenG, &mincw, &miniw, &minrw, cw.get(), &lencw, iw.get(), &leniw, rw.get(), &lenrw, 8 * lencw);
-  if (minrw>lenrw) {
+  snopt::sninit_(&iPrint,&iSumm,d->cw.get(),&d->lencw,d->iw.get(),&d->leniw,d->rw.get(),&d->lenrw,8*d->lencw);
+  snopt::snmema_(&INFO_snopt, &nF, &nx, &nxname, &nFname, &lenA, &lenG, &mincw, &miniw, &minrw, d->cw.get(), &d->lencw, d->iw.get(), &d->leniw, d->rw.get(), &d->lenrw, 8 * d->lencw);
+  if (minrw>d->lenrw) {
     //mexPrintf("reallocation rw with size %d\n",minrw);
-    lenrw = minrw;
-    rw.reset(new snopt::doublereal[lenrw]);
+    d->lenrw = minrw;
+    d->rw.reset(new snopt::doublereal[d->lenrw]);
   }
-  if (miniw>leniw) {
+  if (miniw>d->leniw) {
     //mexPrintf("reallocation iw with size %d\n",miniw);
-    leniw = miniw;
-    iw.reset(new snopt::integer[leniw]);
+    d->leniw = miniw;
+    d->iw.reset(new snopt::integer[d->leniw]);
   }
-  if (mincw>lencw) {
+  if (mincw>d->lencw) {
     //mexPrintf("reallocation cw with size %d\n",mincw);
-    lencw = mincw;
-    cw.reset(new char[8*lencw]);
+    d->lencw = mincw;
+    d->cw.reset(new char[8*d->lencw]);
   }
-  snopt::sninit_(&iPrint,&iSumm,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw,8*lencw);
+  snopt::sninit_(&iPrint,&iSumm,d->cw.get(),&d->lencw,d->iw.get(),&d->leniw,d->rw.get(),&d->lenrw,8*d->lencw);
 
   snopt::integer Cold = 0;
   snopt::doublereal *xmul = new snopt::doublereal[nx];
@@ -304,10 +307,10 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
            x, xstate, xmul, F, Fstate, Fmul,
            &INFO_snopt, &mincw, &miniw, &minrw,
            &nS, &nInf, &sInf,
-           cw.get(), &lencw, iw.get(), &leniw, rw.get(), &lenrw,
-           cw.get(), &lencw, iw.get(), &leniw, rw.get(), &lenrw,
+           d->cw.get(), &d->lencw, d->iw.get(), &d->leniw, d->rw.get(), &d->lenrw,
+           d->cw.get(), &d->lencw, d->iw.get(), &d->leniw, d->rw.get(), &d->lenrw,
            npname, 8*nxname, 8*nFname,
-            8*lencw,8*lencw);
+            8*d->lencw,8*d->lencw);
 
   cout << "SNOPT INFO: " << INFO_snopt << endl;
 
