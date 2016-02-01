@@ -1,7 +1,6 @@
 #ifndef INSTANTANEOUSQPCONTROLLER_H
 #define INSTANTANEOUSQPCONTROLLER_H
 
-#include <regex>
 #include <memory>
 #include "QPCommon.h"
 

@@ -3,7 +3,6 @@
 #include "drake/util/drakeMexUtil.h"
 #include "drake/systems/controllers/controlMexUtil.h"
 #include "drake/util/yaml/yamlUtil.h"
-#include <regex>
 #include <fstream>
 
 using namespace std;
@@ -299,7 +298,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
   std::string control_config_filename = mxGetStdString(prhs[narg]);
   YAML::Node control_config = LoadFile(control_config_filename);
-  std::ofstream debug_file(regex_replace(control_config_filename, std::regex("\\.yaml"), ".debug.out.yaml"));
+  std::ofstream debug_file("debug_" + control_config_filename);
   auto param_sets_yaml = loadAllParamSets(control_config["qp_controller_params"], *robot_ptr, debug_file); 
   narg++;
 
