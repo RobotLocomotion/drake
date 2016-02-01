@@ -64,10 +64,10 @@ public:
   RigidBodyTree(void);
   virtual ~RigidBodyTree(void);
 
-  void addRobotFromURDFString(const std::string &xml_string, const std::string &root_dir = ".", const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW, std::shared_ptr<RigidBody> weld_to_body=nullptr);
-  void addRobotFromURDFString(const std::string &xml_string, std::map<std::string,std::string>& package_map, const std::string &root_dir = ".", const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW, std::shared_ptr<RigidBody> weld_to_body=nullptr);
-  void addRobotFromURDF(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW, std::shared_ptr<RigidBody> weld_to_body=nullptr);
-  void addRobotFromURDF(const std::string &urdf_filename, std::map<std::string,std::string>& package_map, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW, std::shared_ptr<RigidBody> weld_to_body=nullptr);
+  void addRobotFromURDFString(const std::string &xml_string, const std::string &root_dir = ".", const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW, std::shared_ptr<RigidBodyFrame> weld_to_frame=nullptr);
+  void addRobotFromURDFString(const std::string &xml_string, std::map<std::string,std::string>& package_map, const std::string &root_dir = ".", const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW, std::shared_ptr<RigidBodyFrame> weld_to_frame=nullptr);
+  void addRobotFromURDF(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW, std::shared_ptr<RigidBodyFrame> weld_to_frame=nullptr);
+  void addRobotFromURDF(const std::string &urdf_filename, std::map<std::string,std::string>& package_map, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW, std::shared_ptr<RigidBodyFrame> weld_to_frame=nullptr);
 
   void addFrame(const std::shared_ptr<RigidBodyFrame>& frame);
 
@@ -458,6 +458,7 @@ public:
   std::shared_ptr<RigidBody> findJoint(std::string jointname, int robot=-1) const;
   int findJointId(const std::string& linkname, int robot = -1) const;
   //@param robot   the index of the robot. robot = -1 means to look at all the robots
+  std::shared_ptr<RigidBodyFrame> findFrame(std::string frame_name, int robot=-1) const;
 
   std::string getBodyOrFrameName(int body_or_frame_id) const;
   //@param body_or_frame_id   the index of the body or the id of the frame.

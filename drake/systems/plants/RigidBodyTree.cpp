@@ -1328,6 +1328,31 @@ shared_ptr<RigidBody> RigidBodyTree::findLink(std::string linkname, int robot) c
   return nullptr;
 }
 
+shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(std::string frame_name, int robot) const
+{
+  std::transform(frame_name.begin(), frame_name.end(), frame_name.begin(), ::tolower); // convert to lower case
+
+  int match = -1;
+  for(int i = 0;i<frames.size();i++) {
+    string frame_name_lower = frames[i]->name;
+    std::transform(frame_name_lower.begin(), frame_name_lower.end(), frame_name_lower.begin(),
+                   ::tolower); // convert to lower case
+    if (frame_name_lower.compare(frame_name) == 0) { // the names match
+      if (robot == -1 || frames[i]->body->robotnum == robot) { // it's the right robot
+        if (match < 0) { // it's the first match
+          match = i;
+        } else {
+          cerr << "Error: found multiple frames named " << frame_name << endl;
+          return nullptr;
+        }
+      }
+    }
+  }
+  if (match>=0) return frames[match];
+  cerr << "Error: could not find a frame named " << frame_name << endl;
+  return nullptr;
+}
+
 int RigidBodyTree::findLinkId(const std::string& name, int robot) const
 {
 	shared_ptr<RigidBody> link = findLink(name,robot);
