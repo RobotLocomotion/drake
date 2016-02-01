@@ -3,7 +3,7 @@ package drake;
 struct lcmt_joint_pd_override {
 	int64_t timestamp;
 
-	string position_name;
+	int32_t position_ind;
 	double qi_des;
 	double qdi_des;
 	double kp;

@@ -281,8 +281,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   settings.akx_names[Side::RIGHT] = mxGetStdString(mxGetPropertySafe(mxGetPropertySafe(mex_settings, "robot"), "r_akx_name"));
   settings.aky_names[Side::LEFT] = mxGetStdString(mxGetPropertySafe(mxGetPropertySafe(mex_settings, "robot"), "l_aky_name"));
   settings.aky_names[Side::RIGHT] = mxGetStdString(mxGetPropertySafe(mxGetPropertySafe(mex_settings, "robot"), "r_aky_name"));
-  settings.constrained_position_names = matlabToStdVector<std::string>(mxGetPropertySafe(mex_settings, "constrained_position_names"));
-  settings.untracked_position_names = matlabToStdVector<std::string>(mxGetPropertySafe(mex_settings, "untracked_position_names"));
+  settings.constrained_position_indices = matlabToStdVector<int>(mxGetPropertySafe(mex_settings, "constrained_dofs"));
+  addOffset(settings.constrained_position_indices, -1); // base 1 to base 0
+  settings.untracked_position_indices = matlabToStdVector<int>(mxGetPropertySafe(mex_settings, "untracked_joint_inds"));
+  addOffset(settings.untracked_position_indices, -1); // base 1 to base 0
 
   // lcm
   string lcm_channel = mxGetStdString(mex_lcm_channel);

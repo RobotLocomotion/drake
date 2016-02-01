@@ -295,18 +295,6 @@ DLLEXPORT const std::vector<double> matlabToStdVector<double>(const mxArray* in)
   return std::vector<double>(data, data + mxGetNumberOfElements(in));
 }
 
-template <>
-DLLEXPORT const std::vector<std::string> matlabToStdVector<std::string>(const mxArray* in) {
-  if (!mxIsCell(in)) {
-    throw std::runtime_error("Not a cell array");
-  }
-  std::vector<std::string> ret(mxGetNumberOfElements(in));
-  for (int i=0; i < mxGetNumberOfElements(in); i++) {
-    ret[i] = mxGetStdString(mxGetCell(in, i));
-  }
-  return ret;
-}
-
 DLLEXPORT Matrix<Polynomiald, Dynamic, Dynamic> msspolyToEigen(const mxArray* msspoly)
 {
   auto dim = matlabToEigenMap<1,2>(mxGetPropertySafe(msspoly,0,"dim"));
