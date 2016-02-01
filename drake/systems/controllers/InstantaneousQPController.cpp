@@ -83,7 +83,7 @@ void InstantaneousQPController::initialize() {
 
 void InstantaneousQPController::loadConfigurationFromYAML(const std::string& control_config_filename) {
   YAML::Node control_config = YAML::LoadFile(control_config_filename);
-  std::ofstream debug_file("debug_" + control_config_filename);
+  std::ofstream debug_file(control_config_filename + ".debug.yaml");
   param_sets = loadAllParamSets(control_config["qp_controller_params"], *robot, debug_file); 
   rpc = parseKinematicTreeMetadata(control_config["kinematic_tree_metadata"], *robot);
 }
