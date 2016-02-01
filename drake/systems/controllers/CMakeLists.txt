@@ -59,7 +59,7 @@ if (MATLAB_FOUND)
     include_directories(${CMAKE_CURRENT_SOURCE_DIR})
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../core)
     add_mex(constructQPDataPointerMex constructQPDataPointerMex.cpp)
-    target_link_libraries(constructQPDataPointerMex drakeQP drakeControlUtil drakeQPCommon drakeMexUtil drakeControlMexUtil drakeYAMLUtil)
+    target_link_libraries(constructQPDataPointerMex drakeQP drakeControlUtil drakeQPCommon drakeMexUtil drakeControlMexUtil drakeYAMLUtil drakeAtlasUtil)
     pods_use_pkg_config_packages(constructQPDataPointerMex gurobi)
 
     add_mex(compareParamSetsmex compareParamSetsmex.cpp)

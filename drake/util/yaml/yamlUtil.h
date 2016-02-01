@@ -16,3 +16,4 @@ QPControllerParams loadSingleParamSet(const YAML::Node &config, const RigidBodyT
 std::map<std::string, QPControllerParams> loadAllParamSets(YAML::Node config, const RigidBodyTree &robot);
 std::map<std::string, QPControllerParams> loadAllParamSets(YAML::Node config, const RigidBodyTree &robot, std::ofstream& debug_output_file);
 RobotPropertyCache parseKinematicTreeMetadata(const YAML::Node& metadata, const RigidBodyTree& robot);
+KinematicModifications parseKinematicModifications(const YAML::Node& mods);

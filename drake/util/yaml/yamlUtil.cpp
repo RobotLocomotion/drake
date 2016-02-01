@@ -307,7 +307,6 @@ RobotPropertyCache parseKinematicTreeMetadata(const YAML::Node& metadata, const 
   YAML::Node hands = body_names["hands"];
   for (const auto& side : Side::values) {
     ret.foot_ids[side] = robot.findLinkId(feet[side_identifiers[side]].as<string>());
-    ret.hand_ids[side] = robot.findLinkId(hands[side_identifiers[side]].as<string>());
   }
 
   YAML::Node joint_group_names = metadata["joint_group_names"];
@@ -338,3 +337,78 @@ JointNames parseRobotJointNames(const YAML::Node& joint_names, const RigidBodyTr
   return ret;
 }
 
+namespace YAML {
+  template<>
+  struct convert <DrakeJoint::FloatingBaseType> {
+    static bool decode(const Node& node, DrakeJoint::FloatingBaseType& rhs) {
+      std::string joint_type = node.as<std::string>();
+      if (joint_type == "FIXED") {
+        rhs = DrakeJoint::FIXED;
+      } else if (joint_type == "ROLLPITCHYAW") {
+        rhs = DrakeJoint::ROLLPITCHYAW;
+      } else if (joint_type == "QUATERNION") {
+        rhs = DrakeJoint::QUATERNION;
+      } else {
+        return false;
+      }
+      return true;
+    }
+  };
+
+  template<>
+  struct convert<Attachment> {
+    static bool decode(const Node& node, Attachment& rhs) {
+      if (!node.IsMap()) {
+        return false;
+      }
+      if (!node["frame"]) {
+        return false;
+      }
+      if (!node["urdf"]) {
+        return false;
+      }
+      rhs.attach_to_frame = node["frame"].as<std::string>();
+      rhs.urdf_filename = node["urdf"].as<std::string>();
+      if (node["joint_type"]) {
+        rhs.joint_type = node["joint_type"].as<DrakeJoint::FloatingBaseType>();
+      } else {
+        rhs.joint_type = DrakeJoint::FIXED;
+      }
+      return true;
+    }
+  };
+
+  template<>
+  struct convert<KinematicModifications> {
+    static bool decode(const Node& node, KinematicModifications& rhs) {
+      if (!node.IsMap()) {
+        return false;
+      }
+
+      if (!node["collision_groups_to_keep"] || !node["collision_groups_to_keep"].IsSequence()) {
+        return false;
+      }
+
+      if (!node["attachments"] || !node["attachments"].IsSequence()) {
+        return false;
+      }
+
+      rhs.collision_groups_to_keep = std::set<std::string>();
+      const Node& groups = node["collision_groups_to_keep"];
+      for (auto it = groups.begin(); it != groups.end(); ++it) {
+        rhs.collision_groups_to_keep.insert(it->as<std::string>());
+      }
+
+      rhs.attachments = std::vector<Attachment>();
+      const Node& attachments = node["attachments"];
+      for (auto it = attachments.begin(); it != attachments.end(); ++it) {
+        rhs.attachments.push_back(it->as<Attachment>());
+      }
+      return true;
+    }
+  };
+}
+
+KinematicModifications parseKinematicModifications(const YAML::Node& modifications) {
+  return modifications.as<KinematicModifications>();
+}

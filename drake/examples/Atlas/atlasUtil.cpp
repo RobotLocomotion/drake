@@ -1,10 +1,11 @@
 #include "drake/examples/Atlas/atlasUtil.h"
 #include <stdexcept>
 #include <Eigen/Core>
+#include "drake/core/Path.h"
 #include "drake/util/yaml/yamlUtil.h"
 
+namespace Atlas {
 using namespace Eigen;
-using drake::Side;
 
 bool ankleCloseToLimits(double akx, double aky, double tol)
 {
@@ -27,35 +28,32 @@ bool ankleCloseToLimits(double akx, double aky, double tol)
   return ((A*ankle-b).array() > -tol).any();
 }
 
-std::unique_ptr<RigidBodyTree> constructAtlas(std::unique_ptr<RigidBodyTree> robot, const RobotPropertyCache& rpc, const AtlasKinematicOptions& options=AtlasKinematicOptions()) {
-
-  for (auto it = options.hands.begin(); it != options.hands.end(); ++it) {
-    Side side = it->first;
-    AtlasHand hand_type = it->second;
-    std::shared_ptr<RigidBody> hand_body = robot->bodies[rpc.hand_ids.at(side)];
-    switch (hand_type) {
-      case AtlasHand::NONE:
-        break;
-      case AtlasHand::ROBOTIQ:
-        robot->addRobotFromURDF(getDrakePath() + "/examples/Atlas/urdf/robotiq.urdf", DrakeJoint::FIXED, hand_body);
-        break;
-      case AtlasHand::ROBOTIQ_WEIGHT:
-        robot->addRobotFromURDF(getDrakePath() + "/examples/Atlas/urdf/robotiq_box.urdf", DrakeJoint::FIXED, hand_body);
-        break;
-      default:
-        std::cerr << "WARNING: unrecognized hand type: " << hand_type << std::endl;
+void setupAtlas(std::unique_ptr<RigidBodyTree>& robot, const KinematicModifications& modifications) {
+  for (auto it = modifications.attachments.begin(); it != modifications.attachments.end(); ++it) {
+    std::shared_ptr<RigidBodyFrame> attach_to_frame = robot->findFrame(it->attach_to_frame);
+    if (!attach_to_frame) {
+      std::cerr << "frame name: " << it->attach_to_frame << std::endl;
+      throw std::runtime_error("Could not find attachment frame when handling urdf modifications");
     }
+    robot->addRobotFromURDF(Drake::getDrakePath() + "/" + it->urdf_filename, it->joint_type, attach_to_frame);
   }
 
-  auto filter = [&](const string &group_name) { return options.collision_groups_to_keep.find(group_name) == options.collision_groups_to_keep.end(); };
+  auto filter = [&](const string &group_name) { return modifications.collision_groups_to_keep.find(group_name) == modifications.collision_groups_to_keep.end(); };
   robot->removeCollisionGroupsIf(filter);
   robot->compile();
+}
 
+std::unique_ptr<RigidBodyTree> constructAtlas(const std::string& urdf_filename, const KinematicModifications& modifications) {
+  std::unique_ptr<RigidBodyTree> robot = std::unique_ptr<RigidBodyTree>(new RigidBodyTree(urdf_filename));
+  setupAtlas(robot, modifications);
   return robot;
 }
 
-std::unique_ptr<RigidBodyTree> constructAtlasV5(const std::string& urdf_filename, const std::string& control_config_filename, const AtlasKinematicOptions& options=AtlasKinematicOptions()) {
+std::unique_ptr<RigidBodyTree> constructAtlas(const std::string& urdf_filename, const std::string& urdf_modifications_filename) {
   std::unique_ptr<RigidBodyTree> robot = std::unique_ptr<RigidBodyTree>(new RigidBodyTree(urdf_filename));
-  RobotPropertyCache rpc = parseKinematicTreeMetadata(control_config_filename, *robot);
-  return constructAtlasV5(robot, rpc, options);
+  KinematicModifications modifications = parseKinematicModifications(YAML::LoadFile(urdf_modifications_filename));
+  setupAtlas(robot, modifications);
+  return robot;
+}
+
 }

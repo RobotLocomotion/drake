@@ -47,7 +47,8 @@ classdef InstantaneousQPController
 
       obj.data_mex_ptr = ...
              constructQPDataPointerMex(obj.robot.getManipulator.urdf{1},...
-                                       obj.robot.control_config_file);
+                                       obj.robot.control_config_file,...
+                                       fullfile(getDrakePath(), 'examples', 'Atlas', 'config', 'urdf_modifications_robotiq_weight.yaml'));
     end
 
     function [y, v_ref] = updateAndOutput(obj, t, x, qp_input_msg, foot_contact_sensor)

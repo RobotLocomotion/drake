@@ -161,7 +161,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
       bool knee_close_to_singularity = q[knee_index] < settings.knee_settings.min_knee_angle;
       if (!toe_off_active[side]) {
         bool is_support_foot = isSupportingBody(body_id, support_state);
-        bool ankle_close_to_limit = ankleCloseToLimits(q[akx_index],q[aky_index], settings.ankle_limits_tolerance);
+        bool ankle_close_to_limit = Atlas::ankleCloseToLimits(q[akx_index],q[aky_index], settings.ankle_limits_tolerance);
         Matrix<double, 2, Dynamic> reduced_support_pts(2, 0);
         for (int i=0; i < support_state.size(); ++i) {
           RigidBodySupportStateElement& support_state_element = support_state[i];
@@ -323,7 +323,6 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
 
 void QPLocomotionPlan::applyKneePD(Side side, drake::lcmt_qp_controller_input &qp_input)
 {
-  int knee_index = knee_indices.at(side);
   drake::lcmt_joint_pd_override joint_pd_override_for_support;
   joint_pd_override_for_support.timestamp = 0;
   joint_pd_override_for_support.position_name = settings.knee_names.at(side);

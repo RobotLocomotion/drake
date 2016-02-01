@@ -93,7 +93,6 @@ struct PositionIndices {
 struct RobotPropertyCache {
   PositionIndices position_indices;
   std::map<Side, int> foot_ids;
-  std::map<Side, int> hand_ids;
 };
 
 struct VRefIntegratorParams {
@@ -543,5 +542,35 @@ struct PIDOutput {
 
 //enum PlanShiftMode {NONE, XYZ, Z_ONLY, Z_AND_ZMP};
 
+class Attachment {
+public:
+  std::string attach_to_frame;
+  std::string urdf_filename;
+  DrakeJoint::FloatingBaseType joint_type;
+
+  Attachment(const std::string& attach_to_frame_, const std::string& urdf_filename_, const DrakeJoint::FloatingBaseType& joint_type_=DrakeJoint::FIXED):
+    attach_to_frame(attach_to_frame_),
+    urdf_filename(urdf_filename_),
+    joint_type(joint_type_) {
+    //empty 
+  }
+
+  Attachment() {
+    // empty no-argument constructor for YAML::decode
+  }
+};
+
+
+class KinematicModifications {
+public:
+  std::set<std::string> collision_groups_to_keep;
+  std::vector<Attachment> attachments;
+
+  KinematicModifications(const std::set<std::string>& collision_groups_to_keep_={"heel","toe"}, const std::vector<Attachment>& attachments_=std::vector<Attachment>()):
+    collision_groups_to_keep(collision_groups_to_keep_),
+    attachments(attachments_) {
+    //empty
+  }
+};
 
 #endif
