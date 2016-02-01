@@ -14,7 +14,6 @@
 #include <limits>
 #include <cmath>
 #include "drake/util/drakeMexUtil.h"
-#include "controlMexUtil.h"
 
 //#define TEST_FAST_QP
 //#define USE_MATRIX_INVERSION_LEMMA
@@ -39,33 +38,33 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     // get control object properties
     const mxArray* pobj = prhs[1];
     
-    pm = myGetProperty(pobj,"slack_limit");
+    pm = mxGetPropertySafe(pobj,"slack_limit");
     pdata->slack_limit = mxGetScalar(pm);
 
-    pm = myGetProperty(pobj,"W_kdot");
+    pm = mxGetPropertySafe(pobj,"W_kdot");
     assert(mxGetM(pm)==3); assert(mxGetN(pm)==3);
     pdata->W_kdot.resize(mxGetM(pm),mxGetN(pm));
     memcpy(pdata->W_kdot.data(),mxGetPrSafe(pm),sizeof(double)*mxGetM(pm)*mxGetN(pm));
 
-    pm= myGetProperty(pobj,"w_grf");
+    pm= mxGetPropertySafe(pobj,"w_grf");
     pdata->w_grf = mxGetScalar(pm);    
 
-    pm= myGetProperty(pobj,"w_slack");
+    pm= mxGetPropertySafe(pobj,"w_slack");
     pdata->w_slack = mxGetScalar(pm);    
 
-    pm = myGetProperty(pobj,"Kp_ang");
+    pm = mxGetPropertySafe(pobj,"Kp_ang");
     pdata->Kp_ang = mxGetScalar(pm);
 
-    pm = myGetProperty(pobj,"Kp_accel");
+    pm = mxGetPropertySafe(pobj,"Kp_accel");
     pdata->Kp_accel = mxGetScalar(pm);
 
-    pm= myGetProperty(pobj,"n_body_accel_inputs");
+    pm= mxGetPropertySafe(pobj,"n_body_accel_inputs");
     pdata->n_body_accel_inputs = (int) mxGetScalar(pm); 
 
-    pm= myGetProperty(pobj,"n_body_accel_bounds");
+    pm= mxGetPropertySafe(pobj,"n_body_accel_bounds");
     pdata->n_body_accel_bounds = (int) mxGetScalar(pm); 
 
-    mxArray* body_accel_bounds = myGetProperty(pobj,"body_accel_bounds");
+    mxArray* body_accel_bounds = mxGetPropertySafe(pobj,"body_accel_bounds");
     Vector6d vecbound;
     for (int i=0; i<pdata->n_body_accel_bounds; i++) {
       pdata->accel_bound_body_idx.push_back((int) mxGetScalar(mxGetField(body_accel_bounds,i,"body_idx"))-1);
@@ -80,7 +79,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       pdata->max_body_acceleration.push_back(vecbound);
     }
 
-    pm = myGetProperty(pobj,"body_accel_input_weights");
+    pm = mxGetPropertySafe(pobj,"body_accel_input_weights");
     pdata->body_accel_input_weights.resize(pdata->n_body_accel_inputs);
     memcpy(pdata->body_accel_input_weights.data(),mxGetPrSafe(pm),sizeof(double)*pdata->n_body_accel_inputs);
 
@@ -100,7 +99,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
     int nq = pdata->r->num_positions, nu = pdata->B.cols();
     
-    pm = myGetProperty(pobj,"w_qdd");
+    pm = mxGetPropertySafe(pobj,"w_qdd");
     pdata->w_qdd.resize(nq);
     memcpy(pdata->w_qdd.data(),mxGetPrSafe(pm),sizeof(double)*nq);
 
@@ -125,8 +124,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     error = GRBloadenv(&(pdata->env),NULL);
 
     // set solver params (http://www.gurobi.com/documentation/5.5/reference-manual/node798#sec:Parameters)
-    mxArray* psolveropts = myGetProperty(pobj,"gurobi_options");
-    int method = (int) mxGetScalar(myGetField(psolveropts,"method"));
+    mxArray* psolveropts = mxGetPropertySafe(pobj,"gurobi_options");
+    int method = (int) mxGetScalar(mxGetFieldSafe(psolveropts,"method"));
     CGE ( GRBsetintparam(pdata->env,"outputflag",0), pdata->env );
     CGE ( GRBsetintparam(pdata->env,"method",method), pdata->env );
     // CGE ( GRBsetintparam(pdata->env,"method",method), pdata->env );
@@ -247,10 +246,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   int num_active_contact_pts=0;
   if (!mxIsEmpty(prhs[desired_support_argid])) {
     VectorXd phi;
-    mxArray* mxBodies = myGetField(prhs[desired_support_argid],"bodies");
+    mxArray* mxBodies = mxGetFieldSafe(prhs[desired_support_argid],"bodies");
     if (!mxBodies) mexErrMsgTxt("couldn't get bodies");
     double* pBodies = mxGetPrSafe(mxBodies);
-    mxArray* mxContactPts = myGetField(prhs[desired_support_argid],"contact_pts");
+    mxArray* mxContactPts = mxGetFieldSafe(prhs[desired_support_argid],"contact_pts");
     if (!mxContactPts) mexErrMsgTxt("couldn't get contact points");
     
     for (i=0; i<mxGetNumberOfElements(mxBodies);i++) {

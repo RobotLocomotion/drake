@@ -35,20 +35,9 @@ if (MATLAB_FOUND)
 
   if (gurobi_FOUND AND LCM_FOUND)
     # NOTE: controlMexUtil.h currently includes QPCommon.h, which includes a gurobi header.
-    # drakeControlMexUtil also has LCM as a dependency.
-    # Lots of things depend on drakeControlMexUtil. We should consider reducing dependencies
-
-    add_mex(drakeControlMexUtil SHARED controlMexUtil.cpp)
-    target_link_libraries(drakeControlMexUtil drakeRBM drakeMexUtil drakeTrajectories drakeControlUtil drakeLCMUtil)
-    pods_install_libraries(drakeControlMexUtil)
-    drake_install_headers(controlMexUtil.h)
-    pods_install_pkg_config_file(drake-control-mex-util
-      LIBS -ldrakeControlMexUtil
-      REQUIRES
-      VERSION 0.0.1)
 
     add_mex(QPControllermex QPControllermex.cpp)
-    target_link_libraries(QPControllermex drakeQP drakeControlUtil drakeMexUtil drakeControlMexUtil)
+    target_link_libraries(QPControllermex drakeQP drakeControlUtil drakeMexUtil)
     pods_use_pkg_config_packages(QPControllermex gurobi)
 
     add_mex(instantaneousQPControllermex instantaneousQPControllermex.cpp)
@@ -59,12 +48,12 @@ if (MATLAB_FOUND)
     include_directories(${CMAKE_CURRENT_SOURCE_DIR})
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../core)
     add_mex(constructQPDataPointerMex constructQPDataPointerMex.cpp)
-    target_link_libraries(constructQPDataPointerMex drakeQP drakeControlUtil drakeQPCommon drakeMexUtil drakeControlMexUtil drakeYAMLUtil drakeAtlasUtil)
+    target_link_libraries(constructQPDataPointerMex drakeQP drakeControlUtil drakeQPCommon drakeMexUtil drakeYAMLUtil drakeAtlasUtil)
     pods_use_pkg_config_packages(constructQPDataPointerMex gurobi)
 
     macro(add_control_mex)
       add_mex(${ARGV} ${ARGV}.cpp)
-      target_link_libraries(${ARGV} drakeControlUtil drakeMexUtil drakeRBM drakeControlMexUtil)
+      target_link_libraries(${ARGV} drakeControlUtil drakeMexUtil drakeRBM)
     endmacro()
     
     add_control_mex(bodyMotionControlmex)
