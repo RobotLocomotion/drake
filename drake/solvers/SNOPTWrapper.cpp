@@ -228,7 +228,6 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
     A_index++;
   }
 
-  snopt::integer INFO_snopt;
   snopt::integer nxname = 1, nFname = 1, npname = 0;
   char xnames[8*1];  // should match nxname
   char Fnames[8*1];  // should match nFname
@@ -245,13 +244,15 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
     iPrint = 9;
     char print_file_name[50] = "snopt.out";
     snopt::integer print_file_name_len = static_cast<snopt::integer>(strlen(print_file_name));
-    snopt::snopenappend_(&iPrint,print_file_name,&INFO_snopt,print_file_name_len);
-    mysnseti("Major print level",static_cast<snopt::integer>(11),&iPrint,&iSumm,&INFO_snopt,d->cw.get(),&d->lencw,d->iw.get(),&d->leniw,d->rw.get(),&d->lenrw);
-    mysnseti("Print file",iPrint,&iPrint,&iSumm,&INFO_snopt,d->cw.get(),&d->lencw,d->iw.get(),&d->leniw,d->rw.get(),&d->lenrw);
+    snopt::integer inform;
+    snopt::snopenappend_(&iPrint,print_file_name,&inform,print_file_name_len);
+    mysnseti("Major print level",static_cast<snopt::integer>(11),&iPrint,&iSumm,&inform,d->cw.get(),&d->lencw,d->iw.get(),&d->leniw,d->rw.get(),&d->lenrw);
+    mysnseti("Print file",iPrint,&iPrint,&iSumm,&inform,d->cw.get(),&d->lencw,d->iw.get(),&d->leniw,d->rw.get(),&d->lenrw);
   }
 
   snopt::integer minrw,miniw,mincw;
-  snopt::snmema_(&INFO_snopt, &nF, &nx, &nxname, &nFname, &lenA, &lenG, &mincw, &miniw, &minrw, d->cw.get(), &d->lencw, d->iw.get(), &d->leniw, d->rw.get(), &d->lenrw, 8 * d->lencw);
+  snopt::integer mem_info;
+  snopt::snmema_(&mem_info, &nF, &nx, &nxname, &nFname, &lenA, &lenG, &mincw, &miniw, &minrw, d->cw.get(), &d->lencw, d->iw.get(), &d->leniw, d->rw.get(), &d->lenrw, 8 * d->lencw);
   if (minrw>d->lenrw) {
     //mexPrintf("reallocation rw with size %d\n",minrw);
     d->lenrw = minrw;
@@ -299,6 +300,7 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   mysnsetr("Linesearch tolerance",static_cast<snopt::doublereal>(*mxGetPr(mxGetField(prhs[13],0,"LinesearchTolerance"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
 */
 
+  snopt::integer info;
   snopt::snopta_
           (&Cold, &nF, &nx, &nxname, &nFname,
            &ObjAdd, &ObjRow, Prob, snopt_userfun,
@@ -306,14 +308,14 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
            iGfun, jGvar, &lenG, &lenG,
            xlow, xupp, xnames, Flow, Fupp, Fnames,
            x, xstate, xmul, F, Fstate, Fmul,
-           &INFO_snopt, &mincw, &miniw, &minrw,
+           &info, &mincw, &miniw, &minrw,
            &nS, &nInf, &sInf,
            d->cw.get(), &d->lencw, d->iw.get(), &d->leniw, d->rw.get(), &d->lenrw,
            d->cw.get(), &d->lencw, d->iw.get(), &d->leniw, d->rw.get(), &d->lenrw,
            npname, 8*nxname, 8*nFname,
             8*d->lencw,8*d->lencw);
 
-  cout << "SNOPT INFO: " << INFO_snopt << endl;
+  cout << "SNOPT INFO: " << info << endl;
 
   VectorXd sol(nx);
   for (int i=0; i<nx; i++) { sol(i) = static_cast<double>( x[i] ); }
