@@ -7,16 +7,7 @@ classdef InstantaneousQPController
 % variety of plan types (standing, walking, manipulating, etc.). The
 % AtlasPlanEval class now handles the state of the current plan.
   properties(SetAccess=private, GetAccess=public);
-    debug;
-    debug_pub;
-    robot;
-    robot_property_cache
     data_mex_ptr;
-    support_detect_mex_ptr;
-    use_bullet = false;
-    param_sets
-    gurobi_options = struct();
-    solver = 0;
   end
 
   properties
@@ -24,34 +15,17 @@ classdef InstantaneousQPController
   end
 
   methods
-    function obj = InstantaneousQPController(r, options)
-      if nargin < 2
-        options = struct();
+    function obj = InstantaneousQPController(urdf_filename, control_config_filename, urdf_modifications_filename)
+      if nargin < 3
+        urdf_modifications_filename = '';
       end
-      options = applyDefaults(options,...
-        struct('debug', false),...
-        struct('debug', @(x) typecheck(x, 'logical') && sizecheck(x, 1)));
-      for f = fieldnames(options)'
-        obj.(f{1}) = options.(f{1});
-      end
-
-      if r.getNumPositions() ~= r.getNumVelocities()
-        error('Drake:NonQuaternionFloatingBaseAssumption', 'this code assumes a 6-dof XYZRPY floating base, and will need to be updated for quaternions');
-      end
-      obj.robot = r;
-      obj.robot_property_cache = r.getRobotPropertyCache();
-
-      if obj.debug
-        obj.debug_pub = ControllerDebugPublisher('CONTROLLER_DEBUG');
-      end
-
       obj.data_mex_ptr = ...
-             constructQPDataPointerMex(obj.robot.getManipulator.urdf{1},...
-                                       obj.robot.control_config_file,...
-                                       fullfile(getDrakePath(), 'examples', 'Atlas', 'config', 'urdf_modifications_robotiq_weight.yaml'));
+             constructQPDataPointerMex(urdf_filename,...
+                                       control_config_filename,...
+                                       urdf_modifications_filename);
     end
 
-    function [y, v_ref] = updateAndOutput(obj, t, x, qp_input_msg, foot_contact_sensor)
+    function y = updateAndOutput(obj, t, x, qp_input_msg, foot_contact_sensor)
       % Parse inputs from the robot and the planEval, set up the QP, solve it,
       % and return the torques and feed-forward velocity.
       % @param t time (s)
@@ -74,24 +48,16 @@ classdef InstantaneousQPController
         end
       end
 
-      if ~obj.quiet
-        t0 = tic();
-      end
       stream = java.io.ByteArrayOutputStream();
       data_output = java.io.DataOutputStream(stream);
       qp_input_msg.encode(data_output);
       byte_array = stream.toByteArray();
-      [y,qdd,qd_ref,info_fqp] = ...
-                  instantaneousQPControllermex(obj.data_mex_ptr,...
-                  t,...
-                  x,...
-                  byte_array,...
-                  bodies_in_contact);
-      if ~obj.quiet
-        fprintf(1, 'mex: %f, ', toc(t0));
-      end
-      
-      v_ref = qd_ref(obj.robot_property_cache.actuated_indices);
+      y = ...
+        instantaneousQPControllermex(obj.data_mex_ptr,...
+        t,...
+        x,...
+        byte_array,...
+        bodies_in_contact);
     end
   end
 end

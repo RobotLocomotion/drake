@@ -102,7 +102,7 @@ classdef BipedPlanEvalAndControlSystem < DrakeSystem
         if ~obj.quiet
           t0 = tic();
         end
-        [y, v_ref] = obj.control.updateAndOutput(t, x, qp_input_msg, [-1;-1]);
+        y = obj.control.updateAndOutput(t, x, qp_input_msg, [-1;-1]);
         if ~obj.quiet
           ctime = toc(t0);
           fprintf(1, 'control: %f\n', ctime);

@@ -385,24 +385,26 @@ namespace YAML {
         return false;
       }
 
-      if (!node["collision_groups_to_keep"] || !node["collision_groups_to_keep"].IsSequence()) {
-        return false;
+      if (node["collision_groups_to_keep"]) {
+        if (!node["collision_groups_to_keep"].IsSequence()) {
+          return false;
+        }
+        rhs.collision_groups_to_keep = std::set<std::string>();
+        const Node& groups = node["collision_groups_to_keep"];
+        for (auto it = groups.begin(); it != groups.end(); ++it) {
+          rhs.collision_groups_to_keep.insert(it->as<std::string>());
+        }
       }
 
-      if (!node["attachments"] || !node["attachments"].IsSequence()) {
-        return false;
-      }
-
-      rhs.collision_groups_to_keep = std::set<std::string>();
-      const Node& groups = node["collision_groups_to_keep"];
-      for (auto it = groups.begin(); it != groups.end(); ++it) {
-        rhs.collision_groups_to_keep.insert(it->as<std::string>());
-      }
-
-      rhs.attachments = std::vector<Attachment>();
-      const Node& attachments = node["attachments"];
-      for (auto it = attachments.begin(); it != attachments.end(); ++it) {
-        rhs.attachments.push_back(it->as<Attachment>());
+      if (node["attachments"]) {
+        if (!node["attachments"].IsSequence()) {
+          return false;
+        }
+        rhs.attachments = std::vector<Attachment>();
+        const Node& attachments = node["attachments"];
+        for (auto it = attachments.begin(); it != attachments.end(); ++it) {
+          rhs.attachments.push_back(it->as<Attachment>());
+        }
       }
       return true;
     }

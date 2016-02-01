@@ -28,32 +28,4 @@ bool ankleCloseToLimits(double akx, double aky, double tol)
   return ((A*ankle-b).array() > -tol).any();
 }
 
-void setupAtlas(std::unique_ptr<RigidBodyTree>& robot, const KinematicModifications& modifications) {
-  for (auto it = modifications.attachments.begin(); it != modifications.attachments.end(); ++it) {
-    std::shared_ptr<RigidBodyFrame> attach_to_frame = robot->findFrame(it->attach_to_frame);
-    if (!attach_to_frame) {
-      std::cerr << "frame name: " << it->attach_to_frame << std::endl;
-      throw std::runtime_error("Could not find attachment frame when handling urdf modifications");
-    }
-    robot->addRobotFromURDF(Drake::getDrakePath() + "/" + it->urdf_filename, it->joint_type, attach_to_frame);
-  }
-
-  auto filter = [&](const string &group_name) { return modifications.collision_groups_to_keep.find(group_name) == modifications.collision_groups_to_keep.end(); };
-  robot->removeCollisionGroupsIf(filter);
-  robot->compile();
-}
-
-std::unique_ptr<RigidBodyTree> constructAtlas(const std::string& urdf_filename, const KinematicModifications& modifications) {
-  std::unique_ptr<RigidBodyTree> robot = std::unique_ptr<RigidBodyTree>(new RigidBodyTree(urdf_filename));
-  setupAtlas(robot, modifications);
-  return robot;
-}
-
-std::unique_ptr<RigidBodyTree> constructAtlas(const std::string& urdf_filename, const std::string& urdf_modifications_filename) {
-  std::unique_ptr<RigidBodyTree> robot = std::unique_ptr<RigidBodyTree>(new RigidBodyTree(urdf_filename));
-  KinematicModifications modifications = parseKinematicModifications(YAML::LoadFile(urdf_modifications_filename));
-  setupAtlas(robot, modifications);
-  return robot;
-}
-
 }

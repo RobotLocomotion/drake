@@ -77,7 +77,7 @@ plan_settings.gain_set = 'walking';
 plan = QPLocomotionPlanCPPWrapper(plan_settings);
 
 % Build our controller and plan eval objects
-control = bipedControllers.InstantaneousQPController(r, []);
+control = bipedControllers.InstantaneousQPController(r.getManipulator().urdf{1}, r.control_config_file, fullfile(getDrakePath(), 'examples', 'Atlas', 'config', 'urdf_modifications_no_hands.yaml'));
 planeval = bipedControllers.BipedPlanEval(r, plan);
 plancontroller = bipedControllers.BipedPlanEvalAndControlSystem(r, control, planeval);
 sys = feedback(r, plancontroller);

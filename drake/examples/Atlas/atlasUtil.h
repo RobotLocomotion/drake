@@ -16,10 +16,6 @@ namespace Atlas {
  */
 DRAKEATLASUTIL_EXPORT bool ankleCloseToLimits(double akx, double aky, double tol);
 
-DRAKEATLASUTIL_EXPORT void setupAtlas(std::unique_ptr<RigidBodyTree>& robot, const KinematicModifications& modifications=KinematicModifications());
-DRAKEATLASUTIL_EXPORT std::unique_ptr<RigidBodyTree> constructAtlas(const std::string& urdf_filename, const KinematicModifications& modifications=KinematicModifications());
-DRAKEATLASUTIL_EXPORT std::unique_ptr<RigidBodyTree> constructAtlas(const std::string& urdf_filename, const std::string& urdf_modifications_filename);
-
 }
 
 #endif

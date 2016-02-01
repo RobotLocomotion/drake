@@ -90,5 +90,8 @@ private:
   void loadConfigurationFromYAML(const std::string& control_config_filename);
 };
 
+void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot, const KinematicModifications& modifications);
+void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot, const std::string& urdf_modifications_filename);
+
 
 #endif

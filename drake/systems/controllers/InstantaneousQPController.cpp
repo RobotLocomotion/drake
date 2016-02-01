@@ -6,6 +6,7 @@
 #include "drake/util/lcmUtil.h"
 #include "drake/util/testUtil.h"
 #include "drake/util/yaml/yamlUtil.h"
+#include "drake/core/Path.h"
 #include "lcmtypes/drake/lcmt_zmp_com_observer_state.hpp"
 
 const bool CHECK_CENTROIDAL_MOMENTUM_RATE_MATCHES_TOTAL_WRENCH = false;
@@ -85,6 +86,26 @@ void InstantaneousQPController::loadConfigurationFromYAML(const std::string& con
   std::ofstream debug_file("debug_" + control_config_filename);
   param_sets = loadAllParamSets(control_config["qp_controller_params"], *robot, debug_file); 
   rpc = parseKinematicTreeMetadata(control_config["kinematic_tree_metadata"], *robot);
+}
+
+void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot, const KinematicModifications& modifications) {
+  for (auto it = modifications.attachments.begin(); it != modifications.attachments.end(); ++it) {
+    std::shared_ptr<RigidBodyFrame> attach_to_frame = robot->findFrame(it->attach_to_frame);
+    if (!attach_to_frame) {
+      std::cerr << "frame name: " << it->attach_to_frame << std::endl;
+      throw std::runtime_error("Could not find attachment frame when handling urdf modifications");
+    }
+    robot->addRobotFromURDF(Drake::getDrakePath() + "/" + it->urdf_filename, it->joint_type, attach_to_frame);
+  }
+
+  auto filter = [&](const string &group_name) { return modifications.collision_groups_to_keep.find(group_name) == modifications.collision_groups_to_keep.end(); };
+  robot->removeCollisionGroupsIf(filter);
+  robot->compile();
+}
+
+void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot, const std::string& urdf_modifications_filename) {
+  KinematicModifications modifications = parseKinematicModifications(YAML::LoadFile(urdf_modifications_filename));
+  applyURDFModifications(robot, modifications);
 }
 
 

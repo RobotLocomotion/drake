@@ -30,7 +30,7 @@ end
 
 % Construct our control blocks
 planeval = bipedControllers.BipedPlanEval(obj, standing_plan);
-control = bipedControllers.InstantaneousQPController(obj);
+control = bipedControllers.InstantaneousQPController(obj.getManipulator().urdf{1}, obj.control_config_file);
 plancontroller = bipedControllers.BipedPlanEvalAndControlSystem(obj, control, planeval);
 
 sys = feedback(obj, plancontroller);
