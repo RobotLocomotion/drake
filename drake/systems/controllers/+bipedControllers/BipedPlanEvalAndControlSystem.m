@@ -71,10 +71,7 @@ classdef BipedPlanEvalAndControlSystem < DrakeSystem
           t0 = tic();
         end
         qp_input_obj = obj.plan_eval.getQPControllerInput(t, x);
-        if isa(qp_input_obj, 'bipedControllers.QPInputConstantHeight')
-          qp_input_msg_data = encodeQPInputLCMMex(qp_input_obj, false);
-          qp_input_msg = drake.lcmt_qp_controller_input(qp_input_msg_data);
-        elseif isnumeric(qp_input_obj)
+        if isnumeric(qp_input_obj)
           qp_input_msg = drake.lcmt_qp_controller_input(qp_input_obj);
         else
           qp_input_msg = qp_input_obj;
