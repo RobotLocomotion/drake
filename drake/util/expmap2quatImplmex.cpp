@@ -9,7 +9,7 @@ using namespace std;
 using namespace Eigen;
 using namespace Drake;
 
-pair<Vector4d, typename Gradient<Vector4d, 3>::type> expmap2quatWithGradient(MatrixBase<Map<const Vector3d>>& expmap) {
+pair<Vector4d, typename Gradient<Vector4d, 3>::type> expmap2quatWithGradient(const MatrixBase<Map<const Vector3d>>& expmap) {
   auto expmap_autodiff = initializeAutoDiff(expmap);
   auto quat_autodiff = expmap2quat(expmap_autodiff);
   return make_pair(autoDiffToValueMatrix(quat_autodiff), autoDiffToGradientMatrix(quat_autodiff));

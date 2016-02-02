@@ -1291,7 +1291,7 @@ Eigen::Matrix<typename Derived1::Scalar, 3, 1> unwrapExpmap(const Eigen::MatrixB
 
   auto expmap2_flip = flipExpmap(expmap2);
   Real distance1 = (expmap1 - expmap2).squaredNorm();
-  Real distance2 = (expmap1 - expmap2_flip.value()).squaredNorm();
+  Real distance2 = (expmap1 - expmap2_flip).squaredNorm();
   if (distance1 > distance2) {
     return expmap2_flip;
   }
@@ -1300,10 +1300,27 @@ Eigen::Matrix<typename Derived1::Scalar, 3, 1> unwrapExpmap(const Eigen::MatrixB
   }
 }
 
+// TODO: move to AutoDiffScalar.h?
+/** AutoDiffScalar overloads of round to mimic std::round from <cmath>.
+ */
+template <typename DerType>
+double round(const Eigen::AutoDiffScalar<DerType>& x) {
+  return round(x.value());
+}
+
+// TODO: move to AutoDiffScalar.h?
+/** AutoDiffScalar overloads of floor to mimic std::round from <cmath>.
+ */
+template <typename DerType>
+double floor(const Eigen::AutoDiffScalar<DerType>& x) {
+  return floor(x.value());
+}
+
 template <typename Derived1, typename Derived2>
 Eigen::Matrix<typename Derived1::Scalar, 3, 1> closestExpmap(const Eigen::MatrixBase<Derived1> &expmap1, const Eigen::MatrixBase<Derived2> &expmap2)
 {
   using namespace Eigen;
+  using namespace std;
   static_assert(Derived1::RowsAtCompileTime == 3 && Derived1::ColsAtCompileTime == 1, "Wrong size.");
   static_assert(Derived2::RowsAtCompileTime == 3 && Derived2::ColsAtCompileTime == 1, "Wrong size.");
   static_assert(std::is_same<typename Derived1::Scalar, typename Derived2::Scalar>::value, "Scalar types don't match.");
@@ -1316,7 +1333,7 @@ Eigen::Matrix<typename Derived1::Scalar, 3, 1> closestExpmap(const Eigen::Matrix
   if (expmap2_norm < NumTraits<Scalar>::epsilon()) {
     if (expmap1_norm > NumTraits<Scalar>::epsilon()) {
       auto expmap1_axis = (expmap1 / expmap1_norm).eval();
-      int expmap1_round = static_cast<int>(expmap1_norm / (2 * M_PI) + 0.5);
+      auto expmap1_round = round(expmap1_norm / (2 * M_PI));
       return expmap1_axis * expmap1_round * 2 * M_PI;
     }
     else {
@@ -1326,15 +1343,8 @@ Eigen::Matrix<typename Derived1::Scalar, 3, 1> closestExpmap(const Eigen::Matrix
   else {
     auto expmap2_axis = (expmap2 / expmap2_norm).eval();
     auto expmap2_closest_k = ((expmap2_axis.transpose() * expmap1).value() - expmap2_norm) / (2 * M_PI);
-    int expmap2_closest_k1;
-    int expmap2_closest_k2;
-    if (expmap2_closest_k > 0) {
-      expmap2_closest_k1 = static_cast<int>(expmap2_closest_k);
-    }
-    else {
-      expmap2_closest_k1 = static_cast<int>(expmap2_closest_k - 1);
-    }
-    expmap2_closest_k2 = expmap2_closest_k1 + 1;
+    auto expmap2_closest_k1 = floor(expmap2_closest_k);
+    auto expmap2_closest_k2 = expmap2_closest_k1 + 1.0;
     auto expmap2_closest1 = (expmap2 + 2 * expmap2_closest_k1 * M_PI * expmap2_axis).eval();
     auto expmap2_closest2 = (expmap2 + 2 * expmap2_closest_k2 * M_PI * expmap2_axis).eval();
     if ((expmap2_closest1 - expmap1).norm() < (expmap2_closest2 - expmap1).norm()) {
