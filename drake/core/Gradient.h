@@ -49,6 +49,18 @@ namespace Drake {
     }
   }
 
+  /** \brief Creates and initializes an autodiff matrix given a matrix of values and gradient matrix
+   * \param[in] val value matrix
+   * \param[in] gradient gradient matrix; the derivatives of val(j) are stored in row j of the gradient matrix.
+   * \return autodiff_matrix matrix of AutoDiffScalars with the same size as \p val
+   */
+  template <typename Derived, typename DerivedGradient>
+  AutoDiffMatrixType<Derived, DerivedGradient::ColsAtCompileTime> initializeAutoDiffGivenGradientMatrix(const Eigen::MatrixBase<Derived> &val, const Eigen::MatrixBase<DerivedGradient> &gradient) {
+    AutoDiffMatrixType<Derived, DerivedGradient::ColsAtCompileTime> ret(val.rows(), val.cols());
+    initializeAutoDiffGivenGradientMatrix(val, gradient, ret);
+    return ret;
+  }
+
   /** \brief Initialize a single autodiff matrix given the corresponding value matrix.
    *
    * Set the values of \p auto_diff_matrix to be equal to \p val, and for each element i of \p auto_diff_matrix,

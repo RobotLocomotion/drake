@@ -300,40 +300,38 @@ Eigen::Matrix<typename Derived::Scalar, 3, 1> axis2rpy(const Eigen::MatrixBase<D
  * expmap2x
  */
 namespace internal {
-  template <typename Derived>
-  Eigen::Matrix<typename Derived::Scalar, 4, 1> expmap2quatNonDegenerate(const Eigen::MatrixBase<Derived>& v, typename Derived::Scalar& theta)
-  {
+  template<typename Derived>
+  Eigen::Matrix<typename Derived::Scalar, 4, 1> expmap2quatNonDegenerate(const Eigen::MatrixBase<Derived> &v, typename Derived::Scalar &theta) {
     typedef typename Derived::Scalar Scalar;
     static_assert(Derived::RowsAtCompileTime == 3 && Derived::ColsAtCompileTime == 1, "Wrong size.");
 
     Eigen::Matrix<Scalar, 4, 1> q;
 
-    auto t2 = theta*(1.0/2.0);
-    auto t3 = 1.0/theta;
+    auto t2 = theta * (1.0 / 2.0);
+    auto t3 = Scalar(1) / theta;
     auto t4 = sin(t2);
-    q(0,0) = cos(t2);
-    q(1,0) = t3*t4*v(0);
-    q(2,0) = t3*t4*v(1);
-    q(3,0) = t3*t4*v(2);
+    q(0) = cos(t2);
+    q(1) = t3 * t4 * v(0);
+    q(2) = t3 * t4 * v(1);
+    q(3) = t3 * t4 * v(2);
 
     return q;
   }
 
-  template <typename Derived>
-  Eigen::Matrix<typename Derived::Scalar, 4, 1> expmap2quatDegenerate(const Eigen::MatrixBase<Derived>& v, typename Derived::Scalar& theta)
-  {
+  template<typename Derived>
+  Eigen::Matrix<typename Derived::Scalar, 4, 1> expmap2quatDegenerate(const Eigen::MatrixBase<Derived> &v, typename Derived::Scalar &theta) {
     typedef typename Derived::Scalar Scalar;
     static_assert(Derived::RowsAtCompileTime == 3 && Derived::ColsAtCompileTime == 1, "Wrong size.");
 
     Eigen::Matrix<Scalar, 4, 1> q;
 
-    auto t2 = theta*theta;
-    auto t3 = t2*8.0E1;
-    auto t4 = t3-1.92E3;
-    q(0) = t2*(-1.0/8.0)+1.0;
-    q(1) = t4*v(0)*(-2.604166666666667E-4);
-    q(2) = t4*v(1)*(-2.604166666666667E-4);
-    q(3) = t4*v(2)*(-2.604166666666667E-4);
+    auto t2 = theta * theta;
+    auto t3 = t2 * 8.0E1;
+    auto t4 = t3 - 1.92E3;
+    q(0) = t2 * (-1.0 / 8.0) + 1.0;
+    q(1) = t4 * v(0) * (-2.604166666666667E-4);
+    q(2) = t4 * v(1) * (-2.604166666666667E-4);
+    q(3) = t4 * v(2) * (-2.604166666666667E-4);
 
     return q;
   }
@@ -768,24 +766,15 @@ void rpydot2angularvelMatrix(const Eigen::MatrixBase<DerivedRPY>& rpy,
   }
 };
 
-template <typename DerivedQ, typename DerivedM>
-void quatdot2angularvelMatrix(const Eigen::MatrixBase<DerivedQ>& q,
-                              Eigen::MatrixBase<DerivedM>& M,
-                              typename Gradient<DerivedM, QUAT_SIZE, 1>::type* dM = nullptr) {
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedQ>, QUAT_SIZE);
-  EIGEN_STATIC_ASSERT_MATRIX_SPECIFIC_SIZE(Eigen::MatrixBase<DerivedM>, SPACE_DIMENSION, QUAT_SIZE);
-
-  typename DerivedQ::PlainObject qtilde;
-  if (dM) {
-    typename Gradient<DerivedQ, QUAT_SIZE>::type dqtilde;
-    normalizeVec(q, qtilde, &dqtilde);
-    (*dM) << 0.0, -2.0, 0.0, 0.0, 0.0, 0.0, -2.0, 0.0, 0.0, 0.0, 0.0, -2.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, -2.0, 0.0, 0.0, 0.0, 0.0, -2.0, 2.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, -2.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0;
-    (*dM) *= dqtilde;
-  } else {
-    normalizeVec(q, qtilde);
-  }
-  M << -qtilde(1), qtilde(0), -qtilde(3), qtilde(2), -qtilde(2), qtilde(3), qtilde(0), -qtilde(1), -qtilde(3), -qtilde(2), qtilde(1), qtilde(0);
-  M *= 2.0;
+template <typename Derived>
+Eigen::Matrix<typename Derived::Scalar, 3, 4> quatdot2angularvelMatrix(const Eigen::MatrixBase<Derived>& q) {
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, QUAT_SIZE);
+  typedef typename Derived::Scalar Scalar;
+  auto qtilde = q.normalized();
+  Eigen::Matrix<Scalar, 3, 4> ret;
+  ret << -qtilde(1), qtilde(0), -qtilde(3), qtilde(2), -qtilde(2), qtilde(3), qtilde(0), -qtilde(1), -qtilde(3), -qtilde(2), qtilde(1), qtilde(0);
+  ret *= Scalar(2);
+  return ret;
 };
 
 template<typename DerivedRPY, typename DerivedRPYdot, typename DerivedOMEGA>
