@@ -237,6 +237,8 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   snopt::integer iSumm = -1;
   snopt::integer iPrint = -1;
 
+  snopt::sninit_(&iPrint,&iSumm,d->cw.get(),&d->lencw,d->iw.get(),&d->leniw,d->rw.get(),&d->lenrw,8*d->lencw);
+
   snopt::integer nS,nInf;
   snopt::doublereal sInf;
   if (true) { // print to output file (todo: make this an option)
@@ -249,7 +251,6 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   }
 
   snopt::integer minrw,miniw,mincw;
-  snopt::sninit_(&iPrint,&iSumm,d->cw.get(),&d->lencw,d->iw.get(),&d->leniw,d->rw.get(),&d->lenrw,8*d->lencw);
   snopt::snmema_(&INFO_snopt, &nF, &nx, &nxname, &nFname, &lenA, &lenG, &mincw, &miniw, &minrw, d->cw.get(), &d->lencw, d->iw.get(), &d->leniw, d->rw.get(), &d->lenrw, 8 * d->lencw);
   if (minrw>d->lenrw) {
     //mexPrintf("reallocation rw with size %d\n",minrw);
