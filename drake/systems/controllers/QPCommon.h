@@ -8,7 +8,6 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
 #include "drake/systems/robotInterfaces/Side.h"
-#include "drake/drakeQP_export.h" // TODO: do exports
 
 struct QPControllerState {
   double t_prev;
