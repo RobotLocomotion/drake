@@ -113,6 +113,8 @@ struct SNOPTRun {
   SNOPTRun(SNOPTData& d): D(d) {
     // Minimum default allocation needed by snInit
     D.min_alloc_w(500, 500000, 500000);
+
+    snInit();
   }
 
   ~SNOPTRun() {
@@ -352,8 +354,6 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   char xnames[8*1];  // should match nxname
   char Fnames[8*1];  // should match nFname
   char Prob[200]="drake.out";
-
-  cur.snInit();
 
   snopt::integer nS,nInf;
   snopt::doublereal sInf;
