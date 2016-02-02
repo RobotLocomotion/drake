@@ -29,16 +29,38 @@ using namespace Drake;
 const Drake::OptimizationProblem* current_problem = NULL;
 
 struct SNOPTData: public Drake::OptimizationProblem::SolverData {
-  unique_ptr<snopt::doublereal []> rw;
-  unique_ptr<snopt::integer []> iw;
-  unique_ptr<char []> cw;
-  snopt::integer lenrw=0;
-  snopt::integer leniw=0;
+  std::vector<char> cw;
+  std::vector<snopt::integer> iw;
+  std::vector<snopt::doublereal> rw;
   snopt::integer lencw=0;
+  snopt::integer leniw=0;
+  snopt::integer lenrw=0;
+
+  void min_alloc_w(snopt::integer mincw,
+                   snopt::integer miniw,
+                   snopt::integer minrw) {
+    if (lencw < mincw) {
+      lencw = mincw;
+      cw.resize(8*lencw);
+    }
+    if (leniw < miniw) {
+      leniw = miniw;
+      iw.resize(leniw);
+    }
+    if (lenrw < minrw) {
+      lenrw = minrw;
+      rw.resize(lenrw);
+    }
+  }
+
 };
 
 struct SNOPTRun {
-  SNOPTRun(SNOPTData& d): D(d) {}
+  SNOPTRun(SNOPTData& d): D(d) {
+    // Minimum default allocation needed by snInit
+    D.min_alloc_w(500, 500000, 500000);
+  }
+
   ~SNOPTRun() {
     if (iPrint >= 0) {
       snopt::snclose_(&iPrint);
@@ -54,9 +76,9 @@ struct SNOPTRun {
     snopt::integer opt_len = static_cast<snopt::integer>(opt.length());
     snopt::integer err = 0;
     snopt::snseti_(opt.c_str(), &val, &iPrint, &iSumm, &err,
-                   D.cw.get(), &D.lencw,
-                   D.iw.get(), &D.leniw,
-                   D.rw.get(), &D.lenrw,
+                   D.cw.data(), &D.lencw,
+                   D.iw.data(), &D.leniw,
+                   D.rw.data(), &D.lenrw,
                    opt_len, 8*D.lencw);
     return err;
   }
@@ -65,18 +87,18 @@ struct SNOPTRun {
     snopt::integer opt_len = static_cast<snopt::integer>(opt.length());
     snopt::integer err = 0;
     snopt::snsetr_(opt.c_str(), &val, &iPrint, &iSumm, &err,
-                   D.cw.get(), &D.lencw,
-                   D.iw.get(), &D.leniw,
-                   D.rw.get(), &D.lenrw,
+                   D.cw.data(), &D.lencw,
+                   D.iw.data(), &D.leniw,
+                   D.rw.data(), &D.lenrw,
                    opt_len, 8*D.lencw);
     return err;
   }
 
   void snInit() {
     snopt::sninit_(&iPrint, &iSumm,
-                   D.cw.get(), &D.lencw,
-                   D.iw.get(), &D.leniw,
-                   D.rw.get(), &D.lenrw,
+                   D.cw.data(), &D.lencw,
+                   D.iw.data(), &D.leniw,
+                   D.rw.data(), &D.lenrw,
                    8*D.lencw);
   }
 
@@ -86,9 +108,9 @@ struct SNOPTRun {
     snopt::integer info = 0;
     snopt::snmema_(&info, &nF, &nx, &nxname, &nFname, &neA, &neG,
                    mincw, miniw, minrw,
-                   D.cw.get(), &D.lencw,
-                   D.iw.get(), &D.leniw,
-                   D.rw.get(), &D.lenrw,
+                   D.cw.data(), &D.lencw,
+                   D.iw.data(), &D.leniw,
+                   D.rw.data(), &D.lenrw,
                    8*D.lencw);
     return info;
   }
@@ -159,14 +181,6 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   SNOPTRun cur(*d);
 
   current_problem = &prog;
-  if (d->lenrw==0) { // then initialize (sninit needs some default allocation)
-    d->lenrw = 500000;
-    d->rw.reset(new snopt::doublereal[d->lenrw]);
-    d->leniw = 500000;
-    d->iw.reset(new snopt::integer[d->leniw]);
-    d->lencw = 500;
-    d->cw.reset(new char[8*d->lencw]);
-  }
 
   snopt::integer nx = prog.num_vars;
   snopt::doublereal* x    = new snopt::doublereal[nx];
@@ -297,21 +311,7 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
 
   snopt::integer minrw,miniw,mincw;
   cur.snMemA(nF, nx, nxname, nFname, lenA, lenG, &mincw, &miniw, &minrw);
-  if (minrw>d->lenrw) {
-    //mexPrintf("reallocation rw with size %d\n",minrw);
-    d->lenrw = minrw;
-    d->rw.reset(new snopt::doublereal[d->lenrw]);
-  }
-  if (miniw>d->leniw) {
-    //mexPrintf("reallocation iw with size %d\n",miniw);
-    d->leniw = miniw;
-    d->iw.reset(new snopt::integer[d->leniw]);
-  }
-  if (mincw>d->lencw) {
-    //mexPrintf("reallocation cw with size %d\n",mincw);
-    d->lencw = mincw;
-    d->cw.reset(new char[8*d->lencw]);
-  }
+  d->min_alloc_w(mincw, miniw, minrw);
   cur.snInit();
 
   snopt::integer Cold = 0;
@@ -354,8 +354,8 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
            x, xstate, xmul, F, Fstate, Fmul,
            &info, &mincw, &miniw, &minrw,
            &nS, &nInf, &sInf,
-           d->cw.get(), &d->lencw, d->iw.get(), &d->leniw, d->rw.get(), &d->lenrw,
-           d->cw.get(), &d->lencw, d->iw.get(), &d->leniw, d->rw.get(), &d->lenrw,
+           d->cw.data(), &d->lencw, d->iw.data(), &d->leniw, d->rw.data(), &d->lenrw,
+           d->cw.data(), &d->lencw, d->iw.data(), &d->leniw, d->rw.data(), &d->lenrw,
            npname, 8*nxname, 8*nFname,
             8*d->lencw,8*d->lencw);
 
