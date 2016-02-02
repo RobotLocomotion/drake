@@ -34,7 +34,7 @@ v.display_dt = 0.005;
 
 load(traj_file);
 
-repeat_n = 5;
+repeat_n = 1;
 [xtraj,utraj,Btraj,Straj_full] = repeatTraj(r,xtraj,utraj,Btraj,Straj_full,repeat_n,true,true);
 
 
@@ -162,7 +162,7 @@ playback(v,traj,struct('slider',true));
 
 
 
-if 1
+if 0
   traj_ts = traj.getBreaks();
   traj_pts = traj.eval(traj_ts);
   

@@ -1,4 +1,4 @@
-function runTrajStabilizationStop(segment_number)
+function runTrajStabilization3D(segment_number)
 
 if nargin <1
   segment_number=-1;
@@ -17,8 +17,9 @@ options.enable_fastqp = false;
 
 s = '../urdf/atlas_simple_contact_noback.urdf';
 % traj_file = 'data/atlas_3d_lqr2.mat'; 
-traj_file = 'data/stop_3mode_lqr' ; 
+traj_file = 'data/longer_step_smooth_lqr.mat'; 
 options.terrain = RigidBodyFlatTerrain();
+modes = [8,3,4,4,7,8];
 
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 r = Atlas(s,options);
@@ -32,7 +33,10 @@ v = r.constructVisualizer;
 v.display_dt = 0.005;
 
 load(traj_file);
-[xtraj,utraj,Btraj,Straj_full] = flipLeftRight3D(r,xtraj,utraj,Btraj,Straj_full)
+
+repeat_n = 2;
+[xtraj,utraj,Btraj,Straj_full] = repeatTraj(r,xtraj,utraj,Btraj,Straj_full,repeat_n,true,true);
+
 
 support_times = zeros(1,length(Straj_full));
 for i=1:length(Straj_full)
@@ -45,10 +49,15 @@ end
  
 options.right_foot_name = 'r_foot';
 options.left_foot_name = 'l_foot'; 
+%modes = [8,6,3,3,4,4,4,2,7,7,8,8];%,8,6,3,3,4,4];
+% modes = [8,6,1,3,4,4,2,1,7,8];
+% modes = [8,6,3,4,4,2,7,8];
+%modes = [8,6,1,3,4,4,2,1,7,8];
 
-% modes = [4,7,1]; %swapped foot
-modes = [8;3;1];
 
+if repeat_n >1
+  modes = repmat(modes,1,repeat_n-1);
+end
 lfoot_ind = findLinkId(r,options.left_foot_name);
 rfoot_ind = findLinkId(r,options.right_foot_name);  
 
@@ -118,7 +127,7 @@ ctrl_data = FullStateQPControllerData(true,struct(...
 options.timestep = .001;
 options.dt = .001;
 options.cpos_slack_limit = inf;
-options.w_cpos_slack = .001;
+options.w_cpos_slack = 1;
 options.phi_slack_limit = inf;
 options.w_phi_slack = 0.0;
 options.w_qdd = 0*ones(nq,1);
@@ -139,43 +148,39 @@ warning(S);
 
 % t0 = .418;
 % tf = 1;s
-% if iscell(xtraj)
-%   x0 = xtraj{1}.eval(t0);
-% else
-%   x0 = xtraj.eval(t0);
-% end
+if iscell(xtraj)
+  x0 = xtraj{1}.eval(t0);
+else
+  x0 = xtraj.eval(t0);
+end
 
-data_exec = load('data/quick_stop_exec');
-x0 = data_exec.traj.eval(data_exec.traj.tspan(1))
-%   x0 = xtraj{1}.eval(t0);
+x0_nom = x0;
+q0 = x0_nom(1:r.getNumPositions);
+qd0 = x0_nom(r.getNumPositions+1:end)
+[H,C,B] = r.manipulatorDynamics(q0,qd0);
+nom_KE = qd0'*H*qd0
+[phi,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = contactConstraints(r,q0);
+J = [n(1:4,:);D{1}(1:4,:);D{2}(1:4,:)];
+keyboard
+%% Perturb x0
+f = 30*[randn(3,1);zeros(r.getNumPositions-3,1)];
+Lambda = -pinv(J*inv(H)*J')*J*inv(H)*f;
+delta_qd = inv(H)*(J'*Lambda + f)
 
+x0(r.getNumPositions+1:end) = x0_nom(r.getNumPositions+1:end) + delta_qd;
+traj = simulate(sys,[t0 tf],x0);
+% KE=x0(r.getNumPositions+1:end)'*H*x0(r.getNumPositions+1:end)
+
+%%
 traj = simulate(sys,[t0 tf],x0);
 playback(v,traj,struct('slider',true));
 
 
 % save('data/atlas_3d_traj_exec.mat','xtraj','traj');
 
+
+
 if 0
-  xf = traj.eval(traj.tspan(2));
-  q = xf(1:18);
-  [ufp,Kfp,cfp,Sfp] = fixedPointController(p,q);
-  sysfp = feedback(r,cfp);
-  S=warning('off','Drake:DrakeSystem:UnsupportedSampleTime');
-  output_select(1).system=1;
-  output_select(1).output=1;
-  sysfp = mimoCascade(sysfp,v,[],[],output_select);
-  warning(S);
-  traj2_span = [0 1] + .001*floor(tf/.001);
-  traj2 = simulate(sysfp,traj2_span,traj.eval(traj.tspan(2)));
-  tt = [traj.tt traj2.tt(2:end)];
-  xx = [traj.xx traj2.xx(:,2:end)];
-  traj_exec = PPTrajectory(foh(tt,xx));
-  save data/new_stop_exec traj_exec
-end
-
-keyboard
-
-if false
   traj_ts = traj.getBreaks();
   traj_pts = traj.eval(traj_ts);
   

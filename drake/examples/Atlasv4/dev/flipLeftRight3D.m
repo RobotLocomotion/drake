@@ -1,5 +1,5 @@
 function [xtraj_,utraj_,Btraj_,Straj_] = flipLeftRight3D(r,xtraj,utraj,Btraj,Straj)
-% specific to planar Atlas model 
+% specific to planar Atlas model
 
 % keep the same
 % base_x = findPositionIndices(r,'base_x');
@@ -25,8 +25,8 @@ nq = getNumPositions(r);
 
 
 R = zeros(r.getNumStates);
-R(1,1) = 1; %x 
-R(nq+1,nq+1) = 1; %x 
+R(1,1) = 1; %x
+R(nq+1,nq+1) = 1; %x
 R(2,2) = -1; %y
 R(nq+2,nq+2) = -1; %y
 R(3,3) = 1; %z
@@ -58,8 +58,12 @@ R(nq+(13:18),nq+(7:12)) = diag([-1;-1;1;1;1;-1]); %leg joints w/symmetry
 % R(r_leg,l_leg) = eye(length(r_leg));
 % R(r_leg+nq,l_leg+nq) = eye(length(r_leg));
 
-for i=1:length(xtraj),
-  xtraj_{i} = R*xtraj{i};
+if iscell(xtraj)
+  for i=1:length(xtraj),
+    xtraj_{i} = R*xtraj{i};
+  end
+else
+  xtraj_ = R*xtraj;
 end
 
 for i=1:length(Straj)
@@ -91,16 +95,20 @@ U(l_leg_kny,r_leg_kny) = 1; U(r_leg_kny,l_leg_kny) = 1;
 U(l_leg_aky,r_leg_aky) = 1; U(r_leg_aky,l_leg_aky) = 1;
 U(l_leg_akx,r_leg_akx) = -1; U(r_leg_akx,l_leg_akx) = -1;
 
-for i=1:length(utraj),
-  utraj_{i} = U*utraj{i};
+if iscell(utraj)
+  for i=1:length(utraj),
+    utraj_{i} = U*utraj{i};
+  end
+else
+  utraj_ = U*utraj;
 end
 
 for i=1:length(Btraj)
   Btraj_{i} = R*Btraj{i}*U;
 end
 
-end 
+end
 
 function ind = findInputInd(r,str)
- ind = find(~cellfun('isempty',strfind(r.getInputFrame().coordinates,str)));
+ind = r.getInputFrame.findCoordinateIndex(str);
 end

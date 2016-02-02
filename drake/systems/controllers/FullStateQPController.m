@@ -179,7 +179,7 @@ classdef FullStateQPController < DrakeSystem
     supp_idx = find(ctrl_data.support_times<=t,1,'last');
     next_supp_idx = min(supp_idx+1,length(ctrl_data.support_times));
 
-    test_next_support = false;
+    test_next_support = true;
     if next_supp_idx > supp_idx && ctrl_data.support_times(next_supp_idx)-t < 0.025
       test_next_support = true;
     end
