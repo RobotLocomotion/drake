@@ -19,6 +19,11 @@ namespace snopt {
 // todo:  return more information that just the solution (INFO, infeasible constraints, ...)
 // todo:  avoid all dynamic allocation
 
+// snopt minimum workspace requirements
+unsigned int constexpr snopt_mincw = 500;
+unsigned int constexpr snopt_miniw = 500;
+unsigned int constexpr snopt_minrw = 500;
+
 bool Drake::OptimizationProblem::NonlinearProgram::hasSNOPT() const { return true; }
 
 using namespace std;
@@ -112,7 +117,7 @@ struct SNOPTData: public Drake::OptimizationProblem::SolverData {
 struct SNOPTRun {
   SNOPTRun(SNOPTData& d): D(d) {
     // Minimum default allocation needed by snInit
-    D.min_alloc_w(500, 500000, 500000);
+    D.min_alloc_w(snopt_mincw, snopt_miniw*1000, snopt_minrw*1000);
 
     snInit();
   }
