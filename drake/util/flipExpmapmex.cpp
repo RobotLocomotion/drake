@@ -1,23 +1,23 @@
-#include "mex.h"
-#include "drake/util/drakeMexUtil.h"
+#include <Eigen/Core>
+#include "drake/util/mexify.h"
+#include "drake/util/standardMexConversions.h"
 #include "drake/util/drakeGeometryUtil.h"
+#include "drake/util/makeFunction.h"
+#include "drake/core/Gradient.h"
 
 using namespace std;
 using namespace Eigen;
+using namespace Drake;
+
+pair<Vector3d, typename Gradient<Vector3d, 3>::type> quat2expmapWithGradient(MatrixBase<Map<const Vector3d>> &expmap) {
+  auto expmap_autodiff = initializeAutoDiff(expmap);
+  auto flipped_autodiff = flipExpmap(expmap_autodiff);
+  return make_pair(autoDiffToValueMatrix(flipped_autodiff), autoDiffToGradientMatrix(flipped_autodiff));
+}
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-  if(nrhs != 1)
-  {
-    mexErrMsgTxt("Drake:flipExpmapmex:Incorrect Usage, [expmap_flip,dexpmap_flip] = flipExpmapmex(expmap)");
-  }
-  sizecheck(prhs[0],3,1);
-  Map<Vector3d> expmap(mxGetPr(prhs[0]));
-  int gradient_order = nlhs>1?1:0;
-  auto ret = flipExpmap(expmap,gradient_order);
-  plhs[0] = eigenToMatlab(ret.value());
-  if(nlhs>1)
-  {
-    plhs[1] = eigenToMatlab(ret.gradient().value());
-  }
+  auto func_double = make_function(&flipExpmap<Map<const Vector3d>>);
+  auto func_gradient = make_function(&quat2expmapWithGradient);
+  mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double, func_gradient);
 }

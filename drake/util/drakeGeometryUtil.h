@@ -8,7 +8,6 @@
 #include <random>
 #include "drake/util/drakeGradientUtil.h"
 #include "drake/util/GradientVar.h"
-#include "expmap2quat.h"
 #include "drake/drakeGeometryUtil_export.h"
 
 const int TWIST_SIZE = 6;
@@ -135,7 +134,7 @@ Eigen::Matrix<Scalar, 4, 1> slerp(const Eigen::MatrixBase<Derived1>& q1, const E
   // Calculate interpolation factors
   // TODO: do we really want an epsilon so small?
   Scalar r, s;
-  if (std::abs(1.0 - lambda) < std::numeric_limits<double>::epsilon()) {
+  if (std::abs(1.0 - lambda) < Eigen::NumTraits<Scalar>::epsilon()) {
     // The quaternions are nearly parallel, so use linear interpolation
     r = 1.0 - interpolation_parameter;
     s = interpolation_parameter;
@@ -300,36 +299,57 @@ Eigen::Matrix<typename Derived::Scalar, 3, 1> axis2rpy(const Eigen::MatrixBase<D
 /*
  * expmap2x
  */
-template <typename Derived>
-GradientVar<typename Derived::Scalar, QUAT_SIZE, 1> expmap2quat(const Eigen::MatrixBase<Derived>& v, const int gradient_order) {
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
-  assert(gradient_order >= 0 && gradient_order <= 2);
+namespace internal {
+  template <typename Derived>
+  Eigen::Matrix<typename Derived::Scalar, 4, 1> expmap2quatNonDegenerate(const Eigen::MatrixBase<Derived>& v, typename Derived::Scalar& theta)
+  {
+    typedef typename Derived::Scalar Scalar;
+    static_assert(Derived::RowsAtCompileTime == 3 && Derived::ColsAtCompileTime == 1, "Wrong size.");
 
-  GradientVar<typename Derived::Scalar, QUAT_SIZE, 1> ret(QUAT_SIZE, 1, EXPMAP_SIZE,gradient_order);
-  auto theta = v.norm();
-  if (theta < pow(std::numeric_limits<typename Derived::Scalar>::epsilon(),0.25)) {
-    ret.value() = expmap2quatDegenerate(v, theta);
-    if(gradient_order>0)
-    {
-      ret.gradient().value() = dexpmap2quatDegenerate(v, theta);
-      if(gradient_order>1)
-      {
-        ret.gradient().gradient().value() = ddexpmap2quatDegenerate(v, theta);
-      }
-    }
-  } else {
-    ret.value() = expmap2quatNonDegenerate(v, theta);
-    if(gradient_order>0)
-    {
-      ret.gradient().value() = dexpmap2quatNonDegenerate(v, theta);
-      if(gradient_order>1)
-      {
-        ret.gradient().gradient().value() = ddexpmap2quatNonDegenerate(v, theta);
-      }
-    }
+    Eigen::Matrix<Scalar, 4, 1> q;
+
+    auto t2 = theta*(1.0/2.0);
+    auto t3 = 1.0/theta;
+    auto t4 = sin(t2);
+    q(0,0) = cos(t2);
+    q(1,0) = t3*t4*v(0);
+    q(2,0) = t3*t4*v(1);
+    q(3,0) = t3*t4*v(2);
+
+    return q;
   }
-  return ret;
-};
+
+  template <typename Derived>
+  Eigen::Matrix<typename Derived::Scalar, 4, 1> expmap2quatDegenerate(const Eigen::MatrixBase<Derived>& v, typename Derived::Scalar& theta)
+  {
+    typedef typename Derived::Scalar Scalar;
+    static_assert(Derived::RowsAtCompileTime == 3 && Derived::ColsAtCompileTime == 1, "Wrong size.");
+
+    Eigen::Matrix<Scalar, 4, 1> q;
+
+    auto t2 = theta*theta;
+    auto t3 = t2*8.0E1;
+    auto t4 = t3-1.92E3;
+    q(0) = t2*(-1.0/8.0)+1.0;
+    q(1) = t4*v(0)*(-2.604166666666667E-4);
+    q(2) = t4*v(1)*(-2.604166666666667E-4);
+    q(3) = t4*v(2)*(-2.604166666666667E-4);
+
+    return q;
+  }
+}
+
+template<typename Derived>
+Eigen::Matrix<typename Derived::Scalar, QUAT_SIZE, 1> expmap2quat(const Eigen::MatrixBase<Derived> &v) {
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
+
+  auto theta = v.norm();
+  if (theta < pow(Eigen::NumTraits<typename Derived::Scalar>::epsilon(), 0.25)) {
+    return internal::expmap2quatDegenerate(v, theta);
+  } else {
+    return internal::expmap2quatNonDegenerate(v, theta);
+  }
+}
 
 /*
  * rotmat2x
@@ -1231,15 +1251,131 @@ typename DHomogTrans<DerivedDT>::type dHomogTransInv(
   return ret;
 }
 
-DRAKEGEOMETRYUTIL_EXPORT GradientVar<double,3,1> quat2expmap(const Eigen::Ref<const Eigen::Vector4d> &q, int gradient_order);
+template<typename DerivedQ>
+Eigen::Matrix<typename DerivedQ::Scalar, 3, 1> quat2expmap(const Eigen::MatrixBase<DerivedQ> &q) {
+  using namespace Eigen;
+  typedef typename DerivedQ::Scalar Scalar;
+  static_assert(DerivedQ::RowsAtCompileTime == 4 && DerivedQ::ColsAtCompileTime == 1, "Wrong size.");
 
-DRAKEGEOMETRYUTIL_EXPORT GradientVar<double,3,1> flipExpmap(const Eigen::Ref<const Eigen::Vector3d> &expmap, int gradient_order);
+  Scalar t = sqrt(Scalar(1) - q(0) * q(0));
+  bool is_degenerate = (t * t < NumTraits<Scalar>::epsilon());
+  Scalar s(2);
+  if (is_degenerate)
+    s *= acos(q(0)) / t;
+  return s * q.template tail<3>();
+}
 
-DRAKEGEOMETRYUTIL_EXPORT GradientVar<double,3,1> unwrapExpmap(const Eigen::Ref<const Eigen::Vector3d> &expmap1, const Eigen::Ref<const Eigen::Vector3d> &expmap2, int gradient_order);
+template <typename Derived>
+Eigen::Matrix<typename Derived::Scalar, 3, 1> flipExpmap(const Eigen::MatrixBase<Derived> &expmap) {
+  using namespace Eigen;
+  typedef typename Derived::Scalar Scalar;
+    static_assert(Derived::RowsAtCompileTime == 3 && Derived::ColsAtCompileTime == 1, "Wrong size.");
 
-DRAKEGEOMETRYUTIL_EXPORT void quat2expmapSequence(const Eigen::Ref<const Eigen::Matrix<double,4,Eigen::Dynamic>> &quat, const Eigen::Ref<const Eigen::Matrix<double,4,Eigen::Dynamic>> &quat_dot, Eigen::Ref<Eigen::Matrix<double,3,Eigen::Dynamic>> expmap, Eigen::Ref<Eigen::Matrix<double,3,Eigen::Dynamic>> expmap_dot);
+  Scalar expmap_norm = expmap.norm();
+  bool is_degenerate = (expmap_norm < std::numeric_limits<double>::epsilon());
+  Eigen::Matrix<Scalar, 3, 1> ret = expmap;
+  if (!is_degenerate)
+    ret -= expmap / expmap_norm * 2 * M_PI;
 
-DRAKEGEOMETRYUTIL_EXPORT GradientVar<double,3,1> closestExpmap(const Eigen::Ref<const Eigen::Vector3d> &expmap1, const Eigen::Ref<const Eigen::Vector3d> &expmap2, int gradient_order);
+  return ret;
+}
 
+template <typename Derived1, typename Derived2>
+Eigen::Matrix<typename Derived1::Scalar, 3, 1> unwrapExpmap(const Eigen::MatrixBase<Derived1> &expmap1, const Eigen::MatrixBase<Derived2> &expmap2) {
+  using namespace Eigen;
+  static_assert(Derived1::RowsAtCompileTime == 3 && Derived1::ColsAtCompileTime == 1, "Wrong size.");
+  static_assert(Derived2::RowsAtCompileTime == 3 && Derived2::ColsAtCompileTime == 1, "Wrong size.");
+  static_assert(std::is_same<typename Derived1::Scalar, typename Derived2::Scalar>::value, "Scalar types don't match.");
+  typedef typename Derived1::Scalar Scalar;
+  typedef typename NumTraits<Scalar>::Real Real;
+
+  auto expmap2_flip = flipExpmap(expmap2);
+  Real distance1 = (expmap1 - expmap2).squaredNorm();
+  Real distance2 = (expmap1 - expmap2_flip.value()).squaredNorm();
+  if (distance1 > distance2) {
+    return expmap2_flip;
+  }
+  else {
+    return expmap2;
+  }
+}
+
+template <typename Derived1, typename Derived2>
+Eigen::Matrix<typename Derived1::Scalar, 3, 1> closestExpmap(const Eigen::MatrixBase<Derived1> &expmap1, const Eigen::MatrixBase<Derived2> &expmap2)
+{
+  using namespace Eigen;
+  static_assert(Derived1::RowsAtCompileTime == 3 && Derived1::ColsAtCompileTime == 1, "Wrong size.");
+  static_assert(Derived2::RowsAtCompileTime == 3 && Derived2::ColsAtCompileTime == 1, "Wrong size.");
+  static_assert(std::is_same<typename Derived1::Scalar, typename Derived2::Scalar>::value, "Scalar types don't match.");
+  typedef typename Derived1::Scalar Scalar;
+  typedef typename NumTraits<Scalar>::Real Real;
+
+  Real expmap1_norm = expmap1.norm();
+  Real expmap2_norm = expmap2.norm();
+  Eigen::Matrix<Scalar, 3, 1> ret;
+  if (expmap2_norm < NumTraits<Scalar>::epsilon()) {
+    if (expmap1_norm > NumTraits<Scalar>::epsilon()) {
+      auto expmap1_axis = (expmap1 / expmap1_norm).eval();
+      int expmap1_round = static_cast<int>(expmap1_norm / (2 * M_PI) + 0.5);
+      return expmap1_axis * expmap1_round * 2 * M_PI;
+    }
+    else {
+      return expmap2;
+    }
+  }
+  else {
+    auto expmap2_axis = (expmap2 / expmap2_norm).eval();
+    auto expmap2_closest_k = ((expmap2_axis.transpose() * expmap1).value() - expmap2_norm) / (2 * M_PI);
+    int expmap2_closest_k1;
+    int expmap2_closest_k2;
+    if (expmap2_closest_k > 0) {
+      expmap2_closest_k1 = static_cast<int>(expmap2_closest_k);
+    }
+    else {
+      expmap2_closest_k1 = static_cast<int>(expmap2_closest_k - 1);
+    }
+    expmap2_closest_k2 = expmap2_closest_k1 + 1;
+    auto expmap2_closest1 = (expmap2 + 2 * expmap2_closest_k1 * M_PI * expmap2_axis).eval();
+    auto expmap2_closest2 = (expmap2 + 2 * expmap2_closest_k2 * M_PI * expmap2_axis).eval();
+    if ((expmap2_closest1 - expmap1).norm() < (expmap2_closest2 - expmap1).norm()) {
+      return expmap2_closest1;
+    }
+    else {
+      return expmap2_closest2;
+    }
+  }
+}
+
+
+template<typename DerivedQ, typename DerivedE>
+void quat2expmapSequence(const Eigen::MatrixBase<DerivedQ> &quat, const Eigen::MatrixBase<DerivedQ> &quat_dot, Eigen::MatrixBase<DerivedE> &expmap, Eigen::MatrixBase<DerivedE> &expmap_dot) {
+  using namespace Eigen;
+  static_assert(DerivedQ::RowsAtCompileTime == 4, "Wrong size.");
+  static_assert(DerivedE::RowsAtCompileTime == 3, "Wrong size.");
+  static_assert(std::is_same<typename DerivedQ::Scalar, typename DerivedE::Scalar>::value, "Scalar types don't match.");
+  typedef typename DerivedQ::Scalar Scalar;
+
+  assert(quat.cols() == quat_dot.cols() && "number of columns of quat doesn't match quat_dot");
+  Index N = quat.cols();
+
+  typedef AutoDiffScalar<Matrix<Scalar, 1, 1>> ADScalar;
+  auto quat_autodiff = quat.template cast<ADScalar>().eval();
+  for (int i = 0; i < quat.size(); i++) {
+    quat_autodiff(i).derivatives()(0) = quat_dot(i);
+  }
+
+  expmap.resize(3, N);
+  expmap_dot.resize(3, N);
+  Matrix<ADScalar, 3, 1> expmap_autodiff_previous;
+  for (int i = 0; i < N; i++) {
+    auto expmap_autodiff = quat2expmap(quat_autodiff.col(i));
+    if (i >= 1) {
+      expmap_autodiff = closestExpmap(expmap_autodiff_previous, expmap_autodiff);
+    }
+    expmap.col(i) = autoDiffToValueMatrix(expmap_autodiff);
+    expmap_dot.col(i) = autoDiffToGradientMatrix(expmap_autodiff);
+    expmap_autodiff_previous = expmap_autodiff;
+  }
+}
 
 #endif

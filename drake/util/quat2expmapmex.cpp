@@ -1,24 +1,23 @@
-#include "mex.h"
+#include <Eigen/Core>
+#include "drake/util/mexify.h"
+#include "drake/util/standardMexConversions.h"
 #include "drake/util/drakeGeometryUtil.h"
-#include "drake/util/drakeMexUtil.h"
+#include "drake/util/makeFunction.h"
+#include "drake/core/Gradient.h"
 
-using namespace Eigen;
 using namespace std;
+using namespace Eigen;
+using namespace Drake;
+
+pair<Vector3d, typename Gradient<Vector3d, 4>::type> quat2expmapWithGradient(MatrixBase<Map<const Vector4d>> &quat) {
+  auto quat_autodiff = initializeAutoDiff(quat);
+  auto expmap_autodiff = quat2expmap(quat_autodiff);
+  return make_pair(autoDiffToValueMatrix(expmap_autodiff), autoDiffToGradientMatrix(expmap_autodiff));
+}
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-  if(nrhs != 1)
-  {
-    mexErrMsgTxt("Incorrect usage, quat2expmapmex(q)");
-  }
-  Map<Vector4d> q(mxGetPrSafe(prhs[0]));
-  int gradient_order = nlhs==2?1:0;
-  GradientVar<double,3,1> ret = quat2expmap(q,gradient_order);
-  plhs[0] = mxCreateDoubleMatrix(3,1,mxREAL);
-  memcpy(mxGetPrSafe(plhs[0]),ret.value().data(),sizeof(double)*3);
-  if(nlhs>1)
-  {
-    plhs[1] = mxCreateDoubleMatrix(3,4,mxREAL);
-    memcpy(mxGetPrSafe(plhs[1]),ret.gradient().value().data(),sizeof(double)*12);
-  }
+  auto func_double = make_function(&quat2expmap<Map<const Vector4d>>);
+  auto func_gradient = make_function(&quat2expmapWithGradient);
+  mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double, func_gradient);
 }

@@ -21,7 +21,7 @@ namespace Drake {
   /** \brief The appropriate AutoDiffScalar gradient type given the value type and the number of derivatives at compile time
    */
   template<typename Derived, int Nq>
-  using AutoDiffMatrixType = Eigen::Matrix<TaylorVard<Nq>, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime, Derived::Options, Derived::MaxRowsAtCompileTime, Derived::MaxColsAtCompileTime>;
+  using AutoDiffMatrixType = Eigen::Matrix<TaylorVard<Nq>, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime, 0, Derived::MaxRowsAtCompileTime, Derived::MaxColsAtCompileTime>;
 
 
   /** \brief Initializes an autodiff matrix given a matrix of values and gradient matrix

@@ -1,32 +1,24 @@
-#include "mex.h"
-#include "drake/util/drakeMexUtil.h"
+#include <Eigen/Core>
+#include "drake/util/mexify.h"
+#include "drake/util/standardMexConversions.h"
 #include "drake/util/drakeGeometryUtil.h"
+#include "drake/util/makeFunction.h"
+#include "drake/core/Gradient.h"
 
 using namespace std;
 using namespace Eigen;
+using namespace Drake;
+
+pair<Vector4d, typename Gradient<Vector4d, 3>::type> expmap2quatWithGradient(MatrixBase<Map<const Vector3d>>& expmap) {
+  auto expmap_autodiff = initializeAutoDiff(expmap);
+  auto quat_autodiff = expmap2quat(expmap_autodiff);
+  return make_pair(autoDiffToValueMatrix(quat_autodiff), autoDiffToGradientMatrix(quat_autodiff));
+}
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-  if (nrhs!=1) {
-    mexErrMsgTxt("Incorrect usage: expmap2quatImplmex(expmap)");
-  }
-  if (mxGetM(prhs[0])!=3 || mxGetN(prhs[0])!= 1) {
-    mexErrMsgTxt("expmap should be a 3 x 1 vector\n");
-  }
-  Map<Vector3d> expmap(mxGetPrSafe(prhs[0]));
-  auto ret = expmap2quat(expmap,2);
-  if (nlhs >= 1) {
-    plhs[0] = mxCreateDoubleMatrix(4,1,mxREAL);
-    memcpy(mxGetPrSafe(plhs[0]), ret.value().data(), sizeof(double)*4);
-  }
-  if (nlhs >= 2) {
-    plhs[1] = mxCreateDoubleMatrix(4,3,mxREAL);
-    memcpy(mxGetPrSafe(plhs[1]), ret.gradient().value().data(), 
-           sizeof(double)*12);
-  }
-  if (nlhs >= 3) {
-    plhs[2] = mxCreateDoubleMatrix(4,9,mxREAL);
-    memcpy(mxGetPrSafe(plhs[2]), ret.gradient().gradient().value().data(), 
-           sizeof(double)*36);
-  }
+  auto func_double = make_function(&expmap2quat<Map<const Vector3d>>);
+  auto func_gradient = make_function(&expmap2quatWithGradient);
+//  auto func_second_deriv = make_function(&expmap2quatWithSecondDeriv);
+  mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double, func_gradient); // TODO: , func_second_deriv);
 }

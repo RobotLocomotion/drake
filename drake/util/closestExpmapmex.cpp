@@ -1,33 +1,23 @@
-#include "mex.h"
-#include "drake/util/drakeMexUtil.h"
+#include <Eigen/Core>
+#include "drake/util/mexify.h"
+#include "drake/util/standardMexConversions.h"
 #include "drake/util/drakeGeometryUtil.h"
+#include "drake/util/makeFunction.h"
+#include "drake/core/Gradient.h"
 
 using namespace std;
 using namespace Eigen;
+using namespace Drake;
+
+pair<Vector3d, typename Gradient<Vector3d, 6>::type> closestExpmapWithGradient(MatrixBase<Map<const Vector3d>>& expmap1, MatrixBase<Map<const Vector3d>>& expmap2) {
+  auto args = initializeAutoDiffTuple(expmap1, expmap2);
+  auto closest_autodiff = closestExpmap(get<0>(args), get<1>(args));
+  return make_pair(autoDiffToValueMatrix(closest_autodiff), autoDiffToGradientMatrix(closest_autodiff));
+}
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-  if (nrhs != 2) {
-    mexErrMsgIdAndTxt("Drake:closestExpmapmex:InvalidInputs","Usage is closestExpmap(expmap1,expmap2)");
-  }
-  if (mxGetM(prhs[0]) != 3 || mxGetN(prhs[0]) != 1) {
-    mexErrMsgIdAndTxt("Drake:closestExpmapmex:InvalidInputs","expmap1 should be a 3 x 1 vector");
-  }
-  Map<Vector3d> expmap1(mxGetPr(prhs[0]));
-  if (mxGetM(prhs[1]) != 3 || mxGetN(prhs[1]) != 1) {
-    mexErrMsgIdAndTxt("Drake:closestExpmapmex:InvalidInputs","expmap2 should be a 3 x 1 vector");
-  }
-  Map<Vector3d> expmap2(mxGetPr(prhs[1]));
-  int gradient_order;
-  if (nlhs>1) {
-    gradient_order = 1;
-  }
-  else {
-    gradient_order = 0;
-  }
-  GradientVar<double,3,1> ret = closestExpmap(expmap1, expmap2,gradient_order);
-  plhs[0] = eigenToMatlab(ret.value());
-  if (nlhs>1) {
-    plhs[1] = eigenToMatlab(ret.gradient().value());
-  }
+  auto func_double = make_function(&closestExpmap<Map<const Vector3d>, Map<const Vector3d>>);
+  auto func_gradient = make_function(&closestExpmapWithGradient);
+  mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double, func_gradient);
 }

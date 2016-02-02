@@ -1,25 +1,23 @@
-#include "mex.h"
-#include "drake/util/drakeMexUtil.h"
+#include <Eigen/Core>
+#include "drake/util/mexify.h"
+#include "drake/util/standardMexConversions.h"
 #include "drake/util/drakeGeometryUtil.h"
+#include "drake/util/makeFunction.h"
+#include "drake/core/Gradient.h"
 
 using namespace std;
 using namespace Eigen;
+using namespace Drake;
+
+pair<Vector3d, typename Gradient<Vector3d, 6>::type> unwrapExpmapWithGradient(MatrixBase<Map<const Vector3d>> &expmap1, MatrixBase<Map<const Vector3d>> &expmap2) {
+  auto args = initializeAutoDiffTuple(expmap1, expmap2);
+  auto unwrapped_autodiff = unwrapExpmap(get<0>(args), get<1>(args));
+  return make_pair(autoDiffToValueMatrix(unwrapped_autodiff), autoDiffToGradientMatrix(unwrapped_autodiff));
+}
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-  if(nrhs != 2)
-  {
-    mexErrMsgTxt("Drake:unwrapExpmapmex:Incorrect Usage, [expmap_unwrap,dexpmap_unwrap] = unwrapExpmapmex(expmap1,expmap2)");
-  }
-  sizecheck(prhs[0],3,1);
-  sizecheck(prhs[1],3,1);
-  Map<Vector3d> expmap1(mxGetPr(prhs[0]));
-  Map<Vector3d> expmap2(mxGetPr(prhs[1]));
-  int gradient_order = nlhs>1?1:0;
-  auto ret = unwrapExpmap(expmap1,expmap2,gradient_order);
-  plhs[0] = eigenToMatlab(ret.value());
-  if(nlhs>1)
-  {
-    plhs[1] = eigenToMatlab(ret.gradient().value());
-  }
+  auto func_double = make_function(&unwrapExpmap<Map<const Vector3d>, Map<const Vector3d>>);
+  auto func_gradient = make_function(&unwrapExpmapWithGradient);
+  mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double, func_gradient);
 }
