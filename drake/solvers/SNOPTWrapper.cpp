@@ -48,6 +48,10 @@ struct SNOPTData: public Drake::OptimizationProblem::SolverData {
   std::vector<snopt::doublereal> Fmul;
   std::vector<snopt::integer> Fstate;
 
+  std::vector<snopt::doublereal> A;
+  std::vector<snopt::integer> iAfun;
+  std::vector<snopt::integer> jAvar;
+
   void min_alloc_w(snopt::integer mincw,
                    snopt::integer miniw,
                    snopt::integer minrw) {
@@ -82,6 +86,14 @@ struct SNOPTData: public Drake::OptimizationProblem::SolverData {
       Fupp.resize(nF);
       Fmul.resize(nF);
       Fstate.resize(nF);
+    }
+  }
+
+  void min_alloc_A(snopt::integer nA) {
+    if (nA > A.size()) {
+      A.resize(nA);
+      iAfun.resize(nA);
+      jAvar.resize(nA);
     }
   }
 
@@ -313,9 +325,10 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   }
 
   snopt::integer lenA = static_cast<snopt::integer>(tripletList.size());
-  snopt::doublereal* A     = new snopt::doublereal[lenA];
-  snopt::integer*    iAfun = new snopt::integer[lenA];
-  snopt::integer*    jAvar = new snopt::integer[lenA];
+  d->min_alloc_A(lenA);
+  snopt::doublereal* A     = d->A.data();
+  snopt::integer*    iAfun = d->iAfun.data();
+  snopt::integer*    jAvar = d->jAvar.data();
   size_t A_index = 0;
   for (auto const & it : tripletList) {
     A[A_index] = it.value();
@@ -404,9 +417,6 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
 
   // todo: extract the other useful quantities, too.
 
-  delete[] A;
-  delete[] iAfun;
-  delete[] jAvar;
   delete[] iGfun;
   delete[] jGvar;
 
