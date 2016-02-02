@@ -36,10 +36,6 @@ if (MATLAB_FOUND)
   if (gurobi_FOUND AND LCM_FOUND)
     # NOTE: controlMexUtil.h currently includes QPCommon.h, which includes a gurobi header.
 
-    add_mex(QPControllermex QPControllermex.cpp)
-    target_link_libraries(QPControllermex drakeQP drakeControlUtil drakeMexUtil)
-    pods_use_pkg_config_packages(QPControllermex gurobi)
-
     add_mex(instantaneousQPControllermex instantaneousQPControllermex.cpp)
     target_link_libraries(instantaneousQPControllermex drakeQP drakeControlUtil drakeQPCommon drakeMexUtil drakeSide)
     pods_use_pkg_config_packages(instantaneousQPControllermex gurobi)
@@ -50,13 +46,6 @@ if (MATLAB_FOUND)
     add_mex(constructQPDataPointerMex constructQPDataPointerMex.cpp)
     target_link_libraries(constructQPDataPointerMex drakeQP drakeControlUtil drakeQPCommon drakeMexUtil drakeYAMLUtil drakeAtlasUtil)
     pods_use_pkg_config_packages(constructQPDataPointerMex gurobi)
-
-    macro(add_control_mex)
-      add_mex(${ARGV} ${ARGV}.cpp)
-      target_link_libraries(${ARGV} drakeControlUtil drakeMexUtil drakeRBM)
-    endmacro()
-    
-    add_control_mex(bodyMotionControlmex)
   endif()
 
   add_mex(supportDetectmex supportDetectmex.cpp)
