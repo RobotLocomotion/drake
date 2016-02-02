@@ -42,6 +42,12 @@ struct SNOPTData: public Drake::OptimizationProblem::SolverData {
   std::vector<snopt::doublereal> xmul;
   std::vector<snopt::integer> xstate;
 
+  std::vector<snopt::doublereal> F;
+  std::vector<snopt::doublereal> Flow;
+  std::vector<snopt::doublereal> Fupp;
+  std::vector<snopt::doublereal> Fmul;
+  std::vector<snopt::integer> Fstate;
+
   void min_alloc_w(snopt::integer mincw,
                    snopt::integer miniw,
                    snopt::integer minrw) {
@@ -68,6 +74,17 @@ struct SNOPTData: public Drake::OptimizationProblem::SolverData {
       xstate.resize(nx);
     }
   }
+
+  void min_alloc_F(snopt::integer nF) {
+    if (nF > F.size()) {
+      F.resize(nF);
+      Flow.resize(nF);
+      Fupp.resize(nF);
+      Fmul.resize(nF);
+      Fstate.resize(nF);
+    }
+  }
+
 };
 
 struct SNOPTRun {
@@ -230,8 +247,9 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   for (auto const& c : prog.linear_equality_constraints) { num_linear_constraints += c->getNumConstraints(); }
 
   snopt::integer nF = 1+num_nonlinear_constraints+num_linear_constraints;
-  snopt::doublereal* Flow = new snopt::doublereal[nF];
-  snopt::doublereal* Fupp = new snopt::doublereal[nF];
+  d->min_alloc_F(nF);
+  snopt::doublereal* Flow = d->Flow.data();
+  snopt::doublereal* Fupp = d->Fupp.data();
   Flow[0] = static_cast<snopt::doublereal>(-std::numeric_limits<double>::infinity());
   Fupp[0] = static_cast<snopt::doublereal>(std::numeric_limits<double>::infinity());
 
@@ -337,9 +355,9 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   snopt::integer *xstate = d->xstate.data();
   memset(xstate,0,sizeof(snopt::integer)*nx);
 
-  snopt::doublereal *F      = new snopt::doublereal[nF];
-  snopt::doublereal *Fmul   = new snopt::doublereal[nF];
-  snopt::integer    *Fstate = new snopt::integer[nF];
+  snopt::doublereal *F      = d->F.data();
+  snopt::doublereal *Fmul   = d->Fmul.data();
+  snopt::integer    *Fstate = d->Fstate.data();
   memset(Fstate,0,sizeof(snopt::integer)*nF);
 
   snopt::doublereal ObjAdd = 0.0;
@@ -386,16 +404,11 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
 
   // todo: extract the other useful quantities, too.
 
-  delete[] Flow;
-  delete[] Fupp;
   delete[] A;
   delete[] iAfun;
   delete[] jAvar;
   delete[] iGfun;
   delete[] jGvar;
-  delete[] F;
-  delete[] Fmul;
-  delete[] Fstate;
 
   return true;
 }
