@@ -312,7 +312,9 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   snopt::integer minrw,miniw,mincw;
   cur.snMemA(nF, nx, nxname, nFname, lenA, lenG, &mincw, &miniw, &minrw);
   d->min_alloc_w(mincw, miniw, minrw);
-  cur.snInit();
+  cur.snSeti("Total character workspace", d->lencw);
+  cur.snSeti("Total integer workspace", d->leniw);
+  cur.snSeti("Total real workspace", d->lenrw);
 
   snopt::integer Cold = 0;
   snopt::doublereal *xmul = new snopt::doublereal[nx];
