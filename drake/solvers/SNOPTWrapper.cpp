@@ -52,6 +52,9 @@ struct SNOPTData: public Drake::OptimizationProblem::SolverData {
   std::vector<snopt::integer> iAfun;
   std::vector<snopt::integer> jAvar;
 
+  std::vector<snopt::integer> iGfun;
+  std::vector<snopt::integer> jGvar;
+
   void min_alloc_w(snopt::integer mincw,
                    snopt::integer miniw,
                    snopt::integer minrw) {
@@ -94,6 +97,13 @@ struct SNOPTData: public Drake::OptimizationProblem::SolverData {
       A.resize(nA);
       iAfun.resize(nA);
       jAvar.resize(nA);
+    }
+  }
+
+  void min_alloc_G(snopt::integer nG) {
+    if (nG > iGfun.size()) {
+      iGfun.resize(nG);
+      jGvar.resize(nG);
     }
   }
 
@@ -266,8 +276,9 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   Fupp[0] = static_cast<snopt::doublereal>(std::numeric_limits<double>::infinity());
 
   snopt::integer lenG = static_cast<snopt::integer>(max_num_gradients);
-  snopt::integer* iGfun = new snopt::integer[lenG];
-  snopt::integer* jGvar = new snopt::integer[lenG];
+  d->min_alloc_G(lenG);
+  snopt::integer* iGfun = d->iGfun.data();
+  snopt::integer* jGvar = d->jGvar.data();
   for (snopt::integer i=0; i<nx; i++) {
     iGfun[i]=1;
     jGvar[i]=i+1;
@@ -416,9 +427,6 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
 //  prog.printSolution();
 
   // todo: extract the other useful quantities, too.
-
-  delete[] iGfun;
-  delete[] jGvar;
 
   return true;
 }
