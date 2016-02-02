@@ -1,6 +1,8 @@
 #include "yamlUtil.h"
 // #include <regex>
 
+using namespace std;
+
 YAML::Node applyDefaults(const YAML::Node& node, const YAML::Node& default_node) {
   YAML::Node result = YAML::Clone(node);
   if (!default_node.IsMap()) {

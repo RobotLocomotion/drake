@@ -10,6 +10,8 @@
  */
 
 #include "QPCommon.h"
+#include "QPDeprecated.h"
+#include "drake/solvers/fastQP.h"
 #include <Eigen/StdVector>
 #include <limits>
 #include <cmath>

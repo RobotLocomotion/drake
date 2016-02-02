@@ -6,8 +6,11 @@
 #include "drake/util/lcmUtil.h"
 #include "drake/util/testUtil.h"
 #include "drake/util/yaml/yamlUtil.h"
+#include "drake/solvers/fastQP.h"
 #include "drake/Path.h"
 #include "lcmtypes/drake/lcmt_zmp_com_observer_state.hpp"
+
+const double REG = 1e-8;
 
 const bool CHECK_CENTROIDAL_MOMENTUM_RATE_MATCHES_TOTAL_WRENCH = false;
 const bool PUBLISH_ZMP_COM_OBSERVER_STATE = true;
@@ -98,7 +101,7 @@ void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot, const Kinemat
     robot->addRobotFromURDF(Drake::getDrakePath() + "/" + it->urdf_filename, it->joint_type, attach_to_frame);
   }
 
-  auto filter = [&](const string &group_name) { return modifications.collision_groups_to_keep.find(group_name) == modifications.collision_groups_to_keep.end(); };
+  auto filter = [&](const std::string &group_name) { return modifications.collision_groups_to_keep.find(group_name) == modifications.collision_groups_to_keep.end(); };
   robot->removeCollisionGroupsIf(filter);
   robot->compile();
 }
@@ -449,7 +452,7 @@ int InstantaneousQPController::setupAndSolveQP(const drake::lcmt_qp_controller_i
   }
 
   // look up the param set by name
-  std::map<string,QPControllerParams>::iterator it;
+  std::map<std::string,QPControllerParams>::iterator it;
   it = param_sets.find(qp_input.param_set_name);
   if (it == param_sets.end()) {
     std::cout<<"Got a param set I don't recognize! Using standing params instead";

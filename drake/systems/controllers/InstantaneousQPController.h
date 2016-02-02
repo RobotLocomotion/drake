@@ -3,6 +3,8 @@
 
 #include <memory>
 #include "QPCommon.h"
+#include "drake/solvers/gurobiQP.h"
+#include "lcmtypes/drake/lcmt_qp_controller_input.hpp"
 
 #define USE_FASTQP 1
 #define GUROBI_OUTPUTFLAG 0
