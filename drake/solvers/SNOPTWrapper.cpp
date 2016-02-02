@@ -36,6 +36,12 @@ struct SNOPTData: public Drake::OptimizationProblem::SolverData {
   snopt::integer leniw=0;
   snopt::integer lenrw=0;
 
+  std::vector<snopt::doublereal> x;
+  std::vector<snopt::doublereal> xlow;
+  std::vector<snopt::doublereal> xupp;
+  std::vector<snopt::doublereal> xmul;
+  std::vector<snopt::integer> xstate;
+
   void min_alloc_w(snopt::integer mincw,
                    snopt::integer miniw,
                    snopt::integer minrw) {
@@ -53,6 +59,15 @@ struct SNOPTData: public Drake::OptimizationProblem::SolverData {
     }
   }
 
+  void min_alloc_x(snopt::integer nx) {
+    if (nx > x.size()) {
+      x.resize(nx);
+      xlow.resize(nx);
+      xupp.resize(nx);
+      xmul.resize(nx);
+      xstate.resize(nx);
+    }
+  }
 };
 
 struct SNOPTRun {
@@ -183,9 +198,10 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   current_problem = &prog;
 
   snopt::integer nx = prog.num_vars;
-  snopt::doublereal* x    = new snopt::doublereal[nx];
-  snopt::doublereal* xlow = new snopt::doublereal[nx];
-  snopt::doublereal* xupp = new snopt::doublereal[nx];
+  d->min_alloc_x(nx);
+  snopt::doublereal* x    = d->x.data();
+  snopt::doublereal* xlow = d->xlow.data();
+  snopt::doublereal* xupp = d->xupp.data();
   for(int i=0;i<nx;i++)
   {
     x[i] = static_cast<snopt::doublereal>(prog.x_initial_guess(i));
@@ -317,8 +333,8 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   cur.snSeti("Total real workspace", d->lenrw);
 
   snopt::integer Cold = 0;
-  snopt::doublereal *xmul = new snopt::doublereal[nx];
-  snopt::integer *xstate = new snopt::integer[nx];
+  snopt::doublereal *xmul = d->xmul.data();
+  snopt::integer *xstate = d->xstate.data();
   memset(xstate,0,sizeof(snopt::integer)*nx);
 
   snopt::doublereal *F      = new snopt::doublereal[nF];
@@ -370,9 +386,6 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
 
   // todo: extract the other useful quantities, too.
 
-  delete[] x;
-  delete[] xlow;
-  delete[] xupp;
   delete[] Flow;
   delete[] Fupp;
   delete[] A;
@@ -380,8 +393,6 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   delete[] jAvar;
   delete[] iGfun;
   delete[] jGvar;
-  delete[] xmul;
-  delete[] xstate;
   delete[] F;
   delete[] Fmul;
   delete[] Fstate;
