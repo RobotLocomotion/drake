@@ -301,37 +301,32 @@ Eigen::Matrix<typename Derived::Scalar, 3, 1> axis2rpy(const Eigen::MatrixBase<D
  */
 namespace internal {
   template<typename Derived>
-  Eigen::Matrix<typename Derived::Scalar, 4, 1> expmap2quatNonDegenerate(const Eigen::MatrixBase<Derived> &v, typename Derived::Scalar &theta) {
+  Eigen::Matrix<typename Derived::Scalar, 4, 1> expmap2quatNonDegenerate(const Eigen::MatrixBase<Derived> &v, typename Derived::Scalar &theta_squared) {
+    using namespace std;
     typedef typename Derived::Scalar Scalar;
     static_assert(Derived::RowsAtCompileTime == 3 && Derived::ColsAtCompileTime == 1, "Wrong size.");
 
     Eigen::Matrix<Scalar, 4, 1> q;
 
-    auto t2 = theta * (1.0 / 2.0);
-    auto t3 = Scalar(1) / theta;
-    auto t4 = sin(t2);
-    q(0) = cos(t2);
-    q(1) = t3 * t4 * v(0);
-    q(2) = t3 * t4 * v(1);
-    q(3) = t3 * t4 * v(2);
+    Scalar theta = sqrt(theta_squared);
+    Scalar arg = theta / Scalar(2);
+    q(0) = cos(arg);
+    q.template bottomRows<3>() = v;
+    q.template bottomRows<3>() *= sin(arg) / theta;
 
     return q;
   }
 
   template<typename Derived>
-  Eigen::Matrix<typename Derived::Scalar, 4, 1> expmap2quatDegenerate(const Eigen::MatrixBase<Derived> &v, typename Derived::Scalar &theta) {
+  Eigen::Matrix<typename Derived::Scalar, 4, 1> expmap2quatDegenerate(const Eigen::MatrixBase<Derived> &v, typename Derived::Scalar &theta_squared) {
     typedef typename Derived::Scalar Scalar;
     static_assert(Derived::RowsAtCompileTime == 3 && Derived::ColsAtCompileTime == 1, "Wrong size.");
 
     Eigen::Matrix<Scalar, 4, 1> q;
 
-    auto t2 = theta * theta;
-    auto t3 = t2 * 8.0E1;
-    auto t4 = t3 - 1.92E3;
-    q(0) = t2 * (-1.0 / 8.0) + 1.0;
-    q(1) = t4 * v(0) * (-2.604166666666667E-4);
-    q(2) = t4 * v(1) * (-2.604166666666667E-4);
-    q(3) = t4 * v(2) * (-2.604166666666667E-4);
+    q(0) = -theta_squared / 8.0 + 1.0;
+    q.template bottomRows<3>() = v;
+    q.template bottomRows<3>() *= (theta_squared * 8.0E1 - 1.92E3) * (-2.604166666666667E-4);
 
     return q;
   }
@@ -340,12 +335,12 @@ namespace internal {
 template<typename Derived>
 Eigen::Matrix<typename Derived::Scalar, QUAT_SIZE, 1> expmap2quat(const Eigen::MatrixBase<Derived> &v) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
-
-  auto theta = v.norm();
-  if (theta < pow(Eigen::NumTraits<typename Derived::Scalar>::epsilon(), 0.25)) {
-    return internal::expmap2quatDegenerate(v, theta);
+  typedef typename Derived::Scalar Scalar;
+  Scalar theta_squared = v.squaredNorm();
+  if (theta_squared < pow(Eigen::NumTraits<Scalar>::epsilon(), 0.5)) {
+    return internal::expmap2quatDegenerate(v, theta_squared);
   } else {
-    return internal::expmap2quatNonDegenerate(v, theta);
+    return internal::expmap2quatNonDegenerate(v, theta_squared);
   }
 }
 
