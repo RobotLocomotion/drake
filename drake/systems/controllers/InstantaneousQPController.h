@@ -44,6 +44,15 @@ public:
     initialize();
   }
 
+  int setupAndSolveQP(const drake::lcmt_qp_controller_input& qp_input, const DrakeRobotState &robot_state, const Eigen::Ref<const Eigen::Matrix<bool, Eigen::Dynamic, 1> > &contact_detected, const std::map<Side, ForceTorqueMeasurement>& foot_force_torque_measurements, QPControllerOutput& qp_output, QPControllerDebugData* debug=NULL);
+
+  const RigidBodyTree& getRobot() const {
+    return *robot;
+  }
+
+  std::unordered_map<std::string, int> body_or_frame_name_to_id;
+
+private:
   GRBenv *env;
   std::unique_ptr<RigidBodyTree> robot;
   std::map<std::string,QPControllerParams> param_sets;
@@ -52,7 +61,6 @@ public:
   int use_fast_qp;
   JointNames input_joint_names;
 
-  // preallocate memory
   KinematicsCache<double> cache;
   Eigen::MatrixXd H, H_float, H_act;
   Eigen::VectorXd C, C_float, C_act;
@@ -71,15 +79,10 @@ public:
   Eigen::MatrixXd Ak; // centroidal angular momentum matrix
   Eigen::Vector3d Akdot_times_v; // centroidal angular momentum velocity-dependent bias
 
-  std::unordered_map<std::string, int> body_or_frame_name_to_id;
-
   // logical separation for the controller state, that is, things we expect to change at every iteration
   // and which must persist to the next iteration
   QPControllerState controller_state;
 
-  int setupAndSolveQP(const drake::lcmt_qp_controller_input& qp_input, const DrakeRobotState &robot_state, const Eigen::Ref<const Eigen::Matrix<bool, Eigen::Dynamic, 1> > &contact_detected, const std::map<Side, ForceTorqueMeasurement>& foot_force_torque_measurements, QPControllerOutput& qp_output, QPControllerDebugData* debug=NULL);
-
-private:
   PIDOutput wholeBodyPID(double t, const Eigen::Ref<const Eigen::VectorXd> &q, const Eigen::Ref<const Eigen::VectorXd> &qd, const Eigen::Ref<const Eigen::VectorXd> &q_des, const WholeBodyParams& params);
 
   Eigen::VectorXd velocityReference(double t, const Eigen::Ref<const Eigen::VectorXd> &q, const Eigen::Ref<const Eigen::VectorXd> &qd, const Eigen::Ref<const Eigen::VectorXd> &qdd, bool foot_contact[2], const VRefIntegratorParams& params);
