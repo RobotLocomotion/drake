@@ -1,6 +1,9 @@
-function [phi,n,x,body_x, body_idx] = signedDistances(obj,kinsol,points,use_margins)
+function [phi,n,x,body_x, body_idx] = collisionDetectFromPoints(obj,kinsol,points,use_margins)
   % Given a set of points in global frame, returns the signed distance
-  % of each point to the closest surface of the RBM.
+  % of each point to the closest surface of the RBM. Utilizes the same
+  % collision-checking machinery of collisionDetect(), but instead of
+  % checking distances between objects in the model, computes distances
+  % for the supplied points.
   %
   % @param kinsol  the output of doKinematics. Note that this method
   %   requires a kinsol with mex enabled
@@ -20,6 +23,6 @@ function [phi,n,x,body_x, body_idx] = signedDistances(obj,kinsol,points,use_marg
       'You must call doKinematics with mex enabled');
   end
 
-  [phi, n, x, body_x, body_idx] = signedDistancesmex(obj.mex_model_ptr, kinsol.mex_ptr, points, use_margins);
+  [phi, n, x, body_x, body_idx] = collisionDetectFromPointsmex(obj.mex_model_ptr, kinsol.mex_ptr, points, use_margins);
   body_idx = body_idx + 1;
 end

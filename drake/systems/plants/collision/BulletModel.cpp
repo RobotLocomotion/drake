@@ -492,7 +492,7 @@ namespace DrakeCollision
 
 
 
-  void BulletModel::signedDistances(const Matrix3Xd& points,
+  void BulletModel::collisionDetectFromPoints(const Matrix3Xd& points,
                                      bool use_margins,
                                      std::vector<PointPair>& closest_points)
   {

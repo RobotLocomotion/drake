@@ -98,15 +98,15 @@ namespace DrakeCollision
       { return false; };
 
 
-      /** \brief Compute closest distance from each point to a surface in the
-       * collision model.
+      /** \brief Compute closest distance from each point to any surface in the
+       * collision model utilizing Bullet's collision detection code.
        * \param points Matrix of points computing distance from.
        * \param use_margins flag indicating whether or not to use the version
        * of this model with collision margins
        * \param[out] closest_points a vector of PointPair objects containing 
        * the signed distances
        */
-      virtual void signedDistances(const Eigen::Matrix3Xd& points,
+      virtual void collisionDetectFromPoints(const Eigen::Matrix3Xd& points,
                                            bool use_margins,
                                            std::vector<PointPair>& closest_points)
       { };

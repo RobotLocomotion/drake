@@ -12,14 +12,14 @@ using namespace std;
 
 void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
 
-  std::string usage = "Usage [phi, n, x, body_x, body_idx] = signedDistancesmex(model_ptr, cache_ptr, points, use_margins)";
+  std::string usage = "Usage [phi, n, x, body_x, body_idx] = collisionDetectFromPointsmex(model_ptr, cache_ptr, points, use_margins)";
   if (nrhs != 4) {
-    mexErrMsgIdAndTxt("Drake:signedDistancesmex:WrongNumberOfInputs", usage.c_str());
+    mexErrMsgIdAndTxt("Drake:collisionDetectFromPointsmex:WrongNumberOfInputs", usage.c_str());
     printf("Had %d inputs\n", nrhs);
   }
 
   if (nlhs != 5) {
-    mexErrMsgIdAndTxt("Drake:signedDistancesmex:WrongNumberOfOutputs", usage.c_str());
+    mexErrMsgIdAndTxt("Drake:collisionDetectFromPointsmex:WrongNumberOfOutputs", usage.c_str());
     printf("Had %d outputs\n", nlhs);
   }
 
@@ -36,7 +36,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
   Matrix3Xd body_x;
   vector<int> body_idx;
 
-  model->signedDistances(*cache, points, phi, normal, x, body_x, body_idx, use_margins);
+  model->collisionDetectFromPoints(*cache, points, phi, normal, x, body_x, body_idx, use_margins);
   
   plhs[0] = eigenToMatlab(phi);
   plhs[1] = eigenToMatlab(normal);

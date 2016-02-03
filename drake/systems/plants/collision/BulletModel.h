@@ -76,7 +76,7 @@ namespace DrakeCollision
                                                 std::unique_ptr<ResultCollector>& c);
 
 
-      virtual void signedDistances(const Eigen::Matrix3Xd& points,
+      virtual void collisionDetectFromPoints(const Eigen::Matrix3Xd& points,
                                            bool use_margins,
                                            std::vector<PointPair>& closest_points);
 

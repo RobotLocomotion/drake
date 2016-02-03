@@ -1,5 +1,4 @@
-function testSignedDistance
-
+function testCollisionDetectFromPoints
 checkDependency('bullet');
 
 visualize = 0;
@@ -21,7 +20,7 @@ points = [0, 0.25, 1; % surface of the brick with proper collision geometry
           1,  -0.25, 1.75; %0.25 above a corner of the brick with zerorad points at corners
           ].';
 kinsol = p.doKinematics(x0(1:p.getNumPositions));
-[phi, normal, x, body_x, body_idx] = p.getManipulator.signedDistances(kinsol, points, false);
+[phi, normal, x, body_x, body_idx] = p.getManipulator.collisionDetectFromPoints(kinsol, points, false);
 
 valuecheck(phi, [0; 0.25; .5; .25], 1E-6);
 valuecheck(body_idx, [2; 2; 2; 3;], 1E-6);
@@ -41,7 +40,7 @@ N = 20000;
 points = [(rand(1, N)-0.5)*1.5; (rand(1,N)-0.5)*1.5; (rand(1,N)-0.1)*2.5];
 
 t0 = tic();
-[phi, normal, x, body_x, body_idx] = p.getManipulator.signedDistances(kinsol, points, false);
+[phi, normal, x, body_x, body_idx] = p.getManipulator.collisionDetectFromPoints(kinsol, points, false);
 toc(t0)
 
 % pretty rendering

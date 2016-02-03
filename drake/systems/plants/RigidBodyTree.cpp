@@ -281,7 +281,7 @@ void RigidBodyTree::getTerrainContactPoints(const RigidBody& body, Eigen::Matrix
 }
 
 
-void RigidBodyTree::signedDistances(const KinematicsCache<double>& cache,
+void RigidBodyTree::collisionDetectFromPoints(const KinematicsCache<double>& cache,
                                            const Matrix3Xd& points,
                                            VectorXd& phi,
                                            Matrix3Xd& normal,
@@ -294,7 +294,7 @@ void RigidBodyTree::signedDistances(const KinematicsCache<double>& cache,
 
   vector<DrakeCollision::PointPair> closest_points;
 
-  collision_model->signedDistances(points, use_margins, closest_points);
+  collision_model->collisionDetectFromPoints(points, use_margins, closest_points);
   x.resize(3,closest_points.size());
   body_x.resize(3,closest_points.size());
   normal.resize(3,closest_points.size());
