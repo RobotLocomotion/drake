@@ -17,7 +17,14 @@ pair<Vector3d, typename Gradient<Vector3d, 4>::type> quat2expmapWithGradient(con
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-  auto func_double = make_function(&quat2expmap<Map<const Vector4d>>);
-  auto func_gradient = make_function(&quat2expmapWithGradient);
-  mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double, func_gradient);
+  if (nlhs == 1) {
+    auto func = make_function(&quat2expmap<Map<const Vector4d>>);
+    mexCallFunction(nlhs, plhs, nrhs, prhs, true, func);
+  }
+  else if (nlhs == 2) {
+    auto func = make_function(&quat2expmapWithGradient);
+    mexCallFunction(nlhs, plhs, nrhs, prhs, true, func);
+  }
+  else
+    throw std::runtime_error("can't handle requested number of output arguments");
 }

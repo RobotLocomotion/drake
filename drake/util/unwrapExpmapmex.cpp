@@ -9,15 +9,24 @@ using namespace std;
 using namespace Eigen;
 using namespace Drake;
 
-pair<Vector3d, typename Gradient<Vector3d, 6>::type> unwrapExpmapWithGradient(const MatrixBase<Map<const Vector3d>> &expmap1, const MatrixBase<Map<const Vector3d>> &expmap2) {
+// note: gradient only w.r.t. expmap2...
+pair<Vector3d, typename Gradient<Vector3d, 3>::type> unwrapExpmapWithGradient(const MatrixBase<Map<const Vector3d>> &expmap1, const MatrixBase<Map<const Vector3d>> &expmap2) {
   auto args = initializeAutoDiffTuple(expmap1, expmap2);
   auto unwrapped_autodiff = unwrapExpmap(get<0>(args), get<1>(args));
-  return make_pair(autoDiffToValueMatrix(unwrapped_autodiff), autoDiffToGradientMatrix(unwrapped_autodiff));
+  auto grad_expmap2 = autoDiffToGradientMatrix(unwrapped_autodiff).rightCols<3>();
+  return make_pair(autoDiffToValueMatrix(unwrapped_autodiff), grad_expmap2);
 }
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-  auto func_double = make_function(&unwrapExpmap<Map<const Vector3d>, Map<const Vector3d>>);
-  auto func_gradient = make_function(&unwrapExpmapWithGradient);
-  mexTryToCallFunctions(nlhs, plhs, nrhs, prhs, true, func_double, func_gradient);
+  if (nlhs == 1) {
+    auto func = make_function(&unwrapExpmap<Map<const Vector3d>, Map<const Vector3d>>);
+    mexCallFunction(nlhs, plhs, nrhs, prhs, true, func);
+  }
+  else if (nlhs == 2) {
+    auto func = make_function(&unwrapExpmapWithGradient);
+    mexCallFunction(nlhs, plhs, nrhs, prhs, true, func);
+  }
+  else
+    throw std::runtime_error("can't handle requested number of output arguments");
 }

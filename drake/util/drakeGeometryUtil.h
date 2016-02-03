@@ -1244,7 +1244,7 @@ Eigen::Matrix<typename DerivedQ::Scalar, 3, 1> quat2expmap(const Eigen::MatrixBa
   Scalar t = sqrt(Scalar(1) - q(0) * q(0));
   bool is_degenerate = (t * t < NumTraits<Scalar>::epsilon());
   Scalar s(2);
-  if (is_degenerate)
+  if (!is_degenerate)
     s *= acos(q(0)) / t;
   return s * q.template tail<3>();
 }
