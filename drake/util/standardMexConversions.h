@@ -7,7 +7,6 @@
 
 #include <string>
 #include "drake/util/mexify.h"
-#include "drake/util/GradientVar.h"
 
 /**
  * fromMex specializations
@@ -211,30 +210,6 @@ int toMex(const Eigen::Matrix<Scalar, Rows, Cols, Options, MaxRows, MaxCols> &so
   if (nlhs > 0)
     dest[0] = eigenToMatlabGeneral<Rows, Cols>(source);
   return 1;
-};
-
-template<typename Scalar, int Rows, int Cols>
-int toMex(const GradientVar<Scalar, Rows, Cols> &source, mxArray *dest[], int nlhs, bool top_level = true) {
-  if (top_level) {
-    // check number of output arguments
-    if (nlhs > source.maxOrder() + 1) {
-      std::ostringstream buf;
-      buf << nlhs << " output arguments desired, which is more than the maximum number: " << source.maxOrder() + 1 << ".";
-      mexErrMsgTxt(buf.str().c_str());
-    }
-  }
-
-  int outputs = 0;
-  if (nlhs != 0) {
-    // set an output argument
-    outputs += toMex(source.value(), dest, nlhs);
-
-    // recurse
-    if (source.hasGradient()) {
-      outputs += toMex(source.gradient(), &dest[1], nlhs - outputs, false);
-    }
-  }
-  return outputs;
 };
 
 template <typename A, typename B>

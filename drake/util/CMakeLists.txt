@@ -74,8 +74,6 @@ pods_install_pkg_config_file(drake-convex-hull
   REQUIRES
   VERSION 0.0.1)
 
-drake_install_headers(GradientVar.h)
-
 if (MATLAB_FOUND)
   add_mex(cylindrical2cartesianmex cylindrical2cartesianmex.cpp)
   target_link_libraries(cylindrical2cartesianmex drakeGeometryUtil)

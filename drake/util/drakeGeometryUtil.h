@@ -7,7 +7,6 @@
 #include <cmath>
 #include <random>
 #include "drake/util/drakeGradientUtil.h"
-#include "drake/util/GradientVar.h"
 #include "drake/drakeGeometryUtil_export.h"
 
 const int TWIST_SIZE = 6;
