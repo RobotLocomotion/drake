@@ -6,13 +6,13 @@
 #include "drake/solvers/gurobiQP.h"
 #include "lcmtypes/drake/lcmt_qp_controller_input.hpp"
 
-#define USE_FASTQP 1
-#define GUROBI_OUTPUTFLAG 0
-#define GUROBI_METHOD 2
-#define GUROBI_PRESOLVE 0
-#define GUROBI_BARITERLIMIT 20
-#define GUROBI_BARHOMOGENEOUS 0
-#define GUROBI_BARCONVTOL (5e-4)
+#define INSTQP_USE_FASTQP 1
+#define INSTQP_GUROBI_OUTPUTFLAG 0
+#define INSTQP_GUROBI_METHOD 2
+#define INSTQP_GUROBI_PRESOLVE 0
+#define INSTQP_GUROBI_BARITERLIMIT 20
+#define INSTQP_GUROBI_BARHOMOGENEOUS 0
+#define INSTQP_GUROBI_BARCONVTOL (5e-4)
 
 
 class InstantaneousQPController {
@@ -24,14 +24,14 @@ public:
     cache(this->robot->bodies),
     param_sets(param_sets_in),
     rpc(rpc_in),
-    use_fast_qp(USE_FASTQP) {
+    use_fast_qp(INSTQP_USE_FASTQP) {
     initialize();
   }
 
   InstantaneousQPController(std::unique_ptr<RigidBodyTree> robot_in, const std::string& control_config_filename):
     robot(std::move(robot_in)), 
     cache(this->robot->bodies),
-    use_fast_qp(USE_FASTQP) {
+    use_fast_qp(INSTQP_USE_FASTQP) {
     loadConfigurationFromYAML(control_config_filename);
     initialize();
   }
@@ -39,7 +39,7 @@ public:
   InstantaneousQPController(const std::string& urdf_filename, const std::string& control_config_filename):
     robot(std::unique_ptr<RigidBodyTree>(new RigidBodyTree(urdf_filename))), 
     cache(this->robot->bodies),
-    use_fast_qp(USE_FASTQP) {
+    use_fast_qp(INSTQP_USE_FASTQP) {
     loadConfigurationFromYAML(control_config_filename);
     initialize();
   }
