@@ -24,8 +24,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   if (nlhs < 1)
     mexErrMsgTxt("take at least one output... please.");
 
-  double* pr;
-
   // first get the ptr back from matlab
   InstantaneousQPController *controller = (InstantaneousQPController*) getDrakeMexPointer(prhs[0]);
 

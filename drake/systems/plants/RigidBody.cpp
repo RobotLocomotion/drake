@@ -1,7 +1,6 @@
 
 #include "RigidBody.h"
 #include <stdexcept>
-#include <numeric>
 
 using namespace std;
 using namespace Eigen;
@@ -72,13 +71,8 @@ bool RigidBody::appendCollisionElementIdsFromThisBody(const string& group_name, 
 
 bool RigidBody::appendCollisionElementIdsFromThisBody(vector<DrakeCollision::ElementId>& ids) const
 {
-  auto add_element_count = [](size_t count, const pair<string, vector<DrakeCollision::ElementId>>& group) {return count + group.second.size(); };
-  size_t num_elements = accumulate(collision_element_groups.begin(), collision_element_groups.end(), size_t(0), add_element_count);
-
-  ids.reserve(ids.size() + num_elements);
-  for (const auto& group : collision_element_groups) {
-    ids.insert(ids.end(), group.second.begin(), group.second.end());
-  }
+  ids.reserve(ids.size() + collision_element_ids.size());
+  ids.insert(ids.end(), collision_element_ids.begin(), collision_element_ids.end());
   return true;
 }
 
