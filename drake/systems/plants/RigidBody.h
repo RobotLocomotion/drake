@@ -69,6 +69,7 @@ public:
 
   DrakeShapes::VectorOfVisualElements visual_elements;
 
+  std::vector< DrakeCollision::ElementId > collision_element_ids;
   std::map< std::string, std::vector<DrakeCollision::ElementId> > collision_element_groups;
 
   Eigen::Matrix3Xd contact_pts;
