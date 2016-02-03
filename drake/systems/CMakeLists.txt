@@ -7,7 +7,7 @@ if (LCM_FOUND)
   add_library_with_exports(LIB_NAME drakeLCMSystem SOURCE_FILES LCMSystem.cpp)
   add_dependencies(drakeLCMSystem drake_lcmtypes lcmtype_agg_hpp)
   pods_use_pkg_config_packages(drakeLCMSystem lcm)
-  target_link_libraries(drakeLCMSystem pthread)
+  target_link_libraries(drakeLCMSystem)
 
   drake_install_headers(LCMSystem.h)
 endif()
