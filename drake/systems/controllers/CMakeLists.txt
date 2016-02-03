@@ -34,8 +34,6 @@ if (MATLAB_FOUND)
   pods_find_pkg_config(gurobi)
 
   if (gurobi_FOUND AND LCM_FOUND AND yaml-cpp_FOUND)
-    # NOTE: controlMexUtil.h currently includes QPCommon.h, which includes a gurobi header.
-
     add_mex(QPControllermex QPControllermex.cpp)
     target_link_libraries(QPControllermex drakeQP drakeControlUtil drakeMexUtil)
     pods_use_pkg_config_packages(QPControllermex gurobi)
