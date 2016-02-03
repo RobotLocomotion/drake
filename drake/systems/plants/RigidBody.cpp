@@ -1,6 +1,7 @@
 
 #include "RigidBody.h"
 #include <stdexcept>
+#include <numeric>
 
 using namespace std;
 using namespace Eigen;
