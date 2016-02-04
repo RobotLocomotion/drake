@@ -1,6 +1,6 @@
 
 import copy, pygame, lcm, argparse, sys
-from lcmtypes.drake.lcmt_driving_control_cmd_t import lcmt_driving_control_cmd_t as lcm_msg
+from drake.lcmt_driving_control_cmd_t import lcmt_driving_control_cmd_t as lcm_msg
 
 STEERING_AXIS = 0
 ACCEL_AXIS = 1

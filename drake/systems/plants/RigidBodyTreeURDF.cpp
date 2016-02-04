@@ -189,8 +189,7 @@ void parseInertial(shared_ptr<RigidBody> body, XMLElement* node, RigidBodyTree *
     parseScalarAttribute(inertia, "izz", I(2, 2));
   }
 
-  auto bodyI = transformSpatialInertia(T, static_cast<Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type*>(NULL), I);
-  body->I = bodyI.value();
+  body->I = transformSpatialInertia(T, I);
 }
 
 bool parseMaterial(XMLElement* node, map<string, Vector4d, less<string>, aligned_allocator<pair<string, Vector4d> > > & materials)
