@@ -1,11 +1,7 @@
 #ifndef _ATLAS_UTIL_H_
 #define _ATLAS_UTIL_H_
 
-#include <memory>
-#include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/systems/controllers/QPCommon.h"
 #include "drake/drakeAtlasUtil_export.h"
-#include "drake/systems/robotInterfaces/Side.h"
 
 namespace Atlas {
 /*
