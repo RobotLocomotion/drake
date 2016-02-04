@@ -13,7 +13,7 @@ template <typename DerivedM>
 void setConstraintMatrixPart(double time, int derivative_order, MatrixBase<DerivedM> & constraint_matrix, double scaling = 1.0)
 {
   double time_power = 1.0;
-  typename MatrixBase<DerivedM>::Index num_coefficients = constraint_matrix.cols();
+  Eigen::Index num_coefficients = constraint_matrix.cols();
 
   for (int col = derivative_order; col < num_coefficients; col++)
   {

@@ -54,7 +54,7 @@ static int snopt_userfun(snopt::integer *Status, snopt::integer *n, snopt::doubl
   memset(G,0,sizeof(*n)*sizeof(snopt::doublereal));
 
   // evaluate objective
-  auto tx = initTaylorVecXd(xvec);
+  auto tx = initializeAutoDiff(xvec);
   TaylorVecXd ty(1), this_x(*n);
   for (auto const& obj : current_problem->getGenericObjectives() ) {
     size_t index=0;

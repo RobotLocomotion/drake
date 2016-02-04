@@ -1,3 +1,4 @@
+#define _USE_MATH_DEFINES
 #include <iostream>
 #include "drake/examples/Pendulum/Pendulum.h"
 #include "drake/systems/Simulation.h"

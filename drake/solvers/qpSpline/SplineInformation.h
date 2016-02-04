@@ -19,11 +19,11 @@ public:
 
   SplineInformation(std::vector<int> const & segment_polynomial_orders, std::vector<double> const & segment_times);
 
-  virtual int getSegmentPolynomialDegree(int segment_number, Eigen::DenseIndex row, Eigen::DenseIndex cols) const;
+  virtual int getSegmentPolynomialDegree(int segment_number, Eigen::Index row, Eigen::Index cols) const;
 
-  virtual Eigen::DenseIndex rows() const;
+  virtual Eigen::Index rows() const;
 
-  virtual Eigen::DenseIndex cols() const;
+  virtual Eigen::Index cols() const;
 
   std::vector<ValueConstraint> const & getValueConstraints(int segment_number) const;
 

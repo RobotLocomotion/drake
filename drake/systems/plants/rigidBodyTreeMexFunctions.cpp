@@ -248,7 +248,7 @@ Matrix<Scalar, Dynamic, 1>  dynamicsBiasTermTemp(const RigidBodyTree &model, Kin
 
   if (f_ext_value.size() > 0) {
     assert(f_ext_value.cols() == model.bodies.size());
-    for (DenseIndex i = 0; i < f_ext_value.cols(); i++) {
+    for (Eigen::Index i = 0; i < f_ext_value.cols(); i++) {
       f_ext.insert({model.bodies[i].get(), f_ext_value.col(i)});
     }
   }

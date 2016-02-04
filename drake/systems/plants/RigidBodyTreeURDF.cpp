@@ -438,10 +438,9 @@ void setLimits(XMLElement *node, FixedAxisOneDoFJoint<JointType> *fjoint) {
 }
 
 template <typename JointType>
-void setDynamics(RigidBodyTree *model, XMLElement *node, FixedAxisOneDoFJoint<JointType> *fjoint) {
+void setDynamics(XMLElement *node, FixedAxisOneDoFJoint<JointType> *fjoint) {
   XMLElement* dynamics_node = node->FirstChildElement("dynamics");
   if (fjoint != nullptr && dynamics_node) {
-    model->warnOnce("joint_dynamics", "Warning: joint dynamics xml tag is parsed, but not included in the dynamics methods yet.");
     double damping=0.0, coulomb_friction=0.0, coulomb_window=0.0;
     parseScalarAttribute(dynamics_node,"damping",damping);
     parseScalarAttribute(dynamics_node,"friction",coulomb_friction);
@@ -505,14 +504,14 @@ void parseJoint(RigidBodyTree * model, XMLElement* node)
 
   if (type.compare("revolute") == 0 || type.compare("continuous") == 0) {
     FixedAxisOneDoFJoint<RevoluteJoint>* fjoint = new RevoluteJoint(name, Ttree, axis);
-    setDynamics(model, node, fjoint);
+    setDynamics(node, fjoint);
     setLimits(node, fjoint);
     joint = fjoint;
   } else if (type.compare("fixed") == 0) {
     joint = new FixedJoint(name, Ttree);
   } else if (type.compare("prismatic") == 0) {
     FixedAxisOneDoFJoint<PrismaticJoint>* fjoint = new PrismaticJoint(name, Ttree, axis);
-    setDynamics(model, node, fjoint);
+    setDynamics(node, fjoint);
     setLimits(node, fjoint);
     joint = fjoint;
   } else if (type.compare("floating") == 0) {

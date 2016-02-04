@@ -20,16 +20,15 @@ auto make_function(ReturnType(*p)(Args...))
 
 inline void buildSparseMatrixForContactConstraints(Map<const Matrix3Xd> const &pts, SparseMatrix<double> &sparse)
 {
-  typedef SparseMatrix<double>::Index SparseIndex;
-  const SparseIndex m = static_cast<SparseIndex>(pts.cols());
-  const SparseIndex numNonZero = 3 * m;
+  const Index m = pts.cols();
+  const Index numNonZero = 3 * m;
 
   sparse.resize(m, numNonZero);
   sparse.reserve(VectorXi::Constant(numNonZero, 1));
 
-  SparseIndex j = 0;
-  for (SparseIndex i = 0; i < m; i++) {
-    for (SparseIndex k = 0; k < 3; k++) {
+  Index j = 0;
+  for (Index i = 0; i < m; i++) {
+    for (Index k = 0; k < 3; k++) {
       sparse.insert(i, j) = pts(j); // yes, no reference to k
       j++;
     }

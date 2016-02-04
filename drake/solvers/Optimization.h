@@ -130,7 +130,7 @@ namespace Drake {
     virtual ~QuadraticConstraint() {}
 
     virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const override { y.resize(getNumConstraints()); y=.5*x.transpose()*Q*x + b.transpose()*x; }
-    virtual void eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override { y.resize(getNumConstraints()); y = .5*x.transpose()*constantTaylorVecXd(Q)*x + constantTaylorVecXd(b).transpose()*x; };
+    virtual void eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override { y.resize(getNumConstraints()); y = .5*x.transpose()* Q.cast<TaylorVarXd>() * x + b.cast<TaylorVarXd>().transpose() * x; };
 
   private:
     Eigen::MatrixXd Q;
@@ -172,7 +172,7 @@ namespace Drake {
     virtual ~LinearConstraint() {}
 
     virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const override { y.resize(getNumConstraints()); y=getMatrix()*x; }
-    virtual void eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override { y.resize(getNumConstraints()); y = constantTaylorVecXd(getMatrix())*x; };
+    virtual void eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override { y.resize(getNumConstraints()); y = getMatrix().cast<TaylorVarXd>() * x; };
 
     virtual Eigen::SparseMatrix<double> getSparseMatrix() const { return getMatrix().sparseView(); };
     virtual const Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic>& getMatrix() const { return A; }
@@ -226,8 +226,8 @@ namespace Drake {
 
   class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   public:
-    const static int INITIAL_VARIABLE_ALLOCATION_NUM = 100;
-    OptimizationProblem() : problem_type(new LeastSquares), num_vars(0), x_initial_guess(INITIAL_VARIABLE_ALLOCATION_NUM) {};
+    enum { INITIAL_VARIABLE_ALLOCATION_NUM = 100 }; // not const static int because the VectorXd constructor takes a reference to int so it is odr-used (see https://gcc.gnu.org/wiki/VerboseDiagnostics#missing_static_const_definition)
+    OptimizationProblem() : problem_type(new LeastSquares), num_vars(0), x_initial_guess(static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)) {};
 
     const DecisionVariableView addContinuousVariables(std::size_t num_new_vars, std::string name = "x") {
       DecisionVariable v;

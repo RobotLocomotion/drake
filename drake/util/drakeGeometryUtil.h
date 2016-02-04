@@ -1,6 +1,7 @@
 #ifndef __DRAKE_GEOMETRY_UTIL_H__
 #define __DRAKE_GEOMETRY_UTIL_H__
 
+#define _USE_MATH_DEFINES
 #include <Eigen/Dense>
 #include <cstring>
 #include <cmath>
@@ -24,18 +25,133 @@ DRAKEGEOMETRYUTIL_EXPORT double angleDiff(double phi1, double phi2);
 /*
  * quaternion methods
  */
-DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector4d quatConjugate(const Eigen::Vector4d &q);
-DRAKEGEOMETRYUTIL_EXPORT Eigen::Matrix4d dquatConjugate();
-DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector4d quatProduct(const Eigen::Vector4d &q1, const Eigen::Vector4d &q2);
-DRAKEGEOMETRYUTIL_EXPORT Eigen::Matrix<double, 4, 8> dquatProduct(const Eigen::Vector4d &q1,const Eigen::Vector4d &q2);
-DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector3d quatRotateVec(const Eigen::Vector4d &q, const Eigen::Vector3d &v);
-DRAKEGEOMETRYUTIL_EXPORT Eigen::Matrix<double, 3, 7> dquatRotateVec(const Eigen::Vector4d &q, const Eigen::Vector3d &v);
-DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector4d quatDiff(const Eigen::Vector4d &q1, const Eigen::Vector4d &q2);
-DRAKEGEOMETRYUTIL_EXPORT Eigen::Matrix<double, 4, 8> dquatDiff(const Eigen::Vector4d &q1, const Eigen::Vector4d &q2);
-DRAKEGEOMETRYUTIL_EXPORT double quatDiffAxisInvar(const Eigen::Vector4d &q1, const Eigen::Vector4d &q2, const Eigen::Vector3d &u);
-DRAKEGEOMETRYUTIL_EXPORT Eigen::Matrix<double, 1, 11> dquatDiffAxisInvar(const Eigen::Vector4d &q1, const Eigen::Vector4d &q2, const Eigen::Vector3d &u);
-DRAKEGEOMETRYUTIL_EXPORT double quatNorm(const Eigen::Vector4d& q);
-DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector4d slerp(const Eigen::Vector4d& q1, const Eigen::Vector4d& q2, double interpolation_parameter);
+template <typename Derived>
+Eigen::Matrix<typename Derived::Scalar, 4, 1> quatConjugate(const Eigen::MatrixBase<Derived>& q)
+{
+  using namespace Eigen;
+  static_assert(Derived::SizeAtCompileTime == 4, "Wrong size.");
+  Matrix<typename Derived::Scalar, 4, 1> q_conj;
+  q_conj << q(0), -q(1), -q(2), -q(3);
+  return q_conj;
+}
+
+template <typename Derived1, typename Derived2>
+Eigen::Matrix<typename Derived1::Scalar, 4, 1> quatProduct(const Eigen::MatrixBase<Derived1>& q1, const Eigen::MatrixBase<Derived2>& q2)
+{
+  using namespace Eigen;
+  using Scalar = typename Derived1::Scalar;
+  static_assert(Derived1::SizeAtCompileTime == 4, "Wrong size.");
+  static_assert(Derived2::SizeAtCompileTime == 4, "Wrong size.");
+
+  //Scalar w1 = q1(0);
+  //Scalar w2 = q2(0);
+  //auto v1 = q1.template tail<3>();
+  //auto v2 = q2.template tail<3>();
+  //Matrix<typename Derived1::Scalar, 4, 1> r;
+  //r(0) = w1 * w2 - v1.dot(v2);
+  //r.template bottomRows<3>().noalias() = v1.cross(v2);
+  //r.template bottomRows<3>().noalias() += (v2 * w1).eval();
+  //r.template bottomRows<3>().noalias() += (v1 * w2).eval();
+
+  Eigen::Quaternion<typename Derived1::Scalar> q1_eigen(q1(0), q1(1), q1(2), q1(3));
+  Eigen::Quaternion<typename Derived2::Scalar> q2_eigen(q2(0), q2(1), q2(2), q2(3));
+  auto ret_eigen = q1_eigen * q2_eigen;
+  Eigen::Matrix<typename Derived1::Scalar, 4, 1> r;
+  r << ret_eigen.w(), ret_eigen.x(), ret_eigen.y(), ret_eigen.z();
+
+  return r;
+}
+
+template <typename DerivedQ, typename DerivedV>
+Eigen::Matrix<typename DerivedV::Scalar, 3, 1> quatRotateVec(const Eigen::MatrixBase<DerivedQ>& q, const Eigen::MatrixBase<DerivedV>& v)
+{
+  using namespace Eigen;
+  using Scalar = typename DerivedQ::Scalar;
+  static_assert(DerivedQ::SizeAtCompileTime == 4, "Wrong size.");
+  static_assert(DerivedV::SizeAtCompileTime == 3, "Wrong size.");
+
+  typedef Matrix<typename DerivedV::Scalar, 4, 1> Vector4;
+  typedef Matrix<typename DerivedV::Scalar, 3, 1> Vector3;
+
+  Vector4 v_quat;
+  v_quat << 0, v;
+  auto q_times_v = quatProduct(q, v_quat);
+  auto q_conj = quatConjugate(q);
+  auto v_rot = quatProduct(q_times_v, q_conj);
+  Vector3 r = v_rot.template bottomRows<3>();
+  return r;
+}
+
+template <typename Derived1, typename Derived2>
+Eigen::Matrix<typename Derived1::Scalar, 4, 1> quatDiff(const Eigen::MatrixBase<Derived1>& q1, const Eigen::MatrixBase<Derived2>& q2)
+{
+  return quatProduct(quatConjugate(q1), q2);
+}
+
+template <typename Derived1, typename Derived2, typename DerivedU>
+typename Derived1::Scalar quatDiffAxisInvar(const Eigen::MatrixBase<Derived1>& q1, const Eigen::MatrixBase<Derived2>& q2, const Eigen::MatrixBase<DerivedU>& u)
+{
+  static_assert(DerivedU::SizeAtCompileTime == 3, "Wrong size.");
+  auto r = quatDiff(q1, q2);
+  return -2.0 + 2 * r(0) * r(0) + 2 * pow(u(0) * r(1) + u(1) * r(2) + u(2) * r(3), 2);
+}
+
+template <typename Derived>
+typename Derived::Scalar quatNorm(const Eigen::MatrixBase<Derived>& q)
+{
+  return std::acos(q(0));
+}
+
+/*
+ * Q = slerp(q1, q2, f) Spherical linear interpolation between two quaternions
+ *   This function uses the implementation given in Algorithm 8 of [1].
+ *
+ * @param q1   Initial quaternion (w, x, y, z)
+ * @param q2   Final quaternion (w, x, y, z)
+ * @param f    Interpolation parameter between 0 and 1 (inclusive)
+ * @retval Q   Interpolated quaternion(s). 4-by-1 vector.
+ *
+ * [1] Kuffner, J.J., "Effective sampling and distance metrics for 3D rigid
+ * body path planning," Robotics and Automation, 2004. Proceedings. ICRA '04.
+ * 2004 IEEE International Conference on , vol.4, no., pp.3993,3998 Vol.4,
+ * April 26-May 1, 2004
+ * doi: 10.1109/ROBOT.2004.1308895
+ */
+template <typename Derived1, typename Derived2, typename Scalar>
+Eigen::Matrix<Scalar, 4, 1> slerp(const Eigen::MatrixBase<Derived1>& q1, const Eigen::MatrixBase<Derived2>& q2, const Scalar& interpolation_parameter)
+{
+  // Compute the quaternion inner product
+  auto lambda = (q1.transpose() * q2).value();
+  int q2_sign;
+  if (lambda < Scalar(0)) {
+    // The quaternions are pointing in opposite directions, so use the equivalent alternative representation for q2
+    lambda = -lambda;
+    q2_sign = -1;
+  }
+  else {
+    q2_sign = 1;
+  }
+
+  // Calculate interpolation factors
+  // TODO: do we really want an epsilon so small?
+  Scalar r, s;
+  if (std::abs(1.0 - lambda) < std::numeric_limits<double>::epsilon()) {
+    // The quaternions are nearly parallel, so use linear interpolation
+    r = 1.0 - interpolation_parameter;
+    s = interpolation_parameter;
+  }
+  else {
+    Scalar alpha = std::acos(lambda);
+    Scalar gamma = 1.0 / std::sin(alpha);
+    r = std::sin((1.0 - interpolation_parameter) * alpha) * gamma;
+    s = std::sin(interpolation_parameter * alpha) * gamma;
+  }
+
+  auto ret = (q1 * r).eval();
+  ret += q2 * (q2_sign * s);
+  return ret;
+}
+
 DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector4d uniformlyRandomAxisAngle(std::default_random_engine& generator);
 DRAKEGEOMETRYUTIL_EXPORT Eigen::Vector4d uniformlyRandomQuat(std::default_random_engine& generator);
 DRAKEGEOMETRYUTIL_EXPORT Eigen::Matrix3d uniformlyRandomRotmat(std::default_random_engine& generator);
@@ -246,7 +362,7 @@ Eigen::Matrix<typename Derived::Scalar, 4, 1> rotmat2quat(const Eigen::MatrixBas
   A.row(2) << -1.0, 1.0, -1.0;
   A.row(3) << -1.0, -1.0, 1.0;
   Eigen::Matrix<Scalar, 4, 1> B = A * M.diagonal();
-  typename Eigen::Matrix<Scalar, 4, 1>::Index ind, max_col;
+  Eigen::Index ind, max_col;
   Scalar val = B.maxCoeff(&ind, &max_col);
 
   Scalar w, x, y, z;
@@ -320,33 +436,6 @@ Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, 1> rotmat2Representation
 };
 
 DRAKEGEOMETRYUTIL_EXPORT int rotationRepresentationSize(int rotation_type);
-
-template<typename Scalar>
-GradientVar<Scalar, Eigen::Dynamic, 1> rotmat2Representation(const GradientVar<Scalar, SPACE_DIMENSION, SPACE_DIMENSION>& R, int rotation_type) {
-  GradientVar<Scalar, Eigen::Dynamic, 1> ret(rotationRepresentationSize(rotation_type), 1, R.getNumVariables(), R.maxOrder());
-  switch (rotation_type) {
-    case 0:
-      // empty matrix, already done
-      break;
-    case 1:
-      ret.value() = rotmat2rpy(R.value());
-      if (R.hasGradient()) {
-        ret.gradient().value() = drotmat2rpy(R.value(), R.gradient().value());
-      }
-      break;
-    case 2:
-      ret.value() = rotmat2quat(R.value());
-      if (R.hasGradient()) {
-        ret.gradient().value() = drotmat2quat(R.value(), R.gradient().value());
-      }
-      break;
-    default:
-      throw std::runtime_error("rotation representation type not recognized");
-  }
-  return ret;
-};
-
-
 
 /*
  * rpy2x
@@ -635,46 +724,6 @@ void angularvel2rpydotMatrix(const Eigen::MatrixBase<DerivedRPY>& rpy,
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           / cp, Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0);
     }
   }
-};
-
-template<typename Derived>
-GradientVar<typename Derived::Scalar, Eigen::Dynamic, SPACE_DIMENSION> angularvel2RepresentationDotMatrix(
-    int rotation_type, const Eigen::MatrixBase<Derived>& qrot, int gradient_order) {
-  // note: gradients w.r.t. qrot
-  typedef typename Derived::Scalar Scalar;
-  GradientVar<Scalar, Eigen::Dynamic, SPACE_DIMENSION> ret(qrot.rows(), SPACE_DIMENSION, qrot.rows(), gradient_order);
-  switch (rotation_type) {
-    case 0:
-      // done
-      break;
-    case 1: {
-      if (gradient_order > 1) {
-        angularvel2rpydotMatrix(qrot, ret.value(), &ret.gradient().value(), &ret.gradient().gradient().value());
-      }
-      else if (gradient_order > 0) {
-        angularvel2rpydotMatrix(qrot, ret.value(), &ret.gradient().value(), (Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>*) nullptr);
-      }
-      else {
-        angularvel2rpydotMatrix(qrot, ret.value(), (Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>*) nullptr, (Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>*) nullptr);
-      }
-      break;
-    }
-    case 2: {
-      if (gradient_order > 1) {
-        ret.gradient().gradient().value().setZero();
-      }
-      if (gradient_order > 0) {
-        angularvel2quatdotMatrix(qrot, ret.value(), &ret.gradient().value());
-      }
-      else {
-        angularvel2quatdotMatrix(qrot, ret.value(), (Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>*) nullptr);
-      }
-      break;
-    }
-    default:
-      throw std::runtime_error("rotation representation type not recognized");
-  }
-  return ret;
 };
 
 template<typename DerivedRPY, typename DerivedE>
