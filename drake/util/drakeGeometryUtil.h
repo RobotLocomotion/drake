@@ -1,7 +1,6 @@
 #ifndef __DRAKE_GEOMETRY_UTIL_H__
 #define __DRAKE_GEOMETRY_UTIL_H__
 
-#define _USE_MATH_DEFINES
 #include <Eigen/Dense>
 #include <cstring>
 #include <cmath>
@@ -298,36 +297,38 @@ Eigen::Matrix<typename Derived::Scalar, 3, 1> axis2rpy(const Eigen::MatrixBase<D
 /*
  * expmap2x
  */
-namespace internal {
-  template<typename Derived>
-  Eigen::Matrix<typename Derived::Scalar, 4, 1> expmap2quatNonDegenerate(const Eigen::MatrixBase<Derived> &v, typename Derived::Scalar &theta_squared) {
-    using namespace std;
-    typedef typename Derived::Scalar Scalar;
-    static_assert(Derived::RowsAtCompileTime == 3 && Derived::ColsAtCompileTime == 1, "Wrong size.");
+namespace Drake {
+  namespace internal {
+    template<typename Derived>
+    Eigen::Matrix<typename Derived::Scalar, 4, 1> expmap2quatNonDegenerate(const Eigen::MatrixBase<Derived> &v, typename Derived::Scalar &theta_squared) {
+      using namespace std;
+      typedef typename Derived::Scalar Scalar;
+      static_assert(Derived::RowsAtCompileTime == 3 && Derived::ColsAtCompileTime == 1, "Wrong size.");
 
-    Eigen::Matrix<Scalar, 4, 1> q;
+      Eigen::Matrix<Scalar, 4, 1> q;
 
-    Scalar theta = sqrt(theta_squared);
-    Scalar arg = theta / Scalar(2);
-    q(0) = cos(arg);
-    q.template bottomRows<3>() = v;
-    q.template bottomRows<3>() *= sin(arg) / theta;
+      Scalar theta = sqrt(theta_squared);
+      Scalar arg = theta / Scalar(2);
+      q(0) = cos(arg);
+      q.template bottomRows<3>() = v;
+      q.template bottomRows<3>() *= sin(arg) / theta;
 
-    return q;
-  }
+      return q;
+    }
 
-  template<typename Derived>
-  Eigen::Matrix<typename Derived::Scalar, 4, 1> expmap2quatDegenerate(const Eigen::MatrixBase<Derived> &v, typename Derived::Scalar &theta_squared) {
-    typedef typename Derived::Scalar Scalar;
-    static_assert(Derived::RowsAtCompileTime == 3 && Derived::ColsAtCompileTime == 1, "Wrong size.");
+    template<typename Derived>
+    Eigen::Matrix<typename Derived::Scalar, 4, 1> expmap2quatDegenerate(const Eigen::MatrixBase<Derived> &v, typename Derived::Scalar &theta_squared) {
+      typedef typename Derived::Scalar Scalar;
+      static_assert(Derived::RowsAtCompileTime == 3 && Derived::ColsAtCompileTime == 1, "Wrong size.");
 
-    Eigen::Matrix<Scalar, 4, 1> q;
+      Eigen::Matrix<Scalar, 4, 1> q;
 
-    q(0) = -theta_squared / 8.0 + 1.0;
-    q.template bottomRows<3>() = v;
-    q.template bottomRows<3>() *= (theta_squared * 8.0E1 - 1.92E3) * (-2.604166666666667E-4);
+      q(0) = -theta_squared / 8.0 + 1.0;
+      q.template bottomRows<3>() = v;
+      q.template bottomRows<3>() *= (theta_squared * 8.0E1 - 1.92E3) * (-2.604166666666667E-4);
 
-    return q;
+      return q;
+    }
   }
 }
 
@@ -337,9 +338,9 @@ Eigen::Matrix<typename Derived::Scalar, QUAT_SIZE, 1> expmap2quat(const Eigen::M
   typedef typename Derived::Scalar Scalar;
   Scalar theta_squared = v.squaredNorm();
   if (theta_squared < pow(Eigen::NumTraits<Scalar>::epsilon(), 0.5)) {
-    return internal::expmap2quatDegenerate(v, theta_squared);
+    return Drake::internal::expmap2quatDegenerate(v, theta_squared);
   } else {
-    return internal::expmap2quatNonDegenerate(v, theta_squared);
+    return Drake::internal::expmap2quatNonDegenerate(v, theta_squared);
   }
 }
 

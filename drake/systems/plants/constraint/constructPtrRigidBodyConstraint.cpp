@@ -1,4 +1,3 @@
-#define _USE_MATH_DEFINES
 #include <iostream>
 #include <cstdio>
 #include "drake/util/drakeMexUtil.h"

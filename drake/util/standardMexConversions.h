@@ -233,29 +233,31 @@ int toMex(const std::vector<T>& source, mxArray* dest[], int nlhs) {
   return 1;
 }
 
-namespace internal {
-  template<size_t Index>
-  struct TupleToMexHelper {
-    template <typename ...Ts>
-    static int run(const std::tuple<Ts...>& source, mxArray *dest[], int nlhs, int num_outputs = 0) {
-      constexpr size_t tuple_index = sizeof...(Ts) - Index;
-      num_outputs += toMex(std::get<tuple_index>(source), &dest[num_outputs], nlhs - num_outputs);
-      return TupleToMexHelper<Index - 1>::run(source, dest, nlhs, num_outputs);
-    }
-  };
+namespace Drake {
+  namespace internal {
+    template<size_t Index>
+    struct TupleToMexHelper {
+      template <typename ...Ts>
+      static int run(const std::tuple<Ts...>& source, mxArray *dest[], int nlhs, int num_outputs = 0) {
+        constexpr size_t tuple_index = sizeof...(Ts) - Index;
+        num_outputs += toMex(std::get<tuple_index>(source), &dest[num_outputs], nlhs - num_outputs);
+        return TupleToMexHelper<Index - 1>::run(source, dest, nlhs, num_outputs);
+      }
+    };
 
-  template<>
-  struct TupleToMexHelper<0> {
-    template <typename ...Ts>
-    static int run(const std::tuple<Ts...>& source, mxArray *dest[], int nlhs, int num_outputs = 0) {
-      return num_outputs;
-    }
-  };
+    template<>
+    struct TupleToMexHelper<0> {
+      template <typename ...Ts>
+      static int run(const std::tuple<Ts...>& source, mxArray *dest[], int nlhs, int num_outputs = 0) {
+        return num_outputs;
+      }
+    };
+  }
 }
 
 template <typename ...Ts>
 int toMex(const std::tuple<Ts...>& source, mxArray* dest[], int nlhs) {
-  return internal::TupleToMexHelper<sizeof...(Ts)>::run(source, dest, nlhs);
+  return Drake::internal::TupleToMexHelper<sizeof...(Ts)>::run(source, dest, nlhs);
 }
 
 #endif //DRAKE_STANDARDMEXCONVERSIONS_H
