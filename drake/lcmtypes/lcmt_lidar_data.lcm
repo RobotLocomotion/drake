@@ -1,0 +1,9 @@
+package drake;
+
+struct lcmt_lidar_data
+{
+  int64_t timestamp;
+
+  int32_t num_points;
+  lcmt_lidar_point points[num_points];
+}

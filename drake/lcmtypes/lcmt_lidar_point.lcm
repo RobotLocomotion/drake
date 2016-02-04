@@ -1,0 +1,11 @@
+package drake;
+
+struct lcmt_lidar_point
+{
+  float x;
+  float y;
+  float z;
+  float intensity;
+  int16_t scan;
+  int8_t echo;
+}
