@@ -131,7 +131,7 @@ set(iris_GIT_TAG 7442fbca7a456f5564296902d8e2130a751bf3e3)
 set(iris_ADDITIONAL_BUILD_ARGS PATCH_COMMAND make configure-cdd-only)
 set(iris_IS_PUBLIC TRUE)
 set(lcm_GIT_REPOSITORY https://github.com/RobotLocomotion/lcm-pod.git)
-set(lcm_GIT_TAG 7fabc8d8dc9ad82923d6cf067b674f4918614bf4) # note: cmake branch
+set(lcm_GIT_TAG 4b282c3d5a963473321fcebb6dbfc62bae0fa9a4) # note: cmake branch
 set(lcm_IS_CMAKE_POD TRUE)
 set(lcm_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/lcm/lcm-1.0.0)
 set(lcm_IS_PUBLIC TRUE)
