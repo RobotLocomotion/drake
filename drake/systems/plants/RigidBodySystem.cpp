@@ -3,7 +3,8 @@
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/solvers/Optimization.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
-#include "urdfParsingUtil.h"
+#include "xmlUtil.h"
+#include "spruce.hh"
 
 using namespace std;
 using namespace Eigen;
@@ -335,4 +336,23 @@ void RigidBodySystem::addRobotFromURDF(const string &urdf_filename, const DrakeJ
     throw std::runtime_error("failed to parse xml in file " + urdf_filename + "\n" + xml_doc.ErrorName());
   }
   parseURDF(this,&xml_doc);
+}
+
+void RigidBodySystem::addRobotFromSDF(const string &sdf_filename, const DrakeJoint::FloatingBaseType floating_base_type) {
+  tree->addRobotFromSDF(sdf_filename, floating_base_type);
+}
+
+void RigidBodySystem::addRobotFromFile(const std::string &filename, const DrakeJoint::FloatingBaseType floating_base_type)
+{
+  spruce::path p(filename);
+  auto ext = p.extension();
+  // todo: convert ext to lower case
+
+  if (ext.compare(".urdf") == 0) {
+    addRobotFromURDF(filename, floating_base_type);
+  } else if (ext.compare(".sdf") == 0) {
+    addRobotFromSDF(filename, floating_base_type);
+  } else {
+    throw runtime_error("unknown file extension: " + ext);
+  }
 }

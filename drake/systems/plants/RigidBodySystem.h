@@ -56,7 +56,7 @@ namespace Drake {
                                                                              penetration_stiffness(150.0),
                                                                              penetration_damping(penetration_stiffness/10.0),
                                                                              friction_coefficient(1.0) {};
-    RigidBodySystem(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION) :
+    RigidBodySystem(const std::string &filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION) :
             use_multi_contact(false),
             penetration_stiffness(150.0),
             penetration_damping(penetration_stiffness/10.0),
@@ -64,12 +64,14 @@ namespace Drake {
     {
       //tree = std::allocate_shared<RigidBodyTree>(Eigen::aligned_allocator<RigidBodyTree>()); // this crashed g++-4.7
       tree = std::shared_ptr<RigidBodyTree>(new RigidBodyTree());
-      addRobotFromURDF(urdf_filename, floating_base_type);
+      addRobotFromFile(filename, floating_base_type);
     }
     virtual ~RigidBodySystem() {};
 
     void addRobotFromURDFString(const std::string &xml_string, const std::string &root_dir = ".", const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
     void addRobotFromURDF(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION);
+    void addRobotFromSDF(const std::string &sdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION);
+    void addRobotFromFile(const std::string &filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION);
 
     // note: will generalize this soon
     void addForceElement(const std::shared_ptr<RigidBodyForceElement>& f) { force_elements.push_back(f); }

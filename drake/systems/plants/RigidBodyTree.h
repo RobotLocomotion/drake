@@ -63,6 +63,8 @@ public:
   void addRobotFromURDF(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
   void addRobotFromURDF(const std::string &urdf_filename, std::map<std::string,std::string>& package_map, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
 
+  void addRobotFromSDF(const std::string &sdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION);
+
   void addFrame(const std::shared_ptr<RigidBodyFrame>& frame);
 
   std::map<std::string, int> computePositionNameToIndexMap() const;

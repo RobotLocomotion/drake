@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
 //    cout << "xdot_rb = " << xdot_rb.transpose() << endl;
     valuecheckMatrix(xdot_urdf,xdot,1e-8);
 
-//    auto xdot_sdf = r_sdf.dynamics(0.0, x0_rb, u0_rb);
+    auto xdot_sdf = r_sdf.dynamics(0.0, x0_rb, u0_rb);
 //    valuecheckMatrix(xdot_sdf,xdot,1e-8);
   }
 }
