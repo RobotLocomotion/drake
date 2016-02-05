@@ -342,12 +342,14 @@ void evaluateXYZExpmapCubicSpline(double t, const PiecewisePolynomial<double> &s
 
   // construct autodiff version of expmap
   // autodiff derivatives represent first and second derivative w.r.t. time
-  typedef AutoDiffScalar<Matrix<double, 1, 1>> ADScalar;
-  typedef AutoDiffScalar<Matrix<ADScalar, 1, 1>> ADScalarSecondDeriv;
+  typedef AutoDiffScalar<Matrix<double, Dynamic, 1>> ADScalar; // TODO: should use 1 instead of dynamic, but causes issues with eigen on MSVC 32 bit; should be fixed in 3.3
+  typedef AutoDiffScalar<Matrix<ADScalar, Dynamic, 1>> ADScalarSecondDeriv; // TODO: should use 1 instead of dynamic, but causes issues with eigen on MSVC 32 bit; should be fixed in 3.3
   Matrix<ADScalarSecondDeriv, 3, 1> expmap_autodiff;
   for (int i = 0; i < expmap_autodiff.size(); i++) {
     expmap_autodiff(i).value() = expmap(i);
+    expmap_autodiff(i).derivatives().resize(1);
     expmap_autodiff(i).derivatives()(0) = expmap_dot(i);
+    expmap_autodiff(i).derivatives()(0).derivatives().resize(1);
     expmap_autodiff(i).derivatives()(0).derivatives()(0) = expmap_ddot(i);
   }
 
@@ -360,7 +362,9 @@ void evaluateXYZExpmapCubicSpline(double t, const PiecewisePolynomial<double> &s
   decltype(quat_autodiff) quat_dot_autodiff;
   for (int i = 0; i < quat_dot_autodiff.size(); i++) {
     quat_dot_autodiff(i).value() = quat_autodiff(i).derivatives()(0).value();
+    quat_dot_autodiff(i).derivatives().resize(1);
     quat_dot_autodiff(i).derivatives()(0).value() = quat_autodiff(i).derivatives()(0).derivatives()(0);
+    quat_dot_autodiff(i).derivatives()(0).derivatives().resize(1);
     quat_dot_autodiff(i).derivatives()(0).derivatives()(0) = std::numeric_limits<double>::quiet_NaN(); // we're not interested in second deriv of angular velocity
   }
 
