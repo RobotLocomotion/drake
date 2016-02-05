@@ -30,6 +30,14 @@ bool parseScalarValue(tinyxml2::XMLElement* node, double &val)
   return false;
 }
 
+bool parseScalarValue(tinyxml2::XMLElement* node, const char* element_name, double &val)
+{
+  XMLElement* elnode = node->FirstChildElement(element_name);
+  if (elnode) return parseScalarValue(elnode,val);
+  return false;
+}
+
+
 bool parseScalarAttribute(tinyxml2::XMLElement* node, const char* attribute_name, double& val)
 {
   const char* attr = node->Attribute(attribute_name);
@@ -64,7 +72,7 @@ bool parseVectorAttribute(tinyxml2::XMLElement* node, const char* attribute_name
   return false;
 }
 
-void poseAttributesToTransform(tinyxml2::XMLElement* node, Eigen::Isometry3d& T)
+void originAttributesToTransform(tinyxml2::XMLElement *node, Eigen::Isometry3d &T)
 {
   Eigen::Vector3d rpy=Eigen::Vector3d::Zero(), xyz=Eigen::Vector3d::Zero();
 
@@ -74,6 +82,16 @@ void poseAttributesToTransform(tinyxml2::XMLElement* node, Eigen::Isometry3d& T)
   T.matrix() << rpy2rotmat(rpy), xyz, 0,0,0,1;
 }
 
+void poseAttributesToTransform(tinyxml2::XMLElement *node, Eigen::Isometry3d &T)
+{
+  Eigen::Vector3d rpy=Eigen::Vector3d::Zero(), xyz=Eigen::Vector3d::Zero();
+  const char* strval = node->FirstChild()->Value();
+  if (strval) {
+    std::stringstream s(strval);
+    s >> xyz(0) >> xyz(1) >> xyz(2) >> rpy(0) >> rpy(1) >> rpy(2);
+  }
+  T.matrix() << rpy2rotmat(rpy), xyz, 0,0,0,1;
+}
 
 string exec(string cmd)
 {
