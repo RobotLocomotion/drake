@@ -65,7 +65,6 @@ methods
       dxpdxm(1,5)=1;
       dxpdxm(2,1)=cos(xm(2));
       dxpdxm(2,2)=-xm(1)*sin(xm(2));
-%       dxpdxm(2,6)=1; % This shouldn't be here. I guess it's from a different state-frame, and sb forgot to comment it out? (see flight2stance)
       dxpdxm(3,1)=-xm(4)*cos(xm(2));
       dxpdxm(3,2)=-xm(3)*cos(xm(2))+xm(1)*xm(4)*sin(xm(2));
       dxpdxm(3,3)=-sin(xm(2));
@@ -96,7 +95,6 @@ methods
         dxpdu=zeros(5,1);
         dxpdxm(1,2)=1/cos(theta);
         dxpdu(1,1)=(xm(2))*sin(theta)/cos(theta)^2;
-        %dxpdxm(1,6)=-1/cos(theta);
         dxpdu(2,1)=1;
         dxpdxm(3,3)=-sin(theta);
         dxpdxm(3,4)=cos(theta);
@@ -105,10 +103,8 @@ methods
         dxpdxm(4,3)=-cos(theta)^2/(xm(2));
         dxpdxm(4,4)=-sin(theta)*cos(theta)/(xm(2));
         dxpdu(4,1)=-(-xm(3)*sin(2*theta)+xm(4)*cos(2*theta))/(xm(2));
-        %dxpdxm(4,6)=-dxpdxm(4,2);
         dxpdxm(5,1)=1;
         dxpdxm(5,2)=tan(theta);
-        error('still need to update this last one:');
         dxpdu(5,1)=xm(2)/cos(theta)^2;
         dxp=[zeros(5,2) dxpdxm dxpdu];
       end
