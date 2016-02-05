@@ -60,13 +60,12 @@ methods
       end
       status=(xp(3)<0);  % terminate if xdot < 0
       dxpdxm=zeros(4,5);
-      dxpdxm(1,5)=1;
       dxpdxm(1,1)=-sin(xm(2));
       dxpdxm(1,2)=-xm(1)*cos(xm(2));
       dxpdxm(1,5)=1;
       dxpdxm(2,1)=cos(xm(2));
       dxpdxm(2,2)=-xm(1)*sin(xm(2));
-      dxpdxm(2,6)=1;
+%       dxpdxm(2,6)=1; % This shouldn't be here. I guess it's from a different state-frame, and sb forgot to comment it out? (see flight2stance)
       dxpdxm(3,1)=-xm(4)*cos(xm(2));
       dxpdxm(3,2)=-xm(3)*cos(xm(2))+xm(1)*xm(4)*sin(xm(2));
       dxpdxm(3,3)=-sin(xm(2));
