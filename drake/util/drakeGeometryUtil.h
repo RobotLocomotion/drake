@@ -336,7 +336,7 @@ template<typename Derived>
 Eigen::Matrix<typename Derived::Scalar, QUAT_SIZE, 1> expmap2quat(const Eigen::MatrixBase<Derived> &v) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
   typedef typename Derived::Scalar Scalar;
-  Scalar theta_squared = v.squaredNorm();
+  Scalar theta_squared = v.transpose().lazyProduct(v).value(); // v.squaredNorm(); causes issues with Eigen 3.3 beta 1 that should be resolved in 3.3
   if (theta_squared < pow(Eigen::NumTraits<Scalar>::epsilon(), 0.5)) {
     return Drake::internal::expmap2quatDegenerate(v, theta_squared);
   } else {
