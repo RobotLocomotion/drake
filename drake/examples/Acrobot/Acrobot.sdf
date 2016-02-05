@@ -1,0 +1,137 @@
+<sdf version='1.5'>
+  <model name='Acrobot'>
+    <link name='base_link'>
+      <pose frame=''>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0.00666667</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.00666667</iyy>
+          <iyz>0</iyz>
+          <izz>0.00666667</izz>
+        </inertia>
+      </inertial>
+      <collision name='base_link_collision'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.2 0.2 0.2</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='base_link_visual'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.2 0.2 0.2</size>
+          </box>
+        </geometry>
+      </visual>
+    </link>
+    <link name='upper_link'>
+      <pose frame=''>0 0.15 0 0 -0 0</pose>
+      <inertial>
+        <pose frame=''>0 0 -0.5 0 -0 0</pose>
+        <mass>1</mass>
+        <inertia>
+          <ixx>1</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.083</iyy>
+          <iyz>0</iyz>
+          <izz>1</izz>
+        </inertia>
+      </inertial>
+      <collision name='upper_link_collision'>
+        <pose frame=''>0 0 -0.5 0 -0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>1.1</length>
+            <radius>0.05</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='upper_link_visual'>
+        <pose frame=''>0 0 -0.5 0 -0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>1.1</length>
+            <radius>0.05</radius>
+          </cylinder>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='shoulder' type='revolute'>
+      <child>upper_link</child>
+      <parent>base_link</parent>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <damping>0.1</damping>
+          <friction>0</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+    </joint>
+    <link name='lower_link'>
+      <pose frame=''>0 0.25 -1 0 -0 0</pose>
+      <inertial>
+        <pose frame=''>0 0 -1 0 -0 0</pose>
+        <mass>1</mass>
+        <inertia>
+          <ixx>1</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.33</iyy>
+          <iyz>0</iyz>
+          <izz>1</izz>
+        </inertia>
+      </inertial>
+      <collision name='lower_link_collision'>
+        <pose frame=''>0 0 -1 0 -0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>2.1</length>
+            <radius>0.05</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='lower_link_visual'>
+        <pose frame=''>0 0 -1 0 -0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>2.1</length>
+            <radius>0.05</radius>
+          </cylinder>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='elbow' type='revolute'>
+      <child>lower_link</child>
+      <parent>upper_link</parent>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <lower>-1e+16</lower>
+          <upper>1e+16</upper>
+        </limit>
+        <dynamics>
+          <damping>0.1</damping>
+          <friction>0</friction>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+    </joint>
+  </model>
+</sdf>
