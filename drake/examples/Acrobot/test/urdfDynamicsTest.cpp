@@ -13,17 +13,25 @@ int main(int argc, char* argv[])
   auto r_urdf = RigidBodySystem(getDrakePath() + "/examples/Acrobot/Acrobot.urdf", DrakeJoint::FIXED);
   auto r_sdf = RigidBodySystem(getDrakePath() + "/examples/Acrobot/Acrobot.sdf", DrakeJoint::FIXED);
 
+  auto upper_link_urdf = r_urdf.getRigidBodyTree()->bodies[2];
+  auto upper_link_sdf = r_sdf.getRigidBodyTree()->bodies[2];
+
   for (int i=0; i<1000; i++) {
     auto x0 = getRandomVector<AcrobotState>();
     auto u0 = getRandomVector<AcrobotInput>();
+    u0.tau = 0;
 
     RigidBodySystem::StateVector<double> x0_rb = toEigen(x0);
     RigidBodySystem::InputVector<double> u0_rb = toEigen(u0);
 
-//    auto kinsol = tree->doKinematics(x0_rb.topRows(2),x0_rb.bottomRows(2));
-//    cout << "H_rb = " << tree->massMatrix(kinsol) << endl;
-//    eigen_aligned_unordered_map<const RigidBody *, Matrix<double, 6, 1> > f_ext;
-//    cout << "C_rb = " << tree->dynamicsBiasTerm(kinsol,f_ext) << endl;
+    auto kinsol_urdf = r_urdf.getRigidBodyTree()->doKinematics(x0_rb.topRows(2), x0_rb.bottomRows(2));
+    cout << "H_urdf = " << r_urdf.getRigidBodyTree()->massMatrix(kinsol_urdf) << endl;
+    auto kinsol_sdf = r_sdf.getRigidBodyTree()->doKinematics(x0_rb.topRows(2), x0_rb.bottomRows(2));
+    cout << "H_sdf = " << r_sdf.getRigidBodyTree()->massMatrix(kinsol_sdf) << endl;
+    eigen_aligned_unordered_map<const RigidBody *, Matrix<double, 6, 1> > f_ext;
+    cout << "C_urdf = " << r_urdf.getRigidBodyTree()->dynamicsBiasTerm(kinsol_urdf,f_ext) << endl;
+    cout << "C_sdf = " << r_sdf.getRigidBodyTree()->dynamicsBiasTerm(kinsol_sdf,f_ext) << endl;
+
 
     auto xdot = toEigen(r.dynamics(0.0,x0,u0));
     auto xdot_urdf = r_urdf.dynamics(0.0, x0_rb, u0_rb);
@@ -32,6 +40,6 @@ int main(int argc, char* argv[])
     valuecheckMatrix(xdot_urdf,xdot,1e-8);
 
     auto xdot_sdf = r_sdf.dynamics(0.0, x0_rb, u0_rb);
-//    valuecheckMatrix(xdot_sdf,xdot,1e-8);
+    valuecheckMatrix(xdot_sdf,xdot,1e-8);
   }
 }

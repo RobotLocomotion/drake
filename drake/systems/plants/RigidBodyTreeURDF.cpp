@@ -336,7 +336,6 @@ template <typename JointType>
 void setDynamics(RigidBodyTree *model, XMLElement *node, FixedAxisOneDoFJoint<JointType> *fjoint) {
   XMLElement* dynamics_node = node->FirstChildElement("dynamics");
   if (fjoint != nullptr && dynamics_node) {
-    model->warnOnce("joint_dynamics", "Warning: joint dynamics xml tag is parsed, but not included in the dynamics methods yet.");
     double damping=0.0, coulomb_friction=0.0, coulomb_window=0.0;
     parseScalarAttribute(dynamics_node,"damping",damping);
     parseScalarAttribute(dynamics_node,"friction",coulomb_friction);

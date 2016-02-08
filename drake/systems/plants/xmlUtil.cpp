@@ -72,6 +72,29 @@ bool parseVectorAttribute(tinyxml2::XMLElement* node, const char* attribute_name
   return false;
 }
 
+bool parseVectorValue(tinyxml2::XMLElement* node, const char* element_name, Eigen::Vector3d &val)
+{
+  XMLElement* elnode = node->FirstChildElement(element_name);
+  if (elnode && elnode->FirstChild()) {
+    std::stringstream s(elnode->FirstChild()->Value());
+    s >> val(0) >> val(1) >> val(2);
+    return true;
+  }
+  return false;
+}
+
+
+bool parseStringValue(tinyxml2::XMLElement* node, const char* element_name, std::string &val)
+{
+  XMLElement* elnode = node->FirstChildElement(element_name);
+  if (elnode && elnode->FirstChild()) {
+    val = elnode->FirstChild()->Value();
+    return true;
+  }
+  return false;
+}
+
+
 void originAttributesToTransform(tinyxml2::XMLElement *node, Eigen::Isometry3d &T)
 {
   Eigen::Vector3d rpy=Eigen::Vector3d::Zero(), xyz=Eigen::Vector3d::Zero();
@@ -82,7 +105,7 @@ void originAttributesToTransform(tinyxml2::XMLElement *node, Eigen::Isometry3d &
   T.matrix() << rpy2rotmat(rpy), xyz, 0,0,0,1;
 }
 
-void poseAttributesToTransform(tinyxml2::XMLElement *node, Eigen::Isometry3d &T)
+void poseValueToTransform(tinyxml2::XMLElement *node, Eigen::Isometry3d &T)
 {
   Eigen::Vector3d rpy=Eigen::Vector3d::Zero(), xyz=Eigen::Vector3d::Zero();
   const char* strval = node->FirstChild()->Value();

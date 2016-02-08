@@ -16,9 +16,12 @@ DRAKEXMLUTIL_EXPORT bool parseScalarAttribute(tinyxml2::XMLElement* node, const 
 // only writes values if they exist
 DRAKEXMLUTIL_EXPORT bool parseVectorAttribute(tinyxml2::XMLElement* node, const char* attribute_name, Eigen::Vector3d &val);
 DRAKEXMLUTIL_EXPORT bool parseVectorAttribute(tinyxml2::XMLElement* node, const char* attribute_name, Eigen::Vector4d &val);
+DRAKEXMLUTIL_EXPORT bool parseVectorValue(tinyxml2::XMLElement* node, const char* element_name, Eigen::Vector3d &val);
 
 DRAKEXMLUTIL_EXPORT void originAttributesToTransform(tinyxml2::XMLElement *node, Eigen::Isometry3d &T);
-DRAKEXMLUTIL_EXPORT void poseAttributesToTransform(tinyxml2::XMLElement *node, Eigen::Isometry3d &T);
+DRAKEXMLUTIL_EXPORT void poseValueToTransform(tinyxml2::XMLElement *node, Eigen::Isometry3d &T);
+
+DRAKEXMLUTIL_EXPORT bool parseStringValue(tinyxml2::XMLElement* node, const char* element_name, std::string &val);
 
 DRAKEXMLUTIL_EXPORT void populatePackageMap(std::map<std::string,std::string>& package_map);
 DRAKEXMLUTIL_EXPORT std::string resolveFilename(const std::string& filename, const std::map<std::string,std::string>& package_map, const std::string& root_dir);

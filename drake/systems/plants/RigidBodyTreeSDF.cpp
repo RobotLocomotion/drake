@@ -28,11 +28,10 @@ void parseSDFInertial(shared_ptr<RigidBody> body, XMLElement* node, RigidBodyTre
 {
   Isometry3d T = Isometry3d::Identity();
   XMLElement* pose = node->FirstChildElement("pose");
-  if (pose) originAttributesToTransform(pose, T);
+  if (pose) poseValueToTransform(pose, T);
   T = T_element_to_link*T;
 
-  XMLElement* mass = node->FirstChildElement("mass");
-  if (mass) parseScalarAttribute(mass, "value", body->mass);
+  parseScalarValue(node,"mass",body->mass);
 
   body->com << T(0, 3), T(1, 3), T(2, 3);
 
@@ -71,7 +70,7 @@ void parseSDFLink(RigidBodyTree * model, XMLElement* node, const map<string, Vec
 
   Isometry3d T_element_to_link = Isometry3d::Identity();
   XMLElement* pose = node->FirstChildElement("pose");
-  if (pose) poseAttributesToTransform(pose, T_element_to_link);
+  if (pose) poseValueToTransform(pose, T_element_to_link);
 
   XMLElement* inertial_node = node->FirstChildElement("inertial");
   if (inertial_node) parseSDFInertial(body, inertial_node, model, T_element_to_link);
@@ -90,6 +89,107 @@ void parseSDFLink(RigidBodyTree * model, XMLElement* node, const map<string, Vec
   body->body_index = static_cast<int>(model->bodies.size()) - 1;
 }
 
+template <typename JointType>
+void setSDFLimits(XMLElement *node, FixedAxisOneDoFJoint<JointType> *fjoint) {
+  XMLElement* limit_node = node->FirstChildElement("limit");
+  if (fjoint != nullptr && limit_node) {
+    double lower = -numeric_limits<double>::infinity(), upper = numeric_limits<double>::infinity();
+    parseScalarAttribute(limit_node,"lower",lower);
+    parseScalarAttribute(limit_node,"upper",upper);
+    fjoint->setJointLimits(lower,upper);
+  }
+}
+
+template <typename JointType>
+void setSDFDynamics(RigidBodyTree *model, XMLElement *node, FixedAxisOneDoFJoint<JointType> *fjoint) {
+  XMLElement* dynamics_node = node->FirstChildElement("dynamics");
+  if (fjoint != nullptr && dynamics_node) {
+    double damping=0.0, coulomb_friction=0.0, coulomb_window=0.0;
+    parseScalarValue(dynamics_node,"damping",damping);
+    parseScalarValue(dynamics_node,"friction",coulomb_friction);
+    parseScalarValue(dynamics_node,"coulomb_window",coulomb_window);  // note: not a part of the sdf spec
+    fjoint->setDynamics(damping,coulomb_friction,coulomb_window);
+  }
+}
+
+void parseSDFJoint(RigidBodyTree * model, XMLElement* node)
+{
+  const char* attr = node->Attribute("drake_ignore");
+  if (attr && strcmp(attr, "true") == 0)
+    return;
+
+  attr = node->Attribute("name");
+  if (!attr) throw runtime_error("ERROR: joint tag is missing name attribute");
+  string name(attr);
+
+  attr = node->Attribute("type");
+  if (!attr) throw runtime_error("ERROR: joint " + name + " is missing the type attribute");
+  string type(attr);
+
+  // parse parent
+  string parent_name;
+  if (!parseStringValue(node,"parent",parent_name))
+    throw runtime_error("ERROR: joint " + name + " doesn't have a parent node");
+
+  auto parent = model->findLink(parent_name);
+  if (!parent) throw runtime_error("ERROR: could not find parent link named " + parent_name);
+
+  // parse child
+  string child_name;
+  if (!parseStringValue(node,"child",child_name))
+    throw runtime_error("ERROR: joint " + name + " doesn't have a child node");
+
+  auto child = model->findLink(child_name);
+  if (!child) throw runtime_error("ERROR: could not find child link named " + child_name);
+
+  Isometry3d Ttree = Isometry3d::Identity();
+  XMLElement* pose = node->FirstChildElement("pose");
+  if (pose) poseValueToTransform(pose, Ttree);
+
+  Vector3d axis;
+  axis << 1, 0, 0;
+  XMLElement* axis_node = node->FirstChildElement("axis");
+  if (axis_node && type.compare("fixed")!=0 && type.compare("floating")!=0) {
+    parseVectorValue(axis_node, "xyz", axis);
+    if (axis.norm()<1e-8) throw runtime_error("ERROR: axis is zero.  don't do that");
+    axis.normalize();
+    double in_parent_frame;
+    if (parseScalarValue(axis_node,"in_parent_frame",in_parent_frame) && in_parent_frame>0.0)
+      axis = Ttree*axis;
+  }
+
+
+  // now construct the actual joint (based on it's type)
+  DrakeJoint* joint = nullptr;
+
+  if (type.compare("revolute") == 0 || type.compare("continuous") == 0) {
+    FixedAxisOneDoFJoint<RevoluteJoint>* fjoint = new RevoluteJoint(name, Ttree, axis);
+    if (axis_node) {
+      setSDFDynamics(model, axis_node, fjoint);
+      setSDFLimits(axis_node, fjoint);
+    }
+    joint = fjoint;
+  } else if (type.compare("fixed") == 0) {
+    joint = new FixedJoint(name, Ttree);
+  } else if (type.compare("prismatic") == 0) {
+    FixedAxisOneDoFJoint<PrismaticJoint>* fjoint = new PrismaticJoint(name, Ttree, axis);
+    if (axis_node) {
+      setSDFDynamics(model, axis_node, fjoint);
+      setSDFLimits(axis_node, fjoint);
+    }
+    joint = fjoint;
+  } else if (type.compare("floating") == 0) {
+    joint = new RollPitchYawFloatingJoint(name, Ttree);
+  } else {
+    throw runtime_error("ERROR: Unrecognized joint type: " + type);
+  }
+
+  unique_ptr<DrakeJoint> joint_unique_ptr(joint);
+  child->setJoint(move(joint_unique_ptr));
+  child->parent = parent;
+}
+
+
 void parseModel(RigidBodyTree * model, XMLElement* node, const map<string,string> package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type) {
 /*
   if (!node->Attribute("name"))
@@ -103,6 +203,40 @@ void parseModel(RigidBodyTree * model, XMLElement* node, const map<string,string
   // parse link elements
   for (XMLElement *link_node = node->FirstChildElement("link"); link_node; link_node = link_node->NextSiblingElement("link"))
     parseSDFLink(model, link_node, materials, package_map, root_dir);
+
+  // parse joints
+  for (XMLElement* joint_node = node->FirstChildElement("joint"); joint_node; joint_node = joint_node->NextSiblingElement("joint"))
+    parseSDFJoint(model, joint_node);
+
+
+
+  for (unsigned int i = 1; i < model->bodies.size(); i++) {
+    if (model->bodies[i]->parent == nullptr) {  // attach the root nodes to the world with a floating base joint
+      model->bodies[i]->parent = model->bodies[0];
+      switch (floating_base_type) {
+        case DrakeJoint::FIXED:
+        {
+          unique_ptr<DrakeJoint> joint(new FixedJoint("base", Isometry3d::Identity()));
+          model->bodies[i]->setJoint(move(joint));
+        }
+          break;
+        case DrakeJoint::ROLLPITCHYAW:
+        {
+          unique_ptr<DrakeJoint> joint(new RollPitchYawFloatingJoint("base", Isometry3d::Identity()));
+          model->bodies[i]->setJoint(move(joint));
+        }
+          break;
+        case DrakeJoint::QUATERNION:
+        {
+          unique_ptr<DrakeJoint> joint(new QuaternionFloatingJoint("base", Isometry3d::Identity()));
+          model->bodies[i]->setJoint(move(joint));
+        }
+          break;
+        default:
+          throw std::runtime_error("unknown floating base type");
+      }
+    }
+  }
 }
 
 void parseSDF(RigidBodyTree * model, XMLDocument * xml_doc, map<string,string>& package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)

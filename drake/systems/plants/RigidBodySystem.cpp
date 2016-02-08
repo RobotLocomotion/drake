@@ -346,7 +346,8 @@ void RigidBodySystem::addRobotFromFile(const std::string &filename, const DrakeJ
 {
   spruce::path p(filename);
   auto ext = p.extension();
-  // todo: convert ext to lower case
+
+  std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);  // convert to lower case
 
   if (ext.compare(".urdf") == 0) {
     addRobotFromURDF(filename, floating_base_type);
