@@ -11,10 +11,10 @@ using namespace Drake;
 
 // note: gradient only w.r.t. expmap2...
 pair<Vector3d, typename Gradient<Vector3d, 3>::type> unwrapExpmapWithGradient(const MatrixBase<Map<const Vector3d>> &expmap1, const MatrixBase<Map<const Vector3d>> &expmap2) {
-  auto args = initializeAutoDiffTuple(expmap1, expmap2);
-  auto unwrapped_autodiff = unwrapExpmap(get<0>(args), get<1>(args));
-  auto grad_expmap2 = autoDiffToGradientMatrix(unwrapped_autodiff).rightCols<3>();
-  return make_pair(autoDiffToValueMatrix(unwrapped_autodiff), grad_expmap2);
+  auto expmap2_autodiff = initializeAutoDiff(expmap2);
+  auto expmap1_autodiff = (expmap1.cast<decltype(expmap2_autodiff)::Scalar>()).eval();
+  auto unwrapped_autodiff = unwrapExpmap(expmap1_autodiff, expmap2_autodiff);
+  return make_pair(autoDiffToValueMatrix(unwrapped_autodiff), autoDiffToGradientMatrix(unwrapped_autodiff));
 }
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
