@@ -368,7 +368,7 @@ void evaluateXYZExpmapCubicSpline(double t, const PiecewisePolynomial<double> &s
     quat_dot_autodiff(i).derivatives()(0).derivatives()(0) = std::numeric_limits<double>::quiet_NaN(); // we're not interested in second deriv of angular velocity
   }
 
-  auto omega_autodiff = quatdot2angularvelMatrix(quat_autodiff) * quat_dot_autodiff;
+  auto omega_autodiff = (quatdot2angularvelMatrix(quat_autodiff) * quat_dot_autodiff).eval();
   auto omega = xyzdot_angular_vel.tail<3>();
   auto omega_dot = xyzddot_angular_accel.tail<3>();
   for (int i = 0; i < omega_autodiff.size(); i++) {
