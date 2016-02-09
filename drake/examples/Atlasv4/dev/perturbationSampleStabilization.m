@@ -153,6 +153,7 @@ if iscell(xtraj)
 else
   x0 = xtraj.eval(t0);
 end
+x0_ = x0;
 
 x0_nom = x0;
 q0 = x0_nom(1:r.getNumPositions);
@@ -163,12 +164,20 @@ nom_KE = qd0'*H*qd0
 J = [n(1:4,:);D{1}(1:4,:);D{2}(1:4,:)];
 keyboard
 %% Perturb x0
-f = 30*[randn(3,1);zeros(r.getNumPositions-3,1)];
+global cost_t
+for i=1:1,
+f = randn(3,1);
+f = 20*f/norm(f);
+f = [f;zeros(r.getNumPositions-3,1)];
 Lambda = -pinv(J*inv(H)*J')*J*inv(H)*f;
-delta_qd = inv(H)*(J'*Lambda + f)
+delta_qd = inv(H)*(J'*Lambda + f);
 
 x0(r.getNumPositions+1:end) = x0_nom(r.getNumPositions+1:end) + delta_qd;
 traj = simulate(sys,[t0 tf],x0);
+
+initial_cost(i) = (x0-x0_)'*Straj_full{1}.eval(0)*(x0-x0_);
+final_cost(i) = cost_t;
+end
 % KE=x0(r.getNumPositions+1:end)'*H*x0(r.getNumPositions+1:end)
 
 %%

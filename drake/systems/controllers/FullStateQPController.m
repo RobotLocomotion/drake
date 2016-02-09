@@ -160,7 +160,7 @@ classdef FullStateQPController < DrakeSystem
   end
     
   function y=output(obj,t,~,x)
-    global utraj_pts utraj_ts
+    global utraj_pts utraj_ts cost_t
     
     if isempty(utraj_pts)
       utraj_pts = []; 
@@ -360,6 +360,7 @@ classdef FullStateQPController < DrakeSystem
       end
     end
 display(sprintf('t: %.3f S: %3.3e',t,(x-x0)'*S*(x-x0)));
+cost_t = (x-x0)'*S*(x-x0)
     %----------------------------------------------------------------------
     % Build handy index matrices ------------------------------------------
 
