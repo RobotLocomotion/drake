@@ -4,6 +4,9 @@ struct lcmt_lidar_data
 {
   int64_t timestamp;
 
+  float scan_angle;
+  boolean scan_direction;
+
   int32_t num_points;
   lcmt_lidar_point points[num_points];
 }
