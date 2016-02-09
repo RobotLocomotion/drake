@@ -82,6 +82,8 @@ public:
   std::string getVelocityName(int velocity_num) const;
   std::string getStateName(int state_num) const;
 
+  void drawKinematicTree(std::string graphviz_dotfile_filename);
+
   template <typename DerivedQ>
   KinematicsCache<typename DerivedQ::Scalar> doKinematics(const Eigen::MatrixBase<DerivedQ>& q) {
     KinematicsCache<typename DerivedQ::Scalar> ret(bodies);

@@ -105,7 +105,7 @@ void originAttributesToTransform(tinyxml2::XMLElement *node, Eigen::Isometry3d &
   T.matrix() << rpy2rotmat(rpy), xyz, 0,0,0,1;
 }
 
-void poseValueToTransform(tinyxml2::XMLElement *node, Eigen::Isometry3d &T)
+void poseValueToTransform(tinyxml2::XMLElement *node, const PoseMap& pose_map, Eigen::Isometry3d &T, const Eigen::Isometry3d& T_default_frame)
 {
   Eigen::Vector3d rpy=Eigen::Vector3d::Zero(), xyz=Eigen::Vector3d::Zero();
   const char* strval = node->FirstChild()->Value();
@@ -114,6 +114,17 @@ void poseValueToTransform(tinyxml2::XMLElement *node, Eigen::Isometry3d &T)
     s >> xyz(0) >> xyz(1) >> xyz(2) >> rpy(0) >> rpy(1) >> rpy(2);
   }
   T.matrix() << rpy2rotmat(rpy), xyz, 0,0,0,1;
+
+  const char* attr = node->Attribute("frame");
+  if (attr && strlen(attr)>0) {
+    std::string frame;
+    std::stringstream s(attr);
+    s >> frame;
+    Eigen::Isometry3d T_frame = pose_map.at(frame);  // will throw an exception if the frame is not found.  that is the desired behavior.
+    T = T_frame*T;
+  } else {
+    T = T_default_frame*T;
+  }
 }
 
 string exec(string cmd)

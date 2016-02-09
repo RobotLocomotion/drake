@@ -492,7 +492,7 @@ void parseFrame(RigidBodyTree * model, XMLElement* node)
   model->addFrame(frame);
 }
 
-void parseRobot(RigidBodyTree * model, XMLElement* node, const map<string,string> package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
+void parseRobot(RigidBodyTree * model, XMLElement* node, const map<string,string>& package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
 {
   if (!node->Attribute("name"))
     throw runtime_error("Error: your robot must have a name attribute");

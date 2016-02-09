@@ -19,7 +19,9 @@ DRAKEXMLUTIL_EXPORT bool parseVectorAttribute(tinyxml2::XMLElement* node, const 
 DRAKEXMLUTIL_EXPORT bool parseVectorValue(tinyxml2::XMLElement* node, const char* element_name, Eigen::Vector3d &val);
 
 DRAKEXMLUTIL_EXPORT void originAttributesToTransform(tinyxml2::XMLElement *node, Eigen::Isometry3d &T);
-DRAKEXMLUTIL_EXPORT void poseValueToTransform(tinyxml2::XMLElement *node, Eigen::Isometry3d &T);
+
+typedef std::map<std::string, Eigen::Isometry3d, std::less<std::string>, Eigen::aligned_allocator<std::pair<const std::string, Eigen::Isometry3d> > > PoseMap;
+DRAKEXMLUTIL_EXPORT void poseValueToTransform(tinyxml2::XMLElement *node, const PoseMap& pose_map, Eigen::Isometry3d &T, const Eigen::Isometry3d& T_default_frame = Eigen::Isometry3d::Identity());
 
 DRAKEXMLUTIL_EXPORT bool parseStringValue(tinyxml2::XMLElement* node, const char* element_name, std::string &val);
 

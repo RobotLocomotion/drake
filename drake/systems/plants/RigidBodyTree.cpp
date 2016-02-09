@@ -12,6 +12,9 @@
 #include <limits>
 #include "KinematicsCache.h"
 
+#include <iostream>
+#include <fstream>
+
 using namespace std;
 using namespace Eigen;
 
@@ -214,6 +217,29 @@ string RigidBodyTree::getStateName(int state_num) const
 		return getPositionName(state_num);
 	else
 		return getVelocityName(state_num - num_positions);
+}
+
+void RigidBodyTree::drawKinematicTree(std::string graphviz_dotfile_filename)
+{
+  ofstream dotfile;
+  dotfile.open(graphviz_dotfile_filename);
+  dotfile << "digraph {" << endl;
+  for (const auto& body : bodies) {
+    dotfile << "  " << body->linkname <<  " [label=\"" << body->linkname << endl;
+    dotfile << "mass=" << body->mass << endl;
+    dotfile << "inertia=" << endl << body->I << endl;
+    dotfile << "\"];" << endl;
+    if (body->hasParent()) {
+      const auto& joint = body->getJoint();
+      dotfile << "  " << body->linkname << " -> " << body->parent->linkname << " [label=\"" << joint.getName() << endl;
+      dotfile << "transform_to_parent_body=" << endl << joint.getTransformToParentBody().matrix() << endl;
+ //     dotfile << "axis=" << endl << joint.get().matrix() << endl;
+      dotfile << "\"];" << endl;
+    }
+  }
+  dotfile << "}" << endl;
+  dotfile.close();
+  cout << "Wrote kinematic tree to " << graphviz_dotfile_filename << "; run e.g. 'dot -Tpng -O " << graphviz_dotfile_filename << "' to generate an image." << endl;
 }
 
 map<string, int> RigidBodyTree::computePositionNameToIndexMap() const
