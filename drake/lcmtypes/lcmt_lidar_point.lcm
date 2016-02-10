@@ -2,10 +2,27 @@ package drake;
 
 struct lcmt_lidar_point
 {
+  /// Location of the point in the sensor's coordinate system.
+  /// \{
   float x;
   float y;
   float z;
+  /// \}
+
+  /// Strength of the return (in device dependent units).
   float intensity;
+
+  /// Index of the element which produced the point.
+  ///
+  /// The meaning of this field is device dependent, but is intended for
+  /// devices such as multi-laser rotating sensors, for which this field is
+  /// intended to identify which laser element produced the point.
   int16_t scan;
+
+  /// Index of return.
+  ///
+  /// For sensors which can detect multiple returns per laser pulse, this field
+  /// indicates the return number. The first return is \c 0; additional returns
+  /// should be sequentially numbered.
   int8_t echo;
 }
