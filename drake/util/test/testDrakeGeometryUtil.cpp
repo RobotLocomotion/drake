@@ -1,11 +1,13 @@
 #include <Eigen/Core>
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/testUtil.h"
+#include "drake/core/Gradient.h"
 #include <iostream>
 #include <cmath>
 
 using namespace Eigen;
 using namespace std;
+using namespace Drake;
 
 void testExpmap2quat(const Vector4d &quat);
 
@@ -233,12 +235,16 @@ void testdrpy2rotmat()
 
 void testExpmap2quat(const Vector4d &quat)
 {
-  auto expmap = quat2expmap(quat,1);
-  auto quat_back  = expmap2quat(expmap.value(),2);
-  valuecheck(std::abs(quat.transpose() * quat_back.value()), 1.0, 1e-8);
-  Matrix3d expmap_back = expmap.gradient().value()*quat_back.gradient().value();
+  auto quat_autodiff = initializeAutoDiff(quat);
+  auto expmap_autodiff = quat2expmap(quat_autodiff);
+  auto expmap = autoDiffToValueMatrix(expmap_autodiff);
+  auto expmap_grad = autoDiffToGradientMatrix(expmap_autodiff);
+  auto quat_back_autodiff  = expmap2quat(initializeAutoDiff(expmap));
+  auto quat_back = autoDiffToValueMatrix(quat_back_autodiff);
+  auto quat_back_grad = autoDiffToGradientMatrix(quat_back_autodiff);
+  valuecheck(std::abs((quat.transpose() * quat_back).value()), 1.0, 1e-8);
   Matrix3d identity = Matrix3d::Identity();
-  valuecheckMatrix(expmap_back,identity,1E-10);
+  valuecheckMatrix((expmap_grad * quat_back_grad).eval(), identity, 1E-10);
 }
 
 int main(int argc, char **argv)

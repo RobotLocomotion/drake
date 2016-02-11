@@ -1,7 +1,6 @@
 #ifndef DRAKE_RIGIDBODYTREE_H
 #define DRAKE_RIGIDBODYTREE_H
 
-#define _USE_MATH_DEFINES
 #include <Eigen/Dense>
 #include <Eigen/LU>
 #include <set>

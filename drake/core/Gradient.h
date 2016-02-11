@@ -21,7 +21,7 @@ namespace Drake {
   /** \brief The appropriate AutoDiffScalar gradient type given the value type and the number of derivatives at compile time
    */
   template<typename Derived, int Nq>
-  using AutoDiffMatrixType = Eigen::Matrix<TaylorVard<Nq>, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime, Derived::Options, Derived::MaxRowsAtCompileTime, Derived::MaxColsAtCompileTime>;
+  using AutoDiffMatrixType = Eigen::Matrix<Eigen::AutoDiffScalar<Eigen::Matrix<typename Derived::Scalar, Nq, 1> >, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime, 0, Derived::MaxRowsAtCompileTime, Derived::MaxColsAtCompileTime>;
 
 
   /** \brief Initializes an autodiff matrix given a matrix of values and gradient matrix
@@ -47,6 +47,18 @@ namespace Drake {
       auto_diff_matrix(row).derivatives().resize(num_derivs, 1);
       auto_diff_matrix(row).derivatives() = gradient.row(row).transpose();
     }
+  }
+
+  /** \brief Creates and initializes an autodiff matrix given a matrix of values and gradient matrix
+   * \param[in] val value matrix
+   * \param[in] gradient gradient matrix; the derivatives of val(j) are stored in row j of the gradient matrix.
+   * \return autodiff_matrix matrix of AutoDiffScalars with the same size as \p val
+   */
+  template <typename Derived, typename DerivedGradient>
+  AutoDiffMatrixType<Derived, DerivedGradient::ColsAtCompileTime> initializeAutoDiffGivenGradientMatrix(const Eigen::MatrixBase<Derived> &val, const Eigen::MatrixBase<DerivedGradient> &gradient) {
+    AutoDiffMatrixType<Derived, DerivedGradient::ColsAtCompileTime> ret(val.rows(), val.cols());
+    initializeAutoDiffGivenGradientMatrix(val, gradient, ret);
+    return ret;
   }
 
   /** \brief Initialize a single autodiff matrix given the corresponding value matrix.

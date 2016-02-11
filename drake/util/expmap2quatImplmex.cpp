@@ -1,32 +1,46 @@
-#include "mex.h"
-#include "drake/util/drakeMexUtil.h"
+#include <Eigen/Core>
+#include "drake/util/mexify.h"
+#include "drake/util/standardMexConversions.h"
 #include "drake/util/drakeGeometryUtil.h"
+#include "drake/util/makeFunction.h"
+#include "drake/core/Gradient.h"
 
 using namespace std;
 using namespace Eigen;
+using namespace Drake;
+
+pair<Vector4d, typename Gradient<Vector4d, 3>::type> expmap2quatWithGradient(const MatrixBase<Map<const Vector3d>>& expmap) {
+  auto expmap_autodiff = initializeAutoDiff(expmap);
+  auto quat_autodiff = expmap2quat(expmap_autodiff);
+  return make_pair(autoDiffToValueMatrix(quat_autodiff), autoDiffToGradientMatrix(quat_autodiff));
+}
+
+
+tuple<Vector4d, typename Gradient<Vector4d, 3>::type, typename Gradient<Vector4d, 3, 2>::type> expmap2quatWithSecondDeriv(const MatrixBase<Map<const Vector3d>>& expmap) {
+  auto expmap_autodiff = initializeAutoDiff(expmap);
+  auto expmap_autodiff_second = initializeAutoDiff(expmap_autodiff);
+  auto quat_autodiff_second = expmap2quat(expmap_autodiff_second);
+  auto quat = autoDiffToValueMatrix(autoDiffToValueMatrix(quat_autodiff_second));
+  auto dquat_autodiff = autoDiffToGradientMatrix(quat_autodiff_second);
+  auto dquat = autoDiffToValueMatrix(dquat_autodiff);
+  auto ddquat = autoDiffToGradientMatrix(dquat_autodiff);
+  return make_tuple(quat, dquat, ddquat);
+}
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-  if (nrhs!=1) {
-    mexErrMsgTxt("Incorrect usage: expmap2quatImplmex(expmap)");
+  if (nlhs == 1) {
+    auto func_double = make_function(&expmap2quat<Map<const Vector3d>>);
+    mexCallFunction(nlhs, plhs, nrhs, prhs, true, func_double);
   }
-  if (mxGetM(prhs[0])!=3 || mxGetN(prhs[0])!= 1) {
-    mexErrMsgTxt("expmap should be a 3 x 1 vector\n");
+  else if (nlhs == 2) {
+    auto func_gradient = make_function(&expmap2quatWithGradient);
+    mexCallFunction(nlhs, plhs, nrhs, prhs, true, func_gradient);
   }
-  Map<Vector3d> expmap(mxGetPrSafe(prhs[0]));
-  auto ret = expmap2quat(expmap,2);
-  if (nlhs >= 1) {
-    plhs[0] = mxCreateDoubleMatrix(4,1,mxREAL);
-    memcpy(mxGetPrSafe(plhs[0]), ret.value().data(), sizeof(double)*4);
+  else if (nlhs == 3) {
+    auto func_second_deriv = make_function(&expmap2quatWithSecondDeriv);
+    mexCallFunction(nlhs, plhs, nrhs, prhs, true, func_second_deriv);
   }
-  if (nlhs >= 2) {
-    plhs[1] = mxCreateDoubleMatrix(4,3,mxREAL);
-    memcpy(mxGetPrSafe(plhs[1]), ret.gradient().value().data(), 
-           sizeof(double)*12);
-  }
-  if (nlhs >= 3) {
-    plhs[2] = mxCreateDoubleMatrix(4,9,mxREAL);
-    memcpy(mxGetPrSafe(plhs[2]), ret.gradient().gradient().value().data(), 
-           sizeof(double)*36);
-  }
+  else
+    throw std::runtime_error("can't handle requested number of output arguments");
 }

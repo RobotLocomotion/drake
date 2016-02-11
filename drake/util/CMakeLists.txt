@@ -58,9 +58,9 @@ endif()
 
 drake_install_headers(drakeGradientUtil.h)
 
-add_library_with_exports(LIB_NAME drakeGeometryUtil SOURCE_FILES drakeGeometryUtil.cpp expmap2quat.cpp)
+add_library_with_exports(LIB_NAME drakeGeometryUtil SOURCE_FILES drakeGeometryUtil.cpp)
 pods_install_libraries(drakeGeometryUtil)
-drake_install_headers(drakeGeometryUtil.h expmap2quat.h)
+drake_install_headers(drakeGeometryUtil.h)
 pods_install_pkg_config_file(drake-geometry-util
   LIBS -ldrakeGeometryUtil
   REQUIRES
@@ -73,8 +73,6 @@ pods_install_pkg_config_file(drake-convex-hull
   LIBS -ldrakeConvexHull
   REQUIRES
   VERSION 0.0.1)
-
-drake_install_headers(GradientVar.h)
 
 if (MATLAB_FOUND)
   add_mex(cylindrical2cartesianmex cylindrical2cartesianmex.cpp)

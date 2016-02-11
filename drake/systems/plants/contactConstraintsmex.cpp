@@ -7,6 +7,7 @@
 
 using namespace std;
 using namespace Eigen;
+using namespace Drake;
 
 template<typename Scalar>
 using MatrixX = Matrix<Scalar, Dynamic, Dynamic>;
