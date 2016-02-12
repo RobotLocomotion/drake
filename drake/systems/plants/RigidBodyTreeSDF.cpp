@@ -50,8 +50,7 @@ void parseSDFInertial(shared_ptr<RigidBody> body, XMLElement* node, RigidBodyTre
     parseScalarValue(inertia, "izz", I(2, 2));
   }
 
-  auto bodyI = transformSpatialInertia(T_link.inverse()*T, static_cast<Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type*>(NULL), I);
-  body->I = bodyI.value();
+  body->I = transformSpatialInertia(T_link.inverse()*T, I);
 }
 
 void parseSDFLink(RigidBodyTree * model, XMLElement* node, const map<string, Vector4d, less<string>, aligned_allocator<pair<string, Vector4d> > >& materials, const map<string,string>& package_map, PoseMap& pose_map, const string& root_dir)
