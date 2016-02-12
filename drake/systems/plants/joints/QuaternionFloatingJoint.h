@@ -53,37 +53,19 @@ public:
   void qdot2v(const Eigen::MatrixBase<DerivedQ> & q,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic, 0, DrakeJoint::MAX_NUM_VELOCITIES, DrakeJoint::MAX_NUM_POSITIONS> &qdot_to_v,
               Eigen::Matrix<typename DerivedQ::Scalar, Eigen::Dynamic, Eigen::Dynamic> *dqdot_to_v) const {
+    if (dqdot_to_v) {
+      throw std::runtime_error("no longer supported");
+    }
+
     qdot_to_v.resize(getNumVelocities(), getNumPositions());
     typedef typename DerivedQ::Scalar Scalar;
     auto quat = q.template middleRows<QUAT_SIZE>(SPACE_DIMENSION);
     auto R = quat2rotmat(quat);
 
     Eigen::Matrix<Scalar, 4, 1> quattilde;
-    Eigen::Matrix<Scalar, SPACE_DIMENSION, QUAT_SIZE> M;
-    Eigen::Matrix<Scalar, SPACE_DIMENSION, QUAT_SIZE> RTransposeM;
-
     typename Gradient<Eigen::Matrix<Scalar, 4, 1>, QUAT_SIZE, 1>::type dquattildedquat;
-
-    if (dqdot_to_v) {
-      typename Gradient<Eigen::Matrix<Scalar, 4, 1>, QUAT_SIZE, 2>::type ddquattildedquat;
-      normalizeVec(quat, quattilde, &dquattildedquat, &ddquattildedquat);
-      auto dR = dquat2rotmat(quat);
-      typename Gradient<Eigen::Matrix<Scalar, SPACE_DIMENSION, QUAT_SIZE>, QUAT_SIZE, 1>::type dM;
-      quatdot2angularvelMatrix(quat, M, &dM);
-
-      RTransposeM.noalias() = R.transpose() * M;
-      auto dRTranspose = transposeGrad(dR, R.rows());
-      auto dRTransposeM = matGradMultMat(R.transpose(), M, dRTranspose, dM);
-      auto dRTransposeMdquattildedquat = matGradMultMat(RTransposeM, dquattildedquat, dRTransposeM, ddquattildedquat);
-      dqdot_to_v->setZero(qdot_to_v.size(), getNumPositions());
-      setSubMatrixGradient<4>(*dqdot_to_v, dRTranspose, intRange<3>(3), intRange<3>(0), qdot_to_v.rows(), 3);
-      setSubMatrixGradient<4>(*dqdot_to_v, dRTransposeMdquattildedquat, intRange<3>(0), intRange<4>(3), qdot_to_v.rows(), 3);
-    }
-    else {
-      normalizeVec(quat, quattilde, &dquattildedquat);
-      quatdot2angularvelMatrix(quat, M);
-      RTransposeM.noalias() = R.transpose() * M;
-    }
+    normalizeVec(quat, quattilde, &dquattildedquat);
+    auto RTransposeM = (R.transpose() * quatdot2angularvelMatrix(quat)).eval();
     qdot_to_v.template block<3, 3>(0, 0).setZero();
     qdot_to_v.template block<3, 4>(0, 3).noalias() = RTransposeM * dquattildedquat;
     qdot_to_v.template block<3, 3>(3, 0) = R.transpose();

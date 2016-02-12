@@ -8,6 +8,10 @@ using namespace Eigen;
 
 namespace DrakeShapes
 {
+  const int Geometry::NUM_BBOX_POINTS  = 8;
+  const int Sphere::NUM_POINTS = 1;
+  const int Capsule::NUM_POINTS = 2;
+
   Geometry::Geometry() : shape(UNKNOWN) {}
 
   Geometry::Geometry(const Geometry& other)

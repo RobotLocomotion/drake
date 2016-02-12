@@ -362,6 +362,19 @@ public:
   void getTerrainContactPoints(const RigidBody& body, Eigen::Matrix3Xd &terrain_points) const;
 
   bool collisionRaycast(const KinematicsCache<double>& cache, const Eigen::Matrix3Xd &origins, const Eigen::Matrix3Xd &ray_endpoints, Eigen::VectorXd &distances, bool use_margins=false);
+  bool collisionRaycast(const KinematicsCache<double>& cache, const Eigen::Matrix3Xd &origins, const Eigen::Matrix3Xd &ray_endpoints, Eigen::VectorXd &distances, Eigen::Matrix3Xd &normals, bool use_margins=false);
+
+  /** collisionDetectFromPoints
+   * @brief Computes the (signed) distance from the given points to the nearest body in the RigidBodyTree.
+   */
+  void collisionDetectFromPoints(const KinematicsCache<double>& cache,
+                       const Eigen::Matrix3Xd& points,
+                       Eigen::VectorXd& phi,
+                       Eigen::Matrix3Xd& normal,
+                       Eigen::Matrix3Xd& x,
+                       Eigen::Matrix3Xd& body_x,
+                       std::vector<int>& body_idx,
+                       bool use_margins);
 
   bool collisionDetect(const KinematicsCache<double>& cache,
                        Eigen::VectorXd& phi,

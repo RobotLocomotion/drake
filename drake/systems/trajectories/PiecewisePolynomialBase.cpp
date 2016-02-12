@@ -18,11 +18,11 @@ PiecewisePolynomialBase::~PiecewisePolynomialBase()
   // empty
 }
 
-int PiecewisePolynomialBase::getNumberOfCoefficients(int segment_number, Eigen::DenseIndex row, Eigen::DenseIndex col) const {
+int PiecewisePolynomialBase::getNumberOfCoefficients(int segment_number, Eigen::Index row, Eigen::Index col) const {
   return getSegmentPolynomialDegree(segment_number, row, col) + 1;
 }
 
-int PiecewisePolynomialBase::getTotalNumberOfCoefficients(Eigen::DenseIndex row, Eigen::DenseIndex col) const {
+int PiecewisePolynomialBase::getTotalNumberOfCoefficients(Eigen::Index row, Eigen::Index col) const {
   int ret = 0;
 
   for (int i = 0; i < getNumberOfSegments(); i++) {

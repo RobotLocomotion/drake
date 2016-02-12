@@ -76,6 +76,7 @@ int main(int argc, char* argv[]) {
   for (int i=2; i<argc; i++)
     tree->addRobotFromURDF(argv[i],DrakeJoint::FIXED);  // add environment
 
+  if (argc < 3)
   { // add flat terrain
     double box_width = 1000;
     double box_depth = 10;
@@ -95,7 +96,7 @@ int main(int argc, char* argv[]) {
       Kd(getNumInputs(*rigid_body_sys),tree->num_velocities);
   Matrix<double,Eigen::Dynamic,3> map_driving_cmd_to_x_d(tree->num_positions+tree->num_velocities,3);
   { // setup PD controller for throttle and steering
-    double kpSteering = 100, kdSteering = 20, kThrottle = 100;
+    double kpSteering = 400, kdSteering = 80, kThrottle = 100;
     Kp.setZero();
     Kd.setZero();
     map_driving_cmd_to_x_d.setZero();

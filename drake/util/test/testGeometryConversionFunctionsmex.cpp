@@ -1,6 +1,7 @@
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeMexUtil.h"
-#include "mex.h"
+#include "drake/core/Gradient.h"
+
 using namespace Eigen;
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
@@ -29,7 +30,11 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   Matrix<double, SPACE_DIMENSION, RPY_SIZE> rpyd2omega;
   Gradient<Matrix<double,SPACE_DIMENSION,RPY_SIZE>,RPY_SIZE,1>::type drpyd2omega;
   rpydot2angularvelMatrix(rpy,rpyd2omega,&drpyd2omega);
-  quatdot2angularvelMatrix(q, qd2omega, &dqd2omega);
+
+  auto qd2omega_autodiff = quatdot2angularvelMatrix(Drake::initializeAutoDiff(q));
+  qd2omega = autoDiffToValueMatrix(qd2omega_autodiff);
+  dqd2omega = autoDiffToGradientMatrix(qd2omega_autodiff);
+
   auto R = quat2rotmat(q);
   auto dq2R = dquat2rotmat(q);
   Matrix<double, RotmatSize, Dynamic> dR = dq2R * dq;

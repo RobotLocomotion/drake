@@ -186,7 +186,7 @@ public:
     rigid_body_constraint->getRobotPointer()->doKinematics(kinsol);
     VectorXd y; MatrixXd dy;
     rigid_body_constraint->eval(nullptr,kinsol,y,dy);
-    initTaylorVecXd(y,dy*autoDiffToGradientMatrix(tq),ty);
+    initializeAutoDiffGivenGradientMatrix(y, (dy * autoDiffToGradientMatrix(tq)).eval(), ty);
   }
 
 private:

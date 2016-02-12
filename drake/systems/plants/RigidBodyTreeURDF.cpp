@@ -83,8 +83,7 @@ void parseInertial(shared_ptr<RigidBody> body, XMLElement* node, RigidBodyTree *
     parseScalarAttribute(inertia, "izz", I(2, 2));
   }
 
-  auto bodyI = transformSpatialInertia(T, static_cast<Gradient<Isometry3d::MatrixType, Eigen::Dynamic>::type*>(NULL), I);
-  body->I = bodyI.value();
+  body->I = transformSpatialInertia(T, I);
 }
 
 bool parseMaterial(XMLElement* node, map<string, Vector4d, less<string>, aligned_allocator<pair<string, Vector4d> > > & materials)
@@ -333,7 +332,7 @@ void setLimits(XMLElement *node, FixedAxisOneDoFJoint<JointType> *fjoint) {
 }
 
 template <typename JointType>
-void setDynamics(RigidBodyTree *model, XMLElement *node, FixedAxisOneDoFJoint<JointType> *fjoint) {
+void setDynamics(XMLElement *node, FixedAxisOneDoFJoint<JointType> *fjoint) {
   XMLElement* dynamics_node = node->FirstChildElement("dynamics");
   if (fjoint != nullptr && dynamics_node) {
     double damping=0.0, coulomb_friction=0.0, coulomb_window=0.0;
@@ -399,14 +398,14 @@ void parseJoint(RigidBodyTree * model, XMLElement* node)
 
   if (type.compare("revolute") == 0 || type.compare("continuous") == 0) {
     FixedAxisOneDoFJoint<RevoluteJoint>* fjoint = new RevoluteJoint(name, Ttree, axis);
-    setDynamics(model, node, fjoint);
+    setDynamics(node, fjoint);
     setLimits(node, fjoint);
     joint = fjoint;
   } else if (type.compare("fixed") == 0) {
     joint = new FixedJoint(name, Ttree);
   } else if (type.compare("prismatic") == 0) {
     FixedAxisOneDoFJoint<PrismaticJoint>* fjoint = new PrismaticJoint(name, Ttree, axis);
-    setDynamics(model, node, fjoint);
+    setDynamics(node, fjoint);
     setLimits(node, fjoint);
     joint = fjoint;
   } else if (type.compare("floating") == 0) {

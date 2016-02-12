@@ -65,10 +65,9 @@ for i = 1 : length(fields)
   valuecheck(data_out_i.dmotion_subspace_dot_times_vdq, dmotion_subspace_dot_times_vdq);
   valuecheck(data_out_i.dmotion_subspace_dot_times_vdv, dmotion_subspace_dot_times_vdv);
   
-  [qdot_to_v, dqdot_to_v] = jointQdot2v(body, q);
+  qdot_to_v = jointQdot2v(body, q);
   valuecheck(data_out_i.qdot_to_v, qdot_to_v);
-  valuecheck(data_out_i.dqdot_to_v, dqdot_to_v);
-  
+
   [v_to_qdot, dv_to_qdot] = jointV2qdot(body, q);
   valuecheck(data_out_i.v_to_qdot, v_to_qdot);
   valuecheck(data_out_i.dv_to_qdot, dv_to_qdot);

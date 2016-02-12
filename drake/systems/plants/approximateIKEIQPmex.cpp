@@ -20,8 +20,6 @@
 #include "eiquadprog.hpp"
 #endif
 
-#define _USE_MATH_DEFINES
-
 #define MAX_CONSTRS 1000
 #define MAX_ITER    20
 using namespace std;

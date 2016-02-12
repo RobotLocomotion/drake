@@ -7,9 +7,6 @@ add_executable(testDrakeGeometryUtil testDrakeGeometryUtil.cpp)
 target_link_libraries(testDrakeGeometryUtil drakeGeometryUtil)
 add_test(NAME testDrakeGeometryUtil COMMAND testDrakeGeometryUtil)
 
-add_executable(testGradientVar testGradientVar.cpp)
-#add_test(NAME testGradientVar COMMAND testGradientVar)
-
 add_executable(testDrakeGradientUtil testDrakeGradientUtil.cpp)
 target_link_libraries(testDrakeGradientUtil drakeGeometryUtil)
 add_test(NAME testDrakeGradientUtil COMMAND testDrakeGradientUtil)

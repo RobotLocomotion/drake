@@ -81,7 +81,17 @@ if (kinsol.mex)
       end
       dJ = reshape(dJ, size(J, 1), []); % convert to strange second derivative output format
     else
-      J = J(:, 1 : nq); % gradient only w.r.t q
+      if isempty(J)
+        % This happens when we transform to the same frame: derivatives
+        % vector never gets resized in C++ because the relative transform
+        % does not depend on q or v.
+        % This is the best place to fix it, because in C++ we don't have
+        % the convention that AutoDiff derivative vectors always correspond
+        % to q and/or v.
+        J = zeros(numel(x), nq);
+      else
+        J = J(:, 1 : nq); % gradient only w.r.t q
+      end
     end
   else
     if nargout > 1

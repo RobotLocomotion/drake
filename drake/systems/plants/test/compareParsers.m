@@ -35,6 +35,10 @@ for urdf=urdfs'
     disp(' this model had force elements (not implemented in c++ yet)'); 
     continue;
   end
+  if r.getNumPositions == 0
+    disp(' this model is completely static (zero degrees of freedom), so will be skipped');
+    continue;
+  end
   
   compareParsersmex(r.mex_model_ptr,urdffile,'rpy');
 end

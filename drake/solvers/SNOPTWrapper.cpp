@@ -19,20 +19,160 @@ namespace snopt {
 // todo:  return more information that just the solution (INFO, infeasible constraints, ...)
 // todo:  avoid all dynamic allocation
 
+// snopt minimum workspace requirements
+unsigned int constexpr snopt_mincw = 500;
+unsigned int constexpr snopt_miniw = 500;
+unsigned int constexpr snopt_minrw = 500;
+
 bool Drake::OptimizationProblem::NonlinearProgram::hasSNOPT() const { return true; }
 
 using namespace std;
 using namespace Eigen;
 using namespace Drake;
 
-// NOTE: all snopt calls will use this shared memory... so this code is NOT THREAD SAFE
-const Drake::OptimizationProblem* current_problem = NULL;
-static unique_ptr<snopt::doublereal []> rw;
-static unique_ptr<snopt::integer []> iw;
-static unique_ptr<char []> cw;
-static snopt::integer lenrw=0;
-static snopt::integer leniw=0;
-static snopt::integer lencw=0;
+struct SNOPTData: public Drake::OptimizationProblem::SolverData {
+  std::vector<char> cw;
+  std::vector<snopt::integer> iw;
+  std::vector<snopt::doublereal> rw;
+  snopt::integer lencw=0;
+  snopt::integer leniw=0;
+  snopt::integer lenrw=0;
+
+  std::vector<snopt::doublereal> x;
+  std::vector<snopt::doublereal> xlow;
+  std::vector<snopt::doublereal> xupp;
+  std::vector<snopt::doublereal> xmul;
+  std::vector<snopt::integer> xstate;
+
+  std::vector<snopt::doublereal> F;
+  std::vector<snopt::doublereal> Flow;
+  std::vector<snopt::doublereal> Fupp;
+  std::vector<snopt::doublereal> Fmul;
+  std::vector<snopt::integer> Fstate;
+
+  std::vector<snopt::doublereal> A;
+  std::vector<snopt::integer> iAfun;
+  std::vector<snopt::integer> jAvar;
+
+  std::vector<snopt::integer> iGfun;
+  std::vector<snopt::integer> jGvar;
+
+  void min_alloc_w(snopt::integer mincw,
+                   snopt::integer miniw,
+                   snopt::integer minrw) {
+    if (lencw < mincw) {
+      lencw = mincw;
+      cw.resize(8*lencw);
+    }
+    if (leniw < miniw) {
+      leniw = miniw;
+      iw.resize(leniw);
+    }
+    if (lenrw < minrw) {
+      lenrw = minrw;
+      rw.resize(lenrw);
+    }
+  }
+
+  void min_alloc_x(snopt::integer nx) {
+    if (nx > x.size()) {
+      x.resize(nx);
+      xlow.resize(nx);
+      xupp.resize(nx);
+      xmul.resize(nx);
+      xstate.resize(nx);
+    }
+  }
+
+  void min_alloc_F(snopt::integer nF) {
+    if (nF > F.size()) {
+      F.resize(nF);
+      Flow.resize(nF);
+      Fupp.resize(nF);
+      Fmul.resize(nF);
+      Fstate.resize(nF);
+    }
+  }
+
+  void min_alloc_A(snopt::integer nA) {
+    if (nA > A.size()) {
+      A.resize(nA);
+      iAfun.resize(nA);
+      jAvar.resize(nA);
+    }
+  }
+
+  void min_alloc_G(snopt::integer nG) {
+    if (nG > iGfun.size()) {
+      iGfun.resize(nG);
+      jGvar.resize(nG);
+    }
+  }
+
+};
+
+struct SNOPTRun {
+  SNOPTRun(SNOPTData& d): D(d) {
+    // Minimum default allocation needed by snInit
+    D.min_alloc_w(snopt_mincw, snopt_miniw*1000, snopt_minrw*1000);
+
+    snInit();
+  }
+
+  ~SNOPTRun() {
+    if (iPrint >= 0) {
+      snopt::snclose_(&iPrint);
+    }
+  }
+
+  SNOPTData& D;
+
+  snopt::integer iPrint=-1;
+  snopt::integer iSumm=-1;
+
+  snopt::integer snSeti(std::string const& opt, snopt::integer val) {
+    snopt::integer opt_len = static_cast<snopt::integer>(opt.length());
+    snopt::integer err = 0;
+    snopt::snseti_(opt.c_str(), &val, &iPrint, &iSumm, &err,
+                   D.cw.data(), &D.lencw,
+                   D.iw.data(), &D.leniw,
+                   D.rw.data(), &D.lenrw,
+                   opt_len, 8*D.lencw);
+    return err;
+  }
+
+  snopt::integer snSetr(std::string const& opt, snopt::doublereal val) {
+    snopt::integer opt_len = static_cast<snopt::integer>(opt.length());
+    snopt::integer err = 0;
+    snopt::snsetr_(opt.c_str(), &val, &iPrint, &iSumm, &err,
+                   D.cw.data(), &D.lencw,
+                   D.iw.data(), &D.leniw,
+                   D.rw.data(), &D.lenrw,
+                   opt_len, 8*D.lencw);
+    return err;
+  }
+
+  void snInit() {
+    snopt::sninit_(&iPrint, &iSumm,
+                   D.cw.data(), &D.lencw,
+                   D.iw.data(), &D.leniw,
+                   D.rw.data(), &D.lenrw,
+                   8*D.lencw);
+  }
+
+  snopt::integer snMemA(snopt::integer nF, snopt::integer nx, snopt::integer nxname,
+                        snopt::integer nFname, snopt::integer neA, snopt::integer neG,
+                        snopt::integer* mincw, snopt::integer* miniw, snopt::integer* minrw) {
+    snopt::integer info = 0;
+    snopt::snmema_(&info, &nF, &nx, &nxname, &nFname, &neA, &neG,
+                   mincw, miniw, minrw,
+                   D.cw.data(), &D.lencw,
+                   D.iw.data(), &D.leniw,
+                   D.rw.data(), &D.lenrw,
+                   8*D.lencw);
+    return info;
+  }
+};
 
 static int snopt_userfun(snopt::integer *Status, snopt::integer *n, snopt::doublereal x[],
                          snopt::integer *needF, snopt::integer *neF, snopt::doublereal F[],
@@ -41,6 +181,15 @@ static int snopt_userfun(snopt::integer *Status, snopt::integer *n, snopt::doubl
                          snopt::integer iu[], snopt::integer *leniu,
                          snopt::doublereal ru[], snopt::integer *lenru)
 {
+  // Our snOptA call passes the snopt workspace as the user workspace and
+  // reserves one 8-char of space to pass the problem pointer.
+  Drake::OptimizationProblem const* current_problem = NULL;
+  {
+    char* const pcp = reinterpret_cast<char*>(&current_problem);
+    char const* const cu_cp = cu+8*snopt_mincw;
+    std::copy(cu_cp, cu_cp+sizeof(current_problem), pcp);
+  }
+
   size_t constraint_index=0, grad_index=0;  // constraint index starts at 1 because the objective is the first row
   snopt::integer i;
   VectorXd xvec(*n);
@@ -51,7 +200,7 @@ static int snopt_userfun(snopt::integer *Status, snopt::integer *n, snopt::doubl
   memset(G,0,sizeof(*n)*sizeof(snopt::doublereal));
 
   // evaluate objective
-  auto tx = initTaylorVecXd(xvec);
+  auto tx = initializeAutoDiff(xvec);
   TaylorVecXd ty(1), this_x(*n);
   for (auto const& obj : current_problem->getGenericObjectives() ) {
     size_t index=0;
@@ -94,33 +243,28 @@ static int snopt_userfun(snopt::integer *Status, snopt::integer *n, snopt::doubl
   return 0;
 }
 
-void mysnseti(const char* strOpt,snopt::integer val,snopt::integer* iPrint, snopt::integer* iSumm, snopt::integer* INFO_snopt, char* cw, snopt::integer *lencw, snopt::integer* iw, snopt::integer *leniw, snopt::doublereal* rw, snopt::integer *lenrw)
-{
-  snopt::integer strOpt_len = static_cast<snopt::integer>(strlen(strOpt));
-  snopt::snseti_(strOpt,&val,iPrint,iSumm,INFO_snopt,cw,lencw,iw,leniw,rw,lenrw,strOpt_len,8*(*lencw));
-}
-void mysnsetr(const char* strOpt,snopt::doublereal val,snopt::integer* iPrint, snopt::integer* iSumm, snopt::integer* INFO_snopt, char* cw, snopt::integer *lencw, snopt::integer* iw, snopt::integer *leniw, snopt::doublereal* rw, snopt::integer *lenrw)
-{
-  snopt::integer strOpt_len = static_cast<snopt::integer>(strlen(strOpt));
-  snopt::snsetr_(strOpt,&val,iPrint,iSumm,INFO_snopt,cw,lencw,iw,leniw,rw,lenrw,strOpt_len,8*(*lencw));
-}
-
 bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationProblem &prog) const {
-  current_problem = &prog;
+  auto d = prog.getSolverData<SNOPTData>();
+  SNOPTRun cur(*d);
 
-  if (lenrw==0) { // then initialize (sninit needs some default allocation)
-    lenrw = 500000;
-    rw.reset(new snopt::doublereal[lenrw]);
-    leniw = 500000;
-    iw.reset(new snopt::integer[leniw]);
-    lencw = 500;
-    cw.reset(new char[8*lencw]);
+  Drake::OptimizationProblem const* current_problem = &prog;
+
+  // Set the "maxcu" value to tell snopt to reserve one 8-char entry of user
+  // workspace.  We are then allowed to use cw(snopt_mincw+1:maxcu), as
+  // expressed in Fortran array slicing.   Use the space to pass our problem
+  // instance pointer to our userfun.
+  cur.snSeti("User character workspace", snopt_mincw + 1);
+  {
+    char const* const pcp = reinterpret_cast<char*>(&current_problem);
+    char* const cu_cp = d->cw.data()+8*snopt_mincw;
+    std::copy(pcp, pcp+sizeof(current_problem), cu_cp);
   }
 
   snopt::integer nx = prog.num_vars;
-  snopt::doublereal* x    = new snopt::doublereal[nx];
-  snopt::doublereal* xlow = new snopt::doublereal[nx];
-  snopt::doublereal* xupp = new snopt::doublereal[nx];
+  d->min_alloc_x(nx);
+  snopt::doublereal* x    = d->x.data();
+  snopt::doublereal* xlow = d->xlow.data();
+  snopt::doublereal* xupp = d->xupp.data();
   for(int i=0;i<nx;i++)
   {
     x[i] = static_cast<snopt::doublereal>(prog.x_initial_guess(i));
@@ -149,14 +293,16 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   for (auto const& c : prog.linear_equality_constraints) { num_linear_constraints += c->getNumConstraints(); }
 
   snopt::integer nF = 1+num_nonlinear_constraints+num_linear_constraints;
-  snopt::doublereal* Flow = new snopt::doublereal[nF];
-  snopt::doublereal* Fupp = new snopt::doublereal[nF];
+  d->min_alloc_F(nF);
+  snopt::doublereal* Flow = d->Flow.data();
+  snopt::doublereal* Fupp = d->Fupp.data();
   Flow[0] = static_cast<snopt::doublereal>(-std::numeric_limits<double>::infinity());
   Fupp[0] = static_cast<snopt::doublereal>(std::numeric_limits<double>::infinity());
 
   snopt::integer lenG = static_cast<snopt::integer>(max_num_gradients);
-  snopt::integer* iGfun = new snopt::integer[lenG];
-  snopt::integer* jGvar = new snopt::integer[lenG];
+  d->min_alloc_G(lenG);
+  snopt::integer* iGfun = d->iGfun.data();
+  snopt::integer* jGvar = d->jGvar.data();
   for (snopt::integer i=0; i<nx; i++) {
     iGfun[i]=1;
     jGvar[i]=i+1;
@@ -214,9 +360,10 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   }
 
   snopt::integer lenA = static_cast<snopt::integer>(tripletList.size());
-  snopt::doublereal* A     = new snopt::doublereal[lenA];
-  snopt::integer*    iAfun = new snopt::integer[lenA];
-  snopt::integer*    jAvar = new snopt::integer[lenA];
+  d->min_alloc_A(lenA);
+  snopt::doublereal* A     = d->A.data();
+  snopt::integer*    iAfun = d->iAfun.data();
+  snopt::integer*    jAvar = d->jAvar.data();
   size_t A_index = 0;
   for (auto const & it : tripletList) {
     A[A_index] = it.value();
@@ -225,54 +372,38 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
     A_index++;
   }
 
-  snopt::integer INFO_snopt;
   snopt::integer nxname = 1, nFname = 1, npname = 0;
   char xnames[8*1];  // should match nxname
   char Fnames[8*1];  // should match nFname
   char Prob[200]="drake.out";
 
-  snopt::integer iSumm = -1;
-  snopt::integer iPrint = -1;
-
   snopt::integer nS,nInf;
   snopt::doublereal sInf;
   if (true) { // print to output file (todo: make this an option)
-    iPrint = 9;
+    cur.iPrint = 9;
     char print_file_name[50] = "snopt.out";
     snopt::integer print_file_name_len = static_cast<snopt::integer>(strlen(print_file_name));
-    snopt::snopenappend_(&iPrint,print_file_name,&INFO_snopt,print_file_name_len);
-    mysnseti("Major print level",static_cast<snopt::integer>(11),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
-    mysnseti("Print file",iPrint,&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
+    snopt::integer inform;
+    snopt::snopenappend_(&cur.iPrint,print_file_name,&inform,print_file_name_len);
+    cur.snSeti("Major print level",static_cast<snopt::integer>(11));
+    cur.snSeti("Print file",cur.iPrint);
   }
 
   snopt::integer minrw,miniw,mincw;
-  snopt::sninit_(&iPrint,&iSumm,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw,8*lencw);
-  snopt::snmema_(&INFO_snopt, &nF, &nx, &nxname, &nFname, &lenA, &lenG, &mincw, &miniw, &minrw, cw.get(), &lencw, iw.get(), &leniw, rw.get(), &lenrw, 8 * lencw);
-  if (minrw>lenrw) {
-    //mexPrintf("reallocation rw with size %d\n",minrw);
-    lenrw = minrw;
-    rw.reset(new snopt::doublereal[lenrw]);
-  }
-  if (miniw>leniw) {
-    //mexPrintf("reallocation iw with size %d\n",miniw);
-    leniw = miniw;
-    iw.reset(new snopt::integer[leniw]);
-  }
-  if (mincw>lencw) {
-    //mexPrintf("reallocation cw with size %d\n",mincw);
-    lencw = mincw;
-    cw.reset(new char[8*lencw]);
-  }
-  snopt::sninit_(&iPrint,&iSumm,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw,8*lencw);
+  cur.snMemA(nF, nx, nxname, nFname, lenA, lenG, &mincw, &miniw, &minrw);
+  d->min_alloc_w(mincw, miniw, minrw);
+  cur.snSeti("Total character workspace", d->lencw);
+  cur.snSeti("Total integer workspace", d->leniw);
+  cur.snSeti("Total real workspace", d->lenrw);
 
   snopt::integer Cold = 0;
-  snopt::doublereal *xmul = new snopt::doublereal[nx];
-  snopt::integer *xstate = new snopt::integer[nx];
+  snopt::doublereal *xmul = d->xmul.data();
+  snopt::integer *xstate = d->xstate.data();
   memset(xstate,0,sizeof(snopt::integer)*nx);
 
-  snopt::doublereal *F      = new snopt::doublereal[nF];
-  snopt::doublereal *Fmul   = new snopt::doublereal[nF];
-  snopt::integer    *Fstate = new snopt::integer[nF];
+  snopt::doublereal *F      = d->F.data();
+  snopt::doublereal *Fmul   = d->Fmul.data();
+  snopt::integer    *Fstate = d->Fstate.data();
   memset(Fstate,0,sizeof(snopt::integer)*nF);
 
   snopt::doublereal ObjAdd = 0.0;
@@ -295,6 +426,7 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   mysnsetr("Linesearch tolerance",static_cast<snopt::doublereal>(*mxGetPr(mxGetField(prhs[13],0,"LinesearchTolerance"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
 */
 
+  snopt::integer info;
   snopt::snopta_
           (&Cold, &nF, &nx, &nxname, &nFname,
            &ObjAdd, &ObjRow, Prob, snopt_userfun,
@@ -302,14 +434,16 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
            iGfun, jGvar, &lenG, &lenG,
            xlow, xupp, xnames, Flow, Fupp, Fnames,
            x, xstate, xmul, F, Fstate, Fmul,
-           &INFO_snopt, &mincw, &miniw, &minrw,
+           &info, &mincw, &miniw, &minrw,
            &nS, &nInf, &sInf,
-           cw.get(), &lencw, iw.get(), &leniw, rw.get(), &lenrw,
-           cw.get(), &lencw, iw.get(), &leniw, rw.get(), &lenrw,
+           d->cw.data(), &d->lencw, d->iw.data(), &d->leniw, d->rw.data(), &d->lenrw,
+           // Pass the snopt workspace as the user workspace.  We already set
+           // the maxcu option to reserve some of it for our user code.
+           d->cw.data(), &d->lencw, d->iw.data(), &d->leniw, d->rw.data(), &d->lenrw,
            npname, 8*nxname, 8*nFname,
-            8*lencw,8*lencw);
+            8*d->lencw,8*d->lencw);
 
-  cout << "SNOPT INFO: " << INFO_snopt << endl;
+  cout << "SNOPT INFO: " << info << endl;
 
   VectorXd sol(nx);
   for (int i=0; i<nx; i++) { sol(i) = static_cast<double>( x[i] ); }
@@ -317,26 +451,6 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
 //  prog.printSolution();
 
   // todo: extract the other useful quantities, too.
-
-  delete[] x;
-  delete[] xlow;
-  delete[] xupp;
-  delete[] Flow;
-  delete[] Fupp;
-  delete[] A;
-  delete[] iAfun;
-  delete[] jAvar;
-  delete[] iGfun;
-  delete[] jGvar;
-  delete[] xmul;
-  delete[] xstate;
-  delete[] F;
-  delete[] Fmul;
-  delete[] Fstate;
-
-  if(iPrint>=0) {
-    snopt::snclose_(&iPrint);
-  }
 
   return true;
 }
