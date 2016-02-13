@@ -4,14 +4,14 @@
       <pose frame=''>0 0 0 0 -0 0</pose>
       <inertial>
         <pose frame=''>0 0 0 0 -0 0</pose>
-        <mass>1</mass>
+        <mass>0</mass>
         <inertia>
-          <ixx>0.00666667</ixx>
+          <ixx>0</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.00666667</iyy>
+          <iyy>0</iyy>
           <iyz>0</iyz>
-          <izz>0.00666667</izz>
+          <izz>0</izz>
         </inertia>
       </inertial>
       <collision name='base_link_collision'>
@@ -72,6 +72,7 @@
         <limit>
           <lower>-1e+16</lower>
           <upper>1e+16</upper>
+          <effort>0</effort>
         </limit>
         <dynamics>
           <damping>0.1</damping>

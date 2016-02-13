@@ -277,6 +277,14 @@ void parseSDFJoint(RigidBodyTree * model, XMLElement* node, PoseMap& pose_map)
     if (parseScalarValue(axis_node, "in_parent_model_frame", in_parent_model_frame) && in_parent_model_frame > 0.0) {
       axis = T.inverse()*axis;
     }
+
+    double effort_limit = std::numeric_limits<double>::infinity();
+    XMLElement* limit_node = axis_node->FirstChildElement("limit");
+    if (limit_node) parseScalarValue(limit_node,"effort",effort_limit);
+    if (effort_limit != 0.0) {
+      RigidBodyActuator actuator(name,child,1.0,-effort_limit,effort_limit);
+      model->actuators.push_back(actuator);
+    }
   }
 
   // T_joint_to_parent = T_world_to_parent * T_joint_to_world

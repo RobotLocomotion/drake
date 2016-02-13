@@ -21,10 +21,8 @@ int main(int argc, char* argv[])
   valuecheck(r1.getNumOutputs(),r2.getNumOutputs());
 
   // for debugging:
-  /*
   r1.getRigidBodyTree()->drawKinematicTree("/tmp/r1.dot");
   r2.getRigidBodyTree()->drawKinematicTree("/tmp/r2.dot");
-  */
   // I ran this at the console to see the output:
   // dot -Tpng -O /tmp/r1.dot; dot -Tpng -O /tmp/r2.dot; open /tmp/r1.dot.png /tmp/r2.dot.png
 

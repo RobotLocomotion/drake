@@ -24,7 +24,6 @@ int main(int argc, char* argv[])
   for (int i=0; i<1000; i++) {
     auto x0 = getRandomVector<AcrobotState>();
     auto u0 = getRandomVector<AcrobotInput>();
-    u0.tau = 0;
 
     RigidBodySystem::StateVector<double> x0_rb = toEigen(x0);
     RigidBodySystem::InputVector<double> u0_rb = toEigen(u0);

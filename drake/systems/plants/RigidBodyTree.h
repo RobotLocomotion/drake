@@ -26,12 +26,13 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 class DRAKERBM_EXPORT RigidBodyActuator
 {
 public:
-  RigidBodyActuator(std::string _name, std::shared_ptr<RigidBody> _body, double _reduction = 1.0) :
-    name(_name), body(_body), reduction(_reduction) {};
+  RigidBodyActuator(std::string name, std::shared_ptr<RigidBody> body, double reduction = 1.0, double lower_limit = -std::numeric_limits<double>::infinity(), double upper_limit = std::numeric_limits<double>::infinity()) :
+    name(name), body(body), reduction(reduction), lower_limit(lower_limit), upper_limit(upper_limit) {};
 
   std::string name;
   std::shared_ptr<RigidBody> body;
   double reduction;
+  double lower_limit, upper_limit;
 };
 
 class DRAKERBM_EXPORT RigidBodyLoop
