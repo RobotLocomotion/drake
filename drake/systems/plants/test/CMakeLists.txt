@@ -64,3 +64,8 @@ if (LCM_FOUND)
   target_link_libraries(testMassSpringDamper drakeRBSystem)
   add_test(NAME testMassSpringDamper COMMAND testMassSpringDamper)
 endif()
+
+add_executable(compareRigidBodySystems compareRigidBodySystems.cpp)
+target_link_libraries(compareRigidBodySystems drakeRBM)
+add_test(NAME compareAcrobotURDFtoSDF COMMAND compareRigidBodySystems Acrobot.urdf Acrobot.sdf WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/examples/Acrobot")
+
