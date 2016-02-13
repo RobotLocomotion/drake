@@ -21,15 +21,15 @@ int main(int argc, char* argv[])
   valuecheck(r1.getNumOutputs(),r2.getNumOutputs());
 
   // for debugging:
-  // r1.getRigidBodyTree()->drawKinematicTree("/tmp/r1.dot");
-  // r2.getRigidBodyTree()->drawKinematicTree("/tmp/r2.dot");
+  r1.getRigidBodyTree()->drawKinematicTree("/tmp/r1.dot");
+  r2.getRigidBodyTree()->drawKinematicTree("/tmp/r2.dot");
   // I ran this at the console to see the output:
   // dot -Tpng -O /tmp/r1.dot; dot -Tpng -O /tmp/r2.dot; open /tmp/r1.dot.png /tmp/r2.dot.png
 
   for (int i=0; i<1000; i++) {
     double t = 0.0;
-    VectorXd x = VectorXd::Random(r1.getNumStates());
-    VectorXd u = VectorXd::Random(r1.getNumInputs()); 
+    VectorXd x = getInitialState(r1);
+    VectorXd u = VectorXd::Random(r1.getNumInputs());
 
     auto xdot1 = r1.dynamics(t,x,u);
     auto xdot2 = r2.dynamics(t,x,u);

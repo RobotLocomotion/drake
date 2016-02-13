@@ -130,6 +130,7 @@ void poseValueToTransform(tinyxml2::XMLElement *node, const PoseMap& pose_map, E
     std::string frame;
     std::stringstream s(attr);
     s >> frame;
+    assert(0 && "this has not been tested yet"); // and could cause problems with the default pose assumptions in the sdf parser, which I simply had to guess
     Eigen::Isometry3d T_frame = pose_map.at(frame);  // will throw an exception if the frame is not found.  that is the desired behavior.
     T = T_frame*T;
   } else {

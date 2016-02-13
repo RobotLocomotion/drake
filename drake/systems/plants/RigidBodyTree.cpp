@@ -226,7 +226,7 @@ void RigidBodyTree::drawKinematicTree(std::string graphviz_dotfile_filename)
   dotfile << "digraph {" << endl;
   for (const auto& body : bodies) {
     dotfile << "  " << body->linkname <<  " [label=\"" << body->linkname << endl;
-    dotfile << "mass=" << body->mass << endl;
+    dotfile << "mass=" << body->mass << ", com=" << body->com.transpose() << endl;
     dotfile << "inertia=" << endl << body->I << endl;
     dotfile << "\"];" << endl;
     if (body->hasParent()) {
@@ -236,6 +236,12 @@ void RigidBodyTree::drawKinematicTree(std::string graphviz_dotfile_filename)
  //     dotfile << "axis=" << endl << joint.get().matrix() << endl;
       dotfile << "\"];" << endl;
     }
+  }
+  for (const auto& loop : loops) {
+    dotfile << "  " << loop.frameA->body->linkname << " -> " << loop.frameB->body->linkname << " [label=\"loop " << endl;
+    dotfile << "transform_to_parent_body=" << endl << loop.frameA->transform_to_body.matrix() << endl;
+    dotfile << "transform_to_child_body=" << endl << loop.frameB->transform_to_body.matrix() << endl;
+    dotfile << "\"];" << endl;
   }
   dotfile << "}" << endl;
   dotfile.close();

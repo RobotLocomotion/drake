@@ -106,51 +106,45 @@
 </visual>
 </link>
 
-<joint name="joint_0" type="continuous">
+<joint name="joint_0" type="revolute">
 <parent>base_link</parent>
 <child>link_1</child>
 <pose>0 0 2 0 0 0</pose>
-<axis><xyz>0 1 0</xyz></axis>
+<axis><xyz>0 1 0</xyz><limit><effort>100</effort></limit></axis>
 </joint>
 
-<joint name="joint_1" type="continuous">
+<joint name="joint_1" type="revolute">
 <parent>link_1</parent>
 <child>link_2</child>
 <pose>0 0 1.8 0 0 0</pose>
 <axis>
 <xyz>0 1 0</xyz>
+<limit><effort>0</effort></limit>
 <dynamics>
 <damping>0</damping>
 <friction>0</friction>
 </dynamics>
-<limit>
-<effort>100</effort>
-</limit>
 </axis>
 </joint>
 		
 		
-<joint name="joint_2" type="continuous">
+<joint name="joint_2" type="revolute">
 <parent>link_2</parent>
 <child>link_3</child>
 <pose>0 0 3.6 0 0 0</pose>
 <axis>
 <xyz>0 1 0</xyz>
+<limit><effort>0</effort></limit>
 </axis>
 </joint>
 
-<joint name="joint_3" type="continuous">
+<joint name="joint_3" type="revolute">
 <parent>base_link</parent>
 <child>link_3</child>
-<pose>0 0 2.6 0 0 0</pose>
-<axis><xyz>0 1 0</xyz></axis>
+<pose>0 0 0 0 0 0</pose>
+<axis><xyz>0 1 0</xyz><limit><effort>0</effort></limit>
+</axis>
 </joint>
-
-<transmission type="SimpleTransmission" name="joint_0_trans">
-<actuator name="control_torque" />
-<joint name ="joint_0" />
-<mechanicalReduction>1</mechanicalReduction>
-</transmission>
 
 </model>
 </sdf>

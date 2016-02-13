@@ -228,6 +228,7 @@ static int snopt_userfun(snopt::integer *Status, snopt::integer *n, snopt::doubl
       index += v.size();
     }
 
+    ty.resize(num_constraints);
     c->eval(tx,ty);
 
     for (i=0;i<num_constraints;i++) { F[constraint_index++] = static_cast<snopt::doublereal>(ty(i).value()); }
