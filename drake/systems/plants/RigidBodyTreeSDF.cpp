@@ -98,13 +98,13 @@ bool parseSDFGeometry(XMLElement* node, const PackageMap& package_map, const str
     }
     element.setGeometry(DrakeShapes::Capsule(r, l));
   } else if ((shape_node = node->FirstChildElement("mesh"))) {
-    string filename;
-    if (!parseStringValue(shape_node,"filename",filename)) {
-      cerr << "ERROR mesh element has no filename tag" << endl;
+    string uri;
+    if (!parseStringValue(shape_node,"uri",uri)) {
+      cerr << "ERROR mesh element has no uri tag" << endl;
       return false;
     }
-    string resolved_filename = resolveFilename(filename, package_map, root_dir);
-    DrakeShapes::Mesh mesh(filename, resolved_filename);
+    string resolved_filename = resolveFilename(uri, package_map, root_dir);
+    DrakeShapes::Mesh mesh(uri, resolved_filename);
 
     parseScalarValue(shape_node,"scale",mesh.scale);
     element.setGeometry(mesh);
