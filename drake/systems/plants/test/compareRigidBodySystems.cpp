@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
     VectorXd x = VectorXd::Random(r1.getNumStates());
     VectorXd u = VectorXd::Zero(r1.getNumInputs()); // todo: make this non-zero
 
-    auto xdot1 = r1.dynamics(t,x,u));
+    auto xdot1 = r1.dynamics(t,x,u);
     auto xdot2 = r2.dynamics(t,x,u);
 //    cout << "xdot = " << xdot.transpose() << endl;
 //    cout << "xdot_rb = " << xdot_rb.transpose() << endl;

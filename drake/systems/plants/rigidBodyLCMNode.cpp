@@ -8,17 +8,17 @@ using namespace std;
 using namespace Eigen;
 using namespace Drake;
 
-/** @page urdfLCMNode urdfLCMNode Application
+/** @page rigidBodyLCMNode rigidBodyLCMNode Application
  * @ingroup simulation
- * @brief Loads a urdf and simulates it, subscribing to LCM inputs and publishing LCM outputs
+ * @brief Loads a urdf/sdf and simulates it, subscribing to LCM inputs and publishing LCM outputs
  *
- * This application loads a robot from urdf and runs a simulation, with every input
+ * This application loads a robot from urdf or sdf and runs a simulation, with every input
  * with an LCM type defined subscribed to the associated LCM channels, and every
  * output with an LCM type defined publishing on the associate channels.  See @ref lcm_vector_concept.
  *
  *
 @verbatim
-Usage:  urdfLCMNode [options] full_path_to_urdf_file
+Usage:  rigidBodyLCMNode [options] full_path_to_urdf_or_sdf_file
   with (case sensitive) options:
     --base [floating_type]  // can be "FIXED, ROLLPITCHYAW,or QUATERNION" (default: QUATERNION)
 @endverbatim
@@ -26,7 +26,7 @@ Usage:  urdfLCMNode [options] full_path_to_urdf_file
 
 int main(int argc, char* argv[]) {
   if (argc < 2) {
-    std::cerr << "Usage: " << argv[0] << " [options] full_path_to_urdf_file" << std::endl;
+    std::cerr << "Usage: " << argv[0] << " [options] full_path_to_urdf_or_sdf_file" << std::endl;
     return 1;
   }
 

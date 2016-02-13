@@ -143,9 +143,9 @@ if (LCM_FOUND)
 
   pods_install_libraries(drakeRBSystem)
 
-  add_executable(urdfLCMNode urdfLCMNode.cpp)
-  target_link_libraries(urdfLCMNode drakeRBSystem)
-  pods_install_executables(urdfLCMNode)
+  add_executable(rigidBodyLCMNode rigidBodyLCMNode.cpp)
+  target_link_libraries(rigidBodyLCMNode drakeRBSystem)
+  pods_install_executables(rigidBodyLCMNode)
 endif (LCM_FOUND)
 
 add_subdirectory(test)

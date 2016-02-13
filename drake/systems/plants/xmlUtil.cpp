@@ -83,6 +83,16 @@ bool parseVectorValue(tinyxml2::XMLElement* node, const char* element_name, Eige
   return false;
 }
 
+bool parseVectorValue(tinyxml2::XMLElement* node, const char* element_name, Eigen::Vector4d &val)
+{
+  XMLElement* elnode = node->FirstChildElement(element_name);
+  if (elnode && elnode->FirstChild()) {
+    std::stringstream s(elnode->FirstChild()->Value());
+    s >> val(0) >> val(1) >> val(2) >> val(3);
+    return true;
+  }
+  return false;
+}
 
 bool parseStringValue(tinyxml2::XMLElement* node, const char* element_name, std::string &val)
 {

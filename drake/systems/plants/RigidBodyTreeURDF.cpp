@@ -86,7 +86,7 @@ void parseInertial(shared_ptr<RigidBody> body, XMLElement* node, RigidBodyTree *
   body->I = transformSpatialInertia(T, I);
 }
 
-bool parseMaterial(XMLElement* node, map<string, Vector4d, less<string>, aligned_allocator<pair<string, Vector4d> > > & materials)
+bool parseMaterial(XMLElement* node, MaterialMap& materials)
 {
   const char* attr;
   attr = node->Attribute("name");
@@ -116,7 +116,7 @@ bool parseMaterial(XMLElement* node, map<string, Vector4d, less<string>, aligned
   return true;
 }
 
-bool parseGeometry(XMLElement* node, const map<string,string>& package_map, const string& root_dir, DrakeShapes::Element& element)
+bool parseGeometry(XMLElement* node, const PackageMap& package_map, const string& root_dir, DrakeShapes::Element& element)
 {
   // DEBUG
   //cout << "parseGeometry: START" << endl;
@@ -211,7 +211,7 @@ bool parseGeometry(XMLElement* node, const map<string,string>& package_map, cons
   return true;
 }
 
-void parseVisual(shared_ptr<RigidBody> body, XMLElement* node, RigidBodyTree * model, const map<string, Vector4d, less<string>, aligned_allocator<pair<string, Vector4d> > >& materials, const map<string,string>& package_map, const string& root_dir)
+void parseVisual(shared_ptr<RigidBody> body, XMLElement* node, RigidBodyTree * model, const MaterialMap& materials, const PackageMap& package_map, const string& root_dir)
 {
   // DEBUG
   //cout << "parseVisual: START" << endl;
@@ -220,8 +220,6 @@ void parseVisual(shared_ptr<RigidBody> body, XMLElement* node, RigidBodyTree * m
   XMLElement* origin = node->FirstChildElement("origin");
   if (origin)
     originAttributesToTransform(origin, T_element_to_link);
-
-  string group_name;
 
   XMLElement* geometry_node = node->FirstChildElement("geometry");
   if (!geometry_node) throw runtime_error("ERROR: Link " + body->linkname + " has a visual element without geometry.");
@@ -263,7 +261,7 @@ void parseVisual(shared_ptr<RigidBody> body, XMLElement* node, RigidBodyTree * m
   // END_DEBUG
 }
 
-void parseCollision(shared_ptr<RigidBody> body, XMLElement* node, RigidBodyTree * model, const map<string,string>& package_map, const string& root_dir)
+void parseCollision(shared_ptr<RigidBody> body, XMLElement* node, RigidBodyTree * model, const PackageMap& package_map, const string& root_dir)
 {
   Isometry3d T_element_to_link = Isometry3d::Identity();
   XMLElement* origin = node->FirstChildElement("origin");
@@ -292,7 +290,7 @@ void parseCollision(shared_ptr<RigidBody> body, XMLElement* node, RigidBodyTree 
   }
 }
 
-void parseLink(RigidBodyTree * model, XMLElement* node, const map<string, Vector4d, less<string>, aligned_allocator<pair<string, Vector4d> > >& materials, const map<string,string>& package_map, const string& root_dir)
+void parseLink(RigidBodyTree * model, XMLElement* node, const MaterialMap& materials, const PackageMap& package_map, const string& root_dir)
 {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return;
@@ -491,7 +489,7 @@ void parseFrame(RigidBodyTree * model, XMLElement* node)
   model->addFrame(frame);
 }
 
-void parseRobot(RigidBodyTree * model, XMLElement* node, const map<string,string>& package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
+void parseRobot(RigidBodyTree * model, XMLElement* node, const PackageMap& package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
 {
   if (!node->Attribute("name"))
     throw runtime_error("Error: your robot must have a name attribute");
@@ -499,7 +497,7 @@ void parseRobot(RigidBodyTree * model, XMLElement* node, const map<string,string
   string robotname = node->Attribute("name");
 
   // parse material elements
-  map<string, Vector4d, less<string>, aligned_allocator<pair<string, Vector4d> > > materials;
+  MaterialMap materials;
   for (XMLElement* link_node = node->FirstChildElement("material"); link_node; link_node = link_node->NextSiblingElement("material"))
     parseMaterial(link_node, materials);  // accept failed material parsing
 
@@ -562,7 +560,7 @@ void parseRobot(RigidBodyTree * model, XMLElement* node, const map<string,string
   }
 }
 
-void parseURDF(RigidBodyTree * model, XMLDocument * xml_doc, map<string,string>& package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
+void parseURDF(RigidBodyTree * model, XMLDocument * xml_doc, PackageMap& package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
 {
   populatePackageMap(package_map);
   XMLElement *node = xml_doc->FirstChildElement("robot");
@@ -577,11 +575,11 @@ void parseURDF(RigidBodyTree * model, XMLDocument * xml_doc, map<string,string>&
 
 void RigidBodyTree::addRobotFromURDFString(const string &xml_string, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
 {
-  map<string,string> package_map;
+  PackageMap package_map;
   addRobotFromURDFString(xml_string, package_map, root_dir, floating_base_type);
 }
 
-void RigidBodyTree::addRobotFromURDFString(const string &xml_string, map<string, string>& package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
+void RigidBodyTree::addRobotFromURDFString(const string &xml_string, PackageMap& package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
 {
   XMLDocument xml_doc;
   xml_doc.Parse(xml_string.c_str());
@@ -590,11 +588,11 @@ void RigidBodyTree::addRobotFromURDFString(const string &xml_string, map<string,
 
 void RigidBodyTree::addRobotFromURDF(const string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type)
 {
-  map<string,string> package_map;
+  PackageMap package_map;
   addRobotFromURDF(urdf_filename, package_map, floating_base_type);
 }
 
-void RigidBodyTree::addRobotFromURDF(const string &urdf_filename, map<string,string>& package_map, const DrakeJoint::FloatingBaseType floating_base_type)
+void RigidBodyTree::addRobotFromURDF(const string &urdf_filename, PackageMap& package_map, const DrakeJoint::FloatingBaseType floating_base_type)
 {
   XMLDocument xml_doc;
   xml_doc.LoadFile(urdf_filename.data());

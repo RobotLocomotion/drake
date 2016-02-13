@@ -53,7 +53,129 @@ void parseSDFInertial(shared_ptr<RigidBody> body, XMLElement* node, RigidBodyTre
   body->I = transformSpatialInertia(T_link.inverse()*T, I);
 }
 
-void parseSDFLink(RigidBodyTree * model, XMLElement* node, const map<string, Vector4d, less<string>, aligned_allocator<pair<string, Vector4d> > >& materials, const map<string,string>& package_map, PoseMap& pose_map, const string& root_dir)
+bool parseSDFGeometry(XMLElement* node, const PackageMap& package_map, const string& root_dir, DrakeShapes::Element& element)
+{
+  // DEBUG
+  //cout << "parseGeometry: START" << endl;
+  // END_DEBUG
+  XMLElement* shape_node;
+  if ((shape_node = node->FirstChildElement("box"))) {
+    Vector3d xyz;
+    if (!parseVectorValue(shape_node,"size",xyz)) {
+      cerr << "ERROR parsing box element size" << endl;
+      return false;
+    }
+    element.setGeometry(DrakeShapes::Box(xyz));
+  } else if ((shape_node = node->FirstChildElement("sphere"))) {
+    double r = 0;
+    if (!parseScalarValue(shape_node,"radius",r)) {
+      cerr << "ERROR parsing sphere element radius" << endl;
+      return false;
+    }
+    element.setGeometry(DrakeShapes::Sphere(max(DrakeShapes::MIN_RADIUS, r)));
+  } else if ((shape_node = node->FirstChildElement("cylinder"))) {
+    double r = 0, l = 0;
+    if (!parseScalarValue(shape_node,"radius",r)) {
+      cerr << "ERROR parsing cylinder element radius" << endl;
+      return false;
+    }
+
+    if (!parseScalarValue(shape_node,"length",l)) {
+      cerr << "ERROR parsing cylinder element length" << endl;
+      return false;
+    }
+    element.setGeometry(DrakeShapes::Cylinder(r, l));
+  } else if ((shape_node = node->FirstChildElement("capsule"))) {
+    double r = 0, l = 0;
+    if (!parseScalarValue(shape_node,"radius",r)) {
+      cerr << "ERROR parsing capsule element radius" << endl;
+      return false;
+    }
+
+    if (!parseScalarValue(shape_node,"length",l)) {
+      cerr << "ERROR: Failed to parse capsule element length" << endl;
+      return false;
+    }
+    element.setGeometry(DrakeShapes::Capsule(r, l));
+  } else if ((shape_node = node->FirstChildElement("mesh"))) {
+    string filename;
+    if (!parseStringValue(shape_node,"filename",filename)) {
+      cerr << "ERROR mesh element has no filename tag" << endl;
+      return false;
+    }
+    string resolved_filename = resolveFilename(filename, package_map, root_dir);
+    DrakeShapes::Mesh mesh(filename, resolved_filename);
+
+    parseScalarValue(shape_node,"scale",mesh.scale);
+    element.setGeometry(mesh);
+  } else {
+    cerr << "Warning: geometry element has an unknown type and will be ignored." << endl;
+  }
+  // DEBUG
+  //cout << "parseGeometry: END" << endl;
+  // END_DEBUG
+  return true;
+}
+
+void parseSDFVisual(shared_ptr<RigidBody> body, XMLElement* node, RigidBodyTree * model, const PackageMap& package_map, const string& root_dir, PoseMap& pose_map, const Isometry3d& T_link)
+{
+  Isometry3d T = T_link;
+  XMLElement* pose = node->FirstChildElement("pose");
+  if (pose) poseValueToTransform(pose, pose_map, T, T_link);
+
+/*
+  const char* attr = node->Attribute("name");
+  if (!attr) throw runtime_error("ERROR: visual tag is missing name attribute");
+  string name(attr);
+*/
+  XMLElement* geometry_node = node->FirstChildElement("geometry");
+  if (!geometry_node) throw runtime_error("ERROR: Link " + body->linkname + " has a visual element without geometry.");
+
+  DrakeShapes::VisualElement element(T_link.inverse()*T);
+  if (!parseSDFGeometry(geometry_node, package_map, root_dir, element))
+    throw runtime_error("ERROR: Failed to parse visual element in link " + body->linkname + ".");
+
+  XMLElement* material_node = node->FirstChildElement("material");
+  if (material_node) {
+    Vector4d rgba(0.7,0.7,0.7,1.0);
+    parseVectorValue(material_node,"diffuse",rgba);
+    element.setMaterial(rgba);
+  }
+
+  if (element.hasGeometry()) {
+    // DEBUG
+    //cout << "parseVisual: Adding element to body" << endl;
+    // END_DEBUG
+    body->addVisualElement(element);
+  }
+}
+
+void parseSDFCollision(shared_ptr<RigidBody> body, XMLElement* node, RigidBodyTree * model, const PackageMap& package_map, const string& root_dir, PoseMap& pose_map, const Isometry3d& T_link)
+{
+  Isometry3d T = T_link;
+  XMLElement* pose = node->FirstChildElement("pose");
+  if (pose) poseValueToTransform(pose, pose_map, T, T_link);
+
+/*
+  const char* attr = node->Attribute("name");
+  if (!attr) throw runtime_error("ERROR: visual tag is missing name attribute");
+  string name(attr);
+*/
+  string group_name("default");
+
+  XMLElement* geometry_node = node->FirstChildElement("geometry");
+  if (!geometry_node) throw runtime_error("ERROR: Link " + body->linkname + " has a collision element without geometry.");
+
+  RigidBody::CollisionElement element(T_link.inverse()*T, body);
+  if (!parseSDFGeometry(geometry_node, package_map, root_dir, element))
+    throw runtime_error("ERROR: Failed to parse collision element in link " + body->linkname + ".");
+
+  if (element.hasGeometry()) {
+    model->addCollisionElement(element, body, group_name);
+  }
+}
+
+void parseSDFLink(RigidBodyTree * model, XMLElement* node, const PackageMap& package_map, PoseMap& pose_map, const string& root_dir)
 {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return;
@@ -74,15 +196,13 @@ void parseSDFLink(RigidBodyTree * model, XMLElement* node, const map<string, Vec
   XMLElement* inertial_node = node->FirstChildElement("inertial");
   if (inertial_node) parseSDFInertial(body, inertial_node, model, pose_map, T);
 
-/*
   for (XMLElement* visual_node = node->FirstChildElement("visual"); visual_node; visual_node = visual_node->NextSiblingElement("visual")) {
-    parseVisual(body, visual_node, model, materials, package_map, root_dir);
+    parseSDFVisual(body, visual_node, model, package_map, root_dir, pose_map, T);
   }
 
   for (XMLElement* collision_node = node->FirstChildElement("collision"); collision_node; collision_node = collision_node->NextSiblingElement("collision")) {
-    parseCollision(body, collision_node, model, package_map, root_dir);
+    parseSDFCollision(body, collision_node, model, package_map, root_dir, pose_map, T);
   }
-*/
 
   model->bodies.push_back(body);
   body->body_index = static_cast<int>(model->bodies.size()) - 1;
@@ -193,7 +313,7 @@ void parseSDFJoint(RigidBodyTree * model, XMLElement* node, PoseMap& pose_map)
 }
 
 
-void parseModel(RigidBodyTree * model, XMLElement* node, const map<string,string>& package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
+void parseModel(RigidBodyTree * model, XMLElement* node, const PackageMap& package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
 {
   PoseMap pose_map;  // because sdf specifies almost everything in the global (actually model) coordinates instead of relative coordinates.  sigh...
 
@@ -207,12 +327,9 @@ void parseModel(RigidBodyTree * model, XMLElement* node, const map<string,string
   XMLElement* pose = node->FirstChildElement("pose");
   if (pose) poseValueToTransform(pose, pose_map, T);
 
-  // parse material elements
-  map<string, Vector4d, less<string>, aligned_allocator<pair<string, Vector4d> > > materials;
-
   // parse link elements
   for (XMLElement *link_node = node->FirstChildElement("link"); link_node; link_node = link_node->NextSiblingElement("link"))
-    parseSDFLink(model, link_node, materials, package_map, pose_map, root_dir);
+    parseSDFLink(model, link_node, package_map, pose_map, root_dir);
 
   // parse joints
   for (XMLElement* joint_node = node->FirstChildElement("joint"); joint_node; joint_node = joint_node->NextSiblingElement("joint"))
@@ -247,7 +364,7 @@ void parseModel(RigidBodyTree * model, XMLElement* node, const map<string,string
   }
 }
 
-void parseSDF(RigidBodyTree * model, XMLDocument * xml_doc, map<string,string>& package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
+void parseSDF(RigidBodyTree * model, XMLDocument * xml_doc, PackageMap& package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
 {
   populatePackageMap(package_map);
 
@@ -263,7 +380,7 @@ void parseSDF(RigidBodyTree * model, XMLDocument * xml_doc, map<string,string>& 
 
 void RigidBodyTree::addRobotFromSDF(const string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type)
 {
-  map<string,string> package_map;
+  PackageMap package_map;
 
   XMLDocument xml_doc;
   xml_doc.LoadFile(urdf_filename.data());
