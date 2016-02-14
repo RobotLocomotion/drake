@@ -3,17 +3,6 @@
   <model name='prius_1'>
     <link name='front_axle'>
       <pose frame=''>0 0 0 0 -0 0</pose>
-      <inertial>
-        <inertia>
-          <ixx>1</ixx>
-          <ixy>0</ixy>
-          <ixz>0</ixz>
-          <iyy>1</iyy>
-          <iyz>0</iyz>
-          <izz>1</izz>
-        </inertia>
-        <mass>1</mass>
-      </inertial>
       <self_collide>0</self_collide>
       <kinematic>0</kinematic>
       <visual name='visual'>
@@ -146,17 +135,6 @@
     </link>
     <link name='left_hub'>
       <pose frame=''>0 0 0 0 -0 0</pose>
-      <inertial>
-        <inertia>
-          <ixx>1</ixx>
-          <ixy>0</ixy>
-          <ixz>0</ixz>
-          <iyy>1</iyy>
-          <iyz>0</iyz>
-          <izz>1</izz>
-        </inertia>
-        <mass>1</mass>
-      </inertial>
       <self_collide>0</self_collide>
       <kinematic>0</kinematic>
       <visual name='visual'>
@@ -183,17 +161,6 @@
     </link>
     <link name='left_tie_rod_arm'>
       <pose frame=''>0 0 0 0 -0 0</pose>
-      <inertial>
-        <inertia>
-          <ixx>1</ixx>
-          <ixy>0</ixy>
-          <ixz>0</ixz>
-          <iyy>1</iyy>
-          <iyz>0</iyz>
-          <izz>1</izz>
-        </inertia>
-        <mass>1</mass>
-      </inertial>
       <self_collide>0</self_collide>
       <kinematic>0</kinematic>
       <visual name='v2'>
@@ -505,17 +472,6 @@
     </link>
     <link name='rear_axle'>
       <pose frame=''>0 0 0 0 -0 0</pose>
-      <inertial>
-        <inertia>
-          <ixx>1</ixx>
-          <ixy>0</ixy>
-          <ixz>0</ixz>
-          <iyy>1</iyy>
-          <iyz>0</iyz>
-          <izz>1</izz>
-        </inertia>
-        <mass>1</mass>
-      </inertial>
       <self_collide>0</self_collide>
       <kinematic>0</kinematic>
       <visual name='visual'>
@@ -541,17 +497,6 @@
     </link>
     <link name='right_hub'>
       <pose frame=''>0 0 0 0 -0 0</pose>
-      <inertial>
-        <inertia>
-          <ixx>1</ixx>
-          <ixy>0</ixy>
-          <ixz>0</ixz>
-          <iyy>1</iyy>
-          <iyz>0</iyz>
-          <izz>1</izz>
-        </inertia>
-        <mass>1</mass>
-      </inertial>
       <self_collide>0</self_collide>
       <kinematic>0</kinematic>
       <visual name='visual'>
@@ -578,17 +523,6 @@
     </link>
     <link name='right_tie_rod_arm'>
       <pose frame=''>0 0 0 0 -0 0</pose>
-      <inertial>
-        <inertia>
-          <ixx>1</ixx>
-          <ixy>0</ixy>
-          <ixz>0</ixz>
-          <iyy>1</iyy>
-          <iyz>0</iyz>
-          <izz>1</izz>
-        </inertia>
-        <mass>1</mass>
-      </inertial>
       <self_collide>0</self_collide>
       <kinematic>0</kinematic>
       <visual name='v1'>
@@ -900,18 +834,6 @@
     </link>
     <link name='tie_rod'>
       <pose frame=''>0 0 0 0 -0 0</pose>
-      <inertial>
-        <inertia>
-          <ixx>1</ixx>
-          <ixy>0</ixy>
-          <ixz>0</ixz>
-          <iyy>1</iyy>
-          <iyz>0</iyz>
-          <izz>1</izz>
-        </inertia>
-        <mass>1</mass>
-        <pose frame=''>0 0 0 0 -0 0</pose>
-      </inertial>
       <self_collide>0</self_collide>
       <kinematic>0</kinematic>
       <visual name='visual'>
@@ -978,7 +900,7 @@
         <cast_shadows>1</cast_shadows>
         <transparency>0</transparency>
       </visual>
-<sensor name="base_laser" type="ray">
+      <sensor name="base_laser" type="ray">
         <always_on>1</always_on>
         <visualize>1</visualize>
         <update_rate>20.000000</update_rate>
@@ -1073,7 +995,7 @@
     <joint name='chassis_floor_axle' type='fixed'>
       <parent>front_axle</parent>
       <child>chassis_floor</child>
-      <pose frame=''>0 0 0 0 -0 0</pose>
+      <pose frame=''>-1.409480 0 0.061842 0 -0 0</pose>
       <physics>
         <ode>
           <limit>
@@ -1090,7 +1012,7 @@
     <joint name='chassis_rear_axle' type='fixed'>
       <parent>chassis_floor</parent>
       <child>rear_axle</child>
-      <pose frame=''>0 0 0 0 -0 0</pose>
+      <pose frame=''>0 0 0.287408 0 -0 0</pose>
       <physics>
         <ode>
           <limit>
@@ -1339,7 +1261,7 @@
     <joint name='steering' type='revolute'>
       <parent>front_axle</parent>
       <child>left_tie_rod_arm</child>
-      <pose frame=''>1.40948 0.494737 0.323342 0 -0 0</pose>
+      <pose frame=''>0 0.494737 0 0 -0 0</pose>
       <axis>
         <xyz>0 0 1</xyz>
         <use_parent_model_frame>0</use_parent_model_frame>

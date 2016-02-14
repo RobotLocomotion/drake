@@ -376,10 +376,10 @@ void parseJoint(RigidBodyTree * model, XMLElement* node)
   int child_index = findLinkIndex(model, child_name);
   if (child_index < 0) throw runtime_error("ERROR: could not find child link named " + child_name);
 
-  Isometry3d Ttree = Isometry3d::Identity();
+  Isometry3d transform_to_parent_body = Isometry3d::Identity();
   XMLElement* origin = node->FirstChildElement("origin");
   if (origin) {
-    originAttributesToTransform(origin, Ttree);
+    originAttributesToTransform(origin, transform_to_parent_body);
   }
 
   Vector3d axis;
@@ -395,19 +395,19 @@ void parseJoint(RigidBodyTree * model, XMLElement* node)
   DrakeJoint* joint = nullptr;
 
   if (type.compare("revolute") == 0 || type.compare("continuous") == 0) {
-    FixedAxisOneDoFJoint<RevoluteJoint>* fjoint = new RevoluteJoint(name, Ttree, axis);
+    FixedAxisOneDoFJoint<RevoluteJoint>* fjoint = new RevoluteJoint(name, transform_to_parent_body, axis);
     setDynamics(node, fjoint);
     setLimits(node, fjoint);
     joint = fjoint;
   } else if (type.compare("fixed") == 0) {
-    joint = new FixedJoint(name, Ttree);
+    joint = new FixedJoint(name, transform_to_parent_body);
   } else if (type.compare("prismatic") == 0) {
-    FixedAxisOneDoFJoint<PrismaticJoint>* fjoint = new PrismaticJoint(name, Ttree, axis);
+    FixedAxisOneDoFJoint<PrismaticJoint>* fjoint = new PrismaticJoint(name, transform_to_parent_body, axis);
     setDynamics(node, fjoint);
     setLimits(node, fjoint);
     joint = fjoint;
   } else if (type.compare("floating") == 0) {
-    joint = new RollPitchYawFloatingJoint(name, Ttree);
+    joint = new RollPitchYawFloatingJoint(name, transform_to_parent_body);
   } else {
     throw runtime_error("ERROR: Unrecognized joint type: " + type);
   }

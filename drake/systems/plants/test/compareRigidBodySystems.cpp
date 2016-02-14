@@ -16,15 +16,15 @@ int main(int argc, char* argv[])
   auto r1 = RigidBodySystem(argv[1], DrakeJoint::QUATERNION);
   auto r2 = RigidBodySystem(argv[2], DrakeJoint::QUATERNION);
 
-  valuecheck(r1.getNumStates(),r2.getNumStates());
-  valuecheck(r1.getNumInputs(),r2.getNumInputs());
-  valuecheck(r1.getNumOutputs(),r2.getNumOutputs());
-
   // for debugging:
   r1.getRigidBodyTree()->drawKinematicTree("/tmp/r1.dot");
   r2.getRigidBodyTree()->drawKinematicTree("/tmp/r2.dot");
   // I ran this at the console to see the output:
   // dot -Tpng -O /tmp/r1.dot; dot -Tpng -O /tmp/r2.dot; open /tmp/r1.dot.png /tmp/r2.dot.png
+
+  valuecheck(r1.getNumStates(),r2.getNumStates());
+  valuecheck(r1.getNumInputs(),r2.getNumInputs());
+  valuecheck(r1.getNumOutputs(),r2.getNumOutputs());
 
   for (int i=0; i<1000; i++) {
     double t = 0.0;
