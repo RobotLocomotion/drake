@@ -366,9 +366,9 @@ void parseModel(RigidBodyTree * model, XMLElement* node, const PackageMap& packa
   string model_name = node->Attribute("name");
 */
 
-  Isometry3d T = Isometry3d::Identity();
+  Isometry3d transform_to_world = Isometry3d::Identity();
   XMLElement* pose = node->FirstChildElement("pose");
-  if (pose) poseValueToTransform(pose, pose_map, T);
+  if (pose) poseValueToTransform(pose, pose_map, transform_to_world);
 
   // parse link elements
   for (XMLElement *link_node = node->FirstChildElement("link"); link_node; link_node = link_node->NextSiblingElement("link"))
@@ -383,22 +383,27 @@ void parseModel(RigidBodyTree * model, XMLElement* node, const PackageMap& packa
     if (model->bodies[i]->parent == nullptr) {  // attach the root nodes to the world with a floating base joint
       has_root_node = true;
       model->bodies[i]->parent = model->bodies[0];
+
+      Isometry3d transform_to_model = Isometry3d::Identity();
+      if (pose_map.find(model->bodies[i]->linkname)!=pose_map.end())
+        transform_to_model = pose_map.at(model->bodies[i]->linkname);
+
       switch (floating_base_type) {
         case DrakeJoint::FIXED:
         {
-          unique_ptr<DrakeJoint> joint(new FixedJoint("base", T));
+          unique_ptr<DrakeJoint> joint(new FixedJoint("base", transform_to_world*transform_to_model));
           model->bodies[i]->setJoint(move(joint));
         }
           break;
         case DrakeJoint::ROLLPITCHYAW:
         {
-          unique_ptr<DrakeJoint> joint(new RollPitchYawFloatingJoint("base", T));
+          unique_ptr<DrakeJoint> joint(new RollPitchYawFloatingJoint("base", transform_to_world*transform_to_model));
           model->bodies[i]->setJoint(move(joint));
         }
           break;
         case DrakeJoint::QUATERNION:
         {
-          unique_ptr<DrakeJoint> joint(new QuaternionFloatingJoint("base", T));
+          unique_ptr<DrakeJoint> joint(new QuaternionFloatingJoint("base", transform_to_world*transform_to_model));
           model->bodies[i]->setJoint(move(joint));
         }
           break;
