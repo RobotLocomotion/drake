@@ -115,34 +115,16 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
         auto J = R*(JA-JB);  // J = [ D1; D2; n ]
         auto relative_velocity = J*v;  // [ tangent1dot; tangent2dot; phidot ]
 
-        if (true) {
+        {
           // spring law for normal force:  fA_normal = -k*phi - b*phidot
           // and damping for tangential force:  fA_tangent = -b*tangentdot (bounded by the friction cone)
           Vector3d fA;
-          fA(2) = -penetration_stiffness * phi(i) - penetration_damping * relative_velocity(2);
+          fA(2) = std::max(-penetration_stiffness * phi(i) - penetration_damping * relative_velocity(2),0);
           fA.head(2) = -std::min(penetration_damping, friction_coefficient*fA(2)/(relative_velocity.head(2).norm()+EPSILON)) * relative_velocity.head(2);  // epsilon to avoid divide by zero
 
           // equal and opposite: fB = -fA.
           // tau = (R*JA)^T fA + (R*JB)^T fB = J^T fA
           C -= J.transpose()*fA;
-        } else { // linear acceleration constraints (more expensive, but less tuning required for robot mass, etc)
-          // note: this does not work for the multi-contact case (it overly constrains the motion of the link).  Perhaps if I made them inequality constraints...
-          assert(!use_multi_contact && "The acceleration contact constraints do not play well with multi-contact");
-
-          // phiddot = -2*alpha*phidot - alpha^2*phi   // critically damped response
-          // tangential_velocity_dot = -2*alpha*tangential_velocity
-          double alpha = 20;  // todo: put this somewhere better... or make them parameters?
-          Vector3d desired_relative_acceleration = -2*alpha*relative_velocity;
-          desired_relative_acceleration(2) += -alpha*alpha*phi(i);
-          // relative_acceleration = J*vdot + R*(JAdotv - JBdotv) // uses the standard dnormal/dq = 0 assumption
-
-          prog.addContinuousVariables(3,"contact normal force");
-          auto JAdotv = tree->transformPointsJacobianDotTimesV(kinsol, xA.col(i).eval(), bodyA_idx[i], 0);
-          auto JBdotv = tree->transformPointsJacobianDotTimesV(kinsol, xB.col(i).eval(), bodyB_idx[i], 0);
-
-          prog.addLinearEqualityConstraint(J,desired_relative_acceleration - R*(JAdotv - JBdotv),{vdot});
-          H_and_neg_JT.conservativeResize(NoChange,H_and_neg_JT.cols()+3);
-          H_and_neg_JT.rightCols(3) = -J.transpose();
         }
       }
     }

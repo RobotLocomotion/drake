@@ -41,12 +41,15 @@ namespace Drake {
  *
  * (always try to label your methods with const if possible)
  *
+ * todo: dynamics and output should be implemented as Drake::Function(s) with input-output relationships defined.  then we would no longer specify isTimeVarying and isDirectFeedthrough (we could extract them from the input-output relationship)
+ * todo: move xdot and y to be arguments instead of return values, to be consistent with Drake::Function.
+ *
  * @nbsp
  *
  * @par Coming soon.  Support for:
  *   - deterministic discrete update
  *   - input limits
- *   - state constraints
+ *   - state constraints (must also allow for slack variables)
  *   - zero-crossings (to inform the tools of discontinuities in the dynamics)
  * @}
  */
