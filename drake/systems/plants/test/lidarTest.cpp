@@ -23,19 +23,20 @@ int main(int argc, char* argv[])
   auto distances = rigid_body_sys->output(t,x,u);
 
   // these parameters must match the sdf (i've also implicitly hard-coded the box geometry from the sdf)
-  double min_yaw = -1.7;
-  double max_yaw = 1.7;
+  const double min_yaw = -1.7;
+  const double max_yaw = 1.7;
+  const double tol = 0.05; // todo: improve the tolerance (see #1712)
 
   for (int i=0; i<distances.size(); i++) {
     double theta = min_yaw + (max_yaw-min_yaw)*i/(distances.size()-1);
-    if (abs(theta)>=M_PI/2) { // should not be hitting any wall
+    if (abs(theta)>=M_PI/2+.05) { // should not be hitting any wall.  // todo: get rid of the .05 artifact (see #1712)
       valuecheck(-1.0,distances(i));
-    } else if (theta<=M_PI/4) { // hitting the right wall
-      valuecheck(1/sin(theta),distances(i));
+    } else if (theta<=-M_PI/4) { // hitting the right wall
+      valuecheck(-1.0/sin(theta),distances(i),tol);
     } else if (theta>=M_PI/4) { // hitting the left wall
-      valuecheck(1/sin(theta),distances(i));
+      valuecheck(1.0/sin(theta),distances(i),tol);
     } else { // hitting the front wall
-      valuecheck(1/cos(theta),distances(i));
+      valuecheck(1/cos(theta),distances(i),tol);
     }
   }
 
