@@ -119,8 +119,8 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
           // spring law for normal force:  fA_normal = -k*phi - b*phidot
           // and damping for tangential force:  fA_tangent = -b*tangentdot (bounded by the friction cone)
           Vector3d fA;
-          fA(2) = std::max(-penetration_stiffness * phi(i) - penetration_damping * relative_velocity(2),0);
-          fA.head(2) = -std::min(penetration_damping, friction_coefficient*fA(2)/(relative_velocity.head(2).norm()+EPSILON)) * relative_velocity.head(2);  // epsilon to avoid divide by zero
+          fA(2) = std::max<double>(-penetration_stiffness * phi(i) - penetration_damping * relative_velocity(2),0.0);
+          fA.head(2) = -std::min<double>(penetration_damping, friction_coefficient*fA(2)/(relative_velocity.head(2).norm()+EPSILON)) * relative_velocity.head(2);  // epsilon to avoid divide by zero
 
           // equal and opposite: fB = -fA.
           // tau = (R*JA)^T fA + (R*JB)^T fB = J^T fA

@@ -123,6 +123,7 @@ int main(int argc, char* argv[]) {
   SimulationOptions options = default_simulation_options;
   rigid_body_sys->penetration_stiffness = 5000.0;
   rigid_body_sys->penetration_damping = rigid_body_sys->penetration_stiffness/10.0;
+  rigid_body_sys->friction_coefficient = 10.0;  // essentially infinite friction
   options.initial_step_size = 5e-3;
   options.timeout_seconds = numeric_limits<double>::infinity();
 
