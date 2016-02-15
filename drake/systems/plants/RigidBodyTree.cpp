@@ -294,6 +294,7 @@ void RigidBodyTree::updateStaticCollisionElements()
 
 void RigidBodyTree::updateDynamicCollisionElements(const KinematicsCache<double>& cache)
 {
+  // todo: this is currently getting called many times with the same cache object.  and it's presumably somewhat expensive.
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     const RigidBody& body = **it;
     if (body.hasParent()) {
