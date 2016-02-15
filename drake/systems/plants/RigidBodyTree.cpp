@@ -237,6 +237,13 @@ void RigidBodyTree::drawKinematicTree(std::string graphviz_dotfile_filename)
       dotfile << "\"];" << endl;
     }
   }
+  for (const auto& frame : frames) {
+    dotfile << "  " << frame->name <<  " [label=\"" << frame->name << " (frame)\"];" << endl;
+    dotfile << "  " << frame->name << " -> " << frame->body->linkname << " [label=\"";
+    dotfile << "transform_to_body=" << endl << frame->transform_to_body.matrix() << endl;
+    dotfile << "\"];" << endl;
+  }
+
   for (const auto& loop : loops) {
     dotfile << "  " << loop.frameA->body->linkname << " -> " << loop.frameB->body->linkname << " [label=\"loop " << endl;
     dotfile << "transform_to_parent_body=" << endl << loop.frameA->transform_to_body.matrix() << endl;
@@ -1386,6 +1393,38 @@ shared_ptr<RigidBody> RigidBodyTree::findLink(std::string linkname, int robot) c
                    ::tolower); // convert to lower case
     if (lower_linkname.compare(linkname) == 0) { // the names match
       if (robot == -1 || bodies[i]->robotnum == robot) { // it's the right robot
+        if (match < 0) { // it's the first match
+          match = i;
+        } else {
+          cerr << "found multiple links named " << linkname << endl;
+          return nullptr;
+        }
+      }
+    }
+  }
+  if (match>=0) return bodies[match];
+  cerr << "could not find any links named " << linkname << endl;
+  return nullptr;
+}
+
+shared_ptr<RigidBody> RigidBodyTree::findLink(std::string linkname, std::string model_name) const
+{
+  std::transform(linkname.begin(), linkname.end(), linkname.begin(), ::tolower); // convert to lower case
+  std::transform(model_name.begin(), model_name.end(), model_name.begin(), ::tolower); // convert to lower case
+
+  //std::regex linkname_connector("[abc]");
+  //cout<<"get linkname_connector"<<endl;
+  //linkname = std::regex_replace(linkname,linkname_connector,string("_"));
+  int match = -1;
+  for(int i = 0;i<bodies.size();i++) {
+    // Note: unlike the MATLAB implementation, I don't have to handle the fixed joint names
+    string lower_linkname = bodies[i]->linkname;
+    std::transform(lower_linkname.begin(), lower_linkname.end(), lower_linkname.begin(),
+                   ::tolower); // convert to lower case
+    if (lower_linkname.compare(linkname) == 0) { // the names match
+      string lower_model_name = bodies[i]->model_name;
+      std::transform(lower_model_name.begin(), lower_model_name.end(), lower_model_name.begin(), ::tolower);
+      if (model_name.empty() || lower_model_name.compare(model_name) == 0) { // it's the right robot
         if (match < 0) { // it's the first match
           match = i;
         } else {

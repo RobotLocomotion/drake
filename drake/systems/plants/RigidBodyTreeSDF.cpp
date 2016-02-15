@@ -175,12 +175,13 @@ void parseSDFCollision(shared_ptr<RigidBody> body, XMLElement* node, RigidBodyTr
   }
 }
 
-void parseSDFLink(RigidBodyTree * model, XMLElement* node, const PackageMap& package_map, PoseMap& pose_map, const string& root_dir)
+void parseSDFLink(RigidBodyTree * model, std::string model_name, XMLElement* node, const PackageMap& package_map, PoseMap& pose_map, const string& root_dir)
 {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return;
 
   shared_ptr<RigidBody> body(new RigidBody());
+  body->model_name = model_name;
 
   attr = node->Attribute("name");
   if (!attr) throw runtime_error("ERROR: link tag is missing name attribute");
@@ -233,7 +234,7 @@ void setSDFDynamics(RigidBodyTree *model, XMLElement *node, FixedAxisOneDoFJoint
   }
 }
 
-void parseSDFJoint(RigidBodyTree * model, XMLElement* node, PoseMap& pose_map)
+void parseSDFJoint(RigidBodyTree * model, std::string model_name, XMLElement* node, PoseMap& pose_map)
 {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0)
@@ -252,7 +253,7 @@ void parseSDFJoint(RigidBodyTree * model, XMLElement* node, PoseMap& pose_map)
   if (!parseStringValue(node,"parent",parent_name))
     throw runtime_error("ERROR: joint " + name + " doesn't have a parent node");
 
-  auto parent = model->findLink(parent_name);
+  auto parent = model->findLink(parent_name, model_name);
   if (!parent) throw runtime_error("ERROR: could not find parent link named " + parent_name);
 
   // parse child
@@ -260,7 +261,7 @@ void parseSDFJoint(RigidBodyTree * model, XMLElement* node, PoseMap& pose_map)
   if (!parseStringValue(node,"child",child_name))
     throw runtime_error("ERROR: joint " + name + " doesn't have a child node");
 
-  auto child = model->findLink(child_name);
+  auto child = model->findLink(child_name, model_name);
   if (!child) throw runtime_error("ERROR: could not find child link named " + child_name);
 
   Isometry3d transform_to_model = Isometry3d::Identity(), transform_parent_to_model = Isometry3d::Identity();
@@ -360,11 +361,9 @@ void parseModel(RigidBodyTree * model, XMLElement* node, const PackageMap& packa
 {
   PoseMap pose_map;  // because sdf specifies almost everything in the global (actually model) coordinates instead of relative coordinates.  sigh...
 
-/*
   if (!node->Attribute("name"))
     throw runtime_error("Error: your model must have a name attribute");
   string model_name = node->Attribute("name");
-*/
 
   Isometry3d transform_to_world = Isometry3d::Identity();
   XMLElement* pose = node->FirstChildElement("pose");
@@ -372,11 +371,11 @@ void parseModel(RigidBodyTree * model, XMLElement* node, const PackageMap& packa
 
   // parse link elements
   for (XMLElement *link_node = node->FirstChildElement("link"); link_node; link_node = link_node->NextSiblingElement("link"))
-    parseSDFLink(model, link_node, package_map, pose_map, root_dir);
+    parseSDFLink(model, model_name, link_node, package_map, pose_map, root_dir);
 
   // parse joints
   for (XMLElement* joint_node = node->FirstChildElement("joint"); joint_node; joint_node = joint_node->NextSiblingElement("joint"))
-    parseSDFJoint(model, joint_node, pose_map);
+    parseSDFJoint(model, model_name, joint_node, pose_map);
 
   bool has_root_node = false;
   for (unsigned int i = 1; i < model->bodies.size(); i++) {

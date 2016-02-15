@@ -14,6 +14,7 @@ namespace tinyxml2 {
 namespace Drake {
 
   class RigidBodyForceElement; // forward declaration
+  class RigidBodySensor; // forward declaration
 
   namespace RigidBodyConstraints {
     /** @defgroup rigid_body_constraint RigidBodyConstraint Concept
@@ -73,13 +74,13 @@ namespace Drake {
     void addRobotFromSDF(const std::string &sdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION);
     void addRobotFromFile(const std::string &filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION);
 
-    // note: will generalize this soon
     void addForceElement(const std::shared_ptr<RigidBodyForceElement>& f) { force_elements.push_back(f); }
+    void addSensor(const std::shared_ptr<RigidBodySensor>& s) { sensors.push_back(s); }
 
     const std::shared_ptr<RigidBodyTree>& getRigidBodyTree(void) { return tree; }
     size_t getNumStates() const { return tree->num_positions + tree->num_velocities; }
     size_t getNumInputs() const;
-    size_t getNumOutputs() const { return getNumStates(); }
+    size_t getNumOutputs() const;
 
     /** dynamics
      * Formulates the forward dynamics of the rigid body system as an optimization
@@ -100,10 +101,7 @@ namespace Drake {
      */
     StateVector<double> dynamics(const double& t, const StateVector<double>& x, const InputVector<double>& u) const;
 
-    template <typename ScalarType>
-    OutputVector<ScalarType> output(const ScalarType& t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) const {
-      return x;
-    }
+    OutputVector<double> output(const double& t, const StateVector<double>& x, const InputVector<double>& u) const;
 
     bool isTimeVarying() const  { return false; }
     bool isDirectFeedthrough() const { return false; }
@@ -119,6 +117,8 @@ namespace Drake {
   private:
     std::shared_ptr<RigidBodyTree> tree;
     std::vector<std::shared_ptr<RigidBodyForceElement> > force_elements;
+    std::vector<std::shared_ptr<RigidBodySensor> > sensors;
+    size_t num_sensor_outputs;
 
     /*
     mutable OptimizationProblem dynamics_program;
@@ -134,7 +134,7 @@ namespace Drake {
    */
   class DRAKERBSYSTEM_EXPORT RigidBodyForceElement {
   public:
-    RigidBodyForceElement(RigidBodySystem* sys, std::string name) : sys(sys), name(name) {}
+    RigidBodyForceElement(RigidBodySystem* sys, const std::string& name) : sys(sys), name(name) {}
     virtual ~RigidBodyForceElement() {}
 
     virtual size_t getNumInputs() const { return 0; }
@@ -168,7 +168,7 @@ namespace Drake {
    */
   class DRAKERBSYSTEM_EXPORT RigidBodyPropellor : public RigidBodyForceElement {
   public:
-    RigidBodyPropellor(RigidBodySystem* sys, tinyxml2::XMLElement* node, std::string name);
+    RigidBodyPropellor(RigidBodySystem* sys, tinyxml2::XMLElement* node, const std::string& name);
     virtual ~RigidBodyPropellor() {}
 
     virtual size_t getNumInputs() const override { return 1; }
@@ -201,7 +201,7 @@ namespace Drake {
    */
   class DRAKERBSYSTEM_EXPORT RigidBodySpringDamper : public RigidBodyForceElement {
   public:
-    RigidBodySpringDamper(RigidBodySystem* sys, tinyxml2::XMLElement* node, std::string name);
+    RigidBodySpringDamper(RigidBodySystem* sys, tinyxml2::XMLElement* node, const std::string& name);
     virtual ~RigidBodySpringDamper() {}
 
     virtual Eigen::VectorXd output(const double& t, /* todo: add force state here */ const Eigen::VectorXd& u, const KinematicsCache<double>& rigid_body_state) const override {
@@ -239,6 +239,51 @@ namespace Drake {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
+
+  /** RigidBodySensor
+   * @brief interface class for elements which define a sensor which reads the state of a rigid body system
+   */
+  class DRAKERBSYSTEM_EXPORT RigidBodySensor {
+  public:
+    RigidBodySensor(RigidBodySystem* sys, const std::string& name) : sys(sys), name(name) {}
+    virtual ~RigidBodySensor() {}
+
+    virtual size_t getNumOutputs() const { return 0; }
+    virtual Eigen::VectorXd output(const double& t, const KinematicsCache<double>& rigid_body_state) const = 0;
+
+  protected:
+    RigidBodySystem* sys;
+    std::string name;
+  };
+
+  /** RigidBodyDepthSensor
+   * @brief Models the forces and moments produced by a simple propellor
+   */
+  class DRAKERBSYSTEM_EXPORT RigidBodyDepthSensor : public RigidBodySensor {
+  public:
+    RigidBodyDepthSensor(RigidBodySystem* sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame, tinyxml2::XMLElement* node);
+    virtual ~RigidBodyDepthSensor() {}
+
+    virtual size_t getNumOutputs() const override { return num_pixel_rows*num_pixel_cols; }
+    virtual Eigen::VectorXd output(const double& t, const KinematicsCache<double>& rigid_body_state) const override;
+
+  private:
+    const std::shared_ptr<RigidBodyFrame> frame;
+    double min_pitch; // minimum pitch of the camera FOV in radians
+    double max_pitch; // maximum pitch of the camera FOV in radians
+    double min_yaw; // minimum yaw of the sensor FOV in radians
+    double max_yaw; // maximum yaw of the sensor FOV in radians
+    size_t num_pixel_rows; // number of points in the image vertically (pitch)
+    size_t num_pixel_cols; // number of points in the image horizontally (yaw)
+    double min_range; // minimum range of the sensor in meters
+    double max_range; // maximum range of the sensor in meters
+
+    Eigen::Matrix3Xd raycast_endpoints;   // cache to avoid repeated allocation
+
+  public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  };
+
 } // end namespace Drake
 
 #endif

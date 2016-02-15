@@ -3,23 +3,6 @@
   <model name='room_w_lidar'>
     <static>true</static>
     <link name='left_wall'>
-      <pose frame=''>-1.5 0 0 0 0 0</pose>
-      <visual name='wall'>
-        <geometry>
-          <box>
-            <size>1 2 1</size>
-          </box>
-        </geometry>
-      </visual>
-      <collision name='wall'>
-        <geometry>
-          <box>
-            <size>1 2 1</size>
-          </box>
-        </geometry>
-      </collision>
-    </link>
-    <link name='front_wall'>
       <pose frame=''>0 1.5 0 0 0 0</pose>
       <visual name='wall'>
         <geometry>
@@ -36,7 +19,7 @@
         </geometry>
       </collision>
     </link>
-    <link name='right_wall'>
+    <link name='front_wall'>
       <pose frame=''>1.5 0 0 0 0 0</pose>
       <visual name='wall'>
         <geometry>
@@ -53,8 +36,25 @@
         </geometry>
       </collision>
     </link>
+    <link name='right_wall'>
+      <pose frame=''>0 -1.5 0 0 0 0</pose>
+      <visual name='wall'>
+        <geometry>
+          <box>
+            <size>2 1 1</size>
+          </box>
+        </geometry>
+      </visual>
+      <collision name='wall'>
+        <geometry>
+          <box>
+            <size>2 1 1</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
     <link name='rear_wall'>
-      <pose frame=''>0 -1 0 0 0 0</pose>
+      <pose frame=''>-1 0 0 0 0 0</pose>
       <sensor name="lidar" type="ray">
         <always_on>1</always_on>
         <visualize>1</visualize>

@@ -554,16 +554,15 @@ namespace DrakeCollision
   
   bool BulletModel::collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, bool use_margins, VectorXd &distances, Matrix3Xd &normals)
   {
-    
-    distances.resize(origins.cols());
-    normals.resize(3, origins.cols());
+    distances.resize(ray_endpoints.cols());
+    normals.resize(3, ray_endpoints.cols());
 
     BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
     
-    for (int i = 0; i < origins.cols(); i ++)
+    for (int i = 0; i < ray_endpoints.cols(); i ++)
     {
-    
-        btVector3 ray_from_world(origins(0,i), origins(1,i), origins(2,i));
+        int origin_col = (origins.cols()>1 ? i : 0); // if a single origin is passed in, then use it for all raycasts
+        btVector3 ray_from_world(origins(0,origin_col), origins(1,origin_col), origins(2,origin_col));
         btVector3 ray_to_world(ray_endpoints(0,i), ray_endpoints(1,i), ray_endpoints(2,i));
         
         btCollisionWorld::ClosestRayResultCallback ray_callback(ray_from_world, ray_to_world);
@@ -578,7 +577,7 @@ namespace DrakeCollision
             
             Vector3d end_eigen(end.getX(), end.getY(), end.getZ());
             
-            distances(i) = (end_eigen - origins.col(i)).norm();
+            distances(i) = (end_eigen - origins.col(origin_col)).norm();
           
             btVector3 normal = ray_callback.m_hitNormalWorld;
             normals(0, i) = normal.getX();

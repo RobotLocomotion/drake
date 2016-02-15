@@ -446,7 +446,8 @@ public:
 
   void warnOnce(const std::string& id, const std::string& msg);
 
-  std::shared_ptr<RigidBody> findLink(std::string linkname, int robot=-1) const;
+  std::shared_ptr<RigidBody> findLink(std::string linkname, int robot) const;
+  std::shared_ptr<RigidBody> findLink(std::string linkname, std::string model_name="") const;
   int findLinkId(const std::string& linkname, int robot = -1) const;
   std::shared_ptr<RigidBody> findJoint(std::string jointname, int robot=-1) const;
   int findJointId(const std::string& linkname, int robot = -1) const;

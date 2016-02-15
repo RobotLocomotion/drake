@@ -290,12 +290,13 @@ void parseCollision(shared_ptr<RigidBody> body, XMLElement* node, RigidBodyTree 
   }
 }
 
-void parseLink(RigidBodyTree * model, XMLElement* node, const MaterialMap& materials, const PackageMap& package_map, const string& root_dir)
+void parseLink(RigidBodyTree * model, std::string robot_name, XMLElement* node, const MaterialMap& materials, const PackageMap& package_map, const string& root_dir)
 {
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return;
 
   shared_ptr<RigidBody> body(new RigidBody());
+  body->model_name = robot_name;
 
   attr = node->Attribute("name");
   if (!attr) throw runtime_error("ERROR: link tag is missing name attribute");
@@ -503,7 +504,7 @@ void parseRobot(RigidBodyTree * model, XMLElement* node, const PackageMap& packa
 
   // parse link elements
   for (XMLElement* link_node = node->FirstChildElement("link"); link_node; link_node = link_node->NextSiblingElement("link"))
-    parseLink(model, link_node, materials, package_map, root_dir);
+    parseLink(model, robotname, link_node, materials, package_map, root_dir);
 
   //DEBUG
     //else {

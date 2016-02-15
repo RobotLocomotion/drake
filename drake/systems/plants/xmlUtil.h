@@ -9,9 +9,37 @@
 #include "drake/thirdParty/tinyxml2/tinyxml2.h"
 #include "drake/drakeXMLUtil_export.h"
 
-DRAKEXMLUTIL_EXPORT bool parseScalarValue(tinyxml2::XMLElement* node, double &val);
-DRAKEXMLUTIL_EXPORT bool parseScalarValue(tinyxml2::XMLElement* node, const char* element_name, double &val);
-DRAKEXMLUTIL_EXPORT bool parseScalarAttribute(tinyxml2::XMLElement* node, const char* attribute_name, double& val);
+template <typename Scalar>
+bool parseScalarValue(tinyxml2::XMLElement* node, Scalar &val)
+{
+  const char* strval = node->FirstChild()->Value();
+  if (strval) {
+    std::stringstream s(strval);
+    s >> val;
+    return true;
+  }
+  return false;
+}
+
+template <typename Scalar>
+bool parseScalarValue(tinyxml2::XMLElement* node, const char* element_name, Scalar &val)
+{
+  tinyxml2::XMLElement* elnode = node->FirstChildElement(element_name);
+  if (elnode) return parseScalarValue(elnode,val);
+  return false;
+}
+
+template <typename Scalar>
+bool parseScalarAttribute(tinyxml2::XMLElement* node, const char* attribute_name, Scalar& val)
+{
+  const char* attr = node->Attribute(attribute_name);
+  if (attr) {
+    std::stringstream s(attr);
+    s >> val;
+    return true;
+  }
+  return false;
+}
 
 // only writes values if they exist
 DRAKEXMLUTIL_EXPORT bool parseVectorAttribute(tinyxml2::XMLElement* node, const char* attribute_name, Eigen::Vector3d &val);

@@ -17,6 +17,19 @@ size_t RigidBodySystem::getNumInputs(void) const {
   return num;
 }
 
+size_t RigidBodySystem::getNumOutputs() const {
+  if (sensors.size()==0)
+    return getNumStates();
+  else {
+    int n=0;
+    for (const auto& s : sensors) {
+      n+=s->getNumOutputs();
+    }
+    return n;
+  }
+}
+
+
 RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, const RigidBodySystem::StateVector<double>& x, const RigidBodySystem::InputVector<double>& u) const {
   using namespace std;
   using namespace Eigen;
@@ -163,6 +176,22 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
   return dot;
 }
 
+RigidBodySystem::OutputVector<double> RigidBodySystem::output(const double& t, const RigidBodySystem::StateVector<double>& x, const RigidBodySystem::InputVector<double>& u) const
+{
+  if (sensors.size()==0)
+    return x;
+  else {
+    auto kinsol = tree->doKinematics(x.topRows(tree->num_positions),x.bottomRows(tree->num_velocities));
+    Eigen::VectorXd y(getNumOutputs());
+    int index=0;
+    for (const auto& s : sensors) {
+      y.segment(index,s->getNumOutputs()) = s->output(t,kinsol);
+      index+=s->getNumOutputs();
+    }
+  return y;
+  }
+}
+
 
 // todo: move this to a more central location
 class SingleTimeKinematicConstraintWrapper : public Constraint
@@ -233,7 +262,7 @@ DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double> Drake::getInitialState
   return x0;
 }
 
-RigidBodyPropellor::RigidBodyPropellor(RigidBodySystem *sys, XMLElement *node, std::string name) :
+RigidBodyPropellor::RigidBodyPropellor(RigidBodySystem *sys, XMLElement *node, const std::string& name) :
         RigidBodyForceElement(sys,name),
         scale_factor_thrust(1.0), scale_factor_moment(1.0),
         lower_limit(-numeric_limits<double>::infinity()),
@@ -262,7 +291,7 @@ RigidBodyPropellor::RigidBodyPropellor(RigidBodySystem *sys, XMLElement *node, s
   // todo: parse visual info?
 }
 
-RigidBodySpringDamper::RigidBodySpringDamper(RigidBodySystem *sys, XMLElement *node, std::string name) :
+RigidBodySpringDamper::RigidBodySpringDamper(RigidBodySystem *sys, XMLElement *node, const std::string& name) :
         RigidBodyForceElement(sys,name),
         stiffness(0.0), damping(0.0), rest_length(0.0)
 {
@@ -281,6 +310,63 @@ RigidBodySpringDamper::RigidBodySpringDamper(RigidBodySystem *sys, XMLElement *n
   if (!link_ref_node) throw runtime_error("linear_spring_damper " + name + " is missing the link2 node");
   frameB = allocate_shared<RigidBodyFrame>(aligned_allocator<RigidBodyFrame>(),tree.get(),link_ref_node,link_ref_node,name+"FrameB");
   tree->addFrame(frameB);
+}
+
+RigidBodyDepthSensor::RigidBodyDepthSensor(RigidBodySystem *sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame, tinyxml2::XMLElement *node)
+  : RigidBodySensor(sys,name), frame(frame), min_pitch(0.0), max_pitch(0.0), min_yaw(0.0), max_yaw(0.0), num_pixel_rows(1), num_pixel_cols(1), min_range(0.0), max_range(10.0)
+{
+  string type(node->Attribute("type"));
+
+  if (type.compare("ray")==0) {
+    XMLElement* ray_node = node->FirstChildElement("ray");
+    if (!ray_node) throw std::runtime_error("ray sensor does not have a ray element");
+    XMLElement* scan_node = ray_node->FirstChildElement("scan");
+    if (!scan_node) throw std::runtime_error("ray element does not have a scan element");
+
+    XMLElement* horizontal_node = scan_node->FirstChildElement("horizontal");
+    if (horizontal_node) { // it's required by the xml spec, but don't actually require it here
+      parseScalarValue(horizontal_node,"samples",num_pixel_cols);
+      parseScalarValue(horizontal_node,"min_angle",min_yaw);
+      parseScalarValue(horizontal_node,"max_angle",max_yaw);
+      double resolution;
+      parseScalarValue(horizontal_node,"resolution",resolution);
+      num_pixel_cols = static_cast<int>(resolution*num_pixel_cols);
+    }
+
+    XMLElement* vertical_node = scan_node->FirstChildElement("vertical");
+    if (vertical_node) {
+      parseScalarValue(vertical_node,"samples",num_pixel_rows);
+      parseScalarValue(vertical_node,"min_angle",min_pitch);
+      parseScalarValue(vertical_node,"max_angle",max_pitch);
+      double resolution;
+      parseScalarValue(vertical_node,"resolution",resolution);
+      num_pixel_rows = static_cast<int>(resolution*num_pixel_rows);
+    }
+
+    XMLElement* range_node = ray_node->FirstChildElement("range");
+    if (!range_node) throw std::runtime_error("ray sensor does not have a range element");
+    parseScalarValue(range_node,"min",min_range);
+    parseScalarValue(range_node,"max",max_range);
+  }
+
+  raycast_endpoints.resize(3,num_pixel_rows*num_pixel_cols);
+  for (size_t i=0; i<num_pixel_rows; i++) {
+    double pitch = min_pitch + (num_pixel_rows>1 ? static_cast<double>(i)/(num_pixel_rows-1) : 0.0)*(max_pitch-min_pitch);
+    for (size_t j=0; j<num_pixel_cols; j++) {
+      double yaw = min_yaw + (num_pixel_cols>1 ? static_cast<double>(j)/(num_pixel_cols-1) : 0.0)*(max_yaw-min_yaw);
+      raycast_endpoints.col(num_pixel_cols*i + j) = max_range*Vector3d(cos(yaw)*cos(pitch), sin(yaw), -cos(yaw)*sin(pitch)); // rolled out from roty(pitch)*rotz(yaw)*[1;0;0]
+    }
+  }
+}
+
+Eigen::VectorXd RigidBodyDepthSensor::output(const double &t, const KinematicsCache<double> &rigid_body_state) const
+{
+  VectorXd distances(num_pixel_cols*num_pixel_rows);
+  Vector3d origin = sys->getRigidBodyTree()->transformPoints(rigid_body_state,Vector3d::Zero(),frame->frame_index,0);
+  auto raycast_endpoints_world = sys->getRigidBodyTree()->transformPoints(rigid_body_state,raycast_endpoints,frame->frame_index,0);
+  sys->getRigidBodyTree()->collisionRaycast(rigid_body_state,origin,raycast_endpoints,distances);
+  // maybe: could publish lcm here (for debugging), since I can easily infer the 3D location in space
+  return distances;
 }
 
 void parseForceElement(RigidBodySystem *sys, XMLElement* node) {
@@ -312,6 +398,73 @@ void parseURDF(RigidBodySystem *sys, XMLDocument *xml_doc)
   parseRobot(sys, node);
 }
 
+void parseSDFJoint(RigidBodySystem *sys, string model_name, XMLElement* node, PoseMap& pose_map)
+{
+  // todo: parse joint sensors
+}
+
+void parseSDFLink(RigidBodySystem *sys, string model_name, XMLElement* node, PoseMap& pose_map)
+{
+  const char* attr = node->Attribute("name");
+  if (!attr) throw runtime_error("ERROR: link tag is missing name attribute");
+  string link_name(attr);
+
+  auto body = sys->getRigidBodyTree()->findLink(link_name, model_name);
+
+  Isometry3d transform_link_to_model = Isometry3d::Identity();
+  XMLElement* pose = node->FirstChildElement("pose");
+  if (pose) {
+    poseValueToTransform(pose, pose_map, transform_link_to_model);
+    pose_map.insert(std::pair<string,Isometry3d>(body->linkname, transform_link_to_model));
+  }
+
+  for (XMLElement *elnode = node->FirstChildElement("sensor"); elnode; elnode = elnode->NextSiblingElement("sensor")) {
+    attr = elnode->Attribute("name");
+    if (!attr) throw runtime_error("ERROR: sensor tag is missing name attribute");
+    string sensor_name(attr);
+
+    attr = elnode->Attribute("type");
+    if (!attr) throw runtime_error("ERROR: sensor tag is missing type attribute");
+    string type(attr);
+
+    Isometry3d transform_sensor_to_model = transform_link_to_model;
+    XMLElement* pose = elnode->FirstChildElement("pose");
+    if (pose) {
+      poseValueToTransform(pose, pose_map, transform_sensor_to_model, transform_link_to_model);
+    }
+
+    if (type.compare("ray")==0) {
+      auto frame = allocate_shared<RigidBodyFrame>(Eigen::aligned_allocator<RigidBodyFrame>(),sensor_name,body,transform_link_to_model.inverse()*transform_sensor_to_model);
+      sys->getRigidBodyTree()->addFrame(frame);
+      sys->addSensor(allocate_shared<RigidBodyDepthSensor>(Eigen::aligned_allocator<RigidBodyDepthSensor>(),sys,sensor_name,frame,elnode));
+    }
+  }
+}
+
+void parseSDFModel(RigidBodySystem *sys, XMLElement* node)
+{
+  PoseMap pose_map;  // because sdf specifies almost everything in the global (actually model) coordinates instead of relative coordinates.  sigh...
+
+  if (!node->Attribute("name"))
+    throw runtime_error("Error: your model must have a name attribute");
+  string model_name = node->Attribute("name");
+
+  for (XMLElement *elnode = node->FirstChildElement("link"); elnode; elnode = elnode->NextSiblingElement("link"))
+    parseSDFLink(sys, model_name, elnode, pose_map);
+
+  for (XMLElement *elnode = node->FirstChildElement("joint"); elnode; elnode = elnode->NextSiblingElement("joint"))
+    parseSDFJoint(sys, model_name, elnode, pose_map);
+}
+
+void parseSDF(RigidBodySystem *sys, XMLDocument *xml_doc)
+{
+  XMLElement *node = xml_doc->FirstChildElement("sdf");
+  if (!node) throw std::runtime_error("ERROR: This xml file does not contain an sdf tag");
+
+  for (XMLElement* elnode = node->FirstChildElement("model"); elnode; elnode = node->NextSiblingElement("model"))
+    parseSDFModel(sys, elnode);
+}
+
 void RigidBodySystem::addRobotFromURDFString(const string &xml_string, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
 {
   // first add the urdf to the rigid body tree
@@ -322,7 +475,6 @@ void RigidBodySystem::addRobotFromURDFString(const string &xml_string, const str
   xml_doc.Parse(xml_string.c_str());
   parseURDF(this,&xml_doc);
 }
-
 
 void RigidBodySystem::addRobotFromURDF(const string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type)
 {
@@ -340,6 +492,15 @@ void RigidBodySystem::addRobotFromURDF(const string &urdf_filename, const DrakeJ
 
 void RigidBodySystem::addRobotFromSDF(const string &sdf_filename, const DrakeJoint::FloatingBaseType floating_base_type) {
   tree->addRobotFromSDF(sdf_filename, floating_base_type);
+
+  // now parse additional tags understood by rigid body system (actuators, sensors, etc)
+
+  XMLDocument xml_doc;
+  xml_doc.LoadFile(sdf_filename.data());
+  if (xml_doc.ErrorID() != XML_SUCCESS) {
+    throw std::runtime_error("failed to parse xml in file " + sdf_filename + "\n" + xml_doc.ErrorName());
+  }
+  parseSDF(this,&xml_doc);
 }
 
 void RigidBodySystem::addRobotFromFile(const std::string &filename, const DrakeJoint::FloatingBaseType floating_base_type)

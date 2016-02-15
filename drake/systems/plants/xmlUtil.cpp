@@ -19,36 +19,6 @@ using namespace std;
 using namespace Eigen;
 using namespace tinyxml2;
 
-bool parseScalarValue(tinyxml2::XMLElement* node, double &val)
-{
-  const char* strval = node->FirstChild()->Value();
-  if (strval) {
-    std::stringstream s(strval);
-    s >> val;
-    return true;
-  }
-  return false;
-}
-
-bool parseScalarValue(tinyxml2::XMLElement* node, const char* element_name, double &val)
-{
-  XMLElement* elnode = node->FirstChildElement(element_name);
-  if (elnode) return parseScalarValue(elnode,val);
-  return false;
-}
-
-
-bool parseScalarAttribute(tinyxml2::XMLElement* node, const char* attribute_name, double& val)
-{
-  const char* attr = node->Attribute(attribute_name);
-  if (attr) {
-    std::stringstream s(attr);
-    s >> val;
-    return true;
-  }
-  return false;
-}
-
 // only writes values if they exist
 bool parseVectorAttribute(tinyxml2::XMLElement* node, const char* attribute_name, Eigen::Vector3d &val)
 {
