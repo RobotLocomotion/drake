@@ -107,7 +107,16 @@ string resolveFilename(const string& filename, const map<string,string>& package
       return string();
     }
   } else {
+
     mesh_filename_s = spruce::path(root_dir);
+
+    // if root_dir is a relative path then convert to absolute path
+    if (mesh_filename_s.getStr().find("/") != 0) {
+      mesh_filename_s = spruce::path();
+      mesh_filename_s.setAsCurrent();
+      mesh_filename_s.append(root_dir);
+    }
+
     mesh_filename_s.append(filename);
   }
   if (!mesh_filename_s.exists()) {
