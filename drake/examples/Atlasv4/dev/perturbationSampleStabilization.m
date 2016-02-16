@@ -34,7 +34,7 @@ v.display_dt = 0.005;
 
 load(traj_file);
 
-repeat_n = 2;
+repeat_n = 1;
 [xtraj,utraj,Btraj,Straj_full] = repeatTraj(r,xtraj,utraj,Btraj,Straj_full,repeat_n,true,true);
 
 
@@ -165,9 +165,9 @@ J = [n(1:4,:);D{1}(1:4,:);D{2}(1:4,:)];
 keyboard
 %% Perturb x0
 global cost_t
-for i=1:1,
+for i=1:1000,
 f = randn(3,1);
-f = 20*f/norm(f);
+f = 10*f/norm(f);
 f = [f;zeros(r.getNumPositions-3,1)];
 Lambda = -pinv(J*inv(H)*J')*J*inv(H)*f;
 delta_qd = inv(H)*(J'*Lambda + f);
@@ -177,6 +177,8 @@ traj = simulate(sys,[t0 tf],x0);
 
 initial_cost(i) = (x0-x0_)'*Straj_full{1}.eval(0)*(x0-x0_);
 final_cost(i) = cost_t;
+perturb{i}.traj = traj;
+perturb{i}.f = f;
 end
 % KE=x0(r.getNumPositions+1:end)'*H*x0(r.getNumPositions+1:end)
 
