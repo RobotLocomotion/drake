@@ -165,7 +165,7 @@ J = [n(1:4,:);D{1}(1:4,:);D{2}(1:4,:)];
 keyboard
 %% Perturb x0
 global cost_t
-for i=1:1000,
+for i=1:100,
 f = randn(3,1);
 f = 10*f/norm(f);
 f = [f;zeros(r.getNumPositions-3,1)];

@@ -11,11 +11,22 @@
 % All components are included here, in one script, for clarity
 
 %% DIRCON trajectory optimization
+display('**********************************************************')
+display('********* Running DIRCON Trajectory Optimization *********')
+display('**********************************************************')
+warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
+warning('off','Drake:RigidBodySupportState:NoSupportSurface');
 [p,v,xtraj,utraj,ltraj,z,F,info,traj_opt] = passiveAnkleTrajectoryOptimization();
-v.playback(traj,struct('slider',true))
+traj=xtraj{1}.append(xtraj{2}).append(xtraj{3});
+v.playback(traj,struct('slider',true));
 contact_seq = traj_opt.contact_sequence;
+display('Inspect trajectory and press any key to continue')
+pause
 
 %% Constrained time varying LQR
+display('**********************************************************')
+display('**************** Running Constrained LQR *****************')
+display('**********************************************************')
 % Cost functions
 Q = diag([100*ones(p.getNumPositions,1);1*ones(p.getNumVelocities,1)]);
 R = .01*eye(getNumInputs(p));
@@ -37,3 +48,7 @@ options.periodic = true;
 [c,Ktraj,Straj,Ptraj,Btraj,Straj_full,Ftraj,xtraj,utraj] = hybriddircolconstrainedtvlqr(p,xtraj,utraj,contact_seq,Q,R,Qf,options);
 
 %% Run QP controller
+display('**********************************************************')
+display('**************** Running QP Stabilization ****************')
+display('**********************************************************')
+simulated_traj=passiveAnkleExampleStabilization(xtraj,utraj,Btraj,Straj_full,R);

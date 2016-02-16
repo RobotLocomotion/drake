@@ -1,4 +1,4 @@
-function passiveAnkleExampleStabilization(xtraj,utraj,Btraj,Straj_full)
+function traj=passiveAnkleExampleStabilization(xtraj,utraj,Btraj,Straj_full,R)
 
 if ~checkDependency('gurobi')
   error('Must have gurobi installed to run this example');
@@ -17,7 +17,8 @@ s = '../urdf/atlas_simple_spring_ankle_planar_contact.urdf';
 options.terrain = RigidBodyFlatTerrain();
 
 % really should extract the mode sequence from the optimization scripts
-modes = [8,6,4,4,2,8]; 
+% corresponds to the mode list below
+modes = [8,3,4,4,7,8]; 
 contact_seq_full = {[1;2], [2;3;4], [3;4], [3;4], [1;2;4], [1;2]};
 
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
@@ -31,10 +32,10 @@ nx = getNumStates(r);
 nq = getNumPositions(r);
 nu = getNumInputs(r);
 
-v = r.constructVisualizer;
+v = r.constructVisualizer(struct('viewer','BotVisualizer'));
 v.display_dt = 0.01;
 
-  repeat_n = 2;
+  repeat_n = 4;
   [xtraj,utraj,Btraj,Straj_full] = repeatTraj(r,xtraj,utraj,Btraj,Straj_full,repeat_n,true,false);
 
 support_times = zeros(1,length(Straj_full));
@@ -126,8 +127,8 @@ options.w_grf = 0;
 options.Kp_accel = 0;
 options.contact_threshold = 5e-4; %was 1e-4
 options.offset_x = true;
-% qp = FullStateQPController(r,ctrl_data,options);
-qp = FullStateQPControllerDT(r,ctrl_data,options);
+qp = FullStateQPController(r,ctrl_data,options);
+% qp = FullStateQPControllerDT(r,ctrl_data,options);
 
 % feedback QP controller with Atlas
 sys = feedback(r,qp);

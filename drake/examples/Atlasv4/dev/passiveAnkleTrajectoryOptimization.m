@@ -21,14 +21,13 @@ nq = p.getNumPositions;
 nv = p.getNumVelocities;
 nu = p.getNumInputs;
 nx = p.getNumStates();
-v = p.constructVisualizer();
-
+v = p.constructVisualizer(struct('viewer','BotVisualizer'));
 
 % Number of knot points per hybrid mode
 N = [7,4,7];
 
 % Duration bounds on each mode
-duration = {[.1 1],[.01 .4], [.1 1]};
+duration = {[.1 1],[.05 .4], [.1 1]};
 
 % Active contact sequence in each mode
 % 1-left heel
@@ -112,9 +111,9 @@ fn2 = drakeFunction.kinematic.WorldPosition(p,idxA(4),p.T_2D_to_3D'*xA(:,4),2);
 
 % Enforce both toe and heel more than 2cm above ground during swing
 
-for i=1:N(1)-2,
-  traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.03,inf,p.getNumPositions, @fn1.eval, 1), i, 1:p.getNumPositions);
-  traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.03,inf,p.getNumPositions, @fn2.eval, 1), i, 1:p.getNumPositions);
+for i=1:N(1)-3,
+  traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.02,inf,p.getNumPositions, @fn1.eval, 1), i, 1:p.getNumPositions);
+  traj_opt = traj_opt.addModeStateConstraint(1,FunctionHandleConstraint(.02,inf,p.getNumPositions, @fn2.eval, 1), i, 1:p.getNumPositions);
 end
 
 % Toe height of swing in mode 3, enforcing minimum height of 1cm and 2cm
@@ -192,7 +191,7 @@ end
 % Set SNOPT iteration limits and output file
 traj_opt = traj_opt.setSolverOptions('snopt','print','snopt.out');
 % 1000 is a lot of iterations! Reduce if the program is stalling
-traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',1000);
+traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',200);
 traj_opt = traj_opt.setSolverOptions('snopt','MinorIterationsLimit',50000);
 traj_opt = traj_opt.setSolverOptions('snopt','IterationsLimit',2000000);
 
@@ -235,8 +234,8 @@ end
     pitch_idx = 3;
     pitch_dot_idx = p.getNumPositions+pitch_idx;
 
-    Kq = 5000;
-    Kqd = 5000;
+    Kq = 500;
+    Kqd = 500;
     f = Kq*x(pitch_idx)^2 + Kqd*x(pitch_dot_idx)^2;
     df = zeros(1,1+nx+nu);
     df(1+pitch_idx) = 2*Kq*x(pitch_idx);

@@ -142,6 +142,7 @@ end
   
 Qfi = Qf;
 for j = 1:jmax;
+  display(sprintf('LQR iteration %d of %d',j,jmax))
   for i = N:-1:1,  
     ts = xtraj{i}.tspan;   
     [c{i},Ktraj{i},Straj{i},Ptraj{i},Btraj{i},Ftraj{i},Straj_full{i}] = constrainedtvlqr(constrained_plants{i},xtraj{i},utraj{i},Q,R,Qfi,struct('tspan',ts));
