@@ -49,7 +49,7 @@ endif()
 find_program(matlab matlab)
 if (matlab)
 	option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"  ON)
-endif() 
+endif()
 
 option(WITH_SNOPT_PRECOMPILED "precompiled binaries only for snopt; the source requires a license (will be disabled if WITH_SNOPT=ON)"  ON)
 
@@ -131,7 +131,7 @@ set(iris_GIT_TAG 666d2a8593987286ac0ece90481f379e362d4704)
 set(iris_ADDITIONAL_BUILD_ARGS PATCH_COMMAND make configure-cdd-only)
 set(iris_IS_PUBLIC TRUE)
 set(lcm_GIT_REPOSITORY https://github.com/RobotLocomotion/lcm-pod.git)
-set(lcm_GIT_TAG 9d03c3abcc58fd2835a64d5248b12bb637699f0f) # note: cmake branch
+set(lcm_GIT_TAG 8dba206f3403f01048b73ce10b6a17da58280fbe) # note: cmake branch
 set(lcm_IS_CMAKE_POD TRUE)
 set(lcm_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/lcm/lcm/lcm-src)
 set(lcm_IS_PUBLIC TRUE)
