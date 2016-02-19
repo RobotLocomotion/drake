@@ -3,6 +3,8 @@
 #include <vector>
 #include <stdexcept>
 #include <iostream>
+#include <functional>
+#include <memory>
 #include <Eigen/Dense>
 #include "Gradient.h"
 
@@ -118,6 +120,36 @@ namespace Drake {
     template <typename ScalarType>
     static void eval(F const& f, VecIn<ScalarType> const& x, VecOut<ScalarType>& y) {
       f.eval(x, y);
+    }
+  };
+
+  template <typename F>
+  struct FunctionTraits<std::reference_wrapper<F>> {
+    static size_t numInputs(std::reference_wrapper<F> const& f) { return f.get().numInputs(); }
+    static size_t numOutputs(std::reference_wrapper<F> const& f) { return f.get().numOutputs(); }
+    template <typename ScalarType>
+    static void eval(std::reference_wrapper<F> const& f, VecIn<ScalarType> const& x, VecOut<ScalarType>& y) {
+      f.get().eval(x, y);
+    }
+  };
+
+  template <typename F>
+  struct FunctionTraits<std::shared_ptr<F>> {
+    static size_t numInputs(std::shared_ptr<F> const& f) { return f->numInputs(); }
+    static size_t numOutputs(std::shared_ptr<F> const& f) { return f->numOutputs(); }
+    template <typename ScalarType>
+    static void eval(std::shared_ptr<F> const& f, VecIn<ScalarType> const& x, VecOut<ScalarType>& y) {
+      f->eval(x, y);
+    }
+  };
+
+  template <typename F>
+  struct FunctionTraits<std::unique_ptr<F>> {
+    static size_t numInputs(std::unique_ptr<F> const& f) { return f->numInputs(); }
+    static size_t numOutputs(std::unique_ptr<F> const& f) { return f->numOutputs(); }
+    template <typename ScalarType>
+    static void eval(std::unique_ptr<F> const& f, VecIn<ScalarType> const& x, VecOut<ScalarType>& y) {
+      f->eval(x, y);
     }
   };
 
