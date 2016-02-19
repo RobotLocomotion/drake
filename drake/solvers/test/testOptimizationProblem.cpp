@@ -27,6 +27,16 @@ struct Copyable {
   void eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
 };
 
+struct Unique {
+  Unique() = default;
+  Unique(Unique&&) = delete;
+  Unique(Unique const&) = delete;
+  constexpr size_t numInputs() { return 1; }
+  constexpr size_t numOutputs() { return 1; }
+  template<typename ScalarType>
+  void eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
+};
+
 void testAddFunction() {
   OptimizationProblem prog;
   prog.addContinuousVariables(1);
@@ -37,6 +47,11 @@ void testAddFunction() {
 
   Copyable copyable;
   prog.addCost(copyable);
+
+  Unique unique;
+  prog.addCost(std::cref(unique));
+  prog.addCost(std::make_shared<Unique>());
+  prog.addCost(std::unique_ptr<Unique>(new Unique));
 }
 
 void trivialLeastSquares() {
