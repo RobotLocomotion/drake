@@ -26,12 +26,13 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 class DRAKERBM_EXPORT RigidBodyActuator
 {
 public:
-  RigidBodyActuator(std::string _name, std::shared_ptr<RigidBody> _body, double _reduction = 1.0) :
-    name(_name), body(_body), reduction(_reduction) {};
+  RigidBodyActuator(std::string name, std::shared_ptr<RigidBody> body, double reduction = 1.0, double lower_limit = -std::numeric_limits<double>::infinity(), double upper_limit = std::numeric_limits<double>::infinity()) :
+    name(name), body(body), reduction(reduction), lower_limit(lower_limit), upper_limit(upper_limit) {};
 
   std::string name;
   std::shared_ptr<RigidBody> body;
   double reduction;
+  double lower_limit, upper_limit;
 };
 
 class DRAKERBM_EXPORT RigidBodyLoop
@@ -63,6 +64,8 @@ public:
   void addRobotFromURDF(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
   void addRobotFromURDF(const std::string &urdf_filename, std::map<std::string,std::string>& package_map, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
 
+  void addRobotFromSDF(const std::string &sdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION);
+
   void addFrame(const std::shared_ptr<RigidBodyFrame>& frame);
 
   std::map<std::string, int> computePositionNameToIndexMap() const;
@@ -79,6 +82,8 @@ public:
   std::string getPositionName(int position_num) const;
   std::string getVelocityName(int velocity_num) const;
   std::string getStateName(int state_num) const;
+
+  void drawKinematicTree(std::string graphviz_dotfile_filename);
 
   template <typename DerivedQ>
   KinematicsCache<typename DerivedQ::Scalar> doKinematics(const Eigen::MatrixBase<DerivedQ>& q) {
@@ -441,7 +446,8 @@ public:
 
   void warnOnce(const std::string& id, const std::string& msg);
 
-  std::shared_ptr<RigidBody> findLink(std::string linkname, int robot=-1) const;
+  std::shared_ptr<RigidBody> findLink(std::string linkname, int robot) const;
+  std::shared_ptr<RigidBody> findLink(std::string linkname, std::string model_name="") const;
   int findLinkId(const std::string& linkname, int robot = -1) const;
   std::shared_ptr<RigidBody> findJoint(std::string jointname, int robot=-1) const;
   int findJointId(const std::string& linkname, int robot = -1) const;

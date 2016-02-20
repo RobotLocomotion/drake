@@ -63,4 +63,15 @@ if (LCM_FOUND)
   add_executable(testMassSpringDamper testMassSpringDamper.cpp)
   target_link_libraries(testMassSpringDamper drakeRBSystem)
   add_test(NAME testMassSpringDamper COMMAND testMassSpringDamper)
+
+  if (bullet_FOUND)
+    add_executable(testLidar lidarTest.cpp)
+    target_link_libraries(testLidar drakeRBSystem)
+    add_test(NAME testLidar COMMAND testLidar)
+  endif()
+
+  add_executable(compareRigidBodySystems compareRigidBodySystems.cpp)
+  target_link_libraries(compareRigidBodySystems drakeRBSystem)
+  add_test(NAME compareAcrobotURDFtoSDF COMMAND compareRigidBodySystems Acrobot.urdf Acrobot.sdf WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/examples/Acrobot")
 endif()
+

@@ -154,7 +154,7 @@ namespace DrakeCollision
      /** Performs raycasting collision detecting (like a LIDAR / laser rangefinder)
       *
       * \param origin 3 x N matrix in which each column specifies the position
-      * of a ray's origin in world coordinates
+      * of a ray's origin in world coordinates.  if origin is 3x1, then the same origin is used for all raycasts
       * \param ray_endpoint 3 x N matrix in which each column specifies a
       * second point on the corresponding ray
       * \param use_margins flag indicating whether or not to use the version

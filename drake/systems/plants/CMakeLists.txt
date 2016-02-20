@@ -2,12 +2,16 @@
 # matlab has it's own boost libraries.  DO NOT let any mex file depend
 # on the system boost (directly nor indirectly), or you're asking for trouble.
 
-add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES RigidBodyTree.cpp RigidBody.cpp RigidBodyTreeURDF.cpp RigidBodyTreeContact.cpp)
-target_link_libraries(drakeRBM drakeCollision drakeJoints spruce drakeUtil tinyxml2)
+add_library_with_exports(LIB_NAME drakeXMLUtil SOURCE_FILES xmlUtil.cpp)
+target_link_libraries(drakeXMLUtil tinyxml2 spruce)
+pods_install_libraries(drakeXMLUtil)
+
+add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES RigidBodyTree.cpp RigidBody.cpp RigidBodyTreeURDF.cpp RigidBodyTreeSDF.cpp RigidBodyTreeContact.cpp)
+target_link_libraries(drakeRBM drakeCollision drakeJoints drakeUtil drakeXMLUtil)
 pods_install_libraries(drakeRBM)
 drake_install_headers(RigidBodyTree.h RigidBody.h RigidBodyFrame.h KinematicPath.h KinematicsCache.h ForceTorqueMeasurement.h)
 pods_install_pkg_config_file(drake-rbm
-  LIBS -ldrakeRBM -ldrakeCollision -ldrakeJoints -lspruce -ldrakeUtil
+  LIBS -ldrakeRBM -ldrakeCollision -ldrakeJoints -ldrakeUtil -ldrakeXMLUtil
   REQUIRES
   VERSION 0.0.1)
 
@@ -139,9 +143,9 @@ if (LCM_FOUND)
 
   pods_install_libraries(drakeRBSystem)
 
-  add_executable(urdfLCMNode urdfLCMNode.cpp)
-  target_link_libraries(urdfLCMNode drakeRBSystem)
-  pods_install_executables(urdfLCMNode)
+  add_executable(rigidBodyLCMNode rigidBodyLCMNode.cpp)
+  target_link_libraries(rigidBodyLCMNode drakeRBSystem)
+  pods_install_executables(rigidBodyLCMNode)
 endif (LCM_FOUND)
 
 add_subdirectory(test)
