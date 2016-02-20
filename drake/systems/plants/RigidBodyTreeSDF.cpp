@@ -137,7 +137,7 @@ void parseSDFVisual(shared_ptr<RigidBody> body, XMLElement* node, RigidBodyTree 
 
   XMLElement* material_node = node->FirstChildElement("material");
   if (material_node) {
-    Vector4d rgba(0.7,0.7,0.7,1.0);
+    Vector4d rgba(0.7,0.7,0.7,1.0);  // default color is a nice robot gray.  should only be used if diffuse is not specified.
     parseVectorValue(material_node,"diffuse",rgba);
     element.setMaterial(rgba);
   }

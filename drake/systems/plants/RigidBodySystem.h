@@ -313,7 +313,7 @@ namespace Drake {
   };
 
   /** RigidBodyDepthSensor
-   * @brief Models the forces and moments produced by a simple propellor
+   * @brief Uses raycast to simulate a depth image at some evenly spaced pixel rows and columns.
    */
   class DRAKERBSYSTEM_EXPORT RigidBodyDepthSensor : public RigidBodySensor {
   public:
