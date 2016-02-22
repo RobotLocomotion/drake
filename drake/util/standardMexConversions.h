@@ -7,7 +7,6 @@
 
 #include <string>
 #include "drake/util/mexify.h"
-#include "drake/util/GradientVar.h"
 
 /**
  * fromMex specializations
@@ -213,30 +212,6 @@ int toMex(const Eigen::Matrix<Scalar, Rows, Cols, Options, MaxRows, MaxCols> &so
   return 1;
 };
 
-template<typename Scalar, int Rows, int Cols>
-int toMex(const GradientVar<Scalar, Rows, Cols> &source, mxArray *dest[], int nlhs, bool top_level = true) {
-  if (top_level) {
-    // check number of output arguments
-    if (nlhs > source.maxOrder() + 1) {
-      std::ostringstream buf;
-      buf << nlhs << " output arguments desired, which is more than the maximum number: " << source.maxOrder() + 1 << ".";
-      mexErrMsgTxt(buf.str().c_str());
-    }
-  }
-
-  int outputs = 0;
-  if (nlhs != 0) {
-    // set an output argument
-    outputs += toMex(source.value(), dest, nlhs);
-
-    // recurse
-    if (source.hasGradient()) {
-      outputs += toMex(source.gradient(), &dest[1], nlhs - outputs, false);
-    }
-  }
-  return outputs;
-};
-
 template <typename A, typename B>
 int toMex(const std::pair<A, B>& source, mxArray* dest[], int nlhs) {
   int num_outputs = 0;
@@ -256,6 +231,33 @@ int toMex(const std::vector<T>& source, mxArray* dest[], int nlhs) {
   }
 
   return 1;
+}
+
+namespace Drake {
+  namespace internal {
+    template<size_t Index>
+    struct TupleToMexHelper {
+      template <typename ...Ts>
+      static int run(const std::tuple<Ts...>& source, mxArray *dest[], int nlhs, int num_outputs = 0) {
+        constexpr size_t tuple_index = sizeof...(Ts) - Index;
+        num_outputs += toMex(std::get<tuple_index>(source), &dest[num_outputs], nlhs - num_outputs);
+        return TupleToMexHelper<Index - 1>::run(source, dest, nlhs, num_outputs);
+      }
+    };
+
+    template<>
+    struct TupleToMexHelper<0> {
+      template <typename ...Ts>
+      static int run(const std::tuple<Ts...>& source, mxArray *dest[], int nlhs, int num_outputs = 0) {
+        return num_outputs;
+      }
+    };
+  }
+}
+
+template <typename ...Ts>
+int toMex(const std::tuple<Ts...>& source, mxArray* dest[], int nlhs) {
+  return Drake::internal::TupleToMexHelper<sizeof...(Ts)>::run(source, dest, nlhs);
 }
 
 #endif //DRAKE_STANDARDMEXCONVERSIONS_H

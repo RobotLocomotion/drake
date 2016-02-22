@@ -66,7 +66,12 @@ classdef FixedPointProgram < NonlinearProgram
       end
     end
     
-    function [xstar,ustar,info] = findFixedPoint(obj,x0,u0)
+    function [xstar,ustar,info] = findFixedPoint(obj,x0,u0,tol)
+            
+      if ~exist('tol','var')
+          tol = [];
+      end
+        
       if isa(x0,'Point')
         x0 = double(x0.inFrame(obj.getStateFrame));
       end
@@ -74,9 +79,27 @@ classdef FixedPointProgram < NonlinearProgram
         u0 = double(u0.inFrame(obj.getInputFrame));
       end
       w0 = [x0;u0];
-      [wstar,info] = solve(obj,w0);
+      [wstar,~,info] = solve(obj,w0);
       xstar = Point(obj.sys.getStateFrame,wstar(1:length(x0)));
       ustar = Point(obj.sys.getInputFrame,wstar(length(x0)+(1:length(u0))));
+      
+      if ~isempty(tol)
+          % Check that fixed-point is within tolerance, if not, make a second
+          % pass with the scaled tolerance.
+          tf = valuecheck(obj.sys.dynamics(0,double(xstar),double(ustar)),zeros(size(obj.sys.getOutputFrame)),tol);
+          if (~tf)
+              obj = obj.setSolverOptions('snopt','MajorFeasibilityTolerance',tol*max(norm(wstar,inf),1));
+              % nonlinear constraints are always normalized by the solution
+              obj = obj.setSolverOptions('snopt','MinorFeasibilityTolerance',tol);
+              % linear constraints are only normalized if "normalized" option is set to true
+              % TODO: should check for this and handle accordingly, although it is generally false afaik.
+              w0 = wstar; % warm-start with previous result
+              [wstar,~,info] = solve(obj,w0);
+              xstar = Point(obj.sys.getStateFrame,wstar(1:length(x0)));
+              ustar = Point(obj.sys.getInputFrame,wstar(length(x0)+(1:length(u0))));
+          end
+          
+      end
     end
   end
 

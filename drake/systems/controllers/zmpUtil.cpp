@@ -5,12 +5,6 @@
 using namespace Eigen;
 using namespace std;
 
-MatrixXd expm(const MatrixXd& A) {
-  MatrixXd F;
-  MatrixExponential<MatrixXd>(A).compute(F);
-  return F;
-}
-
 ExponentialPlusPiecewisePolynomial<double> s1Trajectory(const TVLQRData &sys, const PiecewisePolynomial<double> &zmp_trajectory,const Ref<const MatrixXd> &S) {
   size_t n = static_cast<size_t>(zmp_trajectory.getNumberOfSegments());
   int d = zmp_trajectory.getSegmentPolynomialDegree(0);
@@ -72,7 +66,7 @@ ExponentialPlusPiecewisePolynomial<double> s1Trajectory(const TVLQRData &sys, co
       dtpow(p) = pow(dt(j), static_cast<int>(p));
     }
     
-    alpha.col(j) = expm(A2*dt(j)).inverse() * (s1dt - beta[j]*dtpow);
+    alpha.col(j) = (A2*dt(j)).eval().exp().inverse() * (s1dt - beta[j]*dtpow);
   }
   
   vector<PiecewisePolynomial<double>::PolynomialMatrix> polynomial_matrices;

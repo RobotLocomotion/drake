@@ -262,8 +262,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   settings.gain_set = mxGetStdString(mxGetPropertySafe(mex_settings, "gain_set"));
   settings.mu = mxGetScalar(mxGetPropertySafe(mex_settings, "mu"));
   settings.use_plan_shift = static_cast<bool>(mxGetScalar(mxGetPropertySafe(mex_settings, "use_plan_shift")));
-  settings.plan_shift_body_motion_indices = matlabToStdVector<Eigen::DenseIndex>(mxGetPropertySafe(mex_settings, "plan_shift_body_motion_inds"));
-  addOffset(settings.plan_shift_body_motion_indices, (Eigen::DenseIndex) -1); // base 1 to base 0
+  settings.plan_shift_body_motion_indices = matlabToStdVector<Eigen::Index>(mxGetPropertySafe(mex_settings, "plan_shift_body_motion_inds"));
+  addOffset(settings.plan_shift_body_motion_indices, (Eigen::Index) -1); // base 1 to base 0
   settings.g = mxGetScalar(mxGetPropertySafe(mex_settings, "g"));
   settings.is_quasistatic = mxGetLogicals(mxGetPropertySafe(mex_settings, "is_quasistatic"))[0];
   settings.knee_settings.min_knee_angle = mxGetScalar(mxGetPropertySafe(mex_settings, "min_knee_angle"));

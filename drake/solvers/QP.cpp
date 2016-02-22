@@ -7,8 +7,6 @@
 #include "drake/solvers/fastQP.h"
 #include "drake/solvers/gurobiQP.h"
 
-#define _USE_MATH_DEFINES
-
 #define MAX_CONSTRS 1000
 #define MAX_STATE   1000
 #define MAX_ITER    10

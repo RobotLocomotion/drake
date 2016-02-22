@@ -93,10 +93,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
 
     Matrix<double, Dynamic, Dynamic, 0, DrakeJoint::MAX_NUM_VELOCITIES, DrakeJoint::MAX_NUM_POSITIONS> qdot_to_v;
-    MatrixXd dqdot_to_v;
-    joint->qdot2v(q, qdot_to_v, &dqdot_to_v);
+    joint->qdot2v(q, qdot_to_v, nullptr);
     safelySetField(joint_struct_out, "qdot_to_v", eigenToMatlab(qdot_to_v));
-    safelySetField(joint_struct_out, "dqdot_to_v", eigenToMatlab(dqdot_to_v));
 
     Matrix<double, Dynamic, Dynamic, 0, DrakeJoint::MAX_NUM_POSITIONS, DrakeJoint::MAX_NUM_VELOCITIES> v_to_qdot;
     MatrixXd dv_to_qdot;

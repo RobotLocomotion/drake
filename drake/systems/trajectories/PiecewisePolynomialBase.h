@@ -13,11 +13,11 @@ public:
 
   virtual ~PiecewisePolynomialBase();
 
-  virtual int getSegmentPolynomialDegree(int segment_number, Eigen::DenseIndex row = 0, Eigen::DenseIndex col = 0) const = 0;
+  virtual int getSegmentPolynomialDegree(int segment_number, Eigen::Index row = 0, Eigen::Index col = 0) const = 0;
 
-  int getNumberOfCoefficients(int segment_number, Eigen::DenseIndex row = 0, Eigen::DenseIndex col = 0) const;
+  int getNumberOfCoefficients(int segment_number, Eigen::Index row = 0, Eigen::Index col = 0) const;
 
-  int getTotalNumberOfCoefficients(Eigen::DenseIndex row = 0, Eigen::DenseIndex col = 0) const;
+  int getTotalNumberOfCoefficients(Eigen::Index row = 0, Eigen::Index col = 0) const;
 
 protected:
   PiecewisePolynomialBase();

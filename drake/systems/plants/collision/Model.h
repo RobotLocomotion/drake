@@ -99,6 +99,20 @@ namespace DrakeCollision
           std::vector<PointPair>& closest_points)
       { return false; };
 
+
+      /** \brief Compute closest distance from each point to any surface in the
+       * collision model utilizing Bullet's collision detection code.
+       * \param points Matrix of points computing distance from.
+       * \param use_margins flag indicating whether or not to use the version
+       * of this model with collision margins
+       * \param[out] closest_points a vector of PointPair objects containing 
+       * the signed distances
+       */
+      virtual void collisionDetectFromPoints(const Eigen::Matrix3Xd& points,
+                                           bool use_margins,
+                                           std::vector<PointPair>& closest_points)
+      { };
+
       /** \brief Compute the set of potential collision points for all
        * eligible pairs of collision geometries in this model. This includes
        * the points of closest approach, but may also include additional points
@@ -142,7 +156,7 @@ namespace DrakeCollision
      /** Performs raycasting collision detecting (like a LIDAR / laser rangefinder)
       *
       * \param origin 3 x N matrix in which each column specifies the position
-      * of a ray's origin in world coordinates
+      * of a ray's origin in world coordinates.  if origin is 3x1, then the same origin is used for all raycasts
       * \param ray_endpoint 3 x N matrix in which each column specifies a
       * second point on the corresponding ray
       * \param use_margins flag indicating whether or not to use the version
@@ -150,7 +164,7 @@ namespace DrakeCollision
       * \param[out] distance to the first collision, or -1 on no collision
       * \return true if this method ran successfully
       */
-      virtual bool collisionRaycast(const Eigen::Matrix3Xd &origin, const Eigen::Matrix3Xd &ray_endpoint, bool use_margins, Eigen::VectorXd &distances) { return false; };
+      virtual bool collisionRaycast(const Eigen::Matrix3Xd &origin, const Eigen::Matrix3Xd &ray_endpoint, bool use_margins, Eigen::VectorXd &distances, Eigen::Matrix3Xd &normals) { return false; };
 
     protected:
       std::unordered_map< ElementId, std::unique_ptr<Element> >  elements;

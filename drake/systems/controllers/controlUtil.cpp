@@ -329,24 +329,52 @@ void evaluateXYZExpmapCubicSpline(double t, const PiecewisePolynomial<double> &s
   auto derivative = spline.derivative();
   Vector6d xyzexpdot = derivative.value(t);
   Vector6d xyzexpddot = derivative.derivative().value(t);
+
+  // translational part
+  body_pose_des.translation() = xyzexp.head<3>();
   xyzdot_angular_vel.head<3>() = xyzexpdot.head<3>();
   xyzddot_angular_accel.head<3>() = xyzexpddot.head<3>();
-  Vector3d expmap = xyzexp.tail<3>();
-  auto quat_grad = expmap2quat(expmap,2);
-  Vector4d quat = quat_grad.value();
+
+  // rotational part
+  auto expmap = xyzexp.tail<3>();
+  auto expmap_dot = xyzexpdot.tail<3>();
+  auto expmap_ddot = xyzexpddot.tail<3>();
+
+  // construct autodiff version of expmap
+  // autodiff derivatives represent first and second derivative w.r.t. time
+  typedef AutoDiffScalar<Matrix<double, Dynamic, 1>> ADScalar; // TODO: should use 1 instead of dynamic, but causes issues with eigen on MSVC 32 bit; should be fixed in 3.3
+  typedef AutoDiffScalar<Matrix<ADScalar, Dynamic, 1>> ADScalarSecondDeriv; // TODO: should use 1 instead of dynamic, but causes issues with eigen on MSVC 32 bit; should be fixed in 3.3
+  Matrix<ADScalarSecondDeriv, 3, 1> expmap_autodiff;
+  for (int i = 0; i < expmap_autodiff.size(); i++) {
+    expmap_autodiff(i).value() = expmap(i);
+    expmap_autodiff(i).derivatives().resize(1);
+    expmap_autodiff(i).derivatives()(0) = expmap_dot(i);
+    expmap_autodiff(i).derivatives()(0).derivatives().resize(1);
+    expmap_autodiff(i).derivatives()(0).derivatives()(0) = expmap_ddot(i);
+  }
+
+  auto quat_autodiff = expmap2quat(expmap_autodiff);
+  Vector4d quat = autoDiffToValueMatrix(autoDiffToValueMatrix(quat_autodiff));
   body_pose_des.linear() = quat2rotmat(quat);
-  body_pose_des.translation() = xyzexp.head<3>();
-  Vector4d quat_dot = quat_grad.gradient().value() * xyzexpdot.tail<3>();
-  quat_grad.gradient().gradient().value().resize(12,3);
-  Matrix<double,12,3> dE = quat_grad.gradient().gradient().value();
-  Vector3d expdot = xyzexpdot.tail<3>();
-  Matrix<double,4,3> Edot = matGradMult(dE,expdot);
-  Vector4d quat_ddot = quat_grad.gradient().value()*xyzexpddot.tail<3>() + Edot*expdot;
-  Matrix<double,3,4> M;
-  Matrix<double,12,4> dM;
-  quatdot2angularvelMatrix(quat,M,&dM);
-  xyzdot_angular_vel.tail<3>() = M*quat_dot;
-  xyzddot_angular_accel.tail<3>() = M*quat_ddot + matGradMult(dM,quat_dot)*quat_dot;
+
+  // angular velocity and acceleration are computed from quaternion derivative
+  // meaning of derivative vectors remains the same: first and second derivatives w.r.t. time
+  decltype(quat_autodiff) quat_dot_autodiff;
+  for (int i = 0; i < quat_dot_autodiff.size(); i++) {
+    quat_dot_autodiff(i).value() = quat_autodiff(i).derivatives()(0).value();
+    quat_dot_autodiff(i).derivatives().resize(1);
+    quat_dot_autodiff(i).derivatives()(0).value() = quat_autodiff(i).derivatives()(0).derivatives()(0);
+    quat_dot_autodiff(i).derivatives()(0).derivatives().resize(1);
+    quat_dot_autodiff(i).derivatives()(0).derivatives()(0) = std::numeric_limits<double>::quiet_NaN(); // we're not interested in second deriv of angular velocity
+  }
+
+  auto omega_autodiff = (quatdot2angularvelMatrix(quat_autodiff) * quat_dot_autodiff).eval();
+  auto omega = xyzdot_angular_vel.tail<3>();
+  auto omega_dot = xyzddot_angular_accel.tail<3>();
+  for (int i = 0; i < omega_autodiff.size(); i++) {
+    omega(i) = omega_autodiff(i).value().value();
+    omega_dot(i) = omega_autodiff(i).derivatives()(0).value();
+  }
 }
 
 void getRobotJointIndexMap(JointNames *joint_names, RobotJointIndexMap *joint_map) {

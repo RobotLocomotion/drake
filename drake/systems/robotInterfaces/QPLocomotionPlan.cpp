@@ -11,6 +11,7 @@
 #include "drake/util/convexHull.h"
 #include "drake/examples/Atlas/atlasUtil.h"
 #include "drake/drakeQPLocomotionPlan_export.h" // TODO: exports
+#include "drake/core/Gradient.h"
 
 // TODO: discuss possibility of chatter in knee control
 // TODO: make body_motions a map from RigidBody* to BodyMotionData, remove body_id from BodyMotionData?
@@ -18,6 +19,7 @@
 
 using namespace std;
 using namespace Eigen;
+using namespace Drake;
 
 const std::map<SupportLogicType, std::vector<bool> > QPLocomotionPlan::support_logic_maps = QPLocomotionPlan::createSupportLogicMaps();
 
@@ -69,7 +71,7 @@ Matrix3Xd getFrontTwoContactPoints(const Ref<const Matrix3Xd>& contact_points) {
     return contact_points;
   }
   Vector2d best_x(-std::numeric_limits<double>::infinity(), -std::numeric_limits<double>::infinity());
-  Matrix<DenseIndex, 2, 1> best_idx;
+  Matrix<Eigen::Index, 2, 1> best_idx;
   for (int j=0; j < contact_points.cols(); ++j) {
     for (int i=0; i < 2; ++i) {
       if (contact_points(0, j) > best_x(i)) {
@@ -395,20 +397,20 @@ drake::lcmt_zmp_data QPLocomotionPlan::createZMPData(double t_plan) const
     auto comdot_des = settings.com_traj.derivative().value(t_plan);
 
     size_t x0_row = 0;
-    for (DenseIndex i = 0; i < com_des.size(); ++i) {
+    for (Eigen::Index i = 0; i < com_des.size(); ++i) {
       zmp_data_lcm.x0[x0_row++][0] = com_des(i);
     }
-    for (DenseIndex i = 0; i < comdot_des.size(); ++i) {
+    for (Eigen::Index i = 0; i < comdot_des.size(); ++i) {
       zmp_data_lcm.x0[x0_row++][0] = comdot_des(i);
     }
     eigenToCArrayOfArrays(com_des, zmp_data_lcm.y0);
   } else {
     size_t x0_row = 0;
     Vector2d shifted_zmp_final = shifted_zmp_trajectory.value(shifted_zmp_trajectory.getEndTime());
-    for (DenseIndex i = 0; i < shifted_zmp_final.size(); ++i) {
+    for (Eigen::Index i = 0; i < shifted_zmp_final.size(); ++i) {
       zmp_data_lcm.x0[x0_row++][0] = shifted_zmp_final(i);
     }
-    for (DenseIndex i = 0; i < shifted_zmp_final.size(); ++i) {
+    for (Eigen::Index i = 0; i < shifted_zmp_final.size(); ++i) {
       zmp_data_lcm.x0[x0_row++][0] = 0.0;
     }
     auto zmp_des = shifted_zmp_trajectory.value(t_plan);
@@ -456,12 +458,14 @@ void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body
   auto x0_twist = robot.relativeTwist(cache, 0, body_motion_data.getBodyOrFrameId(), 0);
 
   Vector4d x0_quat = rotmat2quat(x0_pose.linear());
-  auto x0_expmap = quat2expmap(x0_quat, 1);
-
   Matrix<double, QUAT_SIZE, SPACE_DIMENSION> Phi;
   angularvel2quatdotMatrix(x0_quat, Phi, static_cast<Gradient<decltype(Phi), Dynamic>::type*>(nullptr));
   auto quatdot = (Phi *  x0_twist.topRows<3>()).eval();
-  Vector3d xd0_expmap = x0_expmap.gradient().value() * quatdot;
+
+  auto x0_expmap_autodiff = quat2expmap(Drake::initializeAutoDiffGivenGradientMatrix(x0_quat, quatdot));
+  auto x0_expmap = autoDiffToValueMatrix(x0_expmap_autodiff);
+  auto xd0_expmap = autoDiffToGradientMatrix(x0_expmap_autodiff);
+
   // std::cout << "x0: " << x0_expmap.value()(2) << " x1: " << x1(5) << " x2: " << x2(5) << " xf: " << xf(5) << std::endl;
 
   typedef Matrix<double, 6, 1> Vector6d;
@@ -472,7 +476,7 @@ void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body
       x0(*it) += plan_shift(*it);
     }
   }
-  x0.tail<3>() = x0_expmap.value().tail<3>();
+  x0.tail<3>() = x0_expmap;
   Vector6d xd0;
   // We set the xyz components of xd0 to zero intentionally because, if it
   // happens that the foot is moving while in support, we don't want to
@@ -483,23 +487,21 @@ void QPLocomotionPlan::updateSwingTrajectory(double t_plan, BodyMotionData& body
   // If the current pose is pitched down more than the first aerial knot
   // point, adjust the knot point to match the current pose
   Vector3d unit_x = Vector3d::UnitX();
-  auto quat1_gradientvar = expmap2quat(x1.tail<3>(), 0);
   Vector3d unit_x_rotated_0 = quatRotateVec(x0_quat, unit_x);
-  Vector3d unit_x_rotated_1 = quatRotateVec(quat1_gradientvar.value(), unit_x);
+  Vector3d unit_x_rotated_1 = quatRotateVec(expmap2quat(x1.tail<3>()), unit_x);
   if (unit_x_rotated_0(2) < unit_x_rotated_1(2)) {
-    auto quat2_gradientvar = expmap2quat(x2.tail<3>(), 0);
-    x1.tail<3>() = quat2expmap(slerp(x0_quat, quat2_gradientvar.value(), 0.1), 0).value();
+    x1.tail<3>() = quat2expmap(slerp(x0_quat, expmap2quat(x2.tail<3>()), 0.1));
   }
 
   // TODO: find a less expensive way of doing this
   VectorXd xdf = trajectory.derivative().value(trajectory.getEndTime(landing_segment_index));
 
   // Unwrap all of the knots in the trajectory to ensure we don't create a wraparound
-  x1.tail<3>() = closestExpmap(x0.tail<3>(), x1.tail<3>(), 0).value();
-  x2.tail<3>() = closestExpmap(x1.tail<3>(), x2.tail<3>(), 0).value();
-  auto xf_unwrap_gradvar = closestExpmap(x2.tail<3>(), xf.tail<3>(), 1);
-  xf.tail<3>() = xf_unwrap_gradvar.value();
-  xdf.tail<3>() = xf_unwrap_gradvar.gradient().value() * xdf.tail<3>();
+  x1.tail<3>() = closestExpmap(x0.tail<3>(), x1.tail<3>());
+  x2.tail<3>() = closestExpmap(x1.tail<3>(), x2.tail<3>());
+  auto xf_unwrap_autodiff = closestExpmap(initializeAutoDiffGivenGradientMatrix(x2.tail<3>(), xdf.tail<3>()), initializeAutoDiffGivenGradientMatrix(xf.tail<3>(), xdf.tail<3>()));
+  xf.tail<3>() = autoDiffToValueMatrix(xf_unwrap_autodiff);
+  xdf.tail<3>() = autoDiffToGradientMatrix(xf_unwrap_autodiff);
 
   // std::cout << "after all modifications:" << std::endl;
   // std::cout << "x0: " << x0(5) << " x1: " << x1(5) << " x2: " << x2(5) << " xf: " << xf(5) << std::endl;

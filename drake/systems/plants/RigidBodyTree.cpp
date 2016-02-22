@@ -12,6 +12,9 @@
 #include <limits>
 #include "KinematicsCache.h"
 
+#include <iostream>
+#include <fstream>
+
 using namespace std;
 using namespace Eigen;
 
@@ -216,6 +219,42 @@ string RigidBodyTree::getStateName(int state_num) const
 		return getVelocityName(state_num - num_positions);
 }
 
+void RigidBodyTree::drawKinematicTree(std::string graphviz_dotfile_filename)
+{
+  ofstream dotfile;
+  dotfile.open(graphviz_dotfile_filename);
+  dotfile << "digraph {" << endl;
+  for (const auto& body : bodies) {
+    dotfile << "  " << body->linkname <<  " [label=\"" << body->linkname << endl;
+    dotfile << "mass=" << body->mass << ", com=" << body->com.transpose() << endl;
+    dotfile << "inertia=" << endl << body->I << endl;
+    dotfile << "\"];" << endl;
+    if (body->hasParent()) {
+      const auto& joint = body->getJoint();
+      dotfile << "  " << body->linkname << " -> " << body->parent->linkname << " [label=\"" << joint.getName() << endl;
+      dotfile << "transform_to_parent_body=" << endl << joint.getTransformToParentBody().matrix() << endl;
+ //     dotfile << "axis=" << endl << joint.get().matrix() << endl;
+      dotfile << "\"];" << endl;
+    }
+  }
+  for (const auto& frame : frames) {
+    dotfile << "  " << frame->name <<  " [label=\"" << frame->name << " (frame)\"];" << endl;
+    dotfile << "  " << frame->name << " -> " << frame->body->linkname << " [label=\"";
+    dotfile << "transform_to_body=" << endl << frame->transform_to_body.matrix() << endl;
+    dotfile << "\"];" << endl;
+  }
+
+  for (const auto& loop : loops) {
+    dotfile << "  " << loop.frameA->body->linkname << " -> " << loop.frameB->body->linkname << " [label=\"loop " << endl;
+    dotfile << "transform_to_parent_body=" << endl << loop.frameA->transform_to_body.matrix() << endl;
+    dotfile << "transform_to_child_body=" << endl << loop.frameB->transform_to_body.matrix() << endl;
+    dotfile << "\"];" << endl;
+  }
+  dotfile << "}" << endl;
+  dotfile.close();
+  cout << "Wrote kinematic tree to " << graphviz_dotfile_filename << "; run e.g. 'dot -Tpng -O " << graphviz_dotfile_filename << "' to generate an image." << endl;
+}
+
 map<string, int> RigidBodyTree::computePositionNameToIndexMap() const
 {
   map<string, int> name_to_index_map;
@@ -255,6 +294,7 @@ void RigidBodyTree::updateStaticCollisionElements()
 
 void RigidBodyTree::updateDynamicCollisionElements(const KinematicsCache<double>& cache)
 {
+  // todo: this is currently getting called many times with the same cache object.  and it's presumably somewhat expensive.
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     const RigidBody& body = **it;
     if (body.hasParent()) {
@@ -280,16 +320,60 @@ void RigidBodyTree::getTerrainContactPoints(const RigidBody& body, Eigen::Matrix
   }
 }
 
+
+void RigidBodyTree::collisionDetectFromPoints(const KinematicsCache<double>& cache,
+                                           const Matrix3Xd& points,
+                                           VectorXd& phi,
+                                           Matrix3Xd& normal,
+                                           Matrix3Xd& x,
+                                           Matrix3Xd& body_x,
+                                           vector<int>& body_idx,
+                                           bool use_margins)
+{
+  updateDynamicCollisionElements(cache);
+
+  vector<DrakeCollision::PointPair> closest_points;
+
+  collision_model->collisionDetectFromPoints(points, use_margins, closest_points);
+  x.resize(3,closest_points.size());
+  body_x.resize(3,closest_points.size());
+  normal.resize(3,closest_points.size());
+  phi.resize(closest_points.size());
+
+  Vector3d ptA, ptB, n;
+  double distance;
+  for (int i=0; i<closest_points.size(); ++i) {
+    closest_points[i].getResults(ptA, ptB, n, distance);
+    x.col(i) = ptB;
+    body_x.col(i) = ptA;
+    normal.col(i) = n;
+    phi[i] = distance;
+    const RigidBody::CollisionElement* elementB = dynamic_cast<const RigidBody::CollisionElement*>(collision_model->readElement(closest_points[i].getIdB()));
+    body_idx.push_back(elementB->getBody()->body_index);
+  }
+}
+
 bool RigidBodyTree::collisionRaycast(const KinematicsCache<double>& cache,
                                      const Matrix3Xd &origins,
                                      const Matrix3Xd &ray_endpoints,
                                      VectorXd &distances,
                                      bool use_margins )
 {
+  Matrix3Xd normals;
   updateDynamicCollisionElements(cache);
-  return collision_model->collisionRaycast(origins, ray_endpoints, use_margins, distances);
+  return collision_model->collisionRaycast(origins, ray_endpoints, use_margins, distances, normals);
 }
 
+bool RigidBodyTree::collisionRaycast(const KinematicsCache<double>& cache,
+                                     const Matrix3Xd &origins,
+                                     const Matrix3Xd &ray_endpoints,
+                                     VectorXd &distances,
+                                     Matrix3Xd &normals,
+                                     bool use_margins )
+{
+  updateDynamicCollisionElements(cache);
+  return collision_model->collisionRaycast(origins, ray_endpoints, use_margins, distances, normals);
+}
 
 bool RigidBodyTree::collisionDetect(const KinematicsCache<double>& cache,
                                     VectorXd& phi,
@@ -536,10 +620,8 @@ void RigidBodyTree::updateCompositeRigidBodyInertias(KinematicsCache<Scalar>& ca
   if (!cache.areInertiasCached()) {
     for (int i = 0; i < bodies.size(); i++) {
       auto& element = cache.getElement(*bodies[i]);
-      typename Gradient<typename Transform<Scalar, 3, Isometry>::MatrixType, Dynamic>::type* dTdq = nullptr;
-      auto inertia_in_world = transformSpatialInertia(element.transform_to_world, dTdq, bodies[i]->I.cast<Scalar>());
-      element.inertia_in_world = inertia_in_world.value();
-      element.crb_in_world = inertia_in_world.value();
+      element.inertia_in_world = transformSpatialInertia(element.transform_to_world, bodies[i]->I.cast<Scalar>());
+      element.crb_in_world = element.inertia_in_world;
     }
 
     for (int i = static_cast<int>(bodies.size()) - 1; i >= 0; i--) {
@@ -1312,6 +1394,38 @@ shared_ptr<RigidBody> RigidBodyTree::findLink(std::string linkname, int robot) c
                    ::tolower); // convert to lower case
     if (lower_linkname.compare(linkname) == 0) { // the names match
       if (robot == -1 || bodies[i]->robotnum == robot) { // it's the right robot
+        if (match < 0) { // it's the first match
+          match = i;
+        } else {
+          cerr << "found multiple links named " << linkname << endl;
+          return nullptr;
+        }
+      }
+    }
+  }
+  if (match>=0) return bodies[match];
+  cerr << "could not find any links named " << linkname << endl;
+  return nullptr;
+}
+
+shared_ptr<RigidBody> RigidBodyTree::findLink(std::string linkname, std::string model_name) const
+{
+  std::transform(linkname.begin(), linkname.end(), linkname.begin(), ::tolower); // convert to lower case
+  std::transform(model_name.begin(), model_name.end(), model_name.begin(), ::tolower); // convert to lower case
+
+  //std::regex linkname_connector("[abc]");
+  //cout<<"get linkname_connector"<<endl;
+  //linkname = std::regex_replace(linkname,linkname_connector,string("_"));
+  int match = -1;
+  for(int i = 0;i<bodies.size();i++) {
+    // Note: unlike the MATLAB implementation, I don't have to handle the fixed joint names
+    string lower_linkname = bodies[i]->linkname;
+    std::transform(lower_linkname.begin(), lower_linkname.end(), lower_linkname.begin(),
+                   ::tolower); // convert to lower case
+    if (lower_linkname.compare(linkname) == 0) { // the names match
+      string lower_model_name = bodies[i]->model_name;
+      std::transform(lower_model_name.begin(), lower_model_name.end(), lower_model_name.begin(), ::tolower);
+      if (model_name.empty() || lower_model_name.compare(model_name) == 0) { // it's the right robot
         if (match < 0) { // it's the first match
           match = i;
         } else {

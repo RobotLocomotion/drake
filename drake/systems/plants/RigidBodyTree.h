@@ -69,6 +69,8 @@ public:
   void addRobotFromURDF(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW, std::shared_ptr<RigidBodyFrame> weld_to_frame=nullptr);
   void addRobotFromURDF(const std::string &urdf_filename, std::map<std::string,std::string>& package_map, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW, std::shared_ptr<RigidBodyFrame> weld_to_frame=nullptr);
 
+  void addRobotFromSDF(const std::string &sdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION);
+
   void addFrame(const std::shared_ptr<RigidBodyFrame>& frame);
 
   std::map<std::string, int> computePositionNameToIndexMap() const;
@@ -85,6 +87,8 @@ public:
   std::string getPositionName(int position_num) const;
   std::string getVelocityName(int velocity_num) const;
   std::string getStateName(int state_num) const;
+
+  void drawKinematicTree(std::string graphviz_dotfile_filename);
 
   template <typename DerivedQ>
   KinematicsCache<typename DerivedQ::Scalar> doKinematics(const Eigen::MatrixBase<DerivedQ>& q) {
@@ -385,6 +389,19 @@ public:
   void getTerrainContactPoints(const RigidBody& body, Eigen::Matrix3Xd &terrain_points) const;
 
   bool collisionRaycast(const KinematicsCache<double>& cache, const Eigen::Matrix3Xd &origins, const Eigen::Matrix3Xd &ray_endpoints, Eigen::VectorXd &distances, bool use_margins=false);
+  bool collisionRaycast(const KinematicsCache<double>& cache, const Eigen::Matrix3Xd &origins, const Eigen::Matrix3Xd &ray_endpoints, Eigen::VectorXd &distances, Eigen::Matrix3Xd &normals, bool use_margins=false);
+
+  /** collisionDetectFromPoints
+   * @brief Computes the (signed) distance from the given points to the nearest body in the RigidBodyTree.
+   */
+  void collisionDetectFromPoints(const KinematicsCache<double>& cache,
+                       const Eigen::Matrix3Xd& points,
+                       Eigen::VectorXd& phi,
+                       Eigen::Matrix3Xd& normal,
+                       Eigen::Matrix3Xd& x,
+                       Eigen::Matrix3Xd& body_x,
+                       std::vector<int>& body_idx,
+                       bool use_margins);
 
   bool collisionDetect(const KinematicsCache<double>& cache,
                        Eigen::VectorXd& phi,
@@ -455,7 +472,8 @@ public:
 
   void warnOnce(const std::string& id, const std::string& msg);
 
-  std::shared_ptr<RigidBody> findLink(std::string linkname, int robot=-1) const;
+  std::shared_ptr<RigidBody> findLink(std::string linkname, int robot) const;
+  std::shared_ptr<RigidBody> findLink(std::string linkname, std::string model_name="") const;
   int findLinkId(const std::string& linkname, int robot = -1) const;
   std::shared_ptr<RigidBody> findJoint(std::string jointname, int robot=-1) const;
   int findJointId(const std::string& linkname, int robot = -1) const;

@@ -57,7 +57,7 @@ template <typename Derived>
 void eigenVectorToStdVector(const Eigen::MatrixBase<Derived>& source, std::vector<typename Derived::Scalar>& destination) {
   assert(source.rows() == 1 || source.cols() == 1);
   destination.resize(static_cast<size_t>(source.size()));
-  for (Eigen::DenseIndex i = 0; i < source.size(); i++) {
+  for (Eigen::Index i = 0; i < source.size(); i++) {
     destination[static_cast<size_t>(i)] = source(i);
   }
 }
@@ -66,10 +66,10 @@ void eigenVectorToStdVector(const Eigen::MatrixBase<Derived>& source, std::vecto
 template <typename Derived>
 void eigenToStdVectorOfStdVectors(const Eigen::MatrixBase<Derived>& source, std::vector< std::vector<typename Derived::Scalar> >& destination) {
   destination.resize(source.rows());
-  for (Eigen::DenseIndex row = 0; row < source.rows(); ++row) {
+  for (Eigen::Index row = 0; row < source.rows(); ++row) {
     auto& destination_row = destination[row];
     destination_row.resize(source.cols());
-    for (Eigen::DenseIndex col = 0; col < source.cols(); ++col) {
+    for (Eigen::Index col = 0; col < source.cols(); ++col) {
       destination_row[col] = source(row, col);
     }
   }
