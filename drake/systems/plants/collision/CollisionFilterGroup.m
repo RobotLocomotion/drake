@@ -45,7 +45,8 @@ classdef CollisionFilterGroup
 
     function [linknames,robotnums] = getMembers(obj)
       if ~isempty(obj.members)
-        result = regexp(obj.members,'__','split');
+        % Split at last occurence of separator
+        result = regexp(obj.members,'__(?!.*__)','split');
         result = vertcat(result{:})';
         linknames = result(1,:);
         robotnums = cellfun(@str2num,result(2,:),'UniformOutput',false);
