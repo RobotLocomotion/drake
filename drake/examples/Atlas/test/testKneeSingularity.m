@@ -94,7 +94,7 @@ ytraj = simulate(sys, [0, T], x0, struct('gui_control_interface', true));
 
 v.playback(ytraj, struct('slider', true));
 
-if ~rangecheck(rms_com, 0, 0.005);
+if ~rangecheck(rms_com, 0, 0.006);
   error('Drake:testKneeSingularity:BadCoMTracking', 'Center-of-mass during execution differs substantially from the plan.');
 end
 
