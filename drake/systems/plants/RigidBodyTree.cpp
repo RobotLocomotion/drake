@@ -1440,9 +1440,10 @@ shared_ptr<RigidBody> RigidBodyTree::findLink(std::string linkname, std::string 
   return nullptr;
 }
 
-shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(std::string frame_name, int robot) const
+shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(std::string frame_name, std::string model_name) const
 {
   std::transform(frame_name.begin(), frame_name.end(), frame_name.begin(), ::tolower); // convert to lower case
+  std::transform(model_name.begin(), model_name.end(), model_name.begin(), ::tolower); // convert to lower case
 
   int match = -1;
   for(int i = 0;i<frames.size();i++) {
@@ -1450,7 +1451,9 @@ shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(std::string frame_name, int 
     std::transform(frame_name_lower.begin(), frame_name_lower.end(), frame_name_lower.begin(),
                    ::tolower); // convert to lower case
     if (frame_name_lower.compare(frame_name) == 0) { // the names match
-      if (robot == -1 || frames[i]->body->robotnum == robot) { // it's the right robot
+      string frame_model_name_lower = frames[i]->body->model_name;
+      std::transform(frame_model_name_lower.begin(), frame_model_name_lower.end(), frame_model_name_lower.begin(), ::tolower);
+      if (model_name.empty() || frame_model_name_lower == model_name) { // it's the right robot
         if (match < 0) { // it's the first match
           match = i;
         } else {
