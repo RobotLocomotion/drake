@@ -8,6 +8,7 @@ if (LCM_FOUND)
   add_dependencies(drakeLCMSystem drake_lcmtypes lcmtype_agg_hpp)
   pods_use_pkg_config_packages(drakeLCMSystem lcm)
 
+  pods_install_libraries(drakeLCMSystem)
   drake_install_headers(LCMSystem.h)
 endif()
 
