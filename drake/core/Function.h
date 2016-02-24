@@ -3,6 +3,8 @@
 #include <vector>
 #include <stdexcept>
 #include <iostream>
+#include <functional>
+#include <memory>
 #include <Eigen/Dense>
 #include "Gradient.h"
 
@@ -104,46 +106,54 @@ namespace Drake {
     }
   };
 
-  class Function {
-  public:
-    Function() : relation(InputOutputRelation::Form::ARBITRARY) {};
-    Function(InputOutputRelation::Form f) : relation(f) {};
-    virtual ~Function() {};
+  template <typename ScalarType> using VecIn = Eigen::Ref< Eigen::Matrix<ScalarType, Eigen::Dynamic, 1> const >;
+  template <typename ScalarType> using VecOut = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
 
-    virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const = 0;
-    virtual const InputOutputRelation& getInputOutputRelation() const { return relation; };
-    // note: for multiple argument functions, this can be getInputOutputRelation(input_num,output_num)
-
-  protected:
-    InputOutputRelation relation;
+  /** FunctionTraits
+   * @brief Define interface to a function of the form y = f(x).
+   */
+  template <typename F>
+  struct FunctionTraits {
+    // TODO: add in/out relation, possibly distinguish differentiable functions
+    static size_t numInputs(F const& f) { return f.numInputs(); }
+    static size_t numOutputs(F const& f) { return f.numOutputs(); }
+    template <typename ScalarType>
+    static void eval(F const& f, VecIn<ScalarType> const& x, VecOut<ScalarType>& y) {
+      f.eval(x, y);
+    }
   };
 
-  class DifferentiableFunction : public Function {
-  public:
-    DifferentiableFunction() : Function(InputOutputRelation::Form::DIFFERENTIABLE) {};
-    virtual ~DifferentiableFunction() {};
-
-    virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const = 0;
-    virtual void eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const = 0;
+  template <typename F>
+  struct FunctionTraits<std::reference_wrapper<F>> {
+    static size_t numInputs(std::reference_wrapper<F> const& f) { return f.get().numInputs(); }
+    static size_t numOutputs(std::reference_wrapper<F> const& f) { return f.get().numOutputs(); }
+    template <typename ScalarType>
+    static void eval(std::reference_wrapper<F> const& f, VecIn<ScalarType> const& x, VecOut<ScalarType>& y) {
+      f.get().eval(x, y);
+    }
   };
 
-  template <typename Derived>
-  class TemplatedDifferentiableFunction : public DifferentiableFunction {
-  public:
-    TemplatedDifferentiableFunction(Derived& derived) : DifferentiableFunction(), derived(derived) {};
-    virtual ~TemplatedDifferentiableFunction() {};
+  template <typename F>
+  struct FunctionTraits<std::shared_ptr<F>> {
+    static size_t numInputs(std::shared_ptr<F> const& f) { return f->numInputs(); }
+    static size_t numOutputs(std::shared_ptr<F> const& f) { return f->numOutputs(); }
+    template <typename ScalarType>
+    static void eval(std::shared_ptr<F> const& f, VecIn<ScalarType> const& x, VecOut<ScalarType>& y) {
+      f->eval(x, y);
+    }
+  };
 
-    virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const override { derived.evalImpl(x,y); }
-    virtual void eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override { derived.evalImpl(x,y); }
-
-  private:
-    Derived& derived;
+  template <typename F>
+  struct FunctionTraits<std::unique_ptr<F>> {
+    static size_t numInputs(std::unique_ptr<F> const& f) { return f->numInputs(); }
+    static size_t numOutputs(std::unique_ptr<F> const& f) { return f->numOutputs(); }
+    template <typename ScalarType>
+    static void eval(std::unique_ptr<F> const& f, VecIn<ScalarType> const& x, VecOut<ScalarType>& y) {
+      f->eval(x, y);
+    }
   };
 
   // idea: use templates to support multi-input, multi-output functions which implement, e.g.
   // void eval(x1,...,xn,  y1,...,ym), and
   // InputOutputRelation getInputOutputRelation(input_index,output_index)
-
-  // idea: avoid dynamic allocation by having derived classes which template on input/output size?
-  // hopefully the use of Ref above will mean they can still derive from Function (and avoid the allocation)
 };
