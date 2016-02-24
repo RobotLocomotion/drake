@@ -1,5 +1,7 @@
 #include <iostream>
 #include "drake/examples/Pendulum/Pendulum.h"
+#include "drake/systems/CascadeSystem.h"
+#include "drake/systems/FeedbackSystem.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/controllers/LQR.h"
 #include "drake/systems/plants/BotVisualizer.h"

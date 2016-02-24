@@ -1,6 +1,7 @@
 
 #include <iostream>
 #include "Quadrotor.h"
+#include "drake/systems/CascadeSystem.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/plants/BotVisualizer.h"
 

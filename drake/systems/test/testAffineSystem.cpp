@@ -1,4 +1,6 @@
 #include "drake/util/testUtil.h"
+#include "drake/systems/CascadeSystem.h"
+#include "drake/systems/FeedbackSystem.h"
 #include "drake/systems/LinearSystem.h"
 #include <iostream>
 
