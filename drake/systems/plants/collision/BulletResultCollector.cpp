@@ -9,11 +9,6 @@ using namespace Eigen;
 
 namespace DrakeCollision
 {
-  Vector3d toVector3d(const Vector3d& vec)
-  {
-    return vec;
-  };
-
   Vector3d toVector3d(const btVector3& bt_vec)
   {
     Vector3d vec;
@@ -22,17 +17,6 @@ namespace DrakeCollision
     vec(2) = (double) bt_vec.getZ();
     return vec;
   }
-  
-  void ResultCollector::addPointPairResult(const PointPair& result)
-  {
-    pts.push_back(result);
-  }
-
-  PointPair ResultCollector::minDistPoint()
-  {
-    return *min_element(pts.begin(), pts.end());
-  }
-  
   
   btScalar BulletResultCollector::addSingleResult(btManifoldPoint& cp,	
       const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0,

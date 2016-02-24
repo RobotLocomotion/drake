@@ -1,0 +1,22 @@
+    ----------------------------------------------------
+	Your MATLAB license will expire in 14 days.
+	Please contact your system administrator or
+	go to MathWorks.com to renew this license.
+    ----------------------------------------------------
+
+	Trial License -- for use to evaluate programs for possible purchase as an end-user only.
+
+MEX configured to use <strong>'gcc'</strong> for C language compilation.
+Warning: The MATLAB C and Fortran API has changed to support MATLAB
+	 variables with more than 2^32-1 elements. In the near future
+	 you will be required to update your code to utilize the
+	 new API. You can find more information about this at:
+	 <a href="http://www.mathworks.com/help/matlab/matlab_external/upgrading-mex-files-to-use-64-bit-api.html">http://www.mathworks.com/help/matlab/matlab_external/upgrading-mex-files-to-use-64-bit-api.html</a>.
+
+To choose a different language, select one from the following:
+ <a href="matlab:mex -setup C++">mex -setup C++</a> 
+ <a href="matlab:mex -setup FORTRAN">mex -setup FORTRAN</a>
+Adding /home/claw/projects/drake/drake/../build/matlab to the matlab path
+LCM: Disabling IPV6 support
+LCM: TTL set to zero, traffic will not leave localhost.
+attempting to launch the drake director

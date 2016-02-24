@@ -44,6 +44,9 @@ else()
 	option(WITH_DIRECTOR	"vtk-based visualization tool and robot user interface"   ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
 	option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	ON) # there is hope, but i spent a long time cleaning up c/c++ language errors trying to make msvc happy.. and still had a long way to go.
 	option(WITH_BULLET 		"used for collision detection" 	ON) # almost works.  just one remaining link error..?
+	option(WITH_LIBCCD 		"Required for FCL" 	        OFF) 
+	option(WITH_FLANN 		"Required for FCL" 	        OFF) 
+	option(WITH_FCL 		"Fast Collision Library" 	OFF) 
 	option(WITH_SWIG_MATLAB "A version of SWIG with MATLAB support" ON)
 endif()
 find_program(matlab matlab)
@@ -89,7 +92,8 @@ set(libbot_dependencies lcm)
 set(director_dependencies lcm libbot)
 set(iris_dependencies eigen mosek)
 set(signalscope_dependencies director)
-set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi swig_matlab swigmake)
+set(drake_dependencies cmake eigen lcm libbot bullet libccd flann fcl octomap snopt gurobi swig_matlab swigmake)
+set(fcl_dependancies flann libccd)
 
 # download information, in alphabetical order
 set(avl_GIT_REPOSITORY https://github.com/RobotLocomotion/avl.git)
@@ -102,6 +106,22 @@ set(bullet_GIT_REPOSITORY https://github.com/RobotLocomotion/bullet-pod.git)
 set(bullet_GIT_TAG 4319ffd7e9251066d93064f5a8dab12e33dbe5e2)
 set(bullet_IS_PUBLIC TRUE)
 set(bullet_IS_CMAKE_POD TRUE)
+# ccl #tinyxml  sudo apt-get install libtinyxml-dev
+set(libccd_GIT_REPOSITORY https://github.com/danfis/libccd.git)
+set(libccd_GIT_TAG v2.0)
+set(libccd_IS_PUBLIC TRUE)
+set(libccd_IS_CMAKE_POD TRUE)
+set(flann_GIT_REPOSITORY https://github.com/mariusmuja/flann.git)
+set(flann_GIT_TAG 1.8.1-src)
+set(flann_IS_PUBLIC TRUE)
+set(flann_IS_CMAKE_POD TRUE)
+#set(fcl_GIT_REPOSITORY https://github.com/flexible-collision-library/fcl.git)
+#set(fcl_GIT_TAG 0.4.0)
+set(fcl_GIT_REPOSITORY https://github.com/law12019/fcl.git)
+set(fcl_GIT_TAG f6569963a1e6cdfe283e154154c193628234dd01)
+set(fcl_IS_PUBLIC TRUE)
+set(fcl_IS_CMAKE_POD TRUE)
+
 set(cmake_GIT_REPOSITORY https://github.com/RobotLocomotion/cmake.git)
 set(cmake_GIT_TAG 800fecfa7842f918d96a96606fa61eb99ce4d03f)
 set(cmake_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/drake/cmake")
@@ -206,6 +226,9 @@ foreach(proj IN ITEMS
 		lcm
 		libbot
 		bullet
+		libccd
+		flann
+		fcl
 		spotless
 		director
 		signalscope
