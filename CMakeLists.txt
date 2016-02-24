@@ -33,6 +33,7 @@ option(REMOVE_UNUSED_EXTERNALS "enable this to remove those projects from disk" 
 
 # ON by default:
 option(WITH_EIGEN		"required c++ matrix library.  only disable if you have it already."    ON)
+option(WITH_GOOGLETEST "required c++ unit test library.  only disable ifyou have it already." ON)
 option(WITH_SWIGMAKE    "helper tools to build python & MATLAB wrappers for C++ libraries with Eigen" ON)
 if (WIN32)
    if (CMAKE_SIZEOF_VOID_P EQUAL 8)  # gtk only compiles on win64 right now
@@ -89,7 +90,7 @@ set(libbot_dependencies lcm)
 set(director_dependencies lcm libbot)
 set(iris_dependencies eigen mosek)
 set(signalscope_dependencies director)
-set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi swig_matlab swigmake)
+set(drake_dependencies cmake eigen googletest lcm libbot bullet octomap snopt gurobi swig_matlab swigmake)
 
 # download information, in alphabetical order
 set(avl_GIT_REPOSITORY https://github.com/RobotLocomotion/avl.git)
@@ -116,6 +117,10 @@ set(eigen_GIT_REPOSITORY https://github.com/RobotLocomotion/eigen-pod.git)
 set(eigen_GIT_TAG 20a633e8f0a285edf9dcc5a06cc9e80774920a7f)
 set(eigen_IS_CMAKE_POD TRUE)
 set(eigen_IS_PUBLIC TRUE)
+set(googletest_GIT_REPOSITORY https://github.com/google/googletest.git)
+set(googletest_GIT_TAG ff07a5de0e81580547f1685e101194ed1a4fcd56)
+set(googletest_IS_CMAKE_POD TRUE)
+set(googletest_IS_PUBLIC TRUE)
 set(gtk_GIT_REPOSITORY https://github.com/RobotLocomotion/gtk-pod.git)
 set(gtk_GIT_TAG 78a110023b527e6ee372e4686118a8c7a6a51131)
 set(gtk_IS_CMAKE_POD TRUE)
@@ -202,6 +207,7 @@ foreach(proj IN ITEMS
 		cmake
 		textbook
 		eigen
+		googletest
 		gtk
 		lcm
 		libbot
