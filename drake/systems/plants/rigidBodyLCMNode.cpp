@@ -1,4 +1,5 @@
 
+#include "drake/systems/CascadeSystem.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/BotVisualizer.h"

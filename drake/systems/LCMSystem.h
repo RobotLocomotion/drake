@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <lcm/lcm-cpp.hpp>
 #include "lcmtypes/drake/lcmt_drake_signal.hpp"
+#include "drake/systems/CascadeSystem.h"
 #include "drake/systems/System.h"
 #include "drake/systems/Simulation.h"
 #include "drake/drakeLCMSystem_export.h"
