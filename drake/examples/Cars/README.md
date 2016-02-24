@@ -4,7 +4,7 @@ How to run the car simulation
 Additional prerequisites
 ------------------------
 
-Install pygame (e.g. with brew install pygame, or apt-get install pygame)
+Install pygame (e.g. with `brew install pygame`, or `apt-get install python-pygame`)
 
 Set up your python path, e.g. with
 
