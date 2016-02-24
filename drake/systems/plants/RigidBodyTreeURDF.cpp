@@ -455,17 +455,15 @@ void parseTransmission(RigidBodyTree * model, XMLElement* node) {
   if (reduction_node) parseScalarValue(reduction_node, gain);
 
   XMLElement *limit_node = joint_node->FirstChildElement("limit");
-  double effort_min = -numeric_limits<double>::infinity();
   double effort_max = numeric_limits<double>::infinity();
+  double effort_min = -numeric_limits<double>::infinity();
   if (limit_node) {
-    bool effort_min_or_max_specified = false;
-    effort_min_or_max_specified = effort_min_or_max_specified || parseScalarAttribute(limit_node, "effort_min", effort_min);
-    effort_min_or_max_specified = effort_min_or_max_specified || parseScalarAttribute(limit_node, "effort_max", effort_max);
+    parseScalarAttribute(limit_node, "effort", effort_max);
+    effort_min = -effort_max;
 
-    if (!effort_min_or_max_specified) {
-      parseScalarAttribute(limit_node, "effort_min", effort_max);
-      effort_min = -effort_max;
-    }
+    // effort_min and effort_max take precedence over effort if they exist
+    parseScalarAttribute(limit_node, "effort_min", effort_min);
+    parseScalarAttribute(limit_node, "effort_max", effort_max);
   }
 
   model->actuators.push_back(RigidBodyActuator(actuator_name, model->bodies[body_index], gain, effort_min, effort_max));
