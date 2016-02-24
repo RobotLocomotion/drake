@@ -302,6 +302,21 @@ namespace Drake {
       return addCost(std::forward<F>(f), variable_views);
     }
 
+    // libstdc++ 4.9 evaluates
+    // `std::is_convertible<std::unique_ptr<Unrelated>, std::shared_ptr<Constraint>>::value`
+    // incorrectly as `true` so our enable_if overload is not used.
+    // Provide an explicit alternative for this case.
+    template <typename F>
+    std::shared_ptr<Constraint> addCost(std::unique_ptr<F>&& f, VariableList const& vars) {
+      auto c = std::make_shared<ConstraintImpl<std::unique_ptr<F>>>(std::forward<std::unique_ptr<F>>(f));
+      addCost(c, vars);
+      return c;
+    }
+    template <typename F>
+    std::shared_ptr<Constraint> addCost(std::unique_ptr<F>&& f) {
+      return addCost(std::forward<std::unique_ptr<F>>(f), variable_views);
+    }
+
     /** addQuadraticCost
      * @brief adds a cost term of the form (x-x_desired)'*Q*(x-x_desired)
      */
