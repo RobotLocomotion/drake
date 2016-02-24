@@ -106,7 +106,6 @@ set(bullet_GIT_REPOSITORY https://github.com/RobotLocomotion/bullet-pod.git)
 set(bullet_GIT_TAG 4319ffd7e9251066d93064f5a8dab12e33dbe5e2)
 set(bullet_IS_PUBLIC TRUE)
 set(bullet_IS_CMAKE_POD TRUE)
-# ccl #tinyxml  sudo apt-get install libtinyxml-dev
 set(libccd_GIT_REPOSITORY https://github.com/danfis/libccd.git)
 set(libccd_GIT_TAG v2.0)
 set(libccd_IS_PUBLIC TRUE)
