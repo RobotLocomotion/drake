@@ -1,3 +1,4 @@
+// Copyright 2016 The Drake Authors
 #include "drake/systems/cascade_system.h"
 
 #include "drake/systems/LinearSystem.h"
@@ -8,23 +9,6 @@ using Eigen::Dynamic;
 
 namespace Drake {
 namespace {
-
-/*
-template <int NumStates1, int NumInputs1, int NumOutputs1, int NumStates2, int
-NumOutputs2>
-void testCascade(size_t num_states_1, size_t num_inputs_1, size_t num_outputs_1,
-size_t num_states_2, size_t num_outputs_2) {
-  valuecheck(num_states_1 + num_states_2, getNumStates(*combined), "Wrong number
-of states");
-  valuecheck(num_inputs_1, getNumInputs(*combined), "Wrong number of inputs");
-  valuecheck(num_outputs_2, getNumOutputs(*combined), "Wrong number of
-outputs");
-
-  auto x = createStateVector<double>(*combined);
-  valuecheck(getNumStates(*combined), static_cast<size_t>(x.size()), "State
-vector size wrong");
-}
-*/
 
 template <int NumStates1, int NumInputs1, int NumOutputs1, int NumStates2,
           int NumOutputs2>
@@ -47,6 +31,9 @@ MakeCascadeOfAffineSystems(size_t num_states_1, size_t num_inputs_1,
   return cascade(sys1_ptr, sys2_ptr);
 }
 
+// Tests that, if the number of inputs and outputs for each element in the
+// cascade is fixed at compile time, the number of states, inputs, and
+// outputs for the combined system matches up.
 TEST(CascadeSystemTest, ConstantSizes) {
   auto combined = MakeCascadeOfAffineSystems<3, 4, 5, 6, 7>(3, 4, 5, 6, 7);
   EXPECT_EQ(3 + 6, getNumStates(*combined));
@@ -55,6 +42,9 @@ TEST(CascadeSystemTest, ConstantSizes) {
   EXPECT_EQ(7, getNumOutputs(*combined));
 }
 
+// Tests that, if the number of inputs and outputs for each element in the
+// cascade is determined at construction, the number of states, inputs, and
+// outputs for the combined system matches up.
 TEST(CascadeSystemTest, DynamicSizes) {
   auto combined =
       MakeCascadeOfAffineSystems<Dynamic, Dynamic, Dynamic, Dynamic, Dynamic>(

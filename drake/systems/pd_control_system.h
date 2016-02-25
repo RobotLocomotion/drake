@@ -1,5 +1,6 @@
-#ifndef DRAKE_PD_CONTROL_SYSTEM_H
-#define DRAKE_PD_CONTROL_SYSTEM_H
+// Copyright 2016 The Drake Authors
+#ifndef DRAKE_SYSTEMS_PD_CONTROL_SYSTEM_H_
+#define DRAKE_SYSTEMS_PD_CONTROL_SYSTEM_H_
 
 #include <memory>
 #include "drake/core/Core.h"
@@ -38,7 +39,7 @@ class PDControlSystem {
            "Kd must have the same number of rows as Kp");
     assert(Drake::getNumStates(*sys) == Kp.cols() + Kd.cols() &&
            "Kp and Kd must match the number of states");
-  };
+  }
 
   template <typename ScalarType>
   StateVector<ScalarType> dynamics(const ScalarType& t,
@@ -62,9 +63,9 @@ class PDControlSystem {
 
   bool isTimeVarying() const { return sys->isTimeVarying(); }
   bool isDirectFeedthrough() const { return sys->isDirectFeedthrough(); }
-  size_t getNumStates() const { return Drake::getNumStates(*sys); };
-  size_t getNumInputs() const { return Drake::getNumStates(*sys); };
-  size_t getNumOutputs() const { return Drake::getNumOutputs(*sys); };
+  size_t getNumStates() const { return Drake::getNumStates(*sys); }
+  size_t getNumInputs() const { return Drake::getNumStates(*sys); }
+  size_t getNumOutputs() const { return Drake::getNumOutputs(*sys); }
 
  public:
   const SystemPtr& getSys() const { return sys; }
@@ -80,4 +81,4 @@ class PDControlSystem {
 
 }  // end namespace Drake
 
-#endif  // DRAKE_PD_CONTROL_SYSTEM_H
+#endif  // DRAKE_SYSTEMS_PD_CONTROL_SYSTEM_H_

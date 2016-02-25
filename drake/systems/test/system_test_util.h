@@ -1,5 +1,6 @@
-#ifndef DRAKE_SYSTEM_TEST_UTIL_H
-#define DRAKE_SYSTEM_TEST_UTIL_H
+// Copyright 2016 The Drake Authors
+#ifndef DRAKE_SYSTEMS_TEST_SYSTEM_TEST_UTIL_H_
+#define DRAKE_SYSTEMS_TEST_SYSTEM_TEST_UTIL_H_
 
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/cascade_system.h"
@@ -45,9 +46,9 @@ CreateRandomAffineSystem(size_t num_states, size_t num_inputs,
           .eval();
   return std::allocate_shared<ReturnType>(
       Eigen::aligned_allocator<ReturnType>(), A, B, xdot0, C, D, y0);
-};
+}
 
 }  // namespace system_test
 }  // namespace Drake
 
-#endif  // DRAKE_SYSTEM_TEST_UTIL_H
+#endif  // DRAKE_SYSTEMS_TEST_SYSTEM_TEST_UTIL_H_

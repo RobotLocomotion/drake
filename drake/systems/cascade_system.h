@@ -1,5 +1,6 @@
-#ifndef DRAKE_CASCADE_SYSTEM_H
-#define DRAKE_CASCADE_SYSTEM_H
+// Copyright 2016 The Drake Authors
+#ifndef DRAKE_SYSTEMS_CASCADE_SYSTEM_H_
+#define DRAKE_SYSTEMS_CASCADE_SYSTEM_H_
 
 #include <memory>
 #include "drake/core/Core.h"
@@ -43,7 +44,7 @@ class CascadeSystem {
       "System 2 input vector must match System 1 output vector");
 
   CascadeSystem(const System1Ptr& _sys1, const System2Ptr& _sys2)
-      : sys1(_sys1), sys2(_sys2){};
+      : sys1(_sys1), sys2(_sys2) {}
 
   template <typename ScalarType>
   StateVector<ScalarType> dynamics(const ScalarType& t,
@@ -76,9 +77,9 @@ class CascadeSystem {
   }
   size_t getNumStates() const {
     return Drake::getNumStates(*sys1) + Drake::getNumStates(*sys2);
-  };
-  size_t getNumInputs() const { return Drake::getNumInputs(*sys1); };
-  size_t getNumOutputs() const { return Drake::getNumOutputs(*sys2); };
+  }
+  size_t getNumInputs() const { return Drake::getNumInputs(*sys1); }
+  size_t getNumOutputs() const { return Drake::getNumOutputs(*sys2); }
 
  public:
   const System1Ptr& getSys1() const { return sys1; }
@@ -105,8 +106,8 @@ std::shared_ptr<CascadeSystem<System1, System2>> cascade(
     const std::shared_ptr<System1>& sys1,
     const std::shared_ptr<System2>& sys2) {
   return std::make_shared<CascadeSystem<System1, System2>>(sys1, sys2);
-};
+}
 
 }  // namespace Drake
 
-#endif  // DRAKE_CASCADE_SYSTEM_H
+#endif  // DRAKE_SYSTEMS_CASCADE_SYSTEM_H_
