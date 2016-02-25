@@ -1,5 +1,6 @@
-#ifndef DRAKE_FEEDBACK_SYSTEM_H
-#define DRAKE_FEEDBACK_SYSTEM_H
+// Copyright 2016 The Drake Authors
+#ifndef DRAKE_SYSTEMS_FEEDBACK_SYSTEM_H_
+#define DRAKE_SYSTEMS_FEEDBACK_SYSTEM_H_
 
 #include <memory>
 #include "drake/core/Core.h"
@@ -47,7 +48,7 @@ class FeedbackSystem {
       "System 1 input vector must match System 2 output vector");
 
   FeedbackSystem(const System1Ptr& _sys1, const System2Ptr& _sys2)
-      : sys1(_sys1), sys2(_sys2){};
+      : sys1(_sys1), sys2(_sys2) {}
 
   template <typename ScalarType>
   StateVector<ScalarType> dynamics(const ScalarType& t,
@@ -57,7 +58,7 @@ class FeedbackSystem {
     InputVector<ScalarType> y2;
     auto x1 = util::first(x);
     auto x2 = util::second(x);
-    subsystemOutputs(t, x1, x2, u, y1, y2);
+    subsystemOutputs(t, x1, x2, u, &y1, &y2);
 
     StateVector<ScalarType> xdot = util::combine(
         sys1->dynamics(t, x1, static_cast<InputVector<ScalarType>>(toEigen(y2) +
@@ -92,9 +93,9 @@ class FeedbackSystem {
   bool isDirectFeedthrough() const { return sys1->isDirectFeedthrough(); }
   size_t getNumStates() const {
     return Drake::getNumStates(*sys1) + Drake::getNumStates(*sys2);
-  };
-  size_t getNumInputs() const { return Drake::getNumInputs(*sys1); };
-  size_t getNumOutputs() const { return Drake::getNumOutputs(*sys1); };
+  }
+  size_t getNumInputs() const { return Drake::getNumInputs(*sys1); }
+  size_t getNumOutputs() const { return Drake::getNumOutputs(*sys1); }
 
   const System1Ptr& getSys1() const { return sys1; }
 
@@ -111,17 +112,17 @@ class FeedbackSystem {
   void subsystemOutputs(const ScalarType& t, const StateVector1<ScalarType>& x1,
                         const StateVector2<ScalarType>& x2,
                         const InputVector<ScalarType>& u,
-                        OutputVector<ScalarType>& y1,
-                        InputVector<ScalarType>& y2) const {
+                        OutputVector<ScalarType>* y1,
+                        InputVector<ScalarType>* y2) const {
     if (!sys1->isDirectFeedthrough()) {
-      y1 = sys1->output(t, x1, u);  // output does not depend on u (so it's ok
+      *y1 = sys1->output(t, x1, u);  // output does not depend on u (so it's ok
                                     // that we're not passing u+y2)
-      y2 = sys2->output(t, x2, y1);
+      *y2 = sys2->output(t, x2, *y1);
     } else {
-      y2 = sys2->output(
-          t, x2, y1);  // y1 might be uninitialized junk, but has to be ok
-      y1 = sys1->output(t, x1, static_cast<InputVector<ScalarType>>(
-                                   toEigen(y2) + toEigen(u)));
+      *y2 = sys2->output(
+          t, x2, *y1);  // y1 might be uninitialized junk, but has to be ok
+      *y1 = sys1->output(t, x1, static_cast<InputVector<ScalarType>>(
+                                   toEigen(*y2) + toEigen(u)));
     }
   }
 
@@ -138,8 +139,8 @@ std::shared_ptr<FeedbackSystem<System1, System2>> feedback(
     const std::shared_ptr<System1>& sys1,
     const std::shared_ptr<System2>& sys2) {
   return std::make_shared<FeedbackSystem<System1, System2>>(sys1, sys2);
-};
+}
 
 }  // namespace Drake
 
-#endif  // DRAKE_FEEDBACK_SYSTEM_H
+#endif  // DRAKE_SYSTEMS_FEEDBACK_SYSTEM_H_
