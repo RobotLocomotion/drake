@@ -6,8 +6,7 @@
 using namespace std;
 using namespace Eigen;
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
   if (argc < 2) {
     cerr << "Usage: urdfManipulatorDynamicsTest urdf_filename" << endl;
     exit(-1);
@@ -19,7 +18,8 @@ int main(int argc, char* argv[])
   }
   cout << "=======" << endl;
 
-  // the order of the bodies may be different in matlab, so print it out once here
+  // the order of the bodies may be different in matlab, so print it out once
+  // here
   cout << model->bodies.size() << endl;
   for (int i = 0; i < model->bodies.size(); i++) {
     cout << model->bodies[i]->linkname << endl;
@@ -44,13 +44,14 @@ int main(int argc, char* argv[])
   auto H = model->massMatrix(cache);
   cout << H << endl;
 
-  eigen_aligned_unordered_map<RigidBody const *, Matrix<double, TWIST_SIZE, 1> > f_ext;
+  eigen_aligned_unordered_map<RigidBody const*, Matrix<double, TWIST_SIZE, 1> >
+      f_ext;
   auto C = model->dynamicsBiasTerm(cache, f_ext);
   cout << C << endl;
 
   cout << model->B << endl;
 
-  if (model->loops.size()>0) {
+  if (model->loops.size() > 0) {
     auto phi = model->positionConstraints(cache);
     cout << phi << endl;
     auto dphi = model->positionConstraintsJacobian(cache);

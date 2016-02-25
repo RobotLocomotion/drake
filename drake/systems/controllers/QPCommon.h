@@ -10,16 +10,17 @@
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
 #include "drake/systems/robotInterfaces/Side.h"
 #include "drake/solvers/gurobiQP.h"
-#include "drake/drakeQP_export.h" // TODO: do exports
+#include "drake/drakeQP_export.h"  // TODO: do exports
 
 const double REG = 1e-8;
 
 struct QPControllerData {
   GRBenv *env;
-  RigidBodyTree * r;
-  double slack_limit; // maximum absolute magnitude of acceleration slack variable values
-  Eigen::VectorXd umin,umax;
-  void* map_ptr;
+  RigidBodyTree *r;
+  double slack_limit;  // maximum absolute magnitude of acceleration slack
+                       // variable values
+  Eigen::VectorXd umin, umax;
+  void *map_ptr;
   std::set<int> active;
 
   // preallocate memory
@@ -32,27 +33,32 @@ struct QPControllerData {
   Eigen::Vector2d Jdotv_xy;
   Eigen::MatrixXd Hqp;
   Eigen::RowVectorXd fqp;
-  
-  // momentum controller-specific
-  Eigen::MatrixXd Ag; // centroidal momentum matrix
-  Vector6d Agdot_times_v; // centroidal momentum velocity-dependent bias
-  Eigen::MatrixXd Ak; // centroidal angular momentum matrix
-  Eigen::Vector3d Akdot_times_v; // centroidal angular momentum velocity-dependent bias
 
-  Eigen::MatrixXd W_kdot; // quadratic cost for angular momentum rate: (kdot_des - kdot)'*W*(kdot_des - kdot)
-  Eigen::VectorXd w_qdd; 
-  double w_grf; 
-  double w_slack; 
-  double Kp_ang; // angular momentum (k) P gain 
-  double Kp_accel; // gain for support acceleration constraint: accel=-Kp_accel*vel
+  // momentum controller-specific
+  Eigen::MatrixXd Ag;      // centroidal momentum matrix
+  Vector6d Agdot_times_v;  // centroidal momentum velocity-dependent bias
+  Eigen::MatrixXd Ak;      // centroidal angular momentum matrix
+  Eigen::Vector3d
+      Akdot_times_v;  // centroidal angular momentum velocity-dependent bias
+
+  Eigen::MatrixXd W_kdot;  // quadratic cost for angular momentum rate:
+                           // (kdot_des - kdot)'*W*(kdot_des - kdot)
+  Eigen::VectorXd w_qdd;
+  double w_grf;
+  double w_slack;
+  double Kp_ang;    // angular momentum (k) P gain
+  double Kp_accel;  // gain for support acceleration constraint:
+                    // accel=-Kp_accel*vel
 
   int n_body_accel_inputs;
   int n_body_accel_eq_constraints;
   Eigen::VectorXd body_accel_input_weights;
   int n_body_accel_bounds;
   std::vector<int> accel_bound_body_idx;
-  std::vector<Vector6d,Eigen::aligned_allocator<Vector6d>> min_body_acceleration;
-  std::vector<Vector6d,Eigen::aligned_allocator<Vector6d>> max_body_acceleration;
+  std::vector<Vector6d, Eigen::aligned_allocator<Vector6d>>
+      min_body_acceleration;
+  std::vector<Vector6d, Eigen::aligned_allocator<Vector6d>>
+      max_body_acceleration;
 
   // gurobi active set params
   int *vbasis;
@@ -85,10 +91,12 @@ struct BodyIdsCache {
   int l_foot;
   int pelvis;
 };
-   
+
 struct RobotPropertyCache {
-  typedef std::map<std::string, Eigen::Matrix3Xd> ContactGroupNameToContactPointsMap;
-  std::vector<ContactGroupNameToContactPointsMap> contact_groups; // one for each support
+  typedef std::map<std::string, Eigen::Matrix3Xd>
+      ContactGroupNameToContactPointsMap;
+  std::vector<ContactGroupNameToContactPointsMap>
+      contact_groups;  // one for each support
   std::map<std::string, Eigen::VectorXi> position_indices;
   BodyIdsCache body_ids;
   Eigen::VectorXi actuated_indices;
@@ -176,13 +184,13 @@ struct QPControllerParams {
 };
 
 class NewQPControllerData {
-public:
+ public:
   GRBenv *env;
-  RigidBodyTree * r;
-  std::map<std::string,QPControllerParams> param_sets;
+  RigidBodyTree *r;
+  std::map<std::string, QPControllerParams> param_sets;
   RobotPropertyCache rpc;
-  void* map_ptr;
-  Eigen::VectorXd umin,umax;
+  void *map_ptr;
+  Eigen::VectorXd umin, umax;
   int use_fast_qp;
   JointNames input_joint_names;
   std::vector<std::string> state_coordinate_names;
@@ -200,20 +208,20 @@ public:
   Eigen::RowVectorXd fqp;
   Eigen::VectorXd qdd_lb;
   Eigen::VectorXd qdd_ub;
-  
-  // momentum controller-specific
-  Eigen::MatrixXd Ag; // centroidal momentum matrix
-  Vector6d Agdot_times_v; // centroidal momentum velocity-dependent bias
-  Eigen::MatrixXd Ak; // centroidal angular momentum matrix
-  Eigen::Vector3d Akdot_times_v; // centroidal angular momentum velocity-dependent bias
 
-  // logical separation for the "state", that is, things we expect to change at every iteration
+  // momentum controller-specific
+  Eigen::MatrixXd Ag;      // centroidal momentum matrix
+  Vector6d Agdot_times_v;  // centroidal momentum velocity-dependent bias
+  Eigen::MatrixXd Ak;      // centroidal angular momentum matrix
+  Eigen::Vector3d
+      Akdot_times_v;  // centroidal angular momentum velocity-dependent bias
+
+  // logical separation for the "state", that is, things we expect to change at
+  // every iteration
   // and which must persist to the next iteration
   QPControllerState state;
 
-  NewQPControllerData(RigidBodyTree * r) :
-      r(r), cache(r->bodies)
-  {
+  NewQPControllerData(RigidBodyTree *r) : r(r), cache(r->bodies) {
     // empty
   }
 };
@@ -238,7 +246,8 @@ struct QPControllerOutput {
 };
 
 struct QPControllerDebugData {
-  std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> active_supports;
+  std::vector<SupportStateElement,
+              Eigen::aligned_allocator<SupportStateElement>> active_supports;
   int nc;
   Eigen::MatrixXd normals;
   Eigen::MatrixXd B;
@@ -267,19 +276,34 @@ struct PIDOutput {
   Eigen::VectorXd qddot_des;
 };
 
-//enum PlanShiftMode {NONE, XYZ, Z_ONLY, Z_AND_ZMP};
+// enum PlanShiftMode {NONE, XYZ, Z_ONLY, Z_AND_ZMP};
 
+PIDOutput wholeBodyPID(NewQPControllerData *pdata, double t,
+                       const Eigen::Ref<const Eigen::VectorXd> &q,
+                       const Eigen::Ref<const Eigen::VectorXd> &qd,
+                       const Eigen::Ref<const Eigen::VectorXd> &q_des,
+                       WholeBodyParams *params);
 
-PIDOutput wholeBodyPID(NewQPControllerData *pdata, double t, const Eigen::Ref<const Eigen::VectorXd> &q, const Eigen::Ref<const Eigen::VectorXd> &qd, const Eigen::Ref<const Eigen::VectorXd> &q_des, WholeBodyParams *params);
+Eigen::VectorXd velocityReference(NewQPControllerData *pdata, double t,
+                                  const Eigen::Ref<Eigen::VectorXd> &q,
+                                  const Eigen::Ref<Eigen::VectorXd> &qd,
+                                  const Eigen::Ref<Eigen::VectorXd> &qdd,
+                                  bool foot_contact[2],
+                                  VRefIntegratorParams *params,
+                                  RobotPropertyCache *rpc);
 
-Eigen::VectorXd velocityReference(NewQPControllerData *pdata, double t, const Eigen::Ref<Eigen::VectorXd> &q, const Eigen::Ref<Eigen::VectorXd> &qd, const Eigen::Ref<Eigen::VectorXd> &qdd, bool foot_contact[2], VRefIntegratorParams *params, RobotPropertyCache *rpc);
-
-std::vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>> loadAvailableSupports(std::shared_ptr<drake::lcmt_qp_controller_input> qp_input);
+std::vector<SupportStateElement, Eigen::aligned_allocator<SupportStateElement>>
+loadAvailableSupports(
+    std::shared_ptr<drake::lcmt_qp_controller_input> qp_input);
 
 int setupAndSolveQP(
-		NewQPControllerData *pdata, std::shared_ptr<drake::lcmt_qp_controller_input> qp_input, DrakeRobotState &robot_state,
-		const Eigen::Ref<Eigen::Matrix<bool, Eigen::Dynamic, 1>> &b_contact_force, const std::map<Side, ForceTorqueMeasurement>& foot_force_torque_measurements,
-		QPControllerOutput *qp_output, std::shared_ptr<QPControllerDebugData> debug);
-
+    NewQPControllerData *pdata,
+    std::shared_ptr<drake::lcmt_qp_controller_input> qp_input,
+    DrakeRobotState &robot_state,
+    const Eigen::Ref<Eigen::Matrix<bool, Eigen::Dynamic, 1>> &b_contact_force,
+    const std::map<Side, ForceTorqueMeasurement>
+        &foot_force_torque_measurements,
+    QPControllerOutput *qp_output,
+    std::shared_ptr<QPControllerDebugData> debug);
 
 #endif

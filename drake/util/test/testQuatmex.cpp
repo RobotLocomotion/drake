@@ -7,9 +7,10 @@ using namespace std;
 using namespace Drake;
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
-
   if (nrhs != 5) {
-    mexErrMsgIdAndTxt("Drake:testQuatmex:BadInputs", "Usage [r,dr,e,ed,quat,dquat,q3,dq3,w,dw] = testQuatmex(q1,q2,axis,u,v)");
+    mexErrMsgIdAndTxt("Drake:testQuatmex:BadInputs",
+                      "Usage [r,dr,e,ed,quat,dquat,q3,dq3,w,dw] = "
+                      "testQuatmex(q1,q2,axis,u,v)");
   }
   Vector4d q1;
   Vector4d q2;
@@ -19,10 +20,9 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   Vector3d axis;
   memcpy(axis.data(), mxGetPr(prhs[2]), sizeof(double) * 3);
 
-  Vector3d u,v;
-  memcpy(u.data(),mxGetPr(prhs[3]),sizeof(double)*3);
-  memcpy(v.data(),mxGetPr(prhs[4]),sizeof(double)*3);
-
+  Vector3d u, v;
+  memcpy(u.data(), mxGetPr(prhs[3]), sizeof(double) * 3);
+  memcpy(v.data(), mxGetPr(prhs[4]), sizeof(double) * 3);
 
   {
     auto autodiff_args = initializeAutoDiffTuple(q1, q2);
@@ -38,7 +38,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 
   {
     auto autodiff_args = initializeAutoDiffTuple(q1, q2, axis);
-    auto e_autodiff = quatDiffAxisInvar(get<0>(autodiff_args), get<1>(autodiff_args), get<2>(autodiff_args));
+    auto e_autodiff = quatDiffAxisInvar(
+        get<0>(autodiff_args), get<1>(autodiff_args), get<2>(autodiff_args));
     auto e = e_autodiff.value();
     auto de = e_autodiff.derivatives().transpose().eval();
 
@@ -49,7 +50,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 
   {
     auto autodiff_args = initializeAutoDiffTuple(q1, q2);
-    auto q3_autodiff = quatProduct(get<0>(autodiff_args), get<1>(autodiff_args));
+    auto q3_autodiff =
+        quatProduct(get<0>(autodiff_args), get<1>(autodiff_args));
     auto q3 = autoDiffToValueMatrix(q3_autodiff);
     auto dq3 = autoDiffToGradientMatrix(q3_autodiff);
 
@@ -61,7 +63,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 
   {
     auto autodiff_args = initializeAutoDiffTuple(q1, u);
-    auto w_autodiff = quatRotateVec(get<0>(autodiff_args), get<1>(autodiff_args));
+    auto w_autodiff =
+        quatRotateVec(get<0>(autodiff_args), get<1>(autodiff_args));
     auto w = autoDiffToValueMatrix(w_autodiff);
     auto dw = autoDiffToGradientMatrix(w_autodiff);
 
