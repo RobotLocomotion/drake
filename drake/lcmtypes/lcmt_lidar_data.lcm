@@ -1,0 +1,66 @@
+package drake;
+
+struct lcmt_lidar_data
+{
+  /// Range from the sensor to the point (1-tuple).
+  const int32_t RANGE = 0;
+
+  /// Location of the point in the sensor's coordinate system (3-tuple).
+  const int32_t POSITION = 1;
+
+  /// Strength of the return (in device dependent units) (1-tuple).
+  const int32_t INTENSITY = 2;
+
+  /// Color associated with the point (3-tuple).
+  const int32_t RGB_COLOR = 3;
+
+  /// Index of return (1-tuple).
+  ///
+  /// For sensors which can detect multiple returns per laser pulse, this field
+  /// indicates the return number. The first return is \c 0; additional returns
+  /// should be sequentially numbered.
+  const int32_t ECHO = 4;
+
+  /// Index of the element which produced the point (1-tuple).
+  ///
+  /// The meaning of this field is device dependent, but is intended for
+  /// devices such as multi-laser rotating sensors, for which this field is
+  /// intended to identify which laser element produced the point.
+  const int32_t SCAN = 5;
+
+  /// Time at which the sensor data was received.
+  ///
+  /// This provides a time stamp which may be used to assess the age of sensor
+  /// data and/or correlate the data from multiple data streams (e.g. raw
+  /// sensor data and sensor position data). Traditionally, this value
+  /// represents the UTC time at which the data was generated, as measured in
+  /// nanoseconds since the UNIX epoch (1970-01-01 00:00 UTC).
+  int64_t timestamp;
+
+  /// Device dependent indicator of the sensor position.
+  ///
+  /// This gives the position of the sensor according to the sensor's movement.
+  /// The units are assumed to be device dependent. Note that the aggregator
+  /// will discard previous data whose scan_angle is between the two most
+  /// recent values. Wrap-around is handled based on the scan_direction.
+  float scan_angle;
+
+  /// If the sensor is scanning in reverse direction.
+  ///
+  /// This represents the direction of the sensor scanning. For rotating
+  /// sensors, it is expected to always be \c false. For bidirectional sweeping
+  /// sensors, it is \c true on the back half of each sweep. (More importantly,
+  /// should be \c true if the scan_angle is decreasing.)
+  boolean scan_direction;
+
+  int32_t num_fields;
+
+  /// Field data.
+  ///
+  /// This provides the data associated with each point in the return set. The
+  /// number of values in each field shall equal the number of field
+  /// tuple-values (see field descriptions) times the number of points. Values
+  /// shall be packed by point; that is, the tuple stride shall be \c 1 and the
+  /// point stride shall be the tuple-size of the field.
+  lcmt_lidar_field fields[num_fields];
+}

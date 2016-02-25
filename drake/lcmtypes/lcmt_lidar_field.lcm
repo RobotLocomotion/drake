@@ -1,0 +1,8 @@
+package drake;
+
+struct lcmt_lidar_field
+{
+  int32_t id;
+  int32_t num_values;
+  float values[num_values];
+}
