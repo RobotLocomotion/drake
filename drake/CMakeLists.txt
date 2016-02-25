@@ -143,6 +143,8 @@ endif()
 
 enable_testing()
 include(CTest)
+find_package(GTest REQUIRED)
+include_directories(${GTEST_INCLUDE_DIRS})
 
 set(drake_jar_javafiles util/Transform.java)
 set(drake_jar_requires)
