@@ -15,6 +15,10 @@ namespace DrakeCollision
     return id;
   }
 
+  bool Model::removeElement(const ElementId& id) {
+    return elements.erase(id) > 0;
+  }
+
   const Element* Model::readElement(ElementId id)
   {
     auto element_iter = elements.find(id);

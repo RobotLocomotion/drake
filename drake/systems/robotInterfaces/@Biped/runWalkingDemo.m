@@ -12,7 +12,8 @@ if nargin < 2; walking_options = struct(); end;
 walking_options = applyDefaults(walking_options, struct('initial_pose', [],...
                                                         'navgoal', [1.5;0;0;0;0;0],...
                                                         'max_num_steps', 6,...
-                                                        'rms_com_tolerance', 0.0051));
+                                                        'rms_com_tolerance', 0.0051,...
+                                                        'urdf_modifications_file', ''));
 walking_options = applyDefaults(walking_options, obj.default_footstep_params);
 walking_options = applyDefaults(walking_options, obj.default_walking_params);
 
@@ -48,7 +49,7 @@ end
 % Generate a dynamic walking plan
 walking_plan_data = obj.planWalkingZMP(x0(1:obj.getNumPositions()), footstep_plan);
 
-[ytraj, com, rms_com] = obj.simulateWalking(walking_plan_data);
+[ytraj, com, rms_com] = obj.simulateWalking(walking_plan_data, walking_options);
 
 v.playback(ytraj, struct('slider', true));
 

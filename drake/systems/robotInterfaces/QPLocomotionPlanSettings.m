@@ -36,7 +36,6 @@ classdef QPLocomotionPlanSettings
 
     duration = inf;
     start_time = 0;
-    default_qp_input = bipedControllers.QPInputConstantHeight;
     gain_set = 'standing';
   end
 
@@ -47,7 +46,6 @@ classdef QPLocomotionPlanSettings
       prop_cache = robot.getRobotPropertyCache();
       obj.contact_groups = prop_cache.contact_groups;
       obj.qtraj = S.xstar(1:prop_cache.nq);
-      obj.default_qp_input.whole_body_data.q_des = getZeroConfiguration(obj.robot.getManipulator);
       obj.constrained_dofs = [prop_cache.position_indices.arm; prop_cache.position_indices.neck; prop_cache.position_indices.back_bkz; prop_cache.position_indices.back_bky];
       obj.untracked_joint_inds = [];
       obj.zmp_data = QPLocomotionPlanSettings.defaultZMPData();
