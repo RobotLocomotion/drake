@@ -1,9 +1,9 @@
-#include "RigidBodySystem.h"
-#include "BotVisualizer.h"
-#include "drakeAppUtil.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
-#include "drake/systems/PDControlSystem.h"
+#include "drake/systems/pd_control_system.h"
+#include "drake/systems/plants/BotVisualizer.h"
+#include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/util/drakeAppUtil.h"
 #include "lcmtypes/drake/lcmt_driving_control_cmd_t.hpp"
 
 using namespace std;
