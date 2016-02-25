@@ -202,9 +202,10 @@ static int snopt_userfun(snopt::integer *Status, snopt::integer *n, snopt::doubl
   // evaluate objective
   auto tx = initializeAutoDiff(xvec);
   TaylorVecXd ty(1), this_x(*n);
-  for (auto const& obj : current_problem->getGenericObjectives() ) {
+  for (auto const& binding : current_problem->getGenericObjectives() ) {
+    auto const& obj = binding.getConstraint();
     size_t index=0;
-    for (const DecisionVariableView& v : obj->getVariableList() ) {
+    for (const DecisionVariableView& v : binding.getVariableList() ) {
       this_x.segment(index, v.size()) = tx.segment(v.index(), v.size());
       index += v.size();
     }
@@ -212,7 +213,7 @@ static int snopt_userfun(snopt::integer *Status, snopt::integer *n, snopt::doubl
     obj->eval(tx,ty);
 
     F[constraint_index++] += static_cast<snopt::doublereal>(ty(0).value()); // cout << "F = " << F[0] << endl;
-    for (const DecisionVariableView& v : obj->getVariableList() ) {
+    for (const DecisionVariableView& v : binding.getVariableList() ) {
       for (size_t j=v.index();j<v.index()+v.size();j++) {
         G[grad_index+j] += static_cast<snopt::doublereal>(ty(0).derivatives()(j));
 //      cout << "G[" << j << "] = " << G[j] << endl;
@@ -221,9 +222,10 @@ static int snopt_userfun(snopt::integer *Status, snopt::integer *n, snopt::doubl
   }
   grad_index += *n;
 
-  for (auto const& c : current_problem->getGenericConstraints()) {
+  for (auto const& binding : current_problem->getGenericConstraints()) {
+    auto const& c = binding.getConstraint();
     size_t index=0, num_constraints = c->getNumConstraints();
-    for (const DecisionVariableView& v : c->getVariableList() ) {
+    for (const DecisionVariableView& v : binding.getVariableList() ) {
       this_x.segment(index, v.size()) = tx.segment(v.index(), v.size());
       index += v.size();
     }
@@ -232,7 +234,7 @@ static int snopt_userfun(snopt::integer *Status, snopt::integer *n, snopt::doubl
     c->eval(tx,ty);
 
     for (i=0;i<num_constraints;i++) { F[constraint_index++] = static_cast<snopt::doublereal>(ty(i).value()); }
-    for (const DecisionVariableView& v : c->getVariableList() ) {
+    for (const DecisionVariableView& v : binding.getVariableList() ) {
       for (i=0; i<num_constraints; i++) {
         for (size_t j=v.index(); j<v.index()+v.size(); j++) {
           G[grad_index++] = static_cast<snopt::doublereal>(ty(i).derivatives()(j));
@@ -272,8 +274,9 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
     xlow[i] = static_cast<snopt::doublereal>(-numeric_limits<double>::infinity());
     xupp[i] = static_cast<snopt::doublereal>(numeric_limits<double>::infinity());
   }
-  for (auto const& c : prog.bbox_constraints ) {
-    for (const DecisionVariableView& v : c->getVariableList() ) {
+  for (auto const& binding : prog.bbox_constraints ) {
+    auto const& c = binding.getConstraint();
+    for (const DecisionVariableView& v : binding.getVariableList() ) {
       auto const lb = c->getLowerBound(), ub = c->getUpperBound();
       for (int k=0; k<v.size(); k++) {
         xlow[v.index()+k] = std::max<snopt::doublereal>(static_cast<snopt::doublereal>(lb(k)),xlow[v.index()+k]);
@@ -283,15 +286,18 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   }
 
   size_t num_nonlinear_constraints=0, max_num_gradients=nx;
-  for (auto const& c : prog.generic_constraints) {
+  for (auto const& binding : prog.generic_constraints) {
+    auto const& c = binding.getConstraint();
     size_t n = c->getNumConstraints();
-    for (const DecisionVariableView& v : c->getVariableList() ) {
+    for (const DecisionVariableView& v : binding.getVariableList() ) {
       max_num_gradients += n*v.size();
     }
     num_nonlinear_constraints += n;
   }
   size_t num_linear_constraints=0;
-  for (auto const& c : prog.linear_equality_constraints) { num_linear_constraints += c->getNumConstraints(); }
+  for (auto const& binding : prog.linear_equality_constraints) {
+    num_linear_constraints += binding.getConstraint()->getNumConstraints();
+  }
 
   snopt::integer nF = 1+num_nonlinear_constraints+num_linear_constraints;
   d->min_alloc_F(nF);
@@ -310,7 +316,8 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   }
 
   size_t constraint_index=1, grad_index=nx;  // constraint index starts at 1 because the objective is the first row
-  for (auto const& c : prog.generic_constraints) {
+  for (auto const& binding : prog.generic_constraints) {
+    auto const& c = binding.getConstraint();
     size_t n = c->getNumConstraints();
 
     auto const lb = c->getLowerBound(), ub = c->getUpperBound();
@@ -319,7 +326,7 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
       Fupp[constraint_index+i] = static_cast<snopt::doublereal>(ub(i));
     }
 
-    for (const DecisionVariableView& v : c->getVariableList() ) {
+    for (const DecisionVariableView& v : binding.getVariableList() ) {
       for (size_t i=0; i<n; i++) {
         for (size_t j = 0; j < v.size(); j++) {
           iGfun[grad_index] = constraint_index + i + 1;  // row order
@@ -337,11 +344,12 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(OptimizationPr
   tripletList.reserve(num_linear_constraints*prog.num_vars);
 
   size_t linear_constraint_index=0;
-  for (auto const& c : prog.linear_equality_constraints) {
+  for (auto const& binding : prog.linear_equality_constraints) {
+    auto const& c = binding.getConstraint();
     size_t n = c->getNumConstraints();
     size_t var_index = 0;
     SparseMatrix<double> A_constraint = c->getSparseMatrix();
-    for (const DecisionVariableView& v : c->getVariableList() ) {
+    for (const DecisionVariableView& v : binding.getVariableList() ) {
       for (size_t k=0; k<v.size(); ++k) {
         for (SparseMatrix<double>::InnerIterator it(A_constraint, var_index+k); it; ++it) {
           tripletList.push_back(T(linear_constraint_index+it.col(),v.index()+k,it.value()));
