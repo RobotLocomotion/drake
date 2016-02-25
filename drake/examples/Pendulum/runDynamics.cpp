@@ -2,10 +2,10 @@
 #include <iostream>
 #include "drake/util/Polynomial.h"
 #include "drake/examples/Pendulum/Pendulum.h"
-#include "drake/systems/CascadeSystem.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/LCMSystem.h"
+#include "drake/systems/cascade_system.h"
 
 using namespace std;
 using namespace Drake;

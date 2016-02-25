@@ -1,7 +1,7 @@
 #include "drake/util/testUtil.h"
-#include "drake/systems/CascadeSystem.h"
-#include "drake/systems/FeedbackSystem.h"
-#include "drake/systems/LinearSystem.h"
+#include "drake/systems/cascade_system.h"
+#include "drake/systems/feedback_system.h"
+#include "drake/systems/linear_system.h"
 #include <iostream>
 
 using namespace std;
