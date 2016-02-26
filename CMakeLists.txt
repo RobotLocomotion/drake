@@ -50,6 +50,7 @@ find_program(matlab matlab)
 if (matlab)
 	option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"  ON)
 endif()
+option(WITH_YAML_CPP "library for reading and writing yaml configuration files" ON)
 
 option(WITH_SNOPT_PRECOMPILED "precompiled binaries only for snopt; the source requires a license (will be disabled if WITH_SNOPT=ON)"  ON)
 
@@ -89,7 +90,7 @@ set(libbot_dependencies lcm)
 set(director_dependencies lcm libbot)
 set(iris_dependencies eigen mosek)
 set(signalscope_dependencies director)
-set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi swig_matlab swigmake)
+set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi swig_matlab swigmake yaml_cpp)
 
 # download information, in alphabetical order
 set(avl_GIT_REPOSITORY https://github.com/RobotLocomotion/avl.git)
@@ -103,7 +104,7 @@ set(bullet_GIT_TAG 4319ffd7e9251066d93064f5a8dab12e33dbe5e2)
 set(bullet_IS_PUBLIC TRUE)
 set(bullet_IS_CMAKE_POD TRUE)
 set(cmake_GIT_REPOSITORY https://github.com/RobotLocomotion/cmake.git)
-set(cmake_GIT_TAG 800fecfa7842f918d96a96606fa61eb99ce4d03f)
+set(cmake_GIT_TAG 54f5a4c0734015695334970ecedac79e12c3116f)
 set(cmake_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/drake/cmake")
 set(cmake_NO_BUILD TRUE)
 set(cmake_IS_PUBLIC TRUE)
@@ -177,6 +178,15 @@ set(textbook_IS_PUBLIC TRUE)
 set(yalmip_GIT_REPOSITORY https://github.com/RobotLocomotion/yalmip.git)
 set(yalmip_GIT_TAG c071fb7b7193491f8eefadba3bfff26160ad6cd4)
 set(yalmip_IS_PUBLIC TRUE)
+set(yaml_cpp_GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git)
+set(yaml_cpp_GIT_TAG 57805dfd6a741e55477ea8d4d5b3b6f0272d1f0e)
+set(yaml_cpp_IS_PUBLIC TRUE)
+set(yaml_cpp_IS_CMAKE_POD TRUE)
+if (APPLE OR WIN32)
+	set(yaml_cpp_ADDITIONAL_CMAKE_CONFIGURE_ARGS -DBUILD_SHARED_LIBS=OFF)
+else()
+	set(yaml_cpp_ADDITIONAL_CMAKE_CONFIGURE_ARGS -DBUILD_SHARED_LIBS=ON)
+endif()
 set(xfoil_GIT_REPOSITORY https://github.com/RobotLocomotion/xfoil.git)
 set(xfoil_GIT_TAG fde0a9368dd451c93604051fc5704e120073800c)
 set(xfoil_IS_PUBLIC TRUE)
@@ -223,6 +233,7 @@ foreach(proj IN ITEMS
 		meshconverters
 		swigmake
 		swig_matlab
+		yaml_cpp
 		drake)
 	string(TOUPPER ${proj} proj_upper)
 	if ( ${proj} STREQUAL "drake" OR
@@ -258,19 +269,6 @@ foreach (proj ${EXTERNAL_PROJECTS})
 		if (NOT ${proj}_SOURCE_DIR)
 			set(${proj}_SOURCE_DIR ${${proj}_GIT_CLONE_DIR})
 		endif()
-		if (NOT DEFINED ${proj}_CONFIGURE_COMMAND AND ${proj}_IS_CMAKE_POD)
-			set(${proj}_CONFIGURE_COMMAND ${CMAKE_COMMAND} -E make_directory ${${proj}_SOURCE_DIR}/pod-build
-					COMMAND ${CMAKE_COMMAND} -E chdir ${${proj}_SOURCE_DIR}/pod-build ${CMAKE_COMMAND} -G${CMAKE_GENERATOR} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} ..)
-		endif()
-		if (NOT DEFINED ${proj}_BUILD_COMMAND)
-			if (${proj}_IS_CMAKE_POD)
-				set(${proj}_BUILD_COMMAND ${CMAKE_COMMAND} -E chdir ${${proj}_SOURCE_DIR} ${CMAKE_COMMAND} --build pod-build --config $<CONFIGURATION> --target install)
-			elseif(${proj}_NO_BUILD)
-				set(${proj}_BUILD_COMMAND "")
-			else()# then use the PODS gnu make system
-				set(${proj}_BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=$<CONFIGURATION>)
-			endif()
-		endif()
 		set(EXTERNAL_SOURCE_DIRS ${EXTERNAL_SOURCE_DIRS} ${${proj}_SOURCE_DIR} "\n")
 
 		message(STATUS "Preparing to build ${proj} with dependencies: ${deps}")
@@ -301,19 +299,43 @@ foreach (proj ${EXTERNAL_PROJECTS})
 		endif()
 
 		# now the actual project
-		ExternalProject_Add(${proj}
-				SOURCE_DIR ${${proj}_SOURCE_DIR}
-				#      BINARY_DIR ${${proj}_SOURCE_DIR}/pod-build
-				DOWNLOAD_COMMAND ""
-				UPDATE_COMMAND ""
-				CONFIGURE_COMMAND "${${proj}_CONFIGURE_COMMAND}"
-				BUILD_IN_SOURCE 1
-				BUILD_COMMAND "${${proj}_BUILD_COMMAND}"
-				INSTALL_COMMAND ""
-				DEPENDS download-${proj} ${deps}
-				${${proj}_ADDITIONAL_BUILD_ARGS}
-				)
-		#    message(STATUS "${proj}_BUILD_COMMAND: ${${proj}_BUILD_COMMAND}")
+		if (${proj}_IS_CMAKE_POD)
+			ExternalProject_Add(${proj}
+					SOURCE_DIR ${${proj}_SOURCE_DIR}
+					DOWNLOAD_COMMAND ""
+					UPDATE_COMMAND ""
+					BINARY_DIR ${${proj}_SOURCE_DIR}/pod-build
+					CMAKE_GENERATOR ${CMAKE_GENERATOR}
+					CMAKE_ARGS
+					  -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+					  -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+						${${proj}_ADDITIONAL_CMAKE_CONFIGURE_ARGS}
+					DEPENDS download-${proj} ${deps}
+					${${proj}_ADDITIONAL_BUILD_ARGS}
+					)
+		else() # not a CMake POD
+			if (NOT DEFINED ${proj}_BUILD_COMMAND)
+				if(${proj}_NO_BUILD)
+					set(${proj}_BUILD_COMMAND "")
+				else() # then use the PODS gnu make system
+					set(${proj}_BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=$<CONFIGURATION>)
+				endif()
+			endif()
+
+			ExternalProject_Add(${proj}
+					SOURCE_DIR ${${proj}_SOURCE_DIR}
+					#      BINARY_DIR ${${proj}_SOURCE_DIR}/pod-build
+					DOWNLOAD_COMMAND ""
+					UPDATE_COMMAND ""
+					CONFIGURE_COMMAND ""
+					BUILD_COMMAND "${${proj}_BUILD_COMMAND}"
+					BUILD_IN_SOURCE 1
+					INSTALL_COMMAND ""
+					DEPENDS download-${proj} ${deps}
+					${${proj}_ADDITIONAL_BUILD_ARGS}
+					)
+			#    message(STATUS "${proj}_BUILD_COMMAND: ${${proj}_BUILD_COMMAND}")
+		endif()
 
 	else()
 		message(STATUS "Preparing to build ${proj} with dependencies: ${deps}")
@@ -322,13 +344,11 @@ foreach (proj ${EXTERNAL_PROJECTS})
 				SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake"
 				DOWNLOAD_COMMAND ""
 				UPDATE_COMMAND ""
-				#      CONFIGURE_COMMAND ""
-				#      BUILD_IN_SOURCE 1
-				#      BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE}
-				CONFIGURE_COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/drake/pod-build
-				COMMAND ${CMAKE_COMMAND} -E chdir ${PROJECT_SOURCE_DIR}/drake/pod-build ${CMAKE_COMMAND} -G${CMAKE_GENERATOR} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} ..
-				BUILD_COMMAND ${CMAKE_COMMAND} --build ${PROJECT_SOURCE_DIR}/drake/pod-build --config $<CONFIGURATION> --target install
-				INSTALL_COMMAND ""
+				BINARY_DIR ${PROJECT_SOURCE_DIR}/drake/pod-build
+				CMAKE_GENERATOR ${CMAKE_GENERATOR}
+				CMAKE_ARGS
+				  -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+				  -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
 				DEPENDS ${deps}
 				${${proj}_ADDITIONAL_BUILD_ARGS}
 				#		BUILD_ALWAYS 1

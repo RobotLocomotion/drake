@@ -1,4 +1,5 @@
 set(CTEST_CUSTOM_COVERAGE_EXCLUDE
-  "/thirdParty/"
+  "test/"
+  "thirdParty/"
   ${CTEST_CUSTOM_COVERAGE_EXCLUDE}
 )

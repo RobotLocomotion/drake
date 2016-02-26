@@ -35,8 +35,8 @@ void trivialLeastSquares() {
   valuecheckMatrix(b / 3, x.value(), 1e-10);
 
   std::shared_ptr<BoundingBoxConstraint> bbcon(
-          new BoundingBoxConstraint({x.head(2)}, MatrixXd::Constant(2, 1, -1000.0), MatrixXd::Constant(2, 1, 1000.0)));
-  prog.addConstraint(bbcon);
+          new BoundingBoxConstraint(MatrixXd::Constant(2, 1, -1000.0), MatrixXd::Constant(2, 1, 1000.0)));
+  prog.addConstraint(bbcon, {x.head(2)});
   prog.solve();  // now it will solve as a nonlinear program
   valuecheckMatrix(b.topRows(2) / 2, y.value(), 1e-10);
   valuecheckMatrix(b / 3, x.value(), 1e-10);
@@ -85,7 +85,7 @@ public:
 
 class GloptipolyConstrainedExampleConstraint : public Constraint {  // want to also support deriving directly from constraint without going through Drake::Function
 public:
-  GloptipolyConstrainedExampleConstraint(const VariableList& vars) : Constraint(vars, Vector1d::Constant(0), Vector1d::Constant(numeric_limits<double>::infinity())) {}
+  GloptipolyConstrainedExampleConstraint() : Constraint(1, Vector1d::Constant(0), Vector1d::Constant(numeric_limits<double>::infinity())) {}
 
   // for just these two types, implementing this locally is almost cleaner...
   virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const override { evalImpl(x,y); }
@@ -108,8 +108,8 @@ void gloptipolyConstrainedMinimization() {
   OptimizationProblem prog;
   auto x = prog.addContinuousVariables(3);
   prog.addCost(make_shared<GloptipolyConstrainedExampleObjective>());
-  std::shared_ptr<GloptipolyConstrainedExampleConstraint> qp_con(new GloptipolyConstrainedExampleConstraint({x}));
-  prog.addConstraint(qp_con);
+  std::shared_ptr<GloptipolyConstrainedExampleConstraint> qp_con(new GloptipolyConstrainedExampleConstraint());
+  prog.addConstraint(qp_con, {x});
   prog.addLinearConstraint(Vector3d(1,1,1).transpose(),Vector1d::Constant(-numeric_limits<double>::infinity()),Vector1d::Constant(4));
   prog.addLinearConstraint(Vector3d(0,3,1).transpose(),Vector1d::Constant(-numeric_limits<double>::infinity()),Vector1d::Constant(6));
   prog.addBoundingBoxConstraint(Vector3d(0,0,0),Vector3d(2,numeric_limits<double>::infinity(),3));

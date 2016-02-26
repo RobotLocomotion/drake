@@ -179,9 +179,8 @@ RigidBodySystem::OutputVector<double> RigidBodySystem::output(const double& t, c
 class SingleTimeKinematicConstraintWrapper : public Constraint
 {
 public:
-  SingleTimeKinematicConstraintWrapper(const VariableList& vars, const shared_ptr<SingleTimeKinematicConstraint>& rigid_body_constraint)
-          : Constraint(vars,rigid_body_constraint->getNumConstraint(nullptr)), rigid_body_constraint(rigid_body_constraint), kinsol(rigid_body_constraint->getRobotPointer()->bodies) {
-    assert(rigid_body_constraint->getRobotPointer()->num_positions == size(vars) && "Number of decision variables must match the number of positions in the RigidBodyTree");
+  SingleTimeKinematicConstraintWrapper(const shared_ptr<SingleTimeKinematicConstraint>& rigid_body_constraint)
+          : Constraint(rigid_body_constraint->getNumConstraint(nullptr)), rigid_body_constraint(rigid_body_constraint), kinsol(rigid_body_constraint->getRobotPointer()->bodies) {
     rigid_body_constraint->bounds(nullptr,lower_bound,upper_bound);
   }
   virtual ~SingleTimeKinematicConstraintWrapper() {}
@@ -228,11 +227,11 @@ DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double> Drake::getInitialState
     Vector3d zero = Vector3d::Zero();
     for (int i=0; i<loops.size(); i++) {
       auto con1 = make_shared<RelativePositionConstraint>(sys.tree.get(), zero, zero, zero, loops[i].frameA->frame_index, loops[i].frameB->frame_index,bTbp,tspan);
-      std::shared_ptr<SingleTimeKinematicConstraintWrapper> con1wrapper(new SingleTimeKinematicConstraintWrapper({qvar},con1));
-      prog.addConstraint(con1wrapper);
+      std::shared_ptr<SingleTimeKinematicConstraintWrapper> con1wrapper(new SingleTimeKinematicConstraintWrapper(con1));
+      prog.addConstraint(con1wrapper, {qvar});
       auto con2 = make_shared<RelativePositionConstraint>(sys.tree.get(), loops[i].axis, loops[i].axis, loops[i].axis, loops[i].frameA->frame_index, loops[i].frameB->frame_index,bTbp,tspan);
-      std::shared_ptr<SingleTimeKinematicConstraintWrapper> con2wrapper(new SingleTimeKinematicConstraintWrapper({qvar},con2));
-      prog.addConstraint(con2wrapper);
+      std::shared_ptr<SingleTimeKinematicConstraintWrapper> con2wrapper(new SingleTimeKinematicConstraintWrapper(con2));
+      prog.addConstraint(con2wrapper, {qvar});
     }
 
     VectorXd q_guess = x0.topRows(nq);
