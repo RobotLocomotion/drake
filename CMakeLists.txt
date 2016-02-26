@@ -34,6 +34,7 @@ option(REMOVE_UNUSED_EXTERNALS "enable this to remove those projects from disk" 
 # ON by default:
 option(WITH_EIGEN		"required c++ matrix library.  only disable if you have it already."    ON)
 option(WITH_SWIGMAKE    "helper tools to build python & MATLAB wrappers for C++ libraries with Eigen" ON)
+option(WITH_BOT_CORE_LCMTYPES "required LCM types library. only disable if you have it already." ON)
 if (WIN32)
    if (CMAKE_SIZEOF_VOID_P EQUAL 8)  # gtk only compiles on win64 right now
 	option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" ON)
@@ -86,10 +87,10 @@ endif()
 # list *compilation* dependencies, in alphabetical order by target (note: dependencies must come first in my foreach above)
 set(lcm_dependencies gtk)
 set(libbot_dependencies lcm)
-set(director_dependencies lcm libbot)
+set(director_dependencies lcm bot_core_lcmtypes libbot)
 set(iris_dependencies eigen mosek)
 set(signalscope_dependencies director)
-set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi swig_matlab swigmake)
+set(drake_dependencies cmake eigen lcm bot_core_lcmtypes libbot bullet octomap snopt gurobi swig_matlab swigmake)
 
 # download information, in alphabetical order
 set(avl_GIT_REPOSITORY https://github.com/RobotLocomotion/avl.git)
@@ -138,6 +139,10 @@ set(lcm_IS_PUBLIC TRUE)
 set(libbot_GIT_REPOSITORY https://github.com/RobotLocomotion/libbot.git)
 set(libbot_GIT_TAG 94fe5290329646959e1c27896d529abba81e6d93)
 set(libbot_IS_PUBLIC TRUE)
+set(bot_core_lcmtypes_GIT_REPOSITORY  https://github.com/openhumanoids/bot_core_lcmtypes)
+set(bot_core_lcmtypes_GIT_TAG d2617b85674fa83b371a5c57fabdbe468844f15e)
+set(bot_core_lcmtypes_IS_CMAKE_POD TRUE)
+set(bot_core_lcmtypes_IS_PUBLIC TRUE)
 set(meshconverters_GIT_REPOSITORY https://github.com/RobotLocomotion/meshConverters.git)
 set(meshconverters_GIT_TAG d50a79b80d74dd7a924daba7bd2011e03d9e66b4)
 set(meshconverters_IS_PUBLIC TRUE)
@@ -204,6 +209,7 @@ foreach(proj IN ITEMS
 		eigen
 		gtk
 		lcm
+		bot_core_lcmtypes
 		libbot
 		bullet
 		spotless
