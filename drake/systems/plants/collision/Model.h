@@ -28,6 +28,8 @@ namespace DrakeCollision
       */
       virtual ElementId addElement(const Element& element);
 
+      bool removeElement(const ElementId& id);
+
       /** \brief Get a read-only pointer to a collision element in this model.
        * \param id an ElementId corresponding to the desired collision element
        * \return a read-only pointer to the collision element corresponding to

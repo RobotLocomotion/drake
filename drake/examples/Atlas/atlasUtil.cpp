@@ -1,8 +1,8 @@
 #include "drake/examples/Atlas/atlasUtil.h"
-#include <Eigen/Core>
 #include <stdexcept>
+#include <Eigen/Core>
 
-using namespace std;
+namespace Atlas {
 using namespace Eigen;
 
 bool ankleCloseToLimits(double akx, double aky, double tol)
@@ -24,4 +24,6 @@ bool ankleCloseToLimits(double akx, double aky, double tol)
   Vector2d ankle;
   ankle << akx, aky;
   return ((A*ankle-b).array() > -tol).any();
+}
+
 }
