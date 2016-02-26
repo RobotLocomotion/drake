@@ -1,4 +1,3 @@
-// Copyright 2016 The Drake Authors
 #include "drake/systems/cascade_system.h"
 
 #include "drake/systems/LinearSystem.h"
