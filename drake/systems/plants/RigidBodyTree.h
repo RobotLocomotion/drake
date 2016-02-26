@@ -26,13 +26,18 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 class DRAKERBM_EXPORT RigidBodyActuator
 {
 public:
-  RigidBodyActuator(std::string name, std::shared_ptr<RigidBody> body, double reduction = 1.0, double lower_limit = -std::numeric_limits<double>::infinity(), double upper_limit = std::numeric_limits<double>::infinity()) :
-    name(name), body(body), reduction(reduction), lower_limit(lower_limit), upper_limit(upper_limit) {};
+  RigidBodyActuator(const std::string&name,
+                    std::shared_ptr<RigidBody> body,
+                    double reduction = 1.0,
+                    double effort_limit_min = -std::numeric_limits<double>::infinity(),
+                    double effort_limit_max = std::numeric_limits<double>::infinity()) :
+      name(name), body(body), reduction(reduction), effort_limit_min(effort_limit_min), effort_limit_max(effort_limit_max) {};
 
-  std::string name;
-  std::shared_ptr<RigidBody> body;
-  double reduction;
-  double lower_limit, upper_limit;
+  const std::string name;
+  const std::shared_ptr<RigidBody> body;
+  const double reduction;
+  const double effort_limit_min;
+  const double effort_limit_max;
 };
 
 class DRAKERBM_EXPORT RigidBodyLoop
@@ -41,8 +46,8 @@ public:
   RigidBodyLoop(const std::shared_ptr<RigidBodyFrame>& _frameA, const std::shared_ptr<RigidBodyFrame>& _frameB, const Eigen::Vector3d& _axis) :
     frameA(_frameA), frameB(_frameB), axis(_axis) {};
 
-  std::shared_ptr<RigidBodyFrame> frameA, frameB;
-  Eigen::Vector3d axis;
+  const std::shared_ptr<RigidBodyFrame> frameA, frameB;
+  const Eigen::Vector3d axis;
 
   friend std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj);
 
@@ -59,10 +64,10 @@ public:
   RigidBodyTree(void);
   virtual ~RigidBodyTree(void);
 
-  void addRobotFromURDFString(const std::string &xml_string, const std::string &root_dir = ".", const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
-  void addRobotFromURDFString(const std::string &xml_string, std::map<std::string,std::string>& package_map, const std::string &root_dir = ".", const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
-  void addRobotFromURDF(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
-  void addRobotFromURDF(const std::string &urdf_filename, std::map<std::string,std::string>& package_map, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW);
+  void addRobotFromURDFString(const std::string &xml_string, const std::string &root_dir = ".", const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW, std::shared_ptr<RigidBodyFrame> weld_to_frame=nullptr);
+  void addRobotFromURDFString(const std::string &xml_string, std::map<std::string,std::string>& package_map, const std::string &root_dir = ".", const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW, std::shared_ptr<RigidBodyFrame> weld_to_frame=nullptr);
+  void addRobotFromURDF(const std::string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW, std::shared_ptr<RigidBodyFrame> weld_to_frame=nullptr);
+  void addRobotFromURDF(const std::string &urdf_filename, std::map<std::string,std::string>& package_map, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::ROLLPITCHYAW, std::shared_ptr<RigidBodyFrame> weld_to_frame=nullptr);
 
   void addRobotFromSDF(const std::string &sdf_filename, const DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION);
 
@@ -94,7 +99,7 @@ public:
   }
 
   template <typename DerivedQ, typename DerivedV>
-  KinematicsCache<typename DerivedQ::Scalar> doKinematics(const Eigen::MatrixBase<DerivedQ>& q, const Eigen::MatrixBase<DerivedV>& v, bool compute_JdotV = true) {
+  KinematicsCache<typename DerivedQ::Scalar> doKinematics(const Eigen::MatrixBase<DerivedQ>& q, const Eigen::MatrixBase<DerivedV>& v, bool compute_JdotV = true) const {
     KinematicsCache<typename DerivedQ::Scalar> ret(bodies);
     ret.initialize(q, v);
     doKinematics(ret, compute_JdotV);
@@ -352,7 +357,28 @@ public:
   template <typename Scalar>
   void computeContactJacobians(const KinematicsCache<Scalar>& cache, Eigen::Ref<const Eigen::VectorXi> const & idxA, Eigen::Ref<const Eigen::VectorXi> const & idxB, Eigen::Ref<const Eigen::Matrix3Xd> const & xA, Eigen::Ref<const Eigen::Matrix3Xd> const & xB, Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> & J) const;
 
-  DrakeCollision::ElementId addCollisionElement(const RigidBody::CollisionElement& element, const std::shared_ptr<RigidBody>& body, std::string group_name);
+  DrakeCollision::ElementId addCollisionElement(const RigidBody::CollisionElement& element, const std::shared_ptr<RigidBody>& body, const std::string& group_name);
+
+  template <class UnaryPredicate>
+  void removeCollisionGroupsIf(UnaryPredicate test) {
+    for (const auto& body_ptr : bodies) {
+      std::vector<std::string> names_of_groups_to_delete;
+      for (const auto &group : body_ptr->collision_element_groups) {
+        const std::string &group_name = group.first;
+        if (test(group_name)) {
+          auto& ids = body_ptr->collision_element_ids;
+          for (const auto& id : group.second) {
+            ids.erase(std::find(ids.begin(), ids.end(), id));
+            collision_model->removeElement(id);
+          }
+          names_of_groups_to_delete.push_back(group_name);
+        }
+      }
+      for (const auto& group_name : names_of_groups_to_delete) {
+        body_ptr->collision_element_groups.erase(group_name);
+      }
+    }
+  }
 
   void updateCollisionElements(const RigidBody& body, const Eigen::Transform<double, 3, Eigen::Isometry>& transform_to_world);
 
@@ -452,6 +478,7 @@ public:
   std::shared_ptr<RigidBody> findJoint(std::string jointname, int robot=-1) const;
   int findJointId(const std::string& linkname, int robot = -1) const;
   //@param robot   the index of the robot. robot = -1 means to look at all the robots
+  std::shared_ptr<RigidBodyFrame> findFrame(std::string frame_name, std::string model_name="") const;
 
   std::string getBodyOrFrameName(int body_or_frame_id) const;
   //@param body_or_frame_id   the index of the body or the id of the frame.

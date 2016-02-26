@@ -265,9 +265,9 @@ map<string, int> RigidBodyTree::computePositionNameToIndexMap() const
   return name_to_index_map;
 }
 
-DrakeCollision::ElementId RigidBodyTree::addCollisionElement(const RigidBody::CollisionElement& element, const shared_ptr<RigidBody>& body, string group_name)
+DrakeCollision::ElementId RigidBodyTree::addCollisionElement(const RigidBody::CollisionElement& element, const shared_ptr<RigidBody>& body, const string& group_name)
 {
-  DrakeCollision::ElementId id(collision_model->addElement(element));
+  DrakeCollision::ElementId id = collision_model->addElement(element);
   if (id != 0) {
     body->collision_element_ids.push_back(id);
     body->collision_element_groups[group_name].push_back(id);
@@ -1437,6 +1437,34 @@ shared_ptr<RigidBody> RigidBodyTree::findLink(std::string linkname, std::string 
   }
   if (match>=0) return bodies[match];
   cerr << "could not find any links named " << linkname << endl;
+  return nullptr;
+}
+
+shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(std::string frame_name, std::string model_name) const
+{
+  std::transform(frame_name.begin(), frame_name.end(), frame_name.begin(), ::tolower); // convert to lower case
+  std::transform(model_name.begin(), model_name.end(), model_name.begin(), ::tolower); // convert to lower case
+
+  int match = -1;
+  for(int i = 0;i<frames.size();i++) {
+    string frame_name_lower = frames[i]->name;
+    std::transform(frame_name_lower.begin(), frame_name_lower.end(), frame_name_lower.begin(),
+                   ::tolower); // convert to lower case
+    if (frame_name_lower.compare(frame_name) == 0) { // the names match
+      string frame_model_name_lower = frames[i]->body->model_name;
+      std::transform(frame_model_name_lower.begin(), frame_model_name_lower.end(), frame_model_name_lower.begin(), ::tolower);
+      if (model_name.empty() || frame_model_name_lower == model_name) { // it's the right robot
+        if (match < 0) { // it's the first match
+          match = i;
+        } else {
+          cerr << "Error: found multiple frames named " << frame_name << endl;
+          return nullptr;
+        }
+      }
+    }
+  }
+  if (match>=0) return frames[match];
+  cerr << "Error: could not find a frame named " << frame_name << endl;
   return nullptr;
 }
 
