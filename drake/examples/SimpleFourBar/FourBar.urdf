@@ -70,6 +70,7 @@
     <parent link="base_link"/>
     <child link="link_1"/>
     <origin rpy="0 0 0" xyz="0 0 2"/>    
+    <limit effort="100"/>
   </joint>
 
   <joint name="joint_1" type="continuous">
@@ -77,7 +78,6 @@
     <parent link="link_1"/>
     <child link="link_2"/>
     <origin rpy="0 0 0" xyz="0 0 1.8"/>
-    <limit effort="100"/>
     <dynamics damping="0.0" friction="0.0"/>
   </joint>
 

@@ -214,11 +214,11 @@ public:
     return os;
   }
   
-static Eigen::Matrix<Polynomial, Eigen::Dynamic, Eigen::Dynamic> randomPolynomialMatrix(Eigen::DenseIndex num_coefficients_per_polynomial, Eigen::DenseIndex rows, Eigen::DenseIndex cols)
+static Eigen::Matrix<Polynomial, Eigen::Dynamic, Eigen::Dynamic> randomPolynomialMatrix(Eigen::Index num_coefficients_per_polynomial, Eigen::Index rows, Eigen::Index cols)
   {
     Eigen::Matrix<Polynomial, Eigen::Dynamic, Eigen::Dynamic> mat(rows, cols);
-    for (Eigen::DenseIndex row = 0; row < mat.rows(); ++row) {
-      for (Eigen::DenseIndex col = 0; col < mat.cols(); ++col) {
+    for (Eigen::Index row = 0; row < mat.rows(); ++row) {
+      for (Eigen::Index col = 0; col < mat.cols(); ++col) {
         auto coeffs = (Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1>::Random(num_coefficients_per_polynomial)).eval();
         mat(row, col) = Polynomial(coeffs);
       }

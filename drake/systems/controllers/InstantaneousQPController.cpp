@@ -43,13 +43,13 @@ void InstantaneousQPController::initialize() {
     throw std::runtime_error("Cannot load gurobi environment");
   }
 
-  CGE ( GRBsetintparam(env,"outputflag",GUROBI_OUTPUTFLAG), env );
-  CGE ( GRBsetintparam(env,"method",GUROBI_METHOD), env );
-  CGE ( GRBsetintparam(env,"presolve",GUROBI_PRESOLVE), env );
-  if (GUROBI_METHOD==2) {
-    CGE ( GRBsetintparam(env,"bariterlimit",GUROBI_BARITERLIMIT), env );
-    CGE ( GRBsetintparam(env,"barhomogeneous",GUROBI_BARHOMOGENEOUS), env );
-    CGE ( GRBsetdblparam(env,"barconvtol",GUROBI_BARCONVTOL), env );
+  CGE ( GRBsetintparam(env,"outputflag",INSTQP_GUROBI_OUTPUTFLAG), env );
+  CGE ( GRBsetintparam(env,"method",INSTQP_GUROBI_METHOD), env );
+  CGE ( GRBsetintparam(env,"presolve",INSTQP_GUROBI_PRESOLVE), env );
+  if (INSTQP_GUROBI_METHOD==2) {
+    CGE ( GRBsetintparam(env,"bariterlimit",INSTQP_GUROBI_BARITERLIMIT), env );
+    CGE ( GRBsetintparam(env,"barhomogeneous",INSTQP_GUROBI_BARHOMOGENEOUS), env );
+    CGE ( GRBsetdblparam(env,"barconvtol",INSTQP_GUROBI_BARCONVTOL), env );
   }
 
   // preallocate some memory

@@ -3,7 +3,6 @@
 #include "drake/util/testUtil.h"
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <unsupported/Eigen/KroneckerProduct> // unsupported...
 #include <iostream>
 #include <stdexcept>
 #include <vector>
@@ -43,45 +42,6 @@ void testTransposeGrad(int ntests)
 
 //    transposeGrad(dX, rows_X, dX_transpose);
 //    std::cout << "dX_transpose:\n" << dX_transpose << std::endl;
-  }
-}
-
-void testMatGradMultMat(int ntests, bool check)
-{
-  const int nq = 34;
-  for (int testnr = 0; testnr < ntests; testnr++) {
-
-//    MatrixXd A = MatrixXd::Random(8, 6).eval();
-//    MatrixXd B = MatrixXd::Random(A.cols(), 9).eval();
-    auto A = Matrix<double, 8, 6>::Random().eval();
-    auto B = Matrix<double, A.ColsAtCompileTime, 9>::Random().eval();
-
-    MatrixXd dA = MatrixXd::Random(A.size(), nq).eval();
-    MatrixXd dB = MatrixXd::Random(B.size(), nq).eval();
-    //    auto dA = Matrix<double, A.SizeAtCompileTime, nq>::Random().eval();
-    //    auto dB = Matrix<double, B.SizeAtCompileTime, nq>::Random().eval();
-    //
-    //    MatrixXd A = MatrixXd::Random(8, 6).eval();
-    //    MatrixXd B = MatrixXd::Random(A.cols(), 9).eval();
-    //    auto A = Matrix<double, 5, 3>::Random().eval();
-    //    auto B = Matrix<double, A.ColsAtCompileTime, 2>::Random().eval();
-    //
-    //    MatrixXd dA = MatrixXd::Random(A.size(), nq).eval();
-    //    MatrixXd dB = MatrixXd::Random(B.size(), nq).eval();
-    //    auto dA = Matrix<double, A.SizeAtCompileTime, nq>::Random().eval();
-    //    auto dB = Matrix<double, B.SizeAtCompileTime, nq>::Random().eval();
-
-    auto dAB = matGradMultMat(A, B, dA, dB).eval();
-    volatile auto vol = dAB; // volatile to make sure that the result doesn't get discarded in compiler optimization
-
-    if (check) {
-      auto dAB_check = (Eigen::kroneckerProduct(Eigen::MatrixXd::Identity(B.cols(), B.cols()), A) * dB
-          + Eigen::kroneckerProduct(B.transpose(), Eigen::MatrixXd::Identity(A.rows(), A.rows())) * dA).eval();
-
-      if (!dAB.isApprox(dAB_check, 1e-10)) {
-        throw std::runtime_error("wrong.");
-      }
-    }
   }
 }
 
@@ -159,14 +119,11 @@ void testSetSubMatrixGradient(int ntests, bool check) {
 }
 
 int main(int argc, char **argv) {
-  testMatGradMultMat(1000, true);
   testMatGradMult(1000, true);
   testSetSubMatrixGradient(1000, true);
 
   int ntests = 100000;
   std::cout << "testTransposeGrad elapsed time: " << measure<>::execution(testTransposeGrad, ntests) << std::endl;
-
-  std::cout << "testMatGradMultMat elapsed time: " << measure<>::execution(testMatGradMultMat, ntests, false) << std::endl;
 
   std::cout << "testMatGradMult elapsed time: " << measure<>::execution(testMatGradMult, ntests, false) << std::endl;
 

@@ -47,13 +47,13 @@ ExponentialPlusPiecewisePolynomial<CoefficientType> ExponentialPlusPiecewisePoly
 
 
 template<typename CoefficientType>
-Eigen::DenseIndex ExponentialPlusPiecewisePolynomial<CoefficientType>::rows() const
+Eigen::Index ExponentialPlusPiecewisePolynomial<CoefficientType>::rows() const
 {
   return piecewise_polynomial_part.rows();
 }
 
 template<typename CoefficientType>
-Eigen::DenseIndex ExponentialPlusPiecewisePolynomial<CoefficientType>::cols() const
+Eigen::Index ExponentialPlusPiecewisePolynomial<CoefficientType>::cols() const
 {
   return piecewise_polynomial_part.cols();
 }

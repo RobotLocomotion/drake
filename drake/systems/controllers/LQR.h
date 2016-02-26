@@ -17,15 +17,11 @@ namespace Drake {
     using namespace std;
     using namespace Eigen;
 
-    // todo: clean this up
-    typedef TaylorVard<-1> AutoDiffType;
-    VectorXd xu(num_states+num_inputs);
-    xu << toEigen(x0), toEigen(u0);
-    TaylorVecXd xu_taylor = initTaylorVecXd(xu);
-    typename System::template StateVector<AutoDiffType> x_taylor(xu_taylor.head(num_states));
-    typename System::template InputVector<AutoDiffType> u_taylor(xu_taylor.tail(num_inputs));
-
-    auto xdot = autoDiffToGradientMatrix(toEigen(sys.dynamics(AutoDiffType(0),x_taylor,u_taylor)));
+    auto autodiff_args = initializeAutoDiffTuple(toEigen(x0), toEigen(u0));
+    typedef typename std::tuple_element<0, decltype(autodiff_args)>::type::Scalar AutoDiffType;
+    typename System::template StateVector<AutoDiffType> x_taylor(std::get<0>(autodiff_args));
+    typename System::template InputVector<AutoDiffType> u_taylor(std::get<1>(autodiff_args));
+    auto xdot = autoDiffToGradientMatrix(toEigen(sys.dynamics(AutoDiffType(0), x_taylor, u_taylor)));
     auto A = xdot.leftCols(num_states);
     auto B = xdot.rightCols(num_inputs);
 

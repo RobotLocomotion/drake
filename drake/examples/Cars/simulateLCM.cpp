@@ -64,7 +64,7 @@ bool decode(const drake::lcmt_driving_control_cmd_t& msg, double& t, DrivingComm
 
 int main(int argc, char* argv[]) {
   if (argc < 2) {
-    std::cerr << "Usage: " << argv[0] << " vehicle_urdf [world_urdf files ...]" << std::endl;
+    std::cerr << "Usage: " << argv[0] << " vehicle_urdf [world sdf files ...]" << std::endl;
     return 1;
   }
 
@@ -74,8 +74,9 @@ int main(int argc, char* argv[]) {
   auto rigid_body_sys = make_shared<RigidBodySystem>(argv[1],floating_base_type);
   auto const & tree = rigid_body_sys->getRigidBodyTree();
   for (int i=2; i<argc; i++)
-    tree->addRobotFromURDF(argv[i],DrakeJoint::FIXED);  // add environment
+    tree->addRobotFromSDF(argv[i],DrakeJoint::FIXED);  // add environment
 
+  if (argc < 3)
   { // add flat terrain
     double box_width = 1000;
     double box_depth = 10;
@@ -95,7 +96,7 @@ int main(int argc, char* argv[]) {
       Kd(getNumInputs(*rigid_body_sys),tree->num_velocities);
   Matrix<double,Eigen::Dynamic,3> map_driving_cmd_to_x_d(tree->num_positions+tree->num_velocities,3);
   { // setup PD controller for throttle and steering
-    double kpSteering = 100, kdSteering = 20, kThrottle = 100;
+    double kpSteering = 400, kdSteering = 80, kThrottle = 100;
     Kp.setZero();
     Kd.setZero();
     map_driving_cmd_to_x_d.setZero();
@@ -122,6 +123,7 @@ int main(int argc, char* argv[]) {
   SimulationOptions options = default_simulation_options;
   rigid_body_sys->penetration_stiffness = 5000.0;
   rigid_body_sys->penetration_damping = rigid_body_sys->penetration_stiffness/10.0;
+  rigid_body_sys->friction_coefficient = 10.0;  // essentially infinite friction
   options.initial_step_size = 5e-3;
   options.timeout_seconds = numeric_limits<double>::infinity();
 

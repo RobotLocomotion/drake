@@ -39,6 +39,15 @@ if (kinsol.mex)
   P = forwardKinPositionGradientmex(obj.mex_model_ptr, kinsol.mex_ptr, m, body_or_frame_ind - 1, 0);
   if kinsol.has_gradients
     [P, dP] = eval(P);
+    if isempty(dP)
+      % This happens when we transform to the same frame: derivatives
+      % vector never gets resized in C++ because the relative transform
+      % does not depend on q or v.
+      % This is the best place to fix it, because in C++ we don't have
+      % the convention that AutoDiff derivative vectors always correspond
+      % to q and/or v.
+      dP = zeros(numel(P), length(kinsol.q));
+    end
   end
 else
   if compute_P

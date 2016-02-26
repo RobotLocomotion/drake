@@ -104,17 +104,17 @@ set(bullet_GIT_TAG 4319ffd7e9251066d93064f5a8dab12e33dbe5e2)
 set(bullet_IS_PUBLIC TRUE)
 set(bullet_IS_CMAKE_POD TRUE)
 set(cmake_GIT_REPOSITORY https://github.com/RobotLocomotion/cmake.git)
-set(cmake_GIT_TAG 800fecfa7842f918d96a96606fa61eb99ce4d03f)
+set(cmake_GIT_TAG 54f5a4c0734015695334970ecedac79e12c3116f)
 set(cmake_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/drake/cmake")
 set(cmake_NO_BUILD TRUE)
 set(cmake_IS_PUBLIC TRUE)
 set(director_GIT_REPOSITORY https://github.com/RobotLocomotion/director.git)
-set(director_GIT_TAG 527a40ba48180091e0f459a4ae3b02d642e45a02)
+set(director_GIT_TAG 39c78e73d63704a66a80bfce19b58a3e140e017a)
 set(director_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/director/distro/pods/drake-distro)
 set(director_IS_PUBLIC TRUE)
 set(drake_ADDITIONAL_BUILD_ARGS CMAKE_ARGS -DWITH_PYTHON_3=${WITH_PYTHON_3})
 set(eigen_GIT_REPOSITORY https://github.com/RobotLocomotion/eigen-pod.git)
-set(eigen_GIT_TAG ceba39500b89a77a8649b3e8b421b10a3d74d42b)
+set(eigen_GIT_TAG 20a633e8f0a285edf9dcc5a06cc9e80774920a7f)
 set(eigen_IS_CMAKE_POD TRUE)
 set(eigen_IS_PUBLIC TRUE)
 set(gtk_GIT_REPOSITORY https://github.com/RobotLocomotion/gtk-pod.git)
@@ -128,13 +128,13 @@ set(gurobi_GIT_REPOSITORY https://github.com/RobotLocomotion/gurobi.git)
 set(gurobi_GIT_TAG 9699ec6091f3d9d8013c6f0acaea229c84a189a5)
 set(gurobi_IS_PUBLIC FALSE)
 set(iris_GIT_REPOSITORY https://github.com/rdeits/iris-distro.git)
-set(iris_GIT_TAG 7442fbca7a456f5564296902d8e2130a751bf3e3)
+set(iris_GIT_TAG e3efbc67369e948080a9a1913188874fc31838f5)
 set(iris_ADDITIONAL_BUILD_ARGS PATCH_COMMAND make configure-cdd-only)
 set(iris_IS_PUBLIC TRUE)
 set(lcm_GIT_REPOSITORY https://github.com/RobotLocomotion/lcm-pod.git)
-set(lcm_GIT_TAG 23876258aaf1c29a0a29915aa82c7b785214a2bf) # note: cmake branch
+set(lcm_GIT_TAG 8dba206f3403f01048b73ce10b6a17da58280fbe) # note: cmake branch
 set(lcm_IS_CMAKE_POD TRUE)
-set(lcm_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/lcm/lcm-1.0.0)
+set(lcm_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/lcm/lcm/lcm-src)
 set(lcm_IS_PUBLIC TRUE)
 set(libbot_GIT_REPOSITORY https://github.com/RobotLocomotion/libbot.git)
 set(libbot_GIT_TAG 94fe5290329646959e1c27896d529abba81e6d93)
@@ -163,7 +163,7 @@ set(spotless_GIT_TAG 86275d25eecebe5e85d33e1074cdb274a1b32d49)
 set(spotless_IS_CMAKE_POD TRUE)
 set(spotless_IS_PUBLIC TRUE)
 set(swigmake_GIT_REPOSITORY https://github.com/rdeits/swigmake.git)
-set(swigmake_GIT_TAG 77fd235d5b308a3adfb37a80f3265babe01ad14e)
+set(swigmake_GIT_TAG 7e4fcbeb46c5fc7b1efb651b4365ba8b777ef184)
 set(swigmake_IS_PUBLIC TRUE)
 set(swigmake_IS_CMAKE_POD TRUE)
 set(swig_matlab_GIT_REPOSITORY https://github.com/rdeits/swig-matlab-pod.git)
@@ -179,7 +179,7 @@ set(yalmip_GIT_REPOSITORY https://github.com/RobotLocomotion/yalmip.git)
 set(yalmip_GIT_TAG c071fb7b7193491f8eefadba3bfff26160ad6cd4)
 set(yalmip_IS_PUBLIC TRUE)
 set(yaml_cpp_GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git)
-set(yaml_cpp_GIT_TAG master)
+set(yaml_cpp_GIT_TAG 57805dfd6a741e55477ea8d4d5b3b6f0272d1f0e)
 set(yaml_cpp_IS_PUBLIC TRUE)
 set(yaml_cpp_IS_CMAKE_POD TRUE)
 if (APPLE OR WIN32)
@@ -269,19 +269,6 @@ foreach (proj ${EXTERNAL_PROJECTS})
 		if (NOT ${proj}_SOURCE_DIR)
 			set(${proj}_SOURCE_DIR ${${proj}_GIT_CLONE_DIR})
 		endif()
-		if (NOT DEFINED ${proj}_CONFIGURE_COMMAND AND ${proj}_IS_CMAKE_POD)
-			set(${proj}_CONFIGURE_COMMAND ${CMAKE_COMMAND} -E make_directory ${${proj}_SOURCE_DIR}/pod-build
-					COMMAND ${CMAKE_COMMAND} -E chdir ${${proj}_SOURCE_DIR}/pod-build ${CMAKE_COMMAND} -G${CMAKE_GENERATOR} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} ${${proj}_ADDITIONAL_CMAKE_CONFIGURE_ARGS} ..)
-		endif()
-		if (NOT DEFINED ${proj}_BUILD_COMMAND)
-			if (${proj}_IS_CMAKE_POD)
-				set(${proj}_BUILD_COMMAND ${CMAKE_COMMAND} -E chdir ${${proj}_SOURCE_DIR} ${CMAKE_COMMAND} --build pod-build --config $<CONFIGURATION> --target install)
-			elseif(${proj}_NO_BUILD)
-				set(${proj}_BUILD_COMMAND "")
-			else()# then use the PODS gnu make system
-				set(${proj}_BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=$<CONFIGURATION>)
-			endif()
-		endif()
 		set(EXTERNAL_SOURCE_DIRS ${EXTERNAL_SOURCE_DIRS} ${${proj}_SOURCE_DIR} "\n")
 
 		message(STATUS "Preparing to build ${proj} with dependencies: ${deps}")
@@ -312,19 +299,43 @@ foreach (proj ${EXTERNAL_PROJECTS})
 		endif()
 
 		# now the actual project
-		ExternalProject_Add(${proj}
-				SOURCE_DIR ${${proj}_SOURCE_DIR}
-				#      BINARY_DIR ${${proj}_SOURCE_DIR}/pod-build
-				DOWNLOAD_COMMAND ""
-				UPDATE_COMMAND ""
-				CONFIGURE_COMMAND "${${proj}_CONFIGURE_COMMAND}"
-				BUILD_IN_SOURCE 1
-				BUILD_COMMAND "${${proj}_BUILD_COMMAND}"
-				INSTALL_COMMAND ""
-				DEPENDS download-${proj} ${deps}
-				${${proj}_ADDITIONAL_BUILD_ARGS}
-				)
-		#    message(STATUS "${proj}_BUILD_COMMAND: ${${proj}_BUILD_COMMAND}")
+		if (${proj}_IS_CMAKE_POD)
+			ExternalProject_Add(${proj}
+					SOURCE_DIR ${${proj}_SOURCE_DIR}
+					DOWNLOAD_COMMAND ""
+					UPDATE_COMMAND ""
+					BINARY_DIR ${${proj}_SOURCE_DIR}/pod-build
+					CMAKE_GENERATOR ${CMAKE_GENERATOR}
+					CMAKE_ARGS
+					  -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+					  -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+						${${proj}_ADDITIONAL_CMAKE_CONFIGURE_ARGS}
+					DEPENDS download-${proj} ${deps}
+					${${proj}_ADDITIONAL_BUILD_ARGS}
+					)
+		else() # not a CMake POD
+			if (NOT DEFINED ${proj}_BUILD_COMMAND)
+				if(${proj}_NO_BUILD)
+					set(${proj}_BUILD_COMMAND "")
+				else() # then use the PODS gnu make system
+					set(${proj}_BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=$<CONFIGURATION>)
+				endif()
+			endif()
+
+			ExternalProject_Add(${proj}
+					SOURCE_DIR ${${proj}_SOURCE_DIR}
+					#      BINARY_DIR ${${proj}_SOURCE_DIR}/pod-build
+					DOWNLOAD_COMMAND ""
+					UPDATE_COMMAND ""
+					CONFIGURE_COMMAND ""
+					BUILD_COMMAND "${${proj}_BUILD_COMMAND}"
+					BUILD_IN_SOURCE 1
+					INSTALL_COMMAND ""
+					DEPENDS download-${proj} ${deps}
+					${${proj}_ADDITIONAL_BUILD_ARGS}
+					)
+			#    message(STATUS "${proj}_BUILD_COMMAND: ${${proj}_BUILD_COMMAND}")
+		endif()
 
 	else()
 		message(STATUS "Preparing to build ${proj} with dependencies: ${deps}")
@@ -333,13 +344,11 @@ foreach (proj ${EXTERNAL_PROJECTS})
 				SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake"
 				DOWNLOAD_COMMAND ""
 				UPDATE_COMMAND ""
-				#      CONFIGURE_COMMAND ""
-				#      BUILD_IN_SOURCE 1
-				#      BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=${CMAKE_BUILD_TYPE}
-				CONFIGURE_COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/drake/pod-build
-				COMMAND ${CMAKE_COMMAND} -E chdir ${PROJECT_SOURCE_DIR}/drake/pod-build ${CMAKE_COMMAND} -G${CMAKE_GENERATOR} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} ..
-				BUILD_COMMAND ${CMAKE_COMMAND} --build ${PROJECT_SOURCE_DIR}/drake/pod-build --config $<CONFIGURATION> --target install
-				INSTALL_COMMAND ""
+				BINARY_DIR ${PROJECT_SOURCE_DIR}/drake/pod-build
+				CMAKE_GENERATOR ${CMAKE_GENERATOR}
+				CMAKE_ARGS
+				  -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+				  -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
 				DEPENDS ${deps}
 				${${proj}_ADDITIONAL_BUILD_ARGS}
 				#		BUILD_ALWAYS 1

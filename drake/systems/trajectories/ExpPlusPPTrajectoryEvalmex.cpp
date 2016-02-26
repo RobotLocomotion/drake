@@ -38,13 +38,6 @@ private:
   const int m_n, m_d, m_p;
 
 public:
-
-  MatrixXd expm(const MatrixXd& A) {
-    MatrixXd F;
-    MatrixExponential<MatrixXd>(A).compute(F);
-    return F;
-  }
-
   Eval(const VectorXd& breaks, const MatrixXd& K, const MatrixXd& A, const MatrixXd& alpha, const MatrixXd& gamma) : m_breaks(breaks), m_K(K), m_A(A), m_alpha(alpha), m_gamma(gamma), m_n(static_cast<int>(alpha.cols())), m_d(static_cast<int>(K.rows())), m_p(static_cast<int>(gamma.cols())) {}
 
   int dim() {
@@ -58,7 +51,7 @@ public:
       trels(i) = trels(i-1) * trel; 
     }
     const MatrixXd gammaj = m_gamma.block(j*m_d,0,m_d,m_p);
-    return m_K*expm(m_A*trel)*m_alpha.col(j) + gammaj*trels;
+    return m_K* (m_A*trel).eval().exp() *m_alpha.col(j) + gammaj*trels;
   }
 
   void compute(const VectorXd& t, Map<MatrixXd>& y, Map<MatrixXd>& jj) {

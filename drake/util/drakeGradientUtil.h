@@ -10,7 +10,6 @@
 #include <cassert>
 #include <stdexcept>
 
-
 template<std::size_t Size>
 std::array<int, Size> intRange(int start)
 {

@@ -19,8 +19,13 @@ classdef CubicPolynomialExample < PolynomialSystem
     function obj = CubicPolynomialExample()
       obj = obj@PolynomialSystem(1,0,0,1,false,true,false);
     end
-    function xdot = dynamicsRHS(obj,t,x,u)
+    function [xdot, df] = dynamicsRHS(obj,t,x,u)
       xdot = -x+x^3;
+      
+      if nargout>1
+          df = [0, 3*x^2-1];
+      end
+      
     end
     function y=output(obj,t,x,u)
       y=x;
@@ -61,6 +66,9 @@ classdef CubicPolynomialExample < PolynomialSystem
     end
     
     function sosExample()
+      % Use sums-of-squares (SOS) to find the region of attraction of
+      % the stable fixpoint at x = xdot =0. 
+       
       checkDependency('spotless');
       checkDependency('mosek');
       
@@ -72,12 +80,30 @@ classdef CubicPolynomialExample < PolynomialSystem
       V = x^2;
       Vdot = diff(V,x)*f;
       
+      %%% note: you can generate this programmatically from your model:
+      % p = CubicPolynomialExample();
+      %%% First find a fixpoint.
+      % x0 = 0.01*rand(1); % provide an initial guess for the fixpoint.
+      % prog = FixedPointProgram(p); %
+      % [xstar,~,info] = findFixedPoint(prog,x0,[],1e-10);
+      %%% note: this can be called as a single line as
+      %%% xstar = findFixedPoint(p,x0,[])
+      %%% The precision of f(xstar) needs to be < 1e-10. Because of this the
+      %%% initial guess for x0 needs to be reasonably good.
+      % V_estimate=regionOfAttraction(p,xstar);
+      % f = getPolyDynamics(p,0);
+      % V = getPoly(V_estimate,0);
+      % Vdot = diff(V,x)*f;
+      
+      
       % construct a SOS program
       prog=spotsosprog;
       prog = prog.withIndeterminate(x);
       
       % construct the langrange multiplier
       m=monomials(x,0:4);
+      % note: if the problem seems primal infeasible, try increasing the
+      % order of monomials
       [prog,c] = prog.newFree(length(m));
       lambda = c'*m;
       prog = prog.withSOS(lambda);
@@ -128,7 +154,7 @@ classdef CubicPolynomialExample < PolynomialSystem
       legend('xdot','Vdot','lambda','Vdot+lambda*(1-V)');
       
     end
-    
+
     function animate()
       p=CubicPolynomialExample();
       v=p.constructVisualizer();

@@ -24,8 +24,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   if (nlhs < 1)
     mexErrMsgTxt("take at least one output... please.");
 
-  double* pr;
-
   // first get the ptr back from matlab
   InstantaneousQPController *controller = (InstantaneousQPController*) getDrakeMexPointer(prhs[0]);
 
@@ -36,8 +34,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   double t = mxGetScalar(prhs[narg++]);
 
   // x
-  int nq = controller->robot->num_positions;
-  int nv = controller->robot->num_velocities;
+  int nq = controller->getRobot().num_positions;
+  int nv = controller->getRobot().num_velocities;
   if (mxGetNumberOfElements(prhs[narg]) != (nq + nv)) mexErrMsgTxt("size of x should be nq + nv\n");
   if (nq!=nv) mexErrMsgTxt("still assume nv==nq");
   double *q_ptr = mxGetPrSafe(prhs[narg]);
@@ -56,7 +54,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
   // contact_sensor
   const mxArray *pobj = prhs[narg];
-  Matrix<bool, Dynamic, 1> b_contact_force = Matrix<bool, Dynamic, 1>::Zero(controller->robot->bodies.size()).array();
+  Matrix<bool, Dynamic, 1> b_contact_force = Matrix<bool, Dynamic, 1>::Zero(controller->getRobot().bodies.size()).array();
   int num_bodies_in_contact = mxGetNumberOfElements(pobj);
   for (int i=0; i < num_bodies_in_contact; i++) {
     b_contact_force(controller->body_or_frame_name_to_id.at(mxGetStdString(mxGetCell(pobj, i)))) = 1;
@@ -79,9 +77,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   if (nrhs > 5) {
     const mxArray* mex_foot_force_torque_measurements = prhs[narg++];
     if (!mxIsEmpty(mex_foot_force_torque_measurements)) {
-      foot_force_torque_measurements[Side::LEFT].frame_idx = controller->robot->findLinkId("l_foot");
+      foot_force_torque_measurements[Side::LEFT].frame_idx = controller->getRobot().findLinkId("l_foot");
       foot_force_torque_measurements[Side::LEFT].wrench = matlabToEigenMap<TWIST_SIZE, 1>(mxGetFieldSafe(mex_foot_force_torque_measurements, "left"));
-      foot_force_torque_measurements[Side::RIGHT].frame_idx = controller->robot->findLinkId("r_foot");
+      foot_force_torque_measurements[Side::RIGHT].frame_idx = controller->getRobot().findLinkId("r_foot");
       foot_force_torque_measurements[Side::RIGHT].wrench = matlabToEigenMap<TWIST_SIZE, 1>(mxGetFieldSafe(mex_foot_force_torque_measurements, "right"));
     }
   }
@@ -110,75 +108,5 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
   narg++;
 
-  if (nlhs>narg) {
-      plhs[narg] = mxCreateDoubleMatrix(1,debug->active_supports.size(),mxREAL);
-      pr = mxGetPrSafe(plhs[narg]);
-      int i=0;
-      for (vector<SupportStateElement,Eigen::aligned_allocator<SupportStateElement>>::iterator iter = debug->active_supports.begin(); iter!=debug->active_supports.end(); iter++) {
-          pr[i++] = (double) (iter->body_idx + 1);
-      }
-  }
-  narg++;
 
-  if (nlhs>narg) {
-    plhs[narg] = eigenToMatlab(debug->alpha);
-  }
-  narg++;
-
-  if (nlhs>narg) {
-    plhs[narg] = eigenToMatlab(controller->Hqp);
-  }
-  narg++;
-
-  if (nlhs>narg) {
-    plhs[narg] = eigenToMatlab(debug->f);
-  }
-  narg++;
-
-  if (nlhs>narg) {
-    plhs[narg] = eigenToMatlab(debug->Aeq);
-  }
-  narg++;
-
-  if (nlhs>narg) {
-    plhs[narg] = eigenToMatlab(debug->beq);
-  }
-  narg++;
-
-  if (nlhs>narg) {
-    plhs[narg] = eigenToMatlab(debug->Ain_lb_ub);
-  }
-  narg++;
-
-  if (nlhs>narg) {
-    plhs[narg] = eigenToMatlab(debug->bin_lb_ub);
-  }
-  narg++;
-
-  if (nlhs>narg) {
-    plhs[narg] = eigenToMatlab(debug->Qnfdiag);
-  }
-  narg++;
-
-  if (nlhs>narg) {
-    plhs[narg] = eigenToMatlab(debug->Qneps);
-  }
-  narg++;
-
-  if (nlhs>narg) {
-    double Vdot;
-    if (debug->nc>0) 
-      // note: Sdot is 0 for ZMP/double integrator dynamics, so we omit that term here
-      Vdot = ((2*debug->x_bar.transpose()*debug->S + debug->s1.transpose())*(debug->A_ls*debug->x_bar + debug->B_ls*(debug->Jcomdotv + debug->Jcom*qp_output.qdd)) + debug->s1dot.transpose()*debug->x_bar)(0) + debug->s2dot;
-    else
-      Vdot = 0;
-    plhs[narg] = mxCreateDoubleScalar(Vdot);
-  }
-  narg++;
-
-  if (nlhs>narg) {
-    VectorXd individual_cops = individualSupportCOPs(*controller->robot, controller->cache, debug->active_supports, debug->normals, debug->B, debug->beta);
-    plhs[narg] = eigenToMatlab(individual_cops);
-  }
-  narg++;
 } 

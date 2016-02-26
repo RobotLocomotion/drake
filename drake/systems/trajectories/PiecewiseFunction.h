@@ -16,9 +16,9 @@ public:
 
   virtual ~PiecewiseFunction();
 
-  virtual Eigen::DenseIndex rows() const = 0;
+  virtual Eigen::Index rows() const = 0;
 
-  virtual Eigen::DenseIndex cols() const = 0;
+  virtual Eigen::Index cols() const = 0;
 
   int getNumberOfSegments() const;
 

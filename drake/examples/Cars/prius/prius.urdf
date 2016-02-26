@@ -459,7 +459,7 @@
   </joint>
   
   <force_element name="front_left_spring">
-    <linear_spring_damper rest_length=".323342" stiffness="1000" damping="100">
+    <linear_spring_damper rest_length=".323342" stiffness="10000" damping="100">
       <link1 link="left_hub" xyz="0 0.801993 .323342"/>
       <link2 link="front_left_contact_point"/>
     </linear_spring_damper>
@@ -482,7 +482,7 @@
   </joint>
   
   <force_element name="front_right_spring">
-    <linear_spring_damper rest_length=".323342" stiffness="1000" damping="100">
+    <linear_spring_damper rest_length=".323342" stiffness="10000" damping="100">
       <link1 link="right_hub" xyz="0 -0.801993 .323342"/>
       <link2 link="front_right_contact_point"/>
     </linear_spring_damper>
@@ -519,7 +519,7 @@
   </joint>
   
   <force_element name="rear_left_spring">
-    <linear_spring_damper rest_length="0.323342" stiffness="1000" damping="100">
+    <linear_spring_damper rest_length="0.323342" stiffness="10000" damping="100">
       <link1 link="rear_axle" xyz="-1.409480 0.801993 0"/>
       <link2 link="rear_left_contact_point"/>
     </linear_spring_damper>
@@ -542,7 +542,7 @@
   </joint>
   
   <force_element name="rear_right_spring">
-    <linear_spring_damper rest_length="0.323342" stiffness="1000" damping="100">
+    <linear_spring_damper rest_length="0.323342" stiffness="10000" damping="100">
       <link1 link="rear_axle" xyz="-1.409480 -0.801993 0"/>
       <link2 link="rear_right_contact_point"/>
     </linear_spring_damper>

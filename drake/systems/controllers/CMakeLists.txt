@@ -10,7 +10,7 @@ pods_install_pkg_config_file(drake-control-util
   VERSION 0.0.1)
 
 pods_find_pkg_config(gurobi)
-if (gurobi_FOUND AND LCM_FOUND)
+if (gurobi_FOUND AND LCM_FOUND AND yaml-cpp_FOUND)
   add_library_with_exports(LIB_NAME drakeQPCommon SOURCE_FILES InstantaneousQPController.cpp)
   target_link_libraries(drakeQPCommon drakeControlUtil drakeQP drakeTrajectories drakeLCMUtil drakeSide drakeYAMLUtil)
   pods_use_pkg_config_packages(drakeQPCommon lcm)
@@ -33,16 +33,12 @@ endif()
 if (MATLAB_FOUND)
   pods_find_pkg_config(gurobi)
 
-  if (gurobi_FOUND AND LCM_FOUND)
-    # NOTE: controlMexUtil.h currently includes QPCommon.h, which includes a gurobi header.
+  if (gurobi_FOUND AND LCM_FOUND AND yaml-cpp_FOUND)
 
     add_mex(instantaneousQPControllermex instantaneousQPControllermex.cpp)
     target_link_libraries(instantaneousQPControllermex drakeQP drakeControlUtil drakeQPCommon drakeMexUtil drakeSide)
     pods_use_pkg_config_packages(instantaneousQPControllermex gurobi)
 
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../util/yaml)
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../core)
     add_mex(constructQPDataPointerMex constructQPDataPointerMex.cpp)
     target_link_libraries(constructQPDataPointerMex drakeQP drakeControlUtil drakeQPCommon drakeMexUtil drakeYAMLUtil drakeAtlasUtil)
     pods_use_pkg_config_packages(constructQPDataPointerMex gurobi)
