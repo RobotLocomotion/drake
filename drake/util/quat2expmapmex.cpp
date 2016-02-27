@@ -1,4 +1,4 @@
-#include <Eigen/Core>
+#include "eigen3/Eigen/Core"
 #include "drake/util/mexify.h"
 #include "drake/util/standardMexConversions.h"
 #include "drake/util/drakeGeometryUtil.h"

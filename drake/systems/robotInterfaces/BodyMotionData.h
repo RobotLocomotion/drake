@@ -2,8 +2,8 @@
 #define SYSTEMS_CONTROLLERS_BODYMOTIONDATA_H_
 
 #include <vector>
-#include <Eigen/Core>
-#include <Eigen/Geometry>
+#include "eigen3/Eigen/Core"
+#include "eigen3/Eigen/Geometry"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include "drake/drakeQPLocomotionPlan_export.h" // TODO: exports
 

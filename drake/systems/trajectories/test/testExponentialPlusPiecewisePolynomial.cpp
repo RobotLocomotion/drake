@@ -1,5 +1,5 @@
 #include "drake/systems/trajectories/ExponentialPlusPiecewisePolynomial.h"
-#include <Eigen/Core>
+#include "eigen3/Eigen/Core"
 #include <random>
 #include <iostream>
 #include <cmath>

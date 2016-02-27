@@ -1,4 +1,4 @@
-#include <Eigen/Core>
+#include "eigen3/Eigen/Core"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/testUtil.h"
 #include "drake/core/Gradient.h"

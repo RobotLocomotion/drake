@@ -1,9 +1,9 @@
 #ifndef DRAKE_SOLVERS_POLYNOMIAL_POLYNOMIAL_H_
 #define DRAKE_SOLVERS_POLYNOMIAL_POLYNOMIAL_H_
 
-#include <Eigen/Core>
+#include "eigen3/Eigen/Core"
 #include <complex>
-#include <unsupported/Eigen/Polynomials>
+#include "eigen3/unsupported/Eigen/Polynomials"
 #include <string>
 #include <vector>
 #include <random>

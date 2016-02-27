@@ -2,7 +2,7 @@
 #define TESTUTIL_H_
 
 #include <chrono>
-#include <Eigen/Core>
+#include "eigen3/Eigen/Core"
 #include <sstream>
 #include <string>
 #include <stdexcept>
@@ -56,7 +56,7 @@ void valuecheck(const T& a, const T& b, std::string error_msg = "")
  * https://stackoverflow.com/questions/25925551/gcc-and-clang-implicitly-instantiate-template-arguments-during-operator-overload
  *
  * Fairly minimal failure example (still involving Eigen):
- * #include <Eigen/Core>
+ * #include "eigen3/Eigen/Core"
  * #include <iostream>
  *
  * template <typename Derived>

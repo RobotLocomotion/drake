@@ -1,7 +1,7 @@
 #ifndef __DRAKE_GEOMETRY_UTIL_H__
 #define __DRAKE_GEOMETRY_UTIL_H__
 
-#include <Eigen/Dense>
+#include "eigen3/Eigen/Dense"
 #include <cstring>
 #include <cmath>
 #include <random>

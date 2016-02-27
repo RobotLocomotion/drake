@@ -1,5 +1,5 @@
 #include <vector>
-#include <Eigen/Dense>
+#include "eigen3/Eigen/Dense"
 #include "drake/drakeConvexHull_export.h"
 
 typedef double coord_t;         // coordinate type

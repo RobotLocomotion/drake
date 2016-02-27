@@ -1,7 +1,7 @@
 #ifndef DRAKE_SYSTEMS_TRAJECTORIES_PIECEWISEPOLYNOMIALBASE_H_
 #define DRAKE_SYSTEMS_TRAJECTORIES_PIECEWISEPOLYNOMIALBASE_H_
 
-#include <Eigen/Core>
+#include "eigen3/Eigen/Core"
 #include <vector>
 #include "PiecewiseFunction.h"
 #include "drake/drakeTrajectories_export.h"

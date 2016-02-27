@@ -1,7 +1,7 @@
 #ifndef DRAKE_SYSTEMS_TRAJECTORIES_PIECEWISEFUNCTION_H_
 #define DRAKE_SYSTEMS_TRAJECTORIES_PIECEWISEFUNCTION_H_
 
-#include <Eigen/Core>
+#include "eigen3/Eigen/Core"
 #include <vector>
 #include <random>
 #include "drake/drakeTrajectories_export.h"

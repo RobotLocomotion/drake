@@ -1,5 +1,5 @@
 #include <mex.h>
-#include <Eigen/Core>
+#include "eigen3/Eigen/Core"
 #include "drake/solvers/qpSpline/splineGeneration.h"
 #include "drake/util/drakeMexUtil.h"
 #include <iostream>

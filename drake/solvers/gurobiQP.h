@@ -2,7 +2,7 @@
 #ifndef __GUROBI_QP__
 #define __GUROBI_QP__
 
-#include <Eigen/Dense>
+#include "eigen3/Eigen/Dense"
 #include <vector>
 #include <set>
 #include <gurobi_c++.h>

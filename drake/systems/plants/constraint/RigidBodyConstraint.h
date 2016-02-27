@@ -5,13 +5,13 @@
 #ifndef __RIGIDBODYCONSTRAINT_H__
 #define __RIGIDBODYCONSTRAINT_H__
 #include <iostream>
-#include <Eigen/StdVector>
+#include "eigen3/Eigen/StdVector"
 #include <set>
 #include <string>
 #include <cstdio>
 #include <cstdlib>
-#include <Eigen/Dense>
-#include <Eigen/Sparse>
+#include "eigen3/Eigen/Dense"
+#include "eigen3/Eigen/Sparse"
 #include <sstream>
 #include "drake/systems/plants/KinematicsCache.h"
 #include "drake/drakeRigidBodyConstraint_export.h"

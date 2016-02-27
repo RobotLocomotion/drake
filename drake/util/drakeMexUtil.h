@@ -3,8 +3,8 @@
 
 #include "mex.h"
 #include <vector>
-#include <Eigen/Core>
-#include <Eigen/Sparse>
+#include "eigen3/Eigen/Core"
+#include "eigen3/Eigen/Sparse"
 #include "drake/util/TrigPoly.h"
 #include "unsupported/Eigen/AutoDiff"
 
@@ -15,8 +15,8 @@
  * For some reason there is a bad interaction with AutoDiff, even though LLDT.h still gets included if TrigPoly.h is included before AutoDiff.
  * See http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1057
  */
-#include <unsupported/Eigen/AutoDiff>
-#include <Eigen/src/SparseCore/SparseMatrix.h>
+#include "eigen3/unsupported/Eigen/AutoDiff"
+#include "eigen3/Eigen/src/SparseCore/SparseMatrix.h"
 #include "drake/util/drakeGradientUtil.h"
 
 #undef DLLEXPORT

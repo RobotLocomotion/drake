@@ -1,9 +1,9 @@
 #ifndef DRAKEJOINT_H_
 #define DRAKEJOINT_H_
 
-#include <Eigen/Dense>
-#include <Eigen/Geometry>
-#include <unsupported/Eigen/AutoDiff>
+#include "eigen3/Eigen/Dense"
+#include "eigen3/Eigen/Geometry"
+#include "eigen3/unsupported/Eigen/AutoDiff"
 #include <random>
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/drakeJoints_export.h"

@@ -1,8 +1,8 @@
 #ifndef __RIGIDBODYIK_H__
 #define __RIGIDBODYIK_H__
 #include <string>
-#include <Eigen/Dense>
-#include <Eigen/StdVector>
+#include "eigen3/Eigen/Dense"
+#include "eigen3/Eigen/StdVector"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/IKoptions.h"
 #include "drake/drakeIK_export.h"

@@ -1,6 +1,6 @@
 #include "drake/solvers/qpSpline/splineGeneration.h"
 
-#include <Eigen/Dense>
+#include "eigen3/Eigen/Dense"
 #include <iostream>
 #include <sstream>
 #include <numeric>

@@ -1,11 +1,11 @@
 #ifndef _RIGIDBODY
 #define _RIGIDBODY
 
-#include <Eigen/Dense>
+#include "eigen3/Eigen/Dense"
 #include <iostream>
 #include <set>
 #include <map>
-#include <Eigen/StdVector>
+#include "eigen3/Eigen/StdVector"
 #include <memory>
 #include "drake/systems/plants/joints/DrakeJoint.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"

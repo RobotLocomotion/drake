@@ -1,4 +1,4 @@
-#include <Eigen/Core>
+#include "eigen3/Eigen/Core"
 #include "drake/systems/trajectories/ExponentialPlusPiecewisePolynomial.h"
 #include "drake/drakeZMPUtil_export.h"
 

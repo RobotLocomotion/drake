@@ -2,8 +2,8 @@
 // Michael Kaess, June 2013
 
 #include <mex.h>
-#include <Eigen/Dense>
-#include <unsupported/Eigen/MatrixFunctions>
+#include "eigen3/Eigen/Dense"
+#include "eigen3/unsupported/Eigen/MatrixFunctions"
 #include <vector>
 #include <iostream>
 
