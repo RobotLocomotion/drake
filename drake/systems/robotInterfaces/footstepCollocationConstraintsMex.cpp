@@ -1,6 +1,6 @@
 #include "mex.h"
 #include <math.h>
-#include <Eigen/Dense>
+#include "eigen3/Eigen/Dense"
 
 using namespace std;
 

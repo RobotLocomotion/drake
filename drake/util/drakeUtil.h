@@ -11,8 +11,8 @@
 #include <stdexcept>
 #include <vector>
 #include <utility>
-#include <Eigen/Core>
-#include <Eigen/Dense>
+#include "eigen3/Eigen/Core"
+#include "eigen3/Eigen/Dense"
 #include <unordered_map>
 #include "drake/drakeUtil_export.h"
 

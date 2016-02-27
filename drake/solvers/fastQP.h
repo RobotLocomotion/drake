@@ -1,7 +1,7 @@
 
 #ifndef __FAST_QP__
 #define __FAST_QP__
-#include <Eigen/Dense>
+#include "eigen3/Eigen/Dense"
 #include <vector>
 #include <set>
 

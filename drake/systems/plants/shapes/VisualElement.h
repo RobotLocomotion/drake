@@ -2,8 +2,8 @@
 #define __DrakeShapesVisualElement_H__
 #include <memory>
 
-#include <Eigen/Dense>
-#include <Eigen/StdVector>
+#include "eigen3/Eigen/Dense"
+#include "eigen3/Eigen/StdVector"
 
 #include "Element.h"
 

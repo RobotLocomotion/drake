@@ -3,8 +3,8 @@
 
 #include <string>
 
-#include <Eigen/Dense>
-#include <Eigen/StdVector>
+#include "eigen3/Eigen/Dense"
+#include "eigen3/Eigen/StdVector"
 
 #include "drake/drakeShapes_export.h"
 

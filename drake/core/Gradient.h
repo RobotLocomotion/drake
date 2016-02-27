@@ -1,9 +1,9 @@
 #ifndef DRAKE_GRADIENT_H
 #define DRAKE_GRADIENT_H
 
-#include <Eigen/Core>
-#include <Eigen/Dense>
-#include <unsupported/Eigen/AutoDiff>
+#include "eigen3/Eigen/Core"
+#include "eigen3/Eigen/Dense"
+#include "eigen3/unsupported/Eigen/AutoDiff"
 #include "drake/util/drakeGradientUtil.h" // todo: pull the core tools into this file and zap the old gradient util.
 
 namespace Drake {

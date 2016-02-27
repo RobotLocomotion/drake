@@ -1,6 +1,6 @@
 #ifndef __IKOPTIONS_H__
 #define __IKOPTIONS_H__
-#include <Eigen/Dense>
+#include "eigen3/Eigen/Dense"
 #include "drake/drakeIKoptions_export.h"
 
 

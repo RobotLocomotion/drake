@@ -1,5 +1,5 @@
 #include "drake/systems/trajectories/ExponentialPlusPiecewisePolynomial.h"
-#include <unsupported/Eigen/MatrixFunctions>
+#include "eigen3/unsupported/Eigen/MatrixFunctions"
 #include <stdexcept>
 
 using namespace Eigen;

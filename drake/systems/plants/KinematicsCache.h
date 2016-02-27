@@ -1,8 +1,8 @@
 #ifndef DRAKE_KINEMATICSCACHE_H
 #define DRAKE_KINEMATICSCACHE_H
 
-#include <Eigen/Core>
-#include <Eigen/Geometry>
+#include "eigen3/Eigen/Core"
+#include "eigen3/Eigen/Geometry"
 #include <unordered_map>
 #include <vector>
 #include <cassert>

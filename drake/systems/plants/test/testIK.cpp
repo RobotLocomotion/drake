@@ -4,7 +4,7 @@
 #include "../IKoptions.h"
 #include <iostream>
 #include <cstdlib>
-#include <Eigen/Dense>
+#include "eigen3/Eigen/Dense"
 
 using namespace std;
 using namespace Eigen;

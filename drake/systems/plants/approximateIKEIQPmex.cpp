@@ -4,12 +4,12 @@
 #include <math.h>
 #include <set>
 #include <mex.h>
-#include <Eigen/Dense>
+#include "eigen3/Eigen/Dense"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include <iostream>
-#include <Eigen/Cholesky>
-#include <Eigen/LU>
-#include <Eigen/SVD>
+#include "eigen3/Eigen/Cholesky"
+#include "eigen3/Eigen/LU"
+#include "eigen3/Eigen/SVD"
 
 #include "drake/util/drakeUtil.h"
 #include "drake/solvers/fastQP.h"

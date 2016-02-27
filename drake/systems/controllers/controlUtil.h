@@ -4,8 +4,8 @@
 #include <math.h>
 #include <set>
 #include <vector>
-#include <Eigen/Dense>
-#include <Eigen/StdVector>
+#include "eigen3/Eigen/Dense"
+#include "eigen3/Eigen/StdVector"
 
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"

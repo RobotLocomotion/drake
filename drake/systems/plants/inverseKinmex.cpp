@@ -3,7 +3,7 @@
 #include "constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/IKoptions.h"
 #include "drake/systems/plants/RigidBodyIK.h"
-#include <Eigen/Dense>
+#include "eigen3/Eigen/Dense"
 #include "drake/util/drakeMexUtil.h"
 
 using namespace std;

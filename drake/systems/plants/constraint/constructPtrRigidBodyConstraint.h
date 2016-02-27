@@ -1,7 +1,7 @@
 #ifndef  __CONSTRUCTPTRRIGIDBODYCONSTRAINT_H__
 #define  __CONSTRUCTPTRRIGIDBODYCONSTRAINT_H__
 #include "mex.h"
-#include <Eigen/Dense>
+#include "eigen3/Eigen/Dense"
 
 #if defined(WIN32) || defined(WIN64)
   #if defined(drakeConstructRigidBodyConstraint_EXPORTS)

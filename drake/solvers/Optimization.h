@@ -4,7 +4,7 @@
 #include <list>
 #include <memory>
 #include <initializer_list>
-#include <Eigen/SparseCore>
+#include "eigen3/Eigen/SparseCore"
 #include "drake/core/Core.h"
 #include "drake/drakeOptimization_export.h"
 

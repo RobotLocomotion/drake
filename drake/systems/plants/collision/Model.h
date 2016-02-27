@@ -4,8 +4,8 @@
 #include <memory>
 #include <unordered_map>
 
-#include <Eigen/Dense>
-#include <Eigen/StdVector>
+#include "eigen3/Eigen/Dense"
+#include "eigen3/Eigen/StdVector"
 
 #include "Element.h"
 #include "PointPair.h"

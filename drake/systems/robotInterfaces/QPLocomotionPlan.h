@@ -4,8 +4,8 @@
 #include <vector>
 #include <map>
 #include <string>
-#include <Eigen/Core>
-#include <Eigen/Geometry>
+#include "eigen3/Eigen/Core"
+#include "eigen3/Eigen/Geometry"
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include "drake/systems/trajectories/ExponentialPlusPiecewisePolynomial.h"
 #include "drake/systems/plants/RigidBodyTree.h"

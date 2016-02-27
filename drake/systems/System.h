@@ -2,8 +2,8 @@
 #define DRAKE_SYSTEM_H
 
 #include <memory>
-#include <Eigen/Core>
-#include <Eigen/Dense>
+#include "eigen3/Eigen/Core"
+#include "eigen3/Eigen/Dense"
 #include "drake/core/Core.h"
 
 

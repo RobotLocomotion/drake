@@ -1,5 +1,5 @@
 #include <typeinfo>
-#include <Eigen/Sparse>
+#include "eigen3/Eigen/Sparse"
 #include "rigidBodyTreeMexFunctions.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/util/standardMexConversions.h"

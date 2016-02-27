@@ -8,7 +8,7 @@
 #ifndef SYSTEMS_PLANTS_FORCETORQUEMEASUREMENT_H_
 #define SYSTEMS_PLANTS_FORCETORQUEMEASUREMENT_H_
 
-#include <Eigen/Core>
+#include "eigen3/Eigen/Core"
 
 struct ForceTorqueMeasurement {
   int frame_idx;

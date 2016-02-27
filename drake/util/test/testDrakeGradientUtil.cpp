@@ -1,8 +1,8 @@
 #include "drake/util/drakeGradientUtil.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/testUtil.h"
-#include <Eigen/Core>
-#include <Eigen/Geometry>
+#include "eigen3/Eigen/Core"
+#include "eigen3/Eigen/Geometry"
 #include <iostream>
 #include <stdexcept>
 #include <vector>

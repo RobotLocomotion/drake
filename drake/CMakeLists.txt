@@ -195,15 +195,11 @@ pods_install_pkg_config_file(drake-java
     VERSION 0.0.1)
 
 pods_find_pkg_config(eigen3 3.2.92)
-
-if (eigen3_FOUND)
-   pods_use_pkg_config_includes( eigen3 )
-else()
+if (NOT eigen3_FOUND)
    # then use the traditional approach to finding Eigen3
    find_package( Eigen3 3.2.92 )
    if (EIGEN3_FOUND)
       set(eigen3_FOUND 1)
-      include_directories( ${EIGEN3_INCLUDE_DIR} )
    else()
       message(FATAL_ERROR "Could not find eigen, which is a required depedency")
    endif()

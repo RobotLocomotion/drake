@@ -1,4 +1,4 @@
-#include <Eigen/Sparse>
+#include "eigen3/Eigen/Sparse"
 #include "drake/util/mexify.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "KinematicsCache.h"

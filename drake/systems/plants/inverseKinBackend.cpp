@@ -24,7 +24,7 @@ namespace snopt {
 #include "drake/systems/plants/IKoptions.h"
 #include "inverseKinBackend.h"
 
-#include <Eigen/LU>
+#include "eigen3/Eigen/LU"
 
 //Only for debugging purpose
 //#include "mat.h"
