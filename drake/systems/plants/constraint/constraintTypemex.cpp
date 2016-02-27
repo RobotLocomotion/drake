@@ -18,7 +18,7 @@
 #include "mex.h"
 #include <iostream>
 #include "drake/util/drakeMexUtil.h"
-#include <Eigen/Dense>
+#include "eigen3/Eigen/Dense"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include <cstdio>

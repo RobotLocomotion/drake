@@ -6,7 +6,7 @@
  */
 
 #include "drake/util/drakeUtil.h"
-#include <Eigen/Dense>
+#include "eigen3/Eigen/Dense"
 #include <stdexcept>
 
 using namespace std;

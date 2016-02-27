@@ -1,5 +1,5 @@
 #include "drake/util/drakeGeometryUtil.h"
-#include <Eigen/Sparse>
+#include "eigen3/Eigen/Sparse"
 #include <stdexcept>
 
 using namespace Eigen;

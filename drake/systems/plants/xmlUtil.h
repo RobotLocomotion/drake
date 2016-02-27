@@ -3,7 +3,7 @@
 
 #include <string>
 #include <map>
-#include <Eigen/Dense>
+#include "eigen3/Eigen/Dense"
 
 #include "spruce.hh"
 #include "drake/thirdParty/tinyxml2/tinyxml2.h"

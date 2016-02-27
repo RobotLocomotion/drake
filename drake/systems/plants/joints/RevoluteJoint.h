@@ -2,7 +2,7 @@
 #define REVOLUTEJOINT_H_
 
 #include "FixedAxisOneDoFJoint.h"
-#include <Eigen/Geometry>
+#include "eigen3/Eigen/Geometry"
 
 class DRAKEJOINTS_EXPORT RevoluteJoint : public FixedAxisOneDoFJoint<RevoluteJoint>
 {

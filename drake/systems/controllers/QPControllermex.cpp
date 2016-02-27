@@ -12,7 +12,7 @@
 #include "QPCommon.h"
 #include "QPDeprecated.h"
 #include "drake/solvers/fastQP.h"
-#include <Eigen/StdVector>
+#include "eigen3/Eigen/StdVector"
 #include <limits>
 #include <cmath>
 #include "drake/util/drakeMexUtil.h"

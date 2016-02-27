@@ -1,7 +1,7 @@
 #ifndef UTIL_LCMUTIL_H_
 #define UTIL_LCMUTIL_H_
 
-#include <Eigen/Core>
+#include "eigen3/Eigen/Core"
 #include <iostream>
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include "lcmtypes/drake/lcmt_polynomial.hpp"

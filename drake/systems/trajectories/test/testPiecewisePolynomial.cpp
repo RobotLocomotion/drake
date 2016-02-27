@@ -1,5 +1,5 @@
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
-#include <Eigen/Core>
+#include "eigen3/Eigen/Core"
 #include <random>
 #include <vector>
 #include "drake/util/testUtil.h"

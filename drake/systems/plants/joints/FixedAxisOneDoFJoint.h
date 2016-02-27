@@ -3,7 +3,7 @@
 
 #include "DrakeJointImpl.h"
 #include <cmath>
-#include <Eigen/Core>
+#include "eigen3/Eigen/Core"
 #include <limits>
 #include <exception>
 #include <stdexcept>

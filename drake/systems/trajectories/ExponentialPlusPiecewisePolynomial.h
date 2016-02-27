@@ -1,7 +1,7 @@
 #ifndef SYSTEMS_TRAJECTORIES_EXPONENTIALPLUSPIECEWISEPOLYNOMIAL_H_
 #define SYSTEMS_TRAJECTORIES_EXPONENTIALPLUSPIECEWISEPOLYNOMIAL_H_
 
-#include <Eigen/Core>
+#include "eigen3/Eigen/Core"
 #include <vector>
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include "drake/drakeTrajectories_export.h"

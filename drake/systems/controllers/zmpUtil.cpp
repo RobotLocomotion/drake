@@ -1,5 +1,5 @@
 #include "drake/systems/controllers/zmpUtil.h"
-#include <Eigen/Dense>
+#include "eigen3/Eigen/Dense"
 #include <unsupported/Eigen/MatrixFunctions>
 
 using namespace Eigen;

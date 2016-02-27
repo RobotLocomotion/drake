@@ -4,7 +4,7 @@
 #include "drake/systems/controllers/controlUtil.h"
 #include "drake/util/drakeUtil.h"
 #include <vector>
-#include <Eigen/Core>
+#include "eigen3/Eigen/Core"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
 #include "drake/systems/robotInterfaces/Side.h"

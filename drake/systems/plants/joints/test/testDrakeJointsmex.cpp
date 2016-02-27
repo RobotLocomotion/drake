@@ -3,7 +3,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
-#include <Eigen/Core>
+#include "eigen3/Eigen/Core"
 #include "mex.h"
 #include "matrix.h"
 #include "drake/util/drakeMexUtil.h"

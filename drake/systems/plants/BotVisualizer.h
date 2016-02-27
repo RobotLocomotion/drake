@@ -2,7 +2,7 @@
 #define DRAKE_BOTVISUALIZER_H
 
 #include <lcm/lcm-cpp.hpp>
-#include <Eigen/Dense>
+#include "eigen3/Eigen/Dense"
 #include "drake/systems/System.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 

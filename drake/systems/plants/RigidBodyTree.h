@@ -1,11 +1,11 @@
 #ifndef DRAKE_RIGIDBODYTREE_H
 #define DRAKE_RIGIDBODYTREE_H
 
-#include <Eigen/Dense>
-#include <Eigen/LU>
+#include "eigen3/Eigen/Dense"
+#include "eigen3/Eigen/LU"
 #include <set>
 #include <unordered_map>
-#include <Eigen/StdVector>
+#include "eigen3/Eigen/StdVector"
 
 #include "collision/DrakeCollision.h"
 #include "shapes/DrakeShapes.h"

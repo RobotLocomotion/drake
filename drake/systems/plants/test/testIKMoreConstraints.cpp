@@ -4,7 +4,7 @@
 #include "../IKoptions.h"
 #include <iostream>
 #include <cstdlib>
-#include <Eigen/Dense>
+#include "eigen3/Eigen/Dense"
 #include <numeric> // for iota
 
 using namespace std;

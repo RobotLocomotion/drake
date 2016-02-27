@@ -5,8 +5,8 @@
 #include <utility>
 #include <stdint.h>
 
-#include <Eigen/Dense>
-#include <Eigen/StdVector>
+#include "eigen3/Eigen/Dense"
+#include "eigen3/Eigen/StdVector"
 
 #include "../shapes/DrakeShapes.h"
 #include "drake/drakeCollision_export.h"

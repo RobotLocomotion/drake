@@ -1,8 +1,8 @@
 #ifndef __INVERSEKINBACKEND_H__
 #define __INVERSEKINBACKEND_H__
 #include <string>
-#include <Eigen/StdVector>
-#include <Eigen/Dense>
+#include "eigen3/Eigen/StdVector"
+#include "eigen3/Eigen/Dense"
 class RigidBodyTree;
 class RigidBodyConstraint;
 class IKoptions;

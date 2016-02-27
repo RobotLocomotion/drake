@@ -1,8 +1,8 @@
 #ifndef DRAKEGRADIENTUTIL_H_
 #define DRAKEGRADIENTUTIL_H_
 
-#include <Eigen/Core>
-#include <Eigen/Dense>
+#include "eigen3/Eigen/Core"
+#include "eigen3/Eigen/Dense"
 #include <unsupported/Eigen/AutoDiff>
 #include <cmath>
 #include <vector>

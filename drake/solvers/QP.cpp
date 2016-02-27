@@ -1,8 +1,8 @@
 #include <math.h>
 #include <iostream>
-#include <Eigen/Cholesky>
-#include <Eigen/LU>
-#include <Eigen/SVD>
+#include "eigen3/Eigen/Cholesky"
+#include "eigen3/Eigen/LU"
+#include "eigen3/Eigen/SVD"
 
 #include "drake/solvers/fastQP.h"
 #include "drake/solvers/gurobiQP.h"
