@@ -3,7 +3,7 @@
 
 #include "eigen3/Eigen/Core"
 #include "eigen3/Eigen/Dense"
-#include <unsupported/Eigen/AutoDiff>
+#include "eigen3/unsupported/Eigen/AutoDiff"
 #include <cmath>
 #include <vector>
 #include <array>

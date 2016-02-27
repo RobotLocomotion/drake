@@ -3,7 +3,7 @@
 
 #include <mex.h>
 #include "eigen3/Eigen/Dense"
-#include <unsupported/Eigen/MatrixFunctions>
+#include "eigen3/unsupported/Eigen/MatrixFunctions"
 #include <vector>
 #include <iostream>
 

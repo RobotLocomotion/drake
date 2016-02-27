@@ -3,7 +3,7 @@
 
 #include "eigen3/Eigen/Core"
 #include <complex>
-#include <unsupported/Eigen/Polynomials>
+#include "eigen3/unsupported/Eigen/Polynomials"
 #include <string>
 #include <vector>
 #include <random>

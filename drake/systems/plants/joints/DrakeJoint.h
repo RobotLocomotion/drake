@@ -3,7 +3,7 @@
 
 #include "eigen3/Eigen/Dense"
 #include "eigen3/Eigen/Geometry"
-#include <unsupported/Eigen/AutoDiff>
+#include "eigen3/unsupported/Eigen/AutoDiff"
 #include <random>
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/drakeJoints_export.h"
