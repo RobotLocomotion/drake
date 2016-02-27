@@ -5,11 +5,10 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
-#include "drake/drakeQPLocomotionPlan_export.h" // TODO: exports
+#include "drake/drakeQPLocomotionPlan_export.h"  // TODO: exports
 
-class BodyMotionData
-{
-public: // TODO: would be better to make this private
+class BodyMotionData {
+ public:  // TODO: would be better to make this private
   int body_or_frame_id;
   PiecewisePolynomial<double> trajectory;
   std::vector<bool> toe_off_allowed;
@@ -22,7 +21,7 @@ public: // TODO: would be better to make this private
   double exponential_map_damping_ratio_multiplier;
   Eigen::Matrix<double, 6, 1> weight_multiplier;
 
-public:
+ public:
   int findSegmentIndex(double t) const;
 
   int getBodyOrFrameId() const;
