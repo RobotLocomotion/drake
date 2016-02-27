@@ -203,6 +203,8 @@ classdef Valkyrie < TimeSteppingRigidBodyManipulator & Biped
       prop_cache.body_ids.('pelvis') = obj.findLinkId('pelvis');
       prop_cache.body_ids.('r_foot') = obj.findLinkId('rightFoot');
       prop_cache.body_ids.('l_foot') = obj.findLinkId('leftFoot');
+      prop_cache.body_ids.('rightFoot') = obj.findLinkId('rightFoot');
+      prop_cache.body_ids.('leftFoot') = obj.findLinkId('leftFoot');
 
       prop_cache.position_indices.('neck') = obj.findPositionIndices('lowerNeckPitch');
       prop_cache.position_indices.('r_leg_ak') = [obj.findPositionIndices('rightAnklePitch'); obj.findPositionIndices('rightAnkleRoll')];
@@ -258,7 +260,7 @@ classdef Valkyrie < TimeSteppingRigidBodyManipulator & Biped
                                     'drake_instep_shift', 0.0,... % Distance to shift ZMP trajectory inward toward the instep from the center of the foot (m)
                                     'mu', 1.0,... % friction coefficient
                                     'constrain_full_foot_pose', true,... % whether to constrain the swing foot roll and pitch
-                                    'pelvis_height_above_foot_sole', 0.98,... % default pelvis height when walking
+                                    'pelvis_height_above_foot_sole', 1.01,... % default pelvis height when walking
                                     'support_contact_groups', {{'heel', 'toe'}},... % which contact groups are available for support when walking
                                     'prevent_swing_undershoot', false,... % prevent the first phase of the swing from going backwards while moving to the first knot point
                                     'prevent_swing_overshoot', false,... % prevent the final phase of the swing from moving forward of the last knot point
@@ -272,6 +274,6 @@ classdef Valkyrie < TimeSteppingRigidBodyManipulator & Biped
     r_akx_name = 'rightAnkleRoll';
     r_aky_name = 'rightAnklePitch';
     l_aky_name = 'leftAnklePitch';
+    control_config_file = fullfile(fileparts(mfilename('fullpath')), '..', 'config', 'control_config_sim.yaml');
   end
-
 end

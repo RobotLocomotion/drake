@@ -50,6 +50,7 @@ find_program(matlab matlab)
 if (matlab)
 	option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"  ON)
 endif()
+option(WITH_YAML_CPP "library for reading and writing yaml configuration files" ON)
 
 option(WITH_SNOPT_PRECOMPILED "precompiled binaries only for snopt; the source requires a license (will be disabled if WITH_SNOPT=ON)"  ON)
 
@@ -89,7 +90,7 @@ set(libbot_dependencies lcm)
 set(director_dependencies lcm libbot)
 set(iris_dependencies eigen mosek)
 set(signalscope_dependencies director)
-set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi swig_matlab swigmake)
+set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi swig_matlab swigmake yaml_cpp)
 
 # download information, in alphabetical order
 set(avl_GIT_REPOSITORY https://github.com/RobotLocomotion/avl.git)
@@ -177,6 +178,15 @@ set(textbook_IS_PUBLIC TRUE)
 set(yalmip_GIT_REPOSITORY https://github.com/RobotLocomotion/yalmip.git)
 set(yalmip_GIT_TAG c071fb7b7193491f8eefadba3bfff26160ad6cd4)
 set(yalmip_IS_PUBLIC TRUE)
+set(yaml_cpp_GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git)
+set(yaml_cpp_GIT_TAG 57805dfd6a741e55477ea8d4d5b3b6f0272d1f0e)
+set(yaml_cpp_IS_PUBLIC TRUE)
+set(yaml_cpp_IS_CMAKE_POD TRUE)
+if (APPLE OR WIN32)
+	set(yaml_cpp_ADDITIONAL_CMAKE_CONFIGURE_ARGS -DBUILD_SHARED_LIBS=OFF)
+else()
+	set(yaml_cpp_ADDITIONAL_CMAKE_CONFIGURE_ARGS -DBUILD_SHARED_LIBS=ON)
+endif()
 set(xfoil_GIT_REPOSITORY https://github.com/RobotLocomotion/xfoil.git)
 set(xfoil_GIT_TAG fde0a9368dd451c93604051fc5704e120073800c)
 set(xfoil_IS_PUBLIC TRUE)
@@ -223,6 +233,7 @@ foreach(proj IN ITEMS
 		meshconverters
 		swigmake
 		swig_matlab
+		yaml_cpp
 		drake)
 	string(TOUPPER ${proj} proj_upper)
 	if ( ${proj} STREQUAL "drake" OR
@@ -298,6 +309,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 					CMAKE_ARGS
 					  -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
 					  -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+						${${proj}_ADDITIONAL_CMAKE_CONFIGURE_ARGS}
 					DEPENDS download-${proj} ${deps}
 					${${proj}_ADDITIONAL_BUILD_ARGS}
 					)

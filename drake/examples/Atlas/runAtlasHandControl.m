@@ -96,7 +96,7 @@ manip_plan_data = QPLocomotionPlanSettings.fromQuasistaticQTraj(r,PPTrajectory(q
 r_arm_idx = r.findPositionIndices('r_arm');
 
 manip_plan_data.untracked_joint_inds = r_arm_idx;
-control = InstantaneousQPController(r, []);
+control = bipedControllers.InstantaneousQPController(r.getManipulator().urdf{1}, r.control_config_file, fullfile(getDrakePath(), 'examples', 'Atlas', 'config', 'urdf_modifications_robotiq_weight.yaml'));
 planeval = BipedPlanEval(r, QPLocomotionPlanCPPWrapper(manip_plan_data));
 plancontroller = BipedPlanEvalAndControlSystem(r, control, planeval);
 
