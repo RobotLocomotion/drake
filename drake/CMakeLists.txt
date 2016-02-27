@@ -195,7 +195,10 @@ pods_install_pkg_config_file(drake-java
     VERSION 0.0.1)
 
 pods_find_pkg_config(eigen3 3.2.92)
-if (NOT eigen3_FOUND)
+
+if (eigen3_FOUND)
+   pods_use_pkg_config_includes( eigen3 )
+else()
    # then use the traditional approach to finding Eigen3
    find_package( Eigen3 3.2.92 )
    if (EIGEN3_FOUND)
