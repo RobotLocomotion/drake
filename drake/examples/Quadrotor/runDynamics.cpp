@@ -4,6 +4,7 @@
 #include "BotVisualizer.h"
 #include "RigidBodySystem.h"
 #include "LCMSystem.h"
+#include "LinearSystem.h"
 #include "lcmtypes/drake/lcmt_quadrotor_control_t.hpp"
 
 using namespace std;
@@ -16,6 +17,10 @@ public:
   typedef drake::lcmt_quadrotor_control_t LCMMessageType;
   static std::string channel() { return "QUAD_CONTROL"; };
   
+  QuadrotorControl(void) {
+    motors.setZero();
+  }
+
   template <typename Derived>
   QuadrotorControl(const Eigen::MatrixBase<Derived>& x) : motors(x) {};
 
@@ -65,10 +70,11 @@ int main(int argc, char* argv[]) {
   tree->addCollisionElement(RigidBody::CollisionElement(geom,T_element_to_link,world),world,"terrain");
   tree->updateStaticCollisionElements();
 
-  
   auto visualizer = make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm,tree);
   
-  auto sys = cascade(rigid_body_sys, visualizer);
+  auto sys_with_lcm_input = cascade(make_shared<Gain<QuadrotorControl, RigidBodySystem::InputVector>>(Eigen::Matrix4d::Identity()), rigid_body_sys);
+  
+  auto sys_with_vis = cascade(sys_with_lcm_input, visualizer);
 
   SimulationOptions options = default_simulation_options;
   options.realtime_factor = 1.0;
@@ -79,6 +85,6 @@ int main(int argc, char* argv[]) {
 
   x0(2) = 0.1;
 
-  runLCM(sys,lcm,0,std::numeric_limits<double>::infinity(),x0,options);
+  runLCM(sys_with_vis, lcm,0,std::numeric_limits<double>::infinity(),x0,options);
   
 }
