@@ -1,3 +1,5 @@
+#ifndef DRAKE_CORE_VECTOR_H_
+#define DRAKE_CORE_VECTOR_H_
 
 #include <string>
 #include <vector>
@@ -325,4 +327,7 @@ struct CombinedVectorUtil<
   };
 };
 
-};  // end namespace Drake
+};  // namespace Drake
+
+#endif  // DRAKE_CORE_VECTOR_H_
+
