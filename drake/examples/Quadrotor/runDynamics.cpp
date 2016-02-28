@@ -90,6 +90,14 @@ bool decode(const drake::lcmt_quadrotor_control_t& msg, double& t, QuadrotorCont
   return true;
 }
 
+bool encode(const double& t, const QuadrotorState<double> & x, drake::lcmt_quadrotor_state_t& msg) {
+  msg.timestamp = static_cast<int64_t>(t*1000);
+  for(std::size_t i = 0; i < QuadrotorState<double>::RowsAtCompileTime; i++) {
+    msg.x[i] = x.state[i];
+  }
+  return true;
+}
+
 int main(int argc, char* argv[]) {
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
   if(!lcm->good())
@@ -112,7 +120,14 @@ int main(int argc, char* argv[]) {
 
   auto visualizer = make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm,tree);
   
-  auto sys_with_lcm_input = cascade(make_shared<Gain<QuadrotorControl, RigidBodySystem::InputVector>>(Eigen::Matrix4d::Identity()), rigid_body_sys);
+  auto sys_with_lcm_input = cascade(
+    make_shared<Gain<QuadrotorControl, RigidBodySystem::InputVector>>(Eigen::Matrix4d::Identity()), 
+    rigid_body_sys);
+
+  auto sys_with_lcm_output = cascade(
+    sys_with_lcm_input,
+    make_shared<Gain<RigidBodySystem::StateVector, QuadrotorState>>(Eigen::Matrix<double, 13, 1>::Identity())
+    );
 
   auto sys_with_vis = cascade(sys_with_lcm_input, visualizer);
 
@@ -124,7 +139,7 @@ int main(int argc, char* argv[]) {
   x0.head(tree->num_positions) = tree->getZeroConfiguration();
 
   x0(2) = 0.1;
-  cout << x0.size() << " states" << endl;
+  
   runLCM(sys_with_vis, lcm,0,std::numeric_limits<double>::infinity(),x0,options);
   
 }
