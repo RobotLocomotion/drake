@@ -127,7 +127,7 @@ int main(int argc, char* argv[]) {
   options.initial_step_size = 5e-3;
   options.timeout_seconds = numeric_limits<double>::infinity();
 
-  VectorXd x0(rigid_body_sys->getNumStates());
+  VectorXd x0 = VectorXd::Zero(rigid_body_sys->getNumStates());
   x0.head(tree->num_positions) = tree->getZeroConfiguration();
   // todo:  call getInitialState instead?  (but currently, that would require snopt).  needs #1627
   // I'm getting away without it, but might be generating large internal forces initially as the ackerman constraint (hopefully) gets enforced by the stabilization terms.
