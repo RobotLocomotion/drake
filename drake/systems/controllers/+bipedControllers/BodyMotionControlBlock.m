@@ -9,8 +9,6 @@ classdef BodyMotionControlBlock < DrakeSystem
     controller_data; % pointer to shared data handle containing qtraj
     robot;
     body_ind;
-    mex_ptr;
-    use_mex;
     use_plan_shift;
   end
   
@@ -66,21 +64,6 @@ classdef BodyMotionControlBlock < DrakeSystem
       obj = setSampleTime(obj,[obj.dt;0]); % sets controller update rate
       obj.robot = r;
       obj.body_ind = findLinkId(r,name);
-
-      if isfield(options,'use_mex')
-        sizecheck(options.use_mex,1);
-        obj.use_mex = uint32(options.use_mex);
-        rangecheck(obj.use_mex,0,2);
-        if (obj.use_mex && exist('bodyMotionControlmex','file')~=3)
-          error('can''t find bodyMotionControlmex.  did you build it?');
-        end
-      else
-        obj.use_mex = 1;
-      end
-
-      if (obj.use_mex>0)
-        obj.mex_ptr = SharedDataHandle(bodyMotionControlmex(0,obj.robot.getMexModelPtr.ptr,obj.Kp,obj.Kd,obj.body_ind));
-      end
     end
    
     function y=output(obj,t,~,x)
@@ -115,25 +98,16 @@ classdef BodyMotionControlBlock < DrakeSystem
       % lcmgl.sphere(body_des(1:3), 0.03, 20, 20);
       % lcmgl.switchBuffers();
 
-      if (obj.use_mex == 0 || obj.use_mex==2)
-        q = x(1:obj.nq);
-        qd = x(obj.nq+1:end);
-        kinsol = doKinematics(obj.robot,q,false,true,qd);
+      q = x(1:obj.nq);
+      qd = x(obj.nq+1:end);
+      kinsol = doKinematics(obj.robot,q,false,true,qd);
 
-        % TODO: this should be updated to use quaternions/spatial velocity
-        [p,J] = forwardKin(obj.robot,kinsol,obj.body_ind,[0;0;0],1); 
+      % TODO: this should be updated to use quaternions/spatial velocity
+      [p,J] = forwardKin(obj.robot,kinsol,obj.body_ind,[0;0;0],1); 
 
-        err = [body_des(1:3)-p(1:3);angleDiff(p(4:end),body_des(4:end))];
+      err = [body_des(1:3)-p(1:3);angleDiff(p(4:end),body_des(4:end))];
 
-        body_vdot = obj.Kp.*err + obj.Kd.*(body_v_des-J*qd) + body_vdot_des; 
-        if obj.use_mex == 2
-          % check that matlab/mex agree
-          body_vdot_mex = bodyMotionControlmex(obj.mex_ptr.data,x,body_des,body_v_des,body_vdot_des);  
-          valuecheck(body_vdot_mex,body_vdot);
-        end
-      else
-        body_vdot = bodyMotionControlmex(obj.mex_ptr.data,x,body_des,body_v_des,body_vdot_des);  
-      end
+      body_vdot = obj.Kp.*err + obj.Kd.*(body_v_des-J*qd) + body_vdot_des; 
       y = [obj.body_ind;body_vdot];
     end
   end

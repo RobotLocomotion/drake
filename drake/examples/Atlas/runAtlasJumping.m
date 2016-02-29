@@ -1,12 +1,11 @@
-function runAtlasJumping(use_mex,use_angular_momentum)
+function runAtlasJumping(use_angular_momentum)
 
 if ~checkDependency('gurobi')
   warning('Must have gurobi installed to run this example');
   return;
 end
 
-if (nargin<1); use_mex = true; end
-if (nargin<2); use_angular_momentum = false; end
+if (nargin<1); use_angular_momentum = false; end
 
 import bipedControllers.*;
 
@@ -178,7 +177,6 @@ options.w_qdd(1:6) = 0;
 options.w_grf = 0;
 options.w_slack = 3;
 options.debug = false;
-options.use_mex = use_mex;
 options.contact_threshold = 0.0005;
 
 if use_angular_momentum

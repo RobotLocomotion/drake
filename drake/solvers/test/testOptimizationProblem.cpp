@@ -7,6 +7,53 @@ using namespace std;
 using namespace Eigen;
 using namespace Drake;
 
+struct Movable {
+  Movable() = default;
+  Movable(Movable&&) = default;
+  Movable(Movable const&) = delete;
+  static size_t numInputs() { return 1; }
+  static size_t numOutputs() { return 1; }
+  template<typename ScalarType>
+  void eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
+};
+
+struct Copyable {
+  Copyable() = default;
+  Copyable(Copyable&&) = delete;
+  Copyable(Copyable const&) = default;
+  static size_t numInputs() { return 1; }
+  static size_t numOutputs() { return 1; }
+  template<typename ScalarType>
+  void eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
+};
+
+struct Unique {
+  Unique() = default;
+  Unique(Unique&&) = delete;
+  Unique(Unique const&) = delete;
+  static size_t numInputs() { return 1; }
+  static size_t numOutputs() { return 1; }
+  template<typename ScalarType>
+  void eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
+};
+
+void testAddFunction() {
+  OptimizationProblem prog;
+  prog.addContinuousVariables(1);
+
+  Movable movable;
+  prog.addCost(std::move(movable));
+  prog.addCost(Movable());
+
+  Copyable copyable;
+  prog.addCost(copyable);
+
+  Unique unique;
+  prog.addCost(std::cref(unique));
+  prog.addCost(std::make_shared<Unique>());
+  prog.addCost(std::unique_ptr<Unique>(new Unique));
+}
+
 void trivialLeastSquares() {
   OptimizationProblem prog;
 
@@ -43,13 +90,15 @@ void trivialLeastSquares() {
 }
 
 
-class SixHumpCamelObjective : public TemplatedDifferentiableFunction<SixHumpCamelObjective> {
+class SixHumpCamelObjective {
 public:
-  SixHumpCamelObjective() : TemplatedDifferentiableFunction<SixHumpCamelObjective>(*this) {};
+  static size_t numInputs() { return 2; }
+  static size_t numOutputs() { return 1; }
 
   template<typename ScalarType>
-  void evalImpl(const Ref<const Matrix<ScalarType, Dynamic, 1>>& x, Matrix<ScalarType,Dynamic,1>& y) {
-    y.resize(1);
+  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
+    assert(x.rows() == numInputs());
+    assert(y.rows() == numOutputs());
     y(0) = x(0) * x(0) * (4 - 2.1 * x(0) * x(0) + x(0) * x(0) * x(0) * x(0) / 3) + x(0) * x(1) +
            x(1) * x(1) * (-4 + 4 * x(1) * x(1));
   }
@@ -58,7 +107,7 @@ public:
 void sixHumpCamel() {
   OptimizationProblem prog;
   auto x = prog.addContinuousVariables(2);
-  auto objective = prog.addCost(make_shared<SixHumpCamelObjective>());
+  auto objective = prog.addCost(SixHumpCamelObjective());
   prog.solve();
   prog.printSolution();
 
@@ -71,14 +120,15 @@ void sixHumpCamel() {
   }
 }
 
-class GloptipolyConstrainedExampleObjective
-        : public TemplatedDifferentiableFunction<GloptipolyConstrainedExampleObjective> {
+class GloptipolyConstrainedExampleObjective {
 public:
-  GloptipolyConstrainedExampleObjective() : TemplatedDifferentiableFunction<GloptipolyConstrainedExampleObjective>(*this) {};
+  static size_t numInputs() { return 3; }
+  static size_t numOutputs() { return 1; }
 
   template<typename ScalarType>
-  void evalImpl(const Ref<const Matrix<ScalarType, Dynamic, 1>>& x, Matrix<ScalarType,Dynamic,1>& y) const {
-    y.resize(1);
+  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
+    assert(x.rows() == numInputs());
+    assert(y.rows() == numOutputs());
     y(0) = -2*x(0) + x(1) - x(2);
   }
 };
@@ -107,7 +157,7 @@ public:
 void gloptipolyConstrainedMinimization() {
   OptimizationProblem prog;
   auto x = prog.addContinuousVariables(3);
-  prog.addCost(make_shared<GloptipolyConstrainedExampleObjective>());
+  prog.addCost(GloptipolyConstrainedExampleObjective());
   std::shared_ptr<GloptipolyConstrainedExampleConstraint> qp_con(new GloptipolyConstrainedExampleConstraint());
   prog.addConstraint(qp_con, {x});
   prog.addLinearConstraint(Vector3d(1,1,1).transpose(),Vector1d::Constant(-numeric_limits<double>::infinity()),Vector1d::Constant(4));
@@ -123,6 +173,7 @@ void gloptipolyConstrainedMinimization() {
 
 int main(int argc, char* argv[])
 {
+  testAddFunction();
   trivialLeastSquares();
   sixHumpCamel();
   gloptipolyConstrainedMinimization();

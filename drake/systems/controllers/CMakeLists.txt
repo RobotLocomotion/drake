@@ -34,9 +34,6 @@ if (MATLAB_FOUND)
   pods_find_pkg_config(gurobi)
 
   if (gurobi_FOUND AND LCM_FOUND AND yaml-cpp_FOUND)
-    add_mex(QPControllermex QPControllermex.cpp)
-    target_link_libraries(QPControllermex drakeQP drakeControlUtil drakeMexUtil)
-    pods_use_pkg_config_packages(QPControllermex gurobi)
 
     add_mex(instantaneousQPControllermex instantaneousQPControllermex.cpp)
     target_link_libraries(instantaneousQPControllermex drakeQP drakeControlUtil drakeQPCommon drakeMexUtil drakeSide)
@@ -45,13 +42,6 @@ if (MATLAB_FOUND)
     add_mex(constructQPDataPointerMex constructQPDataPointerMex.cpp)
     target_link_libraries(constructQPDataPointerMex drakeQP drakeControlUtil drakeQPCommon drakeMexUtil drakeYAMLUtil drakeAtlasUtil)
     pods_use_pkg_config_packages(constructQPDataPointerMex gurobi)
-
-    macro(add_control_mex)
-      add_mex(${ARGV} ${ARGV}.cpp)
-      target_link_libraries(${ARGV} drakeControlUtil drakeMexUtil drakeRBM)
-    endmacro()
-    
-    add_control_mex(bodyMotionControlmex)
   endif()
 
   add_mex(supportDetectmex supportDetectmex.cpp)

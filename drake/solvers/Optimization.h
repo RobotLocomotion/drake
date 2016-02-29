@@ -114,6 +114,8 @@ namespace Drake {
     }
     virtual ~Constraint() {}
 
+    // TODO: consider using a Ref for `y` too.  This will require the client
+    // to do allocation, but also allows it to choose stack allocation instead.
     virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const = 0;
     virtual void eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const = 0;  // move this to DifferentiableConstraint derived class if/when we need to support non-differentiable functions
 
@@ -140,25 +142,6 @@ namespace Drake {
   private:
     Eigen::MatrixXd Q;
     Eigen::VectorXd b;
-  };
-
-  class DifferentiableFunctionConstraint : public Constraint {
-  public:
-    DifferentiableFunctionConstraint(const std::shared_ptr<DifferentiableFunction>& func, size_t num_constraints) : Constraint(num_constraints), func(func) {}
-
-    template <typename DerivedLB, typename DerivedUB>
-    DifferentiableFunctionConstraint(const std::shared_ptr<DifferentiableFunction>& func, const Eigen::MatrixBase<DerivedLB>& lb, const Eigen::MatrixBase<DerivedUB>& ub) : Constraint(lb,ub), func(func) {}
-    virtual ~DifferentiableFunctionConstraint() {}
-
-    virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const override {
-      func->eval(x,y);
-    }
-    virtual void eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override {
-      func->eval(x,y);
-    }
-
-  private:
-    const std::shared_ptr<DifferentiableFunction> func;
   };
 
   // todo: consider implementing DifferentiableConstraint, TwiceDifferentiableConstraint, PolynomialConstraint, QuadraticConstraint, ComplementarityConstraint, IntegerConstraint, ...
@@ -243,6 +226,38 @@ namespace Drake {
       VariableList const& getVariableList() const { return variable_list; }
     };
 
+    template <typename F>
+    class ConstraintImpl: public Constraint {
+      F const f_;
+    public:
+      // Construct by copying from an lvalue.
+      template <typename...Args>
+      ConstraintImpl(F const& f, Args&&...args):
+        Constraint(FunctionTraits<F>::numOutputs(f), std::forward<Args>(args)...),
+        f_(f) {
+        }
+
+      // Construct by moving from an rvalue.
+      template <typename...Args>
+      ConstraintImpl(F&& f, Args&&...args):
+        Constraint(FunctionTraits<F>::numOutputs(f), std::forward<Args>(args)...),
+        f_(std::forward<F>(f)) {
+        }
+
+      virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd& y) const override {
+        y.resize(FunctionTraits<F>::numOutputs(f_));
+        assert(x.rows() == FunctionTraits<F>::numInputs(f_));
+        assert(y.rows() == FunctionTraits<F>::numOutputs(f_));
+        FunctionTraits<F>::eval(f_, x, y);
+      }
+      virtual void eval(const Eigen::Ref<const TaylorVecXd>& x, TaylorVecXd& y) const override {
+        y.resize(FunctionTraits<F>::numOutputs(f_));
+        assert(x.rows() == FunctionTraits<F>::numInputs(f_));
+        assert(y.rows() == FunctionTraits<F>::numOutputs(f_));
+        FunctionTraits<F>::eval(f_, x, y);
+      }
+    };
+
   public:
     enum { INITIAL_VARIABLE_ALLOCATION_NUM = 100 }; // not const static int because the VectorXd constructor takes a reference to int so it is odr-used (see https://gcc.gnu.org/wiki/VerboseDiagnostics#missing_static_const_definition)
     OptimizationProblem() : problem_type(new LeastSquares), num_vars(0), x_initial_guess(static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)) {};
@@ -273,14 +288,33 @@ namespace Drake {
       addCost(obj, variable_views);
     }
 
-    std::shared_ptr<DifferentiableFunctionConstraint> addCost(const std::shared_ptr<DifferentiableFunction>& obj, const VariableList& vars) {
-      std::shared_ptr<DifferentiableFunctionConstraint> objective(new DifferentiableFunctionConstraint(obj,1));
-      addCost(objective, vars);
-      return objective;
+    template <typename F>
+    typename std::enable_if<!std::is_convertible<F, std::shared_ptr<Constraint>>::value, std::shared_ptr<Constraint>>::type
+    addCost(F&& f, VariableList const& vars) {
+      auto c = std::make_shared<ConstraintImpl<typename std::remove_reference<F>::type>>(std::forward<F>(f));
+      addCost(c, vars);
+      return c;
     }
 
-    std::shared_ptr<DifferentiableFunctionConstraint> addCost(const std::shared_ptr<DifferentiableFunction>& obj) {
-      return addCost(obj,variable_views);
+    template <typename F>
+    typename std::enable_if<!std::is_convertible<F, std::shared_ptr<Constraint>>::value, std::shared_ptr<Constraint>>::type
+    addCost(F&& f) {
+      return addCost(std::forward<F>(f), variable_views);
+    }
+
+    // libstdc++ 4.9 evaluates
+    // `std::is_convertible<std::unique_ptr<Unrelated>, std::shared_ptr<Constraint>>::value`
+    // incorrectly as `true` so our enable_if overload is not used.
+    // Provide an explicit alternative for this case.
+    template <typename F>
+    std::shared_ptr<Constraint> addCost(std::unique_ptr<F>&& f, VariableList const& vars) {
+      auto c = std::make_shared<ConstraintImpl<std::unique_ptr<F>>>(std::forward<std::unique_ptr<F>>(f));
+      addCost(c, vars);
+      return c;
+    }
+    template <typename F>
+    std::shared_ptr<Constraint> addCost(std::unique_ptr<F>&& f) {
+      return addCost(std::forward<std::unique_ptr<F>>(f), variable_views);
     }
 
     /** addQuadraticCost
