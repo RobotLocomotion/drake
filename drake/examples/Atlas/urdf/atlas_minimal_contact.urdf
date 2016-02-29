@@ -131,6 +131,7 @@
       <inertia ixx="0.000388" ixy="0" ixz="0" iyy="0.000477" iyz="0" izz="0.000379"/>
     </inertial>
   </link>
+  <frame link="l_hand" name="l_hand_mount" rpy="0 -1.5707963267948966 3.1415926535897" xyz="0 -0.195 0"/>
   <link name="l_larm">
     <inertial>
       <mass value="3.248"/>
@@ -417,6 +418,7 @@
       <inertia ixx="0.000388" ixy="0" ixz="0" iyy="0.000477" iyz="0" izz="0.000379"/>
     </inertial>
   </link>
+  <frame link="r_hand" name="r_hand_mount" rpy="0 -1.5707963267948966 3.1415926535897" xyz="0 -0.195 0"/>
   <link name="r_larm">
     <inertial>
       <mass value="3.248"/>

@@ -37,6 +37,8 @@
 %template(AutoDiff3XDynamic) AutoDiffWrapper<Eigen::VectorXd, SPACE_DIMENSION, Eigen::Dynamic>;
 %template(AutoDiff3XMax73) AutoDiffWrapper<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73>, SPACE_DIMENSION, Eigen::Dynamic>;
 
+%immutable RigidBodyTree::actuators;
+%immutable RigidBodyTree::loops;
 %include "drake/systems/plants/RigidBodyTree.h"
 %extend RigidBodyTree {
   KinematicsCache<double> doKinematics(const Eigen::MatrixBase<Eigen::VectorXd>& q, const Eigen::MatrixBase<Eigen::VectorXd>& v) {

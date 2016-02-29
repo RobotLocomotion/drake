@@ -2,7 +2,6 @@ classdef QPControllerPlanMatlabImplementation < QPControllerPlan
   properties (SetAccess = protected)
     duration_ = inf;
     start_time_ = 0;
-    default_qp_input_ = bipedControllers.QPInputConstantHeight;
     gain_set_ = 'standing';
   end
 
@@ -26,10 +25,6 @@ classdef QPControllerPlanMatlabImplementation < QPControllerPlan
     
     function ret = start_time(obj)
       ret = obj.start_time_;
-    end
-    
-    function ret = default_qp_input(obj)
-      ret = obj.default_qp_input_;
     end
     
     function ret = gain_set(obj)

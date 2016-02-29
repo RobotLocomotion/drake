@@ -324,9 +324,9 @@ void setLimits(XMLElement *node, FixedAxisOneDoFJoint<JointType> *fjoint) {
   XMLElement* limit_node = node->FirstChildElement("limit");
   if (fjoint != nullptr && limit_node) {
     double lower = -numeric_limits<double>::infinity(), upper = numeric_limits<double>::infinity();
-    parseScalarAttribute(limit_node,"lower",lower);
-    parseScalarAttribute(limit_node,"upper",upper);
-    fjoint->setJointLimits(lower,upper);
+    parseScalarAttribute(limit_node, "lower", lower);
+    parseScalarAttribute(limit_node, "upper", upper);
+    fjoint->setJointLimits(lower, upper);
   }
 }
 
@@ -454,8 +454,19 @@ void parseTransmission(RigidBodyTree * model, XMLElement* node) {
   double gain = 1.0;
   if (reduction_node) parseScalarValue(reduction_node, gain);
 
-  RigidBodyActuator a(actuator_name, model->bodies[body_index], gain);
-  model->actuators.push_back(a);
+  XMLElement *limit_node = joint_node->FirstChildElement("limit");
+  double effort_max = numeric_limits<double>::infinity();
+  double effort_min = -numeric_limits<double>::infinity();
+  if (limit_node) {
+    parseScalarAttribute(limit_node, "effort", effort_max);
+    effort_min = -effort_max;
+
+    // effort_min and effort_max take precedence over effort if they exist
+    parseScalarAttribute(limit_node, "effort_min", effort_min);
+    parseScalarAttribute(limit_node, "effort_max", effort_max);
+  }
+
+  model->actuators.push_back(RigidBodyActuator(actuator_name, model->bodies[body_index], gain, effort_min, effort_max));
 }
 
 void parseLoop(RigidBodyTree * model, XMLElement* node)
@@ -490,7 +501,7 @@ void parseFrame(RigidBodyTree * model, XMLElement* node)
   model->addFrame(frame);
 }
 
-void parseRobot(RigidBodyTree * model, XMLElement* node, const PackageMap& package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
+void parseRobot(RigidBodyTree * model, XMLElement* node, const PackageMap& package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type, std::shared_ptr<RigidBodyFrame> weld_to_frame=nullptr)
 {
   if (!node->Attribute("name"))
     throw runtime_error("Error: your robot must have a name attribute");
@@ -532,25 +543,39 @@ void parseRobot(RigidBodyTree * model, XMLElement* node, const PackageMap& packa
   for (XMLElement* frame_node = node->FirstChildElement("frame"); frame_node; frame_node = frame_node->NextSiblingElement("frame"))
     parseFrame(model, frame_node);
 
+  std::string floating_joint_name;
+  std::shared_ptr<RigidBody> weld_to_body;
+  Isometry3d transform_to_body;
+  if (!weld_to_frame) {
+    // If no body was given for us to weld to, then weld to the world
+    weld_to_body = model->bodies[0];
+    floating_joint_name = "base";
+    transform_to_body = Isometry3d::Identity();
+  } else {
+    weld_to_body = weld_to_frame->body;
+    transform_to_body = weld_to_frame->transform_to_body;
+    floating_joint_name = "weld";
+  }
+
   for (unsigned int i = 1; i < model->bodies.size(); i++) {
     if (model->bodies[i]->parent == nullptr) {  // attach the root nodes to the world with a floating base joint
-			model->bodies[i]->parent = model->bodies[0];
+			model->bodies[i]->parent = weld_to_body;
 			switch (floating_base_type) {
       case DrakeJoint::FIXED:
         {
-          unique_ptr<DrakeJoint> joint(new FixedJoint("base", Isometry3d::Identity()));
+          unique_ptr<DrakeJoint> joint(new FixedJoint(floating_joint_name, transform_to_body));
           model->bodies[i]->setJoint(move(joint));
         }
         break;
 			case DrakeJoint::ROLLPITCHYAW:
         {
-          unique_ptr<DrakeJoint> joint(new RollPitchYawFloatingJoint("base", Isometry3d::Identity()));
+          unique_ptr<DrakeJoint> joint(new RollPitchYawFloatingJoint(floating_joint_name, transform_to_body));
           model->bodies[i]->setJoint(move(joint));
         }
 				break;
 			case DrakeJoint::QUATERNION:
         {
-          unique_ptr<DrakeJoint> joint(new QuaternionFloatingJoint("base", Isometry3d::Identity()));
+          unique_ptr<DrakeJoint> joint(new QuaternionFloatingJoint(floating_joint_name, transform_to_body));
           model->bodies[i]->setJoint(move(joint));
         }
 				break;
@@ -561,7 +586,7 @@ void parseRobot(RigidBodyTree * model, XMLElement* node, const PackageMap& packa
   }
 }
 
-void parseURDF(RigidBodyTree * model, XMLDocument * xml_doc, PackageMap& package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
+void parseURDF(RigidBodyTree * model, XMLDocument * xml_doc, PackageMap& package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type, std::shared_ptr<RigidBodyFrame> weld_to_frame=nullptr)
 {
   populatePackageMap(package_map);
   XMLElement *node = xml_doc->FirstChildElement("robot");
@@ -569,31 +594,31 @@ void parseURDF(RigidBodyTree * model, XMLDocument * xml_doc, PackageMap& package
     throw std::runtime_error("ERROR: This urdf does not contain a robot tag");
   }
 
-  parseRobot(model, node, package_map, root_dir, floating_base_type);
+  parseRobot(model, node, package_map, root_dir, floating_base_type, weld_to_frame);
 
   model->compile();
 }
 
-void RigidBodyTree::addRobotFromURDFString(const string &xml_string, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
+void RigidBodyTree::addRobotFromURDFString(const string &xml_string, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type, std::shared_ptr<RigidBodyFrame> weld_to_frame)
 {
   PackageMap package_map;
-  addRobotFromURDFString(xml_string, package_map, root_dir, floating_base_type);
+  addRobotFromURDFString(xml_string, package_map, root_dir, floating_base_type, weld_to_frame);
 }
 
-void RigidBodyTree::addRobotFromURDFString(const string &xml_string, PackageMap& package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type)
+void RigidBodyTree::addRobotFromURDFString(const string &xml_string, PackageMap& package_map, const string &root_dir, const DrakeJoint::FloatingBaseType floating_base_type, std::shared_ptr<RigidBodyFrame> weld_to_frame)
 {
   XMLDocument xml_doc;
   xml_doc.Parse(xml_string.c_str());
-  parseURDF(this,&xml_doc,package_map,root_dir,floating_base_type);
+  parseURDF(this,&xml_doc,package_map,root_dir,floating_base_type,weld_to_frame);
 }
 
-void RigidBodyTree::addRobotFromURDF(const string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type)
+void RigidBodyTree::addRobotFromURDF(const string &urdf_filename, const DrakeJoint::FloatingBaseType floating_base_type, std::shared_ptr<RigidBodyFrame> weld_to_frame)
 {
   PackageMap package_map;
-  addRobotFromURDF(urdf_filename, package_map, floating_base_type);
+  addRobotFromURDF(urdf_filename, package_map, floating_base_type, weld_to_frame);
 }
 
-void RigidBodyTree::addRobotFromURDF(const string &urdf_filename, PackageMap& package_map, const DrakeJoint::FloatingBaseType floating_base_type)
+void RigidBodyTree::addRobotFromURDF(const string &urdf_filename, PackageMap& package_map, const DrakeJoint::FloatingBaseType floating_base_type, std::shared_ptr<RigidBodyFrame> weld_to_frame)
 {
   XMLDocument xml_doc;
   xml_doc.LoadFile(urdf_filename.data());
@@ -607,6 +632,6 @@ void RigidBodyTree::addRobotFromURDF(const string &urdf_filename, PackageMap& pa
     root_dir = urdf_filename.substr(0, found);
   }
 
-  parseURDF(this,&xml_doc,package_map,root_dir,floating_base_type);
+  parseURDF(this,&xml_doc,package_map,root_dir,floating_base_type,weld_to_frame);
 }
 

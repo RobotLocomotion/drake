@@ -23,6 +23,17 @@ using namespace Drake;
 
 const std::map<SupportLogicType, std::vector<bool> > QPLocomotionPlan::support_logic_maps = QPLocomotionPlan::createSupportLogicMaps();
 
+std::string primaryBodyOrFrameName(const std::string& full_body_name) {
+  int i;
+  for (i = 0; i < full_body_name.size(); i++) {
+    if (std::strncmp(&full_body_name[i], "+", 1) == 0) {
+      break;
+    }
+  }
+
+  return full_body_name.substr(0, i);
+}
+
 QPLocomotionPlan::QPLocomotionPlan(RigidBodyTree & robot, const QPLocomotionPlanSettings& settings, const std::string& lcm_channel) :
     robot(robot),
     settings(settings),
@@ -153,7 +164,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
       bool knee_close_to_singularity = q[knee_index] < settings.knee_settings.min_knee_angle;
       if (!toe_off_active[side]) {
         bool is_support_foot = isSupportingBody(body_id, support_state);
-        bool ankle_close_to_limit = ankleCloseToLimits(q[akx_index],q[aky_index], settings.ankle_limits_tolerance);
+        bool ankle_close_to_limit = Atlas::ankleCloseToLimits(q[akx_index],q[aky_index], settings.ankle_limits_tolerance);
         Matrix<double, 2, Dynamic> reduced_support_pts(2, 0);
         for (int i=0; i < support_state.size(); ++i) {
           RigidBodySupportStateElement& support_state_element = support_state[i];
@@ -234,7 +245,7 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
 
     drake::lcmt_body_motion_data body_motion_data_for_support_lcm;
     body_motion_data_for_support_lcm.timestamp = 0;
-    body_motion_data_for_support_lcm.body_id = body_or_frame_id + 1; // use 1-indexing in LCM
+    body_motion_data_for_support_lcm.body_or_frame_name = primaryBodyOrFrameName(robot.getBodyOrFrameName(body_or_frame_id));
 
     encodePiecewisePolynomial(body_motion_trajectory_slice, body_motion_data_for_support_lcm.spline);
     body_motion_data_for_support_lcm.in_floating_base_nullspace = body_motion.isInFloatingBaseNullSpace(body_motion_segment_index);
@@ -420,7 +431,7 @@ drake::lcmt_support_data QPLocomotionPlan::createSupportDataElement(const RigidB
 {
   drake::lcmt_support_data support_data_element_lcm;
   support_data_element_lcm.timestamp = 0;
-  support_data_element_lcm.body_id = static_cast<int32_t>(element.body) + 1; // use 1-indexing in LCM
+  support_data_element_lcm.body_name = primaryBodyOrFrameName(robot.getBodyOrFrameName(static_cast<int32_t>(element.body)));
   support_data_element_lcm.num_contact_pts = element.contact_points.cols();
   eigenToStdVectorOfStdVectors(element.contact_points, support_data_element_lcm.contact_pts);
   for (int i = 0; i < support_logic.size(); i++)
