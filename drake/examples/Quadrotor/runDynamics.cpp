@@ -4,97 +4,13 @@
 #include "RigidBodySystem.h"
 #include "LCMSystem.h"
 #include "LinearSystem.h"
-#include "lcmtypes/drake/lcmt_quadrotor_control_t.hpp"
-#include "lcmtypes/drake/lcmt_quadrotor_state_t.hpp"
+
+#include "QuadrotorControl.h"
+#include "QuadrotorState.h"
 
 using namespace std;
 using namespace Drake;
 using namespace Eigen;
-
-template <typename ScalarType = double>
-class QuadrotorControl {
-public:
-  typedef drake::lcmt_quadrotor_control_t LCMMessageType;
-  static std::string channel() { return "QUAD_CONTROL"; };
-  
-  QuadrotorControl(void) : motors(Vector4d::Zero()) {}
-
-  template <typename Derived>
-  QuadrotorControl(const Eigen::MatrixBase<Derived>& x) : motors(x) {};
-
-  template <typename Derived>
-  QuadrotorControl& operator=(const Eigen::MatrixBase<Derived>& x) {
-    motors = x;
-    return *this;
-  }
-
-  friend Eigen::Vector4d toEigen(const QuadrotorControl<ScalarType>& vec) {    
-    return vec.motors;
-  }
-
-  friend std::string getCoordinateName(const QuadrotorControl<ScalarType>& vec, unsigned int index) {    
-    return index >= 0 && index < RowsAtCompileTime ? std::string("motor") + std::to_string(index + 1) : std::string("error");
-  }
-
-  const static int RowsAtCompileTime = 4;
-
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  Eigen::Matrix<ScalarType, 4, 1> motors;
-};
-
-template <typename ScalarType = double>
-class QuadrotorState {
-public:
-
-  typedef drake::lcmt_quadrotor_state_t LCMMessageType;
-  static std::string channel() { return "QUAD_STATE"; };
-  
-  QuadrotorState(void) {
-    state.setZero();
-  }
-
-  template <typename Derived>
-  QuadrotorState(const Eigen::MatrixBase<Derived>& x) : state(x) {};
-
-  template <typename Derived>
-  QuadrotorState& operator=(const Eigen::MatrixBase<Derived>& x) {
-    state = x;
-    return *this;
-  }
-
-  friend Eigen::Matrix<ScalarType, 13, 1> toEigen(const QuadrotorState<ScalarType>& vec) {    
-    return vec.state;
-  }
-
-  friend std::string getCoordinateName(const QuadrotorState<ScalarType>& vec, unsigned int index) {    
-    static const std::vector<std::string> coordinate_names = 
-    {"x","y","z",
-    "qw","qx","qy","qz",
-    "xdot", "ydot", "zdot",
-    "angvel_x", "angvel_y", "angvel_z"
-    };
-    return index >= 0 && index < RowsAtCompileTime ? coordinate_names[index] : std::string("error");
-  }
-
-  const static int RowsAtCompileTime = 13;
-
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  Eigen::Matrix<ScalarType, 13, 1> state;
-};
-
-bool decode(const drake::lcmt_quadrotor_control_t& msg, double& t, QuadrotorControl<double>& x) {
-  t = double(msg.timestamp)/1000.0;
-  x.motors = Eigen::Vector4d(msg.motors);
-  return true;
-}
-
-bool encode(const double& t, const QuadrotorState<double> & x, drake::lcmt_quadrotor_state_t& msg) {
-  msg.timestamp = static_cast<int64_t>(t*1000);
-  for(std::size_t i = 0; i < QuadrotorState<double>::RowsAtCompileTime; i++) {
-    msg.x[i] = x.state[i];
-  }
-  return true;
-}
 
 int main(int argc, char* argv[]) {
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
