@@ -13,10 +13,9 @@ using namespace std;
  *     function [H,C,B] = manipulatorDynamics(obj,q,qd)
  */
 
-template<typename DerivedQ>
-void manipulatorDynamics(const mxArray *pobj, const MatrixBase<DerivedQ>& q, const MatrixBase<DerivedQ>& qd,
-                         mxArray **plhs)
-{
+template <typename DerivedQ>
+void manipulatorDynamics(const mxArray *pobj, const MatrixBase<DerivedQ> &q,
+                         const MatrixBase<DerivedQ> &qd, mxArray **plhs) {
   // keep it readable:
   double m1 = mxGetScalar(mxGetProperty(pobj, 0, "m1"));
   double m2 = mxGetScalar(mxGetProperty(pobj, 0, "m2"));
@@ -41,12 +40,13 @@ void manipulatorDynamics(const mxArray *pobj, const MatrixBase<DerivedQ>& q, con
   Matrix<Scalar, 2, 1> C;
   Matrix<Scalar, 2, 1> B;
 
-  H << I1 + I2 + m2 * l1 * l1 + 2 * m2l1lc2 * c2, h12, h12, I2;
+  H << I1 + I2 + m2 *l1 *l1 + 2 * m2l1lc2 *c2, h12, h12, I2;
 
-  //C = [ -2*m2l1lc2*s(2)*qd(2), -m2l1lc2*s(2)*qd(2); m2l1lc2*s(2)*qd(1), 0 ];
-  //G = g*[ m1*lc1*s(1) + m2*(l1*s(1)+lc2*s12); m2*lc2*s12 ];
+  // C = [ -2*m2l1lc2*s(2)*qd(2), -m2l1lc2*s(2)*qd(2); m2l1lc2*s(2)*qd(1), 0 ];
+  // G = g*[ m1*lc1*s(1) + m2*(l1*s(1)+lc2*s12); m2*lc2*s12 ];
 
-  C << -2 * m2l1lc2 * s2 * qd(1) * qd(0) + -m2l1lc2 * s2 * qd(1) * qd(1), m2l1lc2 * s2 * qd(0) * qd(0);
+  C << -2 * m2l1lc2 *s2 *qd(1) * qd(0) + -m2l1lc2 * s2 * qd(1) * qd(1),
+      m2l1lc2 * s2 * qd(0) * qd(0);
 
   // add in G terms
   C(0) += g * m1 * lc1 * s1 + g * m2 * (l1 * s1 + lc2 * s12);
@@ -57,7 +57,9 @@ void manipulatorDynamics(const mxArray *pobj, const MatrixBase<DerivedQ>& q, con
   C(1) += b2 * qd(1);
 
   // input matrix
-  // multiplying by q(0) just to get the size of the derivatives vector right; Matlab TaylorVar operations will complain otherwise. We could handle this case on the Matlab side instead.
+  // multiplying by q(0) just to get the size of the derivatives vector right;
+  // Matlab TaylorVar operations will complain otherwise. We could handle this
+  // case on the Matlab side instead.
   B << 0.0 * q(0), 1.0;
 
   plhs[0] = eigenToMatlabGeneral<2, 2>(H);
@@ -65,8 +67,7 @@ void manipulatorDynamics(const mxArray *pobj, const MatrixBase<DerivedQ>& q, con
   plhs[2] = eigenToMatlabGeneral<2, 1>(B);
 }
 
-void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-{
+void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   const mxArray *pobj = prhs[0];
 
   if (mxIsDouble(prhs[1]) && mxIsDouble(prhs[2])) {
@@ -83,8 +84,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     manipulatorDynamics(pobj, q, qd, plhs);
   } else {
     mexErrMsgIdAndTxt("Drake:AcrobotPLantCpp:UnknownType",
-                      "don't know how to handle the datatypes passed in for q and/or qd (yet)");
+                      "don't know how to handle the datatypes passed in for q "
+                      "and/or qd (yet)");
   }
 }
-
-
