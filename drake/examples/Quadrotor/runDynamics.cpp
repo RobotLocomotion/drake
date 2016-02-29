@@ -18,7 +18,7 @@ public:
   static std::string channel() { return "QUAD_CONTROL"; };
   
   QuadrotorControl(void) {
-    motors << 1.26,1.26,1.26,1.26;
+    motors.setZero();
   }
 
   template <typename Derived>
@@ -118,9 +118,6 @@ int main(int argc, char* argv[]) {
   // tree->addCollisionElement(RigidBody::CollisionElement(geom,T_element_to_link,world),world,"terrain");
   // tree->updateStaticCollisionElements();
   
-  //uncommenting this line silently breaks the sim?
-  //auto test = new Gain<RigidBodySystem::StateVector, QuadrotorState>(Eigen::Matrix<double, 13, 1>::Identity());
-
   auto visualizer = make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm,tree);
   
   auto quad_control_to_rbsys_input = make_shared<Gain<QuadrotorControl, RigidBodySystem::InputVector>>(Eigen::Matrix4d::Identity());
@@ -136,8 +133,12 @@ int main(int argc, char* argv[]) {
   VectorXd x0(rigid_body_sys->getNumStates());
   x0.head(tree->num_positions) = tree->getZeroConfiguration();
 
-  x0(2) = 0.1;
-  
-  runLCM(sys_with_vis, lcm,0,std::numeric_limits<double>::infinity(),x0,options);
+  auto rbsys_output_to_quad_state = make_shared<Gain<RigidBodySystem::StateVector, QuadrotorState>>(Eigen::Matrix<double, 13, 13>::Identity());
+ 
+  auto lcmio_with_vis = cascade(sys_with_vis, rbsys_output_to_quad_state);
+
+  x0(2) = 1.0;
+
+  runLCM(lcmio_with_vis, lcm,0,std::numeric_limits<double>::infinity(),x0,options);
   
 }
