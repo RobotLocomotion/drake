@@ -47,6 +47,7 @@ public:
 template <typename ScalarType = double>
 class QuadrotorState {
 public:
+
   typedef drake::lcmt_quadrotor_state_t LCMMessageType;
   static std::string channel() { return "QUAD_STATE"; };
   
@@ -116,16 +117,18 @@ int main(int argc, char* argv[]) {
   // world->addVisualElement(DrakeShapes::VisualElement(geom,T_element_to_link,color));
   // tree->addCollisionElement(RigidBody::CollisionElement(geom,T_element_to_link,world),world,"terrain");
   // tree->updateStaticCollisionElements();
-
-  auto quad_control_to_rbsys_input = make_shared<Gain<QuadrotorControl, RigidBodySystem::InputVector>>(Eigen::Matrix4d::Identity());
-  auto rbsys_output_to_quad_state = make_shared<Gain<RigidBodySystem::StateVector, QuadrotorState>>(Eigen::Matrix<double, 13, 1>::Identity());
   
+  //uncommenting this line silently breaks the sim?
+  //auto test = new Gain<RigidBodySystem::StateVector, QuadrotorState>(Eigen::Matrix<double, 13, 1>::Identity());
+
   auto visualizer = make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm,tree);
-  auto sys_with_vis = cascade(rigid_body_sys, visualizer);
-
-  auto sys = cascade(cascade(
-    quad_control_to_rbsys_input, sys_with_vis), rbsys_output_to_quad_state);
   
+  auto quad_control_to_rbsys_input = make_shared<Gain<QuadrotorControl, RigidBodySystem::InputVector>>(Eigen::Matrix4d::Identity());
+  
+  auto sys_with_lcm_input = cascade(quad_control_to_rbsys_input, rigid_body_sys);
+  
+  auto sys_with_vis = cascade(sys_with_lcm_input, visualizer);
+
   SimulationOptions options = default_simulation_options;
   options.realtime_factor = 1.0;
   options.initial_step_size = 0.005;
@@ -135,6 +138,6 @@ int main(int argc, char* argv[]) {
 
   x0(2) = 0.1;
   
-  runLCM(sys, lcm,0,std::numeric_limits<double>::infinity(),x0,options);
+  runLCM(sys_with_vis, lcm,0,std::numeric_limits<double>::infinity(),x0,options);
   
 }
