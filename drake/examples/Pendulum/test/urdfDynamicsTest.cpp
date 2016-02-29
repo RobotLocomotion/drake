@@ -9,7 +9,8 @@ using namespace Drake;
 
 int main(int argc, char* argv[])
 {
-  auto tree = make_shared<RigidBodyTree>(getDrakePath()+"/examples/Pendulum/Pendulum.urdf",DrakeJoint::FIXED);
+  // auto tree = make_shared<RigidBodyTree>(getDrakePath()+"/examples/Pendulum/Pendulum.urdf",DrakeJoint::FIXED); // Segfaults on MSVC win32
+  auto tree = shared_ptr<RigidBodyTree>(new RigidBodyTree(getDrakePath() + "/examples/Pendulum/Pendulum.urdf", DrakeJoint::FIXED));
   auto rbsys = RigidBodySystem(tree);
   auto p = Pendulum();
 
