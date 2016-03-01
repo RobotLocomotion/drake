@@ -11,6 +11,9 @@ using namespace Drake;
 using namespace Eigen;
 
 int main(int argc, char* argv[]) {
+  
+  double final_time = argc >= 2 ? atof(argv[1]) : std::numeric_limits<double>::infinity();
+  cout << "Running simulation for " << final_time << " seconds." << endl;
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
   if(!lcm->good())
     return 1;
@@ -50,6 +53,6 @@ int main(int argc, char* argv[]) {
 
   x0(2) = 1;
 
-  runLCM(lcmio_with_vis, lcm,0,std::numeric_limits<double>::infinity(),x0,options);
+  runLCM(lcmio_with_vis, lcm, 0, final_time, x0, options);
   
 }
