@@ -317,15 +317,20 @@ void parseSDFJoint(RigidBodyTree * model, std::string model_name, XMLElement* no
       if (axis_node) {
         setSDFDynamics(model, axis_node, fjoint);
         setSDFLimits(axis_node, fjoint);
+
+        double effort_limit = std::numeric_limits<double>::infinity();
+
+        XMLElement* limit_node = axis_node->FirstChildElement("limit");
+        if (limit_node) parseScalarValue(limit_node,"effort",effort_limit);
+
+        if (effort_limit != 0.0) {
+          RigidBodyActuator actuator(name,child,1.0,-effort_limit,effort_limit);
+          model->actuators.push_back(actuator);
+        }
       }
+
       joint = fjoint;
-      double effort_limit = std::numeric_limits<double>::infinity();
-      XMLElement* limit_node = axis_node->FirstChildElement("limit");
-      if (limit_node) parseScalarValue(limit_node,"effort",effort_limit);
-      if (effort_limit != 0.0) {
-        RigidBodyActuator actuator(name,child,1.0,-effort_limit,effort_limit);
-        model->actuators.push_back(actuator);
-      }
+
     } else if (type.compare("fixed") == 0) {
       joint = new FixedJoint(name, transform_to_parent_body);
     } else if (type.compare("prismatic") == 0) {
