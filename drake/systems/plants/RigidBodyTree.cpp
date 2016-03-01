@@ -1490,12 +1490,12 @@ RigidBodyTree::relativeQuaternionJacobianDotTimesV(
   auto omega_twist = twist.template topRows<SPACE_DIMENSION>();
   auto quatdot = (Phi * omega_twist).eval();
 
-  using ADScalar = AutoDiffScalar<
-      Matrix<Scalar, Dynamic,
-             1>>;  // would prefer to use 1 instead of Dynamic, but this causes
-                   // issues related to
-                   // http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1006 on MSVC
-                   // 32 bit
+  using ADScalar = AutoDiffScalar<Matrix<Scalar, Dynamic,
+                                         1>>;  // would prefer to use 1 instead
+                                               // of Dynamic, but this causes
+                                               // issues related to
+  // http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1006 on MSVC
+  // 32 bit
   auto quat_autodiff = quat.template cast<ADScalar>().eval();
   gradientMatrixToAutoDiff(quatdot, quat_autodiff);
   Matrix<ADScalar, QUAT_SIZE, SPACE_DIMENSION> Phi_autodiff;
@@ -1537,12 +1537,12 @@ RigidBodyTree::relativeRollPitchYawJacobianDotTimesV(
   auto omega_twist = twist.template topRows<SPACE_DIMENSION>();
   auto rpydot = (Phi * omega_twist).eval();
 
-  using ADScalar = AutoDiffScalar<
-      Matrix<Scalar, Dynamic,
-             1>>;  // would prefer to use 1 instead of Dynamic, but this causes
-                   // issues related to
-                   // http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1006 on MSVC
-                   // 32 bit
+  using ADScalar = AutoDiffScalar<Matrix<Scalar, Dynamic,
+                                         1>>;  // would prefer to use 1 instead
+                                               // of Dynamic, but this causes
+                                               // issues related to
+  // http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1006 on MSVC
+  // 32 bit
   auto rpy_autodiff = rpy.template cast<ADScalar>().eval();
   gradientMatrixToAutoDiff(rpydot, rpy_autodiff);
   Matrix<ADScalar, RPY_SIZE, SPACE_DIMENSION> Phi_autodiff;

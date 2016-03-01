@@ -65,7 +65,7 @@ void surfaceTangents(const Vector3d &normal,
     t1 << 1, 0, 0;
   } else if (1 + normal(2) < EPSILON) {
     t1 << -1, 0, 0;  // same for the reflected case
-  } else {  // now the general case
+  } else {           // now the general case
     t1 << normal(1), -normal(0), 0;
     t1 /= sqrt(normal(1) * normal(1) + normal(0) * normal(0));
   }

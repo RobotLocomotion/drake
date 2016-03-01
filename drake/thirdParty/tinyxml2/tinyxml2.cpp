@@ -67,7 +67,7 @@ static inline int TIXML_VSNPRINTF(char* buffer, size_t size, const char* format,
 // Microsoft Visual Studio 2003 and not WinCE.
 #define TIXML_VSCPRINTF \
   _vscprintf  // VS2003's C runtime has this, but VC6 C runtime or WinCE SDK
-              // doesn't have.
+// doesn't have.
 #else
 // Microsoft Visual Studio 2003 and earlier or WinCE.
 static inline int TIXML_VSCPRINTF(const char* format, va_list va) {

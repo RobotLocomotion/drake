@@ -82,7 +82,7 @@ static void mdlOutputs(SimStruct *S, int_T tid) {
 
 static void mdlTerminate(SimStruct *S) { UNUSED(S); }
 
-#ifdef MATLAB_MEX_FILE /* Is this file being compiled as a \
+#ifdef MATLAB_MEX_FILE /* Is this file being compiled as a \ \
                           MEX-file? */
 #include "simulink.c"  /* MEX-file interface mechanism */
 #else

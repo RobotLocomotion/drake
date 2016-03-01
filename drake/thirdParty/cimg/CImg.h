@@ -2837,7 +2837,7 @@ struct CImgException : public std::exception {
     return *this;
   }
   //! Return a C-string containing the error message associated to the thrown
-  //exception.
+  // exception.
   const char *what() const throw() { return _message; }
 };
 
@@ -2867,7 +2867,7 @@ struct CImgAbortException : public std::exception {
     return *this;
   }
   //! Return a C-string containing the error message associated to the thrown
-  //exception.
+  // exception.
   const char *what() const throw() { return _message; }
 };
 
@@ -6875,7 +6875,7 @@ inline void swap(T1 &a1, T1 &b1, T2 &a2, T2 &b2, T3 &a3, T3 &b3) {
 }
 
 //! Exchange values of variables (\c a1,\c a2,...,\c a4) and (\c b1,\c b2,...,\c
-//b4).
+// b4).
 template <typename T1, typename T2, typename T3, typename T4>
 inline void swap(T1 &a1, T1 &b1, T2 &a2, T2 &b2, T3 &a3, T3 &b3, T4 &a4,
                  T4 &b4) {
@@ -6884,7 +6884,7 @@ inline void swap(T1 &a1, T1 &b1, T2 &a2, T2 &b2, T3 &a3, T3 &b3, T4 &a4,
 }
 
 //! Exchange values of variables (\c a1,\c a2,...,\c a5) and (\c b1,\c b2,...,\c
-//b5).
+// b5).
 template <typename T1, typename T2, typename T3, typename T4, typename T5>
 inline void swap(T1 &a1, T1 &b1, T2 &a2, T2 &b2, T3 &a3, T3 &b3, T4 &a4, T4 &b4,
                  T5 &a5, T5 &b5) {
@@ -6893,7 +6893,7 @@ inline void swap(T1 &a1, T1 &b1, T2 &a2, T2 &b2, T3 &a3, T3 &b3, T4 &a4, T4 &b4,
 }
 
 //! Exchange values of variables (\c a1,\c a2,...,\c a6) and (\c b1,\c b2,...,\c
-//b6).
+// b6).
 template <typename T1, typename T2, typename T3, typename T4, typename T5,
           typename T6>
 inline void swap(T1 &a1, T1 &b1, T2 &a2, T2 &b2, T3 &a3, T3 &b3, T4 &a4, T4 &b4,
@@ -6903,7 +6903,7 @@ inline void swap(T1 &a1, T1 &b1, T2 &a2, T2 &b2, T3 &a3, T3 &b3, T4 &a4, T4 &b4,
 }
 
 //! Exchange values of variables (\c a1,\c a2,...,\c a7) and (\c b1,\c b2,...,\c
-//b7).
+// b7).
 template <typename T1, typename T2, typename T3, typename T4, typename T5,
           typename T6, typename T7>
 inline void swap(T1 &a1, T1 &b1, T2 &a2, T2 &b2, T3 &a3, T3 &b3, T4 &a4, T4 &b4,
@@ -6913,7 +6913,7 @@ inline void swap(T1 &a1, T1 &b1, T2 &a2, T2 &b2, T3 &a3, T3 &b3, T4 &a4, T4 &b4,
 }
 
 //! Exchange values of variables (\c a1,\c a2,...,\c a8) and (\c b1,\c b2,...,\c
-//b8).
+// b8).
 template <typename T1, typename T2, typename T3, typename T4, typename T5,
           typename T6, typename T7, typename T8>
 inline void swap(T1 &a1, T1 &b1, T2 &a2, T2 &b2, T3 &a3, T3 &b3, T4 &a4, T4 &b4,
@@ -7156,7 +7156,7 @@ inline double rand(const double val_min, const double val_max) {
 inline double rand(const double val_max = 1) { return cimg::rand(0, val_max); }
 
 //! Return a random variable following a gaussian distribution and a standard
-//deviation of 1.
+// deviation of 1.
 /**
 **/
 inline double grand() {
@@ -9107,7 +9107,7 @@ struct CImgDisplay {
   bool is_empty() const { return !(_width && _height); }
 
   //! Return \c true if display is closed (i.e. not visible on the screen), \c
-  //false otherwise.
+  // false otherwise.
   /**
      \note
      - When a user physically closes the associated window, the display is set
@@ -9118,31 +9118,31 @@ struct CImgDisplay {
   bool is_closed() const { return _is_closed; }
 
   //! Return \c true if associated window has been resized on the screen, \c
-  //false otherwise.
+  // false otherwise.
   /**
   **/
   bool is_resized() const { return _is_resized; }
 
   //! Return \c true if associated window has been moved on the screen, \c false
-  //otherwise.
+  // otherwise.
   /**
   **/
   bool is_moved() const { return _is_moved; }
 
   //! Return \c true if any event has occured on the associated window, \c false
-  //otherwise.
+  // otherwise.
   /**
   **/
   bool is_event() const { return _is_event; }
 
   //! Return \c true if current display is in fullscreen mode, \c false
-  //otherwise.
+  // otherwise.
   /**
   **/
   bool is_fullscreen() const { return _is_fullscreen; }
 
   //! Return \c true if any key is being pressed on the associated window, \c
-  //false otherwise.
+  // false otherwise.
   /**
      \note The methods below do the same only for specific keys.
   **/
@@ -9170,7 +9170,7 @@ struct CImgDisplay {
   }
 
   //! Return \c true if key specified by given keycode is being pressed on the
-  //associated window, \c false otherwise.
+  // associated window, \c false otherwise.
   /**
      \param keycode Keycode to test.
      \note Keycode constants are defined in the cimg namespace and are
@@ -9281,7 +9281,7 @@ struct CImgDisplay {
   }
 
   //! Return \c true if key specified by given keycode is being pressed on the
-  //associated window, \c false otherwise.
+  // associated window, \c false otherwise.
   /**
      \param keycode C-string containing the keycode label of the key to test.
      \note Use it when the key you want to test can be dynamically set by the
@@ -9394,7 +9394,7 @@ struct CImgDisplay {
   }
 
   //! Return \c true if specified key sequence has been typed on the associated
-  //window, \c false otherwise.
+  // window, \c false otherwise.
   /**
      \param keycodes_sequence Buffer of keycodes to test.
      \param length Number of keys in the \c keycodes_sequence buffer.
@@ -9442,7 +9442,7 @@ struct CImgDisplay {
   bool is_key##k() const { return _is_key##k; }
 
   //! Return \c true if the \c ESC key is being pressed on the associated
-  //window, \c false otherwise.
+  // window, \c false otherwise.
   /**
      \note Similar methods exist for all keys managed by \CImg (see
   cimg::keyESC).
@@ -10479,7 +10479,7 @@ struct CImgDisplay {
   }
 
   //! Wait for any event occuring either on the display \c disp1, \c disp2 or \c
-  //disp3.
+  // disp3.
   static void wait(CImgDisplay &disp1, CImgDisplay &disp2, CImgDisplay &disp3) {
     disp1._is_event = disp2._is_event = disp3._is_event = false;
     while ((!disp1._is_closed || !disp2._is_closed || !disp3._is_closed) &&
@@ -10488,7 +10488,7 @@ struct CImgDisplay {
   }
 
   //! Wait for any event occuring either on the display \c disp1, \c disp2, \c
-  //disp3 or \c disp4.
+  // disp3 or \c disp4.
   static void wait(CImgDisplay &disp1, CImgDisplay &disp2, CImgDisplay &disp3,
                    CImgDisplay &disp4) {
     disp1._is_event = disp2._is_event = disp3._is_event = disp4._is_event =
@@ -10501,7 +10501,7 @@ struct CImgDisplay {
   }
 
   //! Wait for any event occuring either on the display \c disp1, \c disp2, \c
-  //disp3, \c disp4 or \c disp5.
+  // disp3, \c disp4 or \c disp5.
   static void wait(CImgDisplay &disp1, CImgDisplay &disp2, CImgDisplay &disp3,
                    CImgDisplay &disp4, CImgDisplay &disp5) {
     disp1._is_event = disp2._is_event = disp3._is_event = disp4._is_event =
@@ -10514,7 +10514,7 @@ struct CImgDisplay {
   }
 
   //! Wait for any event occuring either on the display \c disp1, \c disp2, \c
-  //disp3, \c disp4, ... \c disp6.
+  // disp3, \c disp4, ... \c disp6.
   static void wait(CImgDisplay &disp1, CImgDisplay &disp2, CImgDisplay &disp3,
                    CImgDisplay &disp4, CImgDisplay &disp5, CImgDisplay &disp6) {
     disp1._is_event = disp2._is_event = disp3._is_event = disp4._is_event =
@@ -10527,7 +10527,7 @@ struct CImgDisplay {
   }
 
   //! Wait for any event occuring either on the display \c disp1, \c disp2, \c
-  //disp3, \c disp4, ... \c disp7.
+  // disp3, \c disp4, ... \c disp7.
   static void wait(CImgDisplay &disp1, CImgDisplay &disp2, CImgDisplay &disp3,
                    CImgDisplay &disp4, CImgDisplay &disp5, CImgDisplay &disp6,
                    CImgDisplay &disp7) {
@@ -10543,7 +10543,7 @@ struct CImgDisplay {
   }
 
   //! Wait for any event occuring either on the display \c disp1, \c disp2, \c
-  //disp3, \c disp4, ... \c disp8.
+  // disp3, \c disp4, ... \c disp8.
   static void wait(CImgDisplay &disp1, CImgDisplay &disp2, CImgDisplay &disp3,
                    CImgDisplay &disp4, CImgDisplay &disp5, CImgDisplay &disp6,
                    CImgDisplay &disp7, CImgDisplay &disp8) {
@@ -10560,7 +10560,7 @@ struct CImgDisplay {
   }
 
   //! Wait for any event occuring either on the display \c disp1, \c disp2, \c
-  //disp3, \c disp4, ... \c disp9.
+  // disp3, \c disp4, ... \c disp9.
   static void wait(CImgDisplay &disp1, CImgDisplay &disp2, CImgDisplay &disp3,
                    CImgDisplay &disp4, CImgDisplay &disp5, CImgDisplay &disp6,
                    CImgDisplay &disp7, CImgDisplay &disp8, CImgDisplay &disp9) {
@@ -10577,7 +10577,7 @@ struct CImgDisplay {
   }
 
   //! Wait for any event occuring either on the display \c disp1, \c disp2, \c
-  //disp3, \c disp4, ... \c disp10.
+  // disp3, \c disp4, ... \c disp10.
   static void wait(CImgDisplay &disp1, CImgDisplay &disp2, CImgDisplay &disp3,
                    CImgDisplay &disp4, CImgDisplay &disp5, CImgDisplay &disp6,
                    CImgDisplay &disp7, CImgDisplay &disp8, CImgDisplay &disp9,
@@ -12943,7 +12943,7 @@ struct CImgDisplay {
  */
 
 //! Class representing an image (up to 4 dimensions wide), each pixel being of
-//type \c T.
+// type \c T.
 /**
    This is the main class of the %CImg Library. It declares and constructs
    an image, allows access to its pixel values, and is able to perform various
@@ -13081,7 +13081,7 @@ struct CImg {
   T *_data;
 
   //! Simple iterator type, to loop through each pixel value of an image
-  //instance.
+  // instance.
   /**
      \note
      - The \c CImg<T>::iterator type is defined to be a <tt>T*</tt>.
@@ -13098,7 +13098,7 @@ struct CImg {
   typedef T *iterator;
 
   //! Simple const iterator type, to loop through each pixel value of a \c const
-  //image instance.
+  // image instance.
   /**
      \note
      - The \c CImg<T>::const_iterator type is defined to be a \c const \c T*.
@@ -13346,7 +13346,7 @@ struct CImg {
   }
 
   //! Construct image with specified size and initialize pixel values from a
-  //sequence of integers.
+  // sequence of integers.
   /**
      Construct a new image instance of size \c size_x x \c size_y x \c size_z x
    \c size_c,
@@ -13414,7 +13414,7 @@ struct CImg {
 
 #if defined(cimg_use_cpp11) && cimg_use_cpp11 != 0
   //! Construct image with specified size and initialize pixel values from an
-  //initializer list of integers.
+  // initializer list of integers.
   /**
      Construct a new image instance of size \c size_x x \c size_y x \c size_z x
   \c size_c,
@@ -13513,7 +13513,7 @@ struct CImg {
   }
 
   //! Construct single channel 1D image with pixel values and width obtained
-  //from an initializer list of integers.
+  // from an initializer list of integers.
   /**
      Construct a new image instance of size \c width x \c 1 x \c 1 x \c 1,
      with pixels of type \c T, and initialize pixel
@@ -13556,7 +13556,7 @@ struct CImg {
 #endif
 
   //! Construct image with specified size and initialize pixel values from a
-  //sequence of doubles.
+  // sequence of doubles.
   /**
      Construct a new image instance of size \c size_x x \c size_y x \c size_z x
    \c size_c, with pixels of type \c T,
@@ -13600,7 +13600,7 @@ struct CImg {
   }
 
   //! Construct image with specified size and initialize pixel values from a
-  //value string.
+  // value string.
   /**
      Construct a new image instance of size \c size_x x \c size_y x \c size_z x
    \c size_c, with pixels of type \c T,
@@ -13669,7 +13669,7 @@ struct CImg {
   }
 
   //! Construct image with specified size and initialize pixel values from a
-  //memory buffer.
+  // memory buffer.
   /**
      Construct a new image instance of size \c size_x x \c size_y x \c size_z x
   \c size_c, with pixels of type \c T,
@@ -13754,7 +13754,7 @@ struct CImg {
   }
 
   //! Construct image with specified size and initialize pixel values from a
-  //memory buffer \specialization.
+  // memory buffer \specialization.
   CImg(const T *const values, const unsigned int size_x,
        const unsigned int size_y = 1, const unsigned int size_z = 1,
        const unsigned int size_c = 1, const bool is_shared = false) {
@@ -14050,7 +14050,7 @@ struct CImg {
   }
 
   //! Construct image with dimensions borrowed from another image and initialize
-  //pixel values.
+  // pixel values.
   /**
      Construct a new image instance with pixels of type \c T, and size get from
    the dimensions of an existing
@@ -14184,7 +14184,7 @@ struct CImg {
   }
 
   //! Construct image with specified size and initialize pixel values from a
-  //sequence of integers \inplace.
+  // sequence of integers \inplace.
   /**
      In-place version of the constructor CImg(unsigned int,unsigned int,unsigned
   int,unsigned int,int,int,...).
@@ -14199,7 +14199,7 @@ struct CImg {
   }
 
   //! Construct image with specified size and initialize pixel values from a
-  //sequence of doubles \inplace.
+  // sequence of doubles \inplace.
   /**
      In-place version of the constructor CImg(unsigned int,unsigned int,unsigned
   int,unsigned int,double,double,...).
@@ -14214,7 +14214,7 @@ struct CImg {
   }
 
   //! Construct image with specified size and initialize pixel values from a
-  //value string \inplace.
+  // value string \inplace.
   /**
      In-place version of the constructor CImg(unsigned int,unsigned int,unsigned
   int,unsigned int,const char*,bool).
@@ -14226,7 +14226,7 @@ struct CImg {
   }
 
   //! Construct image with specified size and initialize pixel values from a
-  //memory buffer \inplace.
+  // memory buffer \inplace.
   /**
      In-place version of the constructor CImg(const t*,unsigned int,unsigned
   int,unsigned int,unsigned int).
@@ -14244,7 +14244,7 @@ struct CImg {
   }
 
   //! Construct image with specified size and initialize pixel values from a
-  //memory buffer \specialization.
+  // memory buffer \specialization.
   CImg<T> &assign(const T *const values, const unsigned int size_x,
                   const unsigned int size_y = 1, const unsigned int size_z = 1,
                   const unsigned int size_c = 1) {
@@ -14285,7 +14285,7 @@ struct CImg {
   }
 
   //! Construct image with specified size and initialize pixel values from a
-  //memory buffer \overloading.
+  // memory buffer \overloading.
   template <typename t>
   CImg<T> &assign(const t *const values, const unsigned int size_x,
                   const unsigned int size_y, const unsigned int size_z,
@@ -14300,7 +14300,7 @@ struct CImg {
   }
 
   //! Construct image with specified size and initialize pixel values from a
-  //memory buffer \overloading.
+  // memory buffer \overloading.
   CImg<T> &assign(const T *const values, const unsigned int size_x,
                   const unsigned int size_y, const unsigned int size_z,
                   const unsigned int size_c, const bool is_shared) {
@@ -14415,7 +14415,7 @@ struct CImg {
   }
 
   //! Construct image with dimensions borrowed from another image and initialize
-  //pixel values \inplace.
+  // pixel values \inplace.
   /**
      In-place version of the constructor CImg(const CImg<t>&,const char*,T).
   **/
@@ -15923,7 +15923,7 @@ value.
   }
 
   //! Test if all pixel values of an image are different from a specified
-  //expression.
+  // expression.
   /**
      Return \c true is all pixels of the image instance are different to the
   specified \c expression.
@@ -16216,7 +16216,7 @@ value.
 #endif
 
   //! Return the offset to a located pixel value, with respect to the beginning
-  //of the pixel buffer.
+  // of the pixel buffer.
   /**
      \param x X-coordinate of the pixel value.
      \param y Y-coordinate of the pixel value.
@@ -16306,7 +16306,7 @@ value.
   const T &back() const { return *(_data + size() - 1); }
 
   //! Access to a pixel value at a specified offset, using Dirichlet boundary
-  //conditions.
+  // conditions.
   /**
      Return a reference to the pixel value of the image instance located at a
   specified \c offset,
@@ -16331,13 +16331,13 @@ value.
   }
 
   //! Access to a pixel value at a specified offset, using Dirichlet boundary
-  //conditions \const.
+  // conditions \const.
   T at(const int offset, const T &out_value) const {
     return (offset < 0 || offset >= (int)size()) ? out_value : (*this)[offset];
   }
 
   //! Access to a pixel value at a specified offset, using Neumann boundary
-  //conditions.
+  // conditions.
   /**
      Return a reference to the pixel value of the image instance located at a
    specified \c offset,
@@ -16370,7 +16370,7 @@ value.
   }
 
   //! Access to a pixel value at a specified offset, using Neumann boundary
-  //conditions \const.
+  // conditions \const.
   const T &at(const int offset) const {
     if (is_empty())
       throw CImgInstanceException(_cimg_instance "at(): Empty instance.",
@@ -16385,7 +16385,7 @@ value.
   }
 
   //! Access to a pixel value, using Dirichlet boundary conditions for the
-  //X-coordinate.
+  // X-coordinate.
   /**
      Return a reference to the pixel value of the image instance located at (\c
   x,\c y,\c z,\c c),
@@ -16416,14 +16416,14 @@ value.
   }
 
   //! Access to a pixel value, using Dirichlet boundary conditions for the
-  //X-coordinate \const.
+  // X-coordinate \const.
   T atX(const int x, const int y, const int z, const int c,
         const T &out_value) const {
     return (x < 0 || x >= width()) ? out_value : (*this)(x, y, z, c);
   }
 
   //! Access to a pixel value, using Neumann boundary conditions for the
-  //X-coordinate.
+  // X-coordinate.
   /**
      Return a reference to the pixel value of the image instance located at (\c
    x,\c y,\c z,\c c),
@@ -16461,7 +16461,7 @@ value.
   }
 
   //! Access to a pixel value, using Neumann boundary conditions for the
-  //X-coordinate \const.
+  // X-coordinate \const.
   const T &atX(const int x, const int y = 0, const int z = 0,
                const int c = 0) const {
     if (is_empty())
@@ -16476,7 +16476,7 @@ value.
   }
 
   //! Access to a pixel value, using Dirichlet boundary conditions for the X and
-  //Y-coordinates.
+  // Y-coordinates.
   /**
      Similar to atX(int,int,int,int,const T), except that boundary checking is
   performed both on X and Y-coordinates.
@@ -16489,7 +16489,7 @@ value.
   }
 
   //! Access to a pixel value, using Dirichlet boundary conditions for the X and
-  //Y coordinates \const.
+  // Y coordinates \const.
   T atXY(const int x, const int y, const int z, const int c,
          const T &out_value) const {
     return (x < 0 || y < 0 || x >= width() || y >= height())
@@ -16498,7 +16498,7 @@ value.
   }
 
   //! Access to a pixel value, using Neumann boundary conditions for the X and
-  //Y-coordinates.
+  // Y-coordinates.
   /**
      Similar to atX(int,int,int,int), except that boundary checking is performed
    both on X and Y-coordinates.
@@ -16520,7 +16520,7 @@ value.
   }
 
   //! Access to a pixel value, using Neumann boundary conditions for the X and
-  //Y-coordinates \const.
+  // Y-coordinates \const.
   const T &atXY(const int x, const int y, const int z = 0,
                 const int c = 0) const {
     if (is_empty())
@@ -16536,7 +16536,7 @@ value.
   }
 
   //! Access to a pixel value, using Dirichlet boundary conditions for the X,Y
-  //and Z-coordinates.
+  // and Z-coordinates.
   /**
      Similar to atX(int,int,int,int,const T), except that boundary checking is
   performed both on
@@ -16551,7 +16551,7 @@ value.
   }
 
   //! Access to a pixel value, using Dirichlet boundary conditions for the X,Y
-  //and Z-coordinates \const.
+  // and Z-coordinates \const.
   T atXYZ(const int x, const int y, const int z, const int c,
           const T &out_value) const {
     return (x < 0 || y < 0 || z < 0 || x >= width() || y >= height() ||
@@ -16561,7 +16561,7 @@ value.
   }
 
   //! Access to a pixel value, using Neumann boundary conditions for the X,Y and
-  //Z-coordinates.
+  // Z-coordinates.
   /**
      Similar to atX(int,int,int,int), except that boundary checking is performed
   both on X,Y and Z-coordinates.
@@ -16584,7 +16584,7 @@ value.
   }
 
   //! Access to a pixel value, using Neumann boundary conditions for the X,Y and
-  //Z-coordinates \const.
+  // Z-coordinates \const.
   const T &atXYZ(const int x, const int y, const int z, const int c = 0) const {
     if (is_empty())
       throw CImgInstanceException(_cimg_instance "atXYZ(): Empty instance.",
@@ -16661,7 +16661,7 @@ value.
   }
 
   //! Return pixel value, using linear interpolation and Dirichlet boundary
-  //conditions for the X-coordinate.
+  // conditions for the X-coordinate.
   /**
      Return a linearly-interpolated pixel value of the image instance located at
   (\c fx,\c y,\c z,\c c),
@@ -16694,7 +16694,7 @@ value.
   }
 
   //! Return pixel value, using linear interpolation and Neumann boundary
-  //conditions for the X-coordinate.
+  // conditions for the X-coordinate.
   /**
      Return a linearly-interpolated pixel value of the image instance located at
   (\c fx,\c y,\c z,\c c),
@@ -16738,7 +16738,7 @@ value.
   }
 
   //! Return pixel value, using linear interpolation and Dirichlet boundary
-  //conditions for the X and Y-coordinates.
+  // conditions for the X and Y-coordinates.
   /**
      Similar to linear_atX(float,int,int,int,const T) const, except that the
   linear interpolation and the
@@ -16758,7 +16758,7 @@ value.
   }
 
   //! Return pixel value, using linear interpolation and Neumann boundary
-  //conditions for the X and Y-coordinates.
+  // conditions for the X and Y-coordinates.
   /**
      Similar to linear_atX(float,int,int,int) const, except that the linear
   interpolation and the boundary checking
@@ -16793,7 +16793,7 @@ value.
   }
 
   //! Return pixel value, using linear interpolation and Dirichlet boundary
-  //conditions for the X,Y and Z-coordinates.
+  // conditions for the X,Y and Z-coordinates.
   /**
      Similar to linear_atX(float,int,int,int,const T) const, except that the
   linear interpolation and the
@@ -16824,7 +16824,7 @@ value.
   }
 
   //! Return pixel value, using linear interpolation and Neumann boundary
-  //conditions for the X,Y and Z-coordinates.
+  // conditions for the X,Y and Z-coordinates.
   /**
      Similar to linear_atX(float,int,int,int) const, except that the linear
   interpolation and the boundary checking
@@ -16872,7 +16872,7 @@ value.
   }
 
   //! Return pixel value, using linear interpolation and Dirichlet boundary
-  //conditions for all X,Y,Z,C-coordinates.
+  // conditions for all X,Y,Z,C-coordinates.
   /**
      Similar to linear_atX(float,int,int,int,const T) const, except that the
   linear interpolation and the
@@ -16926,7 +16926,7 @@ value.
   }
 
   //! Return pixel value, using linear interpolation and Neumann boundary
-  //conditions for all X,Y,Z and C-coordinates.
+  // conditions for all X,Y,Z and C-coordinates.
   /**
      Similar to linear_atX(float,int,int,int) const, except that the linear
   interpolation and the boundary checking
@@ -16997,7 +16997,7 @@ value.
   }
 
   //! Return pixel value, using cubic interpolation and Dirichlet boundary
-  //conditions for the X-coordinate.
+  // conditions for the X-coordinate.
   /**
      Return a cubicly-interpolated pixel value of the image instance located at
   (\c fx,\c y,\c z,\c c),
@@ -17035,7 +17035,7 @@ value.
   }
 
   //! Return damped pixel value, using cubic interpolation and Dirichlet
-  //boundary conditions for the X-coordinate.
+  // boundary conditions for the X-coordinate.
   /**
      Similar to cubic_atX(float,int,int,int,const T) const, except that you can
   specify the authorized minimum
@@ -17049,7 +17049,7 @@ value.
   }
 
   //! Return pixel value, using cubic interpolation and Neumann boundary
-  //conditions for the X-coordinate.
+  // conditions for the X-coordinate.
   /**
      Return a cubicly-interpolated pixel value of the image instance located at
   (\c fx,\c y,\c z,\c c),
@@ -17096,7 +17096,7 @@ value.
   }
 
   //! Return damped pixel value, using cubic interpolation and Neumann boundary
-  //conditions for the X-coordinate.
+  // conditions for the X-coordinate.
   /**
      Similar to cubic_atX(float,int,int,int) const, except that you can specify
   the authorized minimum and maximum
@@ -17115,7 +17115,7 @@ value.
   }
 
   //! Return pixel value, using cubic interpolation and Dirichlet boundary
-  //conditions for the X and Y-coordinates.
+  // conditions for the X and Y-coordinates.
   /**
      Similar to cubic_atX(float,int,int,int,const T) const, except that the
   cubic interpolation and boundary checking
@@ -17165,7 +17165,7 @@ value.
   }
 
   //! Return damped pixel value, using cubic interpolation and Dirichlet
-  //boundary conditions for the X,Y-coordinates.
+  // boundary conditions for the X,Y-coordinates.
   /**
      Similar to cubic_atXY(float,float,int,int,const T) const, except that you
   can specify the authorized
@@ -17179,7 +17179,7 @@ value.
   }
 
   //! Return pixel value, using cubic interpolation and Neumann boundary
-  //conditions for the X and Y-coordinates.
+  // conditions for the X and Y-coordinates.
   /**
      Similar to cubic_atX(float,int,int,int) const, except that the cubic
   interpolation and boundary checking
@@ -17245,7 +17245,7 @@ value.
   }
 
   //! Return damped pixel value, using cubic interpolation and Neumann boundary
-  //conditions for the X,Y-coordinates.
+  // conditions for the X,Y-coordinates.
   /**
      Similar to cubic_atXY(float,float,int,int) const, except that you can
   specify the authorized minimum and
@@ -17264,7 +17264,7 @@ value.
   }
 
   //! Return pixel value, using cubic interpolation and Dirichlet boundary
-  //conditions for the X,Y and Z-coordinates.
+  // conditions for the X,Y and Z-coordinates.
   /**
      Similar to cubic_atX(float,int,int,int,const T) const, except that the
   cubic interpolation and boundary checking
@@ -17429,7 +17429,7 @@ value.
   }
 
   //! Return damped pixel value, using cubic interpolation and Dirichlet
-  //boundary conditions for the XYZ-coordinates.
+  // boundary conditions for the XYZ-coordinates.
   /**
      Similar to cubic_atXYZ(float,float,float,int,const T) const, except that
   you can specify the authorized
@@ -17443,7 +17443,7 @@ value.
   }
 
   //! Return pixel value, using cubic interpolation and Neumann boundary
-  //conditions for the X,Y and Z-coordinates.
+  // conditions for the X,Y and Z-coordinates.
   /**
      Similar to cubic_atX(float,int,int,int) const, except that the cubic
   interpolation and boundary checking
@@ -17626,7 +17626,7 @@ value.
   }
 
   //! Return damped pixel value, using cubic interpolation and Neumann boundary
-  //conditions for the XYZ-coordinates.
+  // conditions for the XYZ-coordinates.
   /**
      Similar to cubic_atXYZ(float,float,float,int) const, except that you can
   specify the authorized minimum and
@@ -17957,7 +17957,7 @@ value.
   }
 
   //! Test if image width and height are the same as that of an existing display
-  //window.
+  // window.
   /**
      Test if is_sameX(const CImgDisplay&) const and is_sameY(const CImgDisplay&)
   const are both verified.
@@ -18072,7 +18072,7 @@ value.
   }
 
   //! Test if image width, height and depth are the same as that of another
-  //image.
+  // image.
   /**
      Test if is_sameXY(const CImg<t>&) const and is_sameZ(const CImg<t>&) const
   are both verified.
@@ -18093,7 +18093,7 @@ value.
   }
 
   //! Test if image width, height and spectrum are the same as that of another
-  //image.
+  // image.
   /**
      Test if is_sameXY(const CImg<t>&) const and is_sameC(const CImg<t>&) const
   are both verified.
@@ -18114,7 +18114,7 @@ value.
   }
 
   //! Test if image width, depth and spectrum are the same as that of another
-  //image.
+  // image.
   /**
      Test if is_sameXZ(const CImg<t>&) const and is_sameC(const CImg<t>&) const
   are both verified.
@@ -18135,7 +18135,7 @@ value.
   }
 
   //! Test if image height, depth and spectrum are the same as that of another
-  //image.
+  // image.
   /**
      Test if is_sameYZ(const CImg<t>&) const and is_sameC(const CImg<t>&) const
   are both verified.
@@ -18146,7 +18146,7 @@ value.
   }
 
   //! Test if image width, height, depth and spectrum are equal to specified
-  //values.
+  // values.
   /**
      Test if is_sameXYZ(unsigned int,unsigned int,unsigned int) const and
   is_sameC(unsigned int) const are both
@@ -18158,7 +18158,7 @@ value.
   }
 
   //! Test if image width, height, depth and spectrum are the same as that of
-  //another image.
+  // another image.
   /**
      Test if is_sameXYZ(const CImg<t>&) const and is_sameC(const CImg<t>&) const
   are both verified.
@@ -18192,7 +18192,7 @@ value.
   }
 
   //! Test if pixel value is inside image bounds and get its X,Y,Z and
-  //C-coordinates.
+  // C-coordinates.
   /**
      Return \c true, if specified reference refers to a pixel value inside
   bounds of the image instance,
@@ -18238,7 +18238,7 @@ value.
   }
 
   //! Test if pixel value is inside image bounds and get its X,Y and
-  //Z-coordinates.
+  // Z-coordinates.
   /**
      Similar to contains(const T&,t&,t&,t&,t&) const, except that only the X,Y
   and Z-coordinates are set.
@@ -18260,7 +18260,7 @@ value.
   }
 
   //! Test if pixel value is inside image bounds and get its X and
-  //Y-coordinates.
+  // Y-coordinates.
   /**
      Similar to contains(const T&,t&,t&,t&,t&) const, except that only the X and
   Y-coordinates are set.
@@ -18333,7 +18333,7 @@ value.
   }
 
   //! Test if the set {\c *this,\c primitives,\c colors,\c opacities} defines a
-  //valid 3d object.
+  // valid 3d object.
   /**
      Return \c true is the 3d object represented by the set {\c *this,\c
   primitives,\c colors,\c opacities} defines a
@@ -25767,7 +25767,7 @@ value.
   }
 
   //! Raise each pixel value to a power, pointwisely specified from another
-  //image.
+  // image.
   /**
      Similar to operator+=(const CImg<t>& img), except that it performs an
   exponentiation instead of an addition.
@@ -25790,7 +25790,7 @@ value.
   }
 
   //! Raise each pixel value to a power, pointwisely specified from another
-  //image \newinstance.
+  // image \newinstance.
   template <typename t>
   CImg<Tfloat> get_pow(const CImg<t> &img) const {
     return CImg<Tfloat>(*this, false).pow(img);
@@ -26091,7 +26091,7 @@ value.
   }
 
   //! Return a reference to the minimum pixel value as well as the maximum pixel
-  //value.
+  // value.
   /**
      \param[out] max_val Maximum pixel value.
   **/
@@ -26115,7 +26115,7 @@ value.
   }
 
   //! Return a reference to the minimum pixel value as well as the maximum pixel
-  //value \const.
+  // value \const.
   template <typename t>
   const T &min_max(t &max_val) const {
     if (is_empty())
@@ -26136,7 +26136,7 @@ value.
   }
 
   //! Return a reference to the maximum pixel value as well as the minimum pixel
-  //value.
+  // value.
   /**
      \param[out] min_val Minimum pixel value.
   **/
@@ -26160,7 +26160,7 @@ value.
   }
 
   //! Return a reference to the maximum pixel value as well as the minimum pixel
-  //value \const.
+  // value \const.
   template <typename t>
   const T &max_min(t &min_val) const {
     if (is_empty())
@@ -27217,13 +27217,13 @@ value.
   }
 
   //! Compute the Moore-Penrose pseudo-inverse of the instance image, viewed as
-  //a matrix.
+  // a matrix.
   /**
   **/
   CImg<T> &pseudoinvert() { return get_pseudoinvert().move_to(*this); }
 
   //! Compute the Moore-Penrose pseudo-inverse of the instance image, viewed as
-  //a matrix \newinstance.
+  // a matrix \newinstance.
   CImg<Tfloat> get_pseudoinvert() const {
     CImg<Tfloat> U, S, V;
     SVD(U, S, V);
@@ -27398,7 +27398,7 @@ value.
   }
 
   //! Compute eigenvalues and eigenvectors of the instance image, viewed as a
-  //matrix.
+  // matrix.
   /**
      \param[out] val Vector of the estimated eigenvalues, in decreasing order.
      \param[out] vec Matrix of the estimated eigenvectors, sorted by columns.
@@ -27453,7 +27453,7 @@ value.
   }
 
   //! Compute eigenvalues and eigenvectors of the instance image, viewed as a
-  //matrix.
+  // matrix.
   /**
      \return A list of two images <tt>[val; vec]</tt>, whose meaning is similar
   as in eigen(CImg<t>&,CImg<t>&) const.
@@ -27465,7 +27465,7 @@ value.
   }
 
   //! Compute eigenvalues and eigenvectors of the instance image, viewed as a
-  //symmetric matrix.
+  // symmetric matrix.
   /**
      \param[out] val Vector of the estimated eigenvalues, in decreasing order.
      \param[out] vec Matrix of the estimated eigenvectors, sorted by columns.
@@ -27550,7 +27550,7 @@ value.
   }
 
   //! Compute eigenvalues and eigenvectors of the instance image, viewed as a
-  //symmetric matrix.
+  // symmetric matrix.
   /**
      \return A list of two images <tt>[val; vec]</tt>, whose meaning are similar
   as in
@@ -29590,7 +29590,7 @@ value.
   }
 
   //! Fill sequentially pixel values according to the values found in another
-  //image.
+  // image.
   /**
      \param values Image containing the values used for the filling.
      \param repeat_values In case there are less values than necessary in \c
@@ -29610,7 +29610,7 @@ value.
   }
 
   //! Fill sequentially pixel values according to the values found in another
-  //image \newinstance.
+  // image \newinstance.
   template <typename t>
   CImg<T> get_fill(const CImg<t> &values,
                    const bool repeat_values = true) const {
@@ -29729,7 +29729,7 @@ value.
   }
 
   //! Discard specified sequence of values in the image buffer, along a specific
-  //axis.
+  // axis.
   /**
      \param values Sequence of values to discard.
      \param axis Axis along which the values are discarded. If set to \c 0
@@ -29875,13 +29875,13 @@ value.
   }
 
   //! Discard neighboring duplicates in the image buffer, along the specified
-  //axis.
+  // axis.
   CImg<T> &discard(const char axis = 0) {
     return get_discard(axis).move_to(*this);
   }
 
   //! Discard neighboring duplicates in the image buffer, along the specified
-  //axis \newinstance.
+  // axis \newinstance.
   CImg<T> get_discard(const char axis = 0) const {
     CImg<T> res;
     if (is_empty()) return res;
@@ -30105,7 +30105,7 @@ value.
   }
 
   //! Normalize multi-valued pixels of the image instance, with respect to their
-  //L2-norm.
+  // L2-norm.
   /**
      \par Example
      \code
@@ -30145,7 +30145,7 @@ value.
   }
 
   //! Normalize multi-valued pixels of the image instance, with respect to their
-  //L2-norm \newinstance.
+  // L2-norm \newinstance.
   CImg<Tfloat> get_normalize() const {
     return CImg<Tfloat>(*this, false).normalize();
   }
@@ -36315,7 +36315,7 @@ value.
   };
 
   //! Return a shared-memory image referencing a range of pixels of the image
-  //instance.
+  // instance.
   /**
      \param x0 X-coordinate of the starting pixel.
      \param x1 X-coordinate of the ending pixel.
@@ -36339,7 +36339,7 @@ value.
   }
 
   //! Return a shared-memory image referencing a range of pixels of the image
-  //instance \const.
+  // instance \const.
   const CImg<T> get_shared_points(const unsigned int x0, const unsigned int x1,
                                   const unsigned int y0 = 0,
                                   const unsigned int z0 = 0,
@@ -36356,7 +36356,7 @@ value.
   }
 
   //! Return a shared-memory image referencing a range of rows of the image
-  //instance.
+  // instance.
   /**
      \param y0 Y-coordinate of the starting row.
      \param y1 Y-coordinate of the ending row.
@@ -36379,7 +36379,7 @@ value.
   }
 
   //! Return a shared-memory image referencing a range of rows of the image
-  //instance \const.
+  // instance \const.
   const CImg<T> get_shared_rows(const unsigned int y0, const unsigned int y1,
                                 const unsigned int z0 = 0,
                                 const unsigned int c0 = 0) const {
@@ -36414,7 +36414,7 @@ value.
   }
 
   //! Return a shared memory image referencing a range of slices of the image
-  //instance.
+  // instance.
   /**
      \param z0 Z-coordinate of the starting slice.
      \param z1 Z-coordinate of the ending slice.
@@ -36435,7 +36435,7 @@ value.
   }
 
   //! Return a shared memory image referencing a range of slices of the image
-  //instance \const.
+  // instance \const.
   const CImg<T> get_shared_slices(const unsigned int z0, const unsigned int z1,
                                   const unsigned int c0 = 0) const {
     const unsigned int beg = (unsigned int)offset(0, 0, z0, c0),
@@ -36467,7 +36467,7 @@ value.
   }
 
   //! Return a shared-memory image referencing a range of channels of the image
-  //instance.
+  // instance.
   /**
      \param c0 C-coordinate of the starting channel.
      \param c1 C-coordinate of the ending channel.
@@ -36486,7 +36486,7 @@ value.
   }
 
   //! Return a shared-memory image referencing a range of channels of the image
-  //instance \const.
+  // instance \const.
   const CImg<T> get_shared_channels(const unsigned int c0,
                                     const unsigned int c1) const {
     const unsigned int beg = (unsigned int)offset(0, 0, 0, c0),
@@ -36502,7 +36502,7 @@ value.
   }
 
   //! Return a shared-memory image referencing one channel of the image
-  //instance.
+  // instance.
   /**
      \param c0 C-coordinate.
   **/
@@ -36715,7 +36715,7 @@ value.
   }
 
   //! Split image into a list of sub-images, according to a specified splitting
-  //value sequence and optionnally axis.
+  // value sequence and optionnally axis.
   /**
      \param values Splitting value sequence.
      \param axis Axis along which the splitting is performed. Can be '0' to
@@ -41980,7 +41980,7 @@ value.
   }
 
   //! Compute correspondence map between two images, using the patch-match
-  //algorithm.
+  // algorithm.
   /**
       \param patch_image The image containing the reference patches to match
   with the instance image.
@@ -42016,7 +42016,7 @@ value.
   }
 
   //! Compute correspondence map between two images, using the patch-match
-  //algorithm \newinstance.
+  // algorithm \newinstance.
   template <typename t1, typename t2>
   CImg<intT> get_patchmatch(
       const CImg<T> &patch_image, const unsigned int patch_width,
@@ -42029,7 +42029,7 @@ value.
   }
 
   //! Compute correspondence map between two images, using the patch-match
-  //algorithm \overloading.
+  // algorithm \overloading.
   template <typename t>
   CImg<T> &patchmatch(const CImg<T> &patch_image,
                       const unsigned int patch_width,
@@ -42042,7 +42042,7 @@ value.
   }
 
   //! Compute correspondence map between two images, using the patch-match
-  //algorithm \overloading.
+  // algorithm \overloading.
   template <typename t>
   CImg<intT> get_patchmatch(const CImg<T> &patch_image,
                             const unsigned int patch_width,
@@ -42057,7 +42057,7 @@ value.
   }
 
   //! Compute correspondence map between two images, using the patch-match
-  //algorithm \overloading.
+  // algorithm \overloading.
   CImg<T> &patchmatch(const CImg<T> &patch_image,
                       const unsigned int patch_width,
                       const unsigned int patch_height,
@@ -42069,7 +42069,7 @@ value.
   }
 
   //! Compute correspondence map between two images, using the patch-match
-  //algorithm \overloading.
+  // algorithm \overloading.
   CImg<intT> get_patchmatch(const CImg<T> &patch_image,
                             const unsigned int patch_width,
                             const unsigned int patch_height,
@@ -42845,7 +42845,7 @@ value.
   }
 
   //! Compute distance to a specified value, according to a custom metric (use
-  //dijkstra algorithm).
+  // dijkstra algorithm).
   /**
      \param value Reference value.
      \param metric Field of distance potentials.
@@ -49826,7 +49826,7 @@ value.
   }
 
   //! Draw a textured Gouraud-shaded 2d triangle, with perspective correction
-  //and z-buffering \overloading.
+  // and z-buffering \overloading.
   template <typename tz, typename tc>
   CImg<T> &draw_triangle(CImg<tz> &zbuffer, const int x0, const int y0,
                          const float z0, const int x1, const int y1,
@@ -50324,7 +50324,7 @@ value.
   }
 
   //! Draw a textured Phong-shaded 2d triangle, with perspective correction and
-  //z-buffering.
+  // z-buffering.
   template <typename tz, typename tc, typename tl>
   CImg<T> &draw_triangle(CImg<tz> &zbuffer, const int x0, const int y0,
                          const float z0, const int x1, const int y1,
@@ -64063,7 +64063,7 @@ struct CImgList {
   typedef CImg<T> *iterator;
 
   //! Simple const iterator type, to loop through each image of a \c const list
-  //instance.
+  // instance.
   /**
      \note
      - The \c CImgList<T>::const_iterator type is defined to be a <tt>const
@@ -64210,7 +64210,7 @@ struct CImgList {
   }
 
   //! Construct list containing images of specified size, and initialize pixel
-  //values.
+  // values.
   /**
      \param n Number of images.
      \param width Width of images.
@@ -64228,7 +64228,7 @@ struct CImgList {
   }
 
   //! Construct list containing images of specified size, and initialize pixel
-  //values from a sequence of integers.
+  // values from a sequence of integers.
   /**
      \param n Number of images.
      \param width Width of images.
@@ -64267,7 +64267,7 @@ struct CImgList {
   }
 
   //! Construct list containing images of specified size, and initialize pixel
-  //values from a sequence of doubles.
+  // values from a sequence of doubles.
   /**
      \param n Number of images.
      \param width Width of images.
@@ -64530,7 +64530,7 @@ struct CImgList {
   }
 
   //! Return a list with elements being shared copies of images in the list
-  //instance.
+  // instance.
   /**
     \note <tt>list2 = list1.get_shared()</tt> is equivalent to
   <tt>list2.assign(list1,true)</tt>.
@@ -64542,7 +64542,7 @@ struct CImgList {
   }
 
   //! Return a list with elements being shared copies of images in the list
-  //instance \const.
+  // instance \const.
   const CImgList<T> get_shared() const {
     CImgList<T> res(_width);
     cimglist_for(*this, l) res[l].assign(_data[l], true);
@@ -64597,7 +64597,7 @@ struct CImgList {
   }
 
   //! Construct list containing images of specified size, and initialize pixel
-  //values \inplace.
+  // values \inplace.
   /**
      \see CImgList(unsigned int, unsigned int, unsigned int, unsigned int,
   unsigned int, const T).
@@ -64611,7 +64611,7 @@ struct CImgList {
   }
 
   //! Construct list with images of specified size, and initialize pixel values
-  //from a sequence of integers \inplace.
+  // from a sequence of integers \inplace.
   /**
      \see CImgList(unsigned int, unsigned int, unsigned int, unsigned int,
   unsigned int, const int, const int, ...).
@@ -64625,7 +64625,7 @@ struct CImgList {
   }
 
   //! Construct list with images of specified size, and initialize pixel values
-  //from a sequence of doubles \inplace.
+  // from a sequence of doubles \inplace.
   /**
      \see CImgList(unsigned int, unsigned int, unsigned int, unsigned int,
   unsigned int, const double, const double, ...).
@@ -64792,7 +64792,7 @@ struct CImgList {
   }
 
   //! Construct list as a copy of an existing list and force the shared state of
-  //the list elements \inplace.
+  // the list elements \inplace.
   /**
     \see CImgList(const CImgList<t>&, bool is_shared).
   **/
@@ -64805,7 +64805,7 @@ struct CImgList {
   }
 
   //! Construct list as a copy of an existing list and force shared state of
-  //elements \inplace \specialization.
+  // elements \inplace \specialization.
   CImgList<T> &assign(const CImgList<T> &list, const bool is_shared = false) {
     if (this == &list) return *this;
     CImgList<T> res(list._width);
@@ -64845,7 +64845,7 @@ struct CImgList {
   }
 
   //! Transfer the content of the list instance at a specified position in
-  //another list.
+  // another list.
   /**
      \param list Destination list.
      \param pos Index of the insertion in the list.
@@ -65006,7 +65006,7 @@ struct CImgList {
   CImgList<T> operator+() const { return CImgList<T>(*this, false); }
 
   //! Return a copy of the list instance, where image \c img has been inserted
-  //at the end.
+  // at the end.
   /**
      \param img Image inserted at the end of the instance copy.
      \note Define a convenient way to create temporary lists of images, as in
@@ -65021,14 +65021,14 @@ struct CImgList {
   }
 
   //! Return a copy of the list instance, where image \c img has been inserted
-  //at the end \const.
+  // at the end \const.
   template <typename t>
   CImgList<T> operator, (const CImg<t> &img) const {
     return (+*this).insert(img);
   }
 
   //! Return a copy of the list instance, where all elements of input list \c
-  //list have been inserted at the end.
+  // list have been inserted at the end.
   /**
      \param list List inserted at the end of the instance copy.
   **/
@@ -65038,14 +65038,14 @@ struct CImgList {
   }
 
   //! Return a copy of the list instance, where all elements of input \c list
-  //have been inserted at the end \const.
+  // have been inserted at the end \const.
   template <typename t>
   CImgList<T> &operator, (const CImgList<t> &list) const {
     return (+*this).insert(list);
   }
 
   //! Return image corresponding to the appending of all images of the instance
-  //list along specified axis.
+  // list along specified axis.
   /**
     \param axis Appending axis. Can be <tt>{ 'x' | 'y' | 'z' | 'c' }</tt>.
     \note <tt>list>'x'</tt> is equivalent to <tt>list.get_append('x')</tt>.
@@ -65053,7 +65053,7 @@ struct CImgList {
   CImg<T> operator>(const char axis) const { return get_append(axis, 0); }
 
   //! Return list corresponding to the splitting of all images of the instance
-  //list along specified axis.
+  // list along specified axis.
   /**
     \param axis Axis used for image splitting.
     \note <tt>list<'x'</tt> is equivalent to <tt>list.get_split('x')</tt>.
@@ -65237,7 +65237,7 @@ struct CImgList {
   }
 
   //! Access pixel value with Dirichlet boundary conditions for the 3 first
-  //coordinates (\c pos, \c x,\c y,\c z).
+  // coordinates (\c pos, \c x,\c y,\c z).
   /**
      \param pos Indice of the image element to access.
      \param x X-coordinate of the pixel value.
@@ -65257,7 +65257,7 @@ struct CImgList {
   }
 
   //! Access pixel value with Dirichlet boundary conditions for the 3 first
-  //coordinates (\c pos, \c x,\c y,\c z) \const.
+  // coordinates (\c pos, \c x,\c y,\c z) \const.
   T atNXYZ(const int pos, const int x, const int y, const int z, const int c,
            const T &out_value) const {
     return (pos < 0 || pos >= (int)_width)
@@ -65266,7 +65266,7 @@ struct CImgList {
   }
 
   //! Access to pixel value with Neumann boundary conditions for the 4 first
-  //coordinates (\c pos, \c x,\c y,\c z).
+  // coordinates (\c pos, \c x,\c y,\c z).
   /**
      \param pos Indice of the image element to access.
      \param x X-coordinate of the pixel value.
@@ -65286,7 +65286,7 @@ struct CImgList {
   }
 
   //! Access to pixel value with Neumann boundary conditions for the 4 first
-  //coordinates (\c pos, \c x,\c y,\c z) \const.
+  // coordinates (\c pos, \c x,\c y,\c z) \const.
   T atNXYZ(const int pos, const int x, const int y, const int z,
            const int c = 0) const {
     if (is_empty())
@@ -65309,7 +65309,7 @@ struct CImgList {
   }
 
   //! Access to pixel value with Dirichlet boundary conditions for the 3 first
-  //coordinates (\c pos, \c x,\c y).
+  // coordinates (\c pos, \c x,\c y).
   /**
      \param pos Indice of the image element to access.
      \param x X-coordinate of the pixel value.
@@ -65329,7 +65329,7 @@ struct CImgList {
   }
 
   //! Access to pixel value with Dirichlet boundary conditions for the 3 first
-  //coordinates (\c pos, \c x,\c y) \const.
+  // coordinates (\c pos, \c x,\c y) \const.
   T atNXY(const int pos, const int x, const int y, const int z, const int c,
           const T &out_value) const {
     return (pos < 0 || pos >= (int)_width)
@@ -65338,7 +65338,7 @@ struct CImgList {
   }
 
   //! Access to pixel value with Neumann boundary conditions for the 3 first
-  //coordinates (\c pos, \c x,\c y).
+  // coordinates (\c pos, \c x,\c y).
   /**
      \param pos Indice of the image element to access.
      \param x X-coordinate of the pixel value.
@@ -65358,7 +65358,7 @@ struct CImgList {
   }
 
   //! Access to pixel value with Neumann boundary conditions for the 3 first
-  //coordinates (\c pos, \c x,\c y) \const.
+  // coordinates (\c pos, \c x,\c y) \const.
   T atNXY(const int pos, const int x, const int y, const int z = 0,
           const int c = 0) const {
     if (is_empty())
@@ -65381,7 +65381,7 @@ struct CImgList {
   }
 
   //! Access to pixel value with Dirichlet boundary conditions for the 2 first
-  //coordinates (\c pos,\c x).
+  // coordinates (\c pos,\c x).
   /**
      \param pos Indice of the image element to access.
      \param x X-coordinate of the pixel value.
@@ -65401,7 +65401,7 @@ struct CImgList {
   }
 
   //! Access to pixel value with Dirichlet boundary conditions for the 2 first
-  //coordinates (\c pos,\c x) \const.
+  // coordinates (\c pos,\c x) \const.
   T atNX(const int pos, const int x, const int y, const int z, const int c,
          const T &out_value) const {
     return (pos < 0 || pos >= (int)_width)
@@ -65410,7 +65410,7 @@ struct CImgList {
   }
 
   //! Access to pixel value with Neumann boundary conditions for the 2 first
-  //coordinates (\c pos, \c x).
+  // coordinates (\c pos, \c x).
   /**
      \param pos Indice of the image element to access.
      \param x X-coordinate of the pixel value.
@@ -65430,7 +65430,7 @@ struct CImgList {
   }
 
   //! Access to pixel value with Neumann boundary conditions for the 2 first
-  //coordinates (\c pos, \c x) \const.
+  // coordinates (\c pos, \c x) \const.
   T atNX(const int pos, const int x, const int y = 0, const int z = 0,
          const int c = 0) const {
     if (is_empty())
@@ -65453,7 +65453,7 @@ struct CImgList {
   }
 
   //! Access to pixel value with Dirichlet boundary conditions for the first
-  //coordinate (\c pos).
+  // coordinate (\c pos).
   /**
      \param pos Indice of the image element to access.
      \param x X-coordinate of the pixel value.
@@ -65473,7 +65473,7 @@ struct CImgList {
   }
 
   //! Access to pixel value with Dirichlet boundary conditions for the first
-  //coordinate (\c pos) \const.
+  // coordinate (\c pos) \const.
   T atN(const int pos, const int x, const int y, const int z, const int c,
         const T &out_value) const {
     return (pos < 0 || pos >= (int)_width) ? out_value
@@ -65481,7 +65481,7 @@ struct CImgList {
   }
 
   //! Return pixel value with Neumann boundary conditions for the first
-  //coordinate (\c pos).
+  // coordinate (\c pos).
   /**
      \param pos Indice of the image element to access.
      \param x X-coordinate of the pixel value.
@@ -65500,7 +65500,7 @@ struct CImgList {
   }
 
   //! Return pixel value with Neumann boundary conditions for the first
-  //coordinate (\c pos) \const.
+  // coordinate (\c pos) \const.
   T atN(const int pos, const int x = 0, const int y = 0, const int z = 0,
         const int c = 0) const {
     if (is_empty())
@@ -65522,7 +65522,7 @@ struct CImgList {
   }
 
   //! Return a C-string containing the values of all images in the instance
-  //list.
+  // list.
   /**
      \param separator Character separator set between consecutive pixel values.
      \param max_size Maximum size of the returned string.
@@ -65657,7 +65657,7 @@ struct CImgList {
                                               _cimglist_def_is_same3(Y, Z, C)
 
       //! Test if dimensions of each image of the list match specified
-      //arguments.
+      // arguments.
       /**
         \param dx Checked image width.
         \param dy Checked image height.
@@ -65892,7 +65892,7 @@ struct CImgList {
   }
 
   //! Return a reference to the minimum pixel value of the instance list and
-  //return the maximum vvalue as well.
+  // return the maximum vvalue as well.
   /**
      \param[out] max_val Value of the maximum value found.
   **/
@@ -65919,7 +65919,7 @@ struct CImgList {
   }
 
   //! Return a reference to the minimum pixel value of the instance list and
-  //return the maximum vvalue as well \const.
+  // return the maximum vvalue as well \const.
   /**
      \param[out] max_val Value of the maximum value found.
   **/
@@ -65946,7 +65946,7 @@ struct CImgList {
   }
 
   //! Return a reference to the minimum pixel value of the instance list and
-  //return the minimum value as well.
+  // return the minimum value as well.
   /**
      \param[out] min_val Value of the minimum value found.
   **/
@@ -65973,7 +65973,7 @@ struct CImgList {
   }
 
   //! Return a reference to the minimum pixel value of the instance list and
-  //return the minimum value as well \const.
+  // return the minimum value as well \const.
   template <typename t>
   const T &max_min(t &min_val) const {
     if (is_empty())
@@ -66160,7 +66160,7 @@ struct CImgList {
   }
 
   //! Insert \c n copies of the image \c img into the current image list, at
-  //position \c pos.
+  // position \c pos.
   /**
      \param n Number of image copies to insert.
      \param img Image to insert by copy.
@@ -66181,7 +66181,7 @@ struct CImgList {
   }
 
   //! Insert \c n copies of the image \c img into the current image list, at
-  //position \c pos \newinstance.
+  // position \c pos \newinstance.
   template <typename t>
   CImgList<T> get_insert(const unsigned int n, const CImg<t> &img,
                          const unsigned int pos = ~0U,
@@ -66190,7 +66190,7 @@ struct CImgList {
   }
 
   //! Insert a copy of the image list \c list into the current image list,
-  //starting from position \c pos.
+  // starting from position \c pos.
   /**
     \param list Image list to insert.
     \param pos Index of the insertion.
@@ -66209,7 +66209,7 @@ struct CImgList {
   }
 
   //! Insert a copy of the image list \c list into the current image list,
-  //starting from position \c pos \newinstance.
+  // starting from position \c pos \newinstance.
   template <typename t>
   CImgList<T> get_insert(const CImgList<t> &list, const unsigned int pos = ~0U,
                          const bool is_shared = false) const {
@@ -66217,7 +66217,7 @@ struct CImgList {
   }
 
   //! Insert n copies of the list \c list at position \c pos of the current
-  //list.
+  // list.
   /**
     \param n Number of list copies to insert.
     \param list Image list to insert.
@@ -66384,7 +66384,7 @@ struct CImgList {
   }
 
   //! Return a single image which is the appending of all images of the current
-  //CImgList instance.
+  // CImgList instance.
   /**
      \param axis Appending axis. Can be <tt>{ 'x' | 'y' | 'z' | 'c' }</tt>.
      \param align Appending alignment.
@@ -68913,7 +68913,7 @@ struct CImgList {
   }
 
   //! Insert the image instance into into an existing .cimg file, at specified
-  //coordinates.
+  // coordinates.
   /**
     \param filename Filename to write data to.
     \param n0 Starting index of images to write.
@@ -68930,7 +68930,7 @@ struct CImgList {
   }
 
   //! Insert the image instance into into an existing .cimg file, at specified
-  //coordinates.
+  // coordinates.
   /**
     \param file File to write data to.
     \param n0 Starting index of images to write.
@@ -69432,7 +69432,7 @@ struct CImgList {
   }
 
   //! Unserialize a CImg<unsigned char> serialized buffer into a CImgList<T>
-  //list.
+  // list.
   template <typename t>
   static CImgList<T> get_unserialize(const CImg<t> &buffer) {
 #ifdef cimg_use_zlib

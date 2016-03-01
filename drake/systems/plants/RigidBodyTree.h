@@ -407,16 +407,12 @@ class DRAKERBM_EXPORT RigidBodyTree {
   template <
       typename Scalar,
       typename DerivedPoints>  // not necessarily any relation between the two;
-                               // a major use case is having an AutoDiff
-                               // KinematicsCache, but double points matrix
-                               Eigen::Matrix<Scalar, 3,
-                                             DerivedPoints::ColsAtCompileTime>
-                               transformPoints(
-                                   const KinematicsCache<Scalar>& cache,
-                                   const Eigen::MatrixBase<DerivedPoints>&
-                                       points,
-                                   int from_body_or_frame_ind,
-                                   int to_body_or_frame_ind) const {
+  // a major use case is having an AutoDiff
+  // KinematicsCache, but double points matrix
+  Eigen::Matrix<Scalar, 3, DerivedPoints::ColsAtCompileTime>
+  transformPoints(const KinematicsCache<Scalar>& cache,
+                  const Eigen::MatrixBase<DerivedPoints>& points,
+                  int from_body_or_frame_ind, int to_body_or_frame_ind) const {
     static_assert(DerivedPoints::RowsAtCompileTime == 3 ||
                       DerivedPoints::RowsAtCompileTime == Eigen::Dynamic,
                   "points argument has wrong number of rows");
@@ -647,7 +643,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
                                        int robot = -1) const;
   int findJointId(const std::string& linkname, int robot = -1) const;
   //@param robot   the index of the robot. robot = -1 means to look at all the
-  //robots
+  // robots
   std::shared_ptr<RigidBodyFrame> findFrame(std::string frame_name,
                                             std::string model_name = "") const;
 

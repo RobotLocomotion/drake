@@ -1145,7 +1145,8 @@ class TINYXML2_LIB XMLElement : public XMLNode {
 
       @verbatim
       int value = 10;
-      QueryIntAttribute( "foo", &value );		// if "foo" isn't found, value will
+      QueryIntAttribute( "foo", &value );		// if "foo" isn't found, value
+     will
      still be 10
       @endverbatim
   */
@@ -1203,7 +1204,8 @@ class TINYXML2_LIB XMLElement : public XMLNode {
 
       @verbatim
       int value = 10;
-      QueryAttribute( "foo", &value );		// if "foo" isn't found, value will
+      QueryAttribute( "foo", &value );		// if "foo" isn't found, value
+     will
      still be 10
       @endverbatim
   */

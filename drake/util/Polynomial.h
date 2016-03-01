@@ -98,9 +98,8 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
   Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1> getCoefficients() const;
 
   template <typename T>  // can be different from both CoefficientsType and
-                         // RealScalar
-                         typename Product<CoefficientType, T>::type value(
-                             const T& x) const {
+  // RealScalar
+  typename Product<CoefficientType, T>::type value(const T& x) const {
     typedef typename Product<CoefficientType, T>::type ProductType;
 
     if (!is_univariate)

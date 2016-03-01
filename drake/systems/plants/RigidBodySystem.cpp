@@ -125,7 +125,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
           tangent1 << 1.0, 0.0, 0.0;
         } else if (1 + this_normal(2) < EPSILON) {
           tangent1 << -1.0, 0.0, 0.0;  // same for the reflected case
-        } else {  // now the general case
+        } else {                       // now the general case
           tangent1 << this_normal(1), -this_normal(0), 0.0;
           tangent1 /= sqrt(this_normal(1) * this_normal(1) +
                            this_normal(0) * this_normal(0));
