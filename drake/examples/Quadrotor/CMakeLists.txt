@@ -1,11 +1,3 @@
-include_directories(${PROJECT_SOURCE_DIR}/core)
-include_directories(${PROJECT_SOURCE_DIR}/solvers)
-include_directories(${PROJECT_SOURCE_DIR}/systems)
-include_directories(${PROJECT_SOURCE_DIR}/systems/frames)
-include_directories(${PROJECT_SOURCE_DIR}/systems/plants)
-include_directories(${PROJECT_SOURCE_DIR}/systems/plants/joints)
-include_directories(${PROJECT_SOURCE_DIR}/systems/controllers)
-include_directories(${PROJECT_SOURCE_DIR}/util)
 
 if (LCM_FOUND AND NOT WIN32)
   add_executable(runQuadrotorDynamics runDynamics.cpp)

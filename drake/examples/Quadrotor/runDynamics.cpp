@@ -1,9 +1,7 @@
-
-#include <iostream>
-#include "BotVisualizer.h"
-#include "RigidBodySystem.h"
-#include "LCMSystem.h"
-#include "LinearSystem.h"
+#include "drake/systems/plants/BotVisualizer.h"
+#include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/systems/LCMSystem.h"
+#include "drake/systems/LinearSystem.h"
 
 #include "QuadrotorControl.h"
 #include "QuadrotorState.h"
@@ -50,7 +48,7 @@ int main(int argc, char* argv[]) {
     
   auto lcmio_with_vis = cascade(sys_with_vis, rbsys_output_to_quad_state);
 
-  x0(2) = 0.1;
+  x0(2) = 1;
 
   runLCM(lcmio_with_vis, lcm,0,std::numeric_limits<double>::infinity(),x0,options);
   
