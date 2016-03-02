@@ -17,22 +17,25 @@ struct CheckSettings {
   bool expect_error_on_jdot_times_v_methods;
 };
 
-template<typename O, typename F, typename ...Args>
-void checkForErrors(bool expect_error, O &object, F function, Args &&... arguments) {
+template <typename O, typename F, typename... Args>
+void checkForErrors(bool expect_error, O &object, F function,
+                    Args &&... arguments) {
   try {
     (object.*function)(std::forward<Args>(arguments)...);
-  }
-  catch (runtime_error &e) {
+  } catch (runtime_error &e) {
     if (expect_error)
       return;
     else
-      throw std::runtime_error(std::string("Caught an unexpected runtime error.\n") + e.what());
+      throw std::runtime_error(
+          std::string("Caught an unexpected runtime error.\n") + e.what());
   }
   if (expect_error)
-    throw std::runtime_error("Expected a runtime error, but did not catch one.");
+    throw std::runtime_error(
+        "Expected a runtime error, but did not catch one.");
 }
 
-void performChecks(RigidBodyTree &model, KinematicsCache<double> &cache, const CheckSettings &settings) {
+void performChecks(RigidBodyTree &model, KinematicsCache<double> &cache,
+                   const CheckSettings &settings) {
   auto points = Matrix<double, 3, Eigen::Dynamic>::Random(3, 5).eval();
   typedef decltype(points) PointsType;
   int body_or_frame_ind = 8;
@@ -45,41 +48,93 @@ void performChecks(RigidBodyTree &model, KinematicsCache<double> &cache, const C
   int npoints = 3;
   Matrix<double, TWIST_SIZE, 1> spatial_acceleration;
   spatial_acceleration.setRandom();
-  eigen_aligned_unordered_map<RigidBody const *, Matrix<double, TWIST_SIZE, 1> > f_ext;
+  eigen_aligned_unordered_map<RigidBody const *, Matrix<double, TWIST_SIZE, 1> >
+      f_ext;
 
-  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyTree::centerOfMass<double>, cache, RigidBodyTree::default_robot_num_set);
-  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyTree::transformPoints<double, PointsType>, cache, points, body_or_frame_ind, base_or_frame_ind);
-  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyTree::relativeQuaternion<double>, cache, body_or_frame_ind, base_or_frame_ind);
-  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyTree::relativeRollPitchYaw<double>, cache, body_or_frame_ind, base_or_frame_ind);
-  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyTree::worldMomentumMatrix<double>, cache, RigidBodyTree::default_robot_num_set, in_terms_of_qdot);
-  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyTree::centroidalMomentumMatrix<double>, cache, RigidBodyTree::default_robot_num_set, in_terms_of_qdot);
-  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyTree::centerOfMassJacobian<double>, cache, RigidBodyTree::default_robot_num_set, in_terms_of_qdot);
-  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyTree::geometricJacobian<double>, cache, base_or_frame_ind, body_or_frame_ind, expressed_in_frame_ind,
+  checkForErrors(settings.expect_error_on_configuration_methods, model,
+                 &RigidBodyTree::centerOfMass<double>, cache,
+                 RigidBodyTree::default_robot_num_set);
+  checkForErrors(settings.expect_error_on_configuration_methods, model,
+                 &RigidBodyTree::transformPoints<double, PointsType>, cache,
+                 points, body_or_frame_ind, base_or_frame_ind);
+  checkForErrors(settings.expect_error_on_configuration_methods, model,
+                 &RigidBodyTree::relativeQuaternion<double>, cache,
+                 body_or_frame_ind, base_or_frame_ind);
+  checkForErrors(settings.expect_error_on_configuration_methods, model,
+                 &RigidBodyTree::relativeRollPitchYaw<double>, cache,
+                 body_or_frame_ind, base_or_frame_ind);
+  checkForErrors(settings.expect_error_on_configuration_methods, model,
+                 &RigidBodyTree::worldMomentumMatrix<double>, cache,
+                 RigidBodyTree::default_robot_num_set, in_terms_of_qdot);
+  checkForErrors(settings.expect_error_on_configuration_methods, model,
+                 &RigidBodyTree::centroidalMomentumMatrix<double>, cache,
+                 RigidBodyTree::default_robot_num_set, in_terms_of_qdot);
+  checkForErrors(settings.expect_error_on_configuration_methods, model,
+                 &RigidBodyTree::centerOfMassJacobian<double>, cache,
+                 RigidBodyTree::default_robot_num_set, in_terms_of_qdot);
+  checkForErrors(settings.expect_error_on_configuration_methods, model,
+                 &RigidBodyTree::geometricJacobian<double>, cache,
+                 base_or_frame_ind, body_or_frame_ind, expressed_in_frame_ind,
                  in_terms_of_qdot, &v_or_qdot_indices);
-  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyTree::relativeTransform<double>, cache, base_or_frame_ind, body_or_frame_ind);
-  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyTree::massMatrix<double>, cache);
-  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyTree::forwardKinPositionGradient<double>, cache, npoints, body_or_frame_ind, base_or_frame_ind);
-  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyTree::transformPointsJacobian<double, PointsType>, cache, points, body_or_frame_ind, base_or_frame_ind, in_terms_of_qdot);
-  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyTree::relativeQuaternionJacobian<double>, cache, body_or_frame_ind, base_or_frame_ind, in_terms_of_qdot);
-  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyTree::relativeRollPitchYawJacobian<double>, cache, body_or_frame_ind, base_or_frame_ind, in_terms_of_qdot);
+  checkForErrors(settings.expect_error_on_configuration_methods, model,
+                 &RigidBodyTree::relativeTransform<double>, cache,
+                 base_or_frame_ind, body_or_frame_ind);
+  checkForErrors(settings.expect_error_on_configuration_methods, model,
+                 &RigidBodyTree::massMatrix<double>, cache);
+  checkForErrors(settings.expect_error_on_configuration_methods, model,
+                 &RigidBodyTree::forwardKinPositionGradient<double>, cache,
+                 npoints, body_or_frame_ind, base_or_frame_ind);
+  checkForErrors(settings.expect_error_on_configuration_methods, model,
+                 &RigidBodyTree::transformPointsJacobian<double, PointsType>,
+                 cache, points, body_or_frame_ind, base_or_frame_ind,
+                 in_terms_of_qdot);
+  checkForErrors(settings.expect_error_on_configuration_methods, model,
+                 &RigidBodyTree::relativeQuaternionJacobian<double>, cache,
+                 body_or_frame_ind, base_or_frame_ind, in_terms_of_qdot);
+  checkForErrors(settings.expect_error_on_configuration_methods, model,
+                 &RigidBodyTree::relativeRollPitchYawJacobian<double>, cache,
+                 body_or_frame_ind, base_or_frame_ind, in_terms_of_qdot);
 
-  checkForErrors(settings.expect_error_on_velocity_methods, model, &RigidBodyTree::relativeTwist<double>, cache, base_or_frame_ind, body_or_frame_ind, expressed_in_frame_ind);
+  checkForErrors(settings.expect_error_on_velocity_methods, model,
+                 &RigidBodyTree::relativeTwist<double>, cache,
+                 base_or_frame_ind, body_or_frame_ind, expressed_in_frame_ind);
 
-  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model, &RigidBodyTree::geometricJacobianDotTimesV<double>, cache, base_or_frame_ind, body_or_frame_ind, expressed_in_frame_ind);
-  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model, &RigidBodyTree::worldMomentumMatrixDotTimesV<double>, cache, RigidBodyTree::default_robot_num_set);
-  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model, &RigidBodyTree::centroidalMomentumMatrixDotTimesV<double>, cache, RigidBodyTree::default_robot_num_set);
-  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model, &RigidBodyTree::centerOfMassJacobianDotTimesV<double>, cache, RigidBodyTree::default_robot_num_set);
-  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model, &RigidBodyTree::transformPointsJacobianDotTimesV<double, PointsType>, cache, points, body_or_frame_ind, base_or_frame_ind);
-  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model, &RigidBodyTree::relativeQuaternionJacobianDotTimesV<double>, cache, body_or_frame_ind, base_or_frame_ind);
-  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model, &RigidBodyTree::relativeRollPitchYawJacobianDotTimesV<double>, cache, body_or_frame_ind, base_or_frame_ind);
-  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model, &RigidBodyTree::transformSpatialAcceleration<double>, cache, spatial_acceleration, base_or_frame_ind, body_or_frame_ind,
-                 old_expressed_in_body_or_frame_ind, new_expressed_in_body_or_frame_ind);
-  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model, &RigidBodyTree::dynamicsBiasTerm<double>, cache, f_ext, true);
-  checkForErrors(settings.expect_error_on_configuration_methods, model, &RigidBodyTree::dynamicsBiasTerm<double>, cache, f_ext, false);
+  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model,
+                 &RigidBodyTree::geometricJacobianDotTimesV<double>, cache,
+                 base_or_frame_ind, body_or_frame_ind, expressed_in_frame_ind);
+  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model,
+                 &RigidBodyTree::worldMomentumMatrixDotTimesV<double>, cache,
+                 RigidBodyTree::default_robot_num_set);
+  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model,
+                 &RigidBodyTree::centroidalMomentumMatrixDotTimesV<double>,
+                 cache, RigidBodyTree::default_robot_num_set);
+  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model,
+                 &RigidBodyTree::centerOfMassJacobianDotTimesV<double>, cache,
+                 RigidBodyTree::default_robot_num_set);
+  checkForErrors(
+      settings.expect_error_on_jdot_times_v_methods, model,
+      &RigidBodyTree::transformPointsJacobianDotTimesV<double, PointsType>,
+      cache, points, body_or_frame_ind, base_or_frame_ind);
+  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model,
+                 &RigidBodyTree::relativeQuaternionJacobianDotTimesV<double>,
+                 cache, body_or_frame_ind, base_or_frame_ind);
+  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model,
+                 &RigidBodyTree::relativeRollPitchYawJacobianDotTimesV<double>,
+                 cache, body_or_frame_ind, base_or_frame_ind);
+  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model,
+                 &RigidBodyTree::transformSpatialAcceleration<double>, cache,
+                 spatial_acceleration, base_or_frame_ind, body_or_frame_ind,
+                 old_expressed_in_body_or_frame_ind,
+                 new_expressed_in_body_or_frame_ind);
+  checkForErrors(settings.expect_error_on_jdot_times_v_methods, model,
+                 &RigidBodyTree::dynamicsBiasTerm<double>, cache, f_ext, true);
+  checkForErrors(settings.expect_error_on_configuration_methods, model,
+                 &RigidBodyTree::dynamicsBiasTerm<double>, cache, f_ext, false);
 }
 
 int main() {
-  std::unique_ptr<RigidBodyTree> model(new RigidBodyTree("examples/Atlas/urdf/atlas_minimal_contact.urdf"));
+  std::unique_ptr<RigidBodyTree> model(
+      new RigidBodyTree("examples/Atlas/urdf/atlas_minimal_contact.urdf"));
   if (model == nullptr) {
     cerr << "ERROR: Failed to load model" << endl;
   }

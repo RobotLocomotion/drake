@@ -6,4 +6,4 @@
 #include "Function.h"
 #include "Gradient.h"
 
-#endif //DRAKE_DRAKECORE_H
+#endif  // DRAKE_DRAKECORE_H

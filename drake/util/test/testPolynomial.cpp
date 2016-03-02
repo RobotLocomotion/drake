@@ -13,15 +13,18 @@ void testIntegralAndDerivative() {
   cout << poly << endl;
 
   cout << "derivative: " << poly.derivative(1) << endl;
-  
+
   Polynomial<CoefficientType> third_derivative = poly.derivative(3);
-  
+
   cout << "third derivative: " << third_derivative << endl;
-  Polynomial<CoefficientType> third_derivative_check = poly.derivative().derivative().derivative();
-  valuecheckMatrix(third_derivative.getCoefficients(), third_derivative_check.getCoefficients(), 1e-14);
+  Polynomial<CoefficientType> third_derivative_check =
+      poly.derivative().derivative().derivative();
+  valuecheckMatrix(third_derivative.getCoefficients(),
+                   third_derivative_check.getCoefficients(), 1e-14);
 
   Polynomial<CoefficientType> tenth_derivative = poly.derivative(10);
-  valuecheckMatrix(tenth_derivative.getCoefficients(), VectorXd::Zero(1), 1e-14);
+  valuecheckMatrix(tenth_derivative.getCoefficients(), VectorXd::Zero(1),
+                   1e-14);
 
   Polynomial<CoefficientType> integral = poly.integral(0.0);
   cout << "integral: " << integral << endl;
@@ -50,7 +53,7 @@ void testOperators() {
     cout << "p1 = " << poly1 << endl;
     cout << "p2 = " << poly2 << endl;
     cout << "c = " << scalar << endl;
-    
+
     Polynomial<CoefficientType> sum = poly1 + poly2;
     cout << "p1+p2: " << sum << endl;
     Polynomial<CoefficientType> difference = poly2 - poly1;
@@ -77,7 +80,8 @@ void testOperators() {
     valuecheck(poly1_minus_scalar.value(t), poly1.value(t) - scalar, 1e-8);
     valuecheck(poly1_scaled.value(t), poly1.value(t) * scalar, 1e-8);
     valuecheck(poly1_div.value(t), poly1.value(t) / scalar, 1e-8);
-    valuecheck(poly1_times_poly1.value(t), poly1.value(t) * poly1.value(t), 1e-8);
+    valuecheck(poly1_times_poly1.value(t), poly1.value(t) * poly1.value(t),
+               1e-8);
   }
 }
 
@@ -111,7 +115,9 @@ void testEvalType() {
   valuecheck(typeid(decltype(valueIntInput)) == typeid(double), true);
 
   auto valueComplexInput = poly.value(std::complex<double>(1.0, 2.0));
-  valuecheck(typeid(decltype(valueComplexInput)) == typeid(std::complex<double>), true);
+  valuecheck(
+      typeid(decltype(valueComplexInput)) == typeid(std::complex<double>),
+      true);
 }
 
 template <typename CoefficientType>
@@ -126,21 +132,25 @@ void testPolynomialMatrix() {
   int rows_B = cols_A;
   int cols_B = matrix_size_distribution(generator);
 
-  auto A = Polynomial<CoefficientType>::randomPolynomialMatrix(num_coefficients, rows_A, cols_A);
-  auto B = Polynomial<CoefficientType>::randomPolynomialMatrix(num_coefficients, rows_B, cols_B);
-  auto C = Polynomial<CoefficientType>::randomPolynomialMatrix(num_coefficients, rows_A, cols_A);
-  auto product = A * B; // just verify that this is possible without crashing
+  auto A = Polynomial<CoefficientType>::randomPolynomialMatrix(num_coefficients,
+                                                               rows_A, cols_A);
+  auto B = Polynomial<CoefficientType>::randomPolynomialMatrix(num_coefficients,
+                                                               rows_B, cols_B);
+  auto C = Polynomial<CoefficientType>::randomPolynomialMatrix(num_coefficients,
+                                                               rows_A, cols_A);
+  auto product = A * B;  // just verify that this is possible without crashing
   auto sum = A + C;
 
   uniform_real_distribution<double> uniform;
   for (int row = 0; row < A.rows(); ++row) {
     for (int col = 0; col < A.cols(); ++col) {
       double t = uniform(generator);
-      valuecheck(sum(row, col).value(t), A(row, col).value(t) + C(row, col).value(t), 1e-8);
+      valuecheck(sum(row, col).value(t),
+                 A(row, col).value(t) + C(row, col).value(t), 1e-8);
     }
   }
 
-  C.setZero(); // this was a problem before
+  C.setZero();  // this was a problem before
 }
 
 int main(int argc, char **argv) {
