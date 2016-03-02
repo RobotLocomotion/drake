@@ -310,6 +310,18 @@ Eigen::VectorXd RigidBodyAccelerometer::output(const double &t, const Kinematics
   return accel_body;
 }
 
+RigidBodyGyroscope::RigidBodyGyroscope(RigidBodySystem *sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame)
+    : RigidBodySensor(sys,name), frame(frame)
+{
+
+}
+
+Eigen::VectorXd RigidBodyGyroscope::output(const double &t, const KinematicsCache<double> &rigid_body_state, const RigidBodySystem::InputVector<double>& u) const
+{
+  auto relative_twist = sys->getRigidBodyTree()->relativeTwist(rigid_body_state, 0, frame->frame_index, frame->frame_index); //relative twist of body with respect to world expressed in body
+  return relative_twist.head<3>();
+}
+
 RigidBodyDepthSensor::RigidBodyDepthSensor(RigidBodySystem *sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame, tinyxml2::XMLElement *node)
   : RigidBodySensor(sys,name), frame(frame), min_pitch(0.0), max_pitch(0.0), min_yaw(0.0), max_yaw(0.0), num_pixel_rows(1), num_pixel_cols(1), min_range(0.0), max_range(10.0)
 {

@@ -355,6 +355,21 @@ namespace Drake {
     const std::shared_ptr<RigidBodyFrame> frame;
   };
 
+    /** RigidBodyGyroscope
+     * @brief Simulates a sensor that measures angular rates
+     */
+    class DRAKERBSYSTEM_EXPORT RigidBodyGyroscope : public RigidBodySensor {
+    public:
+        RigidBodyGyroscope(RigidBodySystem* sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame);
+        virtual ~RigidBodyGyroscope() {}
+
+        virtual size_t getNumOutputs() const override { return 3; }
+        virtual Eigen::VectorXd output(const double& t, const KinematicsCache<double>& rigid_body_state, const RigidBodySystem::InputVector<double>& u) const override;
+
+    private:
+        const std::shared_ptr<RigidBodyFrame> frame;
+    };
+
 } // end namespace Drake
 
 #endif
