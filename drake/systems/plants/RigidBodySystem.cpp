@@ -18,15 +18,11 @@ size_t RigidBodySystem::getNumInputs(void) const {
 }
 
 size_t RigidBodySystem::getNumOutputs() const {
-  if (sensors.size()==0)
-    return getNumStates();
-  else {
-    int n=0;
+    int n = getNumStates();
     for (const auto& s : sensors) {
       n+=s->getNumOutputs();
     }
     return n;
-  }
 }
 
 
@@ -160,18 +156,15 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(const double& t, 
 
 RigidBodySystem::OutputVector<double> RigidBodySystem::output(const double& t, const RigidBodySystem::StateVector<double>& x, const RigidBodySystem::InputVector<double>& u) const
 {
-  if (sensors.size()==0)
-    return x;
-  else {
-    auto kinsol = tree->doKinematics(x.topRows(tree->num_positions),x.bottomRows(tree->num_velocities));
-    Eigen::VectorXd y(getNumOutputs());
-    int index=0;
-    for (const auto& s : sensors) {
-      y.segment(index,s->getNumOutputs()) = s->output(t,kinsol,u);
-      index+=s->getNumOutputs();
-    }
-  return y;
+  auto kinsol = tree->doKinematics(x.topRows(tree->num_positions),x.bottomRows(tree->num_velocities));
+  Eigen::VectorXd y(getNumOutputs());
+  y << x;
+  int index=getNumStates();
+  for (const auto& s : sensors) {
+    y.segment(index,s->getNumOutputs()) = s->output(t,kinsol,u);
+    index+=s->getNumOutputs();
   }
+  return y;
 }
 
 

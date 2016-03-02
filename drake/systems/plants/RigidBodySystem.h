@@ -355,7 +355,6 @@ namespace Drake {
     const std::shared_ptr<RigidBodyFrame> frame;
   };
 
-
 } // end namespace Drake
 
 #endif
