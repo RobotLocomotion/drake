@@ -340,6 +340,22 @@ namespace Drake {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
+  /** RigidBodyAccelerometer
+   * @brief Simulates a sensor that measures linear acceleration
+   */
+  class DRAKERBSYSTEM_EXPORT RigidBodyAccelerometer : public RigidBodySensor {
+  public:
+    RigidBodyAccelerometer(RigidBodySystem* sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame);
+    virtual ~RigidBodyAccelerometer() {}
+
+    virtual size_t getNumOutputs() const override { return 3; }
+    virtual Eigen::VectorXd output(const double& t, const KinematicsCache<double>& rigid_body_state) const override;
+
+  private:
+    const std::shared_ptr<RigidBodyFrame> frame;
+  };
+
+
 } // end namespace Drake
 
 #endif

@@ -293,6 +293,17 @@ RigidBodySpringDamper::RigidBodySpringDamper(RigidBodySystem *sys, XMLElement *n
   tree->addFrame(frameB);
 }
 
+RigidBodyAccelerometer::RigidBodyAccelerometer(RigidBodySystem *sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame)
+  : RigidBodySensor(sys,name), frame(frame)
+{
+  
+}
+
+Eigen::VectorXd RigidBodyAccelerometer::output(const double &t, const KinematicsCache<double> &rigid_body_state) const
+{
+  return VectorXd::Zero(3);
+}
+
 RigidBodyDepthSensor::RigidBodyDepthSensor(RigidBodySystem *sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame, tinyxml2::XMLElement *node)
   : RigidBodySensor(sys,name), frame(frame), min_pitch(0.0), max_pitch(0.0), min_yaw(0.0), max_yaw(0.0), num_pixel_rows(1), num_pixel_cols(1), min_range(0.0), max_range(10.0)
 {
