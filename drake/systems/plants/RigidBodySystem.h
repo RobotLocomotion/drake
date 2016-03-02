@@ -305,7 +305,7 @@ namespace Drake {
     virtual ~RigidBodySensor() {}
 
     virtual size_t getNumOutputs() const { return 0; }
-    virtual Eigen::VectorXd output(const double& t, const KinematicsCache<double>& rigid_body_state) const = 0;
+    virtual Eigen::VectorXd output(const double& t, const KinematicsCache<double>& rigid_body_state, const RigidBodySystem::InputVector<double>& u) const = 0;
 
   protected:
     RigidBodySystem* sys;
@@ -321,7 +321,7 @@ namespace Drake {
     virtual ~RigidBodyDepthSensor() {}
 
     virtual size_t getNumOutputs() const override { return num_pixel_rows*num_pixel_cols; }
-    virtual Eigen::VectorXd output(const double& t, const KinematicsCache<double>& rigid_body_state) const override;
+    virtual Eigen::VectorXd output(const double& t, const KinematicsCache<double>& rigid_body_state, const RigidBodySystem::InputVector<double>& u) const override;
 
   private:
     const std::shared_ptr<RigidBodyFrame> frame;
@@ -349,7 +349,7 @@ namespace Drake {
     virtual ~RigidBodyAccelerometer() {}
 
     virtual size_t getNumOutputs() const override { return 3; }
-    virtual Eigen::VectorXd output(const double& t, const KinematicsCache<double>& rigid_body_state) const override;
+    virtual Eigen::VectorXd output(const double& t, const KinematicsCache<double>& rigid_body_state, const RigidBodySystem::InputVector<double>& u) const override;
 
   private:
     const std::shared_ptr<RigidBodyFrame> frame;

@@ -167,7 +167,7 @@ RigidBodySystem::OutputVector<double> RigidBodySystem::output(const double& t, c
     Eigen::VectorXd y(getNumOutputs());
     int index=0;
     for (const auto& s : sensors) {
-      y.segment(index,s->getNumOutputs()) = s->output(t,kinsol);
+      y.segment(index,s->getNumOutputs()) = s->output(t,kinsol,u);
       index+=s->getNumOutputs();
     }
   return y;
@@ -296,12 +296,25 @@ RigidBodySpringDamper::RigidBodySpringDamper(RigidBodySystem *sys, XMLElement *n
 RigidBodyAccelerometer::RigidBodyAccelerometer(RigidBodySystem *sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame)
   : RigidBodySensor(sys,name), frame(frame)
 {
-  
+
 }
 
-Eigen::VectorXd RigidBodyAccelerometer::output(const double &t, const KinematicsCache<double> &rigid_body_state) const
+Eigen::VectorXd RigidBodyAccelerometer::output(const double &t, const KinematicsCache<double> &rigid_body_state, const RigidBodySystem::InputVector<double>& u) const
 {
-  return VectorXd::Zero(3);
+  auto q = rigid_body_state.getQ();
+  auto v = rigid_body_state.getV();
+  VectorXd x(q.size() + v.size());
+  x << q, v;
+  auto xdd = sys->dynamics(t, x, u);
+  auto tree = sys->getRigidBodyTree();
+  auto v_dot = xdd.bottomRows(v.size());
+  Vector3d sensor_origin = Vector3d::Zero(); //assumes sensor coincides with the frame's origin;
+  auto J = tree->transformPointsJacobian(rigid_body_state, sensor_origin, frame->frame_index, 0, false);
+  auto Jdot_times_v = tree->transformPointsJacobianDotTimesV(rigid_body_state, sensor_origin, frame->frame_index, 0);
+  Vector4d quat_world_to_body = tree->relativeQuaternion(rigid_body_state, 0, frame->frame_index);
+  Vector3d accel_base = Jdot_times_v + J*v_dot;
+  Vector3d accel_body = quatRotateVec(quat_world_to_body, accel_base);
+  return accel_body;
 }
 
 RigidBodyDepthSensor::RigidBodyDepthSensor(RigidBodySystem *sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame, tinyxml2::XMLElement *node)
@@ -351,7 +364,7 @@ RigidBodyDepthSensor::RigidBodyDepthSensor(RigidBodySystem *sys, const std::stri
   }
 }
 
-Eigen::VectorXd RigidBodyDepthSensor::output(const double &t, const KinematicsCache<double> &rigid_body_state) const
+Eigen::VectorXd RigidBodyDepthSensor::output(const double &t, const KinematicsCache<double> &rigid_body_state, const RigidBodySystem::InputVector<double>& u) const
 {
   VectorXd distances(num_pixel_cols*num_pixel_rows);
   Vector3d origin = sys->getRigidBodyTree()->transformPoints(rigid_body_state,Vector3d::Zero(),frame->frame_index,0);
