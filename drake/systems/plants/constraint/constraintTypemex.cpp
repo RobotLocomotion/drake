@@ -3,15 +3,16 @@
  *
  *       Filename:  constraintTypemex.cpp
  *
- *    Description:  return the type of the constraint, KinematicConstraint, PostureConstraint or QuasiStaticConstraint 
+ *    Description:  return the type of the constraint, KinematicConstraint,
+ *PostureConstraint or QuasiStaticConstraint
  *
  *        Version:  1.0
  *        Created:  08/20/2013 09:32:04 PM
  *       Revision:  none
  *       Compiler:  gcc
  *
- *         Author:  YOUR NAME (), 
- *   Organization:  
+ *         Author:  YOUR NAME (),
+ *   Organization:
  *
  * =====================================================================================
  */
@@ -26,16 +27,16 @@
 using namespace Eigen;
 using namespace std;
 
-void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-{
-  if(nrhs!= 1)
-  {
-    mexErrMsgIdAndTxt("Drake:constraintTypemex:BadInputs","Usage constraint_type = constraintTypemex(constraint_ptr)");
+void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+  if (nrhs != 1) {
+    mexErrMsgIdAndTxt(
+        "Drake:constraintTypemex:BadInputs",
+        "Usage constraint_type = constraintTypemex(constraint_ptr)");
   }
-  RigidBodyConstraint* cnst = (RigidBodyConstraint*) getDrakeMexPointer(prhs[0]);
+  RigidBodyConstraint *cnst =
+      (RigidBodyConstraint *)getDrakeMexPointer(prhs[0]);
   int type = cnst->getType();
-  switch(type)
-  {
+  switch (type) {
     case RigidBodyConstraint::QuasiStaticConstraintType:
       plhs[0] = mxCreateString("QuasiStaticConstraint");
       break;
@@ -109,8 +110,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       plhs[0] = mxCreateString("GravityCompensationTorqueConstraint");
       break;
     default:
-      mexErrMsgIdAndTxt("Drake:constraintTypemex:BadInputs","The constraint type is not supported");
+      mexErrMsgIdAndTxt("Drake:constraintTypemex:BadInputs",
+                        "The constraint type is not supported");
       break;
   }
 }
-
