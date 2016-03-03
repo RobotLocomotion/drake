@@ -34,7 +34,7 @@ void parseSDFInertial(shared_ptr<RigidBody> body, XMLElement* node,
 
   parseScalarValue(node, "mass", body->mass);
 
-  body->com << T(0, 3), T(1, 3), T(2, 3);
+  body->com = T_link.inverse() * T.translation();
 
   Matrix<double, TWIST_SIZE, TWIST_SIZE> I =
       Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
