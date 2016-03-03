@@ -112,9 +112,9 @@ Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime> matlabToEigen(
   return ret;
 }
 
-template <int Rows, int Cols>
+template<int Rows, int Cols>
 Eigen::Map<const Eigen::Matrix<double, Rows, Cols>> matlabToEigenMap(
-    const mxArray* mex) {
+    const mxArray *mex) {
   using namespace Eigen;
   using namespace std;
 
@@ -141,18 +141,18 @@ Eigen::Map<const Eigen::Matrix<double, Rows, Cols>> matlabToEigenMap(
   if (Rows != Dynamic && Rows != rows) {
     ostringstream stream;
     stream << "Error converting Matlab matrix. Expected " << Rows
-           << " rows, but got " << mxGetM(mex) << ".";
+        << " rows, but got " << mxGetM(mex) << ".";
     throw runtime_error(stream.str().c_str());
   }
 
   if (Cols != Dynamic && Cols != cols) {
     ostringstream stream;
     stream << "Error converting Matlab matrix. Expected " << Cols
-           << " cols, but got " << mxGetN(mex) << ".";
+        << " cols, but got " << mxGetN(mex) << ".";
     throw runtime_error(stream.str().c_str());
   }
 
-  double* data = rows * cols == 0 ? nullptr : mxGetPrSafe(mex);
+  double *data = rows * cols == 0 ? nullptr : mxGetPrSafe(mex);
   return Map<const Matrix<double, Rows, Cols>>(data, rows, cols);
 }
 
