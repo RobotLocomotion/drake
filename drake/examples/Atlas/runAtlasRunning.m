@@ -1,12 +1,11 @@
-function runAtlasRunning(use_mex,use_angular_momentum)
+function runAtlasRunning(use_angular_momentum)
 %NOTEST
 if ~checkDependency('gurobi')
   warning('Must have gurobi installed to run this example');
   return;
 end
 
-if (nargin<1); use_mex = true; end
-if (nargin<2); use_angular_momentum = false; end
+if (nargin<1); use_angular_momentum = false; end
 
 import bipedControllers.*;
 
@@ -92,9 +91,9 @@ r_foot = r.findLinkId('r_foot');
 
 flight = RigidBodySupportState(r,[]);
 l_foot_support = RigidBodySupportState(r,l_foot);
-l_toe_support = RigidBodySupportState(r,l_foot,struct('contact_groups',{{'toe'}}));
+l_toe_support = RigidBodySupportState(r,l_foot,struct('contact_groups',{{{'toe'}}}));
 r_foot_support = RigidBodySupportState(r,r_foot);
-r_toe_support = RigidBodySupportState(r,r_foot,struct('contact_groups',{{'toe'}}));
+r_toe_support = RigidBodySupportState(r,r_foot,struct('contact_groups',{{{'toe'}}}));
 
 left_phase = [flight;flight;flight;flight;l_foot_support;l_foot_support;l_foot_support; ...
   l_foot_support;l_foot_support;l_foot_support;l_toe_support; ...
@@ -153,7 +152,6 @@ options.w_qdd = 0.1*ones(nq,1);
 options.w_grf = 0;
 options.w_slack = 3;
 options.debug = false;
-options.use_mex = use_mex;
 options.contact_threshold = 0.0005;
 
 if use_angular_momentum

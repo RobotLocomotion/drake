@@ -83,7 +83,7 @@ manip_plan_data = QPLocomotionPlanCPPWrapper(plan_settings);
 %         'translation_task_to_world',randn(3,2),...
 %         'track_com_traj',true));
 
-control = bipedControllers.InstantaneousQPController(r, []);
+control = bipedControllers.InstantaneousQPController(r.getManipulator().urdf{1}, r.control_config_file, fullfile(getDrakePath(), 'examples', 'Atlas', 'config', 'urdf_modifications_robotiq_weight.yaml'));
 planeval = bipedControllers.BipedPlanEval(r, manip_plan_data);
 plancontroller = bipedControllers.BipedPlanEvalAndControlSystem(r, control, planeval);
 sys = feedback(r, plancontroller);

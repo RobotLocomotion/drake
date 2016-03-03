@@ -1,7 +1,9 @@
 /*
- * return the category of the RigidBodyConstraint. Can be SingleTimeKinematicConstraint, MultipleTimeKinematicConstraint, QuasiStaticConstraint, PostureConstraint, SingleTimeLinearPostureConstraint and MultipleTimeLinearPostureConstraint
+ * return the category of the RigidBodyConstraint. Can be
+ * SingleTimeKinematicConstraint, MultipleTimeKinematicConstraint,
+ * QuasiStaticConstraint, PostureConstraint, SingleTimeLinearPostureConstraint
+ * and MultipleTimeLinearPostureConstraint
  */
-
 
 #include "mex.h"
 #include <iostream>
@@ -14,16 +16,16 @@
 using namespace Eigen;
 using namespace std;
 
-void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-{
-  if(nrhs!= 1)
-  {
-    mexErrMsgIdAndTxt("Drake:constraintCategorymex:BadInputs","Usage constraint_category = constraintCategorymex(constraint_ptr)");
+void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+  if (nrhs != 1) {
+    mexErrMsgIdAndTxt(
+        "Drake:constraintCategorymex:BadInputs",
+        "Usage constraint_category = constraintCategorymex(constraint_ptr)");
   }
-  RigidBodyConstraint* cnst = (RigidBodyConstraint*) getDrakeMexPointer(prhs[0]);
+  RigidBodyConstraint *cnst =
+      (RigidBodyConstraint *)getDrakeMexPointer(prhs[0]);
   int category = cnst->getCategory();
-  switch(category)
-  {
+  switch (category) {
     case RigidBodyConstraint::SingleTimeKinematicConstraintCategory:
       plhs[0] = mxCreateString("SingleTimeKinematicConstraint");
       break;
@@ -43,8 +45,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       plhs[0] = mxCreateString("SingleTimeLinearPostureConstraint");
       break;
     default:
-      mexErrMsgIdAndTxt("Drake:constraintCategorymex:BadInputs","The constraint category is not supported");
+      mexErrMsgIdAndTxt("Drake:constraintCategorymex:BadInputs",
+                        "The constraint category is not supported");
       break;
   }
 }
-

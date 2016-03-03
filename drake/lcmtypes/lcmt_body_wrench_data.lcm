@@ -4,7 +4,7 @@ struct lcmt_body_wrench_data
 {
 	int64_t timestamp;
 
-	int32_t body_id;
+	string body_name;
 
 	double wrench[6];
 }

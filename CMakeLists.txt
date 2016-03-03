@@ -34,22 +34,20 @@ option(REMOVE_UNUSED_EXTERNALS "enable this to remove those projects from disk" 
 # ON by default:
 option(WITH_EIGEN		"required c++ matrix library.  only disable if you have it already."    ON)
 option(WITH_SWIGMAKE    "helper tools to build python & MATLAB wrappers for C++ libraries with Eigen" ON)
+option(WITH_BULLET 		"used for collision detection" 	ON)
+option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" ON)
 if (WIN32)
-   if (CMAKE_SIZEOF_VOID_P EQUAL 8)  # gtk only compiles on win64 right now
-	option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" ON)
 	option(WITH_GTK 		"precompiled gtk binaries/headers for Windows"  ON)  # needed for lcm on windows
-   endif()
 else()
-	option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" ON)
 	option(WITH_DIRECTOR	"vtk-based visualization tool and robot user interface"   ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
 	option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	ON) # there is hope, but i spent a long time cleaning up c/c++ language errors trying to make msvc happy.. and still had a long way to go.
-	option(WITH_BULLET 		"used for collision detection" 	ON) # almost works.  just one remaining link error..?
 	option(WITH_SWIG_MATLAB "A version of SWIG with MATLAB support" ON)
 endif()
 find_program(matlab matlab)
 if (matlab)
 	option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"  ON)
 endif()
+option(WITH_YAML_CPP "library for reading and writing yaml configuration files" ON)
 
 option(WITH_SNOPT_PRECOMPILED "precompiled binaries only for snopt; the source requires a license (will be disabled if WITH_SNOPT=ON)"  ON)
 
@@ -89,7 +87,7 @@ set(libbot_dependencies lcm)
 set(director_dependencies lcm libbot)
 set(iris_dependencies eigen mosek)
 set(signalscope_dependencies director)
-set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi swig_matlab swigmake)
+set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi swig_matlab swigmake yaml_cpp)
 
 # download information, in alphabetical order
 set(avl_GIT_REPOSITORY https://github.com/RobotLocomotion/avl.git)
@@ -99,7 +97,7 @@ set(bertini_GIT_REPOSITORY git@github.com:RobotLocomotion/bertini.git)
 set(bertini_GIT_TAG 3ae3e3ad3534acb4b6f7a4c3c22728b493beaa80)
 set(bertini_IS_PUBLIC FALSE)
 set(bullet_GIT_REPOSITORY https://github.com/RobotLocomotion/bullet-pod.git)
-set(bullet_GIT_TAG 4319ffd7e9251066d93064f5a8dab12e33dbe5e2)
+set(bullet_GIT_TAG 248df52f24ff149a8df57f3958f739d8cc6f4e57)
 set(bullet_IS_PUBLIC TRUE)
 set(bullet_IS_CMAKE_POD TRUE)
 set(cmake_GIT_REPOSITORY https://github.com/RobotLocomotion/cmake.git)
@@ -117,7 +115,7 @@ set(eigen_GIT_TAG 20a633e8f0a285edf9dcc5a06cc9e80774920a7f)
 set(eigen_IS_CMAKE_POD TRUE)
 set(eigen_IS_PUBLIC TRUE)
 set(gtk_GIT_REPOSITORY https://github.com/RobotLocomotion/gtk-pod.git)
-set(gtk_GIT_TAG 78a110023b527e6ee372e4686118a8c7a6a51131)
+set(gtk_GIT_TAG 4730a7d3274a35280f1c2c6337eb182935c87fc2)
 set(gtk_IS_CMAKE_POD TRUE)
 set(gtk_IS_PUBLIC TRUE)
 set(gloptipoly_GIT_REPOSITORY git@github.com:RobotLocomotion/gloptipoly3.git)  # todo: rename that repo
@@ -177,6 +175,15 @@ set(textbook_IS_PUBLIC TRUE)
 set(yalmip_GIT_REPOSITORY https://github.com/RobotLocomotion/yalmip.git)
 set(yalmip_GIT_TAG c071fb7b7193491f8eefadba3bfff26160ad6cd4)
 set(yalmip_IS_PUBLIC TRUE)
+set(yaml_cpp_GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git)
+set(yaml_cpp_GIT_TAG 57805dfd6a741e55477ea8d4d5b3b6f0272d1f0e)
+set(yaml_cpp_IS_PUBLIC TRUE)
+set(yaml_cpp_IS_CMAKE_POD TRUE)
+if (APPLE OR WIN32)
+	set(yaml_cpp_ADDITIONAL_CMAKE_CONFIGURE_ARGS -DBUILD_SHARED_LIBS=OFF)
+else()
+	set(yaml_cpp_ADDITIONAL_CMAKE_CONFIGURE_ARGS -DBUILD_SHARED_LIBS=ON)
+endif()
 set(xfoil_GIT_REPOSITORY https://github.com/RobotLocomotion/xfoil.git)
 set(xfoil_GIT_TAG fde0a9368dd451c93604051fc5704e120073800c)
 set(xfoil_IS_PUBLIC TRUE)
@@ -223,6 +230,7 @@ foreach(proj IN ITEMS
 		meshconverters
 		swigmake
 		swig_matlab
+		yaml_cpp
 		drake)
 	string(TOUPPER ${proj} proj_upper)
 	if ( ${proj} STREQUAL "drake" OR
@@ -298,6 +306,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 					CMAKE_ARGS
 					  -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
 					  -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+						${${proj}_ADDITIONAL_CMAKE_CONFIGURE_ARGS}
 					DEPENDS download-${proj} ${deps}
 					${${proj}_ADDITIONAL_BUILD_ARGS}
 					)

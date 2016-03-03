@@ -86,7 +86,7 @@ end
 
 walking_plan = r.planWalkingZMP(x0(1:nq), footstep_plan);
 
-[ytraj, com, rms_com] = r.simulateWalking(walking_plan);
+[ytraj, com, rms_com] = r.simulateWalking(walking_plan, struct('urdf_modifications_file', fullfile(getDrakePath(), 'examples', 'Atlas', 'config', 'urdf_modifications_robotiq_weight.yaml')));
 
 v.playback(ytraj, struct('slider', true));
 
