@@ -7,12 +7,14 @@
 using namespace std;
 using namespace Eigen;
 
-void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
+void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   string usage = "[coefs, objval] = nWaypointCubicSplinemex(ts, xs, xd0, xdf)";
   if (nrhs != 4)
-    mexErrMsgIdAndTxt("Drake:nWaypointCubicSplinemex:WrongNumberOfInputs", usage.c_str());
+    mexErrMsgIdAndTxt("Drake:nWaypointCubicSplinemex:WrongNumberOfInputs",
+                      usage.c_str());
   if (nlhs > 2)
-    mexErrMsgIdAndTxt("Drake:nWaypointCubicSplinemex:WrongNumberOfOutputs", usage.c_str());
+    mexErrMsgIdAndTxt("Drake:nWaypointCubicSplinemex:WrongNumberOfOutputs",
+                      usage.c_str());
 
   const std::vector<double> segment_times = matlabToStdVector<double>(prhs[0]);
   MatrixXd xs = matlabToEigen<Dynamic, Dynamic>(prhs[1]);
@@ -20,7 +22,7 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
   auto xdf = matlabToEigen<Dynamic, 1>(prhs[3]);
 
   mwSize ndof = static_cast<mwSize>(xs.rows());
-  mwSize num_segments = static_cast<mwSize>(xs.cols())-1;
+  mwSize num_segments = static_cast<mwSize>(xs.cols()) - 1;
   mwSize num_knots = num_segments - 1;
   mwSize num_coeffs_per_segment = 4;
   mwSize dims[] = {ndof, num_segments, num_coeffs_per_segment};
@@ -29,17 +31,28 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[]) {
   for (mwSize dof = 0; dof < ndof; dof++) {
     VectorXd xi = xs.block(dof, 1, 1, num_knots).transpose();
 
-    PiecewisePolynomial<double> spline = nWaypointCubicSpline(segment_times, xs(dof, 0), xd0[dof], xs(dof, num_segments), xdf[dof], xi);
+    PiecewisePolynomial<double> spline =
+        nWaypointCubicSpline(segment_times, xs(dof, 0), xd0[dof],
+                             xs(dof, num_segments), xdf[dof], xi);
 
     PiecewisePolynomial<double> acceleration_squared = spline.derivative(2);
     acceleration_squared *= acceleration_squared;
-    PiecewisePolynomial<double> acceleration_squared_integral = acceleration_squared.integral();
-    objective_value += acceleration_squared_integral.scalarValue(spline.getEndTime()) - acceleration_squared_integral.scalarValue(spline.getStartTime());
+    PiecewisePolynomial<double> acceleration_squared_integral =
+        acceleration_squared.integral();
+    objective_value +=
+        acceleration_squared_integral.scalarValue(spline.getEndTime()) -
+        acceleration_squared_integral.scalarValue(spline.getStartTime());
 
-    for (mwSize segment_index = 0; segment_index < spline.getNumberOfSegments(); segment_index++) {
-      for (mwSize coefficient_index = 0; coefficient_index < num_coeffs_per_segment; coefficient_index++) {
-        mwSize sub[] = {dof, segment_index, num_coeffs_per_segment - coefficient_index - 1}; // Matlab's reverse coefficient indexing...
-        *(mxGetPr(plhs[0]) + sub2ind(3, dims, sub)) = spline.getPolynomial(static_cast<int>(segment_index)).getCoefficients()[coefficient_index];
+    for (mwSize segment_index = 0; segment_index < spline.getNumberOfSegments();
+         segment_index++) {
+      for (mwSize coefficient_index = 0;
+           coefficient_index < num_coeffs_per_segment; coefficient_index++) {
+        mwSize sub[] = {dof, segment_index,
+                        num_coeffs_per_segment - coefficient_index -
+                            1};  // Matlab's reverse coefficient indexing...
+        *(mxGetPr(plhs[0]) + sub2ind(3, dims, sub)) =
+            spline.getPolynomial(static_cast<int>(segment_index))
+                .getCoefficients()[coefficient_index];
       }
     }
   }

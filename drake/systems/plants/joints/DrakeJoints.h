@@ -10,4 +10,4 @@
 #include "RevoluteJoint.h"
 #include "FixedJoint.h"
 
-#endif //DRAKE_DRAKEJOINTS_H
+#endif  // DRAKE_DRAKEJOINTS_H

@@ -7,13 +7,36 @@
 #include "drake/util/drakeGeometryUtil.h"
 
 template <typename ScalarType = double>
-class QuadrotorState  { // models the Drake::Vector concept
-public:
-  QuadrotorState(void) : x(0), y(0), z(0), roll(0), pitch(0), yaw(0), xdot(0), ydot(0), zdot(0), rolldot(0), pitchdot(0), yawdot(0) {};
+class QuadrotorState {  // models the Drake::Vector concept
+ public:
+  QuadrotorState(void)
+      : x(0),
+        y(0),
+        z(0),
+        roll(0),
+        pitch(0),
+        yaw(0),
+        xdot(0),
+        ydot(0),
+        zdot(0),
+        rolldot(0),
+        pitchdot(0),
+        yawdot(0){};
 
   template <typename Derived>
-  QuadrotorState(const Eigen::MatrixBase<Derived>& x) : x(x(0)), y(x(1)), z(x(2)), roll(x(3)), pitch(x(4)), yaw(x(5)),
-                                                           xdot(x(6)), ydot(x(7)), zdot(x(8)), rolldot(x(9)), pitchdot(x(10)), yawdot(x(11)) {};
+  QuadrotorState(const Eigen::MatrixBase<Derived>& x)
+      : x(x(0)),
+        y(x(1)),
+        z(x(2)),
+        roll(x(3)),
+        pitch(x(4)),
+        yaw(x(5)),
+        xdot(x(6)),
+        ydot(x(7)),
+        zdot(x(8)),
+        rolldot(x(9)),
+        pitchdot(x(10)),
+        yawdot(x(11)){};
 
   template <typename Derived>
   QuadrotorState& operator=(const Eigen::MatrixBase<Derived>& state) {
@@ -33,8 +56,8 @@ public:
     return *this;
   }
 
-  friend std::ostream& operator<<(std::ostream& os, const QuadrotorState& state)
-  {
+  friend std::ostream& operator<<(std::ostream& os,
+                                  const QuadrotorState& state) {
     using namespace std;
     os << "  x = " << state.x << endl;
     os << "  y = " << state.y << endl;
@@ -52,29 +75,29 @@ public:
     return os;
   }
 
-  enum {
-    RowsAtCompileTime = 12
-  };
+  enum { RowsAtCompileTime = 12 };
   std::size_t size() { return 12; }
 
-  ScalarType x, y, z, roll, pitch, yaw, xdot, ydot, zdot, rolldot, pitchdot, yawdot;
+  ScalarType x, y, z, roll, pitch, yaw, xdot, ydot, zdot, rolldot, pitchdot,
+      yawdot;
 };
 
 template <typename ScalarType>
-Eigen::Matrix<ScalarType,12,1> toEigen(const QuadrotorState<ScalarType>& vec) {
-  Eigen::Matrix<ScalarType,12,1> state;
-  state << vec.x, vec.y, vec.z, vec.roll, vec.pitch, vec.yaw, vec.xdot, vec.ydot, vec.zdot, vec.rolldot, vec.pitchdot, vec.yawdot;
+Eigen::Matrix<ScalarType, 12, 1> toEigen(
+    const QuadrotorState<ScalarType>& vec) {
+  Eigen::Matrix<ScalarType, 12, 1> state;
+  state << vec.x, vec.y, vec.z, vec.roll, vec.pitch, vec.yaw, vec.xdot,
+      vec.ydot, vec.zdot, vec.rolldot, vec.pitchdot, vec.yawdot;
   return state;
 }
 
-
-
 template <typename ScalarType = double>
 class QuadrotorInput {
-public:
-  QuadrotorInput(void) : w1(0),w2(0),w3(0),w4(0) {};
+ public:
+  QuadrotorInput(void) : w1(0), w2(0), w3(0), w4(0){};
   template <typename Derived>
-  QuadrotorInput(const Eigen::MatrixBase<Derived>& x) : w1(x(0)), w2(x(1)), w3(x(2)), w4(x(3)) {};
+  QuadrotorInput(const Eigen::MatrixBase<Derived>& x)
+      : w1(x(0)), w2(x(1)), w3(x(2)), w4(x(3)){};
 
   template <typename Derived>
   QuadrotorInput& operator=(const Eigen::MatrixBase<Derived>& input) {
@@ -85,8 +108,7 @@ public:
     return *this;
   }
 
-  friend std::ostream& operator<<(std::ostream& os, const QuadrotorInput& u)
-  {
+  friend std::ostream& operator<<(std::ostream& os, const QuadrotorInput& u) {
     using namespace std;
     os << "  w1 = " << u.w1 << endl;
     os << "  w2 = " << u.w2 << endl;
@@ -95,44 +117,39 @@ public:
     return os;
   }
 
-  enum {
-    RowsAtCompileTime = 4
-  };
+  enum { RowsAtCompileTime = 4 };
   std::size_t size() { return 4; }
 
-  ScalarType w1,w2,w3,w4;
+  ScalarType w1, w2, w3, w4;
 };
 
 template <typename ScalarType>
-Eigen::Matrix<ScalarType,4,1> toEigen(const QuadrotorInput<ScalarType>& vec) {
-  Eigen::Matrix<ScalarType,4,1> input;
-  input << vec.w1,vec.w2,vec.w3,vec.w4;
+Eigen::Matrix<ScalarType, 4, 1> toEigen(const QuadrotorInput<ScalarType>& vec) {
+  Eigen::Matrix<ScalarType, 4, 1> input;
+  input << vec.w1, vec.w2, vec.w3, vec.w4;
   return input;
 }
 
-
-
-
 class Quadrotor {
-public:
-  template <typename ScalarType> using StateVector = QuadrotorState<ScalarType>;
-  template <typename ScalarType> using OutputVector = QuadrotorState<ScalarType>;
-  template <typename ScalarType> using InputVector = QuadrotorInput<ScalarType>;
+ public:
+  template <typename ScalarType>
+  using StateVector = QuadrotorState<ScalarType>;
+  template <typename ScalarType>
+  using OutputVector = QuadrotorState<ScalarType>;
+  template <typename ScalarType>
+  using InputVector = QuadrotorInput<ScalarType>;
 
-  Quadrotor() :
-            m(0.5),
-            g(9.81),
-            L(0.1750),
-            I(Eigen::Matrix3d::Identity())
-  {
-    I(0,0) = 0.0023;
-    I(1,1) = 0.0023;
-    I(2,2) = 0.004;
+  Quadrotor() : m(0.5), g(9.81), L(0.1750), I(Eigen::Matrix3d::Identity()) {
+    I(0, 0) = 0.0023;
+    I(1, 1) = 0.0023;
+    I(2, 2) = 0.004;
   }
-  virtual ~Quadrotor(void) {};
+  virtual ~Quadrotor(void){};
 
   template <typename Scalar>
-  QuadrotorState<Scalar> dynamics(const Scalar& t, const QuadrotorState<Scalar>& x, const QuadrotorInput<Scalar>& u) const {
+  QuadrotorState<Scalar> dynamics(const Scalar& t,
+                                  const QuadrotorState<Scalar>& x,
+                                  const QuadrotorInput<Scalar>& u) const {
     Eigen::Matrix<Scalar, 12, 1> xvec = toEigen(x);
     Eigen::Matrix<Scalar, 3, 1> rpy(x.roll, x.pitch, x.yaw);
     Eigen::Matrix<Scalar, 3, 3> R = rpy2rotmat(rpy);
@@ -157,45 +174,54 @@ public:
     pqr = R.adjoint() * pqr;
 
     Eigen::Matrix<Scalar, 3, 1> pqr_dot_term1;
-    pqr_dot_term1 << L * (F2 - F4), L * (F3 - F1), (M1 - M2 + M3 - M4);
+    pqr_dot_term1 << L*(F2 - F4), L * (F3 - F1), (M1 - M2 + M3 - M4);
 
-    Eigen::Matrix<Scalar, 3, 1> pqr_dot = I.ldlt().solve(pqr_dot_term1 - pqr.cross(I * pqr));
+    Eigen::Matrix<Scalar, 3, 1> pqr_dot =
+        I.ldlt().solve(pqr_dot_term1 - pqr.cross(I * pqr));
     Eigen::Matrix<Scalar, 3, 3> Phi;
     typename Gradient<Eigen::Matrix<Scalar, 3, 3>, 3>::type dPhi;
-    auto ddPhi = (typename Gradient<Eigen::Matrix<Scalar, 3, 3>, 3, 2>::type*) nullptr;
+    auto ddPhi =
+        (typename Gradient<Eigen::Matrix<Scalar, 3, 3>, 3, 2>::type*)nullptr;
     angularvel2rpydotMatrix(rpy, Phi, &dPhi, ddPhi);
 
     Eigen::Matrix<Scalar, 9, 3> drpy2drotmat = drpy2rotmat(rpy);
     Eigen::Matrix<Scalar, 9, 1> Rdot_vec;
     Rdot_vec = drpy2drotmat * rpydot;
-    Eigen::Matrix<Scalar, 3, 3> Rdot = Eigen::Map< Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> >(Rdot_vec.data(), 3, 3);
+    Eigen::Matrix<Scalar, 3, 3> Rdot =
+        Eigen::Map<Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> >(
+            Rdot_vec.data(), 3, 3);
     Eigen::Matrix<Scalar, 9, 1> dPhi_x_rpydot_vec;
     dPhi_x_rpydot_vec = dPhi * rpydot;
-    Eigen::Matrix<Scalar, 3, 3> dPhi_x_rpydot = Eigen::Map< Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> >(dPhi_x_rpydot_vec.data(), 3, 3);
-    Eigen::Matrix<Scalar, 3, 1> rpy_ddot = Phi * R * pqr_dot + dPhi_x_rpydot * R * pqr + Phi * Rdot * pqr;
+    Eigen::Matrix<Scalar, 3, 3> dPhi_x_rpydot =
+        Eigen::Map<Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> >(
+            dPhi_x_rpydot_vec.data(), 3, 3);
+    Eigen::Matrix<Scalar, 3, 1> rpy_ddot =
+        Phi * R * pqr_dot + dPhi_x_rpydot * R * pqr + Phi * Rdot * pqr;
 
-    Eigen::Matrix<Scalar,12,1> xdotvec;  xdotvec << xvec.template tail<6>(), xyz_ddot, rpy_ddot;
+    Eigen::Matrix<Scalar, 12, 1> xdotvec;
+    xdotvec << xvec.template tail<6>(), xyz_ddot, rpy_ddot;
     QuadrotorState<Scalar> xdot(xdotvec);
     return xdot;
   }
 
   template <typename ScalarType>
-  QuadrotorState<ScalarType> output(const ScalarType& t, const QuadrotorState<ScalarType>& x, const QuadrotorInput<ScalarType>& u) const {
+  QuadrotorState<ScalarType> output(const ScalarType& t,
+                                    const QuadrotorState<ScalarType>& x,
+                                    const QuadrotorInput<ScalarType>& u) const {
     return x;
   }
 
-  bool isTimeVarying() const  { return false; }
-  bool isDirectFeedthrough() const  { return false; }
+  bool isTimeVarying() const { return false; }
+  bool isDirectFeedthrough() const { return false; }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   double g, L, m;
   Eigen::Matrix3d I;
 
-private:
+ private:
   const double kf = 1;
   const double km = 0.0245;
 };
 
-
-#endif // _QUADROTOR_H_
+#endif  // _QUADROTOR_H_

@@ -22,12 +22,9 @@ bool waitForLCM(lcm::LCM& lcm, double timeout) {
   FD_SET(lcmFd, &fds);
 
   int status = select(lcmFd + 1, &fds, 0, 0, &tv);
-  if (status == -1 && errno != EINTR)
-  {
+  if (status == -1 && errno != EINTR) {
     std::cout << "select() returned error: " << errno << std::endl;
-  }
-  else if (status == -1 && errno == EINTR)
-  {
+  } else if (status == -1 && errno == EINTR) {
     std::cout << "select() interrupted" << std::endl;
   }
   return (status > 0 && FD_ISSET(lcmFd, &fds));
@@ -36,10 +33,9 @@ bool waitForLCM(lcm::LCM& lcm, double timeout) {
 void Drake::internal::LCMLoop::loopWithSelect() {
   //    cout << "starting lcm handler thread " << this_thread::get_id() << endl;
 
-  while (!this->stop)
-  {
+  while (!this->stop) {
     const double timeoutInSeconds = 0.3;
-    bool lcmReady = waitForLCM(lcm,timeoutInSeconds);
+    bool lcmReady = waitForLCM(lcm, timeoutInSeconds);
 
     if (this->stop) break;
 
@@ -52,4 +48,3 @@ void Drake::internal::LCMLoop::loopWithSelect() {
   }
   //    cout << "stopping lcm handler thread " << this_thread::get_id() << endl;
 }
-
