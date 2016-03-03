@@ -5,13 +5,12 @@
 #include <stdio.h>
 #endif
 
-void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
-{
+void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nrhs < 1) {
     mexPrintf("Usage: getKey(vkey)\n");
     return;
   }
-  
-  plhs[0] = mxCreateLogicalScalar(GetAsyncKeyState((int)mxGetScalar(prhs[0])) !=
- 0);
+
+  plhs[0] =
+      mxCreateLogicalScalar(GetAsyncKeyState((int)mxGetScalar(prhs[0])) != 0);
 }
