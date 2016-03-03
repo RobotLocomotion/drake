@@ -124,11 +124,15 @@ class DRAKERBM_EXPORT RigidBody {
     std::shared_ptr<RigidBody> body;
 
    public:
+#ifndef SWIG
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
   };
 
  public:
+#ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 #endif
