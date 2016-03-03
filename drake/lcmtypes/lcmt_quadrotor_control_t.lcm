@@ -1,0 +1,9 @@
+package drake;
+
+struct lcmt_quadrotor_control_t
+{
+  int64_t timestamp;
+
+  double motors[4];
+}
+

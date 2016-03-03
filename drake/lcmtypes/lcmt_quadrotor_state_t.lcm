@@ -1,0 +1,8 @@
+package drake;
+
+struct lcmt_quadrotor_state_t
+{
+  int64_t timestamp;
+  double x[13];
+}
+

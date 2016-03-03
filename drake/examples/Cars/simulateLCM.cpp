@@ -1,9 +1,9 @@
 
-#include "LCMSystem.h"
-#include "RigidBodySystem.h"
-#include "LinearSystem.h"
-#include "BotVisualizer.h"
-#include "drakeAppUtil.h"
+#include "drake/systems/LCMSystem.h"
+#include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/systems/LinearSystem.h"
+#include "drake/systems/plants/BotVisualizer.h"
+#include "drake/util/drakeAppUtil.h"
 #include "lcmtypes/drake/lcmt_driving_control_cmd_t.hpp"
 
 using namespace std;
@@ -154,7 +154,7 @@ int main(int argc, char* argv[]) {
   options.initial_step_size = 5e-3;
   options.timeout_seconds = numeric_limits<double>::infinity();
 
-  VectorXd x0(rigid_body_sys->getNumStates());
+  VectorXd x0 = VectorXd::Zero(rigid_body_sys->getNumStates());
   x0.head(tree->num_positions) = tree->getZeroConfiguration();
   // todo:  call getInitialState instead?  (but currently, that would require
   // snopt).  needs #1627
