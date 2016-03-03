@@ -34,7 +34,7 @@ option(REMOVE_UNUSED_EXTERNALS "enable this to remove those projects from disk" 
 # ON by default:
 option(WITH_EIGEN		"required c++ matrix library.  only disable if you have it already."    ON)
 option(WITH_SWIGMAKE    "helper tools to build python & MATLAB wrappers for C++ libraries with Eigen" ON)
-option(WITH_BULLET 		"used for collision detection" 	ON) # almost works.  just one remaining link error..?
+option(WITH_BULLET 		"used for collision detection" 	ON)
 option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" ON)
 if (WIN32)
 	option(WITH_GTK 		"precompiled gtk binaries/headers for Windows"  ON)  # needed for lcm on windows
