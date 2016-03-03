@@ -14,6 +14,7 @@ endfunction(add_python_test)
 
 if (snopt_c_FOUND)
   add_python_test(pydrake.test.testRBTIK)
+  add_python_test(pydrake.test.testPR2IK)
 endif()
 add_python_test(pydrake.test.testRBTTransformPoints)
 add_python_test(pydrake.test.testRBTCoM)

@@ -6,13 +6,13 @@
 
 using namespace std;
 
-int main(int argc, char ** argv)
-{
-  if (argc<3) cout << "Usage: publishDrivingCommand throttle_value steering_value" << endl;
+int main(int argc, char** argv) {
+  if (argc < 3)
+    cout << "Usage: publishDrivingCommand throttle_value steering_value"
+         << endl;
 
   lcm::LCM lcm;
-  if(!lcm.good())
-    return 1;
+  if (!lcm.good()) return 1;
 
   drake::lcmt_driving_control_cmd_t command;
   command.timestamp = 0;

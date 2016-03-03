@@ -17,18 +17,15 @@
 
 static const int MAX_NUM_COLLISION_FILTER_GROUPS = 128;
 
-namespace DrakeCollision
-{
+namespace DrakeCollision {
 
-  DRAKECOLLISION_EXPORT std::unique_ptr<Model> newModel();
+DRAKECOLLISION_EXPORT std::unique_ptr<Model> newModel();
 
-  typedef std::bitset<MAX_NUM_COLLISION_FILTER_GROUPS> bitmask;
+typedef std::bitset<MAX_NUM_COLLISION_FILTER_GROUPS> bitmask;
 
-  // Constants
-  extern const DRAKECOLLISION_EXPORT bitmask ALL_MASK;
-  extern const DRAKECOLLISION_EXPORT bitmask NONE_MASK;
-  extern const DRAKECOLLISION_EXPORT bitmask DEFAULT_GROUP;
-
+// Constants
+extern const DRAKECOLLISION_EXPORT bitmask ALL_MASK;
+extern const DRAKECOLLISION_EXPORT bitmask NONE_MASK;
+extern const DRAKECOLLISION_EXPORT bitmask DEFAULT_GROUP;
 }
 #endif
-
