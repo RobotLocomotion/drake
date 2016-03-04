@@ -5,8 +5,7 @@
 
 using namespace std;
 using namespace Eigen;
-int main()
-{
+int main() {
   RigidBodyTree model("examples/Atlas/urdf/atlas_minimal_contact.urdf");
 
   default_random_engine generator;
@@ -17,12 +16,15 @@ int main()
   auto points = Matrix<double, 3, Eigen::Dynamic>::Random(3, 5).eval();
   int body_or_frame_ind = 8;
   int base_or_frame_ind = 0;
-  model.transformPointsJacobianDotTimesV(cache, points, body_or_frame_ind, base_or_frame_ind);
+  model.transformPointsJacobianDotTimesV(cache, points, body_or_frame_ind,
+                                         base_or_frame_ind);
 
   auto M = model.massMatrix<double>(cache);
-  cout << M << endl << endl;
+  cout << M << endl
+       << endl;
 
-  eigen_aligned_unordered_map<RigidBody const *, Matrix<double, TWIST_SIZE, 1> > f_ext;
+  eigen_aligned_unordered_map<RigidBody const *, Matrix<double, TWIST_SIZE, 1> >
+      f_ext;
   Matrix<double, TWIST_SIZE, 1> f_ext_r_foot;
   f_ext_r_foot.setRandom();
   f_ext.insert({model.findLink("r_foot").get(), f_ext_r_foot});
@@ -31,6 +33,7 @@ int main()
   vd.setRandom();
 
   auto C = model.inverseDynamics(cache, f_ext, vd);
-  cout << C << endl << endl;
+  cout << C << endl
+       << endl;
   return 0;
 }

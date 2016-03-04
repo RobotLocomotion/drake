@@ -17,4 +17,6 @@ struct DRAKEZMPUTIL_EXPORT TVLQRData {
   Eigen::MatrixXd N;
 };
 
-DRAKEZMPUTIL_EXPORT ExponentialPlusPiecewisePolynomial<double> s1Trajectory(const TVLQRData &sys, const PiecewisePolynomial<double> &zmp_trajectory,const Eigen::Ref<const Eigen::MatrixXd> &S);
+DRAKEZMPUTIL_EXPORT ExponentialPlusPiecewisePolynomial<double> s1Trajectory(
+    const TVLQRData &sys, const PiecewisePolynomial<double> &zmp_trajectory,
+    const Eigen::Ref<const Eigen::MatrixXd> &S);
