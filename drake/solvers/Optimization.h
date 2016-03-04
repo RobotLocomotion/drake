@@ -455,23 +455,23 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    * @brief adds a constraint to the program.  method specializations ensure
    * that the constraint gets added in the right way
    */
-  void addConstraint(const std::shared_ptr<Constraint>& con,
+  void addConstraint(std::shared_ptr<Constraint> con,
                      VariableList const& vars) {
     problem_type.reset(problem_type->addGenericConstraint());
     generic_constraints.push_back(Binding<Constraint>(con, vars));
   }
-  void addConstraint(const std::shared_ptr<Constraint>& con) {
+  void addConstraint(std::shared_ptr<Constraint> con) {
     addConstraint(con, variable_views);
   }
 
-  void addConstraint(const std::shared_ptr<LinearEqualityConstraint>& con,
+  void addConstraint(std::shared_ptr<LinearEqualityConstraint> con,
                      VariableList const& vars) {
     problem_type.reset(problem_type->addLinearEqualityConstraint());
     linear_equality_constraints.push_back(
         Binding<LinearEqualityConstraint>(con, vars));
   }
 
-  void addConstraint(const std::shared_ptr<LinearEqualityConstraint>& con) {
+  void addConstraint(std::shared_ptr<LinearEqualityConstraint> con) {
     addConstraint(con, variable_views);
   }
 
@@ -657,12 +657,12 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     return p;
   }
 
-  void checkVariables(const std::shared_ptr<Constraint>& con) {
+  void checkVariables(const Constraint& con) {
     assert(checkVariablesImpl(con) &&
            "Constraint depends on variables that are not associated with this "
            "OptimizationProblem");
   }
-  bool checkVariablesImpl(const std::shared_ptr<Constraint>& con) {
+  bool checkVariablesImpl(const Constraint& con) {
     // todo: implement this
     return true;
   }

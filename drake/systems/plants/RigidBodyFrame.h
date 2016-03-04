@@ -9,14 +9,14 @@ class RigidBodyTree;
 class DRAKERBM_EXPORT RigidBodyFrame {
  public:
   RigidBodyFrame(const std::string& _name,
-                 const std::shared_ptr<RigidBody>& _body,
+                 std::shared_ptr<RigidBody> _body,
                  const Eigen::Isometry3d& _transform_to_body)
       : name(_name),
         body(_body),
         transform_to_body(_transform_to_body),
         frame_index(0) {}
   RigidBodyFrame(const std::string& _name,
-                 const std::shared_ptr<RigidBody>& _body,
+                 std::shared_ptr<RigidBody> _body,
                  const Eigen::Vector3d& xyz = Eigen::Vector3d::Zero(),
                  const Eigen::Vector3d& rpy = Eigen::Vector3d::Zero())
       : name(_name), body(_body), frame_index(0) {
