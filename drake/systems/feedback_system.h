@@ -1,4 +1,3 @@
-// Copyright 2016 The Drake Authors
 #ifndef DRAKE_SYSTEMS_FEEDBACK_SYSTEM_H_
 #define DRAKE_SYSTEMS_FEEDBACK_SYSTEM_H_
 

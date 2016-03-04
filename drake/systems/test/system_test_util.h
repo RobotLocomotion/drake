@@ -1,4 +1,3 @@
-// Copyright 2016 The Drake Authors
 #ifndef DRAKE_SYSTEMS_TEST_SYSTEM_TEST_UTIL_H_
 #define DRAKE_SYSTEMS_TEST_SYSTEM_TEST_UTIL_H_
 

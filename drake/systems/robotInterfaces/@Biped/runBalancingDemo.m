@@ -22,16 +22,15 @@ settings = QPLocomotionPlanSettings.fromStandingState(xstar, obj);
 % settings.planned_support_command = QPControllerPlan.support_logic_maps.kinematic_or_sensed; % Only use supports when in contact
 standing_plan = QPLocomotionPlanCPPWrapper(settings);
 
-param_sets = obj.getDefaultParams();
-
 if options.use_angular_momentum
-  param_sets.standing.Kp_ang = 1.0; % angular momentum proportunal feedback gain
-  param_sets.standing.W_kdot = 1e-5*eye(3); % angular momentum weight
+  error('use_angular_momentum setting no longer supported from Matlab');
+  % param_sets.standing.Kp_ang = 1.0; % angular momentum proportunal feedback gain
+  % param_sets.standing.W_kdot = 1e-5*eye(3); % angular momentum weight
 end
 
 % Construct our control blocks
 planeval = bipedControllers.BipedPlanEval(obj, standing_plan);
-control = bipedControllers.InstantaneousQPController(obj, param_sets);
+control = bipedControllers.InstantaneousQPController(obj.getManipulator().urdf{1}, obj.control_config_file);
 plancontroller = bipedControllers.BipedPlanEvalAndControlSystem(obj, control, planeval);
 
 sys = feedback(obj, plancontroller);
