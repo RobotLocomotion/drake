@@ -112,38 +112,47 @@ Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime> matlabToEigen(
   return ret;
 }
 
-template <int Rows, int Cols>
+template<int Rows, int Cols>
 Eigen::Map<const Eigen::Matrix<double, Rows, Cols>> matlabToEigenMap(
-    const mxArray* mex) {
+    const mxArray *mex) {
   using namespace Eigen;
   using namespace std;
-  int rows;
-  if (Rows == Dynamic)
-    rows = static_cast<int>(mxGetM(mex));
-  else if (mxGetM(mex) == Rows ||
-           mxGetM(mex) == 0)  // be lenient in the empty input case
-    rows = Rows;
+
+  Index rows, cols; // at runtime
+  if (mxIsEmpty(mex)) {
+    // be lenient when it comes to dimensions in the empty input case
+    if (Rows == Dynamic && Cols == Dynamic) {
+      // if both dimensions are dynamic, then follow the dimensions of the Matlab matrix
+      rows = mxGetM(mex);
+      cols = mxGetN(mex);
+    }
+    else {
+      // if only one dimension is dynamic, use the known dimension at compile time and set the other dimension to zero
+      rows = Rows == Dynamic ? 0 : Rows;
+      cols = Cols == Dynamic ? 0 : Cols;
+    }
+  }
   else {
+    // the non-empty case
+    rows = Rows == Dynamic ? mxGetM(mex) : Rows;
+    cols = Cols == Dynamic ? mxGetN(mex) : Cols;
+  }
+
+  if (Rows != Dynamic && Rows != rows) {
     ostringstream stream;
     stream << "Error converting Matlab matrix. Expected " << Rows
-           << " rows, but got " << mxGetM(mex) << ".";
+        << " rows, but got " << mxGetM(mex) << ".";
     throw runtime_error(stream.str().c_str());
   }
 
-  int cols;
-  if (Cols == Dynamic)
-    cols = static_cast<int>(mxGetN(mex));
-  else if (mxGetN(mex) == Cols ||
-           mxGetN(mex) == 0)  // be lenient in the empty input case
-    cols = Cols;
-  else {
+  if (Cols != Dynamic && Cols != cols) {
     ostringstream stream;
     stream << "Error converting Matlab matrix. Expected " << Cols
-           << " cols, but got " << mxGetN(mex) << ".";
+        << " cols, but got " << mxGetN(mex) << ".";
     throw runtime_error(stream.str().c_str());
   }
 
-  double* data = rows * cols == 0 ? nullptr : mxGetPrSafe(mex);
+  double *data = rows * cols == 0 ? nullptr : mxGetPrSafe(mex);
   return Map<const Matrix<double, Rows, Cols>>(data, rows, cols);
 }
 
