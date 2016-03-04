@@ -22,6 +22,17 @@ int main(int argc, char* argv[]) {
   auto rigid_body_sys = make_shared<RigidBodySystem>(getDrakePath()+"/examples/Quadrotor/quadrotor.urdf",floating_base_type);
   auto const & tree = rigid_body_sys->getRigidBodyTree();
 
+  auto sensor_frame = tree->frames[0]; //this is a propellor frame.  probably want a body frame for this
+
+  auto accelerometer = make_shared<RigidBodyAccelerometer>(rigid_body_sys.get(), "accelerometer", sensor_frame);
+  auto gyroscope = make_shared<RigidBodyGyroscope>(rigid_body_sys.get(), "gyroscope", sensor_frame);
+  auto noise_model = make_shared<GaussianNoiseModel<double, 3>>(0, 0.01);
+  accelerometer->setNoiseModel(noise_model);
+  gyroscope->setNoiseModel(noise_model);
+  rigid_body_sys->addSensor(accelerometer);
+  rigid_body_sys->addSensor(gyroscope);
+  cout << rigid_body_sys->getNumOutputs() << endl;
+
   double box_width = 1000;
   double box_depth = 10;
   DrakeShapes::Box geom(Vector3d(box_width, box_width, box_depth));
@@ -36,7 +47,7 @@ int main(int argc, char* argv[]) {
   auto visualizer = make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm,tree);
   
   auto quad_control_to_rbsys_input = make_shared<Gain<QuadrotorControl, RigidBodySystem::InputVector>>(Eigen::Matrix4d::Identity());
-  auto rbsys_output_to_quad_state = make_shared<Gain<RigidBodySystem::StateVector, QuadrotorState>>(Eigen::Matrix<double, 13, 13>::Identity());
+  auto rbsys_output_to_quad_state = make_shared<Gain<RigidBodySystem::StateVector, QuadrotorState>>(Eigen::Matrix<double, 19, 19>::Identity());
   
   auto sys_with_lcm_input = cascade(quad_control_to_rbsys_input, rigid_body_sys);
   
