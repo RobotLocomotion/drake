@@ -45,11 +45,11 @@ public:
 
     template <typename Derived>
     void fromEigen(const Eigen::MatrixBase<Derived>& x) {
-        position = x.segment(0, 3);
-        orientation = x.segment(3, 4);
-        twist = x.segment(7, 6);
-        accelerometer = x.segment(13, 3);
-        gyroscope = x.segment(16, 3);
+        position = x.template segment<3>(0);
+        orientation = x.template segment<4>(3);
+        twist = x.template segment<6>(7);
+        accelerometer = x.template segment<3>(13);
+        gyroscope = x.template segment<3>(16);
     }
 
     friend std::string getCoordinateName(const QuadrotorState<ScalarType>& vec, unsigned int index) {
