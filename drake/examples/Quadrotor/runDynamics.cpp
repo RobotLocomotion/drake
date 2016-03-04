@@ -10,8 +10,7 @@ using namespace std;
 using namespace Drake;
 using namespace Eigen;
 
-int main(int argc, char* argv[]) {
-  
+int main(int argc, char* argv[]) {  
   double final_time = argc >= 2 ? atof(argv[1]) : std::numeric_limits<double>::infinity();
   cout << "Running simulation for " << final_time << " seconds." << endl;
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
@@ -31,7 +30,6 @@ int main(int argc, char* argv[]) {
   gyroscope->setNoiseModel(noise_model);
   rigid_body_sys->addSensor(accelerometer);
   rigid_body_sys->addSensor(gyroscope);
-  cout << rigid_body_sys->getNumOutputs() << endl;
 
   double box_width = 1000;
   double box_depth = 10;
