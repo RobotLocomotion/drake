@@ -295,7 +295,7 @@ void parseCollision(shared_ptr<RigidBody> body, XMLElement* node,
                         body->linkname + ".");
 
   if (element.hasGeometry()) {
-    model->addCollisionElement(element, body, group_name);
+    model->addCollisionElement(element, *body, group_name);
   }
 }
 

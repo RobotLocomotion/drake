@@ -29,7 +29,9 @@ int main(int argc, char* argv[]) {
   auto & world = tree->bodies[0];
   Vector4d color;  color <<  0.9297, 0.7930, 0.6758, 1;  // was hex2dec({'ee','cb','ad'})'/256 in matlab
   world->addVisualElement(DrakeShapes::VisualElement(geom,T_element_to_link,color));
-  tree->addCollisionElement(RigidBody::CollisionElement(geom,T_element_to_link,world),world,"terrain");
+  tree->addCollisionElement(
+      RigidBody::CollisionElement(geom,T_element_to_link,world), *world,
+      "terrain");
   tree->updateStaticCollisionElements();
   
   auto visualizer = make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm,tree);

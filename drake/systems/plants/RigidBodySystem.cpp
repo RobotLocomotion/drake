@@ -369,7 +369,7 @@ RigidBodySpringDamper::RigidBodySpringDamper(RigidBodySystem* sys,
 
 RigidBodyDepthSensor::RigidBodyDepthSensor(
     RigidBodySystem* sys, const std::string& name,
-    const std::shared_ptr<RigidBodyFrame> frame, tinyxml2::XMLElement* node)
+    std::shared_ptr<RigidBodyFrame> frame, tinyxml2::XMLElement* node)
     : RigidBodySensor(sys, name),
       frame(frame),
       min_pitch(0.0),

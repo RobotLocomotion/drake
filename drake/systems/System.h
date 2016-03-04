@@ -355,8 +355,8 @@ class FeedbackSystem {
  */
 template <typename System1, typename System2>
 std::shared_ptr<FeedbackSystem<System1, System2>> feedback(
-    const std::shared_ptr<System1>& sys1,
-    const std::shared_ptr<System2>& sys2) {
+    std::shared_ptr<System1> sys1,
+    std::shared_ptr<System2> sys2) {
   return std::make_shared<FeedbackSystem<System1, System2>>(sys1, sys2);
 };
 
@@ -455,8 +455,8 @@ class CascadeSystem {
  */
 template <typename System1, typename System2>
 std::shared_ptr<CascadeSystem<System1, System2>> cascade(
-    const std::shared_ptr<System1>& sys1,
-    const std::shared_ptr<System2>& sys2) {
+    std::shared_ptr<System1> sys1,
+    std::shared_ptr<System2> sys2) {
   return std::make_shared<CascadeSystem<System1, System2>>(sys1, sys2);
 };
 

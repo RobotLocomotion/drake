@@ -290,11 +290,11 @@ map<string, int> RigidBodyTree::computePositionNameToIndexMap() const {
 
 DrakeCollision::ElementId RigidBodyTree::addCollisionElement(
     const RigidBody::CollisionElement& element,
-    const shared_ptr<RigidBody>& body, const string& group_name) {
+    RigidBody& body, const string& group_name) {
   DrakeCollision::ElementId id = collision_model->addElement(element);
   if (id != 0) {
-    body->collision_element_ids.push_back(id);
-    body->collision_element_groups[group_name].push_back(id);
+    body.collision_element_ids.push_back(id);
+    body.collision_element_groups[group_name].push_back(id);
   }
   return id;
 }
@@ -1034,8 +1034,8 @@ Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyTree::geometricJacobian(
   int body_index;
   for (size_t i = 0; i < kinematic_path.joint_path.size(); i++) {
     body_index = kinematic_path.joint_path[i];
-    const std::shared_ptr<RigidBody>& body = bodies[body_index];
-    const DrakeJoint& joint = body->getJoint();
+    const RigidBody& body = *bodies[body_index];
+    const DrakeJoint& joint = body.getJoint();
     cols +=
         in_terms_of_qdot ? joint.getNumPositions() : joint.getNumVelocities();
   }
@@ -1838,7 +1838,7 @@ size_t RigidBodyTree::getNumPositionConstraints() const {
   return loops.size() * 6;
 }
 
-void RigidBodyTree::addFrame(const std::shared_ptr<RigidBodyFrame>& frame) {
+void RigidBodyTree::addFrame(std::shared_ptr<RigidBodyFrame> frame) {
   frames.push_back(frame);
   frame->frame_index = -(static_cast<int>(frames.size()) - 1) - 2;  // yuck!!
 }
