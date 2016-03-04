@@ -17,6 +17,11 @@ message(STATUS CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
 
 include(ExternalProject)
 
+# Set up Java, use a target of 1.6
+find_package(Java REQUIRED)
+include(UseJava)
+set(CMAKE_JAVA_COMPILE_FLAGS ${CMAKE_JAVA_COMPILE_FLAGS} -source 6 -target 6)
+
 # menu of extra examples
 option(EXAMPLES_LITTLEDOG "planning and control for a small quadruped robot" OFF)
 
