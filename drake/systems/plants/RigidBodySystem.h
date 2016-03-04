@@ -296,6 +296,36 @@ namespace Drake {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
+  /** NoiseModel
+   * @brief Represents generalized vector-valued noise
+   */
+  template <typename ScalarType, int Dimension>
+  class DRAKERBSYSTEM_EXPORT NoiseModel {
+  public:
+      virtual Eigen::Matrix<ScalarType, Dimension, 1> generateNoiseVector() = 0;
+  };
+
+  /** GaussianNoiseModel
+   * @brief Implements the NoiseModel interface where the underlying noise distribution is parameterized by a Gaussian
+   */
+  template <typename ScalarType, int Dimension>
+  class DRAKERBSYSTEM_EXPORT GaussianNoiseModel : public NoiseModel<ScalarType, Dimension> {
+  public:
+      GaussianNoiseModel(double mean, double std_dev) : distribution(mean, std_dev), generator(rd()) { }
+
+      virtual Eigen::Matrix<ScalarType, Dimension, 1> generateNoiseVector() override {
+          Eigen::Matrix<ScalarType, Dimension, 1> noise_vector;
+          for(std::size_t index = 0; index < Dimension; index++) {
+              noise_vector[index] = distribution(generator);
+          }
+          return noise_vector;
+      }
+  private:
+      std::random_device rd;
+      std::normal_distribution<ScalarType> distribution;
+      std::mt19937 generator;
+  };
+
   /** RigidBodySensor
    * @brief interface class for elements which define a sensor which reads the state of a rigid body system
    */
@@ -306,7 +336,6 @@ namespace Drake {
 
     virtual size_t getNumOutputs() const { return 0; }
     virtual Eigen::VectorXd output(const double& t, const KinematicsCache<double>& rigid_body_state, const RigidBodySystem::InputVector<double>& u) const = 0;
-
   protected:
     RigidBodySystem* sys;
     std::string name;
@@ -351,7 +380,12 @@ namespace Drake {
     virtual size_t getNumOutputs() const override { return 3; }
     virtual Eigen::VectorXd output(const double& t, const KinematicsCache<double>& rigid_body_state, const RigidBodySystem::InputVector<double>& u) const override;
 
+    void setNoiseModel(std::shared_ptr<NoiseModel<double, 3>> model) {
+        noise_model = model;
+    }
+
   private:
+    std::shared_ptr<NoiseModel<double, 3>> noise_model;
     const std::shared_ptr<RigidBodyFrame> frame;
   };
 
@@ -366,7 +400,12 @@ namespace Drake {
         virtual size_t getNumOutputs() const override { return 3; }
         virtual Eigen::VectorXd output(const double& t, const KinematicsCache<double>& rigid_body_state, const RigidBodySystem::InputVector<double>& u) const override;
 
+        void setNoiseModel(std::shared_ptr<NoiseModel<double, 3>> model) {
+            noise_model = model;
+        }
+
     private:
+        std::shared_ptr<NoiseModel<double, 3>> noise_model;
         const std::shared_ptr<RigidBodyFrame> frame;
     };
 

@@ -305,8 +305,11 @@ Eigen::VectorXd RigidBodyAccelerometer::output(const double &t, const Kinematics
   auto J = tree->transformPointsJacobian(rigid_body_state, sensor_origin, frame->frame_index, 0, false);
   auto Jdot_times_v = tree->transformPointsJacobianDotTimesV(rigid_body_state, sensor_origin, frame->frame_index, 0);
   Vector4d quat_world_to_body = tree->relativeQuaternion(rigid_body_state, 0, frame->frame_index);
-  Vector3d accel_base = Jdot_times_v + J*v_dot;
+  Vector3d accel_base = Jdot_times_v + J * v_dot;
   Vector3d accel_body = quatRotateVec(quat_world_to_body, accel_base);
+  if(noise_model) {
+    accel_body += noise_model->generateNoiseVector();
+  }
   return accel_body;
 }
 
@@ -319,7 +322,11 @@ RigidBodyGyroscope::RigidBodyGyroscope(RigidBodySystem *sys, const std::string& 
 Eigen::VectorXd RigidBodyGyroscope::output(const double &t, const KinematicsCache<double> &rigid_body_state, const RigidBodySystem::InputVector<double>& u) const
 {
   auto relative_twist = sys->getRigidBodyTree()->relativeTwist(rigid_body_state, 0, frame->frame_index, frame->frame_index); //relative twist of body with respect to world expressed in body
-  return relative_twist.head<3>();
+  Eigen::Vector3d angular_rates = relative_twist.head<3>();
+  if(noise_model) {
+    angular_rates += noise_model->generateNoiseVector();
+  }
+  return angular_rates;
 }
 
 RigidBodyDepthSensor::RigidBodyDepthSensor(RigidBodySystem *sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame, tinyxml2::XMLElement *node)
