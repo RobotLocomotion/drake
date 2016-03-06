@@ -1,0 +1,6 @@
+n   2
+m   3
+nnz 6
+Lnz 3
+mode binary
+file tinyBinary.dat
