@@ -1,0 +1,90 @@
+<?xml version="1.0"?>
+
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../../doc/drakeURDF.xsd"
+ xmlns:xacro="http://ros.org/wiki/xacro" name="CompassGait">
+
+  <xacro:property name="mh" value="10" />
+  <xacro:property name="m" value="5" />
+  <xacro:property name="a" value=".5" />
+  <xacro:property name="b" value=".5" />
+
+  <xacro:macro name="leg" params="lr color">
+    <link name="${lr}_leg">
+      <visual>
+      	<origin xyz="0 0 ${-(a+b)/2}" />
+	      <geometry>
+	        <cylinder radius="0.0075" length="${a+b}"/>
+      	</geometry>
+        <material>
+          <color rgba="${color}" />
+        </material>
+      </visual>
+      <collision>
+	      <origin xyz="0 0 ${-a-b}" />
+	      <geometry>
+	        <sphere radius="0"/>
+	      </geometry>
+      </collision>
+    </link>
+    <link name="${lr}_leg_mass">
+      <visual>
+        <origin xyz="0 0 ${-a}" />
+       	<geometry>
+	        <sphere radius="${.01*m}" />
+	      </geometry>
+        <material>
+          <color rgba="${color}" />
+        </material>
+      </visual>
+      <inertial>
+        <origin xyz="0 0 ${-a}" />
+	        <mass value="${m}" />
+        	<!-- zero inertia -->
+      </inertial>
+    </link>
+    <joint name="${lr}_leg_mass_weld" type="fixed">
+      <parent link="${lr}_leg" />
+      <child link="${lr}_leg_mass" />
+    </joint>
+  </xacro:macro>
+  
+  <link name="world">
+  </link>
+  <link name="hip">
+    <inertial>
+      <mass value="${mh}" />
+      <!-- inertia is zero, which is the default -->
+    </inertial>
+    <visual>    
+      <geometry>
+        <sphere radius="${.005*mh}" />
+      </geometry>
+      <material>
+        <color rgba="0 1 0 1" />
+      </material>
+    </visual>
+  </link>
+
+  <joint name="floating_base" type="planar">
+    <parent link="world" />
+    <child link="hip" />
+    <axis xyz="0 1 0" />    
+  </joint>
+
+  <xacro:leg lr="left" color="1 0 0 1" />
+  <xacro:leg lr="right" color="0 0 1 1" />
+
+  <joint name="left_leg_weld" type="fixed">
+    <parent link="hip" />
+    <child link="left_leg" /> 
+  </joint>
+  
+  <joint name="hip_pin" type="continuous">
+    <parent link="hip" />
+    <child link="right_leg" />
+    <axis xyz="0 1 0"/> 
+  </joint>  
+
+</robot>

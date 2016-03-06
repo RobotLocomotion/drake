@@ -1,0 +1,10 @@
+package drake;
+
+struct lcmt_body_wrench_data
+{
+	int64_t timestamp;
+
+	int32_t body_id;
+
+	double wrench[6];
+}

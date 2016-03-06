@@ -1,0 +1,190 @@
+<?xml version="1.0"?>
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd"
+ xmlns:xacro="http://ros.org/wiki/xacro" name="LegAssembly">
+ <xacro:property name="pi" value="3.1415926535897931" />
+
+ <!-- Measurements and lables were taken from http://files.tested.com/photos/2015/04/05/74549-leg-measurement.jpg -->
+
+<xacro:macro name="strandbeest_leg" params="prefix">
+  <link name="${prefix}_bar_j">
+    <inertial>
+      <origin xyz="0 0 0.25" rpy="0 0 0"/>
+      <mass value="1"/>
+        <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.25" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.50" radius="0.01"/>
+      </geometry>
+      <material name="orange">
+        <color rgba="1 .6392 .0980 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <link name="${prefix}_bar_k">
+    <inertial>
+      <origin xyz="0 0 0.3095" rpy="0 0 0"/>
+      <mass value="1"/>
+        <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.3095" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.619" radius="0.01"/>
+      </geometry>
+      <material name="orange"/>
+    </visual>
+  </link>
+
+  <joint name="${prefix}_joint_j_k" type="revolute">
+    <axis xyz="0 1 0"/>
+    <parent link="${prefix}_bar_j"/>
+    <child link="${prefix}_bar_k"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <limit lower="-1.8" upper="-1.1" effort="0" velocity="1000"/>
+  </joint>
+
+  <link name="${prefix}_bar_c">
+    <inertial>
+      <origin xyz="0 0 0.1965" rpy="0 0 0"/>
+      <mass value="1"/>
+        <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.1965" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.393" radius="0.01"/>
+      </geometry>
+      <material name="orange"/>
+    </visual>
+  </link>
+
+  <joint name="${prefix}_joint_k_c" type="revolute">
+    <axis xyz="0 1 0"/>
+    <parent link="${prefix}_bar_k"/>
+    <child link="${prefix}_bar_c"/>
+    <origin rpy="0 0 0" xyz="0 0 0.619"/>
+    <limit lower="${pi/2}" upper="${pi}" effort="0" velocity="1000"/>
+  </joint>
+
+  <link name="${prefix}_bars_g_h_i">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1"/>
+        <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.245" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.49" radius="0.01"/>
+      </geometry>
+      <material name="orange"/>
+    </visual>
+    <visual>
+      <origin xyz="0.1812 0 -0.0291" rpy="0 1.73 0"/>
+      <geometry>
+        <cylinder length="0.367" radius="0.01"/>
+      </geometry>
+      <material name="orange"/>
+    </visual>
+    <visual>
+      <origin xyz="0.1811 0 0.2159" rpy="0 2.5576 0"/>
+      <geometry>
+        <cylinder length="0.657" radius="0.01"/>
+      </geometry>
+      <material name="orange"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.49"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="${prefix}_joint_k_i" type="revolute">
+    <axis xyz="0 1 0"/>
+    <parent link="${prefix}_bar_k"/>
+    <child link="${prefix}_bars_g_h_i"/>
+    <origin rpy="0 0 0" xyz="0 0 0.619"/>
+    <limit lower="-2" upper="-0.05" effort="0" velocity="1000"/>
+  </joint>
+
+  <loop_joint name="${prefix}_loop_f_g" type="continuous">
+    <axis xyz="0 1 0"/>
+    <link1 link="${prefix}_bar_f" rpy="0 0 0" xyz="0 0 0.394"/>
+    <link2 link="${prefix}_bars_g_h_i" rpy="0 0 0" xyz="0.3624 0 -0.0582"/>
+  </loop_joint>
+
+  <link name="${prefix}_bars_b_d_e">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1"/>
+        <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.279" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.558" radius="0.01"/>
+      </geometry>
+      <material name="orange"/>
+    </visual>
+    <visual>
+      <origin xyz="-0.1488 0 0.4236" rpy="0 -2.3056 0"/>
+      <geometry>
+        <cylinder length="0.401" radius="0.01"/>
+      </geometry>
+      <material name="orange"/>
+    </visual>
+    <visual>
+      <origin xyz="-0.1489 0 0.1446" rpy="0 -0.8 0"/>
+      <geometry>
+        <cylinder length="0.415" radius="0.01"/>
+      </geometry>
+      <material name="orange"/>
+    </visual>
+  </link>
+
+  <loop_joint name="${prefix}_loop_b_c" type="continuous">
+    <axis xyz="0 1 0"/>
+    <link1 link="${prefix}_bars_b_d_e" rpy="0 0 0" xyz="-0.2978 0 0.2892"/>
+    <link2 link="${prefix}_bar_c" rpy="0 0 0" xyz="0 0 0.393"/>
+  </loop_joint>
+
+  <joint name="${prefix}_joint_j_e" type="revolute">
+    <axis xyz="0 1 0"/>
+    <parent link="${prefix}_bar_j"/>
+    <child link="${prefix}_bars_b_d_e"/>
+    <origin rpy="0 0 0" xyz="0 0 0.50"/>
+    <limit lower="-1.9" upper="-1.0" effort="0" velocity="1000"/>
+  </joint>
+
+  <link name="${prefix}_bar_f">
+    <inertial>
+      <origin xyz="0 0 0.197" rpy="0 0 0"/>
+      <mass value="1"/>
+        <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.197" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.394" radius="0.01"/>
+      </geometry>
+      <material name="orange"/>
+    </visual>
+  </link>
+
+  <joint name="${prefix}_joint_e_f" type="revolute">
+    <axis xyz="0 1 0"/>
+    <parent link="${prefix}_bars_b_d_e"/>
+    <child link="${prefix}_bar_f"/>
+    <origin rpy="0 0 0" xyz="0 0 0.558"/>
+    <limit lower="-1.7" upper="0.4" effort="0" velocity="1000"/>
+  </joint>
+
+</xacro:macro>
+</robot>

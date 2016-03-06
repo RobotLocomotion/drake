@@ -1,0 +1,17 @@
+This software is constructed according to the Pods software policies and
+templates.  The policies and templates can be found at:
+
+  http://sourceforge.net/projects/pods
+
+====
+
+Name:         drake_examples
+Maintainers:  Russ Tedrake <russt@mit.edu>
+Summary:      Examples to accompany Drake
+Description:  http://drake.mit.edu
+
+Requirements: 
+	      drake (and the dependencies inherited from drake)
+
+License:      BSD  (http://drake.mit.edu/license)
+
