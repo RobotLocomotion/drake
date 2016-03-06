@@ -87,6 +87,7 @@ Next steps
 .. toctree::
    :maxdepth: 1
 
+   gallery
    installation
    Introduction and Examples <http://underactuated.csail.mit.edu/underactuated.html?chapter=drake>
    developers
