@@ -1,0 +1,17 @@
+package drake;
+
+struct lcmt_robot_state
+{
+  int64_t timestamp;
+
+  int32_t num_robots;
+  string robot_name[num_robots];
+
+  int32_t num_joints;
+  int32_t joint_robot[num_joints];   // which robot [0,num_robots) is this joint associated with
+  string joint_name[num_joints];
+  
+  float joint_position[num_joints];  // q
+  float joint_velocity[num_joints];  // qd
+}
+

@@ -1,0 +1,17 @@
+package drake;
+
+struct lcmt_viewer_command
+{
+  int8_t command_type;
+  string command_data;
+
+  // enum for viewer command type
+  const int8_t STATUS           = 0;
+  const int8_t LOAD_MODEL       = 1;
+  const int8_t LOAD_RENDERER    = 2;
+  const int8_t SHUTDOWN         = 3;
+  const int8_t START_RECORDING  = 4;
+  const int8_t STOP_RECORDING   = 5;
+  const int8_t LOAD_TERRAIN     = 6;
+  const int8_t SET_TERRAIN_TRANSFORM = 7;
+}

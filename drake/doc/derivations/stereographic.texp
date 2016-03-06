@@ -1,0 +1,63 @@
+\documentclass{beamer}
+\usepackage{movie15,multicol,relsize,xstring}
+\usepackage{russt}
+
+\newcommand{\moviedir}{/Users/russt/Movies}
+
+%\title{Title goes here}
+%\author[Russ Tedrake, MIT]{Russ Tedrake \\ MIT Computer Science and Artificial Intelligence Lab}
+%\date{November 11, 2011}
+
+\begin{document}
+
+\begin{frame}
+\frametitle{Stereographic Projection}
+
+\begin{columns}
+\column{.5\textwidth}
+\begin{matlabFigure}[width=\textwidth]
+hold on
+
+axisAnnotation('ellipse',[-1 -1 2 2],'Color','k','LineWidth',2);
+
+axis equal;
+axis(1.5*[-1 1 -1 1]);
+
+theta = pi/4;
+q = 2*sin(theta)/(1+cos(theta));
+
+line([-1 1],[0 0],'Color','k');
+line([1 1],1.2*[-1 1],'Color','k');
+plot([0,-1,cos(theta)],[0,0,sin(theta)],'k.','MarkerSize',20);
+line(cos(theta)*[1 1],sin(theta)*[0 1],'Color','k')
+line(cos(theta)*[0 1],sin(theta)*[0 1],'Color','k')
+line([-1 1],[0 q],'Color','k')
+
+line([1.05 1.2],[q q],'Color','k')
+line([1.05 1.2],[0 0],'Color','k');
+h=axisAnnotation('doublearrow',1.125*[1 1],[0 q],'Color','k','HeadLength',30,'HeadWidth',30);
+text(.17,.1,'$\theta$','interpreter','latex','fontsize',20);
+text(1.175,q/2,'$2q$','interpreter','latex','fontsize',20);
+
+line([0 0],[-.05,-.2],'Color','k');
+h=axisAnnotation('doublearrow',[0 1],-.125*[1 1],'Color','k','HeadLength',30,'HeadWidth',30);
+text(.5,-.225,'$1$','interpreter','latex','fontsize',20);
+
+axis off
+\end{matlabFigure}
+\column{.5\textwidth}
+
+Using similar triangles we have $$q=\frac{\sin\theta}{1+\cos\theta}.$$
+
+Solving for $\sin$ and $\cos$ yields
+$$\cos\theta = \frac{1-q^2}{1+q^2}, \quad \sin\theta = \frac{2q}{1+q^2}.$$
+Given $\dot\theta = f(\theta,x)$, we have $$\dot{q} = \frac{1+q^2}{2}
+f(\theta,x),$$ which can be written as $$e(q) \dot{q} = p(q,x),$$ with
+$e()$ and $p()$ polynomial in $q$.  
+
+\end{columns}
+
+\end{frame}
+
+
+\end{document}

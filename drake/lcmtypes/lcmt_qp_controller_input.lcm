@@ -1,0 +1,26 @@
+package drake;
+
+struct lcmt_qp_controller_input
+{
+	boolean be_silent;
+
+	int64_t timestamp;
+
+	lcmt_zmp_data zmp_data;
+
+	int32_t num_support_data;
+	lcmt_support_data support_data[num_support_data];
+
+	int32_t num_tracked_bodies;
+	lcmt_body_motion_data body_motion_data[num_tracked_bodies];
+	
+	int32_t num_external_wrenches;
+	lcmt_body_wrench_data body_wrench_data[num_external_wrenches];
+
+	lcmt_whole_body_data whole_body_data;
+
+	int32_t num_joint_pd_overrides;
+	lcmt_joint_pd_override joint_pd_override[num_joint_pd_overrides];
+
+	string param_set_name;
+}

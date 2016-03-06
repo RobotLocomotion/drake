@@ -1,0 +1,67 @@
+% simple file for working on the shared slides (by simply including one or two slides at a time).
+
+\documentclass[serif]{beamer}
+\usepackage{movie15,multicol,relsize,xstring}
+\usepackage{russt}
+
+\title{RobotLib Examples using the Pendulum}
+\author{The Robot Locomotion Group}
+
+\renewcommand{\bInlineMovies}{true}
+
+\begin{document}
+
+\begin{frame}
+\titlepage
+\end{frame}
+
+\begin{frame}
+\frametitle{Dynamics (PendulumPlant)}
+Equations of motion:
+$$ml^2 \ddot\theta + b \dot\theta + mgl \sin\theta = \tau$$
+
+\begin{columns}
+\column{.5\textwidth}
+\begin{center}
+\begin{matlabFigure}[width=.8\textwidth]
+cd ..;
+v=PendulumVisualizer; 
+th = .6;
+v.draw(0,[th;0]); 
+axis off
+delete(title(''));
+line([0;0],[0;-.7],'LineWidth',.5,'Color','k');
+s=linspace(0,th,10);
+h=plot(.5*sin(s),-.5*cos(s));  set(h,'LineWidth',.5,'Color','k');
+text(.13,-.55,'$\theta$','Interpreter','latex','FontSize',24);
+addpath([docroot,'/techdoc/creating_plots/examples/']);
+[x,y]=dsxy2figxy(-.25*[1 1], .25*[1 -1]);
+h=annotation('arrow',x,y);
+text(-.45,0,'$g$','Interpreter','latex','FontSize',24);
+text(.75*sin(th)+.05,-.75*cos(th)+.05,'$m$','Interpreter','latex','FontSize',24);
+text(.4*sin(th),-.4*cos(th)+.12,'$l$','Interpreter','latex','FontSize',24);
+\end{matlabFigure}
+\end{center}
+
+\column{.5\textwidth}
+\begin{center}
+\begin{matlabMovieCont}[width=.9\textwidth][autoplay]
+swf.addFrame(gcf);
+delete(h);
+p=PendulumPlant();
+xtraj = p.simulate([0 5],[.6;0]);
+v.display_time=false;
+v.draw_axes=false;
+v.playbackSWF(xtraj,swf);
+\end{matlabMovieCont}
+\end{center}
+
+\end{columns}
+
+\medskip
+Note: The same dynamics are also available with\\
+\centerline{PlanarRigidBodyManipulator('Pendulum.urdf')}
+\end{frame}
+
+
+\end{document}

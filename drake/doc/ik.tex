@@ -1,0 +1,100 @@
+\documentclass{article}
+\usepackage{amsmath,listings,fullpage}
+\title{Drake constraint and inverse kinematics}
+\begin{document}
+\maketitle
+\section{Structure of Constraint}
+Drake defines a base class \textsl{Constraint}, which has four sub classes: \textsl{SingleTimeKinematicConstraint}, \textsl{MultipleTimeKinematicConstraint}, \textsl{QuasiStaticConstraint} and \textsl{PostureConstraint}. For the mex version of Constraint object, calling \textsl{constraintTypemex} function would return the type string in MATLAB. 
+
+\subsection{SingleTimeKinematicConstraint}
+This is for kinematic constraints being evaluated at a single time moment.
+
+All \textsl{SingleTimeKinematicConstraint} objects share four methods: \text{getNumConstraint}, \textsl{eval}, \textsl{bounds} and \textsl{name}. For mex object, calling \textsl{testKinCnstmex} would return the number of constraints, the constraint value, bounds and name in MATLAB.
+\begin{enumerate}
+\item \textsl{WorldPositionConstraint} A box constraint on the position of some points on a certain body.
+\item \textsl{WorldCoMConstraint} A box constraint on the position of the Center of Mass of the whole robot
+\item \textsl{WorldQuatConstraint} Constraining the orientation of a given body by putting a constraint on the quaternion
+\item \textsl{WorldEulerConstraint} A box constraint on the Euler angles of a given body, in the intrinsic z-y'-x'' order
+\item \textsl{WorldGazeTargetConstraint} Constraining the orientation of a given body that a given axis of the body must gaze at a target. Support `cone threshold'
+\item \textsl{WorldGazeDirConstraint} Constraining the orientation of a given body, that a given axis of the body must in a certain direction. Support `cone threshold'
+\item \textsl{WorldGazeOrientConstraint} Constraining the orientation of a given body. Refer to the documentation in the implementation. Support `threshold' and `cone threshold'
+\item \textsl{Point2PointDistanceConstraint} Constraining the distance between points on bodyA/world to points on bodyB/world to be within a range.
+\item \textsl{WorldPositionInFrameConstraint} Constraining the point on bodyA in within a bounding box in a given frame.
+\end{enumerate}
+\subsection{MultipleTimeKinematicConstraint}
+This is for kinematic constraint being evaluated at multiple time moments.
+
+All \textsl{MultipleTimeKinematicConstraint} objects share four methods: \text{getNumConstraint}, \textsl{eval}, \textsl{bounds} and \textsl{name}. For mex object, calling \textsl{testKinCnstmex} would return the number of constraints, the constraint value, bounds and name in MATLAB.
+\begin{enumerate}
+\item \textsl{WorldFixedPositionConstraint} The position of certain points on a certain body is fixed for a given time interval.
+\item \textsl{WorldFixedOrientConstraint} The orientation of a certain body is fixed for a given time interval.
+\item \textsl{WorldFixedBodyPostureConstraint} The position and orientation of a certain body is fixed for a given time interval.
+\end{enumerate}
+
+\subsection{QuasiStaticConstraint}
+Constraining that the \textit{Center of Mass} must lie within a shrunk support polygon. For mex object, call \textsl{testQuasiStaticConstraintmex} would return the active flag, the constraint value, bounds and names. The constraint is
+\begin{equation}
+c = \begin{bmatrix}x_{com}\\y_{com}\end{bmatrix}-w_1\begin{bmatrix}x_{pt1}\\y_{pt2}\end{bmatrix}-w_2\begin{bmatrix}x_{pt2}\\y_{pt2}\end{bmatrix}-\hdots-w_N\begin{bmatrix}x_{ptN}\\y_{ptN}\end{bmatrix}
+\end{equation}
+where $c$ is the constraint value. $x_{com},y_{com}$ is the x,y-position of the CoM, $w_i$ are the weights of associated with each shrunk point $pti$. Also, the user should examine the linear constraint
+\begin{equation}
+1 = w_1+w_2+\hdots+w_N
+\end{equation}
+This constraint is not included in the return value of \textsl{QuasiStaticConstraint.eval} since it is linear and easy to check.
+
+\subsection{PostureConstraint}
+This is a box constraint on the posture value. For mex object, calling \textsl{testPostureConstraintmex} would return the upper and lower bounds of all joints.
+\subsection{Wrap Deprecated Constraint}
+The method \textsl{wrapDeprecatedConstraint} would work to wrap the old format of constraint to \textsl{Constraint} object
+\begin{lstlisting}[language=MATLAB]
+[kc_cell,qsc_pts] = wrapDeprecatedConstraint(robot,body,pts,pos,options)
+\end{lstlisting}
+\section{Inverse Kinematics}
+\subsection{inverseKin}
+This method solves the inverse kinematics problem as
+\begin{lstlisting}[language=MATLAB]
+[q,info,infeasible_constraint] = ...
+  inverseKin(obj,q_seed,q_nom,constraint1,constraint2,constraint3,...,options)
+\end{lstlisting}
+Each constraint is a \textsl{Constraint} object. \textsl{options} is an \textsl{IKoptions} object. If the problem is infeasible, and the debug flag is on by calling
+\begin{lstlisting}[language=MATLAB]
+options = options.setDebug(true);
+\end{lstlisting}
+Then \textsl{infeasible\_constraint} would return the name of the constraints that are infeasible.
+\subsection{inverseKinPointwise}
+This method solves inverse kinematics problems sequentially for multiple time points
+\begin{lstlisting}[language=MATLAB]
+ [q,info,infeasible_constraint] = ...
+  inverseKin(obj,t,q_seed,q_nom,kc1,kc2,kc3,...,options)
+\end{lstlisting}
+where $t$ is a row vector containing all the time moments to solve the inverse kinematics problem.
+
+Setting \textsl{sequentialSeedFlag} to \textsl{true} in \textsl{ikoptions} would allow ik to use the solution at the previous time moment to be the seed of the current time moment.
+\subsection{inverseKinTraj}
+\begin{lstlisting}[language=MATLAB]
+[xtraj,info,infeasible_constraint] = ...
+  inverseKinTraj(obj,t,q0,qd0,q_seed,q_nom,constraint1,constraint2,...,options)
+\end{lstlisting}
+This method solve the inverse kinematics problem for multiple time points simultaneously, and would output a smooth trajectory.
+The problem it solves is
+\begin{align}
+\min_{q_1,q_2,...,q_N} \sum_{i = 1}^N &\ddot{q}_i'Q_a\ddot{q}_i+\sum_{i=2}^N \dot{q}_i'Q_v\dot{q}_i+\sum_{i=2}^N[q_i-q^{nom}_i]'Q[q_i-q^{nom}_i]\\
+\text{subject to}&\quad \text{constraint } k\text{ at }t(j) \quad j = 1,2,\hdots N
+\end{align}
+The assumption is that $q$ is a cubic polynomial, with the initial value $q_0$ and initial time derivative $qd0$ at time $t(1)$.
+
+Further samples can be added in between knot points to check if those samples satisfy the constraints. Check \textsl{setAddtionaltSamples} method in IKoptions.
+\subsection{Wrap deprecated IK}
+The method \textsl{inverseKinWrapup} would wrap the old IK input arguments to the new IK input arguments
+\begin{lstlisting}[language=MATLAB]
+[q_seed,q_nom,constraint,ikoptions] =
+  inverseKinWrapup(obj,q0,
+                 body1,body1_pts,body1_pos,...
+                 body1,body2_pts,body2_pos,...
+                 body1,body3_pts,body3_pos,...
+                 ...
+                 bodyN,bodyN_pts,bodyN_pos,...
+                 options
+                 use_mex_constraint)
+\end{lstlisting}
+\end{document}
