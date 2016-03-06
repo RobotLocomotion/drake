@@ -1,0 +1,67 @@
+<?xml version="1.0" ?>
+
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../../doc/drakeURDF.xsd" name="CompassTripod">
+  <link name="ground" />
+
+  <link name="oleg"> 
+    <inertial>
+      <origin xyz="0 0 -.364" />
+      <mass value="3.77" />
+      <inertia iyy="2.55" />
+    </inertial>
+    <visual>
+      <origin xyz="0.01 0.182 0" />
+      <geometry>
+        <box size="0.0600  1.1760  0.1"/>
+      </geometry>
+      <material>
+        <color rgba=".1 .1 .1" />
+      </material>
+    </visual>     
+  </link>
+
+  <link name="ofoot">
+    <visual>
+      <origin xyz="0.0187 -0.2030  0" />
+      <geometry>
+        <box size="0.1125 0.8660 0.1" />
+      </geometry>
+      <material>
+        <color rgba=".65 .65 .65" />
+      </material>
+    </visual>
+  </link>
+
+  <link name="olegCM">
+    <visual>
+      <origin xyz=".005 .005 0" />
+      <geometry>
+        <box size=".03 .03 0.1" />
+      </geometry>
+      <material> 
+        <color rgba=".1 .9 .1" />
+      </material>
+    </visual>
+  </link>
+
+  <joint name="floatingbase" type="planar">
+    <parent link="ground" />
+    <child link="oleg" />
+    <origin xyz="0 0 0" />
+    <axis xyz="0 1 0" />
+    <dynamics damping="0.1" />
+  </joint>
+
+  <joint name="ofoot_weld" type="fixed">
+    <parent link="oleg" />
+    <child link="ofoot" />
+  </joint>
+
+  <joint name="ofoot_weld" type="fixed">
+    <parent link="oleg" />
+    <child link="olegCM" />
+  </joint>
+
+</robot>

@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<robot name="MassSpringDamper">
+  <material name="green">
+    <color rgba=".3 .6 .4 1" />
+  </material>
+  <material name="red">
+    <color rgba=".9 .1 0 1" />
+  </material>
+  <material name="blue">
+    <color rgba="0 0 1 1" />
+  </material>
+  <link name="base"/>
+  <link name="mass">
+    <inertial> 
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="1" />
+      <inertia ixx=".01" ixy="0" ixz="0" iyy=".01" iyz="0" izz=".01"/> 
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <box size="1 1 1" />
+      </geometry>
+      <material name="red" />
+    </visual> 
+  </link>
+  <joint name="x" type="prismatic">
+    <parent link="base"/>
+    <child link="mass" />
+    <axis xyz="1 0 0" />
+  </joint>
+  <force_element name="spring">
+    <linear_spring_damper stiffness="10" damping="1">
+      <link1 link="base" xyz="0 0 0" />
+      <link2 link="mass" xyz="0 0 0" />
+    </linear_spring_damper>
+  </force_element>
+  <transmission type="SimpleTransmission" name="x_transmission">
+    <actuator name="x_actuator" />
+    <joint name="x" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+</robot>
