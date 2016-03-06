@@ -1,0 +1,100 @@
+<?xml version="1.0"?>
+
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd"
+ xmlns:xacro="http://ros.org/wiki/xacro" name="Strandbeest">
+
+ <!-- Measurements and lables were taken from http://files.tested.com/photos/2015/04/05/74549-leg-measurement.jpg -->
+
+ <xacro:include filename="LegAssembly.xacro" />
+ <xacro:property name="pi" value="3.1415926535897931" />
+
+  <xacro:macro name="strandbeest_leg_pair" params="prefix">
+
+  <link name="${prefix}_bar_l">
+    <inertial>
+      <origin xyz="0 0 0.039" rpy="0 0 0"/>
+      <mass value="1"/>
+        <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.039" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.078" radius="0.01"/>
+      </geometry>
+      <material name="orange"/>
+    </visual>
+  </link>
+
+  <link name="${prefix}_bar_a">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1"/>
+        <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.76" radius="0.01"/>
+      </geometry>
+      <material name="orange"/>
+    </visual>
+  </link>
+
+  <joint name="${prefix}_joint_l_a" type="fixed">
+    <axis xyz="0 1 0"/>
+    <parent link="${prefix}_bar_l"/>
+    <child link="${prefix}_bar_a"/>
+    <origin rpy="0 ${-pi/2} 0" xyz="0 0 0"/>
+  </joint>
+
+  <link name="${prefix}_bar_m">
+    <inertial>
+      <origin xyz="0 0 0.075" rpy="0 0 0"/>
+      <mass value="1"/>
+        <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.075" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.15" radius="0.01"/>
+      </geometry>
+      <material name="orange"/>
+    </visual>
+  </link>
+
+  <xacro:strandbeest_leg prefix="${prefix}_leg1">
+  </xacro:strandbeest_leg>
+
+  <loop_joint name="${prefix}_leg1_loop_a_c" type="continuous">
+    <axis xyz="0 1 0"/>
+    <link1 link="${prefix}_bar_a" rpy="0 0 0" xyz="0 0 0.38"/>
+    <link2 link="${prefix}_leg1_bar_c" rpy="0 0 0" xyz="0 0 0.393"/>
+  </loop_joint>
+
+  <joint name="${prefix}_leg1_joint_m_j" type="continuous">
+    <axis xyz="0 1 0"/>
+    <parent link="${prefix}_bar_m"/>
+    <child link="${prefix}_leg1_bar_j"/>
+    <origin rpy="0 0 0" xyz="0 0 0.15"/>
+  </joint>
+
+  <xacro:strandbeest_leg prefix="${prefix}_leg2">
+  </xacro:strandbeest_leg>
+
+  <loop_joint name="${prefix}_leg2_loop_a_c" type="continuous">
+    <axis xyz="0 1 0"/>
+    <link1 link="${prefix}_bar_a" rpy="0 0 ${pi}" xyz="0 0 -0.38"/>
+    <link2 link="${prefix}_leg2_bar_c" rpy="0 0 0" xyz="0 0 0.393"/>
+  </loop_joint>
+
+  <joint name="${prefix}_leg2_joint_m_j" type="continuous">
+    <axis xyz="0 1 0"/>
+    <parent link="${prefix}_bar_m"/>
+    <child link="${prefix}_leg2_bar_j"/>
+    <origin rpy="0 0 ${pi}" xyz="0 0 0.15"/>
+  </joint>
+
+  </xacro:macro>
+</robot>

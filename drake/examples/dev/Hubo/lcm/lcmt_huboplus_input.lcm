@@ -1,0 +1,36 @@
+// Note: this file was automatically generated using the
+// CoordinateFrame.generateLCMType() method.
+
+struct lcmt_huboplus_input
+{
+  int64_t timestamp;
+
+  double HNR_position;
+  double HNP_position;
+  double LeftShoulderPitch_position;
+  double LeftShoulderRoll_position;
+  double LeftShoulderYaw_position;
+  double LeftElbowPitch_position;
+  double LeftWristYaw_position;
+  double LeftWristPitch_position;
+  double RightShoulderPitch_position;
+  double RightShoulderRoll_position;
+  double RightShoulderYaw_position;
+  double RightElbowPitch_position;
+  double RightWristYaw_position;
+  double RightWristPitch_position;
+  double HipYaw_position;
+  double LeftHipYaw_position;
+  double LeftHipRoll_position;
+  double LeftHipPitch_position;
+  double LeftKneePitch_position;
+  double LeftAnklePitch_position;
+  double LeftAnkleRoll_position;
+  double RightHipYaw_position;
+  double RightHipRoll_position;
+  double RightHipPitch_position;
+  double RightKneePitch_position;
+  double RightAnklePitch_position;
+  double RightAnkleRoll_position;
+}
+

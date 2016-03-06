@@ -1,0 +1,43 @@
+<robot
+  name="ATI-sensor">
+  <link
+    name="ATI_sensor">
+    <inertial>
+      <origin
+        xyz="-0.0064062 0.01873 0.011887"
+        rpy="0 0 0" />
+      <mass
+        value="0.68252" />
+      <inertia
+        ixx="0.000615295062479599"
+        ixy="-0.000155498855912512"
+        ixz="4.23692762827157E-06"
+        iyy="8.42227283334224E-06"
+        iyz="-0.000848389613222753"
+        izz="-8.42227283334216E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="1.5707963267949 0 0" />
+      <geometry>
+        <mesh
+          filename="package://IRB140/urdf/meshes/ATI_sensor.stl" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="1.5707963267949 0 0" />
+      <geometry>
+        <mesh
+          filename="package://IRB140/urdf/meshes/ATI_sensor.stl" />
+      </geometry>
+    </collision>
+  </link>
+</robot>

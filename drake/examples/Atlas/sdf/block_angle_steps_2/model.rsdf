@@ -1,0 +1,69 @@
+<?xml version="1.0" ?>
+<sdf version="1.4">
+ 
+  <% 
+    # Generate a trapezoidal step shape of cinderblocks
+    width  = 5 # x dimension
+    height = 3
+    
+    block_x = 0.387353556
+    block_y = 0.387353556
+    block_z = 0.146
+
+    origin_x = 0 # location of first block
+    origin_y = 0 
+    origin_z = block_z/2.0
+
+    angle_inc = 10 * Math::PI/180
+
+  %>
+  <model name="block_level_steps">
+    <pose><%= origin_x %> <%= origin_y %> <%= origin_z %> 0 0 0</pose>
+    <% for i in 0..width %>
+      <% for j in 0..height %>
+        
+        <% if j < height/2
+             depth_range = (0..(j).ceil).to_a
+           else
+             depth_range = ((0..(j).ceil).to_a).reverse
+           end
+        %>
+
+        <% if (j)%2==0
+             if i%2==0
+	        r_sign = -1
+	     else 
+	        r_sign = 1
+	     end
+	     p_sign = 0
+           else
+             if i%2==0
+	        p_sign = 1
+	     else 
+	        p_sign = -1
+             end
+	     r_sign = 0
+	   end
+        %>
+
+
+        <% for k in depth_range %>
+          <% x0 = origin_x + block_x*j + block_x*i %>
+          <% y0 = origin_y + block_y*i %>
+          <% z0 = origin_z + (block_z)*k %>
+
+	  <% r0 = angle_inc * r_sign %>
+          <% p0 = angle_inc * p_sign %>
+
+          <include>
+            <name><%= "\"block_" + i.to_s + '_' + j.to_s + "\"" %></name>
+            <pose>  <%= x0 %> <%= y0 %> <%= z0 %> <%= r0 %> <%= p0 %> 1.570796 </pose>
+            <uri>model://cinder_block_wide</uri>
+          </include>
+        <% end %>
+      <% end %>
+    <% end %>
+
+  </model>
+
+</sdf>

@@ -1,0 +1,217 @@
+<?xml version="1.0"?>
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../../doc/drakeURDF.xsd"
+ xmlns:xacro="http://www.ros.org/wiki/xacro" name="gripper">
+<!--Properties of the robot-->
+  <xacro:property name="dtr" value="0.0174532925"/>
+
+  <xacro:property name="upperarm_mass" value = "3.3"/>
+  <xacro:property name="upperarm_length" value=".5"/>
+  <xacro:property name="upperarm_radius" value=".02"/>
+  
+  <xacro:property name="forearm_mass" value = "2"/>
+  <xacro:property name="forearm_length" value=".3"/>
+  <xacro:property name="forearm_radius" value=".02"/>
+
+  <xacro:property name="ball_mass" value = "1.8"/>
+  <xacro:property name="ball_radius" value=".1"/>
+
+  <xacro:property name="gr1_mass" value = "1"/>
+  <xacro:property name="gr1_length" value=".2"/>
+  <xacro:property name="gr1_radius" value=".01"/>
+
+  <xacro:property name="glstrut_mass" value = ".1"/>
+  <xacro:property name="glstrut_length" value=".1"/>
+  <xacro:property name="glstrut_radius" value=".01"/>
+
+  <xacro:property name="gl_mass" value = ".8"/>
+  <xacro:property name="gl_length" value=".15"/>
+  <xacro:property name="gl_radius" value=".01"/>
+
+  <xacro:property name="glb_mass" value = ".8"/>
+  <xacro:property name="glb_length" value=".15"/>
+  <xacro:property name="glb_radius" value=".01"/>
+
+  <xacro:property name="gr2_mass" value = "0.025"/>
+  <xacro:property name="gr2_length" value=".1"/>
+  <xacro:property name="gr2_radius" value=".01"/>
+
+  <xacro:property name="elbow_axis" value="0 1 0"/>
+  <xacro:property name="elbow_damping" value="1"/>
+
+  <xacro:property name="gl_axis" value="0 1 0"/>
+  <xacro:property name="gl_damping" value="1"/>
+
+  <xacro:property name="gr_axis" value="0 1 0"/>
+  <xacro:property name="gr_damping" value="1"/>
+
+  <xacro:property name="grr_contact_offset" value=".15"/>
+
+<!--Inertial element for cylinder, axis along z-->
+  <xacro:macro name="cyl_inertia" params="mass length radius">
+    <inertial>
+      <mass value="${mass}" />
+     <inertia ixx="${.25*mass*radius*radius + 1/12*mass*length*length}" ixy="0" iyy="${.25*mass*radius*radius + 1/12*mass*length*length}" iyz="0" izz="${.5*mass*radius*radius}" ixz="0"/>
+    </inertial>
+  </xacro:macro>
+
+<!--Inertial element for a sphere-->
+  <xacro:macro name="sphere_inertia" params="mass r">
+    <inertial>
+      <mass value="${mass}" />
+      <inertia ixx="${2/5*mass*r*r}" ixy="0" iyy="${2/5*mass*r*r}" iyz="0" izz="${2/5*mass*r*r}" ixz="0"/>
+    </inertial>
+  </xacro:macro>
+
+<!--Create the visual element for a cylinder-->
+  <xacro:macro name="cyl_visual" params="origin length radius color rgba">
+    <visual>
+      <origin xyz="0 0 ${origin}" rpy="0 0 0" />
+      <geometry>
+         <cylinder length="${length}" radius="${radius}" />
+      </geometry>
+      <material name="${color}">
+        <color rgba="${rgba}" />
+      </material>
+    </visual>
+  </xacro:macro>
+
+<!--Create the visual element for a box-->
+  <xacro:macro name="sphere_collision" params="r">
+    <collision>
+      <geometry>
+         <sphere radius="${r}" />
+      </geometry>
+    </collision>
+  </xacro:macro>
+
+<!--Create the visual element for a box-->
+  <xacro:macro name="sphere_visual" params="origin r color rgba">
+    <visual>
+         <origin xyz="${origin}" rpy="0 0 0" />
+      <geometry>
+         <sphere radius="${r}" />
+      </geometry>
+      <material name="${color}">
+        <color rgba="${rgba}" />
+      </material>
+    </visual>
+  </xacro:macro>
+
+<!--Creates a link in the form of a cylinder-->
+  <xacro:macro name="simple_cyl" params="name origin length radius mass color rgba">
+    <link name="${name}">
+      <xacro:cyl_inertia mass="${mass}" length="${length}" radius="${radius}"/>
+      <xacro:cyl_visual origin="${origin}" length="${length}" radius="${radius}" color="${color}" rgba="${rgba}"/>
+    </link>
+  </xacro:macro>
+
+<!--Creates a link in the form of a sphere-->
+  <xacro:macro name="simple_sphere" params="name r mass color rgba">
+    <link name="${name}">
+      <xacro:sphere_inertia mass="${mass}" r="${r}"/>
+      <xacro:sphere_visual origin="0 0 0" r="${r}" color="${color}" rgba="${rgba}"/>
+      <!--<xacro:sphere_collision r="${r}"/>-->
+    </link>
+  </xacro:macro>
+
+<!--Creates a simple joint between two cylindrical links.-->
+  <xacro:macro name="cont_joint" params="name parent offset rpy child axisxyz">
+    <joint name="${name}" type="continuous">
+      <parent link="${parent}" />
+      <child link="${child}" />
+      <origin xyz="${offset}" rpy="${rpy}"/>
+      <axis xyz="${axisxyz}" />
+ <!--     <dynamics damping="${damping}" /> -->
+    </joint>
+  </xacro:macro>
+
+<!--Creates a collision link-->
+  <xacro:macro name="collision_ball" params="name">
+    <link name="${name}">
+      <visual>
+        <geometry>
+          <sphere radius="0.01"/>
+        </geometry>
+        <material name="black">
+          <color rgba="0 0 0 1"/>
+        </material>
+      </visual>
+      <collision>
+        <geometry>
+          <sphere radius="0"/>
+        </geometry>
+      </collision>
+    </link>
+  </xacro:macro>
+
+<!--Creates a simple fixed joint-->
+  <xacro:macro name="fixed_jt" params="name parent offset rpy child">
+    <joint name="${name}" type="fixed">
+      <parent link="${parent}"/>
+      <child link="${child}"/>
+      <origin xyz="${offset}" rpy="${rpy}"/>
+    </joint>
+  </xacro:macro>
+
+<!--Creates a transmission at a joint.-->
+  <xacro:macro name="create_tranny" params="name">
+    <transmission type="SimpleTransmission" name="${name}_act">
+      <actuator name="${name}_tranny" />
+      <joint name="${name}" />
+      <mechanicalReduction>1</mechanicalReduction>
+    </transmission>
+  </xacro:macro>
+
+  <link name="world"/>
+  
+  <xacro:simple_sphere name="ball_dot" r="${ball_radius/10}" mass="${ball_mass/10}" color="white" rgba="1 1 1 1"/>
+  <xacro:simple_sphere name="ball" r="${ball_radius}" mass="${ball_mass}" color="red" rgba="1 0 0 1"/>
+  <xacro:simple_cyl name="strut" origin="${-glstrut_length/2}" mass="${glstrut_mass}" length="${glstrut_length}" radius="${glstrut_radius}" color="grey" rgba=".8 .8 .8 1"/>
+  <xacro:simple_cyl name="upperarm" origin="${-upperarm_length/2}" mass="${upperarm_mass}" length="${upperarm_length}" radius="${upperarm_radius}" color="grey" rgba=".8 .8 .8 1"/>
+  <xacro:simple_cyl name="forearm" origin="${-forearm_length/2}" mass="${forearm_mass}" length="${forearm_length}" radius="${forearm_radius}" color="grey" rgba=".8 .8 .8 1"/>
+  <xacro:simple_cyl name="grip_rtop" origin="${-gr1_length/2}" mass="${gr1_mass}" length="${gr1_length}" radius="${gr1_radius}" color="grey" rgba=".8 .8 .8 1"/>
+  <xacro:simple_cyl name="grip_ltop" origin="${-gl_length/2}" mass="${gl_mass}" length="${gl_length}" radius="${gl_radius}" color="grey" rgba=".8 .8 .8 1"/>
+  <xacro:simple_cyl name="grip_rbottom" origin="${-gr2_length/2}" mass="${gr2_mass}" length="${gr2_length}" radius="${gr2_radius}" color="grey" rgba=".8 .8 .8 1"/>
+  <xacro:simple_cyl name="grip_lbottom" origin="${-glb_length/2}" mass="${glb_mass}" length="${glb_length}" radius="${glb_radius}" color="grey" rgba=".8 .8 .8 1"/>
+
+  <xacro:collision_ball name="gr_top"/>
+  <xacro:collision_ball name="gr_bottom"/>
+  <xacro:collision_ball name="gl"/>
+
+  <joint name="shoulder" type="continuous">
+    <parent link="world"/>
+    <child link="upperarm"/>
+    <axis xyz="0 1 0"/>
+    <origin xyz = ".5 0 .75" rpy = "0 0 0"/>
+  </joint>
+
+  <xacro:cont_joint name="elbow" parent="upperarm" child="forearm"  axisxyz="0 1 0" offset=" 0 0 ${-upperarm_length}" rpy="0 0 0"/>
+  <xacro:cont_joint name="wrist_left" parent="forearm" child="grip_ltop"  axisxyz="0 1 0" offset=" 0 0 ${-forearm_length}" rpy="0 ${55*dtr} 0"/>
+  <xacro:cont_joint name="wrist_right" parent="forearm" child="grip_rtop"  axisxyz="0 1 0" offset=" 0 0 ${-forearm_length}" rpy="0 ${-55*dtr} 0"/>
+  <xacro:cont_joint name="finger_right" parent="grip_rtop" child="grip_rbottom" axisxyz="0 1 0" offset="0 0 ${-gr1_length}" rpy="0 ${90*dtr} 0"/>
+
+  <xacro:fixed_jt name="finger_left" parent="grip_ltop" child="grip_lbottom" offset="0 0 ${-gl_length}" rpy="0 ${-90*dtr} 0"/>
+  <xacro:fixed_jt name="coll_left" parent="grip_lbottom" child="gl" offset="0 0 ${-glb_length}" rpy="0 0 0"/>
+  <xacro:fixed_jt name="coll_right2" parent="grip_rbottom" child="gr_bottom" offset="0 0 ${-gr2_length}" rpy="0 0 0"/>
+  <xacro:fixed_jt name="coll_right1" parent="grip_rtop" child="gr_top" offset="0 0 ${-grr_contact_offset}" rpy="0 0 0"/>
+  <xacro:fixed_jt name="strut_joint" parent="grip_ltop" child="strut" offset="0 0 ${-gl_length/2}" rpy="0 ${-45*dtr} 0"/>
+  <xacro:fixed_jt name="ball_dot_joint" parent="ball" child="ball_dot" offset="0 0 ${ball_radius/2}" rpy="0 0 0"/>
+
+  <joint name="floating_base" type="planar">
+    <parent link="world" />
+    <child link="ball" />
+    <axis xyz="0 1 0" />    
+  </joint>
+
+  <xacro:create_tranny name="shoulder"/>
+  <xacro:create_tranny name="elbow"/>
+  <xacro:create_tranny name="wrist_left"/>
+  <xacro:create_tranny name="wrist_right"/>
+  <xacro:create_tranny name="finger_right"/>
+</robot>
+                          
+
+  
+

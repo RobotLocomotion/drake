@@ -1,0 +1,23 @@
+package drake;
+
+struct lcmt_viewer_geometry_data
+{
+  int8_t type;
+
+  // enum for geometry type
+  const int8_t BOX          = 1;
+  const int8_t SPHERE       = 2;
+  const int8_t CYLINDER     = 3;
+  const int8_t MESH         = 4;
+  const int8_t CAPSULE      = 5;
+
+
+  float position[3];
+  float quaternion[4];
+  float color[4];
+
+  string string_data;
+
+  int32_t num_float_data;
+  float float_data[num_float_data];
+}
