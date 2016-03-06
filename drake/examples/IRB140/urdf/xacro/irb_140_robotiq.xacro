@@ -1,0 +1,11 @@
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="IRB140">
+  <xacro:include filename="../irb_140.urdf" />
+
+  <xacro:include filename="../../../Atlas/urdf/robotiq.urdf" />
+
+  <joint name="robotiq_hand_joint" type="fixed">
+    <origin rpy="0.0 0.0 -1.57079" xyz="0.11904 0 0"/>
+    <parent link="link_6"/>
+    <child link="palm"/>
+  </joint>
+</robot>

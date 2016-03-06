@@ -1,0 +1,74 @@
+<?xml version="1.0" ?>
+
+<robot xmlns="http://drake.mit.edu" name="three_dof_force">
+  <link name="three_dof_force_link_root">
+    <inertial>
+      <mass value="0.0001"/>
+      <origin xyz="0 0 0"/>
+      <inertia ixx="0.0001" ixy="0.0" ixz="0.0" iyy="0.0001" iyz="0.0" izz="0.0001"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.01 0.01 0.01"/>
+      </geometry>
+      <material name="red">
+        <color rgba="0.8 0 0 1"/>
+      </material>
+    </visual>     
+  </link>
+
+  <!-- we need a functionally fixed but not actually fixed joint to trick
+    drake into treating this as a separate body so that the input forces get
+    separated into a separate input frame. Ultimately a "weld without merging"
+    option for adding on new bodies could make this unnecessary (and much easier) -->
+  <link name="three_dof_force_link">
+    <inertial>
+      <mass value="0.0001"/>
+      <origin xyz="0 0 0"/>
+      <inertia ixx="0.0001" ixy="0.0" ixz="0.0" iyy="0.0001" iyz="0.0" izz="0.0001"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.15 0.15 0.15"/>
+      </geometry>
+      <material name="blue">
+        <color rgba="0 0 .8 1"/>
+      </material>
+    </visual>     
+  </link>
+  <joint name="three_dof_force_fixedish_joint" type="revolute">
+    <parent link="three_dof_force_link_root"/>
+    <child link="three_dof_force_link"/>
+    <axis xyz="0 0 1"/>
+    <origin rpy="0 0 0" xyz="0.000 0 0"/>
+    <limit lower="-0.0001" upper="0.0001" />
+  </joint>
+
+  <force_element name="fx">
+    <thrust>
+      <parent link="three_dof_force_link"/>
+      <origin xyz="0 0 0"/>
+      <axis xyz="1 0 0"/>
+    </thrust>
+  </force_element>
+
+  <force_element name="fy">
+    <thrust>
+      <parent link="three_dof_force_link"/>
+      <origin xyz="0 0 0"/>
+      <axis xyz="0 1 0"/>
+    </thrust>
+  </force_element>
+
+  <force_element name="fz">
+    <thrust>
+      <parent link="three_dof_force_link"/>
+      <origin xyz="0 0 0"/>
+      <axis xyz="0 0 1"/>
+    </thrust>
+  </force_element>
+  
+</robot>
+

@@ -1,0 +1,409 @@
+kinematic_tree_metadata:
+  body_names:
+    feet:
+      r: &R_FOOT_NAME r_foot
+      l: &L_FOOT_NAME l_foot
+    hands:
+      r: &R_HAND_NAME r_hand
+      l: &L_HAND_NAME l_hand
+
+  joint_group_names:
+    legs:
+      r: [r_leg_hpz, r_leg_hpx, r_leg_hpy, r_leg_kny, r_leg_aky, r_leg_akx]
+      l: [l_leg_hpz, l_leg_hpx, l_leg_hpy, l_leg_kny, l_leg_aky, l_leg_akx]
+    knees:
+      r: r_leg_kny
+      l: l_leg_kny
+    ankles:
+      r: [r_leg_aky, r_leg_akx]
+      l: [l_leg_aky, l_leg_akx]
+    arms:
+      r: [r_arm_shz, r_arm_shx, r_arm_ely, r_arm_elx, r_arm_uwy, r_arm_mwx, r_arm_lwy]
+      l: [l_arm_shz, l_arm_shx, l_arm_ely, l_arm_elx, l_arm_uwy, l_arm_mwx, l_arm_lwy]
+    neck: [neck_ay]
+    back_bkz: back_bkz
+    back_bky: back_bky
+    
+joint_names:
+  - back_bkz
+  - back_bky
+  - back_bkx
+  - neck_ay
+  - l_leg_hpz
+  - l_leg_hpx
+  - l_leg_hpy
+  - l_leg_kny
+  - l_leg_aky
+  - l_leg_akx
+  - r_leg_hpz
+  - r_leg_hpx
+  - r_leg_hpy
+  - r_leg_kny
+  - r_leg_aky
+  - r_leg_akx
+  - l_arm_shz
+  - l_arm_shx
+  - l_arm_ely
+  - l_arm_elx
+  - l_arm_uwy
+  - l_arm_mwx
+  - l_arm_lwy
+  - r_arm_shz
+  - r_arm_shx
+  - r_arm_ely
+  - r_arm_elx
+  - r_arm_uwy
+  - r_arm_mwx
+  - r_arm_lwy
+
+qp_controller_params:
+  DEFAULT:
+    body_specific:
+      DEFAULT:
+        Kp: {x: 12, y: 12, z: 12, wx: 12, wy: 12, wz: 12}
+        damping_ratio: 0.7
+        accel_bounds:
+          min: {x: -100, y: -100, z: -100, wx: -50, wy: -50, wz: -50}
+          max: {x: 100, y: 100, z: 100, wx: 50, wy: 50, wz: 50}
+        weight: 0.0
+      pelvis:
+        Kp: {x: 150, y: 150, z: 150, wx: 200, wy: 200, wz: 200}
+        weight: 0.01
+        damping_ratio: 0.6
+      *R_FOOT_NAME :
+        weight: 0.01
+      *L_FOOT_NAME :
+        weight: 0.01
+    position_specific:
+      DEFAULT:
+        Kp: 150
+        damping_ratio: 0.6
+        w_qdd: 0.001
+        integrator:
+          gain: 0
+          clamp: 0
+        qdd_bounds:
+          min: -100
+          max: 100
+        joint_soft_limits:
+          enabled: false
+          lb: -.inf
+          ub: .inf
+          kp: 150
+          damping_ratio: 0.6
+          weight: 1e-5
+          disable_when_body_in_support: ""
+          k_logistic: 20
+      base_x:
+        w_qdd: 0
+      base_y:
+        w_qdd: 0
+      base_z:
+        w_qdd: 0
+      base_roll:
+        w_qdd: 0
+      base_pitch:
+        w_qdd: 0
+      base_yaw:
+        w_qdd: 0
+      r_leg_kny:
+        joint_soft_limits:
+          enabled: true
+          lb: 0.5
+          disable_when_body_in_support: *R_FOOT_NAME
+      l_leg_kny:
+        joint_soft_limits:
+          enabled: true
+          lb: 0.5
+          disable_when_body_in_support: *L_FOOT_NAME
+      back_bkx:
+        w_qdd: 0.1
+        Kp: 50
+    vref_integrator:
+      zero_ankles_on_contact: false
+      eta: 0.001
+      delta_max: 10
+    integrator: 
+      eta: 0.0
+    W_kdot: 0
+    Kp_ang: 0
+    w_slack: 0.05
+    slack_limit: 100
+    w_grf: 0
+    Kp_accel: 1
+    contact_threshold: 0.002
+    min_knee_angle: 0.7
+    center_of_mass_observer:
+      enabled: false
+      l_zmp: 10
+      l_com: 6.324555320336759 # 2 * sqrt(l_zmp)
+    input_specific:
+      DEFAULT: 
+        hardware:
+          joint_is_force_controlled: true
+          joint_is_position_controlled: false
+          k_f_p: 0
+          k_q_p: 0
+          k_q_i: 0
+          k_qd_p: 0
+          ff_qd: 0
+          ff_f_d: 0
+          ff_const: 0
+          ff_qd_d: 0
+
+  base: # automatically inherits from the default =
+  standing: 
+  manip:
+    body_specific:
+      *L_HAND_NAME :
+        weight: 0.001
+      *R_HAND_NAME :
+        weight: 0.001
+
+  walking:
+    body_specific:
+      DEFAULT:
+        weight: 0.001
+      pelvis:
+        Kp: {x: 0, y: 0, z: 150, wx: 200, wy: 200, wz: 200}
+        weight: 0.075
+      *R_FOOT_NAME :
+        Kp: {x: 100, y: 100, z: 100, wx: 150, wy: 150, wz: 150}
+        damping_ratio: 0.5
+        weight: 0.001
+      *L_FOOT_NAME :
+        Kp: {x: 100, y: 100, z: 100, wx: 150, wy: 150, wz: 150}
+        damping_ratio: 0.5
+        weight: 0.001
+    position_specific:
+      DEFAULT: 
+        w_qdd: 0
+        damping_ratio: 0.5
+      r_leg_hpz: {w_qdd: 1e-6, damping_ratio: 0.5}
+      r_leg_hpx: {w_qdd: 1e-6, damping_ratio: 0.5}
+      r_leg_hpy: {w_qdd: 1e-6, damping_ratio: 0.5}
+      r_leg_kny: {w_qdd: 1e-6, damping_ratio: 0.5}
+      r_leg_aky: {w_qdd: 1e-6, damping_ratio: 0.5}
+      r_leg_akx: {w_qdd: 1e-6, damping_ratio: 0.5}
+      l_leg_hpz: {w_qdd: 1e-6, damping_ratio: 0.5}
+      l_leg_hpx: {w_qdd: 1e-6, damping_ratio: 0.5}
+      l_leg_hpy: {w_qdd: 1e-6, damping_ratio: 0.5}
+      l_leg_kny: {w_qdd: 1e-6, damping_ratio: 0.5}
+      l_leg_aky: {w_qdd: 1e-6, damping_ratio: 0.5}
+      l_leg_akx: {w_qdd: 1e-6, damping_ratio: 0.5}
+      r_arm_shz: {w_qdd: 1e-4, damping_ratio: 0.5}
+      r_arm_shx: {w_qdd: 1e-4, damping_ratio: 0.5}
+      r_arm_ely: {w_qdd: 1e-4, damping_ratio: 0.5}
+      r_arm_elx: {w_qdd: 1e-4, damping_ratio: 0.5}
+      r_arm_uwy: {w_qdd: 1e-4, damping_ratio: 0.5}
+      r_arm_mwx: {w_qdd: 1e-4, damping_ratio: 0.5}
+      r_arm_lwy: {w_qdd: 1e-4, damping_ratio: 0.5}
+      l_arm_shz: {w_qdd: 1e-4, damping_ratio: 0.5}
+      l_arm_shx: {w_qdd: 1e-4, damping_ratio: 0.5}
+      l_arm_ely: {w_qdd: 1e-4, damping_ratio: 0.5}
+      l_arm_elx: {w_qdd: 1e-4, damping_ratio: 0.5}
+      l_arm_uwy: {w_qdd: 1e-4, damping_ratio: 0.5}
+      l_arm_mwx: {w_qdd: 1e-4, damping_ratio: 0.5}
+      l_arm_lwy: {w_qdd: 1e-4, damping_ratio: 0.5}
+      back_bkx: 
+        w_qdd: 0.1
+        Kp: 50
+        damping_ratio: 0.5
+      back_bky:
+        w_qdd: 1e-4
+        damping_ratio: 0.5
+      back_bkz:
+        w_qdd: 1e-4
+        damping_ratio: 0.5
+    contact_threshold: 0.001
+    Kp_accel: 0
+
+  recovery:
+    body_specific:
+      DEFAULT:
+        weight: 0.001
+      pelvis:
+        Kp: {x: 0, y: 0, z: 150, wx: 200, wy: 200, wz: 200}
+        weight: 0.075
+      *R_FOOT_NAME :
+        Kp: {x: 1000, y: 1000, z: 1000, wx: 1500, wy: 1500, wz: 1500}
+        damping_ratio: 0.5
+        weight: 0.001
+      *L_FOOT_NAME :
+        Kp: {x: 1000, y: 1000, z: 1000, wx: 1500, wy: 1500, wz: 1500}
+        damping_ratio: 0.5
+        weight: 0.001
+    position_specific:
+      DEFAULT: 
+        w_qdd: 0
+        damping_ratio: 0.5
+      r_leg_hpz: {w_qdd: 1e-6, damping_ratio: 0.5}
+      r_leg_hpx: {w_qdd: 1e-6, damping_ratio: 0.5}
+      r_leg_hpy: {w_qdd: 1e-6, damping_ratio: 0.5}
+      r_leg_kny: {w_qdd: 1e-6, damping_ratio: 0.5}
+      r_leg_aky: {w_qdd: 1e-6, damping_ratio: 0.5}
+      r_leg_akx: {w_qdd: 1e-6, damping_ratio: 0.5}
+      l_leg_hpz: {w_qdd: 1e-6, damping_ratio: 0.5}
+      l_leg_hpx: {w_qdd: 1e-6, damping_ratio: 0.5}
+      l_leg_hpy: {w_qdd: 1e-6, damping_ratio: 0.5}
+      l_leg_kny: {w_qdd: 1e-6, damping_ratio: 0.5}
+      l_leg_aky: {w_qdd: 1e-6, damping_ratio: 0.5}
+      l_leg_akx: {w_qdd: 1e-6, damping_ratio: 0.5}
+      r_arm_shz: {w_qdd: 1e-4, damping_ratio: 0.5}
+      r_arm_shx: {w_qdd: 1e-4, damping_ratio: 0.5}
+      r_arm_ely: {w_qdd: 1e-4, damping_ratio: 0.5}
+      r_arm_elx: {w_qdd: 1e-4, damping_ratio: 0.5}
+      r_arm_uwy: {w_qdd: 1e-4, damping_ratio: 0.5}
+      r_arm_mwx: {w_qdd: 1e-4, damping_ratio: 0.5}
+      r_arm_lwy: {w_qdd: 1e-4, damping_ratio: 0.5}
+      l_arm_shz: {w_qdd: 1e-4, damping_ratio: 0.5}
+      l_arm_shx: {w_qdd: 1e-4, damping_ratio: 0.5}
+      l_arm_ely: {w_qdd: 1e-4, damping_ratio: 0.5}
+      l_arm_elx: {w_qdd: 1e-4, damping_ratio: 0.5}
+      l_arm_uwy: {w_qdd: 1e-4, damping_ratio: 0.5}
+      l_arm_mwx: {w_qdd: 1e-4, damping_ratio: 0.5}
+      l_arm_lwy: {w_qdd: 1e-4, damping_ratio: 0.5}
+      back_bkx: 
+        w_qdd: 0.1
+        Kp: 50
+        damping_ratio: 0.5
+      back_bky:
+        w_qdd: 1e-4
+        damping_ratio: 0.5
+      back_bkz:
+        w_qdd: 1e-4
+        damping_ratio: 0.5
+    contact_threshold: 0.001
+    Kp_accel: 0
+
+######################## position control #########################
+  position_control:
+    position_specific:
+      back_bkx:
+        integrator:
+          gain: 0.3
+          clamp: 0.2
+      back_bky:
+        integrator:
+          gain: 0.3
+          clamp: 0.2
+      back_bkz:
+        integrator:
+          gain: 0.3
+          clamp: 0.2
+      l_arm_shx:
+        integrator:
+          gain: 1.75
+          clamp: 0.2
+      l_arm_shz:
+        integrator:
+          gain: 1.75
+          clamp: 0.2
+      l_arm_ely:
+        integrator:
+          gain: 1.75
+          clamp: 0.2
+      l_arm_elx:
+        integrator:
+          gain: 1.75
+          clamp: 0.2
+      r_arm_shx:
+        integrator:
+          gain: 1.75
+          clamp: 0.2
+      r_arm_shz:
+        integrator:
+          gain: 1.75
+          clamp: 0.2
+      r_arm_ely:
+        integrator:
+          gain: 1.75
+          clamp: 0.2
+      r_arm_elx:
+        integrator:
+          gain: 1.75
+          clamp: 0.2
+      l_leg_hpx:
+        integrator:
+          gain: 0.3
+          clamp: 0.1
+      l_leg_hpy:
+        integrator:
+          gain: 0.3
+          clamp: 0.1
+      l_leg_hpz:
+        integrator:
+          gain: 0.3
+          clamp: 0.1
+      l_leg_kny:
+        integrator:
+          gain: 0.3
+          clamp: 0.1
+      l_leg_akx:
+        integrator:
+          gain: 0.3
+          clamp: 0.1
+      l_leg_aky:
+        integrator:
+          gain: 0.3
+          clamp: 0.1
+      r_leg_hpx:
+        integrator:
+          gain: 0.3
+          clamp: 0.1
+      r_leg_hpy:
+        integrator:
+          gain: 0.3
+          clamp: 0.1
+      r_leg_hpz:
+        integrator:
+          gain: 0.3
+          clamp: 0.1
+      r_leg_kny:
+        integrator:
+          gain: 0.3
+          clamp: 0.1
+      r_leg_akx:
+        integrator:
+          gain: 0.3
+          clamp: 0.1
+      r_leg_aky:
+        integrator:
+          gain: 0.3
+          clamp: 0.1
+
+######################## bracing ##################################
+  bracing:
+    position_specific:
+      DEFAULT:
+        Kp: 170
+        damping_ratio: 1.1
+        w_qdd: 1
+        integrator:
+          gain: 0
+          clamp: 0
+      base_x: 
+        Kp: 0
+        w_qdd: 1
+      base_y:
+        Kp: 0
+        w_qdd: 1
+      base_z:
+        Kp: 0
+        w_qdd: 1
+      base_roll:
+        Kp: 0
+        w_qdd: 1
+      base_pitch:
+        Kp: 0
+        w_qdd: 1
+      base_yaw:
+        Kp: 0
+        w_qdd: 1
+      back_bkx:
+        Kp: 170
+        w_qdd: 1
+    body_specific:
+      DEFAULT:
+        Kp: {x: 0, y: 0, z: 0, wx: 0, wy: 0, wz: 0}
+        damping_ratio: 0

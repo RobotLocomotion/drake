@@ -1,0 +1,264 @@
+<robot
+  name="door">
+  <link name="Left_Jamb">
+    <inertial>
+      <origin xyz="0 -0.56515 1.029495"
+        rpy="0 0 0" />
+      <mass value="17.8262" />
+      <inertia
+        ixx="2.033342"
+        ixy="0"
+        ixz="0"
+        iyy="2.017483"
+        iyz="0"
+        izz="0.023367" />
+    </inertial>
+    <visual>
+      <origin xyz="0 -0.56515 1.029495"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.0889 0.2032 2.05899" />
+      </geometry>
+      <material name="">
+        <color rgba="0 1 1 1" />
+      </material>
+    </visual> 
+<collision>   
+  <origin xyz="0 -0.56515 1.029495"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.0889 0.2032 2.05899" />
+      </geometry>
+      <material name="">
+        <color rgba="0 1 1 1" />
+      </material>
+</collision>    
+  </link>
+ 
+ <link name="Door">
+    <inertial>
+      <origin xyz=".023812 0.460375 -0.000794"
+        rpy="0 0 0" />
+      <mass value="3.63" />
+      <inertia
+        ixx="1.501437"
+        ixy="0"
+        ixz="0"
+        iyy="1.248965"
+        iyz="0"
+        izz="0.253210" />
+    </inertial>
+    <visual>
+      <origin xyz=".023812 0.460375 -0.000794"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.03493 0.9144 2.032"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 1 0 1" />
+      </material>
+    </visual>    
+<collision>   
+  <origin xyz="0.023812 0.460375 -0.000794"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.03493 0.9144 2.032"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 1 0 1" />
+      </material>
+</collision>    
+  </link>
+  
+<link name="Right_Jamb">
+    <inertial>
+      <origin xyz="0 .508 0"
+        rpy="0 0 0" />
+      <mass value="12.9" />
+      <inertia
+        ixx="1.769722"
+        ixy="0"
+        ixz="0"
+        iyy="1.769722"
+        iyz="0"
+        izz="0.006586" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0.508 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.0889 0.0889 2.05899"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 1 1 1" />
+      </material>
+    </visual>    
+<collision>   
+   <origin xyz="0 0.508 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.0889 0.0889 2.05899"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 1 1 1" />
+      </material>
+</collision>    
+  </link>
+
+<link name="Knob1">
+    <inertial>
+      <origin xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass value="0.68" />
+      <inertia
+        ixx="0.000094"
+        ixy="0"
+        ixz="0"
+        iyy="0.000366"
+        iyz="0"
+        izz="0.000386" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.0762 0.03175 0.0254"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 0 1 1" />
+      </material>
+    </visual> 
+<collision>   
+   <origin xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.0762 0.03175 0.0254"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 0 1 1" />
+      </material>
+</collision>       
+<visual>
+      <origin xyz="-0.12065 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.0762 0.03175 0.0254"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 0 1 1" />
+      </material>
+    </visual>    
+<collision>   
+   <origin xyz="-0.12065 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.0762 0.03175 0.0254"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 0 1 1" />
+      </material>
+</collision>    
+  </link>
+
+<link name="Knob2">
+    <inertial>
+      <origin xyz="-0.004765 -0.0060325 0"
+        rpy="0 0 0" />
+      <mass value="0.226" />
+      <inertia
+        ixx="0.000207"
+        ixy="0"
+        ixz="0"
+        iyy="0.000014"
+        iyz="0"
+        izz="0.000196" />
+    </inertial>
+    <visual>
+      <origin xyz="-0.004765 -0.060325 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.00953 0.0889 0.0254"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 0 1 1" />
+      </material>
+    </visual> 
+<collision>   
+      <origin xyz="-0.004765 -0.060325 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.00953 0.0889 0.0254"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 0 1 1" />
+      </material>
+</collision> 
+<visual>
+      <origin xyz="-0.1920875 -0.060325 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.00953 0.0889 0.0254"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 0 1 1" />
+      </material>
+    </visual>       
+<collision>   
+      <origin xyz="-0.1920875 -0.060325 0" rpy="0 0 0" />
+      <geometry>
+        <box size="0.00953 0.0889 0.0254"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 0 1 1" />
+      </material>
+  </collision> 
+  </link>
+
+<joint
+    name="hinge"
+    type="revolute">
+    <parent link="Left_Jamb" />
+    <child link="Door" />
+    <origin xyz="-0.041275 -0.460375 1.029495" />
+    <axis xyz="0 0 1" />
+    <limit lower="0" upper="2.3562" />
+    <dynamics friction="1" damping="1" />
+  </joint>
+ 
+<joint
+    name="Fixed_1"
+    type="fixed">
+    <parent link="Left_Jamb" />
+    <child link="Right_Jamb" />
+    <origin xyz="0 0 1.029495" />
+    <axis xyz="1 0 0" />
+  </joint>
+
+<joint
+    name="handle_turn"
+    type="revolute">
+    <parent link="Door" />
+    <child link="Knob1" />
+    <origin xyz="0.079375 0.8509 -0.102394" />
+    <axis xyz="1 0 0" />
+    <limit lower="-1.5708" upper="1.5708" />
+    <dynamics friction="0.1" damping="0.1" />
+  </joint>
+
+  <force_element name="spring">
+    <torsional_spring stiffness="1" rest_angle="0">
+      <joint name="handle_turn" />
+    </torsional_spring>
+  </force_element>
+
+<joint
+    name="handle"
+    type="fixed">
+    <parent link="Knob1" />
+    <child link="Knob2" />
+    <origin xyz="0.0381 0 0" />
+    <axis xyz="1 0 0" />
+  </joint>
+
+
+</robot>

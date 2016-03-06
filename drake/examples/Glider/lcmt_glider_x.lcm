@@ -1,0 +1,13 @@
+
+struct lcmt_glider_x
+{
+  int64_t timestamp; 
+
+  double x;
+  double z;
+  double theta;
+  double phi;
+  double xdot;
+  double zdot;
+  double thetadot;
+}

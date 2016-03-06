@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../../doc/drakeURDF.xsd" name="MassSpringDamper">
+  <material name="green">
+    <color rgba=".3 .6 .4 1" />
+  </material>
+  <material name="red">
+    <color rgba=".9 .1 0 1" />
+  </material>
+  <material name="blue">
+    <color rgba="0 0 1 1" />
+  </material>
+  <link name="base"/>
+  <link name="mass">
+    <inertial> 
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="1" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/> 
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <box size="1 1 1" />
+      </geometry>
+      <material name="red" />
+    </visual> 
+  </link>
+  <joint name="x" type="prismatic">
+    <parent link="base"/>
+    <child link="mass" />
+    <axis xyz="1 0 0" />
+  </joint>
+  <force_element name="spring">
+    <linear_spring_damper damping="1" stiffness="10">
+      <link1 link="base" xyz="0 0 0" />
+      <link2 link="mass" xyz="0 0 0" />
+    </linear_spring_damper>    
+  </force_element>
+  <force_element name="external_force">
+    <thrust lower_limit="0" upper_limit="50" scale_factor="1">
+      <parent link="mass"/>
+      <origin xyz="0 0 0"/>
+      <axis xyz="1 0 0"/>
+    </thrust>
+  </force_element>
+</robot>

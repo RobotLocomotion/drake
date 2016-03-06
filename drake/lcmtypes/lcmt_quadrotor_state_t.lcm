@@ -1,0 +1,12 @@
+package drake;
+
+struct lcmt_quadrotor_state_t
+{
+  int64_t timestamp;
+  double position[3];
+  double orientation[4];
+  double twist[6];
+  double accelerometer[3];
+  double gyroscope[3];
+}
+
