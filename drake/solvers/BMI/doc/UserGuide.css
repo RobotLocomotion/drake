@@ -1,0 +1,223 @@
+/*********************************************
+ * GLOBAL STYLES
+ *********************************************/
+body {
+  background: white;
+  background-color: white;
+  width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: justify;
+}
+
+h1,h2,h3,h4,h5,h6 {
+  font-family: Arial, Helvetica, sans-serif;
+  color: rgb(153,51,51); /* mit red */
+}
+
+todo {
+  display: none;
+}
+
+a:not(.image) {
+  color: rgb(153,51,51); /* mit red */
+}
+
+[data-type="titlepage"] {
+  font-size: 22px;
+}
+[data-type="titlepage"] h1 {
+  font-variant: small-caps;
+  margin-bottom: 0px;
+}
+[data-type="sect1"] h1 {
+  font-variant: small-caps;
+}
+[data-type="sect2"] h1 {
+  font-variant: normal;
+}
+
+[data-type="subtitle"] {
+  font-weight: bold;
+  font-style: italic;
+  font-size: 16px;
+  margin-top: 0px;
+}
+
+
+sidenote {
+float: right; margin-right: -170px;
+width: 150px; text-align: left;
+}
+
+pre { margin-top: -5px; }
+
+b { color: rgb(153,51,51); /* mit red */ }
+i { color: rgb(153,51,51); /* mit red */ }
+em { color: rgb(153,51,51); /* mit red */ }
+
+
+/* Counters */
+body {
+  counter-reset:chapter definition;
+}
+
+appendix {
+  counter-reset:chapter;
+}
+
+[data-type="chapter"] {
+  counter-increment:chapter;
+  counter-reset: sect1 example_counter theorem algorithm figure;
+  display:none;
+}
+[data-type="sect1"] {
+  counter-increment:sect1;
+  counter-reset:sect2;
+}
+[data-type="sect2"] {
+  counter-increment:sect2;
+}
+[data-type="definition"] {
+  counter-increment:definition;
+}
+[data-type="theorem"] {
+  counter-increment:theorem;
+}
+[data-type="example"] {
+  counter-increment:example_counter;
+}
+[data-type="algorithm"] {
+  counter-increment:algorithm;
+}
+
+[data-type="chapter"] h1:before {
+  content: "Chapter " counter(chapter);
+  display: block;
+  font-variant: small-caps;
+}
+
+[data-type="sect1"] h1:before {
+  content: counter(chapter) "." counter(sect1) ' ';
+  display: inline;
+}
+[data-type="sect2"] h1:before {
+  content: counter(chapter) "." counter(sect1) "." counter(sect2) " ";
+}
+
+[data-type="sect3"] h1:before {
+  content: "";
+}
+
+[data-type="sect3"] h1 {
+  display: inline;
+}
+
+[data-type="definition"] h1:before {
+  content: "Definition " counter(definition) " (";
+}
+[data-type="theorem"] h1:before {
+  content: "Theorem " counter(chapter) "." counter(theorem) " - ";
+}
+[data-type="definition"] h1:after {
+  content: ")";
+}
+[data-type="definition"] h1 {
+  display: inline;
+  font-size: 16px;
+  font-variant: normal;
+}
+[data-type="theorem"] h1 {
+  display: inline;
+  font-size: 16px;
+  font-variant: normal;
+}
+[data-type="definition"] {
+  border: 1px solid;
+  border-radius: 10px;
+  background-color: rgb(242,242,242); /* light gray */
+  margin: 10px;
+  padding: 5px;
+}
+[data-type="theorem"] {
+  border: 1px solid;
+  border-radius: 10px;
+  background-color: rgb(242,242,242); /* light gray */
+  margin: 10px;
+  padding: 5px;
+}
+
+[data-type="example"] h1:before {
+  content: "Example " counter(chapter) "." counter(example_counter) " (";
+}
+[data-type="algorithm"] h1:before {
+  content: "Algorithm " counter(chapter) "." counter(algorithm) " (";
+}
+[data-type="example"] h1:after {
+  content: ")";
+}
+[data-type="algorithm"] h1:after {
+  content: ")";
+}
+[data-type="example"] h1 {
+  display: block;
+  font-size: 16px;
+  font-variant: normal;
+  margin: 2px;
+}
+[data-type="example"] {
+  border: 1px solid;
+  border-radius: 0px;
+  background-color: rgb(242,242,242); /* light gray */
+  margin-top: 10px;
+  margin-bottom: 10px;
+  padding: 5px;
+}
+
+
+figure {
+  text-align: center;
+  counter-increment: figure;
+}
+
+figcaption:before {
+  content: "Figure " counter(chapter) "." counter(figure) " - ";
+}
+
+figcaption {
+  text-align: center;
+}
+
+[data-type="drake"] h1:before{
+  content: "";
+}
+[data-type="drake"] h1:after {
+  content: "";
+}
+[data-type="drake"] h1 {
+  font-size: 16px;
+}
+
+
+appendix [data-type="chapter"] h1:before {
+  content: "Appendix " counter(chapter, upper-alpha);
+}
+
+appendix [data-type="sect1"] h1:before {
+  content: counter(chapter, upper-alpha) "." counter(sect1) ' ';
+  display: inline;
+}
+appendix [data-type="sect2"] h1:before {
+  content: counter(chapter, upper-alpha) "." counter(sect1) "." counter(sect2) " ";
+}
+
+appendix [data-type="sect3"] h1:before {
+  content: "";
+}
+
+appendix figcaption:before {
+  content: "Figure " counter(chapter, upper-alpha) "." counter(figure) " - ";
+}
+
+
+/* end counters*/

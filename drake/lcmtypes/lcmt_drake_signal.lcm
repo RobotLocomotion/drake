@@ -1,0 +1,15 @@
+
+// a basic vector of doubles which can represent any signal passed 
+// around in drake
+
+package drake;
+
+struct lcmt_drake_signal
+{
+	int32_t dim;        // number of elements in the signal
+	double val[dim];    
+  string coord[dim];  // a name for each element in the signal
+  // NOTE: the channel name will represent the name of the overall signal
+
+ 	int64_t timestamp;
+}

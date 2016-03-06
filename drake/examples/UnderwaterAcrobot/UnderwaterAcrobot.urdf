@@ -1,0 +1,103 @@
+<?xml version="1.0"?>
+
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="UnderwaterAcrobot">
+
+  <link name="base_link">
+    <visual>
+      <geometry>
+         <box size=".2 1 .2" />
+      </geometry>
+      <material name="green">
+	<color rgba="0 1 0 1" />
+      </material>
+    </visual>
+  </link>
+
+  <link name="upper_link">
+    <inertial>
+      <origin xyz="0 0 -0.5" rpy="0 0 0" />
+      <mass value="4" />
+      <inertia ixx="1" ixy="0" ixz="0" iyy="0.3" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 -0.5" rpy="0 0 0" />
+      <geometry>
+         <box size=".1 1 1" />
+      </geometry>
+      <material name="red">
+	<color rgba="1 0 0 1" />
+      </material>
+    </visual>
+  </link>
+
+  <link name="lower_link">
+    <inertial>
+      <origin xyz="0 0 -0.5" rpy="0 0 0" />
+      <mass value="4" />
+      <inertia ixx="1" ixy="0" ixz="0" iyy="0.3" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 -0.5" rpy="0 0 0" />
+      <geometry>
+         <box size=".1 1 1" />
+      </geometry>
+      <material name="blue">
+	<color rgba="0 0 1 1" />
+      </material>
+    </visual>
+  </link>
+  
+  <joint name="shoulder" type="continuous">
+    <parent link="base_link" />
+    <child link="upper_link" />
+    <origin xyz="0 0 0" />
+    <axis xyz="0 1 0" />
+    <dynamics damping="0.1" />
+  </joint>
+
+  <joint name="elbow" type="continuous">
+    <parent link="upper_link" />
+    <child link="lower_link" />
+    <origin xyz="0 0 -1" />
+    <axis xyz="0 1 0" />
+    <dynamics damping="0.1" />
+  </joint>
+
+  <transmission type="SimpleTransmission" name="elbow_trans">
+    <actuator name="elbow_torque" />
+    <joint name="elbow" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+  
+<force_element name="upper_link_buoyancy">
+<buoyancy rho="1000" volume="0.008">
+      <parent link="upper_link"/>
+      <origin xyz="0 0 -0.5" rpy="0 0 0" /> 
+    </buoyancy>
+</force_element>
+
+<force_element name="lower_link_buoyancy">
+<buoyancy rho="1000" volume="0.008">
+      <parent link="lower_link"/>
+      <origin xyz="0 0 -0.5" rpy="0 0 0" />
+    </buoyancy>
+</force_element>
+
+<force_element name="upper_link_addedmass">
+<added_mass m11="8" m33="0.3" m55 = "0.7">
+      <parent link="upper_link"/>
+      <origin xyz="0 0 -0.5" rpy="0 0 0" />
+    </added_mass>
+</force_element>
+
+<force_element name="lower_link_addedmass">
+<added_mass m11="8" m33="0.3" m55 = "0.7">
+      <parent link="lower_link"/>
+      <origin xyz="0 0 -0.5" rpy="0 0 0" />
+    </added_mass>
+</force_element>
+
+  <frame name="hand" link="lower_link" xyz="0 0 -1.1" rpy="0 0 0" />
+</robot>

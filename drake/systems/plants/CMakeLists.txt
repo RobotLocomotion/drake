@@ -1,0 +1,151 @@
+# IMPORTANT NOTE!!
+# matlab has it's own boost libraries.  DO NOT let any mex file depend
+# on the system boost (directly nor indirectly), or you're asking for trouble.
+
+add_library_with_exports(LIB_NAME drakeXMLUtil SOURCE_FILES xmlUtil.cpp)
+target_link_libraries(drakeXMLUtil tinyxml2 spruce)
+pods_install_libraries(drakeXMLUtil)
+
+add_library_with_exports(LIB_NAME drakeRBM SOURCE_FILES RigidBodyTree.cpp RigidBody.cpp RigidBodyTreeURDF.cpp RigidBodyTreeSDF.cpp RigidBodyTreeContact.cpp)
+target_link_libraries(drakeRBM drakeCollision drakeJoints drakeUtil drakeXMLUtil)
+pods_install_libraries(drakeRBM)
+drake_install_headers(RigidBodyTree.h RigidBody.h RigidBodyFrame.h KinematicPath.h KinematicsCache.h ForceTorqueMeasurement.h)
+pods_install_pkg_config_file(drake-rbm
+  LIBS -ldrakeRBM -ldrakeCollision -ldrakeJoints -ldrakeUtil -ldrakeXMLUtil
+  REQUIRES
+  VERSION 0.0.1)
+
+pods_find_pkg_config(gurobi)
+pods_find_pkg_config(snopt_c)
+add_subdirectory(shapes)
+add_subdirectory(collision)
+add_subdirectory(constraint)
+add_subdirectory(joints)
+
+if (MATLAB_FOUND)
+  add_mex(rbmMexFunctions SHARED rigidBodyTreeMexFunctions.cpp)
+  target_link_libraries(rbmMexFunctions drakeRBM drakeMexUtil)
+
+  macro(add_rbm_mex)
+    # todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
+#    add_mex(${ARGV} ${ARGV}.cpp $<TARGET_OBJECTS:drakeUtil>)
+#    target_link_libraries(${ARGV} drakeRBM)
+    add_mex(${ARGV} ${ARGV}.cpp)
+    target_link_libraries(${ARGV} rbmMexFunctions)
+  endmacro()
+
+  add_rbm_mex(constructModelmex)
+  add_rbm_mex(collisionDetectmex)
+  add_rbm_mex(smoothDistancePenaltymex)
+  add_rbm_mex(collisionRaycastmex)
+  add_rbm_mex(allCollisionsmex)
+  add_rbm_mex(collidingPointsmex)
+  add_rbm_mex(collidingPointsCheckOnlymex)
+  add_rbm_mex(findKinematicPathmex)
+  add_rbm_mex(geometricJacobianmex)
+  add_rbm_mex(doKinematicsmex)
+  add_rbm_mex(forwardKinmex)
+  add_rbm_mex(forwardKinJacobianmex)
+  add_rbm_mex(forwardKinPositionGradientmex)
+  add_rbm_mex(centerOfMassmex)
+  add_rbm_mex(centerOfMassJacobianmex)
+  add_rbm_mex(centroidalMomentumMatrixmex)
+  add_rbm_mex(massMatrixmex)
+  add_rbm_mex(dynamicsBiasTermmex)
+  add_rbm_mex(geometricJacobianDotTimesVmex)
+  add_rbm_mex(centroidalMomentumMatrixDotTimesVmex)
+  add_rbm_mex(centerOfMassJacobianDotTimesVmex)
+  add_rbm_mex(forwardJacDotTimesVmex)
+  add_rbm_mex(contactConstraintsmex)
+  add_rbm_mex(surfaceTangentsmex)
+  add_rbm_mex(jointLimitConstraintsmex)
+  add_rbm_mex(positionConstraintsmex)
+  add_rbm_mex(testFrameParsermex)
+  add_rbm_mex(computeS1Trajmex)
+  add_rbm_mex(createKinematicsCachemex)
+  add_rbm_mex(createKinematicsCacheAutoDiffmex)
+  add_rbm_mex(velocityToPositionDotMappingmex)
+  add_rbm_mex(positionDotToVelocityMappingmex)
+  add_rbm_mex(collisionDetectFromPointsmex)
+  target_link_libraries(computeS1Trajmex drakeZMPUtil)
+
+  if(gurobi_FOUND)
+    add_definitions(-DPATHLCP_MEXFILE=\"${PROJECT_SOURCE_DIR}/thirdParty/path/lcppath.${MEX_EXT}\")
+    add_mex(solveLCPmex solveLCPmex.cpp)
+    target_link_libraries(solveLCPmex drakeRBM drakeMexUtil drakeQP)
+  endif()
+endif(MATLAB_FOUND)
+
+add_library_with_exports(LIB_NAME drakeIKoptions SOURCE_FILES IKoptions.cpp)
+target_link_libraries(drakeIKoptions drakeRBM)
+
+if (MATLAB_FOUND)
+  macro(add_ikoptions_mex)
+    add_mex(${ARGV} ${ARGV}.cpp)
+    target_link_libraries(${ARGV} drakeRBM drakeMexUtil drakeIKoptions)
+  endmacro()
+  add_ikoptions_mex(IKoptionsmex)
+
+  macro(add_constraint_mex)
+    add_mex(${ARGV} ${ARGV}.cpp)
+    target_link_libraries(${ARGV} drakeRBM drakeUtil drakeRigidBodyConstraint)
+  endmacro()
+endif(MATLAB_FOUND)
+
+set(drakeIK_SRC_FILES )
+set(drakeIK_PODS_PKG )
+if(gurobi_FOUND)
+  set(drakeIK_SRC_FILES ${drakeIK_SRC_FILES} approximateIK.cpp)
+  set(drakeIK_PODS_PKG ${drakeIK_PODS_PKG} gurobi)
+endif()
+if(snopt_c_FOUND)
+  set(drakeIK_SRC_FILES ${drakeIK_SRC_FILES} inverseKin.cpp inverseKinPointwise.cpp inverseKinTraj.cpp inverseKinBackend.cpp)
+  set(drakeIK_PODS_PKG ${drakeIK_PODS_PKG} snopt_c)
+endif()
+
+if (drakeIK_SRC_FILES)
+  add_library_with_exports(LIB_NAME drakeIK SOURCE_FILES ${drakeIK_SRC_FILES})
+  pods_use_pkg_config_packages(drakeIK ${drakeIK_PODS_PKG})
+  target_link_libraries(drakeIK drakeRBM drakeRigidBodyConstraint drakeIKoptions)
+  set_target_properties(drakeIK PROPERTIES COMPILE_FLAGS -fPIC)
+  pods_install_libraries(drakeIK)
+  pods_install_libraries(drakeIKoptions)
+  drake_install_headers(RigidBodyIK.h IKoptions.h)
+  pods_install_pkg_config_file(drake-ik
+    LIBS -ldrakeIK -ldrakeRigidBodyConstraint -ldrakeIKoptions
+    REQUIRES drake-rbm
+    VERSION 0.0.1)
+endif()
+
+if (MATLAB_FOUND)
+  if (gurobi_FOUND)
+    add_mex(approximateIKmex approximateIKmex.cpp)
+    target_link_libraries(approximateIKmex drakeIK drakeRBM drakeMexUtil drakeRigidBodyConstraint)
+    pods_use_pkg_config_packages(approximateIKmex gurobi)
+  endif()
+
+  macro(add_IK_mex)
+    add_mex(${ARGV} ${ARGV}.cpp)
+    target_link_libraries(${ARGV} drakeIK drakeRBM drakeMexUtil drakeRigidBodyConstraint)
+#    pods_use_pkg_config_packages(${ARGV} snopt_c)
+  endmacro()
+
+  if (snopt_c_FOUND)
+    add_IK_mex(inverseKinmex)
+    add_IK_mex(inverseKinPointwisemex)
+    add_IK_mex(inverseKinTrajmex)
+  endif()
+endif(MATLAB_FOUND)
+
+if (LCM_FOUND)
+  add_library_with_exports(LIB_NAME drakeRBSystem SOURCE_FILES RigidBodySystem.cpp)
+  target_link_libraries(drakeRBSystem drakeRBM drakeLCMSystem drakeOptimization drakeRigidBodyConstraint)
+
+  pods_install_libraries(drakeRBSystem)
+
+  add_executable(rigidBodyLCMNode rigidBodyLCMNode.cpp)
+  target_link_libraries(rigidBodyLCMNode drakeRBSystem)
+  pods_install_executables(rigidBodyLCMNode)
+endif (LCM_FOUND)
+
+add_subdirectory(test)

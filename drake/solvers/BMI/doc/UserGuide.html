@@ -1,0 +1,193 @@
+  <!DOCTYPE html>
+
+<html xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://www.w3.org/1999/xhtml HTMLBook/schema/htmlbook.xsd"
+ xmlns="http://www.w3.org/1999/xhtml">
+
+  <head>
+    <title>User Guide</title>
+    <meta name="User Guide" content="text/html; charset=utf-8;" />
+
+    <script type="text/javascript">
+      function getParameterByName(name) {
+        name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+        var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+          results = regex.exec(location.search);
+        return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+      }
+
+      function setupMathJax() {
+
+	  var sects= document.getElementsByClassName("sect");
+	  var i;
+	      MathJax.Hub.Queue(["Typeset",MathJax.Hub,sects[2]]);
+	  for(i=0;i<sects.length;i++) {
+	      MathJax.Hub.Queue(["Typeset",MathJax.Hub,sects[i]]);
+	  }
+        
+
+        MathJax.Hub.Queue(["Typeset",MathJax.Hub,"mathjax_setup"]);
+      }
+      </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        skipStartupTypeset:true,
+        extensions: ["tex2jax.js"],
+        jax: ["input/TeX", "output/HTML-CSS"],
+        TeX: { equationNumbers: {autoNumber: "AMS"}, noErrors: { disabled: true } },
+        tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+          displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+          processEscapes: true
+        },
+        "HTML-CSS": { availableFonts: ["TeX"] }
+      });
+    </script>
+    <script type="text/javascript"
+  src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+    <link rel="stylesheet" href="highlight/styles/default.css">
+    <script src="highlight/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+
+    <script type="text/javascript">
+      function myMacros(){
+        var elibTags=document.getElementsByTagName('elib');
+        for(i=0;i<elibTags.length;i++)
+        {
+          var c = elibTags[i].innerHTML;
+          elibTags[i].innerHTML='[<a href="http://groups.csail.mit.edu/locomotion/elib.cgi?b='+c+'">'+(i+1)+'</a>]';
+        }
+
+      }
+    </script>
+    <link rel="stylesheet" type="text/css" href="UserGuide.css">
+  </head>
+
+
+<body data-type="book" class="book" id="htmlbook" onload="myMacros(); setupMathJax();">
+<section data-type="titlepage" class="titlepage">
+  <header>
+    <h1><a href="UserGuide.html" style="text-decoration:none;">User Guide</a></h1>
+  </header>
+</section>
+<div style="display:none" id="mathjax_setup"> <!-- definitions for mathjax -->
+  \[
+  \newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
+  \newcommand{\bq}{{\bf q}}
+  \newcommand{\bv}{{\bf v}}
+  \newcommand{\bx}{{\bf x}}
+  \newcommand{\by}{{\bf y}}
+  \newcommand{\bu}{{\bf u}}
+  \newcommand{\bw}{{\bf w}}
+  \newcommand{\bz}{{\bf z}}
+  \newcommand{\bK}{{\bf K}}
+  \newcommand{\balpha}{{\bf \alpha}}
+  \newcommand{\bbeta}{{\bf \beta}}
+  \newcommand{\avg}[1]{E\left[ #1 \right]}
+  \newcommand{\subjto}{\textrm{subject to}}
+  \newcommand{\minimize}{\operatorname{\textrm{minimize}}}
+  \newcommand{\maximize}{\operatorname{\textrm{maximize}}}
+  \newcommand{\find}{\operatorname{\textrm{find}}}
+  \newcommand{\argmax}{\operatorname{\textrm{argmax}}}
+  \newcommand{\argmin}{\operatorname{\textrm{argmin}}}
+  \newcommand{\sgn}{\operatorname{\textrm{sgn}}}
+  \newcommand{\trace}{\operatorname{\textrm{tr}}}
+  \newcommand{\sos}{\text{ is SOS}}
+  \]
+</div>
+
+<section id="Abstract", class="sect">
+	<h1>Abstract</h1>
+	The purpose of this guide is to explain the usage of <i>drake/solvers/BMI/BMIspotless</i> class.
+</section>
+<section id="BMI",class="sect">
+<h1>Bilinear Matrix Inequality</h1>
+<p> Bilinear Matrix Inequality (BMI) is the following constraint on $x\in\mathbb{R}^n$
+\begin{align}
+F_0+\sum_{i=1}^{n}x_iF_i+\sum_{i,j=1}^nx_ix_jF_{ij}\succeq 0\label{eq:bmi}
+\end{align}
+where $F_0,F_i,F_{ij}\in\mathbb{R}^{m\times m}$ are given matrices. $\succeq 0$ means the matrix on the left hand-side is a positive semidefinite matrix (psd), i.e., all the eigen values of such matrix is non-negative. This problem is non-convex, due to the bilinear product $x_ix_j$. But we will try to solve this non-convex problem using a sequence of convex optimization. </p>
+
+<p> There are many methods to solve such BMI. We implement the method described in <elib>Ibaraki01</elib>,<elib>Dai15</elib>. This method replaces the bilinear product $xx^T$ by a symmetric matrix $X\in\mathbb{R}^{n\times n}$, and enforce the following constraints instead of \eqref{eq:bmi}
+\begin{align}
+F_0+\sum_{i=1}^nx_iF_i + \sum_{i,j=1}^n X_{ij}F_{ij}\succeq 0\label{eq:bmi_to_lmi}\\
+M:=\begin{bmatrix}X&x\\x^T&1\end{bmatrix}\succeq 0\label{eq:psd_M}\\
+\text{rank}\left(M\right) = 1\label{eq:rank1}
+\end{align}
+Notice that constraints \eqref{eq:psd_M} and \eqref{eq:rank1} enforce $X=xx^T$. Constraint \eqref{eq:bmi_to_lmi} and \eqref{eq:psd_M} are convex constraints on $x,X$.
+</p>
+<p>The non-convex rank constraint \eqref{eq:rank1} can be reformulated as the following constraint
+\begin{align}
+\text{trace}(X)-x^Tx = 0\label{eq:residue}
+\end{align}
+To enforce constraint \eqref{eq:residue}, we can linearize this constraint and solve it iteratively. As a result, we end up with the following algorithm
+<ol>
+	<li>Start with $x^{(0)}=\mathbf{0}$.</li>
+	<li>At iteration $k$, solve the following convex problem
+	\begin{align}
+	\min_{x^{(k)},X^{(k)}}&X^{(k)}-2\left(x^{(k-1)}\right)^Tx^{(k)}\\
+	\text{s.t }& F_0+\sum_{i=1}^nx_i^{(k)}F_i+\sum_{i,j=1}^nX_{ij}^{(k)}F_{ij}\succeq 0\\
+	&\begin{bmatrix}X^{(k)}&x^{(k)}\\(x^{(k)})^T&1\end{bmatrix}\succeq 0
+	\end{align}
+	</li>
+	<li> $k\rightarrow k+1$.</li>
+</ol>
+</p>
+It is proved that this algorithm will converge.
+</section>
+
+<section id="BMIspotless",class="sect">
+<h1>BMIspotless</h1>
+<p> We implement BMIspotless.m using Spotless <elib>Megretski_pot</elib>. There are two important functions for using this class
+<ol>
+	<li> <i>addBilinearVariable</i>
+	<ol>
+		<li> If the user intends to make matrix $X$ being equal to the bilinear product $xx^T$, call this method
+		<pre><code language="matlab">
+		BMIspotless.addBilinearVariable(x,X);
+		</code></pre>
+		</li>
+		<li> An example is that if we want to solve the following problem
+		\begin{align}
+		x_1^2+x_2^2 = 1\\
+		x_1x_2\le 1
+		\end{align}
+		We can call following code to solve the problem
+		<pre><code language="matlab">
+		checkDependency('spotless');    % Make sure spotless is in the search path
+		p = BMIspotless();              % Construct the program
+		[p,x] = p.newFree(2,1);         % Declare the variables x1,x2
+		[p,X] = p.newSym(2);            % Declare a symmetric matrix X
+		p = p.addBilinearVariable(x,X); % Now the program knows X = x*x^T
+		p = p.withEqs(X(1,1)+X(2,2)-1); % Enforces x_1^2+x_2^2=1 as a convex constraint
+		p = p.withPos(1-X(1,2));        % Enforces x_1*x_2<=1 as a convex constraint;
+		solver_sol = p.optimize();      % Solve the problem;
+		[sol,sol_bilinear] = p.retrieveSolution(solver_sol);
+		x_sol = sol.w;                  % Retrieve the solution
+		</code></pre>
+	</ol>
+	</li>
+	<li><i>replaceBilinearProduct</i>
+	<ol>
+		<li> If the bilinear expression in constraint \eqref{eq:bmi} is too complicated to rewrite using matrix $X$ by hand, then the user can call function
+		<pre><code language="matlab">
+		expression_bilinear = replaceBilinearProduct(expression,x,X);
+		</code></pre>
+		The returned argument is the expression in which the bilinear product of $x$ is replaced by proper entries of $X$.
+		</li>
+		<li> In the previous example, if we call
+		<pre><code language="matlab">
+		replaceBilinearProduct(x(1)^2+x(2)^2,x,X);
+		</code></pre>
+		it will return $X(1,1)+X(2,2)$.
+		</li>
+	</ol>
+	</li>
+</ol>
+The user can refer to <i>drake/solvers/BMI/test/testBMI.m</i> for the example code.
+</section>
+</body>
+</html>

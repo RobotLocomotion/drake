@@ -1,0 +1,10 @@
+
+struct lcmt_cartpole_x
+{
+	int64_t timestamp;
+
+  double x;           // cart position, in meters
+  double xdot;        // m/s
+	double theta;       // radians
+	double thetaDot;    // radians/sec
+}
