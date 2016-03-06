@@ -1,0 +1,35 @@
+<?xml version="1.0" ?>
+
+<robot name="block">
+  <material name="Blue">
+    <color rgba="0.2 0.2 0.9 1.0"/>
+  </material>
+  <material name="Green">
+    <color rgba="0.2 0.9 0.2 1.0"/>
+  </material>
+  <material name="Red">
+    <color rgba="0.9 0.2 0.2 1.0"/>
+  </material>
+
+  <link name="block">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.1" ixy="0" ixz="0" iyy="0.1" iyz="0" izz="0.1"/>
+      <origin xyz="0 0 0"/>
+    </inertial>
+
+    <visual>
+      <geometry>
+        <box size="0.1 0.1 0.1"/>
+      </geometry>
+      <material name="Blue"/>
+    </visual>
+
+		<collision>
+			<geometry>
+				<box size="0.1 0.1 0.1"/>
+			</geometry>
+		</collision>
+
+  </link>
+</robot>

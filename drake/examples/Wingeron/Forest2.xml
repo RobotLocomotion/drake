@@ -1,0 +1,51 @@
+<!-- a simple forest of two trees at x=1, height from z=-10 to +10, and y = +-0.45, with radius .1 (provides a .7 meter gap).  
+For the wingeron (which is ~.71 meters wide), this should require a roll in order to make it through.
+-->
+<robot name="Forest">
+  <link name ="world">
+  </link>
+  <link name="LeftTree">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+         <box size = ".2 .2 20"/>
+      </geometry>
+      <material name="blue">
+	<color rgba="0 1 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+         <box size = ".2 .2 20"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="RightTree">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+         <box size = ".2 .2 20"/>
+      </geometry>
+      <material name="green">
+        <color rgba="0 1 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+         <box size = ".2 .2 20"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="LeftTreeJoint" type="fixed">
+    <parent link="world" />
+    <child link="LeftTree" />
+    <origin xyz="1 .45 0" rpy="0 0 0"/>
+  </joint>
+  <joint name="RightTreeJoint" type="fixed">
+    <parent link="world" />
+    <child link="RightTree" />
+    <origin xyz="1 -.45 0" rpy="0 0 0"/>
+  </joint>
+</robot>

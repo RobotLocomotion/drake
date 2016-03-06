@@ -1,0 +1,3200 @@
+<?xml version="1.0" ?>
+<robot name="valve_task_wall">
+  <link name="base_link">
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="0" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+  </link>
+  <link name="valve_base">
+    <visual>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <geometry>
+        <cylinder length="0.03" radius="0.03" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="0" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <geometry>
+        <cylinder length="0.03" radius="0.03" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING_0">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING_1">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING_2">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING_3">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING_4">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING_5">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING_6">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING_7">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes_0">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes_1">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes_2">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="valve_base10">
+    <visual>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <geometry>
+        <cylinder length="0.03" radius="0.03" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="0" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <geometry>
+        <cylinder length="0.03" radius="0.03" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING10_0">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING10_1">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING10_2">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING10_3">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING10_4">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING10_5">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING10_6">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING10_7">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes10_0">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes10_1">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes10_2">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="valve_base11">
+    <visual>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <geometry>
+        <cylinder length="0.03" radius="0.03" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="0" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <geometry>
+        <cylinder length="0.03" radius="0.03" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING11_0">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING11_1">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING11_2">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING11_3">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING11_4">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING11_5">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING11_6">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING11_7">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes11_0">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes11_1">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes11_2">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="valve_base2">
+    <visual>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <geometry>
+        <cylinder length="0.03" radius="0.03" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="0" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <geometry>
+        <cylinder length="0.03" radius="0.03" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING2_0">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING2_1">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING2_2">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING2_3">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING2_4">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING2_5">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING2_6">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING2_7">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes2_0">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes2_1">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes2_2">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="valve_base3">
+    <visual>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <geometry>
+        <cylinder length="0.03" radius="0.03" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="0" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <geometry>
+        <cylinder length="0.03" radius="0.03" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING3_0">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING3_1">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING3_2">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING3_3">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING3_4">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING3_5">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING3_6">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING3_7">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes3_0">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes3_1">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes3_2">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="valve_base4">
+    <visual>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <geometry>
+        <cylinder length="0.03" radius="0.03" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="0" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <geometry>
+        <cylinder length="0.03" radius="0.03" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING4_0">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING4_1">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING4_2">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING4_3">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING4_4">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING4_5">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING4_6">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING4_7">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes4_0">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes4_1">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes4_2">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="valve_base5">
+    <visual>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <geometry>
+        <cylinder length="0.03" radius="0.03" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="0" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <geometry>
+        <cylinder length="0.03" radius="0.03" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING5_0">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING5_1">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING5_2">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING5_3">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING5_4">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING5_5">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING5_6">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING5_7">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes5_0">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes5_1">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes5_2">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="valve_base6">
+    <visual>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <geometry>
+        <cylinder length="0.03" radius="0.03" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="0" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <geometry>
+        <cylinder length="0.03" radius="0.03" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING6_0">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING6_1">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING6_2">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING6_3">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING6_4">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING6_5">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING6_6">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING6_7">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes6_0">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes6_1">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes6_2">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="valve_base7">
+    <visual>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <geometry>
+        <cylinder length="0.03" radius="0.03" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="0" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <geometry>
+        <cylinder length="0.03" radius="0.03" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING7_0">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING7_1">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING7_2">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING7_3">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING7_4">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING7_5">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING7_6">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING7_7">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes7_0">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes7_1">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes7_2">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="valve_base8">
+    <visual>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <geometry>
+        <cylinder length="0.03" radius="0.03" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="0" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <geometry>
+        <cylinder length="0.03" radius="0.03" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING8_0">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING8_1">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING8_2">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING8_3">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING8_4">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING8_5">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING8_6">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING8_7">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes8_0">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes8_1">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes8_2">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="valve_base9">
+    <visual>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <geometry>
+        <cylinder length="0.03" radius="0.03" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="0" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <geometry>
+        <cylinder length="0.03" radius="0.03" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING9_0">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING9_1">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING9_2">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING9_3">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING9_4">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING9_5">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING9_6">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="RING9_7">
+    <visual>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0.1016 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.095756" radius="0.019" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes9_0">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes9_1">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="Spokes9_2">
+    <visual>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </visual>
+    <inertial>
+      <origin xyz="0 0 0 " rpy="0 -0 0 " />
+      <mass value="1" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01" />
+    </inertial>
+    <collision>
+      <origin xyz="0.0508 0 0 " rpy="0 1.57 0 " />
+      <geometry>
+        <cylinder length="0.1016" radius="0.015" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="base_joint" type="revolute">
+    <parent link="base_link" />
+    <child link="valve_base" />
+    <origin xyz="0 0 0 " rpy="0 -0 0 " />
+    <axis xyz="0 0 1 " />
+    <limit effort="1" lower="-3.14" upper="3.14" velocity="1" />
+  </joint>
+  <joint name="RING_joints_0" type="fixed">
+    <parent link="valve_base" />
+    <child link="RING_0" />
+    <origin xyz="0 0 0 " rpy="0 -0 0 " />
+  </joint>
+  <joint name="RING_joints_1" type="fixed">
+    <parent link="valve_base" />
+    <child link="RING_1" />
+    <origin xyz="0 0 0 " rpy="0 -0 0.7854 " />
+  </joint>
+  <joint name="RING_joints_2" type="fixed">
+    <parent link="valve_base" />
+    <child link="RING_2" />
+    <origin xyz="0 0 0 " rpy="0 -0 1.5708 " />
+  </joint>
+  <joint name="RING_joints_3" type="fixed">
+    <parent link="valve_base" />
+    <child link="RING_3" />
+    <origin xyz="0 0 0 " rpy="0 -0 2.3562 " />
+  </joint>
+  <joint name="RING_joints_4" type="fixed">
+    <parent link="valve_base" />
+    <child link="RING_4" />
+    <origin xyz="0 0 0 " rpy="0 -0 -3.14159 " />
+  </joint>
+  <joint name="RING_joints_5" type="fixed">
+    <parent link="valve_base" />
+    <child link="RING_5" />
+    <origin xyz="0 0 0 " rpy="0 -0 -2.35619 " />
+  </joint>
+  <joint name="RING_joints_6" type="fixed">
+    <parent link="valve_base" />
+    <child link="RING_6" />
+    <origin xyz="0 0 0 " rpy="0 -0 -1.57079 " />
+  </joint>
+  <joint name="RING_joints_7" type="fixed">
+    <parent link="valve_base" />
+    <child link="RING_7" />
+    <origin xyz="0 0 0 " rpy="0 -0 -0.785385 " />
+  </joint>
+  <joint name="spoke_joints_0" type="fixed">
+    <parent link="valve_base" />
+    <child link="Spokes_0" />
+    <origin xyz="0 0 0 " rpy="0 -0 0 " />
+  </joint>
+  <joint name="spoke_joints_1" type="fixed">
+    <parent link="valve_base" />
+    <child link="Spokes_1" />
+    <origin xyz="0 0 0 " rpy="0 -0 2.0944 " />
+  </joint>
+  <joint name="spoke_joints_2" type="fixed">
+    <parent link="valve_base" />
+    <child link="Spokes_2" />
+    <origin xyz="0 0 0 " rpy="0 -0 -2.09439 " />
+  </joint>
+  <joint name="base_joint10" type="revolute">
+    <parent link="base_link" />
+    <child link="valve_base10" />
+    <origin xyz="0 -1.82904 0 " rpy="0 -0 0 " />
+    <axis xyz="0 0 1 " />
+    <limit effort="1" lower="-3.14" upper="3.14" velocity="1" />
+  </joint>
+  <joint name="RING_joints10_0" type="fixed">
+    <parent link="valve_base10" />
+    <child link="RING10_0" />
+    <origin xyz="0 0 0 " rpy="0 -0 0 " />
+  </joint>
+  <joint name="RING_joints10_1" type="fixed">
+    <parent link="valve_base10" />
+    <child link="RING10_1" />
+    <origin xyz="0 0 0 " rpy="0 -0 0.7854 " />
+  </joint>
+  <joint name="RING_joints10_2" type="fixed">
+    <parent link="valve_base10" />
+    <child link="RING10_2" />
+    <origin xyz="0 0 0 " rpy="0 -0 1.5708 " />
+  </joint>
+  <joint name="RING_joints10_3" type="fixed">
+    <parent link="valve_base10" />
+    <child link="RING10_3" />
+    <origin xyz="0 0 0 " rpy="0 -0 2.3562 " />
+  </joint>
+  <joint name="RING_joints10_4" type="fixed">
+    <parent link="valve_base10" />
+    <child link="RING10_4" />
+    <origin xyz="0 0 0 " rpy="0 -0 -3.14159 " />
+  </joint>
+  <joint name="RING_joints10_5" type="fixed">
+    <parent link="valve_base10" />
+    <child link="RING10_5" />
+    <origin xyz="0 0 0 " rpy="0 -0 -2.35619 " />
+  </joint>
+  <joint name="RING_joints10_6" type="fixed">
+    <parent link="valve_base10" />
+    <child link="RING10_6" />
+    <origin xyz="0 0 0 " rpy="0 -0 -1.57079 " />
+  </joint>
+  <joint name="RING_joints10_7" type="fixed">
+    <parent link="valve_base10" />
+    <child link="RING10_7" />
+    <origin xyz="0 0 0 " rpy="0 -0 -0.785385 " />
+  </joint>
+  <joint name="spoke_joints10_0" type="fixed">
+    <parent link="valve_base10" />
+    <child link="Spokes10_0" />
+    <origin xyz="0 0 0 " rpy="0 -0 0 " />
+  </joint>
+  <joint name="spoke_joints10_1" type="fixed">
+    <parent link="valve_base10" />
+    <child link="Spokes10_1" />
+    <origin xyz="0 0 0 " rpy="0 -0 2.0944 " />
+  </joint>
+  <joint name="spoke_joints10_2" type="fixed">
+    <parent link="valve_base10" />
+    <child link="Spokes10_2" />
+    <origin xyz="0 0 0 " rpy="0 -0 -2.09439 " />
+  </joint>
+  <joint name="base_joint11" type="revolute">
+    <parent link="base_link" />
+    <child link="valve_base11" />
+    <origin xyz="0.60968 -1.82904 0 " rpy="0 -0 0 " />
+    <axis xyz="0 0 1 " />
+    <limit effort="1" lower="-3.14" upper="3.14" velocity="1" />
+  </joint>
+  <joint name="RING_joints11_0" type="fixed">
+    <parent link="valve_base11" />
+    <child link="RING11_0" />
+    <origin xyz="0 0 0 " rpy="0 -0 0 " />
+  </joint>
+  <joint name="RING_joints11_1" type="fixed">
+    <parent link="valve_base11" />
+    <child link="RING11_1" />
+    <origin xyz="0 0 0 " rpy="0 -0 0.7854 " />
+  </joint>
+  <joint name="RING_joints11_2" type="fixed">
+    <parent link="valve_base11" />
+    <child link="RING11_2" />
+    <origin xyz="0 0 0 " rpy="0 -0 1.5708 " />
+  </joint>
+  <joint name="RING_joints11_3" type="fixed">
+    <parent link="valve_base11" />
+    <child link="RING11_3" />
+    <origin xyz="0 0 0 " rpy="0 -0 2.3562 " />
+  </joint>
+  <joint name="RING_joints11_4" type="fixed">
+    <parent link="valve_base11" />
+    <child link="RING11_4" />
+    <origin xyz="0 0 0 " rpy="0 -0 -3.14159 " />
+  </joint>
+  <joint name="RING_joints11_5" type="fixed">
+    <parent link="valve_base11" />
+    <child link="RING11_5" />
+    <origin xyz="0 0 0 " rpy="0 -0 -2.35619 " />
+  </joint>
+  <joint name="RING_joints11_6" type="fixed">
+    <parent link="valve_base11" />
+    <child link="RING11_6" />
+    <origin xyz="0 0 0 " rpy="0 -0 -1.57079 " />
+  </joint>
+  <joint name="RING_joints11_7" type="fixed">
+    <parent link="valve_base11" />
+    <child link="RING11_7" />
+    <origin xyz="0 0 0 " rpy="0 -0 -0.785385 " />
+  </joint>
+  <joint name="spoke_joints11_0" type="fixed">
+    <parent link="valve_base11" />
+    <child link="Spokes11_0" />
+    <origin xyz="0 0 0 " rpy="0 -0 0 " />
+  </joint>
+  <joint name="spoke_joints11_1" type="fixed">
+    <parent link="valve_base11" />
+    <child link="Spokes11_1" />
+    <origin xyz="0 0 0 " rpy="0 -0 2.0944 " />
+  </joint>
+  <joint name="spoke_joints11_2" type="fixed">
+    <parent link="valve_base11" />
+    <child link="Spokes11_2" />
+    <origin xyz="0 0 0 " rpy="0 -0 -2.09439 " />
+  </joint>
+  <joint name="base_joint2" type="revolute">
+    <parent link="base_link" />
+    <child link="valve_base2" />
+    <origin xyz="0.6096 0 0 " rpy="0 -0 0 " />
+    <axis xyz="0 0 1 " />
+    <limit effort="1" lower="-3.14" upper="3.14" velocity="1" />
+  </joint>
+  <joint name="RING_joints2_0" type="fixed">
+    <parent link="valve_base2" />
+    <child link="RING2_0" />
+    <origin xyz="0 0 0 " rpy="0 -0 0 " />
+  </joint>
+  <joint name="RING_joints2_1" type="fixed">
+    <parent link="valve_base2" />
+    <child link="RING2_1" />
+    <origin xyz="0 0 0 " rpy="0 -0 0.7854 " />
+  </joint>
+  <joint name="RING_joints2_2" type="fixed">
+    <parent link="valve_base2" />
+    <child link="RING2_2" />
+    <origin xyz="0 0 0 " rpy="0 -0 1.5708 " />
+  </joint>
+  <joint name="RING_joints2_3" type="fixed">
+    <parent link="valve_base2" />
+    <child link="RING2_3" />
+    <origin xyz="0 0 0 " rpy="0 -0 2.3562 " />
+  </joint>
+  <joint name="RING_joints2_4" type="fixed">
+    <parent link="valve_base2" />
+    <child link="RING2_4" />
+    <origin xyz="0 0 0 " rpy="0 -0 -3.14159 " />
+  </joint>
+  <joint name="RING_joints2_5" type="fixed">
+    <parent link="valve_base2" />
+    <child link="RING2_5" />
+    <origin xyz="0 0 0 " rpy="0 -0 -2.35619 " />
+  </joint>
+  <joint name="RING_joints2_6" type="fixed">
+    <parent link="valve_base2" />
+    <child link="RING2_6" />
+    <origin xyz="0 0 0 " rpy="0 -0 -1.57079 " />
+  </joint>
+  <joint name="RING_joints2_7" type="fixed">
+    <parent link="valve_base2" />
+    <child link="RING2_7" />
+    <origin xyz="0 0 0 " rpy="0 -0 -0.785385 " />
+  </joint>
+  <joint name="spoke_joints2_0" type="fixed">
+    <parent link="valve_base2" />
+    <child link="Spokes2_0" />
+    <origin xyz="0 0 0 " rpy="0 -0 0 " />
+  </joint>
+  <joint name="spoke_joints2_1" type="fixed">
+    <parent link="valve_base2" />
+    <child link="Spokes2_1" />
+    <origin xyz="0 0 0 " rpy="0 -0 2.0944 " />
+  </joint>
+  <joint name="spoke_joints2_2" type="fixed">
+    <parent link="valve_base2" />
+    <child link="Spokes2_2" />
+    <origin xyz="0 0 0 " rpy="0 -0 -2.09439 " />
+  </joint>
+  <joint name="base_joint3" type="revolute">
+    <parent link="base_link" />
+    <child link="valve_base3" />
+    <origin xyz="0.3048 -0.3048 0 " rpy="0 -0 0 " />
+    <axis xyz="0 0 1 " />
+    <limit effort="1" lower="-3.14" upper="3.14" velocity="1" />
+  </joint>
+  <joint name="RING_joints3_0" type="fixed">
+    <parent link="valve_base3" />
+    <child link="RING3_0" />
+    <origin xyz="0 0 0 " rpy="0 -0 0 " />
+  </joint>
+  <joint name="RING_joints3_1" type="fixed">
+    <parent link="valve_base3" />
+    <child link="RING3_1" />
+    <origin xyz="0 0 0 " rpy="0 -0 0.7854 " />
+  </joint>
+  <joint name="RING_joints3_2" type="fixed">
+    <parent link="valve_base3" />
+    <child link="RING3_2" />
+    <origin xyz="0 0 0 " rpy="0 -0 1.5708 " />
+  </joint>
+  <joint name="RING_joints3_3" type="fixed">
+    <parent link="valve_base3" />
+    <child link="RING3_3" />
+    <origin xyz="0 0 0 " rpy="0 -0 2.3562 " />
+  </joint>
+  <joint name="RING_joints3_4" type="fixed">
+    <parent link="valve_base3" />
+    <child link="RING3_4" />
+    <origin xyz="0 0 0 " rpy="0 -0 -3.14159 " />
+  </joint>
+  <joint name="RING_joints3_5" type="fixed">
+    <parent link="valve_base3" />
+    <child link="RING3_5" />
+    <origin xyz="0 0 0 " rpy="0 -0 -2.35619 " />
+  </joint>
+  <joint name="RING_joints3_6" type="fixed">
+    <parent link="valve_base3" />
+    <child link="RING3_6" />
+    <origin xyz="0 0 0 " rpy="0 -0 -1.57079 " />
+  </joint>
+  <joint name="RING_joints3_7" type="fixed">
+    <parent link="valve_base3" />
+    <child link="RING3_7" />
+    <origin xyz="0 0 0 " rpy="0 -0 -0.785385 " />
+  </joint>
+  <joint name="spoke_joints3_0" type="fixed">
+    <parent link="valve_base3" />
+    <child link="Spokes3_0" />
+    <origin xyz="0 0 0 " rpy="0 -0 0 " />
+  </joint>
+  <joint name="spoke_joints3_1" type="fixed">
+    <parent link="valve_base3" />
+    <child link="Spokes3_1" />
+    <origin xyz="0 0 0 " rpy="0 -0 2.0944 " />
+  </joint>
+  <joint name="spoke_joints3_2" type="fixed">
+    <parent link="valve_base3" />
+    <child link="Spokes3_2" />
+    <origin xyz="0 0 0 " rpy="0 -0 -2.09439 " />
+  </joint>
+  <joint name="base_joint4" type="revolute">
+    <parent link="base_link" />
+    <child link="valve_base4" />
+    <origin xyz="0 -0.6096 0 " rpy="0 -0 0 " />
+    <axis xyz="0 0 1 " />
+    <limit effort="1" lower="-3.14" upper="3.14" velocity="1" />
+  </joint>
+  <joint name="RING_joints4_0" type="fixed">
+    <parent link="valve_base4" />
+    <child link="RING4_0" />
+    <origin xyz="0 0 0 " rpy="0 -0 0 " />
+  </joint>
+  <joint name="RING_joints4_1" type="fixed">
+    <parent link="valve_base4" />
+    <child link="RING4_1" />
+    <origin xyz="0 0 0 " rpy="0 -0 0.7854 " />
+  </joint>
+  <joint name="RING_joints4_2" type="fixed">
+    <parent link="valve_base4" />
+    <child link="RING4_2" />
+    <origin xyz="0 0 0 " rpy="0 -0 1.5708 " />
+  </joint>
+  <joint name="RING_joints4_3" type="fixed">
+    <parent link="valve_base4" />
+    <child link="RING4_3" />
+    <origin xyz="0 0 0 " rpy="0 -0 2.3562 " />
+  </joint>
+  <joint name="RING_joints4_4" type="fixed">
+    <parent link="valve_base4" />
+    <child link="RING4_4" />
+    <origin xyz="0 0 0 " rpy="0 -0 -3.14159 " />
+  </joint>
+  <joint name="RING_joints4_5" type="fixed">
+    <parent link="valve_base4" />
+    <child link="RING4_5" />
+    <origin xyz="0 0 0 " rpy="0 -0 -2.35619 " />
+  </joint>
+  <joint name="RING_joints4_6" type="fixed">
+    <parent link="valve_base4" />
+    <child link="RING4_6" />
+    <origin xyz="0 0 0 " rpy="0 -0 -1.57079 " />
+  </joint>
+  <joint name="RING_joints4_7" type="fixed">
+    <parent link="valve_base4" />
+    <child link="RING4_7" />
+    <origin xyz="0 0 0 " rpy="0 -0 -0.785385 " />
+  </joint>
+  <joint name="spoke_joints4_0" type="fixed">
+    <parent link="valve_base4" />
+    <child link="Spokes4_0" />
+    <origin xyz="0 0 0 " rpy="0 -0 0 " />
+  </joint>
+  <joint name="spoke_joints4_1" type="fixed">
+    <parent link="valve_base4" />
+    <child link="Spokes4_1" />
+    <origin xyz="0 0 0 " rpy="0 -0 2.0944 " />
+  </joint>
+  <joint name="spoke_joints4_2" type="fixed">
+    <parent link="valve_base4" />
+    <child link="Spokes4_2" />
+    <origin xyz="0 0 0 " rpy="0 -0 -2.09439 " />
+  </joint>
+  <joint name="base_joint5" type="revolute">
+    <parent link="base_link" />
+    <child link="valve_base5" />
+    <origin xyz="0.6096 -0.6096 0 " rpy="0 -0 0 " />
+    <axis xyz="0 0 1 " />
+    <limit effort="1" lower="-3.14" upper="3.14" velocity="1" />
+  </joint>
+  <joint name="RING_joints5_0" type="fixed">
+    <parent link="valve_base5" />
+    <child link="RING5_0" />
+    <origin xyz="0 0 0 " rpy="0 -0 0 " />
+  </joint>
+  <joint name="RING_joints5_1" type="fixed">
+    <parent link="valve_base5" />
+    <child link="RING5_1" />
+    <origin xyz="0 0 0 " rpy="0 -0 0.7854 " />
+  </joint>
+  <joint name="RING_joints5_2" type="fixed">
+    <parent link="valve_base5" />
+    <child link="RING5_2" />
+    <origin xyz="0 0 0 " rpy="0 -0 1.5708 " />
+  </joint>
+  <joint name="RING_joints5_3" type="fixed">
+    <parent link="valve_base5" />
+    <child link="RING5_3" />
+    <origin xyz="0 0 0 " rpy="0 -0 2.3562 " />
+  </joint>
+  <joint name="RING_joints5_4" type="fixed">
+    <parent link="valve_base5" />
+    <child link="RING5_4" />
+    <origin xyz="0 0 0 " rpy="0 -0 -3.14159 " />
+  </joint>
+  <joint name="RING_joints5_5" type="fixed">
+    <parent link="valve_base5" />
+    <child link="RING5_5" />
+    <origin xyz="0 0 0 " rpy="0 -0 -2.35619 " />
+  </joint>
+  <joint name="RING_joints5_6" type="fixed">
+    <parent link="valve_base5" />
+    <child link="RING5_6" />
+    <origin xyz="0 0 0 " rpy="0 -0 -1.57079 " />
+  </joint>
+  <joint name="RING_joints5_7" type="fixed">
+    <parent link="valve_base5" />
+    <child link="RING5_7" />
+    <origin xyz="0 0 0 " rpy="0 -0 -0.785385 " />
+  </joint>
+  <joint name="spoke_joints5_0" type="fixed">
+    <parent link="valve_base5" />
+    <child link="Spokes5_0" />
+    <origin xyz="0 0 0 " rpy="0 -0 0 " />
+  </joint>
+  <joint name="spoke_joints5_1" type="fixed">
+    <parent link="valve_base5" />
+    <child link="Spokes5_1" />
+    <origin xyz="0 0 0 " rpy="0 -0 2.0944 " />
+  </joint>
+  <joint name="spoke_joints5_2" type="fixed">
+    <parent link="valve_base5" />
+    <child link="Spokes5_2" />
+    <origin xyz="0 0 0 " rpy="0 -0 -2.09439 " />
+  </joint>
+  <joint name="base_joint6" type="revolute">
+    <parent link="base_link" />
+    <child link="valve_base6" />
+    <origin xyz="0.3048 -0.9144 0 " rpy="0 -0 0 " />
+    <axis xyz="0 0 1 " />
+    <limit effort="1" lower="-3.14" upper="3.14" velocity="1" />
+  </joint>
+  <joint name="RING_joints6_0" type="fixed">
+    <parent link="valve_base6" />
+    <child link="RING6_0" />
+    <origin xyz="0 0 0 " rpy="0 -0 0 " />
+  </joint>
+  <joint name="RING_joints6_1" type="fixed">
+    <parent link="valve_base6" />
+    <child link="RING6_1" />
+    <origin xyz="0 0 0 " rpy="0 -0 0.7854 " />
+  </joint>
+  <joint name="RING_joints6_2" type="fixed">
+    <parent link="valve_base6" />
+    <child link="RING6_2" />
+    <origin xyz="0 0 0 " rpy="0 -0 1.5708 " />
+  </joint>
+  <joint name="RING_joints6_3" type="fixed">
+    <parent link="valve_base6" />
+    <child link="RING6_3" />
+    <origin xyz="0 0 0 " rpy="0 -0 2.3562 " />
+  </joint>
+  <joint name="RING_joints6_4" type="fixed">
+    <parent link="valve_base6" />
+    <child link="RING6_4" />
+    <origin xyz="0 0 0 " rpy="0 -0 -3.14159 " />
+  </joint>
+  <joint name="RING_joints6_5" type="fixed">
+    <parent link="valve_base6" />
+    <child link="RING6_5" />
+    <origin xyz="0 0 0 " rpy="0 -0 -2.35619 " />
+  </joint>
+  <joint name="RING_joints6_6" type="fixed">
+    <parent link="valve_base6" />
+    <child link="RING6_6" />
+    <origin xyz="0 0 0 " rpy="0 -0 -1.57079 " />
+  </joint>
+  <joint name="RING_joints6_7" type="fixed">
+    <parent link="valve_base6" />
+    <child link="RING6_7" />
+    <origin xyz="0 0 0 " rpy="0 -0 -0.785385 " />
+  </joint>
+  <joint name="spoke_joints6_0" type="fixed">
+    <parent link="valve_base6" />
+    <child link="Spokes6_0" />
+    <origin xyz="0 0 0 " rpy="0 -0 0 " />
+  </joint>
+  <joint name="spoke_joints6_1" type="fixed">
+    <parent link="valve_base6" />
+    <child link="Spokes6_1" />
+    <origin xyz="0 0 0 " rpy="0 -0 2.0944 " />
+  </joint>
+  <joint name="spoke_joints6_2" type="fixed">
+    <parent link="valve_base6" />
+    <child link="Spokes6_2" />
+    <origin xyz="0 0 0 " rpy="0 -0 -2.09439 " />
+  </joint>
+  <joint name="base_joint7" type="revolute">
+    <parent link="base_link" />
+    <child link="valve_base7" />
+    <origin xyz="0 -1.21936 0 " rpy="0 -0 0 " />
+    <axis xyz="0 0 1 " />
+    <limit effort="1" lower="-3.14" upper="3.14" velocity="1" />
+  </joint>
+  <joint name="RING_joints7_0" type="fixed">
+    <parent link="valve_base7" />
+    <child link="RING7_0" />
+    <origin xyz="0 0 0 " rpy="0 -0 0 " />
+  </joint>
+  <joint name="RING_joints7_1" type="fixed">
+    <parent link="valve_base7" />
+    <child link="RING7_1" />
+    <origin xyz="0 0 0 " rpy="0 -0 0.7854 " />
+  </joint>
+  <joint name="RING_joints7_2" type="fixed">
+    <parent link="valve_base7" />
+    <child link="RING7_2" />
+    <origin xyz="0 0 0 " rpy="0 -0 1.5708 " />
+  </joint>
+  <joint name="RING_joints7_3" type="fixed">
+    <parent link="valve_base7" />
+    <child link="RING7_3" />
+    <origin xyz="0 0 0 " rpy="0 -0 2.3562 " />
+  </joint>
+  <joint name="RING_joints7_4" type="fixed">
+    <parent link="valve_base7" />
+    <child link="RING7_4" />
+    <origin xyz="0 0 0 " rpy="0 -0 -3.14159 " />
+  </joint>
+  <joint name="RING_joints7_5" type="fixed">
+    <parent link="valve_base7" />
+    <child link="RING7_5" />
+    <origin xyz="0 0 0 " rpy="0 -0 -2.35619 " />
+  </joint>
+  <joint name="RING_joints7_6" type="fixed">
+    <parent link="valve_base7" />
+    <child link="RING7_6" />
+    <origin xyz="0 0 0 " rpy="0 -0 -1.57079 " />
+  </joint>
+  <joint name="RING_joints7_7" type="fixed">
+    <parent link="valve_base7" />
+    <child link="RING7_7" />
+    <origin xyz="0 0 0 " rpy="0 -0 -0.785385 " />
+  </joint>
+  <joint name="spoke_joints7_0" type="fixed">
+    <parent link="valve_base7" />
+    <child link="Spokes7_0" />
+    <origin xyz="0 0 0 " rpy="0 -0 0 " />
+  </joint>
+  <joint name="spoke_joints7_1" type="fixed">
+    <parent link="valve_base7" />
+    <child link="Spokes7_1" />
+    <origin xyz="0 0 0 " rpy="0 -0 2.0944 " />
+  </joint>
+  <joint name="spoke_joints7_2" type="fixed">
+    <parent link="valve_base7" />
+    <child link="Spokes7_2" />
+    <origin xyz="0 0 0 " rpy="0 -0 -2.09439 " />
+  </joint>
+  <joint name="base_joint8" type="revolute">
+    <parent link="base_link" />
+    <child link="valve_base8" />
+    <origin xyz="0.60968 -1.21936 0 " rpy="0 -0 0 " />
+    <axis xyz="0 0 1 " />
+    <limit effort="1" lower="-3.14" upper="3.14" velocity="1" />
+  </joint>
+  <joint name="RING_joints8_0" type="fixed">
+    <parent link="valve_base8" />
+    <child link="RING8_0" />
+    <origin xyz="0 0 0 " rpy="0 -0 0 " />
+  </joint>
+  <joint name="RING_joints8_1" type="fixed">
+    <parent link="valve_base8" />
+    <child link="RING8_1" />
+    <origin xyz="0 0 0 " rpy="0 -0 0.7854 " />
+  </joint>
+  <joint name="RING_joints8_2" type="fixed">
+    <parent link="valve_base8" />
+    <child link="RING8_2" />
+    <origin xyz="0 0 0 " rpy="0 -0 1.5708 " />
+  </joint>
+  <joint name="RING_joints8_3" type="fixed">
+    <parent link="valve_base8" />
+    <child link="RING8_3" />
+    <origin xyz="0 0 0 " rpy="0 -0 2.3562 " />
+  </joint>
+  <joint name="RING_joints8_4" type="fixed">
+    <parent link="valve_base8" />
+    <child link="RING8_4" />
+    <origin xyz="0 0 0 " rpy="0 -0 -3.14159 " />
+  </joint>
+  <joint name="RING_joints8_5" type="fixed">
+    <parent link="valve_base8" />
+    <child link="RING8_5" />
+    <origin xyz="0 0 0 " rpy="0 -0 -2.35619 " />
+  </joint>
+  <joint name="RING_joints8_6" type="fixed">
+    <parent link="valve_base8" />
+    <child link="RING8_6" />
+    <origin xyz="0 0 0 " rpy="0 -0 -1.57079 " />
+  </joint>
+  <joint name="RING_joints8_7" type="fixed">
+    <parent link="valve_base8" />
+    <child link="RING8_7" />
+    <origin xyz="0 0 0 " rpy="0 -0 -0.785385 " />
+  </joint>
+  <joint name="spoke_joints8_0" type="fixed">
+    <parent link="valve_base8" />
+    <child link="Spokes8_0" />
+    <origin xyz="0 0 0 " rpy="0 -0 0 " />
+  </joint>
+  <joint name="spoke_joints8_1" type="fixed">
+    <parent link="valve_base8" />
+    <child link="Spokes8_1" />
+    <origin xyz="0 0 0 " rpy="0 -0 2.0944 " />
+  </joint>
+  <joint name="spoke_joints8_2" type="fixed">
+    <parent link="valve_base8" />
+    <child link="Spokes8_2" />
+    <origin xyz="0 0 0 " rpy="0 -0 -2.09439 " />
+  </joint>
+  <joint name="base_joint9" type="revolute">
+    <parent link="base_link" />
+    <child link="valve_base9" />
+    <origin xyz="0.3048 -1.52416 0 " rpy="0 -0 0 " />
+    <axis xyz="0 0 1 " />
+    <limit effort="1" lower="-3.14" upper="3.14" velocity="1" />
+  </joint>
+  <joint name="RING_joints9_0" type="fixed">
+    <parent link="valve_base9" />
+    <child link="RING9_0" />
+    <origin xyz="0 0 0 " rpy="0 -0 0 " />
+  </joint>
+  <joint name="RING_joints9_1" type="fixed">
+    <parent link="valve_base9" />
+    <child link="RING9_1" />
+    <origin xyz="0 0 0 " rpy="0 -0 0.7854 " />
+  </joint>
+  <joint name="RING_joints9_2" type="fixed">
+    <parent link="valve_base9" />
+    <child link="RING9_2" />
+    <origin xyz="0 0 0 " rpy="0 -0 1.5708 " />
+  </joint>
+  <joint name="RING_joints9_3" type="fixed">
+    <parent link="valve_base9" />
+    <child link="RING9_3" />
+    <origin xyz="0 0 0 " rpy="0 -0 2.3562 " />
+  </joint>
+  <joint name="RING_joints9_4" type="fixed">
+    <parent link="valve_base9" />
+    <child link="RING9_4" />
+    <origin xyz="0 0 0 " rpy="0 -0 -3.14159 " />
+  </joint>
+  <joint name="RING_joints9_5" type="fixed">
+    <parent link="valve_base9" />
+    <child link="RING9_5" />
+    <origin xyz="0 0 0 " rpy="0 -0 -2.35619 " />
+  </joint>
+  <joint name="RING_joints9_6" type="fixed">
+    <parent link="valve_base9" />
+    <child link="RING9_6" />
+    <origin xyz="0 0 0 " rpy="0 -0 -1.57079 " />
+  </joint>
+  <joint name="RING_joints9_7" type="fixed">
+    <parent link="valve_base9" />
+    <child link="RING9_7" />
+    <origin xyz="0 0 0 " rpy="0 -0 -0.785385 " />
+  </joint>
+  <joint name="spoke_joints9_0" type="fixed">
+    <parent link="valve_base9" />
+    <child link="Spokes9_0" />
+    <origin xyz="0 0 0 " rpy="0 -0 0 " />
+  </joint>
+  <joint name="spoke_joints9_1" type="fixed">
+    <parent link="valve_base9" />
+    <child link="Spokes9_1" />
+    <origin xyz="0 0 0 " rpy="0 -0 2.0944 " />
+  </joint>
+  <joint name="spoke_joints9_2" type="fixed">
+    <parent link="valve_base9" />
+    <child link="Spokes9_2" />
+    <origin xyz="0 0 0 " rpy="0 -0 -2.09439 " />
+  </joint>
+</robot>

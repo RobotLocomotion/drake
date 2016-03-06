@@ -1,0 +1,19 @@
+package drake;
+
+struct lcmt_support_data
+{
+	int64_t timestamp;
+
+	int32_t body_id;
+
+	int32_t num_contact_pts;
+	double contact_pts[3][num_contact_pts];
+
+	boolean support_logic_map[4];
+
+	boolean use_support_surface;  // deprecated. Always assumed to be TRUE
+	
+	float support_surface[4]; // 4-vector describing a support surface: [v; b] such that v' * [x;y;z] + b == 0
+
+	double mu;
+}
