@@ -84,7 +84,7 @@ A dynamical model of a robot inspired by Theo Jansen's `Strandbeest <http://www.
 
 .. raw :: html
 
-..	<iframe width="560" height="315" src="https://www.youtube.com/embed/H6fL-8ScUnU?rel=0" frameborder="0" allowfullscreen></iframe>
+	<iframe width="560" height="315" src="https://www.youtube.com/embed/H6fL-8ScUnU?rel=0" frameborder="0" allowfullscreen></iframe>
 
 *Source Code:* `drake/examples/Strandbeest <https://github.com/RobotLocomotion/drake/tree/master/drake/examples/Strandbeest>`_
 
