@@ -9,7 +9,7 @@ fi  # test for javac >= 1.6
 
 case $1 in
   ("homebrew")
-    brew install graphviz Sphinx ;;
+    brew install graphviz ;;
   ("macports")
     port install graphviz ;;
   ("ubuntu")
