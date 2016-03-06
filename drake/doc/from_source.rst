@@ -42,11 +42,14 @@ Mandatory platform specific instructions
 
 Before running build, you will need to follow the instructions for your host system:
 
-* :doc:`ubuntu`
-* :doc:`homebrew`
-* :doc:`macports`
-* :doc:`windows`
-* :doc:`cygwin`
+.. toctree::
+	:maxdepth: 1
+
+	ubuntu
+	homebrew
+	macports
+	windows
+	cygwin
 
 (Note: there has been reported success building on Redhat using the Ubuntu installation instructions, and changing ``apt-get`` to ``yum`` inside the ``install_prereqs.sh``, but we haven't tested that ourselves).
 
@@ -85,7 +88,7 @@ For an exhaustive test (which can take more than an hour to run if you have all 
 
 Note that this is slow -- it starts a fresh instance of MATLAB for every individual test -- but it is the most robust way to test for issues that can potentially crash MATLAB.  Currently, the make test script is setup to send a summary of the success / failures to our continuous integration server after it finishes all of the jobs.  This was our internal setup, and has been left there for now so that we can help you debug your installations.
 
-If you have problems, please check the :doc:`FAQ`.  If the solution is not there, or if you discover something missing from our installation instructions or lists of prerequisites, then please `file an issue <https://github.com/RobotLocomotion/drake/issues/new>`_ and label it as *installation*.
+If you have problems, please check the :doc:`faq`.  If the solution is not there, or if you discover something missing from our installation instructions or lists of prerequisites, then please `file an issue <https://github.com/RobotLocomotion/drake/issues/new>`_ and label it as *installation*.
 
 Stay up to date
 ===============
@@ -98,6 +101,6 @@ To work on the bleeding edge, do::
 	git pull
 	make
 
-This is especially useful if you are ready to contribute your work back to the main repository with a `pull request <https://help.github.com/articles/using-pull-requests/>`.
+This is especially useful if you are ready to contribute your work back to the main repository with a `pull request <https://help.github.com/articles/using-pull-requests/>`_.
 
 

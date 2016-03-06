@@ -8,5 +8,6 @@ Respond:
 * "ok to test" to accept this pull request for testing.
 * "test this please" for a one time test run.
 * "add to whitelist" to add the author to the whitelist.
+
 If the build fails for other various reasons you can rebuild:
 * "retest this please" to start a new build.

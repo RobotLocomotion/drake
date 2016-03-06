@@ -1,6 +1,6 @@
-****
+*******
 Windows
-****
+*******
 
 Note: If you want to use the MATLAB examples, these instructions assume that you have already followed the instructions `here <from_source>`_ to setup MATLAB, call ``mex -setup`` to set up a compatible compiler ( `Microsoft Visual Studio 2015 Community <http://visualstudio.com>`_ on windows, and `make sure you install the VC++ component <https://msdn.microsoft.com/en-us/library/60k1461a.aspx>`_ ), to add MATLAB to your system path, and to clone drake.
 

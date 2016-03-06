@@ -9,8 +9,11 @@ Choose an installation method
 
 You can choose to download a pre-compiled version of Drake, or to build it from source.  The pre-compiled versions are much easier to use, but the source version is easier to update and will make it easier for you to contribute your fixes/improvements.
 
-* :doc:`from_binary`
-* :doc:`from_source`
+.. toctree::
+	:maxdepth: 1
+
+	from_binary
+	from_source
 
 
 Optional: Installing MATLAB

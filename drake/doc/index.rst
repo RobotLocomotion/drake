@@ -1,7 +1,6 @@
-.. Drake documentation master file, created by
-   sphinx-quickstart on Sat Mar  5 15:31:40 2016.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+.. Build the drake documentation using
+   pip install Sphinx
+   make html (from this doc directory)
 
 
 .. image:: images/logo_w_text.jpg
@@ -98,3 +97,4 @@ Next steps
    video_tutorials
    Mailing list <http://mailman.mit.edu/mailman/listinfo/drake-users>
    GitHub <http://github.com/RobotLocomotion/drake>
+

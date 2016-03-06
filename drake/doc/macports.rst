@@ -1,6 +1,6 @@
-********
+********************
 Mac (using macports)
-********
+********************
 
 We have provided some scripts to simplify the installation of prerequisites.  However, we do assume that you have already installed
 

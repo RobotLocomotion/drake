@@ -1,6 +1,6 @@
-**********
+**********************
 Ubuntu (using apt-get)
-**********
+**********************
 
 You can install the prerequisites::
 
