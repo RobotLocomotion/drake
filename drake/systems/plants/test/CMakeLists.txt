@@ -70,6 +70,10 @@ if (LCM_FOUND)
     add_test(NAME testLidar COMMAND testLidar)
   endif()
 
+  add_executable(testAccelerometer testAccelerometer.cpp)
+  target_link_libraries(testAccelerometer drakeRBSystem)
+  add_test(NAME testAccelerometer COMMAND testAccelerometer)
+
   add_executable(compareRigidBodySystems compareRigidBodySystems.cpp)
   target_link_libraries(compareRigidBodySystems drakeRBSystem)
   add_test(NAME compareAcrobotURDFtoSDF COMMAND compareRigidBodySystems Acrobot.urdf Acrobot.sdf WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/examples/Acrobot")
