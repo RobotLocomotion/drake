@@ -96,4 +96,4 @@ Next steps
    faq
    video_tutorials
    Mailing list <http://mailman.mit.edu/mailman/listinfo/drake-users>
-
+   GitHub <http://github.com/RobotLocomotion/drake>
