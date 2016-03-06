@@ -1,0 +1,100 @@
+<?xml version="1.0"?>
+
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="CartTable">
+  <material name="blue">
+    <color rgba="0 0 1 1" />
+  </material>
+
+  <link name="base">
+    <inertial>
+      <origin xyz="0 0 0" />
+      <mass value="1" />
+      <inertia ixx="1" iyy="1" izz="1" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" />
+      <geometry>
+        <box size=".2 .2 .01" />
+      </geometry> 
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" />
+      <geometry>
+        <box size=".2 .2 .01" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="base_part2">
+    <!-- no inertia -->
+    <visual>
+      <origin xyz="0 0 .5" />
+      <geometry>
+        <cylinder radius=".01" length="1" />
+      </geometry>
+    </visual>
+  </link>
+  <joint name="base_weld" type="fixed">
+    <parent link="base" />
+    <child link="base_part2" />
+    <origin xyz="0 0 0" />
+  </joint>
+  <link name="base_part3">
+    <!-- no inertia -->
+    <visual>
+      <origin xyz="0 0 1" />
+      <geometry>
+         <box size="1 1 .01" />
+      </geometry>
+    </visual>
+  </link> 
+  <joint name="base_weld2" type="fixed">
+    <parent link="base_part2" />
+    <child link="base_part3" />
+    <origin xyz="0 0 0" />
+  </joint>
+
+
+  <link name="cart_x_link" />
+  <joint name="cart_x" type="prismatic">
+    <parent link="base" />
+    <child link="cart_x_link" />
+    <axis xyz="1 0 0" />
+    <origin xyz="0 0 1.055" />
+  </joint>
+  <transmission type="SimpleTransmission" name="cart_x_trans">
+    <actuator name="cart_xddot" />
+    <joint name="cart_x" />
+    <mechanicalReduction>.02</mechanicalReduction>
+  </transmission>
+
+
+  <link name="cart">
+    <inertial>
+      <origin xyz="0 0 0" />
+      <mass value="50" />
+      <inertia ixx="10" iyy="10" izz="1" ixy="0" ixz="0" iyz="0"/>
+      <!-- inertia about COM is zero -->
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" />
+      <geometry>
+        <box size=".1 .1 .1" />
+      </geometry>
+      <material name="blue" />
+    </visual>
+  </link>
+  <joint name="cart_y" type="prismatic">
+    <parent link="cart_x_link" />
+    <child link="cart" />
+    <axis xyz="0 1 0" />
+    <origin xyz="0 0 0" />
+  </joint>
+  <transmission type="SimpleTransmission" name="cart_y_trans">
+    <actuator name="cart_yddot" />
+    <joint name="cart_y" />
+    <mechanicalReduction>.02</mechanicalReduction>
+  </transmission>
+
+</robot>

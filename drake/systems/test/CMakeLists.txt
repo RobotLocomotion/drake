@@ -1,0 +1,2 @@
+add_executable(testAffineSystem testAffineSystem.cpp)
+add_test(NAME testAffineSystem COMMAND testAffineSystem)

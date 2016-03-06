@@ -1,0 +1,3 @@
+collision_groups_to_keep:
+  - "heel"
+  - "toe"

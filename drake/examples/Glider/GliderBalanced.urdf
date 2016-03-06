@@ -1,0 +1,115 @@
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="Glider">
+  <link
+    name="fuselage">
+    <inertial>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass
+        value="0.08" />
+      <inertia
+        ixx="0.1"
+        ixy="0"
+        ixz="0"
+        iyy="0.0015"
+        iyz="0"
+        izz="0.1" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="-.135 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/GliderFuselage.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <!-- <mesh filename="meshes/GliderFuselage.STL" /> -->
+        <box size =".3 .1 .03"/>
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="Elevator">
+    <inertial>
+      <origin
+        xyz="-0.022 0 0"
+        rpy="0 0 0" />
+<!--elevator needs to be (almost) massless and inertia-less in order
+ for the dynamics to work-Rick's model assumes this. Ignore condition
+ number warnings generated because of this.-->
+      <mass
+        value=".00001" />
+      <inertia
+        ixx="7.8055E-06"
+        ixy="-3.0658E-08"
+        ixz="1.5816E-08"
+        iyy="8.2729E-07"
+        iyz="-9.091E-09"
+        izz="8.6162E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="-.02 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/GliderElevator.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0 0 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size=".08 .1 .01"/>
+<!--        <mesh filename="meshes/GliderElevator.STL" /> -->
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="ElevatorHinge"
+    type="revolute">
+    <origin xyz="-0.270 0 0" rpy="0 0 0" /> 
+    <parent
+      link="fuselage" />
+    <child
+      link="Elevator" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      effort="100" />
+  </joint>
+  <force_element name="Wing_force"> 
+    <wing chord=".177" nominal_speed="7" profile="flat plate" span=".5" stall_angle="181">
+      <parent link="fuselage"/>
+  	<origin xyz="0 0 0" rpy="0 0 0"/> 
+    </wing>
+  </force_element>
+  <force_element name="Elevator_force"> 
+    <wing profile="flat plate" stall_angle="181" span=".21" chord=".07" nominal_speed="7">
+      <parent link="Elevator"/>
+      <origin xyz="-.022 0 0" rpy="0 0 0"/> 
+    </wing>
+  </force_element>
+  <transmission name="ElevatorTorque" type="SimpleTransmission" >
+    <joint name="ElevatorHinge" />
+    <actuator name="ElevatorServo"/>
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+</robot>
