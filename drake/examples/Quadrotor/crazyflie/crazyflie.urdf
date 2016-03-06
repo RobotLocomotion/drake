@@ -1,0 +1,71 @@
+<?xml version="1.0" ?>
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ name="crazyflie">
+   <material name="Brown">
+     <color rgba="83./255. 53./255. 10./255."/>
+   </material>
+   <material name="White">
+     <color rgba="1 1 1"/>
+   </material>
+   <material name="Grey">
+     <color rgba=".3 .3 .3"/>
+   </material>
+   <material name="Red">
+     <color rgba="1 0 0"/>
+   </material>
+   <material name="Blue">
+     <color rgba="0 0 1"/>
+   </material>
+
+  <link name="base_link">
+    <inertial>
+      <mass value="0.03352"/>
+      <origin xyz="0 0 0"/>
+      <inertia ixx="2.3951e-05" ixy="0" ixz="0" iyy="2.3951e-05" iyz="0" izz="3.23466e-05"/>
+    </inertial>
+    <visual>
+      <origin rpy="1.570796326794897 0 -2.356194490192345" xyz="0 0 -.01"/>
+      <geometry>
+        <mesh filename="mesh/crazyflie.obj" scale=".001"/>
+      </geometry>
+      <material name="Blue"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.017 0.017 0.006"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <force_element name="prop1">
+    <propellor lower_limit="2.8" upper_limit="40.87" scale_factor_thrust="0.005022393588278" scale_factor_moment="-1.858017992629931e-05" visual_geometry="false">
+      <parent link="base_link"/>
+      <origin xyz="0.046 0 0"/>
+      <axis xyz="0 0 1"/>
+    </propellor>
+  </force_element>
+  <force_element name="prop2">
+    <propellor lower_limit="2.8" upper_limit="40.87" scale_factor_thrust="0.005022393588278" scale_factor_moment="1.858017992629931e-05" visual_geometry="false">
+      <parent link="base_link"/>
+      <origin xyz="0 -0.046 0"/>
+      <axis xyz="0 0 1"/>
+    </propellor>
+  </force_element>
+  <force_element name="prop3">
+    <propellor lower_limit="2.8" upper_limit="40.87" scale_factor_thrust="0.005022393588278" scale_factor_moment="-1.858017992629931e-05" visual_geometry="false">
+      <parent link="base_link"/>
+      <origin xyz="-0.046 0 0"/>
+      <axis xyz="0 0 1"/>
+    </propellor>
+  </force_element>
+  <force_element name="prop4">
+    <propellor lower_limit="2.8" upper_limit="40.87" scale_factor_thrust="0.005022393588278" scale_factor_moment="1.858017992629931e-05" visual_geometry="false">
+      <parent link="base_link"/>
+      <origin xyz="0 0.046 0"/>
+      <axis xyz="0 0 1"/>
+    </propellor>
+  </force_element>
+
+</robot>

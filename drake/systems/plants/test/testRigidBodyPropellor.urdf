@@ -1,0 +1,42 @@
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="testRigidBodyWingWithControlSurface">
+  <link
+    name="fuselage">
+    <inertial>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass
+        value="0.25" />
+      <inertia
+        ixx="0.014894"
+        ixy="0.000082"
+        ixz="0.000152"
+        iyy="0.005580"
+        iyz="-0.000001"
+        izz="0.019316" />
+    </inertial>
+  </link>
+
+
+  <force_element name="propeller_force">
+    <propellor name="propeller" lower_limit="0" upper_limit="100" scale_factor_thrust="0.05159" scale_factor_moment="0.005" visual_geometry="true" visual_diameter=".2">
+      <parent link="fuselage"/>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <axis xyz="1 0 0" />
+    </propellor>
+  </force_element>
+
+  <force_element>
+    <propellor name="propeller_upright" lower_limit="0" upper_limit="100" scale_factor_thrust="0.05159" scale_factor_moment="0.005" visual_geometry="true" visual_diameter=".2">
+      <parent link="fuselage"/>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <axis xyz="0 0 1" />
+    </propellor>
+  </force_element>
+</robot>

@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="ActuatedPendulum">
+
+  <link name="base_link">
+    <visual>
+      <geometry>
+         <box size=".2 .2 .2" />
+      </geometry>
+      <material name="green">
+	<color rgba="0 1 0 1" />
+      </material>
+    </visual>
+  </link>
+
+  <link name="pendulum_link">
+    <inertial>
+      <origin xyz="0 0 -.5" rpy="0 0 0" />
+      <mass value="1" />
+      <inertia ixx="1" ixy="0" ixz="0" iyy="0.083" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 -.5" rpy="0 0 0" />
+      <geometry>
+         <cylinder length="1.1" radius=".05" />
+      </geometry>
+      <material name="red">
+	<color rgba="1 0 0 1" />
+      </material>
+    </visual>
+    <visual>
+      <origin xyz="0 0 -1.1" rpy="0 0 0" />
+      <geometry>
+         <box size=".2 .2 .2" />
+      </geometry>
+      <material name="blue">
+        <color rgba="0 0 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 -1.1" rpy="0 0 0" />
+      <geometry>
+         <box size=".2 .2 .2" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="joint" type="continuous">
+    <parent link="base_link" />
+    <child link="pendulum_link"/>
+    <origin xyz="0 .15 0" rpy="0 3.1416 0"/>
+    <axis xyz="0 1 0" />
+    <dynamics damping="0.1" />
+  </joint>
+
+  <transmission type="SimpleTransmission" name="trans">
+    <actuator name="torque" />
+    <joint name="joint" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+
+  <frame name="tip" link="pendulum_link" xyz="0 0 -1.1" rpy="0 0 0" />
+</robot>

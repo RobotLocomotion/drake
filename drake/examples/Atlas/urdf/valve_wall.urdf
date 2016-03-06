@@ -1,0 +1,285 @@
+<robot
+  name="valve_wall">
+  <link name="base_link">
+    <inertial>
+      <origin xyz="0 0 0.9525"
+        rpy="0 0 0" />
+      <mass value="17.8262" />
+      <inertia
+        ixx="5.3996"
+        ixy="0"
+        ixz="0"
+        iyy="2.5014"
+        iyz="0"
+        izz="7.8838" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.9525"
+        rpy="0 0 0" />
+      <geometry>
+        <box size=".0762 1.2954 1.905" />
+      </geometry>
+      <material name="">
+        <color rgba="0 1 1 1" />
+      </material>
+    </visual>
+<collision>   
+  <origin xyz="0 0 0.9525"
+        rpy="0 0 0" />
+      <geometry>
+        <box size=".0762 1.2954 1.905" />
+      </geometry>
+      <material name="">
+        <color rgba="0 1 1 1" />
+      </material>
+</collision> 
+  <visual>
+      <origin xyz="0.12065 .48736 1.1049"
+        rpy="0 0 0" />
+      <geometry>
+        <box size="0.1651 0.1651 0.1651" />
+      </geometry>
+      <material name="">
+        <color rgba="0 0 1 1" />
+      </material>
+    </visual>
+<visual>
+      <origin xyz="0.150815 0 1.12078"
+        rpy="0 1.57079633 0" />
+      <geometry>
+        <cylinder length=".22543" radius=".0508"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 0 1 1" />
+      </material>
+    </visual> 
+<visual>
+      <origin xyz="0.2794 -.47308 1.13348"
+        rpy="0 1.57079633 0" />
+      <geometry>
+        <cylinder length=".4826" radius=".0508"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 0 1 1" />
+      </material>
+    </visual>       
+  </link>
+ 
+ <link name="Lever">
+    <inertial>
+      <origin xyz="0 .1397 0"
+        rpy="0 0 0" />
+      <mass value=".212844" />
+      <inertia
+        ixx=".002256"
+        ixy="0"
+        ixz="0"
+        iyy=".000027"
+        iyz="0"
+        izz="0.002256" />
+    </inertial>
+    <visual>
+      <origin xyz="0 .1397 0"
+        rpy="1.57079633 0 0" />
+      <geometry>
+        <cylinder length=".3556" radius=".0127"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 1 0 1" />
+      </material>
+    </visual>  
+ <collision>   
+  <origin xyz="0 .1397 0"
+        rpy="1.57079633 0 0" />
+      <geometry>
+        <cylinder length=".3556" radius=".0127"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 1 0 1" />
+      </material>
+</collision> 
+  
+  </link>
+  
+<link name="Valve_18">
+    <inertial>
+      <origin xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass value="12.9" />
+      <inertia
+        ixx="0.342175"
+        ixy="0"
+        ixz="0"
+        iyy="0.200005"
+        iyz="0"
+        izz="0.200005" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0"
+        rpy="0 1.57079633 0" />
+      <geometry>
+        <cylinder length=".0381" radius=".2286"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 1 0 1" />
+      </material>
+    </visual>    
+ <collision>   
+  <origin xyz="0 0 0"
+        rpy="0 1.57079633 0" />
+      <geometry>
+        <cylinder length=".0381" radius=".2286"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 1 0 1" />
+      </material>
+</collision> 
+<visual>
+      <origin xyz=".01524 0 0.1016"
+        rpy="0 0 0" />
+      <geometry>
+        <box size=".0254 .0254 .1778"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 0 0 0" />
+      </material>
+    </visual>   
+<visual>
+      <origin xyz=".01524 0 -0.1016"
+        rpy="0 0 0" />
+      <geometry>
+        <box size=".0254 .0254 .1778"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 0 0 0" />
+      </material>
+    </visual>  
+ <visual>
+      <origin xyz=".0124 0.1016 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size=".0254 .1778 .0254"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 0 0 0" />
+      </material>
+    </visual>   
+<visual>
+      <origin xyz=".01524 -0.1016 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size=".0254 .1778 .0254"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 0 0 0" />
+      </material>
+    </visual> 
+  </link>
+
+<link name="Valve_8">
+    <inertial>
+      <origin xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass value="2.328313" />
+      <inertia
+        ixx=".013286"
+        ixy="0"
+        ixz="0"
+        iyy=".006911"
+        iyz="0"
+        izz="0.006911" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0"
+        rpy="0 1.57079633 0" />
+      <geometry>
+        <cylinder length=".0254" radius=".1016"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 1 0 1" />
+      </material>
+    </visual>    
+ <collision>   
+   <origin xyz="0 0 0"
+        rpy="0 1.57079633 0" />
+      <geometry>
+        <cylinder length=".0254" radius=".1016"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 1 0 1" />
+      </material>
+</collision> 
+ <visual>
+      <origin xyz=".00254 0 .0508"
+        rpy="0 0 0" />
+      <geometry>
+        <box size=".0254 .0254 .0762"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 0 0 0" />
+      </material>
+    </visual>   
+<visual>
+      <origin xyz=".00254 0 -.0508"
+        rpy="0 0 0" />
+      <geometry>
+        <box size=".0254 .0254 .0762"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 0 0 0" />
+      </material>
+    </visual>  
+ <visual>
+      <origin xyz=".00254 .0508 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size=".0254 .0762 .0254"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 0 0 0" />
+      </material>
+    </visual>   
+<visual>
+      <origin xyz=".00254 -.0508 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size=".0254 .0762 .0254"/>
+      </geometry>
+      <material name="">
+        <color rgba="0 0 0 0" />
+      </material>
+    </visual> 
+  </link>
+
+<joint
+    name="Lever"
+    type="continuous">
+    <parent link="base_link" />
+    <child link="Lever" />
+    <origin xyz=".22543 0.48736 1.1049" />
+    <axis xyz="1 0 0" />
+<dynamics damping="5" friction="5"/>
+<limit lower="0" upper="1.5708" />
+  </joint>
+ 
+<joint
+    name="Big_Valve"
+    type="continuous">
+    <parent link="base_link" />
+    <child link="Valve_18" />
+    <origin xyz=".28258 0 1.12078" />
+    <axis xyz="1 0 0" />
+<dynamics damping="5" friction="5"/>
+  </joint>
+
+<joint
+    name="Small_Valve"
+    type="continuous">
+    <parent link="base_link" />
+    <child link="Valve_8" />
+    <origin xyz=".5334 -.47308 1.13348" />
+    <axis xyz="1 0 0" />
+<dynamics damping="5" friction="5"/>
+  </joint>
+
+</robot>

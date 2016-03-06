@@ -1,0 +1,325 @@
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="Plane">
+  <link
+    name="Fuselage">
+    <inertial>
+      <origin
+        xyz="0.0064116 -3.8482E-05 6.9037E-05"
+        rpy="0 0 0" />
+      <mass
+        value="0.5476" />
+      <inertia
+        ixx="0.0010352"
+        ixy="6.3703E-06"
+        ixz="0.00012413"
+        iyy="0.0062106"
+        iyz="-6.3903E-06"
+        izz="0.0070685" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/PlaneFuselage.obj" />
+        <!-- <sphere radius = ".01"/> -->
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.4 0 0.4 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="-.095 0 0"
+        rpy="0 0 0" />
+      <geometry>
+          <box size = ".623 .063 .191"/>
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="LeftWing">
+    <inertial>
+      <origin
+        xyz="-0.026311 0.17404 -0.0011937"
+        rpy="0 0 0" />
+      <mass
+        value="0.0070381" />
+      <inertia
+        ixx="5.6681E-05"
+        ixy="1.3411E-06"
+        ixz="4.6705E-07"
+        iyy="1.5567E-05"
+        iyz="4.1572E-08"
+        izz="7.2091E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/PlaneLeftWing.obj" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba=".4 .4 .4 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="-.05 .2 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size =".2 .4 .03"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="LeftWingJoint"
+    type="revolute">
+    <origin
+      xyz="0.00093765 0.04586 -0.00091841"
+      rpy="0 0 0" />
+    <parent
+      link="Fuselage" />
+    <child
+      link="LeftWing" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="-0.65"
+      upper="0.65"
+      effort="0"
+      velocity="18" />
+  </joint>
+  <link
+    name="RightWing">
+    <inertial>
+      <origin
+        xyz="-0.026514 -0.17185 -0.0012004"
+        rpy="0 0 0" />
+      <mass
+        value="0.007081" />
+      <inertia
+        ixx="5.7443E-05"
+        ixy="-1.5302E-06"
+        ixz="4.6881E-07"
+        iyy="1.5614E-05"
+        iyz="-4.7318E-08"
+        izz="7.29E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="meshes/PlaneRightWing.obj" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba=".4 .4 .4 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="-.05 -.2 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size =".2 .4 .03"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="RightWingJoint"
+    type="revolute">
+    <origin
+      xyz="0.00093765 -0.042393 -0.00091841"
+      rpy="0 0 0" />
+    <parent
+      link="Fuselage" />
+    <child
+      link="RightWing" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="-0.65"
+      upper="0.65"
+      effort="0"
+      velocity="18" />
+  </joint>
+  <link
+    name="Elevator">
+    <inertial>
+      <origin
+        xyz="-0.028692 0.00092117 -9.0303E-05"
+        rpy="0 0 0" />
+      <mass
+        value="0.0034019" />
+      <inertia
+        ixx="1.7645E-05"
+        ixy="6.1641E-08"
+        ixz="1.7326E-08"
+        iyy="2.633E-06"
+        iyz="9.4289E-09"
+        izz="2.0262E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="meshes/PlaneElevator.obj" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba=".7 .7 .7 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="-.0254 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size =".102 .254 .003"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="ElevatorJoint"
+    type="revolute">
+    <origin
+      xyz="-0.44438 0.00052809 -0.017886"
+      rpy="0 0 0" />
+    <parent
+      link="Fuselage" />
+    <child
+      link="Elevator" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="-0.65"
+      upper="0.65"
+      effort="0"
+      velocity="18" />
+  </joint>
+  <link
+    name="Rudder">
+    <inertial>
+      <origin
+        xyz="-0.037114 -0.0057157 0.00096752"
+        rpy="0 0 0" />
+      <mass
+        value="0.0012918" />
+      <inertia
+        ixx="1.3582E-06"
+        ixy="-4.7962E-07"
+        ixz="3.6658E-08"
+        iyy="9.6911E-07"
+        iyz="-4.6973E-08"
+        izz="2.3033E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <!-- <sphere radius =".01"/> -->
+        <mesh filename="meshes/PlaneRudder.obj" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba=".4 .4 .4 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="-.038 0.018 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size =".076 .085 .005"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="RudderJoint"
+    type="revolute">
+    <origin
+      xyz="-0.44234 0.00052809 0.05"
+      rpy="1.5708 0 0" />
+    <parent
+      link="Fuselage" />
+    <child
+      link="Rudder" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="-0.65"
+      upper="0.65"
+      effort="0"
+      velocity="18" />
+  </joint>
+<!--FORCE ELEMENTS ADDED MANUALLY AFTER SOLIDWORKS EXPORT-->
+  <force_element name="LeftWing_force">
+    <wing profile="ht23.dat" chord=".228" span=".28" nominal_speed="10" stall_angle="10">
+    	<parent link="LeftWing"/>
+    	<origin xyz="-.01 .18 0" rpy="0 0 0"/> 
+    </wing>
+  </force_element>
+  <force_element name="RightWing_force"> 
+    <wing profile="ht23.dat" chord=".228" span=".28" nominal_speed="10" stall_angle="10">
+    	<parent link="RightWing"/>
+    	<origin xyz="-.01 -.18 0" rpy="0 0 0"/> 
+    </wing>
+  </force_element>
+  <force_element name="Elevator_force">
+    <wing chord="0.10" nominal_speed="10" profile="flat plate" span=".254" stall_angle="12"> 
+    	<parent link="Elevator"/>
+    	<origin xyz="-.0105 0 0" rpy="0 0 0"/> 
+    </wing>
+  </force_element>
+  <force_element name="Rudder_force">
+    <wing profile="flat plate" chord=".07" span=".23" nominal_speed="10" stall_angle="12"> 
+    	<parent link="Rudder"/>
+    	<origin xyz="-.022 0 0" rpy="0 0 0"/> 
+    </wing>
+  </force_element>
+  <force_element name="Propellers">
+    <thrust lower_limit="0" upper_limit="300" scale_factor=".00223">
+      <!--full throttle (255 value) is about .57 kg of thrust -->
+      <parent link="Fuselage"/>
+      <origin xyz=".2 0 0"/>
+      <axis xyz="1 0 0"/>
+    </thrust>
+  </force_element>
+<!--Even though transmissions come in after Thrust in the URDF,
+	They come in as inputs 1-4 in the Drake model -->
+  <transmission name="RightWingTorque" type="SimpleTransmission" >
+    <joint name="RightWingJoint" />
+    <actuator name="RightWingServo"/>
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+  <transmission name="LeftWingTorque" type="SimpleTransmission" >
+    <joint name="LeftWingJoint" />
+    <actuator name="LeftWingServo"/>
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+  <transmission name="ElevatorTorque" type="SimpleTransmission" >
+    <joint name="ElevatorJoint" />
+    <actuator name="ElevatorServo"/>
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+  <transmission name="RudderTorque" type="SimpleTransmission" >
+    <joint name="RudderJoint" />
+    <actuator name="RudderServo"/>
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+</robot>

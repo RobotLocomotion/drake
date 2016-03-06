@@ -1,0 +1,109 @@
+<?xml version="1.0"?>
+
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="SimpleDoublePendulum">
+  <material name="green">
+ 	  <color rgba=".3 .6 .4 1" />
+  </material>
+  <material name="red">
+    <color rgba=".9 .1 0 1" />
+  </material>
+  <material name="blue">
+    <color rgba="0 0 1 1" />
+  </material>
+
+  <link name="base">
+    <inertial> <!-- drc-viewer needs this to have inertia to parse properly.  remove it when that bug is fixed -->
+      <origin xyz="0 0 0" />
+      <mass value="0.01" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+  </link>
+  <link name="upper_arm">
+    <inertial> 
+      <origin xyz="0 0 -1" rpy="0 0 0" />
+      <mass value="1" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/> 
+    </inertial>
+    <visual>
+      <origin xyz="0 0 -.5" rpy="0 0 0" />
+      <geometry>
+         <cylinder length="1" radius=".01" />
+      </geometry>
+      <material name="red" />
+    </visual> 
+  </link>
+  <joint name="shoulder" type="continuous">
+    <parent link="base"/>
+    <child link="upper_arm" />
+    <axis xyz="0 1 0" />
+    <dynamics damping="0.1" />
+  </joint>
+  <link name="upper_arm_com">
+    <visual>
+      <origin xyz="0 0 -1"/>
+      <geometry>
+        <sphere radius=".025"/>
+      </geometry>
+      <material name="blue" />
+    </visual>
+  </link>
+  <joint name="upper_arm_weld" type="fixed">
+    <parent link="upper_arm" />
+    <child link="upper_arm_com" />
+  </joint>
+  <transmission type="SimpleTransmission" name="shoulder_trans">
+    <actuator name="shoulder" />
+    <joint name="shoulder" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+
+  <link name="lower_arm">
+    <inertial> 
+      <origin xyz="0 0 -1" rpy="0 0 0" />
+      <mass value="1" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/> 
+    </inertial>
+    <visual>
+      <origin xyz="0 0 -.5" rpy="0 0 0" />
+      <geometry>
+         <cylinder length="1" radius=".01" />
+      </geometry>
+      <material name="red" />
+    </visual> 
+  </link>
+  <joint name="elbow" type="continuous">
+    <parent link="upper_arm"/>
+    <origin xyz="0 0 -1" />
+    <child link="lower_arm" />
+    <axis xyz="0 1 0" />
+    <dynamics damping="0.1" />
+  </joint>
+  <link name="lower_arm_com">
+    <visual>
+      <origin xyz="0 0 -1"/>
+      <geometry>
+        <sphere radius=".025"/>
+      </geometry>
+      <material name="blue" />
+    </visual>
+  </link>
+  <joint name="lower_arm_weld" type="fixed">
+    <parent link="lower_arm" />
+    <child link="lower_arm_com" />
+  </joint>
+  <transmission type="SimpleTransmission" name="elbow_trans">
+    <actuator name="elbow" />
+    <joint name="elbow" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+
+  <gazebo>
+    <plugin filename="libgazebo_ros_pub_robot_state.so" name="gazebo_ros_pub_robot_controller">
+      <alwaysOn>true</alwaysOn>
+      <updateRate>100.0</updateRate>
+      <topicName>true_robot_state</topicName>
+    </plugin>
+  </gazebo>
+</robot>
