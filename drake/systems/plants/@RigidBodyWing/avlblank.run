@@ -1,0 +1,39 @@
+ ---------------------------------------------
+ Run case  $casenum:   -URDF Model: AoA:$alpha
+
+ alpha        ->  alpha       =   $alpha   
+ beta         ->  beta        =   0.00000   
+ pb/2V        ->  pb/2V       =   0.00000   
+ qc/2V        ->  qc/2V       =   0.00000   
+ rb/2V        ->  rb/2V       =   0.00000   
+ 
+ alpha     =   $alpha     deg                            
+ beta      =   0.00000     deg                            
+ pb/2V     =   0.00000                                    
+ qc/2V     =   0.00000                                    
+ rb/2V     =   0.00000                                    
+ CL        =   0.00000                                    
+ CDo       =   0.00000                                    
+ bank      =   0.00000     deg                            
+ elevation =   0.00000     deg                            
+ heading   =   0.00000     deg                            
+ Mach      =   $mach                                    
+ velocity  =   $vel     Lunit/Tunit                    
+ density   =   1.22500     kg/m^3                  
+ grav.acc. =   9.81000     m/s^2
+ turn_rad. =   0.00000     Lunit                          
+ load_fac. =   1.00000                                    
+ X_cg      =   0.0     Lunit                          
+ Y_cg      =   0.0     Lunit                          
+ Z_cg      =   0.0     Lunit                          
+ mass      =   1.0     Munit                          
+ Ixx       =   1.00000     Munit-Lunit^2                  
+ Iyy       =   1.00000     Munit-Lunit^2                  
+ Izz       =   1.00000     Munit-Lunit^2                  
+ Ixy       =   0.00000     Munit-Lunit^2                  
+ Iyz       =   0.00000     Munit-Lunit^2                  
+ Izx       =   0.00000     Munit-Lunit^2                  
+ visc CL_a =   0.00000                                    
+ visc CL_u =   0.00000                                    
+ visc CM_a =   0.00000                                    
+ visc CM_u =   0.00000 

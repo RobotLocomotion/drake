@@ -1,0 +1,122 @@
+  <!DOCTYPE html>
+
+<html xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://www.w3.org/1999/xhtml HTMLBook/schema/htmlbook.xsd"
+ xmlns="http://www.w3.org/1999/xhtml">
+
+  <head>
+    <title>User Guide</title>
+    <meta name="User Guide" content="text/html; charset=utf-8;" />
+
+    <script type="text/javascript">
+      function getParameterByName(name) {
+        name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+        var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+          results = regex.exec(location.search);
+        return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+      }
+
+      </script>
+
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        skipStartupTypeset:true,
+        extensions: ["tex2jax.js"],
+        jax: ["input/TeX", "output/HTML-CSS"],
+        TeX: { equationNumbers: {autoNumber: "AMS"}, noErrors: { disabled: true } },
+        tex2jax: {
+          inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+          displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+          processEscapes: true
+        },
+        "HTML-CSS": { availableFonts: ["TeX"] }
+      });
+    </script>
+    <script type="text/javascript"
+      src="MathJax/MathJax.js?config=TeX-AMS_HTML">
+    </script>
+
+    <link rel="stylesheet" href="highlight/styles/default.css">
+    <script src="highlight/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+
+    <script type="text/javascript">
+      function myMacros(){
+        var elibTags=document.getElementsByTagName('elib');
+        for(i=0;i<elibTags.length;i++)
+        {
+          var c = elibTags[i].innerHTML;
+          elibTags[i].innerHTML='[<a href="http://groups.csail.mit.edu/locomotion/elib.cgi?b='+c+'">'+(i+1)+'</a>]';
+        }
+      }
+    </script>
+    <link rel="stylesheet" type="text/css" href="UserGuide.css">
+  </head>
+
+
+<body data-type="book" class="book" id="htmlbook" onload="myMacros();">
+<section data-type="titlepage" class="titlepage">
+  <header>
+    <h1><a href="UserGuide.html" style="text-decoration:none;">User Guide</a></h1>
+  </header>
+</section>
+<div style="display:none" id="mathjax_setup"> <!-- definitions for mathjax -->
+  \[
+  \newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
+  \newcommand{\bq}{{\bf q}}
+  \newcommand{\bv}{{\bf v}}
+  \newcommand{\bx}{{\bf x}}
+  \newcommand{\by}{{\bf y}}
+  \newcommand{\bu}{{\bf u}}
+  \newcommand{\bw}{{\bf w}}
+  \newcommand{\bz}{{\bf z}}
+  \newcommand{\bK}{{\bf K}}
+  \newcommand{\balpha}{{\bf \alpha}}
+  \newcommand{\bbeta}{{\bf \beta}}
+  \newcommand{\avg}[1]{E\left[ #1 \right]}
+  \newcommand{\subjto}{\textrm{subject to}}
+  \newcommand{\minimize}{\operatorname{\textrm{minimize}}}
+  \newcommand{\maximize}{\operatorname{\textrm{maximize}}}
+  \newcommand{\find}{\operatorname{\textrm{find}}}
+  \newcommand{\argmax}{\operatorname{\textrm{argmax}}}
+  \newcommand{\argmin}{\operatorname{\textrm{argmin}}}
+  \newcommand{\sgn}{\operatorname{\textrm{sgn}}}
+  \newcommand{\trace}{\operatorname{\textrm{tr}}}
+  \newcommand{\sos}{\text{ is SOS}}
+  \]
+</div>
+
+<div id="debug_output"></div>
+
+<p> The approach to synthesize and optimize force closure grasp is described in <elib>Dai15</elib>.</p>
+<p> For examples on synthesis force closure contacts, please refer to</p>
+<p><i>drake/examples/grasping/forceClosure/test/testSynthesizeGrasp.m</i> </p>
+<p><i>drake/examples/grasping/forceClosure/test/testForceClosureContactsFixedFaces.m</i> </p>
+<p>We support both linearized and nonlinear friction cones. We use a stochastic method, so the result could change from each run. For example, to find force closure contacts on a polyhedron, we can call the following code.</p>
+<div data-type="example"><h1>Force closure contacts on a polyhedron</h1>
+<pre><code class="matlab">
+% We want to find the force closure contacts on a polyhedron, without specifying the contact facets.
+% In this example, the polyhedron is defined as the convex hull of the polyhedron_vertices
+% To avoid edge contact, we define the allowable contact region to be the shrunk region of each
+% facets on polyhedron. shrink_factor = 1 corresponds to the whole facet,
+% shrink_factor = 0 corresponds to only the center of the facet.
+cd(fullfile(getDrakePath,'examples','grasping','forceClosure'));
+checkDependency('spotless');
+polyhedron_vertices = randn(3,100); 
+num_contacts = 4; % 4 contact points
+mu_face = 1; % friction coefficient is 1
+shrink_factor = 0.8; 
+p = SynthesizeGraspFreeFaces(polyhedron_vertices, num_contacts,mu_face,shrink_factor);
+solver_sol = p.optimize(); % Running optimization
+[sol,sol_bilinear] = p.retrieveSolution(solver_sol);
+p.use_lcmgl = false; % Use MATLAB visualizer
+p.plotSolution(sol,sol_bilinear);
+</code></pre>
+</div>
+</body>
+<p> For example on force closure grasp with a robot hand, please refer to </p>
+<p><i>drake/examples/grasping/forceClosure/test/testIKGrasp.m</i></p>
+<p> For example on optimizing force closure grasp with inverse kinematics, please refer to </p>
+<p><i>drake/examples/grasping/forceClosure/test/testIKOptimalGrasp.m</i></p>
+<p> This example is still not very stable, due to the numerical problem of our solver. We are still working on it. If it reports that the problem is not solved, please rerun the problem as the solver is stochastic.</p>
+</html>
