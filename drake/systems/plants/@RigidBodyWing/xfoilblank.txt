@@ -1,0 +1,27 @@
+PLOP
+G
+
+$airfoil
+oper
+Visc $re
+Mach $mach
+iter
+50
+Pacc
+
+
+aseq
+0
+$negStallAngle
+.5
+
+$airfoil
+oper
+aseq
+0
+$stallAngle
+.5
+pwrt
+$polarLocation
+
+quit

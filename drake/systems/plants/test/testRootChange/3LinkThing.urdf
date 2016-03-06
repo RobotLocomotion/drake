@@ -1,0 +1,120 @@
+<?xml version="1.0"?>
+
+<robot name="3LinkThing">
+
+  <link name="central_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="2" />
+      <inertia ixx="2" ixy="0" ixz="0" iyy="2" iyz="0" izz="2" />
+    </inertial>
+    <visual>
+      <geometry>
+         <sphere radius=".2" />
+      </geometry>
+      <material name="red">
+	<color rgba="1 0 0 1" />
+      </material>
+    </visual>
+  </link>
+
+  <link name="link1">
+    <inertial>
+      <origin xyz="0 0 .5" rpy="0 0 0" />
+      <mass value="1" />
+      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 .5" rpy="0 0 0" />
+      <geometry>
+         <cylinder length="1" radius=".05" />
+      </geometry>
+      <material name="blue">
+	<color rgba="0 0 1 1" />
+      </material>
+    </visual>
+  </link>
+
+  <link name="link2">
+    <inertial>
+      <origin xyz="0 0 -.5" rpy="0 0 0" />
+      <mass value="1" />
+      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 -.5" rpy="0 0 0" />
+      <geometry>
+         <cylinder length="1" radius=".05" />
+      </geometry>
+      <material name="blue">
+	<color rgba="0 0 1 1" />
+      </material>
+    </visual>
+  </link>
+
+  <link name="link3">
+    <inertial>
+      <origin xyz="0 0 -.5" rpy="0 0 0" />
+      <mass value="1" />
+      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 -.5" rpy="0 0 0" />
+      <geometry>
+         <cylinder length="1" radius=".05" />
+      </geometry>
+      <material name="blue">
+	<color rgba="0 0 1 1" />
+      </material>
+    </visual>
+  </link>
+
+
+
+ <joint name="joint1" type="continuous">
+    <parent link="link1" />
+    <child link="central_link" />
+    <origin xyz="0 0 1" />
+    <axis xyz="0 1 0" />
+    <dynamics damping="0.1" />
+  </joint>
+  
+  <joint name="joint2" type="continuous">
+    <parent link="central_link" />
+    <child link="link2" />
+    <origin xyz="0 0 0" />
+    <axis xyz="0 1 0" />
+    <dynamics damping="0.1" />
+  </joint>
+
+  <joint name="joint3" type="continuous">
+    <parent link="central_link" />
+    <child link="link3" />
+    <origin xyz="0 0 0" />
+    <axis xyz="0 1 0" />
+    <dynamics damping="0.1" />
+  </joint>
+
+
+
+  <transmission type="SimpleTransmission" name="link1_trans">
+    <actuator name="link1_torque" />
+    <joint name="joint1" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+
+ <transmission type="SimpleTransmission" name="link2_trans">
+    <actuator name="link2_torque" />
+    <joint name="joint2" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+
+ <transmission type="SimpleTransmission" name="link3_trans">
+    <actuator name="link3_torque" />
+    <joint name="joint3" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+
+
+
+</robot>
