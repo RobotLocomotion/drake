@@ -130,7 +130,7 @@ class LoopConstraint : public LinearEqualityConstraint {
  * with additional sensors and actuators/forces
  * @concept{system_concept}
  */
-class DRAKERBSYSTEM_EXPORT RigidBodySystem : public std::enable_shared_from_this<RigidBodySystem> {
+class DRAKERBSYSTEM_EXPORT RigidBodySystem {
  public:
   template <typename ScalarType>
   using InputVector = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
@@ -180,8 +180,9 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem : public std::enable_shared_from_this
   }
 
 
-  const std::shared_ptr<RigidBodyTree>& getRigidBodyTree(void) { return tree; }
-  size_t getNumStates() const {
+  const std::shared_ptr<RigidBodyTree>& getRigidBodyTree(void) const { return tree; }
+
+    size_t getNumStates() const {
     return tree->num_positions + tree->num_velocities;
   }
   size_t getNumInputs() const;
@@ -248,7 +249,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem : public std::enable_shared_from_this
  */
 class DRAKERBSYSTEM_EXPORT RigidBodyForceElement {
  public:
-  RigidBodyForceElement(std::shared_ptr<RigidBodySystem> sys, const std::string& name)
+  RigidBodyForceElement(RigidBodySystem &sys, const std::string& name)
       : sys(sys), name(name) {}
   virtual ~RigidBodyForceElement() {}
 
@@ -259,7 +260,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodyForceElement {
       const KinematicsCache<double>& rigid_body_state) const = 0;
 
  protected:
-  std::shared_ptr<RigidBodySystem> sys;
+  RigidBodySystem &sys;
   std::string name;
 };
 
@@ -293,7 +294,7 @@ Eigen::VectorXd spatialForceInFrameToJointTorque(
  */
 class DRAKERBSYSTEM_EXPORT RigidBodyPropellor : public RigidBodyForceElement {
  public:
-  RigidBodyPropellor(std::shared_ptr<RigidBodySystem> sys, tinyxml2::XMLElement* node,
+  RigidBodyPropellor(RigidBodySystem &sys, tinyxml2::XMLElement* node,
                      const std::string& name);
   virtual ~RigidBodyPropellor() {}
 
@@ -314,7 +315,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodyPropellor : public RigidBodyForceElement {
     force << scale_factor_moment* u(0) * axis,
         scale_factor_thrust * u(0) * axis;
     return spatialForceInFrameToJointTorque(
-        sys->getRigidBodyTree().get(), rigid_body_state, frame.get(), force);
+        sys.getRigidBodyTree().get(), rigid_body_state, frame.get(), force);
   }
 
  private:
@@ -336,7 +337,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodyPropellor : public RigidBodyForceElement {
 class DRAKERBSYSTEM_EXPORT RigidBodySpringDamper
     : public RigidBodyForceElement {
  public:
-  RigidBodySpringDamper(std::shared_ptr<RigidBodySystem> sys, tinyxml2::XMLElement* node,
+  RigidBodySpringDamper(RigidBodySystem &sys, tinyxml2::XMLElement* node,
                         const std::string& name);
   virtual ~RigidBodySpringDamper() {}
 
@@ -346,11 +347,11 @@ class DRAKERBSYSTEM_EXPORT RigidBodySpringDamper
       const KinematicsCache<double>& rigid_body_state) const override {
     using namespace Eigen;
     const Vector3d origin = Vector3d::Zero();
-    Vector3d xA_in_B = sys->getRigidBodyTree()->transformPoints(
+    Vector3d xA_in_B = sys.getRigidBodyTree()->transformPoints(
         rigid_body_state, origin, frameA->frame_index, frameB->frame_index);
-    Vector3d xB_in_A = sys->getRigidBodyTree()->transformPoints(
+    Vector3d xB_in_A = sys.getRigidBodyTree()->transformPoints(
         rigid_body_state, origin, frameB->frame_index, frameA->frame_index);
-    auto JA_in_B = sys->getRigidBodyTree()->transformPointsJacobian(
+    auto JA_in_B = sys.getRigidBodyTree()->transformPointsJacobian(
         rigid_body_state, origin, frameA->frame_index, frameB->frame_index,
         false);
 
@@ -367,12 +368,12 @@ class DRAKERBSYSTEM_EXPORT RigidBodySpringDamper
     // apply (force_magnitude/length)*xA_in_B to B
     force.tail<3>() = (force_magnitude / (length + EPSILON)) * xA_in_B;
     auto tau = spatialForceInFrameToJointTorque(
-        sys->getRigidBodyTree().get(), rigid_body_state, frameB.get(), force);
+        sys.getRigidBodyTree().get(), rigid_body_state, frameB.get(), force);
 
     // apply (force_magnitude/length)*xB_in_A to A
     force.tail<3>() = (force_magnitude / (length + EPSILON)) * xB_in_A;
     tau += spatialForceInFrameToJointTorque(
-        sys->getRigidBodyTree().get(), rigid_body_state, frameA.get(), force);
+        sys.getRigidBodyTree().get(), rigid_body_state, frameA.get(), force);
     return tau;
   }
 
@@ -422,19 +423,19 @@ class DRAKERBSYSTEM_EXPORT AdditiveGaussianNoiseModel : public NoiseModel<Scalar
 class DRAKERBSYSTEM_EXPORT RigidBodySensor {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  RigidBodySensor(std::shared_ptr<RigidBodySystem> sys, const std::string& name)
+  RigidBodySensor(RigidBodySystem const& sys, const std::string& name)
       : sys(sys), name(name) {}
   virtual ~RigidBodySensor() {}
 
   virtual size_t getNumOutputs() const { return 0; }
   virtual Eigen::VectorXd output(
-      const double& t,
-      const KinematicsCache<double>& rigid_body_state,
-      const RigidBodySystem::InputVector<double>& u) const = 0;
+    const double& t,
+    const KinematicsCache<double>& rigid_body_state,
+    const RigidBodySystem::InputVector<double>& u) const = 0;
 
  protected:
-  std::shared_ptr<RigidBodySystem> sys;
-  std::string name;
+    RigidBodySystem const& sys;
+    std::string name;
 };
 
 /** RigidBodyDepthSensor
@@ -442,7 +443,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySensor {
  */
 class DRAKERBSYSTEM_EXPORT RigidBodyDepthSensor : public RigidBodySensor {
   public:
-    RigidBodyDepthSensor(std::shared_ptr<RigidBodySystem> sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame, tinyxml2::XMLElement* node);
+    RigidBodyDepthSensor(RigidBodySystem const& sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame, tinyxml2::XMLElement* node);
 
     virtual ~RigidBodyDepthSensor() {}
 
@@ -472,7 +473,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodyDepthSensor : public RigidBodySensor {
    */
 class DRAKERBSYSTEM_EXPORT RigidBodyAccelerometer : public RigidBodySensor {
   public:
-    RigidBodyAccelerometer(const std::shared_ptr<RigidBodySystem> sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame);
+    RigidBodyAccelerometer(RigidBodySystem const& sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame);
     virtual ~RigidBodyAccelerometer() {}
 
     virtual size_t getNumOutputs() const override { return 3; }
@@ -493,7 +494,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodyAccelerometer : public RigidBodySensor {
      */
 class DRAKERBSYSTEM_EXPORT RigidBodyGyroscope : public RigidBodySensor {
   public:
-    RigidBodyGyroscope(const std::shared_ptr<RigidBodySystem> sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame);
+    RigidBodyGyroscope(RigidBodySystem const& sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame);
     virtual ~RigidBodyGyroscope() {}
 
     virtual size_t getNumOutputs() const override { return 3; }

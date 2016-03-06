@@ -24,8 +24,8 @@ int main(int argc, char* argv[]) {
 
   auto sensor_frame = tree->frames[0]; //this is a propellor frame.  probably want a body frame for this
 
-  auto accelerometer = make_shared<RigidBodyAccelerometer>(rigid_body_sys, "accelerometer", sensor_frame);
-  auto gyroscope = make_shared<RigidBodyGyroscope>(rigid_body_sys, "gyroscope", sensor_frame);
+  auto accelerometer = make_shared<RigidBodyAccelerometer>(*rigid_body_sys, "accelerometer", sensor_frame);
+  auto gyroscope = make_shared<RigidBodyGyroscope>(*rigid_body_sys, "gyroscope", sensor_frame);
   auto noise_model = make_shared<AdditiveGaussianNoiseModel<double, 3, Vector3d>>(0, 0.01);
   accelerometer->setNoiseModel(noise_model);
   gyroscope->setNoiseModel(noise_model);

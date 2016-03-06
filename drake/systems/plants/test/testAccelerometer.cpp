@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
   rigid_body_sys->addRobotFromFile(getDrakePath()+"/examples/Quadrotor/quadrotor.urdf", floating_base_type);
   auto const & tree = rigid_body_sys->getRigidBodyTree();
   auto sensor_frame = tree->frames[0]; //this is a propellor frame.  probably want a body frame for this
-  auto accelerometer = make_shared<RigidBodyAccelerometer>(rigid_body_sys, "accelerometer", sensor_frame);
+  auto accelerometer = make_shared<RigidBodyAccelerometer>(*rigid_body_sys, "accelerometer", sensor_frame);
   rigid_body_sys->addSensor(accelerometer);
   const double g = 9.81;
   const double tol = 1e-6;
