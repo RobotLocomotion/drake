@@ -1,0 +1,11 @@
+add_executable(testPiecewisePolynomial testPiecewisePolynomial.cpp)
+target_link_libraries(testPiecewisePolynomial drakeTrajectories)
+include_directories( .. )
+include_directories (${PROJECT_SOURCE_DIR}/util/test)
+add_test(NAME testPiecewisePolynomial COMMAND testPiecewisePolynomial)
+
+add_executable(testExponentialPlusPiecewisePolynomial testExponentialPlusPiecewisePolynomial.cpp)
+target_link_libraries(testExponentialPlusPiecewisePolynomial drakeTrajectories)
+include_directories( .. )
+include_directories (${PROJECT_SOURCE_DIR}/util/test)
+add_test(NAME testExponentialPlusPiecewisePolynomial COMMAND testExponentialPlusPiecewisePolynomial)

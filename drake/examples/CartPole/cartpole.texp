@@ -1,0 +1,136 @@
+% simple file for working on the shared slides (by simply including one or two slides at a time).
+
+\documentclass[serif]{beamer}
+\usepackage{movie15,multicol,relsize,xstring}
+\usepackage{russt}
+
+\renewcommand{\bInlineMovies}{true}
+
+\title{RobotLib Examples using the Cart-Pole System}
+\author{The Robot Locomotion Group}
+
+\begin{document}
+
+\begin{frame}
+\titlepage
+\end{frame}
+
+\begin{frame}
+\frametitle{Dynamics (CartPolePlant)}
+Equations of motion:
+\begin{align*}
+\ddot{x} =& \frac{1}{m_c + m_p \sin^2\theta}\left[ f+m_p \sin\theta (l \dot\theta^2 + g\cos\theta)\right] \label{eq:ddot_x}\\
+\ddot{\theta} =& \frac{1}{l(m_c + m_p \sin^2\theta)} \left[ -f
+ \cos\theta - m_p l \dot\theta^2 \cos\theta \sin\theta - (m_c + m_p) g \sin\theta \right] \label{eq:ddot_theta}
+\end{align*}
+
+\begin{center}
+\begin{matlabFigure}[width=.5\textwidth]
+cd ..;
+v=CartPoleVisualizer; 
+th = .6; 
+x0=[0;th;0;0];
+v.draw(0,x0); 
+axis off
+delete(title(''));
+line([0;0],[0;-.5],'LineWidth',.5,'Color','k');
+s=linspace(0,th,10);
+h=plot(.4*sin(s),-.4*cos(s));  set(h,'LineWidth',.5,'Color','k');
+text(.085,-.5,'$\theta$','Interpreter','latex','FontSize',18);
+addpath([docroot,'/techdoc/creating_plots/examples/']);
+[x,y]=dsxy2figxy(-.7*[1 1], .25*[1 -1]);
+h=annotation('arrow',x,y);
+text(-.85,0,'$g$','Interpreter','latex','FontSize',18);
+text(.6*sin(th)+.05,-.6*cos(th)+.05,'$m_p$','Interpreter','latex','FontSize',18);
+text(.4*sin(th),-.4*cos(th)+.1,'$l$','Interpreter','latex','FontSize',18);
+line(-.55*[1,1],.1*[-1,1],'LineWidth',.5,'Color','k');
+[x,y]=dsxy2figxy([-.55,0],[0,0]);
+h=[h,annotation('arrow',x,y)];
+text(-.45,.1,'$x$','Interpreter','latex','FontSize',18);
+text(.2,.2,'$m_c$','Interpreter','latex','FontSize',18);
+\end{matlabFigure}
+\end{center}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{ROA for LQR Balancing Controller}
+
+$$Q = \text{diag}([1,50,1,50]), \quad R = .1$$
+
+\begin{columns}
+\column{.5\textwidth}
+\begin{center}
+
+\only<1>{
+\begin{matlabFigure}[width=.95\textwidth]
+cd ..
+p = CartPolePlant;
+p = p.setInputLimits(-inf,inf);
+
+Q = diag([1 50 1 50]);  R = .1;
+xG = [0;pi;0;0]; uG = 0;
+[c,V0] = tilqr(p,xG,uG,Q,R);
+
+sys = feedback(p,c);
+pp = sys.taylorApprox(0,xG,[],3); 
+
+options.degL1 = 3;
+options.method='levelSet';
+V = regionOfAttraction(pp,xG,V0,options);
+
+plotFunnel(V,xG,[2 4]); %,struct('inclusion','projection'));
+xlabel('$\theta$','Interpreter','latex','FontSize',18);
+ylabel('$\dot\theta$','Interpreter','latex','FontSize',18);
+
+px=msspoly('x',4);
+rho=double(subs(V0,px,ones(4,1)))/double(subs(V,px,ones(4,1)));
+
+title(['$\rho = ',num2str(rho),'$'],'Interpreter','latex','FontSize',24);
+\end{matlabFigure}
+
+Taylor approx via SOS
+}
+
+\only<2>{
+\begin{matlabFigureCont}[width=.95\textwidth]
+options.method='bilinear';
+options.degV=2;
+
+V2 = regionOfAttraction(pp,xG,V,options);
+
+clf;
+h2=plotFunnel(V2,xG,[2 4],struct('color',[.9 .3 .2]));  
+hold on;
+h=plotFunnel(V,xG,[2 4]);
+
+xlabel('$\theta$','Interpreter','latex','FontSize',18);
+ylabel('$\dot\theta$','Interpreter','latex','FontSize',18);
+
+legend([h;h2],'Original','Optimized','FontSize',18);
+\end{matlabFigureCont}
+
+Taylor approx via SOS w/ searching over quadratic Lyapunov functions.
+}
+
+\end{center}
+
+\column{.5\textwidth}
+
+
+\begin{itemize}
+\item  According to a sample-base check, this
+appears to be tight (sampled ROA is 2\% larger on average).  
+
+\item Note that these controllers use a \emph{lot} of control effort.
+  Revisit when verification w/ saturations is implemented.
+
+\item<2> Optimizing quadratic $V$ doesn't help much.  
+
+\end{itemize}
+
+\end{columns}
+
+\end{frame}
+
+\end{document}

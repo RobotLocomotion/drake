@@ -1,0 +1,150 @@
+<?xml version="1.0"?>
+
+<robot name="KneedCompassGait" xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <xacro:property name="mh" value="10" />
+  <xacro:property name="m" value="2.5" />
+  <xacro:property name="a" value=".25" />
+  <xacro:property name="b" value=".25" />
+
+  <xacro:macro name="leg" params="lr cname color">
+    <link name="${lr}_leg">
+      <visual>
+      	<origin xyz="0 0 ${-(a+b)/2}" />
+	      <geometry>
+	        <cylinder radius="0.0075" length="${a+b}"/>
+      	</geometry>
+        <material name="${cname}">
+          <color rgba="${color}" />
+        </material>
+      </visual>
+      <collision>
+	      <origin xyz="0 0 ${-a-b}" />
+	      <geometry>
+	        <sphere radius="0"/>
+	      </geometry>
+      </collision>
+    </link>
+    <link name="${lr}_leg_mass">
+      <visual>
+        <origin xyz="0 0 ${-a}" />
+       	<geometry>
+	        <sphere radius="${.01*m}" />
+	      </geometry>
+        <material name="${cname}">
+          <color rgba="${color}" />
+        </material>
+      </visual>
+      <inertial>
+        <origin xyz="0 0 ${-a}" />
+	        <mass value="${m}" />
+        	<inertia ixx="0"  ixy="0"  ixz="0" iyy="0" iyz="0" izz="0" />
+      </inertial>
+    </link>
+    <joint name="${lr}_leg_mass_weld" type="fixed">
+      <parent link="${lr}_leg" />
+      <child link="${lr}_leg_mass" />
+    </joint>
+  </xacro:macro>
+
+  <xacro:macro name="collisionlessleg" params="lr cname color">
+    <link name="${lr}_leg">
+      <visual>
+      	<origin xyz="0 0 ${-(a+b)/2}" />
+	      <geometry>
+	        <cylinder radius="0.0075" length="${a+b}"/>
+      	</geometry>
+        <material name="${cname}">
+          <color rgba="${color}" />
+        </material>
+      </visual>
+    </link>
+    <link name="${lr}_leg_mass">
+      <visual>
+        <origin xyz="0 0 ${-a}" />
+       	<geometry>
+	        <sphere radius="${.01*m}" />
+	      </geometry>
+        <material name="${cname}">
+          <color rgba="${color}" />
+        </material>
+      </visual>
+      <inertial>
+        <origin xyz="0 0 ${-a}" />
+	        <mass value="${m}" />
+        	<inertia ixx="0"  ixy="0"  ixz="0" iyy="0" iyz="0" izz="0" />
+      </inertial>
+    </link>
+    <joint name="${lr}_leg_mass_weld" type="fixed">
+      <parent link="${lr}_leg" />
+      <child link="${lr}_leg_mass" />
+    </joint>
+  </xacro:macro>
+  
+  <link name="hip">
+    <inertial>
+      <mass value="${mh}" />
+      <inertia ixx="0"  ixy="0"  ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+    <visual>    
+      <geometry>
+        <sphere radius="${.005*mh}" />
+      </geometry>
+      <material name="green">
+        <color rgba="0 1 0 1" />
+      </material>
+    </visual>
+  </link>
+  
+
+  <xacro:collisionlessleg lr="left_upper" cname="red" color="1 0 0 1" />
+  <xacro:leg lr="left_lower" cname="red" color="1 0 0 1" />
+  <xacro:collisionlessleg lr="right_upper" cname="blue" color="0 0 1 1" />
+  <xacro:leg lr="right_lower"  cname="blue" color="0 0 1 1" />
+
+  <joint name="left_leg_weld" type="fixed">
+    <parent link="hip" />
+    <child link="left_upper_leg" /> 
+  </joint>
+  
+  <joint name="hip_pin" type="continuous">
+    <parent link="hip" />
+    <child link="right_upper_leg" />
+    <axis xyz="0 1 0"/> 
+  </joint>
+
+  <joint name="left_knee_pin" type="continuous">
+    <parent link="left_upper_leg" />
+    <child link="left_lower_leg" />
+    <axis xyz="0 1 0"/> 
+    <origin xyz="0 0 ${-a-b}" />
+    <limit upper="0" effort="100" velocity="100" lower="-Inf"/>
+  </joint>
+
+  <joint name="right_knee_pin" type="continuous">
+    <parent link="right_upper_leg" />
+    <child link="right_lower_leg" />
+    <axis xyz="0 1 0"/> 
+    <origin xyz="0 0 ${-a-b}" />
+    <limit upper="0" effort="100" velocity="100" lower="-Inf"/>
+  </joint>
+
+  <transmission type="SimpleTransmission" name="hip_trans">
+    <actuator name="hip_torque" />
+    <joint name="hip_pin" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+
+  <transmission type="SimpleTransmission" name="left_knee_trans">
+    <actuator name="left_knee_torque" />
+    <joint name="left_knee_pin" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+
+  <transmission type="SimpleTransmission" name="right_knee_trans">
+    <actuator name="right_knee_torque" />
+    <joint name="right_knee_pin" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+
+</robot>

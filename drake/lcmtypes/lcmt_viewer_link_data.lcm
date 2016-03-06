@@ -1,0 +1,10 @@
+package drake;
+
+struct lcmt_viewer_link_data
+{
+  string name;
+  int32_t robot_num;
+    
+  int32_t num_geom;
+  lcmt_viewer_geometry_data geom[num_geom];  
+}

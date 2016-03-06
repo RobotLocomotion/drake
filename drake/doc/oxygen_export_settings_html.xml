@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<serialized version="15.0" xml:space="preserve">
+	<map>
+		<entry>
+			<String>xsd.documentation.options</String>
+			<xsdDocumentationOptions>
+				<field name="imageType">
+					<String>jpeg</String>
+				</field>
+				<field name="includeGlobalElements">
+					<Boolean>true</Boolean>
+				</field>
+				<field name="includeGlobalAttributes">
+					<Boolean>true</Boolean>
+				</field>
+				<field name="includeLocalElements">
+					<Boolean>true</Boolean>
+				</field>
+				<field name="includeLocalAttributes">
+					<Boolean>true</Boolean>
+				</field>
+				<field name="includeSimpleTypes">
+					<Boolean>true</Boolean>
+				</field>
+				<field name="includeComplexTypes">
+					<Boolean>true</Boolean>
+				</field>
+				<field name="includeGroups">
+					<Boolean>true</Boolean>
+				</field>
+				<field name="includeAttributesGroups">
+					<Boolean>true</Boolean>
+				</field>
+				<field name="includeRedefines">
+					<Boolean>true</Boolean>
+				</field>
+				<field name="includeReferencedSchemas">
+					<Boolean>true</Boolean>
+				</field>
+				<field name="includeNotations">
+					<Boolean>true</Boolean>
+				</field>
+				<field name="detailsDiagram">
+					<Boolean>true</Boolean>
+				</field>
+				<field name="detailsNamespace">
+					<Boolean>false</Boolean>
+				</field>
+				<field name="detailsLocation">
+					<Boolean>false</Boolean>
+				</field>
+				<field name="detailsType">
+					<Boolean>false</Boolean>
+				</field>
+				<field name="detailsTypeHierarchy">
+					<Boolean>false</Boolean>
+				</field>
+				<field name="detailsModel">
+					<Boolean>false</Boolean>
+				</field>
+				<field name="detailsChildren">
+					<Boolean>true</Boolean>
+				</field>
+				<field name="detailsInstance">
+					<Boolean>false</Boolean>
+				</field>
+				<field name="detailsUsedby">
+					<Boolean>false</Boolean>
+				</field>
+				<field name="detailsProperties">
+					<Boolean>false</Boolean>
+				</field>
+				<field name="detailsFacets">
+					<Boolean>false</Boolean>
+				</field>
+				<field name="detailsAttributes">
+					<Boolean>true</Boolean>
+				</field>
+				<field name="detailsAsserts">
+					<Boolean>false</Boolean>
+				</field>
+				<field name="detailsIdentityConstr">
+					<Boolean>false</Boolean>
+				</field>
+				<field name="detailsEscapeAnn">
+					<Boolean>true</Boolean>
+				</field>
+				<field name="detailsSource">
+					<Boolean>false</Boolean>
+				</field>
+				<field name="detailsAnnotations">
+					<Boolean>true</Boolean>
+				</field>
+				<field name="includeIndexLocalComponents">
+					<Boolean>false</Boolean>
+				</field>
+				<field name="showAnnotationsInDiagram">
+					<Boolean>false</Boolean>
+				</field>
+				<field name="filterByLanguage">
+					<Boolean>false</Boolean>
+				</field>
+				<field name="languageToFilter">
+					<String>en</String>
+				</field>
+				<field name="includeIndexResourceHierarchy">
+					<Boolean>true</Boolean>
+				</field>
+				<field name="unexpandedOutputFile">
+					<String>urdf/${cfn}.html</String>
+				</field>
+				<field name="splitMethod">
+					<Integer>3</Integer>
+				</field>
+				<field name="openOutputInBrowser">
+					<Boolean>false</Boolean>
+				</field>
+				<field name="format">
+					<Integer>1</Integer>
+				</field>
+				<field name="customXSL">
+					<null/>
+				</field>
+				<field name="deleteXMLFiles">
+					<Boolean>true</Boolean>
+				</field>
+				<field name="includeIndex">
+					<Boolean>true</Boolean>
+				</field>
+				<field name="copyAdditionalResources">
+					<Boolean>false</Boolean>
+				</field>
+				<field name="additionalResourcesDir">
+					<null/>
+				</field>
+			</xsdDocumentationOptions>
+		</entry>
+	</map>
+</serialized>

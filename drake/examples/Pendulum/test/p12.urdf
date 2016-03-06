@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../../doc/drakeURDF.xsd" name="Pendulum">
+  <material name="green">
+ 	  <color rgba=".3 .6 .4 1" />
+  </material>
+  <material name="red">
+    <color rgba=".9 .1 0 1" />
+  </material>
+  <material name="blue">
+    <color rgba="0 0 1 1" />
+  </material>
+
+  <link name="world" drake_ignore="true" />
+  <link name="base_part2">
+    <inertial>
+      <origin xyz="0 0 .015" rpy="0 0 0"/>
+      <mass value="1"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 .015" />
+      <geometry>
+        <sphere radius=".015" />
+      </geometry> 
+      <material name="green" />
+    </visual>
+  </link>
+  <joint name="base_weld" type="fixed" drake_ignore="true">
+    <parent link="world" />
+    <child link="base_part2" />
+    <origin xyz="0 0 0" />
+  </joint>
+  <link name="arm">
+    <inertial> 
+      <origin xyz="-.25 -.25 0" rpy="0 0 0" />
+      <mass value="0.5" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/> 
+    </inertial>
+<!--
+    <visual>
+      <origin xyz="-.375 0 0" rpy="0 1.5708 0" />
+      <geometry>
+         <cylinder length=".75" radius=".01" />
+      </geometry>
+      <material name="red" />
+    </visual> 
+-->
+  </link>
+  <joint name="theta" type="continuous">
+    <parent link="base_part2"/>
+    <child link="arm" />
+    <axis xyz="0 0 1" />
+    <dynamics damping="0.1" />
+  </joint>
+</robot>

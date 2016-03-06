@@ -1,0 +1,21 @@
+package drake;
+
+struct lcmt_body_motion_data
+{
+	int64_t timestamp;
+
+	int32_t body_id;
+
+        lcmt_piecewise_polynomial spline;
+
+	boolean in_floating_base_nullspace;
+	boolean control_pose_when_in_contact;
+
+        double quat_task_to_world[4];
+        double translation_task_to_world[3];
+        double xyz_kp_multiplier[3];
+        double xyz_damping_ratio_multiplier[3];
+        double expmap_kp_multiplier;
+        double expmap_damping_ratio_multiplier;
+        double weight_multiplier[6];
+}
