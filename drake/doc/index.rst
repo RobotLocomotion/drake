@@ -62,7 +62,7 @@ Here is a quick summary of capabilities:
 	* Advanced visualization tools, including parts of our user interface from the DARPA Robotics Challenge (with more coming soon)
 	* Hardware / network interfaces
 
-Most of these models/tools are described in `the companion textbook from an MIT course/MOOC <https://people.csail.mit.edu/russt/underactuated/underactuated.html?chapter=drake>`_.  We've also recently started populating the `gallery` (contributions welcome!).
+Most of these models/tools are described in `the companion textbook from an MIT course/MOOC <https://people.csail.mit.edu/russt/underactuated/underactuated.html?chapter=drake>`_.  We've also recently started populating the :doc:`gallery` (contributions welcome!).
 
 We hope you find this tool useful.   Please engage us `via github issues <https://github.com/RobotLocomotion/drake/issues>`_ with comments, questions, success stories, and frustrations.  And please contribute your best bug fixes, features, and examples!
 
