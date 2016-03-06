@@ -155,14 +155,14 @@ Drake's rigid-body manipulator classes support frictional contact, aerodynamics,
 
 .. raw :: html
 
-	<iframe width="420" height="315" src="https://youtu.be/embed/M3m-rmPzbRk?rel=0" frameborder="0" allowfullscreen></iframe>
+	<iframe width="420" height="315" src="https://www.youtube.com/embed/M3m-rmPzbRk?rel=0" frameborder="0" allowfullscreen></iframe>
 
 
 20 falling capsules.  It's not fast to simulate, but it works.
 
 .. raw :: html
 
-	<iframe width="560" height="315" src="https://youtu.be/embed/gsebSpj4KK8?rel=0" frameborder="0" allowfullscreen></iframe>
+	<iframe width="560" height="315" src="https://www.youtube.com/embed/gsebSpj4KK8?rel=0" frameborder="0" allowfullscreen></iframe>
 
 
 
