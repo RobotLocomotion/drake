@@ -389,26 +389,26 @@ class DRAKERBSYSTEM_EXPORT RigidBodySpringDamper
 /** NoiseModel
  * @brief Represents generalized vector-valued noise
  */
-template <typename ScalarType, int Dimension>
+template <typename ScalarType, int Dimension, typename Derived>
 class DRAKERBSYSTEM_EXPORT NoiseModel {
   public:
-    virtual Eigen::Matrix<ScalarType, Dimension, 1> generateNoiseVector() = 0;
+    virtual Eigen::Matrix<ScalarType, Dimension, 1> generateNoise(Eigen::MatrixBase<Derived> const& input) = 0;
 };
 
 /** GaussianNoiseModel
  * @brief Implements the NoiseModel interface where the underlying noise distribution is parameterized by a Gaussian
  */
-template <typename ScalarType, int Dimension>
-class DRAKERBSYSTEM_EXPORT GaussianNoiseModel : public NoiseModel<ScalarType, Dimension> {
+template <typename ScalarType, int Dimension, typename Derived>
+class DRAKERBSYSTEM_EXPORT AdditiveGaussianNoiseModel : public NoiseModel<ScalarType, Dimension, Derived> {
   public:
-    GaussianNoiseModel(double mean, double std_dev) : distribution(mean, std_dev), generator(rd()) { }
+    AdditiveGaussianNoiseModel(double mean, double std_dev) : distribution(mean, std_dev), generator(rd()) { }
 
-    virtual Eigen::Matrix<ScalarType, Dimension, 1> generateNoiseVector() override {
+    virtual Eigen::Matrix<ScalarType, Dimension, 1> generateNoise(Eigen::MatrixBase<Derived> const& input) override {
         Eigen::Matrix<ScalarType, Dimension, 1> noise_vector;
         for(std::size_t index = 0; index < Dimension; index++) {
             noise_vector[index] = distribution(generator);
         }
-        return noise_vector;
+        return noise_vector + input;
     }
   private:
     std::random_device rd;
@@ -478,12 +478,12 @@ class DRAKERBSYSTEM_EXPORT RigidBodyAccelerometer : public RigidBodySensor {
     virtual size_t getNumOutputs() const override { return 3; }
     virtual Eigen::VectorXd output(const double& t, const KinematicsCache<double>& rigid_body_state, const RigidBodySystem::InputVector<double>& u) const override;
 
-    void setNoiseModel(std::shared_ptr<NoiseModel<double, 3>> model) {
+    void setNoiseModel(std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> model) {
         noise_model = model;
     }
 
   private:
-    std::shared_ptr<NoiseModel<double, 3>> noise_model;
+    std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> noise_model;
     const std::shared_ptr<RigidBodyFrame> frame;
 };
 
@@ -499,12 +499,12 @@ class DRAKERBSYSTEM_EXPORT RigidBodyGyroscope : public RigidBodySensor {
     virtual size_t getNumOutputs() const override { return 3; }
     virtual Eigen::VectorXd output(const double& t, const KinematicsCache<double>& rigid_body_state, const RigidBodySystem::InputVector<double>& u) const override;
 
-    void setNoiseModel(std::shared_ptr<NoiseModel<double, 3>> model) {
+    void setNoiseModel(std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> model) {
         noise_model = model;
     }
 
   private:
-    std::shared_ptr<NoiseModel<double, 3>> noise_model;
+    std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> noise_model;
     const std::shared_ptr<RigidBodyFrame> frame;
 };
 

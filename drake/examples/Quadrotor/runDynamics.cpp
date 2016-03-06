@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
 
   auto accelerometer = make_shared<RigidBodyAccelerometer>(rigid_body_sys, "accelerometer", sensor_frame);
   auto gyroscope = make_shared<RigidBodyGyroscope>(rigid_body_sys, "gyroscope", sensor_frame);
-  auto noise_model = make_shared<GaussianNoiseModel<double, 3>>(0, 0.01);
+  auto noise_model = make_shared<AdditiveGaussianNoiseModel<double, 3, Vector3d>>(0, 0.01);
   accelerometer->setNoiseModel(noise_model);
   gyroscope->setNoiseModel(noise_model);
   rigid_body_sys->addSensor(accelerometer);
