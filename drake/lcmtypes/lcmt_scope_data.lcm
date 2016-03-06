@@ -1,0 +1,14 @@
+package drake;
+
+struct lcmt_scope_data
+{
+  // plot settings (shouldn't change often):
+  int64_t scope_id;      // which subplot to draw in
+  int32_t num_points;    // the length of the history to use for this trace 
+  string linespec;       // matlab plot command linespec
+  boolean resetOnXval;   // true =>  plot is cleared whenever xval decreases, e.g. when xval = time
+
+  // unique data from this packet:
+  double xdata;  
+  double ydata;  
+}

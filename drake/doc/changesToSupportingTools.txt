@@ -1,0 +1,22 @@
+
+If you're adventurous, things can get better if you make the following changes.
+
+To SeDuMi:
+
+*****
+
+Another interesting note is that there is a typo in the current version of SeDuMi. On line 21 of getada.m, the code reads
+
+if spars(DAt.q > 0.2)
+
+whereas it should read
+
+if spars(DAt.q) > 0.2
+
+This can actually kill your runtime as sparse(DAt.q > 0.2) will almost always evaluate to true (unless all entries of DAt.q are less than 0.2), meaning that SeDuMi is not exploiting the potential sparsity of DAt.q.
+
+-Jacob
+
+
+******
+

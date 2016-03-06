@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="15.0">
+    <meta>
+        <filters directoryPatterns="" filePatterns="" positiveFilePatterns="*.urdf,*.URDF,*.xsd" showHiddenFiles="false"/>
+        <options/>
+    </meta>
+    <projectTree name="drakeURDF.xpr">
+        <folder path="../"/>
+        <file name="drakeURDF.xsd"/>
+    </projectTree>
+</project>

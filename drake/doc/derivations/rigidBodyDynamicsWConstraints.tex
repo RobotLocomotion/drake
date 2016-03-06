@@ -1,0 +1,194 @@
+\tolerance=10000
+\documentclass{article}
+\usepackage{amsmath,times,graphicx,url}
+
+\newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\bq}{{\bf q}}
+\newcommand{\bx}{{\bf x}}
+\newcommand{\bu}{{\bf u}}
+\newcommand{\bw}{{\bf w}}
+\newcommand{\bz}{{\bf z}}
+\newcommand{\bK}{{\bf K}}
+\newcommand{\balpha}{{\bf \alpha}}
+\newcommand{\bbeta}{{\bf \beta}}
+\newcommand{\avg}[1]{E\left[ #1 \right]}
+\DeclareMathOperator*{\find}{find}
+\newcommand{\subjto}{\text{subject to}}
+\DeclareMathOperator*{\argmin}{argmin}
+\DeclareMathOperator*{\sgn}{sgn}
+
+\usepackage{xcolor}
+% switch to other comment command to remove all comments.
+\newcommand{\mycomment}[2]{\textcolor{red}{#1}\footnote{\textcolor{red}{#2}}}
+%\newcommand{\mycomment}[1]{#1}
+
+
+\title{Drake Implementation of Rigid Body Dynamics Algorithms with Constraints}
+
+\begin{document}
+\maketitle
+
+More complete write-up may follow.  For now, just some quick notes.
+
+
+\section{Bilateral Position Constraints}
+
+Consider constraint equation $$\phi(q) = 0.$$  These arise, for
+instance, when the system has a closed kinematic chain.  
+The (floating base) equations of motion can be written 
+$$H(q)\ddot{q} + C(q,\dot{q}) = B u + J(q)^T \lambda,$$
+where $J(q) = \pd{\phi}{q}$ and $\lambda$ is the constraint force.
+
+To solve for $\lambda$, observe that when the constraint is imposed, 
+$\phi(q)=0$ and therefor $\dot{\phi}=0$ and $\ddot{\phi}=0$.  Writing
+this out, we have \begin{gather*}\dot{\phi} = J(q)\dot{q}=0,\\
+  \ddot{\phi} = J(q) \ddot{q} + \dot{J}(q) \dot{q} = 0.\end{gather*}
+Inserting the dynamics and solving for $\lambda$ yields $$\lambda =- (J
+H^{-1} J^T)^+ (J H^{-1} (Bu - C) + \dot{J}\dot{q}).$$ The
+$^+$ notation refers to a Moore-Penrose pseudo-inverse.  In most cases, there
+are less constraints than degrees of freedom, in which case the
+inverse has a unique solution (and the traditional inverse could have
+been used).  But the pseudo-inverse also works in cases where the
+system is over-constrained. 
+
+For numerical stability, I would like to add a restoring force to
+this constraint in the event that the constraint is not satisfied to
+numerical precision.  To accomplish this, I'll ask for $$\ddot\phi =
+-\frac{2}{\epsilon} \dot\phi(q) - \frac{1}{\epsilon^2} \phi(q).$$
+Carrying this through
+yields 
+\begin{gather*}
+\lambda =- (J
+H^{-1} J^T)^+ (J H^{-1} (Bu - C) + (\dot{J} + \frac{2}{\epsilon}
+J)\dot{q} + \frac{1}{\epsilon^2} \phi).
+\end{gather*}
+
+
+\section{Bilateral Velocity Constraints}
+
+Consider the constraint equation 
+$$\psi(q,\dot{q}) = 0,$$
+where $\pd{\psi}{\dot{q}} =\ne 0.$  These are less common, but arise
+when, for instance, a joint is driven through a prescribed motion.  
+Here, the manipulator equations are given by $$H(q)\ddot{q} + C = B u
++ \pd{\psi}{\dot{q}}^T \lambda.$$
+To solve for $\lambda$, we take $$\dot{\psi} = \pd{\psi}{q} \dot{q} +
+\pd{\psi}{\dot{q}}\ddot{q} = 0,$$ which yields
+$$\lambda = - \left( \pd{\psi}{\dot{q}} H^{-1} \pd{\psi}{\dot{q}}
+  \right)^+ \left[ \pd{\psi}{\dot{q}} H^{-1} (Bu - C) + \pd{\psi}{q}
+    \dot{q} \right].$$
+ 
+Again, for numerical stability, we as instead for $\dot{\psi} =
+-\frac{1}{\epsilon} \psi$, which yields
+$$\lambda = - \left( \pd{\psi}{\dot{q}} H^{-1} \pd{\psi}{\dot{q}}
+  \right)^+ \left[ \pd{\psi}{\dot{q}} H^{-1} (Bu - C) + \pd{\psi}{q}
+    \dot{q} + \frac{1}{\epsilon} \psi \right].$$
+
+\section{Unilateral Position Constraints}
+
+Consider the constraint equation $$\phi(q) \ge 0.$$ One common example
+of this, for instance, is a joint limit.  The dynamics of unilateral
+constraints contain to pieces: the continuous dynamics when the
+constraint is inactive ($\phi(q) > 0$) or active ($\phi(q) = 0$), but
+also an impulsive event when the constraint becomes active
+($\phi(q(t))=0, \phi(q(t-\epsilon))>0$).  We model this as a hybrid
+transition.  There is no corresponding
+event when the constraint transitions to inactive.  
+
+\subsection{Continuous Dynamics}
+
+The continuous equations are governed by $$H\ddot{q} + C = B u + J^T
+\lambda,$$ where $J = \pd{\phi}{q}$.  
+Let us consider the solution for different cases.  
+\begin{itemize}
+\item If $\phi > 0$ the constraint is inactive, and $\lambda = 0$.  
+\item Otherwise $\phi = 0$, and 
+\begin{itemize}
+\item if $\dot{\phi} > 0$, then the constraint is going inactive, and
+  $\lambda = 0$.  
+\item otherwise $\dot{\phi} = 0$, and 
+\begin{itemize}
+\item $\ddot{\phi} > 0$, and $\lambda = 0$
+\item or $\ddot{\phi} = 0$, and $\lambda > 0$.  
+\end{itemize}
+\end{itemize}
+\end{itemize}
+For the case when $\ddot{\phi} = 0, \lambda > 0$, we have (as in the
+bilateral position constraints) $$\lambda =- (J
+H^{-1} J^T)^+ (J H^{-1} (Bu - C) + \dot{J}\dot{q}).$$
+
+As a result, if $\phi>0$ or $\dot{\phi}$, then $\lambda = 0$.  Otherwise, we have
+to solve for $\ddot{q}$ and $\lambda$ simultaneously to determine
+which constraints are active.  We can accomplish this by solving a linear complementarity problem (LCP):
+\begin{eqnarray*}
+  \find & & \ddot{\phi}, \lambda \\
+ \subjto & & \ddot{\phi} \ge 0, \lambda \ge 0, \\
+& & \ddot{\phi} = \dot{J} \dot{q} + J H^{-1} (Bu - C + J^T \lambda), \\
+ & & \forall_i ~ \ddot\phi_i \lambda_i = 0.
+\end{eqnarray*}
+Then $\ddot{q}$ follows from $\ddot{q} = H^{-1}( Bu - C + J^T \lambda ).$
+
+For numerical stability, I must also consider when $\phi < 0$ and/or
+$\phi=0,\dot{\phi}<0$, so I instead ask for $$\ddot{\phi} \ge
+-\frac{2}{\epsilon} \dot{\phi} - \frac{1}{\epsilon^2} \phi,$$ given
+the conditions
+\begin{itemize} 
+\item If $\phi>0$ or $\dot{\phi} > -\frac{1}{\epsilon} \phi$, then
+  $\lambda = 0$.
+\item Otherwise, take $\alpha = \ddot\phi + \frac{2}{\epsilon}\dot\phi
+  + \frac{1}{\epsilon^2} \phi$ to write
+\begin{eqnarray*}
+  \find & & \alpha, \lambda \\
+ \subjto & & \alpha \ge 0, \lambda \ge 0, \\
+& & \alpha = \dot{J} \dot{q} + J H^{-1} (Bu - C + J^T \lambda) -
+\frac{2}{\epsilon} \dot\phi - \frac{1}{\epsilon^2} \phi, \\
+ & & \forall_i ~ \alpha_i \lambda_i = 0.
+\end{eqnarray*}
+\end{itemize}
+
+\subsection{Impulsive Event}
+
+The collision event is described by the
+zero-crossings (from positivie to negative) of the scalar function
+$\phi(q)$, and that after the impact we impose the constraint that
+$\phi = 0$.  Using $$H\ddot{q} + C = Bu + J^T \lambda,$$ 
+$\lambda$ is now an impulsive force that 
+well-defined when integrated over the time of the collision (denoted
+$t_c^-$ to $t_c^+$).  Integrate both sides of the equation
+over that (instantaneous) interval:
+\begin{align*}\int_{t_c^-}^{t_c^+} dt\left[  H \ddot{q} + C \right] =
+\int_{t_c^-}^{t_c^+} dt \left[ Bu + J^T \lambda \right]
+\end{align*}
+Since $q$ and $u$ are constants over this interval, we are left
+with
+$$H\dot{q}^+ - H\dot{q}^- = J^T \int_{t_c^-}^{t_c^+} \lambda dt,$$ 
+where $\dot{q}^+$ is short-hand
+for $\dot{q}(t_c^+)$.  Multiplying both sides by $J H^{-1}$, we have 
+$$ J \dot{q}^+ - J\dot{q}^- = J H^{-1} J^T \int_{t_c^-}^{t_c^+} \lambda dt.$$
+But the first term on the left is zero because after the collision,
+$\dot\phi = 0$, yielding:
+$$\int_{t_c^-}^{t_c^+} \lambda dt = - \left[ J H^{-1} J^T \right]^+
+J \dot{q}^-.$$  Substituting this back in above results in 
+$$\dot{q}^+ = \left[ I - H^{-1} J^T \left[ J H^{-1} J^T \right]^+ J
+\right] \dot{q}^-.$$
+
+So far, I assume all collisions are inelastic.  Elastic
+collisions are also possible, but require some care implementing
+restitution (especially in the contact case described below).  An
+excellent discussion can be found in chapter 3 of \cite{Mirtich96}.  
+
+
+\section{Contact Constraints}
+
+\subsection{Continuous Dynamics}
+
+\subsection{Impulsive Event}
+
+
+\section{Putting it all together}
+
+
+\bibliographystyle{plain}
+\bibliography{elib}
+
+\end{document}

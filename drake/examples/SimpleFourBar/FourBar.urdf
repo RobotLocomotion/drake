@@ -1,0 +1,103 @@
+<?xml version="1.0"?>
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="FourBar">
+  <link name="base_link">
+    <inertial>
+        <mass value="1"/>
+        <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <geometry>
+        <cylinder length="4" radius="0.2"/>
+      </geometry>
+      <material>
+        <color rgba=".6353 .6353 .6353 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <link name="link_1">
+    <inertial>
+        <mass value="1"/>
+        <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 .9" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="1.8" radius="0.2"/>
+      </geometry>
+      <material>
+        <color rgba=".6353 .6353 .6353 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <link name="link_2">
+    <inertial>
+        <mass value="1"/>
+        <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 1.8" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="3.6" radius="0.2"/>
+      </geometry>
+      <material>
+        <color rgba=".6353 .6353 .6353 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <link name="link_3">
+    <inertial>
+        <mass value="1"/>
+        <inertia ixx="1"  ixy="0"  ixz="0" iyy="1" iyz="0" izz="1" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 1.3" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="2.6" radius="0.2"/>
+      </geometry>
+      <material>
+        <color rgba=".6353 .6353 .6353 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <joint name="joint_0" type="continuous">
+    <axis xyz="0 1 0"/>
+    <parent link="base_link"/>
+    <child link="link_1"/>
+    <origin rpy="0 0 0" xyz="0 0 2"/>    
+  </joint>
+
+  <joint name="joint_1" type="continuous">
+    <axis xyz="0 1 0"/>
+    <parent link="link_1"/>
+    <child link="link_2"/>
+    <origin rpy="0 0 0" xyz="0 0 1.8"/>
+    <limit effort="100"/>
+    <dynamics damping="0.0" friction="0.0"/>
+  </joint>
+
+  <joint name="joint_2" type="continuous">
+    <axis xyz="0 1 0"/>
+    <parent link="link_2"/>
+    <child link="link_3"/>
+    <origin rpy="0 0 0" xyz="0 0 3.6"/>
+  </joint>
+
+  <loop_joint name="joint_3" type="continuous">
+    <axis xyz="0 1 0"/>
+    <link1 link="link_3" rpy="0 0 0" xyz="0 0 2.6"/>
+    <link2 link="base_link" rpy="0 0 0" xyz="0 0 0"/>
+  </loop_joint>
+
+  <transmission type="SimpleTransmission" name="joint_0_trans">
+    <actuator name="control_torque" />
+    <joint name="joint_0" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+
+</robot>
