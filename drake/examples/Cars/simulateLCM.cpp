@@ -78,11 +78,12 @@ int main(int argc, char* argv[]) {
   // be reused
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
 
-  auto rigid_body_sys =
-      make_shared<RigidBodySystem>(argv[1], floating_base_type);
-  auto const& tree = rigid_body_sys->getRigidBodyTree();
-  for (int i = 2; i < argc; i++)
-    tree->addRobotFromSDF(argv[i], DrakeJoint::FIXED);  // add environment
+
+  auto rigid_body_sys = make_shared<RigidBodySystem>();
+  rigid_body_sys->addRobotFromFile(argv[1],floating_base_type);
+  auto const & tree = rigid_body_sys->getRigidBodyTree();
+  for (int i=2; i<argc; i++)
+    tree->addRobotFromSDF(argv[i],DrakeJoint::FIXED);  // add environment
 
   if (argc < 3) {  // add flat terrain
     double box_width = 1000;

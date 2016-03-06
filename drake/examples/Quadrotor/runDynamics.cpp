@@ -18,18 +18,20 @@ int main(int argc, char* argv[]) {
     return 1;
 
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
-  auto rigid_body_sys = make_shared<RigidBodySystem>(getDrakePath()+"/examples/Quadrotor/quadrotor.urdf",floating_base_type);
+  auto rigid_body_sys = make_shared<RigidBodySystem>();
   auto const & tree = rigid_body_sys->getRigidBodyTree();
+  rigid_body_sys->addRobotFromFile(getDrakePath()+"/examples/Quadrotor/quadrotor.urdf", floating_base_type);
 
   auto sensor_frame = tree->frames[0]; //this is a propellor frame.  probably want a body frame for this
 
-  auto accelerometer = make_shared<RigidBodyAccelerometer>(rigid_body_sys.get(), "accelerometer", sensor_frame);
-  auto gyroscope = make_shared<RigidBodyGyroscope>(rigid_body_sys.get(), "gyroscope", sensor_frame);
+  auto accelerometer = make_shared<RigidBodyAccelerometer>(rigid_body_sys, "accelerometer", sensor_frame);
+  auto gyroscope = make_shared<RigidBodyGyroscope>(rigid_body_sys, "gyroscope", sensor_frame);
   auto noise_model = make_shared<GaussianNoiseModel<double, 3>>(0, 0.01);
   accelerometer->setNoiseModel(noise_model);
   gyroscope->setNoiseModel(noise_model);
   rigid_body_sys->addSensor(accelerometer);
   rigid_body_sys->addSensor(gyroscope);
+
 
   double box_width = 1000;
   double box_depth = 10;
@@ -41,7 +43,8 @@ int main(int argc, char* argv[]) {
   world->addVisualElement(DrakeShapes::VisualElement(geom,T_element_to_link,color));
   tree->addCollisionElement(RigidBody::CollisionElement(geom,T_element_to_link,world),world,"terrain");
   tree->updateStaticCollisionElements();
-  
+
+
   auto visualizer = make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm,tree);
   
   auto quad_control_to_rbsys_input = make_shared<Gain<QuadrotorControl, RigidBodySystem::InputVector>>(Eigen::Matrix4d::Identity());

@@ -10,7 +10,9 @@ public:
     typedef drake::lcmt_quadrotor_control_t LCMMessageType;
     static std::string channel() { return "QUAD_CONTROL"; };
 
-    QuadrotorControl(void) : motors(Eigen::Vector4d::Zero()) {}
+    QuadrotorControl(void) : motors(Eigen::Vector4d::Zero()) {
+      motors << 1.226250, 1.226250, 1.226250, 1.226250;
+    }
 
     template <typename Derived>
     QuadrotorControl(const Eigen::MatrixBase<Derived>& x) : motors(x) {};
