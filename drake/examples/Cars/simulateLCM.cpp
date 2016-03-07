@@ -154,6 +154,7 @@ int main(int argc, char* argv[]) {
   rigid_body_sys->friction_coefficient = 10.0;  // essentially infinite friction
   options.initial_step_size = 5e-3;
   options.timeout_seconds = numeric_limits<double>::infinity();
+  options.wait_for_keypress = false;
 
   VectorXd x0 = VectorXd::Zero(rigid_body_sys->getNumStates());
   x0.head(tree->num_positions) = tree->getZeroConfiguration();

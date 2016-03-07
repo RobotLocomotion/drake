@@ -20,8 +20,10 @@ struct SimulationOptions {
   double initial_step_size;
   double timeout_seconds;
 
+  bool wait_for_keypress;  //wait for user to press a key before executing the next time stpe.
+
   SimulationOptions()
-      : realtime_factor(-1.0), initial_step_size(0.01), timeout_seconds(1.0){};
+      : realtime_factor(-1.0), initial_step_size(0.01), timeout_seconds(1.0), wait_for_keypress(false){};
 };
 const static SimulationOptions default_simulation_options;
 
@@ -77,6 +79,14 @@ void simulate(const System& sys, double ti, double tf,
   // Take steps from ti to tf.
   double t = ti;
   while (t < tf) {
+    printf(" Time: %12.4f",t);
+    if(options.wait_for_keypress){      
+      std::cout << ". Press any key to step the solver...";
+      std::cin.ignore();
+    }else{
+      std::cout << std::endl;
+    }
+
     handle_realtime_factor(start, t, options.realtime_factor,
                            options.timeout_seconds);
     const double dt = (std::min)(options.initial_step_size, tf - t);
