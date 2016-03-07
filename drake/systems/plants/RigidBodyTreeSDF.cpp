@@ -129,6 +129,7 @@ void parseSDFVisual(shared_ptr<RigidBody> body, XMLElement* node,
                     RigidBodyTree* model, const PackageMap& package_map,
                     const string& root_dir, PoseMap& pose_map,
                     const Isometry3d& transform_parent_to_model) {
+
   Isometry3d transform_to_model = transform_parent_to_model;
   XMLElement* pose = node->FirstChildElement("pose");
   if (pose)
@@ -309,19 +310,25 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
   if (!child)
     throw runtime_error("ERROR: could not find child link named " + child_name);
 
-  Isometry3d transform_to_model = Isometry3d::Identity(),
+  Isometry3d transform_child_to_model = Isometry3d::Identity(),
              transform_parent_to_model = Isometry3d::Identity();
+
+  // obtain the child-to-model frame transformation
   if (pose_map.find(child_name) != pose_map.end())
-    transform_to_model = pose_map.at(
-        child_name);  // by default, use the child frame as the joint frame
+    transform_child_to_model = pose_map.at(child_name);
+
+  // obtain the parent-to-model frame transformation
   if (pose_map.find(parent_name) != pose_map.end())
     transform_parent_to_model = pose_map.at(parent_name);
+
+  // by default, a joint is defined in the child's coordinate frame
+  Isometry3d transform_to_model = transform_child_to_model;
 
   XMLElement* pose = node->FirstChildElement("pose");
   if (pose)
     poseValueToTransform(pose, pose_map, transform_to_model,
-                         transform_parent_to_model);  // read the pose in using
-                                                      // the parent coords by
+                         transform_child_to_model);  // read the pose in using
+                                                      // the child coords by
                                                       // default
 
   if (pose_map.find(child_name) == pose_map.end()) {
@@ -372,6 +379,9 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
     RigidBodyLoop l(frameA, frameB, axis);
     model->loops.push_back(l);
   } else {
+    // Update the child's reference frame to be that of its joint.
+    child->applyTransformToJointFrame(transform_to_model.inverse()*transform_child_to_model);
+
     // construct the actual joint (based on it's type)
     DrakeJoint* joint = nullptr;
 

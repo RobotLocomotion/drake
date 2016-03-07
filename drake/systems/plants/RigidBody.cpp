@@ -2,6 +2,8 @@
 #include "RigidBody.h"
 #include <stdexcept>
 
+#include "drake/util/drakeGeometryUtil.h"
+
 using namespace std;
 using namespace Eigen;
 
@@ -67,6 +69,14 @@ bool RigidBody::appendCollisionElementIdsFromThisBody(
   ids.insert(ids.end(), collision_element_ids.begin(),
              collision_element_ids.end());
   return true;
+}
+
+void RigidBody::applyTransformToJointFrame(const Eigen::Isometry3d& transform_body_to_joint) {
+  I = transformSpatialInertia(transform_body_to_joint,I);
+  for (auto& v : visual_elements) {
+    v.setLocalTransform(transform_body_to_joint*v.getLocalTransform());
+  }
+  // for (auto& c : )
 }
 
 RigidBody::CollisionElement::CollisionElement(const CollisionElement& other)

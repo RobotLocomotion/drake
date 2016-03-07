@@ -77,6 +77,16 @@ class DRAKERBM_EXPORT RigidBody {
   bool appendCollisionElementIdsFromThisBody(
       std::vector<DrakeCollision::ElementId>& ids) const;
 
+  /** 
+   * Transforms all of the visual, collision, and inertial elements associated with this body
+   * to the proper joint frame.  This is necessary, for instance, to support SDF loading
+   * (where the child frame can be specified independently from the joint frame).  In our
+   * RigidBodyTree classes, the body frame IS the joint frame.
+   *
+   * @param transform_body_to_joint The transform from this body's frame to the joint's frame.
+   */
+  void applyTransformToJointFrame(const Eigen::Isometry3d& transform_body_to_joint);
+
  public:
   std::string linkname;
   std::string model_name;  // todo: replace robotnum w/ model_name

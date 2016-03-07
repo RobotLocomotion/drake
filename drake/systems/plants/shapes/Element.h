@@ -32,6 +32,8 @@ class DRAKESHAPES_EXPORT Element {
 
   const Eigen::Isometry3d& getLocalTransform() const;
 
+  void setLocalTransform(const Eigen::Isometry3d& T_element_to_local);
+
   virtual void updateWorldTransform(const Eigen::Isometry3d& T_local_to_world);
 
   Shape getShape() const;
@@ -47,7 +49,7 @@ class DRAKESHAPES_EXPORT Element {
  protected:
   virtual void setWorldTransform(const Eigen::Isometry3d& T_elem_to_world);
   Eigen::Isometry3d T_element_to_world;
-  const Eigen::Isometry3d T_element_to_local;
+  Eigen::Isometry3d T_element_to_local;
   std::unique_ptr<Geometry> geometry;
 
   Element(const Element&);
