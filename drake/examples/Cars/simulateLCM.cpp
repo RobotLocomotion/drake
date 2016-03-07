@@ -155,6 +155,7 @@ int main(int argc, char* argv[]) {
   options.initial_step_size = 5e-3;
   options.timeout_seconds = numeric_limits<double>::infinity();
   options.wait_for_keypress = false;
+  options.rk2 = true;
 
   VectorXd x0 = VectorXd::Zero(rigid_body_sys->getNumStates());
   x0.head(tree->num_positions) = tree->getZeroConfiguration();

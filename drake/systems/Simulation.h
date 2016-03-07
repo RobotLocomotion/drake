@@ -21,9 +21,10 @@ struct SimulationOptions {
   double timeout_seconds;
 
   bool wait_for_keypress;  //wait for user to press a key before executing the next time stpe.
+  bool rk2; //using a second order Runge-Kutta
 
   SimulationOptions()
-      : realtime_factor(-1.0), initial_step_size(0.01), timeout_seconds(1.0), wait_for_keypress(false){};
+      : realtime_factor(-1.0), initial_step_size(0.01), timeout_seconds(1.0), wait_for_keypress(false), rk2(false){};
 };
 const static SimulationOptions default_simulation_options;
 
