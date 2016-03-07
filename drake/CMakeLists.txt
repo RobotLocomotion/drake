@@ -16,7 +16,7 @@ if (NOT DEFINED CMAKE_MACOSX_RPATH)
 endif()
 
 find_package(Java REQUIRED)
-# include(UseJava)
+include(UseJava)
 set(CMAKE_JAVA_COMPILE_FLAGS ${CMAKE_JAVA_COMPILE_FLAGS} -source 6 -target 6)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")

@@ -18,9 +18,9 @@ message(STATUS CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
 include(ExternalProject)
 
 # Set up Java, use a target of 1.6
-find_package(Java REQUIRED)
-include(UseJava)
-set(CMAKE_JAVA_COMPILE_FLAGS ${CMAKE_JAVA_COMPILE_FLAGS} -source 6 -target 6)
+# find_package(Java REQUIRED)
+# include(UseJava)
+# set(CMAKE_JAVA_COMPILE_FLAGS ${CMAKE_JAVA_COMPILE_FLAGS} -source 6 -target 6)
 
 # menu of extra examples
 option(EXAMPLES_LITTLEDOG "planning and control for a small quadruped robot" OFF)
@@ -138,9 +138,12 @@ set(lcm_GIT_TAG 8dba206f3403f01048b73ce10b6a17da58280fbe) # note: cmake branch
 set(lcm_IS_CMAKE_POD TRUE)
 set(lcm_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/lcm/lcm/lcm-src)
 set(lcm_IS_PUBLIC TRUE)
-set(libbot_GIT_REPOSITORY https://github.com/RobotLocomotion/libbot.git)
-set(libbot_GIT_TAG 94fe5290329646959e1c27896d529abba81e6d93)
+# set(libbot_GIT_REPOSITORY https://github.com/RobotLocomotion/libbot.git)
+# set(libbot_GIT_TAG 94fe5290329646959e1c27896d529abba81e6d93)
+set(libbot_GIT_REPOSITORY https://github.com/jonathan-owens/libbot.git)
+set(libbot_GIT_TAG 4b3dec52142c33df0c75abde86752c0ee8f28869)
 set(libbot_IS_PUBLIC TRUE)
+set(libbot_ADDITIONAL_BUILD_ARGS CMAKE_ARGS -DFORCE_JAVA=TRUE)
 set(meshconverters_GIT_REPOSITORY https://github.com/RobotLocomotion/meshConverters.git)
 set(meshconverters_GIT_TAG d50a79b80d74dd7a924daba7bd2011e03d9e66b4)
 set(meshconverters_IS_PUBLIC TRUE)
@@ -350,15 +353,15 @@ foreach (proj ${EXTERNAL_PROJECTS})
 				CMAKE_ARGS
 				  -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
 				  -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-#				  -DCMAKE_JAVA_COMPILE_FLAGS=${CMAKE_JAVA_COMPILE_FLAGS}
-#				  -DCMAKE_JAVA_INCLUDE_PATH=${CMAKE_JAVA_INCLUDE_PATH}
-				  -DJava_IDLJ_EXECUTABLE=${Java_IDLJ_EXECUTABLE}
-				  -DJava_JARSIGNER_EXECUTABLE=${Java_JARSIGNER_EXECUTABLE}
-				  -DJava_JAR_EXECUTABLE=${Java_JAR_EXECUTABLE}
-				  -DJava_JAVAC_EXECUTABLE=${Java_JAVAC_EXECUTABLE}
-				  -DJava_JAVADOC_EXECUTABLE=${Java_JAVADOC_EXECUTABLE}
-				  -DJava_JAVAH_EXECUTABLE=${Java_JAVAH_EXECUTABLE}
-				  -DJava_JAVA_EXECUTABLE=${Java_JAVA_EXECUTABLE}
+				  # -DCMAKE_JAVA_COMPILE_FLAGS=${CMAKE_JAVA_COMPILE_FLAGS}
+				  # -DCMAKE_JAVA_INCLUDE_PATH=${CMAKE_JAVA_INCLUDE_PATH}
+				  # -DJava_IDLJ_EXECUTABLE=${Java_IDLJ_EXECUTABLE}
+				  # -DJava_JARSIGNER_EXECUTABLE=${Java_JARSIGNER_EXECUTABLE}
+				  # -DJava_JAR_EXECUTABLE=${Java_JAR_EXECUTABLE}
+				  # -DJava_JAVAC_EXECUTABLE=${Java_JAVAC_EXECUTABLE}
+				  # -DJava_JAVADOC_EXECUTABLE=${Java_JAVADOC_EXECUTABLE}
+				  # -DJava_JAVAH_EXECUTABLE=${Java_JAVAH_EXECUTABLE}
+				  # -DJava_JAVA_EXECUTABLE=${Java_JAVA_EXECUTABLE}
 				DEPENDS ${deps}
 				${${proj}_ADDITIONAL_BUILD_ARGS}
 				#		BUILD_ALWAYS 1
