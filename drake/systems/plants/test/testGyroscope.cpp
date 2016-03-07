@@ -11,8 +11,8 @@ Vector3d getGyroscopeOutput(shared_ptr<RigidBodySystem> const& sys, Vector3d con
   auto const & tree = sys->getRigidBodyTree();
   x0.head(tree->num_positions) = tree->getZeroConfiguration();
   x0.segment<3>(7) = ang_vel;
-  auto const& output = sys->output(0, x0, Vector4d::Zero()).segment<3>(13);
-  return output;
+  auto const& output = sys->output(0, x0, Vector4d::Zero());
+  return output.segment<3>(13);
 }
 
 
@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
   auto rigid_body_sys = make_shared<RigidBodySystem>();
   rigid_body_sys->addRobotFromFile(getDrakePath()+"/examples/Quadrotor/quadrotor.urdf", floating_base_type);
   auto const & tree = rigid_body_sys->getRigidBodyTree();
-  auto sensor_frame = tree->frames[0];
+  auto sensor_frame = tree->findFrame("body");
   auto gyroscope = make_shared<RigidBodyGyroscope>(*rigid_body_sys, "gyroscope", sensor_frame);
   rigid_body_sys->addSensor(gyroscope);
   const double tol = 1e-6;
