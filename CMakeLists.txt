@@ -17,6 +17,11 @@ message(STATUS CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
 
 include(ExternalProject)
 
+# Set up Java, use a target of 1.6
+find_package(Java REQUIRED)
+include(UseJava)
+set(CMAKE_JAVA_COMPILE_FLAGS ${CMAKE_JAVA_COMPILE_FLAGS} -source 6 -target 6)
+
 # menu of extra examples
 option(EXAMPLES_LITTLEDOG "planning and control for a small quadruped robot" OFF)
 
@@ -337,15 +342,23 @@ foreach (proj ${EXTERNAL_PROJECTS})
 	else()
 		message(STATUS "Preparing to build ${proj} with dependencies: ${deps}")
 
+		# Don't need DOWNLOAD_COMMAND because we have SOURCE_DIR
 		ExternalProject_Add(${proj}
 				SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake"
-				DOWNLOAD_COMMAND ""
-				UPDATE_COMMAND ""
 				BINARY_DIR ${PROJECT_SOURCE_DIR}/drake/pod-build
 				CMAKE_GENERATOR ${CMAKE_GENERATOR}
 				CMAKE_ARGS
 				  -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
 				  -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+#				  -DCMAKE_JAVA_COMPILE_FLAGS=${CMAKE_JAVA_COMPILE_FLAGS}
+#				  -DCMAKE_JAVA_INCLUDE_PATH=${CMAKE_JAVA_INCLUDE_PATH}
+				  -DJava_IDLJ_EXECUTABLE=${Java_IDLJ_EXECUTABLE}
+				  -DJava_JARSIGNER_EXECUTABLE=${Java_JARSIGNER_EXECUTABLE}
+				  -DJava_JAR_EXECUTABLE=${Java_JAR_EXECUTABLE}
+				  -DJava_JAVAC_EXECUTABLE=${Java_JAVAC_EXECUTABLE}
+				  -DJava_JAVADOC_EXECUTABLE=${Java_JAVADOC_EXECUTABLE}
+				  -DJava_JAVAH_EXECUTABLE=${Java_JAVAH_EXECUTABLE}
+				  -DJava_JAVA_EXECUTABLE=${Java_JAVA_EXECUTABLE}
 				DEPENDS ${deps}
 				${${proj}_ADDITIONAL_BUILD_ARGS}
 				#		BUILD_ALWAYS 1
