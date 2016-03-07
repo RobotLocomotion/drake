@@ -144,12 +144,14 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
         use_multi_contact(false),
         penetration_stiffness(150.0),
         penetration_damping(penetration_stiffness / 10.0),
-        friction_coefficient(1.0){};
+        friction_coefficient(1.0),
+        direct_feedthrough(false) {};
   RigidBodySystem()
       : use_multi_contact(false),
         penetration_stiffness(150.0),
         penetration_damping(penetration_stiffness / 10.0),
-        friction_coefficient(1.0) {
+        friction_coefficient(1.0),
+        direct_feedthrough(false) {
     // tree =
     // std::allocate_shared<RigidBodyTree>(Eigen::aligned_allocator<RigidBodyTree>());
     // // this crashed g++-4.7
@@ -175,10 +177,8 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
   void addForceElement(const std::shared_ptr<RigidBodyForceElement>& f) {
     force_elements.push_back(f);
   }
-  void addSensor(const std::shared_ptr<RigidBodySensor>& s) {
-    sensors.push_back(s);
-  }
 
+  void addSensor(const std::shared_ptr<RigidBodySensor>& s);
 
   const std::shared_ptr<RigidBodyTree>& getRigidBodyTree(void) const { return tree; }
 
@@ -219,7 +219,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
                               const InputVector<double>& u) const;
 
   bool isTimeVarying() const { return false; }
-  bool isDirectFeedthrough() const { return false; }
+  bool isDirectFeedthrough() const { return direct_feedthrough; }
 
   friend DRAKERBSYSTEM_EXPORT StateVector<double> getInitialState(
       const RigidBodySystem& sys);
@@ -235,6 +235,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
   std::vector<std::shared_ptr<RigidBodyForceElement> > force_elements;
   std::vector<std::shared_ptr<RigidBodySensor> > sensors;
   size_t num_sensor_outputs;
+  bool direct_feedthrough;
 
   /*
   mutable OptimizationProblem dynamics_program;
@@ -426,7 +427,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySensor {
   RigidBodySensor(RigidBodySystem const& sys, const std::string& name)
       : sys(sys), name(name) {}
   virtual ~RigidBodySensor() {}
-
+  virtual bool isDirectFeedthrough() const { return false; }
   virtual size_t getNumOutputs() const { return 0; }
   virtual Eigen::VectorXd output(
     const double& t,
@@ -478,7 +479,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodyAccelerometer : public RigidBodySensor {
 
     virtual size_t getNumOutputs() const override { return 3; }
     virtual Eigen::VectorXd output(const double& t, const KinematicsCache<double>& rigid_body_state, const RigidBodySystem::InputVector<double>& u) const override;
-
+    virtual bool isDirectFeedthrough() const override { return true; }
     void setNoiseModel(std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> model) {
         noise_model = model;
     }

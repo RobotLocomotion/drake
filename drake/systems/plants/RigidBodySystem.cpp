@@ -27,6 +27,14 @@ size_t RigidBodySystem::getNumOutputs() const {
     return n;
 }
 
+
+void RigidBodySystem::addSensor(const std::shared_ptr<RigidBodySensor>& s) {
+  if(s->isDirectFeedthrough()) {
+    direct_feedthrough = true;
+  }
+  sensors.push_back(s);
+}
+
 RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
     const double& t, const RigidBodySystem::StateVector<double>& x,
     const RigidBodySystem::InputVector<double>& u) const {
