@@ -3,8 +3,8 @@
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
 
-#include "QuadrotorControl.h"
-#include "QuadrotorState.h"
+#include "QuadrotorInput.h"
+#include "QuadrotorOutput.h"
 
 using namespace std;
 using namespace Drake;
@@ -47,8 +47,8 @@ int main(int argc, char* argv[]) {
 
   auto visualizer = make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm,tree);
   
-  auto quad_control_to_rbsys_input = make_shared<Gain<QuadrotorControl, RigidBodySystem::InputVector>>(Eigen::Matrix4d::Identity());
-  auto rbsys_output_to_quad_state = make_shared<Gain<RigidBodySystem::StateVector, QuadrotorState>>(Eigen::Matrix<double, 19, 19>::Identity());
+  auto quad_control_to_rbsys_input = make_shared<Gain<QuadrotorInput, RigidBodySystem::InputVector>>(Eigen::Matrix4d::Identity());
+  auto rbsys_output_to_quad_state = make_shared<Gain<RigidBodySystem::StateVector, QuadrotorOutput>>(Eigen::Matrix<double, 19, 19>::Identity());
   
   auto sys_with_lcm_input = cascade(quad_control_to_rbsys_input, rigid_body_sys);
   

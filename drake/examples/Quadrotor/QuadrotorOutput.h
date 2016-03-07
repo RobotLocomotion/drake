@@ -1,18 +1,18 @@
-#ifndef DRAKE_QUADROTORSTATE_H
-#define DRAKE_QUADROTORSTATE_H
+#ifndef DRAKE_QUADROTOROUTPUT_H
+#define DRAKE_QUADROTOROUTPUT_H
 
 #include <Eigen/Dense>
-#include "lcmtypes/drake/lcmt_quadrotor_state_t.hpp"
+#include "lcmtypes/drake/lcmt_quadrotor_output_t.hpp"
 
 template <typename ScalarType = double>
-class QuadrotorState {
+class QuadrotorOutput {
 public:
 
     const static int RowsAtCompileTime = 19;
-    typedef drake::lcmt_quadrotor_state_t LCMMessageType;
-    static std::string channel() { return "QUAD_STATE"; };
+    typedef drake::lcmt_quadrotor_output_t LCMMessageType;
+    static std::string channel() { return "QUAD_OUTPUT"; };
 
-    QuadrotorState(void) {
+    QuadrotorOutput(void) {
         position.setZero();
         orientation.setZero();
         twist.setZero();
@@ -21,17 +21,17 @@ public:
     }
 
     template <typename Derived>
-    QuadrotorState(const Eigen::MatrixBase<Derived>& x) {
+    QuadrotorOutput(const Eigen::MatrixBase<Derived>& x) {
       fromEigen<Derived>(x);
     };
 
     template <typename Derived>
-    QuadrotorState& operator=(const Eigen::MatrixBase<Derived>& x) {
+    QuadrotorOutput& operator=(const Eigen::MatrixBase<Derived>& x) {
       fromEigen<Derived>(x);
       return *this;
     }
 
-    friend Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> toEigen(const QuadrotorState<ScalarType>& vec) {
+    friend Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> toEigen(const QuadrotorOutput<ScalarType>& vec) {
         Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> x = Eigen::Matrix<ScalarType, RowsAtCompileTime, 1>::Zero();
 
         x.segment<3>(0) = vec.position;
@@ -52,7 +52,7 @@ public:
         gyroscope = x.template segment<3>(16);
     }
 
-    friend std::string getCoordinateName(const QuadrotorState<ScalarType>& vec, unsigned int index) {
+    friend std::string getCoordinateName(const QuadrotorOutput<ScalarType>& vec, unsigned int index) {
       static const std::vector<std::string> coordinate_names =
           {"x","y","z",
            "qx","qy","qz","qw",
@@ -72,7 +72,7 @@ public:
     Eigen::Matrix<ScalarType, 3, 1> gyroscope;
 };
 
-bool encode(const double& t, const QuadrotorState<double> & x, drake::lcmt_quadrotor_state_t& msg) {
+bool encode(const double& t, const QuadrotorOutput<double> & x, drake::lcmt_quadrotor_output_t& msg) {
   msg.timestamp = static_cast<int64_t>(t*1000);
   Eigen::Map<Eigen::Vector3d> lcm_position(msg.position);
   Eigen::Map<Eigen::Vector4d> lcm_orientation(msg.orientation);

@@ -1,6 +1,6 @@
 package drake;
 
-struct lcmt_quadrotor_state_t
+struct lcmt_quadrotor_output_t
 {
   int64_t timestamp;
   double position[3];
