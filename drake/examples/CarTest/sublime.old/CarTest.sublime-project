@@ -1,0 +1,13 @@
+{
+	"folders":
+	[
+		{
+			"path": "/home/alejandro/Drake/drake-distro/drake/examples/CarTest"
+		}
+	],
+	"settings":
+	{
+		"sublimegdb_commandline": "gdb --interpreter=mi ../../pod-build/bin/carTestLCM ./prius/prius.urdf",
+		"sublimegdb_workingdir": "${folder:${project_path:../../pod-build/bin/carTestLCM}}"
+	}
+}

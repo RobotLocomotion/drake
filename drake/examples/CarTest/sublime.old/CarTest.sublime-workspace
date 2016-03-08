@@ -1,0 +1,413 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"wa",
+				"wait_for_keypress"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "simulateLCM.cpp",
+			"settings":
+			{
+				"buffer_size": 6264,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "001 -    stopped - main();\n002 -    stopped - nanosleep();\n003 -    stopped - nanosleep();\n004 -    stopped - nanosleep();\n",
+			"settings":
+			{
+				"buffer_size": 123,
+				"line_ending": "Unix",
+				"name": "GDB Threads",
+				"read_only": true,
+				"scratch": true
+			}
+		},
+		{
+			"contents": "1 - /home/alejandro/Programming/gdb+stl/shared_ptr.cpp:16\n2 - /home/alejandro/Programming/gdb+stl/shared_ptr.cpp:43\n3 - /home/alejandro/Programming/gdb+stl/shared_ptr.cpp:19\n4 - /home/alejandro/Programming/gdb+stl/shared_ptr.cpp:45\n",
+			"settings":
+			{
+				"buffer_size": 232,
+				"line_ending": "Unix",
+				"name": "GDB Breakpoints",
+				"read_only": true,
+				"scratch": true
+			}
+		}
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 263.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"sublim",
+				"SublimeGDB: Show Input Field"
+			],
+			[
+				"sublime",
+				"SublimeGDB: Open Breakpoint View"
+			],
+			[
+				"package re",
+				"Package Control: Remove Package"
+			],
+			[
+				"installpa",
+				"Package Control: Install Package"
+			],
+			[
+				"sublimegdb",
+				"SublimeGDB: Open Breakpoint View"
+			],
+			[
+				"remo",
+				"Package Control: Remove Package"
+			],
+			[
+				"Install ",
+				"Package Control: Install Package"
+			],
+			[
+				"install",
+				"Package Control: Install Package"
+			],
+			[
+				"SublimeGDB",
+				"SublimeGDB: Start Debugging"
+			],
+			[
+				"Insta",
+				"Package Control: Install Package"
+			]
+		],
+		"width": 449.0
+	},
+	"console":
+	{
+		"height": 139.0,
+		"history":
+		[
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/home/alejandro/Drake/drake-distro/drake/examples/CarTest"
+	],
+	"file_history":
+	[
+		"/home/alejandro/Programming/gdb+stl/shared_ptr.cpp",
+		"/usr/include/c++/4.8/bits/shared_ptr_base.h",
+		"/usr/include/c++/4.8/bits/shared_ptr.h",
+		"/usr/include/c++/4.8/bits/allocator.h",
+		"/usr/include/c++/4.8/ext/new_allocator.h",
+		"/usr/include/c++/4.8/bits/alloc_traits.h",
+		"/home/alejandro/.config/sublime-text-3/Packages/User/SublimeGDB.sublime-settings",
+		"/home/alejandro/.config/sublime-text-3/Packages/SublimeGDB/SublimeGDB.sublime-settings",
+		"/home/alejandro/Programming/Sublime/SublimeGDB/hello.c",
+		"/build/eglibc-3GlaMS/eglibc-2.19/libio/ioputs.c",
+		"/home/alejandro/Programming/Sublime/SublimeGDB/hello.sublime-project",
+		"/home/alejandro/Drake/drake-distro/drake/drake.sublime-project",
+		"/home/alejandro/Drake/drake-distro/drake/examples/Pendulum/runDynamics.cpp",
+		"/home/alejandro/Drake/drake-distro/drake/examples/Pendulum/Pendulum.h",
+		"/home/alejandro/Drake/drake-distro/build/include/drake/systems/LCMSystem.h",
+		"/home/alejandro/Drake/drake-distro/build/include/drake/systems/Simulation.h",
+		"/home/alejandro/Drake/drake-distro/build/include/drake/systems/System.h",
+		"/home/alejandro/Drake/drake-distro/build/include/drake/core/Vector.h",
+		"/home/alejandro/Drake/drake-distro/drake/core/Vector.h",
+		"/home/alejandro/Drake/drake-distro/drake/systems/Simulation.h",
+		"/home/alejandro/Drake/drake-distro/drake/systems/LCMSystem.h",
+		"/home/alejandro/Drake/drake-distro/drake/systems/System.h",
+		"/home/alejandro/Drake/drake-distro/drake/examples/Cars/simulateLCM.cpp",
+		"/home/alejandro/Drake/drake-distro/build/bin/lcm-spy",
+		"/home/alejandro/Drake/drake-distro/drake/examples/Pendulum/Pendulum.urdf"
+	],
+	"find":
+	{
+		"height": 25.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"alia",
+			"steering",
+			"internal",
+			"theta",
+			"Pendu"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "simulateLCM.cpp",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 6264,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2227,
+								2227
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 867.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				}
+			]
+		},
+		{
+			"sheets":
+			[
+			]
+		},
+		{
+			"sheets":
+			[
+			]
+		},
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 1,
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 123,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								123,
+								123
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 232,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								232,
+								232
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage",
+							"word_wrap": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 25.0
+	},
+	"input":
+	{
+		"height": 41.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				3,
+				1
+			],
+			[
+				0,
+				1,
+				1,
+				2
+			],
+			[
+				1,
+				1,
+				2,
+				2
+			],
+			[
+				2,
+				1,
+				3,
+				2
+			]
+		],
+		"cols":
+		[
+			0.0,
+			0.381177394035,
+			0.66,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			0.75,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "",
+	"project": "CarTest.sublime-project",
+	"replace":
+	{
+		"height": 46.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"pen",
+				"drake/examples/Pendulum/Pendulum.h"
+			],
+			[
+				"simulatelc",
+				"drake/examples/Cars/simulateLCM.cpp"
+			],
+			[
+				"pendulum",
+				"drake/examples/Pendulum/Pendulum.urdf"
+			],
+			[
+				"pend",
+				"drake/examples/Pendulum/Pendulum.h"
+			],
+			[
+				"rundyn",
+				"drake/examples/Pendulum/runDynamics.cpp"
+			]
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 1,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 190.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

@@ -1,0 +1,1 @@
+BUILD_TYPE=Debug make -j 12 --directory=../../
