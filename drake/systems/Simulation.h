@@ -20,8 +20,10 @@ struct SimulationOptions {
   double initial_step_size;
   double timeout_seconds;
 
+  bool rk2; //using a second order Runge-Kutta
+
   SimulationOptions()
-      : realtime_factor(-1.0), initial_step_size(0.01), timeout_seconds(1.0){};
+      : realtime_factor(-1.0), initial_step_size(0.01), timeout_seconds(1.0), rk2(false){};
 };
 const static SimulationOptions default_simulation_options;
 
@@ -66,7 +68,7 @@ void simulate(const System& sys, double t0, double tf,
   if (options.realtime_factor < 0.0) options.realtime_factor = 0.0;
 
   TimePoint start = TimeClock::now();
-  typename System::template StateVector<double> x(x0), xdot;
+  typename System::template StateVector<double> x(x0), xdot, x_at_half_step;
   typename System::template InputVector<double> u(
       Eigen::VectorXd::Zero(getNumInputs(sys)));
   typename System::template OutputVector<double> y;
@@ -76,6 +78,12 @@ void simulate(const System& sys, double t0, double tf,
     dt = (std::min)(options.initial_step_size, tf - t);
     y = sys.output(t, x, u);
     xdot = sys.dynamics(t, x, u);
+
+    if(options.rk2){
+      x_at_half_step = toEigen(x) + dt/2.0 * toEigen(xdot);
+      xdot = sys.dynamics(t+dt/2.0, x_at_half_step, u);
+    }
+
     x = toEigen(x) + dt * toEigen(xdot);
     t += dt;
   }
