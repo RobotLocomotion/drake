@@ -25,7 +25,7 @@
       </geometry>
     </collision>      
   </link>
-
+  <frame link="base_link" name="body" rpy="0 0 0" xyz="0 0 0" />
   <force_element name="prop1">
     <propellor lower_limit="0" upper_limit="10" scale_factor_thrust="1.0" scale_factor_moment="0.0245">
       <parent link="base_link"/>

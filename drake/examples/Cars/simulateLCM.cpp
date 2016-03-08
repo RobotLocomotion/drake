@@ -1,9 +1,9 @@
 
-#include "LCMSystem.h"
-#include "RigidBodySystem.h"
-#include "LinearSystem.h"
-#include "BotVisualizer.h"
-#include "drakeAppUtil.h"
+#include "drake/systems/LCMSystem.h"
+#include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/systems/LinearSystem.h"
+#include "drake/systems/plants/BotVisualizer.h"
+#include "drake/util/drakeAppUtil.h"
 #include "lcmtypes/drake/lcmt_driving_control_cmd_t.hpp"
 
 using namespace std;
@@ -78,12 +78,12 @@ int main(int argc, char* argv[]) {
   // be reused
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
 
-  auto rigid_body_sys =
-      make_shared<RigidBodySystem>(argv[1], floating_base_type);
+  auto rigid_body_sys = make_shared<RigidBodySystem>();
+  rigid_body_sys->addRobotFromFile(argv[1],floating_base_type);
   rigid_body_sys->use_multi_contact = true;
-  auto const& tree = rigid_body_sys->getRigidBodyTree();
-  for (int i = 2; i < argc; i++)
-    tree->addRobotFromSDF(argv[i], DrakeJoint::FIXED);  // add environment
+  auto const & tree = rigid_body_sys->getRigidBodyTree();
+  for (int i=2; i<argc; i++)
+    tree->addRobotFromSDF(argv[i],DrakeJoint::FIXED);  // add environment
 
   if (argc < 3) {  // add flat terrain
     double box_width = 1000;
@@ -156,7 +156,7 @@ int main(int argc, char* argv[]) {
   options.timeout_seconds = numeric_limits<double>::infinity();
   options.rk2 = true;
 
-  VectorXd x0(rigid_body_sys->getNumStates());
+  VectorXd x0 = VectorXd::Zero(rigid_body_sys->getNumStates());
   x0.head(tree->num_positions) = tree->getZeroConfiguration();
   // todo:  call getInitialState instead?  (but currently, that would require
   // snopt).  needs #1627

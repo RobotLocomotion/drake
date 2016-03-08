@@ -34,8 +34,9 @@ option(REMOVE_UNUSED_EXTERNALS "enable this to remove those projects from disk" 
 # ON by default:
 option(WITH_EIGEN		"required c++ matrix library.  only disable if you have it already."    ON)
 option(WITH_SWIGMAKE    "helper tools to build python & MATLAB wrappers for C++ libraries with Eigen" ON)
-option(WITH_BULLET 		"used for collision detection" 	ON) # almost works.  just one remaining link error..?
+option(WITH_BULLET 		"used for collision detection" 	ON)
 option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" ON)
+option(WITH_BOT_CORE_LCMTYPES "required LCM types library. only disable if you have it already." ON)
 if (WIN32)
 	option(WITH_GTK 		"precompiled gtk binaries/headers for Windows"  ON)  # needed for lcm on windows
 else()
@@ -84,10 +85,11 @@ endif()
 # list *compilation* dependencies, in alphabetical order by target (note: dependencies must come first in my foreach above)
 set(lcm_dependencies gtk)
 set(libbot_dependencies lcm)
-set(director_dependencies lcm libbot)
+set(bot_core_lcmtypes_dependencies lcm)
+set(director_dependencies lcm bot_core_lcmtypes libbot)
 set(iris_dependencies eigen mosek)
 set(signalscope_dependencies director)
-set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi swig_matlab swigmake yaml_cpp)
+set(drake_dependencies cmake eigen lcm bot_core_lcmtypes libbot bullet octomap snopt gurobi swig_matlab swigmake)
 
 # download information, in alphabetical order
 set(avl_GIT_REPOSITORY https://github.com/RobotLocomotion/avl.git)
@@ -122,20 +124,23 @@ set(gloptipoly_GIT_REPOSITORY git@github.com:RobotLocomotion/gloptipoly3.git)  #
 set(gloptipoly_GIT_TAG c9e796e99c584ecf78317348c4162a2ed4121156)
 set(gloptipoly_IS_PUBLIC FALSE)
 set(gurobi_GIT_REPOSITORY https://github.com/RobotLocomotion/gurobi.git)
-set(gurobi_GIT_TAG 9699ec6091f3d9d8013c6f0acaea229c84a189a5)
+set(gurobi_GIT_TAG fbbdbbc0152ddb37df209d221aff37448b8ff29f)
 set(gurobi_IS_PUBLIC FALSE)
 set(iris_GIT_REPOSITORY https://github.com/rdeits/iris-distro.git)
-set(iris_GIT_TAG e3efbc67369e948080a9a1913188874fc31838f5)
+set(iris_GIT_TAG 1533f20cff57504a46773f01e1730f11931d0ea6)
 set(iris_ADDITIONAL_BUILD_ARGS PATCH_COMMAND make configure-cdd-only)
 set(iris_IS_PUBLIC TRUE)
 set(lcm_GIT_REPOSITORY https://github.com/RobotLocomotion/lcm-pod.git)
 set(lcm_GIT_TAG 8dba206f3403f01048b73ce10b6a17da58280fbe) # note: cmake branch
-set(lcm_IS_CMAKE_POD TRUE)
-set(lcm_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/lcm/lcm/lcm-src)
+set(lcm_IS_CMAKE_POD FALSE)
 set(lcm_IS_PUBLIC TRUE)
 set(libbot_GIT_REPOSITORY https://github.com/RobotLocomotion/libbot.git)
 set(libbot_GIT_TAG 94fe5290329646959e1c27896d529abba81e6d93)
 set(libbot_IS_PUBLIC TRUE)
+set(bot_core_lcmtypes_GIT_REPOSITORY  https://github.com/openhumanoids/bot_core_lcmtypes)
+set(bot_core_lcmtypes_GIT_TAG d2617b85674fa83b371a5c57fabdbe468844f15e)
+set(bot_core_lcmtypes_IS_CMAKE_POD TRUE)
+set(bot_core_lcmtypes_IS_PUBLIC TRUE)
 set(meshconverters_GIT_REPOSITORY https://github.com/RobotLocomotion/meshConverters.git)
 set(meshconverters_GIT_TAG d50a79b80d74dd7a924daba7bd2011e03d9e66b4)
 set(meshconverters_IS_PUBLIC TRUE)
@@ -211,6 +216,7 @@ foreach(proj IN ITEMS
 		eigen
 		gtk
 		lcm
+		bot_core_lcmtypes
 		libbot
 		bullet
 		spotless
@@ -421,7 +427,8 @@ endif()
 if (WITH_SNOPT_PRECOMPILED)
   message(STATUS "Preparing to install precompiled snopt")
   ExternalProject_Add(download-snopt-precompiled
-		URL "http://drake002.csail.mit.edu/drake/drakeSnopt.zip"
+		URL "https://s3.amazonaws.com/drake-provisioning/drakeSnopt.zip"
+		URL_MD5 "7b36168cba2fb9a56b2fd6117427fc4a"
 		SOURCE_DIR "${CMAKE_BINARY_DIR}/snopt-precompiled"
 		CONFIGURE_COMMAND ""
 		BUILD_COMMAND cmake -E copy_directory ${CMAKE_BINARY_DIR}/snopt-precompiled/ ${PROJECT_SOURCE_DIR}/drake/solvers/

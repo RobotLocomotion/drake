@@ -20,15 +20,19 @@ size_t RigidBodySystem::getNumInputs(void) const {
 }
 
 size_t RigidBodySystem::getNumOutputs() const {
-  if (sensors.size() == 0)
-    return getNumStates();
-  else {
-    int n = 0;
+    int n = getNumStates();
     for (const auto& s : sensors) {
       n += s->getNumOutputs();
     }
     return n;
+}
+
+
+void RigidBodySystem::addSensor(const std::shared_ptr<RigidBodySensor>& s) {
+  if(s->isDirectFeedthrough()) {
+    direct_feedthrough = true;
   }
+  sensors.push_back(s);
 }
 
 RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
@@ -198,22 +202,19 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   return dot;
 }
 
-RigidBodySystem::OutputVector<double> RigidBodySystem::output(
-    const double& t, const RigidBodySystem::StateVector<double>& x,
-    const RigidBodySystem::InputVector<double>& u) const {
-  if (sensors.size() == 0)
-    return x;
-  else {
-    auto kinsol = tree->doKinematics(x.topRows(tree->num_positions),
-                                     x.bottomRows(tree->num_velocities));
-    Eigen::VectorXd y(getNumOutputs());
-    int index = 0;
-    for (const auto& s : sensors) {
-      y.segment(index, s->getNumOutputs()) = s->output(t, kinsol);
-      index += s->getNumOutputs();
-    }
-    return y;
+RigidBodySystem::OutputVector<double> RigidBodySystem::output(const double& t,
+                                                              const RigidBodySystem::StateVector<double>& x,
+                                                              const RigidBodySystem::InputVector<double>& u) const
+{
+  auto kinsol = tree->doKinematics(x.topRows(tree->num_positions),x.bottomRows(tree->num_velocities));
+  Eigen::VectorXd y(getNumOutputs());
+  y << x;
+  int index=getNumStates();
+  for (const auto& s : sensors) {
+    y.segment(index,s->getNumOutputs()) = s->output(t,kinsol,u);
+    index+=s->getNumOutputs();
   }
+  return y;
 }
 
 // todo: move this to a more central location
@@ -301,14 +302,15 @@ Drake::getInitialState(const RigidBodySystem& sys) {
   return x0;
 }
 
-RigidBodyPropellor::RigidBodyPropellor(RigidBodySystem* sys, XMLElement* node,
+RigidBodyPropellor::RigidBodyPropellor(RigidBodySystem &sys, XMLElement* node,
                                        const std::string& name)
     : RigidBodyForceElement(sys, name),
       scale_factor_thrust(1.0),
       scale_factor_moment(1.0),
       lower_limit(-numeric_limits<double>::infinity()),
       upper_limit(numeric_limits<double>::infinity()) {
-  auto tree = sys->getRigidBodyTree();
+
+  auto tree = sys.getRigidBodyTree();
 
   XMLElement* parent_node = node->FirstChildElement("parent");
   if (!parent_node)
@@ -335,14 +337,14 @@ RigidBodyPropellor::RigidBodyPropellor(RigidBodySystem* sys, XMLElement* node,
   // todo: parse visual info?
 }
 
-RigidBodySpringDamper::RigidBodySpringDamper(RigidBodySystem* sys,
+RigidBodySpringDamper::RigidBodySpringDamper(RigidBodySystem &sys,
                                              XMLElement* node,
                                              const std::string& name)
     : RigidBodyForceElement(sys, name),
       stiffness(0.0),
       damping(0.0),
       rest_length(0.0) {
-  auto tree = sys->getRigidBodyTree();
+  auto tree = sys.getRigidBodyTree();
 
   parseScalarAttribute(node, "rest_length", rest_length);
   parseScalarAttribute(node, "stiffness", stiffness);
@@ -367,8 +369,50 @@ RigidBodySpringDamper::RigidBodySpringDamper(RigidBodySystem* sys,
   tree->addFrame(frameB);
 }
 
+RigidBodyAccelerometer::RigidBodyAccelerometer(RigidBodySystem const& sys,
+                                               const std::string& name,
+                                               const std::shared_ptr<RigidBodyFrame> frame)
+  : RigidBodySensor(sys, name), frame(frame) {  }
+
+
+Eigen::VectorXd RigidBodyAccelerometer::output(const double &t,
+                                               const KinematicsCache<double> &rigid_body_state,
+                                               const RigidBodySystem::InputVector<double>& u) const
+{
+  VectorXd x = rigid_body_state.getX();
+  auto xdd = sys.dynamics(t, x, u);
+  auto const& tree = sys.getRigidBodyTree();
+  auto v_dot = xdd.bottomRows(rigid_body_state.getNumVelocities());
+  Vector3d sensor_origin = Vector3d::Zero(); //assumes sensor coincides with the frame's origin;
+  auto J = tree->transformPointsJacobian(rigid_body_state, sensor_origin, frame->frame_index, 0, false);
+  auto Jdot_times_v = tree->transformPointsJacobianDotTimesV(rigid_body_state, sensor_origin, frame->frame_index, 0);
+  Vector4d quat_world_to_body = tree->relativeQuaternion(rigid_body_state, 0, frame->frame_index);
+  Vector3d accel_base = Jdot_times_v + J * v_dot;
+  Vector3d accel_body = quatRotateVec(quat_world_to_body, accel_base);
+  
+  return noise_model ? noise_model->generateNoise(accel_body) : accel_body;
+}
+
+RigidBodyGyroscope::RigidBodyGyroscope(RigidBodySystem const& sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame)
+    : RigidBodySensor(sys,name), frame(frame)
+{
+
+}
+
+Eigen::VectorXd RigidBodyGyroscope::output(const double &t,
+                                           const KinematicsCache<double> &rigid_body_state,
+                                           const RigidBodySystem::InputVector<double>& u) const
+{
+  //relative twist of body with respect to world expressed in body
+  auto const& tree = sys.getRigidBodyTree();
+  auto relative_twist = tree->relativeTwist(rigid_body_state, 0, frame->frame_index, frame->frame_index);
+  Eigen::Vector3d angular_rates = relative_twist.head<3>();
+  
+  return noise_model ? noise_model->generateNoise(angular_rates) : angular_rates;
+}
+
 RigidBodyDepthSensor::RigidBodyDepthSensor(
-    RigidBodySystem* sys, const std::string& name,
+    RigidBodySystem const& sys, const std::string& name,
     const std::shared_ptr<RigidBodyFrame> frame, tinyxml2::XMLElement* node)
     : RigidBodySensor(sys, name),
       frame(frame),
@@ -380,6 +424,7 @@ RigidBodyDepthSensor::RigidBodyDepthSensor(
       num_pixel_cols(1),
       min_range(0.0),
       max_range(10.0) {
+
   string type(node->Attribute("type"));
 
   if (type.compare("ray") == 0) {
@@ -441,36 +486,38 @@ RigidBodyDepthSensor::RigidBodyDepthSensor(
   }
 }
 
-Eigen::VectorXd RigidBodyDepthSensor::output(
-    const double& t, const KinematicsCache<double>& rigid_body_state) const {
-  VectorXd distances(num_pixel_cols * num_pixel_rows);
-  Vector3d origin = sys->getRigidBodyTree()->transformPoints(
-      rigid_body_state, Vector3d::Zero(), frame->frame_index, 0);
-  auto raycast_endpoints_world = sys->getRigidBodyTree()->transformPoints(
-      rigid_body_state, raycast_endpoints, frame->frame_index, 0);
-  sys->getRigidBodyTree()->collisionRaycast(rigid_body_state, origin,
-                                            raycast_endpoints, distances);
-  // maybe: could publish lcm here (for debugging), since I can easily infer the
-  // 3D location in space
+Eigen::VectorXd RigidBodyDepthSensor::output(const double &t,
+                                             const KinematicsCache<double> &rigid_body_state,
+                                             const RigidBodySystem::InputVector<double>& u) const {
+  VectorXd distances(num_pixel_cols*num_pixel_rows);
+  Vector3d origin = sys.getRigidBodyTree()->transformPoints(rigid_body_state,
+                                                             Vector3d::Zero(),
+                                                             frame->frame_index,0);
+  auto raycast_endpoints_world = sys.getRigidBodyTree()->transformPoints(rigid_body_state,
+                                                                          raycast_endpoints,
+                                                                          frame->frame_index,0);
+  sys.getRigidBodyTree()->collisionRaycast(rigid_body_state,origin, raycast_endpoints, distances);
+  // maybe: could publish lcm here (for debugging), since I can easily infer the 3D location in space
   return distances;
 }
 
-void parseForceElement(RigidBodySystem* sys, XMLElement* node) {
+void parseForceElement(RigidBodySystem &sys, XMLElement* node) {
   string name = node->Attribute("name");
 
   if (XMLElement* propellor_node = node->FirstChildElement("propellor")) {
-    sys->addForceElement(allocate_shared<RigidBodyPropellor>(
+    sys.addForceElement(allocate_shared<RigidBodyPropellor>(
         Eigen::aligned_allocator<RigidBodyPropellor>(), sys, propellor_node,
         name));
   } else if (XMLElement* spring_damper_node =
                  node->FirstChildElement("linear_spring_damper")) {
-    sys->addForceElement(allocate_shared<RigidBodySpringDamper>(
+    sys.addForceElement(allocate_shared<RigidBodySpringDamper>(
         Eigen::aligned_allocator<RigidBodySpringDamper>(), sys,
         spring_damper_node, name));
   }
 }
 
-void parseRobot(RigidBodySystem* sys, XMLElement* node) {
+void parseRobot(RigidBodySystem &sys, XMLElement* node)
+{
   if (!node->Attribute("name"))
     throw runtime_error("Error: your robot must have a name attribute");
   string robotname = node->Attribute("name");
@@ -481,26 +528,26 @@ void parseRobot(RigidBodySystem* sys, XMLElement* node) {
     parseForceElement(sys, force_node);
 }
 
-void parseURDF(RigidBodySystem* sys, XMLDocument* xml_doc) {
-  XMLElement* node = xml_doc->FirstChildElement("robot");
-  if (!node)
-    throw std::runtime_error("ERROR: This urdf does not contain a robot tag");
 
+void parseURDF(RigidBodySystem &sys, XMLDocument *xml_doc)
+{
+  XMLElement *node = xml_doc->FirstChildElement("robot");
+  if (!node) throw std::runtime_error("ERROR: This urdf does not contain a robot tag");
   parseRobot(sys, node);
 }
 
-void parseSDFJoint(RigidBodySystem* sys, string model_name, XMLElement* node,
-                   PoseMap& pose_map) {
+void parseSDFJoint(RigidBodySystem &sys, string model_name, XMLElement* node, PoseMap& pose_map)
+{
   // todo: parse joint sensors
 }
 
-void parseSDFLink(RigidBodySystem* sys, string model_name, XMLElement* node,
-                  PoseMap& pose_map) {
+void parseSDFLink(RigidBodySystem &sys, string model_name, XMLElement* node, PoseMap& pose_map)
+{
   const char* attr = node->Attribute("name");
   if (!attr) throw runtime_error("ERROR: link tag is missing name attribute");
   string link_name(attr);
 
-  auto body = sys->getRigidBodyTree()->findLink(link_name, model_name);
+  auto body = sys.getRigidBodyTree()->findLink(link_name, model_name);
 
   Isometry3d transform_link_to_model = Isometry3d::Identity();
   XMLElement* pose = node->FirstChildElement("pose");
@@ -533,18 +580,18 @@ void parseSDFLink(RigidBodySystem* sys, string model_name, XMLElement* node,
       auto frame = allocate_shared<RigidBodyFrame>(
           Eigen::aligned_allocator<RigidBodyFrame>(), sensor_name, body,
           transform_link_to_model.inverse() * transform_sensor_to_model);
-      sys->getRigidBodyTree()->addFrame(frame);
-      sys->addSensor(allocate_shared<RigidBodyDepthSensor>(
+      sys.getRigidBodyTree()->addFrame(frame);
+      sys.addSensor(allocate_shared<RigidBodyDepthSensor>(
           Eigen::aligned_allocator<RigidBodyDepthSensor>(), sys, sensor_name,
           frame, elnode));
     }
   }
 }
 
-void parseSDFModel(RigidBodySystem* sys, XMLElement* node) {
-  PoseMap pose_map;  // because sdf specifies almost everything in the global
-                     // (actually model) coordinates instead of relative
-                     // coordinates.  sigh...
+
+void parseSDFModel(RigidBodySystem &sys, XMLElement* node)
+{
+  PoseMap pose_map;  // because sdf specifies almost everything in the global (actually model) coordinates instead of relative coordinates.  sigh...
 
   if (!node->Attribute("name"))
     throw runtime_error("Error: your model must have a name attribute");
@@ -559,11 +606,11 @@ void parseSDFModel(RigidBodySystem* sys, XMLElement* node) {
     parseSDFJoint(sys, model_name, elnode, pose_map);
 }
 
-void parseSDF(RigidBodySystem* sys, XMLDocument* xml_doc) {
-  XMLElement* node = xml_doc->FirstChildElement("sdf");
-  if (!node)
-    throw std::runtime_error(
-        "ERROR: This xml file does not contain an sdf tag");
+
+void parseSDF(RigidBodySystem &sys, XMLDocument *xml_doc)
+{
+  XMLElement *node = xml_doc->FirstChildElement("sdf");
+  if (!node) throw std::runtime_error("ERROR: This xml file does not contain an sdf tag");
 
   for (XMLElement* elnode = node->FirstChildElement("model"); elnode;
        elnode = node->NextSiblingElement("model"))
@@ -580,7 +627,8 @@ void RigidBodySystem::addRobotFromURDFString(
   // sensors, etc)
   XMLDocument xml_doc;
   xml_doc.Parse(xml_string.c_str());
-  parseURDF(this, &xml_doc);
+
+  parseURDF(*this, &xml_doc);
 }
 
 void RigidBodySystem::addRobotFromURDF(
@@ -597,7 +645,7 @@ void RigidBodySystem::addRobotFromURDF(
     throw std::runtime_error("failed to parse xml in file " + urdf_filename +
                              "\n" + xml_doc.ErrorName());
   }
-  parseURDF(this, &xml_doc);
+  parseURDF(*this, &xml_doc);
 }
 
 void RigidBodySystem::addRobotFromSDF(
@@ -614,7 +662,7 @@ void RigidBodySystem::addRobotFromSDF(
     throw std::runtime_error("failed to parse xml in file " + sdf_filename +
                              "\n" + xml_doc.ErrorName());
   }
-  parseSDF(this, &xml_doc);
+  parseSDF(*this, &xml_doc);
 }
 
 void RigidBodySystem::addRobotFromFile(
@@ -634,3 +682,4 @@ void RigidBodySystem::addRobotFromFile(
     throw runtime_error("unknown file extension: " + ext);
   }
 }
+

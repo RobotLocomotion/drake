@@ -2,8 +2,9 @@ version: 1.0.{build}
 os: Visual Studio 2015
 clone_depth: 5
 install:
-  # todo: get pkg-config from sourceforge, and unpack it
-  - ps: (new-object net.webclient).DownloadFile('https://s3.amazonaws.com/drake-provisioning/pkg-config.exe', 'c:\pkg-config.exe')
+  # Install pkg-config and make from chocolatey
+  - cinst pkgconfiglite
+  - cinst make
 environment:
   matrix:      # todo: pass in WITH_* options to enable more externals
     # 64-bit build
