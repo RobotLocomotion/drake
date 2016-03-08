@@ -1,44 +1,43 @@
-os:
-  - linux
-  - osx
+sudo: required
+dist: precise
 
 language: cpp
-
-sudo: required
-
-notifications:
-  email: false
 
 branches:
   only:
     - master
     - stable
 
-before_install:
-  - source travis_pre_build.sh
+matrix:
+  include:
+    - os: linux
+      compiler: clang
+      env: DRAKE_CC=clang-3.7 DRAKE_CXX=clang++-3.7
+      addons:
+        apt:
+          sources:
+            - llvm-toolchain-precise-3.7
+            - ubuntu-toolchain-r-test
+          packages:
+            - clang-3.7
+    - os: linux
+      compiler: gcc
+      env: DRAKE_CC=gcc-4.9 DRAKE_CXX=g++-4.9
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-4.9
+    - os: osx
+      compiler: clang
+      env: DRAKE_CC=clang DRAKE_CXX=clang++
 
 install:
-  - make
+  - source travis_install.sh
 
 script:
-  - cd drake/pod-build
-  - export PYTHONPATH="${PYTHONPATH}:`pwd`/../../build/lib/python2.7/dist-packages"
-  - ctest -j 1 -D Experimental -C $BUILD_TYPE --output-on-failure --timeout 1000
+  - source travis_script.sh
 
-# The compiler and env:matrix options create an matrix of build configurations (gcc + Release, gcc + Debug, clang + Release, clang + Debug)
-
-compiler:
-  - gcc
-  - clang
-
-python:
-  - '2.7'
-
-env:
-  matrix:
-    - BUILD_TYPE=Release
-    # - BUILD_TYPE=Debug
-
-matrix:
-  # allow_failures:
-  #   - compiler: gcc
+notifications:
+  email: false

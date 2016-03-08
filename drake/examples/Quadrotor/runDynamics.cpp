@@ -3,8 +3,8 @@
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
 
-#include "QuadrotorControl.h"
-#include "QuadrotorState.h"
+#include "QuadrotorInput.h"
+#include "QuadrotorOutput.h"
 
 using namespace std;
 using namespace Drake;
@@ -18,8 +18,20 @@ int main(int argc, char* argv[]) {
     return 1;
 
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
-  auto rigid_body_sys = make_shared<RigidBodySystem>(getDrakePath()+"/examples/Quadrotor/quadrotor.urdf",floating_base_type);
+  auto rigid_body_sys = make_shared<RigidBodySystem>();
   auto const & tree = rigid_body_sys->getRigidBodyTree();
+  rigid_body_sys->addRobotFromFile(getDrakePath()+"/examples/Quadrotor/quadrotor.urdf", floating_base_type);
+
+  auto sensor_frame = tree->findFrame("body");
+
+  auto accelerometer = make_shared<RigidBodyAccelerometer>(*rigid_body_sys, "accelerometer", sensor_frame);
+  auto gyroscope = make_shared<RigidBodyGyroscope>(*rigid_body_sys, "gyroscope", sensor_frame);
+  auto noise_model = make_shared<AdditiveGaussianNoiseModel<double, 3, Vector3d>>(0, 0.01);
+  accelerometer->setNoiseModel(noise_model);
+  gyroscope->setNoiseModel(noise_model);
+  rigid_body_sys->addSensor(accelerometer);
+  rigid_body_sys->addSensor(gyroscope);
+
 
   double box_width = 1000;
   double box_depth = 10;
@@ -31,11 +43,12 @@ int main(int argc, char* argv[]) {
   world->addVisualElement(DrakeShapes::VisualElement(geom,T_element_to_link,color));
   tree->addCollisionElement(RigidBody::CollisionElement(geom,T_element_to_link,world),world,"terrain");
   tree->updateStaticCollisionElements();
-  
+
+
   auto visualizer = make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm,tree);
   
-  auto quad_control_to_rbsys_input = make_shared<Gain<QuadrotorControl, RigidBodySystem::InputVector>>(Eigen::Matrix4d::Identity());
-  auto rbsys_output_to_quad_state = make_shared<Gain<RigidBodySystem::StateVector, QuadrotorState>>(Eigen::Matrix<double, 13, 13>::Identity());
+  auto quad_control_to_rbsys_input = make_shared<Gain<QuadrotorInput, RigidBodySystem::InputVector>>(Eigen::Matrix4d::Identity());
+  auto rbsys_output_to_quad_state = make_shared<Gain<RigidBodySystem::StateVector, QuadrotorOutput>>(Eigen::Matrix<double, 19, 19>::Identity());
   
   auto sys_with_lcm_input = cascade(quad_control_to_rbsys_input, rigid_body_sys);
   
