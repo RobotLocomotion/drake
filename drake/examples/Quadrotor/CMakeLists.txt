@@ -1,5 +1,4 @@
-
-if (LCM_FOUND AND NOT WIN32)
+if (LCM_FOUND)
   add_executable(runQuadrotorDynamics runDynamics.cpp)
   target_link_libraries(runQuadrotorDynamics drakeRBSystem drakeLCMSystem)
   add_dependencies(runQuadrotorDynamics drake_lcmtypes lcmtype_agg_hpp)
