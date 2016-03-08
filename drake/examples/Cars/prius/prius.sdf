@@ -422,7 +422,7 @@
           <diffuse>0 0 1 1</diffuse>
       </material>
       </visual>
-      </link>
+    </link>
     
     <link name='lidar'>
       <pose>2.4 0 0.52 0 0 0</pose>
