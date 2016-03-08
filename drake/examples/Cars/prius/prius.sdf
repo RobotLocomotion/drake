@@ -438,7 +438,6 @@
           </material>
       </visual>
       
-      
       <sensor name="base_laser" type="ray">
         <always_on>1</always_on>
         <visualize>1</visualize>
@@ -462,8 +461,7 @@
         <plugin name="laser" filename="libRayPlugin.so" />
       </sensor>
       <velocity_decay />
-</link>
-
+    </link>
 
     <joint name='body' type='fixed'>
       <parent>chassis_floor</parent>
