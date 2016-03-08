@@ -17,31 +17,31 @@ class LCP
 
  public:
   LCP();
-
+  
+  bool lcp_fast(
+      const MatrixNd& M, const VectorNd& q, VectorNd* z,
+      double zero_tol = -1.0);
+  bool lcp_fast_regularized(
+      const MatrixNd& M, const VectorNd& q, VectorNd* z,
+      int min_exp = -20, unsigned step_exp = 4, int max_exp = 20,
+      double piv_tol = -1.0, double zero_tol = -1.0);
+  bool lcp_lemke(
+      const MatrixNd& M, const VectorNd& q, VectorNd* z,
+      double piv_tol = -1.0, double zero_tol = -1.0);
   bool lcp_lemke_regularized(
-      const MatrixNd& M, const VectorNd& q, VectorNd& z,
+      const MatrixNd& M, const VectorNd& q, VectorNd* z,
       int min_exp = -20, unsigned step_exp = 1, int max_exp = 1,
       double piv_tol = -1.0, double zero_tol = -1.0);
-    bool lcp_lemke_regularized(
-        const SparseMatrixNd& M, const VectorNd& q, VectorNd& z,
-        int min_exp = -20, unsigned step_exp = 4, int max_exp = 20,
-        double piv_tol = -1.0, double zero_tol = -1.0);
-    bool lcp_lemke(
-        const MatrixNd& M, const VectorNd& q, VectorNd& z,
-        double piv_tol = -1.0, double zero_tol = -1.0);
-    bool lcp_lemke(
-        const SparseMatrixNd& M, const VectorNd& q, VectorNd& z,
-        double piv_tol = -1.0, double zero_tol = -1.0);
-    bool lcp_fast(
-        const MatrixNd& M, const VectorNd& q, VectorNd& z,
-        double zero_tol = -1.0);
-    bool lcp_fast_regularized(
-        const MatrixNd& M, const VectorNd& q, VectorNd& z,
-        int min_exp = -20, unsigned step_exp = 4, int max_exp = 20,
-        double piv_tol = -1.0, double zero_tol = -1.0);
-    bool fast_pivoting(
-        const MatrixNd& M, const VectorNd& q, VectorNd& z,
-        double eps = std::sqrt(std::numeric_limits<double>::epsilon()));
+  bool lcp_lemke(
+      const SparseMatrixNd& M, const VectorNd& q, VectorNd* z,
+      double piv_tol = -1.0, double zero_tol = -1.0);
+  bool lcp_lemke_regularized(
+      const SparseMatrixNd& M, const VectorNd& q, VectorNd* z,
+      int min_exp = -20, unsigned step_exp = 4, int max_exp = 20,
+      double piv_tol = -1.0, double zero_tol = -1.0);
+  bool fast_pivoting(
+      const MatrixNd& M, const VectorNd& q, VectorNd& z,
+      double eps = std::sqrt(std::numeric_limits<double>::epsilon()));
 
  private:
   unsigned pivots;
@@ -49,7 +49,6 @@ class LCP
   static void set_basis(unsigned n, unsigned count,
                         std::vector<unsigned>& bas,
                         std::vector<unsigned>& nbas);
-  static unsigned rand_min(const VectorNd& v, double zero_tol);
 
   // temporaries for regularized solver
   MatrixNd _MM;
@@ -69,7 +68,8 @@ class LCP
   SparseMatrixNd _sBl;
   SparseMatrixNd _MMs, _MMx, _eye, _zero, _diag_lambda;
 
+  // TODO defect sammy take this out
   // linear algebra
-  LinAlgd _LA;
+  // LinAlgd _LA;
 };
 };
