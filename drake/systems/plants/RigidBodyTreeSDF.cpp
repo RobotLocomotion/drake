@@ -389,10 +389,12 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
                   << c << " not found! Cannot update its local frame to be that of joint." << std::endl;
     }
 
-    // Update pose_map with child's new frame
-    // auto it = pose_map.find("child_name");
-    // if (it != pose_map.end())
-    //     it->second = transform_to_model;
+    // Update pose_map with child's new frame, which should now be the same as the joint's frame
+    auto it = pose_map.find(child_name);
+    if (it != pose_map.end())
+         it->second = transform_to_model;
+    else
+      std::cout << "ERROR: Unable to upload transform_to_model of link " << child_name << std::endl;
 
     // construct the actual joint (based on it's type)
     DrakeJoint* joint = nullptr;
