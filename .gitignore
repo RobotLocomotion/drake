@@ -25,6 +25,8 @@ drake/cmake
 drake/util/drake_config.mat
 drake/doc/derivations/elib.bib
 drake/.python
+drake/examples/Quadrotor/funLib.mat
+drake/examples/Quadrotor/trajectoryLibrary.mat
 fort.*
 *.aux
 .drake_unit_test_mutex.mat

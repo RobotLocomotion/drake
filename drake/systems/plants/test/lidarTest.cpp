@@ -1,5 +1,6 @@
 
 #include <cmath>
+#include "lcmtypes/bot_core/planar_lidar_t.hpp"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/BotVisualizer.h"
@@ -11,8 +12,9 @@ using namespace Drake;
 
 int main(int argc, char* argv[]) {
   // unit test that sets up a lidar in a box room and verifies the returns
-  auto rigid_body_sys = make_shared<RigidBodySystem>(
-      getDrakePath() + "/systems/plants/test/lidarTest.sdf", DrakeJoint::FIXED);
+
+  auto rigid_body_sys = make_shared<RigidBodySystem>();
+  rigid_body_sys->addRobotFromFile(getDrakePath() + "/systems/plants/test/lidarTest.sdf",DrakeJoint::FIXED);
 
   double t = 0;
   VectorXd x = VectorXd::Zero(0);
@@ -43,8 +45,21 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  // render for debugging:
   auto lcm = make_shared<lcm::LCM>();
+
+  bot_core::planar_lidar_t msg;
+  msg.utime = -1;
+  msg.nintensities = 0;
+  msg.rad0 = min_yaw;
+  msg.radstep = (max_yaw - min_yaw) / (distances.size() - 1);
+
+  msg.nranges = distances.size();
+  for (int i = 0; i < distances.size(); i++)
+    msg.ranges.push_back(distances(i));
+
+  lcm->publish("DRAKE_POINTCLOUD_LIDAR_TEST", &msg);
+
+  // render for debugging:
   auto visualizer = make_shared<BotVisualizer<RigidBodySystem::StateVector>>(
       lcm, rigid_body_sys->getRigidBodyTree());
   visualizer->output(t, x, u);
