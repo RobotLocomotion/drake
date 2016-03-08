@@ -352,9 +352,13 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
       throw runtime_error("ERROR: axis is zero.  don't do that");
     axis.normalize();
     double in_parent_model_frame;
-    if (parseScalarValue(axis_node, "in_parent_model_frame",
+    if (parseScalarValue(axis_node, "use_parent_model_frame",
                          in_parent_model_frame) &&
         in_parent_model_frame > 0.0) {
+
+      // The joint's axis of rotation should be interpreted as being in the model coordinate frame.
+      // Let's convert it into the joint's coordinate frame.
+
       axis = transform_to_model.inverse() * axis;
     }
   }
