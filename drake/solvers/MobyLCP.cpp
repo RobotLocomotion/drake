@@ -1,12 +1,9 @@
 // Adapted with permission from code by Evan Drumwright
 // (https://github.com/edrumwri).
 
-#include <boost/algorithm/minmax.hpp>
-#include <boost/algorithm/minmax_element.hpp>
-#include <boost/foreach.hpp>
-#include <boost/shared_ptr.hpp>
-
+#include <Eigen/LU>
 #include <Eigen/SparseCore>
+#include <Eigen/SparseLU>
 
 #include <algorithm>
 #include <cstring>
@@ -14,8 +11,10 @@
 #include <cfloat>
 #include <fstream>
 #include <functional>
+#include <iostream>
 #include <limits>
 #include <map>
+#include <memory>
 #include <numeric>
 #include <sstream>
 #include <utility>
@@ -23,16 +22,97 @@
 
 #include "MobyLCP.h"
 
-using std::vector;
 using std::pair;
 using std::map;
 using std::make_pair;
-using boost::shared_ptr;
 
-namespace Moby {
+namespace {
+// TODO sammy these helpers probably have some faster, more Eigen way
+// to do this than I've come up with.  This implementation, anyway, is
+// definitely slow.  It's an attempt at rewriting some Ravelin
+// functionality.  Also, the only reason that the out paramater is a
+// MatrixXd is so that this function can resize it.  Runtime
+// performance may be improved by allowing the caller to create a
+// fixed-size matrix and pass that in instead.
+template <typename Derived>
+void selectSubMat(const Eigen::MatrixBase<Derived>& in,
+                  const std::vector<unsigned>& rows,
+                  const std::vector<unsigned>& cols,
+                  Eigen::MatrixXd* out) {
+  const int num_rows = rows.size();
+  const int num_cols = cols.size();
+  out->resize(num_rows, num_cols);
+  
+  for (int i = 0; i < num_rows; i++) {
+    const auto row_in = in.row(rows[i]);
+    auto row_out = out->row(i);
+    for (int j = 0; j < num_cols; j++) {
+      row_out(j) = row_in(cols[j]);
+    }
+  }
+}
+
+// TODO sammy this could also use a more efficient implementation.
+template <typename Derived>
+void selectSubVec(const Eigen::MatrixBase<Derived>& in,
+                  const std::vector<unsigned>& rows,
+                  Eigen::VectorXd* out) {
+  const int num_rows = rows.size();
+  out->resize(num_rows);
+  for (int i = 0; i < num_rows; i++) {
+    (*out)(i) = in(rows[i]);
+  }
+}
+
+template <typename DerivedA, typename DerivedB, typename F>
+void transformVecElements(const Eigen::MatrixBase<DerivedA>& in,
+                          Eigen::MatrixBase<DerivedB>* out,
+                          F func) {
+  assert(in.cols() == 1);
+  assert(out->cols() == 1);
+  assert(in.rows() == out->rows());
+  for (int i = 0; i < in.rows(); i++) {
+    (*out)(i) = func(in(i), (*out)(i));
+  }
+}
+
+template <typename Derived>
+Eigen::SparseVector<double> makeSparseVector(
+    const Eigen::MatrixBase<Derived>& in) {
+  assert(in.cols() == 1);
+  Eigen::SparseVector<double> out(in.rows());
+  for (int i = 0; i < in.rows(); i++) {
+    if (in(i) != 0.0) {
+      out.coeffRef(i) = in(i);
+    }
+  }
+  return out;
+}
+
+/// Get the minimum index of vector v; if there are multiple minima (within
+/// zero_tol), returns one randomly
+unsigned rand_min(const Eigen::VectorXd& v, double zero_tol) {
+  std::vector<unsigned> minima;
+  Eigen::Index minv;
+  const unsigned minv_val = v.minCoeff(&minv);
+  minima.push_back(minv);
+  for (unsigned i=0; i< v.rows(); i++) {
+    if (i != minv && v[i] < minv_val + zero_tol) {
+      minima.push_back(i);
+    }
+  }
+  return minima[rand() % minima.size()];
+}
+
+const double NEAR_ZERO = std::sqrt(std::numeric_limits<double>::epsilon());
+}
+
+namespace Drake {
 
 // TODO DEFECT ggould replace this with a proper logging hookup
-#define LOG sys::cerr
+#define LOG std::cerr
+#define LOGGING(x) (true)
+#define LOG_OPT 0
 
 // Sole constructor
 LCP::LCP() {
@@ -40,7 +120,7 @@ LCP::LCP() {
 
 /// Fast pivoting algorithm for denerate, monotone LCPs with few nonzero,
 /// nonbasic variables
-bool LCP::lcp_fast(const MatrixNd& M, const VectorNd& q, VectorNd& z,
+bool LCP::lcp_fast(const MatrixNd& M, const VectorNd& q, VectorNd* z,
                    double zero_tol) {
   const unsigned N = q.rows();
   const unsigned UINF = std::numeric_limits<unsigned>::max();
@@ -50,13 +130,14 @@ bool LCP::lcp_fast(const MatrixNd& M, const VectorNd& q, VectorNd& z,
   // look for trivial solution
   if (N == 0) {
     LOG << "LCP::lcp_fast() - empty problem" << std::endl;
-    z.set_zero(0);
+    z->resize(0);
     return true;
   }
 
   // set zero tolerance if necessary
   if (zero_tol < 0.0) {
-    zero_tol = M.rows() * M.norm_inf() * std::numeric_limits<double>::epsilon();
+    zero_tol = M.rows() * M.lpNorm<Eigen::Infinity>() 
+        * std::numeric_limits<double>::epsilon();
   }
 
   // prepare to setup basic and nonbasic variable indices for z
@@ -64,12 +145,12 @@ bool LCP::lcp_fast(const MatrixNd& M, const VectorNd& q, VectorNd& z,
   _bas.clear();
 
   // see whether to warm-start
-  if (z.size() == q.size()) {
+  if (z->size() == q.size()) {
     LOG << "LCP::lcp_fast() - warm starting activated"
                       << std::endl;
 
-    for (unsigned i=0; i< z.size(); i++) {
-      if (std::fabs(z[i]) < zero_tol) {
+    for (unsigned i=0; i< z->size(); i++) {
+      if (std::fabs((*z)[i]) < zero_tol) {
         _bas.push_back(i);
       } else {
         _nonbas.push_back(i);
@@ -85,11 +166,13 @@ bool LCP::lcp_fast(const MatrixNd& M, const VectorNd& q, VectorNd& z,
     }
   } else {
     // get minimum element of q (really w)
-    unsigned minw = std::min_element(q.begin(), q.end()) - q.begin();
-    if (q[minw] > -zero_tol) {
+    Eigen::Index minw;
+    const double minw_val = q.minCoeff(&minw);
+    if (minw_val > -zero_tol) {
       LOG << "LCP::lcp_fast() - trivial solution found"
                         << std::endl;
-      z.set_zero(N);
+      z->resize(N);
+      z->fill(0);
       return true;
     }
 
@@ -108,28 +191,25 @@ bool LCP::lcp_fast(const MatrixNd& M, const VectorNd& q, VectorNd& z,
   const unsigned MAX_PIV = 2*N;
   for (pivots=0; pivots < MAX_PIV; pivots++) {
     // select nonbasic indices
-    M.select_square(_nonbas.begin(), _nonbas.end(), _Msub);
-    M.select(_bas.begin(), _bas.end(), _nonbas.begin(), _nonbas.end(), _Mmix);
-    q.select(_nonbas.begin(), _nonbas.end(), _z);
-    q.select(_bas.begin(), _bas.end(), _qbas);
-    _z.negate();
+    selectSubMat(M, _nonbas, _nonbas, &_Msub);
+    selectSubMat(M, _bas, _nonbas, &_Mmix);
+    selectSubVec(q, _nonbas, &_z);
+    selectSubVec(q, _bas, &_qbas);
+    //_z.negate();
+    _z = _z * -1;
 
     // solve for nonbasic z
-    try {
-      _LA.solve_fast(_Msub, _z);
-    } catch (SingularException e) {
-      LOG << "LCP::lcp_fast() - linear system solve failed"
-                        << std::endl;
-      return false;
-    }
+    _z = _Msub.lu().solve(_z);
 
     // compute w and find minimum value
-    _Mmix.mult(_z, _w) += _qbas;
+    _w = _Mmix * _z;
+    _w += _qbas;
     unsigned minw = (_w.rows() > 0) ? rand_min(_w, zero_tol) : UINF;
 
-    LOG << "LCP::lcp_fast() - minimum w after pivot: "
-                      << _w[minw] << std::endl;
-
+    // TODO sammy this log can't print when minw is UINF.
+    // LOG << "LCP::lcp_fast() - minimum w after pivot: "
+    // << _w[minw] << std::endl;
+    
     // if w >= 0, check whether any component of z < 0
     if (minw == UINF || _w[minw] > -zero_tol) {
       // find the (a) minimum of z
@@ -145,14 +225,15 @@ bool LCP::lcp_fast(const MatrixNd& M, const VectorNd& q, VectorNd& z,
 
         // move index to basic set and continue looping
         _bas.push_back(idx);
-        insertion_sort(_bas.begin(), _bas.end());
+        std::sort(_bas.begin(), _bas.end());
       } else {
         // found the solution
-        z.set_zero(N);
+        z->resize(N);
+        z->fill(0);
 
         // set values of z corresponding to _z
         for (unsigned i=0, j=0; j < _nonbas.size(); i++, j++) {
-          z[_nonbas[j]] = _z[i];
+          (*z)[_nonbas[j]] = _z[i];
         }
 
         LOG << "LCP::lcp_fast() - solution found!" << std::endl;
@@ -166,7 +247,7 @@ bool LCP::lcp_fast(const MatrixNd& M, const VectorNd& q, VectorNd& z,
       unsigned idx = _bas[minw];
       _bas.erase(_bas.begin()+minw);
       _nonbas.push_back(idx);
-      insertion_sort(_nonbas.begin(), _nonbas.end());
+      std::sort(_nonbas.begin(), _nonbas.end());
 
       // look whether any component of z needs to move to basic set
       unsigned minz = (_z.rows() > 0) ? rand_min(_z, zero_tol) : UINF;
@@ -182,7 +263,7 @@ bool LCP::lcp_fast(const MatrixNd& M, const VectorNd& q, VectorNd& z,
 
         _nonbas.erase(_nonbas.begin()+minz);
         _bas.push_back(idx);
-        insertion_sort(_bas.begin(), _bas.end());
+        std::sort(_bas.begin(), _bas.end());
       }
     }
   }
@@ -191,34 +272,18 @@ bool LCP::lcp_fast(const MatrixNd& M, const VectorNd& q, VectorNd& z,
 
   // if we're here, then the maximum number of pivots has been exceeded
   return false;
-  }
-
-/// Get the minimum index of vector v; if there are multiple minima (within
-/// zero_tol), returns one randomly
-unsigned LCP::rand_min(const VectorNd& v, double zero_tol) {
-  static vector<unsigned> minima;
-  minima.clear();
-  unsigned minv = std::min_element(v.begin(), v.end()) - v.begin();
-  minima.push_back(minv);
-  for (unsigned i=0; i< v.rows(); i++) {
-    if (i != minv && v[i] < v[minv] + zero_tol) {
-      minima.push_back(i);
-    }
-  }
-  return minima[rand() % minima.size()];
 }
 
 /// Regularized wrapper around PPM I
 bool LCP::lcp_fast_regularized(
-    const MatrixNd& M, const VectorNd& q, VectorNd& z,
+    const MatrixNd& M, const VectorNd& q, VectorNd* z,
     int min_exp, unsigned step_exp, int max_exp,
     double piv_tol, double zero_tol) {
-  LOG << "LCP::lcp_fast_regularized() entered" << endl;
-  pair<ColumnIteratord, ColumnIteratord> mmax;
+  LOG << "LCP::lcp_fast_regularized() entered" << std::endl;
 
   // look for fast exit
   if (q.size() == 0) {
-    z.resize(0);
+    z->resize(0);
     return true;
   }
 
@@ -228,9 +293,9 @@ bool LCP::lcp_fast_regularized(
   // assign value for zero tolerance, if necessary
   const double ZERO_TOL = (zero_tol > static_cast<double>(0.0))
       ? zero_tol
-      : (q.size() * M.norm_inf() * NEAR_ZERO);
+      : (q.size() * M.lpNorm<Eigen::Infinity>() * NEAR_ZERO);
 
-  LOG << " zero tolerance: " << ZERO_TOL << endl;
+  LOG << " zero tolerance: " << ZERO_TOL << std::endl;
 
   // store the total pivots
   unsigned total_piv = 0;
@@ -239,40 +304,39 @@ bool LCP::lcp_fast_regularized(
   bool result = lcp_fast(_MM, q, z, zero_tol);
   if (result) {
     // verify that solution truly is a solution -- check z
-    if (*std::min_element(z.begin(), z.end()) >= -ZERO_TOL) {
+    if (z->minCoeff() >= -ZERO_TOL) {
       // check w
-      M.mult(z, _wx) += q;
-      if (*std::min_element(_wx.begin(), _wx.end()) >= -ZERO_TOL) {
+      _wx = (M * (*z)) + q;
+      if (_wx.minCoeff() >= -ZERO_TOL) {
         // check z'w
-        std::transform(z.begin(), z.end(), _wx.begin(), _wx.begin(),
-                       std::multiplies<double>());
-        mmax = boost::minmax_element(_wx.begin(), _wx.end());
-        if (*mmax.first >= -ZERO_TOL && *mmax.second < ZERO_TOL) {
+        transformVecElements(*z, &_wx, std::multiplies<double>());
+        const double wx_min = _wx.minCoeff();
+        const double wx_max = _wx.maxCoeff();
+
+        if (wx_min >= -ZERO_TOL && wx_max < ZERO_TOL) {
           LOG << "  solved with no regularization necessary!"
-                            << endl;
+                            << std::endl;
           LOG << "  pivots / total pivots: " << pivots <<
-              " " << pivots << endl;
-          LOG << "LCP::lcp_fast_regularized() exited" << endl;
+              " " << pivots << std::endl;
+          LOG << "LCP::lcp_fast_regularized() exited" << std::endl;
 
           return true;
         } else {
           LOG << "LCP::lcp_fast_regularized() - "
-              <<"'<w, z> not within tolerance(min value: " << *mmax.first
-              << " max value: " << *mmax.second << ")"
+              <<"'<w, z> not within tolerance(min value: " << wx_min
+              << " max value: " << wx_max << ")"
               << std::endl;
         }
       } else {
         LOG << "  LCP::lcp_fast_regularized() - "
             << "'w' not solved to desired tolerance" << std::endl;
-        LOG << "  minimum w: " << *std::min_element(_wx.column_iterator_begin(),
-                                                    _wx.column_iterator_end())
+        LOG << "  minimum w: " << _wx.minCoeff()
             << std::endl;
       }
     } else {
       LOG << "  LCP::lcp_fast_regularized() - "
           <<"'z' not solved to desired tolerance" << std::endl;
-      LOG << "  minimum z: " << *std::min_element(z.column_iterator_begin(),
-                                                  z.column_iterator_end())
+      LOG << "  minimum z: " << z->minCoeff()
           << std::endl;
     }
   } else {
@@ -307,15 +371,16 @@ bool LCP::lcp_fast_regularized(
 
     if (result) {
       // verify that solution truly is a solution -- check z
-      if (*std::min_element(z.begin(), z.end()) > -ZERO_TOL) {
+      if (z->minCoeff() > -ZERO_TOL) {
         // check w
-        _MM.mult(z, _wx) += q;
-        if (*std::min_element(_wx.begin(), _wx.end()) > -ZERO_TOL) {
+        _wx = (_MM * (*z)) + q;
+        if (_wx.minCoeff() > -ZERO_TOL) {
           // check z'w
-          std::transform(z.begin(), z.end(), _wx.begin(), _wx.begin(),
-                         std::multiplies<double>());
-          mmax = boost::minmax_element(_wx.begin(), _wx.end());
-          if (*mmax.first > -ZERO_TOL && *mmax.second < ZERO_TOL) {
+          transformVecElements(*z, &_wx, std::multiplies<double>());
+          const double wx_min = _wx.minCoeff();
+          const double wx_max = _wx.maxCoeff();
+          
+          if (wx_min > -ZERO_TOL && wx_max < ZERO_TOL) {
             LOG << "  solved with regularization factor: " << lambda
                 << std::endl;
             LOG << "  pivots / total pivots: " << pivots
@@ -326,22 +391,20 @@ bool LCP::lcp_fast_regularized(
             return true;
           } else {
             LOG << "LCP::lcp_fast_regularized() - "
-                << "'<w, z> not within tolerance(min value: " << *mmax.first
-                << " max value: " << *mmax.second << ")" << std::endl;
+                << "'<w, z> not within tolerance(min value: " << wx_min
+                << " max value: " << wx_max << ")" << std::endl;
           }
         } else {
           LOG << "  LCP::lcp_fast_regularized() - "
               << "'w' not solved to desired tolerance" << std::endl;
           LOG << "  minimum w: "
-              << *std::min_element(_wx.column_iterator_begin(),
-                                   _wx.column_iterator_end())
+              << _wx.minCoeff()
               << std::endl;
         }
       } else {
         LOG << "  LCP::lcp_fast_regularized() - "
             <<"'z' not solved to desired tolerance" << std::endl;
-        LOG << "  minimum z: " << *std::min_element(z.column_iterator_begin(),
-                                                    z.column_iterator_end())
+        LOG << "  minimum z: " << z->minCoeff()
             << std::endl;
       }
     }
@@ -361,209 +424,12 @@ bool LCP::lcp_fast_regularized(
   return false;
 }
 
-/// Regularized wrapper around Lemke's algorithm
-bool LCP::lcp_lemke_regularized(
-    const MatrixNd& M, const VectorNd& q, VectorNd& z,
-    int min_exp, unsigned step_exp, int max_exp,
-    double piv_tol, double zero_tol) {
-  LOG << "LCP::lcp_lemke_regularized() entered" << std::endl;
-  pair<ColumnIteratord, ColumnIteratord> mmax;
-
-  // look for fast exit
-  if (q.size() == 0) {
-    z.resize(0);
-    return true;
-  }
-
-  // copy MM
-  _MM = M;
-
-  // assign value for zero tolerance, if necessary
-  const double ZERO_TOL = (zero_tol > static_cast<double>(0.0))
-      ? zero_tol
-      : q.size() * M.norm_inf() * NEAR_ZERO;
-
-  LOG << " zero tolerance: " << ZERO_TOL << std::endl;
-
-  // store the total pivots
-  unsigned total_piv = 0;
-
-  // try non-regularized version first
-  bool result = lcp_lemke(_MM, q, z, piv_tol, zero_tol);
-  if (result) {
-    // verify that solution truly is a solution -- check z
-    if (*std::min_element(z.begin(), z.end()) >= -ZERO_TOL) {
-      // check w
-      M.mult(z, _wx) += q;
-      if (*std::min_element(_wx.begin(), _wx.end()) >= -ZERO_TOL) {
-        // check z'w
-        std::transform(z.begin(), z.end(), _wx.begin(), _wx.begin(),
-                       std::multiplies<double>());
-        mmax = boost::minmax_element(_wx.begin(), _wx.end());
-        if (*mmax.first >= -ZERO_TOL && *mmax.second < ZERO_TOL) {
-          LOG << "  solved with no regularization necessary!" << std::endl;
-          LOG << "LCP::lcp_lemke_regularized() exited" << std::endl;
-
-          return true;
-        } else {
-          LOG << "LCP::lcp_lemke() - "
-              << "'<w, z> not within tolerance(min value: " << *mmax.first
-              << " max value: " << *mmax.second << ")" << std::endl;
-        }
-      } else {
-        LOG << "  LCP::lcp_lemke() - 'w' not solved to desired tolerance"
-            << std::endl;
-        LOG << "  minimum w: " << *std::min_element(_wx.column_iterator_begin(),
-                                                    _wx.column_iterator_end())
-            << std::endl;
-      }
-    } else {
-      LOG << "  LCP::lcp_lemke() - 'z' not solved to desired tolerance"
-          << std::endl;
-      LOG << "  minimum z: " << *std::min_element(z.column_iterator_begin(),
-                                                  z.column_iterator_end())
-          << std::endl;
-    }
-  }
-
-  // update the pivots
-  total_piv += pivots;
-
-  // start the regularization process
-  int rf = min_exp;
-  while (rf < max_exp) {
-    // setup regularization factor
-    double lambda = std::pow(static_cast<double>(10.0),
-                             static_cast<double>(rf));
-
-    LOG << "  trying to solve LCP with regularization factor: " << lambda
-        << std::endl;
-
-    // regularize M
-    _MM = M;
-    for (unsigned i=0; i< M.rows(); i++) {
-      _MM(i, i) += lambda;
-    }
-
-    // try to solve the LCP
-    result = lcp_lemke(_MM, q, z, piv_tol, zero_tol);
-
-    // update total pivots
-    total_piv += pivots;
-
-    if (result) {
-      // verify that solution truly is a solution -- check z
-      if (*std::min_element(z.begin(), z.end()) > -ZERO_TOL) {
-        // check w
-        _MM.mult(z, _wx) += q;
-        if (*std::min_element(_wx.begin(), _wx.end()) > -ZERO_TOL) {
-          // check z'w
-          std::transform(z.begin(), z.end(), _wx.begin(), _wx.begin(),
-                         std::multiplies<double>());
-          mmax = boost::minmax_element(_wx.begin(), _wx.end());
-          if (*mmax.first > -ZERO_TOL && *mmax.second < ZERO_TOL) {
-            LOG << "  solved with regularization factor: " << lambda
-                << std::endl;
-            LOG << "LCP::lcp_lemke_regularized() exited" << std::endl;
-            pivots = total_piv;
-            return true;
-          } else {
-            LOG << "LCP::lcp_lemke() - "
-                << "'<w, z> not within tolerance(min value: " << *mmax.first
-                << " max value: " << *mmax.second << ")" << std::endl;
-          }
-        } else {
-          LOG << "  LCP::lcp_lemke() - 'w' not solved to desired tolerance"
-              << std::endl;
-          LOG << "  minimum w: "
-              << *std::min_element(_wx.column_iterator_begin(),
-                                   _wx.column_iterator_end())
-              << std::endl;
-        }
-      } else {
-        LOG << "  LCP::lcp_lemke() - 'z' not solved to desired tolerance"
-            << std::endl;
-        LOG << "  minimum z: " << *std::min_element(z.column_iterator_begin(),
-                                                    z.column_iterator_end())
-            << std::endl;
-      }
-    }
-
-    // increase rf
-    rf += step_exp;
-  }
-
-  LOG << "  unable to solve given any regularization!"
-                    << std::endl;
-  LOG << "LCP::lcp_lemke_regularized() exited"
-                    << std::endl;
-
-  // store total pivots
-  pivots = total_piv;
-
-  // still here?  failure...
-  return false;
-}
-
-/// Sets a basis
-void LCP::set_basis(unsigned n, unsigned count,
-                    vector<unsigned>& bas, vector<unsigned>& nbas) {
-  // clear bas and nbas
-  bas.clear();
-  nbas.clear();
-
-  uint64 countL = count;
-//  unsigned long long n2 = 1L << ((unsigned long long) n-1);
-  uint64 n2 = 1;
-  for (unsigned i=0; i< n; i++)
-    n2 *= 2;
-
-  for (unsigned i=0; i< n; i++) {
-    if (countL / n2 > 0)
-      bas.push_back(i);
-    else
-      nbas.push_back(i);
-    countL = countL % n2;
-    n2 = n2 >> 1L;
-    assert(n2 != 0);
-  }
-}
-
-/// Logs LCP solver failure
-void LCP::log_failure(const MatrixNd& M, const VectorNd& q) {
-  // generate a unique filename
-  std::ostringstream fname;
-  fname << "lemke.Mq.";
-  for (unsigned i=0; i< 8; i++) {
-    fname << rand_r() % 10;
-  }
-  fname << ".fail";
-
-  // open the file
-  std::ofstream out(fname.str().c_str());
-
-  // write the matrix
-  for (unsigned i=0; i< M.rows(); i++) {
-    for (unsigned j=0; j< M.columns(); j++) {
-      out << M(i, j) << " ";
-    }
-    out << std::endl;
-  }
-
-  for (unsigned j=0; j< M.columns(); j++) {
-    out << q[j] << " ";
-  }
-
-  out << std::endl;
-  out.close();
-}
-
 /// Lemke's algorithm for solving linear complementarity problems
 /**
  * \param z a vector "close" to the solution on input (optional); contains
  *        the solution on output
  */
-bool LCP::lcp_lemke(const MatrixNd& M, const VectorNd& q, VectorNd& z,
+bool LCP::lcp_lemke(const MatrixNd& M, const VectorNd& q, VectorNd* z,
                     double piv_tol, double zero_tol) {
   const unsigned n = q.size();
   const unsigned MAXITER = std::min((unsigned) 1000, 50*n);
@@ -576,30 +442,33 @@ bool LCP::lcp_lemke(const MatrixNd& M, const VectorNd& q, VectorNd& z,
 
   // look for immediate exit
   if (n == 0) {
-    z.resize(0);
+    z->resize(0);
     return true;
   }
 
   // Lemke's algorithm doesn't seem to like warmstarting
-  z.set_zero();
+  z->fill(0);
 
   // copy z to z0
-  _z0 = z;
+  _z0 = *z;
 
   // come up with a sensible value for zero tolerance if none is given
   if (zero_tol <= static_cast<double>(0.0)) {
-    zero_tol = std::numeric_limits<double>::epsilon() * M.norm_inf() * n;
+    zero_tol = M.lpNorm<Eigen::Infinity>() 
+        * std::numeric_limits<double>::epsilon();
   }
 
   LOG << "LCP::lcp_lemke() entered" << std::endl;
   LOG << "  M: " << std::endl << M;
   LOG << "  q: " << q << std::endl;
+  LOG << "  zero_tol: " << zero_tol << std::endl;
 
   // see whether trivial solution exists
-  if (*std::min_element(q.begin(), q.end()) > -zero_tol) {
+  if (q.minCoeff() > -zero_tol) {
     LOG << " -- trivial solution found" << std::endl;
     LOG << "LCP::lcp_lemke() exited" << std::endl;
-    z.set_zero(n);
+    z->resize(n);
+    z->fill(0);
     return true;
   }
 
@@ -613,7 +482,8 @@ restart:  // solver restarts from here when basis becomes bad
   _j.clear();
 
   // initialize variables
-  z.set_zero(n*2);
+  z->resize(n*2);
+  z->fill(0);
   unsigned t = 2*n;
   unsigned entering = t;
   unsigned leaving = 0;
@@ -623,7 +493,7 @@ restart:  // solver restarts from here when basis becomes bad
   }
   unsigned lvindex;
   unsigned idx;
-  vector<unsigned>::iterator iiter;
+  std::vector<unsigned>::iterator iiter;
   _tlist.clear();
 
   // determine initial basis
@@ -635,9 +505,7 @@ restart:  // solver restarts from here when basis becomes bad
       _nonbas.push_back(i);
 
     // set the restart basis to random
-    _restart_z0.resize(n);
-    for (unsigned i=0; i< n; i++)
-      _restart_z0[i] = (rand_r() % 2 == 0) ? 0.0 : 1.0;
+    _restart_z0 = Eigen::VectorXd::Random(n);
   } else {
     // setup the initial basis
     for (unsigned i=0; i< n; i++) {
@@ -650,42 +518,45 @@ restart:  // solver restarts from here when basis becomes bad
 
     // setup the restart basis
     if (!restarted) {
-      _restart_z0.set_zero(n);
+      _restart_z0.resize(n);
+      _restart_z0.fill(0);
     } else {
       LOG << "-- setting restart basis to random" << std::endl;
 
       // we've already restarted once, set the restart basis to random
-      _restart_z0.resize(n);
-      for (unsigned i=0; i< n; i++) {
-        _restart_z0[i] = (rand_r() % 2 == 0) ? 0.0 : 1.0;
-      }
+      _restart_z0 = Eigen::VectorXd::Random(n);
     }
   }
 
   // determine initial values
   if (!_bas.empty()) {
-      LOG << "-- initial basis not empty (warmstarting)" << std::endl;
-
+    LOG << "-- initial basis not empty (warmstarting)" << std::endl;
+    
     // start from good initial basis
-    _Bl.set_identity(n);
-    _Bl.negate();
+    _Bl.resize(n, n);
+    _Bl.setIdentity();
+    //_Bl.negate();
+    _Bl *= -1;
 
     // select columns of M corresponding to z vars in the basis
-    M.select(_all.begin(), _all.end(), _bas.begin(), _bas.end(), _t1);
+    selectSubMat(M, _all, _bas, &_t1);
 
     // select columns of I corresponding to z vars not in the basis
-    _Bl.select(_all.begin(), _all.end(), _nonbas.begin(), _nonbas.end(), _t2);
+    selectSubMat(_Bl, _all, _nonbas, &_t2);
 
     // setup the basis matrix
-    _Bl.resize(n, _t1.columns() + _t2.columns());
-    _Bl.set_sub_mat(0, 0, _t1);
-    _Bl.set_sub_mat(0, _t1.columns(), _t2);
+    _Bl.resize(n, _t1.cols() + _t2.cols());
+    _Bl.block(0, 0, _t1.rows(), _t1.cols()) = _t1;
+    _Bl.block(0, _t1.cols(), _t2.rows(), _t2.cols()) = _t2;
 
     // solve B*x = -q
+#if 0
     try {
-      _Al = _Bl;
-      _x = q;
-      _LA.solve_fast(_Al, _x);
+#endif
+    _Al = _Bl;
+    _x = _Al.lu().solve(q);
+#if 0
+    // TODO sammy how to we detect if Eigen failed to solve?
     } catch (SingularException e) {
       // initial basis was no good, set it up as if we have no basis
       _bas.clear();
@@ -705,12 +576,15 @@ restart:  // solver restarts from here when basis becomes bad
         _restart_z0[i] = (rand_r() % 2 == 0) ? 0.0 : 1.0;
       }
     }
+#endif
   } else {
     LOG << "-- using basis of -1 (no warmstarting)" << std::endl;
 
     // use standard initial basis
-    _Bl.set_identity(n);
-    _Bl.negate();
+    _Bl.resize(n, n);
+    _Bl.setIdentity();
+    //_Bl.negate();
+    _Bl *= -1;
     _x = q;
   }
 
@@ -750,20 +624,24 @@ restart:  // solver restarts from here when basis becomes bad
 */
 
   // check whether initial basis provides a solution
-  if (std::find_if(_x.begin(), _x.end(),
-                   std::bind2nd(std::less<double>(), 0.0))
-      == _x.end()) {
+  if (_x.minCoeff() >= 0.0) {
+      // if (std::find_if(_x.begin(), _x.end(),
+      // std::bind2nd(std::less<double>(), 0.0))
+      // == _x.end()) {
+
     for (idx = 0, iiter = _bas.begin(); iiter != _bas.end(); iiter++, idx++) {
-      z[*iiter] = _x[idx];
+      (*z)(*iiter) = _x(idx);
     }
-    z.resize(n, true);
+
+    // TODO sammy is there a more efficient way to resize and preserve the data?
+    z->conservativeResize(n);
 
     // check to see whether tolerances are satisfied
     LOG << " -- initial basis provides a solution!" << std::endl;
     if (LOGGING(LOG_OPT)) {
-      M.mult(z, _wl) += q;
-      double minw = *std::min_element(_wl.begin(), _wl.end());
-      double w_dot_z = std::fabs(_wl.dot(z));
+      _wl = (M * (*z)) + q;
+      double minw = _wl.minCoeff();
+      double w_dot_z = std::fabs(_wl.dot(*z));
       LOG << "  z: " << z << std::endl;
       LOG << "  _w: " << _wl << std::endl;
       LOG << "  minimum w: " << minw << std::endl;
@@ -778,22 +656,24 @@ restart:  // solver restarts from here when basis becomes bad
   const double PIV_TOL = (piv_tol > static_cast<double>(0.0))
       ? piv_tol
       : (std::numeric_limits<double>::epsilon()
-         * n * std::max(static_cast<double>(1.0), M.norm_inf()));
+         * n * std::max(static_cast<double>(1.0), 
+                        M.lpNorm<Eigen::Infinity>()));
 
   // determine initial leaving variable
-  ColumnIteratord min_x = std::min_element(_x.begin(), _x.begin() + n);
-  double tval = -*min_x;
-  BOOST_FOREACH(unsigned i, _nonbas) {  // add w variables to basis
-    _bas.push_back(i+n);
+  Eigen::Index min_x;
+  const double min_x_val = _x.topRows(n).minCoeff(&min_x);
+  double tval = -min_x_val;
+  for (int i = 0; i < _nonbas.size(); i++) {
+      _bas.push_back(_nonbas[i] + n);
   }
-  lvindex = std::distance(_x.begin(), min_x);
+  lvindex = min_x;
   iiter = _bas.begin();
   std::advance(iiter, lvindex);
   leaving = *iiter;
   LOG << " -- x: " << _x << std::endl;
   LOG << " -- first pivot: leaving index=" << lvindex
-                    << "  entering index=" << entering
-                    << " minimum value: " << tval << std::endl;
+      << "  entering index=" << entering
+      << " minimum value: " << tval << std::endl;
 
   // pivot in the artificial variable
   *iiter = t;    // replace w var with _z0 in basic indices
@@ -801,12 +681,11 @@ restart:  // solver restarts from here when basis becomes bad
   for (unsigned i=0; i< n; i++) {
     _u[i] = (_x[i] < 0.0) ? 1.0 : 0.0;
   }
-  _Bl.mult(_u, _Be);
-  _Be.negate();
+  _Be = (_Bl * _u) * -1;
   _u *= tval;
   _x += _u;
   _x[lvindex] = tval;
-  _Bl.set_column(lvindex, _Be);
+  _Bl.col(lvindex) = _Be;
   LOG << "  new q: " << _x << std::endl;
 
   // main iterations begin here
@@ -817,6 +696,7 @@ restart:  // solver restarts from here when basis becomes bad
         basic << " " << _bas[i];
       }
       LOG << "basic variables:" << basic.str() << std::endl;
+      LOG << "leaving: " << leaving << " t:" << t << std::endl;
     }
 
     // check whether done; if not, get new entering variable
@@ -824,15 +704,15 @@ restart:  // solver restarts from here when basis becomes bad
       LOG << "-- solved LCP successfully!" << std::endl;
       unsigned idx;
       for (idx = 0, iiter = _bas.begin(); iiter != _bas.end(); iiter++, idx++) {
-        z[*iiter] = _x[idx];
+        (*z)[*iiter] = _x[idx];
       }
-      z.resize(n, true);
+      z->conservativeResize(n);
 
       // verify tolerances
       if (LOGGING(LOG_OPT)) {
-        M.mult(z, _wl) += q;
-        double minw = *std::min_element(_wl.begin(), _wl.end());
-        double w_dot_z = std::fabs(_wl.dot(z));
+      _wl = (M * (*z)) + q;
+        double minw = _wl.minCoeff();
+        double w_dot_z = std::fabs(_wl.dot(*z));
         LOG << "  found solution!" << std::endl;
         LOG << "  minimum w: " << minw << std::endl;
         LOG << "  w'z: " << w_dot_z << std::endl;
@@ -844,16 +724,22 @@ restart:  // solver restarts from here when basis becomes bad
       return true;
     } else if (leaving < n) {
       entering = n + leaving;
-      _Be.set_zero(n);
+      _Be.resize(n);
+      _Be.fill(0);
       _Be[leaving] = -1;
     } else {
       entering = leaving - n;
-      M.get_column(entering, _Be);
+      _Be = M.col(entering);
     }
     _dl = _Be;
+
+    // TODO sammy again, I'm not sure how tell that the Eigen solver failed.
+    _Al = _Bl;
+    _dl = _Al.lu().solve(_dl);
+#if 0
     try {
       _Al = _Bl;
-      _LA.solve_fast(_Al, _dl);
+      _dl = _Al.lu().solve(_dl);
     } catch (SingularException e) {
       LOG << " -- warning: linear system solver failed (basis became singular)"
           << std::endl;
@@ -898,6 +784,7 @@ restart:  // solver restarts from here when basis becomes bad
       }
 */
     }
+#endif
 
     // ** find new leaving variable
     _j.clear();
@@ -929,26 +816,25 @@ restart:  // solver restarts from here when basis becomes bad
     }
 
     // select elements j from x and d
-    _xj.resize(_j.size());
-    _dj.resize(_xj.size());
-    select(_x.begin(), _j.begin(), _j.end(), _xj.begin());
-    select(_dl.begin(), _j.begin(), _j.end(), _dj.begin());
+    selectSubVec(_x, _j, &_xj);
+    selectSubVec(_dl, _j, &_dj);
 
     // compute minimal ratios x(j) + EPS_DOUBLE ./ d(j), d > 0
-    _result.set_zero(_xj.size());
-    std::transform(_xj.begin(), _xj.end(), _result.begin(),
-          std::bind2nd(std::plus<double>(), zero_tol));
-    std::transform(_result.begin(), _result.end(),
-          _dj.begin(), _result.begin(),
-          std::divides<double>());
-    double theta = *std::min_element(_result.begin(), _result.end());
+    _result.resize(_xj.size());
+    _result.fill(zero_tol);
+    transformVecElements(_xj, &_result, std::plus<double>());
+    transformVecElements(_dj, &_result, [](double a, double b) { 
+      return b / a;});
+    double theta = _result.minCoeff();
 
     // NOTE: lexicographic ordering does not appear to be used here to prevent
     // cycling (see [Cottle 1992], pp. 340-342)
     // find indices of minimal ratios, d> 0
     //   divide _x(j) ./ d(j) -- remove elements above the minimum ratio
-    std::transform(_xj.begin(), _xj.end(), _dj.begin(), _result.begin(),
-          std::divides<double>());
+    for (int i = 0; i < _result.size(); i++) {
+      _result(i) = _xj(i) / _dj(i);
+    }
+
     for (iiter = _j.begin(), idx = 0; iiter != _j.end();) {
       if (_result[idx++] <= theta) {
         iiter++;
@@ -968,7 +854,7 @@ restart:  // solver restarts from here when basis becomes bad
     if (_j.empty()) {
       LOG << "zero tolerance too low?" << std::endl;
       LOG << "LCP::lcp_lemke() exited" << std::endl;
-      z.resize(n, true);
+      z->conservativeResize(n);
 
       // log failure
       #ifndef NDEBUG
@@ -980,7 +866,9 @@ restart:  // solver restarts from here when basis becomes bad
 
     // check whether artificial index among these
     _tlist.clear();
-    select(_bas.begin(), _j.begin(), _j.end(), std::back_inserter(_tlist));
+    for (int i = 0; i < _j.size(); i++) {
+      _tlist.push_back(_bas[_j[i]]);
+    }
     if (std::find(_tlist.begin(), _tlist.end(), t) != _tlist.end()) {
       iiter = std::find(_bas.begin(), _bas.end(), t);
       lvindex = iiter - _bas.begin();
@@ -1002,7 +890,7 @@ restart:  // solver restarts from here when basis becomes bad
     _dl *= ratio;
     _x -= _dl;
     _x[lvindex] = ratio;
-    _Bl.set_column(lvindex, _Be);
+    _Bl.col(lvindex) = _Be;
     *iiter = entering;
     LOG << " -- pivoting: leaving index=" << lvindex
                       << "  entering index=" << entering << std::endl;
@@ -1013,7 +901,7 @@ restart:  // solver restarts from here when basis becomes bad
   LOG << "LCP::lcp_lemke() exited" << std::endl;
 
   // max iterations exceeded
-  z.resize(n, true);
+  z->conservativeResize(n);
   // log failure
   #ifndef NDEBUG
   //  log_failure(M, q);
@@ -1022,53 +910,70 @@ restart:  // solver restarts from here when basis becomes bad
   return false;
 }
 
-/// Regularized wrapper around Lemke's algorithm for srpase matrices
+/// Regularized wrapper around Lemke's algorithm
 bool LCP::lcp_lemke_regularized(
-  const SparseMatrixNd& M, const VectorNd& q, VectorNd& z,
-      int min_exp, unsigned step_exp, int max_exp,
-      double piv_tol, double zero_tol) {
+    const MatrixNd& M, const VectorNd& q, VectorNd* z,
+    int min_exp, unsigned step_exp, int max_exp,
+    double piv_tol, double zero_tol) {
   LOG << "LCP::lcp_lemke_regularized() entered" << std::endl;
 
   // look for fast exit
   if (q.size() == 0) {
-    z.resize(0);
+    z->resize(0);
     return true;
   }
 
   // copy MM
-  _MMs = M;
+  _MM = M;
 
   // assign value for zero tolerance, if necessary
   const double ZERO_TOL = (zero_tol > static_cast<double>(0.0))
       ? zero_tol
-      : q.size() * std::numeric_limits<double>::epsilon();
+      : (q.size() * M.lpNorm<Eigen::Infinity>() * NEAR_ZERO);
+
+  LOG << " zero tolerance: " << ZERO_TOL << std::endl;
+
+  // store the total pivots
+  unsigned total_piv = 0;
 
   // try non-regularized version first
-  bool result = lcp_lemke(_MMs, q, z, piv_tol, zero_tol);
+  bool result = lcp_lemke(_MM, q, z, piv_tol, zero_tol);
   if (result) {
     // verify that solution truly is a solution -- check z
-    if (*std::min_element(z.begin(), z.end()) >= -ZERO_TOL) {
+    if (z->minCoeff() >= -ZERO_TOL) {
       // check w
-      M.mult(z, _wx) += q;
-      if (*std::min_element(_wx.begin(), _wx.end()) >= -ZERO_TOL) {
+      _wx = (M * (*z)) + q;
+      if (_wx.minCoeff() >= -ZERO_TOL) {
         // check z'w
-        std::transform(z.begin(), z.end(), _wx.begin(), _wx.begin(),
-                       std::multiplies<double>());
-        pair<ColumnIteratord, ColumnIteratord> mmax =
-            boost::minmax_element(_wx.begin(), _wx.end());
-        if (*mmax.first >= -ZERO_TOL && *mmax.second < ZERO_TOL) {
+        transformVecElements(*z, &_wx, std::multiplies<double>());
+        const double wx_min = _wx.minCoeff();
+        const double wx_max = _wx.maxCoeff();
+        if (wx_min >= -ZERO_TOL && wx_max < ZERO_TOL) {
           LOG << "  solved with no regularization necessary!" << std::endl;
           LOG << "LCP::lcp_lemke_regularized() exited" << std::endl;
+
           return true;
+        } else {
+          LOG << "LCP::lcp_lemke() - "
+              << "'<w, z> not within tolerance(min value: " << wx_min
+              << " max value: " << wx_max << ")" << std::endl;
         }
+      } else {
+        LOG << "  LCP::lcp_lemke() - 'w' not solved to desired tolerance"
+            << std::endl;
+        LOG << "  minimum w: " << _wx.minCoeff()
+            << std::endl;
       }
+    } else {
+      LOG << "  LCP::lcp_lemke() - 'z' not solved to desired tolerance"
+          << std::endl;
+      LOG << "  minimum z: " << z->minCoeff()
+          << std::endl;
     }
   }
 
-  // add a zero sparse diagonal matrix to _MMs
-  _eye = SparseMatrixNd::identity(q.size());
-  (_zero = _eye) *= 0.0;
-  _MMs += _zero;
+  // update the pivots
+  total_piv += pivots;
 
   // start the regularization process
   int rf = min_exp;
@@ -1076,31 +981,54 @@ bool LCP::lcp_lemke_regularized(
     // setup regularization factor
     double lambda = std::pow(static_cast<double>(10.0),
                              static_cast<double>(rf));
-    (_diag_lambda = _eye) *= lambda;
+
+    LOG << "  trying to solve LCP with regularization factor: " << lambda
+        << std::endl;
 
     // regularize M
-    (_MMx = _MMs) += _diag_lambda;
+    _MM = M;
+    for (unsigned i=0; i< M.rows(); i++) {
+      _MM(i, i) += lambda;
+    }
 
     // try to solve the LCP
-    if ((result = lcp_lemke(_MMx, q, z, piv_tol, zero_tol))) {
+    result = lcp_lemke(_MM, q, z, piv_tol, zero_tol);
+
+    // update total pivots
+    total_piv += pivots;
+
+    if (result) {
       // verify that solution truly is a solution -- check z
-      if (*std::min_element(z.begin(), z.end()) > -ZERO_TOL) {
+      if (z->minCoeff() > -ZERO_TOL) {
         // check w
-        _MMx.mult(z, _wx) += q;
-        if (*std::min_element(_wx.begin(), _wx.end()) > -ZERO_TOL) {
+        _wx = (_MM * (*z)) + q;
+        if (_wx.minCoeff() > - ZERO_TOL) {
           // check z'w
-          std::transform(z.begin(), z.end(), _wx.begin(), _wx.begin(),
-      std::multiplies<double>());
-          pair<ColumnIteratord, ColumnIteratord> mmax =
-              boost::minmax_element(_wx.begin(), _wx.end());
-          if (*mmax.first > -ZERO_TOL && *mmax.second < ZERO_TOL) {
+          transformVecElements(*z, &_wx, std::multiplies<double>());
+          const double wx_min = _wx.minCoeff();
+          const double wx_max = _wx.maxCoeff();
+          if (wx_min > -ZERO_TOL && wx_max < ZERO_TOL) {
             LOG << "  solved with regularization factor: " << lambda
                 << std::endl;
             LOG << "LCP::lcp_lemke_regularized() exited" << std::endl;
-
+            pivots = total_piv;
             return true;
+          } else {
+            LOG << "LCP::lcp_lemke() - "
+                << "'<w, z> not within tolerance(min value: " << wx_min
+                << " max value: " << wx_max << ")" << std::endl;
           }
+        } else {
+          LOG << "  LCP::lcp_lemke() - 'w' not solved to desired tolerance"
+              << std::endl;
+          LOG << "  minimum w: " << _wx.minCoeff()
+              << std::endl;
         }
+      } else {
+        LOG << "  LCP::lcp_lemke() - 'z' not solved to desired tolerance"
+            << std::endl;
+        LOG << "  minimum z: " << z->minCoeff()
+            << std::endl;
       }
     }
 
@@ -1108,12 +1036,18 @@ bool LCP::lcp_lemke_regularized(
     rf += step_exp;
   }
 
-  LOG << "  unable to solve given any regularization!" << std::endl;
-  LOG << "LCP::lcp_lemke_regularized() exited" << std::endl;
+  LOG << "  unable to solve given any regularization!"
+                    << std::endl;
+  LOG << "LCP::lcp_lemke_regularized() exited"
+                    << std::endl;
+
+  // store total pivots
+  pivots = total_piv;
 
   // still here?  failure...
   return false;
 }
+
 
 /// Lemke's algorithm for solving linear complementarity problems using sparse
 /// matrices
@@ -1121,14 +1055,14 @@ bool LCP::lcp_lemke_regularized(
  * \param z a vector "close" to the solution on input (optional); contains
  *        the solution on output
  */
-bool LCP::lcp_lemke(const SparseMatrixNd& M, const VectorNd& q, VectorNd& z,
-      double piv_tol, double zero_tol) {
+bool LCP::lcp_lemke(const SparseMatrixNd& M, const VectorNd& q, VectorNd* z,
+                    double piv_tol, double zero_tol) {
   const unsigned n = q.size();
   const unsigned MAXITER = std::min((unsigned) 1000, 50*n);
 
   // look for immediate exit
   if (n == 0) {
-    z.resize(0);
+    z->resize(0);
     return true;
   }
 
@@ -1140,26 +1074,32 @@ bool LCP::lcp_lemke(const SparseMatrixNd& M, const VectorNd& q, VectorNd& z,
   _j.clear();
 
   // copy z to z0
-  _z0 = z;
+  _z0 = *z;
 
   // come up with a sensible value for zero tolerance if none is given
+  // come up with a sensible value for zero tolerance if none is given
   if (zero_tol <= static_cast<double>(0.0)) {
-    zero_tol = std::numeric_limits<double>::epsilon() * M.norm_inf() * n;
+    Eigen::MatrixXd dense_M = M;
+    zero_tol = dense_M.lpNorm<Eigen::Infinity>() 
+        * std::numeric_limits<double>::epsilon() * n;
   }
+
   LOG << "LCP::lcp_lemke() entered" << std::endl;
   LOG << "  M: " << std::endl << M;
   LOG << "  q: " << q << std::endl;
 
   // see whether trivial solution exists
-  if (*std::min_element(q.begin(), q.end()) > -zero_tol) {
+  if (q.minCoeff() > -zero_tol) {
     LOG << " -- trivial solution found" << std::endl;
     LOG << "LCP::lcp_lemke() exited" << std::endl;
-    z.set_zero(n);
+    z->resize(n);
+    z->fill(0);
     return true;
   }
 
   // initialize variables
-  z.set_zero(n*2);
+  z->resize(n*2);
+  z->fill(0);
   unsigned t = 2*n;
   unsigned entering = t;
   unsigned leaving = 0;
@@ -1169,7 +1109,7 @@ bool LCP::lcp_lemke(const SparseMatrixNd& M, const VectorNd& q, VectorNd& z,
   }
   unsigned lvindex;
   unsigned idx;
-  vector<unsigned>::iterator iiter;
+  std::vector<unsigned>::iterator iiter;
   _tlist.clear();
 
   // determine initial basis
@@ -1190,54 +1130,54 @@ bool LCP::lcp_lemke(const SparseMatrixNd& M, const VectorNd& q, VectorNd& z,
   }
 
   // determine initial values
+  _sBl = Eigen::SparseMatrix<double>(n, n);
   if (!_bas.empty()) {
-    typedef map<pair<unsigned, unsigned>, double> ValueMap;
-    ValueMap values, newvalues;
-
-    // select columns of M corresponding to z vars in the basis
-    M.get_values(values);
-    for (ValueMap::const_iterator i = values.begin(); i != values.end(); i++) {
-      vector<unsigned>::const_iterator j =
-          std::find(_bas.begin(), _bas.end(), i->first.second);
-      if (j == _bas.end()) {
-        continue;
-      } else {
-        newvalues[make_pair(i->first.first, j - _bas.begin())] = i->second;
+    typedef Eigen::Triplet<double> Triplet;
+    std::vector<Triplet> tripletList;
+    for (int i=0; i< M.outerSize(); i++) {
+      for (Eigen::SparseMatrix<double>::InnerIterator it(M, i); it; ++it) {
+        int j = it.col();
+        std::vector<unsigned>::const_iterator j_it =
+            std::find(_bas.begin(), _bas.end(), j);
+        if (j_it == _bas.end()) {
+          continue;
+        } else {
+          tripletList.push_back(Triplet(i, j, it.value()));
+        }
       }
     }
-
-    // "select" columns of eye corresponding to z vars not in the basis
-    // select_columns(_nonbas.begin(), _nonbas.end(), _st2);
-    for (unsigned i=0, j=_bas.size(); i< _nonbas.size(); i++, j++) {
-      newvalues[make_pair(_nonbas[i], j)] = 1.0;
+    for (int i = 0, j = _bas.size(); i < _nonbas.size(); i++, j++) {
+      tripletList.push_back(Triplet(_nonbas[i], j, 1.0));
     }
 
-    // setup the basis matrix
-    _sBl = SparseMatrixNd(SparseMatrixNd::eCSC, n, n, newvalues);
+    _sBl.setFromTriplets(tripletList.begin(), tripletList.end());
   } else {
-    _sBl = SparseMatrixNd::identity(SparseMatrixNd::eCSC, n);
-    _sBl.negate();
+    _sBl.setIdentity();
+    //_sBl.negate();
+    _sBl *= -1;
   }
 
   // solve B*x = -q
-  _LA.solve_sparse_direct(_sBl, q, Ravelin::eNoTranspose, _x);
-  _x.negate();
+  std::unique_ptr<Eigen::SparseLU<Eigen::SparseMatrix<double>>> solver;
+  solver.reset(new Eigen::SparseLU<Eigen::SparseMatrix<double>>);
+  solver->analyzePattern(_sBl);
+  solver->factorize(_sBl);
+  _x = solver->solve(q);
+  _x *= -1;
 
   // check whether initial basis provides a solution
-  if (std::find_if(_x.begin(), _x.end(),
-                   std::bind2nd(std::less<double>(), 0.0))
-      == _x.end()) {
+  if (_x.minCoeff() >= 0.0) {
     for (idx = 0, iiter = _bas.begin(); iiter != _bas.end(); iiter++, idx++) {
-      z[*iiter] = _x[idx];
+      (*z)[*iiter] = _x[idx];
     }
-    z.resize(n, true);
+    z->conservativeResize(n);
 
     // check to see whether tolerances are satisfied
     LOG << " -- initial basis provides a solution!" << std::endl;
     if (LOGGING(LOG_OPT)) {
-      M.mult(z, _wl) += q;
-      double minw = *std::min_element(_wl.begin(), _wl.end());
-      double w_dot_z = std::fabs(_wl.dot(z));
+      _wl = (M * (*z)) + q;
+      double minw = _wl.minCoeff();
+      double w_dot_z = std::fabs(_wl.dot(*z));
       LOG << "  z: " << z << std::endl;
       LOG << "  w: " << _wl << std::endl;
       LOG << "  minimum w: " << minw << std::endl;
@@ -1249,12 +1189,13 @@ bool LCP::lcp_lemke(const SparseMatrixNd& M, const VectorNd& q, VectorNd& z,
   }
 
   // determine initial leaving variable
-  ColumnIteratord min_x = std::min_element(_x.begin(), _x.begin() + n);
-  double tval = -*min_x;
-  BOOST_FOREACH(unsigned i, _nonbas) {  // add w variables to basis
-    _bas.push_back(i+n);
+  Eigen::Index min_x;
+  const double min_x_val = _x.topRows(n).minCoeff(&min_x);
+  double tval = -min_x_val;
+  for (int i = 0; i < _nonbas.size(); i++) {
+    _bas.push_back(_nonbas[i] + n);
   }
-  lvindex = std::distance(_x.begin(), min_x);
+  lvindex = min_x;
   iiter = _bas.begin();
   std::advance(iiter, lvindex);
   leaving = *iiter;
@@ -1265,12 +1206,11 @@ bool LCP::lcp_lemke(const SparseMatrixNd& M, const VectorNd& q, VectorNd& z,
   for (unsigned i=0; i< n; i++) {
     _u[i] = (_x[i] < 0.0) ? 1.0 : 0.0;
   }
-  _sBl.mult(_u, _Be);
-  _Be.negate();
+  _Be = (_sBl * _u) * -1;
   _u *= tval;
   _x += _u;
   _x[lvindex] = tval;
-  _sBl.set_column(lvindex, _Be);
+  _sBl.col(lvindex) = makeSparseVector(_Be);
   LOG << "  new q: " << _x << std::endl;
 
   // main iterations begin here
@@ -1280,15 +1220,15 @@ bool LCP::lcp_lemke(const SparseMatrixNd& M, const VectorNd& q, VectorNd& z,
       LOG << "-- solved LCP successfully!" << std::endl;
       unsigned idx;
       for (idx = 0, iiter = _bas.begin(); iiter != _bas.end(); iiter++, idx++) {
-        z[*iiter] = _x[idx];
+        (*z)[*iiter] = _x[idx];
       }
-      z.resize(n, true);
+      z->conservativeResize(n);
 
       // verify tolerances
       if (LOGGING(LOG_OPT)) {
-        M.mult(z, _wl) += q;
-        double minw = *std::min_element(_wl.begin(), _wl.end());
-        double w_dot_z = std::fabs(_wl.dot(z));
+        _wl = (M * (*z)) + q;
+        double minw = _wl.minCoeff();
+        double w_dot_z = std::fabs(_wl.dot(*z));
         LOG << "  found solution!" << std::endl;
         LOG << "  minimum w: " << minw << std::endl;
         LOG << "  w'z: " << w_dot_z << std::endl;
@@ -1298,19 +1238,24 @@ bool LCP::lcp_lemke(const SparseMatrixNd& M, const VectorNd& q, VectorNd& z,
       return true;
     } else if (leaving < n) {
       entering = n + leaving;
-      _Be.set_zero(n);
+      _Be.resize(n);
+      _Be.fill(0);
       _Be[leaving] = -1;
     } else {
       entering = leaving - n;
-      M.get_column(entering, _Be);
+      _Be = M.col(entering);
     }
-    _LA.solve_sparse_direct(_sBl, _Be, Ravelin::eNoTranspose, _dl);
+    solver.reset(new Eigen::SparseLU<Eigen::SparseMatrix<double>>);
+    solver->analyzePattern(_sBl);
+    solver->factorize(_sBl);
+    _dl = solver->solve(_Be);
 
     // use a new pivot tolerance if necessary
     const double PIV_TOL = (piv_tol > static_cast<double>(0.0))
         ? piv_tol
-        : (std::numeric_limits<double>::epsilon() * n *
-           std::max(static_cast<double>(1.0, _Be.norm_inf())));
+        : (std::numeric_limits<double>::epsilon()
+           * n * std::max(static_cast<double>(1.0), 
+                          _Be.lpNorm<Eigen::Infinity>()));
 
     // ** find new leaving variable
     _j.clear();
@@ -1324,32 +1269,31 @@ bool LCP::lcp_lemke(const SparseMatrixNd& M, const VectorNd& q, VectorNd& z,
       LOG << "LCP::lcp_lemke() - no new pivots (ray termination)" << std::endl;
       LOG << "LCP::lcp_lemke() exited" << std::endl;
 
-      z.resize(n, true);
+      z->conservativeResize(n);
       return false;
     }
 
     LOG << " -- column of M': " << _dl << std::endl;
 
     // select elements j from x and d
-    _xj.resize(_j.size());
-    _dj.resize(_xj.size());
-    select(_x.begin(), _j.begin(), _j.end(), _xj.begin());
-    select(_d.begin(), _j.begin(), _j.end(), _dj.begin());
+    selectSubVec(_x, _j, &_xj);
+    selectSubVec(_dl, _j, &_dj);
 
     // compute minimal ratios x(j) + EPS_DOUBLE ./ d(j), d > 0
     _result.resize(_xj.size());
-    std::transform(_xj.begin(), _xj.end(), _result.begin(),
-      std::bind2nd(std::plus<double>(), zero_tol));
-    std::transform(_result.begin(), _result.end(),
-      _dj.begin(), _result.begin(), std::divides<double>());
-    double theta = *std::min_element(_result.begin(), _result.end());
+    _result.fill(zero_tol);
+    transformVecElements(_xj, &_result, std::plus<double>());
+    transformVecElements(_dj, &_result, [](double a, double b) { 
+        return b / a;});
+    double theta = _result.minCoeff();
 
     // NOTE: lexicographic ordering does not appear to be used here to prevent
     // cycling (see [Cottle 1992], pp. 340-342)
     // find indices of minimal ratios, d> 0
     //   divide _x(j) ./ d(j) -- remove elements above the minimum ratio
-    std::transform(_xj.begin(), _xj.end(), _dj.begin(), _result.begin(),
-      std::divides<double>());
+    for (int i = 0; i < _result.size(); i++) {
+      _result(i) = _xj(i) / _dj(i);
+    }
     for (iiter = _j.begin(), idx = 0; iiter != _j.end(); ) {
       if (_result[idx++] <= theta) {
         iiter++;
@@ -1361,13 +1305,15 @@ bool LCP::lcp_lemke(const SparseMatrixNd& M, const VectorNd& q, VectorNd& z,
     if (_j.empty()) {
       LOG << "zero tolerance too low?" << std::endl;
       LOG << "LCP::lcp_lemke() exited" << std::endl;
-      z.resize(n, true);
+      z->conservativeResize(n);
       return false;
     }
 
     // check whether artificial index among these
     _tlist.clear();
-    select(_bas.begin(), _j.begin(), _j.end(), std::back_inserter(_tlist));
+    for (int i = 0; i < _j.size(); i++) {
+      _tlist.push_back(_bas[_j[i]]);
+    }
     if (std::find(_tlist.begin(), _tlist.end(), t) != _tlist.end()) {
       iiter = std::find(_bas.begin(), _bas.end(), t);
       lvindex = iiter - _bas.begin();
@@ -1390,7 +1336,7 @@ bool LCP::lcp_lemke(const SparseMatrixNd& M, const VectorNd& q, VectorNd& z,
     _dl *= ratio;
     _x -= _dl;
     _x[lvindex] = ratio;
-    _sBl.set_column(lvindex, _Be);
+    _sBl.col(lvindex) = makeSparseVector(_Be);
     *iiter = entering;
     LOG << " -- pivoting: leaving index=" << lvindex
         << "  entering index=" << entering << std::endl;
@@ -1400,10 +1346,153 @@ bool LCP::lcp_lemke(const SparseMatrixNd& M, const VectorNd& q, VectorNd& z,
   LOG << "LCP::lcp_lemke() exited" << std::endl;
 
   // max iterations exceeded
-  z.resize(n, true);
+  z->conservativeResize(n);
 
   return false;
 }
+
+#if 0 
+/// Sets a basis
+void LCP::set_basis(unsigned n, unsigned count,
+                    vector<unsigned>& bas, vector<unsigned>& nbas) {
+  // clear bas and nbas
+  bas.clear();
+  nbas.clear();
+
+  uint64 countL = count;
+//  unsigned long long n2 = 1L << ((unsigned long long) n-1);
+  uint64 n2 = 1;
+  for (unsigned i=0; i< n; i++)
+    n2 *= 2;
+
+  for (unsigned i=0; i< n; i++) {
+    if (countL / n2 > 0)
+      bas.push_back(i);
+    else
+      nbas.push_back(i);
+    countL = countL % n2;
+    n2 = n2 >> 1L;
+    assert(n2 != 0);
+  }
+}
+
+/// Logs LCP solver failure
+void LCP::log_failure(const MatrixNd& M, const VectorNd& q) {
+  // generate a unique filename
+  std::ostringstream fname;
+  fname << "lemke.Mq.";
+  for (unsigned i=0; i< 8; i++) {
+    fname << rand_r() % 10;
+  }
+  fname << ".fail";
+
+  // open the file
+  std::ofstream out(fname.str().c_str());
+
+  // write the matrix
+  for (unsigned i=0; i< M.rows(); i++) {
+    for (unsigned j=0; j< M.cols(); j++) {
+      out << M(i, j) << " ";
+    }
+    out << std::endl;
+  }
+
+  for (unsigned j=0; j< M.cols(); j++) {
+    out << q[j] << " ";
+  }
+
+  out << std::endl;
+  out.close();
+}
+#endif
+
+/// Regularized wrapper around Lemke's algorithm for srpase matrices
+bool LCP::lcp_lemke_regularized(
+  const SparseMatrixNd& M, const VectorNd& q, VectorNd* z,
+      int min_exp, unsigned step_exp, int max_exp,
+      double piv_tol, double zero_tol) {
+  LOG << "LCP::lcp_lemke_regularized() entered" << std::endl;
+
+  // look for fast exit
+  if (q.size() == 0) {
+    z->resize(0);
+    return true;
+  }
+
+  // copy MM
+  _MMs = M;
+
+  // assign value for zero tolerance, if necessary
+  const double ZERO_TOL = (zero_tol > static_cast<double>(0.0))
+      ? zero_tol
+      : q.size() * std::numeric_limits<double>::epsilon();
+
+  // try non-regularized version first
+  bool result = lcp_lemke(_MMs, q, z, piv_tol, zero_tol);
+  if (result) {
+    // verify that solution truly is a solution -- check z
+    if (z->minCoeff() >= -ZERO_TOL) {
+      // check w
+      _wx = (M * (*z)) + q;
+      if (_wx.minCoeff() >= -ZERO_TOL) {
+        // check z'w
+        transformVecElements(*z, &_wx, std::multiplies<double>());
+        if (_wx.minCoeff() >= -ZERO_TOL && _wx.maxCoeff() < ZERO_TOL) {
+          LOG << "  solved with no regularization necessary!" << std::endl;
+          LOG << "LCP::lcp_lemke_regularized() exited" << std::endl;
+          return true;
+        }
+      }
+    }
+  }
+
+  // add a zero sparse diagonal matrix to _MMs
+  _eye.setIdentity();
+  _zero.setZero();
+  _MMs += _zero;
+
+  // start the regularization process
+  int rf = min_exp;
+  while (rf < max_exp) {
+    // setup regularization factor
+    double lambda = std::pow(static_cast<double>(10.0),
+                             static_cast<double>(rf));
+    (_diag_lambda = _eye) *= lambda;
+
+    // regularize M
+    (_MMx = _MMs) += _diag_lambda;
+
+    // try to solve the LCP
+    if ((result = lcp_lemke(_MMx, q, z, piv_tol, zero_tol))) {
+      // verify that solution truly is a solution -- check z
+      if (z->minCoeff() > -ZERO_TOL) {
+        // check w
+        _wx = (_MMx * (*z)) + q;
+        if (_wx.minCoeff() > -ZERO_TOL) {
+          // check z'w
+          transformVecElements(*z, &_wx, std::multiplies<double>());
+          if (_wx.minCoeff() > -ZERO_TOL && _wx.maxCoeff() < ZERO_TOL) {
+            LOG << "  solved with regularization factor: " << lambda
+                << std::endl;
+            LOG << "LCP::lcp_lemke_regularized() exited" << std::endl;
+
+            return true;
+          }
+        }
+      }
+    }
+
+    // increase rf
+    rf += step_exp;
+  }
+
+  LOG << "  unable to solve given any regularization!" << std::endl;
+  LOG << "LCP::lcp_lemke_regularized() exited" << std::endl;
+
+  // still here?  failure...
+  return false;
+}
+#if 0
 
 // picks (randomly) the minimum element from a vector that has potentially
 // multiple minima
@@ -1530,4 +1619,5 @@ bool LCP::fast_pivoting(const MatrixNd& M, const VectorNd& q, VectorNd& z,
             << std::endl;
   return false;
 };
-};
+#endif
+}
