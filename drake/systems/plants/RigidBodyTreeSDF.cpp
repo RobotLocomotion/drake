@@ -379,8 +379,15 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
     RigidBodyLoop l(frameA, frameB, axis);
     model->loops.push_back(l);
   } else {
-    // Update the child's reference frame to be that of its joint.
+    // Update the reference frames of the child link's inertia and visual elements to be that of its joint.
     child->applyTransformToJointFrame(transform_to_model.inverse()*transform_child_to_model);
+
+    // Update the reference frames of the collision elements belonging to the child link.
+    for (auto& c : child->collision_element_ids) {
+      if (!model->transformCollisionFrame(c, transform_to_model.inverse()*transform_child_to_model))
+        std::cout << "RigidBodyTreeSDF::parseSDFJoint: Collision element with ID "
+                  << c << " not found! Cannot update its local frame to be that of joint." << std::endl;
+    }
 
     // construct the actual joint (based on it's type)
     DrakeJoint* joint = nullptr;

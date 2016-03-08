@@ -72,6 +72,12 @@ RigidBodyTree::RigidBodyTree(void)
 
 RigidBodyTree::~RigidBodyTree(void) {}
 
+bool RigidBodyTree::transformCollisionFrame(DrakeCollision::ElementId& eid,
+    const Eigen::Isometry3d& transform_body_to_joint) {
+  return collision_model->transformCollisionFrame(eid, transform_body_to_joint);
+}
+
+
 void RigidBodyTree::compile(void) {
   // reorder body list to make sure that parents before children in the list
   size_t i = 0;

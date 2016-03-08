@@ -175,6 +175,19 @@ class DRAKECOLLISION_EXPORT Model {
     return false;
   };
 
+  virtual bool transformCollisionFrame(DrakeCollision::ElementId& eid,
+    const Eigen::Isometry3d& transform_body_to_joint) {
+
+    auto element = elements.find(eid);
+    if(element != elements.end()) {
+      element->second->setLocalTransform(transform_body_to_joint *
+        element->second->getLocalTransform());
+      return true;
+    }
+    else
+      return false;
+  }
+
  protected:
   std::unordered_map<ElementId, std::unique_ptr<Element> > elements;
 

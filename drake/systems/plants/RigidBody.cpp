@@ -73,10 +73,10 @@ bool RigidBody::appendCollisionElementIdsFromThisBody(
 
 void RigidBody::applyTransformToJointFrame(const Eigen::Isometry3d& transform_body_to_joint) {
   I = transformSpatialInertia(transform_body_to_joint,I);
+
   for (auto& v : visual_elements) {
     v.setLocalTransform(transform_body_to_joint*v.getLocalTransform());
   }
-  // for (auto& c : )
 }
 
 RigidBody::CollisionElement::CollisionElement(const CollisionElement& other)

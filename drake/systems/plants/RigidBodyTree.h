@@ -106,6 +106,9 @@ class DRAKERBM_EXPORT RigidBodyTree {
       Eigen::Map<Eigen::Matrix3Xd> const& normals,
       std::vector<Eigen::Map<Eigen::Matrix3Xd> >& tangents) const;
 
+  bool transformCollisionFrame(DrakeCollision::ElementId& eid,
+    const Eigen::Isometry3d& transform_body_to_joint);
+
   void compile(void);  // call me after the model is loaded
 
   Eigen::VectorXd getZeroConfiguration() const;
