@@ -193,6 +193,46 @@ class BoundingBoxConstraint : public LinearConstraint {
     y = x;
   }
 };
+
+
+/** LinearComplementarityConstraint
+ *
+ * Implements a constraint of the form:
+ *   Mx + q >= 0
+ *   x >= 0
+ *   x'(Mx + q) == 0
+ *
+ * An implied slack variable complements any 0 component of x, which
+ * (TODO ggould) will in the future be retrievable.
+ */
+class LinearComplementarityConstraint : public Constraint {
+ public:
+  template <typename DerivedM, typename Derivedq>
+  LinearComplementarityConstraint(const Eigen::MatrixBase<DerivedM>& M,
+                                  const Eigen::MatrixBase<Derivedq>& q)
+      : Constraint(q.rows(),
+                   Eigen::VectorXd::Constant(0),
+                   Eigen::VectorXd::Constant(
+                       std::numeric_limits<double>::infinity())),
+        M(M),
+        q(q) {}
+  virtual ~LinearComplementarityConstraint() {}
+
+  virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                    Eigen::VectorXd& y) const override {
+    y.resize(getNumConstraints());
+    y = (M * x) + q;
+  }
+  virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
+                    TaylorVecXd& y) const override {
+    y.resize(getNumConstraints());
+    y = (M.cast<TaylorVarXd>() * x) + q.cast<TaylorVarXd>();
+  };
+
+ private:
+  Eigen::MatrixXd M;
+  Eigen::VectorXd q;
+};
 }
 
 #endif

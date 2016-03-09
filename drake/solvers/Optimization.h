@@ -1,6 +1,8 @@
 #ifndef DRAKE_OPTIMIZATION_H
 #define DRAKE_OPTIMIZATION_H
 
+#include <boost/optional.hpp>
+
 #include <list>
 #include <memory>
 #include <initializer_list>
@@ -9,6 +11,7 @@
 #include "drake/drakeOptimization_export.h"
 #include "Constraint.h"
 #include "MathematicalProgram.h"
+
 
 namespace Drake {
 
@@ -384,6 +387,47 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     return constraint;
   }
 
+  /** addLinearComplementarityConstraint
+   *
+   * @brief adds a linear complementarity constraint to the program for all
+   * (currently existing) variables.
+   */
+  template <typename DerivedA, typename DerivedB>
+  std::shared_ptr<LinearComplementarityConstraint>
+      addLinearComplementarityConstraint(
+          const Eigen::MatrixBase<DerivedA>& M,
+          const Eigen::VectorXd& q) {
+    return addLinearComplementarityConstraint(M, q, variable_views);
+  }
+
+  /** addLinearComplementarityConstraint
+   *
+   * @brief adds a linear complementarity constraints referencing a subset of
+   * the decision variables.
+   */
+  template <typename DerivedA, typename DerivedB>
+  std::shared_ptr<LinearComplementarityConstraint>
+      addLinearComplementarityConstraint(
+          const Eigen::MatrixBase<DerivedA>& M,
+          const Eigen::VectorXd& q,
+          const VariableList& vars) {
+    problem_type = problem_type.reset(
+        problem_type->addLinearComplementarityConstraint());
+
+    // Linear Complementarity Constraint cannot currently coexist with any
+    // other types of constraint or objective.
+    assert(generic_constraints.empty());
+    assert(generic_objectives.empty());
+    assert(linear_constraints.empty());
+    assert(linear_equality_constraints.empty());
+    assert(bbox_constraints.empty());
+
+    auto constraint = std::make_shared<LinearComplementarityConstraint>(M, q);
+    linear_complementarity_constraint =
+        Binding<LinearComplementarityConstraint>(constraint, vars);
+    return constraint;
+  }
+
   // template <typename FunctionType>
   // void addCost(std::function..);
   // void addLinearCost(const Eigen::MatrixBase<Derived>& c,const vector<const
@@ -444,7 +488,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
                    linear_equality_constraints.end());
     return conlist;
   }
-  const std::list<Binding<BoundingBoxConstraint>>& 
+  const std::list<Binding<BoundingBoxConstraint>>&
       getBoundingBoxConstraints() const {
     return bbox_constraints;
   }
@@ -469,7 +513,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     }
     return p;
   }
-  
+
   size_t getNumVars() const { return num_vars; }
   const Eigen::VectorXd& getInitialGuess() const { return x_initial_guess; }
 
@@ -494,6 +538,12 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
       linear_constraints;  // note: does not include linear_equality_constraints
   std::list<Binding<LinearEqualityConstraint>> linear_equality_constraints;
   std::list<Binding<BoundingBoxConstraint>> bbox_constraints;
+
+  // An LCP encapsulates all of the constraints and objectives on a set of
+  // variables; if this is set, all of the above must be empty.
+  boost::optional<Binding<LinearComplementarityConstraint>>
+      linear_complementarity_constraint;
+
   size_t num_vars;
   Eigen::VectorXd x_initial_guess;
   std::shared_ptr<SolverData> solver_data;
