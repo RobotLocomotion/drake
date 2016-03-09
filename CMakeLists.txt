@@ -134,9 +134,14 @@ set(lcm_GIT_REPOSITORY https://github.com/RobotLocomotion/lcm-pod.git)
 set(lcm_GIT_TAG 8dba206f3403f01048b73ce10b6a17da58280fbe) # note: cmake branch
 set(lcm_IS_CMAKE_POD FALSE)
 set(lcm_IS_PUBLIC TRUE)
-set(libbot_GIT_REPOSITORY https://github.com/RobotLocomotion/libbot.git)
-set(libbot_GIT_TAG 94fe5290329646959e1c27896d529abba81e6d93)
+# set(libbot_GIT_REPOSITORY https://github.com/RobotLocomotion/libbot.git)
+set(libbot_GIT_REPOSITORY https://github.com/jonathan-owens/libbot.git)
+set(libbot_GIT_TAG 23e815703ab0e6b11c523d8e17813257cb313f96)
 set(libbot_IS_PUBLIC TRUE)
+set(libbot_ADDITIONAL_BUILD_ARGS CMAKE_ARGS -DFORCE_JAVA=TRUE)
+set(libbot_IS_CMAKE_POD TRUE)
+set(bot_core_lcmtypes_GIT_REPOSITORY  https://github.com/openhumanoids/bot_core_lcmtypes)
+set(bot_core_lcmtypes_GIT_TAG d2617b85674fa83b371a5c57fabdbe468844f15e)
 set(bot_core_lcmtypes_GIT_REPOSITORY  https://github.com/jhoare/bot_core_lcmtypes)
 set(bot_core_lcmtypes_GIT_TAG 15471b23faee6cdc48242eb2dfd4c816f0cbe88a)
 set(bot_core_lcmtypes_IS_CMAKE_POD TRUE)
@@ -343,10 +348,9 @@ foreach (proj ${EXTERNAL_PROJECTS})
 	else()
 		message(STATUS "Preparing to build ${proj} with dependencies: ${deps}")
 
+		# Don't need DOWNLOAD_COMMAND because we have SOURCE_DIR
 		ExternalProject_Add(${proj}
 				SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake"
-				DOWNLOAD_COMMAND ""
-				UPDATE_COMMAND ""
 				BINARY_DIR ${PROJECT_SOURCE_DIR}/drake/pod-build
 				CMAKE_GENERATOR ${CMAKE_GENERATOR}
 				CMAKE_ARGS
