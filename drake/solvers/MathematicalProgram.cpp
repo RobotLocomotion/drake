@@ -43,6 +43,10 @@ class MathematicalProgram : public MathematicalProgramInterface {
   virtual MathematicalProgramInterface* addLinearEqualityConstraint() override {
     return new MathematicalProgram;
   };
+  virtual MathematicalProgramInterface*
+  addLinearComplementarityConstraint() override {
+    return new MathematicalProgram;
+  };
   virtual bool solve(OptimizationProblem& prog) const override {
     throw std::runtime_error("not implemented yet");
   }
@@ -50,18 +54,22 @@ class MathematicalProgram : public MathematicalProgramInterface {
 
 class NonlinearProgram : public MathematicalProgram {
  public:
-    virtual MathematicalProgramInterface* addGenericObjective() override {
-      return new NonlinearProgram;
-    };
-    virtual MathematicalProgramInterface* addGenericConstraint() override {
-      return new NonlinearProgram;
-    };
-    virtual MathematicalProgramInterface* addLinearConstraint() override {
-      return new NonlinearProgram;
-    };
-    virtual MathematicalProgramInterface* addLinearEqualityConstraint() override {
-      return new NonlinearProgram;
-    };
+  virtual MathematicalProgramInterface* addGenericObjective() override {
+    return new NonlinearProgram;
+  };
+  virtual MathematicalProgramInterface* addGenericConstraint() override {
+    return new NonlinearProgram;
+  };
+  virtual MathematicalProgramInterface* addLinearConstraint() override {
+    return new NonlinearProgram;
+  };
+  virtual MathematicalProgramInterface* addLinearEqualityConstraint() override {
+    return new NonlinearProgram;
+  };
+  virtual MathematicalProgramInterface*
+  addLinearComplementarityConstraint() override {
+    return new NonlinearProgram;
+  }
 
   virtual bool solve(OptimizationProblem& prog) const override {
     if (snopt_solver.available()) { return snopt_solver.solve(prog); }

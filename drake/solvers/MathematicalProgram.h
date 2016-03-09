@@ -29,6 +29,9 @@ class MathematicalProgramInterface {
   virtual MathematicalProgramInterface* addGenericConstraint() = 0;
   virtual MathematicalProgramInterface* addLinearConstraint() = 0;
   virtual MathematicalProgramInterface* addLinearEqualityConstraint() = 0;
+  virtual MathematicalProgramInterface*
+  addLinearComplementarityConstraint() = 0;
+
   virtual bool solve(OptimizationProblem& prog) const = 0;
 
   static std::shared_ptr<MathematicalProgramInterface> getLeastSquaresProgram();
@@ -42,7 +45,7 @@ class MathematicalProgramSolverInterface {
   virtual bool solve(OptimizationProblem& prog) const = 0;
 };
 
-class MathematicalProgramSNOPTSolver : 
+class MathematicalProgramSNOPTSolver :
       public MathematicalProgramSolverInterface  {
  public:
   // This solver is implemented in various pieces depending on if
