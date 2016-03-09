@@ -356,27 +356,36 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
                          in_parent_model_frame) &&
         in_parent_model_frame > 0.0) {
 
-      // The joint's axis of rotation should be interpreted as being in the model coordinate frame.
-      // Let's convert it into the joint's coordinate frame.
-
-      axis = transform_to_model.inverse() * axis;
+      // The joint's axis of rotation should be interpreted as being in the
+      // model coordinate frame. To be compatible with Drake, the joint's axis
+      // must be defined in the joint's coordinate frame. Since we are
+      // transforming the frame of an axis and not a point, we only want to
+      // use the linear (rotational)part of the transform_to_model matrix.
+      axis = transform_to_model.linear().inverse() * axis;
     }
   }
 
-  // T_joint_to_parent = T_model_to_parent * T_joint_to_model
+  // Obtain the transform from the joint frame to the parent link's frame.
   Isometry3d transform_to_parent_body =
-      transform_parent_to_model.inverse() * transform_to_model;
+    transform_parent_to_model.inverse() * transform_to_model;
 
   if (child->hasParent()) {  // then implement it as a loop joint
+
     Isometry3d transform_child_to_model = Isometry3d::Identity();
     if (pose_map.find(child_name) != pose_map.end())
       transform_child_to_model = pose_map.at(child_name);
+
     std::shared_ptr<RigidBodyFrame> frameA = allocate_shared<RigidBodyFrame>(
         Eigen::aligned_allocator<RigidBodyFrame>(), name + "FrameA", parent,
         transform_to_parent_body);
+
+    // Obtain the transform from the joint frame to the child link's frame.
+    Isometry3d transform_to_child_body =
+      transform_child_to_model.inverse() * transform_to_model;
+
     std::shared_ptr<RigidBodyFrame> frameB = allocate_shared<RigidBodyFrame>(
         Eigen::aligned_allocator<RigidBodyFrame>(), name + "FrameB", child,
-        transform_child_to_model.inverse() * transform_to_model);
+        transform_to_child_body);
 
     model->addFrame(frameA);
     model->addFrame(frameB);
@@ -394,12 +403,13 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
                   << c << " not found! Cannot update its local frame to be that of joint." << std::endl;
     }
 
-    // Update pose_map with child's new frame, which should now be the same as the joint's frame
+    // Update pose_map with child's new frame, which is now the same as this
+    // joint's frame.
     auto it = pose_map.find(child_name);
     if (it != pose_map.end())
          it->second = transform_to_model;
     else
-      std::cout << "ERROR: Unable to upload transform_to_model of link " << child_name << std::endl;
+      throw runtime_error("ERROR: Unable to update transform_to_model of link " + child_name);
 
     // construct the actual joint (based on its type)
     DrakeJoint* joint = nullptr;
