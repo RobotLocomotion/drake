@@ -54,12 +54,18 @@ class DrivingCommand {
   ScalarType brake;
 };
 
+template <typename ScalarType = double>
+std::ostream& operator<<(std::ostream &os, const DrivingCommand<ScalarType> &dc) {
+  return os << "[steering_angle = " << dc.steering_angle << ", throttle = " << dc.throttle << ", brake = " << dc.brake << "]";
+}
+
 bool decode(const drake::lcmt_driving_control_cmd_t& msg, double& t,
             DrivingCommand<double>& x) {
   t = double(msg.timestamp) / 1000.0;
   x.steering_angle = msg.steering_angle;
   x.throttle = msg.throttle_value;
   x.brake = msg.brake_value;
+  std::cout << "simualteLCM.cpp: decode(): Decoded driving command: " << x << std::endl;
   return true;
 }
 
