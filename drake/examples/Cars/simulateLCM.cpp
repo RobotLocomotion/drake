@@ -78,9 +78,9 @@ int main(int argc, char* argv[]) {
   // be reused
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
 
-
   auto rigid_body_sys = make_shared<RigidBodySystem>();
   rigid_body_sys->addRobotFromFile(argv[1],floating_base_type);
+  rigid_body_sys->use_multi_contact = true;
   auto const & tree = rigid_body_sys->getRigidBodyTree();
   for (int i=2; i<argc; i++)
     tree->addRobotFromSDF(argv[i],DrakeJoint::FIXED);  // add environment
@@ -154,6 +154,7 @@ int main(int argc, char* argv[]) {
   rigid_body_sys->friction_coefficient = 10.0;  // essentially infinite friction
   options.initial_step_size = 5e-3;
   options.timeout_seconds = numeric_limits<double>::infinity();
+  options.rk2 = true;
 
   VectorXd x0 = VectorXd::Zero(rigid_body_sys->getNumStates());
   x0.head(tree->num_positions) = tree->getZeroConfiguration();
