@@ -138,12 +138,11 @@ void MobyLCPSolver::clearIndexVectors() const {
 bool MobyLCPSolver::solve(OptimizationProblem& prog) const {
   // TODO ggould in principle it should be possible to render each of these as
   // a LCP and merge the resulting problems, but I don't yet know how to do it.
-  assert(prog.generic_constraints.empty());
-  assert(prog.generic_objectives.empty());
-  assert(prog.linear_constraints.empty());
-  assert(prog.linear_equality_constraints.empty());
-  assert(prog.bbox_constraints.empty());
-  assert(prog.linear_complementarity_constraint);
+  assert(prog.getGenericConstraints().empty());
+  assert(prog.getGenericObjectives().empty());
+  assert(prog.getAllLinearConstraints().empty());
+  assert(prog.getBoundingBoxConstraints().empty());
+  assert(prog.getLinearComplementarityConstraint());
 
   Eigen::VectorXd solution(prog.getNumVars());
   bool solved = lcp_lemke(prog.getLinearComplementarityConstraint()
