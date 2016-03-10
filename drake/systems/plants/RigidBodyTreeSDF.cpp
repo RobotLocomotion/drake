@@ -256,8 +256,8 @@ void setSDFLimits(XMLElement* node, FixedAxisOneDoFJoint<JointType>* fjoint) {
   if (fjoint != nullptr && limit_node) {
     double lower = -numeric_limits<double>::infinity(),
            upper = numeric_limits<double>::infinity();
-    parseScalarAttribute(limit_node, "lower", lower);
-    parseScalarAttribute(limit_node, "upper", upper);
+    parseScalarValue(limit_node, "lower", lower);
+    parseScalarValue(limit_node, "upper", upper);
     fjoint->setJointLimits(lower, upper);
   }
 }
@@ -491,6 +491,7 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
     if (type.compare("revolute") == 0 || type.compare("gearbox") == 0) {
       FixedAxisOneDoFJoint<RevoluteJoint>* fjoint =
           new RevoluteJoint(name, transform_to_parent_body, axis);
+
       if (axis_node) {
         setSDFDynamics(model, axis_node, fjoint);
         setSDFLimits(axis_node, fjoint);
