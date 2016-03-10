@@ -509,9 +509,9 @@
       <child>left_wheel</child>
       <pose>0 0 0 0 0 0</pose>
       <axis>
-        <xyz>0 0 -1</xyz>
-        <!-- <xyz>0 1 0</xyz>
-        <use_parent_model_frame>1</use_parent_model_frame> -->
+        <!-- <xyz>0 0 -1</xyz> -->
+        <xyz>0 1 0</xyz>
+        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     
@@ -533,7 +533,7 @@
     <joint name='right_pin' type='revolute'>
       <parent>right_tie_rod_arm</parent>
       <child>tie_rod</child>
-      <!-- the tie_rod's reference frame was modified internall by Drake to be at the left_pin -->
+      <!-- the tie_rod's reference frame was modified internally by Drake to be at the left_pin -->
       <!-- <pose>0 -0.408503 0 0 0 0</pose> -->
       <pose>0 -0.817006 0 0 0 0</pose>
       <axis>
@@ -550,9 +550,8 @@
       <child>right_wheel</child>
       <pose>0 0 0 0 0 0</pose>
       <axis>
-        <xyz>0 0 -1</xyz>
-        <!-- <xyz>0 1 0</xyz>
-        <use_parent_model_frame>1</use_parent_model_frame> -->
+        <xyz>0 1 0</xyz>
+        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
 
@@ -567,9 +566,8 @@
       <child>left_wheel_rear</child>
       <pose>0 0 0 0 0 0</pose>
       <axis>
-        <xyz>0 0 -1</xyz>
-        <!-- <xyz>0 1 0</xyz>
-        <use_parent_model_frame>1</use_parent_model_frame> -->
+        <xyz>0 1 0</xyz>
+        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     
@@ -578,9 +576,8 @@
       <child>right_wheel_rear</child>
       <pose>0 0 0 0 0 0</pose>
       <axis>
-        <xyz>0 0 -1</xyz>
-        <!-- <xyz>0 1 0</xyz>
-        <use_parent_model_frame>1</use_parent_model_frame> -->
+        <xyz>0 1 0</xyz>
+        <use_parent_model_frame>1</use_parent_model_frame>
       </axis>
     </joint>
     
