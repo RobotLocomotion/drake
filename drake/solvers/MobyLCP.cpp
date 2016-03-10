@@ -140,8 +140,9 @@ bool MobyLCPSolver::solve(OptimizationProblem& prog) const {
 
 /// Fast pivoting algorithm for denerate, monotone LCPs with few nonzero,
 /// nonbasic variables
-bool MobyLCPSolver::lcp_fast(const MatrixNd& M, const VectorNd& q, VectorNd* z,
-                   double zero_tol) {
+bool MobyLCPSolver::lcp_fast(
+    const Eigen::MatrixXd& M, const Eigen::VectorXd& q, Eigen::VectorXd* z,
+    double zero_tol) {
   const unsigned N = q.rows();
   const unsigned UINF = std::numeric_limits<unsigned>::max();
 
@@ -296,7 +297,7 @@ bool MobyLCPSolver::lcp_fast(const MatrixNd& M, const VectorNd& q, VectorNd* z,
 
 /// Regularized wrapper around PPM I
 bool MobyLCPSolver::lcp_fast_regularized(
-    const MatrixNd& M, const VectorNd& q, VectorNd* z,
+    const Eigen::MatrixXd& M, const Eigen::VectorXd& q, Eigen::VectorXd* z,
     int min_exp, unsigned step_exp, int max_exp,
     double piv_tol, double zero_tol) {
 
@@ -442,8 +443,9 @@ bool MobyLCPSolver::lcp_fast_regularized(
   return false;
 }
 
-bool MobyLCPSolver::checkLemkeTrivial(int n, double zero_tol,
-                                      const VectorNd& q, VectorNd* z) const {
+bool MobyLCPSolver::checkLemkeTrivial(
+    int n, double zero_tol,
+    const Eigen::VectorXd& q, Eigen::VectorXd* z) const {
   // look for immediate exit
   if (n == 0) {
     z->resize(0);
@@ -461,8 +463,8 @@ bool MobyLCPSolver::checkLemkeTrivial(int n, double zero_tol,
 }
 
 template <typename MatrixType> 
-void MobyLCPSolver::lemkeFoundSolution(const MatrixType& M, const VectorNd& q,
-                                       VectorNd* z) {
+void MobyLCPSolver::lemkeFoundSolution(
+    const MatrixType& M, const Eigen::VectorXd& q, Eigen::VectorXd* z) {
   std::vector<unsigned>::iterator iiter;
   int idx;
   for (idx = 0, iiter = _bas.begin(); iiter != _bas.end(); iiter++, idx++) {
@@ -489,8 +491,9 @@ void MobyLCPSolver::lemkeFoundSolution(const MatrixType& M, const VectorNd& q,
  * \param z a vector "close" to the solution on input (optional); contains
  *        the solution on output
  */
-bool MobyLCPSolver::lcp_lemke(const MatrixNd& M, const VectorNd& q, VectorNd* z,
-                    double piv_tol, double zero_tol) {
+bool MobyLCPSolver::lcp_lemke(
+    const Eigen::MatrixXd& M, const Eigen::VectorXd& q, Eigen::VectorXd* z,
+    double piv_tol, double zero_tol) {
   if (log_enabled_) {
     LOG() << "MobyLCPSolver::lcp_lemke() entered" << std::endl;
     LOG() << "  M: " << std::endl << M;
@@ -781,7 +784,7 @@ bool MobyLCPSolver::lcp_lemke(const MatrixNd& M, const VectorNd& q, VectorNd* z,
 
 /// Regularized wrapper around Lemke's algorithm
 bool MobyLCPSolver::lcp_lemke_regularized(
-    const MatrixNd& M, const VectorNd& q, VectorNd* z,
+    const Eigen::MatrixXd& M, const Eigen::VectorXd& q, Eigen::VectorXd* z,
     int min_exp, unsigned step_exp, int max_exp,
     double piv_tol, double zero_tol) {
   LOG() << "MobyLCPSolver::lcp_lemke_regularized() entered" << std::endl;
@@ -919,8 +922,9 @@ bool MobyLCPSolver::lcp_lemke_regularized(
  * \param z a vector "close" to the solution on input (optional); contains
  *        the solution on output
  */
-bool MobyLCPSolver::lcp_lemke(const SparseMatrixNd& M, const VectorNd& q, 
-                              VectorNd* z, double piv_tol, double zero_tol) {
+bool MobyLCPSolver::lcp_lemke(const Eigen::SparseMatrix<double>& M, 
+                              const Eigen::VectorXd& q, Eigen::VectorXd* z, 
+                              double piv_tol, double zero_tol) {
   if (log_enabled_) {
     LOG() << "MobyLCPSolver::lcp_lemke() entered" << std::endl;
     LOG() << "  M: " << std::endl << M;
@@ -1171,9 +1175,9 @@ bool MobyLCPSolver::lcp_lemke(const SparseMatrixNd& M, const VectorNd& q,
 
 /// Regularized wrapper around Lemke's algorithm for srpase matrices
 bool MobyLCPSolver::lcp_lemke_regularized(
-  const SparseMatrixNd& M, const VectorNd& q, VectorNd* z,
-      int min_exp, unsigned step_exp, int max_exp,
-      double piv_tol, double zero_tol) {
+  const Eigen::SparseMatrix<double>& M, const Eigen::VectorXd& q, 
+  Eigen::VectorXd* z, int min_exp, unsigned step_exp, int max_exp,
+  double piv_tol, double zero_tol) {
   LOG() << "MobyLCPSolver::lcp_lemke_regularized() entered" << std::endl;
 
   // look for fast exit
@@ -1260,7 +1264,7 @@ bool MobyLCPSolver::lcp_lemke_regularized(
 namespace {
 // picks (randomly) the minimum element from a vector that has potentially
 // multiple minima
-int rand_min2(const VectorNd& v) {
+int rand_min2(const Eigen::VectorXd& v) {
   const double EPS = std::sqrt(std::numeric_limits<double>::epsilon());
   std::vector<unsigned> idx;
 
@@ -1279,8 +1283,9 @@ int rand_min2(const VectorNd& v) {
 
 // TODO sammy do we even need this one?
 /// Fast pivoting algorithm for frictionless contact
-bool MobyLCPSolver::fast_pivoting(const MatrixNd& M, const VectorNd& q, VectorNd& z,
-                                  double eps) {
+bool MobyLCPSolver::fast_pivoting(
+    const Eigen::MatrixXd& M, const Eigen::VectorXd& q, Eigen::VectorXd& z,
+    double eps) {
   const unsigned N = q.size();
   const unsigned MAX_PIVOTS = N*3;
   RowIteratord_const minw, minz;
