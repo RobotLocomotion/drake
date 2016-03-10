@@ -1,0 +1,6 @@
+m 650
+n 1000
+nnz 650000
+Lnz 500500
+mode binary
+file m650n1000Binary.dat

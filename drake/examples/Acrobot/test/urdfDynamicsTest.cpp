@@ -10,10 +10,10 @@ using namespace Drake;
 int main(int argc, char* argv[]) {
   auto r = Acrobot();
 
-  auto r_urdf = make_shared<RigidBodySystem>();
-  r_urdf->addRobotFromFile(getDrakePath() + "/examples/Acrobot/Acrobot.urdf", DrakeJoint::FIXED);
-  auto r_sdf = make_shared<RigidBodySystem>();
-  r_sdf->addRobotFromFile(getDrakePath() + "/examples/Acrobot/Acrobot.sdf", DrakeJoint::FIXED);
+  auto r_urdf = RigidBodySystem();
+  r_urdf.addRobotFromFile(getDrakePath() + "/examples/Acrobot/Acrobot.urdf", DrakeJoint::FIXED);
+  auto r_sdf = RigidBodySystem();
+  r_sdf.addRobotFromFile(getDrakePath() + "/examples/Acrobot/Acrobot.sdf", DrakeJoint::FIXED);
 
   // for debugging:
   /*
@@ -47,12 +47,12 @@ int main(int argc, char* argv[]) {
     */
 
     auto xdot = toEigen(r.dynamics(0.0,x0,u0));
-    auto xdot_urdf = r_urdf->dynamics(0.0, x0_rb, u0_rb);
+    auto xdot_urdf = r_urdf.dynamics(0.0, x0_rb, u0_rb);
 //    cout << "xdot = " << xdot.transpose() << endl;
 //    cout << "xdot_rb = " << xdot_rb.transpose() << endl;
     valuecheckMatrix(xdot_urdf,xdot,1e-8);
 
-    auto xdot_sdf = r_sdf->dynamics(0.0, x0_rb, u0_rb);
+    auto xdot_sdf = r_sdf.dynamics(0.0, x0_rb, u0_rb);
     valuecheckMatrix(xdot_sdf,xdot,1e-8);
   }
 }
