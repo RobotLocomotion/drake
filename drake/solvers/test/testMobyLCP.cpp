@@ -4,6 +4,8 @@
 
 #include "drake/solvers/MobyLCP.h"
 
+namespace {
+
 void testTrivial() {
   Eigen::Matrix<double, 9, 9> M;
   M << 
@@ -66,7 +68,43 @@ void testTrivial() {
   assert(fast_z.isApprox(lemke_z, 1e-6));
 }
 
+void testEmpty() {
+  Eigen::MatrixXd empty_M(0, 0);
+  Eigen::VectorXd empty_q(0);
+  Eigen::VectorXd z;
+  Drake::MobyLCPSolver l;
+  l.setLoggingEnabled(true);
+  
+  bool result = l.lcp_fast(empty_M, empty_q, &z);
+  assert(result);
+  assert(z.size() == 0);
+
+  result = l.lcp_lemke(empty_M, empty_q, &z);
+  assert(result);
+  assert(z.size() == 0);
+
+  Eigen::SparseMatrix<double> empty_sparse_M(0,0);
+  result = l.lcp_lemke(empty_sparse_M, empty_q, &z);
+  assert(result);
+  assert(z.size() == 0);
+
+  result = l.lcp_fast_regularized(empty_M, empty_q, &z);
+  assert(result);
+  assert(z.size() == 0);
+
+  result = l.lcp_lemke_regularized(empty_M, empty_q, &z);
+  assert(result);
+  assert(z.size() == 0);
+
+  result = l.lcp_lemke_regularized(empty_sparse_M, empty_q, &z);
+  assert(result);
+  assert(z.size() == 0);
+}
+
+}
+
 int main(int argc, char* argv[]) {
   testTrivial();
+  testEmpty();
   return 0;
 }

@@ -464,12 +464,6 @@ bool MobyLCPSolver::lcp_fast_regularized(
 bool MobyLCPSolver::checkLemkeTrivial(
     int n, double zero_tol,
     const Eigen::VectorXd& q, Eigen::VectorXd* z) const {
-  // look for immediate exit
-  if (n == 0) {
-    z->resize(0);
-    return true;
-  }  
-
   // see whether trivial solution exists
   if (q.minCoeff() > -zero_tol) {
     z->resize(n);
@@ -960,6 +954,12 @@ bool MobyLCPSolver::lcp_lemke(const Eigen::SparseMatrix<double>& M,
   
   const unsigned n = q.size();
   const unsigned MAXITER = std::min((unsigned) 1000, 50*n);
+
+  // look for immediate exit
+  if (n == 0) {
+    z->resize(0);
+    return true;
+  }
 
   // come up with a sensible value for zero tolerance if none is given
   if (zero_tol <= static_cast<double>(0.0)) {
