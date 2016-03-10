@@ -16,52 +16,51 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
   virtual ~MobyLCPSolver() {};
   void setLoggingEnabled(bool);
 
-  // TODO ggould some subset of these lcp_* methods can be marked const.
   bool lcp_fast(
       const Eigen::MatrixXd& M, const Eigen::VectorXd& q, Eigen::VectorXd* z,
-      double zero_tol = -1.0);
+      double zero_tol = -1.0) const;
   bool lcp_fast_regularized(
       const Eigen::MatrixXd& M, const Eigen::VectorXd& q, Eigen::VectorXd* z,
       int min_exp = -20, unsigned step_exp = 4, int max_exp = 20,
-      double piv_tol = -1.0, double zero_tol = -1.0);
+      double piv_tol = -1.0, double zero_tol = -1.0) const;
   bool lcp_lemke(
       const Eigen::MatrixXd& M, const Eigen::VectorXd& q, Eigen::VectorXd* z,
-      double piv_tol = -1.0, double zero_tol = -1.0);
+      double piv_tol = -1.0, double zero_tol = -1.0) const;
   bool lcp_lemke_regularized(
       const Eigen::MatrixXd& M, const Eigen::VectorXd& q, Eigen::VectorXd* z,
       int min_exp = -20, unsigned step_exp = 1, int max_exp = 1,
-      double piv_tol = -1.0, double zero_tol = -1.0);
+      double piv_tol = -1.0, double zero_tol = -1.0) const;
   bool lcp_lemke(
       const Eigen::SparseMatrix<double>& M, const Eigen::VectorXd& q, 
       Eigen::VectorXd* z,
-      double piv_tol = -1.0, double zero_tol = -1.0);
+      double piv_tol = -1.0, double zero_tol = -1.0) const;
   bool lcp_lemke_regularized(
       const Eigen::SparseMatrix<double>& M, const Eigen::VectorXd& q,
       Eigen::VectorXd* z,
       int min_exp = -20, unsigned step_exp = 4, int max_exp = 20,
-      double piv_tol = -1.0, double zero_tol = -1.0);
+      double piv_tol = -1.0, double zero_tol = -1.0) const;
   bool fast_pivoting(
       const Eigen::MatrixXd& M, const Eigen::VectorXd& q, Eigen::VectorXd* z,
-      double eps = std::sqrt(std::numeric_limits<double>::epsilon()));
+      double eps = std::sqrt(std::numeric_limits<double>::epsilon())) const;
 
   virtual bool available() const override { return true; }
   virtual bool solve(OptimizationProblem& prog) const override;
 
  private:
-  void clearIndexVectors();
+  void clearIndexVectors() const;
   bool checkLemkeTrivial(int n, double zero_tol, 
                          const Eigen::VectorXd& q, Eigen::VectorXd* z) const;
   template <typename MatrixType>
   void lemkeFoundSolution(const MatrixType& M, const Eigen::VectorXd& q,
-                          Eigen::VectorXd* z);
+                          Eigen::VectorXd* z) const;
   
   // TODO sammy replace this with a proper logging hookup
-  std::ostream& LOG();
+  std::ostream& LOG() const;
   bool log_enabled_;
-  std::ofstream null_stream_;
+  mutable std::ofstream null_stream_;
 
   // TODO sammy why is this a member variable?
-  unsigned pivots; 
+  mutable unsigned pivots;
 
   // NOTE:  The temporaries below are stored in the class to minimize
   // allocations; all are marked 'mutable' as they do not affect the
