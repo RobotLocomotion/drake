@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <fstream>
 #include <Eigen/SparseCore>
 
 #include "MathematicalProgram.h"
@@ -19,6 +20,7 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
  public:
   MobyLCPSolver();
   virtual ~MobyLCPSolver() {};
+  void setLoggingEnabled(bool);
 
   // TODO ggould some subset of these lcp_* methods can be marked const.
   bool lcp_fast(
@@ -43,18 +45,27 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
       int min_exp = -20, unsigned step_exp = 4, int max_exp = 20,
       double piv_tol = -1.0, double zero_tol = -1.0);
   bool fast_pivoting(
-      const MatrixNd& M, const VectorNd& q, VectorNd& z,
+      const MatrixNd& M, const VectorNd& q, VectorNd* z,
       double eps = std::sqrt(std::numeric_limits<double>::epsilon()));
 
   virtual bool available() const override { return true; }
   virtual bool solve(OptimizationProblem& prog) const override;
 
  private:
-  unsigned pivots;
-  static void log_failure(const MatrixNd& M, const VectorNd& q);
-  static void set_basis(unsigned n, unsigned count,
-                        std::vector<unsigned>& bas,
-                        std::vector<unsigned>& nbas);
+  void clearIndexVectors();
+  bool checkLemkeTrivial(int n, double zero_tol, 
+                         const VectorNd& q, VectorNd* z) const;
+  template <typename MatrixType>
+  void lemkeFoundSolution(const MatrixType& M, const VectorNd& q,
+                          VectorNd* z);
+  
+  // TODO sammy replace this with a proper logging hookup
+  std::ostream& LOG();
+  bool log_enabled_;
+  std::ofstream null_stream_;
+
+  // TODO sammy why is this a member variable?
+  unsigned pivots; 
 
   // NOTE:  The temporaries below are stored in the class to minimize
   // allocations; all are marked 'mutable' as they do not affect the
@@ -70,9 +81,10 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
 
   // temporaries for Lemke solver
   mutable VectorNd _d, _Be, _u, _z0, _x, _dl, _xj, _dj, _wl, _result;
-  mutable VectorNd _restart_z0;
   mutable MatrixNd _Bl, _Al, _t1, _t2;
-  mutable std::vector<unsigned> _all, _tlist, _bas, _nonbas, _j, _max_elm;
+
+  // Vectors which correspond to indices into other data.
+  mutable std::vector<unsigned> _all, _tlist, _bas, _nonbas, _j;
 
   // temporary for sparse Lemke solver
   mutable SparseMatrixNd _sBl;
