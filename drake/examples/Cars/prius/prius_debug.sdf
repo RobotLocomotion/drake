@@ -521,6 +521,10 @@
       <pose>.17246863 -.08623431 0 0 0 0</pose>
       <axis>
         <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-0.401426</lower>
+          <upper>0.5</upper>
+        </limit>
       </axis>
     </joint>
 
