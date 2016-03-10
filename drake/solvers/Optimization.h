@@ -1,8 +1,6 @@
 #ifndef DRAKE_OPTIMIZATION_H
 #define DRAKE_OPTIMIZATION_H
 
-#include <boost/optional.hpp>
-
 #include <list>
 #include <memory>
 #include <initializer_list>
@@ -424,7 +422,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
     auto constraint = std::make_shared<LinearComplementarityConstraint>(M, q);
     linear_complementarity_constraint =
-        Binding<LinearComplementarityConstraint>(constraint, vars);
+        new Binding<LinearComplementarityConstraint>(constraint, vars);
     return constraint;
   }
 
@@ -541,7 +539,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   // An LCP encapsulates all of the constraints and objectives on a set of
   // variables; if this is set, all of the above must be empty.
-  boost::optional<Binding<LinearComplementarityConstraint>>
+  // TODO ggould this should be a boost::optional<> once boost is permitted.
+  std::unique_ptr<Binding<LinearComplementarityConstraint>>
       linear_complementarity_constraint;
 
   size_t num_vars;
