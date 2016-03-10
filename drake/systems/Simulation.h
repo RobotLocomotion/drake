@@ -80,6 +80,7 @@ void simulate(const System& sys, double ti, double tf,
 
   // Take steps from ti to tf.
   double t = ti;
+
   while (t < tf) {
     handle_realtime_factor(start, t, options.realtime_factor,
                            options.timeout_seconds);
