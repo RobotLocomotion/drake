@@ -229,6 +229,9 @@ class LinearComplementarityConstraint : public Constraint {
     y = (M.cast<TaylorVarXd>() * x) + q.cast<TaylorVarXd>();
   };
 
+  const Eigen::MatrixXd& getM() { return M; };
+  const Eigen::VectorXd& getq() { return q; };
+
  private:
   Eigen::MatrixXd M;
   Eigen::VectorXd q;

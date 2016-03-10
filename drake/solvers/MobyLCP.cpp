@@ -1,6 +1,8 @@
 // Adapted with permission from code by Evan Drumwright
 // (https://github.com/edrumwri).
 
+#include "MobyLCP.h"
+
 #include <Eigen/LU>
 #include <Eigen/SparseCore>
 #include <Eigen/SparseLU>
@@ -20,7 +22,7 @@
 #include <utility>
 #include <vector>
 
-#include "MobyLCP.h"
+#include "Optimization.h"
 
 using std::pair;
 using std::map;
@@ -117,14 +119,14 @@ void MobyLCPSolver::setLoggingEnabled(bool enabled) {
   log_enabled_ = enabled;
 }
 
-std::ostream& MobyLCPSolver::LOG() {
+std::ostream& MobyLCPSolver::LOG() const {
   if (log_enabled_) {
     return std::cerr;
   }
   return null_stream_;
 }
 
-void MobyLCPSolver::clearIndexVectors() {
+void MobyLCPSolver::clearIndexVectors() const {
   // clear all vectors
   _all.clear();
   _tlist.clear();
@@ -134,15 +136,32 @@ void MobyLCPSolver::clearIndexVectors() {
 }
 
 bool MobyLCPSolver::solve(OptimizationProblem& prog) const {
-  // TODO ggould implement this.
-  return false;
+  // TODO ggould in principle it should be possible to render each of these as
+  // a LCP and merge the resulting problems, but I don't yet know how to do it.
+  assert(prog.generic_constraints.empty());
+  assert(prog.generic_objectives.empty());
+  assert(prog.linear_constraints.empty());
+  assert(prog.linear_equality_constraints.empty());
+  assert(prog.bbox_constraints.empty());
+  assert(prog.linear_complementarity_constraint);
+
+  Eigen::VectorXd solution(prog.getNumVars());
+  bool solved = lcp_lemke(prog.getLinearComplementarityConstraint()
+                          ->getConstraint()->getM(),
+                          prog.getLinearComplementarityConstraint()
+                          ->getConstraint()->getq(),
+                          &solution);
+  if (solved) {
+    prog.setDecisionVariableValues(solution);
+  }
+  return solved;
 }
 
 /// Fast pivoting algorithm for denerate, monotone LCPs with few nonzero,
 /// nonbasic variables
 bool MobyLCPSolver::lcp_fast(
     const Eigen::MatrixXd& M, const Eigen::VectorXd& q, Eigen::VectorXd* z,
-    double zero_tol) {
+    double zero_tol) const {
   const unsigned N = q.rows();
   const unsigned UINF = std::numeric_limits<unsigned>::max();
 
@@ -299,7 +318,7 @@ bool MobyLCPSolver::lcp_fast(
 bool MobyLCPSolver::lcp_fast_regularized(
     const Eigen::MatrixXd& M, const Eigen::VectorXd& q, Eigen::VectorXd* z,
     int min_exp, unsigned step_exp, int max_exp,
-    double piv_tol, double zero_tol) {
+    double piv_tol, double zero_tol) const {
 
   LOG() << "MobyLCPSolver::lcp_fast_regularized() entered" << std::endl;
 
@@ -464,7 +483,7 @@ bool MobyLCPSolver::checkLemkeTrivial(
 
 template <typename MatrixType> 
 void MobyLCPSolver::lemkeFoundSolution(
-    const MatrixType& M, const Eigen::VectorXd& q, Eigen::VectorXd* z) {
+    const MatrixType& M, const Eigen::VectorXd& q, Eigen::VectorXd* z) const {
   std::vector<unsigned>::iterator iiter;
   int idx;
   for (idx = 0, iiter = _bas.begin(); iiter != _bas.end(); iiter++, idx++) {
@@ -493,7 +512,7 @@ void MobyLCPSolver::lemkeFoundSolution(
  */
 bool MobyLCPSolver::lcp_lemke(
     const Eigen::MatrixXd& M, const Eigen::VectorXd& q, Eigen::VectorXd* z,
-    double piv_tol, double zero_tol) {
+    double piv_tol, double zero_tol) const {
   if (log_enabled_) {
     LOG() << "MobyLCPSolver::lcp_lemke() entered" << std::endl;
     LOG() << "  M: " << std::endl << M;
@@ -502,6 +521,15 @@ bool MobyLCPSolver::lcp_lemke(
 
   const unsigned n = q.size();
   const unsigned MAXITER = std::min((unsigned) 1000, 50*n);
+
+  // update the pivots
+  pivots = 0;
+
+  // look for immediate exit
+  if (n == 0) {
+    z->resize(0);
+    return true;
+  }
 
   // come up with a sensible value for zero tolerance if none is given
   if (zero_tol <= static_cast<double>(0.0)) {
@@ -786,7 +814,7 @@ bool MobyLCPSolver::lcp_lemke(
 bool MobyLCPSolver::lcp_lemke_regularized(
     const Eigen::MatrixXd& M, const Eigen::VectorXd& q, Eigen::VectorXd* z,
     int min_exp, unsigned step_exp, int max_exp,
-    double piv_tol, double zero_tol) {
+    double piv_tol, double zero_tol) const {
   LOG() << "MobyLCPSolver::lcp_lemke_regularized() entered" << std::endl;
 
   // look for fast exit
@@ -924,7 +952,7 @@ bool MobyLCPSolver::lcp_lemke_regularized(
  */
 bool MobyLCPSolver::lcp_lemke(const Eigen::SparseMatrix<double>& M, 
                               const Eigen::VectorXd& q, Eigen::VectorXd* z, 
-                              double piv_tol, double zero_tol) {
+                              double piv_tol, double zero_tol) const {
   if (log_enabled_) {
     LOG() << "MobyLCPSolver::lcp_lemke() entered" << std::endl;
     LOG() << "  M: " << std::endl << M;
@@ -1177,7 +1205,7 @@ bool MobyLCPSolver::lcp_lemke(const Eigen::SparseMatrix<double>& M,
 bool MobyLCPSolver::lcp_lemke_regularized(
   const Eigen::SparseMatrix<double>& M, const Eigen::VectorXd& q, 
   Eigen::VectorXd* z, int min_exp, unsigned step_exp, int max_exp,
-  double piv_tol, double zero_tol) {
+  double piv_tol, double zero_tol) const {
   LOG() << "MobyLCPSolver::lcp_lemke_regularized() entered" << std::endl;
 
   // look for fast exit
@@ -1285,7 +1313,7 @@ int rand_min2(const Eigen::VectorXd& v) {
 /// Fast pivoting algorithm for frictionless contact
 bool MobyLCPSolver::fast_pivoting(
     const Eigen::MatrixXd& M, const Eigen::VectorXd& q, Eigen::VectorXd& z,
-    double eps) {
+    double eps) const {
   const unsigned N = q.size();
   const unsigned MAX_PIVOTS = N*3;
   RowIteratord_const minw, minz;

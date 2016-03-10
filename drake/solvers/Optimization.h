@@ -490,6 +490,10 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
       getBoundingBoxConstraints() const {
     return bbox_constraints;
   }
+  const Binding<LinearComplementarityConstraint>*
+      getLinearComplementarityConstraint() const {
+    return linear_complementarity_constraint.get();
+  }
 
   // Base class for solver-specific data.  A solver implementation may derive
   // a helper class from this for use with getSolverData.
