@@ -21,7 +21,7 @@ void testTrivial() {
   q << -1, -1, -1, -1, -1, -1, -1, -1, -1;
 
   Eigen::VectorXd fast_z;
-  Drake::LCP l;
+  Drake::MobyLCPSolver l;
   bool result = l.lcp_fast(M, q, &fast_z);
   std::cout << "Result (lcp_fast): " << result << std::endl
             << fast_z << std::endl;
