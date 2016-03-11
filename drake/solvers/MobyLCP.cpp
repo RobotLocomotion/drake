@@ -7,26 +7,14 @@
 #include <Eigen/SparseCore>
 #include <Eigen/SparseLU>
 
-#include <algorithm>
-#include <cstring>
 #include <cmath>
-#include <cfloat>
-#include <fstream>
-#include <functional>
 #include <iostream>
 #include <limits>
-#include <map>
 #include <memory>
-#include <numeric>
 #include <sstream>
-#include <utility>
 #include <vector>
 
 #include "Optimization.h"
-
-using std::pair;
-using std::map;
-using std::make_pair;
 
 namespace {
 // TODO sammy these helpers probably have some faster, more Eigen way
