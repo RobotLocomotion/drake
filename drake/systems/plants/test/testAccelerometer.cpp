@@ -62,6 +62,7 @@ int main(int argc, char* argv[]) {
                    tol);
 
   //real accelerometers can't measure gravity during freefall
+  //but will measure gravity while hovering
   accelerometer->setGravityCompensation(true);
   valuecheckMatrix(getAccelerometerOutput(rigid_body_sys, Vector3d::Zero(), Vector4d::Zero()),
                  Vector3d(0, 0, 0),
@@ -69,5 +70,9 @@ int main(int argc, char* argv[]) {
 
   valuecheckMatrix(getAccelerometerOutput(rigid_body_sys, Vector3d(M_PI, 0, 0), Vector4d::Zero()),
                    Vector3d(0, 0, 0),
+                   tol);
+
+  valuecheckMatrix(getAccelerometerOutput(rigid_body_sys, Vector3d::Zero(), hoverThrust),
+                   Vector3d(0, 0, g),
                    tol);
 }
