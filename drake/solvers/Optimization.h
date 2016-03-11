@@ -18,32 +18,39 @@ namespace Drake {
  * @brief Provides storage for a decision variable inside an OptimizationProblem.
  */
 class DecisionVariable {
+public:
   enum class VarType { CONTINUOUS, INTEGER, BINARY };
+
+  DecisionVariable(VarType type, const std::string& name, 
+                   size_t num_vars, size_t start_index) 
+      : type_(type), name_(name), 
+        data_(Eigen::VectorXd::Zero(num_vars)), start_index_(start_index) {}
 
   /** index()
    * @brief returns the first index of this variable in the entire variable
    * vector for the program
    */
-  size_t index() const { return start_index; }
+  size_t index() const { return start_index_; }
   /** size()
    * @brief returns the number of elements in the decision variable vector
    */
-  size_t size() const { return data.size(); }
+  size_t size() const { return data_.size(); }
+  /** name()
+   * @return the name of the DecisionVariable
+   */
+  const std::string& name() const { return name_; }
   /** value()
    * @brief returns the actual stored value; which is only meaningful after
    * calling solve() in the program.
    */
-  const Eigen::VectorXd& value() const { return data; }
-
-  VarType type;
-  std::string name;
-
-  friend class OptimizationProblem;
-  friend class DecisionVariableView;
+  const Eigen::VectorXd& value() const { return data_; }
+  void set_value(const Eigen::VectorXd& new_data) { data_ = new_data; }
 
  private:
-  Eigen::VectorXd data;
-  size_t start_index;
+  VarType type_;
+  std::string name_;
+  Eigen::VectorXd data_;
+  size_t start_index_;
 };
 
 class DecisionVariableView {  // enables users to access pieces of the decision
@@ -54,21 +61,21 @@ class DecisionVariableView {  // enables users to access pieces of the decision
   ///
   /// @p var is aliased, and must remain valid for the lifetime of the view.
   DecisionVariableView(const DecisionVariable& var)
-      : var(var), start_index(0), length(var.data.rows()) {}
+      : var(var), start_index(0), length(var.value().rows()) {}
 
   /// Create a view covering part of a DecisionVariable.
   ///
   /// @p var is aliased, and must remain valid for the lifetime of the view.
   DecisionVariableView(const DecisionVariable& var, size_t start, size_t n)
       : var(var), start_index(start), length(n) {
-    assert(start + n < var.data.rows());
+    assert(start + n < var.value().rows());
   }
 
   /** index()
    * @brief returns the first index of this variable in the entire variable
    * vector for the program
    */
-  size_t index() const { return var.start_index + start_index; }
+  size_t index() const { return var.index() + start_index; }
   /** size()
    * @brief returns the number of elements in the decision variable vector
    */
@@ -78,13 +85,13 @@ class DecisionVariableView {  // enables users to access pieces of the decision
    * calling solve() in the program.
    */
   Eigen::VectorBlock<const Eigen::VectorXd, Eigen::Dynamic> value() const {
-    return var.data.segment(start_index, length);
+    return var.value().segment(start_index, length);
   }
   std::string getName() const {
-    if (start_index == 0 && length == var.data.size()) {
-      return var.name;
+    if (start_index == 0 && length == var.value().size()) {
+      return var.name();
     } else {
-      return var.name + "(" + std::to_string(start_index) + ":" +
+      return var.name() + "(" + std::to_string(start_index) + ":" +
              std::to_string(start_index + length) + ")";
     }
   }
@@ -109,8 +116,6 @@ class DecisionVariableView {  // enables users to access pieces of the decision
     assert(start + n <= length);
     return DecisionVariableView(var, start_index + start, n);
   }
-
-  friend class OptimizationProblem;
 
  private:
   const DecisionVariable& var;
@@ -187,11 +192,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   const DecisionVariableView addContinuousVariables(std::size_t num_new_vars,
                                                     std::string name = "x") {
-    DecisionVariable v;
-    v.type = DecisionVariable::VarType::CONTINUOUS;
-    v.name = name;
-    v.data = Eigen::VectorXd::Zero(num_new_vars);
-    v.start_index = num_vars;
+    DecisionVariable v(DecisionVariable::VarType::CONTINUOUS, name,
+                       num_new_vars, num_vars);
     num_vars += num_new_vars;
     variables.push_back(v);
     variable_views.push_back(DecisionVariableView(variables.back()));
@@ -456,7 +458,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   void printSolution() {
     for (const auto& v : variables) {
-      std::cout << v.name << " = " << v.data.transpose() << std::endl;
+      std::cout << v.name() << " = " << v.value().transpose() << std::endl;
     }
   }
 
@@ -465,8 +467,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     assert(x.rows() == num_vars);
     size_t index = 0;
     for (auto& v : variables) {
-      v.data = x.middleRows(index, v.data.rows());
-      index += v.data.rows();
+      v.set_value(x.middleRows(index, v.value().rows()));
+      index += v.value().rows();
     }
   }
 
