@@ -999,7 +999,7 @@ bool MobyLCPSolver::lcp_lemke(const Eigen::SparseMatrix<double>& M,
   _sBl = Eigen::SparseMatrix<double>(n, n);
   if (!_bas.empty()) {
     typedef Eigen::Triplet<double> Triplet;
-    std::vector<Triplet> tripletList;
+    std::vector<Triplet> triplet_list;
     for (int i=0; i< M.outerSize(); i++) {
       for (Eigen::SparseMatrix<double>::InnerIterator it(M, i); it; ++it) {
         int j = it.col();
@@ -1008,15 +1008,15 @@ bool MobyLCPSolver::lcp_lemke(const Eigen::SparseMatrix<double>& M,
         if (j_it == _bas.end()) {
           continue;
         } else {
-          tripletList.push_back(Triplet(i, j, it.value()));
+          triplet_list.push_back(Triplet(i, j, it.value()));
         }
       }
     }
     for (int i = 0, j = _bas.size(); i < _nonbas.size(); i++, j++) {
-      tripletList.push_back(Triplet(_nonbas[i], j, 1.0));
+      triplet_list.push_back(Triplet(_nonbas[i], j, 1.0));
     }
 
-    _sBl.setFromTriplets(tripletList.begin(), tripletList.end());
+    _sBl.setFromTriplets(triplet_list.begin(), triplet_list.end());
   } else {
     _sBl.setIdentity();
     _sBl *= -1;
