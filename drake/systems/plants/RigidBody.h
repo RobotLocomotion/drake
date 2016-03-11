@@ -56,17 +56,17 @@ class DRAKERBM_EXPORT RigidBody {
     this->collision_filter_ignores &= ~group;
   };
 
-  bool adjacentTo(const std::shared_ptr<RigidBody>& other) const {
-    return ((parent == other && !(joint && joint->isFloating())) ||
-            (other->parent.get() == this &&
-             !(other->joint && other->joint->isFloating())));
+  bool adjacentTo(const RigidBody& other) const {
+    return ((parent.get() == &other && !(joint && joint->isFloating())) ||
+            (other.parent.get() == this &&
+             !(other.joint && other.joint->isFloating())));
   };
 
-  bool collidesWith(const std::shared_ptr<RigidBody>& other) const {
+  bool collidesWith(const RigidBody& other) const {
     bool ignored =
-        this == other.get() || adjacentTo(other) ||
-        (collision_filter_group & other->getCollisionFilterIgnores()).any() ||
-        (other->getCollisionFilterGroup() & collision_filter_ignores).any();
+        this == &other || adjacentTo(other) ||
+        (collision_filter_group & other.getCollisionFilterIgnores()).any() ||
+        (other.getCollisionFilterGroup() & collision_filter_ignores).any();
     return !ignored;
   };
 

@@ -28,7 +28,7 @@ size_t RigidBodySystem::getNumOutputs() const {
 }
 
 
-void RigidBodySystem::addSensor(const std::shared_ptr<RigidBodySensor>& s) {
+void RigidBodySystem::addSensor(std::shared_ptr<RigidBodySensor> s) {
   if(s->isDirectFeedthrough()) {
     direct_feedthrough = true;
   }
@@ -413,7 +413,7 @@ Eigen::VectorXd RigidBodyGyroscope::output(const double &t,
 
 RigidBodyDepthSensor::RigidBodyDepthSensor(
     RigidBodySystem const& sys, const std::string& name,
-    const std::shared_ptr<RigidBodyFrame> frame, tinyxml2::XMLElement* node)
+    std::shared_ptr<RigidBodyFrame> frame, tinyxml2::XMLElement* node)
     : RigidBodySensor(sys, name),
       frame(frame),
       min_pitch(0.0),

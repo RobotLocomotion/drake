@@ -251,7 +251,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
         // DEBUG
         // cout << "constructModelmex: geometry = " << geometry.get() << endl;
         // END_DEBUG
-        model->addCollisionElement(element, b, group_name);
+        model->addCollisionElement(element, *b, group_name);
       }
       // NOTE: the following should not be necessary since the same thing is
       // being done in RigidBodyTree::compile, which is called below.

@@ -139,7 +139,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
   template <typename ScalarType>
   using OutputVector = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
 
-  RigidBodySystem(const std::shared_ptr<RigidBodyTree>& rigid_body_tree)
+  RigidBodySystem(std::shared_ptr<RigidBodyTree> rigid_body_tree)
       : tree(rigid_body_tree),
         use_multi_contact(false),
         penetration_stiffness(150.0),
@@ -174,11 +174,11 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
                         const DrakeJoint::FloatingBaseType floating_base_type =
                             DrakeJoint::QUATERNION);
 
-  void addForceElement(const std::shared_ptr<RigidBodyForceElement>& f) {
+  void addForceElement(std::shared_ptr<RigidBodyForceElement> f) {
     force_elements.push_back(f);
   }
 
-  void addSensor(const std::shared_ptr<RigidBodySensor>& s);
+  void addSensor(std::shared_ptr<RigidBodySensor> s);
 
   const std::shared_ptr<RigidBodyTree>& getRigidBodyTree(void) const { return tree; }
 
@@ -444,8 +444,9 @@ class DRAKERBSYSTEM_EXPORT RigidBodySensor {
  */
 class DRAKERBSYSTEM_EXPORT RigidBodyDepthSensor : public RigidBodySensor {
   public:
-    RigidBodyDepthSensor(RigidBodySystem const& sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame, tinyxml2::XMLElement* node);
-
+    RigidBodyDepthSensor(RigidBodySystem const& sys, const std::string& name,
+                         std::shared_ptr<RigidBodyFrame> frame,
+                         tinyxml2::XMLElement* node);
     virtual ~RigidBodyDepthSensor() {}
 
     virtual size_t getNumOutputs() const override { return num_pixel_rows*num_pixel_cols; }
