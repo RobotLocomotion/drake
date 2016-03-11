@@ -188,6 +188,11 @@ class DRAKECOLLISION_EXPORT Model {
       return false;
   }
 
+  /**
+   * A toString method for this class.
+   */
+  friend std::ostream& operator<<(std::ostream&, const Model&);
+
  protected:
   std::unordered_map<ElementId, std::unique_ptr<Element> > elements;
 
@@ -195,6 +200,7 @@ class DRAKECOLLISION_EXPORT Model {
   Model(const Model&) {}
   Model& operator=(const Model&) { return *this; }
 };
-}
+
+}  // namespace DrakeCollision
 
 #endif

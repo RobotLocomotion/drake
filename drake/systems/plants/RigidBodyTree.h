@@ -740,6 +740,11 @@ class DRAKERBM_EXPORT RigidBodyTree {
   Eigen::Matrix<double, TWIST_SIZE, 1> a_grav;
   Eigen::MatrixXd B;  // the B matrix maps inputs into joint-space forces
 
+  /**
+   * A toString method for this class.
+   */
+  friend std::ostream& operator<<(std::ostream&, const RigidBodyTree&);
+
  private:
   // helper functions for contactConstraints
   template <typename Scalar>

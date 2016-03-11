@@ -10,6 +10,8 @@ using namespace std;
 using namespace Eigen;
 using namespace Drake;
 
+#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
+
 template <typename ScalarType = double>
 class DrivingCommand {
  public:
@@ -112,6 +114,21 @@ int main(int argc, char* argv[]) {
     tree->updateStaticCollisionElements();
   }
 
+
+  PRINT_VAR(tree->bodies.size());
+  for(auto body: tree->bodies){
+    PRINT_VAR(body->linkname);
+    PRINT_VAR(body->mass);
+    PRINT_VAR(body->hasParent())
+    PRINT_VAR(body->I)
+    if(body->hasParent()){
+      PRINT_VAR(body->getJoint().getName());
+    } else
+      std::cout << "link has no parent joint!" << std::endl;
+    std::cout << std::endl;
+  }
+  std::cout << "collision elements:\n" << *tree.get() << std::endl;
+
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
 
   MatrixXd Kp(getNumInputs(*rigid_body_sys), tree->num_positions),
@@ -168,6 +185,9 @@ int main(int argc, char* argv[]) {
   rigid_body_sys->friction_coefficient = 10.0;  // essentially infinite friction
   options.initial_step_size = 5e-3;
   options.timeout_seconds = numeric_limits<double>::infinity();
+  options.realtime_factor = 0; // run as fast as possible
+  // options.realtime_factor = 1; // run at real-time
+  // options.realtime_factor = 10; // run at 10X slower than real-time
 
   VectorXd x0 = VectorXd::Zero(rigid_body_sys->getNumStates());
   x0.head(tree->num_positions) = tree->getZeroConfiguration();

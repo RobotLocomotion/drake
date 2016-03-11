@@ -65,4 +65,20 @@ bool closestPointsPairwise(const vector<ElementIdPair>& id_pairs,
                            vector<PointPair>& closest_points) {
   return false;
 };
+
+std::ostream& operator<<(std::ostream &os, const Model &model) {
+  if (model.elements.size() == 0)
+    os << "No collision elements.";
+  else {
+    for (auto it = model.elements.begin(); it != model.elements.end(); ++it)
+      os << " ElementID: " << it->first << ":\n"
+         << "    - world transform:\n"
+         << it->second->getWorldTransform().matrix() << "\n"
+         << "    - local transform:\n"
+         << it->second->getLocalTransform().matrix() << "\n"
+         << "    - has geometry? " << (it->second->hasGeometry() ? "yes" : "no") << "\n";
+  }
+  return os;
 }
+
+}  // namespace DrakeCollision

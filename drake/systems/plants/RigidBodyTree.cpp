@@ -40,6 +40,11 @@ std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj) {
   return os;
 }
 
+std::ostream& operator<<(std::ostream &os, const RigidBodyTree &tree) {
+  os << *tree.collision_model.get();
+  return os;
+}
+
 RigidBodyTree::RigidBodyTree(
     const std::string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type)
