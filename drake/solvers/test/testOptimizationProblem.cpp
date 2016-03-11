@@ -193,7 +193,11 @@ void gloptipolyConstrainedMinimization() {
 }
 
 /** Simple linear complementarity problem example.
- * @brief a hand-created LCP with a simple solution
+ * @brief a hand-created LCP easily solved.
+ *
+ * Note: This test is meant to test that OptimizationProblem.solve() works in
+ * this case; tests of the correctness of the Moby LCP solver itself live in
+ * testMobyLCP.
  */
 void simpleLCP() {
   OptimizationProblem prog;
@@ -208,6 +212,7 @@ void simpleLCP() {
   prog.addLinearComplementarityConstraint(M, q, {x});
   prog.solve();
   prog.printSolution();
+  valuecheckMatrix(x.value(), Vector2d(16, 0), 1e-4);
 }
 
 int main(int argc, char* argv[]) {
