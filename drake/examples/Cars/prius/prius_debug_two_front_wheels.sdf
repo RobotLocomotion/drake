@@ -295,6 +295,11 @@
       <pose>0 0.408503 0 0 0 0</pose>
       <axis>
         <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-3.14</lower>
+          <upper>3.14</upper>
+          <effort>0</effort>
+        </limit>
       </axis>
     </joint>
     
@@ -318,6 +323,7 @@
         <limit>
           <lower>-0.401426</lower>
           <upper>0.5</upper>
+          <effort>0</effort>
         </limit>
       </axis>
     </joint>
