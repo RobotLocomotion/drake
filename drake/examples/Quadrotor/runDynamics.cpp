@@ -20,7 +20,7 @@ int main(int argc, char* argv[]) {
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
   auto rigid_body_sys = make_shared<RigidBodySystem>();
   auto const & tree = rigid_body_sys->getRigidBodyTree();
-  rigid_body_sys->addRobotFromFile(getDrakePath()+"/examples/Quadrotor/quadrotor.urdf", floating_base_type);
+  rigid_body_sys->addRobotFromFile(getDrakePath()+"/examples/Quadrotor/quadrotor_fla.urdf", floating_base_type);
 
   auto sensor_frame = tree->findFrame("body");
 
