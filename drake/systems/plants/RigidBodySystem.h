@@ -484,7 +484,12 @@ class DRAKERBSYSTEM_EXPORT RigidBodyAccelerometer : public RigidBodySensor {
         noise_model = model;
     }
 
+    void setGravityCompensation(bool enable_compensation) {
+      gravity_compensation = enable_compensation;
+    }
+
   private:
+    bool gravity_compensation;
     std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> noise_model;
     const std::shared_ptr<RigidBodyFrame> frame;
 };

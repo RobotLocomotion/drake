@@ -12,7 +12,7 @@ Vector3d getAccelerometerOutput(shared_ptr<RigidBodySystem> const& sys, Vector3d
   x0.head(tree->num_positions) = tree->getZeroConfiguration();
   x0.segment(3, 4) = rpy2quat(rpy);
   auto const& system_output = sys->output(0, x0, u);
-  return system_output.tail<3>();
+  return system_output.segment<3>(13);
 }
 
 
@@ -61,4 +61,13 @@ int main(int argc, char* argv[]) {
                    Vector3d(-g, 0, 0),
                    tol);
 
+  //real accelerometers can't measure gravity during freefall
+  accelerometer->setGravityCompensation(true);
+  valuecheckMatrix(getAccelerometerOutput(rigid_body_sys, Vector3d::Zero(), Vector4d::Zero()),
+                 Vector3d(0, 0, 0),
+                 tol);
+
+  valuecheckMatrix(getAccelerometerOutput(rigid_body_sys, Vector3d(M_PI, 0, 0), Vector4d::Zero()),
+                   Vector3d(0, 0, 0),
+                   tol);
 }

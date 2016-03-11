@@ -28,7 +28,9 @@ int main(int argc, char* argv[]) {
   auto gyroscope = make_shared<RigidBodyGyroscope>(*rigid_body_sys, "gyroscope", sensor_frame);
   auto magnetometer = make_shared<RigidBodyMagnetometer>(*rigid_body_sys, "magnetometer", sensor_frame, 0.0);
   auto noise_model = make_shared<AdditiveGaussianNoiseModel<double, 3, Vector3d>>(0, 0.01);
+
   accelerometer->setNoiseModel(noise_model);
+  accelerometer->setGravityCompensation(true);
   gyroscope->setNoiseModel(noise_model);
   magnetometer->setNoiseModel(noise_model);
 
