@@ -8,5 +8,6 @@ struct lcmt_quadrotor_output_t
   double twist[6];
   double accelerometer[3];
   double gyroscope[3];
+  double magnetometer[3];
 }
 
