@@ -47,7 +47,6 @@ RigidBodyTree::RigidBodyTree(
   a_grav << 0, 0, 0, 0, 0, -9.81;
 
   shared_ptr<RigidBody> b(new RigidBody());
-  make_shared<RigidBody>();
   b->linkname = "world";
   b->robotnum = 0;
   b->body_index = 0;
