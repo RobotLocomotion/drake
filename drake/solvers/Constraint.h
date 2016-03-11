@@ -211,8 +211,8 @@ class LinearComplementarityConstraint : public Constraint {
   LinearComplementarityConstraint(const Eigen::MatrixBase<DerivedM>& M,
                                   const Eigen::MatrixBase<Derivedq>& q)
       : Constraint(q.rows(),
-                   Eigen::VectorXd::Constant(0),
-                   Eigen::VectorXd::Constant(
+                   Derivedq::Constant(0),
+                   Derivedq::Constant(
                        std::numeric_limits<double>::infinity())),
         M(M),
         q(q) {}
@@ -233,6 +233,8 @@ class LinearComplementarityConstraint : public Constraint {
   const Eigen::VectorXd& getq() { return q; };
 
  private:
+  // TODO ggould We are storing what are likely statically sized matrices
+  // in dynamically allocated containers.  This probably isn't optimal.
   Eigen::MatrixXd M;
   Eigen::VectorXd q;
 };
