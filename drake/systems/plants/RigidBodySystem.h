@@ -142,13 +142,13 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
   RigidBodySystem(const std::shared_ptr<RigidBodyTree>& rigid_body_tree)
       : tree(rigid_body_tree),
         use_multi_contact(false),
-        penetration_stiffness(150.0),
+        penetration_stiffness(50.0),
         penetration_damping(penetration_stiffness / 10.0),
         friction_coefficient(1.0),
         direct_feedthrough(false) {};
   RigidBodySystem()
       : use_multi_contact(false),
-        penetration_stiffness(150.0),
+        penetration_stiffness(50.0),
         penetration_damping(penetration_stiffness / 10.0),
         friction_coefficient(1.0),
         direct_feedthrough(false) {
@@ -506,6 +506,35 @@ class DRAKERBSYSTEM_EXPORT RigidBodyGyroscope : public RigidBodySensor {
     }
 
   private:
+    std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> noise_model;
+    const std::shared_ptr<RigidBodyFrame> frame;
+};
+
+    /** RigidBodyGyroscope
+     * @brief Simulates a sensor that measures angular rates
+     */
+class DRAKERBSYSTEM_EXPORT RigidBodyMagnetometer : public RigidBodySensor {
+  public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+    RigidBodyMagnetometer(RigidBodySystem const& sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame, double declination);
+    virtual ~RigidBodyMagnetometer() {}
+
+    virtual size_t getNumOutputs() const override { return 3; }
+    virtual Eigen::VectorXd output(const double& t, const KinematicsCache<double>& rigid_body_state, const RigidBodySystem::InputVector<double>& u) const override;
+
+    void setNoiseModel(std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> model) {
+        noise_model = model;
+    }
+
+    void setDeclination(double magnetic_declination) {
+      magnetic_north << cos(M_PI/2 + magnetic_declination), 
+                        sin(M_PI/2 + magnetic_declination), 
+                        0;
+    }
+
+  private:
+    Eigen::Vector3d magnetic_north;
     std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> noise_model;
     const std::shared_ptr<RigidBodyFrame> frame;
 };
