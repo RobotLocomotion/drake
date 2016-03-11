@@ -12,7 +12,7 @@ Vector3d getAccelerometerOutput(shared_ptr<RigidBodySystem> const& sys, Vector3d
   x0.head(tree->num_positions) = tree->getZeroConfiguration();
   x0.segment(3, 4) = rpy2quat(rpy);
   auto const& system_output = sys->output(0, x0, u);
-  return system_output.segment<3>(13);
+  return system_output.tail<3>();
 }
 
 
