@@ -192,10 +192,38 @@ void gloptipolyConstrainedMinimization() {
   valuecheckMatrix(x.value(), Vector3d(.5, 0, 3), 1e-4);
 }
 
+/** Simple linear complementarity problem example.
+ * @brief a hand-created LCP with a simple solution
+ */
+void simpleLCP() {
+  OptimizationProblem prog;
+  Eigen::Matrix<double, 2, 2> M;
+  M << 1, 4,
+      3, 1;
+
+  Eigen::Vector2d q(-16, -15);
+
+  auto x = prog.addContinuousVariables(2);
+
+  prog.addLinearComplementarityConstraint(M, q, {x});
+  prog.solve();
+  prog.printSolution();
+}
+
 int main(int argc, char* argv[]) {
-  testAddFunction();
-  trivialLeastSquares();
-  sixHumpCamel();
-  gloptipolyConstrainedMinimization();
+  // SNOPT tests
+  try {
+    testAddFunction();
+    trivialLeastSquares();
+    sixHumpCamel();
+    gloptipolyConstrainedMinimization();
+  } catch (const std::exception& e) {
+    // If the exception is SNOPT unavailble, skip the remaining snopt tests
+    // and proceed; if not, reraise it to fail.
+    if (std::string(e.what()) != "SNOPT unavailable") {
+      throw;
+    }
+  }
+  simpleLCP();
   return 0;
 }

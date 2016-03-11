@@ -392,11 +392,11 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    * @brief adds a linear complementarity constraint to the program for all
    * (currently existing) variables.
    */
-  template <typename DerivedA, typename DerivedB>
+  template <typename DerivedM, typename Derivedq>
   std::shared_ptr<LinearComplementarityConstraint>
       addLinearComplementarityConstraint(
-          const Eigen::MatrixBase<DerivedA>& M,
-          const Eigen::VectorXd& q) {
+          const Eigen::MatrixBase<DerivedM>& M,
+          const Eigen::MatrixBase<Derivedq>& q) {
     return addLinearComplementarityConstraint(M, q, variable_views);
   }
 
@@ -405,13 +405,13 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    * @brief adds a linear complementarity constraints referencing a subset of
    * the decision variables.
    */
-  template <typename DerivedA, typename DerivedB>
+  template <typename DerivedM, typename Derivedq>
   std::shared_ptr<LinearComplementarityConstraint>
       addLinearComplementarityConstraint(
-          const Eigen::MatrixBase<DerivedA>& M,
-          const Eigen::VectorXd& q,
+          const Eigen::MatrixBase<DerivedM>& M,
+          const Eigen::MatrixBase<Derivedq>& q,
           const VariableList& vars) {
-    problem_type = problem_type.reset(
+    problem_type.reset(
         problem_type->addLinearComplementarityConstraint());
 
     // Linear Complementarity Constraint cannot currently coexist with any
@@ -423,11 +423,10 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     assert(bbox_constraints.empty());
 
     auto constraint = std::make_shared<LinearComplementarityConstraint>(M, q);
-    linear_complementarity_constraint =
-        new Binding<LinearComplementarityConstraint>(constraint, vars);
+    linear_complementarity_constraint.reset(
+        new Binding<LinearComplementarityConstraint>(constraint, vars));
     return constraint;
-  }
-
+}
   // template <typename FunctionType>
   // void addCost(std::function..);
   // void addLinearCost(const Eigen::MatrixBase<Derived>& c,const vector<const
