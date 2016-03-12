@@ -717,7 +717,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
  public:
   static const std::set<int> default_robot_num_set;
 
-  std::vector<std::string> robot_name;
+  // std::vector<std::string> robot_name;
 
   int num_positions;
   int num_velocities;
