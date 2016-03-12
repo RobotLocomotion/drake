@@ -342,6 +342,13 @@ void setLimits(XMLElement* node, FixedAxisOneDoFJoint<JointType>* fjoint) {
            upper = numeric_limits<double>::infinity();
     parseScalarAttribute(limit_node, "lower", lower);
     parseScalarAttribute(limit_node, "upper", upper);
+
+    // If both the lower and upper limits are zero,
+    // assume there are no limits of motion.
+    if (lower == 0 && upper == 0) {
+      lower = -numeric_limits<double>::infinity();
+      upper = numeric_limits<double>::infinity();
+    }
     fjoint->setJointLimits(lower, upper);
   }
 }
@@ -603,6 +610,12 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
     weld_to_body = model->bodies[0];
     floating_joint_name = "base";
     transform_to_body = Isometry3d::Identity();
+
+    // Added by Liang to initialize Prius model at right height above ground.
+    // TODO: Make this an input parameter to this method!
+    transform_to_body.translation() << 0, 0, 0.38518;
+    // transform_to_body.translation() << 0, 0, 1;          // place vehicle 1m above ground (for debugging purposes)
+
   } else {
     weld_to_body = weld_to_frame->body;
     transform_to_body = weld_to_frame->transform_to_body;
