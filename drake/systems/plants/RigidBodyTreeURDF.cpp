@@ -342,13 +342,6 @@ void setLimits(XMLElement* node, FixedAxisOneDoFJoint<JointType>* fjoint) {
            upper = numeric_limits<double>::infinity();
     parseScalarAttribute(limit_node, "lower", lower);
     parseScalarAttribute(limit_node, "upper", upper);
-
-    // If both the lower and upper limits are zero,
-    // assume there are no limits of motion.
-    if (lower == 0 && upper == 0) {
-      lower = -numeric_limits<double>::infinity();
-      upper = numeric_limits<double>::infinity();
-    }
     fjoint->setJointLimits(lower, upper);
   }
 }
