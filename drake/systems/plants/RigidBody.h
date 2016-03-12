@@ -130,6 +130,7 @@ class DRAKERBM_EXPORT RigidBody {
 
     virtual bool collidesWith(const DrakeCollision::Element* other) const;
 
+    friend std::ostream& operator<<(std::ostream& out, const RigidBody& b);
    protected:
     std::shared_ptr<RigidBody> body;
 

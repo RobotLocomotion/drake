@@ -66,6 +66,9 @@ bool closestPointsPairwise(const vector<ElementIdPair>& id_pairs,
   return false;
 };
 
+/**
+ * A toString for the collision model.
+ */
 std::ostream& operator<<(std::ostream &os, const Model &model) {
   if (model.elements.size() == 0)
     os << "No collision elements.";

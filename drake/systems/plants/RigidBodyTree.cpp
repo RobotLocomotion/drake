@@ -50,6 +50,7 @@ RigidBodyTree::RigidBodyTree(
     const DrakeJoint::FloatingBaseType floating_base_type)
     : collision_model(DrakeCollision::newModel()) {
   a_grav << 0, 0, 0, 0, 0, -9.81;
+  // a_grav << 0, 0, 0, 0, 0, 0;
 
   shared_ptr<RigidBody> b(new RigidBody());
   b->linkname = "world";
@@ -65,6 +66,7 @@ RigidBodyTree::RigidBodyTree(
 RigidBodyTree::RigidBodyTree(void)
     : collision_model(DrakeCollision::newModel()) {
   a_grav << 0, 0, 0, 0, 0, -9.81;
+  // a_grav << 0, 0, 0, 0, 0, 0;
 
   shared_ptr<RigidBody> b(new RigidBody());
   b->linkname = "world";
@@ -300,7 +302,20 @@ map<string, int> RigidBodyTree::computePositionNameToIndexMap() const {
 
 DrakeCollision::ElementId RigidBodyTree::addCollisionElement(
     const RigidBody::CollisionElement& element,
-    RigidBody& body, const string& group_name) {
+    const shared_ptr<RigidBody>& body, const string& group_name) {
+
+  std::cout << "RigidBodyTree.cpp: RigidBodyTree::addCollisionElement: Adding element:\n"
+            << "  - link name: " << body->linkname << "\n"
+            << "  - group name: " << group_name << "\n"
+            << "  - collision element:\n"
+            << "     - rigid body name: " << element.getBody()->linkname << "\n"
+            << "     - id (memory address): " << element.getId() << "\n"
+            << "     - T_element_to_world:\n"
+            << element.getWorldTransform().matrix() << "\n"
+            << "     - T_element_to_local:\n"
+            << element.getLocalTransform().matrix()
+            << std::endl;
+
   DrakeCollision::ElementId id = collision_model->addElement(element);
   if (id != 0) {
     body.collision_element_ids.push_back(id);

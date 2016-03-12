@@ -87,6 +87,7 @@ int main(int argc, char* argv[]) {
   // todo: consider moving this logic into the RigidBodySystem class so it can
   // be reused
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
+  // DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::FIXED;
 
 
   auto rigid_body_sys = make_shared<RigidBodySystem>();
@@ -114,18 +115,44 @@ int main(int argc, char* argv[]) {
     tree->updateStaticCollisionElements();
   }
 
-
+  PRINT_VAR(tree->num_positions)
+  PRINT_VAR(tree->num_velocities)
+  PRINT_VAR(tree->actuators.size())
+  for (auto actuator: tree->actuators) {
+    PRINT_VAR(actuator.name)
+    PRINT_VAR(actuator.body->linkname)
+    PRINT_VAR(actuator.reduction)
+    PRINT_VAR(actuator.effort_limit_min)
+    PRINT_VAR(actuator.effort_limit_max)
+  }
+  PRINT_VAR(tree->a_grav.transpose())
+  PRINT_VAR(tree->BB)
   PRINT_VAR(tree->bodies.size());
-  for(auto body: tree->bodies){
+  for(auto body: tree->bodies) {
     PRINT_VAR(body->linkname);
     PRINT_VAR(body->mass);
     PRINT_VAR(body->hasParent())
     PRINT_VAR(body->I)
     if(body->hasParent()){
-      PRINT_VAR(body->getJoint().getName());
+      const DrakeJoint& joint = body->getJoint();
+      PRINT_VAR(joint.getName())
+      PRINT_VAR(joint.getTransformToParentBody().matrix())
+      PRINT_VAR(joint.getNumPositions())
+      PRINT_VAR(joint.getNumVelocities())
+      PRINT_VAR(joint.isFloating())
+      PRINT_VAR(joint.zeroConfiguration())
+      PRINT_VAR(joint.getJointLimitMin().transpose())
+      PRINT_VAR(joint.getJointLimitMax().transpose())
     } else
       std::cout << "link has no parent joint!" << std::endl;
-    std::cout << std::endl;
+    std::cout << "===============================" << std::endl;
+  }
+  PRINT_VAR(tree->frames.size());
+  for (auto frame: tree->frames) {
+    PRINT_VAR(frame->name)
+    PRINT_VAR(frame->frame_index)
+    PRINT_VAR(frame->body->linkname)
+    PRINT_VAR(frame->transform_to_body.matrix())
   }
   std::cout << "collision elements:\n" << *tree.get() << std::endl;
 

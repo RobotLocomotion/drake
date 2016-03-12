@@ -86,7 +86,7 @@ void simulate(const System& sys, double ti, double tf,
                            options.timeout_seconds);
     const double dt = (std::min)(options.initial_step_size, tf - t);
 
-    std::cout << "Drake::simulate: [" << simCycleCnt++ << "] sim time " << t <<  std::endl;
+    // std::cout << "Drake::simulate: [" << simCycleCnt++ << "] sim time " << t <<  std::endl;
 
     // Output is at t0, x0, u0.
 
@@ -97,7 +97,6 @@ void simulate(const System& sys, double ti, double tf,
     xdot0 = sys.dynamics(t, x, u);
     x1est = toEigen(x) + dt * toEigen(xdot0); // explicit Euler step
     t += dt;
-
 
     // Second stage: xd1 = dynamics(t1,x1est,u0).
     xdot1 = sys.dynamics(t, x1est, u);
