@@ -33,6 +33,7 @@ option(REMOVE_UNUSED_EXTERNALS "enable this to remove those projects from disk" 
 
 # ON by default:
 option(WITH_EIGEN		"required c++ matrix library.  only disable if you have it already."    ON)
+option(WITH_GOOGLETEST "required c++ unit test library.  only disable ifyou have it already." ON)
 option(WITH_SWIGMAKE    "helper tools to build python & MATLAB wrappers for C++ libraries with Eigen" ON)
 option(WITH_BULLET 		"used for collision detection" 	ON)
 option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" ON)
@@ -89,7 +90,7 @@ set(bot_core_lcmtypes_dependencies lcm)
 set(director_dependencies lcm bot_core_lcmtypes libbot)
 set(iris_dependencies eigen mosek)
 set(signalscope_dependencies director)
-set(drake_dependencies cmake eigen lcm bot_core_lcmtypes libbot bullet octomap snopt gurobi swig_matlab swigmake)
+set(drake_dependencies cmake eigen googletest lcm bot_core_lcmtypes libbot bullet octomap snopt gurobi swig_matlab swigmake)
 
 # download information, in alphabetical order
 set(avl_GIT_REPOSITORY https://github.com/RobotLocomotion/avl.git)
@@ -116,6 +117,11 @@ set(eigen_GIT_REPOSITORY https://github.com/RobotLocomotion/eigen-pod.git)
 set(eigen_GIT_TAG 20a633e8f0a285edf9dcc5a06cc9e80774920a7f)
 set(eigen_IS_CMAKE_POD TRUE)
 set(eigen_IS_PUBLIC TRUE)
+set(googletest_GIT_REPOSITORY https://github.com/google/googletest.git)
+set(googletest_GIT_TAG ff07a5de0e81580547f1685e101194ed1a4fcd56)
+set(googletest_IS_CMAKE_POD TRUE)
+set(googletest_IS_PUBLIC TRUE)
+set(googletest_ADDITIONAL_CMAKE_CONFIGURE_ARGS -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_NAME_DIR=${CMAKE_INSTALL_PREFIX}/lib)
 set(gtk_GIT_REPOSITORY https://github.com/RobotLocomotion/gtk-pod.git)
 set(gtk_GIT_TAG 4730a7d3274a35280f1c2c6337eb182935c87fc2)
 set(gtk_IS_CMAKE_POD TRUE)
@@ -214,6 +220,7 @@ foreach(proj IN ITEMS
 		cmake
 		textbook
 		eigen
+		googletest
 		gtk
 		lcm
 		bot_core_lcmtypes
