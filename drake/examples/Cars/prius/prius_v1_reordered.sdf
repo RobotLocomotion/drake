@@ -425,7 +425,7 @@
       </visual>
     </link>
     
-    <link name='lidar'>
+<!--     <link name='lidar'>
       <pose>2.4 0 0.52 0 0 0</pose>
       <visual name='lidar'>
         <pose>0 0 0 0 0 0</pose>
@@ -437,7 +437,7 @@
         <material>
           <diffuse>1 1 1 1</diffuse>
           </material>
-      </visual>
+      </visual> -->
       
       <!--
       Message from Liang: I commented this sensor out to work around a problem where the number
@@ -468,9 +468,9 @@
         </ray>
         <plugin name="laser" filename="libRayPlugin.so" />
       </sensor> -->
-      <velocity_decay />
+<!--       <velocity_decay />
     </link>
-
+ -->
 
     <joint name='body' type='fixed'>
       <parent>chassis_floor</parent>
@@ -478,11 +478,11 @@
      <pose>2.27 0.911395 0.218584 0 0 0</pose>
     </joint>
 
-    <joint name='lidar_joint' type='fixed'>
+<!--     <joint name='lidar_joint' type='fixed'>
       <parent>chassis_floor</parent>
       <child>lidar</child>
       <pose>0 0 0 0 0 0</pose>
-    </joint>
+    </joint> -->
 
     <joint name='chassis_floor_axle' type='fixed'>
       <parent>chassis_floor</parent>
@@ -508,6 +508,9 @@
       <pose>0 0.408503 0 0 0 0</pose>
       <axis>
         <xyz>0 0 1</xyz>
+        <limit>
+          <effort>0</effort>
+        </limit>
       </axis>
     </joint>
 
@@ -529,6 +532,9 @@
       <axis>
         <xyz>0 1 0</xyz>
         <use_parent_model_frame>1</use_parent_model_frame>
+        <limit>
+          <effort>0</effort>
+        </limit>
       </axis>
     </joint>
     
@@ -539,6 +545,9 @@
       <axis>
         <xyz>0 1 0</xyz>
         <use_parent_model_frame>1</use_parent_model_frame>
+        <limit>
+          <effort>0</effort>
+        </limit>
       </axis>
     </joint>
 
@@ -559,6 +568,7 @@
         <limit>
           <lower>-3.1416</lower>
           <upper>3.1416</upper>
+          <effort>0</effort>
         </limit>
       </axis>
     </joint>
@@ -595,6 +605,7 @@
         <limit>
           <lower>-0.401426</lower>
           <upper>0.5</upper>
+          <effort>0</effort>
         </limit>
       </axis>
     </joint>
