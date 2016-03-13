@@ -126,7 +126,7 @@ int main(int argc, char* argv[]) {
     PRINT_VAR(actuator.effort_limit_max)
   }
   PRINT_VAR(tree->a_grav.transpose())
-  PRINT_VAR(tree->BB)
+  PRINT_VAR(tree->B)
   PRINT_VAR(tree->bodies.size());
   for(auto body: tree->bodies) {
     PRINT_VAR(body->linkname);

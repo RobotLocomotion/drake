@@ -302,10 +302,10 @@ map<string, int> RigidBodyTree::computePositionNameToIndexMap() const {
 
 DrakeCollision::ElementId RigidBodyTree::addCollisionElement(
     const RigidBody::CollisionElement& element,
-    const shared_ptr<RigidBody>& body, const string& group_name) {
+    RigidBody& body, const string& group_name) {
 
   std::cout << "RigidBodyTree.cpp: RigidBodyTree::addCollisionElement: Adding element:\n"
-            << "  - link name: " << body->linkname << "\n"
+            << "  - link name: " << body.linkname << "\n"
             << "  - group name: " << group_name << "\n"
             << "  - collision element:\n"
             << "     - rigid body name: " << element.getBody()->linkname << "\n"
