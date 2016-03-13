@@ -91,7 +91,20 @@ int main(int argc, char* argv[]) {
 
 
   auto rigid_body_sys = make_shared<RigidBodySystem>();
-  rigid_body_sys->addRobotFromFile(argv[1], floating_base_type);
+
+  // The following variable, weld_to_frame, is only needed if the model is a
+  // URDF file. It is needed since URDF does not specify the location and
+  // orientation of the car's root node in the world. If the model is an SDF,
+  // weld_to_frame is ignored by the parser.
+  auto weld_to_frame = allocate_shared<RigidBodyFrame>(
+      aligned_allocator<RigidBodyFrame>(),
+      "world",
+      nullptr,  // not used since the robot is attached to the world
+      Eigen::Vector3d(0, 0, 0.38518),  // xyz of the car's root link
+      Eigen::Vector3d(0, 0, 0));       // rpy of the car's root link
+
+  rigid_body_sys->addRobotFromFile(argv[1], floating_base_type, weld_to_frame);
+
   auto const & tree = rigid_body_sys->getRigidBodyTree();
   for (int i=2; i<argc; i++)
     tree->addRobotFromSDF(argv[i], DrakeJoint::FIXED);  // add environment

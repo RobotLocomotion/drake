@@ -603,16 +603,19 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
     weld_to_body = model->bodies[0];
     floating_joint_name = "base";
     transform_to_body = Isometry3d::Identity();
-
-    // Added by Liang to initialize Prius model at right height above ground.
-    // TODO: Make this an input parameter to this method!
-    transform_to_body.translation() << 0, 0, 0.38518;
-    // transform_to_body.translation() << 0, 0, 1;          // place vehicle 1m above ground (for debugging purposes)
-
   } else {
-    weld_to_body = weld_to_frame->body;
-    transform_to_body = weld_to_frame->transform_to_body;
-    floating_joint_name = "weld";
+    // If the robot is being welded to the world, ignore the "body" variable
+    // within weld_to_frame. Instead, only use the transform_to_body
+    // variable to initialize the robot at the desired location in the world.
+    if (weld_to_frame->name.compare("world") == 0) {
+      weld_to_body = model->bodies[0];  // the world's body
+      floating_joint_name = "base";
+      transform_to_body = weld_to_frame->transform_to_body;
+    } else {
+      weld_to_body = weld_to_frame->body;
+      transform_to_body = weld_to_frame->transform_to_body;
+      floating_joint_name = "weld";
+    }
   }
 
   for (unsigned int i = 1; i < model->bodies.size(); i++) {

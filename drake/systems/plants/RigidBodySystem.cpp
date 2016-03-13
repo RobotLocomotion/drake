@@ -633,9 +633,10 @@ void RigidBodySystem::addRobotFromURDFString(
 
 void RigidBodySystem::addRobotFromURDF(
     const string& urdf_filename,
-    const DrakeJoint::FloatingBaseType floating_base_type) {
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   // first add the urdf to the rigid body tree
-  tree->addRobotFromURDF(urdf_filename, floating_base_type);
+  tree->addRobotFromURDF(urdf_filename, floating_base_type, weld_to_frame);
 
   // now parse additional tags understood by rigid body system (actuators,
   // sensors, etc)
@@ -667,7 +668,8 @@ void RigidBodySystem::addRobotFromSDF(
 
 void RigidBodySystem::addRobotFromFile(
     const std::string& filename,
-    const DrakeJoint::FloatingBaseType floating_base_type) {
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   spruce::path p(filename);
   auto ext = p.extension();
 
@@ -675,7 +677,7 @@ void RigidBodySystem::addRobotFromFile(
                  ::tolower);  // convert to lower case
 
   if (ext.compare(".urdf") == 0) {
-    addRobotFromURDF(filename, floating_base_type);
+    addRobotFromURDF(filename, floating_base_type, weld_to_frame);
   } else if (ext.compare(".sdf") == 0) {
     addRobotFromSDF(filename, floating_base_type);
   } else {
