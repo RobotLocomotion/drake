@@ -1,7 +1,7 @@
-
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/BotVisualizer.h"
+#include "drake/systems/cascade_system.h"
 #include "drake/util/drakeAppUtil.h"
 
 using namespace std;

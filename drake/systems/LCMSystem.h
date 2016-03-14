@@ -9,6 +9,7 @@
 #include "lcmtypes/drake/lcmt_drake_signal.hpp"
 #include "drake/systems/System.h"
 #include "drake/systems/Simulation.h"
+#include "drake/systems/cascade_system.h"
 #include "drake/drakeLCMSystem_export.h"
 
 namespace Drake {
