@@ -70,8 +70,6 @@ class NonlinearProgram : public MathematicalProgram {
 
  private:
   MathematicalProgramSNOPTSolver snopt_solver;
-  bool solveWithSNOPT(OptimizationProblem& prog) const;
-  bool hasSNOPT() const;
 };
 
 /*  // Prototype of the more complete optimization problem class hiearchy (to
