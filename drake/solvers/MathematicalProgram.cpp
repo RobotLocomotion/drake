@@ -1,5 +1,6 @@
 #include "MathematicalProgram.h"
 
+#include "SnoptSolver.h"
 #include "MobyLCP.h"
 #include "Optimization.h"
 
@@ -83,7 +84,7 @@ class NonlinearProgram : public MathematicalProgram {
   }
 
  private:
-  MathematicalProgramSNOPTSolver snopt_solver;
+  SnoptSolver snopt_solver;
 };
 
 /*  // Prototype of the more complete optimization problem class hiearchy (to
