@@ -159,7 +159,6 @@
       </material>
     </visual>
   </link>
-
   <link name="right_hub">
     <!-- <inertial>
       <mass value="0"/>
@@ -176,7 +175,6 @@
       </material>
     </visual>
   </link>
-
   <link name="right_wheel">
     <inertial>
       <!-- <mass value="0"/> -->
@@ -220,7 +218,19 @@
       </material>
     </visual>
   </link>
-
+  <link name="rear_axle">
+    <inertial>
+      <mass value="0"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+    <visual name="v1">
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.061842 1.38898 0.030921"/>
+      </geometry>
+    </visual>
+  </link>
   <link name="left_wheel_rear">
     <inertial>
       <mass value="14.28"/>
@@ -301,19 +311,6 @@
       </material>
     </visual>
   </link>
-  <link name="rear_axle">
-    <inertial>
-      <mass value="0"/>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
-    </inertial>
-    <visual name="v1">
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <box size="0.061842 1.38898 0.030921"/>
-      </geometry>
-    </visual>
-  </link>
   <link name="body">
     <inertial>
       <mass value="5.42794"/>
@@ -328,19 +325,7 @@
       </geometry>
     </visual>
   </link>
-<!--   <link name="lidar">
-    <inertial>
-      <mass value="0"/>
-      <origin rpy="0  0  0" xyz="0  0  0"/>
-      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
-    </inertial>
-    <visual name="__lidar">
-      <origin rpy="0  0  0" xyz="0  0  0"/>
-      <geometry>
-        <box size="0.1 0.15 0.2"/>
-      </geometry>
-    </visual>
-  </link> -->
+
   <joint name="chassis_floor_axle" type="fixed">
     <parent link="chassis_floor"/>
     <child link="front_axle"/>
@@ -425,19 +410,12 @@
     <axis xyz="0  0  0"/>
     <limit effort="0" lower="0" upper="0" velocity="0"/>
   </joint>
-  <!--<joint name="lidar_joint" type="fixed">
-    <parent link="chassis_floor"/>
-    <child link="lidar"/>
-    <origin rpy="0  0  0" xyz="2.4 0 0.52"/>
-    <axis xyz="0  0  0"/>
-    <limit effort="0" lower="0" upper="0" velocity="0"/>
-  </joint> -->
 
-  <loop_joint name="pin" type="continuous">
+<!--   <loop_joint name="pin" type="continuous">
     <axis xyz="0 0 1"/>
-    <link1 link="right_tie_rod_arm" rpy="0 0 0" xyz="-0.172469 0.0862338  0.030921"/>
+    <link1 link="right_tie_rod_arm" rpy="0 0 0" xyz="-0.17246 0.086227  0.03092"/>
     <link2 link="tie_rod" rpy="0 0 0" xyz="0 -0.817006 0"/>
-  </loop_joint>
+  </loop_joint> -->
 
   <transmission name="steering_drive" type="SimpleTransmission">
     <joint name="steering"/>
