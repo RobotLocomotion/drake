@@ -100,7 +100,7 @@ int main(int argc, char* argv[]) {
       aligned_allocator<RigidBodyFrame>(),
       "world",
       nullptr,  // not used since the robot is attached to the world
-      Eigen::Vector3d(0, 0, 0.38518),  // xyz of the car's root link
+      Eigen::Vector3d(0, 0, 0.378326),  // xyz of the car's root link
       Eigen::Vector3d(0, 0, 0));       // rpy of the car's root link
 
   rigid_body_sys->addRobotFromFile(argv[1], floating_base_type, weld_to_frame);
