@@ -317,7 +317,8 @@
   <link name="body">
     <inertial>
       <mass value="5.42794"/>
-      <origin rpy="0 0 0" xyz="-2.27 -0.91139 -0.21858"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <!-- <origin rpy="0 0 0" xyz="-2.27 -0.91139 -0.21858"/> -->
       <inertia ixx="0.00216238" ixy="0" ixz="0" iyy="0.500375" iyz="0" izz="0.501672"/>
     </inertial>
     <visual name="v1">
@@ -420,7 +421,7 @@
   <joint name="body" type="fixed">
     <parent link="chassis_floor"/>
     <child link="body"/>
-    <origin rpy="0  0  0" xyz="0 0 0"/> <!-- 0.38518"/> -->
+    <origin rpy="0  0  0" xyz="0 0 0.006857999999999975226927518"/> <!-- 0.38518"/> -->
     <axis xyz="0  0  0"/>
     <limit effort="0" lower="0" upper="0" velocity="0"/>
   </joint>
