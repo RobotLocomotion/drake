@@ -47,10 +47,32 @@ int main(int argc, char* argv[]) {
   // dot -Tpng -O /tmp/r1.dot; dot -Tpng -O /tmp/r2.dot; open /tmp/r1.dot.png
   // /tmp/r2.dot.png
 
+  try {
+    valuecheck(r1->getNumStates(),r2->getNumStates());
+  } catch(const std::exception& e) {
+    std::cout << "ERROR: Number of states do not match!" << std::endl
+              << "  - system 1: " << r1->getNumStates() << std::endl
+              << "  - system 2: " << r2->getNumStates() << std::endl;
+    return -1;
+  }
 
-  valuecheck(r1->getNumStates(), r2->getNumStates());
-  valuecheck(r1->getNumInputs(), r2->getNumInputs());
-  valuecheck(r1->getNumOutputs(), r2->getNumOutputs());
+  try {
+    valuecheck(r1->getNumInputs(),r2->getNumInputs());
+  } catch(const std::exception& e) {
+    std::cout << "ERROR: Number of inputs do not match!" << std::endl
+              << "  - system 1: " << r1->getNumInputs() << std::endl
+              << "  - system 2: " << r2->getNumInputs() << std::endl;
+    return -1;
+  }
+
+  try {
+    valuecheck(r1->getNumOutputs(),r2->getNumOutputs());
+  } catch(const std::exception& e) {
+    std::cout << "ERROR: Number of outputs do not match!" << std::endl
+              << "  - system 1: " << r1->getNumOutputs() << std::endl
+              << "  - system 2: " << r2->getNumOutputs() << std::endl;
+    return -1;
+  }
 
   for (int i = 0; i < 1000; i++) {
     std::cout << "i = " << i << std::endl;
