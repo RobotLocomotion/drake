@@ -46,15 +46,6 @@ class DRAKEOPTIMIZATION_EXPORT MathematicalProgramSolverInterface {
   virtual bool available() const = 0;
   virtual bool solve(OptimizationProblem& prog) const = 0;
 };
-
-class DRAKEOPTIMIZATION_EXPORT MathematicalProgramSNOPTSolver :
-      public MathematicalProgramSolverInterface  {
- public:
-  // This solver is implemented in various pieces depending on if
-  // SNOPT was available during compilation.
-  virtual bool available() const override;
-  virtual bool solve(OptimizationProblem& prog) const override;
-};
 }
 
 #endif  // DRAKE_SOLVERS_MATHEMATICALPROGRAM_H_
