@@ -1,0 +1,26 @@
+
+<robot name="BouncingBall">
+
+  <link name="ball">
+    <inertial>
+      <mass value="1.0" />
+      <inertia iyy="0.16667" ixx="0.16667" izz="0.16667" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 1.0" rpy="0 0 0" />
+      <geometry>
+        <sphere radius="0.5"/>
+      </geometry>
+      <material name="">
+        <color rgba=".2 .2 .2 1" />
+      </material>
+    </visual>  
+    <collision>
+      <origin xyz="0 0 1.0" rpy="0 0 0" />
+      <geometry>
+        <sphere radius="0.5"/>
+      </geometry>
+    </collision>
+  </link>
+    
+</robot>
