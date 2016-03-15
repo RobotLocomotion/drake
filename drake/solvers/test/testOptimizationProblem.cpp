@@ -1,6 +1,10 @@
 
+#include <functional>
+#include <iostream>
 #include <typeinfo>
+#include "drake/solvers/NloptSolver.h"
 #include "drake/solvers/Optimization.h"
+#include "drake/solvers/SnoptSolver.h"
 #include "drake/util/testUtil.h"
 
 using namespace std;
@@ -54,6 +58,29 @@ void testAddFunction() {
   prog.addCost(std::unique_ptr<Unique>(new Unique));
 }
 
+void runNonlinearProgram(OptimizationProblem& prog,
+                         std::function<void ()> test_func) {
+  NloptSolver nlopt_solver;
+  SnoptSolver snopt_solver;
+
+  std::pair<const char*, MathematicalProgramSolverInterface*> solvers[] = {
+    std::make_pair("NLopt", &nlopt_solver),
+    std::make_pair("SNOPT", &snopt_solver)
+  };
+
+  for (const auto& solver: solvers) {
+    if (!solver.second->available()) { continue; }
+    try {
+      solver.second->solve(prog);
+      test_func();
+    } catch (const std::exception& e) {
+      std::cerr << "Test failure in NonlinearProgram solver: " << solver.first
+                << std::endl;
+      throw;
+    }
+  }
+}
+
 void trivialLeastSquares() {
   OptimizationProblem prog;
 
@@ -84,9 +111,11 @@ void trivialLeastSquares() {
   std::shared_ptr<BoundingBoxConstraint> bbcon(new BoundingBoxConstraint(
       MatrixXd::Constant(2, 1, -1000.0), MatrixXd::Constant(2, 1, 1000.0)));
   prog.addConstraint(bbcon, {x.head(2)});
-  prog.solve();  // now it will solve as a nonlinear program
-  valuecheckMatrix(b.topRows(2) / 2, y.value(), 1e-10);
-  valuecheckMatrix(b / 3, x.value(), 1e-10);
+  // Now solve as a nonlinear program.
+  runNonlinearProgram(prog, [&]() {
+      valuecheckMatrix(b.topRows(2) / 2, y.value(), 1e-10);
+      valuecheckMatrix(b / 3, x.value(), 1e-10);
+    });
 }
 
 class SixHumpCamelObjective {
@@ -108,16 +137,17 @@ void sixHumpCamel() {
   OptimizationProblem prog;
   auto x = prog.addContinuousVariables(2);
   auto objective = prog.addCost(SixHumpCamelObjective());
-  prog.solve();
-  prog.printSolution();
 
-  // check (numerically) if it is a local minimum
-  VectorXd ystar, y;
-  objective->eval(x.value(), ystar);
-  for (int i = 0; i < 10; i++) {
-    objective->eval(x.value() + .01 * Eigen::Matrix<double, 2, 1>::Random(), y);
-    if (y(0) < ystar(0)) throw std::runtime_error("not a local minima!");
-  }
+  runNonlinearProgram(prog, [&]() {
+      prog.printSolution();
+      // check (numerically) if it is a local minimum
+      VectorXd ystar, y;
+      objective->eval(x.value(), ystar);
+      for (int i = 0; i < 10; i++) {
+        objective->eval(x.value() + .01 * Eigen::Matrix<double, 2, 1>::Random(), y);
+        if (y(0) < ystar(0)) throw std::runtime_error("not a local minima!");
+      }
+    });
 }
 
 class GloptipolyConstrainedExampleObjective {
@@ -186,10 +216,10 @@ void gloptipolyConstrainedMinimization() {
       Vector3d(0, 0, 0), Vector3d(2, numeric_limits<double>::infinity(), 3));
 
   prog.setInitialGuess({x}, Vector3d(.5, 0, 3) + .1 * Vector3d::Random());
-  prog.solve();
-  prog.printSolution();
-
-  valuecheckMatrix(x.value(), Vector3d(.5, 0, 3), 1e-4);
+  runNonlinearProgram(prog, [&]() {
+      prog.printSolution();
+      valuecheckMatrix(x.value(), Vector3d(.5, 0, 3), 1e-4);
+    });
 }
 
 /** Simple linear complementarity problem example.
@@ -216,19 +246,14 @@ void simpleLCP() {
 }
 
 int main(int argc, char* argv[]) {
-  // SNOPT tests
-  try {
-    testAddFunction();
-    trivialLeastSquares();
-    sixHumpCamel();
-    gloptipolyConstrainedMinimization();
-  } catch (const std::exception& e) {
-    // If the exception is SNOPT unavailble, skip the remaining snopt tests
-    // and proceed; if not, reraise it to fail.
-    if (std::string(e.what()) != "SNOPT unavailable") {
-      throw;
-    }
-  }
+  // Nonlinear program tests.  Some tests will be skipped if no
+  // appropriate solver is available.
+  testAddFunction();
+  trivialLeastSquares();
+  sixHumpCamel();
+  gloptipolyConstrainedMinimization();
+
+  // LCP tests.
   simpleLCP();
   return 0;
 }
