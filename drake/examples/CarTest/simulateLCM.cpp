@@ -110,6 +110,7 @@ int main(int argc, char* argv[]) {
 
   PRINT_VAR(getNumInputs(*rigid_body_sys));
 
+#if 0
   MatrixXd Kp(getNumInputs(*rigid_body_sys), tree->num_positions),
       Kd(getNumInputs(*rigid_body_sys), tree->num_velocities);
   Matrix<double, Eigen::Dynamic, 3> map_driving_cmd_to_x_d(
@@ -140,6 +141,9 @@ int main(int argc, char* argv[]) {
       }
     }
   }
+#endif
+
+#if 0
   auto vehicle_with_pd =
       make_shared<PDControlSystem<RigidBodySystem>>(rigid_body_sys, Kp, Kd);
   auto vehicle_sys = cascade(
@@ -150,6 +154,11 @@ int main(int argc, char* argv[]) {
   auto visualizer =
       make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm, tree);
   auto sys = cascade(vehicle_sys, visualizer);
+#endif
+  //this replaces the above commented out code with the "auto sys = cascade(vehicle_sys, visualizer);" at the end
+  auto visualizer =
+      make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm, tree);
+  auto sys = cascade(rigid_body_sys, visualizer);  
 
   SimulationOptions options = default_simulation_options;
   rigid_body_sys->penetration_stiffness = 5000.0;
