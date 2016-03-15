@@ -2,12 +2,12 @@
 #include <stdexcept>
 #include "NloptSolver.h"
 
-bool Drake::MathematicalProgramNloptSolver::available() const {
+bool Drake::NloptSolver::available() const {
   // TODO make this "true" once the interface exists.
   return false;
 }
 
-bool Drake::MathematicalProgramNloptSolver::solve(
+bool Drake::NloptSolver::solve(
     OptimizationProblem &prog) const {
 
   // TODO implement this.
