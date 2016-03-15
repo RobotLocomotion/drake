@@ -1,4 +1,5 @@
 
+#include "MathematicalProgram.h"
 #include "Optimization.h"
 
 #include <cstdlib>
@@ -25,7 +26,7 @@ unsigned int constexpr snopt_mincw = 500;
 unsigned int constexpr snopt_miniw = 500;
 unsigned int constexpr snopt_minrw = 500;
 
-bool Drake::OptimizationProblem::NonlinearProgram::hasSNOPT() const {
+bool Drake::MathematicalProgramSNOPTSolver::available() const {
   return true;
 }
 
@@ -248,7 +249,7 @@ static int snopt_userfun(snopt::integer* Status, snopt::integer* n,
   return 0;
 }
 
-bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(
+bool Drake::MathematicalProgramSNOPTSolver::solve(
     OptimizationProblem& prog) const {
   auto d = prog.getSolverData<SNOPTData>();
   SNOPTRun cur(*d);
@@ -266,19 +267,20 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(
     std::copy(pcp, pcp + sizeof(current_problem), cu_cp);
   }
 
-  snopt::integer nx = prog.num_vars;
+  snopt::integer nx = prog.getNumVars();
   d->min_alloc_x(nx);
   snopt::doublereal* x = d->x.data();
   snopt::doublereal* xlow = d->xlow.data();
   snopt::doublereal* xupp = d->xupp.data();
+  const Eigen::VectorXd x_initial_guess = prog.getInitialGuess();
   for (int i = 0; i < nx; i++) {
-    x[i] = static_cast<snopt::doublereal>(prog.x_initial_guess(i));
+    x[i] = static_cast<snopt::doublereal>(x_initial_guess(i));
     xlow[i] =
         static_cast<snopt::doublereal>(-numeric_limits<double>::infinity());
     xupp[i] =
         static_cast<snopt::doublereal>(numeric_limits<double>::infinity());
   }
-  for (auto const& binding : prog.bbox_constraints) {
+  for (auto const& binding : prog.getBoundingBoxConstraints()) {
     auto const& c = binding.getConstraint();
     for (const DecisionVariableView& v : binding.getVariableList()) {
       auto const lb = c->getLowerBound(), ub = c->getUpperBound();
@@ -292,7 +294,7 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(
   }
 
   size_t num_nonlinear_constraints = 0, max_num_gradients = nx;
-  for (auto const& binding : prog.generic_constraints) {
+  for (auto const& binding : prog.getGenericConstraints()) {
     auto const& c = binding.getConstraint();
     size_t n = c->getNumConstraints();
     for (const DecisionVariableView& v : binding.getVariableList()) {
@@ -301,7 +303,7 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(
     num_nonlinear_constraints += n;
   }
   size_t num_linear_constraints = 0;
-  for (auto const& binding : prog.linear_equality_constraints) {
+  for (auto const& binding : prog.getLinearEqualityConstraints()) {
     num_linear_constraints += binding.getConstraint()->getNumConstraints();
   }
 
@@ -326,7 +328,7 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(
   size_t constraint_index = 1, grad_index = nx;  // constraint index starts at 1
                                                  // because the objective is the
                                                  // first row
-  for (auto const& binding : prog.generic_constraints) {
+  for (auto const& binding : prog.getGenericConstraints()) {
     auto const& c = binding.getConstraint();
     size_t n = c->getNumConstraints();
 
@@ -351,10 +353,10 @@ bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(
   // http://eigen.tuxfamily.org/dox/group__TutorialSparse.html
   typedef Eigen::Triplet<double> T;
   std::vector<T> tripletList;
-  tripletList.reserve(num_linear_constraints * prog.num_vars);
+  tripletList.reserve(num_linear_constraints * prog.getNumVars());
 
   size_t linear_constraint_index = 0;
-  for (auto const& binding : prog.linear_equality_constraints) {
+  for (auto const& binding : prog.getLinearEqualityConstraints()) {
     auto const& c = binding.getConstraint();
     size_t n = c->getNumConstraints();
     size_t var_index = 0;
