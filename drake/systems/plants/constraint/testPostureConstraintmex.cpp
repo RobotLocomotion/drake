@@ -4,7 +4,7 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 #include <cstring>
 /*
- * [lower_bound,upper_bound] = testPostureConstraintmex(postureConstraint_ptr,t)
+ * [lower_bound, upper_bound] = testPostureConstraintmex(postureConstraint_ptr, t)
  * @param postureConstraint_ptr        A pointer to a PostureConstraint object
  * @param t                            A double scalar, the time to evaluate the
  * lower and upper bounds, This is optional if the constraint is time-invariant
@@ -14,7 +14,7 @@
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs != 2 && nrhs != 1) {
     mexErrMsgIdAndTxt("Drake:testPostureConstraintmex:BadInputs",
-                      "Usage [lb,ub] = testPostureConstraintmex(pc_ptr,t)");
+                      "Usage [lb, ub] = testPostureConstraintmex(pc_ptr, t)");
   }
   double t;
   double* t_ptr;

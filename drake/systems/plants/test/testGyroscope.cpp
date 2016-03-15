@@ -16,7 +16,7 @@ Vector3d getGyroscopeOutput(shared_ptr<RigidBodySystem> const& sys, Vector3d con
 }
 
 
-int main(int argc, char* argv[]) {  
+int main(int argc, char* argv[]) {
 
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
   auto rigid_body_sys = make_shared<RigidBodySystem>();

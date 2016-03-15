@@ -196,8 +196,8 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT PostureConstraint
 
 /*
  * @class MultipleTimeLinearPostureConstraint constrain the posture such that
- *lb(t(1),t(2),...,t(n))<=A_mat(t(1),t(2),t(n))*[q(t(1));q(t(2));...;q(t(n))]<=ub(t(1),t(2),...,t(n))
- *where A_mat is a sparse matrix that only depends on t(1),t(2),...,t(n)
+ *lb(t(1), t(2),..., t(n))<=A_mat(t(1), t(2), t(n))*[q(t(1));q(t(2));...;q(t(n))]<=ub(t(1), t(2),..., t(n))
+ *where A_mat is a sparse matrix that only depends on t(1), t(2),..., t(n)
  *
  * @function eval return the value and gradient of the constraint
  *   @param t      array of time

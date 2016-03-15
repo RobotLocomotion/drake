@@ -7,9 +7,9 @@ using namespace std;
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nrhs != 5) {
     mexErrMsgIdAndTxt("Drake:cylindrical2cartesianmex:IncorrectInputs",
-                      "Usage [x_cartesian,v_cartesian,J,Jdotv] = "
-                      "cylindrical2cartesian(cylinder_axis,cylinder_x_dir,"
-                      "cylinder_origin,x_cylinder,v_cylinder)");
+                      "Usage [x_cartesian, v_cartesian, J, Jdotv] = "
+                      "cylindrical2cartesian(cylinder_axis, cylinder_x_dir,"
+                      "cylinder_origin, x_cylinder, v_cylinder)");
   }
   if (!mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0]) != 3) {
     mexErrMsgIdAndTxt("Drake:cylindrical2cartesianmex:InvalidInput",

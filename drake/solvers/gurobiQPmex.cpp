@@ -9,8 +9,8 @@ using namespace std;
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs < 2) {
     mexErrMsgIdAndTxt("Drake:gurobiQP:NotEnoughInputs",
-                      "Usage [x,status,active] = "
-                      "gurobiQP(Q,f[,Ain,bin,Aeq,beq,lb,ub,active])");
+                      "Usage [x, status, active] = "
+                      "gurobiQP(Q, f[, Ain, bin, Aeq, beq, lb, ub, active])");
   }
   if (nlhs < 1) return;
 

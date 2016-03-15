@@ -29,7 +29,7 @@ size_t RigidBodySystem::getNumOutputs() const {
 
 
 void RigidBodySystem::addSensor(std::shared_ptr<RigidBodySensor> s) {
-  if(s->isDirectFeedthrough()) {
+  if (s->isDirectFeedthrough()) {
     direct_feedthrough = true;
   }
   sensors.push_back(s);
@@ -206,12 +206,12 @@ RigidBodySystem::OutputVector<double> RigidBodySystem::output(const double& t,
                                                               const RigidBodySystem::StateVector<double>& x,
                                                               const RigidBodySystem::InputVector<double>& u) const
 {
-  auto kinsol = tree->doKinematics(x.topRows(tree->num_positions),x.bottomRows(tree->num_velocities));
+  auto kinsol = tree->doKinematics(x.topRows(tree->num_positions), x.bottomRows(tree->num_velocities));
   Eigen::VectorXd y(getNumOutputs());
   y << x;
   int index=getNumStates();
   for (const auto& s : sensors) {
-    y.segment(index,s->getNumOutputs()) = s->output(t,kinsol,u);
+    y.segment(index, s->getNumOutputs()) = s->output(t, kinsol, u);
     index+=s->getNumOutputs();
   }
   return y;
@@ -383,18 +383,18 @@ Eigen::VectorXd RigidBodyAccelerometer::output(const double &t,
   auto xdd = sys.dynamics(t, x, u);
   auto const& tree = sys.getRigidBodyTree();
   auto v_dot = xdd.bottomRows(rigid_body_state.getNumVelocities());
-  Vector3d sensor_origin = Vector3d::Zero(); //assumes sensor coincides with the frame's origin;
+  Vector3d sensor_origin = Vector3d::Zero(); // assumes sensor coincides with the frame's origin;
   auto J = tree->transformPointsJacobian(rigid_body_state, sensor_origin, frame->frame_index, 0, false);
   auto Jdot_times_v = tree->transformPointsJacobianDotTimesV(rigid_body_state, sensor_origin, frame->frame_index, 0);
   Vector4d quat_world_to_body = tree->relativeQuaternion(rigid_body_state, 0, frame->frame_index);
   Vector3d accel_base = Jdot_times_v + J * v_dot;
   Vector3d accel_body = quatRotateVec(quat_world_to_body, accel_base);
-  
+
   return noise_model ? noise_model->generateNoise(accel_body) : accel_body;
 }
 
 RigidBodyGyroscope::RigidBodyGyroscope(RigidBodySystem const& sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame)
-    : RigidBodySensor(sys,name), frame(frame)
+    : RigidBodySensor(sys, name), frame(frame)
 {
 
 }
@@ -403,11 +403,11 @@ Eigen::VectorXd RigidBodyGyroscope::output(const double &t,
                                            const KinematicsCache<double> &rigid_body_state,
                                            const RigidBodySystem::InputVector<double>& u) const
 {
-  //relative twist of body with respect to world expressed in body
+  // relative twist of body with respect to world expressed in body
   auto const& tree = sys.getRigidBodyTree();
   auto relative_twist = tree->relativeTwist(rigid_body_state, 0, frame->frame_index, frame->frame_index);
   Eigen::Vector3d angular_rates = relative_twist.head<3>();
-  
+
   return noise_model ? noise_model->generateNoise(angular_rates) : angular_rates;
 }
 
@@ -492,11 +492,11 @@ Eigen::VectorXd RigidBodyDepthSensor::output(const double &t,
   VectorXd distances(num_pixel_cols*num_pixel_rows);
   Vector3d origin = sys.getRigidBodyTree()->transformPoints(rigid_body_state,
                                                              Vector3d::Zero(),
-                                                             frame->frame_index,0);
+                                                             frame->frame_index, 0);
   auto raycast_endpoints_world = sys.getRigidBodyTree()->transformPoints(rigid_body_state,
                                                                           raycast_endpoints,
-                                                                          frame->frame_index,0);
-  sys.getRigidBodyTree()->collisionRaycast(rigid_body_state,origin, raycast_endpoints, distances);
+                                                                          frame->frame_index, 0);
+  sys.getRigidBodyTree()->collisionRaycast(rigid_body_state, origin, raycast_endpoints, distances);
   // maybe: could publish lcm here (for debugging), since I can easily infer the 3D location in space
   return distances;
 }

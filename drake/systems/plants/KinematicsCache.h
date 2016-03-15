@@ -212,7 +212,7 @@ class KinematicsCache {
   }
 
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> getX() const {
-    if(hasV()) {
+    if (hasV()) {
       Eigen::Matrix<Scalar, Eigen::Dynamic, 1> x(getNumPositions() + getNumVelocities());
       x << q, v;
       return x;
