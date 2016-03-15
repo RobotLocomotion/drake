@@ -6,8 +6,6 @@
 #include "drakeAppUtil.h"
 #include "lcmtypes/drake/lcmt_driving_control_cmd_t.hpp"
 
-#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
-
 using namespace std;
 using namespace Eigen;
 using namespace Drake;
@@ -70,6 +68,8 @@ bool decode(const drake::lcmt_driving_control_cmd_t& msg, double& t,
  */
 
 int main(int argc, char* argv[]) {
+  PRINT_FUNCTION_NAME;
+  
   if (argc < 2) {
     std::cerr << "Usage: " << argv[0] << " vehicle_urdf [world sdf files ...]"
               << std::endl;
@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
 
   auto rigid_body_sys =
       make_shared<RigidBodySystem>(argv[1], floating_base_type);
-  rigid_body_sys->use_multi_contact = true;
+  rigid_body_sys->use_multi_contact = false;
   auto const& tree = rigid_body_sys->getRigidBodyTree();
   for (int i = 2; i < argc; i++)
     tree->addRobotFromSDF(argv[i], DrakeJoint::FIXED);  // add environment
@@ -94,7 +94,7 @@ int main(int argc, char* argv[]) {
     Isometry3d T_element_to_link = Isometry3d::Identity();
     T_element_to_link.translation() << 0, 0,
         -box_depth / 2;  // top of the box is at z=0
-    auto& world = tree->bodies[0];
+    auto& world = tree->bodies[0]; //world is a body with zero mass and zero moment of inertia
     Vector4d color;
     color << 0.9297, 0.7930, 0.6758,
         1;  // was hex2dec({'ee','cb','ad'})'/256 in matlab
@@ -106,9 +106,22 @@ int main(int argc, char* argv[]) {
     tree->updateStaticCollisionElements();
   }
 
+  //tree->drawKinematicTree("graphiviz_test.dot"); //Convert to png image file: dot -Tpng graphiviz_test.dot -o graphiviz_test.png
+
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
 
+  PRINT_VAR(tree->bodies.size());
+  for(auto body: tree->bodies){
+    PRINT_VAR(body->linkname);
+    PRINT_VAR(body->mass);
+    PRINT_VAR(body->hasParent())
+    if(body->hasParent())
+      PRINT_VAR(body->getJoint().getName());
+  }
+
   PRINT_VAR(getNumInputs(*rigid_body_sys));
+  PRINT_VAR(tree->num_positions);
+  PRINT_VAR(tree->num_velocities);
 
 #if 0
   MatrixXd Kp(getNumInputs(*rigid_body_sys), tree->num_positions),
@@ -167,7 +180,7 @@ int main(int argc, char* argv[]) {
   rigid_body_sys->friction_coefficient = 10.0;  // essentially infinite friction
   options.initial_step_size = 5.0e-3;
   options.timeout_seconds = numeric_limits<double>::infinity();
-  options.wait_for_keypress = false;
+  options.wait_for_keypress = true; //WHY?
   options.rk2 = false;
 
   VectorXd x0(rigid_body_sys->getNumStates());

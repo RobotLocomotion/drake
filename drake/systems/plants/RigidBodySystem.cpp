@@ -51,6 +51,11 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   auto v = x.bottomRows(nv);
   auto kinsol = tree->doKinematics(q, v);
 
+  std::cout << "RigidBodySystem::dynamics" << std::endl;
+  PRINT_VAR(nq);
+  PRINT_VAR(nv);
+  PRINT_VAR(num_actuators);
+
   // todo: preallocate the optimization problem and constraints, and simply
   // update them then solve on each function eval.
   // happily, this clunkier version seems fast enough for now

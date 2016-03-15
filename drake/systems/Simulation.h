@@ -82,7 +82,7 @@ void simulate(const System& sys, double ti, double tf,
   while (t < tf) {
     printf(" Time: %12.4f",t);
     if(options.wait_for_keypress){      
-      std::cout << ". Press any key to step the solver...";
+      std::cout << ". Press any key to step the solver. WHY?...";
       std::cin.ignore();
     }else{
       std::cout << std::endl;
