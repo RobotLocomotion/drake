@@ -25,8 +25,6 @@ if (gurobi_FOUND)
 
 endif()
 
-pods_find_pkg_config(snopt_c)
-
 if(MATLAB_FOUND)
   add_mex(lqrmex lqrmex.cpp)
   target_link_libraries(lqrmex drakeUtil)
@@ -34,6 +32,13 @@ endif()
 
 set(optimization_files)
 list(APPEND optimization_files MathematicalProgram.cpp MobyLCP.cpp)
+pods_find_pkg_config(nlopt)
+if (nlopt_FOUND)
+  list(APPEND optimization_files NloptSolver.cpp)
+else()
+  list(APPEND optimization_files NoNlopt.cpp)
+endif(nlopt_FOUND)
+pods_find_pkg_config(snopt_c)
 if (snopt_c_FOUND)
   list(APPEND optimization_files SNOPTWrapper.cpp)
 else()
