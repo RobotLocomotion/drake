@@ -4,7 +4,8 @@
   <model name='prius_1'>
     <pose>0 0 0 0 0 0</pose>
     <link name='chassis_floor'>
-      <pose>0 0 0.385184 0 0 0</pose>
+      <pose>0 0 0.378326 0 0 0</pose>
+      <!-- <pose>0 0 0.385184 0 0 0</pose> -->
       <inertial>
        <pose>0 0 0 0 0 0</pose>
         <mass>57.833</mass>
@@ -31,7 +32,8 @@
     </link>
 
     <link name='front_axle'>
-      <pose>1.40948 0 0.3302 0 0 0</pose>
+      <pose>1.40948 0 0.323342 0 0 0</pose>
+      <!-- <pose>1.40948 0 0.3302 0 0 0</pose> -->
       <visual name='visual'>
         <pose>0 0 0 0 0 0</pose>
         <geometry>
@@ -46,7 +48,8 @@
     </link>
     
     <link name='left_tie_rod_arm'>
-      <pose>1.23701032 .40850253 0.299279 0 0 0</pose>
+      <pose>1.23701032 0.40850253 0.292422 0 0 0</pose>
+      <!-- <pose>1.23701032 0.40850253 0.299279 0 0 0</pose> -->
       <visual name='v2'>
         <pose>.06385963 0.03192981 0 0 0 0.463648</pose>
         <geometry>
@@ -72,7 +75,8 @@
     </link>
 
     <link name='left_hub'>
-      <pose>1.40948 0.618421 0.323342 1.5708 0 0</pose>
+      <pose>1.40948 0.618421 0.316482 1.57079632679 0 0</pose>
+      <!-- <pose>1.40948 0.618421 0.323342 1.57079632679 0 0</pose> -->
       <visual name='visual'>
         <pose>0 0 0 0 0 0</pose>
         <geometry>
@@ -87,8 +91,9 @@
       </visual>
     </link>
 
-    <link name='tie_rod'> 
-      <pose>1.23701 0 0.3302 0 0 0</pose>
+    <link name='tie_rod'>
+      <pose>1.23702 0 0.323342 0 0 0</pose>
+      <!-- <pose>1.23701 0 0.3302 0 0 0</pose> -->
       <visual name='visual'>
         <pose>0 0 0 0 0 0</pose>
         <geometry>
@@ -103,7 +108,8 @@
     </link>
 
     <link name='left_wheel'>
-      <pose>1.40948 0.801993 0.323342 1.5708 0 0</pose>
+      <pose>1.40948 0.801993 0.3164819999999999855511135 1.57079632679 0 0</pose>
+      <!-- <pose>1.40948 0.801993 0.323342 1.57079632679 0 0</pose> -->
       <inertial>
         <mass>14.28</mass>
         <inertia>
@@ -139,7 +145,7 @@
         </material>
       </visual>
       <visual name='m1'>
-        <pose>0 0 -.1075 0 1.5708 1.5708</pose>
+        <pose>0 0 -.1075 0 1.57079632679 1.57079632679</pose>
         <material>
           <diffuse>0.9 0.9 0.9 1</diffuse>
         </material>
@@ -163,7 +169,8 @@
     </link>
 
     <link name='right_tie_rod_arm'>
-      <pose>1.23701032 -.40850253 0.299279 0 0 0</pose>
+      <pose>1.23701032 -0.40850253 0.292422 0 0 0</pose>
+      <!-- <pose>1.23701032 -0.40850253 0.299279 0 0 0</pose> -->
       <visual name='v1'>
         <pose>.17246863 -0.10851978 0 0 -0 0</pose>
         <geometry>
@@ -189,7 +196,8 @@
     </link>
 
     <link name='right_hub'>
-      <pose>1.40948 -0.618421 0.323342 1.5708 0 0</pose>
+      <pose>1.40948 -0.61841684 0.316482 1.57079632679 0 0</pose>
+      <!-- <pose>1.40948 -0.618421 0.323342 1.57079632679 0 0</pose> -->
       <visual name='visual'>
         <pose>0 0 0 0 0 0</pose>
         <geometry>
@@ -205,7 +213,8 @@
     </link>
 
     <link name='right_wheel'>
-      <pose>1.40948 -0.801993 0.323342 1.5708 0 0</pose>
+      <pose>1.40948 -0.80198684 0.3164819999999999855511135 1.57079632679 0 0</pose>
+      <!-- <pose>1.40948 -0.801993 0.323342 1.57079632679 0 0</pose> -->
       <inertial>
         <mass>14.28</mass>
         <inertia>
@@ -218,7 +227,7 @@
         </inertia>
       </inertial>
       <visual name='m2'>
-        <pose>0 0 .1075 0 1.57079 3.14159</pose>
+        <pose>0 0 .1075 0 1.57079632679 3.14159265359</pose>
         <material>
           <diffuse>0.9 0.9 0.9 1</diffuse>
         </material>
@@ -241,7 +250,7 @@
         </material>
       </visual>
       <visual name='m1'>
-        <pose>0 0 .1075 0 1.5708 1.5708</pose>
+        <pose>0 0 0.1075 0 1.57079632679 1.57079632679</pose>
         <material>
           <diffuse>0.9 0.9 0.9 1</diffuse>
         </material>
@@ -265,7 +274,7 @@
     </link>
 
    <link name='left_wheel_rear'>
-      <pose>-1.40948 0.801993 0.323342 1.5708 0 0</pose>
+      <pose>-1.40948 0.801993 0.323342 1.57079632679 0 0</pose>
       <inertial>
         <mass>14.28</mass>
         <inertia>
@@ -278,7 +287,7 @@
         </inertia>
       </inertial>
       <visual name='m2'>
-        <pose>0 0 -.1075 0 1.57079 3.14159</pose>
+        <pose>0 0 -.1075 0 1.57079632679 3.14159265359</pose>
         <material>
           <diffuse>0.9 0.9 0.9 1</diffuse>
         </material>
@@ -289,7 +298,7 @@
         </geometry>
       </visual>
       <visual name='m1'>
-        <pose>0 0 -.1075 0 1.5708 1.5708</pose>
+        <pose>0 0 -.1075 0 1.57079632679 1.57079632679</pose>
         <material>
           <diffuse>0.9 0.9 0.9 1</diffuse>
         </material>
@@ -325,7 +334,7 @@
     </link>
 
     <link name='right_wheel_rear'>
-      <pose>-1.40948 -0.801993 0.323342 1.5708 0 0</pose>
+      <pose>-1.40948 -0.801993 0.323342 1.57079632679 0 0</pose>
       <inertial>
         <mass>14.28</mass>
         <inertia>
@@ -338,7 +347,7 @@
         </inertia>
       </inertial>
       <visual name='m2'>
-        <pose>0 0 .1075 0 1.57079 3.14159</pose>
+        <pose>0 0 .1075 0 1.57079632679 3.14159265359</pose>
         <material>
           <diffuse>0.9 0.9 0.9 1</diffuse>
         </material>
@@ -361,7 +370,7 @@
         </material>
       </visual>
       <visual name='m1'>
-        <pose>0 0 .1075 0 1.5708 1.5708</pose>
+        <pose>0 0 .1075 0 1.57079632679 1.57079632679</pose>
         <material>
           <diffuse>0.9 0.9 0.9 1</diffuse>
         </material>
@@ -479,7 +488,8 @@
     <joint name='steering' type='revolute'>
       <parent>front_axle</parent>
       <child>left_tie_rod_arm</child>
-      <pose>.17246863 .08623431 0 0 0 0</pose>
+      <pose>0.17246968 0.08622747 0 0 0 0</pose>
+      <!-- <pose>0.17246863 0.08623431 0 0 0 0</pose> -->
       <axis>
         <xyz>0 0 1</xyz>
         <limit>
@@ -521,7 +531,8 @@
     <joint name='axle_tie_rod_arm' type='revolute'>
       <parent>front_axle</parent>
       <child>right_tie_rod_arm</child>
-      <pose>.17246863 -.08623431 0 0 0 0</pose>
+      <pose>0.17246968 -0.08622747 0 0 0 0</pose>
+      <!-- <pose>0.17246863 -0.08623431 0 0 0 0</pose> -->
       <axis>
         <xyz>0 0 1</xyz>
         <limit>
