@@ -22,19 +22,28 @@ int main(int argc, char* argv[]) {
 
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
   auto rigid_body_sys = make_shared<RigidBodySystem>();
+
+  rigid_body_sys->penetration_stiffness = 50.0;
+  rigid_body_sys->penetration_damping = 5.0;
+
   auto const & tree = rigid_body_sys->getRigidBodyTree();
-  rigid_body_sys->addRobotFromFile(getDrakePath()+"/examples/Quadrotor/quadrotor.urdf", floating_base_type);
+  rigid_body_sys->addRobotFromFile(getDrakePath()+"/examples/Quadrotor/quadrotor_fla.urdf", floating_base_type);
 
   auto sensor_frame = tree->findFrame("body");
 
   auto accelerometer = make_shared<RigidBodyAccelerometer>(*rigid_body_sys, "accelerometer", sensor_frame);
   auto gyroscope = make_shared<RigidBodyGyroscope>(*rigid_body_sys, "gyroscope", sensor_frame);
+  auto magnetometer = make_shared<RigidBodyMagnetometer>(*rigid_body_sys, "magnetometer", sensor_frame, 0.0);
   auto noise_model = make_shared<AdditiveGaussianNoiseModel<double, 3, Vector3d>>(0, 0.01);
+
   accelerometer->setNoiseModel(noise_model);
+  accelerometer->setGravityCompensation(true);
   gyroscope->setNoiseModel(noise_model);
+  magnetometer->setNoiseModel(noise_model);
+
   rigid_body_sys->addSensor(accelerometer);
   rigid_body_sys->addSensor(gyroscope);
-
+  rigid_body_sys->addSensor(magnetometer); 
 
   double box_width = 1000;
   double box_depth = 10;
@@ -53,7 +62,7 @@ int main(int argc, char* argv[]) {
   auto visualizer = make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm,tree);
   
   auto quad_control_to_rbsys_input = make_shared<Gain<QuadrotorInput, RigidBodySystem::InputVector>>(Eigen::Matrix4d::Identity());
-  auto rbsys_output_to_quad_state = make_shared<Gain<RigidBodySystem::StateVector, QuadrotorOutput>>(Eigen::Matrix<double, 19, 19>::Identity());
+  auto rbsys_output_to_quad_state = make_shared<Gain<RigidBodySystem::StateVector, QuadrotorOutput>>(Eigen::Matrix<double, 22, 22>::Identity());
   
   auto sys_with_lcm_input = cascade(quad_control_to_rbsys_input, rigid_body_sys);
   
@@ -68,7 +77,7 @@ int main(int argc, char* argv[]) {
     
   auto lcmio_with_vis = cascade(sys_with_vis, rbsys_output_to_quad_state);
 
-  x0(2) = 1;
+  x0(2) = 0.2;
 
   runLCM(lcmio_with_vis, lcm, 0, final_time, x0, options);
   
