@@ -59,7 +59,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                           // body "world".  zap it because we will construct one
                           // again below
 
-  //  model->robot_name = get_strings(mxGetPropertySafe(pRBM,0,"name"));
+  //  model->robot_name = get_strings(mxGetPropertySafe(pRBM, 0,"name"));
 
   const mxArray* pBodies = mxGetPropertySafe(pRBM, 0, "body");
   if (!pBodies)
@@ -75,7 +75,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 
   for (int i = 0; i < num_bodies; i++) {
     // DEBUG
-    // mexPrintf("constructModelmex: body %d\n",i);
+    // mexPrintf("constructModelmex: body %d\n", i);
     // END_DEBUG
     shared_ptr<RigidBody> b(new RigidBody());
     b->body_index = i;

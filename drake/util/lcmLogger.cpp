@@ -77,7 +77,7 @@ static void message_handler(const lcm_recv_buf_t *rbuf, const char *channel,
   memcpy(mxGetData(m.data), rbuf->data, rbuf->data_size);
   mexMakeArrayPersistent(m.data);
 
-  //  mexPrintf("lcm log: %s at %f\n",channel,m.simtime);
+  //  mexPrintf("lcm log: %s at %f\n", channel, m.simtime);
   message_log.push_back(m);
 }
 
@@ -144,7 +144,7 @@ static void mdlTerminate(SimStruct *S) {
   char *log_variable_name = mxArrayToString(ssGetSFcnParam(S, 1));
 
   //  mexPrintf("Writing LCM log with %d records to
-  //  %s\n",message_log.size(),log_variable_name);
+  //  %s\n", message_log.size(), log_variable_name);
 
   const char *fieldnames[] = {"simtime", "channel", "data"};
 

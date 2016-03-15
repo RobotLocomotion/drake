@@ -5,7 +5,7 @@
 
 namespace Drake {
 
-/** AffineSystem<StateVector,InputVector,OutputVector>
+/** AffineSystem<StateVector, InputVector, OutputVector>
  * @brief Builds an affine system from it's state-space matrix coefficients
  * @concept{system_concept}
  *

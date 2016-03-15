@@ -81,7 +81,7 @@ class DRAKERBM_EXPORT RigidBody {
   std::string linkname;
   std::string model_name;  // todo: replace robotnum w/ model_name
   int robotnum;            // uses 0-index. starts from 0
-  // note: it's very ugly, but parent,dofnum,and pitch also exist currently
+  // note: it's very ugly, but parent, dofnum, and pitch also exist currently
   // (independently) at the RigidBodyTree level to represent the featherstone
   // structure.  this version is for the kinematics.
   std::shared_ptr<RigidBody> parent;

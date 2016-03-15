@@ -4,9 +4,9 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 #include <cstring>
 /*
- * [num_constraint,constraint_val,iAfun,jAvar,A
- * ,constraint_name,lower_bound,upper_bound] =
- * testMultipleTimeLinearPostureConstraintmex(kinCnst_ptr,q,t)
+ * [num_constraint, constraint_val, iAfun, jAvar, A
+ * , constraint_name, lower_bound, upper_bound] =
+ * testMultipleTimeLinearPostureConstraintmex(kinCnst_ptr, q, t)
  * @param kinCnst_ptr           A pointer to a
  * MultipleTimeLinearPostureConstraint object
  * @param q                     A nqxnT double vector
@@ -14,8 +14,8 @@
  * constraint value, bounds and name.
  * @retval num_constraint       The number of constraint active at time t
  * @retval constraint_val       The value of the constraint at time t
- * @retval iAfun,jAvar,A        The sparse matrix
- * sparse(iAfun,jAvar,A,num_constraint,numel(q)) is the gradient of
+ * @retval iAfun, jAvar, A        The sparse matrix
+ * sparse(iAfun, jAvar, A, num_constraint, numel(q)) is the gradient of
  * constraint_val w.r.t q
  * @retval constraint_name      The name of the constraint at time t
  * @retval lower_bound          The lower bound of the constraint at time t
@@ -26,8 +26,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs != 3 || nlhs != 8) {
     mexErrMsgIdAndTxt(
         "Drake:testMultipleTimeLinearPostureConstrainttmex:BadInputs",
-        "Usage [num_cnst,cnst_val,iAfun,jAvar,A,cnst_name,lb,ub] = "
-        "testMultipleTimeLinearPostureConstraintmex(kinCnst,q,t)");
+        "Usage [num_cnst, cnst_val, iAfun, jAvar, A, cnst_name, lb, ub] = "
+        "testMultipleTimeLinearPostureConstraintmex(kinCnst, q, t)");
   }
   MultipleTimeLinearPostureConstraint* cnst =
       (MultipleTimeLinearPostureConstraint*)getDrakeMexPointer(prhs[0]);

@@ -117,7 +117,7 @@ typename Derived::Scalar quatNorm(const Eigen::MatrixBase<Derived>& q) {
  *
  * [1] Kuffner, J.J., "Effective sampling and distance metrics for 3D rigid
  * body path planning," Robotics and Automation, 2004. Proceedings. ICRA '04.
- * 2004 IEEE International Conference on , vol.4, no., pp.3993,3998 Vol.4,
+ * 2004 IEEE International Conference on , vol.4, no., pp.3993, 3998 Vol.4,
  * April 26-May 1, 2004
  * doi: 10.1109/ROBOT.2004.1308895
  */
@@ -424,7 +424,7 @@ Eigen::Matrix<typename Derived::Scalar, 4, 1> rotmat2quat(
       break;
     }
     case 1: {
-      // val = M(1,1) - M(2,2) - M(3,3)
+      // val = M(1, 1) - M(2, 2) - M(3, 3)
       Scalar s = 2.0 * sqrt(1.0 + val);
       w = (M(2, 1) - M(1, 2)) / s;
       x = 0.25 * s;
@@ -433,7 +433,7 @@ Eigen::Matrix<typename Derived::Scalar, 4, 1> rotmat2quat(
       break;
     }
     case 2: {
-      //  % val = M(2,2) - M(1,1) - M(3,3)
+      //  % val = M(2, 2) - M(1, 1) - M(3, 3)
       Scalar s = 2.0 * (sqrt(1.0 + val));
       w = (M(0, 2) - M(2, 0)) / s;
       x = (M(0, 1) + M(1, 0)) / s;
@@ -442,7 +442,7 @@ Eigen::Matrix<typename Derived::Scalar, 4, 1> rotmat2quat(
       break;
     }
     default: {
-      // val = M(3,3) - M(2,2) - M(1,1)
+      // val = M(3, 3) - M(2, 2) - M(1, 1)
       Scalar s = 2.0 * (sqrt(1.0 + val));
       w = (M(1, 0) - M(0, 1)) / s;
       x = (M(0, 2) + M(2, 0)) / s;
@@ -673,7 +673,7 @@ drotmat2quat(const Eigen::MatrixBase<DerivedR>& R,
       break;
     }
     case 1: {
-      // val = M(1,1) - M(2,2) - M(3,3)
+      // val = M(1, 1) - M(2, 2) - M(3, 3)
       auto dvaldq = dR11_dq - dR22_dq - dR33_dq;
       auto s = 2.0 * sqrt(1.0 + val);
       auto ssquare = s * s;
@@ -688,7 +688,7 @@ drotmat2quat(const Eigen::MatrixBase<DerivedR>& R,
       break;
     }
     case 2: {
-      // val = M(2,2) - M(1,1) - M(3,3)
+      // val = M(2, 2) - M(1, 1) - M(3, 3)
       auto dvaldq = -dR11_dq + dR22_dq - dR33_dq;
       auto s = 2.0 * (sqrt(1.0 + val));
       auto ssquare = s * s;
@@ -703,7 +703,7 @@ drotmat2quat(const Eigen::MatrixBase<DerivedR>& R,
       break;
     }
     default: {
-      // val = M(3,3) - M(2,2) - M(1,1)
+      // val = M(3, 3) - M(2, 2) - M(1, 1)
       auto dvaldq = -dR11_dq - dR22_dq + dR33_dq;
       auto s = 2.0 * (sqrt(1.0 + val));
       auto ssquare = s * s;

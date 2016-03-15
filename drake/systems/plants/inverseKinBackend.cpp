@@ -751,8 +751,8 @@ void inverseKinBackend(
         xlow[k] = joint_limit_min(k, i);
         xupp[k] = joint_limit_max(k, i);
       }
-      // memcpy(xlow,joint_limit_min.col(i).data(),sizeof(double)*nq);
-      // memcpy(xupp,joint_limit_max.col(i).data(),sizeof(double)*nq);
+      // memcpy(xlow, joint_limit_min.col(i).data(), sizeof(double)*nq);
+      // memcpy(xupp, joint_limit_max.col(i).data(), sizeof(double)*nq);
       if (qscActiveFlag) {
         for (int k = 0; k < num_qsc_pts; k++) {
           xlow[nq + k] = 0.0;
@@ -767,8 +767,8 @@ void inverseKinBackend(
         Flow[1 + k] = Cmin_array[i](k);
         Fupp[1 + k] = Cmax_array[i](k);
       }
-      // memcpy(&Flow[1],Cmin_array[i].data(),sizeof(double)*nc_array[i]);
-      // memcpy(&Fupp[1],Cmax_array[i].data(),sizeof(double)*nc_array[i]);
+      // memcpy(&Flow[1], Cmin_array[i].data(), sizeof(double)*nc_array[i]);
+      // memcpy(&Fupp[1], Cmax_array[i].data(), sizeof(double)*nc_array[i]);
       ti = const_cast<double*>(&t[i]);
       q_nom_i = q_nom.col(i);
       snopt::doublereal* x = new snopt::doublereal[nx];
@@ -776,24 +776,24 @@ void inverseKinBackend(
         for (int k = 0; k < nq; k++) {
           x[k] = q_seed(k, i);
         }
-        // memcpy(x,q_seed.col(i).data(),sizeof(double)*nq);
+        // memcpy(x, q_seed.col(i).data(), sizeof(double)*nq);
       } else {
         if (i == 0) {
           for (int k = 0; k < nq; k++) {
             x[k] = q_seed(k, i);
           }
-          // memcpy(x,q_seed.col(i).data(),sizeof(double)*nq);
+          // memcpy(x, q_seed.col(i).data(), sizeof(double)*nq);
         } else {
           if (INFO_snopt[i - 1] > 10) {
             for (int k = 0; k < nq; k++) {
               x[k] = q_seed(k, i);
             }
-            // memcpy(x,q_seed.col(i).data(),sizeof(double)*nq);
+            // memcpy(x, q_seed.col(i).data(), sizeof(double)*nq);
           } else {
             for (int k = 0; k < nq; k++) {
               x[k] = q_sol(k, i - 1);
             }
-            // memcpy(x,q_sol.col(i-1).data(),sizeof(double)*nq);
+            // memcpy(x, q_sol.col(i-1).data(), sizeof(double)*nq);
           }
         }
       }
@@ -839,7 +839,7 @@ void inverseKinBackend(
       prnt_len = strlen(printname);
       spec_len = strlen(specname);
       npname = strlen(Prob);
-      snopenappend_(&iPrint,printname, &INFO_snopt[i], prnt_len);*/
+      snopenappend_(&iPrint, printname, &INFO_snopt[i], prnt_len);*/
 
       snopt::sninit_(&iPrint, &iSumm, cw.get(), &lencw, iw.get(), &leniw,
                      rw.get(), &lenrw, 8 * lencw);
@@ -847,24 +847,24 @@ void inverseKinBackend(
                      &mincw, &miniw, &minrw, cw.get(), &lencw, iw.get(), &leniw,
                      rw.get(), &lenrw, 8 * lencw);
       if (minrw > lenrw) {
-        // mexPrintf("reallocation rw with size %d\n",minrw);
+        // mexPrintf("reallocation rw with size %d\n", minrw);
         lenrw = minrw;
         rw.reset(new snopt::doublereal[lenrw]);
       }
       if (miniw > leniw) {
-        // mexPrintf("reallocation iw with size %d\n",miniw);
+        // mexPrintf("reallocation iw with size %d\n", miniw);
         leniw = miniw;
         iw.reset(new snopt::integer[leniw]);
       }
       if (mincw > lencw) {
-        // mexPrintf("reallocation cw with size %d\n",mincw);
+        // mexPrintf("reallocation cw with size %d\n", mincw);
         lencw = mincw;
         cw.reset(new char[8 * lencw]);
       }
 
       snopt::sninit_(&iPrint, &iSumm, cw.get(), &lencw, iw.get(), &leniw,
                      rw.get(), &lenrw, 8 * lencw);
-      // snopt::snfilewrapper_(specname,&iSpecs,&INFO_snopt[i],cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw,spec_len,8*lencw);
+      // snopt::snfilewrapper_(specname,&iSpecs,&INFO_snopt[i], cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw, spec_len, 8*lencw);
       char strOpt1[200] = "Derivative option";
       snopt::integer DerOpt = 1,
                      strOpt_len = static_cast<snopt::integer>(strlen(strOpt1));
@@ -902,50 +902,50 @@ void inverseKinBackend(
       double* f = new double[nF];
       double* G = new double[nG];
       model->doKinematics(x);
-      IK_cost_fun(x,f[0],G);
+      IK_cost_fun(x, f[0], G);
       IK_constraint_fun(x,&f[1],&G[nq]);
-      mxArray* f_ptr = mxCreateDoubleMatrix(nF,1,mxREAL);
-      mxArray* G_ptr = mxCreateDoubleMatrix(nG,1,mxREAL);
-      memcpy(mxGetPrSafe(f_ptr),f,sizeof(double)*(nF));
-      memcpy(mxGetPrSafe(G_ptr),G,sizeof(double)*(nG));
-      mxSetCell(plhs[0],0,f_ptr);
-      mxSetCell(plhs[0],1,G_ptr);
-      printf("get f,G\n");
+      mxArray* f_ptr = mxCreateDoubleMatrix(nF, 1, mxREAL);
+      mxArray* G_ptr = mxCreateDoubleMatrix(nG, 1, mxREAL);
+      memcpy(mxGetPrSafe(f_ptr), f, sizeof(double)*(nF));
+      memcpy(mxGetPrSafe(G_ptr), G, sizeof(double)*(nG));
+      mxSetCell(plhs[0], 0, f_ptr);
+      mxSetCell(plhs[0], 1, G_ptr);
+      printf("get f, G\n");
 
       double* iGfun_tmp = new double[nG];
       double* jGvar_tmp = new double[nG];
-      mxArray* iGfun_ptr = mxCreateDoubleMatrix(nG,1,mxREAL);
-      mxArray* jGvar_ptr = mxCreateDoubleMatrix(nG,1,mxREAL);
+      mxArray* iGfun_ptr = mxCreateDoubleMatrix(nG, 1, mxREAL);
+      mxArray* jGvar_ptr = mxCreateDoubleMatrix(nG, 1, mxREAL);
       for(int k = 0;k<nG;k++)
       {
         iGfun_tmp[k] = (double) iGfun[k];
         jGvar_tmp[k] = (double) jGvar[k];
       }
-      memcpy(mxGetPrSafe(iGfun_ptr),iGfun_tmp,sizeof(double)*nG);
-      memcpy(mxGetPrSafe(jGvar_ptr),jGvar_tmp,sizeof(double)*nG);
-      mxSetCell(plhs[0],2,iGfun_ptr);
-      mxSetCell(plhs[0],3,jGvar_ptr);
+      memcpy(mxGetPrSafe(iGfun_ptr), iGfun_tmp, sizeof(double)*nG);
+      memcpy(mxGetPrSafe(jGvar_ptr), jGvar_tmp, sizeof(double)*nG);
+      mxSetCell(plhs[0], 2, iGfun_ptr);
+      mxSetCell(plhs[0], 3, jGvar_ptr);
       printf("get iGfun jGvar\n");
 
-      mxArray* Fupp_ptr = mxCreateDoubleMatrix(nF,1,mxREAL);
-      mxArray* Flow_ptr = mxCreateDoubleMatrix(nF,1,mxREAL);
-      memcpy(mxGetPrSafe(Fupp_ptr),Fupp,sizeof(double)*nF);
-      memcpy(mxGetPrSafe(Flow_ptr),Flow,sizeof(double)*nF);
-      mxSetCell(plhs[0],4,Fupp_ptr);
-      mxSetCell(plhs[0],5,Flow_ptr);
+      mxArray* Fupp_ptr = mxCreateDoubleMatrix(nF, 1, mxREAL);
+      mxArray* Flow_ptr = mxCreateDoubleMatrix(nF, 1, mxREAL);
+      memcpy(mxGetPrSafe(Fupp_ptr), Fupp, sizeof(double)*nF);
+      memcpy(mxGetPrSafe(Flow_ptr), Flow, sizeof(double)*nF);
+      mxSetCell(plhs[0], 4, Fupp_ptr);
+      mxSetCell(plhs[0], 5, Flow_ptr);
       printf("get Fupp Flow\n");
 
-      mxArray* xupp_ptr = mxCreateDoubleMatrix(nx,1,mxREAL);
-      mxArray* xlow_ptr = mxCreateDoubleMatrix(nx,1,mxREAL);
-      memcpy(mxGetPrSafe(xupp_ptr),xupp,sizeof(double)*nx);
-      memcpy(mxGetPrSafe(xlow_ptr),xlow,sizeof(double)*nx);
-      mxSetCell(plhs[0],6,xupp_ptr);
-      mxSetCell(plhs[0],7,xlow_ptr);
+      mxArray* xupp_ptr = mxCreateDoubleMatrix(nx, 1, mxREAL);
+      mxArray* xlow_ptr = mxCreateDoubleMatrix(nx, 1, mxREAL);
+      memcpy(mxGetPrSafe(xupp_ptr), xupp, sizeof(double)*nx);
+      memcpy(mxGetPrSafe(xlow_ptr), xlow, sizeof(double)*nx);
+      mxSetCell(plhs[0], 6, xupp_ptr);
+      mxSetCell(plhs[0], 7, xlow_ptr);
       printf("get xupp xlow\n");
 
-      mxArray* iAfun_ptr = mxCreateDoubleMatrix(lenA,1,mxREAL);
-      mxArray* jAvar_ptr = mxCreateDoubleMatrix(lenA,1,mxREAL);
-      mxArray* A_ptr = mxCreateDoubleMatrix(lenA,1,mxREAL);
+      mxArray* iAfun_ptr = mxCreateDoubleMatrix(lenA, 1, mxREAL);
+      mxArray* jAvar_ptr = mxCreateDoubleMatrix(lenA, 1, mxREAL);
+      mxArray* A_ptr = mxCreateDoubleMatrix(lenA, 1, mxREAL);
       double* iAfun_tmp = new double[lenA];
       double* jAvar_tmp = new double[lenA];
       for(int k = 0;k<lenA;k++)
@@ -953,16 +953,16 @@ void inverseKinBackend(
         iAfun_tmp[k] = (double) iAfun[k];
         jAvar_tmp[k] = (double) jAvar[k];
       }
-      memcpy(mxGetPrSafe(iAfun_ptr),iAfun_tmp,sizeof(double)*lenA);
-      memcpy(mxGetPrSafe(jAvar_ptr),jAvar_tmp,sizeof(double)*lenA);
-      memcpy(mxGetPrSafe(A_ptr),A,sizeof(double)*lenA);
-      mxSetCell(plhs[0],8,iAfun_ptr);
-      mxSetCell(plhs[0],9,jAvar_ptr);
-      mxSetCell(plhs[0],10,A_ptr);
+      memcpy(mxGetPrSafe(iAfun_ptr), iAfun_tmp, sizeof(double)*lenA);
+      memcpy(mxGetPrSafe(jAvar_ptr), jAvar_tmp, sizeof(double)*lenA);
+      memcpy(mxGetPrSafe(A_ptr), A, sizeof(double)*lenA);
+      mxSetCell(plhs[0], 8, iAfun_ptr);
+      mxSetCell(plhs[0], 9, jAvar_ptr);
+      mxSetCell(plhs[0], 10, A_ptr);
       printf("get iAfun jAvar A\n");
 
       mxArray* nF_ptr = mxCreateDoubleScalar((double) nF);
-      mxSetCell(plhs[0],11,nF_ptr);*/
+      mxSetCell(plhs[0], 11, nF_ptr);*/
       snopt::snopta_(&Cold, &nF, &nx, &nxname, &nFname, &ObjAdd, &ObjRow, Prob,
                      snoptIKfun, iAfun, jAvar, &lenA, &lenA, A, iGfun, jGvar,
                      &nG, &nG, xlow, xupp, xnames, Flow, Fupp, Fnames, x,
@@ -1203,8 +1203,8 @@ void inverseKinBackend(
           xupp[j * (nq + num_qsc_pts) + k] =
               joint_limit_max((j + qstart_idx) * nq + k);
         }
-        // memcpy(xlow+j*(nq+num_qsc_pts),joint_limit_min.data()+(j+qstart_idx)*nq,sizeof(double)*nq);
-        // memcpy(xupp+j*(nq+num_qsc_pts),joint_limit_max.data()+(j+qstart_idx)*nq,sizeof(double)*nq);
+        // memcpy(xlow+j*(nq+num_qsc_pts), joint_limit_min.data()+(j+qstart_idx)*nq, sizeof(double)*nq);
+        // memcpy(xupp+j*(nq+num_qsc_pts), joint_limit_max.data()+(j+qstart_idx)*nq, sizeof(double)*nq);
         for (int k = 0; k < num_qsc_pts; k++) {
           xlow[j * (nq + num_qsc_pts) + nq + k] = 0.0;
           xupp[j * (nq + num_qsc_pts) + nq + k] = 1.0;
@@ -1214,8 +1214,8 @@ void inverseKinBackend(
           xlow[j * nq + k] = joint_limit_min(k, j + qstart_idx);
           xupp[j * nq + k] = joint_limit_max(k, j + qstart_idx);
         }
-        // memcpy(xlow+j*nq,joint_limit_min.col(j+qstart_idx).data(),sizeof(double)*nq);
-        // memcpy(xupp+j*nq,joint_limit_max.col(j+qstart_idx).data(),sizeof(double)*nq);
+        // memcpy(xlow+j*nq, joint_limit_min.col(j+qstart_idx).data(), sizeof(double)*nq);
+        // memcpy(xupp+j*nq, joint_limit_max.col(j+qstart_idx).data(), sizeof(double)*nq);
       }
     }
     if (fixInitialState) {
@@ -1223,8 +1223,8 @@ void inverseKinBackend(
         xlow[qdotf_idx[0] + k] = qdf_lb(k);
         xupp[qdotf_idx[0] + k] = qdf_ub(k);
       }
-      // memcpy(xlow+qdotf_idx[0],qdf_lb.data(),sizeof(double)*nq);
-      // memcpy(xupp+qdotf_idx[0],qdf_ub.data(),sizeof(double)*nq);
+      // memcpy(xlow+qdotf_idx[0], qdf_lb.data(), sizeof(double)*nq);
+      // memcpy(xupp+qdotf_idx[0], qdf_ub.data(), sizeof(double)*nq);
     } else {
       for (int k = 0; k < nq; k++) {
         xlow[qdot0_idx[0] + k] = qd0_lb(k);
@@ -1232,10 +1232,10 @@ void inverseKinBackend(
         xlow[qdotf_idx[0] + k] = qdf_lb(k);
         xupp[qdotf_idx[0] + k] = qdf_ub(k);
       }
-      // memcpy(xlow+qdot0_idx[0], qd0_lb.data(),sizeof(double)*nq);
-      // memcpy(xupp+qdot0_idx[0], qd0_ub.data(),sizeof(double)*nq);
-      // memcpy(xlow+qdotf_idx[0], qdf_lb.data(),sizeof(double)*nq);
-      // memcpy(xupp+qdotf_idx[0], qdf_ub.data(),sizeof(double)*nq);
+      // memcpy(xlow+qdot0_idx[0], qd0_lb.data(), sizeof(double)*nq);
+      // memcpy(xupp+qdot0_idx[0], qd0_ub.data(), sizeof(double)*nq);
+      // memcpy(xlow+qdotf_idx[0], qdf_lb.data(), sizeof(double)*nq);
+      // memcpy(xupp+qdotf_idx[0], qdf_ub.data(), sizeof(double)*nq);
     }
     set<double> t_set(t, t + nT);
     VectorXd inbetween_tSamples;
@@ -1562,8 +1562,8 @@ void inverseKinBackend(
         Flow[nf_cum + k] = Cmin_array[j](k);
         Fupp[nf_cum + k] = Cmax_array[j](k);
       }
-      // memcpy(Flow+nf_cum,Cmin_array[j].data(),sizeof(double)*nc_array[j]);
-      // memcpy(Fupp+nf_cum,Cmax_array[j].data(),sizeof(double)*nc_array[j]);
+      // memcpy(Flow+nf_cum, Cmin_array[j].data(), sizeof(double)*nc_array[j]);
+      // memcpy(Fupp+nf_cum, Cmax_array[j].data(), sizeof(double)*nc_array[j]);
       if (debug_mode) {
         for (int k = 0; k < Cname_array[j].size(); k++) {
           Fname[nf_cum + k] = Cname_array[j][k];
@@ -1594,8 +1594,8 @@ void inverseKinBackend(
         Flow[nf_cum + k] = Cmin_inbetween_array[j](k);
         Fupp[nf_cum + k] = Cmax_inbetween_array[j](k);
       }
-      // memcpy(Flow+nf_cum,Cmin_inbetween_array[j].data(),sizeof(double)*nc_inbetween_array[j]);
-      // memcpy(Fupp+nf_cum,Cmax_inbetween_array[j].data(),sizeof(double)*nc_inbetween_array[j]);
+      // memcpy(Flow+nf_cum, Cmin_inbetween_array[j].data(), sizeof(double)*nc_inbetween_array[j]);
+      // memcpy(Fupp+nf_cum, Cmax_inbetween_array[j].data(), sizeof(double)*nc_inbetween_array[j]);
       if (debug_mode) {
         for (int k = 0; k < nc_inbetween_array[j]; k++) {
           Fname[nf_cum + k] = Cname_inbetween_array[j][k];
@@ -1620,8 +1620,8 @@ void inverseKinBackend(
         Flow[nf_cum + k] = mtkc_lb(k);
         Fupp[nf_cum + k] = mtkc_ub(k);
       }
-      // memcpy(Flow+nf_cum,mtkc_lb.data(),sizeof(double)*mt_kc_nc[j]);
-      // memcpy(Fupp+nf_cum,mtkc_ub.data(),sizeof(double)*mt_kc_nc[j]);
+      // memcpy(Flow+nf_cum, mtkc_lb.data(), sizeof(double)*mt_kc_nc[j]);
+      // memcpy(Fupp+nf_cum, mtkc_ub.data(), sizeof(double)*mt_kc_nc[j]);
       vector<string> mtkc_name;
       mt_kc_array[j]->name(t_samples + qstart_idx,
                            num_qfree + num_inbetween_tSamples, mtkc_name);
@@ -1686,7 +1686,7 @@ void inverseKinBackend(
         for (int k = 0; k < nq; k++) {
           x[j * (nq + num_qsc_pts) + k] = q_seed((j + qstart_idx) * nq + k);
         }
-        // memcpy(x+j*(nq+num_qsc_pts),q_seed.data()+(j+qstart_idx)*nq,sizeof(double)*nq);
+        // memcpy(x+j*(nq+num_qsc_pts), q_seed.data()+(j+qstart_idx)*nq, sizeof(double)*nq);
         for (int k = 0; k < num_qsc_pts; k++) {
           x[j * (nq + num_qsc_pts) + nq + k] = 1.0 / num_qsc_pts;
         }
@@ -1695,20 +1695,20 @@ void inverseKinBackend(
       for (int j = 0; j < nq * num_qfree; j++) {
         x[j] = q_seed(nq * qstart_idx + j);
       }
-      // memcpy(x,q_seed.data()+nq*qstart_idx,sizeof(double)*nq*num_qfree);
+      // memcpy(x, q_seed.data()+nq*qstart_idx, sizeof(double)*nq*num_qfree);
     }
     if (fixInitialState) {
       for (int j = 0; j < nq; j++) {
         x[qdotf_idx[0] + j] = qdf_seed(j);
       }
-      // memcpy(x+qdotf_idx[0],qdf_seed.data(),sizeof(double)*nq);
+      // memcpy(x+qdotf_idx[0], qdf_seed.data(), sizeof(double)*nq);
     } else {
       for (int j = 0; j < nq; j++) {
         x[qdot0_idx[0] + j] = qd0_seed(j);
         x[qdotf_idx[0] + j] = qdf_seed(j);
       }
-      // memcpy(x+qdot0_idx[0],qd0_seed.data(),sizeof(double)*nq);
-      // memcpy(x+qdotf_idx[0],qdf_seed.data(),sizeof(double)*nq);
+      // memcpy(x+qdot0_idx[0], qd0_seed.data(), sizeof(double)*nq);
+      // memcpy(x+qdotf_idx[0], qdf_seed.data(), sizeof(double)*nq);
     }
     for (int i = 0; i < nx; i++) {
       if (std::isnan(x[i])) {
@@ -1752,17 +1752,17 @@ void inverseKinBackend(
                    &miniw, &minrw, cw.get(), &lencw, iw.get(), &leniw, rw.get(),
                    &lenrw, 8 * lencw);
     if (minrw > lenrw) {
-      // mexPrintf("reallocation rw with size %d\n",minrw);
+      // mexPrintf("reallocation rw with size %d\n", minrw);
       lenrw = minrw;
       rw.reset(new snopt::doublereal[lenrw]);
     }
     if (miniw > leniw) {
-      // mexPrintf("reallocation iw with size %d\n",miniw);
+      // mexPrintf("reallocation iw with size %d\n", miniw);
       leniw = miniw;
       iw.reset(new snopt::integer[leniw]);
     }
     if (mincw > lencw) {
-      // mexPrintf("reallocation cw with size %d\n",mincw);
+      // mexPrintf("reallocation cw with size %d\n", mincw);
       lencw = mincw;
       cw.reset(new char[8 * lencw]);
     }
@@ -1803,7 +1803,7 @@ void inverseKinBackend(
     // debug only
     /*MATFile *pmat;
     pmat = matOpen("inverseKinBackend_cpp.mat","w");
-    if(pmat == NULL)
+    if (pmat == NULL)
     {
       printf("Error creating mat file\n");
     }
@@ -1811,59 +1811,59 @@ void inverseKinBackend(
     nG_tmp = nG;
     nF_tmp = nF;
     printf("start to debug\n");
-    VectorXd f_vec(nF,1);
-    VectorXd G_vec(nG,1);
-    VectorXd x_vec(nx,1);
+    VectorXd f_vec(nF, 1);
+    VectorXd G_vec(nG, 1);
+    VectorXd x_vec(nx, 1);
     for(int i = 0;i<nx;i++)
     {
       x_vec(i) = x[i];
     }
-    snoptIKtraj_userfun(x_vec,f_vec,G_vec);
-    mxArray* f_ptr = mxCreateDoubleMatrix(nF,1,mxREAL);
-    mxArray* G_ptr = mxCreateDoubleMatrix(nG,1,mxREAL);
-    memcpy(mxGetPrSafe(f_ptr),f_vec.data(),sizeof(double)*(nF));
-    memcpy(mxGetPrSafe(G_ptr),G_vec.data(),sizeof(double)*(nG));
-    matPutVariable(pmat,"f",f_ptr);
-    matPutVariable(pmat,"G",G_ptr);
-    printf("got f,G\n");
+    snoptIKtraj_userfun(x_vec, f_vec, G_vec);
+    mxArray* f_ptr = mxCreateDoubleMatrix(nF, 1, mxREAL);
+    mxArray* G_ptr = mxCreateDoubleMatrix(nG, 1, mxREAL);
+    memcpy(mxGetPrSafe(f_ptr), f_vec.data(), sizeof(double)*(nF));
+    memcpy(mxGetPrSafe(G_ptr), G_vec.data(), sizeof(double)*(nG));
+    matPutVariable(pmat,"f", f_ptr);
+    matPutVariable(pmat,"G", G_ptr);
+    printf("got f, G\n");
 
     double* iGfun_tmp = new double[nG];
     double* jGvar_tmp = new double[nG];
-    mxArray* iGfun_ptr = mxCreateDoubleMatrix(nG,1,mxREAL);
-    mxArray* jGvar_ptr = mxCreateDoubleMatrix(nG,1,mxREAL);
+    mxArray* iGfun_ptr = mxCreateDoubleMatrix(nG, 1, mxREAL);
+    mxArray* jGvar_ptr = mxCreateDoubleMatrix(nG, 1, mxREAL);
     for(int k = 0;k<nG;k++)
     {
       iGfun_tmp[k] = (double) iGfun[k];
       jGvar_tmp[k] = (double) jGvar[k];
     }
-    memcpy(mxGetPrSafe(iGfun_ptr),iGfun_tmp,sizeof(double)*nG);
-    memcpy(mxGetPrSafe(jGvar_ptr),jGvar_tmp,sizeof(double)*nG);
-    matPutVariable(pmat,"iGfun",iGfun_ptr);
-    matPutVariable(pmat,"jGvar",jGvar_ptr);
+    memcpy(mxGetPrSafe(iGfun_ptr), iGfun_tmp, sizeof(double)*nG);
+    memcpy(mxGetPrSafe(jGvar_ptr), jGvar_tmp, sizeof(double)*nG);
+    matPutVariable(pmat,"iGfun", iGfun_ptr);
+    matPutVariable(pmat,"jGvar", jGvar_ptr);
     printf("got iGfun jGar\n");
-    mxArray* Fupp_ptr = mxCreateDoubleMatrix(nF,1,mxREAL);
-    memcpy(mxGetPrSafe(Fupp_ptr),Fupp,sizeof(double)*nF);
-    matPutVariable(pmat,"Fupp",Fupp_ptr);
-    mxArray* Flow_ptr = mxCreateDoubleMatrix(nF,1,mxREAL);
-    memcpy(mxGetPrSafe(Flow_ptr),Flow,sizeof(double)*nF);
-    matPutVariable(pmat,"Flow",Flow_ptr);
+    mxArray* Fupp_ptr = mxCreateDoubleMatrix(nF, 1, mxREAL);
+    memcpy(mxGetPrSafe(Fupp_ptr), Fupp, sizeof(double)*nF);
+    matPutVariable(pmat,"Fupp", Fupp_ptr);
+    mxArray* Flow_ptr = mxCreateDoubleMatrix(nF, 1, mxREAL);
+    memcpy(mxGetPrSafe(Flow_ptr), Flow, sizeof(double)*nF);
+    matPutVariable(pmat,"Flow", Flow_ptr);
     printf("got Fupp Flow\n");
-    mxArray* xupp_ptr = mxCreateDoubleMatrix(nx,1,mxREAL);
-    mxArray* xlow_ptr = mxCreateDoubleMatrix(nx,1,mxREAL);
-    memcpy(mxGetPrSafe(xupp_ptr),xupp,sizeof(double)*nx);
-    memcpy(mxGetPrSafe(xlow_ptr),xlow,sizeof(double)*nx);
-    matPutVariable(pmat,"xupp",xupp_ptr);
-    matPutVariable(pmat,"xlow",xlow_ptr);
+    mxArray* xupp_ptr = mxCreateDoubleMatrix(nx, 1, mxREAL);
+    mxArray* xlow_ptr = mxCreateDoubleMatrix(nx, 1, mxREAL);
+    memcpy(mxGetPrSafe(xupp_ptr), xupp, sizeof(double)*nx);
+    memcpy(mxGetPrSafe(xlow_ptr), xlow, sizeof(double)*nx);
+    matPutVariable(pmat,"xupp", xupp_ptr);
+    matPutVariable(pmat,"xlow", xlow_ptr);
     printf("got xupp xlow\n");
-    mxArray* qd0_lb_ptr = mxCreateDoubleMatrix(nq,1,mxREAL);
-    mxArray* qd0_ub_ptr = mxCreateDoubleMatrix(nq,1,mxREAL);
-    memcpy(mxGetPrSafe(qd0_lb_ptr),qd0_lb.data(),sizeof(double)*nq);
-    memcpy(mxGetPrSafe(qd0_ub_ptr),qd0_ub.data(),sizeof(double)*nq);
-    matPutVariable(pmat,"qd0_lb",qd0_lb_ptr);
-    matPutVariable(pmat,"qd0_ub",qd0_ub_ptr);
-    mxArray* iAfun_ptr = mxCreateDoubleMatrix(lenA,1,mxREAL);
-    mxArray* jAvar_ptr = mxCreateDoubleMatrix(lenA,1,mxREAL);
-    mxArray* A_ptr = mxCreateDoubleMatrix(lenA,1,mxREAL);
+    mxArray* qd0_lb_ptr = mxCreateDoubleMatrix(nq, 1, mxREAL);
+    mxArray* qd0_ub_ptr = mxCreateDoubleMatrix(nq, 1, mxREAL);
+    memcpy(mxGetPrSafe(qd0_lb_ptr), qd0_lb.data(), sizeof(double)*nq);
+    memcpy(mxGetPrSafe(qd0_ub_ptr), qd0_ub.data(), sizeof(double)*nq);
+    matPutVariable(pmat,"qd0_lb", qd0_lb_ptr);
+    matPutVariable(pmat,"qd0_ub", qd0_ub_ptr);
+    mxArray* iAfun_ptr = mxCreateDoubleMatrix(lenA, 1, mxREAL);
+    mxArray* jAvar_ptr = mxCreateDoubleMatrix(lenA, 1, mxREAL);
+    mxArray* A_ptr = mxCreateDoubleMatrix(lenA, 1, mxREAL);
     double* iAfun_tmp = new double[lenA];
     double* jAvar_tmp = new double[lenA];
     for(int k = 0;k<lenA;k++)
@@ -1871,70 +1871,70 @@ void inverseKinBackend(
       iAfun_tmp[k] = (double) iAfun[k];
       jAvar_tmp[k] = (double) jAvar[k];
     }
-    memcpy(mxGetPrSafe(iAfun_ptr),iAfun_tmp,sizeof(double)*lenA);
-    memcpy(mxGetPrSafe(jAvar_ptr),jAvar_tmp,sizeof(double)*lenA);
-    memcpy(mxGetPrSafe(A_ptr),A,sizeof(double)*lenA);
-    matPutVariable(pmat,"iAfun",iAfun_ptr);
-    matPutVariable(pmat,"jAvar",jAvar_ptr);
-    matPutVariable(pmat,"A",A_ptr);
+    memcpy(mxGetPrSafe(iAfun_ptr), iAfun_tmp, sizeof(double)*lenA);
+    memcpy(mxGetPrSafe(jAvar_ptr), jAvar_tmp, sizeof(double)*lenA);
+    memcpy(mxGetPrSafe(A_ptr), A, sizeof(double)*lenA);
+    matPutVariable(pmat,"iAfun", iAfun_ptr);
+    matPutVariable(pmat,"jAvar", jAvar_ptr);
+    matPutVariable(pmat,"A", A_ptr);
     printf("got iAfun jAvar A\n");
-    mxArray* velocity_mat_ptr = mxCreateDoubleMatrix(nq*(nT-2),nq*nT,mxREAL);
-    memcpy(mxGetPrSafe(velocity_mat_ptr),velocity_mat.data(),sizeof(double)*nq*(nT-2)*nq*nT);
-    matPutVariable(pmat,"velocity_mat",velocity_mat_ptr);
-    mxArray* velocity_mat_qd0_ptr = mxCreateDoubleMatrix(nq*(nT-2),nq,mxREAL);
-    memcpy(mxGetPrSafe(velocity_mat_qd0_ptr),velocity_mat_qd0.data(),sizeof(double)*velocity_mat_qd0.size());
-    matPutVariable(pmat,"velocity_mat_qd0",velocity_mat_qd0_ptr);
-    mxArray* velocity_mat_qdf_ptr = mxCreateDoubleMatrix(nq*(nT-2),nq,mxREAL);
-    memcpy(mxGetPrSafe(velocity_mat_qdf_ptr),velocity_mat_qdf.data(),sizeof(double)*velocity_mat_qdf.size());
-    matPutVariable(pmat,"velocity_mat_qdf",velocity_mat_qdf_ptr);
-    mxArray* accel_mat_ptr = mxCreateDoubleMatrix(nq*nT,nq*nT,mxREAL);
-    memcpy(mxGetPrSafe(accel_mat_ptr),accel_mat.data(),sizeof(double)*accel_mat.size());
-    matPutVariable(pmat,"accel_mat",accel_mat_ptr);
-    mxArray* accel_mat_qd0_ptr = mxCreateDoubleMatrix(nq*nT,nq,mxREAL);
-    memcpy(mxGetPrSafe(accel_mat_qd0_ptr),accel_mat_qd0.data(),sizeof(double)*accel_mat_qd0.size());
-    matPutVariable(pmat,"accel_mat_qd0",accel_mat_qd0_ptr);
-    mxArray* accel_mat_qdf_ptr = mxCreateDoubleMatrix(nq*nT,nq,mxREAL);
-    memcpy(mxGetPrSafe(accel_mat_qdf_ptr),accel_mat_qdf.data(),sizeof(double)*accel_mat_qdf.size());
-    matPutVariable(pmat,"accel_mat_qdf",accel_mat_qdf_ptr);
+    mxArray* velocity_mat_ptr = mxCreateDoubleMatrix(nq*(nT-2), nq*nT, mxREAL);
+    memcpy(mxGetPrSafe(velocity_mat_ptr), velocity_mat.data(), sizeof(double)*nq*(nT-2)*nq*nT);
+    matPutVariable(pmat,"velocity_mat", velocity_mat_ptr);
+    mxArray* velocity_mat_qd0_ptr = mxCreateDoubleMatrix(nq*(nT-2), nq, mxREAL);
+    memcpy(mxGetPrSafe(velocity_mat_qd0_ptr), velocity_mat_qd0.data(), sizeof(double)*velocity_mat_qd0.size());
+    matPutVariable(pmat,"velocity_mat_qd0", velocity_mat_qd0_ptr);
+    mxArray* velocity_mat_qdf_ptr = mxCreateDoubleMatrix(nq*(nT-2), nq, mxREAL);
+    memcpy(mxGetPrSafe(velocity_mat_qdf_ptr), velocity_mat_qdf.data(), sizeof(double)*velocity_mat_qdf.size());
+    matPutVariable(pmat,"velocity_mat_qdf", velocity_mat_qdf_ptr);
+    mxArray* accel_mat_ptr = mxCreateDoubleMatrix(nq*nT, nq*nT, mxREAL);
+    memcpy(mxGetPrSafe(accel_mat_ptr), accel_mat.data(), sizeof(double)*accel_mat.size());
+    matPutVariable(pmat,"accel_mat", accel_mat_ptr);
+    mxArray* accel_mat_qd0_ptr = mxCreateDoubleMatrix(nq*nT, nq, mxREAL);
+    memcpy(mxGetPrSafe(accel_mat_qd0_ptr), accel_mat_qd0.data(), sizeof(double)*accel_mat_qd0.size());
+    matPutVariable(pmat,"accel_mat_qd0", accel_mat_qd0_ptr);
+    mxArray* accel_mat_qdf_ptr = mxCreateDoubleMatrix(nq*nT, nq, mxREAL);
+    memcpy(mxGetPrSafe(accel_mat_qdf_ptr), accel_mat_qdf.data(), sizeof(double)*accel_mat_qdf.size());
+    matPutVariable(pmat,"accel_mat_qdf", accel_mat_qdf_ptr);
     mxArray** dqInbetweendqknot_ptr = new mxArray*[nT-1];
     mxArray** dqInbetweendqd0_ptr = new mxArray*[nT-1];
     mxArray** dqInbetweendqdf_ptr = new mxArray*[nT-1];
     mwSize cell_dim[1] = {nT-1};
-    mxArray* dqInbetweendqknot_cell = mxCreateCellArray(1,cell_dim);
-    mxArray* dqInbetweendqd0_cell = mxCreateCellArray(1,cell_dim);
-    mxArray* dqInbetweendqdf_cell = mxCreateCellArray(1,cell_dim);
+    mxArray* dqInbetweendqknot_cell = mxCreateCellArray(1, cell_dim);
+    mxArray* dqInbetweendqd0_cell = mxCreateCellArray(1, cell_dim);
+    mxArray* dqInbetweendqdf_cell = mxCreateCellArray(1, cell_dim);
     for(int i = 0;i<nT-1;i++)
     {
       dqInbetweendqknot_ptr[i] =
-    mxCreateDoubleMatrix(nq*t_inbetween[i].size(),nq*nT,mxREAL);
+    mxCreateDoubleMatrix(nq*t_inbetween[i].size(), nq*nT, mxREAL);
       dqInbetweendqd0_ptr[i] =
-    mxCreateDoubleMatrix(nq*t_inbetween[i].size(),nq,mxREAL);
+    mxCreateDoubleMatrix(nq*t_inbetween[i].size(), nq, mxREAL);
       dqInbetweendqdf_ptr[i] =
-    mxCreateDoubleMatrix(nq*t_inbetween[i].size(),nq,mxREAL);
-      memcpy(mxGetPrSafe(dqInbetweendqknot_ptr[i]),dqInbetweendqknot[i].data(),sizeof(double)*dqInbetweendqknot[i].size());
-      memcpy(mxGetPrSafe(dqInbetweendqd0_ptr[i]),dqInbetweendqd0[i].data(),sizeof(double)*dqInbetweendqd0[i].size());
-      memcpy(mxGetPrSafe(dqInbetweendqdf_ptr[i]),dqInbetweendqdf[i].data(),sizeof(double)*dqInbetweendqdf[i].size());
-      mxSetCell(dqInbetweendqknot_cell,i,dqInbetweendqknot_ptr[i]);
-      mxSetCell(dqInbetweendqd0_cell,i,dqInbetweendqd0_ptr[i]);
-      mxSetCell(dqInbetweendqdf_cell,i,dqInbetweendqdf_ptr[i]);
+    mxCreateDoubleMatrix(nq*t_inbetween[i].size(), nq, mxREAL);
+      memcpy(mxGetPrSafe(dqInbetweendqknot_ptr[i]), dqInbetweendqknot[i].data(), sizeof(double)*dqInbetweendqknot[i].size());
+      memcpy(mxGetPrSafe(dqInbetweendqd0_ptr[i]), dqInbetweendqd0[i].data(), sizeof(double)*dqInbetweendqd0[i].size());
+      memcpy(mxGetPrSafe(dqInbetweendqdf_ptr[i]), dqInbetweendqdf[i].data(), sizeof(double)*dqInbetweendqdf[i].size());
+      mxSetCell(dqInbetweendqknot_cell, i, dqInbetweendqknot_ptr[i]);
+      mxSetCell(dqInbetweendqd0_cell, i, dqInbetweendqd0_ptr[i]);
+      mxSetCell(dqInbetweendqdf_cell, i, dqInbetweendqdf_ptr[i]);
     }
-    matPutVariable(pmat,"dqInbetweendqknot",dqInbetweendqknot_cell);
-    matPutVariable(pmat,"dqInbetweendqd0",dqInbetweendqd0_cell);
-    matPutVariable(pmat,"dqInbetweendqdf",dqInbetweendqdf_cell);
+    matPutVariable(pmat,"dqInbetweendqknot", dqInbetweendqknot_cell);
+    matPutVariable(pmat,"dqInbetweendqd0", dqInbetweendqd0_cell);
+    matPutVariable(pmat,"dqInbetweendqdf", dqInbetweendqdf_cell);
     delete[] dqInbetweendqknot_ptr; delete[] dqInbetweendqd0_ptr; delete[]
     dqInbetweendqdf_ptr;
     printf("get dqInbetweendqknot\n");
     mxArray** iCfun_inbetween_ptr = new mxArray*[num_inbetween_tSamples];
     mxArray** jCvar_inbetween_ptr = new mxArray*[num_inbetween_tSamples];
     cell_dim[0] = num_inbetween_tSamples;
-    mxArray* iCfun_inbetween_cell = mxCreateCellArray(1,cell_dim);
-    mxArray* jCvar_inbetween_cell = mxCreateCellArray(1,cell_dim);
+    mxArray* iCfun_inbetween_cell = mxCreateCellArray(1, cell_dim);
+    mxArray* jCvar_inbetween_cell = mxCreateCellArray(1, cell_dim);
     for(int i = 0;i<num_inbetween_tSamples;i++)
     {
       iCfun_inbetween_ptr[i] =
-    mxCreateDoubleMatrix(nG_inbetween_array[i],1,mxREAL);
+    mxCreateDoubleMatrix(nG_inbetween_array[i], 1, mxREAL);
       jCvar_inbetween_ptr[i] =
-    mxCreateDoubleMatrix(nG_inbetween_array[i],1,mxREAL);
+    mxCreateDoubleMatrix(nG_inbetween_array[i], 1, mxREAL);
       double* iCfun_inbetween_i_double = new double[nG_inbetween_array[i]];
       double* jCvar_inbetween_i_double = new double[nG_inbetween_array[i]];
       for(int j = 0;j<nG_inbetween_array[i];j++)
@@ -1942,14 +1942,14 @@ void inverseKinBackend(
         iCfun_inbetween_i_double[j] = (double) iCfun_inbetween_array[i](j)+1;
         jCvar_inbetween_i_double[j] = (double) jCvar_inbetween_array[i](j)+1;
       }
-      memcpy(mxGetPrSafe(iCfun_inbetween_ptr[i]),iCfun_inbetween_i_double,sizeof(double)*nG_inbetween_array[i]);
-      memcpy(mxGetPrSafe(jCvar_inbetween_ptr[i]),jCvar_inbetween_i_double,sizeof(double)*nG_inbetween_array[i]);
-      mxSetCell(iCfun_inbetween_cell,i,iCfun_inbetween_ptr[i]);
-      mxSetCell(jCvar_inbetween_cell,i,jCvar_inbetween_ptr[i]);
+      memcpy(mxGetPrSafe(iCfun_inbetween_ptr[i]), iCfun_inbetween_i_double, sizeof(double)*nG_inbetween_array[i]);
+      memcpy(mxGetPrSafe(jCvar_inbetween_ptr[i]), jCvar_inbetween_i_double, sizeof(double)*nG_inbetween_array[i]);
+      mxSetCell(iCfun_inbetween_cell, i, iCfun_inbetween_ptr[i]);
+      mxSetCell(jCvar_inbetween_cell, i, jCvar_inbetween_ptr[i]);
       delete[] iCfun_inbetween_i_double; delete[] jCvar_inbetween_i_double;
     }
-    matPutVariable(pmat,"iCfun_inbetween",iCfun_inbetween_cell);
-    matPutVariable(pmat,"jCvar_inbetween",jCvar_inbetween_cell);
+    matPutVariable(pmat,"iCfun_inbetween", iCfun_inbetween_cell);
+    matPutVariable(pmat,"jCvar_inbetween", jCvar_inbetween_cell);
     delete[] iCfun_inbetween_ptr; delete[] jCvar_inbetween_ptr;
     printf("get iCfun_inbetween\n");
     matClose(pmat);

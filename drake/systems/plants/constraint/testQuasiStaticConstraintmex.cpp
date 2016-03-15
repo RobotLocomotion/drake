@@ -4,8 +4,8 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 #include <cstring>
 /*
- * [active_flag, num_weights,constraint,dconstraint,lower_bound,upper_bound] =
- * testQuasiStaticConstraintmex(quasiStaticConstraint_ptr,q,weights,t)
+ * [active_flag, num_weights, constraint, dconstraint, lower_bound, upper_bound] =
+ * testQuasiStaticConstraintmex(quasiStaticConstraint_ptr, q, weights, t)
  * @param quasiStaticConstraint_ptr       A pointer to a QuasiStaticConstraint
  * object
  * @param q                               An nqx1 double vector, the joint
@@ -29,8 +29,8 @@ using namespace std;
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs != 3 && nrhs != 4) {
     mexErrMsgIdAndTxt("Drake:testQuasiStaticConstraintmex:BadInputs",
-                      "Usage [active,num_weights,c,dc] = "
-                      "testQuasiStaticConstraintmex(qsc_ptr,q,weights,t)");
+                      "Usage [active, num_weights, c, dc] = "
+                      "testQuasiStaticConstraintmex(qsc_ptr, q, weights, t)");
   }
   double t;
   double* t_ptr;

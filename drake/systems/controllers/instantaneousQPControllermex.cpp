@@ -23,7 +23,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nrhs < 5)
     mexErrMsgTxt(
         "usage: "
-        "alpha=QPControllermex(ptr,t,x,qp_input,contact_sensor,foot_force_"
+        "alpha=QPControllermex(ptr, t, x, qp_input, contact_sensor, foot_force_"
         "torque_measurements)");
   if (nlhs < 1) mexErrMsgTxt("take at least one output... please.");
 
