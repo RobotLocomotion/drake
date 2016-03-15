@@ -75,10 +75,14 @@ void RigidBody::applyTransformToJointFrame(const Eigen::Isometry3d& transform_bo
   // std::cout << "RigidBody::applyTransformToJointFrame: Method called!\n"
   //           << " - link name: " << linkname << "\n"
   //           << " - transform_body_to_joint=\n"
-  //           << transform_body_to_joint.matrix()
-  //           << std::endl;
+  //           << transform_body_to_joint.matrix() << "\n"
+  //           << " - I prior to transform=\n"
+  //           << I << std::endl;
 
   I = transformSpatialInertia(transform_body_to_joint, I);
+
+  // std::cout << "  - I after transform:\n"
+  //           << I << std::endl;
 
   for (auto& v : visual_elements) {
     v.setLocalTransform(transform_body_to_joint * v.getLocalTransform());
