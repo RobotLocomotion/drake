@@ -64,7 +64,7 @@
       <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
     </inertial> -->
     <visual name="__visual">
-      <origin rpy="0  0  0" xyz="0  0  0"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
         <cylinder length="0.0618421" radius="0.0154605"/>
       </geometry>
@@ -116,7 +116,7 @@
       </material>
     </visual>
     <visual name="line1">
-      <origin rpy="0 1.57079 3.14159" xyz="0 0 -0.1075"/>
+      <origin rpy="0 1.57079632679 3.14159265359" xyz="0 0 -0.1075"/>
       <geometry>
         <box size="0.0025 0.0025 0.25"/>
       </geometry>
@@ -125,7 +125,7 @@
       </material>
     </visual>
     <visual name="line2">
-      <origin rpy="3.14159 1.57079 -1.57079" xyz="0 0 -0.1075"/>
+      <origin rpy="3.14159265359 1.57079632679 -1.57079632679" xyz="0 0 -0.1075"/>
       <geometry>
         <box size="0.0025 0.0025 0.25"/>
       </geometry>
@@ -202,7 +202,7 @@
       </material>
     </visual>
     <visual name="v1">
-      <origin rpy="0 1.57079 3.14159" xyz="0 0 0.1075"/>
+      <origin rpy="0 1.57079632679 3.14159265359" xyz="0 0 0.1075"/>
       <geometry>
         <box size="0.0025 0.0025 0.25"/>
       </geometry>
@@ -211,7 +211,7 @@
       </material>
     </visual>
     <visual name="v3">
-      <origin rpy="3.14159 1.57079 -1.57079" xyz="0 0 0.1075"/>
+      <origin rpy="3.14159265359 1.57079632679 -1.57079632679" xyz="0 0 0.1075"/>
       <geometry>
         <box size="0.0025 0.0025 0.25"/>
       </geometry>
@@ -234,7 +234,7 @@
       </geometry>
     </collision>
     <visual name="v3">
-      <origin rpy="0 1.57079  3.14159" xyz="0 0 -0.1075"/>
+      <origin rpy="0 1.57079632679 3.14159265359" xyz="0 0 -0.1075"/>
       <geometry>
         <box size="0.0025 0.0025 0.25"/>
       </geometry>
@@ -243,7 +243,7 @@
       </material>
     </visual>
     <visual name="v2">
-      <origin rpy="3.14159 1.57079 -1.57079" xyz="0 0 -0.1075"/>
+      <origin rpy="3.14159265359 1.57079632679 -1.57079632679" xyz="0 0 -0.1075"/>
       <geometry>
         <box size="0.0025 0.0025 0.25"/>
       </geometry>
@@ -274,7 +274,7 @@
       </geometry>
     </collision>
     <visual name="v3">
-      <origin rpy="0 1.57079 3.14159" xyz="0 0 0.1075"/>
+      <origin rpy="0 1.57079632679 3.14159265359" xyz="0 0 0.1075"/>
       <geometry>
         <box size="0.0025 0.0025 0.25"/>
       </geometry>
@@ -292,7 +292,7 @@
       </material>
     </visual>
     <visual name="v2">
-      <origin rpy="3.14159 1.57079 -1.57079" xyz="0 0 0.1075"/>
+      <origin rpy="3.14159265359 1.57079632679 -1.57079632679" xyz="0 0 0.1075"/>
       <geometry>
         <box size="0.0025 0.0025 0.25"/>
       </geometry>
@@ -357,7 +357,7 @@
   <joint name="left_hub" type="fixed">
     <parent link="left_tie_rod_arm"/>
     <child link="left_hub"/>
-    <origin rpy="1.5708 0 0" xyz="0 0.12368 0.02406"/>
+    <origin rpy="1.57079632679 0 0" xyz="0 0.12368 0.02406"/>
     <axis xyz="0  0  0"/>
     <limit effort="0" lower="0" upper="0" velocity="0"/>
   </joint>
@@ -385,7 +385,7 @@
   <joint name="right_hub" type="fixed">
     <parent link="right_tie_rod_arm"/>
     <child link="right_hub"/>
-    <origin rpy="1.5708 0 0" xyz="0 -0.12368 0.02406"/>
+    <origin rpy="1.57079632679 0 0" xyz="0 -0.12368 0.02406"/>
     <axis xyz="0  0  0"/>
     <limit effort="0" lower="0" upper="0" velocity="0"/>
   </joint>
@@ -406,14 +406,14 @@
   <joint name="rear_left_wheel_joint" type="revolute">
     <parent link="rear_axle"/>
     <child link="left_wheel_rear"/>
-    <origin rpy="1.5708  0 0" xyz="0 0.80199  0"/>
+    <origin rpy="1.57079632679  0 0" xyz="0 0.80199  0"/>
     <axis xyz="0  0 -1"/>
     <limit effort="10000" velocity="10000"/>
   </joint>
   <joint name="rear_right_wheel_joint" type="revolute">
     <parent link="rear_axle"/>
     <child link="right_wheel_rear"/>
-    <origin rpy="1.5708 0 0" xyz="0 -0.80199  0"/>
+    <origin rpy="1.57079632679 0 0" xyz="0 -0.80199  0"/>
     <axis xyz="0  0 -1"/>
     <limit effort="10000" velocity="10000"/>
   </joint>
