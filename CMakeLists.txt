@@ -62,6 +62,7 @@ if (NOT WIN32) # many of these might work on win32 with little or no work... the
 	option(WITH_OCTOMAP 	"provides oct-tree data structures")
 	option(WITH_GUROBI 		"convex/integer optimization solver; free for academics (will prompt you for login bits)")
 	option(WITH_MOSEK 		"convex optimization solver; free for academics")
+	option(WITH_NLOPT 		"nonlinear optimization solver")
 	option(WITH_YALMIP 		"free optimization front-end for MATLAB")
 	option(WITH_GLOPTIPOLY 	"free global polynomial optimization tooblox")
 	option(WITH_BERTINI 	"solve polynomial equations; free but pod requires permissions (can't redistribute)")
@@ -153,6 +154,10 @@ set(meshconverters_IS_PUBLIC TRUE)
 set(mosek_GIT_REPOSITORY https://github.com/rdeits/mosek-pod.git)
 set(mosek_GIT_TAG 1919b622df17b7584ac644406f360bd07cdf5fba)
 set(mosek_IS_PUBLIC TRUE)
+set(nlopt_GIT_REPOSITORY https://github.com/stevengj/nlopt.git)
+set(nlopt_GIT_TAG 355a597b43c80f616252cb370fa9f7e5c997418e) 
+set(nlopt_BUILD_COMMAND ./autogen.sh --no-configure && ./configure --enable-maintainer-mode --prefix=${CMAKE_INSTALL_PREFIX} && make install)  # linux (and possibly cygwin) only
+set(nlopt_IS_PUBLIC TRUE)
 set(octomap_GIT_REPOSITORY https://github.com/RobotLocomotion/octomap-pod.git)
 set(octomap_GIT_TAG 00b28215d19580f9e964bc5d126ce55a9253671a)
 set(octomap_IS_PUBLIC TRUE)
@@ -244,6 +249,7 @@ foreach(proj IN ITEMS
 		swigmake
 		swig_matlab
 		yaml_cpp
+		nlopt
 		drake)
 	string(TOUPPER ${proj} proj_upper)
 	if ( ${proj} STREQUAL "drake" OR
