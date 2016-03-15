@@ -304,17 +304,17 @@ DrakeCollision::ElementId RigidBodyTree::addCollisionElement(
     const RigidBody::CollisionElement& element,
     RigidBody& body, const string& group_name) {
 
-  std::cout << "RigidBodyTree.cpp: RigidBodyTree::addCollisionElement: Adding element:\n"
-            << "  - link name: " << body.linkname << "\n"
-            << "  - group name: " << group_name << "\n"
-            << "  - collision element:\n"
-            << "     - rigid body name: " << element.getBody()->linkname << "\n"
-            << "     - id (memory address): " << element.getId() << "\n"
-            << "     - T_element_to_world:\n"
-            << element.getWorldTransform().matrix() << "\n"
-            << "     - T_element_to_local:\n"
-            << element.getLocalTransform().matrix()
-            << std::endl;
+  // std::cout << "RigidBodyTree.cpp: RigidBodyTree::addCollisionElement: Adding element:\n"
+  //           << "  - link name: " << body.linkname << "\n"
+  //           << "  - group name: " << group_name << "\n"
+  //           << "  - collision element:\n"
+  //           << "     - rigid body name: " << element.getBody()->linkname << "\n"
+  //           << "     - id (memory address): " << element.getId() << "\n"
+  //           << "     - T_element_to_world:\n"
+  //           << element.getWorldTransform().matrix() << "\n"
+  //           << "     - T_element_to_local:\n"
+  //           << element.getLocalTransform().matrix()
+  //           << std::endl;
 
   DrakeCollision::ElementId id = collision_model->addElement(element);
   if (id != 0) {

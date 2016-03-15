@@ -531,6 +531,16 @@ Eigen::Matrix<typename Derived::Scalar, 3, 3> rpy2rotmat(
       s(2) * s(1) * c(0) - c(2) * s(0);
   R.row(2) << -s(1), c(1) * s(0), c(1) * c(0);
 
+  // Liang: Hack to test something!
+  for (int ii = 0; ii < 3; ii++)
+  {
+    for (int jj = 0; jj < 3; jj++)
+    {
+      if ((R(ii,jj) > 0 && R(ii,jj) < 1e-10) || (R(ii,jj) < 0 && R(ii,jj) > -1e-10))
+        R(ii,jj) = 0;
+    }
+  }
+  
   return R;
 };
 

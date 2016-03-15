@@ -94,7 +94,16 @@ void poseValueToTransform(tinyxml2::XMLElement* node, const PoseMap& pose_map,
     std::stringstream s(strval);
     s >> xyz(0) >> xyz(1) >> xyz(2) >> rpy(0) >> rpy(1) >> rpy(2);
   }
+
+  std::cout << "xmlUtils.cpp: poseValueToTransform: method called!\n"
+            << "  - xyz = " << xyz.transpose() << "\n"
+            << "  - rpy = " << rpy.transpose()
+            << std::endl;
+
   T.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+
+
+
 
   const char* attr = node->Attribute("frame");
   if (attr && strlen(attr) > 0) {
@@ -111,7 +120,19 @@ void poseValueToTransform(tinyxml2::XMLElement* node, const PoseMap& pose_map,
                              // found.  that is the desired behavior.
     T = T_frame * T;
   } else {
+
+    std::cout << "  - T = \n"
+              << T.matrix() << "\n"
+              << "  - T_default_frame = \n"
+              << T_default_frame.matrix()
+              << std::endl;
+
     T = T_default_frame * T;
+
+    std::cout << "  - T_default_frame * T = \n"
+              << T.matrix()
+              << std::endl;
+
   }
 }
 
