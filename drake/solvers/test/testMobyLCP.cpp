@@ -55,7 +55,7 @@ void runBasicLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
   std::cout << "Result (lcp_lemke): " << result << std::endl
             << lemke_z << std::endl;
   valuecheckMatrix(lemke_z, expected_z, epsilon);
-  
+
   Eigen::SparseMatrix<double> M_sparse = makeSparseMatrix(M);
   lemke_z.setZero();
   result = l.lcp_lemke(M_sparse, q, &lemke_z);
@@ -83,13 +83,13 @@ void runRegularizedLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorX
   } else {
     valuecheckMatrix(fast_z, expected_z, epsilon);
   }
-  
+
   Eigen::VectorXd lemke_z;
   result = l.lcp_lemke_regularized(M, q, &lemke_z);
   std::cout << "Result (lcp_lemke): " << result << std::endl
             << lemke_z << std::endl;
   valuecheckMatrix(lemke_z, expected_z, epsilon);
-  
+
   Eigen::SparseMatrix<double> M_sparse = makeSparseMatrix(M);
   lemke_z.setZero();
   result = l.lcp_lemke_regularized(M_sparse, q, &lemke_z);
@@ -97,10 +97,10 @@ void runRegularizedLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorX
             << lemke_z << std::endl;
   valuecheckMatrix(lemke_z, expected_z, epsilon);
 }
-  
+
 void testTrivial() {
   Eigen::Matrix<double, 9, 9> M;
-  M << 
+  M <<
       1, 0, 0, 0, 0, 0, 0, 0, 0,
       0, 2, 0, 0, 0, 0, 0, 0, 0,
       0, 0, 3, 0, 0, 0, 0, 0, 0,
@@ -113,10 +113,10 @@ void testTrivial() {
 
   Eigen::Matrix<double, 9, 1> q;
   q << -1, -1, -1, -1, -1, -1, -1, -1, -1;
-  
+
   Eigen::VectorXd empty_z;
   runBasicLCP(M, q, empty_z, true);
-    
+
   // Mangle the input matrix so that some regularization occurs.
   M(0,8) = 10;
   runRegularizedLCP(M, q, empty_z);
@@ -132,10 +132,10 @@ void testProblem1() {
       M(i,j) = 2;
     }
   }
-  
+
   Eigen::Matrix<double, 1, 16> q;
   q.fill(-1);
-  
+
   Eigen::Matrix<double, 1, 16> z;
   z.setZero();
   z(15) = 1;
@@ -150,7 +150,7 @@ void testProblem2() {
 
   Eigen::Matrix<double, 1, 2> q;
   q.fill(-1);
-  
+
   // This problem also has valid solutions (0, 1) and (0.5, 0.5).
   Eigen::Matrix<double, 1, 2> z;
   z << 1, 0;
@@ -168,7 +168,7 @@ void testProblem3() {
       -1, 1,  0;
   Eigen::Matrix<double, 1, 3> q;
   q << -3, 6, -1;
-  
+
   Eigen::Matrix<double, 1, 3> z;
   z << 0, 1, 3;
 
@@ -187,7 +187,7 @@ void testProblem4() {
 
   Eigen::Matrix<double, 1, 4> q;
   q.fill(-1);
-  
+
   // This solution is the third in the book, which it explicitly
   // states cannot be found using the Lemke-Howson algorithm.
   Eigen::VectorXd z(4);
@@ -216,6 +216,43 @@ void testProblem4() {
   }
 }
 
+void testProblem6() {
+  // Problem from example 10.2.9 in "Handbook of Test Problems in
+  // Local and Global Optimization".
+  Eigen::Matrix<double, 4, 4> M;
+  M <<
+      11,  0, 10,  -1,
+      0,  11, 10,  -1,
+      10, 10, 21,  -1,
+      1,   1,  1,   0; // Note that the (3, 3) position is incorrectly
+                       // shown in the book with the value 1.
+
+  // Pick a couple of arbitrary points in the [0, 23] range.
+  for (double l = 1; l <= 23; l += 15) {
+    Eigen::Matrix<double, 1, 4> q;
+    q << 50, 50, l, -6;
+
+    Eigen::Matrix<double, 1, 4> z;
+    z << (l + 16.) / 13.,
+        (l + 16.) / 13.,
+        (2. * (23 - l)) / 13.,
+        (1286. - (9. * l)) / 13;
+
+    runBasicLCP(M, q, z, true);
+  }
+
+  // Try again with a value > 23 and see that we've hit the limit as
+  // described.  The fast solver has stopped working in this case.
+  Eigen::Matrix<double, 1, 4> q;
+  q << 50, 50, 100, -6;
+
+  Eigen::Matrix<double, 1, 4> z;
+  z << 3, 3, 0, 83;
+
+  runBasicLCP(M, q, z, false);
+}
+
+
 void assertEmpty(const Eigen::VectorXd& z) {
   if (z.size() != 0) {
     throw std::runtime_error("Expected empty vector.");
@@ -228,7 +265,7 @@ void testEmpty() {
   Eigen::VectorXd z;
   Drake::MobyLCPSolver l;
   l.setLoggingEnabled(true);
-  
+
   bool result = l.lcp_fast(empty_M, empty_q, &z);
   assertEmpty(z);
 
@@ -257,6 +294,7 @@ int main(int argc, char* argv[]) {
   testProblem2();
   testProblem3();
   testProblem4();
+  testProblem6();
   testEmpty();
   return 0;
 }
