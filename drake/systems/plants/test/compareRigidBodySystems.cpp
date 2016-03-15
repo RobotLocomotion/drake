@@ -82,6 +82,16 @@ int main(int argc, char* argv[]) {
 
     auto xdot1 = r1->dynamics(t, x, u);
     auto xdot2 = r2->dynamics(t, x, u);
-    valuecheckMatrix(xdot1, xdot2, 1e-8);
+    try {
+      valuecheckMatrix(xdot1, xdot2, 1e-8);
+    } catch(const std::runtime_error& re) {
+      std::cout << "Model mismatch!" << std::endl
+                << "  - initial state:" << std::endl << x << std::endl
+                << "  - inputs (joint torques?):" << std::endl << u << std::endl
+                << "  - xdot1:" << std::endl << xdot1.transpose() << std::endl
+                << "  - xdot2:" << std::endl << xdot2.transpose() << std::endl
+                << "  - error message:" << std::endl << re.what() << std::endl;
+      return -1;
+    }
   }
 }
