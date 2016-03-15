@@ -57,27 +57,44 @@ inline void handle_realtime_factor(const TimePoint& wall_clock_start_time,
  *of simulation parameters
  * @ingroup simulation
  *
+ * Currently runs with a fixed step integrator using the initial step size in 
+ * \p options and stepping from initial time \p ti to final time \p tf.
+ * There is no error control; if you have accuracy or stability problems try
+ * a smaller step size.
  */
 template <typename System>
-void simulate(const System& sys, double t0, double tf,
-              const typename System::template StateVector<double>& x0,
+void simulate(const System& sys, double ti, double tf,
+              const typename System::template StateVector<double>& xi,
               SimulationOptions& options) {
-  double t = t0, dt;
   if (options.realtime_factor < 0.0) options.realtime_factor = 0.0;
 
   TimePoint start = TimeClock::now();
-  typename System::template StateVector<double> x(x0), xdot;
+  typename System::template StateVector<double> x(xi), x1est, xdot0, xdot1;
   typename System::template InputVector<double> u(
       Eigen::VectorXd::Zero(getNumInputs(sys)));
   typename System::template OutputVector<double> y;
+
+  // Take steps from ti to tf.
+  double t = ti;
   while (t < tf) {
     handle_realtime_factor(start, t, options.realtime_factor,
                            options.timeout_seconds);
-    dt = (std::min)(options.initial_step_size, tf - t);
+    const double dt = (std::min)(options.initial_step_size, tf - t);
+
+    // Output is at t0, x0, u0.
     y = sys.output(t, x, u);
-    xdot = sys.dynamics(t, x, u);
-    x = toEigen(x) + dt * toEigen(xdot);
+
+    // This is an RK2 integrator (explicit trapezoid rule).
+    // First stage: xd0 = dynamics(t0,x0,u0).
+    xdot0 = sys.dynamics(t, x, u);
+    x1est = toEigen(x) + dt * toEigen(xdot0); // explicit Euler step
     t += dt;
+
+    // Second stage: xd1 = dynamics(t1,x1est,u0).
+    xdot1 = sys.dynamics(t, x1est, u);
+
+    // 2nd order result: x = x0 + dt (xd0+xd1)/2.
+    x = toEigen(x) + (dt/2) * (toEigen(xdot0) + toEigen(xdot1));
   }
 }
 
