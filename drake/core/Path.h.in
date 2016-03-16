@@ -2,9 +2,9 @@
 
 #include <string>
 
-namespace {
-  const std::string& getDrakePath() {
-    static std::string root("@PROJECT_SOURCE_DIR@");
-    return root;
-  }
+namespace Drake {
+inline const std::string& getDrakePath() {
+  static std::string root("@PROJECT_SOURCE_DIR@");
+  return root;
+}
 } // end namespace Drake

@@ -150,7 +150,7 @@ void searchDirectory(map<string, string>& package_map, string path) {
 }
 
 void populatePackageMap(map<string, string>& package_map) {
-  searchDirectory(package_map, getDrakePath());
+  searchDirectory(package_map, Drake::getDrakePath());
 
   char* cstrpath = getenv("ROS_ROOT");
   if (cstrpath) searchDirectory(package_map, cstrpath);
