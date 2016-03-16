@@ -2,6 +2,9 @@
 #include <functional>
 #include <iostream>
 #include <typeinfo>
+
+#include <gtest/gtest.h>
+
 #include "drake/solvers/NloptSolver.h"
 #include "drake/solvers/Optimization.h"
 #include "drake/solvers/SnoptSolver.h"
@@ -10,6 +13,8 @@
 using namespace std;
 using namespace Eigen;
 using namespace Drake;
+
+namespace {
 
 struct Movable {
   Movable() = default;
@@ -41,7 +46,7 @@ struct Unique {
   void eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
 };
 
-void testAddFunction() {
+TEST(testOptimizationProblem, testAddFunction) {
   OptimizationProblem prog;
   prog.addContinuousVariables(1);
 
@@ -70,18 +75,13 @@ void runNonlinearProgram(OptimizationProblem& prog,
 
   for (const auto& solver: solvers) {
     if (!solver.second->available()) { continue; }
-    try {
-      solver.second->solve(prog);
-      test_func();
-    } catch (const std::exception& e) {
-      std::cerr << "Test failure in NonlinearProgram solver: " << solver.first
-                << std::endl;
-      throw;
-    }
+    ASSERT_NO_THROW(solver.second->solve(prog)) <<
+        "Using solver: " << solver.first;
+    EXPECT_NO_THROW(test_func()) << "Using solver: " << solver.first;
   }
 }
 
-void trivialLeastSquares() {
+TEST(testOptimizationProblem, trivialLeastSquares) {
   OptimizationProblem prog;
 
   auto const& x = prog.addContinuousVariables(4);
@@ -133,7 +133,7 @@ class SixHumpCamelObjective {
   }
 };
 
-void sixHumpCamel() {
+TEST(testOptimizationProblem, sixHumpCamel) {
   OptimizationProblem prog;
   auto x = prog.addContinuousVariables(2);
   auto objective = prog.addCost(SixHumpCamelObjective());
@@ -145,7 +145,7 @@ void sixHumpCamel() {
       objective->eval(x.value(), ystar);
       for (int i = 0; i < 10; i++) {
         objective->eval(x.value() + .01 * Eigen::Matrix<double, 2, 1>::Random(), y);
-        if (y(0) < ystar(0)) throw std::runtime_error("not a local minima!");
+        EXPECT_GE(y(0), ystar(0)) << "not a local minima!";
       }
     });
 }
@@ -197,7 +197,7 @@ class GloptipolyConstrainedExampleConstraint
  * Which is from section 3.5 in
  *   Handbook of Test Problems in Local and Global Optimization
  */
-void gloptipolyConstrainedMinimization() {
+TEST(testOptimizationProblem, gloptipolyConstrainedMinimization) {
   OptimizationProblem prog;
   auto x = prog.addContinuousVariables(3);
   prog.addCost(GloptipolyConstrainedExampleObjective());
@@ -229,7 +229,7 @@ void gloptipolyConstrainedMinimization() {
  * this case; tests of the correctness of the Moby LCP solver itself live in
  * testMobyLCP.
  */
-void simpleLCP() {
+TEST(testOptimizationProblem, simpleLCP) {
   OptimizationProblem prog;
   Eigen::Matrix<double, 2, 2> M;
   M << 1, 4,
@@ -242,18 +242,6 @@ void simpleLCP() {
   prog.addLinearComplementarityConstraint(M, q, {x});
   prog.solve();
   prog.printSolution();
-  valuecheckMatrix(x.value(), Vector2d(16, 0), 1e-4);
+  EXPECT_NO_THROW(valuecheckMatrix(x.value(), Vector2d(16, 0), 1e-4));
 }
-
-int main(int argc, char* argv[]) {
-  // Nonlinear program tests.  Some tests will be skipped if no
-  // appropriate solver is available.
-  testAddFunction();
-  trivialLeastSquares();
-  sixHumpCamel();
-  gloptipolyConstrainedMinimization();
-
-  // LCP tests.
-  simpleLCP();
-  return 0;
 }

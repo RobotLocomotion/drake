@@ -1,5 +1,6 @@
 add_executable(testOptimizationProblem testOptimizationProblem.cpp)
-target_link_libraries(testOptimizationProblem drakeOptimization)
+target_link_libraries(testOptimizationProblem drakeOptimization
+  ${GTEST_BOTH_LIBRARIES})
 
 if (GTEST_FOUND)
   add_executable(testMobyLCP testMobyLCP.cpp)
