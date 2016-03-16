@@ -23,7 +23,7 @@ testSolvers(prog);
 
 
 fprintf('****************************************\n');
-fprintf(' min_x (.5*x(1)^2+x(2)^2+x(1)*x(2) + x(1)), subj to 5<=x(1)<=10;-20<=x(1)+4*x(2)<10\n');
+fprintf(' min_x (.5*(x(1)^2+x(2)^2+x(1)*x(2)) + x(1)), subj to 5<=x(1)<=10;-20<=x(1)+4*x(2)<10\n');
 fprintf('****************************************\n');
 prog = QuadraticProgram(eye(2),[1;0],[],[],[],[],[],[]);
 prog = prog.addCost(QuadraticConstraint(-inf,inf,[0 1;1 0],zeros(2,1)));
@@ -46,7 +46,7 @@ testSolvers(prog,solvers,1e-3);
 warning(w);
 
 fprintf('****************************************\n');
-fprintf(' min_x (.5*x(1)^2+x(2)^2+x(1)*x(2) + x(1)+2*x(2)), subj to 5<=x(1)<=10;-20<=x(1)+4*x(2)<10\n');
+fprintf(' min_x (.5*(x(1)^2+x(2)^2+x(1)*x(2)) + x(1)+2*x(2)), subj to 5<=x(1)<=10;-20<=x(1)+4*x(2)<10\n');
 fprintf('****************************************\n');
 prog = QuadraticProgram(eye(2),[1;0],[],[],[],[],[],[]);
 prog = prog.addCost(QuadraticConstraint(-inf,inf,[0 1;1 0],zeros(2,1)));
