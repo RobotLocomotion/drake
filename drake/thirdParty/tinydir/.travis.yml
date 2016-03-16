@@ -1,0 +1,24 @@
+sudo: false
+
+language: c
+
+compiler:
+  - gcc
+  - clang
+
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    packages:
+    - gcc-4.8
+
+before_script:
+    # force newer gcc version
+  - if [ "$CC" = "gcc" ]; then export CC="gcc-4.8"; fi
+    # show which tests failed
+  - export CTEST_OUTPUT_ON_FAILURE=1
+
+script:
+  - cmake samples
+  - make -j2
