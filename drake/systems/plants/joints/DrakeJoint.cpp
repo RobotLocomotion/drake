@@ -25,9 +25,9 @@ const Isometry3d& DrakeJoint::getTransformToParentBody() const {
   return transform_to_parent_body;
 }
 
-const int DrakeJoint::getNumPositions() const { return num_positions; }
+int DrakeJoint::getNumPositions() const { return num_positions; }
 
-const int DrakeJoint::getNumVelocities() const { return num_velocities; }
+int DrakeJoint::getNumVelocities() const { return num_velocities; }
 
 const std::string& DrakeJoint::getName() const { return name; }
 
