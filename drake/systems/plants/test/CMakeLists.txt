@@ -87,3 +87,6 @@ if (LCM_FOUND)
   add_test(NAME compareAcrobotURDFtoSDF COMMAND compareRigidBodySystems Acrobot.urdf Acrobot.sdf WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/examples/Acrobot")
 endif()
 
+add_executable(testXmlUtil testXmlUtil.cpp)
+target_link_libraries(testXmlUtil drakeXMLUtil)
+add_test(NAME testXmlUtil COMMAND testXmlUtil)
