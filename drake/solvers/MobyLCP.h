@@ -6,11 +6,14 @@
 #include <fstream>
 #include <Eigen/SparseCore>
 
+#include "drake/drakeOptimization_export.h"
+
 #include "MathematicalProgram.h"
 
 namespace Drake {
 
-class MobyLCPSolver : public MathematicalProgramSolverInterface {
+class DRAKEOPTIMIZATION_EXPORT MobyLCPSolver :
+      public MathematicalProgramSolverInterface {
  public:
   MobyLCPSolver();
   virtual ~MobyLCPSolver() {};
@@ -31,7 +34,7 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
       int min_exp = -20, unsigned step_exp = 1, int max_exp = 1,
       double piv_tol = -1.0, double zero_tol = -1.0) const;
   bool lcp_lemke(
-      const Eigen::SparseMatrix<double>& M, const Eigen::VectorXd& q, 
+      const Eigen::SparseMatrix<double>& M, const Eigen::VectorXd& q,
       Eigen::VectorXd* z,
       double piv_tol = -1.0, double zero_tol = -1.0) const;
   bool lcp_lemke_regularized(
@@ -48,12 +51,12 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
 
  private:
   void clearIndexVectors() const;
-  bool checkLemkeTrivial(int n, double zero_tol, 
+  bool checkLemkeTrivial(int n, double zero_tol,
                          const Eigen::VectorXd& q, Eigen::VectorXd* z) const;
   template <typename MatrixType>
   void lemkeFoundSolution(const MatrixType& M, const Eigen::VectorXd& q,
                           Eigen::VectorXd* z) const;
-  
+
   // TODO sammy replace this with a proper logging hookup
   std::ostream& LOG() const;
   bool log_enabled_;
