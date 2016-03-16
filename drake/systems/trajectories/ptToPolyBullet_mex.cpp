@@ -78,7 +78,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     mexPrintf("z: %f\n", vertsPr[i*nRows+2]);*/
   }
 
-  // btConvexHullShape polytope(&points0[0].getX(),6);
+  // btConvexHullShape polytope(&points0[0].getX(), 6);
 
   // Assign elements of verts (input) to polytope
   btTransform tr;

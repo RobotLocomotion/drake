@@ -18,15 +18,15 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   //    octomapWrapper(octree);     // destructor
   //
   //   Queries:
-  //    results = octomapWrapper(octree,1,pts) // search
-  //    leaf_nodes = octomapWrapper(octree,2)  // getLeafNodes
+  //    results = octomapWrapper(octree, 1, pts) // search
+  //    leaf_nodes = octomapWrapper(octree, 2)  // getLeafNodes
   //
   //   Update tree:
-  //    octomapWrapper(octree,11,pts,occupied)   // updateNote(pts,occupied).
+  //    octomapWrapper(octree, 11, pts, occupied)   // updateNote(pts, occupied).
   //    pts is 3-by-n, occupied is 1-by-n logical
   //
   //   General operations:
-  //    octomapWrapper(octree,21,filename)    // save to file
+  //    octomapWrapper(octree, 21, filename)    // save to file
 
   OcTree* tree = NULL;
 
@@ -137,7 +137,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     case 21:  // save to file
     {
       char* filename = mxArrayToString(prhs[2]);
-      //        mexPrintf("writing octree to %s\n",filename);
+      //        mexPrintf("writing octree to %s\n", filename);
       tree->writeBinary(filename);
       mxFree(filename);
     } break;

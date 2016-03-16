@@ -27,16 +27,16 @@ int main(int argc, char* argv[]) {
   // /tmp/r2.dot.png
 
 
-  valuecheck(r1->getNumStates(),r2->getNumStates());
-  valuecheck(r1->getNumInputs(),r2->getNumInputs());
-  valuecheck(r1->getNumOutputs(),r2->getNumOutputs());
+  valuecheck(r1->getNumStates(), r2->getNumStates());
+  valuecheck(r1->getNumInputs(), r2->getNumInputs());
+  valuecheck(r1->getNumOutputs(), r2->getNumOutputs());
 
   for (int i = 0; i < 1000; i++) {
     double t = 0.0;
     VectorXd x = getInitialState(*r1);
     VectorXd u = VectorXd::Random(r1->getNumInputs());
-    auto xdot1 = r1->dynamics(t,x,u);
-    auto xdot2 = r2->dynamics(t,x,u);
-    valuecheckMatrix(xdot1,xdot2,1e-8);
+    auto xdot1 = r1->dynamics(t, x, u);
+    auto xdot2 = r2->dynamics(t, x, u);
+    valuecheckMatrix(xdot1, xdot2, 1e-8);
   }
 }

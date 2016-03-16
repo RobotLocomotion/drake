@@ -3,35 +3,15 @@ dist: precise
 
 language: cpp
 
+os:
+  - osx
+
+compiler:
+  - clang
+
 branches:
   only:
     - master
-    - stable
-
-matrix:
-  include:
-    - os: linux
-      compiler: clang
-      env: DRAKE_CC=clang-3.7 DRAKE_CXX=clang++-3.7
-      addons:
-        apt:
-          sources:
-            - llvm-toolchain-precise-3.7
-            - ubuntu-toolchain-r-test
-          packages:
-            - clang-3.7
-    - os: linux
-      compiler: gcc
-      env: DRAKE_CC=gcc-4.9 DRAKE_CXX=g++-4.9
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-4.9
-    - os: osx
-      compiler: clang
-      env: DRAKE_CC=clang DRAKE_CXX=clang++
 
 install:
   - source travis_install.sh

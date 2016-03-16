@@ -5,8 +5,8 @@
 #include <cstring>
 /*
  * [type,
- * num_constraint,constraint_val,iAfun,jAvar,A,constraint_name,lower_bound,upper_bound]
- * = testSingleTimeLinearPostureConstraintmex(stlpc_ptr,q,t)
+ * num_constraint, constraint_val, iAfun, jAvar, A, constraint_name, lower_bound, upper_bound]
+ * = testSingleTimeLinearPostureConstraintmex(stlpc_ptr, q, t)
  * @param stlpc_ptr             A pointer to a SingleTimeLinearPostureConstraint
  * object
  * @param q                     A nqx1 double vector
@@ -32,8 +32,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs != 3 || nlhs != 9) {
     mexErrMsgIdAndTxt(
         "Drake:testSingleTimeLinearPostureConstraintmex:BadInputs",
-        "Usage [type,num_cnst,cnst_val,iAfun,jAvar,A,cnst_name,lb,ub] = "
-        "testSingleTimeLinearPostureConstraintmex(stlpc_ptr,q,t)");
+        "Usage [type, num_cnst, cnst_val, iAfun, jAvar, A, cnst_name, lb, ub] = "
+        "testSingleTimeLinearPostureConstraintmex(stlpc_ptr, q, t)");
   }
   SingleTimeLinearPostureConstraint* stlpc =
       (SingleTimeLinearPostureConstraint*)getDrakeMexPointer(prhs[0]);

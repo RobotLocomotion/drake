@@ -109,7 +109,7 @@ double containmentConstraint(snopt::doublereal x_shift[],
   mxArray *pS0 = mxGetField(funnelLibrary, funnelIdx, "S0");
   double *S0 = mxGetPrSafe(pS0);
 
-  // Get x - x0(:,1) (but zero out x,y,z)
+  // Get x - x0(:, 1) (but zero out x, y, z)
   mxArray *xrel = mxCreateDoubleMatrix(dim, 1, mxREAL);
   double *dxrel = mxGetPrSafe(xrel);
 
@@ -253,7 +253,7 @@ bool penetrationCost(snopt::doublereal x[], double *min_dist,
   bool collFree = true;
 
   // For each time sample, we need to check if we are collision free
-  // mxArray *collisions = mxCreateLogicalMatrix(numObs,N);
+  // mxArray *collisions = mxCreateLogicalMatrix(numObs, N);
 
   for (int k = 0; k < N; k++) {
     // Get pointer to cholesky factorization of S at this time
@@ -319,7 +319,7 @@ int snopt_userfun(snopt::integer *Status, snopt::integer *n,
   // far out. The decision variable is the amount to shift the funnel by
   // (and NOT the shiftED position of the funnel).
   //
-  // The triples (g(k),iGfun(k),jGvar(k)), k = 1:neG, define
+  // The triples (g(k), iGfun(k), jGvar(k)), k = 1:neG, define
   // the sparsity pattern and values of the nonlinear elements
   // of the Jacobian.
   //==================================================================
@@ -369,7 +369,7 @@ bool shiftFunnel(int funnelIdx, const mxArray *funnelLibrary,
                  const mxArray *obstacles, mwSize numObs, double *min_dist,
                  double *x_opt) {
   // Number of decision variables (3 in our case: we're searching for shifted
-  // x,y,z)
+  // x, y, z)
   snopt::integer nx = 3;
 
   // Number of rows of user constraint function (2 in our case).

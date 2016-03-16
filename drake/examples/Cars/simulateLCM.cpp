@@ -80,10 +80,10 @@ int main(int argc, char* argv[]) {
 
 
   auto rigid_body_sys = make_shared<RigidBodySystem>();
-  rigid_body_sys->addRobotFromFile(argv[1],floating_base_type);
+  rigid_body_sys->addRobotFromFile(argv[1], floating_base_type);
   auto const & tree = rigid_body_sys->getRigidBodyTree();
   for (int i=2; i<argc; i++)
-    tree->addRobotFromSDF(argv[i],DrakeJoint::FIXED);  // add environment
+    tree->addRobotFromSDF(argv[i], DrakeJoint::FIXED);  // add environment
 
   if (argc < 3) {  // add flat terrain
     double box_width = 1000;
@@ -164,7 +164,7 @@ int main(int argc, char* argv[]) {
   // stabilization terms.
 
   runLCM(sys, lcm, 0, std::numeric_limits<double>::infinity(), x0, options);
-  //  simulate(*sys,0,std::numeric_limits<double>::infinity(),x0,options);
+  //  simulate(*sys, 0, std::numeric_limits<double>::infinity(), x0, options);
 
   return 0;
 }

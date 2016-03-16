@@ -14,8 +14,8 @@ using namespace std;
  *
  * MATLAB signature:
  *
- * [xA,xB,normal,distance,idxA,idxB] = ...
- *    collisionDetectmex( mex_model_ptr,allow_multiple_contacts,
+ * [xA, xB, normal, distance, idxA, idxB] = ...
+ *    collisionDetectmex( mex_model_ptr, allow_multiple_contacts,
  *                        active_collision_options);
  */
 
@@ -23,7 +23,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   // check number of arguments
   if (nrhs < 4) {
     mexErrMsgIdAndTxt("Drake:collisionDetectmex:NotEnoughInputs",
-                      "Usage: [xA,xB,normal,distance,idxA,idxB] = "
+                      "Usage: [xA, xB, normal, distance, idxA, idxB] = "
                       "collisionDetectmex(mex_model_ptr, cache_ptr, "
                       "allow_multiple_contacts, active_collision_options)");
   }

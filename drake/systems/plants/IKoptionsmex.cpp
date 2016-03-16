@@ -8,9 +8,9 @@ using namespace Eigen;
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   /*
-    IKoptionsmex(1,robot_ptr)  // construct IK options
-    IKoptionsmex(2,ikoptions_pts) // destroy IK options
-    IKoptionsmex(3,ikoptions_ptr,field,varargin) // update IK options
+    IKoptionsmex(1, robot_ptr)  // construct IK options
+    IKoptionsmex(2, ikoptions_pts) // destroy IK options
+    IKoptionsmex(3, ikoptions_ptr, field, varargin) // update IK options
     */
 
   if (nrhs < 2) {
@@ -148,7 +148,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
             mxGetM(prhs[3]) != nq || mxGetM(prhs[4]) != nq ||
             mxGetN(prhs[3]) != 1 || mxGetN(prhs[4]) != 1) {
           mexErrMsgIdAndTxt("Drake:updatePtrIKoptionsmex:BadInputs",
-                            "q0_lb,q0_ub must be nq x 1 column double vector");
+                            "q0_lb, q0_ub must be nq x 1 column double vector");
         }
         VectorXd lb(nq);
         VectorXd ub(nq);
@@ -161,7 +161,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
             mxGetN(prhs[3]) != 1 || mxGetN(prhs[4]) != 1) {
           mexErrMsgIdAndTxt(
               "Drake:updatePtrIKoptionsmex:BadInputs",
-              "qd0_lb,qd0_ub must be nq x 1 column double vector");
+              "qd0_lb, qd0_ub must be nq x 1 column double vector");
         }
         VectorXd lb(nq);
         VectorXd ub(nq);
@@ -174,7 +174,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
             mxGetN(prhs[3]) != 1 || mxGetN(prhs[4]) != 1) {
           mexErrMsgIdAndTxt(
               "Drake:updatePtrIKoptionsmex:BadInputs",
-              "qdf_lb,qdf_ub must be nq x 1 column double vector");
+              "qdf_lb, qdf_ub must be nq x 1 column double vector");
         }
         VectorXd lb(nq);
         VectorXd ub(nq);

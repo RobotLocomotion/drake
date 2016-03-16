@@ -390,7 +390,7 @@ SingleTimeLinearPostureConstraint::SingleTimeLinearPostureConstraint(
   int lenA = static_cast<int>(iAfun.size());
   if (jAvar.size() != lenA || A.size() != lenA) {
     std::cerr << "Drake:RigidBodyConstraint:SingleTimeLinearPostureConstraint:"
-                 "iAfun,jAvar and A should be of the same size" << std::endl;
+                 "iAfun, jAvar and A should be of the same size" << std::endl;
   }
   std::set<std::pair<int, int>> mat_ind_set;
   for (int i = 0; i < lenA; i++) {
@@ -399,7 +399,7 @@ SingleTimeLinearPostureConstraint::SingleTimeLinearPostureConstraint(
   }
   if (mat_ind_set.size() != lenA) {
     std::cerr << "Drake:RigidBodyConstraint:SingleTimeLinearPostureConstraint:"
-                 "The pair (iAfun(i),jAvar(i)) is not unique" << std::endl;
+                 "The pair (iAfun(i), jAvar(i)) is not unique" << std::endl;
   }
   if (iAfun.maxCoeff() != this->num_constraint - 1) {
     std::cerr << "Drake:RigidBodyConstraint:SingleTimeLinearPostureConstraint:"
@@ -1927,7 +1927,7 @@ AllBodiesClosestDistanceConstraint::AllBodiesClosestDistanceConstraint(
 // double t = 0;
 // VectorXd c;
 // MatrixXd dc;
-// eval(&t,c,dc);
+// eval(&t, c, dc);
 // num_constraint = c.size();
 //}
 
