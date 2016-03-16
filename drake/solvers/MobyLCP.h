@@ -42,9 +42,6 @@ class DRAKEOPTIMIZATION_EXPORT MobyLCPSolver :
       Eigen::VectorXd* z,
       int min_exp = -20, unsigned step_exp = 4, int max_exp = 20,
       double piv_tol = -1.0, double zero_tol = -1.0) const;
-  bool fast_pivoting(
-      const Eigen::MatrixXd& M, const Eigen::VectorXd& q, Eigen::VectorXd* z,
-      double eps = std::sqrt(std::numeric_limits<double>::epsilon())) const;
 
   virtual bool available() const override { return true; }
   virtual bool solve(OptimizationProblem& prog) const override;
