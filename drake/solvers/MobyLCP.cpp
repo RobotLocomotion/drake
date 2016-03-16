@@ -100,7 +100,7 @@ const double NEAR_ZERO = std::sqrt(std::numeric_limits<double>::epsilon());
 namespace Drake {
 
 // Sole constructor
-MobyLCPSolver::MobyLCPSolver() : log_enabled_(false) {  
+MobyLCPSolver::MobyLCPSolver() : log_enabled_(false) {
 }
 
 void MobyLCPSolver::setLoggingEnabled(bool enabled) {
@@ -163,7 +163,7 @@ bool MobyLCPSolver::lcp_fast(
 
   // set zero tolerance if necessary
   if (zero_tol < 0.0) {
-    zero_tol = M.rows() * M.lpNorm<Eigen::Infinity>() 
+    zero_tol = M.rows() * M.lpNorm<Eigen::Infinity>()
         * std::numeric_limits<double>::epsilon();
   }
 
@@ -236,7 +236,7 @@ bool MobyLCPSolver::lcp_fast(
     // TODO sammy this log can't print when minw is UINF.
     // LOG() << "MobyLCPSolver::lcp_fast() - minimum w after pivot: "
     // << _w[minw] << std::endl;
-    
+
     // if w >= 0, check whether any component of z < 0
     if (minw == UINF || _w[minw] > -zero_tol) {
       // find the (a) minimum of z
@@ -407,7 +407,7 @@ bool MobyLCPSolver::lcp_fast_regularized(
           transformVecElements(*z, &_wx, std::multiplies<double>());
           const double wx_min = _wx.minCoeff();
           const double wx_max = _wx.maxCoeff();
-          
+
           if (wx_min > -ZERO_TOL && wx_max < ZERO_TOL) {
             LOG() << "  solved with regularization factor: " << lambda
                 << std::endl;
@@ -462,7 +462,7 @@ bool MobyLCPSolver::checkLemkeTrivial(
   return false;
 }
 
-template <typename MatrixType> 
+template <typename MatrixType>
 void MobyLCPSolver::lemkeFoundSolution(
     const MatrixType& M, const Eigen::VectorXd& q, Eigen::VectorXd* z) const {
   std::vector<unsigned>::iterator iiter;
@@ -470,10 +470,10 @@ void MobyLCPSolver::lemkeFoundSolution(
   for (idx = 0, iiter = _bas.begin(); iiter != _bas.end(); iiter++, idx++) {
     (*z)(*iiter) = _x(idx);
   }
-  
+
   // TODO sammy is there a more efficient way to resize and preserve the data?
   z->conservativeResize(q.size());
-  
+
   // check to see whether tolerances are satisfied
   if (log_enabled_) {
     _wl = (M * (*z)) + q;
@@ -514,10 +514,10 @@ bool MobyLCPSolver::lcp_lemke(
 
   // come up with a sensible value for zero tolerance if none is given
   if (zero_tol <= static_cast<double>(0.0)) {
-    zero_tol = M.lpNorm<Eigen::Infinity>() 
+    zero_tol = M.lpNorm<Eigen::Infinity>()
         * std::numeric_limits<double>::epsilon();
   }
-  
+
   if (checkLemkeTrivial(n, zero_tol, q, z)) {
     LOG() << " -- trivial solution found" << std::endl;
     LOG() << "MobyLCPSolver::lcp_lemke() exited" << std::endl;
@@ -566,7 +566,7 @@ bool MobyLCPSolver::lcp_lemke(
   // determine initial values
   if (!_bas.empty()) {
     LOG() << "-- initial basis not empty (warmstarting)" << std::endl;
-    
+
     // start from good initial basis
     _Bl.resize(n, n);
     _Bl.setIdentity();
@@ -585,7 +585,7 @@ bool MobyLCPSolver::lcp_lemke(
     _Bl.block(0, _t1.cols(), _t2.rows(), _t2.cols()) = _t2;
 
     // solve B*x = -q
-    // 
+    //
     // The original version of this code from Moby could handle the
     // case where the colver failed (though only in this dense
     // implementation).  It's not obvious how to do this from Eigen,
@@ -614,7 +614,7 @@ bool MobyLCPSolver::lcp_lemke(
   const double PIV_TOL = (piv_tol > static_cast<double>(0.0))
       ? piv_tol
       : (std::numeric_limits<double>::epsilon()
-         * n * std::max(static_cast<double>(1.0), 
+         * n * std::max(static_cast<double>(1.0),
                         M.lpNorm<Eigen::Infinity>()));
 
   // determine initial leaving variable
@@ -692,7 +692,7 @@ bool MobyLCPSolver::lcp_lemke(
 
     // check for no new pivots; ray termination
     if (_j.empty()) {
-      LOG() << "MobyLCPSolver::lcp_lemke() - no new pivots (ray termination)" 
+      LOG() << "MobyLCPSolver::lcp_lemke() - no new pivots (ray termination)"
             << std::endl;
       LOG() << "MobyLCPSolver::lcp_lemke() exiting" << std::endl;
       return false;
@@ -714,7 +714,7 @@ bool MobyLCPSolver::lcp_lemke(
     _result.resize(_xj.size());
     _result.fill(zero_tol);
     transformVecElements(_xj, &_result, std::plus<double>());
-    transformVecElements(_dj, &_result, [](double a, double b) { 
+    transformVecElements(_dj, &_result, [](double a, double b) {
       return b / a;});
     double theta = _result.minCoeff();
 
@@ -931,15 +931,15 @@ bool MobyLCPSolver::lcp_lemke_regularized(
  * \param z a vector "close" to the solution on input (optional); contains
  *        the solution on output
  */
-bool MobyLCPSolver::lcp_lemke(const Eigen::SparseMatrix<double>& M, 
-                              const Eigen::VectorXd& q, Eigen::VectorXd* z, 
+bool MobyLCPSolver::lcp_lemke(const Eigen::SparseMatrix<double>& M,
+                              const Eigen::VectorXd& q, Eigen::VectorXd* z,
                               double piv_tol, double zero_tol) const {
   if (log_enabled_) {
     LOG() << "MobyLCPSolver::lcp_lemke() entered" << std::endl;
     LOG() << "  M: " << std::endl << M;
     LOG() << "  q: " << q << std::endl;
   }
-  
+
   const unsigned n = q.size();
   const unsigned MAXITER = std::min((unsigned) 1000, 50*n);
 
@@ -952,7 +952,7 @@ bool MobyLCPSolver::lcp_lemke(const Eigen::SparseMatrix<double>& M,
   // come up with a sensible value for zero tolerance if none is given
   if (zero_tol <= static_cast<double>(0.0)) {
     Eigen::MatrixXd dense_M = M;
-    zero_tol = dense_M.lpNorm<Eigen::Infinity>() 
+    zero_tol = dense_M.lpNorm<Eigen::Infinity>()
         * std::numeric_limits<double>::epsilon() * n;
   }
 
@@ -1089,7 +1089,7 @@ bool MobyLCPSolver::lcp_lemke(const Eigen::SparseMatrix<double>& M,
     const double PIV_TOL = (piv_tol > static_cast<double>(0.0))
         ? piv_tol
         : (std::numeric_limits<double>::epsilon()
-           * n * std::max(static_cast<double>(1.0), 
+           * n * std::max(static_cast<double>(1.0),
                           _Be.lpNorm<Eigen::Infinity>()));
 
     // ** find new leaving variable
@@ -1101,7 +1101,7 @@ bool MobyLCPSolver::lcp_lemke(const Eigen::SparseMatrix<double>& M,
     }
     // check for no new pivots; ray termination
     if (_j.empty()) {
-      LOG() << "MobyLCPSolver::lcp_lemke() - no new pivots (ray termination)" 
+      LOG() << "MobyLCPSolver::lcp_lemke() - no new pivots (ray termination)"
             << std::endl;
       LOG() << "MobyLCPSolver::lcp_lemke() exited" << std::endl;
 
@@ -1120,7 +1120,7 @@ bool MobyLCPSolver::lcp_lemke(const Eigen::SparseMatrix<double>& M,
     _result.resize(_xj.size());
     _result.fill(zero_tol);
     transformVecElements(_xj, &_result, std::plus<double>());
-    transformVecElements(_dj, &_result, [](double a, double b) { 
+    transformVecElements(_dj, &_result, [](double a, double b) {
         return b / a;});
     double theta = _result.minCoeff();
 
@@ -1190,7 +1190,7 @@ bool MobyLCPSolver::lcp_lemke(const Eigen::SparseMatrix<double>& M,
 
 /// Regularized wrapper around Lemke's algorithm for srpase matrices
 bool MobyLCPSolver::lcp_lemke_regularized(
-  const Eigen::SparseMatrix<double>& M, const Eigen::VectorXd& q, 
+  const Eigen::SparseMatrix<double>& M, const Eigen::VectorXd& q,
   Eigen::VectorXd* z, int min_exp, unsigned step_exp, int max_exp,
   double piv_tol, double zero_tol) const {
   LOG() << "MobyLCPSolver::lcp_lemke_regularized() entered" << std::endl;
@@ -1275,137 +1275,4 @@ bool MobyLCPSolver::lcp_lemke_regularized(
   return false;
 }
 
-#if 0
-namespace {
-// picks (randomly) the minimum element from a vector that has potentially
-// multiple minima
-int rand_min2(const Eigen::VectorXd& v) {
-  const double EPS = std::sqrt(std::numeric_limits<double>::epsilon());
-  std::vector<unsigned> idx;
-
-  double minimum = v.minCoeff();
-  for (int i = 0; i < v.rows(); i++) {
-    if (v[i] - EPS <= minimum) {
-      idx.push_back(i);
-    }
-  }
-
-  // pick one at random
-  assert(!idx.empty());
-  return idx[rand() % idx.size()];
-}
-}
-
-// TODO sammy do we even need this one?
-/// Fast pivoting algorithm for frictionless contact
-bool MobyLCPSolver::fast_pivoting(
-    const Eigen::MatrixXd& M, const Eigen::VectorXd& q, Eigen::VectorXd& z,
-    double eps) const {
-  const unsigned N = q.size();
-  const unsigned MAX_PIVOTS = N*3;
-  RowIteratord_const minw, minz;
-
-  // look for degenerate problem
-  if (N == 0) {
-    z->resize(0);
-    return true;
-  }
-
-  // compute minimum indices
-  Eigen::Index minw;
-  double minw_val = q.minCoeff(&minw);
-
-  // look for easy solution
-  if (minw_val > -eps) {
-    z.resize(N);
-    z.fill(0);
-    return true;
-  }
-
-  // setup the basic variable and non-basic variable indices
-  _bas.clear();
-  _nonbas.clear();
-  for (unsigned i=0; i< N; i++) {
-    if (i != minw) {
-      _bas.push_back(i);
-    }
-  }
-  _nonbas.push_back(minw);
-
-  // TODO sammy this is where I stopped trying to Eigen-ify this
-  // function.  It's not obvious how to finish eigen-ifying this
-  // version, and I can't tell if it's even necessary.
-
-  // start the pivoting algorithm
-  for (unsigned i=0; i< MAX_PIVOTS; i++) {
-    // solve for nonbasic z
-    M.select_square(_nonbas.begin(), _nonbas.end(), _M);
-    q.select(_nonbas.begin(), _nonbas.end(), _qprime);
-    _qprime.negate();
-
-    // compute z subset
-    try {
-      _LA.solve_fast(_M, _qprime);
-    } catch (SingularException e) {
-      M.select_square(_nonbas.begin(), _nonbas.end(), _M);
-      try {
-        _LA.solve_LS_fast(_M, _qprime, LinAlgd::eSVD1, -1.0);
-      } catch (NumericalException e) {
-        try {
-          M.select_square(_nonbas.begin(), _nonbas.end(), _M);
-          _LA.solve_LS_fast(_M, _qprime, LinAlgd::eSVD2, -1.0);
-        } catch (NumericalException e) {
-          return false;
-        }
-      }
-    }
-
-    // setup proposed z
-    z.set_zero(N);
-    for (unsigned j=0; j< _nonbas.size(); j++) {
-      z[_nonbas[j]] = _qprime[j];
-    }
-
-    // compute w
-    M.mult(z, _w) += q;
-
-    // recompute minimum indices
-    minw = rand_min2(_w);
-    minz = rand_min2(z);
-
-    // see whether this has solved the problem
-    if (*minw > -eps) {
-      // check whether any component of z < 0
-      if (*minz < -eps) {
-        // move the element to the basic set
-        unsigned idx = minz-z.row_iterator_begin();
-        _nonbas.erase(std::find(_nonbas.begin(), _nonbas.end(), idx));
-        _bas.insert(std::lower_bound(_bas.begin(), _bas.end(), idx), idx);
-      } else {
-        return true;
-      }
-    } else {
-      // move mimimum component of w to nonbasic set
-      unsigned idx = minw-_w.row_iterator_begin();
-      _bas.erase(std::find(_bas.begin(), _bas.end(), idx));
-      _nonbas.insert(std::lower_bound(_nonbas.begin(), _nonbas.end(), idx),
-                     idx);
-
-      // look whether a component of z needs to move to basic set
-      if (*minz < -eps) {
-        // move the element to the basic set
-        unsigned idx = minz-z.row_iterator_begin();
-        _nonbas.erase(std::find(_nonbas.begin(), _nonbas.end(), idx));
-        _bas.insert(std::lower_bound(_bas.begin(), _bas.end(), idx), idx);
-      }
-    }
-  }
-
-  // if we're here, the maximum number of pivots was exceeded
-  std::cerr << "MobyLCPSolver::fast_pivoting() warning- "
-            << "maximum number of pivots exceeded (" << MAX_PIVOTS << ")"
-            << std::endl;
-  return false;
-};
-#endif
 }
