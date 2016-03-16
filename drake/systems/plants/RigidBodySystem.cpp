@@ -436,6 +436,15 @@ Eigen::VectorXd RigidBodyGyroscope::output(const double &t,
   return noise_model ? noise_model->generateNoise(angular_rates) : angular_rates;
 }
 
+RigidBodyDepthSensor::RigidBodyDepthSensor(RigidBodySystem const& sys,
+                                           const std::string& name,
+                                           const std::shared_ptr<RigidBodyFrame> frame,
+                                           std::size_t samples, double min_angle, double max_angle, double range)
+    : RigidBodySensor(sys, name), frame(frame), min_pitch(0.0), max_pitch(0.0),
+      min_yaw(min_angle), max_yaw(max_angle), num_pixel_rows(1), num_pixel_cols(samples), min_range(0.0), max_range(range) {
+  cacheRaycastEndpoints();
+}
+
 RigidBodyDepthSensor::RigidBodyDepthSensor(
     RigidBodySystem const& sys, const std::string& name,
     const std::shared_ptr<RigidBodyFrame> frame, tinyxml2::XMLElement* node)
@@ -488,28 +497,34 @@ RigidBodyDepthSensor::RigidBodyDepthSensor(
     parseScalarValue(range_node, "max", max_range);
   }
 
+  cacheRaycastEndpoints();
+}
+
+void RigidBodyDepthSensor::cacheRaycastEndpoints() {
   raycast_endpoints.resize(3, num_pixel_rows * num_pixel_cols);
   for (size_t i = 0; i < num_pixel_rows; i++) {
     double pitch =
         min_pitch +
         (num_pixel_rows > 1 ? static_cast<double>(i) / (num_pixel_rows - 1)
                             : 0.0) *
-            (max_pitch - min_pitch);
+        (max_pitch - min_pitch);
     for (size_t j = 0; j < num_pixel_cols; j++) {
       double yaw =
           min_yaw +
           (num_pixel_cols > 1 ? static_cast<double>(j) / (num_pixel_cols - 1)
                               : 0.0) *
-              (max_yaw - min_yaw);
+          (max_yaw - min_yaw);
       raycast_endpoints.col(num_pixel_cols * i + j) =
           max_range *
           Vector3d(
               cos(yaw) * cos(pitch), sin(yaw),
               -cos(yaw) *
-                  sin(pitch));  // rolled out from roty(pitch)*rotz(yaw)*[1;0;0]
+              sin(pitch));  // rolled out from roty(pitch)*rotz(yaw)*[1;0;0]
     }
   }
 }
+
+
 
 Eigen::VectorXd RigidBodyDepthSensor::output(const double &t,
                                              const KinematicsCache<double> &rigid_body_state,

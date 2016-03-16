@@ -29,6 +29,8 @@ int main(int argc, char* argv[]) {
   auto sensor_frame = tree->findFrame("body");
 
   auto accelerometer = make_shared<RigidBodyAccelerometer>(*rigid_body_sys, "accelerometer", sensor_frame);
+  //RigidBodyDepthSensor(RigidBodySystem const& sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame, std::size_t samples, double min_angle, double max_angle, double range);
+  auto lidar2D = make_shared<RigidBodyDepthSensor>(*rigid_body_sys, "lidar2D", sensor_frame, 100, -3*M_PI/4, 3*M_PI/4, 30.0);
   auto gyroscope = make_shared<RigidBodyGyroscope>(*rigid_body_sys, "gyroscope", sensor_frame);
   auto magnetometer = make_shared<RigidBodyMagnetometer>(*rigid_body_sys, "magnetometer", sensor_frame, 0.0);
   auto noise_model = make_shared<AdditiveGaussianNoiseModel<double, 3, Vector3d>>(0, 0.01);
@@ -40,7 +42,11 @@ int main(int argc, char* argv[]) {
 
   rigid_body_sys->addSensor(accelerometer);
   rigid_body_sys->addSensor(gyroscope);
-  rigid_body_sys->addSensor(magnetometer); 
+  rigid_body_sys->addSensor(magnetometer);
+
+  cout << "Outputs before: " << rigid_body_sys->getNumOutputs() << endl;
+  rigid_body_sys->addSensor(lidar2D);
+  cout << "Outputs after: " << rigid_body_sys->getNumOutputs() << endl;
 
   double box_width = 1000;
   double box_depth = 10;

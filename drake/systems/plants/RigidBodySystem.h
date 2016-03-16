@@ -445,6 +445,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySensor {
 class DRAKERBSYSTEM_EXPORT RigidBodyDepthSensor : public RigidBodySensor {
   public:
     RigidBodyDepthSensor(RigidBodySystem const& sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame, tinyxml2::XMLElement* node);
+    RigidBodyDepthSensor(RigidBodySystem const& sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame, std::size_t samples, double min_angle, double max_angle, double range);
 
     virtual ~RigidBodyDepthSensor() {}
 
@@ -452,6 +453,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodyDepthSensor : public RigidBodySensor {
     virtual Eigen::VectorXd output(const double& t, const KinematicsCache<double>& rigid_body_state, const RigidBodySystem::InputVector<double>& u) const override;
 
   private:
+    void cacheRaycastEndpoints();
     const std::shared_ptr<RigidBodyFrame> frame;
     double min_pitch; // minimum pitch of the camera FOV in radians
     double max_pitch; // maximum pitch of the camera FOV in radians
