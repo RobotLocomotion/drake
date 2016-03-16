@@ -13,8 +13,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs < 6) {
     mexErrMsgIdAndTxt("Drake:inverseKinPointwisemex:NotEnoughInputs",
                       "Usage "
-                      "inverseKinPointwisemex(model_ptr,t,q_seed,q_nom,"
-                      "constraint1,constraint2,...,ikoptions");
+                      "inverseKinPointwisemex(model_ptr, t, q_seed, q_nom,"
+                      "constraint1, constraint2,..., ikoptions");
   }
   RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[0]);
   int nq = model->num_positions;

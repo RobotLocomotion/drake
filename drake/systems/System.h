@@ -35,10 +35,10 @@ namespace Drake {
  *Vector<ScalarType> concept |
  * | template <ScalarType> StateVector<ScalarType> X::dynamics(const ScalarType&
  *t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) | @f$
- *\dot{x} = \text{dynamics}(t,x,u) @f$ |
+ *\dot{x} = \text{dynamics}(t, x, u) @f$ |
  * | template <ScalarType> OutputVector<ScalarType> X::output(const ScalarType&
  *t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) | @f$ y
- *= \text{output}(t,x,u) @f$  |
+ *= \text{output}(t, x, u) @f$  |
  * | bool isTimeVarying()  | should return false if output() and dynamics()
  *methods do not depend on time.  @default true |
  * | bool isDirectFeedthrough() | should return false if output() does not

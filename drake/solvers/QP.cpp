@@ -78,7 +78,7 @@ int fastQPThatTakesQinv(vector<MatrixXd*> QinvblkDiag, const VectorXd& f,
         QinvAteq.block(startrow, 0, d, M) =
             thisQinv->asDiagonal() *
             Aeq.block(0, startrow, M, d)
-                .transpose();  // Aeq.transpoODse().block(startrow,0,d,N)
+                .transpose();  // Aeq.transpoODse().block(startrow, 0, d, N)
       minusQinvf.segment(startrow, d) =
           -thisQinv->cwiseProduct(f.segment(startrow, d));
       startrow = startrow + d;
@@ -91,7 +91,7 @@ int fastQPThatTakesQinv(vector<MatrixXd*> QinvblkDiag, const VectorXd& f,
       if (M > 0)
         QinvAteq.block(startrow, 0, d, M) = thisQinv->operator*(
             Aeq.block(0, startrow, M, d)
-                .transpose());  // Aeq.transpose().block(startrow,0,d,N)
+                .transpose());  // Aeq.transpose().block(startrow, 0, d, N)
       minusQinvf.segment(startrow, d) =
           -thisQinv->operator*(f.segment(startrow, d));
       startrow = startrow + d;
@@ -139,7 +139,7 @@ int fastQPThatTakesQinv(vector<MatrixXd*> QinvblkDiag, const VectorXd& f,
     b << beq, bact;
 
     if (A.rows() > 0) {
-      // Solve H * [x;lam] = [-f;b] using Schur complements, H = [Q,At';A,0];
+      // Solve H * [x;lam] = [-f;b] using Schur complements, H = [Q, At';A, 0];
       QinvAt.resize(QinvAteq.rows(), QinvAteq.cols() + Aact.rows());
 
       if (n_active > 0) {
@@ -305,12 +305,12 @@ int fastQP(vector<MatrixXd*> QblkDiag, const VectorXd& f, const MatrixXd& Aeq,
 /* Example call (allocate inequality matrix, call function, resize inequalites:
   VectorXd binBnd = VectorXd(2*N);
   AinBnd.setZero();
-  int numIneq = boundToIneq(ub,lb,AinBnd,binBnd);
-  AinBnd.resize(numIneq,N);
+  int numIneq = boundToIneq(ub, lb, AinBnd, binBnd);
+  AinBnd.resize(numIneq, N);
   binBnd.resize(numIneq);
 */
 /*
-int boundToIneq(const VectorXd& uB,const VectorXd& lB, MatrixXd& Ain, VectorXd&
+int boundToIneq(const VectorXd& uB, const VectorXd& lB, MatrixXd& Ain, VectorXd&
 bin)
 {
     int rCnt = 0;
@@ -328,20 +328,20 @@ bin)
         if (!isinf(lB(i))) {
             cout << lB(i);
             cout << i;
-            Ain(rCnt,cCnt++) = -1;//lB(i);
+            Ain(rCnt, cCnt++) = -1;// lB(i);
             bin(rCnt++) = -lB(i);
         }
     }
     cCnt = 0;
     for (int i = 0; i < uB.rows(); i++ ) {
         if (!isinf(uB(i))) {
-            Ain(rCnt,cCnt++) = 1;//uB(i);
+            Ain(rCnt, cCnt++) = 1;// uB(i);
             bin(rCnt++) = uB(i);
         }
     }
 
-    //resizing inside function all causes exception (why??)
-    //A.resize(rCnt,uB.rows());
+    // resizing inside function all causes exception (why??)
+    // A.resize(rCnt, uB.rows());
     return rCnt;
 }
 */
@@ -353,10 +353,10 @@ int myGRBaddconstrs(GRBmodel* model, MatrixBase<DerivedA> const& A,
   int i, j, nnz, error = 0;
   /*
     // todo: it seems like I should just be able to do something like this:
-    SparseMatrix<double,RowMajor> sparseAeq(Aeq.sparseView());
+    SparseMatrix<double, RowMajor> sparseAeq(Aeq.sparseView());
     sparseAeq.makeCompressed();
     error =
-    GRBaddconstrs(model,nq_con,sparseAeq.nonZeros(),sparseAeq.InnerIndices(),sparseAeq.OuterStarts(),sparseAeq.Values(),beq.data(),NULL);
+    GRBaddconstrs(model, nq_con, sparseAeq.nonZeros(), sparseAeq.InnerIndices(), sparseAeq.OuterStarts(), sparseAeq.Values(), beq.data(), NULL);
   */
 
   int* cind = new int[A.cols()];
@@ -388,12 +388,12 @@ GRBmodel* gurobiQP(GRBenv* env, vector<MatrixXd*> QblkDiag, VectorXd& f,
                    const MatrixXd& Ain, const VectorXd& bin, VectorXd& lb,
                    VectorXd& ub, set<int>& active, VectorXd& x,
                    double active_set_slack_tolerance) {
-  // Note: f,lb, and ub are VectorXd instead of const MatrixBase templates
+  // Note: f, lb, and ub are VectorXd instead of const MatrixBase templates
   // because i want to be able to call f.data() on them
 
   // NOTE:  this allocates memory for a new GRBmodel and returns it. (you should
   // delete this object when you're done with it)
-  // NOTE:  by convention here, the active set indices correspond to Ain,bin
+  // NOTE:  by convention here, the active set indices correspond to Ain, bin
   // first, then lb, then ub.
 
   GRBmodel* model = NULL;
@@ -489,7 +489,7 @@ GRBmodel* gurobiActiveSetQP(GRBenv* env, vector<MatrixXd*> QblkDiag,
                             int cbasis_len, VectorXd& x) {
   // NOTE:  this allocates memory for a new GRBmodel and returns it. (you should
   // delete this object when you're done with it)
-  // NOTE:  by convention here, the active set indices correspond to Ain,bin
+  // NOTE:  by convention here, the active set indices correspond to Ain, bin
   // first, then lb, then ub.
   GRBmodel* model = NULL;
 
@@ -595,8 +595,8 @@ VectorXd >& beq, const MatrixBase< MatrixXd >& Ain, const MatrixBase< VectorXd
 
 /*
 template int fastQP(vector< MatrixBase< VectorXd > >, const MatrixBase< VectorXd
->&, const MatrixBase< Matrix<double,-1,-1,RowMajor,1000,-1> >&, const
-MatrixBase< Matrix<double,-1,1,0,1000,1> >&, const MatrixBase<
-Matrix<double,-1,-1,RowMajor,1000,-1> >&, const MatrixBase<
-Matrix<double,-1,1,0,1000,1> >&, set<int>&, MatrixBase< VectorXd >&);
+>&, const MatrixBase< Matrix<double,-1,-1, RowMajor, 1000,-1> >&, const
+MatrixBase< Matrix<double,-1, 1, 0, 1000, 1> >&, const MatrixBase<
+Matrix<double,-1,-1, RowMajor, 1000,-1> >&, const MatrixBase<
+Matrix<double,-1, 1, 0, 1000, 1> >&, set<int>&, MatrixBase< VectorXd >&);
 */

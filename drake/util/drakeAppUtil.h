@@ -28,7 +28,7 @@ char* getCommandLineOption(char** begin, char** end,
  *(getopt is not available on msvc)
  *
  * Example usage:
- * if(commandLineOptionExists(argv, argv+argc, "-h")) { ... }
+ * if (commandLineOptionExists(argv, argv+argc, "-h")) { ... }
  *
  * See also getCommandLineOption
  */

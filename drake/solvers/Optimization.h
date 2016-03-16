@@ -344,7 +344,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    * Example: to add and equality constraint which only depends on two of the
    * elements of x, you could use
    *   auto x = prog.addContinuousDecisionVariable(6,"myvar");
-   *   prog.addLinearEqualityConstraint(Aeq,beq,{x.row(2),x.row(5)});
+   *   prog.addLinearEqualityConstraint(Aeq, beq,{x.row(2), x.row(5)});
    * where Aeq has exactly two columns.
    */
   template <typename DerivedA, typename DerivedB>
@@ -429,7 +429,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 }
   // template <typename FunctionType>
   // void addCost(std::function..);
-  // void addLinearCost(const Eigen::MatrixBase<Derived>& c,const vector<const
+  // void addLinearCost(const Eigen::MatrixBase<Derived>& c, const vector<const
   // DecisionVariable&>& vars)
   // void addQuadraticCost ...
 

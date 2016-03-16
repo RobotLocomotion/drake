@@ -29,12 +29,12 @@ int main(int argc, char* argv[]) {
   KinematicsCache<double> cache = model->doKinematics(q, v);
   //  }
 
-  //  const Vector4d zero(0,0,0,1);
+  //  const Vector4d zero(0, 0, 0, 1);
   Eigen::Vector3d zero = Eigen::Vector3d::Zero();
   Eigen::Matrix<double, 6, 1> pt;
 
   for (i = 0; i < model->bodies.size(); i++) {
-    //    model->forwardKin(i,zero,1,pt);
+    //    model->forwardKin(i, zero, 1, pt);
     auto pt = model->transformPoints(cache, zero, i, 0);
     auto rpy = model->relativeRollPitchYaw(cache, i, 0);
     Eigen::Matrix<double, 6, 1> x;

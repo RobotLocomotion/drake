@@ -8,7 +8,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs != 2 || nlhs != 12) {
     mexErrMsgIdAndTxt("Drake:testGeometryConversionFunctionsmex:BadInputs",
                       "Usage [omega2qd, domega2qd, omega2rpyd, domega2rpyd, "
-                      "ddomega2rpyd, rpyd2omega, drpyd2omega,qd2omega, "
+                      "ddomega2rpyd, rpyd2omega, drpyd2omega, qd2omega, "
                       "dqd2omega, dq2R, drpydR, dqdR] = "
                       "testGeometryConversionFunctionsmex(q, dq)");
   }

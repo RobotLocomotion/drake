@@ -438,33 +438,33 @@ bool Drake::MathematicalProgramSNOPTSolver::solve(
 
   /*
     mysnseti("Derivative
-    option",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"DerivativeOption"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
+    option", static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13], 0,"DerivativeOption"))),&iPrint,&iSumm,&INFO_snopt, cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw);
     mysnseti("Major iterations
-    limit",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"MajorIterationsLimit"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
+    limit", static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13], 0,"MajorIterationsLimit"))),&iPrint,&iSumm,&INFO_snopt, cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw);
     mysnseti("Minor iterations
-    limit",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"MinorIterationsLimit"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
+    limit", static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13], 0,"MinorIterationsLimit"))),&iPrint,&iSumm,&INFO_snopt, cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw);
     mysnsetr("Major optimality
-    tolerance",static_cast<snopt::doublereal>(*mxGetPr(mxGetField(prhs[13],0,"MajorOptimalityTolerance"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
+    tolerance", static_cast<snopt::doublereal>(*mxGetPr(mxGetField(prhs[13], 0,"MajorOptimalityTolerance"))),&iPrint,&iSumm,&INFO_snopt, cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw);
     mysnsetr("Major feasibility
-    tolerance",static_cast<snopt::doublereal>(*mxGetPr(mxGetField(prhs[13],0,"MajorFeasibilityTolerance"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
+    tolerance", static_cast<snopt::doublereal>(*mxGetPr(mxGetField(prhs[13], 0,"MajorFeasibilityTolerance"))),&iPrint,&iSumm,&INFO_snopt, cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw);
     mysnsetr("Minor feasibility
-    tolerance",static_cast<snopt::doublereal>(*mxGetPr(mxGetField(prhs[13],0,"MinorFeasibilityTolerance"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
+    tolerance", static_cast<snopt::doublereal>(*mxGetPr(mxGetField(prhs[13], 0,"MinorFeasibilityTolerance"))),&iPrint,&iSumm,&INFO_snopt, cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw);
     mysnseti("Superbasics
-    limit",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"SuperbasicsLimit"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
+    limit", static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13], 0,"SuperbasicsLimit"))),&iPrint,&iSumm,&INFO_snopt, cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw);
     mysnseti("Verify
-    level",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"VerifyLevel"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
+    level", static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13], 0,"VerifyLevel"))),&iPrint,&iSumm,&INFO_snopt, cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw);
     mysnseti("Iterations
-    Limit",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"IterationsLimit"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
+    Limit", static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13], 0,"IterationsLimit"))),&iPrint,&iSumm,&INFO_snopt, cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw);
     mysnseti("Scale
-    option",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"ScaleOption"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
+    option", static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13], 0,"ScaleOption"))),&iPrint,&iSumm,&INFO_snopt, cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw);
     mysnseti("New basis
-    file",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"NewBasisFile"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
+    file", static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13], 0,"NewBasisFile"))),&iPrint,&iSumm,&INFO_snopt, cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw);
     mysnseti("Old basis
-    file",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"OldBasisFile"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
+    file", static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13], 0,"OldBasisFile"))),&iPrint,&iSumm,&INFO_snopt, cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw);
     mysnseti("Backup basis
-    file",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"BackupBasisFile"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
+    file", static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13], 0,"BackupBasisFile"))),&iPrint,&iSumm,&INFO_snopt, cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw);
     mysnsetr("Linesearch
-    tolerance",static_cast<snopt::doublereal>(*mxGetPr(mxGetField(prhs[13],0,"LinesearchTolerance"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
+    tolerance", static_cast<snopt::doublereal>(*mxGetPr(mxGetField(prhs[13], 0,"LinesearchTolerance"))),&iPrint,&iSumm,&INFO_snopt, cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw);
   */
 
   snopt::integer info;

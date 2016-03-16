@@ -54,13 +54,13 @@ using namespace std;
 
 /**
  * Use Frank's fastQP code (mexed)
- * [q,info] = approximateIKEIQPmex(objgetMexModelPtr, q0, q_nom, Q, varargin)
+ * [q, info] = approximateIKEIQPmex(objgetMexModelPtr, q0, q_nom, Q, varargin)
  * info = 0 on success, 1 on failure
  **/
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nrhs < 4) {
     mexErrMsgIdAndTxt("Drake:approximateIKmex:NotEnoughInputs",
-                      "Usage approximateIKmex(model_ptr,q0,q_nom,Q,...)");
+                      "Usage approximateIKmex(model_ptr, q0, q_nom, Q,...)");
   }
 
   if (nlhs < 1) return;

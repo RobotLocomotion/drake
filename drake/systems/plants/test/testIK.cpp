@@ -40,9 +40,9 @@ int main() {
   printf("%5.2f\n%5.2f\n%5.2f\n", com(0), com(1), com(2));
   /*MATFile *presultmat;
   presultmat = matOpen("q_sol.mat","w");
-  mxArray* pqsol = mxCreateDoubleMatrix(model.num_dof,1,mxREAL);
-  memcpy(mxGetPrSafe(pqsol),q_sol.data(),sizeof(double)model.num_dof);
-  matPutVariable(presultmat,"q_sol",pqsol);
+  mxArray* pqsol = mxCreateDoubleMatrix(model.num_dof, 1, mxREAL);
+  memcpy(mxGetPrSafe(pqsol), q_sol.data(), sizeof(double)model.num_dof);
+  matPutVariable(presultmat,"q_sol", pqsol);
   matClose(presultmat);*/
   return 0;
 }

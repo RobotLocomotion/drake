@@ -97,7 +97,7 @@ void findContactIndexes(VectorXi const &idxList, const size_t bodyIdx,
 //   A contact points followed
 //     by body B contact points where n = size(cindA) + size(cindB)
 // NOTE: the output is a matrix of 4-vector columns in homogeneous coordinates
-// (x,y,z,1)'
+// (x, y, z, 1)'
 void getBodyPoints(std::vector<size_t> const &cindA,
                    std::vector<size_t> const &cindB, Matrix3Xd const &xA,
                    Matrix3Xd const &xB, Matrix3Xd &bodyPoints) {
