@@ -1,13 +1,15 @@
 
-#include <iostream>
 #include <memory>
 #include <vector>
+
+#include <gtest/gtest.h>
 
 #include "drake/solvers/MobyLCP.h"
 #include "drake/util/testUtil.h"
 
 namespace {
 const double epsilon = 1e-6;
+const bool verbose = false;
 
 template <typename Derived>
 Eigen::SparseMatrix<double> makeSparseMatrix(
@@ -32,36 +34,28 @@ template <typename Derived>
 void runBasicLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
                  const Eigen::VectorXd& expected_z_in, bool expect_fast_pass) {
   Drake::MobyLCPSolver l;
-  l.setLoggingEnabled(true);
+  l.setLoggingEnabled(verbose);
 
   Eigen::VectorXd expected_z = expected_z_in;
 
   Eigen::VectorXd fast_z;
   bool result = l.lcp_fast(M, q, &fast_z);
-  std::cout << "Result (lcp_fast): " << result << std::endl
-            << fast_z << std::endl;
   if (expected_z.size() == 0)  {
-    if (!expect_fast_pass) {
-      throw std::runtime_error(
-          "Expected Z not provided and expect_fast_pass unset.");
-    }
+    ASSERT_TRUE(expect_fast_pass) <<
+        "Expected Z not provided and expect_fast_pass unset.";
     expected_z = fast_z;
   } else if (expect_fast_pass) {
-    valuecheckMatrix(fast_z, expected_z, epsilon);
+    EXPECT_NO_THROW(valuecheckMatrix(fast_z, expected_z, epsilon));
   }
 
   Eigen::VectorXd lemke_z;
   result = l.lcp_lemke(M, q, &lemke_z);
-  std::cout << "Result (lcp_lemke): " << result << std::endl
-            << lemke_z << std::endl;
-  valuecheckMatrix(lemke_z, expected_z, epsilon);
+  EXPECT_NO_THROW(valuecheckMatrix(lemke_z, expected_z, epsilon));
 
   Eigen::SparseMatrix<double> M_sparse = makeSparseMatrix(M);
   lemke_z.setZero();
   result = l.lcp_lemke(M_sparse, q, &lemke_z);
-  std::cout << "Result (lcp_lemke (sparse)): " << result << std::endl
-            << lemke_z << std::endl;
-  valuecheckMatrix(lemke_z, expected_z, epsilon);
+  EXPECT_NO_THROW(valuecheckMatrix(lemke_z, expected_z, epsilon));
 }
 
 /// Run all regularized solvers.  If @p expected_z is an empty
@@ -70,35 +64,29 @@ template <typename Derived>
 void runRegularizedLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
                        const Eigen::VectorXd& expected_z_in) {
   Drake::MobyLCPSolver l;
-  l.setLoggingEnabled(true);
+  l.setLoggingEnabled(verbose);
 
   Eigen::VectorXd expected_z = expected_z_in;
 
   Eigen::VectorXd fast_z;
   bool result = l.lcp_fast_regularized(M, q, &fast_z);
-  std::cout << "Result (lcp_fast): " << result << std::endl
-            << fast_z << std::endl;
   if (expected_z.size() == 0)  {
     expected_z = fast_z;
   } else {
-    valuecheckMatrix(fast_z, expected_z, epsilon);
+    EXPECT_NO_THROW(valuecheckMatrix(fast_z, expected_z, epsilon));
   }
 
   Eigen::VectorXd lemke_z;
   result = l.lcp_lemke_regularized(M, q, &lemke_z);
-  std::cout << "Result (lcp_lemke): " << result << std::endl
-            << lemke_z << std::endl;
-  valuecheckMatrix(lemke_z, expected_z, epsilon);
+  EXPECT_NO_THROW(valuecheckMatrix(lemke_z, expected_z, epsilon));
 
   Eigen::SparseMatrix<double> M_sparse = makeSparseMatrix(M);
   lemke_z.setZero();
   result = l.lcp_lemke_regularized(M_sparse, q, &lemke_z);
-  std::cout << "Result (lcp_lemke (sparse)): " << result << std::endl
-            << lemke_z << std::endl;
-  valuecheckMatrix(lemke_z, expected_z, epsilon);
+  EXPECT_NO_THROW(valuecheckMatrix(lemke_z, expected_z, epsilon));
 }
 
-void testTrivial() {
+TEST(testMobyLCP, testTrivial) {
   Eigen::Matrix<double, 9, 9> M;
   M <<
       1, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -122,7 +110,7 @@ void testTrivial() {
   runRegularizedLCP(M, q, empty_z);
 }
 
-void testProblem1() {
+TEST(testMobyLCP, testProblem1) {
   // Problem from example 10.2.1 in "Handbook of Test Problems in
   // Local and Global Optimization".
   Eigen::Matrix<double, 16, 16> M;
@@ -142,7 +130,7 @@ void testProblem1() {
   runBasicLCP(M, q, z, false);
 }
 
-void testProblem2() {
+TEST(testMobyLCP, testProblem2) {
   // Problem from example 10.2.2 in "Handbook of Test Problems in
   // Local and Global Optimization".
   Eigen::Matrix<double, 2, 2> M;
@@ -158,7 +146,7 @@ void testProblem2() {
   runBasicLCP(M, q, z, true);
 }
 
-void testProblem3() {
+TEST(testMobyLCP, testProblem3) {
   // Problem from example 10.2.3 in "Handbook of Test Problems in
   // Local and Global Optimization".
   Eigen::Matrix<double, 3, 3> M;
@@ -175,7 +163,7 @@ void testProblem3() {
   runBasicLCP(M, q, z, false);
 }
 
-void testProblem4() {
+TEST(testMobyLCP, testProblem4) {
   // Problem from example 10.2.4 in "Handbook of Test Problems in
   // Local and Global Optimization".
   Eigen::Matrix<double, 4, 4> M;
@@ -194,29 +182,23 @@ void testProblem4() {
   z << 1./90., 2./45., 1./90., 2./45.;
 
   Drake::MobyLCPSolver l;
-  l.setLoggingEnabled(true);
+  l.setLoggingEnabled(verbose);
 
-  Eigen::VectorXd fast_z(4);
+  Eigen::VectorXd fast_z;
   bool result = l.lcp_fast(M, q, &fast_z);
-  std::cout << "Result (lcp_fast): " << result << std::endl
-            << fast_z << std::endl;
-  valuecheckMatrix(fast_z, z, epsilon);
+  EXPECT_NO_THROW(valuecheckMatrix(fast_z, z, epsilon));
 
   // TODO sammy the Lemke solvers find no solution at all, however.
   fast_z.setZero();
   result = l.lcp_lemke(M, q, &fast_z);
-  if (result) {
-    throw std::runtime_error("Did not expect solver to provide result.");
-  }
+  EXPECT_FALSE(result);
 
   Eigen::SparseMatrix<double> M_sparse = makeSparseMatrix(M);
   result = l.lcp_lemke(M_sparse, q, &fast_z);
-  if (result) {
-    throw std::runtime_error("Did not expect solver to provide result.");
-  }
+  EXPECT_FALSE(result);
 }
 
-void testProblem6() {
+TEST(testMobyLCP, testProblem6) {
   // Problem from example 10.2.9 in "Handbook of Test Problems in
   // Local and Global Optimization".
   Eigen::Matrix<double, 4, 4> M;
@@ -252,49 +234,31 @@ void testProblem6() {
   runBasicLCP(M, q, z, false);
 }
 
-
-void assertEmpty(const Eigen::VectorXd& z) {
-  if (z.size() != 0) {
-    throw std::runtime_error("Expected empty vector.");
-  }
-}
-
-void testEmpty() {
+TEST(testMobyLCP, testEmpty) {
   Eigen::MatrixXd empty_M(0, 0);
   Eigen::VectorXd empty_q(0);
   Eigen::VectorXd z;
   Drake::MobyLCPSolver l;
-  l.setLoggingEnabled(true);
+  l.setLoggingEnabled(verbose);
 
   bool result = l.lcp_fast(empty_M, empty_q, &z);
-  assertEmpty(z);
+  EXPECT_EQ(z.size(), 0);
 
   result = l.lcp_lemke(empty_M, empty_q, &z);
-  assertEmpty(z);
+  EXPECT_EQ(z.size(), 0);
 
   Eigen::SparseMatrix<double> empty_sparse_M(0,0);
   result = l.lcp_lemke(empty_sparse_M, empty_q, &z);
-  assertEmpty(z);
+  EXPECT_EQ(z.size(), 0);
 
   result = l.lcp_fast_regularized(empty_M, empty_q, &z);
-  assertEmpty(z);
+  EXPECT_EQ(z.size(), 0);
 
   result = l.lcp_lemke_regularized(empty_M, empty_q, &z);
-  assertEmpty(z);
+  EXPECT_EQ(z.size(), 0);
 
   result = l.lcp_lemke_regularized(empty_sparse_M, empty_q, &z);
-  assertEmpty(z);
+  EXPECT_EQ(z.size(), 0);
 }
 
-}
-
-int main(int argc, char* argv[]) {
-  testTrivial();
-  testProblem1();
-  testProblem2();
-  testProblem3();
-  testProblem4();
-  testProblem6();
-  testEmpty();
-  return 0;
 }
