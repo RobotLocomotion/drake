@@ -3,6 +3,8 @@
 #include "drake/systems/Simulation.h"
 #include "drake/systems/controllers/LQR.h"
 #include "drake/systems/plants/BotVisualizer.h"
+#include "drake/systems/cascade_system.h"
+#include "drake/systems/feedback_system.h"
 
 using namespace std;
 using namespace Drake;

@@ -47,7 +47,6 @@ RigidBodyTree::RigidBodyTree(
   a_grav << 0, 0, 0, 0, 0, -9.81;
 
   shared_ptr<RigidBody> b(new RigidBody());
-  make_shared<RigidBody>();
   b->linkname = "world";
   b->robotnum = 0;
   b->body_index = 0;
@@ -290,11 +289,11 @@ map<string, int> RigidBodyTree::computePositionNameToIndexMap() const {
 
 DrakeCollision::ElementId RigidBodyTree::addCollisionElement(
     const RigidBody::CollisionElement& element,
-    const shared_ptr<RigidBody>& body, const string& group_name) {
+    RigidBody& body, const string& group_name) {
   DrakeCollision::ElementId id = collision_model->addElement(element);
   if (id != 0) {
-    body->collision_element_ids.push_back(id);
-    body->collision_element_groups[group_name].push_back(id);
+    body.collision_element_ids.push_back(id);
+    body.collision_element_groups[group_name].push_back(id);
   }
   return id;
 }
@@ -624,8 +623,8 @@ void RigidBodyTree::warnOnce(const string& id, const string& msg) {
 // MatrixXd ptsA, ptsB, normal, JA, JB;
 // vector<int> bodyA_idx, bodyB_idx;
 // bool return_val =
-// closestPointsAllBodies(bodyA_idx,bodyB_idx,ptsA,ptsB,normal,distance,
-// JA,JB,Jd);
+// closestPointsAllBodies(bodyA_idx, bodyB_idx, ptsA, ptsB, normal, distance,
+// JA, JB, Jd);
 // DEBUG
 // cout << "RigidBodyTree::closestDistanceAllBodies: distance.size() = " <<
 // distance.size() << endl;
@@ -919,7 +918,7 @@ void RigidBodyTree::getContactPositionsJac(
   }
 }
 
-/* [body_ind,Tframe] = parseBodyOrFrameID(body_or_frame_id) */
+/* [body_ind, Tframe] = parseBodyOrFrameID(body_or_frame_id) */
 template <typename Scalar>
 int RigidBodyTree::parseBodyOrFrameID(
     const int body_or_frame_id,
@@ -1034,8 +1033,8 @@ Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic> RigidBodyTree::geometricJacobian(
   int body_index;
   for (size_t i = 0; i < kinematic_path.joint_path.size(); i++) {
     body_index = kinematic_path.joint_path[i];
-    const std::shared_ptr<RigidBody>& body = bodies[body_index];
-    const DrakeJoint& joint = body->getJoint();
+    const RigidBody& body = *bodies[body_index];
+    const DrakeJoint& joint = body.getJoint();
     cols +=
         in_terms_of_qdot ? joint.getNumPositions() : joint.getNumVelocities();
   }
@@ -1570,7 +1569,7 @@ shared_ptr<RigidBody> RigidBodyTree::findLink(std::string linkname,
 
   // std::regex linkname_connector("[abc]");
   // cout<<"get linkname_connector"<<endl;
-  // linkname = std::regex_replace(linkname,linkname_connector,string("_"));
+  // linkname = std::regex_replace(linkname, linkname_connector, string("_"));
   int match = -1;
   for (int i = 0; i < bodies.size(); i++) {
     // Note: unlike the MATLAB implementation, I don't have to handle the fixed
@@ -1605,7 +1604,7 @@ shared_ptr<RigidBody> RigidBodyTree::findLink(std::string linkname,
 
   // std::regex linkname_connector("[abc]");
   // cout<<"get linkname_connector"<<endl;
-  // linkname = std::regex_replace(linkname,linkname_connector,string("_"));
+  // linkname = std::regex_replace(linkname, linkname_connector, string("_"));
   int match = -1;
   for (int i = 0; i < bodies.size(); i++) {
     // Note: unlike the MATLAB implementation, I don't have to handle the fixed
@@ -1838,7 +1837,7 @@ size_t RigidBodyTree::getNumPositionConstraints() const {
   return loops.size() * 6;
 }
 
-void RigidBodyTree::addFrame(const std::shared_ptr<RigidBodyFrame>& frame) {
+void RigidBodyTree::addFrame(std::shared_ptr<RigidBodyFrame> frame) {
   frames.push_back(frame);
   frame->frame_index = -(static_cast<int>(frames.size()) - 1) - 2;  // yuck!!
 }

@@ -199,7 +199,7 @@ void parseSDFCollision(shared_ptr<RigidBody> body, XMLElement* node,
                         body->linkname + ".");
 
   if (element.hasGeometry()) {
-    model->addCollisionElement(element, body, group_name);
+    model->addCollisionElement(element, *body, group_name);
   }
 }
 
@@ -331,7 +331,7 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
                                            // link frame
   }
 
-  //  pose_map.insert(pair<string,Isometry3d>(name,T)); // note: joint names
+  //  pose_map.insert(pair<string, Isometry3d>(name, T)); // note: joint names
   //  must be distinct within a model, but nothing prevents them from matching a
   //  link name.
 

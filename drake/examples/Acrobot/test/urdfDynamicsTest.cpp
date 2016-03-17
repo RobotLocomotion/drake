@@ -41,18 +41,18 @@ int main(int argc, char* argv[]) {
     endl;
     eigen_aligned_unordered_map<const RigidBody *, Matrix<double, 6, 1> > f_ext;
     cout << "C_urdf = " <<
-    r_urdf.getRigidBodyTree()->dynamicsBiasTerm(kinsol_urdf,f_ext) << endl;
+    r_urdf.getRigidBodyTree()->dynamicsBiasTerm(kinsol_urdf, f_ext) << endl;
     cout << "C_sdf = " <<
-    r_sdf.getRigidBodyTree()->dynamicsBiasTerm(kinsol_sdf,f_ext) << endl;
+    r_sdf.getRigidBodyTree()->dynamicsBiasTerm(kinsol_sdf, f_ext) << endl;
     */
 
-    auto xdot = toEigen(r.dynamics(0.0,x0,u0));
+    auto xdot = toEigen(r.dynamics(0.0, x0, u0));
     auto xdot_urdf = r_urdf.dynamics(0.0, x0_rb, u0_rb);
 //    cout << "xdot = " << xdot.transpose() << endl;
 //    cout << "xdot_rb = " << xdot_rb.transpose() << endl;
-    valuecheckMatrix(xdot_urdf,xdot,1e-8);
+    valuecheckMatrix(xdot_urdf, xdot, 1e-8);
 
     auto xdot_sdf = r_sdf.dynamics(0.0, x0_rb, u0_rb);
-    valuecheckMatrix(xdot_sdf,xdot,1e-8);
+    valuecheckMatrix(xdot_sdf, xdot, 1e-8);
   }
 }

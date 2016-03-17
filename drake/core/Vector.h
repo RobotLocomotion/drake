@@ -24,7 +24,7 @@ namespace Drake {
  *taking an Eigen object |
  * | template<Derived> Vector& operator=(const Eigen::MatrixBase<Derived>&)   |
  *assignment operator from an Eigen object |
- * | Eigen::Matrix<ScalarType,RowsAtCompileTime,1> toEigen(const
+ * | Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> toEigen(const
  *Vector<ScalarType>&) | non-member namespace method which converts to the Eigen
  *type |
  *
@@ -32,7 +32,7 @@ namespace Drake {
  */
 
 /** EigenVector<Rows>::type<ScalarType>
- * @brief provides an alias for Eigen::Matrix<ScalarType,Rows,1> which is
+ * @brief provides an alias for Eigen::Matrix<ScalarType, Rows, 1> which is
  * templated on only a single argument (the ScalarType)
  * @concept{vector_concept}
  */
@@ -127,11 +127,11 @@ std::string getCoordinateName(const Vector &vec, unsigned int index) {
   std::ostream& operator<<(std::ostream& os, const Vector& vec)
   {
     for (int i=0; i<=size(vec); i++)
-      os << getCoordinateName(vec,i) << " = " << vec(i) << std::endl;
+      os << getCoordinateName(vec, i) << " = " << vec(i) << std::endl;
     return os;
   }
 */
-/** CombinedVector<ScalarType,Vector1,Vector2>
+/** CombinedVector<ScalarType, Vector1, Vector2>
  *
  * @brief produces a new vector type which is the columnwise composition of
  *vector1 and vector2

@@ -316,7 +316,7 @@
 // Define 'cimg_use_png' to enable LibPNG support.
 //
 // PNG library may be used to get a native support of '.png' files.
-// (see methods 'CImg<T>::{load,save}_png()'.
+// (see methods 'CImg<T>::{load, save}_png()'.
 #ifdef cimg_use_png
 extern "C" {
 #include "png.h"
@@ -329,7 +329,7 @@ extern "C" {
 // Define 'cimg_use_jpeg' to enable LibJPEG support.
 //
 // JPEG library may be used to get a native support of '.jpg' files.
-// (see methods 'CImg<T>::{load,save}_jpeg()').
+// (see methods 'CImg<T>::{load, save}_jpeg()').
 #ifdef cimg_use_jpeg
 extern "C" {
 #include "jpeglib.h"
@@ -343,7 +343,7 @@ extern "C" {
 // Define 'cimg_use_tiff' to enable LibTIFF support.
 //
 // TIFF library may be used to get a native support of '.tif' files.
-// (see methods 'CImg[List]<T>::{load,save}_tiff()').
+// (see methods 'CImg[List]<T>::{load, save}_tiff()').
 #ifdef cimg_use_tiff
 extern "C" {
 #define uint64 uint64_hack_
@@ -360,7 +360,7 @@ extern "C" {
 // Define 'cimg_use_minc2' to enable LibMINC2 support.
 //
 // MINC2 library may be used to get a native support of '.mnc' files.
-// (see methods 'CImg<T>::{load,save}_minc2()').
+// (see methods 'CImg<T>::{load, save}_minc2()').
 #ifdef cimg_use_minc2
 #include "minc_io_simple_volume.h"
 #include "minc_1_simple.h"
@@ -373,7 +373,7 @@ extern "C" {
 // Define 'cimg_use_zlib' to enable Zlib support.
 //
 // Zlib library may be used to allow compressed data in '.cimgz' files
-// (see methods 'CImg[List]<T>::{load,save}_cimg()').
+// (see methods 'CImg[List]<T>::{load, save}_cimg()').
 #ifdef cimg_use_zlib
 extern "C" {
 #include "zlib.h"
@@ -399,7 +399,7 @@ extern "C" {
 //
 // Magick++ library may be used to get a native support of various image file
 // formats.
-// (see methods 'CImg<T>::{load,save}()').
+// (see methods 'CImg<T>::{load, save}()').
 #ifdef cimg_use_magick
 #include "Magick++.h"
 #endif
@@ -440,7 +440,7 @@ extern "C" {
 // Define 'cimg_use_openexr' to enable OpenEXR support.
 //
 // OpenEXR library may be used to get a native support of '.exr' files.
-// (see methods 'CImg<T>::{load,save}_exr()').
+// (see methods 'CImg<T>::{load, save}_exr()').
 #ifdef cimg_use_openexr
 #include "ImfRgbaFile.h"
 #include "ImfInputFile.h"
@@ -2551,7 +2551,7 @@ inline void unused(const T &, ...) {}
 
 // [internal] Lock/unlock a mutex for managing concurrent threads.
 // 'lock_mode' can be { 0=unlock | 1=lock | 2=trylock }.
-// 'n' can be in [0,31] but mutex range [0,15] is reserved by CImg.
+// 'n' can be in [0, 31] but mutex range [0, 15] is reserved by CImg.
 inline int mutex(const unsigned int n, const int lock_mode = 1);
 
 inline unsigned int &_exception_mode(const unsigned int value,
@@ -2721,7 +2721,7 @@ function is invalid.
     This is probably one of the most thrown exception by \CImg.
     For instance, the following example throws a \c CImgArgumentException:
     \code
-    CImg<float> img(100,100,1,3); // Define a 100x100 color image with
+    CImg<float> img(100, 100, 1, 3); // Define a 100x100 color image with
 float-valued pixels.
     img.mirror('e');              // Try to mirror image along the
 (non-existing) 'e'-axis.
@@ -2783,7 +2783,7 @@ quiet exception mode.
 what you want to stress CImg.
       } catch (CImgException &e) {                                // You
 succeeded: something went wrong!
-        std::fprintf(stderr,"CImg Library Error: %s",e.what());   // Display
+        std::fprintf(stderr,"CImg Library Error: %s", e.what());   // Display
 your custom error message.
         ...                                                       // Do what you
 want now to save the ship!
@@ -4162,7 +4162,7 @@ static const char *const data_font12x13 =
     "  Fw                         "
     "mwlwlwuwnwuynwuwmyTwlwkwuwmwuwnwlwkwuwmwuw_wuxl"
     "wlwkwuwnwuynwuwTwlwlwtwnwtwnw my     Qw   +wlw   b{ \\w  "
-    "Wx`xTw_w[wbxawSwkw  nynwky<x1w `y    ,w  Xwuw   "
+    "Wx`xTw_w[wbxawSwkw  nynwky<x1w `y    , w  Xwuw   "
     "CxlwiwlwmyuwbwuwUwiwlwbwiwrwqw^wuwmxuwnwiwlwmy"
     "uwJwiwlw^wnwEymymymymy1w^wkxnxtxnw<| "
     "gybwkwuwjwtwowmxswnxnwkxlxkw:wlymxlymykwn{myo{nymy2ykwqwqwm{myozn{o{"
@@ -4462,7 +4462,7 @@ static const char *const data_font20x23 =
     "kq     Fq_q[q #s       Tp\"q^q6p   1p Vu  Rs    YsJsMy &v<s HqWq &sHtcq]t "
     "_q i"
     "qbqKqFqIq`q     hp$q   2q2q   /q        kq     Hs_q]s \"q                "
-    "(r     Xy %t;r GqWq &rFscq]s ^q iqbqKqFqIq`q         ,q4r   0r        lr  "
+    "(r     Xy %t;r GqWq &rFscq]s ^q iqbqKqFqIq`q         , q4r   0r        lr  "
     "   G"
     "r^q                               *q                                      "
     "                                             kr               i";
@@ -4531,7 +4531,7 @@ static const char *const data_font47x53 =
     "IfBf6c B["
     "S]5[S].] <i  R\\W\\1]T] "
     "B\\W\\G]H\\W\\G]H[S]K]?]._0_0_0_0_2c1uIkBn?n?n?n?].].].]-l>`K]>k<k<k<k<k "
-    "EoF]H]C]H]C]H]C]H]F^I^A],h6]*]2\\V\\6]Wa7^V^6\\S\\  H]*]2\\V]6^U"
+    "EoF]H]C]H]C]H]C]H]F^I^A], h6]*]2\\V\\6]Wa7^V^6\\S\\  H]*]2\\V]6^U"
     "^>]*]3]W]6^U^._V_;]Wa5]*]2\\V\\6]Wa7^V^  I]*]2\\V\\5^V^2]7]+^V^      "
     "@]W\\=v   P[ 9\\1c<cSd:]   \"o      #_S^ F]1]T],]S];[5^V^N]A_T]=]*]0]*\\  "
     "  U]1^T^;e8`S_<"
@@ -4555,7 +4555,7 @@ static const char *const data_font47x53 =
     ">\\H\\A\\H\\<\\M\\=]/a2a2a"
     "2a2a1_/]V];_M]C].].].].].].].]-]ObBaL]@^M^@^M^@^M^@^M^@^M^ "
     "J^N`D]H]C]H]C]H]C]H]E^K^@]-^Q]5].]1\\T\\7\\S]6^V^5c  "
-    "E].]2]S\\7^U^<].]2\\S\\7^U^,a6\\S]2].]1\\T\\7\\S"
+    "E].]2]S\\7^U^<].]2\\S\\7^U^, a6\\S]2].]1\\T\\7\\S"
     "]6^V^  G].]1\\T\\6^V^4]5]+^V^  De6e6e6e6e9\\U\\>u   P[ :_3f@gVf<_   &r    "
     "  $]M[ F]1]T],\\R]>d<^T^P]A^OZ=]+].]4]T\\T]   "
     "&^3^P^=[S]8[K].]4\\X];],]!]<]N]>^O^  "
@@ -4572,7 +4572,7 @@ static const char *const data_font47x53 =
     ";\\6]G]   P\\ :`5g@gWh>a   (_       J]KZ "
     "F]1]T],\\R\\?h>]R]P\\@]1]+].]3^V\\V^.]   T]2]N]5]8ZJ]-]6]X];]-]!^=]L]?]M] "
     "   *]5_J_Ec:]L^>]H[C]I^C].],]F[E]H]C].].]"
-    "P_=].]X]M]X]HbM]A]I]D]M]<]I]D]M]?]%]6]H]E]G]C^NaN^N]Q^>^O^-^@]0]'],_U_  "
+    "P_=].]X]M]X]HbM]A]I]D]M]<]I]D]M]?]%]6]H]E]G]C^NaN^N]Q^>^O^-^@]0]'], _U_  "
     "&] '] H] 9]  B].]      ;]     )]4](]   %]N]:d7]   F]       "
     "K]N]8c8^1],]I]>i@]H"
     "]D]P]P]E]I] Fg =] =g G]&[2] <]O];]1] 1\\F\\=\\   Q\\F\\ S\\Q\\+]3\\.]  "
@@ -4682,7 +4682,7 @@ static const char *const data_font47x53 =
     ">\\U\\E\\N\\P]3\\S\\  N\\S\\P\\S\\ S_']:]&\\ @]L]@fU\\  "
     "M\\2\\P\\8\\S\\2\\N]<\\N]7\\S]8]2]S]8]S]8]S]8]S]8]S]8]S]"
     "7]R]?]-].].].].].].].]-]E]G]U^Q]D]C]H]C]H]C]H]C]H]C]A_T_B]M]S]G]H]C]H]C]H]"
-    "C]H]>c9]M^?]U]'].].].].].].`O^N].]N^>]N^>]N^>]N^?].].].],_R^>_O]=]N]=]N]=]"
+    "C]H]>c9]M^?]U]'].].].].].].`O^N].]N^>]N^>]N^>]N^?].].].], _R^>_O]=]N]=]N]=]"
     "N]"
     "=]N]=]N]2^:]O_?]L]?]L]?]L]?]L]@]M]=_O]?]M]  "
     "O\\P]Q]F\\D]F\\U^U^V]F\\L^V]F\\D]B]3]M]  RuJ`O[ "
@@ -4871,7 +4871,7 @@ static const char *const data_font47x53 =
     "R]M^>^M^@]/^M^?]-]0^M^?]L]?].].]V_7].]M]M]N]L]@^L]?^M^A^M^?] "
     "]<].]L]<]U]7]X]R]X]B^W^5]W]6^)]4](]  H\\T]W]U\\F]O_=]L]A]P^;^L^A]-]L"
     "]:]W]8]P]<]L]@]O]O]J^T]T]?]P]>]S]S]@^L]A^L]8]5]L]@^J]=^3]-^I^D^S]S^E]H]<g>"
-    "]G]C_%]%_A_W]W_A_L_@_W]W_ J]0]S[3]0]P]5]4],b =[ThT[ R]T]!] M[T\\P]U[  R]  "
+    "]G]C_%]%_A_W]W_A_L_@_W]W_ J]0]S[3]0]P]5]4], b =[ThT[ R]T]!] M[T\\P]U[  R]  "
     " ]L"
     "]6\\U\\   "
     "*]T].]P[S\\B]J]A]P[S\\N].^J]B^J]B^J]B^J]B^J]B^K^A]M]=]/"
@@ -4925,7 +4925,7 @@ static const char *const data_font47x53 =
     "J_D]MbA^K^B^K^B^K^B^K^B^K^A_N_B^K]B^L^A^L^A^"
     "L^A^L^:]6].]K]A^O_?^O_?^O_?^O_?^O_?^O_?^Oa?].].].].]/"
     "].].].]-]N]>]L]>]N]=]N]=]N]=]N]=]N]2^;_O]=]O_>]O_>]O_>]O_:a7_O]9a  "
-    "E^P_>^P_>^P_>^P_>^P_>\\,a  H^.]"
+    "E^P_>^P_>^P_>^P_>^P_>\\, a  H^.]"
     " /[5]T[S\\8a1`<]L]=^R^<]O^8b7_       H^O\\ F] 6\\R\\=[R[U^5\\N]T]L^M` "
     "L]*] 0]:] 8]1^+]P]4]7_1[L_1]<ZL^:^Q^8]4^N^>ZM];].] R` "
     "P`.]2]QfXaN]G]B]L^=^L]C]K_B].]+"
@@ -4940,7 +4940,7 @@ static const char *const data_font47x53 =
     "-]K_C]La@^M^@^M^@^M^@^M^@^M^A_L_C`N^A^N^?^N^?^"
     "N^?^N^9]6].]L]?]P`>]P`>]P`>]P`>]P`>]P`>]P]X^LZN^NZ;_LZ>_LZ>_LZ>_LZ?].].].]"
     "-^P^>]L]>^P^=^P^=^P^=^P^=^P^2^:^P^=^Q`>^Q`>^Q`>^Q`:a7`Q^9a  "
-    "Dk<k<k<k<k>],a  "
+    "Dk<k<k<k<k>], a  "
     "H]-] /[,[._0_;]L]=j<]N]7`5a       J_S^ F] 6\\R\\=^U[W_5]N^V^K_Rd L],] "
     "/]:] 8]1])^T^3]8_0^Q`0]<]Q_8^S^8^3_R_=]R^:].] O] "
     "P]+]1\\PdW`N^G^C]N_;`R`C]NaA].]*`O"
@@ -4951,19 +4951,19 @@ static const char *const data_font47x53 =
     "S_V^X^?aS^>]T^5_T_=`R]<]L]8_8]M^>`SdA]SaS]E^W]W^=]P^=_W]W_>]X]T_<_T_5^4^T^"
     "?^G^C^/])^Q^8c=]H]7]6`S` ?] ;c >c E]._W[V\\9]4^J^9]4]%] ;]L]"
     " IZQZ  H]L] !u  ,`Sd9\\U\\   "
-    ",ZQZ,]E\\E]L]?]E\\M_S^>^G^F^G^F^G^F^G^F^G^F^G^F^K]:`R`C].].].].].].].]-]"
+    ", ZQZ,]E\\E]L]?]E\\M_S^>^G^F^G^F^G^F^G^F^G^F^G^F^K]:`R`C].].].].].].].]-]"
     "ObB]La?`S`>`S`>`S`>`S`>`S`?]J]CcS`?_R_=_R_=_R_=_R_8]6"
-    "].]V[R^?_Tb>_Tb>_Tb>_Tb>_Tb>_Tb>_T^V_Q]M_R\\:`Q]=`Q]=`Q]=`Q]?].].].],_T_=]"
+    "].]V[R^?_Tb>_Tb>_Tb>_Tb>_Tb>_Tb>_T^V_Q]M_R\\:`Q]=`Q]=`Q]=`Q]?].].].], _T_=]"
     "L]=_T_;_T_;_T_;_T_;_T_1^:`T_;^Sa=^Sa=^Sa=^Sa9_6aS^7_  Bi:i:i:i:i=]+`  "
     "I],] /["
     ",[-].]:]L]<h;]N]7`3q      \"h E] 7]S]=k5]LdIjW^ M],] /]:] "
     "8]1](f9k?n?l/]<j6g7]1j<h9].] LZ "
     "PZ(]1]O`U]K]E]Cm8kBn?n?](nE]H]C].].]K^Am>]C]H]K`>kA])kA]J^Cm5"
     "]2j7_2`M`K^J]9]8tC])].]   "
-    "PgX]>]Xf9h9fX]<k>],fX]?]L]?].].]O^=].]M]M]N]L]<h<]Xf9fX]?]/"
+    "PgX]>]Xf9h9fX]<k>], fX]?]L]?].].]O^=].]M]M]N]L]<h<]Xf9fX]?]/"
     "j9d4gX]:a3_P_D^O^7_8m4]4](]   RfXaBk=^V^3h;j<]L]8_9^L]>qA^U]W]U^D"
     "i<]O`?k=]Xg:h3a7f>uCn?]/eSe;]:]H]7]5k >] :a <a D]-h>n?\\H\\8]4]%] 9^R^   "
-    "*^R^  Xu  ,q9\\U\\    "
+    "*^R^  Xu  , q9\\U\\    "
     "/]D\\F]LfH]D\\Li>]E]F]E]F]E]F]E]F]E]F]E]F]JnIkBn?n?n?n?].].]."
     "]-n@]K`>k<k<k<k<k=[H[Co<j;j;j;j7]6].]Vf=gX]=gX]=gX]=gX]=gX]=gX]=gTjLh9k<k<"
     "k<k?].].].]+h<]L]<h9h9h9h9h Fk:gX]=gX]=gX]=gX]9_6]Xf6_  @e6e6e6e6e;]+_  "
@@ -4980,11 +4980,11 @@ static const char *const data_font47x53 =
     "]K`<g8g8g8g8g "
     "J]Vh:h9h9h9h6]6].]Ve;dV]<dV]<dV]<dV]<dV]<dV]<eRiJf7i:i:i:i?].].].]*f;]L];"
     "f7f7f7f7f F]Xe7dV]<dV]<dV]<dV]9_6]Wd5_  <\\-\\-\\-\\-\\6]+_  FZ*[ /]"
-    ".],Z+Z9]L]8`8]L]7^.m       W` A] 7\\R\\7b2]H^BaP_ O].] .]:\\ "
-    "7]2^%`6k?n:b*]9c/a5],b6b5].\\   "
+    ".], Z+Z9]L]8`8]L]7^.m       W` A] 7\\R\\7b2]H^BaP_ O].] .]:\\ "
+    "7]2^%`6k?n:b*]9c/a5], b6b5].\\   "
     "H]/\\4]C]Di0b=h9n?]#c?]H]C].].]I_Dm>]C]H]J_9a<]$d?]I^?c0].b3_2"
     "_K_M^G^;]8tC](]/]   "
-    "M`T]>]U`2b4`U]7c;])`U]?]L]?].].]M^?].]M]M]N]L]8`8]U`3`U]?],c2a0_T]9_2^N^F^"
+    "M`T]>]U`2b4`U]7c;])`U]?]L]?].].]M^?].]M]M]N]L]8`8]U`3`U]?], c2a0_T]9_2^N^F^"
     "K^8]7m4]4](]   O`R^B]Va8b-`3d:]L]7]9^J]?]V`T]>cUc?c9]N_:"
     "a8]T`3`-_4`<wDn?]/eSe;]:]H]7]0a 9] 8] 8] B])b<n @]4]&^ 5b   \"b  Tu  "
     ",]V`T]8\\U\\    "
@@ -5020,7 +5020,7 @@ static const char *const data_font47x53 =
     " 9]6]                6[   S]            J]  :\\            @\\            "
     "              J\\                 \"^3]*^      A\\V\\                     "
     "  %[   L"
-    "]4]                   Vm       2^      S^       ,b =b        R\\Q_  R]    "
+    "]4]                   Vm       2^      S^       , b =b        R\\Q_  R]    "
     "&] V]      I^ 3b:].b   $]   ;]7] @] /] 9]6]                6[   S]        "
     "   "
     " J]  @ZU]            FZU]                          PZU]                 "
@@ -5161,9 +5161,9 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     "                                                                          "
     "  "
     "                                                                         "
-    "EV ,V 3UDU >TEY ;XHX <TBT     <V ,V 3UDU <XGX DV ,V 3UDU <XHX   /TEY /V "
-    ",V 2U"
-    "EU =TFZ <XGX     >V ,V 2UEU <XGX :V               Na                      "
+    "EV , V 3UDU >TEY ;XHX <TBT     <V , V 3UDU <XGX DV , V 3UDU <XHX   /TEY /V "
+    ", V 2U"
+    "EU =TFZ <XGX     >V , V 2UEU <XGX :V               Na                      "
     "                                                                          "
     "  "
     "                                                                          "
@@ -5221,19 +5221,19 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     "            %T                                                    #W 9W   "
     "  "
     "                                                                          "
-    "                3a   :a     <W   2W    >W   E\\   AW ,W ,W ,W ,W          "
+    "                3a   :a     <W   2W    >W   E\\   AW , W , W , W , W          "
     "   "
     "                HY GV +Y         4Z           NX                 @X       "
     "                                                           %W             "
     "  "
     "                 DUDU                                                 =Y "
-    "7W  KW 6Z 4XDT   BTAT     BW  KW 6Z   IW  KW 6[   ,Y )XDT AW  KW 5Z 4XDT  "
+    "7W  KW 6Z 4XDT   BTAT     BW  KW 6Z   IW  KW 6[   , Y )XDT AW  KW 5Z 4XDT  "
     "   "
-    "  KW  KW 4Z   ,W BW                 8V         (S                         "
+    "  KW  KW 4Z   , W BW                 8V         (S                         "
     "                    <S       9V 7V                                        "
     "  "
     "                                                     3a   :a     ;W   3W  "
-    "  >W   H_   AW ,W ,W ,W ,W                             L] GV +]         "
+    "  >W   H_   AW , W , W , W , W                             L] GV +]         "
     ";a  "
     "        #[                 F^                                           "
     "8XGX                      +W                                BTEU          "
@@ -5242,10 +5242,10 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     "MW 6\\ 7XGX LW  MW 5[ 7XGX .Y +ZET @W  MW 5\\ 6ZET ?XHX     DW  MW 4\\ "
     "7XHX 0W AW"
     " &XHX               MZ         +T                                   $Y    "
-    "     BS 1W,V MY   8W 7W  T           9X   5Z /[     0Z   8Z /Y           "
+    "     BS 1W, V MY   8W 7W  T           9X   5Z /[     0Z   8Z /Y           "
     "GY "
     "      .\\       <\\               [   4[   :\\              -a   :a     "
-    ":W   4W    >W   Ja   AW ,W ,W ,W ,W                             N_ GV +_  "
+    ":W   4W    >W   Ja   AW , W , W , W , W                             N_ GV +_  "
     "       "
     "?e   8]       J]                 Jb       8[       <[                  $Y "
     "      FY 7XGX   =Z         Di 5W   8Z .Y !W         FW *Y   4W)V*W)V-Y(V  "
@@ -5253,19 +5253,19 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     "        <UFU   3\\                    +[ 0[ 0[ 0[ 0[   4[=T            <e "
     ";W  W 5\\ 7\\FT ?XHX <TAT     @W  W 6^ 8XGX KW  W 5] 8XGX .Z@R ?\\FT ?W  "
     "W 4\\ 7\\"
-    "FT ?XHX     CW  W 3\\ 7XHX 1W @W &XHX               N\\         ,T     :U "
+    "FT ?XHX     CW  W 3\\ 7XHX 1W @W &XHX               N\\         , T     :U "
     ":U5U                            `   EX 2VFV   .S 4]0W\"b DV  V 5V  T      "
     "   7W"
     " .` 3[ 7c 8d )Z Dq 8b Hy Bb 7`           Na   /Z @k .d Kj ?x Mt 7f MX/X'X "
-    "-X -X2Z&X -]0]0[3X Dc Ii -c Ij 4f N~W$X/X.X&X.X4Y4XDY/Y/Y,Y'~S%a >W $a  "
+    "-X -X2Z&X -]0]0[3X Dc Ii -c Ij 4f N~W$X/X.X&X.X4Y4XDY/Y/Y, Y'~S%a >W $a  "
     "MY  "
-    " EW   5W    >W   Kb   AW ,W ,W ,W ,W                            !a GV +a  "
+    " EW   5W    >W   Kb   AW , W , W , W , W                            !a GV +a  "
     "       Ch   =f       ^                 Mf 2Z @x Mx <c 3X C~Q)X?X?X Kc   "
     "2T  "
     " .V   .T   CX   $a  !W.W   N` ;XGX ![ Lb       &Z Mi 7[   >a 5a &W   0g   "
     " #\\ -_   <\\*V.\\*V0a-V\"X )Z /Z /Z /Z /Z 4WJV 1~U+d Kx Mx Mx Mx MX -X "
-    "-X -X ,j"
-    " @[3X Dc 8c 8c 8c 8c   <cBV.X/X'X/X'X/X'X/X/Y,Y$X &h ;W \"W 5VNV 8]HU "
+    "-X -X , j"
+    " @[3X Dc 8c 8c 8c 8c   <cBV.X/X'X/X'X/X'X/X/Y, Y$X &h ;W \"W 5VNV 8]HU "
     "?XHX <TAT     ?W \"W 5VNV 8XGX JW \"W 5VMV 9XGX -ZDV @]HU >W \"W 4VNV "
     "8]HU ?XHX     "
     "BW \"W 3VNV 8XHX 2W ?W &XHX               ^ K~\\       >S   3Q +[ @[;[ ;Q "
@@ -5274,26 +5274,26 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     " :` ;j ?k -[ Dq :g Ky Df ;d          $f   1Z @o 5j Np Ex Mt :m\"X/X'X -X "
     "-X3Z%X -]0]0\\4X Gi Lm 4i Ln ;m#~W$X/X-X(X-X4Y4XCY1Y-Y.Y&~S%a >W $a  N[   "
     "EV   "
-    "5W    >W   Lc   AW ,W ,W ,W ,W                            \"b GV +a       "
+    "5W    >W   Lc   AW , W , W , W , W                            \"b GV +a       "
     "  Dk   Aj      \"_                 h 3Z @x Mx ?i 6X C~Q)X?X?X Ni   6V   "
     "/V   /"
     "V   DX   &f  #W0W   e >XGX %c#e       +b\"i 9_   Be 9d 'V   3k    %^ /c   "
-    "@^*V0^*V2d.V\"X )Z /Z /Z /Z /Z 3b 1~U.j Nx Mx Mx Mx MX -X -X -X ,p F\\4X "
+    "@^*V0^*V2d.V\"X )Z /Z /Z /Z /Z 3b 1~U.j Nx Mx Mx Mx MX -X -X -X , p F\\4X "
     "Gi >i "
     ">i >i >i   BiEV.X/X'X/X'X/X'X/X.Y.Y#X 'j ;V \"V 5VLV :_IT >XHX <TAT     "
-    ">V \"V 5VLV 9XGX IV \"V 4VMV 9XGX ,ZHY A_IT <V \"V 4VLV :_IT >XHX     AV "
+    ">V \"V 5VLV 9XGX IV \"V 4VMV 9XGX , ZHY A_IT <V \"V 4VLV :_IT >XHX     AV "
     "\"V 3VLV 9"
     "XHX 2V >W &XHX              !_ K~[       >T   4R -_ D_?_ >S         =t    "
     "            Fh   IX 2VFV #VBV FS 7c4V#i HV \"W 3V !T         7V 0f @e >o "
     "Co 0"
     "\\ Dq <j Ly Fj ?h          (i  \\ ?Z @r :o\"s Hx Mt <q$X/X'X -X -X4Z$X "
-    "-]0]0\\4X Im Np 9m Np ?q%~W$X/X-X(X,W5[6XAX1X+X.X%~S%a =V $a  ]   EV   6W "
+    "-]0]0\\4X Im Np 9m Np ?q%~W$X/X-X(X, W5[6XAX1X+X.X%~S%a =V $a  ]   EV   6W "
     "   >W   M"
-    "d   AW ,W ,W ,W ,W               HW             1b GV +b         Fm   Dm  "
+    "d   AW , W , W , W , W               HW             1b GV +b         Fm   Dm  "
     "    #`                \"j 4Z @x Mx Am 8X C~Q)X?X?X!m   9X   0V   0X   EX  "
     " 'h"
     "  $W0W  \"h ?XGX 'g%g       0h%i :a   Cf :f *V   4m    %^ 0e   "
-    "A^+V/^+V1f1V!X )Z /Z /Z /Z /Z 2` 1~V0o\"x Mx Mx Mx MX -X -X -X ,t J\\4X "
+    "A^+V/^+V1f1V!X )Z /Z /Z /Z /Z 2` 1~V0o\"x Mx Mx Mx MX -X -X -X , t J\\4X "
     "Im Bm Bm Bm Bm   F"
     "mHV-X/X'X/X'X/X'X/X-X.X\"X (l ;V $V 4UJU :ULXLU >XHX <UCU     =V $V 5VJV "
     ":XGX HV $V 4VKV :XGX +ZL\\ AULXLU ;V $V 3UJU :ULXLU >XHX     @V $V 2UJU "
@@ -5302,13 +5302,13 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     "      Hl   KX 2VFV $WCV ES 8e5V$j HV \"V 1V \"T         7V 2j Eh ?q Dp "
     "1\\ Dq >"
     "l Ly Hn Bj          +l %e E\\ At >s$v Kx Mt >u&X/X'X -X -X5Z#X -^2^0]5X "
-    "Jo q ;o r Br%~W$X/X-X(X,X6[6XAY3Y+Y0Y%~S%W 3V  IW !_   FW   7W    >W   Md "
+    "Jo q ;o r Br%~W$X/X-X(X, X6[6XAY3Y+Y0Y%~S%W 3V  IW !_   FW   7W    >W   Md "
     "  AW "
-    ",W ,W ,W ,W               HW             2[ ?V #[         Hn   En      #` "
+    ", W , W , W , W               HW             2[ ?V #[         Hn   En      #` "
     "               #l 6\\ Ax Mx Cp 9X C~Q)X?X?X\"o   ;Z   1V   1Z   FX  KS 0i "
     " #W2"
-    "W LV ,i ?XGX *l'h       3l'i ;c   Dg ;g ,W   6o    %^ 1g   B^,V.^,V0g3V X "
-    "*\\ 1\\ 1\\ 1\\ 1\\ 2^ 0~V2s$x Mx Mx Mx MX -X -X -X ,v L]5X Jo Do Do Do "
+    "W LV , i ?XGX *l'h       3l'i ;c   Dg ;g , W   6o    %^ 1g   B^, V.^, V0g3V X "
+    "*\\ 1\\ 1\\ 1\\ 1\\ 2^ 0~V2s$x Mx Mx Mx MX -X -X -X , v L]5X Jo Do Do Do "
     "Do   HpKW"
     "-X/X'X/X'X/X'X/X-Y0Y\"X )n <W &W 5VJV ;TI_ >XHX ;UEU     <W &W 5VIV ;XGX "
     "HW &W 5VIV ;XGX *g ?TI_ ;W &W 4VJV ;TI_ >XHX     @W &W 3VJV :XHX 4W =W "
@@ -5317,30 +5317,30 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     "        In   LX 2VFV $VBV ES 9g7V$k HV #W 1W #T         8W 3l Fh ?r Eq 3] "
     "Dq ?m L"
     "y Ip Em          -n )k H\\ Au Av%x Mx Mt ?x(X/X'X -X -X6Z\"X -^2^0]5X "
-    "Ls\"s ?s\"s Et%~W$X/X,X*X+X6[6X@Y5Y)Y2Y$~S%W 3W  JW \"a   FW   8W    >W   "
-    "NZ   6W ,W "
-    ",W ,W ,W               HW             2X <V  X         H[G[   Go       KZ "
+    "Ls\"s ?s\"s Et%~W$X/X, X*X+X6[6X@Y5Y)Y2Y$~S%W 3W  JW \"a   FW   8W    >W   "
+    "NZ   6W , W "
+    ", W , W , W               HW             2X <V  X         H[G[   Go       KZ "
     "               %[H[ 7\\ Ax Mx Ds ;X C~Q)X?X?X$s   >\\   2V   2\\   GX  KS "
     "1j  #"
     "W2W LV -j ?XGX +ZEZ)VGY       5ZDZ)i <e   EUFY <UFX -W   7q    %VMU 2YIY  "
-    " CVMU,V.VMU,V0UFX3V X *\\ 1\\ 1\\ 1\\ 1\\ 1\\ 0~W4v%x Mx Mx Mx MX -X -X "
-    "-X ,x N]5X"
-    " Ls Hs Hs Hs Hs   LsMW,X/X'X/X'X/X'X/X,Y2Y!X *\\G[ <W (W 4UHU <UH] =XHX "
+    " CVMU, V.VMU, V0UFX3V X *\\ 1\\ 1\\ 1\\ 1\\ 1\\ 0~W4v%x Mx Mx Mx MX -X -X "
+    "-X , x N]5X"
+    " Ls Hs Hs Hs Hs   LsMW, X/X'X/X'X/X'X/X, Y2Y!X *\\G[ <W (W 4UHU <UH] =XHX "
     ";VGV     ;W (W 5VHV ;XGX GW (W 4UGU ;XGX )c =UH] 9W (W 3UHU <UH] =XHX     "
     "?W (W"
     " 2UHU :XHX 5W <W &XHX     5c 8c 8c 8c 8c @WKU J~X       >T   5V 2e KfEe "
     "CW         G|                Jp   MX 2VFV $VBV ES 9XIX8V$l HV #V /V #T    "
     "    "
     " 8V 3n Gh ?s Fr 5^ Dq @n Lx Ir Go          .o -q L^ Bv Cx&z x Mt A{)X/X'X "
-    "-X -X7Z!X -^2^0^6X Mu#t Au#t Gu%~W$X/X,X*X+X6[6X?X5X'X2X#~S%W 2V  JW #c   "
+    "-X -X7Z!X -^2^0^6X Mu#t Au#t Gu%~W$X/X, X*X+X6[6X?X5X'X2X#~S%W 2V  JW #c   "
     "FW"
-    "   9W    >W   NX   4W ,W ,W ,W ,W               HW             2W ;V  NW  "
+    "   9W    >W   NX   4W , W , W , W , W               HW             2W ;V  NW  "
     "       IZCY   Hp       JY                &ZDZ 9^ Bx Mx Eu <X C~Q)X?X?X%u  "
     " @"
     "^   3V   3^   HX  KS 2k  \"W4W KV -ZGW ?XGX -X=X+R@W       8X<X  .XIX   "
     "FQ@W <Q@W /W   7dGU    %QHU 3XEX   DQHU-V-QHU-V/Q@W5V NX +^ 3^ 3^ 3^ 3^ "
     "2\\ 0~W5"
-    "x&x Mx Mx Mx MX -X -X -X ,z!^6X Mu Ju Ju Ju Ju   N}+X/X'X/X'X/X'X/X+X2X X "
+    "x&x Mx Mx Mx MX -X -X -X , z!^6X Mu Ju Ju Ju Ju   N}+X/X'X/X'X/X'X/X+X2X X "
     "+ZBY ;W *W 4UFU =TF\\ =XHX :VIV     9W *W 5VFV <XGX FW *W 4VGV <XGX (_ "
     ":TF\\ 8"
     "W *W 3UFU =TF\\ =XHX     >W *W 2UFU ;XHX 6W ;W &XHX     7h =h =h =h =h "
@@ -5349,11 +5349,11 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     "ES :XGX9V%\\GX HV $W /W 3PATAP         GV 3[H[ Gh ?]F] GZE^ 6^ Dq A]FX Lx "
     "I\\F\\ G\\G[          /[H] 0u N^ Bw E_D^&{!x Mt B`C_)X/X'X -X -X8Z X "
     "-_4_0_7X N^"
-    "E^$u C^E^$u H^E\\%~W$X/X,Y,Y*W7]8X>Y7Y'Y4Y#~S%W 2V  JW $e   FV   9W    >W "
-    "  NW   3W ,W ,W ,W ,W               HW             2W ;V  NW         IY@X "
+    "E^$u C^E^$u H^E\\%~W$X/X, Y, Y*W7]8X>Y7Y'Y4Y#~S%W 2V  JW $e   FV   9W    >W "
+    "  NW   3W , W , W , W , W               HW             2W ;V  NW         IY@X "
     ">X "
     "4[AV       IX                &X@X 9^ Bx Mx F^E^ =X C~Q)X?X?X&^E^   B`   "
-    "4V   4`   IX  KS 3\\GW  \"W4W KV .YBT ?XGX .V7V,P=W       :W8W  /VEV   3V "
+    "4V   4`   IX  KS 3\\GW  \"W4W KV .YBT ?XGX .V7V, P=W       :W8W  /VEV   3V "
     "+V /V "
     "  7eGU     KU 3WCW   ;U-V$U-V LV5V NX +^ 3^ 3^ 3^ 3^ 3^ 1~W6_D^&x Mx Mx "
     "Mx MX -X -X -X ,{\"_7X N^E^ L^E^ L^E^ L^E^ L^E^  !^Ed*X/X'X/X'X/X'X/X+Y4Y "
@@ -5365,32 +5365,32 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     "DS :WEW:V%ZAU HV $V -V 3RCTCR         HW 4ZDZ H\\LX ?Y?[ HV>\\ 8_ DX )[?T "
     "-Y J[B"
     "[ I[CZ          0WAZ 2x ^ BX>^ G]=Z&X=b#X -X '];[)X/X'X -X -X:[ NX "
-    "-_4_0_7X \\?\\%X@^ E\\?\\%X?] J[=X =X <X/X+X,X)X8]8X=Y9Y%Y6Y )Y$W 2W  KW "
+    "-_4_0_7X \\?\\%X@^ E\\?\\%X?] J[=X =X <X/X+X, X)X8]8X=Y9Y%Y6Y )Y$W 2W  KW "
     "%ZMZ   FV   :W"
-    "    >W   X   3W     4W ,W               HW             3X ;V  NX         "
+    "    >W   X   3W     4W , W               HW             3X ;V  NX         "
     "KY?X Ca 9Y:R       HX                (X>X :VNV BZ /X '\\?\\ A^ "
     "FX0X)X?X?X'\\?\\  "
     " Db   5V   5b   JX  KS 3ZBT  !W6W JV .X?R   4V4U HV       ;V4V  1VCV   4V "
     "*U 0V   7fGU     KU 4WAW   <U.V#U.V JU6V MX +^ 3^ 3^ 3^ 3^ 3^ 2XIX F]=Z&X "
     "-X"
-    " -X -X -X -X -X -X ,X=b$_7X \\?\\ N\\?\\ N\\?\\ N\\?\\ N\\?\\  "
-    "#\\?`)X/X'X/X'X/X'X/X*Y6Y NX ,Y=W :V ,V 3UDU >TDX   ;a     6V ,V 4UBU   "
-    "GV ,V 3UCU   0` 6TDX 4V ,V"
-    " 2UDU >TDX       >V ,V 1UDU   :V 9W       (o Do Do Do Do GWIU J~V       "
+    " -X -X -X -X -X -X , X=b$_7X \\?\\ N\\?\\ N\\?\\ N\\?\\ N\\?\\  "
+    "#\\?`)X/X'X/X'X/X'X/X*Y6Y NX , Y=W :V , V 3UDU >TDX   ;a     6V , V 4UBU   "
+    "GV , V 3UCU   0` 6TDX 4V , V"
+    " 2UDU >TDX       >V , V 1UDU   :V 9W       (o Do Do Do Do GWIU J~V       "
     ">T   6Z 6i jIj I\\         N~R                M[=U   MX 2VFV %VBV H] "
     "AWCW;V%Y=R"
     " HV %W -V 4UETEU         IV 4ZBZ IWGX ?V;[ IS9Z 9VNX DX *Z;R -X JZ>Y JZ?Y "
     "         1U>Z 5`C_#` CX;[ H[7W&X9_$X -X (\\6X)X/X'X -X -X;[ MX "
     "-_4_0`8X![;[&X"
-    "=[ F[;[&X<[ LZ8U =X <X/X+X,X)X8]8X<X9X#X6X )Z$W 1V  KW &ZKZ   FV   ;W    "
-    ">W   W   2W     4W ,W               HW             3W :V  MW         KX=W "
+    "=[ F[;[&X<[ LZ8U =X <X/X+X, X)X8]8X<X9X#X6X )Z$W 1V  KW &ZKZ   FV   ;W    "
+    ">W   W   2W     4W , W               HW             3W :V  MW         KX=W "
     "Cc "
     ";X7P       HX                (W<W ;WNW BY /X ([;[ Gg JX0X)X?X?X([;[   Fd  "
     " 6V   6d   KX  KS 4Y>R  !X8X JV /X<P   6V1U IV       <U0U  2UAU   3U *U "
     "1V  "
     " 6fGU     KU 4V?V   <U/V\"U/V IU7V LX ,` 5` 5` 5` 5` 5` 3XIX G[7W&X -X -X "
-    "-X -X -X -X -X ,X9_%`8X![;[![;[![;[![;[![;[  %[;](X/X'X/X'X/X'X/X)X6X MX "
-    ",X;W"
+    "-X -X -X -X -X , X9_%`8X![;[![;[![;[![;[![;[  %[;](X/X'X/X'X/X'X/X)X6X MX "
+    ", X;W"
     " :V .V 3UBU ?TBT   7]     3V .V 4VAU   GV .V 3UAU   4d 7TBT 1V .V 2UBU "
     "?TBT       ;V .V 1UBU   <V 8W       )r Gr Gr Gr Gr IVHR GX+W       =S   "
     "5[ 7i!k"
@@ -5400,93 +5400,93 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     "Y 6];\\$WNW CX9Z J[4U&X6]%X -X )[2V)X/X'X -X -X<[ LX "
     "-XNV6VNX0`8X\"Z7Z'X;Z HZ7Z'X;Z LY4R =X <X/X*X.X(X8]8X<Y;Y#Y8Y *Z#W 1V  KW "
     "'ZIZ   FV   <W    >W   W "
-    "  2W     4W ,W               HW             3W :V  MW         KW<X Dd <W  "
+    "  2W     4W , W               HW             3W :V  MW         KW<X Dd <W  "
     "     -W                )W;X <WNW AY 0X )Z7Z Jl MX0X)X?X?X)Z7Z   Hf   7V   "
     "7f"
     "   LX  KS 4X;P   W8W IV /W   \"V.U JV       >U.U  4VAV &V 5U *U 2V   6gGU "
-    "    KU 5W?W   =U/V\"U/V IU7V LX ,WNW 5WNW 5WNW 5WNW 5WNW 5WNW 4XHX H[4U&X "
+    "    KU 5W?W   =U/V\"U/V IU7V LX , WNW 5WNW 5WNW 5WNW 5WNW 5WNW 4XHX H[4U&X "
     "-X -"
-    "X -X -X -X -X -X ,X6]&`8X\"Z7Z#Z7Z#Z7Z#Z7Z#Z7Z  'Z8['X/X'X/X'X/X'X/X)Y8Y "
-    "MX ,W:W 9V 0V 3U@U     ?[     1V 0V 3U@V   GV 0V 3U?U   8h   1V 0V 2U@U   "
+    "X -X -X -X -X -X , X6]&`8X\"Z7Z#Z7Z#Z7Z#Z7Z#Z7Z  'Z8['X/X'X/X'X/X'X/X)Y8Y "
+    "MX , W:W 9V 0V 3U@U     ?[     1V 0V 3U@V   GV 0V 3U?U   8h   1V 0V 2U@U   "
     "    "
-    "  CV 0V 1U@U   >V 7W       *`L` I`L` I`L` I`L` I`L` JV =X,X       >T   6] "
+    "  CV 0V 1U@U   >V 7W       *`L` I`L` I`L` I`L` I`L` JV =X, X       >T   6] "
     "9k\"lKl K_        #\\                'Y8S   MX 2VFV %VBV Nk IVAV=V$X 1V "
     "%V +V "
     "6YHTHY -V       EW 5Y>Y :X ?R5Z .Y ;VMX DX +Y  DX IY<Y LY;X          2Q8Y "
     "8[5[&WNW CX8Y KZ1T&X4\\&X -X *Z.T)X/X'X -X -X=[ KX -XNV6VNX0a9X#Z5Z(X:Y "
     "IZ5Z("
     "X:Z NY1P =X <X/X*X.X'W9WNV:X:Y=Y!Y:Y *Z\"W 1W  LW (ZGZ      -W    >W   W  "
-    " 2W     4W ,W               HW             3W :V  MW         KW;W De =W   "
+    " 2W     4W , W               HW             3W :V  MW         KW;W De =W   "
     "   "
     " -X                *W:W <VLV @Y 1X *Z5Z Mp X0X)X?X?X*Z5Z   Jh   8V   8h   "
     "MX  KS 5Y   :X:X IV /W   #U+T JV       ?U+T  5U?U &V 5U +V     AgGU     "
     "KU 5"
-    "V=V   =U0V!U0V IV8V KX ,WNW 5WNW 5WNW 5WNW 5WNW 5WNW 4XHX IZ1T&X -X -X -X "
-    "-X -X -X -X ,X4\\'a9X#Z5Z%Z5Z%Z5Z%Z5Z%Z5Z  )Z5Z(X/X'X/X'X/X'X/X(Y:Y LX "
+    "V=V   =U0V!U0V IV8V KX , WNW 5WNW 5WNW 5WNW 5WNW 5WNW 4XHX IZ1T&X -X -X -X "
+    "-X -X -X -X , X4\\'a9X#Z5Z%Z5Z%Z5Z%Z5Z%Z5Z  )Z5Z(X/X'X/X'X/X'X/X(Y:Y LX "
     "-X:W  "
     "        !W                    2\\LZ                          EW       "
     "+[@[ K[@[ K[@[ K[@[ K[@[ KV <X-X     /P 0T   7^ 9k\"lLm La        %Z      "
     "        "
     "  %Z6Q   MX 2VFV %VCV n KWAW>V$X 1V &W +W 5XITIX +V       EV 4X<X :X ?P2Y "
-    "-X <WMX DX ,Y  CX JY:Y MX9W          2P7Y :Z0Z(WLW DX7X KY.R&X2Z&X -X "
+    "-X <WMX DX , Y  CX JY:Y MX9W          2P7Y :Z0Z(WLW DX7X KY.R&X2Z&X -X "
     "*Y+R)X"
     "/X'X -X -X>[ JX -XNW8WNX0a9X#Y3Y(X9Y JY3Y(X9Y NX  LX <X/X*X.X'X:VMV:X9X=X "
-    "NX:X *Z!W 0V  LW )ZEZ      .W    >W   W   2W     4W ,W               HW   "
+    "NX:X *Z!W 0V  LW )ZEZ      .W    >W   W   2W     4W , W               HW   "
     "  "
-    "        3W :V  MW         LX;W Df >W       ,W                +W8W >WLW @Y "
+    "        3W :V  MW         LX;W Df >W       , W                +W8W >WLW @Y "
     "2X +Z3Z!t\"X0X)X?X?X*Y3Y   Kj   9V   9j     AS 5X   8W:W HV /W   #T)T KV  "
     "   "
     "  @T(T  6U?U &V 5T +V     AhGU     KU 5V=V   =U0V!U0V JV7V   WLW 7WLW "
     "7WLW 7WLW 7WLW 7XNX 6XGX IY.R&X -X -X -X -X -X -X -X "
-    ",X2Z'a9X#Y3Y%Y3Y%Y3Y%Y3Y%Y3"
+    ", X2Z'a9X#Y3Y%Y3Y%Y3Y%Y3Y%Y3"
     "Y  )Y3Z)X/X'X/X'X/X'X/X'X:X Ki >W8V                               *XHZ    "
-    "                      FW       ,Z<Z MZ<Z MZ<Z MZ<Z MZ<Z LV <X.X     .R 2S "
+    "                      FW       , Z<Z MZ<Z MZ<Z MZ<Z MZ<Z LV <X.X     .R 2S "
     "  "
     "7` :k#nMm Mb        &Z                $Y4P   MX 2VFV &VBV!o KV?V?V#W 0V "
     "&V )V 3XKTKX )V       EV 5X:X ;X  X -Y =VLX DX -Y  CY JY:Y NY9X           "
     "HX ;"
-    "Z-Y)WLW DX7Y MY,Q&X1Z'X -X +Y)Q)X/X'X -X -X?[ IX -XMV8VMX0XNX:X$Y1Y)X9Y "
+    "Z-Y)WLW DX7Y MY, Q&X1Z'X -X +Y)Q)X/X'X -X -X?[ IX -XMV8VMX0XNX:X$Y1Y)X9Y "
     "KY1Y)X8X NX  LX <X/X)X0X&X:VMV:X9Y?Y NY<Y *Y W 0V  LW *ZCZ      /W    >W  "
     " W  "
-    " 2W     4W ,W               HW             3W :V  MW         LW:W Dg ?W   "
-    "    ,X                ,W8W >WLW ?Y 3X +Y1Y\"v#X0X)X?X?X+Y1Y   MYNVNY   :V "
+    " 2W     4W , W               HW             3W :V  MW         LW:W Dg ?W   "
+    "    , X                , W8W >WLW ?Y 3X +Y1Y\"v#X0X)X?X?X+Y1Y   MYNVNY   :V "
     "  :"
     "YNVNY     BS 5X   8X<X HV /W   $T?ZBT*c       AT&T  7U?U &V 6U -W     "
     "@hGU     KU 6V;V   >U1V U1V KW7V   NWLW 7WLW 7WLW 7WLW 7WLW 7WLW 6XGX "
-    "JY,Q&X -X "
-    "-X -X -X -X -X -X ,X1Z(XNX:X$Y1Y'Y1Y'Y1Y'Y1Y'Y1Y "
+    "JY, Q&X -X "
+    "-X -X -X -X -X -X , X1Z(XNX:X$Y1Y'Y1Y'Y1Y'Y1Y'Y1Y "
     "P)P$Y3[)X/X'X/X'X/X'X/X'Y<Y Km BW8W                               +UDZ    "
     "           7P          1W  "
     "     -Y8Y Y8Y Y8Y Y8Y Y8Y MV ;W.X     /T 4T   7a ;k#nMn Nc 6P :W4W ?Z "
     "?X6X KY                #Y   0X 2VFV &VBV\"p KV?V?V#W 0V 'W )W 2XMTMX 'V   "
     "    FW "
     "5X:X ;X  Y -X >VKX DX -X  BX IX8X NX7W      KP  1P  =X <Y)X+XLX EX6X "
-    "NY*P&X0Z(X -X ,Y'P)X/X'X -X -X@Z GX -XMV8VMX0XNX:X%Y/Y*X8X LY/Y*X8Y!X  KX "
+    "NY*P&X0Z(X -X , Y'P)X/X'X -X -X@Z GX -XMV8VMX0XNX:X%Y/Y*X8X LY/Y*X8Y!X  KX "
     "<X/X)X0"
-    "X&X:VMV:X8YAY LY>Y *Z W 0W  MW +ZAZ      0W    >W   W   2W     4W ,W      "
+    "X&X:VMV:X8YAY LY>Y *Z W 0W  MW +ZAZ      0W    >W   W   2W     4W , W      "
     "         HW             3W :V  MW         LW:W DSF[ @X       -X           "
     "  "
-    "   -X8W ?WJW ?Y 4X ,Y/Y%z%X0X)X?X?X,Y/Y   YMVMY   ;V   ;YMVMY     CS 5X "
+    "   -X8W ?WJW ?Y 4X , Y/Y%z%X0X)X?X?X, Y/Y   YMVMY   ;V   ;YMVMY     CS 5X "
     "5P*Q JW<W GV /W   %TBbET/g       BTGb?T  8U?U &V 7U 5_     ?hGU     KU "
     "6V;V   "
     ">U2V NU2V$_7V   NXLX 9XLX 9XLX 9XLX 9XLX 8WLW 6XGX KY*P&X -X -X -X -X -X "
-    "-X -X ,X0Z)XNX:X%Y/Y)Y/Y)Y/Y)Y/Y)Y/Y\"R+R&Y3]*X/X'X/X'X/X'X/X&Y>Y Jp EW:Y "
+    "-X -X , X0Z)XNX:X%Y/Y)Y/Y)Y/Y)Y/Y)Y/Y\"R+R&Y3]*X/X'X/X'X/X'X/X&Y>Y Jp EW:Y "
     "    "
     "                          +R@Y               7Q          2W       "
     ".XEVFY\"X5Y\"X5Y\"X5Y\"X5Y NV ;X/X     0V 5T   8c <k#nNo e >^ AW4W ?Z "
     ">W6W KY           "
     "     \"Y   0X 2VFV &VCW#[LSKZ KV?V@V\"W 0V 'W )W 1XNTNX &V       FW 6Y:Y "
-    "<X  NX -X ?WKX DX .Y  CY IX8X NX7W      NS  1S  @X =X&X,WJW EX6X NY "
+    "<X  NX -X ?WKX DX .Y  CY IX8X NX7W      NS  1S  @X =X&X, WJW EX6X NY "
     "/X/Y(X -X ,"
     "Y /X/X'X -X -XAZ FX -XMW:WMX0XMX;X%Y/Y*X8Y MY/Y*X8Y!X  KX "
-    "<X/X)Y1X%W;WMW;W6XAX JX>X *Z NW 0W  MW ,Z?Z      1W    >W   W   2W     4W "
-    ",W               H"
+    "<X/X)Y1X%W;WMW;W6XAX JX>X *Z NW 0W  MW , Z?Z      1W    >W   W   2W     4W "
+    ", W               H"
     "W             3W :V  MW         LW:W DPAY ?Y       .W                -W6W "
-    "@WJW >Y 5X ,X-X&_MXM_&X0X)X?X?X,Y/Y  !YLVLY   <V   <YLVLY     DS 6Y 6R,R "
+    "@WJW >Y 5X , X-X&_MXM_&X0X)X?X?X, Y/Y  !YLVLY   <V   <YLVLY     DS 6Y 6R, R "
     "JX>"
     "W FV /X   'TCfFT2i       CUGfBT  9U?U &V 7U 5]     >iGU     KU 6V;V   "
     ">U2V NU2V$]5V   NWJW 9WJW 9WJW 9WJW 9WJW 9WJW 8XFX KY /X -X -X -X -X -X "
-    "-X -X ,X"
+    "-X -X , X"
     "/Y)XMX;X%Y/Y)Y/Y)Y/Y)Y/Y)Y/Y#T-T'Y3]*X/X'X/X'X/X'X/X%X>X Ir GW=\\         "
     "                       GY               9S          3W       "
     "/XDVDX$X2X$X2X$X"
@@ -5496,14 +5496,14 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     " .X  BX HX8X Y7X     #V  1V  CX >X$X-WJW EX6X Y .X.Y)X -X -Y .X/X'X -X "
     "-XBZ EX -XLV:VLX0XMX;X&Y-Y+X7X NY-Y+X7X!X  KX <X/X(X2X$X<VKV<X6YCY JY@Y "
     "+Z MW /"
-    "V  MW -Y;Y    \"Z ;WDX 0Z 2XDW >Z <W !X :WDY     IW ,W  HX8X MY 3Z *X 3X "
+    "V  MW -Y;Y    \"Z ;WDX 0Z 2XDW >Z <W !X :WDY     IW , W  HX8X MY 3Z *X 3X "
     "&X 7] <W             3W :V  MW       ;X :W:W 4Y @[ )\\ (Y   6X     8QEV   "
     "  :[ "
     "    JW6W @VIW =Y 6X -Y-Y(]JXJ]'X0X)X?X?X-Y-Y  #YKVKY   =V   =YKVKY     IZ "
     "9X 6T.T JW>W FV .X   (TDgFT3j       CTFhDT  9U?U &V 8U 4\\     =iGU     "
     "KU 6V"
     ";V   >U3V MU3V#\\5V   MWJW 9WJW 9WJW 9WJW 9WJW 9WJW 8XFX LY .X -X -X -X "
-    "-X -X -X -X ,X.Y*XMX;X&Y-Y+Y-Y+Y-Y+Y-Y+Y-Y%V/V)Y3_+X/X'X/X'X/X'X/X%Y@Y Is "
+    "-X -X -X -X , X.Y*XMX;X&Y-Y+Y-Y+Y-Y+Y-Y+Y-Y%V/V)Y3_+X/X'X/X'X/X'X/X%Y@Y Is "
     "HW?^ "
     "?Z /Z /Z /Z /Z /Z /Z6Y NZ 0Z /Z /Z /Z         8Y 1Y 3Z /Z /Z /Z /Z   3ZCV "
     "         5WDX       DXCVCW%X0W%X0W%X0W%X0W V :X1X     0X 7T   9f =k#~`\"h "
@@ -5514,16 +5514,16 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     " FX6X X -X.Y)X -X -X -X/X'X -X -XCZ DX -XLV:VLX0XLX<X&X+X+X7X NX+X+X7X!X  "
     "KX <X/X(X2X$X<VKV<X5YEY HYBY +Z LW /W  NW .Y9Y    'b ?WG^ 7b 9^GW A` Gl "
     "2_GW"
-    " MWG_ DW ,W ,W8Y MW ,WG^>^4WG_ 9` @WG^ 9^GW MWG\\ ;f Gm "
+    " MWG_ DW , W , W8Y MW , WG^>^4WG_ 9` @WG^ 9^GW MWG\\ ;f Gm "
     "<W6W#X2X#W;X;W5Y7Y#W1X\"u 6W :V  MW       >^BV\"W:W 3X ?^ 0e AWG_ KV.X ?X "
     "<W6W   HTG[ K}!WCWCW Ca"
     " 7p&{ NW6W AWHW >Z 7X -X+X)\\HXH\\(X0X)X?X?X-X+X  $YJVJY   >V   >YJVJY    "
     " Ma =X 7V0V JW@W EV .Y   *TEiET5k       DTEiDT  :VAV &V 9U 3_   ;W6W NiGU "
     "    "
     "KU 6V;V   >U3V MU3V#_8V   NXJX ;XJX ;XJX ;XJX ;XJX ;XJX :XEX LX -X -X -X "
-    "-X -X -X -X -X ,X.Y*XLX<X&X+X+X+X+X+X+X+X+X+X&X1X*X3`+X/X'X/X'X/X'X/X$YBY "
+    "-X -X -X -X -X , X.Y*XLX<X&X+X+X+X+X+X+X+X+X+X&X1X*X3`+X/X'X/X'X/X'X/X$YBY "
     "Ht "
-    "IW@_ Cb 7b 7b 7b 7b 7b 7b>a'b 7` 5` 5` 5` AW ,W ,W ,W  DY EWG_ 9` 5` 5` "
+    "IW@_ Cb 7b 7b 7b 7b 7b 7b>a'b 7` 5` 5` 5` AW , W , W , W  DY EWG_ 9` 5` 5` "
     "5` 5` (Z <`GV W6W MW6W MW6W MW6W#W1X NWG^ HW1X     "
     "NWBVBW&W.W&WJP:PJW&W4PJW&W."
     "W!V :X2X     0X 6S   8g >k#~`#j Fj GW4W @\\ >W8W LX                 X   "
@@ -5532,7 +5532,7 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     "BY HX8X X5W     ([  1[  HX ?W W/WHW FX6X!Y -X-Y*X -X .Y -X/X'X -X -XDZ CX "
     "-XLW<WLX0XKW<X'Y+X+X7X Y+X+X7X!X  KX <X/X'X4X#X<VKV<X4XFY FXBX *Y KW /W  "
     "NW "
-    "/Y7Y    +g AWIb ;f =bIW De Il 3bIW MWIc FW ,W ,W9Y LW ,WIbBb6WIc >f CWIb "
+    "/Y7Y    +g AWIb ;f =bIW De Il 3bIW MWIc FW , W , W9Y LW , WIbBb6WIc >f CWIb "
     "=bIW MWI^ =j Im <W6W\"W2W\"W<Z<W4X7X!W2W!u 6W :V  MW       @bEW\"W:W 2X "
     "@c 8j CW"
     "Ic MX0W =W <W6W IW/W\"VI^ L}!WCWCW Ee =t&{ W4W BWHW =Y 7X "
@@ -5540,18 +5540,18 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     "+SE[GVDS6ZDV       "
     "DSDVDXDS  9UAU %V :U 2`   <W6W NiGU     KU 6V;V   >U4V LU4V\"`:V GX /WHW "
     ";WHW ;WHW ;WHW ;WHW ;WHW :XEX MY -X -X -X -X -X -X -X -X "
-    ",X-Y+XKW<X'Y+X,Y+X,Y+"
-    "X,Y+X,Y+X'Z3Z,Y4WNY,X/X'X/X'X/X'X/X#XBX Gu JWB\\ Ag <g <g <g <g <g <gBe+f "
-    "<e :e :e :e CW ,W ,W ,W  Mc FWIc >f ;f ;f ;f ;f +Z >eJU NW6W MW6W MW6W "
+    ", X-Y+XKW<X'Y+X, Y+X, Y+"
+    "X, Y+X, Y+X'Z3Z, Y4WNY, X/X'X/X'X/X'X/X#XBX Gu JWB\\ Ag <g <g <g <g <g <gBe+f "
+    "<e :e :e :e CW , W , W , W  Mc FWIc >f ;f ;f ;f ;f +Z >eJU NW6W MW6W MW6W "
     "MW6W\"W"
-    "2W MWIb IW2W     NWAVAW(W,W(WJR<RJW(W4RJW(W,W\"V 9W2X     1X 6T   9i "
+    "2W MWIb IW2W     NWAVAW(W, W(WJR<RJW(W4RJW(W, W\"V 9W2X     1X 6T   9i "
     "?k#~`#k Hl HW4W @] ?X9W LW                 NX   .X 2VFV 'VCW$WFSAP KV?VBV "
     "NW 1V (V"
     " &W *X  MV       GV 5X6X =X  NX -X AVHX DX /X  BX GX8X X5X     ,^  1^  LX "
-    "?W MW0WHW FX6X!X ,X-Y*X -X .X ,X/X'X -X -XEZ BX -XKV<VKX0XKX=X'Y+Y,X7X "
-    "Y+Y,X"
+    "?W MW0WHW FX6X!X , X-Y*X -X .X , X/X'X -X -XEZ BX -XKV<VKX0XKX=X'Y+Y, X7X "
+    "Y+Y, X"
     "7X!X  KX <X/X'X4X\"W=WKV<W3YGY FYDY +Z KW .V  NW 0Y5Y    /l CWJe ?j AeJW "
-    "Eh Kl 5eJW MWJe GW ,W ,W:Y KW ,WJdDd7WJe @h DWJe AeJW MWJ_ ?l Im "
+    "Eh Kl 5eJW MWJe GW , W , W:Y KW , WJdDd7WJe @h DWJe AeJW MWJ_ ?l Im "
     "<W6W\"W2W!W=Z="
     "W2X9X W2W!u 6W :V  MW       BeFV!W;X 1W ?f =k CWJe NY2X =X =W6W JW-W$WI` "
     "N}!WCWCW Gi Av&{ W4W BVGW <Y 8X .X)X+ZEXEZ)X0X)X?X?X.Y+Y  #UHVHU   <V   "
@@ -5559,47 +5559,47 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     "U    !j AX 9Z4Z KWBW DV -Z   -TFY@RDT8XAV       ETDVBWET  :VCV %V ;V )X   "
     "=W6W NiGU     KU 6V;V   >U5V KU5V GX<V FX /WHW ;WHW ;WHW ;WHW ;WHW ;WHW "
     ":WDX"
-    " MX ,X -X -X -X -X -X -X -X "
-    ",X-Y+XKX=X'Y+Y-Y+Y-Y+Y-Y+Y-Y+Y'Z5Z+Y5WMY,X/X'X/X'X/X'X/X#YDY GX@^ KWCZ Al "
-    "Al Al Al Al Al AlFh.j ?h =h =h =h EW ,W ,W ,W !g"
-    " GWJe @h =h =h =h =h ,Z @hLV NW6W MW6W MW6W MW6W\"W2W MWJe KW2W     "
+    " MX , X -X -X -X -X -X -X -X "
+    ", X-Y+XKX=X'Y+Y-Y+Y-Y+Y-Y+Y-Y+Y'Z5Z+Y5WMY, X/X'X/X'X/X'X/X#YDY GX@^ KWCZ Al "
+    "Al Al Al Al Al AlFh.j ?h =h =h =h EW , W , W , W !g"
+    " GWJe @h =h =h =h =h , Z @hLV NW6W MW6W MW6W MW6W\"W2W MWJe KW2W     "
     "W@VAW)W+W)WJT>TKW)W4TKW)W+W\"V 9X3X     2X 5T   :k ?i\"~`$m Jn IW4W A^ "
     "?X:X MW       "
     "          NY   .X 2VFV 7~X2XFS <V?VCV MX 2V )W %W +X  MV       GV 5X6X =X "
-    " NX -X BVGX DX /X  BX GX8X X5X LX -X  7a  1a  X @W KW2XHX GX6X!X ,X,X*X "
+    " NX -X BVGX DX /X  BX GX8X X5X LX -X  7a  1a  X @W KW2XHX GX6X!X , X, X*X "
     "-X ."
-    "X ,X/X'X -X -XFZ AX -XKV<VKX0XJW=X'X)X,X7X X)X,X7X!X  KX "
+    "X , X/X'X -X -XFZ AX -XKV<VKX0XJW=X'X)X, X7X X)X, X7X!X  KX "
     "<X/X'X4X\"X>VIV>X2YIY DYFY +Z JW .V  NW 1Y3Y    1n DWLh Bm ChLW Gk Ll "
-    "6hLW MWKg HW ,W ,W;Y JW "
-    ",WKfGg8WKg Cl FWLh ChLW MWK` @m Im <W6W\"X4X!W=Z=W1X;X NW3X!u 6W :V  MW   "
+    "6hLW MWKg HW , W , W;Y JW "
+    ", WKfGg8WKg Cl FWLh ChLW MWK` @m Im <W6W\"X4X!W=Z=W1X;X NW3X!u 6W :V  MW   "
     "    CgGV!W;W 0X ?g Am CWKg [4X >Y =W6W JW-W&YJb }!WCWCW Hk Dx&{ W4W CWFW "
     "<Y 9"
-    "X /Y)X,ZDXDZ*X0X)X?X?X.X)X P #SGVGS %P 7V 9P0P CSGVGS    !l BX 8ZGWFZ "
-    "JWCX DV ,Z   .SEW<PCS8V?V .P>P     JSCVAVDS  :WEV $V <V &W   >W6W NiGU    "
+    "X /Y)X, ZDXDZ*X0X)X?X?X.X)X P #SGVGS %P 7V 9P0P CSGVGS    !l BX 8ZGWFZ "
+    "JWCX DV , Z   .SEW<PCS8V?V .P>P     JSCVAVDS  :WEV $V <V &W   >W6W NiGU    "
     " KU 6V"
-    ";V BP>P /U5V KU5V EW=V FX 0XHX =XHX =XHX =XHX =XHX =XHX <XDX MX ,X -X -X "
+    ";V BP>P /U5V KU5V EW=V FX 0XHX =XHX =XHX =XHX =XHX =XHX <XDX MX , X -X -X "
     "-X -X -X -X -X "
-    ",X,X+XJW=X'X)X-X)X-X)X-X)X-X)X&Z7Z*X5WKX,X/X'X/X'X/X'X/X\"YFY F"
-    "X=[ KWDY @n Cn Cn Cn Cn Cn CnHj1m Bk @k @k @k FW ,W ,W ,W $j GWKg Cl Al "
+    ", X, X+XJW=X'X)X-X)X-X)X-X)X-X)X&Z7Z*X5WKX, X/X'X/X'X/X'X/X\"YFY F"
+    "X=[ KWDY @n Cn Cn Cn Cn Cn CnHj1m Bk @k @k @k FW , W , W , W $j GWKg Cl Al "
     "Al Al Al .Z Bs MW6W MW6W MW6W MW6W\"W3X MWLh LW3X     "
     "V?V@W*V)W*VJV@VKW*V4VKW*V"
     ")W#V 9X4X     2X 4S   :l ?i\"~`%o Lp JW4W A^ >W:X MW                 NX   "
     "-X 2VFV 7~X2WES <V?VDV LX 2V )W %W -\\  V       HW 5X6X =X  NX .X BWGX DX "
     "0X  "
-    "BY FX:X NX5X LX -X  :d  1d $Y @V IV2WFW GX6X\"Y ,X,Y+X -X /Y ,X/X'X -X "
-    "-XH[ @X -XKW>WKX0XJX>X(Y)X,X7X!Y)X,X7X!Y  LX <X/X&X6X!X>VIV>X1YKY BXFX +Z "
+    "BY FX:X NX5X LX -X  :d  1d $Y @V IV2WFW GX6X\"Y , X, Y+X -X /Y , X/X'X -X "
+    "-XH[ @X -XKW>WKX0XJX>X(Y)X, X7X!Y)X, X7X!Y  LX <X/X&X6X!X>VIV>X1YKY BXFX +Z "
     "IW .W "
-    " W 2Y1Y    2o EWMj Dn DjMW Hn Nl 7jMW MWLi IW ,W ,W<Y IW ,WLhIi9WLi En "
+    " W 2Y1Y    2o EWMj Dn DjMW Hn Nl 7jMW MWLi IW , W , W<Y IW , WLhIi9WLi En "
     "GWMj EjMW MWLa An Im <W6W!W4W W=Z=W1Y=Y MW4W u 6W :V  MW       DiIV W;W "
     "/W =g C"
     "m CWLi![4W =Y =W6W KW+W(ZKd!}!WCWCW Im Fy&{ W4W CWFW ;Y :X "
     "/X'X-YCXCY*X0X)X?X?X/Y)X!R #QFVFQ $R 9V :R1R DQFVFQ    \"n BX 7ZJ\\JZ "
     "HWDW CV +[   1TFW.T:W?V"
     " /Q?Q     KTCVAWET  :XIX $V =V #U   >W6W NiGU     KU 6V;V BQ?Q 0U6V JU6V "
-    "BU>V EX 0WFW =WFW =WFW =WFW =WFW =WFW <XDX NY ,X -X -X -X -X -X -X -X "
-    ",X,Y,XJ"
-    "X>X(Y)X.Y)X.Y)X.Y)X.Y)X%Z9Z*Y6WJX,X/X'X/X'X/X'X/X!XFX EX;Z LWDX ?o Do Do "
-    "Do Do Do DoKn4n Cn Cn Cn Cn HW ,W ,W ,W %l HWLi En Cn Cn Cn Cn /Z Cs LW6W "
+    "BU>V EX 0WFW =WFW =WFW =WFW =WFW =WFW <XDX NY , X -X -X -X -X -X -X -X "
+    ", X, Y, XJ"
+    "X>X(Y)X.Y)X.Y)X.Y)X.Y)X%Z9Z*Y6WJX, X/X'X/X'X/X'X/X!XFX EX;Z LWDX ?o Do Do "
+    "Do Do Do DoKn4n Cn Cn Cn Cn HW , W , W , W %l HWLi En Cn Cn Cn Cn /Z Cs LW6W "
     "MW6"
     "W MW6W MW6W!W4W LWMj LW4W     W?V?V+W(V+WKXBXKV+W5XKV+W(V$W 8W4X     2X "
     "5T   ;n ?g!~_%p LZDZ JW4W A^ >W:W MW                 MX   -X 2VFV 7~X2WES "
@@ -5608,19 +5608,19 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     "-X  <e  /e 'Y @V GV4XFX HX7X!X +X+X+X -X /X +X/X'X -X -XI[ ?X "
     "-XJV>VJX0XIW>X(X"
     "'X-X7X!X'X-X7X!Y  LX <X/X&X6X!X>VIV>X1YKY AXHX +Z HW -V  W 3Y/Y    3p "
-    "FWMk Fo EkMW Io Nl 8kMW MWMk JW ,W ,W=Y HW ,WMjJj:WMk Gp HWMk GkMW MWMb "
+    "FWMk Fo EkMW Io Nl 8kMW MWMk JW , W , W=Y HW , WMjJj:WMk Gp HWMk GkMW MWMb "
     "Bo Im <W"
     "6W!W4W W>\\>W0X=X LW5X u 6W :V  MW       EkJV W<X /W >j Fn CWMk\"\\6X =Z "
     ">W6W KW+W)[Ke\"}!WCWCW Jo Hz&{ W4W DWDW ;Y ;X /X'X.YBXBY+X0X)X?X?X/X'X#T  "
     "HV  IT "
-    ":V ;T3T :V   CV +o BX 6ZM`MZ GXFX CV *\\   3SFW,S:V>V 0R@R     KSBV@VDS  "
+    ":V ;T3T :V   CV +o BX 6ZM`MZ GXFX CV *\\   3SFW, S:V>V 0R@R     KSBV@VDS  "
     "9e #V ?W \"V   ?W6W NiGU     KU 6V;V BR@R 1U6V JU6V BV?V EX 1XFX ?XFX "
     "?XFX ?XFX"
     " ?XFX ?XFW =XCX NX +X -X -X -X -X -X -X -X "
-    ",X+X,XIW>X(X'X/X'X/X'X/X'X/X'X%Z;Z)X5VHX-X/X'X/X'X/X'X/X XHX DX:Y LWEX >p "
+    ", X+X, XIW>X(X'X/X'X/X'X/X'X/X'X%Z;Z)X5VHX-X/X'X/X'X/X'X/X XHX DX:Y LWEX >p "
     "Ep Ep Ep Ep Ep EpMp6o Do Do Do Do"
-    " HW ,W ,W ,W 'o IWMk Gp Ep Ep Ep Ep 0Z Ds KW6W MW6W MW6W MW6W!W5X LWMk "
-    "MW5X     V>V?W,V'W,VKZDYKW,V5YKW,V'W%W 8X5W     2X 4T   ;o @g ~^%q NY@Y "
+    " HW , W , W , W 'o IWMk Gp Ep Ep Ep Ep 0Z Ds KW6W MW6W MW6W MW6W!W5X LWMk "
+    "MW5X     V>V?W, V'W, VKZDYKW, V5YKW, V'W%W 8X5W     2X 4T   ;o @g ~^%q NY@Y "
     "KW4W B`"
     " ?X<X MV                 LX   -X 2VFV 7~X2WES ;VAVDV JY 4V )V $W 1d $V    "
     "   HV 4X6X =X  X .Y CWFX DXLY =XEX 'Y EY<X MX5X LX -X  ?e  )e +Y "
@@ -5628,20 +5628,20 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     "HX7X!X +X+X+X -X /X +X/X'X -X -XJ[ >X -XJW@WJX0XIX?X(X'X-X7X!X'X-X8Y Y  "
     "MX <X/X%W6X W?WIV>W/YMY @YJY +Y GW -V  W 4X+X    4YE\\ FWNXG\\ H]EX "
     "F\\GXNW J\\F[ "
-    "GW ,\\GXNW MWNXG[ JW ,W ,W?Z GW ,WNXH[KXH[:WNXG[ H]H] IWNXG\\ I\\GXNW "
-    "MWNXFQ C\\CW CW ,W6W!X6X NW?\\?W.X?X JW6W 1X 6W :V  MW     9X=X\"[IZKW "
+    "GW ,\\GXNW MWNXG[ JW , W , W?Z GW , WNXH[KXH[:WNXG[ H]H] IWNXG\\ I\\GXNW "
+    "MWNXFQ C\\CW CW , W6W!X6X NW?\\?W.X?X JW6W 1X 6W :V  MW     9X=X\"[IZKW "
     "W=Y /W @m H]DV "
     "CWNXG[\"\\6W =[ >W6W LW)W*ZJWKY\"}!WCWCW K\\H] J{&{ V3W DWDW :Y <X "
     "/X'X.XAXAX+X0X)X?X?X/X'X$V  IV  JV ;V <V5V ;V   CV ,^MSKW BX 5x EWFW BV "
-    ",_   5TFW,S:V?W"
+    ", _   5TFW, S:V?W"
     " 1SAS     LTBV@VDS  9d \"V @W  U   ?W6W NiGU     KU 5V=V ASAS 2U7V IU7V "
     "@U@V DX 1WDW ?WDW ?WDW ?WDW ?WDW ?XFX >XCX NX +X -X -X -X -X -X -X -X "
-    ",X+X,XIX?"
+    ", X+X, XIX?"
     "X(X'X/X'X/X'X/X'X/X'X$Z=Z(X6WHX-X/X'X/X'X/X'X/X YJY DX9Y MWEW =YE\\ EYE\\ "
-    "EYE\\ EYE\\ EYE\\ EYE\\ EYE]N\\G[7]EX E\\F[ F\\F[ F\\F[ F\\F[ IW ,W ,W ,W "
+    "EYE\\ EYE\\ EYE\\ EYE\\ EYE]N\\G[7]EX E\\F[ F\\F[ F\\F[ F\\F[ IW , W , W , W "
     "(p IWNXG[ H]H"
     "] G]H] G]H] G]H] G]H] 1Z E]H^ JW6W MW6W MW6W MW6W W6W KWNXG\\ MW6W     "
-    "NV>V>V,V&V,VJZFYIV,V6YIV,V&V%W 7W6X     3X LR:T   ;q @e N~^&s!Y>Y LW4W B` "
+    "NV>V>V, V&V, VJZFYIV, V6YIV, V&V%W 7W6X     3X LR:T   ;q @e N~^&s!Y>Y LW4W B` "
     ">W<X N"
     "W                $x   FX 2VFV 7~X2WES ;VAVEW IY 5V *W #W 4XNTNX &V       "
     "IW 5X5X =X  X .X CWEX Di AXH_ +X CX<X MX5X LX -X  Be  #e /Z @V<^IUDV5WDW "
@@ -5649,17 +5649,17 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     "!X +X+X+X -X /X +X/X'X -X -XK[ =X -XIV@VIX0XHW?X(X'X-X7X!X'X-X8X NZ  NX "
     "<X/X%X8X NX@VGV@X.c >XJX +Z GW -W !W 5X)X    5U>Z G_CZ I[>T FZC_ KZAZ HW "
     "-ZB_ "
-    "M^BZ KW ,W ,W@Z FW ,^CZMVCZ;^BZ IZBZ I_CZ IZC_ M^ 5Y<S CW ,W6W W6W "
+    "M^BZ KW , W , W@Z FW ,^CZMVCZ;^BZ IZBZ I_CZ IZC_ M^ 5Y<S CW , W6W W6W "
     "MW?\\?W.YAY JW6W 2Y 6W :V  MW     ;\\A\\%YDYLV NW>Y .W AXJa IZ<Q C^BZ "
     "MX8X =\\ ?W6W LW)"
     "W+YIXJY LW=W JWCWCW LZBZ K]F] ;W >W2W EWDW 9Y =X "
-    "/X'X/YAXAY,X0X)X?X?X/X'X%X  JV  KX <V =X7X <V   CV -\\JSHT BX 4v DXHX BV "
+    "/X'X/YAXAY, X0X)X?X?X/X'X%X  JV  KX <V =X7X <V   CV -\\JSHT BX 4v DXHX BV "
     "-b   7SEV*S;V?W 2TBT     LSAV"
     "@VCS  9b !V AV  MU   ?W6W MhGU     KU 5V=V ATBT 3U8V HU8V ?UAV CX 1WDW "
     "?WDW ?WDW ?WDW ?WDW ?WDW ?XBX NX +X -X -X -X -X -X -X -X "
-    ",X+X,XHW?X(X'X/X'X/X'X"
+    ", X+X, XHW?X(X'X/X'X/X'X"
     "/X'X/X'X#Z?Z'X7WGX-X/X'X/X'X/X'X/X NXJX CX9Y MWFW <U>Z FU>Z FU>Z FU>Z "
-    "FU>Z FU>Z FU>eBZ9[>T FZAZ HZAZ HZAZ HZAZ JW ,W ,W ,W )r J^BZ IZBZ GZBZ "
+    "FU>Z FU>Z FU>eBZ9[>T FZAZ HZAZ HZAZ HZAZ JW , W , W , W )r J^BZ IZBZ GZBZ "
     "GZBZ GZBZ"
     " GZBZ 1Z EZB[ JW6W MW6W MW6W MW6W W6W K_CZ MW6W     "
     "V=V>V-V%V-VHZHYHV-V6YHV-V%V%W 7X7X     4X NU:T   <s Ae N~^'u\"X<X LW4W "
@@ -5668,91 +5668,91 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     "Dk CXJc -X BX>X LX5Y MX -X  Ee   Le 3Z ?U=bKUCU6XDX IX9Y X +X+X+X -X /X "
     "+X/X"
     "'X -X -XL[ <X -XIV@VIX0XHX@X(X'X-X8Y!X'X-X8X N[  X <X/X%X8X NX@VGV@X.c "
-    "=XLX +Z FW ,V !W       AR9Y H]?Y KZ:R GY?] LY=Y IW -Y?] M]@Y KW ,W ,WAY "
+    "=XLX +Z FW , V !W       AR9Y H]?Y KZ:R GY?] LY=Y IW -Y?] M]@Y KW , W , WAY "
     "DW ,]@X"
-    "NV@X;]@Y JY>Y J]?Y KY?] M] 4X8P CW ,W6W X8X MW?\\?W-XAX IW7X 3Y 5W :V  MW "
-    "    =_C_(YBXLV NW?Z -W CXC\\ KY ,]@Y LW8X >] ?W6W LW)W,YHWHY MW=W JWCWCW "
+    "NV@X;]@Y JY>Y J]?Y KY?] M] 4X8P CW , W6W X8X MW?\\?W-XAX IW7X 3Y 5W :V  MW "
+    "    =_C_(YBXLV NW?Z -W CXC\\ KY ,]@Y LW8X >] ?W6W LW)W, YHWHY MW=W JWCWCW "
     "MY>Y "
-    "L[B[ ;W >W2W FWBW 9Y >X 0X%X0X@X@X,X0X)X?X?X/X'X&Y  JV  KY =V >Y7Y =V   "
+    "L[B[ ;W >W2W FWBW 9Y >X 0X%X0X@X@X, X0X)X?X?X/X'X&Y  JV  KY =V >Y7Y =V   "
     "CV .[HSFR BX 3t BWHW AV .WN\\   9SFV)S;V?W 3UCU     LSAV@VCS  7_  V BV  "
     "LU   ?W"
     "6W MhGU     KU 5W?W AUCU 4U8V HU8V ?UAV CX 2XDX AXDX AXDX AXDX AXDX AXDX "
     "@XBX NX +X -X -X -X -X -X -X -X "
-    ",X+X,XHX@X(X'X/X'X/X'X/X'X/X'X\"ZAZ&X8WFX-X/X'"
+    ", X+X, XHX@X(X'X/X'X/X'X/X'X/X'X\"ZAZ&X8WFX-X/X'"
     "X/X'X/X'X/X MXLX BX8X MWFW <R9Y GR9Y GR9Y GR9Y GR9Y GR9Y GR9a>Y;Z:R GY=Y "
-    "JY=Y JY=Y JY=Y KW ,W ,W ,W *]E[ J]@Y JY>Y IY>Y IY>Y IY>Y IY>Y 2Z FY>Y "
+    "JY=Y JY=Y JY=Y KW , W , W , W *]E[ J]@Y JY>Y IY>Y IY>Y IY>Y IY>Y 2Z FY>Y "
     "JW6W MW"
     "6W MW6W MW6W W7X K]?Y NW7X     V=V=U-V$U-VGZJYFU-V7YFU-V$U%W 7X8X    "
     "&~X/X:T   =t @c L~\\'v\"W:W LW4W CXNX ?X>X MV                $x   EX   "
     "2~X2WES :VDW"
     "EV FZ   :W #W 7XKTKX )V       IV 4X4X >X !X 0Y BWDX Dm FXKf /Y AYBY KX5Y "
-    "MX -X  Gd ~X d 5Y ?V>dLUCU6WBW IX;Z Y +X+Y,X -X 0Y +X/X'X -X -XM[ ;X "
+    "MX -X  Gd ~X d 5Y ?V>dLUCU6WBW IX;Z Y +X+Y, X -X 0Y +X/X'X -X -XM[ ;X "
     "-XIWBWIX"
-    "0XGW@X)Y'Y.X8X!Y'Y.X9Y M] #X <X/X$X:X MX@VGV@X-a <YNY ,Z EW ,V !W       "
-    "AP6X H\\=Y LY7P HY=\\ LX;X IW .Y=\\ M[=X KW ,W ,WBY CW ,[=]=W;[=X KY<Y "
+    "0XGW@X)Y'Y.X8X!Y'Y.X9Y M] #X <X/X$X:X MX@VGV@X-a <YNY , Z EW , V !W       "
+    "AP6X H\\=Y LY7P HY=\\ LX;X IW .Y=\\ M[=X KW , W , WBY CW ,[=]=W;[=X KY<Y "
     "K\\=Y MY=\\ "
-    "M\\ 4X *W ,W6W NW8X MW@VNV@W,XCX GW8W 3Y 4W :V  MW     >aEa)X@XNW NWA[ ,W "
+    "M\\ 4X *W , W6W NW8X MW@VNV@W, XCX GW8W 3Y 4W :V  MW     >aEa)X@XNW NWA[ , W "
     "DW?[ LX +[=X KW:X =] ?W6W MW'W-XGWGX MW=W JWCWCW MX<Y NZ>Z <W >W2W FWBW "
     "9Z ?X"
-    " 0X%X0X@X@X,X0X(X@X@X/Y'Y(Y  IV  JY >V ?Y5Y >V   CV .YFSDP BX 2q @XJX AV "
+    " 0X%X0X@X@X, X0X(X@X@X/Y'Y(Y  IV  JY >V ?Y5Y >V   CV .YFSDP BX 2q @XJX AV "
     "/WK[   :SFV)S;V@X 4VDV     LSAV@VCS  6\\  MV CV  KU   ?W6W MhGU     KU "
     "4V?V @V"
     "DV 5U9V GU9V >UBV BX 2WBW AWBW AWBW AWBW AWBW AXDX @XBX Y +X -X -X -X -X "
-    "-X -X -X ,X+Y-XGW@X)Y'Y1Y'Y1Y'Y1Y'Y1Y'Y\"ZCZ&Y9WEY.X/X'X/X'X/X'X/X MYNY "
+    "-X -X -X , X+Y-XGW@X)Y'Y1Y'Y1Y'Y1Y'Y1Y'Y\"ZCZ&Y9WEY.X/X'X/X'X/X'X/X MYNY "
     "BX8Y N"
-    "WFW <P6X GP6X GP6X GP6X GP6X GP6X GP6_<X;Y7P GX;X JX;X JX;X JX;X KW ,W ,W "
-    ",W *Z?Y K[=X KY<Y KY<Y KY<Y KY<Y KY<Y 3Z GY<Y KW6W MW6W MW6W MW6W NW8W "
+    "WFW <P6X GP6X GP6X GP6X GP6X GP6X GP6_<X;Y7P GX;X JX;X JX;X JX;X KW , W , W "
+    ", W *Z?Y K[=X KY<Y KY<Y KY<Y KY<Y KY<Y 3Z GY<Y KW6W MW6W MW6W MW6W NW8W "
     "J\\=Y "
     "NW8W     NV=V=V.V$V.VFZLYEV.V8YEV.V$V&W 6W8X    &~X2\\<T   =v Ab "
     "K~\\(x$W8W MW4W CXNX ?X>X NW                $w   DX   $VBV#XFS :WFXEV H]  "
     " ;W #W 9XITIX"
     " +V       JW 4X4X >X \"Y 3[ BWCX Dn GXLi 1X ?ZFZ JY7Z MX -X  Je M~X Me 9Y "
-    ">U?gMUCV7WBW IX>\\ NX *X*X,X -X 0X *X/X'X -X -XNZ 9X "
+    ">U?gMUCV7WBW IX>\\ NX *X*X, X -X 0X *X/X'X -X -XNZ 9X "
     "-XHVBVHX0XGXAX)X%X.X9Y!X%"
-    "X.X:Y La 'X <X/X$X:X LWAWGV@W+_ :XNX ,Z DW ,W \"W       &W H[;X MY .X;[ "
-    "MX9X JW .X;[ M[<X LW ,W ,WCY BW ,Z<\\<X<[<X LX:X K[;X MX;[ M[ 3W )W ,W6W "
+    "X.X:Y La 'X <X/X$X:X LWAWGV@W+_ :XNX , Z DW , W \"W       &W H[;X MY .X;[ "
+    "MX9X JW .X;[ M[<X LW , W , WCY BW , Z<\\<X<[<X LX:X K[;X MX;[ M[ 3W )W , W6W "
     "NW8W KW"
     "AVNVAW*XEX FW9X 4Y 3W :V  MW     ?cGc+Y?WNV MWD] +W DV=Z LX +Z;X LW:X >_ "
     "@W6W MW'W.YGWFX NW=W JWCWCW NX:X NY<Y <W >W2W FWBW 8Z @X "
-    "0X%X0X@X@X,X0X(X@X@X"
+    "0X%X0X@X@X, X0X(X@X@X"
     "/X%X)Y  HV  IY ?V @Y3Y ?V   CV /YES 6X 1\\H[ JcJc LV 0WI\\   =TFV)S;WAX "
     "5WEW     MTAVAWCS  3W 4~W.W  KV   ?W6W LgGU     KU 4WAW @WEW 6U9V GU9V "
     "?VBV BX 2"
     "WBW AWBW AWBW AWBW AWBW AWBW AXAX X *X -X -X -X -X -X -X -X "
-    ",X*X-XGXAX)X%X1X%X1X%X1X%X1X%X!ZEZ%X9WCX.X/X'X/X'X/X'X/X LXNX AX7X NWFW "
-    "!W ,W ,W ,W ,W ,W "
-    ",]:X=Y .X9X LX9X LX9X LX9X LW ,W ,W ,W +Z=X K[<X LX:X KX:X KX:X KX:X KX:X "
+    ", X*X-XGXAX)X%X1X%X1X%X1X%X1X%X!ZEZ%X9WCX.X/X'X/X'X/X'X/X LXNX AX7X NWFW "
+    "!W , W , W , W , W , W "
+    ",]:X=Y .X9X LX9X LX9X LX9X LW , W , W , W +Z=X K[<X LX:X KX:X KX:X KX:X KX:X "
     "3Z GX<Z KW6W MW6W MW6W MW6W NW9X J[;X NW9X     "
     "NU<V=V.U#V.UDZNYDV.U8YDV.U#V&"
     "V 5X9W    %~X3]<T   >x A` J~\\(y%W8W MW4W CXMW >W>W MV                $x  "
     " DX   $VCV\"XFS 9XIXEV H_   <W #W ;YHTHY -V       JV 3X4X >X #Y ?g AVBX "
     "Do HXM"
-    "k 3Y >l HX7Z MX -X  Me J~X Je =Y >V?hNUBU8XBX Ju MX *X*X,w Lq IX *~R'X -X "
-    "-c 8X -XHVBVHX0XFWAX)X%X.X9Y!X%X.X;Z Ke ,X <X/X$X:X LXBVEVBX+_ 9` +Y CW "
+    "k 3Y >l HX7Z MX -X  Me J~X Je =Y >V?hNUBU8XBX Ju MX *X*X, w Lq IX *~R'X -X "
+    "-c 8X -XHVBVHX0XFWAX)X%X.X9Y!X%X.X;Z Ke , X <X/X$X:X LXBVEVBX+_ 9` +Y CW "
     "+V \""
-    "W       %W IZ9X NX .X9Z MW7W JW /X9Z MZ;X LW ,W ,WDY AW ,Z;[;W<Z;X MY:Y "
-    "LZ9X X9Z MZ 2W )W ,W6W NX:X KWAVNVAW*YGY EW:W 4Z 3W :V  MW     "
-    "?XMYIe,X>WNV MW"
+    "W       %W IZ9X NX .X9Z MW7W JW /X9Z MZ;X LW , W , WDY AW , Z;[;W<Z;X MY:Y "
+    "LZ9X X9Z MZ 2W )W , W6W NX:X KWAVNVAW*YGY EW:W 4Z 3W :V  MW     "
+    "?XMYIe, X>WNV MW"
     "Ib +W EW;Y MW *Z;X KV:W =_ @W6W NW%W/XFWFX NW=W JWCWCW NW8X!Y:Y =W >| "
     "GW@W 8Y @X 0X%X1Y@X@Y-X0X(X@X@X/XImIX*Y  GV  HY @V AY1Y @V   CV /XDS 6X "
     "0YDY JdL"
     "d LV 1WF[   >SFV'S<WBY 6XFX     MS@VAVAS    @~W/W  JU   >W6W LgGU     KU "
     "3WCW ?XFX 7U:V FU:V >UBV AX 3XBX CXBX CXBX CXBX CXBX CXBX BXAw?X *w Lw Lw "
     "Lw "
-    "LX -X -X -X ,X*X-XFWAX)X%X1X%X1X%X1X%X1X%X ZGZ$X:WBX.X/X'X/X'X/X'X/X K` "
-    "@X7X NWFW  W ,W ,W ,W ,W ,W ,[8W=X -W7W LW7W LW7W LW7W LW ,W ,W ,W ,Y:X "
+    "LX -X -X -X , X*X-XFWAX)X%X1X%X1X%X1X%X1X%X ZGZ$X:WBX.X/X'X/X'X/X'X/X K` "
+    "@X7X NWFW  W , W , W , W , W , W ,[8W=X -W7W LW7W LW7W LW7W LW , W , W , W , Y:X "
     "LZ;X M"
     "Y:Y MY:Y MY:Y MY:Y MY:Y  \"Y=\\ LW6W MW6W MW6W MW6W MW:W IZ9X NW:W     "
     "NV<V=V/V#V/VCcCV/V9YCV/V=X>V&V 4W:X    %~X2TNV<S   =y KWM^LW$~Z({&W7V "
     "MW4W CWLX ?"
-    "X?W MV                 KX   ,X   %VBV!XGS 9gFV Ha   >W \"W ;WFTFW -V      "
+    "X?W MV                 KX   , X   %VBV!XGS 9gFV Ha   >W \"W ;WFTFW -V      "
     " JV 3X4X >X #Y ?f AWBX Dp IXNm 4X <j GX7Z MX -X !e G~X Ge AY =U?ZH^BU8W@W "
     "Jt "
-    "LX *X*X,w Lq IX *~R'X -X -b 7X -XHWDWHX0XFXBX)X%X.X:Y X%X.X<Z Ih 0X "
-    "<X/X#X<X KXBVEVBX*] 8` ,Z CW +V \"W       %W IZ9X X -X9Z NX7X KW /X9Z "
-    "MY9W LW ,W ,W"
-    "EY @W ,Y:Z:W<Y9W MX8X LZ9X X9Z MY 1W )W ,W6W MW:W JWAVNVAW)XGX DW:W 4Y 3X "
-    ":V  MW     @VHXKWGV,W<^ MWIa *W FW9Y NW *Y9W KW<X >` @W6W NW%W/WEWEW NW=W "
+    "LX *X*X, w Lq IX *~R'X -X -b 7X -XHWDWHX0XFXBX)X%X.X:Y X%X.X<Z Ih 0X "
+    "<X/X#X<X KXBVEVBX*] 8` , Z CW +V \"W       %W IZ9X X -X9Z NX7X KW /X9Z "
+    "MY9W LW , W , W"
+    "EY @W , Y:Z:W<Y9W MX8X LZ9X X9Z MY 1W )W , W6W MW:W JWAVNVAW)XGX DW:W 4Y 3X "
+    ":V  MW     @VHXKWGV, W<^ MWIa *W FW9Y NW *Y9W KW<X >` @W6W NW%W/WEWEW NW=W "
     "JW"
     "CWCW X8X!X8X =W >| GW@W 7Y AX 0X%X1X?X?X-X0X(X@X@X/XImIX+Y  FV  GY AV "
     "BY/Y AV   DX 1XCS 6X 0W@X KdLd LV 1VCZ   ?SFV'S;WE[ 7XFX G~X  .S@VBWAS    "
@@ -5760,38 +5760,38 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     ".P>W   >W6W KfGU     KU 3XEX >XFX 8U;V:W3U;VCZ9P>WCV:W/Y 3W@W CW@W CW@W "
     "CW@W CW@W CXBX CX@w?X *w Lw Lw Lw LX -X -X -X "
     "5p9X-XFXBX)X%X1X%X1X%X1X%X1X%X N"
-    "ZIZ#X:VAX.X/X'X/X'X/X'X/X K` @X7X NWFW  W ,W ,W ,W ,W ,W ,[8X?X -X7X NX7X "
-    "NX7X NX7X MW ,W ,W ,W ,X9X LY9W MX8X MX8X MX8X MX8X MX8X  \"X=] LW6W MW6W "
+    "ZIZ#X:VAX.X/X'X/X'X/X'X/X K` @X7X NWFW  W , W , W , W , W , W ,[8X?X -X7X NX7X "
+    "NX7X NX7X MW , W , W , W , X9X LY9W MX8X MX8X MX8X MX8X MX8X  \"X=] LW6W MW6W "
     "MW6"
     "W MW6W MW:W IZ9X NW:W     NVLuKU/VLuKU/VBaAU/V:YAU/V=X=U&V 4X;X    "
-    "%~X2RLW>T   >{!z'~Z)}(W6W NW4W DXLX ?X@X MV                 KX   ,X   "
+    "%~X2RLW>T   >{!z'~Z)}(W6W NW4W DXLX ?X@X MV                 KX   , X   "
     "%VBV!YHS 8eEV"
-    " Ic   ?W !W ;UETEU ,V       KW 3X4X >X $Y >c ?WAX DWD^ JbG] 5X 9d DY9[ MX "
-    "-X #d D~X Dd DY <U@YD\\BU9X@X Kq IX *X*X,w Lq IX *~R'X -X -a 6X "
+    " Ic   ?W !W ;UETEU , V       KW 3X4X >X $Y >c ?WAX DWD^ JbG] 5X 9d DY9[ MX "
+    "-X #d D~X Dd DY <U@YD\\BU9X@X Kq IX *X*X, w Lq IX *~R'X -X -a 6X "
     "-XGVDVGX0XEWB"
-    "X)X%X.X;Z X%X.X?\\ Gk 4X <X/X#X<X KXBVEVBX)[ 6^ ,Z BW +W #W       %W IY7W "
-    "X -W7Y NW5W KW 0X7Y MY9W LW ,W ,WFY ?W ,Y:Z:W<Y9W MW6W LY7W W7Y MY 1W )W "
-    ",W6W"
+    "X)X%X.X;Z X%X.X?\\ Gk 4X <X/X#X<X KXBVEVBX)[ 6^ , Z BW +W #W       %W IY7W "
+    "X -W7Y NW5W KW 0X7Y MY9W LW , W , WFY ?W , Y:Z:W<Y9W MW6W LY7W W7Y MY 1W )W "
+    ", W6W"
     " MW:W JWBVLVBW(XIX CW;X 5Y 2X :V  MX     BUDVKVDU.X<] LWI_ :WEW FV7X NW "
     "*Y9W JV<X >a AW6W NW%W0XEWEX W=W JWCWCW W6W!X8X =W >| HX@X 7Y BX "
     "0X%X1X?X?X-X0"
-    "X(X@X@X/XImIX,Y  EV  FY BV CY-Y BV   DX 1XCS 6X 1W>W KeNe LV 1VB[   "
-    "ASFV'S;YI] 9YGY F~X  .S@VDX@S    @~W1V ,TEZ   >W6W JeGU IX   +U 2YIY <YGY "
+    "X(X@X@X/XImIX, Y  EV  FY BV CY-Y BV   DX 1XCS 6X 1W>W KeNe LV 1VB[   "
+    "ASFV'S;YI] 9YGY F~X  .S@VDX@S    @~W1V , TEZ   >W6W JeGU IX   +U 2YIY <YGY "
     ":U;V:W3U"
     ";VGa<TEZCV:W/X 3X@X EX@X EX@X EX@X EX@X EX@X DX@w?X *w Lw Lw Lw LX -X -X "
     "-X 5p9X-XEWBX)X%X1X%X1X%X1X%X1X%X MZKZ\"X;WAX.X/X'X/X'X/X'X/X J^ ?X7X "
     "NWFX !W "
-    ",W ,W ,W ,W ,W ,Z6W?X -W5W NW5W NW5W NW5W MW ,W ,W ,W -X7W LY9W MW6W MW6W "
+    ", W , W , W , W , W , Z6W?X -W5W NW5W NW5W NW5W MW , W , W , W -X7W LY9W MW6W MW6W "
     "MW6W MW6W MW6W  \"W=^ LW6W MW6W MW6W MW6W MW;X IY7W NW;X     "
     "NVLuKU/VLuKU/VA_"
-    "@U/V;Y@U/V=X=U&V 4X<X    $~X,W>T   ?|\"}(~X)~(W6W NW4W DXKW >W@X MV       "
-    "          KX   ,X   %VBV!ZIS 7cEV IYNZ8W  0W !W :RCTCR +V       KW 3X4X "
+    "@U/V;Y@U/V=X=U&V 4X<X    $~X, W>T   ?|\"}(~X)~(W6W NW4W DXKW >W@X MV       "
+    "          KX   , X   %VBV!ZIS 7cEV IYNZ8W  0W !W :RCTCR +V       KW 3X4X "
     ">X %Y"
-    " =b >V@X DS=\\ K`C[ 6Y 8b BX9[     Nd A~X Ad HY <VAX@ZBV:X?W Kq IX *X*X,w "
+    " =b >V@X DS=\\ K`C[ 6Y 8b BX9[     Nd A~X Ad HY <VAX@ZBV:X?W Kq IX *X*X, w "
     "Lq IX *~R'X -X -a 6X -XGVDVGX0XEXCX)X%X.X=[ NX%X.u Fl 6X <X/X\"W<W "
     "IWCWEVBW([ "
-    "5\\ ,Z AW +W #W       $V IY7X\"X -X7Y NW5W KW 0X7Y MX8X MW ,W ,WHZ >W "
-    ",X8X8W=X8X X6X MY7X\"X7Y MX 0W )W ,W6W MX<X IWCVLVCW&XKX AW<W 5Y 1W 9V  "
+    "5\\ , Z AW +W #W       $V IY7X\"X -X7Y NW5W KW 0X7Y MX8X MW , W , WHZ >W "
+    ", X8X8W=X8X X6X MY7X\"X7Y MX 0W )W , W6W MX<X IWCVLVCW&XKX AW<W 5Y 1W 9V  "
     "LW  4P  /TB"
     "VMVBT.X;\\ LWI` =\\HW GW7X NW *X8X KV=X >XMW AW6W NW%W0XEWDW W=W "
     "JWCWCW!X6X#X6X >W >| HW>W 6Y CX 0X%X1X?X?X-X0X'XAXAX.XImIX-Y  DV  EY CV "
@@ -5800,18 +5800,18 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     "JeGU IX   4g :g :YFX DgEV:X<gEVHe>hCV:X/X 3X?W EX?W EX?W EX?W EX?W EX@X "
     "EX?w?"
     "X *w Lw Lw Lw LX -X -X -X 5p9X-XEXCX)X%X1X%X1X%X1X%X1X%X "
-    "LZMZ!X<W@X.X/X'X/X'X/X'X/X I\\ >X7X NWFY !V +V +V +V +V +V +Y6W@X ,W5W "
-    "NW5W NW5W NW5W MW ,W ,W"
-    " ,W -X7X MX8X X6X X6X X6X X6X X6X  $X=_ MW6W MW6W MW6W MW6W LW<W HY7X "
+    "LZMZ!X<W@X.X/X'X/X'X/X'X/X I\\ >X7X NWFY !V +V +V +V +V +V +Y6W@X , W5W "
+    "NW5W NW5W NW5W MW , W , W"
+    " , W -X7X MX8X X6X X6X X6X X6X X6X  $X=_ MW6W MW6W MW6W MW6W LW<W HY7X "
     "NW<W     MVLuKU/VLuKU/V@]?U/V<Y?U/V=X=U&V 3W<X    $~X+V>S   "
     ">}%~R)~V(~P)W6W NW4W"
-    " DWJX ?XAW L~^               $X   ,X   %VCV N\\LS 6aDVAW0XLZ9W  0W !W "
+    " DWJX ?XAW L~^               $X   , X   %VCV N\\LS 6aDVAW0XLZ9W  0W !W "
     ":PATAP +V       KV 2X4X >X &Z =e BW@X DP8[ L^?Z 7X :h EY;\\    \"d >~X ?e "
     "LY ;U@W>Y"
-    "AU:W>W Ks KX *X*X,w Lq IX6f+~R'X -X -b 7X -XGWFWGX0XDWCX)X%X.X@^ NX%X.s "
+    "AU:W>W Ks KX *X*X, w Lq IX6f+~R'X -X -b 7X -XGWFWGX0XDWCX)X%X.X@^ NX%X.s "
     "Bl 8X <X/X\"X>X IXDVCVDX)[ 4\\ -Z @W *V #W       $W JX5W\"X -W5X W4W KW "
     "0W5X MX7W"
-    " MW ,W ,WIZ =W ,X8X8W=X7W W4W MX5W\"W5X MX 0X *W ,W6W LW<W HWCVLVCW&YMY "
+    " MW , W , WIZ =W , X8X8W=X7W W4W MX5W\"W5X MX 0X *W , W6W LW<W HWCVLVCW&YMY "
     "AW=X 6Y 1X 9V  LX 1X.Q  /TA]AU/W:\\ LWIb A`JW GV5X NW +X7W KW>X >XMX BW6W "
     "W#W1WD"
     "WDW W=W JWCWCW!W4W#X6X >W >| HW>W 7Y BX 0X%X1X?X?X-X0X'XAXAX.XImIX.Y  CV  "
@@ -5820,17 +5820,17 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     "@~W2i >g   <W6W HcGU IX   4g 9e 8YFX EgEV;Y<gEVHf?gBV;Y0Y 3W>W EW>W EW>W "
     "EW>W EW>W EW>W EX?w?X *w Lw Lw Lw LX -X -X -X "
     "5p9X-XDWCX)X%X1X%X1X%X1X%X1X%X "
-    "Ke X=W?X.X/X'X/X'X/X'X/X I\\ >X7X NWEY \"W ,W ,W ,W ,W ,W ,X5W@X -W4W W4W "
-    "W4W W4W MW ,W ,W ,W -W6X MX7W W4W W4W W4W W4W W4W  $W=VMW MW6W MW6W MW6W "
+    "Ke X=W?X.X/X'X/X'X/X'X/X I\\ >X7X NWEY \"W , W , W , W , W , W , X5W@X -W4W W4W "
+    "W4W W4W MW , W , W , W -W6X MX7W W4W W4W W4W W4W W4W  $W=VMW MW6W MW6W MW6W "
     "MW6W "
     "LW=X HX5W NW=X     MVLuKU/VLuKU/V?[>U/V=Y>U/V=X=U&V 3X=W     7X FW@T   "
-    "?~&~T*~V)~R*W5V NW4W EXJX ?XBX L~^               $X   ,X   &VBV Mb "
+    "?~&~T*~V)~R*W5V NW4W EXJX ?XBX L~^               $X   , X   &VBV Mb "
     "4]CVC]4XJZ:W"
     "  0W !W +T  KV       KV 2X4X >X 'Z <g EW?X +Z L]=Z 9Y <l GZ=]    %e    "
-    "e!Y :UAW<XAU;X>X Lu MX *X*X,w Lq IX6f+~R'X -X -c 8X -XFVFVFX0XDXDX)X%X.u "
+    "e!Y :UAW<XAU;X>X Lu MX *X*X, w Lq IX6f+~R'X -X -c 8X -XFVFVFX0XDXDX)X%X.u "
     "MX%X.r"
-    " ?l :X <X/X\"X>X IXDVCVDX)\\ 4Z ,Y ?W *V #W       $W JX5W\"W ,W5X W3W LW "
-    "0W5X MX7W MW ,W ,WJY ;W ,X8X8W=X7W W4W MX5W\"W5X MX 0X *W ,W6W LW<W "
+    " ?l :X <X/X\"X>X IXDVCVDX)\\ 4Z , Y ?W *V #W       $W JX5W\"W , W5X W3W LW "
+    "0W5X MX7W MW , W , WJY ;W , X8X8W=X7W W4W MX5W\"W5X MX 0X *W , W6W LW<W "
     "HWCVKUCW%XMX "
     "?W>W 6Y 0X 9V  LX 5`3R  0T?[?T/W:[ KWId DbKW HW5X NW +X7W JV>W =WLX BW6W "
     "W#W1WDWDW W=W JWCWCW!W4W#W4W >W >| IX>X 9Y AX "
@@ -5840,18 +5840,18 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     "GX>X GX>"
     "X GX>X GX>X GX>X FX?w?X *w Lw Lw Lw LX -X -X -X "
     "5p9X-XDXDX)X%X1X%X1X%X1X%X1X%X Jc NX>W>X.X/X'X/X'X/X'X/X HZ =X7X NWEZ #W "
-    ",W ,W ,W ,W ,W ,X4WAW ,W3W!W3"
-    "W!W3W!W3W NW ,W ,W ,W .X5W MX7W W4W W4W W4W W4W W4W  $W>VLW MW6W MW6W "
+    ", W , W , W , W , W , X4WAW , W3W!W3"
+    "W!W3W!W3W NW , W , W , W .X5W MX7W W4W W4W W4W W4W W4W  $W>VLW MW6W MW6W "
     "MW6W MW6W KW>W GX5W MW>W     LVLuKU/VLuKU/V>Z>U/V>Y=U/V=X=U&V 2W>X     8Y "
     "FW@T  "
-    " ?~P(~V*~T(~Q)V4V NW4W EXJX >WBX L~^               $X   ,X   &VBV Ld "
+    " ?~P(~V*~T(~Q)V4V NW4W EXJX >WBX L~^               $X   , X   &VBV Ld "
     "4WAVD`6XHZ;W  0W !W +T  KV       LW 2X4X >X 'Y ;i GV>X *Z M\\;Y 9X =p "
     "HZ?^    'd  "
-    "  Id$Y 9UAW<XAU;W<W Lw X *X*X,w Lq IX6f+~R'X -X -d 9X "
-    "-XFVFVFX0XCWDX)X%X.t LX%X.p ;k ;X <X/X!X@X HXDVCVDX*^ 4X ,Z ?W *W $W      "
-    " $W JX5W\"W ,W5X W3W LW"
-    " 0W5X MW6W MW ,W ,WKY :W ,W7W7W=W6W W4W MX5W\"W5X MX /Y ,W ,W6W LX>X "
-    "GWEVJVEW#a >W>W 7Y 1Y 8V  KY 9e8T  0T?Z>T0X:[ KWIf GdLW HW4W MW ,W6W JV?X "
+    "  Id$Y 9UAW<XAU;W<W Lw X *X*X, w Lq IX6f+~R'X -X -d 9X "
+    "-XFVFVFX0XCWDX)X%X.t LX%X.p ;k ;X <X/X!X@X HXDVCVDX*^ 4X , Z ?W *W $W      "
+    " $W JX5W\"W , W5X W3W LW"
+    " 0W5X MW6W MW , W , WKY :W , W7W7W=W6W W4W MX5W\"W5X MX /Y , W , W6W LX>X "
+    "GWEVJVEW#a >W>W 7Y 1Y 8V  KY 9e8T  0T?Z>T0X:[ KWIf GdLW HW4W MW , W6W JV?X "
     ">XKW BW6"
     "W W#W2XDWDX!W=W JWCWCW!W4W#W4W >W >| IW<W :Y @X "
     "0X%X1X?X?X-X0X&XBXBX-XImIX0Y  AV  BY FV GY%Y FV   DX 2WAS ?r DW:W =\\ <V "
@@ -5860,17 +5860,17 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     "GW<W GW<W GW<W GW<W GX>X GX>w?X *w Lw Lw Lw LX -X -X -X "
     "5p9X-XCWDX)X%X1X%X1X%",
     // Start of second string.
-    "X1X%X1X%X Ia MX?W=X.X/X'X/X'X/X'X/X GX <X7X NWDZ $W ,W ,W ,W ,W ,W ,X4WAW "
-    ",W3W!W3W!W3W!W3W NW ,W ,W ,W .W4W MW6W W4W W4W W4W W4W W4W  $W?VKW MW6W "
+    "X1X%X1X%X Ia MX?W=X.X/X'X/X'X/X'X/X GX <X7X NWDZ $W , W , W , W , W , W , X4WAW "
+    ", W3W!W3W!W3W!W3W NW , W , W , W .W4W MW6W W4W W4W W4W W4W W4W  $W?VKW MW6W "
     "MW6W"
     " MW6W MW6W KW>W GX5W MW>W     LVLuKU/VLuKU/V?\\?U/V?Y<U/V=X=U&V 2W>X     "
-    "8X DWBT   ?~Q)~W)~R&~(V4V NW4W EWHW >WBW K~^               $X   ,X   &VBV "
+    "8X DWBT   ?~Q)~W)~R&~(V4V NW4W EWHW >WBW K~^               $X   , X   &VBV "
     "Kg \""
     "VEc8WFZ=W  /W !W +T 4~W      5V 1X4X >X (Y -] IW>X )Y M[9X 9X >\\F\\ H[C` "
-    "   'a    Ca$Y 9UAV:WAU;W<W LX<\\!X *X*X,X -X 0X6f+X/X'X -X -XN[ :X "
+    "   'a    Ca$Y 9UAV:WAU;W<W LX<\\!X *X*X, X -X 0X6f+X/X'X -X -XN[ :X "
     "-XEVHVEX0XCX"
     "EX)X%X.s KX%X.o 6h <X <X/X!X@X GWDVCVDW*_ 4X -Z >W )V $W       6i JX5X$X "
-    "-X5X V2W LW 1W3W MW6W MW ,W ,WLY 9W ,W7W7W=W6W!X4X NX5X$X5X MW .[ .W ,W6W "
+    "-X5X V2W LW 1W3W MW6W MW , W , WLY 9W , W7W7W=W6W!X4X NX5X$X5X MW .[ .W , W6W "
     "KW>"
     "W FWEVJVEW#a >W?X 8Z 4\\ 8V  K[ =i<V  0S=Y=S0X:[ KW@^ IfMW HW4W MY .W6W "
     "JW@W =XKX CW6W W#W2WCWCW!W=W JWCWCW\"X4X%X4X ?W >W2W IW<W :Y @X "
@@ -5879,106 +5879,106 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     "/XFX @~X  .S@VIX;S    (V Ii 8Z   5W6W D_GU IX   4g 3Y .XFX "
     "HgGV;TNU<gGVFQ@W;Z=V;T"
     "NU3Y 1W<W GW<W GW<W GW<W GW<W GW<W GX>X X *X -X -X -X -X -X -X -X "
-    ",X*X-XCXEX)X%X1X%X1X%X1X%X1X%X H_ LX@W<X.X/X'X/X'X/X'X/X GX <X7X NWD\\ 8i "
+    ", X*X-XCXEX)X%X1X%X1X%X1X%X1X%X H_ LX@W<X.X/X'X/X'X/X'X/X GX <X7X NWD\\ 8i "
     ">i >i >i >i"
-    " >i >i3WBX ,V2W!V2W!V2W!V2W NW ,W ,W ,W .W4W MW6W!X4X\"X4X\"X4X\"X4X\"X4X "
+    " >i >i3WBX , V2W!V2W!V2W!V2W NW , W , W , W .W4W MW6W!X4X\"X4X\"X4X\"X4X\"X4X "
     "M~Y2X@VIW NW6W MW6W MW6W MW6W KW?X GX5X NW?X     "
     "LVLuKU/VLuKU/V@^@U/V@Y;U/V=X=U&"
     "V 2X?W     8X CWBT   ?~R*~X)~Q%}(V4W W4W FXHX ?XDX K~^               $X   "
-    ",X   'WCV Ii &VEe:XEZ>W  /W !W +T 4~W      5V 1X4X >X )Y )[ KW=X (Y N[9Y "
+    ", X   'WCV Ii &VEe:XEZ>W  /W !W +T 4~W      5V 1X4X >X )Y )[ KW=X (Y N[9Y "
     ";Y "
-    "?Z@Z I]Gb    '^    =^$X 9U@V:WAU<X<X MX9Z\"X *X*X,X -X 0X6f+X/X'X -X -XM[ "
+    "?Z@Z I]Gb    '^    =^$X 9U@V:WAU<X<X MX9Z\"X *X*X, X -X 0X6f+X/X'X -X -XM[ "
     ";X -XEVHVEX0XBWEX)X%X.r JX%X.q 4e =X <X/X!X@X GXFVAVFX*` 5X .Z =W )V $W   "
     "   "
-    " :m JW3W$W ,W3W!W2W LW 1W3W MW6W MW ,W ,WMY 8W ,W7W7W=W6W!W2W NW3W$W3W MW "
-    "-^ 2W ,W6W KX@X FWEVJVEW\"_ <W@W 7Y :b 7V  Jb FmAX  0S<W<S0W8Y JW<[ "
+    " :m JW3W$W , W3W!W2W LW 1W3W MW6W MW , W , WMY 8W , W7W7W=W6W!W2W NW3W$W3W MW "
+    "-^ 2W , W6W KX@X FWEVJVEW\"_ <W@W 7Y :b 7V  Jb FmAX  0S<W<S0W8Y JW<[ "
     "KYHVMV GV"
     "3X MZ 0W6W IVAX >XIW CW6W!W!W3WCWCW!W=W JWCWCW\"W2W%W3X ?W >W2W JW;X <Y "
     "?X 0X&Y1X?X?X-X0X&YCXCY-X%X2~a GV H~a HV I~b HV   DX 3W@S ?r DV8V <Z ;V "
     "2W;W   "
     "DSFV'S  <XFX  =V  .S@VGW<S    (V      \"W6W A\\GU IX       2XFX *V;TMU "
     "LV2V V;TMU4Z 2X<X IX<X IX<X IX<X IX<X IX<X IX=X X *X -X -X -X -X -X -X -X "
-    ",X*X-XB"
+    ", X*X-XB"
     "WEX)X%X1X%X1X%X1X%X1X%X G] KX@V;X.X/X'X/X'X/X'X/X GX <X8Y NWC\\ =m Bm Bm "
-    "Bm Bm Bm Bm3WBW ,W2W\"W2W\"W2W\"W2W NW ,W ,W ,W /X4X "
+    "Bm Bm Bm Bm3WBW , W2W\"W2W\"W2W\"W2W NW , W , W , W /X4X "
     "NW6W!W2W\"W2W\"W2W\"W2W\"W2W M~Y"
     "2W@VHW NW6W MW6W MW6W MW6W JW@W FW3W MW@W     "
     "KVLuKU/VLuKU/VA`AU/VAY:U/V=X=U&V 1W@X     9X BWBS   >~R+~Z*~P#{'V4W W4W "
     "FXHX ?XDX K~^               $X  "
-    " ,X   'VBV Gi (VFg;WCZ?W  /W !W +T 4~W      6W 1X4X >X *Y &Z LW=X (Y NZ7X "
-    ";X ?Z>Z ImNX    '[    8\\%Y 9UAW:WAU<W:W MX7Y#X *X*X,X -X 0X6f+X/X'X -X "
+    " , X   'VBV Gi (VFg;WCZ?W  /W !W +T 4~W      6W 1X4X >X *Y &Z LW=X (Y NZ7X "
+    ";X ?Z>Z ImNX    '[    8\\%Y 9UAW:WAU<W:W MX7Y#X *X*X, X -X 0X6f+X/X'X -X "
     "-XL[ "
     "<X -XEWJWEX0XBXFX)X%X.p HX%X.r 0a >X <X/X XBX FXFVAVFX+b 6X /Z <W )W %W   "
-    "    =p JW3W$W ,W3W!| LW 1W3W MW6W MW ,W ,WNY 7W ,W7W7W=W6W!W2W NW3W$W3W "
+    "    =p JW3W$W , W3W!| LW 1W3W MW6W MW , W , WNY 7W , W7W7W=W6W!W2W NW3W$W3W "
     "MW -"
-    "b 6W ,W6W JW@W EWFVHVFW!] ;WAX 8Y 9` 5V  H` HrG[  0S<W<S0W8Y JW:Y KXF^ "
+    "b 6W , W6W JW@W EWFVHVFW!] ;WAX 8Y 9` 5V  H` HrG[  0S<W<S0W8Y JW:Y KXF^ "
     "HW2W Kc ;W6W IVAX >XIW CW6W!W!W3WCWCW!W=W JWCWCW\"W2W%W2W ?W >W2W JW:W =Y "
     ">X 0Y'"
-    "X0X?X?X-X0X%XCXCX,X%X2~a GV H~a HV I~b HV   DX 3W@S ?r DV8V <Z   FW;W   "
+    "X0X?X?X-X0X%XCXCX, X%X2~a GV H~a HV I~b HV   DX 3W@S ?r DV8V <Z   FW;W   "
     "DSFV'S  =XFX  <V  .S@VFW=S    (V      \"W6W <WGU IX       1XFX +V;SLU "
     "LV2V V;SL"
     "U5Z 1W:W IW:W IW:W IW:W IW:W IX<X IX=X X *X -X -X -X -X -X -X -X "
-    ",X*X-XBXFX)X%X1X%X1X%X1X%X1X%X F[ JXAW;X.X/X'X/X'X/X'X/X GX <X8X MWB] Bp "
+    ", X*X-XBXFX)X%X1X%X1X%X1X%X1X%X F[ JXAW;X.X/X'X/X'X/X'X/X GX <X8X MWB] Bp "
     "Ep Ep Ep Ep "
-    "Ep E~eBW ,|\"|\"|\"| NW ,W ,W ,W /W2W NW6W!W2W\"W2W\"W2W\"W2W\"W2W "
+    "Ep E~eBW ,|\"|\"|\"| NW , W , W , W /W2W NW6W!W2W\"W2W\"W2W\"W2W\"W2W "
     "M~Y2WAWHW NW6W MW6W MW6W MW6W JWAX FW3W MWAX     "
     "KV<V=V/V#V/VBbCV/VBY:V/V=X>V&V 1XAW     9"
     "X @WDT   ?~S+~Z)}!y'W4W W4W FWFW >WDW J~^               *r   ?V   &VBV Eh "
     "*VEXIX<XBZ@W  /W !W +T 4~W  5f   8V 0X4X >X +Y $Z NW<X 'X NZ7X ;X ?X:X "
     "HkMX "
-    "   '[    7[%X 8UAV8VAU=X:X NX6X#X *X*X,X -X 0X6f+X/X'X -X -XK[ =X "
-    "-XDVJVDX0XAWFX)X%X.m EX%X.XA\\ -^ ?X <X/X XBX FXFVAVFX,c 6X /Y ;W (V %W   "
+    "   '[    7[%X 8UAV8VAU=X:X NX6X#X *X*X, X -X 0X6f+X/X'X -X -XK[ =X "
+    "-XDVJVDX0XAWFX)X%X.m EX%X.XA\\ -^ ?X <X/X XBX FXFVAVFX, c 6X /Y ;W (V %W   "
     "    ?r JW3W"
-    "$W ,W3W!| LW 1W3W MW6W MW ,W ,a 6W ,W7W7W=W6W!W2W NW3W$W3W MW ,e :W ,W6W "
+    "$W , W3W!| LW 1W3W MW6W MW , W , a 6W , W7W7W=W6W!W2W NW3W$W3W MW , e :W , W6W "
     "JW@W DWGVHVGW N[ 9WBW 8Y 8^ 3V  F^ I~X  0S;U;T1W8Y JW8X MXC\\ HW2W Ia "
     ";W6W IWB"
     "W >XHX DW6W!W<W<W3WCWCW!W=W JWCWCW\"W2W%W2W ?W >W2W KX:X ?Y =X "
-    "/X'X0Y@X@Y-X0X%YDXDY,X%X2~a GV H~a HV I~b HV   DX 3W@S ?r DV8V ;X   DW;V  "
+    "/X'X0Y@X@Y-X0X%YDXDY, X%X2~a GV H~a HV I~b HV   DX 3W@S ?r DV8V ;X   DW;V  "
     " DSFV'S  >XFX "
     " ;V  .S@VFW=S    (V      \"W6W :UGU IX       0XFX -V;TLU MV0U!V;TLU6Y "
     "0X:X KX:X KX:X KX:X KX:X KX:X JW<X X *X -X -X -X -X -X -X -X "
-    ",X*X-XAWFX)X%X1X%X1X"
+    ", X*X-XAWFX)X%X1X%X1X"
     "%X1X%X1X%X F[ JXBW:X.X/X'X/X'X/X'X/X GX <X9Y MWA] Er Gr Gr Gr Gr Gr G~gBW "
-    ",|\"|\"|\"| NW ,W ,W ,W /W2W NW6W!W2W\"W2W\"W2W\"W2W\"W2W M~Y2WBWGW NW6W "
+    ",|\"|\"|\"| NW , W , W , W /W2W NW6W!W2W\"W2W\"W2W\"W2W\"W2W M~Y2WBWGW NW6W "
     "MW6W MW6W "
     "MW6W IWBW EW3W LWBW     IU<V=V.U#V.UCdDV.UCY9V.U=X>V&V 1XBX     :X ?WDT   "
     "?~S,~[({ x&W4W W4W FWFX ?XFX JV                \"q   >V   &VBV Af "
     "-VEXGX=W@ZB"
-    "W  .W !W +T 4~W  5f   8V 0X4X >X ,Y \"Y W;X 'X NZ7X <Y @Y:Y HiLX    '^    "
-    "=^%X 8UAV8VAU=X:X NX5X$X *X*X,X -X 0X(X+X/X'X -X -XJ[ >X "
+    "W  .W !W +T 4~W  5f   8V 0X4X >X , Y \"Y W;X 'X NZ7X <Y @Y:Y HiLX    '^    "
+    "=^%X 8UAV8VAU=X:X NX5X$X *X*X, X -X 0X(X+X/X'X -X -XJ[ >X "
     "-XDVJVDX0XAXGX)X%X.i"
     " AX%X.X>Z ,\\ ?X <X/X NWBW DWFVAVFW+XMY 7X 0Z ;W (V %W       @s JW3W$W "
-    ",W3W!| LW 1W3W MW6W MW ,W ,` 5W ,W7W7W=W6W!W2W NW3W$W3W MW +g =W ,W6W "
+    ", W3W!| LW 1W3W MW6W MW , W ,` 5W , W7W7W=W6W!W2W NW3W$W3W MW +g =W , W6W "
     "JXBX DWGVH"
     "VGW N[ 9WBW 9Y 7^ 3V  F^ I[Gr  /S;U;T1W8X IW7X NWA[ HW2W F^ ;W6W HVCX "
     ">XGW DW6W!W<W<W3WCWCW!W=W JWCWCW\"W2W%W2W ?W >W2W KW9X ?Y =X "
-    "/X'X/X@X@X,X0X$YEXEY"
+    "/X'X/X@X@X, X0X$YEXEY"
     "+X%X2~a GV H~a HV I~b HV   DX 3W@S 6X 3V8V ;X   DX<V   DTFV)T  >WEW  :V  "
     ".TAVEW?T    (V      \"W6W :UGU IX       /WEW .V;TKU NV/U\"V;TKU7Y /X:X "
     "KX:X KX:"
     "X KX:X KX:X KX:X KX<X X *X -X -X -X -X -X -X -X "
-    ",X*X-XAXGX)X%X1X%X1X%X1X%X1X%X G] KXCW9X.X/X'X/X'X/X'X/X GX <X9Y MW?] Hs "
+    ", X*X-XAXGX)X%X1X%X1X%X1X%X1X%X G] KXCW9X.X/X'X/X'X/X'X/X GX <X9Y MW?] Hs "
     "Hs Hs Hs Hs Hs H~hBW ,|\"|\"|\"|"
-    " NW ,W ,W ,W /W2W NW6W!W2W\"W2W\"W2W\"W2W\"W2W M~Y2WBVFW NW6W MW6W MW6W "
+    " NW , W , W , W /W2W NW6W!W2W\"W2W\"W2W\"W2W\"W2W M~Y2WBVFW NW6W MW6W MW6W "
     "MW6W IWBW EW3W LWBW     IU<V=V.U#V.UDYMZEV.UDY8V.U#V&V 0WBX     ;X >WDS   "
     ">~T-~\\(y"
     " Mw&W4W W4W GXFX ?XFX JV                #r   >V   'WCV <c .VEWEW=W?ZCW  "
     ".W !W   :~W  5f   9W 0X4X >X -Y  Y!W;X 'Y Y5X =X @Y8Y HgKX    'a    Ca%X "
     "8UAV8"
-    "VAU=W8W NX4X%X *X+Y,X -X 0X(X+X/X'X -X -XI[ ?X -XDWLWDX0X@WGX)X&Y.X "
-    "0X&Y.X=Y *[ @X <X/X NXDX DXHW@VHX,YMZ 8X 1Z :W (W &W       At JW3W$W "
-    ",W3W!| LW 1W3"
-    "W MW6W MW ,W ,` 5W ,W7W7W=W6W!W2W NW3W$W3W MW )g ?W ,W6W IWBW CWGVHVGW MY "
+    "VAU=W8W NX4X%X *X+Y, X -X 0X(X+X/X'X -X -XI[ ?X -XDWLWDX0X@WGX)X&Y.X "
+    "0X&Y.X=Y *[ @X <X/X NXDX DXHW@VHX, YMZ 8X 1Z :W (W &W       At JW3W$W "
+    ", W3W!| LW 1W3"
+    "W MW6W MW , W ,` 5W , W7W7W=W6W!W2W NW3W$W3W MW )g ?W , W6W IWBW CWGVHVGW MY "
     "8WCX :Y 6` 5V  H` IW@m  -S;V<T1W8X IW7X W@[ HW2W Ia ;W6W HVCW >XFX "
     "EW6W!W<W<"
     "W3WCWCW!W=W JWCWCW\"W2W%W2W ?W >W2W KW8W @Y <X "
-    "/X'X/X@X@X,X0X#YFXFY*X&Y2~a GV H~a HV I~b HV   DX 3W@S 6X 3V8V ;X   CX=V  "
+    "/X'X/X@X@X, X0X#YFXFY*X&Y2~a GV H~a HV I~b HV   DX 3W@S 6X 3V8V ;X   CX=V  "
     " CSFV)S  =WEW  :V  -SAVDW@S   "
     " 'V      \"W6W :UGU IX       /WEW .V<TJU NV/U\"V<TJU8Z /W8W KW8W KW8W "
     "KW8W KW8W KX:X KX<X X *X -X -X -X -X -X -X -X "
-    ",X+Y-X@WGX)X&Y1X&Y1X&Y1X&Y1X&Y H_ LX"
+    ", X+Y-X@WGX)X&Y1X&Y1X&Y1X&Y1X&Y H_ LX"
     "DW9Y.X/X'X/X'X/X'X/X GX <X:Y LW>] Jt It It It It It I~iBW ,|\"|\"|\"| NW "
-    ",W ,W ,W /W2W NW6W!W2W\"W2W\"W2W\"W2W\"W2W M~Y2WCVEW NW6W MW6W MW6W MW6W "
+    ", W , W , W /W2W NW6W!W2W\"W2W\"W2W\"W2W\"W2W M~Y2WCVEW NW6W MW6W MW6W MW6W "
     "IWCX EW3W L"
     "WCX     IV=V=V.V$V.VFYKZFV.VFY7V.V$V&V 0XCW     ;Y =WFT   >~T-~\\'w "
     "Ku%W4W W4W GXEW >WFW IV                #q   =V   6~X JSN^ /VEWCW?W=ZDW  "
@@ -5986,250 +5986,250 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     "  5f   9V /X4X >X .Y  MX\"W:X &X Y5X >Y @X6X FcJX    &d    Id%X "
     "8UAV8VAU>X8X X4X$X +X+X+X -X /X)X+X/X'X -X -XH[ @X -XCVLVCX0X@XHX(X'X-X "
     "/X'X-X<Y *Z @X "
-    "<X/X NXDX DXHV?VHX-YKY 8X 2Z 9W 'V &W       B]?W JW3W$W ,W3W!| LW 1W3W "
-    "MW6W MW ,W ,a 6W ,W7W7W=W6W!W2W NW3W$W3W MW 'g AW ,W6W IWBW CWHVFVHW NZ "
+    "<X/X NXDX DXHV?VHX-YKY 8X 2Z 9W 'V &W       B]?W JW3W$W , W3W!| LW 1W3W "
+    "MW6W MW , W , a 6W , W7W7W=W6W!W2W NW3W$W3W MW 'g AW , W6W IWBW CWHVFVHW NZ "
     "7WDW :Z"
-    " 6a 6V  Jb IU;i  ,S;V<S0W7W IW6W W?Z HW2W Kc ;W6W HWEX >XFX "
+    " 6a 6V  Jb IU;i  , S;V<S0W7W IW6W W?Z HW2W Kc ;W6W HWEX >XFX "
     "EW6W!W<W<W3WCWCW!W=W JWCWCW\"W2W%W2W ?W =V2V KX8X BY ;X "
-    "/Y)Y/X@X@X,X0X#YFXGZ)X'X0~` GV H~` "
+    "/Y)Y/X@X@X, X0X#YFXGZ)X'X0~` GV H~` "
     "GV H~` GV   DX 3W@S 6X 3V8V M|  &Z?V   CSFV)S:m AXFX  ;V  -SAVDW@S    'V  "
     "    \"W6W :UGU      *m 5XFX /V;SIU V.T\"V;SIU9Z /X8X MX8X MX8X MX8X MX8X "
     "MX8X "
-    "MX;X NX +X -X -X -X -X -X -X -X ,X+X,X@XHX(X'X/X'X/X'X/X'X/X'X Ha "
+    "MX;X NX +X -X -X -X -X -X -X -X , X+X, X@XHX(X'X/X'X/X'X/X'X/X'X Ha "
     "LXFW8X-X/X'X/X'X/X'X/X GX <X;Z LW<\\ L]?W J]?W J]?W J]?W J]?W J]?W J]?{BW "
     ",|\"|\"|\"| NW"
-    " ,W ,W ,W /W2W NW6W!W2W\"W2W\"W2W\"W2W\"W2W M~Y2WDVDW NW6W MW6W MW6W MW6W "
+    " , W , W , W /W2W NW6W!W2W\"W2W\"W2W\"W2W\"W2W M~Y2WDVDW NW6W MW6W MW6W MW6W "
     "HWDW DW3W KWDW     HV=V>V-V%V-VGYIZHV-VGY7V-V%V%V /WDX     ;X <WFT   "
     ">~T-~\\'v Is"
     "$W4W W4W GWDX ?XGW HV                %r   =V   6~X JSJ[ 0VEVAV?W<ZFW  -W "
     "!W   \"V   Lf   9V /X5X =X /Z  MX\"V9X &X NX5X >X ?X6X D`IX    $d    Ne#X "
     "8UAV8"
     "VBU=x X4X$X +X+X+X -X /X)X+X/X'X -X -XG[ AX -XCVLVCX0X?WHX(X'X-X /X'X-X;Y "
-    "*Y @X <X/X MXFX CXHV?VHX-XIY 9X 3Z 8W 'V &W       CZ;W JW3W$W ,W3W!| LW "
+    "*Y @X <X/X MXFX CXHV?VHX-XIY 9X 3Z 8W 'V &W       CZ;W JW3W$W , W3W!| LW "
     "1W3W"
-    " MW6W MW ,W ,b 7W ,W7W7W=W6W!W2W NW3W$W3W MW %f BW ,W6W IXDX BWIVFVIW N\\ "
+    " MW6W MW , W , b 7W , W7W7W=W6W!W2W NW3W$W3W MW %f BW , W6W IXDX BWIVFVIW N\\ "
     "8WEX :Y .[ 7V  K\\ BT8e  *S<X=S0W7V HW6X\"W=X GW2W Me ;W6W GVEX >WDW "
     "EW6W!W<W<W"
-    "3WCWCW!W=W JWCWCW\"W2W%W2W ?W =W4W KW6W CY :X .X)X.YAXAY,X0X\"ZHXHZ(X'X/Y "
+    "3WCWCW!W=W JWCWCW\"W2W%W2W ?W =W4W KW6W CY :X .X)X.YAXAY, X0X\"ZHXHZ(X'X/Y "
     " AV  BY FV GY%Y FV   DX 3W@S 6X 2V:V L|  %ZAV   BSEV*S:m @XFX  <V  "
     "-SAVCWAS   "
     " 'V      \"W6W :UGU      *m 6XFX .V<TIU V/U\"V<TIU9Y .x Mx Mx Mx Mx Mx Mu "
-    "NX +X -X -X -X -X -X -X -X ,X+X,X?WHX(X'X/X'X/X'X/X'X/X'X Ic "
+    "NX +X -X -X -X -X -X -X -X , X+X, X?WHX(X'X/X'X/X'X/X'X/X'X Ic "
     "MXGW7X-X/X'X/X'X/"
-    "X'X/X GX <X=[ KW:[ NZ;W KZ;W KZ;W KZ;W KZ;W KZ;W KZ;{BW ,|\"|\"|\"| NW ,W "
-    ",W ,W /W2W NW6W!W2W\"W2W\"W2W\"W2W\"W2W  &WEVCW NW6W MW6W MW6W MW6W HWEX "
+    "X'X/X GX <X=[ KW:[ NZ;W KZ;W KZ;W KZ;W KZ;W KZ;W KZ;{BW ,|\"|\"|\"| NW , W "
+    ", W , W /W2W NW6W!W2W\"W2W\"W2W\"W2W\"W2W  &WEVCW NW6W MW6W MW6W MW6W HWEX "
     "DW3W KWEX "
-    "    GV>V>V,V&V,VIYGZIV,VIY6V,V&V&W /XEW     N~X'VGT   =~T-~\\&u Ir#W4W "
-    "NV4W HXDX ?XHX HV                 KX   ,V   6~X JSHZ 2VDVAV?W;ZGW  -W !W  "
+    "    GV>V>V, V&V, VIYGZIV, VIY6V, V&V&W /XEW     N~X'VGT   =~T-~\\&u Ir#W4W "
+    "NV4W HXDX ?XHX HV                 KX   , V   6~X JSHZ 2VDVAV?W;ZGW  -W !W  "
     " \"V   "
     "Lf   :W .X6X =X 0Z  LY#~ /X NX5X >X @X5Y AYFX    !d >~X >d X "
     "8UAV8VBU>z!X3X%X +X+X+X -X /X)X+X/X'X -X -XF[ BX -XCWNWCX0X?XIX(X'X-X "
     "/X'X-X:X )Y AX <X/X"
-    " MXFX BWHV?VHW-YIY 9X 3Y 7W 'W 'W       CX9W JW3W$W ,W3W!W 'W 1W3W MW6W "
-    "MW ,W ,WNZ 8W ,W7W7W=W6W!W2W NW3W$W3W MW !c CW ,W6W HWDW AWIVFVIW N] 8WFW "
+    " MXFX BWHV?VHW-YIY 9X 3Y 7W 'W 'W       CX9W JW3W$W , W3W!W 'W 1W3W MW6W "
+    "MW , W , WNZ 8W , W7W7W=W6W!W2W NW3W$W3W MW !c CW , W6W HWDW AWIVFVIW N] 8WFW "
     ":Y *"
     "Y 8V  KY ?R3`  (S<X=S0W7V HW5W\"W=X GW2W N[ 0W6W GWFW >XDX "
     "FW6W!W<W<W3WCWCW!W=W JWCWCW\"W2W%W2W ?W =W4W LX6X DY :X "
     ".X)X-XAXAX+X0X!ZIXIZ'X'X.Y  BV  CY EV"
-    " FY'Y EV   DX 3W@S 6X 2V:V L|  $[CV   BTFW,T:m ?XFX  =V  -TBVBVBT    'V   "
+    " FY'Y EV   DX 3W@S 6X 2V:V L|  $[CV   BTFW, T:m ?XFX  =V  -TBVBVBT    'V   "
     "   \"W6W :UGU      *m 7XFX .V<THU!V/U\"V<THU:Y .z z z z z Nx Nv NX +X -X "
     "-X -X"
-    " -X -X -X -X ,X+X,X?XIX(X'X/X'X/X'X/X'X/X'X Je NXGV6X-X/X'X/X'X/X'X/X GX "
-    "<X@^ KW9[ X9W KX9W KX9W KX9W KX9W KX9W KX9W MW ,W ,W ,W ,W )W ,W ,W ,W "
+    " -X -X -X -X , X+X, X?XIX(X'X/X'X/X'X/X'X/X'X Je NXGV6X-X/X'X/X'X/X'X/X GX "
+    "<X@^ KW9[ X9W KX9W KX9W KX9W KX9W KX9W KX9W MW , W , W , W , W )W , W , W , W "
     "/W2W N"
     "W6W!W2W\"W2W\"W2W\"W2W\"W2W  &WFVBW NW6W MW6W MW6W MW6W GWFW CW3W JWFW    "
-    " FV>V?W,V'W,VJYEZKW,VJY6W,V'W&W /XFX     N~X'WHT   =~T-~\\%s Gp\"W4W NV4V "
+    " FV>V?W, V'W, VJYEZKW, VJY6W, V'W&W /XFX     N~X'WHT   =~T-~\\%s Gp\"W4W NV4V "
     "GXCW >WH"
-    "X HW                 LX   ,V   6~X JSGY 3VDWAW@W:ZIW  ,W !W   \"V   Lf   "
+    "X HW                 LX   , V   6~X JSGY 3VDWAW@W:ZIW  , W !W   \"V   Lf   "
     ":W .X6X =X 1Z  JX#~ /X NX5X ?Y @X4X .X     Md A~X Ad LX 8UAV8VBU>z!X3X%X "
     "+X+X+"
     "X -X /X)X+X/X'X -X -XE[ CX -XBVNVBX0X>WIX(X'X-X /X'X-X9X *Y AX <X/X MXFX "
-    "BXJW?WJX.YGY :X 4Z 7W 'W 'W       DX8W JW3W$W ,W3W!W 'W 1W3W MW6W MW ,W "
-    ",WLY "
-    "9W ,W7W7W=W6W!W2W NW3W$W3W MW  K_ DW ,W6W HXFX AWIVFVIW ^ 8WFW ;Y (Y 9V  "
+    "BXJW?WJX.YGY :X 4Z 7W 'W 'W       DX8W JW3W$W , W3W!W 'W 1W3W MW6W MW , W "
+    ", WLY "
+    "9W , W7W7W=W6W!W2W NW3W$W3W MW  K_ DW , W6W HXFX AWIVFVIW ^ 8WFW ;Y (Y 9V  "
     "LY >Q.X  $T>Z?T0W8W HW5W\"W<W GW2W Y -W6W GWGX >WCX FW6W!W<W<W3WCWCW!W=W "
     "JWCWC"
     "W\"W2W%W2W ?W =W4W LX6X EY 9X .Y+Y-YBXBY+X0X ZJXJZ&X'X-Y  CV  DY DV EY)Y "
-    "DV   DX 3W@S 6X 2W<W L|  #\\FW   ASFW,S9m >XFX  >V  ,SBVBWCS    &V      "
+    "DV   DX 3W@S 6X 2W<W L|  #\\FW   ASFW, S9m >XFX  >V  , SBVBWCS    &V      "
     "\"W6W :U"
     "GU      *m 8XFX .V<TGU\"V.U#V<TGU;Y -z z z z z z v NX +X -X -X -X -X -X "
-    "-X -X ,X+X,X>WIX(X'X/X'X/X'X/X'X/X'X KZMZ XHW6X-X/X'X/X'X/X'X/X GX <u "
+    "-X -X , X+X, X>WIX(X'X/X'X/X'X/X'X/X'X KZMZ XHW6X-X/X'X/X'X/X'X/X GX <u "
     "JW7Y!X8W "
-    "LX8W LX8W LX8W LX8W LX8W LX8W MW ,W ,W ,W ,W )W ,W ,W ,W /W2W "
+    "LX8W LX8W LX8W LX8W LX8W LX8W MW , W , W , W , W )W , W , W , W /W2W "
     "NW6W!W2W\"W2W\"W2W\"W2W\"W2W  &WGWBW NW6W MW6W MW6W MW6W GWFW CW3W JWFW   "
     "  FW?V?V+W(V+WKXCY"
     "KV+WKX5V+W(V%W .WFX     N~X'WHT   =~T-~\\$q Eo\"W4W NV4V GWBW >XIW GW     "
     "            LX       ;~X JSFX 3VDV?V@W9ZJW  +V \"W   !V       V -X6X =X "
     "2Z  IX#"
-    "~ /X NX5X ?X ?X4X .X     Jd D~X Dd IX 8UAV8VCV>z!X3X%Y ,X,Y+X -X "
-    "/Y*X+X/X'X -X -XD[ DX -XBVNVBX0X>XJX(Y)X,X /Y)X,X9Y *X AX <X/X LXHX "
+    "~ /X NX5X ?X ?X4X .X     Jd D~X Dd IX 8UAV8VCV>z!X3X%Y , X, Y+X -X "
+    "/Y*X+X/X'X -X -XD[ DX -XBVNVBX0X>XJX(Y)X, X /Y)X, X9Y *X AX <X/X LXHX "
     "AXJV=VJX.XEY ;X 5"
-    "Z 6W &V 'W       DW7W JW3W$W ,W3W!W 'W 1W3W MW6W MW ,W ,WKY :W "
-    ",W7W7W=W6W!W2W NW3W$W3W MW  H\\ DW ,W6W GWFW @WJVDVJW!` 9WGX <Y &X 9V  LX "
+    "Z 6W &V 'W       DW7W JW3W$W , W3W!W 'W 1W3W MW6W MW , W , WKY :W "
+    ", W7W7W=W6W!W2W NW3W$W3W MW  H\\ DW , W6W GWFW @WJVDVJW!` 9WGX <Y &X 9V  LX "
     "=P   (T?\\@T0W8"
-    "X IW5W\"W<W GW2W X ,W6W FVGW >XBW FW6W!W<W<W3WCWCW!W=W JWCWCW\"W2W%W2W ?W "
+    "X IW5W\"W<W GW2W X , W6W FVGW >XBW FW6W!W<W<W3WCWCW!W=W JWCWCW\"W2W%W2W ?W "
     "=W4W LW4W FY 8X -X+X+YCXCY*X0X N\\MXM\\%Y)X+Y  DV  EY NQFVFQ Y+Y CV   DX "
     "3W@S 6X"
-    " 1V<V K|  ![HW   @TFW.T9m =XFX  ?V  ,TCVAVDT    &V      \"W6W :UGU      "
-    "*m 9XFX -V<SFU\"V/U\"V<SFU;X ,z z z z z z v NY ,X -X -X -X -X -X -X -X "
-    ",X,Y,X>XJX"
-    "(Y)X.Y)X.Y)X.Y)X.Y)X KZKZ!YJW6X,X/X'X/X'X/X'X/X GX <t IW6Y\"W7W LW7W LW7W "
-    "LW7W LW7W LW7W LW7W MW ,W ,W ,W ,W )W ,W ,W ,W /W2W "
+    " 1V<V K|  ![HW   @TFW.T9m =XFX  ?V  , TCVAVDT    &V      \"W6W :UGU      "
+    "*m 9XFX -V<SFU\"V/U\"V<SFU;X , z z z z z z v NY , X -X -X -X -X -X -X -X "
+    ", X, Y, X>XJX"
+    "(Y)X.Y)X.Y)X.Y)X.Y)X KZKZ!YJW6X, X/X'X/X'X/X'X/X GX <t IW6Y\"W7W LW7W LW7W "
+    "LW7W LW7W LW7W LW7W MW , W , W , W , W )W , W , W , W /W2W "
     "NW6W!W2W\"W2W\"W2W\"W2W\"W2W "
     " &WHWAW NW6W MW6W MW6W MW6W GWGX CW3W JWGX     "
-    "EV?V@W*V)W*VJVAWKW*VJV5W*V)W%W .XGW     M~X&WJT   <~S,kNn#o Cm!W4W NV4V "
+    "EV?V@W*V)W*VJVAWKW*VJV5W*V)W%W .XGW     M~X&WJT   <~S, kNn#o Cm!W4W NV4V "
     "HXBX ?XJX FW                 MY"
     "       <~X JSEX 5VCV?V@W8ZLW  *W #W   !V       V -X6X =X 3Z  HX#~ /X NX5X "
-    "@Y ?X4X /X     Ge G~X Ge GX 8UAV9WCU>|\"X3X$X ,X,X*X -X .X*X+X/X'X -X "
+    "@Y ?X4X /X     Ge G~X Ge GX 8UAV9WCU>|\"X3X$X , X, X*X -X .X*X+X/X'X -X "
     "-XC[ EX"
-    " -XA\\AX0X=WJX'X)X,X .X)X,X8X *X AX <X/X LXHX AXJV=VJX/YEY ;X 6Z 5W &V 'W "
-    "      DW7W JW3W$W ,W3W!W 'W 1W3W MW6W MW ,W ,WJY ;W ,W7W7W=W6W!W2W "
+    " -XA\\AX0X=WJX'X)X, X .X)X, X8X *X AX <X/X LXHX AXJV=VJX/YEY ;X 6Z 5W &V 'W "
+    "      DW7W JW3W$W , W3W!W 'W 1W3W MW6W MW , W , WJY ;W , W7W7W=W6W!W2W "
     "NW3W$W3W M"
-    "W  EZ EW ,W6W GWFW ?WKVDVKW!b 9WHW <Y $W 9V  LW     BTAVNUAT/W8X IW5W#W;V "
+    "W  EZ EW , W6W GWFW ?WKVDVKW!b 9WHW <Y $W 9V  LW     BTAVNUAT/W8X IW5W#W;V "
     "FW2W!X +W6W FWIX >XBX GW6W!W<W<W3WCWCW!W=W JWCWCW\"W2W%W2W ?W =W4W MX4X "
     "HY 7X"
     " -Y-Y+ZDXDZ*X0X Mt#X)X*Y  EV  FY NSGVGS Y-Y MQFVFQ   X 3W@S 6X 1W>W 9X   "
     "=\\KW   >SEW<PCS  6XFX  @V  +SCVAWES    %V      \"W6W :UGU        &XFX "
     "-V<TFU#V"
-    "/U\"V<TFU<X ,|\"|\"|\"|\"|\"|\"w MX ,X -X -X -X -X -X -X -X "
-    ",X,X+X=WJX'X)X-X)X-X)X-X)X-X)X LZIZ!XKW5X,X/X'X/X'X/X'X/X GX <s HW5X\"W7W "
+    "/U\"V<TFU<X ,|\"|\"|\"|\"|\"|\"w MX , X -X -X -X -X -X -X -X "
+    ", X, X+X=WJX'X)X-X)X-X)X-X)X-X)X LZIZ!XKW5X, X/X'X/X'X/X'X/X GX <s HW5X\"W7W "
     "LW7W LW7W LW7W LW7W LW7W"
-    " LW7W MW ,W ,W ,W ,W )W ,W ,W ,W /W2W NW6W!W2W\"W2W\"W2W\"W2W\"W2W  "
+    " LW7W MW , W , W , W , W )W , W , W , W /W2W NW6W!W2W\"W2W\"W2W\"W2W\"W2W  "
     "&WIW@W NW6W MW6W MW6W MW6W FWHW BW3W IWHW     "
     "DW@VAW)W+W)WJT?UKW)WJT5W)W+W$W -WHX     "
     "M~X&WJT   ;eMQMe+jNQNj!m Bl W4W NW6W HXBX >WJX FW                 LX      "
     " <~X JSEX 6WCV?V@W7ZMW  *W #W   !V      !W -X6X =X 4Z  GX#~ /X NX5X @X "
     ">X4X "
-    "/X     De J~X Je DX 8U@V:WDV>|\"X3X$X ,X-Y*X -X .X*X+X/X'X -X -XB[ FX "
-    "-XA\\AX0X=XKX'X*Y,X .X*Y,X8Y +X AX <Y1Y KWHW ?WJV=VJW/YCY <X 7Z 4W &W (W  "
+    "/X     De J~X Je DX 8U@V:WDV>|\"X3X$X , X-Y*X -X .X*X+X/X'X -X -XB[ FX "
+    "-XA\\AX0X=XKX'X*Y, X .X*Y, X8Y +X AX <Y1Y KWHW ?WJV=VJW/YCY <X 7Z 4W &W (W  "
     "     EW6"
-    "W JX5X$X -X5X!X (W 0W5X MW6W MW ,W ,WIY <W ,W7W7W=W6W!X4X NX5X$X5X MW  CX "
-    "EW ,W6W GXHX ?WKVDVKW!XNY :WIX =Y #X :V  MX     BUCVMVBT/W9Y IW5W#W<W "
+    "W JX5X$X -X5X!X (W 0W5X MW6W MW , W , WIY <W , W7W7W=W6W!X4X NX5X$X5X MW  CX "
+    "EW , W6W GXHX ?WKVDVKW!XNY :WIX =Y #X :V  MX     BUCVMVBT/W9Y IW5W#W<W "
     "FW3X!W"
     " *W6W EVIX ?X@W GW6W!W=Y=W3XDWDX!W=W JWCWCW\"X4X%X4W >W <W6W LX4X HY 7X "
-    ",X-X)ZEXEZ)X0X Lr\"X)X)Y  FV  GY NUHVHU Y/Y MSGVGS  !X 3XAS 6X 0W@W 8X   "
+    ", X-X)ZEXEZ)X0X Lr\"X)X)Y  FV  GY NUHVHU Y/Y MSGVGS  !X 3XAS 6X 0W@W 8X   "
     ";\\NW   "
     "=TEX@RDT  5XFY  BV  +TDV@WGT    %V      \"W6W :UGU        (YFX "
-    ",V=TEU#V0U!V=TEU<X ,|\"|\"|\"|\"|\"|\"w MX ,X -X -X -X -X -X -X -X "
-    ",X-Y+X=XKX'X*Y-X*Y-X*Y-X*Y-"
-    "X*Y MZGZ\"XLW5Y,Y1Y'Y1Y'Y1Y'Y1Y GX <r GW4X$W6W MW6W MW6W MW6W MW6W MW6W "
-    "MW6X NX -X -X -X -X *W ,W ,W ,W /W2W NW6W!X4X\"X4X\"X4X\"X4X\"X4X  &WIV@X "
+    ", V=TEU#V0U!V=TEU<X ,|\"|\"|\"|\"|\"|\"w MX , X -X -X -X -X -X -X -X "
+    ", X-Y+X=XKX'X*Y-X*Y-X*Y-X*Y-"
+    "X*Y MZGZ\"XLW5Y, Y1Y'Y1Y'Y1Y'Y1Y GX <r GW4X$W6W MW6W MW6W MW6W MW6W MW6W "
+    "MW6X NX -X -X -X -X *W , W , W , W /W2W NW6W!X4X\"X4X\"X4X\"X4X\"X4X  &WIV@X "
     "NW6W MW6W"
-    " MW6W MW6W FWIX BX5X IWIX     CWAVAW(W,W(WJR=SJW(WJR4W(W,W$W -XIX     "
+    " MW6W MW6W FWIX BX5X IWIX     CWAVAW(W, W(WJR=SJW(WJR4W(W, W$W -XIX     "
     "M~X&WJS   :dLQLd+iMQNj!l @j NW4W NW6W HW@W >WJW DW                 MX     "
     "  .VCV"
     " :SDW 6VBV?V@W6b  )W #W   !V      !V +X8X <X 5Z  FX#~ /X MW5X @X >X4X /X  "
     "   Ad L~X Ld AX 8VAV:WDU=|\"X3X$Y -X-Y*X -X .Y+X+X/X'X -X -XA[ GX "
     "-XA\\AX0X<WK"
-    "X'Y+X+X .Y+Y,X7X +X AX ;X1X JXJX ?XLW=WLX/XAY =X 7Y 3W %V (W       EW7X "
-    "JX5W\"W ,W5X W (W 0W5X MW6W MW ,W ,WHY =W ,W7W7W=W6W W4W MX5W\"W5X MW  BX "
-    "FW ,W6"
+    "X'Y+X+X .Y+Y, X7X +X AX ;X1X JXJX ?XLW=WLX/XAY =X 7Y 3W %V (W       EW7X "
+    "JX5W\"W , W5X W (W 0W5X MW6W MW , W , WHY =W , W7W7W=W6W W4W MX5W\"W5X MW  BX "
+    "FW , W6"
     "W FWHW >WKVDVKW\"XLX 9WJW =Z #X :V  MX     AUEVKVDU/X:Y IW5W#W<W EW4W!X "
     "*W6W EVJX >X@W GW6W!W=Y=W2WDWDW W=W JWCWCW\"X4W#W4W >W <W6W LW2W IY 6X "
-    ",Y/Y(ZFXF"
+    ", Y/Y(ZFXF"
     "Z(X0X Kp!Y+X'Y  GV  HY NWIVIW Y1Y MUHVHU  \"X 2WAS 6X 0YDY 8X   :c   "
     "<TE[FUDS  3XFY  CV  *SDV@WGS    $V      \"W6W :UGU        )YFX "
-    ",V=TDU$V0V\"V=TDU=X +"
+    ", V=TDU$V0V\"V=TDU=X +"
     "|\"|\"|\"|\"|\"|#x MY -X -X -X -X -X -X -X -X "
-    ",X-Y+X<WKX'Y+X,Y+X,Y+X,Y+X,Y+X MZEZ#YNW4X*X1X%X1X%X1X%X1X FX <p EW4X$W7X "
-    "MW7X MW7X MW7X MW7X MW7X MW7Y MW ,W "
-    ",W ,W ,W *W ,W ,W ,W .W4W MW6W W4W W4W W4W W4W W4W  $WKV?W MW6W MW6W MW6W "
-    "MW6W EWJW AX5W GWJW     BXBVBW'X.W'XJP;QJW'XJP4W'X.W#V ,XIW     L~X%WLT   "
+    ", X-Y+X<WKX'Y+X, Y+X, Y+X, Y+X, Y+X MZEZ#YNW4X*X1X%X1X%X1X%X1X FX <p EW4X$W7X "
+    "MW7X MW7X MW7X MW7X MW7X MW7Y MW , W "
+    ", W , W , W *W , W , W , W .W4W MW6W W4W W4W W4W W4W W4W  $WKV?W MW6W MW6W MW6W "
+    "MW6W EWJW AX5W GWJW     BXBVBW'X.W'XJP;QJW'XJP4W'X.W#V , XIW     L~X%WLT   "
     ":d"
     "LQLc*iMQMi k ?i NW4W NW6W IX@X ?XLX DW                 MY       0VBV :SDW "
     "7VAV?V@X6a  )W #W   !V      !V +X8X <X 6Z  EX#~ 0Y MW5X AY >X4X 0X     =d "
     "~X"
     " d   LUAW<XEV>X2X#X3X#X -X.Y)X -X -X+X+X/X'X -X -X@[ HX "
-    "-X@Z@X0X<XLX&X+X+X -X+X+X7Y ,X AX ;X1X JXJX ?XLV;VLX0YAY =X 8Z 3W %V (W   "
-    "    EW7X JX5W\"W ,W5X"
-    " W (W 0W5X MW6W MW ,W ,WGY >W ,W7W7W=W6W W4W MX5W\"W5X MW  BX FW ,W7X "
+    "-X@Z@X0X<XLX&X+X+X -X+X+X7Y , X AX ;X1X JXJX ?XLV;VLX0YAY =X 8Z 3W %V (W   "
+    "    EW7X JX5W\"W , W5X"
+    " W (W 0W5X MW6W MW , W , WGY >W , W7W7W=W6W W4W MX5W\"W5X MW  BX FW , W7X "
     "FWHW >WLVBVLW#YKX :WJW =Y !W :V  MW     @VHXJWHV-W:Y IW5W#W<W EW4W!W )W6W "
     "EWKX ?X"
     "?X HW6W!X>Y>W1WDWDW W=W JWCWCW\"X4W#W4W >W <W6W MX2X KY 5X "
     "+Y1Y'[GXH\\(X0X Jn NX+X&Y  HV  IY NYJVJY Y3Y MWIVIW  #X 2WAS 6X 0[H[ 8X "
     ":V %`   :TEiET  2YGY "
-    " DV  *TEV?WIT    $V      \"W6W :UGU        *YGY ,V<SCU%V0V\"V<SCU=X "
-    ",X2X$X2X$X2X$X2X$X2X$X2X$X8X LX -X -X -X -X -X -X -X -X "
-    ",X.Y*X<XLX&X+X+X+X+X+X+X+X+X"
+    " DV  *TEV?WIT    $V      \"W6W :UGU        *YGY , V<SCU%V0V\"V<SCU=X "
+    ", X2X$X2X$X2X$X2X$X2X$X2X$X8X LX -X -X -X -X -X -X -X -X "
+    ", X.Y*X<XLX&X+X+X+X+X+X+X+X+X"
     "+X NZCZ#`3X*X1X%X1X%X1X%X1X FX <m BW3W$W7X MW7X MW7X MW7X MW7X MW7X MW7Y "
-    "MW ,W ,W ,W ,W *W ,W ,W ,W .W4W MW6W W4W W4W W4W W4W W4W 5Z IWLV>W MW7X "
+    "MW , W , W , W , W *W , W , W , W .W4W MW6W W4W W4W W4W W4W W4W 5Z IWLV>W MW7X "
     "MW7X "
     "MW7X MW7X EWJW AX5W GWJW     AXCVCW%X0W%X0W%X0W%X0W\"V +WJX     ?X 2WLT   "
     "9bKQKb)gLQMh Mi =g MW4W MV6W IX@X ?XLX CW                 MX       0VBV "
     ":SDW "
     "7VAV?V@X5_  (W #W   !V      \"W +X8X <X 7Z  DX 5X 'X LX7X @X =X4X 0X     "
-    ";e   Le   JUAW<XFV=X1W#X3X#Y .X.Y)X -X -Y,X+X/X'X -X -X?[ IX "
+    ";e   Le   JUAW<XFV=X1W#X3X#Y .X.Y)X -X -Y, X+X/X'X -X -X?[ IX "
     "-X@Z@X0X;XMX&Y-Y+"
-    "X -Y-Y+X6X ,X AX ;X1X IXLX >XLV;VLX1Y?Y >X 9Z 2W %W )W       EW7X JX5W\"X "
-    "-W5X X )W 0X7Y MW6W MW ,W ,WFY ?W ,W7W7W=W6W W4W MX5W\"W5X MW  AW FW ,W7X "
+    "X -Y-Y+X6X , X AX ;X1X IXLX >XLV;VLX1Y?Y >X 9Z 2W %W )W       EW7X JX5W\"X "
+    "-W5X X )W 0X7Y MW6W MW , W , WFY ?W , W7W7W=W6W W4W MX5W\"W5X MW  AW FW , W7X "
     "FXJX"
-    " =WMVBVMW#YJY ;WKX >Y  W :V  MW     ?dId,W;Z IW5W#W=W DW4W!W )W6W DVKW "
+    " =WMVBVMW#YJY ;WKX >Y  W :V  MW     ?dId, W;Z IW5W#W=W DW4W!W )W6W DVKW "
     ">X>W HW6W W>Y>W1WDWDW W=W JWCWDX\"X4W#W4W >W ;V7W LX2X LY 4X "
     "*X1X%]JXJ]'X0X Hj L"
     "Y-Y%Y  IV  JY LYKVKY MY5Y MYJVJY  $X 2XBS 6X 2q 9X :V #\\   7TDgFT  /XFX  "
     "EV  )TFV>VJT    #V      \"W6W :UGU        +XFX *V=TCU%V1V!V=TCU=X "
-    ",X1W$X1W$X1W"
+    ", X1W$X1W$X1W"
     "$X1W$X1W$X2X%X7X LY .X -X -X -X -X -X -X -X "
-    ",X.Y*X;XMX&Y-Y+Y-Y+Y-Y+Y-Y+Y-Y ZAZ$_3Y*X1X%X1X%X1X%X1X FX <i >W3W$W7X "
+    ", X.Y*X;XMX&Y-Y+Y-Y+Y-Y+Y-Y+Y-Y ZAZ$_3Y*X1X%X1X%X1X%X1X FX <i >W3W$W7X "
     "MW7X MW7X MW7X MW7X MW7X MW7Z NX -X "
-    "-X -X -X +W ,W ,W ,W .W4W MW6W W4W W4W W4W W4W W4W 5Z IWMV=W MW7X MW7X "
+    "-X -X -X +W , W , W , W .W4W MW6W W4W W4W W4W W4W W4W 5Z IWMV=W MW7X MW7X "
     "MW7X MW7X EWKX AX5W GWKX     @XDVDX$X2X$X2X$X2X$X2X\"V +XKW     ?X 1WMT   "
     "7`JQKa"
     "'fLQLf Kg <f LW4W MW8W HW>W >WLW BX                 NY       1VBV :SDW "
     "8V@V?V?W4]  &V $W    V      \"V *Y:Y <X 8Z  DY 5X 'X KW7X @X =X5Y 1Y     "
     "8e  #e "
-    "  GU@W>YGW>X0X$X4Y\"Y /X/Y(X -X ,Y-X+X/X'X -X -X>[ JX -X@Z@X0X;XMX%Y/Y*X "
-    ",Y/Y*X6Y -X AX ;Y3Y IXLX =WLV;VLW0X=Y ?X :Z 1W $V )W       EW8Y JY7X\"X "
+    "  GU@W>YGW>X0X$X4Y\"Y /X/Y(X -X , Y-X+X/X'X -X -X>[ JX -X@Z@X0X;XMX%Y/Y*X "
+    ", Y/Y*X6Y -X AX ;Y3Y IXLX =WLV;VLW0X=Y ?X :Z 1W $V )W       EW8Y JY7X\"X "
     "-X7Y X "
-    ")W 0X7Y MW6W MW ,W ,WEY @W ,W7W7W=W6W X6X MY7X\"X7Y MW  AW FW ,X8X EWJW "
-    "<WMVBVMW#XHX :WLW >Y  NW :V  MW     >bGc,W;[ JW6X#W=W DX6X!W )W6W DVLX "
+    ")W 0X7Y MW6W MW , W , WEY @W , W7W7W=W6W X6X MY7X\"X7Y MW  AW FW , X8X EWJW "
+    "<WMVBVMW#XHX :WLW >Y  NW :V  MW     >bGc, W;[ JW6X#W=W DX6X!W )W6W DVLX "
     ">W=X IW7"
     "X W>Y>W1XEWEX W=W IWDWDW!Y6X#X6X >W ;W8W MX0X MY 4X *Y3Y$^LXL^&X0X Ff "
     "IY/Y#Y  JV  KY JYLVLY KY7Y KYKVKY  #X 2XBS 6X 3t ;X :V ![   8TCfFT  .XFX  "
     "FV  )U"
-    "GV>WKT            MW7X :UGU        ,XFX *V=TBU&V2W!V=TBU=X "
+    "GV>WKT            MW7X :UGU        , XFX *V=TBU&V2W!V=TBU=X "
     "-X0X&X0X&X0X&X0X&X0X&X0W%X7X KY /X -X -X -X -X -X -X -X "
-    ",X/Y)X;XMX%Y/Y)Y/Y)Y/Y)Y/Y)Y/Y Z?Z$"
+    ", X/Y)X;XMX%Y/Y)Y/Y)Y/Y)Y/Y)Y/Y Z?Z$"
     "^4Y)Y3Y%Y3Y%Y3Y%Y3Y FX <X -W3W$W8Y MW8Y MW8Y MW8Y MW8Y MW8Y MW8[ NX -X -X "
-    "-X -X +W ,W ,W ,W .X6X MW6W X6X X6X X6X X6X X6X 5Z I_=X MX8X MX8X MX8X "
+    "-X -X +W , W , W , W .X6X MW6W X6X X6X X6X X6X X6X 5Z I_=X MX8X MX8X MX8X "
     "MX8X "
     "DWLW @Y7X FWLW     >XEVFY\"X5Y\"X5Y\"X5Y\"X5Y!V *WLX     @X /WNT   "
     "7`JQJ_&eKQKe Je :d KW4W MW8W HW>X ?XNX AX                 Y       1VCV "
     "9SDW 9V?V?V?X4\\ "
     " &W %W    V      \"V )X:X ;X 9Z  CX 4X (Y KW7X AX <Y6Y 1X     4e  )e   "
-    "DVAX@ZHW=X0X$X4Y\"Y*P&X0Z(X -X ,Y-X+X/X'X -X -X=[ KX -X?X?X0X:XNX%Y/Y*X "
-    ",Y/Y*X5X "
-    ".Y AX :X3X HXLX =XNW;WNX1Y=Y ?X ;Z 0W $V )W       EW8Y JY7W W ,W7Y NX *W "
-    "/W8Z MW6W MW ,W ,WDY AW ,W7W7W=W6W NW6W LY7W W7Y MW  AW FW ,X9Y EWJW "
+    "DVAX@ZHW=X0X$X4Y\"Y*P&X0Z(X -X , Y-X+X/X'X -X -X=[ KX -X?X?X0X:XNX%Y/Y*X "
+    ", Y/Y*X5X "
+    ".Y AX :X3X HXLX =XNW;WNX1Y=Y ?X ;Z 0W $V )W       EW8Y JY7W W , W7Y NX *W "
+    "/W8Z MW6W MW , W , WDY AW , W7W7W=W6W NW6W LY7W W7Y MW  AW FW , X9Y EWJW "
     "<WMVBVMW"
     "$XFX ;WMX ?Y  MW :V  MW     =`Ea+X<[ JW6W\"W>W BW6W W )W6W DWMX ?X=X IX8X "
     "W?[?W0WEWEW NW=W IWDWDW!Y6W!W6W =W ;W8W MX0X NY 3X )Y5Y\"z%X0X C` FY/Y\"X "
     " JV  "
-    "KX HYMVMY IX7X IYLVLY  \"X 1XCS 6X 4v <X :V  [   8TBbET  ,WEW  FV  (T$T   "
-    "         LX8X :UGU        ,WEW )V=m,V3W V=mCX "
+    "KX HYMVMY IX7X IYLVLY  \"X 1XCS 6X 4v <X :V  [   8TBbET  , WEW  FV  (T$T   "
+    "         LX8X :UGU        , WEW )V=m, V3W V=mCX "
     "-X0X&X0X&X0X&X0X&X0X&X0X&X7X KY"
     "*P&X -X -X -X -X -X -X -X "
-    ",X0Z)X:XNX%Y/Y)Y/Y)Y/Y)Y/Y)Y/Y!Z=Z%]3Y(X3X#X3X#X3X#X3X EX <X -W3W$W8Y "
-    "MW8Y MW8Y MW8Y MW8Y MW8Y MW8[ MW ,X -X -X -X ,W ,W ,W "
-    ",W -W6W LW6W NW6W MW6W MW6W MW6W MW6W 4Z H^=W LX9Y MX9Y MX9Y MX9Y DWMX "
+    ", X0Z)X:XNX%Y/Y)Y/Y)Y/Y)Y/Y)Y/Y!Z=Z%]3Y(X3X#X3X#X3X#X3X EX <X -W3W$W8Y "
+    "MW8Y MW8Y MW8Y MW8Y MW8Y MW8[ MW , X -X -X -X , W , W , W "
+    ", W -W6W LW6W NW6W MW6W MW6W MW6W MW6W 4Z H^=W LX9Y MX9Y MX9Y MX9Y DWMX "
     "@Y7W EWMX     =Y8Y Y8Y Y8Y Y8Y Y8Y V *WLX     AX .WNT   6^IQI]$cKRJc Id "
     "8c KW4W"
     " MX:X IX>X ?XNX AY                 Y4P       VBV 9SDW 9V?V?V?Y4Z  %W %W   "
     " V      #W )X:X ;X :Z  CY 4X (Y KX9Y AX ;X6X 1Y     1e  /e   "
     "@U@XB[JX<X/W$X4"
-    "X Y,Q&X1Z'X -X +Y.X+X/X'X -X -X<[ LX -X?X?X0X:XNX$Y1Y)X +Y1Y)X5Y /X @X "
+    "X Y, Q&X1Z'X -X +Y.X+X/X'X -X -X<[ LX -X?X?X0X:XNX$Y1Y)X +Y1Y)X5Y /X @X "
     ":X4Y GXNX <XNV9VNX2Y;Y @X ;Y /W $W *W       EW9Z JZ9X X -X9Z NX *W /X9Z "
     "MW6W MW"
-    " ,W ,WCY BW ,W7W7W=W6W NX8X LZ9X X9Z MW  AW FW +W9Y EXLX <WNV@VNW%YEX "
+    " , W , WCY BW , W7W7W=W6W NX8X LZ9X X9Z MW  AW FW +W9Y EXLX <WNV@VNW%YEX "
     ";WNW ?Y  LW :V  MW     <^C_)W=\\ JX7W\"W>W BX8X W )W6W CVNX >W;W IX8X "
     "X@[@X0XFWEW "
     "NW=W IWDWEX!Z8X!X8X =W :W:W LX0X Y 2X (Y7Y Nv#X0X ?X AY1Y V  IV  JV "
     "FYNVNY GV5V GYMVMY  !X 1XCS 6X 5x =X :V  MZ   8T?ZBT  *VDV  FV  'T&T      "
     "      KX"
-    "8X :UGU        ,VDV )V<m-V3V NV<mCX -X/W&X/W&X/W&X/W&X/W&X0X'X6X JY,Q&X "
+    "8X :UGU        , VDV )V<m-V3V NV<mCX -X/W&X/W&X/W&X/W&X/W&X0X'X6X JY, Q&X "
     "-X -X -X -X -X -X -X "
-    ",X1Z(X:XNX$Y1Y'Y1Y'Y1Y'Y1Y'Y1Y!Z;Z%[3Y'X4Y#X4Y#X4Y#X4Y EX"
-    " <X -W3W$W9Z MW9Z MW9Z MW9Z MW9Z MW9Z MW9] NX -X -X -X -X ,W ,W ,W ,W "
+    ", X1Z(X:XNX$Y1Y'Y1Y'Y1Y'Y1Y'Y1Y!Z;Z%[3Y'X4Y#X4Y#X4Y#X4Y EX"
+    " <X -W3W$W9Z MW9Z MW9Z MW9Z MW9Z MW9Z MW9] NX -X -X -X -X , W , W , W , W "
     "-X8X LW6W NX8X MX8X MX8X MX8X MX8X 4Z H]=X KW9Y LW9Y LW9Y LW9Y CWNW ?Z9X "
     "DWNW   "
     "  ;Y;Z MY;Z MY;Z MY;Z MY;Z NV *XMW     AY -[   3ZHRH[\"aJRI` Fb 6a JW4W "
@@ -6239,16 +6239,16 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     "NY.R&X2Z&X -X *Y/X+X/X'X -X -X;[ MX -X&X0X9a$Z3Y(X *Y3Y(X4X$P-Y @X :Y5Y "
     "GXNX"
     " <XNV9VNX2X9Y AX <Z /W #V *W       EX:Z JZ9X NX .X9Z MX +W .X;[ MW6W MW "
-    ",W ,WBY CW ,W7W7W=W6W NX9Y LZ9X X9Z MW  AW FW +W:Z DWLW :^@^$XDY <WNW @Z  "
+    ", W , WBY CW , W7W7W=W6W NX9Y LZ9X X9Z MW  AW FW +W:Z DWLW :^@^$XDY <WNW @Z  "
     "LW :"
     "V  MW     ;\\@['X>\\ JX8X\"W?W AX9Y X *W6W CVNX ?X;X JX9Y NW@[@W/XFWFX "
     "NW=W IXEWEX!Z8X!X8W ;W ;W;X MX.X\"Y 1X 'Y9Y Lt\"X0X ?X @Y3Y MT  HV  IT Dj "
     "ET3T EYNVN"
     "Y   X 0XDS 6X 6ZM`LY >X :V  LY   7T)T  (UCU     ET(T            JX9Y :UGU "
-    "       ,UCU )V;m.V3V NV;mCY7P HX.X(X.X(X.X(X.X(X.X(X.X(X6X IY.R&X -X -X "
+    "       , UCU )V;m.V3V NV;mCY7P HX.X(X.X(X.X(X.X(X.X(X.X(X6X IY.R&X -X -X "
     "-X -"
-    "X -X -X -X ,X2Z'X9a$Z3Y&Z3Y&Z3Y&Z3Y&Z3Y!Z9Z&Z3Y&Y5Y#Y5Y#Y5Y#Y5Y EX <X "
-    "-W3W$X:Z MX:Z MX:Z MX:Z MX:Z MX:Z MX:^ NX -X -X -X -X -W ,W ,W ,W -X8X "
+    "X -X -X -X , X2Z'X9a$Z3Y&Z3Y&Z3Y&Z3Y&Z3Y!Z9Z&Z3Y&Y5Y#Y5Y#Y5Y#Y5Y EX <X "
+    "-W3W$X:Z MX:Z MX:Z MX:Z MX:Z MX:Z MX:^ NX -X -X -X -X -W , W , W , W -X8X "
     "LW6W NX9Y"
     " MX9Y MX9Y MX9Y MX9Y 4Z H\\=Y KW:Z LW:Z LW:Z LW:Z CWNW ?Z9X DWNW     :[@[ "
     "K[@[ K[@[ K[@[ K[@[ MV )WNX     AX ,[   1WGRFW N_IRH^ Da 5_ IW4W LX<X "
@@ -6259,197 +6259,197 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     "Z1T&X4\\&X -X *Z0X+X/X'X -X -X:[ NX -X&X0X9a#Z5Z(X *Z5Z(X4Y%R/Y @X 9Y7Y "
     "EWNW :WNV9VNW2Y9Y AX =Z .W #V *W       EX;[ J[;X MY .X;[ MY2P JW .Y=\\ "
     "MW6W MW ,"
-    "W ,WAY DW ,W7W7W=W6W MX:X K[;X MX;[ MW /P4X FX ,X<[ DXNX :^@^%XBX <` @Y  "
+    "W , WAY DW , W7W7W=W6W MX:X K[;X MX;[ MW /P4X FX , X<[ DXNX :^@^%XBX <` @Y  "
     "KW :V  MW     8V;W%X?^ KY9X!V@X @X:X NX *W6W C_ >X:W JY;Z NXB]BX.XGWGX "
     "MW=W H"
     "XFWFX [:X NX:X ;W :W<W LX.X\"Y 1X &Y;Y Ip X0X ?X @Z5Z LR  GV  HR Bh CR1R "
     "Cj   NX 0YES 6X 7ZJ\\IY ?X :V  KY   8U+U  'TBT     DU+T            IY;Z "
     ":UGU   "
-    "     ,TBT (V;m.V4V MV;mCY8Q HX.X(X.X(X.X(X.X(X.X(X.X)X5X IZ1T&X -X -X -X "
-    "-X -X -X -X ,X4\\'X9a#Z5Z%Z5Z%Z5Z%Z5Z%Z5Z\"Z7Z&Z5Z%Y7Y!Y7Y!Y7Y!Y7Y DX <X "
+    "     , TBT (V;m.V4V MV;mCY8Q HX.X(X.X(X.X(X.X(X.X(X.X)X5X IZ1T&X -X -X -X "
+    "-X -X -X -X , X4\\'X9a#Z5Z%Z5Z%Z5Z%Z5Z%Z5Z\"Z7Z&Z5Z%Y7Y!Y7Y!Y7Y!Y7Y DX <X "
     "-W4X$X"
-    ";[ MX;[ MX;[ MX;[ MX;[ MX;[ MX;`3P=Y .Y2P LY2P LY2P LY2P LW ,W ,W ,W ,X:X "
+    ";[ MX;[ MX;[ MX;[ MX;[ MX;[ MX;`3P=Y .Y2P LY2P LY2P LY2P LW , W , W , W , X:X "
     "KW6W MX:X KX:X KX:X KX:X KX:X 3Z GZ<X JX<[ LX<[ LX<[ LX<[ C` ?[;X C`     "
     "9_J"
     "_ I_J_ I_J_ I_J_ I_J_ LV )`     AX +Z    S <[GRFZ A_ 4^ HW4W KX>X HX<X ?` "
     "=Z                \"Y:T   MX   +VCV JSASFX :V<VAV<Y8_  'W 'W    NV BX   "
     "1X 2W"
     " &X>X 9X =Z 1P2Z 3X GQ5Z GX=Y @X 9Y:Y KP8Z GX -X  4^  1^ +X "
-    "5U?gM_9W,W%X7Z L[4U&X6]%X -X )[2X+X/X'X -X -X9[ X -X&X0X8`\"Z7Z'X "
+    "5U?gM_9W, W%X7Z L[4U&X6]%X -X )[2X+X/X'X -X -X9[ X -X&X0X8`\"Z7Z'X "
     ")Z7Z'X3X%T2Y ?X 9Z9Z E` :"
     "_9_3Y7Y BX >Z -W #W +W       DX=\\ J\\=Y LY7P HY=\\ LY5R JW -Y?] MW6W MW "
-    ",W ,W@Y EW ,W7W7W=W6W MY<Y K\\=Y MY=\\ MW /R6W DW ,Y=[ CWNW 9^@^&X@X <^ "
+    ", W , W@Y EW , W7W7W=W6W MY<Y K\\=Y MY=\\ MW /R6W DW , Y=[ CWNW 9^@^&X@X <^ "
     "@Y  JW :V "
     " MW       HXA` LZ;X V@W ?Y<Y MX +W6W B^ ?X9W JZ<Z NXB]BX.YHWHY MW=W "
     "HYGWGY \\<Y NY<X :W :X>X LX.X#Y 0X %Y=Z Gl MX0X ?X ?Z7Z JP  FV  GP @f "
     "AP/P Ah   MX "
     "/YFSDP BX 8ZFVEY @X :V  JX   7V.U  %SAS     CU.U            HZ<Z :UGU     "
-    "   ,SAS (V:m/V5W MV:mBY;S HW,W(W,W(W,W(W,W(W,W(X.X)X5X H[4U&X -X -X -X -X "
+    "   , SAS (V:m/V5W MV:mBY;S HW, W(W, W(W, W(W, W(W, W(X.X)X5X H[4U&X -X -X -X -X "
     "-X"
-    " -X -X ,X6]&X8`\"Z7Z#Z7Z#Z7Z#Z7Z#Z7Z\"Z5Z&[8Z$Z9Z!Z9Z!Z9Z!Z9Z DX <X "
+    " -X -X , X6]&X8`\"Z7Z#Z7Z#Z7Z#Z7Z#Z7Z\"Z5Z&[8Z$Z9Z!Z9Z!Z9Z!Z9Z DX <X "
     "-W4W\"X=\\ LX=\\ LX=\\ LX=\\ LX=\\ LX=\\ LX=b6R<Y7P GY5R KY5R KY5R KY5R "
-    "LW ,W ,W ,W ,Y<Y KW"
+    "LW , W , W , W , Y<Y KW"
     "6W MY<Y KY<Y KY<Y KY<Y KY<Y 3Z GY<Y JY=[ LY=[ LY=[ LY=[ B^ >\\=Y B^     "
     "7r Gr Gr Gr Gr KV (_     BX )Y    S 8RBSCR <] 2\\ GW4W KZBZ HX;W >_ <[    "
     "      "
-    "      $[=U   MX   ,VBV JUCSHY :V;WCW<[<b  (W 'W    NV BX   1X 2W &Y@Y 9X "
-    ">Z 0R5Z 2X GT9[ GY?Z AY 9[>[ KR;Z FX -X  1[  1[ (X 5V>dL^9X,X&X9[ "
+    "      $[=U   MX   , VBV JUCSHY :V;WCW<[<b  (W 'W    NV BX   1X 2W &Y@Y 9X "
+    ">Z 0R5Z 2X GT9[ GY?Z AY 9[>[ KR;Z FX -X  1[  1[ (X 5V>dL^9X, X&X9[ "
     "J[7W&X9_$X "
     "-X (\\6Z+X/X'X -X -X8[!X -X&X0X8`![;[&X ([;[&X3Y&W7[ ?X 8Z;Z D` :^7^3X5Y "
-    "CX ?Z ,W #W +W       DY?] J]?Y KZ:R GY?] LZ8T JW -ZA^ MW6W MW ,W ,W?Y FW "
-    ",W7W7"
-    "W=W6W LY>Y J]?Y KY?] MW /T9X DX ,Y@] CWNW 9]>]'Y@Y =^ AY  IW :V  MW       "
-    "HYCXNW L\\>Y VAX >Y>Y LY ,W6W B] >X9X K[>[ MXDVMVDX,YIWIY LW=W GYHWHY "
+    "CX ?Z , W #W +W       DY?] J]?Y KZ:R GY?] LZ8T JW -ZA^ MW6W MW , W , W?Y FW "
+    ", W7W7"
+    "W=W6W LY>Y J]?Y KY?] MW /T9X DX , Y@] CWNW 9]>]'Y@Y =^ AY  IW :V  MW       "
+    "HYCXNW L\\>Y VAX >Y>Y LY , W6W B] >X9X K[>[ MXDVMVDX, YIWIY LW=W GYHWHY "
     "N]>Y LY"
-    ">Y :X :X@X LX,X%Y /X $ZAZ Ch KX0X ?X >[;[   ?V   6d   >f   LX /[HSFR BX "
-    "9Z3Y AX :V  IX   7V1V  #R@R     BU0U            G[>[ :UGU        ,R@R "
+    ">Y :X :X@X LX, X%Y /X $ZAZ Ch KX0X ?X >[;[   ?V   6d   >f   LX /[HSFR BX "
+    "9Z3Y AX :V  IX   7V1V  #R@R     BU0U            G[>[ :UGU        , R@R "
     "'V(U)V6W"
-    " LV(U<Z>U IX,X*X,X*X,X*X,X*X,X*X,X*W4X G[7W&X -X -X -X -X -X -X -X "
-    ",X9_%X8`![;[![;[![;[![;[![;[\"Z3Z(];[\"Z;Z NZ;Z NZ;Z NZ;Z CX <X "
+    " LV(U<Z>U IX, X*X, X*X, X*X, X*X, X*X, X*W4X G[7W&X -X -X -X -X -X -X -X "
+    ", X9_%X8`![;[![;[![;[![;[![;[\"Z3Z(];[\"Z;Z NZ;Z NZ;Z NZ;Z CX <X "
     "-WJP;X\"Y?] LY?] LY?] "
-    "LY?] LY?] LY?] LY?XNZ9T<Z:R GZ8T KZ8T KZ8T KZ8T LW ,W ,W ,W +Y>Y JW6W "
+    "LY?] LY?] LY?] LY?XNZ9T<Z:R GZ8T KZ8T KZ8T KZ8T LW , W , W , W +Y>Y JW6W "
     "LY>Y IY>Y IY>Y IY>Y IY>Y 2Z FY>Y HY@] KY@] KY@] KY@] B^ >]?Y A^     6o Do "
     "Do Do "
     "Do IV (_     CX (Y    S (S ,[ 0[ GW4W J\\H\\ GW:W >^ :\\                "
-    "%[@W   MX   ,VBV JXFSIZ :V:WEW:\\@e  (V 'V    MV BX   1X 2V $ZDZ 8X ?Z "
+    "%[@W   MX   , VBV JXFSIZ :V:WEW:\\@e  (V 'V    MV BX   1X 2V $ZDZ 8X ?Z "
     "/U;] 2X GV="
-    "\\ EZC[ @X 7[@[ JT?[ EX -X  /Y  1Y &X 5V=bK\\7X,X&X<^ I]=Z&X=b#X -X "
+    "\\ EZC[ @X 7[@[ JT?[ EX -X  /Y  1Y &X 5V=bK\\7X, X&X<^ I]=Z&X=b#X -X "
     "']:\\+X/X'X -X -X7[\"X -X&X0X7_ \\?\\%X '\\?\\%X2X&Z<\\ >X 7[?[ B^ "
     "9^7^4Y5Y CX ?Y +W \"V +W "
-    "      DZB_ J_CZ I[>T G[C_ K[=W JW ,\\GXNW MW6W MW ,W ,W>Y GW ,W7W7W=W6W "
+    "      DZB_ J_CZ I[>T G[C_ K[=W JW ,\\GXNW MW6W MW , W , W>Y GW , W7W7W=W6W "
     "KZBZ I_CZ J[C_ MW /W>Z DZ .ZB^ C` 8\\>\\&X>Y =\\ AY  HW :V  MW       "
     "GZFYNY N]AZ N"
-    "WCX <ZBZ JZ:Q EW6W B] ?X7W K\\A^ NYFWMWFY,ZJWJY KW=X H[JWJ[ N_BZ JZBZ 8Y "
-    "<ZDZ LX,X&Y .X #ZCZ >_ FX0X ?X =\\?\\   >V   5b   <d   KX .\\JSHT BX 8X2X "
+    "WCX <ZBZ JZ:Q EW6W B] ?X7W K\\A^ NYFWMWFY, ZJWJY KW=X H[JWJ[ N_BZ JZBZ 8Y "
+    "<ZDZ LX, X&Y .X #ZCZ >_ FX0X ?X =\\?\\   >V   5b   <d   KX .\\JSHT BX 8X2X "
     "@X :V  "
-    "IX   5V4U   Q?Q     AV4V            F\\A^ ;UGU        ,Q?Q 'V'U*V6W "
-    "LV'U<[AW IX,X*X,X*X,X*X,X*X,X*X,X+X4X F]=Z&X -X -X -X -X -X -X -X "
-    ",X=b$X7_ \\?\\ N\\?\\"
+    "IX   5V4U   Q?Q     AV4V            F\\A^ ;UGU        , Q?Q 'V'U*V6W "
+    "LV'U<[AW IX, X*X, X*X, X*X, X*X, X*X, X+X4X F]=Z&X -X -X -X -X -X -X -X "
+    ", X=b$X7_ \\?\\ N\\?\\"
     " N\\?\\ N\\?\\ N\\?\\ X1X(`?\\ [?[ L[?[ L[?[ L[?[ BX <X -WJS@Z\"ZB_ LZB_ "
-    "LZB_ LZB_ LZB_ LZB_ LZBYM\\>W;[>T F[=W J[=W J[=W J[=W LW ,W ,W ,W *ZBZ "
+    "LZB_ LZB_ LZB_ LZB_ LZBYM\\>W;[>T F[=W J[=W J[=W J[=W LW , W , W , W *ZBZ "
     "IW6W KZBZ GZBZ "
     "GZBZ GZBZ GZBZ 1Z F[BZ GZB^ KZB^ KZB^ KZB^ A\\ =_CZ ?\\     3l Al Al Al "
-    "Al HV (^     BX (X    NS (S ,Z .Y FW4W In GX:X ?^ 9_                (]FZ  "
+    "Al HV (^     BX (X    NS (S , Z .Y FW4W In GX:X ?^ 9_                (]FZ  "
     " MX   "
-    ",VBV J[ISL\\ :V9XGX9^Fi  )W )W    MV BX   1X 3W #[H[ Et Mx MZC_ 1X GZD^ "
-    "C[G\\ @Y 7^F] IXF] DX -X  ,V  1V #X 4V<^IY5X*X'y G_D^&{!y NX &`B`+X/X'X "
+    ", VBV J[ISL\\ :V9XGX9^Fi  )W )W    MV BX   1X 3W #[H[ Et Mx MZC_ 1X GZD^ "
+    "C[G\\ @Y 7^F] IXF] DX -X  , V  1V #X 4V<^IY5X*X'y G_D^&{!y NX &`B`+X/X'X "
     "-X -X6[#"
-    "w LX&X0X7_ N^E^$X &^E^$X2Y'^C^ =X 7^E^ B^ 8]7]4Y3Y DX @~U&W \"W ,W       "
-    "C\\HYNW JWNXG\\ H]EX F\\GXNW J]D[ JW +kMW MW6W MW ,W ,W=Y HW ,W7W7W=W6W "
+    "w LX&X0X7_ N^E^$X &^E^$X2Y'^C^ =X 7^E^ B^ 8]7]4Y3Y DX @~U&W \"W , W       "
+    "C\\HYNW JWNXG\\ H]EX F\\GXNW J]D[ JW +kMW MW6W MW , W , W=Y HW , W7W7W=W6W "
     "K]H] IWNX"
     "G\\ I\\GXNW MW /[E\\ Be 9[GXNW B^ 7\\>\\'X<X =\\ AX  GW :V  MW       "
     "G\\IYM^$`F\\ MWEX ;]H] J]BV EW6W A\\ ?X7X L_GaKP#ZJYMYJZ*[LWL[ KW=Y "
     "H\\LWL\\ MWNXG] J]H\\ 7a "
     "C[H[ L~W'x MX 1iEi HX CX0X ?X <^E^   =V   4`   :b   JX -^MSLX Lz V0V ?X "
-    ":V  HW   4V7V   MP>P     @W8W    3~W      :_GaKP @UGU        ,P>P "
+    ":V  HW   4V7V   MP>P     @W8W    3~W      :_GaKP @UGU        , P>P "
     "'V&U+V6V KV&"
-    "U;]GZ JX*X,X*X,X*X,X*X,X*X,Y,Y,X4y7_D^&y Ny Ny Ny NX -X -X -X ,{\"X7_ "
+    "U;]GZ JX*X, X*X, X*X, X*X, X*X, Y, Y, X4y7_D^&y Ny Ny Ny NX -X -X -X ,{\"X7_ "
     "N^E^ L^E^ L^E^ L^E^ L^E^ MV/V(dE^ N^E^ L^E^ L^E^ L^E^ BX <X -WJWF[ \\HYNW "
     "K\\HYNW K"
-    "\\HYNW K\\HYNW K\\HYNW K\\HYNW K\\H[K^E[:]EX E]D[ I]D[ I]D[ I]D[ LW ,W ,W "
-    ",W )[F[ HW6W K]H] G]H] G]H] G]H] G]H] 1Z F]G] F[GXNW J[GXNW J[GXNW J[GXNW "
+    "\\HYNW K\\HYNW K\\HYNW K\\HYNW K\\H[K^E[:]EX E]D[ I]D[ I]D[ I]D[ LW , W , W "
+    ", W )[F[ HW6W K]H] G]H] G]H] G]H] G]H] 1Z F]G] F[GXNW J[GXNW J[GXNW J[GXNW "
     "A\\ =WNX"
     "G\\ ?\\     1h =h =h =h =h FV ']     AV &W    T )T +X -X EW4W Hl FX9W ?^ "
-    "8~R                Jp   MX   ,VCV It 9V8XIX7sLZ  *W )W    MV BX   1X 3W "
+    "8~R                Jp   MX   , VCV It 9V8XIX7sLZ  *W )W    MV BX   1X 3W "
     "#n Et M"
     "x Mu 0X Gs Ao @X 5t In CX -X  )S  1S  X 4V9XFU1X*X'x Ex&z y NX %|*X/X'X "
-    "-X -X5[$w LX&X0X6^ Mu#X %u#X1X'y =X 6u A^ 8]7]4X1X DX @~U&W \"W ,W       "
+    "-X -X5[$w LX&X0X6^ Mu#X %u#X1X'y =X 6u A^ 8]7]4X1X DX @~U&W \"W , W       "
     "ClMW J"
-    "WMk Fo EkMW Is JW *jMW MW6W MW ,W ,W<Y IW ,W7W7W=W6W Jp HWMk GkMW MW /q "
+    "WMk Fo EkMW Is JW *jMW MW6W MW , W , W<Y IW , W7W7W=W6W Jp HWMk GkMW MW /q "
     "Ae 9kMW B^ 7\\=[(Y;X >\\ Av 6W :V  MW       FkL]$u LXGX 9p Hp EW6W A[ "
     "?X6X LpN\\#"
     "hKh)s JW<] Lu LWNm Hp 6` Bl K~W'x MX 1iEi HX CX0X ?X ;u   <V   3^   8`   "
-    "IX ,o Lz NT.T >X :V  HW   3X=X        )X<X    2~W      :pN\\ @UGU         "
+    "IX , o Lz NT.T >X :V  HW   3X=X        )X<X    2~W      :pN\\ @UGU         "
     "  V&"
-    "U+V7i.V&U:o JX*X,X*X,X*X,X*X,X*X,X*X-X3y6x&y Ny Ny Ny NX -X -X -X ,z!X6^ "
+    "U+V7i.V&U:o JX*X, X*X, X*X, X*X, X*X, X*X-X3y6x&y Ny Ny Ny NX -X -X -X , z!X6^ "
     "Mu Ju Ju Ju Ju KT-T(} Lu Ju Ju Ju AX <X -WJk NlMW KlMW KlMW KlMW KlMW "
     "KlMW Kn"
-    "Is9o Ds Hs Hs Hs LW ,W ,W ,W )p HW6W Jp Ep Ep Ep Ep   Ls EkMW JkMW JkMW "
-    "JkMW A\\ =WMk >\\     /c 8c 8c 8c 8c CV '\\     ?T %W    U *T *W ,V DW4W "
+    "Is9o Ds Hs Hs Hs LW , W , W , W )p HW6W Jp Ep Ep Ep Ep   Ls EkMW JkMW JkMW "
+    "JkMW A\\ =WMk >\\     /c 8c 8c 8c 8c CV '\\     ?T %W    U *T *W , V DW4W "
     "Gj EW8W "
     ">\\ 5~P                In   LX   -VBV Is 9V7g6qJZ  *V )V    LV BX   1X 3V "
     "!l Dt Mx Mt /X Gr ?m ?X 4r Hm BX -X  &P  1P  LX 3V 3X*X'w Cv%x My NX "
     "#x(X/X'X"
-    " -X -X4[%w LX&X0X5] Ls\"X $s\"X1Y(w ;X 5s ?\\ 7\\5\\5Y1Y EX @~U&W !V ,W   "
-    "    BjLW JWMj Dn DjMW Hr JW )hLW MW6W MW ,W ,W;Y JW ,W7W7W=W6W In GWMj "
+    " -X -X4[%w LX&X0X5] Ls\"X $s\"X1Y(w ;X 5s ?\\ 7\\5\\5Y1Y EX @~U&W !V , W   "
+    "    BjLW JWMj Dn DjMW Hr JW )hLW MW6W MW , W , W;Y JW , W7W7W=W6W In GWMj "
     "EjMW MW /p"
     " ?d 8iLW B^ 6Z<[)Y:Y >Z @v 6W :V  MW       EiK]$t JYLZ 7n Fo EW6W A[ ?X5W "
     "LWNfM\\\"gKg'q IW<] Ks KWMk Fn 5` Aj J~W'x MX 1iEi HX CX0X ?X :s   ;V   "
     "2\\   6"
-    "^   HX +n Lz MR,R =X :V  HW   1ZEZ        %ZDZ    0~W      :WNfM\\ @UGU   "
-    "       !V%U,V6i/V%U9n JX*X,X*X,X*X,X*X,X*X,X*X-X3y5v%y Ny Ny Ny NX -X -X "
+    "^   HX +n Lz MR, R =X :V  HW   1ZEZ        %ZDZ    0~W      :WNfM\\ @UGU   "
+    "       !V%U, V6i/V%U9n JX*X, X*X, X*X, X*X, X*X, X*X-X3y5v%y Ny Ny Ny NX -X -X "
     "-X ,"
     "x NX5] Ls Hs Hs Hs Hs IR+R(WMs Js Hs Hs Hs @X <X -WJk MjLW JjLW JjLW JjLW "
-    "JjLW JjLW JmHr8n Cr Gr Gr Gr LW ,W ,W ,W (n GW6W In Cn Cn Cn Cn   Ls CiLW "
+    "JjLW JjLW JmHr8n Cr Gr Gr Gr LW , W , W , W (n GW6W In Cn Cn Cn Cn   Ls CiLW "
     "Ii"
     "LW IiLW IiLW @Z <WMj <Z     +] 2] 2] 2] 2] @V &[     >R $V    NU *U *U *U "
     "DW4W Fh DW8X ?\\ 4~                Hl   KX   -VBV Hp 8V5e4nGZ  +W +W    "
     "LV BX"
     "   1X 3V  j Ct Mx Mr -X Gq =j >Y 3p Gl AX -X       2X 3W 5X(X(u ?s$v Ky "
     "NX \"v'X/X'X -X -X3[&w LX&X0X5] Kq!X #p X0X(v :X 4p =\\ 7\\5\\6Y/Y FX "
-    "@~U&W !V ,W "
-    "      AhKW JWLh Bm ChLW Gq JW (eJW MW6W MW ,W ,W:Y KW ,W7W7W=W6W Hl FWLh "
+    "@~U&W !V , W "
+    "      AhKW JWLh Bm ChLW Gq JW (eJW MW6W MW , W , W:Y KW , W7W7W=W6W Hl FWLh "
     "ChLW MW /o >d 7gKW A\\ 5Z<Z(X8X >Z @v 6W :V  MW       DgI\\$s He 5l Dn "
     "EW6W @Y "
     ">W4X MWMeM\\!eIe%o HW<] Jq JWLi Dk 2_ @h J~Y(x MX 1iEi HX CX0X ?X 9q   :V "
     "  1Z   4\\   GX *m Lz LP*P <X :V  HW   0m        \"l    .~W      :WMeM\\ "
     "@UGU   "
-    "       !V%U,V6i/V%U8l JX(X.X(X.X(X.X(X.X(X.Y)X/X2y3s$y Ny Ny Ny NX -X -X "
-    "-X ,v LX5] Kq Fq Fq Fq Fq GP)P'VKp Gp Ep Ep Ep >X <X -WJj KhKW IhKW IhKW "
+    "       !V%U, V6i/V%U8l JX(X.X(X.X(X.X(X.X(X.Y)X/X2y3s$y Ny Ny Ny NX -X -X "
+    "-X , v LX5] Kq Fq Fq Fq Fq GP)P'VKp Gp Ep Ep Ep >X <X -WJj KhKW IhKW IhKW "
     "IhKW"
-    " IhKW IhKW IjEq7m Bq Fq Fq Fq LW ,W ,W ,W &j EW6W Hl Al Al Al Al   Ls "
+    " IhKW IhKW IjEq7m Bq Fq Fq Fq LW , W , W , W &j EW6W Hl Al Al Al Al   Ls "
     "AgKW HgKW HgKW HgKW @Z <WLh ;Z               MV &[     =P \"U    V +V )S "
     "(S CW4W "
     "De DX8X ?\\ 2|                Fh   IX   -VBV Ek 6V4c1kEZ  +V +V    KV BW  "
-    " 0X 4W  Mf At Mx Mq ,X Go :h =X 0l Ej ?X -W       1X 2W 6X(X(s ;o\"s Hy "
+    " 0X 4W  Mf At Mx Mq , X Go :h =X 0l Ej ?X -W       1X 2W 6X(X(s ;o\"s Hy "
     "NX  r%"
     "X/X'X -X -X2['w LX&X0X4\\ Im NX !m NX0Y(t 9X 2m ;Z 5[5[5X-X FX @~U&W !W "
-    "-W       @fJW JWJe ?j AeJW En IW 'cIW MW6W MW ,W ,W9Y LW ,W7W7W=W6W Fh "
+    "-W       @fJW JWJe ?j AeJW En IW 'cIW MW6W MW , W , W9Y LW , W7W7W=W6W Fh "
     "DWJe AeJ"
     "W MW .m ;b 6eJW A\\ 5Z<Z)X6X >X ?v 6W :V  MW       CeG[$r Fc 2h Am EW6W "
     "@Y ?X3W MWMdL\\ cGc#m GW;\\ Hm HWKg Ah /] ?f I~Y(x MX 1iEi HX CX0X ?X 7m  "
     " 8V   0"
     "X   2Z   FX (j Kz   AX :V  HW   -g         Lh    ,~W      :WMdL\\ @UGU    "
     "      \"V$U-V5i0V$U7i HX(X.X(X.X(X.X(X.X(X.X(X/X2y1o\"y Ny Ny Ny NX -X -X "
-    "-X ,t"
+    "-X , t"
     " JX4\\ Im Bm Bm Bm Bm  %VHm Dm Bm Bm Bm =X <X -WJh HfJW HfJW HfJW HfJW "
-    "HfJW HfJW HhBn4j ?n Cn Cn Cn KW ,W ,W ,W %h DW6W Fh =h =h =h =h   KVMi "
+    "HfJW HfJW HhBn4j ?n Cn Cn Cn KW , W , W , W %h DW6W Fh =h =h =h =h   KVMi "
     ">eJW GeJW"
-    " GeJW GeJW ?X ;WJe 9X               MW &Z       =U    W ,W *R &Q BW4W B` "
-    "AW6W >[ /y                Dd   GX   -VCV Af 5V2a.gBZ  ,W -W    KV CX   0X "
+    " GeJW GeJW ?X ;WJe 9X               MW &Z       =U    W , W *R &Q BW4W B` "
+    "AW6W >[ /y                Dd   GX   -VCV Af 5V2a.gBZ  , W -W    KV CX   0X "
     "4V "
     " Kd @t Mx Km *X Ek 6d ;X .h Bh >X .X       1X 1W 7X(X(q 7j Np Ey NX  "
     "Mm\"X/X'X -X -X1[(w LX&X0X4\\ Gi LX  Ni LX/X$n 7X 0i 9Z 5[5[6Y-Y GX @~U&W "
     " V -W    "
-    "   >cIW JWIb <g =bIW Ci FW %_GW MW6W MW ,W ,W8Y MW ,W7W7W=W6W Ef CWIb "
+    "   >cIW JWIb <g =bIW Ci FW %_GW MW6W MW , W , W8Y MW , W7W7W=W6W Ef CWIb "
     "=bIW MW +h 8a 5cIW @Z 4Y:Y*Y5X ?X ?v 6W :V  MW       AbDY$WMf Ca 0f >k "
     "EW6W @Y ?"
     "W2W MWK`I[ NaEa i EW;\\ Fi FWIc >e ,\\ =b G~Y(x MX 1iEi HX CX0X ?X 5i   "
     "6V   /V   0X   EX &f Iz   AX :V /P;W   *c         Gb    )~W      :WK`I[ "
     "@UGU    "
     "      #V#U.V4i1V#U6f FX(X.X(X.X(X.X(X.X(X.X(X/X2y/j Ny Ny Ny Ny NX -X -X "
-    "-X ,p FX4\\ Gi >i >i >i >i  $VEi @i >i >i >i ;X <X -WIf EcIW FcIW FcIW "
+    "-X , p FX4\\ Gi >i >i >i >i  $VEi @i >i >i >i ;X <X -WIf EcIW FcIW FcIW "
     "FcIW Fc"
-    "IW FcIW Fd>i0g ;i >i >i >i HW ,W ,W ,W #d BW6W Ef ;f ;f ;f ;f   JUJe ;cIW "
+    "IW FcIW Fd>i0g ;i >i >i >i HW , W , W , W #d BW6W Ef ;f ;f ;f ;f   JUJe ;cIW "
     "FcIW FcIW FcIW ?X ;WIb 7X               MW %Y       =T    X -X )P %P AW4W "
     "?Z"
-    " >W6X ?Z ,w                B`   EX   .VBV <] 1V0]*b?[  -W -W    KV CW   "
+    " >W6X ?Z , w                B`   EX   .VBV <] 1V0]*b?[  -W -W    KV CW   "
     "/X 4V  I` >t Mx Hg 'X Bf 2` :X +d =b ;X .W       0X 1X 9X&X)m 0d Kj ?y NX "
     " Jg "
     "NX/X'X -X -X0[)w LX&X0X3[ Dc IX  Kf LX/Y!g 4X .e 7Z 5Z3Z7Y+Y HX @~U&W  V "
-    "-W       =`GW JWG^ 7b 9^GW Ad CW \"YDW MW6W MW ,W ,W7Y NW ,W7W7W=W6W B` "
+    "-W       =`GW JWG^ 7b 9^GW Ad CW \"YDW MW6W MW , W , W7Y NW , W7W7W=W6W B` "
     "@WG^ 9"
     "^GW MW (c 2] 3_GW @Z 3X:X*Y4Y @X ?v 6W :V  MW       ?_AW$WKb @^ +` 9g "
     "CW6W ?W ?X2X NWJ^GY K]B^ Ke CW:[ Dd CWG_ 9` 'Y ;^ F~[)x MX 1iEi HX CX0X "
     "?X 2c   "
     "3V   .T   .V   DX $b Gz   AX :V /R>X   &[         ?Z    %~W      :WJ^GY "
-    "?UGU          #V +V +V 1b EX&X0X&X0X&X0X&X0X&X0Y'X1X1y,d Ky Ny Ny Ny NX "
+    "?UGU          #V +V +V 1b EX&X0X&X0X&X0X&X0X&X0Y'X1X1y, d Ky Ny Ny Ny NX "
     "-X -X "
-    "-X ,j @X3[ Dc 8c 8c 8c 8c  !VBc ;e :e :e :e 9X <X -WFa B`GW E`GW E`GW "
-    "E`GW E`GW E`GW D`:d*b 7d 9d 9d 9d EW ,W ,W ,W !` @W6W B` 5` 5` 5` 5`   "
+    "-X , j @X3[ Dc 8c 8c 8c 8c  !VBc ;e :e :e :e 9X <X -WFa B`GW E`GW E`GW "
+    "E`GW E`GW E`GW D`:d*b 7d 9d 9d 9d EW , W , W , W !` @W6W B` 5` 5` 5` 5`   "
     "HVHa 7_GW"
     " D_GW D_GW D_GW ?X ;WG^ 5X               MW         7S                   "
-    "@r                >Y         BS .V,W#Z   ;V -V     7W     ;W  EX     ;\\  "
+    "@r                >Y         BS .V, W#Z   ;V -V     7W     ;W  EX     ;\\  "
     " 6] "
     "+Z   5\\ 5Z   <W         7X     %\\       <]    \"X         ([   4c   E]  "
     " /[          (W  W .W       :Y #X 0Z 2X *\\   $W    &W         .Z =WDX "
@@ -6457,10 +6457,10 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     "   0Y       8W   -W :V  MW       <Z ;WH[ 9Y &Z 1]  LW ?W   >WGXBU FX=X E` "
     "\"W >] @WDY 3Z   2X               C[           >T     :[       KV /TAY    "
     "   "
-    "                   EWGXBU =UGU   BT       6V +V +V ,Y               ?\\   "
+    "                   EWGXBU =UGU   BT       6V +V +V , Y               ?\\   "
     "                 +[ 0[ 0[ 0[ 0[   KT=[ 2[ 0[ 0[ 0[     7Z ;Y .Y .Y .Y .Y "
     ".Y -"
-    "Y2\\\"Z /\\ 1\\ 1\\ 1\\         CZ   3Z /Z /Z /Z /Z   FVCZ 1Y .Y .Y .Y ,W "
+    "Y2\\\"Z /\\ 1\\ 1\\ 1\\         CZ   3Z /Z /Z /Z /Z   FVCZ 1Y .Y .Y .Y , W "
     ":WDX 2W               LW         7R                                       "
     "      #S"
     "       >W /W     8W     :V                      \"W         5X            "
@@ -6476,7 +6476,7 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     "                        7S       =V /V     7W     :V                      "
     "\"W"
     "         4X'Q                 &Y             %Z                  DW  NV "
-    ".W                   :W    %W           @W  :W              -W   ,W :V  "
+    ".W                   :W    %W           @W  :W              -W   , W :V  "
     "MW    "
     "     LW        FW ?W   >W    NW   0W =W                                   "
     "   3S       GV /j                          CW  HUGU   @T                  "
@@ -6488,7 +6488,7 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     ":W                      \"V         2X)R                 &X             "
     "#Z    "
     "              EW  NW /W                   :W    %W           @W  :W       "
-    "       -W   ,X ;V  NX         LW        FW ?W   >W    NW   0W =W          "
+    "       -W   , X ;V  NX         LW        FW ?W   >W    NW   0W =W          "
     "  "
     "                          3S       GV /j                          CW  "
     "HUGU   @U                            &U                                   "
@@ -6536,7 +6536,7 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     "                                 3S       GV 'Z                          "
     ";W "
     " HUGU   >U                            &U                                  "
-    "                           U                                         ,W "
+    "                           U                                         , W "
     "7W !"
     "W              'VIV                                                       "
     "6S       :V 6W     6V                            4V         *_C`          "
@@ -6579,7 +6579,7 @@ static const char *const _data_font90x103[] = {  // Defined as an array to avoid
     "    "
     "     3S       GV                            7W     /QGW                   "
     "         2QGW                                                            "
-    ",QG"
+    ", QG"
     "W                                         0Z 6W %Z              %a        "
     "                                               5S                         "
     "  "
@@ -6772,7 +6772,7 @@ throws a
    \warning As the first argument is a format string, it is highly recommended
 to write
    \code
-   cimg::warn("%s",warning_message);
+   cimg::warn("%s", warning_message);
    \endcode
    instead of
    \code
@@ -6934,7 +6934,7 @@ inline bool endianness() {
 
 //! Reverse endianness of all elements in a memory buffer.
 /**
-   \param[in,out] buffer Memory buffer whose endianness must be reversed.
+   \param[in, out] buffer Memory buffer whose endianness must be reversed.
    \param size Number of buffer elements to reverse.
 **/
 template <typename T>
@@ -6968,7 +6968,7 @@ inline void invert_endianness(T *const buffer, const unsigned long size) {
 
 //! Reverse endianness of a single variable.
 /**
-   \param[in,out] a Variable to reverse.
+   \param[in, out] a Variable to reverse.
    \return Reference to reversed variable.
 **/
 template <typename T>
@@ -7141,7 +7141,7 @@ inline void srand() {
 
 inline void srand(const unsigned int seed) { std::srand(seed); }
 
-//! Return a random variable uniformely distributed between [val_min,val_max].
+//! Return a random variable uniformely distributed between [val_min, val_max].
 /**
 **/
 inline double rand(const double val_min, const double val_max) {
@@ -7150,7 +7150,7 @@ inline double rand(const double val_min, const double val_max) {
 }
 #endif
 
-//! Return a random variable uniformely distributed between [0,val_max].
+//! Return a random variable uniformely distributed between [0, val_max].
 /**
  **/
 inline double rand(const double val_max = 1) { return cimg::rand(0, val_max); }
@@ -7524,7 +7524,7 @@ inline char *strellipsize(const char *const str, char *const res,
 
 //! Remove delimiters on the start and/or end of a C-string.
 /**
-   \param[in,out] str C-string to work with (modified at output).
+   \param[in, out] str C-string to work with (modified at output).
    \param delimiter Delimiter character code to remove.
    \param is_symmetric Tells if the removal is done only if delimiters are
 symmetric
@@ -7567,7 +7567,7 @@ inline bool strpare(char *const str, const char delimiter = ' ',
 
 //! Replace reserved characters (for Windows filename) by another character.
 /**
-   \param[in,out] str C-string to work with (modified at output).
+   \param[in, out] str C-string to work with (modified at output).
    \param[in] c Replacement character.
 **/
 inline void strwindows_reserved(char *const str, const char c = '_') {
@@ -7581,7 +7581,7 @@ inline void strwindows_reserved(char *const str, const char c = '_') {
 
 //! Replace escape sequences in C-strings by their binary ascii values.
 /**
-   \param[in,out] str C-string to work with (modified at output).
+   \param[in, out] str C-string to work with (modified at output).
 **/
 inline void strunescape(char *const str) {
 #define cimg_strunescape(ci, co) \
@@ -9178,7 +9178,7 @@ struct CImgDisplay {
      your code stay portable (see cimg::keyESC).
      \par Example
      \code
-     CImgDisplay disp(400,400);
+     CImgDisplay disp(400, 400);
      while (!disp.is_closed()) {
        if (disp.key(cimg::keyTAB)) { ... }  // Equivalent to 'if
   (disp.is_keyTAB())'.
@@ -9288,7 +9288,7 @@ struct CImgDisplay {
   user.
      \par Example
      \code
-     CImgDisplay disp(400,400);
+     CImgDisplay disp(400, 400);
      const char *const keycode = "TAB";
      while (!disp.is_closed()) {
        if (disp.is_key(keycode)) { ... }  // Equivalent to 'if
@@ -9405,10 +9405,10 @@ struct CImgDisplay {
      your code stay portable (see cimg::keyESC).
      \par Example
      \code
-     CImgDisplay disp(400,400);
+     CImgDisplay disp(400, 400);
      const unsigned int key_seq[] = { cimg::keyCTRLLEFT, cimg::keyD };
      while (!disp.is_closed()) {
-       if (disp.is_key_sequence(key_seq,2)) { ... }  // Test for the 'CTRL+D'
+       if (disp.is_key_sequence(key_seq, 2)) { ... }  // Test for the 'CTRL+D'
   keyboard event.
        disp.wait();
      }
@@ -9584,17 +9584,17 @@ struct CImgDisplay {
      The normalization type tells about how the values of an input image are
   normalized by the CImgDisplay to be
      correctly displayed. The range of values for pixels displayed on screen is
-  <tt>[0,255]</tt>.
+  <tt>[0, 255]</tt>.
      If the range of values of the data to display is different, a normalization
   may be required for displaying
      the data in a correct way. The normalization type can be one of:
      - \c 0: Value normalization is disabled. It is then assumed that all input
   data to be displayed by the
-     CImgDisplay instance have values in range <tt>[0,255]</tt>.
+     CImgDisplay instance have values in range <tt>[0, 255]</tt>.
      - \c 1: Value normalization is always performed (this is the default
   behavior).
      Before displaying an input image, its values will be (virtually) stretched
-     in range <tt>[0,255]</tt>, so that the contrast of the displayed pixels
+     in range <tt>[0, 255]</tt>, so that the contrast of the displayed pixels
   will be maximum.
      Use this mode for images whose minimum and maximum values are not
   prescribed to known values
@@ -9658,7 +9658,7 @@ struct CImgDisplay {
   /**
      \note
      - If the mouse pointer is outside window area, \c -1 is returned.
-     - Otherwise, the returned value is in the range [0,width()-1].
+     - Otherwise, the returned value is in the range [0, width()-1].
   **/
   int mouse_x() const { return _mouse_x; }
 
@@ -9666,7 +9666,7 @@ struct CImgDisplay {
   /**
      \note
      - If the mouse pointer is outside window area, \c -1 is returned.
-     - Otherwise, the returned value is in the range [0,height()-1].
+     - Otherwise, the returned value is in the range [0, height()-1].
   **/
   int mouse_y() const { return _mouse_y; }
 
@@ -9683,7 +9683,7 @@ struct CImgDisplay {
   same time.
      \par Example
      \code
-     CImgDisplay disp(400,400);
+     CImgDisplay disp(400, 400);
      while (!disp.is_closed()) {
        if (disp.button()&1) { // Left button clicked.
          ...
@@ -9719,7 +9719,7 @@ struct CImgDisplay {
      (as many in forward as in backward directions).
      \par Example
      \code
-     CImgDisplay disp(400,400);
+     CImgDisplay disp(400, 400);
      while (!disp.is_closed()) {
        if (disp.wheel()) {
          int counter = disp.wheel();  // Read the state of the mouse wheel.
@@ -10051,8 +10051,8 @@ struct CImgDisplay {
     return resize(disp.width(), disp.height(), force_redraw);
   }
 
-  // [internal] Render pixel buffer with size (wd,hd) from source buffer of size
-  // (ws,hs).
+  // [internal] Render pixel buffer with size (wd, hd) from source buffer of size
+  // (ws, hs).
   template <typename t, typename T>
   static void _render_resize(const T *ptrs, const unsigned int ws,
                              const unsigned int hs, t *ptrd,
@@ -10115,7 +10115,7 @@ struct CImgDisplay {
      \warning As the first argument is a format string, it is highly recommended
   to write
      \code
-     disp.set_title("%s",window_title);
+     disp.set_title("%s", window_title);
      \endcode
      instead of
      \code
@@ -12957,9 +12957,9 @@ contains a regular grid of pixels,
 dimensions: width, height, depth
    and number of channels.
    Usually, the three first dimensions are used to describe spatial coordinates
-<tt>(x,y,z)</tt>,
+<tt>(x, y, z)</tt>,
    while the number of channels is rather used as a vector-valued dimension
-   (it may describe the R,G,B color channels for instance).
+   (it may describe the R, G, B color channels for instance).
    If you need a fifth dimension, you can use image lists \c CImgList<T> rather
 than simple images \c CImg<T>.
 
@@ -13022,25 +13022,25 @@ constructors.
 
    - Construct images from arbitrary dimensions:
        - <tt>CImg<char> img;</tt> declares an empty image.
-       - <tt>CImg<unsigned char> img(128,128);</tt> declares a 128x128 greyscale
+       - <tt>CImg<unsigned char> img(128, 128);</tt> declares a 128x128 greyscale
 image with
        \c unsigned \c char pixel values.
-       - <tt>CImg<double> img(3,3);</tt> declares a 3x3 matrix with \c double
+       - <tt>CImg<double> img(3, 3);</tt> declares a 3x3 matrix with \c double
 coefficients.
-       - <tt>CImg<unsigned char> img(256,256,1,3);</tt> declares a 256x256x1x3
+       - <tt>CImg<unsigned char> img(256, 256, 1, 3);</tt> declares a 256x256x1x3
 (color) image
        (colors are stored as an image with three channels).
-       - <tt>CImg<double> img(128,128,128);</tt> declares a 128x128x128
+       - <tt>CImg<double> img(128, 128, 128);</tt> declares a 128x128x128
 volumetric and greyscale image
        (with \c double pixel values).
-       - <tt>CImg<> img(128,128,128,3);</tt> declares a 128x128x128 volumetric
+       - <tt>CImg<> img(128, 128, 128, 3);</tt> declares a 128x128x128 volumetric
 color image
        (with \c float pixels, which is the default value of the template
 parameter \c T).
        - \b Note: images pixels are <b>not automatically initialized to 0</b>.
 You may use the function \c fill() to
        do it, or use the specific constructor taking 5 parameters like this:
-       <tt>CImg<> img(128,128,128,3,0);</tt> declares a 128x128x128 volumetric
+       <tt>CImg<> img(128, 128, 128, 3, 0);</tt> declares a 128x128x128 volumetric
 color image with all pixel values to 0.
 
    - Construct images from filenames:
@@ -13051,16 +13051,16 @@ from the file "image.jpg".
        file "analyze.hdr".
        - \b Note: You need to install <a
 href="http://www.imagemagick.org">ImageMagick</a>
-       to be able to read common compressed image formats (JPG,PNG, ...) (See
+       to be able to read common compressed image formats (JPG, PNG, ...) (See
 \ref cimg_files_io).
 
    - Construct images from C-style arrays:
-       - <tt>CImg<int> img(data_buffer,256,256);</tt> constructs a 256x256
+       - <tt>CImg<int> img(data_buffer, 256, 256);</tt> constructs a 256x256
 greyscale image from a \c int* buffer
        \c data_buffer (of size 256x256=65536).
-       - <tt>CImg<unsigned char> img(data_buffer,256,256,1,3);</tt> constructs a
+       - <tt>CImg<unsigned char> img(data_buffer, 256, 256, 1, 3);</tt> constructs a
 256x256 color image
-       from a \c unsigned \c char* buffer \c data_buffer (where R,G,B channels
+       from a \c unsigned \c char* buffer \c data_buffer (where R, G, B channels
 follow each others).
 
        The complete list of constructors can be found <a
@@ -13221,16 +13221,16 @@ struct CImg {
   height(), depth(), spectrum()
        are set to \c 0, as well as its pixel buffer pointer data().
      - An empty image may be re-assigned afterwards, e.g. with the family of
-       assign(unsigned int,unsigned int,unsigned int,unsigned int) methods,
+       assign(unsigned int, unsigned int, unsigned int, unsigned int) methods,
        or by operator=(const CImg<t>&). In all cases, the type of pixels stays
   \c T.
      - An empty image is never shared.
      \par Example
      \code
      CImg<float> img1, img2;      // Construct two empty images.
-     img1.assign(256,256,1,3);    // Re-assign 'img1' to be a 256x256x1x3
+     img1.assign(256, 256, 1, 3);    // Re-assign 'img1' to be a 256x256x1x3
   (color) image.
-     img2 = img1.get_rand(0,255); // Re-assign 'img2' to be a random-valued
+     img2 = img1.get_rand(0, 255); // Re-assign 'img2' to be a random-valued
   version of 'img1'.
      img2.assign();               // Re-assign 'img2' to be an empty image
   again.
@@ -13265,12 +13265,12 @@ struct CImg {
   likely to contain garbage values.
        In order to initialize pixel values during construction (e.g. with \c 0),
   use constructor
-       CImg(unsigned int,unsigned int,unsigned int,unsigned int,T) instead.
+       CImg(unsigned int, unsigned int, unsigned int, unsigned int, T) instead.
      \par Example
      \code
-     CImg<float> img1(256,256,1,3);   // Construct a 256x256x1x3 (color) image,
+     CImg<float> img1(256, 256, 1, 3);   // Construct a 256x256x1x3 (color) image,
   filled with garbage values.
-     CImg<float> img2(256,256,1,3,0); // Construct a 256x256x1x3 (color) image,
+     CImg<float> img2(256, 256, 1, 3, 0); // Construct a 256x256x1x3 (color) image,
   filled with value '0'.
      \endcode
   **/
@@ -13309,7 +13309,7 @@ struct CImg {
      \param size_c Image spectrum() (number of channels).
      \param value Initialization value.
      \note
-     - Similar to CImg(unsigned int,unsigned int,unsigned int,unsigned int),
+     - Similar to CImg(unsigned int, unsigned int, unsigned int, unsigned int),
        but it also fills the pixel buffer with the specified \c value.
      \warning
      - It cannot be used to construct a vector-valued image and initialize it
@@ -13362,7 +13362,7 @@ struct CImg {
    integer).
      \param ...
      \note
-     - Similar to CImg(unsigned int,unsigned int,unsigned int,unsigned int), but
+     - Similar to CImg(unsigned int, unsigned int, unsigned int, unsigned int), but
    it also fills
        the pixel buffer with a sequence of specified integer values.
      \warning
@@ -13372,14 +13372,14 @@ struct CImg {
    garbage.
      \par Example
      \code
-     const CImg<float> img(2,2,1,3,      // Construct a 2x2 color (RGB) image.
-                           0,255,0,255,  // Set the 4 values for the red
+     const CImg<float> img(2, 2, 1, 3,      // Construct a 2x2 color (RGB) image.
+                           0, 255, 0, 255,  // Set the 4 values for the red
    component.
-                           0,0,255,255,  // Set the 4 values for the green
+                           0, 0, 255, 255,  // Set the 4 values for the green
    component.
-                           64,64,64,64); // Set the 4 values for the blue
+                           64, 64, 64, 64); // Set the 4 values for the blue
    component.
-     img.resize(150,150).display();
+     img.resize(150, 150).display();
      \endcode
      \image html ref_constructor1.jpg
    **/
@@ -13430,19 +13430,19 @@ struct CImg {
   the image.
 
      \note
-     - Similar to CImg(unsigned int,unsigned int,unsigned int,unsigned int), but
+     - Similar to CImg(unsigned int, unsigned int, unsigned int, unsigned int), but
   it also fills
        the pixel buffer with a sequence of specified integer values.
      \par Example
      \code
-     const CImg<float> img(2,2,1,3,      // Construct a 2x2 color (RGB) image.
-                           { 0,255,0,255,    // Set the 4 values for the red
+     const CImg<float> img(2, 2, 1, 3,      // Construct a 2x2 color (RGB) image.
+                           { 0, 255, 0, 255,    // Set the 4 values for the red
   component.
-                             0,0,255,255,    // Set the 4 values for the green
+                             0, 0, 255, 255,    // Set the 4 values for the green
   component.
-                             64,64,64,64 }); // Set the 4 values for the blue
+                             64, 64, 64, 64 }); // Set the 4 values for the blue
   component.
-     img.resize(150,150).display();
+     img.resize(150, 150).display();
      \endcode
      \image html ref_constructor1.jpg
   **/
@@ -13522,15 +13522,15 @@ struct CImg {
      given by the size of the initializer list.
      \param { value0, value1, ... } Initialization list
      \note
-     - Similar to CImg(unsigned int,unsigned int,unsigned int,unsigned int) with
+     - Similar to CImg(unsigned int, unsigned int, unsigned int, unsigned int) with
    height=1, depth=1, and spectrum=1,
        but it also fills the pixel buffer with a sequence of specified integer
    values.
      \par Example
      \code
-     const CImg<float> img = {10,20,30,20,10 }; // Construct a 5x1 image with
+     const CImg<float> img = {10, 20, 30, 20, 10 }; // Construct a 5x1 image with
    one channel, and set its pixel values.
-     img.resize(150,150).display();
+     img.resize(150, 150).display();
      \endcode
      \image html ref_constructor1.jpg
    **/
@@ -13572,8 +13572,8 @@ struct CImg {
    double).
      \param ...
      \note
-     - Similar to CImg(unsigned int,unsigned int,unsigned int,unsigned
-   int,int,int,...), but
+     - Similar to CImg(unsigned int, unsigned int, unsigned int, unsigned
+   int, int, int,...), but
        takes a sequence of double values instead of integers.
      \warning
      - You must specify \e exactly \c dx*\c dy*\c dz*\c dc doubles in the
@@ -13581,7 +13581,7 @@ struct CImg {
        Otherwise, the constructor may crash or fill your image with garbage.
        For instance, the code below will probably crash on most platforms:
        \code
-       const CImg<float> img(2,2,1,1, 0.5,0.5,255,255); // FAIL: The two last
+       const CImg<float> img(2, 2, 1, 1, 0.5, 0.5, 255, 255); // FAIL: The two last
    arguments are 'int', not 'double'!
        \endcode
    **/
@@ -13613,29 +13613,29 @@ struct CImg {
      \param repeat_values Tells if the value filling process is repeated over
    the image.
      \note
-     - Similar to CImg(unsigned int,unsigned int,unsigned int,unsigned int), but
+     - Similar to CImg(unsigned int, unsigned int, unsigned int, unsigned int), but
    it also fills
        the pixel buffer with values described in the value string \c values.
      - Value string \c values may describe two different filling processes:
        - Either \c values is a sequences of values assigned to the image pixels,
-   as in <tt>"1,2,3,7,8,2"</tt>.
+   as in <tt>"1, 2, 3, 7, 8, 2"</tt>.
          In this case, set \c repeat_values to \c true to periodically fill the
    image with the value sequence.
        - Either, \c values is a formula, as in <tt>"cos(x/10)*sin(y/20)"</tt>.
          In this case, parameter \c repeat_values is pointless.
      - For both cases, specifying \c repeat_values is mandatory.
        It disambiguates the possible overloading of constructor
-       CImg(unsigned int,unsigned int,unsigned int,unsigned int,T) with \c T
+       CImg(unsigned int, unsigned int, unsigned int, unsigned int, T) with \c T
    being a <tt>const char*</tt>.
      - A \c CImgArgumentException is thrown when an invalid value string \c
    values is specified.
      \par Example
      \code
-     const CImg<float> img1(129,129,1,3,"0,64,128,192,255",true),
+     const CImg<float> img1(129, 129, 1, 3,"0, 64, 128, 192, 255", true),
    // Construct image filled from a value sequence.
-                       img2(129,129,1,3,"if(c==0,255*abs(cos(x/10)),1.8*y)",false);
+                       img2(129, 129, 1, 3,"if(c==0, 255*abs(cos(x/10)), 1.8*y)", false);
    // Construct image filled from a formula.
-     (img1,img2).display();
+     (img1, img2).display();
      \endcode
      \image html ref_constructor2.jpg
    **/
@@ -13704,9 +13704,9 @@ struct CImg {
      \par Example
      \code
      unsigned char tab[256*256] = { 0 };
-     CImg<unsigned char> img1(tab,256,256,1,1,false), // Construct new
+     CImg<unsigned char> img1(tab, 256, 256, 1, 1, false), // Construct new
   non-shared image from buffer 'tab'.
-                         img2(tab,256,256,1,1,true);  // Construct new
+                         img2(tab, 256, 256, 1, 1, true);  // Construct new
   shared-image from buffer 'tab'.
      tab[1024] = 255;                                 // Here, 'img2' is
   indirectly modified, but not 'img1'.
@@ -13796,7 +13796,7 @@ struct CImg {
      an image file.
      \param filename Filename, as a C-string.
      \note
-     - Similar to CImg(unsigned int,unsigned int,unsigned int,unsigned int), but
+     - Similar to CImg(unsigned int, unsigned int, unsigned int, unsigned int), but
   it reads the image
        dimensions and pixel values from the specified image file.
      - The recognition of the image file format by %CImg higly depends on the
@@ -14018,23 +14018,23 @@ struct CImg {
    some dimensions of an existing
      \c CImg<t> instance.
      \param img Input image from which dimensions are borrowed.
-     \param dimensions C-string describing the image size along the X,Y,Z and
+     \param dimensions C-string describing the image size along the X, Y, Z and
    C-dimensions.
      \note
-     - Similar to CImg(unsigned int,unsigned int,unsigned int,unsigned int), but
+     - Similar to CImg(unsigned int, unsigned int, unsigned int, unsigned int), but
    it takes the image dimensions
        (\e not its pixel values) from an existing \c CImg<t> instance.
      - The allocated pixel buffer is \e not filled with a default value, and is
    likely to contain garbage values.
        In order to initialize pixel values (e.g. with \c 0), use constructor
-   CImg(const CImg<t>&,const char*,T)
+   CImg(const CImg<t>&, const char*, T)
        instead.
      \par Example
      \code
-     const CImg<float> img1(256,128,1,3),      // 'img1' is a 256x128x1x3 image.
+     const CImg<float> img1(256, 128, 1, 3),      // 'img1' is a 256x128x1x3 image.
                        img2(img1,"xyzc"),      // 'img2' is a 256x128x1x3 image.
-                       img3(img1,"y,x,z,c"),   // 'img3' is a 128x256x1x3 image.
-                       img4(img1,"c,x,y,3",0), // 'img4' is a 3x128x256x3 image
+                       img3(img1,"y, x, z, c"),   // 'img3' is a 128x256x1x3 image.
+                       img4(img1,"c, x, y, 3", 0), // 'img4' is a 3x128x256x3 image
    (with pixels initialized to '0').
      \endcode
    **/
@@ -14056,11 +14056,11 @@ struct CImg {
    the dimensions of an existing
      \c CImg<t> instance, and set all pixel values to specified \c value.
      \param img Input image from which dimensions are borrowed.
-     \param dimensions String describing the image size along the X,Y,Z and
+     \param dimensions String describing the image size along the X, Y, Z and
    V-dimensions.
      \param value Value used for initialization.
      \note
-     - Similar to CImg(const CImg<t>&,const char*), but it also fills the pixel
+     - Similar to CImg(const CImg<t>&, const char*), but it also fills the pixel
    buffer with the specified \c value.
    **/
   template <typename t>
@@ -14131,8 +14131,8 @@ struct CImg {
 
   //! Construct image with specified size \inplace.
   /**
-     In-place version of the constructor CImg(unsigned int,unsigned int,unsigned
-  int,unsigned int).
+     In-place version of the constructor CImg(unsigned int, unsigned int, unsigned
+  int, unsigned int).
   **/
   CImg<T> &assign(const unsigned int size_x, const unsigned int size_y = 1,
                   const unsigned int size_z = 1,
@@ -14174,8 +14174,8 @@ struct CImg {
 
   //! Construct image with specified size and initialize pixel values \inplace.
   /**
-     In-place version of the constructor CImg(unsigned int,unsigned int,unsigned
-  int,unsigned int,T).
+     In-place version of the constructor CImg(unsigned int, unsigned int, unsigned
+  int, unsigned int, T).
   **/
   CImg<T> &assign(const unsigned int size_x, const unsigned int size_y,
                   const unsigned int size_z, const unsigned int size_c,
@@ -14186,8 +14186,8 @@ struct CImg {
   //! Construct image with specified size and initialize pixel values from a
   // sequence of integers \inplace.
   /**
-     In-place version of the constructor CImg(unsigned int,unsigned int,unsigned
-  int,unsigned int,int,int,...).
+     In-place version of the constructor CImg(unsigned int, unsigned int, unsigned
+  int, unsigned int, int, int,...).
   **/
   CImg<T> &assign(const unsigned int size_x, const unsigned int size_y,
                   const unsigned int size_z, const unsigned int size_c,
@@ -14201,8 +14201,8 @@ struct CImg {
   //! Construct image with specified size and initialize pixel values from a
   // sequence of doubles \inplace.
   /**
-     In-place version of the constructor CImg(unsigned int,unsigned int,unsigned
-  int,unsigned int,double,double,...).
+     In-place version of the constructor CImg(unsigned int, unsigned int, unsigned
+  int, unsigned int, double, double,...).
   **/
   CImg<T> &assign(const unsigned int size_x, const unsigned int size_y,
                   const unsigned int size_z, const unsigned int size_c,
@@ -14216,8 +14216,8 @@ struct CImg {
   //! Construct image with specified size and initialize pixel values from a
   // value string \inplace.
   /**
-     In-place version of the constructor CImg(unsigned int,unsigned int,unsigned
-  int,unsigned int,const char*,bool).
+     In-place version of the constructor CImg(unsigned int, unsigned int, unsigned
+  int, unsigned int, const char*, bool).
   **/
   CImg<T> &assign(const unsigned int size_x, const unsigned int size_y,
                   const unsigned int size_z, const unsigned int size_c,
@@ -14228,8 +14228,8 @@ struct CImg {
   //! Construct image with specified size and initialize pixel values from a
   // memory buffer \inplace.
   /**
-     In-place version of the constructor CImg(const t*,unsigned int,unsigned
-  int,unsigned int,unsigned int).
+     In-place version of the constructor CImg(const t*, unsigned int, unsigned
+  int, unsigned int, unsigned int).
   **/
   template <typename t>
   CImg<T> &assign(const t *const values, const unsigned int size_x,
@@ -14346,7 +14346,7 @@ struct CImg {
 
   //! In-place version of the advanced copy constructor.
   /**
-     In-place version of the constructor CImg(const CImg<t>&,bool).
+     In-place version of the constructor CImg(const CImg<t>&, bool).
    **/
   template <typename t>
   CImg<T> &assign(const CImg<t> &img, const bool is_shared) {
@@ -14356,7 +14356,7 @@ struct CImg {
 
   //! Construct image with dimensions borrowed from another image \inplace.
   /**
-     In-place version of the constructor CImg(const CImg<t>&,const char*).
+     In-place version of the constructor CImg(const CImg<t>&, const char*).
   **/
   template <typename t>
   CImg<T> &assign(const CImg<t> &img, const char *const dimensions) {
@@ -14417,7 +14417,7 @@ struct CImg {
   //! Construct image with dimensions borrowed from another image and initialize
   // pixel values \inplace.
   /**
-     In-place version of the constructor CImg(const CImg<t>&,const char*,T).
+     In-place version of the constructor CImg(const CImg<t>&, const char*, T).
   **/
   template <typename t>
   CImg<T> &assign(const CImg<t> &img, const char *const dimensions,
@@ -14456,9 +14456,9 @@ struct CImg {
        designed to be instantaneous when \c T and \c t are the same.
      \par Example
      \code
-     CImg<float> src(256,256,1,3,0), // Construct a 256x256x1x3 (color) image
+     CImg<float> src(256, 256, 1, 3, 0), // Construct a 256x256x1x3 (color) image
   filled with value '0'.
-                 dest(16,16);        // Construct a 16x16x1x1 (scalar) image.
+                 dest(16, 16);        // Construct a 16x16x1x1 (scalar) image.
      src.move_to(dest);              // Now, 'src' is empty and 'dest' is the
   256x256x1x3 image.
      \endcode
@@ -14571,14 +14571,14 @@ struct CImg {
    \param z Z-coordinate of the pixel value.
    \param c C-coordinate of the pixel value.
    \note
-   - Range of pixel coordinates start from <tt>(0,0,0,0)</tt> to
-     <tt>(width() - 1,height() - 1,depth() - 1,spectrum() - 1)</tt>.
+   - Range of pixel coordinates start from <tt>(0, 0, 0, 0)</tt> to
+     <tt>(width() - 1, height() - 1, depth() - 1, spectrum() - 1)</tt>.
    - Due to the particular arrangement of the pixel buffers defined in %CImg,
 you can omit one coordinate if the
      corresponding dimension is equal to \c 1.
      For instance, pixels of a 2d image (depth() equal to \c 1) can be accessed
-by <tt>img(x,y,c)</tt> instead of
-     <tt>img(x,y,0,c)</tt>.
+by <tt>img(x, y, c)</tt> instead of
+     <tt>img(x, y, 0, c)</tt>.
    \warning
    - There is \e no boundary checking done in this operator, to make it as fast
 as possible.
@@ -14590,19 +14590,19 @@ be printed on the error output
      when accessing out-of-bounds pixels.
    \par Example
    \code
-   CImg<float> img(100,100,1,3,0);                   // Construct a 100x100x1x3
+   CImg<float> img(100, 100, 1, 3, 0);                   // Construct a 100x100x1x3
 (color) image with pixels set to '0'.
    const float
-      valR = img(10,10,0,0),                         // Read red value at
-coordinates (10,10).
-      valG = img(10,10,0,1),                         // Read green value at
-coordinates (10,10)
-      valB = img(10,10,2),                           // Read blue value at
-coordinates (10,10) (Z-coordinate can be omitted).
+      valR = img(10, 10, 0, 0),                         // Read red value at
+coordinates (10, 10).
+      valG = img(10, 10, 0, 1),                         // Read green value at
+coordinates (10, 10)
+      valB = img(10, 10, 2),                           // Read blue value at
+coordinates (10, 10) (Z-coordinate can be omitted).
       avg = (valR + valG + valB)/3;                  // Compute average pixel
 value.
-   img(10,10,0) = img(10,10,1) = img(10,10,2) = avg; // Replace the color pixel
-(10,10) by the average grey value.
+   img(10, 10, 0) = img(10, 10, 1) = img(10, 10, 2) = avg; // Replace the color pixel
+(10, 10) by the average grey value.
    \endcode
 **/
 #if cimg_verbosity >= 3
@@ -14733,7 +14733,7 @@ value.
      - This implicit conversion is convenient to test the empty state of images
   (data() being \c 0 in this case), e.g.
      \code
-     CImg<float> img1(100,100), img2; // 'img1' is a 100x100 image, 'img2' is an
+     CImg<float> img1(100, 100), img2; // 'img1' is a 100x100 image, 'img2' is an
   empty image.
      if (img1) {                      // Test succeeds, 'img1' is not an empty
   image.
@@ -14746,10 +14746,10 @@ value.
      - It also allows to use brackets to access pixel values, without need for a
   \c CImg<T>::operator[](), e.g.
      \code
-     CImg<float> img(100,100);
+     CImg<float> img(100, 100);
      const float value = img[99]; // Access to value of the last pixel on the
   first row.
-     img[510] = 255;              // Set pixel value at (10,5).
+     img[510] = 255;              // Set pixel value at (10, 5).
      \endcode
   **/
   operator T *() { return _data; }
@@ -14766,7 +14766,7 @@ value.
      - The \c value may be casted to pixel type \c T if necessary.
      \par Example
      \code
-     CImg<char> img(100,100); // Declare image (with garbage values).
+     CImg<char> img(100, 100); // Declare image (with garbage values).
      img = 0;                 // Set all pixel values to '0'.
      img = 1.2;               // Set all pixel values to '1' (cast of '1.2' as a
   'char').
@@ -14780,7 +14780,7 @@ value.
      \param expression Value string describing the way pixel values are set.
      \note
      - String parameter \c expression may describe different things:
-       - If \c expression is a list of values (as in \c "1,2,3,8,3,2"), or a
+       - If \c expression is a list of values (as in \c "1, 2, 3, 8, 3, 2"), or a
   formula (as in \c "(x*y)%255"),
          the pixel values are set from specified \c expression and the image
   size is not modified.
@@ -14789,15 +14789,15 @@ value.
          replace the image instance. The image size is modified if necessary.
      \par Example
      \code
-     CImg<float> img1(100,100), img2(img1), img3(img1); // Declare three 100x100
+     CImg<float> img1(100, 100), img2(img1), img3(img1); // Declare three 100x100
   scalar images with unitialized pixel values.
-     img1 = "0,50,100,150,200,250,200,150,100,50";      // Set pixel values of
+     img1 = "0, 50, 100, 150, 200, 250, 200, 150, 100, 50";      // Set pixel values of
   'img1' from a value sequence.
      img2 = "10*((x*y)%25)";                            // Set pixel values of
   'img2' from a formula.
      img3 = "reference.jpg";                            // Set pixel values of
   'img3' from a file (image size is modified).
-     (img1,img2,img3).display();
+     (img1, img2, img3).display();
      \endcode
      \image html ref_operator_eq.jpg
   **/
@@ -14846,7 +14846,7 @@ value.
      - Overflow values are treated as with standard C++ numeric types. For
    instance,
      \code
-     CImg<unsigned char> img(100,100,1,1,255); // Construct a 100x100 image with
+     CImg<unsigned char> img(100, 100, 1, 1, 255); // Construct a 100x100 image with
    pixel values '255'.
      img+=1;                                   // Add '1' to each pixels ->
    Overflow.
@@ -14858,18 +14858,18 @@ value.
      \par Example
      \code
      CImg<unsigned char> img1("reference.jpg");          // Load a 8-bits RGB
-   image (values in [0,255]).
+   image (values in [0, 255]).
      CImg<float> img2(img1);                             // Construct a
    float-valued copy of 'img1'.
      img2+=100;                                          // Add '100' to pixel
-   values -> goes out of [0,255] but no problems with floats.
-     img2.cut(0,255);                                    // Cut values in
-   [0,255] to fit the 'unsigned char' constraint.
+   values -> goes out of [0, 255] but no problems with floats.
+     img2.cut(0, 255);                                    // Cut values in
+   [0, 255] to fit the 'unsigned char' constraint.
      img1 = img2;                                        // Rewrite safe result
    in 'unsigned char' version 'img1'.
-     const CImg<unsigned char> img3 = (img1 + 100).cut(0,255); // Do the same in
+     const CImg<unsigned char> img3 = (img1 + 100).cut(0, 255); // Do the same in
    a more simple and elegant way.
-     (img1,img2,img3).display();
+     (img1, img2, img3).display();
      \endcode
      \image html ref_operator_plus.jpg
    **/
@@ -14917,13 +14917,13 @@ value.
      \code
      CImg<float> img1("reference.jpg");                                   //
   Load a RGB color image (img1.spectrum()==3)
-     const CImg<float> img2(img1.width(),img.height(),1,1,"255*(x/w)^2"); //
+     const CImg<float> img2(img1.width(), img.height(), 1, 1,"255*(x/w)^2"); //
   Construct a scalar shading (img2.spectrum()==1).
      img1+=img2;                                                          // Add
   shading to each channel of 'img1'.
-     img1.cut(0,255);                                                     //
-  Prevent [0,255] overflow.
-     (img2,img1).display();
+     img1.cut(0, 255);                                                     //
+  Prevent [0, 255] overflow.
+     (img2, img1).display();
      \endcode
      \image html ref_operator_plus1.jpg
   **/
@@ -14986,7 +14986,7 @@ value.
        and it may be not desirable to work on a regular copy (e.g. for a resize
   operation) if you have no
        information about the shared state of the input image.
-     - Writing \c (+img) is equivalent to \c CImg<T>(img,false).
+     - Writing \c (+img) is equivalent to \c CImg<T>(img, false).
   **/
   CImg<T> operator+() const { return CImg<T>(*this, false); }
 
@@ -15108,7 +15108,7 @@ value.
      const CImg<unsigned char>
        img1("reference.jpg"),   // Load a RGB color image.
        img2 = -img1;            // Compute its opposite (in 'unsigned char').
-     (img1,img2).display();
+     (img1, img2).display();
      \endcode
      \image html ref_operator_minus.jpg
    **/
@@ -15189,8 +15189,8 @@ value.
      - The size of the image instance can be modified by this operator.
      \par Example
      \code
-     CImg<float> A(2,2,1,1, 1,2,3,4);   // Construct 2x2 matrix A = [1,2;3,4].
-     const CImg<float> X(1,2,1,1, 1,2); // Construct 1x2 vector X = [1;2].
+     CImg<float> A(2, 2, 1, 1, 1, 2, 3, 4);   // Construct 2x2 matrix A = [1, 2;3, 4].
+     const CImg<float> X(1, 2, 1, 1, 1, 2); // Construct 1x2 vector X = [1;2].
      A*=X;                              // Assign matrix multiplication A*X to
   'A'.
      // 'A' is now a 1x2 vector whose values are [5;11].
@@ -15888,9 +15888,9 @@ value.
        pixel types \c T and \c t.
      \par Example
      \code
-     const CImg<float> img1(1,3,1,1, 0,1,2); // Construct a 1x3 vector [0;1;2]
+     const CImg<float> img1(1, 3, 1, 1, 0, 1, 2); // Construct a 1x3 vector [0;1;2]
   (with 'float' pixel values).
-     const CImg<char> img2(1,3,1,1, 0,1,2);  // Construct a 1x3 vector [0;1;2]
+     const CImg<char> img2(1, 3, 1, 1, 0, 1, 2);  // Construct a 1x3 vector [0;1;2]
   (with 'char' pixel values).
      if (img1==img2) {                       // Test succeeds, image dimensions
   and values are the same.
@@ -15973,17 +15973,17 @@ value.
        build a new CImgList instance from several images, if you are seeking for
   performance.
        Fast insertions of images in an image list are possible with
-       CImgList<T>::insert(const CImg<t>&,unsigned int,bool) or
-  move_to(CImgList<t>&,unsigned int).
+       CImgList<T>::insert(const CImg<t>&, unsigned int, bool) or
+  move_to(CImgList<t>&, unsigned int).
      \par Example
      \code
      const CImg<float>
         img1("reference.jpg"),
         img2 = img1.get_mirror('x'),
         img3 = img2.get_blur(5);
-     const CImgList<float> list = (img1,img2); // Create list of two elements
+     const CImgList<float> list = (img1, img2); // Create list of two elements
   from 'img1' and 'img2'.
-     (list,img3).display();                    // Display image list containing
+     (list, img3).display();                    // Display image list containing
   copies of 'img1','img2' and 'img3'.
      \endcode
      \image html ref_operator_comma.jpg
@@ -16018,13 +16018,13 @@ value.
      of the instance image along the specified axis.
      \param axis Splitting axis (can be '\c x','\c y','\c z' or '\c c')
      \note
-     - Similar to get_split(char,int) const, with default second argument.
+     - Similar to get_split(char, int) const, with default second argument.
      \par Example
      \code
      const CImg<unsigned char> img("reference.jpg"); // Load a RGB color image.
      const CImgList<unsigned char> list = (img<'c'); // Get a list of its three
-  R,G,B channels.
-     (img,list).display();
+  R, G, B channels.
+     (img, list).display();
      \endcode
      \image html ref_operator_less.jpg
   **/
@@ -16139,7 +16139,7 @@ value.
        <tt>size()*sizeof(T)</tt>.
      \par Example
      \code
-     const CImg<float> img(100,100,1,3);               // Construct new 100x100
+     const CImg<float> img(100, 100, 1, 3);               // Construct new 100x100
   color image.
      if (img.size()==30000)                            // Test succeeds.
        std::printf("Pixel buffer uses %lu bytes",
@@ -16160,7 +16160,7 @@ value.
      - The allocated pixel buffer for the image instance starts from \c data()
        and goes to <tt>data()+\ref size() - 1</tt> (included).
      - To get the pointer to one particular location of the pixel buffer, use
-       data(unsigned int,unsigned int,unsigned int,unsigned int) instead.
+       data(unsigned int, unsigned int, unsigned int, unsigned int) instead.
   **/
   T *data() { return _data; }
 
@@ -16178,9 +16178,9 @@ value.
    \param z Z-coordinate of the pixel value.
    \param c C-coordinate of the pixel value.
    \note
-   - Writing \c img.data(x,y,z,c) is equivalent to <tt>&(img(x,y,z,c))</tt>.
+   - Writing \c img.data(x, y, z, c) is equivalent to <tt>&(img(x, y, z, c))</tt>.
  Thus, this method has the same
-     properties as operator()(unsigned int,unsigned int,unsigned int,unsigned
+     properties as operator()(unsigned int, unsigned int, unsigned int, unsigned
  int).
  **/
 #if cimg_verbosity >= 3
@@ -16223,16 +16223,16 @@ value.
      \param z Z-coordinate of the pixel value.
      \param c C-coordinate of the pixel value.
      \note
-     - Writing \c img.data(x,y,z,c) is equivalent to <tt>&(img(x,y,z,c)) -
+     - Writing \c img.data(x, y, z, c) is equivalent to <tt>&(img(x, y, z, c)) -
   img.data()</tt>.
        Thus, this method has the same properties as operator()(unsigned
-  int,unsigned int,unsigned int,unsigned int).
+  int, unsigned int, unsigned int, unsigned int).
      \par Example
      \code
-     const CImg<float> img(100,100,1,3);      // Define a 100x100 RGB-color
+     const CImg<float> img(100, 100, 1, 3);      // Define a 100x100 RGB-color
   image.
-     const long off = img.offset(10,10,0,2);  // Get the offset of the blue
-  value of the pixel located at (10,10).
+     const long off = img.offset(10, 10, 0, 2);  // Get the offset of the blue
+  value of the pixel located at (10, 10).
      const float val = img[off];              // Get the blue value of this
   pixel.
      \endcode
@@ -16268,7 +16268,7 @@ value.
        Use it mainly as a strict upper bound for a CImg<T>::iterator.
      \par Example
      \code
-     CImg<float> img(100,100,1,3);                                     // Define
+     CImg<float> img(100, 100, 1, 3);                                     // Define
   a 100x100 RGB color image.
      for (CImg<float>::iterator it = img.begin(); it<img.end(); ++it)  //
   'img.end()' used here as an upper bound for the iterator.
@@ -16284,7 +16284,7 @@ value.
   /**
      \note
      - Writing \c img.front() is equivalent to <tt>img[0]</tt>, or
-  <tt>img(0,0,0,0)</tt>.
+  <tt>img(0, 0, 0, 0)</tt>.
      - It has been mainly defined for compatibility with STL naming conventions.
   **/
   T &front() { return *_data; }
@@ -16296,7 +16296,7 @@ value.
   /**
      \note
      - Writing \c img.end() is equivalent to <tt>img[img.size() - 1]</tt>, or
-       <tt>img(img.width() - 1,img.height() - 1,img.depth() - 1,img.spectrum() -
+       <tt>img(img.width() - 1, img.height() - 1, img.depth() - 1, img.spectrum() -
   1)</tt>.
      - It has been mainly defined for compatibility with STL naming conventions.
   **/
@@ -16315,7 +16315,7 @@ value.
      \param out_value Default value returned if \c offset is outside image
   bounds.
      \note
-     - Writing \c img.at(offset,out_value) is similar to <tt>img[offset]</tt>,
+     - Writing \c img.at(offset, out_value) is similar to <tt>img[offset]</tt>,
   except that if \c offset
        is outside bounds (e.g. \c offset<0 or \c offset>=img.size()), a
   reference to a value \c out_value
@@ -16345,7 +16345,7 @@ value.
    out-of-bounds access.
      \param offset Offset to the desired pixel value.
      \note
-     - Similar to at(int,const T), except that an out-of-bounds access returns
+     - Similar to at(int, const T), except that an out-of-bounds access returns
    the value of the
        nearest pixel in the image instance, regarding the specified offset, i.e.
        - If \c offset<0, then \c img[0] is returned.
@@ -16406,7 +16406,7 @@ value.
        you are \e not sure about the validity of the specified pixel
   coordinates.
      \warning
-     - There is \e no boundary checking performed for the Y,Z and C-coordinates,
+     - There is \e no boundary checking performed for the Y, Z and C-coordinates,
   so they must be inside image bounds.
   **/
   T &atX(const int x, const int y, const int z, const int c,
@@ -16434,7 +16434,7 @@ value.
      \param z Z-coordinate of the pixel value.
      \param c C-coordinate of the pixel value.
      \note
-     - Similar to at(int,int,int,int,const T), except that an out-of-bounds
+     - Similar to at(int, int, int, int, const T), except that an out-of-bounds
    access returns the value of the
        nearest pixel in the image instance, regarding the specified
    X-coordinate.
@@ -16444,9 +16444,9 @@ value.
    coordinates.
      - If you know your image instance is \e not empty, you may rather use the
    slightly faster method
-       \c _at(int,int,int,int).
+       \c _at(int, int, int, int).
      \warning
-     - There is \e no boundary checking performed for the Y,Z and C-coordinates,
+     - There is \e no boundary checking performed for the Y, Z and C-coordinates,
    so they must be inside image bounds.
    **/
   T &atX(const int x, const int y = 0, const int z = 0, const int c = 0) {
@@ -16478,7 +16478,7 @@ value.
   //! Access to a pixel value, using Dirichlet boundary conditions for the X and
   // Y-coordinates.
   /**
-     Similar to atX(int,int,int,int,const T), except that boundary checking is
+     Similar to atX(int, int, int, int, const T), except that boundary checking is
   performed both on X and Y-coordinates.
   **/
   T &atXY(const int x, const int y, const int z, const int c,
@@ -16500,12 +16500,12 @@ value.
   //! Access to a pixel value, using Neumann boundary conditions for the X and
   // Y-coordinates.
   /**
-     Similar to atX(int,int,int,int), except that boundary checking is performed
+     Similar to atX(int, int, int, int), except that boundary checking is performed
    both on X and Y-coordinates.
      \note
      - If you know your image instance is \e not empty, you may rather use the
    slightly faster method
-       \c _atXY(int,int,int,int).
+       \c _atXY(int, int, int, int).
    **/
   T &atXY(const int x, const int y, const int z = 0, const int c = 0) {
     if (is_empty())
@@ -16535,12 +16535,12 @@ value.
                    y < 0 ? 0 : (y >= height() ? height() - 1 : y), z, c);
   }
 
-  //! Access to a pixel value, using Dirichlet boundary conditions for the X,Y
+  //! Access to a pixel value, using Dirichlet boundary conditions for the X, Y
   // and Z-coordinates.
   /**
-     Similar to atX(int,int,int,int,const T), except that boundary checking is
+     Similar to atX(int, int, int, int, const T), except that boundary checking is
   performed both on
-     X,Y and Z-coordinates.
+     X, Y and Z-coordinates.
   **/
   T &atXYZ(const int x, const int y, const int z, const int c,
            const T &out_value) {
@@ -16550,7 +16550,7 @@ value.
                : (*this)(x, y, z, c);
   }
 
-  //! Access to a pixel value, using Dirichlet boundary conditions for the X,Y
+  //! Access to a pixel value, using Dirichlet boundary conditions for the X, Y
   // and Z-coordinates \const.
   T atXYZ(const int x, const int y, const int z, const int c,
           const T &out_value) const {
@@ -16560,15 +16560,15 @@ value.
                : (*this)(x, y, z, c);
   }
 
-  //! Access to a pixel value, using Neumann boundary conditions for the X,Y and
+  //! Access to a pixel value, using Neumann boundary conditions for the X, Y and
   // Z-coordinates.
   /**
-     Similar to atX(int,int,int,int), except that boundary checking is performed
-  both on X,Y and Z-coordinates.
+     Similar to atX(int, int, int, int), except that boundary checking is performed
+  both on X, Y and Z-coordinates.
      \note
      - If you know your image instance is \e not empty, you may rather use the
   slightly faster method
-       \c _atXYZ(int,int,int,int).
+       \c _atXYZ(int, int, int, int).
   **/
   T &atXYZ(const int x, const int y, const int z, const int c = 0) {
     if (is_empty())
@@ -16583,7 +16583,7 @@ value.
                    z < 0 ? 0 : z >= depth() ? depth() - 1 : z, c);
   }
 
-  //! Access to a pixel value, using Neumann boundary conditions for the X,Y and
+  //! Access to a pixel value, using Neumann boundary conditions for the X, Y and
   // Z-coordinates \const.
   const T &atXYZ(const int x, const int y, const int z, const int c = 0) const {
     if (is_empty())
@@ -16601,9 +16601,9 @@ value.
 
   //! Access to a pixel value, using Dirichlet boundary conditions.
   /**
-     Similar to atX(int,int,int,int,const T), except that boundary checking is
+     Similar to atX(int, int, int, int, const T), except that boundary checking is
   performed on all
-     X,Y,Z and C-coordinates.
+     X, Y, Z and C-coordinates.
   **/
   T &atXYZC(const int x, const int y, const int z, const int c,
             const T &out_value) {
@@ -16624,12 +16624,12 @@ value.
 
   //! Access to a pixel value, using Neumann boundary conditions.
   /**
-     Similar to atX(int,int,int,int), except that boundary checking is performed
-  on all X,Y,Z and C-coordinates.
+     Similar to atX(int, int, int, int), except that boundary checking is performed
+  on all X, Y, Z and C-coordinates.
      \note
      - If you know your image instance is \e not empty, you may rather use the
   slightly faster method
-       \c _atXYZC(int,int,int,int).
+       \c _atXYZC(int, int, int, int).
   **/
   T &atXYZC(const int x, const int y, const int z, const int c) {
     if (is_empty())
@@ -16674,14 +16674,14 @@ value.
      \param out_value Default value returned if \c (\c fx,\c y,\c z,\c c) is
   outside image bounds.
      \note
-     - Similar to atX(int,int,int,int,const T), except that the returned pixel
+     - Similar to atX(int, int, int, int, const T), except that the returned pixel
   value is approximated by
        a linear interpolation along the X-axis, if corresponding coordinates are
   not integers.
      - The type of the returned pixel value is extended to \c float, if the
   pixel type \c T is not float-valued.
      \warning
-     - There is \e no boundary checking performed for the Y,Z and C-coordinates,
+     - There is \e no boundary checking performed for the Y, Z and C-coordinates,
   so they must be inside image bounds.
   **/
   Tfloat linear_atX(const float fx, const int y, const int z, const int c,
@@ -16706,15 +16706,15 @@ value.
      \param z Z-coordinate of the pixel value.
      \param c C-coordinate of the pixel value.
      \note
-     - Similar to linear_atX(float,int,int,int,const T) const, except that an
+     - Similar to linear_atX(float, int, int, int, const T) const, except that an
   out-of-bounds access returns
        the value of the nearest pixel in the image instance, regarding the
   specified X-coordinate.
      - If you know your image instance is \e not empty, you may rather use the
   slightly faster method
-       \c _linear_atX(float,int,int,int).
+       \c _linear_atX(float, int, int, int).
      \warning
-     - There is \e no boundary checking performed for the Y,Z and C-coordinates,
+     - There is \e no boundary checking performed for the Y, Z and C-coordinates,
   so they must be inside image bounds.
   **/
   Tfloat linear_atX(const float fx, const int y = 0, const int z = 0,
@@ -16740,7 +16740,7 @@ value.
   //! Return pixel value, using linear interpolation and Dirichlet boundary
   // conditions for the X and Y-coordinates.
   /**
-     Similar to linear_atX(float,int,int,int,const T) const, except that the
+     Similar to linear_atX(float, int, int, int, const T) const, except that the
   linear interpolation and the
      boundary checking are achieved both for X and Y-coordinates.
   **/
@@ -16760,13 +16760,13 @@ value.
   //! Return pixel value, using linear interpolation and Neumann boundary
   // conditions for the X and Y-coordinates.
   /**
-     Similar to linear_atX(float,int,int,int) const, except that the linear
+     Similar to linear_atX(float, int, int, int) const, except that the linear
   interpolation and the boundary checking
      are achieved both for X and Y-coordinates.
      \note
      - If you know your image instance is \e not empty, you may rather use the
   slightly faster method
-       \c _linear_atXY(float,float,int,int).
+       \c _linear_atXY(float, float, int, int).
   **/
   Tfloat linear_atXY(const float fx, const float fy, const int z = 0,
                      const int c = 0) const {
@@ -16793,11 +16793,11 @@ value.
   }
 
   //! Return pixel value, using linear interpolation and Dirichlet boundary
-  // conditions for the X,Y and Z-coordinates.
+  // conditions for the X, Y and Z-coordinates.
   /**
-     Similar to linear_atX(float,int,int,int,const T) const, except that the
+     Similar to linear_atX(float, int, int, int, const T) const, except that the
   linear interpolation and the
-     boundary checking are achieved both for X,Y and Z-coordinates.
+     boundary checking are achieved both for X, Y and Z-coordinates.
   **/
   Tfloat linear_atXYZ(const float fx, const float fy, const float fz,
                       const int c, const T &out_value) const {
@@ -16824,15 +16824,15 @@ value.
   }
 
   //! Return pixel value, using linear interpolation and Neumann boundary
-  // conditions for the X,Y and Z-coordinates.
+  // conditions for the X, Y and Z-coordinates.
   /**
-     Similar to linear_atX(float,int,int,int) const, except that the linear
+     Similar to linear_atX(float, int, int, int) const, except that the linear
   interpolation and the boundary checking
-     are achieved both for X,Y and Z-coordinates.
+     are achieved both for X, Y and Z-coordinates.
      \note
      - If you know your image instance is \e not empty, you may rather use the
   slightly faster method
-       \c _linear_atXYZ(float,float,float,int).
+       \c _linear_atXYZ(float, float, float, int).
   **/
   Tfloat linear_atXYZ(const float fx, const float fy = 0, const float fz = 0,
                       const int c = 0) const {
@@ -16872,11 +16872,11 @@ value.
   }
 
   //! Return pixel value, using linear interpolation and Dirichlet boundary
-  // conditions for all X,Y,Z,C-coordinates.
+  // conditions for all X, Y, Z, C-coordinates.
   /**
-     Similar to linear_atX(float,int,int,int,const T) const, except that the
+     Similar to linear_atX(float, int, int, int, const T) const, except that the
   linear interpolation and the
-     boundary checking are achieved for all X,Y,Z and C-coordinates.
+     boundary checking are achieved for all X, Y, Z and C-coordinates.
   **/
   Tfloat linear_atXYZC(const float fx, const float fy, const float fz,
                        const float fc, const T &out_value) const {
@@ -16926,15 +16926,15 @@ value.
   }
 
   //! Return pixel value, using linear interpolation and Neumann boundary
-  // conditions for all X,Y,Z and C-coordinates.
+  // conditions for all X, Y, Z and C-coordinates.
   /**
-     Similar to linear_atX(float,int,int,int) const, except that the linear
+     Similar to linear_atX(float, int, int, int) const, except that the linear
   interpolation and the boundary checking
-     are achieved for all X,Y,Z and C-coordinates.
+     are achieved for all X, Y, Z and C-coordinates.
      \note
      - If you know your image instance is \e not empty, you may rather use the
   slightly faster method
-       \c _linear_atXYZC(float,float,float,float).
+       \c _linear_atXYZC(float, float, float, float).
   **/
   Tfloat linear_atXYZC(const float fx, const float fy = 0, const float fz = 0,
                        const float fc = 0) const {
@@ -17011,13 +17011,13 @@ value.
      \param out_value Default value returned if \c (\c fx,\c y,\c z,\c c) is
   outside image bounds.
      \note
-     - Similar to linear_atX(float,int,int,int,const T) const, except that the
+     - Similar to linear_atX(float, int, int, int, const T) const, except that the
   returned pixel value is
        approximated by a \e cubic interpolation along the X-axis.
      - The type of the returned pixel value is extended to \c float, if the
   pixel type \c T is not float-valued.
      \warning
-     - There is \e no boundary checking performed for the Y,Z and C-coordinates,
+     - There is \e no boundary checking performed for the Y, Z and C-coordinates,
   so they must be inside image bounds.
   **/
   Tfloat cubic_atX(const float fx, const int y, const int z, const int c,
@@ -17037,7 +17037,7 @@ value.
   //! Return damped pixel value, using cubic interpolation and Dirichlet
   // boundary conditions for the X-coordinate.
   /**
-     Similar to cubic_atX(float,int,int,int,const T) const, except that you can
+     Similar to cubic_atX(float, int, int, int, const T) const, except that you can
   specify the authorized minimum
      and maximum of the returned value.
   **/
@@ -17061,14 +17061,14 @@ value.
      \param z Z-coordinate of the pixel value.
      \param c C-coordinate of the pixel value.
      \note
-     - Similar to cubic_atX(float,int,int,int,const T) const, except that the
+     - Similar to cubic_atX(float, int, int, int, const T) const, except that the
   returned pixel value is
        approximated by a cubic interpolation along the X-axis.
      - If you know your image instance is \e not empty, you may rather use the
   slightly faster method
-       \c _cubic_atX(float,int,int,int).
+       \c _cubic_atX(float, int, int, int).
      \warning
-     - There is \e no boundary checking performed for the Y,Z and C-coordinates,
+     - There is \e no boundary checking performed for the Y, Z and C-coordinates,
   so they must be inside image bounds.
   **/
   Tfloat cubic_atX(const float fx, const int y = 0, const int z = 0,
@@ -17098,7 +17098,7 @@ value.
   //! Return damped pixel value, using cubic interpolation and Neumann boundary
   // conditions for the X-coordinate.
   /**
-     Similar to cubic_atX(float,int,int,int) const, except that you can specify
+     Similar to cubic_atX(float, int, int, int) const, except that you can specify
   the authorized minimum and maximum
      of the returned value.
   **/
@@ -17117,7 +17117,7 @@ value.
   //! Return pixel value, using cubic interpolation and Dirichlet boundary
   // conditions for the X and Y-coordinates.
   /**
-     Similar to cubic_atX(float,int,int,int,const T) const, except that the
+     Similar to cubic_atX(float, int, int, int, const T) const, except that the
   cubic interpolation and boundary checking
      are achieved both for X and Y-coordinates.
   **/
@@ -17165,9 +17165,9 @@ value.
   }
 
   //! Return damped pixel value, using cubic interpolation and Dirichlet
-  // boundary conditions for the X,Y-coordinates.
+  // boundary conditions for the X, Y-coordinates.
   /**
-     Similar to cubic_atXY(float,float,int,int,const T) const, except that you
+     Similar to cubic_atXY(float, float, int, int, const T) const, except that you
   can specify the authorized
      minimum and maximum of the returned value.
   **/
@@ -17181,13 +17181,13 @@ value.
   //! Return pixel value, using cubic interpolation and Neumann boundary
   // conditions for the X and Y-coordinates.
   /**
-     Similar to cubic_atX(float,int,int,int) const, except that the cubic
+     Similar to cubic_atX(float, int, int, int) const, except that the cubic
   interpolation and boundary checking
      are achieved for both X and Y-coordinates.
      \note
      - If you know your image instance is \e not empty, you may rather use the
   slightly faster method
-     \c _cubic_atXY(float,float,int,int).
+     \c _cubic_atXY(float, float, int, int).
   **/
   Tfloat cubic_atXY(const float fx, const float fy, const int z = 0,
                     const int c = 0) const {
@@ -17245,9 +17245,9 @@ value.
   }
 
   //! Return damped pixel value, using cubic interpolation and Neumann boundary
-  // conditions for the X,Y-coordinates.
+  // conditions for the X, Y-coordinates.
   /**
-     Similar to cubic_atXY(float,float,int,int) const, except that you can
+     Similar to cubic_atXY(float, float, int, int) const, except that you can
   specify the authorized minimum and
      maximum of the returned value.
   **/
@@ -17264,11 +17264,11 @@ value.
   }
 
   //! Return pixel value, using cubic interpolation and Dirichlet boundary
-  // conditions for the X,Y and Z-coordinates.
+  // conditions for the X, Y and Z-coordinates.
   /**
-     Similar to cubic_atX(float,int,int,int,const T) const, except that the
+     Similar to cubic_atX(float, int, int, int, const T) const, except that the
   cubic interpolation and boundary checking
-     are achieved both for X,Y and Z-coordinates.
+     are achieved both for X, Y and Z-coordinates.
   **/
   Tfloat cubic_atXYZ(const float fx, const float fy, const float fz,
                      const int c, const T &out_value) const {
@@ -17431,7 +17431,7 @@ value.
   //! Return damped pixel value, using cubic interpolation and Dirichlet
   // boundary conditions for the XYZ-coordinates.
   /**
-     Similar to cubic_atXYZ(float,float,float,int,const T) const, except that
+     Similar to cubic_atXYZ(float, float, float, int, const T) const, except that
   you can specify the authorized
      minimum and maximum of the returned value.
   **/
@@ -17443,15 +17443,15 @@ value.
   }
 
   //! Return pixel value, using cubic interpolation and Neumann boundary
-  // conditions for the X,Y and Z-coordinates.
+  // conditions for the X, Y and Z-coordinates.
   /**
-     Similar to cubic_atX(float,int,int,int) const, except that the cubic
+     Similar to cubic_atX(float, int, int, int) const, except that the cubic
   interpolation and boundary checking
-     are achieved both for X,Y and Z-coordinates.
+     are achieved both for X, Y and Z-coordinates.
      \note
      - If you know your image instance is \e not empty, you may rather use the
   slightly faster method
-       \c _cubic_atXYZ(float,float,float,int).
+       \c _cubic_atXYZ(float, float, float, int).
   **/
   Tfloat cubic_atXYZ(const float fx, const float fy, const float fz,
                      const int c = 0) const {
@@ -17628,7 +17628,7 @@ value.
   //! Return damped pixel value, using cubic interpolation and Neumann boundary
   // conditions for the XYZ-coordinates.
   /**
-     Similar to cubic_atXYZ(float,float,float,int) const, except that you can
+     Similar to cubic_atXYZ(float, float, float, int) const, except that you can
   specify the authorized minimum and
      maximum of the returned value.
   **/
@@ -17685,7 +17685,7 @@ value.
 
   //! Set pixel value, using linear interpolation for the X and Y-coordinates.
   /**
-     Similar to set_linear_atX(const T&,float,int,int,int,bool), except that the
+     Similar to set_linear_atX(const T&, float, int, int, int, bool), except that the
   linear interpolation
      is achieved both for X and Y-coordinates.
   **/
@@ -17720,11 +17720,11 @@ value.
     return *this;
   }
 
-  //! Set pixel value, using linear interpolation for the X,Y and Z-coordinates.
+  //! Set pixel value, using linear interpolation for the X, Y and Z-coordinates.
   /**
-     Similar to set_linear_atXY(const T&,float,float,int,int,bool), except that
+     Similar to set_linear_atXY(const T&, float, float, int, int, bool), except that
   the linear interpolation
-     is achieved both for X,Y and Z-coordinates.
+     is achieved both for X, Y and Z-coordinates.
   **/
   CImg<T> &set_linear_atXYZ(const T &value, const float fx, const float fy = 0,
                             const float fz = 0, const int c = 0,
@@ -18063,7 +18063,7 @@ value.
 
   //! Test if image width, height and depth are equal to specified values.
   /**
-     Test if is_sameXY(unsigned int,unsigned int) const and is_sameZ(unsigned
+     Test if is_sameXY(unsigned int, unsigned int) const and is_sameZ(unsigned
   int) const are both verified.
   **/
   bool is_sameXYZ(const unsigned int size_x, const unsigned int size_y,
@@ -18084,7 +18084,7 @@ value.
 
   //! Test if image width, height and spectrum are equal to specified values.
   /**
-     Test if is_sameXY(unsigned int,unsigned int) const and is_sameC(unsigned
+     Test if is_sameXY(unsigned int, unsigned int) const and is_sameC(unsigned
   int) const are both verified.
   **/
   bool is_sameXYC(const unsigned int size_x, const unsigned int size_y,
@@ -18105,7 +18105,7 @@ value.
 
   //! Test if image width, depth and spectrum are equal to specified values.
   /**
-     Test if is_sameXZ(unsigned int,unsigned int) const and is_sameC(unsigned
+     Test if is_sameXZ(unsigned int, unsigned int) const and is_sameC(unsigned
   int) const are both verified.
   **/
   bool is_sameXZC(const unsigned int size_x, const unsigned int size_z,
@@ -18126,7 +18126,7 @@ value.
 
   //! Test if image height, depth and spectrum are equal to specified values.
   /**
-     Test if is_sameYZ(unsigned int,unsigned int) const and is_sameC(unsigned
+     Test if is_sameYZ(unsigned int, unsigned int) const and is_sameC(unsigned
   int) const are both verified.
   **/
   bool is_sameYZC(const unsigned int size_y, const unsigned int size_z,
@@ -18148,7 +18148,7 @@ value.
   //! Test if image width, height, depth and spectrum are equal to specified
   // values.
   /**
-     Test if is_sameXYZ(unsigned int,unsigned int,unsigned int) const and
+     Test if is_sameXYZ(unsigned int, unsigned int, unsigned int) const and
   is_sameC(unsigned int) const are both
      verified.
   **/
@@ -18191,7 +18191,7 @@ value.
            z >= 0 && z < depth() && c >= 0 && c < spectrum();
   }
 
-  //! Test if pixel value is inside image bounds and get its X,Y,Z and
+  //! Test if pixel value is inside image bounds and get its X, Y, Z and
   // C-coordinates.
   /**
      Return \c true, if specified reference refers to a pixel value inside
@@ -18206,15 +18206,15 @@ value.
      - Useful to convert an offset to a buffer value into pixel value
   coordinates:
      \code
-     const CImg<float> img(100,100,1,3);      // Construct a 100x100 RGB color
+     const CImg<float> img(100, 100, 1, 3);      // Construct a 100x100 RGB color
   image.
      const unsigned long offset = 1249;       // Offset to the pixel
-  (49,12,0,0).
-     unsigned int x,y,z,c;
-     if (img.contains(img[offset],x,y,z,c)) { // Convert offset to (x,y,z,c)
+  (49, 12, 0, 0).
+     unsigned int x, y, z, c;
+     if (img.contains(img[offset], x, y, z, c)) { // Convert offset to (x, y, z, c)
   coordinates.
        std::printf("Offset %u refers to pixel located at (%u,%u,%u,%u).\n",
-                   offset,x,y,z,c);
+                   offset, x, y, z, c);
      }
      \endcode
   **/
@@ -18237,10 +18237,10 @@ value.
     return true;
   }
 
-  //! Test if pixel value is inside image bounds and get its X,Y and
+  //! Test if pixel value is inside image bounds and get its X, Y and
   // Z-coordinates.
   /**
-     Similar to contains(const T&,t&,t&,t&,t&) const, except that only the X,Y
+     Similar to contains(const T&, t&, t&, t&, t&) const, except that only the X, Y
   and Z-coordinates are set.
   **/
   template <typename t>
@@ -18262,7 +18262,7 @@ value.
   //! Test if pixel value is inside image bounds and get its X and
   // Y-coordinates.
   /**
-     Similar to contains(const T&,t&,t&,t&,t&) const, except that only the X and
+     Similar to contains(const T&, t&, t&, t&, t&) const, except that only the X and
   Y-coordinates are set.
   **/
   template <typename t>
@@ -18280,7 +18280,7 @@ value.
 
   //! Test if pixel value is inside image bounds and get its X-coordinate.
   /**
-     Similar to contains(const T&,t&,t&,t&,t&) const, except that only the
+     Similar to contains(const T&, t&, t&, t&, t&) const, except that only the
   X-coordinate is set.
   **/
   template <typename t>
@@ -18293,7 +18293,7 @@ value.
 
   //! Test if pixel value is inside image bounds.
   /**
-     Similar to contains(const T&,t&,t&,t&,t&) const, except that no pixel
+     Similar to contains(const T&, t&, t&, t&, t&) const, except that no pixel
   coordinates are set.
   **/
   bool contains(const T &pixel) const {
@@ -19361,7 +19361,7 @@ value.
               (*ss1 == '(' || *ss1 == '[') && reserved_label[*ss] == ~0U) {
             is_relative = *ss == 'j' || *ss == 'J';
 
-            if (*ss1 == '[' && *ve1 == ']') {  // i/j/I/J[_#ind,offset] = value
+            if (*ss1 == '[' && *ve1 == ']') {  // i/j/I/J[_#ind, offset] = value
               if (*ss2 == '#') {               // Index specified
                 s0 = ss3;
                 while (s0 < ve1 &&
@@ -19432,7 +19432,7 @@ value.
             }
 
             if (*ss1 == '(' &&
-                *ve1 == ')') {    // i/j/I/J(_#ind,_x,_y,_z,_c) = value
+                *ve1 == ')') {    // i/j/I/J(_#ind, _x, _y, _z, _c) = value
               if (*ss2 == '#') {  // Index specified
                 s0 = ss3;
                 while (s0 < ve1 &&
@@ -19448,14 +19448,14 @@ value.
               arg3 = is_relative ? 0U : (unsigned int)_cimg_mp_z;
               arg4 = is_relative ? 0U : (unsigned int)_cimg_mp_c;
               arg5 = compile(s + 1, se);  // Value to assign
-              if (s0 < ve1) {             // X or [ X,_Y,_Z,_C ]
+              if (s0 < ve1) {             // X or [ X, _Y, _Z, _C ]
                 s1 = s0;
                 while (s1 < ve1 &&
                        (*s1 != ',' || level[s1 - expr._data] != clevel1))
                   ++s1;
                 arg1 = compile(s0, s1);
                 if (_cimg_mp_is_vector(
-                        arg1)) {  // Coordinates specified as a vector [X,Y,Z,C]
+                        arg1)) {  // Coordinates specified as a vector [X, Y, Z, C]
                   p2 = _cimg_mp_vector_size(arg1);  // Vector size
                   arg1 = arg1 + 1;
                   if (p2 > 1) {
@@ -19822,7 +19822,7 @@ value.
               _cimg_mp_return(arg2);
             }
 
-            if (*ref == 2) {  // Image value (scalar): i/j[_#ind,off] = scalar
+            if (*ref == 2) {  // Image value (scalar): i/j[_#ind, off] = scalar
               _cimg_mp_check_type(arg2, 2, s_op, 1, 0);
               p1 = ref[1];  // Index
               is_relative = (bool)ref[2];
@@ -19844,7 +19844,7 @@ value.
             }
 
             if (*ref ==
-                3) {  // Image value (scalar): i/j(_#ind,_x,_y,_z,_c) = scalar
+                3) {  // Image value (scalar): i/j(_#ind, _x, _y, _z, _c) = scalar
               _cimg_mp_check_type(arg2, 2, s_op, 1, 0);
               p1 = ref[1];  // Index
               is_relative = (bool)ref[2];
@@ -19869,7 +19869,7 @@ value.
               _cimg_mp_return(arg2);
             }
 
-            if (*ref == 4) {  // Image value (vector): I/J[_#ind,off] = value
+            if (*ref == 4) {  // Image value (vector): I/J[_#ind, off] = value
               _cimg_mp_check_type(arg2, 2, s_op, 3, _cimg_mp_vector_size(arg1));
               p1 = ref[1];  // Index
               is_relative = (bool)ref[2];
@@ -19901,7 +19901,7 @@ value.
             }
 
             if (*ref ==
-                5) {  // Image value (vector): I/J(_#ind,_x,_y,_z,_c) = value
+                5) {  // Image value (vector): I/J(_#ind, _x, _y, _z, _c) = value
               _cimg_mp_check_type(arg2, 2, s_op, 3, _cimg_mp_vector_size(arg1));
               p1 = ref[1];  // Index
               is_relative = (bool)ref[2];
@@ -20033,7 +20033,7 @@ value.
           }
 
           // Write computed value back in image if necessary.
-          if (*ref == 4) {  // Image value (vector): I/J[_#ind,off] **= value
+          if (*ref == 4) {  // Image value (vector): I/J[_#ind, off] **= value
             p1 = ref[1];    // Index
             is_relative = (bool)ref[2];
             arg3 = ref[3];  // Offset
@@ -20052,7 +20052,7 @@ value.
             }
 
           } else if (*ref == 5) {  // Image value (vector):
-                                   // I/J(_#ind,_x,_y,_z,_c) **= value
+                                   // I/J(_#ind, _x, _y, _z, _c) **= value
             p1 = ref[1];           // Index
             is_relative = (bool)ref[2];
             arg3 = ref[3];  // X
@@ -20154,7 +20154,7 @@ value.
             _cimg_mp_return(arg1);
           }
 
-          if (*ref == 2) {  // Image value (scalar): i/j[_#ind,off] += scalar
+          if (*ref == 2) {  // Image value (scalar): i/j[_#ind, off] += scalar
             _cimg_mp_check_type(arg2, 2, s_op, 1, 0);
             p1 = ref[1];  // Index
             is_relative = (bool)ref[2];
@@ -20177,7 +20177,7 @@ value.
           }
 
           if (*ref ==
-              3) {  // Image value (scalar): i/j(_#ind,_x,_y,_z,_c) += scalar
+              3) {  // Image value (scalar): i/j(_#ind, _x, _y, _z, _c) += scalar
             _cimg_mp_check_type(arg2, 2, s_op, 1, 0);
             p1 = ref[1];  // Index
             is_relative = (bool)ref[2];
@@ -20202,7 +20202,7 @@ value.
             _cimg_mp_return(arg1);
           }
 
-          if (*ref == 4) {  // Image value (vector): I/J[_#ind,off] += value
+          if (*ref == 4) {  // Image value (vector): I/J[_#ind, off] += value
             _cimg_mp_check_type(arg2, 2, s_op, 3, _cimg_mp_vector_size(arg1));
             p1 = ref[1];  // Index
             is_relative = (bool)ref[2];
@@ -20232,7 +20232,7 @@ value.
           }
 
           if (*ref ==
-              5) {  // Image value (vector): I/J(_#ind,_x,_y,_z,_c) = value
+              5) {  // Image value (vector): I/J(_#ind, _x, _y, _z, _c) = value
             _cimg_mp_check_type(arg2, 2, s_op, 3, _cimg_mp_vector_size(arg1));
             p1 = ref[1];  // Index
             is_relative = (bool)ref[2];
@@ -20867,7 +20867,7 @@ value.
           _cimg_mp_return(pos);
         }
 
-        if (*ref == 2) {  // Image value (scalar): i/j[_#ind,off]++
+        if (*ref == 2) {  // Image value (scalar): i/j[_#ind, off]++
           p1 = ref[1];    // Index
           is_relative = (bool)ref[2];
           arg3 = ref[3];  // Offset
@@ -20887,7 +20887,7 @@ value.
           _cimg_mp_return(pos);
         }
 
-        if (*ref == 3) {  // Image value (scalar): i/j(_#ind,_x,_y,_z,_c)++
+        if (*ref == 3) {  // Image value (scalar): i/j(_#ind, _x, _y, _z, _c)++
           p1 = ref[1];    // Index
           is_relative = (bool)ref[2];
           arg3 = ref[3];  // X
@@ -20910,7 +20910,7 @@ value.
           _cimg_mp_return(pos);
         }
 
-        if (*ref == 4) {  // Image value (vector): I/J[_#ind,off]++
+        if (*ref == 4) {  // Image value (vector): I/J[_#ind, off]++
           p1 = ref[1];    // Index
           is_relative = (bool)ref[2];
           arg3 = ref[3];  // Offset
@@ -20934,7 +20934,7 @@ value.
           _cimg_mp_return(pos);
         }
 
-        if (*ref == 5) {  // Image value (vector): I/J(_#ind,_x,_y,_z,_c)++
+        if (*ref == 5) {  // Image value (vector): I/J(_#ind, _x, _y, _z, _c)++
           p1 = ref[1];    // Index
           is_relative = (bool)ref[2];
           arg3 = ref[3];  // X
@@ -20993,7 +20993,7 @@ value.
       }
 
       // Array-like access to vectors and  image values
-      // 'i/j[_#ind,offset,_boundary]' and 'vector[offset]'.
+      // 'i/j[_#ind, offset, _boundary]' and 'vector[offset]'.
       if (*se1 == ']' && *ss != '[') {
         s_op = "Operator '[]'";
         is_relative = *ss == 'j' || *ss == 'J';
@@ -21174,7 +21174,7 @@ value.
           _cimg_mp_return(compile(ss1, se1, p_ref));  // Simple parentheses
         is_relative = *ss == 'j' || *ss == 'J';
 
-        // I/J(_#ind,_x,_y,_z,_c,_interpolation,_boundary)
+        // I/J(_#ind, _x, _y, _z, _c, _interpolation, _boundary)
         if ((*ss == 'I' || *ss == 'J') && *ss1 == '(' &&
             reserved_label[*ss] == ~0U) {  // Image value as scalar
           if (*ss2 == '#') {               // Index specified
@@ -21198,7 +21198,7 @@ value.
               ++s1;
             arg1 = compile(s0, s1);
             if (_cimg_mp_is_vector(
-                    arg1)) {  // Coordinates specified as a vector [X,Y,Z]
+                    arg1)) {  // Coordinates specified as a vector [X, Y, Z]
               p2 = _cimg_mp_vector_size(arg1);
               arg1 = arg1 + 1;
               if (p2 > 1) {
@@ -21267,7 +21267,7 @@ value.
           _cimg_mp_return(pos);
         }
 
-        // i/j(_#ind,_x,_y,_z,_c,_interpolation,_boundary)
+        // i/j(_#ind, _x, _y, _z, _c, _interpolation, _boundary)
         if ((*ss == 'i' || *ss == 'j') && *ss1 == '(' &&
             reserved_label[*ss] == ~0U) {  // Image value as scalar
           if (*ss2 == '#') {               // Index specified
@@ -24779,7 +24779,7 @@ value.
     }
 
     static double mp_vector_map_sv(
-        _cimg_math_parser &mp) {  // Operator(scalar,vector)
+        _cimg_math_parser &mp) {  // Operator(scalar, vector)
       unsigned int siz = (unsigned int)mp.opcode[2],
                    ptrs = (unsigned int)mp.opcode[5] + 1;
       double *ptrd = &_mp_arg(1) + 1;
@@ -24813,7 +24813,7 @@ value.
     }
 
     static double mp_vector_map_vs(
-        _cimg_math_parser &mp) {  // Operator(vector,scalar)
+        _cimg_math_parser &mp) {  // Operator(vector, scalar)
       unsigned int siz = (unsigned int)mp.opcode[2],
                    ptrs = (unsigned int)mp.opcode[4] + 1;
       double *ptrd = &_mp_arg(1) + 1;
@@ -24831,7 +24831,7 @@ value.
     }
 
     static double mp_vector_map_vss(
-        _cimg_math_parser &mp) {  // Operator(vector,scalar,scalar)
+        _cimg_math_parser &mp) {  // Operator(vector, scalar, scalar)
       unsigned int siz = (unsigned int)mp.opcode[2],
                    ptrs = (unsigned int)mp.opcode[4] + 1;
       double *ptrd = &_mp_arg(1) + 1;
@@ -24850,7 +24850,7 @@ value.
     }
 
     static double mp_vector_map_vv(
-        _cimg_math_parser &mp) {  // Operator(vector,vector)
+        _cimg_math_parser &mp) {  // Operator(vector, vector)
       unsigned int siz = (unsigned int)mp.opcode[2],
                    ptrs1 = (unsigned int)mp.opcode[4] + 1,
                    ptrs2 = (unsigned int)mp.opcode[5] + 1;
@@ -25096,8 +25096,8 @@ value.
 
   //! Compute the square value of each pixel value.
   /**
-     Replace each pixel value \f$I_{(x,y,z,c)}\f$ of the image instance by its
-  square value \f$I_{(x,y,z,c)}^2\f$.
+     Replace each pixel value \f$I_{(x, y, z, c)}\f$ of the image instance by its
+  square value \f$I_{(x, y, z, c)}^2\f$.
      \note
      - The \inplace of this method statically casts the computed values to the
   pixel type \c T.
@@ -25106,7 +25106,7 @@ value.
      \par Example
      \code
      const CImg<float> img("reference.jpg");
-     (img,img.get_sqr().normalize(0,255)).display();
+     (img, img.get_sqr().normalize(0, 255)).display();
      \endcode
      \image html ref_sqr.jpg
   **/
@@ -25127,8 +25127,8 @@ value.
 
   //! Compute the square root of each pixel value.
   /**
-     Replace each pixel value \f$I_{(x,y,z,c)}\f$ of the image instance by its
-  square root \f$\sqrt{I_{(x,y,z,c)}}\f$.
+     Replace each pixel value \f$I_{(x, y, z, c)}\f$ of the image instance by its
+  square root \f$\sqrt{I_{(x, y, z, c)}}\f$.
      \note
      - The \inplace of this method statically casts the computed values to the
   pixel type \c T.
@@ -25137,7 +25137,7 @@ value.
      \par Example
      \code
      const CImg<float> img("reference.jpg");
-     (img,img.get_sqrt().normalize(0,255)).display();
+     (img, img.get_sqrt().normalize(0, 255)).display();
      \endcode
      \image html ref_sqrt.jpg
   **/
@@ -25155,8 +25155,8 @@ value.
 
   //! Compute the exponential of each pixel value.
   /**
-     Replace each pixel value \f$I_{(x,y,z,c)}\f$ of the image instance by its
-  exponential \f$e^{I_{(x,y,z,c)}}\f$.
+     Replace each pixel value \f$I_{(x, y, z, c)}\f$ of the image instance by its
+  exponential \f$e^{I_{(x, y, z, c)}}\f$.
      \note
      - The \inplace of this method statically casts the computed values to the
   pixel type \c T.
@@ -25177,9 +25177,9 @@ value.
 
   //! Compute the logarithm of each pixel value.
   /**
-     Replace each pixel value \f$I_{(x,y,z,c)}\f$ of the image instance by its
+     Replace each pixel value \f$I_{(x, y, z, c)}\f$ of the image instance by its
   logarithm
-     \f$\mathrm{log}_{e}(I_{(x,y,z,c)})\f$.
+     \f$\mathrm{log}_{e}(I_{(x, y, z, c)})\f$.
      \note
      - The \inplace of this method statically casts the computed values to the
   pixel type \c T.
@@ -25200,9 +25200,9 @@ value.
 
   //! Compute the base-2 logarithm of each pixel value.
   /**
-     Replace each pixel value \f$I_{(x,y,z,c)}\f$ of the image instance by its
+     Replace each pixel value \f$I_{(x, y, z, c)}\f$ of the image instance by its
   base-2 logarithm
-     \f$\mathrm{log}_{2}(I_{(x,y,z,c)})\f$.
+     \f$\mathrm{log}_{2}(I_{(x, y, z, c)})\f$.
      \note
      - The \inplace of this method statically casts the computed values to the
   pixel type \c T.
@@ -25223,9 +25223,9 @@ value.
 
   //! Compute the base-10 logarithm of each pixel value.
   /**
-     Replace each pixel value \f$I_{(x,y,z,c)}\f$ of the image instance by its
+     Replace each pixel value \f$I_{(x, y, z, c)}\f$ of the image instance by its
   base-10 logarithm
-     \f$\mathrm{log}_{10}(I_{(x,y,z,c)})\f$.
+     \f$\mathrm{log}_{10}(I_{(x, y, z, c)})\f$.
      \note
      - The \inplace of this method statically casts the computed values to the
   pixel type \c T.
@@ -25246,8 +25246,8 @@ value.
 
   //! Compute the absolute value of each pixel value.
   /**
-     Replace each pixel value \f$I_{(x,y,z,c)}\f$ of the image instance by its
-  absolute value \f$|I_{(x,y,z,c)}|\f$.
+     Replace each pixel value \f$I_{(x, y, z, c)}\f$ of the image instance by its
+  absolute value \f$|I_{(x, y, z, c)}|\f$.
      \note
      - The \inplace of this method statically casts the computed values to the
   pixel type \c T.
@@ -25268,9 +25268,9 @@ value.
 
   //! Compute the sign of each pixel value.
   /**
-     Replace each pixel value \f$I_{(x,y,z,c)}\f$ of the image instance by its
+     Replace each pixel value \f$I_{(x, y, z, c)}\f$ of the image instance by its
   sign
-     \f$\mathrm{sign}(I_{(x,y,z,c)})\f$.
+     \f$\mathrm{sign}(I_{(x, y, z, c)})\f$.
      \note
      - The sign is set to:
        - \c 1 if pixel value is strictly positive.
@@ -25295,8 +25295,8 @@ value.
 
   //! Compute the cosine of each pixel value.
   /**
-     Replace each pixel value \f$I_{(x,y,z,c)}\f$ of the image instance by its
-  cosine \f$\cos(I_{(x,y,z,c)})\f$.
+     Replace each pixel value \f$I_{(x, y, z, c)}\f$ of the image instance by its
+  cosine \f$\cos(I_{(x, y, z, c)})\f$.
      \note
      - Pixel values are regarded as being in \e radian.
      - The \inplace of this method statically casts the computed values to the
@@ -25318,8 +25318,8 @@ value.
 
   //! Compute the sine of each pixel value.
   /**
-     Replace each pixel value \f$I_{(x,y,z,c)}\f$ of the image instance by its
-  sine \f$\sin(I_{(x,y,z,c)})\f$.
+     Replace each pixel value \f$I_{(x, y, z, c)}\f$ of the image instance by its
+  sine \f$\sin(I_{(x, y, z, c)})\f$.
      \note
      - Pixel values are regarded as being in \e radian.
      - The \inplace of this method statically casts the computed values to the
@@ -25341,9 +25341,9 @@ value.
 
   //! Compute the sinc of each pixel value.
   /**
-     Replace each pixel value \f$I_{(x,y,z,c)}\f$ of the image instance by its
+     Replace each pixel value \f$I_{(x, y, z, c)}\f$ of the image instance by its
   sinc
-     \f$\mathrm{sinc}(I_{(x,y,z,c)})\f$.
+     \f$\mathrm{sinc}(I_{(x, y, z, c)})\f$.
      \note
      - Pixel values are regarded as being exin \e radian.
      - The \inplace of this method statically casts the computed values to the
@@ -25365,8 +25365,8 @@ value.
 
   //! Compute the tangent of each pixel value.
   /**
-     Replace each pixel value \f$I_{(x,y,z,c)}\f$ of the image instance by its
-  tangent \f$\tan(I_{(x,y,z,c)})\f$.
+     Replace each pixel value \f$I_{(x, y, z, c)}\f$ of the image instance by its
+  tangent \f$\tan(I_{(x, y, z, c)})\f$.
      \note
      - Pixel values are regarded as being exin \e radian.
      - The \inplace of this method statically casts the computed values to the
@@ -25388,9 +25388,9 @@ value.
 
   //! Compute the hyperbolic cosine of each pixel value.
   /**
-     Replace each pixel value \f$I_{(x,y,z,c)}\f$ of the image instance by its
+     Replace each pixel value \f$I_{(x, y, z, c)}\f$ of the image instance by its
   hyperbolic cosine
-     \f$\mathrm{cosh}(I_{(x,y,z,c)})\f$.
+     \f$\mathrm{cosh}(I_{(x, y, z, c)})\f$.
      \note
      - The \inplace of this method statically casts the computed values to the
   pixel type \c T.
@@ -25411,9 +25411,9 @@ value.
 
   //! Compute the hyperbolic sine of each pixel value.
   /**
-     Replace each pixel value \f$I_{(x,y,z,c)}\f$ of the image instance by its
+     Replace each pixel value \f$I_{(x, y, z, c)}\f$ of the image instance by its
   hyperbolic sine
-     \f$\mathrm{sinh}(I_{(x,y,z,c)})\f$.
+     \f$\mathrm{sinh}(I_{(x, y, z, c)})\f$.
      \note
      - The \inplace of this method statically casts the computed values to the
   pixel type \c T.
@@ -25434,9 +25434,9 @@ value.
 
   //! Compute the hyperbolic tangent of each pixel value.
   /**
-     Replace each pixel value \f$I_{(x,y,z,c)}\f$ of the image instance by its
+     Replace each pixel value \f$I_{(x, y, z, c)}\f$ of the image instance by its
   hyperbolic tangent
-     \f$\mathrm{tanh}(I_{(x,y,z,c)})\f$.
+     \f$\mathrm{tanh}(I_{(x, y, z, c)})\f$.
      \note
      - The \inplace of this method statically casts the computed values to the
   pixel type \c T.
@@ -25457,9 +25457,9 @@ value.
 
   //! Compute the arccosine of each pixel value.
   /**
-     Replace each pixel value \f$I_{(x,y,z,c)}\f$ of the image instance by its
+     Replace each pixel value \f$I_{(x, y, z, c)}\f$ of the image instance by its
   arccosine
-     \f$\mathrm{acos}(I_{(x,y,z,c)})\f$.
+     \f$\mathrm{acos}(I_{(x, y, z, c)})\f$.
      \note
      - The \inplace of this method statically casts the computed values to the
   pixel type \c T.
@@ -25480,9 +25480,9 @@ value.
 
   //! Compute the arcsine of each pixel value.
   /**
-     Replace each pixel value \f$I_{(x,y,z,c)}\f$ of the image instance by its
+     Replace each pixel value \f$I_{(x, y, z, c)}\f$ of the image instance by its
   arcsine
-     \f$\mathrm{asin}(I_{(x,y,z,c)})\f$.
+     \f$\mathrm{asin}(I_{(x, y, z, c)})\f$.
      \note
      - The \inplace of this method statically casts the computed values to the
   pixel type \c T.
@@ -25503,9 +25503,9 @@ value.
 
   //! Compute the arctangent of each pixel value.
   /**
-     Replace each pixel value \f$I_{(x,y,z,c)}\f$ of the image instance by its
+     Replace each pixel value \f$I_{(x, y, z, c)}\f$ of the image instance by its
   arctangent
-     \f$\mathrm{atan}(I_{(x,y,z,c)})\f$.
+     \f$\mathrm{atan}(I_{(x, y, z, c)})\f$.
      \note
      - The \inplace of this method statically casts the computed values to the
   pixel type \c T.
@@ -25526,9 +25526,9 @@ value.
 
   //! Compute the arctangent2 of each pixel value.
   /**
-     Replace each pixel value \f$I_{(x,y,z,c)}\f$ of the image instance by its
+     Replace each pixel value \f$I_{(x, y, z, c)}\f$ of the image instance by its
   arctangent2
-     \f$\mathrm{atan2}(I_{(x,y,z,c)})\f$.
+     \f$\mathrm{atan2}(I_{(x, y, z, c)})\f$.
      \param img Image whose pixel values specify the second argument of the \c
   atan2() function.
      \note
@@ -25539,13 +25539,13 @@ value.
      \par Example
      \code
      const CImg<float>
-        img_x(100,100,1,1,"x-w/2",false),   // Define an horizontal centered
+        img_x(100, 100, 1, 1,"x-w/2", false),   // Define an horizontal centered
   gradient, from '-width/2' to 'width/2'.
-        img_y(100,100,1,1,"y-h/2",false),   // Define a vertical centered
+        img_y(100, 100, 1, 1,"y-h/2", false),   // Define a vertical centered
   gradient, from '-height/2' to 'height/2'.
-        img_atan2 = img_y.get_atan2(img_x); // Compute atan2(y,x) for each pixel
+        img_atan2 = img_y.get_atan2(img_x); // Compute atan2(y, x) for each pixel
   value.
-     (img_x,img_y,img_atan2).display();
+     (img_x, img_y, img_atan2).display();
      \endcode
   **/
   template <typename t>
@@ -25586,9 +25586,9 @@ value.
      \code
      CImg<float>
        img("reference.jpg"),
-       shade(img.width,img.height(),1,1,"-(x-w/2)^2-(y-h/2)^2",false);
-     shade.normalize(0,1);
-     (img,shade,img.get_mul(shade)).display();
+       shade(img.width, img.height(), 1, 1,"-(x-w/2)^2-(y-h/2)^2", false);
+     shade.normalize(0, 1);
+     (img, shade, img.get_mul(shade)).display();
      \endcode
   **/
   template <typename t>
@@ -25644,8 +25644,8 @@ value.
 
   //! Raise each pixel value to a specified power.
   /**
-     Replace each pixel value \f$I_{(x,y,z,c)}\f$ of the image instance by its
-  power \f$I_{(x,y,z,c)}^p\f$.
+     Replace each pixel value \f$I_{(x, y, z, c)}\f$ of the image instance by its
+  power \f$I_{(x, y, z, c)}^p\f$.
      \param p Exponent value.
      \note
      - The \inplace of this method statically casts the computed values to the
@@ -25660,7 +25660,7 @@ value.
   = 1.8.
        img2 = (img0/255).pow(0.5)*=255; // Compute gamma correction, with gamma
   = 0.5.
-     (img0,img1,img2).display();
+     (img0, img1, img2).display();
      \endcode
   **/
   CImg<T> &pow(const double p) {
@@ -25917,8 +25917,8 @@ value.
   //! Pointwise min operator between instance image and a value.
   /**
      \param val Value used as the reference argument of the min operator.
-     \note Replace each pixel value \f$I_{(x,y,z,c)}\f$ of the image instance by
-     \f$\mathrm{min}(I_{(x,y,z,c)},\mathrm{val})\f$.
+     \note Replace each pixel value \f$I_{(x, y, z, c)}\f$ of the image instance by
+     \f$\mathrm{min}(I_{(x, y, z, c)},\mathrm{val})\f$.
    **/
   CImg<T> &min(const T &val) {
     if (is_empty()) return *this;
@@ -25935,8 +25935,8 @@ value.
   //! Pointwise min operator between two images.
   /**
      \param img Image used as the reference argument of the min operator.
-     \note Replace each pixel value \f$I_{(x,y,z,c)}\f$ of the image instance by
-     \f$\mathrm{min}(I_{(x,y,z,c)},\mathrm{img}_{(x,y,z,c)})\f$.
+     \note Replace each pixel value \f$I_{(x, y, z, c)}\f$ of the image instance by
+     \f$\mathrm{min}(I_{(x, y, z, c)},\mathrm{img}_{(x, y, z, c)})\f$.
    **/
   template <typename t>
   CImg<T> &min(const CImg<t> &img) {
@@ -25964,8 +25964,8 @@ value.
   //! Pointwise min operator between an image and an expression.
   /**
      \param expression Math formula as a C-string.
-     \note Replace each pixel value \f$I_{(x,y,z,c)}\f$ of the image instance by
-     \f$\mathrm{min}(I_{(x,y,z,c)},\mathrm{expr}_{(x,y,z,c)})\f$.
+     \note Replace each pixel value \f$I_{(x, y, z, c)}\f$ of the image instance by
+     \f$\mathrm{min}(I_{(x, y, z, c)},\mathrm{expr}_{(x, y, z, c)})\f$.
   **/
   CImg<T> &min(const char *const expression) {
     return min((+*this)._fill(expression, true, true, 0, 0, "min", this));
@@ -25979,8 +25979,8 @@ value.
   //! Pointwise max operator between instance image and a value.
   /**
      \param val Value used as the reference argument of the max operator.
-     \note Replace each pixel value \f$I_{(x,y,z,c)}\f$ of the image instance by
-     \f$\mathrm{max}(I_{(x,y,z,c)},\mathrm{val})\f$.
+     \note Replace each pixel value \f$I_{(x, y, z, c)}\f$ of the image instance by
+     \f$\mathrm{max}(I_{(x, y, z, c)},\mathrm{val})\f$.
    **/
   CImg<T> &max(const T &val) {
     if (is_empty()) return *this;
@@ -25997,8 +25997,8 @@ value.
   //! Pointwise max operator between two images.
   /**
      \param img Image used as the reference argument of the max operator.
-     \note Replace each pixel value \f$I_{(x,y,z,c)}\f$ of the image instance by
-     \f$\mathrm{max}(I_{(x,y,z,c)},\mathrm{img}_{(x,y,z,c)})\f$.
+     \note Replace each pixel value \f$I_{(x, y, z, c)}\f$ of the image instance by
+     \f$\mathrm{max}(I_{(x, y, z, c)},\mathrm{img}_{(x, y, z, c)})\f$.
    **/
   template <typename t>
   CImg<T> &max(const CImg<t> &img) {
@@ -26026,8 +26026,8 @@ value.
   //! Pointwise max operator between an image and an expression.
   /**
      \param expression Math formula as a C-string.
-     \note Replace each pixel value \f$I_{(x,y,z,c)}\f$ of the image instance by
-     \f$\mathrm{max}(I_{(x,y,z,c)},\mathrm{expr}_{(x,y,z,c)})\f$.
+     \note Replace each pixel value \f$I_{(x, y, z, c)}\f$ of the image instance by
+     \f$\mathrm{max}(I_{(x, y, z, c)},\mathrm{expr}_{(x, y, z, c)})\f$.
   **/
   CImg<T> &max(const char *const expression) {
     return max((+*this)._fill(expression, true, true, 0, 0, "max", this));
@@ -26589,7 +26589,7 @@ value.
   //! Evaluate math formula on a set of variables.
   /**
      \param expression Math formula, as a C-string.
-     \param xyzc Set of values (x,y,z,c) used for the evaluation.
+     \param xyzc Set of values (x, y, z, c) used for the evaluation.
   **/
   template <typename t>
   CImg<doubleT> eval(const char *const expression, const CImg<t> &xyzc,
@@ -27362,8 +27362,8 @@ value.
   //! Solve a tridiagonal system of linear equations.
   /**
      \param A Coefficients of the tridiagonal system.
-     A is a tridiagonal matrix A = [ b0,c0,0,...; a1,b1,c1,0,... ; ... ;
-  ...,0,aN,bN ],
+     A is a tridiagonal matrix A = [ b0, c0, 0,...; a1, b1, c1, 0,... ; ... ;
+  ..., 0, aN, bN ],
      stored as a 3 columns matrix
      \note Solve AX=B where \c B=*this, using the Thomas algorithm.
   **/
@@ -27456,7 +27456,7 @@ value.
   // matrix.
   /**
      \return A list of two images <tt>[val; vec]</tt>, whose meaning is similar
-  as in eigen(CImg<t>&,CImg<t>&) const.
+  as in eigen(CImg<t>&, CImg<t>&) const.
   **/
   CImgList<Tfloat> get_eigen() const {
     CImgList<Tfloat> res(2);
@@ -27554,7 +27554,7 @@ value.
   /**
      \return A list of two images <tt>[val; vec]</tt>, whose meaning are similar
   as in
-       symmetric_eigen(CImg<t>&,CImg<t>&) const.
+       symmetric_eigen(CImg<t>&, CImg<t>&) const.
   **/
   CImgList<Tfloat> get_symmetric_eigen() const {
     CImgList<Tfloat> res(2);
@@ -27735,8 +27735,8 @@ value.
      \note The instance matrix can be computed from \c U,\c S and \c V by
      \code
      const CImg<> A;  // Input matrix (assumed to contain some values).
-     CImg<> U,S,V;
-     A.SVD(U,S,V)
+     CImg<> U, S, V;
+     A.SVD(U, S, V)
      \endcode
   **/
   template <typename t>
@@ -27959,7 +27959,7 @@ value.
   /**
      \return A list of three images <tt>[U; S; V]</tt>, whose meaning is similar
   as in
-       SVD(CImg<t>&,CImg<t>&,CImg<t>&,bool,unsigned int,float) const.
+       SVD(CImg<t>&, CImg<t>&, CImg<t>&, bool, unsigned int, float) const.
   **/
   CImgList<Tfloat> get_SVD(const bool sorting = true,
                            const unsigned int max_iteration = 40,
@@ -28026,7 +28026,7 @@ value.
   /**
      \param distance An object having operator()(unsigned int i, unsigned int j)
   which returns distance
-       between two nodes (i,j).
+       between two nodes (i, j).
      \param nb_nodes Number of graph nodes.
      \param starting_node Indice of the starting node.
      \param ending_node Indice of the ending node (set to ~0U to ignore ending
@@ -28641,7 +28641,7 @@ value.
     return CImg<T>();
   }
 
-  //! Return a 3x3 rotation matrix along the (x,y,z)-axis with an angle w.
+  //! Return a 3x3 rotation matrix along the (x, y, z)-axis with an angle w.
   /**
      \param x X-coordinate of the rotation axis, or first quaternion coordinate.
      \param y Y-coordinate of the rotation axis, or second quaternion
@@ -29943,7 +29943,7 @@ value.
   /**
      \param val_min Minimal authorized random value.
      \param val_max Maximal authorized random value.
-     \note Random variables are uniformely distributed in [val_min,val_max].
+     \note Random variables are uniformely distributed in [val_min, val_max].
    **/
   CImg<T> &rand(const T &val_min, const T &val_max) {
     const float delta =
@@ -30002,7 +30002,7 @@ value.
      \par Example
      \code
      const CImg<float> img("reference.jpg"), res = img.get_noise(40);
-     (img,res.normalize(0,255)).display();
+     (img, res.normalize(0, 255)).display();
      \endcode
      \image html ref_noise.jpg
   **/
@@ -30077,8 +30077,8 @@ value.
      \param max_value Maximum desired value of the resulting image.
      \par Example
      \code
-     const CImg<float> img("reference.jpg"), res = img.get_normalize(160,220);
-     (img,res).display();
+     const CImg<float> img("reference.jpg"), res = img.get_normalize(160, 220);
+     (img, res).display();
      \endcode
      \image html ref_normalize2.jpg
   **/
@@ -30110,7 +30110,7 @@ value.
      \par Example
      \code
      const CImg<float> img("reference.jpg"), res = img.get_normalize();
-     (img,res.normalize(0,255)).display();
+     (img, res.normalize(0, 255)).display();
      \endcode
      \image html ref_normalize.jpg
   **/
@@ -30157,7 +30157,7 @@ value.
      \par Example
      \code
      const CImg<float> img("reference.jpg"), res = img.get_norm();
-     (img,res.normalize(0,255)).display();
+     (img, res.normalize(0, 255)).display();
      \endcode
      \image html ref_norm.jpg
   **/
@@ -30280,8 +30280,8 @@ value.
      \param max_value Maximum desired value of the resulting image.
      \par Example
      \code
-     const CImg<float> img("reference.jpg"), res = img.get_cut(160,220);
-     (img,res).display();
+     const CImg<float> img("reference.jpg"), res = img.get_cut(160, 220);
+     (img, res).display();
      \endcode
      \image html ref_cut.jpg
   **/
@@ -30310,7 +30310,7 @@ value.
      \par Example
      \code
      const CImg<float> img("reference.jpg"), res = img.get_quantize(4);
-     (img,res).display();
+     (img, res).display();
      \endcode
      \image html ref_quantize.jpg
   **/
@@ -30362,7 +30362,7 @@ value.
      \par Example
      \code
      const CImg<float> img("reference.jpg"), res = img.get_threshold(128);
-     (img,res.normalize(0,255)).display();
+     (img, res.normalize(0, 255)).display();
      \endcode
      \image html ref_threshold.jpg
   **/
@@ -30427,7 +30427,7 @@ value.
      \par Example
      \code
      const CImg<float> img = CImg<float>("reference.jpg").histogram(256);
-     img.display_graph(0,3);
+     img.display_graph(0, 3);
      \endcode
      \image html ref_histogram.jpg
   **/
@@ -30477,7 +30477,7 @@ value.
      \par Example
      \code
      const CImg<float> img("reference.jpg"), res = img.get_equalize(256);
-     (img,res).display();
+     (img, res).display();
      \endcode
      \image html ref_equalize.jpg
   **/
@@ -30530,14 +30530,14 @@ value.
      \param map_indexes Tell if the values of the resulting image are the
   colormap indices or the colormap vectors.
      \note
-     - \p img.index(colormap,dithering,1) is equivalent to
-  <tt>img.index(colormap,dithering,0).map(colormap)</tt>.
+     - \p img.index(colormap, dithering, 1) is equivalent to
+  <tt>img.index(colormap, dithering, 0).map(colormap)</tt>.
      \par Example
      \code
-     const CImg<float> img("reference.jpg"), colormap(3,1,1,3, 0,128,255,
-  0,128,255, 0,128,255);
-     const CImg<float> res = img.get_index(colormap,1,true);
-     (img,res).display();
+     const CImg<float> img("reference.jpg"), colormap(3, 1, 1, 3, 0, 128, 255,
+  0, 128, 255, 0, 128, 255);
+     const CImg<float> res = img.get_index(colormap, 1, true);
+     (img, res).display();
      \endcode
      \image html ref_index.jpg
   **/
@@ -30956,10 +30956,10 @@ value.
      \par Example
      \code
      const CImg<float> img("reference.jpg"),
-                       colormap1(3,1,1,3, 0,128,255, 0,128,255, 0,128,255),
-                       colormap2(3,1,1,3, 255,0,0, 0,255,0, 0,0,255),
-                       res = img.get_index(colormap1,0).map(colormap2);
-     (img,res).display();
+                       colormap1(3, 1, 1, 3, 0, 128, 255, 0, 128, 255, 0, 128, 255),
+                       colormap2(3, 1, 1, 3, 255, 0, 0, 0, 255, 0, 0, 0, 255),
+                       res = img.get_index(colormap1, 0).map(colormap2);
+     (img, res).display();
      \endcode
      \image html ref_map.jpg
   **/
@@ -32323,7 +32323,7 @@ value.
      \param centering_y Set centering type (only if \p interpolation_type=0).
      \param centering_z Set centering type (only if \p interpolation_type=0).
      \param centering_c Set centering type (only if \p interpolation_type=0).
-     \note If pd[x,y,z,v]<0, it corresponds to a percentage of the original size
+     \note If pd[x, y, z, v]<0, it corresponds to a percentage of the original size
   (the default value is -100).
   **/
   CImg<T> &resize(const int size_x, const int size_y = -100,
@@ -32368,7 +32368,7 @@ value.
         centering_c < 0 || centering_c > 1)
       throw CImgArgumentException(_cimg_instance
                                   "resize(): Specified centering arguments "
-                                  "(%g,%g,%g,%g) are outside range [0,1].",
+                                  "(%g,%g,%g,%g) are outside range [0, 1].",
                                   cimg_instance, centering_x, centering_y,
                                   centering_z, centering_c);
 
@@ -35472,7 +35472,7 @@ value.
     return res;
   }
 
-  //! Generate a 2d representation of a 3d image, with XY,XZ and YZ views.
+  //! Generate a 2d representation of a 3d image, with XY, XZ and YZ views.
   /**
      \param x0 X-coordinate of the projection point.
      \param y0 Y-coordinate of the projection point.
@@ -35500,7 +35500,7 @@ value.
         .draw_image(0, img_xy._height, img_xz);
   }
 
-  //! Construct a 2d representation of a 3d image, with XY,XZ and YZ views
+  //! Construct a 2d representation of a 3d image, with XY, XZ and YZ views
   //\inplace.
   CImg<T> &projections2d(const unsigned int x0, const unsigned int y0,
                          const unsigned int z0) {
@@ -36428,7 +36428,7 @@ value.
       throw CImgArgumentException(
           _cimg_instance
           "get_shared_slices(): Invalid request of a shared-memory subset "
-          "(0->%u,0->%u,%u->%u,%u).",
+          "(0->%u, 0->%u,%u->%u,%u).",
           cimg_instance, _width - 1, _height - 1, z0, z1, c0);
 
     return CImg<T>(_data + beg, _width, _height, z1 - z0 + 1, 1, true);
@@ -36444,7 +36444,7 @@ value.
       throw CImgArgumentException(
           _cimg_instance
           "get_shared_slices(): Invalid request of a shared-memory subset "
-          "(0->%u,0->%u,%u->%u,%u).",
+          "(0->%u, 0->%u,%u->%u,%u).",
           cimg_instance, _width - 1, _height - 1, z0, z1, c0);
 
     return CImg<T>(_data + beg, _width, _height, z1 - z0 + 1, 1, true);
@@ -36479,7 +36479,7 @@ value.
       throw CImgArgumentException(
           _cimg_instance
           "get_shared_channels(): Invalid request of a shared-memory subset "
-          "(0->%u,0->%u,0->%u,%u->%u).",
+          "(0->%u, 0->%u, 0->%u,%u->%u).",
           cimg_instance, _width - 1, _height - 1, _depth - 1, c0, c1);
 
     return CImg<T>(_data + beg, _width, _height, _depth, c1 - c0 + 1, true);
@@ -36495,7 +36495,7 @@ value.
       throw CImgArgumentException(
           _cimg_instance
           "get_shared_channels(): Invalid request of a shared-memory subset "
-          "(0->%u,0->%u,0->%u,%u->%u).",
+          "(0->%u, 0->%u, 0->%u,%u->%u).",
           cimg_instance, _width - 1, _height - 1, _depth - 1, c0, c1);
 
     return CImg<T>(_data + beg, _width, _height, _depth, c1 - c0 + 1, true);
@@ -36934,7 +36934,7 @@ value.
   /**
      \param img Image to append with instance image.
      \param axis Appending axis. Can be <tt>{ 'x' | 'y' | 'z' | 'c' }</tt>.
-     \param align Append alignment in \c [0,1].
+     \param align Append alignment in \c [0, 1].
   **/
   template <typename t>
   CImg<T> &append(const CImg<t> &img, const char axis = 'x',
@@ -36988,7 +36988,7 @@ value.
      \note
      - The correlation of the image instance \p *this by the mask \p mask is
   defined to be:
-     res(x,y,z) = sum_{i,j,k} (*this)(x + i,y + j,z + k)*mask(i,j,k).
+     res(x, y, z) = sum_{i, j, k} (*this)(x + i, y + j, z + k)*mask(i, j, k).
   **/
   template <typename t>
   CImg<T> &correlate(const CImg<t> &mask,
@@ -37474,7 +37474,7 @@ value.
      \note
      - The result \p res of the convolution of an image \p img by a mask \p mask
   is defined to be:
-     res(x,y,z) = sum_{i,j,k} img(x-i,y-j,z-k)*mask(i,j,k)
+     res(x, y, z) = sum_{i, j, k} img(x-i, y-j, z-k)*mask(i, j, k)
   **/
   template <typename t>
   CImg<T> &convolve(const CImg<t> &mask,
@@ -38969,8 +38969,8 @@ value.
   // [internal] Apply a recursive filter (used by CImg<T>::vanvliet()).
   /*
      \param ptr the pointer of the data
-     \param filter the coefficient of the filter in the following order [n,n -
-     1,n - 2,n - 3].
+     \param filter the coefficient of the filter in the following order [n, n -
+     1, n - 2, n - 3].
      \param N size of the data
      \param off the offset between two data point
      \param order the order of the filter 0 (smoothing), 1st derivtive, 2nd
@@ -38985,7 +38985,7 @@ value.
                                     const unsigned int order,
                                     const bool boundary_conditions) {
     double val[4] = {
-        0};  // res[n,n - 1,n - 2,n - 3,..] or res[n,n + 1,n + 2,n + 3,..]
+        0};  // res[n, n - 1, n - 2, n - 3,..] or res[n, n + 1, n + 2, n + 3,..]
     const double sumsq = filter[0], sum = sumsq * sumsq, a1 = filter[1],
                  a2 = filter[2], a3 = filter[3],
                  scaleM = 1.0 / ((1.0 + a1 - a2 + a3) * (1.0 - a1 - a2 - a3) *
@@ -39036,7 +39036,7 @@ value.
         }
       } break;
       case 1: {
-        double x[3];  // [front,center,back]
+        double x[3];  // [front, center, back]
         for (int pass = 0; pass < 2; ++pass) {
           if (!pass) {
             for (int k = 0; k < 3; ++k)
@@ -39072,7 +39072,7 @@ value.
         }
       } break;
       case 2: {
-        double x[3];  // [front,center,back]
+        double x[3];  // [front, center, back]
         for (int pass = 0; pass < 2; ++pass) {
           if (!pass) {
             for (int k = 0; k < 3; ++k)
@@ -39109,7 +39109,7 @@ value.
         }
       } break;
       case 3: {
-        double x[3];  // [front,center,back]
+        double x[3];  // [front, center, back]
         for (int pass = 0; pass < 2; ++pass) {
           if (!pass) {
             for (int k = 0; k < 3; ++k)
@@ -39151,7 +39151,7 @@ value.
   //! Van Vliet recursive Gaussian filter.
   /**
      \param sigma standard deviation of the Gaussian filter
-     \param order the order of the filter 0,1,2,3
+     \param order the order of the filter 0, 1, 2, 3
      \param axis  Axis along which the filter is computed. Can be <tt>{ 'x' |
   'y' | 'z' | 'c' }</tt>.
      \param boundary_conditions Boundary conditions. Can be <tt>{ 0=dirichlet |
@@ -39967,10 +39967,10 @@ value.
     return ptr[x * off];
   }
 
-  // Apply box filter of order 0,1,2.
+  // Apply box filter of order 0, 1, 2.
   /**
     \param sigma sigma of the box filter
-    \param order the order of the filter 0,1 or 2.
+    \param order the order of the filter 0, 1 or 2.
     \param axis  Axis along which the filter is computed. Can be <tt>{ 'x' | 'y'
   | 'z' | 'c' }</tt>.
     \param boundary_conditions Boundary conditions. Can be <tt>{ 0=dirichlet |
@@ -40029,7 +40029,7 @@ value.
     return *this;
   }
 
-  // Apply box filter of order 0,1 or 2 \newinstance.
+  // Apply box filter of order 0, 1 or 2 \newinstance.
   CImg<Tfloat> get_boxfilter(const float sigma, const int order,
                              const char axis = 'x',
                              const bool boundary_conditions = true) const {
@@ -40095,7 +40095,7 @@ value.
      \note This method implements the filtering algorithm described in:
      He, Kaiming; Sun, Jian; Tang, Xiaoou, "Guided Image Filtering," Pattern
   Analysis and Machine Intelligence,
-     IEEE Transactions on , vol.35, no.6, pp.1397,1409, June 2013
+     IEEE Transactions on , vol.35, no.6, pp.1397, 1409, June 2013
   **/
   template <typename t>
   CImg<T> &blur_guided(const CImg<t> &guide, const float radius,
@@ -43807,8 +43807,8 @@ value.
 
   //! Compute 1d Fast Fourier Transform, along a specified axis.
   /**
-     \param[in,out] real Real part of the pixel values.
-     \param[in,out] imag Imaginary part of the pixel values.
+     \param[in, out] real Real part of the pixel values.
+     \param[in, out] imag Imaginary part of the pixel values.
      \param axis Axis along which the FFT is computed.
      \param is_invert Tells if the forward (\c false) or inverse (\c true) FFT
   is computed.
@@ -44143,8 +44143,8 @@ value.
 
   //! Compute n-d Fast Fourier Transform.
   /**
-     \param[in,out] real Real part of the pixel values.
-     \param[in,out] imag Imaginary part of the pixel values.
+     \param[in, out] real Real part of the pixel values.
+     \param[in, out] imag Imaginary part of the pixel values.
      \param is_invert Tells if the forward (\c false) or inverse (\c true) FFT
   is computed.
      \param nb_threads Number of parallel threads used for the computation.
@@ -44380,7 +44380,7 @@ value.
 
   //! Merge two 3d objects together.
   /**
-     \param[in,out] primitives Primitives data of the current 3d object.
+     \param[in, out] primitives Primitives data of the current 3d object.
      \param obj_vertices Vertices data of the additional 3d object.
      \param obj_primitives Primitives data of the additional 3d object.
   **/
@@ -44448,8 +44448,8 @@ value.
 
   //! Texturize primitives of a 3d object.
   /**
-     \param[in,out] primitives Primitives data of the 3d object.
-     \param[in,out] colors Colors data of the 3d object.
+     \param[in, out] primitives Primitives data of the 3d object.
+     \param[in, out] colors Colors data of the 3d object.
      \param texture Texture image to map to 3d object.
      \param coords Texture-mapping coordinates.
   **/
@@ -44551,7 +44551,7 @@ value.
   \e int).
      \param[out] colors The returned list of the 3d object colors.
      \param elevation The input elevation map.
-     \return The N vertices (xi,yi,zi) of the 3d object as a Nx3 CImg<float>
+     \return The N vertices (xi, yi, zi) of the 3d object as a Nx3 CImg<float>
   image (0<=i<=N - 1).
      \par Example
      \code
@@ -44559,9 +44559,9 @@ value.
      CImgList<unsigned int> faces3d;
      CImgList<unsigned char> colors3d;
      const CImg<float> points3d =
-  img.get_elevation3d(faces3d,colors3d,img.get_norm()*0.2);
+  img.get_elevation3d(faces3d, colors3d, img.get_norm()*0.2);
      CImg<unsigned
-  char>().display_object3d("Elevation3d",points3d,faces3d,colors3d);
+  char>().display_object3d("Elevation3d", points3d, faces3d, colors3d);
      \endcode
      \image html ref_elevation3d.jpg
   **/
@@ -44676,15 +44676,15 @@ value.
      \param isovalue The returned list of the 3d object colors.
      \param size_x The number of subdivisions along the X-axis.
      \param size_y The number of subdisivions along the Y-axis.
-     \return The N vertices (xi,yi,zi) of the 3d object as a Nx3 CImg<float>
+     \return The N vertices (xi, yi, zi) of the 3d object as a Nx3 CImg<float>
   image (0<=i<=N - 1).
      \par Example
      \code
      const CImg<float> img("reference.jpg");
      CImgList<unsigned int> faces3d;
-     const CImg<float> points3d = img.get_isoline3d(faces3d,100);
+     const CImg<float> points3d = img.get_isoline3d(faces3d, 100);
      CImg<unsigned
-  char>().display_object3d("Isoline3d",points3d,faces3d,colors3d);
+  char>().display_object3d("Isoline3d", points3d, faces3d, colors3d);
      \endcode
      \image html ref_isoline3d.jpg
   **/
@@ -44725,16 +44725,16 @@ value.
      \param size_x Number of subdivisions along the X-axis.
      \param size_y Number of subdisivions along the Y-axis.
      \param size_z Number of subdisivions along the Z-axis.
-     \return The N vertices (xi,yi,zi) of the 3d object as a Nx3 CImg<float>
+     \return The N vertices (xi, yi, zi) of the 3d object as a Nx3 CImg<float>
   image (0<=i<=N - 1).
      \par Example
      \code
      const CImg<float> img = CImg<unsigned
-  char>("reference.jpg").resize(-100,-100,20);
+  char>("reference.jpg").resize(-100,-100, 20);
      CImgList<unsigned int> faces3d;
-     const CImg<float> points3d = img.get_isosurface3d(faces3d,100);
+     const CImg<float> points3d = img.get_isosurface3d(faces3d, 100);
      CImg<unsigned
-  char>().display_object3d("Isosurface3d",points3d,faces3d,colors3d);
+  char>().display_object3d("Isosurface3d", points3d, faces3d, colors3d);
      \endcode
      \image html ref_isosurface3d.jpg
   **/
@@ -44769,7 +44769,7 @@ value.
   /**
      \param[out] primitives Primitives data of the resulting 3d object.
      \param func Elevation function. Is of type <tt>float (*func)(const float
-  x,const float y)</tt>.
+  x, const float y)</tt>.
      \param x0 X-coordinate of the starting point.
      \param y0 Y-coordinate of the starting point.
      \param x1 X-coordinate of the ending point.
@@ -44835,7 +44835,7 @@ value.
   /**
      \param[out] primitives Primitives data of the resulting 3d object.
      \param func Elevation function. Is of type <tt>float (*func)(const float
-   x,const float y)</tt>.
+   x, const float y)</tt>.
      \param isovalue Isovalue to extract from function.
      \param x0 X-coordinate of the starting point.
      \param y0 Y-coordinate of the starting point.
@@ -45562,13 +45562,13 @@ value.
      \param size_x The width of the box (dimension along the X-axis).
      \param size_y The height of the box (dimension along the Y-axis).
      \param size_z The depth of the box (dimension along the Z-axis).
-     \return The N vertices (xi,yi,zi) of the 3d object as a Nx3 CImg<float>
+     \return The N vertices (xi, yi, zi) of the 3d object as a Nx3 CImg<float>
   image (0<=i<=N - 1).
      \par Example
      \code
      CImgList<unsigned int> faces3d;
-     const CImg<float> points3d = CImg<float>::box3d(faces3d,10,20,30);
-     CImg<unsigned char>().display_object3d("Box3d",points3d,faces3d);
+     const CImg<float> points3d = CImg<float>::box3d(faces3d, 10, 20, 30);
+     CImg<unsigned char>().display_object3d("Box3d", points3d, faces3d);
      \endcode
      \image html ref_box3d.jpg
   **/
@@ -45591,13 +45591,13 @@ value.
      \param radius The radius of the cone basis.
      \param size_z The cone's height.
      \param subdivisions The number of basis angular subdivisions.
-     \return The N vertices (xi,yi,zi) of the 3d object as a Nx3 CImg<float>
+     \return The N vertices (xi, yi, zi) of the 3d object as a Nx3 CImg<float>
   image (0<=i<=N - 1).
      \par Example
      \code
      CImgList<unsigned int> faces3d;
-     const CImg<float> points3d = CImg<float>::cone3d(faces3d,50);
-     CImg<unsigned char>().display_object3d("Cone3d",points3d,faces3d);
+     const CImg<float> points3d = CImg<float>::cone3d(faces3d, 50);
+     CImg<unsigned char>().display_object3d("Cone3d", points3d, faces3d);
      \endcode
      \image html ref_cone3d.jpg
   **/
@@ -45631,13 +45631,13 @@ value.
      \param radius The radius of the cylinder basis.
      \param size_z The cylinder's height.
      \param subdivisions The number of basis angular subdivisions.
-     \return The N vertices (xi,yi,zi) of the 3d object as a Nx3 CImg<float>
+     \return The N vertices (xi, yi, zi) of the 3d object as a Nx3 CImg<float>
   image (0<=i<=N - 1).
      \par Example
      \code
      CImgList<unsigned int> faces3d;
-     const CImg<float> points3d = CImg<float>::cylinder3d(faces3d,50);
-     CImg<unsigned char>().display_object3d("Cylinder3d",points3d,faces3d);
+     const CImg<float> points3d = CImg<float>::cylinder3d(faces3d, 50);
+     CImg<unsigned char>().display_object3d("Cylinder3d", points3d, faces3d);
      \endcode
      \image html ref_cylinder3d.jpg
   **/
@@ -45680,13 +45680,13 @@ value.
   radius.
      \param subdivisions2 The number of angular subdivisions for the small
   radius.
-     \return The N vertices (xi,yi,zi) of the 3d object as a Nx3 CImg<float>
+     \return The N vertices (xi, yi, zi) of the 3d object as a Nx3 CImg<float>
   image (0<=i<=N - 1).
      \par Example
      \code
      CImgList<unsigned int> faces3d;
-     const CImg<float> points3d = CImg<float>::torus3d(faces3d,20,4);
-     CImg<unsigned char>().display_object3d("Torus3d",points3d,faces3d);
+     const CImg<float> points3d = CImg<float>::torus3d(faces3d, 20, 4);
+     CImg<unsigned char>().display_object3d("Torus3d", points3d, faces3d);
      \endcode
      \image html ref_torus3d.jpg
   **/
@@ -45734,13 +45734,13 @@ value.
      \param size_y The height of the plane (dimensions along the Y-axis).
      \param subdivisions_x The number of planar subdivisions along the X-axis.
      \param subdivisions_y The number of planar subdivisions along the Y-axis.
-     \return The N vertices (xi,yi,zi) of the 3d object as a Nx3 CImg<float>
+     \return The N vertices (xi, yi, zi) of the 3d object as a Nx3 CImg<float>
   image (0<=i<=N - 1).
      \par Example
      \code
      CImgList<unsigned int> faces3d;
-     const CImg<float> points3d = CImg<float>::plane3d(faces3d,100,50);
-     CImg<unsigned char>().display_object3d("Plane3d",points3d,faces3d);
+     const CImg<float> points3d = CImg<float>::plane3d(faces3d, 100, 50);
+     CImg<unsigned char>().display_object3d("Plane3d", points3d, faces3d);
      \endcode
      \image html ref_plane3d.jpg
   **/
@@ -45775,13 +45775,13 @@ value.
      \param radius The radius of the sphere (dimension along the X-axis).
      \param subdivisions The number of recursive subdivisions from an initial
   icosahedron.
-     \return The N vertices (xi,yi,zi) of the 3d object as a Nx3 CImg<float>
+     \return The N vertices (xi, yi, zi) of the 3d object as a Nx3 CImg<float>
   image (0<=i<=N - 1).
      \par Example
      \code
      CImgList<unsigned int> faces3d;
-     const CImg<float> points3d = CImg<float>::sphere3d(faces3d,100,4);
-     CImg<unsigned char>().display_object3d("Sphere3d",points3d,faces3d);
+     const CImg<float> points3d = CImg<float>::sphere3d(faces3d, 100, 4);
+     CImg<unsigned char>().display_object3d("Sphere3d", points3d, faces3d);
      \endcode
      \image html ref_sphere3d.jpg
   **/
@@ -45871,14 +45871,14 @@ value.
      \param tensor The tensor which gives the shape and size of the ellipsoid.
      \param subdivisions The number of recursive subdivisions from an initial
   stretched icosahedron.
-     \return The N vertices (xi,yi,zi) of the 3d object as a Nx3 CImg<float>
+     \return The N vertices (xi, yi, zi) of the 3d object as a Nx3 CImg<float>
   image (0<=i<=N - 1).
      \par Example
      \code
      CImgList<unsigned int> faces3d;
-     const CImg<float> tensor = CImg<float>::diagonal(10,7,3),
-                       points3d = CImg<float>::ellipsoid3d(faces3d,tensor,4);
-     CImg<unsigned char>().display_object3d("Ellipsoid3d",points3d,faces3d);
+     const CImg<float> tensor = CImg<float>::diagonal(10, 7, 3),
+                       points3d = CImg<float>::ellipsoid3d(faces3d, tensor, 4);
+     CImg<unsigned char>().display_object3d("Ellipsoid3d", points3d, faces3d);
      \endcode
      \image html ref_ellipsoid3d.jpg
   **/
@@ -46339,9 +46339,9 @@ value.
   CImg::operator()() function.
      \par Example:
      \code
-     CImg<unsigned char> img(100,100,1,3,0);
-     const unsigned char color[] = { 255,128,64 };
-     img.draw_point(50,50,color);
+     CImg<unsigned char> img(100, 100, 1, 3, 0);
+     const unsigned char color[] = { 255, 128, 64 };
+     img.draw_point(50, 50, color);
      \endcode
   **/
   template <typename tc>
@@ -46428,9 +46428,9 @@ value.
   breaking the line pattern.
      \par Example:
      \code
-     CImg<unsigned char> img(100,100,1,3,0);
-     const unsigned char color[] = { 255,128,64 };
-      img.draw_line(40,40,80,70,color);
+     CImg<unsigned char> img(100, 100, 1, 3, 0);
+     const unsigned char color[] = { 255, 128, 64 };
+      img.draw_line(40, 40, 80, 70, color);
      \endcode
   **/
   template <typename tc>
@@ -46860,9 +46860,9 @@ value.
      - Line routine uses the well known Bresenham's algorithm.
      \par Example:
      \code
-     CImg<unsigned char> img(100,100,1,3,0), texture("texture256x256.ppm");
-     const unsigned char color[] = { 255,128,64 };
-     img.draw_line(40,40,80,70,texture,0,0,255,255);
+     CImg<unsigned char> img(100, 100, 1, 3, 0), texture("texture256x256.ppm");
+     const unsigned char color[] = { 255, 128, 64 };
+     img.draw_line(40, 40, 80, 70, texture, 0, 0, 255, 255);
      \endcode
   **/
   template <typename tc>
@@ -47537,9 +47537,9 @@ value.
   and \p v1 = (\p y1 - \p yb).
      \par Example:
      \code
-     CImg<unsigned char> img(100,100,1,3,0);
-     const unsigned char color[] = { 255,255,255 };
-     img.draw_spline(30,30,0,100,90,40,0,-100,color);
+     CImg<unsigned char> img(100, 100, 1, 3, 0);
+     const unsigned char color[] = { 255, 255, 255 };
+     img.draw_spline(30, 30, 0, 100, 90, 40, 0,-100, color);
      \endcode
   **/
   template <typename tc>
@@ -48482,9 +48482,9 @@ value.
      \param y2 Y-coordinate of the third vertex in the image instance.
      \param color Pointer to \c spectrum() consecutive values, defining the
   drawing color.
-     \param brightness0 Brightness factor of the first vertex (in [0,2]).
-     \param brightness1 brightness factor of the second vertex (in [0,2]).
-     \param brightness2 brightness factor of the third vertex (in [0,2]).
+     \param brightness0 Brightness factor of the first vertex (in [0, 2]).
+     \param brightness1 brightness factor of the second vertex (in [0, 2]).
+     \param brightness2 brightness factor of the third vertex (in [0, 2]).
      \param opacity Drawing opacity.
   **/
   template <typename tc>
@@ -48727,7 +48727,7 @@ value.
      \param tx2 X-coordinate of the third vertex in the texture image.
      \param ty2 Y-coordinate of the third vertex in the texture image.
      \param opacity Drawing opacity.
-     \param brightness Brightness factor of the drawing (in [0,2]).
+     \param brightness Brightness factor of the drawing (in [0, 2]).
   **/
   template <typename tc>
   CImg<T> &draw_triangle(const int x0, const int y0, const int x1, const int y1,
@@ -51320,7 +51320,7 @@ value.
      \note
      - Pixel values of \c mask set the opacity of the corresponding pixels in \c
   sprite.
-     - Dimensions along x,y and z of \p sprite and \p mask must be the same.
+     - Dimensions along x, y and z of \p sprite and \p mask must be the same.
   **/
   template <typename ti, typename tm>
   CImg<T> &draw_image(const int x0, const int y0, const int z0, const int c0,
@@ -51511,7 +51511,7 @@ value.
      \param background_color Array of spectrum() values of type \c T,
        defining the background color (0 means 'transparent').
      \param opacity Drawing opacity.
-     \param font_height Height of the text font (exact match for 13,23,53,103,
+     \param font_height Height of the text font (exact match for 13, 23, 53, 103,
   interpolated otherwise).
   **/
   template <typename tc1, typename tc2>
@@ -51750,7 +51750,7 @@ value.
   drawing color.
      \param opacity Drawing opacity.
      \param pattern Drawing pattern.
-     \param font_height Height of the labels (exact match for 13,23,53,103,
+     \param font_height Height of the labels (exact match for 13, 23, 53, 103,
   interpolated otherwise).
      \param allow_zero Enable/disable the drawing of label '0' if found.
   **/
@@ -51812,7 +51812,7 @@ value.
   drawing color.
      \param opacity Drawing opacity.
      \param pattern Drawing pattern.
-     \param font_height Height of the labels (exact match for 13,23,53,103,
+     \param font_height Height of the labels (exact match for 13, 23, 53, 103,
   interpolated otherwise).
      \param allow_zero Enable/disable the drawing of label '0' if found.
   **/
@@ -51875,7 +51875,7 @@ value.
      \param opacity Drawing opacity.
      \param pattern_x Drawing pattern for the X-axis.
      \param pattern_y Drawing pattern for the Y-axis.
-     \param font_height Height of the labels (exact match for 13,23,53,103,
+     \param font_height Height of the labels (exact match for 13, 23, 53, 103,
   interpolated otherwise).
      \param allow_zero Enable/disable the drawing of label '0' if found.
   **/
@@ -53439,7 +53439,7 @@ value.
           throw CImgArgumentException(
               _cimg_instance
               "draw_object3d(): Invalid primitive[%u] with size %u "
-              "(should have size 1,2,3,4,5,6,9 or 12).",
+              "(should have size 1, 2, 3, 4, 5, 6, 9 or 12).",
               cimg_instance, l, primitive.size());
       }
     }
@@ -54682,7 +54682,7 @@ value.
      \param disp Display window to use.
      \param feature_type Type of feature to select. Can be <tt>{ 0=point |
   1=line | 2=rectangle | 3=ellipse }</tt>.
-     \param XYZ Pointer to 3 values X,Y,Z which tells about the projection point
+     \param XYZ Pointer to 3 values X, Y, Z which tells about the projection point
   coordinates, for volumetric images.
   **/
   CImg<T> &select(CImgDisplay &disp, const unsigned int feature_type = 2,
@@ -54957,7 +54957,7 @@ value.
 
         case 1:
         case 2:
-        case 3:  // When mouse is over the XY,XZ or YZ projections.
+        case 3:  // When mouse is over the XY, XZ or YZ projections.
           if (disp.button() & 1 && phase < 2 &&
               clicked_area ==
                   area) {  // When selection has been started (1st step).
@@ -57479,7 +57479,7 @@ value.
       directive \c cimg_use_tif.
      - When libtiff is enabled, 2D and 3D (multipage) several
       channel per pixel are supported for
-      <tt>char,uchar,short,ushort,float</tt> and \c double pixel types.
+      <tt>char, uchar, short, ushort, float</tt> and \c double pixel types.
      - If \c cimg_use_tif is not defined at compile time the
       function uses CImg<T>& load_other(const char*).
    **/
@@ -62656,7 +62656,7 @@ value.
       directive \c cimg_use_tif.
      - When libtiff is enabled, 2D and 3D (multipage) several
       channel per pixel are supported for
-      <tt>char,uchar,short,ushort,float</tt> and \c double pixel types.
+      <tt>char, uchar, short, ushort, float</tt> and \c double pixel types.
      - If \c cimg_use_tif is not defined at compile time the
       function uses CImg<T>&save_other(const char*).
    **/
@@ -62853,7 +62853,7 @@ value.
   /**
     \param filename Filename, as a C-string.
     \param voxel_size Pointer to 3 consecutive values that tell about the voxel
-  sizes along the X,Y and Z dimensions.
+  sizes along the X, Y and Z dimensions.
   **/
   const CImg<T> &save_analyze(const char *const filename,
                               const float *const voxel_size = 0) const {
@@ -63001,8 +63001,8 @@ value.
 
   //! Save blank image as a .cimg file \overloading.
   /**
-     Same as save_empty_cimg(const char *,unsigned int,unsigned int,unsigned
-  int,unsigned int)
+     Same as save_empty_cimg(const char *, unsigned int, unsigned int, unsigned
+  int, unsigned int)
      with a file stream argument instead of a filename string.
   **/
   static void save_empty_cimg(std::FILE *const file, const unsigned int dx,
@@ -63016,7 +63016,7 @@ value.
   /**
     \param filename Filename, as a C-string.
     \param voxel_size Pointer to 3 values specifying the voxel sizes along the
-  X,Y and Z dimensions.
+  X, Y and Z dimensions.
   **/
   const CImg<T> &save_inr(const char *const filename,
                           const float *const voxel_size = 0) const {
@@ -63201,7 +63201,7 @@ value.
 
   //! Save image as a Pandore-5 file \overloading.
   /**
-      Same as save_pandore(const char *,unsigned int) const
+      Same as save_pandore(const char *, unsigned int) const
       with a file stream argument instead of a filename string.
   **/
   const CImg<T> &save_pandore(std::FILE *const file,
@@ -63458,7 +63458,7 @@ value.
 
   //! Save image as a raw data file \overloading.
   /**
-     Same as save_raw(const char *,bool) const
+     Same as save_raw(const char *, bool) const
      with a file stream argument instead of a filename string.
   **/
   const CImg<T> &save_raw(std::FILE *const file,
@@ -63507,7 +63507,7 @@ value.
 
   //! Save image as a .yuv video file \overloading.
   /**
-     Same as save_yuv(const char*,bool) const
+     Same as save_yuv(const char*, bool) const
      with a file stream argument instead of a filename string.
   **/
   const CImg<T> &save_yuv(std::FILE *const file,
@@ -63539,7 +63539,7 @@ value.
 
   //! Save 3d object as an Object File Format (.off) file \overloading.
   /**
-     Same as save_off(const CImgList<tf>&,const CImgList<tc>&,const char*) const
+     Same as save_off(const CImgList<tf>&, const CImgList<tc>&, const char*) const
      with a file stream argument instead of a filename string.
   **/
   template <typename tf, typename tc>
@@ -63711,7 +63711,7 @@ value.
   /**
      \param filename Filename, as a C-string.
      \note This method uses \c gzip, an external executable binary provided by
-       <a href="//http://www.gzip.org">gzip</a>.
+       <a href="// http://www.gzip.org">gzip</a>.
      It must be installed for the method to succeed.
   **/
   const CImg<T> &save_gzip_external(const char *const filename) const {
@@ -64057,7 +64057,7 @@ struct CImgList {
      - Using the loop macro \c cimglist_for is another (more concise)
   alternative:
      \code
-     cimglist_for(list,l) list[l].mirror('x');
+     cimglist_for(list, l) list[l].mirror('x');
      \endcode
   **/
   typedef CImg<T> *iterator;
@@ -64533,7 +64533,7 @@ struct CImgList {
   // instance.
   /**
     \note <tt>list2 = list1.get_shared()</tt> is equivalent to
-  <tt>list2.assign(list1,true)</tt>.
+  <tt>list2.assign(list1, true)</tt>.
   **/
   CImgList<T> get_shared() {
     CImgList<T> res(_width);
@@ -64936,7 +64936,7 @@ struct CImgList {
      \param y Y-coordinate of the pixel value.
      \param z Z-coordinate of the pixel value.
      \param c C-coordinate of the pixel value.
-     \note <tt>list(n,x,y,z,c)</tt> is equivalent to <tt>list[n](x,y,z,c)</tt>.
+     \note <tt>list(n, x, y, z, c)</tt> is equivalent to <tt>list[n](x, y, z, c)</tt>.
   **/
   T &operator()(const unsigned int pos, const unsigned int x,
                 const unsigned int y = 0, const unsigned int z = 0,
@@ -65000,7 +65000,7 @@ struct CImgList {
 
   //! Return a non-shared copy of a list.
   /**
-      \note <tt>+list</tt> is equivalent to <tt>CImgList<T>(list,false)</tt>.
+      \note <tt>+list</tt> is equivalent to <tt>CImgList<T>(list, false)</tt>.
         It forces the copy to have non-shared elements.
   **/
   CImgList<T> operator+() const { return CImgList<T>(*this, false); }
@@ -65012,7 +65012,7 @@ struct CImgList {
      \note Define a convenient way to create temporary lists of images, as in
   the following code:
      \code
-     (img1,img2,img3,img4).display("My four images");
+     (img1, img2, img3, img4).display("My four images");
      \endcode
   **/
   template <typename t>
@@ -65177,8 +65177,8 @@ struct CImgList {
      \param c C-coordinate of the pixel value.
      \param out_value Default value returned if \c offset is outside image
   bounds.
-     \note <tt>list.atNXYZC(p,x,y,z,c);</tt> is equivalent to
-  <tt>list[p].atXYZC(x,y,z,c);</tt>.
+     \note <tt>list.atNXYZC(p, x, y, z, c);</tt> is equivalent to
+  <tt>list[p].atXYZC(x, y, z, c);</tt>.
   **/
   T &atNXYZC(const int pos, const int x, const int y, const int z, const int c,
              const T &out_value) {
@@ -65202,8 +65202,8 @@ struct CImgList {
      \param y Y-coordinate of the pixel value.
      \param z Z-coordinate of the pixel value.
      \param c C-coordinate of the pixel value.
-     \note <tt>list.atNXYZC(p,x,y,z,c);</tt> is equivalent to
-  <tt>list[p].atXYZC(x,y,z,c);</tt>.
+     \note <tt>list.atNXYZC(p, x, y, z, c);</tt> is equivalent to
+  <tt>list[p].atXYZC(x, y, z, c);</tt>.
   **/
   T &atNXYZC(const int pos, const int x, const int y, const int z,
              const int c) {
@@ -65246,8 +65246,8 @@ struct CImgList {
      \param c C-coordinate of the pixel value.
      \param out_value Default value returned if \c offset is outside image
   bounds.
-     \note <tt>list.atNXYZ(p,x,y,z,c);</tt> is equivalent to
-  <tt>list[p].atXYZ(x,y,z,c);</tt>.
+     \note <tt>list.atNXYZ(p, x, y, z, c);</tt> is equivalent to
+  <tt>list[p].atXYZ(x, y, z, c);</tt>.
   **/
   T &atNXYZ(const int pos, const int x, const int y, const int z, const int c,
             const T &out_value) {
@@ -65273,8 +65273,8 @@ struct CImgList {
      \param y Y-coordinate of the pixel value.
      \param z Z-coordinate of the pixel value.
      \param c C-coordinate of the pixel value.
-     \note <tt>list.atNXYZ(p,x,y,z,c);</tt> is equivalent to
-  <tt>list[p].atXYZ(x,y,z,c);</tt>.
+     \note <tt>list.atNXYZ(p, x, y, z, c);</tt> is equivalent to
+  <tt>list[p].atXYZ(x, y, z, c);</tt>.
   **/
   T &atNXYZ(const int pos, const int x, const int y, const int z,
             const int c = 0) {
@@ -65318,8 +65318,8 @@ struct CImgList {
      \param c C-coordinate of the pixel value.
      \param out_value Default value returned if \c offset is outside image
   bounds.
-     \note <tt>list.atNXYZ(p,x,y,z,c);</tt> is equivalent to
-  <tt>list[p].atXYZ(x,y,z,c);</tt>.
+     \note <tt>list.atNXYZ(p, x, y, z, c);</tt> is equivalent to
+  <tt>list[p].atXYZ(x, y, z, c);</tt>.
   **/
   T &atNXY(const int pos, const int x, const int y, const int z, const int c,
            const T &out_value) {
@@ -65345,8 +65345,8 @@ struct CImgList {
      \param y Y-coordinate of the pixel value.
      \param z Z-coordinate of the pixel value.
      \param c C-coordinate of the pixel value.
-     \note <tt>list.atNXYZ(p,x,y,z,c);</tt> is equivalent to
-  <tt>list[p].atXYZ(x,y,z,c);</tt>.
+     \note <tt>list.atNXYZ(p, x, y, z, c);</tt> is equivalent to
+  <tt>list[p].atXYZ(x, y, z, c);</tt>.
   **/
   T &atNXY(const int pos, const int x, const int y, const int z = 0,
            const int c = 0) {
@@ -65390,8 +65390,8 @@ struct CImgList {
      \param c C-coordinate of the pixel value.
      \param out_value Default value returned if \c offset is outside image
   bounds.
-     \note <tt>list.atNXYZ(p,x,y,z,c);</tt> is equivalent to
-  <tt>list[p].atXYZ(x,y,z,c);</tt>.
+     \note <tt>list.atNXYZ(p, x, y, z, c);</tt> is equivalent to
+  <tt>list[p].atXYZ(x, y, z, c);</tt>.
   **/
   T &atNX(const int pos, const int x, const int y, const int z, const int c,
           const T &out_value) {
@@ -65417,8 +65417,8 @@ struct CImgList {
      \param y Y-coordinate of the pixel value.
      \param z Z-coordinate of the pixel value.
      \param c C-coordinate of the pixel value.
-     \note <tt>list.atNXYZ(p,x,y,z,c);</tt> is equivalent to
-  <tt>list[p].atXYZ(x,y,z,c);</tt>.
+     \note <tt>list.atNXYZ(p, x, y, z, c);</tt> is equivalent to
+  <tt>list[p].atXYZ(x, y, z, c);</tt>.
   **/
   T &atNX(const int pos, const int x, const int y = 0, const int z = 0,
           const int c = 0) {
@@ -65462,8 +65462,8 @@ struct CImgList {
      \param c C-coordinate of the pixel value.
      \param out_value Default value returned if \c offset is outside image
   bounds.
-     \note <tt>list.atNXYZ(p,x,y,z,c);</tt> is equivalent to
-  <tt>list[p].atXYZ(x,y,z,c);</tt>.
+     \note <tt>list.atNXYZ(p, x, y, z, c);</tt> is equivalent to
+  <tt>list[p].atXYZ(x, y, z, c);</tt>.
   **/
   T &atN(const int pos, const int x, const int y, const int z, const int c,
          const T &out_value) {
@@ -65488,8 +65488,8 @@ struct CImgList {
      \param y Y-coordinate of the pixel value.
      \param z Z-coordinate of the pixel value.
      \param c C-coordinate of the pixel value.
-     \note <tt>list.atNXYZ(p,x,y,z,c);</tt> is equivalent to
-  <tt>list[p].atXYZ(x,y,z,c);</tt>.
+     \note <tt>list.atNXYZ(p, x, y, z, c);</tt> is equivalent to
+  <tt>list[p].atXYZ(x, y, z, c);</tt>.
   **/
   T &atN(const int pos, const int x = 0, const int y = 0, const int z = 0,
          const int c = 0) {
@@ -65719,7 +65719,7 @@ struct CImgList {
      \param[out] y Y-coordinate of the pixel value, if test succeeds.
      \param[out] z Z-coordinate of the pixel value, if test succeeds.
      \param[out] c C-coordinate of the pixel value, if test succeeds.
-     \note If true, set coordinates (n,x,y,z,c).
+     \note If true, set coordinates (n, x, y, z, c).
   **/
   template <typename t>
   bool contains(const T &pixel, t &n, t &x, t &y, t &z, t &c) const {
@@ -65738,7 +65738,7 @@ struct CImgList {
      \param[out] x X-coordinate of the pixel value, if test succeeds.
      \param[out] y Y-coordinate of the pixel value, if test succeeds.
      \param[out] z Z-coordinate of the pixel value, if test succeeds.
-     \note If true, set coordinates (n,x,y,z).
+     \note If true, set coordinates (n, x, y, z).
   **/
   template <typename t>
   bool contains(const T &pixel, t &n, t &x, t &y, t &z) const {
@@ -65752,7 +65752,7 @@ struct CImgList {
      \param[out] n Index of image containing the pixel value, if test succeeds.
      \param[out] x X-coordinate of the pixel value, if test succeeds.
      \param[out] y Y-coordinate of the pixel value, if test succeeds.
-     \note If true, set coordinates (n,x,y).
+     \note If true, set coordinates (n, x, y).
   **/
   template <typename t>
   bool contains(const T &pixel, t &n, t &x, t &y) const {
@@ -65765,7 +65765,7 @@ struct CImgList {
      \param pixel Reference to pixel value to test.
      \param[out] n Index of image containing the pixel value, if test succeeds.
      \param[out] x X-coordinate of the pixel value, if test succeeds.
-     \note If true, set coordinates (n,x).
+     \note If true, set coordinates (n, x).
   **/
   template <typename t>
   bool contains(const T &pixel, t &n, t &x) const {
@@ -69602,7 +69602,7 @@ struct CImgList {
   //! Return a CImg pre-defined font with desired size.
   /**
      \param font_height Height of the desired font (exact match for
-  13,23,53,103).
+  13, 23, 53, 103).
      \param is_variable_width Decide if the font has a variable (\c true) or
   fixed (\c false) width.
   **/
@@ -71331,8 +71331,8 @@ expression.
    \par Example
    \code
    const double
-   res1 = cimg::eval("cos(x)^2 + sin(y)^2",2,2),  // will return '1'.
-   res2 = cimg::eval(0,1,1);                    // will return '1' too.
+   res1 = cimg::eval("cos(x)^2 + sin(y)^2", 2, 2),  // will return '1'.
+   res2 = cimg::eval(0, 1, 1);                    // will return '1' too.
    \endcode
 **/
 inline double eval(const char *const expression, const double x, const double y,

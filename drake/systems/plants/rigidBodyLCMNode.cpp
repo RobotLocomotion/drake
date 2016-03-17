@@ -1,7 +1,7 @@
-
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/BotVisualizer.h"
+#include "drake/systems/cascade_system.h"
 #include "drake/util/drakeAppUtil.h"
 
 using namespace std;
@@ -23,7 +23,7 @@ every input
 @verbatim
 Usage:  rigidBodyLCMNode [options] full_path_to_urdf_or_sdf_file
   with (case sensitive) options:
-    --base [floating_type]  // can be "FIXED, ROLLPITCHYAW,or QUATERNION"
+    --base [floating_type]  // can be "FIXED, ROLLPITCHYAW, or QUATERNION"
 (default: QUATERNION)
 @endverbatim
  */
@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
     } else {
       throw std::runtime_error(string("Unknown base type") +
                                floating_base_option +
-                               "; must be FIXED,RPY, or QUAT");
+                               "; must be FIXED, RPY, or QUAT");
     }
   }
 
@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
     world->addVisualElement(
         DrakeShapes::VisualElement(geom, T_element_to_link, color));
     tree->addCollisionElement(
-        RigidBody::CollisionElement(geom, T_element_to_link, world), world,
+        RigidBody::CollisionElement(geom, T_element_to_link, world), *world,
         "terrain");
     tree->updateStaticCollisionElements();
   }
@@ -90,7 +90,7 @@ int main(int argc, char* argv[]) {
 
   runLCM(sys, lcm, 0, std::numeric_limits<double>::infinity(),
          getInitialState(*sys), options);
-  //  simulate(*sys,0,std::numeric_limits<double>::max(),getInitialState(*sys),options);
+  //  simulate(*sys, 0, std::numeric_limits<double>::max(), getInitialState(*sys), options);
 
   return 0;
 }

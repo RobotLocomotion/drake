@@ -88,7 +88,7 @@ int main(int argc, char* argv[]) {
 
         PendulumState<Polynomial<double>> x;
         PendulumInput<Polynomial<double>> u;
-        auto out = p->dynamicsImplementation(x,u);
+        auto out = p->dynamicsImplementation(x, u);
       }
     */
     if (!InputOutputRelation::isA(InputOutputRelation::Form::LINEAR,

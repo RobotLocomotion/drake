@@ -34,13 +34,13 @@ class BotVisualizer {
   template <typename ScalarType>
   using InputVector = RobotStateVector<ScalarType>;
 
-  BotVisualizer(const std::shared_ptr<lcm::LCM> &_lcm,
-                const std::shared_ptr<RigidBodyTree> &tree)
+  BotVisualizer(std::shared_ptr<lcm::LCM> _lcm,
+                std::shared_ptr<RigidBodyTree> tree)
       : tree(tree), lcm(_lcm) {
     init();
   }
 
-  BotVisualizer(const std::shared_ptr<lcm::LCM> &_lcm,
+  BotVisualizer(std::shared_ptr<lcm::LCM> _lcm,
                 const std::string &urdf_filename,
                 const DrakeJoint::FloatingBaseType floating_base_type)
       : tree(new RigidBodyTree(urdf_filename, floating_base_type)), lcm(_lcm) {

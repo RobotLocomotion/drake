@@ -5,21 +5,21 @@
 /* barycentricInterpolation
  *  Looks up the indices and weighted coefficients for a barycentric
  * interpolation on an ndgrid:
- *  [indices,coefs,dcoefs] = barycentricInterpolation(bins,pts)
+ *  [indices, coefs, dcoefs] = barycentricInterpolation(bins, pts)
  *
  * @param bins is an m-element cell array with bins{i} describing the mesh
  *             discretization along dimention i.  Bin elements must be
  *             sorted in ascending order.
  * @param pts is an m-by-n matrix with m pts to be interpolated
  * @retval indices is a d-by-n list of indices into the ndarray, with
- *             element (i,j) being the ith interpolant of the point j.
+ *             element (i, j) being the ith interpolant of the point j.
  *             For triangulated interpolation (the only one implemented so
  *             far), d = m+1
  * @retval coefs is a d-by-n list of weights for each interpolant, such
- *             that, for instance, the original pts(:,i) could be
+ *             that, for instance, the original pts(:, i) could be
  *             reconstructed using
- *         pt(:,j) = sum_i coefs(i,j) * gridpoint(:,indices(i,j));
- *           aka pt(:,j) = gridpoint(:,indices(:,j))*coefs(:,j)
+ *         pt(:, j) = sum_i coefs(i, j) * gridpoint(:, indices(i, j));
+ *           aka pt(:, j) = gridpoint(:, indices(:, j))*coefs(:, j)
  * @retval dcoefs is a (d*n)-by-m matrix which is the gradient of coefs
  *              using the geval convention
  * Note that points off the grid are cropped to the closest point (in an
@@ -49,7 +49,7 @@ int barycomp(const void* b1, const void* b2) {
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs < 2) {
-    mexPrintf("Usage: [indices,coefs] = barycentricInterpolation(bins,pts)\n");
+    mexPrintf("Usage: [indices, coefs] = barycentricInterpolation(bins, pts)\n");
     return;
   }
 
@@ -174,7 +174,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
  *
 
           % truncate back onto the grid if it's off the edge
-          xn = min(max(xn,xmin),xmax);
+          xn = min(max(xn, xmin), xmax);
 
           % populate T using barycentric interpolation
           % simple description in Scott Davies, "Multidimensional
@@ -191,7 +191,7 @@ https://svn.csail.mit.edu/locomotion/robotlib/tags/version1/approx/@barycentricG
 
           for xi=1:num_x
             % note: could do binary search here
-            bin(xi) = find(xn(xi)<=xbins{xi}(2:end),1);
+            bin(xi) = find(xn(xi)<=xbins{xi}(2:end), 1);
           end
           sidx_min = mysub2ind(bin);  % lower left
 
@@ -200,24 +200,24 @@ https://svn.csail.mit.edu/locomotion/robotlib/tags/version1/approx/@barycentricG
           sidx_max = sidx_min+sum(nskip);
 
           % compute relative locations
-          fracway = (xn-S(:,sidx_min))./(S(:,sidx_max)-S(:,sidx_min));
-          [fracway,p] = sort(fracway); % p from Davies96
+          fracway = (xn-S(:, sidx_min))./(S(:, sidx_max)-S(:, sidx_min));
+          [fracway, p] = sort(fracway); % p from Davies96
           fracway(end+1)=1;
 
           % crawl through the simplex
           % start at the top-right corner
           sidx = sidx_max;
-          T{ai}(si,sidx) = fracway(1);
-%          xn_recon = T{ai}(si,sidx)*S(:,sidx);  % just a sanity check
+          T{ai}(si, sidx) = fracway(1);
+%          xn_recon = T{ai}(si, sidx)*S(:, sidx);  % just a sanity check
           % now move down the box as prescribed by the permutation p
           for xi=1:num_x
 %            bin(p(xi))=bin(p(xi))-1;
 %            sidx = mysub2ind(bin);
             sidx = sidx - nskip(p(xi));
-            T{ai}(si,sidx) = fracway(xi+1)-fracway(xi);
-%            xn_recon = xn_recon+T{ai}(si,sidx)*S(:,sidx);  % just a sanity
+            T{ai}(si, sidx) = fracway(xi+1)-fracway(xi);
+%            xn_recon = xn_recon+T{ai}(si, sidx)*S(:, sidx);  % just a sanity
 check
           end
-%          valuecheck(xn,xn_recon);  % just a sanity check
+%          valuecheck(xn, xn_recon);  % just a sanity check
 
  */

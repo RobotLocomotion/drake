@@ -5,6 +5,7 @@
 #include "drake/systems/Simulation.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/LCMSystem.h"
+#include "drake/systems/cascade_system.h"
 
 using namespace std;
 using namespace Drake;
@@ -31,6 +32,6 @@ int main(int argc, char* argv[]) {
   SimulationOptions options;
   options.realtime_factor = 1.0;
 
-  //  simulate(*sys,0,10,x0,options);
+  //  simulate(*sys, 0, 10, x0, options);
   runLCM(sys, lcm, 0, 10, x0, options);
 }

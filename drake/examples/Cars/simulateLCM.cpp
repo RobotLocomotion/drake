@@ -1,8 +1,8 @@
-
 #include "drake/systems/LCMSystem.h"
-#include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/LinearSystem.h"
+#include "drake/systems/pd_control_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
+#include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/drakeAppUtil.h"
 #include "lcmtypes/drake/lcmt_driving_control_cmd_t.hpp"
 
@@ -80,10 +80,10 @@ int main(int argc, char* argv[]) {
 
 
   auto rigid_body_sys = make_shared<RigidBodySystem>();
-  rigid_body_sys->addRobotFromFile(argv[1],floating_base_type);
+  rigid_body_sys->addRobotFromFile(argv[1], floating_base_type);
   auto const & tree = rigid_body_sys->getRigidBodyTree();
   for (int i=2; i<argc; i++)
-    tree->addRobotFromSDF(argv[i],DrakeJoint::FIXED);  // add environment
+    tree->addRobotFromSDF(argv[i], DrakeJoint::FIXED);  // add environment
 
   if (argc < 3) {  // add flat terrain
     double box_width = 1000;
@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
     world->addVisualElement(
         DrakeShapes::VisualElement(geom, T_element_to_link, color));
     tree->addCollisionElement(
-        RigidBody::CollisionElement(geom, T_element_to_link, world), world,
+        RigidBody::CollisionElement(geom, T_element_to_link, world), *world,
         "terrain");
     tree->updateStaticCollisionElements();
   }
@@ -164,7 +164,7 @@ int main(int argc, char* argv[]) {
   // stabilization terms.
 
   runLCM(sys, lcm, 0, std::numeric_limits<double>::infinity(), x0, options);
-  //  simulate(*sys,0,std::numeric_limits<double>::infinity(),x0,options);
+  //  simulate(*sys, 0, std::numeric_limits<double>::infinity(), x0, options);
 
   return 0;
 }

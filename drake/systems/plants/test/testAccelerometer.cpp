@@ -16,7 +16,7 @@ Vector3d getAccelerometerOutput(shared_ptr<RigidBodySystem> const& sys, Vector3d
 }
 
 
-int main(int argc, char* argv[]) {  
+int main(int argc, char* argv[]) {
 
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
   auto rigid_body_sys = make_shared<RigidBodySystem>();
@@ -33,7 +33,7 @@ int main(int argc, char* argv[]) {
                    Vector3d(0, 0, -g),
                    tol);
 
-  valuecheckMatrix(getAccelerometerOutput(rigid_body_sys, Vector3d(M_PI, 0, 0), Vector4d::Zero()), //inverted
+  valuecheckMatrix(getAccelerometerOutput(rigid_body_sys, Vector3d(M_PI, 0, 0), Vector4d::Zero()), // inverted
                    Vector3d(0, 0, g),
                    tol);
 
@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
                    Vector3d(0, 0, 0),
                    tol);
 
-  valuecheckMatrix(getAccelerometerOutput(rigid_body_sys, Vector3d(M_PI, 0, 0), hoverThrust), //inverted with thrust
+  valuecheckMatrix(getAccelerometerOutput(rigid_body_sys, Vector3d(M_PI, 0, 0), hoverThrust), // inverted with thrust
                    Vector3d(0, 0, 2*g),
                    tol);
 

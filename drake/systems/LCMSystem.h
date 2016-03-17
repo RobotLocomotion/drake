@@ -9,6 +9,7 @@
 #include "lcmtypes/drake/lcmt_drake_signal.hpp"
 #include "drake/systems/System.h"
 #include "drake/systems/Simulation.h"
+#include "drake/systems/cascade_system.h"
 #include "drake/drakeLCMSystem_export.h"
 
 namespace Drake {
@@ -70,7 +71,7 @@ class LCMInputSystem {
 
   template <typename System>
   LCMInputSystem(const System &wrapped_sys,
-                 const std::shared_ptr<lcm::LCM> &lcm)
+                 std::shared_ptr<lcm::LCM> lcm)
       : all_zeros(Eigen::VectorXd::Zero(getNumInputs(wrapped_sys))){};
 
   StateVector<double> dynamics(const double &t, const StateVector<double> &x,
@@ -102,7 +103,7 @@ class LCMInputSystem<
   const static bool has_lcm_input = true;
 
   template <typename System>
-  LCMInputSystem(const System &sys, const std::shared_ptr<lcm::LCM> &lcm) {
+  LCMInputSystem(const System &sys, std::shared_ptr<lcm::LCM> lcm) {
     lcm::Subscription *sub =
         lcm->subscribe(Vector<double>::channel(),
                        &LCMInputSystem<Vector>::handleMessage, this);
@@ -146,7 +147,7 @@ class LCMOutputSystem {
   template <typename ScalarType>
   using OutputVector = NullVector<ScalarType>;
 
-  LCMOutputSystem(const std::shared_ptr<lcm::LCM> &lcm){};
+  LCMOutputSystem(std::shared_ptr<lcm::LCM> lcm){};
 
   StateVector<double> dynamics(const double &t, const StateVector<double> &x,
                                const InputVector<double> &u) const {
@@ -172,7 +173,7 @@ class LCMOutputSystem<
   template <typename ScalarType>
   using OutputVector = NullVector<ScalarType>;
 
-  LCMOutputSystem(const std::shared_ptr<lcm::LCM> &lcm) : lcm(lcm){};
+  LCMOutputSystem(std::shared_ptr<lcm::LCM> lcm) : lcm(lcm){};
 
   StateVector<double> dynamics(const double &t, const StateVector<double> &x,
                                const InputVector<double> &u) const {
@@ -190,7 +191,7 @@ class LCMOutputSystem<
   }
 
  private:
-  std::shared_ptr<lcm::LCM> lcm;
+  const std::shared_ptr<lcm::LCM> lcm;
 };
 
 // todo: template specialization for the CombinedVector case
@@ -217,8 +218,8 @@ class DRAKELCMSYSTEM_EXPORT LCMLoop {
  */
 
 template <typename System>
-void runLCM(const std::shared_ptr<System> &sys,
-            const std::shared_ptr<lcm::LCM> &lcm, double t0, double tf,
+void runLCM(std::shared_ptr<System> sys,
+            std::shared_ptr<lcm::LCM> lcm, double t0, double tf,
             const typename System::template StateVector<double> &x0,
             const SimulationOptions &options = default_simulation_options) {
   if (!lcm->good()) throw std::runtime_error("bad LCM reference");
@@ -276,8 +277,8 @@ void runLCM(const std::shared_ptr<System> &sys,
 }
 
 template <typename System>
-void runLCM(const std::shared_ptr<System> &sys,
-            const std::shared_ptr<lcm::LCM> &lcm, double t0, double tf) {
+void runLCM(const System &sys,
+            std::shared_ptr<lcm::LCM> lcm, double t0, double tf) {
   runLCM(sys, lcm, t0, tf, getInitialState(*sys));
 }
 

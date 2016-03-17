@@ -1,11 +1,12 @@
 
-#include "Optimization.h"
+#include <stdexcept>
+#include "MathematicalProgram.h"
 
-bool Drake::OptimizationProblem::NonlinearProgram::hasSNOPT() const {
+bool Drake::MathematicalProgramSNOPTSolver::available() const {
   return false;
 }
 
-bool Drake::OptimizationProblem::NonlinearProgram::solveWithSNOPT(
+bool Drake::MathematicalProgramSNOPTSolver::solve(
     OptimizationProblem &prog) const {
   throw std::runtime_error(
       "The SNOPT bindings were not compiled.  You'll need to use a different "

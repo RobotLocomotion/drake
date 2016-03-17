@@ -10,7 +10,7 @@ using namespace Drake;
 
 int main(int argc, char* argv[])
 {
-  auto tree = shared_ptr<RigidBodyTree>(new RigidBodyTree(getDrakePath()+"/examples/Pendulum/Pendulum.urdf",DrakeJoint::FIXED));
+  auto tree = shared_ptr<RigidBodyTree>(new RigidBodyTree(getDrakePath() + "/examples/Pendulum/Pendulum.urdf", DrakeJoint::FIXED));
   auto rbsys = RigidBodySystem(tree);
   auto p = Pendulum();
 
@@ -23,8 +23,8 @@ int main(int argc, char* argv[])
 
 
 
-    auto xdot = toEigen(p.dynamics(0.0,x0,u0));
-    auto xdot_rb = rbsys.dynamics(0.0,x0_rb,u0_rb);
-    valuecheckMatrix(xdot_rb,xdot,1e-8);
+    auto xdot = toEigen(p.dynamics(0.0, x0, u0));
+    auto xdot_rb = rbsys.dynamics(0.0, x0_rb, u0_rb);
+    valuecheckMatrix(xdot_rb, xdot, 1e-8);
   }
 }

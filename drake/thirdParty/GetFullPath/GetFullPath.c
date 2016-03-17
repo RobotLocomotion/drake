@@ -121,20 +121,20 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   mwSize  iC;
   OutStyle_T OutStyle = Auto_Style;  // Default: Auto-expanding
   char    StyleIn;
-  
+
   // Check number of inputs and outputs:
   if (nrhs == 0 || nrhs > 2 || nlhs > 1) {
      mexErrMsgIdAndTxt(ERR_ID   "BadNInput",
                        ERR_HEAD "2 inputs allowed, 1 output allowed.");
   }
-  
+
   // Parse 2nd input, if it is not empty:
   if (nrhs == 2 && !mxIsEmpty(prhs[1])) {
      if (!mxIsChar(prhs[1])) {
         mexErrMsgIdAndTxt(ERR_ID   "BadType",
                           ERR_HEAD "2nd input [Style] must be a string.");
      }
-     
+
      // "Auto", "Lean", "Fat":
      StyleIn = *((char *) mxGetData(prhs[1]));
      switch (StyleIn) {
@@ -149,13 +149,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                              ERR_HEAD "Unknown Style.");
      }
   }
-  
+
   // Get input string or cell string and call the core: ------------------------
   In = prhs[0];
   if (mxIsChar(In)) {                          // Input is a string:
      plhs[0] = Core((mxChar *) mxGetData(In), mxGetNumberOfElements(prhs[0]),
                     OutStyle);
-         
+
   } else if (mxIsCell(In)) {                   // Input is a cell string:
      plhs[0] = mxCreateCellArray(mxGetNumberOfDimensions(In),
                                  mxGetDimensions(In));
@@ -175,12 +175,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                         ERR_HEAD "[FileName] must be a string or cell string.");
         }
      }
-     
+
   } else {                                     // Bad input type:
      mexErrMsgIdAndTxt(ERR_ID   "BadInputType",
                        ERR_HEAD "[FileName] must be a string or cell string.");
   }
-  
+
   return;
 }
 
@@ -193,19 +193,19 @@ mxArray *Core(mxChar *Name_M, mwSize NameLenL, OutStyle_T OutStyle)
   //   NameLen: Number of characters without terminator
   // OUTPUT:
   //   mxArray pointer: Matlab array containing the full path as string.
-  
+
   wchar_t *Name_W, *Full_W, *Out_W, *Buffer_W;  // "w"ide character
   bool    freeName, freeBuffer, isUNC;
   mwSize  dims[2] = {1L, 0L};
   mxArray *Full_M;                              // "M"atlab variable
   DWORD   FullLen, In_Offset, Out_Shift, Out_Crop, BufferLen,
           NameLen = (DWORD) NameLenL;
-  
+
   // Convert input string to terminated 2-byte unicode string: -----------------
   if (NameLen == 0) {          // Empty input => Current directory:
      Name_W   = L".";          // Terminated, is converted to current folder
      freeName = false;
-     
+
   } else if (NameLen <= MAXFILELEN_INPUT) {
      // Copy Matlab string to terminated 2-Byte Unicode string:
      freeName = true;
@@ -216,13 +216,13 @@ mxArray *Core(mxChar *Name_M, mwSize NameLenL, OutStyle_T OutStyle)
      }
      memcpy(Name_W, Name_M, NameLen * sizeof(wchar_t));
      Name_W[NameLen] = L'\0';
-     
+
   } else {                     // Ridiculous input: ----------------------------
      mexErrMsgIdAndTxt(ERR_ID   "BadInputSize",
                        ERR_HEAD "FileName is too long: %d characters",
                        MAXFILELEN_INPUT);
   }
-  
+
   // Input cases:
   //   short                 -> no input offset
   //   \\server\share\short  -> no input offset
@@ -230,7 +230,7 @@ mxArray *Core(mxChar *Name_M, mwSize NameLenL, OutStyle_T OutStyle)
   //   long                  -> no input offset
   //   \\?\any               -> input offset = 4
   //   \\?\UNC\server\share  -> input offset = 6, insert leading '\'
-  
+
   // Ignore leading "\\?\" and "\\?\UNC\". Otherwise the Windows API function
   // GetFullPathName("\\?\D:\..") replies "\\?\D:" instead of "\\?\D:\" !?
   In_Offset = 0;
@@ -250,7 +250,7 @@ mxArray *Core(mxChar *Name_M, mwSize NameLenL, OutStyle_T OutStyle)
         isUNC = true;
      }
   }
-  
+
   // Define Buffer for output: -------------------------------------------------
   if (NameLen - In_Offset < StaticBufferLen) {    // short input name
      freeBuffer = false;
@@ -266,20 +266,20 @@ mxArray *Core(mxChar *Name_M, mwSize NameLenL, OutStyle_T OutStyle)
                           ERR_HEAD "No memory for Buffer.");
      }
   }
-  
+
   // Call Windows API to get the full path: ------------------------------------
   FullLen = GetFullPathNameW(
                       (LPCWSTR) Name_W + In_Offset,   // file name
                       BufferLen,          // length of static buffer
                       (LPWSTR) Buffer_W,  // static buffer [MAX_PATH]
                       NULL);              // unused, pointer to filename in path
-  
+
   if (FullLen == 0) {                     // GetFullPathName failed: -----------
      // Not expected!
      mexErrMsgIdAndTxt(ERR_ID   "API_failed_static",
                        ERR_HEAD "WindowsAPI:GetFullPathName failed.");
   }
-  
+
   // Check if the full name is still too long, although the buffer is larger
   // than the input already:
   if (FullLen > BufferLen) {              // Full name too long: ---------------
@@ -288,7 +288,7 @@ mxArray *Core(mxChar *Name_M, mwSize NameLenL, OutStyle_T OutStyle)
      if (freeBuffer) {                    // Free formerly created buffer:
         mxFree(Buffer_W);
      }
-     
+
      // Create bigger buffer, FullLen plus terminator:
      freeBuffer = true;
      BufferLen  = FullLen + 1;
@@ -297,20 +297,20 @@ mxArray *Core(mxChar *Name_M, mwSize NameLenL, OutStyle_T OutStyle)
         mexErrMsgIdAndTxt(ERR_ID   "NoMemory",
                           ERR_HEAD "No memory for dynamic buffer.");
      }
-     
+
      // Call Windows API again to get the full path:
      FullLen = GetFullPathNameW(
                       (LPCWSTR) Name_W + In_Offset,   // file name
                       BufferLen,          // buffer length, with terminator
                       Buffer_W,           // address of path buffer
                       NULL);              // address of filename in path
-     
+
      if (FullLen == 0) {                  // GetFullPathNameW failed:
         mexErrMsgIdAndTxt(ERR_ID   "API_failed_dynamic",
                           ERR_HEAD "Win:GetFullPathName failed (long name).");
      }
   }
-  
+
   // Add the magic prefix //?/ on demand:
   if ((OutStyle == Auto_Style && FullLen >= MAX_PATH) ||
        OutStyle == Fat_Style) {
@@ -325,7 +325,7 @@ mxArray *Core(mxChar *Name_M, mwSize NameLenL, OutStyle_T OutStyle)
      //   # \\?\UNC\server\share\short
      //   # \\?\long
      //   # \\?\UNC\server\share\long
-     
+
      // Check for UNC path again, because the current value of isUNC can be
      // FALSE, when the input is a relative file name and the current folder is
      // UNC path. Here a leading '\\' cannot be a '\\?\'.
@@ -336,18 +336,18 @@ mxArray *Core(mxChar *Name_M, mwSize NameLenL, OutStyle_T OutStyle)
         Out_Shift = 7;                  // Shift output to right, insert prefix
         Out_Crop  = 1;                  // Remove leading characters
      }
-     
+
   } else {  // No shifting in lean style or for short name:
      Out_Crop  = 0;
      Out_Shift = 0;
   }
-  
+
   // Create output as Matlab string:
   FullLen -= Out_Crop;
   dims[1]  = FullLen + Out_Shift;
   Full_M   = mxCreateCharArray(2, dims);
   Out_W    = (wchar_t *) mxGetData(Full_M);
-  
+
   // Copy strings to output:
   if (Out_Shift == 0) {
      memcpy(Out_W, Buffer_W, FullLen * sizeof(mxChar));
@@ -356,7 +356,7 @@ mxArray *Core(mxChar *Name_M, mwSize NameLenL, OutStyle_T OutStyle)
      memcpy(Out_W, Prefix, Out_Shift * sizeof(mxChar));
      memcpy(Out_W + Out_Shift, Buffer_W + Out_Crop, FullLen * sizeof(mxChar));
   }
-  
+
   // Cleanup:
   if (freeName) {
      mxFree(Name_W);
@@ -364,6 +364,6 @@ mxArray *Core(mxChar *Name_M, mwSize NameLenL, OutStyle_T OutStyle)
   if (freeBuffer) {
      mxFree(Buffer_W);
   }
-  
+
   return Full_M;
 }

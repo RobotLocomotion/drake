@@ -12,15 +12,15 @@
  *
  * RigidBodyTree (isa System)
  * Input: generalized forces (tau)
- * Output: generalized state (q,v)
+ * Output: generalized state (q, v)
  *
  * ContinuousTimeConstraintForce  (isa Constraint)
  * For forces that must be computed simultaneously with accelerations (not
  *simply a function of state)
- * Described as a vector phi(q,v,vdot,f)>=0, and forceJacobian(q) in terms of
+ * Described as a vector phi(q, v, vdot, f)>=0, and forceJacobian(q) in terms of
  *vdot
  *    Note: tau_constraint = forceJacobian(q)^T*f.
- * also exposes an interface to be evaluated as phi(vdot,f)>=0, with the kinsol
+ * also exposes an interface to be evaluated as phi(vdot, f)>=0, with the kinsol
  *set as a parameter.  Note that the complexity class of this constraint is
  *likely to be simpler than of the original constraint.
  * Example: position constraint:  J(q)*vdot + Jdot*v - stabilization terms = 0.
@@ -29,7 +29,7 @@
  *constraints imposing non-penetration + the friction cone)
  *
  * TimeSteppingConstraintForce (isa Constraint)
- * Writable as a vector phi(q,v,qn,vn,f)>=0.
+ * Writable as a vector phi(q, v, qn, vn, f)>=0.
  *    Note: tau_constraint = J^T(q)*f.
  * Example: stick-slip frictional contact w/ a linearized friction code (as
  *linear complementarity constraints)
@@ -48,7 +48,7 @@
  * Examples: GeneralizedForce, TorqueSource, SpatialForce, Linear
  *Spring/Dampers, Aerodynamic Forces, ...
  * Example: (no-stick) frictional contact: f_normal = max(-k*phi(q) -
- *b*phidot(q,v),0).  f_tangent = min(b*norm(tangential_velocity),mu*f_normal) *
+ *b*phidot(q, v), 0).  f_tangent = min(b*norm(tangential_velocity), mu*f_normal) *
  *tangential_velocity/norm(tangential_velocity).  forceJacobian is the contact
  *jacobian.
  *
@@ -63,8 +63,8 @@
  *ContinuousTimeConstraintForces.  Limited to sensors/actuators w/o discrete
  *dynamics.
  * adds the additional constraints:
- * H(q) vdot + C(q,v) = \sum tau_actuators(q,v) + \sum
- *tau_constraints(q,v,vdot,f).
+ * H(q) vdot + C(q, v) = \sum tau_actuators(q, v) + \sum
+ *tau_constraints(q, v, vdot, f).
  * then solves for vdot and f, then computes qdot = vToQdot*v
  * Input: Actuator inputs (only; does not include all generalized forces by
  *default).
@@ -76,8 +76,8 @@
  *TimeSteppingConstraintForces.  Limited to sensors/actuators w/o continuous
  *dynamics.
  * adds the additional constraints:
- * H(q) (vn-v)/h + C(q,v) = \sum tau_actuators(q,v) + \sum
- *tau_constraints(q,v,qn,vn,f)
+ * H(q) (vn-v)/h + C(q, v) = \sum tau_actuators(q, v) + \sum
+ *tau_constraints(q, v, qn, vn, f)
  * then solves for vn and f using qn = q + h*vToQdot(q)*vn
  * Input: Actuator inputs (only; does not include all generalized forces by
  *default).
@@ -139,7 +139,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
   template <typename ScalarType>
   using OutputVector = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
 
-  RigidBodySystem(const std::shared_ptr<RigidBodyTree>& rigid_body_tree)
+  RigidBodySystem(std::shared_ptr<RigidBodyTree> rigid_body_tree)
       : tree(rigid_body_tree),
         use_multi_contact(false),
         penetration_stiffness(150.0),
@@ -156,7 +156,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
     // std::allocate_shared<RigidBodyTree>(Eigen::aligned_allocator<RigidBodyTree>());
     // // this crashed g++-4.7
     tree = std::shared_ptr<RigidBodyTree>(new RigidBodyTree());
-    
+
   }
   virtual ~RigidBodySystem(){};
 
@@ -174,11 +174,11 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
                         const DrakeJoint::FloatingBaseType floating_base_type =
                             DrakeJoint::QUATERNION);
 
-  void addForceElement(const std::shared_ptr<RigidBodyForceElement>& f) {
+  void addForceElement(std::shared_ptr<RigidBodyForceElement> f) {
     force_elements.push_back(f);
   }
 
-  void addSensor(const std::shared_ptr<RigidBodySensor>& s);
+  void addSensor(std::shared_ptr<RigidBodySensor> s);
 
   const std::shared_ptr<RigidBodyTree>& getRigidBodyTree(void) const { return tree; }
 
@@ -198,12 +198,12 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    *       velocity equality constraints (differentiated once + stabilization):
    *A vdot = b
    *       forces from joint limits and contact OR
-   *       contact force constraints on vdot,f.  can be linear, nonlinear, even
+   *       contact force constraints on vdot, f.  can be linear, nonlinear, even
    *complementarity.  may have inequalities
    *   the trick is that each new constraint can add decision variables (the new
    *constraint forces and/or slack variables)
    *   to the problem, so the last constraint to add is
-   *       equations of motion: H vdot + C(q,qdot,u,f_ext) = J^T(q,qdot) f
+   *       equations of motion: H vdot + C(q, qdot, u, f_ext) = J^T(q, qdot) f
    *   where J is accumulated through the constraint logic
    *
    * The solver will then dispatch to the right tool for the job.  Note that for
@@ -444,8 +444,17 @@ class DRAKERBSYSTEM_EXPORT RigidBodySensor {
  */
 class DRAKERBSYSTEM_EXPORT RigidBodyDepthSensor : public RigidBodySensor {
   public:
-    RigidBodyDepthSensor(RigidBodySystem const& sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame, tinyxml2::XMLElement* node);
-    RigidBodyDepthSensor(RigidBodySystem const& sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame, std::size_t samples, double min_angle, double max_angle, double range);
+    RigidBodyDepthSensor(RigidBodySystem const& sys,
+                         const std::string& name,
+                         const std::shared_ptr<RigidBodyFrame> frame,
+                         tinyxml2::XMLElement* node);
+    RigidBodyDepthSensor(RigidBodySystem const& sys,
+                         const std::string& name,
+                         const std::shared_ptr<RigidBodyFrame> frame,
+                         std::size_t samples,
+                         double min_angle,
+                         double max_angle,
+                         double range);
 
     virtual ~RigidBodyDepthSensor() {}
 
