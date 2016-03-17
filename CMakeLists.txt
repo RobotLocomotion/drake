@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 2.8.0)
 project(drake-superbuild)
 
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
+  message(FATAL_ERROR "GCC version must be at least 4.9")
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.7)
+  message(FATAL_ERROR "Clang version must be at least 3.7")
+endif()
+
 # PODs out-of-source build logic
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 	find_file(_build_dir build PATHS ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/.. ${PROJECT_SOURCE_DIR}/../.. ${PROJECT_SOURCE_DIR}/../../.. ${PROJECT_SOURCE_DIR}/../../../..)
