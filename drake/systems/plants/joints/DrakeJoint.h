@@ -77,9 +77,9 @@ class DRAKEJOINTS_EXPORT DrakeJoint {
 
   const Eigen::Isometry3d &getTransformToParentBody() const;
 
-  const int getNumPositions() const;
+  int getNumPositions() const;
 
-  const int getNumVelocities() const;
+  int getNumVelocities() const;
 
   const std::string &getName() const;
 

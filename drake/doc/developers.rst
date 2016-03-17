@@ -18,7 +18,11 @@ tests locally by running ``make test`` from the command line -- note
 that there are a lot of computationally demanding tests and this could
 run for a few hours depending on your machine.
 
-We would also like to hear about your success stories if you've used
+Your change must include unit tests that protect it against regressions,
+and those tests must pass on all platforms supported by Drake.  Please
+use the googletest framework, which is already available in the superbuild.
+
+We would like to hear about your success stories if you've used
 Drake in your own projects.  Please consider contributing to our :doc:`gallery`
 by editing ``gallery.rst`` in the ``drake/doc/`` directory and submitting a pull
 request.
