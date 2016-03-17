@@ -529,15 +529,26 @@ void RigidBodyDepthSensor::cacheRaycastEndpoints() {
 Eigen::VectorXd RigidBodyDepthSensor::output(const double &t,
                                              const KinematicsCache<double> &rigid_body_state,
                                              const RigidBodySystem::InputVector<double>& u) const {
-  VectorXd distances(num_pixel_cols*num_pixel_rows);
+  const size_t num_distances = num_pixel_cols * num_pixel_rows;
+  VectorXd distances(num_distances);
+
   Vector3d origin = sys.getRigidBodyTree()->transformPoints(rigid_body_state,
                                                              Vector3d::Zero(),
                                                              frame->frame_index,0);
+
   auto raycast_endpoints_world = sys.getRigidBodyTree()->transformPoints(rigid_body_state,
                                                                           raycast_endpoints,
                                                                           frame->frame_index,0);
-  sys.getRigidBodyTree()->collisionRaycast(rigid_body_state,origin, raycast_endpoints, distances);
-  // maybe: could publish lcm here (for debugging), since I can easily infer the 3D location in space
+
+  sys.getRigidBodyTree()->collisionRaycast(rigid_body_state, origin, raycast_endpoints_world, distances);
+
+  for(size_t i = 0; i < num_distances; i++) {
+    if(distances[i] < 0.0 || distances[i] > max_range) {
+      distances[i] = max_range;
+    } else if(distances[i] < min_range) {
+      distances[i] = min_range;
+    }
+  }
   return distances;
 }
 

@@ -17,34 +17,35 @@
         <mesh filename="quadrotor_base.obj" scale=".1"/>
       </geometry>
     </visual>
-    <!-- note: the original hector quadrotor urdf had a (simplified, but still complex) collision mesh, too -->
     <collision>
-      <origin rpy="0 0 0" xyz=".1750 0 0"/>
+      <origin rpy="0 0 " xyz=".1750 0 -0.1"/>
       <geometry>
         <box size="0.2 0.2 0.1"/>
       </geometry>
     </collision>      
     <collision>
-      <origin rpy="0 0 0" xyz="-.1750 0 0"/>
+      <origin rpy="0 0 0" xyz="-.1750 0 -0.1"/>
       <geometry>
         <box size="0.2 0.2 0.1"/>
       </geometry>
     </collision>      
     <collision>
-      <origin rpy="0 0 0" xyz="0 -.1750 0"/>
+      <origin rpy="0 0 0" xyz="0 -.1750 -0.1"/>
       <geometry>
         <box size="0.2 0.2 0.1"/>
       </geometry>
     </collision>      
     <collision>
-      <origin rpy="0 0 0" xyz="0 .1750 0"/>
+      <origin rpy="0 0 0" xyz="0 .1750 -0.1"/>
       <geometry>
         <box size="0.2 0.2 0.1"/>
       </geometry>
     </collision>      
   </link>
-  <frame link="base_link" name="body" rpy="0 0 0.78539816339" xyz="0 0 0" />
-  
+
+  <frame link="base_link" name="body" rpy="0 0 -0.78539816339" xyz="0 0 0" />
+  <frame link="base_link" name="laser" rpy="0 0 -0.78539816339" xyz="0 0 0.0" />
+
   <force_element name="prop1">
     <propellor lower_limit="0" upper_limit="10" scale_factor_thrust="2.0" scale_factor_moment="-0.0245">
       <parent link="base_link"/>
