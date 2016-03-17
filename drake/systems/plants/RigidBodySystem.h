@@ -145,13 +145,15 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
         penetration_stiffness(150.0),
         penetration_damping(penetration_stiffness / 10.0),
         friction_coefficient(1.0),
-        direct_feedthrough(false) {};
+        direct_feedthrough(false),
+        filename("NO_FILE_NAME") {};
   RigidBodySystem()
       : use_multi_contact(false),
         penetration_stiffness(150.0),
         penetration_damping(penetration_stiffness / 10.0),
         friction_coefficient(1.0),
-        direct_feedthrough(false) {
+        direct_feedthrough(false),
+        filename("NO_FILE_NAME") {
     // tree =
     // std::allocate_shared<RigidBodyTree>(Eigen::aligned_allocator<RigidBodyTree>());
     // // this crashed g++-4.7
@@ -231,6 +233,9 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
   double penetration_stiffness;  // k
   double penetration_damping;    // b
   double friction_coefficient;   // mu
+
+  // The name of the file used to instantiate this rigid body system
+  std::string filename;
 
  private:
   std::shared_ptr<RigidBodyTree> tree;
