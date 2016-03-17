@@ -17,7 +17,7 @@ Geometry::Geometry(const Geometry &other) { shape = other.getShape(); }
 
 Geometry::Geometry(Shape shape) : shape(shape){};
 
-const Shape Geometry::getShape() const { return shape; }
+Shape Geometry::getShape() const { return shape; }
 
 Geometry *Geometry::clone() const { return new Geometry(*this); }
 

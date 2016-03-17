@@ -30,7 +30,7 @@ class DRAKESHAPES_EXPORT Geometry {
 
   virtual Geometry *clone() const;
 
-  const Shape getShape() const;
+  Shape getShape() const;
 
   virtual void getPoints(Eigen::Matrix3Xd &points) const;
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
