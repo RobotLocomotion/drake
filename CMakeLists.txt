@@ -22,6 +22,19 @@ endif()
 message(STATUS CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
 
 include(ExternalProject)
+function(drake_forcebuild proj)
+  if(CMAKE_CONFIGURATION_TYPES)
+    set(build_stamp_file "${CMAKE_CURRENT_BINARY_DIR}/${proj}-prefix/src/${proj}-stamp/${CMAKE_CFG_INTDIR}/${proj}-build")
+  else()
+    set(build_stamp_file "${CMAKE_CURRENT_BINARY_DIR}/${proj}-prefix/src/${proj}-stamp/${proj}-build")
+  endif()
+  ExternalProject_Add_Step(${proj} forcebuild
+    COMMAND ${CMAKE_COMMAND} -E remove ${build_stamp_file}
+    COMMENT "Forcing build step for '${proj}'"
+    DEPENDEES build
+    ALWAYS 1
+    )
+endfunction()
 
 # Require Java at the super-build level so libbot cannot configure without finding Java
 find_package(Java REQUIRED)
@@ -152,7 +165,8 @@ set(lcm_GIT_TAG 62dcf194077a54efbfce4ac65adee3af6a7df3d0) # note: cmake branch
 set(lcm_IS_CMAKE_POD TRUE)
 set(lcm_IS_PUBLIC TRUE)
 set(libbot_GIT_REPOSITORY https://github.com/RobotLocomotion/libbot.git)
-set(libbot_GIT_TAG 94fe5290329646959e1c27896d529abba81e6d93)
+set(libbot_GIT_TAG cc8d228b50847c4c55e6963b8ee95c237287547f)
+set(libbot_IS_CMAKE_POD TRUE)
 set(libbot_IS_PUBLIC TRUE)
 set(bot_core_lcmtypes_GIT_REPOSITORY  https://github.com/jhoare/bot_core_lcmtypes)
 set(bot_core_lcmtypes_GIT_TAG fc70d061005f52000cf8af7658c34e86bc2bac68)
@@ -291,6 +305,13 @@ foreach (proj ${EXTERNAL_PROJECTS})
 		if (NOT ${proj}_SOURCE_DIR)
 			set(${proj}_SOURCE_DIR ${${proj}_GIT_CLONE_DIR})
 		endif()
+		if (NOT ${proj}_BINARY_DIR)
+			if(POD_BUILD)
+				set(${proj}_BINARY_DIR "${${proj}_SOURCE_DIR}/pod-build")
+			else()
+				set(${proj}_BINARY_DIR "${PROJECT_BINARY_DIR}/externals/${proj}")
+			endif()
+		endif()
 		set(EXTERNAL_SOURCE_DIRS ${EXTERNAL_SOURCE_DIRS} ${${proj}_SOURCE_DIR} "\n")
 
 		message(STATUS "Preparing to build ${proj} with dependencies: ${deps}")
@@ -330,7 +351,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 					SOURCE_DIR ${${proj}_SOURCE_DIR}
 					DOWNLOAD_COMMAND ""
 					UPDATE_COMMAND ""
-					BINARY_DIR ${${proj}_SOURCE_DIR}/pod-build
+					BINARY_DIR ${${proj}_BINARY_DIR}
 					CMAKE_GENERATOR ${CMAKE_GENERATOR}
 					CMAKE_ARGS
 					  -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
@@ -340,6 +361,7 @@ foreach (proj ${EXTERNAL_PROJECTS})
 					DEPENDS download-${proj} ${deps}
 					${${proj}_ADDITIONAL_BUILD_ARGS}
 					)
+			drake_forcebuild(${proj})
 		else() # not a CMake POD
 			if (NOT DEFINED ${proj}_BUILD_COMMAND)
 				if(${proj}_NO_BUILD)
@@ -365,6 +387,9 @@ foreach (proj ${EXTERNAL_PROJECTS})
 					DEPENDS download-${proj} ${deps}
 					${${proj}_ADDITIONAL_BUILD_ARGS}
 					)
+			if (${proj}_BUILD_COMMAND)
+				drake_forcebuild(${proj})
+			endif()
 			#    message(STATUS "${proj}_BUILD_COMMAND: ${${proj}_BUILD_COMMAND}")
 		endif()
 
@@ -374,11 +399,16 @@ foreach (proj ${EXTERNAL_PROJECTS})
 		if (CMAKE_VERBOSE_MAKEFILE)
 		    set(PODS_VERBOSE_MAKEFILE "-DCMAKE_VERBOSE_MAKEFILE=ON")
 		endif()
+		if(POD_BUILD)
+			set(drake_BINARY_DIR "${PROJECT_SOURCE_DIR}/drake/pod-build")
+		else()
+			set(drake_BINARY_DIR "${PROJECT_BINARY_DIR}/drake")
+		endif()
 		ExternalProject_Add(${proj}
 				SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake"
 				DOWNLOAD_COMMAND ""
 				UPDATE_COMMAND ""
-				BINARY_DIR ${PROJECT_SOURCE_DIR}/drake/pod-build
+				BINARY_DIR ${drake_BINARY_DIR}
 				CMAKE_GENERATOR ${CMAKE_GENERATOR}
 				CMAKE_ARGS
 				  -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
@@ -386,17 +416,9 @@ foreach (proj ${EXTERNAL_PROJECTS})
 				  ${PODS_VERBOSE_MAKEFILE}
 				DEPENDS ${deps}
 				${${proj}_ADDITIONAL_BUILD_ARGS}
-				#		BUILD_ALWAYS 1
 				)
+		drake_forcebuild(${proj})
 	endif(NOT ${proj} STREQUAL "drake")
-
-
-	# once we require cmake version >= 3.1, then we can zap this and just use the BUILD_ALWAYS flags above
-	ExternalProject_Add_Step(${proj} forceconfigure
-			COMMAND ${CMAKE_COMMAND} -E echo "Force configure of ${proj}"
-			DEPENDEES update
-			DEPENDERS configure
-			ALWAYS 1)
 
 endforeach()
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/drake_external_source_dirs.txt ${EXTERNAL_SOURCE_DIRS})
