@@ -120,6 +120,29 @@ A simple demonstration of collision-free dynamic trajectory optimization.
 *Source Code:* `drake/examples/Quadrotor/runDircolWObs.m <https://github.com/RobotLocomotion/drake/tree/master/drake/examples/Quadrotor/runDircolWObs.m>`_
 
 
+Quadrotor Online Obstacle Avoidance
+----------------------------------------
+
+A demonstration of using funnel libraries to dynamically navigate a simulated forest.
+
+.. raw :: html
+
+	<iframe width="560" height="315" src="https://youtu.be/lnvR_tWXzi4" frameborder="0" allowfullscreen></iframe>
+
+*Source Code:* `drake/examples/Quadrotor/runOnlinePlanning.m <https://github.com/RobotLocomotion/drake/tree/master/drake/examples/Quadrotor/runOnlinePlanning.m>`_
+
+
+Quadrotor Simulation with Onboard Lidar
+----------------------------------------
+
+A demonstration of using Drake to simulate a lidar sensor onboard a quadrotor in C++.
+
+.. raw :: html
+
+	<iframe width="560" height="315" src="https://www.youtube.com/watch?v=oB73wTbvnHI" frameborder="0" allowfullscreen></iframe>
+
+*Source Code:* `drake/examples/Quadrotor/runDynamics.cpp <https://github.com/RobotLocomotion/drake/tree/master/drake/examples/Quadrotor/runDynamics.cpp>`_
+
 
 Robot Manipulation
 ==================
