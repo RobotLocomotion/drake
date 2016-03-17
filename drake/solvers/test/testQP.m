@@ -23,7 +23,7 @@ testSolvers(prog);
 
 
 fprintf('****************************************\n');
-fprintf(' min_x (.5*x(1)^2+x(2)^2+x(1)*x(2) + x(1)+2*x(2)), subj to 5<=x(1)<=10;-20<=x(1)+4*x(2)<10\n');
+fprintf(' min_x (.5*(x(1)^2+x(2)^2+x(1)*x(2)) + x(1)), subj to 5<=x(1)<=10;-20<=x(1)+4*x(2)<10\n');
 fprintf('****************************************\n');
 prog = QuadraticProgram(eye(2),[1;0],[],[],[],[],[],[]);
 prog = prog.addCost(QuadraticConstraint(-inf,inf,[0 1;1 0],zeros(2,1)));
@@ -45,6 +45,29 @@ end
 testSolvers(prog,solvers,1e-3);
 warning(w);
 
+fprintf('****************************************\n');
+fprintf(' min_x (.5*(x(1)^2+x(2)^2+x(1)*x(2)) + x(1)+2*x(2)), subj to 5<=x(1)<=10;-20<=x(1)+4*x(2)<10\n');
+fprintf('****************************************\n');
+prog = QuadraticProgram(eye(2),[1;0],[],[],[],[],[],[]);
+prog = prog.addCost(QuadraticConstraint(-inf,inf,[0 1;1 0],zeros(2,1)));
+prog = prog.addCost(LinearConstraint(-inf,inf,[0 2]));
+prog = prog.addBoundingBoxConstraint(BoundingBoxConstraint(5,10),1);
+prog = prog.addLinearConstraint(LinearConstraint(-20,10,[1 4]));
+solvers = {};
+if(checkDependency('quadprog'))
+  solvers = [solvers,{'quadprog'}];
+end
+if(checkDependency('gurobi'))
+  solvers = [solvers,{'gurobi'}];
+end
+if(checkDependency('gurobi_mex'))
+  solvers = [solvers,{'gurobi_mex'}];
+end
+if(checkDependency('snopt'))
+  solvers = [solvers,{'snopt'}];
+end
+testSolvers(prog,solvers,1e-3);
+warning(w);
 end
 
 
