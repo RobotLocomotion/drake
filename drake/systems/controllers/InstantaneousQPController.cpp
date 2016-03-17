@@ -110,7 +110,7 @@ void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot,
       throw std::runtime_error(
           "Could not find attachment frame when handling urdf modifications");
     }
-    robot->addRobotFromURDF(getDrakePath() + "/" + it->urdf_filename,
+    robot->addRobotFromURDF(Drake::getDrakePath() + "/" + it->urdf_filename,
                             it->joint_type, attach_to_frame);
   }
 
