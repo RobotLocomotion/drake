@@ -1,19 +1,15 @@
-**********************
-Ubuntu (using apt-get)
-**********************
+************************
+Ubuntu 12.04 / 14.04 LTS
+************************
 
-You can install the prerequisites::
+You can install the prerequisites using the ``install_prereqs.sh`` script::
 
 	sudo apt-get update
 	sudo apt-get upgrade  # optional
-	sudo apt-get install build-essential cmake-curses-gui python-software-properties
-	sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-	sudo apt-get update
-	sudo apt-get g++-4.9
 	cd drake-distro
+	sudo ./install_prereqs.sh ubuntu
 	make options  # use the GUI to choose which externals you want, then press 'c' to configure, then 'g' to generate makefiles and exit
 	make download-all
-	sudo ./install_prereqs.sh ubuntu
 
 The version of the standard C++ libraries that are shipped with the Linux distribution of MATLAB is severely outdated and can cause problems when running mex files that are built against a newer version of the standard.  The typical error message in this case reports "Invalid MEX-Files"
 

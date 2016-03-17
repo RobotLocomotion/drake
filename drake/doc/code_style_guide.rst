@@ -20,6 +20,7 @@ We now strictly follow the `Google C++ Style Guide <https://google.github.io/sty
 * Classes and methods should be documented using [doxygen](https://www.stack.nl/~dimitri/doxygen/manual/docblocks.html).
 * Embrace templates/C++11 when it makes the code more correct (more clear readable also implies more correct).  Minimize template requirements on public interfaces.  Avoid explicit template instantiations in cc files when possible.
 
+
 MATLAB Style
 ============
 
@@ -48,6 +49,12 @@ LCM Style
 
 * LCM types are under_scored with a leading lcmt_ added. If the type is specific to a particular robot, then it begins with lcmt_robotname_.
 * Variable names in LCM types follow the rules above.
+
+
+Shell Script Style
+==================
+
+We follow the `Google Shell Style Guide` <https://google.github.io/styleguide/shell.xml> `.
 
 
 Version numbers

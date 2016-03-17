@@ -15,7 +15,7 @@ If you have installed the 64-bit version of MATLAB then you must tell CMAKE to b
 Drake will locally build and install the remaining prerequisites.  Open up a shell (the standard ``cmd`` shell will definitely work) and run::
 
 	cd drake-distro
-	make options # use the gui to choose which externals you want, then run generate before exiting
+	make options  # use the GUI to choose which externals you want, then run generate before exiting
 	make download-all
 
 We have attempted to automate the installation of the remaining prerequisites for you, using the cygwin installer.  To use this, simply:
@@ -43,7 +43,7 @@ Note: You should update the `PROCESS_ARCHITECTURE` for your system (you can find
 
 ---------
 
-When you're done with these platform-specific steps, return to :doc:`from_source` to complete and test your installation.
+When you are done with these platform-specific steps, return to :doc:`from_source` to complete and test your installation.
 
 
 
