@@ -648,7 +648,11 @@ bool BulletModel::closestPointsAllToAll(const vector<ElementId>& ids_to_check,
            ++idB_iter) {
         auto elementB_iter = elements.find(*idB_iter);
         if (elementB_iter != elements_end) {
-          if (elements[*idA_iter]->collidesWith(elements[*idB_iter].get())) {
+          if (elements[*idA_iter]->collidesWith(elements[*idB_iter].get())) { 
+            //collidesWith call discars these cases: 
+            // 1) the case where both objects are the same
+            // 2) the case two bodies are adjacent
+            // 3) filters ....
             id_pairs.push_back(make_pair(*idA_iter, *idB_iter));
           }
         }

@@ -513,7 +513,7 @@ bool RigidBodyTree::collisionDetect(const KinematicsCache<double>& cache,
                                     VectorXd& phi, Matrix3Xd& normal,
                                     Matrix3Xd& xA, Matrix3Xd& xB,
                                     vector<int>& bodyA_idx,
-                                    vector<int>& bodyB_idx, bool use_margins) {
+                                    vector<int>& bodyB_idx, bool use_margins) { //use_margins = true by default
   vector<DrakeCollision::ElementId> ids_to_check;
   for (auto body_iter = bodies.begin(); body_iter != bodies.end();
        ++body_iter) {
