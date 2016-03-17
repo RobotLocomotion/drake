@@ -1,6 +1,8 @@
 #ifndef DRAKE_CONSTRAINT_H
 #define DRAKE_CONSTRAINT_H
 
+#include <stdexcept>
+
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
 
@@ -210,23 +212,19 @@ class LinearComplementarityConstraint : public Constraint {
   template <typename DerivedM, typename Derivedq>
   LinearComplementarityConstraint(const Eigen::MatrixBase<DerivedM>& M,
                                   const Eigen::MatrixBase<Derivedq>& q)
-      : Constraint(q.rows(),
-                   Derivedq::Constant(0),
-                   Derivedq::Constant(
-                       std::numeric_limits<double>::infinity())),
-        M(M),
-        q(q) {}
+      : Constraint(q.rows()), M(M), q(q) {}
+
   virtual ~LinearComplementarityConstraint() {}
 
   virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
-    y.resize(getNumConstraints());
-    y = (M * x) + q;
+    throw std::runtime_error(
+        "Linear Complementarity Constraints should not invoke eval()");
   }
   virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
                     TaylorVecXd& y) const override {
-    y.resize(getNumConstraints());
-    y = (M.cast<TaylorVarXd>() * x) + q.cast<TaylorVarXd>();
+    throw std::runtime_error(
+        "Linear Complementarity Constraints should not invoke eval()");
   };
 
   const Eigen::MatrixXd& getM() { return M; };

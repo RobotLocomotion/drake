@@ -305,7 +305,7 @@ bool MobyLCPSolver::lcp_fast(
 bool MobyLCPSolver::lcp_fast_regularized(
     const Eigen::MatrixXd& M, const Eigen::VectorXd& q, Eigen::VectorXd* z,
     int min_exp, unsigned step_exp, int max_exp,
-    double piv_tol, double zero_tol) const {
+    double zero_tol) const {
 
   LOG() << "MobyLCPSolver::lcp_fast_regularized() entered" << std::endl;
 

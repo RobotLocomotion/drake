@@ -25,7 +25,7 @@ class DRAKEOPTIMIZATION_EXPORT MobyLCPSolver :
   bool lcp_fast_regularized(
       const Eigen::MatrixXd& M, const Eigen::VectorXd& q, Eigen::VectorXd* z,
       int min_exp = -20, unsigned step_exp = 4, int max_exp = 20,
-      double piv_tol = -1.0, double zero_tol = -1.0) const;
+      double zero_tol = -1.0) const;
   bool lcp_lemke(
       const Eigen::MatrixXd& M, const Eigen::VectorXd& q, Eigen::VectorXd* z,
       double piv_tol = -1.0, double zero_tol = -1.0) const;
