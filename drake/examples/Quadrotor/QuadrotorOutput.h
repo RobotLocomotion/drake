@@ -91,7 +91,8 @@ bool encode(const double& t, const QuadrotorOutput<double> & x, drake::lcmt_quad
   Eigen::Map<Eigen::Vector3d> lcm_accelerometer(msg.accelerometer);
   Eigen::Map<Eigen::Vector3d> lcm_gyroscope(msg.gyroscope);
   Eigen::Map<Eigen::Vector3d> lcm_magnetometer(msg.magnetometer);
-  Eigen::Map<Eigen::Matrix<double, x.num_lidar_points, 1>> lcm_lidar(msg.lidar_returns);
+
+  Eigen::Map< Eigen::Matrix<double, QuadrotorOutput<double>::num_lidar_points, 1> > lcm_lidar(msg.lidar_returns);
   lcm_position = x.position;
   lcm_orientation = x.orientation;
   lcm_twist = x.twist;
