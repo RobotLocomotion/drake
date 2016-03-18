@@ -156,7 +156,7 @@ set(mosek_GIT_TAG 1919b622df17b7584ac644406f360bd07cdf5fba)
 set(mosek_IS_PUBLIC TRUE)
 set(nlopt_GIT_REPOSITORY https://github.com/stevengj/nlopt.git)
 set(nlopt_GIT_TAG 355a597b43c80f616252cb370fa9f7e5c997418e) 
-set(nlopt_BUILD_COMMAND ./autogen.sh --no-configure && ./configure --enable-maintainer-mode --prefix=${CMAKE_INSTALL_PREFIX} && make install)  # linux (and possibly cygwin) only
+set(nlopt_BUILD_COMMAND ./autogen.sh --no-configure && ./configure --enable-maintainer-mode --enable-shared --prefix=${CMAKE_INSTALL_PREFIX} --includedir=${CMAKE_INSTALL_PREFIX}/include/nlopt && make install)  # linux (and possibly cygwin) only
 set(nlopt_IS_PUBLIC TRUE)
 set(octomap_GIT_REPOSITORY https://github.com/RobotLocomotion/octomap-pod.git)
 set(octomap_GIT_TAG 00b28215d19580f9e964bc5d126ce55a9253671a)
