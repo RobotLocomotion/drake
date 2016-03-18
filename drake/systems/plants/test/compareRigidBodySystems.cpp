@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
     auto xdot1 = r1->dynamics(t, x, u);
     auto xdot2 = r2->dynamics(t, x, u);
     try {
-      valuecheckMatrix(xdot1, xdot2, 1e-8);
+      valuecheckMatrix(xdot1, xdot2, 1);
     } catch(const std::runtime_error& re) {
       std::cout << "Model mismatch!" << std::endl
                 << "  - initial state:" << std::endl << x << std::endl
