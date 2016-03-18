@@ -705,3 +705,33 @@ void RigidBodySystem::addRobotFromFile(
   }
 }
 
+std::string RigidBodySystem::getStateVectorSemantics() const {
+  std::stringstream msg;
+  int jIndx = 0;
+  for (auto& bb : tree->bodies) {
+    try {
+      const DrakeJoint& jj = bb->getJoint();
+      for (int ii = 0; ii < jj.getNumPositions(); ii++) {
+        msg << (jIndx++) << "\t" << jj.getName() << "::" << jj.getPositionName(ii) << std::endl;
+      }
+    } catch(std::runtime_error re) {
+      // std::cout << "RigidBodySystem::getStateVectorSemantics: link \""
+      //           << bb->linkname << "\" does not have a joint."
+      //           << std::endl;
+    }
+  }
+  for (auto& bb : tree->bodies) {
+    try {
+      const DrakeJoint& jj = bb->getJoint();
+      for (int ii = 0; ii < jj.getNumVelocities(); ii++) {
+        msg << (jIndx++) << "\t" << jj.getName() << "::" << jj.getVelocityName(ii) << std::endl;
+      }
+    } catch(std::runtime_error re) {
+      // std::cout << "RigidBodySystem::getStateVectorSemantics: link \""
+      //           << bb->linkname << "\" does not have a joint."
+      //           << std::endl;
+    }
+  }
+  return msg.str();
+}
+

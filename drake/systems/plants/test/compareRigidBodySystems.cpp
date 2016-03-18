@@ -74,6 +74,10 @@ int main(int argc, char* argv[]) {
     return -1;
   }
 
+  // Print the semantics of the states
+  std::cout << "State vector semantics (tree 1):\n" << r1->getStateVectorSemantics() << std::endl;
+  std::cout << "State vector semantics (tree 2):\n" << r2->getStateVectorSemantics() << std::endl;
+
   if (*r1->getRigidBodyTree().get() != *r2->getRigidBodyTree().get()) {
     std::cout << "ERROR: The two rigid body trees are numerically different!" << std::endl;
     return -1;

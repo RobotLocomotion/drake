@@ -228,6 +228,11 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
   friend DRAKERBSYSTEM_EXPORT StateVector<double> getInitialState(
       const RigidBodySystem& sys);
 
+  /*!
+   * Returns a string describing the semantics of the state vector.
+   */
+  std::string getStateVectorSemantics() const;
+
   // some parameters defining the contact
   bool use_multi_contact;
   double penetration_stiffness;  // k
