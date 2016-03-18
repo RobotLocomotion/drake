@@ -11,7 +11,7 @@ namespace DrakeCollision
   Vector3d toVector3d(const Vector3d& vec)
   {
     return vec;
-  };
+  }
 
   void ResultCollector::addPointPairResult(const PointPair& result)
   {

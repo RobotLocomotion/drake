@@ -5,6 +5,9 @@
 #include "Model.h"
 #include "ResultCollector.h"
 
+#include "fcl/BVH/BVH_model.h"
+
+
 namespace DrakeCollision
 {
   class FCLModel;    // forward declaration
@@ -54,6 +57,13 @@ namespace DrakeCollision
               const Eigen::Matrix3Xd &ray_endpoints, bool use_margins, 
               Eigen::VectorXd &distances, Eigen::Matrix3Xd &normals);
 
+      /** \brief Compute the set of potential collision points for all
+       * eligible pairs of collision geometries in this model. This includes
+       * the points of closest approach, but may also include additional points
+       * that are "close" to being in contact. This can be useful when
+       * simulating scenarios in which two collision elements have more than
+       * one point of contact.
+       */
       virtual std::vector<PointPair> potentialCollisionPoints(bool use_margins);
 
       virtual bool collidingPointsCheckOnly(const std::vector<Eigen::Vector3d>& points, 
@@ -67,9 +77,16 @@ namespace DrakeCollision
       
     protected:
 
-      //static constexpr double small_margin = 1e-9;
-      //static constexpr double large_margin = 0.05;
+      // FCL elements that were created from the drake elements.
+      std::unordered_map< ElementId,std::unique_ptr<fcl::BVHModel<fcl::OBBRSS>>> fclElements;
 
+      // Helper methods to create meshes from baskic shapes.
+      static fcl::BVHModel<fcl::OBBRSS>* newFCLBoxShape(const DrakeShapes::Box& geometry, bool use_margins);
+      static fcl::BVHModel<fcl::OBBRSS>* newFCLSphereShape(const DrakeShapes::Sphere& geometry, bool use_margins);
+      static fcl::BVHModel<fcl::OBBRSS>* newFCLCylinderShape(const DrakeShapes::Cylinder& geometry, bool use_margins);
+      static fcl::BVHModel<fcl::OBBRSS>* newFCLCapsuleShape(const DrakeShapes::Capsule& geometry, bool use_margins);
+      static fcl::BVHModel<fcl::OBBRSS>* newFCLMeshShape(const DrakeShapes::Mesh& geometry, bool use_margins);
+      
       class unknownShapeException : public std::exception
       {
         public:

@@ -130,7 +130,7 @@ methods
       if(cnstr.num_cnstr~= 1)
         error('Drake:QuadraticProgram:UnsupportedConstraint','QuadraticProgram cannot accept LinearConstraint with multiple rows in its objective')
       end
-      obj.f(xind) = obj.f(xind)+A';
+      obj.f(xind) = obj.f(xind)+cnstr.A';
     end
   end
   

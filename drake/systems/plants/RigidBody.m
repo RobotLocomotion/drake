@@ -405,7 +405,10 @@ classdef RigidBody < RigidBodyElement
         body.mass = varargin{1};
         body.com = varargin{2};
         body.inertia = varargin{3};
-        body.Imass = mcI(body.mass,body.com,body.inertia);
+        
+        C = vectorToSkewSymmetric(body.com);
+        body.Imass = [ body.inertia + body.mass*C*C', body.mass*C; body.mass*C', body.mass*eye(3) ];
+        
         if nargin==5
             % Set added mass matrix
             sizecheck(varargin{4},[6 6]);
