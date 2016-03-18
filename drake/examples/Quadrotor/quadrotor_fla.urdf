@@ -45,6 +45,8 @@
 
   <frame link="base_link" name="body" rpy="0 0 -0.78539816339" xyz="0 0 0" />
   <frame link="base_link" name="laser" rpy="0 0 -0.78539816339" xyz="0 0 0.0" />
+  <frame link="base_link" name="rangefinder" rpy="0 1.57079632679 0" xyz="0 0 0.0" />
+
 
   <force_element name="prop1">
     <propellor lower_limit="0" upper_limit="10" scale_factor_thrust="2.0" scale_factor_moment="-0.0245">

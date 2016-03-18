@@ -9,12 +9,12 @@ class QuadrotorOutput {
 public:
 
     const static int num_lidar_points = 100;
-    const static int RowsAtCompileTime = 22 + num_lidar_points;
+    const static int RowsAtCompileTime = 22 + num_lidar_points + 1;
 
     typedef drake::lcmt_quadrotor_output_t LCMMessageType;
     static std::string channel() { return "QUAD_OUTPUT"; };
 
-    QuadrotorOutput(void) {
+    QuadrotorOutput(void) : rangefinder(0) {
         position.setZero();
         orientation.setZero();
         twist.setZero();
@@ -45,6 +45,7 @@ public:
         x.segment<3>(16) = vec.gyroscope;
         x.segment<3>(19) = vec.magnetometer;
         x.segment<num_lidar_points>(22) = vec.lidar_returns;
+        x[num_lidar_points + 22] = vec.rangefinder;
         return x;
     }
 
@@ -57,6 +58,7 @@ public:
         gyroscope = x.template segment<3>(16);
         magnetometer = x.template segment<3>(19);
         lidar_returns = x.template segment<num_lidar_points>(22);
+        rangefinder = x[num_lidar_points + 22];
     }
 
     friend std::string getCoordinateName(const QuadrotorOutput<ScalarType>& vec, unsigned int index) {
@@ -81,6 +83,7 @@ public:
     Eigen::Matrix<ScalarType, 3, 1> gyroscope;
     Eigen::Matrix<ScalarType, 3, 1> magnetometer;
     Eigen::Matrix<ScalarType, num_lidar_points, 1> lidar_returns;
+    ScalarType rangefinder;
 };
 
 bool encode(const double& t, const QuadrotorOutput<double> & x, drake::lcmt_quadrotor_output_t& msg) {
@@ -100,6 +103,8 @@ bool encode(const double& t, const QuadrotorOutput<double> & x, drake::lcmt_quad
   lcm_gyroscope = x.gyroscope;
   lcm_magnetometer = x.magnetometer;
   lcm_lidar = x.lidar_returns;
+  msg.rangefinder = x.rangefinder;
+  std::cout << msg.rangefinder << std::endl;
   return true;
 }
 
