@@ -72,19 +72,11 @@ Eigen::SparseVector<double> makeSparseVector(
   return out;
 }
 
-/// Get the minimum index of vector v; if there are multiple minima (within
-/// zero_tol), returns one randomly
-unsigned rand_min(const Eigen::VectorXd& v, double zero_tol) {
-  std::vector<unsigned> minima;
-  Eigen::Index minv;
-  const unsigned minv_val = v.minCoeff(&minv);
-  minima.push_back(minv);
-  for (unsigned i=0; i< v.rows(); i++) {
-    if (i != minv && v[i] < minv_val + zero_tol) {
-      minima.push_back(i);
-    }
-  }
-  return minima[rand() % minima.size()];
+template <typename Derived>
+Eigen::Index minCoeffIdx(const Eigen::MatrixBase<Derived>& in) {
+  Eigen::Index idx;
+  in.minCoeff(&idx);
+  return idx;
 }
 
 const double NEAR_ZERO = std::sqrt(std::numeric_limits<double>::epsilon());
@@ -126,11 +118,10 @@ bool MobyLCPSolver::solve(OptimizationProblem& prog) const {
   assert(prog.getLinearComplementarityConstraint());
 
   Eigen::VectorXd solution(prog.getNumVars());
-  bool solved = lcp_lemke(prog.getLinearComplementarityConstraint()
-                          ->getConstraint()->getM(),
-                          prog.getLinearComplementarityConstraint()
-                          ->getConstraint()->getq(),
-                          &solution);
+  bool solved = lcp_lemke_regularized(
+      prog.getLinearComplementarityConstraint()->getConstraint()->getM(),
+      prog.getLinearComplementarityConstraint()->getConstraint()->getq(),
+      &solution);
   if (solved) {
     prog.setDecisionVariableValues(solution);
   }
@@ -224,7 +215,7 @@ bool MobyLCPSolver::lcp_fast(
     // compute w and find minimum value
     _w = _Mmix * _z;
     _w += _qbas;
-    unsigned minw = (_w.rows() > 0) ? rand_min(_w, zero_tol) : UINF;
+    unsigned minw = (_w.rows() > 0) ? minCoeffIdx(_w) : UINF;
 
     // TODO sammy this log can't print when minw is UINF.
     // LOG() << "MobyLCPSolver::lcp_fast() - minimum w after pivot: "
@@ -233,7 +224,7 @@ bool MobyLCPSolver::lcp_fast(
     // if w >= 0, check whether any component of z < 0
     if (minw == UINF || _w[minw] > -zero_tol) {
       // find the (a) minimum of z
-      unsigned minz = (_z.rows() > 0) ? rand_min(_z, zero_tol) : UINF;
+      unsigned minz = (_z.rows() > 0) ? minCoeffIdx(_z) : UINF;
       if (log_enabled_ && _z.rows() > 0) {
         LOG() << "MobyLCPSolver::lcp_fast() - minimum z after pivot: "
             << _z[minz] << std::endl;
@@ -270,7 +261,7 @@ bool MobyLCPSolver::lcp_fast(
       std::sort(_nonbas.begin(), _nonbas.end());
 
       // look whether any component of z needs to move to basic set
-      unsigned minz = (_z.rows() > 0) ? rand_min(_z, zero_tol) : UINF;
+      unsigned minz = (_z.rows() > 0) ? minCoeffIdx(_z) : UINF;
       if (log_enabled_ && _z.rows() > 0) {
         LOG() << "MobyLCPSolver::lcp_fast() - minimum z after pivot: "
               << _z[minz] << std::endl;
@@ -1199,8 +1190,7 @@ bool MobyLCPSolver::lcp_lemke_regularized(
 
   // assign value for zero tolerance, if necessary
   const double ZERO_TOL = (zero_tol > static_cast<double>(0.0))
-      ? zero_tol
-      : q.size() * std::numeric_limits<double>::epsilon();
+      ? zero_tol : q.size() * NEAR_ZERO;
 
   // try non-regularized version first
   bool result = lcp_lemke(_MMs, q, z, piv_tol, zero_tol);
@@ -1212,19 +1202,26 @@ bool MobyLCPSolver::lcp_lemke_regularized(
       if (_wx.minCoeff() >= -ZERO_TOL) {
         // check z'w
         transformVecElements(*z, &_wx, std::multiplies<double>());
-        if (_wx.minCoeff() >= -ZERO_TOL && _wx.maxCoeff() < ZERO_TOL) {
+        const double wx_min = _wx.minCoeff();
+        const double wx_max = _wx.maxCoeff();
+        if (wx_min >= -ZERO_TOL && wx_max < ZERO_TOL) {
           LOG() << "  solved with no regularization necessary!" << std::endl;
           LOG() << "MobyLCPSolver::lcp_lemke_regularized() exited" << std::endl;
+
           return true;
+        } else {
+          LOG() << "MobyLCPSolver::lcp_lemke() - "
+                << "'<w, z> not within tolerance(min value: " << wx_min
+                << " max value: " << wx_max << ")"
+                << " tol " << ZERO_TOL << std::endl;
+
         }
       }
     }
   }
 
-  // add a zero sparse diagonal matrix to _MMs
+  _eye.resize(M.rows(), M.cols());
   _eye.setIdentity();
-  _zero.setZero();
-  _MMs += _zero;
 
   // start the regularization process
   int rf = min_exp;

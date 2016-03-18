@@ -44,8 +44,13 @@ void runBasicLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
     ASSERT_TRUE(expect_fast_pass) <<
         "Expected Z not provided and expect_fast_pass unset.";
     expected_z = fast_z;
-  } else if (expect_fast_pass) {
-    EXPECT_NO_THROW(valuecheckMatrix(fast_z, expected_z, epsilon));
+  } else {
+    if (expect_fast_pass) {
+      EXPECT_NO_THROW(valuecheckMatrix(fast_z, expected_z, epsilon));
+    } else {
+      EXPECT_THROW(valuecheckMatrix(fast_z, expected_z, epsilon),
+                   std::runtime_error);
+    }
   }
 
   Eigen::VectorXd lemke_z;
@@ -61,8 +66,10 @@ void runBasicLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
 /// Run all regularized solvers.  If @p expected_z is an empty
 /// vector, outputs will only be compared against each other.
 template <typename Derived>
-void runRegularizedLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
-                       const Eigen::VectorXd& expected_z_in) {
+void runRegularizedLCP(const Eigen::MatrixBase<Derived>& M,
+                       const Eigen::VectorXd& q,
+                       const Eigen::VectorXd& expected_z_in,
+                       bool expect_fast_pass) {
   Drake::MobyLCPSolver l;
   l.setLoggingEnabled(verbose);
 
@@ -73,7 +80,15 @@ void runRegularizedLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorX
   if (expected_z.size() == 0)  {
     expected_z = fast_z;
   } else {
-    EXPECT_NO_THROW(valuecheckMatrix(fast_z, expected_z, epsilon));
+    if (expect_fast_pass) {
+      ASSERT_TRUE(result);
+      EXPECT_NO_THROW(valuecheckMatrix(fast_z, expected_z, epsilon))
+          << "expected: " << expected_z << " actual " << fast_z
+          << std::endl;
+    } else {
+      EXPECT_THROW(valuecheckMatrix(fast_z, expected_z, epsilon),
+                   std::runtime_error);
+    }
   }
 
   Eigen::VectorXd lemke_z;
@@ -84,6 +99,15 @@ void runRegularizedLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorX
   lemke_z.setZero();
   result = l.lcp_lemke_regularized(M_sparse, q, &lemke_z);
   EXPECT_NO_THROW(valuecheckMatrix(lemke_z, expected_z, epsilon));
+}
+
+/// Run all solvers.  If @p expected_z is an empty
+/// vector, outputs will only be compared against each other.
+template <typename Derived>
+void runLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
+            const Eigen::VectorXd& expected_z_in, bool expect_fast_pass) {
+  runBasicLCP(M, q, expected_z_in, expect_fast_pass);
+  runRegularizedLCP(M, q, expected_z_in, expect_fast_pass);
 }
 
 TEST(testMobyLCP, testTrivial) {
@@ -107,7 +131,7 @@ TEST(testMobyLCP, testTrivial) {
 
   // Mangle the input matrix so that some regularization occurs.
   M(0,8) = 10;
-  runRegularizedLCP(M, q, empty_z);
+  runRegularizedLCP(M, q, empty_z, true);
 }
 
 TEST(testMobyLCP, testProblem1) {
@@ -127,7 +151,7 @@ TEST(testMobyLCP, testProblem1) {
   Eigen::Matrix<double, 1, 16> z;
   z.setZero();
   z(15) = 1;
-  runBasicLCP(M, q, z, false);
+  runLCP(M, q, z, false);
 }
 
 TEST(testMobyLCP, testProblem2) {
@@ -143,7 +167,7 @@ TEST(testMobyLCP, testProblem2) {
   Eigen::Matrix<double, 1, 2> z;
   z << 1, 0;
 
-  runBasicLCP(M, q, z, true);
+  runLCP(M, q, z, true);
 }
 
 TEST(testMobyLCP, testProblem3) {
@@ -160,7 +184,7 @@ TEST(testMobyLCP, testProblem3) {
   Eigen::Matrix<double, 1, 3> z;
   z << 0, 1, 3;
 
-  runBasicLCP(M, q, z, false);
+  runLCP(M, q, z, true);
 }
 
 TEST(testMobyLCP, testProblem4) {
@@ -220,18 +244,19 @@ TEST(testMobyLCP, testProblem6) {
         (2. * (23 - l)) / 13.,
         (1286. - (9. * l)) / 13;
 
-    runBasicLCP(M, q, z, true);
+    runLCP(M, q, z, true);
   }
 
   // Try again with a value > 23 and see that we've hit the limit as
-  // described.  The fast solver has stopped working in this case.
+  // described.  The fast solver has stopped working in this case
+  // without regularization.
   Eigen::Matrix<double, 1, 4> q;
   q << 50, 50, 100, -6;
 
   Eigen::Matrix<double, 1, 4> z;
   z << 3, 3, 0, 83;
 
-  runBasicLCP(M, q, z, false);
+  runLCP(M, q, z, true);
 }
 
 TEST(testMobyLCP, testEmpty) {
@@ -242,22 +267,28 @@ TEST(testMobyLCP, testEmpty) {
   l.setLoggingEnabled(verbose);
 
   bool result = l.lcp_fast(empty_M, empty_q, &z);
+  EXPECT_TRUE(result);
   EXPECT_EQ(z.size(), 0);
 
   result = l.lcp_lemke(empty_M, empty_q, &z);
+  EXPECT_TRUE(result);
   EXPECT_EQ(z.size(), 0);
 
   Eigen::SparseMatrix<double> empty_sparse_M(0,0);
   result = l.lcp_lemke(empty_sparse_M, empty_q, &z);
+  EXPECT_TRUE(result);
   EXPECT_EQ(z.size(), 0);
 
   result = l.lcp_fast_regularized(empty_M, empty_q, &z);
+  EXPECT_TRUE(result);
   EXPECT_EQ(z.size(), 0);
 
   result = l.lcp_lemke_regularized(empty_M, empty_q, &z);
+  EXPECT_TRUE(result);
   EXPECT_EQ(z.size(), 0);
 
   result = l.lcp_lemke_regularized(empty_sparse_M, empty_q, &z);
+  EXPECT_TRUE(result);
   EXPECT_EQ(z.size(), 0);
 }
 
