@@ -186,7 +186,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
 
   const std::shared_ptr<RigidBodyTree>& getRigidBodyTree(void) const { return tree; }
 
-    size_t getNumStates() const {
+  size_t getNumStates() const {
     return tree->num_positions + tree->num_velocities;
   }
   size_t getNumInputs() const;
