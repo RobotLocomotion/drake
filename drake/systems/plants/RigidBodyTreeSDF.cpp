@@ -479,26 +479,11 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
 
     // std::cout << "RigidBodyTreeSDF.cpp: parseSDFJoint(): Treating joint \"" << name << "\" as a loop joint.\n"
     //           << "  - axis: " << axis.transpose() << "\n"
-    //           << "  - parent (" << parent_name << ") loop point matrix:\n"
+    //           << std::setprecision(25)
+    //           << "  - parent (" << frameA->body->linkname << ") loop point matrix:\n"
     //           << frameA->transform_to_body.matrix() << "\n"
-    //           << "  - child (" << child_name << ") loop point matrix:\n"
+    //           << "  - child (" << frameB->body->linkname << ") loop point matrix:\n"
     //           << frameB->transform_to_body.matrix() << "\n"
-    //           << "  - translation part of parent matrix:\n"
-    //           << frameA->transform_to_body.translation() << "\n"
-    //           << "  - translation part of child matrix:\n"
-    //           << frameB->transform_to_body.translation() << "\n"
-    //           << "  - transform_parent_to_model:\n"
-    //           << transform_parent_to_model.matrix() << "\n"
-    //           << "  - transform_child_to_model:\n"
-    //           << transform_child_to_model.matrix() << "\n"
-    //           << "  - inverse of transform_parent_to_model:\n"
-    //           << transform_parent_to_model.inverse().matrix() << "\n"
-    //           << "  - inverse of transform_child_to_model:\n"
-    //           << transform_child_to_model.inverse().matrix() << "\n"
-    //           << "  - conversion of parent loop point into model frame: "
-    //           << (transform_parent_to_model * frameA->transform_to_body.translation()).transpose() << "\n"
-    //           << "  - conversion of child loop point into model frame: "
-    //           << (transform_child_to_model * frameB->transform_to_body.translation()).transpose() << "\n"
     //           << std::endl;
 
 
