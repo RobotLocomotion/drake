@@ -17,13 +17,6 @@
 #include "Optimization.h"
 
 namespace {
-// TODO sammy these helpers probably have some faster, more Eigen way
-// to do this than I've come up with.  This implementation, anyway, is
-// definitely slow.  It's an attempt at rewriting some Ravelin
-// functionality.  Also, the only reason that the out paramater is a
-// MatrixXd is so that this function can resize it.  Runtime
-// performance may be improved by allowing the caller to create a
-// fixed-size matrix and pass that in instead.
 template <typename Derived>
 void selectSubMat(const Eigen::MatrixBase<Derived>& in,
                   const std::vector<unsigned>& rows,
