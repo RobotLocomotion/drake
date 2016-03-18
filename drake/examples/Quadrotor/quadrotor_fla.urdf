@@ -18,29 +18,29 @@
       </geometry>
     </visual>
     <collision>
-      <origin rpy="0 0 " xyz=".1750 0 -0.1"/>
+      <origin rpy="0 0 0" xyz=".1750 0 -0.1"/>
       <geometry>
         <box size="0.2 0.2 0.1"/>
       </geometry>
-    </collision>      
+    </collision>
     <collision>
       <origin rpy="0 0 0" xyz="-.1750 0 -0.1"/>
       <geometry>
         <box size="0.2 0.2 0.1"/>
       </geometry>
-    </collision>      
+    </collision>
     <collision>
       <origin rpy="0 0 0" xyz="0 -.1750 -0.1"/>
       <geometry>
         <box size="0.2 0.2 0.1"/>
       </geometry>
-    </collision>      
+    </collision>
     <collision>
       <origin rpy="0 0 0" xyz="0 .1750 -0.1"/>
       <geometry>
         <box size="0.2 0.2 0.1"/>
       </geometry>
-    </collision>      
+    </collision>
   </link>
 
   <frame link="base_link" name="body" rpy="0 0 -0.78539816339" xyz="0 0 0" />
