@@ -1,5 +1,5 @@
-#ifndef __DrakeCollisionResultCollector_H__
-#define __DrakeCollisionResultCollector_H__
+#ifndef DRAKE_COLLISION_RESULT_COLLECTOR
+#define DRAKE_COLLISION_RESULT_COLLECTOR
 
 #include "drake/systems/plants/collision/DrakeCollision.h"
 

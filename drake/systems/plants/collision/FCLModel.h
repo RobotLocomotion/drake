@@ -1,5 +1,5 @@
-#ifndef __DrakeCollisionFCLModel_H__
-#define __DrakeCollisionFCLModel_H__
+#ifndef DRAKE_COLLISION_FCL_MODEL
+#define DRAKE_COLLISION_FCL_MODEL
 
 #include "Element.h"
 #include "Model.h"

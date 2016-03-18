@@ -1,6 +1,4 @@
-// Get an example of Bullet Collision detection working.
-// Characterize its output.
-// Duplicate with FCLModel.
+// Get an example of FCL Collision detection working compare it with the BulletModel.
 
 #include <iostream>
 #include <math.h>
