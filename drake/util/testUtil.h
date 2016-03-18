@@ -113,7 +113,7 @@ void valuecheckMatrix(const Eigen::MatrixBase<DerivedA>& a,
   }
 }
 
-void valuecheck(double a, double b, double tolerance) {
+inline void valuecheck(double a, double b, double tolerance) {
   if (std::abs(a - b) > tolerance) {
     std::ostringstream stream;
     stream << "Expected:\n" << a << "\nbut got:" << b << "\n";
