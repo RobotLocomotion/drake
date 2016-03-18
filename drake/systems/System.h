@@ -20,44 +20,57 @@ namespace Drake {
  * @ingroup concepts
  * @ingroup modeling
  * @{
- * @brief Describes a dynamical system that is compatible with most of our tools
- *for design and analysis
+  * @brief Describes a dynamical system that is compatible with most of our
+ * tools for design and analysis
  *
  * @nbsp
  *
- * | Every model of this concept must implement |  |
- * ---------------------|------------------------------------------------------------|
- * | X::StateVector     | type for the internal state of the system, which
- *models the Vector<ScalarType> concept |
- * | X::InputVector     | type for the input to the system, which models the
- *Vector<ScalarType> concept |
- * | X::OutputVector    | type for the output from the system, which models the
- *Vector<ScalarType> concept |
- * | template <ScalarType> StateVector<ScalarType> X::dynamics(const ScalarType&
- *t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) | @f$
- *\dot{x} = \text{dynamics}(t, x, u) @f$ |
- * | template <ScalarType> OutputVector<ScalarType> X::output(const ScalarType&
- *t, const StateVector<ScalarType>& x, const InputVector<ScalarType>& u) | @f$ y
- *= \text{output}(t, x, u) @f$  |
- * | bool isTimeVarying()  | should return false if output() and dynamics()
- *methods do not depend on time.  @default true |
- * | bool isDirectFeedthrough() | should return false if output() does not
- *depend directly on the input u.  @default true |
- * | size_t getNumStates() | only required if the state vector is
- *dynamically-sized |
- * | size_t getNumInputs() | only required if the input vector is
- *dynamically-sized |
- * | size_t getNumOutputs() | only required if the output vector is
- *dynamically-sized |
+ * <table>
+ * <tr><th colspan="2"> Every model of this concept must implement
+ * <tr><td> X::StateVector
+ *     <td> type for the internal state of the system, which models the
+ *          Vector<ScalarType> concept
+ * <tr><td> X::InputVector
+ *     <td> type for the input to the system, which models the
+ *          Vector<ScalarType> concept
+ * <tr><td> X::OutputVector
+ *     <td> type for the output from the system, which models the
+ *          Vector<ScalarType> concept
+ * <tr><td><pre>
+ * template <ScalarType> StateVector<ScalarType>
+ * X::dynamics(const ScalarType& *t,
+ *             const StateVector<ScalarType>& x,
+ *             const InputVector<ScalarType>& u)</pre>
+ *     <td> @f$ \dot{x} = \text{dynamics}(t, x, u) @f$
+ * <tr><td><pre>
+ * template <ScalarType> OutputVector<ScalarType>
+ * X::output(const ScalarType& t,
+ *           const StateVector<ScalarType>& x,
+ *           const InputVector<ScalarType>& u)</pre>
+ *     <td> @f$ y = \text{output}(t, x, u) @f$
+ * <tr><td> bool isTimeVarying()
+ *     <td> should return false if output() and dynamics() methods
+ *          do not depend on time.  @default true
+ * <tr><td> bool isDirectFeedthrough()
+ *     <td> should return false if output() does not depend directly
+ *          on the input u.  @default true
+ * <tr><td> size_t getNumStates()
+ *     <td> only required if the state vector is dynamically-sized
+ * <tr><td> size_t getNumInputs()
+ *     <td> only required if the input vector is dynamically-sized
+ * <tr><td> size_t getNumOutputs()
+ *     <td> only required if the output vector is dynamically-sized
+ * </table>
  *
  * (always try to label your methods with const if possible)
  *
  * todo: dynamics and output should be implemented as Drake::Function(s) with
- *input-output relationships defined.  then we would no longer specify
- *isTimeVarying and isDirectFeedthrough (we could extract them from the
- *input-output relationship)
+ * input-output relationships defined.  then we would no longer specify
+ * isTimeVarying and isDirectFeedthrough (we could extract them from the
+ * input-output relationship)
+ *
  * todo: move xdot and y to be arguments instead of return values, to be
- *consistent with Drake::Function.
+ * consistent with Drake::Function.
  *
  * @nbsp
  *
@@ -87,7 +100,7 @@ struct NumStatesDispatch<System, true> {
  * @concept{system_concept}
  *
  * @retval RowsAtCompileTime or the result of getNumStates() for dynamically
- *sized vectors
+ * sized vectors
  */
 template <typename System>
 std::size_t getNumStates(const System& sys) {
