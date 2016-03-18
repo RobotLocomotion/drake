@@ -3,6 +3,7 @@
 #include <stdexcept>
 
 #include "drake/util/drakeGeometryUtil.h"
+#include "drake/util/testUtil.h"
 
 using namespace std;
 using namespace Eigen;
@@ -133,4 +134,125 @@ ostream& operator<<(ostream& out, const RigidBody& b) {
       b.hasParent() ? b.getJoint().getName() : "no parent joint";
   out << "RigidBody(" << b.linkname << "," << joint_name << ")";
   return out;
+}
+
+#define PRINT_STMT(x) std::cout << "RigidBody: EQUALS: " << x << std::endl;
+
+bool operator==(const RigidBody & rb1, const RigidBody & rb2) {
+  bool result = true;
+
+  if (rb1.linkname.compare(rb2.linkname) != 0) {
+    PRINT_STMT("Link names do not match "
+      << rb1.linkname << " vs. " << rb2.linkname)
+    result = false;
+  }
+
+  if (result && rb1.hasParent() && !rb2.hasParent()) {
+    PRINT_STMT("LHS rigid body has parent whereas RHS rigid body does not. Linkname is " << rb1.linkname << ".")
+    result = false;
+  }
+
+  if (result && !rb1.hasParent() && rb2.hasParent()) {
+    PRINT_STMT("LHS rigid body does not have parent whereas RHS rigid body does. Linkname is " << rb1.linkname << ".")
+    result = false;
+  }
+
+  if (result && rb1.hasParent() && rb2.hasParent()) {
+      if (rb1.parent->linkname.compare(rb2.parent->linkname) != 0) {
+        PRINT_STMT("Link " << rb1.linkname << " have different parent links ("
+          << rb1.parent->linkname << " vs. " << rb2.parent->linkname << ".")
+        result = false;
+      }
+  }
+
+  if (result && rb1.body_index != rb2.body_index) {
+    PRINT_STMT("Body indices do not match: "
+      << rb1.body_index << " vs. " << rb2.body_index)
+    result = false;
+  }
+
+  if (result && rb1.position_num_start != rb2.position_num_start) {
+    PRINT_STMT("Variable position_num_start does not match: "
+      << rb1.position_num_start << " vs. " << rb2.position_num_start)
+    result = false;
+  }
+
+  if (result && rb1.velocity_num_start != rb2.velocity_num_start) {
+    PRINT_STMT("Variable velocity_num_start does not match: "
+      << rb1.velocity_num_start << " vs. " << rb2.velocity_num_start)
+    result = false;
+  }
+
+  // Do not compare visual_elements for now.
+  // DrakeShapes::VectorOfVisualElements visual_elements;
+
+  // Do not compare collision elements for now.
+  // if (result) {
+  //   for (auto& ce1 : rb1.collision_element_ids) {
+  //     // Do not enforce a specific ordering of bodies
+  //     bool found = false;
+  //     for (auto& ce2 : rb2.collision_element_ids) {
+  //       if (ce1 == ce2)
+  //         found = true;
+  //     }
+  //     if (!found) {
+  //       PRINT_STMT("Could not find collision element matching " << ce1)
+  //       result = false;
+  //     }
+  //   }
+  // }
+
+  // Do not compare collision element groups for now
+  // std::map<std::string, std::vector<DrakeCollision::ElementId> >
+  //     collision_element_groups;
+
+  if (result) {
+    try {
+      valuecheckMatrix(rb1.contact_pts, rb2.contact_pts, 1e-10);
+    } catch(std::runtime_error re) {
+      PRINT_STMT("Contact points mismatch!" << std::endl
+                  << "  - rigid body 1:\n" << rb1.contact_pts << std::endl
+                  << "  - rigid body 2:\n" << rb2.contact_pts << std::endl
+                  << "  - details:\n" << re.what())
+      result = false;
+    }
+  }
+
+  if (result && rb1.mass != rb2.mass) {
+    std::cout << "The rigid body masses do not match: "
+      << rb1.mass << " vs. " << rb2.mass << std::endl;
+    result = false;
+  }
+
+  if (result) {
+    try {
+      valuecheckMatrix(rb1.com, rb2.com, 1e-10);
+    } catch(std::runtime_error re) {
+      PRINT_STMT("Center of mass mismatch!" << std::endl
+                  << "  - rigid body 1:\n" << rb1.com << std::endl
+                  << "  - rigid body 2:\n" << rb2.com << std::endl
+                  << "  - details:\n" << re.what())
+      result = false;
+    }
+  }
+
+  if (result) {
+    try {
+      valuecheckMatrix(rb1.I, rb2.I, 1e-10);
+    } catch(std::runtime_error re) {
+      PRINT_STMT("Inertia matrix mismatch!" << std::endl
+                  << "  - rigid body 1:\n" << rb1.I << std::endl
+                  << "  - rigid body 2:\n" << rb2.I << std::endl
+                  << "  - details:\n" << re.what())
+      result = false;
+    }
+  }
+
+  return result;
+}
+
+#undef PRINT_STMT
+
+bool operator!=(const RigidBody & rb1, const RigidBody & rb2) {
+  return !operator==(rb1, rb2);
 }

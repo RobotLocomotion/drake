@@ -74,6 +74,13 @@ int main(int argc, char* argv[]) {
     return -1;
   }
 
+  if (*r1->getRigidBodyTree().get() != *r2->getRigidBodyTree().get()) {
+    std::cout << "ERROR: The two rigid body trees are numerically different!" << std::endl;
+    return -1;
+  } else {
+    std::cout << "The two models passed the numerical comparison test." << std::endl;
+  }
+
   for (int i = 0; i < 1000; i++) {
     std::cout << "i = " << i << std::endl;
     double t = 0.0;

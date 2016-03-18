@@ -5,6 +5,7 @@
 #include "drake/systems/plants/joints/DrakeJoint.h"
 #include "drake/systems/plants/joints/FixedJoint.h"
 #include "drake/util/drakeUtil.h"
+#include "drake/util/testUtil.h"
 
 #include <algorithm>
 #include <string>
@@ -38,6 +39,201 @@ std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj) {
      << obj.frameB->transform_to_body.matrix().topRightCorner(3, 1).transpose()
      << " on " << obj.frameB->body->linkname << std::endl;
   return os;
+}
+
+#define PRINT_STMT(x) std::cout << "RigidBodyTree: ==: " << x << std::endl;
+
+bool operator==(const RigidBodyTree & rbt1, const RigidBodyTree & rbt2) {
+  // PRINT_STMT("Checking if two rigid body trees are equal...")
+  bool result = true;
+
+  // Verify the two models have the same number of position values
+  if (rbt1.num_positions != rbt2.num_positions) {
+    PRINT_STMT("Number of positions do not match!")
+    result = false;
+  }
+
+  // Verify the two models have the same number of velocity values
+  if (result && rbt1.num_velocities != rbt2.num_velocities) {
+    PRINT_STMT("Number of velocities do not match!")
+    result = false;
+  }
+
+  // Verify the two models have the same minimum joint limits
+  if (result) {
+    try {
+      valuecheckMatrix(rbt1.joint_limit_min, rbt2.joint_limit_min, 1e-10);
+    } catch(std::runtime_error re) {
+      PRINT_STMT("Minimum joint limits do not match!" << std::endl
+                  << "  - tree 1:\n" << rbt1.jointLimitsToString() << std::endl
+                  << "  - tree 2:\n" << rbt2.jointLimitsToString() << std::endl
+                  << "  - details:\n" << re.what())
+      result = false;
+    }
+  }
+
+  // Verify the two models have the same maximum joint limits
+  if (result) {
+    try {
+      valuecheckMatrix(rbt1.joint_limit_max, rbt2.joint_limit_max, 1e-10);
+    } catch(std::runtime_error re) {
+      PRINT_STMT("Minimum joint limits do not match!" << std::endl
+                  << "  - tree 1:\n" << rbt1.jointLimitsToString() << std::endl
+                  << "  - tree 2:\n" << rbt2.jointLimitsToString() << std::endl
+                  << "  - details:\n" << re.what())
+      result = false;
+    }
+  }
+
+  // Verify the two models have the same rigid bodies
+  if (result && rbt1.bodies.size() != rbt2.bodies.size()) {
+    PRINT_STMT("Number of bodies do not match! (" << rbt1.bodies.size() << " vs. " << rbt2.bodies.size() << ")")
+    result = false;
+  }
+
+  if (result) {
+    for (auto& rb1 : rbt1.bodies) {
+      std::shared_ptr<RigidBody> rb2 = rbt2.findLink(rb1->linkname, rb1->model_name);
+      if (rb2 != nullptr) {
+        if (*rb1 != *rb2) {
+          PRINT_STMT("Rigid body \"" << rb1->linkname << "\" mismatch!")
+          result = false;
+        }
+      } else {
+        PRINT_STMT("Could not find rigid body in RHS tree with linkname \""
+          << rb2->linkname << "\", and model_name \"" << rb2->model_name << "\"")
+        result = false;
+      }
+    }
+  }
+
+  // Verify the two models have the same frames
+  if (result && rbt1.frames.size() != rbt2.frames.size()) {
+    PRINT_STMT("Number of frames do not match! (" << rbt1.frames.size() << " vs. " << rbt2.frames.size() << ")")
+    result = false;
+  }
+
+  if (result) {
+    for (auto& f1 : rbt1.frames) {
+      std::shared_ptr<RigidBodyFrame> f2 = rbt2.findFrame(f1->name, f1->body->model_name);
+      if (f2 != nullptr) {
+        if (*f1 != *f2) {
+          PRINT_STMT("Frame mismatch!\n"
+                     << "  - f1 =\n" << f1 << "\n"
+                     << "  - f2 =\n" << f2)
+          result = false;
+          break;
+        }
+      } else {
+        std::stringstream msg;
+        msg << "Unable to find frame in RHS tree with name \"" << f1->name
+          << ", and model name \"" << f1->body->model_name << "\". ";
+        msg << "Frames in RHS tree:\n";
+        for (auto& f2 : rbt2.frames) {
+          msg << "\t" << f2->name << "\t" << f2->body->model_name << "\n";
+        }
+        PRINT_STMT(msg.str())
+        result = false;
+        break;
+      }
+    }
+  }
+
+  // Verify the two models have the same actuators
+  if (result && rbt1.actuators.size() != rbt2.actuators.size()) {
+    PRINT_STMT("Number of actuators do not match! (" << rbt1.actuators.size() << " vs. " << rbt2.actuators.size() << ")")
+    result = false;
+  }
+
+  if (result) {
+    for (auto& a1 : rbt1.actuators) {
+      bool match = false;
+      for (auto& a2 : rbt2.actuators) {
+        if (a1.name.compare(a2.name) == 0 &&
+          *a1.body == *a2.body &&
+          a1.reduction == a2.reduction &&
+          a1.effort_limit_min == a2.effort_limit_min &&
+          a1.effort_limit_max == a2.effort_limit_max) {
+          match = true;
+        }
+      }
+      if (!match) {
+        PRINT_STMT("No matching actuator named \"" << a1.name << "\"")
+        result = false;
+        break;
+      }
+    }
+  }
+
+  // Verify the two models have the same loop
+  if (result && rbt1.loops.size() != rbt2.loops.size()) {
+    PRINT_STMT("Number of loops do not match! (" << rbt1.loops.size() << " vs. " << rbt2.loops.size() << ")")
+    result = false;
+  }
+
+  if (result) {
+    for (auto& l1 : rbt1.loops) {
+      bool match = false;
+      for (auto& l2 : rbt2.loops) {
+        if (*l1.frameA == *l2.frameA &&
+            *l2.frameB == *l2.frameB) {
+          try {
+            valuecheckMatrix(l1.axis, l2.axis, 1e-10);
+            match = true;
+          } catch(std::runtime_error re) {
+            // don't do anything here, another RHS rigid body tree loop may match
+          }
+        }
+        if (!match) {
+          PRINT_STMT("Loop mismatch!")
+          result = false;
+          break;
+        }
+      }
+    }
+  }
+
+  // Verify the two models have the same gravity
+  if (result) {
+    try {
+      valuecheckMatrix(rbt1.a_grav, rbt2.a_grav, 1e-10);
+    } catch(std::runtime_error re) {
+      PRINT_STMT("Gravity vector mismatch!" << std::endl
+                  << "  - tree 1:\n" << rbt1.jointLimitsToString() << std::endl
+                  << "  - tree 2:\n" << rbt2.jointLimitsToString() << std::endl
+                  << "  - details:\n" << re.what())
+      result = false;
+    }
+  }
+
+  // Verify the two models have the same B matrix (maps inputs into joint-space forces)
+  if (result) {
+    try {
+      valuecheckMatrix(rbt1.B, rbt2.B, 1e-10);
+    } catch(std::runtime_error re) {
+      PRINT_STMT("B matrix mismatch!" << std::endl
+                  << "  - tree 1:\n" << rbt1.B << std::endl
+                  << "  - tree 2:\n" << rbt2.B << std::endl
+                  << "  - details:\n" << re.what())
+      result = false;
+    }
+  }
+
+  // Verify the two models have identical collision models
+  // if (result) {
+  //   if (*rbt1.collision_model != *rbt2.collision_model) {
+  //     PRINT_STMT("Collision model mismatch!")
+  //     result = false;
+  //   }
+  // }
+
+  return result;
+}
+
+#undef PRINT_STMT
+
+bool operator!=(const RigidBodyTree & t1, const RigidBodyTree & t2) {
+  return !operator==(t1,t2);
 }
 
 std::ostream& operator<<(std::ostream &os, const RigidBodyTree &tree) {
@@ -1866,6 +2062,22 @@ size_t RigidBodyTree::getNumPositionConstraints() const {
 void RigidBodyTree::addFrame(std::shared_ptr<RigidBodyFrame> frame) {
   frames.push_back(frame);
   frame->frame_index = -(static_cast<int>(frames.size()) - 1) - 2;  // yuck!!
+}
+
+std::string RigidBodyTree::jointLimitsToString() const {
+  std::stringstream msg;
+  for (int ii = 0; ii < bodies.size(); ii++) {
+    auto& body = bodies[ii];
+    if (body->hasParent()) {
+      const DrakeJoint& joint = body->getJoint();
+      auto min = joint.getJointLimitMin();
+      auto max = joint.getJointLimitMax();
+      for (int jj = 0; jj < min.size(); jj++) {
+        msg << joint.getName() << "[" << jj << "]" << "\t" << min[jj] << "\t" << max[jj] << std::endl;
+      }
+    }
+  }
+  return msg.str();
 }
 
 template DRAKERBM_EXPORT Eigen::Matrix<

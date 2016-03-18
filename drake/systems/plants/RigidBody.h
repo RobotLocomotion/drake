@@ -87,6 +87,16 @@ class DRAKERBM_EXPORT RigidBody {
    */
   void applyTransformToJointFrame(const Eigen::Isometry3d& transform_body_to_joint);
 
+  /*!
+   * Overload operator== to check whether two RigidBody objects are equal.
+   */
+  friend bool operator==(const RigidBody & rb1, const RigidBody & rb2);
+
+  /*!
+   * Overload operator!= to check whether two RigidBody objects are unequal.
+   */
+  friend bool operator!=(const RigidBody & rb1, const RigidBody & rb2);
+
  public:
   std::string linkname;
   std::string model_name;  // todo: replace robotnum w/ model_name
@@ -130,7 +140,7 @@ class DRAKERBM_EXPORT RigidBody {
 
     virtual bool collidesWith(const DrakeCollision::Element* other) const;
 
-    friend std::ostream& operator<<(std::ostream& out, const RigidBody& b);
+    // friend std::ostream& operator<<(std::ostream& out, const RigidBody& b);
    protected:
     std::shared_ptr<RigidBody> body;
 

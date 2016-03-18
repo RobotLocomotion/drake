@@ -9,13 +9,13 @@
 
 #include "collision/DrakeCollision.h"
 #include "shapes/DrakeShapes.h"
-#include "KinematicPath.h"
+#include "drake/systems/plants/KinematicPath.h"
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
 #include "drake/util/drakeUtil.h"
 #include <stdexcept>
-#include "RigidBody.h"
-#include "RigidBodyFrame.h"
-#include "KinematicsCache.h"
+#include "drake/systems/plants/RigidBody.h"
+#include "drake/systems/plants/RigidBodyFrame.h"
+#include "drake/systems/plants/KinematicsCache.h"
 #include "drake/drakeRBM_export.h"
 
 #define BASIS_VECTOR_HALF_COUNT \
@@ -714,6 +714,27 @@ class DRAKERBM_EXPORT RigidBodyTree {
     return full;
   };
 
+  /*!
+   * Returns a string describing the limits of the joints in this
+   * rigid body tree.
+   */
+  std::string jointLimitsToString() const;
+
+  /*!
+   * Overload operator== to check whether two RigidBodyTree objects are equal.
+   */
+  friend bool operator==(const RigidBodyTree & t1, const RigidBodyTree & t2);
+
+  /*!
+   * Overload operator!= to check whether two RigidBodyTree objects are unequal.
+   */
+  friend bool operator!=(const RigidBodyTree & t1, const RigidBodyTree & t2);
+
+  /**
+   * A toString method for this class.
+   */
+  friend std::ostream& operator<<(std::ostream&, const RigidBodyTree&);
+
  public:
   static const std::set<int> default_robot_num_set;
 
@@ -739,11 +760,6 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
   Eigen::Matrix<double, TWIST_SIZE, 1> a_grav;
   Eigen::MatrixXd B;  // the B matrix maps inputs into joint-space forces
-
-  /**
-   * A toString method for this class.
-   */
-  friend std::ostream& operator<<(std::ostream&, const RigidBodyTree&);
 
  private:
   // helper functions for contactConstraints
@@ -785,5 +801,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
   std::set<std::string> already_printed_warnings;
 };
+
+
 
 #endif
