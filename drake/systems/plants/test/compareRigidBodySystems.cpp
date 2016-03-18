@@ -85,6 +85,7 @@ int main(int argc, char* argv[]) {
     std::cout << "i = " << i << std::endl;
     double t = 0.0;
     VectorXd x = getInitialState(*r1);
+    x[2] = 10.0; // fix vehicle 10m high in the air
     VectorXd u = VectorXd::Random(r1->getNumInputs());
 
     auto xdot1 = r1->dynamics(t, x, u);
