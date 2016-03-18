@@ -411,22 +411,22 @@
     <limit effort="0" lower="0" upper="0" velocity="0"/>
   </joint>
 
-<!--   <loop_joint name="pin" type="continuous">
+  <loop_joint name="right_pin" type="continuous">
     <axis xyz="0 0 1"/>
     <link1 link="right_tie_rod_arm" rpy="0 0 0" xyz="-0.17246 0.086227  0.03092"/>
     <link2 link="tie_rod" rpy="0 0 0" xyz="0 -0.817006 0"/>
-  </loop_joint> -->
+  </loop_joint>
 
   <transmission name="steering_drive" type="SimpleTransmission">
     <joint name="steering"/>
-    <actuator name="steering_angle"/>
+    <actuator name="steering"/>
   </transmission>
   <transmission name="front_left_drive" type="SimpleTransmission">
     <joint name="left_wheel_joint"/>
-    <actuator name="throttle_left_value"/>
+    <actuator name="left_wheel_joint"/>
   </transmission>
   <transmission name="front_right_drive" type="SimpleTransmission">
     <joint name="right_wheel_joint"/>
-    <actuator name="throttle_right_value"/>
+    <actuator name="right_wheel_joint"/>
   </transmission>
 </robot>

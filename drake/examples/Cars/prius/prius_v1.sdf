@@ -457,6 +457,8 @@
       <axis>
         <xyz>0 0 1</xyz>
         <limit>
+          <lower>-1.5</lower>
+          <upper>1.5</upper>
           <effort>0</effort>
         </limit>
       </axis>
@@ -490,7 +492,7 @@
       <child>right_hub</child>
       <pose>0 0 0 0 0 0</pose>
     </joint>
-<!--     <joint name='right_pin' type='revolute'>
+    <joint name='right_pin' type='revolute'>
       <parent>right_tie_rod_arm</parent>
       <child>tie_rod</child>
       <pose>0 -0.817006 0 0 0 0</pose>
@@ -502,7 +504,7 @@
           <effort>0</effort>
         </limit>
       </axis>
-    </joint> -->
+    </joint>
     <joint name='right_wheel_joint' type='revolute'>
       <parent>right_hub</parent>
       <child>right_wheel</child>
