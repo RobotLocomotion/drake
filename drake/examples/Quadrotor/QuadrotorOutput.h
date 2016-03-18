@@ -104,7 +104,6 @@ bool encode(const double& t, const QuadrotorOutput<double> & x, drake::lcmt_quad
   lcm_magnetometer = x.magnetometer;
   lcm_lidar = x.lidar_returns;
   msg.rangefinder = x.rangefinder;
-  std::cout << msg.rangefinder << std::endl;
   return true;
 }
 
