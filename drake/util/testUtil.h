@@ -109,7 +109,7 @@ void valuecheckMatrix(const Eigen::MatrixBase<DerivedA>& a,
     }
     error_msg += "\nA:\n" + to_string(a) + "\nB:\n" + to_string(b) +
                  "\nA-B:\n" + to_string(a - b);
-    throw std::runtime_error("Drake:ValueCheck ERROR:" + error_msg);
+    throw std::runtime_error("Drake:ValueCheck ERROR: " + error_msg);
   }
 }
 
