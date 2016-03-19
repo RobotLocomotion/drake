@@ -17,6 +17,10 @@ message(STATUS CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
 
 include(ExternalProject)
 
+# Require Java at the super-build level so libbot cannot configure without finding Java
+find_package(Java REQUIRED)
+include(UseJava)
+
 # menu of extra examples
 option(EXAMPLES_LITTLEDOG "planning and control for a small quadruped robot" OFF)
 
@@ -112,7 +116,8 @@ set(director_GIT_REPOSITORY https://github.com/RobotLocomotion/director.git)
 set(director_GIT_TAG 7782d87304a7819e8716237b1251451bb949c792)
 set(director_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/director/distro/pods/drake-distro)
 set(director_IS_PUBLIC TRUE)
-set(drake_ADDITIONAL_BUILD_ARGS CMAKE_ARGS -DWITH_PYTHON_3=${WITH_PYTHON_3})
+set(drake_java_args -DJava_JAVA_EXECUTABLE=${Java_JAVA_EXECUTABLE} -DJava_JAVAC_EXECUTABLE=${Java_JAVAC_EXECUTABLE} -DJava_JAVAH_EXECUTABLE=${Java_JAVAH_EXECUTABLE} -DJava_VERSION_STRING=${Java_VERSION_STRING})
+set(drake_ADDITIONAL_BUILD_ARGS CMAKE_ARGS drake_java_args -DWITH_PYTHON_3=${WITH_PYTHON_3})
 set(eigen_GIT_REPOSITORY https://github.com/RobotLocomotion/eigen-pod.git)
 set(eigen_GIT_TAG 20a633e8f0a285edf9dcc5a06cc9e80774920a7f)
 set(eigen_IS_CMAKE_POD TRUE)
