@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <unordered_map>
+#include <iostream>
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
@@ -182,6 +183,13 @@ class DRAKECOLLISION_EXPORT Model {
     if(element != elements.end()) {
       element->second->setLocalTransform(transform_body_to_joint *
         element->second->getLocalTransform());
+
+      std::cout << "DrakeCollision::Model::transformCollisionFrame: Updating frame:\n"
+                << "  - eid: " << eid << "\n"
+                << "  - transform_body_to_joint:\n" << transform_body_to_joint.matrix() << "\n"
+                << "  - new local transform:\n"
+                << (transform_body_to_joint * element->second->getLocalTransform()).matrix()
+                << std::endl;
       return true;
     }
     else
@@ -192,6 +200,16 @@ class DRAKECOLLISION_EXPORT Model {
    * A toString method for this class.
    */
   friend std::ostream& operator<<(std::ostream&, const Model&);
+
+  /*!
+   * Overload operator== to check whether two DrakeCollision::Model objects are equal.
+   */
+  friend bool operator==(const Model & m1, const Model & m2);
+
+  /*!
+   * Overload operator!= to check whether two DrakeCollision::Model objects are unequal.
+   */
+  friend bool operator!=(const Model & m1, const Model & m2);
 
  protected:
   std::unordered_map<ElementId, std::unique_ptr<Element> > elements;

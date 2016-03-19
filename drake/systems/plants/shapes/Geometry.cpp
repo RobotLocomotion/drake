@@ -2,6 +2,7 @@
 
 #include "Geometry.h"
 #include "spruce.hh"
+#include "drake/util/testUtil.h"
 
 using namespace std;
 using namespace Eigen;
@@ -10,6 +11,21 @@ namespace DrakeShapes {
 const int Geometry::NUM_BBOX_POINTS = 8;
 const int Sphere::NUM_POINTS = 1;
 const int Capsule::NUM_POINTS = 2;
+
+
+std::string shapeToString(Shape ss) {
+  switch (ss) {
+    case UNKNOWN: return "UNKNOWN"; break;
+    case BOX: return "BOX"; break;
+    case SPHERE: return "SPHERE"; break;
+    case CYLINDER: return "CYLINDER"; break;
+    case MESH: return "MESH"; break;
+    case MESH_POINTS: return "MESH_POINTS"; break;
+    case CAPSULE: return "CAPSULE"; break;
+  }
+  return "UNDEFINED";
+}
+
 
 Geometry::Geometry() : shape(UNKNOWN) {}
 
@@ -44,6 +60,36 @@ void Geometry::getBoundingBoxPoints(double x_half_width, double y_half_width,
   points << cx, cy, cz;
 }
 
+ostream& operator<<(ostream& out, const Geometry& gg) {
+  out << shapeToString(gg.getShape())
+      << ", " << gg.NUM_BBOX_POINTS;
+  return out;
+}
+
+#define PRINT_STMT(x) std::cout << "Geometry: EQUALS: " << x << std::endl;
+
+bool operator==(const Geometry & g1, const Geometry & g2) {
+  bool result = true;
+
+  if (g1.getShape() != g2.getShape()) {
+    PRINT_STMT("shapes do not match")
+    result = false;
+  }
+
+  if (result && g1.NUM_BBOX_POINTS != g2.NUM_BBOX_POINTS) {
+    PRINT_STMT("num_bbox_points mismatch")
+    result = false;
+  }
+
+  return result;
+}
+
+#undef PRINT_STMT
+
+bool operator!=(const Geometry & g1, const Geometry & g2) {
+  return !operator==(g1, g2);
+}
+
 Sphere::Sphere(double radius) : Geometry(SPHERE), radius(radius) {}
 
 Sphere *Sphere::clone() const { return new Sphere(*this); }
@@ -63,6 +109,37 @@ void Sphere::getTerrainContactPoints(Matrix3Xd &points) const {
     points = Matrix3Xd();
 }
 
+ostream& operator<<(ostream& out, const Sphere& ss) {
+  out << static_cast<const Geometry &>(ss) << ", " << ss.radius << ", " << ss.NUM_POINTS;
+  return out;
+}
+
+#define PRINT_STMT(x) std::cout << "Sphere: EQUALS: " << x << std::endl;
+
+bool operator==(const Sphere & s1, const Sphere & s2) {
+  bool result = true;
+
+  result = (static_cast<const Geometry &>(s1) == static_cast<const Geometry &>(s2));
+
+  if (result && s1.radius != s2.radius) {
+    PRINT_STMT("radius does not match (" << s1.radius << " vs. " << s2.radius << ")")
+    result = false;
+  }
+
+  if (result && s1.NUM_POINTS != s2.NUM_POINTS) {
+    PRINT_STMT("NUM_POINTS mismatch (" << s1.NUM_POINTS << " vs. " << s2.NUM_POINTS << ")")
+    result = false;
+  }
+
+  return result;
+}
+
+#undef PRINT_STMT
+
+bool operator!=(const Sphere & s1, const Sphere & s2) {
+  return !operator==(s1, s2);
+}
+
 Box::Box(const Eigen::Vector3d &size) : Geometry(BOX), size(size) {}
 
 Box *Box::clone() const { return new Box(*this); }
@@ -77,6 +154,33 @@ void Box::getBoundingBoxPoints(Matrix3Xd &points) const { getPoints(points); }
 void Box::getTerrainContactPoints(Matrix3Xd &points) const {
   getPoints(points);
 }
+
+ostream& operator<<(ostream& out, const Box& bb) {
+  out << static_cast<const Geometry &>(bb) << ", " << bb.size.transpose();
+  return out;
+}
+
+#define PRINT_STMT(x) std::cout << "Box: EQUALS: " << x << std::endl;
+
+bool operator==(const Box & b1, const Box & b2) {
+  bool result = true;
+
+  result = (static_cast<const Geometry &>(b1) == static_cast<const Geometry &>(b2));
+
+  if (result && b1.size != b2.size) {
+    PRINT_STMT("box size does not match (" << b1.size.transpose() << " vs. " << b2.size.transpose() << ")")
+    result = false;
+  }
+
+  return result;
+}
+
+#undef PRINT_STMT
+
+bool operator!=(const Box & b1, const Box & b2) {
+  return !operator==(b1, b2);
+}
+
 
 Cylinder::Cylinder(double radius, double length)
     : Geometry(CYLINDER), radius(radius), length(length) {}
@@ -98,6 +202,38 @@ void Cylinder::getBoundingBoxPoints(Matrix3Xd &points) const {
   Geometry::getBoundingBoxPoints(radius, radius, length / 2.0, points);
 }
 
+ostream& operator<<(ostream& out, const Cylinder& cc) {
+  out << static_cast<const Geometry &>(cc) << ", " << cc.radius << ", " << cc.length;
+  return out;
+}
+
+#define PRINT_STMT(x) std::cout << "Cylinder: EQUALS: " << x << std::endl;
+
+bool operator==(const Cylinder & c1, const Cylinder & c2) {
+  bool result = true;
+
+  result = (static_cast<const Geometry &>(c1) == static_cast<const Geometry &>(c2));
+
+  if (result && c1.radius != c2.radius) {
+    PRINT_STMT("radius does not match (" << c1.radius << " vs. " << c2.radius << ")")
+    result = false;
+  }
+
+  if (result && c1.length != c2.length) {
+    PRINT_STMT("length mismatch (" << c1.length << " vs. " << c2.length << ")")
+    result = false;
+  }
+
+  return result;
+}
+
+#undef PRINT_STMT
+
+bool operator!=(const Cylinder & c1, const Cylinder & c2) {
+  return !operator==(c1, c2);
+}
+
+
 Capsule::Capsule(double radius, double length)
     : Geometry(CAPSULE), radius(radius), length(length) {}
 
@@ -118,6 +254,38 @@ void Capsule::getBoundingBoxPoints(Matrix3Xd &points) const {
   Geometry::getBoundingBoxPoints(radius, radius, (length / 2.0 + radius),
                                  points);
 }
+
+ostream& operator<<(ostream& out, const Capsule& cc) {
+  out << static_cast<const Geometry &>(cc) << ", " << cc.radius << ", " << cc.length;
+  return out;
+}
+
+#define PRINT_STMT(x) std::cout << "Capsule: EQUALS: " << x << std::endl;
+
+bool operator==(const Capsule & c1, const Capsule & c2) {
+  bool result = true;
+
+  result = (static_cast<const Geometry &>(c1) == static_cast<const Geometry &>(c2));
+
+  if (result && c1.radius != c2.radius) {
+    PRINT_STMT("radius does not match (" << c1.radius << " vs. " << c2.radius << ")")
+    result = false;
+  }
+
+  if (result && c1.length != c2.length) {
+    PRINT_STMT("length mismatch (" << c1.length << " vs. " << c2.length << ")")
+    result = false;
+  }
+
+  return result;
+}
+
+#undef PRINT_STMT
+
+bool operator!=(const Capsule & c1, const Capsule & c2) {
+  return !operator==(c1, c2);
+}
+
 
 Mesh::Mesh(const string &filename)
     : Geometry(MESH), scale(1.0), filename(filename) {}
@@ -236,6 +404,48 @@ void Mesh::getBoundingBoxPoints(Matrix3Xd &bbox_points) const {
       max_pos(2);
 }
 
+ostream& operator<<(ostream& out, const Mesh& mm) {
+  out << static_cast<const Geometry &>(mm) << ", " << mm.scale << ", " << mm.filename << ", " << mm.resolved_filename << ", " << mm.root_dir;
+  return out;
+}
+
+#define PRINT_STMT(x) std::cout << "Mesh: EQUALS: " << x << std::endl;
+
+bool operator==(const Mesh & m1, const Mesh & m2) {
+  bool result = true;
+
+  result = (static_cast<const Geometry &>(m1) == static_cast<const Geometry &>(m2));
+
+  if (result && m1.scale != m2.scale) {
+    PRINT_STMT("scale does not match (" << m1.scale << " vs. " << m2.scale << ")")
+    result = false;
+  }
+
+  if (result && m1.filename.compare(m2.filename) == 0) {
+    PRINT_STMT("filename mismatch (" << m1.filename << " vs. " << m2.filename << ")")
+    result = false;
+  }
+
+  if (result && m1.resolved_filename.compare(m2.resolved_filename) == 0) {
+    PRINT_STMT("resolved_filename mismatch (" << m1.resolved_filename << " vs. " << m2.resolved_filename << ")")
+    result = false;
+  }
+
+  if (result && m1.root_dir.compare(m2.root_dir) == 0) {
+    PRINT_STMT("root_dir mismatch (" << m1.root_dir << " vs. " << m2.root_dir << ")")
+    result = false;
+  }
+
+  return result;
+}
+
+#undef PRINT_STMT
+
+bool operator!=(const Mesh & m1, const Mesh & m2) {
+  return !operator==(m1, m2);
+}
+
+
 MeshPoints::MeshPoints(const Eigen::Matrix3Xd &points)
     : Geometry(MESH_POINTS), points(points) {}
 
@@ -256,4 +466,35 @@ void MeshPoints::getBoundingBoxPoints(Matrix3Xd &bbox_points) const {
       max_pos(2), min_pos(2), max_pos(2), min_pos(2), max_pos(2), min_pos(2),
       max_pos(2);
 }
+
+ostream& operator<<(ostream& out, const MeshPoints& mp) {
+  out << static_cast<const Geometry &>(mp) << ",\n" << mp.points;
+  return out;
 }
+
+#define PRINT_STMT(x) std::cout << "MeshPoints: EQUALS: " << x << std::endl;
+
+bool operator==(const MeshPoints & mp1, const MeshPoints & mp2) {
+  bool result = true;
+
+  result = (static_cast<const Geometry &>(mp1) == static_cast<const Geometry &>(mp2));
+
+  if (result) {
+    try {
+      valuecheckMatrix(mp1.points, mp2.points, 1e-10);
+    } catch(std::runtime_error & re) {
+      PRINT_STMT("points does not match:\n" << mp1.points << "\nvs.\n" << mp2.points)
+      result = false;
+    }
+  }
+
+  return result;
+}
+
+#undef PRINT_STMT
+
+bool operator!=(const MeshPoints & mp1, const MeshPoints & mp2) {
+  return !operator==(mp1, mp2);
+}
+
+} // namespace DrakeShapes

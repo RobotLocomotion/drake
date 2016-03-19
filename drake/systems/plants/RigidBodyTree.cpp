@@ -220,12 +220,12 @@ bool operator==(const RigidBodyTree & rbt1, const RigidBodyTree & rbt2) {
   }
 
   // Verify the two models have identical collision models
-  // if (result) {
-  //   if (*rbt1.collision_model != *rbt2.collision_model) {
-  //     PRINT_STMT("Collision model mismatch!")
-  //     result = false;
-  //   }
-  // }
+  if (result) {
+    if (*rbt1.collision_model != *rbt2.collision_model) {
+      PRINT_STMT("Collision model mismatch!")
+      result = false;
+    }
+  }
 
   return result;
 }
@@ -233,7 +233,7 @@ bool operator==(const RigidBodyTree & rbt1, const RigidBodyTree & rbt2) {
 #undef PRINT_STMT
 
 bool operator!=(const RigidBodyTree & t1, const RigidBodyTree & t2) {
-  return !operator==(t1,t2);
+  return !operator==(t1, t2);
 }
 
 std::ostream& operator<<(std::ostream &os, const RigidBodyTree &tree) {
@@ -277,6 +277,10 @@ RigidBodyTree::~RigidBodyTree(void) {}
 
 bool RigidBodyTree::transformCollisionFrame(DrakeCollision::ElementId& eid,
     const Eigen::Isometry3d& transform_body_to_joint) {
+  // std::cout << "RigidBodyTree::transformCollisionFrame: Method called!\n"
+  //           << "  - eid: " << eid << "\n"
+  //           << "  - transform_body_to_joint:\n" << transform_body_to_joint.matrix()
+  //           << std::endl;
   return collision_model->transformCollisionFrame(eid, transform_body_to_joint);
 }
 
@@ -500,29 +504,35 @@ DrakeCollision::ElementId RigidBodyTree::addCollisionElement(
     const RigidBody::CollisionElement& element,
     RigidBody& body, const string& group_name) {
 
-  // std::cout << "RigidBodyTree.cpp: RigidBodyTree::addCollisionElement: Adding element:\n"
-  //           << "  - link name: " << body.linkname << "\n"
-  //           << "  - group name: " << group_name << "\n"
-  //           << "  - collision element:\n"
-  //           << "     - rigid body name: " << element.getBody()->linkname << "\n"
-  //           << "     - id (memory address): " << element.getId() << "\n"
-  //           << "     - T_element_to_world:\n"
-  //           << element.getWorldTransform().matrix() << "\n"
-  //           << "     - T_element_to_local:\n"
-  //           << element.getLocalTransform().matrix()
-  //           << std::endl;
+  // std::cout << "RigidBodyTree::addCollisionElement: Adding element:\n"
+  //         << "  - link name: " << body.linkname << "\n"
+  //         << "  - group name: " << group_name << "\n"
+  //         << "  - collision element:\n"
+  //         << "     - rigid body name: " << element.getBody()->linkname << "\n"
+  //         << "     - id: " << id << "\n"
+  //         << "     - element.getId(): " << element.getId() << "\n"
+  //         << "     - T_element_to_world:\n"
+  //         << element.getWorldTransform().matrix() << "\n"
+  //         << "     - T_element_to_local:\n"
+  //         << element.getLocalTransform().matrix()
+  //         << std::endl;
 
   DrakeCollision::ElementId id = collision_model->addElement(element);
   if (id != 0) {
     body.collision_element_ids.push_back(id);
     body.collision_element_groups[group_name].push_back(id);
   }
+
   return id;
 }
 
 void RigidBodyTree::updateCollisionElements(
     const RigidBody& body,
     const Eigen::Transform<double, 3, Eigen::Isometry>& transform_to_world) {
+  // std::cout << "RigidBodyTree::updateCollisionElements: Method called!\n"
+  //           << "  - body: " << body.linkname << " / " << body.model_name << "\n"
+  //           << "  - transform_to_world:\n" << transform_to_world.matrix()
+  //           << std::endl;
   for (auto id_iter = body.collision_element_ids.begin();
        id_iter != body.collision_element_ids.end(); ++id_iter) {
     collision_model->updateElementWorldTransform(*id_iter, transform_to_world);
@@ -540,6 +550,7 @@ void RigidBodyTree::updateStaticCollisionElements() {
 
 void RigidBodyTree::updateDynamicCollisionElements(
     const KinematicsCache<double>& cache) {
+  // std::cout << "RigidBodyTree::updateDynamicCollisionElements: Method called!" << std::endl;
   // todo: this is currently getting called many times with the same cache
   // object.  and it's presumably somewhat expensive.
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {

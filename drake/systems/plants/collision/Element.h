@@ -33,6 +33,21 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
 
   virtual bool collidesWith(const Element* other) const { return true; };
 
+  /*!
+   * Overload operator== to check whether two RigidBodyTree objects are equal.
+   */
+  friend bool operator==(const Element & e1, const Element & e2);
+
+  /*!
+   * Overload operator!= to check whether two RigidBodyTree objects are unequal.
+   */
+  friend bool operator!=(const Element & e1, const Element & e2);
+
+  /**
+   * A toString method for this class.
+   */
+  friend std::ostream& operator<<(std::ostream&, const Element&);
+
  protected:
   Element(const Element& other);
 

@@ -19,6 +19,8 @@ enum DRAKESHAPES_EXPORT Shape {
   CAPSULE = 6
 };
 
+std::string shapeToString(Shape ss);
+
 const double MIN_RADIUS = 1e-7;
 
 class DRAKESHAPES_EXPORT Geometry {
@@ -37,6 +39,21 @@ class DRAKESHAPES_EXPORT Geometry {
   virtual void getTerrainContactPoints(Eigen::Matrix3Xd &points) const {
     points = Eigen::Matrix3Xd();
   };
+
+  /**
+   * A toString method for this class.
+   */
+  friend std::ostream& operator<<(std::ostream&, const Geometry&);
+
+  /*!
+   * Overload operator== to check whether two Geometry objects are equal.
+   */
+  friend bool operator==(const Geometry & g1, const Geometry & g2);
+
+  /*!
+   * Overload operator!= to check whether two Geometry objects are unequal.
+   */
+  friend bool operator!=(const Geometry & g1, const Geometry & g2);
 
  protected:
   Geometry(Shape shape);
@@ -57,6 +74,21 @@ class DRAKESHAPES_EXPORT Sphere : public Geometry {
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
   virtual void getTerrainContactPoints(Eigen::Matrix3Xd &points) const;
 
+  /**
+   * A toString method for this class.
+   */
+  friend std::ostream& operator<<(std::ostream&, const Sphere&);
+
+  /*!
+   * Overload operator== to check whether two Sphere objects are equal.
+   */
+  friend bool operator==(const Sphere & s1, const Sphere & s2);
+
+  /*!
+   * Overload operator!= to check whether two Sphere objects are unequal.
+   */
+  friend bool operator!=(const Sphere & s1, const Sphere & s2);
+
   double radius;
   static const int NUM_POINTS;
 };
@@ -70,6 +102,21 @@ class DRAKESHAPES_EXPORT Box : public Geometry {
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
   virtual void getTerrainContactPoints(Eigen::Matrix3Xd &points) const;
 
+  /**
+   * A toString method for this class.
+   */
+  friend std::ostream& operator<<(std::ostream&, const Box&);
+
+  /*!
+   * Overload operator== to check whether two Box objects are equal.
+   */
+  friend bool operator==(const Box & b1, const Box & b2);
+
+  /*!
+   * Overload operator!= to check whether two Box objects are unequal.
+   */
+  friend bool operator!=(const Box & b1, const Box & b2);
+
   Eigen::Vector3d size;
 };
 
@@ -80,6 +127,21 @@ class DRAKESHAPES_EXPORT Cylinder : public Geometry {
   virtual Cylinder *clone() const;
   virtual void getPoints(Eigen::Matrix3Xd &points) const;
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
+
+  /**
+   * A toString method for this class.
+   */
+  friend std::ostream& operator<<(std::ostream&, const Cylinder&);
+
+  /*!
+   * Overload operator== to check whether two Cylinder objects are equal.
+   */
+  friend bool operator==(const Cylinder & c1, const Cylinder & c2);
+
+  /*!
+   * Overload operator!= to check whether two Cylinder objects are unequal.
+   */
+  friend bool operator!=(const Cylinder & c1, const Cylinder & c2);
 
   double radius;
   double length;
@@ -92,6 +154,22 @@ class DRAKESHAPES_EXPORT Capsule : public Geometry {
   virtual Capsule *clone() const;
   virtual void getPoints(Eigen::Matrix3Xd &points) const;
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
+
+  /**
+   * A toString method for this class.
+   */
+  friend std::ostream& operator<<(std::ostream&, const Capsule&);
+
+  /*!
+   * Overload operator== to check whether two Capsule objects are equal.
+   */
+  friend bool operator==(const Capsule & c1, const Capsule & c2);
+
+  /*!
+   * Overload operator!= to check whether two Capsule objects are unequal.
+   */
+  friend bool operator!=(const Capsule & c1, const Capsule & c2);
+
   double radius;
   double length;
 
@@ -106,6 +184,21 @@ class DRAKESHAPES_EXPORT Mesh : public Geometry {
   virtual Mesh *clone() const;
   virtual void getPoints(Eigen::Matrix3Xd &points) const;
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
+
+  /**
+   * A toString method for this class.
+   */
+  friend std::ostream& operator<<(std::ostream&, const Mesh&);
+
+  /*!
+   * Overload operator== to check whether two Mesh objects are equal.
+   */
+  friend bool operator==(const Mesh & m1, const Mesh & m2);
+
+  /*!
+   * Overload operator!= to check whether two Mesh objects are unequal.
+   */
+  friend bool operator!=(const Mesh & m1, const Mesh & m2);
 
   double scale;
   std::string filename;
@@ -124,6 +217,21 @@ class DRAKESHAPES_EXPORT MeshPoints : public Geometry {
 
   virtual void getPoints(Eigen::Matrix3Xd &points) const;
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
+
+  /**
+   * A toString method for this class.
+   */
+  friend std::ostream& operator<<(std::ostream&, const MeshPoints&);
+
+  /*!
+   * Overload operator== to check whether two MeashPoints objects are equal.
+   */
+  friend bool operator==(const MeshPoints & mp1, const MeshPoints & mp2);
+
+  /*!
+   * Overload operator!= to check whether two MeashPoints objects are unequal.
+   */
+  friend bool operator!=(const MeshPoints & mp1, const MeshPoints & mp2);
 
   Eigen::Matrix3Xd points;
 };

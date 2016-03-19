@@ -530,6 +530,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
   template <class UnaryPredicate>
   void removeCollisionGroupsIf(UnaryPredicate test) {
+    // std::cout << "RigidBodyTree::removeCollisionGroupsIf: Method called!" << std::endl;
     for (const auto& body_ptr : bodies) {
       std::vector<std::string> names_of_groups_to_delete;
       for (const auto& group : body_ptr->collision_element_groups) {
