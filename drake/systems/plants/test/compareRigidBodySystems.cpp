@@ -85,6 +85,31 @@ int main(int argc, char* argv[]) {
     std::cout << "The two models passed the numerical comparison test." << std::endl;
   }
 
+  // Test some know previous failure cases
+  {
+    double tt = 0.0;
+    VectorXd xx(27);
+    xx << -0.11178, -1.03367, 10, 0.196684, -0.371481, 0.0390621, -0.85062,
+          -225.333, 166.725, -104.719, 197.192, -212.579, -67.8423, -17.4616,
+          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+    VectorXd uu(3);
+    uu << 0.994796, 0.832517, -0.767727;
+    auto xdot1 = r1->dynamics(tt, xx, uu);
+    auto xdot2 = r2->dynamics(tt, xx, uu);
+
+    std::stringstream ss;
+    ss << "Fixed test case 1 failed!" << std::endl
+      << "  - initial state:" << std::endl << xx << std::endl
+      << "  - inputs:" << std::endl << uu;
+
+    try {
+      valuecheckMatrix(xdot1, xdot2, 1, ss.str());
+    } catch(const std::runtime_error& re) {
+      std::cout << re.what() << std::endl;
+      return -1;
+    }
+  }
+
   for (int i = 0; i < 1000; i++) {
     std::cout << "i = " << i << std::endl;
     double t = 0.0;
