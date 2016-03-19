@@ -1,6 +1,9 @@
 function exprX = replaceBilinearProduct(expr,w,W)
 % if we have an expresion that involves linear and bilinear terms of w, then we replace
 % the bilinear terms using the matrix W, W is supposed to be equal to w*w'
+if(~issimple(w))
+  error('w should be simple');
+end
 [vars,degrees,coefs,sizeExpr] = decomp(expr);
 num_vars = length(vars);
 if(num_vars > 0)
