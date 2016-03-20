@@ -62,7 +62,7 @@ bool operator==(const RigidBodyTree & rbt1, const RigidBodyTree & rbt2) {
   // Verify the two models have the same minimum joint limits
   if (result) {
     try {
-      valuecheckMatrix(rbt1.joint_limit_min, rbt2.joint_limit_min, 1e-10);
+      valuecheckMatrix(rbt1.joint_limit_min, rbt2.joint_limit_min, std::numeric_limits<double>::epsilon());
     } catch(std::runtime_error re) {
       PRINT_STMT("Minimum joint limits do not match!" << std::endl
                   << "  - tree 1:\n" << rbt1.jointLimitsToString() << std::endl
@@ -75,7 +75,7 @@ bool operator==(const RigidBodyTree & rbt1, const RigidBodyTree & rbt2) {
   // Verify the two models have the same maximum joint limits
   if (result) {
     try {
-      valuecheckMatrix(rbt1.joint_limit_max, rbt2.joint_limit_max, 1e-10);
+      valuecheckMatrix(rbt1.joint_limit_max, rbt2.joint_limit_max, std::numeric_limits<double>::epsilon());
     } catch(std::runtime_error re) {
       PRINT_STMT("Minimum joint limits do not match!" << std::endl
                   << "  - tree 1:\n" << rbt1.jointLimitsToString() << std::endl
@@ -98,11 +98,13 @@ bool operator==(const RigidBodyTree & rbt1, const RigidBodyTree & rbt2) {
         if (*rb1 != *rb2) {
           PRINT_STMT("Rigid body \"" << rb1->linkname << "\" mismatch!")
           result = false;
+          break;
         }
       } else {
         PRINT_STMT("Could not find rigid body in RHS tree with linkname \""
           << rb2->linkname << "\", and model_name \"" << rb2->model_name << "\"")
         result = false;
+        break;
       }
     }
   }
@@ -196,7 +198,7 @@ bool operator==(const RigidBodyTree & rbt1, const RigidBodyTree & rbt2) {
   // Verify the two models have the same gravity
   if (result) {
     try {
-      valuecheckMatrix(rbt1.a_grav, rbt2.a_grav, 1e-10);
+      valuecheckMatrix(rbt1.a_grav, rbt2.a_grav, std::numeric_limits<double>::epsilon());
     } catch(std::runtime_error re) {
       PRINT_STMT("Gravity vector mismatch!" << std::endl
                   << "  - tree 1:\n" << rbt1.jointLimitsToString() << std::endl
@@ -209,7 +211,7 @@ bool operator==(const RigidBodyTree & rbt1, const RigidBodyTree & rbt2) {
   // Verify the two models have the same B matrix (maps inputs into joint-space forces)
   if (result) {
     try {
-      valuecheckMatrix(rbt1.B, rbt2.B, 1e-10);
+      valuecheckMatrix(rbt1.B, rbt2.B, std::numeric_limits<double>::epsilon());
     } catch(std::runtime_error re) {
       PRINT_STMT("B matrix mismatch!" << std::endl
                   << "  - tree 1:\n" << rbt1.B << std::endl

@@ -55,7 +55,7 @@ class DRAKERBM_EXPORT RigidBodyFrame {
 
     if (result) {
        try {
-        valuecheckMatrix(rbf1.transform_to_body.matrix(), rbf2.transform_to_body.matrix(), 1e-10);
+        valuecheckMatrix(rbf1.transform_to_body.matrix(), rbf2.transform_to_body.matrix(), std::numeric_limits<double>::epsilon());
       } catch(std::runtime_error re) {
         PRINT_STMT("Transform-to-body mismatch!" << std::endl
                     << "  - name: " << rbf1.name << "\n"
