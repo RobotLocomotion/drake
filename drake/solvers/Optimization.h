@@ -404,7 +404,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   }
 
   bool solve() {
-    std::cout << "OptimizationProblem::solve(): Method called!" << std::endl;
+    // std::cout << "OptimizationProblem::solve(): Method called!" << std::endl;
     return problem_type->solve(*this);
   };  // todo: add argument for options
 
@@ -423,8 +423,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   template <typename Derived>
   void setDecisionVariableValues(const Eigen::MatrixBase<Derived>& x) {
-    std::cout << "OptimizationProblem::setDecisionVariableValues: Method called!\n"
-              << "  - x =\n" << x << std::endl;
+    // std::cout << "OptimizationProblem::setDecisionVariableValues: Method called!\n"
+    //           << "  - x =\n" << x << std::endl;
     assert(x.rows() == num_vars);
     size_t index = 0;
     for (auto& v : variables) {

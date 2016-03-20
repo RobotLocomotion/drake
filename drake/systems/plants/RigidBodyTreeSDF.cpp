@@ -354,6 +354,7 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
   if (pose)
   {
     // std::cout << "Reading in the pose of joint " << name << "\n"
+    //           << std::setprecision(25)
     //           << "  - original transform_to_model is:\n"
     //           << transform_to_model.matrix()
     //           << std::endl;
@@ -404,7 +405,7 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
   Isometry3d transform_to_parent_body =
     transform_parent_to_model.inverse() * transform_to_model;
 
-  // if (name.compare("body") == 0)
+  // if (name.compare("rear_left_wheel_joint") == 0)
   // {
   //   std::cout << "RigidBodyTreeSDF.cpp: parseSDFJoint: Computing transform_to_parent_body.\n"
   //             << "  - joint name: " << name << "\n"
