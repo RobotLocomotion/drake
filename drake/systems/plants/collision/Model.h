@@ -184,12 +184,12 @@ class DRAKECOLLISION_EXPORT Model {
       element->second->setLocalTransform(transform_body_to_joint *
         element->second->getLocalTransform());
 
-      std::cout << "DrakeCollision::Model::transformCollisionFrame: Updating frame:\n"
-                << "  - eid: " << eid << "\n"
-                << "  - transform_body_to_joint:\n" << transform_body_to_joint.matrix() << "\n"
-                << "  - new local transform:\n"
-                << (transform_body_to_joint * element->second->getLocalTransform()).matrix()
-                << std::endl;
+      // std::cout << "DrakeCollision::Model::transformCollisionFrame: Updating frame:\n"
+      //           << "  - eid: " << eid << "\n"
+      //           << "  - transform_body_to_joint:\n" << transform_body_to_joint.matrix() << "\n"
+      //           << "  - new local transform:\n"
+      //           << (transform_body_to_joint * element->second->getLocalTransform()).matrix()
+      //           << std::endl;
       return true;
     }
     else

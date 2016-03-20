@@ -201,9 +201,8 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
 
   prog.solve();
 
-
-  std::cout << "RigidBodySystem::dynamics: [" << filename << "]: After calling prog.solve():" << std::endl;
-  prog.printSolution();
+  // std::cout << "RigidBodySystem::dynamics: [" << filename << "]: After calling prog.solve():" << std::endl;
+  // prog.printSolution();
 
   // std::cout << "RigidBodySystem::dynamics: [" << filename << "]: About to call kinsol.transformPositionDotMappingToVelocityMapping()" << std::endl;
   StateVector<double> dot(nq + nv);

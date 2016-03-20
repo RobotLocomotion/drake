@@ -35,8 +35,10 @@ int main(int argc, char* argv[]) {
       Isometry3d::Identity());
   }
 
+  std::cout << "Loading " << argv[1] << "..." << std::endl;
   auto r1 = make_shared<RigidBodySystem>();
   r1->addRobotFromFile(argv[1], DrakeJoint::QUATERNION);
+  std::cout << "Loading " << argv[2] << "..." << std::endl;
   auto r2 = make_shared<RigidBodySystem>();
   r2->addRobotFromFile(argv[2], DrakeJoint::QUATERNION, weld_to_frame);
 
@@ -75,8 +77,8 @@ int main(int argc, char* argv[]) {
   }
 
   // Print the semantics of the states
-  std::cout << "State vector semantics (tree 1):\n" << r1->getStateVectorSemantics() << std::endl;
-  std::cout << "State vector semantics (tree 2):\n" << r2->getStateVectorSemantics() << std::endl;
+  // std::cout << "State vector semantics (tree 1):\n" << r1->getStateVectorSemantics() << std::endl;
+  // std::cout << "State vector semantics (tree 2):\n" << r2->getStateVectorSemantics() << std::endl;
 
   if (*r1->getRigidBodyTree().get() != *r2->getRigidBodyTree().get()) {
     std::cout << "ERROR: The two rigid body trees are numerically different!" << std::endl;
@@ -85,7 +87,7 @@ int main(int argc, char* argv[]) {
     std::cout << "The two models passed the numerical comparison test." << std::endl;
   }
 
-  // Test some know previous failure cases
+  // Test some known previous failure cases
   {
     double tt = 0.0;
     VectorXd xx(27);
