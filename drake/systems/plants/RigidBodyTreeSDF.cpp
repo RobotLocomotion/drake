@@ -1,7 +1,6 @@
 #include <string>
 #include <fstream>
 #include <sstream>
-#include <iomanip> // for std::setprecision
 
 #include "spruce.hh"
 
@@ -54,24 +53,7 @@ void parseSDFInertial(shared_ptr<RigidBody> body, XMLElement* node,
     parseScalarValue(inertia, "izz", I(2, 2));
   }
 
-  // if (body->linkname.compare("body") == 0) {
-  //   std::cout << "parseSDFInertial for link " << body->linkname << std::endl
-  //             << "  - T_link (T_link_to_model):" << std::endl
-  //             << T_link.matrix() << std::endl
-  //             << "  - T_link.inverse:" << std::endl
-  //             << T_link.inverse().matrix() << std::endl
-  //             << "  - T (T_inertia_to_model):" << std::endl
-  //             << T.matrix() << std::endl
-  //             << "  - I:" << std::endl
-  //             << I << std::endl;
-  // }
-
   body->I = transformSpatialInertia(T_link.inverse() * T, I);
-
-  // if (body->linkname.compare("body") == 0) {
-  //   std::cout << "  - body->I:" << std::endl
-  //             << body->I << std::endl;
-  // }
 }
 
 bool parseSDFGeometry(XMLElement* node, const PackageMap& package_map,
@@ -147,7 +129,6 @@ void parseSDFVisual(shared_ptr<RigidBody> body, XMLElement* node,
                     RigidBodyTree* model, const PackageMap& package_map,
                     const string& root_dir, PoseMap& pose_map,
                     const Isometry3d& transform_parent_to_model) {
-
   Isometry3d transform_to_model = transform_parent_to_model;
   XMLElement* pose = node->FirstChildElement("pose");
   if (pose)
@@ -264,14 +245,6 @@ void parseSDFLink(RigidBodyTree* model, std::string model_name,
                       pose_map, transform_to_model);
   }
 
-  // if (body->linkname.compare("body") == 0 || body->linkname.compare("chassis_floor") == 0) {
-  //   std::cout << "RigidBodyTreeSDF.cpp: parseSDFLink: Adding link:\n"
-  //             << "  - name: " << body->linkname << "\n"
-  //             << std::setprecision(25)
-  //             << "  - transform_to_model:\n" << transform_to_model.matrix()
-  //             << std::endl;
-  // }
-
   model->bodies.push_back(body);
   body->body_index = static_cast<int>(model->bodies.size()) - 1;
 }
@@ -353,18 +326,10 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
   XMLElement* pose = node->FirstChildElement("pose");
   if (pose)
   {
-    // std::cout << "Reading in the pose of joint " << name << "\n"
-    //           << std::setprecision(25)
-    //           << "  - original transform_to_model is:\n"
-    //           << transform_to_model.matrix()
-    //           << std::endl;
     poseValueToTransform(pose, pose_map, transform_to_model,
                          transform_child_to_model);  // read the pose in using
                                                      // the child coords by
                                                      // default
-    // std::cout << "New transform_to_model for joint " << name << " after considering joint's pose:\n"
-    //           << transform_to_model.matrix()
-    //           << std::endl;
   }
 
   if (pose_map.find(child_name) == pose_map.end()) {
@@ -405,20 +370,6 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
   Isometry3d transform_to_parent_body =
     transform_parent_to_model.inverse() * transform_to_model;
 
-  // if (name.compare("rear_left_wheel_joint") == 0)
-  // {
-  //   std::cout << "RigidBodyTreeSDF.cpp: parseSDFJoint: Computing transform_to_parent_body.\n"
-  //             << "  - joint name: " << name << "\n"
-  //             << "  - parent link name: " << parent_name << "\n"
-  //             << "  - child link name: " << child_name << "\n"
-  //             << std::setprecision(25)
-  //             << "  - transform_parent_to_model:\n" << transform_parent_to_model.matrix() << "\n"
-  //             << "  - transform_parent_to_model.inverse():\n" << transform_parent_to_model.inverse().matrix() << "\n"
-  //             << "  - transform_to_model:\n" << transform_to_model.matrix() << "\n"
-  //             << "  - transform_to_parent_body:\n" << transform_to_parent_body.matrix()
-  //             << std::endl;
-  // }
-
   if (child->hasParent()) {  // then implement it as a loop joint
 
     // Get the loop point in the joint's reference frame. Since the SDF standard specifies
@@ -426,67 +377,26 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
     // point in the joint's reference frame is simply the pose of the joint.
     Eigen::Vector3d lpChild = Eigen::Vector3d::Zero();
     {
-    const char* strval = pose->FirstChild()->Value();
-    if (strval) {
-       std::stringstream s(strval);
-       s >> lpChild(0) >> lpChild(1) >> lpChild(2);
-    } else
-      throw runtime_error("ERROR: Unable to construct loop joint \"" + name + "\": could not parse loop point.");
+      const char* strval = pose->FirstChild()->Value();
+      if (strval) {
+         std::stringstream s(strval);
+         s >> lpChild(0) >> lpChild(1) >> lpChild(2);
+      } else
+        throw runtime_error("ERROR: Unable to construct loop joint \"" + name + "\": could not parse loop point.");
     }
-    // std::cout << "RigidBodyTreeSDF.cpp: parseSDFJoint(): loop point in child's reference frame is: " << lpChild.transpose() << std::endl;
 
     // Get the loop point in the parent's reference frame.
     Eigen::Vector3d lpModel = transform_child_to_model * lpChild;
-    // std::cout << "lpModel = " << lpModel.transpose() << std::endl;
 
     Eigen::Vector3d lpParent = transform_parent_to_model.inverse() * lpModel;
-    // std::cout << "lpParent = " << lpParent.transpose() << std::endl;
-
-
-    // Eigen::Vector3d lpParent = transform_to_parent_body * lpChild;
-    // std::cout << "RigidBodyTreeSDF.cpp: parseSDFJoint(): loop point in parent's reference frame: "
-    //           << lpParent.transpose()
-    //           << std::endl;
-
-    // TODO: Modify API to avoid having to instantiate these matrices.
-    // Isometry3d parentLP, childLP;
-
-    // parentLP.matrix() << rpy2rotmat(Vector3d::Zero()), lpParent, 0, 0, 0, 1;
-    // childLP.matrix() << rpy2rotmat(Vector3d::Zero()), lpChild, 0, 0, 0, 1;
-
-
-    // std::cout << "RigidBodyTreeSDF.cpp: parseSDFJoint(): Treating joint \"" << name << "\" as a loop joint.\n"
-    //           << "  - parent (" << parent_name << ") loop point matrix:\n"
-    //           << parentLP.matrix() << "\n"
-    //           << "  - child (" << child_name << ") loop point matrix:\n"
-    //           << childLP.matrix()
-    //           << std::endl;
-
-    // Isometry3d transform_child_to_model = Isometry3d::Identity();
-    // if (pose_map.find(child_name) != pose_map.end())
-    //   transform_child_to_model = pose_map.at(child_name);
 
     std::shared_ptr<RigidBodyFrame> frameA = allocate_shared<RigidBodyFrame>(
         Eigen::aligned_allocator<RigidBodyFrame>(), name + "FrameA", parent,
         lpParent, Vector3d::Zero());
 
-    // Obtain the transform from the joint frame to the child link's frame.
-    // Isometry3d transform_to_child_body =
-    //   transform_child_to_model.inverse() * transform_to_model;
-
     std::shared_ptr<RigidBodyFrame> frameB = allocate_shared<RigidBodyFrame>(
         Eigen::aligned_allocator<RigidBodyFrame>(), name + "FrameB", child,
         lpChild, Vector3d::Zero());
-
-    // std::cout << "RigidBodyTreeSDF.cpp: parseSDFJoint(): Treating joint \"" << name << "\" as a loop joint.\n"
-    //           << "  - axis: " << axis.transpose() << "\n"
-    //           << std::setprecision(25)
-    //           << "  - parent (" << frameA->body->linkname << ") loop point matrix:\n"
-    //           << frameA->transform_to_body.matrix() << "\n"
-    //           << "  - child (" << frameB->body->linkname << ") loop point matrix:\n"
-    //           << frameB->transform_to_body.matrix() << "\n"
-    //           << std::endl;
-
 
     model->addFrame(frameA);
     model->addFrame(frameB);
@@ -509,14 +419,6 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
     // joint's frame.
     auto it = pose_map.find(child_name);
     if (it != pose_map.end()) {
-
-      // debug statement!
-      // if (child_name.compare("body") == 0) {
-      //   std::cout << "RigidBodyTreeSDF::parseSDFJoint: Updating transform_to_model for link "
-      //             << child_name << " while processing joint " << name << ". New value is:\n"
-      //             << transform_to_model.matrix()
-      //             << std::endl;
-      // }
       it->second = transform_to_model;
     } else
       throw runtime_error("ERROR: Unable to update transform_to_model of link " + child_name);
@@ -534,7 +436,6 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
     if (type.compare("revolute") == 0 || type.compare("gearbox") == 0) {
       FixedAxisOneDoFJoint<RevoluteJoint>* fjoint =
           new RevoluteJoint(name, transform_to_parent_body, axis);
-
       if (axis_node) {
         setSDFDynamics(model, axis_node, fjoint);
         setSDFLimits(axis_node, fjoint);

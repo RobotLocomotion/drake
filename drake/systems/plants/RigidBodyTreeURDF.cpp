@@ -1,7 +1,6 @@
 #include <string>
 #include <fstream>
 #include <sstream>
-// #include <iomanip> // for std::setprecision
 
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "joints/DrakeJoints.h"
@@ -527,15 +526,6 @@ void parseLoop(RigidBodyTree* model, XMLElement* node) {
   XMLElement* axis_node = node->FirstChildElement("axis");
   if (axis_node && !parseVectorAttribute(axis_node, "xyz", axis))
     throw runtime_error("ERROR parsing loop joint axis");
-
-  // std::cout << "RigidBodyTreeURDF.cpp: parseLoop(): Treating joint \"" << name << "\" as a loop joint.\n"
-  //           << "  - axis: " << axis.transpose() << "\n"
-  //           << std::setprecision(25)
-  //           << "  - parent (" << frameA->body->linkname << ") loop point matrix:\n"
-  //           << frameA->transform_to_body.matrix() << "\n"
-  //           << "  - child (" << frameB->body->linkname << ") loop point matrix:\n"
-  //           << frameB->transform_to_body.matrix() << "\n"
-  //           << std::endl;
 
   model->addFrame(frameA);
   model->addFrame(frameB);

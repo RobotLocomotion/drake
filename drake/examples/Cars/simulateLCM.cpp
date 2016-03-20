@@ -10,8 +10,6 @@ using namespace std;
 using namespace Eigen;
 using namespace Drake;
 
-#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
-
 template <typename ScalarType = double>
 class DrivingCommand {
  public:
@@ -74,7 +72,7 @@ bool decode(const drake::lcmt_driving_control_cmd_t& msg, double& t,
 }
 
 /** Driving Simulator
- * Usage:  simulateLCM vehicle_urdf [world_urdf files ...]
+ * Usage:  simulateLCM vehicle_model_file [world_model files ...]
  */
 
 int main(int argc, char* argv[]) {
@@ -87,7 +85,6 @@ int main(int argc, char* argv[]) {
   // todo: consider moving this logic into the RigidBodySystem class so it can
   // be reused
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
-  // DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::FIXED;
 
 
   auto rigid_body_sys = make_shared<RigidBodySystem>();
@@ -128,54 +125,12 @@ int main(int argc, char* argv[]) {
     tree->updateStaticCollisionElements();
   }
 
-  PRINT_VAR(tree->num_positions)
-  PRINT_VAR(tree->num_velocities)
-  PRINT_VAR(tree->actuators.size())
-  for (auto actuator: tree->actuators) {
-    PRINT_VAR(actuator.name)
-    PRINT_VAR(actuator.body->linkname)
-    PRINT_VAR(actuator.reduction)
-    PRINT_VAR(actuator.effort_limit_min)
-    PRINT_VAR(actuator.effort_limit_max)
-  }
-  PRINT_VAR(tree->a_grav.transpose())
-  PRINT_VAR(tree->B)
-  PRINT_VAR(tree->bodies.size());
-  for(auto body: tree->bodies) {
-    PRINT_VAR(body->linkname);
-    PRINT_VAR(body->mass);
-    PRINT_VAR(body->hasParent())
-    PRINT_VAR(body->I)
-    if(body->hasParent()){
-      const DrakeJoint& joint = body->getJoint();
-      PRINT_VAR(joint.getName())
-      PRINT_VAR(joint.getTransformToParentBody().matrix())
-      PRINT_VAR(joint.getNumPositions())
-      PRINT_VAR(joint.getNumVelocities())
-      PRINT_VAR(joint.isFloating())
-      PRINT_VAR(joint.zeroConfiguration())
-      PRINT_VAR(joint.getJointLimitMin().transpose())
-      PRINT_VAR(joint.getJointLimitMax().transpose())
-    } else
-      std::cout << "link has no parent joint!" << std::endl;
-    std::cout << "===============================" << std::endl;
-  }
-  PRINT_VAR(tree->frames.size());
-  for (auto frame: tree->frames) {
-    PRINT_VAR(frame->name)
-    PRINT_VAR(frame->frame_index)
-    PRINT_VAR(frame->body->linkname)
-    PRINT_VAR(frame->transform_to_body.matrix())
-  }
-  std::cout << "collision elements:\n" << *tree.get() << std::endl;
-
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
 
   MatrixXd Kp(getNumInputs(*rigid_body_sys), tree->num_positions),
       Kd(getNumInputs(*rigid_body_sys), tree->num_velocities);
   Matrix<double, Eigen::Dynamic, 3> map_driving_cmd_to_x_d(
       tree->num_positions + tree->num_velocities, 3);
-
   {  // setup PD controller for throttle and steering
     double kpSteering = 400, kdSteering = 80, kThrottle = 100;
     Kp.setZero();
@@ -225,9 +180,6 @@ int main(int argc, char* argv[]) {
   rigid_body_sys->friction_coefficient = 10.0;  // essentially infinite friction
   options.initial_step_size = 5e-3;
   options.timeout_seconds = numeric_limits<double>::infinity();
-  options.realtime_factor = 0; // run as fast as possible
-  // options.realtime_factor = 1; // run at real-time
-  // options.realtime_factor = 10; // run at 10X slower than real-time
 
   VectorXd x0 = VectorXd::Zero(rigid_body_sys->getNumStates());
   x0.head(tree->num_positions) = tree->getZeroConfiguration();

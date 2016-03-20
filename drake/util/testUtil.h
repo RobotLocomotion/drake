@@ -90,7 +90,6 @@ void valuecheckMatrix(const Eigen::MatrixBase<DerivedA>& a,
         std::to_string(static_cast<unsigned long long>(b.rows())) + " by " +
         std::to_string(static_cast<unsigned long long>(b.cols())) + ")");
   }
-
   if (!(a - b).isZero(tol)) {
     if (!a.allFinite() && !b.allFinite()) {
       // could be failing because inf-inf = nan
@@ -118,7 +117,7 @@ void valuecheckMatrix(const Eigen::MatrixBase<DerivedA>& a,
   }
 }
 
-inline void valuecheck(double a, double b, double tolerance) {
+static inline void valuecheck(double a, double b, double tolerance) {
   if (std::abs(a - b) > tolerance) {
     std::ostringstream stream;
     stream << "Expected:\n" << a << "\nbut got:" << b << "\n";

@@ -106,6 +106,16 @@ class DRAKERBM_EXPORT RigidBodyTree {
       Eigen::Map<Eigen::Matrix3Xd> const& normals,
       std::vector<Eigen::Map<Eigen::Matrix3Xd> >& tangents) const;
 
+  /*!
+   * Updates the frame of collision elements to be equal to the joint's frame.
+   *
+   * @param eid The ID of the collision element to update.
+   * @param transform_body_to_joint The transform from the model's
+   * body frame to the joint frame.
+   * @return true if the collision element was successfully updated.
+   * False can be returned if a collision element with the specified eid
+   * cannot be found.
+   */
   bool transformCollisionFrame(DrakeCollision::ElementId& eid,
     const Eigen::Isometry3d& transform_body_to_joint);
 
@@ -530,7 +540,6 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
   template <class UnaryPredicate>
   void removeCollisionGroupsIf(UnaryPredicate test) {
-    // std::cout << "RigidBodyTree::removeCollisionGroupsIf: Method called!" << std::endl;
     for (const auto& body_ptr : bodies) {
       std::vector<std::string> names_of_groups_to_delete;
       for (const auto& group : body_ptr->collision_element_groups) {
@@ -738,8 +747,6 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
  public:
   static const std::set<int> default_robot_num_set;
-
-  // std::vector<std::string> robot_name;
 
   int num_positions;
   int num_velocities;

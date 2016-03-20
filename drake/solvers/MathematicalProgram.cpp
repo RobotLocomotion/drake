@@ -136,17 +136,6 @@ class LeastSquares
       constraint_index += n;
     }
     
-    // std::cout << "LeastSquares::solve():\n"
-    //       << "  - aeq =\n" << Aeq << "\n"
-    //       << "  - beq =\n" << beq << "\n"
-    //       << "  - Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).singularValues()=\n"
-    //       << Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).singularValues() << "\n"
-    //       // << "  - Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).matrixU()=\n"
-    //       // << Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).matrixU() << "\n"
-    //       // << "  - Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).matrixV()=\n"
-    //       // << Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).matrixV()
-    //       << std::endl;
-
     // least-squares solution
     prog.setDecisionVariableValues(
         Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beq));

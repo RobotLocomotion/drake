@@ -185,36 +185,20 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
         J, -(Jdotv + 2 * alpha * J * v + alpha * alpha * phi), {vdot});
     H_and_neg_JT.conservativeResize(NoChange, H_and_neg_JT.cols() + J.rows());
     H_and_neg_JT.rightCols(J.rows()) = -J.transpose();
-
-    // std::cout << "RigidBodySystem::dynamics: [" << filename << "]: Constraint forces:\n"
-    //       << "  - phi =\n" << phi << "\n"
-    //       << "  - J =\n" << J << "\n"
-    //       << "  - Jdotv=\n" << Jdotv << "\n"
-    //       << "  - H_and_neg_JT=\n" << H_and_neg_JT << "\n"
-    //       << "  - C=\n" << C
-    //       << std::endl;
-
   }
 
   // add [H,-J^T]*[vdot;f] = -C
   prog.addLinearEqualityConstraint(H_and_neg_JT, -C);
 
   prog.solve();
+  //      prog.printSolution();
 
-  // std::cout << "RigidBodySystem::dynamics: [" << filename << "]: After calling prog.solve():" << std::endl;
-  // prog.printSolution();
-
-  // std::cout << "RigidBodySystem::dynamics: [" << filename << "]: About to call kinsol.transformPositionDotMappingToVelocityMapping()" << std::endl;
   StateVector<double> dot(nq + nv);
   dot << kinsol.transformPositionDotMappingToVelocityMapping(
              Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>::Identity(
                  nq, nq)) *
              v,
       vdot.value();
-
-  // std::cout << "RigidBodySystem::dynamics: [" << filename << "]: About to return:\n"
-  //           << "  - dot =\n" << dot
-  //           << std::endl;
   return dot;
 }
 
@@ -702,35 +686,5 @@ void RigidBodySystem::addRobotFromFile(
   } else {
     throw runtime_error("unknown file extension: " + ext);
   }
-}
-
-std::string RigidBodySystem::getStateVectorSemantics() const {
-  std::stringstream msg;
-  int jIndx = 0;
-  for (auto& bb : tree->bodies) {
-    try {
-      const DrakeJoint& jj = bb->getJoint();
-      for (int ii = 0; ii < jj.getNumPositions(); ii++) {
-        msg << (jIndx++) << "\t" << jj.getName() << "::" << jj.getPositionName(ii) << std::endl;
-      }
-    } catch(std::runtime_error re) {
-      // std::cout << "RigidBodySystem::getStateVectorSemantics: link \""
-      //           << bb->linkname << "\" does not have a joint."
-      //           << std::endl;
-    }
-  }
-  for (auto& bb : tree->bodies) {
-    try {
-      const DrakeJoint& jj = bb->getJoint();
-      for (int ii = 0; ii < jj.getNumVelocities(); ii++) {
-        msg << (jIndx++) << "\t" << jj.getName() << "::" << jj.getVelocityName(ii) << std::endl;
-      }
-    } catch(std::runtime_error re) {
-      // std::cout << "RigidBodySystem::getStateVectorSemantics: link \""
-      //           << bb->linkname << "\" does not have a joint."
-      //           << std::endl;
-    }
-  }
-  return msg.str();
 }
 

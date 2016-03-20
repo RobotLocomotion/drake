@@ -34,12 +34,12 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
   virtual bool collidesWith(const Element* other) const { return true; };
 
   /*!
-   * Overload operator== to check whether two RigidBodyTree objects are equal.
+   * Overload operator== to check whether two Element objects are equal.
    */
   friend bool operator==(const Element & e1, const Element & e2);
 
   /*!
-   * Overload operator!= to check whether two RigidBodyTree objects are unequal.
+   * Overload operator!= to check whether two Element objects are unequal.
    */
   friend bool operator!=(const Element & e1, const Element & e2);
 
@@ -57,5 +57,6 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-}
+
+}  // namespace DrakeCollision
 #endif

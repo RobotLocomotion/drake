@@ -183,29 +183,6 @@ bool operator==(const RigidBody & rb1, const RigidBody & rb2) {
     result = false;
   }
 
-  // Do not compare visual_elements for now.
-  // DrakeShapes::VectorOfVisualElements visual_elements;
-
-  // Do not compare collision elements for now.
-  // if (result) {
-  //   for (auto& ce1 : rb1.collision_element_ids) {
-  //     // Do not enforce a specific ordering of bodies
-  //     bool found = false;
-  //     for (auto& ce2 : rb2.collision_element_ids) {
-  //       if (ce1 == ce2)
-  //         found = true;
-  //     }
-  //     if (!found) {
-  //       PRINT_STMT("Could not find collision element matching " << ce1)
-  //       result = false;
-  //     }
-  //   }
-  // }
-
-  // Do not compare collision element groups for now
-  // std::map<std::string, std::vector<DrakeCollision::ElementId> >
-  //     collision_element_groups;
-
   // Compare joints
   if (result) {
     bool hasJoint1 = false, hasJoint2 = false;
