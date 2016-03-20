@@ -357,7 +357,8 @@
   <joint name="left_wheel_joint" type="revolute">
     <parent link="left_hub"/>
     <child link="left_wheel"/>
-    <origin rpy="0 0 0" xyz="0 0 -0.18357"/>
+    <origin rpy="0 0 0" xyz="0 0 -0.183582999999999940676787"/>
+    <!-- <origin rpy="0 0 0" xyz="0 0 -0.18357"/> -->
     <axis xyz="0 0 -1"/>
     <limit effort="10000" velocity="10000"/>
   </joint>
@@ -413,7 +414,7 @@
 
   <loop_joint name="right_pin" type="continuous">
     <axis xyz="0 0 1"/>
-    <link1 link="right_tie_rod_arm" rpy="0 0 0" xyz="-0.17246 0.086227  0.03092"/>
+    <link1 link="right_tie_rod_arm" rpy="0 0 0" xyz="-0.17246 0.08622399999999996733635044  0.03092"/>
     <link2 link="tie_rod" rpy="0 0 0" xyz="0 -0.817006 0"/>
   </loop_joint>
 
