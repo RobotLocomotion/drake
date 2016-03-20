@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
 
   auto lcmio_with_vis = cascade(sys_with_vis, rbsys_output_to_quad_state);
 
-  x0(0) = -1;
+  x0(0) = 0;
   x0(2) = 0.2;
   //x0(9) = 0.5; //yaw rate
   //x0(12) = 0.05; //Z dot
