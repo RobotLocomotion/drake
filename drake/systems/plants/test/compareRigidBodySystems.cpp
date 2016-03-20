@@ -116,13 +116,13 @@ int main(int argc, char* argv[]) {
     std::cout << "i = " << i << std::endl;
     double t = 0.0;
     VectorXd x = getInitialState(*r1);
-    x[2] = 10.0; // fix vehicle 10m high in the air
+    // x[2] = 10.0; // fix vehicle 10m high in the air
     VectorXd u = VectorXd::Random(r1->getNumInputs());
 
     auto xdot1 = r1->dynamics(t, x, u);
     auto xdot2 = r2->dynamics(t, x, u);
     try {
-      valuecheckMatrix(xdot1, xdot2, 1);
+      valuecheckMatrix(xdot1, xdot2, 1e-8);
     } catch(const std::runtime_error& re) {
       std::cout << "Model mismatch!" << std::endl
                 << "  - initial state:" << std::endl << x << std::endl
