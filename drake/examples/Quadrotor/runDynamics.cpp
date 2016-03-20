@@ -24,9 +24,10 @@ int main(int argc, char* argv[]) {
 
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
   auto rigid_body_sys = make_shared<RigidBodySystem>();
+  rigid_body_sys->addRobotFromFile(getDrakePath()+"/examples/Quadrotor/warehouse.sdf", floating_base_type);
 
-  rigid_body_sys->penetration_stiffness = 50.0;
-  rigid_body_sys->penetration_damping = 5.0;
+  rigid_body_sys->penetration_stiffness = 20.0;
+  rigid_body_sys->penetration_damping = 2.0;
 
   auto const & tree = rigid_body_sys->getRigidBodyTree();
   rigid_body_sys->addRobotFromFile(getDrakePath()+"/examples/Quadrotor/quadrotor_fla.urdf", floating_base_type);
@@ -77,7 +78,7 @@ int main(int argc, char* argv[]) {
 
   SimulationOptions options = default_simulation_options;
   options.realtime_factor = 1.0;
-  options.initial_step_size = 0.0025;
+  options.initial_step_size = 0.01;
 
   VectorXd x0 = VectorXd::Zero(rigid_body_sys->getNumStates());
   x0.head(tree->num_positions) = tree->getZeroConfiguration();

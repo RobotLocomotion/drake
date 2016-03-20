@@ -544,8 +544,8 @@ class DRAKERBSYSTEM_EXPORT RigidBodyMagnetometer : public RigidBodySensor {
     }
 
     void setDeclination(double magnetic_declination) {
-      magnetic_north << cos(M_PI/2 + magnetic_declination), 
-                        sin(M_PI/2 + magnetic_declination), 
+      magnetic_north << cos(magnetic_declination), 
+                        sin(magnetic_declination), 
                         0;
     }
 

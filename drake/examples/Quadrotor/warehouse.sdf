@@ -1,0 +1,77 @@
+<?xml version='1.0' ?>
+<sdf version='1.6'>
+  <model name='room_w_lidar'>
+    <static>true</static>
+    <link name='left_wall'>
+      <pose frame=''>0 9.5 0 0 0 0</pose>
+      <visual name='wall'>
+        <geometry>
+          <box>
+            <size>20 1 20</size>
+          </box>
+        </geometry>
+      </visual>
+      <collision name='wall'>
+        <geometry>
+          <box>
+            <size>20 1 20</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name='front_wall'>
+      <pose frame=''>9.5 0 0 0 0 0</pose>
+      <visual name='wall'>
+        <geometry>
+          <box>
+            <size>1 20 20</size>
+          </box>
+        </geometry>
+      </visual>
+      <collision name='wall'>
+        <geometry>
+          <box>
+            <size>1 20 20</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name='back_wall'>
+      <pose frame=''>-9.5 0 0 0 0 0</pose>
+      <visual name='wall'>
+        <geometry>
+          <box>
+            <size>1 20 20</size>
+          </box>
+        </geometry>
+      </visual>
+      <collision name='wall'>
+        <geometry>
+          <box>
+            <size>1 20 20</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name='right_wall'>
+      <pose frame=''>0 -9.5 0 0 0 0</pose>
+      <visual name='wall'>
+        <geometry>
+          <box>
+            <size>20 1 20</size>
+          </box>
+        </geometry>
+      </visual>
+      <collision name='wall'>
+        <geometry>
+          <box>
+            <size>20 1 20</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>
