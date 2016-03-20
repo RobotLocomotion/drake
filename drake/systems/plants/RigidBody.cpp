@@ -206,9 +206,39 @@ bool operator==(const RigidBody & rb1, const RigidBody & rb2) {
   // std::map<std::string, std::vector<DrakeCollision::ElementId> >
   //     collision_element_groups;
 
+  // Compare joints
+  if (result) {
+    bool hasJoint1 = false, hasJoint2 = false;
+    try {
+      rb1.getJoint();
+      hasJoint1 = true;
+      rb2.getJoint();
+      hasJoint2 = true;
+    } catch(std::runtime_error re) {
+      // either rb1 or rb2 does not have a joint
+    }
+
+    if (hasJoint1 && !hasJoint2) {
+      PRINT_STMT("LHS link \"" << rb1.linkname << "\" has a joint but RHS link does not!")
+      result = false;
+    }
+
+    if (!hasJoint1 && hasJoint2) {
+      PRINT_STMT("LHS link \"" << rb1.linkname << "\" does not have a joint but RHS link does!")
+      result = false;
+    }
+
+    if (result && hasJoint1 && hasJoint2) {
+      if (rb1.getJoint() != rb2.getJoint()) {
+        result = false;
+      }
+    }
+  }
+
+  // Compare contact points
   if (result) {
     try {
-      valuecheckMatrix(rb1.contact_pts, rb2.contact_pts, 1e-10);
+      valuecheckMatrix(rb1.contact_pts, rb2.contact_pts, std::numeric_limits<double>::epsilon());
     } catch(std::runtime_error re) {
       PRINT_STMT("Contact points mismatch!" << std::endl
                   << "  - rigid body 1:\n" << rb1.contact_pts << std::endl
@@ -218,15 +248,17 @@ bool operator==(const RigidBody & rb1, const RigidBody & rb2) {
     }
   }
 
+  // Compare mass
   if (result && rb1.mass != rb2.mass) {
     std::cout << "The rigid body masses do not match: "
       << rb1.mass << " vs. " << rb2.mass << std::endl;
     result = false;
   }
 
+  // Compare center of mass
   if (result) {
     try {
-      valuecheckMatrix(rb1.com, rb2.com, 1e-10);
+      valuecheckMatrix(rb1.com, rb2.com, std::numeric_limits<double>::epsilon());
     } catch(std::runtime_error re) {
       PRINT_STMT("Center of mass mismatch!" << std::endl
                   << "  - rigid body 1:\n" << rb1.com << std::endl
@@ -236,9 +268,10 @@ bool operator==(const RigidBody & rb1, const RigidBody & rb2) {
     }
   }
 
+  // Compare inertia matrices
   if (result) {
     try {
-      valuecheckMatrix(rb1.I, rb2.I, 1e-10);
+      valuecheckMatrix(rb1.I, rb2.I, std::numeric_limits<double>::epsilon());
     } catch(std::runtime_error re) {
       PRINT_STMT("Inertia matrix mismatch!" << std::endl
                   << "  - rigid body 1:\n" << rb1.I << std::endl

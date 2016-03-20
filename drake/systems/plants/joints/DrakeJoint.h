@@ -107,6 +107,16 @@ class DRAKEJOINTS_EXPORT DrakeJoint {
   POSITION_AND_VELOCITY_DEPENDENT_METHODS(
       Eigen::AutoDiffScalar<Eigen::VectorXd>)
 
+  /*!
+   * Overload operator== to check whether two DrakeJoint objects are equal.
+   */
+  friend bool operator==(const DrakeJoint & j1, const DrakeJoint & j2);
+
+  /*!
+   * Overload operator!= to check whether two DrakeJoint objects are unequal.
+   */
+  friend bool operator!=(const DrakeJoint & j1, const DrakeJoint & j2);
+
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
