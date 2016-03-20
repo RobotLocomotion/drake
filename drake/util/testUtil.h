@@ -7,6 +7,7 @@
 #include <string>
 #include <stdexcept>
 #include <cmath>
+#include <iomanip> // for std::setprecision
 
 // requires <chrono>, which isn't available in MSVC2010...
 template <typename TimeT = std::chrono::milliseconds>
@@ -89,6 +90,7 @@ void valuecheckMatrix(const Eigen::MatrixBase<DerivedA>& a,
         std::to_string(static_cast<unsigned long long>(b.rows())) + " by " +
         std::to_string(static_cast<unsigned long long>(b.cols())) + ")");
   }
+
   if (!(a - b).isZero(tol)) {
     if (!a.allFinite() && !b.allFinite()) {
       // could be failing because inf-inf = nan
@@ -107,9 +109,12 @@ void valuecheckMatrix(const Eigen::MatrixBase<DerivedA>& a,
         }
       if (ok) return;
     }
-    error_msg += "\nA:\n" + to_string(a) + "\nB:\n" + to_string(b) +
-                 "\nA-B:\n" + to_string(a - b);
-    throw std::runtime_error("Drake:ValueCheck ERROR: " + error_msg);
+    std::stringstream ss;
+    ss << std::setprecision(25);
+    ss << "Drake:ValueCheck ERROR: ";
+    ss << error_msg << "\nA:\n" << a << "\nB:\n" << b
+                    << "\nA-B:\n" << (a - b);
+    throw std::runtime_error(ss.str());
   }
 }
 
