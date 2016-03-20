@@ -31,22 +31,22 @@ int main(int argc, char* argv[]) {
   const double tol = 1e-6;
 
   valuecheckMatrix(getMagnetometerOutput(rigid_body_sys, Vector3d::Zero()),
-                   Vector3d(0, 1, 0),
+                   Vector3d(1, 0, 0),
                    tol);
 
 
   valuecheckMatrix(getMagnetometerOutput(rigid_body_sys, Vector3d(0,0,M_PI/2)),
-                 Vector3d(1, 0, 0),
+                 Vector3d(0, -1, 0),
                  tol);
 
   magnetometer->setDeclination(M_PI/4);
 
   valuecheckMatrix(getMagnetometerOutput(rigid_body_sys, Vector3d::Zero()),
-                 Vector3d(-std::sqrt(2)/2, std::sqrt(2)/2, 0),
+                 Vector3d(std::sqrt(2)/2, std::sqrt(2)/2, 0),
                  tol);
 
   valuecheckMatrix(getMagnetometerOutput(rigid_body_sys,  Vector3d(0,0,M_PI/2)),
-                 Vector3d(std::sqrt(2)/2, std::sqrt(2)/2, 0),
+                 Vector3d(std::sqrt(2)/2, -std::sqrt(2)/2, 0),
                  tol);
 
 }
