@@ -179,6 +179,7 @@ set(swigmake_GIT_REPOSITORY https://github.com/rdeits/swigmake.git)
 set(swigmake_GIT_TAG 7e4fcbeb46c5fc7b1efb651b4365ba8b777ef184)
 set(swigmake_IS_PUBLIC TRUE)
 set(swigmake_IS_CMAKE_POD TRUE)
+set(swigmake_NO_CLEAN TRUE)
 set(swig_matlab_GIT_REPOSITORY https://github.com/rdeits/swig-matlab-pod.git)
 set(swig_matlab_GIT_TAG 6459fbb0a16c5473504ed181630ec9df60114261)
 set(swig_matlab_IS_PUBLIC TRUE)
@@ -397,13 +398,28 @@ foreach (proj ${EXTERNAL_PROJECTS})
 		add_dependencies(status status-${proj})
 	endif()
 
-	ExternalProject_Get_Property(${proj} SOURCE_DIR)
-	if (NOT ${proj}_NO_BUILD)
-		add_custom_target(clean-${proj}
-				COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=$<CONFIGURATION> clean
-				WORKING_DIRECTORY ${SOURCE_DIR})
-		add_dependencies(clean-all clean-${proj})
-	endif()
+  ExternalProject_Get_Property(${proj} SOURCE_DIR)
+  # Handle pods-style 'make clean' cleaning of external projects/pods
+  if (NOT ${proj}_NO_BUILD)
+    if (${proj}_IS_CMAKE_POD)
+      ExternalProject_Get_Property(${proj} BINARY_DIR)
+      # if _NO_CLEAN is set, don't attempt to run `make clean`, just wipe the build folder
+      if (${proj}_NO_CLEAN)
+        add_custom_target(clean-${proj}
+          COMMAND ${CMAKE_COMMAND} -E remove_directory ${BINARY_DIR})
+      else()
+        add_custom_target(clean-${proj}
+          COMMAND ${CMAKE_COMMAND} --build ${BINARY_DIR} --target clean
+          COMMAND ${CMAKE_COMMAND} -E remove_directory ${BINARY_DIR})
+      endif()
+      add_dependencies(clean-all clean-${proj})
+    else()
+      add_custom_target(clean-${proj}
+          COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=$<CONFIGURATION> clean
+          WORKING_DIRECTORY ${SOURCE_DIR})
+      add_dependencies(clean-all clean-${proj})
+    endif()
+  endif()
 	list(APPEND PROJECT_LIST ${SOURCE_DIR})
 endforeach()
 
