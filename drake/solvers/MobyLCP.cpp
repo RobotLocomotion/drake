@@ -729,7 +729,6 @@ bool MobyLCPSolver::lcp_lemke(
     if (_j.empty()) {
       LOG() << "zero tolerance too low?" << std::endl;
       LOG() << "MobyLCPSolver::lcp_lemke() exited" << std::endl;
-      z->conservativeResize(n);
       return false;
     }
 
@@ -768,10 +767,6 @@ bool MobyLCPSolver::lcp_lemke(
   LOG() << " -- maximum number of iterations exceeded (n=" << n
                     << ", max=" << MAXITER << ")" << std::endl;
   LOG() << "MobyLCPSolver::lcp_lemke() exited" << std::endl;
-
-  // max iterations exceeded
-  z->conservativeResize(n);
-
   return false;
 }
 
@@ -1088,9 +1083,6 @@ bool MobyLCPSolver::lcp_lemke(const Eigen::SparseMatrix<double>& M,
       LOG() << "MobyLCPSolver::lcp_lemke() - no new pivots (ray termination)"
             << std::endl;
       LOG() << "MobyLCPSolver::lcp_lemke() exited" << std::endl;
-
-      // TODO sammy why is z being resized/preserved here?
-      z->conservativeResize(n);
       return false;
     }
 
@@ -1126,7 +1118,6 @@ bool MobyLCPSolver::lcp_lemke(const Eigen::SparseMatrix<double>& M,
     if (_j.empty()) {
       LOG() << "zero tolerance too low?" << std::endl;
       LOG() << "MobyLCPSolver::lcp_lemke() exited" << std::endl;
-      z->conservativeResize(n);
       return false;
     }
 
@@ -1165,10 +1156,6 @@ bool MobyLCPSolver::lcp_lemke(const Eigen::SparseMatrix<double>& M,
 
   LOG() << " -- maximum number of iterations exceeded" << std::endl;
   LOG() << "MobyLCPSolver::lcp_lemke() exited" << std::endl;
-
-  // max iterations exceeded
-  z->conservativeResize(n);
-
   return false;
 }
 
