@@ -380,7 +380,18 @@ void RigidBodyTree::compile(void) {
 
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
     RigidBody& body = **it;
+
+    // if (body.linkname.compare("base_link") == 0) {
+    //   std::cout << "RigidBodyTree::compile: About to call getTerrainContactPoints() for body \"" << body.linkname << "\".\n"
+    //             << "  - body.contact_pts:\n" << body.contact_pts << std::endl;
+    // }
+
     getTerrainContactPoints(body, body.contact_pts);
+
+    // if (body.linkname.compare("base_link") == 0) {
+    //   std::cout << "RigidBodyTree::compile: Done calling getTerrainContactPoints.\n"
+    //             << "  - body.contact_pts:\n" << body.contact_pts << std::endl;
+    // }
   }
 
   initialized = true;
@@ -544,6 +555,10 @@ void RigidBodyTree::updateDynamicCollisionElements(
 
 void RigidBodyTree::getTerrainContactPoints(
     const RigidBody& body, Eigen::Matrix3Xd& terrain_points) const {
+
+  // std::cout << "RigidBodyTree: getTerrainContactPoints: Method Called! Details of rigid body:\n"
+  //           << body << std::endl;
+
   // clear matrix before filling it again
   size_t num_points = 0;
   terrain_points.resize(Eigen::NoChange, 0);
