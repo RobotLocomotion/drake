@@ -281,6 +281,43 @@ void setSDFDynamics(RigidBodyTree* model, XMLElement* node,
   }
 }
 
+void parseSDFFrame(RigidBodyTree* model, std::string model_name,
+                   XMLElement* node) {
+  const char* attr = node->Attribute("drake_ignore");
+  if (attr && strcmp(attr, "true") == 0) return;
+
+  attr = node->Attribute("name");
+  if (!attr) throw runtime_error("ERROR: frame tag is missing name attribute");
+  string name(attr);
+
+  // Parse the link
+  string link_name;
+  if (!parseStringValue(node, "link", link_name))
+    throw runtime_error("ERROR: frame " + name + " doesn't have a link node");
+
+  // The following will throw a std::runtime_error if the link doesn't exist.
+  std::shared_ptr<RigidBody> link = model->findLink(link_name, model_name);
+
+  // Get the frame's pose
+  XMLElement* pose = node->FirstChildElement("pose");
+  if (!pose) throw runtime_error("ERROR: frame \"" + name + "\" is missing its pose tag");
+
+  Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
+  Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
+
+  const char* strval = pose->FirstChild()->Value();
+  if (strval) {
+    std::stringstream s(strval);
+    s >> xyz(0) >> xyz(1) >> xyz(2) >> rpy(0) >> rpy(1) >> rpy(2);
+  }
+
+  // Create the frame
+  std::shared_ptr<RigidBodyFrame> frame = allocate_shared<RigidBodyFrame>(
+      Eigen::aligned_allocator<RigidBodyFrame>(), name, link, xyz, rpy);
+
+  model->addFrame(frame);
+}
+
 void parseSDFJoint(RigidBodyTree* model, std::string model_name,
                    XMLElement* node, PoseMap& pose_map) {
   const char* attr = node->Attribute("drake_ignore");
@@ -528,6 +565,11 @@ void parseModel(RigidBodyTree* model, XMLElement* node,
   for (XMLElement* joint_node = node->FirstChildElement("joint"); joint_node;
        joint_node = joint_node->NextSiblingElement("joint"))
     parseSDFJoint(model, model_name, joint_node, pose_map);
+
+  // parse frames
+  for (XMLElement* frame_node = node->FirstChildElement("frame"); frame_node;
+       frame_node = frame_node->NextSiblingElement("frame"))
+    parseSDFFrame(model, model_name, frame_node);
 
   bool has_root_node = false;
   for (unsigned int i = 1; i < model->bodies.size(); i++) {
