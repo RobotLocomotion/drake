@@ -41,7 +41,7 @@ std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj) {
   return os;
 }
 
-#define PRINT_STMT(x) std::cout << "RigidBodyTree: ==: " << x << std::endl;
+#define PRINT_STMT(x) std::cout << "RigidBodyTree: EQUALS: " << x << std::endl;
 
 bool operator==(const RigidBodyTree & rbt1, const RigidBodyTree & rbt2) {
   // PRINT_STMT("Checking if two rigid body trees are equal...")
