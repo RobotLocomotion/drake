@@ -93,9 +93,7 @@
     <inertial>
       <mass value="14.28"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <!-- <inertia ixx="0.0" ixy="0" ixz="0" iyy="0.0" iyz="0" izz="0.0"/> -->
       <inertia ixx="0.499912" ixy="0" ixz="0" iyy="0.778439" iyz="0" izz="0.499912"/>
-      <!-- <inertia ixx="0.42825" ixy="0" ixz="0" iyy="0.42825" iyz="0" izz="0.746487"/> -->
     </inertial>
     <collision name="c1">
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -116,7 +114,7 @@
       </material>
     </visual>
     <visual name="line1">
-      <origin rpy="0 1.57079632679 3.14159265359" xyz="0 0 -0.1075"/>
+      <origin rpy="0 1.570796326794896557998982 3.141592653589793115997963" xyz="0 0 -0.1075"/>
       <geometry>
         <box size="0.0025 0.0025 0.25"/>
       </geometry>
@@ -125,7 +123,7 @@
       </material>
     </visual>
     <visual name="line2">
-      <origin rpy="3.14159265359 1.57079632679 -1.57079632679" xyz="0 0 -0.1075"/>
+      <origin rpy="3.141592653589793115997963 1.570796326794896557998982 -1.570796326794896557998982" xyz="0 0 -0.1075"/>
       <geometry>
         <box size="0.0025 0.0025 0.25"/>
       </geometry>
@@ -177,12 +175,9 @@
   </link>
   <link name="right_wheel">
     <inertial>
-      <!-- <mass value="0"/> -->
       <mass value="14.28"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <!-- <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/> -->
       <inertia ixx="0.499912" ixy="0" ixz="0" iyy="0.778439" iyz="0" izz="0.499912"/>
-      <!-- <inertia ixx="0.42825" ixy="0" ixz="0" iyy="0.42825" iyz="0" izz="0.746487"/> -->
     </inertial>
     <collision  name="c1">
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -200,7 +195,7 @@
       </material>
     </visual>
     <visual name="v1">
-      <origin rpy="0 1.57079632679 3.14159265359" xyz="0 0 0.1075"/>
+      <origin rpy="0 1.570796326794896557998982 3.141592653589793115997963" xyz="0 0 0.1075"/>
       <geometry>
         <box size="0.0025 0.0025 0.25"/>
       </geometry>
@@ -209,7 +204,7 @@
       </material>
     </visual>
     <visual name="v3">
-      <origin rpy="3.14159265359 1.57079632679 -1.57079632679" xyz="0 0 0.1075"/>
+      <origin rpy="3.141592653589793115997963 1.570796326794896557998982 -1.570796326794896557998982" xyz="0 0 0.1075"/>
       <geometry>
         <box size="0.0025 0.0025 0.25"/>
       </geometry>
@@ -244,7 +239,7 @@
       </geometry>
     </collision>
     <visual name="v3">
-      <origin rpy="0 1.57079632679 3.14159265359" xyz="0 0 -0.1075"/>
+      <origin rpy="0 1.570796326794896557998982 3.141592653589793115997963" xyz="0 0 -0.1075"/>
       <geometry>
         <box size="0.0025 0.0025 0.25"/>
       </geometry>
@@ -253,7 +248,7 @@
       </material>
     </visual>
     <visual name="v2">
-      <origin rpy="3.14159265359 1.57079632679 -1.57079632679" xyz="0 0 -0.1075"/>
+      <origin rpy="3.141592653589793115997963 1.570796326794896557998982 -1.570796326794896557998982" xyz="0 0 -0.1075"/>
       <geometry>
         <box size="0.0025 0.0025 0.25"/>
       </geometry>
@@ -284,7 +279,7 @@
       </geometry>
     </collision>
     <visual name="v3">
-      <origin rpy="0 1.57079632679 3.14159265359" xyz="0 0 0.1075"/>
+      <origin rpy="0 1.570796326794896557998982 3.141592653589793115997963" xyz="0 0 0.1075"/>
       <geometry>
         <box size="0.0025 0.0025 0.25"/>
       </geometry>
@@ -302,7 +297,7 @@
       </material>
     </visual>
     <visual name="v2">
-      <origin rpy="3.14159265359 1.57079632679 -1.57079632679" xyz="0 0 0.1075"/>
+      <origin rpy="3.141592653589793115997963 1.570796326794896557998982 -1.570796326794896557998982" xyz="0 0 0.1075"/>
       <geometry>
         <box size="0.0025 0.0025 0.25"/>
       </geometry>
@@ -315,7 +310,6 @@
     <inertial>
       <mass value="5.42794"/>
       <origin rpy="0 0 0" xyz="0 0 0"/>
-      <!-- <origin rpy="0 0 0" xyz="-2.27 -0.91139 -0.21858"/> -->
       <inertia ixx="0.00216238" ixy="0" ixz="0" iyy="0.500375" iyz="0" izz="0.501672"/>
     </inertial>
     <visual name="v1">
@@ -343,7 +337,7 @@
   <joint name="left_hub" type="fixed">
     <parent link="left_tie_rod_arm"/>
     <child link="left_hub"/>
-    <origin rpy="1.57079632679 0 0" xyz="0 0.12368 0.02406"/>
+    <origin rpy="1.570796326794896557998982 0 0" xyz="0 0.12368 0.02406"/>
     <axis xyz="0  0  0"/>
     <limit effort="0" lower="0" upper="0" velocity="0"/>
   </joint>
@@ -358,7 +352,6 @@
     <parent link="left_hub"/>
     <child link="left_wheel"/>
     <origin rpy="0 0 0" xyz="0 0 -0.183582999999999940676787"/>
-    <!-- <origin rpy="0 0 0" xyz="0 0 -0.18357"/> -->
     <axis xyz="0 0 -1"/>
     <limit effort="10000" velocity="10000"/>
   </joint>
@@ -372,7 +365,7 @@
   <joint name="right_hub" type="fixed">
     <parent link="right_tie_rod_arm"/>
     <child link="right_hub"/>
-    <origin rpy="1.57079632679 0 0" xyz="0 -0.12368 0.02406"/>
+    <origin rpy="1.570796326794896557998982 0 0" xyz="0 -0.12368 0.02406"/>
     <axis xyz="0  0  0"/>
     <limit effort="0" lower="0" upper="0" velocity="0"/>
   </joint>
@@ -386,28 +379,28 @@
   <joint name="chassis_rear_axle" type="fixed">
     <parent link="chassis_floor"/>
     <child link="rear_axle"/>
-    <origin rpy="0 0 0" xyz="-1.40948 0 -0.054984"/> <!-- 0.32334"/> -->
+    <origin rpy="0 0 0" xyz="-1.40948 0 -0.054984"/>
     <axis xyz="0 0 0"/>
     <limit effort="0" lower="0" upper="0" velocity="0"/>
   </joint>
   <joint name="rear_left_wheel_joint" type="revolute">
     <parent link="rear_axle"/>
     <child link="left_wheel_rear"/>
-    <origin rpy="1.57079632679  0 0" xyz="0 0.80199  0"/>
+    <origin rpy="1.570796326794896557998982  0 0" xyz="0 0.80199  0"/>
     <axis xyz="0  0 -1"/>
     <limit effort="10000" velocity="10000"/>
   </joint>
   <joint name="rear_right_wheel_joint" type="revolute">
     <parent link="rear_axle"/>
     <child link="right_wheel_rear"/>
-    <origin rpy="1.57079632679 0 0" xyz="0 -0.80199  0"/>
+    <origin rpy="1.570796326794896557998982 0 0" xyz="0 -0.80199  0"/>
     <axis xyz="0  0 -1"/>
     <limit effort="10000" velocity="10000"/>
   </joint>
   <joint name="body" type="fixed">
     <parent link="chassis_floor"/>
     <child link="body"/>
-    <origin rpy="0  0  0" xyz="0 0 0.006857999999999975226927518"/> <!-- 0.38518"/> -->
+    <origin rpy="0  0  0" xyz="0 0 0.006857999999999975226927518"/>
     <axis xyz="0  0  0"/>
     <limit effort="0" lower="0" upper="0" velocity="0"/>
   </joint>
