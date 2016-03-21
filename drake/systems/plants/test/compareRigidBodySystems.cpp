@@ -88,6 +88,7 @@ int main(int argc, char* argv[]) {
   }
 
   for (int i = 0; i < 1000; i++) {
+    std::cout << "Round: " << i << " of " << 1000 << std::endl;
     double t = 0.0;
     VectorXd x = getInitialState(*r1);
     VectorXd u = VectorXd::Random(r1->getNumInputs());
