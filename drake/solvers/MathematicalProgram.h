@@ -32,7 +32,7 @@ class DRAKEOPTIMIZATION_EXPORT  MathematicalProgramInterface {
   virtual MathematicalProgramInterface* addLinearConstraint() = 0;
   virtual MathematicalProgramInterface* addLinearEqualityConstraint() = 0;
   virtual MathematicalProgramInterface*
-  addLinearComplementarityConstraint() = 0;
+      addLinearComplementarityConstraint() = 0;
 
   virtual bool solve(OptimizationProblem& prog) const = 0;
 
