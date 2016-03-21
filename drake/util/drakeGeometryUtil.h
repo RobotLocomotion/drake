@@ -531,6 +531,17 @@ Eigen::Matrix<typename Derived::Scalar, 3, 3> rpy2rotmat(
       s(2) * s(1) * c(0) - c(2) * s(0);
   R.row(2) << -s(1), c(1) * s(0), c(1) * c(0);
 
+  // Clean up the rotation matrix by treating any value less than the system's epsilon as zero.
+  for (int ii = 0; ii < 3; ii++)
+  {
+    for (int jj = 0; jj < 3; jj++)
+    {
+      if ((R(ii,jj) > 0 && R(ii,jj) < std::numeric_limits<typename Derived::Scalar>::epsilon()) ||
+          (R(ii,jj) < 0 && R(ii,jj) > -std::numeric_limits<typename Derived::Scalar>::epsilon()))
+        R(ii,jj) = 0;
+    }
+  }
+  
   return R;
 };
 
