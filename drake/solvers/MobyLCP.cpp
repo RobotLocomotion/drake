@@ -124,7 +124,7 @@ bool MobyLCPSolver::solve(OptimizationProblem& prog) const {
   // the same variable.
   for (int i = 0; i < prog.getNumVars(); i++) {
     bool coverings = 0;
-    for (auto binding : bindings) {
+    for (const auto& binding : bindings) {
       if (binding.covers(i)) {
         coverings++;
       }
@@ -139,7 +139,7 @@ bool MobyLCPSolver::solve(OptimizationProblem& prog) const {
   // If any is infeasible, returns false and does not alter the decision
   // variables.
   Eigen::VectorXd solution(prog.getNumVars());
-  for (auto binding : bindings) {
+  for (const auto& binding : bindings) {
     Eigen::VectorXd constraint_solution(binding.getNumElements());
     const std::shared_ptr<LinearComplementarityConstraint> constraint =
         binding.getConstraint();
