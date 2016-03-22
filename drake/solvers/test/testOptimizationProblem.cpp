@@ -192,6 +192,26 @@ void gloptipolyConstrainedMinimization() {
   valuecheckMatrix(x.value(), Vector3d(.5, 0, 3), 1e-4);
 }
 
+/**
+ * Test that the eval() method of LinearComplementarityConstraint correctly
+ * returns the slack.
+ */
+void simpleLCPConstraintEval() {
+  OptimizationProblem prog;
+  Eigen::Matrix<double, 2, 2> M;
+  M << 1, 0,
+      0, 1;
+
+  Eigen::Vector2d q(-1, -1);
+
+  LinearComplementarityConstraint c(M, q);
+  Eigen::VectorXd x;
+  c.eval(Eigen::Vector2d(1, 1), x);
+  valuecheckMatrix(x, Vector2d(0, 0), 1e-4);
+  c.eval(Eigen::Vector2d(1, 2), x);
+  valuecheckMatrix(x, Vector2d(0, 1), 1e-4);
+}
+
 /** Simple linear complementarity problem example.
  * @brief a hand-created LCP easily solved.
  *
@@ -229,6 +249,7 @@ int main(int argc, char* argv[]) {
       throw;
     }
   }
+  simpleLCPConstraintEval();
   simpleLCP();
   return 0;
 }

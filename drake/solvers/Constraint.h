@@ -204,8 +204,8 @@ class BoundingBoxConstraint : public LinearConstraint {
  *   x >= 0
  *   x'(Mx + q) == 0
  *
- * An implied slack variable complements any 0 component of x, which
- * (TODO ggould) will in the future be retrievable.
+ * An implied slack variable complements any 0 component of x.  To get
+ * the slack values at a given solution x, use eval(x).
  */
 class LinearComplementarityConstraint : public Constraint {
  public:
@@ -216,15 +216,16 @@ class LinearComplementarityConstraint : public Constraint {
 
   virtual ~LinearComplementarityConstraint() {}
 
+  /** Return Mx + q (the value of the slack variable). */
   virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
-    throw std::runtime_error(
-        "Linear Complementarity Constraints should not invoke eval()");
+    y.resize(getNumConstraints());
+    y = (M * x) + q;
   }
   virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
                     TaylorVecXd& y) const override {
-    throw std::runtime_error(
-        "Linear Complementarity Constraints should not invoke eval()");
+    y.resize(getNumConstraints());
+    y = (M.cast<TaylorVarXd>() * x) + q.cast<TaylorVarXd>();
   };
 
   const Eigen::MatrixXd& getM() { return M; };
