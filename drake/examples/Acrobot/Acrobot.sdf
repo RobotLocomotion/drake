@@ -124,6 +124,7 @@
         <limit>
           <!-- <lower>-1e+16</lower> -->
           <!-- <upper>1e+16</upper> -->
+          <effort>0.0</effort>
         </limit>
         <dynamics>
           <damping>0.1</damping>
