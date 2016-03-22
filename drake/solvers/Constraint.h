@@ -19,7 +19,7 @@ namespace Drake {
  * on vdot and f, but are "parameterized" by q and v.
  */
 class Constraint {
-  void check(size_t num_constraints) {
+  void Check(size_t num_constraints) {
     static_cast<void>(num_constraints);
     assert(lower_bound.size() == num_constraints &&
            "Size of lower bound must match number of constraints.");
@@ -30,7 +30,7 @@ class Constraint {
  public:
   Constraint(size_t num_constraints)
       : lower_bound(num_constraints), upper_bound(num_constraints) {
-    check(num_constraints);
+    Check(num_constraints);
     lower_bound.setConstant(-std::numeric_limits<double>::infinity());
     upper_bound.setConstant(std::numeric_limits<double>::infinity());
   }
@@ -39,15 +39,15 @@ class Constraint {
   Constraint(size_t num_constraints, Eigen::MatrixBase<DerivedLB> const& lb,
              Eigen::MatrixBase<DerivedUB> const& ub)
       : lower_bound(lb), upper_bound(ub) {
-    check(num_constraints);
+    Check(num_constraints);
   }
   virtual ~Constraint() {}
 
   // TODO: consider using a Ref for `y` too.  This will require the client
   // to do allocation, but also allows it to choose stack allocation instead.
-  virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+  virtual void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const = 0;
-  virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
+  virtual void Eval(const Eigen::Ref<const TaylorVecXd>& x,
                     TaylorVecXd& y) const = 0;  // move this to
                                                 // DifferentiableConstraint
                                                 // derived class if/when we need
@@ -76,12 +76,12 @@ class QuadraticConstraint : public Constraint {
         b(b) {}
   virtual ~QuadraticConstraint() {}
 
-  virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+  virtual void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
     y.resize(getNumConstraints());
     y = .5 * x.transpose() * Q * x + b.transpose() * x;
   }
-  virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
+  virtual void Eval(const Eigen::Ref<const TaylorVecXd>& x,
                     TaylorVecXd& y) const override {
     y.resize(getNumConstraints());
     y = .5 * x.transpose() * Q.cast<TaylorVarXd>() * x +
@@ -111,12 +111,12 @@ class LinearConstraint : public Constraint {
   }
   virtual ~LinearConstraint() {}
 
-  virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+  virtual void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
     y.resize(getNumConstraints());
     y = getMatrix() * x;
   }
-  virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
+  virtual void Eval(const Eigen::Ref<const TaylorVecXd>& x,
                     TaylorVecXd& y) const override {
     y.resize(getNumConstraints());
     y = getMatrix().cast<TaylorVarXd>() * x;
@@ -182,12 +182,12 @@ class BoundingBoxConstraint : public LinearConstraint {
                          ub) {}
   virtual ~BoundingBoxConstraint() {}
 
-  virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+  virtual void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
     y.resize(getNumConstraints());
     y = x;
   }
-  virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
+  virtual void Eval(const Eigen::Ref<const TaylorVecXd>& x,
                     TaylorVecXd& y) const override {
     y.resize(getNumConstraints());
     y = x;
@@ -214,28 +214,28 @@ class LinearComplementarityConstraint : public Constraint {
                    Derivedq::Constant(0),
                    Derivedq::Constant(
                        std::numeric_limits<double>::infinity())),
-        M(M),
+        m_matrix(M),
         q(q) {}
   virtual ~LinearComplementarityConstraint() {}
 
-  virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+  virtual void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
     y.resize(getNumConstraints());
-    y = (M * x) + q;
+    y = (m_matrix * x) + q;
   }
-  virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
+  virtual void Eval(const Eigen::Ref<const TaylorVecXd>& x,
                     TaylorVecXd& y) const override {
     y.resize(getNumConstraints());
-    y = (M.cast<TaylorVarXd>() * x) + q.cast<TaylorVarXd>();
+    y = (m_matrix.cast<TaylorVarXd>() * x) + q.cast<TaylorVarXd>();
   };
 
-  const Eigen::MatrixXd& getM() { return M; };
-  const Eigen::VectorXd& getq() { return q; };
+  const Eigen::MatrixXd& get_m_matrix() { return M; };
+  const Eigen::VectorXd& get_q() { return q; };
 
  private:
   // TODO ggould We are storing what are likely statically sized matrices
   // in dynamically allocated containers.  This probably isn't optimal.
-  Eigen::MatrixXd M;
+  Eigen::MatrixXd m_matrix;
   Eigen::VectorXd q;
 };
 }

@@ -23,7 +23,7 @@ struct Movable {
   static size_t numInputs() { return 1; }
   static size_t numOutputs() { return 1; }
   template <typename ScalarType>
-  void eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
+  void Eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
 };
 
 struct Copyable {
@@ -33,7 +33,7 @@ struct Copyable {
   static size_t numInputs() { return 1; }
   static size_t numOutputs() { return 1; }
   template <typename ScalarType>
-  void eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
+  void Eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
 };
 
 struct Unique {
@@ -43,10 +43,10 @@ struct Unique {
   static size_t numInputs() { return 1; }
   static size_t numOutputs() { return 1; }
   template <typename ScalarType>
-  void eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
+  void Eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
 };
 
-TEST(testOptimizationProblem, testAddFunction) {
+TEST(TestOptimizationProblem, TestAddFunction) {
   OptimizationProblem prog;
   prog.addContinuousVariables(1);
 
@@ -81,7 +81,7 @@ void runNonlinearProgram(OptimizationProblem& prog,
   }
 }
 
-TEST(testOptimizationProblem, trivialLeastSquares) {
+TEST(TestOptimizationProblem, trivialLeastSquares) {
   OptimizationProblem prog;
 
   auto const& x = prog.addContinuousVariables(4);
@@ -124,7 +124,7 @@ class SixHumpCamelObjective {
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
-  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
+  void Eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
     assert(x.rows() == numInputs());
     assert(y.rows() == numOutputs());
     y(0) =
@@ -133,7 +133,7 @@ class SixHumpCamelObjective {
   }
 };
 
-TEST(testOptimizationProblem, sixHumpCamel) {
+TEST(TestOptimizationProblem, sixHumpCamel) {
   OptimizationProblem prog;
   auto x = prog.addContinuousVariables(2);
   auto objective = prog.addCost(SixHumpCamelObjective());
@@ -142,9 +142,9 @@ TEST(testOptimizationProblem, sixHumpCamel) {
       prog.printSolution();
       // check (numerically) if it is a local minimum
       VectorXd ystar, y;
-      objective->eval(x.value(), ystar);
+      objective->Eval(x.value(), ystar);
       for (int i = 0; i < 10; i++) {
-        objective->eval(x.value() + .01 * Eigen::Matrix<double, 2, 1>::Random(), y);
+        objective->Eval(x.value() + .01 * Eigen::Matrix<double, 2, 1>::Random(), y);
         EXPECT_GE(y(0), ystar(0)) << "not a local minima!";
       }
     });
@@ -156,7 +156,7 @@ class GloptipolyConstrainedExampleObjective {
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
-  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
+  void Eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
     assert(x.rows() == numInputs());
     assert(y.rows() == numOutputs());
     y(0) = -2 * x(0) + x(1) - x(2);
@@ -172,13 +172,13 @@ class GloptipolyConstrainedExampleConstraint
                    Vector1d::Constant(numeric_limits<double>::infinity())) {}
 
   // for just these two types, implementing this locally is almost cleaner...
-  virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+  virtual void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
-    evalImpl(x, y);
+    EvalImpl(x, y);
   }
-  virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
+  virtual void Eval(const Eigen::Ref<const TaylorVecXd>& x,
                     TaylorVecXd& y) const override {
-    evalImpl(x, y);
+    EvalImpl(x, y);
   }
 
   template <typename ScalarType>
@@ -197,7 +197,7 @@ class GloptipolyConstrainedExampleConstraint
  * Which is from section 3.5 in
  *   Handbook of Test Problems in Local and Global Optimization
  */
-TEST(testOptimizationProblem, gloptipolyConstrainedMinimization) {
+TEST(TestOptimizationProblem, gloptipolyConstrainedMinimization) {
   OptimizationProblem prog;
   auto x = prog.addContinuousVariables(3);
   prog.addCost(GloptipolyConstrainedExampleObjective());
@@ -229,7 +229,7 @@ TEST(testOptimizationProblem, gloptipolyConstrainedMinimization) {
  * this case; tests of the correctness of the Moby LCP solver itself live in
  * testMobyLCP.
  */
-TEST(testOptimizationProblem, simpleLCP) {
+TEST(TestOptimizationProblem, simpleLCP) {
   OptimizationProblem prog;
   Eigen::Matrix<double, 2, 2> M;
   M << 1, 4,
@@ -237,11 +237,11 @@ TEST(testOptimizationProblem, simpleLCP) {
 
   Eigen::Vector2d q(-16, -15);
 
-  auto x = prog.addContinuousVariables(2);
+  auto x = prog.AddContinuousVariables(2);
 
-  prog.addLinearComplementarityConstraint(M, q, {x});
-  prog.solve();
-  prog.printSolution();
-  EXPECT_NO_THROW(valuecheckMatrix(x.value(), Vector2d(16, 0), 1e-4));
+  prog.AddLinearComplementarityConstraint(M, q, {x});
+  prog.Solve();
+  prog.PrintSolution();
+  EXPECT_NO_THROW(ValuecheckMatrix(x.value(), Vector2d(16, 0), 1e-4));
 }
 }
