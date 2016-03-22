@@ -126,6 +126,10 @@ class LinearComplementarityProblem : public MathematicalProgram {
     MobyLCPSolver solver;
     return solver.solve(prog);
   }
+  virtual MathematicalProgramInterface*
+  addLinearComplementarityConstraint() override {
+    return new LinearComplementarityProblem;
+  };
 };
 
 class LeastSquares

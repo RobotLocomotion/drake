@@ -109,24 +109,50 @@ void MobyLCPSolver::clearIndexVectors() const {
 }
 
 bool MobyLCPSolver::solve(OptimizationProblem& prog) const {
+  // This solver only knows how to solve LC constraints; forbid other types.
   // TODO ggould in principle it should be possible to render each of these as
   // a LCP and merge the resulting problems, but I don't yet know how to do it.
   assert(prog.getGenericConstraints().empty());
   assert(prog.getGenericObjectives().empty());
   assert(prog.getAllLinearConstraints().empty());
   assert(prog.getBoundingBoxConstraints().empty());
-  assert(prog.getLinearComplementarityConstraints().size() == 1);
 
-  Eigen::VectorXd solution(prog.getNumVars());
-  const std::shared_ptr<LinearComplementarityConstraint> constraint =
-      prog.getLinearComplementarityConstraints().front().getConstraint();
-  bool solved = lcp_lemke_regularized(
-      constraint->getM(), constraint->getq(),
-      &solution);
-  if (solved) {
-    prog.setDecisionVariableValues(solution);
+  const auto& bindings =
+      prog.getLinearComplementarityConstraints();
+
+  // Assert that the available LCPs cover the program and no two LCPs cover
+  // the same variable.
+  for (int i = 0; i < prog.getNumVars(); i++) {
+    bool coverings = 0;
+    for (auto binding : bindings) {
+      if (binding.covers(i)) {
+        coverings++;
+      }
+    }
+    assert(coverings == 1);
   }
-  return solved;
+
+  // Solve each individual LCP, writing the result back to the decision
+  // variables through the binding and returning true iff all LCPs are
+  // feasible.
+  //
+  // If any is infeasible, returns false and does not alter the decision
+  // variables.
+  Eigen::VectorXd solution(prog.getNumVars());
+  for (auto binding : bindings) {
+    Eigen::VectorXd constraint_solution(binding.getNumElements());
+    const std::shared_ptr<LinearComplementarityConstraint> constraint =
+        binding.getConstraint();
+    bool solved = lcp_lemke_regularized(
+        constraint->getM(), constraint->getq(),
+        &constraint_solution);
+    if (!solved) {
+      return false;
+    }
+    binding.writeThrough(constraint_solution, &solution);
+  }
+  prog.setDecisionVariableValues(solution);
+  return true;
 }
 
 /// Fast pivoting algorithm for denerate, monotone LCPs with few nonzero,

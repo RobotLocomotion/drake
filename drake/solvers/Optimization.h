@@ -76,10 +76,12 @@ class DecisionVariableView {  // enables users to access pieces of the decision
    * vector for the program
    */
   size_t index() const { return var.index() + start_index; }
+
   /** size()
    * @brief returns the number of elements in the decision variable vector
    */
   size_t size() const { return length; }
+
   /** value()
    * @brief returns the actual stored value; which is only meaningful after
    * calling solve() in the program.
@@ -87,6 +89,7 @@ class DecisionVariableView {  // enables users to access pieces of the decision
   Eigen::VectorBlock<const Eigen::VectorXd, Eigen::Dynamic> value() const {
     return var.value().segment(start_index, length);
   }
+
   std::string getName() const {
     if (start_index == 0 && length == var.value().size()) {
       return var.name();
@@ -94,6 +97,13 @@ class DecisionVariableView {  // enables users to access pieces of the decision
       return var.name() + "(" + std::to_string(start_index) + ":" +
              std::to_string(start_index + length) + ")";
     }
+  }
+
+  /** covers()
+   * @brief returns true iff the given @p index of the enclosing
+   * OptimizationProblem is included in this VariableView.*/
+  bool covers(size_t index) const {
+    return (index >= start_index) && (index < start_index + length);
   }
 
   const DecisionVariableView operator()(size_t i) const {
@@ -145,8 +155,48 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
         typename std::enable_if<std::is_convertible<
             std::shared_ptr<U>, std::shared_ptr<C>>::value>::type* = nullptr)
         : Binding(b.getConstraint(), b.getVariableList()) {}
+
     std::shared_ptr<C> const& getConstraint() const { return constraint; }
+
     VariableList const& getVariableList() const { return variable_list; }
+
+    /** covers()
+     * @brief returns true iff the given @p index of the enclosing
+     * OptimizationProblem is included in this Binding.*/
+    bool covers(size_t index) const {
+      for (auto view : getVariableList()) {
+        if (view.covers(index)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    size_t getNumElements() const {
+      // TODO ggould assumes that no index appears more than once in the
+      // view, which is nowhere asserted (but seems assumed elsewhere).
+      size_t count = 0;
+      for (auto view : getVariableList()) {
+        count += view.size();
+      }
+      return count;
+    }
+
+    /** writeThrough()
+     * @brief Write the elements of @p solution to the bound elements of
+     * the @p output vector.
+     */
+    void writeThrough(const Eigen::VectorXd& solution,
+                      Eigen::VectorXd* output) const {
+      assert(solution.rows() == getNumElements());
+      size_t solution_index = 0;
+      for (auto view : variable_list) {
+        const auto& solution_segment =
+            solution.segment(solution_index, view.size());
+        output->segment(view.index(), view.size()) = solution_segment;
+        solution_index += view.size();
+      }
+    }
   };
 
   template <typename F>

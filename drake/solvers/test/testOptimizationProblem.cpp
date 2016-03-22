@@ -235,6 +235,29 @@ void simpleLCP() {
   valuecheckMatrix(x.value(), Vector2d(16, 0), 1e-4);
 }
 
+/** Multiple LC constraints in a single optimization problem
+ * @brief Just two copies of the simpleLCP example, to make sure that the
+ * write-through of LCP results to the solution vector works correctly.
+ */
+void multiLCP() {
+  OptimizationProblem prog;
+  Eigen::Matrix<double, 2, 2> M;
+  M << 1, 4,
+      3, 1;
+
+  Eigen::Vector2d q(-16, -15);
+
+  auto x = prog.addContinuousVariables(2);
+  auto y = prog.addContinuousVariables(2);
+
+  prog.addLinearComplementarityConstraint(M, q, {x});
+  prog.addLinearComplementarityConstraint(M, q, {y});
+  prog.solve();
+  prog.printSolution();
+  valuecheckMatrix(x.value(), Vector2d(16, 0), 1e-4);
+  valuecheckMatrix(y.value(), Vector2d(16, 0), 1e-4);
+}
+
 int main(int argc, char* argv[]) {
   // SNOPT tests
   try {
@@ -251,5 +274,6 @@ int main(int argc, char* argv[]) {
   }
   simpleLCPConstraintEval();
   simpleLCP();
+  multiLCP();
   return 0;
 }
