@@ -125,6 +125,12 @@ class DecisionVariableView {  // enables users to access pieces of the decision
 typedef std::list<DecisionVariableView> VariableList;
 
 class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
+
+  /** Binding
+   * @brief A binding on constraint type C is a mapping of the decision
+   * variables onto the inputs of C.  This allows the constraint to operate
+   * on a vector made up of different elements of the decision variables.
+   */
   template <typename C>
   class Binding {
     std::shared_ptr<C> constraint;
@@ -416,17 +422,21 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
     // Linear Complementarity Constraint cannot currently coexist with any
     // other types of constraint or objective.
+    // (TODO ggould relax this to non-overlapping bindings, possibly by
+    // calling multiple solvers.)
     assert(generic_constraints.empty());
     assert(generic_objectives.empty());
     assert(linear_constraints.empty());
     assert(linear_equality_constraints.empty());
     assert(bbox_constraints.empty());
 
-    auto constraint = std::make_shared<LinearComplementarityConstraint>(M, q);
-    linear_complementarity_constraint.reset(
-        new Binding<LinearComplementarityConstraint>(constraint, vars));
+    std::shared_ptr<LinearComplementarityConstraint> constraint(
+        new LinearComplementarityConstraint(M, q));
+    linear_complementarity_constraints.push_back(
+        Binding<LinearComplementarityConstraint>(constraint, vars));
     return constraint;
-}
+  }
+
   // template <typename FunctionType>
   // void addCost(std::function..);
   // void addLinearCost(const Eigen::MatrixBase<Derived>& c, const vector<const
@@ -491,9 +501,9 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
       getBoundingBoxConstraints() const {
     return bbox_constraints;
   }
-  const Binding<LinearComplementarityConstraint>*
-      getLinearComplementarityConstraint() const {
-    return linear_complementarity_constraint.get();
+  const std::list<Binding<LinearComplementarityConstraint>>&
+      getLinearComplementarityConstraints() const {
+    return linear_complementarity_constraints;
   }
 
   // Base class for solver-specific data.  A solver implementation may derive
@@ -542,11 +552,10 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   std::list<Binding<LinearEqualityConstraint>> linear_equality_constraints;
   std::list<Binding<BoundingBoxConstraint>> bbox_constraints;
 
-  // An LCP encapsulates all of the constraints and objectives on a set of
-  // variables; if this is set, all of the above must be empty.
-  // TODO ggould this should be a boost::optional<> once boost is permitted.
-  std::unique_ptr<Binding<LinearComplementarityConstraint>>
-      linear_complementarity_constraint;
+  // Invariant:  The bindings in this list must be non-overlapping.
+  // TODO ggould can this constraint be relaxed?
+  std::list<Binding<LinearComplementarityConstraint>>
+      linear_complementarity_constraints;
 
   size_t num_vars;
   Eigen::VectorXd x_initial_guess;

@@ -115,12 +115,13 @@ bool MobyLCPSolver::solve(OptimizationProblem& prog) const {
   assert(prog.getGenericObjectives().empty());
   assert(prog.getAllLinearConstraints().empty());
   assert(prog.getBoundingBoxConstraints().empty());
-  assert(prog.getLinearComplementarityConstraint());
+  assert(prog.getLinearComplementarityConstraints().size() == 1);
 
   Eigen::VectorXd solution(prog.getNumVars());
+  const std::shared_ptr<LinearComplementarityConstraint> constraint =
+      prog.getLinearComplementarityConstraints().front().getConstraint();
   bool solved = lcp_lemke_regularized(
-      prog.getLinearComplementarityConstraint()->getConstraint()->getM(),
-      prog.getLinearComplementarityConstraint()->getConstraint()->getq(),
+      constraint->getM(), constraint->getq(),
       &solution);
   if (solved) {
     prog.setDecisionVariableValues(solution);
