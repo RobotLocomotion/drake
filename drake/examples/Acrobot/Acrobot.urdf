@@ -83,7 +83,7 @@
   </joint>
 
   <transmission type="SimpleTransmission" name="elbow_trans">
-    <actuator name="elbow_torque" />
+    <actuator name="elbow" />
     <joint name="elbow" />
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
