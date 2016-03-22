@@ -21,9 +21,9 @@ class DecisionVariable {
 public:
   enum class VarType { CONTINUOUS, INTEGER, BINARY };
 
-  DecisionVariable(VarType type, const std::string& name, 
-                   size_t num_vars, size_t start_index) 
-      : type_(type), name_(name), 
+  DecisionVariable(VarType type, const std::string& name,
+                   size_t num_vars, size_t start_index)
+      : type_(type), name_(name),
         data_(Eigen::VectorXd::Zero(num_vars)), start_index_(start_index) {}
 
   /** index()
@@ -480,6 +480,10 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   const std::list<Binding<LinearEqualityConstraint>>&
       getLinearEqualityConstraints() const {
     return linear_equality_constraints;
+  }
+  const std::list<Binding<LinearConstraint>>&
+      getLinearConstraints() const {
+    return linear_constraints;
   }
   std::list<Binding<LinearConstraint>> getAllLinearConstraints() const {
     std::list<Binding<LinearConstraint>> conlist = linear_constraints;

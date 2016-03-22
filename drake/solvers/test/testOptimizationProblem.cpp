@@ -69,8 +69,8 @@ void runNonlinearProgram(OptimizationProblem& prog,
   SnoptSolver snopt_solver;
 
   std::pair<const char*, MathematicalProgramSolverInterface*> solvers[] = {
-    std::make_pair("NLopt", &nlopt_solver),
-    std::make_pair("SNOPT", &snopt_solver)
+    std::make_pair("SNOPT", &snopt_solver),
+    std::make_pair("NLopt", &nlopt_solver)
   };
 
   for (const auto& solver: solvers) {
