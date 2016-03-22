@@ -1,7 +1,8 @@
 // Adapted with permission from code by Evan Drumwright
 // (https://github.com/edrumwri).
 
-#pragma once
+#ifndef DRAKE_OPTIMIZATION_MOBYLCP_H_
+#define DRAKE_OPTIMIZATION_MOBYLCP_H_
 
 #include <fstream>
 #include <Eigen/SparseCore>
@@ -86,3 +87,5 @@ class DRAKEOPTIMIZATION_EXPORT MobyLCPSolver :
   mutable Eigen::SparseMatrix<double> _MMs, _MMx, _eye, _zero, _diag_lambda;
 };
 };
+
+#endif // DRAKE_OPTIMIZATION_MOBYLCP_H_
