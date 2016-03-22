@@ -16,6 +16,13 @@ size_t RigidBodySystem::getNumInputs(void) const {
   for (auto const& f : force_elements) {
     num += f->getNumInputs();
   }
+
+  // std::cout << "RigidBodySystem::getNumInputs: Method called!\n"
+  //         << "  - filename: " << filename << "\n"
+  //         << "  - # actuators: " << tree->actuators.size() << "\n"
+  //         << "  - inputs from force elements: " << num - tree->actuators.size()
+  //         << std::endl;
+
   return num;
 }
 
