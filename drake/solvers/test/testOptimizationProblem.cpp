@@ -14,7 +14,7 @@ struct Movable {
   static size_t numInputs() { return 1; }
   static size_t numOutputs() { return 1; }
   template <typename ScalarType>
-  void eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
+  void Eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
 };
 
 struct Copyable {
@@ -24,7 +24,7 @@ struct Copyable {
   static size_t numInputs() { return 1; }
   static size_t numOutputs() { return 1; }
   template <typename ScalarType>
-  void eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
+  void Eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
 };
 
 struct Unique {
@@ -34,57 +34,57 @@ struct Unique {
   static size_t numInputs() { return 1; }
   static size_t numOutputs() { return 1; }
   template <typename ScalarType>
-  void eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
+  void Eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
 };
 
 void testAddFunction() {
   OptimizationProblem prog;
-  prog.addContinuousVariables(1);
+  prog.AddContinuousVariables(1);
 
   Movable movable;
-  prog.addCost(std::move(movable));
-  prog.addCost(Movable());
+  prog.AddCost(std::move(movable));
+  prog.AddCost(Movable());
 
   Copyable copyable;
-  prog.addCost(copyable);
+  prog.AddCost(copyable);
 
   Unique unique;
-  prog.addCost(std::cref(unique));
-  prog.addCost(std::make_shared<Unique>());
-  prog.addCost(std::unique_ptr<Unique>(new Unique));
+  prog.AddCost(std::cref(unique));
+  prog.AddCost(std::make_shared<Unique>());
+  prog.AddCost(std::unique_ptr<Unique>(new Unique));
 }
 
 void trivialLeastSquares() {
   OptimizationProblem prog;
 
-  auto const& x = prog.addContinuousVariables(4);
+  auto const& x = prog.AddContinuousVariables(4);
 
   auto x2 = x(2);
   auto xhead = x.head(3);
 
   Vector4d b = Vector4d::Random();
-  auto con = prog.addLinearEqualityConstraint(Matrix4d::Identity(), b, {x});
-  prog.solve();
+  auto con = prog.AddLinearEqualityConstraint(Matrix4d::Identity(), b, {x});
+  prog.Solve();
   valuecheckMatrix(b, x.value(), 1e-10);
   valuecheck(b(2), x2.value()(0), 1e-10);
   valuecheckMatrix(b.head(3), xhead.value(), 1e-10);
   valuecheck(b(2), xhead(2).value()(0), 1e-10);  // a segment of a segment
 
-  auto const& y = prog.addContinuousVariables(2);
-  prog.addLinearEqualityConstraint(2 * Matrix2d::Identity(), b.topRows(2), {y});
-  prog.solve();
+  auto const& y = prog.AddContinuousVariables(2);
+  prog.AddLinearEqualityConstraint(2 * Matrix2d::Identity(), b.topRows(2), {y});
+  prog.Solve();
   valuecheckMatrix(b.topRows(2) / 2, y.value(), 1e-10);
   valuecheckMatrix(b, x.value(), 1e-10);
 
-  con->updateConstraint(3 * Matrix4d::Identity(), b);
-  prog.solve();
+  con->UpdateConstraint(3 * Matrix4d::Identity(), b);
+  prog.Solve();
   valuecheckMatrix(b.topRows(2) / 2, y.value(), 1e-10);
   valuecheckMatrix(b / 3, x.value(), 1e-10);
 
   std::shared_ptr<BoundingBoxConstraint> bbcon(new BoundingBoxConstraint(
       MatrixXd::Constant(2, 1, -1000.0), MatrixXd::Constant(2, 1, 1000.0)));
-  prog.addBoundingBoxConstraint(bbcon, {x.head(2)});
-  prog.solve();  // now it will solve as a nonlinear program
+  prog.AddBoundingBoxConstraint(bbcon, {x.head(2)});
+  prog.Solve();  // now it will solve as a nonlinear program
   valuecheckMatrix(b.topRows(2) / 2, y.value(), 1e-10);
   valuecheckMatrix(b / 3, x.value(), 1e-10);
 }
@@ -95,7 +95,7 @@ class SixHumpCamelObjective {
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
-  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
+  void Eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
     assert(x.rows() == numInputs());
     assert(y.rows() == numOutputs());
     y(0) =
@@ -106,17 +106,17 @@ class SixHumpCamelObjective {
 
 void sixHumpCamel() {
   OptimizationProblem prog;
-  auto x = prog.addContinuousVariables(2);
-  auto objective = prog.addCost(SixHumpCamelObjective());
-  prog.solve();
-  prog.printSolution();
+  auto x = prog.AddContinuousVariables(2);
+  auto objective = prog.AddCost(SixHumpCamelObjective());
+  prog.Solve();
+  prog.PrintSolution();
 
   // check (numerically) if it is a local minimum
   VectorXd ystar, y;
-  objective->eval(x.value(), ystar);
+  objective->Eval(x.value(), ystar);
   for (int i = 0; i < 10; i++) {
-    objective->eval(x.value() + .01 * Eigen::Matrix<double, 2, 1>::Random(), y);
-    if (y(0) < ystar(0)) throw std::runtime_error("not a local minima!");
+    objective->Eval(x.value() + .01 * Eigen::Matrix<double, 2, 1>::Random(), y);
+    if (y(0) < ystar(0)) throw std::runtime_error("not a local minimum!");
   }
 }
 
@@ -126,7 +126,7 @@ class GloptipolyConstrainedExampleObjective {
   static size_t numOutputs() { return 1; }
 
   template <typename ScalarType>
-  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
+  void Eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
     assert(x.rows() == numInputs());
     assert(y.rows() == numOutputs());
     y(0) = -2 * x(0) + x(1) - x(2);
@@ -142,17 +142,17 @@ class GloptipolyConstrainedExampleConstraint
                    Vector1d::Constant(numeric_limits<double>::infinity())) {}
 
   // for just these two types, implementing this locally is almost cleaner...
-  virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+  virtual void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
-    evalImpl(x, y);
+    EvalImpl(x, y);
   }
-  virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
+  virtual void Eval(const Eigen::Ref<const TaylorVecXd>& x,
                     TaylorVecXd& y) const override {
-    evalImpl(x, y);
+    EvalImpl(x, y);
   }
 
   template <typename ScalarType>
-  void evalImpl(const Ref<const Matrix<ScalarType, Dynamic, 1>>& x,
+  void EvalImpl(const Ref<const Matrix<ScalarType, Dynamic, 1>>& x,
                 Matrix<ScalarType, Dynamic, 1>& y) const {
     y.resize(1);
     y(0) = 24 - 20 * x(0) + 9 * x(1) - 13 * x(2) + 4 * x(0) * x(0) -
@@ -169,25 +169,25 @@ class GloptipolyConstrainedExampleConstraint
  */
 void gloptipolyConstrainedMinimization() {
   OptimizationProblem prog;
-  auto x = prog.addContinuousVariables(3);
-  prog.addCost(GloptipolyConstrainedExampleObjective());
+  auto x = prog.AddContinuousVariables(3);
+  prog.AddCost(GloptipolyConstrainedExampleObjective());
   std::shared_ptr<GloptipolyConstrainedExampleConstraint> qp_con(
       new GloptipolyConstrainedExampleConstraint());
-  prog.addGenericConstraint(qp_con, {x});
-  prog.addLinearConstraint(
+  prog.AddGenericConstraint(qp_con, {x});
+  prog.AddLinearConstraint(
       Vector3d(1, 1, 1).transpose(),
       Vector1d::Constant(-numeric_limits<double>::infinity()),
       Vector1d::Constant(4));
-  prog.addLinearConstraint(
+  prog.AddLinearConstraint(
       Vector3d(0, 3, 1).transpose(),
       Vector1d::Constant(-numeric_limits<double>::infinity()),
       Vector1d::Constant(6));
-  prog.addBoundingBoxConstraint(
+  prog.AddBoundingBoxConstraint(
       Vector3d(0, 0, 0), Vector3d(2, numeric_limits<double>::infinity(), 3));
 
-  prog.setInitialGuess({x}, Vector3d(.5, 0, 3) + .1 * Vector3d::Random());
-  prog.solve();
-  prog.printSolution();
+  prog.set_initial_guess({x}, Vector3d(.5, 0, 3) + .1 * Vector3d::Random());
+  prog.Solve();
+  prog.PrintSolution();
 
   valuecheckMatrix(x.value(), Vector3d(.5, 0, 3), 1e-4);
 }
@@ -206,16 +206,16 @@ void simpleLCPConstraintEval() {
 
   LinearComplementarityConstraint c(M, q);
   Eigen::VectorXd x;
-  c.eval(Eigen::Vector2d(1, 1), x);
+  c.Eval(Eigen::Vector2d(1, 1), x);
   valuecheckMatrix(x, Vector2d(0, 0), 1e-4);
-  c.eval(Eigen::Vector2d(1, 2), x);
+  c.Eval(Eigen::Vector2d(1, 2), x);
   valuecheckMatrix(x, Vector2d(0, 1), 1e-4);
 }
 
 /** Simple linear complementarity problem example.
  * @brief a hand-created LCP easily solved.
  *
- * Note: This test is meant to test that OptimizationProblem.solve() works in
+ * Note: This test is meant to test that OptimizationProblem.Solve() works in
  * this case; tests of the correctness of the Moby LCP solver itself live in
  * testMobyLCP.
  */
@@ -227,11 +227,11 @@ void simpleLCP() {
 
   Eigen::Vector2d q(-16, -15);
 
-  auto x = prog.addContinuousVariables(2);
+  auto x = prog.AddContinuousVariables(2);
 
-  prog.addLinearComplementarityConstraint(M, q, {x});
-  prog.solve();
-  prog.printSolution();
+  prog.AddLinearComplementarityConstraint(M, q, {x});
+  prog.Solve();
+  prog.PrintSolution();
   valuecheckMatrix(x.value(), Vector2d(16, 0), 1e-4);
 }
 
@@ -247,13 +247,13 @@ void multiLCP() {
 
   Eigen::Vector2d q(-16, -15);
 
-  auto x = prog.addContinuousVariables(2);
-  auto y = prog.addContinuousVariables(2);
+  auto x = prog.AddContinuousVariables(2);
+  auto y = prog.AddContinuousVariables(2);
 
-  prog.addLinearComplementarityConstraint(M, q, {x});
-  prog.addLinearComplementarityConstraint(M, q, {y});
-  prog.solve();
-  prog.printSolution();
+  prog.AddLinearComplementarityConstraint(M, q, {x});
+  prog.AddLinearComplementarityConstraint(M, q, {y});
+  prog.Solve();
+  prog.PrintSolution();
   valuecheckMatrix(x.value(), Vector2d(16, 0), 1e-4);
   valuecheckMatrix(y.value(), Vector2d(16, 0), 1e-4);
 }

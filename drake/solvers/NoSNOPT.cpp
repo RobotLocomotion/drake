@@ -6,7 +6,7 @@ bool Drake::MathematicalProgramSNOPTSolver::available() const {
   return false;
 }
 
-bool Drake::MathematicalProgramSNOPTSolver::solve(
+bool Drake::MathematicalProgramSNOPTSolver::Solve(
     OptimizationProblem &prog) const {
   throw std::runtime_error(
       "The SNOPT bindings were not compiled.  You'll need to use a different "

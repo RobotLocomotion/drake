@@ -135,9 +135,9 @@ struct FunctionTraits {
   static size_t numInputs(F const& f) { return f.numInputs(); }
   static size_t numOutputs(F const& f) { return f.numOutputs(); }
   template <typename ScalarType>
-  static void eval(F const& f, VecIn<ScalarType> const& x,
+  static void Eval(F const& f, VecIn<ScalarType> const& x,
                    VecOut<ScalarType>& y) {
-    f.eval(x, y);
+    f.Eval(x, y);
   }
 };
 
@@ -150,9 +150,9 @@ struct FunctionTraits<std::reference_wrapper<F>> {
     return f.get().numOutputs();
   }
   template <typename ScalarType>
-  static void eval(std::reference_wrapper<F> const& f,
+  static void Eval(std::reference_wrapper<F> const& f,
                    VecIn<ScalarType> const& x, VecOut<ScalarType>& y) {
-    f.get().eval(x, y);
+    f.get().Eval(x, y);
   }
 };
 
@@ -165,9 +165,9 @@ struct FunctionTraits<std::shared_ptr<F>> {
     return f->numOutputs();
   }
   template <typename ScalarType>
-  static void eval(std::shared_ptr<F> const& f, VecIn<ScalarType> const& x,
+  static void Eval(std::shared_ptr<F> const& f, VecIn<ScalarType> const& x,
                    VecOut<ScalarType>& y) {
-    f->eval(x, y);
+    f->Eval(x, y);
   }
 };
 
@@ -180,14 +180,14 @@ struct FunctionTraits<std::unique_ptr<F>> {
     return f->numOutputs();
   }
   template <typename ScalarType>
-  static void eval(std::unique_ptr<F> const& f, VecIn<ScalarType> const& x,
+  static void Eval(std::unique_ptr<F> const& f, VecIn<ScalarType> const& x,
                    VecOut<ScalarType>& y) {
-    f->eval(x, y);
+    f->Eval(x, y);
   }
 };
 
 // idea: use templates to support multi-input, multi-output functions which
 // implement, e.g.
-// void eval(x1,..., xn,  y1,..., ym), and
+// void Eval(x1,..., xn,  y1,..., ym), and
 // InputOutputRelation getInputOutputRelation(input_index, output_index)
 };
