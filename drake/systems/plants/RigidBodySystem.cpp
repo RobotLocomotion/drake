@@ -32,10 +32,10 @@ size_t RigidBodySystem::getNumOutputs() const {
       n += s->getNumOutputs();
     }
 
-    std::cout << "RigidBodySystem::getNumOutputs: Method called!\n"
-              << "  - num states = " << getNumStates() << "\n"
-              << "  - num sensor outputs = " << (n - getNumStates())
-              << std::endl;
+    // std::cout << "RigidBodySystem::getNumOutputs: Method called!\n"
+    //           << "  - num states = " << getNumStates() << "\n"
+    //           << "  - num sensor outputs = " << (n - getNumStates())
+    //           << std::endl;
     return n;
 }
 
@@ -218,10 +218,6 @@ RigidBodySystem::OutputVector<double> RigidBodySystem::output(const double& t,
                                                               const RigidBodySystem::StateVector<double>& x,
                                                               const RigidBodySystem::InputVector<double>& u) const
 {
-  std::cout << "RigidBodySystem::output: Method called!\n"
-            << "  - getNumOutputs() = " << getNumOutputs() << "\n"
-            << "  - x.size() = " << x.size()
-            << std::endl;
   auto kinsol = tree->doKinematics(x.topRows(tree->num_positions), x.bottomRows(tree->num_velocities));
   Eigen::VectorXd y(getNumOutputs());
   y << x;
