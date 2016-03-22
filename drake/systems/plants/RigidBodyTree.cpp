@@ -147,6 +147,11 @@ bool operator==(const RigidBodyTree & rbt1, const RigidBodyTree & rbt2) {
     result = false;
   }
 
+  if (rbt1.actuators.size() != rbt2.actuators.size()) {
+    PRINT_STMT("Number of actuators do not match! (" << rbt1.actuators.size() << " vs. " << rbt2.actuators.size())
+    result = false;
+  }
+
   if (result) {
     for (auto& a1 : rbt1.actuators) {
       bool match = false;
