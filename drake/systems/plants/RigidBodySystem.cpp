@@ -208,7 +208,11 @@ RigidBodySystem::OutputVector<double> RigidBodySystem::output(const double& t,
 {
   auto kinsol = tree->doKinematics(x.topRows(tree->num_positions), x.bottomRows(tree->num_velocities));
   Eigen::VectorXd y(getNumOutputs());
-  y << x;
+
+  assert(getNumStates() == x.size());
+  assert(getNumInputs() == u.size());
+
+  y.segment(0, getNumStates()) << x;
   int index=getNumStates();
   for (const auto& s : sensors) {
     y.segment(index, s->getNumOutputs()) = s->output(t, kinsol, u);
