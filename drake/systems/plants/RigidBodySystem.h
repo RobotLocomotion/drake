@@ -444,15 +444,25 @@ class DRAKERBSYSTEM_EXPORT RigidBodySensor {
  */
 class DRAKERBSYSTEM_EXPORT RigidBodyDepthSensor : public RigidBodySensor {
   public:
-    RigidBodyDepthSensor(RigidBodySystem const& sys, const std::string& name,
-                         std::shared_ptr<RigidBodyFrame> frame,
+    RigidBodyDepthSensor(RigidBodySystem const& sys,
+                         const std::string& name,
+                         const std::shared_ptr<RigidBodyFrame> frame,
                          tinyxml2::XMLElement* node);
+    RigidBodyDepthSensor(RigidBodySystem const& sys,
+                         const std::string& name,
+                         const std::shared_ptr<RigidBodyFrame> frame,
+                         std::size_t samples,
+                         double min_angle,
+                         double max_angle,
+                         double range);
+
     virtual ~RigidBodyDepthSensor() {}
 
     virtual size_t getNumOutputs() const override { return num_pixel_rows*num_pixel_cols; }
     virtual Eigen::VectorXd output(const double& t, const KinematicsCache<double>& rigid_body_state, const RigidBodySystem::InputVector<double>& u) const override;
 
   private:
+    void cacheRaycastEndpoints();
     const std::shared_ptr<RigidBodyFrame> frame;
     double min_pitch; // minimum pitch of the camera FOV in radians
     double max_pitch; // maximum pitch of the camera FOV in radians
@@ -485,7 +495,12 @@ class DRAKERBSYSTEM_EXPORT RigidBodyAccelerometer : public RigidBodySensor {
         noise_model = model;
     }
 
+    void setGravityCompensation(bool enable_compensation) {
+      gravity_compensation = enable_compensation;
+    }
+
   private:
+    bool gravity_compensation;
     std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> noise_model;
     const std::shared_ptr<RigidBodyFrame> frame;
 };
@@ -507,6 +522,35 @@ class DRAKERBSYSTEM_EXPORT RigidBodyGyroscope : public RigidBodySensor {
     }
 
   private:
+    std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> noise_model;
+    const std::shared_ptr<RigidBodyFrame> frame;
+};
+
+    /** RigidBodyGyroscope
+     * @brief Simulates a sensor that measures angular rates
+     */
+class DRAKERBSYSTEM_EXPORT RigidBodyMagnetometer : public RigidBodySensor {
+  public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+    RigidBodyMagnetometer(RigidBodySystem const& sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame, double declination);
+    virtual ~RigidBodyMagnetometer() {}
+
+    virtual size_t getNumOutputs() const override { return 3; }
+    virtual Eigen::VectorXd output(const double& t, const KinematicsCache<double>& rigid_body_state, const RigidBodySystem::InputVector<double>& u) const override;
+
+    void setNoiseModel(std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> model) {
+        noise_model = model;
+    }
+
+    void setDeclination(double magnetic_declination) {
+      magnetic_north << cos(magnetic_declination), 
+                        sin(magnetic_declination), 
+                        0;
+    }
+
+  private:
+    Eigen::Vector3d magnetic_north;
     std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> noise_model;
     const std::shared_ptr<RigidBodyFrame> frame;
 };

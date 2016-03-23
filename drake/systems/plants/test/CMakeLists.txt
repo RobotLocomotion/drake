@@ -78,6 +78,10 @@ if (LCM_FOUND)
   target_link_libraries(testGyroscope drakeRBSystem)
   add_test(NAME testGyroscope COMMAND testGyroscope)
 
+  add_executable(testMagnetometer testMagnetometer.cpp)
+  target_link_libraries(testMagnetometer drakeRBSystem)
+  add_test(NAME testMagnetometer COMMAND testMagnetometer)
+
   add_executable(compareRigidBodySystems compareRigidBodySystems.cpp)
   target_link_libraries(compareRigidBodySystems drakeRBSystem)
   add_test(NAME compareAcrobotURDFtoSDF COMMAND compareRigidBodySystems Acrobot.urdf Acrobot.sdf WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/examples/Acrobot")
