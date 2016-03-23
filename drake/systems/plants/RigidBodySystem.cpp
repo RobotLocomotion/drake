@@ -220,7 +220,11 @@ RigidBodySystem::OutputVector<double> RigidBodySystem::output(const double& t,
 {
   auto kinsol = tree->doKinematics(x.topRows(tree->num_positions), x.bottomRows(tree->num_velocities));
   Eigen::VectorXd y(getNumOutputs());
-  y << x;
+
+  assert(getNumStates() == x.size());
+  assert(getNumInputs() == u.size());
+
+  y.segment(0, getNumStates()) << x;
   int index=getNumStates();
   for (const auto& s : sensors) {
     y.segment(index, s->getNumOutputs()) = s->output(t, kinsol, u);
@@ -381,10 +385,18 @@ RigidBodySpringDamper::RigidBodySpringDamper(RigidBodySystem &sys,
   tree->addFrame(frameB);
 }
 
+RigidBodyMagnetometer::RigidBodyMagnetometer(RigidBodySystem const& sys,
+                                             const std::string& name,
+                                             const std::shared_ptr<RigidBodyFrame> frame,
+                                             double declination)
+    : RigidBodySensor(sys, name), frame(frame) {
+  setDeclination(declination);
+}
+
 RigidBodyAccelerometer::RigidBodyAccelerometer(RigidBodySystem const& sys,
                                                const std::string& name,
                                                const std::shared_ptr<RigidBodyFrame> frame)
-  : RigidBodySensor(sys, name), frame(frame) {  }
+  : RigidBodySensor(sys, name), frame(frame), gravity_compensation(false) {  }
 
 
 Eigen::VectorXd RigidBodyAccelerometer::output(const double &t,
@@ -398,29 +410,54 @@ Eigen::VectorXd RigidBodyAccelerometer::output(const double &t,
   Vector3d sensor_origin = Vector3d::Zero(); // assumes sensor coincides with the frame's origin;
   auto J = tree->transformPointsJacobian(rigid_body_state, sensor_origin, frame->frame_index, 0, false);
   auto Jdot_times_v = tree->transformPointsJacobianDotTimesV(rigid_body_state, sensor_origin, frame->frame_index, 0);
+  
   Vector4d quat_world_to_body = tree->relativeQuaternion(rigid_body_state, 0, frame->frame_index);
   Vector3d accel_base = Jdot_times_v + J * v_dot;
   Vector3d accel_body = quatRotateVec(quat_world_to_body, accel_base);
 
+  if(gravity_compensation) {
+    Vector3d gravity(0, 0, 9.81);
+    accel_body += quatRotateVec(quat_world_to_body, gravity);
+  }
+  
   return noise_model ? noise_model->generateNoise(accel_body) : accel_body;
 }
 
+
 RigidBodyGyroscope::RigidBodyGyroscope(RigidBodySystem const& sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame)
     : RigidBodySensor(sys, name), frame(frame)
-{
+{ }
 
+Eigen::VectorXd RigidBodyMagnetometer::output(const double &t,
+                                               const KinematicsCache<double> &rigid_body_state,
+                                               const RigidBodySystem::InputVector<double>& u) const {
+  auto const& tree = sys.getRigidBodyTree();
+
+  Vector4d quat_world_to_body = tree->relativeQuaternion(rigid_body_state, 0, frame->frame_index);
+
+  Vector3d mag_body = quatRotateVec(quat_world_to_body, magnetic_north);
+  
+  return noise_model ? noise_model->generateNoise(mag_body) : mag_body;
 }
 
 Eigen::VectorXd RigidBodyGyroscope::output(const double &t,
                                            const KinematicsCache<double> &rigid_body_state,
-                                           const RigidBodySystem::InputVector<double>& u) const
-{
+                                           const RigidBodySystem::InputVector<double>& u) const {
   // relative twist of body with respect to world expressed in body
   auto const& tree = sys.getRigidBodyTree();
   auto relative_twist = tree->relativeTwist(rigid_body_state, 0, frame->frame_index, frame->frame_index);
   Eigen::Vector3d angular_rates = relative_twist.head<3>();
 
   return noise_model ? noise_model->generateNoise(angular_rates) : angular_rates;
+}
+
+RigidBodyDepthSensor::RigidBodyDepthSensor(RigidBodySystem const& sys,
+                                           const std::string& name,
+                                           const std::shared_ptr<RigidBodyFrame> frame,
+                                           std::size_t samples, double min_angle, double max_angle, double range)
+    : RigidBodySensor(sys, name), frame(frame), min_pitch(0.0), max_pitch(0.0),
+      min_yaw(min_angle), max_yaw(max_angle), num_pixel_rows(1), num_pixel_cols(samples), min_range(0.0), max_range(range) {
+  cacheRaycastEndpoints();
 }
 
 RigidBodyDepthSensor::RigidBodyDepthSensor(
@@ -475,41 +512,59 @@ RigidBodyDepthSensor::RigidBodyDepthSensor(
     parseScalarValue(range_node, "max", max_range);
   }
 
+  cacheRaycastEndpoints();
+}
+
+void RigidBodyDepthSensor::cacheRaycastEndpoints() {
   raycast_endpoints.resize(3, num_pixel_rows * num_pixel_cols);
   for (size_t i = 0; i < num_pixel_rows; i++) {
     double pitch =
         min_pitch +
         (num_pixel_rows > 1 ? static_cast<double>(i) / (num_pixel_rows - 1)
                             : 0.0) *
-            (max_pitch - min_pitch);
+        (max_pitch - min_pitch);
     for (size_t j = 0; j < num_pixel_cols; j++) {
       double yaw =
           min_yaw +
           (num_pixel_cols > 1 ? static_cast<double>(j) / (num_pixel_cols - 1)
                               : 0.0) *
-              (max_yaw - min_yaw);
+          (max_yaw - min_yaw);
       raycast_endpoints.col(num_pixel_cols * i + j) =
           max_range *
           Vector3d(
               cos(yaw) * cos(pitch), sin(yaw),
               -cos(yaw) *
-                  sin(pitch));  // rolled out from roty(pitch)*rotz(yaw)*[1;0;0]
+              sin(pitch));  // rolled out from roty(pitch)*rotz(yaw)*[1;0;0]
     }
   }
 }
 
+
+
 Eigen::VectorXd RigidBodyDepthSensor::output(const double &t,
                                              const KinematicsCache<double> &rigid_body_state,
                                              const RigidBodySystem::InputVector<double>& u) const {
-  VectorXd distances(num_pixel_cols*num_pixel_rows);
+  const size_t num_distances = num_pixel_cols * num_pixel_rows;
+  VectorXd distances(num_distances);
+
   Vector3d origin = sys.getRigidBodyTree()->transformPoints(rigid_body_state,
                                                              Vector3d::Zero(),
-                                                             frame->frame_index, 0);
+                                                             frame->frame_index,0);
+
   auto raycast_endpoints_world = sys.getRigidBodyTree()->transformPoints(rigid_body_state,
                                                                           raycast_endpoints,
-                                                                          frame->frame_index, 0);
-  sys.getRigidBodyTree()->collisionRaycast(rigid_body_state, origin, raycast_endpoints, distances);
-  // maybe: could publish lcm here (for debugging), since I can easily infer the 3D location in space
+                                                                          frame->frame_index,0);
+
+  sys.getRigidBodyTree()->collisionRaycast(rigid_body_state, origin, raycast_endpoints_world, distances);
+
+  for(size_t i = 0; i < num_distances; i++) {
+    if(distances[i] < 0.0 || distances[i] > max_range) {
+      distances[i] = max_range;
+    } else if(distances[i] < min_range) {
+      distances[i] = min_range;
+    }
+  }
+
   return distances;
 }
 

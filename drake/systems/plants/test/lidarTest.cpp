@@ -17,8 +17,8 @@ int main(int argc, char* argv[]) {
   rigid_body_sys->addRobotFromFile(getDrakePath() + "/systems/plants/test/lidarTest.sdf", DrakeJoint::FIXED);
 
   double t = 0;
-  VectorXd x = VectorXd::Zero(0);
-  VectorXd u = VectorXd::Zero(0);
+  VectorXd x = VectorXd::Zero(rigid_body_sys->getNumStates());
+  VectorXd u = VectorXd::Zero(rigid_body_sys->getNumInputs());
 
   //  rigid_body_sys->getRigidBodyTree()->drawKinematicTree("/tmp/lidar.dot");
 
@@ -28,14 +28,16 @@ int main(int argc, char* argv[]) {
   // box geometry from the sdf)
   const double min_yaw = -1.7;
   const double max_yaw = 1.7;
-  const double tol = 0.05;  // todo: improve the tolerance (see #1712)
+  const double max_range = 25.0;
+  const double tol = 0.01;
 
   for (int i = 0; i < distances.size(); i++) {
     double theta = min_yaw + (max_yaw - min_yaw) * i / (distances.size() - 1);
-    if (abs(theta) >= M_PI / 2 + .05) {  // should not be hitting any wall.  //
+
+    if (abs(theta) >= M_PI / 2 + 0.01) {  // should not be hitting any wall.  //
                                          // todo: get rid of the .05 artifact
                                          // (see #1712)
-      valuecheck(-1.0, distances(i));
+      valuecheck(max_range, distances(i));
     } else if (theta <= -M_PI / 4) {  // hitting the right wall
       valuecheck(-1.0 / sin(theta), distances(i), tol);
     } else if (theta >= M_PI / 4) {  // hitting the left wall
