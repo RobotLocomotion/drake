@@ -5,11 +5,6 @@
 #include "Vector.h"
 #include "Function.h"
 #include "Gradient.h"
-
-#define PRINT_VAR(x) std::cout <<  #x ": " << x << std::endl;
-
-#define PRINT_MSG(x) std::cout <<  x << std::endl;
-
-#define PRINT_FUNCTION_NAME std::cout << __PRETTY_FUNCTION__ << std::endl;
+#include "Macros.h"
 
 #endif  // DRAKE_DRAKECORE_H
