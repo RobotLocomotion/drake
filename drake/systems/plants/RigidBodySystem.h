@@ -543,8 +543,8 @@ class DRAKERBSYSTEM_EXPORT RigidBodyGyroscope : public RigidBodySensor {
   const std::shared_ptr<RigidBodyFrame> frame;
 };
 
-/** RigidBodyGyroscope
- * @brief Simulates a sensor that measures angular rates
+/** RigidBodyMagnetometer
+ * @brief Simulates a sensor that measures magnetic fields
  */
 class DRAKERBSYSTEM_EXPORT RigidBodyMagnetometer : public RigidBodySensor {
  public:
