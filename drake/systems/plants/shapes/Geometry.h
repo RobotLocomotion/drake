@@ -8,6 +8,8 @@
 
 #include "drake/drakeShapes_export.h"
 
+#include "drake/core/Macros.h"
+
 namespace DrakeShapes {
 enum DRAKESHAPES_EXPORT Shape {
   UNKNOWN = 0,
@@ -128,5 +130,6 @@ class DRAKESHAPES_EXPORT MeshPoints : public Geometry {
 
   Eigen::Matrix3Xd points;
 };
+
 }
 #endif
