@@ -1,4 +1,7 @@
 #include "MathematicalProgram.h"
+
+#include "SnoptSolver.h"
+#include "MobyLCP.h"
 #include "Optimization.h"
 
 namespace Drake {
@@ -19,7 +22,7 @@ class MathematicalProgram : public MathematicalProgramInterface {
    MathematicalProgram; }
    virtual MathematicalProgramInterface* addQuadraticCost() { return new
    MathematicalProgram; }
-   virtual MathematicalProgramInterface* addCost() { return new 
+   virtual MathematicalProgramInterface* addCost() { return new
    MathematicalProgram; }
 
    virtual MathematicalProgramInterface* addSumsOfSquaresConstraint() { return new
@@ -31,45 +34,57 @@ class MathematicalProgram : public MathematicalProgramInterface {
    virtual MathematicalProgramInterface* addComplementarityConstraint() { return new
    MathematicalProgram; };
 */
-  virtual MathematicalProgramInterface* addGenericObjective() override {
+  virtual MathematicalProgramInterface* add_generic_objective() override {
     return new MathematicalProgram;
   };
-  virtual MathematicalProgramInterface* addGenericConstraint() override {
+  virtual MathematicalProgramInterface* add_generic_constraint() override {
     return new MathematicalProgram;
   };
-  virtual MathematicalProgramInterface* addLinearConstraint() override {
+  virtual MathematicalProgramInterface* add_linear_constraint() override {
     return new MathematicalProgram;
   };
-  virtual MathematicalProgramInterface* addLinearEqualityConstraint() override {
+  virtual MathematicalProgramInterface* add_linear_equality_constraint() override {
     return new MathematicalProgram;
   };
-  virtual bool solve(OptimizationProblem& prog) const override {
+  virtual MathematicalProgramInterface*
+  add_linear_complementarity_constraint() override {
+    return new MathematicalProgram;
+  };
+  virtual bool Solve(OptimizationProblem& prog) const override {
     throw std::runtime_error("not implemented yet");
   }
 };
 
 class NonlinearProgram : public MathematicalProgram {
  public:
-    virtual MathematicalProgramInterface* addGenericObjective() override {
-      return new NonlinearProgram;
-    };
-    virtual MathematicalProgramInterface* addGenericConstraint() override {
-      return new NonlinearProgram;
-    };
-    virtual MathematicalProgramInterface* addLinearConstraint() override {
-      return new NonlinearProgram;
-    };
-    virtual MathematicalProgramInterface* addLinearEqualityConstraint() override {
-      return new NonlinearProgram;
-    };
+  virtual MathematicalProgramInterface* add_generic_objective() override {
+    return new NonlinearProgram;
+  };
+  virtual MathematicalProgramInterface* add_generic_constraint() override {
+    return new NonlinearProgram;
+  };
+  virtual MathematicalProgramInterface* add_linear_constraint() override {
+    return new NonlinearProgram;
+  };
+  virtual MathematicalProgramInterface* add_linear_equality_constraint() override {
+    return new NonlinearProgram;
+  };
+  virtual MathematicalProgramInterface*
+  add_linear_complementarity_constraint() override {
+    return new NonlinearProgram;
+  }
 
-  virtual bool solve(OptimizationProblem& prog) const override {
-    if (snopt_solver.available()) { return snopt_solver.solve(prog); }
-    return MathematicalProgram::solve(prog);
+  virtual bool Solve(OptimizationProblem& prog) const override {
+    if (snopt_solver.available()) { return snopt_solver.Solve(prog); }
+    try {
+      return MathematicalProgram::Solve(prog);
+    } catch (const std::runtime_error& e) {
+      throw std::runtime_error("SNOPT unavailable");
+    }
   }
 
  private:
-  MathematicalProgramSNOPTSolver snopt_solver;
+  SnoptSolver snopt_solver;
 };
 
 /*  // Prototype of the more complete optimization problem class hiearchy (to
@@ -82,7 +97,7 @@ class NonlinearProgram : public MathematicalProgram {
     struct MixedIntegerQuadraticProgram : public
     MixedIntegerSecondOrderConeProgram {};
     struct MixedIntegerLinearProgram : public MixedIntegerQuadraticProgram {};
-    
+
     struct NonlinearProgram : public MixedIntegerNonlinearProgram {};
     struct SemidefiniteProgram : public NonlinearProgram, public
     MixedIntegerSemidefiniteProgram {};
@@ -92,60 +107,77 @@ class NonlinearProgram : public MathematicalProgram {
     MixedIntegerQuadraticProgram {};
     struct LinearProgram : public QuadraticProgram, public
     MixedIntegerLinearProgram {
-    virtual MathematicalProgramInterface* addLinearEqualityConstraint() { return new
+    virtual MathematicalProgramInterface* add_linear_equality_constraint() { return new
     LinearProgram; };
     virtual MathematicalProgramInterface* addLinearInequalityConstraint() { return
     new LinearProgram; };
     };
-    
+
     struct NonlinearComplementarityProblem : public NonlinearProgram {};
     struct LinearComplementarityProblem : public
     NonlinearComplementarityProblem {};
 */
 
+class LinearComplementarityProblem : public MathematicalProgram {
+ public:
+  virtual bool Solve(OptimizationProblem& prog) const override {
+    // TODO ggould given the Moby solver's meticulous use of temporaries, it
+    // would be an easy performance win to reuse this solver object by making
+    // a static place to store it.
+    MobyLCPSolver solver;
+    return solver.Solve(prog);
+  }
+};
+
 class LeastSquares
     : public NonlinearProgram {  // public LinearProgram, public
  public:
   // LinearComplementarityProblem
-  virtual MathematicalProgramInterface* addLinearEqualityConstraint() override {
+  virtual MathematicalProgramInterface* add_linear_equality_constraint() override {
     return new LeastSquares;
   };
-  virtual bool solve(OptimizationProblem& prog) const override {
+  virtual MathematicalProgramInterface*
+  add_linear_complementarity_constraint() override {
+    return new LinearComplementarityProblem;
+  };
+
+  virtual bool Solve(OptimizationProblem& prog) const override {
     size_t num_constraints = 0;
     for (auto const& binding : prog.getLinearEqualityConstraints()) {
-      num_constraints += binding.getConstraint()->getMatrix().rows();
+      num_constraints += binding.get_constraint()->get_matrix().rows();
     }
-    
+
+    // todo: use a sparse matrix here?
     Eigen::MatrixXd Aeq = Eigen::MatrixXd::Zero(
-        num_constraints, prog.getNumVars());  // todo: use a sparse matrix here?
+        num_constraints, prog.get_num_vars());
     Eigen::VectorXd beq(num_constraints);
-    
+
     size_t constraint_index = 0;
     for (auto const& binding :  prog.getLinearEqualityConstraints()) {
-      auto const& c = binding.getConstraint();
-      size_t n = c->getMatrix().rows();
+      auto const& c = binding.get_constraint();
+      size_t n = c->get_matrix().rows();
       size_t var_index = 0;
-      for (const DecisionVariableView& v : binding.getVariableList()) {
+      for (const DecisionVariableView& v : binding.get_variable_list()) {
         Aeq.block(constraint_index, v.index(), n, v.size()) =
-            c->getMatrix().middleCols(var_index, v.size());
+            c->get_matrix().middleCols(var_index, v.size());
         var_index += v.size();
       }
       beq.segment(constraint_index, n) =
-          c->getLowerBound();  // = c->getUpperBound() since it's an equality
-      // constraint
+          c->get_lower_bound();  // = c->get_upper_bound() since it's an
+                                 // equality constraint
       constraint_index += n;
     }
-    
+
     // least-squares solution
-    prog.setDecisionVariableValues(
+    prog.SetDecisionVariableValues(
         Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beq));
     return true;
   }
 };
 }
 
-std::shared_ptr<MathematicalProgramInterface> 
-MathematicalProgramInterface::getLeastSquaresProgram() {
+std::shared_ptr<MathematicalProgramInterface>
+MathematicalProgramInterface::get_least_squares_program() {
   return std::shared_ptr<MathematicalProgramInterface>(new LeastSquares);
 }
 

@@ -1,5 +1,5 @@
 
-#include "MathematicalProgram.h"
+#include "SnoptSolver.h"
 #include "Optimization.h"
 
 #include <cstdlib>
@@ -26,7 +26,7 @@ unsigned int constexpr snopt_mincw = 500;
 unsigned int constexpr snopt_miniw = 500;
 unsigned int constexpr snopt_minrw = 500;
 
-bool Drake::MathematicalProgramSNOPTSolver::available() const {
+bool Drake::SnoptSolver::available() const {
   return true;
 }
 
@@ -200,15 +200,15 @@ static int snopt_userfun(snopt::integer* Status, snopt::integer* n,
   // evaluate objective
   auto tx = initializeAutoDiff(xvec);
   TaylorVecXd ty(1), this_x(*n);
-  for (auto const& binding : current_problem->getGenericObjectives()) {
-    auto const& obj = binding.getConstraint();
+  for (auto const& binding : current_problem->get_generic_objectives()) {
+    auto const& obj = binding.get_constraint();
     size_t index = 0;
     for (const DecisionVariableView& v : binding.getVariableList()) {
       this_x.segment(index, v.size()) = tx.segment(v.index(), v.size());
       index += v.size();
     }
 
-    obj->eval(tx, ty);
+    obj->Eval(tx, ty);
 
     F[constraint_index++] += static_cast<snopt::doublereal>(
         ty(0).value());  // cout << "F = " << F[0] << endl;
@@ -222,8 +222,8 @@ static int snopt_userfun(snopt::integer* Status, snopt::integer* n,
   }
   grad_index += *n;
 
-  for (auto const& binding : current_problem->getGenericConstraints()) {
-    auto const& c = binding.getConstraint();
+  for (auto const& binding : current_problem->get_generic_constraints()) {
+    auto const& c = binding.get_constraint();
     size_t index = 0, num_constraints = c->getNumConstraints();
     for (const DecisionVariableView& v : binding.getVariableList()) {
       this_x.segment(index, v.size()) = tx.segment(v.index(), v.size());
@@ -231,7 +231,7 @@ static int snopt_userfun(snopt::integer* Status, snopt::integer* n,
     }
 
     ty.resize(num_constraints);
-    c->eval(tx, ty);
+    c->Eval(tx, ty);
 
     for (i = 0; i < num_constraints; i++) {
       F[constraint_index++] = static_cast<snopt::doublereal>(ty(i).value());
@@ -249,7 +249,7 @@ static int snopt_userfun(snopt::integer* Status, snopt::integer* n,
   return 0;
 }
 
-bool Drake::MathematicalProgramSNOPTSolver::solve(
+bool Drake::SnoptSolver::solve(
     OptimizationProblem& prog) const {
   auto d = prog.getSolverData<SNOPTData>();
   SNOPTRun cur(*d);
@@ -280,10 +280,10 @@ bool Drake::MathematicalProgramSNOPTSolver::solve(
     xupp[i] =
         static_cast<snopt::doublereal>(numeric_limits<double>::infinity());
   }
-  for (auto const& binding : prog.getBoundingBoxConstraints()) {
-    auto const& c = binding.getConstraint();
+  for (auto const& binding : prog.get_bounding_box_constraints()) {
+    auto const& c = binding.get_constraint();
     for (const DecisionVariableView& v : binding.getVariableList()) {
-      auto const lb = c->getLowerBound(), ub = c->getUpperBound();
+      auto const lb = c->get_lower_bound(), ub = c->get_upper_bound();
       for (int k = 0; k < v.size(); k++) {
         xlow[v.index() + k] = std::max<snopt::doublereal>(
             static_cast<snopt::doublereal>(lb(k)), xlow[v.index() + k]);
@@ -294,8 +294,8 @@ bool Drake::MathematicalProgramSNOPTSolver::solve(
   }
 
   size_t num_nonlinear_constraints = 0, max_num_gradients = nx;
-  for (auto const& binding : prog.getGenericConstraints()) {
-    auto const& c = binding.getConstraint();
+  for (auto const& binding : prog.get_generic_constraints()) {
+    auto const& c = binding.get_constraint();
     size_t n = c->getNumConstraints();
     for (const DecisionVariableView& v : binding.getVariableList()) {
       max_num_gradients += n * v.size();
@@ -304,7 +304,7 @@ bool Drake::MathematicalProgramSNOPTSolver::solve(
   }
   size_t num_linear_constraints = 0;
   for (auto const& binding : prog.getLinearEqualityConstraints()) {
-    num_linear_constraints += binding.getConstraint()->getNumConstraints();
+    num_linear_constraints += binding.get_constraint()->getNumConstraints();
   }
 
   snopt::integer nF = 1 + num_nonlinear_constraints + num_linear_constraints;
@@ -328,11 +328,11 @@ bool Drake::MathematicalProgramSNOPTSolver::solve(
   size_t constraint_index = 1, grad_index = nx;  // constraint index starts at 1
                                                  // because the objective is the
                                                  // first row
-  for (auto const& binding : prog.getGenericConstraints()) {
-    auto const& c = binding.getConstraint();
+  for (auto const& binding : prog.get_generic_constraints()) {
+    auto const& c = binding.get_constraint();
     size_t n = c->getNumConstraints();
 
-    auto const lb = c->getLowerBound(), ub = c->getUpperBound();
+    auto const lb = c->get_lower_bound(), ub = c->get_upper_bound();
     for (int i = 0; i < n; i++) {
       Flow[constraint_index + i] = static_cast<snopt::doublereal>(lb(i));
       Fupp[constraint_index + i] = static_cast<snopt::doublereal>(ub(i));
@@ -357,7 +357,7 @@ bool Drake::MathematicalProgramSNOPTSolver::solve(
 
   size_t linear_constraint_index = 0;
   for (auto const& binding : prog.getLinearEqualityConstraints()) {
-    auto const& c = binding.getConstraint();
+    auto const& c = binding.get_constraint();
     size_t n = c->getNumConstraints();
     size_t var_index = 0;
     SparseMatrix<double> A_constraint = c->getSparseMatrix();
@@ -375,7 +375,7 @@ bool Drake::MathematicalProgramSNOPTSolver::solve(
       var_index += v.size();
     }
 
-    auto const lb = c->getLowerBound(), ub = c->getUpperBound();
+    auto const lb = c->get_lower_bound(), ub = c->get_upper_bound();
     for (int i = 0; i < n; i++) {
       Flow[constraint_index + i] = static_cast<snopt::doublereal>(lb(i));
       Fupp[constraint_index + i] = static_cast<snopt::doublereal>(ub(i));
@@ -438,33 +438,33 @@ bool Drake::MathematicalProgramSNOPTSolver::solve(
 
   /*
     mysnseti("Derivative
-    option", static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13], 0,"DerivativeOption"))),&iPrint,&iSumm,&INFO_snopt, cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw);
+    option",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"DerivativeOption"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
     mysnseti("Major iterations
-    limit", static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13], 0,"MajorIterationsLimit"))),&iPrint,&iSumm,&INFO_snopt, cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw);
+    limit",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"MajorIterationsLimit"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
     mysnseti("Minor iterations
-    limit", static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13], 0,"MinorIterationsLimit"))),&iPrint,&iSumm,&INFO_snopt, cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw);
+    limit",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"MinorIterationsLimit"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
     mysnsetr("Major optimality
-    tolerance", static_cast<snopt::doublereal>(*mxGetPr(mxGetField(prhs[13], 0,"MajorOptimalityTolerance"))),&iPrint,&iSumm,&INFO_snopt, cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw);
+    tolerance",static_cast<snopt::doublereal>(*mxGetPr(mxGetField(prhs[13],0,"MajorOptimalityTolerance"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
     mysnsetr("Major feasibility
-    tolerance", static_cast<snopt::doublereal>(*mxGetPr(mxGetField(prhs[13], 0,"MajorFeasibilityTolerance"))),&iPrint,&iSumm,&INFO_snopt, cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw);
+    tolerance",static_cast<snopt::doublereal>(*mxGetPr(mxGetField(prhs[13],0,"MajorFeasibilityTolerance"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
     mysnsetr("Minor feasibility
-    tolerance", static_cast<snopt::doublereal>(*mxGetPr(mxGetField(prhs[13], 0,"MinorFeasibilityTolerance"))),&iPrint,&iSumm,&INFO_snopt, cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw);
+    tolerance",static_cast<snopt::doublereal>(*mxGetPr(mxGetField(prhs[13],0,"MinorFeasibilityTolerance"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
     mysnseti("Superbasics
-    limit", static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13], 0,"SuperbasicsLimit"))),&iPrint,&iSumm,&INFO_snopt, cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw);
+    limit",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"SuperbasicsLimit"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
     mysnseti("Verify
-    level", static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13], 0,"VerifyLevel"))),&iPrint,&iSumm,&INFO_snopt, cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw);
+    level",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"VerifyLevel"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
     mysnseti("Iterations
-    Limit", static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13], 0,"IterationsLimit"))),&iPrint,&iSumm,&INFO_snopt, cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw);
+    Limit",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"IterationsLimit"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
     mysnseti("Scale
-    option", static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13], 0,"ScaleOption"))),&iPrint,&iSumm,&INFO_snopt, cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw);
+    option",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"ScaleOption"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
     mysnseti("New basis
-    file", static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13], 0,"NewBasisFile"))),&iPrint,&iSumm,&INFO_snopt, cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw);
+    file",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"NewBasisFile"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
     mysnseti("Old basis
-    file", static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13], 0,"OldBasisFile"))),&iPrint,&iSumm,&INFO_snopt, cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw);
+    file",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"OldBasisFile"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
     mysnseti("Backup basis
-    file", static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13], 0,"BackupBasisFile"))),&iPrint,&iSumm,&INFO_snopt, cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw);
+    file",static_cast<snopt::integer>(*mxGetPr(mxGetField(prhs[13],0,"BackupBasisFile"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
     mysnsetr("Linesearch
-    tolerance", static_cast<snopt::doublereal>(*mxGetPr(mxGetField(prhs[13], 0,"LinesearchTolerance"))),&iPrint,&iSumm,&INFO_snopt, cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw);
+    tolerance",static_cast<snopt::doublereal>(*mxGetPr(mxGetField(prhs[13],0,"LinesearchTolerance"))),&iPrint,&iSumm,&INFO_snopt,cw.get(),&lencw,iw.get(),&leniw,rw.get(),&lenrw);
   */
 
   snopt::integer info;
@@ -485,8 +485,8 @@ bool Drake::MathematicalProgramSNOPTSolver::solve(
   for (int i = 0; i < nx; i++) {
     sol(i) = static_cast<double>(x[i]);
   }
-  prog.setDecisionVariableValues(sol);
-  //  prog.printSolution();
+  prog.SetDecisionVariableValues(sol);
+  //  prog.PrintSolution();
 
   // todo: extract the other useful quantities, too.
 
