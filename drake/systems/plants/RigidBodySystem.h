@@ -8,7 +8,7 @@
 #include "drake/drakeRBSystem_export.h"
 
 /** Rigid Body Dynamics Engine Class Design  (still needs to be implemented
- *below)
+ * below)
  *
  * RigidBodyTree (isa System)
  * Input: generalized forces (tau)
@@ -16,23 +16,23 @@
  *
  * ContinuousTimeConstraintForce  (isa Constraint)
  * For forces that must be computed simultaneously with accelerations (not
- *simply a function of state)
+ * simply a function of state)
  * Described as a vector phi(q, v, vdot, f)>=0, and forceJacobian(q) in terms of
- *vdot
+ * vdot
  *    Note: tau_constraint = forceJacobian(q)^T*f.
  * also exposes an interface to be evaluated as phi(vdot, f)>=0, with the kinsol
- *set as a parameter.  Note that the complexity class of this constraint is
- *likely to be simpler than of the original constraint.
+ * set as a parameter.  Note that the complexity class of this constraint is
+ * likely to be simpler than of the original constraint.
  * Example: position constraint:  J(q)*vdot + Jdot*v - stabilization terms = 0.
- *forceJacobian(q) = J // the jacobian of the position constraint
+ * forceJacobian(q) = J // the jacobian of the position constraint
  * Example: stick-slip frictional contact (as a set of nonlinear complementarity
- *constraints imposing non-penetration + the friction cone)
+ * constraints imposing non-penetration + the friction cone)
  *
  * TimeSteppingConstraintForce (isa Constraint)
  * Writable as a vector phi(q, v, qn, vn, f)>=0.
  *    Note: tau_constraint = J^T(q)*f.
  * Example: stick-slip frictional contact w/ a linearized friction code (as
- *linear complementarity constraints)
+ * linear complementarity constraints)
  *
  * Sensor (isa System)
  * Input: generalized state
@@ -41,49 +41,49 @@
  * Examples: FullStateSensor, Encoder, IMU, Lidar, ...
  *
  * Actuator (isa System)    (anything that applies forces which can be computed
- *from the current state)
+ * from the current state)
  * Input: generalized state, input command
  * Output: generalized force, tau_actuator
  * (can have internal dynamics/state)
  * Examples: GeneralizedForce, TorqueSource, SpatialForce, Linear
- *Spring/Dampers, Aerodynamic Forces, ...
+ * Spring/Dampers, Aerodynamic Forces, ...
  * Example: (no-stick) frictional contact: f_normal = max(-k*phi(q) -
- *b*phidot(q, v), 0).  f_tangent = min(b*norm(tangential_velocity), mu*f_normal)
- **
- *tangential_velocity/norm(tangential_velocity).  forceJacobian is the contact
- *jacobian.
+ * b*phidot(q, v), 0).  f_tangent = min(b*norm(tangential_velocity),
+ * mu*f_normal) *
+ * tangential_velocity/norm(tangential_velocity).  forceJacobian is the contact
+ * jacobian.
  *
  * The value/importance of thinking of sensors and actuators as systems is that
- *they can be implemented in a separate
+ * they can be implemented in a separate
  * executable using the signal abstraction. Note, however, that there is
- *efficiency to be gained by keeping it in the
+ * efficiency to be gained by keeping it in the
  * same executable thanks to the kinematics cache.
  *
  * RigidBodySystem (isa System):
  * a RigidBodyTree + a list of Actuators and Sensors + list of
- *ContinuousTimeConstraintForces.  Limited to sensors/actuators w/o discrete
- *dynamics.
+ * ContinuousTimeConstraintForces.  Limited to sensors/actuators w/o discrete
+ * dynamics.
  * adds the additional constraints:
  * H(q) vdot + C(q, v) = \sum tau_actuators(q, v) + \sum
- *tau_constraints(q, v, vdot, f).
+ * tau_constraints(q, v, vdot, f).
  * then solves for vdot and f, then computes qdot = vToQdot*v
  * Input: Actuator inputs (only; does not include all generalized forces by
- *default).
+ * default).
  * Output: Sensor outputs (only; does not include the entire generalized state
- *by default).
+ * by default).
  *
  * TimeSteppingRigidBodySystem (isa System, with purely discrete-time dynamics):
  * a RigidBodyTree + a list of Actuators and Sensors + a list of
- *TimeSteppingConstraintForces.  Limited to sensors/actuators w/o continuous
- *dynamics.
+ * TimeSteppingConstraintForces.  Limited to sensors/actuators w/o continuous
+ * dynamics.
  * adds the additional constraints:
  * H(q) (vn-v)/h + C(q, v) = \sum tau_actuators(q, v) + \sum
- *tau_constraints(q, v, qn, vn, f)
+ * tau_constraints(q, v, qn, vn, f)
  * then solves for vn and f using qn = q + h*vToQdot(q)*vn
  * Input: Actuator inputs (only; does not include all generalized forces by
- *default).
+ * default).
  * Output: Sensor outputs (only; does not include the entire generalized state
- *by default).
+ * by default).
  *
  */
 
@@ -101,17 +101,19 @@ namespace RigidBodyConstraints {
  * @ingroup concepts
  * @{
  * @brief A constraint that can be updated using the state of the rigid body
- *system
+ * system
  * @nbsp
  *
- * | Valid Expressions (which must be implemented) |  |
- * ------------------|-------------------------------------------------------------|
- * | template <typename ScalarType> updateConstraint(const
- *KinematicCache<ScalarType>& kinsol)  | Updates the parameters of the
- *constraint |
- * | Eigen::MatrixXd constraintForceJacobian() | returns the J used in J^T force
- *for any constraint forces implied
- * | size_t getNumConstraintForces() |
+ * <table>
+ * <tr><th colspan="2"> Valid Expressions (which must be implemented)
+ * <tr><td><pre>
+ * template &lt;typename ScalarType>
+ * updateConstraint(const KinematicCache<ScalarType>& kinsol)</pre>
+ *     <td> Updates the parameters of the constraint
+ * <tr><td> Eigen::MatrixXd constraintForceJacobian()
+ *     <td> returns the J used in J^T force for any constraint forces implied
+ * <tr><td> size_t getNumConstraintForces() <td>
+ * </table>
  * @}
  */
 
@@ -193,25 +195,25 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
   /** dynamics
    * Formulates the forward dynamics of the rigid body system as an optimization
    *   find vdot, f  (feasibility problem ok for now => implicit objective is
-   *min norm solution)
+   * min norm solution)
    *   subject to
    *       position equality constraints (differentiated twice + stabilization):
-   *A vdot = b
+   * A vdot = b
    *       velocity equality constraints (differentiated once + stabilization):
-   *A vdot = b
+   * A vdot = b
    *       forces from joint limits and contact OR
    *       contact force constraints on vdot, f.  can be linear, nonlinear, even
-   *complementarity.  may have inequalities
+   * complementarity.  may have inequalities
    *   the trick is that each new constraint can add decision variables (the new
-   *constraint forces and/or slack variables)
+   * constraint forces and/or slack variables)
    *   to the problem, so the last constraint to add is
    *       equations of motion: H vdot + C(q, qdot, u, f_ext) = J^T(q, qdot) f
    *   where J is accumulated through the constraint logic
    *
    * The solver will then dispatch to the right tool for the job.  Note that for
-   *many systems, especially those
+   * many systems, especially those
    * without any contact constraints (or with simple friction models), the
-   *formulation is linear and can be solved
+   * formulation is linear and can be solved
    * with least-squares.
    */
   StateVector<double> dynamics(const double& t, const StateVector<double>& x,
