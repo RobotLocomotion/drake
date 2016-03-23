@@ -39,5 +39,3 @@ From a DOS prompt::
 
 	reg add "HKCU\Software\Microsoft\Windows\Windows Error Reporting\ExcludedApplications" /v "MATLAB.exe" /t REG_SZ /d 1 /f
 	reg add "HKCU\Software\Microsoft\Windows\Windows Error Reporting" /v "DontShowUI" /t REG_DWORD /d 1 /f
-
-
