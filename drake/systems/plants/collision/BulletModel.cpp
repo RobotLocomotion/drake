@@ -202,6 +202,55 @@ unique_ptr<btCollisionShape> BulletModel::newBulletHeightMapTerrainShape(
 #endif
 }
 
+
+void BulletModel::writeHeightMapTerrain(  
+  const btHeightfieldTerrainShape* bullet_height_map,
+  const string& fname){
+  std::ofstream file;
+  file.open(fname);    
+  
+  btVector3 aabbMin(0,0,0),aabbMax(0,0,0);            
+  aabbMin-=btVector3(BT_LARGE_FLOAT,BT_LARGE_FLOAT,BT_LARGE_FLOAT);
+  aabbMax+=btVector3(BT_LARGE_FLOAT,BT_LARGE_FLOAT,BT_LARGE_FLOAT);
+
+  GatherHeightMapAsGridCallBack grid_buffer;
+  bullet_height_map->processAllTriangles(&grid_buffer,aabbMin,aabbMax); 
+
+  //write vertices
+  for(int i=0;i<grid_buffer.numPoints();i++){            
+    btVector3 vertex = grid_buffer.getPoint(i);
+    file << "v " << vertex[0] << " " << vertex[1] << " " << vertex[2] << " " << endl;
+  }
+
+  //write connectivities (two triangles per cell)
+  for(int i=0;i<grid_buffer.numTriangles();i++){            
+    Vector3i conn = grid_buffer.getTriangle(i);
+    file << "f " << conn[0] << " " << conn[1] << " " << conn[2] << endl;
+  }
+
+
+#if 0
+  for(int i=0;i<ncells(0);i++){
+    for(int j=0;j<ncells(1);j++){
+      //Four corners      
+      int p1 = (j  )+nnodes(1)*(i  ) + 1;
+      int p2 = (j  )+nnodes(1)*(i+1) + 1;
+      int p3 = (j+1)+nnodes(1)*(i+1) + 1;
+      int p4 = (j+1)+nnodes(1)*(i  ) + 1;
+
+      //first triangle
+      file << "f " << p1 << " " << p2 << " " << p4 << endl;
+
+      //second triangle
+      file << "f " << p2 << " " << p3 << " " << p4 << endl;
+      
+    }
+  }  
+#endif
+
+  file.close();
+}
+
 unique_ptr<btCollisionShape> BulletModel::newBulletMeshPointsShape(
     const DrakeShapes::MeshPoints& geometry, bool use_margins) {
   unique_ptr<btCollisionShape> bt_shape(new btConvexHullShape());
@@ -324,6 +373,8 @@ vector<PointPair> BulletModel::potentialCollisionPoints(bool use_margins) {
   bt_world.bt_collision_world->performDiscreteCollisionDetection();
   size_t numManifolds =
       bt_world.bt_collision_world->getDispatcher()->getNumManifolds();
+
+  PRINT_VAR(numManifolds);
 
   for (size_t i = 0; i < numManifolds; i++) {
     btPersistentManifold* contact_manifold =

@@ -129,6 +129,9 @@ class BulletModel : public Model {
       const DrakeShapes::MeshPoints& geometry, bool use_margins);
   static std::unique_ptr<btCollisionShape> newBulletHeightMapTerrainShape(
       const DrakeShapes::HeightMapTerrain& geometry, bool use_margins);
+  static void writeHeightMapTerrain(  
+      const btHeightfieldTerrainShape* bullet_height_map,
+      const std::string& fname);  
 
   static constexpr double small_margin = 1e-9;
   static constexpr double large_margin = 0.05;
