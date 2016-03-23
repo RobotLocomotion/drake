@@ -110,12 +110,12 @@ class DRAKEJOINTS_EXPORT DrakeJoint {
   /*!
    * Overload operator== to check whether two DrakeJoint objects are equal.
    */
-  friend bool operator==(const DrakeJoint & j1, const DrakeJoint & j2);
+  friend DRAKEJOINTS_EXPORT bool operator==(const DrakeJoint & j1, const DrakeJoint & j2);
 
   /*!
    * Overload operator!= to check whether two DrakeJoint objects are unequal.
    */
-  friend bool operator!=(const DrakeJoint & j1, const DrakeJoint & j2);
+  friend DRAKEJOINTS_EXPORT bool operator!=(const DrakeJoint & j1, const DrakeJoint & j2);
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

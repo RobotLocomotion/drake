@@ -733,17 +733,17 @@ class DRAKERBM_EXPORT RigidBodyTree {
   /*!
    * Overload operator== to check whether two RigidBodyTree objects are equal.
    */
-  friend bool operator==(const RigidBodyTree & t1, const RigidBodyTree & t2);
+  friend DRAKERBM_EXPORT bool operator==(const RigidBodyTree & t1, const RigidBodyTree & t2);
 
   /*!
    * Overload operator!= to check whether two RigidBodyTree objects are unequal.
    */
-  friend bool operator!=(const RigidBodyTree & t1, const RigidBodyTree & t2);
+  friend DRAKERBM_EXPORT bool operator!=(const RigidBodyTree & t1, const RigidBodyTree & t2);
 
   /**
    * A toString method for this class.
    */
-  friend std::ostream& operator<<(std::ostream&, const RigidBodyTree&);
+  friend DRAKERBM_EXPORT std::ostream& operator<<(std::ostream&, const RigidBodyTree&);
 
  public:
   static const std::set<int> default_robot_num_set;

@@ -55,7 +55,7 @@ class DRAKERBM_EXPORT RigidBodyFrame {
   /*!
    * Overload operator== to check whether two RigidBodyFrame objects are equal.
    */
-  friend bool operator==(const RigidBodyFrame & rbf1, const RigidBodyFrame & rbf2) {
+  friend DRAKERBM_EXPORT bool operator==(const RigidBodyFrame & rbf1, const RigidBodyFrame & rbf2) {
     bool result = true;
 
     if (rbf1.name.compare(rbf2.name) != 0) {
@@ -97,7 +97,7 @@ class DRAKERBM_EXPORT RigidBodyFrame {
   /*!
    * Overload operator!= to check whether two RigidBodyFrame objects are unequal.
    */
-  friend bool operator!=(const RigidBodyFrame & rbf1, const RigidBodyFrame & rbf2) {
+  friend DRAKERBM_EXPORT bool operator!=(const RigidBodyFrame & rbf1, const RigidBodyFrame & rbf2) {
     return !operator==(rbf1, rbf2);
   }
 

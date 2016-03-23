@@ -199,17 +199,17 @@ class DRAKECOLLISION_EXPORT Model {
   /**
    * A toString method for this class.
    */
-  friend std::ostream& operator<<(std::ostream&, const Model&);
+  friend DRAKECOLLISION_EXPORT std::ostream& operator<<(std::ostream&, const Model&);
 
   /*!
    * Overload operator== to check whether two DrakeCollision::Model objects are equal.
    */
-  friend bool operator==(const Model & m1, const Model & m2);
+  friend DRAKECOLLISION_EXPORT bool operator==(const Model & m1, const Model & m2);
 
   /*!
    * Overload operator!= to check whether two DrakeCollision::Model objects are unequal.
    */
-  friend bool operator!=(const Model & m1, const Model & m2);
+  friend DRAKECOLLISION_EXPORT bool operator!=(const Model & m1, const Model & m2);
 
  protected:
   std::unordered_map<ElementId, std::unique_ptr<Element> > elements;

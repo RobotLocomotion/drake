@@ -90,12 +90,12 @@ class DRAKERBM_EXPORT RigidBody {
   /*!
    * Overload operator== to check whether two RigidBody objects are equal.
    */
-  friend bool operator==(const RigidBody & rb1, const RigidBody & rb2);
+  friend DRAKERBM_EXPORT bool operator==(const RigidBody & rb1, const RigidBody & rb2);
 
   /*!
    * Overload operator!= to check whether two RigidBody objects are unequal.
    */
-  friend bool operator!=(const RigidBody & rb1, const RigidBody & rb2);
+  friend DRAKERBM_EXPORT bool operator!=(const RigidBody & rb1, const RigidBody & rb2);
 
  public:
   std::string linkname;

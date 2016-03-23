@@ -36,17 +36,17 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
   /*!
    * Overload operator== to check whether two Element objects are equal.
    */
-  friend bool operator==(const Element & e1, const Element & e2);
+  friend DRAKECOLLISION_EXPORT bool operator==(const Element & e1, const Element & e2);
 
   /*!
    * Overload operator!= to check whether two Element objects are unequal.
    */
-  friend bool operator!=(const Element & e1, const Element & e2);
+  friend DRAKECOLLISION_EXPORT bool operator!=(const Element & e1, const Element & e2);
 
   /**
    * A toString method for this class.
    */
-  friend std::ostream& operator<<(std::ostream&, const Element&);
+  friend DRAKECOLLISION_EXPORT std::ostream& operator<<(std::ostream&, const Element&);
 
  protected:
   Element(const Element& other);
