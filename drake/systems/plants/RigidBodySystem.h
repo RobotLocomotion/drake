@@ -48,7 +48,8 @@
  * Examples: GeneralizedForce, TorqueSource, SpatialForce, Linear
  *Spring/Dampers, Aerodynamic Forces, ...
  * Example: (no-stick) frictional contact: f_normal = max(-k*phi(q) -
- *b*phidot(q, v), 0).  f_tangent = min(b*norm(tangential_velocity), mu*f_normal) *
+ *b*phidot(q, v), 0).  f_tangent = min(b*norm(tangential_velocity), mu*f_normal)
+ **
  *tangential_velocity/norm(tangential_velocity).  forceJacobian is the contact
  *jacobian.
  *
@@ -145,7 +146,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
         penetration_stiffness(150.0),
         penetration_damping(penetration_stiffness / 10.0),
         friction_coefficient(1.0),
-        direct_feedthrough(false) {};
+        direct_feedthrough(false){};
   RigidBodySystem()
       : use_multi_contact(false),
         penetration_stiffness(150.0),
@@ -156,7 +157,6 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
     // std::allocate_shared<RigidBodyTree>(Eigen::aligned_allocator<RigidBodyTree>());
     // // this crashed g++-4.7
     tree = std::shared_ptr<RigidBodyTree>(new RigidBodyTree());
-
   }
   virtual ~RigidBodySystem(){};
 
@@ -180,9 +180,11 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
 
   void addSensor(std::shared_ptr<RigidBodySensor> s);
 
-  const std::shared_ptr<RigidBodyTree>& getRigidBodyTree(void) const { return tree; }
+  const std::shared_ptr<RigidBodyTree>& getRigidBodyTree(void) const {
+    return tree;
+  }
 
-    size_t getNumStates() const {
+  size_t getNumStates() const {
     return tree->num_positions + tree->num_velocities;
   }
   size_t getNumInputs() const;
@@ -232,8 +234,8 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
 
  private:
   std::shared_ptr<RigidBodyTree> tree;
-  std::vector<std::shared_ptr<RigidBodyForceElement> > force_elements;
-  std::vector<std::shared_ptr<RigidBodySensor> > sensors;
+  std::vector<std::shared_ptr<RigidBodyForceElement>> force_elements;
+  std::vector<std::shared_ptr<RigidBodySensor>> sensors;
   size_t num_sensor_outputs;
   bool direct_feedthrough;
 
@@ -250,7 +252,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
  */
 class DRAKERBSYSTEM_EXPORT RigidBodyForceElement {
  public:
-  RigidBodyForceElement(RigidBodySystem &sys, const std::string& name)
+  RigidBodyForceElement(RigidBodySystem& sys, const std::string& name)
       : sys(sys), name(name) {}
   virtual ~RigidBodyForceElement() {}
 
@@ -261,7 +263,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodyForceElement {
       const KinematicsCache<double>& rigid_body_state) const = 0;
 
  protected:
-  RigidBodySystem &sys;
+  RigidBodySystem& sys;
   std::string name;
 };
 
@@ -295,7 +297,7 @@ Eigen::VectorXd spatialForceInFrameToJointTorque(
  */
 class DRAKERBSYSTEM_EXPORT RigidBodyPropellor : public RigidBodyForceElement {
  public:
-  RigidBodyPropellor(RigidBodySystem &sys, tinyxml2::XMLElement* node,
+  RigidBodyPropellor(RigidBodySystem& sys, tinyxml2::XMLElement* node,
                      const std::string& name);
   virtual ~RigidBodyPropellor() {}
 
@@ -338,7 +340,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodyPropellor : public RigidBodyForceElement {
 class DRAKERBSYSTEM_EXPORT RigidBodySpringDamper
     : public RigidBodyForceElement {
  public:
-  RigidBodySpringDamper(RigidBodySystem &sys, tinyxml2::XMLElement* node,
+  RigidBodySpringDamper(RigidBodySystem& sys, tinyxml2::XMLElement* node,
                         const std::string& name);
   virtual ~RigidBodySpringDamper() {}
 
@@ -393,33 +395,40 @@ class DRAKERBSYSTEM_EXPORT RigidBodySpringDamper
  */
 template <typename ScalarType, int Dimension, typename Derived>
 class DRAKERBSYSTEM_EXPORT NoiseModel {
-  public:
-    virtual Eigen::Matrix<ScalarType, Dimension, 1> generateNoise(Eigen::MatrixBase<Derived> const& input) = 0;
+ public:
+  virtual Eigen::Matrix<ScalarType, Dimension, 1> generateNoise(
+      Eigen::MatrixBase<Derived> const& input) = 0;
 };
 
 /** GaussianNoiseModel
- * @brief Implements the NoiseModel interface where the underlying noise distribution is parameterized by a Gaussian
+ * @brief Implements the NoiseModel interface where the underlying noise
+ * distribution is parameterized by a Gaussian
  */
 template <typename ScalarType, int Dimension, typename Derived>
-class DRAKERBSYSTEM_EXPORT AdditiveGaussianNoiseModel : public NoiseModel<ScalarType, Dimension, Derived> {
-  public:
-    AdditiveGaussianNoiseModel(double mean, double std_dev) : distribution(mean, std_dev), generator(rd()) { }
+class DRAKERBSYSTEM_EXPORT AdditiveGaussianNoiseModel
+    : public NoiseModel<ScalarType, Dimension, Derived> {
+ public:
+  AdditiveGaussianNoiseModel(double mean, double std_dev)
+      : distribution(mean, std_dev), generator(rd()) {}
 
-    virtual Eigen::Matrix<ScalarType, Dimension, 1> generateNoise(Eigen::MatrixBase<Derived> const& input) override {
-        Eigen::Matrix<ScalarType, Dimension, 1> noise_vector;
-        for(std::size_t index = 0; index < Dimension; index++) {
-            noise_vector[index] = distribution(generator);
-        }
-        return noise_vector + input;
+  virtual Eigen::Matrix<ScalarType, Dimension, 1> generateNoise(
+      Eigen::MatrixBase<Derived> const& input) override {
+    Eigen::Matrix<ScalarType, Dimension, 1> noise_vector;
+    for (std::size_t index = 0; index < Dimension; index++) {
+      noise_vector[index] = distribution(generator);
     }
-  private:
-    std::random_device rd;
-    std::normal_distribution<ScalarType> distribution;
-    std::mt19937 generator;
+    return noise_vector + input;
+  }
+
+ private:
+  std::random_device rd;
+  std::normal_distribution<ScalarType> distribution;
+  std::mt19937 generator;
 };
 
 /** RigidBodySensor
- * @brief interface class for elements which define a sensor which reads the state of a rigid body system
+ * @brief interface class for elements which define a sensor which reads the
+ * state of a rigid body system
  */
 class DRAKERBSYSTEM_EXPORT RigidBodySensor {
  public:
@@ -430,131 +439,140 @@ class DRAKERBSYSTEM_EXPORT RigidBodySensor {
   virtual bool isDirectFeedthrough() const { return false; }
   virtual size_t getNumOutputs() const { return 0; }
   virtual Eigen::VectorXd output(
-    const double& t,
-    const KinematicsCache<double>& rigid_body_state,
-    const RigidBodySystem::InputVector<double>& u) const = 0;
+      const double& t, const KinematicsCache<double>& rigid_body_state,
+      const RigidBodySystem::InputVector<double>& u) const = 0;
 
  protected:
-    RigidBodySystem const& sys;
-    std::string name;
+  RigidBodySystem const& sys;
+  std::string name;
 };
 
 /** RigidBodyDepthSensor
- * @brief Uses raycast to simulate a depth image at some evenly spaced pixel rows and columns.
+ * @brief Uses raycast to simulate a depth image at some evenly spaced pixel
+ * rows and columns.
  */
 class DRAKERBSYSTEM_EXPORT RigidBodyDepthSensor : public RigidBodySensor {
-  public:
-    RigidBodyDepthSensor(RigidBodySystem const& sys,
-                         const std::string& name,
-                         const std::shared_ptr<RigidBodyFrame> frame,
-                         tinyxml2::XMLElement* node);
-    RigidBodyDepthSensor(RigidBodySystem const& sys,
-                         const std::string& name,
-                         const std::shared_ptr<RigidBodyFrame> frame,
-                         std::size_t samples,
-                         double min_angle,
-                         double max_angle,
-                         double range);
+ public:
+  RigidBodyDepthSensor(RigidBodySystem const& sys, const std::string& name,
+                       const std::shared_ptr<RigidBodyFrame> frame,
+                       tinyxml2::XMLElement* node);
+  RigidBodyDepthSensor(RigidBodySystem const& sys, const std::string& name,
+                       const std::shared_ptr<RigidBodyFrame> frame,
+                       std::size_t samples, double min_angle, double max_angle,
+                       double range);
 
-    virtual ~RigidBodyDepthSensor() {}
+  virtual ~RigidBodyDepthSensor() {}
 
-    virtual size_t getNumOutputs() const override { return num_pixel_rows*num_pixel_cols; }
-    virtual Eigen::VectorXd output(const double& t, const KinematicsCache<double>& rigid_body_state, const RigidBodySystem::InputVector<double>& u) const override;
+  virtual size_t getNumOutputs() const override {
+    return num_pixel_rows * num_pixel_cols;
+  }
+  virtual Eigen::VectorXd output(
+      const double& t, const KinematicsCache<double>& rigid_body_state,
+      const RigidBodySystem::InputVector<double>& u) const override;
 
-  private:
-    void cacheRaycastEndpoints();
-    const std::shared_ptr<RigidBodyFrame> frame;
-    double min_pitch; // minimum pitch of the camera FOV in radians
-    double max_pitch; // maximum pitch of the camera FOV in radians
-    double min_yaw; // minimum yaw of the sensor FOV in radians
-    double max_yaw; // maximum yaw of the sensor FOV in radians
-    size_t num_pixel_rows; // number of points in the image vertically (pitch)
-    size_t num_pixel_cols; // number of points in the image horizontally (yaw)
-    double min_range; // minimum range of the sensor in meters
-    double max_range; // maximum range of the sensor in meters
+ private:
+  void cacheRaycastEndpoints();
+  const std::shared_ptr<RigidBodyFrame> frame;
+  double min_pitch;       // minimum pitch of the camera FOV in radians
+  double max_pitch;       // maximum pitch of the camera FOV in radians
+  double min_yaw;         // minimum yaw of the sensor FOV in radians
+  double max_yaw;         // maximum yaw of the sensor FOV in radians
+  size_t num_pixel_rows;  // number of points in the image vertically (pitch)
+  size_t num_pixel_cols;  // number of points in the image horizontally (yaw)
+  double min_range;       // minimum range of the sensor in meters
+  double max_range;       // maximum range of the sensor in meters
 
-    Eigen::Matrix3Xd raycast_endpoints;   // cache to avoid repeated allocation
+  Eigen::Matrix3Xd raycast_endpoints;  // cache to avoid repeated allocation
 
-  public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+ public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-
-  /** RigidBodyAccelerometer
-   * @brief Simulates a sensor that measures linear acceleration
-   */
+/** RigidBodyAccelerometer
+ * @brief Simulates a sensor that measures linear acceleration
+ */
 class DRAKERBSYSTEM_EXPORT RigidBodyAccelerometer : public RigidBodySensor {
-  public:
-    RigidBodyAccelerometer(RigidBodySystem const& sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame);
-    virtual ~RigidBodyAccelerometer() {}
+ public:
+  RigidBodyAccelerometer(RigidBodySystem const& sys, const std::string& name,
+                         const std::shared_ptr<RigidBodyFrame> frame);
+  virtual ~RigidBodyAccelerometer() {}
 
-    virtual size_t getNumOutputs() const override { return 3; }
-    virtual Eigen::VectorXd output(const double& t, const KinematicsCache<double>& rigid_body_state, const RigidBodySystem::InputVector<double>& u) const override;
-    virtual bool isDirectFeedthrough() const override { return true; }
-    void setNoiseModel(std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> model) {
-        noise_model = model;
-    }
+  virtual size_t getNumOutputs() const override { return 3; }
+  virtual Eigen::VectorXd output(
+      const double& t, const KinematicsCache<double>& rigid_body_state,
+      const RigidBodySystem::InputVector<double>& u) const override;
+  virtual bool isDirectFeedthrough() const override { return true; }
+  void setNoiseModel(
+      std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> model) {
+    noise_model = model;
+  }
 
-    void setGravityCompensation(bool enable_compensation) {
-      gravity_compensation = enable_compensation;
-    }
+  void setGravityCompensation(bool enable_compensation) {
+    gravity_compensation = enable_compensation;
+  }
 
-  private:
-    bool gravity_compensation;
-    std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> noise_model;
-    const std::shared_ptr<RigidBodyFrame> frame;
+ private:
+  bool gravity_compensation;
+  std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> noise_model;
+  const std::shared_ptr<RigidBodyFrame> frame;
 };
 
-
-    /** RigidBodyGyroscope
-     * @brief Simulates a sensor that measures angular rates
-     */
+/** RigidBodyGyroscope
+ * @brief Simulates a sensor that measures angular rates
+ */
 class DRAKERBSYSTEM_EXPORT RigidBodyGyroscope : public RigidBodySensor {
-  public:
-    RigidBodyGyroscope(RigidBodySystem const& sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame);
-    virtual ~RigidBodyGyroscope() {}
+ public:
+  RigidBodyGyroscope(RigidBodySystem const& sys, const std::string& name,
+                     const std::shared_ptr<RigidBodyFrame> frame);
+  virtual ~RigidBodyGyroscope() {}
 
-    virtual size_t getNumOutputs() const override { return 3; }
-    virtual Eigen::VectorXd output(const double& t, const KinematicsCache<double>& rigid_body_state, const RigidBodySystem::InputVector<double>& u) const override;
+  virtual size_t getNumOutputs() const override { return 3; }
+  virtual Eigen::VectorXd output(
+      const double& t, const KinematicsCache<double>& rigid_body_state,
+      const RigidBodySystem::InputVector<double>& u) const override;
 
-    void setNoiseModel(std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> model) {
-        noise_model = model;
-    }
+  void setNoiseModel(
+      std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> model) {
+    noise_model = model;
+  }
 
-  private:
-    std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> noise_model;
-    const std::shared_ptr<RigidBodyFrame> frame;
+ private:
+  std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> noise_model;
+  const std::shared_ptr<RigidBodyFrame> frame;
 };
 
-    /** RigidBodyGyroscope
-     * @brief Simulates a sensor that measures angular rates
-     */
+/** RigidBodyGyroscope
+ * @brief Simulates a sensor that measures angular rates
+ */
 class DRAKERBSYSTEM_EXPORT RigidBodyMagnetometer : public RigidBodySensor {
-  public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+ public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    RigidBodyMagnetometer(RigidBodySystem const& sys, const std::string& name, const std::shared_ptr<RigidBodyFrame> frame, double declination);
-    virtual ~RigidBodyMagnetometer() {}
+  RigidBodyMagnetometer(RigidBodySystem const& sys, const std::string& name,
+                        const std::shared_ptr<RigidBodyFrame> frame,
+                        double declination);
+  virtual ~RigidBodyMagnetometer() {}
 
-    virtual size_t getNumOutputs() const override { return 3; }
-    virtual Eigen::VectorXd output(const double& t, const KinematicsCache<double>& rigid_body_state, const RigidBodySystem::InputVector<double>& u) const override;
+  virtual size_t getNumOutputs() const override { return 3; }
+  virtual Eigen::VectorXd output(
+      const double& t, const KinematicsCache<double>& rigid_body_state,
+      const RigidBodySystem::InputVector<double>& u) const override;
 
-    void setNoiseModel(std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> model) {
-        noise_model = model;
-    }
+  void setNoiseModel(
+      std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> model) {
+    noise_model = model;
+  }
 
-    void setDeclination(double magnetic_declination) {
-      magnetic_north << cos(magnetic_declination), 
-                        sin(magnetic_declination), 
-                        0;
-    }
+  void setDeclination(double magnetic_declination) {
+    magnetic_north << cos(magnetic_declination), sin(magnetic_declination), 0;
+  }
 
-  private:
-    Eigen::Vector3d magnetic_north;
-    std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> noise_model;
-    const std::shared_ptr<RigidBodyFrame> frame;
+ private:
+  Eigen::Vector3d magnetic_north;
+  std::shared_ptr<NoiseModel<double, 3, Eigen::Vector3d>> noise_model;
+  const std::shared_ptr<RigidBodyFrame> frame;
 };
 
- // end namespace Drake
+// end namespace Drake
 }
 #endif
