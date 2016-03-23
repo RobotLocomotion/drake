@@ -6,6 +6,8 @@
 #include "drakeAppUtil.h"
 #include "lcmtypes/drake/lcmt_driving_control_cmd_t.hpp"
 
+#include "drake/systems/plants/shapes/HeightMapTerrain.h"
+
 using namespace std;
 using namespace Eigen;
 using namespace Drake;
@@ -87,6 +89,7 @@ int main(int argc, char* argv[]) {
   for (int i = 2; i < argc; i++)
     tree->addRobotFromSDF(argv[i], DrakeJoint::FIXED);  // add environment
 
+#if 0
   if (argc < 3) {  // add flat terrain
     double box_width = 1000;
     double box_depth = 10;
@@ -103,6 +106,27 @@ int main(int argc, char* argv[]) {
     tree->addCollisionElement(
         RigidBody::CollisionElement(geom, T_element_to_link, world), world,
         "terrain");
+    tree->updateStaticCollisionElements();
+  }
+#endif
+  {//Add Height map
+    double terrain_width = 10;
+    double terrain_height = 1.0;
+    int terrain_ncells = 4;
+    DrakeShapes::FlatTerrain terrain_geom("terrain",Vector2i(terrain_ncells,terrain_ncells),Vector2d(terrain_width, terrain_width));
+
+    Isometry3d T_element_to_link = Isometry3d::Identity();
+    //T_element_to_link.translation() << -terrain_width/2.0, -terrain_width/2.0, 0.0;
+    T_element_to_link.translation() << 0.0, 0.0, 0.0;
+
+    auto& world = tree->bodies[0]; 
+
+    Vector4d color;
+    color << 0.9297, 0.7930, 0.6758, 1;
+
+    world->addVisualElement(DrakeShapes::VisualElement(terrain_geom, T_element_to_link, color));
+
+    tree->addCollisionElement(RigidBody::CollisionElement(terrain_geom, T_element_to_link, world), world, "terrain");
     tree->updateStaticCollisionElements();
   }
 
@@ -137,7 +161,7 @@ int main(int argc, char* argv[]) {
   rigid_body_sys->friction_coefficient = 10.0;  // essentially infinite friction
   options.initial_step_size = 1.0e-3;
   options.timeout_seconds = numeric_limits<double>::infinity();
-  options.wait_for_keypress = false;
+  options.wait_for_keypress = true;
   options.rk2 = true;
 
   VectorXd x0(rigid_body_sys->getNumStates());
