@@ -7,7 +7,7 @@
       <inertia iyy="0.16667" ixx="0.16667" izz="0.16667" />
     </inertial>
     <visual>
-      <origin xyz="0 0 1.0" rpy="0 0 0" />
+      <origin xyz="0 0 1.75" rpy="0 0 0" />
       <geometry>
         <sphere radius="0.5"/>
       </geometry>
@@ -16,7 +16,7 @@
       </material>
     </visual>  
     <collision>
-      <origin xyz="0 0 1.0" rpy="0 0 0" />
+      <origin xyz="0 0 1.75" rpy="0 0 0" />
       <geometry>
         <sphere radius="0.5"/>
       </geometry>
