@@ -30,14 +30,14 @@ double evaluateCosts(const std::vector<double>& x,
   TaylorVecXd ty(1);
   TaylorVecXd this_x(x.size());
 
-  for (auto const& binding : prog->getGenericObjectives()) {
+  for (auto const& binding : prog->get_generic_objectives()) {
     size_t index = 0;
     for (const DecisionVariableView& v : binding.getVariableList()) {
       this_x.segment(index, v.size()) = tx.segment(v.index(), v.size());
       index += v.size();
     }
 
-    binding.getConstraint()->eval(tx, ty);
+    binding.get_constraint()->eval(tx, ty);
 
     // TODO sammy is it actually valid to sum these?
     cost += ty(0).value();
@@ -95,7 +95,7 @@ void evaluateConstraint(unsigned m, double* result, unsigned n,
   }
   c->eval(this_x, ty);
 
-  const Eigen::VectorXd upper_bound = c->getUpperBound();
+  const Eigen::VectorXd upper_bound = c->get_upper_bound();
   for (size_t i = 0; i < num_constraints; i++) {
     result[i] = ty(i).value();
     if (upper_bound[i] != std::numeric_limits<double>::infinity()) {
@@ -163,10 +163,10 @@ bool NloptSolver::solve(OptimizationProblem &prog) const {
   std::vector<double> xlow(nx, -numeric_limits<double>::infinity());
   std::vector<double> xupp(nx, numeric_limits<double>::infinity());
 
-  for (auto const& binding : prog.getBoundingBoxConstraints()) {
-    auto const& c = binding.getConstraint();
+  for (auto const& binding : prog.get_bounding_box_constraints()) {
+    auto const& c = binding.get_constraint();
     for (const DecisionVariableView& v : binding.getVariableList()) {
-      auto const lb = c->getLowerBound(), ub = c->getUpperBound();
+      auto const lb = c->get_lower_bound(), ub = c->get_upper_bound();
       for (int k = 0; k < v.size(); k++) {
         const int idx = v.index() + k;
         xlow[idx] = std::max(lb(k), xlow[idx]);
@@ -187,27 +187,27 @@ bool NloptSolver::solve(OptimizationProblem &prog) const {
 
   std::list<WrappedConstraint> wrapped_list;
 
-  for (auto& c: prog.getGenericConstraints()) {
-    WrappedConstraint wrapped = { c.getConstraint().get(),
+  for (auto& c: prog.get_generic_constraints()) {
+    WrappedConstraint wrapped = { c.get_constraint().get(),
                                   &c.getVariableList() };
     wrapped_list.push_back(wrapped);
-    std::vector<double> tol(c.getConstraint()->getNumConstraints(), 1e-4);
+    std::vector<double> tol(c.get_constraint()->getNumConstraints(), 1e-4);
     opt.add_inequality_mconstraint(evaluateConstraint, &wrapped_list.back(), tol);
   }
 
   for (auto& c: prog.getLinearEqualityConstraints()) {
-    WrappedConstraint wrapped = { c.getConstraint().get(),
+    WrappedConstraint wrapped = { c.get_constraint().get(),
                                   &c.getVariableList() };
     wrapped_list.push_back(wrapped);
-    std::vector<double> tol(c.getConstraint()->getNumConstraints(), 1e-4);
+    std::vector<double> tol(c.get_constraint()->getNumConstraints(), 1e-4);
     opt.add_equality_mconstraint(evaluateConstraint, &wrapped_list.back(), tol);
   }
 
   for (auto& c: prog.getLinearConstraints()) {
-    WrappedConstraint wrapped = { c.getConstraint().get(),
+    WrappedConstraint wrapped = { c.get_constraint().get(),
                                   &c.getVariableList() };
     wrapped_list.push_back(wrapped);
-    std::vector<double> tol(c.getConstraint()->getNumConstraints(), 1e-4);
+    std::vector<double> tol(c.get_constraint()->getNumConstraints(), 1e-4);
     opt.add_inequality_mconstraint(evaluateConstraint, &wrapped_list.back(), tol);
   }
 
@@ -227,7 +227,7 @@ bool NloptSolver::solve(OptimizationProblem &prog) const {
     sol(i) = x[i];
   }
 
-  prog.setDecisionVariableValues(sol);
+  prog.SetDecisionVariableValues(sol);
   return true;
 }
 }

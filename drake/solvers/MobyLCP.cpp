@@ -123,23 +123,23 @@ void MobyLCPSolver::clearIndexVectors() const {
   _j.clear();
 }
 
-bool MobyLCPSolver::solve(OptimizationProblem& prog) const {
+bool MobyLCPSolver::Solve(OptimizationProblem& prog) const {
   // TODO ggould in principle it should be possible to render each of these as
   // a LCP and merge the resulting problems, but I don't yet know how to do it.
-  assert(prog.getGenericConstraints().empty());
-  assert(prog.getGenericObjectives().empty());
-  assert(prog.getAllLinearConstraints().empty());
-  assert(prog.getBoundingBoxConstraints().empty());
-  assert(prog.getLinearComplementarityConstraint());
+  assert(prog.get_generic_constraints().empty());
+  assert(prog.get_generic_objectives().empty());
+  assert(prog.get_all_linear_constraints().empty());
+  assert(prog.get_bounding_box_constraints().empty());
+  assert(prog.get_linear_complementarity_constraint());
 
-  Eigen::VectorXd solution(prog.getNumVars());
-  bool solved = lcp_lemke(prog.getLinearComplementarityConstraint()
-                          ->getConstraint()->getM(),
-                          prog.getLinearComplementarityConstraint()
-                          ->getConstraint()->getq(),
+  Eigen::VectorXd solution(prog.get_num_vars());
+  bool solved = lcp_lemke(prog.get_linear_complementarity_constraint()
+                          ->get_constraint()->get_m_matrix(),
+                          prog.get_linear_complementarity_constraint()
+                          ->get_constraint()->get_q(),
                           &solution);
   if (solved) {
-    prog.setDecisionVariableValues(solution);
+    prog.SetDecisionVariableValues(solution);
   }
   return solved;
 }

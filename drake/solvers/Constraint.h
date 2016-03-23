@@ -54,9 +54,9 @@ class Constraint {
                                                 // to support non-differentiable
                                                 // functions
 
-  Eigen::VectorXd const& getLowerBound() const { return lower_bound; }
-  Eigen::VectorXd const& getUpperBound() const { return upper_bound; }
-  size_t getNumConstraints() const { return lower_bound.size(); }
+  Eigen::VectorXd const& get_lower_bound() const { return lower_bound; }
+  Eigen::VectorXd const& get_upper_bound() const { return upper_bound; }
+  size_t get_num_constraints() const { return lower_bound.size(); }
 
  protected:
   Eigen::VectorXd lower_bound, upper_bound;
@@ -78,12 +78,12 @@ class QuadraticConstraint : public Constraint {
 
   virtual void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
-    y.resize(getNumConstraints());
+    y.resize(get_num_constraints());
     y = .5 * x.transpose() * Q * x + b.transpose() * x;
   }
   virtual void Eval(const Eigen::Ref<const TaylorVecXd>& x,
                     TaylorVecXd& y) const override {
-    y.resize(getNumConstraints());
+    y.resize(get_num_constraints());
     y = .5 * x.transpose() * Q.cast<TaylorVarXd>() * x +
         b.cast<TaylorVarXd>().transpose() * x;
   };
@@ -113,20 +113,20 @@ class LinearConstraint : public Constraint {
 
   virtual void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
-    y.resize(getNumConstraints());
-    y = getMatrix() * x;
+    y.resize(get_num_constraints());
+    y = get_matrix() * x;
   }
   virtual void Eval(const Eigen::Ref<const TaylorVecXd>& x,
                     TaylorVecXd& y) const override {
-    y.resize(getNumConstraints());
-    y = getMatrix().cast<TaylorVarXd>() * x;
+    y.resize(get_num_constraints());
+    y = get_matrix().cast<TaylorVarXd>() * x;
   };
 
-  virtual Eigen::SparseMatrix<double> getSparseMatrix() const {
-    return getMatrix().sparseView();
+  virtual Eigen::SparseMatrix<double> GetSparseMatrix() const {
+    return get_matrix().sparseView();
   };
   virtual const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>&
-  getMatrix() const {
+  get_matrix() const {
     return A;
   }
 
@@ -153,7 +153,7 @@ class LinearEqualityConstraint : public LinearConstraint {
    *different number of linear constraints, but on the same decision variables)
    */
   template <typename DerivedA, typename DerivedB>
-  void updateConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,
+  void UpdateConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,
                         const Eigen::MatrixBase<DerivedB>& beq) {
     assert(Aeq.rows() == beq.rows());
     if (Aeq.cols() != A.cols())
@@ -184,12 +184,12 @@ class BoundingBoxConstraint : public LinearConstraint {
 
   virtual void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
-    y.resize(getNumConstraints());
+    y.resize(get_num_constraints());
     y = x;
   }
   virtual void Eval(const Eigen::Ref<const TaylorVecXd>& x,
                     TaylorVecXd& y) const override {
-    y.resize(getNumConstraints());
+    y.resize(get_num_constraints());
     y = x;
   }
 };
@@ -220,16 +220,16 @@ class LinearComplementarityConstraint : public Constraint {
 
   virtual void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
-    y.resize(getNumConstraints());
+    y.resize(get_num_constraints());
     y = (m_matrix * x) + q;
   }
   virtual void Eval(const Eigen::Ref<const TaylorVecXd>& x,
                     TaylorVecXd& y) const override {
-    y.resize(getNumConstraints());
+    y.resize(get_num_constraints());
     y = (m_matrix.cast<TaylorVarXd>() * x) + q.cast<TaylorVarXd>();
   };
 
-  const Eigen::MatrixXd& get_m_matrix() { return M; };
+  const Eigen::MatrixXd& get_m_matrix() { return m_matrix; };
   const Eigen::VectorXd& get_q() { return q; };
 
  private:

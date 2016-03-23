@@ -27,16 +27,17 @@ class DRAKEOPTIMIZATION_EXPORT  MathematicalProgramInterface {
      virtual MathematicalProgramInterface* addSecondOrderConeConstraint() = 0;
      virtual MathematicalProgramInterface* addComplementarityConstraint() = 0;
   */
-  virtual MathematicalProgramInterface* addGenericObjective() = 0;
-  virtual MathematicalProgramInterface* addGenericConstraint() = 0;
-  virtual MathematicalProgramInterface* addLinearConstraint() = 0;
-  virtual MathematicalProgramInterface* addLinearEqualityConstraint() = 0;
+  virtual MathematicalProgramInterface* add_generic_objective() = 0;
+  virtual MathematicalProgramInterface* add_generic_constraint() = 0;
+  virtual MathematicalProgramInterface* add_linear_constraint() = 0;
+  virtual MathematicalProgramInterface* add_linear_equality_constraint() = 0;
   virtual MathematicalProgramInterface*
-  addLinearComplementarityConstraint() = 0;
+      add_linear_complementarity_constraint() = 0;
 
-  virtual bool solve(OptimizationProblem& prog) const = 0;
+  virtual bool Solve(OptimizationProblem& prog) const = 0;
 
-  static std::shared_ptr<MathematicalProgramInterface> getLeastSquaresProgram();
+  static std::shared_ptr<MathematicalProgramInterface>
+      get_least_squares_program();
 };
 
 /// Interface used by implementations of individual solvers.
@@ -44,7 +45,7 @@ class DRAKEOPTIMIZATION_EXPORT MathematicalProgramSolverInterface {
  public:
   virtual ~MathematicalProgramSolverInterface();
   virtual bool available() const = 0;
-  virtual bool solve(OptimizationProblem& prog) const = 0;
+  virtual bool Solve(OptimizationProblem& prog) const = 0;
 };
 }
 
