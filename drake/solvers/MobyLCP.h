@@ -1,8 +1,8 @@
 // Adapted with permission from code by Evan Drumwright
 // (https://github.com/edrumwri).
 
-#ifndef DRAKE_OPTIMIZATION_MOBYLCP_H_
-#define DRAKE_OPTIMIZATION_MOBYLCP_H_
+#ifndef DRAKE_SOLVERS_MOBYLCP_H_
+#define DRAKE_SOLVERS_MOBYLCP_H_
 
 #include <fstream>
 #include <Eigen/SparseCore>
@@ -55,12 +55,12 @@ class DRAKEOPTIMIZATION_EXPORT MobyLCPSolver :
   void lemkeFoundSolution(const MatrixType& M, const Eigen::VectorXd& q,
                           Eigen::VectorXd* z) const;
 
-  // TODO sammy replace this with a proper logging hookup
+  // TODO(sammy-tri) replace this with a proper logging hookup
   std::ostream& LOG() const;
   bool log_enabled_;
   mutable std::ofstream null_stream_;
 
-  // TODO sammy why is this a member variable?
+  // TODO(sammy-tri) why is this a member variable?
   mutable unsigned pivots;
 
   // NOTE:  The temporaries below are stored in the class to minimize
@@ -86,6 +86,7 @@ class DRAKEOPTIMIZATION_EXPORT MobyLCPSolver :
   mutable Eigen::SparseMatrix<double> _sBl;
   mutable Eigen::SparseMatrix<double> _MMs, _MMx, _eye, _zero, _diag_lambda;
 };
-};
 
-#endif // DRAKE_OPTIMIZATION_MOBYLCP_H_
+} // end namespace Drake
+
+#endif // DRAKE_SOLVERS_MOBYLCP_H_

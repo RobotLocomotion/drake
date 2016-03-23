@@ -1,5 +1,5 @@
-#ifndef DRAKE_CONSTRAINT_H
-#define DRAKE_CONSTRAINT_H
+#ifndef DRAKE_SOLVERS_CONSTRAINT_H
+#define DRAKE_SOLVERS_CONSTRAINT_H
 
 #include <stdexcept>
 
@@ -232,11 +232,12 @@ class LinearComplementarityConstraint : public Constraint {
   const Eigen::VectorXd& getq() const { return q; };
 
  private:
-  // TODO ggould We are storing what are likely statically sized matrices
+  // TODO(ggould-tri) We are storing what are likely statically sized matrices
   // in dynamically allocated containers.  This probably isn't optimal.
   Eigen::MatrixXd M;
   Eigen::VectorXd q;
 };
-}
 
-#endif
+} // end namespace Drake
+
+#endif // DRAKE_SOLVERS_CONSTRAINT_H

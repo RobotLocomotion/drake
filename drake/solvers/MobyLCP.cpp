@@ -35,7 +35,7 @@ void selectSubMat(const Eigen::MatrixBase<Derived>& in,
   }
 }
 
-// TODO sammy this could also use a more efficient implementation.
+// TODO(sammy-tri) this could also use a more efficient implementation.
 template <typename Derived>
 void selectSubVec(const Eigen::MatrixBase<Derived>& in,
                   const std::vector<unsigned>& rows,
@@ -110,7 +110,7 @@ void MobyLCPSolver::clearIndexVectors() const {
 
 bool MobyLCPSolver::solve(OptimizationProblem& prog) const {
   // This solver only knows how to solve LC constraints; forbid other types.
-  // TODO ggould in principle it should be possible to render each of these as
+  // TODO(ggould-tri) in principle it should be possible to render each of these as
   // a LCP and merge the resulting problems, but I don't yet know how to do it.
   assert(prog.getGenericConstraints().empty());
   assert(prog.getGenericObjectives().empty());
@@ -244,7 +244,7 @@ bool MobyLCPSolver::lcp_fast(
     _w += _qbas;
     unsigned minw = (_w.rows() > 0) ? minCoeffIdx(_w) : UINF;
 
-    // TODO sammy this log can't print when minw is UINF.
+    // TODO(sammy-tri) this log can't print when minw is UINF.
     // LOG() << "MobyLCPSolver::lcp_fast() - minimum w after pivot: "
     // << _w[minw] << std::endl;
 
@@ -482,7 +482,7 @@ void MobyLCPSolver::lemkeFoundSolution(
     (*z)(*iiter) = _x(idx);
   }
 
-  // TODO sammy is there a more efficient way to resize and preserve the data?
+  // TODO(sammy-tri) is there a more efficient way to resize and preserve the data?
   z->conservativeResize(q.size());
 
   // check to see whether tolerances are satisfied
@@ -537,7 +537,7 @@ bool MobyLCPSolver::lcp_lemke(
 
   // Lemke's algorithm doesn't seem to like warmstarting
   //
-  // TODO sammy this is not present in the sparse solver, and it
+  // TODO(sammy-tri) this is not present in the sparse solver, and it
   // causes subtle dead code below.
   z->fill(0);
 

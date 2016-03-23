@@ -21,9 +21,9 @@ class DecisionVariable {
 public:
   enum class VarType { CONTINUOUS, INTEGER, BINARY };
 
-  DecisionVariable(VarType type, const std::string& name, 
-                   size_t num_vars, size_t start_index) 
-      : type_(type), name_(name), 
+  DecisionVariable(VarType type, const std::string& name,
+                   size_t num_vars, size_t start_index)
+      : type_(type), name_(name),
         data_(Eigen::VectorXd::Zero(num_vars)), start_index_(start_index) {}
 
   /** index()
@@ -173,7 +173,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     }
 
     size_t getNumElements() const {
-      // TODO ggould assumes that no index appears more than once in the
+      // TODO(ggould-tri) assumes that no index appears more than once in the
       // view, which is nowhere asserted (but seems assumed elsewhere).
       size_t count = 0;
       for (auto view : getVariableList()) {
@@ -472,7 +472,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
     // Linear Complementarity Constraint cannot currently coexist with any
     // other types of constraint or objective.
-    // (TODO ggould relax this to non-overlapping bindings, possibly by
+    // (TODO(ggould-tri) relax this to non-overlapping bindings, possibly by
     // calling multiple solvers.)
     assert(generic_constraints.empty());
     assert(generic_objectives.empty());
@@ -603,7 +603,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   std::list<Binding<BoundingBoxConstraint>> bbox_constraints;
 
   // Invariant:  The bindings in this list must be non-overlapping.
-  // TODO ggould can this constraint be relaxed?
+  // TODO(ggould-tri) can this constraint be relaxed?
   std::list<Binding<LinearComplementarityConstraint>>
       linear_complementarity_constraints;
 
