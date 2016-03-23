@@ -5,6 +5,7 @@
 #include <BulletCollision/NarrowPhaseCollision/btGjkEpaPenetrationDepthSolver.h>
 #include <BulletCollision/NarrowPhaseCollision/btGjkPairDetector.h>
 #include <BulletCollision/NarrowPhaseCollision/btPointCollector.h>
+#include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
 
 #include "Element.h"
 #include "Model.h"
@@ -126,6 +127,8 @@ class BulletModel : public Model {
       const DrakeShapes::Mesh& geometry, bool use_margins);
   static std::unique_ptr<btCollisionShape> newBulletMeshPointsShape(
       const DrakeShapes::MeshPoints& geometry, bool use_margins);
+  static std::unique_ptr<btCollisionShape> newBulletHeightMapTerrainShape(
+      const DrakeShapes::HeightMapTerrain& geometry, bool use_margins);
 
   static constexpr double small_margin = 1e-9;
   static constexpr double large_margin = 0.05;
