@@ -15,7 +15,9 @@ int main(int argc, char* argv[]) {
 
   if (!lcm->good()) return 1;
 
-  auto quad = std::make_shared<Quadrotor>();
+  // Can't use std::make_shared here because it will use the default allocator.
+  auto quad = std::allocate_shared<Quadrotor>
+                                    (Eigen::aligned_allocator<Quadrotor>());
 
   const int num_states = getNumStates(*quad);
   const int num_positions = num_states / 2;

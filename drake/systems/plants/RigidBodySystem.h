@@ -392,7 +392,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySpringDamper
  * @brief Represents generalized vector-valued noise
  */
 template <typename ScalarType, int Dimension, typename Derived>
-class DRAKERBSYSTEM_EXPORT NoiseModel {
+class NoiseModel {
   public:
     virtual Eigen::Matrix<ScalarType, Dimension, 1> generateNoise(Eigen::MatrixBase<Derived> const& input) = 0;
 };
@@ -401,7 +401,7 @@ class DRAKERBSYSTEM_EXPORT NoiseModel {
  * @brief Implements the NoiseModel interface where the underlying noise distribution is parameterized by a Gaussian
  */
 template <typename ScalarType, int Dimension, typename Derived>
-class DRAKERBSYSTEM_EXPORT AdditiveGaussianNoiseModel : public NoiseModel<ScalarType, Dimension, Derived> {
+class AdditiveGaussianNoiseModel : public NoiseModel<ScalarType, Dimension, Derived> {
   public:
     AdditiveGaussianNoiseModel(double mean, double std_dev) : distribution(mean, std_dev), generator(rd()) { }
 
