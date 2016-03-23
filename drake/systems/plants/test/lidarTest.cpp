@@ -17,8 +17,8 @@ int main(int argc, char* argv[]) {
   rigid_body_sys->addRobotFromFile(getDrakePath() + "/systems/plants/test/lidarTest.sdf", DrakeJoint::FIXED);
 
   double t = 0;
-  VectorXd x = VectorXd::Zero(0);
-  VectorXd u = VectorXd::Zero(0);
+  VectorXd x = VectorXd::Zero(rigid_body_sys->getNumStates());
+  VectorXd u = VectorXd::Zero(rigid_body_sys->getNumInputs());
 
   //  rigid_body_sys->getRigidBodyTree()->drawKinematicTree("/tmp/lidar.dot");
 
