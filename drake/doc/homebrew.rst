@@ -4,8 +4,9 @@ Mac (using homebrew -- recommended for mac)
 
 We have provided some scripts to simplify the installation of prerequisites.  However, we do assume that you have already installed
 
-* XQuartz / X11
+* `XQuartz / X11 <http://www.xquartz.org>`_
 * XCode and the command line tools (``xcode-select --install``)
+* `Java Development Kit (JDK) <http://www.oracle.com/technetwork/java/javase/downloads/index.html>`_
 
 Now you can install the prerequistes::
 
