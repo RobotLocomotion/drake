@@ -28,8 +28,8 @@ Note: the build process may encounter problems if you have unusual characters li
 If you want to use the private externals
 ========================================
 
-Drake includes support for some externals which we are not able to redistribute directly 
-(SNOPT, SEDUMI, BERTINI, ...).  In order to have drake locally install these for you, you must have access to the corresponding private github repositories, and must set your machine up with SSH keys.  
+Drake includes support for some externals which we are not able to redistribute directly
+(SNOPT, SEDUMI, BERTINI, ...).  In order to have drake locally install these for you, you must have access to the corresponding private github repositories, and must set your machine up with SSH keys.
 
 Follow the instructions here:
 https://help.github.com/articles/generating-ssh-keys/
@@ -45,14 +45,12 @@ Before running build, you will need to follow the instructions for your host sys
 .. toctree::
 	:maxdepth: 1
 
-	ubuntu
+	cygwin
+	fedora
 	homebrew
 	macports
+	ubuntu
 	windows
-	cygwin
-
-(Note: there has been reported success building on Redhat using the Ubuntu installation instructions, and changing ``apt-get`` to ``yum`` inside the ``install_prereqs.sh``, but we haven't tested that ourselves).
-
 
 Build the collection
 ====================
