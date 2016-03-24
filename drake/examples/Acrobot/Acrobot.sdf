@@ -13,7 +13,7 @@
           <iyz>0</iyz>
           <izz>0</izz>
         </inertia>
-      </inertial>ax
+      </inertial>
       <collision name='base_link_collision'>
         <pose frame=''>0 0 0 0 0 0</pose>
         <geometry>
