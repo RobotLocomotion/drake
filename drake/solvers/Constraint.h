@@ -200,10 +200,11 @@ class BoundingBoxConstraint : public LinearConstraint {
 /** LinearComplementarityConstraint
  *
  * Implements a constraint of the form:
+ * <pre>
  *   Mx + q >= 0
  *   x >= 0
  *   x'(Mx + q) == 0
- *
+ * </pre>
  * An implied slack variable complements any 0 component of x.  To get
  * the slack values at a given solution x, use eval(x).
  */
