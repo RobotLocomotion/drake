@@ -4,6 +4,25 @@ Drake Development on OS X
 
 This page contains software development notes that are specific to OS X.
 
+Installing pygame
+===================================
+
+`pygame <http://pygame.org>`_ is used by ``drake/examples/Cars/SteeringCommandDriver.py``.
+
+Install Mercurial:
+
+    brew install mercurial
+
+Install pygame:
+
+    pip install hg+http://bitbucket.org/pygame/pygame
+
+Ensure your ``PYTHONPATH`` environment variable includes Drake's site-package and dist-packages directories:
+
+    export PYTHONPATH=$PYTHONPATH:[DRAKE_ROOT]/build/lib/python2.7/site-packages:[DRAKE_ROOT]/build/lib/python2.7/dist-packages
+
+
+
 Running gitk
 ============
 
