@@ -141,20 +141,7 @@ unique_ptr<btCollisionShape> BulletModel::newBulletMeshShape(
 }
 
 unique_ptr<btCollisionShape> BulletModel::newBulletHeightMapTerrainShape(
-  const DrakeShapes::HeightMapTerrain& geometry, bool use_margins) {  
-
-  PRINT_VAR(geometry.nnodes.transpose());
-  PRINT_VAR(geometry.m_gridHeightScale);
-  PRINT_VAR(geometry.m_minHeight); 
-  PRINT_VAR(geometry.m_maxHeight);
-  PRINT_VAR(geometry.m_upAxis);
-  PRINT_VAR(geometry.m_rawHeightfieldData);
-
-  PRINT_VAR(sizeof(float));
-  PRINT_VAR(sizeof(double));
-  PRINT_VAR(sizeof(btScalar));
-
-  //geometry.writeToFile("terrain_from_bullet.obj");      
+  const DrakeShapes::HeightMapTerrain& geometry, bool use_margins) {
 
   bool flipQuadEdges = false;
   PHY_ScalarType btType = PHY_FLOAT;  
@@ -171,38 +158,10 @@ unique_ptr<btCollisionShape> BulletModel::newBulletHeightMapTerrainShape(
   btVector3 localScaling(geometry.delta_ell(0), geometry.delta_ell(1), 1.0);
   bt_shape->setLocalScaling(localScaling);
 
-  PRINT_VAR(geometry.delta_ell(0));
-  PRINT_VAR(geometry.delta_ell(1));
-
   //Write a mesh file to be used by the BotVisualizer
   writeHeightMapTerrain(static_cast<btHeightfieldTerrainShape*>(bt_shape.get()),geometry.fname);
 
-  //writeHeightMapTerrain(geometry,static_cast<btHeightfieldTerrainShape*>(bt_shape.get()),"terrain_from_bullet.obj");
-
-  //assert(!"stop at test");
-
   return bt_shape;
-
-#if 0
-  Matrix3Xd vertices;
-  if (geometry.extractMeshVertices(vertices)) {
-    if (use_margins)
-      bt_shape->setMargin(BulletModel::large_margin);
-    else
-      bt_shape->setMargin(BulletModel::small_margin);
-    auto bt_convex_hull_shape =
-        dynamic_cast<btConvexHullShape*>(bt_shape.get());
-    for (int i = 0; i < vertices.cols(); i++) {
-      bt_convex_hull_shape->addPoint(
-          btVector3(vertices(0, i), vertices(1, i), vertices(2, i)), false);
-    }
-    bt_convex_hull_shape->recalcLocalAabb();
-
-    return bt_shape;
-  } else {
-    return nullptr;
-  }
-#endif
 }
 
 
@@ -230,26 +189,6 @@ void BulletModel::writeHeightMapTerrain(
     Vector3i conn = grid_buffer.getTriangle(i);
     file << "f " << conn[0] << " " << conn[1] << " " << conn[2] << endl;
   }
-
-
-#if 0
-  for(int i=0;i<ncells(0);i++){
-    for(int j=0;j<ncells(1);j++){
-      //Four corners      
-      int p1 = (j  )+nnodes(1)*(i  ) + 1;
-      int p2 = (j  )+nnodes(1)*(i+1) + 1;
-      int p3 = (j+1)+nnodes(1)*(i+1) + 1;
-      int p4 = (j+1)+nnodes(1)*(i  ) + 1;
-
-      //first triangle
-      file << "f " << p1 << " " << p2 << " " << p4 << endl;
-
-      //second triangle
-      file << "f " << p2 << " " << p3 << " " << p4 << endl;
-      
-    }
-  }  
-#endif
 
   file.close();
 }
@@ -375,9 +314,7 @@ vector<PointPair> BulletModel::potentialCollisionPoints(bool use_margins) {
   BulletResultCollector c;
   bt_world.bt_collision_world->performDiscreteCollisionDetection();
   size_t numManifolds =
-      bt_world.bt_collision_world->getDispatcher()->getNumManifolds();
-
-  PRINT_VAR(numManifolds);
+      bt_world.bt_collision_world->getDispatcher()->getNumManifolds();  
 
   for (size_t i = 0; i < numManifolds; i++) {
     btPersistentManifold* contact_manifold =
