@@ -78,6 +78,8 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
+  bool flat_terrain = false;
+
   // todo: consider moving this logic into the RigidBodySystem class so it can
   // be reused
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
@@ -89,35 +91,28 @@ int main(int argc, char* argv[]) {
   for (int i = 2; i < argc; i++)
     tree->addRobotFromSDF(argv[i], DrakeJoint::FIXED);  // add environment
 
-#if 0
-  if (argc < 3) {  // add flat terrain
-    double box_width = 1000;
-    double box_depth = 10;
+  if (flat_terrain) {  // add flat terrain
+    double box_width = 10;
+    double box_depth = 1;
     DrakeShapes::Box geom(Vector3d(box_width, box_width, box_depth));
     Isometry3d T_element_to_link = Isometry3d::Identity();
-    T_element_to_link.translation() << 0, 0,
-        -box_depth / 2;  // top of the box is at z=0
+    T_element_to_link.translation() << 0, 0, -1.5;  // top of the box is at z=-radius (sphere is at z=0)
     auto& world = tree->bodies[0]; //world is a body with zero mass and zero moment of inertia
     Vector4d color;
-    color << 0.9297, 0.7930, 0.6758,
-        1;  // was hex2dec({'ee','cb','ad'})'/256 in matlab
-    world->addVisualElement(
-        DrakeShapes::VisualElement(geom, T_element_to_link, color));
-    tree->addCollisionElement(
-        RigidBody::CollisionElement(geom, T_element_to_link, world), world,
-        "terrain");
+    color << 0.9297, 0.7930, 0.6758, 1;
+    world->addVisualElement(DrakeShapes::VisualElement(geom, T_element_to_link, color));
+    tree->addCollisionElement(RigidBody::CollisionElement(geom, T_element_to_link, world), *world, "terrain");
     tree->updateStaticCollisionElements();
-  }
-#endif
+  }else
   {//Add Height map
     double terrain_width = 10;
     double terrain_height = 1.0;
-    int terrain_ncells = 4;
+    int terrain_ncells = 16;
     DrakeShapes::FlatTerrain terrain_geom("terrain",Vector2i(terrain_ncells,terrain_ncells),Vector2d(terrain_width, terrain_width));
 
     Isometry3d T_element_to_link = Isometry3d::Identity();
     //T_element_to_link.translation() << -terrain_width/2.0, -terrain_width/2.0, 0.0;
-    T_element_to_link.translation() << 0.0, 0.0, 0.0;
+    T_element_to_link.translation() << 1.0, 0.0, -2.0;
 
     auto& world = tree->bodies[0]; 
 
