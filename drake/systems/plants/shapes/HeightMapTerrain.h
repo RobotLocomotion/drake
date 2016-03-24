@@ -12,11 +12,6 @@
 #include "drake/core/Macros.h"
 #include "drake/systems/plants/shapes/Geometry.h"
 
-//#include <btBulletCollisionCommon.h>
-//#include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
-
-//#include <iostream>
-
 namespace DrakeShapes {
 
 //!  A class representing a height map terrrain shape
@@ -87,7 +82,7 @@ class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
       }
 
       return NULL;
-    }//getDataTypeName
+    }
 
     static int getByteSize(RawDataType type)
     {
@@ -112,39 +107,6 @@ class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
 
       return size;
     }
-
-#if 0
-    static void convertFromFloat(byte_t * p,float value,RawDataType type)
-    {
-      assert(p && "null");
-
-      switch (type) {
-        case FLOAT:
-        {
-          float * pf = (float *) p;
-          *pf = value;
-        }
-        break;
-
-        case UCHAR:
-        {
-          unsigned char * pu = (unsigned char *) p;
-          *pu = (unsigned char) (value);
-        }
-        break;
-
-        case SHORT:
-        {
-          short * ps = (short *) p;
-          *ps = (short) (value);
-        }
-        break;
-
-        default:
-        assert(!"bad type");
-      }
-    }
-#endif
     
 };
 
