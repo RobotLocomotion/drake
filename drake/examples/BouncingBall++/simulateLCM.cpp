@@ -164,7 +164,7 @@ int main(int argc, char* argv[]) {
   options.wait_for_keypress = true;
   options.rk2 = true;
 
-  VectorXd x0(rigid_body_sys->getNumStates());
+  VectorXd x0 = VectorXd::Zero(rigid_body_sys->getNumStates());  
   x0.head(tree->num_positions) = tree->getZeroConfiguration();
   // todo:  call getInitialState instead?  (but currently, that would require
   // snopt).  needs #1627
