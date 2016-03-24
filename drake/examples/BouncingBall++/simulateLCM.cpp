@@ -78,7 +78,7 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  bool flat_terrain = false;
+  bool flat_terrain = true;
 
   // todo: consider moving this logic into the RigidBodySystem class so it can
   // be reused
@@ -94,9 +94,15 @@ int main(int argc, char* argv[]) {
   if (flat_terrain) {  // add flat terrain
     double box_width = 10;
     double box_depth = 1;
+    double angle = 0.25*M_PI;    
     DrakeShapes::Box geom(Vector3d(box_width, box_width, box_depth));
     Isometry3d T_element_to_link = Isometry3d::Identity();
-    T_element_to_link.translation() << 0, 0, -1.5;  // top of the box is at z=-radius (sphere is at z=0)
+    Matrix3d m;
+    m = AngleAxisd(angle,  Vector3d::UnitY());
+    //Vector3d center(0, 0, -1.5);
+    T_element_to_link.linear() = m;
+    //This makes the impact to happen when the sphere is at z=-0.5 regardless of the angle. Just useful for debugging.
+    T_element_to_link.translation() = m*Vector3d(0.0,0.0,-1.0) + Vector3d(0.0,0.0,-0.5); 
     auto& world = tree->bodies[0]; //world is a body with zero mass and zero moment of inertia
     Vector4d color;
     color << 0.9297, 0.7930, 0.6758, 1;
@@ -112,7 +118,7 @@ int main(int argc, char* argv[]) {
 
     Isometry3d T_element_to_link = Isometry3d::Identity();
     //T_element_to_link.translation() << -terrain_width/2.0, -terrain_width/2.0, 0.0;
-    T_element_to_link.translation() << 1.0, 0.0, -2.0;
+    T_element_to_link.translation() << 0.0, 0.0, -2.0;
 
     auto& world = tree->bodies[0]; 
 
@@ -157,7 +163,7 @@ int main(int argc, char* argv[]) {
   rigid_body_sys->friction_coefficient = 0.0;
   options.initial_step_size = 1.0e-3;
   options.timeout_seconds = numeric_limits<double>::infinity();
-  options.wait_for_keypress = true;
+  options.wait_for_keypress = false;
   options.rk2 = true;
 
   VectorXd x0 = VectorXd::Zero(rigid_body_sys->getNumStates());  
