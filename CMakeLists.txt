@@ -100,7 +100,7 @@ set(bot_core_lcmtypes_dependencies lcm)
 set(director_dependencies lcm bot_core_lcmtypes libbot)
 set(iris_dependencies eigen mosek)
 set(signalscope_dependencies director)
-set(drake_dependencies cmake eigen googletest lcm bot_core_lcmtypes libbot bullet octomap snopt gurobi swig_matlab swigmake)
+set(drake_dependencies cmake eigen googletest lcm bot_core_lcmtypes libbot bullet octomap snopt gurobi swig_matlab swigmake yaml_cpp)
 
 # download information, in alphabetical order
 set(avl_GIT_REPOSITORY https://github.com/RobotLocomotion/avl.git)
