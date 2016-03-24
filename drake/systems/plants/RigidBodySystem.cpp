@@ -167,7 +167,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
           tangent1 /= sqrt(this_normal(1) * this_normal(1) +
                            this_normal(0) * this_normal(0));
         }
-        Vector3d tangent2 = tangent1.cross(this_normal); //AMC: Shouldn't this be the oposite? is not right-hand sided!!!
+        Vector3d tangent2 = tangent1.cross(this_normal);
         Matrix3d R;  // rotation into normal coordinates
         R << tangent1, tangent2, this_normal;
 
