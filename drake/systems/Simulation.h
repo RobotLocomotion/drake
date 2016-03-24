@@ -77,6 +77,8 @@ void simulate(const System& sys, double ti, double tf,
       Eigen::VectorXd::Zero(getNumInputs(sys)));
   typename System::template OutputVector<double> y;
 
+
+  PRINT_VAR(xi.transpose()); 
   // Take steps from ti to tf.
   double t = ti;
   while (t < tf) {
@@ -91,13 +93,21 @@ void simulate(const System& sys, double ti, double tf,
     handle_realtime_factor(start, t, options.realtime_factor,
                            options.timeout_seconds);
     const double dt = (std::min)(options.initial_step_size, tf - t);
+    
+    PRINT_VAR(u.transpose());
+    PRINT_VAR(x.transpose());
 
     // Output is at t0, x0, u0.
     y = sys.output(t, x, u);
 
+    PRINT_VAR(y.transpose());
+
     // This is an RK2 integrator (explicit trapezoid rule).
     // First stage: xd0 = dynamics(t0,x0,u0).
     xdot0 = sys.dynamics(t, x, u);
+
+    PRINT_VAR(xdot0.transpose());
+
     x1est = toEigen(x) + dt * toEigen(xdot0); // explicit Euler step
     t += dt;
 
@@ -106,6 +116,8 @@ void simulate(const System& sys, double ti, double tf,
 
     // 2nd order result: x = x0 + dt (xd0+xd1)/2.
     x = toEigen(x) + (dt/2) * (toEigen(xdot0) + toEigen(xdot1));
+
+    PRINT_VAR(x.transpose());
   }
 }
 

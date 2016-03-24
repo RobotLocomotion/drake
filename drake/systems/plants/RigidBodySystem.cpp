@@ -67,10 +67,21 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   auto H = tree->massMatrix(kinsol);
   Eigen::MatrixXd H_and_neg_JT = H;
 
+  PRINT_MSG("H:\n");
+  std::cout << H << std::endl;
+
   PRINT_VAR(H.rows());
-  PRINT_VAR(H.cols());
+  PRINT_VAR(H.cols());  
 
   VectorXd C = tree->dynamicsBiasTerm(kinsol, f_ext);
+
+  PRINT_VAR(f_ext.size());
+  for(auto p: f_ext){
+    cout << p.second.transpose() << endl;
+  }
+
+  PRINT_VAR(C.transpose());
+
   if (num_actuators > 0) C -= tree->B * u.topRows(num_actuators);
 
   PRINT_VAR(C.rows());
@@ -153,6 +164,9 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
 
         PRINT_VAR(i);
         PRINT_VAR(this_normal.transpose());
+        PRINT_VAR(xA.col(i).transpose());
+        PRINT_VAR(xB.col(i).transpose());
+        PRINT_VAR(phi(i));
 
         // compute the surface tangent basis
         Vector3d tangent1;
@@ -227,6 +241,11 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
     H_and_neg_JT.conservativeResize(NoChange, H_and_neg_JT.cols() + J.rows());
     H_and_neg_JT.rightCols(J.rows()) = -J.transpose();
   }
+
+  PRINT_MSG("H_and_neg_JT:\n");
+  std::cout << H_and_neg_JT << std::endl;
+
+  PRINT_VAR(C.transpose());
 
   // add [H,-J^T]*[vdot;f] = -C
   prog.addLinearEqualityConstraint(H_and_neg_JT, -C);

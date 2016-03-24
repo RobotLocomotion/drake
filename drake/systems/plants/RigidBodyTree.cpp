@@ -1255,6 +1255,9 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
     if (body.hasParent()) {
       const auto& element = cache.getElement(body);
 
+      PRINT_VAR(i);
+      PRINT_VAR(body.linkname);      
+
       Vector6 spatial_accel = root_accel;
       if (include_velocity_terms)
         spatial_accel += element.motion_subspace_in_world_dot_times_v;
@@ -1281,10 +1284,17 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
   }
 
   Matrix<Scalar, Eigen::Dynamic, 1> ret(num_velocities, 1);
+  //PRINT_VAR(ret.transpose());
+  std::cout << "ret.transpose(): " << std:: endl;
+  for(int i = 0; i<num_velocities; i++)
+    std::cout << ret(i) << " ";
+  std::cout << std::endl;
 
   for (int i = static_cast<int>(bodies.size()) - 1; i >= 0; i--) {
     RigidBody& body = *bodies[i];
     if (body.hasParent()) {
+      PRINT_VAR(body.linkname);
+
       const auto& element = cache.getElement(body);
       const auto& net_wrenches_const = net_wrenches;  // eliminates the need for
                                                       // another explicit
@@ -1292,14 +1302,29 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
       auto joint_wrench = net_wrenches_const.col(i);
       int nv_joint = body.getJoint().getNumVelocities();
       auto J_transpose = element.motion_subspace_in_world.transpose();
+     
+      PRINT_VAR(joint_wrench.size());
+      for(int ii=0;ii<joint_wrench.size();ii++) cout << " " << joint_wrench(ii);
+      cout << endl;
+
       ret.middleRows(body.velocity_num_start, nv_joint).noalias() =
           J_transpose * joint_wrench;
       auto parent_net_wrench = net_wrenches.col(body.parent->body_index);
       parent_net_wrench += joint_wrench;
     }
   }
+  //PRINT_VAR(ret.transpose());
+  std::cout << "ret.transpose(): " << std:: endl;
+  for(int i = 0; i<num_velocities; i++)
+    std::cout << ret(i) << " ";
+  std::cout << std::endl;
 
   if (include_velocity_terms) ret += frictionTorques(cache.getV());
+  //PRINT_VAR(ret.transpose());
+  std::cout << "ret.transpose(): " << std:: endl;
+  for(int i = 0; i<num_velocities; i++)
+    std::cout << ret(i) << " ";
+  std::cout << std::endl;
 
   return ret;
 }
