@@ -142,16 +142,14 @@ int main(int argc, char* argv[]) {
 
       const std::string & actuatorName = tree->actuators[actuator_idx].name;
 
-      if (strcmp(actuatorName.c_str(), "steering_angle") == 0 ||
-          strcmp(actuatorName.c_str(), "steering") == 0) {
+      if (strcmp(actuatorName.c_str(), "steering") == 0) {
         auto const& b = tree->actuators[actuator_idx].body;
         Kp(actuator_idx, b->position_num_start) = kpSteering;  // steering
         Kd(actuator_idx, b->velocity_num_start) = kdSteering;  // steeringdot
         map_driving_cmd_to_x_d(b->position_num_start, 0) = 1;  // steering command
 
-      } else if (strncmp(actuatorName.c_str(), "throttle", 8) == 0 ||
-                 strcmp(actuatorName.c_str(), "right_wheel_joint") == 0 ||
-                 strcmp(actuatorName.c_str(), "left_wheel_joint") == 0) {  // intentionally match all throttle_ inputs
+      } else if (strcmp(actuatorName.c_str(), "right_wheel_joint") == 0 ||
+                 strcmp(actuatorName.c_str(), "left_wheel_joint") == 0) {
 
         auto const& b = tree->actuators[actuator_idx].body;
         Kd(actuator_idx, b->velocity_num_start) = kThrottle;  // throttle
