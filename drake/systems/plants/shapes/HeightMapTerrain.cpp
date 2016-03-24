@@ -1,6 +1,7 @@
 #include "HeightMapTerrain.h"
 #include <iostream>
 #include <fstream>
+#include <cstring>
 
 using namespace std;
 using namespace Eigen;
@@ -42,16 +43,51 @@ HeightMapTerrain::HeightMapTerrain(const std::string& name, const Eigen::Vector2
 Geometry(HEIGHT_MAP_TERRAIN), name(name), ncells(ncells), size(size), m_gridHeightScale(1.0), m_upAxis(2),m_type(FLOAT)
 {
     //check if ncells_along_width is of the form (2^N) + 1    
-  PRINT_VAR(ncells(0));
+  PRINT_VAR(ncells.transpose());
   PRINT_VAR(is_power_of_2(ncells(0)));
 
   assert(is_power_of_2(ncells(0)) && "ncells must be of the form 2^n.");
   assert(is_power_of_2(ncells(1)) && "ncells must be of the form 2^n.");  
+
   nnodes = ncells.array()+1;
+  nTotNodes = ((long) nnodes(0)) * nnodes(1);    
   bytesPerElement = getByteSize(m_type);
-  m_rawHeightfieldData = NULL;
+  nBytes = nTotNodes * bytesPerElement;    
+
+  m_rawHeightfieldData = new byte_t[nBytes];
+  if(m_rawHeightfieldData==NULL) assert(!"Out of memory");
 
   delta_ell = size.array()/ncells.array().cast<double>(); 
+}
+
+HeightMapTerrain::HeightMapTerrain(const HeightMapTerrain& other): 
+Geometry(HEIGHT_MAP_TERRAIN){  
+  PRINT_FUNCTION_NAME;
+
+  nBytes = other.nBytes;
+  nTotNodes = other.nTotNodes;
+  bytesPerElement = other.bytesPerElement;
+  size = other.size;
+  delta_ell = other.delta_ell;
+  ncells = other.ncells;
+  nnodes = other.nnodes;
+  m_gridHeightScale = other.m_gridHeightScale;
+  m_minHeight = other.m_minHeight;
+  m_maxHeight = other.m_maxHeight;
+  m_upAxis = other.m_upAxis;
+  m_type = other.m_type;
+  name = other.name;
+  fname = other.fname;
+  
+  PRINT_VAR(nBytes);
+  m_rawHeightfieldData = new byte_t[nBytes];
+  if(m_rawHeightfieldData==NULL) assert(!"Out of memory");
+  std::memcpy(m_rawHeightfieldData, other.m_rawHeightfieldData, nBytes);
+}
+
+HeightMapTerrain::~HeightMapTerrain(){
+  PRINT_FUNCTION_NAME;
+  delete m_rawHeightfieldData;
 }
 
 HeightMapTerrain *HeightMapTerrain::clone() const {   
@@ -143,19 +179,13 @@ double HeightMapTerrain::heightValue(int i, int j) const{
 
 FlatTerrain::FlatTerrain(const std::string& name, const Eigen::Vector2i &ncells, const Eigen::Vector2d &size) : 
 HeightMapTerrain(name,ncells, size)
-{
-  long nElements = ((long) nnodes(0)) * nnodes(1);  
-
-  long nBytes = nElements * bytesPerElement;
-
-  PRINT_VAR(ncells);
-  PRINT_VAR(nnodes);
-  PRINT_VAR(nElements);
+{  
+  PRINT_FUNCTION_NAME;
+  PRINT_VAR(ncells.transpose());
+  PRINT_VAR(nnodes.transpose());
+  PRINT_VAR(nTotNodes);
   PRINT_VAR(bytesPerElement);
-  PRINT_VAR(nBytes);
-
-  m_rawHeightfieldData = new byte_t[nBytes];
-  if(m_rawHeightfieldData==NULL) assert(!"Out of memory");
+  PRINT_VAR(nBytes);  
 
   m_maxHeight = -numeric_limits<double>::infinity();
   m_minHeight = +numeric_limits<double>::infinity();
@@ -180,15 +210,20 @@ HeightMapTerrain(name,ncells, size)
   
   //m_maxHeight = size.maxCoeff()/10.0;
   //m_minHeight = -m_maxHeight;
+  m_minHeight = -m_maxHeight;
+  //assert(!"Make sure the bounding box is centered around zero");
+  //In this way you can think of z=0 in the usual way. 
 
   fname = name+".obj";
   //writeToFile(fname);
 }
 
+FlatTerrain::FlatTerrain(const FlatTerrain& other): HeightMapTerrain(other) {    
+  PRINT_FUNCTION_NAME;
+}
+
 HeightMapTerrain *FlatTerrain::clone() const {
-  FlatTerrain *cloned = new FlatTerrain(*this); 
-  cloned->m_rawHeightfieldData = m_rawHeightfieldData; //the clone points to the same data!!
-  return cloned;
+  return new FlatTerrain(*this);  
 }
 
 void FlatTerrain::getPoints(Matrix3Xd &points) const {

@@ -5,6 +5,7 @@
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
+#include <cstring> //for the definition of syze_t
 
 #include "drake/drakeShapes_export.h"
 
@@ -34,7 +35,8 @@ class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
       \param pos Position of the terrain center in world's coordinates. The terrain center is located at the middle of the 2D plane and at zero height.            
     */      
   HeightMapTerrain(const std::string& name, const Eigen::Vector2i &ncells, const Eigen::Vector2d &size);
-  virtual ~HeightMapTerrain() {}
+  HeightMapTerrain(const HeightMapTerrain& other);
+  virtual ~HeightMapTerrain();
   virtual HeightMapTerrain *clone() const;
   virtual void getPoints(Eigen::Matrix3Xd &points) const;
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
@@ -51,6 +53,10 @@ class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
   enum RawDataType {UCHAR, SHORT,FLOAT};    
   typedef unsigned char byte_t;
 
+  std::size_t nBytes;   //!< number of bytes allocated in m_rawHeightfieldData
+  long nTotNodes;       //!< total number of nodes
+  int bytesPerElement;
+
   Eigen::Vector2d size;      //!< length along the map's local x and y directions
   Eigen::Vector2d delta_ell; //!< grid size (delta) in the map's local x and y directions
   Eigen::Vector2i ncells;    //!< number of cells
@@ -58,11 +64,9 @@ class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
   double m_gridHeightScale;
   double m_minHeight, m_maxHeight; 
   int m_upAxis; 
-  RawDataType m_type;  
-  int bytesPerElement;
+  RawDataType m_type;    
   byte_t* m_rawHeightfieldData;
-  std::string name,fname;
-  void* bullet_ptr; //pointer to the actual btHeightfieldTerrainShape pointer
+  std::string name,fname;  
 
   protected:
     
@@ -109,6 +113,7 @@ class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
       return size;
     }
 
+#if 0
     static void convertFromFloat(byte_t * p,float value,RawDataType type)
     {
       assert(p && "null");
@@ -139,14 +144,14 @@ class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
         assert(!"bad type");
       }
     }
-
-
+#endif
     
 };
 
 class DRAKESHAPES_EXPORT FlatTerrain : public HeightMapTerrain {
  public:
   FlatTerrain(const std::string& name, const Eigen::Vector2i &ncells, const Eigen::Vector2d &size);
+  FlatTerrain(const FlatTerrain& other);
   virtual ~FlatTerrain() {}
   HeightMapTerrain *clone() const;
   void getPoints(Eigen::Matrix3Xd &points) const;
