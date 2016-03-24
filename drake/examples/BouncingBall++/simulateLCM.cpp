@@ -153,7 +153,8 @@ int main(int argc, char* argv[]) {
   SimulationOptions options = default_simulation_options;
   rigid_body_sys->penetration_stiffness = 5000.0;
   rigid_body_sys->penetration_damping = 0.0; //rigid_body_sys->penetration_stiffness / 10.0;
-  rigid_body_sys->friction_coefficient = 10.0;  // essentially infinite friction
+  //rigid_body_sys->friction_coefficient = 10.0;  // essentially infinite friction. Causes ball to rotate
+  rigid_body_sys->friction_coefficient = 0.0;
   options.initial_step_size = 1.0e-3;
   options.timeout_seconds = numeric_limits<double>::infinity();
   options.wait_for_keypress = true;
