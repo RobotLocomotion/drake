@@ -17,12 +17,9 @@ bool is_power_of_2(int x) {
 HeightMapTerrain::HeightMapTerrain(const std::string& name, const Eigen::Vector2i &ncells, const Eigen::Vector2d &size) : 
 Geometry(HEIGHT_MAP_TERRAIN), name(name), ncells(ncells), size(size), m_gridHeightScale(1.0), m_upAxis(2),m_type(FLOAT)
 {
-  //check if ncells_along_width is of the form (2^N) + 1    
-  PRINT_VAR(ncells.transpose());
-  PRINT_VAR(is_power_of_2(ncells(0)));
-
-  assert(is_power_of_2(ncells(0)) && "ncells must be of the form 2^n.");
-  assert(is_power_of_2(ncells(1)) && "ncells must be of the form 2^n.");  
+  //check if ncells is of the form 2^N
+  assert(is_power_of_2(ncells(0)) && "ncells must be a power of 2.");
+  assert(is_power_of_2(ncells(1)) && "ncells must be a power of 2.");
 
   nnodes = ncells.array()+1;
   nTotNodes = ((long) nnodes(0)) * nnodes(1);    
@@ -36,9 +33,7 @@ Geometry(HEIGHT_MAP_TERRAIN), name(name), ncells(ncells), size(size), m_gridHeig
 }
 
 HeightMapTerrain::HeightMapTerrain(const HeightMapTerrain& other): 
-Geometry(HEIGHT_MAP_TERRAIN){  
-  PRINT_FUNCTION_NAME;
-
+Geometry(HEIGHT_MAP_TERRAIN){
   nBytes = other.nBytes;
   nTotNodes = other.nTotNodes;
   bytesPerElement = other.bytesPerElement;
@@ -53,15 +48,13 @@ Geometry(HEIGHT_MAP_TERRAIN){
   m_type = other.m_type;
   name = other.name;
   fname = other.fname;
-  
-  PRINT_VAR(nBytes);
+
   m_rawHeightfieldData = new byte_t[nBytes];
   if(m_rawHeightfieldData==NULL) assert(!"Out of memory");
   std::memcpy(m_rawHeightfieldData, other.m_rawHeightfieldData, nBytes);
 }
 
 HeightMapTerrain::~HeightMapTerrain(){
-  PRINT_FUNCTION_NAME;
   delete m_rawHeightfieldData;
 }
 
@@ -155,13 +148,6 @@ double HeightMapTerrain::heightValue(int i, int j) const{
 FlatTerrain::FlatTerrain(const std::string& name, const Eigen::Vector2i &ncells, const Eigen::Vector2d &size) : 
 HeightMapTerrain(name,ncells, size)
 {  
-  PRINT_FUNCTION_NAME;
-  PRINT_VAR(ncells.transpose());
-  PRINT_VAR(nnodes.transpose());
-  PRINT_VAR(nTotNodes);
-  PRINT_VAR(bytesPerElement);
-  PRINT_VAR(nBytes);  
-
   m_maxHeight = -numeric_limits<double>::infinity();
   m_minHeight = +numeric_limits<double>::infinity();
   
@@ -185,8 +171,7 @@ HeightMapTerrain(name,ncells, size)
   fname = name+".obj";
 }
 
-FlatTerrain::FlatTerrain(const FlatTerrain& other): HeightMapTerrain(other) {    
-  PRINT_FUNCTION_NAME;
+FlatTerrain::FlatTerrain(const FlatTerrain& other): HeightMapTerrain(other) {
 }
 
 HeightMapTerrain *FlatTerrain::clone() const {
