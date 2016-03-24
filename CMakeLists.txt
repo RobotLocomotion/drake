@@ -147,8 +147,8 @@ set(iris_GIT_REPOSITORY https://github.com/rdeits/iris-distro.git)
 set(iris_GIT_TAG 1533f20cff57504a46773f01e1730f11931d0ea6)
 set(iris_ADDITIONAL_BUILD_ARGS PATCH_COMMAND make configure-cdd-only)
 set(iris_IS_PUBLIC TRUE)
-set(lcm_GIT_REPOSITORY https://github.com/RobotLocomotion/lcm-pod.git)
-set(lcm_GIT_TAG 47d01a5338502d282a6cc1d4080a50bc0bac3dce) # note: cmake branch
+set(lcm_GIT_REPOSITORY https://github.com/jhoare/lcm-pod.git)
+set(lcm_GIT_TAG 62dcf194077a54efbfce4ac65adee3af6a7df3d0) # note: cmake branch
 set(lcm_IS_CMAKE_POD TRUE)
 set(lcm_IS_PUBLIC TRUE)
 set(libbot_GIT_REPOSITORY https://github.com/RobotLocomotion/libbot.git)
