@@ -1284,6 +1284,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
   }
 
   Matrix<Scalar, Eigen::Dynamic, 1> ret(num_velocities, 1);
+  ret.setZero();  
   //PRINT_VAR(ret.transpose());
   std::cout << "ret.transpose(): " << std:: endl;
   for(int i = 0; i<num_velocities; i++)
