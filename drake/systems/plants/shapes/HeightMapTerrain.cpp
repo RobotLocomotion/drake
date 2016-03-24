@@ -9,31 +9,6 @@ using namespace Eigen;
 namespace DrakeShapes {
 // TODO: it would probably cleaner to have a struct per data type, so
 //  you could lookup byte sizes, conversion functions, etc.
-#if 0
-static int getByteSize(PHY_ScalarType type)
-{
-  int size = 0;
-
-  switch (type) {
-  case PHY_FLOAT:
-    size = sizeof(float);
-    break;
-
-  case PHY_UCHAR:
-    size = sizeof(unsigned char);
-    break;
-
-  case PHY_SHORT:
-    size = sizeof(short);
-    break;
-
-  default:
-    assert(!"Bad heightfield data type");
-  }
-
-  return size;
-}
-#endif
 
 bool is_power_of_2(int x) {
   return (x>0 && ((x&(x-1))==0) );
@@ -42,7 +17,7 @@ bool is_power_of_2(int x) {
 HeightMapTerrain::HeightMapTerrain(const std::string& name, const Eigen::Vector2i &ncells, const Eigen::Vector2d &size) : 
 Geometry(HEIGHT_MAP_TERRAIN), name(name), ncells(ncells), size(size), m_gridHeightScale(1.0), m_upAxis(2),m_type(FLOAT)
 {
-    //check if ncells_along_width is of the form (2^N) + 1    
+  //check if ncells_along_width is of the form (2^N) + 1    
   PRINT_VAR(ncells.transpose());
   PRINT_VAR(is_power_of_2(ncells(0)));
 
@@ -189,33 +164,25 @@ HeightMapTerrain(name,ncells, size)
 
   m_maxHeight = -numeric_limits<double>::infinity();
   m_minHeight = +numeric_limits<double>::infinity();
-
-  //byte_t * p = m_rawHeightfieldData;
+  
   for (int i = 0; i < nnodes(0); ++i) {  
     double x = i*delta_ell(0);  
     for (int j = 0; j < nnodes(1); ++j) {        
         double y = j*delta_ell(1);        
         double z = sin(x*3.1416/size(0));
 
-        //double z = 0.0; //simple flat terrain at z=0                
-
         cellValue(i,j) = z;
 
         m_minHeight = std::min(m_minHeight,(double)z);
-        m_maxHeight = std::max(m_maxHeight,(double)z);
-        //convertFromdouble(p, z, m_type);
-        //p += bytesPerElement;
+        m_maxHeight = std::max(m_maxHeight,(double)z);        
       }
     }
   
-  //m_maxHeight = size.maxCoeff()/10.0;
-  //m_minHeight = -m_maxHeight;
   m_minHeight = -m_maxHeight;
   //assert(!"Make sure the bounding box is centered around zero");
   //In this way you can think of z=0 in the usual way. 
 
   fname = name+".obj";
-  //writeToFile(fname);
 }
 
 FlatTerrain::FlatTerrain(const FlatTerrain& other): HeightMapTerrain(other) {    
@@ -241,9 +208,5 @@ void FlatTerrain::getTerrainContactPoints(Matrix3Xd &points) const {
 void FlatTerrain::initialize() {  
   assert(!"Implement me!!");  
 }
-
-
-
-
 
 }//namespace DrakeShapes
