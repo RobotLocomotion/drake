@@ -109,9 +109,26 @@ void MobyLCPSolver::clearIndexVectors() const {
 }
 
 bool MobyLCPSolver::solve(OptimizationProblem& prog) const {
-  // This solver only knows how to solve LC constraints; forbid other types.
-  // TODO(ggould-tri) in principle it should be possible to render each of these as
-  // a LCP and merge the resulting problems, but I don't yet know how to do it.
+  // TODO(ggould-tri) This solver currently imposes restrictions that its
+  // problem:
+  //
+  // (1) Contains only linear complementarity constraints,
+  // (2) Has no element of any decision variable appear in more than one
+  //     constraint, and
+  // (3) Has every element of every decision variable in a constraint.
+  //
+  // Restriction 1 could reasonably be relaxed by reformulating other
+  // constraint types that can be expressed as LCPs (eg, convex QLPs),
+  // although this would also entail adding an output stage to convert
+  // the LCP results back to the desired form.  See eg. @RussTedrake on
+  // how to convert a linear equality constraint of n elements to an
+  // LCP of 2n elements.
+  //
+  // There is no obvious way to relax restriction 2.
+  //
+  // Restriction 3 could reasonably be relaxed to simply let unbound
+  // variables sit at 0.
+
   assert(prog.getGenericConstraints().empty());
   assert(prog.getGenericObjectives().empty());
   assert(prog.getAllLinearConstraints().empty());
@@ -138,6 +155,12 @@ bool MobyLCPSolver::solve(OptimizationProblem& prog) const {
   //
   // If any is infeasible, returns false and does not alter the decision
   // variables.
+  //
+  // TODO(ggould-tri) This could also be solved by constructing a single large
+  // square matrix and vector, and then copying the elements of the individual
+  // Ms and qs into the appropriate places.  That would be equivalent to this
+  // implementation but might perform better if the solver were to parallelize
+  // internally.
   Eigen::VectorXd solution(prog.getNumVars());
   for (const auto& binding : bindings) {
     Eigen::VectorXd constraint_solution(binding.getNumElements());
