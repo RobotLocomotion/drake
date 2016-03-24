@@ -2,6 +2,7 @@
 #include "drake/util/testUtil.h"
 
 #include "gtest/gtest.h"
+#include "drake/core/test/eigen_compare_matrix.h"
 
 namespace Drake {
 namespace {
@@ -41,7 +42,15 @@ TEST(VectorTest, ValueAssignment) {
 
   {
     Eigen::VectorXd y = toEigen(state);
-    valuecheckMatrix(x, y, 1e-8);         // TODO: Replace with Google Mock!
+    EXPECT_THAT(x, EigenMatrixIsApproximatelyEqual(y));
+
+    // Eigen::Vector2d yy;
+    // yy << 0.5, 0.6;
+    // EXPECT_THAT(x, EigenMatrixIsApproximatelyEqual(yy));
+
+    // valuecheckMatrix(x, y, 1e-8);         // TODO: Replace with Google Mock!
+
+    // EXPECT_THAT(4.0, EigenMatrixIsApproximatelyEqual(4.0));
   }
 }
 
