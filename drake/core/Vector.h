@@ -13,23 +13,28 @@ namespace Drake {
  * @ingroup concepts
  * @{
  * @brief Describes a (potentially structured) data which can be operated on as
- *a (finite-dimensional) column vector
+ * a (finite-dimensional) column vector
  *
  * @nbsp
  *
- * | Valid Expressions (which must be implemented) |  |
- * ------------------|-------------------------------------------------------------|
- * | RowsAtCompileTime  | defined as a static constant int (or enum).  Can be
- *Eigen::Dynamic. |
- * | size_t size()      | only required if RowsAtCompileTime==Eigen::Dynamic |
- * | template<Derived> Vector(const Eigen::MatrixBase<Derived>&)  | constructor
- *taking an Eigen object |
- * | template<Derived> Vector& operator=(const Eigen::MatrixBase<Derived>&)   |
- *assignment operator from an Eigen object |
- * | Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> toEigen(const
- *Vector<ScalarType>&) | non-member namespace method which converts to the Eigen
- *type |
- *
+ * <table>
+ * <tr><th colspan="2"> Valid Expressions (which must be implemented)
+ * <tr><td> RowsAtCompileTime
+ *     <td> defined as a static constant int (or enum).  Can be
+ *          Eigen::Dynamic.
+ * <tr><td> size_t size()
+ *     <td> only required if RowsAtCompileTime==Eigen::Dynamic
+ * <tr><td> template<Derived> Vector(const Eigen::MatrixBase<Derived>&)
+ *     <td> constructor taking an Eigen object
+ * <tr><td><pre>
+ * template<Derived>
+ * Vector& operator=(const Eigen::MatrixBase<Derived>&)</pre>
+ *     <td> assignment operator from an Eigen object
+ * <tr><td><pre>
+ * Eigen::Matrix<ScalarType, RowsAtCompileTime, 1>
+ * toEigen(const Vector<ScalarType>&)</pre>
+ *     <td> non-member namespace method which converts to the Eigen type
+ * </table>
  * @}
  */
 
@@ -103,7 +108,7 @@ struct SizeDispatch<VecType,
  * @concept{vector_concept}
  *
  * @retval RowsAtCompileTime or the result of size() for dynamically sized
- *vectors
+ * vectors
  */
 template <typename VecType>
 std::size_t size(const VecType &vec) {
@@ -267,12 +272,13 @@ struct CombinedVectorHelper<Vector1, Vector2, true> {
 }
 
 /** CombinedVectorUtil
+
  * @brief provides logic to build combined vectors and access the first and
-second elements of the combined vector, handling the \
-case when the combined vector builder could have returned the original type
+ * second elements of the combined vector, handling the case when the
+ * combined vector builder could have returned the original type
  *
  * Uses template aliasing so that combining a vector with the NullVector simply
-returns the orginal vector type.
+ * returns the orginal vector type.
  */
 template <template <typename> class Vector1, template <typename> class Vector2,
           typename Vec1IsNull = void>
