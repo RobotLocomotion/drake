@@ -4,6 +4,8 @@ Drake Development on OS X
 
 This page contains software development notes that are specific to OS X.
 
+*Note that the applications, tools, and libraries listed below are simply those that some have found useful when developing Drake in OS X. They should* **not** *be interpreted as mandatory for software development in OS X.*
+
 Installing pygame
 ===================================
 
