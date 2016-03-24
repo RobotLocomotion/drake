@@ -101,6 +101,28 @@ bool HeightMapTerrain::writeToFile(const string& fname) const{
   return true;
 }
 
+void HeightMapTerrain::computeMinMaxHeights(){
+  m_maxHeight = -numeric_limits<double>::infinity();
+  m_minHeight = +numeric_limits<double>::infinity();
+  for(int i=0;i<nTotNodes;i++){
+    double z = cellValue(i);
+    m_minHeight = std::min(m_minHeight,(double)z);
+    m_maxHeight = std::max(m_maxHeight,(double)z);        
+  } 
+  
+  //This next code ensure the terrain bounding box is centered around z=0 (local z)
+  //Bullet takes what we pass as min/max heights and does not compute them.
+  //The bounding box is computed based on these values. It is then useful to have minHeight=-maxHeight
+  //so that what the user thinks as z=0 actually is z=0.
+  //Another option would be to have an offset if keeping a tighter AABB is desired.
+  if (m_maxHeight < -m_minHeight) {
+    m_maxHeight = -m_minHeight;
+  }
+  if (m_minHeight > -m_maxHeight) {
+    m_minHeight = -m_maxHeight;
+  }  
+}
+
 void HeightMapTerrain::getPoints(Matrix3Xd &points) const {
   assert(!"Implement me!!");  
 }
@@ -147,26 +169,17 @@ double HeightMapTerrain::heightValue(int i, int j) const{
 
 FlatTerrain::FlatTerrain(const std::string& name, const Eigen::Vector2i &ncells, const Eigen::Vector2d &size) : 
 HeightMapTerrain(name,ncells, size)
-{  
-  m_maxHeight = -numeric_limits<double>::infinity();
-  m_minHeight = +numeric_limits<double>::infinity();
-  
+{    
   for (int i = 0; i < nnodes(0); ++i) {  
     double x = i*delta_ell(0);  
     for (int j = 0; j < nnodes(1); ++j) {        
         double y = j*delta_ell(1);        
         double z = sin(x*3.1416/size(0));
 
-        cellValue(i,j) = z;
-
-        m_minHeight = std::min(m_minHeight,(double)z);
-        m_maxHeight = std::max(m_maxHeight,(double)z);        
+        cellValue(i,j) = z;        
       }
-    }
-  
-  m_minHeight = -m_maxHeight;
-  //assert(!"Make sure the bounding box is centered around zero");
-  //In this way you can think of z=0 in the usual way. 
+    }    
+  this->computeMinMaxHeights();
 
   fname = name+".obj";
 }

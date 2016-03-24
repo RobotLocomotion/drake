@@ -65,7 +65,8 @@ class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
   std::string name,fname;  
 
   protected:
-    
+    void computeMinMaxHeights();
+
     static const char* getDataTypeName(RawDataType type)
     {
       switch (type) {
