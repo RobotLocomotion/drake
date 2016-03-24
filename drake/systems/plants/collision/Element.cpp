@@ -64,7 +64,7 @@ bool operator==(const Element & e1, const Element & e2) {
   }
 
   if (result) {
-    if (e1.hasGeometry() && !e2.hasGeometry() || !e1.hasGeometry() && e2.hasGeometry()) {
+    if ((e1.hasGeometry() && !e2.hasGeometry()) || (!e1.hasGeometry() && e2.hasGeometry())) {
       PRINT_STMT("[" << e1.getId() << ", " << e2.getId() << "] has gometry mismatch")
       result = false;
     }
