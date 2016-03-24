@@ -157,7 +157,9 @@ unique_ptr<btCollisionShape> BulletModel::newBulletHeightMapTerrainShape(
   //geometry.writeToFile("terrain_from_bullet.obj");      
 
   bool flipQuadEdges = false;
-  PHY_ScalarType btType = PHY_FLOAT; //HARCODED!!
+  PHY_ScalarType btType = PHY_FLOAT;  
+  assert(sizeof(btScalar)==sizeof(double) && "HeightMapTerrain is internally using double's when Bullet is using float's?");
+
   //m_heightScale = geometry.m_gridHeightScale is actually ignored for float data type.;
   //This scaling is only used for ushort and short data types (see btHeightfieldTerrainShape.cpp:149)
   unique_ptr<btCollisionShape> bt_shape(
@@ -172,6 +174,7 @@ unique_ptr<btCollisionShape> BulletModel::newBulletHeightMapTerrainShape(
   PRINT_VAR(geometry.delta_ell(0));
   PRINT_VAR(geometry.delta_ell(1));
 
+  //Write a mesh file to be used by the BotVisualizer
   writeHeightMapTerrain(static_cast<btHeightfieldTerrainShape*>(bt_shape.get()),geometry.fname);
 
   //writeHeightMapTerrain(geometry,static_cast<btHeightfieldTerrainShape*>(bt_shape.get()),"terrain_from_bullet.obj");

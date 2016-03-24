@@ -30,6 +30,8 @@ Geometry(HEIGHT_MAP_TERRAIN), name(name), ncells(ncells), size(size), m_gridHeig
   if(m_rawHeightfieldData==NULL) assert(!"Out of memory");
 
   delta_ell = size.array()/ncells.array().cast<double>(); 
+
+  fname = name+".obj";
 }
 
 HeightMapTerrain::HeightMapTerrain(const HeightMapTerrain& other): 
@@ -180,8 +182,6 @@ HeightMapTerrain(name,ncells, size)
       }
     }    
   this->computeMinMaxHeights();
-
-  fname = name+".obj";
 }
 
 FlatTerrain::FlatTerrain(const FlatTerrain& other): HeightMapTerrain(other) {
