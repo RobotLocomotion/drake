@@ -52,10 +52,11 @@ class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
   long nTotNodes;       //!< total number of nodes
   int bytesPerElement;
 
-  Eigen::Vector2d size;      //!< length along the map's local x and y directions
-  Eigen::Vector2d delta_ell; //!< grid size (delta) in the map's local x and y directions
-  Eigen::Vector2i ncells;    //!< number of cells
-  Eigen::Vector2i nnodes;    //!< number of nodes
+  //Arrays here are made not-aligned because aligned vectors are causing a strange behaviour during simulation:
+  //The bouncing ball on a height map test fails with the ball moving sideways as it hits the height map.
+  Eigen::Matrix<double,2,1,Eigen::DontAlign> size, delta_ell;
+  Eigen::Matrix<int,2,1,Eigen::DontAlign> ncells, nnodes;
+
   double m_gridHeightScale;
   double m_minHeight, m_maxHeight; 
   int m_upAxis; 
@@ -107,7 +108,6 @@ class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
 
       return size;
     }
-    
 };
 
 class DRAKESHAPES_EXPORT FlatTerrain : public HeightMapTerrain {
