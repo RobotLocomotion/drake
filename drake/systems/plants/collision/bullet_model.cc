@@ -1,10 +1,14 @@
+#include "drake/systems/plants/collision/bullet_model.h"
+
 #include <iostream>
 
 #include "drake/systems/plants/collision/DrakeCollision.h"
-#include "BulletModel.h"
 
-using namespace std;
-using namespace Eigen;
+using Eigen::Isometry3d;
+using Eigen::Matrix3Xd;
+using Eigen::MatrixXd;
+using Eigen::Vector3d;
+using Eigen::VectorXd;
 
 namespace DrakeCollision {
 
@@ -38,9 +42,9 @@ bool OverlapFilterCallback::needBroadphaseCollision(
   // add some additional logic here that modified 'collides'
   if (collides) {
     btCollisionObject* bt_collision_object0 =
-        (btCollisionObject*)proxy0->m_clientObject;
+        reinterpret_cast<btCollisionObject*>(proxy0->m_clientObject);
     btCollisionObject* bt_collision_object1 =
-        (btCollisionObject*)proxy1->m_clientObject;
+        reinterpret_cast<btCollisionObject*>(proxy1->m_clientObject);
     if ((bt_collision_object0->getUserPointer() != NULL) &&
         (bt_collision_object1->getUserPointer() != NULL)) {
       auto element0 =
@@ -59,9 +63,9 @@ BulletCollisionWorldWrapper::BulletCollisionWorldWrapper()
       filter_callback() {
   bt_collision_configuration.setConvexConvexMultipointIterations(0, 0);
   bt_collision_configuration.setPlaneConvexMultipointIterations(0, 0);
-  bt_collision_dispatcher = unique_ptr<btCollisionDispatcher>(
+  bt_collision_dispatcher = std::unique_ptr<btCollisionDispatcher>(
       new btCollisionDispatcher(&bt_collision_configuration));
-  bt_collision_world = unique_ptr<btCollisionWorld>(new btCollisionWorld(
+  bt_collision_world = std::unique_ptr<btCollisionWorld>(new btCollisionWorld(
       bt_collision_dispatcher.get(), &bt_collision_broadphase,
       &bt_collision_configuration));
 
@@ -69,9 +73,9 @@ BulletCollisionWorldWrapper::BulletCollisionWorldWrapper()
       &filter_callback);
 }
 
-unique_ptr<btCollisionShape> BulletModel::newBulletBoxShape(
+std::unique_ptr<btCollisionShape> BulletModel::newBulletBoxShape(
     const DrakeShapes::Box& geometry, bool use_margins) {
-  unique_ptr<btCollisionShape> bt_shape(new btConvexHullShape());
+  std::unique_ptr<btCollisionShape> bt_shape(new btConvexHullShape());
   btBoxShape bt_box(btVector3(geometry.size(0) / 2, geometry.size(1) / 2,
                               geometry.size(2) / 2));
   /* Strange things happen to the collision-normals when we use the
@@ -79,9 +83,9 @@ unique_ptr<btCollisionShape> BulletModel::newBulletBoxShape(
    * a btConvexHullShape.
    */
   if (use_margins)
-    bt_shape->setMargin(BulletModel::large_margin);
+    bt_shape->setMargin(kLargeMargin);
   else
-    bt_shape->setMargin(BulletModel::small_margin);
+    bt_shape->setMargin(kSmallMargin);
   for (int i = 0; i < 8; ++i) {
     btVector3 vtx;
     bt_box.getVertex(i, vtx);
@@ -91,22 +95,23 @@ unique_ptr<btCollisionShape> BulletModel::newBulletBoxShape(
   return bt_shape;
 }
 
-unique_ptr<btCollisionShape> BulletModel::newBulletSphereShape(
+std::unique_ptr<btCollisionShape> BulletModel::newBulletSphereShape(
     const DrakeShapes::Sphere& geometry, bool use_margins) {
-  unique_ptr<btCollisionShape> bt_shape(new btSphereShape(geometry.radius));
+  std::unique_ptr<btCollisionShape> bt_shape(
+      new btSphereShape(geometry.radius));
   return bt_shape;
 }
 
-unique_ptr<btCollisionShape> BulletModel::newBulletCylinderShape(
+std::unique_ptr<btCollisionShape> BulletModel::newBulletCylinderShape(
     const DrakeShapes::Cylinder& geometry, bool use_margins) {
-  unique_ptr<btCollisionShape> bt_shape(new btCylinderShapeZ(
+  std::unique_ptr<btCollisionShape> bt_shape(new btCylinderShapeZ(
       btVector3(geometry.radius, geometry.radius, geometry.length / 2)));
   return bt_shape;
 }
 
-unique_ptr<btCollisionShape> BulletModel::newBulletCapsuleShape(
+std::unique_ptr<btCollisionShape> BulletModel::newBulletCapsuleShape(
     const DrakeShapes::Capsule& geometry, bool use_margins) {
-  unique_ptr<btCollisionShape> bt_shape(new btConvexHullShape());
+  std::unique_ptr<btCollisionShape> bt_shape(new btConvexHullShape());
   dynamic_cast<btConvexHullShape*>(bt_shape.get())
       ->addPoint(btVector3(0, 0, -geometry.length / 2));
   dynamic_cast<btConvexHullShape*>(bt_shape.get())
@@ -115,15 +120,15 @@ unique_ptr<btCollisionShape> BulletModel::newBulletCapsuleShape(
   return bt_shape;
 }
 
-unique_ptr<btCollisionShape> BulletModel::newBulletMeshShape(
+std::unique_ptr<btCollisionShape> BulletModel::newBulletMeshShape(
     const DrakeShapes::Mesh& geometry, bool use_margins) {
-  unique_ptr<btCollisionShape> bt_shape(new btConvexHullShape());
+  std::unique_ptr<btCollisionShape> bt_shape(new btConvexHullShape());
   Matrix3Xd vertices;
   if (geometry.extractMeshVertices(vertices)) {
     if (use_margins)
-      bt_shape->setMargin(BulletModel::large_margin);
+      bt_shape->setMargin(kLargeMargin);
     else
-      bt_shape->setMargin(BulletModel::small_margin);
+      bt_shape->setMargin(kSmallMargin);
     auto bt_convex_hull_shape =
         dynamic_cast<btConvexHullShape*>(bt_shape.get());
     for (int i = 0; i < vertices.cols(); i++) {
@@ -138,13 +143,13 @@ unique_ptr<btCollisionShape> BulletModel::newBulletMeshShape(
   }
 }
 
-unique_ptr<btCollisionShape> BulletModel::newBulletMeshPointsShape(
+std::unique_ptr<btCollisionShape> BulletModel::newBulletMeshPointsShape(
     const DrakeShapes::MeshPoints& geometry, bool use_margins) {
-  unique_ptr<btCollisionShape> bt_shape(new btConvexHullShape());
+  std::unique_ptr<btCollisionShape> bt_shape(new btConvexHullShape());
   if (use_margins)
-    bt_shape->setMargin(BulletModel::large_margin);
+    bt_shape->setMargin(kLargeMargin);
   else
-    bt_shape->setMargin(BulletModel::small_margin);
+    bt_shape->setMargin(kSmallMargin);
   auto bt_convex_hull_shape = dynamic_cast<btConvexHullShape*>(bt_shape.get());
   for (int i = 0; i < geometry.points.cols(); i++) {
     bt_convex_hull_shape->addPoint(
@@ -160,8 +165,8 @@ ElementId BulletModel::addElement(const Element& element) {
   ElementId id = Model::addElement(element);
 
   if (id != 0) {
-    unique_ptr<btCollisionShape> bt_shape;
-    unique_ptr<btCollisionShape> bt_shape_no_margin;
+    std::unique_ptr<btCollisionShape> bt_shape;
+    std::unique_ptr<btCollisionShape> bt_shape_no_margin;
     switch (elements[id]->getShape()) {
       case DrakeShapes::BOX: {
         const auto box =
@@ -200,23 +205,24 @@ ElementId BulletModel::addElement(const Element& element) {
         bt_shape_no_margin = newBulletCapsuleShape(capsule, false);
       } break;
       default:
-        cerr << "Warning: Collision elements[id] has an unknown type "
-             << elements[id]->getShape() << endl;
-        throw unknownShapeException(elements[id]->getShape());
+        std::cerr << "Warning: Collision elements[id] has an unknown type "
+                  << elements[id]->getShape() << std::endl;
+        throw UnknownShapeException(elements[id]->getShape());
         break;
     }
     if (bt_shape) {
       // Create the collision objects
-      unique_ptr<btCollisionObject> bt_obj(new btCollisionObject());
-      unique_ptr<btCollisionObject> bt_obj_no_margin(new btCollisionObject());
+      std::unique_ptr<btCollisionObject> bt_obj(new btCollisionObject());
+      std::unique_ptr<btCollisionObject> bt_obj_no_margin(
+          new btCollisionObject());
       bt_obj->setCollisionShape(bt_shape.get());
       bt_obj_no_margin->setCollisionShape(bt_shape_no_margin.get());
       bt_obj->setUserPointer(elements[id].get());
       bt_obj_no_margin->setUserPointer(elements[id].get());
 
       // Add the collision objects to the collision worlds
-      bullet_world.bt_collision_world->addCollisionObject(bt_obj.get());
-      bullet_world_no_margin.bt_collision_world->addCollisionObject(
+      bullet_world_.bt_collision_world->addCollisionObject(bt_obj.get());
+      bullet_world_no_margin_.bt_collision_world->addCollisionObject(
           bt_obj_no_margin.get());
 
       if (elements[id]->isStatic()) {
@@ -231,20 +237,22 @@ ElementId BulletModel::addElement(const Element& element) {
             btCollisionObject::CF_STATIC_OBJECT);
       }
 
-      // Store the Bullet collision objects
-      bullet_world.bt_collision_objects.insert(make_pair(id, move(bt_obj)));
-      bullet_world_no_margin.bt_collision_objects.insert(
-          make_pair(id, move(bt_obj_no_margin)));
+      // Take ownership of the Bullet collision objects.
+      bullet_world_.bt_collision_objects.insert(
+          std::make_pair(id, move(bt_obj)));
+      bullet_world_no_margin_.bt_collision_objects.insert(
+          std::make_pair(id, move(bt_obj_no_margin)));
 
-      // Store the Bullet collision shapes too, because Bullet does no cleanup
-      bt_collision_shapes.push_back(move(bt_shape));
-      bt_collision_shapes.push_back(move(bt_shape_no_margin));
+      // Take ownership of the Bullet collision shapes too, because Bullet
+      // does no cleanup.
+      bt_collision_shapes_.push_back(move(bt_shape));
+      bt_collision_shapes_.push_back(move(bt_shape_no_margin));
     }
   }
   return id;
 }
 
-vector<PointPair> BulletModel::potentialCollisionPoints(bool use_margins) {
+std::vector<PointPair> BulletModel::potentialCollisionPoints(bool use_margins) {
   BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
   bt_world.bt_collision_configuration.setConvexConvexMultipointIterations(
       PERTURBATION_ITERATIONS, MINIMUM_POINTS_PERTURBATION_THRESHOLD);
@@ -310,7 +318,7 @@ vector<PointPair> BulletModel::potentialCollisionPoints(bool use_margins) {
   return c.getResults();
 }
 
-bool BulletModel::collidingPointsCheckOnly(const vector<Vector3d>& points,
+bool BulletModel::collidingPointsCheckOnly(const std::vector<Vector3d>& points,
                                            double collision_threshold) {
   // Create sphere geometry
   btSphereShape bt_shape(collision_threshold);
@@ -342,8 +350,8 @@ bool BulletModel::collidingPointsCheckOnly(const vector<Vector3d>& points,
   return false;
 }
 
-vector<size_t> BulletModel::collidingPoints(const vector<Vector3d>& points,
-                                            double collision_threshold) {
+std::vector<size_t> BulletModel::collidingPoints(
+    const std::vector<Vector3d>& points, double collision_threshold) {
   // Create sphere geometry
   btSphereShape bt_shape(collision_threshold);
 
@@ -354,7 +362,7 @@ vector<size_t> BulletModel::collidingPoints(const vector<Vector3d>& points,
   btTransform btT;
   btT.setIdentity();
   BulletCollisionWorldWrapper& bt_world = getBulletWorld(false);
-  vector<size_t> in_collision_indices;
+  std::vector<size_t> in_collision_indices;
 
   for (size_t i = 0; i < points.size(); ++i) {
     BinaryContactResultCallback c;
@@ -391,16 +399,16 @@ bool BulletModel::updateElementWorldTransform(
     pos.setValue(T(0, 3), T(1, 3), T(2, 3));
     btT.setOrigin(pos);
 
-    auto bt_obj_iter = bullet_world.bt_collision_objects.find(id);
+    auto bt_obj_iter = bullet_world_.bt_collision_objects.find(id);
     auto bt_obj_no_margin_iter =
-        bullet_world_no_margin.bt_collision_objects.find(id);
-    if (bt_obj_iter != bullet_world.bt_collision_objects.end()) {
-      bullet_world.bt_collision_objects.at(id)->setWorldTransform(btT);
+        bullet_world_no_margin_.bt_collision_objects.find(id);
+    if (bt_obj_iter != bullet_world_.bt_collision_objects.end()) {
+      bullet_world_.bt_collision_objects.at(id)->setWorldTransform(btT);
     }
 
     if (bt_obj_no_margin_iter !=
-        bullet_world_no_margin.bt_collision_objects.end()) {
-      bullet_world_no_margin.bt_collision_objects.at(id)
+        bullet_world_no_margin_.bt_collision_objects.end()) {
+      bullet_world_no_margin_.bt_collision_objects.at(id)
           ->setWorldTransform(btT);
     }
   }
@@ -408,13 +416,13 @@ bool BulletModel::updateElementWorldTransform(
 }
 
 void BulletModel::updateModel() {
-  bullet_world.bt_collision_world->updateAabbs();
-  bullet_world_no_margin.bt_collision_world->updateAabbs();
+  bullet_world_.bt_collision_world->updateAabbs();
+  bullet_world_no_margin_.bt_collision_world->updateAabbs();
 }
 
-bool BulletModel::findClosestPointsBtwElements(
+bool BulletModel::findClosestPointsBetweenElements(
     const ElementId idA, const ElementId idB, const bool use_margins,
-    std::unique_ptr<ResultCollector>& c) {
+    ResultCollector* result_collector) {
   // special case: two spheres (because we need to handle the zero-radius sphere
   // case)
   if (elements[idA]->getShape() == DrakeShapes::SPHERE &&
@@ -428,17 +436,18 @@ bool BulletModel::findClosestPointsBtwElements(
     double radiusB = dynamic_cast<const DrakeShapes::Sphere&>(
                          elements[idB]->getGeometry()).radius;
     double distance = (xA_world - xB_world).norm();
-    c->addSingleResult(idA, idB,
-                       elements[idA]->getLocalTransform() * TA_world.inverse() *
-                           (xA_world +
-                            (xB_world - xA_world) * radiusA /
-                                distance),  // ptA (in body A coords)
-                       elements[idB]->getLocalTransform() * TB_world.inverse() *
-                           (xB_world +
-                            (xA_world - xB_world) * radiusB /
-                                distance),  // ptB (in body B coords)
-                       (xA_world - xB_world) / distance,
-                       distance - radiusA - radiusB);
+    result_collector->addSingleResult(
+        idA, idB,
+        elements[idA]->getLocalTransform() * TA_world.inverse() *
+            (xA_world +
+             (xB_world - xA_world) * radiusA /
+                 distance),  // ptA (in body A coords)
+        elements[idB]->getLocalTransform() * TB_world.inverse() *
+            (xB_world +
+             (xA_world - xB_world) * radiusB /
+                 distance),  // ptB (in body B coords)
+        (xA_world - xB_world) / distance,
+        distance - radiusA - radiusB);
     return true;
   }
 
@@ -455,11 +464,11 @@ bool BulletModel::findClosestPointsBtwElements(
   auto bt_objB_iter = bt_world.bt_collision_objects.find(idB);
   if (bt_objB_iter == bt_world.bt_collision_objects.end()) return false;
 
-  unique_ptr<btCollisionObject>& bt_objA = bt_objA_iter->second;
-  unique_ptr<btCollisionObject>& bt_objB = bt_objB_iter->second;
+  std::unique_ptr<btCollisionObject>& bt_objA = bt_objA_iter->second;
+  std::unique_ptr<btCollisionObject>& bt_objB = bt_objB_iter->second;
 
-  shapeA = (btConvexShape*)bt_objA->getCollisionShape();
-  shapeB = (btConvexShape*)bt_objB->getCollisionShape();
+  shapeA = dynamic_cast<btConvexShape*>(bt_objA->getCollisionShape());
+  shapeB = dynamic_cast<btConvexShape*>(bt_objB->getCollisionShape());
 
   btGjkEpaPenetrationDepthSolver epa;
   btVoronoiSimplexSolver sGjkSimplexSolver;
@@ -505,17 +514,17 @@ bool BulletModel::findClosestPointsBtwElements(
       gjkOutput.m_normalOnBInWorld.dot(pointOnAinWorld - pointOnBinWorld);
 
   if (gjkOutput.m_hasResult) {
-    c->addSingleResult(idA, idB, point_on_A, point_on_B,
-                       toVector3d(gjkOutput.m_normalOnBInWorld),
-                       (double)distance);
+    result_collector->addSingleResult(idA, idB, point_on_A, point_on_B,
+                                      toVector3d(gjkOutput.m_normalOnBInWorld),
+                                      static_cast<double>(distance));
   } else {
     throw std::runtime_error(
-        "In BulletModel::findClosestPointsBtwElements: No closest point found "
-        "between " +
-        to_string(idA) + " and " + to_string(idB));
+        "In BulletModel::findClosestPointsBetweenElements: "
+        "No closest point found between " +
+        std::to_string(idA) + " and " + std::to_string(idB));
   }
 
-  return (c->pts.size() > 0);
+  return (result_collector->pts.size() > 0);
 }
 
 void BulletModel::collisionDetectFromPoints(
@@ -532,15 +541,15 @@ void BulletModel::collisionDetectFromPoints(
   BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
 
   // do collision check against all bodies for each point using bullet's
-  // internal getclosestpoitns solver
+  // internal getclosestpoints solver
   for (int i = 0; i < points.cols(); i++) {
     bool got_one = false;
     for (auto bt_objB_iter = bt_world.bt_collision_objects.begin();
          bt_objB_iter != bt_world.bt_collision_objects.end(); bt_objB_iter++) {
-      unique_ptr<btCollisionObject>& bt_objB = bt_objB_iter->second;
+      std::unique_ptr<btCollisionObject>& bt_objB = bt_objB_iter->second;
       btPointCollector gjkOutput;
 
-      shapeB = (btConvexShape*)bt_objB->getCollisionShape();
+      shapeB = dynamic_cast<btConvexShape*>(bt_objB->getCollisionShape());
 
       btGjkEpaPenetrationDepthSolver epa;
       btVoronoiSimplexSolver sGjkSimplexSolver;
@@ -560,20 +569,6 @@ void BulletModel::collisionDetectFromPoints(
       btScalar distance =
           gjkOutput.m_normalOnBInWorld.dot(pointOnAinWorld - pointOnBinWorld);
 
-      /*
-              cout << "Point " << i << ": has result " << gjkOutput.m_hasResult
-         << ", dist " << distance << endl;
-              cout << "\tA in world: " << pointOnAinWorld.x() << "," <<
-         pointOnAinWorld.y() << "," << pointOnAinWorld.z() << endl;
-              cout << "\tB in world: " << pointOnBinWorld.x() << "," <<
-         pointOnBinWorld.y() << "," << pointOnBinWorld.z() << endl;
-              cout << "\tB normal: " << gjkOutput.m_normalOnBInWorld.x() << ","
-         << gjkOutput.m_normalOnBInWorld.y() << "," <<
-         gjkOutput.m_normalOnBInWorld.z() << endl;
-              cout << "\tBobj in world: " << input.m_transformB.getOrigin().x()
-         << "," << input.m_transformB.getOrigin().y() << "," <<
-         input.m_transformB.getOrigin().z() << endl;
-      */
       if (gjkOutput.m_hasResult && (!got_one || distance < phi[i])) {
         btVector3 pointOnElemB = input.m_transformB.invXform(pointOnBinWorld);
         phi[i] = distance;
@@ -635,21 +630,20 @@ bool BulletModel::collisionRaycast(const Matrix3Xd& origins,
   return true;
 }
 
-bool BulletModel::closestPointsAllToAll(const vector<ElementId>& ids_to_check,
-                                        const bool use_margins,
-                                        vector<PointPair>& closest_points) {
-  vector<ElementIdPair> id_pairs;
-  const auto elements_end = elements.end();
+bool BulletModel::closestPointsAllToAll(
+    const std::vector<ElementId>& ids_to_check, const bool use_margins,
+    std::vector<PointPair>& closest_points) {
+  std::vector<ElementIdPair> id_pairs;
   for (auto idA_iter = ids_to_check.begin(); idA_iter != ids_to_check.end();
        ++idA_iter) {
     auto elementA_iter = elements.find(*idA_iter);
-    if (elementA_iter != elements_end) {
+    if (elementA_iter != elements.end()) {
       for (auto idB_iter = idA_iter + 1; idB_iter != ids_to_check.end();
            ++idB_iter) {
         auto elementB_iter = elements.find(*idB_iter);
-        if (elementB_iter != elements_end) {
+        if (elementB_iter != elements.end()) {
           if (elements[*idA_iter]->collidesWith(elements[*idB_iter].get())) {
-            id_pairs.push_back(make_pair(*idA_iter, *idB_iter));
+            id_pairs.push_back(std::make_pair(*idA_iter, *idB_iter));
           }
         }
       }
@@ -658,25 +652,24 @@ bool BulletModel::closestPointsAllToAll(const vector<ElementId>& ids_to_check,
   return closestPointsPairwise(id_pairs, use_margins, closest_points);
 }
 
-bool BulletModel::closestPointsPairwise(const vector<ElementIdPair>& id_pairs,
-                                        const bool use_margins,
-                                        vector<PointPair>& closest_points) {
-  unique_ptr<ResultCollector> c(new ResultCollector());
-  for (auto id_pair_iter = id_pairs.begin(); id_pair_iter != id_pairs.end();
-       ++id_pair_iter) {
-    findClosestPointsBtwElements(id_pair_iter->first, id_pair_iter->second,
-                                 use_margins, c);
+bool BulletModel::closestPointsPairwise(
+    const std::vector<ElementIdPair>& id_pairs, const bool use_margins,
+    std::vector<PointPair>& closest_points) {
+  ResultCollector result_collector;
+  for (const ElementIdPair& pair : id_pairs) {
+    findClosestPointsBetweenElements(pair.first, pair.second, use_margins,
+                                     &result_collector);
   }
 
-  closest_points = c->getResults();
+  closest_points = result_collector.getResults();
   return closest_points.size() > 0;
 }
 
-bool BulletModel::collisionPointsAllToAll(const bool use_margins,
-                                          vector<PointPair>& collision_points) {
+bool BulletModel::collisionPointsAllToAll(
+    const bool use_margins, std::vector<PointPair>& collision_points) {
   BulletResultCollector c;
   MatrixXd normals;
-  vector<double> distance;
+  std::vector<double> distance;
   BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
   bt_world.bt_collision_world->performDiscreteCollisionDetection();
   int numManifolds =
@@ -710,7 +703,7 @@ bool BulletModel::collisionPointsAllToAll(const bool use_margins,
         const btVector3& ptB = pt.getPositionWorldOnB() - normalOnB * marginB;
         c.addSingleResult(elementA->getId(), elementB->getId(), toVector3d(ptA),
                           toVector3d(ptB), toVector3d(normalOnB),
-                          (double)pt.getDistance());
+                          static_cast<double>(pt.getDistance()));
       }
     }
   }
@@ -720,21 +713,21 @@ bool BulletModel::collisionPointsAllToAll(const bool use_margins,
 
 BulletCollisionWorldWrapper& BulletModel::getBulletWorld(bool use_margins) {
   if (use_margins) {
-    return bullet_world;
+    return bullet_world_;
   } else {
-    return bullet_world_no_margin;
+    return bullet_world_no_margin_;
   }
 }
 
-BulletModel::unknownShapeException::unknownShapeException(
-    DrakeShapes::Shape shape) {
+UnknownShapeException::UnknownShapeException(DrakeShapes::Shape shape) {
   std::ostringstream ostr;
   ostr << shape;
-  this->shape_str = ostr.str();
+  this->shape_name_ = ostr.str();
 }
 
-const char* BulletModel::unknownShapeException::what() const throw() {
-  return ("Unknown collision shape: " + shape_str +
+const char* UnknownShapeException::what() const throw() {
+  return ("Unknown collision shape: " + shape_name_ +
           ". Ignoring this collision element").c_str();
 }
-}
+
+}  // namespace DrakeCollision
