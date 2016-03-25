@@ -28,14 +28,14 @@ bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
                            const Eigen::MatrixBase<DerivedB>& m2,
                            double tolerance,
                            MatrixCompareType compare_type,
-                           std::string & error_msg) {
+                           std::string * error_msg) {
   bool result = true;
 
   if (m1.rows() != m2.rows() || m1.cols() != m2.cols()) {
     std::stringstream msg;
     msg << "Matrix size mismatch: (" << m1.rows() << " x " << m1.cols()
         << " vs. " << m2.rows() << " x " << m2.rows() << ")";
-    error_msg = msg.str();
+    *error_msg = msg.str();
     result = false;
   }
 
@@ -75,7 +75,7 @@ bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
             << delta << ", tolerance = " << tolerance << "\nm1 =\n" << m1
             << "\nm2 =\n" << m2 << "\ndelta=\n" << (m1 - m2);
 
-          error_msg = msg.str();
+          *error_msg = msg.str();
           result = false;
         }
       } else {
@@ -97,7 +97,7 @@ bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
             << "\nm1 =\n" << m1 << "\nm2 =\n" << m2 << "\ndelta=\n"
             << (m1 - m2);
 
-          error_msg = msg.str();
+          *error_msg = msg.str();
           result = false;
         }
       }

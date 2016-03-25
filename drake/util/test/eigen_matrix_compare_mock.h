@@ -49,7 +49,7 @@ class EigenMatrixIsApproximatelyEqualMatcher {
 
     if (result) {
       std::string error_msg;
-      result = CompareMatrices(mm, mm_, tolerance_, compare_type_, error_msg);
+      result = CompareMatrices(mm, mm_, tolerance_, compare_type_, &error_msg);
       if (!result)
         *listener << error_msg;
     }
