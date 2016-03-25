@@ -19,13 +19,13 @@ enum MatrixCompareType {
  * @param m2 The second matrix to compare.
  * @param tolerance The tolerance for determining equivalence.
  * @param compare_type Whether the tolereance is absolute or relative.
- * @param error_msg A string for storing a description of why a comparison is 
+ * @param error_msg A string for storing a description of why a comparison is
  * false.
  * @return true if the two matrices match.
  */
 template <typename DerivedA, typename DerivedB>
 bool matrix_compare_equals(const Eigen::MatrixBase<DerivedA>& m1,
-                           const Eigen::MatrixBase<DerivedB>& m2, 
+                           const Eigen::MatrixBase<DerivedB>& m2,
                            double tolerance,
                            MatrixCompareType compare_type,
                            std::string & error_msg) {
@@ -33,7 +33,7 @@ bool matrix_compare_equals(const Eigen::MatrixBase<DerivedA>& m1,
   bool result = true;
 
   if (m1.rows() != m2.rows() || m1.cols() != m2.cols()) {
-    error_msg = 
+    error_msg =
         "drake::util::matrix_compare_equals: Matrix size mismatch: (" +
         std::to_string(static_cast<unsigned long long>(m1.rows())) + " by " +
         std::to_string(static_cast<unsigned long long>(m1.cols())) + ") vs. (" +
@@ -48,7 +48,7 @@ bool matrix_compare_equals(const Eigen::MatrixBase<DerivedA>& m1,
       bool both_positive_infinity =
         m1(ii, jj) == std::numeric_limits<double>::infinity() &&
         m2(ii, jj) == std::numeric_limits<double>::infinity();
-      
+
       if (!both_positive_infinity) {
         bool both_negative_infinity =
           m1(ii, jj) == -std::numeric_limits<double>::infinity() &&
@@ -67,7 +67,7 @@ bool matrix_compare_equals(const Eigen::MatrixBase<DerivedA>& m1,
 
               if (!is_within_tolerance) {
                 std::stringstream msg;
-                msg 
+                msg
                   << "Values at (" << ii << ", " << jj << ") exceed tolerance: "
                   << m1(ii, jj) << " vs. " << m2(ii, jj) << ", diff = "
                   << delta << ", tolerance = " << tolerance << "\nm1 =\n" << m1
@@ -79,7 +79,7 @@ bool matrix_compare_equals(const Eigen::MatrixBase<DerivedA>& m1,
             } else {
               // Perform comparison using relative tolerance, see:
               // http://realtimecollisiondetection.net/blog/?p=89
-              double max_value = std::max(std::abs(m1(ii, jj)), 
+              double max_value = std::max(std::abs(m1(ii, jj)),
                                           std::abs(m2(ii, jj)));
               double relative_tolerance = tolerance * std::max(1.0, max_value);
 
@@ -90,8 +90,8 @@ bool matrix_compare_equals(const Eigen::MatrixBase<DerivedA>& m1,
                 msg
                   << "Values at (" << ii << ", " << jj << ") exceed tolerance: "
                   << m1(ii, jj) << " vs. " << m2(ii, jj) << ", diff = "
-                  << delta << ", tolerance = " << tolerance 
-                  << ", relative tolerance = " << relative_tolerance 
+                  << delta << ", tolerance = " << tolerance
+                  << ", relative tolerance = " << relative_tolerance
                   << "\nm1 =\n" << m1 << "\nm2 =\n" << m2;
                 error_msg = msg.str();
                 result = false;
