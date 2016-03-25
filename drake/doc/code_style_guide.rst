@@ -11,15 +11,24 @@ Note: Many of the files in the repository were written before this style guide, 
 C++ Style
 =========
 
-We now strictly follow the `Google C++ Style Guide <https://google.github.io/styleguide/cppguide.html>`_ .  Here are some additional comments:
+We follow a slightly modified version of the `Google C++ Style Guide <https://google.github.io/styleguide/cppguide.html>`_ .  Here are the modifications:
 
 * Always prefer long, human-readable variable/method/class names to short acronyms.
 * Manually provide user gradients only when we know more than AutoDiffScalar possibly could (e.g. sparsity of the gradients).
 * Use exceptions for error handling.  Essential control loops must be exception safe.
-* Aim for no dynamic allocation in the inner simulation/control loops.  Code should be still be thread-safe (e.g. be careful with pre-allocations).
+* No dynamic allocation in the inner simulation/control loops.  Code should be still be thread-safe (e.g. be careful with pre-allocations).
 * Classes and methods should be documented using [doxygen](https://www.stack.nl/~dimitri/doxygen/manual/docblocks.html).
-* Embrace templates/C++11 when it makes the code more correct (more clear readable also implies more correct).  Minimize template requirements on public interfaces.  Avoid explicit template instantiations in cc files when possible.
+* Embrace templates/C++11 when it makes the code more correct (more clear or more readable also implies more correct).  Minimize template requirements on public interfaces.  Avoid explicit template instantiations in cc files when possible.
+* No need for a copyright line at the top of every file (this will change soon).
 
+There are several tools that can be used to achieve style compliance. They are listed below.
+
+cpplint
+-------
+
+`cpplint <https://github.com/google/styleguide/tree/gh-pages/cpplint>`_ is a tool for finding compliance violations. Here is the command:
+
+    cpplint --filter="-legal/copyright" [file name]
 
 MATLAB Style
 ============
