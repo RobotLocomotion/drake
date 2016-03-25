@@ -1,10 +1,10 @@
-#ifndef EIGEN_COMPARE_MATRIX_MOCK_H_
-#define EIGEN_COMPARE_MATRIX_MOCK_H_
+#ifndef DRAKE_UTIL_TEST_EIGEN_COMPARE_MATRIX_MOCK_H_
+#define DRAKE_UTIL_TEST_EIGEN_COMPARE_MATRIX_MOCK_H_
 
 #include "gmock/gmock.h"
 #include <Eigen/Dense>
 
-#include "drake/util/eigen_matrix_compare_util.h"
+#include "drake/util/eigen_matrix_compare.h"
 
 using ::testing::MakePolymorphicMatcher;
 using ::testing::PolymorphicMatcher;
@@ -18,6 +18,8 @@ namespace test {
 
 /**
  * Implements a Google Mock matcher for comparing two Eigen matrices.
+ * It supports both relative and absolute tolerances and can handle
+ * infinity and NaN corner cases.
  */
 template<typename Derived>
 class EigenMatrixIsApproximatelyEqualMatcher {
@@ -45,14 +47,14 @@ class EigenMatrixIsApproximatelyEqualMatcher {
       result = false;
     }
 
-    std::string error_msg;
-    result = matrix_compare_equals(mm, mm_, tolerance_, compare_type_, error_msg);
-
-    if (!result) {
-      *listener << error_msg;
+    if (result) {
+      std::string error_msg;
+      result = CompareMatrices(mm, mm_, tolerance_, compare_type_, error_msg);
+      if (!result)
+        *listener << error_msg;
     }
 
-    return result;  // temp!
+    return result;
   }
 
   /**

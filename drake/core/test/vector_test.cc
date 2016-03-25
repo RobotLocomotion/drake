@@ -2,7 +2,7 @@
 #include "drake/util/testUtil.h"
 
 #include "gtest/gtest.h"
-#include "drake/util/test/eigen_compare_matrix_mock.h"
+#include "drake/util/test/eigen_matrix_compare_mock.h"
 
 namespace Drake {
 namespace {
