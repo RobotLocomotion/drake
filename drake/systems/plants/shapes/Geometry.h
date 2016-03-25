@@ -8,8 +8,6 @@
 
 #include "drake/drakeShapes_export.h"
 
-#include "drake/core/Macros.h"
-
 namespace DrakeShapes {
 enum DRAKESHAPES_EXPORT Shape {
   UNKNOWN = 0,

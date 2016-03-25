@@ -9,7 +9,6 @@
 
 #include "drake/drakeShapes_export.h"
 
-#include "drake/core/Macros.h"
 #include "drake/systems/plants/shapes/Geometry.h"
 
 namespace DrakeShapes {
