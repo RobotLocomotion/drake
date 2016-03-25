@@ -6,7 +6,13 @@ This section defines a style guide which should be followed by all code that is 
 in Drake. Being consistent with this style will make the code easier to read, debug,
 and maintain.
 
-Note: Many of the files in the repository were written before this style guide, or did not follow it precisely.  If you find style errors, go ahead and change it and submit a pull request.
+Note: Many of the files in the repository were written before this style guide, or did
+not follow it precisely.  If you find style errors, go ahead and change it and submit
+a pull request.
+
+.. contents:: `Table of contents`
+   :depth: 3
+   :local:
 
 C++ Style
 =========
@@ -34,8 +40,17 @@ Exceptions
 
 There are several tools that can be used to achieve style compliance. They are listed below.
 
+Tools
+-----
+There are several tools for helping you to compile with the required style. They are listed below.
+
+ClangFormat
+^^^^^^^^^^^
+
+(*Notes comming soon*)
+
 cpplint
--------
+^^^^^^^
 
 `cpplint <https://github.com/google/styleguide/tree/gh-pages/cpplint>`_ is a tool for finding compliance violations. Here is the command:
 
@@ -59,7 +74,7 @@ Java Style
 
 We also strictly follow the `Google Java Style Guide` <https://google.github.io/styleguide/javaguide.html>`_ .  Here are some additional comments:
 
-* Every class and method should have a brief _javadoc_ associated with it.
+* Every class and method should have a brief `_javadoc_` associated with it.
 * All Java classes should be in packages relative to the Drake root,
    e.g.: package drake.examples.Pendulum
 
@@ -67,7 +82,7 @@ We also strictly follow the `Google Java Style Guide` <https://google.github.io/
 LCM Style
 =========
 
-* LCM types are under_scored with a leading lcmt_ added. If the type is specific to a particular robot, then it begins with lcmt_robotname_.
+* LCM types are under_scored with a leading `lcmt_` added. If the type is specific to a particular robot, then it begins with `lcmt_robotname_`.
 * Variable names in LCM types follow the rules above.
 
 
