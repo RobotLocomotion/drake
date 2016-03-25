@@ -34,8 +34,6 @@ class DRAKESHAPES_EXPORT SinusoidalTerrain : public DrakeShapes::HeightMapTerrai
 };
 
 int main(int argc, char* argv[]) {
-  PRINT_FUNCTION_NAME;
-  
   if (argc < 2) {
     std::cerr << "Usage: " << argv[0] << " (world_urdf) -terrain (flat -angle <angle>|height_map -x <x position>) " << std::endl;
     std::cerr << "With: " << std::endl;
@@ -131,22 +129,6 @@ int main(int argc, char* argv[]) {
   //tree->drawKinematicTree("graphiviz_test.dot"); //Convert to png image file: dot -Tpng graphiviz_test.dot -o graphiviz_test.png
 
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
-
-  PRINT_VAR(tree->bodies.size());
-  for(auto body: tree->bodies){
-    PRINT_VAR(body->linkname);
-    PRINT_VAR(body->mass);
-    PRINT_VAR(body->hasParent())
-    if(body->hasParent()){
-      PRINT_VAR(body->parent->linkname);
-      PRINT_VAR(body->getJoint().getName());
-    }
-    std::cout << std::endl;
-  }
-
-  PRINT_VAR(getNumInputs(*rigid_body_sys));
-  PRINT_VAR(tree->num_positions);
-  PRINT_VAR(tree->num_velocities);
 
   //this replaces the above commented out code with the "auto sys = cascade(vehicle_sys, visualizer);" at the end
   auto visualizer =
