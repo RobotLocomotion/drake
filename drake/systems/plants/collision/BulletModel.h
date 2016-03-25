@@ -105,6 +105,12 @@ class BulletModel : public Model {
   virtual std::vector<size_t> collidingPoints(
       const std::vector<Eigen::Vector3d>& points, double collision_threshold);
 
+  /** \brief Determines if every collision object in the world is convex.
+   *  This routine should be called at initialization to flat the model as all convex or not.
+   *  Specific, more efficient, strategies can then be used if every collision object in the world is convex.
+  */
+  virtual bool isEverybodyConvex() const;
+
   // END Required member functions
 
  protected:

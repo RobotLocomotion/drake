@@ -802,4 +802,15 @@ const char* BulletModel::unknownShapeException::what() const throw() {
   return ("Unknown collision shape: " + shape_str +
           ". Ignoring this collision element").c_str();
 }
+
+bool BulletModel::isEverybodyConvex() const {
+  bool all_shapes_are_convex = true;
+  for(const auto& bt_obj_iter: bullet_world.bt_collision_objects){
+    const auto* bt_collision_obj = bt_obj_iter.second.get();
+    const auto* bt_collision_shape = bt_collision_obj->getCollisionShape();
+    if(!bt_collision_shape->isConvex()) all_shapes_are_convex = false;
+  }
+  return all_shapes_are_convex;
+}
+
 }

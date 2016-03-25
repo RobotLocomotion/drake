@@ -405,15 +405,15 @@ bool RigidBodyTree::collisionDetect(
   updateDynamicCollisionElements(cache);
 
   vector<DrakeCollision::PointPair> points;
-  
-  //Original code assuming convex shapes
-#if 0
-  bool points_found =
-      collision_model->closestPointsAllToAll(ids_to_check, use_margins, points);
-#endif
 
-  points = collision_model->potentialCollisionPoints(use_margins);
-  bool points_found = points.size() > 0;
+  bool points_found;
+  if(collision_model->isEverybodyConvex()){
+    points_found =
+        collision_model->closestPointsAllToAll(ids_to_check, use_margins, points);
+  }else{  
+    points = collision_model->potentialCollisionPoints(use_margins);
+    points_found = points.size() > 0;
+  }
 
   xA = MatrixXd::Zero(3, points.size());
   xB = MatrixXd::Zero(3, points.size());
