@@ -26,7 +26,6 @@ unique_ptr<Model> newModel(ModelType model_type) {
       break;
     case BULLET:
 #ifdef BULLET_COLLISION
-      std::cout << "ModelType = BULLET" << std::endl;
       return unique_ptr<Model>(new BulletModel());
 #else
       cerr << "Recompile with Bullet enabled (-DBULLET_COLLISION) to use "
