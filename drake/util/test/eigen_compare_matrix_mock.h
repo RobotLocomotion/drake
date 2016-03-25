@@ -1,19 +1,33 @@
-#ifndef EIGEN_COMPARE_MATRIX_H_
-#define EIGEN_COMPARE_MATRIX_H_
+#ifndef EIGEN_COMPARE_MATRIX_MOCK_H_
+#define EIGEN_COMPARE_MATRIX_MOCK_H_
 
 #include "gmock/gmock.h"
 #include <Eigen/Dense>
+
+#include "drake/util/eigen_matrix_compare_util.h"
 
 using ::testing::MakePolymorphicMatcher;
 using ::testing::PolymorphicMatcher;
 using ::testing::MatcherInterface;
 using ::testing::MatchResultListener;
 
+using ::drake::util::MatrixCompareType;
+
+namespace drake {
+namespace test {
+
+/**
+ * Implements a Google Mock matcher for comparing two Eigen matrices.
+ */
 template<typename Derived>
 class EigenMatrixIsApproximatelyEqualMatcher {
  public:
-  explicit EigenMatrixIsApproximatelyEqualMatcher(Eigen::MatrixBase<Derived> & mm)
-      : mm_(mm) { }
+  explicit EigenMatrixIsApproximatelyEqualMatcher(
+    Eigen::MatrixBase<Derived> & mm, double tolerance,
+    MatrixCompareType compare_type)
+      : mm_(mm),
+        tolerance_(tolerance),
+        compare_type_(compare_type) { }
 
   template <typename T>
   bool MatchAndExplain(T& mm,
@@ -31,18 +45,11 @@ class EigenMatrixIsApproximatelyEqualMatcher {
       result = false;
     }
 
-    for (size_t ii = 0; result && ii < mm.rows(); ii++) {
-      for (size_t jj = 0; result && jj < mm.cols(); jj++) {
+    std::string error_msg;
+    result = matrix_compare_equals(mm, mm_, tolerance_, compare_type_, error_msg);
 
-        // TODO: Add logic for handling infinity, NaN, and tolerance
-        if (mm(ii,jj) != mm_(ii,jj)) {
-          result = false;
-        }
-
-        if (!result) {
-          *listener << "mismatch in location (" << ii << ", " << jj << "): " << mm(ii, jj) << " vs. " << mm_(ii, jj);
-        }
-      }
+    if (!result) {
+      *listener << error_msg;
     }
 
     return result;  // temp!
@@ -64,11 +71,17 @@ class EigenMatrixIsApproximatelyEqualMatcher {
 
  private:
   Eigen::MatrixBase<Derived> & mm_;
+  double tolerance_;
+  MatrixCompareType compare_type_;
 };
 
 template <typename Derived>
-inline PolymorphicMatcher<EigenMatrixIsApproximatelyEqualMatcher<Derived>> EigenMatrixIsApproximatelyEqual(Eigen::MatrixBase<Derived>& mm) {
-  return MakePolymorphicMatcher(EigenMatrixIsApproximatelyEqualMatcher<Derived>(mm));
+inline PolymorphicMatcher<EigenMatrixIsApproximatelyEqualMatcher<Derived>>
+EigenMatrixIsApproximatelyEqual(Eigen::MatrixBase<Derived>& mm, double tolerance, MatrixCompareType compare_type) {
+  return MakePolymorphicMatcher(EigenMatrixIsApproximatelyEqualMatcher<Derived>(mm, tolerance, compare_type));
 }
+
+}  // namespace test
+}  // namespace drake
 
 #endif
