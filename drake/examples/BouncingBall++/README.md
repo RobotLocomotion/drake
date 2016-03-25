@@ -1,50 +1,29 @@
-How to run the car simulation
-=============================
- 
-Additional prerequisites
-------------------------
+How to run the bouncing ball simulation
+=======================================
 
-Install pygame (e.g. with `brew install pygame`, or `apt-get install python-pygame`)
-
-Set up your python path, e.g. with
+To get usage info simply run the program without arguments:
 
 ```
-export PYTHONPATH="/path/to/drake-distro/build/lib/python2.7/dist-packages:/path/to/drake-distro/build/lib/python2.7/site-packages:$PYTHONPATH"
+cd drake-distro/drake/examples/SimpleCollisionTests
+../../pod-build/bin/bouncingBall
 ```
-e.g. for me it is
+
+To run a ball bouncing on a flat inclined plane:
 
 ```
-export PYTHONPATH="/Users/russt/drake-distro/build/lib/python2.7/dist-packages:/Users/russt/drake-distro/build/lib/python2.7/site-packages:$PYTHONPATH"
-```
- 
-
-Running the simulator
----------------------
-
-```
-cd drake-distro/drake/examples/Cars
+cd drake-distro/drake/examples/SimpleCollisionTests
 ../../../build/bin/drake-visualizer &
-python SteeringCommandDriver.py &
-../../pod-build/bin/carSimLCM prius/prius.urdf stata_garage_p1.sdf
+../../pod-build/bin/bouncingBall ./ball_world.urdf -terrain flat -angle 45
 ```
 
-I recommend setting the viewer to chase cam mode.  Choose from the Menu 'View->Camera Control Panel'.
-Then click 'Select Target' and click on the prius.  Change track mode to 'Smooth Follow' and increase your elevation.
+The option `-angle` allows to specify the slope of the inclined plane, in degrees. 
 
-Make sure that the (very small) pygame window has focus, then use your arrow
-keys to drive around. If you have a joystick / steering wheel.. you can use
-that, too (see SteeringCommandDriver.py for details).
+To run a ball bouncing on a sinusoidal shape height map:
+```
+cd drake-distro/drake/examples/SimpleCollisionTests
+../../../build/bin/drake-visualizer &
+../../pod-build/bin/bouncingBall ./ball_world.urdf -terrain height_map -x -1
+```
 
-If for some reason the python game interface is not to your liking (e.g. you
-don’t have python on your system, etc), then you can generate simple throttle
-and steering commands using the command line interface
+The `-x` option allows to specify a translation of the height map terrain in the x direction. The ball has a diameter of 1.0. Therefore `-x 1` shifts the height map position one sphere diameter in the positive x direction. 
 
-```
-../../pod-build/bin/publishDrivingCommand [throttle_value] [steering_value]
-```
-where the values in bracket should be replaced with desired values.  e.g.
-
-```
-../../pod-build/bin/publishDrivingCommand 1.0 .4
-```
-Every time that you run this command, it sends one LCM message.
