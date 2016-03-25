@@ -10,6 +10,7 @@
 #include "Constraint.h"
 #include "MathematicalProgram.h"
 
+
 namespace Drake {
 
 /**
@@ -17,32 +18,39 @@ namespace Drake {
  * @brief Provides storage for a decision variable inside an OptimizationProblem.
  */
 class DecisionVariable {
+public:
   enum class VarType { CONTINUOUS, INTEGER, BINARY };
+
+  DecisionVariable(VarType type, const std::string& name,
+                   size_t num_vars, size_t start_index)
+      : type_(type), name_(name),
+        data_(Eigen::VectorXd::Zero(num_vars)), start_index_(start_index) {}
 
   /** index()
    * @brief returns the first index of this variable in the entire variable
    * vector for the program
    */
-  size_t index() const { return start_index; }
+  size_t index() const { return start_index_; }
   /** size()
    * @brief returns the number of elements in the decision variable vector
    */
-  size_t size() const { return data.size(); }
+  size_t size() const { return data_.size(); }
+  /** name()
+   * @return the name of the DecisionVariable
+   */
+  const std::string& name() const { return name_; }
   /** value()
    * @brief returns the actual stored value; which is only meaningful after
    * calling solve() in the program.
    */
-  const Eigen::VectorXd& value() const { return data; }
-
-  VarType type;
-  std::string name;
-
-  friend class OptimizationProblem;
-  friend class DecisionVariableView;
+  const Eigen::VectorXd& value() const { return data_; }
+  void set_value(const Eigen::VectorXd& new_data) { data_ = new_data; }
 
  private:
-  Eigen::VectorXd data;
-  size_t start_index;
+  VarType type_;
+  std::string name_;
+  Eigen::VectorXd data_;
+  size_t start_index_;
 };
 
 class DecisionVariableView {  // enables users to access pieces of the decision
@@ -53,39 +61,49 @@ class DecisionVariableView {  // enables users to access pieces of the decision
   ///
   /// @p var is aliased, and must remain valid for the lifetime of the view.
   DecisionVariableView(const DecisionVariable& var)
-      : var(var), start_index(0), length(var.data.rows()) {}
+      : var(var), start_index(0), length(var.value().rows()) {}
 
   /// Create a view covering part of a DecisionVariable.
   ///
   /// @p var is aliased, and must remain valid for the lifetime of the view.
   DecisionVariableView(const DecisionVariable& var, size_t start, size_t n)
       : var(var), start_index(start), length(n) {
-    assert(start + n < var.data.rows());
+    assert(start + n < var.value().rows());
   }
 
   /** index()
    * @brief returns the first index of this variable in the entire variable
    * vector for the program
    */
-  size_t index() const { return var.start_index + start_index; }
+  size_t index() const { return var.index() + start_index; }
+
   /** size()
    * @brief returns the number of elements in the decision variable vector
    */
   size_t size() const { return length; }
+
   /** value()
    * @brief returns the actual stored value; which is only meaningful after
    * calling solve() in the program.
    */
   Eigen::VectorBlock<const Eigen::VectorXd, Eigen::Dynamic> value() const {
-    return var.data.segment(start_index, length);
+    return var.value().segment(start_index, length);
   }
+
   std::string getName() const {
-    if (start_index == 0 && length == var.data.size()) {
-      return var.name;
+    if (start_index == 0 && length == var.value().size()) {
+      return var.name();
     } else {
-      return var.name + "(" + std::to_string(start_index) + ":" +
+      return var.name() + "(" + std::to_string(start_index) + ":" +
              std::to_string(start_index + length) + ")";
     }
+  }
+
+  /** covers()
+   * @brief returns true iff the given @p index of the enclosing
+   * OptimizationProblem is included in this VariableView.*/
+  bool covers(size_t index) const {
+    return (index >= start_index) && (index < start_index + length);
   }
 
   const DecisionVariableView operator()(size_t i) const {
@@ -109,8 +127,6 @@ class DecisionVariableView {  // enables users to access pieces of the decision
     return DecisionVariableView(var, start_index + start, n);
   }
 
-  friend class OptimizationProblem;
-
  private:
   const DecisionVariable& var;
   size_t start_index, length;
@@ -119,6 +135,12 @@ class DecisionVariableView {  // enables users to access pieces of the decision
 typedef std::list<DecisionVariableView> VariableList;
 
 class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
+
+  /** Binding
+   * @brief A binding on constraint type C is a mapping of the decision
+   * variables onto the inputs of C.  This allows the constraint to operate
+   * on a vector made up of different elements of the decision variables.
+   */
   template <typename C>
   class Binding {
     std::shared_ptr<C> constraint;
@@ -133,8 +155,48 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
         typename std::enable_if<std::is_convertible<
             std::shared_ptr<U>, std::shared_ptr<C>>::value>::type* = nullptr)
         : Binding(b.getConstraint(), b.getVariableList()) {}
+
     std::shared_ptr<C> const& getConstraint() const { return constraint; }
+
     VariableList const& getVariableList() const { return variable_list; }
+
+    /** covers()
+     * @brief returns true iff the given @p index of the enclosing
+     * OptimizationProblem is included in this Binding.*/
+    bool covers(size_t index) const {
+      for (auto view : getVariableList()) {
+        if (view.covers(index)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    size_t getNumElements() const {
+      // TODO(ggould-tri) assumes that no index appears more than once in the
+      // view, which is nowhere asserted (but seems assumed elsewhere).
+      size_t count = 0;
+      for (auto view : getVariableList()) {
+        count += view.size();
+      }
+      return count;
+    }
+
+    /** writeThrough()
+     * @brief Write the elements of @p solution to the bound elements of
+     * the @p output vector.
+     */
+    void writeThrough(const Eigen::VectorXd& solution,
+                      Eigen::VectorXd* output) const {
+      assert(solution.rows() == getNumElements());
+      size_t solution_index = 0;
+      for (auto view : variable_list) {
+        const auto& solution_segment =
+            solution.segment(solution_index, view.size());
+        output->segment(view.index(), view.size()) = solution_segment;
+        solution_index += view.size();
+      }
+    }
   };
 
   template <typename F>
@@ -186,11 +248,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   const DecisionVariableView addContinuousVariables(std::size_t num_new_vars,
                                                     std::string name = "x") {
-    DecisionVariable v;
-    v.type = DecisionVariable::VarType::CONTINUOUS;
-    v.name = name;
-    v.data = Eigen::VectorXd::Zero(num_new_vars);
-    v.start_index = num_vars;
+    DecisionVariable v(DecisionVariable::VarType::CONTINUOUS, name,
+                       num_new_vars, num_vars);
     num_vars += num_new_vars;
     variables.push_back(v);
     variable_views.push_back(DecisionVariableView(variables.back()));
@@ -384,6 +443,50 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     return constraint;
   }
 
+  /** addLinearComplementarityConstraint
+   *
+   * @brief adds a linear complementarity constraint to the program for all
+   * (currently existing) variables.
+   */
+  template <typename DerivedM, typename Derivedq>
+  std::shared_ptr<LinearComplementarityConstraint>
+      addLinearComplementarityConstraint(
+          const Eigen::MatrixBase<DerivedM>& M,
+          const Eigen::MatrixBase<Derivedq>& q) {
+    return addLinearComplementarityConstraint(M, q, variable_views);
+  }
+
+  /** addLinearComplementarityConstraint
+   *
+   * @brief adds a linear complementarity constraints referencing a subset of
+   * the decision variables.
+   */
+  template <typename DerivedM, typename Derivedq>
+  std::shared_ptr<LinearComplementarityConstraint>
+      addLinearComplementarityConstraint(
+          const Eigen::MatrixBase<DerivedM>& M,
+          const Eigen::MatrixBase<Derivedq>& q,
+          const VariableList& vars) {
+    problem_type.reset(
+        problem_type->addLinearComplementarityConstraint());
+
+    // Linear Complementarity Constraint cannot currently coexist with any
+    // other types of constraint or objective.
+    // (TODO(ggould-tri) relax this to non-overlapping bindings, possibly by
+    // calling multiple solvers.)
+    assert(generic_constraints.empty());
+    assert(generic_objectives.empty());
+    assert(linear_constraints.empty());
+    assert(linear_equality_constraints.empty());
+    assert(bbox_constraints.empty());
+
+    std::shared_ptr<LinearComplementarityConstraint> constraint(
+        new LinearComplementarityConstraint(M, q));
+    linear_complementarity_constraints.push_back(
+        Binding<LinearComplementarityConstraint>(constraint, vars));
+    return constraint;
+  }
+
   // template <typename FunctionType>
   // void addCost(std::function..);
   // void addLinearCost(const Eigen::MatrixBase<Derived>& c, const vector<const
@@ -414,7 +517,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   void printSolution() {
     for (const auto& v : variables) {
-      std::cout << v.name << " = " << v.data.transpose() << std::endl;
+      std::cout << v.name() << " = " << v.value().transpose() << std::endl;
     }
   }
 
@@ -423,8 +526,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     assert(x.rows() == num_vars);
     size_t index = 0;
     for (auto& v : variables) {
-      v.data = x.middleRows(index, v.data.rows());
-      index += v.data.rows();
+      v.set_value(x.middleRows(index, v.value().rows()));
+      index += v.value().rows();
     }
   }
 
@@ -444,9 +547,13 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
                    linear_equality_constraints.end());
     return conlist;
   }
-  const std::list<Binding<BoundingBoxConstraint>>& 
+  const std::list<Binding<BoundingBoxConstraint>>&
       getBoundingBoxConstraints() const {
     return bbox_constraints;
+  }
+  const std::list<Binding<LinearComplementarityConstraint>>&
+      getLinearComplementarityConstraints() const {
+    return linear_complementarity_constraints;
   }
 
   // Base class for solver-specific data.  A solver implementation may derive
@@ -469,7 +576,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     }
     return p;
   }
-  
+
   size_t getNumVars() const { return num_vars; }
   const Eigen::VectorXd& getInitialGuess() const { return x_initial_guess; }
 
@@ -494,6 +601,12 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
       linear_constraints;  // note: does not include linear_equality_constraints
   std::list<Binding<LinearEqualityConstraint>> linear_equality_constraints;
   std::list<Binding<BoundingBoxConstraint>> bbox_constraints;
+
+  // Invariant:  The bindings in this list must be non-overlapping.
+  // TODO(ggould-tri) can this constraint be relaxed?
+  std::list<Binding<LinearComplementarityConstraint>>
+      linear_complementarity_constraints;
+
   size_t num_vars;
   Eigen::VectorXd x_initial_guess;
   std::shared_ptr<SolverData> solver_data;

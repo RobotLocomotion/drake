@@ -1,4 +1,6 @@
 #include "MathematicalProgram.h"
+
+#include "MobyLCP.h"
 #include "Optimization.h"
 
 namespace Drake {
@@ -43,6 +45,10 @@ class MathematicalProgram : public MathematicalProgramInterface {
   virtual MathematicalProgramInterface* addLinearEqualityConstraint() override {
     return new MathematicalProgram;
   };
+  virtual MathematicalProgramInterface*
+  addLinearComplementarityConstraint() override {
+    return new MathematicalProgram;
+  };
   virtual bool solve(OptimizationProblem& prog) const override {
     throw std::runtime_error("not implemented yet");
   }
@@ -50,22 +56,30 @@ class MathematicalProgram : public MathematicalProgramInterface {
 
 class NonlinearProgram : public MathematicalProgram {
  public:
-    virtual MathematicalProgramInterface* addGenericObjective() override {
-      return new NonlinearProgram;
-    };
-    virtual MathematicalProgramInterface* addGenericConstraint() override {
-      return new NonlinearProgram;
-    };
-    virtual MathematicalProgramInterface* addLinearConstraint() override {
-      return new NonlinearProgram;
-    };
-    virtual MathematicalProgramInterface* addLinearEqualityConstraint() override {
-      return new NonlinearProgram;
-    };
+  virtual MathematicalProgramInterface* addGenericObjective() override {
+    return new NonlinearProgram;
+  };
+  virtual MathematicalProgramInterface* addGenericConstraint() override {
+    return new NonlinearProgram;
+  };
+  virtual MathematicalProgramInterface* addLinearConstraint() override {
+    return new NonlinearProgram;
+  };
+  virtual MathematicalProgramInterface* addLinearEqualityConstraint() override {
+    return new NonlinearProgram;
+  };
+  virtual MathematicalProgramInterface*
+  addLinearComplementarityConstraint() override {
+    return new NonlinearProgram;
+  }
 
   virtual bool solve(OptimizationProblem& prog) const override {
     if (snopt_solver.available()) { return snopt_solver.solve(prog); }
-    return MathematicalProgram::solve(prog);
+    try {
+      return MathematicalProgram::solve(prog);
+    } catch (const std::runtime_error& e) {
+      throw std::runtime_error("SNOPT unavailable");
+    }
   }
 
  private:
@@ -103,6 +117,21 @@ class NonlinearProgram : public MathematicalProgram {
     NonlinearComplementarityProblem {};
 */
 
+class LinearComplementarityProblem : public MathematicalProgram {
+ public:
+  virtual bool solve(OptimizationProblem& prog) const override {
+    // TODO ggould given the Moby solver's meticulous use of temporaries, it
+    // would be an easy performance win to reuse this solver object by making
+    // a static place to store it.
+    MobyLCPSolver solver;
+    return solver.solve(prog);
+  }
+  virtual MathematicalProgramInterface*
+  addLinearComplementarityConstraint() override {
+    return new LinearComplementarityProblem;
+  };
+};
+
 class LeastSquares
     : public NonlinearProgram {  // public LinearProgram, public
  public:
@@ -110,6 +139,11 @@ class LeastSquares
   virtual MathematicalProgramInterface* addLinearEqualityConstraint() override {
     return new LeastSquares;
   };
+  virtual MathematicalProgramInterface*
+  addLinearComplementarityConstraint() override {
+    return new LinearComplementarityProblem;
+  };
+
   virtual bool solve(OptimizationProblem& prog) const override {
     size_t num_constraints = 0;
     for (auto const& binding : prog.getLinearEqualityConstraints()) {
@@ -144,7 +178,7 @@ class LeastSquares
 };
 }
 
-std::shared_ptr<MathematicalProgramInterface> 
+std::shared_ptr<MathematicalProgramInterface>
 MathematicalProgramInterface::getLeastSquaresProgram() {
   return std::shared_ptr<MathematicalProgramInterface>(new LeastSquares);
 }
