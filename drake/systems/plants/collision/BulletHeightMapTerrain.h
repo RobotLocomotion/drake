@@ -2,9 +2,6 @@
 #define __BulletHeightMapTerrain_H__
 
 #include <btBulletCollisionCommon.h>
-//#include <BulletCollision/NarrowPhaseCollision/btGjkEpaPenetrationDepthSolver.h>
-//#include <BulletCollision/NarrowPhaseCollision/btGjkPairDetector.h>
-//#include <BulletCollision/NarrowPhaseCollision/btPointCollector.h>
 #include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
 #include <Eigen/StdVector>
 
