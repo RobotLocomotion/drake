@@ -192,10 +192,88 @@ void gloptipolyConstrainedMinimization() {
   valuecheckMatrix(x.value(), Vector3d(.5, 0, 3), 1e-4);
 }
 
+/**
+ * Test that the eval() method of LinearComplementarityConstraint correctly
+ * returns the slack.
+ */
+void simpleLCPConstraintEval() {
+  OptimizationProblem prog;
+  Eigen::Matrix<double, 2, 2> M;
+  M << 1, 0,
+      0, 1;
+
+  Eigen::Vector2d q(-1, -1);
+
+  LinearComplementarityConstraint c(M, q);
+  Eigen::VectorXd x;
+  c.eval(Eigen::Vector2d(1, 1), x);
+  valuecheckMatrix(x, Vector2d(0, 0), 1e-4);
+  c.eval(Eigen::Vector2d(1, 2), x);
+  valuecheckMatrix(x, Vector2d(0, 1), 1e-4);
+}
+
+/** Simple linear complementarity problem example.
+ * @brief a hand-created LCP easily solved.
+ *
+ * Note: This test is meant to test that OptimizationProblem.solve() works in
+ * this case; tests of the correctness of the Moby LCP solver itself live in
+ * testMobyLCP.
+ */
+void simpleLCP() {
+  OptimizationProblem prog;
+  Eigen::Matrix<double, 2, 2> M;
+  M << 1, 4,
+      3, 1;
+
+  Eigen::Vector2d q(-16, -15);
+
+  auto x = prog.addContinuousVariables(2);
+
+  prog.addLinearComplementarityConstraint(M, q, {x});
+  prog.solve();
+  prog.printSolution();
+  valuecheckMatrix(x.value(), Vector2d(16, 0), 1e-4);
+}
+
+/** Multiple LC constraints in a single optimization problem
+ * @brief Just two copies of the simpleLCP example, to make sure that the
+ * write-through of LCP results to the solution vector works correctly.
+ */
+void multiLCP() {
+  OptimizationProblem prog;
+  Eigen::Matrix<double, 2, 2> M;
+  M << 1, 4,
+      3, 1;
+
+  Eigen::Vector2d q(-16, -15);
+
+  auto x = prog.addContinuousVariables(2);
+  auto y = prog.addContinuousVariables(2);
+
+  prog.addLinearComplementarityConstraint(M, q, {x});
+  prog.addLinearComplementarityConstraint(M, q, {y});
+  prog.solve();
+  prog.printSolution();
+  valuecheckMatrix(x.value(), Vector2d(16, 0), 1e-4);
+  valuecheckMatrix(y.value(), Vector2d(16, 0), 1e-4);
+}
+
 int main(int argc, char* argv[]) {
-  testAddFunction();
-  trivialLeastSquares();
-  sixHumpCamel();
-  gloptipolyConstrainedMinimization();
+  // SNOPT tests
+  try {
+    testAddFunction();
+    trivialLeastSquares();
+    sixHumpCamel();
+    gloptipolyConstrainedMinimization();
+  } catch (const std::exception& e) {
+    // If the exception is SNOPT unavailble, skip the remaining snopt tests
+    // and proceed; if not, reraise it to fail.
+    if (std::string(e.what()) != "SNOPT unavailable") {
+      throw;
+    }
+  }
+  simpleLCPConstraintEval();
+  simpleLCP();
+  multiLCP();
   return 0;
 }

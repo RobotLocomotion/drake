@@ -17,17 +17,25 @@ namespace Drake {
 /** @defgroup lcm_vector_concept LCMVector<ScalarType> Concept
  * @ingroup vector_concept
  * @brief A specialization of the Vector concept adding the ability to read and
- *publish LCM messages
+ * publish LCM messages
  *
- * | Valid Expressions (which must be implemented) |  |
- * ------------------|-------------------------------------------------------------|
- * | LCMMessageType  | defined with a typedef |
- * | static std::string channel() const         | return the name of the channel
- *to subscribe to/ publish on      |
- * | bool encode(const double& t, const Vector<double>& x, LCMMessageType& msg)
- *| define the mapping from your LCM type to your Vector type |
- * | bool decode(const LCMMessageType& msg, double& t, Vector<double>& x)  |
- *define the mapping from your Vector type to your LCM type |
+ * <table>
+ * <tr><th colspan="2"> Valid Expressions (which must be implemented)
+ * <tr><td> LCMMessageType
+ *     <td> defined with a typedef
+ * <tr><td> static std::string channel() const
+ *     <td> return the name of the channel to subscribe to/ publish on
+ * <tr><td><pre>
+ * bool encode(const double& t,
+ *             const Vector<double>& x,
+ *             LCMMessageType& msg)</pre>
+ *     <td> define the mapping from your LCM type to your Vector type
+ * <tr><td><pre>
+ * bool decode(const LCMMessageType& msg,
+ *             double& t,
+ *             Vector<double>& x)</pre>
+ *     <td> define the mapping from your Vector type to your LCM type
+ * </table>
  */
 
 template <class Vector>
@@ -209,12 +217,12 @@ class DRAKELCMSYSTEM_EXPORT LCMLoop {
 }  //  end namespace internal
 
 /** runLCM
- * @brief Simulates the system with the (exposed) inputs being read from LCM and
- *the output being published to LCM.
+ * @brief Simulates the system with the (exposed) inputs being read from LCM
+ * and the output being published to LCM.
  * @ingroup simulation
  *
  * The input and output vector types must overload a publishLCM namespace
- *method; the default for new vectors is to not publish anything.
+ * method; the default for new vectors is to not publish anything.
  */
 
 template <typename System>

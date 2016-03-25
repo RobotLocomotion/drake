@@ -1,5 +1,11 @@
-cmake_minimum_required(VERSION 2.8.0)
+cmake_minimum_required(VERSION 2.8.10)
 project(drake-superbuild)
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
+  message(FATAL_ERROR "GCC version must be at least 4.9")
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.7)
+  message(FATAL_ERROR "Clang version must be at least 3.7")
+endif()
 
 # PODs out-of-source build logic
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -73,8 +79,8 @@ if (NOT WIN32) # many of these might work on win32 with little or no work... the
 	option(WITH_TEXTBOOK "pull in the Underactuated Robotics textbook and its examples")  # almost works on windows.  the update step call to git was complaining about local modifications on drake003
 	#  include(CMakeDetermineFortranCompiler) # this didn't do the trick, and enable_language(Fortran OPTIONAL) simply fails if not found (optional is a placeholder option that doesn't work yet)
 	#  if (CMAKE_Fortran_COMPILER)
-	option(WITH_AVL			"use w/ XFOIL to compute aerodynamic coefficients for airfoils")
-	option(WITH_XFOIL		"use w/ AVL to compute aerodynamic coefficients for airfoils")
+	option(WITH_AVL			"use w/ AVL to compute aerodynamic coefficients for airfoils")
+	option(WITH_XFOIL		"use w/ XFOIL to compute aerodynamic coefficients for airfoils")
 	#  endif()
 	option(WITH_MESHCONVERTERS "uses vcglib to convert a few standard filetypes")
 endif()
@@ -94,7 +100,7 @@ set(bot_core_lcmtypes_dependencies lcm)
 set(director_dependencies lcm bot_core_lcmtypes libbot)
 set(iris_dependencies eigen mosek)
 set(signalscope_dependencies director)
-set(drake_dependencies cmake eigen googletest lcm bot_core_lcmtypes libbot bullet octomap snopt gurobi swig_matlab swigmake)
+set(drake_dependencies cmake eigen googletest lcm bot_core_lcmtypes libbot bullet octomap snopt gurobi swig_matlab swigmake yaml_cpp)
 
 # download information, in alphabetical order
 set(avl_GIT_REPOSITORY https://github.com/RobotLocomotion/avl.git)
