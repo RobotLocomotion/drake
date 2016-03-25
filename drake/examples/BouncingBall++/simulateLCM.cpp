@@ -16,12 +16,47 @@ int main(int argc, char* argv[]) {
   PRINT_FUNCTION_NAME;
   
   if (argc < 2) {
-    std::cerr << "Usage: " << argv[0] << " vehicle_urdf [world sdf files ...]"
-              << std::endl;
+    std::cerr << "Usage: " << argv[0] << " (world_urdf) -terrain (flat -angle <angle>|height_map -x <x position>) " << std::endl;
+    std::cerr << "With: " << std::endl;
+    std::cerr << " <angle> in degrees" << std::endl;
+    std::cerr << " <x position> in sphere diameters" << std::endl;
+    std::cerr << std::endl;
+    std::cerr << "Flat terrain example: "  << argv[0] << " ball_world.urdf -terrain flat -angle 45" << std::endl;
+    std::cerr << "Heigth map example  : "  << argv[0] << " ball_world.urdf -terrain height_map -x -1.0" << std::endl;
     return 1;
-  }
+  }  
 
-  bool flat_terrain = false;
+  //Retrieve command line options
+  bool flat_terrain = true; //run flat terrain test by default
+  double angle = 0.0; //zero angle terrain test is run by default
+  double x_pos = 0.0; //flat terrain located at x=0 by default
+  {
+    char* terrain_type = getCommandLineOption(argv, argv + argc, "-terrain");
+    if (terrain_type){      
+      if(strcmp(terrain_type, "height_map")==0){
+        flat_terrain = false;
+        char* x_str = getCommandLineOption(argv, argv + argc, "-x");
+        if (x_str){
+          x_pos = std::stod(std::string(x_str));        
+        }
+      }else if(strcmp(terrain_type, "flat")==0){
+        char* angle_str = getCommandLineOption(argv, argv + argc, "-angle");
+        if (angle_str){
+          angle = std::stod(std::string(angle_str));        
+        }
+      }else{
+        throw std::runtime_error("Invalid terrain type option.");        
+      }
+    }
+
+    if(flat_terrain){
+      cout << "Running flat terrain test: " << endl;
+      cout << "  angle = " << angle << endl;
+    }else{
+      cout << "Running height map test:" << endl;
+      cout << "  x position = " << x_pos << endl;
+    }
+  }    
 
   // todo: consider moving this logic into the RigidBodySystem class so it can
   // be reused
@@ -30,14 +65,12 @@ int main(int argc, char* argv[]) {
   auto rigid_body_sys = make_shared<RigidBodySystem>();  
   rigid_body_sys->addRobotFromFile(argv[1], floating_base_type);
   rigid_body_sys->use_multi_contact = false;
-  auto const & tree = rigid_body_sys->getRigidBodyTree();
-  for (int i = 2; i < argc; i++)
-    tree->addRobotFromSDF(argv[i], DrakeJoint::FIXED);  // add environment
+  auto const & tree = rigid_body_sys->getRigidBodyTree();  
 
   if (flat_terrain) {  // add flat terrain
     double box_width = 10;
     double box_depth = 1;
-    double angle = 0.25*M_PI;    
+    angle = angle*M_PI/180.0;
     DrakeShapes::Box geom(Vector3d(box_width, box_width, box_depth));
     Isometry3d T_element_to_link = Isometry3d::Identity();
     Matrix3d m;
@@ -55,13 +88,12 @@ int main(int argc, char* argv[]) {
   }else
   {//Add Height map
     double terrain_width = 10;
-    double terrain_height = 1.0;
     int terrain_ncells = 16;
     DrakeShapes::FlatTerrain terrain_geom("terrain",Vector2i(terrain_ncells,terrain_ncells),Vector2d(terrain_width, terrain_width));
 
     Isometry3d T_element_to_link = Isometry3d::Identity();
     //T_element_to_link.translation() << -terrain_width/2.0, -terrain_width/2.0, 0.0;
-    T_element_to_link.translation() << 0.0, 0.0, -2.0;
+    T_element_to_link.translation() << x_pos, 0.0, -2.0;
 
     auto& world = tree->bodies[0]; 
 
