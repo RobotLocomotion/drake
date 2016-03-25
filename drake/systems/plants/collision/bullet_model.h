@@ -17,9 +17,6 @@ namespace DrakeCollision {
 
 class BulletModel;  // forward declaration
 
-#define PERTURBATION_ITERATIONS 8
-#define MINIMUM_POINTS_PERTURBATION_THRESHOLD 8
-
 typedef std::unordered_map<ElementId, std::unique_ptr<btCollisionObject>>
     ElementToBtObjMap;
 

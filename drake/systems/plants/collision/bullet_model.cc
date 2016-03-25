@@ -12,6 +12,9 @@ using Eigen::VectorXd;
 
 namespace DrakeCollision {
 
+static const int kPerturbationIterations = 8;
+static const int kMinimumPointsPerturbationThreshold = 8;
+
 struct BinaryContactResultCallback
     : public btCollisionWorld::ContactResultCallback {
  public:
@@ -255,9 +258,9 @@ ElementId BulletModel::addElement(const Element& element) {
 std::vector<PointPair> BulletModel::potentialCollisionPoints(bool use_margins) {
   BulletCollisionWorldWrapper& bt_world = getBulletWorld(use_margins);
   bt_world.bt_collision_configuration.setConvexConvexMultipointIterations(
-      PERTURBATION_ITERATIONS, MINIMUM_POINTS_PERTURBATION_THRESHOLD);
+      kPerturbationIterations, kMinimumPointsPerturbationThreshold);
   bt_world.bt_collision_configuration.setPlaneConvexMultipointIterations(
-      PERTURBATION_ITERATIONS, MINIMUM_POINTS_PERTURBATION_THRESHOLD);
+      kPerturbationIterations, kMinimumPointsPerturbationThreshold);
   BulletResultCollector c;
   bt_world.bt_collision_world->performDiscreteCollisionDetection();
   size_t numManifolds =
