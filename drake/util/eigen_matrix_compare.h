@@ -1,6 +1,7 @@
 #ifndef DRAKE_UTIL_EIGEN_MATRIX_COMPARE_H_
 #define DRAKE_UTIL_EIGEN_MATRIX_COMPARE_H_
 
+#include <Eigen/Dense>
 #include <cmath>
 
 namespace drake {
