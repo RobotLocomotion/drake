@@ -111,9 +111,12 @@ class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
     }
 };
 
+/** \brief Example class showing how to inherit from HeightMapTerrain. 
+  *  It represents a simple flat terrain in an angle.
+  */
 class DRAKESHAPES_EXPORT FlatTerrain : public HeightMapTerrain {
  public:
-  FlatTerrain(const std::string& name, const Eigen::Vector2i &ncells, const Eigen::Vector2d &size);
+  FlatTerrain(const std::string& name, const Eigen::Vector2i &ncells, const Eigen::Vector2d &size, double angle=0.0);
   FlatTerrain(const FlatTerrain& other);
   virtual ~FlatTerrain() {}
   HeightMapTerrain *clone() const;
@@ -124,7 +127,7 @@ class DRAKESHAPES_EXPORT FlatTerrain : public HeightMapTerrain {
   void initialize();
 
   protected:
-    double angle;
+    double m_angle;
 };
 
 }//namespace DrakeShapes

@@ -5,12 +5,33 @@
 #include "BotVisualizer.h"
 #include "drakeAppUtil.h"
 #include "lcmtypes/drake/lcmt_driving_control_cmd_t.hpp"
-
 #include "drake/systems/plants/shapes/HeightMapTerrain.h"
 
 using namespace std;
 using namespace Eigen;
 using namespace Drake;
+
+class DRAKESHAPES_EXPORT SinusoidalTerrain : public DrakeShapes::HeightMapTerrain {
+ public:
+  SinusoidalTerrain(const std::string& name, const Eigen::Vector2i &ncells, const Eigen::Vector2d &size,double height=1.0):
+  HeightMapTerrain(name,ncells, size), m_height(height) {    
+    for (int i = 0; i < nnodes(0); ++i) {
+      double x = i*delta_ell(0);
+      for (int j = 0; j < nnodes(1); ++j) {
+        double y = j*delta_ell(1);
+        double z = m_height*sin(x*3.1416/size(0));
+        cellValue(i,j) = z;
+      }
+    }
+    this->computeMinMaxHeights();
+  }
+  SinusoidalTerrain(const SinusoidalTerrain& other): HeightMapTerrain(other){}
+  SinusoidalTerrain *clone() const {
+    return new SinusoidalTerrain(*this);  
+  }
+  protected:
+    double m_height;
+};
 
 int main(int argc, char* argv[]) {
   PRINT_FUNCTION_NAME;
@@ -89,7 +110,8 @@ int main(int argc, char* argv[]) {
   {//Add Height map
     double terrain_width = 10;
     int terrain_ncells = 16;
-    DrakeShapes::FlatTerrain terrain_geom("terrain",Vector2i(terrain_ncells,terrain_ncells),Vector2d(terrain_width, terrain_width));
+    //DrakeShapes::FlatTerrain terrain_geom("terrain",Vector2i(terrain_ncells,terrain_ncells),Vector2d(terrain_width, terrain_width),-M_PI/4.0);
+    SinusoidalTerrain terrain_geom("terrain",Vector2i(terrain_ncells,terrain_ncells),Vector2d(terrain_width, terrain_width));
 
     Isometry3d T_element_to_link = Isometry3d::Identity();
     //T_element_to_link.translation() << -terrain_width/2.0, -terrain_width/2.0, 0.0;

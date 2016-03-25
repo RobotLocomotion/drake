@@ -63,7 +63,7 @@ HeightMapTerrain::~HeightMapTerrain(){
 HeightMapTerrain *HeightMapTerrain::clone() const {   
   if(m_rawHeightfieldData != NULL)
     assert(!"Are you sure you want to clone this object with heavy data?");
-  return new HeightMapTerrain(*this);   
+  return new HeightMapTerrain(*this); //unreachable. avoid compiler warning for non return. 
 }
 
 bool HeightMapTerrain::writeToFile(const string& fname) const{
@@ -169,16 +169,16 @@ double HeightMapTerrain::heightValue(int i, int j) const{
 *************************************************************************************************
 ************************************************************************************************/
 
-FlatTerrain::FlatTerrain(const std::string& name, const Eigen::Vector2i &ncells, const Eigen::Vector2d &size) : 
-HeightMapTerrain(name,ncells, size)
+FlatTerrain::FlatTerrain(const std::string& name, const Eigen::Vector2i &ncells, const Eigen::Vector2d &size,double angle) : 
+HeightMapTerrain(name,ncells, size), m_angle(angle)
 {    
-  for (int i = 0; i < nnodes(0); ++i) {  
-    double x = i*delta_ell(0);  
-    for (int j = 0; j < nnodes(1); ++j) {        
-        double y = j*delta_ell(1);        
-        double z = sin(x*3.1416/size(0));
-
-        cellValue(i,j) = z;        
+  double slope = tan(m_angle);
+  for (int i = 0; i < nnodes(0); ++i) {
+    double x = i*delta_ell(0) - size(0)/2.0; //x=0 at the center
+    for (int j = 0; j < nnodes(1); ++j) {
+        double y = j*delta_ell(1);
+        double z = x*slope;        
+        cellValue(i,j) = z;
       }
     }    
   this->computeMinMaxHeights();
