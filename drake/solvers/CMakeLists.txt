@@ -33,7 +33,7 @@ if(MATLAB_FOUND)
 endif()
 
 set(optimization_files)
-list(APPEND optimization_files MathematicalProgram.cpp)
+list(APPEND optimization_files MathematicalProgram.cpp MobyLCP.cpp)
 if (snopt_c_FOUND)
   list(APPEND optimization_files SNOPTWrapper.cpp)
 else()
