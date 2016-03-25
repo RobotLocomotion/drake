@@ -7,21 +7,6 @@
 namespace Drake {
 namespace {
 
-struct OutputTest {
-  template <typename ScalarType>
-  using OutputVector = EigenVector<2>::type<ScalarType>;
-
-  template <typename ScalarType>
-  OutputVector<ScalarType> output(const ScalarType& t) const;
-};
-
-struct OutputTestTwo {
-  template <typename ScalarType>
-  using OutputVector = EigenVector<2>::type<ScalarType>;
-
-  OutputVector<double> output(const double& t) const;
-};
-
 // Tests the ability to set a PendulumState equal to a vector and vice versa.
 TEST(VectorTest, ValueAssignment) {
   Eigen::Vector2d x;
