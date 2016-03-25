@@ -1,7 +1,7 @@
 
 #include <typeinfo>
 
-#include <gtest/gtest.h>
+#include "gtest/gtest.h"
 
 #include "drake/solvers/Optimization.h"
 #include "drake/util/testUtil.h"
