@@ -50,12 +50,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   auto q = x.topRows(nq);
   auto v = x.bottomRows(nv);
   auto kinsol = tree->doKinematics(q, v);
-
-  std::cout << "RigidBodySystem::dynamics" << std::endl;
-  PRINT_VAR(nq);
-  PRINT_VAR(nv);
-  PRINT_VAR(num_actuators);
-
+  
   // todo: preallocate the optimization problem and constraints, and simply
   // update them then solve on each function eval.
   // happily, this clunkier version seems fast enough for now
@@ -67,30 +62,9 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   auto H = tree->massMatrix(kinsol);
   Eigen::MatrixXd H_and_neg_JT = H;
 
-  PRINT_MSG("H:\n");
-  std::cout << H << std::endl;
-
-  PRINT_VAR(H.rows());
-  PRINT_VAR(H.cols());  
-
   VectorXd C = tree->dynamicsBiasTerm(kinsol, f_ext);
 
-  PRINT_VAR(f_ext.size());
-  for(auto p: f_ext){
-    cout << p.second.transpose() << endl;
-  }
-
-  PRINT_VAR(C.transpose());
-
   if (num_actuators > 0) C -= tree->B * u.topRows(num_actuators);
-
-  PRINT_VAR(C.rows());
-  PRINT_VAR(C.cols());
-
-  PRINT_VAR(tree->B.rows());
-  PRINT_VAR(tree->B.cols());
-
-  PRINT_VAR(force_elements.size());
 
   {  // loop through rigid body force elements
 
@@ -139,21 +113,8 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
       tree->collisionDetect(kinsol, phi, normal, xA, xB, bodyA_idx, bodyB_idx);
     //normal is body B's normal and therefore pointing out from body B
 
-    PRINT_VAR(phi.rows());
-
-    if((phi.array()<0).any()) {
-      PRINT_MSG("***************************************");
-      PRINT_MSG("*** WE HAVE CONTACT!!");      
-      PRINT_MSG("***************************************");
-      PRINT_MSG("");
-    }
-
     for (int i = 0; i < phi.rows(); i++) {
-      if (phi(i) < 0.0) {  // then i have contact
-
-        PRINT_VAR(tree->bodies[bodyA_idx[i]]->linkname);
-        PRINT_VAR(tree->bodies[bodyB_idx[i]]->linkname);
-
+      if (phi(i) < 0.0) {  // then I have contact
         // todo: move this entire block to a shared an updated "contactJacobian"
         // method in RigidBodyTree
         auto JA = tree->transformPointsJacobian(kinsol, xA.col(i), bodyA_idx[i],
@@ -161,12 +122,6 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
         auto JB = tree->transformPointsJacobian(kinsol, xB.col(i), bodyB_idx[i],
                                                 0, false);
         Vector3d this_normal = normal.col(i);
-
-        PRINT_VAR(i);
-        PRINT_VAR(this_normal.transpose());
-        PRINT_VAR(xA.col(i).transpose());
-        PRINT_VAR(xB.col(i).transpose());
-        PRINT_VAR(phi(i));
 
         // compute the surface tangent basis
         Vector3d tangent1;
@@ -184,11 +139,6 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
         Vector3d tangent2 = tangent1.cross(this_normal);
         Matrix3d R;  // rotation into normal coordinates
         R << tangent1, tangent2, this_normal;
-
-        PRINT_VAR(tangent1.transpose());
-        PRINT_VAR(tangent2.transpose());
-        PRINT_MSG("R:");
-        PRINT_MSG(R);
 
         auto J = R * (JA - JB);          // J = [ D1; D2; n ]
         auto relative_velocity = J * v;  // [ tangent1dot; tangent2dot; phidot ]
@@ -217,8 +167,6 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
     }
   }
 
-  PRINT_VAR(tree->getNumPositionConstraints());
-
   if (tree->getNumPositionConstraints()) {
     int nc = tree->getNumPositionConstraints();
     const double alpha = 5.0;  // 1/time constant of position constraint
@@ -241,11 +189,6 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
     H_and_neg_JT.conservativeResize(NoChange, H_and_neg_JT.cols() + J.rows());
     H_and_neg_JT.rightCols(J.rows()) = -J.transpose();
   }
-
-  PRINT_MSG("H_and_neg_JT:\n");
-  std::cout << H_and_neg_JT << std::endl;
-
-  PRINT_VAR(C.transpose());
 
   // add [H,-J^T]*[vdot;f] = -C
   prog.addLinearEqualityConstraint(H_and_neg_JT, -C);
