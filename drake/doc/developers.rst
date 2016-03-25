@@ -32,8 +32,8 @@ extremely flexible terms intended to encourage use by anyone, for any
 purpose. When you make a contribution to the Drake project, you are
 agreeing to do so under those same terms.
 
-Here are some useful links
-
+Table of Contents
+=================
 .. toctree::
 	:maxdepth: 1
 
@@ -42,8 +42,15 @@ Here are some useful links
 	known_issue
 	no_push_to_origin
 
-Here are some tips for using our favorite IDEs for development with Drake
+OS Notes
+========
+.. toctree::
+	:maxdepth: 1
 
+	development_on_osx
+
+IDE Notes
+=========
 * `CLion <https://github.com/tkoolen/drake/wiki/CLion-setup-(experimental)>`_
 * `Eclipse <https://github.com/tkoolen/drake/wiki/Eclipse-setup-(experimental)>`_
 
