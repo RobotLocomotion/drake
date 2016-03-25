@@ -2,9 +2,9 @@
 Drake Development on OS X
 *****************************************
 
-This page contains software development notes that are specific to OS X.
+This page contains information that may be useful to people developing in OS X.
 
-*Note that the applications, tools, and libraries listed below are simply those that some have found useful when developing Drake in OS X. They should* **not** *be interpreted as mandatory for software development in OS X.*
+*Note that the applications, tools, and libraries listed below are simply those that some have found useful. They should* **not** *be interpreted as mandatory.*
 
 Installing pygame
 ===================================
@@ -28,7 +28,7 @@ Ensure your ``PYTHONPATH`` environment variable includes Drake's site-package an
 Running gitk
 ============
 
-The version of `git <https://git-scm.com>`_ that comes with OS X may not include `gitk <https://git-scm.com/docs/gitk>`_, a GUI-based git repository browser. We recommend getting a newer version using brew:
+The version of `git <https://git-scm.com>`_ that comes with OS X may not include `gitk <https://git-scm.com/docs/gitk>`_, a GUI-based git repository browser. A workaround is to get a newer version using brew:
 
     brew update
     brew install git
