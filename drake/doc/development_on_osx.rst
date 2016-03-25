@@ -33,7 +33,7 @@ The version of `git <https://git-scm.com>`_ that comes with OS X may not include
     brew update
     brew install git
 
-If gitk does not start with an ``unknown color name "lime"`` error, upgrade your vesrion of Tcl/Tk:
+If gitk does not start with an ``unknown color name "lime"`` error, upgrade your version of Tcl/Tk:
 
     brew cask install tcl
 
