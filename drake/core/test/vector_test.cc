@@ -106,7 +106,7 @@ TEST(VectorTest, InputOutputRelationLeastCommonAncestor) {
            InputOutputRelation::Form::LINEAR,
            InputOutputRelation::Form::POLYNOMIAL}) ==
       InputOutputRelation::Form::POLYNOMIAL))
-  << "least common ancestor should be polynomial should be poly";
+  << "least common ancestor should be polynomial";
 }
 
 // Verify that compositions of I/O relations are as expected
