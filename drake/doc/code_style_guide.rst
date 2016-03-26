@@ -47,7 +47,9 @@ There are several tools for helping you to compile with the required style. They
 ClangFormat
 ^^^^^^^^^^^
 
-Downloading it from: http://llvm.org/releases/download.html
+The following instructions were tested on OS X but should also work on Linux. A different installation procedure may need to be followed on Windows.
+
+Download it from: http://llvm.org/releases/download.html
 
 Extract it to a known location like `~/tools/`.
 
