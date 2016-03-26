@@ -83,7 +83,7 @@ if (LCM_FOUND)
   add_test(NAME testMagnetometer COMMAND testMagnetometer)
 
   add_executable(compareRigidBodySystems compareRigidBodySystems.cpp)
-  target_link_libraries(compareRigidBodySystems drakeRBSystem)
+  target_link_libraries(compareRigidBodySystems drakeRBSystem ${GTEST_BOTH_LIBRARIES})
   add_test(NAME compareAcrobotURDFtoSDF COMMAND compareRigidBodySystems Acrobot.urdf Acrobot.sdf WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/examples/Acrobot")
 endif()
 
