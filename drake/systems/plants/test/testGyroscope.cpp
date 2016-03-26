@@ -1,9 +1,21 @@
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/testUtil.h"
 
-using namespace std;
-using namespace Drake;
-using namespace Eigen;
+#include "gtest/gtest.h"
+#include "drake/util/eigen_matrix_compare.h"
+
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+using Eigen::VectorXd;
+using std::shared_ptr;
+using std::make_shared;
+using Drake::getDrakePath;
+using Drake::RigidBodySystem;
+using drake::util::MatrixCompareType;
+using Drake::RigidBodyGyroscope;
+
+namespace drake {
+namespace test {
 
 
 Vector3d getGyroscopeOutput(shared_ptr<RigidBodySystem> const& sys, Vector3d const& ang_vel) {
@@ -16,7 +28,7 @@ Vector3d getGyroscopeOutput(shared_ptr<RigidBodySystem> const& sys, Vector3d con
 }
 
 
-int main(int argc, char* argv[]) {
+TEST(testGyroscope, AllTests) {
 
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
   auto rigid_body_sys = make_shared<RigidBodySystem>();
@@ -29,9 +41,17 @@ int main(int argc, char* argv[]) {
 
   for(size_t i = 0; i < 100 ; i++) {
     Vector3d ang_vel = Vector3d::Random();
-    valuecheckMatrix(getGyroscopeOutput(rigid_body_sys, ang_vel),
-                     ang_vel,
-                     tol);
+
+    EXPECT_TRUE(CompareMatrices(
+      getGyroscopeOutput(rigid_body_sys, ang_vel),
+      ang_vel, tol, MatrixCompareType::absolute));
+
+    // valuecheckMatrix(getGyroscopeOutput(rigid_body_sys, ang_vel),
+    //                  ang_vel,
+    //                  tol);
   }
 
 }
+
+}  // namespace test
+}  // namespace drake

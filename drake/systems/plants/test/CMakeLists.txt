@@ -61,7 +61,7 @@ add_test(NAME bullet_collision_zero_rad_sphere_test COMMAND bullet_collision_zer
 
 if (LCM_FOUND)
   add_executable(testMassSpringDamper testMassSpringDamper.cpp)
-  target_link_libraries(testMassSpringDamper drakeRBSystem)
+  target_link_libraries(testMassSpringDamper drakeRBSystem ${GTEST_BOTH_LIBRARIES})
   add_test(NAME testMassSpringDamper COMMAND testMassSpringDamper)
 
   if (bullet_FOUND)
@@ -71,15 +71,15 @@ if (LCM_FOUND)
   endif()
 
   add_executable(testAccelerometer testAccelerometer.cpp)
-  target_link_libraries(testAccelerometer drakeRBSystem)
+  target_link_libraries(testAccelerometer drakeRBSystem ${GTEST_BOTH_LIBRARIES})
   add_test(NAME testAccelerometer COMMAND testAccelerometer)
 
   add_executable(testGyroscope testGyroscope.cpp)
-  target_link_libraries(testGyroscope drakeRBSystem)
+  target_link_libraries(testGyroscope drakeRBSystem ${GTEST_BOTH_LIBRARIES})
   add_test(NAME testGyroscope COMMAND testGyroscope)
 
   add_executable(testMagnetometer testMagnetometer.cpp)
-  target_link_libraries(testMagnetometer drakeRBSystem)
+  target_link_libraries(testMagnetometer drakeRBSystem ${GTEST_BOTH_LIBRARIES})
   add_test(NAME testMagnetometer COMMAND testMagnetometer)
 
   add_executable(compareRigidBodySystems compareRigidBodySystems.cpp)

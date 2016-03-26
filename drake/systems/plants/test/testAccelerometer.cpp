@@ -1,10 +1,21 @@
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/testUtil.h"
 
-using namespace std;
-using namespace Drake;
-using namespace Eigen;
+#include "gtest/gtest.h"
+#include "drake/util/eigen_matrix_compare.h"
 
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+using Eigen::VectorXd;
+using std::shared_ptr;
+using std::make_shared;
+using Drake::getDrakePath;
+using Drake::RigidBodySystem;
+using drake::util::MatrixCompareType;
+using Drake::RigidBodyAccelerometer;
+
+namespace drake {
+namespace test {
 
 Vector3d getAccelerometerOutput(shared_ptr<RigidBodySystem> const& sys, Vector3d const& rpy, Vector4d const& u) {
   VectorXd x0 = VectorXd::Zero(sys->getNumStates());
@@ -16,7 +27,7 @@ Vector3d getAccelerometerOutput(shared_ptr<RigidBodySystem> const& sys, Vector3d
 }
 
 
-int main(int argc, char* argv[]) {
+TEST(testAccelerometer, AllTests) {
 
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
   auto rigid_body_sys = make_shared<RigidBodySystem>();
@@ -29,50 +40,53 @@ int main(int argc, char* argv[]) {
   const double tol = 1e-6;
   const Vector4d hoverThrust = 1.226250 * Vector4d::Ones();
 
-  valuecheckMatrix(getAccelerometerOutput(rigid_body_sys, Vector3d::Zero(), Vector4d::Zero()),
-                   Vector3d(0, 0, -g),
-                   tol);
+  EXPECT_TRUE(CompareMatrices(
+      getAccelerometerOutput(rigid_body_sys, Vector3d::Zero(), Vector4d::Zero()),
+      Vector3d(0, 0, -g), tol, MatrixCompareType::absolute));
 
-  valuecheckMatrix(getAccelerometerOutput(rigid_body_sys, Vector3d(M_PI, 0, 0), Vector4d::Zero()), // inverted
-                   Vector3d(0, 0, g),
-                   tol);
+  EXPECT_TRUE(CompareMatrices(
+      getAccelerometerOutput(rigid_body_sys, Vector3d(M_PI, 0, 0), Vector4d::Zero()), // inverted
+      Vector3d(0, 0, g), tol, MatrixCompareType::absolute));
 
-  valuecheckMatrix(getAccelerometerOutput(rigid_body_sys, Vector3d::Zero(), hoverThrust),
-                   Vector3d(0, 0, 0),
-                   tol);
+  EXPECT_TRUE(CompareMatrices(
+      getAccelerometerOutput(rigid_body_sys, Vector3d::Zero(), hoverThrust),
+      Vector3d(0, 0, 0), tol, MatrixCompareType::absolute));
 
-  valuecheckMatrix(getAccelerometerOutput(rigid_body_sys, Vector3d(M_PI, 0, 0), hoverThrust), // inverted with thrust
-                   Vector3d(0, 0, 2*g),
-                   tol);
+  EXPECT_TRUE(CompareMatrices(
+      getAccelerometerOutput(rigid_body_sys, Vector3d(M_PI, 0, 0), hoverThrust), // inverted with thrust
+      Vector3d(0, 0, 2 * g), tol, MatrixCompareType::absolute));
 
-  valuecheckMatrix(getAccelerometerOutput(rigid_body_sys, Vector3d(M_PI/2, 0, 0), Vector4d::Zero()),
-                   Vector3d(0, -g, 0),
-                   tol);
+  EXPECT_TRUE(CompareMatrices(
+      getAccelerometerOutput(rigid_body_sys, Vector3d(M_PI/2, 0, 0), Vector4d::Zero()),
+      Vector3d(0, -g, 0), tol, MatrixCompareType::absolute));
 
-  valuecheckMatrix(getAccelerometerOutput(rigid_body_sys, Vector3d(-M_PI/2, 0, 0), Vector4d::Zero()),
-                   Vector3d(0, g, 0),
-                   tol);
+  EXPECT_TRUE(CompareMatrices(
+      getAccelerometerOutput(rigid_body_sys, Vector3d(-M_PI/2, 0, 0), Vector4d::Zero()),
+      Vector3d(0, g, 0), tol, MatrixCompareType::absolute));
 
-  valuecheckMatrix(getAccelerometerOutput(rigid_body_sys, Vector3d(0, M_PI/2, 0), Vector4d::Zero()),
-                   Vector3d(g, 0, 0),
-                   tol);
+  EXPECT_TRUE(CompareMatrices(
+      getAccelerometerOutput(rigid_body_sys, Vector3d(0, M_PI/2, 0), Vector4d::Zero()),
+      Vector3d(g, 0, 0), tol, MatrixCompareType::absolute));
 
-  valuecheckMatrix(getAccelerometerOutput(rigid_body_sys, Vector3d(0, -M_PI/2, 0), Vector4d::Zero()),
-                   Vector3d(-g, 0, 0),
-                   tol);
+  EXPECT_TRUE(CompareMatrices(
+      getAccelerometerOutput(rigid_body_sys, Vector3d(0, -M_PI/2, 0), Vector4d::Zero()),
+      Vector3d(-g, 0, 0), tol, MatrixCompareType::absolute));
 
   //real accelerometers can't measure gravity during freefall
   //but will measure gravity while hovering
   accelerometer->setGravityCompensation(true);
-  valuecheckMatrix(getAccelerometerOutput(rigid_body_sys, Vector3d::Zero(), Vector4d::Zero()),
-                 Vector3d(0, 0, 0),
-                 tol);
+  EXPECT_TRUE(CompareMatrices(
+      getAccelerometerOutput(rigid_body_sys, Vector3d::Zero(), Vector4d::Zero()),
+      Vector3d(0, 0, 0), tol, MatrixCompareType::absolute));
 
-  valuecheckMatrix(getAccelerometerOutput(rigid_body_sys, Vector3d(M_PI, 0, 0), Vector4d::Zero()),
-                   Vector3d(0, 0, 0),
-                   tol);
+  EXPECT_TRUE(CompareMatrices(
+      getAccelerometerOutput(rigid_body_sys, Vector3d(M_PI, 0, 0), Vector4d::Zero()),
+      Vector3d(0, 0, 0), tol, MatrixCompareType::absolute));
 
-  valuecheckMatrix(getAccelerometerOutput(rigid_body_sys, Vector3d::Zero(), hoverThrust),
-                   Vector3d(0, 0, g),
-                   tol);
+  EXPECT_TRUE(CompareMatrices(
+      getAccelerometerOutput(rigid_body_sys, Vector3d::Zero(), hoverThrust),
+      Vector3d(0, 0, g), tol, MatrixCompareType::absolute));
 }
+
+}  // namespace test
+}  // namespace drake

@@ -1,10 +1,21 @@
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/testUtil.h"
 
-using namespace std;
-using namespace Drake;
-using namespace Eigen;
+#include "gtest/gtest.h"
+#include "drake/util/eigen_matrix_compare.h"
 
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+using Eigen::VectorXd;
+using std::shared_ptr;
+using std::make_shared;
+using Drake::getDrakePath;
+using Drake::RigidBodyMagnetometer;
+using Drake::RigidBodySystem;
+using drake::util::MatrixCompareType;
+
+namespace drake {
+namespace test {
 
 Vector3d getMagnetometerOutput(shared_ptr<RigidBodySystem> const& sys, Vector3d const& rpy) {
   VectorXd x0 = VectorXd::Zero(sys->getNumStates());
@@ -15,8 +26,7 @@ Vector3d getMagnetometerOutput(shared_ptr<RigidBodySystem> const& sys, Vector3d 
   return system_output.tail<3>();
 }
 
-
-int main(int argc, char* argv[]) {  
+TEST(testMagnetometer, AllTests) {
 
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
   auto rigid_body_sys = make_shared<RigidBodySystem>();
@@ -30,23 +40,24 @@ int main(int argc, char* argv[]) {
   
   const double tol = 1e-6;
 
-  valuecheckMatrix(getMagnetometerOutput(rigid_body_sys, Vector3d::Zero()),
-                   Vector3d(1, 0, 0),
-                   tol);
+  EXPECT_TRUE(CompareMatrices(
+    getMagnetometerOutput(rigid_body_sys, Vector3d::Zero()),
+    Vector3d(1, 0, 0), tol, MatrixCompareType::absolute));
 
-
-  valuecheckMatrix(getMagnetometerOutput(rigid_body_sys, Vector3d(0,0,M_PI/2)),
-                 Vector3d(0, -1, 0),
-                 tol);
+  EXPECT_TRUE(CompareMatrices(
+    getMagnetometerOutput(rigid_body_sys, Vector3d(0,0,M_PI/2)),
+    Vector3d(0, -1, 0), tol, MatrixCompareType::absolute));
 
   magnetometer->setDeclination(M_PI/4);
 
-  valuecheckMatrix(getMagnetometerOutput(rigid_body_sys, Vector3d::Zero()),
-                 Vector3d(std::sqrt(2)/2, std::sqrt(2)/2, 0),
-                 tol);
+  EXPECT_TRUE(CompareMatrices(
+    getMagnetometerOutput(rigid_body_sys, Vector3d::Zero()),
+    Vector3d(std::sqrt(2)/2, std::sqrt(2)/2, 0), tol, MatrixCompareType::absolute));
 
-  valuecheckMatrix(getMagnetometerOutput(rigid_body_sys,  Vector3d(0,0,M_PI/2)),
-                 Vector3d(std::sqrt(2)/2, -std::sqrt(2)/2, 0),
-                 tol);
-
+  EXPECT_TRUE(CompareMatrices(
+    getMagnetometerOutput(rigid_body_sys,  Vector3d(0,0,M_PI/2)),
+    Vector3d(std::sqrt(2)/2, -std::sqrt(2)/2, 0), tol, MatrixCompareType::absolute));
 }
+
+}  // namespace test
+}  // namespace drake

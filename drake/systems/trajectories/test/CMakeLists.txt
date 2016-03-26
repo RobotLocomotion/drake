@@ -1,5 +1,5 @@
 add_executable(testPiecewisePolynomial testPiecewisePolynomial.cpp)
-target_link_libraries(testPiecewisePolynomial drakeTrajectories)
+target_link_libraries(testPiecewisePolynomial drakeTrajectories ${GTEST_BOTH_LIBRARIES})
 add_test(NAME testPiecewisePolynomial COMMAND testPiecewisePolynomial)
 
 add_executable(testExponentialPlusPiecewisePolynomial testExponentialPlusPiecewisePolynomial.cpp)

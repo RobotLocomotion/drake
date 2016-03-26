@@ -1,14 +1,20 @@
-
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/testUtil.h"
 
-using namespace std;
-using namespace Eigen;
-using namespace Drake;
+#include "gtest/gtest.h"
+#include "drake/util/eigen_matrix_compare.h"
 
+using Eigen::Matrix;
+using std::make_shared;
+using Drake::getDrakePath;
+using Drake::RigidBodySystem;
+using drake::util::MatrixCompareType;
+using Drake::toEigen;
 
-int main(int argc, char* argv[])
-{
+namespace drake {
+namespace test {
+
+TEST(testMassSpringDamper, AllTests) {
   auto sys = make_shared<RigidBodySystem>();
   sys->addRobotFromFile(getDrakePath()+"/systems/plants/test/MassSpringDamper.urdf", DrakeJoint::FIXED);
 
@@ -22,6 +28,10 @@ int main(int argc, char* argv[])
 
     auto xdot = toEigen(sys->dynamics(0.0, x0, u0));
     xdot_desired << x0(1), (u0(0) -k*x0(0) - b*x0(1))/mass;
-    valuecheckMatrix(xdot_desired, xdot, 1e-5);
+
+    EXPECT_TRUE(CompareMatrices(xdot_desired, xdot, 1e-5, MatrixCompareType::absolute));
   }
 }
+
+}  // namespace test
+}  // namespace drake
