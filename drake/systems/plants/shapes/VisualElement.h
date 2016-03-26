@@ -1,5 +1,6 @@
-#ifndef __DrakeShapesVisualElement_H__
-#define __DrakeShapesVisualElement_H__
+#ifndef DRAKE_SYSTEMS_PLANTS_SHAPES_VISUALELEMENT_H_
+#define DRAKE_SYSTEMS_PLANTS_SHAPES_VISUALELEMENT_H_
+
 #include <memory>
 
 #include <Eigen/Dense>
@@ -39,4 +40,5 @@ class DRAKESHAPES_EXPORT VisualElement : public Element {
 typedef std::vector<VisualElement, Eigen::aligned_allocator<VisualElement> >
     VectorOfVisualElements;
 }
-#endif
+
+#endif  // DRAKE_SYSTEMS_PLANTS_SHAPES_VISUALELEMENT_H_

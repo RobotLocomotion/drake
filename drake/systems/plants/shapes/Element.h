@@ -1,5 +1,5 @@
-#ifndef __DrakeShapesElement_H__
-#define __DrakeShapesElement_H__
+#ifndef DRAKE_SYSTEMS_PLANTS_SHAPES_ELEMENT_H_
+#define DRAKE_SYSTEMS_PLANTS_SHAPES_ELEMENT_H_
 
 #include <memory>
 #include <utility>
@@ -57,4 +57,5 @@ class DRAKESHAPES_EXPORT Element {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 }
-#endif
+
+#endif  // DRAKE_SYSTEMS_PLANTS_SHAPES_ELEMENT_H_
