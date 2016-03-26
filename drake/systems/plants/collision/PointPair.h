@@ -1,5 +1,5 @@
-#ifndef __DrakeCollisionPointPair_H__
-#define __DrakeCollisionPointPair_H__
+#ifndef DRAKE_SYSTEMS_PLANTS_COLLISION_POINTPAIR_H_
+#define DRAKE_SYSTEMS_PLANTS_COLLISION_POINTPAIR_H_
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
@@ -60,4 +60,5 @@ class DRAKECOLLISION_EXPORT PointPair {
   double distance;
 };
 }
-#endif
+
+#endif  // DRAKE_SYSTEMS_PLANTS_COLLISION_POINTPAIR_H_

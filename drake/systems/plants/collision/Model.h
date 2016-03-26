@@ -1,5 +1,5 @@
-#ifndef __DrakeCollisionModel_H__
-#define __DrakeCollisionModel_H__
+#ifndef DRAKE_SYSTEMS_PLANTS_COLLISION_MODEL_H_
+#define DRAKE_SYSTEMS_PLANTS_COLLISION_MODEL_H_
 
 #include <memory>
 #include <unordered_map>
@@ -184,4 +184,4 @@ class DRAKECOLLISION_EXPORT Model {
 };
 }
 
-#endif
+#endif  // DRAKE_SYSTEMS_PLANTS_COLLISION_MODEL_H_
