@@ -59,6 +59,12 @@ You can check whether you've installed it correctly by executing::
 
     $ clang-format --help
 
+*Execution*
+
+To run clang-format::
+
+    clang-format -i -style=file [file name]
+
 cpplint
 ^^^^^^^
 
