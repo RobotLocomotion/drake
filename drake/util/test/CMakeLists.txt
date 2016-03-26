@@ -4,7 +4,7 @@
 # add_mex(debugMexTest debugMexTest.cpp)
 
 add_executable(testDrakeGeometryUtil testDrakeGeometryUtil.cpp)
-target_link_libraries(testDrakeGeometryUtil drakeGeometryUtil)
+target_link_libraries(testDrakeGeometryUtil drakeGeometryUtil ${GTEST_BOTH_LIBRARIES})
 add_test(NAME testDrakeGeometryUtil COMMAND testDrakeGeometryUtil)
 
 add_executable(testDrakeGradientUtil testDrakeGradientUtil.cpp)
