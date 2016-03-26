@@ -34,25 +34,10 @@ class EigenMatrixIsApproximatelyEqualMatcher {
   template <typename T>
   bool MatchAndExplain(T& mm,
                        MatchResultListener * listener) const {
-
-    bool result = true;
-
-    if (mm.rows() != mm_.rows()) {
-      *listener << "rows do not match: " << mm.rows() << " vs. " << mm_.rows();
-      result = false;
-    }
-
-    if (result && mm.cols() != mm_.cols()) {
-      *listener << "columns do not match: " << mm.cols() << " vs. " << mm_.cols();
-      result = false;
-    }
-
-    if (result) {
-      std::string error_msg;
-      result = CompareMatrices(mm, mm_, tolerance_, compare_type_, &error_msg);
-      if (!result)
-        *listener << error_msg;
-    }
+    std::string error_msg;
+    bool result = CompareMatrices(mm, mm_, tolerance_, compare_type_, &error_msg);
+    if (!result)
+      *listener << error_msg;
 
     return result;
   }
