@@ -6,8 +6,13 @@
 
 #include "drake/solvers/MobyLCP.h"
 #include "drake/util/testUtil.h"
+#include "drake/util/eigen_matrix_compare.h"
 
-namespace {
+using drake::util::MatrixCompareType;
+
+namespace drake {
+namespace test {
+
 const double epsilon = 1e-6;
 const bool verbose = false;
 
@@ -46,21 +51,20 @@ void runBasicLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
     expected_z = fast_z;
   } else {
     if (expect_fast_pass) {
-      EXPECT_NO_THROW(valuecheckMatrix(fast_z, expected_z, epsilon));
+      EXPECT_TRUE(CompareMatrices(fast_z, expected_z, epsilon, MatrixCompareType::absolute));
     } else {
-      EXPECT_THROW(valuecheckMatrix(fast_z, expected_z, epsilon),
-                   std::runtime_error);
+      EXPECT_FALSE(CompareMatrices(fast_z, expected_z, epsilon, MatrixCompareType::absolute));
     }
   }
 
   Eigen::VectorXd lemke_z;
   result = l.lcp_lemke(M, q, &lemke_z);
-  EXPECT_NO_THROW(valuecheckMatrix(lemke_z, expected_z, epsilon));
+  EXPECT_TRUE(CompareMatrices(lemke_z, expected_z, epsilon, MatrixCompareType::absolute));
 
   Eigen::SparseMatrix<double> M_sparse = makeSparseMatrix(M);
   lemke_z.setZero();
   result = l.lcp_lemke(M_sparse, q, &lemke_z);
-  EXPECT_NO_THROW(valuecheckMatrix(lemke_z, expected_z, epsilon));
+  EXPECT_TRUE(CompareMatrices(lemke_z, expected_z, epsilon, MatrixCompareType::absolute));
 }
 
 /// Run all regularized solvers.  If @p expected_z is an empty
@@ -82,23 +86,22 @@ void runRegularizedLCP(const Eigen::MatrixBase<Derived>& M,
   } else {
     if (expect_fast_pass) {
       ASSERT_TRUE(result);
-      EXPECT_NO_THROW(valuecheckMatrix(fast_z, expected_z, epsilon))
-          << "expected: " << expected_z << " actual " << fast_z
+      EXPECT_TRUE(CompareMatrices(fast_z, expected_z, epsilon, MatrixCompareType::absolute))
+        << "expected: " << expected_z << " actual " << fast_z
           << std::endl;
     } else {
-      EXPECT_THROW(valuecheckMatrix(fast_z, expected_z, epsilon),
-                   std::runtime_error);
+      EXPECT_FALSE(CompareMatrices(fast_z, expected_z, epsilon, MatrixCompareType::absolute));
     }
   }
 
   Eigen::VectorXd lemke_z;
   result = l.lcp_lemke_regularized(M, q, &lemke_z);
-  EXPECT_NO_THROW(valuecheckMatrix(lemke_z, expected_z, epsilon));
+  EXPECT_TRUE(CompareMatrices(lemke_z, expected_z, epsilon, MatrixCompareType::absolute));
 
   Eigen::SparseMatrix<double> M_sparse = makeSparseMatrix(M);
   lemke_z.setZero();
   result = l.lcp_lemke_regularized(M_sparse, q, &lemke_z);
-  EXPECT_NO_THROW(valuecheckMatrix(lemke_z, expected_z, epsilon));
+  EXPECT_TRUE(CompareMatrices(lemke_z, expected_z, epsilon, MatrixCompareType::absolute));
 }
 
 /// Run all solvers.  If @p expected_z is an empty
@@ -210,7 +213,7 @@ TEST(testMobyLCP, testProblem4) {
 
   Eigen::VectorXd fast_z;
   bool result = l.lcp_fast(M, q, &fast_z);
-  EXPECT_NO_THROW(valuecheckMatrix(fast_z, z, epsilon));
+  EXPECT_TRUE(CompareMatrices(fast_z, z, epsilon, MatrixCompareType::absolute));
 
   // TODO sammy the Lemke solvers find no solution at all, however.
   fast_z.setZero();
@@ -292,4 +295,5 @@ TEST(testMobyLCP, testEmpty) {
   EXPECT_EQ(z.size(), 0);
 }
 
-}
+}  // namespace test
+}  // namespace drake
