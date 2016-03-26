@@ -1,5 +1,5 @@
-#ifndef _ACROBOT_H_
-#define _ACROBOT_H_
+#ifndef DRAKE_EXAMPLES_ACROBOT_ACROBOT_H_
+#define DRAKE_EXAMPLES_ACROBOT_ACROBOT_H_
 
 #include <iostream>
 #include <cmath>
@@ -178,4 +178,4 @@ class Acrobot {
       g;  // parameters (initialized in the constructor)
 };
 
-#endif  // _ACROBOT_H_
+#endif  // DRAKE_EXAMPLES_ACROBOT_ACROBOT_H_
