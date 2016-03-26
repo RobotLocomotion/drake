@@ -322,6 +322,10 @@ foreach (proj ${EXTERNAL_PROJECTS})
 
 		# now the actual project
 		if (${proj}_IS_CMAKE_POD)
+			set(PODS_VERBOSE_MAKEFILE "")
+			if (CMAKE_VERBOSE_MAKEFILE)
+			    set(PODS_VERBOSE_MAKEFILE "-DCMAKE_VERBOSE_MAKEFILE=ON")
+			endif()
 			ExternalProject_Add(${proj}
 					SOURCE_DIR ${${proj}_SOURCE_DIR}
 					DOWNLOAD_COMMAND ""
@@ -329,9 +333,10 @@ foreach (proj ${EXTERNAL_PROJECTS})
 					BINARY_DIR ${${proj}_SOURCE_DIR}/pod-build
 					CMAKE_GENERATOR ${CMAKE_GENERATOR}
 					CMAKE_ARGS
-					  -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
 					  -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-						${${proj}_ADDITIONAL_CMAKE_CONFIGURE_ARGS}
+					  -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+					  ${PODS_VERBOSE_MAKEFILE}
+					  ${${proj}_ADDITIONAL_CMAKE_CONFIGURE_ARGS}
 					DEPENDS download-${proj} ${deps}
 					${${proj}_ADDITIONAL_BUILD_ARGS}
 					)
@@ -340,7 +345,11 @@ foreach (proj ${EXTERNAL_PROJECTS})
 				if(${proj}_NO_BUILD)
 					set(${proj}_BUILD_COMMAND "")
 				else() # then use the PODS gnu make system
-					set(${proj}_BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=$<CONFIGURATION>)
+					set(PODS_VERBOSE_MAKEFILE "")
+					if (CMAKE_VERBOSE_MAKEFILE)
+					    set(PODS_VERBOSE_MAKEFILE "V=1 VERBOSE=1")
+					endif()
+					set(${proj}_BUILD_COMMAND ${PODS_MAKE_COMMAND} ${PODS_VERBOSE_MAKEFILE} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=$<CONFIGURATION> )
 				endif()
 			endif()
 
@@ -361,7 +370,10 @@ foreach (proj ${EXTERNAL_PROJECTS})
 
 	else()
 		message(STATUS "Preparing to build ${proj} with dependencies: ${deps}")
-
+		set(PODS_VERBOSE_MAKEFILE "")
+		if (CMAKE_VERBOSE_MAKEFILE)
+		    set(PODS_VERBOSE_MAKEFILE "-DCMAKE_VERBOSE_MAKEFILE=ON")
+		endif()
 		ExternalProject_Add(${proj}
 				SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake"
 				DOWNLOAD_COMMAND ""
@@ -369,8 +381,9 @@ foreach (proj ${EXTERNAL_PROJECTS})
 				BINARY_DIR ${PROJECT_SOURCE_DIR}/drake/pod-build
 				CMAKE_GENERATOR ${CMAKE_GENERATOR}
 				CMAKE_ARGS
-				  -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
 				  -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+				  -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+				  ${PODS_VERBOSE_MAKEFILE}
 				DEPENDS ${deps}
 				${${proj}_ADDITIONAL_BUILD_ARGS}
 				#		BUILD_ALWAYS 1
