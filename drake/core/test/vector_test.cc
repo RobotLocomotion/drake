@@ -38,7 +38,7 @@ TEST(VectorTest, ValueAssignment) {
     y, tolerance, MatrixCompareType::absolute));
 }
 
-// Test the ability to set a CombinedVector's value
+// Tests the ability to set a CombinedVector's value
 TEST(VectorTest, CombinedVector) {
   Eigen::Vector3d abc;
   abc << 1, 2, 3;
@@ -78,20 +78,20 @@ TEST(VectorTest, CombineVectorCornerCases) {
        static_cast<string>(typeid(test2).name());
 }
 
-// Test the RowsAtCompileTime
+// Tests the RowsAtCompileTime
 TEST(VectorTest, RowsAtCompileTime) {
   EXPECT_TRUE((Eigen::Matrix<double, 2, 1>::RowsAtCompileTime == 2))
     << "failed to evaluate RowsAtCompileTime";
 }
 
-// Test the InputOutputRelation. Verify that linear is a polynomial.
+// Tests the InputOutputRelation. Verify that linear is a polynomial.
 TEST(VectorTest, InputOutputRelationLinearIsPolynomial) {
   EXPECT_TRUE((InputOutputRelation::isA(InputOutputRelation::Form::LINEAR,
                                 InputOutputRelation::Form::POLYNOMIAL)))
     << "linear is polynomial";
 }
 
-// Test the InputOutputRelation. Verify that zero is arbitrary.
+// Tests the InputOutputRelation. Verify that zero is arbitrary.
 TEST(VectorTest, InputOutputRelationZeroIsArbitrary) {
   EXPECT_TRUE((InputOutputRelation::isA(InputOutputRelation::Form::ZERO,
                                 InputOutputRelation::Form::ARBITRARY)))
