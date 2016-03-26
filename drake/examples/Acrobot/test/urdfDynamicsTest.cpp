@@ -2,7 +2,7 @@
 #include "../Acrobot.h"
 #include "gtest/gtest.h"
 #include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/util/test/eigen_matrix_compare_mock.h"
+#include "drake/util/eigen_matrix_compare.h"
 
 using Drake::RigidBodySystem;
 using Drake::getRandomVector;
