@@ -47,12 +47,20 @@ There are several tools for helping you to compile with the required style. They
 ClangFormat
 ^^^^^^^^^^^
 
-(*Notes comming soon*)
+Downloading it from: http://llvm.org/releases/download.html
+
+Extract it to a known location like `~/tools/`.
+
+Create a symbolic link from `/usr/local/bin/clang-format` to `[clang directory]/bin/clang-format`.
+
+You can check whether you've installed it correctly by executing::
+
+    $ clang-format --help
 
 cpplint
 ^^^^^^^
 
-`cpplint <https://github.com/google/styleguide/tree/gh-pages/cpplint>`_ is a tool for finding compliance violations. Here is the command:
+`cpplint <https://github.com/google/styleguide/tree/gh-pages/cpplint>`_ is a tool for finding compliance violations. Here is the command::
 
     cpplint --filter="-legal/copyright" [file name]
 
