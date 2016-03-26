@@ -4,7 +4,7 @@
 #include "drake/systems/plants/collision/DrakeCollision.h"
 
 #ifdef BULLET_COLLISION
-#include "BulletModel.h"
+#include "drake/systems/plants/collision/bullet_model.h"
 #endif
 
 using namespace std;

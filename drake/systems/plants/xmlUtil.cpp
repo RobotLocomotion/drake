@@ -3,18 +3,9 @@
 #include <fstream>
 #include <sstream>
 #include "xmlUtil.h"
+#include "drake/thirdParty/tinydir/tinydir.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/Path.h"
-
-// from
-// http://stackoverflow.com/questions/478898/how-to-execute-a-command-and-get-output-of-command-within-c
-#if defined(WIN32) || defined(WIN64)
-#define POPEN _popen
-#define PCLOSE _pclose
-#else
-#define POPEN popen
-#define PCLOSE pclose
-#endif
 
 using namespace std;
 using namespace Eigen;
@@ -115,38 +106,50 @@ void poseValueToTransform(tinyxml2::XMLElement* node, const PoseMap& pose_map,
   }
 }
 
-string exec(string cmd) {
-  FILE* pipe = POPEN(cmd.c_str(), "r");
-  if (!pipe) return "ERROR";
-  char buffer[128];
-  string result = "";
-  while (!feof(pipe)) {
-    if (fgets(buffer, 128, pipe) != NULL) result += buffer;
-  }
-  PCLOSE(pipe);
-  return result;
-}
-
+namespace {
 void searchDirectory(map<string, string>& package_map, string path) {
+#if defined(WIN32) || defined(WIN64)
+  const char pathsep = ';';
+#else
+  const char pathsep = ':';
+#endif
+
+
   string token, t;
   istringstream iss(path);
+  const std::string target_filename("package.xml");
 
-  while (getline(iss, token, ':')) {
-    istringstream p(exec("find -L " + token + " -iname package.xml"));
-    while (getline(p, t)) {
-      spruce::path mypath_s(t);
-      auto path_split = mypath_s.split();
-      if (path_split.size() > 2) {
-        string package = path_split.at(path_split.size() - 2);
-        auto package_iter = package_map.find(package);
-        // Don't overwrite entries in the map
-        if (package_iter == package_map.end()) {
-          package_map.insert(make_pair(package, mypath_s.root().append("/")));
-        }
-        // cout << mypath.getFileName() << endl;
-      }
+  while (getline(iss, token, pathsep)) {
+    tinydir_dir dir;
+    if (tinydir_open(&dir, token.c_str()) < 0 ) {
+      std::cerr << "Unable to open directory: " << token << std::endl;
+      continue;
     }
+
+    while (dir.has_next) {
+      tinydir_file file;
+      tinydir_readfile(&dir, &file);
+
+      // Skip hidden directories (including, importantly, "." and "..").
+      if (file.is_dir && (file.name[0] != '.')) {
+        searchDirectory(package_map, file.path);
+      } else if (file.name == target_filename) {
+        spruce::path mypath_s(file.path);
+        auto path_split = mypath_s.split();
+        if (path_split.size() > 2) {
+          string package = path_split.at(path_split.size() - 2);
+          auto package_iter = package_map.find(package);
+          // Don't overwrite entries in the map
+          if (package_iter == package_map.end()) {
+            package_map.insert(make_pair(package, mypath_s.root().append("/")));
+          }
+        }
+      }
+      tinydir_next(&dir);
+    }
+    tinydir_close(&dir);
   }
+}
 }
 
 void populatePackageMap(map<string, string>& package_map) {
@@ -159,6 +162,7 @@ void populatePackageMap(map<string, string>& package_map) {
   if (cstrpath) searchDirectory(package_map, cstrpath);
 }
 
+namespace {
 bool rospack(const string& package, const map<string, string>& package_map,
              string& package_path) {
   // my own quick and dirty implementation of the rospack algorithm (based on my
@@ -173,6 +177,7 @@ bool rospack(const string& package, const map<string, string>& package_map,
          << endl;
     return false;
   }
+}
 }
 
 string resolveFilename(const string& filename,

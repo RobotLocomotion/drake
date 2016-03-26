@@ -1,5 +1,7 @@
-#ifndef DRAKE_CONSTRAINT_H
-#define DRAKE_CONSTRAINT_H
+#ifndef DRAKE_SOLVERS_CONSTRAINT_H
+#define DRAKE_SOLVERS_CONSTRAINT_H
+
+#include <stdexcept>
 
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
@@ -193,6 +195,50 @@ class BoundingBoxConstraint : public LinearConstraint {
     y = x;
   }
 };
-}
 
-#endif
+
+/** LinearComplementarityConstraint
+ *
+ * Implements a constraint of the form:
+ * <pre>
+ *   Mx + q >= 0
+ *   x >= 0
+ *   x'(Mx + q) == 0
+ * </pre>
+ * An implied slack variable complements any 0 component of x.  To get
+ * the slack values at a given solution x, use eval(x).
+ */
+class LinearComplementarityConstraint : public Constraint {
+ public:
+  template <typename DerivedM, typename Derivedq>
+  LinearComplementarityConstraint(const Eigen::MatrixBase<DerivedM>& M,
+                                  const Eigen::MatrixBase<Derivedq>& q)
+      : Constraint(q.rows()), M(M), q(q) {}
+
+  virtual ~LinearComplementarityConstraint() {}
+
+  /** Return Mx + q (the value of the slack variable). */
+  virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                    Eigen::VectorXd& y) const override {
+    y.resize(getNumConstraints());
+    y = (M * x) + q;
+  }
+  virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
+                    TaylorVecXd& y) const override {
+    y.resize(getNumConstraints());
+    y = (M.cast<TaylorVarXd>() * x) + q.cast<TaylorVarXd>();
+  };
+
+  const Eigen::MatrixXd& getM() const { return M; };
+  const Eigen::VectorXd& getq() const { return q; };
+
+ private:
+  // TODO(ggould-tri) We are storing what are likely statically sized matrices
+  // in dynamically allocated containers.  This probably isn't optimal.
+  Eigen::MatrixXd M;
+  Eigen::VectorXd q;
+};
+
+} // end namespace Drake
+
+#endif // DRAKE_SOLVERS_CONSTRAINT_H

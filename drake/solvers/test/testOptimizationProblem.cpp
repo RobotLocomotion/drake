@@ -112,7 +112,7 @@ void trivialLeastSquares() {
 
   std::shared_ptr<BoundingBoxConstraint> bbcon(new BoundingBoxConstraint(
       MatrixXd::Constant(2, 1, -1000.0), MatrixXd::Constant(2, 1, 1000.0)));
-  prog.addConstraint(bbcon, {x.head(2)});
+  prog.addBoundingBoxConstraint(bbcon, {x.head(2)});
   prog.solve();  // now it will solve as a nonlinear program
   EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10, MatrixCompareType::absolute));
   // valuecheckMatrix(b.topRows(2) / 2, y.value(), 1e-10);
@@ -204,7 +204,7 @@ void gloptipolyConstrainedMinimization() {
   prog.addCost(GloptipolyConstrainedExampleObjective());
   std::shared_ptr<GloptipolyConstrainedExampleConstraint> qp_con(
       new GloptipolyConstrainedExampleConstraint());
-  prog.addConstraint(qp_con, {x});
+  prog.addGenericConstraint(qp_con, {x});
   prog.addLinearConstraint(
       Vector3d(1, 1, 1).transpose(),
       Vector1d::Constant(-numeric_limits<double>::infinity()),
@@ -224,11 +224,100 @@ void gloptipolyConstrainedMinimization() {
   // valuecheckMatrix(x.value(), Vector3d(.5, 0, 3), 1e-4);
 }
 
+/**
+ * Test that the eval() method of LinearComplementarityConstraint correctly
+ * returns the slack.
+ */
+void simpleLCPConstraintEval() {
+  OptimizationProblem prog;
+  Eigen::Matrix<double, 2, 2> M;
+  M << 1, 0,
+      0, 1;
+
+  Eigen::Vector2d q(-1, -1);
+
+  LinearComplementarityConstraint c(M, q);
+  Eigen::VectorXd x;
+  c.eval(Eigen::Vector2d(1, 1), x);
+
+  EXPECT_TRUE(CompareMatrices(x, Vector2d(0, 0), 1e-4, MatrixCompareType::absolute));
+  // valuecheckMatrix(x, Vector2d(0, 0), 1e-4);
+  c.eval(Eigen::Vector2d(1, 2), x);
+  
+  EXPECT_TRUE(CompareMatrices(x, Vector2d(0, 1), 1e-4, MatrixCompareType::absolute));
+  // valuecheckMatrix(x, Vector2d(0, 1), 1e-4);
+}
+
+/** Simple linear complementarity problem example.
+ * @brief a hand-created LCP easily solved.
+ *
+ * Note: This test is meant to test that OptimizationProblem.solve() works in
+ * this case; tests of the correctness of the Moby LCP solver itself live in
+ * testMobyLCP.
+ */
+void simpleLCP() {
+  OptimizationProblem prog;
+  Eigen::Matrix<double, 2, 2> M;
+  M << 1, 4,
+      3, 1;
+
+  Eigen::Vector2d q(-16, -15);
+
+  auto x = prog.addContinuousVariables(2);
+
+  prog.addLinearComplementarityConstraint(M, q, {x});
+  prog.solve();
+  prog.printSolution();
+  EXPECT_TRUE(CompareMatrices(x.value(), Vector2d(16, 0), 1e-4, MatrixCompareType::absolute));
+  // valuecheckMatrix(x.value(), Vector2d(16, 0), 1e-4);
+}
+
+/** Multiple LC constraints in a single optimization problem
+ * @brief Just two copies of the simpleLCP example, to make sure that the
+ * write-through of LCP results to the solution vector works correctly.
+ */
+void multiLCP() {
+  OptimizationProblem prog;
+  Eigen::Matrix<double, 2, 2> M;
+  M << 1, 4,
+      3, 1;
+
+  Eigen::Vector2d q(-16, -15);
+
+  auto x = prog.addContinuousVariables(2);
+  auto y = prog.addContinuousVariables(2);
+
+  prog.addLinearComplementarityConstraint(M, q, {x});
+  prog.addLinearComplementarityConstraint(M, q, {y});
+  prog.solve();
+  prog.printSolution();
+
+  EXPECT_TRUE(CompareMatrices(x.value(), Vector2d(16, 0), 1e-4, MatrixCompareType::absolute));
+  // valuecheckMatrix(x.value(), Vector2d(16, 0), 1e-4);
+
+  EXPECT_TRUE(CompareMatrices(y.value(), Vector2d(16, 0), 1e-4, MatrixCompareType::absolute));
+  // valuecheckMatrix(y.value(), Vector2d(16, 0), 1e-4);
+}
+
 TEST(OptimizationProblemTest, AllTests) {
-  testAddFunction();
-  trivialLeastSquares();
-  sixHumpCamel();
-  gloptipolyConstrainedMinimization();
+
+  // SNOPT tests
+  try {
+    testAddFunction();
+    trivialLeastSquares();
+    sixHumpCamel();
+    gloptipolyConstrainedMinimization();
+  } catch (const std::exception& e) {
+    // If the exception is SNOPT unavailble, skip the remaining snopt tests
+    // and proceed; if not, reraise it to fail.
+    if (std::string(e.what()) != "SNOPT unavailable") {
+      throw;
+    }
+  }
+  simpleLCPConstraintEval();
+  simpleLCP();
+  multiLCP();
+  return 0;
 }
 
 }  // namespace test
