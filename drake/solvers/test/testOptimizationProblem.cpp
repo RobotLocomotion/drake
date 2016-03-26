@@ -3,9 +3,32 @@
 #include "drake/solvers/Optimization.h"
 #include "drake/util/testUtil.h"
 
-using namespace std;
-using namespace Eigen;
-using namespace Drake;
+#include "gtest/gtest.h"
+#include "drake/util/eigen_matrix_compare.h"
+
+using Eigen::Dynamic;
+using Eigen::Ref;
+using Eigen::Matrix;
+using Eigen::Matrix2d;
+using Eigen::Matrix4d;
+using Eigen::MatrixXd;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+using Eigen::VectorXd;
+
+using std::numeric_limits;
+
+using Drake::Constraint;
+using Drake::TaylorVecXd;
+using Drake::VecIn;
+using Drake::Vector1d;
+using Drake::VecOut;
+using Drake::OptimizationProblem;
+using Drake::BoundingBoxConstraint;
+using drake::util::MatrixCompareType;
+
+namespace drake {
+namespace test {
 
 struct Movable {
   Movable() = default;
@@ -65,28 +88,36 @@ void trivialLeastSquares() {
   Vector4d b = Vector4d::Random();
   auto con = prog.addLinearEqualityConstraint(Matrix4d::Identity(), b, {x});
   prog.solve();
-  valuecheckMatrix(b, x.value(), 1e-10);
+  EXPECT_TRUE(CompareMatrices(b, x.value(), 1e-10, MatrixCompareType::absolute));
+  // valuecheckMatrix(b, x.value(), 1e-10);
   valuecheck(b(2), x2.value()(0), 1e-10);
-  valuecheckMatrix(b.head(3), xhead.value(), 1e-10);
+  EXPECT_TRUE(CompareMatrices(b.head(3), xhead.value(), 1e-10, MatrixCompareType::absolute));
+  // valuecheckMatrix(b.head(3), xhead.value(), 1e-10);
   valuecheck(b(2), xhead(2).value()(0), 1e-10);  // a segment of a segment
 
   auto const& y = prog.addContinuousVariables(2);
   prog.addLinearEqualityConstraint(2 * Matrix2d::Identity(), b.topRows(2), {y});
   prog.solve();
-  valuecheckMatrix(b.topRows(2) / 2, y.value(), 1e-10);
-  valuecheckMatrix(b, x.value(), 1e-10);
+  EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10, MatrixCompareType::absolute));
+  // valuecheckMatrix(b.topRows(2) / 2, y.value(), 1e-10);
+  EXPECT_TRUE(CompareMatrices(b, x.value(), 1e-10, MatrixCompareType::absolute));
+  // valuecheckMatrix(b, x.value(), 1e-10);
 
   con->updateConstraint(3 * Matrix4d::Identity(), b);
   prog.solve();
-  valuecheckMatrix(b.topRows(2) / 2, y.value(), 1e-10);
-  valuecheckMatrix(b / 3, x.value(), 1e-10);
+  EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10, MatrixCompareType::absolute));
+  // valuecheckMatrix(b.topRows(2) / 2, y.value(), 1e-10);
+  EXPECT_TRUE(CompareMatrices(b / 3, x.value(), 1e-10, MatrixCompareType::absolute));
+  // valuecheckMatrix(b / 3, x.value(), 1e-10);
 
   std::shared_ptr<BoundingBoxConstraint> bbcon(new BoundingBoxConstraint(
       MatrixXd::Constant(2, 1, -1000.0), MatrixXd::Constant(2, 1, 1000.0)));
   prog.addConstraint(bbcon, {x.head(2)});
   prog.solve();  // now it will solve as a nonlinear program
-  valuecheckMatrix(b.topRows(2) / 2, y.value(), 1e-10);
-  valuecheckMatrix(b / 3, x.value(), 1e-10);
+  EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10, MatrixCompareType::absolute));
+  // valuecheckMatrix(b.topRows(2) / 2, y.value(), 1e-10);
+  EXPECT_TRUE(CompareMatrices(b / 3, x.value(), 1e-10, MatrixCompareType::absolute));
+  // valuecheckMatrix(b / 3, x.value(), 1e-10);
 }
 
 class SixHumpCamelObjective {
@@ -189,13 +220,16 @@ void gloptipolyConstrainedMinimization() {
   prog.solve();
   prog.printSolution();
 
-  valuecheckMatrix(x.value(), Vector3d(.5, 0, 3), 1e-4);
+  EXPECT_TRUE(CompareMatrices(x.value(), Vector3d(0.5, 0, 3), 1e-4, MatrixCompareType::absolute));
+  // valuecheckMatrix(x.value(), Vector3d(.5, 0, 3), 1e-4);
 }
 
-int main(int argc, char* argv[]) {
+TEST(OptimizationProblemTest, AllTests) {
   testAddFunction();
   trivialLeastSquares();
   sixHumpCamel();
   gloptipolyConstrainedMinimization();
-  return 0;
 }
+
+}  // namespace test
+}  // namespace drake
