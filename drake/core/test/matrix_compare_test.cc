@@ -120,5 +120,21 @@ TEST(MatrixCompareTest, RelativeCompare) {
     &error_msg));
 }
 
+// Test ability to not specify an error message parameter
+TEST(MatrixCompareTest, NoMessageParam) {
+  Eigen::MatrixXd m1(2, 2);
+  m1 << 1, 2, 3, 4;
+
+  Eigen::MatrixXd m2(2, 2);
+  m2 << 1, 2, 3, 4;
+
+  double one_pct = 0.01;
+
+  // The difference between m1 and m2 is less than 1%.
+  // They should be considered equal.
+  // Note that we do not specify an error message parameter.
+  EXPECT_TRUE(CompareMatrices(m1, m2, one_pct, MatrixCompareType::relative));
+}
+
 }  // namespace
 }  // namespace Drake
