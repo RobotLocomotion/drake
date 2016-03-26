@@ -8,7 +8,6 @@
 
 #include <algorithm>
 #include <string>
-#include <regex>
 #include <limits>
 #include "KinematicsCache.h"
 
@@ -1567,9 +1566,6 @@ shared_ptr<RigidBody> RigidBodyTree::findLink(std::string linkname,
   std::transform(linkname.begin(), linkname.end(), linkname.begin(),
                  ::tolower);  // convert to lower case
 
-  // std::regex linkname_connector("[abc]");
-  // cout<<"get linkname_connector"<<endl;
-  // linkname = std::regex_replace(linkname, linkname_connector, string("_"));
   int match = -1;
   for (int i = 0; i < bodies.size(); i++) {
     // Note: unlike the MATLAB implementation, I don't have to handle the fixed
@@ -1602,9 +1598,6 @@ shared_ptr<RigidBody> RigidBodyTree::findLink(std::string linkname,
   std::transform(model_name.begin(), model_name.end(), model_name.begin(),
                  ::tolower);  // convert to lower case
 
-  // std::regex linkname_connector("[abc]");
-  // cout<<"get linkname_connector"<<endl;
-  // linkname = std::regex_replace(linkname, linkname_connector, string("_"));
   int match = -1;
   for (int i = 0; i < bodies.size(); i++) {
     // Note: unlike the MATLAB implementation, I don't have to handle the fixed
