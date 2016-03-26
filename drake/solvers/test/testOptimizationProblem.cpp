@@ -12,6 +12,7 @@ using Eigen::Matrix;
 using Eigen::Matrix2d;
 using Eigen::Matrix4d;
 using Eigen::MatrixXd;
+using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
@@ -25,6 +26,7 @@ using Drake::Vector1d;
 using Drake::VecOut;
 using Drake::OptimizationProblem;
 using Drake::BoundingBoxConstraint;
+using Drake::LinearComplementarityConstraint;
 using drake::util::MatrixCompareType;
 
 namespace drake {
@@ -317,7 +319,6 @@ TEST(OptimizationProblemTest, AllTests) {
   simpleLCPConstraintEval();
   simpleLCP();
   multiLCP();
-  return 0;
 }
 
 }  // namespace test
