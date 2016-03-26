@@ -47,13 +47,13 @@ There are several tools for helping you to compile with the required style. They
 ClangFormat
 ^^^^^^^^^^^
 
-The following instructions were tested on OS X but should also work on Linux. A different installation procedure may need to be followed on Windows.
+*Installion*
 
-Download it from: http://llvm.org/releases/download.html
+On Ubuntu, clang-format is already packaged. Ubuntu users should use the pre-packaged version, not a separate download.
 
-Extract it to a known location like `~/tools/`.
+On OSX, `clang-format` can be installed via brew::
 
-Create a symbolic link from `/usr/local/bin/clang-format` to `[clang directory]/bin/clang-format`.
+    brew install clang-format
 
 You can check whether you've installed it correctly by executing::
 
