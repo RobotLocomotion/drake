@@ -55,20 +55,29 @@ bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
 
       bool both_nan = std::isnan(m1(ii, jj)) && std::isnan(m2(ii, jj));
 
-      if (both_positive_infinity || both_negative_infinity || both_nan){
+      if (both_positive_infinity || both_negative_infinity || both_nan)
+        continue;
+
+      // Check for case where one value is NaN and the other is not
+      if ((std::isnan(m1(ii, jj)) && !std::isnan(m2(ii, jj))) ||
+          (!std::isnan(m1(ii, jj)) && std::isnan(m2(ii, jj)))) {
+        std::stringstream msg;
+          msg
+            << "NaN missmatch at (" << ii << ", " << jj << "):\nm1 =\n"
+            << m1 << "\nm2 =\n" << m2;
+        *error_msg = msg.str();
+        result = false;
         continue;
       }
 
-      // Determine whether the difference between the two matrices are less than
+      // Determine whether the difference between the two matrices isl less than
       // the tolerance.
-      bool is_within_tolerance = false;
       double delta = std::abs(m1(ii, jj) - m2(ii, jj));
 
       if (compare_type == MatrixCompareType::absolute) {
         // Perform comparison using absolute tolerance.
-        is_within_tolerance = delta < tolerance;
 
-        if (!is_within_tolerance) {
+        if (delta > tolerance) {
           std::stringstream msg;
           msg
             << "Values at (" << ii << ", " << jj << ") exceed tolerance: "
@@ -86,9 +95,7 @@ bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
                                     std::abs(m2(ii, jj)));
         double relative_tolerance = tolerance * std::max(1.0, max_value);
 
-        is_within_tolerance = delta < relative_tolerance;
-
-        if (!is_within_tolerance) {
+        if (delta > relative_tolerance) {
           std::stringstream msg;
           msg
             << "Values at (" << ii << ", " << jj << ") exceed tolerance: "
