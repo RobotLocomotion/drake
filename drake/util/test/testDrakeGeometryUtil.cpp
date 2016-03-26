@@ -1,12 +1,12 @@
 #include <Eigen/Core>
+#include <cmath>
+#include <iostream>
+#include "drake/core/Gradient.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/testUtil.h"
-#include "drake/core/Gradient.h"
-#include <iostream>
-#include <cmath>
 
-#include "gtest/gtest.h"
 #include "drake/util/eigen_matrix_compare.h"
+#include "gtest/gtest.h"
 
 using Eigen::Isometry3d;
 using Eigen::Vector3d;
@@ -69,7 +69,8 @@ void testRotationConversionFunctions() {
     Vector3d rpy = uniformlyRandomRPY(generator);
     Vector4d axis = rpy2axis(rpy);
     Vector3d rpy_back = axis2rpy(axis);
-    EXPECT_TRUE(CompareMatrices(rpy, rpy_back, 1e-6, MatrixCompareType::absolute));
+    EXPECT_TRUE(
+        CompareMatrices(rpy, rpy_back, 1e-6, MatrixCompareType::absolute));
   }
   // expmap2quat, quat2expmap
   Vector4d quat_degenerate = Vector4d::Zero();
@@ -86,7 +87,8 @@ void testRotationConversionFunctions() {
   Quaterniond eigenQuat = quat2eigenQuaternion(quat);
   Matrix3d R_expected = quat2rotmat(quat);
   Matrix3d R_eigen = eigenQuat.matrix();
-  EXPECT_TRUE(CompareMatrices(R_expected, R_eigen, 1e-6, MatrixCompareType::absolute));
+  EXPECT_TRUE(
+      CompareMatrices(R_expected, R_eigen, 1e-6, MatrixCompareType::absolute));
 }
 
 void testDHomogTrans(int ntests) {
@@ -222,7 +224,8 @@ void testSpatialCrossProduct() {
   auto b = (Matrix<double, TWIST_SIZE, TWIST_SIZE>::Identity()).eval();
   auto a_crm_b = crossSpatialMotion(a, b);
   auto a_crf_b = crossSpatialForce(a, b);
-  EXPECT_TRUE(CompareMatrices(a_crf_b, -a_crm_b.transpose(), 1e-8, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(a_crf_b, -a_crm_b.transpose(), 1e-8,
+                              MatrixCompareType::absolute));
 }
 
 void testdrpy2rotmat() {
@@ -254,8 +257,8 @@ void testExpmap2quat(const Vector4d &quat) {
   auto quat_back_grad = autoDiffToGradientMatrix(quat_back_autodiff);
   valuecheck(std::abs((quat.transpose() * quat_back).value()), 1.0, 1e-8);
   Matrix3d identity = Matrix3d::Identity();
-  EXPECT_TRUE(CompareMatrices((expmap_grad * quat_back_grad).eval(),
-    identity, 1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices((expmap_grad * quat_back_grad).eval(), identity,
+                              1e-10, MatrixCompareType::absolute));
 }
 
 TEST(drakeGeometryUtilTest, AllTests) {

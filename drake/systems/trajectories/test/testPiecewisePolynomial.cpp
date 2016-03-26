@@ -1,12 +1,12 @@
-#include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include <Eigen/Core>
+#include <iostream>
 #include <random>
 #include <vector>
+#include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include "drake/util/testUtil.h"
-#include <iostream>
 
-#include "gtest/gtest.h"
 #include "drake/util/eigen_matrix_compare.h"
+#include "gtest/gtest.h"
 
 using Eigen::Matrix;
 using std::default_random_engine;
@@ -50,7 +50,8 @@ void testIntegralAndDerivative() {
                                                          piecewise.cols());
   PiecewisePolynomialType integral = piecewise.integral(desired_value_at_t0);
   auto value_at_t0 = integral.value(piecewise.getStartTime());
-  EXPECT_TRUE(CompareMatrices(desired_value_at_t0, value_at_t0, 1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(desired_value_at_t0, value_at_t0, 1e-10,
+                              MatrixCompareType::absolute));
 
   // check continuity at knot points
   for (int i = 0; i < piecewise.getNumberOfSegments() - 1; ++i) {
@@ -100,20 +101,25 @@ void testBasicFunctionality() {
                                               piecewise1.getEndTime());
     double t = uniform(generator);
 
-    EXPECT_TRUE(CompareMatrices(sum.value(t), piecewise1.value(t) + piecewise2.value(t), 
-      1e-8, MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(sum.value(t),
+                                piecewise1.value(t) + piecewise2.value(t), 1e-8,
+                                MatrixCompareType::absolute));
 
-    EXPECT_TRUE(CompareMatrices(difference.value(t), piecewise2.value(t) - piecewise1.value(t), 
-      1e-8, MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(difference.value(t),
+                                piecewise2.value(t) - piecewise1.value(t), 1e-8,
+                                MatrixCompareType::absolute));
 
-    EXPECT_TRUE(CompareMatrices(piecewise1_plus_offset.value(t), piecewise1.value(t) + offset, 
-      1e-8, MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(piecewise1_plus_offset.value(t),
+                                piecewise1.value(t) + offset, 1e-8,
+                                MatrixCompareType::absolute));
 
-    EXPECT_TRUE(CompareMatrices(piecewise1_minus_offset.value(t), piecewise1.value(t) - offset, 
-      1e-8, MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(piecewise1_minus_offset.value(t),
+                                piecewise1.value(t) - offset, 1e-8,
+                                MatrixCompareType::absolute));
 
-    EXPECT_TRUE(CompareMatrices(piecewise1_shifted.value(t), piecewise1.value(t - shift), 
-      1e-8, MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(piecewise1_shifted.value(t),
+                                piecewise1.value(t - shift), 1e-8,
+                                MatrixCompareType::absolute));
   }
 }
 
@@ -128,12 +134,12 @@ void testValueOutsideOfRange() {
       PiecewisePolynomial<CoefficientType>::random(3, 4, 5, segment_times);
 
   EXPECT_TRUE(CompareMatrices(piecewise.value(piecewise.getStartTime()),
-    piecewise.value(piecewise.getStartTime() - 1.0),
-    1e-10, MatrixCompareType::absolute));
+                              piecewise.value(piecewise.getStartTime() - 1.0),
+                              1e-10, MatrixCompareType::absolute));
 
   EXPECT_TRUE(CompareMatrices(piecewise.value(piecewise.getEndTime()),
-    piecewise.value(piecewise.getEndTime() + 1.0),
-    1e-10, MatrixCompareType::absolute));
+                              piecewise.value(piecewise.getEndTime() + 1.0),
+                              1e-10, MatrixCompareType::absolute));
 }
 
 TEST(testPiecewisePolynomial, AllTests) {

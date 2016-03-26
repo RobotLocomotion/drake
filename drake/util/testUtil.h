@@ -1,12 +1,12 @@
 #ifndef TESTUTIL_H_
 #define TESTUTIL_H_
 
-#include <chrono>
 #include <Eigen/Core>
-#include <sstream>
-#include <string>
-#include <stdexcept>
+#include <chrono>
 #include <cmath>
+#include <sstream>
+#include <stdexcept>
+#include <string>
 
 // requires <chrono>, which isn't available in MSVC2010...
 template <typename TimeT = std::chrono::milliseconds>

@@ -3,8 +3,8 @@
 #include "drake/solvers/Optimization.h"
 #include "drake/util/testUtil.h"
 
-#include "gtest/gtest.h"
 #include "drake/util/eigen_matrix_compare.h"
+#include "gtest/gtest.h"
 
 using Eigen::Dynamic;
 using Eigen::Ref;
@@ -90,35 +90,43 @@ void trivialLeastSquares() {
   Vector4d b = Vector4d::Random();
   auto con = prog.addLinearEqualityConstraint(Matrix4d::Identity(), b, {x});
   prog.solve();
-  EXPECT_TRUE(CompareMatrices(b, x.value(), 1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(
+      CompareMatrices(b, x.value(), 1e-10, MatrixCompareType::absolute));
   // valuecheckMatrix(b, x.value(), 1e-10);
   valuecheck(b(2), x2.value()(0), 1e-10);
-  EXPECT_TRUE(CompareMatrices(b.head(3), xhead.value(), 1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(b.head(3), xhead.value(), 1e-10,
+                              MatrixCompareType::absolute));
   // valuecheckMatrix(b.head(3), xhead.value(), 1e-10);
   valuecheck(b(2), xhead(2).value()(0), 1e-10);  // a segment of a segment
 
   auto const& y = prog.addContinuousVariables(2);
   prog.addLinearEqualityConstraint(2 * Matrix2d::Identity(), b.topRows(2), {y});
   prog.solve();
-  EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10,
+                              MatrixCompareType::absolute));
   // valuecheckMatrix(b.topRows(2) / 2, y.value(), 1e-10);
-  EXPECT_TRUE(CompareMatrices(b, x.value(), 1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(
+      CompareMatrices(b, x.value(), 1e-10, MatrixCompareType::absolute));
   // valuecheckMatrix(b, x.value(), 1e-10);
 
   con->updateConstraint(3 * Matrix4d::Identity(), b);
   prog.solve();
-  EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10,
+                              MatrixCompareType::absolute));
   // valuecheckMatrix(b.topRows(2) / 2, y.value(), 1e-10);
-  EXPECT_TRUE(CompareMatrices(b / 3, x.value(), 1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(
+      CompareMatrices(b / 3, x.value(), 1e-10, MatrixCompareType::absolute));
   // valuecheckMatrix(b / 3, x.value(), 1e-10);
 
   std::shared_ptr<BoundingBoxConstraint> bbcon(new BoundingBoxConstraint(
       MatrixXd::Constant(2, 1, -1000.0), MatrixXd::Constant(2, 1, 1000.0)));
   prog.addBoundingBoxConstraint(bbcon, {x.head(2)});
   prog.solve();  // now it will solve as a nonlinear program
-  EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10,
+                              MatrixCompareType::absolute));
   // valuecheckMatrix(b.topRows(2) / 2, y.value(), 1e-10);
-  EXPECT_TRUE(CompareMatrices(b / 3, x.value(), 1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(
+      CompareMatrices(b / 3, x.value(), 1e-10, MatrixCompareType::absolute));
   // valuecheckMatrix(b / 3, x.value(), 1e-10);
 }
 
@@ -222,7 +230,8 @@ void gloptipolyConstrainedMinimization() {
   prog.solve();
   prog.printSolution();
 
-  EXPECT_TRUE(CompareMatrices(x.value(), Vector3d(0.5, 0, 3), 1e-4, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(x.value(), Vector3d(0.5, 0, 3), 1e-4,
+                              MatrixCompareType::absolute));
   // valuecheckMatrix(x.value(), Vector3d(.5, 0, 3), 1e-4);
 }
 
@@ -234,7 +243,7 @@ void simpleLCPConstraintEval() {
   OptimizationProblem prog;
   Eigen::Matrix<double, 2, 2> M;
   M << 1, 0,
-      0, 1;
+       0, 1;
 
   Eigen::Vector2d q(-1, -1);
 
@@ -242,11 +251,13 @@ void simpleLCPConstraintEval() {
   Eigen::VectorXd x;
   c.eval(Eigen::Vector2d(1, 1), x);
 
-  EXPECT_TRUE(CompareMatrices(x, Vector2d(0, 0), 1e-4, MatrixCompareType::absolute));
+  EXPECT_TRUE(
+      CompareMatrices(x, Vector2d(0, 0), 1e-4, MatrixCompareType::absolute));
   // valuecheckMatrix(x, Vector2d(0, 0), 1e-4);
   c.eval(Eigen::Vector2d(1, 2), x);
-  
-  EXPECT_TRUE(CompareMatrices(x, Vector2d(0, 1), 1e-4, MatrixCompareType::absolute));
+
+  EXPECT_TRUE(
+      CompareMatrices(x, Vector2d(0, 1), 1e-4, MatrixCompareType::absolute));
   // valuecheckMatrix(x, Vector2d(0, 1), 1e-4);
 }
 
@@ -261,7 +272,7 @@ void simpleLCP() {
   OptimizationProblem prog;
   Eigen::Matrix<double, 2, 2> M;
   M << 1, 4,
-      3, 1;
+       3, 1;
 
   Eigen::Vector2d q(-16, -15);
 
@@ -270,7 +281,8 @@ void simpleLCP() {
   prog.addLinearComplementarityConstraint(M, q, {x});
   prog.solve();
   prog.printSolution();
-  EXPECT_TRUE(CompareMatrices(x.value(), Vector2d(16, 0), 1e-4, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(x.value(), Vector2d(16, 0), 1e-4,
+                              MatrixCompareType::absolute));
   // valuecheckMatrix(x.value(), Vector2d(16, 0), 1e-4);
 }
 
@@ -282,7 +294,7 @@ void multiLCP() {
   OptimizationProblem prog;
   Eigen::Matrix<double, 2, 2> M;
   M << 1, 4,
-      3, 1;
+       3, 1;
 
   Eigen::Vector2d q(-16, -15);
 
@@ -294,15 +306,16 @@ void multiLCP() {
   prog.solve();
   prog.printSolution();
 
-  EXPECT_TRUE(CompareMatrices(x.value(), Vector2d(16, 0), 1e-4, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(x.value(), Vector2d(16, 0), 1e-4,
+                              MatrixCompareType::absolute));
   // valuecheckMatrix(x.value(), Vector2d(16, 0), 1e-4);
 
-  EXPECT_TRUE(CompareMatrices(y.value(), Vector2d(16, 0), 1e-4, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(y.value(), Vector2d(16, 0), 1e-4,
+                              MatrixCompareType::absolute));
   // valuecheckMatrix(y.value(), Vector2d(16, 0), 1e-4);
 }
 
 TEST(OptimizationProblemTest, AllTests) {
-
   // SNOPT tests
   try {
     testAddFunction();

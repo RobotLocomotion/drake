@@ -3,8 +3,8 @@
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/testUtil.h"
 
-#include "gtest/gtest.h"
 #include "drake/util/eigen_matrix_compare.h"
+#include "gtest/gtest.h"
 
 using Drake::getDrakePath;
 using Drake::getRandomVector;
@@ -16,7 +16,8 @@ namespace test {
 
 TEST(urdfDynamicsTest, AllTests) {
   auto rbsys = RigidBodySystem();
-  rbsys.addRobotFromFile(getDrakePath() + "/examples/Quadrotor/quadrotor.urdf", DrakeJoint::ROLLPITCHYAW);
+  rbsys.addRobotFromFile(getDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
+                         DrakeJoint::ROLLPITCHYAW);
 
   auto p = Quadrotor();
 
@@ -29,7 +30,8 @@ TEST(urdfDynamicsTest, AllTests) {
 
     auto xdot = toEigen(p.dynamics(0.0, x0, u0));
     auto xdot_rb = rbsys.dynamics(0.0, x0_rb, u0_rb);
-    EXPECT_TRUE(CompareMatrices(xdot_rb, xdot, 1e-8, MatrixCompareType::absolute));
+    EXPECT_TRUE(
+        CompareMatrices(xdot_rb, xdot, 1e-8, MatrixCompareType::absolute));
   }
 }
 

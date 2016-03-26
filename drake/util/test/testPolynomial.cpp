@@ -1,9 +1,9 @@
+#include <iostream>
 #include "drake/util/Polynomial.h"
 #include "drake/util/testUtil.h"
-#include <iostream>
 
-#include "gtest/gtest.h"
 #include "drake/util/eigen_matrix_compare.h"
+#include "gtest/gtest.h"
 
 using Eigen::VectorXd;
 using std::cout;
@@ -31,20 +31,18 @@ void testIntegralAndDerivative() {
   Polynomial<CoefficientType> third_derivative_check =
       poly.derivative().derivative().derivative();
 
-  EXPECT_TRUE(CompareMatrices(
-    third_derivative.getCoefficients(),
-    third_derivative_check.getCoefficients(),
-    1e-14, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(third_derivative.getCoefficients(),
+                              third_derivative_check.getCoefficients(), 1e-14,
+                              MatrixCompareType::absolute));
 
   // valuecheckMatrix(third_derivative.getCoefficients(),
   //                  third_derivative_check.getCoefficients(), 1e-14);
 
   Polynomial<CoefficientType> tenth_derivative = poly.derivative(10);
 
-  EXPECT_TRUE(CompareMatrices(
-    tenth_derivative.getCoefficients(),
-    VectorXd::Zero(1),
-    1e-14, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(tenth_derivative.getCoefficients(),
+                              VectorXd::Zero(1), 1e-14,
+                              MatrixCompareType::absolute));
 
   // valuecheckMatrix(tenth_derivative.getCoefficients(), VectorXd::Zero(1),
   //                  1e-14);
@@ -53,12 +51,12 @@ void testIntegralAndDerivative() {
   // cout << "integral: " << integral << endl;
   Polynomial<CoefficientType> poly_back = integral.derivative();
 
-  EXPECT_TRUE(CompareMatrices(
-    poly_back.getCoefficients(),
-    poly.getCoefficients(),
-    1e-14, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(poly_back.getCoefficients(),
+                              poly.getCoefficients(), 1e-14,
+                              MatrixCompareType::absolute));
 
-  // valuecheckMatrix(poly_back.getCoefficients(), poly.getCoefficients(), 1e-14);
+  // valuecheckMatrix(poly_back.getCoefficients(), poly.getCoefficients(),
+  // 1e-14);
 }
 
 template <typename CoefficientType>
@@ -186,21 +184,13 @@ TEST(PolynomialTest, IntegrateAndDerivative) {
   testIntegralAndDerivative<double>();
 }
 
-TEST(PolynomialTest, Operators) {
-  testOperators<double>();
-}
+TEST(PolynomialTest, Operators) { testOperators<double>(); }
 
-TEST(PolynomialTest, Roots) {
-  testRoots<double>();
-}
+TEST(PolynomialTest, Roots) { testRoots<double>(); }
 
-TEST(PolynomialTest, EvalType) {
-  testEvalType();
-}
+TEST(PolynomialTest, EvalType) { testEvalType(); }
 
-TEST(PolynomialTest, PolynomialMatrix) {
-  testPolynomialMatrix<double>();
-}
+TEST(PolynomialTest, PolynomialMatrix) { testPolynomialMatrix<double>(); }
 
 // int main(int argc, char **argv) {
 //   testIntegralAndDerivative<double>();

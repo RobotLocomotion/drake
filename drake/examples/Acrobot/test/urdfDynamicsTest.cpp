@@ -1,8 +1,8 @@
 
 #include "../Acrobot.h"
-#include "gtest/gtest.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/eigen_matrix_compare.h"
+#include "gtest/gtest.h"
 
 using Drake::RigidBodySystem;
 using Drake::getRandomVector;
@@ -14,18 +14,20 @@ namespace test {
 
 // Tests whether the dynamics of Acrobot are the same regardless of whether
 // it is loaded via direct Acrobot object instantiation, URDF, or SDF. This
-// is done by loading random state and input values into the models and verifying
+// is done by loading random state and input values into the models and
+// verifying
 // that their dynamics are identical.
 TEST(AcrobotDynamicsTest, ValueAssignment) {
-
   // Create three Acrobot models
   auto r = Acrobot();
 
   auto r_urdf = RigidBodySystem();
-  r_urdf.addRobotFromFile(getDrakePath() + "/examples/Acrobot/Acrobot.urdf", DrakeJoint::FIXED);
+  r_urdf.addRobotFromFile(getDrakePath() + "/examples/Acrobot/Acrobot.urdf",
+                          DrakeJoint::FIXED);
 
   auto r_sdf = RigidBodySystem();
-  r_sdf.addRobotFromFile(getDrakePath() + "/examples/Acrobot/Acrobot.sdf", DrakeJoint::FIXED);
+  r_sdf.addRobotFromFile(getDrakePath() + "/examples/Acrobot/Acrobot.sdf",
+                         DrakeJoint::FIXED);
 
   // for debugging:
   /*
@@ -35,7 +37,8 @@ TEST(AcrobotDynamicsTest, ValueAssignment) {
   // I ran this at the console to see the output:
   // dot -Tpng -O /tmp/urdf.dot; dot -Tpng -O /tmp/sdf.dot; open /tmp/*.dot.png
 
-  // Iterate 1000 times each time sending in random state and input variables and
+  // Iterate 1000 times each time sending in random state and input variables
+  // and
   // verifying that the resulting dynamics are the same.
   for (int ii = 0; ii < 1000; ii++) {
     auto x0 = getRandomVector<AcrobotState>();
@@ -63,10 +66,12 @@ TEST(AcrobotDynamicsTest, ValueAssignment) {
     auto xdot = toEigen(r.dynamics(0.0, x0, u0));
 
     auto xdot_urdf = r_urdf.dynamics(0.0, x0_rb, u0_rb);
-    EXPECT_TRUE(CompareMatrices(xdot_urdf, xdot, 1e-8, MatrixCompareType::absolute));
+    EXPECT_TRUE(
+        CompareMatrices(xdot_urdf, xdot, 1e-8, MatrixCompareType::absolute));
 
     auto xdot_sdf = r_sdf.dynamics(0.0, x0_rb, u0_rb);
-    EXPECT_TRUE(CompareMatrices(xdot_sdf, xdot, 1e-8, MatrixCompareType::absolute));
+    EXPECT_TRUE(
+        CompareMatrices(xdot_sdf, xdot, 1e-8, MatrixCompareType::absolute));
   }
 }
 

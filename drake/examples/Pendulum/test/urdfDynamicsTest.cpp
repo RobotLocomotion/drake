@@ -3,8 +3,8 @@
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/testUtil.h"
 
-#include "gtest/gtest.h"
 #include "drake/util/eigen_matrix_compare.h"
+#include "gtest/gtest.h"
 
 using Drake::getDrakePath;
 using Drake::getRandomVector;
@@ -15,7 +15,8 @@ namespace drake {
 namespace test {
 
 TEST(urdfDynamicsTest, AllTests) {
-  auto tree = shared_ptr<RigidBodyTree>(new RigidBodyTree(getDrakePath() + "/examples/Pendulum/Pendulum.urdf", DrakeJoint::FIXED));
+  auto tree = shared_ptr<RigidBodyTree>(new RigidBodyTree(
+      getDrakePath() + "/examples/Pendulum/Pendulum.urdf", DrakeJoint::FIXED));
   auto rbsys = RigidBodySystem(tree);
   auto p = Pendulum();
 
@@ -26,11 +27,10 @@ TEST(urdfDynamicsTest, AllTests) {
     RigidBodySystem::StateVector<double> x0_rb = toEigen(x0);
     RigidBodySystem::InputVector<double> u0_rb = toEigen(u0);
 
-
-
     auto xdot = toEigen(p.dynamics(0.0, x0, u0));
     auto xdot_rb = rbsys.dynamics(0.0, x0_rb, u0_rb);
-    EXPECT_TRUE(CompareMatrices(xdot_rb, xdot, 1e-8, MatrixCompareType::absolute));
+    EXPECT_TRUE(
+        CompareMatrices(xdot_rb, xdot, 1e-8, MatrixCompareType::absolute));
   }
 }
 
