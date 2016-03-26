@@ -4,7 +4,7 @@
 using drake::util::MatrixCompareType;
 
 namespace Drake {
-namespace {
+namespace test {
 
 // Tests the ability for two identical matrices to be compared.
 TEST(MatrixCompareTest, CompareIdentical) {
@@ -136,5 +136,5 @@ TEST(MatrixCompareTest, NoMessageParam) {
   EXPECT_TRUE(CompareMatrices(m1, m2, one_pct, MatrixCompareType::relative));
 }
 
-}  // namespace
+}  // namespace test
 }  // namespace Drake

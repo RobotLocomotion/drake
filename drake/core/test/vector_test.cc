@@ -4,8 +4,14 @@
 #include "gtest/gtest.h"
 #include "drake/util/test/eigen_matrix_compare_mock.h"
 
-namespace Drake {
-namespace {
+using Drake::CombinedVector;
+using Drake::size;
+using Drake::CombinedVectorUtil;
+using Drake::NullVector;
+using Drake::InputOutputRelation;
+
+namespace drake {
+namespace test {
 
 // Tests the ability to set a PendulumState equal to a vector and vice versa.
 TEST(VectorTest, ValueAssignment) {
@@ -131,5 +137,5 @@ TEST(VectorTest, InputOutputRelationCombinationTests) {
     << "should be poly";
 }
 
-}  // namespace
-}  // namespace Drake
+}  // namespace test
+}  // namespace drake

@@ -1,5 +1,5 @@
 if (LCM_FOUND)
   add_executable(acrobotURDFDynamicsTest urdfDynamicsTest.cpp)
-  target_link_libraries(acrobotURDFDynamicsTest drakeRBSystem)
+  target_link_libraries(acrobotURDFDynamicsTest drakeRBSystem ${GTEST_BOTH_LIBRARIES})
   add_test(NAME acrobotURDFDynamicsTest COMMAND acrobotURDFDynamicsTest)
 endif(LCM_FOUND)
