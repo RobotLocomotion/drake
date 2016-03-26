@@ -1,5 +1,5 @@
-#ifndef _RIGIDBODY
-#define _RIGIDBODY
+#ifndef DRAKE_SYSTEMS_PLANTS_RIGIDBODY_H_
+#define DRAKE_SYSTEMS_PLANTS_RIGIDBODY_H_
 
 #include <Eigen/Dense>
 #include <iostream>
@@ -135,4 +135,4 @@ class DRAKERBM_EXPORT RigidBody {
 #endif
 };
 
-#endif
+#endif  // DRAKE_SYSTEMS_PLANTS_RIGIDBODY_H_
