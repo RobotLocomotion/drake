@@ -102,8 +102,8 @@ class DecisionVariableView {  // enables users to access pieces of the decision
   /** covers()
    * @brief returns true iff the given @p index of the enclosing
    * OptimizationProblem is included in this VariableView.*/
-  bool covers(size_t index) const {
-    return (index >= start_index) && (index < start_index + length);
+  bool covers(size_t var_index) const {
+    return (var_index >= index()) && (var_index < (index() + length));
   }
 
   const DecisionVariableView operator()(size_t i) const {
@@ -331,31 +331,62 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     return addQuadraticCost(Q, x_desired, variable_views);
   };
 
-  /** addConstraint
-   * @brief adds a constraint to the program.  method specializations ensure
-   * that the constraint gets added in the right way
+  /** addGenericConstraint
+   *
+   * @brief adds a generic constraint to the program.  This should
+   * only be used if a more specific type of constraint is not
+   * available, as it may require the use of a significantly more
+   * expensive solver.
    */
-  void addConstraint(std::shared_ptr<Constraint> con,
+  void addGenericConstraint(std::shared_ptr<Constraint> con,
                      VariableList const& vars) {
     problem_type.reset(problem_type->addGenericConstraint());
     generic_constraints.push_back(Binding<Constraint>(con, vars));
   }
-  void addConstraint(std::shared_ptr<Constraint> con) {
-    addConstraint(con, variable_views);
-  }
-
-  void addConstraint(std::shared_ptr<LinearEqualityConstraint> con,
-                     VariableList const& vars) {
-    problem_type.reset(problem_type->addLinearEqualityConstraint());
-    linear_equality_constraints.push_back(
-        Binding<LinearEqualityConstraint>(con, vars));
-  }
-
-  void addConstraint(std::shared_ptr<LinearEqualityConstraint> con) {
-    addConstraint(con, variable_views);
+  void addGenericConstraint(std::shared_ptr<Constraint> con) {
+    addGenericConstraint(con, variable_views);
   }
 
   /** addLinearConstraint
+   *
+   * @brief adds linear constraints referencing potentially a subset
+   * of the decision variables.
+   */
+  void addLinearConstraint(
+      std::shared_ptr<LinearConstraint> con,
+      VariableList const& vars) {
+    problem_type.reset(problem_type->addLinearConstraint());
+    linear_constraints.push_back(
+        Binding<LinearConstraint>(con, vars));
+  }
+
+  /** addLinearConstraint
+   *
+   * @brief adds linear constraints to the program for all (currently existing)
+   * variables
+   */
+  void addLinearConstraint(
+      std::shared_ptr<LinearConstraint> con) {
+    addLinearConstraint(con, variable_views);
+  }
+
+  /** addLinearConstraint
+   *
+   * @brief adds linear constraints referencing potentially a subset
+   * of the decision variables.
+   */
+  template <typename DerivedA, typename DerivedLB, typename DerivedUB>
+  std::shared_ptr<LinearConstraint> addLinearConstraint(
+      const Eigen::MatrixBase<DerivedA>& A,
+      const Eigen::MatrixBase<DerivedLB>& lb,
+      const Eigen::MatrixBase<DerivedUB>& ub, const VariableList& vars) {
+    auto constraint = std::make_shared<LinearConstraint>(A, lb, ub);
+    addLinearConstraint(constraint, vars);
+    return constraint;
+  }
+
+  /** addLinearConstraint
+   *
    * @brief adds linear constraints to the program for all (currently existing)
    * variables
    */
@@ -367,34 +398,32 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     return addLinearConstraint(A, lb, ub, variable_views);
   }
 
-  /** addLinearConstraint
-   * @brief adds linear constraints referencing potentially a subset of the
-   * decision variables.
-   */
-  template <typename DerivedA, typename DerivedLB, typename DerivedUB>
-  std::shared_ptr<LinearConstraint> addLinearConstraint(
-      const Eigen::MatrixBase<DerivedA>& A,
-      const Eigen::MatrixBase<DerivedLB>& lb,
-      const Eigen::MatrixBase<DerivedUB>& ub, const VariableList& vars) {
-    problem_type.reset(problem_type->addLinearConstraint());
 
-    auto constraint = std::make_shared<LinearConstraint>(A, lb, ub);
-    linear_constraints.push_back(Binding<LinearConstraint>(constraint, vars));
-    return constraint;
+  /** addLinearEqualityConstraint
+   *
+   * @brief adds linear equality constraints referencing potentially a
+   * subset of the decision variables.
+   */
+  void addLinearEqualityConstraint(
+      std::shared_ptr<LinearEqualityConstraint> con,
+      VariableList const& vars) {
+    problem_type.reset(problem_type->addLinearEqualityConstraint());
+    linear_equality_constraints.push_back(
+        Binding<LinearEqualityConstraint>(con, vars));
   }
 
   /** addLinearEqualityConstraint
-   * @brief adds linear equality constraints to the program for all (currently
-   * existing) variables
+   *
+   * @brief adds linear equality constraints to the program for all
+   * (currently existing) variables
    */
-  template <typename DerivedA, typename DerivedB>
-  std::shared_ptr<LinearEqualityConstraint> addLinearEqualityConstraint(
-      const Eigen::MatrixBase<DerivedA>& Aeq,
-      const Eigen::MatrixBase<DerivedB>& beq) {
-    return addLinearEqualityConstraint(Aeq, beq, variable_views);
+  void addLinearEqualityConstraint(
+      std::shared_ptr<LinearEqualityConstraint> con) {
+    addLinearEqualityConstraint(con, variable_views);
   }
 
   /** addLinearEqualityConstraint
+   *
    * @brief adds linear equality constraints referencing potentially a subset of
    * the decision variables.
    * Example: to add and equality constraint which only depends on two of the
@@ -407,40 +436,72 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   std::shared_ptr<LinearEqualityConstraint> addLinearEqualityConstraint(
       const Eigen::MatrixBase<DerivedA>& Aeq,
       const Eigen::MatrixBase<DerivedB>& beq, const VariableList& vars) {
-    problem_type.reset(problem_type->addLinearEqualityConstraint());
 
     auto constraint = std::make_shared<LinearEqualityConstraint>(Aeq, beq);
-    linear_equality_constraints.push_back(
-        Binding<LinearEqualityConstraint>(constraint, vars));
+    addLinearEqualityConstraint(constraint, vars);
+    return constraint;
+  }
+
+  /** addLinearEqualityConstraint
+   *
+   * @brief adds linear equality constraints to the program for all
+   * (currently existing) variables
+   */
+  template <typename DerivedA, typename DerivedB>
+  std::shared_ptr<LinearEqualityConstraint> addLinearEqualityConstraint(
+      const Eigen::MatrixBase<DerivedA>& Aeq,
+      const Eigen::MatrixBase<DerivedB>& beq) {
+    return addLinearEqualityConstraint(Aeq, beq, variable_views);
+  }
+
+  /** addBoundingBoxConstraint
+   *
+   * @brief adds bounding box constraints referencing potentially a subset of
+   * the decision variables.
+   */
+  void addBoundingBoxConstraint(
+      std::shared_ptr<BoundingBoxConstraint> con,
+      VariableList const& vars) {
+    problem_type.reset(problem_type->addLinearConstraint());
+    bbox_constraints.push_back(
+        Binding<BoundingBoxConstraint>(con, vars));
+  }
+
+  /** addBoundingBoxConstraint
+   *
+   * @brief adds bounding box constraints to the program for all
+   * (currently existing) variables
+   */
+  void addBoundingBoxConstraint(
+      std::shared_ptr<BoundingBoxConstraint> con) {
+    addBoundingBoxConstraint(con, variable_views);
+  }
+
+  /** addBoundingBoxConstraint
+   *
+   * @brief adds bounding box constraints referencing potentially a
+   * subset of the decision variables.
+   */
+  template <typename DerivedLB, typename DerivedUB>
+  std::shared_ptr<BoundingBoxConstraint> addBoundingBoxConstraint(
+      const Eigen::MatrixBase<DerivedLB>& lb,
+      const Eigen::MatrixBase<DerivedUB>& ub, const VariableList& vars) {
+    std::shared_ptr<BoundingBoxConstraint> constraint(
+        new BoundingBoxConstraint(lb, ub));
+    addBoundingBoxConstraint(constraint, vars);
     return constraint;
   }
 
   /** addBoundingBoxConstraint
-   * @brief adds bounding box constraints to the program for all (currently
-   * existing) variables
+   *
+   * @brief adds bounding box constraints to the program for all
+   * (currently existing) variables
    */
   template <typename DerivedLB, typename DerivedUB>
   std::shared_ptr<BoundingBoxConstraint> addBoundingBoxConstraint(
       const Eigen::MatrixBase<DerivedLB>& lb,
       const Eigen::MatrixBase<DerivedUB>& ub) {
     return addBoundingBoxConstraint(lb, ub, variable_views);
-  }
-
-  /** addBoundingBoxConstraint
-   * @brief adds bounding box constraints referencing potentially a subset of
-   * the decision variables.
-   */
-  template <typename DerivedLB, typename DerivedUB>
-  std::shared_ptr<BoundingBoxConstraint> addBoundingBoxConstraint(
-      const Eigen::MatrixBase<DerivedLB>& lb,
-      const Eigen::MatrixBase<DerivedUB>& ub, const VariableList& vars) {
-    problem_type.reset(problem_type->addLinearConstraint());
-
-    std::shared_ptr<BoundingBoxConstraint> constraint(
-        new BoundingBoxConstraint(lb, ub));
-    bbox_constraints.push_back(
-        Binding<BoundingBoxConstraint>(constraint, vars));
-    return constraint;
   }
 
   /** addLinearComplementarityConstraint
@@ -492,11 +553,6 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   // void addLinearCost(const Eigen::MatrixBase<Derived>& c, const vector<const
   // DecisionVariable&>& vars)
   // void addQuadraticCost ...
-
-  //    void addConstraint(const LinearConstraint& constraint, const
-  //    std::vector<const DecisionVariable&>& vars);
-  //  void addConstraint(const BoundingBoxConstraint& constraint, const
-  //  std::vector<const DecisionVariable&>& vars);
 
   template <typename Derived>
   void setInitialGuess(const DecisionVariableView& var,
