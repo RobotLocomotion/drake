@@ -1,8 +1,8 @@
 #include "drake/examples/Pendulum/Pendulum.h"  // to get some types
 #include "drake/util/testUtil.h"
 
-#include "gtest/gtest.h"
 #include "drake/util/test/eigen_matrix_compare_mock.h"
+#include "gtest/gtest.h"
 
 using Drake::CombinedVector;
 using Drake::size;
@@ -35,7 +35,7 @@ TEST(VectorTest, ValueAssignment) {
   const double tolerance = 1e-8;
 
   EXPECT_THAT(x, drake::test::EigenMatrixIsApproximatelyEqual(
-    y, tolerance, MatrixCompareType::absolute));
+                     y, tolerance, MatrixCompareType::absolute));
 }
 
 // Tests the ability to set a CombinedVector's value
@@ -68,45 +68,44 @@ TEST(VectorTest, CombinedVectorUtil) {
 TEST(VectorTest, CombineVectorCornerCases) {
   CombinedVectorUtil<PendulumState, NullVector>::type<double> test1;
   EXPECT_TRUE((is_same<PendulumState<double>, decltype(test1)>::value))
-    << "combined vector builder returned " +
-       static_cast<string>(typeid(test1).name());
-
+      << "combined vector builder returned " +
+             static_cast<string>(typeid(test1).name());
 
   CombinedVectorUtil<NullVector, PendulumState>::type<double> test2;
   EXPECT_TRUE((is_same<PendulumState<double>, decltype(test2)>::value))
-    << "combined vector builder returned " +
-       static_cast<string>(typeid(test2).name());
+      << "combined vector builder returned " +
+             static_cast<string>(typeid(test2).name());
 }
 
 // Tests the RowsAtCompileTime
 TEST(VectorTest, RowsAtCompileTime) {
   EXPECT_TRUE((Eigen::Matrix<double, 2, 1>::RowsAtCompileTime == 2))
-    << "failed to evaluate RowsAtCompileTime";
+      << "failed to evaluate RowsAtCompileTime";
 }
 
 // Tests the InputOutputRelation. Verify that linear is a polynomial.
 TEST(VectorTest, InputOutputRelationLinearIsPolynomial) {
   EXPECT_TRUE((InputOutputRelation::isA(InputOutputRelation::Form::LINEAR,
-                                InputOutputRelation::Form::POLYNOMIAL)))
-    << "linear is polynomial";
+                                        InputOutputRelation::Form::POLYNOMIAL)))
+      << "linear is polynomial";
 }
 
 // Tests the InputOutputRelation. Verify that zero is arbitrary.
 TEST(VectorTest, InputOutputRelationZeroIsArbitrary) {
   EXPECT_TRUE((InputOutputRelation::isA(InputOutputRelation::Form::ZERO,
-                                InputOutputRelation::Form::ARBITRARY)))
-    << "zero is arbitrary";
+                                        InputOutputRelation::Form::ARBITRARY)))
+      << "zero is arbitrary";
 }
 
 // Verify that the least common ancestor of the I/O relations
 // AFFINE, LINEAR, AND POLYNOMIAL is polynomial.
 TEST(VectorTest, InputOutputRelationLeastCommonAncestor) {
-  EXPECT_TRUE((InputOutputRelation::leastCommonAncestor(
-          {InputOutputRelation::Form::AFFINE,
-           InputOutputRelation::Form::LINEAR,
+  EXPECT_TRUE((
+      InputOutputRelation::leastCommonAncestor(
+          {InputOutputRelation::Form::AFFINE, InputOutputRelation::Form::LINEAR,
            InputOutputRelation::Form::POLYNOMIAL}) ==
       InputOutputRelation::Form::POLYNOMIAL))
-  << "least common ancestor should be polynomial";
+      << "least common ancestor should be polynomial";
 }
 
 // Verify that compositions of I/O relations are as expected
@@ -115,12 +114,12 @@ TEST(VectorTest, InputOutputRelationCompositionTests) {
   InputOutputRelation f(InputOutputRelation::Form::POLYNOMIAL);
 
   EXPECT_TRUE(InputOutputRelation::composeWith(g, f).form ==
-      InputOutputRelation::Form::POLYNOMIAL)
-    << "should be poly";
+              InputOutputRelation::Form::POLYNOMIAL)
+      << "should be poly";
 
   EXPECT_TRUE(InputOutputRelation::composeWith(f, g).form ==
-      InputOutputRelation::Form::POLYNOMIAL)
-    << "should be poly";
+              InputOutputRelation::Form::POLYNOMIAL)
+      << "should be poly";
 }
 
 // Verify that combinations of I/O relations are as expected
@@ -129,12 +128,12 @@ TEST(VectorTest, InputOutputRelationCombinationTests) {
   InputOutputRelation f(InputOutputRelation::Form::POLYNOMIAL);
 
   EXPECT_TRUE(InputOutputRelation::combine(g, f).form ==
-      InputOutputRelation::Form::POLYNOMIAL)
-    << "should be poly";
+              InputOutputRelation::Form::POLYNOMIAL)
+      << "should be poly";
 
   EXPECT_TRUE(InputOutputRelation::combine(f, g).form ==
-      InputOutputRelation::Form::POLYNOMIAL)
-    << "should be poly";
+              InputOutputRelation::Form::POLYNOMIAL)
+      << "should be poly";
 }
 
 }  // namespace test

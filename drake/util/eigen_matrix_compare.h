@@ -7,10 +7,7 @@
 namespace drake {
 namespace util {
 
-enum MatrixCompareType {
-  absolute,
-  relative
-};
+enum MatrixCompareType { absolute, relative };
 
 /**
  * Compares two matrices to determine whether they are equal to within a certain
@@ -26,10 +23,9 @@ enum MatrixCompareType {
  */
 template <typename DerivedA, typename DerivedB>
 bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
-                           const Eigen::MatrixBase<DerivedB>& m2,
-                           double tolerance,
-                           MatrixCompareType compare_type,
-                           std::string * error_msg = nullptr) {
+                     const Eigen::MatrixBase<DerivedB>& m2, double tolerance,
+                     MatrixCompareType compare_type,
+                     std::string* error_msg = nullptr) {
   bool result = true;
 
   if (m1.rows() != m2.rows() || m1.cols() != m2.cols()) {
@@ -44,16 +40,15 @@ bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
 
   for (size_t ii = 0; result && ii < m1.rows(); ii++) {
     for (size_t jj = 0; result && jj < m1.cols(); jj++) {
-
       // First handle the corner cases of positive infinity, negative infinity,
       // and NaN
       bool both_positive_infinity =
-        m1(ii, jj) == std::numeric_limits<double>::infinity() &&
-        m2(ii, jj) == std::numeric_limits<double>::infinity();
+          m1(ii, jj) == std::numeric_limits<double>::infinity() &&
+          m2(ii, jj) == std::numeric_limits<double>::infinity();
 
       bool both_negative_infinity =
-        m1(ii, jj) == -std::numeric_limits<double>::infinity() &&
-        m2(ii, jj) == -std::numeric_limits<double>::infinity();
+          m1(ii, jj) == -std::numeric_limits<double>::infinity() &&
+          m2(ii, jj) == -std::numeric_limits<double>::infinity();
 
       bool both_nan = std::isnan(m1(ii, jj)) && std::isnan(m2(ii, jj));
 
@@ -65,9 +60,9 @@ bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
           (!std::isnan(m1(ii, jj)) && std::isnan(m2(ii, jj)))) {
         if (error_msg != nullptr) {
           std::stringstream msg;
-            msg
-              << "NaN missmatch at (" << ii << ", " << jj << "):\nm1 =\n"
-              << m1 << "\nm2 =\n" << m2;
+          msg << "NaN missmatch at (" << ii << ", " << jj << "):\nm1 =\n"
+              << m1 << "\nm2 =\n"
+              << m2;
           *error_msg = msg.str();
         }
         result = false;
@@ -84,11 +79,13 @@ bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
         if (delta > tolerance) {
           if (error_msg != nullptr) {
             std::stringstream msg;
-            msg
-              << "Values at (" << ii << ", " << jj << ") exceed tolerance: "
-              << m1(ii, jj) << " vs. " << m2(ii, jj) << ", diff = "
-              << delta << ", tolerance = " << tolerance << "\nm1 =\n" << m1
-              << "\nm2 =\n" << m2 << "\ndelta=\n" << (m1 - m2);
+            msg << "Values at (" << ii << ", " << jj
+                << ") exceed tolerance: " << m1(ii, jj) << " vs. " << m2(ii, jj)
+                << ", diff = " << delta << ", tolerance = " << tolerance
+                << "\nm1 =\n"
+                << m1 << "\nm2 =\n"
+                << m2 << "\ndelta=\n"
+                << (m1 - m2);
 
             *error_msg = msg.str();
           }
@@ -97,20 +94,19 @@ bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
       } else {
         // Perform comparison using relative tolerance, see:
         // http://realtimecollisiondetection.net/blog/?p=89
-        double max_value = std::max(std::abs(m1(ii, jj)),
-                                    std::abs(m2(ii, jj)));
+        double max_value = std::max(std::abs(m1(ii, jj)), std::abs(m2(ii, jj)));
         double relative_tolerance = tolerance * std::max(1.0, max_value);
 
         if (delta > relative_tolerance) {
           if (error_msg != nullptr) {
             std::stringstream msg;
-            msg
-              << "Values at (" << ii << ", " << jj << ") exceed tolerance: "
-              << m1(ii, jj) << " vs. " << m2(ii, jj) << ", diff = "
-              << delta << ", tolerance = " << tolerance
-              << ", relative tolerance = " << relative_tolerance
-              << "\nm1 =\n" << m1 << "\nm2 =\n" << m2 << "\ndelta=\n"
-              << (m1 - m2);
+            msg << "Values at (" << ii << ", " << jj
+                << ") exceed tolerance: " << m1(ii, jj) << " vs. " << m2(ii, jj)
+                << ", diff = " << delta << ", tolerance = " << tolerance
+                << ", relative tolerance = " << relative_tolerance << "\nm1 =\n"
+                << m1 << "\nm2 =\n"
+                << m2 << "\ndelta=\n"
+                << (m1 - m2);
 
             *error_msg = msg.str();
           }
