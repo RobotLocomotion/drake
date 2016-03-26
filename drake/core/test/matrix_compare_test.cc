@@ -14,6 +14,9 @@ TEST(MatrixCompareTest, CompareIdentical) {
   Eigen::MatrixXd m2(2, 2);
   m2 << 0, 1, 2, 3;
 
+  Eigen::MatrixXd m3(2, 2);
+  m3 << 100, 200, 300, 400;
+
   double tolerance = 1e-8;
   std::string error_msg;
 
@@ -21,6 +24,12 @@ TEST(MatrixCompareTest, CompareIdentical) {
     &error_msg));
 
   EXPECT_TRUE(CompareMatrices(m1, m2, tolerance, MatrixCompareType::relative,
+    &error_msg));
+
+  EXPECT_FALSE(CompareMatrices(m1, m3, tolerance, MatrixCompareType::absolute,
+    &error_msg));
+
+  EXPECT_FALSE(CompareMatrices(m1, m3, tolerance, MatrixCompareType::relative,
     &error_msg));
 }
 
@@ -120,7 +129,7 @@ TEST(MatrixCompareTest, RelativeCompare) {
     &error_msg));
 }
 
-// Test ability to not specify an error message parameter
+// Tests ability to not specify an error message parameter
 TEST(MatrixCompareTest, NoMessageParam) {
   Eigen::MatrixXd m1(2, 2);
   m1 << 1, 2, 3, 4;
