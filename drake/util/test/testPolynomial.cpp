@@ -2,34 +2,63 @@
 #include "drake/util/testUtil.h"
 #include <iostream>
 
-using namespace Eigen;
-using namespace std;
+#include "gtest/gtest.h"
+#include "drake/util/eigen_matrix_compare.h"
+
+using Eigen::VectorXd;
+using std::cout;
+using std::endl;
+using std::default_random_engine;
+using std::uniform_int_distribution;
+using std::uniform_real_distribution;
+using drake::util::MatrixCompareType;
+
+namespace drake {
+namespace test {
 
 template <typename CoefficientType>
 void testIntegralAndDerivative() {
   VectorXd coefficients = VectorXd::Random(5);
   Polynomial<CoefficientType> poly(coefficients);
 
-  cout << poly << endl;
+  // cout << poly << endl;
 
-  cout << "derivative: " << poly.derivative(1) << endl;
+  // cout << "derivative: " << poly.derivative(1) << endl;
 
   Polynomial<CoefficientType> third_derivative = poly.derivative(3);
 
-  cout << "third derivative: " << third_derivative << endl;
+  // cout << "third derivative: " << third_derivative << endl;
   Polynomial<CoefficientType> third_derivative_check =
       poly.derivative().derivative().derivative();
-  valuecheckMatrix(third_derivative.getCoefficients(),
-                   third_derivative_check.getCoefficients(), 1e-14);
+
+  EXPECT_TRUE(CompareMatrices(
+    third_derivative.getCoefficients(),
+    third_derivative_check.getCoefficients(),
+    1e-14, MatrixCompareType::absolute));
+
+  // valuecheckMatrix(third_derivative.getCoefficients(),
+  //                  third_derivative_check.getCoefficients(), 1e-14);
 
   Polynomial<CoefficientType> tenth_derivative = poly.derivative(10);
-  valuecheckMatrix(tenth_derivative.getCoefficients(), VectorXd::Zero(1),
-                   1e-14);
+
+  EXPECT_TRUE(CompareMatrices(
+    tenth_derivative.getCoefficients(),
+    VectorXd::Zero(1),
+    1e-14, MatrixCompareType::absolute));
+
+  // valuecheckMatrix(tenth_derivative.getCoefficients(), VectorXd::Zero(1),
+  //                  1e-14);
 
   Polynomial<CoefficientType> integral = poly.integral(0.0);
-  cout << "integral: " << integral << endl;
+  // cout << "integral: " << integral << endl;
   Polynomial<CoefficientType> poly_back = integral.derivative();
-  valuecheckMatrix(poly_back.getCoefficients(), poly.getCoefficients(), 1e-14);
+
+  EXPECT_TRUE(CompareMatrices(
+    poly_back.getCoefficients(),
+    poly.getCoefficients(),
+    1e-14, MatrixCompareType::absolute));
+
+  // valuecheckMatrix(poly_back.getCoefficients(), poly.getCoefficients(), 1e-14);
 }
 
 template <typename CoefficientType>
@@ -49,28 +78,28 @@ void testOperators() {
 
     double scalar = uniform(generator);
 
-    cout << "-------" << endl;
-    cout << "p1 = " << poly1 << endl;
-    cout << "p2 = " << poly2 << endl;
-    cout << "c = " << scalar << endl;
+    // cout << "-------" << endl;
+    // cout << "p1 = " << poly1 << endl;
+    // cout << "p2 = " << poly2 << endl;
+    // cout << "c = " << scalar << endl;
 
     Polynomial<CoefficientType> sum = poly1 + poly2;
-    cout << "p1+p2: " << sum << endl;
+    // cout << "p1+p2: " << sum << endl;
     Polynomial<CoefficientType> difference = poly2 - poly1;
-    cout << "p2-p1: " << difference << endl;
+    // cout << "p2-p1: " << difference << endl;
     Polynomial<CoefficientType> product = poly1 * poly2;
-    cout << "p1*p2: " << product << endl;
+    // cout << "p1*p2: " << product << endl;
     Polynomial<CoefficientType> poly1_plus_scalar = poly1 + scalar;
-    cout << "p1+c: " << poly1_plus_scalar << endl;
+    // cout << "p1+c: " << poly1_plus_scalar << endl;
     Polynomial<CoefficientType> poly1_minus_scalar = poly1 - scalar;
-    cout << "p1-c: " << poly1_minus_scalar << endl;
+    // cout << "p1-c: " << poly1_minus_scalar << endl;
     Polynomial<CoefficientType> poly1_scaled = poly1 * scalar;
-    cout << "p1*c: " << poly1_scaled << endl;
+    // cout << "p1*c: " << poly1_scaled << endl;
     Polynomial<CoefficientType> poly1_div = poly1 / scalar;
-    cout << "p1/c: " << poly1_div << endl;
+    // cout << "p1/c: " << poly1_div << endl;
     Polynomial<CoefficientType> poly1_times_poly1 = poly1;
     poly1_times_poly1 *= poly1_times_poly1;
-    cout << "p1*p1" << poly1_times_poly1 << endl;
+    // cout << "p1*p1" << poly1_times_poly1 << eigen_matrix_comparendl;
 
     double t = uniform(generator);
     valuecheck(sum.value(t), poly1.value(t) + poly2.value(t), 1e-8);
@@ -153,11 +182,34 @@ void testPolynomialMatrix() {
   C.setZero();  // this was a problem before
 }
 
-int main(int argc, char **argv) {
+TEST(PolynomialTest, IntegrateAndDerivative) {
   testIntegralAndDerivative<double>();
-  testOperators<double>();
-  testRoots<double>();
-  testEvalType();
-  testPolynomialMatrix<double>();
-  return 0;
 }
+
+TEST(PolynomialTest, Operators) {
+  testOperators<double>();
+}
+
+TEST(PolynomialTest, Roots) {
+  testRoots<double>();
+}
+
+TEST(PolynomialTest, EvalType) {
+  testEvalType();
+}
+
+TEST(PolynomialTest, PolynomialMatrix) {
+  testPolynomialMatrix<double>();
+}
+
+// int main(int argc, char **argv) {
+//   testIntegralAndDerivative<double>();
+//   testOperators<double>();
+//   testRoots<double>();
+//   testEvalType();
+//   testPolynomialMatrix<double>();
+//   return 0;
+// }
+
+}  // namespace test
+}  // namespace drake

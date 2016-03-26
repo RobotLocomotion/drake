@@ -32,7 +32,7 @@ target_link_libraries(testConvexHull drakeConvexHull)
 add_test(NAME testConvexHull COMMAND testConvexHull)
 
 add_executable(testPolynomial testPolynomial.cpp)
-target_link_libraries(testPolynomial drakePolynomial)
+target_link_libraries(testPolynomial drakePolynomial ${GTEST_BOTH_LIBRARIES})
 add_test(NAME testPolynomial COMMAND testPolynomial)
 
 add_executable(testTrigPoly testTrigPoly.cpp)
