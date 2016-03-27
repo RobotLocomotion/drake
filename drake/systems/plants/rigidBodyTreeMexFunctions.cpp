@@ -215,9 +215,9 @@ Matrix<Scalar, Dynamic, Dynamic> forwardKinJacobianTemp(
   auto Jtrans =
       tree.transformPointsJacobian(cache, points, current_body_or_frame_ind,
                                    new_body_or_frame_ind, in_terms_of_qdot);
-  if (rotation_type == 0)
+  if (rotation_type == 0) {
     return Jtrans;
-  else {
+  } else {
     Matrix<Scalar, Dynamic, Dynamic> Jrot(
         rotationRepresentationSize(rotation_type), Jtrans.cols());
     if (rotation_type == 1)

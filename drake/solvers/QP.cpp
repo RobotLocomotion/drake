@@ -470,13 +470,18 @@ GRBmodel* gurobiQP(GRBenv* env, vector<MatrixXd*> QblkDiag, VectorXd& f,
     if (slack(i) < active_set_slack_tolerance) active.insert(i);
   }
   offset = Ain.rows();
-  if (lb.rows() == nparams)
-    for (int i = 0; i < nparams; i++)
+  if (lb.rows() == nparams) {
+    for (int i = 0; i < nparams; i++) {
       if (x(i) - lb(i) < active_set_slack_tolerance) active.insert(offset + i);
-  if (ub.rows() == nparams)
-    for (int i = 0; i < nparams; i++)
-      if (ub(i) - x(i) < active_set_slack_tolerance)
+    }
+  }
+  if (ub.rows() == nparams) {
+    for (int i = 0; i < nparams; i++) {
+      if (ub(i) - x(i) < active_set_slack_tolerance) {
         active.insert(offset + i + nparams);
+      }
+    }
+  }
 
   return model;
 }
