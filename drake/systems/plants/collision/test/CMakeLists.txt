@@ -1,5 +1,5 @@
 if (bullet_FOUND)
-  add_executable( model_test ModelTest.cpp)
+  add_executable(model_test model_test.cc)
   target_link_libraries(model_test drakeCollision)
   add_test(NAME model_test COMMAND model_test)
 endif()
