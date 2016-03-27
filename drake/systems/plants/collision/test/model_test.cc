@@ -45,10 +45,10 @@ TEST(ModelTest, ClosestPointsAllToAll) {
   T_elem2_to_body.setIdentity();
   T_elem2_to_body.translation() << 1, 0, 0;
   T_body3_to_world.translation() << 2, 2, 0;
-  T_body3_to_world.matrix().block<2, 2>(0, 0)
-      << 0, -1, 1, 0;  // rotate 90 degrees in z
+  T_body3_to_world.matrix().block<2, 2>(0, 0) << 0, -1, 1,
+      0;  // rotate 90 degrees in z
 
-  DrakeShapes::Box geometry_1(Vector3d(1,1,1));
+  DrakeShapes::Box geometry_1(Vector3d(1, 1, 1));
   DrakeShapes::Sphere geometry_2(0.5);
   DrakeShapes::Sphere geometry_3(0.5);
   Element element_1(geometry_1);
@@ -87,7 +87,8 @@ TEST(ModelTest, ClosestPointsAllToAll) {
   EXPECT_EQ(1.6213203435596428, points[1].getDistance());
   EXPECT_EQ(Vector3d(-sqrt(2) / 2, -sqrt(2) / 2, 0), points[1].getNormal());
   EXPECT_TRUE((Vector3d(0.5, 0.5, 0) - points[1].getPtA()).isZero());
-  EXPECT_TRUE((Vector3d(-sqrt(2) / 4, sqrt(2) / 4, 0) - points[1].getPtB()).isZero());
+  EXPECT_TRUE(
+      (Vector3d(-sqrt(2) / 4, sqrt(2) / 4, 0) - points[1].getPtB()).isZero());
 
   // Check the closest point between object 2 and object 3.
   EXPECT_EQ(id2, points[2].getIdA());
@@ -100,4 +101,3 @@ TEST(ModelTest, ClosestPointsAllToAll) {
 
 }  // namespace
 }  // namespace DrakeCollision
-

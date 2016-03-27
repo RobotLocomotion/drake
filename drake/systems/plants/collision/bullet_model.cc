@@ -434,10 +434,12 @@ bool BulletModel::findClosestPointsBetweenElements(
     const Isometry3d& TB_world = elements[idB]->getWorldTransform();
     auto xA_world = TA_world.translation();
     auto xB_world = TB_world.translation();
-    double radiusA = dynamic_cast<const DrakeShapes::Sphere&>(
-                         elements[idA]->getGeometry()).radius;
-    double radiusB = dynamic_cast<const DrakeShapes::Sphere&>(
-                         elements[idB]->getGeometry()).radius;
+    double radiusA =
+        dynamic_cast<const DrakeShapes::Sphere&>(elements[idA]->getGeometry())
+            .radius;
+    double radiusB =
+        dynamic_cast<const DrakeShapes::Sphere&>(elements[idB]->getGeometry())
+            .radius;
     double distance = (xA_world - xB_world).norm();
     result_collector->addSingleResult(
         idA, idB,
@@ -728,7 +730,8 @@ UnknownShapeException::UnknownShapeException(DrakeShapes::Shape shape) {
 
 const char* UnknownShapeException::what() const throw() {
   return ("Unknown collision shape: " + shape_name_ +
-          ". Ignoring this collision element").c_str();
+          ". Ignoring this collision element")
+      .c_str();
 }
 
 }  // namespace DrakeCollision
