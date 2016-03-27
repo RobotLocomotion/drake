@@ -90,21 +90,21 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT RigidBodyConstraint {
 
 /**
  * @class QuasiStaticConstraint       -- Constrain the Center of Mass (CoM) is
- *within the support polygon. The support polygon is a shrunk area of the
- *contact polygon
+ * within the support polygon. The support polygon is a shrunk area of the
+ * contact polygon
  * @param robot
  * @param tspan           -- The time span of this constraint being active
  * @param robotnumset     -- The set of the robots in the RigidBodyTree for
- *which the CoM is computed
+ * which the CoM is computed
  * @param shrinkFactor    -- The factor to shrink the contact polygon. The
- *shrunk area is the support polygon.
+ * shrunk area is the support polygon.
  * @param active          -- Whether the constraint is on/off. If active =
- *false, even the time t is within tspan, the constraint is still inactive
+ * false, even the time t is within tspan, the constraint is still inactive
  * @param num_bodies      -- The total number of ground contact bodies/frames
  * @param num_pts         -- The total number of ground contact points
  * @param bodies          -- The index of ground contact bodies/frames
  * @param num_body_pts    -- The number of contact points on each contact
- *body/frame
+ * body/frame
  * @param body_pts        -- The contact points on each contact body/frame
  *
  * Function:
@@ -117,7 +117,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT RigidBodyConstraint {
  *    @param num_new_bodies      -- number of new contact bodies
  *    @param body                -- the index of new contact bodies/frames
  *    @param body_pts            -- body_pts[i] are the contact points on
- *body[i]
+ * body[i]
  */
 
 class DRAKERIGIDBODYCONSTRAINT_EXPORT QuasiStaticConstraint
@@ -167,7 +167,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT QuasiStaticConstraint
  * @function setJointLimits   set the limit of some joints
  *   @param num_idx    The number of joints whose limits are going to be set
  *   @param joint_idx  joint_idx[i] is the index of the i'th joint whose limits
- *are going to be set
+ * are going to be set
  *   @param lb         lb[i] is the lower bound of the joint joint_idx[i]
  *   @param ub         ub[i] is the upper bound of the joint joint_idx[i]
  */
@@ -196,8 +196,8 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT PostureConstraint
 
 /*
  * @class MultipleTimeLinearPostureConstraint constrain the posture such that
- *lb(t(1),t(2),...,t(n))<=A_mat(t(1),t(2),t(n))*[q(t(1));q(t(2));...;q(t(n))]<=ub(t(1),t(2),...,t(n))
- *where A_mat is a sparse matrix that only depends on t(1),t(2),...,t(n)
+ * lb(t(1), t(2),..., t(n))<=A_mat(t(1), t(2), t(n))*[q(t(1));q(t(2));...;q(t(n))]<=ub(t(1), t(2),..., t(n))
+ * where A_mat is a sparse matrix that only depends on t(1), t(2),..., t(n)
  *
  * @function eval return the value and gradient of the constraint
  *   @param t      array of time
@@ -209,11 +209,11 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT PostureConstraint
  * @function feval returns the value of the constraint
  *
  * @function geval returns the gradient of the constraint, written in the sprase
- *matrix form
+ * matrix form
  *   @return iAfun    The row index of the non-zero entries in the gradient
- *matrix
+ * matrix
  *   @return jAvar    The column index of the non-zero entries in the gradient
- *matrix
+ * matrix
  *   @return A        The value of the non-zero entries in the gradient matrix
  */
 class DRAKERIGIDBODYCONSTRAINT_EXPORT MultipleTimeLinearPostureConstraint
@@ -246,7 +246,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT MultipleTimeLinearPostureConstraint
 
 /*
  * @class SingleTimeLinearPostureConstraint constrain the posture satisfies lb<=
- *A_mat*q <=ub at any time, where A_mat is a sparse matrix
+ * A_mat*q <=ub at any time, where A_mat is a sparse matrix
  *
  * @function SingleTimeLinearPostureConstraint
  *   @param robot
@@ -256,7 +256,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT MultipleTimeLinearPostureConstraint
  *   @param lb       The lower bound of the constraint, a column vector.
  *   @param ub       The upper bound of the constraint, a column vector.
  *   @param tspan    The time span [tspan[0] tspan[1]] is the time span of the
- *constraint being active
+ * constraint being active
  * @function eval return the value and gradient of the constraint
  *   @param t      array of time
  *   @param n_breaks   the length of array t
@@ -267,11 +267,11 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT MultipleTimeLinearPostureConstraint
  * @function feval returns the value of the constraint
  *
  * @function geval returns the gradient of the constraint, written in the sprase
- *matrix form
+ * matrix form
  *   @return iAfun    The row index of the non-zero entries in the gradient
- *matrix
+ * matrix
  *   @return jAvar    The column index of the non-zero entries in the gradient
- *matrix
+ * matrix
  *   @return A        The value of the non-zero entries in the gradient matrix
  */
 class DRAKERIGIDBODYCONSTRAINT_EXPORT SingleTimeLinearPostureConstraint

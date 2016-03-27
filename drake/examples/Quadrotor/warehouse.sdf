@@ -1,0 +1,135 @@
+<?xml version='1.0' ?>
+<sdf version='1.6'>
+  <model name='room_w_lidar'>
+    <static>true</static>
+    <link name='left_wall'>
+      <pose frame=''>3.5 1.75 0 0 0 0</pose>
+      <visual name='wall'>
+        <geometry>
+          <box>
+            <size>9 0.5 3</size>
+          </box>
+        </geometry>
+      </visual>
+      <collision name='wall'>
+        <geometry>
+          <box>
+            <size>9 0.5 3</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+    <link name='right_wall'>
+      <pose frame=''>3.5 -2.25 0 0 0 0</pose>
+      <visual name='wall'>
+        <geometry>
+          <box>
+            <size>9 0.5 3</size>
+          </box>
+        </geometry>
+      </visual>
+      <collision name='wall'>
+        <geometry>
+          <box>
+            <size>9 0.5 3</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+
+
+    <link name='back_wall'>
+      <pose frame=''>-1.25 -0.25 0 0 0 0</pose>
+      <visual name='wall'>
+        <geometry>
+          <box>
+            <size>0.5 4.5 3</size>
+          </box>
+        </geometry>
+      </visual>
+      <collision name='wall'>
+        <geometry>
+          <box>
+            <size>0.5 4.5 3</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name='front_wall'>
+      <pose frame=''>8.25 -0.25 0 0 0 0</pose>
+      <visual name='wall'>
+        <geometry>
+          <box>
+            <size>0.5 4.5 3</size>
+          </box>
+        </geometry>
+      </visual>
+      <collision name='wall'>
+        <geometry>
+          <box>
+            <size>0.5 4.5 3</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+
+
+    <link name='slalom_1'>
+      <pose frame=''>1.75 0.5 0 0 0 0</pose>
+      <visual name='wall'>
+        <geometry>
+          <box>
+            <size>0.5 2 3</size>
+          </box>
+        </geometry>
+      </visual>
+      <collision name='wall'>
+        <geometry>
+          <box>
+            <size>0.5 2 3</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name='slalom_2'>
+      <pose frame=''>3.75 -1 0 0 0 0</pose>
+      <visual name='wall'>
+        <geometry>
+          <box>
+            <size>0.5 2 3</size>
+          </box>
+        </geometry>
+      </visual>
+      <collision name='wall'>
+        <geometry>
+          <box>
+            <size>0.5 2 3</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+
+
+    <link name='slalom_3'>
+      <pose frame=''>5.75 0.5 0 0 0 0</pose>
+      <visual name='wall'>
+        <geometry>
+          <box>
+            <size>0.5 2 3</size>
+          </box>
+        </geometry>
+      </visual>
+      <collision name='wall'>
+        <geometry>
+          <box>
+            <size>0.5 2 3</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+
+    
+  </model>
+</sdf>

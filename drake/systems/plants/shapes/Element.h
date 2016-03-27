@@ -34,7 +34,7 @@ class DRAKESHAPES_EXPORT Element {
 
   virtual void updateWorldTransform(const Eigen::Isometry3d& T_local_to_world);
 
-  const Shape getShape() const;
+  Shape getShape() const;
 
   void setGeometry(const Geometry& geometry);
 

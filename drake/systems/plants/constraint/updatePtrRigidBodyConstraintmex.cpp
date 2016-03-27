@@ -26,7 +26,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     case RigidBodyConstraint::QuasiStaticConstraintType: {
       QuasiStaticConstraint* cnst = (QuasiStaticConstraint*)constraint;
       if (field_str == "active") {
-        // setActive(qsc_ptr,flag)
+        // setActive(qsc_ptr, flag)
         if (mxGetNumberOfElements(prhs[2]) != 1) {
           mexErrMsgIdAndTxt(
               "Drake:updatePtrRigidBodyConstraintmex:BadInputs",
@@ -37,7 +37,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
         cnst_new->setActive(*flag);
         plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,
                                                   "QuasiStaticConstraint");
-      } else if (field_str == "factor") {  // setShrinkFactor(qsc_ptr,factor)
+      } else if (field_str == "factor") {  // setShrinkFactor(qsc_ptr, factor)
         if (mxGetNumberOfElements(prhs[2]) != 1) {
           mexErrMsgIdAndTxt(
               "Drake:updatePtrRigidBodyConstraintmex:BadInputs",
@@ -54,7 +54,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
         plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,
                                                   "QuasiStaticConstraint");
       } else if (field_str == "contact") {
-        // addContact(qsc_ptr,body1, body1_pts, body2, body2_pts,...)
+        // addContact(qsc_ptr, body1, body1_pts, body2, body2_pts,...)
         int num_new_bodies = (nrhs - 2) / 2;
         int* new_bodies = new int[num_new_bodies];
         Matrix3Xd* new_body_pts = new Matrix3Xd[num_new_bodies];
@@ -101,7 +101,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     } break;
     case RigidBodyConstraint::PostureConstraintType: {
       PostureConstraint* pc = (PostureConstraint*)constraint;
-      if (field_str == "bounds") {  // setJointLimits(pc,joint_idx,lb,ub)
+      if (field_str == "bounds") {  // setJointLimits(pc, joint_idx, lb, ub)
         size_t num_idx = mxGetM(prhs[2]);
         if (!mxIsNumeric(prhs[2]) || mxGetN(prhs[2]) != 1 ||
             !mxIsNumeric(prhs[3]) || mxGetM(prhs[3]) != num_idx ||

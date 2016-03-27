@@ -4,8 +4,8 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 #include <cstring>
 /*
- * [type,num_constraint,constraint_val,dconstraint_val,constraint_name,lower_bound,upper_bound]
- * = testSingleKinCnstmex(kinCnst_ptr,q,t)
+ * [type, num_constraint, constraint_val, dconstraint_val, constraint_name, lower_bound, upper_bound]
+ * = testSingleKinCnstmex(kinCnst_ptr, q, t)
  * @param kinCnst_ptr           A pointer to a SingleTimeKinematicConstraint
  * object
  * @param q                     A nqx1 double vector
@@ -24,8 +24,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs != 3 || nlhs != 7) {
     mexErrMsgIdAndTxt("Drake:testMultipleTimeKinCnstmex:BadInputs",
                       "Usage "
-                      "[type,num_cnst,cnst_val,dcnst_val,cnst_name,lb,ub] = "
-                      "testMultipleTimeKinCnstmex(kinCnst,q,t)");
+                      "[type, num_cnst, cnst_val, dcnst_val, cnst_name, lb, ub] = "
+                      "testMultipleTimeKinCnstmex(kinCnst, q, t)");
   }
   MultipleTimeKinematicConstraint* cnst =
       (MultipleTimeKinematicConstraint*)getDrakeMexPointer(prhs[0]);

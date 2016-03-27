@@ -59,7 +59,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                           // body "world".  zap it because we will construct one
                           // again below
 
-  //  model->robot_name = get_strings(mxGetPropertySafe(pRBM,0,"name"));
+  //  model->robot_name = get_strings(mxGetPropertySafe(pRBM, 0,"name"));
 
   const mxArray* pBodies = mxGetPropertySafe(pRBM, 0, "body");
   if (!pBodies)
@@ -75,7 +75,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 
   for (int i = 0; i < num_bodies; i++) {
     // DEBUG
-    // mexPrintf("constructModelmex: body %d\n",i);
+    // mexPrintf("constructModelmex: body %d\n", i);
     // END_DEBUG
     shared_ptr<RigidBody> b(new RigidBody());
     b->body_index = i;
@@ -251,7 +251,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
         // DEBUG
         // cout << "constructModelmex: geometry = " << geometry.get() << endl;
         // END_DEBUG
-        model->addCollisionElement(element, b, group_name);
+        model->addCollisionElement(element, *b, group_name);
       }
       // NOTE: the following should not be necessary since the same thing is
       // being done in RigidBodyTree::compile, which is called below.

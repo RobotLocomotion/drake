@@ -4,8 +4,8 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 #include <cstring>
 /*
- * [type,num_constraint,constraint_val,dconstraint_val,constraint_name,lower_bound,upper_bound]
- * = testSingleTimeKinCnstmex(kinCnst_ptr,q,t)
+ * [type, num_constraint, constraint_val, dconstraint_val, constraint_name, lower_bound, upper_bound]
+ * = testSingleTimeKinCnstmex(kinCnst_ptr, q, t)
  * @param kinCnst_ptr           A pointer to a SingleTimeKinematicConstraint
  * object
  * @param q                     A nqx1 double vector
@@ -23,8 +23,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if ((nrhs != 3 && nrhs != 2) || nlhs != 7) {
     mexErrMsgIdAndTxt("Drake:testSingleTimeKinCnstmex:BadInputs",
                       "Usage [type, "
-                      "num_cnst,cnst_val,dcnst_val,cnst_name,lb,ub] = "
-                      "testSingleTimeKinKinCnstmex(kinCnst,q,t)");
+                      "num_cnst, cnst_val, dcnst_val, cnst_name, lb, ub] = "
+                      "testSingleTimeKinKinCnstmex(kinCnst, q, t)");
   }
   SingleTimeKinematicConstraint* cnst =
       (SingleTimeKinematicConstraint*)getDrakeMexPointer(prhs[0]);
@@ -46,14 +46,14 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   }
   int type = cnst->getType();
   int num_cnst = cnst->getNumConstraint(t_ptr);
-  // mexPrintf("num_cnst = %d\n",num_cnst);
+  // mexPrintf("num_cnst = %d\n", num_cnst);
   int nq = cnst->getRobotPointer()->num_positions;
   Eigen::Map<Eigen::VectorXd> q(mxGetPrSafe(prhs[1]), nq);
   KinematicsCache<double> cache = cnst->getRobotPointer()->doKinematics(q);
   Eigen::VectorXd c(num_cnst);
   Eigen::MatrixXd dc(num_cnst, nq);
   cnst->eval(t_ptr, cache, c, dc);
-  // mexPrintf("get c,dc\n");
+  // mexPrintf("get c, dc\n");
   Eigen::VectorXd lb(num_cnst);
   Eigen::VectorXd ub(num_cnst);
   cnst->bounds(t_ptr, lb, ub);

@@ -97,7 +97,7 @@ mxArray* createDrakeMexPointer(void* ptr, const std::string& name, int type_id,
   for (int i = 0; i < num_additional_inputs; i++)
     prhs[4 + i] = delete_fcn_additional_inputs[i];
 
-  //  mexPrintf("deleteMethod = %s\n name =%s\n", deleteMethod,name);
+  //  mexPrintf("deleteMethod = %s\n name =%s\n", deleteMethod, name);
 
   // call matlab to construct mex pointer object
   if (!subclass_name.empty()) {
@@ -465,4 +465,4 @@ matlabToStdVector<Eigen::Index>(const mxArray* in);
 template DLLEXPORT const std::vector<bool> matlabToStdVector<bool>(
     const mxArray* in);
 // template DLLEXPORT mxArray* eigenToMSSPoly(const
-// Matrix<Polynomiald,Dynamic,Dynamic> & poly);
+// Matrix<Polynomiald, Dynamic, Dynamic> & poly);

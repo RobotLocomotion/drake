@@ -12,7 +12,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs < 2) {
     mexErrMsgIdAndTxt(
         "Drake:fastQP:NotEnoughInputs",
-        "Usage [x,info,active] = fastQP(Q,f[,Aeq,beq,Ain,bin,active])");
+        "Usage [x, info, active] = fastQP(Q, f[, Aeq, beq, Ain, bin, active])");
   }
   if (nlhs < 1) return;
 

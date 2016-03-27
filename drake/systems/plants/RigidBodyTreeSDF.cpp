@@ -34,7 +34,7 @@ void parseSDFInertial(shared_ptr<RigidBody> body, XMLElement* node,
 
   parseScalarValue(node, "mass", body->mass);
 
-  body->com << T(0, 3), T(1, 3), T(2, 3);
+  body->com = T_link.inverse() * T.translation();
 
   Matrix<double, TWIST_SIZE, TWIST_SIZE> I =
       Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
@@ -61,6 +61,10 @@ bool parseSDFGeometry(XMLElement* node, const PackageMap& package_map,
   // DEBUG
   // cout << "parseGeometry: START" << endl;
   // END_DEBUG
+  if (node->NoChildren()) {
+    // This may not be true legal SDF, but is seen in practice.
+    return true;
+  }
   XMLElement* shape_node;
   if ((shape_node = node->FirstChildElement("box"))) {
     Vector3d xyz;
@@ -195,7 +199,7 @@ void parseSDFCollision(shared_ptr<RigidBody> body, XMLElement* node,
                         body->linkname + ".");
 
   if (element.hasGeometry()) {
-    model->addCollisionElement(element, body, group_name);
+    model->addCollisionElement(element, *body, group_name);
   }
 }
 
@@ -327,7 +331,7 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
                                            // link frame
   }
 
-  //  pose_map.insert(pair<string,Isometry3d>(name,T)); // note: joint names
+  //  pose_map.insert(pair<string, Isometry3d>(name, T)); // note: joint names
   //  must be distinct within a model, but nothing prevents them from matching a
   //  link name.
 
@@ -497,6 +501,15 @@ void parseModel(RigidBodyTree* model, XMLElement* node,
   // loop joint, and connecting the new free joint to the world
 }
 
+void parseWorld(RigidBodyTree* model, XMLElement* node,
+		const PackageMap& package_map, const string& root_dir,
+		const DrakeJoint::FloatingBaseType floating_base_type) {
+  for (XMLElement* model_node = node->FirstChildElement("model"); model_node;
+       model_node = model_node->NextSiblingElement("model")) {
+    parseModel(model, model_node, package_map, root_dir, floating_base_type);
+  }
+}
+
 void parseSDF(RigidBodyTree* model, XMLDocument* xml_doc,
               PackageMap& package_map, const string& root_dir,
               const DrakeJoint::FloatingBaseType floating_base_type) {
@@ -507,6 +520,18 @@ void parseSDF(RigidBodyTree* model, XMLDocument* xml_doc,
     throw std::runtime_error(
         "ERROR: This xml file does not contain an sdf tag");
 
+  // If we have a world, load it.
+  XMLElement* world_node = node->FirstChildElement("world");
+  if (world_node) {
+    // If we have more than one world, it is ambiguous which one the user
+    // wishes.
+    if (world_node->NextSiblingElement("world")) {
+      throw runtime_error("ERROR: Multiple worlds in file, ambiguous.");
+    }
+    parseWorld(model, world_node, package_map, root_dir, floating_base_type);
+  }
+
+  // Load all models not in a world.
   for (XMLElement* model_node = node->FirstChildElement("model"); model_node;
        model_node = model_node->NextSiblingElement("model"))
     parseModel(model, model_node, package_map, root_dir, floating_base_type);

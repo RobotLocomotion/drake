@@ -1,5 +1,11 @@
-cmake_minimum_required(VERSION 2.8.0)
+cmake_minimum_required(VERSION 2.8.10)
 project(drake-superbuild)
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
+  message(FATAL_ERROR "GCC version must be at least 4.9")
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.7)
+  message(FATAL_ERROR "Clang version must be at least 3.7")
+endif()
 
 # PODs out-of-source build logic
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -17,6 +23,10 @@ message(STATUS CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
 
 include(ExternalProject)
 
+# Require Java at the super-build level so libbot cannot configure without finding Java
+find_package(Java REQUIRED)
+include(UseJava)
+
 # menu of extra examples
 option(EXAMPLES_LITTLEDOG "planning and control for a small quadruped robot" OFF)
 
@@ -33,9 +43,11 @@ option(REMOVE_UNUSED_EXTERNALS "enable this to remove those projects from disk" 
 
 # ON by default:
 option(WITH_EIGEN		"required c++ matrix library.  only disable if you have it already."    ON)
+option(WITH_GOOGLETEST "required c++ unit test library.  only disable ifyou have it already." ON)
 option(WITH_SWIGMAKE    "helper tools to build python & MATLAB wrappers for C++ libraries with Eigen" ON)
-option(WITH_BULLET 		"used for collision detection" 	ON) # almost works.  just one remaining link error..?
+option(WITH_BULLET 		"used for collision detection" 	ON)
 option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" ON)
+option(WITH_BOT_CORE_LCMTYPES "required LCM types library. only disable if you have it already." ON)
 if (WIN32)
 	option(WITH_GTK 		"precompiled gtk binaries/headers for Windows"  ON)  # needed for lcm on windows
 else()
@@ -67,8 +79,8 @@ if (NOT WIN32) # many of these might work on win32 with little or no work... the
 	option(WITH_TEXTBOOK "pull in the Underactuated Robotics textbook and its examples")  # almost works on windows.  the update step call to git was complaining about local modifications on drake003
 	#  include(CMakeDetermineFortranCompiler) # this didn't do the trick, and enable_language(Fortran OPTIONAL) simply fails if not found (optional is a placeholder option that doesn't work yet)
 	#  if (CMAKE_Fortran_COMPILER)
-	option(WITH_AVL			"use w/ XFOIL to compute aerodynamic coefficients for airfoils")
-	option(WITH_XFOIL		"use w/ AVL to compute aerodynamic coefficients for airfoils")
+	option(WITH_AVL			"use w/ AVL to compute aerodynamic coefficients for airfoils")
+	option(WITH_XFOIL		"use w/ XFOIL to compute aerodynamic coefficients for airfoils")
 	#  endif()
 	option(WITH_MESHCONVERTERS "uses vcglib to convert a few standard filetypes")
 endif()
@@ -84,10 +96,11 @@ endif()
 # list *compilation* dependencies, in alphabetical order by target (note: dependencies must come first in my foreach above)
 set(lcm_dependencies gtk)
 set(libbot_dependencies lcm)
-set(director_dependencies lcm libbot)
+set(bot_core_lcmtypes_dependencies lcm)
+set(director_dependencies lcm bot_core_lcmtypes libbot)
 set(iris_dependencies eigen mosek)
 set(signalscope_dependencies director)
-set(drake_dependencies cmake eigen lcm libbot bullet octomap snopt gurobi swig_matlab swigmake yaml_cpp)
+set(drake_dependencies cmake eigen googletest lcm bot_core_lcmtypes libbot bullet octomap snopt gurobi swig_matlab swigmake yaml_cpp)
 
 # download information, in alphabetical order
 set(avl_GIT_REPOSITORY https://github.com/RobotLocomotion/avl.git)
@@ -97,23 +110,29 @@ set(bertini_GIT_REPOSITORY git@github.com:RobotLocomotion/bertini.git)
 set(bertini_GIT_TAG 3ae3e3ad3534acb4b6f7a4c3c22728b493beaa80)
 set(bertini_IS_PUBLIC FALSE)
 set(bullet_GIT_REPOSITORY https://github.com/RobotLocomotion/bullet-pod.git)
-set(bullet_GIT_TAG 248df52f24ff149a8df57f3958f739d8cc6f4e57)
+set(bullet_GIT_TAG 6ba53233bb0bbce764ba49a05e5d37e4a11f96db)
 set(bullet_IS_PUBLIC TRUE)
 set(bullet_IS_CMAKE_POD TRUE)
 set(cmake_GIT_REPOSITORY https://github.com/RobotLocomotion/cmake.git)
-set(cmake_GIT_TAG 54f5a4c0734015695334970ecedac79e12c3116f)
+set(cmake_GIT_TAG c0522e484f4172cd60435720aaecdeabaef8385f)
 set(cmake_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/drake/cmake")
 set(cmake_NO_BUILD TRUE)
 set(cmake_IS_PUBLIC TRUE)
 set(director_GIT_REPOSITORY https://github.com/RobotLocomotion/director.git)
-set(director_GIT_TAG 39c78e73d63704a66a80bfce19b58a3e140e017a)
+set(director_GIT_TAG 7782d87304a7819e8716237b1251451bb949c792)
 set(director_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/director/distro/pods/drake-distro)
 set(director_IS_PUBLIC TRUE)
-set(drake_ADDITIONAL_BUILD_ARGS CMAKE_ARGS -DWITH_PYTHON_3=${WITH_PYTHON_3})
+set(drake_java_args -DJava_JAVA_EXECUTABLE=${Java_JAVA_EXECUTABLE} -DJava_JAVAC_EXECUTABLE=${Java_JAVAC_EXECUTABLE} -DJava_JAVAH_EXECUTABLE=${Java_JAVAH_EXECUTABLE} -DJava_VERSION_STRING=${Java_VERSION_STRING})
+set(drake_ADDITIONAL_BUILD_ARGS CMAKE_ARGS drake_java_args -DWITH_PYTHON_3=${WITH_PYTHON_3})
 set(eigen_GIT_REPOSITORY https://github.com/RobotLocomotion/eigen-pod.git)
 set(eigen_GIT_TAG 20a633e8f0a285edf9dcc5a06cc9e80774920a7f)
 set(eigen_IS_CMAKE_POD TRUE)
 set(eigen_IS_PUBLIC TRUE)
+set(googletest_GIT_REPOSITORY https://github.com/google/googletest.git)
+set(googletest_GIT_TAG ff07a5de0e81580547f1685e101194ed1a4fcd56)
+set(googletest_IS_CMAKE_POD TRUE)
+set(googletest_IS_PUBLIC TRUE)
+set(googletest_ADDITIONAL_CMAKE_CONFIGURE_ARGS -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_NAME_DIR=${CMAKE_INSTALL_PREFIX}/lib)
 set(gtk_GIT_REPOSITORY https://github.com/RobotLocomotion/gtk-pod.git)
 set(gtk_GIT_TAG 4730a7d3274a35280f1c2c6337eb182935c87fc2)
 set(gtk_IS_CMAKE_POD TRUE)
@@ -122,20 +141,23 @@ set(gloptipoly_GIT_REPOSITORY git@github.com:RobotLocomotion/gloptipoly3.git)  #
 set(gloptipoly_GIT_TAG c9e796e99c584ecf78317348c4162a2ed4121156)
 set(gloptipoly_IS_PUBLIC FALSE)
 set(gurobi_GIT_REPOSITORY https://github.com/RobotLocomotion/gurobi.git)
-set(gurobi_GIT_TAG 9699ec6091f3d9d8013c6f0acaea229c84a189a5)
+set(gurobi_GIT_TAG fbbdbbc0152ddb37df209d221aff37448b8ff29f)
 set(gurobi_IS_PUBLIC FALSE)
 set(iris_GIT_REPOSITORY https://github.com/rdeits/iris-distro.git)
-set(iris_GIT_TAG e3efbc67369e948080a9a1913188874fc31838f5)
+set(iris_GIT_TAG 1533f20cff57504a46773f01e1730f11931d0ea6)
 set(iris_ADDITIONAL_BUILD_ARGS PATCH_COMMAND make configure-cdd-only)
 set(iris_IS_PUBLIC TRUE)
-set(lcm_GIT_REPOSITORY https://github.com/RobotLocomotion/lcm-pod.git)
-set(lcm_GIT_TAG 8dba206f3403f01048b73ce10b6a17da58280fbe) # note: cmake branch
+set(lcm_GIT_REPOSITORY https://github.com/jhoare/lcm-pod.git)
+set(lcm_GIT_TAG 62dcf194077a54efbfce4ac65adee3af6a7df3d0) # note: cmake branch
 set(lcm_IS_CMAKE_POD TRUE)
-set(lcm_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/lcm/lcm/lcm-src)
 set(lcm_IS_PUBLIC TRUE)
 set(libbot_GIT_REPOSITORY https://github.com/RobotLocomotion/libbot.git)
 set(libbot_GIT_TAG 94fe5290329646959e1c27896d529abba81e6d93)
 set(libbot_IS_PUBLIC TRUE)
+set(bot_core_lcmtypes_GIT_REPOSITORY  https://github.com/jhoare/bot_core_lcmtypes)
+set(bot_core_lcmtypes_GIT_TAG fc70d061005f52000cf8af7658c34e86bc2bac68)
+set(bot_core_lcmtypes_IS_CMAKE_POD TRUE)
+set(bot_core_lcmtypes_IS_PUBLIC TRUE)
 set(meshconverters_GIT_REPOSITORY https://github.com/RobotLocomotion/meshConverters.git)
 set(meshconverters_GIT_TAG d50a79b80d74dd7a924daba7bd2011e03d9e66b4)
 set(meshconverters_IS_PUBLIC TRUE)
@@ -163,8 +185,9 @@ set(swigmake_GIT_REPOSITORY https://github.com/rdeits/swigmake.git)
 set(swigmake_GIT_TAG 7e4fcbeb46c5fc7b1efb651b4365ba8b777ef184)
 set(swigmake_IS_PUBLIC TRUE)
 set(swigmake_IS_CMAKE_POD TRUE)
+set(swigmake_NO_CLEAN TRUE)
 set(swig_matlab_GIT_REPOSITORY https://github.com/rdeits/swig-matlab-pod.git)
-set(swig_matlab_GIT_TAG 6459fbb0a16c5473504ed181630ec9df60114261)
+set(swig_matlab_GIT_TAG a763cac0a0862849f2f33d295cc398014531acf4)
 set(swig_matlab_IS_PUBLIC TRUE)
 set(swig_matlab_IS_CMAKE_POD TRUE)
 set(textbook_GIT_REPOSITORY https://github.com/RussTedrake/underactuated.git)
@@ -209,8 +232,10 @@ foreach(proj IN ITEMS
 		cmake
 		textbook
 		eigen
+		googletest
 		gtk
 		lcm
+		bot_core_lcmtypes
 		libbot
 		bullet
 		spotless
@@ -297,6 +322,10 @@ foreach (proj ${EXTERNAL_PROJECTS})
 
 		# now the actual project
 		if (${proj}_IS_CMAKE_POD)
+			set(PODS_VERBOSE_MAKEFILE "")
+			if (CMAKE_VERBOSE_MAKEFILE)
+			    set(PODS_VERBOSE_MAKEFILE "-DCMAKE_VERBOSE_MAKEFILE=ON")
+			endif()
 			ExternalProject_Add(${proj}
 					SOURCE_DIR ${${proj}_SOURCE_DIR}
 					DOWNLOAD_COMMAND ""
@@ -304,9 +333,10 @@ foreach (proj ${EXTERNAL_PROJECTS})
 					BINARY_DIR ${${proj}_SOURCE_DIR}/pod-build
 					CMAKE_GENERATOR ${CMAKE_GENERATOR}
 					CMAKE_ARGS
-					  -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
 					  -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-						${${proj}_ADDITIONAL_CMAKE_CONFIGURE_ARGS}
+					  -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+					  ${PODS_VERBOSE_MAKEFILE}
+					  ${${proj}_ADDITIONAL_CMAKE_CONFIGURE_ARGS}
 					DEPENDS download-${proj} ${deps}
 					${${proj}_ADDITIONAL_BUILD_ARGS}
 					)
@@ -315,7 +345,11 @@ foreach (proj ${EXTERNAL_PROJECTS})
 				if(${proj}_NO_BUILD)
 					set(${proj}_BUILD_COMMAND "")
 				else() # then use the PODS gnu make system
-					set(${proj}_BUILD_COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=$<CONFIGURATION>)
+					set(PODS_VERBOSE_MAKEFILE "")
+					if (CMAKE_VERBOSE_MAKEFILE)
+					    set(PODS_VERBOSE_MAKEFILE "V=1 VERBOSE=1")
+					endif()
+					set(${proj}_BUILD_COMMAND ${PODS_MAKE_COMMAND} ${PODS_VERBOSE_MAKEFILE} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=$<CONFIGURATION> )
 				endif()
 			endif()
 
@@ -336,7 +370,10 @@ foreach (proj ${EXTERNAL_PROJECTS})
 
 	else()
 		message(STATUS "Preparing to build ${proj} with dependencies: ${deps}")
-
+		set(PODS_VERBOSE_MAKEFILE "")
+		if (CMAKE_VERBOSE_MAKEFILE)
+		    set(PODS_VERBOSE_MAKEFILE "-DCMAKE_VERBOSE_MAKEFILE=ON")
+		endif()
 		ExternalProject_Add(${proj}
 				SOURCE_DIR "${PROJECT_SOURCE_DIR}/drake"
 				DOWNLOAD_COMMAND ""
@@ -344,8 +381,9 @@ foreach (proj ${EXTERNAL_PROJECTS})
 				BINARY_DIR ${PROJECT_SOURCE_DIR}/drake/pod-build
 				CMAKE_GENERATOR ${CMAKE_GENERATOR}
 				CMAKE_ARGS
-				  -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
 				  -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+				  -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+				  ${PODS_VERBOSE_MAKEFILE}
 				DEPENDS ${deps}
 				${${proj}_ADDITIONAL_BUILD_ARGS}
 				#		BUILD_ALWAYS 1
@@ -379,13 +417,28 @@ foreach (proj ${EXTERNAL_PROJECTS})
 		add_dependencies(status status-${proj})
 	endif()
 
-	ExternalProject_Get_Property(${proj} SOURCE_DIR)
-	if (NOT ${proj}_NO_BUILD)
-		add_custom_target(clean-${proj}
-				COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=$<CONFIGURATION> clean
-				WORKING_DIRECTORY ${SOURCE_DIR})
-		add_dependencies(clean-all clean-${proj})
-	endif()
+  ExternalProject_Get_Property(${proj} SOURCE_DIR)
+  # Handle pods-style 'make clean' cleaning of external projects/pods
+  if (NOT ${proj}_NO_BUILD)
+    if (${proj}_IS_CMAKE_POD)
+      ExternalProject_Get_Property(${proj} BINARY_DIR)
+      # if _NO_CLEAN is set, don't attempt to run `make clean`, just wipe the build folder
+      if (${proj}_NO_CLEAN)
+        add_custom_target(clean-${proj}
+          COMMAND ${CMAKE_COMMAND} -E remove_directory ${BINARY_DIR})
+      else()
+        add_custom_target(clean-${proj}
+          COMMAND ${CMAKE_COMMAND} --build ${BINARY_DIR} --target clean
+          COMMAND ${CMAKE_COMMAND} -E remove_directory ${BINARY_DIR})
+      endif()
+      add_dependencies(clean-all clean-${proj})
+    else()
+      add_custom_target(clean-${proj}
+          COMMAND ${PODS_MAKE_COMMAND} BUILD_PREFIX=${CMAKE_INSTALL_PREFIX} BUILD_TYPE=$<CONFIGURATION> clean
+          WORKING_DIRECTORY ${SOURCE_DIR})
+      add_dependencies(clean-all clean-${proj})
+    endif()
+  endif()
 	list(APPEND PROJECT_LIST ${SOURCE_DIR})
 endforeach()
 
@@ -421,7 +474,8 @@ endif()
 if (WITH_SNOPT_PRECOMPILED)
   message(STATUS "Preparing to install precompiled snopt")
   ExternalProject_Add(download-snopt-precompiled
-		URL "http://drake002.csail.mit.edu/drake/drakeSnopt.zip"
+		URL "https://s3.amazonaws.com/drake-provisioning/drakeSnopt.zip"
+		URL_MD5 "7b36168cba2fb9a56b2fd6117427fc4a"
 		SOURCE_DIR "${CMAKE_BINARY_DIR}/snopt-precompiled"
 		CONFIGURE_COMMAND ""
 		BUILD_COMMAND cmake -E copy_directory ${CMAKE_BINARY_DIR}/snopt-precompiled/ ${PROJECT_SOURCE_DIR}/drake/solvers/

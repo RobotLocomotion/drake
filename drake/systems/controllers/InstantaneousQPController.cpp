@@ -858,7 +858,7 @@ int InstantaneousQPController::setupAndSolveQP(
   MatrixXd D_float(6, JB.cols()), D_act(nu, JB.cols());
   if (nc > 0) {
     if (x0.size() == 6) {
-      // x,y,z com
+      // x, y, z com
       xlimp.resize(6);
       xlimp.topRows(3) = xcom;
       xlimp.bottomRows(3) = xcomdot;
@@ -963,7 +963,7 @@ int InstantaneousQPController::setupAndSolveQP(
 
         if (qp_input.body_motion_data[i].in_floating_base_nullspace) {
           Jb.block(0, 0, 6, 6) = MatrixXd::Zero(6, 6);
-          // Jbdot.block(0,0,6,6) = MatrixXd::Zero(6,6);
+          // Jbdot.block(0, 0, 6, 6) = MatrixXd::Zero(6, 6);
         }
         for (int j = 0; j < 6; j++) {
           if (!std::isnan(desired_body_accelerations[i].body_vdot(j))) {
@@ -1014,7 +1014,7 @@ int InstantaneousQPController::setupAndSolveQP(
 
     if (qp_input.body_motion_data[i].in_floating_base_nullspace) {
       Jb.block(0, 0, 6, 6) = MatrixXd::Zero(6, 6);
-      // Jbdot.block(0,0,6,6) = MatrixXd::Zero(6,6);
+      // Jbdot.block(0, 0, 6, 6) = MatrixXd::Zero(6, 6);
     }
     Ain.block(constraint_start_index, 0, 6, robot->num_positions) = Jb;
     bin.segment(constraint_start_index, 6) =
@@ -1037,7 +1037,7 @@ int InstantaneousQPController::setupAndSolveQP(
   GRBmodel* model = nullptr;
   int info = -1;
 
-  // set obj,lb,up
+  // set obj, lb, up
   VectorXd lb(nparams), ub(nparams);
   lb.head(nq) = qdd_lb;
   ub.head(nq) = qdd_ub;
@@ -1109,7 +1109,7 @@ int InstantaneousQPController::setupAndSolveQP(
     if (nc > 0) {
       QBlkDiag[1] = &Qnfdiag;
       QBlkDiag[2] = &Qneps;  // quadratic slack var cost,
-                             // Q(nparams-neps:end,nparams-neps:end)=eye(neps)
+                             // Q(nparams-neps:end, nparams-neps:end)=eye(neps)
     }
 
     MatrixXd Ain_lb_ub(n_ineq + 2 * nparams, nparams);
@@ -1164,7 +1164,7 @@ int InstantaneousQPController::setupAndSolveQP(
 
           if (qp_input.body_motion_data[i].in_floating_base_nullspace) {
             Jb.block(0, 0, 6, 6) = MatrixXd::Zero(6, 6);
-            // Jbdot.block(0,0,6,6) = MatrixXd::Zero(6,6);
+            // Jbdot.block(0, 0, 6, 6) = MatrixXd::Zero(6, 6);
           }
           for (int j = 0; j < 6; j++) {
             if (!std::isnan(desired_body_accelerations[i].body_vdot[j])) {
@@ -1189,7 +1189,7 @@ int InstantaneousQPController::setupAndSolveQP(
     if (nc > 0) {
       QBlkDiag[1] = &Qnfdiag;
       QBlkDiag[2] = &Qneps;  // quadratic slack var cost,
-                             // Q(nparams-neps:end,nparams-neps:end)=eye(neps)
+                             // Q(nparams-neps:end, nparams-neps:end)=eye(neps)
     }
 
     MatrixXd Ain_lb_ub(n_ineq + 2 * nparams, nparams);

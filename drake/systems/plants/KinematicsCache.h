@@ -211,6 +211,16 @@ class KinematicsCache {
           "Kinematics cache has no valid velocity vector.");
   }
 
+  Eigen::Matrix<Scalar, Eigen::Dynamic, 1> getX() const {
+    if (hasV()) {
+      Eigen::Matrix<Scalar, Eigen::Dynamic, 1> x(getNumPositions() + getNumVelocities());
+      x << q, v;
+      return x;
+    } else {
+      return getQ();
+    }
+  };
+
   bool hasV() const { return velocity_vector_valid; }
 
   void setInertiasCached() { inertias_cached = true; }

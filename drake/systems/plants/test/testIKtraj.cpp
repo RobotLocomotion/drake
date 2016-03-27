@@ -28,11 +28,11 @@ int main() {
     } else if (model->bodies[i]->linkname.compare(string("r_hand"))) {
       r_hand = i;
     }
-    // else if(model->bodies[i].linkname.compare(string("l_foot")))
+    // else if (model->bodies[i].linkname.compare(string("l_foot")))
     //{
     //  l_foot = i;
     //}
-    // else if(model->bodies[i].linkname.compare(string("r_foot")))
+    // else if (model->bodies[i].linkname.compare(string("r_foot")))
     //{
     //  r_foot = i;
     //}

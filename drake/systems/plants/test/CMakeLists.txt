@@ -70,8 +70,25 @@ if (LCM_FOUND)
     add_test(NAME testLidar COMMAND testLidar)
   endif()
 
+  add_executable(testAccelerometer testAccelerometer.cpp)
+  target_link_libraries(testAccelerometer drakeRBSystem)
+  add_test(NAME testAccelerometer COMMAND testAccelerometer)
+
+  add_executable(testGyroscope testGyroscope.cpp)
+  target_link_libraries(testGyroscope drakeRBSystem)
+  add_test(NAME testGyroscope COMMAND testGyroscope)
+
+  add_executable(testMagnetometer testMagnetometer.cpp)
+  target_link_libraries(testMagnetometer drakeRBSystem)
+  add_test(NAME testMagnetometer COMMAND testMagnetometer)
+
   add_executable(compareRigidBodySystems compareRigidBodySystems.cpp)
   target_link_libraries(compareRigidBodySystems drakeRBSystem)
   add_test(NAME compareAcrobotURDFtoSDF COMMAND compareRigidBodySystems Acrobot.urdf Acrobot.sdf WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/examples/Acrobot")
 endif()
 
+if (GTEST_FOUND)
+  add_executable(testXmlUtil testXmlUtil.cpp)
+  target_link_libraries(testXmlUtil drakeXMLUtil ${GTEST_BOTH_LIBRARIES})
+  add_test(NAME testXmlUtil COMMAND testXmlUtil)
+endif()

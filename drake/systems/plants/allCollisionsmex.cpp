@@ -34,7 +34,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   // mxGetNumberOfFields(active_collision_options) << endl;
   // for (int i = 0; i < mxGetNumberOfFields(active_collision_options); ++i) {
   // const char* fieldname;
-  // fieldname = mxGetFieldNameByNumber(active_collision_options,i);
+  // fieldname = mxGetFieldNameByNumber(active_collision_options, i);
   // cout << *fieldname << endl;
   //}
   // END_DEBUG

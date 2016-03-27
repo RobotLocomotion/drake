@@ -1,44 +1,23 @@
-os:
-  - linux
-  - osx
+sudo: required
+dist: precise
 
 language: cpp
 
-sudo: required
+os:
+  - osx
 
-notifications:
-  email: false
+compiler:
+  - clang
 
 branches:
   only:
     - master
-    - stable
-
-before_install:
-  - source travis_pre_build.sh
 
 install:
-  - make
+  - source travis_install.sh
 
 script:
-  - cd drake/pod-build
-  - export PYTHONPATH="${PYTHONPATH}:`pwd`/../../build/lib/python2.7/dist-packages"
-  - ctest -j 1 -D Experimental -C $BUILD_TYPE --output-on-failure --timeout 1000
+  - source travis_script.sh
 
-# The compiler and env:matrix options create an matrix of build configurations (gcc + Release, gcc + Debug, clang + Release, clang + Debug)
-
-compiler:
-  - gcc
-  - clang
-
-python:
-  - '2.7'
-
-env:
-  matrix:
-    - BUILD_TYPE=Release
-    # - BUILD_TYPE=Debug
-
-matrix:
-  # allow_failures:
-  #   - compiler: gcc
+notifications:
+  email: false

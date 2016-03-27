@@ -46,8 +46,8 @@ class DRAKERBM_EXPORT RigidBodyActuator {
 
 class DRAKERBM_EXPORT RigidBodyLoop {
  public:
-  RigidBodyLoop(const std::shared_ptr<RigidBodyFrame>& _frameA,
-                const std::shared_ptr<RigidBodyFrame>& _frameB,
+  RigidBodyLoop(std::shared_ptr<RigidBodyFrame> _frameA,
+                std::shared_ptr<RigidBodyFrame> _frameB,
                 const Eigen::Vector3d& _axis)
       : frameA(_frameA), frameB(_frameB), axis(_axis){};
 
@@ -98,7 +98,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
                        const DrakeJoint::FloatingBaseType floating_base_type =
                            DrakeJoint::QUATERNION);
 
-  void addFrame(const std::shared_ptr<RigidBodyFrame>& frame);
+  void addFrame(std::shared_ptr<RigidBodyFrame> frame);
 
   std::map<std::string, int> computePositionNameToIndexMap() const;
 
@@ -523,7 +523,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
   DrakeCollision::ElementId addCollisionElement(
       const RigidBody::CollisionElement& element,
-      const std::shared_ptr<RigidBody>& body, const std::string& group_name);
+      RigidBody& body, const std::string& group_name);
 
   template <class UnaryPredicate>
   void removeCollisionGroupsIf(UnaryPredicate test) {

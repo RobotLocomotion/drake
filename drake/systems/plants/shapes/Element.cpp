@@ -18,7 +18,7 @@ const Isometry3d& Element::getLocalTransform() const {
   return T_element_to_local;
 }
 
-const Shape Element::getShape() const { return geometry->getShape(); }
+Shape Element::getShape() const { return geometry->getShape(); }
 
 void Element::setGeometry(const Geometry& geometry) {
   this->geometry = std::unique_ptr<Geometry>(geometry.clone());

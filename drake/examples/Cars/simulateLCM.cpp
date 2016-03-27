@@ -1,9 +1,9 @@
-
-#include "LCMSystem.h"
-#include "RigidBodySystem.h"
-#include "LinearSystem.h"
-#include "BotVisualizer.h"
-#include "drakeAppUtil.h"
+#include "drake/systems/LCMSystem.h"
+#include "drake/systems/LinearSystem.h"
+#include "drake/systems/pd_control_system.h"
+#include "drake/systems/plants/BotVisualizer.h"
+#include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/util/drakeAppUtil.h"
 #include "lcmtypes/drake/lcmt_driving_control_cmd_t.hpp"
 
 using namespace std;
@@ -78,10 +78,11 @@ int main(int argc, char* argv[]) {
   // be reused
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
 
-  auto rigid_body_sys =
-      make_shared<RigidBodySystem>(argv[1], floating_base_type);
-  auto const& tree = rigid_body_sys->getRigidBodyTree();
-  for (int i = 2; i < argc; i++)
+
+  auto rigid_body_sys = make_shared<RigidBodySystem>();
+  rigid_body_sys->addRobotFromFile(argv[1], floating_base_type);
+  auto const & tree = rigid_body_sys->getRigidBodyTree();
+  for (int i=2; i<argc; i++)
     tree->addRobotFromSDF(argv[i], DrakeJoint::FIXED);  // add environment
 
   if (argc < 3) {  // add flat terrain
@@ -98,7 +99,7 @@ int main(int argc, char* argv[]) {
     world->addVisualElement(
         DrakeShapes::VisualElement(geom, T_element_to_link, color));
     tree->addCollisionElement(
-        RigidBody::CollisionElement(geom, T_element_to_link, world), world,
+        RigidBody::CollisionElement(geom, T_element_to_link, world), *world,
         "terrain");
     tree->updateStaticCollisionElements();
   }
@@ -154,7 +155,7 @@ int main(int argc, char* argv[]) {
   options.initial_step_size = 5e-3;
   options.timeout_seconds = numeric_limits<double>::infinity();
 
-  VectorXd x0(rigid_body_sys->getNumStates());
+  VectorXd x0 = VectorXd::Zero(rigid_body_sys->getNumStates());
   x0.head(tree->num_positions) = tree->getZeroConfiguration();
   // todo:  call getInitialState instead?  (but currently, that would require
   // snopt).  needs #1627
@@ -163,7 +164,7 @@ int main(int argc, char* argv[]) {
   // stabilization terms.
 
   runLCM(sys, lcm, 0, std::numeric_limits<double>::infinity(), x0, options);
-  //  simulate(*sys,0,std::numeric_limits<double>::infinity(),x0,options);
+  //  simulate(*sys, 0, std::numeric_limits<double>::infinity(), x0, options);
 
   return 0;
 }
