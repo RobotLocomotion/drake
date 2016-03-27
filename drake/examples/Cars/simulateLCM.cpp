@@ -80,7 +80,6 @@ int main(int argc, char* argv[]) {
 
 
   auto rigid_body_sys = make_shared<RigidBodySystem>();
-  rigid_body_sys->use_multi_contact = true;
   rigid_body_sys->addRobotFromFile(argv[1], floating_base_type);
   auto const & tree = rigid_body_sys->getRigidBodyTree();
   for (int i=2; i<argc; i++)
@@ -154,7 +153,7 @@ int main(int argc, char* argv[]) {
       rigid_body_sys->penetration_stiffness / 10.0;
   rigid_body_sys->friction_coefficient = 10.0;  // essentially infinite friction
   options.initial_step_size = 5e-3;
-  options.timeout_seconds = numeric_limits<double>::infinity();  
+  options.timeout_seconds = numeric_limits<double>::infinity();
 
   VectorXd x0 = VectorXd::Zero(rigid_body_sys->getNumStates());
   x0.head(tree->num_positions) = tree->getZeroConfiguration();
