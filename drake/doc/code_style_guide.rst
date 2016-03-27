@@ -47,12 +47,28 @@ There are several tools for helping you to compile with the required style. They
 ClangFormat
 ^^^^^^^^^^^
 
-(*Notes comming soon*)
+*Installion*
+
+On Ubuntu, clang-format is already packaged. Ubuntu users should use the pre-packaged version, not a separate download.
+
+On OSX, `clang-format` can be installed via brew::
+
+    brew install clang-format
+
+You can check whether you've installed it correctly by executing::
+
+    $ clang-format --help
+
+*Execution*
+
+To run clang-format::
+
+    clang-format -i -style=file [file name]
 
 cpplint
 ^^^^^^^
 
-`cpplint <https://github.com/google/styleguide/tree/gh-pages/cpplint>`_ is a tool for finding compliance violations. Here is the command:
+`cpplint <https://github.com/google/styleguide/tree/gh-pages/cpplint>`_ is a tool for finding compliance violations. Here is the command::
 
     cpplint --filter="-legal/copyright" [file name]
 
