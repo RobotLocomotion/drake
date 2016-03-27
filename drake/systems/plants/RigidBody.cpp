@@ -94,7 +94,7 @@ bool RigidBody::CollisionElement::CollidesWith(
   auto other_rb = dynamic_cast<const RigidBody::CollisionElement*>(other);
   bool collides = true;
   if (other_rb != nullptr) {
-    collides = this->body->collidesWith(*other_rb->body);
+    collides = this->body->CollidesWith(*other_rb->body);
   }
   return collides;
 }

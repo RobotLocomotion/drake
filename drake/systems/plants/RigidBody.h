@@ -62,7 +62,7 @@ class DRAKERBM_EXPORT RigidBody {
              !(other.joint && other.joint->isFloating())));
   }
 
-  bool collidesWith(const RigidBody& other) const {
+  bool CollidesWith(const RigidBody& other) const {
     bool ignored =
         this == &other || adjacentTo(other) ||
         (collision_filter_group & other.getCollisionFilterIgnores()).any() ||
