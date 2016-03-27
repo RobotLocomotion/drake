@@ -14,12 +14,12 @@ template <typename ScalarType = double>
 class DrivingCommand {
  public:
   typedef drake::lcmt_driving_control_cmd_t LCMMessageType;
-  static std::string channel() { return "DRIVING_COMMAND"; };
+  static std::string channel() { return "DRIVING_COMMAND"; }
 
-  DrivingCommand(void) : throttle(0), brake(0), steering_angle(0){};
+  DrivingCommand(void) : throttle(0), brake(0), steering_angle(0){}
   template <typename Derived>
   DrivingCommand(const Eigen::MatrixBase<Derived>& x)
-      : steering_angle(x(0)), throttle(x(1)), brake(x(2)){};
+      : steering_angle(x(0)), throttle(x(1)), brake(x(2)){}
 
   template <typename Derived>
   DrivingCommand& operator=(const Eigen::MatrixBase<Derived>& x) {
