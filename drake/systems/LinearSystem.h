@@ -62,9 +62,9 @@ class AffineSystem {
 
   bool isTimeVarying() const { return false; }
   bool isDirectFeedthrough() const { return !D.isZero(); }
-  size_t getNumStates() const { return static_cast<size_t>(A.cols()); };
-  size_t getNumInputs() const { return static_cast<size_t>(B.cols()); };
-  size_t getNumOutputs() const { return static_cast<size_t>(C.rows()); };
+  size_t getNumStates() const { return static_cast<size_t>(A.cols()); }
+  size_t getNumInputs() const { return static_cast<size_t>(B.cols()); }
+  size_t getNumOutputs() const { return static_cast<size_t>(C.rows()); }
 
  private:
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> A;
