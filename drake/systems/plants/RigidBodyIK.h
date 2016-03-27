@@ -17,7 +17,7 @@ class IKResults {
 
   const Eigen::VectorXd &getQSol() const { return q_sol; }
 
-  IKResults(){};
+  IKResults(){}
 };
 
 template <typename DerivedA, typename DerivedB, typename DerivedC>

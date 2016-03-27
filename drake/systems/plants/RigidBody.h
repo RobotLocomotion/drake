@@ -34,33 +34,33 @@ class DRAKERBM_EXPORT RigidBody {
 
   const DrakeCollision::bitmask& getCollisionFilterGroup() const {
     return collision_filter_group;
-  };
+  }
   void setCollisionFilterGroup(const DrakeCollision::bitmask& group) {
     this->collision_filter_group = group;
-  };
+  }
 
   const DrakeCollision::bitmask& getCollisionFilterIgnores() const {
     return collision_filter_ignores;
-  };
+  }
   void setCollisionFilterIgnores(const DrakeCollision::bitmask& ignores) {
     this->collision_filter_ignores = ignores;
-  };
+  }
 
   void addToCollisionFilterGroup(const DrakeCollision::bitmask& group) {
     this->collision_filter_group |= group;
-  };
+  }
   void ignoreCollisionFilterGroup(const DrakeCollision::bitmask& group) {
     this->collision_filter_ignores |= group;
-  };
+  }
   void collideWithCollisionFilterGroup(const DrakeCollision::bitmask& group) {
     this->collision_filter_ignores &= ~group;
-  };
+  }
 
   bool adjacentTo(const RigidBody& other) const {
     return ((parent.get() == &other && !(joint && joint->isFloating())) ||
             (other.parent.get() == this &&
              !(other.joint && other.joint->isFloating())));
-  };
+  }
 
   bool collidesWith(const RigidBody& other) const {
     bool ignored =
@@ -68,7 +68,7 @@ class DRAKERBM_EXPORT RigidBody {
         (collision_filter_group & other.getCollisionFilterIgnores()).any() ||
         (other.getCollisionFilterGroup() & collision_filter_ignores).any();
     return !ignored;
-  };
+  }
 
   bool appendCollisionElementIdsFromThisBody(
       const std::string& group_name,
@@ -112,7 +112,7 @@ class DRAKERBM_EXPORT RigidBody {
     CollisionElement(const DrakeShapes::Geometry& geometry,
                      const Eigen::Isometry3d& T_element_to_link,
                      std::shared_ptr<RigidBody> body);
-    virtual ~CollisionElement(){};
+    virtual ~CollisionElement(){}
 
     virtual CollisionElement* clone() const;
 
