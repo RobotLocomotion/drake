@@ -337,18 +337,18 @@ mxArray* eigenToMatlabGeneral(const Eigen::MatrixBase<Eigen::Matrix<
     Eigen::AutoDiffScalar<DerType>, RowsAtCompileTime, ColsAtCompileTime>>&
                                   mat) {
   return eigenToTaylorVar(mat);
-};
+}
 
 template <int RowsAtCompileTime, int ColsAtCompileTime>
 mxArray* eigenToMatlabGeneral(const Eigen::MatrixBase<
     Eigen::Matrix<TrigPolyd, RowsAtCompileTime, ColsAtCompileTime>>& mat) {
   return eigenToTrigPoly<RowsAtCompileTime, ColsAtCompileTime>(mat);
-};
+}
 
 template <int RowsAtCompileTime, int ColsAtCompileTime>
 mxArray* eigenToMatlabGeneral(const Eigen::MatrixBase<
     Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime>>& mat) {
   return eigenToMatlab(mat.const_cast_derived());
-};
+}
 
 #endif
