@@ -114,19 +114,18 @@ class DRAKERBM_EXPORT RigidBody {
                      std::shared_ptr<RigidBody> body);
     virtual ~CollisionElement(){}
 
-    virtual CollisionElement* clone() const;
+    CollisionElement* clone() const override;
 
     const std::shared_ptr<RigidBody>& getBody() const;
 
-    virtual bool collidesWith(const DrakeCollision::Element* other) const;
+    bool CollidesWith(const DrakeCollision::Element* other) const override;
 
-   protected:
-    std::shared_ptr<RigidBody> body;
-
-   public:
 #ifndef SWIG
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 #endif
+
+   private:
+    std::shared_ptr<RigidBody> body;
   };
 
  public:

@@ -31,7 +31,11 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
 
   virtual bool isStatic() const { return false; }
 
-  virtual bool collidesWith(const Element* other) const { return true; }
+  /**
+   * Returns true if this element should be checked for collisions
+   * with the other object.
+   */
+  virtual bool CollidesWith(const Element* other) const { return true; }
 
  protected:
   Element(const Element& other);
