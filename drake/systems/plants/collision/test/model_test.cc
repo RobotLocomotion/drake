@@ -1,50 +1,15 @@
-#include <iostream>
 #include <math.h>
+#include <vector>
 
 #include "drake/systems/plants/collision/DrakeCollision.h"
+#include "drake/systems/plants/collision/Model.h"
+#include "gtest/gtest.h"
 
-using namespace DrakeCollision;
-using namespace std;
-using namespace Eigen;
+using Eigen::Isometry3d;
+using Eigen::Vector3d;
 
-int testPointPair(PointPair point, double distance, Vector3d normal,
-                  ElementId idA, ElementId idB, Vector3d ptA, Vector3d ptB) {
-  if (point.getDistance() != distance) {
-    cerr << "Wrong distance:" << endl;
-    cerr << "  Expected " << distance << ", got " << point.getDistance()
-         << endl;
-    return 1;
-  }
-  if (point.getNormal() != normal) {
-    cerr << "  Expected " << normal.transpose() << ", got "
-         << point.getNormal().transpose() << endl;
-    cerr << "Wrong normal:" << endl;
-    return 1;
-  }
-  if (point.getIdA() != idA) {
-    cerr << "Wrong idA:" << endl;
-    cerr << "  Expected " << idA << ", got " << point.getIdA() << endl;
-    return 1;
-  }
-  if (point.getIdB() != idB) {
-    cerr << "Wrong idB:" << endl;
-    cerr << "  Expected " << idB << ", got " << point.getIdB() << endl;
-    return 1;
-  }
-  if (!(point.getPtA() - ptA).isZero()) {
-    cerr << "Wrong ptA:" << endl;
-    cerr << "  Expected " << ptA.transpose() << ", got "
-         << point.getPtA().transpose() << endl;
-    return 1;
-  }
-  if (!(point.getPtB() - ptB).isZero()) {
-    cerr << "Wrong ptB:" << endl;
-    cerr << "  Expected " << ptB.transpose() << ", got "
-         << point.getPtB().transpose() << endl;
-    return 1;
-  }
-  return 0;
-}
+namespace DrakeCollision {
+namespace {
 
 /*
  * Three bodies (cube (1 m edges) and two spheres (0.5 m radii) arranged like
@@ -69,7 +34,8 @@ int testPointPair(PointPair point, double distance, Vector3d normal,
  *          |                    |
  *
  */
-int main() {
+TEST(ModelTest, ClosestPointsAllToAll) {
+  // Set up the geometry.
   Isometry3d T_body1_to_world, T_body2_to_world, T_body3_to_world,
       T_elem2_to_body;
   T_body1_to_world.setIdentity();
@@ -79,45 +45,59 @@ int main() {
   T_elem2_to_body.setIdentity();
   T_elem2_to_body.translation() << 1, 0, 0;
   T_body3_to_world.translation() << 2, 2, 0;
-  T_body3_to_world.matrix().block<2, 2>(0, 0) << 0, -1, 1,
-      0;  // rotate 90 deg in z
+  T_body3_to_world.matrix().block<2, 2>(0, 0)
+      << 0, -1, 1, 0;  // rotate 90 degrees in z
 
-  shared_ptr<Model> model = newModel();
+  DrakeShapes::Box geometry_1(Vector3d(1,1,1));
+  DrakeShapes::Sphere geometry_2(0.5);
+  DrakeShapes::Sphere geometry_3(0.5);
+  Element element_1(geometry_1);
+  Element element_2(geometry_2, T_elem2_to_body);
+  Element element_3(geometry_3);
   ElementId id1, id2, id3;
-  id1 = model->addElement(Element(DrakeShapes::Box(Vector3d(1, 1, 1))));
-  id2 = model->addElement(Element(DrakeShapes::Sphere(0.5), T_elem2_to_body));
-  id3 = model->addElement(Element(DrakeShapes::Sphere(0.5)));
+
+  // Populate the model.
+  std::shared_ptr<Model> model = newModel();
+  id1 = model->addElement(element_1);
+  id2 = model->addElement(element_2);
+  id3 = model->addElement(element_3);
   model->updateElementWorldTransform(id1, T_body1_to_world);
   model->updateElementWorldTransform(id2, T_body2_to_world);
   model->updateElementWorldTransform(id3, T_body3_to_world);
 
-  vector<PointPair> points;
-  vector<ElementId> ids_to_check;
-  ids_to_check.push_back(id1);
-  ids_to_check.push_back(id2);
-  ids_to_check.push_back(id3);
-
+  // Compute the closest points.
+  const std::vector<ElementId> ids_to_check = {id1, id2, id3};
+  std::vector<PointPair> points;
   model->closestPointsAllToAll(ids_to_check, true, points);
-  if (points.size() != 3) {
-    cerr << "Wrong number of points: " << endl;
-    cerr << "  Expected 3, got " << points.size() << endl;
-    return 1;
-  }
-  int out;
-  cout << "Check points[0] ..." << endl;
-  out = testPointPair(points[0], 1.0, Vector3d(-1, 0, 0), id1, id2,
-                      Vector3d(0.5, 0, 0), Vector3d(.5, 0, 0));
-  if (out == 0) {
-    cout << "Check points[1] ..." << endl;
-    out = testPointPair(
-        points[1], 1.6213203435596428, Vector3d(-sqrt(2) / 2, -sqrt(2) / 2, 0),
-        id1, id3, Vector3d(.5, .5, 0), Vector3d(-sqrt(2) / 4, sqrt(2) / 4, 0));
-  }
-  if (out == 0) {
-    cout << "Check points[2] ..." << endl;
-    out = testPointPair(points[2], 1.0, Vector3d(0, -1, 0), id2, id3,
-                        Vector3d(1, .5, 0), Vector3d(-.5, 0, 0));
-  }
-  cout << out << endl;
-  return out;
+  ASSERT_EQ(3, points.size());
+
+  // Check the closest point between object 1 and object 2.
+  // TODO(david-german-tri): Migrate this test to use Eigen matchers once
+  // they are available.
+  EXPECT_EQ(id1, points[0].getIdA());
+  EXPECT_EQ(id2, points[0].getIdB());
+  EXPECT_EQ(1.0, points[0].getDistance());
+  EXPECT_EQ(Vector3d(-1, 0, 0), points[0].getNormal());
+  EXPECT_TRUE((Vector3d(0.5, 0, 0) - points[0].getPtA()).isZero());
+  EXPECT_TRUE((Vector3d(0.5, 0, 0) - points[0].getPtB()).isZero());
+
+  // Check the closest point between object 1 and object 3.
+  EXPECT_EQ(id1, points[1].getIdA());
+  EXPECT_EQ(id3, points[1].getIdB());
+  EXPECT_EQ(1.6213203435596428, points[1].getDistance());
+  EXPECT_EQ(Vector3d(-sqrt(2) / 2, -sqrt(2) / 2, 0), points[1].getNormal());
+  EXPECT_TRUE((Vector3d(0.5, 0.5, 0) - points[1].getPtA()).isZero());
+  EXPECT_TRUE((Vector3d(-sqrt(2) / 4, sqrt(2) / 4, 0) - points[1].getPtB()).isZero());
+
+  // Check the closest point between object 2 and object 3.
+  EXPECT_EQ(id2, points[2].getIdA());
+  EXPECT_EQ(id3, points[2].getIdB());
+  EXPECT_EQ(1.0, points[2].getDistance());
+  EXPECT_EQ(Vector3d(0, -1, 0), points[2].getNormal());
+  EXPECT_TRUE((Vector3d(1, 0.5, 0) - points[2].getPtA()).isZero());
+  EXPECT_TRUE((Vector3d(-0.5, 0, 0) - points[2].getPtB()).isZero());
 }
+
+}  // namespace
+}  // namespace DrakeCollision
+
