@@ -42,7 +42,7 @@ class DRAKESHAPES_EXPORT Element {
 
   const Geometry& getGeometry() const;
 
-  void getTerrainContactPoints(Eigen::Matrix3Xd& points);
+  void getTerrainContactPoints(Eigen::Matrix3Xd& points) const;
 
  protected:
   virtual void setWorldTransform(const Eigen::Isometry3d& T_elem_to_world);
