@@ -33,7 +33,7 @@ void rigidBodyConstraintParseTspan(const mxArray* pm, Eigen::Vector2d& tspan) {
     }
     delete[] tspan_tmp;
   }
-};
+}
 
 void rigidBodyConstraintParse3dUnitVector(const mxArray* pm,
                                           Vector3d& unit_vec) {
@@ -52,7 +52,7 @@ void rigidBodyConstraintParse3dUnitVector(const mxArray* pm,
                       "The input cannot be a zero vector");
   }
   unit_vec = unit_vec / vec_norm;
-};
+}
 
 void rigidBodyConstraintParseQuat(const mxArray* pm, Vector4d& quat) {
   if (!mxIsNumeric(pm)) {
@@ -96,7 +96,7 @@ double rigidBodyConstraintParseGazeConethreshold(const mxArray* pm) {
     }
     return conethreshold;
   }
-};
+}
 
 double rigidBodyConstraintParseGazeThreshold(const mxArray* pm) {
   if (mxGetNumberOfElements(pm) == 0) {
