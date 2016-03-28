@@ -8,7 +8,7 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-#include "../shapes/DrakeShapes.h"
+#include "drake/systems/plants/shapes/DrakeShapes.h"
 #include "drake/drakeCollision_export.h"
 
 namespace DrakeCollision {
@@ -33,7 +33,8 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
 
   /**
    * Returns true if this element should be checked for collisions
-   * with the other object.
+   * with the other object.  CollidesWith should be symmetric: if
+   * A collides with B, B collides with A.
    */
   virtual bool CollidesWith(const Element* other) const { return true; }
 
