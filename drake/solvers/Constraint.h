@@ -122,11 +122,11 @@ class LinearConstraint : public Constraint {
                     TaylorVecXd& y) const override {
     y.resize(get_num_constraints());
     y = get_matrix().cast<TaylorVarXd>() * x;
-  };
+  }
 
   virtual Eigen::SparseMatrix<double> GetSparseMatrix() const {
     return get_matrix().sparseView();
-  };
+  }
   virtual const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>&
   get_matrix() const {
     return A;
@@ -227,10 +227,10 @@ class LinearComplementarityConstraint : public Constraint {
                     TaylorVecXd& y) const override {
     y.resize(get_num_constraints());
     y = (M.cast<TaylorVarXd>() * x) + q.cast<TaylorVarXd>();
-  };
+  }
 
-  const Eigen::MatrixXd& get_M() const { return M; };
-  const Eigen::VectorXd& get_q() const { return q; };
+  const Eigen::MatrixXd& get_M() const { return M; }
+  const Eigen::VectorXd& get_q() const { return q; }
 
  private:
   // TODO(ggould-tri) We are storing what are likely statically sized matrices
