@@ -9,7 +9,7 @@
 class ConstraintMatrixSingularError : public std::runtime_error {
  public:
   ConstraintMatrixSingularError()
-      : runtime_error("Constraint matrix is singular!"){};
+      : runtime_error("Constraint matrix is singular!"){}
 };
 
 DRAKESPLINEGENERATION_EXPORT PiecewisePolynomial<double> generateSpline(

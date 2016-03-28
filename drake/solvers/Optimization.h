@@ -244,7 +244,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
       : problem_type(MathematicalProgramInterface::getLeastSquaresProgram()),
         num_vars(0),
         x_initial_guess(
-            static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)){};
+            static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)){}
 
   const DecisionVariableView addContinuousVariables(std::size_t num_new_vars,
                                                     std::string name = "x") {
@@ -322,14 +322,14 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
         std::numeric_limits<double>::infinity()));
     addCost(objective, vars);
     return objective;
-  };
+  }
 
   template <typename DerivedQ, typename Derivedb>
   std::shared_ptr<QuadraticConstraint> addQuadraticCost(
       const Eigen::MatrixBase<DerivedQ>& Q,
       const Eigen::MatrixBase<Derivedb>& x_desired) {
     return addQuadraticCost(Q, x_desired, variable_views);
-  };
+  }
 
   /** addGenericConstraint
    *
@@ -562,7 +562,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   bool solve() {
     return problem_type->solve(*this);
-  };  // todo: add argument for options
+  }  // todo: add argument for options
 
   //    template <typename Derived>
   //    bool solve(const Eigen::MatrixBase<Derived>& x0);
