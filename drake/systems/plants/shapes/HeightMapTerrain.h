@@ -25,9 +25,9 @@ class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
     /*!
       A more elaborate description of the constructor.
 
-      \param size The provided array will be scaled so that the terrain size(0) x size(1) in size and has maximum height size(2). The minimum height will be located at zero height. 
-      \param pos Position of the terrain center in world's coordinates. The terrain center is located at the middle of the 2D plane and at zero height.            
-    */      
+      \param size The provided array will be scaled so that the terrain size(0) x size(1) in size and has maximum height size(2). The minimum height will be located at zero height.
+      \param pos Position of the terrain center in world's coordinates. The terrain center is located at the middle of the 2D plane and at zero height.
+    */
   HeightMapTerrain(const std::string& name, const Eigen::Vector2i &ncells, const Eigen::Vector2d &size);
   HeightMapTerrain(const HeightMapTerrain& other);
   virtual ~HeightMapTerrain();
@@ -44,7 +44,7 @@ class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
   double& cellValue(int i,int j);
   bool writeToFile(const std::string& fname) const;
 
-  enum RawDataType {UCHAR, SHORT,FLOAT};    
+  enum RawDataType {UCHAR, SHORT,FLOAT};
   typedef unsigned char byte_t;
 
   std::size_t nBytes;   //!< number of bytes allocated in m_rawHeightfieldData
@@ -57,11 +57,11 @@ class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
   Eigen::Matrix<int,2,1,Eigen::DontAlign> ncells, nnodes;
 
   double m_gridHeightScale;
-  double m_minHeight, m_maxHeight; 
-  int m_upAxis; 
-  RawDataType m_type;    
+  double m_minHeight, m_maxHeight;
+  int m_upAxis;
+  RawDataType m_type;
   byte_t* m_rawHeightfieldData;
-  std::string name,fname;  
+  std::string name,fname;
 
   protected:
     void computeMinMaxHeights();
@@ -110,7 +110,7 @@ class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
     }
 };
 
-/** \brief Example class showing how to inherit from HeightMapTerrain. 
+/** \brief Example class showing how to inherit from HeightMapTerrain.
   *  It represents a simple flat terrain in an angle.
   */
 class DRAKESHAPES_EXPORT FlatTerrain : public HeightMapTerrain {
@@ -131,5 +131,5 @@ class DRAKESHAPES_EXPORT FlatTerrain : public HeightMapTerrain {
 
 }//namespace DrakeShapes
 
-#endif 
+#endif
 //__HeightMapTerrain_H__
