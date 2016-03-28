@@ -144,13 +144,13 @@ unique_ptr<btCollisionShape> BulletModel::newBulletHeightMapTerrainShape(
   const DrakeShapes::HeightMapTerrain& geometry, bool use_margins) {
 
   bool flipQuadEdges = false;
-  PHY_ScalarType btType = PHY_FLOAT;  
+  PHY_ScalarType btType = PHY_FLOAT;
   assert(sizeof(btScalar)==sizeof(double) && "HeightMapTerrain is internally using double's when Bullet is using float's?");
 
   //m_heightScale = geometry.m_gridHeightScale is actually ignored for float data type.;
   //This scaling is only used for ushort and short data types (see btHeightfieldTerrainShape.cpp:149)
   unique_ptr<btCollisionShape> bt_shape(
-    new btHeightfieldTerrainShape(geometry.nnodes(0), geometry.nnodes(1), 
+    new btHeightfieldTerrainShape(geometry.nnodes(0), geometry.nnodes(1),
       geometry.m_rawHeightfieldData,
       geometry.m_gridHeightScale,
       static_cast<btScalar>(geometry.m_minHeight), static_cast<btScalar>(geometry.m_maxHeight),
@@ -165,27 +165,27 @@ unique_ptr<btCollisionShape> BulletModel::newBulletHeightMapTerrainShape(
 }
 
 
-void BulletModel::writeHeightMapTerrain(  
+void BulletModel::writeHeightMapTerrain(
   const btHeightfieldTerrainShape* bullet_height_map,
   const string& fname){
   std::ofstream file;
-  file.open(fname);    
-  
-  btVector3 aabbMin(0,0,0),aabbMax(0,0,0);            
+  file.open(fname);
+
+  btVector3 aabbMin(0,0,0),aabbMax(0,0,0);
   aabbMin-=btVector3(BT_LARGE_FLOAT,BT_LARGE_FLOAT,BT_LARGE_FLOAT);
   aabbMax+=btVector3(BT_LARGE_FLOAT,BT_LARGE_FLOAT,BT_LARGE_FLOAT);
 
   GatherHeightMapAsGridCallBack grid_buffer;
-  bullet_height_map->processAllTriangles(&grid_buffer,aabbMin,aabbMax); 
+  bullet_height_map->processAllTriangles(&grid_buffer,aabbMin,aabbMax);
 
   //write vertices
-  for(int i=0;i<grid_buffer.numPoints();i++){            
+  for(int i=0;i<grid_buffer.numPoints();i++){
     btVector3 vertex = grid_buffer.getPoint(i);
     file << "v " << vertex[0] << " " << vertex[1] << " " << vertex[2] << " " << endl;
   }
 
   //write connectivities (two triangles per cell)
-  for(int i=0;i<grid_buffer.numTriangles();i++){            
+  for(int i=0;i<grid_buffer.numTriangles();i++){
     Vector3i conn = grid_buffer.getTriangle(i);
     file << "f " << conn[0] << " " << conn[1] << " " << conn[2] << endl;
   }
@@ -254,11 +254,11 @@ ElementId BulletModel::addElement(const Element& element) {
         bt_shape = newBulletCapsuleShape(capsule, true);
         bt_shape_no_margin = newBulletCapsuleShape(capsule, false);
       } break;
-      case DrakeShapes::HEIGHT_MAP_TERRAIN: {                        
+      case DrakeShapes::HEIGHT_MAP_TERRAIN: {
         const auto terrain_geom = static_cast<const DrakeShapes::HeightMapTerrain&>(
             elements[id]->getGeometry());
         bt_shape = newBulletHeightMapTerrainShape(terrain_geom, true);
-        bt_shape_no_margin = newBulletHeightMapTerrainShape(terrain_geom, false);        
+        bt_shape_no_margin = newBulletHeightMapTerrainShape(terrain_geom, false);
       } break;
       default:
         cerr << "Warning: Collision elements[id] has an unknown type "
@@ -314,7 +314,7 @@ vector<PointPair> BulletModel::potentialCollisionPoints(bool use_margins) {
   BulletResultCollector c;
   bt_world.bt_collision_world->performDiscreteCollisionDetection();
   size_t numManifolds =
-      bt_world.bt_collision_world->getDispatcher()->getNumManifolds();  
+      bt_world.bt_collision_world->getDispatcher()->getNumManifolds();
 
   for (size_t i = 0; i < numManifolds; i++) {
     btPersistentManifold* contact_manifold =
@@ -709,8 +709,8 @@ bool BulletModel::closestPointsAllToAll(const vector<ElementId>& ids_to_check,
            ++idB_iter) {
         auto elementB_iter = elements.find(*idB_iter);
         if (elementB_iter != elements_end) {
-          if (elements[*idA_iter]->collidesWith(elements[*idB_iter].get())) { 
-            //collidesWith call discars these cases: 
+          if (elements[*idA_iter]->collidesWith(elements[*idB_iter].get())) {
+            //collidesWith call discars these cases:
             // 1) the case where both objects are the same
             // 2) the case two bodies are adjacent
             // 3) filters ....
