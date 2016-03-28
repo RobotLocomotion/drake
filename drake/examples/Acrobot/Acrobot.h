@@ -11,12 +11,12 @@ template <typename ScalarType = double>
 class AcrobotState {  // models the Drake::Vector concept
  public:
   typedef drake::lcmt_drake_signal LCMMessageType;
-  static std::string channel() { return "AcrobotState"; };
+  static std::string channel() { return "AcrobotState"; }
 
-  AcrobotState(void) : shoulder(0), elbow(0), shoulder_dot(0), elbow_dot(0){};
+  AcrobotState(void) : shoulder(0), elbow(0), shoulder_dot(0), elbow_dot(0){}
   template <typename Derived>
   AcrobotState(const Eigen::MatrixBase<Derived>& x)
-      : shoulder(x(0)), elbow(x(1)), shoulder_dot(x(2)), elbow_dot(x(3)){};
+      : shoulder(x(0)), elbow(x(1)), shoulder_dot(x(2)), elbow_dot(x(3)){}
 
   template <typename Derived>
   AcrobotState& operator=(const Eigen::MatrixBase<Derived>& x) {
@@ -46,7 +46,7 @@ class AcrobotState {  // models the Drake::Vector concept
     Eigen::Matrix<ScalarType, 4, 1> x;
     x << vec.shoulder, vec.elbow, vec.shoulder_dot, vec.elbow_dot;
     return x;
-  };
+  }
 
   const static int RowsAtCompileTime = 4;
 
@@ -57,12 +57,12 @@ template <typename ScalarType = double>
 class AcrobotInput {
  public:
   typedef drake::lcmt_drake_signal LCMMessageType;
-  static std::string channel() { return "AcrobotInput"; };
+  static std::string channel() { return "AcrobotInput"; }
 
-  AcrobotInput(void) : tau(0){};
+  AcrobotInput(void) : tau(0){}
   template <typename Derived>
   AcrobotInput(const Eigen::MatrixBase<Derived>& x)
-      : tau(x(0)){};
+      : tau(x(0)){}
 
   template <typename Derived>
   AcrobotInput& operator=(const Eigen::MatrixBase<Derived>& x) {
@@ -85,7 +85,7 @@ Eigen::Matrix<ScalarType, 1, 1> toEigen(const AcrobotInput<ScalarType>& vec) {
   Eigen::Matrix<ScalarType, 1, 1> x;
   x << vec.tau;
   return x;
-};
+}
 
 class Acrobot {
  public:
@@ -109,7 +109,7 @@ class Acrobot {
         b2(0.1),  // kg m^2 /s
         g(9.81)   // m/s^2
   {}
-  virtual ~Acrobot(void){};
+  virtual ~Acrobot(void){}
 
   template <typename ScalarType>
   void manipulatorDynamics(const AcrobotState<ScalarType>& x,

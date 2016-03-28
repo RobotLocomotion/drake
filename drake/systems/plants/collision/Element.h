@@ -23,15 +23,15 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
           const Eigen::Isometry3d& T_element_to_local =
               Eigen::Isometry3d::Identity());
 
-  virtual ~Element(){};
+  virtual ~Element(){}
 
   virtual Element* clone() const;
 
   ElementId getId() const;
 
-  virtual bool isStatic() const { return false; };
+  virtual bool isStatic() const { return false; }
 
-  virtual bool collidesWith(const Element* other) const { return true; };
+  virtual bool collidesWith(const Element* other) const { return true; }
 
  protected:
   Element(const Element& other);

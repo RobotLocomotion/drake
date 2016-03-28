@@ -36,7 +36,7 @@ unique_ptr<Model> newModel(ModelType model_type) {
            << endl;
   }
   return unique_ptr<Model>();
-};
+}
 
 unique_ptr<Model> newModel() {
 #ifdef BULLET_COLLISION

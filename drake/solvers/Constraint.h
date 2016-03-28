@@ -126,7 +126,7 @@ class LinearConstraint : public Constraint {
 
   virtual Eigen::SparseMatrix<double> getSparseMatrix() const {
     return getMatrix().sparseView();
-  };
+  }
   virtual const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>&
   getMatrix() const {
     return A;
@@ -166,7 +166,7 @@ class LinearEqualityConstraint : public LinearConstraint {
     lower_bound = beq;
     upper_bound.conservativeResize(beq.rows());
     upper_bound = beq;
-  };
+  }
 };
 
 /** BoundingBoxConstraint
@@ -229,8 +229,8 @@ class LinearComplementarityConstraint : public Constraint {
     y = (M.cast<TaylorVarXd>() * x) + q.cast<TaylorVarXd>();
   };
 
-  const Eigen::MatrixXd& getM() const { return M; };
-  const Eigen::VectorXd& getq() const { return q; };
+  const Eigen::MatrixXd& getM() const { return M; }
+  const Eigen::VectorXd& getq() const { return q; }
 
  private:
   // TODO(ggould-tri) We are storing what are likely statically sized matrices
