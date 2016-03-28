@@ -103,9 +103,9 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     b->velocity_num_start = (int)mxGetScalar(pm) - 1;  // zero-indexed
 
     pm = mxGetPropertySafe(pBodies, i, "parent");
-    if (!pm || mxIsEmpty(pm))
+    if (!pm || mxIsEmpty(pm)) {
       b->parent = nullptr;
-    else {
+    } else {
       int parent_ind = static_cast<int>(mxGetScalar(pm)) - 1;
       if (parent_ind >= static_cast<int>(model->bodies.size()))
         mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs",

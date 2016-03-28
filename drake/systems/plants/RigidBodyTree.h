@@ -35,7 +35,7 @@ class DRAKERBM_EXPORT RigidBodyActuator {
         body(body),
         reduction(reduction),
         effort_limit_min(effort_limit_min),
-        effort_limit_max(effort_limit_max){};
+        effort_limit_max(effort_limit_max){}
 
   const std::string name;
   const std::shared_ptr<RigidBody> body;
@@ -49,7 +49,7 @@ class DRAKERBM_EXPORT RigidBodyLoop {
   RigidBodyLoop(std::shared_ptr<RigidBodyFrame> _frameA,
                 std::shared_ptr<RigidBodyFrame> _frameB,
                 const Eigen::Vector3d& _axis)
-      : frameA(_frameA), frameB(_frameB), axis(_axis){};
+      : frameA(_frameA), frameB(_frameB), axis(_axis){}
 
   const std::shared_ptr<RigidBodyFrame> frameA, frameB;
   const Eigen::Vector3d axis;
@@ -246,7 +246,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
     }
 
     cache.setJdotVCached(compute_JdotV && cache.hasV());
-  };
+  }
 
   bool isBodyPartOfRobot(const RigidBody& body,
                          const std::set<int>& robotnum) const;
@@ -419,7 +419,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
     auto T =
         relativeTransform(cache, to_body_or_frame_ind, from_body_or_frame_ind);
     return T * points.template cast<Scalar>();
-  };
+  }
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, 4, 1> relativeQuaternion(
@@ -427,7 +427,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
       int to_body_or_frame_ind) const {
     return rotmat2quat(relativeTransform(cache, to_body_or_frame_ind,
                                          from_body_or_frame_ind).linear());
-  };
+  }
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, 3, 1> relativeRollPitchYaw(
@@ -435,7 +435,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
       int to_body_or_frame_ind) const {
     return rotmat2rpy(relativeTransform(cache, to_body_or_frame_ind,
                                         from_body_or_frame_ind).linear());
-  };
+  }
 
   template <typename Scalar, typename DerivedPoints>
   Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> transformPointsJacobian(
@@ -709,7 +709,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
       compact_col_start += ncols_joint;
     }
     return full;
-  };
+  }
 
  public:
   static const std::set<int> default_robot_num_set;

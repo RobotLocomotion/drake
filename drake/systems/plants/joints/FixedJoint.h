@@ -14,16 +14,16 @@ class DRAKEJOINTS_EXPORT FixedJoint : public DrakeJointImpl<FixedJoint> {
  public:
   FixedJoint(const std::string &name,
              const Eigen::Isometry3d &transform_to_parent_body)
-      : DrakeJointImpl(*this, name, transform_to_parent_body, 0, 0){};
+      : DrakeJointImpl(*this, name, transform_to_parent_body, 0, 0){}
 
-  virtual ~FixedJoint(){};
+  virtual ~FixedJoint(){}
 
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>
   jointTransform(const Eigen::MatrixBase<DerivedQ> &q) const {
     return Eigen::Transform<typename DerivedQ::Scalar, 3,
                             Eigen::Isometry>::Identity();
-  };
+  }
 
   template <typename DerivedQ, typename DerivedMS>
   void motionSubspace(const Eigen::MatrixBase<DerivedQ> &q,
@@ -34,7 +34,7 @@ class DRAKEJOINTS_EXPORT FixedJoint : public DrakeJointImpl<FixedJoint> {
     if (dmotion_subspace) {
       dmotion_subspace->resize(motion_subspace.size(), getNumPositions());
     }
-  };
+  }
 
   template <typename DerivedQ, typename DerivedV>
   void motionSubspaceDotTimesV(
@@ -57,7 +57,7 @@ class DRAKEJOINTS_EXPORT FixedJoint : public DrakeJointImpl<FixedJoint> {
     if (dmotion_subspace_dot_times_vdv) {
       dmotion_subspace_dot_times_vdv->setZero(TWIST_SIZE, 1);
     }
-  };
+  }
 
   template <typename DerivedQ>
   void qdot2v(
@@ -70,7 +70,7 @@ class DRAKEJOINTS_EXPORT FixedJoint : public DrakeJointImpl<FixedJoint> {
     if (dqdot_to_v) {
       dqdot_to_v->setZero(qdot_to_v.size(), getNumPositions());
     }
-  };
+  }
 
   template <typename DerivedQ>
   void v2qdot(
@@ -83,7 +83,7 @@ class DRAKEJOINTS_EXPORT FixedJoint : public DrakeJointImpl<FixedJoint> {
     if (dv_to_qdot) {
       dv_to_qdot->setZero(v_to_qdot.size(), getNumPositions());
     }
-  };
+  }
 
   template <typename DerivedV>
   Eigen::Matrix<typename DerivedV::Scalar, Eigen::Dynamic, 1> frictionTorque(

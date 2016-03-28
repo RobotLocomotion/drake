@@ -98,7 +98,7 @@ void mexCallFunctionUnsafe(std::function<R(Arg0, Args...)> func, int nlhs,
   // recursively call mexCallFunctionUnsafe with partially applied function
   return mexCallFunctionUnsafe(std::function<R(Args...)>{partially_applied},
                                nlhs, plhs, nrhs - 1, &prhs[1]);
-};
+}
 
 /**
  * areArgumentsConvertibleFromMex

@@ -36,7 +36,7 @@ createRandomAffineSystem(size_t num_states, size_t num_inputs,
       Matrix<double, OutputsAtCompileTime, 1>::Random(num_outputs, 1).eval();
   return allocate_shared<ReturnType>(aligned_allocator<ReturnType>(), A, B,
                                      xdot0, C, D, y0);
-};
+}
 
 template <int StatesAtCompileTime, int InputsAtCompileTime,
           int OutputsAtCompileTime>
@@ -59,7 +59,7 @@ void testSizes(size_t num_states, size_t num_inputs, size_t num_outputs) {
   auto x = createStateVector<double>(sys);
   valuecheck(num_states, static_cast<size_t>(x.size()),
              "State vector size wrong");
-};
+}
 
 int main(int argc, char* argv[]) {
   testSizes<Dynamic, Dynamic, Dynamic>(3, 4, 5);

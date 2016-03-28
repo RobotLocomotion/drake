@@ -21,7 +21,7 @@ struct SimulationOptions {
   double timeout_seconds;
 
   SimulationOptions()
-      : realtime_factor(-1.0), initial_step_size(0.01), timeout_seconds(1.0){};
+      : realtime_factor(-1.0), initial_step_size(0.01), timeout_seconds(1.0){}
 };
 const static SimulationOptions default_simulation_options;
 
@@ -57,7 +57,7 @@ inline void handle_realtime_factor(const TimePoint& wall_clock_start_time,
  *of simulation parameters
  * @ingroup simulation
  *
- * Currently runs with a fixed step integrator using the initial step size in 
+ * Currently runs with a fixed step integrator using the initial step size in
  * \p options and stepping from initial time \p ti to final time \p tf.
  * There is no error control; if you have accuracy or stability problems try
  * a smaller step size.

@@ -14,14 +14,14 @@ uniform_real_distribution<> uniform(0, 1);
 template <int Rows, int Cols>
 void printMatrix(const MatrixBase<Matrix<double, Rows, Cols>>& mat) {
   cout << mat << endl;
-};
+}
 
 template <int Rows, int Cols, typename DerType>
 void printMatrix(
     const MatrixBase<Matrix<AutoDiffScalar<DerType>, Rows, Cols>>& mat) {
   cout << autoDiffToValueMatrix(mat) << endl;
   cout << autoDiffToGradientMatrix(mat) << endl;
-};
+}
 
 template <typename Scalar>
 void scenario1(const RigidBodyTree& model, KinematicsCache<Scalar>& cache,
