@@ -22,9 +22,9 @@ class DRAKEJOINTS_EXPORT RevoluteJoint
                                             spatialJointAxis(_rotation_axis)),
         rotation_axis(_rotation_axis) {
     assert(std::abs(rotation_axis.norm() - 1.0) < 1e-10);
-  };
+  }
 
-  virtual ~RevoluteJoint(){};
+  virtual ~RevoluteJoint(){}
 
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>

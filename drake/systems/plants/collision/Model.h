@@ -19,7 +19,7 @@ class DRAKECOLLISION_EXPORT Model {
  public:
   Model() {}
 
-  virtual ~Model(){};
+  virtual ~Model(){}
 
   /** \brief Add a collision element to this model.
   * \param element the collision element to be added to this model
@@ -44,7 +44,7 @@ class DRAKECOLLISION_EXPORT Model {
   /** \brief Perform any operations needed to bring the model up-to-date
    * after making changes to its collision elements
    */
-  virtual void updateModel(){};
+  virtual void updateModel(){}
 
   /** \brief Change the element-to-world transform of a specified collision
    * element.
@@ -70,7 +70,7 @@ class DRAKECOLLISION_EXPORT Model {
                                      const bool use_margins,
                                      std::vector<PointPair>& closest_points) {
     return false;
-  };
+  }
 
   /** \brief Compute the points of closest approach between all eligible
    * pairs of collision elements in this model
@@ -84,7 +84,7 @@ class DRAKECOLLISION_EXPORT Model {
   virtual bool collisionPointsAllToAll(const bool use_margins,
                                        std::vector<PointPair>& points) {
     return false;
-  };
+  }
 
   /** \brief Compute the points of closest approach between specified pairs
    * of collision elements
@@ -101,7 +101,7 @@ class DRAKECOLLISION_EXPORT Model {
                                      const bool use_margins,
                                      std::vector<PointPair>& closest_points) {
     return false;
-  };
+  }
 
   /** \brief Compute closest distance from each point to any surface in the
    * collision model utilizing Bullet's collision detection code.
@@ -113,7 +113,7 @@ class DRAKECOLLISION_EXPORT Model {
    */
   virtual void collisionDetectFromPoints(
       const Eigen::Matrix3Xd& points, bool use_margins,
-      std::vector<PointPair>& closest_points){};
+      std::vector<PointPair>& closest_points){}
 
   /** \brief Compute the set of potential collision points for all
    * eligible pairs of collision geometries in this model. This includes
@@ -129,7 +129,7 @@ class DRAKECOLLISION_EXPORT Model {
   virtual std::vector<PointPair> potentialCollisionPoints(
       const bool use_margins) {
     return std::vector<PointPair>();
-  };
+  }
 
   /** \brief Given a vector of points in world coordinates, returns the
    * indices of those points within a specified distance of any collision
@@ -143,7 +143,7 @@ class DRAKECOLLISION_EXPORT Model {
   virtual std::vector<size_t> collidingPoints(
       const std::vector<Eigen::Vector3d>& points, double collision_threshold) {
     return std::vector<size_t>();
-  };
+  }
 
   /** \brief Returns true if any of the given points are within a specified
    * distance of the collision geometries in this model.
@@ -155,7 +155,7 @@ class DRAKECOLLISION_EXPORT Model {
   virtual bool collidingPointsCheckOnly(
       const std::vector<Eigen::Vector3d>& points, double collision_threshold) {
     return false;
-  };
+  }
 
   /** Performs raycasting collision detecting (like a LIDAR / laser rangefinder)
    *
@@ -174,7 +174,7 @@ class DRAKECOLLISION_EXPORT Model {
                                 bool use_margins, Eigen::VectorXd& distances,
                                 Eigen::Matrix3Xd& normals) {
     return false;
-  };
+  }
 
   virtual bool transformCollisionFrame(DrakeCollision::ElementId& eid,
     const Eigen::Isometry3d& transform_body_to_joint) {

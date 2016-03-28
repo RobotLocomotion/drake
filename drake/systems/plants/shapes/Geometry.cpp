@@ -31,7 +31,7 @@ Geometry::Geometry() : shape(UNKNOWN) {}
 
 Geometry::Geometry(const Geometry &other) { shape = other.getShape(); }
 
-Geometry::Geometry(Shape shape) : shape(shape){};
+Geometry::Geometry(Shape shape) : shape(shape){}
 
 Shape Geometry::getShape() const { return shape; }
 

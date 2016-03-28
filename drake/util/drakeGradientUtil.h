@@ -250,7 +250,7 @@ getSubMatrixGradient(
     }
   }
   return dM_submatrix;
-};
+}
 
 template <int QSubvectorSize, typename Derived>
 typename GetSubMatrixGradientSingleElement<QSubvectorSize, Derived>::type
@@ -263,7 +263,7 @@ getSubMatrixGradient(
   }
   return dM.template block<1, QSubvectorSize>(row + col * M_rows, q_start, 1,
                                               q_subvector_size);
-};
+}
 
 template <typename DerivedA, typename DerivedB>
 void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM,
@@ -285,7 +285,7 @@ void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM,
           dM_submatrix.row(index++);
     }
   }
-};
+}
 
 template <int QSubvectorSize, typename DerivedA, typename DerivedB,
           std::size_t NRows, std::size_t NCols>
@@ -308,7 +308,7 @@ void setSubMatrixGradient(
           dM_submatrix.row(index++);
     }
   }
-};
+}
 
 template <int QSubvectorSize, typename DerivedDM, typename DerivedDMSub>
 void setSubMatrixGradient(
@@ -321,7 +321,7 @@ void setSubMatrixGradient(
   }
   dM.template block<1, QSubvectorSize>(row + col * M_rows, q_start, 1,
                                        q_subvector_size) = dM_submatrix;
-};
+}
 
 template <typename Derived>
 typename AutoDiffToValueMatrix<Derived>::type autoDiffToValueMatrix(
@@ -334,7 +334,7 @@ typename AutoDiffToValueMatrix<Derived>::type autoDiffToValueMatrix(
     }
   }
   return ret;
-};
+}
 
 template <typename Derived>
 typename AutoDiffToGradientMatrix<Derived>::type autoDiffToGradientMatrix(
@@ -393,7 +393,7 @@ namespace Drake {
 namespace internal {
 template <typename Derived, typename Scalar>
 struct ResizeDerivativesToMatchScalarImpl {
-  static void run(Eigen::MatrixBase<Derived>& mat, const Scalar& scalar){};
+  static void run(Eigen::MatrixBase<Derived>& mat, const Scalar& scalar){}
 };
 
 template <typename Derived, typename DerivType>
@@ -408,7 +408,7 @@ struct ResizeDerivativesToMatchScalarImpl<Derived,
         derivs.setZero();
       }
     }
-  };
+  }
 };
 }
 

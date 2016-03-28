@@ -119,7 +119,7 @@ void smoothDistancePenalty(double& c, MatrixXd& dc, RigidBodyTree* robot,
   MatrixXd dcost_dscaled_dist(dpairwise_costs_dscaled_dist.colwise().sum());
   c = pairwise_costs.sum();
   dc = dcost_dscaled_dist * dscaled_dist_ddist * ddist_dq;
-};
+}
 
 /*
  * mex interface for evaluating a smooth-penalty on violations of a

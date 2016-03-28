@@ -215,7 +215,7 @@ Eigen::Matrix<typename Derived::Scalar, 4, 1> quat2axis(
 
   a << q_normalized.template tail<3>() / s, 2.0 * std::acos(q_normalized(0));
   return a;
-};
+}
 
 template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, 3, 3> quat2rotmat(
@@ -253,7 +253,7 @@ Eigen::Matrix<typename Derived::Scalar, 3, 1> quat2rpy(
       std::asin(2.0 * (w * y - z * x)),
       std::atan2(2.0 * (w * z + x * y), w * w + x * x - (y * y + z * z));
   return ret;
-};
+}
 
 template <typename Derived>
 Eigen::Quaternion<typename Derived::Scalar> quat2eigenQuaternion(
@@ -308,14 +308,14 @@ Eigen::Matrix<typename Derived::Scalar, 3, 3> axis2rotmat(
       z* x* c - y* stheta, z* y* c + x* stheta, ctheta + z* z* c;
 
   return R;
-};
+}
 
 template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, 3, 1> axis2rpy(
     const Eigen::MatrixBase<Derived>& a) {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
   return quat2rpy(axis2quat(a));
-};
+}
 
 /*
  * expmap2x
@@ -394,7 +394,7 @@ Eigen::Matrix<typename Derived::Scalar, 4, 1> rotmat2axis(
     a << 1.0, 0.0, 0.0, 0.0;
   }
   return a;
-};
+}
 
 template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, 4, 1> rotmat2quat(
@@ -455,7 +455,7 @@ Eigen::Matrix<typename Derived::Scalar, 4, 1> rotmat2quat(
   Eigen::Matrix<Scalar, 4, 1> q;
   q << w, x, y, z;
   return q;
-};
+}
 
 template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, 3, 1> rotmat2rpy(
@@ -468,7 +468,7 @@ Eigen::Matrix<typename Derived::Scalar, 3, 1> rotmat2rpy(
       atan2(-R(2, 0), sqrt(pow(R(2, 1), 2.0) + pow(R(2, 2), 2.0))),
       atan2(R(1, 0), R(0, 0));
   return rpy;
-};
+}
 
 template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, 1>
@@ -484,7 +484,7 @@ rotmat2Representation(const Eigen::MatrixBase<Derived>& R, int rotation_type) {
     default:
       throw std::runtime_error("rotation representation type not recognized");
   }
-};
+}
 
 DRAKEGEOMETRYUTIL_EXPORT int rotationRepresentationSize(int rotation_type);
 
@@ -508,13 +508,13 @@ Eigen::Matrix<typename Derived::Scalar, 4, 1> rpy2quat(
 
   q /= q.norm() + std::numeric_limits<typename Derived::Scalar>::epsilon();
   return q;
-};
+}
 
 template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, 4, 1> rpy2axis(
     const Eigen::MatrixBase<Derived>& rpy) {
   return quat2axis(rpy2quat(rpy));
-};
+}
 
 template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, 3, 3> rpy2rotmat(
@@ -543,7 +543,7 @@ Eigen::Matrix<typename Derived::Scalar, 3, 3> rpy2rotmat(
   // }
   
   return R;
-};
+}
 
 /*
  * rotation conversion gradient functions
@@ -619,7 +619,7 @@ drotmat2rpy(const Eigen::MatrixBase<DerivedR>& R,
   sqterm = R(0, 0) * R(0, 0) + R(1, 0) * R(1, 0);
   drpy.row(2) = (R(0, 0) * dR21_dq - R(1, 0) * dR11_dq) / sqterm;
   return drpy;
-};
+}
 
 template <typename DerivedR, typename DerivedDR>
 typename Gradient<Eigen::Matrix<typename DerivedR::Scalar, QUAT_SIZE, 1>,
@@ -730,7 +730,7 @@ drotmat2quat(const Eigen::MatrixBase<DerivedR>& R,
     }
   }
   return dq;
-};
+}
 
 template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, 9, 3> drpy2rotmat(
@@ -756,7 +756,7 @@ Eigen::Matrix<typename Derived::Scalar, 9, 3> drpy2rotmat(
   dR.row(8) << c(1) * -s(0), -s(1) * c(0), 0;
 
   return dR;
-};
+}
 
 DRAKEGEOMETRYUTIL_EXPORT Eigen::Matrix3d rotz(double theta);
 DRAKEGEOMETRYUTIL_EXPORT void rotz(double theta, Eigen::Matrix3d& M,
@@ -772,7 +772,7 @@ Eigen::Matrix<typename Derived::Scalar, 3, 3> vectorToSkewSymmetric(
   Eigen::Matrix<typename Derived::Scalar, 3, 3> ret;
   ret << 0.0, -p(2), p(1), p(2), 0.0, -p(0), -p(1), p(0), 0.0;
   return ret;
-};
+}
 
 template <typename DerivedA, typename DerivedB>
 Eigen::Matrix<typename DerivedA::Scalar, 3, Eigen::Dynamic> dcrossProduct(
@@ -783,7 +783,7 @@ Eigen::Matrix<typename DerivedA::Scalar, 3, Eigen::Dynamic> dcrossProduct(
   ret.noalias() = da.colwise().cross(b);
   ret.noalias() -= db.colwise().cross(a);
   return ret;
-};
+}
 
 /*
  * angular velocity conversion functions
@@ -812,7 +812,7 @@ void angularvel2quatdotMatrix(const Eigen::MatrixBase<DerivedQ>& q,
         Scalar(0.5), Scalar(0), Scalar(0), Scalar(0.5), Scalar(0), Scalar(0),
         Scalar(0);
   }
-};
+}
 
 template <typename DerivedRPY, typename DerivedPhi, typename DerivedDPhi,
           typename DerivedDDPhi>
@@ -868,7 +868,7 @@ void angularvel2rpydotMatrix(
           Scalar(0), Scalar(0), Scalar(0), Scalar(0), Scalar(0);
     }
   }
-};
+}
 
 template <typename DerivedRPY, typename DerivedE>
 void rpydot2angularvelMatrix(
@@ -892,7 +892,7 @@ void rpydot2angularvelMatrix(
         0.0, 0.0, -cy, 0.0, 0.0, -sy, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
         0.0, 0.0, 0.0, 0.0;
   }
-};
+}
 
 template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, 3, 4> quatdot2angularvelMatrix(
@@ -906,7 +906,7 @@ Eigen::Matrix<typename Derived::Scalar, 3, 4> quatdot2angularvelMatrix(
       qtilde(0), -qtilde(1), -qtilde(3), -qtilde(2), qtilde(1), qtilde(0);
   ret *= Scalar(2);
   return ret;
-};
+}
 
 template <typename DerivedRPY, typename DerivedRPYdot, typename DerivedOMEGA>
 void rpydot2angularvel(
@@ -1164,7 +1164,7 @@ dTransformSpatialMotion(const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
                                          X.rows());
   }
   return ret;
-};
+}
 
 template <typename DerivedF>
 typename TransformSpatial<DerivedF>::type transformSpatialForce(
@@ -1229,7 +1229,7 @@ dTransformSpatialForce(const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
                                          X.rows());
   }
   return ret;
-};
+}
 
 template <typename DerivedI>
 bool isRegularInertiaMatrix(const Eigen::MatrixBase<DerivedI>& I) {
@@ -1338,7 +1338,7 @@ typename TransformSpatial<DerivedB>::type crossSpatialMotion(
   ret.template bottomRows<3>() -=
       b.template bottomRows<3>().colwise().cross(a.template topRows<3>());
   return ret;
-};
+}
 
 template <typename DerivedA, typename DerivedB>
 typename TransformSpatial<DerivedB>::type crossSpatialForce(
@@ -1352,7 +1352,7 @@ typename TransformSpatial<DerivedB>::type crossSpatialForce(
   ret.template bottomRows<3>() =
       -b.template bottomRows<3>().colwise().cross(a.template topRows<3>());
   return ret;
-};
+}
 
 template <typename DerivedA, typename DerivedB>
 Eigen::Matrix<typename DerivedA::Scalar, TWIST_SIZE, Eigen::Dynamic>
@@ -1378,7 +1378,7 @@ dCrossSpatialMotion(
                da.row(0) * b[4] - a[4] * db.row(0) + a[3] * db.row(1) -
                a[1] * db.row(3) + a[0] * db.row(4);
   return ret;
-};
+}
 
 template <typename DerivedA, typename DerivedB>
 Eigen::Matrix<typename DerivedA::Scalar, TWIST_SIZE, Eigen::Dynamic>
@@ -1405,7 +1405,7 @@ dCrossSpatialForce(
       da.row(1) * b[3] - da.row(0) * b[4] + a[1] * db.row(3) - a[0] * db.row(4);
   ret = -ret;
   return ret;
-};
+}
 
 /*
  * spatial transform gradient methods
@@ -1452,7 +1452,7 @@ typename DHomogTrans<DerivedQdotToV>::type dHomogTrans(
   ret.row(15).setZero();
 
   return ret;
-};
+}
 
 template <typename DerivedDT>
 typename DHomogTrans<DerivedDT>::type dHomogTransInv(

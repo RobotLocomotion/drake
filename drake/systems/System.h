@@ -190,7 +190,7 @@ template <typename System>
 typename System::template StateVector<double> getInitialState(
     const System& sys) {
   return internal::RandomVectorDispatch<System>::getRandomState(sys);
-};
+}
 
 /** @brief Create a new, uninitialized state vector for the system.
  * @concept{system_concept}
@@ -238,7 +238,7 @@ template <typename Scalar, typename System>
 typename System::template StateVector<Scalar> createStateVector(
     const System& sys) {
   return internal::CreateStateVectorDispatch<System, Scalar>::eval(sys);
-};
+}
 
 }  // end namespace Drake
 

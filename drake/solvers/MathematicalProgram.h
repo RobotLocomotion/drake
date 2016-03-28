@@ -3,6 +3,8 @@
 
 #include <memory>
 
+#include "drake/drakeOptimization_export.h"
+
 namespace Drake {
 class OptimizationProblem;
 
@@ -10,7 +12,7 @@ class OptimizationProblem;
 // variables and constraints are added to the program
 // note that there is dynamic allocation happening in here, but on a structure
 // of negligible size.  (is there a better way?)
-class MathematicalProgramInterface {
+class DRAKEOPTIMIZATION_EXPORT  MathematicalProgramInterface {
  public:
   virtual ~MathematicalProgramInterface();
 
@@ -29,20 +31,23 @@ class MathematicalProgramInterface {
   virtual MathematicalProgramInterface* addGenericConstraint() = 0;
   virtual MathematicalProgramInterface* addLinearConstraint() = 0;
   virtual MathematicalProgramInterface* addLinearEqualityConstraint() = 0;
+  virtual MathematicalProgramInterface*
+      addLinearComplementarityConstraint() = 0;
+
   virtual bool solve(OptimizationProblem& prog) const = 0;
 
   static std::shared_ptr<MathematicalProgramInterface> getLeastSquaresProgram();
 };
 
 /// Interface used by implementations of individual solvers.
-class MathematicalProgramSolverInterface {
+class DRAKEOPTIMIZATION_EXPORT MathematicalProgramSolverInterface {
  public:
   virtual ~MathematicalProgramSolverInterface();
   virtual bool available() const = 0;
   virtual bool solve(OptimizationProblem& prog) const = 0;
 };
 
-class MathematicalProgramSNOPTSolver : 
+class DRAKEOPTIMIZATION_EXPORT MathematicalProgramSNOPTSolver :
       public MathematicalProgramSolverInterface  {
  public:
   // This solver is implemented in various pieces depending on if

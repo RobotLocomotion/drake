@@ -29,7 +29,7 @@ class DRAKESHAPES_EXPORT Element {
         T_element_to_local(T_element_to_local),
         geometry(){};
 
-  virtual ~Element(){};
+  virtual ~Element(){}
 
   virtual Element* clone() const;
 

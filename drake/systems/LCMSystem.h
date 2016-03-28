@@ -17,17 +17,25 @@ namespace Drake {
 /** @defgroup lcm_vector_concept LCMVector<ScalarType> Concept
  * @ingroup vector_concept
  * @brief A specialization of the Vector concept adding the ability to read and
- *publish LCM messages
+ * publish LCM messages
  *
- * | Valid Expressions (which must be implemented) |  |
- * ------------------|-------------------------------------------------------------|
- * | LCMMessageType  | defined with a typedef |
- * | static std::string channel() const         | return the name of the channel
- *to subscribe to/ publish on      |
- * | bool encode(const double& t, const Vector<double>& x, LCMMessageType& msg)
- *| define the mapping from your LCM type to your Vector type |
- * | bool decode(const LCMMessageType& msg, double& t, Vector<double>& x)  |
- *define the mapping from your Vector type to your LCM type |
+ * <table>
+ * <tr><th colspan="2"> Valid Expressions (which must be implemented)
+ * <tr><td> LCMMessageType
+ *     <td> defined with a typedef
+ * <tr><td> static std::string channel() const
+ *     <td> return the name of the channel to subscribe to/ publish on
+ * <tr><td><pre>
+ * bool encode(const double& t,
+ *             const Vector<double>& x,
+ *             LCMMessageType& msg)</pre>
+ *     <td> define the mapping from your LCM type to your Vector type
+ * <tr><td><pre>
+ * bool decode(const LCMMessageType& msg,
+ *             double& t,
+ *             Vector<double>& x)</pre>
+ *     <td> define the mapping from your Vector type to your LCM type
+ * </table>
  */
 
 template <class Vector>
@@ -72,7 +80,7 @@ class LCMInputSystem {
   template <typename System>
   LCMInputSystem(const System &wrapped_sys,
                  std::shared_ptr<lcm::LCM> lcm)
-      : all_zeros(Eigen::VectorXd::Zero(getNumInputs(wrapped_sys))){};
+      : all_zeros(Eigen::VectorXd::Zero(getNumInputs(wrapped_sys))){}
 
   StateVector<double> dynamics(const double &t, const StateVector<double> &x,
                                const InputVector<double> &u) const {
@@ -108,8 +116,8 @@ class LCMInputSystem<
         lcm->subscribe(Vector<double>::channel(),
                        &LCMInputSystem<Vector>::handleMessage, this);
     sub->setQueueCapacity(1);
-  };
-  virtual ~LCMInputSystem(){};
+  }
+  virtual ~LCMInputSystem(){}
 
   void handleMessage(const lcm::ReceiveBuffer *rbuf, const std::string &chan,
                      const typename Vector<double>::LCMMessageType *msg) {
@@ -147,7 +155,7 @@ class LCMOutputSystem {
   template <typename ScalarType>
   using OutputVector = NullVector<ScalarType>;
 
-  LCMOutputSystem(std::shared_ptr<lcm::LCM> lcm){};
+  LCMOutputSystem(std::shared_ptr<lcm::LCM> lcm){}
 
   StateVector<double> dynamics(const double &t, const StateVector<double> &x,
                                const InputVector<double> &u) const {
@@ -173,7 +181,7 @@ class LCMOutputSystem<
   template <typename ScalarType>
   using OutputVector = NullVector<ScalarType>;
 
-  LCMOutputSystem(std::shared_ptr<lcm::LCM> lcm) : lcm(lcm){};
+  LCMOutputSystem(std::shared_ptr<lcm::LCM> lcm) : lcm(lcm){}
 
   StateVector<double> dynamics(const double &t, const StateVector<double> &x,
                                const InputVector<double> &u) const {
@@ -209,12 +217,12 @@ class DRAKELCMSYSTEM_EXPORT LCMLoop {
 }  //  end namespace internal
 
 /** runLCM
- * @brief Simulates the system with the (exposed) inputs being read from LCM and
- *the output being published to LCM.
+ * @brief Simulates the system with the (exposed) inputs being read from LCM
+ * and the output being published to LCM.
  * @ingroup simulation
  *
  * The input and output vector types must overload a publishLCM namespace
- *method; the default for new vectors is to not publish anything.
+ * method; the default for new vectors is to not publish anything.
  */
 
 template <typename System>

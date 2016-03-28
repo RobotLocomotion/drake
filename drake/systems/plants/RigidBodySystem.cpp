@@ -299,14 +299,14 @@ Drake::getInitialState(const RigidBodySystem& sys) {
           loops[i].frameB->frame_index, bTbp, tspan);
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con1wrapper(
           new SingleTimeKinematicConstraintWrapper(con1));
-      prog.addConstraint(con1wrapper, {qvar});
+      prog.addGenericConstraint(con1wrapper, {qvar});
       auto con2 = make_shared<RelativePositionConstraint>(
           sys.tree.get(), loops[i].axis, loops[i].axis, loops[i].axis,
           loops[i].frameA->frame_index, loops[i].frameB->frame_index, bTbp,
           tspan);
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con2wrapper(
           new SingleTimeKinematicConstraintWrapper(con2));
-      prog.addConstraint(con2wrapper, {qvar});
+      prog.addGenericConstraint(con2wrapper, {qvar});
     }
 
     VectorXd q_guess = x0.topRows(nq);
