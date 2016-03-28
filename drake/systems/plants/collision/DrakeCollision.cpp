@@ -21,7 +21,6 @@ enum DRAKECOLLISION_EXPORT ModelType { NONE, AUTO, BULLET };
 unique_ptr<Model> newModel(ModelType model_type) {
   switch (model_type) {
     case NONE:
-      std::cout << "ModelType = NONE" << std::endl;
       return unique_ptr<Model>(new Model());
       break;
     case BULLET:
