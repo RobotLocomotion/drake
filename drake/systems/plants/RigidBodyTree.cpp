@@ -410,7 +410,7 @@ bool RigidBodyTree::collisionDetect(
   if(collision_model->isEverybodyConvex()){
     points_found =
         collision_model->closestPointsAllToAll(ids_to_check, use_margins, points);
-  }else{  
+  }else{
     points = collision_model->potentialCollisionPoints(use_margins);
     points_found = points.size() > 0;
   }
@@ -512,7 +512,7 @@ bool RigidBodyTree::collisionDetect(const KinematicsCache<double>& cache,
                                     VectorXd& phi, Matrix3Xd& normal,
                                     Matrix3Xd& xA, Matrix3Xd& xB,
                                     vector<int>& bodyA_idx,
-                                    vector<int>& bodyB_idx, bool use_margins) { //use_margins = true by default
+                                    vector<int>& bodyB_idx, bool use_margins) { //use_margins = true by default in constructor
   vector<DrakeCollision::ElementId> ids_to_check;
   for (auto body_iter = bodies.begin(); body_iter != bodies.end();
        ++body_iter) {
@@ -1281,8 +1281,8 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
   }
 
   Matrix<Scalar, Eigen::Dynamic, 1> ret(num_velocities, 1);
-  ret.setZero();  
-  
+
+  ret.setZero();
   for (int i = static_cast<int>(bodies.size()) - 1; i >= 0; i--) {
     RigidBody& body = *bodies[i];
     if (body.hasParent()) {
@@ -1293,16 +1293,15 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
       auto joint_wrench = net_wrenches_const.col(i);
       int nv_joint = body.getJoint().getNumVelocities();
       auto J_transpose = element.motion_subspace_in_world.transpose();
-
       ret.middleRows(body.velocity_num_start, nv_joint).noalias() =
           J_transpose * joint_wrench;
       auto parent_net_wrench = net_wrenches.col(body.parent->body_index);
       parent_net_wrench += joint_wrench;
     }
   }
-  
+
   if (include_velocity_terms) ret += frictionTorques(cache.getV());
-  
+
   return ret;
 }
 
