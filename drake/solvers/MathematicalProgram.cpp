@@ -1,8 +1,9 @@
 #include "MathematicalProgram.h"
 
-#include "SnoptSolver.h"
 #include "MobyLCP.h"
+#include "NloptSolver.h"
 #include "Optimization.h"
+#include "SnoptSolver.h"
 
 namespace Drake {
 MathematicalProgramInterface::~MathematicalProgramInterface() { }
@@ -76,14 +77,12 @@ class NonlinearProgram : public MathematicalProgram {
 
   virtual bool solve(OptimizationProblem& prog) const override {
     if (snopt_solver.available()) { return snopt_solver.solve(prog); }
-    try {
-      return MathematicalProgram::solve(prog);
-    } catch (const std::runtime_error& e) {
-      throw std::runtime_error("SNOPT unavailable");
-    }
+    if (nlopt_solver.available()) { return nlopt_solver.solve(prog); }
+    return MathematicalProgram::solve(prog);
   }
 
  private:
+  NloptSolver nlopt_solver;
   SnoptSolver snopt_solver;
 };
 
