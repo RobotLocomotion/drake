@@ -35,7 +35,7 @@ agreeing to do so under those same terms.
 
 
 Continuous Integration Notes
-======================
+============================
 .. toctree::
     :maxdepth: 1
 
@@ -48,7 +48,7 @@ IDE Notes
 * `Eclipse <https://github.com/tkoolen/drake/wiki/Eclipse-setup-(experimental)>`_
 
 Operating System Notes
-========
+======================
 .. toctree::
     :maxdepth: 1
 
@@ -63,7 +63,7 @@ Programming Style Notes
     code_style_tools
 
 Version Control
-===================
+===============
 .. toctree::
     :maxdepth: 1
 
