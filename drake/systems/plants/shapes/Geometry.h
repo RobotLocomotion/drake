@@ -37,7 +37,7 @@ class DRAKESHAPES_EXPORT Geometry {
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
   virtual void getTerrainContactPoints(Eigen::Matrix3Xd &points) const {
     points = Eigen::Matrix3Xd();
-  };
+  }
 
  protected:
   Geometry(Shape shape);

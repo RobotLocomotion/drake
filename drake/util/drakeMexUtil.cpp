@@ -108,8 +108,9 @@ mxArray* createDrakeMexPointer(void* ptr, const std::string& name, int type_id,
           "Drake:createDrakeMexPointer:InvalidSubclass",
           "subclass_name is not a valid subclass of DrakeMexPointer");
     }
-  } else
+  } else {
     mexCallMATLABsafe(1, plhs, nrhs, prhs, "DrakeMexPointer");
+  }
 
   mexLock();
 
