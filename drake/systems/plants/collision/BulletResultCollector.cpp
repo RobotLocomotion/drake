@@ -8,7 +8,7 @@ using namespace std;
 using namespace Eigen;
 
 namespace DrakeCollision {
-Vector3d toVector3d(const Vector3d& vec) { return vec; };
+Vector3d toVector3d(const Vector3d& vec) { return vec; }
 
 Vector3d toVector3d(const btVector3& bt_vec) {
   Vector3d vec;
