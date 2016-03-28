@@ -354,9 +354,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   void AddLinearConstraint(
       std::shared_ptr<LinearConstraint> con,
       VariableList const& vars) {
-    problem_type.reset(problem_type->AddLinearConstraint());
-    linear_constraints.push_back(
-        Binding<LinearConstraint>(con, vars));
+    problem_type.reset(problem_type->add_linear_constraint());
+    linear_constraints.push_back(Binding<LinearConstraint>(con, vars));
   }
 
   /** AddLinearConstraint
@@ -406,7 +405,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   void AddLinearEqualityConstraint(
       std::shared_ptr<LinearEqualityConstraint> con,
       VariableList const& vars) {
-    problem_type.reset(problem_type->AddLinearEqualityConstraint());
+    problem_type.reset(problem_type->add_linear_equality_constraint());
     linear_equality_constraints.push_back(
         Binding<LinearEqualityConstraint>(con, vars));
   }
@@ -447,7 +446,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    * (currently existing) variables
    */
   template <typename DerivedA, typename DerivedB>
-  std::shared_ptr<LinearEqualityConstraint> addLinearEqualityConstraint(
+  std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::MatrixBase<DerivedA>& Aeq,
       const Eigen::MatrixBase<DerivedB>& beq) {
     return AddLinearEqualityConstraint(Aeq, beq, variable_views);
@@ -461,7 +460,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   void AddBoundingBoxConstraint(
       std::shared_ptr<BoundingBoxConstraint> con,
       VariableList const& vars) {
-    problem_type.reset(problem_type->AddLinearConstraint());
+    problem_type.reset(problem_type->add_linear_constraint());
     bbox_constraints.push_back(
         Binding<BoundingBoxConstraint>(con, vars));
   }
@@ -637,7 +636,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
  private:
   void CheckVariables(const Constraint& con) {
-    assert(checkVariablesImpl(con) &&
+    assert(CheckVariablesImpl(con) &&
            "Constraint depends on variables that are not associated with this "
            "OptimizationProblem");
   }

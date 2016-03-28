@@ -131,7 +131,7 @@ bool MobyLCPSolver::Solve(OptimizationProblem& prog) const {
 
   assert(prog.get_generic_constraints().empty());
   assert(prog.get_generic_objectives().empty());
-  assert(prog.get_all_linear_constraints().empty());
+  assert(prog.GetAllLinearConstraints().empty());
   assert(prog.get_bounding_box_constraints().empty());
 
   const auto& bindings =
