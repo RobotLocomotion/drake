@@ -288,8 +288,8 @@ map<string, int> RigidBodyTree::computePositionNameToIndexMap() const {
 }
 
 DrakeCollision::ElementId RigidBodyTree::addCollisionElement(
-    const RigidBody::CollisionElement& element,
-    RigidBody& body, const string& group_name) {
+    const RigidBody::CollisionElement& element, RigidBody& body,
+    const string& group_name) {
   DrakeCollision::ElementId id = collision_model->addElement(element);
   if (id != 0) {
     body.collision_element_ids.push_back(id);
@@ -407,10 +407,10 @@ bool RigidBodyTree::collisionDetect(
   vector<DrakeCollision::PointPair> points;
 
   bool points_found;
-  if(collision_model->isEverybodyConvex()){
-    points_found =
-        collision_model->closestPointsAllToAll(ids_to_check, use_margins, points);
-  }else{
+  if (collision_model->isEverybodyConvex()) {
+    points_found = collision_model->closestPointsAllToAll(ids_to_check,
+                                                          use_margins, points);
+  } else {
     points = collision_model->potentialCollisionPoints(use_margins);
     points_found = points.size() > 0;
   }
@@ -508,11 +508,11 @@ bool RigidBodyTree::collisionDetect(const KinematicsCache<double>& cache,
                          ids_to_check, use_margins);
 }
 
-bool RigidBodyTree::collisionDetect(const KinematicsCache<double>& cache,
-                                    VectorXd& phi, Matrix3Xd& normal,
-                                    Matrix3Xd& xA, Matrix3Xd& xB,
-                                    vector<int>& bodyA_idx,
-                                    vector<int>& bodyB_idx, bool use_margins) { //use_margins = true by default in constructor
+bool RigidBodyTree::collisionDetect(
+    const KinematicsCache<double>& cache, VectorXd& phi, Matrix3Xd& normal,
+    Matrix3Xd& xA, Matrix3Xd& xB, vector<int>& bodyA_idx,
+    vector<int>& bodyB_idx,
+    bool use_margins) {  // use_margins = true by default in constructor
   vector<DrakeCollision::ElementId> ids_to_check;
   for (auto body_iter = bodies.begin(); body_iter != bodies.end();
        ++body_iter) {
