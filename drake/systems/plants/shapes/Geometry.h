@@ -128,6 +128,5 @@ class DRAKESHAPES_EXPORT MeshPoints : public Geometry {
 
   Eigen::Matrix3Xd points;
 };
-
 }
 #endif
