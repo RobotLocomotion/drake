@@ -8,12 +8,12 @@ template <typename ScalarType = double>
 class QuadrotorInput {
 public:
     typedef drake::lcmt_quadrotor_input_t LCMMessageType;
-    static std::string channel() { return "QUAD_CONTROL"; };
+    static std::string channel() { return "QUAD_CONTROL"; }
 
     QuadrotorInput(void) : motors(Eigen::Vector4d::Zero()) {}
 
     template <typename Derived>
-    QuadrotorInput(const Eigen::MatrixBase<Derived>& x) : motors(x) {};
+    QuadrotorInput(const Eigen::MatrixBase<Derived>& x) : motors(x) {}
 
     template <typename Derived>
     QuadrotorInput& operator=(const Eigen::MatrixBase<Derived>& x) {

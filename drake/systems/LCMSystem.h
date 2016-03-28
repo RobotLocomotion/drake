@@ -80,7 +80,7 @@ class LCMInputSystem {
   template <typename System>
   LCMInputSystem(const System &wrapped_sys,
                  std::shared_ptr<lcm::LCM> lcm)
-      : all_zeros(Eigen::VectorXd::Zero(getNumInputs(wrapped_sys))){};
+      : all_zeros(Eigen::VectorXd::Zero(getNumInputs(wrapped_sys))){}
 
   StateVector<double> dynamics(const double &t, const StateVector<double> &x,
                                const InputVector<double> &u) const {
@@ -116,8 +116,8 @@ class LCMInputSystem<
         lcm->subscribe(Vector<double>::channel(),
                        &LCMInputSystem<Vector>::handleMessage, this);
     sub->setQueueCapacity(1);
-  };
-  virtual ~LCMInputSystem(){};
+  }
+  virtual ~LCMInputSystem(){}
 
   void handleMessage(const lcm::ReceiveBuffer *rbuf, const std::string &chan,
                      const typename Vector<double>::LCMMessageType *msg) {
@@ -155,7 +155,7 @@ class LCMOutputSystem {
   template <typename ScalarType>
   using OutputVector = NullVector<ScalarType>;
 
-  LCMOutputSystem(std::shared_ptr<lcm::LCM> lcm){};
+  LCMOutputSystem(std::shared_ptr<lcm::LCM> lcm){}
 
   StateVector<double> dynamics(const double &t, const StateVector<double> &x,
                                const InputVector<double> &u) const {
@@ -181,7 +181,7 @@ class LCMOutputSystem<
   template <typename ScalarType>
   using OutputVector = NullVector<ScalarType>;
 
-  LCMOutputSystem(std::shared_ptr<lcm::LCM> lcm) : lcm(lcm){};
+  LCMOutputSystem(std::shared_ptr<lcm::LCM> lcm) : lcm(lcm){}
 
   StateVector<double> dynamics(const double &t, const StateVector<double> &x,
                                const InputVector<double> &u) const {

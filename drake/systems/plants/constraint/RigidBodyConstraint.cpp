@@ -14,7 +14,7 @@ void drakePrintMatrix(const MatrixXd &mat) {
     }
     printf("\n");
   }
-};
+}
 
 namespace DrakeRigidBodyConstraint {
 Vector3d com_pts = Vector3d::Zero();
@@ -45,7 +45,7 @@ RigidBodyConstraint::RigidBodyConstraint(const RigidBodyConstraint &rhs)
   this->tspan[1] = rhs.tspan[1];
 }
 
-RigidBodyConstraint::~RigidBodyConstraint(void){};
+RigidBodyConstraint::~RigidBodyConstraint(void){}
 
 std::string RigidBodyConstraint::getTimeString(const double *t) const {
   std::string time_str;
@@ -1915,7 +1915,7 @@ AllBodiesClosestDistanceConstraint::AllBodiesClosestDistanceConstraint(
   // END_DEBUG
   num_constraint = static_cast<int>(c.size());
   this->type = RigidBodyConstraint::AllBodiesClosestDistanceConstraintType;
-};
+}
 
 // AllBodiesClosestDistanceConstraint::AllBodiesClosestDistanceConstraint(const
 // AllBodiesClosestDistanceConstraint &rhs)
@@ -1984,7 +1984,7 @@ void AllBodiesClosestDistanceConstraint::eval(const double *t,
     c.resize(0);
     dc.resize(0, 0);
   }
-};
+}
 
 void AllBodiesClosestDistanceConstraint::bounds(const double *t, VectorXd &lb,
                                                 VectorXd &ub) const {
@@ -2019,7 +2019,7 @@ MinDistanceConstraint::MinDistanceConstraint(
       active_group_names(active_group_names) {
   this->num_constraint = 1;
   this->type = RigidBodyConstraint::MinDistanceConstraintType;
-};
+}
 
 void MinDistanceConstraint::eval(const double *t,
                                  KinematicsCache<double> &cache, VectorXd &c,
@@ -2141,7 +2141,7 @@ void MinDistanceConstraint::eval(const double *t,
   // DEBUG
   // std::cout << "MinDistanceConstraint::eval: END" << std::endl;
   // END_DEBUG
-};
+}
 
 void MinDistanceConstraint::scaleDistance(
     const Eigen::VectorXd &dist, Eigen::VectorXd &scaled_dist,

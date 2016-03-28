@@ -41,7 +41,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   } else if (nlhs == 3) {
     auto func_second_deriv = make_function(&expmap2quatWithSecondDeriv);
     mexCallFunction(nlhs, plhs, nrhs, prhs, true, func_second_deriv);
-  } else
+  } else {
     throw std::runtime_error(
         "can't handle requested number of output arguments");
+  }
 }

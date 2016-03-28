@@ -20,6 +20,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     plhs[0] = createDrakeMexPointer(
         (void *)cache, typeid(KinematicsCache<double>).name(),
         DrakeMexPointerTypeId<KinematicsCache<double>>::value);
-  } else
+  } else {
     mexErrMsgTxt("couldn't parse input");
+  }
 }
