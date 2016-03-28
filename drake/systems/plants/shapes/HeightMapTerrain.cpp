@@ -14,7 +14,7 @@ bool is_power_of_2(int x) {
   return (x>0 && ((x&(x-1))==0) );
 }
 
-HeightMapTerrain::HeightMapTerrain(const std::string& name, const Eigen::Vector2i &ncells, const Eigen::Vector2d &size) : 
+HeightMapTerrain::HeightMapTerrain(const std::string& name, const Eigen::Vector2i &ncells, const Eigen::Vector2d &size) :
 Geometry(HEIGHT_MAP_TERRAIN), name(name), ncells(ncells), size(size), m_gridHeightScale(1.0), m_upAxis(2),m_type(FLOAT)
 {
   //check if ncells is of the form 2^N
@@ -22,19 +22,19 @@ Geometry(HEIGHT_MAP_TERRAIN), name(name), ncells(ncells), size(size), m_gridHeig
   assert(is_power_of_2(ncells(1)) && "ncells must be a power of 2.");
 
   nnodes = ncells.array()+1;
-  nTotNodes = ((long) nnodes(0)) * nnodes(1);    
+  nTotNodes = ((long) nnodes(0)) * nnodes(1);
   bytesPerElement = getByteSize(m_type);
-  nBytes = nTotNodes * bytesPerElement;    
+  nBytes = nTotNodes * bytesPerElement;
 
   m_rawHeightfieldData = new byte_t[nBytes];
   if(m_rawHeightfieldData==NULL) assert(!"Out of memory");
 
-  delta_ell = size.array()/ncells.array().cast<double>(); 
+  delta_ell = size.array()/ncells.array().cast<double>();
 
   fname = name+".obj";
 }
 
-HeightMapTerrain::HeightMapTerrain(const HeightMapTerrain& other): 
+HeightMapTerrain::HeightMapTerrain(const HeightMapTerrain& other):
 Geometry(HEIGHT_MAP_TERRAIN){
   nBytes = other.nBytes;
   nTotNodes = other.nTotNodes;
@@ -60,10 +60,10 @@ HeightMapTerrain::~HeightMapTerrain(){
   delete m_rawHeightfieldData;
 }
 
-HeightMapTerrain *HeightMapTerrain::clone() const {   
+HeightMapTerrain *HeightMapTerrain::clone() const {
   if(m_rawHeightfieldData != NULL)
     assert(!"Are you sure you want to clone this object with heavy data?");
-  return new HeightMapTerrain(*this); //unreachable. avoid compiler warning for non return. 
+  return new HeightMapTerrain(*this); //unreachable. avoid compiler warning for non return.
 }
 
 bool HeightMapTerrain::writeToFile(const string& fname) const{
@@ -83,7 +83,7 @@ bool HeightMapTerrain::writeToFile(const string& fname) const{
   //write connectivities (two triangles per cell)
   for(int i=0;i<ncells(0);i++){
     for(int j=0;j<ncells(1);j++){
-      //Four corners      
+      //Four corners
       int p1 = (j  )+nnodes(1)*(i  ) + 1;
       int p2 = (j  )+nnodes(1)*(i+1) + 1;
       int p3 = (j+1)+nnodes(1)*(i+1) + 1;
@@ -94,9 +94,9 @@ bool HeightMapTerrain::writeToFile(const string& fname) const{
 
       //second triangle
       file << "f " << p2 << " " << p3 << " " << p4 << endl;
-      
+
     }
-  }  
+  }
 
   file.close();
 
@@ -109,9 +109,9 @@ void HeightMapTerrain::computeMinMaxHeights(){
   for(int i=0;i<nTotNodes;i++){
     double z = cellValue(i);
     m_minHeight = std::min(m_minHeight,(double)z);
-    m_maxHeight = std::max(m_maxHeight,(double)z);        
-  } 
-  
+    m_maxHeight = std::max(m_maxHeight,(double)z);
+  }
+
   //This next code ensure the terrain bounding box is centered around z=0 (local z)
   //Bullet takes what we pass as min/max heights and does not compute them.
   //The bounding box is computed based on these values. It is then useful to have minHeight=-maxHeight
@@ -122,23 +122,23 @@ void HeightMapTerrain::computeMinMaxHeights(){
   }
   if (m_minHeight > -m_maxHeight) {
     m_minHeight = -m_maxHeight;
-  }  
+  }
 }
 
 void HeightMapTerrain::getPoints(Matrix3Xd &points) const {
-  assert(!"Implement me!!");  
+  assert(!"Implement me!!");
 }
 
 void HeightMapTerrain::getBoundingBoxPoints(Matrix3Xd &points) const {
-  assert(!"Implement me!!");  
+  assert(!"Implement me!!");
 }
 
-void HeightMapTerrain::getTerrainContactPoints(Matrix3Xd &points) const {  
-  assert(!"Implement me!!");  
+void HeightMapTerrain::getTerrainContactPoints(Matrix3Xd &points) const {
+  assert(!"Implement me!!");
 }
 
-void HeightMapTerrain::initialize() {  
-  assert(!"Implement me!!");  
+void HeightMapTerrain::initialize() {
+  assert(!"Implement me!!");
 }
 
 // todo: these are implemented assuming the data is stored in FLOAT format
@@ -148,17 +148,17 @@ double HeightMapTerrain::cellValue(int i) const{
 
 // todo: these are implemented assuming the data is stored in double format
 double HeightMapTerrain::cellValue(int i, int j) const{
-  //return *((double*)(m_rawHeightfieldData+(i+j*nnodes(0))*bytesPerElement);  
+  //return *((double*)(m_rawHeightfieldData+(i+j*nnodes(0))*bytesPerElement);
   return *((double*)(m_rawHeightfieldData+(i+j*nnodes(1))*bytesPerElement));
 }
 
 double& HeightMapTerrain::cellValue(int i, int j) {
-  //return *((double*)(m_rawHeightfieldData+(i+j*nnodes(0))*bytesPerElement);  
+  //return *((double*)(m_rawHeightfieldData+(i+j*nnodes(0))*bytesPerElement);
   return *((double*)(m_rawHeightfieldData+(i+j*nnodes(1))*bytesPerElement));
 }
 
-double HeightMapTerrain::heightValue(int i, int j) const{ 
-  //Bullet's local coordinate system is at the center of the height map's bounding box 
+double HeightMapTerrain::heightValue(int i, int j) const{
+  //Bullet's local coordinate system is at the center of the height map's bounding box
   return cellValue(i,j) - (m_maxHeight-m_minHeight)/2.0;
 }
 
@@ -169,18 +169,18 @@ double HeightMapTerrain::heightValue(int i, int j) const{
 *************************************************************************************************
 ************************************************************************************************/
 
-FlatTerrain::FlatTerrain(const std::string& name, const Eigen::Vector2i &ncells, const Eigen::Vector2d &size,double angle) : 
+FlatTerrain::FlatTerrain(const std::string& name, const Eigen::Vector2i &ncells, const Eigen::Vector2d &size,double angle) :
 HeightMapTerrain(name,ncells, size), m_angle(angle)
-{    
+{
   double slope = tan(m_angle);
   for (int i = 0; i < nnodes(0); ++i) {
     double x = i*delta_ell(0) - size(0)/2.0; //x=0 at the center
     for (int j = 0; j < nnodes(1); ++j) {
         double y = j*delta_ell(1);
-        double z = x*slope;        
+        double z = x*slope;
         cellValue(i,j) = z;
       }
-    }    
+    }
   this->computeMinMaxHeights();
 }
 
@@ -188,23 +188,23 @@ FlatTerrain::FlatTerrain(const FlatTerrain& other): HeightMapTerrain(other) {
 }
 
 HeightMapTerrain *FlatTerrain::clone() const {
-  return new FlatTerrain(*this);  
+  return new FlatTerrain(*this);
 }
 
 void FlatTerrain::getPoints(Matrix3Xd &points) const {
-  assert(!"Implement me!!");  
+  assert(!"Implement me!!");
 }
 
 void FlatTerrain::getBoundingBoxPoints(Matrix3Xd &points) const {
-  assert(!"Implement me!!");  
+  assert(!"Implement me!!");
 }
 
-void FlatTerrain::getTerrainContactPoints(Matrix3Xd &points) const {  
-  assert(!"Implement me!!");  
+void FlatTerrain::getTerrainContactPoints(Matrix3Xd &points) const {
+  assert(!"Implement me!!");
 }
 
-void FlatTerrain::initialize() {  
-  assert(!"Implement me!!");  
+void FlatTerrain::initialize() {
+  assert(!"Implement me!!");
 }
 
 }//namespace DrakeShapes
