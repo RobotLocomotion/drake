@@ -50,7 +50,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   auto q = x.topRows(nq);
   auto v = x.bottomRows(nv);
   auto kinsol = tree->doKinematics(q, v);
-  
+
   // todo: preallocate the optimization problem and constraints, and simply
   // update them then solve on each function eval.
   // happily, this clunkier version seems fast enough for now
@@ -63,7 +63,6 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   Eigen::MatrixXd H_and_neg_JT = H;
 
   VectorXd C = tree->dynamicsBiasTerm(kinsol, f_ext);
-
   if (num_actuators > 0) C -= tree->B * u.topRows(num_actuators);
 
   {  // loop through rigid body force elements
@@ -132,14 +131,13 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
         } else if (1 + this_normal(2) < EPSILON) {
           tangent1 << -1.0, 0.0, 0.0;  // same for the reflected case
         } else {                       // now the general case
-          tangent1 << this_normal(1), -this_normal(0), 0.0;   //AMC-BUCHE: This is not normal to this_normal!!!
+          tangent1 << this_normal(1), -this_normal(0), 0.0;
           tangent1 /= sqrt(this_normal(1) * this_normal(1) +
                            this_normal(0) * this_normal(0));
         }
         Vector3d tangent2 = tangent1.cross(this_normal);
         Matrix3d R;  // rotation into normal coordinates
         R << tangent1, tangent2, this_normal;
-
         auto J = R * (JA - JB);          // J = [ D1; D2; n ]
         auto relative_velocity = J * v;  // [ tangent1dot; tangent2dot; phidot ]
 
