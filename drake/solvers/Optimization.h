@@ -597,6 +597,10 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
       getLinearEqualityConstraints() const {
     return linear_equality_constraints;
   }
+  const std::list<Binding<LinearConstraint>>&
+      getLinearConstraints() const {
+    return linear_constraints;
+  }
   std::list<Binding<LinearConstraint>> getAllLinearConstraints() const {
     std::list<Binding<LinearConstraint>> conlist = linear_constraints;
     conlist.insert(conlist.end(), linear_equality_constraints.begin(),

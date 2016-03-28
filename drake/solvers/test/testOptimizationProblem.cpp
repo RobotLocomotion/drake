@@ -191,6 +191,111 @@ TEST(testOptimizationProblem, testProblem1) {
     });
 }
 
+// This test comes from Section 3.4 of "Handbook of Test Problems in
+// Local and Global Optimization"
+class LowerBoundTestObjective {
+ public:
+  static size_t numInputs() { return 6; }
+  static size_t numOutputs() { return 1; }
+
+  template <typename ScalarType>
+  void eval(VecIn<ScalarType> const& x, VecOut<ScalarType>& y) const {
+    assert(x.rows() == numInputs());
+    assert(y.rows() == numOutputs());
+    y(0) = -25 * (x(0) - 2) * (x(0) - 2) + (x(1) - 2) * (x(1) - 2) -
+        (x(2) - 1) * (x(2) - 1) - (x(3) - 4) * (x(3) - 4) -
+        (x(4) - 1) * (x(4) - 1) - (x(5) - 4) * (x(5) - 4);
+  }
+};
+
+class LowerBoundTestConstraint : public Constraint {
+ public:
+  LowerBoundTestConstraint(int i1, int i2) :
+      Constraint(1, Vector1d::Constant(4),
+                 Vector1d::Constant(std::numeric_limits<double>::infinity())),
+      i1_(i1),
+      i2_(i2) {}
+
+
+  // for just these two types, implementing this locally is almost cleaner...
+  virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                    Eigen::VectorXd& y) const override {
+    evalImpl(x, y);
+  }
+  virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
+                    TaylorVecXd& y) const override {
+    evalImpl(x, y);
+  }
+
+  template <typename ScalarType>
+  void evalImpl(
+      const Eigen::Ref<const Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>>& x,
+      Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>& y) const {
+    y.resize(1);
+    y(0) = (x(i1_) - 3) * (x(i1_) - 3) + x(i2_);
+  }
+
+  int i1_;
+  int i2_;
+};
+
+TEST(testOptimizationProblem, lowerBoundTest) {
+  OptimizationProblem prog;
+  auto x = prog.addContinuousVariables(6);
+  prog.addCost(LowerBoundTestObjective());
+  std::shared_ptr<Constraint> con1(new LowerBoundTestConstraint(2, 3));
+  prog.addGenericConstraint(con1);
+  std::shared_ptr<Constraint> con2(new LowerBoundTestConstraint(4, 5));
+  prog.addGenericConstraint(con2);
+
+  Eigen::VectorXd c1(6);
+  c1 << 1, -3, 0, 0, 0, 0;
+  prog.addLinearConstraint(
+      c1.transpose(),
+      Drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
+      Drake::Vector1d::Constant(2));
+  Eigen::VectorXd c2(6);
+  c2 << -1, 1, 0, 0, 0, 0;
+  prog.addLinearConstraint(
+      c2.transpose(),
+      Drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
+      Drake::Vector1d::Constant(2));
+  Eigen::VectorXd c3(6);
+  c3 << 1, 1, 0, 0, 0, 0;
+  prog.addLinearConstraint(
+      c3.transpose(),
+      Drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
+      Drake::Vector1d::Constant(6));
+  Eigen::VectorXd c4(6);
+  c4 << 1, 1, 0, 0, 0, 0;
+  prog.addLinearConstraint(
+      c4.transpose(),
+      Drake::Vector1d::Constant(2),
+      Drake::Vector1d::Constant(std::numeric_limits<double>::infinity()));
+  Eigen::VectorXd lower(6);
+  lower << 0, 0, 1, 0, 1, 0;
+  Eigen::VectorXd upper(6);
+  upper << std::numeric_limits<double>::infinity(),
+      std::numeric_limits<double>::infinity(),
+      5, 6, 5, 10;
+  prog.addBoundingBoxConstraint(lower, upper);
+
+  Eigen::VectorXd expected(6);
+  expected << 5, 1, 5, 0, 5, 10;
+  prog.setInitialGuess({x}, expected + .1 * Eigen::VectorXd::Random(6));
+
+  // This test actually fails in SNOPT but works in NLopt.
+  NloptSolver nlopt_solver;
+  if (!nlopt_solver.available()) { return; }
+  nlopt_solver.solve(prog);
+
+  // This test seems to be fairly sensitive to how much the randomness
+  // causes the initial guess to deviate, so the tolerance is a bit
+  // larget than others.
+  EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-6,
+                              MatrixCompareType::absolute));
+}
+
 class SixHumpCamelObjective {
  public:
   static size_t numInputs() { return 2; }
