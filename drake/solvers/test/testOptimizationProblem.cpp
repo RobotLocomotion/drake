@@ -1,11 +1,16 @@
 
 #include <typeinfo>
+
+#include "gtest/gtest.h"
+
 #include "drake/solvers/Optimization.h"
 #include "drake/util/testUtil.h"
 
 using namespace std;
 using namespace Eigen;
 using namespace Drake;
+
+namespace {
 
 struct Movable {
   Movable() = default;
@@ -37,7 +42,7 @@ struct Unique {
   void eval(VecIn<ScalarType> const&, VecOut<ScalarType>&) const {}
 };
 
-void testAddFunction() {
+TEST(testOptimizationProblem, testAddFunction) {
   OptimizationProblem prog;
   prog.addContinuousVariables(1);
 
@@ -54,7 +59,7 @@ void testAddFunction() {
   prog.addCost(std::unique_ptr<Unique>(new Unique));
 }
 
-void trivialLeastSquares() {
+TEST(testOptimizationProblem, trivialLeastSquares) {
   OptimizationProblem prog;
 
   auto const& x = prog.addContinuousVariables(4);
@@ -104,7 +109,7 @@ class SixHumpCamelObjective {
   }
 };
 
-void sixHumpCamel() {
+TEST(testOptimizationProblem, sixHumpCamel) {
   OptimizationProblem prog;
   auto x = prog.addContinuousVariables(2);
   auto objective = prog.addCost(SixHumpCamelObjective());
@@ -167,7 +172,7 @@ class GloptipolyConstrainedExampleConstraint
  * Which is from section 3.5 in
  *   Handbook of Test Problems in Local and Global Optimization
  */
-void gloptipolyConstrainedMinimization() {
+TEST(testOptimizationProblem, gloptipolyConstrainedMinimization) {
   OptimizationProblem prog;
   auto x = prog.addContinuousVariables(3);
   prog.addCost(GloptipolyConstrainedExampleObjective());
@@ -219,7 +224,7 @@ void simpleLCPConstraintEval() {
  * this case; tests of the correctness of the Moby LCP solver itself live in
  * testMobyLCP.
  */
-void simpleLCP() {
+TEST(testOptimizationProblem, simpleLCP) {
   OptimizationProblem prog;
   Eigen::Matrix<double, 2, 2> M;
   M << 1, 4,
@@ -230,16 +235,16 @@ void simpleLCP() {
   auto x = prog.addContinuousVariables(2);
 
   prog.addLinearComplementarityConstraint(M, q, {x});
-  prog.solve();
+  EXPECT_NO_THROW(prog.solve());
   prog.printSolution();
-  valuecheckMatrix(x.value(), Vector2d(16, 0), 1e-4);
+  EXPECT_NO_THROW(valuecheckMatrix(x.value(), Vector2d(16, 0), 1e-4));
 }
 
 /** Multiple LC constraints in a single optimization problem
  * @brief Just two copies of the simpleLCP example, to make sure that the
  * write-through of LCP results to the solution vector works correctly.
  */
-void multiLCP() {
+TEST(testOptimizationProblem, multiLCP) {
   OptimizationProblem prog;
   Eigen::Matrix<double, 2, 2> M;
   M << 1, 4,
@@ -252,28 +257,10 @@ void multiLCP() {
 
   prog.addLinearComplementarityConstraint(M, q, {x});
   prog.addLinearComplementarityConstraint(M, q, {y});
-  prog.solve();
+  EXPECT_NO_THROW(prog.solve());
   prog.printSolution();
-  valuecheckMatrix(x.value(), Vector2d(16, 0), 1e-4);
-  valuecheckMatrix(y.value(), Vector2d(16, 0), 1e-4);
+  EXPECT_NO_THROW(valuecheckMatrix(x.value(), Vector2d(16, 0), 1e-4));
+  EXPECT_NO_THROW(valuecheckMatrix(y.value(), Vector2d(16, 0), 1e-4));
 }
 
-int main(int argc, char* argv[]) {
-  // SNOPT tests
-  try {
-    testAddFunction();
-    trivialLeastSquares();
-    sixHumpCamel();
-    gloptipolyConstrainedMinimization();
-  } catch (const std::exception& e) {
-    // If the exception is SNOPT unavailble, skip the remaining snopt tests
-    // and proceed; if not, reraise it to fail.
-    if (std::string(e.what()) != "SNOPT unavailable") {
-      throw;
-    }
-  }
-  simpleLCPConstraintEval();
-  simpleLCP();
-  multiLCP();
-  return 0;
 }
