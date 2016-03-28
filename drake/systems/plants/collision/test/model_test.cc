@@ -1,4 +1,4 @@
-#include <math.h>
+#include <cmath>
 #include <vector>
 
 #include "drake/systems/plants/collision/DrakeCollision.h"
@@ -54,13 +54,12 @@ TEST(ModelTest, ClosestPointsAllToAll) {
   Element element_1(geometry_1);
   Element element_2(geometry_2, T_elem2_to_body);
   Element element_3(geometry_3);
-  ElementId id1, id2, id3;
 
   // Populate the model.
   std::shared_ptr<Model> model = newModel();
-  id1 = model->addElement(element_1);
-  id2 = model->addElement(element_2);
-  id3 = model->addElement(element_3);
+  ElementId id1 = model->addElement(element_1);
+  ElementId id2 = model->addElement(element_2);
+  ElementId id3 = model->addElement(element_3);
   model->updateElementWorldTransform(id1, T_body1_to_world);
   model->updateElementWorldTransform(id2, T_body2_to_world);
   model->updateElementWorldTransform(id3, T_body3_to_world);
