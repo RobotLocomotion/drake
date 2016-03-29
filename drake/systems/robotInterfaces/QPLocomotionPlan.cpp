@@ -224,9 +224,9 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
                     << zmp_is_safely_within_reduced_support_polygon
                     << " knee: " << knee_close_to_singularity
                     << " ankle: " << ankle_close_to_limit << std::endl;
-          if (is_last_support)
+          if (is_last_support) {
             toe_off_active[side] = false;
-          else {
+          } else {
             toe_off_active[side] = !isSupportingBody(body_id, next_support);
           }
           std::cout << "toe off active: " << toe_off_active[side] << std::endl;

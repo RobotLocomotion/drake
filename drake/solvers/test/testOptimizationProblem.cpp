@@ -83,7 +83,7 @@ void trivialLeastSquares() {
 
   std::shared_ptr<BoundingBoxConstraint> bbcon(new BoundingBoxConstraint(
       MatrixXd::Constant(2, 1, -1000.0), MatrixXd::Constant(2, 1, 1000.0)));
-  prog.addConstraint(bbcon, {x.head(2)});
+  prog.addBoundingBoxConstraint(bbcon, {x.head(2)});
   prog.solve();  // now it will solve as a nonlinear program
   valuecheckMatrix(b.topRows(2) / 2, y.value(), 1e-10);
   valuecheckMatrix(b / 3, x.value(), 1e-10);
@@ -173,7 +173,7 @@ void gloptipolyConstrainedMinimization() {
   prog.addCost(GloptipolyConstrainedExampleObjective());
   std::shared_ptr<GloptipolyConstrainedExampleConstraint> qp_con(
       new GloptipolyConstrainedExampleConstraint());
-  prog.addConstraint(qp_con, {x});
+  prog.addGenericConstraint(qp_con, {x});
   prog.addLinearConstraint(
       Vector3d(1, 1, 1).transpose(),
       Vector1d::Constant(-numeric_limits<double>::infinity()),

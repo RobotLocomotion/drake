@@ -6,7 +6,13 @@ This section defines a style guide which should be followed by all code that is 
 in Drake. Being consistent with this style will make the code easier to read, debug,
 and maintain.
 
-Note: Many of the files in the repository were written before this style guide, or did not follow it precisely.  If you find style errors, go ahead and change it and submit a pull request.
+Note: Many of the files in the repository were written before this style guide, or did
+not follow it precisely.  If you find style errors, go ahead and change it and submit
+a pull request.
+
+.. contents:: `Table of contents`
+   :depth: 3
+   :local:
 
 C++ Style
 =========
@@ -16,9 +22,9 @@ We now strictly follow the `Google C++ Style Guide <https://google.github.io/sty
 * Always prefer long, human-readable variable/method/class names to short acronyms.
 * Manually provide user gradients only when we know more than AutoDiffScalar possibly could (e.g. sparsity of the gradients).
 * Use exceptions for error handling.  Essential control loops must be exception safe.
-* Aim for no dynamic allocation in the inner simulation/control loops.  Code should be still be thread-safe (e.g. be careful with pre-allocations).
+* No dynamic allocation in the inner simulation/control loops.  Code should be still be thread-safe (e.g. be careful with pre-allocations).
 * Classes and methods should be documented using [doxygen](https://www.stack.nl/~dimitri/doxygen/manual/docblocks.html).
-* Embrace templates/C++11 when it makes the code more correct (more clear readable also implies more correct).  Minimize template requirements on public interfaces.  Avoid explicit template instantiations in cc files when possible.
+* Embrace templates/C++11 when it makes the code more correct (more clear or more readable also implies more correct).  Minimize template requirements on public interfaces.  Avoid explicit template instantiations in cc files when possible.
 
 Exceptions
 ----------
@@ -29,6 +35,42 @@ Exceptions
    linear complementarity constraint is traditionally 'M' (one letter,
    upper-case); it is not mandatory to downcase it or give it a more verbose
    name.
+ * No need for a copyright line at the top of every file (this will change soon, see: `issue #1805 <https://github.com/RobotLocomotion/drake/issues/1805>`_).
+
+
+There are several tools that can be used to achieve style compliance. They are listed below.
+
+Tools
+-----
+There are several tools for helping you to compile with the required style. They are listed below.
+
+ClangFormat
+^^^^^^^^^^^
+
+*Installion*
+
+On Ubuntu, clang-format is already packaged. Ubuntu users should use the pre-packaged version, not a separate download.
+
+On OSX, `clang-format` can be installed via brew::
+
+    brew install clang-format
+
+You can check whether you've installed it correctly by executing::
+
+    $ clang-format --help
+
+*Execution*
+
+To run clang-format::
+
+    clang-format -i -style=file [file name]
+
+cpplint
+^^^^^^^
+
+`cpplint <https://github.com/google/styleguide/tree/gh-pages/cpplint>`_ is a tool for finding compliance violations. Here is the command::
+
+    cpplint --filter="-legal/copyright" [file name]
 
 MATLAB Style
 ============
@@ -48,7 +90,7 @@ Java Style
 
 We also strictly follow the `Google Java Style Guide` <https://google.github.io/styleguide/javaguide.html>`_ .  Here are some additional comments:
 
-* Every class and method should have a brief _javadoc_ associated with it.
+* Every class and method should have a brief `_javadoc_` associated with it.
 * All Java classes should be in packages relative to the Drake root,
    e.g.: package drake.examples.Pendulum
 
@@ -56,7 +98,7 @@ We also strictly follow the `Google Java Style Guide` <https://google.github.io/
 LCM Style
 =========
 
-* LCM types are under_scored with a leading lcmt_ added. If the type is specific to a particular robot, then it begins with lcmt_robotname_.
+* LCM types are under_scored with a leading `lcmt_` added. If the type is specific to a particular robot, then it begins with `lcmt_robotname_`.
 * Variable names in LCM types follow the rules above.
 
 

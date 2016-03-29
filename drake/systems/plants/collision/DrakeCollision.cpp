@@ -4,7 +4,7 @@
 #include "drake/systems/plants/collision/DrakeCollision.h"
 
 #ifdef BULLET_COLLISION
-#include "BulletModel.h"
+#include "drake/systems/plants/collision/bullet_model.h"
 #endif
 
 using namespace std;
@@ -36,7 +36,7 @@ unique_ptr<Model> newModel(ModelType model_type) {
            << endl;
   }
   return unique_ptr<Model>();
-};
+}
 
 unique_ptr<Model> newModel() {
 #ifdef BULLET_COLLISION
