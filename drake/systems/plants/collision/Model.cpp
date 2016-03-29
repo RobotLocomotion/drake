@@ -53,16 +53,16 @@ bool closestPointsAllToAll(const vector<ElementId>& ids_to_check,
                            const bool use_margins,
                            vector<PointPair>& closest_points) {
   return false;
-};
+}
 
 bool collisionPointsAllToAll(const bool use_margins,
                              vector<PointPair>& points) {
   return false;
-};
+}
 
 bool closestPointsPairwise(const vector<ElementIdPair>& id_pairs,
                            const bool use_margins,
                            vector<PointPair>& closest_points) {
   return false;
-};
+}
 }

@@ -54,6 +54,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     } else {
       plhs[0] = createKinematicsCache<AutoDiffScalar<VectorXd>>(*model);
     }
-  } else
+  } else {
     mexErrMsgTxt("couldn't parse input");
+  }
 }

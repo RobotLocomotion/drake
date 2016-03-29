@@ -8,7 +8,6 @@
 
 #include <algorithm>
 #include <string>
-#include <regex>
 #include <limits>
 #include "KinematicsCache.h"
 
@@ -1230,7 +1229,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::dynamicsBiasTerm(
   Matrix<Scalar, Eigen::Dynamic, 1> vd(num_velocities, 1);
   vd.setZero();
   return inverseDynamics(cache, f_ext, vd, include_velocity_terms);
-};
+}
 
 template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
@@ -1366,7 +1365,7 @@ RigidBodyTree::transformPointsJacobian(
   }
 
   return J;
-};
+}
 
 template <typename Scalar>
 Eigen::Matrix<Scalar, QUAT_SIZE, Eigen::Dynamic>
@@ -1388,7 +1387,7 @@ RigidBodyTree::relativeQuaternionJacobian(const KinematicsCache<Scalar>& cache,
       static_cast<typename Gradient<decltype(Phi), Dynamic>::type*>(nullptr));
   return compactToFull((Phi * Jomega).eval(), kinematic_path.joint_path,
                        in_terms_of_qdot);
-};
+}
 
 template <typename Scalar>
 Eigen::Matrix<Scalar, RPY_SIZE, Eigen::Dynamic>
@@ -1411,7 +1410,7 @@ RigidBodyTree::relativeRollPitchYawJacobian(
           nullptr));
   return compactToFull((Phi * Jomega).eval(), kinematic_path.joint_path,
                        in_terms_of_qdot);
-};
+}
 
 template <typename Scalar>
 Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>
@@ -1466,7 +1465,7 @@ RigidBodyTree::transformPointsJacobianDotTimesV(
 
   return Map<Matrix<Scalar, Dynamic, 1>>(Jposdot_times_v_mat.data(), r.size(),
                                          1);
-};
+}
 
 template <typename Scalar>
 Eigen::Matrix<Scalar, Eigen::Dynamic, 1>
@@ -1511,7 +1510,7 @@ RigidBodyTree::relativeQuaternionJacobianDotTimesV(
   ret.noalias() +=
       Phi * J_geometric_dot_times_v.template topRows<SPACE_DIMENSION>();
   return ret;
-};
+}
 
 template <typename Scalar>
 Eigen::Matrix<Scalar, Eigen::Dynamic, 1>
@@ -1560,16 +1559,13 @@ RigidBodyTree::relativeRollPitchYawJacobianDotTimesV(
   ret.noalias() +=
       Phi * J_geometric_dot_times_v.template topRows<SPACE_DIMENSION>();
   return ret;
-};
+}
 
 shared_ptr<RigidBody> RigidBodyTree::findLink(std::string linkname,
                                               int robot) const {
   std::transform(linkname.begin(), linkname.end(), linkname.begin(),
                  ::tolower);  // convert to lower case
 
-  // std::regex linkname_connector("[abc]");
-  // cout<<"get linkname_connector"<<endl;
-  // linkname = std::regex_replace(linkname, linkname_connector, string("_"));
   int match = -1;
   for (int i = 0; i < bodies.size(); i++) {
     // Note: unlike the MATLAB implementation, I don't have to handle the fixed
@@ -1602,9 +1598,6 @@ shared_ptr<RigidBody> RigidBodyTree::findLink(std::string linkname,
   std::transform(model_name.begin(), model_name.end(), model_name.begin(),
                  ::tolower);  // convert to lower case
 
-  // std::regex linkname_connector("[abc]");
-  // cout<<"get linkname_connector"<<endl;
-  // linkname = std::regex_replace(linkname, linkname_connector, string("_"));
   int match = -1;
   for (int i = 0; i < bodies.size(); i++) {
     // Note: unlike the MATLAB implementation, I don't have to handle the fixed

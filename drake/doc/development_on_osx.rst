@@ -6,8 +6,19 @@ This page contains information that may be useful to people developing in OS X.
 
 *Note that the applications, tools, and libraries listed below are simply those that some have found useful. They should* **not** *be interpreted as mandatory.*
 
-Installing pygame
-===================================
+.. contents:: `Table of contents`
+   :depth: 2
+   :local:
+
+cpplint
+=======
+
+cpplint is a tool for checking whether C++ code conforms to a certain style. To install it on OS X, execute:
+
+    pip install cpplint
+
+pygame
+======
 
 `pygame <http://pygame.org>`_ is used by ``drake/examples/Cars/SteeringCommandDriver.py``.
 
@@ -25,15 +36,18 @@ Ensure your ``PYTHONPATH`` environment variable includes Drake's site-package an
 
 
 
-Running gitk
-============
+git Tools
+=========
+
+gitk
+----
 
 The version of `git <https://git-scm.com>`_ that comes with OS X may not include `gitk <https://git-scm.com/docs/gitk>`_, a GUI-based git repository browser. A workaround is to get a newer version using brew:
 
     brew update
     brew install git
 
-If gitk does not start with an ``unknown color name "lime"`` error, upgrade your vesrion of Tcl/Tk:
+If gitk does not start with an ``unknown color name "lime"`` error, upgrade your version of Tcl/Tk:
 
     brew cask install tcl
 
@@ -41,3 +55,31 @@ References:
 
 1. http://stackoverflow.com/questions/34637896/gitk-will-not-start-on-mac-unknown-color-name-lime
 2. http://stackoverflow.com/questions/17582685/install-gitk-on-mac
+
+SourceTree
+-----------
+
+`SourceTree <https://www.sourcetreeapp.com>`_ is a free git and mercurial client for Windows and Mac made by Atlassian.
+
+(*Notes comming soon*)
+
+Text Editors and IDEs
+=====================
+
+Below are some notes on various text edtiors and IDEs we've used on OS X.
+
+CLion
+-----
+
+(*Notes comming soon*)
+
+Sublime Text
+------------
+
+Recommended packages to install:
+
+1. https://packagecontrol.io/packages/SublimeLinter-cpplint
+
+To display the current file's full path in the title bar, open your user preferences by going to "Sublime Text," "Preferences," "Settings - User." Then add the following to your user preferences:
+
+    "show_full_path": true
