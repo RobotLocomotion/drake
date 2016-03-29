@@ -438,8 +438,9 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
       if (strval) {
          std::stringstream s(strval);
          s >> lpChild(0) >> lpChild(1) >> lpChild(2);
-      } else
+      } else {
         throw runtime_error("ERROR: Unable to construct loop joint \"" + name + "\": could not parse loop point.");
+      }
     }
 
     // Get the loop point in the parent's reference frame.
@@ -477,8 +478,9 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
     auto it = pose_map.find(child_name);
     if (it != pose_map.end()) {
       it->second = transform_to_model;
-    } else
+    } else {
       throw runtime_error("ERROR: Unable to update transform_to_model of link " + child_name);
+    }
 
     // construct the actual joint (based on its type)
     DrakeJoint* joint = nullptr;
