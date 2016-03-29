@@ -10,6 +10,10 @@ using Drake::CombinedVectorUtil;
 using Drake::NullVector;
 using Drake::InputOutputRelation;
 
+// Liang: DEBUG! Trying this to see if the following msvc-32 error goes away:
+// "error C2718: 'const T1': actual parameter with requested alignment of 16 won't be aligned"
+#define EIGEN_DONT_ALIGN
+
 namespace drake {
 namespace test {
 
