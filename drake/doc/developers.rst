@@ -51,7 +51,7 @@ they need to review your change effectively. If a reviewer asks you for more
 information, that is a sign you should add more documentation to your PR. 
 
 **Feature Review.** After creating your pull request, assign it to someone
-else on your team for feature review. Choose someone be deeply familiar
+else on your team for feature review. Choose the person most familiar
 with the context of your pull request. This reviewer is responsible for
 protecting your team by inspecting for bugs, for test coverage, and for 
 alignment with the team's goals. During this review, you and your reviewer
