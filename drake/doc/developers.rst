@@ -75,8 +75,8 @@ time for code review, so prefer other owners unless you really need his input.
 - @RussTedrake (MIT / Toyota Research Institute)
 
 
-Table of Contents
-=================
+Additional References
+=====================
 .. toctree::
 	:maxdepth: 1
 
