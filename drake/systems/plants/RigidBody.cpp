@@ -150,50 +150,78 @@ ostream& operator<<(ostream& out, const RigidBody& b) {
   return out;
 }
 
-#define PRINT_STMT(x) std::cout << "RigidBody: EQUALS: " << x << std::endl;
-
-bool operator==(const RigidBody & rb1, const RigidBody & rb2) {
+bool RigidBody::Compare(const RigidBody & rb, std::string * explanation) const {
   bool result = true;
 
-  if (rb1.linkname.compare(rb2.linkname) != 0) {
-    PRINT_STMT("Link names do not match "
-      << rb1.linkname << " vs. " << rb2.linkname)
+  if (linkname.compare(rb.linkname) != 0) {
+    if (explanation != nullptr) {
+      std::stringstream ss;
+      ss << "Link names do not match "
+         << linkname << " vs. " << rb.linkname;
+      *explanation = ss.str();
+    }
     result = false;
   }
 
-  if (result && rb1.hasParent() && !rb2.hasParent()) {
-    PRINT_STMT("LHS rigid body has parent whereas RHS rigid body does not. Linkname is " << rb1.linkname << ".")
+  if (result && hasParent() && !rb.hasParent()) {
+    if (explanation != nullptr) {
+      std::stringstream ss;
+      ss << "LHS rigid body has parent whereas RHS rigid body does not. Linkname is "
+         << linkname << ".";
+      *explanation = ss.str();
+    }
     result = false;
   }
 
-  if (result && !rb1.hasParent() && rb2.hasParent()) {
-    PRINT_STMT("LHS rigid body does not have parent whereas RHS rigid body does. Linkname is " << rb1.linkname << ".")
+  if (result && !hasParent() && rb.hasParent()) {
+    if (explanation != nullptr) {
+      std::stringstream ss;
+      ss << "LHS rigid body does not have parent whereas RHS rigid body does. Linkname is "
+         << linkname << ".";
+      *explanation = ss.str();
+    }
     result = false;
   }
 
-  if (result && rb1.hasParent() && rb2.hasParent()) {
-      if (rb1.parent->linkname.compare(rb2.parent->linkname) != 0) {
-        PRINT_STMT("Link " << rb1.linkname << " have different parent links ("
-          << rb1.parent->linkname << " vs. " << rb2.parent->linkname << ".")
+  if (result && hasParent() && rb.hasParent()) {
+      if (parent->linkname.compare(rb.parent->linkname) != 0) {
+        if (explanation != nullptr) {
+          std::stringstream ss;
+          ss << "Link " << linkname << " have different parent links ("
+            << parent->linkname << " vs. " << rb.parent->linkname << ".";
+          *explanation = ss.str();
+        }
         result = false;
       }
   }
 
-  if (result && rb1.body_index != rb2.body_index) {
-    PRINT_STMT("Body indices do not match: "
-      << rb1.body_index << " vs. " << rb2.body_index)
+  if (result && body_index != rb.body_index) {
+    if (explanation != nullptr) {
+      std::stringstream ss;
+      ss << "Body indices do not match: "
+        << body_index << " vs. " << rb.body_index;
+      *explanation = ss.str();
+    }
     result = false;
   }
 
-  if (result && rb1.position_num_start != rb2.position_num_start) {
-    PRINT_STMT("Variable position_num_start does not match: "
-      << rb1.position_num_start << " vs. " << rb2.position_num_start)
+  if (result && position_num_start != rb.position_num_start) {
+    if (explanation != nullptr) {
+      std::stringstream ss;
+      ss << "Variable position_num_start does not match: "
+        << position_num_start << " vs. " << rb.position_num_start;
+      *explanation = ss.str();
+    }
     result = false;
   }
 
-  if (result && rb1.velocity_num_start != rb2.velocity_num_start) {
-    PRINT_STMT("Variable velocity_num_start does not match: "
-      << rb1.velocity_num_start << " vs. " << rb2.velocity_num_start)
+  if (result && velocity_num_start != rb.velocity_num_start) {
+    if (explanation != nullptr) {
+      std::stringstream ss;
+      ss << "Variable velocity_num_start does not match: "
+         << velocity_num_start << " vs. " << rb.velocity_num_start;
+      *explanation = ss.str();
+    }
     result = false;
   }
 
@@ -201,26 +229,34 @@ bool operator==(const RigidBody & rb1, const RigidBody & rb2) {
   if (result) {
     bool hasJoint1 = false, hasJoint2 = false;
     try {
-      rb1.getJoint();
+      getJoint();
       hasJoint1 = true;
-      rb2.getJoint();
+      rb.getJoint();
       hasJoint2 = true;
     } catch(std::runtime_error re) {
-      // either rb1 or rb2 does not have a joint
+      // either rb1 or rb does not have a joint
     }
 
     if (hasJoint1 && !hasJoint2) {
-      PRINT_STMT("LHS link \"" << rb1.linkname << "\" has a joint but RHS link does not!")
+      if (explanation != nullptr) {
+        std::stringstream ss;
+        ss << "LHS link \"" << linkname << "\" has a joint but RHS link does not!";
+        *explanation = ss.str();
+      }
       result = false;
     }
 
     if (!hasJoint1 && hasJoint2) {
-      PRINT_STMT("LHS link \"" << rb1.linkname << "\" does not have a joint but RHS link does!")
+      if (explanation != nullptr) {
+        std::stringstream ss;
+        ss << "LHS link \"" << linkname << "\" does not have a joint but RHS link does!";
+        *explanation = ss.str();
+      }
       result = false;
     }
 
     if (result && hasJoint1 && hasJoint2) {
-      if (rb1.getJoint() != rb2.getJoint()) {
+      if (!getJoint().Compare(rb.getJoint(), explanation)) {
         result = false;
       }
     }
@@ -229,32 +265,44 @@ bool operator==(const RigidBody & rb1, const RigidBody & rb2) {
   // Compare contact points
   if (result) {
     try {
-      valuecheckMatrix(rb1.contact_pts, rb2.contact_pts, std::numeric_limits<double>::epsilon());
+      valuecheckMatrix(contact_pts, rb.contact_pts, std::numeric_limits<double>::epsilon());
     } catch(std::runtime_error re) {
-      PRINT_STMT("Contact points mismatch!" << std::endl
-                  << "  - rigid body 1:\n" << rb1.contact_pts << std::endl
-                  << "  - rigid body 2:\n" << rb2.contact_pts << std::endl
-                  << "  - details:\n" << re.what())
+      if (explanation != nullptr) {
+        std::stringstream ss;
+        ss << "Contact points mismatch!" << std::endl
+           << "  - rigid body 1:\n" << contact_pts << std::endl
+           << "  - rigid body 2:\n" << rb.contact_pts << std::endl
+           << "  - details:\n" << re.what();
+        *explanation = ss.str();
+      }
       result = false;
     }
   }
 
   // Compare mass
-  if (result && rb1.mass != rb2.mass) {
-    std::cout << "The rigid body masses do not match: "
-      << rb1.mass << " vs. " << rb2.mass << std::endl;
+  if (result && mass != rb.mass) {
+    if (explanation != nullptr) {
+      std::stringstream ss;
+      ss << "The rigid body masses do not match: "
+         << mass << " vs. " << rb.mass;
+      *explanation = ss.str();
+    }
     result = false;
   }
 
   // Compare center of mass
   if (result) {
     try {
-      valuecheckMatrix(rb1.com, rb2.com, std::numeric_limits<double>::epsilon());
+      valuecheckMatrix(com, rb.com, std::numeric_limits<double>::epsilon());
     } catch(std::runtime_error re) {
-      PRINT_STMT("Center of mass mismatch!" << std::endl
-                  << "  - rigid body 1:\n" << rb1.com << std::endl
-                  << "  - rigid body 2:\n" << rb2.com << std::endl
-                  << "  - details:\n" << re.what())
+      if (explanation != nullptr) {
+        std::stringstream ss;
+        ss << "Center of mass mismatch!" << std::endl
+           << "  - rigid body 1:\n" << com << std::endl
+           << "  - rigid body 2:\n" << rb.com << std::endl
+           << "  - details:\n" << re.what();
+        *explanation = ss.str();
+      }
       result = false;
     }
   }
@@ -262,12 +310,16 @@ bool operator==(const RigidBody & rb1, const RigidBody & rb2) {
   // Compare inertia matrices
   if (result) {
     try {
-      valuecheckMatrix(rb1.I, rb2.I, std::numeric_limits<double>::epsilon());
+      valuecheckMatrix(I, rb.I, std::numeric_limits<double>::epsilon());
     } catch(std::runtime_error re) {
-      PRINT_STMT("Inertia matrix mismatch!" << std::endl
-                  << "  - rigid body 1:\n" << rb1.I << std::endl
-                  << "  - rigid body 2:\n" << rb2.I << std::endl
-                  << "  - details:\n" << re.what())
+      if (explanation != nullptr) {
+        std::stringstream ss;
+        ss << "Inertia matrix mismatch!" << std::endl
+           << "  - rigid body 1:\n" << I << std::endl
+           << "  - rigid body 2:\n" << rb.I << std::endl
+           << "  - details:\n" << re.what();
+        *explanation = ss.str();
+      }
       result = false;
     }
   }
@@ -275,7 +327,9 @@ bool operator==(const RigidBody & rb1, const RigidBody & rb2) {
   return result;
 }
 
-#undef PRINT_STMT
+bool operator==(const RigidBody & rb1, const RigidBody & rb2) {
+  return rb1.Compare(rb2);
+}
 
 bool operator!=(const RigidBody & rb1, const RigidBody & rb2) {
   return !operator==(rb1, rb2);

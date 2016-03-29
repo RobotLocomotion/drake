@@ -37,50 +37,69 @@ ostream& operator<<(ostream& out, const Element& ee) {
   return out;
 }
 
-#define PRINT_STMT(x) std::cout << "DrakeCollision::Element::EQUALS: " << x << std::endl;
-
-bool operator==(const Element & e1, const Element & e2) {
+bool Element::Compare(const Element & ee, std::string * explanation) const {
   bool result = true;
 
   try {
-    valuecheckMatrix(e1.getWorldTransform().matrix(), e2.getWorldTransform().matrix(), 1e-10);
+    valuecheckMatrix(getWorldTransform().matrix(), ee.getWorldTransform().matrix(), 1e-10);
   } catch(std::runtime_error& re) {
-    PRINT_STMT("[" << e1.getId() << ", " << e2.getId() << "] world transforms do not match")
+    if (explanation != nullptr) {
+      std::stringstream ss;
+      ss << "[" << getId() << ", " << ee.getId() << "] world transforms do not match";
+      *explanation = ss.str();
+    }
     result = false;
   }
 
   if (result) {
     try {
-      valuecheckMatrix(e1.getLocalTransform().matrix(), e2.getLocalTransform().matrix(), 1e-10);
+      valuecheckMatrix(getLocalTransform().matrix(), ee.getLocalTransform().matrix(), 1e-10);
     } catch(std::runtime_error& re) {
-      PRINT_STMT("[" << e1.getId() << ", " << e2.getId() << "] local transforms do not match")
+      if (explanation != nullptr) {
+        std::stringstream ss;
+        ss << "[" << getId() << ", " << ee.getId() << "] local transforms do not match";
+        *explanation = ss.str();
+      }
       result = false;
     }
   }
 
-  if (result && e1.getShape() != e2.getShape()) {
-    PRINT_STMT("[" << e1.getId() << ", " << e2.getId() << "] shapes do not match")
+  if (result && getShape() != ee.getShape()) {
+    if (explanation != nullptr) {
+      std::stringstream ss;
+      ss << "[" << getId() << ", " << ee.getId() << "] shapes do not match";
+      *explanation = ss.str();
+    }
     result = false;
   }
 
   if (result) {
-    if ((e1.hasGeometry() && !e2.hasGeometry()) || (!e1.hasGeometry() && e2.hasGeometry())) {
-      PRINT_STMT("[" << e1.getId() << ", " << e2.getId() << "] has gometry mismatch")
+    if ((hasGeometry() && !ee.hasGeometry()) || (!hasGeometry() && ee.hasGeometry())) {
+      if (explanation != nullptr) {
+        std::stringstream ss;
+        ss << "[" << getId() << ", " << ee.getId() << "] has gometry mismatch";
+        *explanation = ss.str();
+      }
       result = false;
     }
   }
 
-  if (result && e1.hasGeometry() && e2.hasGeometry()) {
-    if (e1.getGeometry() != e2.getGeometry()) {
-      PRINT_STMT("[" << e1.getId() << ", " << e2.getId() << "] geometry mismatch")
+  if (result && hasGeometry() && ee.hasGeometry()) {
+    if (getGeometry() != ee.getGeometry()) {
+      if (explanation != nullptr) {
+        std::stringstream ss;
+        ss << "[" << getId() << ", " << ee.getId() << "] geometry mismatch";
+        *explanation = ss.str();
+      }
       result = false;
     }
   }
 
   return result;
 }
-
-#undef PRINT_STMT
+bool operator==(const Element & e1, const Element & e2) {
+  return e1.Compare(e2);
+}
 
 bool operator!=(const Element & e1, const Element & e2) {
   return !operator==(e1, e2);

@@ -77,7 +77,7 @@ class DRAKERBM_EXPORT RigidBody {
   bool appendCollisionElementIdsFromThisBody(
       std::vector<DrakeCollision::ElementId>& ids) const;
 
-  /** 
+  /**
    * Transforms all of the visual, collision, and inertial elements associated with this body
    * to the proper joint frame.  This is necessary, for instance, to support SDF loading
    * where the child frame can be specified independently from the joint frame.  In our
@@ -86,6 +86,16 @@ class DRAKERBM_EXPORT RigidBody {
    * @param transform_body_to_joint The transform from this body's frame to the joint's frame.
    */
   void applyTransformToJointFrame(const Eigen::Isometry3d& transform_body_to_joint);
+
+  /**
+   * Compares this rigid body with another one.
+   *
+   * @param rb The rigid body to compare against.
+   * @param explanation A pointer to a string for holding an explanation on why
+   * a match did not exist.
+   * @return true if this rigid body matches the parameter rigid body, and false otherwise.
+   */
+  bool Compare(const RigidBody & rb, std::string * explanation = nullptr) const;
 
   /*!
    * Overload operator== to check whether two RigidBody objects are equal.

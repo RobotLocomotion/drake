@@ -40,33 +40,42 @@ std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj) {
   return os;
 }
 
-#define PRINT_STMT(x) std::cout << "RigidBodyTree: EQUALS: " << x << std::endl;
-
-bool operator==(const RigidBodyTree & rbt1, const RigidBodyTree & rbt2) {
-  // PRINT_STMT("Checking if two rigid body trees are equal...")
+bool RigidBodyTree::Compare(const RigidBodyTree & rbt, std::string * explanation) const {
   bool result = true;
 
   // Verify the two models have the same number of position values
-  if (rbt1.num_positions != rbt2.num_positions) {
-    PRINT_STMT("Number of positions do not match!")
+  if (num_positions != rbt.num_positions) {
+    if (explanation != nullptr) {
+      std::stringstream ss;
+      ss << "Number of positions do not match!";
+      *explanation = ss.str();
+    }
     result = false;
   }
 
   // Verify the two models have the same number of velocity values
-  if (result && rbt1.num_velocities != rbt2.num_velocities) {
-    PRINT_STMT("Number of velocities do not match!")
+  if (result && num_velocities != rbt.num_velocities) {
+    if (explanation != nullptr) {
+      std::stringstream ss;
+      ss << "Number of velocities do not match!";
+      *explanation = ss.str();
+    }
     result = false;
   }
 
   // Verify the two models have the same minimum joint limits
   if (result) {
     try {
-      valuecheckMatrix(rbt1.joint_limit_min, rbt2.joint_limit_min, std::numeric_limits<double>::epsilon());
+      valuecheckMatrix(joint_limit_min, rbt.joint_limit_min, std::numeric_limits<double>::epsilon());
     } catch(std::runtime_error re) {
-      PRINT_STMT("Minimum joint limits do not match!" << std::endl
-                  << "  - tree 1:\n" << rbt1.jointLimitsToString() << std::endl
-                  << "  - tree 2:\n" << rbt2.jointLimitsToString() << std::endl
-                  << "  - details:\n" << re.what())
+      if (explanation != nullptr) {
+        std::stringstream ss;
+        ss << "Minimum joint limits do not match!" << std::endl
+           << "  - tree 1:\n" << jointLimitsToString() << std::endl
+           << "  - tree 2:\n" << rbt.jointLimitsToString() << std::endl
+           << "  - details:\n" << re.what();
+        *explanation = ss.str();
+      }
       result = false;
     }
   }
@@ -74,34 +83,45 @@ bool operator==(const RigidBodyTree & rbt1, const RigidBodyTree & rbt2) {
   // Verify the two models have the same maximum joint limits
   if (result) {
     try {
-      valuecheckMatrix(rbt1.joint_limit_max, rbt2.joint_limit_max, std::numeric_limits<double>::epsilon());
+      valuecheckMatrix(joint_limit_max, rbt.joint_limit_max, std::numeric_limits<double>::epsilon());
     } catch(std::runtime_error re) {
-      PRINT_STMT("Minimum joint limits do not match!" << std::endl
-                  << "  - tree 1:\n" << rbt1.jointLimitsToString() << std::endl
-                  << "  - tree 2:\n" << rbt2.jointLimitsToString() << std::endl
-                  << "  - details:\n" << re.what())
+      if (explanation != nullptr) {
+        std::stringstream ss;
+        ss << "Minimum joint limits do not match!" << std::endl
+           << "  - tree 1:\n" << jointLimitsToString() << std::endl
+           << "  - tree 2:\n" << rbt.jointLimitsToString() << std::endl
+           << "  - details:\n" << re.what();
+        *explanation = ss.str();
+      }
       result = false;
     }
   }
 
   // Verify the two models have the same rigid bodies
-  if (result && rbt1.bodies.size() != rbt2.bodies.size()) {
-    PRINT_STMT("Number of bodies do not match! (" << rbt1.bodies.size() << " vs. " << rbt2.bodies.size() << ")")
+  if (result && bodies.size() != rbt.bodies.size()) {
+    if (explanation != nullptr) {
+      std::stringstream ss;
+      ss << "Number of bodies do not match! (" << bodies.size() << " vs. " << rbt.bodies.size() << ")";
+      *explanation = ss.str();
+    }
     result = false;
   }
 
   if (result) {
-    for (auto& rb1 : rbt1.bodies) {
-      std::shared_ptr<RigidBody> rb2 = rbt2.findLink(rb1->linkname, rb1->model_name);
+    for (auto& rb1 : bodies) {
+      std::shared_ptr<RigidBody> rb2 = rbt.findLink(rb1->linkname, rb1->model_name);
       if (rb2 != nullptr) {
-        if (*rb1 != *rb2) {
-          PRINT_STMT("Rigid body \"" << rb1->linkname << "\" mismatch!")
+        if (!rb1->Compare(*rb2, explanation)) {
           result = false;
           break;
         }
       } else {
-        PRINT_STMT("Could not find rigid body in RHS tree with linkname \""
-          << rb2->linkname << "\", and model_name \"" << rb2->model_name << "\"")
+        if (explanation != nullptr) {
+          std::stringstream ss;
+          ss << "Could not find rigid body in RHS tree with linkname \""
+             << rb2->linkname << "\", and model_name \"" << rb2->model_name << "\"";
+          *explanation = ss.str();
+        }
         result = false;
         break;
       }
@@ -109,31 +129,42 @@ bool operator==(const RigidBodyTree & rbt1, const RigidBodyTree & rbt2) {
   }
 
   // Verify the two models have the same frames
-  if (result && rbt1.frames.size() != rbt2.frames.size()) {
-    PRINT_STMT("Number of frames do not match! (" << rbt1.frames.size() << " vs. " << rbt2.frames.size() << ")")
+  if (result && frames.size() != rbt.frames.size()) {
+    if (explanation != nullptr) {
+      std::stringstream ss;
+      ss << "Number of frames do not match! (" << frames.size() << " vs. "
+         << rbt.frames.size() << ")";
+      *explanation = ss.str();
+    }
     result = false;
   }
 
   if (result) {
-    for (auto& f1 : rbt1.frames) {
-      std::shared_ptr<RigidBodyFrame> f2 = rbt2.findFrame(f1->name, f1->body->model_name);
+    for (auto& f1 : frames) {
+      std::shared_ptr<RigidBodyFrame> f2 = rbt.findFrame(f1->name, f1->body->model_name);
       if (f2 != nullptr) {
-        if (*f1 != *f2) {
-          PRINT_STMT("Frame mismatch!\n"
-                     << "  - f1 =\n" << f1 << "\n"
-                     << "  - f2 =\n" << f2)
+        if (!f1->Compare(*f2, explanation)) {
+          // if (explanation != nullptr) {
+          //   std::stringstream ss;
+          //   ss << "Frame mismatch!\n"
+          //      << "  - f1 =\n" << f1 << "\n"
+          //      << "  - f2 =\n" << f2;
+          //   *explanation = ss.str();
+          // }
           result = false;
           break;
         }
       } else {
-        std::stringstream msg;
-        msg << "Unable to find frame in RHS tree with name \"" << f1->name
-          << ", and model name \"" << f1->body->model_name << "\". ";
-        msg << "Frames in RHS tree:\n";
-        for (auto& f2 : rbt2.frames) {
-          msg << "\t" << f2->name << "\t" << f2->body->model_name << "\n";
+        if (explanation != nullptr) {
+          std::stringstream msg;
+          msg << "Unable to find frame in RHS tree with name \"" << f1->name
+              << ", and model name \"" << f1->body->model_name << "\". "
+              << "Frames in RHS tree:\n";
+          for (auto& f2 : rbt.frames) {
+            msg << "\t" << f2->name << "\t" << f2->body->model_name << "\n";
+          }
+          *explanation = msg.str();
         }
-        PRINT_STMT(msg.str())
         result = false;
         break;
       }
@@ -141,20 +172,30 @@ bool operator==(const RigidBodyTree & rbt1, const RigidBodyTree & rbt2) {
   }
 
   // Verify the two models have the same actuators
-  if (result && rbt1.actuators.size() != rbt2.actuators.size()) {
-    PRINT_STMT("Number of actuators do not match! (" << rbt1.actuators.size() << " vs. " << rbt2.actuators.size() << ")")
+  if (result && actuators.size() != rbt.actuators.size()) {
+    if (explanation != nullptr) {
+      std::stringstream ss;
+      ss << "Number of actuators do not match! (" << actuators.size() << " vs. "
+         << rbt.actuators.size() << ")";
+      *explanation = ss.str();
+    }
     result = false;
   }
 
-  if (rbt1.actuators.size() != rbt2.actuators.size()) {
-    PRINT_STMT("Number of actuators do not match! (" << rbt1.actuators.size() << " vs. " << rbt2.actuators.size())
+  if (actuators.size() != rbt.actuators.size()) {
+    if (explanation != nullptr) {
+      std::stringstream ss;
+      ss << "Number of actuators do not match! (" << actuators.size() << " vs. "
+         << rbt.actuators.size();
+      *explanation = ss.str();
+    }
     result = false;
   }
 
   if (result) {
-    for (auto& a1 : rbt1.actuators) {
+    for (auto& a1 : actuators) {
       bool match = false;
-      for (auto& a2 : rbt2.actuators) {
+      for (auto& a2 : rbt.actuators) {
         if (a1.name.compare(a2.name) == 0 &&
           *a1.body == *a2.body &&
           a1.reduction == a2.reduction &&
@@ -164,7 +205,11 @@ bool operator==(const RigidBodyTree & rbt1, const RigidBodyTree & rbt2) {
         }
       }
       if (!match) {
-        PRINT_STMT("No matching actuator named \"" << a1.name << "\"")
+        if (explanation != nullptr) {
+          std::stringstream ss;
+          ss << "No matching actuator named \"" << a1.name << "\"";
+          *explanation = ss.str();
+        }
         result = false;
         break;
       }
@@ -172,15 +217,20 @@ bool operator==(const RigidBodyTree & rbt1, const RigidBodyTree & rbt2) {
   }
 
   // Verify the two models have the same loop
-  if (result && rbt1.loops.size() != rbt2.loops.size()) {
-    PRINT_STMT("Number of loops do not match! (" << rbt1.loops.size() << " vs. " << rbt2.loops.size() << ")")
+  if (result && loops.size() != rbt.loops.size()) {
+    if (explanation != nullptr) {
+      std::stringstream ss;
+      ss << "Number of loops do not match! (" << loops.size() << " vs. "
+         << rbt.loops.size() << ")";
+      *explanation = ss.str();
+    }
     result = false;
   }
 
   if (result) {
-    for (auto& l1 : rbt1.loops) {
+    for (auto& l1 : loops) {
       bool match = false;
-      for (auto& l2 : rbt2.loops) {
+      for (auto& l2 : rbt.loops) {
         if (*l1.frameA == *l2.frameA &&
             *l2.frameB == *l2.frameB) {
           try {
@@ -191,7 +241,9 @@ bool operator==(const RigidBodyTree & rbt1, const RigidBodyTree & rbt2) {
           }
         }
         if (!match) {
-          PRINT_STMT("Loop mismatch!")
+          if (explanation != nullptr) {
+            *explanation = "Loop mismatch!";
+          }
           result = false;
           break;
         }
@@ -202,12 +254,16 @@ bool operator==(const RigidBodyTree & rbt1, const RigidBodyTree & rbt2) {
   // Verify the two models have the same gravity
   if (result) {
     try {
-      valuecheckMatrix(rbt1.a_grav, rbt2.a_grav, std::numeric_limits<double>::epsilon());
+      valuecheckMatrix(a_grav, rbt.a_grav, std::numeric_limits<double>::epsilon());
     } catch(std::runtime_error re) {
-      PRINT_STMT("Gravity vector mismatch!" << std::endl
-                  << "  - tree 1:\n" << rbt1.jointLimitsToString() << std::endl
-                  << "  - tree 2:\n" << rbt2.jointLimitsToString() << std::endl
-                  << "  - details:\n" << re.what())
+      if (explanation != nullptr) {
+        std::stringstream ss;
+        ss << "Gravity vector mismatch!" << std::endl
+           << "  - tree 1:\n" << jointLimitsToString() << std::endl
+           << "  - tree 2:\n" << rbt.jointLimitsToString() << std::endl
+           << "  - details:\n" << re.what();
+        *explanation = ss.str();
+      }
       result = false;
     }
   }
@@ -215,20 +271,28 @@ bool operator==(const RigidBodyTree & rbt1, const RigidBodyTree & rbt2) {
   // Verify the two models have the same B matrix (maps inputs into joint-space forces)
   if (result) {
     try {
-      valuecheckMatrix(rbt1.B, rbt2.B, std::numeric_limits<double>::epsilon());
+      valuecheckMatrix(B, rbt.B, std::numeric_limits<double>::epsilon());
     } catch(std::runtime_error re) {
-      PRINT_STMT("B matrix mismatch!" << std::endl
-                  << "  - tree 1:\n" << rbt1.B << std::endl
-                  << "  - tree 2:\n" << rbt2.B << std::endl
-                  << "  - details:\n" << re.what())
+      if (explanation != nullptr) {
+        std::stringstream ss;
+        ss << "B matrix mismatch!" << std::endl
+                  << "  - tree 1:\n" << B << std::endl
+                  << "  - tree 2:\n" << rbt.B << std::endl
+                  << "  - details:\n" << re.what();
+        *explanation = ss.str();
+      }
       result = false;
     }
   }
 
   // Verify the two models have identical collision models
   if (result) {
-    if (*rbt1.collision_model != *rbt2.collision_model) {
-      PRINT_STMT("Collision model mismatch!")
+    if (*collision_model != *rbt.collision_model) {
+      if (explanation != nullptr) {
+        std::stringstream ss;
+        ss << "Collision model mismatch!";
+        *explanation = ss.str();
+      }
       result = false;
     }
   }
@@ -236,7 +300,9 @@ bool operator==(const RigidBodyTree & rbt1, const RigidBodyTree & rbt2) {
   return result;
 }
 
-#undef PRINT_STMT
+bool operator==(const RigidBodyTree & rbt1, const RigidBodyTree & rbt2) {
+  return rbt1.Compare(rbt2);
+}
 
 bool operator!=(const RigidBodyTree & t1, const RigidBodyTree & t2) {
   return !operator==(t1, t2);

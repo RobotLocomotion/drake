@@ -201,6 +201,16 @@ class DRAKECOLLISION_EXPORT Model {
    */
   friend DRAKECOLLISION_EXPORT std::ostream& operator<<(std::ostream&, const Model&);
 
+  /**
+   * Determines whether this model is qual to another one.
+   *
+   * @param mm The model to compare with.
+   * @param explanation A pointer to where an explanation for why the supplied
+   * model is not equal to this one.
+   * @return true if the supplied model is equal to this one.
+   */
+  bool Compare(const Model & mm, std::string * explanation = nullptr) const;
+
   /*!
    * Overload operator== to check whether two DrakeCollision::Model objects are equal.
    */

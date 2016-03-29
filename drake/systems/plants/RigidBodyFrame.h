@@ -50,49 +50,66 @@ class DRAKERBM_EXPORT RigidBodyFrame {
         transform_to_body(Eigen::Isometry3d::Identity()),
         frame_index(0) {}
 
-  #define PRINT_STMT(x) std::cout << "RigidBodyFrame: EQUALS: " << x << std::endl;
-
-  /*!
-   * Overload operator== to check whether two RigidBodyFrame objects are equal.
-   */
-  friend DRAKERBM_EXPORT bool operator==(const RigidBodyFrame & rbf1, const RigidBodyFrame & rbf2) {
+  bool Compare(const RigidBodyFrame & rbf, std::string * explanation = nullptr) const {
     bool result = true;
 
-    if (rbf1.name.compare(rbf2.name) != 0) {
-      PRINT_STMT("Names do not match: " << rbf1.name << " vs. " << rbf2.name)
+    if (name.compare(rbf.name) != 0) {
+      if (explanation != nullptr) {
+        std::stringstream ss;
+        ss << "Names do not match: " << name << " vs. " << rbf.name;
+        *explanation = ss.str();
+      }
       result = false;
     }
 
-    if (result && *rbf1.body != *rbf2.body) {
-      PRINT_STMT("Bodies do not match:\n"
-              << "  - frame 1:\n" << *rbf1.body << "\n"
-              << "  - frame 2:\n" << *rbf2.body)
+    if (result && *body != *rbf.body) {
+      if (explanation != nullptr) {
+        std::stringstream ss;
+        ss << "Bodies do not match:\n"
+              << "  - frame 1:\n" << *body << "\n"
+              << "  - frame 2:\n" << *rbf.body;
+        *explanation = ss.str();
+      }
       result = false;
     }
 
     if (result) {
        try {
-        valuecheckMatrix(rbf1.transform_to_body.matrix(), rbf2.transform_to_body.matrix(), std::numeric_limits<double>::epsilon());
+        valuecheckMatrix(transform_to_body.matrix(), rbf.transform_to_body.matrix(), std::numeric_limits<double>::epsilon());
       } catch(std::runtime_error re) {
-        PRINT_STMT("Transform-to-body mismatch!" << std::endl
-                    << "  - name: " << rbf1.name << "\n"
-                    << "  - tree 1:\n" << rbf1.transform_to_body.matrix() << std::endl
-                    << "  - tree 2:\n" << rbf2.transform_to_body.matrix() << std::endl
-                    << "  - details:\n" << re.what())
+        if (explanation != nullptr) {
+          std::stringstream ss;
+          ss << "Transform-to-body mismatch!" << std::endl
+             << "  - name: " << name << "\n"
+             << "  - tree 1:\n" << transform_to_body.matrix() << std::endl
+             << "  - tree 2:\n" << rbf.transform_to_body.matrix() << std::endl
+             << "  - details:\n" << re.what();
+          *explanation = ss.str();
+        }
         result = false;
       }
     }
 
-    if (result && rbf1.frame_index != rbf2.frame_index) {
-      PRINT_STMT("Frame indices do not match:\n"
-              << "  - frame 1:\n" << rbf1.frame_index << "\n"
-              << "  - frame 2:\n" << rbf2.frame_index)
+    if (result && frame_index != rbf.frame_index) {
+      if (explanation != nullptr) {
+        std::stringstream ss;
+        ss << "Frame indices do not match:\n"
+           << "  - frame 1:\n" << frame_index << "\n"
+           << "  - frame 2:\n" << rbf.frame_index;
+        *explanation = ss.str();
+      }
       result = false;
     }
 
     return result;
   }
-  #undef PRINT_STMT
+
+  /*!
+   * Overload operator== to check whether two RigidBodyFrame objects are equal.
+   */
+  friend DRAKERBM_EXPORT bool operator==(const RigidBodyFrame & rbf1, const RigidBodyFrame & rbf2) {
+    return rbf1.Compare(rbf2);
+  }
 
   /*!
    * Overload operator!= to check whether two RigidBodyFrame objects are unequal.

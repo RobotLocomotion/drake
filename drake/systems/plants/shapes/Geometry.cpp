@@ -66,25 +66,27 @@ ostream& operator<<(ostream& out, const Geometry& gg) {
   return out;
 }
 
-#define PRINT_STMT(x) std::cout << "Geometry: EQUALS: " << x << std::endl;
-
-bool operator==(const Geometry & g1, const Geometry & g2) {
+bool Geometry::Compare(const Geometry & gg, std::string * explanation) const {
   bool result = true;
 
-  if (g1.getShape() != g2.getShape()) {
-    PRINT_STMT("shapes do not match")
+  if (getShape() != gg.getShape()) {
+    if (explanation != nullptr)
+      *explanation = "shapes do not match";
     result = false;
   }
 
-  if (result && g1.NUM_BBOX_POINTS != g2.NUM_BBOX_POINTS) {
-    PRINT_STMT("num_bbox_points mismatch")
+  if (result && NUM_BBOX_POINTS != gg.NUM_BBOX_POINTS) {
+    if (explanation != nullptr)
+      *explanation = "num_bbox_points mismatch";
     result = false;
   }
 
   return result;
 }
 
-#undef PRINT_STMT
+bool operator==(const Geometry & g1, const Geometry & g2) {
+  return g1.Compare(g2);
+}
 
 bool operator!=(const Geometry & g1, const Geometry & g2) {
   return !operator==(g1, g2);
@@ -114,27 +116,36 @@ ostream& operator<<(ostream& out, const Sphere& ss) {
   return out;
 }
 
-#define PRINT_STMT(x) std::cout << "Sphere: EQUALS: " << x << std::endl;
-
-bool operator==(const Sphere & s1, const Sphere & s2) {
+bool Sphere::Compare(const Sphere & sp, std::string * explanation) const {
   bool result = true;
 
-  result = (static_cast<const Geometry &>(s1) == static_cast<const Geometry &>(s2));
+  result = (static_cast<const Geometry &>(*this))
+    .Compare(static_cast<const Geometry &>(sp), explanation);
 
-  if (result && s1.radius != s2.radius) {
-    PRINT_STMT("radius does not match (" << s1.radius << " vs. " << s2.radius << ")")
+  if (result && radius != sp.radius) {
+    if (explanation != nullptr) {
+      std::stringstream ss;
+      ss << "radius does not match (" << radius << " vs. " << sp.radius << ")";
+      *explanation = ss.str();
+    }
     result = false;
   }
 
-  if (result && s1.NUM_POINTS != s2.NUM_POINTS) {
-    PRINT_STMT("NUM_POINTS mismatch (" << s1.NUM_POINTS << " vs. " << s2.NUM_POINTS << ")")
+  if (result && NUM_POINTS != sp.NUM_POINTS) {
+    if (explanation != nullptr) {
+      std::stringstream ss;
+      ss << "NUM_POINTS mismatch (" << NUM_POINTS << " vs. " << sp.NUM_POINTS << ")";
+      *explanation = ss.str();
+    }
     result = false;
   }
 
   return result;
 }
 
-#undef PRINT_STMT
+bool operator==(const Sphere & s1, const Sphere & s2) {
+  return s1.Compare(s2);
+}
 
 bool operator!=(const Sphere & s1, const Sphere & s2) {
   return !operator==(s1, s2);
@@ -160,22 +171,27 @@ ostream& operator<<(ostream& out, const Box& bb) {
   return out;
 }
 
-#define PRINT_STMT(x) std::cout << "Box: EQUALS: " << x << std::endl;
+bool Box::Compare(const Box & bb, std::string * explanation) const {
+  bool result = (static_cast<const Geometry &>(*this))
+    .Compare(static_cast<const Geometry &>(bb), explanation);
 
-bool operator==(const Box & b1, const Box & b2) {
-  bool result = true;
-
-  result = (static_cast<const Geometry &>(b1) == static_cast<const Geometry &>(b2));
-
-  if (result && b1.size != b2.size) {
-    PRINT_STMT("box size does not match (" << b1.size.transpose() << " vs. " << b2.size.transpose() << ")")
+  if (result && size != bb.size) {
+    if (explanation != nullptr) {
+      std::stringstream ss;
+      ss << "box size does not match (" << size.transpose() << " vs. "
+         << bb.size.transpose() << ")";
+      *explanation = ss.str();
+    }
     result = false;
   }
 
   return result;
 }
 
-#undef PRINT_STMT
+bool operator==(const Box & b1, const Box & b2) {
+  return b1.Compare(b2);
+}
+
 
 bool operator!=(const Box & b1, const Box & b2) {
   return !operator==(b1, b2);
@@ -207,27 +223,34 @@ ostream& operator<<(ostream& out, const Cylinder& cc) {
   return out;
 }
 
-#define PRINT_STMT(x) std::cout << "Cylinder: EQUALS: " << x << std::endl;
+bool Cylinder::Compare(const Cylinder & cc, std::string * explanation) const {
+  bool result = (static_cast<const Geometry &>(*this))
+    .Compare(static_cast<const Geometry &>(cc), explanation);
 
-bool operator==(const Cylinder & c1, const Cylinder & c2) {
-  bool result = true;
-
-  result = (static_cast<const Geometry &>(c1) == static_cast<const Geometry &>(c2));
-
-  if (result && c1.radius != c2.radius) {
-    PRINT_STMT("radius does not match (" << c1.radius << " vs. " << c2.radius << ")")
+  if (result && radius != cc.radius) {
+    if (explanation != nullptr) {
+      std::stringstream ss;
+      ss << "radius does not match (" << radius << " vs. " << cc.radius << ")";
+      *explanation = ss.str();
+    }
     result = false;
   }
 
-  if (result && c1.length != c2.length) {
-    PRINT_STMT("length mismatch (" << c1.length << " vs. " << c2.length << ")")
+  if (result && length != cc.length) {
+    if (explanation != nullptr) {
+      std::stringstream ss;
+      ss << "length mismatch (" << length << " vs. " << cc.length << ")";
+      *explanation = ss.str();
+    }
     result = false;
   }
 
   return result;
 }
 
-#undef PRINT_STMT
+bool operator==(const Cylinder & c1, const Cylinder & c2) {
+  return c1.Compare(c2);
+}
 
 bool operator!=(const Cylinder & c1, const Cylinder & c2) {
   return !operator==(c1, c2);
@@ -260,27 +283,34 @@ ostream& operator<<(ostream& out, const Capsule& cc) {
   return out;
 }
 
-#define PRINT_STMT(x) std::cout << "Capsule: EQUALS: " << x << std::endl;
+bool Capsule::Compare(const Capsule & cc, std::string * explanation) const {
+  bool result = (static_cast<const Geometry &>(*this))
+    .Compare(static_cast<const Geometry &>(cc), explanation);
 
-bool operator==(const Capsule & c1, const Capsule & c2) {
-  bool result = true;
-
-  result = (static_cast<const Geometry &>(c1) == static_cast<const Geometry &>(c2));
-
-  if (result && c1.radius != c2.radius) {
-    PRINT_STMT("radius does not match (" << c1.radius << " vs. " << c2.radius << ")")
+  if (result && radius != cc.radius) {
+    if (explanation != nullptr) {
+      std::stringstream ss;
+      ss << "radius does not match (" << radius << " vs. " << cc.radius << ")";
+      *explanation = ss.str();
+    }
     result = false;
   }
 
-  if (result && c1.length != c2.length) {
-    PRINT_STMT("length mismatch (" << c1.length << " vs. " << c2.length << ")")
+  if (result && length != cc.length) {
+    if (explanation != nullptr) {
+      std::stringstream ss;
+      ss << "length mismatch (" << length << " vs. " << cc.length << ")";
+      *explanation = ss.str();
+    }
     result = false;
   }
 
   return result;
 }
 
-#undef PRINT_STMT
+bool operator==(const Capsule & c1, const Capsule & c2) {
+  return c1.Compare(c2);
+}
 
 bool operator!=(const Capsule & c1, const Capsule & c2) {
   return !operator==(c1, c2);
@@ -409,37 +439,56 @@ ostream& operator<<(ostream& out, const Mesh& mm) {
   return out;
 }
 
-#define PRINT_STMT(x) std::cout << "Mesh: EQUALS: " << x << std::endl;
 
-bool operator==(const Mesh & m1, const Mesh & m2) {
+bool Mesh::Compare(const Mesh & mm, std::string * explanation) const {
   bool result = true;
 
-  result = (static_cast<const Geometry &>(m1) == static_cast<const Geometry &>(m2));
+  result = (static_cast<const Geometry &>(*this))
+    .Compare(static_cast<const Geometry &>(mm), explanation);
 
-  if (result && m1.scale != m2.scale) {
-    PRINT_STMT("scale does not match (" << m1.scale << " vs. " << m2.scale << ")")
+  if (result && scale != mm.scale) {
+    if (explanation != nullptr) {
+      std::stringstream ss;
+      ss << "scale does not match (" << scale << " vs. " << mm.scale << ")";
+      *explanation = ss.str();
+    }
     result = false;
   }
 
-  if (result && m1.filename.compare(m2.filename) == 0) {
-    PRINT_STMT("filename mismatch (" << m1.filename << " vs. " << m2.filename << ")")
+  if (result && filename.compare(mm.filename) == 0) {
+    if (explanation != nullptr) {
+      std::stringstream ss;
+      ss << "filename mismatch (" << filename << " vs. " << mm.filename << ")";
+      *explanation = ss.str();
+    }
     result = false;
   }
 
-  if (result && m1.resolved_filename.compare(m2.resolved_filename) == 0) {
-    PRINT_STMT("resolved_filename mismatch (" << m1.resolved_filename << " vs. " << m2.resolved_filename << ")")
+  if (result && resolved_filename.compare(mm.resolved_filename) == 0) {
+    if (explanation != nullptr) {
+      std::stringstream ss;
+      ss << "resolved_filename mismatch (" << resolved_filename << " vs. "
+         << mm.resolved_filename << ")";
+      *explanation = ss.str();
+    }
     result = false;
   }
 
-  if (result && m1.root_dir.compare(m2.root_dir) == 0) {
-    PRINT_STMT("root_dir mismatch (" << m1.root_dir << " vs. " << m2.root_dir << ")")
+  if (result && root_dir.compare(mm.root_dir) == 0) {
+    if (explanation != nullptr) {
+      std::stringstream ss;
+      ss << "root_dir mismatch (" << root_dir << " vs. " << mm.root_dir << ")";
+      *explanation = ss.str();
+    }
     result = false;
   }
 
   return result;
 }
 
-#undef PRINT_STMT
+bool operator==(const Mesh & m1, const Mesh & m2) {
+  return m1.Compare(m2);
+}
 
 bool operator!=(const Mesh & m1, const Mesh & m2) {
   return !operator==(m1, m2);
@@ -472,18 +521,21 @@ ostream& operator<<(ostream& out, const MeshPoints& mp) {
   return out;
 }
 
-#define PRINT_STMT(x) std::cout << "MeshPoints: EQUALS: " << x << std::endl;
-
-bool operator==(const MeshPoints & mp1, const MeshPoints & mp2) {
+bool MeshPoints::Compare(const MeshPoints & mp, std::string * explanation) const {
   bool result = true;
 
-  result = (static_cast<const Geometry &>(mp1) == static_cast<const Geometry &>(mp2));
+  result = (static_cast<const Geometry &>(*this))
+    .Compare(static_cast<const Geometry &>(mp), explanation);
 
   if (result) {
     try {
-      valuecheckMatrix(mp1.points, mp2.points, 1e-10);
+      valuecheckMatrix(points, mp.points, 1e-10);
     } catch(std::runtime_error & re) {
-      PRINT_STMT("points does not match:\n" << mp1.points << "\nvs.\n" << mp2.points)
+      if (explanation != nullptr) {
+        std::stringstream ss;
+        ss << "points does not match:\n" << points << "\nvs.\n" << mp.points;
+        *explanation = ss.str();
+      }
       result = false;
     }
   }
@@ -491,7 +543,9 @@ bool operator==(const MeshPoints & mp1, const MeshPoints & mp2) {
   return result;
 }
 
-#undef PRINT_STMT
+bool operator==(const MeshPoints & mp1, const MeshPoints & mp2) {
+  return mp1.Compare(mp2);
+}
 
 bool operator!=(const MeshPoints & mp1, const MeshPoints & mp2) {
   return !operator==(mp1, mp2);

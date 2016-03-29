@@ -34,6 +34,16 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
   virtual bool collidesWith(const Element* other) const { return true; }
 
   /*!
+   * Compare this element to another element.
+   *
+   * @param ee The element to compare with.
+   * @param explanation A pointer to a string where an explanation on why
+   * this element does not match the supplied one.
+   * @return true if this element is equal to the supplied element.
+   */
+  virtual bool Compare(const Element & ee, std::string * explanation = nullptr) const;
+
+  /*!
    * Overload operator== to check whether two Element objects are equal.
    */
   friend DRAKECOLLISION_EXPORT bool operator==(const Element & e1, const Element & e2);
