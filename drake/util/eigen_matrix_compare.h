@@ -38,8 +38,8 @@ bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
     result = false;
   }
 
-  for (size_t ii = 0; result && ii < m1.rows(); ii++) {
-    for (size_t jj = 0; result && jj < m1.cols(); jj++) {
+  for (int ii = 0; result && ii < m1.rows(); ii++) {
+    for (int jj = 0; result && jj < m1.cols(); jj++) {
       // First handle the corner cases of positive infinity, negative infinity,
       // and NaN
       bool both_positive_infinity =
