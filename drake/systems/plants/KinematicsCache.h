@@ -219,7 +219,7 @@ class KinematicsCache {
     } else {
       return getQ();
     }
-  };
+  }
 
   bool hasV() const { return velocity_vector_valid; }
 

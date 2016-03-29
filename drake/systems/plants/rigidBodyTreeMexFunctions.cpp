@@ -151,7 +151,7 @@ forwardJacDotTimesVTemp(const RigidBodyTree &tree,
     }
     return Jdot_times_v;
   }
-};
+}
 
 void forwardJacDotTimesVmex(int nlhs, mxArray *plhs[], int nrhs,
                             const mxArray *prhs[]) {
@@ -184,7 +184,7 @@ Matrix<Scalar, Dynamic, DerivedPoints::ColsAtCompileTime> forwardKinTemp(
         cache, current_body_or_frame_ind, new_body_or_frame_ind);
   }
   return ret;
-};
+}
 
 void forwardKinmex(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   auto func_double =
@@ -215,9 +215,9 @@ Matrix<Scalar, Dynamic, Dynamic> forwardKinJacobianTemp(
   auto Jtrans =
       tree.transformPointsJacobian(cache, points, current_body_or_frame_ind,
                                    new_body_or_frame_ind, in_terms_of_qdot);
-  if (rotation_type == 0)
+  if (rotation_type == 0) {
     return Jtrans;
-  else {
+  } else {
     Matrix<Scalar, Dynamic, Dynamic> Jrot(
         rotationRepresentationSize(rotation_type), Jtrans.cols());
     if (rotation_type == 1)
@@ -243,7 +243,7 @@ Matrix<Scalar, Dynamic, Dynamic> forwardKinJacobianTemp(
     }
     return J;
   }
-};
+}
 
 void forwardKinJacobianmex(int nlhs, mxArray *plhs[], int nrhs,
                            const mxArray *prhs[]) {
@@ -294,7 +294,7 @@ Matrix<Scalar, TWIST_SIZE, Dynamic> geometricJacobianTemp(
   return model.geometricJacobian(
       cache, base_body_or_frame_ind, end_effector_body_or_frame_ind,
       expressed_in_body_or_frame_ind, in_terms_of_qdot, nullptr);
-};
+}
 
 void geometricJacobianmex(int nlhs, mxArray *plhs[], int nrhs,
                           const mxArray *prhs[]) {
@@ -333,7 +333,7 @@ Matrix<Scalar, Dynamic, 1> dynamicsBiasTermTemp(
   }
 
   return model.dynamicsBiasTerm(cache, f_ext);
-};
+}
 
 void dynamicsBiasTermmex(int nlhs, mxArray *plhs[], int nrhs,
                          const mxArray *prhs[]) {

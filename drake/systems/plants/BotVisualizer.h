@@ -144,7 +144,7 @@ class BotVisualizer {
   StateVector<double> dynamics(const double &t, const StateVector<double> &x,
                                const InputVector<double> &u) const {
     return StateVector<double>();
-  };
+  }
 
   OutputVector<double> output(const double &t, const StateVector<double> &x,
                               const InputVector<double> &u) const {

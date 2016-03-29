@@ -12,7 +12,7 @@ public:
     const static int RowsAtCompileTime = 22 + num_lidar_points + 1;
 
     typedef drake::lcmt_quadrotor_output_t LCMMessageType;
-    static std::string channel() { return "QUAD_OUTPUT"; };
+    static std::string channel() { return "QUAD_OUTPUT"; }
 
     QuadrotorOutput(void) : rangefinder(0) {
         position.setZero();
@@ -27,7 +27,7 @@ public:
     template <typename Derived>
     QuadrotorOutput(const Eigen::MatrixBase<Derived>& x) {
       fromEigen<Derived>(x);
-    };
+    }
 
     template <typename Derived>
     QuadrotorOutput& operator=(const Eigen::MatrixBase<Derived>& x) {

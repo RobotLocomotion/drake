@@ -21,7 +21,7 @@ class DRAKEJOINTS_EXPORT PrismaticJoint
             spatialJointAxis(translation_axis)),
         translation_axis(translation_axis) {
     assert(std::abs(translation_axis.norm() - 1.0) < 1e-10);
-  };
+  }
 
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>
@@ -34,7 +34,7 @@ class DRAKEJOINTS_EXPORT PrismaticJoint
     return ret;
   }
 
-  virtual ~PrismaticJoint(){};
+  virtual ~PrismaticJoint(){}
 
  private:
   static Eigen::Matrix<double, TWIST_SIZE, 1> spatialJointAxis(

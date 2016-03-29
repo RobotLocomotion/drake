@@ -255,7 +255,7 @@ int toMex(
     mxArray* dest[], int nlhs) {
   if (nlhs > 0) dest[0] = eigenToMatlabGeneral<Rows, Cols>(source);
   return 1;
-};
+}
 
 template <typename A, typename B>
 int toMex(const std::pair<A, B>& source, mxArray* dest[], int nlhs) {

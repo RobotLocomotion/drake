@@ -17,7 +17,7 @@ class DRAKEOPTIMIZATION_EXPORT MobyLCPSolver :
       public MathematicalProgramSolverInterface {
  public:
   MobyLCPSolver();
-  virtual ~MobyLCPSolver() {};
+  virtual ~MobyLCPSolver() {}
   void setLoggingEnabled(bool);
 
   bool lcp_fast(
