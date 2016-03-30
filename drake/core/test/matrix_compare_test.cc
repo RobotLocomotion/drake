@@ -3,7 +3,7 @@
 
 using drake::util::MatrixCompareType;
 
-namespace Drake {
+namespace drake {
 namespace test {
 
 // Tests the ability for two identical matrices to be compared.
@@ -149,4 +149,4 @@ TEST(MatrixCompareTest, NoMessageParam) {
 }
 
 }  // namespace test
-}  // namespace Drake
+}  // namespace drake

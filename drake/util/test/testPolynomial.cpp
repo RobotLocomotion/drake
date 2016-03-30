@@ -35,17 +35,11 @@ void testIntegralAndDerivative() {
                               third_derivative_check.getCoefficients(), 1e-14,
                               MatrixCompareType::absolute));
 
-  // valuecheckMatrix(third_derivative.getCoefficients(),
-  //                  third_derivative_check.getCoefficients(), 1e-14);
-
   Polynomial<CoefficientType> tenth_derivative = poly.derivative(10);
 
   EXPECT_TRUE(CompareMatrices(tenth_derivative.getCoefficients(),
                               VectorXd::Zero(1), 1e-14,
                               MatrixCompareType::absolute));
-
-  // valuecheckMatrix(tenth_derivative.getCoefficients(), VectorXd::Zero(1),
-  //                  1e-14);
 
   Polynomial<CoefficientType> integral = poly.integral(0.0);
   // cout << "integral: " << integral << endl;
@@ -54,9 +48,6 @@ void testIntegralAndDerivative() {
   EXPECT_TRUE(CompareMatrices(poly_back.getCoefficients(),
                               poly.getCoefficients(), 1e-14,
                               MatrixCompareType::absolute));
-
-  // valuecheckMatrix(poly_back.getCoefficients(), poly.getCoefficients(),
-  // 1e-14);
 }
 
 template <typename CoefficientType>
@@ -191,15 +182,6 @@ TEST(PolynomialTest, Roots) { testRoots<double>(); }
 TEST(PolynomialTest, EvalType) { testEvalType(); }
 
 TEST(PolynomialTest, PolynomialMatrix) { testPolynomialMatrix<double>(); }
-
-// int main(int argc, char **argv) {
-//   testIntegralAndDerivative<double>();
-//   testOperators<double>();
-//   testRoots<double>();
-//   testEvalType();
-//   testPolynomialMatrix<double>();
-//   return 0;
-// }
 
 }  // namespace test
 }  // namespace drake

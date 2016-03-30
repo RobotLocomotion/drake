@@ -38,8 +38,7 @@ TEST(AcrobotDynamicsTest, ValueAssignment) {
   // dot -Tpng -O /tmp/urdf.dot; dot -Tpng -O /tmp/sdf.dot; open /tmp/*.dot.png
 
   // Iterate 1000 times each time sending in random state and input variables
-  // and
-  // verifying that the resulting dynamics are the same.
+  // and verifying that the resulting dynamics are the same.
   for (int ii = 0; ii < 1000; ii++) {
     auto x0 = getRandomVector<AcrobotState>();
     auto u0 = getRandomVector<AcrobotInput>();
