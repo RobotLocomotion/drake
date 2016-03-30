@@ -1,6 +1,5 @@
-
-#include "drake/systems/plants/RigidBodyFrame.h"
 #include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/systems/plants/RigidBodyFrame.h"
 #include "drake/util/testUtil.h"
 
 using namespace std;
