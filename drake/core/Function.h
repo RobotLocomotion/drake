@@ -1,3 +1,5 @@
+#ifndef DRAKE_CORE_FUNCTION_H_
+#define DRAKE_CORE_FUNCTION_H_
 
 #include <string>
 #include <vector>
@@ -191,3 +193,5 @@ struct FunctionTraits<std::unique_ptr<F>> {
 // void Eval(x1,..., xn,  y1,..., ym), and
 // InputOutputRelation getInputOutputRelation(input_index, output_index)
 };
+
+#endif  // DRAKE_CORE_FUNCTION_H_

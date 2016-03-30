@@ -13,7 +13,11 @@ CMAKE_CONFIG=--config $(BUILD_TYPE)
 
 .PHONY: all
 all: configure
+ifeq ($(OS),Windows_NT)
 	cmake --build pod-build $(CMAKE_CONFIG) --target install
+else
+	$(MAKE) -C pod-build
+endif
 
 pod-build:
 	cmake -E make_directory pod-build
