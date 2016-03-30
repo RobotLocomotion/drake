@@ -31,8 +31,7 @@ Install the prerequisites::
     sudo apt-get install cmake-curses-gui
 
     # These are not required for the basic "make" rule.  We suggest that you
-    # wait to do this step until you actually need these tools.  (We intend
-    # to switch to non-pip instructions once that approach has been tested.)
+    # wait to do this step until you actually need these tools.
     sudo pip install -U cpplint Sphinx
 
 Download the external dependencies::
@@ -40,7 +39,6 @@ Download the external dependencies::
     cd drake-distro
     env CXX=g++-4.9 CC=gcc-4.9 PATH=/usr/lib/ccache:$PATH make options
     # Use the GUI to choose which externals you want, then press 'c' twice to configure, then 'g' to generate makefiles and exit.
-    # If you intend to modify Drake, we suggest that you set CMAKE_BUILD_TYPE to Debug instead of Release after the first 'g'.
     env CXX=g++-4.9 CC=gcc-4.9 PATH=/usr/lib/ccache:$PATH make download-all
 
 The version of the standard C++ libraries that are shipped with the Linux distribution of MATLAB is severely outdated and can cause problems when running mex files that are built against a newer version of the standard.  The typical error message in this case reports "Invalid MEX-Files"
