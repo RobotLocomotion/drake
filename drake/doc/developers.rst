@@ -34,8 +34,14 @@ that there are a lot of computationally demanding tests and this could
 run for a few hours depending on your machine.
 
 Your change must include unit tests that protect it against regressions,
-and those tests must pass on all platforms supported by Drake.  Please
-use the googletest framework, which is already available in the superbuild.
+and those tests must pass on all platforms supported by Drake.
+
+**For C++ changes,** please use the googletest framework. It is already
+available in the superbuild.
+
+**For MATLAB changes,** please write an example. Every example and static
+class method runs as a unit test, and fails if it times out or calls
+``error``. For more information, see ``drake/util/unitTest.m``.
 
 Code Review
 ===========
@@ -71,7 +77,7 @@ time for code review, so prefer other owners unless you really need his input.
 - @david-german-tri (Toyota Research Institute)
 - @jwnimmer-tri (Toyota Research Institute)
 - @psiorx (MIT)
-- @sherm1 (Stanford / Toyota Research Institute)
+- @sherm1 (Toyota Research Institute)
 - @RussTedrake (MIT / Toyota Research Institute)
 
 
