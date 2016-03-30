@@ -1,5 +1,5 @@
-#ifndef __DrakeShapesElement_H__
-#define __DrakeShapesElement_H__
+#ifndef DRAKE_SYSTEMS_PLANTS_SHAPES_ELEMENT_H_
+#define DRAKE_SYSTEMS_PLANTS_SHAPES_ELEMENT_H_
 
 #include <memory>
 #include <utility>
@@ -49,7 +49,7 @@ class DRAKESHAPES_EXPORT Element {
 
   const Geometry& getGeometry() const;
 
-  void getTerrainContactPoints(Eigen::Matrix3Xd& points);
+  void getTerrainContactPoints(Eigen::Matrix3Xd& points) const;
 
  protected:
   virtual void setWorldTransform(const Eigen::Isometry3d& T_elem_to_world);
@@ -64,4 +64,5 @@ class DRAKESHAPES_EXPORT Element {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 }
-#endif
+
+#endif  // DRAKE_SYSTEMS_PLANTS_SHAPES_ELEMENT_H_

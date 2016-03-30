@@ -1,5 +1,5 @@
-#ifndef TESTUTIL_H_
-#define TESTUTIL_H_
+#ifndef DRAKE_UTIL_TESTUTIL_H_
+#define DRAKE_UTIL_TESTUTIL_H_
 
 #include <chrono>
 #include <Eigen/Core>
@@ -125,4 +125,4 @@ static inline void valuecheck(double a, double b, double tolerance) {
   }
 }
 
-#endif /* TESTUTIL_H_ */
+#endif  // DRAKE_UTIL_TESTUTIL_H_

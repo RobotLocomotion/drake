@@ -28,7 +28,7 @@ const Geometry& Element::getGeometry() const { return *geometry; }
 
 bool Element::hasGeometry() const { return geometry != nullptr; }
 
-void Element::getTerrainContactPoints(Eigen::Matrix3Xd& local_points) {
+void Element::getTerrainContactPoints(Eigen::Matrix3Xd& local_points) const {
   if (!hasGeometry()) {
     local_points = Eigen::Matrix3Xd();
     return;

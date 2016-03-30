@@ -1,5 +1,5 @@
-#ifndef DRAKE_QUADROTOROUTPUT_H
-#define DRAKE_QUADROTOROUTPUT_H
+#ifndef DRAKE_EXAMPLES_QUADROTOR_QUADROTOROUTPUT_H_
+#define DRAKE_EXAMPLES_QUADROTOR_QUADROTOROUTPUT_H_
 
 #include <Eigen/Dense>
 #include "lcmtypes/drake/lcmt_quadrotor_output_t.hpp"
@@ -107,4 +107,4 @@ bool encode(const double& t, const QuadrotorOutput<double> & x, drake::lcmt_quad
   return true;
 }
 
-#endif
+#endif  // DRAKE_EXAMPLES_QUADROTOR_QUADROTOROUTPUT_H_

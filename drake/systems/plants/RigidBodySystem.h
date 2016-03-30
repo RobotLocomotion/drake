@@ -1,5 +1,5 @@
-#ifndef DRAKE_RIGIDBODYSYSTEM_H
-#define DRAKE_RIGIDBODYSYSTEM_H
+#ifndef DRAKE_SYSTEMS_PLANTS_RIGIDBODYSYSTEM_H_
+#define DRAKE_SYSTEMS_PLANTS_RIGIDBODYSYSTEM_H_
 
 #include "drake/systems/System.h"
 #include "drake/solvers/Optimization.h"
@@ -582,4 +582,6 @@ class DRAKERBSYSTEM_EXPORT RigidBodyMagnetometer : public RigidBodySensor {
 
 // end namespace Drake
 }
-#endif
+
+#endif  // DRAKE_SYSTEMS_PLANTS_RIGIDBODYSYSTEM_H_
+

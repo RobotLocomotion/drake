@@ -1,5 +1,5 @@
-#ifndef _PENDULUM_H_
-#define _PENDULUM_H_
+#ifndef DRAKE_EXAMPLES_PENDULUM_PENDULUM_H_
+#define DRAKE_EXAMPLES_PENDULUM_PENDULUM_H_
 
 #include <iostream>
 #include <cmath>
@@ -162,4 +162,4 @@ class PendulumEnergyShapingController {
   double m, l, b, g;  // pendulum parameters (initialized in the constructor)
 };
 
-#endif  // _PENDULUM_H_
+#endif  // DRAKE_EXAMPLES_PENDULUM_PENDULUM_H_

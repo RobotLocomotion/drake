@@ -109,21 +109,12 @@ const std::shared_ptr<RigidBody>& RigidBody::CollisionElement::getBody() const {
   return this->body;
 }
 
-bool RigidBody::CollisionElement::collidesWith(
+bool RigidBody::CollisionElement::CollidesWith(
     const DrakeCollision::Element* other) const {
-  // DEBUG
-  // cout << "RigidBody::CollisionElement::collidesWith: START" << endl;
-  // END_DEBUG
   auto other_rb = dynamic_cast<const RigidBody::CollisionElement*>(other);
   bool collides = true;
   if (other_rb != nullptr) {
-    collides = this->body->collidesWith(*other_rb->body);
-    // DEBUG
-    // cout << "RigidBody::CollisionElement::collidesWith:" << endl;
-    // cout << "  " << this->body->linkname << " & " <<
-    // other_rb->body->linkname;
-    // cout << ": collides = " << collides << endl;
-    // END_DEBUG
+    collides = this->body->CollidesWith(*other_rb->body);
   }
   return collides;
 }
