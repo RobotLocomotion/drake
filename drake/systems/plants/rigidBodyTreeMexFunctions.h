@@ -1,7 +1,7 @@
-#include "drake/util/mexify.h"
+#ifndef DRAKE_SYSTEMS_PLANTS_RIGIDBODYTREEMEXFUNCTIONS_H_
+#define DRAKE_SYSTEMS_PLANTS_RIGIDBODYTREEMEXFUNCTIONS_H_
 
-#ifndef DRAKE_DRAKEMEXFUNCTIONS_H
-#define DRAKE_DRAKEMEXFUNCTIONS_H
+#include "drake/util/mexify.h"
 
 #undef DLLEXPORT
 #if defined(WIN32) || defined(WIN64)
@@ -51,4 +51,4 @@ DLLEXPORT void velocityToPositionDotMappingmex(int nlhs, mxArray *plhs[],
 DLLEXPORT void positionDotToVelocityMappingmex(int nlhs, mxArray *plhs[],
                                                int nrhs, const mxArray *prhs[]);
 
-#endif  // DRAKE_DRAKEMEXFUNCTIONS_H
+#endif  // DRAKE_SYSTEMS_PLANTS_RIGIDBODYTREEMEXFUNCTIONS_H_

@@ -2,7 +2,7 @@
 For Developers
 **************
 
-If you have improvements to Drake, send us your pull requests! 
+If you have improvements to Drake, send us your pull requests!
 
 The standard github workflow is to fork the drake repository into your
 own github account, push your changes into a branch on that account,
@@ -19,7 +19,7 @@ request.
 Licensing
 =========
 
-Drake is an open source project licensed under
+**Important note:** Drake is an open source project licensed under
 extremely flexible terms intended to encourage use by anyone, for any
 purpose. When you make a contribution to the Drake project, you are
 agreeing to do so under those same terms.
@@ -81,27 +81,37 @@ time for code review, so prefer other owners unless you really need his input.
 - @RussTedrake (MIT / Toyota Research Institute)
 
 
-Additional References
-=====================
+Continuous Integration Notes
+============================
 .. toctree::
-	:maxdepth: 1
+    :maxdepth: 1
 
-	code_style_guide
-	jenkins
-	known_issue
-	no_push_to_origin
-
-OS Notes
-========
-.. toctree::
-	:maxdepth: 1
-
-	development_on_osx
+    jenkins
+    known_issue
 
 IDE Notes
 =========
 * `CLion <https://github.com/tkoolen/drake/wiki/CLion-setup-(experimental)>`_
 * `Eclipse <https://github.com/tkoolen/drake/wiki/Eclipse-setup-(experimental)>`_
 
+Operating System Notes
+======================
+.. toctree::
+    :maxdepth: 1
 
+    development_on_osx
 
+Programming Style Notes
+=======================
+.. toctree::
+    :maxdepth: 1
+
+    code_style_guide
+    code_style_tools
+
+Version Control
+===============
+.. toctree::
+    :maxdepth: 1
+
+    no_push_to_origin

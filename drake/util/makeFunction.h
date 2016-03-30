@@ -1,5 +1,5 @@
-#ifndef DRAKE_MAKEFUNCTION_H
-#define DRAKE_MAKEFUNCTION_H
+#ifndef DRAKE_UTIL_MAKEFUNCTION_H_
+#define DRAKE_UTIL_MAKEFUNCTION_H_
 
 #include <functional>
 
@@ -41,4 +41,4 @@ auto make_function(ReturnType (ClassType::*p)(Args...) const)
 }
 }
 
-#endif  // DRAKE_MAKEFUNCTION_H
+#endif // DRAKE_UTIL_MAKEFUNCTION_H_

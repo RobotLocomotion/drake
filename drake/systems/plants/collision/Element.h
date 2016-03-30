@@ -1,5 +1,5 @@
-#ifndef __DrakeCollisionElement_H__
-#define __DrakeCollisionElement_H__
+#ifndef DRAKE_SYSTEMS_PLANTS_COLLISION_ELEMENT_H_
+#define DRAKE_SYSTEMS_PLANTS_COLLISION_ELEMENT_H_
 
 #include <memory>
 #include <utility>
@@ -8,7 +8,7 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-#include "../shapes/DrakeShapes.h"
+#include "drake/systems/plants/shapes/DrakeShapes.h"
 #include "drake/drakeCollision_export.h"
 
 namespace DrakeCollision {
@@ -31,7 +31,12 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
 
   virtual bool isStatic() const { return false; }
 
-  virtual bool collidesWith(const Element* other) const { return true; }
+  /**
+   * Returns true if this element should be checked for collisions
+   * with the other object.  CollidesWith should be symmetric: if
+   * A collides with B, B collides with A.
+   */
+  virtual bool CollidesWith(const Element* other) const { return true; }
 
  protected:
   Element(const Element& other);
@@ -43,4 +48,5 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 }
-#endif
+
+#endif  // DRAKE_SYSTEMS_PLANTS_COLLISION_ELEMENT_H_

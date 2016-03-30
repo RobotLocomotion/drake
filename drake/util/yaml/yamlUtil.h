@@ -1,3 +1,6 @@
+#ifndef DRAKE_UTIL_YAML_YAMLUTIL_H_
+#define DRAKE_UTIL_YAML_YAMLUTIL_H_
+
 #include <map>
 #include <fstream>
 #include "yaml-cpp/yaml.h"
@@ -24,3 +27,5 @@ std::map<std::string, QPControllerParams> loadAllParamSets(
 RobotPropertyCache parseKinematicTreeMetadata(const YAML::Node& metadata,
                                               const RigidBodyTree& robot);
 KinematicModifications parseKinematicModifications(const YAML::Node& mods);
+
+#endif  // DRAKE_UTIL_YAML_YAMLUTIL_H_

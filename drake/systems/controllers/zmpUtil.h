@@ -1,3 +1,6 @@
+#ifndef DRAKE_SYSTEMS_CONTROLLERS_ZMPUTIL_H_
+#define DRAKE_SYSTEMS_CONTROLLERS_ZMPUTIL_H_
+
 #include <Eigen/Core>
 #include "drake/systems/trajectories/ExponentialPlusPiecewisePolynomial.h"
 #include "drake/drakeZMPUtil_export.h"
@@ -20,3 +23,5 @@ struct DRAKEZMPUTIL_EXPORT TVLQRData {
 DRAKEZMPUTIL_EXPORT ExponentialPlusPiecewisePolynomial<double> s1Trajectory(
     const TVLQRData &sys, const PiecewisePolynomial<double> &zmp_trajectory,
     const Eigen::Ref<const Eigen::MatrixXd> &S);
+
+#endif  // DRAKE_SYSTEMS_CONTROLLERS_ZMPUTIL_H_

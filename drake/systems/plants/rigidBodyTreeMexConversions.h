@@ -1,5 +1,5 @@
-#ifndef DRAKE_RIGIDBODYTREEMEXCONVERSIONS_H
-#define DRAKE_RIGIDBODYTREEMEXCONVERSIONS_H
+#ifndef DRAKE_SYSTEMS_PLANTS_RIGIDBODYTREEMEXCONVERSIONS_H_
+#define DRAKE_SYSTEMS_PLANTS_RIGIDBODYTREEMEXCONVERSIONS_H_
 
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "KinematicsCache.h"
@@ -100,4 +100,4 @@ void toMex(const KinematicPath &path, mxArray *dest[], int nlhs) {
   }
 }
 
-#endif  // DRAKE_RIGIDBODYTREEMEXCONVERSIONS_H
+#endif  // DRAKE_SYSTEMS_PLANTS_RIGIDBODYTREEMEXCONVERSIONS_H_

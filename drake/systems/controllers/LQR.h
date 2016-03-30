@@ -1,5 +1,5 @@
-#ifndef DRAKE_LQR_H
-#define DRAKE_LQR_H
+#ifndef DRAKE_SYSTEMS_CONTROLLERS_LQR_H_
+#define DRAKE_SYSTEMS_CONTROLLERS_LQR_H_
 
 #include "drake/core/Core.h"
 #include "drake/systems/LinearSystem.h"
@@ -56,4 +56,5 @@ timeInvariantLQR(const System& sys,
 }
 }
 
-#endif  // DRAKE_LQR_H
+#endif  // DRAKE_SYSTEMS_CONTROLLERS_LQR_H_
+
