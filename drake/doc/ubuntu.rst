@@ -30,13 +30,18 @@ Install the prerequisites::
     # Ubuntu 14.04 LTS (Trusty)
     sudo apt-get install cmake-curses-gui
 
+    # These are not required for the basic "make" rule.  We suggest that you
+    # wait to do this step until you actually need these tools.  (We intend
+    # to switch to non-pip instructions once that approach has been tested.)
     sudo pip install -U cpplint Sphinx
 
 Download the external dependencies::
 
     cd drake-distro
-    make options  # use the GUI to choose which externals you want, then press 'c' to configure, then 'g' to generate makefiles and exit
-    make download-all
+    env CXX=g++-4.9 CC=gcc-4.9 PATH=/usr/lib/ccache:$PATH make options
+    # Use the GUI to choose which externals you want, then press 'c' twice to configure, then 'g' to generate makefiles and exit.
+    # If you intend to modify Drake, we suggest that you set CMAKE_BUILD_TYPE to Debug instead of Release after the first 'g'.
+    env CXX=g++-4.9 CC=gcc-4.9 PATH=/usr/lib/ccache:$PATH make download-all
 
 The version of the standard C++ libraries that are shipped with the Linux distribution of MATLAB is severely outdated and can cause problems when running mex files that are built against a newer version of the standard.  The typical error message in this case reports "Invalid MEX-Files"
 
@@ -49,3 +54,9 @@ Update the symbolic link in MATLAB to point to the version that was installed ea
     sudo ln -s /usr/lib/gcc/x86_64-linux-gnu/4.9/libstdc++.so libstdc++.so.6
 
 When you are done with these platform-specific steps, return to :doc:`from_source` to complete and test your installation.
+
+Note that when you run drake commands from now on (including the
+ones in the linked instructions, such as `make` or `make test`),
+you must always precede them with
+`env CXX=g++-4.9 CC=gcc-4.9 PATH=/usr/lib/ccache:$PATH`,
+just like you did in the the `make options` step above).
