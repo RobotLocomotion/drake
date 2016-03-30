@@ -364,7 +364,7 @@ void RigidBodyTree::collisionDetectFromPoints(
   Vector3d ptA, ptB, n;
   double distance;
   for (int i = 0; i < closest_points.size(); ++i) {
-    closest_points[i].getResults(ptA, ptB, n, distance);
+    closest_points[i].getResults(&ptA, &ptB, &n, &distance);
     x.col(i) = ptB;
     body_x.col(i) = ptA;
     normal.col(i) = n;
@@ -423,7 +423,7 @@ bool RigidBodyTree::collisionDetect(
   Vector3d ptA, ptB, n;
   double distance;
   for (int i = 0; i < points.size(); ++i) {
-    points[i].getResults(ptA, ptB, n, distance);
+    points[i].getResults(&ptA, &ptB, &n, &distance);
     xA.col(i) = ptA;
     xB.col(i) = ptB;
     normal.col(i) = n;
@@ -551,7 +551,7 @@ void RigidBodyTree::potentialCollisions(const KinematicsCache<double>& cache,
     const RigidBody::CollisionElement* elementB =
         dynamic_cast<const RigidBody::CollisionElement*>(
             collision_model->readElement(potential_collisions[i].getIdB()));
-    potential_collisions[i].getResults(ptA, ptB, n, distance);
+    potential_collisions[i].getResults(&ptA, &ptB, &n, &distance);
     xA.col(i) = ptA;
     xB.col(i) = ptB;
     normal.col(i) = n;
@@ -592,7 +592,7 @@ bool RigidBodyTree::allCollisions(const KinematicsCache<double>& cache,
   Vector3d ptA, ptB, n;
   double distance;
   for (int i = 0; i < points.size(); ++i) {
-    points[i].getResults(ptA, ptB, n, distance);
+    points[i].getResults(&ptA, &ptB, &n, &distance);
     xA_in_world.col(i) = ptA;
     xB_in_world.col(i) = ptB;
 

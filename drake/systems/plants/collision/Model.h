@@ -8,7 +8,7 @@
 #include <Eigen/StdVector>
 
 #include "Element.h"
-#include "PointPair.h"
+#include "drake/systems/plants/collision/point_pair.h"
 #include "drake/drakeCollision_export.h"
 
 namespace DrakeCollision {
