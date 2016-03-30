@@ -2,7 +2,6 @@
 #include <string>
 #include <fstream>
 #include <sstream>
-#include <iomanip>
 
 #include "xmlUtil.h"
 #include "drake/thirdParty/tinydir/tinydir.h"

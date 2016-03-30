@@ -140,16 +140,16 @@ int main(int argc, char* argv[]) {
     for (int actuator_idx = 0; actuator_idx < tree->actuators.size();
          actuator_idx++) {
 
-      const std::string & actuatorName = tree->actuators[actuator_idx].name;
+      const std::string & actuator_name = tree->actuators[actuator_idx].name;
 
-      if (strcmp(actuatorName.c_str(), "steering") == 0) {
+      if (strcmp(actuator_name.c_str(), "steering") == 0) {
         auto const& b = tree->actuators[actuator_idx].body;
         Kp(actuator_idx, b->position_num_start) = kpSteering;  // steering
         Kd(actuator_idx, b->velocity_num_start) = kdSteering;  // steeringdot
         map_driving_cmd_to_x_d(b->position_num_start, 0) = 1;  // steering command
 
-      } else if (strcmp(actuatorName.c_str(), "right_wheel_joint") == 0 ||
-                 strcmp(actuatorName.c_str(), "left_wheel_joint") == 0) {
+      } else if (strcmp(actuator_name.c_str(), "right_wheel_joint") == 0 ||
+                 strcmp(actuator_name.c_str(), "left_wheel_joint") == 0) {
 
         auto const& b = tree->actuators[actuator_idx].body;
         Kd(actuator_idx, b->velocity_num_start) = kThrottle;  // throttle

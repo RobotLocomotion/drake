@@ -7,7 +7,6 @@
 #include <string>
 #include <stdexcept>
 #include <cmath>
-#include <iomanip> // for std::setprecision
 
 // requires <chrono>, which isn't available in MSVC2010...
 template <typename TimeT = std::chrono::milliseconds>
@@ -109,7 +108,6 @@ void valuecheckMatrix(const Eigen::MatrixBase<DerivedA>& a,
       if (ok) return;
     }
     std::stringstream ss;
-    ss << std::setprecision(25);
     ss << "Drake:ValueCheck ERROR: ";
     ss << error_msg << "\nA:\n" << a << "\nB:\n" << b
                     << "\nA-B:\n" << (a - b);

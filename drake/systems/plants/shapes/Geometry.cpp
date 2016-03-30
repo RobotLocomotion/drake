@@ -12,7 +12,7 @@ const int Sphere::NUM_POINTS = 1;
 const int Capsule::NUM_POINTS = 2;
 
 
-std::string shapeToString(Shape ss) {
+std::string ShapeToString(Shape ss) {
   switch (ss) {
     case UNKNOWN: return "UNKNOWN"; break;
     case BOX: return "BOX"; break;
@@ -60,7 +60,7 @@ void Geometry::getBoundingBoxPoints(double x_half_width, double y_half_width,
 }
 
 ostream& operator<<(ostream& out, const Geometry& gg) {
-  out << shapeToString(gg.getShape())
+  out << ShapeToString(gg.getShape())
       << ", " << gg.NUM_BBOX_POINTS;
   return out;
 }

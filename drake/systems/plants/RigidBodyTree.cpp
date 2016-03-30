@@ -78,10 +78,6 @@ RigidBodyTree::~RigidBodyTree(void) {}
 
 bool RigidBodyTree::transformCollisionFrame(DrakeCollision::ElementId& eid,
     const Eigen::Isometry3d& transform_body_to_joint) {
-  // std::cout << "RigidBodyTree::transformCollisionFrame: Method called!\n"
-  //           << "  - eid: " << eid << "\n"
-  //           << "  - transform_body_to_joint:\n" << transform_body_to_joint.matrix()
-  //           << std::endl;
   return collision_model->transformCollisionFrame(eid, transform_body_to_joint);
 }
 
@@ -1850,22 +1846,6 @@ size_t RigidBodyTree::getNumPositionConstraints() const {
 void RigidBodyTree::addFrame(std::shared_ptr<RigidBodyFrame> frame) {
   frames.push_back(frame);
   frame->frame_index = -(static_cast<int>(frames.size()) - 1) - 2;  // yuck!!
-}
-
-std::string RigidBodyTree::jointLimitsToString() const {
-  std::stringstream msg;
-  for (int ii = 0; ii < bodies.size(); ii++) {
-    auto& body = bodies[ii];
-    if (body->hasParent()) {
-      const DrakeJoint& joint = body->getJoint();
-      auto min = joint.getJointLimitMin();
-      auto max = joint.getJointLimitMax();
-      for (int jj = 0; jj < min.size(); jj++) {
-        msg << joint.getName() << "[" << jj << "]" << "\t" << min[jj] << "\t" << max[jj] << std::endl;
-      }
-    }
-  }
-  return msg.str();
 }
 
 template DRAKERBM_EXPORT Eigen::Matrix<

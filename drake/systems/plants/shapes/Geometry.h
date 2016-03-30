@@ -19,7 +19,7 @@ enum DRAKESHAPES_EXPORT Shape {
   CAPSULE = 6
 };
 
-std::string shapeToString(Shape ss);
+std::string ShapeToString(Shape ss);
 
 const double MIN_RADIUS = 1e-7;
 
