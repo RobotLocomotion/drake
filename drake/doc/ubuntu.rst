@@ -37,9 +37,9 @@ Install the prerequisites::
 Download the external dependencies::
 
     cd drake-distro
-    env CXX=g++-4.9 CC=gcc-4.9 PATH=/usr/lib/ccache:$PATH make options
+    env CXX=g++-4.9 CC=gcc-4.9 make options
     # Use the GUI to choose which externals you want, then press 'c' twice to configure, then 'g' to generate makefiles and exit.
-    env CXX=g++-4.9 CC=gcc-4.9 PATH=/usr/lib/ccache:$PATH make download-all
+    env CXX=g++-4.9 CC=gcc-4.9 make download-all
 
 The version of the standard C++ libraries that are shipped with the Linux distribution of MATLAB is severely outdated and can cause problems when running mex files that are built against a newer version of the standard.  The typical error message in this case reports "Invalid MEX-Files"
 
@@ -50,6 +50,9 @@ Update the symbolic link in MATLAB to point to the version that was installed ea
     cd /usr/local/MATLAB/R2015b/sys/os/glnxa64
     sudo rm libstdc++.so.6
     sudo ln -s /usr/lib/gcc/x86_64-linux-gnu/4.9/libstdc++.so libstdc++.so.6
+
+You may wish to use `ccache` to speed up your (re)builds.
+To do so, add `/usr/lib/ccache` to the front of your `$PATH`.
 
 When you are done with these platform-specific steps, return to :doc:`from_source` to complete and test your installation.
 
