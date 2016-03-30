@@ -25,7 +25,6 @@ class TestRBMForwardKin(unittest.TestCase):
 
         point = np.ones((3,1))
         p = r.transformPoints(kinsol, point, 2, 0)
-        print(p.value())
         self.assertTrue(np.allclose(p.value(), np.ones((3,1))))
         self.assertTrue(np.allclose(p.derivatives(),
                                     np.array([[1, 0, 0, 0, 1, -1, 1],

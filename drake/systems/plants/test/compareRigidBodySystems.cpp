@@ -80,15 +80,6 @@ int main(int argc, char* argv[]) {
   // std::cout << "State vector semantics (tree 1):\n" << r1->getStateVectorSemantics() << std::endl;
   // std::cout << "State vector semantics (tree 2):\n" << r2->getStateVectorSemantics() << std::endl;
 
-  std::string mismatch_explanation;
-  if (!r1->getRigidBodyTree()->Compare(*r2->getRigidBodyTree().get(), &mismatch_explanation)) {
-    std::cout << "ERROR: The two rigid body trees are numerically different!\n"
-              << mismatch_explanation << std::endl;
-    return -1;
-  } else {
-    std::cout << "The two models passed the numerical comparison test." << std::endl;
-  }
-
   for (int i = 0; i < 1000; i++) {
     std::cout << "Round: " << i << " of " << 1000 << std::endl;
     double t = 0.0;

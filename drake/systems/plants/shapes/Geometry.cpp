@@ -2,7 +2,6 @@
 
 #include "Geometry.h"
 #include "spruce.hh"
-#include "drake/util/testUtil.h"
 
 using namespace std;
 using namespace Eigen;
@@ -66,32 +65,6 @@ ostream& operator<<(ostream& out, const Geometry& gg) {
   return out;
 }
 
-bool Geometry::Compare(const Geometry & gg, std::string * explanation) const {
-  bool result = true;
-
-  if (getShape() != gg.getShape()) {
-    if (explanation != nullptr)
-      *explanation = "shapes do not match";
-    result = false;
-  }
-
-  if (result && NUM_BBOX_POINTS != gg.NUM_BBOX_POINTS) {
-    if (explanation != nullptr)
-      *explanation = "num_bbox_points mismatch";
-    result = false;
-  }
-
-  return result;
-}
-
-bool operator==(const Geometry & g1, const Geometry & g2) {
-  return g1.Compare(g2);
-}
-
-bool operator!=(const Geometry & g1, const Geometry & g2) {
-  return !operator==(g1, g2);
-}
-
 Sphere::Sphere(double radius) : Geometry(SPHERE), radius(radius) {}
 
 Sphere *Sphere::clone() const { return new Sphere(*this); }
@@ -116,41 +89,6 @@ ostream& operator<<(ostream& out, const Sphere& ss) {
   return out;
 }
 
-bool Sphere::Compare(const Sphere & sp, std::string * explanation) const {
-  bool result = true;
-
-  result = (static_cast<const Geometry &>(*this))
-    .Compare(static_cast<const Geometry &>(sp), explanation);
-
-  if (result && radius != sp.radius) {
-    if (explanation != nullptr) {
-      std::stringstream ss;
-      ss << "radius does not match (" << radius << " vs. " << sp.radius << ")";
-      *explanation = ss.str();
-    }
-    result = false;
-  }
-
-  if (result && NUM_POINTS != sp.NUM_POINTS) {
-    if (explanation != nullptr) {
-      std::stringstream ss;
-      ss << "NUM_POINTS mismatch (" << NUM_POINTS << " vs. " << sp.NUM_POINTS << ")";
-      *explanation = ss.str();
-    }
-    result = false;
-  }
-
-  return result;
-}
-
-bool operator==(const Sphere & s1, const Sphere & s2) {
-  return s1.Compare(s2);
-}
-
-bool operator!=(const Sphere & s1, const Sphere & s2) {
-  return !operator==(s1, s2);
-}
-
 Box::Box(const Eigen::Vector3d &size) : Geometry(BOX), size(size) {}
 
 Box *Box::clone() const { return new Box(*this); }
@@ -170,33 +108,6 @@ ostream& operator<<(ostream& out, const Box& bb) {
   out << static_cast<const Geometry &>(bb) << ", " << bb.size.transpose();
   return out;
 }
-
-bool Box::Compare(const Box & bb, std::string * explanation) const {
-  bool result = (static_cast<const Geometry &>(*this))
-    .Compare(static_cast<const Geometry &>(bb), explanation);
-
-  if (result && size != bb.size) {
-    if (explanation != nullptr) {
-      std::stringstream ss;
-      ss << "box size does not match (" << size.transpose() << " vs. "
-         << bb.size.transpose() << ")";
-      *explanation = ss.str();
-    }
-    result = false;
-  }
-
-  return result;
-}
-
-bool operator==(const Box & b1, const Box & b2) {
-  return b1.Compare(b2);
-}
-
-
-bool operator!=(const Box & b1, const Box & b2) {
-  return !operator==(b1, b2);
-}
-
 
 Cylinder::Cylinder(double radius, double length)
     : Geometry(CYLINDER), radius(radius), length(length) {}
@@ -223,40 +134,6 @@ ostream& operator<<(ostream& out, const Cylinder& cc) {
   return out;
 }
 
-bool Cylinder::Compare(const Cylinder & cc, std::string * explanation) const {
-  bool result = (static_cast<const Geometry &>(*this))
-    .Compare(static_cast<const Geometry &>(cc), explanation);
-
-  if (result && radius != cc.radius) {
-    if (explanation != nullptr) {
-      std::stringstream ss;
-      ss << "radius does not match (" << radius << " vs. " << cc.radius << ")";
-      *explanation = ss.str();
-    }
-    result = false;
-  }
-
-  if (result && length != cc.length) {
-    if (explanation != nullptr) {
-      std::stringstream ss;
-      ss << "length mismatch (" << length << " vs. " << cc.length << ")";
-      *explanation = ss.str();
-    }
-    result = false;
-  }
-
-  return result;
-}
-
-bool operator==(const Cylinder & c1, const Cylinder & c2) {
-  return c1.Compare(c2);
-}
-
-bool operator!=(const Cylinder & c1, const Cylinder & c2) {
-  return !operator==(c1, c2);
-}
-
-
 Capsule::Capsule(double radius, double length)
     : Geometry(CAPSULE), radius(radius), length(length) {}
 
@@ -282,40 +159,6 @@ ostream& operator<<(ostream& out, const Capsule& cc) {
   out << static_cast<const Geometry &>(cc) << ", " << cc.radius << ", " << cc.length;
   return out;
 }
-
-bool Capsule::Compare(const Capsule & cc, std::string * explanation) const {
-  bool result = (static_cast<const Geometry &>(*this))
-    .Compare(static_cast<const Geometry &>(cc), explanation);
-
-  if (result && radius != cc.radius) {
-    if (explanation != nullptr) {
-      std::stringstream ss;
-      ss << "radius does not match (" << radius << " vs. " << cc.radius << ")";
-      *explanation = ss.str();
-    }
-    result = false;
-  }
-
-  if (result && length != cc.length) {
-    if (explanation != nullptr) {
-      std::stringstream ss;
-      ss << "length mismatch (" << length << " vs. " << cc.length << ")";
-      *explanation = ss.str();
-    }
-    result = false;
-  }
-
-  return result;
-}
-
-bool operator==(const Capsule & c1, const Capsule & c2) {
-  return c1.Compare(c2);
-}
-
-bool operator!=(const Capsule & c1, const Capsule & c2) {
-  return !operator==(c1, c2);
-}
-
 
 Mesh::Mesh(const string &filename)
     : Geometry(MESH), scale(1.0), filename(filename) {}
@@ -439,62 +282,6 @@ ostream& operator<<(ostream& out, const Mesh& mm) {
   return out;
 }
 
-
-bool Mesh::Compare(const Mesh & mm, std::string * explanation) const {
-  bool result = true;
-
-  result = (static_cast<const Geometry &>(*this))
-    .Compare(static_cast<const Geometry &>(mm), explanation);
-
-  if (result && scale != mm.scale) {
-    if (explanation != nullptr) {
-      std::stringstream ss;
-      ss << "scale does not match (" << scale << " vs. " << mm.scale << ")";
-      *explanation = ss.str();
-    }
-    result = false;
-  }
-
-  if (result && filename.compare(mm.filename) == 0) {
-    if (explanation != nullptr) {
-      std::stringstream ss;
-      ss << "filename mismatch (" << filename << " vs. " << mm.filename << ")";
-      *explanation = ss.str();
-    }
-    result = false;
-  }
-
-  if (result && resolved_filename.compare(mm.resolved_filename) == 0) {
-    if (explanation != nullptr) {
-      std::stringstream ss;
-      ss << "resolved_filename mismatch (" << resolved_filename << " vs. "
-         << mm.resolved_filename << ")";
-      *explanation = ss.str();
-    }
-    result = false;
-  }
-
-  if (result && root_dir.compare(mm.root_dir) == 0) {
-    if (explanation != nullptr) {
-      std::stringstream ss;
-      ss << "root_dir mismatch (" << root_dir << " vs. " << mm.root_dir << ")";
-      *explanation = ss.str();
-    }
-    result = false;
-  }
-
-  return result;
-}
-
-bool operator==(const Mesh & m1, const Mesh & m2) {
-  return m1.Compare(m2);
-}
-
-bool operator!=(const Mesh & m1, const Mesh & m2) {
-  return !operator==(m1, m2);
-}
-
-
 MeshPoints::MeshPoints(const Eigen::Matrix3Xd &points)
     : Geometry(MESH_POINTS), points(points) {}
 
@@ -519,36 +306,6 @@ void MeshPoints::getBoundingBoxPoints(Matrix3Xd &bbox_points) const {
 ostream& operator<<(ostream& out, const MeshPoints& mp) {
   out << static_cast<const Geometry &>(mp) << ",\n" << mp.points;
   return out;
-}
-
-bool MeshPoints::Compare(const MeshPoints & mp, std::string * explanation) const {
-  bool result = true;
-
-  result = (static_cast<const Geometry &>(*this))
-    .Compare(static_cast<const Geometry &>(mp), explanation);
-
-  if (result) {
-    try {
-      valuecheckMatrix(points, mp.points, 1e-10);
-    } catch(std::runtime_error & re) {
-      if (explanation != nullptr) {
-        std::stringstream ss;
-        ss << "points does not match:\n" << points << "\nvs.\n" << mp.points;
-        *explanation = ss.str();
-      }
-      result = false;
-    }
-  }
-
-  return result;
-}
-
-bool operator==(const MeshPoints & mp1, const MeshPoints & mp2) {
-  return mp1.Compare(mp2);
-}
-
-bool operator!=(const MeshPoints & mp1, const MeshPoints & mp2) {
-  return !operator==(mp1, mp2);
 }
 
 } // namespace DrakeShapes

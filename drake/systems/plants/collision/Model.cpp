@@ -84,40 +84,4 @@ std::ostream& operator<<(std::ostream &os, const Model &model) {
   return os;
 }
 
-bool Model::Compare(const Model & mm, std::string * explanation) const {
-  bool result = true;
-
-  for (auto it1 = elements.begin(); result && it1 != elements.end(); ++it1) {
-    auto& element1 = it1->second;
-    bool matchFound = false;
-    for (auto it2 = mm.elements.begin(); !matchFound && it2 != mm.elements.end(); ++it2) {
-      auto& element2 = it2->second;
-      if (*element1 == *element2)
-        matchFound = true;
-    }
-    if (!matchFound) {
-      if (explanation != nullptr) {
-        std::stringstream msg;
-        msg << "No match found for LHS collision element:\n" << *element1 << "\n"
-            << "Available collision elements in RHS model:\n";
-        for (auto& ce : mm.elements) {
-          msg << *ce.second << "\n";
-        }
-        *explanation = msg.str();
-      }
-      result = false;
-    }
-  }
-
-  return result;
-}
-
-bool operator==(const Model & m1, const Model & m2) {
-  return m1.Compare(m2);
-}
-
-bool operator!=(const Model & m1, const Model & m2) {
-  return !operator==(m1, m2);
-}
-
 }  // namespace DrakeCollision

@@ -107,25 +107,6 @@ class DRAKEJOINTS_EXPORT DrakeJoint {
   POSITION_AND_VELOCITY_DEPENDENT_METHODS(
       Eigen::AutoDiffScalar<Eigen::VectorXd>)
 
-  /**
-   * Compare this joint to another joint.
-   *
-   * @param jj The joint to compare against.
-   * @param explanation An explanation of why jj is not equal to this joint.
-   * @return true if this joint is qual to jj.
-   */
-  virtual bool Compare(const DrakeJoint & jj, std::string * explanation = nullptr) const;
-
-  /*!
-   * Overload operator== to check whether two DrakeJoint objects are equal.
-   */
-  friend DRAKEJOINTS_EXPORT bool operator==(const DrakeJoint & j1, const DrakeJoint & j2);
-
-  /*!
-   * Overload operator!= to check whether two DrakeJoint objects are unequal.
-   */
-  friend DRAKEJOINTS_EXPORT bool operator!=(const DrakeJoint & j1, const DrakeJoint & j2);
-
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };

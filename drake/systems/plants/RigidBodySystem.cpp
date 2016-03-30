@@ -16,13 +16,6 @@ size_t RigidBodySystem::getNumInputs(void) const {
   for (auto const& f : force_elements) {
     num += f->getNumInputs();
   }
-
-  // std::cout << "RigidBodySystem::getNumInputs: Method called!\n"
-  //         << "  - filename: " << filename << "\n"
-  //         << "  - # actuators: " << tree->actuators.size() << "\n"
-  //         << "  - inputs from force elements: " << num - tree->actuators.size()
-  //         << std::endl;
-
   return num;
 }
 
@@ -31,11 +24,6 @@ size_t RigidBodySystem::getNumOutputs() const {
     for (const auto& s : sensors) {
       n += s->getNumOutputs();
     }
-
-    // std::cout << "RigidBodySystem::getNumOutputs: Method called!\n"
-    //           << "  - num states = " << getNumStates() << "\n"
-    //           << "  - num sensor outputs = " << (n - getNumStates())
-    //           << std::endl;
     return n;
 }
 
@@ -737,8 +725,6 @@ void RigidBodySystem::addRobotFromFile(
     const std::string& filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-
-  this->filename = filename;
 
   spruce::path p(filename);
   auto ext = p.extension();

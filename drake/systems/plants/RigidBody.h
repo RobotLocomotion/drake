@@ -87,26 +87,6 @@ class DRAKERBM_EXPORT RigidBody {
    */
   void applyTransformToJointFrame(const Eigen::Isometry3d& transform_body_to_joint);
 
-  /**
-   * Compares this rigid body with another one.
-   *
-   * @param rb The rigid body to compare against.
-   * @param explanation A pointer to a string for holding an explanation on why
-   * a match did not exist.
-   * @return true if this rigid body matches the parameter rigid body, and false otherwise.
-   */
-  bool Compare(const RigidBody & rb, std::string * explanation = nullptr) const;
-
-  /*!
-   * Overload operator== to check whether two RigidBody objects are equal.
-   */
-  friend DRAKERBM_EXPORT bool operator==(const RigidBody & rb1, const RigidBody & rb2);
-
-  /*!
-   * Overload operator!= to check whether two RigidBody objects are unequal.
-   */
-  friend DRAKERBM_EXPORT bool operator!=(const RigidBody & rb1, const RigidBody & rb2);
-
  public:
   std::string linkname;
   std::string model_name;  // todo: replace robotnum w/ model_name

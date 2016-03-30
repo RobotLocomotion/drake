@@ -3,7 +3,6 @@
 
 #include <memory>
 #include <unordered_map>
-// #include <iostream>
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
@@ -183,13 +182,6 @@ class DRAKECOLLISION_EXPORT Model {
     if(element != elements.end()) {
       element->second->setLocalTransform(transform_body_to_joint *
         element->second->getLocalTransform());
-
-      // std::cout << "DrakeCollision::Model::transformCollisionFrame: Updating frame:\n"
-      //           << "  - eid: " << eid << "\n"
-      //           << "  - transform_body_to_joint:\n" << transform_body_to_joint.matrix() << "\n"
-      //           << "  - new local transform:\n"
-      //           << (transform_body_to_joint * element->second->getLocalTransform()).matrix()
-      //           << std::endl;
       return true;
     }
     else
@@ -200,26 +192,6 @@ class DRAKECOLLISION_EXPORT Model {
    * A toString method for this class.
    */
   friend DRAKECOLLISION_EXPORT std::ostream& operator<<(std::ostream&, const Model&);
-
-  /**
-   * Determines whether this model is qual to another one.
-   *
-   * @param mm The model to compare with.
-   * @param explanation A pointer to where an explanation for why the supplied
-   * model is not equal to this one.
-   * @return true if the supplied model is equal to this one.
-   */
-  bool Compare(const Model & mm, std::string * explanation = nullptr) const;
-
-  /*!
-   * Overload operator== to check whether two DrakeCollision::Model objects are equal.
-   */
-  friend DRAKECOLLISION_EXPORT bool operator==(const Model & m1, const Model & m2);
-
-  /*!
-   * Overload operator!= to check whether two DrakeCollision::Model objects are unequal.
-   */
-  friend DRAKECOLLISION_EXPORT bool operator!=(const Model & m1, const Model & m2);
 
  protected:
   std::unordered_map<ElementId, std::unique_ptr<Element> > elements;

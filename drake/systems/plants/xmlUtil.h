@@ -69,8 +69,7 @@ typedef std::map<
     PoseMap;
 DRAKEXMLUTIL_EXPORT void poseValueToTransform(
     tinyxml2::XMLElement* node, const PoseMap& pose_map, Eigen::Isometry3d& T,
-    const Eigen::Isometry3d& T_default_frame = Eigen::Isometry3d::Identity(),
-    bool printMsgs = false);
+    const Eigen::Isometry3d& T_default_frame = Eigen::Isometry3d::Identity());
 
 typedef std::map<std::string, std::string> PackageMap;
 DRAKEXMLUTIL_EXPORT void populatePackageMap(PackageMap& package_map);

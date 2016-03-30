@@ -223,13 +223,7 @@ void parseSDFLink(RigidBodyTree* model, std::string model_name,
   Isometry3d transform_to_model = Isometry3d::Identity();
   XMLElement* pose = node->FirstChildElement("pose");
   if (pose) {
-    bool printMsg = false;
-    // if (body->linkname.compare("left_hub") == 0) {
-    //   std::cout << "RigidBodyTreeSDF.cpp: parseSDFLink: Computing transform_to_model of link \""
-    //             << body->linkname << "\"..." << std::endl;
-    //   printMsg = true;
-    // }
-    poseValueToTransform(pose, pose_map, transform_to_model, Eigen::Isometry3d::Identity(), printMsg);
+    poseValueToTransform(pose, pose_map, transform_to_model, Eigen::Isometry3d::Identity());
     pose_map.insert(
         std::pair<string, Isometry3d>(body->linkname, transform_to_model));
   }
@@ -413,38 +407,24 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
   Isometry3d transform_to_parent_body =
     transform_parent_to_model.inverse() * transform_to_model;
 
-  // if (name.compare("left_wheel_joint") == 0)
-  // {
-  //   std::cout << "RigidBodyTreeSDF.cpp: parseSDFJoint: Computing transform_to_parent_body.\n"
-  //             << "  - joint name: " << name << "\n"
-  //             << "  - parent link name: " << parent_name << "\n"
-  //             << "  - child link name: " << child_name << "\n"
-  //             << std::setprecision(25)
-  //             << "  - transform_parent_to_model:\n" << transform_parent_to_model.matrix() << "\n"
-  //             << "  - transform_parent_to_model.inverse():\n" << transform_parent_to_model.inverse().matrix() << "\n"
-  //             << "  - transform_to_model:\n" << transform_to_model.matrix() << "\n"
-  //             << "  - transform_to_parent_body:\n" << transform_to_parent_body.matrix()
-  //             << std::endl;
-  // }
-
   if (child->hasParent()) {  // then implement it as a loop joint
 
     // Get the loop point in the joint's reference frame. Since the SDF standard specifies
     // that the joint's reference frame is defined by the child's reference frame, the loop
     // point in the joint's reference frame is simply the pose of the joint.
-    Eigen::Vector3d lpChild = Eigen::Vector3d::Zero();
+    Eigen::Vector3d lp_child = Eigen::Vector3d::Zero();
     {
       const char* strval = pose->FirstChild()->Value();
       if (strval) {
          std::stringstream s(strval);
-         s >> lpChild(0) >> lpChild(1) >> lpChild(2);
+         s >> lp_child(0) >> lp_child(1) >> lp_child(2);
       } else {
         throw runtime_error("ERROR: Unable to construct loop joint \"" + name + "\": could not parse loop point.");
       }
     }
 
     // Get the loop point in the parent's reference frame.
-    Eigen::Vector3d lpModel = transform_child_to_model * lpChild;
+    Eigen::Vector3d lpModel = transform_child_to_model * lp_child;
 
     Eigen::Vector3d lpParent = transform_parent_to_model.inverse() * lpModel;
 
@@ -454,7 +434,7 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
 
     std::shared_ptr<RigidBodyFrame> frameB = allocate_shared<RigidBodyFrame>(
         Eigen::aligned_allocator<RigidBodyFrame>(), name + "FrameB", child,
-        lpChild, Vector3d::Zero());
+        lp_child, Vector3d::Zero());
 
     model->addFrame(frameA);
     model->addFrame(frameB);
@@ -484,13 +464,6 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
 
     // construct the actual joint (based on its type)
     DrakeJoint* joint = nullptr;
-
-    //    assert(transform_to_child_body.isApprox(Isometry3d::Identity()) );
-    // note: my tests on the fourbar pass when this is not true, but I do not
-    // actually understand why...
-    // I would think that this meant my inertial and geometry elements were
-    // generated in the wrong coordinate frame.
-    // ... the lack of documentation in the SDF format is maddening
 
     if (type.compare("revolute") == 0 || type.compare("gearbox") == 0) {
       FixedAxisOneDoFJoint<RevoluteJoint>* fjoint =

@@ -730,25 +730,6 @@ class DRAKERBM_EXPORT RigidBodyTree {
    */
   std::string jointLimitsToString() const;
 
-  /*!
-   * Compares this rigid body tree with another one.
-   *
-   * @param rbt the rigid body tree to compare with.
-   * @param explanation A pointer to where an explanation for a non-match is stored.
-   * @return true if the supplied rigid body tree matches this one.
-   */
-  bool Compare(const RigidBodyTree & rbt, std::string * explanation = nullptr) const;
-
-  /*!
-   * Overload operator== to check whether two RigidBodyTree objects are equal.
-   */
-  friend DRAKERBM_EXPORT bool operator==(const RigidBodyTree & t1, const RigidBodyTree & t2);
-
-  /*!
-   * Overload operator!= to check whether two RigidBodyTree objects are unequal.
-   */
-  friend DRAKERBM_EXPORT bool operator!=(const RigidBodyTree & t1, const RigidBodyTree & t2);
-
   /**
    * A toString method for this class.
    */
