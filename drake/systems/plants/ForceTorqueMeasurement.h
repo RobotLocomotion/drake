@@ -5,8 +5,8 @@
  *      Author: twan
  */
 
-#ifndef SYSTEMS_PLANTS_FORCETORQUEMEASUREMENT_H_
-#define SYSTEMS_PLANTS_FORCETORQUEMEASUREMENT_H_
+#ifndef DRAKE_SYSTEMS_PLANTS_FORCETORQUEMEASUREMENT_H_
+#define DRAKE_SYSTEMS_PLANTS_FORCETORQUEMEASUREMENT_H_
 
 #include <Eigen/Core>
 
@@ -16,4 +16,4 @@ struct ForceTorqueMeasurement {
                                        // corresponding to frame_idx;
 };
 
-#endif /* SYSTEMS_PLANTS_FORCETORQUEMEASUREMENT_H_ */
+#endif  // DRAKE_SYSTEMS_PLANTS_FORCETORQUEMEASUREMENT_H_

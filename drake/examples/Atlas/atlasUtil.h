@@ -1,5 +1,5 @@
-#ifndef _ATLAS_UTIL_H_
-#define _ATLAS_UTIL_H_
+#ifndef DRAKE_EXAMPLES_ATLAS_ATLASUTIL_H_
+#define DRAKE_EXAMPLES_ATLAS_ATLASUTIL_H_
 
 #include "drake/drakeAtlasUtil_export.h"
 
@@ -14,4 +14,4 @@ DRAKEATLASUTIL_EXPORT bool ankleCloseToLimits(double akx, double aky,
                                               double tol);
 }
 
-#endif
+#endif  // DRAKE_EXAMPLES_ATLAS_ATLASUTIL_H_

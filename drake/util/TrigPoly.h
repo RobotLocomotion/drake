@@ -250,4 +250,4 @@ std::ostream& operator<<(
 
 typedef TrigPoly<double> TrigPolyd;
 
-#endif
+#endif  // DRAKE_UTIL_TRIGPOLY_H_

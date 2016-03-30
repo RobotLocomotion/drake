@@ -1,5 +1,5 @@
-#ifndef DRAKE_SYSTEM_H
-#define DRAKE_SYSTEM_H
+#ifndef DRAKE_SYSTEMS_SYSTEM_H_
+#define DRAKE_SYSTEMS_SYSTEM_H_
 
 #include <memory>
 #include <Eigen/Core>
@@ -242,4 +242,4 @@ typename System::template StateVector<Scalar> createStateVector(
 
 }  // end namespace Drake
 
-#endif  // DRAKE_SYSTEM_H
+#endif  // DRAKE_SYSTEMS_SYSTEM_H_

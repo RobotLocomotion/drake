@@ -1,5 +1,5 @@
-#ifndef DRAKE_QUADROTORINPUT_H
-#define DRAKE_QUADROTORINPUT_H
+#ifndef DRAKE_EXAMPLES_QUADROTOR_QUADROTORINPUT_H_
+#define DRAKE_EXAMPLES_QUADROTOR_QUADROTORINPUT_H_
 
 #include <Eigen/Dense>
 #include "lcmtypes/drake/lcmt_quadrotor_input_t.hpp"
@@ -41,4 +41,4 @@ bool decode(const drake::lcmt_quadrotor_input_t& msg, double& t, QuadrotorInput<
   return true;
 }
 
-#endif
+#endif  // DRAKE_EXAMPLES_QUADROTOR_QUADROTORINPUT_H_

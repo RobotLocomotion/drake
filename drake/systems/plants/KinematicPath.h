@@ -1,5 +1,5 @@
-#ifndef KINEMATICPATH_H_
-#define KINEMATICPATH_H_
+#ifndef DRAKE_SYSTEMS_PLANTS_KINEMATICPATH_H_
+#define DRAKE_SYSTEMS_PLANTS_KINEMATICPATH_H_
 
 #include <vector>
 #include <memory>
@@ -10,4 +10,4 @@ struct KinematicPath {
   std::vector<int> body_path;
 };
 
-#endif /* KINEMATICPATH_H_ */
+#endif  // DRAKE_SYSTEMS_PLANTS_KINEMATICPATH_H_
