@@ -238,8 +238,7 @@ void RigidBodyTree::drawKinematicTree(std::string graphviz_dotfile_filename) {
     dotfile << "  " << body->linkname << " [label=\"" << body->linkname << endl;
     dotfile << "mass=" << body->mass << ", com=" << body->com.transpose()
             << endl;
-    dotfile << "inertia=" << endl
-            << body->I << endl;
+    dotfile << "inertia=" << endl << body->I << endl;
     dotfile << "\"];" << endl;
     if (body->hasParent()) {
       const auto& joint = body->getJoint();
@@ -287,8 +286,8 @@ map<string, int> RigidBodyTree::computePositionNameToIndexMap() const {
 }
 
 DrakeCollision::ElementId RigidBodyTree::addCollisionElement(
-    const RigidBody::CollisionElement& element,
-    RigidBody& body, const string& group_name) {
+    const RigidBody::CollisionElement& element, RigidBody& body,
+    const string& group_name) {
   DrakeCollision::ElementId id = collision_model->addElement(element);
   if (id != 0) {
     body.collision_element_ids.push_back(id);
@@ -925,7 +924,8 @@ int RigidBodyTree::parseBodyOrFrameID(
   int body_ind = 0;
   if (body_or_frame_id == -1) {
     cerr << "parseBodyOrFrameID got a -1, which should have been reserved for "
-            "COM.  Shouldn't have gotten here." << endl;
+            "COM.  Shouldn't have gotten here."
+         << endl;
   } else if (body_or_frame_id < 0) {
     int frame_ind = -body_or_frame_id - 2;
     // check that this is in range
@@ -1459,7 +1459,8 @@ RigidBodyTree::transformPointsJacobianDotTimesV(
   auto Jposdot_times_v_mat = (-rdots.colwise().cross(omega_twist)).eval();
   Jposdot_times_v_mat -=
       (r.colwise().cross(
-           J_geometric_dot_times_v.template topRows<SPACE_DIMENSION>())).eval();
+           J_geometric_dot_times_v.template topRows<SPACE_DIMENSION>()))
+          .eval();
   Jposdot_times_v_mat.colwise() +=
       J_geometric_dot_times_v.template bottomRows<SPACE_DIMENSION>();
 

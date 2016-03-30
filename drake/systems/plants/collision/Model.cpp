@@ -17,7 +17,7 @@ bool Model::removeElement(const ElementId& id) {
   return elements.erase(id) > 0;
 }
 
-const Element* Model::readElement(ElementId id) {
+const Element* Model::readElement(ElementId id) const {
   auto element_iter = elements.find(id);
   if (element_iter != elements.end()) {
     return element_iter->second.get();
