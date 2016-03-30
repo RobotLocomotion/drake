@@ -619,4 +619,4 @@ inline void delete_constraint(MatrixXd& R, MatrixXd& J, VectorXi& A, VectorXd& u
 
 }
 
-#endif  //  DRAKE_SYSTEMS_PLANTS_EIQUADPROG_H_
+#endif  // DRAKE_SYSTEMS_PLANTS_EIQUADPROG_H_
