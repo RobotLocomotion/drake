@@ -25,17 +25,17 @@ template<typename Derived>
 class EigenMatrixIsApproximatelyEqualMatcher {
  public:
   explicit EigenMatrixIsApproximatelyEqualMatcher(
-    Eigen::MatrixBase<Derived> & mm, double tolerance,
+    Eigen::MatrixBase<Derived> * mm, double tolerance,
     MatrixCompareType compare_type)
       : mm_(mm),
         tolerance_(tolerance),
         compare_type_(compare_type) { }
 
   template <typename T>
-  bool MatchAndExplain(T& mm,
+  bool MatchAndExplain(T * mm,
                        MatchResultListener * listener) const {
     std::string error_msg;
-    bool result = CompareMatrices(mm, mm_, tolerance_, compare_type_, &error_msg);
+    bool result = CompareMatrices(*mm, *mm_, tolerance_, compare_type_, &error_msg);
     if (!result)
       *listener << error_msg;
 
@@ -57,14 +57,14 @@ class EigenMatrixIsApproximatelyEqualMatcher {
   }
 
  private:
-  Eigen::MatrixBase<Derived> & mm_;
+  Eigen::MatrixBase<Derived> * mm_;
   double tolerance_;
   MatrixCompareType compare_type_;
 };
 
 template <typename Derived>
 inline PolymorphicMatcher<EigenMatrixIsApproximatelyEqualMatcher<Derived>>
-EigenMatrixIsApproximatelyEqual(Eigen::MatrixBase<Derived>& mm, double tolerance, MatrixCompareType compare_type) {
+EigenMatrixIsApproximatelyEqual(Eigen::MatrixBase<Derived> * mm, double tolerance, MatrixCompareType compare_type) {
   return MakePolymorphicMatcher(EigenMatrixIsApproximatelyEqualMatcher<Derived>(mm, tolerance, compare_type));
 }
 

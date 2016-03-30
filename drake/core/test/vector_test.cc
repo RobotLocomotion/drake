@@ -38,8 +38,8 @@ TEST(VectorTest, ValueAssignment) {
   Eigen::VectorXd y = toEigen(state);
   const double tolerance = 1e-8;
 
-  EXPECT_THAT(x, drake::test::EigenMatrixIsApproximatelyEqual(
-                     y, tolerance, MatrixCompareType::absolute));
+  EXPECT_THAT(&x, drake::test::EigenMatrixIsApproximatelyEqual(
+                     &y, tolerance, MatrixCompareType::absolute));
 }
 
 // // Tests the ability to set a CombinedVector's value
