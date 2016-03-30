@@ -30,8 +30,6 @@ Install the prerequisites::
     # Ubuntu 14.04 LTS (Trusty)
     sudo apt-get install cmake-curses-gui
 
-    # These are not required for the basic "make" rule.  We suggest that you
-    # wait to do this step until you actually need these tools.
     sudo pip install -U cpplint Sphinx
 
 Download the external dependencies::
