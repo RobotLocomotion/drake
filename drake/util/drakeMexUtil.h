@@ -1,5 +1,5 @@
-#ifndef DRAKE_MEX_UTIL_H_
-#define DRAKE_MEX_UTIL_H_
+#ifndef DRAKE_UTIL_DRAKEMEXUTIL_H_
+#define DRAKE_UTIL_DRAKEMEXUTIL_H_
 
 #include "mex.h"
 #include <vector>
@@ -349,4 +349,4 @@ mxArray* eigenToMatlabGeneral(const Eigen::MatrixBase<
   return eigenToMatlab(mat.const_cast_derived());
 }
 
-#endif
+#endif  // DRAKE_UTIL_DRAKEMEXUTIL_H_

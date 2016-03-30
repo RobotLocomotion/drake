@@ -1,5 +1,6 @@
-#ifndef __INVERSEKINBACKEND_H__
-#define __INVERSEKINBACKEND_H__
+#ifndef DRAKE_SYSTEMS_PLANTS_INVERSEKINBACKEND_H_
+#define DRAKE_SYSTEMS_PLANTS_INVERSEKINBACKEND_H_
+
 #include <string>
 #include <Eigen/StdVector>
 #include <Eigen/Dense>
@@ -21,4 +22,4 @@ void inverseKinBackend(RigidBodyTree *model, const int mode, const int nT,
                        std::vector<std::string> &infeasible_constraint,
                        const IKoptions &ikoptions);
 
-#endif
+#endif  // DRAKE_SYSTEMS_PLANTS_INVERSEKINBACKEND_H_
