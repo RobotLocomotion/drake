@@ -1,5 +1,6 @@
-#ifndef __IKOPTIONS_H__
-#define __IKOPTIONS_H__
+#ifndef DRAKE_SYSTEMS_PLANTS_IKOPTIONS_H_
+#define DRAKE_SYSTEMS_PLANTS_IKOPTIONS_H_
+
 #include <Eigen/Dense>
 #include "drake/drakeIKoptions_export.h"
 
@@ -68,4 +69,5 @@ class DRAKEIKOPTIONS_EXPORT IKoptions {
   void getqd0(Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
   void getqdf(Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
 };
-#endif
+
+#endif  // DRAKE_SYSTEMS_PLANTS_IKOPTIONS_H_

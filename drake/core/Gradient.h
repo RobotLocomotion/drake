@@ -1,5 +1,5 @@
-#ifndef DRAKE_GRADIENT_H
-#define DRAKE_GRADIENT_H
+#ifndef DRAKE_CORE_GRADIENT_H_
+#define DRAKE_CORE_GRADIENT_H_
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -276,4 +276,4 @@ initializeAutoDiffTuple(const Eigen::MatrixBase<Deriveds> &... args) {
 }
 }
 
-#endif  // DRAKE_GRADIENT_H
+#endif  // DRAKE_CORE_GRADIENT_H_

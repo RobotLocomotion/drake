@@ -1,3 +1,6 @@
+#ifndef DRAKE_SYSTEMS_PLANTS_CONSTRAINT_RIGIDBODYCONSTRAINT_H_
+#define DRAKE_SYSTEMS_PLANTS_CONSTRAINT_RIGIDBODYCONSTRAINT_H_
+
 //-----------------------------------------
 /**
  * @class RigidBodyConstraint       The abstract base class. All the constraints
@@ -5,8 +8,7 @@
  * RigidBodyConstraint. There are 6 main categories of the RigidBodyConstraint,
  * each category has its own interface
  */
-#ifndef __RIGIDBODYCONSTRAINT_H__
-#define __RIGIDBODYCONSTRAINT_H__
+
 #include <iostream>
 #include <Eigen/StdVector>
 #include <set>
@@ -975,4 +977,5 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT GravityCompensationTorqueConstraint
   Eigen::VectorXd lb;
   Eigen::VectorXd ub;
 };
-#endif
+
+#endif  // DRAKE_SYSTEMS_PLANTS_CONSTRAINT_RIGIDBODYCONSTRAINT_H_

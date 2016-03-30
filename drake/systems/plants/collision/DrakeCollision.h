@@ -1,5 +1,5 @@
-#ifndef __DrakeCollision_H__
-#define __DrakeCollision_H__
+#ifndef DRAKE_SYSTEMS_PLANTS_COLLISION_DRAKECOLLISION_H_
+#define DRAKE_SYSTEMS_PLANTS_COLLISION_DRAKECOLLISION_H_
 
 #include <memory>
 #include <set>
@@ -26,4 +26,5 @@ extern const DRAKECOLLISION_EXPORT bitmask ALL_MASK;
 extern const DRAKECOLLISION_EXPORT bitmask NONE_MASK;
 extern const DRAKECOLLISION_EXPORT bitmask DEFAULT_GROUP;
 }
-#endif
+
+#endif  // DRAKE_SYSTEMS_PLANTS_COLLISION_DRAKECOLLISION_H_

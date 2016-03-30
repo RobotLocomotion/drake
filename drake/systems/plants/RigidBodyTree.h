@@ -1,5 +1,5 @@
-#ifndef DRAKE_RIGIDBODYTREE_H
-#define DRAKE_RIGIDBODYTREE_H
+#ifndef DRAKE_SYSTEMS_PLANTS_RIGIDBODYTREE_H_
+#define DRAKE_SYSTEMS_PLANTS_RIGIDBODYTREE_H_
 
 #include <Eigen/Dense>
 #include <Eigen/LU>
@@ -778,4 +778,4 @@ class DRAKERBM_EXPORT RigidBodyTree {
   std::set<std::string> already_printed_warnings;
 };
 
-#endif
+#endif  // DRAKE_SYSTEMS_PLANTS_RIGIDBODYTREE_H_

@@ -1,5 +1,5 @@
-#ifndef DRAKE_LCMSYSTEM_H
-#define DRAKE_LCMSYSTEM_H
+#ifndef DRAKE_SYSTEMS_LCMSYSTEM_H_
+#define DRAKE_SYSTEMS_LCMSYSTEM_H_
 
 #include <unordered_map>
 #include <mutex>
@@ -292,4 +292,4 @@ void runLCM(const System &sys,
 
 }  // end namespace Drake
 
-#endif  // DRAKE_LCMSYSTEM_H
+#endif  // DRAKE_SYSTEMS_LCMSYSTEM_H_

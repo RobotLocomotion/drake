@@ -1,5 +1,5 @@
-#ifndef MEX_WRAPPER_H
-#define MEX_WRAPPER_H
+#ifndef DRAKE_UTIL_MEXWRAPPER_H_
+#define DRAKE_UTIL_MEXWRAPPER_H_
 
 #include "mex.h"
 #include <string>
@@ -30,4 +30,4 @@ class DLLEXPORT MexWrapper {
   void (*m_mexFunc)(int, mxArray* [], int, const mxArray* []);
 };
 
-#endif
+#endif  // DRAKE_UTIL_MEXWRAPPER_H_

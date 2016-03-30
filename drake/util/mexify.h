@@ -1,9 +1,9 @@
+#ifndef DRAKE_UTIL_MEXIFY_H_
+#define DRAKE_UTIL_MEXIFY_H_
+
 //
 // Created by Twan Koolen on 8/22/15.
 //
-
-#ifndef DRAKE_MEXIFY_H
-#define DRAKE_MEXIFY_H
 
 #include <functional>
 #include <sstream>
@@ -243,4 +243,4 @@ auto fromMex(const mxArray *source, T *trigger_type)
   }
 }
 
-#endif  // DRAKE_MEXIFY_H
+#endif  // DRAKE_UTIL_MEXIFY_H_
