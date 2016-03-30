@@ -1,5 +1,5 @@
-#ifndef SYSTEMS_CONTROLLERS_SIDE_H_
-#define SYSTEMS_CONTROLLERS_SIDE_H_
+#ifndef DRAKE_SYSTEMS_ROBOTINTERFACES_SIDE_H_
+#define DRAKE_SYSTEMS_ROBOTINTERFACES_SIDE_H_
 
 #include <array>
 #include <string>
@@ -31,4 +31,4 @@ class DRAKESIDE_EXPORT Side {
   std::string toString() const;
 };
 
-#endif /* SYSTEMS_CONTROLLERS_SIDE_H_ */
+#endif  // DRAKE_SYSTEMS_ROBOTINTERFACES_SIDE_H_

@@ -1,5 +1,5 @@
-#ifndef __DrakeShapesGeometry_H__
-#define __DrakeShapesGeometry_H__
+#ifndef DRAKE_SYSTEMS_PLANTS_SHAPES_GEOMETRY_H_
+#define DRAKE_SYSTEMS_PLANTS_SHAPES_GEOMETRY_H_
 
 #include <string>
 
@@ -129,4 +129,5 @@ class DRAKESHAPES_EXPORT MeshPoints : public Geometry {
   Eigen::Matrix3Xd points;
 };
 }
-#endif
+
+#endif  // DRAKE_SYSTEMS_PLANTS_SHAPES_GEOMETRY_H_

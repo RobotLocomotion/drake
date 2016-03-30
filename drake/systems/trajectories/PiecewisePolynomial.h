@@ -110,4 +110,4 @@ class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial
                                       Eigen::Index row, Eigen::Index col) const;
 };
 
-#endif /* DRAKE_SYSTEMS_TRAJECTORIES_PIECEWISEPOLYNOMIAL_H_ */
+#endif  // DRAKE_SYSTEMS_TRAJECTORIES_PIECEWISEPOLYNOMIAL_H_

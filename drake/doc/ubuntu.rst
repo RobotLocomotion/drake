@@ -30,7 +30,7 @@ Install the prerequisites::
     # Ubuntu 14.04 LTS (Trusty)
     sudo apt-get install cmake-curses-gui
 
-    sudo pip install -U -r requirements.txt
+    sudo pip install -U cpplint Sphinx
 
 Download the external dependencies::
 

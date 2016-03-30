@@ -1,10 +1,13 @@
+.. _code-style-guide:
+
 ****************
 Code Style Guide
 ****************
 
 This section defines a style guide which should be followed by all code that is written
 in Drake. Being consistent with this style will make the code easier to read, debug,
-and maintain.
+and maintain. To ensure your code is style compliant, consider using
+:ref:`tools for complying with coding style <code-style-tools>`.
 
 Note: Many of the files in the repository were written before this style guide, or did
 not follow it precisely.  If you find style errors, go ahead and change it and submit
@@ -36,41 +39,6 @@ Exceptions
    upper-case); it is not mandatory to downcase it or give it a more verbose
    name.
  * No need for a copyright line at the top of every file (this will change soon, see: `issue #1805 <https://github.com/RobotLocomotion/drake/issues/1805>`_).
-
-
-There are several tools that can be used to achieve style compliance. They are listed below.
-
-Tools
------
-There are several tools for helping you to compile with the required style. They are listed below.
-
-ClangFormat
-^^^^^^^^^^^
-
-*Installion*
-
-On Ubuntu, clang-format is already packaged. Ubuntu users should use the pre-packaged version, not a separate download.
-
-On OSX, `clang-format` can be installed via brew::
-
-    brew install clang-format
-
-You can check whether you've installed it correctly by executing::
-
-    $ clang-format --help
-
-*Execution*
-
-To run clang-format::
-
-    clang-format -i -style=file [file name]
-
-cpplint
-^^^^^^^
-
-`cpplint <https://github.com/google/styleguide/tree/gh-pages/cpplint>`_ is a tool for finding compliance violations. Here is the command::
-
-    cpplint --filter="-legal/copyright" [file name]
 
 MATLAB Style
 ============
@@ -105,7 +73,7 @@ LCM Style
 Shell Script Style
 ==================
 
-We follow the `Google Shell Style Guide` <https://google.github.io/styleguide/shell.xml> `.
+We follow the `Google Shell Style Guide` <https://google.github.io/styleguide/shell.xml>`_.
 
 
 Version numbers
@@ -125,4 +93,4 @@ Development stage is one of four values:
 * 3 = release
 
 Z (build) is optional. This is probably not needed but could just refer to the revision of
-the repo at the time of snapshot. Numbered versions should be referenced via tags.s
+the repository at the time of snapshot. Numbered versions should be referenced via tags.

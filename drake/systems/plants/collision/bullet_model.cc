@@ -58,7 +58,7 @@ bool OverlapFilterCallback::needBroadphaseCollision(
           static_cast<Element*>(bt_collision_object0->getUserPointer());
       auto element1 =
           static_cast<Element*>(bt_collision_object1->getUserPointer());
-      collides = collides && element0->collidesWith(element1);
+      collides = collides && element0->CollidesWith(element1);
     }
   }
   return collides;
@@ -501,10 +501,12 @@ bool BulletModel::findClosestPointsBetweenElements(
     const Isometry3d& TB_world = elements[idB]->getWorldTransform();
     auto xA_world = TA_world.translation();
     auto xB_world = TB_world.translation();
-    double radiusA = dynamic_cast<const DrakeShapes::Sphere&>(
-                         elements[idA]->getGeometry()).radius;
-    double radiusB = dynamic_cast<const DrakeShapes::Sphere&>(
-                         elements[idB]->getGeometry()).radius;
+    double radiusA =
+        dynamic_cast<const DrakeShapes::Sphere&>(elements[idA]->getGeometry())
+            .radius;
+    double radiusB =
+        dynamic_cast<const DrakeShapes::Sphere&>(elements[idB]->getGeometry())
+            .radius;
     double distance = (xA_world - xB_world).norm();
     result_collector->addSingleResult(
         idA, idB,
@@ -704,17 +706,15 @@ bool BulletModel::closestPointsAllToAll(
     const std::vector<ElementId>& ids_to_check, const bool use_margins,
     std::vector<PointPair>& closest_points) {
   std::vector<ElementIdPair> id_pairs;
-  for (auto idA_iter = ids_to_check.begin(); idA_iter != ids_to_check.end();
-       ++idA_iter) {
-    auto elementA_iter = elements.find(*idA_iter);
-    if (elementA_iter != elements.end()) {
-      for (auto idB_iter = idA_iter + 1; idB_iter != ids_to_check.end();
-           ++idB_iter) {
-        auto elementB_iter = elements.find(*idB_iter);
-        if (elementB_iter != elements.end()) {
-          if (elements[*idA_iter]->collidesWith(elements[*idB_iter].get())) {
-            id_pairs.push_back(std::make_pair(*idA_iter, *idB_iter));
-          }
+  for (int i = 0; i < ids_to_check.size(); ++i) {
+    ElementId id_a = ids_to_check[i];
+    const Element* element_a = readElement(id_a);
+    if (element_a != nullptr) {
+      for (int j = i + 1; j < ids_to_check.size(); ++j) {
+        ElementId id_b = ids_to_check[j];
+        const Element* element_b = readElement(id_b);
+        if (element_b != nullptr && element_a->CollidesWith(element_b)) {
+          id_pairs.push_back(std::make_pair(id_a, id_b));
         }
       }
     }
@@ -797,7 +797,8 @@ UnknownShapeException::UnknownShapeException(DrakeShapes::Shape shape) {
 
 const char* UnknownShapeException::what() const throw() {
   return ("Unknown collision shape: " + shape_name_ +
-          ". Ignoring this collision element").c_str();
+          ". Ignoring this collision element")
+      .c_str();
 }
 
 bool BulletModel::isEverybodyConvex() const {
