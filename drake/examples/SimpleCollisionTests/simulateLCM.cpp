@@ -11,7 +11,7 @@ using namespace std;
 using namespace Eigen;
 using namespace Drake;
 
-class DRAKESHAPES_EXPORT SinusoidalTerrain
+class SinusoidalTerrain
     : public DrakeShapes::HeightMapTerrain {
  public:
   SinusoidalTerrain(const std::string& name, const Eigen::Vector2i& ncells,
