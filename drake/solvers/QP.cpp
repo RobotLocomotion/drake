@@ -170,7 +170,7 @@ int fastQPThatTakesQinv(vector<MatrixXd*> QinvblkDiag, const VectorXd& f,
 
       lam.resize(QinvAt.cols());
       lam =
-          -(A * QinvAt).ldlt().Solve(b + (f.transpose() * QinvAt).transpose());
+          -(A * QinvAt).ldlt().solve(b + (f.transpose() * QinvAt).transpose());
       x = minusQinvf - QinvAt * lam;
       lamIneq = lam.tail(lam.size() - M);
     } else {
