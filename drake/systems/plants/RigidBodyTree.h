@@ -3,20 +3,20 @@
 
 #include <Eigen/Dense>
 #include <Eigen/LU>
+#include <Eigen/StdVector>
 #include <set>
 #include <unordered_map>
-#include <Eigen/StdVector>
 
-#include "collision/DrakeCollision.h"
-#include "shapes/DrakeShapes.h"
-#include "drake/systems/plants/KinematicPath.h"
-#include "drake/systems/plants/ForceTorqueMeasurement.h"
-#include "drake/util/drakeUtil.h"
 #include <stdexcept>
+#include "collision/DrakeCollision.h"
+#include "drake/drakeRBM_export.h"
+#include "drake/systems/plants/ForceTorqueMeasurement.h"
+#include "drake/systems/plants/KinematicPath.h"
+#include "drake/systems/plants/KinematicsCache.h"
 #include "drake/systems/plants/RigidBody.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
-#include "drake/systems/plants/KinematicsCache.h"
-#include "drake/drakeRBM_export.h"
+#include "drake/util/drakeUtil.h"
+#include "shapes/DrakeShapes.h"
 
 #define BASIS_VECTOR_HALF_COUNT \
   2  // number of basis vectors over 2 (i.e. 4 basis vectors in this case)
@@ -35,7 +35,7 @@ class DRAKERBM_EXPORT RigidBodyActuator {
         body(body),
         reduction(reduction),
         effort_limit_min(effort_limit_min),
-        effort_limit_max(effort_limit_max){}
+        effort_limit_max(effort_limit_max) {}
 
   const std::string name;
   const std::shared_ptr<RigidBody> body;
@@ -49,7 +49,7 @@ class DRAKERBM_EXPORT RigidBodyLoop {
   RigidBodyLoop(std::shared_ptr<RigidBodyFrame> _frameA,
                 std::shared_ptr<RigidBodyFrame> _frameB,
                 const Eigen::Vector3d& _axis)
-      : frameA(_frameA), frameB(_frameB), axis(_axis){}
+      : frameA(_frameA), frameB(_frameB), axis(_axis) {}
 
   const std::shared_ptr<RigidBodyFrame> frameA, frameB;
   const Eigen::Vector3d axis;
@@ -116,8 +116,9 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * False can be returned if a collision element with the specified eid
    * cannot be found.
    */
-  bool transformCollisionFrame(DrakeCollision::ElementId& eid,
-    const Eigen::Isometry3d& transform_body_to_joint);
+  bool transformCollisionFrame(
+      DrakeCollision::ElementId& eid,
+      const Eigen::Isometry3d& transform_body_to_joint);
 
   void compile(void);  // call me after the model is loaded
 
@@ -438,16 +439,18 @@ class DRAKERBM_EXPORT RigidBodyTree {
   Eigen::Matrix<Scalar, 4, 1> relativeQuaternion(
       const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind,
       int to_body_or_frame_ind) const {
-    return rotmat2quat(relativeTransform(cache, to_body_or_frame_ind,
-                                         from_body_or_frame_ind).linear());
+    return rotmat2quat(
+        relativeTransform(cache, to_body_or_frame_ind, from_body_or_frame_ind)
+            .linear());
   }
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, 3, 1> relativeRollPitchYaw(
       const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind,
       int to_body_or_frame_ind) const {
-    return rotmat2rpy(relativeTransform(cache, to_body_or_frame_ind,
-                                        from_body_or_frame_ind).linear());
+    return rotmat2rpy(
+        relativeTransform(cache, to_body_or_frame_ind, from_body_or_frame_ind)
+            .linear());
   }
 
   template <typename Scalar, typename DerivedPoints>
@@ -535,8 +538,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
       Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>& J) const;
 
   DrakeCollision::ElementId addCollisionElement(
-      const RigidBody::CollisionElement& element,
-      RigidBody& body, const std::string& group_name);
+      const RigidBody::CollisionElement& element, RigidBody& body,
+      const std::string& group_name);
 
   template <class UnaryPredicate>
   void removeCollisionGroupsIf(UnaryPredicate test) {
@@ -707,7 +710,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
      */
     int ncols = in_terms_of_qdot ? num_positions : num_velocities;
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                  Eigen::Dynamic> full(compact.rows(), ncols);
+                  Eigen::Dynamic>
+        full(compact.rows(), ncols);
     full.setZero();
     int compact_col_start = 0;
     for (std::vector<int>::const_iterator it = joint_path.begin();
@@ -727,7 +731,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
   /**
    * A toString method for this class.
    */
-  friend DRAKERBM_EXPORT std::ostream& operator<<(std::ostream&, const RigidBodyTree&);
+  friend DRAKERBM_EXPORT std::ostream& operator<<(std::ostream&,
+                                                  const RigidBodyTree&);
 
  public:
   static const std::set<int> default_robot_num_set;

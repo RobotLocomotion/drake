@@ -69,7 +69,8 @@ bool RigidBody::appendCollisionElementIdsFromThisBody(
   return true;
 }
 
-void RigidBody::applyTransformToJointFrame(const Eigen::Isometry3d& transform_body_to_joint) {
+void RigidBody::applyTransformToJointFrame(
+    const Eigen::Isometry3d& transform_body_to_joint) {
   I = transformSpatialInertia(transform_body_to_joint, I);
   for (auto& v : visual_elements) {
     v.setLocalTransform(transform_body_to_joint * v.getLocalTransform());
@@ -112,10 +113,9 @@ ostream& operator<<(ostream& out, const RigidBody& b) {
 
   std::stringstream ceMsg;
   ceMsg << "[";
-  for (size_t ii = 0; ii< b.collision_element_ids.size(); ii++) {
+  for (size_t ii = 0; ii < b.collision_element_ids.size(); ii++) {
     ceMsg << b.collision_element_ids[ii];
-    if (ii < b.collision_element_ids.size() - 1)
-      ceMsg << ", ";
+    if (ii < b.collision_element_ids.size() - 1) ceMsg << ", ";
   }
   ceMsg << "]";
 

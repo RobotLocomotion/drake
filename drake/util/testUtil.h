@@ -1,12 +1,12 @@
 #ifndef DRAKE_UTIL_TESTUTIL_H_
 #define DRAKE_UTIL_TESTUTIL_H_
 
-#include <chrono>
 #include <Eigen/Core>
-#include <sstream>
-#include <string>
-#include <stdexcept>
+#include <chrono>
 #include <cmath>
+#include <sstream>
+#include <stdexcept>
+#include <string>
 
 // requires <chrono>, which isn't available in MSVC2010...
 template <typename TimeT = std::chrono::milliseconds>
@@ -109,8 +109,7 @@ void valuecheckMatrix(const Eigen::MatrixBase<DerivedA>& a,
     }
     std::stringstream ss;
     ss << "Drake:ValueCheck ERROR: ";
-    ss << error_msg << "\nA:\n" << a << "\nB:\n" << b
-                    << "\nA-B:\n" << (a - b);
+    ss << error_msg << "\nA:\n" << a << "\nB:\n" << b << "\nA-B:\n" << (a - b);
     throw std::runtime_error(ss.str());
   }
 }

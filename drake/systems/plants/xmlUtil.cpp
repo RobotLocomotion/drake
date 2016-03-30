@@ -1,12 +1,12 @@
 
-#include <string>
 #include <fstream>
 #include <sstream>
+#include <string>
 
-#include "xmlUtil.h"
+#include "drake/Path.h"
 #include "drake/thirdParty/tinydir/tinydir.h"
 #include "drake/util/drakeGeometryUtil.h"
-#include "drake/Path.h"
+#include "xmlUtil.h"
 
 using namespace std;
 using namespace Eigen;
@@ -116,14 +116,13 @@ void searchDirectory(map<string, string>& package_map, string path) {
   const char pathsep = ':';
 #endif
 
-
   string token, t;
   istringstream iss(path);
   const std::string target_filename("package.xml");
 
   while (getline(iss, token, pathsep)) {
     tinydir_dir dir;
-    if (tinydir_open(&dir, token.c_str()) < 0 ) {
+    if (tinydir_open(&dir, token.c_str()) < 0) {
       std::cerr << "Unable to open directory: " << token << std::endl;
       continue;
     }

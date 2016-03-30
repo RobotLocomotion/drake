@@ -16,10 +16,10 @@ class DrivingCommand {
   typedef drake::lcmt_driving_control_cmd_t LCMMessageType;
   static std::string channel() { return "DRIVING_COMMAND"; }
 
-  DrivingCommand(void) : throttle(0), brake(0), steering_angle(0){}
+  DrivingCommand(void) : throttle(0), brake(0), steering_angle(0) {}
   template <typename Derived>
   DrivingCommand(const Eigen::MatrixBase<Derived>& x)
-      : steering_angle(x(0)), throttle(x(1)), brake(x(2)){}
+      : steering_angle(x(0)), throttle(x(1)), brake(x(2)) {}
 
   template <typename Derived>
   DrivingCommand& operator=(const Eigen::MatrixBase<Derived>& x) {
@@ -58,8 +58,11 @@ class DrivingCommand {
  * A toString method for DrivingCommand.
  */
 template <typename ScalarType = double>
-std::ostream& operator<<(std::ostream &os, const DrivingCommand<ScalarType> &dc) {
-  return os << "[steering_angle = " << dc.steering_angle << ", throttle = " << dc.throttle << ", brake = " << dc.brake << "]";
+std::ostream& operator<<(std::ostream& os,
+                         const DrivingCommand<ScalarType>& dc) {
+  return os << "[steering_angle = " << dc.steering_angle
+            << ", throttle = " << dc.throttle << ", brake = " << dc.brake
+            << "]";
 }
 
 bool decode(const drake::lcmt_driving_control_cmd_t& msg, double& t,
@@ -86,7 +89,6 @@ int main(int argc, char* argv[]) {
   // be reused
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
 
-
   auto rigid_body_sys = make_shared<RigidBodySystem>();
 
   // The following variable, weld_to_frame, is only needed if the model is a
@@ -94,16 +96,15 @@ int main(int argc, char* argv[]) {
   // orientation of the car's root node in the world. If the model is an SDF,
   // weld_to_frame is ignored by the parser.
   auto weld_to_frame = allocate_shared<RigidBodyFrame>(
-      aligned_allocator<RigidBodyFrame>(),
-      "world",
+      aligned_allocator<RigidBodyFrame>(), "world",
       nullptr,  // not used since the robot is attached to the world
       Eigen::Vector3d(0, 0, 0.378326),  // xyz of the car's root link
-      Eigen::Vector3d(0, 0, 0));       // rpy of the car's root link
+      Eigen::Vector3d(0, 0, 0));        // rpy of the car's root link
 
   rigid_body_sys->addRobotFromFile(argv[1], floating_base_type, weld_to_frame);
 
-  auto const & tree = rigid_body_sys->getRigidBodyTree();
-  for (int i=2; i<argc; i++)
+  auto const& tree = rigid_body_sys->getRigidBodyTree();
+  for (int i = 2; i < argc; i++)
     tree->addRobotFromSDF(argv[i], DrakeJoint::FIXED);  // add environment
 
   if (argc < 3) {  // add flat terrain
@@ -139,18 +140,17 @@ int main(int argc, char* argv[]) {
 
     for (int actuator_idx = 0; actuator_idx < tree->actuators.size();
          actuator_idx++) {
-
-      const std::string & actuator_name = tree->actuators[actuator_idx].name;
+      const std::string& actuator_name = tree->actuators[actuator_idx].name;
 
       if (strcmp(actuator_name.c_str(), "steering") == 0) {
         auto const& b = tree->actuators[actuator_idx].body;
         Kp(actuator_idx, b->position_num_start) = kpSteering;  // steering
         Kd(actuator_idx, b->velocity_num_start) = kdSteering;  // steeringdot
-        map_driving_cmd_to_x_d(b->position_num_start, 0) = 1;  // steering command
+        map_driving_cmd_to_x_d(b->position_num_start, 0) =
+            1;  // steering command
 
       } else if (strcmp(actuator_name.c_str(), "right_wheel_joint") == 0 ||
                  strcmp(actuator_name.c_str(), "left_wheel_joint") == 0) {
-
         auto const& b = tree->actuators[actuator_idx].body;
         Kd(actuator_idx, b->velocity_num_start) = kThrottle;  // throttle
         map_driving_cmd_to_x_d(tree->num_positions + b->velocity_num_start, 1) =

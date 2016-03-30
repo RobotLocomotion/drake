@@ -1,18 +1,18 @@
 #include <iostream>
 
-#include "drake/util/drakeGeometryUtil.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/systems/plants/joints/DrakeJoint.h"
 #include "drake/systems/plants/joints/FixedJoint.h"
+#include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
 
 #include <algorithm>
-#include <string>
 #include <limits>
+#include <string>
 #include "KinematicsCache.h"
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 
 using namespace std;
 using namespace Eigen;
@@ -39,7 +39,7 @@ std::ostream& operator<<(std::ostream& os, const RigidBodyLoop& obj) {
   return os;
 }
 
-std::ostream& operator<<(std::ostream &os, const RigidBodyTree &tree) {
+std::ostream& operator<<(std::ostream& os, const RigidBodyTree& tree) {
   os << *tree.collision_model.get();
   return os;
 }
@@ -76,11 +76,11 @@ RigidBodyTree::RigidBodyTree(void)
 
 RigidBodyTree::~RigidBodyTree(void) {}
 
-bool RigidBodyTree::transformCollisionFrame(DrakeCollision::ElementId& eid,
+bool RigidBodyTree::transformCollisionFrame(
+    DrakeCollision::ElementId& eid,
     const Eigen::Isometry3d& transform_body_to_joint) {
   return collision_model->transformCollisionFrame(eid, transform_body_to_joint);
 }
-
 
 void RigidBodyTree::compile(void) {
   // reorder body list to make sure that parents before children in the list
@@ -340,7 +340,6 @@ void RigidBodyTree::updateDynamicCollisionElements(
 
 void RigidBodyTree::getTerrainContactPoints(
     const RigidBody& body, Eigen::Matrix3Xd& terrain_points) const {
-
   // clear matrix before filling it again
   size_t num_points = 0;
   terrain_points.resize(Eigen::NoChange, 0);

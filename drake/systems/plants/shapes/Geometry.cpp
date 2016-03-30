@@ -11,26 +11,38 @@ const int Geometry::NUM_BBOX_POINTS = 8;
 const int Sphere::NUM_POINTS = 1;
 const int Capsule::NUM_POINTS = 2;
 
-
 std::string ShapeToString(Shape ss) {
   switch (ss) {
-    case UNKNOWN: return "UNKNOWN"; break;
-    case BOX: return "BOX"; break;
-    case SPHERE: return "SPHERE"; break;
-    case CYLINDER: return "CYLINDER"; break;
-    case MESH: return "MESH"; break;
-    case MESH_POINTS: return "MESH_POINTS"; break;
-    case CAPSULE: return "CAPSULE"; break;
+    case UNKNOWN:
+      return "UNKNOWN";
+      break;
+    case BOX:
+      return "BOX";
+      break;
+    case SPHERE:
+      return "SPHERE";
+      break;
+    case CYLINDER:
+      return "CYLINDER";
+      break;
+    case MESH:
+      return "MESH";
+      break;
+    case MESH_POINTS:
+      return "MESH_POINTS";
+      break;
+    case CAPSULE:
+      return "CAPSULE";
+      break;
   }
   return "UNDEFINED";
 }
-
 
 Geometry::Geometry() : shape(UNKNOWN) {}
 
 Geometry::Geometry(const Geometry &other) { shape = other.getShape(); }
 
-Geometry::Geometry(Shape shape) : shape(shape){}
+Geometry::Geometry(Shape shape) : shape(shape) {}
 
 Shape Geometry::getShape() const { return shape; }
 
@@ -59,9 +71,8 @@ void Geometry::getBoundingBoxPoints(double x_half_width, double y_half_width,
   points << cx, cy, cz;
 }
 
-ostream& operator<<(ostream& out, const Geometry& gg) {
-  out << ShapeToString(gg.getShape())
-      << ", " << gg.NUM_BBOX_POINTS;
+ostream &operator<<(ostream &out, const Geometry &gg) {
+  out << ShapeToString(gg.getShape()) << ", " << gg.NUM_BBOX_POINTS;
   return out;
 }
 
@@ -84,8 +95,9 @@ void Sphere::getTerrainContactPoints(Matrix3Xd &points) const {
     points = Matrix3Xd();
 }
 
-ostream& operator<<(ostream& out, const Sphere& ss) {
-  out << static_cast<const Geometry &>(ss) << ", " << ss.radius << ", " << ss.NUM_POINTS;
+ostream &operator<<(ostream &out, const Sphere &ss) {
+  out << static_cast<const Geometry &>(ss) << ", " << ss.radius << ", "
+      << ss.NUM_POINTS;
   return out;
 }
 
@@ -104,7 +116,7 @@ void Box::getTerrainContactPoints(Matrix3Xd &points) const {
   getPoints(points);
 }
 
-ostream& operator<<(ostream& out, const Box& bb) {
+ostream &operator<<(ostream &out, const Box &bb) {
   out << static_cast<const Geometry &>(bb) << ", " << bb.size.transpose();
   return out;
 }
@@ -118,7 +130,8 @@ void Cylinder::getPoints(Matrix3Xd &points) const {
   static bool warnOnce = true;
   if (warnOnce) {
     cerr << "Warning: DrakeShapes::Cylinder::getPoints(): This method returns "
-            "the vertices of the cylinder''s bounding-box." << endl;
+            "the vertices of the cylinder''s bounding-box."
+         << endl;
     warnOnce = false;
   }
 
@@ -129,8 +142,9 @@ void Cylinder::getBoundingBoxPoints(Matrix3Xd &points) const {
   Geometry::getBoundingBoxPoints(radius, radius, length / 2.0, points);
 }
 
-ostream& operator<<(ostream& out, const Cylinder& cc) {
-  out << static_cast<const Geometry &>(cc) << ", " << cc.radius << ", " << cc.length;
+ostream &operator<<(ostream &out, const Cylinder &cc) {
+  out << static_cast<const Geometry &>(cc) << ", " << cc.radius << ", "
+      << cc.length;
   return out;
 }
 
@@ -155,8 +169,9 @@ void Capsule::getBoundingBoxPoints(Matrix3Xd &points) const {
                                  points);
 }
 
-ostream& operator<<(ostream& out, const Capsule& cc) {
-  out << static_cast<const Geometry &>(cc) << ", " << cc.radius << ", " << cc.length;
+ostream &operator<<(ostream &out, const Capsule &cc) {
+  out << static_cast<const Geometry &>(cc) << ", " << cc.radius << ", "
+      << cc.length;
   return out;
 }
 
@@ -208,7 +223,8 @@ bool Mesh::extractMeshVertices(Matrix3Xd &vertex_coordinates) const {
   if (!file.is_open()) {
     cerr << "Warning: Mesh " << spath.getStr()
          << " ignored because it does not have extension .obj (nor can I find "
-            "a juxtaposed file with a .obj extension)" << endl;
+            "a juxtaposed file with a .obj extension)"
+         << endl;
     return false;
   }
 
@@ -277,8 +293,9 @@ void Mesh::getBoundingBoxPoints(Matrix3Xd &bbox_points) const {
       max_pos(2);
 }
 
-ostream& operator<<(ostream& out, const Mesh& mm) {
-  out << static_cast<const Geometry &>(mm) << ", " << mm.scale << ", " << mm.filename << ", " << mm.resolved_filename << ", " << mm.root_dir;
+ostream &operator<<(ostream &out, const Mesh &mm) {
+  out << static_cast<const Geometry &>(mm) << ", " << mm.scale << ", "
+      << mm.filename << ", " << mm.resolved_filename << ", " << mm.root_dir;
   return out;
 }
 
@@ -303,9 +320,9 @@ void MeshPoints::getBoundingBoxPoints(Matrix3Xd &bbox_points) const {
       max_pos(2);
 }
 
-ostream& operator<<(ostream& out, const MeshPoints& mp) {
+ostream &operator<<(ostream &out, const MeshPoints &mp) {
   out << static_cast<const Geometry &>(mp) << ",\n" << mp.points;
   return out;
 }
 
-} // namespace DrakeShapes
+}  // namespace DrakeShapes

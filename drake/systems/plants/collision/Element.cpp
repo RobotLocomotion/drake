@@ -27,10 +27,11 @@ ElementId Element::getId() const { return id; }
 ostream& operator<<(ostream& out, const Element& ee) {
   out << "DrakeCollision::Element:\n"
       << "  - id = " << ee.id << "\n"
-      << "  - T_element_to_world =\n" << ee.T_element_to_world.matrix() << "\n"
-      << "  - T_element_to_local =\n" << ee.T_element_to_local.matrix() << "\n"
-      << "  - geometry = " << *ee.geometry
-      << std::endl;
+      << "  - T_element_to_world =\n"
+      << ee.T_element_to_world.matrix() << "\n"
+      << "  - T_element_to_local =\n"
+      << ee.T_element_to_local.matrix() << "\n"
+      << "  - geometry = " << *ee.geometry << std::endl;
   return out;
 }
 

@@ -1,6 +1,6 @@
-#include <string>
 #include <fstream>
 #include <sstream>
+#include <string>
 
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "joints/DrakeJoints.h"
@@ -249,7 +249,8 @@ void parseVisual(shared_ptr<RigidBody> body, XMLElement* node,
         }
       } else {
         cerr << "WARNING: visual element had a material with neither a name "
-                "nor a nested color element" << endl;
+                "nor a nested color element"
+             << endl;
       }
     }
   }
@@ -463,7 +464,8 @@ void parseTransmission(RigidBodyTree* model, XMLElement* node) {
   string type(attr);
   if (type.find("SimpleTransmission") == string::npos) {
     cerr << "WARNING: only SimpleTransmissions are supported right now.  this "
-            "element will be skipped." << endl;
+            "element will be skipped."
+         << endl;
     return;
   }
 
@@ -481,7 +483,8 @@ void parseTransmission(RigidBodyTree* model, XMLElement* node) {
 
   if (model->bodies[body_index]->getJoint().getNumPositions() == 0) {
     cerr << "WARNING: Skipping transmission since it's attached to a fixed "
-            "joint: " << joint_name << endl;
+            "joint: "
+         << joint_name << endl;
     return;
   }
 

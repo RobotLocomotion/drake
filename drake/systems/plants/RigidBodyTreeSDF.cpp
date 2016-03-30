@@ -1,11 +1,11 @@
-#include <string>
 #include <fstream>
 #include <sstream>
+#include <string>
 
 #include "spruce.hh"
 
-#include "drake/thirdParty/tinyxml2/tinyxml2.h"
 #include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/thirdParty/tinyxml2/tinyxml2.h"
 #include "joints/DrakeJoints.h"
 
 #include "drake/Path.h"
@@ -223,7 +223,8 @@ void parseSDFLink(RigidBodyTree* model, std::string model_name,
   Isometry3d transform_to_model = Isometry3d::Identity();
   XMLElement* pose = node->FirstChildElement("pose");
   if (pose) {
-    poseValueToTransform(pose, pose_map, transform_to_model, Eigen::Isometry3d::Identity());
+    poseValueToTransform(pose, pose_map, transform_to_model,
+                         Eigen::Isometry3d::Identity());
     pose_map.insert(
         std::pair<string, Isometry3d>(body->linkname, transform_to_model));
   }
@@ -294,7 +295,9 @@ void parseSDFFrame(RigidBodyTree* model, std::string model_name,
 
   // Get the frame's pose
   XMLElement* pose = node->FirstChildElement("pose");
-  if (!pose) throw runtime_error("ERROR: frame \"" + name + "\" is missing its pose tag");
+  if (!pose)
+    throw runtime_error("ERROR: frame \"" + name +
+                        "\" is missing its pose tag");
 
   Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
   Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
@@ -361,8 +364,7 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
   Isometry3d transform_to_model = transform_child_to_model;
 
   XMLElement* pose = node->FirstChildElement("pose");
-  if (pose)
-  {
+  if (pose) {
     poseValueToTransform(pose, pose_map, transform_to_model,
                          transform_child_to_model);  // read the pose in using
                                                      // the child coords by
@@ -393,7 +395,6 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
     if (parseScalarValue(axis_node, "use_parent_model_frame",
                          in_parent_model_frame) &&
         in_parent_model_frame > 0.0) {
-
       // The joint's axis of rotation should be interpreted as being in the
       // model coordinate frame. To be compatible with Drake, the joint's axis
       // must be defined in the joint's coordinate frame. Since we are
@@ -405,21 +406,23 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
 
   // Obtain the transform from the joint frame to the parent link's frame.
   Isometry3d transform_to_parent_body =
-    transform_parent_to_model.inverse() * transform_to_model;
+      transform_parent_to_model.inverse() * transform_to_model;
 
   if (child->hasParent()) {  // then implement it as a loop joint
 
-    // Get the loop point in the joint's reference frame. Since the SDF standard specifies
-    // that the joint's reference frame is defined by the child's reference frame, the loop
-    // point in the joint's reference frame is simply the pose of the joint.
+    // Get the loop point in the joint's reference frame. Since the SDF standard
+    // specifies that the joint's reference frame is defined by the child's
+    // reference frame, the loop point in the joint's reference frame is simply
+    // the pose of the joint.
     Eigen::Vector3d lp_child = Eigen::Vector3d::Zero();
     {
       const char* strval = pose->FirstChild()->Value();
       if (strval) {
-         std::stringstream s(strval);
-         s >> lp_child(0) >> lp_child(1) >> lp_child(2);
+        std::stringstream s(strval);
+        s >> lp_child(0) >> lp_child(1) >> lp_child(2);
       } else {
-        throw runtime_error("ERROR: Unable to construct loop joint \"" + name + "\": could not parse loop point.");
+        throw runtime_error("ERROR: Unable to construct loop joint \"" + name +
+                            "\": could not parse loop point.");
       }
     }
 
@@ -445,12 +448,16 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
     // Update the reference frames of the child link's inertia, visual,
     // and collision elements to be this joint's frame.
     child->applyTransformToJointFrame(transform_to_model.inverse() *
-      transform_child_to_model);
+                                      transform_child_to_model);
 
     for (auto& c : child->collision_element_ids) {
-      if (!model->transformCollisionFrame(c, transform_to_model.inverse() * transform_child_to_model))
-        std::cout << "RigidBodyTreeSDF::parseSDFJoint: Collision element with ID "
-                  << c << " not found! Cannot update its local frame to be that of joint." << std::endl;
+      if (!model->transformCollisionFrame(
+              c, transform_to_model.inverse() * transform_child_to_model))
+        std::cout
+            << "RigidBodyTreeSDF::parseSDFJoint: Collision element with ID "
+            << c
+            << " not found! Cannot update its local frame to be that of joint."
+            << std::endl;
     }
 
     // Update pose_map with child's new frame, which is now the same as this
@@ -459,7 +466,8 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
     if (it != pose_map.end()) {
       it->second = transform_to_model;
     } else {
-      throw runtime_error("ERROR: Unable to update transform_to_model of link " + child_name);
+      throw runtime_error(
+          "ERROR: Unable to update transform_to_model of link " + child_name);
     }
 
     // construct the actual joint (based on its type)
@@ -590,8 +598,8 @@ void parseModel(RigidBodyTree* model, XMLElement* node,
 }
 
 void parseWorld(RigidBodyTree* model, XMLElement* node,
-		const PackageMap& package_map, const string& root_dir,
-		const DrakeJoint::FloatingBaseType floating_base_type) {
+                const PackageMap& package_map, const string& root_dir,
+                const DrakeJoint::FloatingBaseType floating_base_type) {
   for (XMLElement* model_node = node->FirstChildElement("model"); model_node;
        model_node = model_node->NextSiblingElement("model")) {
     parseModel(model, model_node, package_map, root_dir, floating_base_type);

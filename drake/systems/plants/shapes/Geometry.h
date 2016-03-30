@@ -43,7 +43,8 @@ class DRAKESHAPES_EXPORT Geometry {
   /**
    * A toString method for this class.
    */
-  friend DRAKESHAPES_EXPORT std::ostream& operator<<(std::ostream&, const Geometry&);
+  friend DRAKESHAPES_EXPORT std::ostream &operator<<(std::ostream &,
+                                                     const Geometry &);
 
  protected:
   Geometry(Shape shape);
@@ -67,7 +68,8 @@ class DRAKESHAPES_EXPORT Sphere : public Geometry {
   /**
    * A toString method for this class.
    */
-  friend DRAKESHAPES_EXPORT std::ostream& operator<<(std::ostream&, const Sphere&);
+  friend DRAKESHAPES_EXPORT std::ostream &operator<<(std::ostream &,
+                                                     const Sphere &);
 
   double radius;
   static const int NUM_POINTS;
@@ -85,7 +87,8 @@ class DRAKESHAPES_EXPORT Box : public Geometry {
   /**
    * A toString method for this class.
    */
-  friend DRAKESHAPES_EXPORT std::ostream& operator<<(std::ostream&, const Box&);
+  friend DRAKESHAPES_EXPORT std::ostream &operator<<(std::ostream &,
+                                                     const Box &);
 
   Eigen::Vector3d size;
 };
@@ -101,7 +104,8 @@ class DRAKESHAPES_EXPORT Cylinder : public Geometry {
   /**
    * A toString method for this class.
    */
-  friend DRAKESHAPES_EXPORT std::ostream& operator<<(std::ostream&, const Cylinder&);
+  friend DRAKESHAPES_EXPORT std::ostream &operator<<(std::ostream &,
+                                                     const Cylinder &);
 
   double radius;
   double length;
@@ -118,7 +122,8 @@ class DRAKESHAPES_EXPORT Capsule : public Geometry {
   /**
    * A toString method for this class.
    */
-  friend DRAKESHAPES_EXPORT std::ostream& operator<<(std::ostream&, const Capsule&);
+  friend DRAKESHAPES_EXPORT std::ostream &operator<<(std::ostream &,
+                                                     const Capsule &);
 
   double radius;
   double length;
@@ -138,7 +143,8 @@ class DRAKESHAPES_EXPORT Mesh : public Geometry {
   /**
    * A toString method for this class.
    */
-  friend DRAKESHAPES_EXPORT std::ostream& operator<<(std::ostream&, const Mesh&);
+  friend DRAKESHAPES_EXPORT std::ostream &operator<<(std::ostream &,
+                                                     const Mesh &);
 
   double scale;
   std::string filename;
@@ -161,7 +167,8 @@ class DRAKESHAPES_EXPORT MeshPoints : public Geometry {
   /**
    * A toString method for this class.
    */
-  friend DRAKESHAPES_EXPORT std::ostream& operator<<(std::ostream&, const MeshPoints&);
+  friend DRAKESHAPES_EXPORT std::ostream &operator<<(std::ostream &,
+                                                     const MeshPoints &);
 
   Eigen::Matrix3Xd points;
 };
