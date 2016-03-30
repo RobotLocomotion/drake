@@ -2,8 +2,8 @@
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/testUtil.h"
 
-#include <iostream>
 #include <gtest/gtest.h>
+#include <iostream>
 
 #include "drake/util/eigen_matrix_compare.h"
 
@@ -18,7 +18,6 @@ namespace test {
 std::string modelFile1, modelFile2;
 
 TEST(CompareRigidBodySystemsTest, TestAll) {
-
   auto r1 = make_shared<RigidBodySystem>();
   r1->addRobotFromFile(modelFile1, DrakeJoint::QUATERNION);
 
@@ -42,7 +41,8 @@ TEST(CompareRigidBodySystemsTest, TestAll) {
     VectorXd u = VectorXd::Random(r1->getNumInputs());
     auto xdot1 = r1->dynamics(t, x, u);
     auto xdot2 = r2->dynamics(t, x, u);
-    EXPECT_TRUE(CompareMatrices(xdot1, xdot2, 1e-8, MatrixCompareType::absolute));
+    EXPECT_TRUE(
+        CompareMatrices(xdot1, xdot2, 1e-8, MatrixCompareType::absolute));
   }
 }
 
@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
               << std::endl;
     return 1;
   }
-  
+
   drake::test::modelFile1 = argv[1];
   drake::test::modelFile2 = argv[2];
 

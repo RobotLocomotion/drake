@@ -36,8 +36,9 @@ TEST(VectorTest, ValueAssignment) {
   const double tolerance = 1e-8;
 
   std::string error_msg;
-  EXPECT_TRUE(CompareMatrices(x, y, tolerance, MatrixCompareType::absolute,
-    &error_msg)) << error_msg;
+  EXPECT_TRUE(
+      CompareMatrices(x, y, tolerance, MatrixCompareType::absolute, &error_msg))
+      << error_msg;
 }
 
 // Tests the ability to set a CombinedVector's value

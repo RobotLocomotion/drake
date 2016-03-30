@@ -1,5 +1,5 @@
-#include "gtest/gtest.h"
 #include "drake/util/eigen_matrix_compare.h"
+#include "gtest/gtest.h"
 
 using drake::util::MatrixCompareType;
 
@@ -21,16 +21,16 @@ TEST(MatrixCompareTest, CompareIdentical) {
   std::string error_msg;
 
   EXPECT_TRUE(CompareMatrices(m1, m2, tolerance, MatrixCompareType::absolute,
-    &error_msg));
+                              &error_msg));
 
   EXPECT_TRUE(CompareMatrices(m1, m2, tolerance, MatrixCompareType::relative,
-    &error_msg));
+                              &error_msg));
 
   EXPECT_FALSE(CompareMatrices(m1, m3, tolerance, MatrixCompareType::absolute,
-    &error_msg));
+                               &error_msg));
 
   EXPECT_FALSE(CompareMatrices(m1, m3, tolerance, MatrixCompareType::relative,
-    &error_msg));
+                               &error_msg));
 }
 
 // Tests absolute tolerance with real numbers.
@@ -53,17 +53,17 @@ TEST(MatrixCompareTest, AbsoluteCompare) {
   // The difference between m1 and m2 is less than the tolerance.
   // They should be considered equal.
   EXPECT_TRUE(CompareMatrices(m1, m2, tolerance, MatrixCompareType::absolute,
-    &error_msg));
+                              &error_msg));
 
   // The difference between m1 and m3 is exactly equal to the tolerance.
   // They should be considered equal.
   EXPECT_TRUE(CompareMatrices(m1, m3, tolerance, MatrixCompareType::absolute,
-    &error_msg));
+                              &error_msg));
 
   // The difference between m1 and m4 is greater than the tolerance.
   // They should be considered different.
   EXPECT_FALSE(CompareMatrices(m1, m4, tolerance, MatrixCompareType::absolute,
-    &error_msg));
+                               &error_msg));
 }
 
 // Tests absolute tolerance with NaN values
@@ -86,17 +86,20 @@ TEST(MatrixCompareTest, AbsoluteNaNCompare) {
   // The difference between m1 and m2 is less than the tolerance.
   // They should be considered equal.
   EXPECT_TRUE(CompareMatrices(m1, m2, tolerance, MatrixCompareType::absolute,
-    &error_msg));
+                              &error_msg));
 
   // The difference between m1 and m3 is exactly equal to the tolerance.
   // They should be considered equal.
   EXPECT_TRUE(CompareMatrices(m1, m3, tolerance, MatrixCompareType::absolute,
-    &error_msg));
+                              &error_msg));
 
   // The difference between m1 and m4 is greater than the tolerance.
   // They should be considered different.
   EXPECT_FALSE(CompareMatrices(m1, m4, tolerance, MatrixCompareType::absolute,
-    &error_msg)) << "m1 =\n" << m1 << "\nm4 =\n" << m4;
+                               &error_msg))
+      << "m1 =\n"
+      << m1 << "\nm4 =\n"
+      << m4;
 }
 
 // Tests absolute tolerance with real numbers.
@@ -116,17 +119,17 @@ TEST(MatrixCompareTest, RelativeCompare) {
   // The difference between m1 and m2 is more than 1%.
   // They should be considered not equal.
   EXPECT_FALSE(CompareMatrices(m1, m2, one_pct, MatrixCompareType::relative,
-    &error_msg));
+                               &error_msg));
 
   // The difference between m1 and m2 is equal to 1%.
   // They should be considered equal.
   EXPECT_TRUE(CompareMatrices(m1, m2, ten_pct, MatrixCompareType::relative,
-    &error_msg));
+                              &error_msg));
 
   // The difference between m1 and m4 is less than 20%.
   // They should be considered equal.
   EXPECT_TRUE(CompareMatrices(m1, m2, twenty_pct, MatrixCompareType::relative,
-    &error_msg));
+                              &error_msg));
 }
 
 // Tests ability to not specify an error message parameter
