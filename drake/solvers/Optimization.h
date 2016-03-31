@@ -1,14 +1,15 @@
 #ifndef DRAKE_SOLVERS_OPTIMIZATION_H_
 #define DRAKE_SOLVERS_OPTIMIZATION_H_
 
+#include <algorithm>
 #include <list>
 #include <memory>
 #include <initializer_list>
 #include <Eigen/Core>
 #include "drake/core/Core.h"
 #include "drake/drakeOptimization_export.h"
-#include "Constraint.h"
-#include "MathematicalProgram.h"
+#include "drake/solvers/Constraint.h"
+#include "drake/solvers/MathematicalProgram.h"
 
 
 namespace Drake {

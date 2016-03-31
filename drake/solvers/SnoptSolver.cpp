@@ -1,6 +1,5 @@
 
-#include "SnoptSolver.h"
-#include "Optimization.h"
+#include "drake/solvers/SnoptSolver.h"
 
 #include <cstdlib>
 #include <memory>
@@ -8,11 +7,14 @@
 #include <cstdio>
 #include <cstring>
 
+#include "drake/solvers/Optimization.h"
+
 namespace snopt {
 #include "snopt.hh"
 #include "snfilewrapper.hh"
 //#include "snoptProblem.hh"
 }
+
 
 // todo:  implement sparsity inside each objective/constraint
 // todo:  handle snopt options
