@@ -112,18 +112,18 @@ TEST(MatrixCompareTest, RelativeCompare) {
 
   // The difference between m1 and m2 is more than 1%.
   // They should be considered not equal.
-  EXPECT_FALSE(CompareMatrices(m1, m2, 0.01, MatrixCompareType::relative,
-                               &error_msg));
+  EXPECT_FALSE(
+      CompareMatrices(m1, m2, 0.01, MatrixCompareType::relative, &error_msg));
 
   // The difference between m1 and m2 is equal to 10%.
   // They should be considered equal.
-  EXPECT_TRUE(CompareMatrices(m1, m2, 0.1, MatrixCompareType::relative,
-                              &error_msg));
+  EXPECT_TRUE(
+      CompareMatrices(m1, m2, 0.1, MatrixCompareType::relative, &error_msg));
 
   // The difference between m1 and m4 is less than 20%.
   // They should be considered equal.
-  EXPECT_TRUE(CompareMatrices(m1, m2, 0.2, MatrixCompareType::relative,
-                              &error_msg));
+  EXPECT_TRUE(
+      CompareMatrices(m1, m2, 0.2, MatrixCompareType::relative, &error_msg));
 }
 
 // Tests ability to not specify an error message parameter

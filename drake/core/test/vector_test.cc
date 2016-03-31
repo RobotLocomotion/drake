@@ -119,10 +119,10 @@ TEST(VectorTest, InputOutputRelationCompositionTests) {
   InputOutputRelation f(InputOutputRelation::Form::POLYNOMIAL);
 
   EXPECT_EQ(InputOutputRelation::composeWith(g, f).form,
-              InputOutputRelation::Form::POLYNOMIAL);
+            InputOutputRelation::Form::POLYNOMIAL);
 
   EXPECT_EQ(InputOutputRelation::composeWith(f, g).form,
-              InputOutputRelation::Form::POLYNOMIAL);
+            InputOutputRelation::Form::POLYNOMIAL);
 }
 
 // Verify that combinations of I/O relations are as expected
@@ -131,10 +131,10 @@ TEST(VectorTest, InputOutputRelationCombinationTests) {
   InputOutputRelation f(InputOutputRelation::Form::POLYNOMIAL);
 
   EXPECT_EQ(InputOutputRelation::combine(g, f).form,
-              InputOutputRelation::Form::POLYNOMIAL);
+            InputOutputRelation::Form::POLYNOMIAL);
 
   EXPECT_EQ(InputOutputRelation::combine(f, g).form,
-              InputOutputRelation::Form::POLYNOMIAL);
+            InputOutputRelation::Form::POLYNOMIAL);
 }
 
 }  // namespace

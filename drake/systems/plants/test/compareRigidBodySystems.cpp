@@ -1,5 +1,5 @@
-#include <iostream>
 #include <gtest/gtest.h>
+#include <iostream>
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"

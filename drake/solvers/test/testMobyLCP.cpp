@@ -1,7 +1,7 @@
-#include "drake/solvers/MobyLCP.h"
+#include <gtest/gtest.h>
 #include <memory>
 #include <vector>
-#include <gtest/gtest.h>
+#include "drake/solvers/MobyLCP.h"
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
 

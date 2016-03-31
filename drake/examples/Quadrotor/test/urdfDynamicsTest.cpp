@@ -2,9 +2,9 @@
 
 #include "gtest/gtest.h"
 
+#include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
-#include "drake/systems/plants/RigidBodySystem.h"
 
 using Drake::getDrakePath;
 using Drake::getRandomVector;

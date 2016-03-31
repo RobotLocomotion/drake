@@ -1,8 +1,8 @@
-#include "drake/util/Polynomial.h"
 #include <iostream>
-#include "gtest/gtest.h"
+#include "drake/util/Polynomial.h"
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
+#include "gtest/gtest.h"
 
 using drake::util::MatrixCompareType;
 using Eigen::VectorXd;
@@ -161,7 +161,6 @@ TEST(PolynomialTest, Roots) { testRoots<double>(); }
 TEST(PolynomialTest, EvalType) { testEvalType(); }
 
 TEST(PolynomialTest, PolynomialMatrix) { testPolynomialMatrix<double>(); }
-
 }
 }  // namespace test
 }  // namespace drake

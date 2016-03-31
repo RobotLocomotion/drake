@@ -1,11 +1,11 @@
-#include "drake/util/drakeGeometryUtil.h"
+#include <Eigen/Core>
 #include <cmath>
 #include <iostream>
-#include <Eigen/Core>
-#include "gtest/gtest.h"
 #include "drake/core/Gradient.h"
-#include "drake/util/testUtil.h"
+#include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/eigen_matrix_compare.h"
+#include "drake/util/testUtil.h"
+#include "gtest/gtest.h"
 
 using Eigen::Isometry3d;
 using Eigen::Vector3d;

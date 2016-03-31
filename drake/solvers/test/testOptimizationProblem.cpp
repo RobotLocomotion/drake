@@ -1,8 +1,8 @@
 #include <typeinfo>
-#include "gtest/gtest.h"
 #include "drake/solvers/Optimization.h"
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
+#include "gtest/gtest.h"
 
 using Eigen::Dynamic;
 using Eigen::Ref;
@@ -106,7 +106,6 @@ void trivialLeastSquares() {
 
   EXPECT_TRUE(
       CompareMatrices(b, x.value(), 1e-10, MatrixCompareType::absolute));
-
 
   con->updateConstraint(3 * Matrix4d::Identity(), b);
   prog.solve();

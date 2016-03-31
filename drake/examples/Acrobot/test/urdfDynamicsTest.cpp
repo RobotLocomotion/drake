@@ -1,7 +1,7 @@
 #include "drake/examples/Acrobot/Acrobot.h"
-#include "gtest/gtest.h"
-#include "drake/util/eigen_matrix_compare.h"
 #include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/util/eigen_matrix_compare.h"
+#include "gtest/gtest.h"
 
 using Drake::RigidBodySystem;
 using Drake::getRandomVector;
@@ -10,7 +10,7 @@ using drake::util::MatrixCompareType;
 
 namespace drake {
 namespace examples {
-namespace Acobot {
+namespace acrobot {
 namespace {
 
 // Tests whether the dynamics of Acrobot are the same regardless of whether
@@ -76,6 +76,6 @@ TEST(AcrobotDynamicsTest, ValueAssignment) {
 }
 
 }  // namespace
-}  // namespace Acrobot
+}  // namespace acrobot
 }  // namespace examples
 }  // namespace drake

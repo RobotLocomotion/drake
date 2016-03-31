@@ -1,11 +1,11 @@
-#include "drake/systems/trajectories/PiecewisePolynomial.h"
+#include <Eigen/Core>
 #include <iostream>
 #include <random>
 #include <vector>
-#include <Eigen/Core>
-#include "gtest/gtest.h"
+#include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
+#include "gtest/gtest.h"
 
 using Eigen::Matrix;
 using std::default_random_engine;
