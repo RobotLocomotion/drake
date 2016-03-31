@@ -1,14 +1,15 @@
 #include "InstantaneousQPController.h"
-#include "controlUtil.h"
 #include <map>
 #include <memory>
 #include <lcm/lcm-cpp.hpp>
+#include "lcmtypes/drake/lcmt_zmp_com_observer_state.hpp"
+#include "drake/systems/controllers/controlUtil.h"
+#include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/lcmUtil.h"
 #include "drake/util/testUtil.h"
 #include "drake/util/yaml/yamlUtil.h"
 #include "drake/solvers/fastQP.h"
 #include "drake/Path.h"
-#include "lcmtypes/drake/lcmt_zmp_com_observer_state.hpp"
 
 const double REG = 1e-8;
 
@@ -16,6 +17,7 @@ const bool CHECK_CENTROIDAL_MOMENTUM_RATE_MATCHES_TOTAL_WRENCH = false;
 const bool PUBLISH_ZMP_COM_OBSERVER_STATE = true;
 
 using namespace Eigen;
+using drake::util::MatrixCompareType;
 
 #define LEG_INTEGRATOR_DEACTIVATION_MARGIN 0.07
 
@@ -560,7 +562,11 @@ void checkCentroidalMomentumMatchesTotalWrench(
   Vector6d momentum_rate_of_change =
       world_momentum_matrix * qdd + world_momentum_matrix_dot_times_v;
 
-  valuecheckMatrix(total_wrench_in_world, momentum_rate_of_change, 1e-6);
+  std::string explanation;
+  if(!CompareMatrices(total_wrench_in_world, momentum_rate_of_change, 1e-6,
+                      MatrixCompareType::absolute, &explanation)) {
+    throw std::runtime_error("Drake:ValueCheck ERROR:" + explanation);
+  }
 }
 
 std::unordered_map<std::string, int> computeBodyOrFrameNameToIdMap(

@@ -1,8 +1,8 @@
-#include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/util/testUtil.h"
-
-#include "drake/util/eigen_matrix_compare.h"
 #include "gtest/gtest.h"
+
+#include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/util/eigen_matrix_compare.h"
+#include "drake/util/testUtil.h"
 
 using Eigen::Vector3d;
 using Eigen::Vector4d;
@@ -15,7 +15,9 @@ using Drake::RigidBodySystem;
 using drake::util::MatrixCompareType;
 
 namespace drake {
-namespace test {
+namespace systems {
+namespace plants {
+namespace {
 
 Vector3d getMagnetometerOutput(shared_ptr<RigidBodySystem> const& sys,
                                Vector3d const& rpy) {
@@ -64,5 +66,7 @@ TEST(testMagnetometer, AllTests) {
       MatrixCompareType::absolute));
 }
 
-}  // namespace test
+}  // namespace
+}  // namespace plants
+}  // namespace systems
 }  // namespace drake

@@ -1,8 +1,8 @@
-#include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/util/testUtil.h"
-
-#include "drake/util/eigen_matrix_compare.h"
 #include "gtest/gtest.h"
+
+#include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/util/eigen_matrix_compare.h"
+#include "drake/util/testUtil.h"
 
 using Eigen::Matrix;
 using std::make_shared;

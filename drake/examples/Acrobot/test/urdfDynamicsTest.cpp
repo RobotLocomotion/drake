@@ -1,8 +1,7 @@
-
-#include "../Acrobot.h"
-#include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/util/eigen_matrix_compare.h"
+#include "drake/examples/Acrobot/Acrobot.h"
 #include "gtest/gtest.h"
+#include "drake/util/eigen_matrix_compare.h"
+#include "drake/systems/plants/RigidBodySystem.h"
 
 using Drake::RigidBodySystem;
 using Drake::getRandomVector;
@@ -10,7 +9,9 @@ using Drake::getDrakePath;
 using drake::util::MatrixCompareType;
 
 namespace drake {
-namespace test {
+namespace examples {
+namespace Acobot {
+namespace {
 
 // Tests whether the dynamics of Acrobot are the same regardless of whether
 // it is loaded via direct Acrobot object instantiation, URDF, or SDF. This
@@ -74,5 +75,7 @@ TEST(AcrobotDynamicsTest, ValueAssignment) {
   }
 }
 
-}  // namespace test
+}  // namespace
+}  // namespace Acrobot
+}  // namespace examples
 }  // namespace drake

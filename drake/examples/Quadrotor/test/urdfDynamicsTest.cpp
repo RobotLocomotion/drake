@@ -1,10 +1,10 @@
+#include "drake/examples/Quadrotor/Quadrotor.h"
 
-#include "../Quadrotor.h"
-#include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/util/testUtil.h"
+#include "gtest/gtest.h"
 
 #include "drake/util/eigen_matrix_compare.h"
-#include "gtest/gtest.h"
+#include "drake/util/testUtil.h"
+#include "drake/systems/plants/RigidBodySystem.h"
 
 using Drake::getDrakePath;
 using Drake::getRandomVector;
@@ -12,7 +12,9 @@ using Drake::RigidBodySystem;
 using drake::util::MatrixCompareType;
 
 namespace drake {
-namespace test {
+namespace examples {
+namespace quadrotor {
+namespace {
 
 TEST(urdfDynamicsTest, AllTests) {
   auto rbsys = RigidBodySystem();
@@ -35,5 +37,7 @@ TEST(urdfDynamicsTest, AllTests) {
   }
 }
 
-}  // namespace test
+}  // namespace
+}  // namespace quadrotor
+}  // namespace examples
 }  // namespace drake

@@ -1,17 +1,15 @@
-
+#include "drake/solvers/MobyLCP.h"
 #include <memory>
 #include <vector>
-
 #include <gtest/gtest.h>
-
-#include "drake/solvers/MobyLCP.h"
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
 
 using drake::util::MatrixCompareType;
 
 namespace drake {
-namespace test {
+namespace solvers {
+namespace {
 
 const double epsilon = 1e-6;
 const bool verbose = false;
@@ -317,5 +315,6 @@ TEST(testMobyLCP, testEmpty) {
   EXPECT_EQ(z.size(), 0);
 }
 
-}  // namespace test
+}  // namespace
+}  // namespace solvers
 }  // namespace drake

@@ -1,21 +1,20 @@
-
-#include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/util/testUtil.h"
-
-#include <gtest/gtest.h>
 #include <iostream>
-
+#include <gtest/gtest.h>
+#include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/eigen_matrix_compare.h"
+#include "drake/util/testUtil.h"
 
 using std::make_shared;
 using Drake::RigidBodySystem;
 using Eigen::VectorXd;
 using drake::util::MatrixCompareType;
 
-namespace drake {
-namespace test {
-
 std::string modelFile1, modelFile2;
+
+namespace drake {
+namespace systems {
+namespace plants {
+namespace {
 
 TEST(CompareRigidBodySystemsTest, TestAll) {
   auto r1 = make_shared<RigidBodySystem>();
@@ -47,6 +46,8 @@ TEST(CompareRigidBodySystemsTest, TestAll) {
 }
 
 }  // namespace test
+}  // namespace plants
+}  // namespace systems
 }  // namespace drake
 
 int main(int argc, char **argv) {
@@ -64,8 +65,8 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  drake::test::modelFile1 = argv[1];
-  drake::test::modelFile2 = argv[2];
+  modelFile1 = argv[1];
+  modelFile2 = argv[2];
 
   return RUN_ALL_TESTS();
 }

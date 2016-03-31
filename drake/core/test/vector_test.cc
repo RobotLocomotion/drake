@@ -1,8 +1,8 @@
+#include "gtest/gtest.h"
+
 #include "drake/examples/Pendulum/Pendulum.h"  // to get some types
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
-
-#include "gtest/gtest.h"
 
 using Drake::CombinedVector;
 using Drake::size;
@@ -22,11 +22,12 @@ TEST(VectorTest, ValueAssignment) {
 
   PendulumState<double> state;
   state.theta = 0.2;
-  state.thetadot = .3;
+  state.thetadot = 0.3;
 
   EXPECT_EQ(size(state), 2);
 
   state = x;
+  EXPECT_EQ(state.theta, 0.2);
   EXPECT_EQ(state.thetadot, 0.4);
 
   state.theta = 0.5;
@@ -83,7 +84,7 @@ TEST(VectorTest, CombineVectorCornerCases) {
 
 // Tests the RowsAtCompileTime
 TEST(VectorTest, RowsAtCompileTime) {
-  EXPECT_TRUE((Eigen::Matrix<double, 2, 1>::RowsAtCompileTime == 2))
+  EXPECT_EQ((Eigen::Matrix<double, 2, 1>::RowsAtCompileTime), 2)
       << "failed to evaluate RowsAtCompileTime";
 }
 
@@ -101,7 +102,7 @@ TEST(VectorTest, InputOutputRelationZeroIsArbitrary) {
       << "zero is arbitrary";
 }
 
-// Verify that the least common ancestor of the I/O relations
+// Verifies that the least common ancestor of the I/O relations
 // AFFINE, LINEAR, AND POLYNOMIAL is polynomial.
 TEST(VectorTest, InputOutputRelationLeastCommonAncestor) {
   EXPECT_TRUE((
@@ -112,18 +113,16 @@ TEST(VectorTest, InputOutputRelationLeastCommonAncestor) {
       << "least common ancestor should be polynomial";
 }
 
-// Verify that compositions of I/O relations are as expected
+// Verifies that compositions of I/O relations are as expected
 TEST(VectorTest, InputOutputRelationCompositionTests) {
   InputOutputRelation g(InputOutputRelation::Form::LINEAR);
   InputOutputRelation f(InputOutputRelation::Form::POLYNOMIAL);
 
-  EXPECT_TRUE(InputOutputRelation::composeWith(g, f).form ==
-              InputOutputRelation::Form::POLYNOMIAL)
-      << "should be poly";
+  EXPECT_EQ(InputOutputRelation::composeWith(g, f).form,
+              InputOutputRelation::Form::POLYNOMIAL);
 
-  EXPECT_TRUE(InputOutputRelation::composeWith(f, g).form ==
-              InputOutputRelation::Form::POLYNOMIAL)
-      << "should be poly";
+  EXPECT_EQ(InputOutputRelation::composeWith(f, g).form,
+              InputOutputRelation::Form::POLYNOMIAL);
 }
 
 // Verify that combinations of I/O relations are as expected
@@ -131,13 +130,11 @@ TEST(VectorTest, InputOutputRelationCombinationTests) {
   InputOutputRelation g(InputOutputRelation::Form::LINEAR);
   InputOutputRelation f(InputOutputRelation::Form::POLYNOMIAL);
 
-  EXPECT_TRUE(InputOutputRelation::combine(g, f).form ==
-              InputOutputRelation::Form::POLYNOMIAL)
-      << "should be poly";
+  EXPECT_EQ(InputOutputRelation::combine(g, f).form,
+              InputOutputRelation::Form::POLYNOMIAL);
 
-  EXPECT_TRUE(InputOutputRelation::combine(f, g).form ==
-              InputOutputRelation::Form::POLYNOMIAL)
-      << "should be poly";
+  EXPECT_EQ(InputOutputRelation::combine(f, g).form,
+              InputOutputRelation::Form::POLYNOMIAL);
 }
 
 }  // namespace

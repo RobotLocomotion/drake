@@ -1,10 +1,8 @@
-
-#include "../Pendulum.h"
-#include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/util/testUtil.h"
-
-#include "drake/util/eigen_matrix_compare.h"
+#include "drake/examples/Pendulum/Pendulum.h"
 #include "gtest/gtest.h"
+#include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/util/eigen_matrix_compare.h"
+#include "drake/util/testUtil.h"
 
 using Drake::getDrakePath;
 using Drake::getRandomVector;
@@ -12,7 +10,9 @@ using Drake::RigidBodySystem;
 using drake::util::MatrixCompareType;
 
 namespace drake {
-namespace test {
+namespace examples {
+namespace pendulum {
+namespace {
 
 TEST(urdfDynamicsTest, AllTests) {
   auto tree = shared_ptr<RigidBodyTree>(new RigidBodyTree(
@@ -34,5 +34,7 @@ TEST(urdfDynamicsTest, AllTests) {
   }
 }
 
-}  // namespace test
+}  // namespace
+}  // namespace pendulum
+}  // namespace examples
 }  // namespace drake

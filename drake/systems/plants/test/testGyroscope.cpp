@@ -1,8 +1,8 @@
-#include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/util/testUtil.h"
-
-#include "drake/util/eigen_matrix_compare.h"
 #include "gtest/gtest.h"
+
+#include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/util/eigen_matrix_compare.h"
+#include "drake/util/testUtil.h"
 
 using Eigen::Vector3d;
 using Eigen::Vector4d;
@@ -15,7 +15,9 @@ using drake::util::MatrixCompareType;
 using Drake::RigidBodyGyroscope;
 
 namespace drake {
-namespace test {
+namespace systems {
+namespace plants {
+namespace {
 
 Vector3d getGyroscopeOutput(shared_ptr<RigidBodySystem> const& sys,
                             Vector3d const& ang_vel) {
@@ -45,12 +47,10 @@ TEST(testGyroscope, AllTests) {
 
     EXPECT_TRUE(CompareMatrices(getGyroscopeOutput(rigid_body_sys, ang_vel),
                                 ang_vel, tol, MatrixCompareType::absolute));
-
-    // valuecheckMatrix(getGyroscopeOutput(rigid_body_sys, ang_vel),
-    //                  ang_vel,
-    //                  tol);
   }
 }
 
-}  // namespace test
+}  // namespace
+}  // namespace plants
+}  // namespace systems
 }  // namespace drake

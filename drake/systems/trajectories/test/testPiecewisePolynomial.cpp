@@ -1,12 +1,11 @@
-#include <Eigen/Core>
+#include "drake/systems/trajectories/PiecewisePolynomial.h"
 #include <iostream>
 #include <random>
 #include <vector>
-#include "drake/systems/trajectories/PiecewisePolynomial.h"
-#include "drake/util/testUtil.h"
-
-#include "drake/util/eigen_matrix_compare.h"
+#include <Eigen/Core>
 #include "gtest/gtest.h"
+#include "drake/util/eigen_matrix_compare.h"
+#include "drake/util/testUtil.h"
 
 using Eigen::Matrix;
 using std::default_random_engine;
@@ -19,7 +18,7 @@ using std::uniform_int_distribution;
 using drake::util::MatrixCompareType;
 
 namespace drake {
-namespace test {
+namespace {
 
 default_random_engine generator;
 uniform_real_distribution<double> uniform;
@@ -148,5 +147,5 @@ TEST(testPiecewisePolynomial, AllTests) {
   testValueOutsideOfRange<double>();
 }
 
-}  // namespace test
+}  // namespace
 }  // namespace drake

@@ -1,12 +1,13 @@
 #ifndef DRAKE_UTIL_TESTUTIL_H_
 #define DRAKE_UTIL_TESTUTIL_H_
 
-#include <Eigen/Core>
 #include <chrono>
 #include <cmath>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+
+#include <Eigen/Core>
 
 // requires <chrono>, which isn't available in MSVC2010...
 template <typename TimeT = std::chrono::milliseconds>

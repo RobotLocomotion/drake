@@ -1,8 +1,8 @@
-#include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/util/testUtil.h"
-
-#include "drake/util/eigen_matrix_compare.h"
 #include "gtest/gtest.h"
+
+#include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/util/eigen_matrix_compare.h"
+#include "drake/util/testUtil.h"
 
 using Eigen::Vector3d;
 using Eigen::Vector4d;
@@ -15,7 +15,9 @@ using drake::util::MatrixCompareType;
 using Drake::RigidBodyAccelerometer;
 
 namespace drake {
-namespace test {
+namespace systems {
+namespace plants {
+namespace {
 
 Vector3d getAccelerometerOutput(shared_ptr<RigidBodySystem> const& sys,
                                 Vector3d const& rpy, Vector4d const& u) {
@@ -101,5 +103,7 @@ TEST(testAccelerometer, AllTests) {
       Vector3d(0, 0, g), tol, MatrixCompareType::absolute));
 }
 
-}  // namespace test
+}  // namespace
+}  // namespace plants
+}  // namespace systems
 }  // namespace drake

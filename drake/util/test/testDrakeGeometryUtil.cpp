@@ -1,12 +1,11 @@
-#include <Eigen/Core>
+#include "drake/util/drakeGeometryUtil.h"
 #include <cmath>
 #include <iostream>
-#include "drake/core/Gradient.h"
-#include "drake/util/drakeGeometryUtil.h"
-#include "drake/util/testUtil.h"
-
-#include "drake/util/eigen_matrix_compare.h"
+#include <Eigen/Core>
 #include "gtest/gtest.h"
+#include "drake/core/Gradient.h"
+#include "drake/util/testUtil.h"
+#include "drake/util/eigen_matrix_compare.h"
 
 using Eigen::Isometry3d;
 using Eigen::Vector3d;
@@ -22,7 +21,8 @@ using drake::util::MatrixCompareType;
 using Drake::initializeAutoDiff;
 
 namespace drake {
-namespace test {
+namespace util {
+namespace {
 
 void testExpmap2quat(const Vector4d &quat);
 
@@ -283,5 +283,6 @@ TEST(drakeGeometryUtilTest, AllTests) {
   testdrpy2rotmat();
 }
 
-}  // namespace test
+}  // namespace
+}  // namespace util
 }  // namespace drake
