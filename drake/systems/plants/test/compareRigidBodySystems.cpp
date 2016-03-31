@@ -9,12 +9,12 @@ using Drake::RigidBodySystem;
 using Eigen::VectorXd;
 using drake::util::MatrixCompareType;
 
-std::string modelFile1, modelFile2;
-
 namespace drake {
 namespace systems {
 namespace plants {
 namespace {
+
+std::string modelFile1, modelFile2;
 
 TEST(CompareRigidBodySystemsTest, TestAll) {
   auto r1 = make_shared<RigidBodySystem>();
@@ -45,7 +45,7 @@ TEST(CompareRigidBodySystemsTest, TestAll) {
   }
 }
 
-}  // namespace test
+}  // namespace
 }  // namespace plants
 }  // namespace systems
 }  // namespace drake
@@ -65,8 +65,8 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  modelFile1 = argv[1];
-  modelFile2 = argv[2];
+  drake::systems::plants::modelFile1 = argv[1];
+  drake::systems::plants::modelFile2 = argv[2];
 
   return RUN_ALL_TESTS();
 }
