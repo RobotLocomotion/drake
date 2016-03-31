@@ -1,5 +1,5 @@
-#ifndef DRAKE_SOLVERS_SNOPT_SOLVER_H
-#define DRAKE_SOLVERS_SNOPT_SOLVER_H
+#ifndef DRAKE_SOLVERS_SNOPT_SOLVER_H_
+#define DRAKE_SOLVERS_SNOPT_SOLVER_H_
 
 #include "drake/drakeOptimization_export.h"
 
