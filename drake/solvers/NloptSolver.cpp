@@ -115,8 +115,7 @@ double EvaluateScalarConstraint(const std::vector<double>& x,
   Eigen::VectorXd xvec = MakeEigenVector(x);
 
   const Constraint* c = wrapped->constraint;
-  const size_t num_constraints = c->getNumConstraints();
-  assert(num_constraints == 1);
+  assert(c->getNumConstraints() == 1);
 
   TaylorVecXd ty(1);
   TaylorVecXd this_x = MakeInputTaylorVec(xvec, *(wrapped->variable_list));
