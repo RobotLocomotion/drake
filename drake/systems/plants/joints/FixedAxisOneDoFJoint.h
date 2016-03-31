@@ -1,5 +1,5 @@
-#ifndef ONEDOFJOINT_H_
-#define ONEDOFJOINT_H_
+#ifndef DRAKE_SYSTEMS_PLANTS_JOINTS_FIXEDAXISONEDOFJOINT_H_
+#define DRAKE_SYSTEMS_PLANTS_JOINTS_FIXEDAXISONEDOFJOINT_H_
 
 #include "DrakeJointImpl.h"
 #include <cmath>
@@ -176,4 +176,4 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-#endif /* ONEDOFJOINT_H_ */
+#endif  // DRAKE_SYSTEMS_PLANTS_JOINTS_FIXEDAXISONEDOFJOINT_H_

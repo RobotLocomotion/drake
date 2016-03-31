@@ -1,5 +1,5 @@
-#ifndef DRAKE_SIMULATION_H
-#define DRAKE_SIMULATION_H
+#ifndef DRAKE_SYSTEMS_SIMULATION_H_
+#define DRAKE_SYSTEMS_SIMULATION_H_
 
 #include <thread>
 #include <chrono>
@@ -122,4 +122,4 @@ void simulate(const System& sys, double t0, double tf) {
 
 }  // end namespace Drake
 
-#endif  // DRAKE_SIMULATION_H
+#endif  // DRAKE_SYSTEMS_SIMULATION_H_

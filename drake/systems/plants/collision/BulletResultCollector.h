@@ -1,5 +1,5 @@
-#ifndef __DrakeCollisionBullletResultCollector_H__
-#define __DrakeCollisionBullletResultCollector_H__
+#ifndef DRAKE_SYSTEMS_PLANTS_COLLISION_BULLETRESULTCOLLECTOR_H_
+#define DRAKE_SYSTEMS_PLANTS_COLLISION_BULLETRESULTCOLLECTOR_H_
 
 #include "drake/systems/plants/collision/DrakeCollision.h"
 
@@ -54,4 +54,4 @@ class BulletResultCollector : public ResultCollector,
 typedef std::shared_ptr<ResultCollector> ResultCollShPtr;
 }
 
-#endif
+#endif  // DRAKE_SYSTEMS_PLANTS_COLLISION_BULLETRESULTCOLLECTOR_H_

@@ -1,6 +1,5 @@
-
-#ifndef DRAKE_DRAKEJOINTS_H
-#define DRAKE_DRAKEJOINTS_H
+#ifndef DRAKE_SYSTEMS_PLANTS_JOINTS_DRAKEJOINTS_H_
+#define DRAKE_SYSTEMS_PLANTS_JOINTS_DRAKEJOINTS_H_
 
 #include "DrakeJoint.h"
 #include "QuaternionFloatingJoint.h"
@@ -10,4 +9,4 @@
 #include "RevoluteJoint.h"
 #include "FixedJoint.h"
 
-#endif  // DRAKE_DRAKEJOINTS_H
+#endif  // DRAKE_SYSTEMS_PLANTS_JOINTS_DRAKEJOINTS_H_

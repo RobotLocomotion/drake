@@ -1,5 +1,5 @@
-#ifndef __DrakeCollisionModel_H__
-#define __DrakeCollisionModel_H__
+#ifndef DRAKE_SYSTEMS_PLANTS_COLLISION_MODEL_H_
+#define DRAKE_SYSTEMS_PLANTS_COLLISION_MODEL_H_
 
 #include <memory>
 #include <unordered_map>
@@ -8,7 +8,7 @@
 #include <Eigen/StdVector>
 
 #include "Element.h"
-#include "PointPair.h"
+#include "drake/systems/plants/collision/point_pair.h"
 #include "drake/drakeCollision_export.h"
 
 namespace DrakeCollision {
@@ -35,7 +35,7 @@ class DRAKECOLLISION_EXPORT Model {
    * the given id or nullptr if no such collision element is present in the
    * model.
    */
-  virtual const Element* readElement(ElementId id);
+  virtual const Element* readElement(ElementId id) const;
 
   virtual void getTerrainContactPoints(ElementId id0,
                                        Eigen::Matrix3Xd& terrain_points);
@@ -176,7 +176,10 @@ class DRAKECOLLISION_EXPORT Model {
   }
 
  protected:
-  std::unordered_map<ElementId, std::unique_ptr<Element> > elements;
+  // Protected member variables are forbidden by the style guide.
+  // Please do not add new references to this member.  Instead, use
+  // the accessors.
+  std::unordered_map<ElementId, std::unique_ptr<Element>> elements;
 
  private:
   Model(const Model&) {}
@@ -184,4 +187,4 @@ class DRAKECOLLISION_EXPORT Model {
 };
 }
 
-#endif
+#endif  // DRAKE_SYSTEMS_PLANTS_COLLISION_MODEL_H_

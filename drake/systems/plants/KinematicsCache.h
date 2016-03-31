@@ -1,5 +1,5 @@
-#ifndef DRAKE_KINEMATICSCACHE_H
-#define DRAKE_KINEMATICSCACHE_H
+#ifndef DRAKE_SYSTEMS_PLANTS_KINEMATICSCACHE_H_
+#define DRAKE_SYSTEMS_PLANTS_KINEMATICSCACHE_H_
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -270,4 +270,4 @@ class KinematicsCache {
 #endif
 };
 
-#endif  // DRAKE_KINEMATICSCACHE_H
+#endif  // DRAKE_SYSTEMS_PLANTS_KINEMATICSCACHE_H_

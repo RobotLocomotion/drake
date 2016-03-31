@@ -1,5 +1,6 @@
-#ifndef __RIGIDBODYIK_H__
-#define __RIGIDBODYIK_H__
+#ifndef DRAKE_SYSTEMS_PLANTS_RIGIDBODYIK_H_
+#define DRAKE_SYSTEMS_PLANTS_RIGIDBODYIK_H_
+
 #include <string>
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
@@ -174,4 +175,5 @@ DRAKEIK_EXPORT void inverseKinTraj(
  *         ikoptions.fixInitialState = False   The solver will search for the
  * initial posture and velocity
  */
-#endif
+
+#endif  // DRAKE_SYSTEMS_PLANTS_RIGIDBODYIK_H_

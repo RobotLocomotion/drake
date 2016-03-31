@@ -1,5 +1,5 @@
-#ifndef __DRAKE_GEOMETRY_UTIL_H__
-#define __DRAKE_GEOMETRY_UTIL_H__
+#ifndef DRAKE_UTIL_DRAKEGEOMETRYUTIL_H_
+#define DRAKE_UTIL_DRAKEGEOMETRYUTIL_H_
 
 #include <Eigen/Dense>
 #include <cstring>
@@ -1640,4 +1640,4 @@ void quat2expmapSequence(const Eigen::MatrixBase<DerivedQ>& quat,
   }
 }
 
-#endif
+#endif  // DRAKE_UTIL_DRAKEGEOMETRYUTIL_H_
