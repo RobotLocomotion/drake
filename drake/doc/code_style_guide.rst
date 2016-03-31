@@ -39,6 +39,7 @@ Exceptions
    upper-case); it is not mandatory to downcase it or give it a more verbose
    name.
  * No need for a copyright line at the top of every file (this will change soon, see: `issue #1805 <https://github.com/RobotLocomotion/drake/issues/1805>`_).
+ * No need to follow the `order of includes rules <https://google.github.io/styleguide/cppguide.html#Names_and_Order_of_Includes>`_. Instead, accept whatever :ref:`clang-format <code-style-tools-clang-format>` enforces.
 
 MATLAB Style
 ============
