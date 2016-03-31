@@ -61,15 +61,10 @@ double EvaluateCosts(const std::vector<double>& x,
 
     binding.getConstraint()->eval(this_x, ty);
 
-    // sam.creasey: I think the right thing to do here is to sum all
-    // of the costs if multiple objectives are specified.
     cost += ty(0).value();
     if (!grad.empty()) {
       for (const DecisionVariableView& v : binding.getVariableList()) {
         for (size_t j = v.index(); j < v.index() + v.size(); j++) {
-          // TODO sam.creasey Is summing the derivatives the right
-          // thing to do if a decision variable is bound to multiple
-          // objectives?
           grad[j] += ty(0).derivatives()(j);
         }
       }
@@ -179,9 +174,6 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
             (c->getUpperBound()(i) ==
              std::numeric_limits<double>::infinity()) ? -1 : 1;
          for (size_t j = v.index(); j < v.index() + v.size(); j++) {
-           // TODO sam.creasey I don't actually know if summing these
-           // is the right thing to do when more than one constraint
-           // is present.
            grad[j] += ty(i).derivatives()(j) * grad_sign;
          }
       }
