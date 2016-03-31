@@ -1,12 +1,14 @@
 
+#include "drake/solvers/NloptSolver.h"
+
 #include <stdexcept>
 #include <list>
 #include <vector>
 
 #include <nlopt.hpp>
 
-#include "NloptSolver.h"
-#include "Optimization.h"
+#include "drake/core/Gradient.h"
+#include "drake/solvers/Optimization.h"
 
 namespace Drake {
 namespace {
@@ -35,6 +37,9 @@ TaylorVecXd MakeInputTaylorVec(const Eigen::VectorXd& xvec,
   return this_x;
 }
 
+// This function meets the signature requirements for nlopt::vfunc as
+// described in
+// http://ab-initio.mit.edu/wiki/index.php/NLopt_C-plus-plus_Reference#Objective_function
 double EvaluateCosts(const std::vector<double>& x,
                      std::vector<double>& grad,
                      void* f_data) {
@@ -82,12 +87,16 @@ struct WrappedConstraint {
 };
 
 double ApplyConstraintBounds(double result, double lb, double ub) {
-  // Our constraints are expressed in the form lb <= f(x) <= ub.
-  // NLopt always wants the value of a constraint expressed as
+  // Our (Drake's) constraints are expressed in the form lb <= f(x) <=
+  // ub.  NLopt always wants the value of a constraint expressed as
   // f(x) <= 0.
   //
   // For upper bounds rewrite as: f(x) - ub <= 0
   // For lower bounds rewrite as: -f(x) + lb <= 0
+  //
+  // See
+  // http://ab-initio.mit.edu/wiki/index.php/NLopt_Reference#Nonlinear_constraints
+  // for more detail on how NLopt interprets return values.
 
   if (ub != std::numeric_limits<double>::infinity()) {
     if ((lb != -std::numeric_limits<double>::infinity()) && (lb != ub)) {
@@ -106,6 +115,12 @@ double ApplyConstraintBounds(double result, double lb, double ub) {
   return result;
 }
 
+// This function meets the signature of nlopt::vfunc (yes, same
+// signature as a cost function, but with different semantics) as
+// described in
+// http://ab-initio.mit.edu/wiki/index.php/NLopt_C-plus-plus_Reference#Nonlinear_constraints
+// and
+// http://ab-initio.mit.edu/wiki/index.php/NLopt_Reference#Nonlinear_constraints
 double EvaluateScalarConstraint(const std::vector<double>& x,
                                 std::vector<double>& grad,
                                 void* f_data) {
@@ -123,9 +138,6 @@ double EvaluateScalarConstraint(const std::vector<double>& x,
   const double result = ApplyConstraintBounds(
       ty(0).value(), c->getLowerBound()(0), c->getUpperBound()(0));
 
-  // TODO sam.creasey How should lower bounds be handled?  We don't
-  // have any tests which use them...
-
   if (!grad.empty()) {
     grad.assign(grad.size(), 0);
     const double grad_sign =
@@ -140,6 +152,8 @@ double EvaluateScalarConstraint(const std::vector<double>& x,
   return result;
 }
 
+// This function meets the signature of nlopt_mfunc as described in
+// http://ab-initio.mit.edu/wiki/index.php/NLopt_Reference#Vector-valued_constraints
 void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
                               const double* x, double* grad, void* f_data) {
   const WrappedConstraint* wrapped =
@@ -221,14 +235,14 @@ bool NloptSolver::solve(OptimizationProblem &prog) const {
 
   opt.set_min_objective(EvaluateCosts, &prog);
 
-  // TODO sam.creasey All hardcoded tolerances in this function should
-  // be made configurable when #1879 is fixed.
+  // TODO(sam.creasey): All hardcoded tolerances in this function
+  // should be made configurable when #1879 is fixed.
   const double constraint_tol = 1e-6;
   const double xtol_rel = 1e-6;
 
   std::list<WrappedConstraint> wrapped_list;
 
-  // TODO sam.creasey Missing test coverage for generic constraints
+  // TODO(sam.creasey): Missing test coverage for generic constraints
   // with >1 output.
   for (auto& c : prog.getGenericConstraints()) {
     WrappedConstraint wrapped = { c.getConstraint().get(),
@@ -259,7 +273,7 @@ bool NloptSolver::solve(OptimizationProblem &prog) const {
     }
   }
 
-  // TODO sam.creasey Missing test coverage for linear constraints
+  // TODO(sam.creasey): Missing test coverage for linear constraints
   // with >1 output.
   for (auto& c : prog.getLinearConstraints()) {
     WrappedConstraint wrapped = { c.getConstraint().get(),

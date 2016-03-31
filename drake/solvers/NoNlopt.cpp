@@ -1,6 +1,7 @@
 
+#include "drake/solvers/NloptSolver.h"
+
 #include <stdexcept>
-#include "NloptSolver.h"
 
 bool Drake::NloptSolver::available() const {
   return false;

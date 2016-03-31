@@ -1,6 +1,7 @@
 
+#include "drake/solvers/SnoptSolver.h"
+
 #include <stdexcept>
-#include "SnoptSolver.h"
 
 bool Drake::SnoptSolver::available() const {
   return false;

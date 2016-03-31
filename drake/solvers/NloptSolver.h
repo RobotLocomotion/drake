@@ -1,9 +1,9 @@
-#ifndef DRAKE_NLOPT_SOLVER_H
-#define DRAKE_NLOPT_SOLVER_H
+#ifndef DRAKE_SOLVERS_NLOPT_SOLVER_H
+#define DRAKE_SOLVERS_NLOPT_SOLVER_H
 
 #include "drake/drakeOptimization_export.h"
 
-#include "MathematicalProgram.h"
+#include "drake/solvers/MathematicalProgram.h"
 
 namespace Drake {
 
