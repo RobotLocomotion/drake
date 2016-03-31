@@ -1,9 +1,18 @@
 
-#include "drake/examples/Pendulum/Pendulum.h"  // to get some types
-#include "drake/util/testUtil.h"
+#include "drake/core/test/pendulum.h"
+#include "drake/core/testUtil.h"
 
-using namespace std;
-using namespace Drake;
+using std::cout;
+using std::endl;
+using std::exception;
+using std::is_same;
+using std::runtime_error;
+using std::string;
+
+namespace Drake {
+namespace core {
+namespace test {
+namespace {
 
 struct OutputTest {
   template <typename ScalarType>
@@ -20,7 +29,7 @@ struct OutputTestTwo {
   OutputVector<double> output(const double& t) const;
 };
 
-int main(int argc, char* argv[]) {
+int do_main() {
   try {
     Eigen::Vector2d x;
     x << 0.2, 0.4;
@@ -127,4 +136,13 @@ int main(int argc, char* argv[]) {
 
   cout << "all tests passed" << endl;
   return 0;
+}
+
+} // anonymous namespace
+} // namespace test
+} // namespace core
+} // namespace Drake
+
+int main(int argc, char* argv[]) {
+  Drake::core::test::do_main();
 }
