@@ -56,6 +56,5 @@ When you are done with these platform-specific steps, return to :doc:`from_sourc
 
 Note that when you run drake commands from now on (including the
 ones in the linked instructions, such as `make` or `make test`),
-you must always precede them with
-`env CXX=g++-4.9 CC=gcc-4.9 PATH=/usr/lib/ccache:$PATH`,
+you must always precede them with `env CXX=g++-4.9 CC=gcc-4.9`,
 just like you did in the the `make options` step above).
