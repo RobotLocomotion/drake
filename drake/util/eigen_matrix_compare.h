@@ -69,7 +69,7 @@ bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
         continue;
       }
 
-      // Determine whether the difference between the two matrices isl less than
+      // Determine whether the difference between the two matrices is less than
       // the tolerance.
       double delta = std::abs(m1(ii, jj) - m2(ii, jj));
 

@@ -242,8 +242,11 @@ void gloptipolyConstrainedMinimization() {
 void simpleLCPConstraintEval() {
   OptimizationProblem prog;
   Eigen::Matrix<double, 2, 2> M;
+
+  // clang-format off
   M << 1, 0,
        0, 1;
+  // clang-format on
 
   Eigen::Vector2d q(-1, -1);
 
@@ -271,8 +274,11 @@ void simpleLCPConstraintEval() {
 void simpleLCP() {
   OptimizationProblem prog;
   Eigen::Matrix<double, 2, 2> M;
+
+  // clang-format off
   M << 1, 4,
        3, 1;
+  // clang-format on
 
   Eigen::Vector2d q(-16, -15);
 
@@ -293,8 +299,11 @@ void simpleLCP() {
 void multiLCP() {
   OptimizationProblem prog;
   Eigen::Matrix<double, 2, 2> M;
+
+  // clang-format off
   M << 1, 4,
        3, 1;
+  // clang-format on
 
   Eigen::Vector2d q(-16, -15);
 
