@@ -2,7 +2,7 @@
 
 #include "drake/examples/Pendulum/Pendulum.h"  // to get some types
 #include "drake/util/eigen_matrix_compare.h"
-#include "drake/util/testUtil.h"
+#include "drake/core/testUtil.h"
 
 using Drake::CombinedVector;
 using Drake::size;
