@@ -17,23 +17,24 @@ enum MatrixCompareType { absolute, relative };
  * @param m2 The second matrix to compare.
  * @param tolerance The tolerance for determining equivalence.
  * @param compare_type Whether the tolereance is absolute or relative.
- * @param error_msg A string for storing a description of why a comparison is
- * false.
- * @return true if the two matrices match.
+ * @param explanation A pointer to a string variable for saving an explanation
+ * of why m1 and m2 are unequal. This parameter is optional and defaults to
+ * nullptr.
+ * @return true if the two matrices are equal based on the specified tolerance.
  */
 template <typename DerivedA, typename DerivedB>
 bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
-                     const Eigen::MatrixBase<DerivedB>& m2, double tolerance,
-                     MatrixCompareType compare_type,
-                     std::string* error_msg = nullptr) {
+                     const Eigen::MatrixBase<DerivedB>& m2, const double tolerance,
+                     const MatrixCompareType compare_type,
+                     std::string* explanation = nullptr) {
   bool result = true;
 
   if (m1.rows() != m2.rows() || m1.cols() != m2.cols()) {
-    if (error_msg != nullptr) {
+    if (explanation != nullptr) {
       std::stringstream msg;
       msg << "Matrix size mismatch: (" << m1.rows() << " x " << m1.cols()
           << " vs. " << m2.rows() << " x " << m2.rows() << ")";
-      *error_msg = msg.str();
+      *explanation = msg.str();
     }
     result = false;
   }
@@ -58,12 +59,12 @@ bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
       // Check for case where one value is NaN and the other is not
       if ((std::isnan(m1(ii, jj)) && !std::isnan(m2(ii, jj))) ||
           (!std::isnan(m1(ii, jj)) && std::isnan(m2(ii, jj)))) {
-        if (error_msg != nullptr) {
+        if (explanation != nullptr) {
           std::stringstream msg;
           msg << "NaN missmatch at (" << ii << ", " << jj << "):\nm1 =\n"
               << m1 << "\nm2 =\n"
               << m2;
-          *error_msg = msg.str();
+          *explanation = msg.str();
         }
         result = false;
         continue;
@@ -77,7 +78,7 @@ bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
         // Perform comparison using absolute tolerance.
 
         if (delta > tolerance) {
-          if (error_msg != nullptr) {
+          if (explanation != nullptr) {
             std::stringstream msg;
             msg << "Values at (" << ii << ", " << jj
                 << ") exceed tolerance: " << m1(ii, jj) << " vs. " << m2(ii, jj)
@@ -87,7 +88,7 @@ bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
                 << m2 << "\ndelta=\n"
                 << (m1 - m2);
 
-            *error_msg = msg.str();
+            *explanation = msg.str();
           }
           result = false;
         }
@@ -98,7 +99,7 @@ bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
         double relative_tolerance = tolerance * std::max(1.0, max_value);
 
         if (delta > relative_tolerance) {
-          if (error_msg != nullptr) {
+          if (explanation != nullptr) {
             std::stringstream msg;
             msg << "Values at (" << ii << ", " << jj
                 << ") exceed tolerance: " << m1(ii, jj) << " vs. " << m2(ii, jj)
@@ -108,7 +109,7 @@ bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
                 << m2 << "\ndelta=\n"
                 << (m1 - m2);
 
-            *error_msg = msg.str();
+            *explanation = msg.str();
           }
           result = false;
         }

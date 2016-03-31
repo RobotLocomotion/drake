@@ -1,7 +1,7 @@
 #include "drake/examples/Pendulum/Pendulum.h"  // to get some types
+#include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
 
-#include "drake/util/eigen_matrix_compare.h"
 #include "gtest/gtest.h"
 
 using Drake::CombinedVector;
@@ -12,7 +12,8 @@ using Drake::InputOutputRelation;
 using drake::util::MatrixCompareType;
 
 namespace drake {
-namespace test {
+namespace core {
+namespace {
 
 // Tests the ability to set a PendulumState equal to a vector and vice versa.
 TEST(VectorTest, ValueAssignment) {
@@ -23,7 +24,7 @@ TEST(VectorTest, ValueAssignment) {
   state.theta = 0.2;
   state.thetadot = .3;
 
-  EXPECT_EQ(size(state), static_cast<size_t>(2));
+  EXPECT_EQ(size(state), 2);
 
   state = x;
   EXPECT_EQ(state.thetadot, 0.4);
@@ -139,5 +140,6 @@ TEST(VectorTest, InputOutputRelationCombinationTests) {
       << "should be poly";
 }
 
-}  // namespace test
+}  // namespace
+}  // namespace core
 }  // namespace drake

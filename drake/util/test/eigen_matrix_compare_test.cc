@@ -4,7 +4,8 @@
 using drake::util::MatrixCompareType;
 
 namespace drake {
-namespace test {
+namespace util {
+namespace {
 
 // Tests the ability for two identical matrices to be compared.
 TEST(MatrixCompareTest, CompareIdentical) {
@@ -17,20 +18,20 @@ TEST(MatrixCompareTest, CompareIdentical) {
   Eigen::MatrixXd m3(2, 2);
   m3 << 100, 200, 300, 400;
 
-  double tolerance = 1e-8;
-  std::string error_msg;
+  const double tolerance = 1e-8;
+  std::string explanation;
 
   EXPECT_TRUE(CompareMatrices(m1, m2, tolerance, MatrixCompareType::absolute,
-                              &error_msg));
+                              &explanation));
 
   EXPECT_TRUE(CompareMatrices(m1, m2, tolerance, MatrixCompareType::relative,
-                              &error_msg));
+                              &explanation));
 
   EXPECT_FALSE(CompareMatrices(m1, m3, tolerance, MatrixCompareType::absolute,
-                               &error_msg));
+                               &explanation));
 
   EXPECT_FALSE(CompareMatrices(m1, m3, tolerance, MatrixCompareType::relative,
-                               &error_msg));
+                               &explanation));
 }
 
 // Tests absolute tolerance with real numbers.
@@ -47,7 +48,7 @@ TEST(MatrixCompareTest, AbsoluteCompare) {
   Eigen::MatrixXd m4(2, 2);
   m4 << 0, 1, 2, 3 - 1e-6;
 
-  double tolerance = 1e-8;
+  const double tolerance = 1e-8;
   std::string error_msg;
 
   // The difference between m1 and m2 is less than the tolerance.
@@ -80,7 +81,7 @@ TEST(MatrixCompareTest, AbsoluteNaNCompare) {
   Eigen::MatrixXd m4(2, 2);
   m4 << 0, 1, 2, 3;
 
-  double tolerance = 1e-8;
+  const double tolerance = 1e-8;
   std::string error_msg;
 
   // The difference between m1 and m2 is less than the tolerance.
@@ -96,10 +97,7 @@ TEST(MatrixCompareTest, AbsoluteNaNCompare) {
   // The difference between m1 and m4 is greater than the tolerance.
   // They should be considered different.
   EXPECT_FALSE(CompareMatrices(m1, m4, tolerance, MatrixCompareType::absolute,
-                               &error_msg))
-      << "m1 =\n"
-      << m1 << "\nm4 =\n"
-      << m4;
+                               &error_msg));
 }
 
 // Tests absolute tolerance with real numbers.
@@ -110,25 +108,21 @@ TEST(MatrixCompareTest, RelativeCompare) {
   Eigen::MatrixXd m2(2, 2);
   m2 << 100, 100 * 0.9, 100, 100;
 
-  double one_pct = 0.01;
-  double ten_pct = 0.1;
-  double twenty_pct = 0.2;
-
   std::string error_msg;
 
   // The difference between m1 and m2 is more than 1%.
   // They should be considered not equal.
-  EXPECT_FALSE(CompareMatrices(m1, m2, one_pct, MatrixCompareType::relative,
+  EXPECT_FALSE(CompareMatrices(m1, m2, 0.01, MatrixCompareType::relative,
                                &error_msg));
 
-  // The difference between m1 and m2 is equal to 1%.
+  // The difference between m1 and m2 is equal to 10%.
   // They should be considered equal.
-  EXPECT_TRUE(CompareMatrices(m1, m2, ten_pct, MatrixCompareType::relative,
+  EXPECT_TRUE(CompareMatrices(m1, m2, 0.1, MatrixCompareType::relative,
                               &error_msg));
 
   // The difference between m1 and m4 is less than 20%.
   // They should be considered equal.
-  EXPECT_TRUE(CompareMatrices(m1, m2, twenty_pct, MatrixCompareType::relative,
+  EXPECT_TRUE(CompareMatrices(m1, m2, 0.2, MatrixCompareType::relative,
                               &error_msg));
 }
 
@@ -140,7 +134,7 @@ TEST(MatrixCompareTest, NoMessageParam) {
   Eigen::MatrixXd m2(2, 2);
   m2 << 1, 2, 3, 4;
 
-  double one_pct = 0.01;
+  const double one_pct = 0.01;
 
   // The difference between m1 and m2 is less than 1%.
   // They should be considered equal.
@@ -148,5 +142,6 @@ TEST(MatrixCompareTest, NoMessageParam) {
   EXPECT_TRUE(CompareMatrices(m1, m2, one_pct, MatrixCompareType::relative));
 }
 
-}  // namespace test
+}  // namespace
+}  // namespace util
 }  // namespace drake
