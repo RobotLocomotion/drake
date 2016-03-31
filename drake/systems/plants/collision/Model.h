@@ -183,8 +183,9 @@ class DRAKECOLLISION_EXPORT Model {
       element->second->setLocalTransform(transform_body_to_joint *
                                          element->second->getLocalTransform());
       return true;
-    } else
+    } else {
       return false;
+    }
   }
 
   /**
