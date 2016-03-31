@@ -4,7 +4,7 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <unsupported/Eigen/AutoDiff>
-#include "drake/util/drakeGradientUtil.h"  // todo: pull the core tools into this file and zap the old gradient util.
+#include "drake/core/drakeGradientUtil.h"  // todo: pull the core tools into this file and zap the old gradient util.
 
 namespace Drake {
 // todo: recursive template to get arbitrary gradient order
