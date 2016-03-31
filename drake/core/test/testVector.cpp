@@ -1,5 +1,5 @@
 
-#include "pendulum.h"
+#include "drake/core/test/pendulum.h"
 #include "drake/core/testUtil.h"
 
 using std::cout;
