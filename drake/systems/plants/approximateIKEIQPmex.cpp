@@ -17,7 +17,7 @@
 #define USE_EIQUADPROG_BACKUP 1
 
 #if USE_EIQUADPROG_BACKUP
-#include "eiquadprog.hpp"
+#include "eiquadprog.h"
 #endif
 
 #define MAX_CONSTRS 1000
