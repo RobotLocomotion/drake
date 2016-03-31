@@ -79,7 +79,6 @@ else()
   option(WITH_DIRECTOR "vtk-based visualization tool and robot user interface" ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
   option(WITH_LIBBOT "simple open-gl visualizer + lcmgl for director" ON) # there is hope, but i spent a long time cleaning up c/c++ language errors trying to make msvc happy.. and still had a long way to go.
   option(WITH_LIBCCD "Required for FCL" OFF)
-  option(WITH_FLANN "Required for FCL" OFF)
   option(WITH_FCL "Fast Collision Library" OFF)
   option(WITH_NLOPT "nonlinear optimization solver" ON)
   option(WITH_SWIG_MATLAB "A version of SWIG with MATLAB support" ON)
@@ -158,7 +157,6 @@ set(drake_dependencies
   cmake
   eigen
   fcl
-  flann
   gloptipoly3
   googletest
   gurobi
@@ -176,7 +174,7 @@ set(drake_dependencies
   swigmake
   yalmip
   yaml_cpp)
-set(fcl_dependancies flann libccd)
+set(fcl_dependancies libccd)
 
 # download information, in alphabetical order
 set(avl_GIT_REPOSITORY https://github.com/RobotLocomotion/avl.git)
@@ -193,10 +191,6 @@ set(libccd_GIT_REPOSITORY https://github.com/danfis/libccd.git)
 set(libccd_GIT_TAG v2.0)
 set(libccd_IS_PUBLIC TRUE)
 set(libccd_IS_CMAKE_POD TRUE)
-set(flann_GIT_REPOSITORY https://github.com/mariusmuja/flann.git)
-set(flann_GIT_TAG 1.8.1-src)
-set(flann_IS_PUBLIC TRUE)
-set(flann_IS_CMAKE_POD TRUE)
 set(fcl_GIT_REPOSITORY https://github.com/flexible-collision-library/fcl.git)
 set(fcl_GIT_TAG d65487fdd1fe4fd38b3cc8dedd2a6b5224924854)
 #set(fcl_GIT_TAG 0.5.0)
@@ -334,7 +328,6 @@ foreach(proj IN ITEMS
   libbot
   bullet
   libccd
-  flann
   fcl
   spotless
   director
