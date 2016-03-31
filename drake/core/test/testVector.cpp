@@ -1,6 +1,6 @@
 
 #include "drake/examples/Pendulum/Pendulum.h"  // to get some types
-#include "drake/util/testUtil.h"
+#include "drake/core/testUtil.h"
 
 using namespace std;
 using namespace Drake;
