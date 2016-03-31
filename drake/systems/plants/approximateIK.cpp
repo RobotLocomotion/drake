@@ -113,7 +113,7 @@ void approximateIK(RigidBodyTree *model, const MatrixBase<DerivedA> &q_seed,
     VectorXd c(nc);
     MatrixXd dc(nc, nq);
     kc_array[kc_idx]->bounds(nullptr, lb, ub);
-    kc_array[kc_idx]->eval(nullptr, cache, c, dc);
+    kc_array[kc_idx]->Eval(nullptr, cache, c, dc);
     for (c_idx = 0; c_idx < nc; c_idx++) {
       VectorXd rowVec = dc.row(c_idx);
       double *Jrow = rowVec.data();

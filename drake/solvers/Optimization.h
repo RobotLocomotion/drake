@@ -10,7 +10,6 @@
 #include "Constraint.h"
 #include "MathematicalProgram.h"
 
-
 namespace Drake {
 
 /**
@@ -41,7 +40,7 @@ public:
   const std::string& name() const { return name_; }
   /** value()
    * @brief returns the actual stored value; which is only meaningful after
-   * calling solve() in the program.
+   * calling Solve() in the program.
    */
   const Eigen::VectorXd& value() const { return data_; }
   void set_value(const Eigen::VectorXd& new_data) { data_ = new_data; }
@@ -84,13 +83,13 @@ class DecisionVariableView {  // enables users to access pieces of the decision
 
   /** value()
    * @brief returns the actual stored value; which is only meaningful after
-   * calling solve() in the program.
+   * calling Solve() in the program.
    */
   Eigen::VectorBlock<const Eigen::VectorXd, Eigen::Dynamic> value() const {
     return var.value().segment(start_index, length);
   }
 
-  std::string getName() const {
+  std::string get_name() const {
     if (start_index == 0 && length == var.value().size()) {
       return var.name();
     } else {
@@ -154,17 +153,17 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
         Binding<U> const& b,
         typename std::enable_if<std::is_convertible<
             std::shared_ptr<U>, std::shared_ptr<C>>::value>::type* = nullptr)
-        : Binding(b.getConstraint(), b.getVariableList()) {}
+        : Binding(b.get_constraint(), b.get_variable_list()) {}
 
-    std::shared_ptr<C> const& getConstraint() const { return constraint; }
+    std::shared_ptr<C> const& get_constraint() const { return constraint; }
 
-    VariableList const& getVariableList() const { return variable_list; }
+    VariableList const& get_variable_list() const { return variable_list; }
 
     /** covers()
      * @brief returns true iff the given @p index of the enclosing
      * OptimizationProblem is included in this Binding.*/
-    bool covers(size_t index) const {
-      for (auto view : getVariableList()) {
+    bool Covers(size_t index) const {
+      for (auto view : get_variable_list()) {
         if (view.covers(index)) {
           return true;
         }
@@ -172,11 +171,11 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
       return false;
     }
 
-    size_t getNumElements() const {
+    size_t GetNumElements() const {
       // TODO(ggould-tri) assumes that no index appears more than once in the
       // view, which is nowhere asserted (but seems assumed elsewhere).
       size_t count = 0;
-      for (auto view : getVariableList()) {
+      for (auto view : get_variable_list()) {
         count += view.size();
       }
       return count;
@@ -186,9 +185,9 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
      * @brief Write the elements of @p solution to the bound elements of
      * the @p output vector.
      */
-    void writeThrough(const Eigen::VectorXd& solution,
+    void WriteThrough(const Eigen::VectorXd& solution,
                       Eigen::VectorXd* output) const {
-      assert(solution.rows() == getNumElements());
+      assert(solution.rows() == GetNumElements());
       size_t solution_index = 0;
       for (auto view : variable_list) {
         const auto& solution_segment =
@@ -218,19 +217,19 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
                      std::forward<Args>(args)...),
           f_(std::forward<F>(f)) {}
 
-    virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+    virtual void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                       Eigen::VectorXd& y) const override {
       y.resize(FunctionTraits<F>::numOutputs(f_));
       assert(x.rows() == FunctionTraits<F>::numInputs(f_));
       assert(y.rows() == FunctionTraits<F>::numOutputs(f_));
-      FunctionTraits<F>::eval(f_, x, y);
+      FunctionTraits<F>::Eval(f_, x, y);
     }
-    virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
+    virtual void Eval(const Eigen::Ref<const TaylorVecXd>& x,
                       TaylorVecXd& y) const override {
       y.resize(FunctionTraits<F>::numOutputs(f_));
       assert(x.rows() == FunctionTraits<F>::numInputs(f_));
       assert(y.rows() == FunctionTraits<F>::numOutputs(f_));
-      FunctionTraits<F>::eval(f_, x, y);
+      FunctionTraits<F>::Eval(f_, x, y);
     }
   };
 
@@ -241,12 +240,12 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
       // to int so it is odr-used (see
   // https://gcc.gnu.org/wiki/VerboseDiagnostics#missing_static_const_definition)
   OptimizationProblem()
-      : problem_type(MathematicalProgramInterface::getLeastSquaresProgram()),
+      : problem_type(MathematicalProgramInterface::get_least_squares_program()),
         num_vars(0),
         x_initial_guess(
             static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)){}
 
-  const DecisionVariableView addContinuousVariables(std::size_t num_new_vars,
+  const DecisionVariableView AddContinuousVariables(std::size_t num_new_vars,
                                                     std::string name = "x") {
     DecisionVariable v(DecisionVariable::VarType::CONTINUOUS, name,
                        num_new_vars, num_vars);
@@ -258,29 +257,29 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
     return variable_views.back();
   }
-  //    const DecisionVariable& addIntegerVariables(size_t num_new_vars,
+  //    const DecisionVariable& AddIntegerVariables(size_t num_new_vars,
   //    std::string name);
   //  ...
 
-  void addCost(std::shared_ptr<Constraint> const& obj,
+  void AddCost(std::shared_ptr<Constraint> const& obj,
                VariableList const& vars) {
-    problem_type.reset(problem_type->addGenericObjective());
+    problem_type.reset(problem_type->add_generic_objective());
     generic_objectives.push_back(Binding<Constraint>(obj, vars));
   }
 
-  void addCost(std::shared_ptr<Constraint> const& obj) {
-    addCost(obj, variable_views);
+  void AddCost(std::shared_ptr<Constraint> const& obj) {
+    AddCost(obj, variable_views);
   }
 
   template <typename F>
   typename std::enable_if<
       !std::is_convertible<F, std::shared_ptr<Constraint>>::value,
       std::shared_ptr<Constraint>>::type
-  addCost(F&& f, VariableList const& vars) {
+  AddCost(F&& f, VariableList const& vars) {
     auto c = std::make_shared<
         ConstraintImpl<typename std::remove_reference<F>::type>>(
         std::forward<F>(f));
-    addCost(c, vars);
+    AddCost(c, vars);
     return c;
   }
 
@@ -288,8 +287,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   typename std::enable_if<
       !std::is_convertible<F, std::shared_ptr<Constraint>>::value,
       std::shared_ptr<Constraint>>::type
-  addCost(F&& f) {
-    return addCost(std::forward<F>(f), variable_views);
+  AddCost(F&& f) {
+    return AddCost(std::forward<F>(f), variable_views);
   }
 
   // libstdc++ 4.9 evaluates
@@ -298,238 +297,237 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   // incorrectly as `true` so our enable_if overload is not used.
   // Provide an explicit alternative for this case.
   template <typename F>
-  std::shared_ptr<Constraint> addCost(std::unique_ptr<F>&& f,
+  std::shared_ptr<Constraint> AddCost(std::unique_ptr<F>&& f,
                                       VariableList const& vars) {
     auto c = std::make_shared<ConstraintImpl<std::unique_ptr<F>>>(
         std::forward<std::unique_ptr<F>>(f));
-    addCost(c, vars);
+    AddCost(c, vars);
     return c;
   }
   template <typename F>
-  std::shared_ptr<Constraint> addCost(std::unique_ptr<F>&& f) {
-    return addCost(std::forward<std::unique_ptr<F>>(f), variable_views);
+  std::shared_ptr<Constraint> AddCost(std::unique_ptr<F>&& f) {
+    return AddCost(std::forward<std::unique_ptr<F>>(f), variable_views);
   }
 
-  /** addQuadraticCost
+  /** AddQuadraticCost
    * @brief adds a cost term of the form (x-x_desired)'*Q*(x-x_desired)
    */
   template <typename DerivedQ, typename Derivedb>
-  std::shared_ptr<QuadraticConstraint> addQuadraticCost(
+  std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
       const Eigen::MatrixBase<DerivedQ>& Q,
       const Eigen::MatrixBase<Derivedb>& x_desired, const VariableList& vars) {
     std::shared_ptr<QuadraticConstraint> objective(new QuadraticConstraint(
         2 * Q, -2 * Q * x_desired, -std::numeric_limits<double>::infinity(),
         std::numeric_limits<double>::infinity()));
-    addCost(objective, vars);
+    AddCost(objective, vars);
     return objective;
   }
 
   template <typename DerivedQ, typename Derivedb>
-  std::shared_ptr<QuadraticConstraint> addQuadraticCost(
+  std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
       const Eigen::MatrixBase<DerivedQ>& Q,
       const Eigen::MatrixBase<Derivedb>& x_desired) {
-    return addQuadraticCost(Q, x_desired, variable_views);
+    return AddQuadraticCost(Q, x_desired, variable_views);
   }
 
-  /** addGenericConstraint
+  /** AddGenericConstraint
    *
    * @brief adds a generic constraint to the program.  This should
    * only be used if a more specific type of constraint is not
    * available, as it may require the use of a significantly more
    * expensive solver.
    */
-  void addGenericConstraint(std::shared_ptr<Constraint> con,
+  void AddGenericConstraint(std::shared_ptr<Constraint> con,
                      VariableList const& vars) {
-    problem_type.reset(problem_type->addGenericConstraint());
+    problem_type.reset(problem_type->add_generic_constraint());
     generic_constraints.push_back(Binding<Constraint>(con, vars));
   }
-  void addGenericConstraint(std::shared_ptr<Constraint> con) {
-    addGenericConstraint(con, variable_views);
+  void AddGenericConstraint(std::shared_ptr<Constraint> con) {
+    AddGenericConstraint(con, variable_views);
   }
 
-  /** addLinearConstraint
+  /** AddLinearConstraint
    *
    * @brief adds linear constraints referencing potentially a subset
    * of the decision variables.
    */
-  void addLinearConstraint(
+  void AddLinearConstraint(
       std::shared_ptr<LinearConstraint> con,
       VariableList const& vars) {
-    problem_type.reset(problem_type->addLinearConstraint());
-    linear_constraints.push_back(
-        Binding<LinearConstraint>(con, vars));
+    problem_type.reset(problem_type->add_linear_constraint());
+    linear_constraints.push_back(Binding<LinearConstraint>(con, vars));
   }
 
-  /** addLinearConstraint
+  /** AddLinearConstraint
    *
    * @brief adds linear constraints to the program for all (currently existing)
    * variables
    */
-  void addLinearConstraint(
+  void AddLinearConstraint(
       std::shared_ptr<LinearConstraint> con) {
-    addLinearConstraint(con, variable_views);
+    AddLinearConstraint(con, variable_views);
   }
 
-  /** addLinearConstraint
+  /** AddLinearConstraint
    *
    * @brief adds linear constraints referencing potentially a subset
    * of the decision variables.
    */
   template <typename DerivedA, typename DerivedLB, typename DerivedUB>
-  std::shared_ptr<LinearConstraint> addLinearConstraint(
+  std::shared_ptr<LinearConstraint> AddLinearConstraint(
       const Eigen::MatrixBase<DerivedA>& A,
       const Eigen::MatrixBase<DerivedLB>& lb,
       const Eigen::MatrixBase<DerivedUB>& ub, const VariableList& vars) {
     auto constraint = std::make_shared<LinearConstraint>(A, lb, ub);
-    addLinearConstraint(constraint, vars);
+    AddLinearConstraint(constraint, vars);
     return constraint;
   }
 
-  /** addLinearConstraint
+  /** AddLinearConstraint
    *
    * @brief adds linear constraints to the program for all (currently existing)
    * variables
    */
   template <typename DerivedA, typename DerivedLB, typename DerivedUB>
-  std::shared_ptr<LinearConstraint> addLinearConstraint(
+  std::shared_ptr<LinearConstraint> AddLinearConstraint(
       const Eigen::MatrixBase<DerivedA>& A,
       const Eigen::MatrixBase<DerivedLB>& lb,
       const Eigen::MatrixBase<DerivedUB>& ub) {
-    return addLinearConstraint(A, lb, ub, variable_views);
+    return AddLinearConstraint(A, lb, ub, variable_views);
   }
 
 
-  /** addLinearEqualityConstraint
+  /** AddLinearEqualityConstraint
    *
    * @brief adds linear equality constraints referencing potentially a
    * subset of the decision variables.
    */
-  void addLinearEqualityConstraint(
+  void AddLinearEqualityConstraint(
       std::shared_ptr<LinearEqualityConstraint> con,
       VariableList const& vars) {
-    problem_type.reset(problem_type->addLinearEqualityConstraint());
+    problem_type.reset(problem_type->add_linear_equality_constraint());
     linear_equality_constraints.push_back(
         Binding<LinearEqualityConstraint>(con, vars));
   }
 
-  /** addLinearEqualityConstraint
+  /** AddLinearEqualityConstraint
    *
    * @brief adds linear equality constraints to the program for all
    * (currently existing) variables
    */
-  void addLinearEqualityConstraint(
+  void AddLinearEqualityConstraint(
       std::shared_ptr<LinearEqualityConstraint> con) {
-    addLinearEqualityConstraint(con, variable_views);
+    AddLinearEqualityConstraint(con, variable_views);
   }
 
-  /** addLinearEqualityConstraint
+  /** AddLinearEqualityConstraint
    *
    * @brief adds linear equality constraints referencing potentially a subset of
    * the decision variables.
    * Example: to add and equality constraint which only depends on two of the
    * elements of x, you could use
    *   auto x = prog.addContinuousDecisionVariable(6,"myvar");
-   *   prog.addLinearEqualityConstraint(Aeq, beq,{x.row(2), x.row(5)});
+   *   prog.add_linear_equality_constraint(Aeq, beq,{x.row(2), x.row(5)});
    * where Aeq has exactly two columns.
    */
   template <typename DerivedA, typename DerivedB>
-  std::shared_ptr<LinearEqualityConstraint> addLinearEqualityConstraint(
+  std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::MatrixBase<DerivedA>& Aeq,
       const Eigen::MatrixBase<DerivedB>& beq, const VariableList& vars) {
 
     auto constraint = std::make_shared<LinearEqualityConstraint>(Aeq, beq);
-    addLinearEqualityConstraint(constraint, vars);
+    AddLinearEqualityConstraint(constraint, vars);
     return constraint;
   }
 
-  /** addLinearEqualityConstraint
+  /** AddLinearEqualityConstraint
    *
    * @brief adds linear equality constraints to the program for all
    * (currently existing) variables
    */
   template <typename DerivedA, typename DerivedB>
-  std::shared_ptr<LinearEqualityConstraint> addLinearEqualityConstraint(
+  std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::MatrixBase<DerivedA>& Aeq,
       const Eigen::MatrixBase<DerivedB>& beq) {
-    return addLinearEqualityConstraint(Aeq, beq, variable_views);
+    return AddLinearEqualityConstraint(Aeq, beq, variable_views);
   }
 
-  /** addBoundingBoxConstraint
+  /** AddBoundingBoxConstraint
    *
    * @brief adds bounding box constraints referencing potentially a subset of
    * the decision variables.
    */
-  void addBoundingBoxConstraint(
+  void AddBoundingBoxConstraint(
       std::shared_ptr<BoundingBoxConstraint> con,
       VariableList const& vars) {
-    problem_type.reset(problem_type->addLinearConstraint());
+    problem_type.reset(problem_type->add_linear_constraint());
     bbox_constraints.push_back(
         Binding<BoundingBoxConstraint>(con, vars));
   }
 
-  /** addBoundingBoxConstraint
+  /** AddBoundingBoxConstraint
    *
    * @brief adds bounding box constraints to the program for all
    * (currently existing) variables
    */
-  void addBoundingBoxConstraint(
+  void AddBoundingBoxConstraint(
       std::shared_ptr<BoundingBoxConstraint> con) {
-    addBoundingBoxConstraint(con, variable_views);
+    AddBoundingBoxConstraint(con, variable_views);
   }
 
-  /** addBoundingBoxConstraint
+  /** AddBoundingBoxConstraint
    *
    * @brief adds bounding box constraints referencing potentially a
    * subset of the decision variables.
    */
   template <typename DerivedLB, typename DerivedUB>
-  std::shared_ptr<BoundingBoxConstraint> addBoundingBoxConstraint(
+  std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
       const Eigen::MatrixBase<DerivedLB>& lb,
       const Eigen::MatrixBase<DerivedUB>& ub, const VariableList& vars) {
     std::shared_ptr<BoundingBoxConstraint> constraint(
         new BoundingBoxConstraint(lb, ub));
-    addBoundingBoxConstraint(constraint, vars);
+    AddBoundingBoxConstraint(constraint, vars);
     return constraint;
   }
 
-  /** addBoundingBoxConstraint
+  /** AddBoundingBoxConstraint
    *
    * @brief adds bounding box constraints to the program for all
    * (currently existing) variables
    */
   template <typename DerivedLB, typename DerivedUB>
-  std::shared_ptr<BoundingBoxConstraint> addBoundingBoxConstraint(
+  std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
       const Eigen::MatrixBase<DerivedLB>& lb,
       const Eigen::MatrixBase<DerivedUB>& ub) {
-    return addBoundingBoxConstraint(lb, ub, variable_views);
+    return AddBoundingBoxConstraint(lb, ub, variable_views);
   }
 
-  /** addLinearComplementarityConstraint
+  /** AddLinearComplementarityConstraint
    *
    * @brief adds a linear complementarity constraint to the program for all
    * (currently existing) variables.
    */
   template <typename DerivedM, typename Derivedq>
   std::shared_ptr<LinearComplementarityConstraint>
-      addLinearComplementarityConstraint(
+      AddLinearComplementarityConstraint(
           const Eigen::MatrixBase<DerivedM>& M,
           const Eigen::MatrixBase<Derivedq>& q) {
-    return addLinearComplementarityConstraint(M, q, variable_views);
+    return AddLinearComplementarityConstraint(M, q, variable_views);
   }
 
-  /** addLinearComplementarityConstraint
+  /** AddLinearComplementarityConstraint
    *
    * @brief adds a linear complementarity constraints referencing a subset of
    * the decision variables.
    */
   template <typename DerivedM, typename Derivedq>
   std::shared_ptr<LinearComplementarityConstraint>
-      addLinearComplementarityConstraint(
+      AddLinearComplementarityConstraint(
           const Eigen::MatrixBase<DerivedM>& M,
           const Eigen::MatrixBase<Derivedq>& q,
           const VariableList& vars) {
     problem_type.reset(
-        problem_type->addLinearComplementarityConstraint());
+        problem_type->add_linear_complementarity_constraint());
 
     // Linear Complementarity Constraint cannot currently coexist with any
     // other types of constraint or objective.
@@ -549,36 +547,36 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   }
 
   // template <typename FunctionType>
-  // void addCost(std::function..);
-  // void addLinearCost(const Eigen::MatrixBase<Derived>& c, const vector<const
+  // void AddCost(std::function..);
+  // void AddLinearCost(const Eigen::MatrixBase<Derived>& c, const vector<const
   // DecisionVariable&>& vars)
-  // void addQuadraticCost ...
+  // void AddQuadraticCost ...
 
   template <typename Derived>
-  void setInitialGuess(const DecisionVariableView& var,
-                       const Eigen::MatrixBase<Derived>& x0) {
+  void set_initial_guess(const DecisionVariableView& var,
+                         const Eigen::MatrixBase<Derived>& x0) {
     x_initial_guess.segment(var.index(), var.size()) = x0;
   }
 
-  bool solve() {
-    return problem_type->solve(*this);
+  bool Solve() {
+    return problem_type->Solve(*this);
   }  // todo: add argument for options
 
   //    template <typename Derived>
-  //    bool solve(const Eigen::MatrixBase<Derived>& x0);
+  //    bool Solve(const Eigen::MatrixBase<Derived>& x0);
 
   //    getObjectiveValue();
   //    getExitFlag();
   //    getInfeasibleConstraintNames();
 
-  void printSolution() {
+  void PrintSolution() {
     for (const auto& v : variables) {
       std::cout << v.name() << " = " << v.value().transpose() << std::endl;
     }
   }
 
   template <typename Derived>
-  void setDecisionVariableValues(const Eigen::MatrixBase<Derived>& x) {
+  void SetDecisionVariableValues(const Eigen::MatrixBase<Derived>& x) {
     assert(x.rows() == num_vars);
     size_t index = 0;
     for (auto& v : variables) {
@@ -587,28 +585,28 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     }
   }
 
-  const std::list<Binding<Constraint>>& getGenericObjectives() const {
+  const std::list<Binding<Constraint>>& get_generic_objectives() const {
     return generic_objectives;
   }  // e.g. for snopt_user_fun
-  const std::list<Binding<Constraint>>& getGenericConstraints() const {
+  const std::list<Binding<Constraint>>& get_generic_constraints() const {
     return generic_constraints;
   }  // e.g. for snopt_user_fun
   const std::list<Binding<LinearEqualityConstraint>>&
-      getLinearEqualityConstraints() const {
+      get_linear_equality_constraints() const {
     return linear_equality_constraints;
   }
-  std::list<Binding<LinearConstraint>> getAllLinearConstraints() const {
+  std::list<Binding<LinearConstraint>> GetAllLinearConstraints() const {
     std::list<Binding<LinearConstraint>> conlist = linear_constraints;
     conlist.insert(conlist.end(), linear_equality_constraints.begin(),
                    linear_equality_constraints.end());
     return conlist;
   }
   const std::list<Binding<BoundingBoxConstraint>>&
-      getBoundingBoxConstraints() const {
+      get_bounding_box_constraints() const {
     return bbox_constraints;
   }
   const std::list<Binding<LinearComplementarityConstraint>>&
-      getLinearComplementarityConstraints() const {
+      get_linear_complementarity_constraints() const {
     return linear_complementarity_constraints;
   }
 
@@ -624,7 +622,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   // and stored, replacing data from any other solver in this problem
   // instance.
   template <typename T>
-  std::shared_ptr<T> getSolverData() {
+  std::shared_ptr<T> GetSolverData() {
     auto p = std::dynamic_pointer_cast<T>(solver_data);
     if (!p) {
       p = std::make_shared<T>();
@@ -633,16 +631,16 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     return p;
   }
 
-  size_t getNumVars() const { return num_vars; }
-  const Eigen::VectorXd& getInitialGuess() const { return x_initial_guess; }
+  size_t get_num_vars() const { return num_vars; }
+  const Eigen::VectorXd& get_initial_guess() const { return x_initial_guess; }
 
  private:
-  void checkVariables(const Constraint& con) {
-    assert(checkVariablesImpl(con) &&
+  void CheckVariables(const Constraint& con) {
+    assert(CheckVariablesImpl(con) &&
            "Constraint depends on variables that are not associated with this "
            "OptimizationProblem");
   }
-  bool checkVariablesImpl(const Constraint& con) {
+  bool CheckVariablesImpl(const Constraint& con) {
     // todo: implement this
     return true;
   }

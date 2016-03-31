@@ -100,7 +100,7 @@ int QuasiStaticConstraint::getNumConstraint(const double *t) const {
 void QuasiStaticConstraint::updateRobot(RigidBodyTree *robot) {
   this->robot = robot;
 }
-void QuasiStaticConstraint::eval(const double *t,
+void QuasiStaticConstraint::Eval(const double *t,
                                  KinematicsCache<double> &cache,
                                  const double *weights, VectorXd &c,
                                  MatrixXd &dc) const {
@@ -355,7 +355,7 @@ void MultipleTimeLinearPostureConstraint::validTimeInd(
   }
 }
 
-void MultipleTimeLinearPostureConstraint::eval(const double *t, int n_breaks,
+void MultipleTimeLinearPostureConstraint::Eval(const double *t, int n_breaks,
                                                const MatrixXd &q, VectorXd &c,
                                                SparseMatrix<double> &dc) const {
   this->feval(t, n_breaks, q, c);
@@ -489,7 +489,7 @@ void SingleTimeLinearPostureConstraint::geval(const double *t, VectorXi &iAfun,
   }
 }
 
-void SingleTimeLinearPostureConstraint::eval(const double *t, const VectorXd &q,
+void SingleTimeLinearPostureConstraint::Eval(const double *t, const VectorXd &q,
                                              VectorXd &c,
                                              SparseMatrix<double> &dc) const {
   if (this->isTimeValid(t)) {
@@ -551,7 +551,7 @@ MultipleTimeKinematicConstraint::MultipleTimeKinematicConstraint(
     const MultipleTimeKinematicConstraint &rhs)
     : RigidBodyConstraint(rhs) {}
 
-void MultipleTimeKinematicConstraint::eval(const double *t, int n_breaks,
+void MultipleTimeKinematicConstraint::Eval(const double *t, int n_breaks,
                                            const MatrixXd &q, VectorXd &c,
                                            MatrixXd &dc) const {
   int num_valid_t = this->numValidTime(t, n_breaks);
@@ -683,7 +683,7 @@ PositionConstraint::PositionConstraint(const PositionConstraint &rhs)
   this->null_constraint_rows = rhs.null_constraint_rows;
 }
 
-void PositionConstraint::eval(const double *t, KinematicsCache<double> &cache,
+void PositionConstraint::Eval(const double *t, KinematicsCache<double> &cache,
                               VectorXd &c, MatrixXd &dc) const {
   if (this->isTimeValid(t)) {
     Matrix3Xd pos(3, this->n_pts);
@@ -848,7 +848,7 @@ QuatConstraint::QuatConstraint(RigidBodyTree *robot, double tol,
   this->num_constraint = 1;
 }
 
-void QuatConstraint::eval(const double *t, KinematicsCache<double> &cache,
+void QuatConstraint::Eval(const double *t, KinematicsCache<double> &cache,
                           VectorXd &c, MatrixXd &dc) const {
   int num_constraint = this->getNumConstraint(t);
   c.resize(num_constraint);
@@ -1005,7 +1005,7 @@ EulerConstraint::EulerConstraint(const EulerConstraint &rhs)
   this->avg_rpy = rhs.avg_rpy;
 }
 
-void EulerConstraint::eval(const double *t, KinematicsCache<double> &cache,
+void EulerConstraint::Eval(const double *t, KinematicsCache<double> &cache,
                            VectorXd &c, MatrixXd &dc) const {
   int n_constraint = this->getNumConstraint(t);
   if (this->isTimeValid(t)) {
@@ -1109,7 +1109,7 @@ GazeOrientConstraint::GazeOrientConstraint(
   this->num_constraint = 2;
 }
 
-void GazeOrientConstraint::eval(const double *t, KinematicsCache<double> &cache,
+void GazeOrientConstraint::Eval(const double *t, KinematicsCache<double> &cache,
                                 VectorXd &c, MatrixXd &dc) const {
   using namespace std;
   using namespace Drake;
@@ -1224,7 +1224,7 @@ WorldGazeDirConstraint::WorldGazeDirConstraint(RigidBodyTree *robot, int body,
   this->type = RigidBodyConstraint::WorldGazeDirConstraintType;
 }
 
-void WorldGazeDirConstraint::eval(const double *t,
+void WorldGazeDirConstraint::Eval(const double *t,
                                   KinematicsCache<double> &cache, VectorXd &c,
                                   MatrixXd &dc) const {
   if (this->isTimeValid(t)) {
@@ -1287,7 +1287,7 @@ WorldGazeTargetConstraint::WorldGazeTargetConstraint(
   this->type = RigidBodyConstraint::WorldGazeTargetConstraintType;
 }
 
-void WorldGazeTargetConstraint::eval(const double *t,
+void WorldGazeTargetConstraint::Eval(const double *t,
                                      KinematicsCache<double> &cache,
                                      VectorXd &c, MatrixXd &dc) const {
   int num_constraint = this->getNumConstraint(t);
@@ -1345,7 +1345,7 @@ RelativeGazeTargetConstraint::RelativeGazeTargetConstraint(
   this->type = RigidBodyConstraint::RelativeGazeTargetConstraintType;
 }
 
-void RelativeGazeTargetConstraint::eval(const double *t,
+void RelativeGazeTargetConstraint::Eval(const double *t,
                                         KinematicsCache<double> &cache,
                                         VectorXd &c, MatrixXd &dc) const {
   if (this->isTimeValid(t)) {
@@ -1410,7 +1410,7 @@ RelativeGazeDirConstraint::RelativeGazeDirConstraint(
   this->type = RigidBodyConstraint::RelativeGazeDirConstraintType;
 }
 
-void RelativeGazeDirConstraint::eval(const double *t,
+void RelativeGazeDirConstraint::Eval(const double *t,
                                      KinematicsCache<double> &cache,
                                      VectorXd &c, MatrixXd &dc) const {
   if (this->isTimeValid(t)) {
@@ -1470,7 +1470,7 @@ Point2PointDistanceConstraint::Point2PointDistanceConstraint(
   this->type = RigidBodyConstraint::Point2PointDistanceConstraintType;
 }
 
-void Point2PointDistanceConstraint::eval(const double *t,
+void Point2PointDistanceConstraint::Eval(const double *t,
                                          KinematicsCache<double> &cache,
                                          VectorXd &c, MatrixXd &dc) const {
   if (this->isTimeValid(t)) {
@@ -1561,7 +1561,7 @@ Point2LineSegDistConstraint::Point2LineSegDistConstraint(
   this->type = RigidBodyConstraint::Point2LineSegDistConstraintType;
 }
 
-void Point2LineSegDistConstraint::eval(const double *t,
+void Point2LineSegDistConstraint::Eval(const double *t,
                                        KinematicsCache<double> &cache,
                                        VectorXd &c, MatrixXd &dc) const {
   if (this->isTimeValid(t)) {
@@ -1909,7 +1909,7 @@ AllBodiesClosestDistanceConstraint::AllBodiesClosestDistanceConstraint(
   // FIXME: hack to determine num_constraint
   VectorXd q = robot->getZeroConfiguration();
   KinematicsCache<double> cache = robot->doKinematics(q);
-  eval(&t, cache, c, dc);
+  Eval(&t, cache, c, dc);
   // DEBUG
   // std::cout << "ABCDC::ABCDC: c.size() = " << c.size() << std::endl;
   // END_DEBUG
@@ -1940,12 +1940,12 @@ void AllBodiesClosestDistanceConstraint::updateRobot(RigidBodyTree *robot) {
   // FIXME: hack to determine num_constraint
   VectorXd q = robot->getZeroConfiguration();
   KinematicsCache<double> cache = robot->doKinematics(q);
-  eval(&t, cache, c, dc);
+  Eval(&t, cache, c, dc);
 
   this->num_constraint = static_cast<int>(c.size());
 }
 
-void AllBodiesClosestDistanceConstraint::eval(const double *t,
+void AllBodiesClosestDistanceConstraint::Eval(const double *t,
                                               KinematicsCache<double> &cache,
                                               VectorXd &c, MatrixXd &dc) const {
   if (this->isTimeValid(t)) {
@@ -2021,7 +2021,7 @@ MinDistanceConstraint::MinDistanceConstraint(
   this->type = RigidBodyConstraint::MinDistanceConstraintType;
 }
 
-void MinDistanceConstraint::eval(const double *t,
+void MinDistanceConstraint::Eval(const double *t,
                                  KinematicsCache<double> &cache, VectorXd &c,
                                  MatrixXd &dc) const {
   // DEBUG
@@ -2363,7 +2363,7 @@ GravityCompensationTorqueConstraint::GravityCompensationTorqueConstraint(
   this->type = RigidBodyConstraint::GravityCompensationTorqueConstraintType;
 }
 
-void GravityCompensationTorqueConstraint::eval(const double *t,
+void GravityCompensationTorqueConstraint::Eval(const double *t,
                                                KinematicsCache<double> &cache,
                                                VectorXd &c,
                                                MatrixXd &dc) const {

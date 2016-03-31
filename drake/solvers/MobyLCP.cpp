@@ -108,7 +108,7 @@ void MobyLCPSolver::clearIndexVectors() const {
   _j.clear();
 }
 
-bool MobyLCPSolver::solve(OptimizationProblem& prog) const {
+bool MobyLCPSolver::Solve(OptimizationProblem& prog) const {
   // TODO(ggould-tri) This solver currently imposes restrictions that its
   // problem:
   //
@@ -129,20 +129,20 @@ bool MobyLCPSolver::solve(OptimizationProblem& prog) const {
   // Restriction 3 could reasonably be relaxed to simply let unbound
   // variables sit at 0.
 
-  assert(prog.getGenericConstraints().empty());
-  assert(prog.getGenericObjectives().empty());
-  assert(prog.getAllLinearConstraints().empty());
-  assert(prog.getBoundingBoxConstraints().empty());
+  assert(prog.get_generic_constraints().empty());
+  assert(prog.get_generic_objectives().empty());
+  assert(prog.GetAllLinearConstraints().empty());
+  assert(prog.get_bounding_box_constraints().empty());
 
   const auto& bindings =
-      prog.getLinearComplementarityConstraints();
+      prog.get_linear_complementarity_constraints();
 
   // Assert that the available LCPs cover the program and no two LCPs cover
   // the same variable.
-  for (int i = 0; i < prog.getNumVars(); i++) {
+  for (int i = 0; i < prog.get_num_vars(); i++) {
     bool coverings = 0;
     for (const auto& binding : bindings) {
-      if (binding.covers(i)) {
+      if (binding.Covers(i)) {
         coverings++;
       }
     }
@@ -161,20 +161,20 @@ bool MobyLCPSolver::solve(OptimizationProblem& prog) const {
   // Ms and qs into the appropriate places.  That would be equivalent to this
   // implementation but might perform better if the solver were to parallelize
   // internally.
-  Eigen::VectorXd solution(prog.getNumVars());
+  Eigen::VectorXd solution(prog.get_num_vars());
   for (const auto& binding : bindings) {
-    Eigen::VectorXd constraint_solution(binding.getNumElements());
+    Eigen::VectorXd constraint_solution(binding.GetNumElements());
     const std::shared_ptr<LinearComplementarityConstraint> constraint =
-        binding.getConstraint();
+        binding.get_constraint();
     bool solved = lcp_lemke_regularized(
-        constraint->getM(), constraint->getq(),
+        constraint->get_M(), constraint->get_q(),
         &constraint_solution);
     if (!solved) {
       return false;
     }
-    binding.writeThrough(constraint_solution, &solution);
+    binding.WriteThrough(constraint_solution, &solution);
   }
-  prog.setDecisionVariableValues(solution);
+  prog.SetDecisionVariableValues(solution);
   return true;
 }
 

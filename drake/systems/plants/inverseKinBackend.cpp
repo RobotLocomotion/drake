@@ -142,7 +142,7 @@ static void IK_constraint_fun(KinematicsCache<double>& cache, double* x,
     nc = st_kc_array[i]->getNumConstraint(ti);
     VectorXd cnst(nc);
     MatrixXd dcnst(nc, nq);
-    st_kc_array[i]->eval(ti, cache, cnst, dcnst);
+    st_kc_array[i]->Eval(ti, cache, cnst, dcnst);
     memcpy(&c[nc_accum], cnst.data(), sizeof(double) * nc);
     memcpy(&G[ng_accum], dcnst.data(), sizeof(double) * nc * nq);
     nc_accum += nc;
@@ -155,7 +155,7 @@ static void IK_constraint_fun(KinematicsCache<double>& cache, double* x,
     int num_qsc_cnst = qsc_ptr->getNumConstraint(ti);
     VectorXd cnst(num_qsc_cnst - 1);
     MatrixXd dcnst(num_qsc_cnst - 1, nq + num_qsc_pts);
-    qsc_ptr->eval(ti, cache, qsc_weights, cnst, dcnst);
+    qsc_ptr->Eval(ti, cache, qsc_weights, cnst, dcnst);
     memcpy(c + nc_accum, cnst.data(), sizeof(double) * (num_qsc_cnst - 1));
     c[nc_accum + num_qsc_cnst - 1] = 0.0;
     memcpy(G + ng_accum, dcnst.data(), sizeof(double) * dcnst.size());
@@ -309,7 +309,7 @@ static int snoptIKtrajfun(snopt::integer* Status, snopt::integer* n,
           int nc = st_kc_array[k]->getNumConstraint(&t_j);
           VectorXd c_k(nc);
           MatrixXd dc_k(nc, nq);
-          st_kc_array[k]->eval(&t_j, cache, c_k, dc_k);
+          st_kc_array[k]->Eval(&t_j, cache, c_k, dc_k);
           memcpy(F + nf_cum, c_k.data(), sizeof(double) * nc);
           MatrixXd dc_kdx = MatrixXd::Zero(nc, nq * (num_qfree + num_qdotfree));
           dc_kdx.block(0, 0, nc, nq * num_qfree) =
@@ -341,7 +341,7 @@ static int snoptIKtrajfun(snopt::integer* Status, snopt::integer* n,
   for (int i = 0; i < num_mt_kc; i++) {
     VectorXd mtkc_c(mt_kc_nc[i]);
     MatrixXd mtkc_dc(mt_kc_nc[i], nq * (num_qfree + num_inbetween_tSamples));
-    mt_kc_array[i]->eval(
+    mt_kc_array[i]->Eval(
         t_samples + qstart_idx, num_qfree + num_inbetween_tSamples,
         q_samples.block(0, qstart_idx, nq, num_qfree + num_inbetween_tSamples),
         mtkc_c, mtkc_dc);
