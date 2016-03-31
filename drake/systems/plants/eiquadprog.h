@@ -1,9 +1,9 @@
-#ifndef _EIGEN_QUADSOLVE_HPP_
-#define _EIGEN_QUADSOLVE_HPP_
+#ifndef DRAKE_SYSTEMS_PLANTS_EIQUADPROG_H_
+#define DRAKE_SYSTEMS_PLANTS_EIQUADPROG_H_
 
 
 /*
- FILE eiquadprog.hh
+ FILE eiquadprog.h
 
  NOTE: this is a modified of uQuadProg++ package, working with Eigen data structures.
        uQuadProg++ is itself a port made by Angelo Furfaro of QuadProg++ originally developed by
@@ -619,4 +619,4 @@ inline void delete_constraint(MatrixXd& R, MatrixXd& J, VectorXi& A, VectorXd& u
 
 }
 
-#endif
+#endif  // DRAKE_SYSTEMS_PLANTS_EIQUADPROG_H_
