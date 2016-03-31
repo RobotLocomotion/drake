@@ -71,8 +71,7 @@ Once satisfied, the owner merges the PR.
 
 The following github users are Drake owners. If possible, seek platform review 
 from an owner who has previously reviewed related changes. Shared context will 
-make the review faster! @RussTedrake is the creator of Drake, but has limited
-time for code review, so prefer other owners unless you really need his input.
+make the review faster.
 
 - @david-german-tri (Toyota Research Institute)
 - @jwnimmer-tri (Toyota Research Institute)
