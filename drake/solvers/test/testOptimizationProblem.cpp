@@ -1,6 +1,6 @@
 #include <typeinfo>
+#include "drake/core/eigen_matrix_compare.h"
 #include "drake/solvers/Optimization.h"
-#include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
 #include "gtest/gtest.h"
 
@@ -25,7 +25,7 @@ using Drake::VecOut;
 using Drake::OptimizationProblem;
 using Drake::BoundingBoxConstraint;
 using Drake::LinearComplementarityConstraint;
-using drake::util::MatrixCompareType;
+using drake::core::MatrixCompareType;
 
 namespace drake {
 namespace solvers {

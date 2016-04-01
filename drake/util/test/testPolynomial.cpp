@@ -1,10 +1,10 @@
 #include <iostream>
+#include "drake/core/eigen_matrix_compare.h"
 #include "drake/util/Polynomial.h"
-#include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
 #include "gtest/gtest.h"
 
-using drake::util::MatrixCompareType;
+using drake::core::MatrixCompareType;
 using Eigen::VectorXd;
 using std::default_random_engine;
 using std::uniform_int_distribution;

@@ -2,10 +2,10 @@
 #include <lcm/lcm-cpp.hpp>
 #include <map>
 #include <memory>
+#include "drake/core/eigen_matrix_compare.h"
 #include "drake/Path.h"
 #include "drake/solvers/fastQP.h"
 #include "drake/systems/controllers/controlUtil.h"
-#include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/lcmUtil.h"
 #include "drake/util/testUtil.h"
 #include "drake/util/yaml/yamlUtil.h"

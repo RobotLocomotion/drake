@@ -1,11 +1,11 @@
-#ifndef DRAKE_UTIL_EIGEN_MATRIX_COMPARE_H_
-#define DRAKE_UTIL_EIGEN_MATRIX_COMPARE_H_
+#ifndef DRAKE_CORE_EIGEN_MATRIX_COMPARE_H_
+#define DRAKE_CORE_EIGEN_MATRIX_COMPARE_H_
 
 #include <Eigen/Dense>
 #include <cmath>
 
 namespace drake {
-namespace util {
+namespace core {
 
 enum MatrixCompareType { absolute, relative };
 
@@ -121,7 +121,7 @@ bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
   return result;
 }
 
-}  // namespace util
+}  // namespace core
 }  // namespace drake
 
-#endif  // DRAKE_UTIL_EIGEN_MATRIX_COMPARE_H_
+#endif  // DRAKE_CORE_EIGEN_MATRIX_COMPARE_H_

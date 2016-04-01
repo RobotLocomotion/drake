@@ -1,14 +1,14 @@
 #include "gtest/gtest.h"
 
+#include "drake/core/eigen_matrix_compare.h"
 #include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
 
 using Eigen::Matrix;
 using std::make_shared;
 using Drake::getDrakePath;
 using Drake::RigidBodySystem;
-using drake::util::MatrixCompareType;
+using drake::core::MatrixCompareType;
 using Drake::toEigen;
 
 namespace drake {
