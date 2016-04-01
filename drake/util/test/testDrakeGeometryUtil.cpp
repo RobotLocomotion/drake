@@ -1,13 +1,28 @@
 #include <Eigen/Core>
-#include "drake/util/drakeGeometryUtil.h"
-#include "drake/util/testUtil.h"
-#include "drake/core/Gradient.h"
-#include <iostream>
 #include <cmath>
+#include <iostream>
+#include "drake/core/Gradient.h"
+#include "drake/util/drakeGeometryUtil.h"
+#include "drake/util/eigen_matrix_compare.h"
+#include "drake/util/testUtil.h"
+#include "gtest/gtest.h"
 
-using namespace Eigen;
-using namespace std;
-using namespace Drake;
+using Eigen::Isometry3d;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+using Eigen::Matrix;
+using Eigen::Matrix3d;
+using Eigen::MatrixXd;
+using Eigen::Dynamic;
+using Eigen::Quaterniond;
+using Eigen::Translation3d;
+using std::default_random_engine;
+using drake::util::MatrixCompareType;
+using Drake::initializeAutoDiff;
+
+namespace drake {
+namespace util {
+namespace {
 
 void testExpmap2quat(const Vector4d &quat);
 
@@ -19,42 +34,43 @@ void testRotationConversionFunctions() {
     Vector4d q = uniformlyRandomQuat(generator);
     auto a = quat2axis(q);
     auto q_back = axis2quat(a);
-    valuecheck(acos(abs(q.transpose() * q_back)), 0.0, 1e-6);
+    valuecheck(acos(std::abs(q.transpose() * q_back)), 0.0, 1e-6);
   }
   // quat2rotmat, rotmat2quat
   for (int i = 0; i < ntests; i++) {
     Vector4d q = uniformlyRandomQuat(generator);
     Matrix3d R = quat2rotmat(q);
     Vector4d q_back = rotmat2quat(R);
-    valuecheck(acos(abs(q.transpose() * q_back)), 0.0, 1e-6);
+    valuecheck(acos(std::abs(q.transpose() * q_back)), 0.0, 1e-6);
   }
   // quat2rpy, rpy2quat
   for (int i = 0; i < ntests; i++) {
     Vector4d q = uniformlyRandomQuat(generator);
     Vector3d rpy = quat2rpy(q);
     Vector4d q_back = rpy2quat(rpy);
-    valuecheck(acos(abs(q.transpose() * q_back)), 0.0, 1e-6);
+    valuecheck(acos(std::abs(q.transpose() * q_back)), 0.0, 1e-6);
   }
   // rotmat2axis, axis2rotmat
   for (int i = 0; i < ntests; i++) {
     Matrix3d R = uniformlyRandomRotmat(generator);
     Vector4d a = rotmat2axis(R);
     Matrix3d R_back = axis2rotmat(a);
-    valuecheckMatrix(R, R_back, 1e-6);
+    EXPECT_TRUE(CompareMatrices(R, R_back, 1e-6, MatrixCompareType::absolute));
   }
   // rotmat2rpy, rpy2rotmat
   for (int i = 0; i < ntests; i++) {
     Matrix3d R = uniformlyRandomRotmat(generator);
     Vector3d rpy = rotmat2rpy(R);
     Matrix3d R_back = rpy2rotmat(rpy);
-    valuecheckMatrix(R, R_back, 1e-6);
+    EXPECT_TRUE(CompareMatrices(R, R_back, 1e-6, MatrixCompareType::absolute));
   }
   // rpy2axis, axis2rpy
   for (int i = 0; i < ntests; i++) {
     Vector3d rpy = uniformlyRandomRPY(generator);
     Vector4d axis = rpy2axis(rpy);
     Vector3d rpy_back = axis2rpy(axis);
-    valuecheckMatrix(rpy, rpy_back, 1e-6);
+    EXPECT_TRUE(
+        CompareMatrices(rpy, rpy_back, 1e-6, MatrixCompareType::absolute));
   }
   // expmap2quat, quat2expmap
   Vector4d quat_degenerate = Vector4d::Zero();
@@ -71,7 +87,8 @@ void testRotationConversionFunctions() {
   Quaterniond eigenQuat = quat2eigenQuaternion(quat);
   Matrix3d R_expected = quat2rotmat(quat);
   Matrix3d R_eigen = eigenQuat.matrix();
-  valuecheckMatrix(R_expected, R_eigen, 1e-6);
+  EXPECT_TRUE(
+      CompareMatrices(R_expected, R_eigen, 1e-6, MatrixCompareType::absolute));
 }
 
 void testDHomogTrans(int ntests) {
@@ -207,7 +224,8 @@ void testSpatialCrossProduct() {
   auto b = (Matrix<double, TWIST_SIZE, TWIST_SIZE>::Identity()).eval();
   auto a_crm_b = crossSpatialMotion(a, b);
   auto a_crf_b = crossSpatialForce(a, b);
-  valuecheckMatrix(a_crf_b, -a_crm_b.transpose(), 1e-8);
+  EXPECT_TRUE(CompareMatrices(a_crf_b, -a_crm_b.transpose(), 1e-8,
+                              MatrixCompareType::absolute));
 }
 
 void testdrpy2rotmat() {
@@ -239,10 +257,11 @@ void testExpmap2quat(const Vector4d &quat) {
   auto quat_back_grad = autoDiffToGradientMatrix(quat_back_autodiff);
   valuecheck(std::abs((quat.transpose() * quat_back).value()), 1.0, 1e-8);
   Matrix3d identity = Matrix3d::Identity();
-  valuecheckMatrix((expmap_grad * quat_back_grad).eval(), identity, 1E-10);
+  EXPECT_TRUE(CompareMatrices((expmap_grad * quat_back_grad).eval(), identity,
+                              1e-10, MatrixCompareType::absolute));
 }
 
-int main(int argc, char **argv) {
+TEST(drakeGeometryUtilTest, AllTests) {
   testRotationConversionFunctions();
 
   int ntests = 100000;
@@ -262,6 +281,8 @@ int main(int argc, char **argv) {
   testDHomogTransInv(1000, true);
   testSpatialCrossProduct();
   testdrpy2rotmat();
-
-  return 0;
 }
+
+}  // namespace
+}  // namespace util
+}  // namespace drake
