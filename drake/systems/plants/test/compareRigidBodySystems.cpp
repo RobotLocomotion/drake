@@ -22,7 +22,6 @@ std::string model_file_1, model_file_2;
 std::shared_ptr<RigidBodyFrame> car_pose_in_world;
 
 TEST(CompareRigidBodySystemsTest, TestAll) {
-
   auto r1 = make_shared<RigidBodySystem>();
   r1->addRobotFromFile(model_file_1, DrakeJoint::QUATERNION);
 
@@ -49,19 +48,19 @@ TEST(CompareRigidBodySystemsTest, TestAll) {
     auto xdot2 = r2->dynamics(t, x, u);
 
     std::string explanation;
-    EXPECT_TRUE(
-        drake::util::CompareMatrices(xdot1, xdot2, 1e-8, MatrixCompareType::absolute, &explanation))
-      << "Model mismatch!" << std::endl
-                << "  - initial state:" << std::endl
-                << x << std::endl
-                << "  - inputs (joint torques?):" << std::endl
-                << u << std::endl
-                << "  - xdot1:" << std::endl
-                << xdot1.transpose() << std::endl
-                << "  - xdot2:" << std::endl
-                << xdot2.transpose() << std::endl
-                << "  - error message:" << std::endl
-                << explanation;
+    EXPECT_TRUE(drake::util::CompareMatrices(
+        xdot1, xdot2, 1e-8, MatrixCompareType::absolute, &explanation))
+        << "Model mismatch!" << std::endl
+        << "  - initial state:" << std::endl
+        << x << std::endl
+        << "  - inputs (joint torques?):" << std::endl
+        << u << std::endl
+        << "  - xdot1:" << std::endl
+        << xdot1.transpose() << std::endl
+        << "  - xdot2:" << std::endl
+        << xdot2.transpose() << std::endl
+        << "  - error message:" << std::endl
+        << explanation;
   }
 }
 
@@ -91,16 +90,18 @@ int main(int argc, char **argv) {
   drake::systems::plants::model_file_2 = argv[2];
 
   if (argc > 3) {
-    drake::systems::plants::car_pose_in_world = std::allocate_shared<RigidBodyFrame>(
-        Eigen::aligned_allocator<RigidBodyFrame>(), "world",
-        nullptr,  // not used since the robot is attached to the world
-        Eigen::Vector3d(std::stod(argv[3]), std::stod(argv[4]),
-                        std::stod(argv[5])),  // xyz of the car's root link
-        Eigen::Vector3d(0, 0, 0));            // rpy of the car's root link
+    drake::systems::plants::car_pose_in_world =
+        std::allocate_shared<RigidBodyFrame>(
+            Eigen::aligned_allocator<RigidBodyFrame>(), "world",
+            nullptr,  // not used since the robot is attached to the world
+            Eigen::Vector3d(std::stod(argv[3]), std::stod(argv[4]),
+                            std::stod(argv[5])),  // xyz of the car's root link
+            Eigen::Vector3d(0, 0, 0));            // rpy of the car's root link
   } else {
-    drake::systems::plants::car_pose_in_world = std::allocate_shared<RigidBodyFrame>(
-        Eigen::aligned_allocator<RigidBodyFrame>(), "world", nullptr,
-        Eigen::Isometry3d::Identity());
+    drake::systems::plants::car_pose_in_world =
+        std::allocate_shared<RigidBodyFrame>(
+            Eigen::aligned_allocator<RigidBodyFrame>(), "world", nullptr,
+            Eigen::Isometry3d::Identity());
   }
 
   return RUN_ALL_TESTS();
