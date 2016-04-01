@@ -3,12 +3,12 @@ Change Log
 
 Introduction
 ------------
-Drake is undergoing continuous development and some of the changes may break its API and ABI. To help downstream users cope, this document provides brief summaries of the changes. The changes are organized by pull requests that are merged into Drake's master branch.
+Drake is undergoing continuous development and cannot yet offer a stable, documented API or ABI. To help downstream users cope, this document provides brief summaries of the changes. The changes are organized by pull requests that are merged into Drake's master branch.
 
 Descriptions of Pull Requests
 ------------------------------
 
-### Pull Request #1953 - Replacement of valuecheckMatrix() with CompareMatrices()
+Replacement of valuecheckMatrix() with CompareMatrices(). (@liangfok, #1953)
 
 PR link: https://github.com/RobotLocomotion/drake/pull/1953
 
