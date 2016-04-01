@@ -227,6 +227,7 @@ class LowerBoundTestConstraint : public Constraint {
     evalImpl(x, y);
   }
 
+ private:
   template <typename ScalarType>
   void evalImpl(
       const Eigen::Ref<const Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>>& x,
@@ -358,6 +359,7 @@ class GloptipolyConstrainedExampleConstraint
     evalImpl(x, y);
   }
 
+ private:
   template <typename ScalarType>
   void evalImpl(const Ref<const Matrix<ScalarType, Dynamic, 1>>& x,
                 Matrix<ScalarType, Dynamic, 1>& y) const {

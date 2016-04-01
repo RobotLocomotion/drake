@@ -244,7 +244,7 @@ bool NloptSolver::solve(OptimizationProblem &prog) const {
 
   // TODO(sam.creasey): Missing test coverage for generic constraints
   // with >1 output.
-  for (auto& c : prog.getGenericConstraints()) {
+  for (const auto& c : prog.getGenericConstraints()) {
     WrappedConstraint wrapped = { c.getConstraint().get(),
                                   &c.getVariableList() };
     wrapped_list.push_back(wrapped);
@@ -259,7 +259,7 @@ bool NloptSolver::solve(OptimizationProblem &prog) const {
   // outputs as a vector constraint.  This did not seem to work.  The
   // version below breaks out the problem into multiple constraints.
   std::list<LinearEqualityConstraint> equalities;
-  for (auto& c : prog.getLinearEqualityConstraints()) {
+  for (const auto& c : prog.getLinearEqualityConstraints()) {
     const size_t num_constraints = c.getConstraint()->getNumConstraints();
     const auto& A = c.getConstraint()->getMatrix();
     const auto& b = c.getConstraint()->getLowerBound();
@@ -275,7 +275,7 @@ bool NloptSolver::solve(OptimizationProblem &prog) const {
 
   // TODO(sam.creasey): Missing test coverage for linear constraints
   // with >1 output.
-  for (auto& c : prog.getLinearConstraints()) {
+  for (const auto& c : prog.getLinearConstraints()) {
     WrappedConstraint wrapped = { c.getConstraint().get(),
                                   &c.getVariableList() };
     wrapped_list.push_back(wrapped);
