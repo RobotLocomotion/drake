@@ -49,7 +49,7 @@ TEST(CompareRigidBodySystemsTest, TestAll) {
 
     std::string explanation;
     EXPECT_TRUE(drake::util::CompareMatrices(
-        xdot1, xdot2, 1e-8, MatrixCompareType::absolute, &explanation))
+        xdot1, xdot2, 1e-8, MatrixCompareType::relative, &explanation))
         << "Model mismatch!" << std::endl
         << "  - initial state:" << std::endl
         << x << std::endl
