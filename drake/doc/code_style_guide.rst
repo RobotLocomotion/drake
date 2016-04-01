@@ -26,7 +26,7 @@ We now strictly follow the `Google C++ Style Guide <https://google.github.io/sty
 * Manually provide user gradients only when we know more than AutoDiffScalar possibly could (e.g. sparsity of the gradients).
 * Use exceptions for error handling.  Essential control loops must be exception safe.
 * No dynamic allocation in the inner simulation/control loops.  Code should be still be thread-safe (e.g. be careful with pre-allocations).
-* Classes and methods should be documented using [doxygen](https://www.stack.nl/~dimitri/doxygen/manual/docblocks.html).
+* Classes and methods should be documented using `doxygen <https://www.stack.nl/~dimitri/doxygen/manual/docblocks.html>`_.
 * Embrace templates/C++11 when it makes the code more correct (more clear or more readable also implies more correct).  Minimize template requirements on public interfaces.  Avoid explicit template instantiations in cc files when possible.
 
 Exceptions

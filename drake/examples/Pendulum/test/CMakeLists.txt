@@ -1,5 +1,5 @@
-if (LCM_FOUND)
+if (LCM_FOUND AND GTEST_FOUND)
   add_executable(pendulumURDFDynamicsTest urdfDynamicsTest.cpp)
-  target_link_libraries(pendulumURDFDynamicsTest drakeRBSystem)
+  target_link_libraries(pendulumURDFDynamicsTest drakeRBSystem ${GTEST_BOTH_LIBRARIES})
   add_test(NAME pendulumURDFDynamicsTest COMMAND pendulumURDFDynamicsTest)
-endif(LCM_FOUND)
+endif(LCM_FOUND AND GTEST_FOUND)
