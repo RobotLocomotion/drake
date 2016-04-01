@@ -1,15 +1,15 @@
 #include "gtest/gtest.h"
 
+#include "drake/core/eigen_matrix_compare.h"
 #include "drake/core/test/pendulum.h"
 #include "drake/core/testUtil.h"
-#include "drake/util/eigen_matrix_compare.h"
 
 using Drake::CombinedVector;
 using Drake::size;
 using Drake::CombinedVectorUtil;
 using Drake::NullVector;
 using Drake::InputOutputRelation;
-using drake::util::MatrixCompareType;
+using drake::core::MatrixCompareType;
 using std::is_same;
 using std::string;
 

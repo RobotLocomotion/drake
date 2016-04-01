@@ -1,12 +1,12 @@
+#include "drake/core/eigen_matrix_compare.h"
 #include "drake/examples/Acrobot/Acrobot.h"
 #include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/util/eigen_matrix_compare.h"
 #include "gtest/gtest.h"
 
 using Drake::RigidBodySystem;
 using Drake::getRandomVector;
 using Drake::getDrakePath;
-using drake::util::MatrixCompareType;
+using drake::core::MatrixCompareType;
 
 namespace drake {
 namespace examples {

@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 
+#include "drake/core/eigen_matrix_compare.h"
 #include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
 
 using Eigen::Vector3d;
@@ -9,9 +9,9 @@ using Eigen::Vector4d;
 using Eigen::VectorXd;
 using std::shared_ptr;
 using std::make_shared;
+using drake::core::MatrixCompareType;
 using Drake::getDrakePath;
 using Drake::RigidBodySystem;
-using drake::util::MatrixCompareType;
 using Drake::RigidBodyGyroscope;
 
 namespace drake {

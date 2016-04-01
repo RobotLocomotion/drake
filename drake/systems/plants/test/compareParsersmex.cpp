@@ -1,14 +1,14 @@
 #include <iostream>
+#include "drake/core/eigen_matrix_compare.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/util/drakeMexUtil.h"
-#include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
 #include "math.h"
 #include "mex.h"
 
 using namespace Eigen;
 using namespace std;
-using drake::util::MatrixCompareType;
+using drake::core::MatrixCompareType;
 
 /*
  * compares C++ robots generated via the matlab constructModelmex with the same

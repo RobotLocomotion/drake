@@ -2,10 +2,10 @@
 #include <lcm/lcm-cpp.hpp>
 #include <map>
 #include <memory>
+#include "drake/core/eigen_matrix_compare.h"
 #include "drake/Path.h"
 #include "drake/solvers/fastQP.h"
 #include "drake/systems/controllers/controlUtil.h"
-#include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/lcmUtil.h"
 #include "drake/util/testUtil.h"
 #include "drake/util/yaml/yamlUtil.h"
@@ -17,7 +17,7 @@ const bool CHECK_CENTROIDAL_MOMENTUM_RATE_MATCHES_TOTAL_WRENCH = false;
 const bool PUBLISH_ZMP_COM_OBSERVER_STATE = true;
 
 using namespace Eigen;
-using drake::util::MatrixCompareType;
+using drake::core::MatrixCompareType;
 
 #define LEG_INTEGRATOR_DEACTIVATION_MARGIN 0.07
 
