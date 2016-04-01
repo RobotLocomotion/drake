@@ -1,13 +1,16 @@
-
+#include <gtest/gtest.h>
 #include <memory>
 #include <vector>
-
-#include <gtest/gtest.h>
-
 #include "drake/solvers/MobyLCP.h"
+#include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
 
+using drake::util::MatrixCompareType;
+
+namespace drake {
+namespace solvers {
 namespace {
+
 const double epsilon = 1e-6;
 const bool verbose = false;
 
@@ -40,27 +43,30 @@ void runBasicLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
 
   Eigen::VectorXd fast_z;
   bool result = l.lcp_fast(M, q, &fast_z);
-  if (expected_z.size() == 0)  {
-    ASSERT_TRUE(expect_fast_pass) <<
-        "Expected Z not provided and expect_fast_pass unset.";
+  if (expected_z.size() == 0) {
+    ASSERT_TRUE(expect_fast_pass)
+        << "Expected Z not provided and expect_fast_pass unset.";
     expected_z = fast_z;
   } else {
     if (expect_fast_pass) {
-      EXPECT_NO_THROW(valuecheckMatrix(fast_z, expected_z, epsilon));
+      EXPECT_TRUE(CompareMatrices(fast_z, expected_z, epsilon,
+                                  MatrixCompareType::absolute));
     } else {
-      EXPECT_THROW(valuecheckMatrix(fast_z, expected_z, epsilon),
-                   std::runtime_error);
+      EXPECT_FALSE(CompareMatrices(fast_z, expected_z, epsilon,
+                                   MatrixCompareType::absolute));
     }
   }
 
   Eigen::VectorXd lemke_z;
   result = l.lcp_lemke(M, q, &lemke_z);
-  EXPECT_NO_THROW(valuecheckMatrix(lemke_z, expected_z, epsilon));
+  EXPECT_TRUE(CompareMatrices(lemke_z, expected_z, epsilon,
+                              MatrixCompareType::absolute));
 
   Eigen::SparseMatrix<double> M_sparse = makeSparseMatrix(M);
   lemke_z.setZero();
   result = l.lcp_lemke(M_sparse, q, &lemke_z);
-  EXPECT_NO_THROW(valuecheckMatrix(lemke_z, expected_z, epsilon));
+  EXPECT_TRUE(CompareMatrices(lemke_z, expected_z, epsilon,
+                              MatrixCompareType::absolute));
 }
 
 /// Run all regularized solvers.  If @p expected_z is an empty
@@ -77,28 +83,30 @@ void runRegularizedLCP(const Eigen::MatrixBase<Derived>& M,
 
   Eigen::VectorXd fast_z;
   bool result = l.lcp_fast_regularized(M, q, &fast_z);
-  if (expected_z.size() == 0)  {
+  if (expected_z.size() == 0) {
     expected_z = fast_z;
   } else {
     if (expect_fast_pass) {
       ASSERT_TRUE(result);
-      EXPECT_NO_THROW(valuecheckMatrix(fast_z, expected_z, epsilon))
-          << "expected: " << expected_z << " actual " << fast_z
-          << std::endl;
+      EXPECT_TRUE(CompareMatrices(fast_z, expected_z, epsilon,
+                                  MatrixCompareType::absolute))
+          << "expected: " << expected_z << " actual " << fast_z << std::endl;
     } else {
-      EXPECT_THROW(valuecheckMatrix(fast_z, expected_z, epsilon),
-                   std::runtime_error);
+      EXPECT_FALSE(CompareMatrices(fast_z, expected_z, epsilon,
+                                   MatrixCompareType::absolute));
     }
   }
 
   Eigen::VectorXd lemke_z;
   result = l.lcp_lemke_regularized(M, q, &lemke_z);
-  EXPECT_NO_THROW(valuecheckMatrix(lemke_z, expected_z, epsilon));
+  EXPECT_TRUE(CompareMatrices(lemke_z, expected_z, epsilon,
+                              MatrixCompareType::absolute));
 
   Eigen::SparseMatrix<double> M_sparse = makeSparseMatrix(M);
   lemke_z.setZero();
   result = l.lcp_lemke_regularized(M_sparse, q, &lemke_z);
-  EXPECT_NO_THROW(valuecheckMatrix(lemke_z, expected_z, epsilon));
+  EXPECT_TRUE(CompareMatrices(lemke_z, expected_z, epsilon,
+                              MatrixCompareType::absolute));
 }
 
 /// Run all solvers.  If @p expected_z is an empty
@@ -112,6 +120,7 @@ void runLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
 
 TEST(testMobyLCP, testTrivial) {
   Eigen::Matrix<double, 9, 9> M;
+  // clang-format off
   M <<
       1, 0, 0, 0, 0, 0, 0, 0, 0,
       0, 2, 0, 0, 0, 0, 0, 0, 0,
@@ -122,6 +131,7 @@ TEST(testMobyLCP, testTrivial) {
       0, 0, 0, 0, 0, 0, 7, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 8, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 9;
+  // clang-format on
 
   Eigen::Matrix<double, 9, 1> q;
   q << -1, -1, -1, -1, -1, -1, -1, -1, -1;
@@ -130,7 +140,7 @@ TEST(testMobyLCP, testTrivial) {
   runBasicLCP(M, q, empty_z, true);
 
   // Mangle the input matrix so that some regularization occurs.
-  M(0,8) = 10;
+  M(0, 8) = 10;
   runRegularizedLCP(M, q, empty_z, true);
 }
 
@@ -141,7 +151,7 @@ TEST(testMobyLCP, testProblem1) {
   M.setIdentity();
   for (int i = 0; i < M.rows() - 1; i++) {
     for (int j = i + 1; j < M.cols(); j++) {
-      M(i,j) = 2;
+      M(i, j) = 2;
     }
   }
 
@@ -174,10 +184,14 @@ TEST(testMobyLCP, testProblem3) {
   // Problem from example 10.2.3 in "Handbook of Test Problems in
   // Local and Global Optimization".
   Eigen::Matrix<double, 3, 3> M;
+
+  // clang-format off
   M <<
       0, -1,  2,
       2,  0, -2,
       -1, 1,  0;
+  // clang-format on
+
   Eigen::Matrix<double, 1, 3> q;
   q << -3, 6, -1;
 
@@ -191,11 +205,14 @@ TEST(testMobyLCP, testProblem4) {
   // Problem from example 10.2.4 in "Handbook of Test Problems in
   // Local and Global Optimization".
   Eigen::Matrix<double, 4, 4> M;
+
+  // clang-format off
   M <<
       0,  0,  10,  20,
       0,  0,  30,  15,
       10, 20,  0,   0,
       30, 15,  0,   0;
+  // clang-format on
 
   Eigen::Matrix<double, 1, 4> q;
   q.fill(-1);
@@ -203,14 +220,14 @@ TEST(testMobyLCP, testProblem4) {
   // This solution is the third in the book, which it explicitly
   // states cannot be found using the Lemke-Howson algorithm.
   Eigen::VectorXd z(4);
-  z << 1./90., 2./45., 1./90., 2./45.;
+  z << 1. / 90., 2. / 45., 1. / 90., 2. / 45.;
 
   Drake::MobyLCPSolver l;
   l.setLoggingEnabled(verbose);
 
   Eigen::VectorXd fast_z;
   bool result = l.lcp_fast(M, q, &fast_z);
-  EXPECT_NO_THROW(valuecheckMatrix(fast_z, z, epsilon));
+  EXPECT_TRUE(CompareMatrices(fast_z, z, epsilon, MatrixCompareType::absolute));
 
   // TODO sammy the Lemke solvers find no solution at all, however.
   fast_z.setZero();
@@ -226,12 +243,15 @@ TEST(testMobyLCP, testProblem6) {
   // Problem from example 10.2.9 in "Handbook of Test Problems in
   // Local and Global Optimization".
   Eigen::Matrix<double, 4, 4> M;
+
+  // clang-format off
   M <<
       11,  0, 10,  -1,
       0,  11, 10,  -1,
       10, 10, 21,  -1,
       1,   1,  1,   0; // Note that the (3, 3) position is incorrectly
                        // shown in the book with the value 1.
+  // clang-format on
 
   // Pick a couple of arbitrary points in the [0, 23] range.
   for (double l = 1; l <= 23; l += 15) {
@@ -239,10 +259,13 @@ TEST(testMobyLCP, testProblem6) {
     q << 50, 50, l, -6;
 
     Eigen::Matrix<double, 1, 4> z;
+
+    // clang-format off
     z << (l + 16.) / 13.,
-        (l + 16.) / 13.,
-        (2. * (23 - l)) / 13.,
-        (1286. - (9. * l)) / 13;
+         (l + 16.) / 13.,
+         (2. * (23 - l)) / 13.,
+         (1286. - (9. * l)) / 13;
+    // clang-format on
 
     runLCP(M, q, z, true);
   }
@@ -274,7 +297,7 @@ TEST(testMobyLCP, testEmpty) {
   EXPECT_TRUE(result);
   EXPECT_EQ(z.size(), 0);
 
-  Eigen::SparseMatrix<double> empty_sparse_M(0,0);
+  Eigen::SparseMatrix<double> empty_sparse_M(0, 0);
   result = l.lcp_lemke(empty_sparse_M, empty_q, &z);
   EXPECT_TRUE(result);
   EXPECT_EQ(z.size(), 0);
@@ -292,4 +315,6 @@ TEST(testMobyLCP, testEmpty) {
   EXPECT_EQ(z.size(), 0);
 }
 
-}
+}  // namespace
+}  // namespace solvers
+}  // namespace drake
