@@ -31,13 +31,13 @@ Clarifications
 * No dynamic allocation in the inner simulation/control loops.  Code should be still be thread-safe (e.g. be careful with pre-allocations).
 * Classes and methods should be documented using [doxygen](https://www.stack.nl/~dimitri/doxygen/manual/docblocks.html).
 * Embrace templates/C++11 when it makes the code more correct (more clear or more readable also implies more correct).  Minimize template requirements on public interfaces.  Avoid explicit template instantiations in cc files when possible.
-* For the `order of includes <https://google.github.io/styleguide/cppguide.html#Names_and_Order_of_Includes>`_ style rule, surround Drake header files with double quotes and all other header files with angle brackets. Then accept whatever :ref:`clang-format <code-style-tools-clang-format>` enforces.
+* For the `order of includes <https://google.github.io/styleguide/cppguide.html#Names_and_Order_of_Includes>`_ style rule, surround Drake header files with double quotes and all other header files with angle brackets. Follow the guide as best you can in terms of arranging the ``#include`` statements in the following order: (1) Related header, (2) C library, (3) C++ library, (4) other libraries' .h, (5) your project's .h. Then accept whatever :ref:`clang-format <code-style-tools-clang-format>` enforces.
 
 
 Exceptions
 ----------
 
-* Method names may violate google standards and the "long, human-readable" standard above if a short, non-compliant name more closely matches the common conventions of the field.  For instance, the matrix portion of a linear complementarity constraint is traditionally 'M' (one letter, upper-case); it is not mandatory to downcase it or give it a more verbose name.
+* Method names may violate Google standards and the "long, human-readable" standard above if a short, non-compliant name more closely matches the common conventions of the field.  For instance, the matrix portion of a linear complementarity constraint is traditionally 'M' (one letter, upper-case); it is not mandatory to downcase it or give it a more verbose name.
 * No need for a copyright line at the top of every file (this will change soon, see: `issue #1805 <https://github.com/RobotLocomotion/drake/issues/1805>`_).
 
 
