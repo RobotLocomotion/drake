@@ -20,8 +20,15 @@ struct SimulationOptions {
   double initial_step_size;
   double timeout_seconds;
 
+  /**
+   * Whether to issue a warning if the simulation's real-time semantics are
+   * violated.
+   */
+  bool warn_real_time_violation;
+
   SimulationOptions()
-      : realtime_factor(-1.0), initial_step_size(0.01), timeout_seconds(1.0){}
+      : realtime_factor(-1.0), initial_step_size(0.01), timeout_seconds(1.0),
+      warn_real_time_violation(false) {}
 };
 const static SimulationOptions default_simulation_options;
 
@@ -32,6 +39,23 @@ typedef std::chrono::system_clock TimeClock;  // would love to use steady_clock,
 typedef std::chrono::duration<double> TimeDuration;
 typedef std::chrono::time_point<TimeClock, TimeDuration> TimePoint;
 
+
+/*!
+ * Determines whether the simulation time has lagged behind the real time beyond
+ * the specified <pre>timeout_seconds</pre>, after accounting for the real-time
+ * factor. If it has, throw a <pre>std::runtime_error</pre> exception.
+ *
+ * @param wall_clock_start_time The the simulation's start time.
+ * @param sim_time The current simulation time.
+ * @param realtime_factor The simulation's desired real-time factor. This
+ * is the speed at which the simulation should run relative to real-time.
+ * For example, 0 means the simulation should run as fast as possible,
+ * 1.0 means the simulation should run at real-time, and 2.0 means the
+ * simulation should run at 2X real-time speed.
+ * @param timeout_seconds The maximum difference between the current time and
+ * the desired time (as determined based on the current simulation time
+ * and real-time factor) before which an exception is thrown.
+ */
 inline void handle_realtime_factor(const TimePoint& wall_clock_start_time,
                                    double sim_time, double realtime_factor,
                                    double timeout_seconds) {
@@ -39,8 +63,8 @@ inline void handle_realtime_factor(const TimePoint& wall_clock_start_time,
     TimePoint wall_time = TimeClock::now();
     TimePoint desired_time =
         wall_clock_start_time + TimeDuration(sim_time / realtime_factor);
-    if (desired_time >
-        wall_time) {  // could probably just call sleep_until, but just in case
+    if (desired_time > wall_time) {
+      // could probably just call sleep_until, but just in case
       std::this_thread::sleep_until(desired_time);
     } else if (wall_time >
                desired_time + TimeDuration(timeout_seconds / realtime_factor)) {
@@ -61,6 +85,12 @@ inline void handle_realtime_factor(const TimePoint& wall_clock_start_time,
  * \p options and stepping from initial time \p ti to final time \p tf.
  * There is no error control; if you have accuracy or stability problems try
  * a smaller step size.
+ *
+ * @param sys The system being simulated.
+ * @param ti The initial time of the simulation.
+ * @param tf The final time of the simulation.
+ * @param xi The state vector of the system being simulated.
+ * @param options The simulation options.
  */
 template <typename System>
 void simulate(const System& sys, double ti, double tf,
@@ -74,11 +104,24 @@ void simulate(const System& sys, double ti, double tf,
       Eigen::VectorXd::Zero(getNumInputs(sys)));
   typename System::template OutputVector<double> y;
 
+  bool rt_warning_printed = false;
+
   // Take steps from ti to tf.
   double t = ti;
   while (t < tf) {
-    handle_realtime_factor(start, t, options.realtime_factor,
-                           options.timeout_seconds);
+    try {
+      handle_realtime_factor(start, t, options.realtime_factor,
+                             options.timeout_seconds);
+    } catch(std::runtime_error err) {
+      if (options.warn_real_time_violation) {
+        if (!rt_warning_printed) {
+          std::cerr << "WARNING: " << err.what() << std::endl;
+          rt_warning_printed = true;  // supress future warnings
+        }
+      } else {
+        throw err;
+      }
+    }
     const double dt = (std::min)(options.initial_step_size, tf - t);
 
     // Output is at t0, x0, u0.

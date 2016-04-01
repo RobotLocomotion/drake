@@ -16,8 +16,22 @@ using namespace Eigen;
 int main(int argc, char* argv[]) {
   const size_t num_lidar_points = 100;
 
+  // Get the final time of the simulation
   double final_time = argc >= 2 ? atof(argv[1]) : std::numeric_limits<double>::infinity();
-  cout << "Running simulation for " << final_time << " seconds." << endl;
+
+  // Get the maximum delay in seconds of the simulation time relative to the real time
+  double max_delay = argc >= 3 ? atof(argv[2]) : 1.0;
+
+  // Get whether a warning should be printed or exception should be thrown
+  // if real-time semantics are violated. (default is to throw exception)
+  bool warn_delay = argc >= 4 ? (std::string(argv[3]).compare("warn") == 0) : false;
+
+  cout << "Running simulation for " << final_time
+    << " seconds with a maximum real-time delay of "
+    << max_delay << " seconds. Will "
+    << (warn_delay ? "print warning" : "throw exception")
+    << " if real-time max-delay is violated." << endl;
+
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
   if (!lcm->good())
     return 1;
@@ -68,7 +82,7 @@ int main(int argc, char* argv[]) {
   tree->updateStaticCollisionElements();
 
   auto visualizer = make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm,tree);
-  
+
   auto quad_control_to_rbsys_input = make_shared<Gain<QuadrotorInput, RigidBodySystem::InputVector>>(Eigen::Matrix4d::Identity());
   auto rbsys_output_to_quad_state = make_shared<Gain<RigidBodySystem::StateVector, QuadrotorOutput>>(Eigen::Matrix<double, 22 + num_lidar_points + 1, 22 + num_lidar_points + 1>::Identity());
 
@@ -79,6 +93,8 @@ int main(int argc, char* argv[]) {
   SimulationOptions options = default_simulation_options;
   options.realtime_factor = 1.0;
   options.initial_step_size = 0.01;
+  options.timeout_seconds = max_delay;
+  options.warn_real_time_violation = warn_delay;
 
   VectorXd x0 = VectorXd::Zero(rigid_body_sys->getNumStates());
   x0.head(tree->num_positions) = tree->getZeroConfiguration();
