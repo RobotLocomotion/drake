@@ -4,6 +4,12 @@
 #include <chrono>
 #include <stdexcept>
 #include <thread>
+#include <iostream>
+#include <Eigen/Dense>
+
+#include <drake/core/Vector.h>
+
+using Drake::toEigen;
 
 namespace Drake {
 
