@@ -2,8 +2,8 @@
 #include <cmath>
 #include <iostream>
 #include "drake/core/Gradient.h"
+#include "drake/core/eigen_matrix_compare.h"
 #include "drake/util/drakeGeometryUtil.h"
-#include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
 #include "gtest/gtest.h"
 
@@ -17,7 +17,7 @@ using Eigen::Dynamic;
 using Eigen::Quaterniond;
 using Eigen::Translation3d;
 using std::default_random_engine;
-using drake::util::MatrixCompareType;
+using drake::core::MatrixCompareType;
 using Drake::initializeAutoDiff;
 
 namespace drake {
