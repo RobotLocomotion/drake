@@ -149,6 +149,8 @@ function(add_matlab_test)
     set(multiValueArgs)
     cmake_parse_arguments(parsed_args "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
+    string(REPLACE ' '' parsed_args_COMMAND ${parsed_args_COMMAND}) # turn ' into '' so we can eval it in matlab
+
   # set(exit_status 1)   # missing dependency => failure
     set(exit_status "~strncmp(ex.identifier,'Drake:MissingDependency',23)")  # missing dependency => pass
     set(matlab_command "addpath('${CMAKE_INSTALL_PREFIX}/matlab'); addpath_drake;  global g_disable_visualizers; g_disable_visualizers=true; try, eval('${parsed_args_COMMAND}'); catch ex, disp(getReport(ex,'extended')); disp(' '); force_close_system; exit(${exit_status}); end; force_close_system; exit(0)")
@@ -299,7 +301,7 @@ endif()
 
 if (MATLAB_FOUND)
   add_matlab_test(NAME "RigidBodyManipulatorMemoryTest"
-  	COMMAND "r = RigidBodyManipulator(''Acrobot.urdf''), megaclear" 
+  	COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear" 
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/Acrobot)
   set_tests_properties(RigidBodyManipulatorMemoryTest PROPERTIES TIMEOUT 300)
 endif()
