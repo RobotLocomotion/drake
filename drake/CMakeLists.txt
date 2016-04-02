@@ -134,12 +134,34 @@ install(FILES ${drake_path_header} DESTINATION include/drake/)
 include_directories(BEFORE ${generated_dir})
 
 find_package( Perl )
-if ( PERL_FOUND )
-  if (MATLAB_FOUND)
-    file(WRITE ${CMAKE_BINARY_DIR}/CTestCustom.cmake
-   	      "set(CTEST_CUSTOM_PRE_TEST \"${PERL_EXECUTABLE} ${PROJECT_SOURCE_DIR}/cmake/add_matlab_unit_tests.pl ${PROJECT_SOURCE_DIR}\")\n")
+if (MATLAB_FOUND AND NOT PERL_FOUND)
+  message(WARNING "Perl not found.  MATLAB unit tests will not run as a part of make test")
+endif() 
+
+# add ctest for a matlab string
+# add_matlab_test(NAME <testname> COMMAND <matlab_string_to_eval> 
+#         [CONFIGURATIONS <config>...]
+#         [WORKING_DIRECTORY <dir>])
+# note: can still use e.g. set_tests_properties ( <testname> PROPERTIES TIMEOUT 100) after this
+function(add_matlab_test)
+  if (MATLAB_FOUND AND PERL_FOUND)
+    set(oneValueArgs NAME COMMAND)
+    set(multiValueArgs)
+    cmake_parse_arguments(parsed_args "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+
+  # set(exit_status 1)   # missing dependency => failure
+    set(exit_status "~strncmp(ex.identifier,'Drake:MissingDependency',23)")  # missing dependency => pass
+    set(matlab_command "addpath('${CMAKE_INSTALL_PREFIX}/matlab'); addpath_drake;  global g_disable_visualizers; g_disable_visualizers=true; try, eval('${parsed_args_COMMAND}'); catch ex, disp(getReport(ex,'extended')); disp(' '); force_close_system; exit(${exit_status}); end; force_close_system; exit(0)")
+    set(call_matlab ${PERL_EXECUTABLE} ${CMAKE_SOURCE_DIR}/cmake/matlab_clean.pl -nosplash)
+    if (WIN32)
+       set(call_matlab ${call_matlab} -nodesktop -wait)
+    else()
+       set(call_matlab ${call_matlab} -nodisplay)
+    endif()
+
+    add_test(NAME ${parsed_args_NAME} COMMAND ${call_matlab} "-r" "${matlab_command}" ${parsed_args_UNPARSED_ARGUMENTS})
   endif()
-endif()
+endfunction()
 
 enable_testing()
 include(CTest)
@@ -276,8 +298,8 @@ else()
 endif()
 
 if (MATLAB_FOUND)
-  add_test(NAME "RigidBodyManipulatorMemoryTest"
-  	COMMAND "matlab" #"${PROJECT_SOURCE_DIR}/cmake/matlab_clean.pl"
-  	"-nosplash" "-nodisplay" "-wait" "-r" "addpath('${CMAKE_INSTALL_PREFIX}/matlab'); addpath_${POD_NAME}; cd('${PROJECT_SOURCE_DIR}/examples/Acrobot'); try, r = RigidBodyManipulator('Acrobot.urdf'); megaclear; catch ex, disp(getReport(ex,'extended')); disp(''); force_close_system; exit(1); end; force_close_system; exit(0)")
+  add_matlab_test(NAME "RigidBodyManipulatorMemoryTest"
+  	COMMAND "r = RigidBodyManipulator(''Acrobot.urdf''), megaclear" 
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/Acrobot)
   set_tests_properties(RigidBodyManipulatorMemoryTest PROPERTIES TIMEOUT 300)
 endif()
