@@ -501,7 +501,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           Mvn = [];
           wvn = v + h*(H\tau);
           if (nargout>4)
-            error('need to implement this case');
+            Hinv = inv(H);
+            dz = zeros(0,1+obj.num_x+obj.num_u);
+            dwvn = [zeros(num_v,1+num_q),eye(num_v),zeros(num_v,obj.num_u)] + ...
+              h*Hinv*dtau - [zeros(num_v,1),h*Hinv*matGradMult(dH(:,1:num_q),Hinv*tau),zeros(num_v,num_q),zeros(num_v,obj.num_u)];
+            dMvn = [zeros(numel(Mvn),1),reshape(Hinv*reshape(dJtranspose - matGradMult(dH(:,1:num_q),Hinv*J'),num_q,[]),numel(Mvn),[]),zeros(numel(Mvn),num_v+obj.num_u)];
           end
           return;
         end
