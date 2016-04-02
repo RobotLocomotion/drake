@@ -400,6 +400,7 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
     testname = files(i).name;
     ind=find(testname=='.',1);
     testname=testname(1:(ind-1));
+    drake_rel_path = pwd; drake_rel_path = strrep(drake_rel_path,[getDrakePath,filesep],'');
     
     isClass = checkFile(files(i).name,'classdef',false);
     if (isClass)
@@ -422,7 +423,9 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
           [tf] = checkFile(files(i).name,'RUN_SERIAL');
           if (tf), test_properties = sprintf('%s RUN_SERIAL',test_properties); end
           
-          fprintf(options.test_list_file,'%s.%s\t%s\t%s\n',testname,m{j},pwd,test_properties);
+%          fprintf(options.test_list_file,'%s.%s\t%s\t%s\n',testname,m{j},pwd,test_properties);
+          fprintf(options.test_list_file, 'add_matlab_test(NAME %s/%s.%s COMMAND %s.%s)\n',drake_rel_path,testname,m{j},testname,m{j});
+          if ~isempty(test_properties), fprintf(options.test_list_file, 'set_tests_properties(%s/%s PROPERTIES %s)\n',drake_rel_path,testname,test_properties); end
         end
         
         if options.gui
@@ -451,7 +454,11 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
         [tf] = checkFile(files(i).name,'RUN_SERIAL');
         if (tf), test_properties = sprintf('%s RUN_SERIAL',test_properties); end 
 
-        fprintf(options.test_list_file,'%s\t%s\t%s\n',testname,pwd,test_properties);
+%        fprintf(options.test_list_file,'%s\t%s\t%s\n',testname,pwd,test_properties);
+ 
+        testname = packageSafeTestName(testname);
+        fprintf(options.test_list_file, 'add_matlab_test(NAME %s/%s COMMAND %s)\n',drake_rel_path,testname,testname);
+        if ~isempty(test_properties), fprintf(options.test_list_file, 'set_tests_properties(%s/%s PROPERTIES %s)\n',drake_rel_path,testname,test_properties); end
       end
       
       if (options.gui)
@@ -888,4 +895,19 @@ end
   function tf = isTestDir(dirname)
     % Supports package notation in which folders begin with a +
     tf = strcmp(dirname, 'test') || strcmp(dirname, '+test');
+  end
+
+  
+  function testname = packageSafeTestName(testname)
+    [pathstr, name] = fileparts(pwd());
+    if strcmp(name(1), '+')
+      % we're in a package
+      % add the package name
+      testname = strcat(name(2:end), '.', testname);
+      % move up a directory and try again
+      cd(pathstr)
+      testname = packageSafeTestName(testname);
+      % back to where we started
+      cd(name);
+    end
   end

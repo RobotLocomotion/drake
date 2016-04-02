@@ -40,7 +40,6 @@ Continuous Integration Notes
     :maxdepth: 1
 
     jenkins
-    known_issue
 
 IDE Notes
 =========

@@ -1,5 +1,8 @@
 function runLQR(N)
 
+% note that this test is known to occasionally trip a zero crossing limit
+% https://github.com/RobotLocomotion/drake/issues/313
+
 if (nargin<1) N=max(ceil(8*rand),2); end
 
 p = PlanarNLink(N);
@@ -14,12 +17,12 @@ sys=feedback(p,c);
 
 % disp('taking taylor approx..'); drawnow;
 % pp = sys.taylorApprox(0,x0,[],3);  % make polynomial approximation
-% 
+%
 % disp('computing ROA...'); drawnow;
 % options=struct();
 % %options.method='bilinear';
 % V=regionOfAttraction(pp,x0,[],options)
-% 
+%
 % disp('simulating.');
 
 for i=1:5;

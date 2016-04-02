@@ -158,6 +158,9 @@ function(add_matlab_test)
   # set(exit_status 1)   # missing dependency => failure
     set(exit_status "~strncmp(ex.identifier,'Drake:MissingDependency',23)")  # missing dependency => pass
     set(matlab_command "addpath('${CMAKE_INSTALL_PREFIX}/matlab'); addpath_drake;  global g_disable_visualizers; g_disable_visualizers=true; try, eval('${parsed_args_COMMAND}'); catch ex, disp(getReport(ex,'extended')); disp(' '); force_close_system; exit(${exit_status}); end; force_close_system; exit(0)")
+    if (RANDOMIZED_UNIT_TESTS)
+      set(matlab_command "rng('shuffle'); rng_state=rng; disp(sprintf('To reproduce this test use rng(%d,''%s'')',rng_state.Seed,rng_state.Type)); disp(' '); ${matlab_command}")
+    endif()
     set(call_matlab ${PERL_EXECUTABLE} ${CMAKE_SOURCE_DIR}/cmake/matlab_clean.pl -nosplash)
     if (WIN32)
        set(call_matlab ${call_matlab} -nodesktop -wait)

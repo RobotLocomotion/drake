@@ -13,7 +13,7 @@ endif()
 
 add_matlab_test(NAME systems/test/HybridSystemSampleTimeTest.run COMMAND HybridSystemSampleTimeTest.run)
 add_matlab_test(NAME systems/test/LinearGaussianDT.run COMMAND LinearGaussianDT.run)
-add_matlab_test(NAME systems/test/linear_gaussian_dt COMMAND linear_gaussian_dt)
+# add_matlab_test(NAME systems/test/linear_gaussian_dt COMMAND linear_gaussian_dt)  # see #366
 add_matlab_test(NAME systems/test/memoryTest COMMAND memoryTest)
-add_matlab_test(NAME systems/test/runPendulum COMMAND runPendulum)
+# add_matlab_test(NAME systems/test/runPendulum COMMAND runPendulum) # see #310
 add_matlab_test(NAME systems/test/testSimInput COMMAND testSimInput)
