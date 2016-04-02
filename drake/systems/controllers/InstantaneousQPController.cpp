@@ -1,13 +1,14 @@
 #include "InstantaneousQPController.h"
-#include "controlUtil.h"
+#include <lcm/lcm-cpp.hpp>
 #include <map>
 #include <memory>
-#include <lcm/lcm-cpp.hpp>
+#include "drake/Path.h"
+#include "drake/solvers/fastQP.h"
+#include "drake/systems/controllers/controlUtil.h"
+#include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/lcmUtil.h"
 #include "drake/util/testUtil.h"
 #include "drake/util/yaml/yamlUtil.h"
-#include "drake/solvers/fastQP.h"
-#include "drake/Path.h"
 #include "lcmtypes/drake/lcmt_zmp_com_observer_state.hpp"
 
 const double REG = 1e-8;
@@ -16,6 +17,7 @@ const bool CHECK_CENTROIDAL_MOMENTUM_RATE_MATCHES_TOTAL_WRENCH = false;
 const bool PUBLISH_ZMP_COM_OBSERVER_STATE = true;
 
 using namespace Eigen;
+using drake::util::MatrixCompareType;
 
 #define LEG_INTEGRATOR_DEACTIVATION_MARGIN 0.07
 
@@ -282,7 +284,8 @@ InstantaneousQPController::loadAvailableSupports(
   // Parse a qp_input LCM message to extract its available supports as a vector
   // of SupportStateElements
   std::vector<SupportStateElement,
-              Eigen::aligned_allocator<SupportStateElement>> available_supports;
+              Eigen::aligned_allocator<SupportStateElement>>
+      available_supports;
   available_supports.resize(qp_input.num_support_data);
   for (int i = 0; i < qp_input.num_support_data; i++) {
     available_supports[i].body_idx =
@@ -560,7 +563,11 @@ void checkCentroidalMomentumMatchesTotalWrench(
   Vector6d momentum_rate_of_change =
       world_momentum_matrix * qdd + world_momentum_matrix_dot_times_v;
 
-  valuecheckMatrix(total_wrench_in_world, momentum_rate_of_change, 1e-6);
+  std::string explanation;
+  if (!CompareMatrices(total_wrench_in_world, momentum_rate_of_change, 1e-6,
+                       MatrixCompareType::absolute, &explanation)) {
+    throw std::runtime_error("Drake:ValueCheck ERROR:" + explanation);
+  }
 }
 
 std::unordered_map<std::string, int> computeBodyOrFrameNameToIdMap(
@@ -636,10 +643,10 @@ int InstantaneousQPController::setupAndSolveQP(
               Eigen::aligned_allocator<SupportStateElement>>
       available_supports = loadAvailableSupports(qp_input);
   std::vector<SupportStateElement,
-              Eigen::aligned_allocator<SupportStateElement>> active_supports =
-      getActiveSupports(*robot, robot_state.q, robot_state.qd,
-                        available_supports, contact_detected,
-                        params.contact_threshold);
+              Eigen::aligned_allocator<SupportStateElement>>
+      active_supports = getActiveSupports(*robot, robot_state.q, robot_state.qd,
+                                          available_supports, contact_detected,
+                                          params.contact_threshold);
 
   // // whole_body_data
   if (qp_input.whole_body_data.num_positions != nq)
@@ -733,14 +740,16 @@ int InstantaneousQPController::setupAndSolveQP(
     Vector6d body_Kp;
     body_Kp.head<3>() =
         (params.body_motion[true_body_id0].Kp.head<3>().array() *
-         xyz_kp_multiplier.array()).matrix();
+         xyz_kp_multiplier.array())
+            .matrix();
     body_Kp.tail<3>() =
         params.body_motion[true_body_id0].Kp.tail<3>() * expmap_kp_multiplier;
     Vector6d body_Kd;
     body_Kd.head<3>() =
         (params.body_motion[true_body_id0].Kd.head<3>().array() *
          xyz_damping_ratio_multiplier.array() *
-         xyz_kp_multiplier.array().sqrt()).matrix();
+         xyz_kp_multiplier.array().sqrt())
+            .matrix();
     body_Kd.tail<3>() = params.body_motion[true_body_id0].Kd.tail<3>() *
                         sqrt(expmap_kp_multiplier) *
                         expmap_damping_ratio_multiplier;
