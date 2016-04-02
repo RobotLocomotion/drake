@@ -1,16 +1,18 @@
 #ifndef DRAKE_SYSTEMS_LCMSYSTEM_H_
 #define DRAKE_SYSTEMS_LCMSYSTEM_H_
 
-#include <lcm/lcm-cpp.hpp>
 #include <mutex>
 #include <stdexcept>
 #include <thread>
 #include <unordered_map>
+
+#include <lcm/lcm-cpp.hpp>
+#include "lcmtypes/drake/lcmt_drake_signal.hpp"
+
 #include "drake/drakeLCMSystem_export.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/System.h"
 #include "drake/systems/cascade_system.h"
-#include "lcmtypes/drake/lcmt_drake_signal.hpp"
 
 namespace Drake {
 

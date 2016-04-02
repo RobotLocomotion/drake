@@ -16,23 +16,31 @@ using namespace Eigen;
 int main(int argc, char* argv[]) {
   const size_t num_lidar_points = 100;
 
-  // Get the final time of the simulation
+  SimulationOptions options = default_simulation_options;
+  options.realtime_factor = 1.0;
+  options.initial_step_size = 0.01;
+
+  // Get the final time of the simulation.
   double final_time =
       argc >= 2 ? atof(argv[1]) : std::numeric_limits<double>::infinity();
 
-  // Get the maximum delay in seconds of the simulation time relative to the
-  // real time
-  double max_delay = argc >= 3 ? atof(argv[2]) : 1.0;
+  // Get the simulation's maximum acceptable delay in seconds.
+  if (argc >= 3) {
+    options.timeout_seconds = atof(argv[2]);
+  }
 
-  // Get whether a warning should be printed or exception should be thrown
-  // if real-time semantics are violated. (default is to throw exception)
-  bool warn_delay =
-      argc >= 4 ? (std::string(argv[3]).compare("warn") == 0) : false;
+  // Determine whether a warning should be printed or an exception should be
+  // thrown if the simulation is delayed by more than the timeout threshold.
+  if (argc >= 4) {
+    options.warn_real_time_violation =
+        (std::string(argv[3]).compare("warn") == 0);
+  }
 
   cout << "Running simulation for " << final_time
-       << " seconds with a maximum real-time delay of " << max_delay
-       << " seconds. Will "
-       << (warn_delay ? "print warning" : "throw exception")
+       << " seconds with a maximum real-time delay of "
+       << options.timeout_seconds << " seconds. Will "
+       << (options.warn_real_time_violation ? "print warning"
+                                            : "throw exception")
        << " if real-time max-delay is violated." << endl;
 
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
@@ -113,12 +121,6 @@ int main(int argc, char* argv[]) {
       cascade(quad_control_to_rbsys_input, rigid_body_sys);
 
   auto sys_with_vis = cascade(sys_with_lcm_input, visualizer);
-
-  SimulationOptions options = default_simulation_options;
-  options.realtime_factor = 1.0;
-  options.initial_step_size = 0.01;
-  options.timeout_seconds = max_delay;
-  options.warn_real_time_violation = warn_delay;
 
   VectorXd x0 = VectorXd::Zero(rigid_body_sys->getNumStates());
   x0.head(tree->num_positions) = tree->getZeroConfiguration();

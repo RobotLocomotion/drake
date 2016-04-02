@@ -1,15 +1,13 @@
 #ifndef DRAKE_SYSTEMS_SIMULATION_H_
 #define DRAKE_SYSTEMS_SIMULATION_H_
 
+#include <Eigen/Dense>
 #include <chrono>
+#include <iostream>
 #include <stdexcept>
 #include <thread>
-#include <iostream>
-#include <Eigen/Dense>
 
-#include <drake/core/Vector.h>
-
-using Drake::toEigen;
+#include "drake/core/Vector.h"
 
 namespace Drake {
 
@@ -27,8 +25,10 @@ struct SimulationOptions {
   double timeout_seconds;
 
   /**
-   * Whether to issue a warning if the simulation's real-time semantics are
-   * violated.
+   * This variable dermines what happens if the simulation's timing is delayed
+   * by more than timeout_seconds. When this occurs, a warning is printed if
+   * this variable is true, and an exception is raised if this variable is
+   * false.
    */
   bool warn_real_time_violation;
 
@@ -62,10 +62,12 @@ typedef std::chrono::time_point<TimeClock, TimeDuration> TimePoint;
  * @param timeout_seconds The maximum difference between the current time and
  * the desired time (as determined based on the current simulation time
  * and real-time factor) before which an exception is thrown.
+ * return True if the realtime factor was successfully handled. False otherwise.
  */
-inline void handle_realtime_factor(const TimePoint& wall_clock_start_time,
+inline bool handle_realtime_factor(const TimePoint& wall_clock_start_time,
                                    double sim_time, double realtime_factor,
                                    double timeout_seconds) {
+  bool result = true;
   if (realtime_factor > 0.0) {
     TimePoint wall_time = TimeClock::now();
     TimePoint desired_time =
@@ -75,12 +77,11 @@ inline void handle_realtime_factor(const TimePoint& wall_clock_start_time,
       std::this_thread::sleep_until(desired_time);
     } else if (wall_time >
                desired_time + TimeDuration(timeout_seconds / realtime_factor)) {
-      throw std::runtime_error(
-          "Simulation is not keeping up with desired real-time factor -- "
-          "behind by more than 1 (scaled) second at simulation time " +
-          std::to_string(sim_time));
+      result = false;
     }
   }
+
+  return result;
 }
 
 /** simulate
@@ -116,17 +117,21 @@ void simulate(const System& sys, double ti, double tf,
   // Take steps from ti to tf.
   double t = ti;
   while (t < tf) {
-    try {
-      handle_realtime_factor(start, t, options.realtime_factor,
-                             options.timeout_seconds);
-    } catch (std::runtime_error err) {
+    if (!handle_realtime_factor(start, t, options.realtime_factor,
+                                options.timeout_seconds)) {
+      std::stringstream error_msg;
+      error_msg
+          << "The simulation is not keeping up with desired real-time factor. "
+          << "It is behind by more than " << options.timeout_seconds
+          << " (scaled) second at simulation time " << t;
+
       if (options.warn_real_time_violation) {
         if (!rt_warning_printed) {
-          std::cerr << "WARNING: " << err.what() << std::endl;
-          rt_warning_printed = true;  // supress future warnings
+          std::cerr << "WARNING: " << error_msg.str() << std::endl;
+          rt_warning_printed = true;  // Suppress future warnings.
         }
       } else {
-        throw err;
+        throw std::runtime_error(error_msg.str());
       }
     }
     const double dt = (std::min)(options.initial_step_size, tf - t);
@@ -137,14 +142,16 @@ void simulate(const System& sys, double ti, double tf,
     // This is an RK2 integrator (explicit trapezoid rule).
     // First stage: xd0 = dynamics(t0,x0,u0).
     xdot0 = sys.dynamics(t, x, u);
-    x1est = toEigen(x) + dt * toEigen(xdot0);  // explicit Euler step
+    x1est =
+        toEigen(x) + dt * toEigen(xdot0);  // explicit Euler step
     t += dt;
 
     // Second stage: xd1 = dynamics(t1,x1est,u0).
     xdot1 = sys.dynamics(t, x1est, u);
 
     // 2nd order result: x = x0 + dt (xd0+xd1)/2.
-    x = toEigen(x) + (dt / 2) * (toEigen(xdot0) + toEigen(xdot1));
+    x = toEigen(x) +
+        (dt / 2) * (toEigen(xdot0) + toEigen(xdot1));
   }
 }
 
