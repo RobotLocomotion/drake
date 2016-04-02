@@ -136,20 +136,24 @@ include_directories(BEFORE ${generated_dir})
 find_package( Perl )
 if (MATLAB_FOUND AND NOT PERL_FOUND)
   message(WARNING "Perl not found.  MATLAB unit tests will not run as a part of make test")
-endif() 
+endif()
 
 # add ctest for a matlab string
-# add_matlab_test(NAME <testname> COMMAND <matlab_string_to_eval> 
+# add_matlab_test(NAME <testname> COMMAND <matlab_string_to_eval>
 #         [CONFIGURATIONS <config>...]
 #         [WORKING_DIRECTORY <dir>])
+# note: default working directory is CMAKE_CURRENT_SOURCE_DIR
 # note: can still use e.g. set_tests_properties ( <testname> PROPERTIES TIMEOUT 100) after this
 function(add_matlab_test)
   if (MATLAB_FOUND AND PERL_FOUND)
-    set(oneValueArgs NAME COMMAND)
+    set(oneValueArgs NAME COMMAND WORKING_DIRECTORY)
     set(multiValueArgs)
     cmake_parse_arguments(parsed_args "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
     string(REPLACE ' '' parsed_args_COMMAND ${parsed_args_COMMAND}) # turn ' into '' so we can eval it in matlab
+    if (NOT parsed_args_WORKING_DIRECTORY)
+      set(parsed_args_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    endif()
 
   # set(exit_status 1)   # missing dependency => failure
     set(exit_status "~strncmp(ex.identifier,'Drake:MissingDependency',23)")  # missing dependency => pass
@@ -161,7 +165,7 @@ function(add_matlab_test)
        set(call_matlab ${call_matlab} -nodisplay)
     endif()
 
-    add_test(NAME ${parsed_args_NAME} COMMAND ${call_matlab} "-r" "${matlab_command}" ${parsed_args_UNPARSED_ARGUMENTS})
+    add_test(NAME ${parsed_args_NAME} COMMAND ${call_matlab} "-r" "${matlab_command}" WORKING_DIRECTORY ${parsed_args_WORKING_DIRECTORY} ${parsed_args_UNPARSED_ARGUMENTS})
   endif()
 endfunction()
 
@@ -301,7 +305,11 @@ endif()
 
 if (MATLAB_FOUND)
   add_matlab_test(NAME "RigidBodyManipulatorMemoryTest"
-  	COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear" 
+  	COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/Acrobot)
   set_tests_properties(RigidBodyManipulatorMemoryTest PROPERTIES TIMEOUT 300)
+endif()
+
+if(IS_DIRECTORY doc/textbook)
+  add_subdirectory(doc/textbook)
 endif()

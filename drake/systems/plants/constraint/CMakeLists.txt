@@ -33,3 +33,5 @@ if (NOT MSVC)
 endif()
 target_link_libraries(testConstraintConstructor drakeRBM drakeRigidBodyConstraint)
 add_test(NAME testConstraintConstructor WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/test" COMMAND testConstraintConstructor)
+
+add_subdirectory(test)

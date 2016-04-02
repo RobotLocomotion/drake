@@ -13,4 +13,11 @@ if (LCM_FOUND AND NOT WIN32)
   add_test(NAME runQuadrotorLQR COMMAND runQuadrotorLQR WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/examples/Quadrotor)
 endif()
 
+add_matlab_test(NAME examples/Quadrotor/Quadrotor.runOpenLoop COMMAND Quadrotor.runOpenLoop)
+add_matlab_test(NAME examples/Quadrotor/runDircol COMMAND runDircol)
+add_matlab_test(NAME examples/Quadrotor/runDircolWObs COMMAND runDircolWObs)
+add_matlab_test(NAME examples/Quadrotor/runLQR COMMAND runLQR)
+add_matlab_test(NAME examples/Quadrotor/runMixedIntegerSimpleForest COMMAND runMixedIntegerSimpleForest)
+
 add_subdirectory(test)
+add_subdirectory(crazyflie)
