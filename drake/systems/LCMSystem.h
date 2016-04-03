@@ -77,7 +77,7 @@ class LCMInputSystem {
   using InputVector = NullVector<ScalarType>;
   template <typename ScalarType>
   using OutputVector = Vector<ScalarType>;
-  const static bool has_lcm_input = false;
+  static const bool has_lcm_input = false;
 
   template <typename System>
   LCMInputSystem(const System &wrapped_sys, std::shared_ptr<lcm::LCM> lcm)
@@ -108,7 +108,7 @@ class LCMInputSystem<
   using InputVector = NullVector<ScalarType>;
   template <typename ScalarType>
   using OutputVector = Vector<ScalarType>;
-  const static bool has_lcm_input = true;
+  static const bool has_lcm_input = true;
 
   template <typename System>
   LCMInputSystem(const System &sys, std::shared_ptr<lcm::LCM> lcm) {
