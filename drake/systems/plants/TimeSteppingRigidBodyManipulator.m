@@ -25,7 +25,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     function obj=TimeSteppingRigidBodyManipulator(manipulator_or_urdf_filename,timestep,options)
       if (nargin<3) options=struct(); end
       if ~isfield(options,'twoD') options.twoD = false; end
-
+      
+      if ispc
+        error('Drake:MissingDependency:PathLCP','PathLCP is known to fail on windows.  See https://github.com/RobotLocomotion/drake/issues/569');
+      end
+        
       typecheck(timestep,'double');
       sizecheck(timestep,1);
 
