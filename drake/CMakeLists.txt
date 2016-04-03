@@ -141,13 +141,14 @@ endif()
 # add ctest for a matlab string
 # add_matlab_test(NAME <testname> COMMAND <matlab_string_to_eval>
 #         [CONFIGURATIONS <config>...]
-#         [WORKING_DIRECTORY <dir>])
+#         [WORKING_DIRECTORY <dir>]
+#         [PROPERTIES <prop1> <value1> ...])
 # note: default working directory is CMAKE_CURRENT_SOURCE_DIR
-# note: can still use e.g. set_tests_properties ( <testname> PROPERTIES TIMEOUT 100) after this
+# note: properties are set internally using set_tests_properties ( <testname> PROPERTIES <prop1> <value1> ...)
 function(add_matlab_test)
   if (MATLAB_FOUND AND PERL_FOUND)
     set(oneValueArgs NAME COMMAND WORKING_DIRECTORY)
-    set(multiValueArgs)
+    set(multiValueArgs PROPERTIES)
     cmake_parse_arguments(parsed_args "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
     string(REPLACE ' '' parsed_args_COMMAND ${parsed_args_COMMAND}) # turn ' into '' so we can eval it in matlab
@@ -169,6 +170,9 @@ function(add_matlab_test)
     endif()
 
     add_test(NAME ${parsed_args_NAME} COMMAND ${call_matlab} "-r" "${matlab_command}" WORKING_DIRECTORY ${parsed_args_WORKING_DIRECTORY} ${parsed_args_UNPARSED_ARGUMENTS})
+    if (parsed_args_PROPERTIES)
+      set_tests_properties(${parsed_args_NAME} PROPERTIES ${parsed_args_PROPERTIES})
+    endif()
   endif()
 endfunction()
 
@@ -309,8 +313,8 @@ endif()
 if (MATLAB_FOUND)
   add_matlab_test(NAME "RigidBodyManipulatorMemoryTest"
   	COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/Acrobot)
-  set_tests_properties(RigidBodyManipulatorMemoryTest PROPERTIES TIMEOUT 300)
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/Acrobot
+    PROPERTIES TIMEOUT 300)
 endif()
 
 if(IS_DIRECTORY doc/textbook)
