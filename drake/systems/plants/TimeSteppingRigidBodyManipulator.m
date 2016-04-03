@@ -504,12 +504,18 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           z = [];
           Mvn = [];
           wvn = v + h*(H\tau);
+          obj.LCP_cache.data.z = z;
+          obj.LCP_cache.data.Mqdn = Mvn;
+          obj.LCP_cache.data.wqdn = wvn;
           if (nargout>4)
             Hinv = inv(H);
             dz = zeros(0,1+obj.num_x+obj.num_u);
             dwvn = [zeros(num_v,1+num_q),eye(num_v),zeros(num_v,obj.num_u)] + ...
               h*Hinv*dtau - [zeros(num_v,1),h*Hinv*matGradMult(dH(:,1:num_q),Hinv*tau),zeros(num_v,num_q),zeros(num_v,obj.num_u)];
-            dMvn = [zeros(numel(Mvn),1),reshape(Hinv*reshape(dJtranspose - matGradMult(dH(:,1:num_q),Hinv*J'),num_q,[]),numel(Mvn),[]),zeros(numel(Mvn),num_v+obj.num_u)];
+            dMvn = zeros(0,1+obj.num_x+obj.num_u);
+            obj.LCP_cache.data.dz = dz;
+            obj.LCP_cache.data.dMqdn = dMvn;
+            obj.LCP_cache.data.dwqdn = dwvn;
           end
           return;
         end
