@@ -180,7 +180,7 @@ class QPLocomotionPlan {
    * To allow the controller to use that support only if it thinks the body is
    * in contact with the terrain, try KINEMATIC_OR_SENSED
    */
-  const static std::map<SupportLogicType, std::vector<bool> >
+  static const std::map<SupportLogicType, std::vector<bool> >
       support_logic_maps;
 
  public:

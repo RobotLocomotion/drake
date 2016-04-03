@@ -68,7 +68,7 @@ int main(int argc, char* argv[]) {
   tree->updateStaticCollisionElements();
 
   auto visualizer = make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm,tree);
-  
+
   auto quad_control_to_rbsys_input = make_shared<Gain<QuadrotorInput, RigidBodySystem::InputVector>>(Eigen::Matrix4d::Identity());
   auto rbsys_output_to_quad_state = make_shared<Gain<RigidBodySystem::StateVector, QuadrotorOutput>>(Eigen::Matrix<double, 22 + num_lidar_points + 1, 22 + num_lidar_points + 1>::Identity());
 

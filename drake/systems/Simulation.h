@@ -23,7 +23,7 @@ struct SimulationOptions {
   SimulationOptions()
       : realtime_factor(-1.0), initial_step_size(0.01), timeout_seconds(1.0){}
 };
-const static SimulationOptions default_simulation_options;
+static const SimulationOptions default_simulation_options;
 
 typedef std::chrono::system_clock TimeClock;  // would love to use steady_clock,
                                               // but it seems to not compile on
