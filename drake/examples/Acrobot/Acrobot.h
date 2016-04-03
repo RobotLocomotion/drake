@@ -48,7 +48,7 @@ class AcrobotState {  // models the Drake::Vector concept
     return x;
   }
 
-  const static int RowsAtCompileTime = 4;
+  static const int RowsAtCompileTime = 4;
 
   ScalarType shoulder, elbow, shoulder_dot, elbow_dot;
 };
@@ -75,7 +75,7 @@ class AcrobotInput {
     return os;
   }
 
-  const static int RowsAtCompileTime = 1;
+  static const int RowsAtCompileTime = 1;
 
   ScalarType tau;
 };
