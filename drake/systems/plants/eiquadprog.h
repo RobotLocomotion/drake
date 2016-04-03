@@ -12,21 +12,21 @@
  The quadprog_solve() function implements the algorithm of Goldfarb and Idnani
  for the solution of a (convex) Quadratic Programming problem
 by means of a dual method.
-	
+
 The problem is in the form:
 
 min 0.5 * x G x + g0 x
 s.t.
     CE^T x + ce0 = 0
     CI^T x + ci0 >= 0
-	
+
  The matrix and vectors dimensions are as follows:
      G: n * n
 		g0: n
-				
+
 		CE: n * p
 	 ce0: p
-				
+
 	  CI: n * m
    ci0: m
 
@@ -141,7 +141,7 @@ inline double solve_quadprog(MatrixBase<tA> & G,  MatrixBase<tB> & g0,
                       const MatrixBase<tC> & CE, const MatrixBase<tD> & ce0,
                       const MatrixBase<tE> & CI, const MatrixBase<tF> & ci0,
                       MatrixBase<tG>& x){
-						
+
   LLT<MatrixXd, Lower> chol(G.cols());
   double c1;
 
@@ -179,7 +179,7 @@ inline double solve_quadprog2(LLT<MatrixXd, Lower> &chol,  double c1, MatrixBase
   VectorXi A(m + p), A_old(m + p), iai(m + p), iaexcl(m+p);
   int q;
   int iq, iter = 0;
- 	
+
   me = p; /* number of equality constraints */
   mi = m; /* number of inequality constraints */
   q = 0;  /* size of the active set A (containing the indices of the active constraints) */
@@ -187,8 +187,8 @@ inline double solve_quadprog2(LLT<MatrixXd, Lower> &chol,  double c1, MatrixBase
   /*
    * Preprocessing phase
    */
-	
-	
+
+
 
   /* initialize the matrix R */
   d.setZero();
@@ -273,7 +273,7 @@ l1:	iter++;
 	  ip = A(i);
 		iai(ip) = -1;
 	}
-	
+
 	/* compute s(x) = ci^T * x + ci0 for all elements of K \ A */
 	ss = 0.0;
 	psi = 0.0; /* this value will contain the sum of all infeasibilities */
@@ -481,7 +481,7 @@ inline bool add_constraint(MatrixXd& R, MatrixXd& J, VectorXd& d, int& iq, doubl
 #endif
 	int i, j, k;
 	double cc, ss, h, t1, t2, xny;
-	
+
   /* we have to find the Givens rotation which will reduce the element
 		d(j) to zero.
 		if it is already zero we don't have to do anything, except of
