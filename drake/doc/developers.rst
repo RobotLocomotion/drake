@@ -39,9 +39,9 @@ and those tests must pass on all platforms supported by Drake.
 **For C++ changes,** please use the googletest framework. It is already
 available in the superbuild.
 
-**For MATLAB changes,** please write an example. Every example and static
-class method runs as a unit test, and fails if it times out or calls
-``error``. For more information, see ``drake/util/unitTest.m``.
+**For MATLAB changes,** please write an example and add it as a test in
+directory CMakeLists.txt using add_matlab_test().  ctest will consider
+the test failed if it times out or calls ``error``.
 
 Code Review
 ===========
@@ -54,12 +54,12 @@ Be prepared to engage in active code review on your pull requests.  The Drake
 code review process has two phases: feature review and platform review. You
 are responsible for finding reviewers, and for providing them the information
 they need to review your change effectively. If a reviewer asks you for more
-information, that is a sign you should add more documentation to your PR. 
+information, that is a sign you should add more documentation to your PR.
 
 **Feature Review.** After creating your pull request, assign it to someone
 else on your team for feature review. Choose the person most familiar
 with the context of your pull request. This reviewer is responsible for
-protecting your team by inspecting for bugs, for test coverage, and for 
+protecting your team by inspecting for bugs, for test coverage, and for
 alignment with the team's goals. During this review, you and your reviewer
 should also strive to minimize the number of changes that will be necessary
 in platform review.
@@ -67,10 +67,10 @@ in platform review.
 **Platform Review.** After your feature reviewer has signed off on your change,
 reassign it to a Drake owner for platform review. The owner will inspect for
 architectural compatibility, stability, performance, test coverage, and style.
-Once satisfied, the owner merges the PR. 
+Once satisfied, the owner merges the PR.
 
-The following github users are Drake owners. If possible, seek platform review 
-from an owner who has previously reviewed related changes. Shared context will 
+The following github users are Drake owners. If possible, seek platform review
+from an owner who has previously reviewed related changes. Shared context will
 make the review faster.
 
 - @david-german-tri (Toyota Research Institute)
