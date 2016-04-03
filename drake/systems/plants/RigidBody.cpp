@@ -108,21 +108,21 @@ bool RigidBody::CollisionElement::CollidesWith(
 }
 
 ostream& operator<<(ostream& out, const RigidBody& b) {
-  std::string parentJointName =
+  std::string parent_joint_name =
       b.hasParent() ? b.getJoint().getName() : "no parent joint";
 
-  std::stringstream ceMsg;
-  ceMsg << "[";
+  std::stringstream collision_element_str;
+  collision_element_str << "[";
   for (size_t ii = 0; ii < b.collision_element_ids.size(); ii++) {
-    ceMsg << b.collision_element_ids[ii];
-    if (ii < b.collision_element_ids.size() - 1) ceMsg << ", ";
+    collision_element_str << b.collision_element_ids[ii];
+    if (ii < b.collision_element_ids.size() - 1) collision_element_str << ", ";
   }
-  ceMsg << "]";
+  collision_element_str << "]";
 
   out << "RigidBody\n"
       << "  - link name: " << b.linkname << "\n"
-      << "  - parent joint: " << parentJointName << "\n"
-      << "  - Collision elements IDs: " << ceMsg.str();
+      << "  - parent joint: " << parent_joint_name << "\n"
+      << "  - Collision elements IDs: " << collision_element_str.str();
 
   return out;
 }

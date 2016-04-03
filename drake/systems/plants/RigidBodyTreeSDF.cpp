@@ -427,13 +427,14 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
     }
 
     // Get the loop point in the parent's reference frame.
-    Eigen::Vector3d lpModel = transform_child_to_model * lp_child;
+    Eigen::Vector3d loop_point_model = transform_child_to_model * lp_child;
 
-    Eigen::Vector3d lpParent = transform_parent_to_model.inverse() * lpModel;
+    Eigen::Vector3d loop_point_parent =
+        transform_parent_to_model.inverse() * loop_point_model;
 
     std::shared_ptr<RigidBodyFrame> frameA = allocate_shared<RigidBodyFrame>(
         Eigen::aligned_allocator<RigidBodyFrame>(), name + "FrameA", parent,
-        lpParent, Vector3d::Zero());
+        loop_point_parent, Vector3d::Zero());
 
     std::shared_ptr<RigidBodyFrame> frameB = allocate_shared<RigidBodyFrame>(
         Eigen::aligned_allocator<RigidBodyFrame>(), name + "FrameB", child,
@@ -452,12 +453,12 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
 
     for (auto& c : child->collision_element_ids) {
       if (!model->transformCollisionFrame(
-              c, transform_to_model.inverse() * transform_child_to_model))
-        std::cout
-            << "RigidBodyTreeSDF::parseSDFJoint: Collision element with ID "
-            << c
-            << " not found! Cannot update its local frame to be that of joint."
-            << std::endl;
+              c, transform_to_model.inverse() * transform_child_to_model)) {
+        std::stringstream ss;
+        ss << "RigidBodyTreeSDF::parseSDFJoint: Collision element with ID " << c
+           << " not found! Cannot update its local frame to be that of joint.";
+        throw std::runtime_error(ss.str());
+      }
     }
 
     // Update pose_map with child's new frame, which is now the same as this
