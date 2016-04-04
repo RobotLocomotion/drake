@@ -148,7 +148,6 @@ classdef FeedbackSystem < DrakeSystem
       % sys2 umax
       ind=find(~isinf(obj.sys2.umax));
       if (~isempty(ind)) zcs=[zcs;obj.sys2.umax(ind) - y1(ind)]; end
-      
     end
 
   end
