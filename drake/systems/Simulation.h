@@ -66,13 +66,23 @@ template <typename System>
 void simulate(const System& sys, double ti, double tf,
               const typename System::template StateVector<double>& xi,
               SimulationOptions& options) {
+  typename System::template StateVector<double> x(xi);
+  simulate(sys,ti,tf,xi,options,x);
+}
+
+template <typename System>
+void simulate(const System& sys, double ti, double tf,
+              const typename System::template StateVector<double>& xi,
+              SimulationOptions& options,typename System::template StateVector<double>& x) {
   if (options.realtime_factor < 0.0) options.realtime_factor = 0.0;
 
   TimePoint start = TimeClock::now();
-  typename System::template StateVector<double> x(xi), x1est, xdot0, xdot1;
+  typename System::template StateVector<double> x1est, xdot0, xdot1;
   typename System::template InputVector<double> u(
       Eigen::VectorXd::Zero(getNumInputs(sys)));
   typename System::template OutputVector<double> y;
+
+  x = xi;
 
   // Take steps from ti to tf.
   double t = ti;
