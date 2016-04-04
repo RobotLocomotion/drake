@@ -81,7 +81,7 @@ Official support for a broader range of superbuild configurations is planned
 for later in 2016:
 
 - No optional dependencies enabled.
-- All open-source optional dependencies is enabled.
+- All open-source optional dependencies enabled.
 - All optional dependencies enabled.
 
 Code Review
