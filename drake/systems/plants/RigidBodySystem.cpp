@@ -398,7 +398,7 @@ Eigen::VectorXd RigidBodyAccelerometer::output(const double &t,
   Vector3d sensor_origin = Vector3d::Zero(); // assumes sensor coincides with the frame's origin;
   auto J = tree->transformPointsJacobian(rigid_body_state, sensor_origin, frame->frame_index, 0, false);
   auto Jdot_times_v = tree->transformPointsJacobianDotTimesV(rigid_body_state, sensor_origin, frame->frame_index, 0);
-  
+
   Vector4d quat_world_to_body = tree->relativeQuaternion(rigid_body_state, 0, frame->frame_index);
   Vector3d accel_base = Jdot_times_v + J * v_dot;
   Vector3d accel_body = quatRotateVec(quat_world_to_body, accel_base);
@@ -407,7 +407,7 @@ Eigen::VectorXd RigidBodyAccelerometer::output(const double &t,
     Vector3d gravity(0, 0, 9.81);
     accel_body += quatRotateVec(quat_world_to_body, gravity);
   }
-  
+
   return noise_model ? noise_model->generateNoise(accel_body) : accel_body;
 }
 
@@ -424,7 +424,7 @@ Eigen::VectorXd RigidBodyMagnetometer::output(const double &t,
   Vector4d quat_world_to_body = tree->relativeQuaternion(rigid_body_state, 0, frame->frame_index);
 
   Vector3d mag_body = quatRotateVec(quat_world_to_body, magnetic_north);
-  
+
   return noise_model ? noise_model->generateNoise(mag_body) : mag_body;
 }
 
