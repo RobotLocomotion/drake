@@ -85,6 +85,7 @@ Continuous Integration Notes
 .. toctree::
     :maxdepth: 1
 
+    CDash <https://drake-cdash.csail.mit.edu/index.php?project=Drake>
     jenkins
     known_issue
 
