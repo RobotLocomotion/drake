@@ -149,22 +149,6 @@ classdef FeedbackSystem < DrakeSystem
       ind=find(~isinf(obj.sys2.umax));
       if (~isempty(ind)) zcs=[zcs;obj.sys2.umax(ind) - y1(ind)]; end
       
-      if (abs(zcs(2))<1e-4)
-        persistent zc_hist;
-        if isempty(zc_hist), zc_hist=struct('t',[],'x',[],'u',[],'zcs',[]); end
-        zc_hist.t(end+1) = t;
-        zc_hist.x(:,end+1) = x;
-        zc_hist.u(:,end+1) = u;
-        zc_hist.zcs(:,end+1) = zcs;
-%        figure(11); clf; hold on; plot(zc_hist.zcs(2,:),'k'); plot(zc_hist.x','r');
-        if (numel(zc_hist.t)>5)
-          zc_hist.t(:,end-4:end) - repmat(zc_hist.t(:,end),1,5)
-          zc_hist.x(:,end-4:end) - repmat(zc_hist.x(:,end),1,5)
-          zc_hist.u(:,end-4:end) - repmat(zc_hist.u(:,end),1,5)
-          zc_hist.zcs(:,end-4:end) - repmat(zc_hist.zcs(:,end),1,5)
-          keyboard;
-        end
-      end
     end
 
   end
