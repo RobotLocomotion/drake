@@ -8,8 +8,8 @@ template <typename ScalarType = double>
 class QuadrotorOutput {
 public:
 
-    const static int num_lidar_points = 100;
-    const static int RowsAtCompileTime = 22 + num_lidar_points + 1;
+    static const int num_lidar_points = 100;
+    static const int RowsAtCompileTime = 22 + num_lidar_points + 1;
 
     typedef drake::lcmt_quadrotor_output_t LCMMessageType;
     static std::string channel() { return "QUAD_OUTPUT"; }

@@ -42,7 +42,7 @@ class PendulumState {  // models the Drake::Vector concept
     return x;
   }
 
-  const static int RowsAtCompileTime = 2;
+  static const int RowsAtCompileTime = 2;
 
   ScalarType theta;
   ScalarType thetadot;
@@ -70,7 +70,7 @@ class PendulumInput {
     return os;
   }
 
-  const static int RowsAtCompileTime = 1;
+  static const int RowsAtCompileTime = 1;
 
   ScalarType tau;
 };
