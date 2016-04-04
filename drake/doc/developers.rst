@@ -49,6 +49,7 @@ Supported Configurations
 The following table shows the configurations and platforms that Drake
 officially supports. Supported configurations are tested in continuous
 integration. All other configurations are provided on a best-effort basis.
+On Ubuntu and OS X, only makefile builds are supported.
 
 +------------------------+--------------------+-------------------+---------+
 | Operating System       | Compiler           | Superbuild Deps   | Build   |
@@ -77,12 +78,6 @@ integration. All other configurations are provided on a best-effort basis.
 +------------------------+--------------------+-------------------+---------+
 
 Official support for MATLAB on Windows and OS X is planned for 2016 Q2.
-Official support for a broader range of superbuild configurations is planned
-for later in 2016:
-
-- No optional dependencies enabled.
-- All open-source optional dependencies enabled.
-- All optional dependencies enabled.
 
 Code Review
 ===========
