@@ -26,7 +26,16 @@ sys=feedback(p,c);
 % disp('simulating.');
 
 for i=1:5;
-  xtraj = sys.simulate([0 2],double(x0)+.01*randn(2*N,1));
+  try 
+    xtraj = sys.simulate([0 2],double(x0)+.01*randn(2*N,1));
+  catch ex
+    if strcmp(ex.identifier,'Simulink:Engine:SolverConsecutiveZCNum');
+      % see https://github.com/RobotLocomotion/drake/issues/313
+      continue;
+    else
+      rethrow(ex);
+    end
+  end
   v.playback(xtraj);
 end
 
