@@ -9,67 +9,19 @@ Descriptions of Pull Requests
 ------------------------------
 
 
-### ([@billhoffman][], [#1990][]) - Updated Version of Bullet Used
-
-Updated to a newer version of bullet that's more compatible with Drake.
-
-### ([@jwnimmer-tri][], [#1988][]) - Enabled `cpplint` Rule for `whitespace/end_of_line` and `whitespace/ending_newline`
-
-Necessary for code style guide conformance. No functional or API changes.
-
-### ([@jwnimmer-tri][], [#1986][]) - Enabled `cpplint` Rule for `build/storage_class`
-
-Necessary for code style guide conformance. No functional or API changes.
-
-### ([@liangfok][], [#1985][]) - API change of quad rotor's unit test
+### ([@liangfok][], [#1985][]) - Added Max Delay and Warn command line options to quadrotor's unit test
 
 Changed the API of the quad rotor's unit test. Users can now specify via the command line the maximum real-time delay and whether to throw an exception or print an error if this maximum delay is exceeded.
 
-### ([@liangfok][], [#1981][]) - Added a change log
-
-Added this file!
-
-### ([@chrisdembia][], [#1980][]) - Wiki Documentation Update
-
-Fixed a link error in the wiki documentation.
-
-### ([@jwnimmer-tri][], [#1971][]) - Wiki Documentation Update
-
-Updated the Ubuntu installation instructions.
-
-### ([@patmarion][], [#1970][]) - Build System Changes
-
-Added a make install step to the pod makefile.
-
-### ([@david-german-tri][], [#1967][]) - Wiki Documentation Update
-
-Added details of the two-stage review process of code prior to merge into Drake's RobotLocomotion/master.
-
-### ([@jwnimmer-tri][], [#1966][]) - API Change for Code Style Conformance.
+### ([@jwnimmer-tri][], [#1966][]) - Renamed `eiquadprog.hpp` to `eiquadprog.h`.
 
 Renamed `eiquadprog.hpp` to `eiquadprog.h`.
 
-### ([@jamiesnape][], [#1961][]) - Wiki Documentation Update
-
-Updated the way `cpplint` and `Sphinx` are installed on Ubuntu Linux.
-
-### ([@liangfok][], [#1960][]) - Nonfunctional Code Style Refinements
-
-Removed some trailing spaces and extraneous blank lines in LCM messages.
-
-### ([@liangfok][], [#1959][]) - Wiki Documentation Update
-
-Refined the code style and code style tools pages on Drake's wiki. No code changes.
-
-### ([@david-german-tri][], [#1955][]) - API Change for Code Style Conformance
+### ([@david-german-tri][], [#1955][]) - Renamed `collidesWith()` to be `CollidesWith()`.
 
 Renames `RigidBody::CollisionElement::collidesWith()` to be `RigidBody::CollisionElement::CollidesWith()`. Updates the collision model unit test to use Google Test.
 
-### ([@jwnimmer-tri][], [#1954][]) - Enabled `cpplint` Rule for `readability/Braces`
-
-Numerous non-functional modifications necessary due to the CPPLint readability/braces rule being enabled.
-
-### ([@liangfok][], [#1953][]) - Replacement of valuecheckMatrix() with CompareMatrices()
+### ([@liangfok][], [#1953][]) - Renamed of `valuecheckMatrix()` to be `CompareMatrices()`
 
 Method `valuecheckMatrix()` in `drake/util/testUtil.h` was removed and replaced with `drake::util::CompareMatrices()` in `drake/util/eigen_matrix_compare.h`.
 
