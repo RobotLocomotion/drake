@@ -11,7 +11,7 @@ Descriptions of Pull Requests
 
 ### ([@liangfok][], [#1985][]) - Added Max Delay and Warn command line options to quadrotor's unit test
 
-Changed the API of the quad rotor's unit test. Users can now specify via the command line the maximum real-time delay and whether to throw an exception or print an error if this maximum delay is exceeded.
+Changed the command line options of the quad rotor's unit test. Users can now specify via the command line the maximum real-time delay and whether to throw an exception or print an error if this maximum delay is exceeded.
 
 ### ([@jwnimmer-tri][], [#1966][]) - Renamed `eiquadprog.hpp` to be `eiquadprog.h`.
 
