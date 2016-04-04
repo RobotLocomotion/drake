@@ -13,7 +13,7 @@ Descriptions of Pull Requests
 
 Changed the API of the quad rotor's unit test. Users can now specify via the command line the maximum real-time delay and whether to throw an exception or print an error if this maximum delay is exceeded.
 
-### ([@jwnimmer-tri][], [#1966][]) - Renamed `eiquadprog.hpp` to `eiquadprog.h`.
+### ([@jwnimmer-tri][], [#1966][]) - Renamed `eiquadprog.hpp` to be `eiquadprog.h`.
 
 Renamed `eiquadprog.hpp` to `eiquadprog.h`.
 
