@@ -9,11 +9,12 @@ include_directories(${PROJECT_SOURCE_DIR}/util)
 
 if (LCM_FOUND)
   include_directories(${PROJECT_SOURCE_DIR}/pod-build/lcmgen)
-  add_executable(bouncingBall simulateLCM.cpp)
+  add_executable(bouncingBall simulateLCM.cpp collision_tests.cc)
   target_link_libraries(bouncingBall drakeRBSystem drakeLCMSystem)
-#  add_test(NAME carSimLCM COMMAND carSimLCM WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/examples/Cars)
-
-#  add_executable(publishDrivingCommand publishDrivingCommand.cpp)
-#  pods_use_pkg_config_packages(publishDrivingCommand lcm)
-#  add_test(NAME publishDrivingCommand COMMAND publishDrivingCommand 1.0 0.0)
 endif (LCM_FOUND)
+
+if (GTEST_FOUND)
+	add_executable(simple_collisions_gtest simple_collisions_gtest.cc collision_tests.cc)
+	target_link_libraries(simple_collisions_gtest drakeRBSystem drakeLCMSystem ${GTEST_BOTH_LIBRARIES})
+	add_test(NAME simple_collisions_gtest COMMAND simple_collisions_gtest)
+endif()
