@@ -31,7 +31,7 @@ Clarifications
 * No dynamic allocation in the inner simulation/control loops.  Code should be still be thread-safe (e.g. be careful with pre-allocations).
 * Classes and methods should be documented using `doxygen <https://www.stack.nl/~dimitri/doxygen/manual/docblocks.html>`_.
 * Embrace templates/C++11 when it makes the code more correct (more clear or more readable also implies more correct).  Minimize template requirements on public interfaces.  Avoid explicit template instantiations in cc files when possible.
-* For the `order of includes <https://google.github.io/styleguide/cppguide.html#Names_and_Order_of_Includes>`_ style rule, surround system header files with angle brackets, and all other header files with double quotes. Separate the ``#include`` statements for system and external library header files from the ``#include`` statements for Drake header files with a blank line. Working within the aforementioned guidelines, follow the style guide's order-of-includes instructions as best you can. Finally, accept whatever :ref:`clang-format <code-style-tools-clang-format>` enforces.
+* For the `order of includes <https://google.github.io/styleguide/cppguide.html#Names_and_Order_of_Includes>`_ style rule, separate each category of ``#include`` statements with a blank line. Then, accept whatever :ref:`clang-format <code-style-tools-clang-format>` enforces.
 
 
 Exceptions
