@@ -1,10 +1,10 @@
-#include "drake/util/eigen_matrix_compare.h"
+#include "drake/core/eigen_matrix_compare.h"
 #include "gtest/gtest.h"
 
-using drake::util::MatrixCompareType;
+using drake::core::MatrixCompareType;
 
 namespace drake {
-namespace util {
+namespace core {
 namespace {
 
 // Tests the ability for two identical matrices to be compared.
@@ -143,5 +143,5 @@ TEST(MatrixCompareTest, NoMessageParam) {
 }
 
 }  // namespace
-}  // namespace util
+}  // namespace core
 }  // namespace drake

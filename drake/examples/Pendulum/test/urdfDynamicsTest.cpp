@@ -1,13 +1,13 @@
+#include "drake/core/eigen_matrix_compare.h"
 #include "drake/examples/Pendulum/Pendulum.h"
 #include "drake/systems/plants/RigidBodySystem.h"
-#include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
 #include "gtest/gtest.h"
 
 using Drake::getDrakePath;
 using Drake::getRandomVector;
 using Drake::RigidBodySystem;
-using drake::util::MatrixCompareType;
+using drake::core::MatrixCompareType;
 
 namespace drake {
 namespace examples {

@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
 #include <memory>
 #include <vector>
+#include "drake/core/eigen_matrix_compare.h"
 #include "drake/solvers/MobyLCP.h"
-#include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
 
-using drake::util::MatrixCompareType;
+using drake::core::MatrixCompareType;
 
 namespace drake {
 namespace solvers {
