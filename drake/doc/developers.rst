@@ -50,31 +50,31 @@ The following table shows the configurations and platforms that Drake
 officially supports. Supported configurations are tested in continuous
 integration. All other configurations are provided on a best-effort basis.
 
-+------------------------+-----------------+-------------------+---------+
-| Operating System       | Compiler        | Superbuild Deps   | Build   |
-+========================+=================+===================+=========+
-| Ubuntu 14.04 LTS       | GCC 4.9         | Default           | Debug   |
-|                        |                 |                   +---------+
-|                        |                 |                   | Release |
-|                        |                 +-------------------+---------+
-|                        |                 | Default + MATLAB  | Release |
-|                        +-----------------+-------------------+---------+
-|                        | Clang 3.7       | Default           | Debug   |
-|                        |                 |                   +---------+
-|                        |                 |                   | Release |
-+------------------------+-----------------+-------------------+---------+
-| Windows Server 2012 R2 | MSVC 14 32-bit  | Default           | Debug   |
-|                        |                 |                   +---------+
-|                        |                 |                   | Release |
-|                        +-----------------+-------------------+---------+
-|                        | MSVC 14 64-bit  | Default           | Debug   |
-|                        |                 |                   +---------+
-|                        |                 |                   | Release |
-+------------------------+-----------------+-------------------+---------+
-| OS X 10.10             | Apple Clang 7.0 | Default           | Debug   |
-|                        |                 |                   +---------+
-|                        |                 |                   | Release |
-+------------------------+-----------------+-------------------+---------+
++------------------------+--------------------+-------------------+---------+
+| Operating System       | Compiler           | Superbuild Deps   | Build   |
++========================+====================+===================+=========+
+| Ubuntu 14.04 LTS       | GCC 4.9            | Default           | Debug   |
+|                        |                    |                   +---------+
+|                        |                    |                   | Release |
+|                        |                    +-------------------+---------+
+|                        |                    | Default + MATLAB  | Release |
+|                        +--------------------+-------------------+---------+
+|                        | Clang 3.7          | Default           | Debug   |
+|                        |                    |                   +---------+
+|                        |                    |                   | Release |
++------------------------+--------------------+-------------------+---------+
+| Windows Server 2012 R2 | MSVC 14 32-bit     | Default           | Debug   |
+|                        | Visual Studio 2015 |                   +---------+
+|                        |                    |                   | Release |
+|                        +--------------------+-------------------+---------+
+|                        | MSVC 14 64-bit     | Default           | Debug   |
+|                        | Visual Studio 2015 |                   +---------+
+|                        |                    |                   | Release |
++------------------------+--------------------+-------------------+---------+
+| OS X 10.10             | Apple Clang 7.0    | Default           | Debug   |
+|                        |                    |                   +---------+
+|                        |                    |                   | Release |
++------------------------+--------------------+-------------------+---------+
 
 Official support for MATLAB on Windows and OS X is planned for 2016 Q2.
 Official support for a broader range of superbuild configurations is planned
