@@ -21,7 +21,7 @@ class MathematicalProgram : public MathematicalProgramInterface {
    MathematicalProgram; }
    virtual MathematicalProgramInterface* addQuadraticCost() { return new
    MathematicalProgram; }
-   virtual MathematicalProgramInterface* addCost() { return new 
+   virtual MathematicalProgramInterface* addCost() { return new
    MathematicalProgram; }
 
    virtual MathematicalProgramInterface* addSumsOfSquaresConstraint() { return new
@@ -96,7 +96,7 @@ class NonlinearProgram : public MathematicalProgram {
     struct MixedIntegerQuadraticProgram : public
     MixedIntegerSecondOrderConeProgram {};
     struct MixedIntegerLinearProgram : public MixedIntegerQuadraticProgram {};
-    
+
     struct NonlinearProgram : public MixedIntegerNonlinearProgram {};
     struct SemidefiniteProgram : public NonlinearProgram, public
     MixedIntegerSemidefiniteProgram {};
@@ -111,7 +111,7 @@ class NonlinearProgram : public MathematicalProgram {
     virtual MathematicalProgramInterface* addLinearInequalityConstraint() { return
     new LinearProgram; };
     };
-    
+
     struct NonlinearComplementarityProblem : public NonlinearProgram {};
     struct LinearComplementarityProblem : public
     NonlinearComplementarityProblem {};
@@ -149,11 +149,11 @@ class LeastSquares
     for (auto const& binding : prog.getLinearEqualityConstraints()) {
       num_constraints += binding.getConstraint()->getMatrix().rows();
     }
-    
+
     Eigen::MatrixXd Aeq = Eigen::MatrixXd::Zero(
         num_constraints, prog.getNumVars());  // todo: use a sparse matrix here?
     Eigen::VectorXd beq(num_constraints);
-    
+
     size_t constraint_index = 0;
     for (auto const& binding :  prog.getLinearEqualityConstraints()) {
       auto const& c = binding.getConstraint();
@@ -169,7 +169,7 @@ class LeastSquares
       // constraint
       constraint_index += n;
     }
-    
+
     // least-squares solution
     prog.setDecisionVariableValues(
         Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beq));

@@ -29,7 +29,7 @@ public:
       return index >= 0 && index < RowsAtCompileTime ? std::string("motor") + std::to_string(index + 1) : std::string("error");
     }
 
-    const static int RowsAtCompileTime = 4;
+    static const int RowsAtCompileTime = 4;
 
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     Eigen::Matrix<ScalarType, 4, 1> motors;

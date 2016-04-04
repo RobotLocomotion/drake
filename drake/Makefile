@@ -16,7 +16,7 @@ all: configure
 ifeq ($(OS),Windows_NT)
 	cmake --build pod-build $(CMAKE_CONFIG) --target install
 else
-	$(MAKE) -C pod-build
+	$(MAKE) -C pod-build all install
 endif
 
 pod-build:

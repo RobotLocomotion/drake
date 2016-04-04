@@ -47,7 +47,7 @@ class DrivingCommand {
     }
     return "error";
   }
-  const static int RowsAtCompileTime = 3;
+  static const int RowsAtCompileTime = 3;
 
   ScalarType steering_angle;
   ScalarType throttle;
