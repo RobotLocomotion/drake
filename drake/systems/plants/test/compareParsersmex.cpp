@@ -1,12 +1,14 @@
-#include "mex.h"
 #include <iostream>
-#include "drake/util/testUtil.h"
-#include "drake/util/drakeMexUtil.h"
 #include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/util/drakeMexUtil.h"
+#include "drake/util/eigen_matrix_compare.h"
+#include "drake/util/testUtil.h"
 #include "math.h"
+#include "mex.h"
 
 using namespace Eigen;
 using namespace std;
+using drake::util::MatrixCompareType;
 
 /*
  * compares C++ robots generated via the matlab constructModelmex with the same
@@ -97,37 +99,76 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
     {  // compare H, C, and B
       eigen_aligned_unordered_map<RigidBody const *,
-                                  Matrix<double, TWIST_SIZE, 1> > f_ext;
+                                  Matrix<double, TWIST_SIZE, 1> >
+          f_ext;
 
       auto matlab_H = matlab_model->massMatrix(matlab_cache);
       auto cpp_H = cpp_model->massMatrix(cpp_cache);
-      valuecheckMatrix(matlab_H, cpp_H, 1e-8, "H doesn't match");
+
+      std::string explanation;
+      if (!CompareMatrices(matlab_H, cpp_H, 1e-8, MatrixCompareType::absolute,
+                           &explanation)) {
+        throw std::runtime_error(
+            "Drake: CompareParserMex: ERROR: H doesn't match: " + explanation);
+      }
 
       auto matlab_C = matlab_model->dynamicsBiasTerm(matlab_cache, f_ext);
       auto cpp_C = cpp_model->dynamicsBiasTerm(cpp_cache, f_ext);
-      valuecheckMatrix(matlab_C, cpp_C, 1e-8, "C doesn't match");
 
-      valuecheckMatrix(matlab_model->B, cpp_model->B, 1e-8, "B doesn't match");
+      if (!CompareMatrices(matlab_C, cpp_C, 1e-8, MatrixCompareType::absolute,
+                           &explanation)) {
+        throw std::runtime_error(
+            "Drake: CompareParserMex: ERROR: C doesn't match: " + explanation);
+      }
+
+      if (!CompareMatrices(matlab_model->B, cpp_model->B, 1e-8,
+                           MatrixCompareType::absolute, &explanation)) {
+        throw std::runtime_error(
+            "Drake: CompareParserMex: ERROR: B doesn't match: " + explanation);
+      }
     }
 
     {  // compare joint limits
-      valuecheckMatrix(matlab_model->joint_limit_min,
-                       cpp_model->joint_limit_min, 1e-8,
-                       "joint_limit_min doesn't match");
-      valuecheckMatrix(matlab_model->joint_limit_max,
-                       cpp_model->joint_limit_max, 1e-8,
-                       "joint_limit_max doesn't match");
+      std::string explanation;
+      if (!CompareMatrices(matlab_model->joint_limit_min,
+                           cpp_model->joint_limit_min, 1e-8,
+                           MatrixCompareType::absolute, &explanation)) {
+        throw std::runtime_error(
+            "Drake: CompareParserMex: ERROR: joint_limit_min doesn't match: " +
+            explanation);
+      }
+
+      if (!CompareMatrices(matlab_model->joint_limit_max,
+                           cpp_model->joint_limit_max, 1e-8,
+                           MatrixCompareType::absolute, &explanation)) {
+        throw std::runtime_error(
+            "Drake: CompareParserMex: ERROR: joint_limit_max doesn't match: " +
+            explanation);
+      }
     }
 
     {  // compare position constraints
       auto matlab_phi = matlab_model->positionConstraints(matlab_cache);
       auto cpp_phi = cpp_model->positionConstraints(cpp_cache);
-      valuecheckMatrix(matlab_phi, cpp_phi, 1e-8, "phi doesn't match");
+
+      std::string explanation;
+      if (!CompareMatrices(matlab_phi, cpp_phi, 1e-8,
+                           MatrixCompareType::absolute, &explanation)) {
+        throw std::runtime_error(
+            "Drake: CompareParserMex: ERROR: phi doesn't match doesn't "
+            "match: " +
+            explanation);
+      }
 
       auto matlab_dphi =
           matlab_model->positionConstraintsJacobian(matlab_cache);
       auto cpp_dphi = cpp_model->positionConstraintsJacobian(cpp_cache);
-      valuecheckMatrix(matlab_dphi, cpp_dphi, 1e-8, "dphi doesn't match");
+      if (!CompareMatrices(matlab_dphi, cpp_dphi, 1e-8,
+                           MatrixCompareType::absolute, &explanation)) {
+        throw std::runtime_error(
+            "Drake: CompareParserMex: ERROR: dphi doesn't match: " +
+            explanation);
+      }
     }
   }
 
