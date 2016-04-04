@@ -22,6 +22,10 @@ classdef FeedbackSystem < DrakeSystem
         error('Drake:FeedbackSystem:NoStochasticSupport','feedback combinations with stochastic systems not implemented yet.');
       end
 
+      if any(~isinf([sys1.umin;sys1.umax;sys2.umin;sys2.umax]))
+        error('Drake:FeedbackSystem:InternalInputLimits','feedback combinations with saturations were causing problems in simulation.  See https://github.com/RobotLocomotion/drake/issues/494');
+      end
+      
       sys2 = sys2.inInputFrame(sys1.getOutputFrame);
       sys2 = sys2.inOutputFrame(sys1.getInputFrame);
 
@@ -108,7 +112,16 @@ classdef FeedbackSystem < DrakeSystem
 
     function zcs = zeroCrossings(obj,t,x,u)
       [x1,x2]=decodeX(obj,x);
-      [y1,y2]=getOutputs(obj,t,x,u);
+      
+      % same as getOutputs, but *without* the input saturations
+      if (~obj.sys1.isDirectFeedthrough()) % do sys1 first
+        y1=output(obj.sys1,t,x1,u);  % output shouldn't depend on u
+        y2=output(obj.sys2,t,x2,y1);
+      else % do sys2 first
+        y2=output(obj.sys2,t,x2,zeros(obj.sys2.num_u,1));  % output shouldn't depend on this u
+        y1=output(obj.sys1,t,x1,y2+u);
+      end
+      
       if (getNumZeroCrossings(obj.sys1)>0)
         zcs=zeroCrossings(obj.sys1,t,x1,sat1(obj,y2+u));
       else
@@ -118,6 +131,8 @@ classdef FeedbackSystem < DrakeSystem
         zcs=[zcs;zeroCrossings(obj.sys2,t,x2,sat2(obj,y1))];
       end
 
+      return;  % the following code is disabled by throwing an error in the constructor
+      
       % sys1 umin
       ind=find(~isinf(obj.sys1.umin));
       if (~isempty(ind)) zcs=[zcs;y2(ind)+u(ind) - obj.sys1.umin(ind)]; end
@@ -133,6 +148,23 @@ classdef FeedbackSystem < DrakeSystem
       % sys2 umax
       ind=find(~isinf(obj.sys2.umax));
       if (~isempty(ind)) zcs=[zcs;obj.sys2.umax(ind) - y1(ind)]; end
+      
+      if (abs(zcs(2))<1e-4)
+        persistent zc_hist;
+        if isempty(zc_hist), zc_hist=struct('t',[],'x',[],'u',[],'zcs',[]); end
+        zc_hist.t(end+1) = t;
+        zc_hist.x(:,end+1) = x;
+        zc_hist.u(:,end+1) = u;
+        zc_hist.zcs(:,end+1) = zcs;
+%        figure(11); clf; hold on; plot(zc_hist.zcs(2,:),'k'); plot(zc_hist.x','r');
+        if (numel(zc_hist.t)>5)
+          zc_hist.t(:,end-4:end) - repmat(zc_hist.t(:,end),1,5)
+          zc_hist.x(:,end-4:end) - repmat(zc_hist.x(:,end),1,5)
+          zc_hist.u(:,end-4:end) - repmat(zc_hist.u(:,end),1,5)
+          zc_hist.zcs(:,end-4:end) - repmat(zc_hist.zcs(:,end),1,5)
+          keyboard;
+        end
+      end
     end
 
   end
