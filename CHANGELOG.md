@@ -8,7 +8,7 @@ Drake is undergoing continuous development and cannot yet offer a stable, docume
 Descriptions of Pull Requests
 ------------------------------
 
-### ([@jamiesnape][], [#1961][]]) - Wiki Documentation Update
+### ([@jamiesnape][], [#1961][]) - Wiki Documentation Update
 
 Updated the way `cpplint` and `Sphinx` are installed on Ubuntu Linux.
 
