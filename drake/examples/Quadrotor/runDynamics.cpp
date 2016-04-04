@@ -16,9 +16,7 @@ using namespace Eigen;
 int main(int argc, char* argv[]) {
   const size_t num_lidar_points = 100;
 
-  SimulationOptions options = default_simulation_options;
-  options.realtime_factor = 1.0;
-  options.initial_step_size = 0.01;
+  SimulationOptions options;
 
   // Get the final time of the simulation.
   double final_time =
