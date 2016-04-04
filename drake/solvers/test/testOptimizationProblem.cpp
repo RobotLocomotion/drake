@@ -1,11 +1,35 @@
-
 #include <typeinfo>
 #include "drake/solvers/Optimization.h"
+#include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
+#include "gtest/gtest.h"
 
-using namespace std;
-using namespace Eigen;
-using namespace Drake;
+using Eigen::Dynamic;
+using Eigen::Ref;
+using Eigen::Matrix;
+using Eigen::Matrix2d;
+using Eigen::Matrix4d;
+using Eigen::MatrixXd;
+using Eigen::Vector2d;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+using Eigen::VectorXd;
+
+using std::numeric_limits;
+
+using Drake::Constraint;
+using Drake::TaylorVecXd;
+using Drake::VecIn;
+using Drake::Vector1d;
+using Drake::VecOut;
+using Drake::OptimizationProblem;
+using Drake::BoundingBoxConstraint;
+using Drake::LinearComplementarityConstraint;
+using drake::util::MatrixCompareType;
+
+namespace drake {
+namespace solvers {
+namespace {
 
 struct Movable {
   Movable() = default;
@@ -65,28 +89,41 @@ void trivialLeastSquares() {
   Vector4d b = Vector4d::Random();
   auto con = prog.addLinearEqualityConstraint(Matrix4d::Identity(), b, {x});
   prog.solve();
-  valuecheckMatrix(b, x.value(), 1e-10);
+  EXPECT_TRUE(
+      CompareMatrices(b, x.value(), 1e-10, MatrixCompareType::absolute));
+
   valuecheck(b(2), x2.value()(0), 1e-10);
-  valuecheckMatrix(b.head(3), xhead.value(), 1e-10);
+  EXPECT_TRUE(CompareMatrices(b.head(3), xhead.value(), 1e-10,
+                              MatrixCompareType::absolute));
+
   valuecheck(b(2), xhead(2).value()(0), 1e-10);  // a segment of a segment
 
   auto const& y = prog.addContinuousVariables(2);
   prog.addLinearEqualityConstraint(2 * Matrix2d::Identity(), b.topRows(2), {y});
   prog.solve();
-  valuecheckMatrix(b.topRows(2) / 2, y.value(), 1e-10);
-  valuecheckMatrix(b, x.value(), 1e-10);
+  EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10,
+                              MatrixCompareType::absolute));
+
+  EXPECT_TRUE(
+      CompareMatrices(b, x.value(), 1e-10, MatrixCompareType::absolute));
 
   con->updateConstraint(3 * Matrix4d::Identity(), b);
   prog.solve();
-  valuecheckMatrix(b.topRows(2) / 2, y.value(), 1e-10);
-  valuecheckMatrix(b / 3, x.value(), 1e-10);
+  EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10,
+                              MatrixCompareType::absolute));
+
+  EXPECT_TRUE(
+      CompareMatrices(b / 3, x.value(), 1e-10, MatrixCompareType::absolute));
 
   std::shared_ptr<BoundingBoxConstraint> bbcon(new BoundingBoxConstraint(
       MatrixXd::Constant(2, 1, -1000.0), MatrixXd::Constant(2, 1, 1000.0)));
   prog.addBoundingBoxConstraint(bbcon, {x.head(2)});
   prog.solve();  // now it will solve as a nonlinear program
-  valuecheckMatrix(b.topRows(2) / 2, y.value(), 1e-10);
-  valuecheckMatrix(b / 3, x.value(), 1e-10);
+  EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10,
+                              MatrixCompareType::absolute));
+
+  EXPECT_TRUE(
+      CompareMatrices(b / 3, x.value(), 1e-10, MatrixCompareType::absolute));
 }
 
 class SixHumpCamelObjective {
@@ -189,7 +226,8 @@ void gloptipolyConstrainedMinimization() {
   prog.solve();
   prog.printSolution();
 
-  valuecheckMatrix(x.value(), Vector3d(.5, 0, 3), 1e-4);
+  EXPECT_TRUE(CompareMatrices(x.value(), Vector3d(0.5, 0, 3), 1e-4,
+                              MatrixCompareType::absolute));
 }
 
 /**
@@ -199,17 +237,24 @@ void gloptipolyConstrainedMinimization() {
 void simpleLCPConstraintEval() {
   OptimizationProblem prog;
   Eigen::Matrix<double, 2, 2> M;
+
+  // clang-format off
   M << 1, 0,
-      0, 1;
+       0, 1;
+  // clang-format on
 
   Eigen::Vector2d q(-1, -1);
 
   LinearComplementarityConstraint c(M, q);
   Eigen::VectorXd x;
   c.eval(Eigen::Vector2d(1, 1), x);
-  valuecheckMatrix(x, Vector2d(0, 0), 1e-4);
+
+  EXPECT_TRUE(
+      CompareMatrices(x, Vector2d(0, 0), 1e-4, MatrixCompareType::absolute));
   c.eval(Eigen::Vector2d(1, 2), x);
-  valuecheckMatrix(x, Vector2d(0, 1), 1e-4);
+
+  EXPECT_TRUE(
+      CompareMatrices(x, Vector2d(0, 1), 1e-4, MatrixCompareType::absolute));
 }
 
 /** Simple linear complementarity problem example.
@@ -222,8 +267,11 @@ void simpleLCPConstraintEval() {
 void simpleLCP() {
   OptimizationProblem prog;
   Eigen::Matrix<double, 2, 2> M;
+
+  // clang-format off
   M << 1, 4,
-      3, 1;
+       3, 1;
+  // clang-format on
 
   Eigen::Vector2d q(-16, -15);
 
@@ -232,7 +280,8 @@ void simpleLCP() {
   prog.addLinearComplementarityConstraint(M, q, {x});
   prog.solve();
   prog.printSolution();
-  valuecheckMatrix(x.value(), Vector2d(16, 0), 1e-4);
+  EXPECT_TRUE(CompareMatrices(x.value(), Vector2d(16, 0), 1e-4,
+                              MatrixCompareType::absolute));
 }
 
 /** Multiple LC constraints in a single optimization problem
@@ -242,8 +291,11 @@ void simpleLCP() {
 void multiLCP() {
   OptimizationProblem prog;
   Eigen::Matrix<double, 2, 2> M;
+
+  // clang-format off
   M << 1, 4,
-      3, 1;
+       3, 1;
+  // clang-format on
 
   Eigen::Vector2d q(-16, -15);
 
@@ -254,11 +306,15 @@ void multiLCP() {
   prog.addLinearComplementarityConstraint(M, q, {y});
   prog.solve();
   prog.printSolution();
-  valuecheckMatrix(x.value(), Vector2d(16, 0), 1e-4);
-  valuecheckMatrix(y.value(), Vector2d(16, 0), 1e-4);
+
+  EXPECT_TRUE(CompareMatrices(x.value(), Vector2d(16, 0), 1e-4,
+                              MatrixCompareType::absolute));
+
+  EXPECT_TRUE(CompareMatrices(y.value(), Vector2d(16, 0), 1e-4,
+                              MatrixCompareType::absolute));
 }
 
-int main(int argc, char* argv[]) {
+TEST(OptimizationProblemTest, AllTests) {
   // SNOPT tests
   try {
     testAddFunction();
@@ -275,5 +331,8 @@ int main(int argc, char* argv[]) {
   simpleLCPConstraintEval();
   simpleLCP();
   multiLCP();
-  return 0;
 }
+
+}  // namespace
+}  // namespace solvers
+}  // namespace drake

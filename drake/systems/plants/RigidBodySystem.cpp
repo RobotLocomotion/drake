@@ -393,15 +393,11 @@ Eigen::VectorXd RigidBodyAccelerometer::output(
   auto xdd = sys.dynamics(t, x, u);
   auto const& tree = sys.getRigidBodyTree();
   auto v_dot = xdd.bottomRows(rigid_body_state.getNumVelocities());
-  Vector3d sensor_origin =
-      Vector3d::Zero();  // assumes sensor coincides with the frame's origin;
-  auto J = tree->transformPointsJacobian(rigid_body_state, sensor_origin,
-                                         frame->frame_index, 0, false);
-  auto Jdot_times_v = tree->transformPointsJacobianDotTimesV(
-      rigid_body_state, sensor_origin, frame->frame_index, 0);
+  Vector3d sensor_origin = Vector3d::Zero(); // assumes sensor coincides with the frame's origin;
+  auto J = tree->transformPointsJacobian(rigid_body_state, sensor_origin, frame->frame_index, 0, false);
+  auto Jdot_times_v = tree->transformPointsJacobianDotTimesV(rigid_body_state, sensor_origin, frame->frame_index, 0);
 
-  Vector4d quat_world_to_body =
-      tree->relativeQuaternion(rigid_body_state, 0, frame->frame_index);
+  Vector4d quat_world_to_body = tree->relativeQuaternion(rigid_body_state, 0, frame->frame_index);
   Vector3d accel_base = Jdot_times_v + J * v_dot;
   Vector3d accel_body = quatRotateVec(quat_world_to_body, accel_base);
 

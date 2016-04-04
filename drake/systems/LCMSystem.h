@@ -1,16 +1,18 @@
 #ifndef DRAKE_SYSTEMS_LCMSYSTEM_H_
 #define DRAKE_SYSTEMS_LCMSYSTEM_H_
 
-#include <unordered_map>
 #include <mutex>
-#include <thread>
 #include <stdexcept>
+#include <thread>
+#include <unordered_map>
+
 #include <lcm/lcm-cpp.hpp>
 #include "lcmtypes/drake/lcmt_drake_signal.hpp"
-#include "drake/systems/System.h"
-#include "drake/systems/Simulation.h"
-#include "drake/systems/cascade_system.h"
+
 #include "drake/drakeLCMSystem_export.h"
+#include "drake/systems/Simulation.h"
+#include "drake/systems/System.h"
+#include "drake/systems/cascade_system.h"
 
 namespace Drake {
 
@@ -75,12 +77,11 @@ class LCMInputSystem {
   using InputVector = NullVector<ScalarType>;
   template <typename ScalarType>
   using OutputVector = Vector<ScalarType>;
-  const static bool has_lcm_input = false;
+  static const bool has_lcm_input = false;
 
   template <typename System>
-  LCMInputSystem(const System &wrapped_sys,
-                 std::shared_ptr<lcm::LCM> lcm)
-      : all_zeros(Eigen::VectorXd::Zero(getNumInputs(wrapped_sys))){}
+  LCMInputSystem(const System &wrapped_sys, std::shared_ptr<lcm::LCM> lcm)
+      : all_zeros(Eigen::VectorXd::Zero(getNumInputs(wrapped_sys))) {}
 
   StateVector<double> dynamics(const double &t, const StateVector<double> &x,
                                const InputVector<double> &u) const {
@@ -98,9 +99,8 @@ class LCMInputSystem {
 
 template <template <typename> class Vector>
 class LCMInputSystem<
-    Vector,
-    typename std::enable_if<
-        !std::is_void<typename Vector<double>::LCMMessageType>::value>::type> {
+    Vector, typename std::enable_if<!std::is_void<
+                typename Vector<double>::LCMMessageType>::value>::type> {
  public:
   template <typename ScalarType>
   using StateVector = NullVector<ScalarType>;
@@ -108,7 +108,7 @@ class LCMInputSystem<
   using InputVector = NullVector<ScalarType>;
   template <typename ScalarType>
   using OutputVector = Vector<ScalarType>;
-  const static bool has_lcm_input = true;
+  static const bool has_lcm_input = true;
 
   template <typename System>
   LCMInputSystem(const System &sys, std::shared_ptr<lcm::LCM> lcm) {
@@ -117,7 +117,7 @@ class LCMInputSystem<
                        &LCMInputSystem<Vector>::handleMessage, this);
     sub->setQueueCapacity(1);
   }
-  virtual ~LCMInputSystem(){}
+  virtual ~LCMInputSystem() {}
 
   void handleMessage(const lcm::ReceiveBuffer *rbuf, const std::string &chan,
                      const typename Vector<double>::LCMMessageType *msg) {
@@ -155,7 +155,7 @@ class LCMOutputSystem {
   template <typename ScalarType>
   using OutputVector = NullVector<ScalarType>;
 
-  LCMOutputSystem(std::shared_ptr<lcm::LCM> lcm){}
+  LCMOutputSystem(std::shared_ptr<lcm::LCM> lcm) {}
 
   StateVector<double> dynamics(const double &t, const StateVector<double> &x,
                                const InputVector<double> &u) const {
@@ -170,9 +170,8 @@ class LCMOutputSystem {
 
 template <template <typename> class Vector>
 class LCMOutputSystem<
-    Vector,
-    typename std::enable_if<
-        !std::is_void<typename Vector<double>::LCMMessageType>::value>::type> {
+    Vector, typename std::enable_if<!std::is_void<
+                typename Vector<double>::LCMMessageType>::value>::type> {
  public:
   template <typename ScalarType>
   using StateVector = NullVector<ScalarType>;
@@ -181,7 +180,7 @@ class LCMOutputSystem<
   template <typename ScalarType>
   using OutputVector = NullVector<ScalarType>;
 
-  LCMOutputSystem(std::shared_ptr<lcm::LCM> lcm) : lcm(lcm){}
+  LCMOutputSystem(std::shared_ptr<lcm::LCM> lcm) : lcm(lcm) {}
 
   StateVector<double> dynamics(const double &t, const StateVector<double> &x,
                                const InputVector<double> &u) const {
@@ -226,8 +225,8 @@ class DRAKELCMSYSTEM_EXPORT LCMLoop {
  */
 
 template <typename System>
-void runLCM(std::shared_ptr<System> sys,
-            std::shared_ptr<lcm::LCM> lcm, double t0, double tf,
+void runLCM(std::shared_ptr<System> sys, std::shared_ptr<lcm::LCM> lcm,
+            double t0, double tf,
             const typename System::template StateVector<double> &x0,
             const SimulationOptions &options = default_simulation_options) {
   if (!lcm->good()) throw std::runtime_error("bad LCM reference");
@@ -285,8 +284,8 @@ void runLCM(std::shared_ptr<System> sys,
 }
 
 template <typename System>
-void runLCM(const System &sys,
-            std::shared_ptr<lcm::LCM> lcm, double t0, double tf) {
+void runLCM(const System &sys, std::shared_ptr<lcm::LCM> lcm, double t0,
+            double tf) {
   runLCM(sys, lcm, t0, tf, getInitialState(*sys));
 }
 
