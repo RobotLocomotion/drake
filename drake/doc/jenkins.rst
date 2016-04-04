@@ -12,4 +12,4 @@ Respond:
 If the build fails for other various reasons you can rebuild:
 * "retest this please" to start a new build.
 
-You can also view the `Jenkins console <https://drake-jenkins.csail.mit.edu/>`_ directly.
+You can also view the `Jenkins interface <https://drake-jenkins.csail.mit.edu/>`_ directly.
