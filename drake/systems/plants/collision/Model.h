@@ -175,6 +175,19 @@ class DRAKECOLLISION_EXPORT Model {
     return false;
   }
 
+  /** \brief Determines if every collision object in the world is convex.
+   *  This routine should be called at initialization to flat the model as all
+   *convex or not.
+   *  Specific, more efficient, strategies can then be used if every collision
+   *object in the world is convex.
+   *
+   *  \todo call this method at initialization so that the model is flaged as
+   *having all convex objects or not.
+   *  Then it won't be necessary to call this method every time we test for
+   *collisions.
+  */
+  virtual bool isEverybodyConvex() const { return false; }
+
  protected:
   // Protected member variables are forbidden by the style guide.
   // Please do not add new references to this member.  Instead, use

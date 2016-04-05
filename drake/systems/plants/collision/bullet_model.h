@@ -8,6 +8,7 @@
 #include "BulletCollision/NarrowPhaseCollision/btGjkEpaPenetrationDepthSolver.h"
 #include "BulletCollision/NarrowPhaseCollision/btGjkPairDetector.h"
 #include "BulletCollision/NarrowPhaseCollision/btPointCollector.h"
+#include "BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h"
 
 #include "Element.h"
 #include "Model.h"
@@ -133,6 +134,17 @@ class BulletModel : public Model {
       const ElementId idA, const ElementId idB, const bool use_margins,
       ResultCollector* result_collector);
 
+  /** \brief Determines if every collision object in the world is convex.
+   *  This routine should be called at initialization to flat the model as all
+   * convex or not.
+   *  Specific, more efficient, strategies can then be used if every collision
+   * object in the world is convex.
+   */
+  bool isEverybodyConvex() const override;
+
+  // END Required member functions
+
+ protected:
   BulletCollisionWorldWrapper& getBulletWorld(bool use_margins);
   static std::unique_ptr<btCollisionShape> newBulletBoxShape(
       const DrakeShapes::Box& geometry, bool use_margins);
@@ -146,6 +158,11 @@ class BulletModel : public Model {
       const DrakeShapes::Mesh& geometry, bool use_margins);
   static std::unique_ptr<btCollisionShape> newBulletMeshPointsShape(
       const DrakeShapes::MeshPoints& geometry, bool use_margins);
+  static std::unique_ptr<btCollisionShape> newBulletHeightMapTerrainShape(
+      const DrakeShapes::HeightMapTerrain& geometry, bool use_margins);
+  static void writeHeightMapTerrain(
+      const btHeightfieldTerrainShape* bullet_height_map,
+      const std::string& fname);
 
   std::vector<std::unique_ptr<btCollisionShape>> bt_collision_shapes_;
   BulletCollisionWorldWrapper bullet_world_;

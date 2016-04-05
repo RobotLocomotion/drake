@@ -403,16 +403,15 @@ bool RigidBodyTree::collisionDetect(
   updateDynamicCollisionElements(cache);
 
   vector<DrakeCollision::PointPair> points;
-  // DEBUG
-  // cout << "RigidBodyTree::collisionDetect: calling
-  // collision_model->closestPointsAllToAll" << endl;
-  // END_DEBUG
-  bool points_found =
-      collision_model->closestPointsAllToAll(ids_to_check, use_margins, points);
-  // DEBUG
-  // cout << "RigidBodyTree::collisionDetect: points.size() = " << points.size()
-  // << endl;
-  // END_DEBUG
+
+  bool points_found;
+  if (collision_model->isEverybodyConvex()) {
+    points_found = collision_model->closestPointsAllToAll(ids_to_check,
+                                                          use_margins, points);
+  } else {
+    points = collision_model->potentialCollisionPoints(use_margins);
+    points_found = points.size() > 0;
+  }
 
   xA = MatrixXd::Zero(3, points.size());
   xB = MatrixXd::Zero(3, points.size());
@@ -507,11 +506,11 @@ bool RigidBodyTree::collisionDetect(const KinematicsCache<double>& cache,
                          ids_to_check, use_margins);
 }
 
-bool RigidBodyTree::collisionDetect(const KinematicsCache<double>& cache,
-                                    VectorXd& phi, Matrix3Xd& normal,
-                                    Matrix3Xd& xA, Matrix3Xd& xB,
-                                    vector<int>& bodyA_idx,
-                                    vector<int>& bodyB_idx, bool use_margins) {
+bool RigidBodyTree::collisionDetect(
+    const KinematicsCache<double>& cache, VectorXd& phi, Matrix3Xd& normal,
+    Matrix3Xd& xA, Matrix3Xd& xB, vector<int>& bodyA_idx,
+    vector<int>& bodyB_idx,
+    bool use_margins) {  // use_margins = true by default in constructor
   vector<DrakeCollision::ElementId> ids_to_check;
   for (auto body_iter = bodies.begin(); body_iter != bodies.end();
        ++body_iter) {
@@ -1282,6 +1281,7 @@ Matrix<Scalar, Eigen::Dynamic, 1> RigidBodyTree::inverseDynamics(
 
   Matrix<Scalar, Eigen::Dynamic, 1> ret(num_velocities, 1);
 
+  ret.setZero();
   for (int i = static_cast<int>(bodies.size()) - 1; i >= 0; i--) {
     RigidBody& body = *bodies[i];
     if (body.hasParent()) {
