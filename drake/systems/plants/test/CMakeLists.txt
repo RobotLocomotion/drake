@@ -88,6 +88,10 @@ if (LCM_FOUND)
     add_executable(compareRigidBodySystems compareRigidBodySystems.cpp)
     target_link_libraries(compareRigidBodySystems drakeRBSystem ${GTEST_BOTH_LIBRARIES})
     add_test(NAME compareAcrobotURDFtoSDF COMMAND compareRigidBodySystems Acrobot.urdf Acrobot.sdf WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/examples/Acrobot")
+
+    add_executable(load_urdf_test load_urdf_test.cc)
+    target_link_libraries(load_urdf_test drakeRBSystem ${GTEST_BOTH_LIBRARIES})
+    add_test(NAME load_urdf_test COMMAND load_urdf_test)
   endif (GTEST_FOUND)
 endif (LCM_FOUND)
 

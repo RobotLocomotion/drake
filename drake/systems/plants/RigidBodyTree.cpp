@@ -1847,6 +1847,81 @@ void RigidBodyTree::addFrame(std::shared_ptr<RigidBodyFrame> frame) {
   frame->frame_index = -(static_cast<int>(frames.size()) - 1) - 2;  // yuck!!
 }
 
+void RigidBodyTree::AddFloatingJoint(RigidBodyTree* model, PoseMap * pose_map,
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+
+    std::string floating_joint_name;
+    std::shared_ptr<RigidBody> weld_to_body;
+    Eigen::Isometry3d transform_to_world;
+
+    if (!weld_to_frame) {
+      // If no body was given for us to weld to, then weld to the world
+      weld_to_body = model->bodies[0];
+      floating_joint_name = "base";
+      transform_to_world = Eigen::Isometry3d::Identity();
+    } else {
+      // If the robot is being welded to the world, ignore the "body" variable
+      // within weld_to_frame. Instead, only use the transform_to_body
+      // variable to initialize the robot at the desired location in the world.
+      if (weld_to_frame->name.compare("world") == 0) {
+        weld_to_body = model->bodies[0];  // the world's body
+        floating_joint_name = "base";
+        transform_to_world = weld_to_frame->transform_to_body;
+      } else {
+        weld_to_body = weld_to_frame->body;
+        transform_to_world = weld_to_frame->transform_to_body;
+        floating_joint_name = "weld";
+      }
+    }
+
+    bool floating_joint_added = false;
+
+    for (unsigned int i = 1; i < model->bodies.size(); i++) {
+      if (model->bodies[i]->parent == nullptr) {
+        // A parent-less node was found. The following code connects it to the
+        // rest of the rigid body tree using a floating joint.
+
+        model->bodies[i]->parent = weld_to_body;
+
+        Eigen::Isometry3d transform_to_model = Eigen::Isometry3d::Identity();
+        if (pose_map != nullptr && pose_map->find(model->bodies[i]->linkname) != pose_map->end())
+          transform_to_model = pose_map->at(model->bodies[i]->linkname);
+
+        switch (floating_base_type) {
+          case DrakeJoint::FIXED: {
+            std::unique_ptr<DrakeJoint> joint(
+                new FixedJoint(floating_joint_name, transform_to_world * transform_to_model));
+            model->bodies[i]->setJoint(move(joint));
+            floating_joint_added = true;
+          } break;
+          case DrakeJoint::ROLLPITCHYAW: {
+            std::unique_ptr<DrakeJoint> joint(new RollPitchYawFloatingJoint(
+                floating_joint_name, transform_to_world * transform_to_model));
+            model->bodies[i]->setJoint(move(joint));
+            floating_joint_added = true;
+          } break;
+          case DrakeJoint::QUATERNION: {
+            std::unique_ptr<DrakeJoint> joint(new QuaternionFloatingJoint(
+                floating_joint_name, transform_to_world * transform_to_model));
+            model->bodies[i]->setJoint(move(joint));
+            floating_joint_added = true;
+          } break;
+          default:
+            throw std::runtime_error("unknown floating base type");
+        }
+      }
+    }
+
+    if (!floating_joint_added) {
+      throw std::runtime_error(
+        "No root links found (every link in the rigid body model has a joint "
+        "connecting it to some other joint).  You're about to loop "
+        "indefinitely in the compile() method.  Still need to handle this case.");
+      // could handle it by disconnecting one of the internal nodes, making that a
+      // loop joint, and connecting the new free joint to the world
+    }
+  }
 template DRAKERBM_EXPORT Eigen::Matrix<
     Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1>>, -1, -1, 0,
     -1, -1>

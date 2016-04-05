@@ -6,9 +6,9 @@
 #include <Eigen/StdVector>
 #include <set>
 #include <unordered_map>
-
 #include <stdexcept>
-#include "collision/DrakeCollision.h"
+
+#include "drake/systems/plants/collision/DrakeCollision.h"
 #include "drake/drakeRBM_export.h"
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
 #include "drake/systems/plants/KinematicPath.h"
@@ -16,7 +16,9 @@
 #include "drake/systems/plants/RigidBody.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
 #include "drake/util/drakeUtil.h"
-#include "shapes/DrakeShapes.h"
+#include "drake/systems/plants/joints/DrakeJoints.h"
+#include "drake/systems/plants/xmlUtil.h"
+#include "drake/systems/plants/shapes/DrakeShapes.h"
 
 #define BASIS_VECTOR_HALF_COUNT \
   2  // number of basis vectors over 2 (i.e. 4 basis vectors in this case)
@@ -734,6 +736,27 @@ class DRAKERBM_EXPORT RigidBodyTree {
    */
   friend DRAKERBM_EXPORT std::ostream& operator<<(std::ostream&,
                                                   const RigidBodyTree&);
+
+  /**
+   * Adds a floating joint connecting the root of a robot model to the world
+   * link. This method assumes that at least one robot model was added to the
+   * rigid body tree but is not yet attached to the tree. In other words, it
+   * assumes that at least one link in the tree is parent-less. It connects
+   * these parent-less links to the world using a floating joint of the
+   * type and according to the values stored within the supplied rigid body
+   * frame.
+   *
+   * @param model The rigid body model containing the robot models to which the
+   * floating joint will be added.
+   * @param floating_base_type The floating joint's type.
+   * @param weld_to_frame The frame to which the floating joint should attach
+   * the parent-less links.
+   * @throws A std::runtime_error if no parent-less links are found in the
+   * rigid body tree, or if the floating_base_type is unrecognized.
+   */
+  static void AddFloatingJoint(RigidBodyTree* model, PoseMap * pose_map,
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
  public:
   static const std::set<int> default_robot_num_set;
