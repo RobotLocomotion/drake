@@ -1,0 +1,7 @@
+
+add_matlab_test(NAME examples/SimpleDoublePendulum/DoublePendPlant.run COMMAND DoublePendPlant.run)
+add_matlab_test(NAME examples/SimpleDoublePendulum/runEndPointJac COMMAND runEndPointJac)
+add_matlab_test(NAME examples/SimpleDoublePendulum/runPDtest COMMAND runPDtest)
+add_matlab_test(NAME examples/SimpleDoublePendulum/runPassiveURDF COMMAND runPassiveURDF)
+add_matlab_test(NAME examples/SimpleDoublePendulum/runSimplePend COMMAND runSimplePend)
+add_matlab_test(NAME examples/SimpleDoublePendulum/runSimplePendInv COMMAND runSimplePendInv)

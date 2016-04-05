@@ -3,6 +3,7 @@ function testFeedback
 tmp = addpathTemporary([getDrakePath,'/examples/Pendulum']);
 
 p = PendulumPlant();
+p = setInputLimits(p,-inf,inf); % to keep things as a DrakeSystem.  see #494
 c = balanceLQR(p);
   
 sys1=feedback(p,c);
