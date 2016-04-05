@@ -1,8 +1,7 @@
 if (fcl_FOUND)
   set(Boost_DEBUG TRUE)
-  find_package(Boost REQUIRED system)
   add_executable( fcl_model_test FCLModelTest.cpp)
-  target_link_libraries(fcl_model_test drakeCollision ${Boost_LIBRARIES})
+  target_link_libraries(fcl_model_test drakeCollision)
 endif()
 
 if (bullet_FOUND AND GTEST_FOUND)
