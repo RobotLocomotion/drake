@@ -5,6 +5,8 @@
 using namespace std;
 using namespace Eigen;
 
+using Drake::systems::plants::inverseKinBackend;
+
 template <typename DerivedA, typename DerivedB, typename DerivedC,
           typename DerivedD, typename DerivedE, typename DerivedF>
 DRAKEIK_EXPORT void inverseKinTraj(

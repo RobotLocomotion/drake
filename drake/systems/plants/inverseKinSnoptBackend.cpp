@@ -28,6 +28,10 @@ namespace snopt {
 using namespace Eigen;
 using namespace std;
 
+namespace Drake {
+namespace systems {
+namespace plants {
+
 // NOTE: all snopt calls will use this shared memory... so this code is NOT
 // THREAD SAFE
 static unique_ptr<snopt::doublereal[]> rw;
@@ -419,7 +423,7 @@ static void snoptIKtraj_fevalfun(const VectorXd& x, VectorXd& c) {
 
 template <typename DerivedA, typename DerivedB, typename DerivedC,
           typename DerivedD, typename DerivedE>
-void inverseKinBackend(
+void inverseKinSnoptBackend(
     RigidBodyTree* model_input, const int mode, const int nT_input,
     const double* t_input, const MatrixBase<DerivedA>& q_seed,
     const MatrixBase<DerivedB>& q_nom_input, const int num_constraints,
@@ -434,7 +438,7 @@ void inverseKinBackend(
   q_nom = q_nom_input;
   if (q_seed.rows() != nq || q_seed.cols() != nT || q_nom.rows() != nq ||
       q_nom.cols() != nT) {
-    cerr << "Drake:inverseKinBackend: q_seed and q_nom must be of size nq x nT"
+    cerr << "Drake:inverseKinSnoptBackend: q_seed and q_nom must be of size nq x nT"
          << endl;
   }
 
@@ -482,7 +486,7 @@ void inverseKinBackend(
                RigidBodyConstraint::QuasiStaticConstraintCategory) {
       num_qsc++;
       if (num_qsc > 1) {
-        cerr << "Drake:inverseKinBackend:current implementation supports at "
+        cerr << "Drake:inverseKinSnoptBackend:current implementation supports at "
                 "most one QuasiStaticConstraint" << endl;
       }
       qsc_ptr = static_cast<QuasiStaticConstraint*>(constraint);
@@ -500,7 +504,7 @@ void inverseKinBackend(
               (joint_limit_max(k, j) < joint_max[k] ? joint_limit_max(k, j)
                                                     : joint_max[k]);
           if (joint_limit_min(k, j) > joint_limit_max(k, j)) {
-            cerr << "Drake:inverseKinBackend:BadInputs Some posture constraint "
+            cerr << "Drake:inverseKinSnoptBackend:BadInputs Some posture constraint "
                     "has lower bound larger than the upper bound of other "
                     "posture constraint for joint " << k << " at " << j
                  << "'th time " << endl;
@@ -1799,7 +1803,7 @@ void inverseKinBackend(
                    strOpt_len, 8 * lencw);
     // debug only
     /*MATFile *pmat;
-    pmat = matOpen("inverseKinBackend_cpp.mat","w");
+    pmat = matOpen("inverseKinSnoptBackend_cpp.mat","w");
     if (pmat == NULL)
     {
       printf("Error creating mat file\n");
@@ -2153,7 +2157,7 @@ void inverseKinBackend(
   delete[] st_lpc_array;
   delete[] mt_lpc_array;
 }  // NOLINT(readability/fn_size)
-template void inverseKinBackend(
+template void inverseKinSnoptBackend(
     RigidBodyTree* model, const int mode, const int nT, const double* t,
     const MatrixBase<Map<MatrixXd>>& q_seed,
     const MatrixBase<Map<MatrixXd>>& q_nom, const int num_constraints,
@@ -2161,14 +2165,14 @@ template void inverseKinBackend(
     MatrixBase<Map<MatrixXd>>& q_sol, MatrixBase<Map<MatrixXd>>& qdot_sol,
     MatrixBase<Map<MatrixXd>>& qddot_sol, int* INFO,
     vector<string>& infeasible_constraint, const IKoptions& ikoptions);
-template void inverseKinBackend(
+template void inverseKinSnoptBackend(
     RigidBodyTree* model, const int mode, const int nT, const double* t,
     const MatrixBase<MatrixXd>& q_seed, const MatrixBase<MatrixXd>& q_nom,
     const int num_constraints, RigidBodyConstraint** const constraint_array,
     MatrixBase<MatrixXd>& q_sol, MatrixBase<MatrixXd>& qdot_sol,
     MatrixBase<MatrixXd>& qddot_sol, int* INFO,
     vector<string>& infeasible_constraint, const IKoptions& ikoptions);
-template void inverseKinBackend(
+template void inverseKinSnoptBackend(
     RigidBodyTree* model, const int mode, const int nT, const double* t,
     const MatrixBase<Map<MatrixXd>>& q_seed,
     const MatrixBase<Map<MatrixXd>>& q_nom, const int num_constraints,
@@ -2176,7 +2180,7 @@ template void inverseKinBackend(
     MatrixBase<Map<MatrixXd>>& q_sol, MatrixBase<MatrixXd>& qdot_sol,
     MatrixBase<MatrixXd>& qddot_sol, int* INFO,
     vector<string>& infeasible_constraint, const IKoptions& ikoptions);
-template void inverseKinBackend(
+template void inverseKinSnoptBackend(
     RigidBodyTree* model, const int mode, const int nT, const double* t,
     const MatrixBase<Map<VectorXd>>& q_seed,
     const MatrixBase<Map<VectorXd>>& q_nom, const int num_constraints,
@@ -2184,14 +2188,14 @@ template void inverseKinBackend(
     MatrixBase<Map<VectorXd>>& q_sol, MatrixBase<Map<VectorXd>>& qdot_sol,
     MatrixBase<Map<VectorXd>>& qddot_sol, int* INFO,
     vector<string>& infeasible_constraint, const IKoptions& ikoptions);
-template void inverseKinBackend(
+template void inverseKinSnoptBackend(
     RigidBodyTree* model, const int mode, const int nT, const double* t,
     const MatrixBase<VectorXd>& q_seed, const MatrixBase<VectorXd>& q_nom,
     const int num_constraints, RigidBodyConstraint** const constraint_array,
     MatrixBase<VectorXd>& q_sol, MatrixBase<VectorXd>& qdot_sol,
     MatrixBase<VectorXd>& qddot_sol, int* INFO,
     vector<string>& infeasible_constraint, const IKoptions& ikoptions);
-template void inverseKinBackend(
+template void inverseKinSnoptBackend(
     RigidBodyTree* model, const int mode, const int nT, const double* t,
     const MatrixBase<Map<VectorXd>>& q_seed,
     const MatrixBase<Map<VectorXd>>& q_nom, const int num_constraints,
@@ -2199,3 +2203,7 @@ template void inverseKinBackend(
     MatrixBase<Map<VectorXd>>& q_sol, MatrixBase<VectorXd>& qdot_sol,
     MatrixBase<VectorXd>& qddot_sol, int* INFO,
     vector<string>& infeasible_constraint, const IKoptions& ikoptions);
+
+}
+}
+}

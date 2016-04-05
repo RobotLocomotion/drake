@@ -5,6 +5,8 @@
 using namespace std;
 using namespace Eigen;
 
+using Drake::systems::plants::inverseKinBackend;
+
 template <typename DerivedA, typename DerivedB, typename DerivedC>
 DRAKEIK_EXPORT void inverseKinPointwise(
     RigidBodyTree *model, const int nT, const double *t,
