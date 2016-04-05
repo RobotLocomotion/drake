@@ -135,9 +135,9 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
         }
         Vector3d tangent2 = this_normal.cross(tangent1);
         Matrix3d R;  // rotation into normal coordinates
-	R.row(0) = tangent1;
-	R.row(1) = tangent2;
-	R.row(2) = this_normal;
+        R.row(0) = tangent1;
+        R.row(1) = tangent2;
+        R.row(2) = this_normal;
         auto J = R * (JA - JB);          // J = [ D1; D2; n ]
         auto relative_velocity = J * v;  // [ tangent1dot; tangent2dot; phidot ]
 
@@ -714,8 +714,9 @@ void RigidBodySystem::addRobotFromURDF(
 
 void RigidBodySystem::addRobotFromSDF(
     const string& sdf_filename,
-    const DrakeJoint::FloatingBaseType floating_base_type) {
-  tree->addRobotFromSDF(sdf_filename, floating_base_type);
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+  tree->addRobotFromSDF(sdf_filename, floating_base_type, weld_to_frame);
 
   // now parse additional tags understood by rigid body system (actuators,
   // sensors, etc)
@@ -742,7 +743,7 @@ void RigidBodySystem::addRobotFromFile(
   if (ext.compare(".urdf") == 0) {
     addRobotFromURDF(filename, floating_base_type, weld_to_frame);
   } else if (ext.compare(".sdf") == 0) {
-    addRobotFromSDF(filename, floating_base_type);
+    addRobotFromSDF(filename, floating_base_type, weld_to_frame);
   } else {
     throw runtime_error("unknown file extension: " + ext);
   }

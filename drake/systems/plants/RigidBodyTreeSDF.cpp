@@ -527,7 +527,8 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
 
 void parseModel(RigidBodyTree* model, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
-                const DrakeJoint::FloatingBaseType floating_base_type) {
+                const DrakeJoint::FloatingBaseType floating_base_type,
+                std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   PoseMap pose_map;  // because sdf specifies almost everything in the global
                      // (actually model) coordinates instead of relative
                      // coordinates.  sigh...
@@ -538,7 +539,14 @@ void parseModel(RigidBodyTree* model, XMLElement* node,
 
   Isometry3d transform_to_world = Isometry3d::Identity();
   XMLElement* pose = node->FirstChildElement("pose");
-  if (pose) poseValueToTransform(pose, pose_map, transform_to_world);
+  if (pose) {
+    poseValueToTransform(pose, pose_map, transform_to_world);
+    if (transform_to_world.matrix() != Isometry3d::Identity().matrix() &&
+        weld_to_frame != nullptr) {
+      throw std::runtime_error(
+          "SDF model double offset to world not yet supported");
+    }
+  }
 
   // parse link elements
   for (XMLElement* link_node = node->FirstChildElement("link"); link_node;
@@ -600,16 +608,19 @@ void parseModel(RigidBodyTree* model, XMLElement* node,
 
 void parseWorld(RigidBodyTree* model, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
-                const DrakeJoint::FloatingBaseType floating_base_type) {
+                const DrakeJoint::FloatingBaseType floating_base_type,
+              std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   for (XMLElement* model_node = node->FirstChildElement("model"); model_node;
        model_node = model_node->NextSiblingElement("model")) {
-    parseModel(model, model_node, package_map, root_dir, floating_base_type);
+    parseModel(model, model_node, package_map, root_dir, floating_base_type,
+      weld_to_frame);
   }
 }
 
 void parseSDF(RigidBodyTree* model, XMLDocument* xml_doc,
               PackageMap& package_map, const string& root_dir,
-              const DrakeJoint::FloatingBaseType floating_base_type) {
+              const DrakeJoint::FloatingBaseType floating_base_type,
+              std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   populatePackageMap(package_map);
 
   XMLElement* node = xml_doc->FirstChildElement("sdf");
@@ -625,20 +636,23 @@ void parseSDF(RigidBodyTree* model, XMLDocument* xml_doc,
     if (world_node->NextSiblingElement("world")) {
       throw runtime_error("ERROR: Multiple worlds in file, ambiguous.");
     }
-    parseWorld(model, world_node, package_map, root_dir, floating_base_type);
+    parseWorld(model, world_node, package_map, root_dir, floating_base_type,
+      weld_to_frame);
   }
 
   // Load all models not in a world.
   for (XMLElement* model_node = node->FirstChildElement("model"); model_node;
        model_node = model_node->NextSiblingElement("model"))
-    parseModel(model, model_node, package_map, root_dir, floating_base_type);
+    parseModel(model, model_node, package_map, root_dir, floating_base_type,
+               weld_to_frame);
 
   model->compile();
 }
 
 void RigidBodyTree::addRobotFromSDF(
     const string& urdf_filename,
-    const DrakeJoint::FloatingBaseType floating_base_type) {
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   PackageMap package_map;
 
   XMLDocument xml_doc;
@@ -654,5 +668,6 @@ void RigidBodyTree::addRobotFromSDF(
     root_dir = urdf_filename.substr(0, found);
   }
 
-  parseSDF(this, &xml_doc, package_map, root_dir, floating_base_type);
+  parseSDF(this, &xml_doc, package_map, root_dir, floating_base_type,
+           weld_to_frame);
 }

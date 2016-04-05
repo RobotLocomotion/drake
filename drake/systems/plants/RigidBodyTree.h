@@ -96,7 +96,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
   void addRobotFromSDF(const std::string& sdf_filename,
                        const DrakeJoint::FloatingBaseType floating_base_type =
-                           DrakeJoint::QUATERNION);
+                           DrakeJoint::QUATERNION,
+                       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   void addFrame(std::shared_ptr<RigidBodyFrame> frame);
 

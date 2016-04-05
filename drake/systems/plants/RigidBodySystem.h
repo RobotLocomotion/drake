@@ -175,7 +175,8 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
   void addRobotFromSDF(const std::string& sdf_filename,
                        const DrakeJoint::FloatingBaseType floating_base_type =
-                           DrakeJoint::QUATERNION);
+                           DrakeJoint::QUATERNION,
+                       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
   void addRobotFromFile(
       const std::string& filename,
       const DrakeJoint::FloatingBaseType floating_base_type =
