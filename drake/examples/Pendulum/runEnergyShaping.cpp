@@ -20,15 +20,15 @@ int main(int argc, char* argv[]) {
   auto p = std::make_shared<Pendulum>();
   auto c = std::make_shared<PendulumEnergyShapingController>(*p);
 
-  if (commandLineOptionExists(argv, argv+argc, "-h")) {
-    std::cout
-        << "Runs the energy shaping controller as an LCM node or," << std::endl
-        << "with '-s', as a standalone BotVisualizer-compatible app."
-        << std::endl;
+  if (commandLineOptionExists(argv, argv + argc, "-h")) {
+    std::cout << "Runs the energy shaping controller as an LCM node or,"
+              << std::endl
+              << "with '-s', as a standalone BotVisualizer-compatible app."
+              << std::endl;
     exit(0);
   }
 
-  if (!commandLineOptionExists(argv, argv+argc, "-s")) {
+  if (!commandLineOptionExists(argv, argv + argc, "-s")) {
     // run as LCM node
     runLCM(c, lcm, 0, 10, NullVector<double>());
   } else {  // run a stand-alone simulation
