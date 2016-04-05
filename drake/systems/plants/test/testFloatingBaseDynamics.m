@@ -1,10 +1,13 @@
 function testFloatingBaseDynamics
 
+% note that we have seen tolerance issues here in the past
+% https://github.com/RobotLocomotion/drake/issues/311
+
 for urdf = {'FallingBrick.urdf',...
     '../../../examples/FurutaPendulum/FurutaPendulum.urdf', ...
     '../../../examples/Atlas/urdf/atlas_minimal_contact.urdf'};
 
-urdf=urdf{1};  
+urdf=urdf{1};
 options.floating = 'rpy';
 options.terrain = RigidBodyFlatTerrain();
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
@@ -42,18 +45,18 @@ for i=1:100
   [pt,J,dJ] = terrainContactPositions(m_rpy,kinsol);
   Jdot_times_v = terrainContactJacobianDotTimesV(m_rpy, kinsol);
   phi = [jointLimitConstraints(m_rpy,q); contactConstraints(m_rpy,kinsol,false,collision_options)];
-  
+
   kinsol2 = doKinematics(m_ypr_rel,q(ind),true,false,qd(ind));
   [pt2,J2,dJ2] = terrainContactPositions(m_ypr_rel,kinsol2);
   Jdot_times_v2 = terrainContactJacobianDotTimesV(m_ypr_rel, kinsol2);
-  
-  dJind = reshape(1:nq*nq,[nq,nq]);  
-  dJind = reshape(dJind(ind,ind),nq*nq,1); 
-  
+
+  dJind = reshape(1:nq*nq,[nq,nq]);
+  dJind = reshape(dJind(ind,ind),nq*nq,1);
+
   valuecheck(pt,pt2);
   valuecheck(J,J2(:,ind));
   valuecheck(Jdot_times_v, Jdot_times_v2);
-  valuecheck(full(dJ),full(dJ2(:,dJind))); 
+  valuecheck(full(dJ),full(dJ2(:,dJind)));
 
   kinsol = doKinematics(m_rpy,q,true,true,qd);
   [pt2,J2] = terrainContactPositions(m_rpy,kinsol);
@@ -64,7 +67,7 @@ for i=1:100
   valuecheck(J,J2);
   valuecheck(Jdot_times_v, Jdot_times_v2);
   valuecheck(phi,phi2);
-  
+
   kinsol2 = doKinematics(m_ypr_rel,q(ind),true,true,qd(ind));
   [pt2,J2] = terrainContactPositions(m_ypr_rel,kinsol2);
   Jdot_times_v2 = terrainContactJacobianDotTimesV(m_ypr_rel, kinsol2);
@@ -72,11 +75,11 @@ for i=1:100
   valuecheck(pt,pt2);
   valuecheck(J,J2(:,ind));
   valuecheck(Jdot_times_v, Jdot_times_v2);
-  
+
   % check dynamics:
   [H,C,B] = manipulatorDynamics(m_rpy,q,qd,false);
   [H2,C2,B2] = manipulatorDynamics(m_ypr_rel,q(ind),qd(ind),false);
-  
+
   valuecheck(H,H2(ind,ind));
   valuecheck(C,C2(ind));
   valuecheck(B,B2(ind,:));
@@ -91,10 +94,10 @@ for i=1:100
   valuecheck(H,H2(ind,ind));
   valuecheck(C,C2(ind));
   valuecheck(B,B2(ind,:));
-  
+
   xdn = update(m_rpy,0,[q;qd],u);
   xdn2 = update(m_ypr_rel,0,[q(ind);qd(ind)],u);
-  
+
   valuecheck(xdn,xdn2([ind;nq+ind]),1e-4);
 end
 warning(w);

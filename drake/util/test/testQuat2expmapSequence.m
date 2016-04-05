@@ -1,4 +1,8 @@
 function testQuat2expmapSequence()
+
+% note: this test is known to fail with small probability
+% see https://github.com/RobotLocomotion/drake/issues/1158
+
 N = 100;
 quat = zeros(4,100);
 quat_dot = zeros(4,100);

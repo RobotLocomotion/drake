@@ -16,9 +16,9 @@
         <cylinder length=".2" radius=".2"/>
       </geometry>
     </visual>
-    <sensor type="imu">
+<!--    <sensor type="imu">
       <pose rpy="0 0 0" xyz="0 0 0"/>
-    </sensor>
+    </sensor> -->
   </link>
   <link name="spoke1">
     <visual>
@@ -197,4 +197,3 @@
     <child link="spoke8"/>
   </joint>
 </robot>
-

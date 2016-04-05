@@ -1,0 +1,5 @@
+
+add_matlab_test(NAME examples/TwoWheeledInvertedPendulum/runObserverControl COMMAND runObserverControl)
+add_matlab_test(NAME examples/TwoWheeledInvertedPendulum/runSwingUp COMMAND runSwingUp)
+
+add_subdirectory(test)

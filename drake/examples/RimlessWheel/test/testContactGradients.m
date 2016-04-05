@@ -18,8 +18,9 @@ options.diff_type = 'central';
 options.tol = 1e-4;
 [n,D,dn,dD] = geval(2,@contactConstraintsWrapper,p,x0(1:p.getNumPositions()),options);
 
+manip = p.getManipulator();
 for i=1:100
-  q = getRandomConfiguration(p);
+  q = getRandomConfiguration(manip);
   [n,D,dn,dD] = geval(2,@contactConstraintsWrapper,p,q,options);
 end
 
