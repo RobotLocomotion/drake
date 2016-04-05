@@ -16,6 +16,8 @@ document your trick and submit a pull request!
 C/C++
 =====
 
+.. _code-style-tools-clang-format:
+
 Clang-Format
 ------------
 

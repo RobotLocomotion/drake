@@ -1,0 +1,5 @@
+
+add_matlab_test(NAME systems/robotInterfaces/test/octomapSimpleExample COMMAND octomapSimpleExample)
+add_matlab_test(NAME systems/robotInterfaces/test/testFootstepSolvers COMMAND testFootstepSolvers)
+add_matlab_test(NAME systems/robotInterfaces/test/testFootstepSolversNoRegions COMMAND testFootstepSolversNoRegions)
+add_matlab_test(NAME systems/robotInterfaces/test/testInfeasibleFootstepProblems COMMAND testInfeasibleFootstepProblems)

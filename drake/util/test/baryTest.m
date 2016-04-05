@@ -1,5 +1,8 @@
 function baryTest
 
+% note: this test is known to fail (throwing nans) with small probability
+% see https://github.com/RobotLocomotion/drake/issues/485
+
 % note: also tests singleton dimensions
 bins = { linspace(0,5,6), 1, linspace(0,10,11) };
 pts = [5*rand(1,100); ones(1,100); 10*rand(1,100)];

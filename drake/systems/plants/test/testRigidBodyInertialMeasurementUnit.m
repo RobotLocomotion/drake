@@ -1,7 +1,7 @@
 function testRigidBodyInertialMeasurementUnit()
 
 testAtlas('rpy');
-compare2dTo3d();
+% compare2dTo3d(); % see #374
 
 end
 
@@ -26,11 +26,11 @@ for i = 1 : 100
   x = [q; v];
   u = randn(r.getNumInputs(), 1);
   y = r.output(t, x, u);
-  
+
   quat = y(1:4);
   omega = y(5:7);
   accel = y(8:10);
-  
+
   kinsol = r.doKinematics(q, false, false, v);
   kinsol.twists = r.twists(kinsol.T, q, v);
   kinsol.v = v;
@@ -42,7 +42,7 @@ for i = 1 : 100
   qvec = quat_difference(2:4);
   angle_difference = angleDiff(0, 2 * atan2(norm(qvec), qs));
   valuecheck(0, angle_difference, 1e-10);
-  
+
   world = 1;
   body_twist_in_world = relativeTwist(kinsol, world, body, world);
   omega_check = Rframe' * body_twist_in_world(1:3);  % TODO: change to use relativeTwist with frame once floatingBase branch is merged in
@@ -52,7 +52,7 @@ for i = 1 : 100
   vd = xdot(nq + 1 : end);
   spatial_accels = r.spatialAccelerations(kinsol, vd);
   body_spatial_accel_in_world = spatial_accels{body};
-  
+
   % TODO: extract this out into a method of its own:
   p = r.forwardKin(kinsol, body, xyz, 0);
   omega_body = body_twist_in_world(1:3);
@@ -94,16 +94,16 @@ for i = 1 : 100
   u = randn(nu, 1);
   y2d = r2d.output(t, x, u);
   y3d = r3d.output(t, x, u);
-  
+
   angle = y2d(1);
   angledot = y2d(2);
   accel2d = y2d(3:4);
-  
+
   quat = y3d(1:4);
   omega = y3d(5:7);
   accel = y3d(8:10);
   axis = quat2axis(quat);
-  
+
   valuecheck(0, angleDiff(axis(4), angle));
   valuecheck(omega(3), angledot);
   valuecheck(accel(1:2), accel2d);
