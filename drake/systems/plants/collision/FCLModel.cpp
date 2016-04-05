@@ -1,9 +1,6 @@
 #include <iostream>
 
-//#include "drake/systems/plants/collision/DrakeCollision.h"
 #include "FCLModel.h"
-//#include "fcl/shape/geometric_shapes.h"
-//#include "fcl/shape/geometric_shape_to_BVH_model.h"
 
 #include "fcl/shape/geometric_shapes.h"
 #include "fcl/collision_data.h"
@@ -84,9 +81,9 @@ BVHModel<OBBRSS>* FCLModel::newFCLMeshShape(const DrakeShapes::Mesh& geometry,
     // geometry.getPoints(Eigen::Matrix3Xd &points) const;
   }
   // What about traingle indexes?
-  // TODL........
+  // TODO........
   cerr << "Warning: FCLModel::newMeshShape is not implemented." << endl;
-  return 0;
+  throw std::runtime_error("not implemented yet");
 }
 
 ElementId FCLModel::addElement(const Element& element) {
@@ -110,27 +107,9 @@ ElementId FCLModel::addElement(const Element& element) {
             elements[id]->getGeometry());
         bvh_shape = newFCLCylinderShape(cylinder, true);
       } break;
-      case DrakeShapes::MESH: {
-        const auto mesh =
-            static_cast<const DrakeShapes::Mesh&>(elements[id]->getGeometry());
-        // I only see points.  I cannot find triangles.
-        // bt_shape = newBulletMeshShape(mesh, true);
-        // bt_shape_no_margin = newBulletMeshShape(mesh, false);
-        cerr << "Warning: FCLMesh not implemented." << endl;
-      } break;
-      case DrakeShapes::MESH_POINTS: {
-        const auto mesh = static_cast<const DrakeShapes::MeshPoints&>(
-            elements[id]->getGeometry());
-        // bt_shape = newBulletMeshPointsShape(mesh, true);
-        // bt_shape_no_margin = newBulletMeshPointsShape(mesh, false);
-        cerr << "Warning: FCLMeshPoints not implemented." << endl;
-      } break;
-      case DrakeShapes::CAPSULE: {
-        const auto capsule = static_cast<const DrakeShapes::Capsule&>(
-            elements[id]->getGeometry());
-        bvh_shape = newFCLCapsuleShape(capsule, true);
-        cerr << "Warning: FCLCapsule not implemented." << endl;
-      } break;
+      case DrakeShapes::MESH: // not implemented yet
+      case DrakeShapes::MESH_POINTS: // not implemented yet
+      case DrakeShapes::CAPSULE: // not implemented yet
       default:
         cerr << "Warning: Collision elements[id] has an unknown type "
              << elements[id]->getShape() << endl;
@@ -150,7 +129,7 @@ vector<PointPair> FCLModel::potentialCollisionPoints(bool use_margins) {
   // TODO: Not Implemented
   cerr << "Warning: FCLModel::potentialCollisionPoints not implemented."
        << endl;
-  return c.getResults();
+  throw std::runtime_error("not implemented yet");
 }
 
 bool FCLModel::collidingPointsCheckOnly(const vector<Vector3d>& points,
@@ -158,60 +137,32 @@ bool FCLModel::collidingPointsCheckOnly(const vector<Vector3d>& points,
   // TODO: Not Implemented
   cerr << "Warning: FCLModel::collisionPointsCheckOnly not implemented."
        << endl;
-  // if (c.isInCollision()) {
-  //  return true;
-  //}
-
-  return false;
+  throw std::runtime_error("not implemented yet");
 }
 
 vector<size_t> FCLModel::collidingPoints(const vector<Vector3d>& points,
                                          double collision_threshold) {
   cerr << "Warning: FCLModel::collidingPoints not implemented." << endl;
-  vector<size_t> in_collision_indices;
-
-  for (size_t i = 0; i < points.size(); ++i) {
-    // if (c.isInCollision()) {
-    //  in_collision_indices.push_back(i);
-    //}
-  }
-
-  return in_collision_indices;
+  throw std::runtime_error("not implemented yet");
 }
 
 bool FCLModel::updateElementWorldTransform(const ElementId id,
                                            const Isometry3d& T_local_to_world) {
-  // Since the transform is applide during collision, this method may not need
-  // to be
-  // implemented.
+  // Since the transform is applied during collision, this method may not need
+  // to be implemented.
   cerr << "Warning: FCLModel::updateElementWorldTransform not implemented."
        << endl;
-
-  const bool element_exists(
-      Model::updateElementWorldTransform(id, T_local_to_world));
-  if (element_exists) {
-    // const Isometry3d& T = elements[id]->getWorldTransform();
-    // btMatrix3x3 rot;
-    // btVector3 pos;
-    // btTransform btT;
-
-    // rot.setValue( T(0,0), T(0,1), T(0,2),
-    //              T(1,0), T(1,1), T(1,2),
-    //              T(2,0), T(2,1), T(2,2) );
-    // btT.setBasis(rot);
-    // pos.setValue( T(0,3), T(1,3), T(2,3) );
-    // btT.setOrigin(pos);
-    // ...
-  }
-  return element_exists;
+  // throw std::runtime_error("not implemented yet");
+  return false;
 }
 
 void FCLModel::updateModel() {
   // I am not sure if this needs to be implemented.
   cerr << "Warning: FCLModel::updateModel not implemented." << endl;
-  // NOTE: ccl: I am not sure what cahnges I have to accomadate.
+  // NOTE: ccl: I am not sure what changes I have to accommodate.
   // Should I rebuild the fclModels?
   // TODO: Test this.
+  throw std::runtime_error("not implemented yet");
 }
 
 bool FCLModel::findClosestPointsBtwElements(
@@ -322,19 +273,7 @@ void FCLModel::collisionDetectFromPoints(
 
   cerr << "Warning: FCLModel::collisionDetectFromPoints not implemented."
        << endl;
-  //...
-
-  // do collision check against all bodies for each point using bullet's
-  // internal getclosestpoitns solver
-  for (int i = 0; i < points.cols(); i++) {
-    // bool got_one = false;
-    //...
-
-    // closest_points[i] = PointPair(
-    //          bt_objB_iter->first, bt_objB_iter->first,
-    //          toVector3d(pointOnElemB), toVector3d(pointOnBinWorld),
-    //          toVector3d(gjkOutput.m_normalOnBInWorld), distance);
-  }
+  throw std::runtime_error("not implemented yet");
 }
 
 bool FCLModel::collisionRaycast(const Matrix3Xd& origins,
@@ -345,13 +284,7 @@ bool FCLModel::collisionRaycast(const Matrix3Xd& origins,
   normals.resize(3, origins.cols());
 
   cerr << "Warning: FCLModel::collisionRaycast not implemented." << endl;
-
-  //...
-  for (int i = 0; i < origins.cols(); i++) {
-    //...
-  }
-
-  return true;
+  throw std::runtime_error("not implemented yet");
 }
 
 // This is the same implementation as in bullet.
