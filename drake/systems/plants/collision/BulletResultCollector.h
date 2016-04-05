@@ -5,7 +5,6 @@
 #include "drake/systems/plants/collision/ResultCollector.h"
 
 namespace DrakeCollision {
-// Eigen::Vector3d toVector3d(const Eigen::Vector3d& vec);
 Eigen::Vector3d toVector3d(const btVector3& bt_vec);
 
 class BulletResultCollector : public ResultCollector,

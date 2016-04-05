@@ -8,10 +8,6 @@
 #include "fcl/BVH/BVH_model.h"
 
 namespace DrakeCollision {
-class FCLModel;  // forward declaration
-
-//#define PERTURBATION_ITERATIONS 8
-//#define MINIMUM_POINTS_PERTURBATION_THRESHOLD 8
 
 class FCLModel : public Model {
  public:
