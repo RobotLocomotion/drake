@@ -10,3 +10,10 @@ if (GTEST_FOUND)
 	target_link_libraries(feedback_system_test ${GTEST_BOTH_LIBRARIES})
 	add_test(NAME feedback_system_test COMMAND feedback_system_test)
 endif()
+
+add_matlab_test(NAME systems/test/HybridSystemSampleTimeTest.run COMMAND HybridSystemSampleTimeTest.run)
+add_matlab_test(NAME systems/test/LinearGaussianDT.run COMMAND LinearGaussianDT.run)
+# add_matlab_test(NAME systems/test/linear_gaussian_dt COMMAND linear_gaussian_dt)  # see #366
+add_matlab_test(NAME systems/test/memoryTest COMMAND memoryTest)
+# add_matlab_test(NAME systems/test/runPendulum COMMAND runPendulum) # see #310
+add_matlab_test(NAME systems/test/testSimInput COMMAND testSimInput)

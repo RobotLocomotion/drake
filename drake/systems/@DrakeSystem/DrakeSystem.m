@@ -543,7 +543,7 @@ classdef DrakeSystem < DynamicalSystem
           if (strcmp(ex.identifier, 'Drake:DrakeSystem:UnsupportedSampleTime'))
             warning('Drake:DrakeSystem:UnsupportedSampleTime','Aborting feedback combination as a DrakeSystem due to incompatible sample times');
             sys = feedback@DynamicalSystem(sys1,sys2);
-          elseif (strcmp(ex.identifier, 'Drake:FeedbackSystem:NoHybridSupport') || strcmp(ex.identifier,'Drake:FeedbackSystem:NoStochasticSupport'))
+          elseif (strcmp(ex.identifier, 'Drake:FeedbackSystem:NoHybridSupport') || strcmp(ex.identifier,'Drake:FeedbackSystem:NoStochasticSupport') || strcmp(ex.identifier,'Drake:FeedbackSystem:InternalInputLimits'))
             sys = feedback@DynamicalSystem(sys1,sys2);
           else
             rethrow(ex);

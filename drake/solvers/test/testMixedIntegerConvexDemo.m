@@ -1,6 +1,9 @@
 function testMixedIntegerConvexDemo
 % Demonstrate a few features of the new mixed-integer convex program interface.
 
+% note: this test is known to fail to match tolerances with small
+% probability.  see https://github.com/RobotLocomotion/drake/issues/827
+
 % Let's say we want to perform a simple mixed-integer quadratic optimization:
 % minimize ||(x - xgoal)||^2
 % subject to A1x <= b1 OR A2x <= b2

@@ -1,0 +1,4 @@
+
+add_matlab_test(NAME examples/Airplane2D/test/dynamicsGradientsTest COMMAND dynamicsGradientsTest)
+add_matlab_test(NAME examples/Airplane2D/test/testObstacles COMMAND testObstacles)
+add_matlab_test(NAME examples/Airplane2D/test/testVerticalAndHorizontalObstacles COMMAND testVerticalAndHorizontalObstacles)

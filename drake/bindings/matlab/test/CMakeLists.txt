@@ -1,0 +1,5 @@
+
+add_matlab_test(NAME bindings/matlab/test/testRBTCoM COMMAND testRBTCoM)
+add_matlab_test(NAME bindings/matlab/test/testRBTIK_posture_constraint COMMAND testRBTIK_posture_constraint)
+add_matlab_test(NAME bindings/matlab/test/testRBTTransformPoints_gradient COMMAND testRBTTransformPoints_gradient)
+add_matlab_test(NAME bindings/matlab/test/testRBTTransformPoints_value COMMAND testRBTTransformPoints_value)

@@ -1,4 +1,8 @@
 function testKinCnst
+
+% note: this test is known to fail with very small probability
+% see https://github.com/RobotLocomotion/drake/issues/516
+
 rng(0,'twister');
 checkDependency('rigidbodyconstraint_mex');
 

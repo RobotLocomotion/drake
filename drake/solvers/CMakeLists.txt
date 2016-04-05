@@ -55,3 +55,6 @@ endif()
 
 add_subdirectory(qpSpline)
 add_subdirectory(test)
+add_subdirectory(+drakeFunction)
+add_subdirectory(BMI)
+add_subdirectory(trajectoryOptimization/test)

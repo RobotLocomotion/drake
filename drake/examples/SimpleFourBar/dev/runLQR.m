@@ -1,6 +1,6 @@
 function runLQR
 w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
-r = PlanarRigidBodyManipulator('FourBar2.urdf');
+r = PlanarRigidBodyManipulator('../FourBar2.urdf');
 warning(w);
 v = r.constructVisualizer();
 v.xlim = [-8 8]; v.ylim = [-4 10];
