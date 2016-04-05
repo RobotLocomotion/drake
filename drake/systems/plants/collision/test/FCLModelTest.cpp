@@ -1,7 +1,7 @@
 // Get an example of FCL Collision detection working compare it with the BulletModel.
 
 #include <iostream>
-#include <math.h>
+#include <cmath>
 
 #include "fcl/shape/geometric_shapes.h"
 #include "fcl/collision_data.h"
