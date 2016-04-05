@@ -1,8 +1,6 @@
 #ifndef DRAKE_CORE_TEST_PENDULUM_H_
 #define DRAKE_CORE_TEST_PENDULUM_H_
 
-#include <cmath>
-
 #include <Eigen/Dense>
 
 namespace drake {
