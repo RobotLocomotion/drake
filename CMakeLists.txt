@@ -72,7 +72,14 @@ if (NOT WIN32) # many of these might work on win32 with little or no work... the
 	option(WITH_OCTOMAP 	"provides oct-tree data structures")
 	option(WITH_GUROBI 		"convex/integer optimization solver; free for academics (will prompt you for login bits)")
 	option(WITH_MOSEK 		"convex optimization solver; free for academics")
-	option(WITH_NLOPT 		"nonlinear optimization solver"  ON)
+	# TODO(sam.creasey): Compilation of the NLopt external works
+	# frequently on OSX, but not always (working in the travis CI
+	# build, not working in the drake005 CI build).  I would have
+	# liked to continue to offer the option on OSX, but drake005
+	# forces all supported externals on, so I can't even do that.
+	if (NOT APPLE)
+	  option(WITH_NLOPT 		"nonlinear optimization solver"  ON)
+	endif()
 	option(WITH_YALMIP 		"free optimization front-end for MATLAB")
 	option(WITH_GLOPTIPOLY 	"free global polynomial optimization tooblox")
 	option(WITH_BERTINI 	"solve polynomial equations; free but pod requires permissions (can't redistribute)")
