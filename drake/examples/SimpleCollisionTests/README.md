@@ -27,8 +27,8 @@ cd drake-distro/drake/examples/SimpleCollisionTests
 
 The `-x` option allows to specify a translation of the height map terrain in the x direction. The ball has a diameter of 1.0. Therefore `-x 1` shifts the height map position one sphere diameter in the positive x direction.
 
-Bouncing ball on 45 degrees inclined plane
-==========================================
+Unit Test: Bouncing ball on 45 degrees inclined plane
+=====================================================
 
 This test corresponds to running the bouncing ball simulation as:
 
