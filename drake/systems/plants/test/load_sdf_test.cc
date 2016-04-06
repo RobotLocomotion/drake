@@ -148,6 +148,67 @@ TEST(LoadSDFTest, TestWeld) {
     T_model2_to_link2.matrix());
 }
 
+TEST(LoadSDFTest, TestInternalOffset) {
+  // Loads a one-DOF SDF model with:
+  //   1. A Z = 1 offset between the model's root and the model's world
+  //   2. Zero offset between the model's world and Drake's world
+  RigidBodySystem rbs;
+  rbs.addRobotFromFile(Drake::getDrakePath()
+    + "/systems/plants/test/cylindrical_1dof_robot_offset_z1.sdf",
+    DrakeJoint::QUATERNION);
+
+  // Verifies that the transform between the robot's root node
+  // and the world is equal to Z = 1.
+  Eigen::Isometry3d T_model_to_world;
+  {
+    Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
+    Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
+    xyz(2) = 1;
+    T_model_to_world.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+  }
+
+  auto link1_body = rbs.getRigidBodyTree()->findLink("link1");
+  EXPECT_TRUE(link1_body != nullptr);
+  EXPECT_EQ(link1_body->getJoint().getTransformToParentBody().matrix(),
+    T_model_to_world.matrix());
+}
+
+TEST(LoadSDFTest, TestDualOffset) {
+  // Loads a one-DOF SDF model with:
+  //   1. A Z = 1 offset between the model's root and the model's world
+  //   2. An X = 2 offset between the model's world and Drake's world
+  Eigen::Isometry3d T_model_world_to_drake_world;
+  {
+    Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
+    Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
+    xyz(0) = 2;
+    T_model_world_to_drake_world.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+  }
+
+  auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
+    Eigen::aligned_allocator<RigidBodyFrame>(), "world",
+    nullptr,  // not used since the robot is attached to the world
+    T_model_world_to_drake_world);
+
+  RigidBodySystem rbs;
+  rbs.addRobotFromFile(Drake::getDrakePath()
+    + "/systems/plants/test/cylindrical_1dof_robot_offset_z1.sdf",
+    DrakeJoint::QUATERNION, weld_to_frame);
+
+  // Verifies that the transform between the robot's root node
+  // and the world is equal to X = 2, Z = 1.
+  Eigen::Isometry3d T_model_to_world;
+  {
+    Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
+    Eigen::Vector3d xyz; xyz << 2, 0, 1;
+    T_model_to_world.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+  }
+
+  auto link1_body = rbs.getRigidBodyTree()->findLink("link1");
+  EXPECT_TRUE(link1_body != nullptr);
+  EXPECT_EQ(link1_body->getJoint().getTransformToParentBody().matrix(),
+    T_model_to_world.matrix());
+}
 
 }  // namespace
 }  // namespace test
