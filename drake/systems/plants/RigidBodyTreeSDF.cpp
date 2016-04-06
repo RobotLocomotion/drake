@@ -525,6 +525,10 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
   }
 }
 
+/**
+ * weld_to_frame's transform_to_body is the API-based shifting of the
+ * robot's world frame to Drake's world frame
+ */
 void parseModel(RigidBodyTree* model, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
                 const DrakeJoint::FloatingBaseType floating_base_type,
@@ -568,54 +572,13 @@ void parseModel(RigidBodyTree* model, XMLElement* node,
 
     // Implements dual-offset: one from model root to model world, another
     // from model world to Drake's world.
-    weld_to_frame->transform_to_body = weld_to_frame->transform_to_body * transform_model_root_to_model_world;
+    weld_to_frame->transform_to_body = weld_to_frame->transform_to_body
+      * transform_model_root_to_model_world;
   }
 
   // Adds the floating joint that connects the newly added robot model to the
   // rest of the rigid body tree.
   RigidBodyTree::AddFloatingJoint(model, &pose_map, floating_base_type, weld_to_frame);
-
-  // bool has_root_node = false;
-  // for (unsigned int i = 1; i < model->bodies.size(); i++) {
-  //   if (model->bodies[i]->parent == nullptr) {  // attach the root nodes to the
-  //                                               // world with a floating base
-  //                                               // joint
-  //     has_root_node = true;
-  //     model->bodies[i]->parent = model->bodies[0];
-
-  //     Isometry3d transform_to_model = Isometry3d::Identity();
-  //     if (pose_map.find(model->bodies[i]->linkname) != pose_map.end())
-  //       transform_to_model = pose_map.at(model->bodies[i]->linkname);
-
-  //     switch (floating_base_type) {
-  //       case DrakeJoint::FIXED: {
-  //         unique_ptr<DrakeJoint> joint(
-  //             new FixedJoint("base", transform_to_world * transform_to_model));
-  //         model->bodies[i]->setJoint(move(joint));
-  //       } break;
-  //       case DrakeJoint::ROLLPITCHYAW: {
-  //         unique_ptr<DrakeJoint> joint(new RollPitchYawFloatingJoint(
-  //             "base", transform_to_world * transform_to_model));
-  //         model->bodies[i]->setJoint(move(joint));
-  //       } break;
-  //       case DrakeJoint::QUATERNION: {
-  //         unique_ptr<DrakeJoint> joint(new QuaternionFloatingJoint(
-  //             "base", transform_to_world * transform_to_model));
-  //         model->bodies[i]->setJoint(move(joint));
-  //       } break;
-  //       default:
-  //         throw std::runtime_error("unknown floating base type");
-  //     }
-  //   }
-  // }
-  // if (!has_root_node)
-  //   throw runtime_error(
-  //       "Your model does not have a root link (every link has a joint "
-  //       "connecting it to some other joint).  You're about to loop "
-  //       "indefinitely in the compile() method.  Still need to handle this "
-  //       "case");
-  // // could handle it by disconnecting one of the internal nodes, making that a
-  // // loop joint, and connecting the new free joint to the world
 }
 
 void parseWorld(RigidBodyTree* model, XMLElement* node,

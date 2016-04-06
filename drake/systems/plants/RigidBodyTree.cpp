@@ -1855,7 +1855,7 @@ void RigidBodyTree::AddFloatingJoint(RigidBodyTree* model, PoseMap * pose_map,
     std::shared_ptr<RigidBody> weld_to_body;
     Eigen::Isometry3d transform_to_world;
 
-    if (!weld_to_frame) {
+    if (weld_to_frame == nullptr) {
       // If no body was given for us to weld to, then weld to the world
       weld_to_body = model->bodies[0];
       floating_joint_name = "base";
@@ -1867,12 +1867,11 @@ void RigidBodyTree::AddFloatingJoint(RigidBodyTree* model, PoseMap * pose_map,
       if (weld_to_frame->name.compare("world") == 0) {
         weld_to_body = model->bodies[0];  // the world's body
         floating_joint_name = "base";
-        transform_to_world = weld_to_frame->transform_to_body;
       } else {
         weld_to_body = weld_to_frame->body;
-        transform_to_world = weld_to_frame->transform_to_body;
         floating_joint_name = "weld";
       }
+      transform_to_world = weld_to_frame->transform_to_body;
     }
 
     bool floating_joint_added = false;
