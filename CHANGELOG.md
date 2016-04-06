@@ -21,7 +21,7 @@ Unreleased: changes on master, not yet released
 [//]: # "Altered functionality or APIs."
 ### Changed
 
- - [#1992][] Matlab tests much now be explicitly listed in CMakeLists.
+ - [#1992][] Matlab tests must now be explicitly listed in CMakeLists.
  - [#1970][] The drake pod Makefile now includes the `install` action.
  - [#1953][] Replace valuecheckMatrix() with CompareMatrices().
  
