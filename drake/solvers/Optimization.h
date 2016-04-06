@@ -1,14 +1,15 @@
 #ifndef DRAKE_SOLVERS_OPTIMIZATION_H_
 #define DRAKE_SOLVERS_OPTIMIZATION_H_
 
+#include <algorithm>
 #include <list>
 #include <memory>
 #include <initializer_list>
 #include <Eigen/Core>
 #include "drake/core/Core.h"
 #include "drake/drakeOptimization_export.h"
-#include "Constraint.h"
-#include "MathematicalProgram.h"
+#include "drake/solvers/Constraint.h"
+#include "drake/solvers/MathematicalProgram.h"
 
 
 namespace Drake {
@@ -596,6 +597,10 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   const std::list<Binding<LinearEqualityConstraint>>&
       getLinearEqualityConstraints() const {
     return linear_equality_constraints;
+  }
+  const std::list<Binding<LinearConstraint>>&
+      getLinearConstraints() const {
+    return linear_constraints;
   }
   std::list<Binding<LinearConstraint>> getAllLinearConstraints() const {
     std::list<Binding<LinearConstraint>> conlist = linear_constraints;
