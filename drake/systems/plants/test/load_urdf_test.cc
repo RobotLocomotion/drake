@@ -2,25 +2,16 @@
 
 #include <gtest/gtest.h>
 
-// #include "drake/Path.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
-#include "drake/util/eigen_matrix_compare.h"
-#include "drake/util/testUtil.h"
 
-using std::make_shared;
 using Drake::RigidBodySystem;
-using Eigen::VectorXd;
-using drake::util::MatrixCompareType;
 
 namespace drake {
 namespace systems {
 namespace plants {
 namespace test {
 namespace {
-
-std::string model_file_1, model_file_2;
-std::shared_ptr<RigidBodyFrame> car_pose_in_world;
 
 TEST(LoadURDFTest, TestNoOffset) {
   // Loads the URDF model with zero offset between the model's
@@ -30,7 +21,7 @@ TEST(LoadURDFTest, TestNoOffset) {
     + "/systems/plants/test/cylindrical_1dof_robot.urdf", DrakeJoint::QUATERNION);
 
   // Verifies that RigidBodyTree cannot find a link that
-  // should not exist.
+  // does not exist.
   auto nonexistent_body = rbs.getRigidBodyTree()->findLink("not_a_link");
   EXPECT_TRUE(nonexistent_body == nullptr);
 
