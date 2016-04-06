@@ -21,8 +21,10 @@ Unreleased: changes on master, not yet released
 [//]: # "Altered functionality or APIs."
 ### Changed
 
+ - [#1992][] Matlab tests much now be explicitly listed in CMakeLists.
+ - [#1970][] The drake pod Makefile now includes the `install` action.
  - [#1953][] Replace valuecheckMatrix() with CompareMatrices().
-
+ 
 [//]: # "Lost functionality or APIs."
 ### Removed / Deprecated
 
@@ -31,7 +33,11 @@ Unreleased: changes on master, not yet released
 [//]: # "Smaller bug fixes.  No API changes."
 ### Fixes
 
- - None
+ - [#2008][] `Drake::simulate(4-arg)` actually compiles again now.
+ - [#1990][] Windows builds that include bullet are working again.
+ - [#1985][] runQuadrotorDynamics no longer asserts realtime performance when run under ctest.
+ - [#1975][] Fix coordinate frame error in rigid body collisions.
+ - (Assorted) Non-functional fixes for cpplint compliance.
 
 v0.9.11 (2015-10-08)
 --------------------
