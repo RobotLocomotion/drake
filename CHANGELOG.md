@@ -39,6 +39,9 @@ Unreleased: changes on master, not yet released
  - [#1975][] Fix coordinate frame error in rigid body collisions.
  - (Assorted) Non-functional fixes for cpplint compliance.
 
+Note that not all changes since v0.9.11 have been captured in the above.
+Only changes since approximately 2016-04-01 have been noted.
+
 v0.9.11 (2015-10-08)
 --------------------
 
