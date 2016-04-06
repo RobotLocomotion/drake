@@ -427,9 +427,10 @@ void inverseKinSnoptBackend(
     RigidBodyTree* model_input, const int mode, const int nT_input,
     const double* t_input, const MatrixBase<DerivedA>& q_seed,
     const MatrixBase<DerivedB>& q_nom_input, const int num_constraints,
-    RigidBodyConstraint** const constraint_array, MatrixBase<DerivedC>& q_sol,
-    MatrixBase<DerivedD>& qdot_sol, MatrixBase<DerivedE>& qddot_sol, int* INFO,
-    vector<string>& infeasible_constraint, const IKoptions& ikoptions) {
+    RigidBodyConstraint** const constraint_array,
+    const IKoptions& ikoptions, MatrixBase<DerivedC>* q_sol,
+    MatrixBase<DerivedD>* qdot_sol, MatrixBase<DerivedE>* qddot_sol, int* INFO,
+    std::vector<std::string>* infeasible_constraint) {
   model = model_input;
   nT = nT_input;
   t = const_cast<double*>(t_input);
@@ -554,9 +555,9 @@ void inverseKinSnoptBackend(
     INFO_snopt = new snopt::integer[1];
     INFO_snopt[0] = 0;
   }
-  q_sol.resize(nq, nT);
-  qdot_sol.resize(nv, nT);
-  qddot_sol.resize(nv, nT);
+  q_sol->resize(nq, nT);
+  qdot_sol->resize(nv, nT);
+  qddot_sol->resize(nv, nT);
   VectorXi* iCfun_array = new VectorXi[nT];
   VectorXi* jCvar_array = new VectorXi[nT];
   nc_array = new snopt::integer[nT];
@@ -792,9 +793,9 @@ void inverseKinSnoptBackend(
             // memcpy(x, q_seed.col(i).data(), sizeof(double)*nq);
           } else {
             for (int k = 0; k < nq; k++) {
-              x[k] = q_sol(k, i - 1);
+              x[k] = (*q_sol)(k, i - 1);
             }
-            // memcpy(x, q_sol.col(i-1).data(), sizeof(double)*nq);
+            // memcpy(x, q_sol->col(i-1).data(), sizeof(double)*nq);
           }
         }
       }
@@ -1003,7 +1004,7 @@ void inverseKinSnoptBackend(
           if (debug_mode) {
             for (int j = 1; j < nF; j++) {
               if (infeasible_constraint_idx[j]) {
-                infeasible_constraint.push_back(Fname[j]);
+                infeasible_constraint->push_back(Fname[j]);
               }
             }
           }
@@ -1018,16 +1019,16 @@ void inverseKinSnoptBackend(
         delete[] lb_err;
         delete[] infeasible_constraint_idx;
       }
-      memcpy(q_sol.col(i).data(), x, sizeof(double) * nq);
+      memcpy(q_sol->col(i).data(), x, sizeof(double) * nq);
       INFO[i] = static_cast<int>(INFO_snopt[i]);
       if (INFO[i] < 10) {
         for (int j = 0; j < nq; j++) {
-          q_sol(j, i) = q_sol(j, i) > joint_limit_min(j, i)
-                            ? q_sol(j, i)
-                            : joint_limit_min(j, i);
-          q_sol(j, i) = q_sol(j, i) < joint_limit_max(j, i)
-                            ? q_sol(j, i)
-                            : joint_limit_max(j, i);
+          (*q_sol)(j, i) = (*q_sol)(j, i) > joint_limit_min(j, i)
+              ? (*q_sol)(j, i)
+              : joint_limit_min(j, i);
+          (*q_sol)(j, i) = (*q_sol)(j, i) < joint_limit_max(j, i)
+                                         ? (*q_sol)(j, i)
+                                         : joint_limit_max(j, i);
         }
       }
 
@@ -2010,10 +2011,10 @@ void inverseKinSnoptBackend(
     VectorXd qdot0(nq);
     VectorXd qdotf(nq);
     if (fixInitialState) {
-      q_sol.block(0, 0, nq, 1) = q0_fixed;
+      q_sol->block(0, 0, nq, 1) = q0_fixed;
     }
     for (int j = 0; j < nq * num_qfree; j++) {
-      q_sol(j + nq * qstart_idx) = x[qfree_idx[j]];
+      (*q_sol)(j + nq * qstart_idx) = x[qfree_idx[j]];
     }
     for (int j = 0; j < nq; j++) {
       qdotf(j) = x[qdotf_idx[j]];
@@ -2028,27 +2029,27 @@ void inverseKinSnoptBackend(
     if (*INFO_snopt < 10) {
       for (int i = 0; i < nT; i++) {
         for (int j = 0; j < nq; j++) {
-          q_sol(j, i) = q_sol(j, i) > joint_limit_min(j, i)
-                            ? q_sol(j, i)
+          (*q_sol)(j, i) = (*q_sol)(j, i) > joint_limit_min(j, i)
+                            ? (*q_sol)(j, i)
                             : joint_limit_min(j, i);
-          q_sol(j, i) = q_sol(j, i) < joint_limit_max(j, i)
-                            ? q_sol(j, i)
+          (*q_sol)(j, i) = (*q_sol)(j, i) < joint_limit_max(j, i)
+                            ? (*q_sol)(j, i)
                             : joint_limit_max(j, i);
         }
       }
     }
-    qdot_sol.block(0, 0, nq, 1) = qdot0;
-    qdot_sol.block(0, nT - 1, nq, 1) = qdotf;
-    MatrixXd q_sol_tmp = q_sol;
+    qdot_sol->block(0, 0, nq, 1) = qdot0;
+    qdot_sol->block(0, nT - 1, nq, 1) = qdotf;
+    MatrixXd q_sol_tmp = *q_sol;
     q_sol_tmp.resize(nq * nT, 1);
     MatrixXd qdot_sol_tmp = velocity_mat * q_sol_tmp;
     qdot_sol_tmp.resize(nq, nT - 2);
-    qdot_sol.block(0, 1, nq, nT - 2) = qdot_sol_tmp;
+    qdot_sol->block(0, 1, nq, nT - 2) = qdot_sol_tmp;
     MatrixXd qddot_sol_tmp(nq * nT, 1);
     qddot_sol_tmp =
         accel_mat * q_sol_tmp + accel_mat_qd0 * qdot0 + accel_mat_qdf * qdotf;
     qddot_sol_tmp.resize(nq, nT);
-    qddot_sol = qddot_sol_tmp;
+    (*qddot_sol) = qddot_sol_tmp;
 
     if (*INFO_snopt == 13 || *INFO_snopt == 31 || *INFO_snopt == 32) {
       double* ub_err = new double[nF];
@@ -2072,7 +2073,7 @@ void inverseKinSnoptBackend(
         if (debug_mode) {
           for (int j = 1; j < nF; j++) {
             if (infeasible_constraint_idx[j]) {
-              infeasible_constraint.push_back(Fname[j]);
+              infeasible_constraint->push_back(Fname[j]);
             }
           }
         }
@@ -2162,47 +2163,53 @@ template void inverseKinSnoptBackend(
     const MatrixBase<Map<MatrixXd>>& q_seed,
     const MatrixBase<Map<MatrixXd>>& q_nom, const int num_constraints,
     RigidBodyConstraint** const constraint_array,
-    MatrixBase<Map<MatrixXd>>& q_sol, MatrixBase<Map<MatrixXd>>& qdot_sol,
-    MatrixBase<Map<MatrixXd>>& qddot_sol, int* INFO,
-    vector<string>& infeasible_constraint, const IKoptions& ikoptions);
+    const IKoptions& ikoptions,
+    MatrixBase<Map<MatrixXd>>* q_sol, MatrixBase<Map<MatrixXd>>* qdot_sol,
+    MatrixBase<Map<MatrixXd>>* qddot_sol, int* INFO,
+    std::vector<std::string>* infeasible_constraint);
 template void inverseKinSnoptBackend(
     RigidBodyTree* model, const int mode, const int nT, const double* t,
     const MatrixBase<MatrixXd>& q_seed, const MatrixBase<MatrixXd>& q_nom,
     const int num_constraints, RigidBodyConstraint** const constraint_array,
-    MatrixBase<MatrixXd>& q_sol, MatrixBase<MatrixXd>& qdot_sol,
-    MatrixBase<MatrixXd>& qddot_sol, int* INFO,
-    vector<string>& infeasible_constraint, const IKoptions& ikoptions);
+    const IKoptions& ikoptions,
+    MatrixBase<MatrixXd>* q_sol, MatrixBase<MatrixXd>* qdot_sol,
+    MatrixBase<MatrixXd>* qddot_sol, int* INFO,
+    std::vector<std::string>* infeasible_constraint);
 template void inverseKinSnoptBackend(
     RigidBodyTree* model, const int mode, const int nT, const double* t,
     const MatrixBase<Map<MatrixXd>>& q_seed,
     const MatrixBase<Map<MatrixXd>>& q_nom, const int num_constraints,
     RigidBodyConstraint** const constraint_array,
-    MatrixBase<Map<MatrixXd>>& q_sol, MatrixBase<MatrixXd>& qdot_sol,
-    MatrixBase<MatrixXd>& qddot_sol, int* INFO,
-    vector<string>& infeasible_constraint, const IKoptions& ikoptions);
+    const IKoptions& ikoptions,
+    MatrixBase<Map<MatrixXd>>* q_sol, MatrixBase<MatrixXd>* qdot_sol,
+    MatrixBase<MatrixXd>* qddot_sol, int* INFO,
+    std::vector<std::string>* infeasible_constraint);
 template void inverseKinSnoptBackend(
     RigidBodyTree* model, const int mode, const int nT, const double* t,
     const MatrixBase<Map<VectorXd>>& q_seed,
     const MatrixBase<Map<VectorXd>>& q_nom, const int num_constraints,
     RigidBodyConstraint** const constraint_array,
-    MatrixBase<Map<VectorXd>>& q_sol, MatrixBase<Map<VectorXd>>& qdot_sol,
-    MatrixBase<Map<VectorXd>>& qddot_sol, int* INFO,
-    vector<string>& infeasible_constraint, const IKoptions& ikoptions);
+    const IKoptions& ikoptions,
+    MatrixBase<Map<VectorXd>>* q_sol, MatrixBase<Map<VectorXd>>* qdot_sol,
+    MatrixBase<Map<VectorXd>>* qddot_sol, int* INFO,
+    std::vector<std::string>* infeasible_constraint);
 template void inverseKinSnoptBackend(
     RigidBodyTree* model, const int mode, const int nT, const double* t,
     const MatrixBase<VectorXd>& q_seed, const MatrixBase<VectorXd>& q_nom,
     const int num_constraints, RigidBodyConstraint** const constraint_array,
-    MatrixBase<VectorXd>& q_sol, MatrixBase<VectorXd>& qdot_sol,
-    MatrixBase<VectorXd>& qddot_sol, int* INFO,
-    vector<string>& infeasible_constraint, const IKoptions& ikoptions);
+    const IKoptions& ikoptions,
+    MatrixBase<VectorXd>* q_sol, MatrixBase<VectorXd>* qdot_sol,
+    MatrixBase<VectorXd>* qddot_sol, int* INFO,
+    std::vector<std::string>* infeasible_constraint);
 template void inverseKinSnoptBackend(
     RigidBodyTree* model, const int mode, const int nT, const double* t,
     const MatrixBase<Map<VectorXd>>& q_seed,
     const MatrixBase<Map<VectorXd>>& q_nom, const int num_constraints,
     RigidBodyConstraint** const constraint_array,
-    MatrixBase<Map<VectorXd>>& q_sol, MatrixBase<VectorXd>& qdot_sol,
-    MatrixBase<VectorXd>& qddot_sol, int* INFO,
-    vector<string>& infeasible_constraint, const IKoptions& ikoptions);
+    const IKoptions& ikoptions,
+    MatrixBase<Map<VectorXd>>* q_sol, MatrixBase<VectorXd>* qdot_sol,
+    MatrixBase<VectorXd>* qddot_sol, int* INFO,
+    std::vector<std::string>* infeasible_constraint);
 
 }
 }
