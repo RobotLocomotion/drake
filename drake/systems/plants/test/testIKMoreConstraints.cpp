@@ -173,8 +173,8 @@ int main() {
   int info;
   vector<string> infeasible_constraint;
   inverseKin(&model, qstar, qstar, constraint_array.size(),
-             constraint_array.data(), q_sol, info, infeasible_constraint,
-             ikoptions);
+             constraint_array.data(), ikoptions,
+             &q_sol, &info, &infeasible_constraint);
   printf("INFO = %d\n", info);
   if (info != 1) {
     return 1;
