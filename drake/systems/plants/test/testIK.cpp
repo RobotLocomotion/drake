@@ -30,7 +30,7 @@ int main() {
   int info;
   vector<string> infeasible_constraint;
   inverseKin(&model, q0, q0, constraint_array.size(), constraint_array.data(),
-             q_sol, info, infeasible_constraint, ikoptions);
+             ikoptions, &q_sol, &info, &infeasible_constraint);
   printf("INFO = %d\n", info);
   if (info != 1) {
     return 1;
