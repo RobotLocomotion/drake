@@ -23,17 +23,23 @@ std::string model_file_1, model_file_2;
 std::shared_ptr<RigidBodyFrame> car_pose_in_world;
 
 TEST(LoadURDFTest, TestNoOffset) {
+  // Loads the URDF model with zero offset between the model's
+  // root frame and the world frame.
   RigidBodySystem rbs;
-
   rbs.addRobotFromFile(Drake::getDrakePath()
-    + "/systems/plants/test/simple_1dof_robot.urdf", DrakeJoint::QUATERNION);
+    + "/systems/plants/test/cylindrical_1dof_robot.urdf", DrakeJoint::QUATERNION);
 
+  // Verifies that RigidBodyTree cannot find a link that
+  // should not exist.
   auto nonexistent_body = rbs.getRigidBodyTree()->findLink("not_a_link");
   EXPECT_TRUE(nonexistent_body == nullptr);
 
+  // Verifies that the world link within the rigid body tree
+  // can be found and obtained.
   auto world_body = rbs.getRigidBodyTree()->findLink("world");
   EXPECT_TRUE(world_body != nullptr);
 
+  // Verifies that the world link does not have a parent.
   EXPECT_FALSE(world_body->hasParent());
 
   // Gets the link whose parent joint is called "base".
@@ -82,7 +88,7 @@ TEST(LoadURDFTest, TestVerticalOffset) {
 
   RigidBodySystem rbs;
   rbs.addRobotFromFile(Drake::getDrakePath()
-    + "/systems/plants/test/simple_1dof_robot.urdf", DrakeJoint::QUATERNION,
+    + "/systems/plants/test/cylindrical_1dof_robot.urdf", DrakeJoint::QUATERNION,
     weld_to_frame);
 
   // Gets the link whose parent joint is called "base".
@@ -117,7 +123,38 @@ TEST(LoadURDFTest, TestVerticalOffset) {
 }
 
 TEST(LoadURDFTest, TestWeld) {
-  // TODO
+  // Loads a one-DOF URDF model with zero offset between the model's
+  // root frame and the world frame.
+  RigidBodySystem rbs;
+  rbs.addRobotFromFile(Drake::getDrakePath()
+    + "/systems/plants/test/cylindrical_1dof_robot.urdf", DrakeJoint::QUATERNION);
+
+  // Loads a zero-DOF URDF robot model and weld it to the end of the
+  // one DOF robot's link 2.
+  Eigen::Isometry3d T_model2_to_link2;
+  {
+    Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
+    Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
+    xyz(2) = 0.06;
+    T_model2_to_link2.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+  }
+
+  auto link2_body = rbs.getRigidBodyTree()->findLink("link2");
+  EXPECT_TRUE(link2_body != nullptr);
+
+  auto weld_to_frame = std::allocate_shared<RigidBodyFrame>(
+      Eigen::aligned_allocator<RigidBodyFrame>(), "joint2",
+      link2_body,
+      T_model2_to_link2);
+  rbs.addRobotFromFile(Drake::getDrakePath()
+    + "/systems/plants/test/cylindrical_0dof_robot.urdf", DrakeJoint::FIXED,
+    weld_to_frame);
+
+  // Verifies that the newly added link exists and is in the correct location.
+  auto link_body = rbs.getRigidBodyTree()->findLink("link");
+  EXPECT_TRUE(link_body != nullptr);
+  EXPECT_EQ(link_body->getJoint().getTransformToParentBody().matrix(),
+    T_model2_to_link2.matrix());
 }
 
 
