@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include "drake/solvers/Optimization.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/systems/plants/ConstraintWrappers.h"
 #include "drake/systems/plants/pose_map.h"
 #include "drake/systems/plants/rigid_body_tree_urdf.h"
 #include "spruce.hh"
@@ -12,6 +13,9 @@ using namespace std;
 using namespace Eigen;
 using namespace Drake;
 using namespace tinyxml2;
+
+// TODO(sam.creasey) This whole file should be in this namespace.
+using Drake::systems::plants::SingleTimeKinematicConstraintWrapper;
 
 size_t RigidBodySystem::getNumInputs(void) const {
   size_t num = tree->actuators.size();
@@ -225,41 +229,6 @@ RigidBodySystem::OutputVector<double> RigidBodySystem::output(
   }
   return y;
 }
-
-// todo: move this to a more central location
-class SingleTimeKinematicConstraintWrapper : public Constraint {
- public:
-  SingleTimeKinematicConstraintWrapper(
-      const shared_ptr<SingleTimeKinematicConstraint>& rigid_body_constraint)
-      : Constraint(rigid_body_constraint->getNumConstraint(nullptr)),
-        rigid_body_constraint(rigid_body_constraint),
-        kinsol(rigid_body_constraint->getRobotPointer()->bodies) {
-    rigid_body_constraint->bounds(nullptr, lower_bound_, upper_bound_);
-  }
-  ~SingleTimeKinematicConstraintWrapper() override {}
-
-  void eval(const Eigen::Ref<const Eigen::VectorXd>& q,
-                    Eigen::VectorXd& y) const override {
-    kinsol.initialize(q);
-    rigid_body_constraint->getRobotPointer()->doKinematics(kinsol);
-    MatrixXd dy;
-    rigid_body_constraint->eval(nullptr, kinsol, y, dy);
-  }
-  void eval(const Eigen::Ref<const TaylorVecXd>& tq,
-                    TaylorVecXd& ty) const override {
-    kinsol.initialize(autoDiffToValueMatrix(tq));
-    rigid_body_constraint->getRobotPointer()->doKinematics(kinsol);
-    VectorXd y;
-    MatrixXd dy;
-    rigid_body_constraint->eval(nullptr, kinsol, y, dy);
-    initializeAutoDiffGivenGradientMatrix(
-        y, (dy * autoDiffToGradientMatrix(tq)).eval(), ty);
-  }
-
- private:
-  shared_ptr<SingleTimeKinematicConstraint> rigid_body_constraint;
-  mutable KinematicsCache<double> kinsol;
-};
 
 DRAKERBSYSTEM_EXPORT RigidBodySystem::StateVector<double>
 Drake::getInitialState(const RigidBodySystem& sys) {
