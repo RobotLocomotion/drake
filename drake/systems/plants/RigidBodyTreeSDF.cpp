@@ -560,9 +560,9 @@ void parseModel(RigidBodyTree* model, XMLElement* node,
   // By default, the robot is welded to the world frame.
   if (weld_to_frame == nullptr) {
     weld_to_frame = std::allocate_shared<RigidBodyFrame>(
-            Eigen::aligned_allocator<RigidBodyFrame>(), "world",
-            nullptr,  // Valid since the robot is attached to the world.
-            Eigen::Isometry3d::Identity());
+        Eigen::aligned_allocator<RigidBodyFrame>(), "world",
+        nullptr,  // Valid since the robot is attached to the world.
+        Eigen::Isometry3d::Identity());
   }
 
   XMLElement* pose = node->FirstChildElement("pose");
@@ -572,23 +572,24 @@ void parseModel(RigidBodyTree* model, XMLElement* node,
 
     // Implements dual-offset: one from model root to model world, another
     // from model world to Drake's world.
-    weld_to_frame->transform_to_body = weld_to_frame->transform_to_body
-      * transform_model_root_to_model_world;
+    weld_to_frame->transform_to_body =
+        weld_to_frame->transform_to_body * transform_model_root_to_model_world;
   }
 
   // Adds the floating joint that connects the newly added robot model to the
   // rest of the rigid body tree.
-  RigidBodyTree::AddFloatingJoint(model, &pose_map, floating_base_type, weld_to_frame);
+  RigidBodyTree::AddFloatingJoint(model, &pose_map, floating_base_type,
+                                  weld_to_frame);
 }
 
 void parseWorld(RigidBodyTree* model, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
                 const DrakeJoint::FloatingBaseType floating_base_type,
-              std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+                std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   for (XMLElement* model_node = node->FirstChildElement("model"); model_node;
        model_node = model_node->NextSiblingElement("model")) {
     parseModel(model, model_node, package_map, root_dir, floating_base_type,
-      weld_to_frame);
+               weld_to_frame);
   }
 }
 
@@ -612,7 +613,7 @@ void parseSDF(RigidBodyTree* model, XMLDocument* xml_doc,
       throw runtime_error("ERROR: Multiple worlds in file, ambiguous.");
     }
     parseWorld(model, world_node, package_map, root_dir, floating_base_type,
-      weld_to_frame);
+               weld_to_frame);
   }
 
   // Load all models not in a world.

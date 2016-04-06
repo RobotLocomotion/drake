@@ -713,8 +713,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
      */
     int ncols = in_terms_of_qdot ? num_positions : num_velocities;
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                  Eigen::Dynamic>
-        full(compact.rows(), ncols);
+                  Eigen::Dynamic> full(compact.rows(), ncols);
     full.setZero();
     int compact_col_start = 0;
     for (std::vector<int>::const_iterator it = joint_path.begin();
@@ -754,9 +753,10 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * @throws A std::runtime_error if no parent-less links are found in the
    * rigid body tree, or if the floating_base_type is unrecognized.
    */
-  static void AddFloatingJoint(RigidBodyTree* model, PoseMap * pose_map,
-    const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
+  static void AddFloatingJoint(
+      RigidBodyTree* model, PoseMap* pose_map,
+      const DrakeJoint::FloatingBaseType floating_base_type,
+      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
  public:
   static const std::set<int> default_robot_num_set;
