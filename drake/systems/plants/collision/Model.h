@@ -175,13 +175,16 @@ class DRAKECOLLISION_EXPORT Model {
     return false;
   }
 
-  /** \brief Determines if every collision object in the world is convex.
-   *  This routine should be called at initialization to flat the model as all convex or not.
-   *  Specific, more efficient, strategies can then be used if every collision object in the world is convex. 
-   *
-   *  \todo call this method at initialization so that the model is flaged as having all convex objects or not.
-   *  Then it won't be necessary to call this method every time we test for collisions.
-  */
+  /** \brief Determines if every collision shape in the world is convex.
+   *  This routine should be called at initialization to flag the model as having
+   *  all convex shapes (or not) in order to call specific schedulers that might
+   *  take advantage of this.
+   *  Specific (and possibly more efficient) strategies could be used if every collision
+   *  shape in the world is convex.
+   *  This routine is called within RigidBodyTree::collisionDetect to determine whether to call:
+   *  1. DrakeCollision::Model::closestPointsAllToAll: a method for ALL convex shapes.
+   *  2. DrakeCollision::Model::potentialCollisionPoints: a multicontact method that allows concave shapes.
+   */
   virtual bool isEverybodyConvex() const{
     return false;
   }
