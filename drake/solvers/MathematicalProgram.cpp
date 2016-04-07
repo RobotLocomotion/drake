@@ -174,7 +174,7 @@ class LeastSquares : public NonlinearProgram {  // public LinearProgram, public
         var_index += v.size();
       }
       beq.segment(constraint_index, n) =
-          c->lower_bound();  // = c->getUpperBound() since it's an equality
+          c->lower_bound();  // = c->upper_bound() since it's an equality
       // constraint
       constraint_index += n;
     }

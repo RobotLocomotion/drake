@@ -20,24 +20,24 @@ class DRAKEOPTIMIZATION_EXPORT MobyLCPSolver
   virtual ~MobyLCPSolver() {}
   void SetLoggingEnabled(bool);
 
-  bool SolveLCPFast(const Eigen::MatrixXd& M, const Eigen::VectorXd& q,
+  bool SolveLcpFast(const Eigen::MatrixXd& M, const Eigen::VectorXd& q,
                     Eigen::VectorXd* z, double zero_tol = -1.0) const;
-  bool SolveLCPFastRegularized(const Eigen::MatrixXd& M,
+  bool SolveLcpFastRegularized(const Eigen::MatrixXd& M,
                                const Eigen::VectorXd& q, Eigen::VectorXd* z,
                                int min_exp = -20, unsigned step_exp = 4,
                                int max_exp = 20, double zero_tol = -1.0) const;
-  bool SolveLCPLemke(const Eigen::MatrixXd& M, const Eigen::VectorXd& q,
+  bool SolveLcpLemke(const Eigen::MatrixXd& M, const Eigen::VectorXd& q,
                      Eigen::VectorXd* z, double piv_tol = -1.0,
                      double zero_tol = -1.0) const;
-  bool SolveLCPLemkeRegularized(const Eigen::MatrixXd& M,
+  bool SolveLcpLemkeRegularized(const Eigen::MatrixXd& M,
                                 const Eigen::VectorXd& q, Eigen::VectorXd* z,
                                 int min_exp = -20, unsigned step_exp = 1,
                                 int max_exp = 1, double piv_tol = -1.0,
                                 double zero_tol = -1.0) const;
-  bool SolveLCPLemke(const Eigen::SparseMatrix<double>& M,
+  bool SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
                      const Eigen::VectorXd& q, Eigen::VectorXd* z,
                      double piv_tol = -1.0, double zero_tol = -1.0) const;
-  bool SolveLCPLemkeRegularized(const Eigen::SparseMatrix<double>& M,
+  bool SolveLcpLemkeRegularized(const Eigen::SparseMatrix<double>& M,
                                 const Eigen::VectorXd& q, Eigen::VectorXd* z,
                                 int min_exp = -20, unsigned step_exp = 4,
                                 int max_exp = 20, double piv_tol = -1.0,

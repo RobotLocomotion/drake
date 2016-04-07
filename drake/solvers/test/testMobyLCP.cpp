@@ -42,7 +42,7 @@ void RunBasicLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
   Eigen::VectorXd expected_z = expected_z_in;
 
   Eigen::VectorXd fast_z;
-  bool result = l.SolveLCPFast(M, q, &fast_z);
+  bool result = l.SolveLcpFast(M, q, &fast_z);
   if (expected_z.size() == 0) {
     ASSERT_TRUE(expect_fast_pass)
         << "Expected Z not provided and expect_fast_pass unset.";
@@ -58,13 +58,13 @@ void RunBasicLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
   }
 
   Eigen::VectorXd lemke_z;
-  result = l.SolveLCPLemke(M, q, &lemke_z);
+  result = l.SolveLcpLemke(M, q, &lemke_z);
   EXPECT_TRUE(CompareMatrices(lemke_z, expected_z, epsilon,
                               MatrixCompareType::absolute));
 
   Eigen::SparseMatrix<double> M_sparse = MakeSparseMatrix(M);
   lemke_z.setZero();
-  result = l.SolveLCPLemke(M_sparse, q, &lemke_z);
+  result = l.SolveLcpLemke(M_sparse, q, &lemke_z);
   EXPECT_TRUE(CompareMatrices(lemke_z, expected_z, epsilon,
                               MatrixCompareType::absolute));
 }
@@ -82,7 +82,7 @@ void RunRegularizedLCP(const Eigen::MatrixBase<Derived>& M,
   Eigen::VectorXd expected_z = expected_z_in;
 
   Eigen::VectorXd fast_z;
-  bool result = l.SolveLCPFastRegularized(M, q, &fast_z);
+  bool result = l.SolveLcpFastRegularized(M, q, &fast_z);
   if (expected_z.size() == 0) {
     expected_z = fast_z;
   } else {
@@ -98,13 +98,13 @@ void RunRegularizedLCP(const Eigen::MatrixBase<Derived>& M,
   }
 
   Eigen::VectorXd lemke_z;
-  result = l.SolveLCPLemkeRegularized(M, q, &lemke_z);
+  result = l.SolveLcpLemkeRegularized(M, q, &lemke_z);
   EXPECT_TRUE(CompareMatrices(lemke_z, expected_z, epsilon,
                               MatrixCompareType::absolute));
 
   Eigen::SparseMatrix<double> M_sparse = MakeSparseMatrix(M);
   lemke_z.setZero();
-  result = l.SolveLCPLemkeRegularized(M_sparse, q, &lemke_z);
+  result = l.SolveLcpLemkeRegularized(M_sparse, q, &lemke_z);
   EXPECT_TRUE(CompareMatrices(lemke_z, expected_z, epsilon,
                               MatrixCompareType::absolute));
 }
@@ -226,16 +226,16 @@ TEST(testMobyLCP, testProblem4) {
   l.SetLoggingEnabled(verbose);
 
   Eigen::VectorXd fast_z;
-  bool result = l.SolveLCPFast(M, q, &fast_z);
+  bool result = l.SolveLcpFast(M, q, &fast_z);
   EXPECT_TRUE(CompareMatrices(fast_z, z, epsilon, MatrixCompareType::absolute));
 
   // TODO sammy the Lemke solvers find no solution at all, however.
   fast_z.setZero();
-  result = l.SolveLCPLemke(M, q, &fast_z);
+  result = l.SolveLcpLemke(M, q, &fast_z);
   EXPECT_FALSE(result);
 
   Eigen::SparseMatrix<double> M_sparse = MakeSparseMatrix(M);
-  result = l.SolveLCPLemke(M_sparse, q, &fast_z);
+  result = l.SolveLcpLemke(M_sparse, q, &fast_z);
   EXPECT_FALSE(result);
 }
 
@@ -289,28 +289,28 @@ TEST(testMobyLCP, testEmpty) {
   Drake::MobyLCPSolver l;
   l.SetLoggingEnabled(verbose);
 
-  bool result = l.SolveLCPFast(empty_M, empty_q, &z);
+  bool result = l.SolveLcpFast(empty_M, empty_q, &z);
   EXPECT_TRUE(result);
   EXPECT_EQ(z.size(), 0);
 
-  result = l.SolveLCPLemke(empty_M, empty_q, &z);
+  result = l.SolveLcpLemke(empty_M, empty_q, &z);
   EXPECT_TRUE(result);
   EXPECT_EQ(z.size(), 0);
 
   Eigen::SparseMatrix<double> empty_sparse_M(0, 0);
-  result = l.SolveLCPLemke(empty_sparse_M, empty_q, &z);
+  result = l.SolveLcpLemke(empty_sparse_M, empty_q, &z);
   EXPECT_TRUE(result);
   EXPECT_EQ(z.size(), 0);
 
-  result = l.SolveLCPFastRegularized(empty_M, empty_q, &z);
+  result = l.SolveLcpFastRegularized(empty_M, empty_q, &z);
   EXPECT_TRUE(result);
   EXPECT_EQ(z.size(), 0);
 
-  result = l.SolveLCPLemkeRegularized(empty_M, empty_q, &z);
+  result = l.SolveLcpLemkeRegularized(empty_M, empty_q, &z);
   EXPECT_TRUE(result);
   EXPECT_EQ(z.size(), 0);
 
-  result = l.SolveLCPLemkeRegularized(empty_sparse_M, empty_q, &z);
+  result = l.SolveLcpLemkeRegularized(empty_sparse_M, empty_q, &z);
   EXPECT_TRUE(result);
   EXPECT_EQ(z.size(), 0);
 }
