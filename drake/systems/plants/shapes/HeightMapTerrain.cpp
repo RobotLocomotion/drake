@@ -125,14 +125,17 @@ void HeightMapTerrain::computeMinMaxHeights(){
   }
 }
 
+//Geometry::getPoints is used nowhere in the code however an implementation is required for inherited classes.
 void HeightMapTerrain::getPoints(Matrix3Xd &points) const {
   assert(!"Implement me!!");
 }
 
+//Geometry::getBoundingBoxPoints is used nowhere in the code however an implementation is required for inherited classes.
 void HeightMapTerrain::getBoundingBoxPoints(Matrix3Xd &points) const {
   assert(!"Implement me!!");
 }
 
+//Geometry::getTerrainContactPoints is used nowhere in the code however an implementation is required for inherited classes.
 void HeightMapTerrain::getTerrainContactPoints(Matrix3Xd &points) const {
   assert(!"Implement me!!");
 }
@@ -187,14 +190,17 @@ HeightMapTerrain *FlatTerrain::clone() const {
   return new FlatTerrain(*this);
 }
 
+//Geometry::getPoints is used nowhere in the code however an implementation is required for inherited classes.
 void FlatTerrain::getPoints(Matrix3Xd &points) const {
   assert(!"Implement me!!");
 }
 
+//Geometry::getBoundingBoxPoints is used nowhere in the code however an implementation is required for inherited classes.
 void FlatTerrain::getBoundingBoxPoints(Matrix3Xd &points) const {
   assert(!"Implement me!!");
 }
 
+//Geometry::getTerrainContactPoints is used nowhere in the code however an implementation is required for inherited classes.
 void FlatTerrain::getTerrainContactPoints(Matrix3Xd &points) const {
   assert(!"Implement me!!");
 }

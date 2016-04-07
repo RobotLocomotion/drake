@@ -32,6 +32,8 @@ class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
   HeightMapTerrain(const HeightMapTerrain& other);
   ~HeightMapTerrain() override;
   HeightMapTerrain *clone() const override;
+
+  //The following set of routines are used nowhere in the code however are required in Geometry's interface
   void getPoints(Eigen::Matrix3Xd &points) const override;
   void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const override;
   void getTerrainContactPoints(Eigen::Matrix3Xd &points) const override;
