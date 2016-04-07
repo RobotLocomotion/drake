@@ -1,5 +1,5 @@
-#ifndef DRAKE_SOLVERS_SNOPT_SOLVER_H_
-#define DRAKE_SOLVERS_SNOPT_SOLVER_H_
+#ifndef DRAKE_SOLVERS_SNOPTSOLVER_H_
+#define DRAKE_SOLVERS_SNOPTSOLVER_H_
 
 #include "drake/drakeOptimization_export.h"
 
@@ -17,4 +17,4 @@ class DRAKEOPTIMIZATION_EXPORT SnoptSolver :
 };
 }
 
-#endif
+#endif  // DRAKE_SOLVERS_SNOPTSOLVER_H_
