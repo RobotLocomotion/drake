@@ -2,7 +2,6 @@
 #include <iostream>
 #include <fstream>
 #include <cstring>
-
 using namespace Eigen;
 
 namespace DrakeShapes {
@@ -26,7 +25,7 @@ Geometry(HEIGHT_MAP_TERRAIN), name(name), ncells(ncells), size(size), m_gridHeig
   nBytes = nTotNodes * bytesPerElement;
 
   try {
-    m_rawHeightfieldData = new byte_t[nBytes];
+    m_rawHeightfieldData = std::unique_ptr<byte_t[]>(new byte_t[nBytes]);
   } catch (const std::exception& e) {
     std::cerr << "Allocation failed: " << e.what() << std::endl;
     throw e;
@@ -54,14 +53,17 @@ Geometry(HEIGHT_MAP_TERRAIN){
   name = other.name;
   fname = other.fname;
 
-  m_rawHeightfieldData = new byte_t[nBytes];
-  if(m_rawHeightfieldData==NULL) assert(!"Out of memory");
-  std::memcpy(m_rawHeightfieldData, other.m_rawHeightfieldData, nBytes);
+  try {
+    m_rawHeightfieldData = std::unique_ptr<byte_t[]>(new byte_t[nBytes]);
+  } catch (const std::exception& e) {
+    std::cerr << "Allocation failed: " << e.what() << std::endl;
+    throw e;
+  }
+
+  std::memcpy(m_rawHeightfieldData.get(), other.m_rawHeightfieldData.get(), nBytes);
 }
 
-HeightMapTerrain::~HeightMapTerrain(){
-  delete m_rawHeightfieldData;
-}
+HeightMapTerrain::~HeightMapTerrain(){}
 
 HeightMapTerrain *HeightMapTerrain::clone() const {
   return new HeightMapTerrain(*this);
@@ -143,18 +145,20 @@ void HeightMapTerrain::getTerrainContactPoints(Matrix3Xd &points) const {
 
 // todo: these are implemented assuming the data is stored in FLOAT format
 double HeightMapTerrain::cellValue(int i) const{
-  return *((double*)(m_rawHeightfieldData+bytesPerElement*i));
+  return *((double*)(m_rawHeightfieldData.get()+bytesPerElement*i));
+}
+
+double& HeightMapTerrain::cellValue(int i) {
+  return *((double*)(m_rawHeightfieldData.get()+bytesPerElement*i));
 }
 
 // todo: these are implemented assuming the data is stored in double format
 double HeightMapTerrain::cellValue(int i, int j) const{
-  //return *((double*)(m_rawHeightfieldData+(i+j*nnodes(0))*bytesPerElement);
-  return *((double*)(m_rawHeightfieldData+(i+j*nnodes(1))*bytesPerElement));
+  return cellValue(i+j*nnodes(1));
 }
 
 double& HeightMapTerrain::cellValue(int i, int j) {
-  //return *((double*)(m_rawHeightfieldData+(i+j*nnodes(0))*bytesPerElement);
-  return *((double*)(m_rawHeightfieldData+(i+j*nnodes(1))*bytesPerElement));
+  return cellValue(i+j*nnodes(1));
 }
 
 double HeightMapTerrain::heightValue(int i, int j) const{

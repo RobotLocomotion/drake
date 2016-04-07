@@ -159,7 +159,7 @@ std::unique_ptr<btCollisionShape> BulletModel::newBulletHeightMapTerrainShape(
          "float's?");
 
   std::unique_ptr<btHeightfieldTerrainShape> bt_shape(new btHeightfieldTerrainShape(
-      geometry.nnodes(0), geometry.nnodes(1), geometry.m_rawHeightfieldData,
+      geometry.nnodes(0), geometry.nnodes(1), geometry.m_rawHeightfieldData.get(),
       geometry.m_gridHeightScale, static_cast<btScalar>(geometry.m_minHeight),
       static_cast<btScalar>(geometry.m_maxHeight), geometry.m_upAxis, btType,
       flipQuadEdges));

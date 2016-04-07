@@ -2,6 +2,7 @@
 #define DRAKE_SHAPES_HEIGHT_MAP_TERRAIN_H_
 
 #include <string>
+#include <memory>
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
@@ -42,6 +43,7 @@ class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
 
   int nTotCells()const{ return ncells.prod();}
   double cellValue(int i) const;
+  double& cellValue(int i);
   double cellValue(int i,int j) const;
   double heightValue(int i,int j) const;
   double& cellValue(int i,int j);
@@ -63,7 +65,7 @@ class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
   double m_minHeight, m_maxHeight;
   int m_upAxis;
   RawDataType m_type;
-  byte_t *m_rawHeightfieldData; //use a unique_ptr here
+  std::unique_ptr<byte_t[]> m_rawHeightfieldData;
   std::string name, fname;
 
   protected:
