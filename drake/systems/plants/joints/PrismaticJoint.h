@@ -34,7 +34,7 @@ class DRAKEJOINTS_EXPORT PrismaticJoint
     return ret;
   }
 
-  virtual ~PrismaticJoint(){}
+  virtual ~PrismaticJoint() {}
 
  private:
   static Eigen::Matrix<double, TWIST_SIZE, 1> spatialJointAxis(
