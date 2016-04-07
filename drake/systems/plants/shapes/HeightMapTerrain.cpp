@@ -3,7 +3,6 @@
 #include <fstream>
 #include <cstring>
 
-using namespace std;
 using namespace Eigen;
 
 namespace DrakeShapes {
@@ -68,8 +67,8 @@ HeightMapTerrain *HeightMapTerrain::clone() const {
   return new HeightMapTerrain(*this);
 }
 
-bool HeightMapTerrain::writeToFile(const string& fname) const{
-  ofstream file;
+bool HeightMapTerrain::writeToFile(const std::string& fname) const{
+  std::ofstream file;
   file.open(fname);
 
   Vector3f x;
@@ -78,7 +77,7 @@ bool HeightMapTerrain::writeToFile(const string& fname) const{
   for(int i=0;i<nnodes(0);i++){
     for(int j=0;j<nnodes(1);j++){
       x << i*delta_ell(0) - size(0)/2.0, j*delta_ell(1) - size(1)/2.0, heightValue(i,j);
-      file << "v " << x.transpose() << endl;
+      file << "v " << x.transpose() << std::endl;
     }
   }
 
@@ -92,10 +91,10 @@ bool HeightMapTerrain::writeToFile(const string& fname) const{
       int p4 = (j+1)+nnodes(1)*(i  ) + 1;
 
       //first triangle
-      file << "f " << p1 << " " << p2 << " " << p4 << endl;
+      file << "f " << p1 << " " << p2 << " " << p4 << std::endl;
 
       //second triangle
-      file << "f " << p2 << " " << p3 << " " << p4 << endl;
+      file << "f " << p2 << " " << p3 << " " << p4 << std::endl;
 
     }
   }
@@ -106,8 +105,8 @@ bool HeightMapTerrain::writeToFile(const string& fname) const{
 }
 
 void HeightMapTerrain::computeMinMaxHeights(){
-  m_maxHeight = -numeric_limits<double>::infinity();
-  m_minHeight = +numeric_limits<double>::infinity();
+  m_maxHeight = -std::numeric_limits<double>::infinity();
+  m_minHeight = +std::numeric_limits<double>::infinity();
   for(int i=0;i<nTotNodes;i++){
     double z = cellValue(i);
     m_minHeight = std::min(m_minHeight,(double)z);
@@ -173,7 +172,7 @@ double HeightMapTerrain::heightValue(int i, int j) const{
 FlatTerrain::FlatTerrain(const std::string& name, const Eigen::Vector2i &ncells, const Eigen::Vector2d &size,double angle) :
 HeightMapTerrain(name,ncells, size), m_angle(angle)
 {
-  double slope = tan(m_angle);
+  double slope = std::tan(m_angle);
   for (int i = 0; i < nnodes(0); ++i) {
     double x = i*delta_ell(0) - size(0)/2.0; //x=0 at the center
     for (int j = 0; j < nnodes(1); ++j) {
