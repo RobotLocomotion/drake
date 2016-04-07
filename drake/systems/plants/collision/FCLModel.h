@@ -11,14 +11,14 @@ namespace DrakeCollision {
 
 class FCLModel : public Model {
  public:
-  FCLModel(){};
+  FCLModel() {}
 
-  virtual ~FCLModel(){};
+  virtual ~FCLModel() {}
 
   // Required member functions for Model interface
   virtual void updateModel();
 
-  virtual void resize(int num_bodies){};
+  virtual void resize(int num_bodies) {}
 
   virtual ElementId addElement(const Element& element);
 
@@ -87,7 +87,7 @@ class FCLModel : public Model {
    public:
     unknownShapeException(DrakeShapes::Shape shape);
     virtual const char* what() const throw();
-    virtual ~unknownShapeException() throw(){};
+    virtual ~unknownShapeException() throw() {}
 
    protected:
     std::string shape_str;
