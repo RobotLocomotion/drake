@@ -26,15 +26,15 @@ PiecewisePolynomial<double> matlabPPFormToPiecewisePolynomial(
   if (num_dims_mex == 0 || num_dims_mex > 2)
     throw runtime_error("case not handled");  // because PiecewisePolynomial
                                               // can't currently handle it
-  const int num_dims = 2;
-  mwSize dims[num_dims];
+  const int kNumDims = 2;
+  mwSize dims[kNumDims];
   for (int i = 0; i < num_dims_mex; i++) {
     dims[i] = static_cast<mwSize>(mxGetPr(dim_mex)[i]);
   }
-  for (int i = num_dims_mex; i < num_dims; i++) dims[i] = 1;
+  for (int i = num_dims_mex; i < kNumDims; i++) dims[i] = 1;
 
   size_t product_of_dimensions = dims[0];  // d
-  for (int i = 1; i < num_dims; ++i) {
+  for (int i = 1; i < kNumDims; ++i) {
     product_of_dimensions *= dims[i];
   }
 
