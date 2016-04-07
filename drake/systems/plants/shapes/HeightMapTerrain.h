@@ -1,5 +1,5 @@
-#ifndef __HeightMapTerrain_H__
-#define __HeightMapTerrain_H__
+#ifndef DRAKE_SHAPES_HEIGHT_MAP_TERRAIN_H_
+#define DRAKE_SHAPES_HEIGHT_MAP_TERRAIN_H_
 
 #include <string>
 
@@ -133,4 +133,4 @@ class DRAKESHAPES_EXPORT FlatTerrain : public HeightMapTerrain {
 }//namespace DrakeShapes
 
 #endif
-//__HeightMapTerrain_H__
+//DRAKE_SHAPES_HEIGHT_MAP_TERRAIN_H_
