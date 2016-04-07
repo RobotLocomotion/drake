@@ -142,7 +142,10 @@ int main(int argc, char* argv[]) {
     tree->updateStaticCollisionElements();
   }
 
-  //tree->drawKinematicTree("graphiviz_test.dot"); //Convert to png image file: dot -Tpng graphiviz_test.dot -o graphiviz_test.png
+  //NOTE:
+  // The next line ouptuts a dot file wchih allows to visualize the robot's connectivity as a schematic.
+  // The *.dot file can be converted to a *.png image file with: dot -Tpng graphiviz_test.dot -o graphiviz_test.png
+  //tree->drawKinematicTree("graphiviz_test.dot");
 
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
 
