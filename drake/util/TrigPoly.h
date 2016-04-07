@@ -3,7 +3,6 @@
 
 #include "drake/util/Polynomial.h"
 #include <map>
-//#include <iostream>  // just for debugging
 
 /// A scalar multi-variate polynomial containing sines and cosines.
 /**
