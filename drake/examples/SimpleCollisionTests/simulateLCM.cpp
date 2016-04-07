@@ -61,9 +61,9 @@ class SinusoidalTerrain : public DrakeShapes::HeightMapTerrain {
 
 int main(int argc, char* argv[]) {
   if (argc < 2) {
-    std::cerr << "Usage: " << argv[0] <<
-      " (world_urdf) -terrain (flat -angle <angle>|height_map -x <x position>) "
-              << std::endl;
+    std::cerr << "Usage: " << argv[0] << " (world_urdf) -terrain ("
+              << "flat -angle <angle>| "
+              << "height_map -x <x position>) " << std::endl;
     std::cerr << "With: " << std::endl;
     std::cerr << " <angle> in degrees" << std::endl;
     std::cerr << " <x position> in sphere diameters" << std::endl;
@@ -77,8 +77,8 @@ int main(int argc, char* argv[]) {
 
   // Retrieve command line options
   bool flat_terrain = true;  // run flat terrain test by default
-  double angle = 0.0;  // zero angle terrain test is run by default
-  double x_pos = 0.0;  // flat terrain located at x=0 by default
+  double angle = 0.0;        // zero angle terrain test is run by default
+  double x_pos = 0.0;        // flat terrain located at x=0 by default
   {
     char* terrain_type = getCommandLineOption(argv, argv + argc, "-terrain");
     if (terrain_type) {
