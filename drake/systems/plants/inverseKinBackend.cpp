@@ -12,7 +12,6 @@
 namespace snopt {
 #include "snopt.hh"
 #include "snfilewrapper.hh"
-//#include "snoptProblem.hh"
 }
 #undef abs
 #undef max
@@ -25,9 +24,6 @@ namespace snopt {
 #include "inverseKinBackend.h"
 
 #include <Eigen/LU>
-
-// Only for debugging purpose
-//#include "mat.h"
 
 using namespace Eigen;
 using namespace std;
@@ -214,7 +210,7 @@ static void IKtraj_cost_fun(MatrixXd q, const VectorXd& qdot0,
   MatrixXd tmp6 = tmp5.cwiseProduct(q_diff);
   J += tmp6.sum();
   MatrixXd dJdqd =
-      2 * tmp3.block(0, 1, nq, nT - 2);  //[dJdqd(2) dJdqd(3) dJdqd(nT-1)]
+      2 * tmp3.block(0, 1, nq, nT - 2);  // [dJdqd(2) dJdqd(3) dJdqd(nT-1)]
   dJdqd.resize(1, nq * (nT - 2));
   dJ_vec.block(0, 0, 1, nq * num_qfree) =
       dJdqd *

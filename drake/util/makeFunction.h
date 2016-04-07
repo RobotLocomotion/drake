@@ -41,4 +41,4 @@ auto make_function(ReturnType (ClassType::*p)(Args...) const)
 }
 }
 
-#endif // DRAKE_UTIL_MAKEFUNCTION_H_
+#endif  // DRAKE_UTIL_MAKEFUNCTION_H_
