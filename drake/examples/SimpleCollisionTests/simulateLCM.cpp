@@ -152,23 +152,19 @@ int main(int argc, char* argv[]) {
   auto sys = cascade(rigid_body_sys, visualizer);
 
   SimulationOptions options = default_simulation_options;
+
+  //Only the penetration stiffness is non-zero for these tests in order
+  //to isolate the numerics for collision only.
   rigid_body_sys->penetration_stiffness = 5000.0;
-  rigid_body_sys->penetration_damping = 0.0; //rigid_body_sys->penetration_stiffness / 10.0;
-  //rigid_body_sys->friction_coefficient = 10.0;  // essentially infinite friction. Causes ball to rotate
+  rigid_body_sys->penetration_damping = 0.0;
   rigid_body_sys->friction_coefficient = 0.0;
   options.initial_step_size = 1.0e-3;
   options.timeout_seconds = numeric_limits<double>::infinity();
 
   VectorXd x0 = VectorXd::Zero(rigid_body_sys->getNumStates());
   x0.head(tree->num_positions) = tree->getZeroConfiguration();
-  // todo:  call getInitialState instead?  (but currently, that would require
-  // snopt).  needs #1627
-  // I'm getting away without it, but might be generating large internal forces
-  // initially as the ackerman constraint (hopefully) gets enforced by the
-  // stabilization terms.
 
   runLCM(sys, lcm, 0, std::numeric_limits<double>::infinity(), x0, options);
-  //  simulate(*sys,0,std::numeric_limits<double>::infinity(),x0,options);
 
   return 0;
 }
