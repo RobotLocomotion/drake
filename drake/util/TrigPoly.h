@@ -13,9 +13,9 @@
  * Prosthaphaeresis formulae.
  *
  * Any variables which will appear in the arguments to trigonometric functions
- * must be declared in the "SinCosMap"; attempting to, e.g., use sin(x)
- * without first creating a SinCosMap mapping for 'x' will result in an
- * exception.
+ * must be declared in the "SinCosMap" (created automatically by most TrigPoly
+ * constructors); attempting to, e.g., use sin(x) without first creating a
+ * SinCosMap mapping for 'x' will result in an exception.
  *
  * For example:
  * \code
