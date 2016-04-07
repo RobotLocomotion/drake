@@ -416,9 +416,9 @@ l2a:/* Step 2a: determine step direction */
       }
       x = x_old;
       goto l2; /* go to step 2 */
-    }
-    else
+    } else {
       iai(ip) = -1;
+    }
 #ifdef TRACE_SOLVER
     print_matrix("R", R, n);
     print_ivector("A", A, iq);
