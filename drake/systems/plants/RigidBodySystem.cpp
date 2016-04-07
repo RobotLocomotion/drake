@@ -136,9 +136,9 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
         }
         Vector3d tangent2 = this_normal.cross(tangent1);
         Matrix3d R;  // rotation into normal coordinates
-	R.row(0) = tangent1;
-	R.row(1) = tangent2;
-	R.row(2) = this_normal;
+        R.row(0) = tangent1;
+        R.row(1) = tangent2;
+        R.row(2) = this_normal;
         auto J = R * (JA - JB);          // J = [ D1; D2; n ]
         auto relative_velocity = J * v;  // [ tangent1dot; tangent2dot; phidot ]
 
