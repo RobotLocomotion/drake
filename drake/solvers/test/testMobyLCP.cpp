@@ -34,7 +34,7 @@ Eigen::SparseMatrix<double> MakeSparseMatrix(
 /// Run all non-regularized solvers.  If @p expected_z is an empty
 /// vector, outputs will only be compared against each other.
 template <typename Derived>
-void RunBasicLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
+void RunBasicLcp(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
                  const Eigen::VectorXd& expected_z_in, bool expect_fast_pass) {
   Drake::MobyLCPSolver l;
   l.SetLoggingEnabled(verbose);
@@ -72,7 +72,7 @@ void RunBasicLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
 /// Run all regularized solvers.  If @p expected_z is an empty
 /// vector, outputs will only be compared against each other.
 template <typename Derived>
-void RunRegularizedLCP(const Eigen::MatrixBase<Derived>& M,
+void RunRegularizedLcp(const Eigen::MatrixBase<Derived>& M,
                        const Eigen::VectorXd& q,
                        const Eigen::VectorXd& expected_z_in,
                        bool expect_fast_pass) {
@@ -114,8 +114,8 @@ void RunRegularizedLCP(const Eigen::MatrixBase<Derived>& M,
 template <typename Derived>
 void runLCP(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
             const Eigen::VectorXd& expected_z_in, bool expect_fast_pass) {
-  RunBasicLCP(M, q, expected_z_in, expect_fast_pass);
-  RunRegularizedLCP(M, q, expected_z_in, expect_fast_pass);
+  RunBasicLcp(M, q, expected_z_in, expect_fast_pass);
+  RunRegularizedLcp(M, q, expected_z_in, expect_fast_pass);
 }
 
 TEST(testMobyLCP, testTrivial) {
@@ -137,11 +137,11 @@ TEST(testMobyLCP, testTrivial) {
   q << -1, -1, -1, -1, -1, -1, -1, -1, -1;
 
   Eigen::VectorXd empty_z;
-  RunBasicLCP(M, q, empty_z, true);
+  RunBasicLcp(M, q, empty_z, true);
 
   // Mangle the input matrix so that some regularization occurs.
   M(0, 8) = 10;
-  RunRegularizedLCP(M, q, empty_z, true);
+  RunRegularizedLcp(M, q, empty_z, true);
 }
 
 TEST(testMobyLCP, testProblem1) {
