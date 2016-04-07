@@ -34,7 +34,7 @@ class SinusoidalTerrain
     for (int i = 0; i < nnodes(0); ++i) {
       double x = i*delta_ell(0);
       for (int j = 0; j < nnodes(1); ++j) {
-        double y = j*delta_ell(1);
+        //double y = j*delta_ell(1); //y is not used and triggers a warning by the compiler.
         double z = m_height*sin(x*3.1416/size(0));
         cellValue(i,j) = z;
       }
