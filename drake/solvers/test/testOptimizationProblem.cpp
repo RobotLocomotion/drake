@@ -83,7 +83,7 @@ TEST(testOptimizationProblem, testAddFunction) {
 }
 
 void runNonlinearProgram(OptimizationProblem& prog,
-                         std::function<void ()> test_func) {
+                         std::function<void(void)> test_func) {
   NloptSolver nlopt_solver;
   SnoptSolver snopt_solver;
 
