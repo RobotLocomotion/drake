@@ -33,7 +33,6 @@ class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
    */
   HeightMapTerrain(const std::string& name, const Eigen::Vector2i &ncells, const Eigen::Vector2d &size);
   HeightMapTerrain(const HeightMapTerrain& other);
-  ~HeightMapTerrain() override;
   HeightMapTerrain *clone() const override;
 
   //The following set of routines are used nowhere in the code however are required in Geometry's interface
@@ -122,7 +121,6 @@ class DRAKESHAPES_EXPORT FlatTerrain : public HeightMapTerrain {
  public:
   FlatTerrain(const std::string& name, const Eigen::Vector2i &ncells, const Eigen::Vector2d &size, double angle=0.0);
   FlatTerrain(const FlatTerrain& other);
-  virtual ~FlatTerrain() {}
   HeightMapTerrain *clone() const;
   void getPoints(Eigen::Matrix3Xd &points) const final;
   void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const final;

@@ -63,8 +63,6 @@ Geometry(HEIGHT_MAP_TERRAIN){
   std::memcpy(m_rawHeightfieldData.get(), other.m_rawHeightfieldData.get(), nBytes);
 }
 
-HeightMapTerrain::~HeightMapTerrain(){}
-
 HeightMapTerrain *HeightMapTerrain::clone() const {
   return new HeightMapTerrain(*this);
 }
