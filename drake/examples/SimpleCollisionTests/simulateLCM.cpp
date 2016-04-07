@@ -25,9 +25,21 @@ using namespace Drake;
 //9. Use Sherm's "non-virtual methods" (is that what he called them?) design to avoid having the user calling "this->computeMinMaxHeights" within
 //   SinusoidalTerrain's constructor
 
+
+/**
+ *  A class representing a terrain with an analytical sinusoidal shape.
+ *  This class inherits general functionality and storage from DrakeShapes::HeightMapTerrain
+ */
 class SinusoidalTerrain
     : public DrakeShapes::HeightMapTerrain {
  public:
+  /** \brief SinusoidalTerrain constructor
+      \sa DrakeShapes::HeightMapTerrain(const std::string& name, const Eigen::Vector2i &ncells, const Eigen::Vector2d &size);
+   *  \param name This is only used to generate a file name where the height map is written as a triangular mesh for director to render. The file name will be <name>.obj.
+   *  \param ncells Two dimensional vector of integers with the number of cells used to discretize the map in "local" x and y directions respectively. The number of cells MUST be a power of 2.
+   *  \param size The provided array will be scaled so that the terrain is size(0) x size(1) in size.
+   *  \param height The sinusoidal terran maximum height.
+   */
   SinusoidalTerrain(const string& name, const Eigen::Vector2i& ncells,
                     const Eigen::Vector2d& size, double height = 1.0)
       : HeightMapTerrain(name, ncells, size), m_height(height) {

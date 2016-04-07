@@ -13,21 +13,23 @@
 
 namespace DrakeShapes {
 
-//!  A class representing a height map terrrain shape
-/*!
-*/
+/**
+ *  A class representing a height map terrain shape.
+ *  A height map is stored as a two dimensional array of heights.
+ *  This allows for more efficient algorithms for collision detection since a heigh map's structure is much simpler
+ *  than that of a general triangulated surface.
+ *  Height maps are desired over general triangulated surfaces whenever they are suffucient to provide a given terrain's geometry.
+ */
 class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
  public:
 
   HeightMapTerrain(){}
 
-  //! HeightMapTerrain constructor.
-    /*!
-      A more elaborate description of the constructor.
-
-      \param size The provided array will be scaled so that the terrain size(0) x size(1) in size and has maximum height size(2). The minimum height will be located at zero height.
-      \param pos Position of the terrain center in world's coordinates. The terrain center is located at the middle of the 2D plane and at zero height.
-    */
+  /** \brief HeightMapTerrain constructor.
+   *  \param name This is only used to generate a file name where the height map is written as a triangular mesh for director to render. The file name will be <name>.obj.
+   *  \param ncells Two dimensional vector of integers with the number of cells used to discretize the map in "local" x and y directions respectively. The number of cells MUST be a power of 2.
+   *  \param size The provided array will be scaled so that the terrain is size(0) x size(1) in size.
+   */
   HeightMapTerrain(const std::string& name, const Eigen::Vector2i &ncells, const Eigen::Vector2d &size);
   HeightMapTerrain(const HeightMapTerrain& other);
   ~HeightMapTerrain() override;
@@ -112,7 +114,7 @@ class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
 };
 
 /** \brief Example class showing how to inherit from HeightMapTerrain.
-  *  It represents a simple flat terrain in an angle.
+  *  It represents a simple flat terrain at an angle.
   */
 class DRAKESHAPES_EXPORT FlatTerrain : public HeightMapTerrain {
  public:
