@@ -405,7 +405,7 @@ Eigen::VectorXd RigidBodyAccelerometer::output(const double &t,
   Vector3d accel_base = Jdot_times_v + J * v_dot;
   Vector3d accel_body = quatRotateVec(quat_world_to_body, accel_base);
 
-  if(gravity_compensation) {
+  if (gravity_compensation) {
     Vector3d gravity(0, 0, 9.81);
     accel_body += quatRotateVec(quat_world_to_body, gravity);
   }
@@ -547,10 +547,10 @@ Eigen::VectorXd RigidBodyDepthSensor::output(const double &t,
 
   sys.getRigidBodyTree()->collisionRaycast(rigid_body_state, origin, raycast_endpoints_world, distances);
 
-  for(size_t i = 0; i < num_distances; i++) {
-    if(distances[i] < 0.0 || distances[i] > max_range) {
+  for (size_t i = 0; i < num_distances; i++) {
+    if (distances[i] < 0.0 || distances[i] > max_range) {
       distances[i] = max_range;
-    } else if(distances[i] < min_range) {
+    } else if (distances[i] < min_range) {
       distances[i] = min_range;
     }
   }
