@@ -30,11 +30,11 @@ class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
     */
   HeightMapTerrain(const std::string& name, const Eigen::Vector2i &ncells, const Eigen::Vector2d &size);
   HeightMapTerrain(const HeightMapTerrain& other);
-  virtual ~HeightMapTerrain();
-  virtual HeightMapTerrain *clone() const;
-  virtual void getPoints(Eigen::Matrix3Xd &points) const;
-  virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
-  virtual void getTerrainContactPoints(Eigen::Matrix3Xd &points) const;
+  ~HeightMapTerrain() override;
+  HeightMapTerrain *clone() const override;
+  void getPoints(Eigen::Matrix3Xd &points) const override;
+  void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const override;
+  void getTerrainContactPoints(Eigen::Matrix3Xd &points) const override;
 
   virtual void initialize();
   int nTotCells()const{ return ncells.prod();}
@@ -119,9 +119,9 @@ class DRAKESHAPES_EXPORT FlatTerrain : public HeightMapTerrain {
   FlatTerrain(const FlatTerrain& other);
   virtual ~FlatTerrain() {}
   HeightMapTerrain *clone() const;
-  void getPoints(Eigen::Matrix3Xd &points) const;
-  void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
-  void getTerrainContactPoints(Eigen::Matrix3Xd &points) const;
+  void getPoints(Eigen::Matrix3Xd &points) const final;
+  void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const final;
+  void getTerrainContactPoints(Eigen::Matrix3Xd &points) const final;
 
   void initialize();
 
