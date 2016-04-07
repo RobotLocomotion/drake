@@ -85,11 +85,11 @@ int main(int argc, char* argv[]) {
     }
 
     if(flat_terrain){
-      cout << "Running flat terrain test: " << endl;
-      cout << "  angle = " << angle << endl;
+      std::cout << "Running flat terrain test: " << std::endl;
+      std::cout << "  angle = " << angle << std::endl;
     }else{
-      cout << "Running height map test:" << endl;
-      cout << "  x position = " << x_pos << endl;
+      std::cout << "Running height map test:" << std::endl;
+      std::cout << "  x position = " << x_pos << std::endl;
     }
   }
 
@@ -97,7 +97,7 @@ int main(int argc, char* argv[]) {
   // be reused
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
 
-  auto rigid_body_sys = make_shared<RigidBodySystem>();
+  auto rigid_body_sys = std::make_shared<RigidBodySystem>();
   rigid_body_sys->addRobotFromFile(argv[1], floating_base_type);
   rigid_body_sys->use_multi_contact = false;
   auto const & tree = rigid_body_sys->getRigidBodyTree();
@@ -144,11 +144,11 @@ int main(int argc, char* argv[]) {
 
   //tree->drawKinematicTree("graphiviz_test.dot"); //Convert to png image file: dot -Tpng graphiviz_test.dot -o graphiviz_test.png
 
-  shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
+  std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
 
   //this replaces the above commented out code with the "auto sys = cascade(vehicle_sys, visualizer);" at the end
   auto visualizer =
-      make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm, tree);
+    std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm, tree);
   auto sys = cascade(rigid_body_sys, visualizer);
 
   SimulationOptions options = default_simulation_options;
@@ -159,7 +159,7 @@ int main(int argc, char* argv[]) {
   rigid_body_sys->penetration_damping = 0.0;
   rigid_body_sys->friction_coefficient = 0.0;
   options.initial_step_size = 1.0e-3;
-  options.timeout_seconds = numeric_limits<double>::infinity();
+  options.timeout_seconds = std::numeric_limits<double>::infinity();
 
   VectorXd x0 = VectorXd::Zero(rigid_body_sys->getNumStates());
   x0.head(tree->num_positions) = tree->getZeroConfiguration();
