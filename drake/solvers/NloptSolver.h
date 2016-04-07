@@ -1,5 +1,5 @@
-#ifndef DRAKE_SOLVERS_NLOPT_SOLVER_H_
-#define DRAKE_SOLVERS_NLOPT_SOLVER_H_
+#ifndef DRAKE_SOLVERS_NLOPTSOLVER_H_
+#define DRAKE_SOLVERS_NLOPTSOLVER_H_
 
 #include "drake/drakeOptimization_export.h"
 
@@ -17,4 +17,4 @@ class DRAKEOPTIMIZATION_EXPORT NloptSolver :
 };
 }
 
-#endif
+#endif  // DRAKE_SOLVERS_NLOPTSOLVER_H_
