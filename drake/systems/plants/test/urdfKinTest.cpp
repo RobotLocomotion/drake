@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
   }
 
   // for (i=0; i<model->num_dof; i++)
-  // 	 q(i)=(double)rand() / RAND_MAX;
+  //   q(i)=(double)rand() / RAND_MAX;
   KinematicsCache<double> cache = model->doKinematics(q, v);
   //  }
 
@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
     cout << model->bodies[i]->linkname << " ";
     cout << x.transpose() << endl;
     //    for (int j=0; j<pt.size(); j++)
-    //    	cout << pt(j) << " ";
+    //        cout << pt(j) << " ";
   }
 
   auto phi = model->positionConstraints<double>(cache);
