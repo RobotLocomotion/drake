@@ -134,11 +134,12 @@ class BulletModel : public Model {
       const ElementId idA, const ElementId idB, const bool use_margins,
       ResultCollector* result_collector);
 
-  /** \brief Determines if every collision object in the world is convex.
-   *  This routine should be called at initialization to flat the model as all
-   * convex or not.
-   *  Specific, more efficient, strategies can then be used if every collision
-   * object in the world is convex.
+  /** \brief Determines if every collision shape in the world is convex.
+   *  This routine should be called at initialization to flag the model as having
+   *  all convex shapes (or not) in order to call specific schedulers that might
+   *  take advantage of this.
+   *  Specific (and possibly more efficient) strategies could be used if every collision
+   *  shape in the world is convex.
    */
   bool isEverybodyConvex() const override;
 
