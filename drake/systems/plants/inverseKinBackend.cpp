@@ -697,12 +697,13 @@ void inverseKinBackend(
         string qsc_weights_cnst_name;
         if (&t[i] != nullptr) {
           char qsc_name_buffer[200];
-          sprintf(qsc_name_buffer,
-                  "quasi static constraint weights at time %7.3f", t[i]);
+          snprintf(qsc_name_buffer, sizeof(qsc_name_buffer),
+                   "quasi static constraint weights at time %7.3f", t[i]);
           qsc_weights_cnst_name = string(qsc_name_buffer);
         } else {
           char qsc_name_buffer[200];
-          sprintf(qsc_name_buffer, "quasi static constraint weights");
+          snprintf(qsc_name_buffer, sizeof(qsc_name_buffer),
+                   "quasi static constraint weights");
           qsc_weights_cnst_name = string(qsc_name_buffer);
         }
         Cname_array[i].push_back(qsc_weights_cnst_name);

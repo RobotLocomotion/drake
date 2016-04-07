@@ -49,11 +49,11 @@ int main(
   }
 
   int i, count = 1;
-  char buff[100], countstr[6] = "00000";
+  char buff[6], countstr[6] = "00000";
   string name;
 
   while (true) {
-    sprintf(buff, "%d", count);
+    snprintf(buff, sizeof(buff), "%d", count);
     memcpy(&countstr[5 - strlen(buff)], buff, strlen(buff));
 
     name = "fun_";
