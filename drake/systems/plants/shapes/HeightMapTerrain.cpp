@@ -137,10 +137,6 @@ void HeightMapTerrain::getTerrainContactPoints(Matrix3Xd &points) const {
   assert(!"Implement me!!");
 }
 
-void HeightMapTerrain::initialize() {
-  assert(!"Implement me!!");
-}
-
 // todo: these are implemented assuming the data is stored in FLOAT format
 double HeightMapTerrain::cellValue(int i) const{
   return *((double*)(m_rawHeightfieldData+bytesPerElement*i));
@@ -200,10 +196,6 @@ void FlatTerrain::getBoundingBoxPoints(Matrix3Xd &points) const {
 }
 
 void FlatTerrain::getTerrainContactPoints(Matrix3Xd &points) const {
-  assert(!"Implement me!!");
-}
-
-void FlatTerrain::initialize() {
   assert(!"Implement me!!");
 }
 

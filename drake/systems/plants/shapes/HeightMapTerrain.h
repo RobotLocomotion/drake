@@ -36,7 +36,6 @@ class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
   void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const override;
   void getTerrainContactPoints(Eigen::Matrix3Xd &points) const override;
 
-  virtual void initialize();
   int nTotCells()const{ return ncells.prod();}
   double cellValue(int i) const;
   double cellValue(int i,int j) const;
@@ -122,8 +121,6 @@ class DRAKESHAPES_EXPORT FlatTerrain : public HeightMapTerrain {
   void getPoints(Eigen::Matrix3Xd &points) const final;
   void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const final;
   void getTerrainContactPoints(Eigen::Matrix3Xd &points) const final;
-
-  void initialize();
 
   protected:
     double m_angle;
