@@ -133,7 +133,6 @@ inline double solve_quadprog(MatrixBase<tA> & G,  MatrixBase<tB> & g0,
                       const MatrixBase<tC> & CE, const MatrixBase<tD> & ce0,
                       const MatrixBase<tE> & CI, const MatrixBase<tF> & ci0,
                       MatrixBase<tG>& x) {
-
   LLT<MatrixXd, Lower> chol(G.cols());
   double c1;
 
@@ -144,7 +143,6 @@ inline double solve_quadprog(MatrixBase<tA> & G,  MatrixBase<tB> & g0,
   chol.compute(G);
 
   return solve_quadprog2(chol, c1, g0, CE, ce0, CI, ci0, x);
-
 }
 
 /* solve_quadprog2 is used for when the Cholesky decomposition of G is pre-computed */

@@ -200,7 +200,6 @@ bool NloptSolver::available() const {
 }
 
 bool NloptSolver::Solve(OptimizationProblem &prog) const {
-
   int nx = prog.num_vars();
 
   // Load the algo to use and the size.

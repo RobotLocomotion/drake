@@ -136,7 +136,6 @@ class DecisionVariableView {  // enables users to access pieces of the decision
 typedef std::list<DecisionVariableView> VariableList;
 
 class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
-
   /** Binding
    * @brief A binding on constraint type C is a mapping of the decision
    * variables onto the inputs of C.  This allows the constraint to operate
@@ -438,7 +437,6 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::MatrixBase<DerivedA>& Aeq,
       const Eigen::MatrixBase<DerivedB>& beq, const VariableList& vars) {
-
     auto constraint = std::make_shared<LinearEqualityConstraint>(Aeq, beq);
     AddLinearEqualityConstraint(constraint, vars);
     return constraint;
