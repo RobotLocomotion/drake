@@ -23,7 +23,7 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
           const Eigen::Isometry3d& T_element_to_local =
               Eigen::Isometry3d::Identity());
 
-  virtual ~Element(){}
+  virtual ~Element() {}
 
   virtual Element* clone() const;
 
