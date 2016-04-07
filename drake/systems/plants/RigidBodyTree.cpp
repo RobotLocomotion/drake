@@ -404,6 +404,9 @@ bool RigidBodyTree::collisionDetect(
 
   vector<DrakeCollision::PointPair> points;
 
+  //If all shapes in the simulation are convex then DrakeCollision::ModelclosestPointsAllToAll
+  //is called since it was designed specifically for convex shapes.
+  //In case one of the shapes is concave the more general DrakeCollision::ModelpotentialCollisionPoints is called here.
   bool points_found;
   if(collision_model->isEverybodyConvex()){
     points_found =
