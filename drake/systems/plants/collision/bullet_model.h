@@ -162,7 +162,7 @@ class BulletModel : public Model {
   static std::unique_ptr<btCollisionShape> newBulletHeightMapTerrainShape(
       const DrakeShapes::HeightMapTerrain& geometry, bool use_margins);
   static void writeHeightMapTerrain(
-      const btHeightfieldTerrainShape* bullet_height_map,
+      const btHeightfieldTerrainShape& bullet_height_map,
       const std::string& fname);
 
   std::vector<std::unique_ptr<btCollisionShape>> bt_collision_shapes_;

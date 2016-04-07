@@ -158,11 +158,7 @@ std::unique_ptr<btCollisionShape> BulletModel::newBulletHeightMapTerrainShape(
          "HeightMapTerrain is internally using double's when Bullet is using "
          "float's?");
 
-  // m_heightScale = geometry.m_gridHeightScale is actually ignored for float
-  // data type.;
-  // This scaling is only used for ushort and short data types (see
-  // btHeightfieldTerrainShape.cpp:149)
-  std::unique_ptr<btCollisionShape> bt_shape(new btHeightfieldTerrainShape(
+  std::unique_ptr<btHeightfieldTerrainShape> bt_shape(new btHeightfieldTerrainShape(
       geometry.nnodes(0), geometry.nnodes(1), geometry.m_rawHeightfieldData,
       geometry.m_gridHeightScale, static_cast<btScalar>(geometry.m_minHeight),
       static_cast<btScalar>(geometry.m_maxHeight), geometry.m_upAxis, btType,
@@ -171,13 +167,13 @@ std::unique_ptr<btCollisionShape> BulletModel::newBulletHeightMapTerrainShape(
   bt_shape->setLocalScaling(localScaling);
 
   //Write a mesh file to be used by the BotVisualizer
-  writeHeightMapTerrain(static_cast<btHeightfieldTerrainShape*>(bt_shape.get()),geometry.fname);
+  writeHeightMapTerrain(*bt_shape,geometry.fname);
 
-  return bt_shape;
+  return std::move(bt_shape);
 }
 
   void BulletModel::writeHeightMapTerrain(
-     const btHeightfieldTerrainShape* bullet_height_map, const std::string& fname) {
+     const btHeightfieldTerrainShape& bullet_height_map, const std::string& fname) {
   std::ofstream file;
   file.open(fname);
 
@@ -186,7 +182,7 @@ std::unique_ptr<btCollisionShape> BulletModel::newBulletHeightMapTerrainShape(
   aabbMax+=btVector3(BT_LARGE_FLOAT,BT_LARGE_FLOAT,BT_LARGE_FLOAT);
 
   GatherHeightMapAsGridCallBack grid_buffer;
-  bullet_height_map->processAllTriangles(&grid_buffer,aabbMin,aabbMax);
+  bullet_height_map.processAllTriangles(&grid_buffer,aabbMin,aabbMax);
 
   //write vertices
   for(int i=0;i<grid_buffer.numPoints();i++){
