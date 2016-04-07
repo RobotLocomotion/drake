@@ -19,7 +19,7 @@
  *
  * For example:
  * \code
- * Polynomial base_x("x"), s("x"), c("c");
+ * Polynomial base_x("x"), s("s"), c("c");
  * TrigPoly x(base_x, s, c)  // This "x" knows that s = sin(x)
  *                           // and that c = cos(x)
  * cout << sin(x)                     // emits "s1"
