@@ -65,9 +65,7 @@ HeightMapTerrain::~HeightMapTerrain(){
 }
 
 HeightMapTerrain *HeightMapTerrain::clone() const {
-  if(m_rawHeightfieldData != NULL)
-    assert(!"Are you sure you want to clone this object with heavy data?");
-  return new HeightMapTerrain(*this); //unreachable. avoid compiler warning for non return.
+  return new HeightMapTerrain(*this);
 }
 
 bool HeightMapTerrain::writeToFile(const string& fname) const{
@@ -187,7 +185,7 @@ HeightMapTerrain(name,ncells, size), m_angle(angle)
   this->computeMinMaxHeights();
 }
 
-FlatTerrain::FlatTerrain(const FlatTerrain& other): HeightMapTerrain(other) {
+FlatTerrain::FlatTerrain(const FlatTerrain& other): HeightMapTerrain(other), m_angle(other.m_angle) {
 }
 
 HeightMapTerrain *FlatTerrain::clone() const {
