@@ -7,7 +7,14 @@
 #include "lcmtypes/drake/lcmt_driving_control_cmd_t.hpp"
 #include "drake/systems/plants/shapes/HeightMapTerrain.h"
 
-using namespace Eigen;
+using Eigen::Vector2i;
+using Eigen::Vector2d;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+using Eigen::VectorXd;
+using Eigen::Matrix3d;
+using Eigen::Isometry3d;
+using Eigen::AngleAxisd;
 using namespace Drake;
 
 // Review commments
