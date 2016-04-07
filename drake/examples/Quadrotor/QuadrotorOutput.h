@@ -62,8 +62,8 @@ public:
 
     friend std::string getCoordinateName(const QuadrotorOutput<ScalarType>& vec, unsigned int index) {
       static const std::vector<std::string> coordinate_names =
-          {"x","y","z",
-           "qx","qy","qz","qw",
+          {"x", "y", "z",
+           "qx", "qy", "qz", "qw",
            "xdot", "ydot", "zdot",
            "angvel_x", "angvel_y", "angvel_z",
            "accel_x", "accel_y", "accel_z",
