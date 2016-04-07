@@ -178,8 +178,6 @@ int main(int argc, char* argv[]) {
 
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
 
-  // this replaces the above commented out code with the "auto sys =
-  // cascade(vehicle_sys, visualizer);" at the end
   auto visualizer =
       std::make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm, tree);
   auto sys = cascade(rigid_body_sys, visualizer);
