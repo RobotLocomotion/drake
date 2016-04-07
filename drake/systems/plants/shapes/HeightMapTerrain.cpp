@@ -21,7 +21,7 @@ Geometry(HEIGHT_MAP_TERRAIN), name(name), ncells(ncells), size(size), m_gridHeig
   assert(is_power_of_2(ncells(1)) && "ncells must be a power of 2.");
 
   nnodes = ncells.array()+1;
-  nTotNodes = ((long) nnodes(0)) * nnodes(1);
+  nTotNodes = nnodes(0) * nnodes(1);
   bytesPerElement = getByteSize(m_type);
   nBytes = nTotNodes * bytesPerElement;
 

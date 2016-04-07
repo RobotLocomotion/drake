@@ -51,7 +51,7 @@ class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
   typedef unsigned char byte_t;
 
   std::size_t nBytes;   //!< number of bytes allocated in m_rawHeightfieldData
-  long nTotNodes;       //!< total number of nodes
+  int nTotNodes;       //!< total number of nodes
   int bytesPerElement;
 
   //Arrays here are made not-aligned because aligned vectors are causing a strange behaviour during simulation:
