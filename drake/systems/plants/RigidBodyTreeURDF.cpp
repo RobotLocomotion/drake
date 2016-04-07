@@ -282,7 +282,6 @@ void parseCollision(shared_ptr<RigidBody> body, XMLElement* node,
     group_name = attr;
   } else {
     group_name = "default";
-    ;
   }
 
   XMLElement* geometry_node = node->FirstChildElement("geometry");
