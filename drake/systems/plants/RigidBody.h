@@ -112,7 +112,7 @@ class DRAKERBM_EXPORT RigidBody {
     CollisionElement(const DrakeShapes::Geometry& geometry,
                      const Eigen::Isometry3d& T_element_to_link,
                      std::shared_ptr<RigidBody> body);
-    virtual ~CollisionElement(){}
+    virtual ~CollisionElement() {}
 
     CollisionElement* clone() const override;
 
