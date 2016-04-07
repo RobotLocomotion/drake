@@ -7,8 +7,6 @@
 #include "lcmtypes/drake/lcmt_driving_control_cmd_t.hpp"
 #include "drake/systems/plants/shapes/HeightMapTerrain.h"
 
-using std::sin;
-using std::string;
 using namespace Eigen;
 using namespace Drake;
 
@@ -40,14 +38,14 @@ class SinusoidalTerrain
    *  \param size The provided array will be scaled so that the terrain is size(0) x size(1) in size.
    *  \param height The sinusoidal terran maximum height.
    */
-  SinusoidalTerrain(const string& name, const Eigen::Vector2i& ncells,
+  SinusoidalTerrain(const std::string& name, const Eigen::Vector2i& ncells,
                     const Eigen::Vector2d& size, double height = 1.0)
       : HeightMapTerrain(name, ncells, size), m_height(height) {
     for (int i = 0; i < nnodes(0); ++i) {
       double x = i*delta_ell(0);
       for (int j = 0; j < nnodes(1); ++j) {
         //double y = j*delta_ell(1); //y is not used and triggers a warning by the compiler.
-        double z = m_height*sin(x*3.1416/size(0));
+        double z = m_height*std::sin(x*3.1416/size(0));
         cellValue(i,j) = z;
       }
     }
