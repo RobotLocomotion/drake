@@ -5,7 +5,7 @@
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
-#include <cstring>  //for the definition of syze_t
+#include <cstring> //for the definition of syze_t
 
 #include "drake/drakeShapes_export.h"
 
@@ -18,21 +18,18 @@ namespace DrakeShapes {
 */
 class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
  public:
-  HeightMapTerrain() {}
+
+  HeightMapTerrain(){}
 
   //! HeightMapTerrain constructor.
-  /*!
-    A more elaborate description of the constructor.
+    /*!
+      A more elaborate description of the constructor.
 
-    \param size The provided array will be scaled so that the terrain size(0) x
-    size(1) in size and has maximum height size(2). The minimum height will be
-    located at zero height.
-    \param pos Position of the terrain center in world's coordinates. The
-    terrain center is located at the middle of the 2D plane and at zero height.
-  */
-  HeightMapTerrain(const std::string &name, const Eigen::Vector2i &ncells,
-                   const Eigen::Vector2d &size);
-  HeightMapTerrain(const HeightMapTerrain &other);
+      \param size The provided array will be scaled so that the terrain size(0) x size(1) in size and has maximum height size(2). The minimum height will be located at zero height.
+      \param pos Position of the terrain center in world's coordinates. The terrain center is located at the middle of the 2D plane and at zero height.
+    */
+  HeightMapTerrain(const std::string& name, const Eigen::Vector2i &ncells, const Eigen::Vector2d &size);
+  HeightMapTerrain(const HeightMapTerrain& other);
   virtual ~HeightMapTerrain();
   virtual HeightMapTerrain *clone() const;
   virtual void getPoints(Eigen::Matrix3Xd &points) const;
@@ -40,26 +37,24 @@ class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
   virtual void getTerrainContactPoints(Eigen::Matrix3Xd &points) const;
 
   virtual void initialize();
-  int nTotCells() const { return ncells.prod(); }
+  int nTotCells()const{ return ncells.prod();}
   double cellValue(int i) const;
-  double cellValue(int i, int j) const;
-  double heightValue(int i, int j) const;
-  double &cellValue(int i, int j);
-  bool writeToFile(const std::string &fname) const;
+  double cellValue(int i,int j) const;
+  double heightValue(int i,int j) const;
+  double& cellValue(int i,int j);
+  bool writeToFile(const std::string& fname) const;
 
-  enum RawDataType { UCHAR, SHORT, FLOAT };
+  enum RawDataType {UCHAR, SHORT,FLOAT};
   typedef unsigned char byte_t;
 
-  std::size_t nBytes;  //!< number of bytes allocated in m_rawHeightfieldData
-  long nTotNodes;      //!< total number of nodes
+  std::size_t nBytes;   //!< number of bytes allocated in m_rawHeightfieldData
+  long nTotNodes;       //!< total number of nodes
   int bytesPerElement;
 
-  // Arrays here are made not-aligned because aligned vectors are causing a
-  // strange behaviour during simulation:
-  // The bouncing ball on a height map test fails with the ball moving sideways
-  // as it hits the height map.
-  Eigen::Matrix<double, 2, 1, Eigen::DontAlign> size, delta_ell;
-  Eigen::Matrix<int, 2, 1, Eigen::DontAlign> ncells, nnodes;
+  //Arrays here are made not-aligned because aligned vectors are causing a strange behaviour during simulation:
+  //The bouncing ball on a height map test fails with the ball moving sideways as it hits the height map.
+  Eigen::Matrix<double,2,1,Eigen::DontAlign> size, delta_ell;
+  Eigen::Matrix<int,2,1,Eigen::DontAlign> ncells, nnodes;
 
   double m_gridHeightScale;
   double m_minHeight, m_maxHeight;
@@ -68,49 +63,51 @@ class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
   byte_t *m_rawHeightfieldData; //use a unique_ptr here
   std::string name, fname;
 
- protected:
-  void computeMinMaxHeights();
+  protected:
+    void computeMinMaxHeights();
 
-  static const char *getDataTypeName(RawDataType type) {
-    switch (type) {
-      case UCHAR:
+    static const char* getDataTypeName(RawDataType type)
+    {
+      switch (type) {
+        case UCHAR:
         return "UnsignedChar";
 
-      case SHORT:
+        case SHORT:
         return "Short";
 
-      case FLOAT:
+        case FLOAT:
         return "Float";
 
-      default:
+        default:
         assert(!"bad heightfield data type");
+      }
+
+      return NULL;
     }
 
-    return NULL;
-  }
+    static int getByteSize(RawDataType type)
+    {
+      int size = 0;
 
-  static int getByteSize(RawDataType type) {
-    int size = 0;
-
-    switch (type) {
-      case FLOAT:
+      switch (type) {
+        case FLOAT:
         size = sizeof(double);
         break;
 
-      case UCHAR:
+        case UCHAR:
         size = sizeof(unsigned char);
         break;
 
-      case SHORT:
+        case SHORT:
         size = sizeof(short);
         break;
 
-      default:
+        default:
         assert(!"Bad heightfield data type");
-    }
+      }
 
-    return size;
-  }
+      return size;
+    }
 };
 
 /** \brief Example class showing how to inherit from HeightMapTerrain.
@@ -118,9 +115,8 @@ class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
   */
 class DRAKESHAPES_EXPORT FlatTerrain : public HeightMapTerrain {
  public:
-  FlatTerrain(const std::string &name, const Eigen::Vector2i &ncells,
-              const Eigen::Vector2d &size, double angle = 0.0);
-  FlatTerrain(const FlatTerrain &other);
+  FlatTerrain(const std::string& name, const Eigen::Vector2i &ncells, const Eigen::Vector2d &size, double angle=0.0);
+  FlatTerrain(const FlatTerrain& other);
   virtual ~FlatTerrain() {}
   HeightMapTerrain *clone() const;
   void getPoints(Eigen::Matrix3Xd &points) const;
@@ -129,11 +125,11 @@ class DRAKESHAPES_EXPORT FlatTerrain : public HeightMapTerrain {
 
   void initialize();
 
- protected:
-  double m_angle;
+  protected:
+    double m_angle;
 };
 
-}  // namespace DrakeShapes
+}//namespace DrakeShapes
 
 #endif
 //__HeightMapTerrain_H__

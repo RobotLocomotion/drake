@@ -170,9 +170,8 @@ std::unique_ptr<btCollisionShape> BulletModel::newBulletHeightMapTerrainShape(
   btVector3 localScaling(geometry.delta_ell(0), geometry.delta_ell(1), 1.0);
   bt_shape->setLocalScaling(localScaling);
 
-  // Write a mesh file to be used by the BotVisualizer
-  writeHeightMapTerrain(static_cast<btHeightfieldTerrainShape*>(bt_shape.get()),
-                        geometry.fname);
+  //Write a mesh file to be used by the BotVisualizer
+  writeHeightMapTerrain(static_cast<btHeightfieldTerrainShape*>(bt_shape.get()),geometry.fname);
 
   return bt_shape;
 }
@@ -182,22 +181,22 @@ std::unique_ptr<btCollisionShape> BulletModel::newBulletHeightMapTerrainShape(
   std::ofstream file;
   file.open(fname);
 
-  btVector3 aabbMin(0, 0, 0), aabbMax(0, 0, 0);
-  aabbMin -= btVector3(BT_LARGE_FLOAT, BT_LARGE_FLOAT, BT_LARGE_FLOAT);
-  aabbMax += btVector3(BT_LARGE_FLOAT, BT_LARGE_FLOAT, BT_LARGE_FLOAT);
+  btVector3 aabbMin(0,0,0),aabbMax(0,0,0);
+  aabbMin-=btVector3(BT_LARGE_FLOAT,BT_LARGE_FLOAT,BT_LARGE_FLOAT);
+  aabbMax+=btVector3(BT_LARGE_FLOAT,BT_LARGE_FLOAT,BT_LARGE_FLOAT);
 
   GatherHeightMapAsGridCallBack grid_buffer;
-  bullet_height_map->processAllTriangles(&grid_buffer, aabbMin, aabbMax);
+  bullet_height_map->processAllTriangles(&grid_buffer,aabbMin,aabbMax);
 
-  // write vertices
-  for (int i = 0; i < grid_buffer.numPoints(); i++) {
+  //write vertices
+  for(int i=0;i<grid_buffer.numPoints();i++){
     btVector3 vertex = grid_buffer.getPoint(i);
     file << "v " << vertex[0] << " " << vertex[1] << " " << vertex[2] << " "
          << std::endl;
   }
 
-  // write connectivities (two triangles per cell)
-  for (int i = 0; i < grid_buffer.numTriangles(); i++) {
+  //write connectivities (two triangles per cell)
+  for(int i=0;i<grid_buffer.numTriangles();i++){
     Vector3i conn = grid_buffer.getTriangle(i);
     file << "f " << conn[0] << " " << conn[1] << " " << conn[2] << std::endl;
   }
@@ -267,12 +266,10 @@ ElementId BulletModel::addElement(const Element& element) {
         bt_shape_no_margin = newBulletCapsuleShape(capsule, false);
       } break;
       case DrakeShapes::HEIGHT_MAP_TERRAIN: {
-        const auto terrain_geom =
-            static_cast<const DrakeShapes::HeightMapTerrain&>(
-                elements[id]->getGeometry());
+        const auto terrain_geom = static_cast<const DrakeShapes::HeightMapTerrain&>(
+            elements[id]->getGeometry());
         bt_shape = newBulletHeightMapTerrainShape(terrain_geom, true);
-        bt_shape_no_margin =
-            newBulletHeightMapTerrainShape(terrain_geom, false);
+        bt_shape_no_margin = newBulletHeightMapTerrainShape(terrain_geom, false);
       } break;
       default:
         std::cerr << "Warning: Collision elements[id] has an unknown type "
@@ -806,7 +803,7 @@ bool BulletModel::isEverybodyConvex() const {
   for (const auto& bt_obj_iter : bullet_world_.bt_collision_objects) {
     const auto* bt_collision_obj = bt_obj_iter.second.get();
     const auto* bt_collision_shape = bt_collision_obj->getCollisionShape();
-    if (!bt_collision_shape->isConvex()) all_shapes_are_convex = false;
+    if(!bt_collision_shape->isConvex()) all_shapes_are_convex = false;
   }
   return all_shapes_are_convex;
 }
