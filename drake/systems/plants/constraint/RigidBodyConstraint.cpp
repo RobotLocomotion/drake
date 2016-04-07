@@ -45,7 +45,7 @@ RigidBodyConstraint::RigidBodyConstraint(const RigidBodyConstraint &rhs)
   this->tspan[1] = rhs.tspan[1];
 }
 
-RigidBodyConstraint::~RigidBodyConstraint(void){}
+RigidBodyConstraint::~RigidBodyConstraint(void) {}
 
 std::string RigidBodyConstraint::getTimeString(const double *t) const {
   std::string time_str;
