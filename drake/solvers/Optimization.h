@@ -19,7 +19,7 @@ namespace Drake {
  * @brief Provides storage for a decision variable inside an OptimizationProblem.
  */
 class DecisionVariable {
-public:
+ public:
   enum class VarType { CONTINUOUS, INTEGER, BINARY };
 
   DecisionVariable(VarType type, const std::string& name,

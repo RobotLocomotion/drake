@@ -190,7 +190,7 @@ inline double solve_quadprog2(LLT<MatrixXd, Lower> &chol,  double c1, MatrixBase
   J = chol.matrixU().solve(J);
   c2 = J.trace();
 #ifdef TRACE_SOLVER
- print_matrix("J", J, n);
+  print_matrix("J", J, n);
 #endif
 
   /* c1 * c2 is an estimate for cond(G) */
@@ -283,9 +283,9 @@ l1:
   }
 
   /* save old values for u, x and A */
-   u_old.head(iq) = u.head(iq);
-   A_old.head(iq) = A.head(iq);
-   x_old = x;
+  u_old.head(iq) = u.head(iq);
+  A_old.head(iq) = A.head(iq);
+  x_old = x;
 
 l2: /* Step 2: check for feasibility and determine a new S-pair */
   for (i = 0; i < mi; i++) {
@@ -449,7 +449,7 @@ l2a:/* Step 2a: determine step direction */
 
 
 inline bool add_constraint(MatrixXd& R, MatrixXd& J, VectorXd& d, int& iq, double& R_norm) {
- int n=J.rows();
+  int n=J.rows();
 #ifdef TRACE_SOLVER
   std::cerr << "Add constraint " << iq << '/';
 #endif

@@ -6,7 +6,7 @@
 
 template <typename ScalarType = double>
 class QuadrotorOutput {
-public:
+ public:
     static const int num_lidar_points = 100;
     static const int RowsAtCompileTime = 22 + num_lidar_points + 1;
 
