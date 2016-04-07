@@ -110,7 +110,6 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
                                 bodyB_idx);
     else
       tree->collisionDetect(kinsol, phi, normal, xA, xB, bodyA_idx, bodyB_idx);
-    //normal is body B's normal and therefore pointing out from body B
 
     for (int i = 0; i < phi.rows(); i++) {
       if (phi(i) < 0.0) {  // then I have contact
