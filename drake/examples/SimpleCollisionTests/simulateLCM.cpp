@@ -7,14 +7,28 @@
 #include "lcmtypes/drake/lcmt_driving_control_cmd_t.hpp"
 #include "drake/systems/plants/shapes/HeightMapTerrain.h"
 
-using namespace std;
+using std::sin;
+using std::string;
 using namespace Eigen;
 using namespace Drake;
+
+// Review commments
+//1. Fix these namespaces inclusions for varibles in Eigen and son on ...
+//2. Add description for HeightMapTerrain constructors explaining why you need a name
+//3. Change member names to use the trailing underscore as in Google's style guide
+//4. Lets ask Russ why we have two containers with AND without the margins
+//5. Use a unique_ptr in m_rawHeightfieldData
+//6. Make HeightMapTerrain::clone() = 0? just make sure child MUST implement this method.
+//7. Replace virtual's with override's where needed (specially within HeightMap but leave other shapes untouched for now, mayb another Issue?)
+//8. Use Google's style guide for types: eg.: use "using std::sin;" at the top of the file or "std::string" elsewhere when needed?
+//   See SinusoidalTerrain constructror as an example where a "string&" is passed as an argument
+//9. Use Sherm's "non-virtual methods" (is that what he called them?) design to avoid having the user calling "this->computeMinMaxHeights" within
+//   SinusoidalTerrain's constructor
 
 class SinusoidalTerrain
     : public DrakeShapes::HeightMapTerrain {
  public:
-  SinusoidalTerrain(const std::string& name, const Eigen::Vector2i& ncells,
+  SinusoidalTerrain(const string& name, const Eigen::Vector2i& ncells,
                     const Eigen::Vector2d& size, double height = 1.0)
       : HeightMapTerrain(name, ncells, size), m_height(height) {
     for (int i = 0; i < nnodes(0); ++i) {

@@ -65,7 +65,7 @@ class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
   double m_minHeight, m_maxHeight;
   int m_upAxis;
   RawDataType m_type;
-  byte_t *m_rawHeightfieldData;
+  byte_t *m_rawHeightfieldData; //use a unique_ptr here
   std::string name, fname;
 
  protected:
