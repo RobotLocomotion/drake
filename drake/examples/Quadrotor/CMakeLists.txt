@@ -10,7 +10,7 @@ if (LCM_FOUND AND NOT WIN32)
   target_link_libraries(runQuadrotorLQR drakeRBM)
   add_dependencies(runQuadrotorLQR drake_lcmtypes lcmtype_agg_hpp)
   pods_use_pkg_config_packages(runQuadrotorLQR lcm)
-  add_test(NAME runQuadrotorLQR COMMAND runQuadrotorLQR WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/examples/Quadrotor)
+  add_test(NAME runQuadrotorLQR COMMAND runQuadrotorLQR --non-realtime)
 endif()
 
 add_matlab_test(NAME examples/Quadrotor/Quadrotor.runOpenLoop COMMAND Quadrotor.runOpenLoop)
