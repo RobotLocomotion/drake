@@ -176,11 +176,11 @@ HeightMapTerrain(name,ncells, size), m_angle(angle)
   for (int i = 0; i < nnodes(0); ++i) {
     double x = i*delta_ell(0) - size(0)/2.0; //x=0 at the center
     for (int j = 0; j < nnodes(1); ++j) {
-        double y = j*delta_ell(1);
-        double z = x*slope;
-        cellValue(i,j) = z;
-      }
+      //double y = j*delta_ell(1); //never used, triggers compiler warning
+      double z = x*slope;
+      cellValue(i,j) = z;
     }
+  }
   this->computeMinMaxHeights();
 }
 
