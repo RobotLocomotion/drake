@@ -26,8 +26,12 @@ Geometry(HEIGHT_MAP_TERRAIN), name(name), ncells(ncells), size(size), m_gridHeig
   bytesPerElement = getByteSize(m_type);
   nBytes = nTotNodes * bytesPerElement;
 
-  m_rawHeightfieldData = new byte_t[nBytes];
-  if(m_rawHeightfieldData==NULL) assert(!"Out of memory");
+  try {
+    m_rawHeightfieldData = new byte_t[nBytes];
+  } catch (const std::exception& e) {
+    std::cerr << "Allocation failed: " << e.what() << std::endl;
+    throw e;
+  }
 
   delta_ell = size.array()/ncells.array().cast<double>();
 
