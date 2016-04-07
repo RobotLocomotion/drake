@@ -1,5 +1,5 @@
-#ifndef __BulletHeightMapTerrain_H__
-#define __BulletHeightMapTerrain_H__
+#ifndef BULLET_HEIGHT_MAP_TERRAIN_H_
+#define BULLET_HEIGHT_MAP_TERRAIN_H_
 
 #include <btBulletCollisionCommon.h>
 #include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
@@ -52,5 +52,5 @@ namespace DrakeCollision {
 
 }//namespace DrakeCollision
 
-#endif 
-//__BulletHeightMapTerrain_H__
+#endif
+//BULLET_HEIGHT_MAP_TERRAIN_H_
