@@ -92,21 +92,20 @@ namespace Eigen {
 template<typename Scalar>
 inline Scalar distance(Scalar a, Scalar b)
 {
-	Scalar a1, b1, t;
-	a1 = std::abs(a);
-	b1 = std::abs(b);
-	if (a1 > b1)
-	{
-		t = (b1 / a1);
-		return a1 * std::sqrt(1.0 + t * t);
-	}
-	else
-		if (b1 > a1)
-		{
-			t = (a1 / b1);
-			return b1 * std::sqrt(1.0 + t * t);
-		}
-	return a1 * std::sqrt(2.0);
+  Scalar a1, b1, t;
+  a1 = std::abs(a);
+  b1 = std::abs(b);
+  if (a1 > b1)
+  {
+    t = (b1 / a1);
+    return a1 * std::sqrt(1.0 + t * t);
+  }
+  else if (b1 > a1)
+  {
+    t = (a1 / b1);
+    return b1 * std::sqrt(1.0 + t * t);
+  }
+  return a1 * std::sqrt(2.0);
 }
 
 // }
@@ -193,52 +192,52 @@ inline double solve_quadprog2(LLT<MatrixXd, Lower> &chol,  double c1, MatrixBase
   /* initialize the matrix R */
   d.setZero();
   R.setZero();
-	R_norm = 1.0; /* this variable will hold the norm of the matrix R */
+  R_norm = 1.0; /* this variable will hold the norm of the matrix R */
 
-	/* compute the inverse of the factorized matrix G^-1, this is the initial value for H */
+  /* compute the inverse of the factorized matrix G^-1, this is the initial value for H */
   // J = L^-T
   J.setIdentity();
   J = chol.matrixU().solve(J);
-	c2 = J.trace();
+  c2 = J.trace();
 #ifdef TRACE_SOLVER
  print_matrix("J", J, n);
 #endif
 
-	/* c1 * c2 is an estimate for cond(G) */
+  /* c1 * c2 is an estimate for cond(G) */
 
-	/*
+  /*
    * Find the unconstrained minimizer of the quadratic form 0.5 * x G x + g0 x
    * this is a feasible point in the dual space
 	 * x = G^-1 * g0
    */
   x = chol.solve(g0);
   x = -x;
-	/* and compute the current solution value */
-	f_value = 0.5 * g0.dot(x);
+  /* and compute the current solution value */
+  f_value = 0.5 * g0.dot(x);
 #ifdef TRACE_SOLVER
   std::cerr << "Unconstrained solution: " << f_value << std::endl;
   print_vector("x", x, n);
 #endif
 
-	/* Add equality constraints to the working set A */
+  /* Add equality constraints to the working set A */
   iq = 0;
-	for (i = 0; i < me; i++)
-	{
+  for (i = 0; i < me; i++)
+  {
     np = CE.col(i);
     compute_d(d, J, np);
-		update_z(z, J, d,  iq);
-		update_r(R, r, d,  iq);
+    update_z(z, J, d,  iq);
+    update_r(R, r, d,  iq);
 #ifdef TRACE_SOLVER
-		print_matrix("R", R, iq);
-		print_vector("z", z, n);
-		print_vector("r", r, iq);
-		print_vector("d", d, n);
+    print_matrix("R", R, iq);
+    print_vector("z", z, n);
+    print_vector("r", r, iq);
+    print_vector("d", d, n);
 #endif
 
     /* compute full step length t2: i.e., the minimum step in primal space s.t. the contraint
-      becomes feasible */
+       becomes feasible */
     t2 = 0.0;
-	if (std::abs(z.dot(z)) > std::numeric_limits<double>::epsilon()) // i.e. z != 0
+    if (std::abs(z.dot(z)) > std::numeric_limits<double>::epsilon()) // i.e. z != 0
       t2 = (-np.dot(x) - ce0(i)) / z.dot(np);
 
     x += t2 * z;
@@ -259,42 +258,43 @@ inline double solve_quadprog2(LLT<MatrixXd, Lower> &chol,  double c1, MatrixBase
     }
   }
 
-	/* set iai = K \ A */
-	for (i = 0; i < mi; i++)
-		iai(i) = i;
+  /* set iai = K \ A */
+  for (i = 0; i < mi; i++)
+    iai(i) = i;
 
-l1:	iter++;
+l1:
+  iter++;
 #ifdef TRACE_SOLVER
   print_vector("x", x, n);
 #endif
   /* step 1: choose a violated constraint */
-	for (i = me; i < iq; i++)
-	{
-	  ip = A(i);
-		iai(ip) = -1;
-	}
+  for (i = me; i < iq; i++)
+  {
+    ip = A(i);
+    iai(ip) = -1;
+  }
 
-	/* compute s(x) = ci^T * x + ci0 for all elements of K \ A */
-	ss = 0.0;
-	psi = 0.0; /* this value will contain the sum of all infeasibilities */
-	ip = 0; /* ip will be the index of the chosen violated constraint */
-	for (i = 0; i < mi; i++)
-	{
-		iaexcl(i) = 1;
-		sum = CI.col(i).dot(x) + ci0(i);
-		s(i) = sum;
-		psi += std::min(0.0, sum);
-	}
+  /* compute s(x) = ci^T * x + ci0 for all elements of K \ A */
+  ss = 0.0;
+  psi = 0.0; /* this value will contain the sum of all infeasibilities */
+  ip = 0; /* ip will be the index of the chosen violated constraint */
+  for (i = 0; i < mi; i++)
+  {
+    iaexcl(i) = 1;
+    sum = CI.col(i).dot(x) + ci0(i);
+    s(i) = sum;
+    psi += std::min(0.0, sum);
+  }
 #ifdef TRACE_SOLVER
   print_vector("s", s, mi);
 #endif
 
 
-	if (std::abs(psi) <= mi * std::numeric_limits<double>::epsilon() * c1 * c2* 100.0)
-	{
+  if (std::abs(psi) <= mi * std::numeric_limits<double>::epsilon() * c1 * c2* 100.0)
+  {
     /* numerically there are not infeasibilities anymore */
     q = iq;
-		return f_value;
+    return f_value;
   }
 
   /* save old values for u, x and A */
@@ -303,14 +303,14 @@ l1:	iter++;
    x_old = x;
 
 l2: /* Step 2: check for feasibility and determine a new S-pair */
-	for (i = 0; i < mi; i++)
-	{
-		if (s(i) < ss && iai(i) != -1 && iaexcl(i))
-		{
-			ss = s(i);
-			ip = i;
-		}
-	}
+  for (i = 0; i < mi; i++)
+  {
+    if (s(i) < ss && iai(i) != -1 && iaexcl(i))
+    {
+      ss = s(i);
+      ip = i;
+    }
+  }
   if (ss >= 0.0)
   {
     q = iq;
@@ -325,8 +325,8 @@ l2: /* Step 2: check for feasibility and determine a new S-pair */
   A(iq) = ip;
 
 #ifdef TRACE_SOLVER
-	std::cerr << "Trying with constraint " << ip << std::endl;
-	print_vector("np", np, n);
+  std::cerr << "Trying with constraint " << ip << std::endl;
+  print_vector("np", np, n);
 #endif
 
 l2a:/* Step 2a: determine step direction */
@@ -337,8 +337,8 @@ l2a:/* Step 2a: determine step direction */
   update_r(R, r, d, iq);
 #ifdef TRACE_SOLVER
   std::cerr << "Step direction z" << std::endl;
-		print_vector("z", z, n);
-		print_vector("r", r, iq + 1);
+    print_vector("z", z, n);
+    print_vector("r", r, iq + 1);
     print_vector("u", u, iq + 1);
     print_vector("d", d, n);
     print_ivector("A", A, iq + 1);
@@ -393,7 +393,7 @@ l2a:/* Step 2a: determine step direction */
       << f_value << std::endl;
     print_vector("x", x, n);
     print_vector("z", z, n);
-		print_ivector("A", A, iq + 1);
+    print_ivector("A", A, iq + 1);
 #endif
     goto l2a;
   }
@@ -409,10 +409,10 @@ l2a:/* Step 2a: determine step direction */
 #ifdef TRACE_SOLVER
   std::cerr << " in both spaces: "
     << f_value << std::endl;
-	print_vector("x", x, n);
-	print_vector("u", u, iq + 1);
-	print_vector("r", r, iq + 1);
-	print_ivector("A", A, iq + 1);
+  print_vector("x", x, n);
+  print_vector("u", u, iq + 1);
+  print_vector("r", r, iq + 1);
+  print_ivector("A", A, iq + 1);
 #endif
 
   if (t == t2)
@@ -423,25 +423,25 @@ l2a:/* Step 2a: determine step direction */
 #endif
     /* full step has taken */
     /* add constraint ip to the active set*/
-		if (!add_constraint(R, J, d, iq, R_norm))
-		{
-			iaexcl(ip) = 0;
-			delete_constraint(R, J, A, u, p, iq, ip);
+    if (!add_constraint(R, J, d, iq, R_norm))
+    {
+      iaexcl(ip) = 0;
+      delete_constraint(R, J, A, u, p, iq, ip);
 #ifdef TRACE_SOLVER
       print_matrix("R", R, n);
       print_ivector("A", A, iq);
 #endif
-			for (i = 0; i < m; i++)
-				iai(i) = i;
-			for (i = 0; i < iq; i++)
-			{
-				A(i) = A_old(i);
-				iai(A(i)) = -1;
-				u(i) = u_old(i);
-			}
-			x = x_old;
+      for (i = 0; i < m; i++)
+        iai(i) = i;
+      for (i = 0; i < iq; i++)
+      {
+        A(i) = A_old(i);
+        iai(A(i)) = -1;
+        u(i) = u_old(i);
+      }
+      x = x_old;
       goto l2; /* go to step 2 */
-		}
+    }
     else
       iai(ip) = -1;
 #ifdef TRACE_SOLVER
@@ -457,8 +457,8 @@ l2a:/* Step 2a: determine step direction */
   print_vector("x", x, n);
 #endif
   /* drop constraint l */
-	iai(l) = l;
-	delete_constraint(R, J, A, u, p, iq, l);
+  iai(l) = l;
+  delete_constraint(R, J, A, u, p, iq, l);
 #ifdef TRACE_SOLVER
   print_matrix("R", R, n);
   print_ivector("A", A, iq);
@@ -479,50 +479,50 @@ inline bool add_constraint(MatrixXd& R, MatrixXd& J, VectorXd& d, int& iq, doubl
 #ifdef TRACE_SOLVER
   std::cerr << "Add constraint " << iq << '/';
 #endif
-	int i, j, k;
-	double cc, ss, h, t1, t2, xny;
+  int i, j, k;
+  double cc, ss, h, t1, t2, xny;
 
   /* we have to find the Givens rotation which will reduce the element
-		d(j) to zero.
-		if it is already zero we don't have to do anything, except of
-		decreasing j */
-	for (j = n - 1; j >= iq + 1; j--)
-	{
+    d(j) to zero.
+    if it is already zero we don't have to do anything, except of
+    decreasing j */
+  for (j = n - 1; j >= iq + 1; j--)
+  {
     /* The Givens rotation is done with the matrix (cc cs, cs -cc).
-			 If cc is one, then element (j) of d is zero compared with element
-			 (j - 1). Hence we don't have to do anything.
-			 If cc is zero, then we just have to switch column (j) and column (j - 1)
-			 of J. Since we only switch columns in J, we have to be careful how we
-			 update d depending on the sign of gs.
-			 Otherwise we have to apply the Givens rotation to these columns.
-			 The i - 1 element of d has to be updated to h. */
-		cc = d(j - 1);
-		ss = d(j);
-		h = distance(cc, ss);
-		if (h == 0.0)
-			continue;
-		d(j) = 0.0;
-		ss = ss / h;
-		cc = cc / h;
-		if (cc < 0.0)
-		{
-			cc = -cc;
-			ss = -ss;
-			d(j - 1) = -h;
-		}
-		else
-			d(j - 1) = h;
-		xny = ss / (1.0 + cc);
-		for (k = 0; k < n; k++)
-		{
-			t1 = J(k, j - 1);
-			t2 = J(k, j);
-			J(k, j - 1) = t1 * cc + t2 * ss;
-			J(k, j) = xny * (t1 + J(k, j - 1)) - t2;
-		}
-	}
+       If cc is one, then element (j) of d is zero compared with element
+       (j - 1). Hence we don't have to do anything.
+       If cc is zero, then we just have to switch column (j) and column (j - 1)
+       of J. Since we only switch columns in J, we have to be careful how we
+       update d depending on the sign of gs.
+       Otherwise we have to apply the Givens rotation to these columns.
+       The i - 1 element of d has to be updated to h. */
+    cc = d(j - 1);
+    ss = d(j);
+    h = distance(cc, ss);
+    if (h == 0.0)
+      continue;
+    d(j) = 0.0;
+    ss = ss / h;
+    cc = cc / h;
+    if (cc < 0.0)
+    {
+      cc = -cc;
+      ss = -ss;
+      d(j - 1) = -h;
+    }
+    else
+      d(j - 1) = h;
+    xny = ss / (1.0 + cc);
+    for (k = 0; k < n; k++)
+    {
+      t1 = J(k, j - 1);
+      t2 = J(k, j);
+      J(k, j - 1) = t1 * cc + t2 * ss;
+      J(k, j) = xny * (t1 + J(k, j - 1)) - t2;
+    }
+  }
   /* update the number of constraints added*/
-	iq++;
+  iq++;
   /* To update R we have to put the iq components of the d vector
     into column iq - 1 of R
     */
@@ -531,11 +531,11 @@ inline bool add_constraint(MatrixXd& R, MatrixXd& J, VectorXd& d, int& iq, doubl
   std::cerr << iq << std::endl;
 #endif
 
-	if (std::abs(d(iq - 1)) <= std::numeric_limits<double>::epsilon() * R_norm)
-		// problem degenerate
-		return false;
-	R_norm = std::max<double>(R_norm, std::abs(d(iq - 1)));
-	return true;
+  if (std::abs(d(iq - 1)) <= std::numeric_limits<double>::epsilon() * R_norm)
+    // problem degenerate
+    return false;
+  R_norm = std::max<double>(R_norm, std::abs(d(iq - 1)));
+  return true;
 }
 
 
@@ -546,10 +546,10 @@ inline void delete_constraint(MatrixXd& R, MatrixXd& J, VectorXi& A, VectorXd& u
 #ifdef TRACE_SOLVER
   std::cerr << "Delete constraint " << l << ' ' << iq;
 #endif
-	int i, j, k, qq;
-	double cc, ss, h, xny, t1, t2;
+  int i, j, k, qq;
+  double cc, ss, h, xny, t1, t2;
 
-	/* Find the index qq for active constraint l to be removed */
+  /* Find the index qq for active constraint l to be removed */
   for (i = p; i < iq; i++)
   if (A(i) == l)
   {
