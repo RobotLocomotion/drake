@@ -20,6 +20,7 @@ namespace DrakeShapes {
  *  This allows for more efficient algorithms for collision detection since a heigh map's structure is much simpler
  *  than that of a general triangulated surface.
  *  Height maps are desired over general triangulated surfaces whenever they are suffucient to provide a given terrain's geometry.
+ *
  */
 class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
  public:
@@ -69,6 +70,7 @@ class DRAKESHAPES_EXPORT HeightMapTerrain : public Geometry {
 
   protected:
     void computeMinMaxHeights();
+    void finalize_loading_data();
 
     static const char* getDataTypeName(RawDataType type)
     {

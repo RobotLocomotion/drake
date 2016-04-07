@@ -126,6 +126,10 @@ void HeightMapTerrain::computeMinMaxHeights(){
   }
 }
 
+void HeightMapTerrain::finalize_loading_data(){
+  computeMinMaxHeights();
+}
+
 //Geometry::getPoints is used nowhere in the code however an implementation is required for inherited classes.
 void HeightMapTerrain::getPoints(Matrix3Xd &points) const {
   assert(!"Implement me!!");

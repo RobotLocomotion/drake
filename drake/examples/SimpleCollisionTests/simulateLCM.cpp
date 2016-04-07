@@ -39,7 +39,8 @@ class SinusoidalTerrain
     : public DrakeShapes::HeightMapTerrain {
  public:
   /** \brief SinusoidalTerrain constructor
-      \sa DrakeShapes::HeightMapTerrain(const std::string& name, const Eigen::Vector2i &ncells, const Eigen::Vector2d &size);
+   *  Notice the call to HeightMapTerrain::finalize_loading_data the end of the constructor. This call MUST be performed.
+   *  \sa DrakeShapes::HeightMapTerrain(const std::string& name, const Eigen::Vector2i &ncells, const Eigen::Vector2d &size);
    *  \param name This is only used to generate a file name where the height map is written as a triangular mesh for director to render. The file name will be <name>.obj.
    *  \param ncells Two dimensional vector of integers with the number of cells used to discretize the map in "local" x and y directions respectively. The number of cells MUST be a power of 2.
    *  \param size The provided array will be scaled so that the terrain is size(0) x size(1) in size.
@@ -56,7 +57,7 @@ class SinusoidalTerrain
         cellValue(i,j) = z;
       }
     }
-    this->computeMinMaxHeights();
+    finalize_loading_data();
   }
   SinusoidalTerrain(const SinusoidalTerrain& other): HeightMapTerrain(other){}
   SinusoidalTerrain *clone() const {
