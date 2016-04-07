@@ -795,13 +795,12 @@ const char* UnknownShapeException::what() const throw() {
 }
 
 bool BulletModel::isEverybodyConvex() const {
-  bool all_shapes_are_convex = true;
   for (const auto& bt_obj_iter : bullet_world_.bt_collision_objects) {
     const auto* bt_collision_obj = bt_obj_iter.second.get();
     const auto* bt_collision_shape = bt_collision_obj->getCollisionShape();
-    if(!bt_collision_shape->isConvex()) all_shapes_are_convex = false;
+    if(!bt_collision_shape->isConvex()) return false;
   }
-  return all_shapes_are_convex;
+  return true;
 }
 
 }  // namespace DrakeCollision
