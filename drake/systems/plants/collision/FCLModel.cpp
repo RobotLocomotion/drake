@@ -80,8 +80,7 @@ BVHModel<OBBRSS>* FCLModel::newFCLMeshShape(const DrakeShapes::Mesh& geometry,
   if (geometry.extractMeshVertices(vertices)) {
     // geometry.getPoints(Eigen::Matrix3Xd &points) const;
   }
-  // What about traingle indexes?
-  // TODO........
+  // TODO: What about traingle indexes?
   cerr << "Warning: FCLModel::newMeshShape is not implemented." << endl;
   throw std::runtime_error("not implemented yet");
 }
@@ -107,9 +106,9 @@ ElementId FCLModel::addElement(const Element& element) {
             elements[id]->getGeometry());
         bvh_shape = newFCLCylinderShape(cylinder, true);
       } break;
-      case DrakeShapes::MESH: // not implemented yet
-      case DrakeShapes::MESH_POINTS: // not implemented yet
-      case DrakeShapes::CAPSULE: // not implemented yet
+      case DrakeShapes::MESH:         // not implemented yet
+      case DrakeShapes::MESH_POINTS:  // not implemented yet
+      case DrakeShapes::CAPSULE:      // not implemented yet
       default:
         cerr << "Warning: Collision elements[id] has an unknown type "
              << elements[id]->getShape() << endl;
@@ -179,22 +178,18 @@ bool FCLModel::findClosestPointsBtwElements(
     const Isometry3d& TB_world = elements[idB]->getWorldTransform();
     auto xA_world = TA_world.translation();
     auto xB_world = TB_world.translation();
-    double radiusA =
-        dynamic_cast<const DrakeShapes::Sphere&>(elements[idA]->getGeometry())
-            .radius;
-    double radiusB =
-        dynamic_cast<const DrakeShapes::Sphere&>(elements[idB]->getGeometry())
-            .radius;
+    double radiusA = dynamic_cast<const DrakeShapes::Sphere&>(
+        elements[idA]->getGeometry()).radius;
+    double radiusB = dynamic_cast<const DrakeShapes::Sphere&>(
+        elements[idB]->getGeometry()).radius;
     double distance = (xA_world - xB_world).norm();
     c->addSingleResult(idA, idB,
                        elements[idA]->getLocalTransform() * TA_world.inverse() *
-                           (xA_world +
-                            (xB_world - xA_world) * radiusA /
-                                distance),  // ptA (in body A coords)
+                           (xA_world + (xB_world - xA_world) * radiusA /
+                                           distance),  // ptA (in body A coords)
                        elements[idB]->getLocalTransform() * TB_world.inverse() *
-                           (xB_world +
-                            (xA_world - xB_world) * radiusB /
-                                distance),  // ptB (in body B coords)
+                           (xB_world + (xA_world - xB_world) * radiusB /
+                                           distance),  // ptB (in body B coords)
                        (xA_world - xB_world) / distance,
                        distance - radiusA - radiusB);
     return true;
@@ -348,7 +343,6 @@ FCLModel::unknownShapeException::unknownShapeException(
 
 const char* FCLModel::unknownShapeException::what() const throw() {
   return ("Unknown collision shape: " + shape_str +
-          ". Ignoring this collision element")
-      .c_str();
+          ". Ignoring this collision element").c_str();
 }
 }
