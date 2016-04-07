@@ -153,9 +153,9 @@ inline double solve_quadprog2(LLT<MatrixXd, Lower> &chol,  double c1, MatrixBase
                       MatrixBase<tF>& x) {
   int i, j, k, l; /* indices */
   int ip, me, mi;
-  int n=g0.size();
-  int p=CE.cols();
-  int m=CI.cols();
+  int n = g0.size();
+  int p = CE.cols();
+  int m = CI.cols();
   MatrixXd R(g0.size(), g0.size()), J(g0.size(), g0.size());
 
 
@@ -449,7 +449,7 @@ l2a:/* Step 2a: determine step direction */
 
 
 inline bool add_constraint(MatrixXd& R, MatrixXd& J, VectorXd& d, int& iq, double& R_norm) {
-  int n=J.rows();
+  int n = J.rows();
 #ifdef TRACE_SOLVER
   std::cerr << "Add constraint " << iq << '/';
 #endif
