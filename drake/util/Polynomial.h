@@ -56,7 +56,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
   bool is_univariate;
 
  public:
-  Polynomial(void) : is_univariate(true){}
+  Polynomial(void) : is_univariate(true) {}
   Polynomial(const CoefficientType& scalar);  // this is required for some Eigen
                                               // operations when used in a
                                               // polynomial matrix
