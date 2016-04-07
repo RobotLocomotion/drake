@@ -118,8 +118,7 @@ class NonlinearProgram : public MathematicalProgram {
     virtual MathematicalProgramInterface* AddLinearEqualityConstraint() { return
    new
     LinearProgram; };
-    virtual MathematicalProgramInterface* AddLinearInequalityConstraint() {
-   return
+    virtual MathematicalProgramInterface* AddLinearInequalityConstraint() { return
     new LinearProgram; };
     };
 
