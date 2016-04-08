@@ -143,5 +143,4 @@ class DRAKESHAPES_EXPORT FlatTerrain : public HeightMapTerrain {
 
 }  // namespace DrakeShapes
 
-#endif
-// DRAKE_SYSTEMS_PLANTS_SHAPES_HEIGHTMAPTERRAIN_H_
+#endif  // DRAKE_SYSTEMS_PLANTS_SHAPES_HEIGHTMAPTERRAIN_H_

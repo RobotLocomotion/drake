@@ -42,5 +42,4 @@ class GatherHeightMapAsGridCallBack : public btTriangleCallback {
 
 }  // namespace DrakeCollision
 
-#endif
-// DRAKE_SYSTEMS_PLANTS_COLLISION_BULLETHEIGHTMAPTERRAIN_H_
+#endif  // DRAKE_SYSTEMS_PLANTS_COLLISION_BULLETHEIGHTMAPTERRAIN_H_

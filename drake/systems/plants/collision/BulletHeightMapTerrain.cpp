@@ -8,7 +8,7 @@ using namespace Eigen;
 
 namespace DrakeCollision {
 
-void GatherHeightMapAsGridCallBack::processTriangle(btVector3* triangle,
+void GatherHeightMapAsGridCallBack::processTriangle(btVector3* triangle,  //
                                                     int i, int j) {
   int n = m_grid_points.size();
   m_connectivities.push_back(Vector3i(n + 1, n + 2, n + 3));

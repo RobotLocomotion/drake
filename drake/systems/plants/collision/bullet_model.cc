@@ -185,14 +185,14 @@ std::unique_ptr<btCollisionShape> BulletModel::newBulletHeightMapTerrainShape(
   bullet_height_map.processAllTriangles(&grid_buffer,aabbMin,aabbMax);
 
   //write vertices
-  for(int i=0;i<grid_buffer.numPoints();i++){
+  for (int i=0;i<grid_buffer.numPoints();i++){
     btVector3 vertex = grid_buffer.getPoint(i);
     file << "v " << vertex[0] << " " << vertex[1] << " " << vertex[2] << " "
          << std::endl;
   }
 
   //write connectivities (two triangles per cell)
-  for(int i=0;i<grid_buffer.numTriangles();i++){
+  for (int i=0;i<grid_buffer.numTriangles();i++){
     Vector3i conn = grid_buffer.getTriangle(i);
     file << "f " << conn[0] << " " << conn[1] << " " << conn[2] << std::endl;
   }
@@ -798,7 +798,7 @@ bool BulletModel::isEverybodyConvex() const {
   for (const auto& bt_obj_iter : bullet_world_.bt_collision_objects) {
     const auto* bt_collision_obj = bt_obj_iter.second.get();
     const auto* bt_collision_shape = bt_collision_obj->getCollisionShape();
-    if(!bt_collision_shape->isConvex()) return false;
+    if (!bt_collision_shape->isConvex()) return false;
   }
   return true;
 }
