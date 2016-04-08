@@ -57,7 +57,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   // the optimization framework should support this (though it has not been
   // tested thoroughly yet)
   OptimizationProblem prog;
-  auto const& vdot = prog.addContinuousVariables(nv, "vdot");
+  auto const& vdot = prog.AddContinuousVariables(nv, "vdot");
 
   auto H = tree->massMatrix(kinsol);
   Eigen::MatrixXd H_and_neg_JT = H;
@@ -136,9 +136,9 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
         }
         Vector3d tangent2 = this_normal.cross(tangent1);
         Matrix3d R;  // rotation into normal coordinates
-	R.row(0) = tangent1;
-	R.row(1) = tangent2;
-	R.row(2) = this_normal;
+        R.row(0) = tangent1;
+        R.row(1) = tangent2;
+        R.row(2) = this_normal;
         auto J = R * (JA - JB);          // J = [ D1; D2; n ]
         auto relative_velocity = J * v;  // [ tangent1dot; tangent2dot; phidot ]
 
@@ -171,7 +171,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
     const double alpha = 5.0;  // 1/time constant of position constraint
                                // satisfaction (see my latex rigid body notes)
 
-    prog.addContinuousVariables(
+    prog.AddContinuousVariables(
         nc, "position constraint force");  // don't actually need to use the
                                            // decision variable reference that
                                            // would be returned...
@@ -183,17 +183,17 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
 
     // phiddot = -2 alpha phidot - alpha^2 phi  (0 + critically damped
     // stabilization term)
-    prog.addLinearEqualityConstraint(
+    prog.AddLinearEqualityConstraint(
         J, -(Jdotv + 2 * alpha * J * v + alpha * alpha * phi), {vdot});
     H_and_neg_JT.conservativeResize(NoChange, H_and_neg_JT.cols() + J.rows());
     H_and_neg_JT.rightCols(J.rows()) = -J.transpose();
   }
 
   // add [H,-J^T]*[vdot;f] = -C
-  prog.addLinearEqualityConstraint(H_and_neg_JT, -C);
+  prog.AddLinearEqualityConstraint(H_and_neg_JT, -C);
 
-  prog.solve();
-  //      prog.printSolution();
+  prog.Solve();
+  //      prog.PrintSolution();
 
   StateVector<double> dot(nq + nv);
   dot << kinsol.transformPositionDotMappingToVelocityMapping(
@@ -206,8 +206,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
 
 RigidBodySystem::OutputVector<double> RigidBodySystem::output(const double& t,
                                                               const RigidBodySystem::StateVector<double>& x,
-                                                              const RigidBodySystem::InputVector<double>& u) const
-{
+                                                              const RigidBodySystem::InputVector<double>& u) const {
   auto kinsol = tree->doKinematics(x.topRows(tree->num_positions), x.bottomRows(tree->num_velocities));
   Eigen::VectorXd y(getNumOutputs());
 
@@ -231,7 +230,7 @@ class SingleTimeKinematicConstraintWrapper : public Constraint {
       : Constraint(rigid_body_constraint->getNumConstraint(nullptr)),
         rigid_body_constraint(rigid_body_constraint),
         kinsol(rigid_body_constraint->getRobotPointer()->bodies) {
-    rigid_body_constraint->bounds(nullptr, lower_bound, upper_bound);
+    rigid_body_constraint->bounds(nullptr, lower_bound_, upper_bound_);
   }
   virtual ~SingleTimeKinematicConstraintWrapper() {}
 
@@ -275,7 +274,7 @@ Drake::getInitialState(const RigidBodySystem& sys) {
         loops = sys.tree->loops;
 
     int nq = sys.tree->num_positions;
-    auto qvar = prog.addContinuousVariables(nq);
+    auto qvar = prog.AddContinuousVariables(nq);
 
     Matrix<double, 7, 1> bTbp = Matrix<double, 7, 1>::Zero();
     bTbp(3) = 1.0;
@@ -289,19 +288,19 @@ Drake::getInitialState(const RigidBodySystem& sys) {
           loops[i].frameB->frame_index, bTbp, tspan);
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con1wrapper(
           new SingleTimeKinematicConstraintWrapper(con1));
-      prog.addGenericConstraint(con1wrapper, {qvar});
+      prog.AddGenericConstraint(con1wrapper, {qvar});
       auto con2 = make_shared<RelativePositionConstraint>(
           sys.tree.get(), loops[i].axis, loops[i].axis, loops[i].axis,
           loops[i].frameA->frame_index, loops[i].frameB->frame_index, bTbp,
           tspan);
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con2wrapper(
           new SingleTimeKinematicConstraintWrapper(con2));
-      prog.addGenericConstraint(con2wrapper, {qvar});
+      prog.AddGenericConstraint(con2wrapper, {qvar});
     }
 
     VectorXd q_guess = x0.topRows(nq);
-    prog.addQuadraticCost(MatrixXd::Identity(nq, nq), q_guess);
-    prog.solve();
+    prog.AddQuadraticCost(MatrixXd::Identity(nq, nq), q_guess);
+    prog.Solve();
 
     x0 << qvar.value(), VectorXd::Zero(sys.tree->num_velocities);
   }
@@ -391,8 +390,7 @@ RigidBodyAccelerometer::RigidBodyAccelerometer(RigidBodySystem const& sys,
 
 Eigen::VectorXd RigidBodyAccelerometer::output(const double &t,
                                                const KinematicsCache<double> &rigid_body_state,
-                                               const RigidBodySystem::InputVector<double>& u) const
-{
+                                               const RigidBodySystem::InputVector<double>& u) const {
   VectorXd x = rigid_body_state.getX();
   auto xdd = sys.dynamics(t, x, u);
   auto const& tree = sys.getRigidBodyTree();
@@ -405,7 +403,7 @@ Eigen::VectorXd RigidBodyAccelerometer::output(const double &t,
   Vector3d accel_base = Jdot_times_v + J * v_dot;
   Vector3d accel_body = quatRotateVec(quat_world_to_body, accel_base);
 
-  if(gravity_compensation) {
+  if (gravity_compensation) {
     Vector3d gravity(0, 0, 9.81);
     accel_body += quatRotateVec(quat_world_to_body, gravity);
   }
@@ -547,10 +545,10 @@ Eigen::VectorXd RigidBodyDepthSensor::output(const double &t,
 
   sys.getRigidBodyTree()->collisionRaycast(rigid_body_state, origin, raycast_endpoints_world, distances);
 
-  for(size_t i = 0; i < num_distances; i++) {
-    if(distances[i] < 0.0 || distances[i] > max_range) {
+  for (size_t i = 0; i < num_distances; i++) {
+    if (distances[i] < 0.0 || distances[i] > max_range) {
       distances[i] = max_range;
-    } else if(distances[i] < min_range) {
+    } else if (distances[i] < min_range) {
       distances[i] = min_range;
     }
   }
@@ -573,8 +571,7 @@ void parseForceElement(RigidBodySystem &sys, XMLElement* node) {
   }
 }
 
-void parseRobot(RigidBodySystem &sys, XMLElement* node)
-{
+void parseRobot(RigidBodySystem &sys, XMLElement* node) {
   if (!node->Attribute("name"))
     throw runtime_error("Error: your robot must have a name attribute");
   string robotname = node->Attribute("name");
@@ -586,20 +583,17 @@ void parseRobot(RigidBodySystem &sys, XMLElement* node)
 }
 
 
-void parseURDF(RigidBodySystem &sys, XMLDocument *xml_doc)
-{
+void parseURDF(RigidBodySystem &sys, XMLDocument *xml_doc) {
   XMLElement *node = xml_doc->FirstChildElement("robot");
   if (!node) throw std::runtime_error("ERROR: This urdf does not contain a robot tag");
   parseRobot(sys, node);
 }
 
-void parseSDFJoint(RigidBodySystem &sys, string model_name, XMLElement* node, PoseMap& pose_map)
-{
+void parseSDFJoint(RigidBodySystem &sys, string model_name, XMLElement* node, PoseMap& pose_map) {
   // todo: parse joint sensors
 }
 
-void parseSDFLink(RigidBodySystem &sys, string model_name, XMLElement* node, PoseMap& pose_map)
-{
+void parseSDFLink(RigidBodySystem &sys, string model_name, XMLElement* node, PoseMap& pose_map) {
   const char* attr = node->Attribute("name");
   if (!attr) throw runtime_error("ERROR: link tag is missing name attribute");
   string link_name(attr);
@@ -646,8 +640,7 @@ void parseSDFLink(RigidBodySystem &sys, string model_name, XMLElement* node, Pos
 }
 
 
-void parseSDFModel(RigidBodySystem &sys, XMLElement* node)
-{
+void parseSDFModel(RigidBodySystem &sys, XMLElement* node) {
   PoseMap pose_map;  // because sdf specifies almost everything in the global (actually model) coordinates instead of relative coordinates.  sigh...
 
   if (!node->Attribute("name"))
@@ -664,8 +657,7 @@ void parseSDFModel(RigidBodySystem &sys, XMLElement* node)
 }
 
 
-void parseSDF(RigidBodySystem &sys, XMLDocument *xml_doc)
-{
+void parseSDF(RigidBodySystem &sys, XMLDocument *xml_doc) {
   XMLElement *node = xml_doc->FirstChildElement("sdf");
   if (!node) throw std::runtime_error("ERROR: This xml file does not contain an sdf tag");
 
@@ -739,4 +731,3 @@ void RigidBodySystem::addRobotFromFile(
     throw runtime_error("unknown file extension: " + ext);
   }
 }
-

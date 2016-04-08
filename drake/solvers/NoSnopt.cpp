@@ -1,12 +1,13 @@
 
-#include <stdexcept>
-#include "MathematicalProgram.h"
+#include "drake/solvers/SnoptSolver.h"
 
-bool Drake::MathematicalProgramSNOPTSolver::available() const {
+#include <stdexcept>
+
+bool Drake::SnoptSolver::available() const {
   return false;
 }
 
-bool Drake::MathematicalProgramSNOPTSolver::solve(
+bool Drake::SnoptSolver::Solve(
     OptimizationProblem &prog) const {
   throw std::runtime_error(
       "The SNOPT bindings were not compiled.  You'll need to use a different "

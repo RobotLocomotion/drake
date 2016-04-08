@@ -10,9 +10,30 @@
 #include <stdexcept>
 #include "drake/drakePolynomial_export.h"
 
-// represents a scalar multi-variate polynomial
-// modeled after the msspoly in spotless
-
+/// A scalar multi-variate polynomial, modeled after the msspoly in spotless.
+/**
+ * Polynomial represents a list of additive Monomials, each one of which is a
+ * product of a constant coefficient (of _CoefficientType, which by default is
+ * double) and any number of distinct Terms (variables raised to positive
+ * integer powers).
+ *
+ * Variables are identified by integer indices rather than symbolic names, but
+ * an automatic facility is provided to covert variable names up to four
+ * characters into unique integers, provided those variables are named using
+ * only lowercase letters and the "@#_." characters followed by a number.  For
+ * example, valid names include "dx4" and "m_x".
+ *
+ * Monomials which have the same variables and powers may be constructed but
+ * will be automatically combined:
+ *   (3 * a * b * a) + (1.5 * b * a**2)
+ * will be reduced to
+ *   (4.5 * b * a**2)
+ * internally after construction.
+ *
+ * Polynomials can be added, subtracted, and multiplied.  They may only be
+ * divided by scalars (of _CoefficientType) because Polynomials are not closed
+ * under division.
+ */
 template <typename _CoefficientType = double>
 class DRAKEPOLYNOMIAL_EXPORT Polynomial {
  public:
@@ -32,6 +53,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
     typedef decltype((Rhs)0 * (Lhs)0) type;
   };
 
+  /// An individual variable raised to an integer power; e.g. x**2.
   class Term {
    public:
     VarType var;
@@ -42,6 +64,8 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
     }
   };
 
+  /// \brief An additive atom of a Polynomial: The product of any number of
+  /// Terms and a coefficient.
   class Monomial {
    public:
     CoefficientType coefficient;
@@ -52,21 +76,37 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
   };
 
  private:
+  /// The Monomial atoms of the Polynomial.
   std::vector<Monomial> monomials;
+
+  /// True iff only 0 or 1 distinct variables appear in the Polynomial.
   bool is_univariate;
 
  public:
-  Polynomial(void) : is_univariate(true){}
-  Polynomial(const CoefficientType& scalar);  // this is required for some Eigen
-                                              // operations when used in a
-                                              // polynomial matrix
+  /// Construct the vacuous polynomial, "0".
+  Polynomial(void) : is_univariate(true) {}
+
+  /// Construct a Polynomial of a single constant. e.g. "5".
+  // This is required for some Eigen operations when used in a
+  // polynomial matrix.
+  Polynomial(const CoefficientType& scalar);
+
+  /// Construct a Polynomial consisting of a single Monomial, e.g. "5xy**3".
   Polynomial(const CoefficientType coeff, const std::vector<Term>& terms);
+
+  /// Construct a Polynomial from a sequence of Monomials.
   Polynomial(typename std::vector<Monomial>::const_iterator start,
              typename std::vector<Monomial>::const_iterator finish);
+
+  /// Construct a polynomial consisting of a single Monomial of the variable
+  /// named varname + num.
   Polynomial(const std::string varname, const unsigned int num = 1);
+
+  /// Construct a single Monomial of the given coefficient and variable.
   Polynomial(const CoefficientType& coeff, const VarType& v);
 
-  // continue to support the old (univariate) constructor
+  /// A legacy constructor for univariate polynomials:  Takes a vector
+  /// of coefficients for the constant, x, x**2, x**3... Monomials.
   template <typename Derived>
   Polynomial(Eigen::MatrixBase<Derived> const& coefficients) {
     VarType v = variableNameToId("t");
@@ -84,21 +124,33 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
     is_univariate = true;
   }
 
+  /// Returns the number of unique Monomials (and thus the number of
+  /// coefficients) in this Polynomial.
   int getNumberOfCoefficients() const;
 
+  /// Returns the highest degree of any Monomial in this Polynomial.
+  /**
+   * The degree of a multivariate Monomial is the product of the degrees of
+   * each of its terms. */
   int getDegree() const;
 
-  // getSimpleVariable()
-  // if the polynomial is "simple" -- e.g. just a single term with
-  // coefficient 1 -- then return that variable.  otherwise return 0
+  /// If the polynomial is "simple" -- e.g. just a single term with
+  /// coefficient 1 -- then returns that variable; otherwise returns 0.
   VarType getSimpleVariable() const;
 
   const std::vector<Monomial>& getMonomials() const;
 
   Eigen::Matrix<CoefficientType, Eigen::Dynamic, 1> getCoefficients() const;
 
-  template <typename T>  // can be different from both CoefficientsType and
-  // RealScalar
+  /// Evaluate a univariate Polynomial at a specific point.
+  /**
+   * Evaluates a univariate Polynomial at the given x.  Throws an
+   * exception of this Polynomial is not univariate.
+   *
+   * x may be of any type supporting the ** and + operations (which can
+   * be different from both CoefficientsType and RealScalar)
+   */
+  template <typename T>
   typename Product<CoefficientType, T>::type value(const T& x) const {
     typedef typename Product<CoefficientType, T>::type ProductType;
 
@@ -119,10 +171,28 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
     return value;
   }
 
+  /// Replaces all instances of variable orig with replacement.
   void subs(const VarType& orig, const VarType& replacement);
 
+  /// Takes the derivative of this (univariate) Polynomial.
+  /**
+   * Returns a new Polynomial that is the derivative of this one in its sole
+   * variable.  Throws an exception of this Polynomial is not univariate.
+   *
+   * If derivative_order is given, takes the nth derivative of this
+   * Polynomial.
+   */
   Polynomial derivative(unsigned int derivative_order = 1) const;
 
+  /// Takes the integral of this (univariate, non-constant) Polynomial.
+  /**
+   * Returns a new Polynomial that is the indefinite integral of this one in
+   * its sole variable.  Throws an exception of this Polynomial is not
+   * univariate, or if it has no variables.
+   *
+   * If integration_constant is given, adds that constant as the constant
+   * term (zeroth-order coefficient) of the resulting Polynomial.
+   */
   Polynomial integral(const CoefficientType& integration_constant = 0.0) const;
 
   Polynomial& operator+=(const Polynomial& other);
@@ -190,8 +260,20 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
 
   const Polynomial operator/(const CoefficientType& scalar) const;
 
+  /// Returns the roots of this (univariate) Polynomial.
+  /**
+   * Returns the roots of a univariate Polynomial as an Eigen column vector of
+   * complex numbers whose components are of the RealScalar type.  Throws an
+   * exception of this Polynomial is not univariate.
+   */
   RootsType roots() const;
 
+  /// Checks if a (univariate) Polynomial is approximately equal to this one.
+  /**
+   * Checks that every coefficient of other is within tol of the
+   * corresponding coefficient of this Polynomial.  Throws an exception if
+   * either Polynomial is not univariate.
+   */
   bool isApprox(const Polynomial& other, const RealScalar& tol) const;
 
   friend std::ostream& operator<<(std::ostream& os, const Monomial& m) {
@@ -235,6 +317,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
     return os;
   }
 
+  /// Obtains a matrix of random unvariate Polynomials of the specified size.
   static Eigen::Matrix<Polynomial, Eigen::Dynamic, Eigen::Dynamic>
   randomPolynomialMatrix(Eigen::Index num_coefficients_per_polynomial,
                          Eigen::Index rows, Eigen::Index cols) {
@@ -251,14 +334,17 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
   }
 
  private:
+  //@{
+  /** Variable name/ID conversion facility. */
   static bool isValidVariableName(const std::string name);
 
   static VarType variableNameToId(const std::string name,
                                   const unsigned int m = 1);
 
   static std::string idToVariableName(const VarType id);
+  //@}
 
-  // sorts through monomial list and merges any that have the same powers
+  /// Sorts through Monomial list and merges any that have the same powers.
   void makeMonomialsUnique(void);
 };
 

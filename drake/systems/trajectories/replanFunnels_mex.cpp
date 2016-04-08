@@ -160,9 +160,7 @@ double *shiftAndTransform(double *verts, double *vertsT, const mxArray *x,
 /* Constraint to make sure current state is in inlet of shifted funnel
  */
 double containmentConstraint(snopt::doublereal x_shift[],
-                             double *containment_grad)
-
-{
+                             double *containment_grad) {
   // Initialize some variables
   mxArray *x0 =
       mxGetField(funnelLibrary, funnelIdx, "x0");  // all points on trajectory
@@ -559,8 +557,7 @@ bool shiftFunnel_snopt(int funnelIdx, const mxArray *funnelLibrary,
   // Set min distance
   *min_dist = min_dist_snopt;
 
-  if (*min_dist > 1.0)  // Collision free
-  {
+  if (*min_dist > 1.0) {  // Collision free
     delete[] F;
     return true;
   } else {
@@ -760,8 +757,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     if (shift_method_mx != NULL) {
       shift_method = mxArrayToString(shift_method_mx);
 
-      if (strcmp(shift_method, "snopt") == 0)  // if snopt
-      {
+      if (strcmp(shift_method, "snopt") == 0) {  // if snopt
         shift_using_snopt = true;
       }
     }
