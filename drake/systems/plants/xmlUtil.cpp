@@ -121,7 +121,7 @@ void searchDirectory(map<string, string>& package_map, string path) {
 
   while (getline(iss, token, pathsep)) {
     tinydir_dir dir;
-    if (tinydir_open(&dir, token.c_str()) < 0 ) {
+    if (tinydir_open(&dir, token.c_str()) < 0) {
       std::cerr << "Unable to open directory: " << token << std::endl;
       continue;
     }
