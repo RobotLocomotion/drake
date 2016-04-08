@@ -472,9 +472,7 @@ string Polynomial<CoefficientType>::idToVariableName(const VarType id) {
   }
   if (j == 0) name[j++] = kNameChars[0];
   name[j] = '\0';
-  return string(name) +
-         std::to_string(static_cast<uint64_t>(m + 1));  // for msvc
-                                                        // http://stackoverflow.com/questions/10664699/stdto-string-more-than-instance-of-overloaded-function-matches-the-argument
+  return string(name) + std::to_string((m + 1));
 }
 
 template <typename CoefficientType>
