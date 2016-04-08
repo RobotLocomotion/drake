@@ -422,9 +422,9 @@ bool Polynomial<CoefficientType>::isApprox(const Polynomial& other,
 }
 
 const char kNameChars[] = "@#_.abcdefghijklmnopqrstuvwxyz";
-const unsigned int kNumNameChars = sizeof(kNameChars);
+const unsigned int kNumNameChars = sizeof(kNameChars) - 1;
 const unsigned int kNameLength = 4;
-const unsigned int kMaxNamePart = 923521;  // (num_name_chars+1)^name_length;
+const unsigned int kMaxNamePart = 923521;  // (kNumNameChars+1)^kNameLength;
 
 template <typename CoefficientType>
 bool Polynomial<CoefficientType>::isValidVariableName(const string name) {
@@ -442,11 +442,12 @@ Polynomial<CoefficientType>::variableNameToId(const string name,
   unsigned int multiplier = 1;
   VarType name_part = 0;
   for (int i = (int)name.size() - 1; i >= 0; i--) {
-    multiplier *= kNumNameChars + 1;
     VarType offset = static_cast<VarType>(
         strchr(kNameChars, name[i]) - kNameChars);
     name_part += (offset + 1) * multiplier;
+    multiplier *= kNumNameChars + 1;
   }
+  if (name_part > kMaxNamePart) throw runtime_error("name exceeds max allowed");
   const VarType maxId = std::numeric_limits<VarType>::max() / 2 / kMaxNamePart;
   if (m > maxId) throw runtime_error("name exceeds max ID");
   if (m < 1) throw runtime_error("m must be >0");
