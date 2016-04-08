@@ -1,5 +1,5 @@
-#ifndef BULLET_HEIGHT_MAP_TERRAIN_H_
-#define BULLET_HEIGHT_MAP_TERRAIN_H_
+#ifndef DRAKE_SYSTEMS_PLANTS_COLLISION_BULLETHEIGHTMAPTERRAIN_H_
+#define DRAKE_SYSTEMS_PLANTS_COLLISION_BULLETHEIGHTMAPTERRAIN_H_
 
 #include <btBulletCollisionCommon.h>
 #include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
@@ -43,4 +43,4 @@ class GatherHeightMapAsGridCallBack : public btTriangleCallback {
 }  // namespace DrakeCollision
 
 #endif
-// BULLET_HEIGHT_MAP_TERRAIN_H_
+// DRAKE_SYSTEMS_PLANTS_COLLISION_BULLETHEIGHTMAPTERRAIN_H_
