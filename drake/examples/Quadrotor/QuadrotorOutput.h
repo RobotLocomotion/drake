@@ -71,7 +71,7 @@ public:
            "gyro_x", "gyro_y", "gyro_z",
            "mag_x", "mag_y", "mag_z"
           };
-      if(index >= 22) return "lidar_" + std::to_string(index - 22);
+      if (index >= 22) return "lidar_" + std::to_string(index - 22);
       return index >= 0 && index < RowsAtCompileTime ? coordinate_names[index] : std::string("error");
     }
 

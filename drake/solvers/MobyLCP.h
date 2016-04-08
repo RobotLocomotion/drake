@@ -13,47 +13,46 @@
 
 namespace Drake {
 
-class DRAKEOPTIMIZATION_EXPORT MobyLCPSolver :
-      public MathematicalProgramSolverInterface {
+class DRAKEOPTIMIZATION_EXPORT MobyLCPSolver
+    : public MathematicalProgramSolverInterface {
  public:
   MobyLCPSolver();
   virtual ~MobyLCPSolver() {}
-  void setLoggingEnabled(bool);
+  void SetLoggingEnabled(bool);
 
-  bool lcp_fast(
-      const Eigen::MatrixXd& M, const Eigen::VectorXd& q, Eigen::VectorXd* z,
-      double zero_tol = -1.0) const;
-  bool lcp_fast_regularized(
-      const Eigen::MatrixXd& M, const Eigen::VectorXd& q, Eigen::VectorXd* z,
-      int min_exp = -20, unsigned step_exp = 4, int max_exp = 20,
-      double zero_tol = -1.0) const;
-  bool lcp_lemke(
-      const Eigen::MatrixXd& M, const Eigen::VectorXd& q, Eigen::VectorXd* z,
-      double piv_tol = -1.0, double zero_tol = -1.0) const;
-  bool lcp_lemke_regularized(
-      const Eigen::MatrixXd& M, const Eigen::VectorXd& q, Eigen::VectorXd* z,
-      int min_exp = -20, unsigned step_exp = 1, int max_exp = 1,
-      double piv_tol = -1.0, double zero_tol = -1.0) const;
-  bool lcp_lemke(
-      const Eigen::SparseMatrix<double>& M, const Eigen::VectorXd& q,
-      Eigen::VectorXd* z,
-      double piv_tol = -1.0, double zero_tol = -1.0) const;
-  bool lcp_lemke_regularized(
-      const Eigen::SparseMatrix<double>& M, const Eigen::VectorXd& q,
-      Eigen::VectorXd* z,
-      int min_exp = -20, unsigned step_exp = 4, int max_exp = 20,
-      double piv_tol = -1.0, double zero_tol = -1.0) const;
+  bool SolveLcpFast(const Eigen::MatrixXd& M, const Eigen::VectorXd& q,
+                    Eigen::VectorXd* z, double zero_tol = -1.0) const;
+  bool SolveLcpFastRegularized(const Eigen::MatrixXd& M,
+                               const Eigen::VectorXd& q, Eigen::VectorXd* z,
+                               int min_exp = -20, unsigned step_exp = 4,
+                               int max_exp = 20, double zero_tol = -1.0) const;
+  bool SolveLcpLemke(const Eigen::MatrixXd& M, const Eigen::VectorXd& q,
+                     Eigen::VectorXd* z, double piv_tol = -1.0,
+                     double zero_tol = -1.0) const;
+  bool SolveLcpLemkeRegularized(const Eigen::MatrixXd& M,
+                                const Eigen::VectorXd& q, Eigen::VectorXd* z,
+                                int min_exp = -20, unsigned step_exp = 1,
+                                int max_exp = 1, double piv_tol = -1.0,
+                                double zero_tol = -1.0) const;
+  bool SolveLcpLemke(const Eigen::SparseMatrix<double>& M,
+                     const Eigen::VectorXd& q, Eigen::VectorXd* z,
+                     double piv_tol = -1.0, double zero_tol = -1.0) const;
+  bool SolveLcpLemkeRegularized(const Eigen::SparseMatrix<double>& M,
+                                const Eigen::VectorXd& q, Eigen::VectorXd* z,
+                                int min_exp = -20, unsigned step_exp = 4,
+                                int max_exp = 20, double piv_tol = -1.0,
+                                double zero_tol = -1.0) const;
 
   virtual bool available() const override { return true; }
-  virtual bool solve(OptimizationProblem& prog) const override;
+  virtual bool Solve(OptimizationProblem& prog) const override;
 
  private:
-  void clearIndexVectors() const;
-  bool checkLemkeTrivial(int n, double zero_tol,
-                         const Eigen::VectorXd& q, Eigen::VectorXd* z) const;
+  void ClearIndexVectors() const;
+  bool CheckLemkeTrivial(int n, double zero_tol, const Eigen::VectorXd& q,
+                         Eigen::VectorXd* z) const;
   template <typename MatrixType>
-  void lemkeFoundSolution(const MatrixType& M, const Eigen::VectorXd& q,
-                          Eigen::VectorXd* z) const;
+  void FinishLemkeSolution(const MatrixType& M, const Eigen::VectorXd& q,
+                           Eigen::VectorXd* z) const;
 
   // TODO(sammy-tri) replace this with a proper logging hookup
   std::ostream& LOG() const;
@@ -87,6 +86,6 @@ class DRAKEOPTIMIZATION_EXPORT MobyLCPSolver :
   mutable Eigen::SparseMatrix<double> _MMs, _MMx, _eye, _zero, _diag_lambda;
 };
 
-} // end namespace Drake
+}  // end namespace Drake
 
-#endif // DRAKE_SOLVERS_MOBYLCP_H_
+#endif  // DRAKE_SOLVERS_MOBYLCP_H_

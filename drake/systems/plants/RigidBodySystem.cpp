@@ -56,7 +56,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   // the optimization framework should support this (though it has not been
   // tested thoroughly yet)
   OptimizationProblem prog;
-  auto const& vdot = prog.addContinuousVariables(nv, "vdot");
+  auto const& vdot = prog.AddContinuousVariables(nv, "vdot");
 
   auto H = tree->massMatrix(kinsol);
   Eigen::MatrixXd H_and_neg_JT = H;
@@ -170,7 +170,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
     const double alpha = 5.0;  // 1/time constant of position constraint
                                // satisfaction (see my latex rigid body notes)
 
-    prog.addContinuousVariables(
+    prog.AddContinuousVariables(
         nc, "position constraint force");  // don't actually need to use the
                                            // decision variable reference that
                                            // would be returned...
@@ -182,17 +182,17 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
 
     // phiddot = -2 alpha phidot - alpha^2 phi  (0 + critically damped
     // stabilization term)
-    prog.addLinearEqualityConstraint(
+    prog.AddLinearEqualityConstraint(
         J, -(Jdotv + 2 * alpha * J * v + alpha * alpha * phi), {vdot});
     H_and_neg_JT.conservativeResize(NoChange, H_and_neg_JT.cols() + J.rows());
     H_and_neg_JT.rightCols(J.rows()) = -J.transpose();
   }
 
   // add [H,-J^T]*[vdot;f] = -C
-  prog.addLinearEqualityConstraint(H_and_neg_JT, -C);
+  prog.AddLinearEqualityConstraint(H_and_neg_JT, -C);
 
-  prog.solve();
-  //      prog.printSolution();
+  prog.Solve();
+  //      prog.PrintSolution();
 
   StateVector<double> dot(nq + nv);
   dot << kinsol.transformPositionDotMappingToVelocityMapping(
@@ -230,7 +230,7 @@ class SingleTimeKinematicConstraintWrapper : public Constraint {
       : Constraint(rigid_body_constraint->getNumConstraint(nullptr)),
         rigid_body_constraint(rigid_body_constraint),
         kinsol(rigid_body_constraint->getRobotPointer()->bodies) {
-    rigid_body_constraint->bounds(nullptr, lower_bound, upper_bound);
+    rigid_body_constraint->bounds(nullptr, lower_bound_, upper_bound_);
   }
   virtual ~SingleTimeKinematicConstraintWrapper() {}
 
@@ -274,7 +274,7 @@ Drake::getInitialState(const RigidBodySystem& sys) {
         loops = sys.tree->loops;
 
     int nq = sys.tree->num_positions;
-    auto qvar = prog.addContinuousVariables(nq);
+    auto qvar = prog.AddContinuousVariables(nq);
 
     Matrix<double, 7, 1> bTbp = Matrix<double, 7, 1>::Zero();
     bTbp(3) = 1.0;
@@ -288,19 +288,19 @@ Drake::getInitialState(const RigidBodySystem& sys) {
           loops[i].frameB->frame_index, bTbp, tspan);
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con1wrapper(
           new SingleTimeKinematicConstraintWrapper(con1));
-      prog.addGenericConstraint(con1wrapper, {qvar});
+      prog.AddGenericConstraint(con1wrapper, {qvar});
       auto con2 = make_shared<RelativePositionConstraint>(
           sys.tree.get(), loops[i].axis, loops[i].axis, loops[i].axis,
           loops[i].frameA->frame_index, loops[i].frameB->frame_index, bTbp,
           tspan);
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con2wrapper(
           new SingleTimeKinematicConstraintWrapper(con2));
-      prog.addGenericConstraint(con2wrapper, {qvar});
+      prog.AddGenericConstraint(con2wrapper, {qvar});
     }
 
     VectorXd q_guess = x0.topRows(nq);
-    prog.addQuadraticCost(MatrixXd::Identity(nq, nq), q_guess);
-    prog.solve();
+    prog.AddQuadraticCost(MatrixXd::Identity(nq, nq), q_guess);
+    prog.Solve();
 
     x0 << qvar.value(), VectorXd::Zero(sys.tree->num_velocities);
   }
