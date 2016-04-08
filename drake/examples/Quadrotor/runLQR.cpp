@@ -5,6 +5,7 @@
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/feedback_system.h"
+#include "drake/util/drakeAppUtil.h"
 
 using namespace std;
 using namespace Eigen;
@@ -41,6 +42,9 @@ int main(int argc, char* argv[]) {
   SimulationOptions options;
   options.realtime_factor = 1.0;
   options.initial_step_size = 0.005;
+  if (commandLineOptionExists(argv, argv + argc, "--non-realtime")) {
+    options.warn_real_time_violation = true;
+  }
 
   for (int i = 0; i < 5; i++) {
     Eigen::Matrix<double, 12, 1> x0 = toEigen(xG);

@@ -33,9 +33,9 @@ Unreleased: changes on master, not yet released
 [//]: # "Smaller bug fixes.  No API changes."
 ### Fixes
 
+ - [#2027][] Realtime C++ tests no longer fail under ctest.
  - [#2008][] `Drake::simulate(4-arg)` actually compiles again now.
  - [#1990][] Windows builds that include `bullet` are working again.
- - [#1985][] `runQuadrotorDynamics` no longer fails under ctest.
  - [#1975][] Fix coordinate frame error in rigid body collisions.
  - (Assorted) Non-functional fixes for `cpplint` compliance.
 
@@ -49,10 +49,10 @@ Changes in version v0.9.11 and before are not provided.
 
 [//]: # "You can use PimpMyChangelog to auto-update this list."
 [//]: # "https://github.com/pcreux/pimpmychangelog"
+[#2027]: https://github.com/RobotLocomotion/drake/issues/2027
 [#1953]: https://github.com/RobotLocomotion/drake/issues/1953
 [#1970]: https://github.com/RobotLocomotion/drake/issues/1970
 [#1975]: https://github.com/RobotLocomotion/drake/issues/1975
-[#1985]: https://github.com/RobotLocomotion/drake/issues/1985
 [#1990]: https://github.com/RobotLocomotion/drake/issues/1990
 [#1992]: https://github.com/RobotLocomotion/drake/issues/1992
 [#2008]: https://github.com/RobotLocomotion/drake/issues/2008
