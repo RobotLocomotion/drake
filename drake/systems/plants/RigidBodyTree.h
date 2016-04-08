@@ -35,7 +35,7 @@ class DRAKERBM_EXPORT RigidBodyActuator {
         body(body),
         reduction(reduction),
         effort_limit_min(effort_limit_min),
-        effort_limit_max(effort_limit_max){}
+        effort_limit_max(effort_limit_max) {}
 
   const std::string name;
   const std::shared_ptr<RigidBody> body;
@@ -49,7 +49,7 @@ class DRAKERBM_EXPORT RigidBodyLoop {
   RigidBodyLoop(std::shared_ptr<RigidBodyFrame> _frameA,
                 std::shared_ptr<RigidBodyFrame> _frameB,
                 const Eigen::Vector3d& _axis)
-      : frameA(_frameA), frameB(_frameB), axis(_axis){}
+      : frameA(_frameA), frameB(_frameB), axis(_axis) {}
 
   const std::shared_ptr<RigidBodyFrame> frameA, frameB;
   const Eigen::Vector3d axis;

@@ -206,8 +206,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
 
 RigidBodySystem::OutputVector<double> RigidBodySystem::output(const double& t,
                                                               const RigidBodySystem::StateVector<double>& x,
-                                                              const RigidBodySystem::InputVector<double>& u) const
-{
+                                                              const RigidBodySystem::InputVector<double>& u) const {
   auto kinsol = tree->doKinematics(x.topRows(tree->num_positions), x.bottomRows(tree->num_velocities));
   Eigen::VectorXd y(getNumOutputs());
 
@@ -391,8 +390,7 @@ RigidBodyAccelerometer::RigidBodyAccelerometer(RigidBodySystem const& sys,
 
 Eigen::VectorXd RigidBodyAccelerometer::output(const double &t,
                                                const KinematicsCache<double> &rigid_body_state,
-                                               const RigidBodySystem::InputVector<double>& u) const
-{
+                                               const RigidBodySystem::InputVector<double>& u) const {
   VectorXd x = rigid_body_state.getX();
   auto xdd = sys.dynamics(t, x, u);
   auto const& tree = sys.getRigidBodyTree();
@@ -573,8 +571,7 @@ void parseForceElement(RigidBodySystem &sys, XMLElement* node) {
   }
 }
 
-void parseRobot(RigidBodySystem &sys, XMLElement* node)
-{
+void parseRobot(RigidBodySystem &sys, XMLElement* node) {
   if (!node->Attribute("name"))
     throw runtime_error("Error: your robot must have a name attribute");
   string robotname = node->Attribute("name");
@@ -586,20 +583,17 @@ void parseRobot(RigidBodySystem &sys, XMLElement* node)
 }
 
 
-void parseURDF(RigidBodySystem &sys, XMLDocument *xml_doc)
-{
+void parseURDF(RigidBodySystem &sys, XMLDocument *xml_doc) {
   XMLElement *node = xml_doc->FirstChildElement("robot");
   if (!node) throw std::runtime_error("ERROR: This urdf does not contain a robot tag");
   parseRobot(sys, node);
 }
 
-void parseSDFJoint(RigidBodySystem &sys, string model_name, XMLElement* node, PoseMap& pose_map)
-{
+void parseSDFJoint(RigidBodySystem &sys, string model_name, XMLElement* node, PoseMap& pose_map) {
   // todo: parse joint sensors
 }
 
-void parseSDFLink(RigidBodySystem &sys, string model_name, XMLElement* node, PoseMap& pose_map)
-{
+void parseSDFLink(RigidBodySystem &sys, string model_name, XMLElement* node, PoseMap& pose_map) {
   const char* attr = node->Attribute("name");
   if (!attr) throw runtime_error("ERROR: link tag is missing name attribute");
   string link_name(attr);
@@ -646,8 +640,7 @@ void parseSDFLink(RigidBodySystem &sys, string model_name, XMLElement* node, Pos
 }
 
 
-void parseSDFModel(RigidBodySystem &sys, XMLElement* node)
-{
+void parseSDFModel(RigidBodySystem &sys, XMLElement* node) {
   PoseMap pose_map;  // because sdf specifies almost everything in the global (actually model) coordinates instead of relative coordinates.  sigh...
 
   if (!node->Attribute("name"))
@@ -664,8 +657,7 @@ void parseSDFModel(RigidBodySystem &sys, XMLElement* node)
 }
 
 
-void parseSDF(RigidBodySystem &sys, XMLDocument *xml_doc)
-{
+void parseSDF(RigidBodySystem &sys, XMLDocument *xml_doc) {
   XMLElement *node = xml_doc->FirstChildElement("sdf");
   if (!node) throw std::runtime_error("ERROR: This xml file does not contain an sdf tag");
 
