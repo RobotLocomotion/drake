@@ -10,7 +10,6 @@ Install the prerequisites::
     sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
     wget -q -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
 
-    # Ubuntu 14.04 LTS (Trusty)
     sudo add-apt-repository -y "deb http://llvm.org/apt/trusty/ llvm-toolchain-trusty-3.7 main"
 
     sudo apt-get update
@@ -23,7 +22,6 @@ Install the prerequisites::
       python-dev python-gtk2 python-numpy python-pip python-vtk subversion \
       swig valgrind
 
-    # Ubuntu 14.04 LTS (Trusty)
     sudo apt-get install cmake-curses-gui
 
     sudo pip install -U cpplint Sphinx
