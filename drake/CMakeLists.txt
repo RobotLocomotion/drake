@@ -133,11 +133,6 @@ configure_file(core/Path.h.in ${drake_path_header})
 install(FILES ${drake_path_header} DESTINATION include/drake/)
 include_directories(BEFORE ${generated_dir})
 
-find_package( Perl )
-if (MATLAB_FOUND AND NOT PERL_FOUND)
-  message(WARNING "Perl not found.  MATLAB unit tests will not run as a part of make test")
-endif()
-
 # add ctest for a matlab string
 # add_matlab_test(NAME <testname> COMMAND <matlab_string_to_eval>
 #         [CONFIGURATIONS <config>...]
@@ -146,7 +141,8 @@ endif()
 # note: default working directory is CMAKE_CURRENT_SOURCE_DIR
 # note: properties are set internally using set_tests_properties ( <testname> PROPERTIES <prop1> <value1> ...)
 function(add_matlab_test)
-  if (MATLAB_FOUND AND PERL_FOUND)
+  find_package(Matlab)
+  if (MATLAB_FOUND)
     set(oneValueArgs NAME COMMAND WORKING_DIRECTORY)
     set(multiValueArgs PROPERTIES)
     cmake_parse_arguments(parsed_args "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
@@ -156,20 +152,18 @@ function(add_matlab_test)
       set(parsed_args_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     endif()
 
-  # set(exit_status 1)   # missing dependency => failure
     set(exit_status "~strncmp(ex.identifier,'Drake:MissingDependency',23)")  # missing dependency => pass
-    set(matlab_command "addpath('${CMAKE_INSTALL_PREFIX}/matlab'); addpath_drake;  global g_disable_visualizers; g_disable_visualizers=true; try, eval('${parsed_args_COMMAND}'); catch ex, disp(getReport(ex,'extended')); disp(' '); force_close_system; exit(${exit_status}); end; force_close_system; exit(0)")
+    set(additional_paths "${CMAKE_INSTALL_PREFIX}/matlab;${parsed_args_WORKING_DIRECTORY};")
+    # ${parsed_args_WORKING_DIRECTORY}/test")
+    set(cmd_to_run_before_test "addpath_drake; global g_disable_visualizers; g_disable_visualizers=true;")
+    set(custom_Matlab_test_command "try, eval('${parsed_args_COMMAND}'); catch ex, disp(getReport(ex,'extended')); disp(' '); force_close_system; exit(${exit_status}); end; force_close_system; exit(0)")
+
     if (RANDOMIZED_UNIT_TESTS)
-      set(matlab_command "rng('shuffle'); rng_state=rng; disp(sprintf('To reproduce this test use rng(%d,''%s'')',rng_state.Seed,rng_state.Type)); disp(' '); ${matlab_command}")
-    endif()
-    set(call_matlab ${PERL_EXECUTABLE} ${CMAKE_SOURCE_DIR}/cmake/matlab_clean.pl -nosplash)
-    if (WIN32)
-       set(call_matlab ${call_matlab} -nodesktop -wait)
-    else()
-       set(call_matlab ${call_matlab} -nodisplay)
+      set(custom_Matlab_test_command "rng('shuffle'); rng_state=rng; disp(sprintf('To reproduce this test use rng(%d,''%s'')',rng_state.Seed,rng_state.Type)); disp(' '); ${custom_Matlab_test_command}")
     endif()
 
-    add_test(NAME ${parsed_args_NAME} COMMAND ${call_matlab} "-r" "${matlab_command}" WORKING_DIRECTORY ${parsed_args_WORKING_DIRECTORY} ${parsed_args_UNPARSED_ARGUMENTS})
+    matlab_add_unit_test(NAME ${parsed_args_NAME} ADDITIONAL_PATH ${additional_paths} UNITTEST_PRECOMMAND ${cmd_to_run_before_test} CUSTOM_TEST_COMMAND \"${custom_Matlab_test_command}\" WORKING_DIRECTORY ${parsed_args_WORKING_DIRECTORY})
+    
     if (parsed_args_PROPERTIES)
       set_tests_properties(${parsed_args_NAME} PROPERTIES ${parsed_args_PROPERTIES})
     endif()
