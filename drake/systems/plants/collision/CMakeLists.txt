@@ -1,5 +1,5 @@
 set(drakeCollision_SRC_FILES DrakeCollision.cpp Element.cpp point_pair.cc Model.cpp ResultCollector.cpp)
-pods_find_pkg_config(fcl)
+find_package(fcl)
 
 if (fcl_FOUND)
   #add_definitions( -DBULLET_COLLISION -DBT_USE_DOUBLE_PRECISION )
@@ -18,7 +18,7 @@ endif()
 add_library_with_exports(LIB_NAME drakeCollision SOURCE_FILES ${drakeCollision_SRC_FILES})
 
 if (fcl_FOUND)
-  pods_use_pkg_config_packages(drakeCollision fcl)
+  target_link_libraries(drakeCollision fcl)
 endif()
 
 if (bullet_FOUND)
