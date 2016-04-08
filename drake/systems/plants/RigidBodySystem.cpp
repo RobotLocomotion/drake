@@ -203,6 +203,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   return dot;
 }
 
+
 RigidBodySystem::OutputVector<double> RigidBodySystem::output(
     const double& t, const RigidBodySystem::StateVector<double>& x,
     const RigidBodySystem::InputVector<double>& u) const {
@@ -388,6 +389,7 @@ RigidBodyAccelerometer::RigidBodyAccelerometer(
 Eigen::VectorXd RigidBodyAccelerometer::output(
     const double& t, const KinematicsCache<double>& rigid_body_state,
     const RigidBodySystem::InputVector<double>& u) const {
+
   VectorXd x = rigid_body_state.getX();
   auto xdd = sys.dynamics(t, x, u);
   auto const& tree = sys.getRigidBodyTree();
@@ -655,7 +657,6 @@ void parseSDFModel(RigidBodySystem& sys, XMLElement* node) {
   PoseMap pose_map;  // because sdf specifies almost everything in the global
                      // (actually model) coordinates instead of relative
                      // coordinates.  sigh...
-
   if (!node->Attribute("name"))
     throw runtime_error("Error: your model must have a name attribute");
   string model_name = node->Attribute("name");
@@ -674,7 +675,6 @@ void parseSDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
   if (!node)
     throw std::runtime_error(
         "ERROR: This xml file does not contain an sdf tag");
-
   for (XMLElement* elnode = node->FirstChildElement("model"); elnode;
        elnode = node->NextSiblingElement("model"))
     parseSDFModel(sys, elnode);

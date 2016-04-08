@@ -14,9 +14,9 @@ class DRAKEJOINTS_EXPORT RollPitchYawFloatingJoint
  public:
   RollPitchYawFloatingJoint(const std::string &name,
                             const Eigen::Isometry3d &transform_to_parent_body)
-      : DrakeJointImpl(*this, name, transform_to_parent_body, 6, 6){}
+      : DrakeJointImpl(*this, name, transform_to_parent_body, 6, 6) {}
 
-  virtual ~RollPitchYawFloatingJoint(){}
+  virtual ~RollPitchYawFloatingJoint() {}
 
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>
