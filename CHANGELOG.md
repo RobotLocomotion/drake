@@ -24,7 +24,7 @@ Unreleased: changes on master, not yet released
  - [#1992][] Matlab tests must now be explicitly listed in CMakeLists.
  - [#1970][] The `drake` pod Makefile now includes the `install` action.
  - [#1953][] Replace `valuecheckMatrix()` with `CompareMatrices()`.
- - [#2018][] Fix capitalization of `Constrant` and `OptimizationProblem` APIs to match style guide.
+ - [#2018][] Fix capitalization of `Constraint` and `OptimizationProblem` APIs to match style guide.
 
 [//]: # "Lost functionality or APIs."
 ### Removed / Deprecated
