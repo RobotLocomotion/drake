@@ -148,7 +148,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
         penetration_stiffness(150.0),
         penetration_damping(penetration_stiffness / 10.0),
         friction_coefficient(1.0),
-        direct_feedthrough(false){}
+        direct_feedthrough(false) {}
   RigidBodySystem()
       : use_multi_contact(false),
         penetration_stiffness(150.0),
@@ -160,7 +160,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
     // // this crashed g++-4.7
     tree = std::shared_ptr<RigidBodyTree>(new RigidBodyTree());
   }
-  virtual ~RigidBodySystem(){}
+  virtual ~RigidBodySystem() {}
 
   void addRobotFromURDFString(
       const std::string& xml_string, const std::string& root_dir = ".",

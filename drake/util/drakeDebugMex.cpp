@@ -21,8 +21,8 @@ void cleanupDrakeMexPointers(void) {
   // DYLD_INSERT_LIBRARIES
 }
 
-int mexPrintf(const char* message)  // todo: handle the variable arguments case
-{
+// todo: handle the variable arguments case
+int mexPrintf(const char* message) {
   return printf("%s", message);
 }
 
@@ -34,10 +34,10 @@ mxArray* mexCallMATLABWithTrap(int nlhs, mxArray* plhs[], int nrhs,
 
 // todo: implement stubs for other mex functions (mexErrMsgAndTxt, ...) here
 
+// todo: take the mex function and dynamically load / run it.
 int main(
     int argc,
-    char* argv[])  // todo: take the mex function and dynamically load / run it.
-{
+    char* argv[]) {
   map<string, MexWrapper> mexfiles;
   map<string, MexWrapper>::iterator iter;
 

@@ -6,6 +6,7 @@
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/cascade_system.h"
+#include "drake/util/drakeAppUtil.h"
 
 using namespace std;
 using namespace Drake;
@@ -31,6 +32,9 @@ int main(int argc, char* argv[]) {
 
   SimulationOptions options;
   options.realtime_factor = 1.0;
+  if (commandLineOptionExists(argv, argv + argc, "--non-realtime")) {
+    options.warn_real_time_violation = true;
+  }
 
   //  simulate(*sys, 0, 10, x0, options);
   runLCM(sys, lcm, 0, 10, x0, options);

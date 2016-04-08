@@ -21,9 +21,9 @@ class DRAKEJOINTS_EXPORT HelicalJoint
                                            transform_to_parent_body,
                                            spatialJointAxis(axis, pitch)),
         axis(axis),
-        pitch(pitch){}
+        pitch(pitch) {}
 
-  virtual ~HelicalJoint(){}
+  virtual ~HelicalJoint() {}
 
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>

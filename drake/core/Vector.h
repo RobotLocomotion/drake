@@ -147,11 +147,11 @@ template <typename ScalarType, template <typename> class Vector1,
           template <typename> class Vector2>
 class CombinedVector {
  public:
-  CombinedVector(){}  // allow use of default constructors for vec1 and vec2,
-                      // also
+  CombinedVector() {}  // allow use of default constructors for vec1 and vec2,
+                       // also
   CombinedVector(const Vector1<ScalarType> &first,
                  const Vector2<ScalarType> &second)
-      : vec1(first), vec2(second){}
+      : vec1(first), vec2(second) {}
 
   template <typename Derived>
   CombinedVector(const Eigen::MatrixBase<Derived> &x)
@@ -167,7 +167,7 @@ class CombinedVector {
   template <typename Derived1, typename Derived2>
   CombinedVector(const Eigen::MatrixBase<Derived1> &x1,
                  const Eigen::MatrixBase<Derived2> &x2)
-      : vec1(x1), vec2(x2){}
+      : vec1(x1), vec2(x2) {}
 
   template <typename Derived>
   CombinedVector &operator=(const Eigen::MatrixBase<Derived> &x) {

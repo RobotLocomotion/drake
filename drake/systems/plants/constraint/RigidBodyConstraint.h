@@ -570,7 +570,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT GazeConstraint
       RigidBodyTree *model, const Eigen::Vector3d &axis,
       double conethreshold = 0.0,
       const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
-  virtual ~GazeConstraint(void){}
+  virtual ~GazeConstraint(void) {}
 
  public:
 #ifndef SWIG
@@ -596,7 +596,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT GazeOrientConstraint
                     Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
   virtual void bounds(const double *t, Eigen::VectorXd &lb,
                       Eigen::VectorXd &ub) const;
-  virtual ~GazeOrientConstraint(void){}
+  virtual ~GazeOrientConstraint(void) {}
 
  public:
 #ifndef SWIG
@@ -634,7 +634,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT GazeDirConstraint
       const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
   virtual void bounds(const double *t, Eigen::VectorXd &lb,
                       Eigen::VectorXd &ub) const;
-  virtual ~GazeDirConstraint(void){}
+  virtual ~GazeDirConstraint(void) {}
 
  public:
 #ifndef SWIG
@@ -673,7 +673,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT GazeTargetConstraint
       const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
   virtual void bounds(const double *t, Eigen::VectorXd &lb,
                       Eigen::VectorXd &ub) const;
-  virtual ~GazeTargetConstraint(void){}
+  virtual ~GazeTargetConstraint(void) {}
 
  public:
 #ifndef SWIG
@@ -784,7 +784,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT Point2LineSegDistConstraint
   virtual void name(const double *t, std::vector<std::string> &name_str) const;
   virtual void bounds(const double *t, Eigen::VectorXd &lb,
                       Eigen::VectorXd &ub) const;
-  virtual ~Point2LineSegDistConstraint(void){}
+  virtual ~Point2LineSegDistConstraint(void) {}
 
  public:
 #ifndef SWIG
@@ -970,7 +970,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT GravityCompensationTorqueConstraint
   virtual void name(const double *t, std::vector<std::string> &name) const;
   virtual void bounds(const double *t, Eigen::VectorXd &lb,
                       Eigen::VectorXd &ub) const;
-  virtual ~GravityCompensationTorqueConstraint(){}
+  virtual ~GravityCompensationTorqueConstraint() {}
 
  protected:
   Eigen::VectorXi joint_indices;

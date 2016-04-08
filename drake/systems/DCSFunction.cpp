@@ -11,10 +11,9 @@
 #define IS_STOCHASTIC_IDX 2
 #define DT_SAMPLE_TIME_IDX 3
 
-bool isa(const mxArray *mxa, const char *class_str)
 // mxIsClass seems to not be able to handle derived classes. so i'll implement
 // what I need by calling back to matlab
-{
+bool isa(const mxArray *mxa, const char *class_str) {
   mxArray *plhs;
   mxArray *prhs[2];
   prhs[0] = const_cast<mxArray *>(mxa);

@@ -1,17 +1,17 @@
 if (LCM_FOUND)
   add_executable(runPendulumDynamics runDynamics.cpp)
   target_link_libraries(runPendulumDynamics drakeRBM drakeLCMSystem)
-  add_test(NAME runPendulumDynamics COMMAND runPendulumDynamics WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/examples/Pendulum)
+  add_test(NAME runPendulumDynamics COMMAND runPendulumDynamics --non-realtime)
 
   add_executable(runPendulumEnergyShaping runEnergyShaping.cpp)
   target_link_libraries(runPendulumEnergyShaping drakeRBM drakeLCMSystem)
-#  add_test(NAME runPendulumEnergyShaping COMMAND runPendulumEnergyShaping)
+#  add_test(NAME runPendulumEnergyShaping COMMAND runPendulumEnergyShaping --non-realtime)
 #  set_tests_properties(runPendulumEnergyShaping PROPERTIES TIMEOUT 10)
     # disabled for now since it's not a good test, since it will always timeout
 
   add_executable(runPendulumLQR runLQR.cpp)
   target_link_libraries(runPendulumLQR drakeRBM drakeLCMSystem)
-  add_test(NAME runPendulumLQR COMMAND runPendulumLQR WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/examples/Pendulum)
+  add_test(NAME runPendulumLQR COMMAND runPendulumLQR --non-realtime)
 
 #  write_procman(Pendulum.pmd
 #      GROUP "Simulate"

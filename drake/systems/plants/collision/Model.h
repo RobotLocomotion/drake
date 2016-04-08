@@ -18,7 +18,7 @@ class DRAKECOLLISION_EXPORT Model {
  public:
   Model() {}
 
-  virtual ~Model(){}
+  virtual ~Model() {}
 
   /** \brief Add a collision element to this model.
   * \param element the collision element to be added to this model
@@ -43,7 +43,7 @@ class DRAKECOLLISION_EXPORT Model {
   /** \brief Perform any operations needed to bring the model up-to-date
    * after making changes to its collision elements
    */
-  virtual void updateModel(){}
+  virtual void updateModel() {}
 
   /** \brief Change the element-to-world transform of a specified collision
    * element.
@@ -112,7 +112,7 @@ class DRAKECOLLISION_EXPORT Model {
    */
   virtual void collisionDetectFromPoints(
       const Eigen::Matrix3Xd& points, bool use_margins,
-      std::vector<PointPair>& closest_points){}
+      std::vector<PointPair>& closest_points) {}
 
   /** \brief Compute the set of potential collision points for all
    * eligible pairs of collision geometries in this model. This includes

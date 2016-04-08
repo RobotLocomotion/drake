@@ -62,8 +62,8 @@ class DrakeJointImpl : public DrakeJoint {
                  int num_positions, int num_velocities)
       : DrakeJoint(name, transform_to_parent_body, num_positions,
                    num_velocities),
-        derived(_derived){}
-  virtual ~DrakeJointImpl(){}
+        derived(_derived) {}
+  virtual ~DrakeJointImpl() {}
 
   POSITION_AND_VELOCITY_DEPENDENT_METHODS_IMPL(double)
   POSITION_AND_VELOCITY_DEPENDENT_METHODS_IMPL(DrakeJoint::AutoDiffFixedMaxSize)

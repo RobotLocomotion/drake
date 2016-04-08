@@ -5,6 +5,7 @@
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/util/drakeAppUtil.h"
 
 #include "QuadrotorInput.h"
 #include "QuadrotorOutput.h"
@@ -29,9 +30,8 @@ int main(int argc, char* argv[]) {
 
   // Determine whether a warning should be printed or an exception should be
   // thrown if the simulation is delayed by more than the timeout threshold.
-  if (argc >= 4) {
-    options.warn_real_time_violation =
-        (std::string(argv[3]).compare("warn") == 0);
+  if (commandLineOptionExists(argv, argv + argc, "--non-realtime")) {
+    options.warn_real_time_violation = true;
   }
 
   cout << "Running simulation for " << final_time

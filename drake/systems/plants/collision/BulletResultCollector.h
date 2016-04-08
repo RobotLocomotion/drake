@@ -9,7 +9,7 @@ Eigen::Vector3d toVector3d(const btVector3& bt_vec);
 
 class ResultCollector {
  public:
-  virtual ~ResultCollector(){}
+  virtual ~ResultCollector() {}
 
   virtual void addPointPairResult(const PointPair& result);
 
@@ -30,11 +30,11 @@ class ResultCollector {
 class BulletResultCollector : public ResultCollector,
                               public btCollisionWorld::ContactResultCallback {
  public:
-  virtual ~BulletResultCollector(){}
+  virtual ~BulletResultCollector() {}
 
   using ResultCollector::addSingleResult;
 
-  BulletResultCollector() : curr_bodyA_idx(-1), curr_bodyB_idx(-1){}
+  BulletResultCollector() : curr_bodyA_idx(-1), curr_bodyB_idx(-1) {}
 
   virtual btScalar addSingleResult(btManifoldPoint& cp,
                                    const btCollisionObjectWrapper* colObj0Wrap,

@@ -29,10 +29,10 @@ class FixedAxisOneDoFJoint : public DrakeJointImpl<Derived> {
         joint_axis(_joint_axis),
         damping(0.0),
         coulomb_friction(0.0),
-        coulomb_window(0.0){}
+        coulomb_window(0.0) {}
 
  public:
-  virtual ~FixedAxisOneDoFJoint(){}
+  virtual ~FixedAxisOneDoFJoint() {}
 
   using DrakeJoint::getNumPositions;
   using DrakeJoint::getNumVelocities;

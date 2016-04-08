@@ -245,7 +245,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
       : problem_type_(MathematicalProgramInterface::GetLeastSquaresProgram()),
         num_vars_(0),
         x_initial_guess_(
-            static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)){}
+            static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)) {}
 
   const DecisionVariableView AddContinuousVariables(std::size_t num_new_vars,
                                                     std::string name = "x") {

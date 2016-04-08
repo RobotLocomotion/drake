@@ -84,7 +84,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
 
  public:
   /// Construct the vacuous polynomial, "0".
-  Polynomial(void) : is_univariate(true){}
+  Polynomial(void) : is_univariate(true) {}
 
   /// Construct a Polynomial of a single constant. e.g. "5".
   // This is required for some Eigen operations when used in a
