@@ -191,6 +191,31 @@ TEST(PolynomialTest, VariableIdGeneration) {
   EXPECT_EQ(result, "x1");
 }
 
+TEST(PolynomialTest, testGetVariables) {
+  Polynomiald x = Polynomiald("x");
+  Polynomiald::VarType x_var = x.getSimpleVariable();
+  Polynomiald y = Polynomiald("y");
+  Polynomiald::VarType y_var = y.getSimpleVariable();
+  Polynomiald z = Polynomiald("z");
+  Polynomiald::VarType z_var = z.getSimpleVariable();
+
+  EXPECT_TRUE(x.getVariables().count(x_var));
+  EXPECT_FALSE(x.getVariables().count(y_var));
+
+  EXPECT_FALSE(Polynomiald().getVariables().count(x_var));
+
+  EXPECT_TRUE((x + x).getVariables().count(x_var));
+
+  EXPECT_TRUE((x + y).getVariables().count(x_var));
+  EXPECT_TRUE((x + y).getVariables().count(y_var));
+
+  EXPECT_TRUE((x * y * y + z).getVariables().count(x_var));
+  EXPECT_TRUE((x * y * y + z).getVariables().count(y_var));
+  EXPECT_TRUE((x * y * y + z).getVariables().count(z_var));
+
+  EXPECT_FALSE(x.derivative().getVariables().count(x_var));
+}
+
 }
 }  // namespace test
 }  // namespace drake

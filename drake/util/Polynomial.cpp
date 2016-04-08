@@ -155,6 +155,18 @@ Polynomial<CoefficientType>::getCoefficients() const {
 }
 
 template <typename CoefficientType>
+std::set<typename Polynomial<CoefficientType>::VarType>
+Polynomial<CoefficientType>::getVariables() const {
+  std::set<Polynomial<CoefficientType>::VarType> vars;
+  for (auto monomial : monomials) {
+    for (auto term : monomial.terms) {
+      vars.insert(term.var);
+    }
+  }
+  return vars;
+}
+
+template <typename CoefficientType>
 void Polynomial<CoefficientType>::subs(const VarType& orig,
                                        const VarType& replacement) {
   for (typename vector<Monomial>::iterator iter = monomials.begin();
