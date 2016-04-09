@@ -738,13 +738,12 @@ class DRAKERBM_EXPORT RigidBodyTree {
                                                   const RigidBodyTree&);
 
   /**
-   * Adds a floating joint connecting the root of a robot model to the world
-   * link. This method assumes that at least one robot model was added to the
-   * rigid body tree but is not yet attached to the tree. In other words, it
-   * assumes that at least one link in the tree is parent-less. It connects
-   * these parent-less links to the world using a floating joint of the
-   * type and according to the values stored within the supplied rigid body
-   * frame.
+   * Adds a floating joint to each model that was loaded into the rigid body
+   * tree but not yet connected to any link in the tree.  It finds models that
+   * have been loaded but not yet connected by searching for non-world links
+   * that are parent-less. These parent-less links are then connected to the
+   * rigid body tree using a floating joint whose details are specified by
+   * the floating_base_type and weld_to_frame parameters.
    *
    * @param model The rigid body model containing the robot models to which the
    * floating joint will be added.
