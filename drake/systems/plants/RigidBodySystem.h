@@ -184,8 +184,6 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   void addForceElement(std::shared_ptr<RigidBodyForceElement> f) {
-    // std::cout << "RigidBodySystem::addForceElement: Method called!" <<
-    // std::endl;
     force_elements.push_back(f);
   }
 

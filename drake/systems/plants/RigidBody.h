@@ -87,7 +87,7 @@ class DRAKERBM_EXPORT RigidBody {
    * @param transform_body_to_joint The transform from this body's frame to the
    * joint's frame.
    */
-  void applyTransformToJointFrame(
+  void ApplyTransformToJointFrame(
       const Eigen::Isometry3d& transform_body_to_joint);
 
  public:

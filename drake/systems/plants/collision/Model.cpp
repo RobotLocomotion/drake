@@ -49,6 +49,19 @@ bool Model::updateElementWorldTransform(const ElementId id,
   }
 }
 
+bool Model::transformCollisionFrame(
+    DrakeCollision::ElementId& eid,
+    const Eigen::Isometry3d& transform_body_to_joint) {
+  auto element = elements.find(eid);
+  if (element != elements.end()) {
+    element->second->SetLocalTransform(transform_body_to_joint *
+                                       element->second->getLocalTransform());
+    return true;
+  } else {
+    return false;
+  }
+}
+
 bool closestPointsAllToAll(const vector<ElementId>& ids_to_check,
                            const bool use_margins,
                            vector<PointPair>& closest_points) {

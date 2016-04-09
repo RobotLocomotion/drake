@@ -37,7 +37,7 @@ class DRAKESHAPES_EXPORT Element {
 
   const Eigen::Isometry3d& getLocalTransform() const;
 
-  void setLocalTransform(const Eigen::Isometry3d& T_element_to_local);
+  void SetLocalTransform(const Eigen::Isometry3d& T_element_to_local);
 
   virtual void updateWorldTransform(const Eigen::Isometry3d& T_local_to_world);
 

@@ -175,18 +175,19 @@ class DRAKECOLLISION_EXPORT Model {
     return false;
   }
 
+  /**
+   * Modifies a collision element's local transform to be relative to a joint's
+   * frame rather than a link's frame. This is necessary because Drake requires
+   * that link frames by defined by their parent joint frames.
+   *
+   * @param eid The ID of the collision element to update.
+   * @param transform_body_to_joint The transform from the collision element's
+   * link's frame to the joint's coordinate frame.
+   * @param true if the collision element was successfully updated.
+   */
   virtual bool transformCollisionFrame(
       DrakeCollision::ElementId& eid,
-      const Eigen::Isometry3d& transform_body_to_joint) {
-    auto element = elements.find(eid);
-    if (element != elements.end()) {
-      element->second->setLocalTransform(transform_body_to_joint *
-                                         element->second->getLocalTransform());
-      return true;
-    } else {
-      return false;
-    }
-  }
+      const Eigen::Isometry3d& transform_body_to_joint);
 
   /**
    * A toString method for this class.
