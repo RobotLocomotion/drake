@@ -423,7 +423,7 @@ GRBmodel* gurobiQP(GRBenv* env, vector<MatrixXd*> QblkDiag, VectorXd& f,
       d = Q->rows() * Q->cols();
       for (i = 0; i < d; i++) {
         Qi = i + startrow;
-        CGE(GRBaddqpterms(model, 1, &Qi, &Qi, &(Q->operator()(i))), env);
+        CGE(GRBaddqpterms(model, 1, &Qi, &Qi, &(typoQ->operator()(i))), env);
       }
       startrow = startrow + d;
     } else {  // potentially dense matrix
