@@ -92,6 +92,10 @@ if (LCM_FOUND)
     add_executable(load_urdf_test load_urdf_test.cc)
     target_link_libraries(load_urdf_test drakeRBSystem ${GTEST_BOTH_LIBRARIES})
     add_test(NAME load_urdf_test COMMAND load_urdf_test)
+
+    add_executable(load_sdf_test load_sdf_test.cc)
+    target_link_libraries(load_sdf_test drakeRBSystem ${GTEST_BOTH_LIBRARIES})
+    add_test(NAME load_sdf_test COMMAND load_sdf_test)
   endif (GTEST_FOUND)
 endif (LCM_FOUND)
 

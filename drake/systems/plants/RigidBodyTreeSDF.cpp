@@ -522,6 +522,10 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
   }
 }
 
+/**
+ * weld_to_frame's transform_to_body is the API-based shifting of the
+ * robot's world frame to Drake's world frame
+ */
 void parseModel(RigidBodyTree* model, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
                 const DrakeJoint::FloatingBaseType floating_base_type,
