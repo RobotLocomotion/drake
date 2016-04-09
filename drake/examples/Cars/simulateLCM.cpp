@@ -96,10 +96,23 @@ int main(int argc, char* argv[]) {
   // orientation of the car's root node in the world. If the model is an SDF,
   // weld_to_frame is ignored by the parser.
   auto weld_to_frame = allocate_shared<RigidBodyFrame>(
-      aligned_allocator<RigidBodyFrame>(), "world",
-      nullptr,  // not used since the robot is attached to the world
-      Eigen::Vector3d(0, 0, 0.378326),  // xyz of the car's root link
-      Eigen::Vector3d(0, 0, 0));        // rpy of the car's root link
+      aligned_allocator<RigidBodyFrame>(),
+      // Weld the model to the world link.
+      "world",
+
+      // A pointer to a rigid body to which to weld the model is not needed
+      // since the model will be welded to the world, which can by automatically
+      // found within the rigid body tree.
+      nullptr,
+
+      // The following parameter specifies the X,Y,Z position of the car's root
+      // link in the world's frame. The kinematics of the car model requires
+      // that its root link be elevated along the Z-axis by 0.378326m.
+      Eigen::Vector3d(0, 0, 0.378326),
+
+      // The following parameter specifies the roll, pitch, and yaw of the car's
+      // root link i the world's frame.
+      Eigen::Vector3d(0, 0, 0));
 
   rigid_body_sys->addRobotFromFile(argv[1], floating_base_type, weld_to_frame);
 
@@ -142,15 +155,15 @@ int main(int argc, char* argv[]) {
          actuator_idx++) {
       const std::string& actuator_name = tree->actuators[actuator_idx].name;
 
-      if (strcmp(actuator_name.c_str(), "steering") == 0) {
+      if (actuator_name == "steering") {
         auto const& b = tree->actuators[actuator_idx].body;
         Kp(actuator_idx, b->position_num_start) = kpSteering;  // steering
         Kd(actuator_idx, b->velocity_num_start) = kdSteering;  // steeringdot
         map_driving_cmd_to_x_d(b->position_num_start, 0) =
             1;  // steering command
 
-      } else if (strcmp(actuator_name.c_str(), "right_wheel_joint") == 0 ||
-                 strcmp(actuator_name.c_str(), "left_wheel_joint") == 0) {
+      } else if (actuator_name == "right_wheel_joint" ||
+                 actuator_name == "left_wheel_joint") {
         auto const& b = tree->actuators[actuator_idx].body;
         Kd(actuator_idx, b->velocity_num_start) = kThrottle;  // throttle
         map_driving_cmd_to_x_d(tree->num_positions + b->velocity_num_start, 1) =

@@ -15,25 +15,18 @@ std::string ShapeToString(Shape ss) {
   switch (ss) {
     case UNKNOWN:
       return "UNKNOWN";
-      break;
     case BOX:
       return "BOX";
-      break;
     case SPHERE:
       return "SPHERE";
-      break;
     case CYLINDER:
       return "CYLINDER";
-      break;
     case MESH:
       return "MESH";
-      break;
     case MESH_POINTS:
       return "MESH_POINTS";
-      break;
     case CAPSULE:
       return "CAPSULE";
-      break;
   }
   return "UNDEFINED";
 }

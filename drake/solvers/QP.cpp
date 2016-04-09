@@ -65,7 +65,7 @@ int fastQPThatTakesQinv(vector<MatrixXd*> QinvblkDiag, const VectorXd& f,
   int startrow = 0;
   //  for (typename vector< MatrixBase<tA>* >::iterator
   //  iterQinv=QinvblkDiag.begin(); iterQinv!=QinvblkDiag.end(); iterQinv++) {
-  //  	MatrixBase<tA> *thisQinv = *iterQinv;
+  //    MatrixBase<tA> *thisQinv = *iterQinv;
   for (vector<MatrixXd*>::iterator iterQinv = QinvblkDiag.begin();
        iterQinv != QinvblkDiag.end(); iterQinv++) {
     MatrixXd* thisQinv = *iterQinv;
@@ -283,7 +283,7 @@ int fastQP(vector<MatrixXd*> QblkDiag, const VectorXd& f, const MatrixXd& Aeq,
       Qinvmap.push_back(&Qinv[i]);
       startrow = startrow + numRow;
     }
-    //  	cout << "Qinv{" << i << "} = " << Qinv[i] << endl;
+    // cout << "Qinv{" << i << "} = " << Qinv[i] << endl;
     if (startrow > N) {
       cerr << "Q is too big!" << endl;
       return -2;
@@ -415,8 +415,7 @@ GRBmodel* gurobiQP(GRBenv* env, vector<MatrixXd*> QblkDiag, VectorXd& f,
 
     // WARNING:  If there are no constraints, then gurobi clearly solves a
     // different problem: min 1/2 x'Qx + f'x
-    //  				 This is very strange; see the
-    //  solveWGUROBI method in QuadraticProgram
+    // This is very strange; see the solveWGUROBI method in QuadraticProgram
     if (method == 2)  //&& (Aeq.rows()+Ain.rows()>0))
       *Q = .5 * (*Q);
 

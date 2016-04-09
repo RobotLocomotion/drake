@@ -11,10 +11,9 @@
 #define IS_STOCHASTIC_IDX 2
 #define DT_SAMPLE_TIME_IDX 3
 
-bool isa(const mxArray *mxa, const char *class_str)
 // mxIsClass seems to not be able to handle derived classes. so i'll implement
 // what I need by calling back to matlab
-{
+bool isa(const mxArray *mxa, const char *class_str) {
   mxArray *plhs;
   mxArray *prhs[2];
   prhs[0] = const_cast<mxArray *>(mxa);
@@ -45,10 +44,10 @@ bool mexCallMATLABsafe(SimStruct *S, int nlhs, mxArray *plhs[], int nrhs,
     mxArray *identifier = mxGetProperty(ex, 0, "identifier");
     char buffer[200];
     errmsg = mxArrayToString(identifier);
-    sprintf(buffer,
-            "\n\nDrakeSystem S-Function: error %s in MATLAB callback.\nSee "
-            "additional debugging information above",
-            errmsg);
+    snprintf(buffer, sizeof(buffer),
+             "\n\nDrakeSystem S-Function: error %s in MATLAB callback.\nSee "
+             "additional debugging information above",
+             errmsg);
     ssSetErrorStatus(S, buffer);
     mxFree(errmsg);
     //    mxFree(identifier);  // it appears I'm not supposed to free this
