@@ -600,7 +600,8 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
 
   // Adds the floating joint that connects the newly added robot model to the
   // rest of the rigid body tree.
-  RigidBodyTree::AddFloatingJoint(model, nullptr, floating_base_type, weld_to_frame);
+  RigidBodyTree::AddFloatingJoint(model, nullptr, floating_base_type,
+                                  weld_to_frame);
 }
 
 void parseURDF(RigidBodyTree* model, XMLDocument* xml_doc,
