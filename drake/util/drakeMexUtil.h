@@ -7,8 +7,6 @@
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 #include "drake/util/TrigPoly.h"
-#include "unsupported/Eigen/AutoDiff"
-
 /*
  * NOTE: include AutoDiff AFTER TrigPoly.h.
  * TrigPoly.h includes LLDT.h via Eigenvalues, PolynomialSolver, and our
