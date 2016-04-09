@@ -1,11 +1,11 @@
 #include <mex.h>
 
+#include <cmath>
 #include <iostream>
 #include <memory>
 #include "drake/util/drakeMexUtil.h"
 #include "RigidBodyTree.h"
 #include "drake/util/drakeGeometryUtil.h"
-#include "math.h"
 
 using namespace Eigen;
 using namespace std;

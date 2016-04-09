@@ -1,10 +1,10 @@
 #include <mex.h>
 
+#include <cmath>
 #include <iostream>
 #include "drake/util/drakeMexUtil.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 #include <Eigen/Dense>
-#include "math.h"
 
 using namespace Eigen;
 using namespace std;

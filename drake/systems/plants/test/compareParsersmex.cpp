@@ -1,11 +1,11 @@
 #include <mex.h>
 
+#include <cmath>
 #include <iostream>
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/util/drakeMexUtil.h"
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
-#include "math.h"
 
 using namespace Eigen;
 using namespace std;
