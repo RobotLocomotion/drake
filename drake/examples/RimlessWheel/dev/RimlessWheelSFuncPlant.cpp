@@ -1,9 +1,9 @@
 
 #define S_FUNCTION_NAME RimlessWheelSFuncPlant
 #define S_FUNCTION_LEVEL 2
+#include <simstruc.h>
 
 #include <math.h>
-#include "simstruc.h"
 
 static void mdlInitializeSizes(SimStruct *S) {
   ssSetNumSFcnParams(S, 0); /* Number of expected parameters */

@@ -5,6 +5,8 @@ Author: Anirudha Majumdar
 Date: Nov 8 2013
 */
 
+#include <mex.h>
+
 /// We need internal access to bullet
 // #include "GL_Simplex1to4.h"
 #include "LinearMath/btTransform.h"
@@ -25,7 +27,6 @@ Date: Nov 8 2013
 #include "BulletCollision/NarrowPhaseCollision/btGjkEpaPenetrationDepthSolver.h"
 #include "LinearMath/btTransformUtil.h"
 
-#include <mex.h>
 #include "drake/util/drakeMexUtil.h"
 
 using namespace std;

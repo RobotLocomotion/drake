@@ -1,9 +1,11 @@
 /*
  * A c++ version of @RigidBodyTree/approximateIK.m
  */
+
+#include <mex.h>
+
 #include <math.h>
 #include <set>
-#include <mex.h>
 #include <Eigen/Dense>
 #include "drake/systems/plants/RigidBodyTree.h"
 #include <iostream>

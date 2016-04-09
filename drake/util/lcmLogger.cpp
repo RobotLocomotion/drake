@@ -8,7 +8,7 @@
 
 #define S_FUNCTION_NAME lcmLogger
 #define S_FUNCTION_LEVEL 2
-#include "simstruc.h"
+#include <simstruc.h>
 
 #include <lcm/lcm.h>
 

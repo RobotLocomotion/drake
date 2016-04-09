@@ -1,4 +1,5 @@
 #include <mex.h>
+
 #include <lcm/lcm.h>
 
 static lcm_t* lcm = NULL;

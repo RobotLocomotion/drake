@@ -1,4 +1,5 @@
 #include <mex.h>
+
 #include <iostream>
 #include <memory>
 #include "drake/util/drakeMexUtil.h"

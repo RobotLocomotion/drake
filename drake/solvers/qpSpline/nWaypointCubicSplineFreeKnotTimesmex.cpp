@@ -1,4 +1,5 @@
 #include <mex.h>
+
 #include <Eigen/Core>
 #include "drake/solvers/qpSpline/splineGeneration.h"
 #include "drake/util/drakeMexUtil.h"

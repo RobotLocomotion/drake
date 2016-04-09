@@ -20,9 +20,10 @@
 
 // Mex stuff
 #include <mex.h>
-#include <blas.h>
-#include <math.h>
 #include <matrix.h>
+#include <blas.h>
+
+#include <math.h>
 #include "drake/util/drakeMexUtil.h"
 #include <memory>
 #include <algorithm>

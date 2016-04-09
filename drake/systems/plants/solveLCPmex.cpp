@@ -1,4 +1,5 @@
-#include "mex.h"
+#include <mex.h>
+
 #include <iostream>
 #include "drake/util/drakeMexUtil.h"
 #include "drake/util/MexWrapper.h"

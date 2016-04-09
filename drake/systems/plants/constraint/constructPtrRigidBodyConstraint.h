@@ -1,7 +1,8 @@
 #ifndef DRAKE_SYSTEMS_PLANTS_CONSTRAINT_CONSTRUCTPTRRIGIDBODYCONSTRAINT_H_
 #define DRAKE_SYSTEMS_PLANTS_CONSTRAINT_CONSTRUCTPTRRIGIDBODYCONSTRAINT_H_
 
-#include "mex.h"
+#include <mex.h>
+
 #include <Eigen/Dense>
 
 #if defined(WIN32) || defined(WIN64)

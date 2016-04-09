@@ -1,6 +1,8 @@
+
 #define S_FUNCTION_NAME realtime
 #define S_FUNCTION_LEVEL 2
-#include "simstruc.h"
+#include <simstruc.h>
+
 #include <chrono>
 #include <thread>
 
