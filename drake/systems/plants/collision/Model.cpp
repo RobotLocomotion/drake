@@ -50,7 +50,7 @@ bool Model::updateElementWorldTransform(const ElementId id,
 }
 
 bool Model::transformCollisionFrame(
-    DrakeCollision::ElementId& eid,
+    const DrakeCollision::ElementId& eid,
     const Eigen::Isometry3d& transform_body_to_joint) {
   auto element = elements.find(eid);
   if (element != elements.end()) {

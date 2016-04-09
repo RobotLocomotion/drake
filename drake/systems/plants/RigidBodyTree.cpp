@@ -77,7 +77,7 @@ RigidBodyTree::RigidBodyTree(void)
 RigidBodyTree::~RigidBodyTree(void) {}
 
 bool RigidBodyTree::transformCollisionFrame(
-    DrakeCollision::ElementId& eid,
+    const DrakeCollision::ElementId& eid,
     const Eigen::Isometry3d& transform_body_to_joint) {
   return collision_model->transformCollisionFrame(eid, transform_body_to_joint);
 }

@@ -186,7 +186,7 @@ class DRAKECOLLISION_EXPORT Model {
    * @param true if the collision element was successfully updated.
    */
   virtual bool transformCollisionFrame(
-      DrakeCollision::ElementId& eid,
+      const DrakeCollision::ElementId& eid,
       const Eigen::Isometry3d& transform_body_to_joint);
 
   /**
