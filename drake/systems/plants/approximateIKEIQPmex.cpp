@@ -19,7 +19,7 @@
 #define USE_EIQUADPROG_BACKUP 1
 
 #if USE_EIQUADPROG_BACKUP
-#include "eiquadprog.h"
+#include "drake/systems/plants/eiquadprog.h"
 #endif
 
 #define MAX_CONSTRS 1000
