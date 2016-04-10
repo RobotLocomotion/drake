@@ -88,6 +88,7 @@ if (LCM_FOUND)
     add_executable(compareRigidBodySystems compareRigidBodySystems.cpp)
     target_link_libraries(compareRigidBodySystems drakeRBSystem ${GTEST_BOTH_LIBRARIES})
     add_test(NAME compareAcrobotURDFtoSDF COMMAND compareRigidBodySystems Acrobot.urdf Acrobot.sdf WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/examples/Acrobot")
+    add_test(NAME comparePriusURDFtoSDF COMMAND compareRigidBodySystems prius.sdf prius.urdf 0 0 0.378326 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/examples/Cars/prius")
 
     add_executable(load_urdf_test load_urdf_test.cc)
     target_link_libraries(load_urdf_test drakeRBSystem ${GTEST_BOTH_LIBRARIES})
