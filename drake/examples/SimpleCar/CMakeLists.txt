@@ -1,0 +1,7 @@
+add_subdirectory(test)
+add_library(simple_car SHARED simple_car.cc)
+if (LCM_FOUND)
+  include_directories(${PROJECT_SOURCE_DIR}/pod-build/lcmgen)
+  add_executable(simple_car_demo simple_car_demo.cc simple_car.cc)
+  target_link_libraries(simple_car_demo drakeRBSystem drakeLCMSystem)
+endif (LCM_FOUND)
