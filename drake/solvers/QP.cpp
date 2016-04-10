@@ -423,7 +423,8 @@ GRBmodel* gurobiQP(GRBenv* env, vector<MatrixXd*> QblkDiag, VectorXd& f,
       d = Q->rows() * Q->cols();
       for (i = 0; i < d; i++) {
         Qi = i + startrow;
-        CGE(GRBaddqpterms(model, 1, &Qi, &Qi, &(Q->operator()(i))), env);
+        double& qval = Q->operator()(i);
+        CGE(GRBaddqpterms(model, 1, &Qi, &Qi, &qval), env);
       }
       startrow = startrow + d;
     } else {  // potentially dense matrix
@@ -437,7 +438,8 @@ GRBmodel* gurobiQP(GRBenv* env, vector<MatrixXd*> QblkDiag, VectorXd& f,
         for (j = 0; j < d; j++) {
           Qi = i + startrow;
           Qj = j + startrow;
-          CGE(GRBaddqpterms(model, 1, &Qi, &Qj, &(Q->operator()(i, j))), env);
+          double& qval = Q->operator()(i, j);
+          CGE(GRBaddqpterms(model, 1, &Qi, &Qj, &qval), env);
         }
       startrow = startrow + d;
     }
@@ -522,7 +524,8 @@ GRBmodel* gurobiActiveSetQP(GRBenv* env, vector<MatrixXd*> QblkDiag,
       d = Q->rows() * Q->cols();
       for (i = 0; i < d; i++) {
         Qi = i + startrow;
-        CGE(GRBaddqpterms(model, 1, &Qi, &Qi, &(Q->operator()(i))), env);
+        double& qval = Q->operator()(i);
+        CGE(GRBaddqpterms(model, 1, &Qi, &Qi, &qval), env);
       }
       startrow = startrow + d;
     } else {  // potentially dense matrix
@@ -536,7 +539,8 @@ GRBmodel* gurobiActiveSetQP(GRBenv* env, vector<MatrixXd*> QblkDiag,
         for (j = 0; j < d; j++) {
           Qi = i + startrow;
           Qj = j + startrow;
-          CGE(GRBaddqpterms(model, 1, &Qi, &Qj, &(Q->operator()(i, j))), env);
+          double& qval = Q->operator()(i, j);
+          CGE(GRBaddqpterms(model, 1, &Qi, &Qj, &qval), env);
         }
       startrow = startrow + d;
     }
