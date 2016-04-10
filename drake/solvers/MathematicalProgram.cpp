@@ -56,7 +56,9 @@ class MathematicalProgram : public MathematicalProgramInterface {
     return new MathematicalProgram;
   };
   virtual bool Solve(OptimizationProblem& prog) const override {
-    throw std::runtime_error("not implemented yet");
+    throw std::runtime_error(
+        "MathematicalProgram::Solve: "
+        "No solver available for the given optimization problem!");
   }
 };
 
