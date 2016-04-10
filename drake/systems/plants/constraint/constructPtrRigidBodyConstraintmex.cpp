@@ -1204,4 +1204,4 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                         "Unsupported constraint type");
       break;
   }
-}
+}  // NOLINT(readability/fn_size)
