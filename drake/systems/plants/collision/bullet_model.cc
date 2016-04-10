@@ -1,13 +1,17 @@
 #include "drake/systems/plants/collision/bullet_model.h"
 
 #include <iostream>
+#include <fstream>
 
 #include "drake/systems/plants/collision/DrakeCollision.h"
+#include "bullet_model.h"
+#include "BulletHeightMapTerrain.h"
 
 using Eigen::Isometry3d;
 using Eigen::Matrix3Xd;
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
+using Eigen::Vector3i;
 using Eigen::VectorXd;
 
 namespace DrakeCollision {
@@ -146,6 +150,56 @@ std::unique_ptr<btCollisionShape> BulletModel::newBulletMeshShape(
   }
 }
 
+std::unique_ptr<btCollisionShape> BulletModel::newBulletHeightMapTerrainShape(
+    const DrakeShapes::HeightMapTerrain& geometry, bool use_margins) {
+  bool flipQuadEdges = false;
+  PHY_ScalarType btType = PHY_FLOAT;
+  assert(sizeof(btScalar) == sizeof(double) &&
+         "HeightMapTerrain is internally using double's when Bullet is using "
+         "float's?");
+
+  std::unique_ptr<btHeightfieldTerrainShape> bt_shape(new btHeightfieldTerrainShape(
+      geometry.nnodes(0), geometry.nnodes(1), geometry.m_rawHeightfieldData.get(),
+      geometry.m_gridHeightScale, static_cast<btScalar>(geometry.m_minHeight),
+      static_cast<btScalar>(geometry.m_maxHeight), geometry.m_upAxis, btType,
+      flipQuadEdges));
+  btVector3 localScaling(geometry.delta_ell(0), geometry.delta_ell(1), 1.0);
+  bt_shape->setLocalScaling(localScaling);
+
+  //Write a mesh file to be used by the BotVisualizer
+  writeHeightMapTerrain(*bt_shape,geometry.fname);
+
+  return std::move(bt_shape);
+}
+
+  void BulletModel::writeHeightMapTerrain(
+     const btHeightfieldTerrainShape& bullet_height_map, const std::string& fname) {
+  std::ofstream file;
+  file.open(fname);
+
+  btVector3 aabbMin(0,0,0),aabbMax(0,0,0);
+  aabbMin-=btVector3(BT_LARGE_FLOAT,BT_LARGE_FLOAT,BT_LARGE_FLOAT);
+  aabbMax+=btVector3(BT_LARGE_FLOAT,BT_LARGE_FLOAT,BT_LARGE_FLOAT);
+
+  GatherHeightMapAsGridCallBack grid_buffer;
+  bullet_height_map.processAllTriangles(&grid_buffer,aabbMin,aabbMax);
+
+  //write vertices
+  for (int i=0;i<grid_buffer.numPoints();i++){
+    btVector3 vertex = grid_buffer.getPoint(i);
+    file << "v " << vertex[0] << " " << vertex[1] << " " << vertex[2] << " "
+         << std::endl;
+  }
+
+  //write connectivities (two triangles per cell)
+  for (int i=0;i<grid_buffer.numTriangles();i++){
+    Vector3i conn = grid_buffer.getTriangle(i);
+    file << "f " << conn[0] << " " << conn[1] << " " << conn[2] << std::endl;
+  }
+
+  file.close();
+}
+
 std::unique_ptr<btCollisionShape> BulletModel::newBulletMeshPointsShape(
     const DrakeShapes::MeshPoints& geometry, bool use_margins) {
   std::unique_ptr<btCollisionShape> bt_shape(new btConvexHullShape());
@@ -206,6 +260,12 @@ ElementId BulletModel::addElement(const Element& element) {
             elements[id]->getGeometry());
         bt_shape = newBulletCapsuleShape(capsule, true);
         bt_shape_no_margin = newBulletCapsuleShape(capsule, false);
+      } break;
+      case DrakeShapes::HEIGHT_MAP_TERRAIN: {
+        const auto terrain_geom = static_cast<const DrakeShapes::HeightMapTerrain&>(
+            elements[id]->getGeometry());
+        bt_shape = newBulletHeightMapTerrainShape(terrain_geom, true);
+        bt_shape_no_margin = newBulletHeightMapTerrainShape(terrain_geom, false);
       } break;
       default:
         std::cerr << "Warning: Collision elements[id] has an unknown type "
@@ -732,6 +792,15 @@ const char* UnknownShapeException::what() const throw() {
   return ("Unknown collision shape: " + shape_name_ +
           ". Ignoring this collision element")
       .c_str();
+}
+
+bool BulletModel::isEverybodyConvex() const {
+  for (const auto& bt_obj_iter : bullet_world_.bt_collision_objects) {
+    const auto* bt_collision_obj = bt_obj_iter.second.get();
+    const auto* bt_collision_shape = bt_collision_obj->getCollisionShape();
+    if (!bt_collision_shape->isConvex()) return false;
+  }
+  return true;
 }
 
 }  // namespace DrakeCollision

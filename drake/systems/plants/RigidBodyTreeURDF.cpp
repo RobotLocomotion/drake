@@ -675,7 +675,7 @@ void RigidBodyTree::addRobotFromURDFString(
 void RigidBodyTree::addRobotFromURDF(
     const string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
-    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+    std::shared_ptr<RigidBodyFrame> weld_to_frame) { //weld_to_frame defaults to nullptr in RigidBodyTree.h
   PackageMap package_map;
   addRobotFromURDF(urdf_filename, package_map, floating_base_type,
                    weld_to_frame);

@@ -118,6 +118,14 @@ class BotVisualizer {
             gdata.float_data.push_back(static_cast<float>(c.length));
             break;
           }
+          case DrakeShapes::HEIGHT_MAP_TERRAIN: {
+            gdata.type = gdata.MESH;
+            auto terrain = dynamic_cast<const DrakeShapes::HeightMapTerrain &>(geometry);
+            gdata.num_float_data = 1;
+            gdata.float_data.push_back(1.0f); //scale
+            gdata.string_data = terrain.fname;
+            break;
+          }
           default: {
             // intentionally do nothing
             break;

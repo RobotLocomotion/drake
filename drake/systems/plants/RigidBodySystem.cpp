@@ -112,7 +112,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
       tree->collisionDetect(kinsol, phi, normal, xA, xB, bodyA_idx, bodyB_idx);
 
     for (int i = 0; i < phi.rows(); i++) {
-      if (phi(i) < 0.0) {  // then i have contact
+      if (phi(i) < 0.0) {  // then I have contact
         // todo: move this entire block to a shared an updated "contactJacobian"
         // method in RigidBodyTree
         auto JA = tree->transformPointsJacobian(kinsol, xA.col(i), bodyA_idx[i],
