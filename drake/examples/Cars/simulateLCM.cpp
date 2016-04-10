@@ -111,7 +111,7 @@ int main(int argc, char* argv[]) {
       Eigen::Vector3d(0, 0, 0.378326),
 
       // The following parameter specifies the roll, pitch, and yaw of the car's
-      // root link i the world's frame.
+      // root link in the world's frame.
       Eigen::Vector3d(0, 0, 0));
 
   rigid_body_sys->addRobotFromFile(argv[1], floating_base_type, weld_to_frame);
