@@ -67,7 +67,7 @@ struct KneeSettings {
 };
 
 struct QPLocomotionPlanSettings {
-  QPLocomotionPlanSettings() : min_foot_shift_delay(0.1){}
+  QPLocomotionPlanSettings() : min_foot_shift_delay(0.1) {}
 
   double duration;
   std::vector<RigidBodySupportState> supports;

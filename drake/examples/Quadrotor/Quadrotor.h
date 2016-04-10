@@ -21,7 +21,7 @@ class QuadrotorState {  // models the Drake::Vector concept
         zdot(0),
         rolldot(0),
         pitchdot(0),
-        yawdot(0){}
+        yawdot(0) {}
 
   template <typename Derived>
   QuadrotorState(const Eigen::MatrixBase<Derived>& x)
@@ -36,7 +36,7 @@ class QuadrotorState {  // models the Drake::Vector concept
         zdot(x(8)),
         rolldot(x(9)),
         pitchdot(x(10)),
-        yawdot(x(11)){}
+        yawdot(x(11)) {}
 
   template <typename Derived>
   QuadrotorState& operator=(const Eigen::MatrixBase<Derived>& state) {
@@ -94,10 +94,10 @@ Eigen::Matrix<ScalarType, 12, 1> toEigen(
 template <typename ScalarType = double>
 class QuadrotorInput {
  public:
-  QuadrotorInput(void) : w1(0), w2(0), w3(0), w4(0){}
+  QuadrotorInput(void) : w1(0), w2(0), w3(0), w4(0) {}
   template <typename Derived>
   QuadrotorInput(const Eigen::MatrixBase<Derived>& x)
-      : w1(x(0)), w2(x(1)), w3(x(2)), w4(x(3)){}
+      : w1(x(0)), w2(x(1)), w3(x(2)), w4(x(3)) {}
 
   template <typename Derived>
   QuadrotorInput& operator=(const Eigen::MatrixBase<Derived>& input) {
@@ -144,7 +144,7 @@ class Quadrotor {
     I(1, 1) = 0.0023;
     I(2, 2) = 0.004;
   }
-  virtual ~Quadrotor(void){}
+  virtual ~Quadrotor(void) {}
 
   template <typename Scalar>
   QuadrotorState<Scalar> dynamics(const Scalar& t,

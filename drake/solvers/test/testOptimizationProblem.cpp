@@ -67,22 +67,22 @@ struct Unique {
 
 TEST(testOptimizationProblem, testAddFunction) {
   OptimizationProblem prog;
-  prog.addContinuousVariables(1);
+  prog.AddContinuousVariables(1);
 
   Movable movable;
-  prog.addCost(std::move(movable));
-  prog.addCost(Movable());
+  prog.AddCost(std::move(movable));
+  prog.AddCost(Movable());
 
   Copyable copyable;
-  prog.addCost(copyable);
+  prog.AddCost(copyable);
 
   Unique unique;
-  prog.addCost(std::cref(unique));
-  prog.addCost(std::make_shared<Unique>());
-  prog.addCost(std::unique_ptr<Unique>(new Unique));
+  prog.AddCost(std::cref(unique));
+  prog.AddCost(std::make_shared<Unique>());
+  prog.AddCost(std::unique_ptr<Unique>(new Unique));
 }
 
-void runNonlinearProgram(OptimizationProblem& prog,
+void RunNonlinearProgram(OptimizationProblem& prog,
                          std::function<void(void)> test_func) {
   NloptSolver nlopt_solver;
   SnoptSolver snopt_solver;
@@ -94,7 +94,7 @@ void runNonlinearProgram(OptimizationProblem& prog,
 
   for (const auto& solver : solvers) {
     if (!solver.second->available()) { continue; }
-    ASSERT_NO_THROW(solver.second->solve(prog)) <<
+    ASSERT_NO_THROW(solver.second->Solve(prog)) <<
         "Using solver: " << solver.first;
     EXPECT_NO_THROW(test_func()) << "Using solver: " << solver.first;
   }
@@ -103,15 +103,15 @@ void runNonlinearProgram(OptimizationProblem& prog,
 TEST(testOptimizationProblem, trivialLeastSquares) {
   OptimizationProblem prog;
 
-  auto const& x = prog.addContinuousVariables(4);
+  auto const& x = prog.AddContinuousVariables(4);
 
   auto x2 = x(2);
   auto xhead = x.head(3);
 
   Vector4d b = Vector4d::Random();
-  auto con = prog.addLinearEqualityConstraint(Matrix4d::Identity(), b, {x});
+  auto con = prog.AddLinearEqualityConstraint(Matrix4d::Identity(), b, {x});
 
-  prog.solve();
+  prog.Solve();
   EXPECT_TRUE(
       CompareMatrices(b, x.value(), 1e-10, MatrixCompareType::absolute));
 
@@ -121,9 +121,9 @@ TEST(testOptimizationProblem, trivialLeastSquares) {
 
   valuecheck(b(2), xhead(2).value()(0), 1e-10);  // a segment of a segment
 
-  auto const& y = prog.addContinuousVariables(2);
-  prog.addLinearEqualityConstraint(2 * Matrix2d::Identity(), b.topRows(2), {y});
-  prog.solve();
+  auto const& y = prog.AddContinuousVariables(2);
+  prog.AddLinearEqualityConstraint(2 * Matrix2d::Identity(), b.topRows(2), {y});
+  prog.Solve();
   EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10,
                               MatrixCompareType::absolute));
 
@@ -131,7 +131,7 @@ TEST(testOptimizationProblem, trivialLeastSquares) {
       CompareMatrices(b, x.value(), 1e-10, MatrixCompareType::absolute));
 
   con->updateConstraint(3 * Matrix4d::Identity(), b);
-  prog.solve();
+  prog.Solve();
   EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10,
                               MatrixCompareType::absolute));
 
@@ -140,10 +140,10 @@ TEST(testOptimizationProblem, trivialLeastSquares) {
 
   std::shared_ptr<BoundingBoxConstraint> bbcon(new BoundingBoxConstraint(
       MatrixXd::Constant(2, 1, -1000.0), MatrixXd::Constant(2, 1, 1000.0)));
-  prog.addBoundingBoxConstraint(bbcon, {x.head(2)});
+  prog.AddBoundingBoxConstraint(bbcon, {x.head(2)});
 
   // Now solve as a nonlinear program.
-  runNonlinearProgram(prog, [&]() {
+  RunNonlinearProgram(prog, [&]() {
       EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10,
                                   MatrixCompareType::absolute));
       EXPECT_TRUE(
@@ -172,20 +172,20 @@ class TestProblem1Objective {
 
 TEST(testOptimizationProblem, testProblem1) {
   OptimizationProblem prog;
-  auto x = prog.addContinuousVariables(5);
-  prog.addCost(TestProblem1Objective());
+  auto x = prog.AddContinuousVariables(5);
+  prog.AddCost(TestProblem1Objective());
   VectorXd constraint(5);
   constraint << 20, 12, 11, 7, 4;
-  prog.addLinearConstraint(
+  prog.AddLinearConstraint(
       constraint.transpose(),
       Drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
       Drake::Vector1d::Constant(40));
-  prog.addBoundingBoxConstraint(
+  prog.AddBoundingBoxConstraint(
       MatrixXd::Constant(5, 1, 0), MatrixXd::Constant(5, 1, 1));
   VectorXd expected(5);
   expected << 1, 1, 0, 1, 0;
-  prog.setInitialGuess({x}, expected + .2 * VectorXd::Random(5));
-  runNonlinearProgram(prog, [&]() {
+  prog.SetInitialGuess({x}, expected + .2 * VectorXd::Random(5));
+  RunNonlinearProgram(prog, [&]() {
       EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-10,
                                   MatrixCompareType::absolute));
     });
@@ -242,34 +242,34 @@ class LowerBoundTestConstraint : public Constraint {
 
 TEST(testOptimizationProblem, lowerBoundTest) {
   OptimizationProblem prog;
-  auto x = prog.addContinuousVariables(6);
-  prog.addCost(LowerBoundTestObjective());
+  auto x = prog.AddContinuousVariables(6);
+  prog.AddCost(LowerBoundTestObjective());
   std::shared_ptr<Constraint> con1(new LowerBoundTestConstraint(2, 3));
-  prog.addGenericConstraint(con1);
+  prog.AddGenericConstraint(con1);
   std::shared_ptr<Constraint> con2(new LowerBoundTestConstraint(4, 5));
-  prog.addGenericConstraint(con2);
+  prog.AddGenericConstraint(con2);
 
   Eigen::VectorXd c1(6);
   c1 << 1, -3, 0, 0, 0, 0;
-  prog.addLinearConstraint(
+  prog.AddLinearConstraint(
       c1.transpose(),
       Drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
       Drake::Vector1d::Constant(2));
   Eigen::VectorXd c2(6);
   c2 << -1, 1, 0, 0, 0, 0;
-  prog.addLinearConstraint(
+  prog.AddLinearConstraint(
       c2.transpose(),
       Drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
       Drake::Vector1d::Constant(2));
   Eigen::VectorXd c3(6);
   c3 << 1, 1, 0, 0, 0, 0;
-  prog.addLinearConstraint(
+  prog.AddLinearConstraint(
       c3.transpose(),
       Drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
       Drake::Vector1d::Constant(6));
   Eigen::VectorXd c4(6);
   c4 << 1, 1, 0, 0, 0, 0;
-  prog.addLinearConstraint(
+  prog.AddLinearConstraint(
       c4.transpose(),
       Drake::Vector1d::Constant(2),
       Drake::Vector1d::Constant(std::numeric_limits<double>::infinity()));
@@ -279,16 +279,16 @@ TEST(testOptimizationProblem, lowerBoundTest) {
   upper << std::numeric_limits<double>::infinity(),
       std::numeric_limits<double>::infinity(),
       5, 6, 5, 10;
-  prog.addBoundingBoxConstraint(lower, upper);
+  prog.AddBoundingBoxConstraint(lower, upper);
 
   Eigen::VectorXd expected(6);
   expected << 5, 1, 5, 0, 5, 10;
-  prog.setInitialGuess({x}, expected + .1 * Eigen::VectorXd::Random(6));
+  prog.SetInitialGuess({x}, expected + .1 * Eigen::VectorXd::Random(6));
 
   // This test actually fails in SNOPT but works in NLopt.
   NloptSolver nlopt_solver;
   if (!nlopt_solver.available()) { return; }
-  nlopt_solver.solve(prog);
+  nlopt_solver.Solve(prog);
 
   // This test seems to be fairly sensitive to how much the randomness
   // causes the initial guess to deviate, so the tolerance is a bit
@@ -314,10 +314,10 @@ class SixHumpCamelObjective {
 
 TEST(testOptimizationProblem, sixHumpCamel) {
   OptimizationProblem prog;
-  auto x = prog.addContinuousVariables(2);
-  auto objective = prog.addCost(SixHumpCamelObjective());
+  auto x = prog.AddContinuousVariables(2);
+  auto objective = prog.AddCost(SixHumpCamelObjective());
 
-  runNonlinearProgram(prog, [&]() {
+  RunNonlinearProgram(prog, [&]() {
       // check (numerically) if it is a local minimum
       VectorXd ystar, y;
       objective->eval(x.value(), ystar);
@@ -378,25 +378,25 @@ class GloptipolyConstrainedExampleConstraint
  */
 TEST(testOptimizationProblem, gloptipolyConstrainedMinimization) {
   OptimizationProblem prog;
-  auto x = prog.addContinuousVariables(3);
-  prog.addCost(GloptipolyConstrainedExampleObjective());
+  auto x = prog.AddContinuousVariables(3);
+  prog.AddCost(GloptipolyConstrainedExampleObjective());
   std::shared_ptr<GloptipolyConstrainedExampleConstraint> qp_con(
       new GloptipolyConstrainedExampleConstraint());
-  prog.addGenericConstraint(qp_con, {x});
-  prog.addLinearConstraint(
+  prog.AddGenericConstraint(qp_con, {x});
+  prog.AddLinearConstraint(
       Vector3d(1, 1, 1).transpose(),
       Vector1d::Constant(-std::numeric_limits<double>::infinity()),
       Vector1d::Constant(4));
-  prog.addLinearConstraint(
+  prog.AddLinearConstraint(
       Vector3d(0, 3, 1).transpose(),
       Vector1d::Constant(-std::numeric_limits<double>::infinity()),
       Vector1d::Constant(6));
-  prog.addBoundingBoxConstraint(
+  prog.AddBoundingBoxConstraint(
       Vector3d(0, 0, 0),
       Vector3d(2, std::numeric_limits<double>::infinity(), 3));
 
-  prog.setInitialGuess({x}, Vector3d(.5, 0, 3) + .1 * Vector3d::Random());
-  runNonlinearProgram(prog, [&]() {
+  prog.SetInitialGuess({x}, Vector3d(.5, 0, 3) + .1 * Vector3d::Random());
+  RunNonlinearProgram(prog, [&]() {
       EXPECT_TRUE(CompareMatrices(x.value(), Vector3d(0.5, 0, 3), 1e-4,
                                   MatrixCompareType::absolute));
     });
@@ -432,7 +432,7 @@ TEST(testOptimizationProblem, simpleLCPConstraintEval) {
 /** Simple linear complementarity problem example.
  * @brief a hand-created LCP easily solved.
  *
- * Note: This test is meant to test that OptimizationProblem.solve() works in
+ * Note: This test is meant to test that OptimizationProblem.Solve() works in
  * this case; tests of the correctness of the Moby LCP solver itself live in
  * testMobyLCP.
  */
@@ -447,10 +447,10 @@ TEST(testOptimizationProblem, simpleLCP) {
 
   Eigen::Vector2d q(-16, -15);
 
-  auto x = prog.addContinuousVariables(2);
+  auto x = prog.AddContinuousVariables(2);
 
-  prog.addLinearComplementarityConstraint(M, q, {x});
-  EXPECT_NO_THROW(prog.solve());
+  prog.AddLinearComplementarityConstraint(M, q, {x});
+  EXPECT_NO_THROW(prog.Solve());
   EXPECT_TRUE(CompareMatrices(x.value(), Vector2d(16, 0), 1e-4,
                               MatrixCompareType::absolute));
 }
@@ -470,12 +470,12 @@ TEST(testOptimizationProblem, multiLCP) {
 
   Eigen::Vector2d q(-16, -15);
 
-  auto x = prog.addContinuousVariables(2);
-  auto y = prog.addContinuousVariables(2);
+  auto x = prog.AddContinuousVariables(2);
+  auto y = prog.AddContinuousVariables(2);
 
-  prog.addLinearComplementarityConstraint(M, q, {x});
-  prog.addLinearComplementarityConstraint(M, q, {y});
-  EXPECT_NO_THROW(prog.solve());
+  prog.AddLinearComplementarityConstraint(M, q, {x});
+  prog.AddLinearComplementarityConstraint(M, q, {y});
+  EXPECT_NO_THROW(prog.Solve());
 
   EXPECT_TRUE(CompareMatrices(x.value(), Vector2d(16, 0), 1e-4,
                               MatrixCompareType::absolute));
