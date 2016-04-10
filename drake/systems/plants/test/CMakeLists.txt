@@ -89,9 +89,9 @@ if (LCM_FOUND)
     target_link_libraries(compareRigidBodySystems drakeRBSystem ${GTEST_BOTH_LIBRARIES})
     add_test(NAME compareAcrobotURDFtoSDF COMMAND compareRigidBodySystems Acrobot.urdf Acrobot.sdf WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/examples/Acrobot")
 
-    if (WITH_SNOPT_PRECOMPILED OR WITH_SNOPT)
+    if (WITH_SNOPT)
       add_test(NAME comparePriusURDFtoSDF COMMAND compareRigidBodySystems prius.sdf prius.urdf 0 0 0.378326 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/examples/Cars/prius")
-    endif (WITH_SNOPT_PRECOMPILED OR WITH_SNOPT)
+    endif (WITH_SNOPT)
   endif (GTEST_FOUND)
 endif (LCM_FOUND)
 
