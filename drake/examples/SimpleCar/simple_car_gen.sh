@@ -15,3 +15,4 @@ gen () {
 
 gen "simple car state" x y heading steering_angle velocity
 gen "driving command" steering_angle throttle brake
+gen "floating joint state" x y z roll pitch yaw
