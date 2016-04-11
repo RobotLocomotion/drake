@@ -7,7 +7,7 @@ void ResultCollector::addPointPairResult(const PointPair& result) {
   pts.push_back(result);
 }
 
-PointPair ResultCollector::minDistPoint() {
+PointPair ResultCollector::minDistPoint() const {
   return *std::min_element(pts.begin(), pts.end());
 }
 }

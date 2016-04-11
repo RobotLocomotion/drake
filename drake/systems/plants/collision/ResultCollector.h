@@ -20,7 +20,7 @@ class ResultCollector {
 
   std::vector<PointPair> getResults() const { return pts; }
 
-  PointPair minDistPoint();
+  PointPair minDistPoint() const;
 
   std::vector<PointPair> pts;
 };
