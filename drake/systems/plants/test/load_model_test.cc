@@ -2,8 +2,8 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/systems/plants/RigidBodyFrame.h"
 #include "drake/systems/plants/RigidBodySystem.h"
+#include "drake/systems/plants/RigidBodyFrame.h"
 
 using Drake::RigidBodySystem;
 
