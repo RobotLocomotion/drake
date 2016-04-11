@@ -404,7 +404,8 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
   Isometry3d transform_to_parent_body =
       transform_parent_to_model.inverse() * transform_to_model;
 
-  if (child->hasParent()) {  // then implement it as a loop joint
+  if (child->hasParent()) {
+    // ... then implement it as a loop joint.
 
     // Gets the loop point in the joint's reference frame. Since the SDF
     // standard specifies that the joint's reference frame is defined by the

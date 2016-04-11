@@ -133,7 +133,6 @@ inline double solve_quadprog(MatrixBase<tA> & G,  MatrixBase<tB> & g0,
                       const MatrixBase<tC> & CE, const MatrixBase<tD> & ce0,
                       const MatrixBase<tE> & CI, const MatrixBase<tF> & ci0,
                       MatrixBase<tG>& x) {
-
   LLT<MatrixXd, Lower> chol(G.cols());
   double c1;
 
@@ -144,7 +143,6 @@ inline double solve_quadprog(MatrixBase<tA> & G,  MatrixBase<tB> & g0,
   chol.compute(G);
 
   return solve_quadprog2(chol, c1, g0, CE, ce0, CI, ci0, x);
-
 }
 
 /* solve_quadprog2 is used for when the Cholesky decomposition of G is pre-computed */
@@ -155,9 +153,9 @@ inline double solve_quadprog2(LLT<MatrixXd, Lower> &chol,  double c1, MatrixBase
                       MatrixBase<tF>& x) {
   int i, j, k, l; /* indices */
   int ip, me, mi;
-  int n=g0.size();
-  int p=CE.cols();
-  int m=CI.cols();
+  int n = g0.size();
+  int p = CE.cols();
+  int m = CI.cols();
   MatrixXd R(g0.size(), g0.size()), J(g0.size(), g0.size());
 
 
@@ -192,7 +190,7 @@ inline double solve_quadprog2(LLT<MatrixXd, Lower> &chol,  double c1, MatrixBase
   J = chol.matrixU().solve(J);
   c2 = J.trace();
 #ifdef TRACE_SOLVER
- print_matrix("J", J, n);
+  print_matrix("J", J, n);
 #endif
 
   /* c1 * c2 is an estimate for cond(G) */
@@ -228,7 +226,7 @@ inline double solve_quadprog2(LLT<MatrixXd, Lower> &chol,  double c1, MatrixBase
     /* compute full step length t2: i.e., the minimum step in primal space s.t. the contraint
        becomes feasible */
     t2 = 0.0;
-    if (std::abs(z.dot(z)) > std::numeric_limits<double>::epsilon()) // i.e. z != 0
+    if (std::abs(z.dot(z)) > std::numeric_limits<double>::epsilon())  // i.e. z != 0
       t2 = (-np.dot(x) - ce0(i)) / z.dot(np);
 
     x += t2 * z;
@@ -285,9 +283,9 @@ l1:
   }
 
   /* save old values for u, x and A */
-   u_old.head(iq) = u.head(iq);
-   A_old.head(iq) = A.head(iq);
-   x_old = x;
+  u_old.head(iq) = u.head(iq);
+  A_old.head(iq) = A.head(iq);
+  x_old = x;
 
 l2: /* Step 2: check for feasibility and determine a new S-pair */
   for (i = 0; i < mi; i++) {
@@ -341,7 +339,7 @@ l2a:/* Step 2a: determine step direction */
     }
   }
   /* Compute t2: full step length (minimum step in primal space such that the constraint ip becomes feasible */
-  if (std::abs(z.dot(z))  > std::numeric_limits<double>::epsilon()) // i.e. z != 0
+  if (std::abs(z.dot(z))  > std::numeric_limits<double>::epsilon())  // i.e. z != 0
     t2 = -s(ip) / z.dot(np);
   else
     t2 = inf; /* +inf */
@@ -418,9 +416,9 @@ l2a:/* Step 2a: determine step direction */
       }
       x = x_old;
       goto l2; /* go to step 2 */
-    }
-    else
+    } else {
       iai(ip) = -1;
+    }
 #ifdef TRACE_SOLVER
     print_matrix("R", R, n);
     print_ivector("A", A, iq);
@@ -451,7 +449,7 @@ l2a:/* Step 2a: determine step direction */
 
 
 inline bool add_constraint(MatrixXd& R, MatrixXd& J, VectorXd& d, int& iq, double& R_norm) {
- int n=J.rows();
+  int n = J.rows();
 #ifdef TRACE_SOLVER
   std::cerr << "Add constraint " << iq << '/';
 #endif

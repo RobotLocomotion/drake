@@ -249,8 +249,8 @@ TEST(testMobyLCP, testProblem6) {
       11,  0, 10,  -1,
       0,  11, 10,  -1,
       10, 10, 21,  -1,
-      1,   1,  1,   0; // Note that the (3, 3) position is incorrectly
-                       // shown in the book with the value 1.
+      1,   1,  1,   0;  // Note that the (3, 3) position is incorrectly
+                        // shown in the book with the value 1.
   // clang-format on
 
   // Pick a couple of arbitrary points in the [0, 23] range.

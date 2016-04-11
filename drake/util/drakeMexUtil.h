@@ -118,7 +118,7 @@ Eigen::Map<const Eigen::Matrix<double, Rows, Cols>> matlabToEigenMap(
   using namespace Eigen;
   using namespace std;
 
-  Index rows, cols; // at runtime
+  Index rows, cols;  // at runtime
   if (mxIsEmpty(mex)) {
     // be lenient when it comes to dimensions in the empty input case
     if (Rows == Dynamic && Cols == Dynamic) {

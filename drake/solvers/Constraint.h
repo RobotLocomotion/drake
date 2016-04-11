@@ -239,6 +239,6 @@ class LinearComplementarityConstraint : public Constraint {
   Eigen::VectorXd q_;
 };
 
-} // end namespace Drake
+}  // namespace Drake
 
 #endif  // DRAKE_SOLVERS_CONSTRAINT_H_

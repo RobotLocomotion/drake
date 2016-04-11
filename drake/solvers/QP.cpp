@@ -78,7 +78,7 @@ int fastQPThatTakesQinv(vector<MatrixXd*> QinvblkDiag, const VectorXd& f,
         QinvAteq.block(startrow, 0, d, M) =
             thisQinv->asDiagonal() *
             Aeq.block(0, startrow, M, d)
-                .transpose();  // Aeq.transpoODse().block(startrow, 0, d, N)
+                .transpose();  // Aeq.transpose().block(startrow, 0, d, N)
       minusQinvf.segment(startrow, d) =
           -thisQinv->cwiseProduct(f.segment(startrow, d));
       startrow = startrow + d;
@@ -586,25 +586,3 @@ GRBmodel* gurobiActiveSetQP(GRBenv* env, vector<MatrixXd*> QblkDiag,
   return model;
 }
 
-/*
-template int fastQP(vector< MatrixBase<MatrixXd>* > QblkDiag, const MatrixBase<
-Map<VectorXd> >&, const MatrixBase< Map<MatrixXd> >&, const MatrixBase<
-Map<VectorXd> >&, const MatrixBase< Map<MatrixXd> >&, const MatrixBase<
-Map<VectorXd> >&, set<int>&, MatrixBase< Map<VectorXd> >&);
-template GRBmodel* gurobiQP(GRBenv *env, vector< MatrixBase<MatrixXd>* >
-QblkDiag, VectorXd& f, const MatrixBase< Map<MatrixXd> >& Aeq, const MatrixBase<
-Map<VectorXd> >& beq, const MatrixBase< Map<MatrixXd> >& Ain, const MatrixBase<
-Map<VectorXd> >&bin, VectorXd& lb, VectorXd& ub, set<int>&, VectorXd&);
-template GRBmodel* gurobiQP(GRBenv *env, vector< MatrixBase<MatrixXd>* >
-QblkDiag, VectorXd& f, const MatrixBase< MatrixXd >& Aeq, const MatrixBase<
-VectorXd >& beq, const MatrixBase< MatrixXd >& Ain, const MatrixBase< VectorXd
->&bin, VectorXd&lb, VectorXd&ub, set<int>&, VectorXd&);
-*/
-
-/*
-template int fastQP(vector< MatrixBase< VectorXd > >, const MatrixBase< VectorXd
->&, const MatrixBase< Matrix<double,-1,-1, RowMajor, 1000,-1> >&, const
-MatrixBase< Matrix<double,-1, 1, 0, 1000, 1> >&, const MatrixBase<
-Matrix<double,-1,-1, RowMajor, 1000,-1> >&, const MatrixBase<
-Matrix<double,-1, 1, 0, 1000, 1> >&, set<int>&, MatrixBase< VectorXd >&);
-*/
