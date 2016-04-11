@@ -524,8 +524,16 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
 }
 
 /**
- * weld_to_frame's transform_to_body is the API-based shifting of the
- * robot's world frame to Drake's world frame
+ * Parses a model and adds it to the rigid body tree.
+ *
+ * @param model A pointer to the rigid body tree to which to add the model.
+ * @param package_map A map containing information about the ROS workspace
+ * in which to search for meshes.
+ * @param root_dir The root directory from which to search for mesh files.
+ * @param floating_base_type The type of floating joint to use to weld the
+ * newly added model to the rigid body tree.
+ * @param weld_to_frame Specifies the initial pose of the newly added robot
+ * relative to the link to which the robot is being welded.
  */
 void parseModel(RigidBodyTree* model, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
