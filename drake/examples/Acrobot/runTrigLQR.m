@@ -5,7 +5,7 @@ function runTrigLQR()
 %v = AcrobotVisualizer(p);
 %xG = p.xG; uG = p.uG;
 
-p = PlanarRigidBodyManipulator('Acrobot.urdf');
+p = PlanarRigidBodyManipulator('Acrobot_no_collision.urdf');
 v = p.constructVisualizer;
 xG = Point(p.getStateFrame,[pi;0;0;0]);
 uG = Point(p.getInputFrame,0);

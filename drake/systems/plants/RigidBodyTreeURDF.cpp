@@ -1,6 +1,6 @@
-#include <string>
 #include <fstream>
 #include <sstream>
+#include <string>
 
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "joints/DrakeJoints.h"
@@ -249,7 +249,8 @@ void parseVisual(shared_ptr<RigidBody> body, XMLElement* node,
         }
       } else {
         cerr << "WARNING: visual element had a material with neither a name "
-                "nor a nested color element" << endl;
+                "nor a nested color element"
+             << endl;
       }
     }
   }
@@ -463,7 +464,8 @@ void parseTransmission(RigidBodyTree* model, XMLElement* node) {
   string type(attr);
   if (type.find("SimpleTransmission") == string::npos) {
     cerr << "WARNING: only SimpleTransmissions are supported right now.  this "
-            "element will be skipped." << endl;
+            "element will be skipped."
+         << endl;
     return;
   }
 
@@ -481,7 +483,8 @@ void parseTransmission(RigidBodyTree* model, XMLElement* node) {
 
   if (model->bodies[body_index]->getJoint().getNumPositions() == 0) {
     cerr << "WARNING: Skipping transmission since it's attached to a fixed "
-            "joint: " << joint_name << endl;
+            "joint: "
+         << joint_name << endl;
     return;
   }
 
@@ -604,9 +607,18 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
     floating_joint_name = "base";
     transform_to_body = Isometry3d::Identity();
   } else {
-    weld_to_body = weld_to_frame->body;
-    transform_to_body = weld_to_frame->transform_to_body;
-    floating_joint_name = "weld";
+    // If the robot is being welded to the world, ignore the "body" variable
+    // within weld_to_frame. Instead, only use the transform_to_body
+    // variable to initialize the robot at the desired location in the world.
+    if (weld_to_frame->name.compare("world") == 0) {
+      weld_to_body = model->bodies[0];  // the world's body
+      floating_joint_name = "base";
+      transform_to_body = weld_to_frame->transform_to_body;
+    } else {
+      weld_to_body = weld_to_frame->body;
+      transform_to_body = weld_to_frame->transform_to_body;
+      floating_joint_name = "weld";
+    }
   }
 
   for (unsigned int i = 1; i < model->bodies.size(); i++) {

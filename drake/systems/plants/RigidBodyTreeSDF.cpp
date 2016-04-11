@@ -1,11 +1,11 @@
-#include <string>
 #include <fstream>
 #include <sstream>
+#include <string>
 
 #include "spruce.hh"
 
-#include "drake/thirdParty/tinyxml2/tinyxml2.h"
 #include "drake/systems/plants/RigidBodyTree.h"
+#include "drake/thirdParty/tinyxml2/tinyxml2.h"
 #include "joints/DrakeJoints.h"
 
 #include "drake/Path.h"
@@ -255,8 +255,8 @@ void setSDFLimits(XMLElement* node, FixedAxisOneDoFJoint<JointType>* fjoint) {
   if (fjoint != nullptr && limit_node) {
     double lower = -numeric_limits<double>::infinity(),
            upper = numeric_limits<double>::infinity();
-    parseScalarAttribute(limit_node, "lower", lower);
-    parseScalarAttribute(limit_node, "upper", upper);
+    parseScalarValue(limit_node, "lower", lower);
+    parseScalarValue(limit_node, "upper", upper);
     fjoint->setJointLimits(lower, upper);
   }
 }
@@ -273,6 +273,45 @@ void setSDFDynamics(RigidBodyTree* model, XMLElement* node,
                      coulomb_window);  // note: not a part of the sdf spec
     fjoint->setDynamics(damping, coulomb_friction, coulomb_window);
   }
+}
+
+void parseSDFFrame(RigidBodyTree* model, std::string model_name,
+                   XMLElement* node) {
+  const char* attr = node->Attribute("drake_ignore");
+  if (attr && strcmp(attr, "true") == 0) return;
+
+  attr = node->Attribute("name");
+  if (!attr) throw runtime_error("ERROR: frame tag is missing name attribute");
+  string name(attr);
+
+  // Parse the link
+  string link_name;
+  if (!parseStringValue(node, "link", link_name))
+    throw runtime_error("ERROR: frame " + name + " doesn't have a link node");
+
+  // The following will throw a std::runtime_error if the link doesn't exist.
+  std::shared_ptr<RigidBody> link = model->findLink(link_name, model_name);
+
+  // Get the frame's pose
+  XMLElement* pose = node->FirstChildElement("pose");
+  if (!pose)
+    throw runtime_error("ERROR: frame \"" + name +
+                        "\" is missing its pose tag");
+
+  Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
+  Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
+
+  const char* strval = pose->FirstChild()->Value();
+  if (strval) {
+    std::stringstream s(strval);
+    s >> xyz(0) >> xyz(1) >> xyz(2) >> rpy(0) >> rpy(1) >> rpy(2);
+  }
+
+  // Create the frame
+  std::shared_ptr<RigidBodyFrame> frame = allocate_shared<RigidBodyFrame>(
+      Eigen::aligned_allocator<RigidBodyFrame>(), name, link, xyz, rpy);
+
+  model->addFrame(frame);
 }
 
 void parseSDFJoint(RigidBodyTree* model, std::string model_name,
@@ -309,31 +348,35 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
   if (!child)
     throw runtime_error("ERROR: could not find child link named " + child_name);
 
-  Isometry3d transform_to_model = Isometry3d::Identity(),
+  Isometry3d transform_child_to_model = Isometry3d::Identity(),
              transform_parent_to_model = Isometry3d::Identity();
+
+  // Obtain the child-to-model frame transformation.
   if (pose_map.find(child_name) != pose_map.end())
-    transform_to_model = pose_map.at(
-        child_name);  // by default, use the child frame as the joint frame
+    transform_child_to_model = pose_map.at(child_name);
+
+  // Obtain the parent-to-model frame transformation.
   if (pose_map.find(parent_name) != pose_map.end())
     transform_parent_to_model = pose_map.at(parent_name);
 
-  XMLElement* pose = node->FirstChildElement("pose");
-  if (pose)
-    poseValueToTransform(pose, pose_map, transform_to_model,
-                         transform_parent_to_model);  // read the pose in using
-                                                      // the parent coords by
-                                                      // default
+  // By default, a joint is defined in the child's coordinate frame.
+  // This was determined by studying valid SDF files available at:
+  // https://bitbucket.org/osrf/gazebo_models/src
+  Isometry3d transform_to_model = transform_child_to_model;
 
-  if (pose_map.find(child_name) == pose_map.end()) {
-    pose_map.insert(pair<string, Isometry3d>(
-        child_name, transform_to_model));  // this joint actually defines the
-                                           // pose of the previously unspecified
-                                           // link frame
+  XMLElement* pose = node->FirstChildElement("pose");
+  if (pose) {
+    // Read the joint's pose using the child link's coordinate frame by default.
+    poseValueToTransform(pose, pose_map, transform_to_model,
+                         transform_child_to_model);
   }
 
-  //  pose_map.insert(pair<string, Isometry3d>(name, T)); // note: joint names
-  //  must be distinct within a model, but nothing prevents them from matching a
-  //  link name.
+  if (pose_map.find(child_name) == pose_map.end()) {
+    // The child link is not in the pose map. Thus, this joint actually defines
+    // the pose of a previously-unspecified link frame. Adds this link's
+    // transform to the model coordinate frame to the pose map.
+    pose_map.insert(pair<string, Isometry3d>(child_name, transform_to_model));
+  }
 
   Vector3d axis;
   axis << 1, 0, 0;
@@ -345,42 +388,88 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
       throw runtime_error("ERROR: axis is zero.  don't do that");
     axis.normalize();
     double in_parent_model_frame;
-    if (parseScalarValue(axis_node, "in_parent_model_frame",
+    if (parseScalarValue(axis_node, "use_parent_model_frame",
                          in_parent_model_frame) &&
         in_parent_model_frame > 0.0) {
-      axis = transform_to_model.inverse() * axis;
+      // The joint's axis of rotation should be interpreted as being in the
+      // model coordinate frame. To be compatible with Drake, the joint's axis
+      // must be defined in the joint's coordinate frame. Since we are
+      // transforming the frame of an axis and not a point, we only want to
+      // use the linear (rotational) part of the transform_to_model matrix.
+      axis = transform_to_model.linear().inverse() * axis;
     }
   }
 
-  // T_joint_to_parent = T_model_to_parent * T_joint_to_model
+  // Obtain the transform from the joint frame to the parent link's frame.
   Isometry3d transform_to_parent_body =
       transform_parent_to_model.inverse() * transform_to_model;
 
   if (child->hasParent()) {  // then implement it as a loop joint
-    Isometry3d transform_child_to_model = Isometry3d::Identity();
-    if (pose_map.find(child_name) != pose_map.end())
-      transform_child_to_model = pose_map.at(child_name);
+
+    // Gets the loop point in the joint's reference frame. Since the SDF
+    // standard specifies that the joint's reference frame is defined by the
+    // child link's reference frame, the loop point in the joint's reference
+    // frame is simply the pose of the joint.
+    Eigen::Vector3d loop_point_child = Eigen::Vector3d::Zero();
+    {
+      const char* strval = pose->FirstChild()->Value();
+      if (strval) {
+        std::stringstream s(strval);
+        s >> loop_point_child(0) >> loop_point_child(1) >> loop_point_child(2);
+      } else {
+        throw runtime_error("ERROR: Unable to construct loop joint \"" + name +
+                            "\": could not parse loop point.");
+      }
+    }
+
+    // Get the loop point in the parent's reference frame.
+    Eigen::Vector3d loop_point_model =
+        transform_child_to_model * loop_point_child;
+
+    Eigen::Vector3d loop_point_parent =
+        transform_parent_to_model.inverse() * loop_point_model;
+
     std::shared_ptr<RigidBodyFrame> frameA = allocate_shared<RigidBodyFrame>(
         Eigen::aligned_allocator<RigidBodyFrame>(), name + "FrameA", parent,
-        transform_to_parent_body);
+        loop_point_parent, Vector3d::Zero());
+
     std::shared_ptr<RigidBodyFrame> frameB = allocate_shared<RigidBodyFrame>(
         Eigen::aligned_allocator<RigidBodyFrame>(), name + "FrameB", child,
-        transform_child_to_model.inverse() * transform_to_model);
+        loop_point_child, Vector3d::Zero());
 
     model->addFrame(frameA);
     model->addFrame(frameB);
     RigidBodyLoop l(frameA, frameB, axis);
     model->loops.push_back(l);
-  } else {
-    // construct the actual joint (based on it's type)
-    DrakeJoint* joint = nullptr;
 
-    //    assert(transform_to_child_body.isApprox(Isometry3d::Identity()) );
-    // note: my tests on the fourbar pass when this is not true, but I do not
-    // actually understand why...
-    // I would think that this meant my inertial and geometry elements were
-    // generated in the wrong coordinate frame.
-    // ... the lack of documentation in the SDF format is maddening
+  } else {
+    // Update the reference frames of the child link's inertia, visual,
+    // and collision elements to be this joint's frame.
+    child->ApplyTransformToJointFrame(transform_to_model.inverse() *
+                                      transform_child_to_model);
+
+    for (const auto& c : child->collision_element_ids) {
+      if (!model->transformCollisionFrame(
+              c, transform_to_model.inverse() * transform_child_to_model)) {
+        std::stringstream ss;
+        ss << "RigidBodyTreeSDF::parseSDFJoint: Collision element with ID " << c
+           << " not found! Cannot update its local frame to be that of joint.";
+        throw std::runtime_error(ss.str());
+      }
+    }
+
+    // Update pose_map with child's new frame, which is now the same as this
+    // joint's frame.
+    auto it = pose_map.find(child_name);
+    if (it != pose_map.end()) {
+      it->second = transform_to_model;
+    } else {
+      throw runtime_error(
+          "ERROR: Unable to update transform_to_model of link " + child_name);
+    }
+
+    // construct the actual joint (based on its type)
+    DrakeJoint* joint = nullptr;
 
     if (type.compare("revolute") == 0 || type.compare("gearbox") == 0) {
       FixedAxisOneDoFJoint<RevoluteJoint>* fjoint =
@@ -435,7 +524,8 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
 
 void parseModel(RigidBodyTree* model, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
-                const DrakeJoint::FloatingBaseType floating_base_type) {
+                const DrakeJoint::FloatingBaseType floating_base_type,
+                std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   PoseMap pose_map;  // because sdf specifies almost everything in the global
                      // (actually model) coordinates instead of relative
                      // coordinates.  sigh...
@@ -446,7 +536,14 @@ void parseModel(RigidBodyTree* model, XMLElement* node,
 
   Isometry3d transform_to_world = Isometry3d::Identity();
   XMLElement* pose = node->FirstChildElement("pose");
-  if (pose) poseValueToTransform(pose, pose_map, transform_to_world);
+  if (pose) {
+    poseValueToTransform(pose, pose_map, transform_to_world);
+    if (transform_to_world.matrix() != Isometry3d::Identity().matrix() &&
+        weld_to_frame != nullptr) {
+      throw std::runtime_error(
+          "SDF model double offset to world not yet supported");
+    }
+  }
 
   // parse link elements
   for (XMLElement* link_node = node->FirstChildElement("link"); link_node;
@@ -457,6 +554,11 @@ void parseModel(RigidBodyTree* model, XMLElement* node,
   for (XMLElement* joint_node = node->FirstChildElement("joint"); joint_node;
        joint_node = joint_node->NextSiblingElement("joint"))
     parseSDFJoint(model, model_name, joint_node, pose_map);
+
+  // parse frames
+  for (XMLElement* frame_node = node->FirstChildElement("frame"); frame_node;
+       frame_node = frame_node->NextSiblingElement("frame"))
+    parseSDFFrame(model, model_name, frame_node);
 
   bool has_root_node = false;
   for (unsigned int i = 1; i < model->bodies.size(); i++) {
@@ -503,16 +605,19 @@ void parseModel(RigidBodyTree* model, XMLElement* node,
 
 void parseWorld(RigidBodyTree* model, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
-                const DrakeJoint::FloatingBaseType floating_base_type) {
+                const DrakeJoint::FloatingBaseType floating_base_type,
+                std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   for (XMLElement* model_node = node->FirstChildElement("model"); model_node;
        model_node = model_node->NextSiblingElement("model")) {
-    parseModel(model, model_node, package_map, root_dir, floating_base_type);
+    parseModel(model, model_node, package_map, root_dir, floating_base_type,
+               weld_to_frame);
   }
 }
 
 void parseSDF(RigidBodyTree* model, XMLDocument* xml_doc,
               PackageMap& package_map, const string& root_dir,
-              const DrakeJoint::FloatingBaseType floating_base_type) {
+              const DrakeJoint::FloatingBaseType floating_base_type,
+              std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   populatePackageMap(package_map);
 
   XMLElement* node = xml_doc->FirstChildElement("sdf");
@@ -528,20 +633,23 @@ void parseSDF(RigidBodyTree* model, XMLDocument* xml_doc,
     if (world_node->NextSiblingElement("world")) {
       throw runtime_error("ERROR: Multiple worlds in file, ambiguous.");
     }
-    parseWorld(model, world_node, package_map, root_dir, floating_base_type);
+    parseWorld(model, world_node, package_map, root_dir, floating_base_type,
+               weld_to_frame);
   }
 
   // Load all models not in a world.
   for (XMLElement* model_node = node->FirstChildElement("model"); model_node;
        model_node = model_node->NextSiblingElement("model"))
-    parseModel(model, model_node, package_map, root_dir, floating_base_type);
+    parseModel(model, model_node, package_map, root_dir, floating_base_type,
+               weld_to_frame);
 
   model->compile();
 }
 
 void RigidBodyTree::addRobotFromSDF(
     const string& urdf_filename,
-    const DrakeJoint::FloatingBaseType floating_base_type) {
+    const DrakeJoint::FloatingBaseType floating_base_type,
+    std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   PackageMap package_map;
 
   XMLDocument xml_doc;
@@ -557,5 +665,6 @@ void RigidBodyTree::addRobotFromSDF(
     root_dir = urdf_filename.substr(0, found);
   }
 
-  parseSDF(this, &xml_doc, package_map, root_dir, floating_base_type);
+  parseSDF(this, &xml_doc, package_map, root_dir, floating_base_type,
+           weld_to_frame);
 }

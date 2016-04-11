@@ -40,6 +40,10 @@ void Element::getTerrainContactPoints(Eigen::Matrix3Xd& local_points) const {
   local_points = T_element_to_local * points;
 }
 
+void Element::SetLocalTransform(const Eigen::Isometry3d& T_element_to_local) {
+  this->T_element_to_local = T_element_to_local;
+}
+
 void Element::updateWorldTransform(const Eigen::Isometry3d& T_local_to_world) {
   setWorldTransform(T_local_to_world * (this->T_element_to_local));
 }
