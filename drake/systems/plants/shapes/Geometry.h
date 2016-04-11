@@ -19,6 +19,8 @@ enum DRAKESHAPES_EXPORT Shape {
   CAPSULE = 6
 };
 
+std::string ShapeToString(Shape ss);
+
 const double MIN_RADIUS = 1e-7;
 
 class DRAKESHAPES_EXPORT Geometry {
@@ -37,6 +39,12 @@ class DRAKESHAPES_EXPORT Geometry {
   virtual void getTerrainContactPoints(Eigen::Matrix3Xd &points) const {
     points = Eigen::Matrix3Xd();
   }
+
+  /**
+   * A toString method for this class.
+   */
+  friend DRAKESHAPES_EXPORT std::ostream &operator<<(std::ostream &,
+                                                     const Geometry &);
 
  protected:
   Geometry(Shape shape);
@@ -57,6 +65,12 @@ class DRAKESHAPES_EXPORT Sphere : public Geometry {
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
   virtual void getTerrainContactPoints(Eigen::Matrix3Xd &points) const;
 
+  /**
+   * A toString method for this class.
+   */
+  friend DRAKESHAPES_EXPORT std::ostream &operator<<(std::ostream &,
+                                                     const Sphere &);
+
   double radius;
   static const int NUM_POINTS;
 };
@@ -70,6 +84,12 @@ class DRAKESHAPES_EXPORT Box : public Geometry {
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
   virtual void getTerrainContactPoints(Eigen::Matrix3Xd &points) const;
 
+  /**
+   * A toString method for this class.
+   */
+  friend DRAKESHAPES_EXPORT std::ostream &operator<<(std::ostream &,
+                                                     const Box &);
+
   Eigen::Vector3d size;
 };
 
@@ -80,6 +100,12 @@ class DRAKESHAPES_EXPORT Cylinder : public Geometry {
   virtual Cylinder *clone() const;
   virtual void getPoints(Eigen::Matrix3Xd &points) const;
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
+
+  /**
+   * A toString method for this class.
+   */
+  friend DRAKESHAPES_EXPORT std::ostream &operator<<(std::ostream &,
+                                                     const Cylinder &);
 
   double radius;
   double length;
@@ -92,6 +118,13 @@ class DRAKESHAPES_EXPORT Capsule : public Geometry {
   virtual Capsule *clone() const;
   virtual void getPoints(Eigen::Matrix3Xd &points) const;
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
+
+  /**
+   * A toString method for this class.
+   */
+  friend DRAKESHAPES_EXPORT std::ostream &operator<<(std::ostream &,
+                                                     const Capsule &);
+
   double radius;
   double length;
 
@@ -106,6 +139,12 @@ class DRAKESHAPES_EXPORT Mesh : public Geometry {
   virtual Mesh *clone() const;
   virtual void getPoints(Eigen::Matrix3Xd &points) const;
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
+
+  /**
+   * A toString method for this class.
+   */
+  friend DRAKESHAPES_EXPORT std::ostream &operator<<(std::ostream &,
+                                                     const Mesh &);
 
   double scale;
   std::string filename;
@@ -124,6 +163,12 @@ class DRAKESHAPES_EXPORT MeshPoints : public Geometry {
 
   virtual void getPoints(Eigen::Matrix3Xd &points) const;
   virtual void getBoundingBoxPoints(Eigen::Matrix3Xd &points) const;
+
+  /**
+   * A toString method for this class.
+   */
+  friend DRAKESHAPES_EXPORT std::ostream &operator<<(std::ostream &,
+                                                     const MeshPoints &);
 
   Eigen::Matrix3Xd points;
 };

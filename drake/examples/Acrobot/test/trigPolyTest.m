@@ -4,7 +4,7 @@ options.replace_output_w_new_state = true;
 
 w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-p1 = PlanarRigidBodyManipulator('../Acrobot.urdf');
+p1 = PlanarRigidBodyManipulator('../Acrobot_no_collision.urdf');
 warning(w);
 tp1 = extractTrigPolySystem(p1,options);
 
