@@ -144,7 +144,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 function(add_matlab_test)
   find_package(Matlab COMPONENTS MAIN_PROGRAM)
   if (MATLAB_FOUND)
-    set(oneValueArgs NAME COMMAND WORKING_DIRECTORY TIMEOUT)
+    set(oneValueArgs NAME COMMAND WORKING_DIRECTORY)
     set(multiValueArgs PROPERTIES)
     cmake_parse_arguments(parsed_args "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
@@ -163,12 +163,13 @@ function(add_matlab_test)
       set(custom_Matlab_test_command "rng('shuffle'); rng_state=rng; disp(sprintf('To reproduce this test use rng(%d,''%s'')',rng_state.Seed,rng_state.Type)); disp(' '); ${custom_Matlab_test_command}")
     endif()
 
-    if (!${parsed_args_TIMEOUT})
-      set(parsed_args_TIMEOUT 400)
-    endif()
+    matlab_add_unit_test(NAME ${parsed_args_NAME}
+      ADDITIONAL_PATH ${additional_paths}
+      UNITTEST_PRECOMMAND ${cmd_to_run_before_test}
+      CUSTOM_TEST_COMMAND \"${custom_Matlab_test_command}\"
+      WORKING_DIRECTORY ${parsed_args_WORKING_DIRECTORY}
+      TIMEOUT -1) # use an infinite timeout and rely on cmake timeout
 
-    matlab_add_unit_test(NAME ${parsed_args_NAME} ADDITIONAL_PATH ${additional_paths} UNITTEST_PRECOMMAND ${cmd_to_run_before_test} CUSTOM_TEST_COMMAND \"${custom_Matlab_test_command}\" WORKING_DIRECTORY ${parsed_args_WORKING_DIRECTORY} TIMEOUT ${parsed_args_TIMEOUT})
-    
     if (parsed_args_PROPERTIES)
       set_tests_properties(${parsed_args_NAME} PROPERTIES ${parsed_args_PROPERTIES})
     endif()
