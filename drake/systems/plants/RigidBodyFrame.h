@@ -1,6 +1,11 @@
 #ifndef DRAKE_SYSTEMS_PLANTS_RIGIDBODYFRAME_H_
 #define DRAKE_SYSTEMS_PLANTS_RIGIDBODYFRAME_H_
 
+#include <Eigen/Dense>
+
+#include "drake/drakeRBSystem_export.h"
+#include "drake/systems/plants/RigidBodyTree.h"
+
 namespace tinyxml2 {
 class XMLElement;
 }
