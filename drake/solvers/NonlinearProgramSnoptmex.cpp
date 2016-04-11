@@ -10,7 +10,6 @@
 namespace snopt {
 #include "snopt.hh"
 #include "snfilewrapper.hh"
-//#include "snoptProblem.hh"
 }
 
 using namespace std;

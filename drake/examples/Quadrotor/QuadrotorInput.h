@@ -6,7 +6,7 @@
 
 template <typename ScalarType = double>
 class QuadrotorInput {
-public:
+ public:
     typedef drake::lcmt_quadrotor_input_t LCMMessageType;
     static std::string channel() { return "QUAD_CONTROL"; }
 

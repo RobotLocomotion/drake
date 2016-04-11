@@ -659,13 +659,13 @@ class DRAKERBM_EXPORT RigidBodyTree {
   std::shared_ptr<RigidBody> findJoint(std::string jointname,
                                        int robot = -1) const;
   int findJointId(const std::string& linkname, int robot = -1) const;
-  //@param robot   the index of the robot. robot = -1 means to look at all the
-  // robots
+  // @param robot the index of the robot. robot = -1 means to look at
+  // all the robots
   std::shared_ptr<RigidBodyFrame> findFrame(std::string frame_name,
                                             std::string model_name = "") const;
 
   std::string getBodyOrFrameName(int body_or_frame_id) const;
-  //@param body_or_frame_id   the index of the body or the id of the frame.
+  // @param body_or_frame_id the index of the body or the id of the frame.
 
   // TODO: remove parseBodyOrFrameID methods
   template <typename Scalar>

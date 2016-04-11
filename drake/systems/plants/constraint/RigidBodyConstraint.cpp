@@ -966,7 +966,6 @@ EulerConstraint::EulerConstraint(RigidBodyTree *robot, const Vector3d &lb,
       std::cerr
           << "Drake:EulerConstraint:BadInputs:lb must be no larger than ub"
           << std::endl;
-      ;
     }
     if (std::isinf(my_lb(i)) && std::isinf(my_ub(i))) {
       null_constraint_rows[i] = true;
