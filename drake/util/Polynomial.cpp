@@ -457,8 +457,8 @@ Polynomial<CoefficientType>::variableNameToId(const string name,
 template <typename CoefficientType>
 string Polynomial<CoefficientType>::idToVariableName(const VarType id) {
   VarType name_part = (id / 2) % kMaxNamePart;  // id/2 to be compatible w/
-                                                 // msspoly, even though I'm not
-                                                 // doing the trig support here
+                                                // msspoly, even though I'm not
+                                                // doing the trig support here
 
   unsigned int m = id / 2 / kMaxNamePart;
   unsigned int multiplier = (unsigned int)std::pow((double)(kNumNameChars + 1),
