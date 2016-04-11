@@ -4,6 +4,8 @@
 #include "drake/systems/plants/collision/DrakeCollision.h"
 #include "drake/systems/plants/collision/ResultCollector.h"
 
+#include <btBulletCollisionCommon.h>
+
 namespace DrakeCollision {
 Eigen::Vector3d toVector3d(const btVector3& bt_vec);
 

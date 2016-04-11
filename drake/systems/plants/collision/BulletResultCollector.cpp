@@ -1,15 +1,10 @@
-#include <iostream>
-#include <btBulletCollisionCommon.h>
+#include "drake/systems/plants/collision/BulletResultCollector.h"
 
 #include "drake/systems/plants/collision/DrakeCollision.h"
-#include "BulletResultCollector.h"
-
-using namespace std;
-using namespace Eigen;
 
 namespace DrakeCollision {
-Vector3d toVector3d(const btVector3& bt_vec) {
-  Vector3d vec;
+Eigen::Vector3d toVector3d(const btVector3& bt_vec) {
+  Eigen::Vector3d vec;
   vec(0) = (double)bt_vec.getX();
   vec(1) = (double)bt_vec.getY();
   vec(2) = (double)bt_vec.getZ();

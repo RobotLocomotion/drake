@@ -1,10 +1,6 @@
-#include <iostream>
+#include "drake/systems/plants/collision/ResultCollector.h"
 
 #include "drake/systems/plants/collision/DrakeCollision.h"
-#include "ResultCollector.h"
-
-using namespace std;
-using namespace Eigen;
 
 namespace DrakeCollision {
 void ResultCollector::addPointPairResult(const PointPair& result) {
@@ -12,6 +8,6 @@ void ResultCollector::addPointPairResult(const PointPair& result) {
 }
 
 PointPair ResultCollector::minDistPoint() {
-  return *min_element(pts.begin(), pts.end());
+  return *std::min_element(pts.begin(), pts.end());
 }
 }

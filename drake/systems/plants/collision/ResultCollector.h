@@ -13,7 +13,8 @@ class ResultCollector {
   inline void addSingleResult(const ElementId idA, const ElementId idB,
                               const Eigen::Vector3d& ptA,
                               const Eigen::Vector3d& ptB,
-                              const Eigen::Vector3d& normal, double distance) {
+                              const Eigen::Vector3d& normal,
+                              const double distance) {
     addPointPairResult(PointPair(idA, idB, ptA, ptB, normal, distance));
   }
 
