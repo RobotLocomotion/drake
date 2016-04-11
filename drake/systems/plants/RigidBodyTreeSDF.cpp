@@ -554,17 +554,19 @@ void parseModel(RigidBodyTree* model, XMLElement* node,
        frame_node = frame_node->NextSiblingElement("frame"))
     parseSDFFrame(model, model_name, frame_node);
 
-  // Sets a default value for weld_to_frame if none was set.
-  // By default, the robot is welded to the world frame.
-  if (weld_to_frame == nullptr) {
-    weld_to_frame = std::allocate_shared<RigidBodyFrame>(
-        Eigen::aligned_allocator<RigidBodyFrame>(), "world",
-        nullptr,  // Valid since the robot is attached to the world.
-        Eigen::Isometry3d::Identity());
-  }
-
   XMLElement* pose = node->FirstChildElement("pose");
   if (pose) {
+    // Sets a default value for weld_to_frame if none was set.
+    // By default, the robot is welded to the world frame.
+    if (weld_to_frame == nullptr) {
+      weld_to_frame = std::allocate_shared<RigidBodyFrame>(
+          Eigen::aligned_allocator<RigidBodyFrame>(), "world",
+          nullptr,  // Valid since the robot is attached to the world.
+          Eigen::Isometry3d::Identity());
+    }
+
+    // Obtains the transform from the frame of the model's root link to the
+    // frame of the model's world.
     Isometry3d transform_model_root_to_model_world = Isometry3d::Identity();
     poseValueToTransform(pose, pose_map, transform_model_root_to_model_world);
 
@@ -576,8 +578,7 @@ void parseModel(RigidBodyTree* model, XMLElement* node,
 
   // Adds the floating joint that connects the newly added robot model to the
   // rest of the rigid body tree.
-  RigidBodyTree::AddFloatingJoint(model, &pose_map, floating_base_type,
-                                  weld_to_frame);
+  model->AddFloatingJoint(&pose_map, floating_base_type, weld_to_frame);
 }
 
 void parseWorld(RigidBodyTree* model, XMLElement* node,

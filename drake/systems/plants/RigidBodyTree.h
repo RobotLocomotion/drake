@@ -5,20 +5,20 @@
 #include <Eigen/LU>
 #include <Eigen/StdVector>
 #include <set>
-#include <unordered_map>
 #include <stdexcept>
+#include <unordered_map>
 
-#include "drake/systems/plants/collision/DrakeCollision.h"
 #include "drake/drakeRBM_export.h"
 #include "drake/systems/plants/ForceTorqueMeasurement.h"
 #include "drake/systems/plants/KinematicPath.h"
 #include "drake/systems/plants/KinematicsCache.h"
 #include "drake/systems/plants/RigidBody.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
-#include "drake/util/drakeUtil.h"
+#include "drake/systems/plants/collision/DrakeCollision.h"
 #include "drake/systems/plants/joints/DrakeJoints.h"
-#include "drake/systems/plants/xmlUtil.h"
 #include "drake/systems/plants/shapes/DrakeShapes.h"
+#include "drake/systems/plants/xmlUtil.h"
+#include "drake/util/drakeUtil.h"
 
 #define BASIS_VECTOR_HALF_COUNT \
   2  // number of basis vectors over 2 (i.e. 4 basis vectors in this case)
@@ -713,7 +713,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
      */
     int ncols = in_terms_of_qdot ? num_positions : num_velocities;
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                  Eigen::Dynamic> full(compact.rows(), ncols);
+                  Eigen::Dynamic>
+        full(compact.rows(), ncols);
     full.setZero();
     int compact_col_start = 0;
     for (std::vector<int>::const_iterator it = joint_path.begin();
@@ -737,24 +738,21 @@ class DRAKERBM_EXPORT RigidBodyTree {
                                                   const RigidBodyTree&);
 
   /**
-   * Adds a floating joint to each model that was loaded into the rigid body
-   * tree but not yet connected to any link in the tree.  It finds models that
-   * have been loaded but not yet connected by searching for non-world links
-   * that are parent-less. These parent-less links are then connected to the
-   * rigid body tree using a floating joint whose details are specified by
-   * the floating_base_type and weld_to_frame parameters.
+   * Connects each parent-less non-world link within this rigid body tree to the
+   * tree using a floating joint. This occurs when a URDF or SDF model is
+   * initially loaded.
    *
-   * @param model The rigid body model containing the robot models to which the
-   * floating joint will be added.
+   * @param pose_map A mapping where the key is the link's name and the value
+   * is a the transform from the frame of the link to the frame of the model
+   * to which the link belongs.
    * @param floating_base_type The floating joint's type.
    * @param weld_to_frame The frame to which the floating joint should attach
-   * the parent-less links.
+   * the parent-less non-world links.
    * @throws A std::runtime_error if no parent-less links are found in the
    * rigid body tree, or if the floating_base_type is unrecognized.
    */
-  static void AddFloatingJoint(
-      RigidBodyTree* model, PoseMap* pose_map,
-      const DrakeJoint::FloatingBaseType floating_base_type,
+  void AddFloatingJoint(
+      PoseMap* pose_map, const DrakeJoint::FloatingBaseType floating_base_type,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
  public:

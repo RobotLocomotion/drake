@@ -1848,8 +1848,7 @@ void RigidBodyTree::addFrame(std::shared_ptr<RigidBodyFrame> frame) {
 }
 
 void RigidBodyTree::AddFloatingJoint(
-    RigidBodyTree* model, PoseMap* pose_map,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    PoseMap* pose_map, const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   std::string floating_joint_name;
   std::shared_ptr<RigidBody> weld_to_body;
@@ -1858,7 +1857,7 @@ void RigidBodyTree::AddFloatingJoint(
   if (weld_to_frame == nullptr) {
     // If weld_to_frame is not specified, weld the newly added model(s) to the
     // world with zero offset.
-    weld_to_body = model->bodies[0];
+    weld_to_body = bodies[0];
     floating_joint_name = "base";
     transform_to_world = Eigen::Isometry3d::Identity();
   } else {
@@ -1868,10 +1867,12 @@ void RigidBodyTree::AddFloatingJoint(
     // the robot at the desired location in the world.
     if (weld_to_frame->name.compare("world") == 0) {
       if (weld_to_frame->body != nullptr) {
-        throw std::runtime_error("RigidBodyTree::AddFloatingJoint: "
-           "Attempted to weld robot to the world while specifying a body link!");
+        throw std::runtime_error(
+            "RigidBodyTree::AddFloatingJoint: "
+            "Attempted to weld robot to the world while specifying a body "
+            "link!");
       }
-      weld_to_body = model->bodies[0];  // the world's body
+      weld_to_body = bodies[0];  // the world's body
       floating_joint_name = "base";
     } else {
       weld_to_body = weld_to_frame->body;
@@ -1882,36 +1883,36 @@ void RigidBodyTree::AddFloatingJoint(
 
   bool floating_joint_added = false;
 
-  for (unsigned int i = 1; i < model->bodies.size(); i++) {
-    if (model->bodies[i]->parent == nullptr) {
-      // A parent-less rigid body was found. This must belong to a newly added
-      // model. The following code connects it to the rest of the rigid body
-      // tree using a floating joint of the specified type.
+  for (unsigned int i = 1; i < bodies.size(); i++) {
+    if (bodies[i]->parent == nullptr) {
+      // A parent-less non-world was found. The following code connects it to
+      // the rest of the rigid body tree using a floating joint of the specified
+      // type.
 
-      model->bodies[i]->parent = weld_to_body;
+      bodies[i]->parent = weld_to_body;
 
       Eigen::Isometry3d transform_to_model = Eigen::Isometry3d::Identity();
       if (pose_map != nullptr &&
-          pose_map->find(model->bodies[i]->linkname) != pose_map->end())
-        transform_to_model = pose_map->at(model->bodies[i]->linkname);
+          pose_map->find(bodies[i]->linkname) != pose_map->end())
+        transform_to_model = pose_map->at(bodies[i]->linkname);
 
       switch (floating_base_type) {
         case DrakeJoint::FIXED: {
           std::unique_ptr<DrakeJoint> joint(new FixedJoint(
               floating_joint_name, transform_to_world * transform_to_model));
-          model->bodies[i]->setJoint(move(joint));
+          bodies[i]->setJoint(move(joint));
           floating_joint_added = true;
         } break;
         case DrakeJoint::ROLLPITCHYAW: {
           std::unique_ptr<DrakeJoint> joint(new RollPitchYawFloatingJoint(
               floating_joint_name, transform_to_world * transform_to_model));
-          model->bodies[i]->setJoint(move(joint));
+          bodies[i]->setJoint(move(joint));
           floating_joint_added = true;
         } break;
         case DrakeJoint::QUATERNION: {
           std::unique_ptr<DrakeJoint> joint(new QuaternionFloatingJoint(
               floating_joint_name, transform_to_world * transform_to_model));
-          model->bodies[i]->setJoint(move(joint));
+          bodies[i]->setJoint(move(joint));
           floating_joint_added = true;
         } break;
         default:
@@ -1930,6 +1931,7 @@ void RigidBodyTree::AddFloatingJoint(
     // loop joint, and connecting the new free joint to the world
   }
 }
+
 template DRAKERBM_EXPORT Eigen::Matrix<
     Eigen::AutoDiffScalar<Eigen::Matrix<double, -1, 1, 0, 73, 1>>, -1, -1, 0,
     -1, -1>
