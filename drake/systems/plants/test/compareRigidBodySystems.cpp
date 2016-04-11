@@ -19,14 +19,14 @@ namespace plants {
 namespace {
 
 std::string model_file_1, model_file_2;
-std::shared_ptr<RigidBodyFrame> car_pose_in_world;
+std::shared_ptr<RigidBodyFrame> model_pose_in_world;
 
 TEST(CompareRigidBodySystemsTest, TestAll) {
   auto r1 = make_shared<RigidBodySystem>();
   r1->addRobotFromFile(model_file_1, DrakeJoint::QUATERNION);
 
   auto r2 = make_shared<RigidBodySystem>();
-  r2->addRobotFromFile(model_file_2, DrakeJoint::QUATERNION, car_pose_in_world);
+  r2->addRobotFromFile(model_file_2, DrakeJoint::QUATERNION, model_pose_in_world);
 
   // for debugging:
   // r1->getRigidBodyTree()->drawKinematicTree("/tmp/r1.dot");
@@ -90,7 +90,7 @@ int main(int argc, char **argv) {
   drake::systems::plants::model_file_2 = argv[2];
 
   if (argc > 3) {
-    drake::systems::plants::car_pose_in_world =
+    drake::systems::plants::model_pose_in_world =
         std::allocate_shared<RigidBodyFrame>(
             Eigen::aligned_allocator<RigidBodyFrame>(), "world",
             nullptr,  // not used since the robot is attached to the world
@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
                             std::stod(argv[5])),  // xyz of the car's root link
             Eigen::Vector3d(0, 0, 0));            // rpy of the car's root link
   } else {
-    drake::systems::plants::car_pose_in_world =
+    drake::systems::plants::model_pose_in_world =
         std::allocate_shared<RigidBodyFrame>(
             Eigen::aligned_allocator<RigidBodyFrame>(), "world", nullptr,
             Eigen::Isometry3d::Identity());
