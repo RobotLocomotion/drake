@@ -29,7 +29,7 @@ Unreleased: changes on master, not yet released
 [//]: # "Lost functionality or APIs."
 ### Removed / Deprecated
 
- - [#2039][] Removed support for Ubuntu 12.04 Trusty.
+ - [#2039][] Ubuntu 12.04 Trusty is no longer supported.
 
 [//]: # "Smaller bug fixes.  No API changes."
 ### Fixes
