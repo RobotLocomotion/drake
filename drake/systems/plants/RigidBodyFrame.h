@@ -5,7 +5,6 @@
 
 #include "drake/drakeRBSystem_export.h"
 #include "drake/systems/plants/RigidBody.h"
-#include "drake/systems/plants/RigidBodyTree.h"
 
 namespace tinyxml2 {
 class XMLElement;
