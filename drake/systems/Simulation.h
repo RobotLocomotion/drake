@@ -104,7 +104,6 @@ template <typename System>
 void simulate(const System& sys, double ti, double tf,
               const typename System::template StateVector<double>& xi,
               const SimulationOptions& options) {
-
   TimePoint start = TimeClock::now();
   typename System::template StateVector<double> x(xi), x1est, xdot0, xdot1;
   typename System::template InputVector<double> u(

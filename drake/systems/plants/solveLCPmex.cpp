@@ -194,8 +194,8 @@ bool callFastQP(MatrixBase<DerivedM> const& M, MatrixBase<Derivedw> const& w,
   return true;
 }
 
-//[z, Mvn, wvn] = setupLCPmex(mex_model_ptr, cache_ptr, u, phiC, n, D, h,
-// z_inactive_guess_tol)
+// [z, Mvn, wvn] = setupLCPmex(mex_model_ptr, cache_ptr, u, phiC, n, D, h,
+//   z_inactive_guess_tol)
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nlhs != 5 || nrhs != 13) {
     mexErrMsgIdAndTxt("Drake:setupLCPmex:InvalidUsage",

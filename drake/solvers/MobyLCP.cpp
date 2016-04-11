@@ -247,7 +247,7 @@ bool MobyLCPSolver::SolveLcpFast(const Eigen::MatrixXd& M,
     selectSubMat(M, _bas, _nonbas, &_Mmix);
     selectSubVec(q, _nonbas, &_z);
     selectSubVec(q, _bas, &_qbas);
-    //_z.negate();
+    // _z.negate();
     _z = _z * -1;
 
     // solve for nonbasic z
@@ -594,7 +594,7 @@ bool MobyLCPSolver::SolveLcpLemke(const Eigen::MatrixXd& M,
     // start from good initial basis
     _Bl.resize(n, n);
     _Bl.setIdentity();
-    //_Bl.negate();
+    // _Bl.negate();
     _Bl *= -1;
 
     // select columns of M corresponding to z vars in the basis

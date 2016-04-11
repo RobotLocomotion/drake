@@ -26,6 +26,10 @@
  * cout << sin(x) * x                 // emits "x1*s1"
  * cout << sin(x + x) * x             // emits "x1*s1*c1 + x1*c1*s1"
  * \endcode
+ *
+ * NOTE:  Certain analyses may not succeed when individual Monomials contain
+ * both x and sin(x) or cos(x) terms.  This restriction is not currently
+ * enforced programmatically; TODO(ggould-tri) fix this in the future.
  */
 template <typename _CoefficientType = double>
 class TrigPoly {
