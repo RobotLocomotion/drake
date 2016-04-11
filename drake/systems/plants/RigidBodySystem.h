@@ -1,11 +1,11 @@
 #ifndef DRAKE_SYSTEMS_PLANTS_RIGIDBODYSYSTEM_H_
 #define DRAKE_SYSTEMS_PLANTS_RIGIDBODYSYSTEM_H_
 
-#include "drake/systems/System.h"
-#include "drake/solvers/Optimization.h"
-#include "drake/systems/plants/RigidBodyTree.h"
 #include "KinematicsCache.h"
 #include "drake/drakeRBSystem_export.h"
+#include "drake/solvers/Optimization.h"
+#include "drake/systems/System.h"
+#include "drake/systems/plants/RigidBodyTree.h"
 
 /** Rigid Body Dynamics Engine Class Design  (still needs to be implemented
  * below)
@@ -149,6 +149,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
         penetration_damping(penetration_stiffness / 10.0),
         friction_coefficient(1.0),
         direct_feedthrough(false) {}
+
   RigidBodySystem()
       : use_multi_contact(false),
         penetration_stiffness(150.0),
@@ -160,21 +161,27 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
     // // this crashed g++-4.7
     tree = std::shared_ptr<RigidBodyTree>(new RigidBodyTree());
   }
+
   virtual ~RigidBodySystem() {}
 
   void addRobotFromURDFString(
       const std::string& xml_string, const std::string& root_dir = ".",
       const DrakeJoint::FloatingBaseType floating_base_type =
           DrakeJoint::ROLLPITCHYAW);
-  void addRobotFromURDF(const std::string& urdf_filename,
-                        const DrakeJoint::FloatingBaseType floating_base_type =
-                            DrakeJoint::QUATERNION);
+  void addRobotFromURDF(
+      const std::string& urdf_filename,
+      const DrakeJoint::FloatingBaseType floating_base_type =
+          DrakeJoint::QUATERNION,
+      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
   void addRobotFromSDF(const std::string& sdf_filename,
                        const DrakeJoint::FloatingBaseType floating_base_type =
-                           DrakeJoint::QUATERNION);
-  void addRobotFromFile(const std::string& filename,
-                        const DrakeJoint::FloatingBaseType floating_base_type =
-                            DrakeJoint::QUATERNION);
+                           DrakeJoint::QUATERNION,
+                       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
+  void addRobotFromFile(
+      const std::string& filename,
+      const DrakeJoint::FloatingBaseType floating_base_type =
+          DrakeJoint::QUATERNION,
+      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   void addForceElement(std::shared_ptr<RigidBodyForceElement> f) {
     force_elements.push_back(f);
@@ -317,7 +324,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodyPropellor : public RigidBodyForceElement {
       /* todo: add force state here */ const Eigen::VectorXd& u,
       const KinematicsCache<double>& rigid_body_state) const override {
     Eigen::Matrix<double, 6, 1> force;
-    force << scale_factor_moment* u(0) * axis,
+    force << scale_factor_moment * u(0) * axis,
         scale_factor_thrust * u(0) * axis;
     return spatialForceInFrameToJointTorque(
         sys.getRigidBodyTree().get(), rigid_body_state, frame.get(), force);
@@ -579,4 +586,3 @@ class DRAKERBSYSTEM_EXPORT RigidBodyMagnetometer : public RigidBodySensor {
 }
 
 #endif  // DRAKE_SYSTEMS_PLANTS_RIGIDBODYSYSTEM_H_
-

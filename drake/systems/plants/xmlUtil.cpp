@@ -1,11 +1,12 @@
 
-#include <string>
 #include <fstream>
 #include <sstream>
-#include "xmlUtil.h"
+#include <string>
+
+#include "drake/Path.h"
 #include "drake/thirdParty/tinydir/tinydir.h"
 #include "drake/util/drakeGeometryUtil.h"
-#include "drake/Path.h"
+#include "xmlUtil.h"
 
 using namespace std;
 using namespace Eigen;
@@ -85,6 +86,7 @@ void poseValueToTransform(tinyxml2::XMLElement* node, const PoseMap& pose_map,
     std::stringstream s(strval);
     s >> xyz(0) >> xyz(1) >> xyz(2) >> rpy(0) >> rpy(1) >> rpy(2);
   }
+
   T.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
 
   const char* attr = node->Attribute("frame");
@@ -113,7 +115,6 @@ void searchDirectory(map<string, string>& package_map, string path) {
 #else
   const char pathsep = ':';
 #endif
-
 
   string token, t;
   istringstream iss(path);
