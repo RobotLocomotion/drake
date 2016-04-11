@@ -2,7 +2,6 @@
 // prints the input
 
 #include <mex.h>
-//#include <matrix.h>
 
 #define UNUSED(x) (void)(x)
 
