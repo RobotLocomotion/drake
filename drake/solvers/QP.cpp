@@ -78,7 +78,7 @@ int fastQPThatTakesQinv(vector<MatrixXd*> QinvblkDiag, const VectorXd& f,
         QinvAteq.block(startrow, 0, d, M) =
             thisQinv->asDiagonal() *
             Aeq.block(0, startrow, M, d)
-                .transpose();  // Aeq.transpoODse().block(startrow, 0, d, N)
+                .transpose();  // Aeq.transpose().block(startrow, 0, d, N)
       minusQinvf.segment(startrow, d) =
           -thisQinv->cwiseProduct(f.segment(startrow, d));
       startrow = startrow + d;
