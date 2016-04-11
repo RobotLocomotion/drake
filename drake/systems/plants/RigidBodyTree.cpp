@@ -1856,15 +1856,21 @@ void RigidBodyTree::AddFloatingJoint(
   Eigen::Isometry3d transform_to_world;
 
   if (weld_to_frame == nullptr) {
-    // If no body was given for us to weld to, then weld to the world
+    // If weld_to_frame is not specified, weld the newly added model(s) to the
+    // world with zero offset.
     weld_to_body = model->bodies[0];
     floating_joint_name = "base";
     transform_to_world = Eigen::Isometry3d::Identity();
   } else {
-    // If the robot is being welded to the world, ignore the "body" variable
-    // within weld_to_frame. Instead, only use the transform_to_body
-    // variable to initialize the robot at the desired location in the world.
+    // If weld_to_frame is specified and the model is being welded to the world,
+    // ensure the "body" variable within weld_to_frame is nullptr. Then, only
+    // use the transform_to_body variable within weld_to_frame to initialize
+    // the robot at the desired location in the world.
     if (weld_to_frame->name.compare("world") == 0) {
+      if (weld_to_frame->body != nullptr) {
+        throw std::runtime_error("RigidBodyTree::AddFloatingJoint: "
+           "Attempted to weld robot to the world while specifying a body link!");
+      }
       weld_to_body = model->bodies[0];  // the world's body
       floating_joint_name = "base";
     } else {
@@ -1878,9 +1884,9 @@ void RigidBodyTree::AddFloatingJoint(
 
   for (unsigned int i = 1; i < model->bodies.size(); i++) {
     if (model->bodies[i]->parent == nullptr) {
-      // A parent-less node was found. The following code connects it to the
-      // rest of the rigid body tree using a floating joint of the specified
-      // type.
+      // A parent-less rigid body was found. This must belong to a newly added
+      // model. The following code connects it to the rest of the rigid body
+      // tree using a floating joint of the specified type.
 
       model->bodies[i]->parent = weld_to_body;
 

@@ -36,18 +36,18 @@ TEST(LoadSDFTest, TestNoOffset) {
   // Gets the link whose parent joint is called "base".
   auto link1_body = rbs.getRigidBodyTree()->findJoint("base");
   EXPECT_TRUE(link1_body != nullptr);
-  EXPECT_EQ(link1_body->linkname.compare("link1"), 0);
+  EXPECT_EQ(link1_body->linkname, "link1");
 
   // Verifies that the transformation from link1's frame to the world's frame
   // is correct. Since the model was not offset from the world, we expect
   // the transformation to be Eigen::Isometry3d::Identity().
-  EXPECT_EQ(link1_body->getJoint().getTransformToParentBody().matrix(),
-            Eigen::Isometry3d::Identity().matrix());
+  EXPECT_TRUE(link1_body->getJoint().getTransformToParentBody().matrix()
+            == Eigen::Isometry3d::Identity().matrix());
 
   // Gets the link whose parent joint is called "joint1".
   auto link2_body = rbs.getRigidBodyTree()->findJoint("joint1");
   EXPECT_TRUE(link2_body != nullptr);
-  EXPECT_EQ(link2_body->linkname.compare("link2"), 0);
+  EXPECT_EQ(link2_body->linkname, "link2");
 
   // Verifies that the transformation from link2's frame to link1's frame is
   // correct. From the SDF, the transformation is expected to be
@@ -60,8 +60,8 @@ TEST(LoadSDFTest, TestNoOffset) {
     T_link2_to_link1.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
-  EXPECT_EQ(link2_body->getJoint().getTransformToParentBody().matrix(),
-            T_link2_to_link1.matrix());
+  EXPECT_TRUE(link2_body->getJoint().getTransformToParentBody().matrix()
+            == T_link2_to_link1.matrix());
 }
 
 TEST(LoadSDFTest, TestVerticalOffset) {
@@ -87,19 +87,19 @@ TEST(LoadSDFTest, TestVerticalOffset) {
   // Gets the link whose parent joint is called "base".
   auto link1_body = rbs.getRigidBodyTree()->findJoint("base");
   EXPECT_TRUE(link1_body != nullptr);
-  EXPECT_EQ(link1_body->linkname.compare("link1"), 0);
+  EXPECT_EQ(link1_body->linkname, "link1");
 
   // Verifies that the transformation from link1's frame to the world's frame
   // is correct. Since the model was offset from the world frame, we expect the
   // transformation of link1_body's frame to the world frame to be equal to
   // T_model_to_world.
-  EXPECT_EQ(link1_body->getJoint().getTransformToParentBody().matrix(),
-            T_model_to_world.matrix());
+  EXPECT_TRUE(link1_body->getJoint().getTransformToParentBody().matrix()
+            == T_model_to_world.matrix());
 
   // Gets the link whose parent joint is called "joint1".
   auto link2_body = rbs.getRigidBodyTree()->findJoint("joint1");
   EXPECT_TRUE(link2_body != nullptr);
-  EXPECT_EQ(link2_body->linkname.compare("link2"), 0);
+  EXPECT_EQ(link2_body->linkname, "link2");
 
   // Verifies that the transformation from link2's frame to link1's frame is
   // correct. From the SDF, the transformation is expected to be
@@ -112,8 +112,8 @@ TEST(LoadSDFTest, TestVerticalOffset) {
     T_link2_to_link1.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
-  EXPECT_EQ(link2_body->getJoint().getTransformToParentBody().matrix(),
-            T_link2_to_link1.matrix());
+  EXPECT_TRUE(link2_body->getJoint().getTransformToParentBody().matrix()
+            == T_link2_to_link1.matrix());
 }
 
 TEST(LoadSDFTest, TestWeld) {
@@ -147,8 +147,8 @@ TEST(LoadSDFTest, TestWeld) {
   // Verifies that the newly added link exists and is in the correct location.
   auto link_body = rbs.getRigidBodyTree()->findLink("link");
   EXPECT_TRUE(link_body != nullptr);
-  EXPECT_EQ(link_body->getJoint().getTransformToParentBody().matrix(),
-            T_model2_to_link2.matrix());
+  EXPECT_TRUE(link_body->getJoint().getTransformToParentBody().matrix()
+            == T_model2_to_link2.matrix());
 }
 
 TEST(LoadSDFTest, TestInternalOffset) {
@@ -173,8 +173,8 @@ TEST(LoadSDFTest, TestInternalOffset) {
 
   auto link1_body = rbs.getRigidBodyTree()->findLink("link1");
   EXPECT_TRUE(link1_body != nullptr);
-  EXPECT_EQ(link1_body->getJoint().getTransformToParentBody().matrix(),
-            T_model_to_world.matrix());
+  EXPECT_TRUE(link1_body->getJoint().getTransformToParentBody().matrix()
+            == T_model_to_world.matrix());
 }
 
 TEST(LoadSDFTest, TestDualOffset1) {
@@ -212,8 +212,8 @@ TEST(LoadSDFTest, TestDualOffset1) {
 
   auto link1_body = rbs.getRigidBodyTree()->findLink("link1");
   EXPECT_TRUE(link1_body != nullptr);
-  EXPECT_EQ(link1_body->getJoint().getTransformToParentBody().matrix(),
-            T_model_to_world.matrix());
+  EXPECT_TRUE(link1_body->getJoint().getTransformToParentBody().matrix()
+            == T_model_to_world.matrix());
 }
 
 TEST(LoadSDFTest, TestDualOffset2) {
