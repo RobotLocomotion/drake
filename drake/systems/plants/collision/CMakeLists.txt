@@ -1,4 +1,4 @@
-set(drakeCollision_SRC_FILES DrakeCollision.cpp Element.cpp point_pair.cc Model.cpp)
+set(drakeCollision_SRC_FILES DrakeCollision.cpp Element.cpp point_pair.cc Model.cpp ResultCollector.cpp)
 pods_find_pkg_config(bullet)
 
 if (bullet_FOUND)
