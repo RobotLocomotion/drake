@@ -39,6 +39,7 @@ Exceptions
 
 * Method names may violate Google standards and the "long, human-readable" standard above if a short, non-compliant name more closely matches the common conventions of the field.  For instance, the matrix portion of a linear complementarity constraint is traditionally 'M' (one letter, upper-case); it is not mandatory to downcase it or give it a more verbose name.
 * No need for a copyright line at the top of every file (this will change soon, see: `issue #1805 <https://github.com/RobotLocomotion/drake/issues/1805>`_).
+* While we encourage you to `Include What You Use (IWYU) <https://google.github.io/styleguide/cppguide.html#Names_and_Order_of_Includes>`_ since it improves code transparency and readability, it will not be strictly enforced. Instead, we enforce a "weak include" style that simply requires every symbol referenced within a file be covered by the transitive closure of all `#include` statements in the file. We decided to make this exception because (1) we can always adopt an IWYU rule later, (2) to reduce verbosity, and (3) we don't have a tool to enforce IWYU at this time.
 
 
 MATLAB Style

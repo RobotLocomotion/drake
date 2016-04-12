@@ -1,3 +1,4 @@
+#include "drake/Path.h"
 #include "drake/examples/Acrobot/Acrobot.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/eigen_matrix_compare.h"

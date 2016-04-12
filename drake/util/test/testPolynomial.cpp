@@ -109,7 +109,8 @@ void testEvalType() {
   Polynomial<double> poly(coeffs);
 
   auto valueIntInput = poly.value(1);
-  valuecheck(typeid(decltype(valueIntInput)) == typeid(double), true);
+  const auto& double_type = typeid(double);  // NOLINT(readability/function)
+  valuecheck(typeid(decltype(valueIntInput)) == double_type, true);
 
   auto valueComplexInput = poly.value(std::complex<double>(1.0, 2.0));
   valuecheck(
