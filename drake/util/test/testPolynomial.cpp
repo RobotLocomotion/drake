@@ -174,13 +174,13 @@ TEST(PolynomialTest, VariableIdGeneration) {
   EXPECT_NO_THROW(Polynomial<double>("zzzz", 1));
   EXPECT_NO_THROW(Polynomial<double>("zzzz", kMaxId));
   EXPECT_THROW(Polynomial<double>("!"),
-               std::runtime_error); // Illegal character.
+               std::runtime_error);  // Illegal character.
   EXPECT_THROW(Polynomial<double>("zzzz@"),
-               std::runtime_error); // Illegal length.
+               std::runtime_error);  // Illegal length.
   EXPECT_THROW(Polynomial<double>("z", 0),
-               std::runtime_error); // Illegal ID.
+               std::runtime_error);  // Illegal ID.
   EXPECT_THROW(Polynomial<double>("z", kMaxId + 1),
-               std::runtime_error); // Illegal ID.
+               std::runtime_error);  // Illegal ID.
 
   // Test that ID generation round-trips correctly.
   std::stringstream test_stream;
