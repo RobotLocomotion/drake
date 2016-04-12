@@ -1,6 +1,7 @@
 
 #include <cmath>
 #include "lcmtypes/bot_core/planar_lidar_t.hpp"
+#include "drake/Path.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/BotVisualizer.h"
