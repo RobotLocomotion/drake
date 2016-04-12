@@ -18,7 +18,7 @@ class DRAKEOPTIMIZATION_EXPORT MobyLCPSolver
  public:
   MobyLCPSolver();
   virtual ~MobyLCPSolver() {}
-  void SetLoggingEnabled(bool);
+  void SetLoggingEnabled(bool enabled);
 
   bool SolveLcpFast(const Eigen::MatrixXd& M, const Eigen::VectorXd& q,
                     Eigen::VectorXd* z, double zero_tol = -1.0) const;
