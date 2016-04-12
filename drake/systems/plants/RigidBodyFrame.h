@@ -31,13 +31,6 @@ class DRAKERBM_EXPORT RigidBodyFrame {
   }
 
   /**
-   * A constructor based on a URDF specification.
-   */
-  RigidBodyFrame(RigidBodyTree* tree, tinyxml2::XMLElement* link_reference,
-                 tinyxml2::XMLElement* pose = nullptr,
-                 std::string name = "");  // parse from URDF
-
-  /**
    * The default constructor.
    */
   RigidBodyFrame()
