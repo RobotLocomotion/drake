@@ -1,5 +1,7 @@
 
 #include <iostream>
+
+#include "drake/Path.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/cascade_system.h"

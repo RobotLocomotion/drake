@@ -1,5 +1,7 @@
 
 #include <iostream>
+
+#include "drake/Path.h"
 #include "drake/util/Polynomial.h"
 #include "drake/examples/Pendulum/Pendulum.h"
 #include "drake/systems/Simulation.h"

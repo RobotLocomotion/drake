@@ -1,4 +1,6 @@
 #include <iostream>
+
+#include "drake/Path.h"
 #include "drake/examples/Pendulum/Pendulum.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/controllers/LQR.h"
