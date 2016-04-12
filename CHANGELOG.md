@@ -29,6 +29,7 @@ Unreleased: changes on master, not yet released
 [//]: # "Lost functionality or APIs."
 ### Removed / Deprecated
 
+ - [][] `core/Core.h` is removed.
  - [#2039][] Ubuntu 12.04 Trusty is no longer supported.
 
 [//]: # "Smaller bug fixes.  No API changes."
