@@ -16,7 +16,7 @@ namespace systems {
 /// \p model.
 std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
     const RigidBodyTree& model, const tinyxml2::XMLElement* link,
-    const tinyxml2::XMLElement* pose, std::string name);
+    const tinyxml2::XMLElement* pose, const std::string& name);
 
 }  // namespace systems
 }  // namespace drake
