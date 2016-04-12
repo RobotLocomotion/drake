@@ -1,7 +1,6 @@
 #include "gtest/gtest.h"
 
 #include "drake/core/Function.h"
-#include "drake/core/Gradient.h"
 #include "drake/core/Vector.h"
 #include "drake/core/test/pendulum.h"
 #include "drake/util/eigen_matrix_compare.h"
