@@ -15,7 +15,8 @@ if (NOT DEFINED CMAKE_MACOSX_RPATH)
   set(CMAKE_MACOSX_RPATH ON)
 endif()
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+# prepend module path so we can override FindMatlab.cmake
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 if(WITH_PYTHON_3)
   set(Python_ADDITIONAL_VERSIONS 3.5)
@@ -140,7 +141,6 @@ include_directories(BEFORE ${generated_dir})
 #         [PROPERTIES <prop1> <value1> ...])
 # note: default working directory is CMAKE_CURRENT_SOURCE_DIR
 # note: properties are set internally using set_tests_properties ( <testname> PROPERTIES <prop1> <value1> ...)
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 function(add_matlab_test)
   find_package(Matlab COMPONENTS MAIN_PROGRAM)
   if (MATLAB_FOUND)
