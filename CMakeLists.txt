@@ -66,13 +66,13 @@ option(WITH_SWIGMAKE    "helper tools to build python & MATLAB wrappers for C++ 
 option(WITH_BULLET 		"used for collision detection" 	ON)
 option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" ON)
 option(WITH_BOT_CORE_LCMTYPES "required LCM types library. only disable if you have it already." ON)
+option(WITH_LIBCCD 		"Required for FCL" 	        ON)
+option(WITH_FCL 		"Fast Collision Library" 	ON)
 if (WIN32)
 	option(WITH_GTK 		"precompiled gtk binaries/headers for Windows"  ON)  # needed for lcm on windows
 else()
 	option(WITH_DIRECTOR	"vtk-based visualization tool and robot user interface"   ON) # not win32 yet.  it builds on windows, but requires manually installation of vtk, etc.  perhaps make a precompiled director pod (a bit like snopt)
 	option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	ON) # there is hope, but i spent a long time cleaning up c/c++ language errors trying to make msvc happy.. and still had a long way to go.
-	option(WITH_LIBCCD 		"Required for FCL" 	        OFF)
-	option(WITH_FCL 		"Fast Collision Library" 	OFF)
 	option(WITH_SWIG_MATLAB "A version of SWIG with MATLAB support" ON)
 endif()
 
