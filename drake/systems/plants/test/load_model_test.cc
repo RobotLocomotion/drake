@@ -7,10 +7,18 @@
 #include "drake/systems/plants/RigidBodyFrame.h"
 
 #ifndef GTEST_CREATE_SHARED_LIBRARY
-  #ifdef BUILD_SHARED_LIBS
-    #define GTEST_LINKED_AS_SHARED_LIBRARY 1
-  #endif
+# ifdef BUILD_SHARED_LIBS
+#  define GTEST_LINKED_AS_SHARED_LIBRARY 1
+# endif
 #endif
+
+#ifdef _MSC_VER
+# if GTEST_LINKED_AS_SHARED_LIBRARY
+#  define GTEST_API_ __declspec(dllimport)
+# elif GTEST_CREATE_SHARED_LIBRARY
+#  define GTEST_API_ __declspec(dllexport)
+# endif
+#endif  // _MSC_VER
 
 using Drake::RigidBodySystem;
 
