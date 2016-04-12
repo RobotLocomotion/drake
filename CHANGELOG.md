@@ -29,7 +29,7 @@ Unreleased: changes on master, not yet released
 [//]: # "Lost functionality or APIs."
 ### Removed / Deprecated
 
- - [][] `core/Core.h` is removed.
+ - [#2067][] `core/Core.h` is removed.
  - [#2039][] Ubuntu 12.04 Trusty is no longer supported.
 
 [//]: # "Smaller bug fixes.  No API changes."
@@ -51,6 +51,7 @@ Changes in version v0.9.11 and before are not provided.
 
 [//]: # "You can use PimpMyChangelog to auto-update this list."
 [//]: # "https://github.com/pcreux/pimpmychangelog"
+[#2067]: https://github.com/RobotLocomotion/drake/issues/2067
 [#2039]: https://github.com/RobotLocomotion/drake/issues/2039
 [#2027]: https://github.com/RobotLocomotion/drake/issues/2027
 [#1953]: https://github.com/RobotLocomotion/drake/issues/1953
