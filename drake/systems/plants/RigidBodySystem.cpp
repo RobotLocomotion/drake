@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include "drake/solvers/Optimization.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/systems/plants/rigid_body_tree_urdf.h"
 #include "spruce.hh"
 #include "xmlUtil.h"
 
@@ -205,7 +206,6 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
   return dot;
 }
 
-
 RigidBodySystem::OutputVector<double> RigidBodySystem::output(
     const double& t, const RigidBodySystem::StateVector<double>& x,
     const RigidBodySystem::InputVector<double>& u) const {
@@ -322,9 +322,8 @@ RigidBodyPropellor::RigidBodyPropellor(RigidBodySystem& sys, XMLElement* node,
   XMLElement* parent_node = node->FirstChildElement("parent");
   if (!parent_node)
     throw runtime_error("propellor " + name + " is missing the parent node");
-  frame = allocate_shared<RigidBodyFrame>(
-      aligned_allocator<RigidBodyFrame>(), tree.get(), parent_node,
-      node->FirstChildElement("origin"), name + "Frame");
+  frame = drake::systems::MakeRigidBodyFrameFromURDFNode(
+      parent_node, node->FirstChildElement("origin"), name + "Frame");
   tree->addFrame(frame);
 
   axis << 1.0, 0.0, 0.0;
@@ -361,18 +360,16 @@ RigidBodySpringDamper::RigidBodySpringDamper(RigidBodySystem& sys,
   if (!link_ref_node)
     throw runtime_error("linear_spring_damper " + name +
                         " is missing the link1 node");
-  frameA = allocate_shared<RigidBodyFrame>(aligned_allocator<RigidBodyFrame>(),
-                                           tree.get(), link_ref_node,
-                                           link_ref_node, name + "FrameA");
+  frameA = drake::systems::MakeRigidBodyFrameFromURDFNode(
+      link_ref_node, link_ref_node, name + "FrameA");
   tree->addFrame(frameA);
 
   link_ref_node = node->FirstChildElement("link2");
   if (!link_ref_node)
     throw runtime_error("linear_spring_damper " + name +
                         " is missing the link2 node");
-  frameB = allocate_shared<RigidBodyFrame>(aligned_allocator<RigidBodyFrame>(),
-                                           tree.get(), link_ref_node,
-                                           link_ref_node, name + "FrameB");
+  frameB = drake::systems::MakeRigidBodyFrameFromURDFNode(
+      link_ref_node, link_ref_node, name + "FrameB");
   tree->addFrame(frameB);
 }
 
@@ -391,7 +388,6 @@ RigidBodyAccelerometer::RigidBodyAccelerometer(
 Eigen::VectorXd RigidBodyAccelerometer::output(
     const double& t, const KinematicsCache<double>& rigid_body_state,
     const RigidBodySystem::InputVector<double>& u) const {
-
   VectorXd x = rigid_body_state.getX();
   auto xdd = sys.dynamics(t, x, u);
   auto const& tree = sys.getRigidBodyTree();
