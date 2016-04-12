@@ -656,7 +656,7 @@ namespace systems {
 
 std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
     const RigidBodyTree& model, const tinyxml2::XMLElement* link,
-    const tinyxml2::XMLElement* pose, std::string name) {
+    const tinyxml2::XMLElement* pose, const std::string& name) {
   std::string linkname = link->Attribute("link");
   std::shared_ptr<RigidBody> body = model.findLink(linkname);
   if (body == nullptr) {

@@ -2152,7 +2152,7 @@ void inverseKinBackend(
   delete[] mt_kc_array;
   delete[] st_lpc_array;
   delete[] mt_lpc_array;
-}
+}  // NOLINT(readability/fn_size)
 template void inverseKinBackend(
     RigidBodyTree* model, const int mode, const int nT, const double* t,
     const MatrixBase<Map<MatrixXd>>& q_seed,

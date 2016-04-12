@@ -163,8 +163,9 @@ inline double solve_quadprog2(LLT<MatrixXd, Lower> &chol,  double c1, MatrixBase
   VectorXd x_old(n), u_old(m + p);
   double f_value, psi, c2, sum, ss, R_norm;
   const double inf = std::numeric_limits<double>::infinity();
-  double t, t1, t2; /* t is the step length, which is the minimum of the partial step length t1
-    * and the full step length t2 */
+  // t is the step length, which is the minimum of the
+  // partial step length t1 and the full step length t2
+  double t, t1, t2;
   VectorXi A(m + p), A_old(m + p), iai(m + p), iaexcl(m+p);
   int q;
   int iq, iter = 0;
