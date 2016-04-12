@@ -2,8 +2,15 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/Path.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
+
+#ifndef GTEST_CREATE_SHARED_LIBRARY
+  #ifdef BUILD_SHARED_LIBS
+    #define GTEST_LINKED_AS_SHARED_LIBRARY 1
+ #endif
+#endif
 
 using Drake::RigidBodySystem;
 
