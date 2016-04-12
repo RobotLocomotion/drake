@@ -22,6 +22,7 @@ class LCMScope {
 
  private:
   // http://www.mpp.mpg.de/~huber/util/timevaldiff.c
+  /// @return the (finishtime - starttime), in milliseconds
   double timevaldiff(struct timeval* starttime, struct timeval* finishtime) {
     double msec;
     msec = (finishtime->tv_sec - starttime->tv_sec) * 1000.0;
