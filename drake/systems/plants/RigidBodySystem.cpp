@@ -362,7 +362,7 @@ RigidBodySpringDamper::RigidBodySpringDamper(RigidBodySystem& sys,
     throw runtime_error("linear_spring_damper " + name +
                         " is missing the link1 node");
   frameA = drake::systems::MakeRigidBodyFrameFromURDFNode(
-      *tree link_ref_node, link_ref_node, name + "FrameA");
+      *tree, link_ref_node, link_ref_node, name + "FrameA");
   tree->addFrame(frameA);
 
   link_ref_node = node->FirstChildElement("link2");
