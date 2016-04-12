@@ -4,7 +4,6 @@
 namespace tinyxml2 {
 class XMLElement;
 }
-class RigidBodyTree;
 
 class DRAKERBM_EXPORT RigidBodyFrame {
  public:
