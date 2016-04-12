@@ -2,7 +2,10 @@
 #define DRAKE_SYSTEMS_CASCADE_SYSTEM_H_
 
 #include <memory>
-#include "drake/core/Core.h"
+
+#include "drake/core/Function.h"
+#include "drake/core/Gradient.h"
+#include "drake/core/Vector.h"
 #include "drake/systems/System.h"
 
 namespace Drake {

@@ -4,7 +4,10 @@
 #include <memory>
 #include <Eigen/Core>
 #include <Eigen/Dense>
-#include "drake/core/Core.h"
+
+#include "drake/core/Function.h"
+#include "drake/core/Gradient.h"
+#include "drake/core/Vector.h"
 
 namespace Drake {
 
