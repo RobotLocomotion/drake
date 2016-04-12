@@ -1,14 +1,20 @@
+#include <cstdlib>
+#include <iostream>
+#include <numeric>  // for iota
+
+#include <Eigen/Dense>
+
+#include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/systems/plants/IKoptions.h"
 #include "drake/systems/plants/RigidBodyIK.h"
 #include "drake/systems/plants/RigidBodyTree.h"
-#include "../constraint/RigidBodyConstraint.h"
-#include "../IKoptions.h"
-#include <iostream>
-#include <cstdlib>
-#include <Eigen/Dense>
-#include <numeric>  // for iota
+#include "drake/util/eigen_matrix_compare.h"
+#include "gtest/gtest.h"
 
 using namespace std;
 using namespace Eigen;
+using drake::util::CompareMatrices;
+using drake::util::MatrixCompareType;
 
 // Find the joint position indices corresponding to 'name'
 vector<int> getJointPositionVectorIndices(const RigidBodyTree &model,
@@ -31,7 +37,7 @@ void findJointAndInsert(const RigidBodyTree &model, const std::string &name,
                        position_indices.end());
 }
 
-int main() {
+TEST(testIKMoreConstraints, IKMoreConstraints) {
   RigidBodyTree model("examples/Atlas/urdf/atlas_minimal_contact.urdf");
 
   Vector2d tspan;
@@ -176,14 +182,14 @@ int main() {
              constraint_array.data(), ikoptions,
              &q_sol, &info, &infeasible_constraint);
   printf("INFO = %d\n", info);
-  if (info != 1) {
-    return 1;
-  }
+  EXPECT_EQ(info, 1);
+
 
   /////////////////////////////////////////
   KinematicsCache<double> cache = model.doKinematics(q_sol);
   Vector3d com = model.centerOfMass(cache);
-  printf("%5.2f\n%5.2f\n%5.2f\n", com(0), com(1), com(2));
-
-  return 0;
+  printf("%5.6f\n%5.6f\n%5.6f\n", com(0), com(1), com(2));
+  EXPECT_TRUE(
+      CompareMatrices(com, Vector3d(0.074890, -0.037551, 1.008913), 1e-6,
+                      MatrixCompareType::absolute));
 }
