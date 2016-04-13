@@ -216,6 +216,29 @@ TEST(PolynomialTest, testGetVariables) {
   EXPECT_FALSE(x.derivative().getVariables().count(x_var));
 }
 
+// TODO(ggould-tri) -- This test does not pass, which is a misfeature or
+// bug in Polynomial.
+TEST(PolynomialTest, DISABLED_testSimplification) {
+  Polynomiald x = Polynomiald("x");
+  Polynomiald y = Polynomiald("y");
+
+  { // Test duplicate monomials.
+    std::stringstream test_stream;
+    test_stream << ((x * y) + (x * y));
+    std::string result;
+    test_stream >> result;
+    EXPECT_EQ(result, "2 * x1 * y1");
+  }
+
+  { // Test monomials that are duplicates under commutativity.
+    std::stringstream test_stream;
+    test_stream << ((x * y) + (y * x));
+    std::string result;
+    test_stream >> result;
+    EXPECT_EQ(result, "2 * x1 * y1");
+  }
+}
+
 }
 }  // namespace test
 }  // namespace drake
