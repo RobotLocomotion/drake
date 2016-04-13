@@ -1,6 +1,5 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 
-#include "drake/util/drakeGeometryUtil.h"
 #include "drake/systems/plants/joints/DrakeJoint.h"
 #include "drake/systems/plants/joints/FixedJoint.h"
 #include "drake/util/drakeGeometryUtil.h"
