@@ -9,7 +9,6 @@
 namespace tinyxml2 {
 class XMLElement;
 }
-class RigidBodyTree;
 
 class DRAKERBM_EXPORT RigidBodyFrame {
  public:
@@ -34,13 +33,6 @@ class DRAKERBM_EXPORT RigidBodyFrame {
       : name(_name), body(_body), frame_index(0) {
     transform_to_body.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
-
-  /**
-   * A constructor based on a URDF specification.
-   */
-  RigidBodyFrame(RigidBodyTree* tree, tinyxml2::XMLElement* link_reference,
-                 tinyxml2::XMLElement* pose = nullptr,
-                 std::string name = "");  // parse from URDF
 
   /**
    * The default constructor.
