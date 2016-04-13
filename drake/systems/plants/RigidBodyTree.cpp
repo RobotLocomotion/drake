@@ -1847,7 +1847,7 @@ void RigidBodyTree::addFrame(std::shared_ptr<RigidBodyFrame> frame) {
   frame->frame_index = -(static_cast<int>(frames.size()) - 1) - 2;  // yuck!!
 }
 
-void RigidBodyTree::AddFloatingJoint(
+void RigidBodyTree::AddFloatingJoints(
     PoseMap* pose_map, const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   std::string floating_joint_name;
@@ -1865,7 +1865,7 @@ void RigidBodyTree::AddFloatingJoint(
     // ensure the "body" variable within weld_to_frame is nullptr. Then, only
     // use the transform_to_body variable within weld_to_frame to initialize
     // the robot at the desired location in the world.
-    if (weld_to_frame->name.compare("world") == 0) {
+    if (weld_to_frame->name == "world") {
       if (weld_to_frame->body != nullptr) {
         throw std::runtime_error(
             "RigidBodyTree::AddFloatingJoint: "
@@ -1885,9 +1885,9 @@ void RigidBodyTree::AddFloatingJoint(
 
   for (unsigned int i = 1; i < bodies.size(); i++) {
     if (bodies[i]->parent == nullptr) {
-      // A parent-less non-world was found. The following code connects it to
-      // the rest of the rigid body tree using a floating joint of the specified
-      // type.
+      // A parent-less non-world link was found. The following code connects it
+      // to the rest of the rigid body tree using a floating joint of the
+      // specified type.
 
       bodies[i]->parent = weld_to_body;
 

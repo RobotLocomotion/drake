@@ -751,7 +751,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * @throws A std::runtime_error if no parent-less links are found in the
    * rigid body tree, or if the floating_base_type is unrecognized.
    */
-  void AddFloatingJoint(
+  void AddFloatingJoints(
       PoseMap* pose_map, const DrakeJoint::FloatingBaseType floating_base_type,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
