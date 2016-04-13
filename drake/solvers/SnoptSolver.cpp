@@ -190,7 +190,7 @@ static int snopt_userfun(snopt::integer* Status, snopt::integer* n,
   }
 
   F[0] = 0.0;
-  memset(G, 0, sizeof(*n) * sizeof(snopt::doublereal));
+  memset(G, 0, (*n) * sizeof(snopt::doublereal));
 
   // evaluate objective
   auto tx = Drake::initializeAutoDiff(xvec);
@@ -202,18 +202,17 @@ static int snopt_userfun(snopt::integer* Status, snopt::integer* n,
       this_x.segment(index, v.size()) = tx.segment(v.index(), v.size());
       index += v.size();
     }
+    obj->eval(this_x, ty);
 
-    obj->eval(tx, ty);
+    F[0] += static_cast<snopt::doublereal>(ty(0).value());
 
-    F[constraint_index++] += static_cast<snopt::doublereal>(
-        ty(0).value());
     for (const Drake::DecisionVariableView& v : binding.variable_list()) {
       for (size_t j = v.index(); j < v.index() + v.size(); j++) {
-        G[grad_index + j] +=
-            static_cast<snopt::doublereal>(ty(0).derivatives()(j));
+        G[j] += static_cast<snopt::doublereal>(ty(0).derivatives()(j));
       }
     }
   }
+  constraint_index++;
   grad_index += *n;
 
   for (auto const& binding : current_problem->generic_constraints()) {
@@ -225,11 +224,12 @@ static int snopt_userfun(snopt::integer* Status, snopt::integer* n,
     }
 
     ty.resize(num_constraints);
-    c->eval(tx, ty);
+    c->eval(this_x, ty);
 
     for (i = 0; i < num_constraints; i++) {
       F[constraint_index++] = static_cast<snopt::doublereal>(ty(i).value());
     }
+
     for (const Drake::DecisionVariableView& v : binding.variable_list()) {
       for (i = 0; i < num_constraints; i++) {
         for (size_t j = v.index(); j < v.index() + v.size(); j++) {
@@ -472,7 +472,6 @@ bool Drake::SnoptSolver::Solve(
       // the maxcu option to reserve some of it for our user code.
       d->cw.data(), &d->lencw, d->iw.data(), &d->leniw, d->rw.data(), &d->lenrw,
       npname, 8 * nxname, 8 * nFname, 8 * d->lencw, 8 * d->lencw);
-
 
   Eigen::VectorXd sol(nx);
   for (int i = 0; i < nx; i++) {
