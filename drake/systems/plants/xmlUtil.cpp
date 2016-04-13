@@ -13,7 +13,7 @@ using namespace Eigen;
 using namespace tinyxml2;
 
 // only writes values if they exist
-bool parseVectorAttribute(tinyxml2::XMLElement* node,
+bool parseVectorAttribute(const tinyxml2::XMLElement* node,
                           const char* attribute_name, Eigen::Vector3d& val) {
   const char* attr = node->Attribute(attribute_name);
   if (attr) {
@@ -24,7 +24,7 @@ bool parseVectorAttribute(tinyxml2::XMLElement* node,
   return false;
 }
 
-bool parseVectorAttribute(tinyxml2::XMLElement* node,
+bool parseVectorAttribute(const tinyxml2::XMLElement* node,
                           const char* attribute_name, Eigen::Vector4d& val) {
   const char* attr = node->Attribute(attribute_name);
   if (attr) {
