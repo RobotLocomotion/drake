@@ -3,8 +3,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/Path.h"
-#include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
+#include "drake/systems/plants/RigidBodySystem.h"
 
 using Drake::RigidBodySystem;
 
@@ -14,8 +14,15 @@ namespace plants {
 namespace test {
 namespace {
 
+/**
+ * Defines a class that extends Google Test's ::testing::TestWithParam
+ * class, which enables parameterized Google Tests. In this case, the parameter
+ * is a const char* and it is the file extension of the model files to use in
+ * the LoadModelTest unit tests. Specifically, the possible values are "urdf"
+ * and "sdf".
+ */
 class LoadModelTest : public ::testing::TestWithParam<const char*> {
- public:
+ protected:
   RigidBodySystem rbs;
 };
 

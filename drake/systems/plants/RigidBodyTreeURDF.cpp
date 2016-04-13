@@ -2,8 +2,8 @@
 #include <sstream>
 #include <string>
 
-#include "drake/systems/plants/rigid_body_tree_urdf.h"
 #include "drake/systems/plants/joints/DrakeJoints.h"
+#include "drake/systems/plants/rigid_body_tree_urdf.h"
 #include "drake/systems/plants/xmlUtil.h"
 
 using namespace std;
@@ -582,7 +582,7 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
        frame_node = frame_node->NextSiblingElement("frame"))
     parseFrame(model, frame_node);
 
-  // Adds the floating joint that connects the newly added robot model to the
+  // Adds the floating joint(s) that connect the newly added robot model to the
   // rest of the rigid body tree.
   model->AddFloatingJoints(nullptr, floating_base_type, weld_to_frame);
 }
