@@ -68,9 +68,9 @@ else()
 	option(WITH_LIBBOT 		"simple open-gl visualizer + lcmgl for director"	ON) # there is hope, but i spent a long time cleaning up c/c++ language errors trying to make msvc happy.. and still had a long way to go.
 	option(WITH_SWIG_MATLAB "A version of SWIG with MATLAB support" ON)
 endif()
-find_package(Matlab COMPONENTS MAIN_PROGRAM)
-if (MATLAB_FOUND)
-  set(matlab ${Matlab_MAIN_PROGRAM})
+
+find_program(matab matlab PATHS /usr/local/MATLAB/R2015b/bin /Applications/MATLAB_R2015b.app/bin)
+if (matlab)
   option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"  ON)
 endif()
 option(WITH_YAML_CPP "library for reading and writing yaml configuration files" ON)
