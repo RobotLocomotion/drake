@@ -6,6 +6,7 @@
 
 #include <Eigen/Geometry>
 
+#include "drake/drakeSimpleCar_export.h"
 #include "drake/examples/SimpleCar/driving_command.h"
 #include "drake/examples/SimpleCar/simple_car_state.h"
 #include "lcmtypes/drake/lcmt_simple_car_config_t.hpp"
@@ -29,7 +30,7 @@ namespace Drake {
 ///
 /// output vector: same as state vector.
 ///
-class SimpleCar {
+class DRAKESIMPLECAR_EXPORT SimpleCar {
  public:
   template <typename ScalarType>
   using StateVector = SimpleCarState<ScalarType>;
