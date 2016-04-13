@@ -287,6 +287,13 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
 
   const Polynomial operator/(const CoefficientType& scalar) const;
 
+  /// A comparison to allow std::lexicographical_compare on this class; does
+  /// not reflect any sort of mathematical total order.
+  bool operator<(const Polynomial& other) const {
+    // Just delegate to the default vector std::lexicographical_compare.
+    return monomials < other.monomials;
+  }
+
   /// Returns the roots of this (univariate) Polynomial.
   /**
    * Returns the roots of a univariate Polynomial as an Eigen column vector of
