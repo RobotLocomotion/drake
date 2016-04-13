@@ -1,5 +1,5 @@
-if (GTEST_FOUND AND LCM_FOUND AND NOT WIN32)
+if (GTEST_FOUND AND LCM_FOUND)
   add_executable(simple_car_test simple_car_test.cc)
   target_link_libraries(simple_car_test ${GTEST_BOTH_LIBRARIES} simple_car)
   add_test(NAME simple_car_test COMMAND simple_car_test)
-endif (GTEST_FOUND AND NOT WIN32)
+endif (GTEST_FOUND)
