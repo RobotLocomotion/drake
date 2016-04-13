@@ -28,18 +28,18 @@ PiecewisePolynomial<double> matlabPPFormToPiecewisePolynomial(
   if (num_dims_mex == 0 | num_dims_mex > 2)
     throw runtime_error("case not handled");  // because PiecewisePolynomial
                                               // can't currently handle it
-  const int kNumDims = 2;
-  mwSize dims[kNumDims];
+  const int num_dims = 2;
+  mwSize dims[num_dims];
   if (!mxIsDouble(dim_mex))
     mexErrMsgIdAndTxt("Drake:matlabPPFormToPiecewisePolynomial:BadInputs",
                       "dim should have type double");
   for (int i = 0; i < num_dims_mex; i++) {
     dims[i] = static_cast<mwSize>(mxGetPr(dim_mex)[i]);
   }
-  for (int i = num_dims_mex; i < kNumDims; i++) dims[i] = 1;
+  for (int i = num_dims_mex; i < num_dims; i++) dims[i] = 1;
 
   size_t product_of_dimensions = dims[0];  // d
-  for (int i = 1; i < kNumDims; ++i) {
+  for (int i = 1; i < num_dims; ++i) {
     product_of_dimensions *= dims[i];
   }
 
@@ -89,13 +89,13 @@ PiecewisePolynomial<double> matlabCoefsAndBreaksToPiecewisePolynomial(
     mexErrMsgIdAndTxt("Drake:matlabPPFormToPiecewisePolynomial:BadInputs",
                       "coefs should have type double");
 
-  const int kNumDims = 3;
-  mwSize dims[kNumDims];
+  int num_dims = 3;
+  mwSize dims[num_dims];
   size_t num_dims_mex = mxGetNumberOfDimensions(mex_coefs);
   for (int i = 0; i < num_dims_mex; i++) {
     dims[i] = mxGetDimensions(mex_coefs)[i];
   }
-  for (int i = num_dims_mex; i < kNumDims; i++) {
+  for (int i = num_dims_mex; i < num_dims; i++) {
     dims[i] = 1;
   }
   vector<double> breaks = matlabToStdVector<double>(mex_breaks);
@@ -113,7 +113,7 @@ PiecewisePolynomial<double> matlabCoefsAndBreaksToPiecewisePolynomial(
                                            : coefficient_index;
         mwSize sub[] = {row, segment_index, third_dimension_index};
         coefficients[coefficient_index] =
-            *(mxGetPr(mex_coefs) + sub2ind(kNumDims, dims, sub));
+            *(mxGetPr(mex_coefs) + sub2ind(num_dims, dims, sub));
       }
       polynomial_matrix(row) = Polynomial<double>(coefficients);
     }
