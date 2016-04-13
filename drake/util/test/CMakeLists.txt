@@ -39,6 +39,13 @@ if (GTEST_FOUND)
   add_test(NAME testPolynomial COMMAND testPolynomial)
 endif (GTEST_FOUND)
 
+if (GTEST_FOUND)
+  add_executable(testSystemIdentification testSystemIdentification.cpp)
+  target_link_libraries(testSystemIdentification
+                        drakePolynomial ${GTEST_BOTH_LIBRARIES})
+  add_test(NAME testSystemIdentification COMMAND testSystemIdentification)
+endif (GTEST_FOUND)
+
 add_executable(testTrigPoly testTrigPoly.cpp)
 target_link_libraries(testTrigPoly drakePolynomial)
 add_test(NAME testTrigPoly COMMAND testTrigPoly)

@@ -4,6 +4,7 @@
 #include <map>
 #include <set>
 #include <stdexcept>
+#include <vector>
 
 #include "drake/util/Polynomial.h"
 #include "drake/drakePolynomial_export.h"
@@ -22,6 +23,8 @@ class DRAKEPOLYNOMIAL_EXPORT SystemIdentification {
 public:
   typedef _CoefficientType CoefficientType;
   typedef ::Polynomial<CoefficientType> PolyType;
+  typedef typename PolyType::Monomial MonomialType;
+  typedef typename PolyType::Term TermType;
   typedef typename PolyType::VarType VarType;
   typedef std::map<PolyType, VarType> LumpingMapType;
 
@@ -49,7 +52,7 @@ public:
    * together.
    */
   static LumpingMapType GetLumpedParametersFromPolynomials(
-      std::set<PolyType> polys,
+      std::vector<PolyType> polys,
       std::set<VarType> vars_of_interest);
 
   /// Rewrite a Polynomial in terms of lumped parameters.
