@@ -1,4 +1,4 @@
-#include "simple_car.h"
+#include "drake/examples/SimpleCar/simple_car.h"
 
 namespace Drake {
 

@@ -1,10 +1,10 @@
 #ifndef DRAKE_UTIL_LCMSCOPE_H_
 #define DRAKE_UTIL_LCMSCOPE_H_
 
-#include "lcmt_scope_data.h"
+#include "lcmtypes/drake/lcmt_scope_data.h"
 #include <string.h>
 #include <time.h>
-#include "lcm.h"
+#include <lcm/lcm.h>
 
 /*Utility to automate the use of our matlab scope infrastructure with C++
 programs.

@@ -81,7 +81,7 @@
 #endif
 
 #include <windows.h>
-#include "mex.h"
+#include <mex.h>
 #include <string.h>
 #include <wchar.h>
 

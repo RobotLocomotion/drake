@@ -1,7 +1,8 @@
 #ifndef DRAKE_UTIL_MEXWRAPPER_H_
 #define DRAKE_UTIL_MEXWRAPPER_H_
 
-#include "mex.h"
+#include <mex.h>
+
 #include <string>
 
 #undef DLLEXPORT
