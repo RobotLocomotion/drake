@@ -64,6 +64,13 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
     bool operator==(const Term& other) const {
       return (var == other.var) && (power == other.power);
     }
+
+    /// A comparison to allow std::lexicographical_compare on this class; does
+    /// not reflect any sort of mathematical total order.
+    bool operator<(const Term& other) const {
+      return ((var < other.var) ||
+              ((var == other.var) && (power < other.power)));
+    }
   };
 
   /// \brief An additive atom of a Polynomial: The product of any number of
@@ -72,6 +79,17 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
    public:
     CoefficientType coefficient;
     std::vector<Term> terms;  // a list of N variable ids
+
+    bool operator==(const Monomial& other) const {
+      return (coefficient == other.coefficient) && (terms == other.terms);
+    }
+
+    /// A comparison to allow std::lexicographical_compare on this class; does
+    /// not reflect any sort of mathematical total order.
+    bool operator<(const Monomial& other) const {
+      return ((coefficient < other.coefficient)  ||
+              ((coefficient == other.coefficient) && (terms < other.terms)));
+    }
 
     int getDegree() const;
     bool hasSameExponents(const Monomial& other);
