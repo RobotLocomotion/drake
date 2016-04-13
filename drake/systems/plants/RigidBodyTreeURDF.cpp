@@ -284,11 +284,11 @@ void parseCollision(shared_ptr<RigidBody> body, XMLElement* node,
   }
 }
 
-void parseLink(RigidBodyTree* model, std::string robot_name, XMLElement* node,
+bool parseLink(RigidBodyTree* model, std::string robot_name, XMLElement* node,
                const MaterialMap& materials, const PackageMap& package_map,
-               const string& root_dir) {
+               const string& root_dir, int* index) {
   const char* attr = node->Attribute("drake_ignore");
-  if (attr && strcmp(attr, "true") == 0) return;
+  if (attr && strcmp(attr, "true") == 0) return false;
 
   shared_ptr<RigidBody> body(new RigidBody());
   body->model_name = robot_name;
@@ -315,8 +315,9 @@ void parseLink(RigidBodyTree* model, std::string robot_name, XMLElement* node,
     parseCollision(body, collision_node, model, package_map, root_dir);
   }
 
-  model->bodies.push_back(body);
-  body->body_index = static_cast<int>(model->bodies.size()) - 1;
+  model->AddRigidBody(body);
+  *index = body->body_index;
+  return true;
 }
 
 template <typename JointType>
@@ -545,10 +546,20 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
        link_node = link_node->NextSiblingElement("material"))
     parseMaterial(link_node, materials);  // accept failed material parsing
 
+  // Maintains a list of links that were added to the rigid body tree.
+  // This is iterated over by method AddFloatingJoints() to determine where
+  // to attach floating joints.
+  std::vector<int> link_indices;
+
   // Parses the model's link elements.
   for (XMLElement* link_node = node->FirstChildElement("link"); link_node;
-       link_node = link_node->NextSiblingElement("link"))
-    parseLink(model, robotname, link_node, materials, package_map, root_dir);
+       link_node = link_node->NextSiblingElement("link")) {
+    int index;
+    if (parseLink(model, robotname, link_node, materials, package_map, root_dir,
+                  &index)) {
+      link_indices.push_back(index);
+    }
+  }
 
   // DEBUG
   // else {
@@ -584,7 +595,8 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
 
   // Adds the floating joint(s) that connect the newly added robot model to the
   // rest of the rigid body tree.
-  model->AddFloatingJoints(nullptr, floating_base_type, weld_to_frame);
+  model->AddFloatingJoints(nullptr, floating_base_type, link_indices,
+                           weld_to_frame);
 }
 
 void parseURDF(RigidBodyTree* model, XMLDocument* xml_doc,

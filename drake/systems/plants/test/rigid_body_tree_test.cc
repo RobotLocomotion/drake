@@ -42,17 +42,21 @@ class RigidBodyTreeTest : public ::testing::Test {
 TEST_F(RigidBodyTreeTest, TestAddFloatingJointNoOffset) {
   // Adds rigid bodies r1b1 and r2b1 to the rigid body tree and verify they can
   // be found.
-  tree.bodies.push_back(r1b1);
-  tree.bodies.push_back(r2b1);
+  tree.AddRigidBody(r1b1);
+  tree.AddRigidBody(r2b1);
 
   EXPECT_TRUE(tree.findLink("body1", "robot1") != nullptr);
   EXPECT_TRUE(tree.findLink("body1", "robot2") != nullptr);
   EXPECT_TRUE(tree.findLink("body2", "robot1") == nullptr);
   EXPECT_TRUE(tree.findLink("body2", "robot2") == nullptr);
 
+  std::vector<int> link_indicies;
+  link_indicies.push_back(r1b1->body_index);
+  link_indicies.push_back(r2b1->body_index);
+
   // Adds floating joints that connect r1b1 and r2b1 to the rigid body tree's
   // world link at zero offset.
-  tree.AddFloatingJoints(nullptr, DrakeJoint::QUATERNION);
+  tree.AddFloatingJoints(nullptr, DrakeJoint::QUATERNION, link_indicies);
 
   // Verfies that the two rigid bodies are located in the correct place.
   const DrakeJoint& jointR1B1 = tree.findLink("body1", "robot1")->getJoint();
@@ -68,8 +72,8 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointNoOffset) {
 
 TEST_F(RigidBodyTreeTest, TestAddFloatingJointWithOffset) {
   // Adds rigid bodies r1b1 and r2b1 to the rigid body tree.
-  tree.bodies.push_back(r1b1);
-  tree.bodies.push_back(r2b1);
+  tree.AddRigidBody(r1b1);
+  tree.AddRigidBody(r2b1);
 
   // Adds floating joints that connect r1b1 and r2b1 to the rigid body tree's
   // world link at offset x = 1, y = 1, z = 1.
@@ -85,7 +89,12 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWithOffset) {
       Eigen::aligned_allocator<RigidBodyFrame>(), "world", nullptr,
       T_r1and2_to_world);
 
-  tree.AddFloatingJoints(nullptr, DrakeJoint::QUATERNION, weld_to_frame);
+  std::vector<int> link_indicies;
+  link_indicies.push_back(r1b1->body_index);
+  link_indicies.push_back(r2b1->body_index);
+
+  tree.AddFloatingJoints(nullptr, DrakeJoint::QUATERNION, link_indicies,
+                         weld_to_frame);
 
   // Verfies that the two rigid bodies are located in the correct place.
   const DrakeJoint& jointR1B1 = tree.findLink("body1", "robot1")->getJoint();
@@ -102,16 +111,19 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWithOffset) {
 TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
   // Adds rigid body r1b1 to the rigid body tree and welds it to the world with
   // zero offset. Verifies that it is in the correct place.
-  tree.bodies.push_back(r1b1);
-  tree.AddFloatingJoints(nullptr, DrakeJoint::QUATERNION);
-  EXPECT_TRUE(tree.findLink("body1", "robot1")
-                  ->getJoint()
-                  .getTransformToParentBody()
-                  .matrix() == Eigen::Isometry3d::Identity().matrix());
+  tree.AddRigidBody(r1b1);
+
+  std::vector<int> link_indicies;
+  link_indicies.push_back(r1b1->body_index);
+
+  tree.AddFloatingJoints(nullptr, DrakeJoint::QUATERNION, link_indicies);
 
   // Adds rigid body r2b1 to the rigid body tree and welds it to r1b1 with
   // offset x = 1, y = 1, z = 1. Verifies that it is in the correct place.
-  tree.bodies.push_back(r2b1);
+  tree.AddRigidBody(r2b1);
+
+  link_indicies.clear();
+  link_indicies.push_back(r2b1->body_index);
 
   Eigen::Isometry3d T_r2_to_r1;
   {
@@ -125,16 +137,15 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
       Eigen::aligned_allocator<RigidBodyFrame>(), "body1",
       tree.findLink("body1", "robot1"), T_r2_to_r1);
 
-  tree.AddFloatingJoints(nullptr, DrakeJoint::QUATERNION, r2b1_weld);
-
-  EXPECT_TRUE(tree.findLink("body1", "robot2")
-                  ->getJoint()
-                  .getTransformToParentBody()
-                  .matrix() == T_r2_to_r1.matrix());
+  tree.AddFloatingJoints(nullptr, DrakeJoint::QUATERNION, link_indicies,
+                         r2b1_weld);
 
   // Adds rigid body r3b1 to the rigid body tree and welds it to r2b1 with
   // offset x = 2, y = 2, z = 2. Verifies that it is in the correct place.
-  tree.bodies.push_back(r3b1);
+  tree.AddRigidBody(r3b1);
+
+  link_indicies.clear();
+  link_indicies.push_back(r3b1->body_index);
 
   Eigen::Isometry3d T_r3_to_r2;
   {
@@ -148,7 +159,18 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
       Eigen::aligned_allocator<RigidBodyFrame>(), "body1",
       tree.findLink("body1", "robot2"), T_r3_to_r2);
 
-  tree.AddFloatingJoints(nullptr, DrakeJoint::QUATERNION, r3b1_weld);
+  tree.AddFloatingJoints(nullptr, DrakeJoint::QUATERNION, link_indicies,
+                         r3b1_weld);
+
+  EXPECT_TRUE(tree.findLink("body1", "robot1")
+                  ->getJoint()
+                  .getTransformToParentBody()
+                  .matrix() == Eigen::Isometry3d::Identity().matrix());
+
+  EXPECT_TRUE(tree.findLink("body1", "robot2")
+                  ->getJoint()
+                  .getTransformToParentBody()
+                  .matrix() == T_r2_to_r1.matrix());
 
   EXPECT_TRUE(tree.findLink("body1", "robot3")
                   ->getJoint()

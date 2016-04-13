@@ -203,11 +203,11 @@ void parseSDFCollision(shared_ptr<RigidBody> body, XMLElement* node,
   }
 }
 
-void parseSDFLink(RigidBodyTree* model, std::string model_name,
+bool parseSDFLink(RigidBodyTree* model, std::string model_name,
                   XMLElement* node, const PackageMap& package_map,
-                  PoseMap& pose_map, const string& root_dir) {
+                  PoseMap& pose_map, const string& root_dir, int* index) {
   const char* attr = node->Attribute("drake_ignore");
-  if (attr && strcmp(attr, "true") == 0) return;
+  if (attr && strcmp(attr, "true") == 0) return false;
 
   shared_ptr<RigidBody> body(new RigidBody());
   body->model_name = model_name;
@@ -245,8 +245,9 @@ void parseSDFLink(RigidBodyTree* model, std::string model_name,
                       pose_map, transform_to_model);
   }
 
-  model->bodies.push_back(body);
-  body->body_index = static_cast<int>(model->bodies.size()) - 1;
+  model->AddRigidBody(body);
+  *index = body->body_index;
+  return true;
 }
 
 template <typename JointType>
@@ -547,10 +548,20 @@ void parseModel(RigidBodyTree* model, XMLElement* node,
     throw runtime_error("Error: your model must have a name attribute");
   string model_name = node->Attribute("name");
 
+  // Maintains a list of links that were added to the rigid body tree.
+  // This is iterated over by method AddFloatingJoints() to determine where
+  // to attach floating joints.
+  std::vector<int> link_indices;
+
   // Parses the model's link elements.
   for (XMLElement* link_node = node->FirstChildElement("link"); link_node;
-       link_node = link_node->NextSiblingElement("link"))
-    parseSDFLink(model, model_name, link_node, package_map, pose_map, root_dir);
+       link_node = link_node->NextSiblingElement("link")) {
+    int index;
+    if (parseSDFLink(model, model_name, link_node, package_map, pose_map,
+                     root_dir, &index)) {
+      link_indices.push_back(index);
+    }
+  }
 
   // Parses the model's joint elements.
   for (XMLElement* joint_node = node->FirstChildElement("joint"); joint_node;
@@ -586,7 +597,8 @@ void parseModel(RigidBodyTree* model, XMLElement* node,
 
   // Adds the floating joint that connects the newly added robot model to the
   // rest of the rigid body tree.
-  model->AddFloatingJoints(&pose_map, floating_base_type, weld_to_frame);
+  model->AddFloatingJoints(&pose_map, floating_base_type, link_indices,
+                           weld_to_frame);
 }
 
 void parseWorld(RigidBodyTree* model, XMLElement* node,

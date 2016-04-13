@@ -1847,8 +1847,14 @@ void RigidBodyTree::addFrame(std::shared_ptr<RigidBodyFrame> frame) {
   frame->frame_index = -(static_cast<int>(frames.size()) - 1) - 2;  // yuck!!
 }
 
+void RigidBodyTree::AddRigidBody(std::shared_ptr<RigidBody> body) {
+  bodies.push_back(body);
+  body->body_index = static_cast<int>(bodies.size()) - 1;
+}
+
 void RigidBodyTree::AddFloatingJoints(
     PoseMap* pose_map, const DrakeJoint::FloatingBaseType floating_base_type,
+    std::vector<int>& link_indices,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   std::string floating_joint_name;
   std::shared_ptr<RigidBody> weld_to_body;
@@ -1883,11 +1889,10 @@ void RigidBodyTree::AddFloatingJoints(
 
   bool floating_joint_added = false;
 
-  for (unsigned int i = 1; i < bodies.size(); i++) {
+  for (auto i : link_indices) {
     if (bodies[i]->parent == nullptr) {
-      // A parent-less non-world link was found. The following code connects it
-      // to the rest of the rigid body tree using a floating joint of the
-      // specified type.
+      // A parent-less link was found. The following code connects it to the
+      // rest of the rigid body tree using a floating joint.
 
       bodies[i]->parent = weld_to_body;
 

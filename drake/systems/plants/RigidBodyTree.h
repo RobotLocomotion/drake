@@ -738,6 +738,15 @@ class DRAKERBM_EXPORT RigidBodyTree {
                                                   const RigidBodyTree&);
 
   /**
+   * Adds a rigid body to this rigid body tree. It saves an index value in the
+   * rigid body, which can be used to access the rigid body from within the
+   * "bodies" vector.
+   *
+   * @param body The rigid body to add to this rigid body tree.
+   */
+  void AddRigidBody(std::shared_ptr<RigidBody> body);
+
+  /**
    * Connects each parent-less non-world link within this rigid body tree to the
    * tree using a floating joint. This occurs when a URDF or SDF model is
    * initially loaded.
@@ -746,13 +755,17 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * is a the transform from the frame of the link to the frame of the model
    * to which the link belongs.
    * @param floating_base_type The floating joint's type.
+   * @param link_indices A list of link indexes to check. A floating joint is
+   * added to any link in this list that does not have a parent joint.
    * @param weld_to_frame The frame to which the floating joint should attach
-   * the parent-less non-world links.
+   * the parent-less non-world links. This parameter may be nullptr, in which
+   * case the link is welded to the world with zero offset.
    * @throws A std::runtime_error if no parent-less links are found in the
    * rigid body tree, or if the floating_base_type is unrecognized.
    */
   void AddFloatingJoints(
       PoseMap* pose_map, const DrakeJoint::FloatingBaseType floating_base_type,
+      std::vector<int>& link_indices,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
  public:
