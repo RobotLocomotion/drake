@@ -239,6 +239,31 @@ TEST(PolynomialTest, DISABLED_testSimplification) {
   }
 }
 
+TEST(PolynomialTest, testMonomialFactor) {
+  Polynomiald x = Polynomiald("x");
+  Polynomiald y = Polynomiald("y");
+
+  // "m_" prefix denotes monomial.
+  Polynomiald::Monomial m_one = Polynomiald(1).getMonomials()[0];
+  Polynomiald::Monomial m_two = Polynomiald(2).getMonomials()[0];
+  Polynomiald::Monomial m_x = x.getMonomials()[0];
+  Polynomiald::Monomial m_y = y.getMonomials()[0];
+  Polynomiald::Monomial m_2x = (x * 2).getMonomials()[0];
+  Polynomiald::Monomial m_x2 = (x * x).getMonomials()[0];
+  Polynomiald::Monomial m_x2y = (x * x * y).getMonomials()[0];
+
+  // Expect failures
+  EXPECT_EQ(m_x.factor(m_y).coefficient, 0);
+  EXPECT_EQ(m_x.factor(m_x2).coefficient, 0);
+
+  // Expect successes
+  EXPECT_EQ(m_x.factor(m_x), m_one);
+  EXPECT_EQ(m_2x.factor(m_x), m_two);
+  EXPECT_EQ(m_x2.factor(m_x), m_x);
+  EXPECT_EQ(m_x2y.factor(m_x2), m_y);
+  EXPECT_EQ(m_x2y.factor(m_y), m_x2);
+}
+
 }
 }  // namespace test
 }  // namespace drake

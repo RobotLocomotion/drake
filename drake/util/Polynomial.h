@@ -92,7 +92,11 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
     }
 
     int getDegree() const;
-    bool hasSameExponents(const Monomial& other);
+    int getDegreeOf(VarType var) const;
+    bool hasSameExponents(const Monomial& other) const;
+
+    /// Factors this by other; returns 0 iff other does not divide this.
+    Monomial factor(const Monomial& other) const;
   };
 
  private:

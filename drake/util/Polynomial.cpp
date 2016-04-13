@@ -7,7 +7,7 @@ using namespace Eigen;
 
 template <typename CoefficientType>
 bool Polynomial<CoefficientType>::Monomial::hasSameExponents(
-    const Monomial& other) {
+    const Monomial& other) const {
   if (terms.size() != other.terms.size()) return false;
 
   for (typename vector<Term>::const_iterator iter = terms.begin();
@@ -104,6 +104,38 @@ int Polynomial<CoefficientType>::Monomial::getDegree() const {
   int degree = terms[0].power;
   for (int i = 1; i < terms.size(); i++) degree *= terms[i].power;
   return degree;
+}
+
+template <typename CoefficientType>
+int Polynomial<CoefficientType>::Monomial::getDegreeOf(VarType v) const {
+  for (auto term : terms) {
+    if (term.var == v) {
+      return term.power;
+    }
+  }
+  return 0;
+}
+
+template <typename CoefficientType>
+typename Polynomial<CoefficientType>::Monomial
+Polynomial<CoefficientType>::Monomial::factor(const Monomial& other) const {
+  Monomial error, result;
+  error.coefficient = 0;
+  result.coefficient = coefficient / other.coefficient;
+  for (auto term : terms) {
+    PowerType other_power = other.getDegreeOf(term.var);
+    if (term.power < other_power) { return error; }
+    Term new_term;
+    new_term.var = term.var;
+    new_term.power = term.power - other_power;
+    if (new_term.power > 0) {
+      result.terms.push_back(new_term);
+    }
+  }
+  for (auto other_term : other.terms) {
+    if (!getDegreeOf(other_term.var)) { return error; }
+  }
+  return result;
 }
 
 template <typename CoefficientType>
