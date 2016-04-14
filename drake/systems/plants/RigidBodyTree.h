@@ -765,9 +765,9 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * rigid body tree, or if the floating_base_type is unrecognized.
    */
   void AddFloatingJoints(
-      PoseMap* pose_map, const DrakeJoint::FloatingBaseType floating_base_type,
+      const PoseMap* pose_map, DrakeJoint::FloatingBaseType floating_base_type,
       const std::vector<int>& link_indices,
-      std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
+      const std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
  public:
   static const std::set<int> default_robot_num_set;
