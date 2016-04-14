@@ -165,7 +165,10 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
   Eigen::VectorXd xvec(n);
   for (size_t i = 0; i < n; i++) {
     xvec[i] = x[i];
-    if (grad) { grad[i] = 0; }
+  }
+
+  if (grad) {
+    memset(grad, 0, sizeof(double) * m * n);
   }
 
   const Constraint* c = wrapped->constraint;
@@ -190,7 +193,7 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
             (c->upper_bound()(i) ==
              std::numeric_limits<double>::infinity()) ? -1 : 1;
          for (size_t j = v.index(); j < v.index() + v.size(); j++) {
-           grad[j] += ty(i).derivatives()(j) * grad_sign;
+           grad[(i * n) + j] = ty(i).derivatives()(j) * grad_sign;
          }
       }
     }
@@ -250,10 +253,21 @@ SolutionResult NloptSolver::Solve(OptimizationProblem &prog) const {
     WrappedConstraint wrapped = { c.constraint().get(),
                                   &c.variable_list() };
     wrapped_list.push_back(wrapped);
-    std::vector<double> tol(c.constraint()->num_constraints(),
-                            constraint_tol);
-    opt.add_inequality_mconstraint(
-        EvaluateVectorConstraint, &wrapped_list.back(), tol);
+    if (c.constraint()->lower_bound() == c.constraint()->upper_bound()) {
+      if (c.constraint()->num_constraints() != 1) {
+        // (sam.creasey) I've gotten incorrect results using
+        // EvaluateVectorConstraint with add_equality_constraint.
+        throw std::runtime_error("Generic equality constraints only supported "
+                                 "with num_constraints == 1");
+      }
+      opt.add_equality_constraint(
+          EvaluateScalarConstraint, &wrapped_list.back(), constraint_tol);
+    } else {
+      std::vector<double> tol(c.constraint()->num_constraints(),
+                              constraint_tol);
+      opt.add_inequality_mconstraint(
+          EvaluateVectorConstraint, &wrapped_list.back(), tol);
+    }
   }
 
   // sam.creasey: The initial implementation of this code used
