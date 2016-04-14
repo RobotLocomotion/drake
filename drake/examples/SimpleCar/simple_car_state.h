@@ -22,8 +22,8 @@ class SimpleCarState {  // models the Drake::LCMVector concept
 
   template <typename Derived>
   SimpleCarState(const Eigen::MatrixBase<Derived>& initial)
-      : x(initial(0)),  // BR
-        y(initial(1)),  // BR
+      : x(initial(0)),        // BR
+        y(initial(1)),        // BR
         heading(initial(2)),  // BR
         velocity(initial(3)) {}
 
@@ -45,10 +45,14 @@ class SimpleCarState {  // models the Drake::LCMVector concept
   friend std::string getCoordinateName(const SimpleCarState<ScalarType>& vec,
                                        unsigned int index) {
     switch (index) {
-      case 0: return "x";
-      case 1: return "y";
-      case 2: return "heading";
-      case 3: return "velocity";
+      case 0:
+        return "x";
+      case 1:
+        return "y";
+      case 2:
+        return "heading";
+      case 3:
+        return "velocity";
     }
     throw std::domain_error("unknown coordinate index");
   }
@@ -80,7 +84,6 @@ bool decode(const drake::lcmt_simple_car_state_t& msg, double& t,
   wrap.velocity = msg.velocity;
   return true;
 }
-
 }
 
 #endif  // DRAKE_EXAMPLES_SIMPLECAR_SIMPLE_CAR_STATE_H_

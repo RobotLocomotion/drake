@@ -23,7 +23,7 @@ class DrivingCommand {  // models the Drake::LCMVector concept
   template <typename Derived>
   DrivingCommand(const Eigen::MatrixBase<Derived>& initial)
       : steering_angle(initial(0)),  // BR
-        throttle(initial(1)),  // BR
+        throttle(initial(1)),        // BR
         brake(initial(2)) {}
 
   template <typename Derived>
@@ -43,9 +43,12 @@ class DrivingCommand {  // models the Drake::LCMVector concept
   friend std::string getCoordinateName(const DrivingCommand<ScalarType>& vec,
                                        unsigned int index) {
     switch (index) {
-      case 0: return "steering_angle";
-      case 1: return "throttle";
-      case 2: return "brake";
+      case 0:
+        return "steering_angle";
+      case 1:
+        return "throttle";
+      case 2:
+        return "brake";
     }
     throw std::domain_error("unknown coordinate index");
   }
@@ -74,7 +77,6 @@ bool decode(const drake::lcmt_driving_command_t& msg, double& t,
   wrap.brake = msg.brake;
   return true;
 }
-
 }
 
 #endif  // DRAKE_EXAMPLES_SIMPLECAR_DRIVING_COMMAND_H_

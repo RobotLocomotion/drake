@@ -22,10 +22,10 @@ class EulerFloatingJointState {  // models the Drake::LCMVector concept
 
   template <typename Derived>
   EulerFloatingJointState(const Eigen::MatrixBase<Derived>& initial)
-      : x(initial(0)),  // BR
-        y(initial(1)),  // BR
-        z(initial(2)),  // BR
-        roll(initial(3)),  // BR
+      : x(initial(0)),      // BR
+        y(initial(1)),      // BR
+        z(initial(2)),      // BR
+        roll(initial(3)),   // BR
         pitch(initial(4)),  // BR
         yaw(initial(5)) {}
 
@@ -46,15 +46,21 @@ class EulerFloatingJointState {  // models the Drake::LCMVector concept
     return result;
   }
 
-  friend std::string getCoordinateName(const EulerFloatingJointState<ScalarType>& vec,
-                                       unsigned int index) {
+  friend std::string getCoordinateName(
+      const EulerFloatingJointState<ScalarType>& vec, unsigned int index) {
     switch (index) {
-      case 0: return "x";
-      case 1: return "y";
-      case 2: return "z";
-      case 3: return "roll";
-      case 4: return "pitch";
-      case 5: return "yaw";
+      case 0:
+        return "x";
+      case 1:
+        return "y";
+      case 2:
+        return "z";
+      case 3:
+        return "roll";
+      case 4:
+        return "pitch";
+      case 5:
+        return "yaw";
     }
     throw std::domain_error("unknown coordinate index");
   }
@@ -92,7 +98,6 @@ bool decode(const drake::lcmt_euler_floating_joint_state_t& msg, double& t,
   wrap.yaw = msg.yaw;
   return true;
 }
-
 }
 
 #endif  // DRAKE_EXAMPLES_SIMPLECAR_EULER_FLOATING_JOINT_STATE_H_

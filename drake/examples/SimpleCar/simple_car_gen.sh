@@ -21,3 +21,7 @@ gen () {
 gen "simple car state" x y heading velocity
 gen "driving command" steering_angle throttle brake
 gen "euler floating joint state" x y z roll pitch yaw
+
+clang-format-3.6 --style=Google -i $mydir/simple_car_state.h
+clang-format-3.6 --style=Google -i $mydir/driving_command.h
+clang-format-3.6 --style=Google -i $mydir/euler_floating_joint_state.h
