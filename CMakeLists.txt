@@ -71,6 +71,7 @@ endif()
 
 find_program(matab matlab)
 if (matlab)
+  message(STATUS "Matlab found in path default enable WITH_SPOTLESS")
   option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"  ON)
 endif()
 option(WITH_YAML_CPP "library for reading and writing yaml configuration files" ON)
