@@ -99,11 +99,8 @@ double ApplyConstraintBounds(double result, double lb, double ub) {
   // http://ab-initio.mit.edu/wiki/index.php/NLopt_Reference#Nonlinear_constraints
   // for more detail on how NLopt interprets return values.
 
-  if (ub != std::numeric_limits<double>::infinity()) {
-    if ((lb != -std::numeric_limits<double>::infinity()) && (lb != ub)) {
-      throw std::runtime_error(
-          "Constraints with different upper and lower bounds not implemented.");
-    }
+  if ((ub != std::numeric_limits<double>::infinity()) &&
+      ((result >= lb) || (lb == ub))) {
     result -= ub;
   } else {
     if (lb == -std::numeric_limits<double>::infinity()) {
@@ -163,7 +160,10 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
   Eigen::VectorXd xvec(n);
   for (size_t i = 0; i < n; i++) {
     xvec[i] = x[i];
-    if (grad) { grad[i] = 0; }
+  }
+
+  if (grad) {
+    memset(grad, 0, sizeof(double) * m * n);
   }
 
   const Constraint* c = wrapped->constraint;
@@ -188,7 +188,7 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
             (c->upper_bound()(i) ==
              std::numeric_limits<double>::infinity()) ? -1 : 1;
          for (size_t j = v.index(); j < v.index() + v.size(); j++) {
-           grad[j] += ty(i).derivatives()(j) * grad_sign;
+           grad[(i * n) + j] = ty(i).derivatives()(j) * grad_sign;
          }
       }
     }

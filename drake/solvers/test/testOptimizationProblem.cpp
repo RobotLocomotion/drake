@@ -126,7 +126,6 @@ TEST(testOptimizationProblem, trivialLeastSquares) {
   prog.Solve();
   EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10,
                               MatrixCompareType::absolute));
-
   EXPECT_TRUE(
       CompareMatrices(b, x.value(), 1e-10, MatrixCompareType::absolute));
 
@@ -134,7 +133,6 @@ TEST(testOptimizationProblem, trivialLeastSquares) {
   prog.Solve();
   EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10,
                               MatrixCompareType::absolute));
-
   EXPECT_TRUE(
       CompareMatrices(b / 3, x.value(), 1e-10, MatrixCompareType::absolute));
 
