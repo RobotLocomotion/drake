@@ -180,9 +180,6 @@ static int snopt_userfun(snopt::integer* Status, snopt::integer* n,
     std::copy(cu_cp, cu_cp + sizeof(current_problem), pcp);
   }
 
-  size_t constraint_index = 0, grad_index = 0;  // constraint index starts at 1
-                                                // because the objective is the
-                                                // first row
   snopt::integer i;
   Eigen::VectorXd xvec(*n);
   for (i = 0; i < *n; i++) {
@@ -212,8 +209,12 @@ static int snopt_userfun(snopt::integer* Status, snopt::integer* n,
       }
     }
   }
-  constraint_index++;
-  grad_index += *n;
+
+  // The constraint index starts at 1 because the objective is the
+  // first row.
+  size_t constraint_index = 1;
+  // The gradient_index also starts after the objective.
+  size_t grad_index = *n;
 
   for (auto const& binding : current_problem->generic_constraints()) {
     auto const& c = binding.constraint();
