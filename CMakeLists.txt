@@ -8,18 +8,20 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VE
 endif()
 
 # PODs out-of-source build logic
-if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-	find_file(_build_dir build PATHS ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/.. ${PROJECT_SOURCE_DIR}/../.. ${PROJECT_SOURCE_DIR}/../../.. ${PROJECT_SOURCE_DIR}/../../../..)
-	if (_build_dir)
-		set(CMAKE_INSTALL_PREFIX "${_build_dir}" CACHE STRING
-		"install prefix" FORCE)
-	else()
-		execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/build)
-		set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/build
-		CACHE STRING "install prefix" FORCE)
+if(POD_BUILD)
+	if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+		find_file(_build_dir build PATHS ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/.. ${PROJECT_SOURCE_DIR}/../.. ${PROJECT_SOURCE_DIR}/../../.. ${PROJECT_SOURCE_DIR}/../../../..)
+		if (_build_dir)
+			set(CMAKE_INSTALL_PREFIX "${_build_dir}" CACHE STRING
+			"install prefix" FORCE)
+		else()
+			execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/build)
+			set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/build
+			CACHE STRING "install prefix" FORCE)
+		endif()
 	endif()
+	message(STATUS CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
 endif()
-message(STATUS CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
 
 include(ExternalProject)
 function(drake_forcebuild proj)
