@@ -6,6 +6,8 @@ me=$(readlink -f $0)
 mydir=$(dirname $me)
 drake=$(dirname $(dirname $mydir))
 
+CLANG_FORMAT=${CLANG_FORMAT:-clang-format-3.6}
+
 # Call the code generator with common configuration.
 # @param1 title -- used to create class/type names
 # @param... --- used to create field names for vector entries
@@ -21,3 +23,8 @@ gen () {
 gen "simple car state" x y heading velocity
 gen "driving command" steering_angle throttle brake
 gen "euler floating joint state" x y z roll pitch yaw
+
+$CLANG_FORMAT --style=Google -i \
+  $mydir/simple_car_state.h \
+  $mydir/driving_command.h \
+  $mydir/euler_floating_joint_state.h
