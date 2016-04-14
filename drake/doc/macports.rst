@@ -14,11 +14,11 @@ Install the prerequisites::
     sudo port selfupdate
     sudo port install automake ccache cmake doxygen freeglut gcc49 glib2 \
       graphviz gtk2 jpeg libpng libtool mpfr mpich-default p5-html-form \
-      p5-libwww-perl p5-term-readkey py-numpy py-pip python27 qt4-mac swig \
-      valgrind wget
+      p5-libwww-perl p5-term-readkey py-beautifulsoup4 py-html5lib py-numpy \
+      py-pip py-sphinx python27 qt4-mac qwt swig valgrind wget
     sudo port install vtk5 +python27 +qt4_mac
     sudo port select --set mpich mpich-mp-fortran
-    sudo pip install -U cpplint Sphinx
+    sudo pip install -U cpplint
 
 Add the line::
 

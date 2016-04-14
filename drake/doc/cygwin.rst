@@ -15,10 +15,11 @@ Startup a new Cygwin shell with administrator privileges (using a right-click) a
 
     cygwin-setup -q -P autoconf automake bison ccache cmake doxygen flex git \
       gcc-g++ gcc-gfortran graphviz libjpeg-devel libgtk2.0-devel \
-      libmpfr-devel libpng-devel libtool make patch perl perl-libwww-perl \
-      perl-TermReadKey pkg-config python subversion swig wget
+      libmpfr-devel libpng-devel libqwt5-devel libtool make patch perl \
+      perl-libwww-perl perl-TermReadKey pkg-config python subversion swig \
+      unzip wget
     wget -q -O - https://bootstrap.pypa.io/get-pip.py | python
-    pip install -U cpplint Sphinx
+    pip install -U beautifulsoup4 cpplint html5lib Sphinx
 
 If you have installed the 64-bit version of MATLAB then you must tell CMake to build Drake as a 64-bit library. Create a new system environment variable ``CMAKE_FLAGS`` and set it to, e.g. ``-G "Visual Studio 14 2015 Win64"``.
 

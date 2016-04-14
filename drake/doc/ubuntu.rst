@@ -14,17 +14,15 @@ Install the prerequisites::
 
     sudo apt-get update
     sudo apt-get install --no-install-recommends autoconf automake bison \
-      ccache clang-3.7 cmake default-jdk doxygen flex freeglut3-dev \
-      g++-multilib g++-4.9-multilib gfortran gfortran-4.9 git graphviz \
-      libgtk2.0-dev libhtml-form-perl libjpeg-dev libmpfr-dev libwww-perl \
-      libpng-dev libqt4-dev libqt4-opengl-dev libterm-readkey-perl libtool \
-      libvtk-java libvtk5-dev libvtk5-qt4-dev make mpich2 perl pkg-config \
-      python-dev python-gtk2 python-numpy python-pip python-vtk subversion \
-      swig valgrind
-
-    sudo apt-get install cmake-curses-gui
-
-    sudo pip install -U cpplint Sphinx
+      ccache clang-3.7 cmake cmake-curses-gui default-jdk doxygen flex \
+      freeglut3-dev g++-multilib g++-4.9-multilib gfortran gfortran-4.9 git \
+      graphviz libgtk2.0-dev libhtml-form-perl libjpeg-dev libmpfr-dev \
+      libwww-perl libpng-dev libqt4-dev libqt4-opengl-dev libqwt-dev \
+      libterm-readkey-perl libtool libvtk-java libvtk5-dev libvtk5-qt4-dev \
+      make mpich2 perl pkg-config python-bs4 python-dev python-gtk2 \
+      python-html5lib python-numpy python-pip python-sphinx python-vtk \
+      subversion swig unzip valgrind
+    sudo pip install -U cpplint
 
 Download the external dependencies::
 
