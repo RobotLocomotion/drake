@@ -747,9 +747,10 @@ class DRAKERBM_EXPORT RigidBodyTree {
   void AddRigidBody(std::shared_ptr<RigidBody> body);
 
   /**
-   * Connects each parent-less non-world link within this rigid body tree to the
-   * tree using a floating joint. This occurs when a URDF or SDF model is
-   * initially loaded.
+   * Searches through a set of links specified by a list of link indices. For
+   * each link in this set that does not have a parent joint, connect it to the
+   * tree using a floating joint. Typically, the list of link indices is created
+   * while calling AddRigidBody().
    *
    * @param pose_map A mapping where the key is the link's name and the value
    * is a the transform from the frame of the link to the frame of the model
