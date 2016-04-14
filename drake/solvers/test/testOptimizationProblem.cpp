@@ -378,26 +378,48 @@ class GloptipolyConstrainedExampleConstraint
  */
 TEST(testOptimizationProblem, gloptipolyConstrainedMinimization) {
   OptimizationProblem prog;
+
+  // This test is run twice on different collections of continuous
+  // variables to make sure that the solvers correctly handle mapping
+  // variables to constraints/objectives.
   auto x = prog.AddContinuousVariables(3);
-  prog.AddCost(GloptipolyConstrainedExampleObjective());
+  auto y = prog.AddContinuousVariables(3);
+  prog.AddCost(GloptipolyConstrainedExampleObjective(), {x});
+  prog.AddCost(GloptipolyConstrainedExampleObjective(), {y});
   std::shared_ptr<GloptipolyConstrainedExampleConstraint> qp_con(
       new GloptipolyConstrainedExampleConstraint());
   prog.AddGenericConstraint(qp_con, {x});
+  prog.AddGenericConstraint(qp_con, {y});
   prog.AddLinearConstraint(
       Vector3d(1, 1, 1).transpose(),
       Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      Vector1d::Constant(4));
+      Vector1d::Constant(4), {x});
+  prog.AddLinearConstraint(
+      Vector3d(1, 1, 1).transpose(),
+      Vector1d::Constant(-std::numeric_limits<double>::infinity()),
+      Vector1d::Constant(4), {y});
   prog.AddLinearConstraint(
       Vector3d(0, 3, 1).transpose(),
       Vector1d::Constant(-std::numeric_limits<double>::infinity()),
-      Vector1d::Constant(6));
+      Vector1d::Constant(6), {x});
+  prog.AddLinearConstraint(
+      Vector3d(0, 3, 1).transpose(),
+      Vector1d::Constant(-std::numeric_limits<double>::infinity()),
+      Vector1d::Constant(6), {y});
   prog.AddBoundingBoxConstraint(
       Vector3d(0, 0, 0),
-      Vector3d(2, std::numeric_limits<double>::infinity(), 3));
+      Vector3d(2, std::numeric_limits<double>::infinity(), 3), {x});
+  prog.AddBoundingBoxConstraint(
+      Vector3d(0, 0, 0),
+      Vector3d(2, std::numeric_limits<double>::infinity(), 3), {y});
 
-  prog.SetInitialGuess({x}, Vector3d(.5, 0, 3) + .1 * Vector3d::Random());
+  Vector3d initial_guess = Vector3d(.5, 0, 3) + .1 * Vector3d::Random();
+  prog.SetInitialGuess({x}, initial_guess);
+  prog.SetInitialGuess({y}, initial_guess);
   RunNonlinearProgram(prog, [&]() {
       EXPECT_TRUE(CompareMatrices(x.value(), Vector3d(0.5, 0, 3), 1e-4,
+                                  MatrixCompareType::absolute));
+      EXPECT_TRUE(CompareMatrices(y.value(), Vector3d(0.5, 0, 3), 1e-4,
                                   MatrixCompareType::absolute));
     });
 }
