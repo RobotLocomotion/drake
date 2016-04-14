@@ -69,7 +69,7 @@ else()
 	option(WITH_SWIG_MATLAB "A version of SWIG with MATLAB support" ON)
 endif()
 
-find_program(matab matlab)
+find_program(matlab matlab)
 message("result of find matlab: ${matlab}")
 if (matlab)
   message(STATUS "Matlab found in path default enable WITH_SPOTLESS")
