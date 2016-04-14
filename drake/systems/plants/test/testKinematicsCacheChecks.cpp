@@ -1,5 +1,4 @@
 #include "drake/systems/plants/RigidBodyTree.h"
-#include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include <iostream>
 #include <cstdlib>

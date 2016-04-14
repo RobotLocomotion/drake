@@ -1,4 +1,5 @@
-#include "mex.h"
+#include <mex.h>
+
 #include <iostream>
 #include <octomap/octomap.h>
 #include <octomap/OcTree.h>

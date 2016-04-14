@@ -1,6 +1,8 @@
+
 #define S_FUNCTION_NAME realtime
 #define S_FUNCTION_LEVEL 2
-#include "simstruc.h"
+#include <simstruc.h>
+
 #include <chrono>
 #include <thread>
 
@@ -85,5 +87,6 @@ static void mdlTerminate(SimStruct *S) { UNUSED(S); }
 #ifdef MATLAB_MEX_FILE  // Is this file being compiled as a MEX-file?
 #include "simulink.c"   // MEX-file interface mechanism
 #else
+// NOLINTNEXTLINE(build/include)
 #include "cg_sfun.h"    // Code generation registration function
 #endif

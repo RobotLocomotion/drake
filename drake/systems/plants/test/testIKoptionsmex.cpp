@@ -1,4 +1,5 @@
-#include "mex.h"
+#include <mex.h>
+
 #include "drake/util/drakeMexUtil.h"
 #include "drake/systems/plants/IKoptions.h"
 #include "drake/systems/plants/RigidBodyTree.h"
@@ -17,8 +18,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                       " = testIKoptionsmex(ikoptions_ptr)");
   }
   IKoptions* ikoptions = (IKoptions*)getDrakeMexPointer(prhs[0]);
-  long long robot_address =
-      reinterpret_cast<long long>(ikoptions->getRobotPtr());
+  // NOLINTNEXTLINE(runtime/int)
+  auto robot_address = reinterpret_cast<long long>(ikoptions->getRobotPtr());
   int nq = ikoptions->getRobotPtr()->num_positions;
   MatrixXd Q;
   ikoptions->getQ(Q);

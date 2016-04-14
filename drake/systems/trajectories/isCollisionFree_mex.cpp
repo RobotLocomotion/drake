@@ -22,8 +22,9 @@ Date: Nov 12 2013
 
 // Mex stuff
 #include <mex.h>
-#include <math.h>
 #include <matrix.h>
+
+#include <math.h>
 #include "drake/util/drakeMexUtil.h"
 
 // Internal access to bullet

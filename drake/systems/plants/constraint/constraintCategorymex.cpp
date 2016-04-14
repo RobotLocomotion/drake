@@ -5,7 +5,8 @@
  * and MultipleTimeLinearPostureConstraint
  */
 
-#include "mex.h"
+#include <mex.h>
+
 #include <iostream>
 #include "drake/util/drakeMexUtil.h"
 #include <Eigen/Dense>
