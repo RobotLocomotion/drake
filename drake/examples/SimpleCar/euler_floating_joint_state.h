@@ -22,11 +22,11 @@ class EulerFloatingJointState {  // models the Drake::LCMVector concept
 
   template <typename Derived>
   EulerFloatingJointState(const Eigen::MatrixBase<Derived>& initial)
-      : x(initial(0)),
-        y(initial(1)),
-        z(initial(2)),
-        roll(initial(3)),
-        pitch(initial(4)),
+      : x(initial(0)),  // BR
+        y(initial(1)),  // BR
+        z(initial(2)),  // BR
+        roll(initial(3)),  // BR
+        pitch(initial(4)),  // BR
         yaw(initial(5)) {}
 
   template <typename Derived>

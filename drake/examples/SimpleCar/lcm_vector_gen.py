@@ -17,7 +17,7 @@ INITIAL_STATE_CTOR_BEGIN = """
   %(camel)s(const Eigen::MatrixBase<Derived>& initial)
       : """
 INITIAL_STATE_CTOR_FIELD = "%(field)s(initial(%(k)d))"
-INITIAL_STATE_CTOR_JOIN = """,
+INITIAL_STATE_CTOR_JOIN = """,  // BR
         """
 INITIAL_STATE_CTOR_END = " {}"
 

@@ -22,9 +22,9 @@ class SimpleCarState {  // models the Drake::LCMVector concept
 
   template <typename Derived>
   SimpleCarState(const Eigen::MatrixBase<Derived>& initial)
-      : x(initial(0)),
-        y(initial(1)),
-        heading(initial(2)),
+      : x(initial(0)),  // BR
+        y(initial(1)),  // BR
+        heading(initial(2)),  // BR
         velocity(initial(3)) {}
 
   template <typename Derived>

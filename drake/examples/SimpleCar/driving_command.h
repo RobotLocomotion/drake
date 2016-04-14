@@ -22,8 +22,8 @@ class DrivingCommand {  // models the Drake::LCMVector concept
 
   template <typename Derived>
   DrivingCommand(const Eigen::MatrixBase<Derived>& initial)
-      : steering_angle(initial(0)),
-        throttle(initial(1)),
+      : steering_angle(initial(0)),  // BR
+        throttle(initial(1)),  // BR
         brake(initial(2)) {}
 
   template <typename Derived>
