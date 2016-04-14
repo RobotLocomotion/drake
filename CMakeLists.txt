@@ -70,6 +70,7 @@ else()
 endif()
 
 find_program(matab matlab)
+message("result of find matlab: ${matlab}")
 if (matlab)
   message(STATUS "Matlab found in path default enable WITH_SPOTLESS")
   option(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB"  ON)
