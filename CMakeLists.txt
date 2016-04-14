@@ -56,7 +56,7 @@ option(REMOVE_UNUSED_EXTERNALS "enable this to remove those projects from disk" 
 
 # ON by default:
 option(WITH_EIGEN		"required c++ matrix library.  only disable if you have it already."    ON)
-option(WITH_GOOGLETEST "required c++ unit test library.  only disable ifyou have it already." ON)
+option(WITH_GOOGLETEST "required c++ unit test library.  only disable if you have it already." ON)
 option(WITH_SWIGMAKE    "helper tools to build python & MATLAB wrappers for C++ libraries with Eigen" ON)
 option(WITH_BULLET 		"used for collision detection" 	ON)
 option(WITH_LCM 		"interprocess communications protocol for visualizers, etc" ON)
@@ -85,14 +85,7 @@ if (NOT WIN32) # many of these might work on win32 with little or no work... the
 	option(WITH_OCTOMAP 	"provides oct-tree data structures")
 	option(WITH_GUROBI 		"convex/integer optimization solver; free for academics (will prompt you for login bits)")
 	option(WITH_MOSEK 		"convex optimization solver; free for academics")
-	# TODO(sam.creasey): Compilation of the NLopt external works
-	# frequently on OSX, but not always (working in the travis CI
-	# build, not working in the drake005 CI build).  I would have
-	# liked to continue to offer the option on OSX, but drake005
-	# forces all supported externals on, so I can't even do that.
-	if (NOT APPLE)
-	  option(WITH_NLOPT 		"nonlinear optimization solver"  ON)
-	endif()
+	option(WITH_NLOPT 		"nonlinear optimization solver"  ON)
 	option(WITH_YALMIP 		"free optimization front-end for MATLAB")
 	option(WITH_GLOPTIPOLY 	"free global polynomial optimization tooblox")
 	option(WITH_BERTINI 	"solve polynomial equations; free but pod requires permissions (can't redistribute)")
@@ -187,7 +180,7 @@ set(mosek_GIT_REPOSITORY https://github.com/rdeits/mosek-pod.git)
 set(mosek_GIT_TAG 1919b622df17b7584ac644406f360bd07cdf5fba)
 set(mosek_IS_PUBLIC TRUE)
 set(nlopt_GIT_REPOSITORY https://github.com/stevengj/nlopt.git)
-set(nlopt_GIT_TAG 355a597b43c80f616252cb370fa9f7e5c997418e)
+set(nlopt_GIT_TAG 78e165f9defbac487e915219b7a0866fd25e4c62)
 set(nlopt_BUILD_COMMAND ./autogen.sh --no-configure && ./configure --without-matlab --without-python --without-octave --without-guile --enable-maintainer-mode --enable-shared --prefix=${CMAKE_INSTALL_PREFIX} --includedir=${CMAKE_INSTALL_PREFIX}/include/nlopt && make install)
 set(nlopt_IS_PUBLIC TRUE)
 set(octomap_GIT_REPOSITORY https://github.com/RobotLocomotion/octomap-pod.git)

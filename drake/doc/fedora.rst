@@ -20,15 +20,16 @@ Install the prerequisites::
       freeglut-devel gcc-c++ gcc-gfortran git graphviz gtk2-devel \
       java-*-openjdk-devel libjpeg-turbo-devel libpng-devel libtool make \
       mpfr-devel mpich numpy perl perl-HTML-Form perl-libwww-perl \
-      perl-TermReadKey pkgconfig pygtk2 python-devel python-pip qt-devel \
-      subversion swig valgrind vtk-devel
+      perl-TermReadKey pkgconfig pygtk2 python-beautifulsoup4 python-devel \
+      python-html5lib python-pip python-sphinx qt-devel qwt-devel subversion \
+      swig unzip valgrind vtk-devel
 
     # CentOS and Red Hat Enterprise Linux
     sudo yum install devtoolset-3-gcc-c++ devtoolset-3-gcc-gfortran \
       devtoolset-3-valgrind
     scl enable devtoolset-3 bash
 
-    sudo pip install -U cpplint Sphinx
+    sudo pip install -U cpplint
 
 On CentOS and Red Hat Enterprise Linux, add the line::
 
