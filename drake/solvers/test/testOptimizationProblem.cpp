@@ -129,7 +129,6 @@ TEST(testOptimizationProblem, trivialLeastSquares) {
   prog.Solve();
   EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10,
                               MatrixCompareType::absolute));
-
   EXPECT_TRUE(
       CompareMatrices(b, x.value(), 1e-10, MatrixCompareType::absolute));
 
@@ -137,7 +136,6 @@ TEST(testOptimizationProblem, trivialLeastSquares) {
   prog.Solve();
   EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10,
                               MatrixCompareType::absolute));
-
   EXPECT_TRUE(
       CompareMatrices(b / 3, x.value(), 1e-10, MatrixCompareType::absolute));
 
@@ -154,7 +152,7 @@ TEST(testOptimizationProblem, trivialLeastSquares) {
     });
 }
 
-TEST(testOptimizationProblem, trivalLinearEquality) {
+TEST(testOptimizationProblem, trivialLinearEquality) {
   OptimizationProblem prog;
 
   auto vars = prog.AddContinuousVariables(2);
@@ -546,44 +544,47 @@ TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     OptimizationProblem problem;
     auto x_var = problem.AddContinuousVariables(1);
     std::vector<Polynomiald::VarType> var_mapping = { x.getSimpleVariable() };
-    problem.AddPolynomialConstraint(x, var_mapping, 2, kInf);
-    problem.Solve();
-    EXPECT_GE(x_var.value()[0], 2);
-    // TODO(ggould-tri) test this with a two-sided and/or equality constraint,
-    // once the nlopt wrapper supports those.
+    problem.AddPolynomialConstraint(x, var_mapping, 2, 2);
+    RunNonlinearProgram(problem, [&]() {
+        EXPECT_NEAR(x_var.value()[0], 2, kEpsilon);
+        // TODO(ggould-tri) test this with a two-sided constraint, once
+        // the nlopt wrapper supports those.
+      });
   }
 
   // Given a small univariate polynomial, find a low point.
   {
     Polynomiald x("x");
-    Polynomiald poly = (x - 1) * (x - 1) - 0.01;
+    Polynomiald poly = (x - 1) * (x - 1);
     OptimizationProblem problem;
     auto x_var = problem.AddContinuousVariables(1);
     std::vector<Polynomiald::VarType> var_mapping = { x.getSimpleVariable() };
-    problem.AddPolynomialConstraint(poly, var_mapping, -kInf, 0);
-    problem.Solve();
-    EXPECT_NEAR(x_var.value()[0], 1, 0.2);
-    EXPECT_LE(poly.evaluateUnivariate(x_var.value()[0]), kEpsilon);
+    problem.AddPolynomialConstraint(poly, var_mapping, 0, 0);
+    RunNonlinearProgram(problem, [&]() {
+        EXPECT_NEAR(x_var.value()[0], 1, 0.2);
+        EXPECT_LE(poly.evaluateUnivariate(x_var.value()[0]), kEpsilon);
+      });
   }
 
   // Given a small multivariate polynomial, find a low point.
   {
     Polynomiald x("x");
     Polynomiald y("y");
-    Polynomiald poly = (x - 1) * (x - 1) + (y + 2) * (y + 2) - 0.01;
+    Polynomiald poly = (x - 1) * (x - 1) + (y + 2) * (y + 2);
     OptimizationProblem problem;
     auto xy_var = problem.AddContinuousVariables(2);
     std::vector<Polynomiald::VarType> var_mapping = {
       x.getSimpleVariable(),
       y.getSimpleVariable()};
-    problem.AddPolynomialConstraint(poly, var_mapping, -kInf, 0);
-    problem.Solve();
-    EXPECT_NEAR(xy_var.value()[0], 1, 0.2);
-    EXPECT_NEAR(xy_var.value()[1], -2, 0.2);
-    std::map<Polynomiald::VarType, double> eval_point = {
-      {x.getSimpleVariable(), xy_var.value()[0]},
-      {y.getSimpleVariable(), xy_var.value()[1]}};
-    EXPECT_LE(poly.evaluateMultivariate(eval_point), kEpsilon);
+    problem.AddPolynomialConstraint(poly, var_mapping, 0, 0);
+    RunNonlinearProgram(problem, [&]() {
+        EXPECT_NEAR(xy_var.value()[0], 1, 0.2);
+        EXPECT_NEAR(xy_var.value()[1], -2, 0.2);
+        std::map<Polynomiald::VarType, double> eval_point = {
+          {x.getSimpleVariable(), xy_var.value()[0]},
+          {y.getSimpleVariable(), xy_var.value()[1]}};
+        EXPECT_LE(poly.evaluateMultivariate(eval_point), kEpsilon);
+      });
   }
 
   // Given two polynomial constraints, satisfy both.
@@ -594,13 +595,16 @@ TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
     Polynomiald poly = x * x * x * x - x * x + 0.2;
     OptimizationProblem problem;
     auto x_var = problem.AddContinuousVariables(1);
+    problem.SetInitialGuess({x_var}, Vector1d::Constant(-0.1));
     std::vector<Polynomiald::VarType> var_mapping = { x.getSimpleVariable() };
     problem.AddPolynomialConstraint(poly, var_mapping, -kInf, 0);
     problem.AddPolynomialConstraint(x, var_mapping, -kInf, 0);
-    problem.Solve();
-    EXPECT_NEAR(x_var.value()[0], -0.7, 0.2);
-    EXPECT_LE(poly.evaluateUnivariate(x_var.value()[0]), kEpsilon);
+    RunNonlinearProgram(problem, [&]() {
+        EXPECT_NEAR(x_var.value()[0], -0.7, 0.2);
+        EXPECT_LE(poly.evaluateUnivariate(x_var.value()[0]), kEpsilon);
+      });
   }
+
 }
 
 }  // namespace
