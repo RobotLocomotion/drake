@@ -1854,7 +1854,7 @@ void RigidBodyTree::AddRigidBody(std::shared_ptr<RigidBody> body) {
 
 void RigidBodyTree::AddFloatingJoints(
     PoseMap* pose_map, const DrakeJoint::FloatingBaseType floating_base_type,
-    std::vector<int>& link_indices,
+    const std::vector<int>& link_indices,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   std::string floating_joint_name;
   std::shared_ptr<RigidBody> weld_to_body;

@@ -765,7 +765,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
    */
   void AddFloatingJoints(
       PoseMap* pose_map, const DrakeJoint::FloatingBaseType floating_base_type,
-      std::vector<int>& link_indices,
+      const std::vector<int>& link_indices,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
  public:
