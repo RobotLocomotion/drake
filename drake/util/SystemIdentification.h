@@ -1,5 +1,5 @@
-#ifndef DRAKE_UTIL_SYSTEM_IDENTIFICATION_H_
-#define DRAKE_UTIL_SYSTEM_IDENTIFICATION_H_
+#ifndef DRAKE_UTIL_SYSTEMIDENTIFICATION_H_
+#define DRAKE_UTIL_SYSTEMIDENTIFICATION_H_
 
 #include <map>
 #include <set>
@@ -20,7 +20,7 @@ namespace util {
  */
 template <typename _CoefficientType = double>
 class DRAKEPOLYNOMIAL_EXPORT SystemIdentification {
-public:
+ public:
   typedef _CoefficientType CoefficientType;
   typedef ::Polynomial<CoefficientType> PolyType;
   typedef typename PolyType::Monomial MonomialType;
@@ -68,7 +68,7 @@ public:
       const PolyType& poly,
       const LumpingMapType& lumped_parameters);
 
-private:
+ private:
   /// This class is not constructable.
   SystemIdentification() {}
 
@@ -102,4 +102,4 @@ private:
 };
 };
 };
-#endif //  DRAKE_UTIL_SYSTEM_IDENTIFICATION_H_
+#endif  // DRAKE_UTIL_SYSTEMIDENTIFICATION_H_

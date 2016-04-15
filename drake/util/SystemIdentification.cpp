@@ -2,9 +2,6 @@
 
 #include <algorithm>
 
-// TODO DEFECT ggould
-#include <iostream>
-
 namespace drake {
 namespace util {
 
@@ -151,28 +148,18 @@ SystemIdentification<T>::RewritePolynomialWithLumpedParameters(
   std::vector<MonomialType> working_monomials = poly.getMonomials();
   for (const MonomialType& interest_monomial : interest_monomials) {
     std::vector<MonomialType> new_working_monomials;
-    std::cout << "trying to factor interest in " << interest_monomial
-              << " from polynomial " << PolyType(working_monomials.begin(),
-                                                 working_monomials.end())
-              << std::endl;
     std::vector<int> indices_to_erase;
     std::vector<MonomialType> factor_monomials;
     for (const MonomialType& working_monomial : working_monomials) {
       if (MonomialMatches(working_monomial, interest_monomial,
                           vars_of_interest)) {
         factor_monomials.push_back(working_monomial.factor(interest_monomial));
-        std::cout << "  match in " << working_monomial
-                  << " factored: " << factor_monomials.back() << std::endl;
       } else {
         new_working_monomials.push_back(working_monomial);
       }
     }
     PolyType factor_polynomial(factor_monomials.begin(),
                                factor_monomials.end());
-    std::cout << "  A factor polynomial for "
-              << PolyType(working_monomials.begin(),
-                          working_monomials.end()) << " is "
-              << factor_polynomial << std::endl;
     auto normalization = NormalizePolynomial(factor_polynomial);
     T factor = normalization.first;
     PolyType normalized = normalization.second;
@@ -189,13 +176,7 @@ SystemIdentification<T>::RewritePolynomialWithLumpedParameters(
     lumped_monomial.coefficient = factor;
     new_working_monomials.push_back(lumped_monomial);
     working_monomials = new_working_monomials;
-    std::cout << "    rewriting to " << PolyType(working_monomials.begin(),
-                                                 working_monomials.end())
-              << std::endl;
   }
-  std::cout << "rewritten poly is " << PolyType(working_monomials.begin(),
-                                                working_monomials.end())
-            << std::endl;
 
   return PolyType(working_monomials.begin(), working_monomials.end());
 }
