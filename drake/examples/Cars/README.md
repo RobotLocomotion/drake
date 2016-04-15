@@ -23,7 +23,7 @@ it though. In that case you can use `publishDrivingCommand` (see below) to
 control it.
 
 
-Running the simulator
+Running the Simulator
 ---------------------
 To adjust these instructions for Windows, see notes at the end of this section.
 
