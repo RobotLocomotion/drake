@@ -79,9 +79,15 @@ TEST(SystemIdentificationTest, testLumpedParameterRewrite) {
     Polynomiald rewritten =
         SID::RewritePolynomialWithLumpedParameters(poly, lump_map);
 
-    // TODO(ggould-tri) test:
-    // No non-lumped parameters are left in rewritten.
-    // Rewritten has the same or smaller number of terms.
+    // No non-lumped parameters should remain in rewritten.
+    EXPECT_EQ(rewritten.getVariables().count(a.getSimpleVariable()), 0);
+    EXPECT_EQ(rewritten.getVariables().count(b.getSimpleVariable()), 0);
+    EXPECT_EQ(rewritten.getVariables().count(c.getSimpleVariable()), 0);
+
+    // Rewritten has the same or smaller number of variables and terms.
+    EXPECT_LE(rewritten.getVariables().size(), poly.getVariables().size());
+    EXPECT_LE(rewritten.getMonomials().size(), poly.getMonomials().size());
+
     // Numerical similarity between pre- and post-rewritten.
   }
 }
