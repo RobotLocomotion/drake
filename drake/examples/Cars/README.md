@@ -46,18 +46,19 @@ I recommend setting the viewer to chase cam mode.  Choose from the Menu
 'View->Camera Control Panel'. Then click 'Select Target' and click on the prius.
 Change track mode to 'Smooth Follow' and increase your elevation.
 
-Make sure that the (very small) pygame window has focus, then use your arrow
+Make sure that the (very small) `pygame` window has focus, then use your arrow
 keys to drive around. If you have a joystick / steering wheel.. you can use
-that, too (see SteeringCommandDriver.py for details).
+that, too (see `SteeringCommandDriver.py` for details).
 
 If for some reason the python game interface is not to your liking (e.g. you
 don’t have python on your system, etc), then you can generate simple throttle
-and steering commands using the command line interface
+and steering commands from the command line as shown below.
 
 ```
 ../../pod-build/bin/publishDrivingCommand [throttle_value] [steering_value]
 ```
-where the values in bracket should be replaced with desired values.  e.g.
+
+The values in bracket should be replaced with desired values.  e.g.
 
 ```
 ../../pod-build/bin/publishDrivingCommand 1.0 .4
