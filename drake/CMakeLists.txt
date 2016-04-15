@@ -125,13 +125,13 @@ include_directories(BEFORE ${generated_dir})
 
 # set up matlab build
 include(cmake/mex.cmake)
-if (USE_MATLAB)
+if (DISABLE_MATLAB)
+	message(STATUS "MATLAB is disabled because the CMake option DISABLE_MATLAB is set to ON.")
+else()
 	# Search for MATLAB and configure various MEX options.
 	# If MATLAB is found, MATLAB_FOUND is set.
 	mex_setup()
-else()
-	message(STATUS "MATLAB is disabled because the CMake option USE_MATLAB is set to OFF.")
-endif (USE_MATLAB)
+endif (DISABLE_MATLAB)
 
 find_package( Perl )
 if (MATLAB_FOUND AND NOT PERL_FOUND)
