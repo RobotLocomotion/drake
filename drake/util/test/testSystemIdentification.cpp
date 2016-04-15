@@ -55,5 +55,36 @@ TEST(SystemIdentificationTest, testLumpedMulti) {
   EXPECT_EQ(lump_map.count(a * c), 1);
 }
 
+TEST(SystemIdentificationTest, testLumpedParameterRewrite) {
+  Polynomiald x = Polynomiald("x");
+  Polynomiald y = Polynomiald("y");
+  Polynomiald a = Polynomiald("a");
+  Polynomiald b = Polynomiald("b");
+  Polynomiald c = Polynomiald("c");
+
+  std::vector<Polynomiald> input = {
+    (a * x) + (b * x) + (3 * a * c * y),
+    (a * x) + (2 * b * x) + (3 * a * c * y),
+    (a * c * y * y),
+    2 * a,
+    a};
+
+  std::set<Polynomiald::VarType> interests = {
+    x.getSimpleVariable(),
+    y.getSimpleVariable()};
+  SID::LumpingMapType lump_map =
+      SID::GetLumpedParametersFromPolynomials(input, interests);
+
+  for (const Polynomiald& poly : input) {
+    Polynomiald rewritten =
+        SID::RewritePolynomialWithLumpedParameters(poly, lump_map);
+
+    // TODO(ggould-tri) test:
+    // No non-lumped parameters are left in rewritten.
+    // Rewritten has the same or smaller number of terms.
+    // Numerical similarity between pre- and post-rewritten.
+  }
+}
+
 }  // namespace test
 }  // namespace drake

@@ -42,8 +42,8 @@ public:
    *   lump1 == a+b ;  lump2 == a*c
    */
   static LumpingMapType GetLumpedParametersFromPolynomial(
-      PolyType poly,
-      std::set<VarType> vars_of_interest);
+      const PolyType& poly,
+      const std::set<VarType>& vars_of_interest);
 
   /// Same as GetLumpedParametersFromPolynomial but for multiple Polynomials.
   /**
@@ -52,8 +52,8 @@ public:
    * together.
    */
   static LumpingMapType GetLumpedParametersFromPolynomials(
-      std::vector<PolyType> polys,
-      std::set<VarType> vars_of_interest);
+      const std::vector<PolyType>& polys,
+      const std::set<VarType>& vars_of_interest);
 
   /// Rewrite a Polynomial in terms of lumped parameters.
   /**
@@ -65,13 +65,40 @@ public:
    *   lump1*x + lump2*y + lump2*y**2
    */
   static PolyType RewritePolynomialWithLumpedParameters(
-      PolyType poly,
-      LumpingMapType lumped_parameters);
+      const PolyType& poly,
+      const LumpingMapType& lumped_parameters);
 
 private:
   /// This class is not constructable.
   SystemIdentification() {}
 
+  /// Return every combination of the given vars_of_interest in the polynomials.
+  /**
+   * For instance, if x and y are of interest on the polynomial
+   *   a * x + b * x*y + b * y^2 + c * y^2,
+   * then return x, x*y, and y^2.
+   */
+  static std::set<MonomialType>
+  GetAllCombinationsOfVars(
+      std::vector<PolyType> polys, std::set<VarType> vars_of_interest);
+
+  /// Test if one monomial is a product of parameters times another monomial.
+  /**
+   * Return true iff monomial "haystack" consists only of the monomial "needle"
+   * times variables not in "vars_of_interest.
+   */
+  static bool MonomialMatches(
+    const MonomialType& haystack,
+    const MonomialType& needle,
+    std::set<VarType> vars_of_interest);
+
+  /// Factor out the smallest coefficient in a Polynomial.
+  /**
+   * The resulting pair is the factored coefficient and a polynomial whose
+   * smallest coefficient is 1.
+   */
+  static std::pair<CoefficientType, PolyType>
+  NormalizePolynomial(const PolyType& poly);
 };
 };
 };
