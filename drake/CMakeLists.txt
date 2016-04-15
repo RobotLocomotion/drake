@@ -4,10 +4,6 @@ cmake_minimum_required(VERSION 2.8.10)
 option(BUILD_SHARED_LIBS "Build Drake with shared libraries." ON)
 option(RANDOMIZE_UNIT_TESTS "every matlab unit is started with a new random seed" OFF)
 
-if (NOT WIN32 AND NOT WIN64 AND NOT APPLE)
-  option(WITH_ROS "Include support for the Robot Operating System (ROS)." OFF)
-endif()
-
 #cmake_policy(SET CMP0042 NEW)
 if (POLICY CMP0054)
   cmake_policy(SET CMP0054 OLD)  # so variables inside quotes are still evaluated in if() statements
