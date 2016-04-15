@@ -9,14 +9,19 @@ endif()
 
 # PODs out-of-source build logic
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-	find_file(_build_dir build PATHS ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/.. ${PROJECT_SOURCE_DIR}/../.. ${PROJECT_SOURCE_DIR}/../../.. ${PROJECT_SOURCE_DIR}/../../../..)
-	if (_build_dir)
-		set(CMAKE_INSTALL_PREFIX "${_build_dir}" CACHE STRING
-		"install prefix" FORCE)
+	if(POD_BUILD)
+		find_file(_build_dir build PATHS ${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/.. ${PROJECT_SOURCE_DIR}/../.. ${PROJECT_SOURCE_DIR}/../../.. ${PROJECT_SOURCE_DIR}/../../../..)
+		if (_build_dir)
+			set(CMAKE_INSTALL_PREFIX "${_build_dir}" CACHE STRING
+				"Prefix for installation of sub-packages (note: required during build!)" FORCE)
+		else()
+			execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/build)
+			set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/build
+			CACHE STRING "install prefix" FORCE)
+		endif()
 	else()
-		execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/build)
-		set(CMAKE_INSTALL_PREFIX ${PROJECT_SOURCE_DIR}/build
-		CACHE STRING "install prefix" FORCE)
+		set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE STRING
+			"Prefix for installation of sub-packages (note: required during build!)" FORCE)
 	endif()
 endif()
 message(STATUS CMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX})
