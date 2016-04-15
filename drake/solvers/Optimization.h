@@ -257,7 +257,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     variables_.push_back(v);
     variable_views_.push_back(DecisionVariableView(variables_.back()));
     x_initial_guess_.conservativeResize(num_vars_);
-    x_initial_guess_.tail(num_vars_) = 0.1 * Eigen::VectorXd::Random(num_vars_);
+    x_initial_guess_.tail(num_new_vars) =
+        0.1 * Eigen::VectorXd::Random(num_new_vars);
 
     return variable_views_.back();
   }
