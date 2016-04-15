@@ -1,5 +1,5 @@
-
-if (LCM_FOUND AND NOT WIN32)
+# Currently has alignment problems on 32 bit Windows.
+if (LCM_FOUND AND NOT (WIN32 AND (CMAKE_SIZEOF_VOID_P EQUAL 4)))
   add_executable(runQuadrotorDynamics runDynamics.cpp)
   target_link_libraries(runQuadrotorDynamics drakeRBSystem drakeLCMSystem)
   add_dependencies(runQuadrotorDynamics drake_lcmtypes lcmtype_agg_hpp)
