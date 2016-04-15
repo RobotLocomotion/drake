@@ -75,6 +75,19 @@ TEST(SystemIdentificationTest, testLumpedParameterRewrite) {
   SID::LumpingMapType lump_map =
       SID::GetLumpedParametersFromPolynomials(input, interests);
 
+  // A point for testing numeric stability.
+  std::map<Polynomiald::VarType, double> eval_point = {
+    {x.getSimpleVariable(), 1},
+    {y.getSimpleVariable(), 2},
+    {a.getSimpleVariable(), 3},
+    {b.getSimpleVariable(), 5},
+    {c.getSimpleVariable(), 7},
+  };
+  for (const auto& poly_var_pair : lump_map) {
+    eval_point[poly_var_pair.second] =
+        poly_var_pair.first.multivariateValue(eval_point);
+  }
+
   for (const Polynomiald& poly : input) {
     Polynomiald rewritten =
         SID::RewritePolynomialWithLumpedParameters(poly, lump_map);
@@ -88,7 +101,10 @@ TEST(SystemIdentificationTest, testLumpedParameterRewrite) {
     EXPECT_LE(rewritten.getVariables().size(), poly.getVariables().size());
     EXPECT_LE(rewritten.getMonomials().size(), poly.getMonomials().size());
 
-    // Numerical similarity between pre- and post-rewritten.
+    // Rewriting in terms of lumped parameters should never change the
+    // actual value of a polynomial at a particular point.
+    EXPECT_EQ(poly.multivariateValue(eval_point),
+              rewritten.multivariateValue(eval_point));
   }
 }
 
