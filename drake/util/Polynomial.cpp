@@ -123,7 +123,7 @@ Polynomial<CoefficientType>::Monomial::factor(const Monomial& other) const {
   error.coefficient = 0;
   result.coefficient = coefficient / other.coefficient;
   for (auto term : terms) {
-    PowerType other_power = other.getDegreeOf(term.var);
+    const PowerType other_power = other.getDegreeOf(term.var);
     if (term.power < other_power) { return error; }
     Term new_term;
     new_term.var = term.var;
@@ -132,7 +132,7 @@ Polynomial<CoefficientType>::Monomial::factor(const Monomial& other) const {
       result.terms.push_back(new_term);
     }
   }
-  for (auto other_term : other.terms) {
+  for (const Term& other_term : other.terms) {
     if (!getDegreeOf(other_term.var)) { return error; }
   }
   return result;
@@ -190,8 +190,8 @@ template <typename CoefficientType>
 std::set<typename Polynomial<CoefficientType>::VarType>
 Polynomial<CoefficientType>::getVariables() const {
   std::set<Polynomial<CoefficientType>::VarType> vars;
-  for (auto monomial : monomials) {
-    for (auto term : monomial.terms) {
+  for (const Monomial& monomial : monomials) {
+    for (const Term& term : monomial.terms) {
       vars.insert(term.var);
     }
   }

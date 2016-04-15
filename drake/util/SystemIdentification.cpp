@@ -8,8 +8,8 @@ namespace util {
 template<typename T>
 std::set<typename SystemIdentification<T>::MonomialType>
 SystemIdentification<T>::GetAllCombinationsOfVars(
-    std::vector<PolyType> polys,
-    std::set<VarType> vars_of_interest) {
+    const std::vector<PolyType>& polys,
+    const std::set<VarType>& vars_of_interest) {
   std::set<MonomialType> interest_monomials;
   for (const PolyType& poly : polys) {
     for (const MonomialType& monomial : poly.getMonomials()) {
@@ -30,12 +30,12 @@ template<typename T>
 bool SystemIdentification<T>::MonomialMatches(
     const MonomialType& haystack,
     const MonomialType& needle,
-    std::set<VarType> vars_of_interest) {
-  MonomialType residue = haystack.factor(needle);
+    const std::set<VarType>& vars_of_interest) {
+  const MonomialType residue = haystack.factor(needle);
   if (residue.coefficient == 0) {
     return false;
   }
-  for (VarType var : vars_of_interest) {
+  for (const VarType& var : vars_of_interest) {
     if (residue.getDegreeOf(var) > 0) {
       return false;
     }
@@ -47,9 +47,9 @@ template<typename T>
 std::pair<T, typename SystemIdentification<T>::PolyType>
 SystemIdentification<T>::NormalizePolynomial(const PolyType& poly) {
   std::vector<MonomialType> monomials = poly.getMonomials();
-  T min_coefficient = std::min_element(
+  const T min_coefficient = std::min_element(
       monomials.begin(), monomials.end(),
-      [&](MonomialType l, MonomialType r){
+      [&](const MonomialType& l, const MonomialType& r){
         return l.coefficient < r.coefficient; })->coefficient;
   for (MonomialType& monomial : monomials) {
     monomial.coefficient /= min_coefficient;
@@ -64,7 +64,7 @@ SystemIdentification<T>::GetLumpedParametersFromPolynomial(
     const PolyType& poly,
     const std::set<VarType>& vars_of_interest) {
   // Just dispatch to the set version.
-  std::vector<Polynomial<T>> polys = {poly};
+  const std::vector<Polynomial<T>> polys = {poly};
   return SystemIdentification<T>::GetLumpedParametersFromPolynomials(
       polys, vars_of_interest);
 }
@@ -78,12 +78,12 @@ SystemIdentification<T>::GetLumpedParametersFromPolynomials(
   // for our lumped parameters.
   std::set<VarType> all_vars;
   for (const PolyType& poly : polys) {
-    auto poly_vars = poly.getVariables();
+    const auto& poly_vars = poly.getVariables();
     all_vars.insert(poly_vars.begin(), poly_vars.end());
   }
-  VarType reservation_start = Polynomiald("lump", 1).getSimpleVariable();
-  VarType reservation_end = Polynomiald("lump", 1000).getSimpleVariable();
-  for (VarType var : all_vars) {
+  const VarType reservation_start = Polynomiald("lump", 1).getSimpleVariable();
+  const VarType reservation_end = Polynomiald("lump", 1000).getSimpleVariable();
+  for (const VarType& var : all_vars) {
     if ((var >= reservation_start) && (var <= reservation_end)) {
       throw std::runtime_error(
           "Lumped parameters failed because variable name already in use");
@@ -91,7 +91,7 @@ SystemIdentification<T>::GetLumpedParametersFromPolynomials(
   }
 
   // First, extract every combination of the vars_of_interest.
-  std::set<typename PolyType::Monomial> interest_monomials =
+  const std::set<typename PolyType::Monomial> interest_monomials =
       GetAllCombinationsOfVars(polys, vars_of_interest);
 
   // Second, for each of those combinations, find the corresponding
@@ -139,7 +139,7 @@ SystemIdentification<T>::RewritePolynomialWithLumpedParameters(
   std::set<VarType> vars_of_interest = poly.getVariables();
   for (auto lump_name_pair : lumped_parameters) {
     std::set<VarType> parameters_in_lump = lump_name_pair.first.getVariables();
-    for (VarType var : parameters_in_lump) {
+    for (const VarType& var : parameters_in_lump) {
       vars_of_interest.erase(var);
     }
   }
@@ -158,11 +158,11 @@ SystemIdentification<T>::RewritePolynomialWithLumpedParameters(
         new_working_monomials.push_back(working_monomial);
       }
     }
-    PolyType factor_polynomial(factor_monomials.begin(),
+    const PolyType factor_polynomial(factor_monomials.begin(),
                                factor_monomials.end());
-    auto normalization = NormalizePolynomial(factor_polynomial);
-    T factor = normalization.first;
-    PolyType normalized = normalization.second;
+    const auto& normalization = NormalizePolynomial(factor_polynomial);
+    const T factor = normalization.first;
+    const PolyType& normalized = normalization.second;
     if (!lumped_parameters.count(normalized)) {
       // No lumping possible for this interest monomial.
       continue;

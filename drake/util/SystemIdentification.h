@@ -80,7 +80,8 @@ class DRAKEPOLYNOMIAL_EXPORT SystemIdentification {
    */
   static std::set<MonomialType>
   GetAllCombinationsOfVars(
-      std::vector<PolyType> polys, std::set<VarType> vars_of_interest);
+      const std::vector<PolyType>& polys,
+      const std::set<VarType>& vars_of_interest);
 
   /// Test if one monomial is a product of parameters times another monomial.
   /**
@@ -90,7 +91,7 @@ class DRAKEPOLYNOMIAL_EXPORT SystemIdentification {
   static bool MonomialMatches(
     const MonomialType& haystack,
     const MonomialType& needle,
-    std::set<VarType> vars_of_interest);
+    const std::set<VarType>& vars_of_interest);
 
   /// Factor out the smallest coefficient in a Polynomial.
   /**
