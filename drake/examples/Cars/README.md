@@ -65,7 +65,7 @@ The values in bracket should be replaced with desired values.  e.g.
 ```
 Every time you run this command, one LCM message is sent.
 
-*Adjustments for Windows*
+### Adjustments for Windows
 - Insert the configuration directory (e.g. `Release/`) after `bin/` in paths
 below to find executables.
 - When running from the Windows Command Prompt you'll need to use backslashes in
