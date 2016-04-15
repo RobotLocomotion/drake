@@ -1846,7 +1846,7 @@ void RigidBodyTree::addFrame(std::shared_ptr<RigidBodyFrame> frame) {
   frame->frame_index = -(static_cast<int>(frames.size()) - 1) - 2;  // yuck!!
 }
 
-void RigidBodyTree::AddRigidBody(std::shared_ptr<RigidBody> body) {
+void RigidBodyTree::add_rigid_body(std::shared_ptr<RigidBody> body) {
   bodies.push_back(body);
   body->body_index = static_cast<int>(bodies.size()) - 1;
 }
