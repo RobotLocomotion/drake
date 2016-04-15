@@ -42,7 +42,7 @@ class AbstractValue {
   }
 
  private:
-  // Throws
+  /// Throws an std::runtime_error if value is nullptr.
   template<typename T> void ThrowIfNullptr(const Value<T>* value) const {
     if (value == nullptr) {
       std::string error("Abstract value type was not ");
