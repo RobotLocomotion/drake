@@ -426,7 +426,6 @@ foreach (proj ${EXTERNAL_PROJECTS})
 		endif()
 
 	else()
-		# ${proj} is drake
 		message(STATUS "Preparing to build ${proj} with dependencies: ${deps}")
 		set(PODS_VERBOSE_MAKEFILE "")
 		if (CMAKE_VERBOSE_MAKEFILE)
