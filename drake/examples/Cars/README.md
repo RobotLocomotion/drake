@@ -25,7 +25,8 @@ control it.
 
 Running the Simulator
 ---------------------
-To adjust these instructions for Windows, see notes at the end of this section.
+The following commands work in Linux and OS X. To get them to work in Windows,
+see the notes at the bottom of this document.
 
 ```
 cd drake-distro/drake/examples/Cars
@@ -34,9 +35,9 @@ python SteeringCommandDriver.py &
 ../../pod-build/bin/carSimLCM prius/prius.urdf stata_garage_p1.sdf
 ```
 
-The instructions above use the URDF version of the Prius (`prius/prius.urdf`).
-You can also use the [SDF](http://sdformat.org/) version by replacing the last
-command with:
+The instructions above use the [URDF](http://wiki.ros.org/urdf) version of the
+Prius (`prius/prius.urdf`). You can also use the [SDF](http://sdformat.org/)
+version by replacing the last command with:
 
 ```
 ../../pod-build/bin/carSimLCM prius/prius.sdf stata_garage_p1.sdf
