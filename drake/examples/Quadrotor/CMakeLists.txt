@@ -1,4 +1,5 @@
-# Currently has alignment problems on 32 bit Windows.
+# Currently has alignment problems on 32 bit Windows apparently
+# due to a bug in Eigen; see issue #2106 and PR #2107.
 if (LCM_FOUND AND NOT (WIN32 AND (CMAKE_SIZEOF_VOID_P EQUAL 4)))
   add_executable(runQuadrotorDynamics runDynamics.cpp)
   target_link_libraries(runQuadrotorDynamics drakeRBSystem drakeLCMSystem)
