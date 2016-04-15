@@ -90,13 +90,12 @@ SystemIdentification<T>::GetLumpedParametersFromPolynomials(
     }
   }
 
-  // First, extract every combination of the vars_of_interest.
+  // Extract every combination of the vars_of_interest.
   const std::set<typename PolyType::Monomial> interest_monomials =
       GetAllCombinationsOfVars(polys, vars_of_interest);
 
-  // Second, for each of those combinations, find the corresponding
-  // polynomials of parameter (ie, non of-interest) variables in each
-  // polynomial.
+  // For each of those combinations, find the corresponding polynomials of
+  // parameter (ie, non of-interest) variables in each polynomial.
   std::set<PolyType> lumped_parameters;
   for (const MonomialType& interest_monomial : interest_monomials) {
     for (const PolyType& poly : polys) {
@@ -117,8 +116,7 @@ SystemIdentification<T>::GetLumpedParametersFromPolynomials(
     }
   }
 
-  // Third, for the set of such parameter polynomials, create a lumped
-  // parameter for each.
+  // For each such parameter polynomial, create a lumped parameter.
   int lump_index = 1;
   typename SystemIdentification<T>::LumpingMapType lumping_map;
 
@@ -136,6 +134,8 @@ typename SystemIdentification<T>::PolyType
 SystemIdentification<T>::RewritePolynomialWithLumpedParameters(
     const PolyType& poly,
     const LumpingMapType& lumped_parameters) {
+  // Reconstruct vars_of_interest, the variables in poly that are not
+  // mentioned by the lumped_parameters.
   std::set<VarType> vars_of_interest = poly.getVariables();
   for (auto lump_name_pair : lumped_parameters) {
     std::set<VarType> parameters_in_lump = lump_name_pair.first.getVariables();
@@ -143,37 +143,51 @@ SystemIdentification<T>::RewritePolynomialWithLumpedParameters(
       vars_of_interest.erase(var);
     }
   }
+
+  // Loop over the combinations of the variables-of-interest, constructing the
+  // polynomial of parameters that multiply by each combination; if that
+  // polynomial is a lumped variable, substitute in a new monomial of the
+  // lumped variable times the combination instead.
   std::set<typename PolyType::Monomial> interest_monomials =
       GetAllCombinationsOfVars({poly}, vars_of_interest);
   std::vector<MonomialType> working_monomials = poly.getMonomials();
   for (const MonomialType& interest_monomial : interest_monomials) {
     std::vector<MonomialType> new_working_monomials;
-    std::vector<int> indices_to_erase;
     std::vector<MonomialType> factor_monomials;
     for (const MonomialType& working_monomial : working_monomials) {
       if (MonomialMatches(working_monomial, interest_monomial,
                           vars_of_interest)) {
+        // This monomial matches our interest monomial; we will factor it by
+        // the interest monomial and add the resulting monomial of parameters
+        // to our factor list.
         factor_monomials.push_back(working_monomial.factor(interest_monomial));
       } else {
+        // This monomial does not match our interest monomial; copy it
+        // unchanged.
         new_working_monomials.push_back(working_monomial);
       }
     }
     const PolyType factor_polynomial(factor_monomials.begin(),
                                factor_monomials.end());
     const auto& normalization = NormalizePolynomial(factor_polynomial);
-    const T factor = normalization.first;
+    const T coefficient = normalization.first;
     const PolyType& normalized = normalization.second;
+
     if (!lumped_parameters.count(normalized)) {
-      // No lumping possible for this interest monomial.
+      // Factoring out this combination yielded a parameter polynomial that
+      // does not correspond to a lumped variable.  Ignore it.
       continue;
     }
+
+    // We have a lumped parameter, so construct a new monomial and replace the
+    // working monomials list.
     TermType lump_term;
     lump_term.var = lumped_parameters.at(normalized);
     lump_term.power = 1;
     MonomialType lumped_monomial;
     lumped_monomial.terms = interest_monomial.terms;
     lumped_monomial.terms.push_back(lump_term);
-    lumped_monomial.coefficient = factor;
+    lumped_monomial.coefficient = coefficient;
     new_working_monomials.push_back(lumped_monomial);
     working_monomials = new_working_monomials;
   }
