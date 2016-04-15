@@ -4,6 +4,7 @@
 #include <unsupported/Eigen/Polynomials>
 
 #include <complex>
+#include <map>
 #include <random>
 #include <set>
 #include <stdexcept>
@@ -194,6 +195,38 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
         value += iter->coefficient *
                  std::pow((ProductType)x,
                           (MSVC_STD_POW_PowerType)iter->terms[0].power);
+    }
+    return value;
+  }
+
+  /// Evaluate a univariate Polynomial at a specific point.
+  /**
+   * Evaluates a univariate Polynomial at the given x.  Throws an
+   * exception of this Polynomial is not univariate.
+   *
+   * x may be of any type supporting the ** and + operations (which can
+   * be different from both CoefficientsType and RealScalar)
+   */
+  template <typename T>
+  typename Product<CoefficientType, T>::type multivariateValue(
+      const std::map<VarType, T>& xs) const {
+    typedef typename Product<CoefficientType, T>::type ProductType;
+
+    for (const VarType& var : getVariables()) {
+      if (!xs.count(var)) {
+        throw std::runtime_error(
+            "No value provided for variable " + var);
+      }
+    }
+
+    ProductType value = (ProductType)0;
+    for (const Monomial& monomial : monomials) {
+      ProductType monomial_value = monomial.coefficient;
+      for (const Term& term : monomial.terms) {
+        monomial_value *= std::pow(static_cast<ProductType>(xs.at(term.var)),
+                                   (MSVC_STD_POW_PowerType)term.power);
+      }
+      value += monomial_value;
     }
     return value;
   }

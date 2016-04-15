@@ -1,4 +1,6 @@
 #include <iostream>
+#include <map>
+
 #include "drake/util/Polynomial.h"
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
@@ -262,6 +264,18 @@ TEST(PolynomialTest, testMonomialFactor) {
   EXPECT_EQ(m_x2.factor(m_x), m_x);
   EXPECT_EQ(m_x2y.factor(m_x2), m_y);
   EXPECT_EQ(m_x2y.factor(m_y), m_x2);
+}
+
+TEST(PolynomialTest, testMultivariateValue) {
+  Polynomiald x = Polynomiald("x");
+  Polynomiald y = Polynomiald("y");
+  std::map<Polynomiald::VarType, double> eval_point = {
+    {x.getSimpleVariable(), 1},
+    {y.getSimpleVariable(), 2}};
+  EXPECT_EQ((x * x + y).multivariateValue(eval_point), 3);
+  EXPECT_EQ((2 * x * x + y).multivariateValue(eval_point), 4);
+  EXPECT_EQ((x * x + 2 * y).multivariateValue(eval_point), 5);
+  EXPECT_EQ((x * x + x * y).multivariateValue(eval_point), 3);
 }
 
 }
