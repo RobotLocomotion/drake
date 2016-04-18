@@ -1,5 +1,5 @@
-#ifndef DRAKE_SYSTEMS_PLANTS_POSEMAP_H_
-#define DRAKE_SYSTEMS_PLANTS_POSEMAP_H_
+#ifndef DRAKE_SYSTEMS_PLANTS_POSE_MAP_H_
+#define DRAKE_SYSTEMS_PLANTS_POSE_MAP_H_
 
 #include <string>
 #include <map>
@@ -10,4 +10,4 @@ typedef std::map<
     Eigen::aligned_allocator<std::pair<const std::string, Eigen::Isometry3d> > >
     PoseMap;
 
-#endif  // DRAKE_SYSTEMS_PLANTS_POSEMAP_H_
+#endif  // DRAKE_SYSTEMS_PLANTS_POSE_MAP_H_
