@@ -76,7 +76,7 @@ endif()
 
 include(CMakeDependentOption)
 option(DISABLE_MATLAB "Don't use MATLAB even if it is present." OFF)
-CMAKE_DEPENDENT_OPTION(WITH_SPOTLESS	"polynomial optimization front-end for MATLAB" ON "NOT DISABLE_MATLAB" OFF)
+CMAKE_DEPENDENT_OPTION(WITH_SPOTLESS "polynomial optimization front-end for MATLAB" ON "NOT DISABLE_MATLAB" OFF)
 if (DISABLE_MATLAB)
 	message(STATUS "MATLAB is disabled.")
 else()
