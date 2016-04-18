@@ -262,6 +262,7 @@ endif()
 include_directories(thirdParty/spruce/include)
 include_directories(thirdParty/cimg)
 
+add_subdirectory(rostypes)
 add_subdirectory(core)
 add_subdirectory(util)
 add_subdirectory(solvers)

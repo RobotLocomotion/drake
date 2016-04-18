@@ -7,7 +7,7 @@
 
 // these could all go in the cpp file:
 // #include "lcmtypes/drake/lcmt_viewer_load_robot.hpp"
-// #include "lcmtypes/drake/lcmt_viewer_draw.hpp"
+#include "drake/rost_viewer_draw.h"
 // #include "drake/util/drakeGeometryUtil.h"
 
 using Drake::NullVector;
@@ -181,7 +181,7 @@ class BotVisualizerROS {
  private:
   mutable std::shared_ptr<RigidBodyTree>
       tree;  // todo: remove mutable tag after RBM cleanup
-  // mutable drake::lcmt_viewer_draw draw_msg;
+  drake::rost_viewer_draw draw_msg;
 };
 
 }  // end namespace plants
