@@ -151,6 +151,21 @@ TEST(testOptimizationProblem, trivialLeastSquares) {
     });
 }
 
+TEST(testOptimizationProblem, trivalLinearEquality) {
+  OptimizationProblem prog;
+
+  auto vars = prog.AddContinuousVariables(2);
+
+  // Use a non-square matrix to catch row/column mistakes in the solvers.
+  prog.AddLinearEqualityConstraint(
+      Vector2d(0, 1).transpose(), Vector1d::Constant(1));
+  prog.SetInitialGuess(vars, Vector2d(2, 2));
+  RunNonlinearProgram(prog, [&]() {
+      EXPECT_DOUBLE_EQ(vars.value()(0), 2);
+      EXPECT_DOUBLE_EQ(vars.value()(1), 1);
+    });
+}
+
 // This test comes from Section 2.2 of "Handbook of Test Problems in
 // Local and Global Optimization"
 class TestProblem1Objective {
