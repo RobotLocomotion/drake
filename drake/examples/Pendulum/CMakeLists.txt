@@ -29,7 +29,7 @@ endif()
 
 if(roscpp_FOUND)
   add_executable(run_pendulum_dynamics_ros run_pendulum_dynamics_ros.cc)
-  target_link_libraries(run_pendulum_dynamics_ros ${roscpp_LIBRARIES})
+  target_link_libraries(run_pendulum_dynamics_ros drakeRBM ${roscpp_LIBRARIES})
 endif()
 
 add_subdirectory(test)

@@ -5,20 +5,21 @@
 // #include "drake/util/Polynomial.h"
 #include "drake/examples/Pendulum/Pendulum.h"
 #include "drake/systems/Simulation.h"
-// #include "drake/systems/plants/BotVisualizer.h"
+#include "drake/systems/plants/bot_visualizer_ros.h"
 // #include "drake/systems/cascade_system.h"
 #include "drake/util/drakeAppUtil.h"
 
 using Drake::SimulationOptions;
+using drake::systems::plants::BotVisualizerROS;
 
 int main(int argc, char* argv[]) {
   auto p = make_shared<Pendulum>();
 
-  // auto v = make_shared<BotVisualizer<PendulumState> >(
-  //     lcm, getDrakePath() + "/examples/Pendulum/Pendulum.urdf",
-  //     DrakeJoint::FIXED);
+  auto v = make_shared<BotVisualizerROS<PendulumState> >(
+      Drake::getDrakePath() + "/examples/Pendulum/Pendulum.urdf",
+      DrakeJoint::FIXED);
 
-  // auto sys = cascade(p, v);
+  auto sys = Drake::cascade(p, v);
 
   PendulumState<double> x0;
   x0.theta = 1;
