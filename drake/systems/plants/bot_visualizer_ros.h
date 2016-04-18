@@ -6,7 +6,7 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 
 // these could all go in the cpp file:
-// #include "lcmtypes/drake/lcmt_viewer_load_robot.hpp"
+#include "drake/rost_viewer_load_robot.h"
 #include "drake/rost_viewer_draw.h"
 // #include "drake/util/drakeGeometryUtil.h"
 
@@ -48,13 +48,42 @@ class BotVisualizerROS {
   void init() {
     publishLoadRobot();
 
-    // draw_msg.num_links = tree->bodies.size();
     std::vector<float> position = {0, 0, 0}, quaternion = {0, 0, 0, 1};
+
+    // Defines a 2D array for draw_msg.position. The array has dimensions
+    // [num_links][3].
+    draw_msg.position.layout.dim.push_back(std_msgs::MultiArrayDimension());
+    draw_msg.position.layout.dim.push_back(std_msgs::MultiArrayDimension());
+    draw_msg.position.layout.dim[0].label = "link";
+    draw_msg.position.layout.dim[1].label = "xyz";
+    draw_msg.position.layout.dim[0].size = tree->bodies.size();
+    draw_msg.position.layout.dim[1].size = 3;
+    draw_msg.position.layout.dim[0].stride = tree->bodies.size() * 3;
+    draw_msg.position.layout.dim[1].stride = 3;
+    draw_msg.position.layout.data_offset = 0;
+
+    // Defines a 2D array for draw_msg.quaternion. The array has dimensions
+    // [num_links][4].
+    draw_msg.quaternion.layout.dim.push_back(std_msgs::MultiArrayDimension());
+    draw_msg.quaternion.layout.dim.push_back(std_msgs::MultiArrayDimension());
+    draw_msg.quaternion.layout.dim[0].label = "link";
+    draw_msg.quaternion.layout.dim[1].label = "wxyz";
+    draw_msg.quaternion.layout.dim[0].size = tree->bodies.size();
+    draw_msg.quaternion.layout.dim[1].size = 4;
+    draw_msg.quaternion.layout.dim[0].stride = tree->bodies.size() * 4;
+    draw_msg.quaternion.layout.dim[1].stride = 4;
+    draw_msg.quaternion.layout.data_offset = 0;
+
+    // Initializes membe variable draw_msg.
     for (const auto &body : tree->bodies) {
-      // draw_msg.link_name.push_back(body->linkname);
-      // draw_msg.robot_num.push_back(body->robotnum);
-      // draw_msg.position.push_back(position);
-      // draw_msg.quaternion.push_back(quaternion);
+      draw_msg.link_name.push_back(body->linkname);
+      draw_msg.robot_num.push_back(body->robotnum);
+      for (int ii = 0; ii < position.size(); ii++) {
+        draw_msg.position.data.push_back(position[ii]);
+      }
+      for (int ii = 0; ii < quaternion.size(); ii++) {
+        draw_msg.quaternion.data.push_back(quaternion[ii]);
+      }
     }
   }
 
