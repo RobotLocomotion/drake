@@ -45,10 +45,8 @@ Before running build, you will need to follow the instructions for your host sys
 .. toctree::
 	:maxdepth: 1
 
-	cygwin
 	fedora
 	homebrew
-	macports
 	ubuntu
 	windows
 
