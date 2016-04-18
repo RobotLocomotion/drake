@@ -250,6 +250,15 @@ else()
    endif()
 endif()
 
+# Setup ROS if it is available on the local system
+find_package(roscpp QUIET)
+if(roscpp_FOUND)
+  message(STATUS "Found roscpp installed at ${roscpp_DIR}, so building ROS-specific functionality.")
+  include_directories(${roscpp_INCLUDE_DIRS})
+else()
+  message(STATUS "Couldn't find roscpp so not building ROS-specific functionality.")
+endif()
+
 include_directories(thirdParty/spruce/include)
 include_directories(thirdParty/cimg)
 
