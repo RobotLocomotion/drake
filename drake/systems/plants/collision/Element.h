@@ -1,15 +1,15 @@
 #ifndef DRAKE_SYSTEMS_PLANTS_COLLISION_ELEMENT_H_
 #define DRAKE_SYSTEMS_PLANTS_COLLISION_ELEMENT_H_
 
+#include <stdint.h>
 #include <memory>
 #include <utility>
-#include <stdint.h>
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-#include "drake/systems/plants/shapes/DrakeShapes.h"
 #include "drake/drakeCollision_export.h"
+#include "drake/systems/plants/shapes/DrakeShapes.h"
 
 namespace DrakeCollision {
 typedef uintptr_t ElementId;
@@ -23,7 +23,7 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
           const Eigen::Isometry3d& T_element_to_local =
               Eigen::Isometry3d::Identity());
 
-  virtual ~Element(){}
+  virtual ~Element() {}
 
   virtual Element* clone() const;
 
@@ -38,6 +38,12 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
    */
   virtual bool CollidesWith(const Element* other) const { return true; }
 
+  /**
+   * A toString method for this class.
+   */
+  friend DRAKECOLLISION_EXPORT std::ostream& operator<<(std::ostream&,
+                                                        const Element&);
+
  protected:
   Element(const Element& other);
 
@@ -47,6 +53,7 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-}
+
+}  // namespace DrakeCollision
 
 #endif  // DRAKE_SYSTEMS_PLANTS_COLLISION_ELEMENT_H_

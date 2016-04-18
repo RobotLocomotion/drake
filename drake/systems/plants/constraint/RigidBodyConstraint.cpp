@@ -45,7 +45,7 @@ RigidBodyConstraint::RigidBodyConstraint(const RigidBodyConstraint &rhs)
   this->tspan[1] = rhs.tspan[1];
 }
 
-RigidBodyConstraint::~RigidBodyConstraint(void){}
+RigidBodyConstraint::~RigidBodyConstraint(void) {}
 
 std::string RigidBodyConstraint::getTimeString(const double *t) const {
   std::string time_str;
@@ -966,7 +966,6 @@ EulerConstraint::EulerConstraint(RigidBodyTree *robot, const Vector3d &lb,
       std::cerr
           << "Drake:EulerConstraint:BadInputs:lb must be no larger than ub"
           << std::endl;
-      ;
     }
     if (std::isinf(my_lb(i)) && std::isinf(my_ub(i))) {
       null_constraint_rows[i] = true;

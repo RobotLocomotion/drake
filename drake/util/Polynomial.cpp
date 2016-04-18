@@ -1,5 +1,6 @@
 #include "drake/util/Polynomial.h"
 #include <stdexcept>
+#include <cstring>
 
 using namespace std;
 using namespace Eigen;
@@ -420,17 +421,17 @@ bool Polynomial<CoefficientType>::isApprox(const Polynomial& other,
   return getCoefficients().isApprox(other.getCoefficients(), tol);
 }
 
-const string name_chars = "@#_.abcdefghijklmnopqrstuvwxyz";
-const unsigned int num_name_chars = 30;  // length of the string above
-const unsigned int name_length = 4;
-const unsigned int max_name_part = 923521;  // (num_name_chars+1)^name_length;
+const char kNameChars[] = "@#_.abcdefghijklmnopqrstuvwxyz";
+const unsigned int kNumNameChars = sizeof(kNameChars) - 1;
+const unsigned int kNameLength = 4;
+const unsigned int kMaxNamePart = 923521;  // (kNumNameChars+1)^kNameLength;
 
 template <typename CoefficientType>
 bool Polynomial<CoefficientType>::isValidVariableName(const string name) {
   size_t len = name.length();
   if (len < 1) return false;
   for (int i = 0; i < len; i++)
-    if (name_chars.find(name[i]) == string::npos) return false;
+    if (!strchr(kNameChars, name[i])) return false;
   return true;
 }
 
@@ -438,39 +439,40 @@ template <typename CoefficientType>
 typename Polynomial<CoefficientType>::VarType
 Polynomial<CoefficientType>::variableNameToId(const string name,
                                               const unsigned int m) {
-  unsigned int exponent = 1;
+  unsigned int multiplier = 1;
   VarType name_part = 0;
   for (int i = (int)name.size() - 1; i >= 0; i--) {
-    exponent *= num_name_chars + 1;
-    name_part += ((VarType)name_chars.find(name[i]) + 1) * exponent;
+    VarType offset = static_cast<VarType>(
+        strchr(kNameChars, name[i]) - kNameChars);
+    name_part += (offset + 1) * multiplier;
+    multiplier *= kNumNameChars + 1;
   }
-  const VarType maxId = std::numeric_limits<VarType>::max() / 2 / max_name_part;
+  if (name_part > kMaxNamePart) throw runtime_error("name exceeds max allowed");
+  const VarType maxId = std::numeric_limits<VarType>::max() / 2 / kMaxNamePart;
   if (m > maxId) throw runtime_error("name exceeds max ID");
   if (m < 1) throw runtime_error("m must be >0");
-  return (VarType)2 * (name_part + max_name_part * (m - 1));
+  return (VarType)2 * (name_part + kMaxNamePart * (m - 1));
 }
 
 template <typename CoefficientType>
 string Polynomial<CoefficientType>::idToVariableName(const VarType id) {
-  VarType name_part = (id / 2) % max_name_part;  // id/2 to be compatible w/
-                                                 // msspoly, even though I'm not
-                                                 // doing the trig support here
+  VarType name_part = (id / 2) % kMaxNamePart;  // id/2 to be compatible w/
+                                                // msspoly, even though I'm not
+                                                // doing the trig support here
 
-  unsigned int m = id / 2 / max_name_part;
-  unsigned int exponent = (unsigned int)std::pow((double)(num_name_chars + 1),
-                                                 (int)(name_length - 1));
-  char name[name_length + 1];
+  unsigned int m = id / 2 / kMaxNamePart;
+  unsigned int multiplier = (unsigned int)std::pow((double)(kNumNameChars + 1),
+                                                   (int)(kNameLength - 1));
+  char name[kNameLength + 1];
   int j = 0;
-  for (int i = 0; i < name_length; i++) {
-    unsigned int name_ind = (name_part / exponent) % (num_name_chars + 1);
-    if (name_ind > 0) name[j++] = name_chars[name_ind - 1];
-    exponent /= num_name_chars + 1;
+  for (int i = 0; i < kNameLength; i++) {
+    unsigned int name_ind = (name_part / multiplier) % (kNumNameChars + 1);
+    if (name_ind > 0) name[j++] = kNameChars[name_ind - 1];
+    multiplier /= kNumNameChars + 1;
   }
-  if (j == 0) name[j++] = name_chars[0];
+  if (j == 0) name[j++] = kNameChars[0];
   name[j] = '\0';
-  return string(name) +
-         std::to_string(static_cast<unsigned long long>(m + 1));  // for msvc
-                                                                  // http://stackoverflow.com/questions/10664699/stdto-string-more-than-instance-of-overloaded-function-matches-the-argument
+  return string(name) + std::to_string((m + 1));
 }
 
 template <typename CoefficientType>

@@ -1,13 +1,12 @@
 #ifndef DRAKE_UTIL_DRAKEMEXUTIL_H_
 #define DRAKE_UTIL_DRAKEMEXUTIL_H_
 
-#include "mex.h"
+#include <mex.h>
+
 #include <vector>
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 #include "drake/util/TrigPoly.h"
-#include "unsupported/Eigen/AutoDiff"
-
 /*
  * NOTE: include AutoDiff AFTER TrigPoly.h.
  * TrigPoly.h includes LLDT.h via Eigenvalues, PolynomialSolver, and our
@@ -118,7 +117,7 @@ Eigen::Map<const Eigen::Matrix<double, Rows, Cols>> matlabToEigenMap(
   using namespace Eigen;
   using namespace std;
 
-  Index rows, cols; // at runtime
+  Index rows, cols;  // at runtime
   if (mxIsEmpty(mex)) {
     // be lenient when it comes to dimensions in the empty input case
     if (Rows == Dynamic && Cols == Dynamic) {

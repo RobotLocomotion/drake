@@ -2,6 +2,7 @@
 // Michael Kaess, June 2013
 
 #include <mex.h>
+
 #include <Eigen/Dense>
 #include <unsupported/Eigen/MatrixFunctions>
 #include <vector>

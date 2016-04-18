@@ -1,14 +1,12 @@
 function coordinateTest(is,js)
 
 if (nargin<1) is=1:12; end
-if (nargin<2) js=1:4; end  
-
-syms q qd;
+if (nargin<2) js=1:4; end
 
 options=struct();
 for i=is
 for j=js
-    
+
 if (j<=2)
   twod = true;
   if ismember(i,[1:3,7:8])
@@ -45,7 +43,7 @@ else
       r = setGravity(r,[-9.81;0;0]);
     end
   end
-  
+
   r = compile(r);
 end
 
@@ -66,13 +64,12 @@ kinsol = r.doKinematics(xf(1));
 c = r.body(2).com;
 
 comf = r.forwardKin(kinsol,2,c);
-if (twod) 
+if (twod)
 fprintf(1,'i:%d,j:%d,2D, c: %s, a: %s, v: %s, g: %s, qf: %s, cf: %s.\n',i,j,mat2str(c),mat2str(r.body(2).joint_axis), options.view, mat2str(r.gravity), num2str(xf(1)), mat2str(comf,1));
 else
 fprintf(1,'i:%d,j:%d,3D, c: %s, a: %s, g: %s, qf: %s, cf: %s.\n',i,j,mat2str(c),mat2str(r.body(2).joint_axis), mat2str(r.gravity), num2str(xf(1)), mat2str(comf,1));
 end
 
-%qddot = sodynamics(r,0,q,qd,0)
 if (comf'*r.gravity<.4)
   fprintf(1,'grav check: ');
   cprintf('red','fail\n');

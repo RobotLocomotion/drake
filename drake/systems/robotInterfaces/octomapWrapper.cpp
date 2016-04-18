@@ -1,9 +1,9 @@
-#include "mex.h"
+#include <mex.h>
+
 #include <iostream>
 #include <octomap/octomap.h>
 #include <octomap/OcTree.h>
 
-//#include "drake/util/drakeUtil.h"
 #include "drake/util/drakeMexUtil.h"
 
 using namespace std;

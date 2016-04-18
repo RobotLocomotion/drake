@@ -20,9 +20,10 @@
 
 // Mex stuff
 #include <mex.h>
-#include <blas.h>
-#include <math.h>
 #include <matrix.h>
+#include <blas.h>
+
+#include <math.h>
 #include "drake/util/drakeMexUtil.h"
 #include <memory>
 #include <algorithm>
@@ -31,7 +32,6 @@
 namespace snopt {
 #include "snopt.hh"
 #include "snfilewrapper.hh"
-//#include "snoptProblem.hh"
 }
 
 // Internal access to bullet
@@ -84,17 +84,15 @@ const int DEFAULT_LENCW = 500;
 /* Constraint to make sure current state is in inlet of shifted funnel
  */
 double containmentConstraint(snopt::doublereal x_shift[],
-                             double *containment_grad)
-
-{
+                             double *containment_grad) {
   // Initialize some variables
   mxArray *x0 =
       mxGetField(funnelLibrary, funnelIdx, "x0");  // all points on trajectory
 
   double *dx0 = mxGetPrSafe(x0);
 
-  long int dim = 12;
-  long int dimx0 = mxGetM(x0);
+  long int dim = 12;  // NOLINT(runtime/int)
+  long int dimx0 = mxGetM(x0);  // NOLINT(runtime/int)
 
   // Check that we got the right dimensions
   if (dim > 1) {
@@ -126,7 +124,7 @@ double containmentConstraint(snopt::doublereal x_shift[],
   // Now compute xrel'*S0*xrel using lapack
   // First do S0*xrel
   double one = 1.0, zero = 0.0;  // Seriously?
-  long int ione = 1;
+  long int ione = 1;  // NOLINT(runtime/int)
   mxArray *S0xrel = mxCreateDoubleMatrix(dim, 1, mxREAL);
   double *dS0xrel = mxGetPrSafe(S0xrel);
   char chn[] = "N";
@@ -283,8 +281,8 @@ bool penetrationCost(snopt::doublereal x[], double *min_dist,
         // Multiply normal_vec by cSk to get it back in the correct coordinate
         // frame (i.e., normal_vec'*cSk)
         double one = 1.0, zero = 0.0;  // Seriously?
-        long int ione = 1;
-        long int dim = 3;
+        long int ione = 1;  // NOLINT(runtime/int)
+        long int dim = 3;  // NOLINT(runtime/int)
         char chn[] = "N";
         dgemm(chn, chn, &ione, &dim, &dim, &one, mxGetPrSafe(normal_vec), &ione,
               mxGetPrSafe(cSk), &dim, &zero, normal_vec_transformed, &ione);
@@ -535,8 +533,7 @@ bool shiftFunnel(int funnelIdx, const mxArray *funnelLibrary,
   // Set min distance
   *min_dist = min_dist_snopt;
 
-  if (*min_dist > 1.0)  // Collision free
-  {
+  if (*min_dist > 1.0) {  // Collision free
     delete[] F;
     return true;
   } else {

@@ -1,9 +1,9 @@
 
 #define S_FUNCTION_NAME DCSFunction  // for Drake C S-Function
 #define S_FUNCTION_LEVEL 2
+#include <simstruc.h>
 
 #include <math.h>
-#include "simstruc.h"
 
 // indices of the IWork vector
 #define IC_IDX 0
@@ -11,10 +11,9 @@
 #define IS_STOCHASTIC_IDX 2
 #define DT_SAMPLE_TIME_IDX 3
 
-bool isa(const mxArray *mxa, const char *class_str)
 // mxIsClass seems to not be able to handle derived classes. so i'll implement
 // what I need by calling back to matlab
-{
+bool isa(const mxArray *mxa, const char *class_str) {
   mxArray *plhs;
   mxArray *prhs[2];
   prhs[0] = const_cast<mxArray *>(mxa);
@@ -45,10 +44,10 @@ bool mexCallMATLABsafe(SimStruct *S, int nlhs, mxArray *plhs[], int nrhs,
     mxArray *identifier = mxGetProperty(ex, 0, "identifier");
     char buffer[200];
     errmsg = mxArrayToString(identifier);
-    sprintf(buffer,
-            "\n\nDrakeSystem S-Function: error %s in MATLAB callback.\nSee "
-            "additional debugging information above",
-            errmsg);
+    snprintf(buffer, sizeof(buffer),
+             "\n\nDrakeSystem S-Function: error %s in MATLAB callback.\nSee "
+             "additional debugging information above",
+             errmsg);
     ssSetErrorStatus(S, buffer);
     mxFree(errmsg);
     //    mxFree(identifier);  // it appears I'm not supposed to free this
@@ -516,5 +515,6 @@ static void mdlTerminate(SimStruct *S) {}
 #ifdef MATLAB_MEX_FILE /* Is this file being compiled as a MEX-file? */
 #include "simulink.c"  /* MEX-file interface mechanism */
 #else
+// NOLINTNEXTLINE(build/include)
 #include "cg_sfun.h" /* Code generation registration function */
 #endif

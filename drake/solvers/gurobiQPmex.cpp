@@ -1,6 +1,7 @@
+#include <mex.h>
+
 #include <math.h>
 #include <iostream>
-#include <mex.h>
 #include "drake/solvers/gurobiQP.h"
 
 using namespace Eigen;

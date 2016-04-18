@@ -57,18 +57,18 @@ double EvaluateCosts(const std::vector<double>& x,
     grad.assign(grad.size(), 0);
   }
 
-  for (auto const& binding : prog->getGenericObjectives()) {
+  for (auto const& binding : prog->generic_objectives()) {
     size_t index = 0;
-    for (const DecisionVariableView& v : binding.getVariableList()) {
+    for (const DecisionVariableView& v : binding.variable_list()) {
       this_x.segment(index, v.size()) = tx.segment(v.index(), v.size());
       index += v.size();
     }
 
-    binding.getConstraint()->eval(this_x, ty);
+    binding.constraint()->eval(this_x, ty);
 
     cost += ty(0).value();
     if (!grad.empty()) {
-      for (const DecisionVariableView& v : binding.getVariableList()) {
+      for (const DecisionVariableView& v : binding.variable_list()) {
         for (size_t j = v.index(); j < v.index() + v.size(); j++) {
           grad[j] += ty(0).derivatives()(j);
         }
@@ -130,18 +130,18 @@ double EvaluateScalarConstraint(const std::vector<double>& x,
   Eigen::VectorXd xvec = MakeEigenVector(x);
 
   const Constraint* c = wrapped->constraint;
-  assert(c->getNumConstraints() == 1);
+  assert(c->num_constraints() == 1);
 
   TaylorVecXd ty(1);
   TaylorVecXd this_x = MakeInputTaylorVec(xvec, *(wrapped->variable_list));
   c->eval(this_x, ty);
   const double result = ApplyConstraintBounds(
-      ty(0).value(), c->getLowerBound()(0), c->getUpperBound()(0));
+      ty(0).value(), c->lower_bound()(0), c->upper_bound()(0));
 
   if (!grad.empty()) {
     grad.assign(grad.size(), 0);
     const double grad_sign =
-        (c->getUpperBound()(0) ==
+        (c->upper_bound()(0) ==
          std::numeric_limits<double>::infinity()) ? -1 : 1;
     for (const DecisionVariableView& v : *(wrapped->variable_list)) {
       for (size_t j = v.index(); j < v.index() + v.size(); j++) {
@@ -166,15 +166,15 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
   }
 
   const Constraint* c = wrapped->constraint;
-  const size_t num_constraints = c->getNumConstraints();
+  const size_t num_constraints = c->num_constraints();
   assert(num_constraints == m);
 
   TaylorVecXd ty(m);
   TaylorVecXd this_x = MakeInputTaylorVec(xvec, *(wrapped->variable_list));
   c->eval(this_x, ty);
 
-  const Eigen::VectorXd& lower_bound = c->getLowerBound();
-  const Eigen::VectorXd& upper_bound = c->getUpperBound();
+  const Eigen::VectorXd& lower_bound = c->lower_bound();
+  const Eigen::VectorXd& upper_bound = c->upper_bound();
   for (size_t i = 0; i < num_constraints; i++) {
     result[i] = ApplyConstraintBounds(
         ty(i).value(), lower_bound(i), upper_bound(i));
@@ -184,7 +184,7 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
     for (const DecisionVariableView& v : *(wrapped->variable_list)) {
       for (size_t i = 0; i < num_constraints; i++) {
         const double grad_sign =
-            (c->getUpperBound()(i) ==
+            (c->upper_bound()(i) ==
              std::numeric_limits<double>::infinity()) ? -1 : 1;
          for (size_t j = v.index(); j < v.index() + v.size(); j++) {
            grad[j] += ty(i).derivatives()(j) * grad_sign;
@@ -199,14 +199,13 @@ bool NloptSolver::available() const {
   return true;
 }
 
-bool NloptSolver::solve(OptimizationProblem &prog) const {
-
-  int nx = prog.getNumVars();
+bool NloptSolver::Solve(OptimizationProblem &prog) const {
+  int nx = prog.num_vars();
 
   // Load the algo to use and the size.
   nlopt::opt opt(nlopt::LD_SLSQP, nx);
 
-  const Eigen::VectorXd& initial_guess = prog.getInitialGuess();
+  const Eigen::VectorXd& initial_guess = prog.initial_guess();
   std::vector<double> x(initial_guess.size());
   for (size_t i = 0; i < x.size(); i++) {
     x[i] = initial_guess[i];
@@ -215,11 +214,11 @@ bool NloptSolver::solve(OptimizationProblem &prog) const {
   std::vector<double> xlow(nx, -std::numeric_limits<double>::infinity());
   std::vector<double> xupp(nx, std::numeric_limits<double>::infinity());
 
-  for (auto const& binding : prog.getBoundingBoxConstraints()) {
-    auto const& c = binding.getConstraint();
-    const Eigen::VectorXd& lower_bound = c->getLowerBound();
-    const Eigen::VectorXd& upper_bound = c->getUpperBound();
-    for (const DecisionVariableView& v : binding.getVariableList()) {
+  for (auto const& binding : prog.bounding_box_constraints()) {
+    auto const& c = binding.constraint();
+    const Eigen::VectorXd& lower_bound = c->lower_bound();
+    const Eigen::VectorXd& upper_bound = c->upper_bound();
+    for (const DecisionVariableView& v : binding.variable_list()) {
       for (int k = 0; k < v.size(); k++) {
         const int idx = v.index() + k;
         xlow[idx] = std::max(lower_bound(k), xlow[idx]);
@@ -244,11 +243,11 @@ bool NloptSolver::solve(OptimizationProblem &prog) const {
 
   // TODO(sam.creasey): Missing test coverage for generic constraints
   // with >1 output.
-  for (const auto& c : prog.getGenericConstraints()) {
-    WrappedConstraint wrapped = { c.getConstraint().get(),
-                                  &c.getVariableList() };
+  for (const auto& c : prog.generic_constraints()) {
+    WrappedConstraint wrapped = { c.constraint().get(),
+                                  &c.variable_list() };
     wrapped_list.push_back(wrapped);
-    std::vector<double> tol(c.getConstraint()->getNumConstraints(),
+    std::vector<double> tol(c.constraint()->num_constraints(),
                             constraint_tol);
     opt.add_inequality_mconstraint(
         EvaluateVectorConstraint, &wrapped_list.back(), tol);
@@ -259,14 +258,14 @@ bool NloptSolver::solve(OptimizationProblem &prog) const {
   // outputs as a vector constraint.  This did not seem to work.  The
   // version below breaks out the problem into multiple constraints.
   std::list<LinearEqualityConstraint> equalities;
-  for (const auto& c : prog.getLinearEqualityConstraints()) {
-    const size_t num_constraints = c.getConstraint()->getNumConstraints();
-    const auto& A = c.getConstraint()->getMatrix();
-    const auto& b = c.getConstraint()->getLowerBound();
+  for (const auto& c : prog.linear_equality_constraints()) {
+    const size_t num_constraints = c.constraint()->num_constraints();
+    const auto& A = c.constraint()->A();
+    const auto& b = c.constraint()->lower_bound();
     for (size_t i = 0; i < num_constraints; i++) {
       equalities.push_back(LinearEqualityConstraint(A.row(i), b.row(i)));
       WrappedConstraint wrapped = { &equalities.back(),
-                                    &c.getVariableList() };
+                                    &c.variable_list() };
       wrapped_list.push_back(wrapped);
       opt.add_equality_constraint(
           EvaluateScalarConstraint, &wrapped_list.back(), constraint_tol);
@@ -275,11 +274,11 @@ bool NloptSolver::solve(OptimizationProblem &prog) const {
 
   // TODO(sam.creasey): Missing test coverage for linear constraints
   // with >1 output.
-  for (const auto& c : prog.getLinearConstraints()) {
-    WrappedConstraint wrapped = { c.getConstraint().get(),
-                                  &c.getVariableList() };
+  for (const auto& c : prog.linear_constraints()) {
+    WrappedConstraint wrapped = { c.constraint().get(),
+                                  &c.variable_list() };
     wrapped_list.push_back(wrapped);
-    std::vector<double> tol(c.getConstraint()->getNumConstraints(),
+    std::vector<double> tol(c.constraint()->num_constraints(),
                             constraint_tol);
     opt.add_inequality_mconstraint(
         EvaluateVectorConstraint, &wrapped_list.back(), tol);
@@ -295,7 +294,7 @@ bool NloptSolver::solve(OptimizationProblem &prog) const {
     sol(i) = x[i];
   }
 
-  prog.setDecisionVariableValues(sol);
+  prog.SetDecisionVariableValues(sol);
   return true;
 }
 }

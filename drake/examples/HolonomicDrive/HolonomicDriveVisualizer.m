@@ -38,11 +38,11 @@ classdef HolonomicDriveVisualizer < Visualizer
       end
 
       % draw the body
-      body = gadd(x(1:2), rotation * obj.outline);
+      translation = repmat(x(1:2), 1, 4);
+      body = translation + (rotation * obj.outline);
       patch(body(1,:), body(2,:), 'r', 'FaceAlpha', 1-obj.fade_percent);
 
-      corners = [1 1 -1 -1; 1 -1 -1 1];
-      corners = gmultiply(corners, [1; 0.1]);
+      corners = [1 1 -1 -1; 0.1 -0.1 -0.1 0.1];
 
       % draw the wheels
       for wheel = obj.wheels
@@ -50,10 +50,10 @@ classdef HolonomicDriveVisualizer < Visualizer
         w_corners = wheel.r * [wheel.driveDir wheel.slipDir] * corners;
 
         % corners of wheels in body space
-        b_corners = gadd(wheel.pos, w_corners);
+        b_corners = repmat(wheel.pos, 1, 4) + w_corners;
 
         % corners of wheels in global space
-        g_corners = gadd(x(1:2), rotation * b_corners);
+        g_corners = translation + (rotation * b_corners);
 
         patch(g_corners(1,:), g_corners(2,:), [0.5 0.5 0.5], 'FaceAlpha', 1-obj.fade_percent);
       end

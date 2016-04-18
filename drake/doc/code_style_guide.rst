@@ -32,13 +32,14 @@ Clarifications
 * Classes and methods should be documented using `doxygen <https://www.stack.nl/~dimitri/doxygen/manual/docblocks.html>`_.
 * Embrace templates/C++11 when it makes the code more correct (more clear or more readable also implies more correct).  Minimize template requirements on public interfaces.  Avoid explicit template instantiations in cc files when possible.
 * For the `order of includes <https://google.github.io/styleguide/cppguide.html#Names_and_Order_of_Includes>`_ style rule, separate each category of ``#include`` statements with a blank line. Then, accept whatever :ref:`clang-format <code-style-tools-clang-format>` enforces.
-
+* The `Function Names <https://google.github.io/styleguide/cppguide.html#Function_Names>`_ rule specifies that the names of "very cheap" methods may be all lower-case with underscores between words. It defines "very cheap" as a method that you wouldn't hesitate calling from within a loop. We clarify that this method should have a time complexity of O(1) and be less than 5 lines long.
 
 Exceptions
 ----------
 
 * Method names may violate Google standards and the "long, human-readable" standard above if a short, non-compliant name more closely matches the common conventions of the field.  For instance, the matrix portion of a linear complementarity constraint is traditionally 'M' (one letter, upper-case); it is not mandatory to downcase it or give it a more verbose name.
 * No need for a copyright line at the top of every file (this will change soon, see: `issue #1805 <https://github.com/RobotLocomotion/drake/issues/1805>`_).
+* While we encourage you to `Include What You Use (IWYU) <https://google.github.io/styleguide/cppguide.html#Names_and_Order_of_Includes>`_ since it improves code transparency and readability, it will not be strictly enforced. Instead, we enforce a "weak include" style that simply requires every symbol referenced within a file be covered by the transitive closure of all `#include` statements in the file. We decided to make this exception because (1) we can always adopt an IWYU rule later, (2) to reduce verbosity, and (3) we don't have a tool to enforce IWYU at this time.
 
 
 MATLAB Style

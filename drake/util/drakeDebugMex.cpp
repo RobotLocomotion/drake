@@ -4,13 +4,16 @@
  * Happy bugfinding!  - Russ
  */
 
+#include <mex.h>
+#include <matrix.h>
+#include <mat.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include "drake/util/MexWrapper.h"
 
-#include <matrix.h>
-#include <mat.h>
 #include <string>
 #include <map>
 
@@ -21,8 +24,8 @@ void cleanupDrakeMexPointers(void) {
   // DYLD_INSERT_LIBRARIES
 }
 
-int mexPrintf(const char* message)  // todo: handle the variable arguments case
-{
+// todo: handle the variable arguments case
+int mexPrintf(const char* message) {
   return printf("%s", message);
 }
 
@@ -34,10 +37,10 @@ mxArray* mexCallMATLABWithTrap(int nlhs, mxArray* plhs[], int nrhs,
 
 // todo: implement stubs for other mex functions (mexErrMsgAndTxt, ...) here
 
+// todo: take the mex function and dynamically load / run it.
 int main(
     int argc,
-    char* argv[])  // todo: take the mex function and dynamically load / run it.
-{
+    char* argv[]) {
   map<string, MexWrapper> mexfiles;
   map<string, MexWrapper>::iterator iter;
 
@@ -49,11 +52,11 @@ int main(
   }
 
   int i, count = 1;
-  char buff[100], countstr[6] = "00000";
+  char buff[6], countstr[6] = "00000";
   string name;
 
   while (true) {
-    sprintf(buff, "%d", count);
+    snprintf(buff, sizeof(buff), "%d", count);
     memcpy(&countstr[5 - strlen(buff)], buff, strlen(buff));
 
     name = "fun_";

@@ -1,15 +1,16 @@
-#include <string>
 #include <fstream>
 #include <sstream>
+#include <string>
 
-#include "drake/systems/plants/RigidBodyTree.h"
-#include "joints/DrakeJoints.h"
-
-#include "xmlUtil.h"
+#include "drake/systems/plants/rigid_body_tree_urdf.h"
+#include "drake/systems/plants/joints/DrakeJoints.h"
+#include "drake/systems/plants/xmlUtil.h"
 
 using namespace std;
 using namespace Eigen;
 using namespace tinyxml2;
+
+namespace {
 
 // todo: rectify this with findLinkId in the class (which makes more
 // assumptions)
@@ -34,22 +35,6 @@ int findLinkIndexByJointName(RigidBodyTree* model, string jointname) {
     }
   }
   return index;
-}
-
-RigidBodyFrame::RigidBodyFrame(RigidBodyTree* tree, XMLElement* link_reference,
-                               XMLElement* pose, std::string name)
-    : name(name), frame_index(0) {
-  string linkname = link_reference->Attribute("link");
-  body = tree->findLink(linkname);
-  if (!body)
-    throw runtime_error("couldn't find link %s referenced in frame " + name);
-
-  Vector3d xyz = Vector3d::Zero(), rpy = Vector3d::Zero();
-  if (pose) {
-    parseVectorAttribute(pose, "xyz", xyz);
-    parseVectorAttribute(pose, "rpy", rpy);
-  }
-  transform_to_body.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
 }
 
 void parseInertial(shared_ptr<RigidBody> body, XMLElement* node,
@@ -249,7 +234,8 @@ void parseVisual(shared_ptr<RigidBody> body, XMLElement* node,
         }
       } else {
         cerr << "WARNING: visual element had a material with neither a name "
-                "nor a nested color element" << endl;
+                "nor a nested color element"
+             << endl;
       }
     }
   }
@@ -281,7 +267,6 @@ void parseCollision(shared_ptr<RigidBody> body, XMLElement* node,
     group_name = attr;
   } else {
     group_name = "default";
-    ;
   }
 
   XMLElement* geometry_node = node->FirstChildElement("geometry");
@@ -463,7 +448,8 @@ void parseTransmission(RigidBodyTree* model, XMLElement* node) {
   string type(attr);
   if (type.find("SimpleTransmission") == string::npos) {
     cerr << "WARNING: only SimpleTransmissions are supported right now.  this "
-            "element will be skipped." << endl;
+            "element will be skipped."
+         << endl;
     return;
   }
 
@@ -481,7 +467,8 @@ void parseTransmission(RigidBodyTree* model, XMLElement* node) {
 
   if (model->bodies[body_index]->getJoint().getNumPositions() == 0) {
     cerr << "WARNING: Skipping transmission since it's attached to a fixed "
-            "joint: " << joint_name << endl;
+            "joint: "
+         << joint_name << endl;
     return;
   }
 
@@ -514,14 +501,14 @@ void parseLoop(RigidBodyTree* model, XMLElement* node) {
   string name(node->Attribute("name"));
 
   XMLElement* link_node = node->FirstChildElement("link1");
-  std::shared_ptr<RigidBodyFrame> frameA = allocate_shared<RigidBodyFrame>(
-      Eigen::aligned_allocator<RigidBodyFrame>(), model, link_node, link_node,
-      name + "FrameA");
+  std::shared_ptr<RigidBodyFrame> frameA =
+      drake::systems::MakeRigidBodyFrameFromURDFNode(
+          *model, link_node, link_node, name + "FrameA");
 
   link_node = node->FirstChildElement("link2");
-  std::shared_ptr<RigidBodyFrame> frameB = allocate_shared<RigidBodyFrame>(
-      Eigen::aligned_allocator<RigidBodyFrame>(), model, link_node, link_node,
-      name + "FrameB");
+  std::shared_ptr<RigidBodyFrame> frameB =
+      drake::systems::MakeRigidBodyFrameFromURDFNode(
+          *model, link_node, link_node, name + "FrameB");
 
   XMLElement* axis_node = node->FirstChildElement("axis");
   if (axis_node && !parseVectorAttribute(axis_node, "xyz", axis))
@@ -537,9 +524,9 @@ void parseFrame(RigidBodyTree* model, XMLElement* node) {
   const char* frame_name = node->Attribute("name");
   if (!frame_name) throw runtime_error("ERROR parsing Drake frame name");
 
-  std::shared_ptr<RigidBodyFrame> frame = allocate_shared<RigidBodyFrame>(
-      Eigen::aligned_allocator<RigidBodyFrame>(), model, node, node,
-      frame_name);
+  std::shared_ptr<RigidBodyFrame> frame =
+      drake::systems::MakeRigidBodyFrameFromURDFNode(*model, node, node,
+                                                     frame_name);
   model->addFrame(frame);
 }
 
@@ -604,9 +591,18 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
     floating_joint_name = "base";
     transform_to_body = Isometry3d::Identity();
   } else {
-    weld_to_body = weld_to_frame->body;
-    transform_to_body = weld_to_frame->transform_to_body;
-    floating_joint_name = "weld";
+    // If the robot is being welded to the world, ignore the "body" variable
+    // within weld_to_frame. Instead, only use the transform_to_body
+    // variable to initialize the robot at the desired location in the world.
+    if (weld_to_frame->name.compare("world") == 0) {
+      weld_to_body = model->bodies[0];  // the world's body
+      floating_joint_name = "base";
+      transform_to_body = weld_to_frame->transform_to_body;
+    } else {
+      weld_to_body = weld_to_frame->body;
+      transform_to_body = weld_to_frame->transform_to_body;
+      floating_joint_name = "weld";
+    }
   }
 
   for (unsigned int i = 1; i < model->bodies.size(); i++) {
@@ -652,6 +648,33 @@ void parseURDF(RigidBodyTree* model, XMLDocument* xml_doc,
 
   model->compile();
 }
+
+}  // namespace
+
+namespace drake {
+namespace systems {
+
+std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
+    const RigidBodyTree& model, const tinyxml2::XMLElement* link,
+    const tinyxml2::XMLElement* pose, const std::string& name) {
+  std::string linkname = link->Attribute("link");
+  std::shared_ptr<RigidBody> body = model.findLink(linkname);
+  if (body == nullptr) {
+    throw runtime_error("couldn't find link " + linkname +
+                        " referenced in frame " + name);
+  }
+
+  Vector3d xyz = Vector3d::Zero(), rpy = Vector3d::Zero();
+  if (pose) {
+    parseVectorAttribute(pose, "xyz", xyz);
+    parseVectorAttribute(pose, "rpy", rpy);
+  }
+  return allocate_shared<RigidBodyFrame>(
+      Eigen::aligned_allocator<RigidBodyFrame>(), name, body, xyz, rpy);
+}
+
+}  // namespace systems
+}  // namespace drake
 
 void RigidBodyTree::addRobotFromURDFString(
     const string& xml_string, const string& root_dir,

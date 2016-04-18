@@ -1,9 +1,9 @@
 
 #define S_FUNCTION_NAME RimlessWheelSFuncPlant
 #define S_FUNCTION_LEVEL 2
+#include <simstruc.h>
 
 #include <math.h>
-#include "simstruc.h"
 
 static void mdlInitializeSizes(SimStruct *S) {
   ssSetNumSFcnParams(S, 0); /* Number of expected parameters */
@@ -98,5 +98,6 @@ static void mdlTerminate(SimStruct *S) {}
 #ifdef MATLAB_MEX_FILE /* Is this file being compiled as a MEX-file? */
 #include "simulink.c"  /* MEX-file interface mechanism */
 #else
+// NOLINTNEXTLINE(build/include)
 #include "cg_sfun.h" /* Code generation registration function */
 #endif

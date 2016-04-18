@@ -3,20 +3,20 @@
 
 #include <Eigen/Dense>
 #include <Eigen/LU>
+#include <Eigen/StdVector>
 #include <set>
 #include <unordered_map>
-#include <Eigen/StdVector>
 
-#include "collision/DrakeCollision.h"
-#include "shapes/DrakeShapes.h"
-#include "KinematicPath.h"
-#include "drake/systems/plants/ForceTorqueMeasurement.h"
-#include "drake/util/drakeUtil.h"
 #include <stdexcept>
-#include "RigidBody.h"
-#include "RigidBodyFrame.h"
-#include "KinematicsCache.h"
+#include "collision/DrakeCollision.h"
 #include "drake/drakeRBM_export.h"
+#include "drake/systems/plants/ForceTorqueMeasurement.h"
+#include "drake/systems/plants/KinematicPath.h"
+#include "drake/systems/plants/KinematicsCache.h"
+#include "drake/systems/plants/RigidBody.h"
+#include "drake/systems/plants/RigidBodyFrame.h"
+#include "drake/util/drakeUtil.h"
+#include "shapes/DrakeShapes.h"
 
 #define BASIS_VECTOR_HALF_COUNT \
   2  // number of basis vectors over 2 (i.e. 4 basis vectors in this case)
@@ -35,7 +35,7 @@ class DRAKERBM_EXPORT RigidBodyActuator {
         body(body),
         reduction(reduction),
         effort_limit_min(effort_limit_min),
-        effort_limit_max(effort_limit_max){}
+        effort_limit_max(effort_limit_max) {}
 
   const std::string name;
   const std::shared_ptr<RigidBody> body;
@@ -49,7 +49,7 @@ class DRAKERBM_EXPORT RigidBodyLoop {
   RigidBodyLoop(std::shared_ptr<RigidBodyFrame> _frameA,
                 std::shared_ptr<RigidBodyFrame> _frameB,
                 const Eigen::Vector3d& _axis)
-      : frameA(_frameA), frameB(_frameB), axis(_axis){}
+      : frameA(_frameA), frameB(_frameB), axis(_axis) {}
 
   const std::shared_ptr<RigidBodyFrame> frameA, frameB;
   const Eigen::Vector3d axis;
@@ -96,7 +96,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
   void addRobotFromSDF(const std::string& sdf_filename,
                        const DrakeJoint::FloatingBaseType floating_base_type =
-                           DrakeJoint::QUATERNION);
+                           DrakeJoint::QUATERNION,
+                       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   void addFrame(std::shared_ptr<RigidBodyFrame> frame);
 
@@ -105,6 +106,20 @@ class DRAKERBM_EXPORT RigidBodyTree {
   void surfaceTangents(
       Eigen::Map<Eigen::Matrix3Xd> const& normals,
       std::vector<Eigen::Map<Eigen::Matrix3Xd> >& tangents) const;
+
+  /*!
+   * Updates the frame of collision elements to be equal to the joint's frame.
+   *
+   * @param eid The ID of the collision element to update.
+   * @param transform_body_to_joint The transform from the model's
+   * body frame to the joint frame.
+   * @return true if the collision element was successfully updated.
+   * False can be returned if a collision element with the specified eid
+   * cannot be found.
+   */
+  bool transformCollisionFrame(
+      const DrakeCollision::ElementId& eid,
+      const Eigen::Isometry3d& transform_body_to_joint);
 
   void compile(void);  // call me after the model is loaded
 
@@ -425,16 +440,18 @@ class DRAKERBM_EXPORT RigidBodyTree {
   Eigen::Matrix<Scalar, 4, 1> relativeQuaternion(
       const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind,
       int to_body_or_frame_ind) const {
-    return rotmat2quat(relativeTransform(cache, to_body_or_frame_ind,
-                                         from_body_or_frame_ind).linear());
+    return rotmat2quat(
+        relativeTransform(cache, to_body_or_frame_ind, from_body_or_frame_ind)
+            .linear());
   }
 
   template <typename Scalar>
   Eigen::Matrix<Scalar, 3, 1> relativeRollPitchYaw(
       const KinematicsCache<Scalar>& cache, int from_body_or_frame_ind,
       int to_body_or_frame_ind) const {
-    return rotmat2rpy(relativeTransform(cache, to_body_or_frame_ind,
-                                        from_body_or_frame_ind).linear());
+    return rotmat2rpy(
+        relativeTransform(cache, to_body_or_frame_ind, from_body_or_frame_ind)
+            .linear());
   }
 
   template <typename Scalar, typename DerivedPoints>
@@ -522,8 +539,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
       Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>& J) const;
 
   DrakeCollision::ElementId addCollisionElement(
-      const RigidBody::CollisionElement& element,
-      RigidBody& body, const std::string& group_name);
+      const RigidBody::CollisionElement& element, RigidBody& body,
+      const std::string& group_name);
 
   template <class UnaryPredicate>
   void removeCollisionGroupsIf(UnaryPredicate test) {
@@ -642,13 +659,13 @@ class DRAKERBM_EXPORT RigidBodyTree {
   std::shared_ptr<RigidBody> findJoint(std::string jointname,
                                        int robot = -1) const;
   int findJointId(const std::string& linkname, int robot = -1) const;
-  //@param robot   the index of the robot. robot = -1 means to look at all the
-  // robots
+  // @param robot the index of the robot. robot = -1 means to look at
+  // all the robots
   std::shared_ptr<RigidBodyFrame> findFrame(std::string frame_name,
                                             std::string model_name = "") const;
 
   std::string getBodyOrFrameName(int body_or_frame_id) const;
-  //@param body_or_frame_id   the index of the body or the id of the frame.
+  // @param body_or_frame_id the index of the body or the id of the frame.
 
   // TODO: remove parseBodyOrFrameID methods
   template <typename Scalar>
@@ -694,7 +711,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
      */
     int ncols = in_terms_of_qdot ? num_positions : num_velocities;
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                  Eigen::Dynamic> full(compact.rows(), ncols);
+                  Eigen::Dynamic>
+        full(compact.rows(), ncols);
     full.setZero();
     int compact_col_start = 0;
     for (std::vector<int>::const_iterator it = joint_path.begin();
@@ -711,10 +729,14 @@ class DRAKERBM_EXPORT RigidBodyTree {
     return full;
   }
 
+  /**
+   * A toString method for this class.
+   */
+  friend DRAKERBM_EXPORT std::ostream& operator<<(std::ostream&,
+                                                  const RigidBodyTree&);
+
  public:
   static const std::set<int> default_robot_num_set;
-
-  std::vector<std::string> robot_name;
 
   int num_positions;
   int num_velocities;

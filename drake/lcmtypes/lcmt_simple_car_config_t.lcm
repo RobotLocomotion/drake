@@ -1,0 +1,13 @@
+package drake;
+
+struct lcmt_simple_car_config_t
+{
+  int64_t instance_id;
+  double wheelbase;
+  double track;
+  double max_abs_steering_angle;
+  double max_velocity;
+  double max_acceleration;
+  double velocity_lookahead_time;
+  double velocity_kp;
+}

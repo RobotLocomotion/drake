@@ -25,7 +25,7 @@ class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial
       polynomials;  // a PolynomialMatrix for each piece
 
  public:
-  virtual ~PiecewisePolynomial(){}
+  virtual ~PiecewisePolynomial() {}
 
   // default constructor; just leaves segment_times and polynomials empty
   PiecewisePolynomial();

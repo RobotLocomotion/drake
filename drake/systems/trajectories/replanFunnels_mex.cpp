@@ -28,9 +28,10 @@
 
 // Mex stuff
 #include <mex.h>
-#include <blas.h>
-#include <math.h>
 #include <matrix.h>
+#include <blas.h>
+
+#include <math.h>
 #include "drake/util/drakeMexUtil.h"
 
 // Snopt stuff
@@ -160,15 +161,15 @@ double *shiftAndTransform(double *verts, double *vertsT, const mxArray *x,
 /* Constraint to make sure current state is in inlet of shifted funnel
  */
 double containmentConstraint(snopt::doublereal x_shift[],
-                             double *containment_grad)
-
-{
+                             double *containment_grad) {
   // Initialize some variables
   mxArray *x0 =
       mxGetField(funnelLibrary, funnelIdx, "x0");  // all points on trajectory
 
   double *dx0 = mxGetPrSafe(x0);
+  // NOLINTNEXTLINE(runtime/int)
   long int dim = mxGetM(x_current);  // Dimension of state
+  // NOLINTNEXTLINE(runtime/int)
   long int dimx0 = mxGetM(x0);
 
   // Check that we got the right dimensions
@@ -201,7 +202,7 @@ double containmentConstraint(snopt::doublereal x_shift[],
   // Now compute xrel'*S0*xrel using lapack
   // First do S0*xrel
   double one = 1.0, zero = 0.0;  // Seriously?
-  long int ione = 1;
+  long int ione = 1;  // NOLINT(runtime/int)
   mxArray *S0xrel = mxCreateDoubleMatrix(dim, 1, mxREAL);
   double *dS0xrel = mxGetPrSafe(S0xrel);
   char chn[] = "N";
@@ -299,8 +300,8 @@ bool penetrationCost(snopt::doublereal x[], double *min_dist,
         // Multiply normal_vec by cSk to get it back in the correct coordinate
         // frame (i.e., normal_vec'*cSk)
         double one = 1.0, zero = 0.0;  // Seriously?
-        long int ione = 1;
-        long int dim = 3;
+        long int ione = 1;  // NOLINT(runtime/int)
+        long int dim = 3;  // NOLINT(runtime/int)
 
         char chn[] = "N";
         dgemm(chn, chn, &ione, &dim, &dim, &one, mxGetPrSafe(normal_vec), &ione,
@@ -559,8 +560,7 @@ bool shiftFunnel_snopt(int funnelIdx, const mxArray *funnelLibrary,
   // Set min distance
   *min_dist = min_dist_snopt;
 
-  if (*min_dist > 1.0)  // Collision free
-  {
+  if (*min_dist > 1.0) {  // Collision free
     delete[] F;
     return true;
   } else {
@@ -654,7 +654,9 @@ bool isInsideInlet(int funnelIdx, const mxArray *x,
   double *dx0 = mxGetPrSafe(x0);
   double *dx = mxGetPrSafe(x);
 
+  // NOLINTNEXTLINE(runtime/int)
   long int dim = mxGetM(x);  // Dimension of state
+  // NOLINTNEXTLINE(runtime/int)
   long int dimx0 = mxGetM(x0);
 
   // Check that we got the right dimensions
@@ -684,7 +686,7 @@ bool isInsideInlet(int funnelIdx, const mxArray *x,
   // Now compute xrel'*S0*xrel using lapack
   // First do S0*xrel
   double one = 1.0, zero = 0.0;
-  long int ione = 1;
+  long int ione = 1;  // NOLINT(runtime/int)
   mxArray *S0xrel = mxCreateDoubleMatrix(dim, 1, mxREAL);
   double *dS0xrel = mxGetPrSafe(S0xrel);
   char chn[] = "N";
@@ -760,8 +762,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     if (shift_method_mx != NULL) {
       shift_method = mxArrayToString(shift_method_mx);
 
-      if (strcmp(shift_method, "snopt") == 0)  // if snopt
-      {
+      if (strcmp(shift_method, "snopt") == 0) {  // if snopt
         shift_using_snopt = true;
       }
     }
