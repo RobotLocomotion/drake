@@ -44,7 +44,7 @@ TEST(ValueTest, ClassType) {
   Point point(1, 2);
   Value<Point> value(point);
   AbstractValue& erased = value;
-  erased.GetMutableValue<Point>()->set_x(-1);
+  erased.GetMutableValue<Point>().set_x(-1);
   EXPECT_EQ(-1, erased.GetValue<Point>().x());
   EXPECT_EQ(2, erased.GetValue<Point>().y());
 }

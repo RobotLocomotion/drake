@@ -6,21 +6,25 @@
 namespace drake {
 namespace systems {
 
+/// A container class for an arbitrary type T.
 template<typename T> class Value : public AbstractValue {
  public:
-  // T must be copy-constructable.
+  // T must be copy-constructible.
   explicit Value(const T& v)
       : value_(v) {}
-  explicit Value(const Value<T>& v)
-      : value_(v.value()) {}
+
+  explicit Value(const Value<T>& v) = default;
 
   ~Value() {}
 
-  virtual const T& value() const { return value_; }
+  /// Returns a const reference to the stored value.
+  const T& get_value() const { return value_; }
 
-  virtual T* mutable_value() { return &value_; }
+  /// Returns a mutable reference to the stored value.
+  T& get_mutable_value() { return value_; }
 
-  virtual void set_value(const T& v) { value_ = v; }
+  /// Replaces the stored value with a new one.
+  void set_value(const T& v) { value_ = v; }
 
  private:
   T value_;
