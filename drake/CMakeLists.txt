@@ -256,7 +256,7 @@ if(roscpp_FOUND)
   message(STATUS "Found roscpp installed at ${roscpp_DIR}, so building ROS-specific functionality.")
   include_directories(${roscpp_INCLUDE_DIRS})
 else()
-  message(STATUS "Couldn't find roscpp so not building ROS-specific functionality.")
+  message(STATUS "Couldn't find roscpp so not building ROS-specific functionality. If you want ROS support, be sure to source the ROS setup.sh prior to building Drake.")
 endif()
 
 include_directories(thirdParty/spruce/include)
