@@ -549,7 +549,7 @@ void parseModel(RigidBodyTree* model, XMLElement* node,
   string model_name = node->Attribute("name");
 
   // Maintains a list of links that were added to the rigid body tree.
-  // This is iterated over by method AddFloatingJoints() to determine where
+  // This is iterated over by method AddFloatingJoint() to determine where
   // to attach floating joints.
   std::vector<int> link_indices;
 
@@ -597,8 +597,8 @@ void parseModel(RigidBodyTree* model, XMLElement* node,
 
   // Adds the floating joint that connects the newly added robot model to the
   // rest of the rigid body tree.
-  model->AddFloatingJoints(&pose_map, floating_base_type, link_indices,
-                           weld_to_frame);
+  model->AddFloatingJoint(&pose_map, floating_base_type, link_indices,
+                          weld_to_frame);
 }
 
 void parseWorld(RigidBodyTree* model, XMLElement* node,

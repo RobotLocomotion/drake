@@ -1851,8 +1851,9 @@ void RigidBodyTree::add_rigid_body(std::shared_ptr<RigidBody> body) {
   body->body_index = static_cast<int>(bodies.size()) - 1;
 }
 
-void RigidBodyTree::AddFloatingJoints(
-    const PoseMap* pose_map, const DrakeJoint::FloatingBaseType floating_base_type,
+void RigidBodyTree::AddFloatingJoint(
+    const PoseMap* pose_map,
+    const DrakeJoint::FloatingBaseType floating_base_type,
     const std::vector<int>& link_indices,
     const std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   std::string floating_joint_name;
@@ -1890,9 +1891,8 @@ void RigidBodyTree::AddFloatingJoints(
 
   for (auto i : link_indices) {
     if (bodies[i]->parent == nullptr) {
-      // A parent-less link was found. The following code connects it to the
-      // rest of the rigid body tree using a floating joint.
-
+      // The following code connects the parent-less link to the rigid body tree
+      // using a floating joint.
       bodies[i]->parent = weld_to_body;
 
       Eigen::Isometry3d transform_to_model = Eigen::Isometry3d::Identity();

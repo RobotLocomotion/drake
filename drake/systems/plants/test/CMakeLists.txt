@@ -93,9 +93,6 @@ if (LCM_FOUND)
       add_test(NAME comparePriusURDFtoSDF COMMAND compareRigidBodySystems prius.sdf prius.urdf 0 0 0.378326 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/examples/Cars/prius")
     endif (snopt_c_FOUND)
 
-    # The following compiler flag is needed to support parameterized Google tests on Windows.
-    SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DGTEST_LINKED_AS_SHARED_LIBRARY=1" )
-
     add_executable(load_model_test load_model_test.cc)
     target_link_libraries(load_model_test drakeRBSystem ${GTEST_BOTH_LIBRARIES})
     add_test(NAME load_model_test COMMAND load_model_test)

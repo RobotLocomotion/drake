@@ -14,10 +14,10 @@
 #include "drake/systems/plants/KinematicsCache.h"
 #include "drake/systems/plants/RigidBody.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
+#include "drake/systems/plants/pose_map.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
 #include "drake/systems/plants/joints/DrakeJoints.h"
 #include "drake/systems/plants/shapes/DrakeShapes.h"
-#include "drake/systems/plants/xmlUtil.h"
 #include "drake/util/drakeUtil.h"
 
 #define BASIS_VECTOR_HALF_COUNT \
@@ -713,8 +713,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
      */
     int ncols = in_terms_of_qdot ? num_positions : num_velocities;
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                  Eigen::Dynamic>
-        full(compact.rows(), ncols);
+                  Eigen::Dynamic> full(compact.rows(), ncols);
     full.setZero();
     int compact_col_start = 0;
     for (std::vector<int>::const_iterator it = joint_path.begin();
@@ -747,10 +746,10 @@ class DRAKERBM_EXPORT RigidBodyTree {
   void add_rigid_body(std::shared_ptr<RigidBody> body);
 
   /**
-   * Searches through a set of links specified by a list of link indices. For
-   * each link in this set that does not have a parent joint, connect it to the
-   * tree using a floating joint. Typically, the list of link indices is created
-   * while calling add_rigid_body().
+   * Adds one floating joint to each link specified in the list of link indicies
+   * that does not already have a parent. Typically, the list of link indices is
+   * created while calling add_rigid_body(). The purpose of the floating joint
+   * is to connect the links and of their child branches to the rigid body tree.
    *
    * @param pose_map A mapping where the key is the link's name and the value
    * is a the transform from the frame of the link to the frame of the model
@@ -764,7 +763,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * @throws A std::runtime_error if no parent-less links are found in the
    * rigid body tree, or if the floating_base_type is unrecognized.
    */
-  void AddFloatingJoints(
+  void AddFloatingJoint(
       const PoseMap* pose_map, DrakeJoint::FloatingBaseType floating_base_type,
       const std::vector<int>& link_indices,
       const std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);

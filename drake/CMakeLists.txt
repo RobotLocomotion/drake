@@ -183,6 +183,10 @@ find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
 if (GTEST_FOUND)
   set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pthread")
+  if (WIN32)
+    # The following compiler flag is needed to support parameterized Google tests on Windows.
+    SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DGTEST_LINKED_AS_SHARED_LIBRARY=1" )
+  endif()
 endif()
 
 set(drake_jar_javafiles util/Transform.java)
