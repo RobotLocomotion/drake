@@ -1,6 +1,6 @@
-*********************************************
-OS X (using Homebrew -- recommended for OS X)
-*********************************************
+*********************
+OS X (using Homebrew)
+*********************
 
 We assume that you have already installed:
 
