@@ -32,7 +32,7 @@ Clarifications
 * Classes and methods should be documented using `doxygen <https://www.stack.nl/~dimitri/doxygen/manual/docblocks.html>`_.
 * Embrace templates/C++11 when it makes the code more correct (more clear or more readable also implies more correct).  Minimize template requirements on public interfaces.  Avoid explicit template instantiations in cc files when possible.
 * For the `order of includes <https://google.github.io/styleguide/cppguide.html#Names_and_Order_of_Includes>`_ style rule, separate each category of ``#include`` statements with a blank line. Then, accept whatever :ref:`clang-format <code-style-tools-clang-format>` enforces.
-
+* The `Function Names <https://google.github.io/styleguide/cppguide.html#Function_Names>`_ rule specifies that the names of "very cheap" methods may be all lower-case with underscores between words. It defines "very cheap" as a method that you wouldn't hesitate calling from within a loop. We clarify that this method should have a time complexity of O(1) and be less than 5 lines long.
 
 Exceptions
 ----------
