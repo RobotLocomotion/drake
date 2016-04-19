@@ -1,10 +1,3 @@
-/*
- * FixedJoint.h
- *
- *  Created on: Mar 26, 2015
- *      Author: twan
- */
-
 #ifndef DRAKE_SYSTEMS_PLANTS_JOINTS_FIXEDJOINT_H_
 #define DRAKE_SYSTEMS_PLANTS_JOINTS_FIXEDJOINT_H_
 

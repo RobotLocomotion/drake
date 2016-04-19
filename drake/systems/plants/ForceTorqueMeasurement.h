@@ -1,10 +1,3 @@
-/*
- * ForceTorqueMeasurement.h
- *
- *  Created on: May 11, 2015
- *      Author: twan
- */
-
 #ifndef DRAKE_SYSTEMS_PLANTS_FORCETORQUEMEASUREMENT_H_
 #define DRAKE_SYSTEMS_PLANTS_FORCETORQUEMEASUREMENT_H_
 
