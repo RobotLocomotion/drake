@@ -362,7 +362,7 @@ bool Drake::SnoptSolver::Solve(
                  A_constraint, var_index + k);
              it; ++it) {
           tripletList.push_back(
-              T(linear_constraint_index + it.col(), v.index() + k, it.value()));
+              T(linear_constraint_index + it.row(), v.index() + k, it.value()));
         }
       }
       var_index += v.size();
