@@ -30,10 +30,10 @@ When a reviewer creates a new comment, the reviewer's disposition toward the
 thread may be "satisfied", "discussing", or "blocking".  Reviewers should:
 
 * Use **satisfied** to indicate that no action is required of the author.
-* Use **discussing** to indicate that a response is required, but the author
-  may close the thread at their discretion without further input.
-  If the author has follow-up questions, the reviewer is responsible for
-  iterating on it. This is the default.
+* Use **discussing** to indicate that the author must respond, but may
+  then close the thread without further input. However, if the author has
+  follow-up questions, the reviewer is responsible for iterating on it.
+  This is the default.
 * Use **blocking** to indicate that the author must take action on the
   comment. The reviewer must then review and iterate on the fix with the
   author. Once an acceptable resolution is achieved, the reviewer should
