@@ -1,6 +1,8 @@
 
 #include <iostream>
 
+#include "ros/ros.h"
+
 #include "drake/Path.h"
 // #include "drake/util/Polynomial.h"
 #include "drake/examples/Pendulum/Pendulum.h"
@@ -13,6 +15,8 @@ using Drake::SimulationOptions;
 using drake::systems::plants::BotVisualizerROS;
 
 int main(int argc, char* argv[]) {
+  ros::init(argc, argv, "PendulumDynamicsNode");
+
   auto p = make_shared<Pendulum>();
 
   auto v = make_shared<BotVisualizerROS<PendulumState> >(

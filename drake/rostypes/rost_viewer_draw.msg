@@ -1,4 +1,4 @@
-int64 timestep
+int64 time_stamp
 
 string[] link_name
 int32[] robot_num
