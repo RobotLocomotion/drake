@@ -1,5 +1,9 @@
 #include "drake/systems/framework/value.h"
 
+#include <memory>
+
+#include "drake/systems/framework/abstract_value.h"
+
 #include "gtest/gtest.h"
 
 namespace drake {
@@ -15,7 +19,14 @@ TEST(ValueTest, Access) {
 TEST(ValueTest, Copy) {
   Value<int> value(42);
   Value<int> copied_value = value;
-  EXPECT_EQ(42, value.get_value());
+  EXPECT_EQ(42, copied_value.get_value());
+}
+
+TEST(ValueTest, Clone) {
+  Value<int> value(43);
+  const AbstractValue& erased = value;
+  std::unique_ptr<AbstractValue> cloned = erased.Clone();
+  EXPECT_EQ(43, cloned->GetValue<int>());
 }
 
 TEST(ValueTest, Mutation) {
@@ -36,8 +47,7 @@ TEST(ValueTest, BadCast) {
 // A two-dimensional point, for testing purposes.
 class Point {
  public:
-  Point(int x, int y)
-      : x_(x), y_(y) {}
+  Point(int x, int y) : x_(x), y_(y) {}
   int x() const { return x_; }
   int y() const { return y_; }
   void set_x(int x) { x_ = x; }

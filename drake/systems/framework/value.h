@@ -1,6 +1,8 @@
 #ifndef DRAKE_SYSTEMS_FRAMEWORK_VALUE_H_
 #define DRAKE_SYSTEMS_FRAMEWORK_VALUE_H_
 
+#include <memory>
+
 #include "drake/systems/framework/abstract_value.h"
 
 namespace drake {
@@ -8,10 +10,10 @@ namespace systems {
 
 /// A container class for an arbitrary type T.
 /// @tparam T Must be copy-constructible.
-template<typename T> class Value : public AbstractValue {
+template <typename T>
+class Value : public AbstractValue {
  public:
-  explicit Value(const T& v)
-      : value_(v) {}
+  explicit Value(const T& v) : value_(v) {}
 
   // Values are copyable but not moveable.
   Value(const Value<T>& other) = default;
@@ -19,8 +21,11 @@ template<typename T> class Value : public AbstractValue {
   Value(Value<T>&& other) = delete;
   Value& operator=(Value<T>&& other) = delete;
 
-
   ~Value() override {}
+
+  std::unique_ptr<AbstractValue> Clone() const override {
+    return std::unique_ptr<Value<T>>(new Value<T>(*this));
+  }
 
   /// Returns a const reference to the stored value.
   const T& get_value() const { return value_; }
