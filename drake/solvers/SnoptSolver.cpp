@@ -302,7 +302,8 @@ SolutionResult Drake::SnoptSolver::Solve(
     num_nonlinear_constraints += n;
   }
   size_t num_linear_constraints = 0;
-  for (auto const& binding : prog.linear_equality_constraints()) {
+  const auto linear_constraints = prog.GetAllLinearConstraints();
+  for (auto const& binding : linear_constraints) {
     num_linear_constraints += binding.constraint()->num_constraints();
   }
 
@@ -355,7 +356,7 @@ SolutionResult Drake::SnoptSolver::Solve(
   tripletList.reserve(num_linear_constraints * prog.num_vars());
 
   size_t linear_constraint_index = 0;
-  for (auto const& binding : prog.linear_equality_constraints()) {
+  for (auto const& binding : linear_constraints) {
     auto const& c = binding.constraint();
     size_t n = c->num_constraints();
     size_t var_index = 0;
