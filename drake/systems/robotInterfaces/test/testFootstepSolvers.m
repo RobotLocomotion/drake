@@ -1,5 +1,8 @@
 function testFootstepSolvers()
 
+% note: this test is known to fail with small probability
+% see https://github.com/RobotLocomotion/drake/issues/855
+
 checkDependency('gurobi');
 addpath(fullfile(getDrakePath, 'examples', 'Atlas'));
 options.floating = true;

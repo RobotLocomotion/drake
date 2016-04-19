@@ -65,7 +65,7 @@ int fastQPThatTakesQinv(vector<MatrixXd*> QinvblkDiag, const VectorXd& f,
   int startrow = 0;
   //  for (typename vector< MatrixBase<tA>* >::iterator
   //  iterQinv=QinvblkDiag.begin(); iterQinv!=QinvblkDiag.end(); iterQinv++) {
-  //  	MatrixBase<tA> *thisQinv = *iterQinv;
+  //    MatrixBase<tA> *thisQinv = *iterQinv;
   for (vector<MatrixXd*>::iterator iterQinv = QinvblkDiag.begin();
        iterQinv != QinvblkDiag.end(); iterQinv++) {
     MatrixXd* thisQinv = *iterQinv;
@@ -78,7 +78,7 @@ int fastQPThatTakesQinv(vector<MatrixXd*> QinvblkDiag, const VectorXd& f,
         QinvAteq.block(startrow, 0, d, M) =
             thisQinv->asDiagonal() *
             Aeq.block(0, startrow, M, d)
-                .transpose();  // Aeq.transpoODse().block(startrow, 0, d, N)
+                .transpose();  // Aeq.transpose().block(startrow, 0, d, N)
       minusQinvf.segment(startrow, d) =
           -thisQinv->cwiseProduct(f.segment(startrow, d));
       startrow = startrow + d;
@@ -283,7 +283,7 @@ int fastQP(vector<MatrixXd*> QblkDiag, const VectorXd& f, const MatrixXd& Aeq,
       Qinvmap.push_back(&Qinv[i]);
       startrow = startrow + numRow;
     }
-    //  	cout << "Qinv{" << i << "} = " << Qinv[i] << endl;
+    // cout << "Qinv{" << i << "} = " << Qinv[i] << endl;
     if (startrow > N) {
       cerr << "Q is too big!" << endl;
       return -2;
@@ -415,8 +415,7 @@ GRBmodel* gurobiQP(GRBenv* env, vector<MatrixXd*> QblkDiag, VectorXd& f,
 
     // WARNING:  If there are no constraints, then gurobi clearly solves a
     // different problem: min 1/2 x'Qx + f'x
-    //  				 This is very strange; see the
-    //  solveWGUROBI method in QuadraticProgram
+    // This is very strange; see the solveWGUROBI method in QuadraticProgram
     if (method == 2)  //&& (Aeq.rows()+Ain.rows()>0))
       *Q = .5 * (*Q);
 
@@ -424,7 +423,8 @@ GRBmodel* gurobiQP(GRBenv* env, vector<MatrixXd*> QblkDiag, VectorXd& f,
       d = Q->rows() * Q->cols();
       for (i = 0; i < d; i++) {
         Qi = i + startrow;
-        CGE(GRBaddqpterms(model, 1, &Qi, &Qi, &(Q->operator()(i))), env);
+        double& qval = Q->operator()(i);
+        CGE(GRBaddqpterms(model, 1, &Qi, &Qi, &qval), env);
       }
       startrow = startrow + d;
     } else {  // potentially dense matrix
@@ -438,7 +438,8 @@ GRBmodel* gurobiQP(GRBenv* env, vector<MatrixXd*> QblkDiag, VectorXd& f,
         for (j = 0; j < d; j++) {
           Qi = i + startrow;
           Qj = j + startrow;
-          CGE(GRBaddqpterms(model, 1, &Qi, &Qj, &(Q->operator()(i, j))), env);
+          double& qval = Q->operator()(i, j);
+          CGE(GRBaddqpterms(model, 1, &Qi, &Qj, &qval), env);
         }
       startrow = startrow + d;
     }
@@ -523,7 +524,8 @@ GRBmodel* gurobiActiveSetQP(GRBenv* env, vector<MatrixXd*> QblkDiag,
       d = Q->rows() * Q->cols();
       for (i = 0; i < d; i++) {
         Qi = i + startrow;
-        CGE(GRBaddqpterms(model, 1, &Qi, &Qi, &(Q->operator()(i))), env);
+        double& qval = Q->operator()(i);
+        CGE(GRBaddqpterms(model, 1, &Qi, &Qi, &qval), env);
       }
       startrow = startrow + d;
     } else {  // potentially dense matrix
@@ -537,7 +539,8 @@ GRBmodel* gurobiActiveSetQP(GRBenv* env, vector<MatrixXd*> QblkDiag,
         for (j = 0; j < d; j++) {
           Qi = i + startrow;
           Qj = j + startrow;
-          CGE(GRBaddqpterms(model, 1, &Qi, &Qj, &(Q->operator()(i, j))), env);
+          double& qval = Q->operator()(i, j);
+          CGE(GRBaddqpterms(model, 1, &Qi, &Qj, &qval), env);
         }
       startrow = startrow + d;
     }
@@ -583,25 +586,3 @@ GRBmodel* gurobiActiveSetQP(GRBenv* env, vector<MatrixXd*> QblkDiag,
   return model;
 }
 
-/*
-template int fastQP(vector< MatrixBase<MatrixXd>* > QblkDiag, const MatrixBase<
-Map<VectorXd> >&, const MatrixBase< Map<MatrixXd> >&, const MatrixBase<
-Map<VectorXd> >&, const MatrixBase< Map<MatrixXd> >&, const MatrixBase<
-Map<VectorXd> >&, set<int>&, MatrixBase< Map<VectorXd> >&);
-template GRBmodel* gurobiQP(GRBenv *env, vector< MatrixBase<MatrixXd>* >
-QblkDiag, VectorXd& f, const MatrixBase< Map<MatrixXd> >& Aeq, const MatrixBase<
-Map<VectorXd> >& beq, const MatrixBase< Map<MatrixXd> >& Ain, const MatrixBase<
-Map<VectorXd> >&bin, VectorXd& lb, VectorXd& ub, set<int>&, VectorXd&);
-template GRBmodel* gurobiQP(GRBenv *env, vector< MatrixBase<MatrixXd>* >
-QblkDiag, VectorXd& f, const MatrixBase< MatrixXd >& Aeq, const MatrixBase<
-VectorXd >& beq, const MatrixBase< MatrixXd >& Ain, const MatrixBase< VectorXd
->&bin, VectorXd&lb, VectorXd&ub, set<int>&, VectorXd&);
-*/
-
-/*
-template int fastQP(vector< MatrixBase< VectorXd > >, const MatrixBase< VectorXd
->&, const MatrixBase< Matrix<double,-1,-1, RowMajor, 1000,-1> >&, const
-MatrixBase< Matrix<double,-1, 1, 0, 1000, 1> >&, const MatrixBase<
-Matrix<double,-1,-1, RowMajor, 1000,-1> >&, const MatrixBase<
-Matrix<double,-1, 1, 0, 1000, 1> >&, set<int>&, MatrixBase< VectorXd >&);
-*/

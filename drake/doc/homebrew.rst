@@ -1,6 +1,6 @@
-*********************************************
-OS X (using Homebrew -- recommended for OS X)
-*********************************************
+*********************
+OS X (using Homebrew)
+*********************
 
 We assume that you have already installed:
 
@@ -16,9 +16,9 @@ Install the prerequisites::
     brew update
     brew upgrade
     brew install autoconf automake ccache cmake doxygen gcc glib graphviz gtk+ \
-      jpeg libpng libtool mpfr mpich2 numpy python qt swig valgrind wget
+      jpeg libpng libtool mpfr mpich2 numpy python qt qwt swig valgrind wget
     brew install vtk5 --with-qt
-    pip install -U cpplint Sphinx
+    pip install -U beautifulsoup4 cpplint html5lib Sphinx
 
 Add the line::
 

@@ -1,7 +1,9 @@
 #ifndef DRAKE_SYSTEMS_CONTROLLERS_LQR_H_
 #define DRAKE_SYSTEMS_CONTROLLERS_LQR_H_
 
-#include "drake/core/Core.h"
+#include "drake/core/Function.h"
+#include "drake/core/Gradient.h"
+#include "drake/core/Vector.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/util/drakeGradientUtil.h"
 #include "drake/util/drakeUtil.h"

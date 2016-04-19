@@ -9,6 +9,7 @@ ifeq "$(BUILD_TYPE)" ""
   BUILD_TYPE="Release"
 endif
 CMAKE_FLAGS+=-DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
+CMAKE_FLAGS+=-DPOD_BUILD=TRUE
 CMAKE_CONFIG=--config $(BUILD_TYPE)
 
 .PHONY: all
@@ -60,7 +61,6 @@ download-all : configure
 .PHONY: release_filelist
 release_filelist: configure
 # note: the following will not work in windows cmd shells
-	echo "drake/.UNITTEST"
 	echo ".mlintopts"
 	find * -type f | grep -v "pod-build" | grep -v "\.valgrind" | grep -v "\.viewer-prefs" | grep -v "\.out" | grep -v "\.autosave" | grep -v "\.git" | grep -v "\.tmp" | grep -v "drake_config\.mat" | grep -v "DoxygenMatlab" | grep -v "\.aux" | grep -v "\.d" | grep -v "\.log" | grep -v "\.bib"
 	find drake/pod-build/lib -type f

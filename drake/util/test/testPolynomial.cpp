@@ -109,7 +109,8 @@ void testEvalType() {
   Polynomial<double> poly(coeffs);
 
   auto valueIntInput = poly.value(1);
-  valuecheck(typeid(decltype(valueIntInput)) == typeid(double), true);
+  const auto& double_type = typeid(double);  // NOLINT(readability/function)
+  valuecheck(typeid(decltype(valueIntInput)) == double_type, true);
 
   auto valueComplexInput = poly.value(std::complex<double>(1.0, 2.0));
   valuecheck(
@@ -161,6 +162,35 @@ TEST(PolynomialTest, Roots) { testRoots<double>(); }
 TEST(PolynomialTest, EvalType) { testEvalType(); }
 
 TEST(PolynomialTest, PolynomialMatrix) { testPolynomialMatrix<double>(); }
+
+TEST(PolynomialTest, VariableIdGeneration) {
+  // Probe the outer edge cases of variable ID generation.
+
+  // There is no documented maximum ID, but empirically it is 2325.  What we
+  // really care about here is just that there is some value below which it
+  // succeeds and above which it fails.
+  static const int kMaxId = 2325;
+
+  EXPECT_NO_THROW(Polynomial<double>("x", kMaxId));
+  EXPECT_NO_THROW(Polynomial<double>("zzzz", 1));
+  EXPECT_NO_THROW(Polynomial<double>("zzzz", kMaxId));
+  EXPECT_THROW(Polynomial<double>("!"),
+               std::runtime_error);  // Illegal character.
+  EXPECT_THROW(Polynomial<double>("zzzz@"),
+               std::runtime_error);  // Illegal length.
+  EXPECT_THROW(Polynomial<double>("z", 0),
+               std::runtime_error);  // Illegal ID.
+  EXPECT_THROW(Polynomial<double>("z", kMaxId + 1),
+               std::runtime_error);  // Illegal ID.
+
+  // Test that ID generation round-trips correctly.
+  std::stringstream test_stream;
+  test_stream << Polynomial<double>("x", 1);
+  std::string result;
+  test_stream >> result;
+  EXPECT_EQ(result, "x1");
+}
+
 }
 }  // namespace test
 }  // namespace drake

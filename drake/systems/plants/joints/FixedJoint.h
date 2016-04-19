@@ -14,9 +14,9 @@ class DRAKEJOINTS_EXPORT FixedJoint : public DrakeJointImpl<FixedJoint> {
  public:
   FixedJoint(const std::string &name,
              const Eigen::Isometry3d &transform_to_parent_body)
-      : DrakeJointImpl(*this, name, transform_to_parent_body, 0, 0){}
+      : DrakeJointImpl(*this, name, transform_to_parent_body, 0, 0) {}
 
-  virtual ~FixedJoint(){}
+  virtual ~FixedJoint() {}
 
   template <typename DerivedQ>
   Eigen::Transform<typename DerivedQ::Scalar, 3, Eigen::Isometry>

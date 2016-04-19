@@ -1,0 +1,2 @@
+
+add_matlab_test(NAME systems/robotInterfaces/calibration/test/testJointCalibration COMMAND testJointCalibration)

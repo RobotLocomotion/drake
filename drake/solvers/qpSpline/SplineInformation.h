@@ -15,7 +15,7 @@ class DRAKESPLINEGENERATION_EXPORT SplineInformation
   std::vector<ContinuityConstraint> continuity_constraints;
 
  public:
-  virtual ~SplineInformation(){}
+  virtual ~SplineInformation() {}
 
   SplineInformation(std::vector<int> const& segment_polynomial_orders,
                     std::vector<double> const& segment_times);

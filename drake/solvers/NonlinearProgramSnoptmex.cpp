@@ -1,5 +1,6 @@
-#include "mex.h"
-#include "matrix.h"
+#include <mex.h>
+#include <matrix.h>
+
 #include <cstdlib>
 #include <memory>
 #include <algorithm>
@@ -10,7 +11,6 @@
 namespace snopt {
 #include "snopt.hh"
 #include "snfilewrapper.hh"
-//#include "snoptProblem.hh"
 }
 
 using namespace std;

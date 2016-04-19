@@ -6,8 +6,7 @@
 
 template <typename ScalarType = double>
 class QuadrotorOutput {
-public:
-
+ public:
     static const int num_lidar_points = 100;
     static const int RowsAtCompileTime = 22 + num_lidar_points + 1;
 
@@ -63,15 +62,15 @@ public:
 
     friend std::string getCoordinateName(const QuadrotorOutput<ScalarType>& vec, unsigned int index) {
       static const std::vector<std::string> coordinate_names =
-          {"x","y","z",
-           "qx","qy","qz","qw",
+          {"x", "y", "z",
+           "qx", "qy", "qz", "qw",
            "xdot", "ydot", "zdot",
            "angvel_x", "angvel_y", "angvel_z",
            "accel_x", "accel_y", "accel_z",
            "gyro_x", "gyro_y", "gyro_z",
            "mag_x", "mag_y", "mag_z"
           };
-      if(index >= 22) return "lidar_" + std::to_string(index - 22);
+      if (index >= 22) return "lidar_" + std::to_string(index - 22);
       return index >= 0 && index < RowsAtCompileTime ? coordinate_names[index] : std::string("error");
     }
 

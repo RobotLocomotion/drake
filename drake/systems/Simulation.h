@@ -103,9 +103,7 @@ inline bool handle_realtime_factor(const TimePoint& wall_clock_start_time,
 template <typename System>
 void simulate(const System& sys, double ti, double tf,
               const typename System::template StateVector<double>& xi,
-              SimulationOptions& options) {
-  if (options.realtime_factor < 0.0) options.realtime_factor = 0.0;
-
+              const SimulationOptions& options) {
   TimePoint start = TimeClock::now();
   typename System::template StateVector<double> x(xi), x1est, xdot0, xdot1;
   typename System::template InputVector<double> u(
@@ -117,7 +115,9 @@ void simulate(const System& sys, double ti, double tf,
   // Take steps from ti to tf.
   double t = ti;
   while (t < tf) {
-    if (!handle_realtime_factor(start, t, options.realtime_factor,
+    double realtime_factor = options.realtime_factor;
+    if (realtime_factor < 0.0) { realtime_factor = 0.0; }
+    if (!handle_realtime_factor(start, t, realtime_factor,
                                 options.timeout_seconds)) {
       std::stringstream error_msg;
       error_msg
@@ -162,7 +162,7 @@ void simulate(const System& sys, double ti, double tf,
  */
 template <typename System>
 void simulate(const System& sys, double t0, double tf,
-              const typename System::template StateVectorType<double>& x0) {
+              const typename System::template StateVector<double>& x0) {
   simulate(sys, t0, tf, x0, default_simulation_options);
 }
 

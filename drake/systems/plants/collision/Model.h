@@ -8,8 +8,8 @@
 #include <Eigen/StdVector>
 
 #include "Element.h"
-#include "drake/systems/plants/collision/point_pair.h"
 #include "drake/drakeCollision_export.h"
+#include "drake/systems/plants/collision/point_pair.h"
 
 namespace DrakeCollision {
 typedef std::pair<ElementId, ElementId> ElementIdPair;
@@ -18,7 +18,7 @@ class DRAKECOLLISION_EXPORT Model {
  public:
   Model() {}
 
-  virtual ~Model(){}
+  virtual ~Model() {}
 
   /** \brief Add a collision element to this model.
   * \param element the collision element to be added to this model
@@ -43,7 +43,7 @@ class DRAKECOLLISION_EXPORT Model {
   /** \brief Perform any operations needed to bring the model up-to-date
    * after making changes to its collision elements
    */
-  virtual void updateModel(){}
+  virtual void updateModel() {}
 
   /** \brief Change the element-to-world transform of a specified collision
    * element.
@@ -112,7 +112,7 @@ class DRAKECOLLISION_EXPORT Model {
    */
   virtual void collisionDetectFromPoints(
       const Eigen::Matrix3Xd& points, bool use_margins,
-      std::vector<PointPair>& closest_points){}
+      std::vector<PointPair>& closest_points) {}
 
   /** \brief Compute the set of potential collision points for all
    * eligible pairs of collision geometries in this model. This includes
@@ -175,6 +175,26 @@ class DRAKECOLLISION_EXPORT Model {
     return false;
   }
 
+  /**
+   * Modifies a collision element's local transform to be relative to a joint's
+   * frame rather than a link's frame. This is necessary because Drake requires
+   * that link frames by defined by their parent joint frames.
+   *
+   * @param eid The ID of the collision element to update.
+   * @param transform_body_to_joint The transform from the collision element's
+   * link's frame to the joint's coordinate frame.
+   * @param true if the collision element was successfully updated.
+   */
+  virtual bool transformCollisionFrame(
+      const DrakeCollision::ElementId& eid,
+      const Eigen::Isometry3d& transform_body_to_joint);
+
+  /**
+   * A toString method for this class.
+   */
+  friend DRAKECOLLISION_EXPORT std::ostream& operator<<(std::ostream&,
+                                                        const Model&);
+
  protected:
   // Protected member variables are forbidden by the style guide.
   // Please do not add new references to this member.  Instead, use
@@ -185,6 +205,7 @@ class DRAKECOLLISION_EXPORT Model {
   Model(const Model&) {}
   Model& operator=(const Model&) { return *this; }
 };
-}
+
+}  // namespace DrakeCollision
 
 #endif  // DRAKE_SYSTEMS_PLANTS_COLLISION_MODEL_H_

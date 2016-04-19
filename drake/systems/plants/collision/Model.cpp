@@ -49,6 +49,19 @@ bool Model::updateElementWorldTransform(const ElementId id,
   }
 }
 
+bool Model::transformCollisionFrame(
+    const DrakeCollision::ElementId& eid,
+    const Eigen::Isometry3d& transform_body_to_joint) {
+  auto element = elements.find(eid);
+  if (element != elements.end()) {
+    element->second->SetLocalTransform(transform_body_to_joint *
+                                       element->second->getLocalTransform());
+    return true;
+  } else {
+    return false;
+  }
+}
+
 bool closestPointsAllToAll(const vector<ElementId>& ids_to_check,
                            const bool use_margins,
                            vector<PointPair>& closest_points) {
@@ -65,4 +78,24 @@ bool closestPointsPairwise(const vector<ElementIdPair>& id_pairs,
                            vector<PointPair>& closest_points) {
   return false;
 }
+
+/**
+ * A toString for the collision model.
+ */
+std::ostream& operator<<(std::ostream& os, const Model& model) {
+  if (model.elements.size() == 0) {
+    os << "No collision elements.";
+  } else {
+    for (auto it = model.elements.begin(); it != model.elements.end(); ++it)
+      os << " ElementID: " << it->first << ":\n"
+         << "    - world transform:\n"
+         << it->second->getWorldTransform().matrix() << "\n"
+         << "    - local transform:\n"
+         << it->second->getLocalTransform().matrix() << "\n"
+         << "    - has geometry? " << (it->second->hasGeometry() ? "yes" : "no")
+         << "\n";
+  }
+  return os;
 }
+
+}  // namespace DrakeCollision

@@ -1,6 +1,7 @@
 
 #include <cmath>
 #include "lcmtypes/bot_core/planar_lidar_t.hpp"
+#include "drake/Path.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/systems/plants/BotVisualizer.h"
@@ -47,8 +48,14 @@ int main(int argc, char* argv[]) {
     }
   }
 
+  // render for debugging; do this before publishing lidar so visualizer knows
+  // the sensor position
   auto lcm = make_shared<lcm::LCM>();
+  auto visualizer = make_shared<BotVisualizer<RigidBodySystem::StateVector>>(
+      lcm, rigid_body_sys->getRigidBodyTree());
+  visualizer->output(t, x, u);
 
+  // publish lidar message
   bot_core::planar_lidar_t msg;
   msg.utime = -1;
   msg.nintensities = 0;
@@ -59,12 +66,7 @@ int main(int argc, char* argv[]) {
   for (int i = 0; i < distances.size(); i++)
     msg.ranges.push_back(distances(i));
 
-  lcm->publish("DRAKE_POINTCLOUD_LIDAR_TEST", &msg);
-
-  // render for debugging:
-  auto visualizer = make_shared<BotVisualizer<RigidBodySystem::StateVector>>(
-      lcm, rigid_body_sys->getRigidBodyTree());
-  visualizer->output(t, x, u);
+  lcm->publish("DRAKE_PLANAR_LIDAR_0_rear_wall", &msg);
 
   return 0;
 }

@@ -1,10 +1,13 @@
 #include <iostream>
+
+#include "drake/Path.h"
 #include "drake/examples/Pendulum/Pendulum.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/controllers/LQR.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/cascade_system.h"
 #include "drake/systems/feedback_system.h"
+#include "drake/util/drakeAppUtil.h"
 
 using namespace std;
 using namespace Drake;
@@ -33,6 +36,9 @@ int main(int argc, char* argv[]) {
 
   SimulationOptions options;
   options.realtime_factor = 1.0;
+  if (commandLineOptionExists(argv, argv + argc, "--non-realtime")) {
+    options.warn_real_time_violation = true;
+  }
 
   for (int i = 0; i < 5; i++) {
     Eigen::Vector2d x0 = toEigen(xG);

@@ -5,19 +5,14 @@ Author: Anirudha Majumdar
 Date: Nov 8 2013
 */
 
+#include <mex.h>
+
 /// We need internal access to bullet
 // #include "GL_Simplex1to4.h"
 #include "LinearMath/btTransform.h"
-#include "BulletCollision/NarrowPhaseCollision/btVoronoiSimplexSolver.h"
-
 #include "BulletCollision/CollisionShapes/btSphereShape.h"
 #include "BulletCollision/CollisionShapes/btBoxShape.h"
 #include "BulletCollision/CollisionShapes/btConvexHullShape.h"
-// #include <iostream>
-// #include <chrono>
-// #include <ctime>
-// #include <time.h>
-
 #include "BulletCollision/NarrowPhaseCollision/btGjkPairDetector.h"
 #include "BulletCollision/NarrowPhaseCollision/btPointCollector.h"
 #include "BulletCollision/NarrowPhaseCollision/btVoronoiSimplexSolver.h"
@@ -25,7 +20,6 @@ Date: Nov 8 2013
 #include "BulletCollision/NarrowPhaseCollision/btGjkEpaPenetrationDepthSolver.h"
 #include "LinearMath/btTransformUtil.h"
 
-#include <mex.h>
 #include "drake/util/drakeMexUtil.h"
 
 using namespace std;

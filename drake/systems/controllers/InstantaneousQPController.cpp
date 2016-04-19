@@ -1314,4 +1314,4 @@ int InstantaneousQPController::setupAndSolveQP(
   //  GRBfreeenv(env);
 
   return info;
-}
+}  // NOLINT(readability/fn_size)

@@ -1,6 +1,8 @@
 #include "gtest/gtest.h"
 
-#include "drake/examples/Pendulum/Pendulum.h"  // to get some types
+#include "drake/core/Function.h"
+#include "drake/core/Vector.h"
+#include "drake/core/test/pendulum.h"
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
 
@@ -10,9 +12,12 @@ using Drake::CombinedVectorUtil;
 using Drake::NullVector;
 using Drake::InputOutputRelation;
 using drake::util::MatrixCompareType;
+using std::is_same;
+using std::string;
 
 namespace drake {
 namespace core {
+namespace test {
 namespace {
 
 // Tests the ability to set a PendulumState equal to a vector and vice versa.
@@ -138,5 +143,6 @@ TEST(VectorTest, InputOutputRelationCombinationTests) {
 }
 
 }  // namespace
+}  // namespace test
 }  // namespace core
 }  // namespace drake

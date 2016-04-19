@@ -3,6 +3,9 @@ function timeSteppingRigidBodyManipulatorFramesTest
 % still work when the state frame contains more than simply the
 % RigidBodyManipulator state.
 
+% note: this test is known to throw errors in non-bullet builds
+% see https://github.com/RobotLocomotion/drake/issues/468
+
 S = warning('OFF','Drake:RigidBodyManipulator:WeldedLinkInd');
 urdf = [getDrakePath() '/systems/plants/test/ActuatedPendulum.urdf'];
 p = TimeSteppingRigidBodyManipulator(urdf,.01);

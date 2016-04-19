@@ -16,10 +16,10 @@ class DrivingCommand {
   typedef drake::lcmt_driving_control_cmd_t LCMMessageType;
   static std::string channel() { return "DRIVING_COMMAND"; }
 
-  DrivingCommand(void) : throttle(0), brake(0), steering_angle(0){}
+  DrivingCommand(void) : throttle(0), brake(0), steering_angle(0) {}
   template <typename Derived>
   DrivingCommand(const Eigen::MatrixBase<Derived>& x)
-      : steering_angle(x(0)), throttle(x(1)), brake(x(2)){}
+      : steering_angle(x(0)), throttle(x(1)), brake(x(2)) {}
 
   template <typename Derived>
   DrivingCommand& operator=(const Eigen::MatrixBase<Derived>& x) {
@@ -54,6 +54,17 @@ class DrivingCommand {
   ScalarType brake;
 };
 
+/**
+ * A toString method for DrivingCommand.
+ */
+template <typename ScalarType = double>
+std::ostream& operator<<(std::ostream& os,
+                         const DrivingCommand<ScalarType>& dc) {
+  return os << "[steering_angle = " << dc.steering_angle
+            << ", throttle = " << dc.throttle << ", brake = " << dc.brake
+            << "]";
+}
+
 bool decode(const drake::lcmt_driving_control_cmd_t& msg, double& t,
             DrivingCommand<double>& x) {
   t = double(msg.timestamp) / 1000.0;
@@ -64,7 +75,7 @@ bool decode(const drake::lcmt_driving_control_cmd_t& msg, double& t,
 }
 
 /** Driving Simulator
- * Usage:  simulateLCM vehicle_urdf [world_urdf files ...]
+ * Usage:  simulateLCM vehicle_model_file [world_model files ...]
  */
 
 int main(int argc, char* argv[]) {
@@ -78,11 +89,35 @@ int main(int argc, char* argv[]) {
   // be reused
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
 
-
   auto rigid_body_sys = make_shared<RigidBodySystem>();
-  rigid_body_sys->addRobotFromFile(argv[1], floating_base_type);
-  auto const & tree = rigid_body_sys->getRigidBodyTree();
-  for (int i=2; i<argc; i++)
+
+  // The following variable, weld_to_frame, is only needed if the model is a
+  // URDF file. It is needed since URDF does not specify the location and
+  // orientation of the car's root node in the world. If the model is an SDF,
+  // weld_to_frame is ignored by the parser.
+  auto weld_to_frame = allocate_shared<RigidBodyFrame>(
+      aligned_allocator<RigidBodyFrame>(),
+      // Weld the model to the world link.
+      "world",
+
+      // A pointer to a rigid body to which to weld the model is not needed
+      // since the model will be welded to the world, which can by automatically
+      // found within the rigid body tree.
+      nullptr,
+
+      // The following parameter specifies the X,Y,Z position of the car's root
+      // link in the world's frame. The kinematics of the car model requires
+      // that its root link be elevated along the Z-axis by 0.378326m.
+      Eigen::Vector3d(0, 0, 0.378326),
+
+      // The following parameter specifies the roll, pitch, and yaw of the car's
+      // root link in the world's frame.
+      Eigen::Vector3d(0, 0, 0));
+
+  rigid_body_sys->addRobotFromFile(argv[1], floating_base_type, weld_to_frame);
+
+  auto const& tree = rigid_body_sys->getRigidBodyTree();
+  for (int i = 2; i < argc; i++)
     tree->addRobotFromSDF(argv[i], DrakeJoint::FIXED);  // add environment
 
   if (argc < 3) {  // add flat terrain
@@ -118,15 +153,17 @@ int main(int argc, char* argv[]) {
 
     for (int actuator_idx = 0; actuator_idx < tree->actuators.size();
          actuator_idx++) {
-      if (strcmp(tree->actuators[actuator_idx].name.c_str(),
-                 "steering_angle") == 0) {
+      const std::string& actuator_name = tree->actuators[actuator_idx].name;
+
+      if (actuator_name == "steering") {
         auto const& b = tree->actuators[actuator_idx].body;
         Kp(actuator_idx, b->position_num_start) = kpSteering;  // steering
         Kd(actuator_idx, b->velocity_num_start) = kdSteering;  // steeringdot
         map_driving_cmd_to_x_d(b->position_num_start, 0) =
             1;  // steering command
-      } else if (strncmp(tree->actuators[actuator_idx].name.c_str(), "throttle",
-                         8) == 0) {  // intentionally match all throttle_ inputs
+
+      } else if (actuator_name == "right_wheel_joint" ||
+                 actuator_name == "left_wheel_joint") {
         auto const& b = tree->actuators[actuator_idx].body;
         Kd(actuator_idx, b->velocity_num_start) = kThrottle;  // throttle
         map_driving_cmd_to_x_d(tree->num_positions + b->velocity_num_start, 1) =

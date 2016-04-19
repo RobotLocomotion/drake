@@ -39,3 +39,6 @@ if (MATLAB_FOUND)
     add_subdirectory(@QPLocomotionPlanCPPWrapper)
   endif()
 endif()
+
+add_subdirectory(calibration/test)
+add_subdirectory(test)

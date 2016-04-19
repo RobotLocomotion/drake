@@ -1,0 +1,3 @@
+
+add_matlab_test(NAME examples/CompassGait/test/collisionDynamicsGradientsTest COMMAND collisionDynamicsGradientsTest)
+add_matlab_test(NAME examples/CompassGait/test/dynamicsGradientsTest COMMAND dynamicsGradientsTest)

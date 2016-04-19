@@ -5,3 +5,4 @@ if (NOT WIN32)
   endif()
 endif()
 
+add_subdirectory(matlab/test)

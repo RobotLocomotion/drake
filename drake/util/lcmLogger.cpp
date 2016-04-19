@@ -8,7 +8,7 @@
 
 #define S_FUNCTION_NAME lcmLogger
 #define S_FUNCTION_LEVEL 2
-#include "simstruc.h"
+#include <simstruc.h>
 
 #include <lcm/lcm.h>
 
@@ -165,10 +165,9 @@ static void mdlTerminate(SimStruct *S) {
   mxFree(log_variable_name);
 }
 
-#ifdef MATLAB_MEX_FILE /* Is this file being compiled as a \ \
-                          MEX-file? */
-#include "simulink.c"  /* MEX-file interface mechanism */
+#ifdef MATLAB_MEX_FILE  // Is this file being compiled as a MEX-file?
+#include "simulink.c"   // MEX-file interface mechanism
 #else
-#include "cg_sfun.h" /* Code generation registration
-                             function */
+// NOLINTNEXTLINE(build/include)
+#include "cg_sfun.h"    // Code generation registration function
 #endif

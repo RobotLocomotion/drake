@@ -1,0 +1,4 @@
+
+add_matlab_test(NAME examples/grasping/forceClosure/test/testFixedContactsSearchQ1 COMMAND testFixedContactsSearchQ1)
+add_matlab_test(NAME examples/grasping/forceClosure/test/testForceClosureContactsFixedFaces COMMAND testForceClosureContactsFixedFaces)
+add_matlab_test(NAME examples/grasping/forceClosure/test/testSynthesizeGrasp COMMAND testSynthesizeGrasp)

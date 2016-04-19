@@ -69,6 +69,14 @@ bool RigidBody::appendCollisionElementIdsFromThisBody(
   return true;
 }
 
+void RigidBody::ApplyTransformToJointFrame(
+    const Eigen::Isometry3d& transform_body_to_joint) {
+  I = transformSpatialInertia(transform_body_to_joint, I);
+  for (auto& v : visual_elements) {
+    v.SetLocalTransform(transform_body_to_joint * v.getLocalTransform());
+  }
+}
+
 RigidBody::CollisionElement::CollisionElement(const CollisionElement& other)
     : DrakeCollision::Element(other), body(other.getBody()) {}
 
@@ -100,8 +108,21 @@ bool RigidBody::CollisionElement::CollidesWith(
 }
 
 ostream& operator<<(ostream& out, const RigidBody& b) {
-  std::string joint_name =
+  std::string parent_joint_name =
       b.hasParent() ? b.getJoint().getName() : "no parent joint";
-  out << "RigidBody(" << b.linkname << "," << joint_name << ")";
+
+  std::stringstream collision_element_str;
+  collision_element_str << "[";
+  for (size_t ii = 0; ii < b.collision_element_ids.size(); ii++) {
+    collision_element_str << b.collision_element_ids[ii];
+    if (ii < b.collision_element_ids.size() - 1) collision_element_str << ", ";
+  }
+  collision_element_str << "]";
+
+  out << "RigidBody\n"
+      << "  - link name: " << b.linkname << "\n"
+      << "  - parent joint: " << parent_joint_name << "\n"
+      << "  - Collision elements IDs: " << collision_element_str.str();
+
   return out;
 }
