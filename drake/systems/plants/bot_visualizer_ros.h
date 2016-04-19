@@ -17,14 +17,14 @@ namespace systems {
 namespace plants {
 
 /** BotVisualizerROS<RobotStateVector>
- * @brief A system which takes the robot state as input and publishes an lcm
- *draw command to the drake visualizer
+ * @brief A system which takes the robot state as input and publishes a ROS draw
+ * command to the drake visualizer
  * @concept{system_concept}
  *
  * The resulting system has no internal state; the publish command is executed
- *on every call to the output method.
- * For convenience, the input is passed directly through as an output.
+ * on every call to the output method.
  *
+ * For convenience, the input is passed directly through as an output.
  */
 
 template <template <typename> class RobotStateVector>
@@ -37,7 +37,9 @@ class BotVisualizerROS {
   template <typename ScalarType>
   using InputVector = RobotStateVector<ScalarType>;
 
-  BotVisualizerROS(std::shared_ptr<RigidBodyTree> tree) : tree(tree) { init(); }
+  BotVisualizerROS(std::shared_ptr<RigidBodyTree> tree) : tree(tree) {
+    init();
+  }
 
   BotVisualizerROS(const std::string &urdf_filename,
                    const DrakeJoint::FloatingBaseType floating_base_type)
@@ -88,15 +90,15 @@ class BotVisualizerROS {
   }
 
   void publishLoadRobot() const {
-    // drake::lcmt_viewer_load_robot vr;
+    drake::rost_viewer_load_robot vr;
     // vr.num_links = tree->bodies.size();
     for (const auto &body : tree->bodies) {
-      // drake::lcmt_viewer_link_data link;
-      // link.name = body->linkname;
-      // link.robot_num = body->robotnum;
+      drake::rost_viewer_link_data link;
+      link.name = body->linkname;
+      link.robot_num = body->robotnum;
       // link.num_geom = body->visual_elements.size();
       for (const auto &v : body->visual_elements) {
-        // drake::lcmt_viewer_geometry_data gdata;
+        drake::rost_viewer_geometry_data gdata;
 
         const DrakeShapes::Geometry &geometry = v.getGeometry();
 
@@ -104,35 +106,35 @@ class BotVisualizerROS {
                                  // methods, but don't want to introduce any LCM
                                  // dependency on the Geometry classes
           case DrakeShapes::BOX: {
-            // gdata.type = gdata.BOX;
+            gdata.type = gdata.BOX;
             // gdata.num_float_data = 3;
             auto b = dynamic_cast<const DrakeShapes::Box &>(geometry);
             for (int i = 0; i < 3; i++) {
-              // gdata.float_data.push_back(static_cast<float>(b.size(i)));
+              gdata.float_data.push_back(static_cast<float>(b.size(i)));
             }
             break;
           }
           case DrakeShapes::SPHERE: {
-            // gdata.type = gdata.SPHERE;
+            gdata.type = gdata.SPHERE;
             // gdata.num_float_data = 1;
             auto b = dynamic_cast<const DrakeShapes::Sphere &>(geometry);
-            // gdata.float_data.push_back(static_cast<float>(b.radius));
+            gdata.float_data.push_back(static_cast<float>(b.radius));
             break;
           }
           case DrakeShapes::CYLINDER: {
-            // gdata.type = gdata.CYLINDER;
+            gdata.type = gdata.CYLINDER;
             // gdata.num_float_data = 2;
             auto c = dynamic_cast<const DrakeShapes::Cylinder &>(geometry);
-            // gdata.float_data.push_back(static_cast<float>(c.radius));
-            // gdata.float_data.push_back(static_cast<float>(c.length));
+            gdata.float_data.push_back(static_cast<float>(c.radius));
+            gdata.float_data.push_back(static_cast<float>(c.length));
             break;
           }
           case DrakeShapes::MESH: {
-            // gdata.type = gdata.MESH;
+            gdata.type = gdata.MESH;
             // gdata.num_float_data = 1;
             auto m = dynamic_cast<const DrakeShapes::Mesh &>(geometry);
-            // gdata.float_data.push_back(static_cast<float>(m.scale));
-            // gdata.string_data = m.resolved_filename;  // looks like this
+            gdata.float_data.push_back(static_cast<float>(m.scale));
+            gdata.string_data = m.resolved_filename;  // looks like this
             // could
             //                                           // be empty, but it is
             //                                           // what's used in the
@@ -141,11 +143,11 @@ class BotVisualizerROS {
             break;
           }
           case DrakeShapes::CAPSULE: {
-            // gdata.type = gdata.CAPSULE;
+            gdata.type = gdata.CAPSULE;
             // gdata.num_float_data = 2;
             auto c = dynamic_cast<const DrakeShapes::Capsule &>(geometry);
-            // gdata.float_data.push_back(static_cast<float>(c.radius));
-            // gdata.float_data.push_back(static_cast<float>(c.length));
+            gdata.float_data.push_back(static_cast<float>(c.radius));
+            gdata.float_data.push_back(static_cast<float>(c.length));
             break;
           }
           default: {

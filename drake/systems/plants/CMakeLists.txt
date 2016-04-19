@@ -17,6 +17,10 @@ pods_install_pkg_config_file(drake-rbm
 
 drake_install_headers(BotVisualizer.h)
 
+if(roscpp_FOUND)
+  drake_install_headers(bot_visualizer_ros.h)
+endif()
+
 pods_find_pkg_config(gurobi)
 pods_find_pkg_config(snopt_c)
 add_subdirectory(shapes)

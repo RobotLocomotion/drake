@@ -6,7 +6,7 @@
 #include "drake/examples/Pendulum/Pendulum.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/plants/bot_visualizer_ros.h"
-// #include "drake/systems/cascade_system.h"
+#include "drake/systems/cascade_system.h"
 #include "drake/util/drakeAppUtil.h"
 
 using Drake::SimulationOptions;

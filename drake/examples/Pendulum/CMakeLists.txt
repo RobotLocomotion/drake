@@ -28,7 +28,9 @@ if (LCM_FOUND)
 endif()
 
 if(roscpp_FOUND)
+  # include_directories(${${PROJECT_NAME}_INCLUDE_DIRS})
   add_executable(run_pendulum_dynamics_ros run_pendulum_dynamics_ros.cc)
+  add_dependencies(run_pendulum_dynamics_ros ${PROJECT_NAME}_generate_messages)
   target_link_libraries(run_pendulum_dynamics_ros drakeRBM ${roscpp_LIBRARIES})
 endif()
 

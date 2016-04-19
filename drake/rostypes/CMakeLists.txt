@@ -19,4 +19,6 @@ if(roscpp_FOUND)
 
   # Do code generation, specifying which other message packages we depend on.
   generate_messages(DEPENDENCIES std_msgs)
+
+  include_directories(${${PROJECT_NAME}_INCLUDE_DIRS})
 endif()
