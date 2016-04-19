@@ -1308,7 +1308,7 @@ classdef NonlinearProgram
 
       [iGfun,jGvar] = obj.getNonlinearGradientSparsity();
       if any(fix_x_idx)
-        jGvar_free_idx = all(bsxfun(@minus,jGvar,reshape(fix_x_idx,1,[])),2);
+        jGvar_free_idx = ~ismember(jGvar,fix_x_idx);
       else
         jGvar_free_idx = true(size(jGvar));
       end
