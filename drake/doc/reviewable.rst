@@ -27,7 +27,7 @@ All threads in Reviewable must be resolved before you can merge your PR. The
 semantics of discussion resolution are a little tricky:
 
 When a reviewer creates a new comment, the reviewer's disposition toward the
-thread may be "satisfied", discussing", or "blocking".  Reviewers should:
+thread may be "satisfied", "discussing", or "blocking".  Reviewers should:
 
 * Use **satisfied** to indicate that no action is required of the author.
 * Use **discussing** to indicate that a response is required, but the author
