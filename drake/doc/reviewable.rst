@@ -27,24 +27,28 @@ All threads in Reviewable must be resolved before you can merge your PR. The
 semantics of discussion resolution are a little tricky:
 
 When a reviewer creates a new comment, the reviewer's disposition toward the
-thread may be "satisfied", discussing", or "blocking".
+thread may be "satisfied", discussing", or "blocking".  Reviewers should:
 
 * Use **satisfied** to indicate that no action is required of the author.
 * Use **discussing** to indicate that a response is required, but the author
-  may close the thread at their discretion without further input from you.
-  If the author has follow-up questions or wants you to take another look,
-  you are responsible for iterating on it. This is the default.
+  may close the thread at their discretion without further input.
+  If the author has follow-up questions, the reviewer is responsible for
+  iterating on it. This is the default.
 * Use **blocking** to indicate that the author must take action on the
-  comment. You must then review the fix and iterate on it with the author
-  until you are willing to update your status to **satisfied**.
+  comment. The reviewer must then review and iterate on the fix with the
+  author. Once an acceptable resolution is achieved, the reviewer should
+  update disposition to **satisfied**.
 
 The author may respond to each comment with the same set of dispositions.
+Authors should:
 
-* Use **satisfied** to indicate that you believe the discussion is over.
+* Use **satisfied** to indicate that they believe the discussion is over.
   If the reviewer's comment is not blocking, this will close the thread.
-* Use **discussing** to indicate that you require more input from the
+  This is the default disposition when the "Done" or "Acknowledged" button
+  is clicked.
+* Use **discussing** to indicate that they require more input from the
   reviewer.
-* Use **blocking** to indicate that you have not yet resolved the problem.
+* Use **blocking** to indicate that they have not yet resolved the problem.
   This serves as a safeguard against accidental merge.
 
 Before commenting on a line of code, reviewers should check to see if there
@@ -53,5 +57,5 @@ discussions are indicated by a small white check-mark in a grey circle to
 the left of the line of code.
 
 Reviewers should click the eye-shaped buttons to indicate that they have
-reviewed a file.  Reviewable will then remember the revision at which it
-was reviewed.
+reviewed a file.  Reviewable will remember the revisions at which the file
+was reviewed, and mark them with an eye icon in the file history.
