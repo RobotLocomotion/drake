@@ -12,6 +12,12 @@ TEST(ValueTest, Access) {
   EXPECT_EQ(3, erased.GetValue<int>());
 }
 
+TEST(ValueTest, Copy) {
+  Value<int> value(42);
+  Value<int> copied_value = value;
+  EXPECT_EQ(42, value.get_value());
+}
+
 TEST(ValueTest, Mutation) {
   Value<int> value(5);
   value.set_value(6);
