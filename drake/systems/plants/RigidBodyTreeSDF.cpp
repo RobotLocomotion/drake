@@ -203,11 +203,11 @@ void parseSDFCollision(shared_ptr<RigidBody> body, XMLElement* node,
   }
 }
 
-void parseSDFLink(RigidBodyTree* model, std::string model_name,
+bool parseSDFLink(RigidBodyTree* model, std::string model_name,
                   XMLElement* node, const PackageMap& package_map,
-                  PoseMap& pose_map, const string& root_dir) {
+                  PoseMap& pose_map, const string& root_dir, int* index) {
   const char* attr = node->Attribute("drake_ignore");
-  if (attr && strcmp(attr, "true") == 0) return;
+  if (attr && strcmp(attr, "true") == 0) return false;
 
   shared_ptr<RigidBody> body(new RigidBody());
   body->model_name = model_name;
@@ -245,8 +245,9 @@ void parseSDFLink(RigidBodyTree* model, std::string model_name,
                       pose_map, transform_to_model);
   }
 
-  model->bodies.push_back(body);
-  body->body_index = static_cast<int>(model->bodies.size()) - 1;
+  model->add_rigid_body(body);
+  *index = body->body_index;
+  return true;
 }
 
 template <typename JointType>
@@ -523,6 +524,18 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
   }
 }
 
+/**
+ * Parses a model and adds it to the rigid body tree.
+ *
+ * @param model A pointer to the rigid body tree to which to add the model.
+ * @param package_map A map containing information about the ROS workspace
+ * in which to search for meshes.
+ * @param root_dir The root directory from which to search for mesh files.
+ * @param floating_base_type The type of floating joint to use to weld the
+ * newly added model to the rigid body tree.
+ * @param weld_to_frame Specifies the initial pose of the newly added robot
+ * relative to the link to which the robot is being welded.
+ */
 void parseModel(RigidBodyTree* model, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
                 const DrakeJoint::FloatingBaseType floating_base_type,
@@ -535,73 +548,57 @@ void parseModel(RigidBodyTree* model, XMLElement* node,
     throw runtime_error("Error: your model must have a name attribute");
   string model_name = node->Attribute("name");
 
-  Isometry3d transform_to_world = Isometry3d::Identity();
-  XMLElement* pose = node->FirstChildElement("pose");
-  if (pose) {
-    poseValueToTransform(pose, pose_map, transform_to_world);
-    if (transform_to_world.matrix() != Isometry3d::Identity().matrix() &&
-        weld_to_frame != nullptr) {
-      throw std::runtime_error(
-          "SDF model double offset to world not yet supported");
+  // Maintains a list of links that were added to the rigid body tree.
+  // This is iterated over by method AddFloatingJoint() to determine where
+  // to attach floating joints.
+  std::vector<int> link_indices;
+
+  // Parses the model's link elements.
+  for (XMLElement* link_node = node->FirstChildElement("link"); link_node;
+       link_node = link_node->NextSiblingElement("link")) {
+    int index;
+    if (parseSDFLink(model, model_name, link_node, package_map, pose_map,
+                     root_dir, &index)) {
+      link_indices.push_back(index);
     }
   }
 
-  // parse link elements
-  for (XMLElement* link_node = node->FirstChildElement("link"); link_node;
-       link_node = link_node->NextSiblingElement("link"))
-    parseSDFLink(model, model_name, link_node, package_map, pose_map, root_dir);
-
-  // parse joints
+  // Parses the model's joint elements.
   for (XMLElement* joint_node = node->FirstChildElement("joint"); joint_node;
        joint_node = joint_node->NextSiblingElement("joint"))
     parseSDFJoint(model, model_name, joint_node, pose_map);
 
-  // parse frames
+  // Parses the model's Drake frame elements.
   for (XMLElement* frame_node = node->FirstChildElement("frame"); frame_node;
        frame_node = frame_node->NextSiblingElement("frame"))
     parseSDFFrame(model, model_name, frame_node);
 
-  bool has_root_node = false;
-  for (unsigned int i = 1; i < model->bodies.size(); i++) {
-    if (model->bodies[i]->parent == nullptr) {  // attach the root nodes to the
-                                                // world with a floating base
-                                                // joint
-      has_root_node = true;
-      model->bodies[i]->parent = model->bodies[0];
-
-      Isometry3d transform_to_model = Isometry3d::Identity();
-      if (pose_map.find(model->bodies[i]->linkname) != pose_map.end())
-        transform_to_model = pose_map.at(model->bodies[i]->linkname);
-
-      switch (floating_base_type) {
-        case DrakeJoint::FIXED: {
-          unique_ptr<DrakeJoint> joint(
-              new FixedJoint("base", transform_to_world * transform_to_model));
-          model->bodies[i]->setJoint(move(joint));
-        } break;
-        case DrakeJoint::ROLLPITCHYAW: {
-          unique_ptr<DrakeJoint> joint(new RollPitchYawFloatingJoint(
-              "base", transform_to_world * transform_to_model));
-          model->bodies[i]->setJoint(move(joint));
-        } break;
-        case DrakeJoint::QUATERNION: {
-          unique_ptr<DrakeJoint> joint(new QuaternionFloatingJoint(
-              "base", transform_to_world * transform_to_model));
-          model->bodies[i]->setJoint(move(joint));
-        } break;
-        default:
-          throw std::runtime_error("unknown floating base type");
-      }
+  XMLElement* pose = node->FirstChildElement("pose");
+  if (pose) {
+    // Sets a default value for weld_to_frame if none was set.
+    // By default, the robot is welded to the world frame.
+    if (weld_to_frame == nullptr) {
+      weld_to_frame = std::allocate_shared<RigidBodyFrame>(
+          Eigen::aligned_allocator<RigidBodyFrame>(), "world",
+          nullptr,  // Valid since the robot is attached to the world.
+          Eigen::Isometry3d::Identity());
     }
+
+    // Obtains the transform from the frame of the model's root link to the
+    // frame of the model's world.
+    Isometry3d transform_model_root_to_model_world = Isometry3d::Identity();
+    poseValueToTransform(pose, pose_map, transform_model_root_to_model_world);
+
+    // Implements dual-offset: one from model root to model world, another
+    // from model world to Drake's world.
+    weld_to_frame->transform_to_body =
+        weld_to_frame->transform_to_body * transform_model_root_to_model_world;
   }
-  if (!has_root_node)
-    throw runtime_error(
-        "Your model does not have a root link (every link has a joint "
-        "connecting it to some other joint).  You're about to loop "
-        "indefinitely in the compile() method.  Still need to handle this "
-        "case");
-  // could handle it by disconnecting one of the internal nodes, making that a
-  // loop joint, and connecting the new free joint to the world
+
+  // Adds the floating joint that connects the newly added robot model to the
+  // rest of the rigid body tree.
+  model->AddFloatingJoint(floating_base_type, link_indices, weld_to_frame,
+                          &pose_map);
 }
 
 void parseWorld(RigidBodyTree* model, XMLElement* node,

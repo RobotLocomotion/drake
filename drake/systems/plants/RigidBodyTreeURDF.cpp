@@ -2,8 +2,9 @@
 #include <sstream>
 #include <string>
 
-#include "drake/systems/plants/rigid_body_tree_urdf.h"
 #include "drake/systems/plants/joints/DrakeJoints.h"
+#include "drake/systems/plants/material_map.h"
+#include "drake/systems/plants/rigid_body_tree_urdf.h"
 #include "drake/systems/plants/xmlUtil.h"
 
 using namespace std;
@@ -284,11 +285,11 @@ void parseCollision(shared_ptr<RigidBody> body, XMLElement* node,
   }
 }
 
-void parseLink(RigidBodyTree* model, std::string robot_name, XMLElement* node,
+bool parseLink(RigidBodyTree* model, std::string robot_name, XMLElement* node,
                const MaterialMap& materials, const PackageMap& package_map,
-               const string& root_dir) {
+               const string& root_dir, int* index) {
   const char* attr = node->Attribute("drake_ignore");
-  if (attr && strcmp(attr, "true") == 0) return;
+  if (attr && strcmp(attr, "true") == 0) return false;
 
   shared_ptr<RigidBody> body(new RigidBody());
   body->model_name = robot_name;
@@ -315,8 +316,9 @@ void parseLink(RigidBodyTree* model, std::string robot_name, XMLElement* node,
     parseCollision(body, collision_node, model, package_map, root_dir);
   }
 
-  model->bodies.push_back(body);
-  body->body_index = static_cast<int>(model->bodies.size()) - 1;
+  model->add_rigid_body(body);
+  *index = body->body_index;
+  return true;
 }
 
 template <typename JointType>
@@ -539,16 +541,26 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
 
   string robotname = node->Attribute("name");
 
-  // parse material elements
+  // Parses the model's material elements.
   MaterialMap materials;
   for (XMLElement* link_node = node->FirstChildElement("material"); link_node;
        link_node = link_node->NextSiblingElement("material"))
     parseMaterial(link_node, materials);  // accept failed material parsing
 
-  // parse link elements
+  // Maintains a list of links that were added to the rigid body tree.
+  // This is iterated over by method AddFloatingJoint() to determine where
+  // to attach floating joints.
+  std::vector<int> link_indices;
+
+  // Parses the model's link elements.
   for (XMLElement* link_node = node->FirstChildElement("link"); link_node;
-       link_node = link_node->NextSiblingElement("link"))
-    parseLink(model, robotname, link_node, materials, package_map, root_dir);
+       link_node = link_node->NextSiblingElement("link")) {
+    int index;
+    if (parseLink(model, robotname, link_node, materials, package_map, root_dir,
+                  &index)) {
+      link_indices.push_back(index);
+    }
+  }
 
   // DEBUG
   // else {
@@ -560,77 +572,31 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
 
   // todo: parse collision filter groups
 
-  // parse joints
+  // Parses the model's joint elements.
   for (XMLElement* joint_node = node->FirstChildElement("joint"); joint_node;
        joint_node = joint_node->NextSiblingElement("joint"))
     parseJoint(model, joint_node);
 
-  // parse transmission elements
+  // Parses the model's transmission elements.
   for (XMLElement* transmission_node = node->FirstChildElement("transmission");
        transmission_node;
        transmission_node =
            transmission_node->NextSiblingElement("transmission"))
     parseTransmission(model, transmission_node);
 
-  // parse loop joints
+  // Parses the model's loop joint elements.
   for (XMLElement* loop_node = node->FirstChildElement("loop_joint"); loop_node;
        loop_node = loop_node->NextSiblingElement("loop_joint"))
     parseLoop(model, loop_node);
 
-  // parse Drake frames
+  // Parses the model's Drake frame elements.
   for (XMLElement* frame_node = node->FirstChildElement("frame"); frame_node;
        frame_node = frame_node->NextSiblingElement("frame"))
     parseFrame(model, frame_node);
 
-  std::string floating_joint_name;
-  std::shared_ptr<RigidBody> weld_to_body;
-  Isometry3d transform_to_body;
-  if (!weld_to_frame) {
-    // If no body was given for us to weld to, then weld to the world
-    weld_to_body = model->bodies[0];
-    floating_joint_name = "base";
-    transform_to_body = Isometry3d::Identity();
-  } else {
-    // If the robot is being welded to the world, ignore the "body" variable
-    // within weld_to_frame. Instead, only use the transform_to_body
-    // variable to initialize the robot at the desired location in the world.
-    if (weld_to_frame->name.compare("world") == 0) {
-      weld_to_body = model->bodies[0];  // the world's body
-      floating_joint_name = "base";
-      transform_to_body = weld_to_frame->transform_to_body;
-    } else {
-      weld_to_body = weld_to_frame->body;
-      transform_to_body = weld_to_frame->transform_to_body;
-      floating_joint_name = "weld";
-    }
-  }
-
-  for (unsigned int i = 1; i < model->bodies.size(); i++) {
-    if (model->bodies[i]->parent == nullptr) {  // attach the root nodes to the
-                                                // world with a floating base
-                                                // joint
-      model->bodies[i]->parent = weld_to_body;
-      switch (floating_base_type) {
-        case DrakeJoint::FIXED: {
-          unique_ptr<DrakeJoint> joint(
-              new FixedJoint(floating_joint_name, transform_to_body));
-          model->bodies[i]->setJoint(move(joint));
-        } break;
-        case DrakeJoint::ROLLPITCHYAW: {
-          unique_ptr<DrakeJoint> joint(new RollPitchYawFloatingJoint(
-              floating_joint_name, transform_to_body));
-          model->bodies[i]->setJoint(move(joint));
-        } break;
-        case DrakeJoint::QUATERNION: {
-          unique_ptr<DrakeJoint> joint(new QuaternionFloatingJoint(
-              floating_joint_name, transform_to_body));
-          model->bodies[i]->setJoint(move(joint));
-        } break;
-        default:
-          throw std::runtime_error("unknown floating base type");
-      }
-    }
-  }
+  // Adds the floating joint(s) that connect the newly added robot model to the
+  // rest of the rigid body tree.
+  model->AddFloatingJoint(floating_base_type, link_indices, weld_to_frame);
 }
 
 void parseURDF(RigidBodyTree* model, XMLDocument* xml_doc,
