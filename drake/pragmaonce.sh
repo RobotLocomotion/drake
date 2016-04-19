@@ -3,14 +3,13 @@
 set -ex
 
 find . -name thirdParty -prune -o -name pod-build -prune -o -name 'doc' -prune -o -name '*.h' -print0 |
-  xargs --verbose -n1 -0 perl -ne '
+  xargs -n1 -0 perl -pi -e '
 BEGIN { undef $/; }
 
 if (m|^(//[^\n]*\n)*\n*#ifndef (DRAKE_\S+)|) {
   $guard = $2;
-  print STDERR "Found $guard\n";
-  s|#ifndef\s+$guard\s*\n#define\s+$guard\s*|#pragma once|m or die("cannot fix open");
-  s|#endif *([/*]*\s*$guard\s*[/*]*)?\s*\n$|| or die("cannot fix close");
+  s|#ifndef\s+$guard\s*\n#define\s+$guard\s*\n*|#pragma once\n\n|m or die("cannot fix open");
+  s|\n*#endif *([/*]*\s*$guard\s*[/*]*)?\s*\n$|\n| or die("cannot fix close");
 } else {
   die("Cannot find include guard");
 }
