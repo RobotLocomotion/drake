@@ -8,6 +8,7 @@
 #include "drake/examples/Pendulum/Pendulum.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/plants/bot_visualizer_ros.h"
+#include "drake/systems/ros_system.h"
 #include "drake/systems/cascade_system.h"
 #include "drake/util/drakeAppUtil.h"
 
@@ -38,5 +39,5 @@ int main(int argc, char* argv[]) {
     options.warn_real_time_violation = true;
   }
 
-  // runROS(sys, lcm, 0, 10, x0, options);
+  drake::systems::RunROS(sys, 0, 10, x0, options);
 }

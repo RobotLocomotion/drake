@@ -49,13 +49,15 @@ class BotVisualizerROS {
   }
 
   void init() {
+    ros::NodeHandle nh;
+
     // Instantiates the ROS topic publishers.
     drake_viewer_load_robot_publisher_ =
-      nh_.advertise<drake::rost_viewer_load_robot>("drake_viewer_load_robot",
+      nh.advertise<drake::rost_viewer_load_robot>("drake_viewer_load_robot",
         1000);
 
     drake_viewer_draw_publisher_ =
-      nh_.advertise<drake::rost_viewer_draw>("drake_viewer_draw",
+      nh.advertise<drake::rost_viewer_draw>("drake_viewer_draw",
         1000);
 
     // Publishes the load robot message.
@@ -232,11 +234,6 @@ class BotVisualizerROS {
   bool isDirectFeedthrough() const { return true; }
 
  private:
-  /*!
-   * The ROS node handle to use when interacting with the ROS network.
-   */
-  ros::NodeHandle nh_;
-
   /*!
    * The ROS topic publisher for publishing drake::rost_viewer_load_robot
    * messages.
