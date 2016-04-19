@@ -135,7 +135,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   std::string getVelocityName(int velocity_num) const;
   std::string getStateName(int state_num) const;
 
-  void drawKinematicTree(std::string graphviz_dotfile_filename);
+  void drawKinematicTree(std::string graphviz_dotfile_filename) const;
 
   template <typename DerivedQ>
   KinematicsCache<typename DerivedQ::Scalar> doKinematics(
