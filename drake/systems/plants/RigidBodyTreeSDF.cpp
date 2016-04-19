@@ -597,8 +597,8 @@ void parseModel(RigidBodyTree* model, XMLElement* node,
 
   // Adds the floating joint that connects the newly added robot model to the
   // rest of the rigid body tree.
-  model->AddFloatingJoint(&pose_map, floating_base_type, link_indices,
-                          weld_to_frame);
+  model->AddFloatingJoint(floating_base_type, link_indices, weld_to_frame,
+                          &pose_map);
 }
 
 void parseWorld(RigidBodyTree* model, XMLElement* node,

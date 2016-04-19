@@ -52,7 +52,7 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointNoOffset) {
 
   // Adds floating joints that connect r1b1 and r2b1 to the rigid body tree's
   // world link at zero offset.
-  tree.AddFloatingJoint(nullptr, DrakeJoint::QUATERNION,
+  tree.AddFloatingJoint(DrakeJoint::QUATERNION,
                         {r1b1->body_index, r2b1->body_index});
 
   // Verfies that the two rigid bodies are located in the correct place.
@@ -86,7 +86,7 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWithOffset) {
       Eigen::aligned_allocator<RigidBodyFrame>(), "world", nullptr,
       T_r1and2_to_world);
 
-  tree.AddFloatingJoint(nullptr, DrakeJoint::QUATERNION,
+  tree.AddFloatingJoint(DrakeJoint::QUATERNION,
                         {r1b1->body_index, r2b1->body_index}, weld_to_frame);
 
   // Verfies that the two rigid bodies are located in the correct place.
@@ -106,7 +106,7 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
   // zero offset. Verifies that it is in the correct place.
   tree.add_rigid_body(r1b1);
 
-  tree.AddFloatingJoint(nullptr, DrakeJoint::QUATERNION, {r1b1->body_index});
+  tree.AddFloatingJoint(DrakeJoint::QUATERNION, {r1b1->body_index});
 
   // Adds rigid body r2b1 to the rigid body tree and welds it to r1b1 with
   // offset x = 1, y = 1, z = 1. Verifies that it is in the correct place.
@@ -124,8 +124,7 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
       Eigen::aligned_allocator<RigidBodyFrame>(), "body1",
       tree.findLink("body1", "robot1"), T_r2_to_r1);
 
-  tree.AddFloatingJoint(nullptr, DrakeJoint::QUATERNION, {r2b1->body_index},
-                        r2b1_weld);
+  tree.AddFloatingJoint(DrakeJoint::QUATERNION, {r2b1->body_index}, r2b1_weld);
 
   // Adds rigid body r3b1 and r4b1 to the rigid body tree and welds it to r2b1
   // with offset x = 2, y = 2, z = 2. Verifies that it is in the correct place.
@@ -144,7 +143,7 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointWeldToLink) {
       Eigen::aligned_allocator<RigidBodyFrame>(), "body1",
       tree.findLink("body1", "robot2"), T_r3_and_r4_to_r2);
 
-  tree.AddFloatingJoint(nullptr, DrakeJoint::QUATERNION,
+  tree.AddFloatingJoint(DrakeJoint::QUATERNION,
                         {r3b1->body_index, r4b1->body_index},
                         r3b1_and_r4b1_weld);
 

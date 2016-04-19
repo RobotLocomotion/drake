@@ -1851,11 +1851,11 @@ void RigidBodyTree::add_rigid_body(std::shared_ptr<RigidBody> body) {
   body->body_index = static_cast<int>(bodies.size()) - 1;
 }
 
-void RigidBodyTree::AddFloatingJoint(
-    const PoseMap* pose_map,
+int RigidBodyTree::AddFloatingJoint(
     const DrakeJoint::FloatingBaseType floating_base_type,
     const std::vector<int>& link_indices,
-    const std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+    const std::shared_ptr<RigidBodyFrame> weld_to_frame,
+    const PoseMap* pose_map) {
   std::string floating_joint_name;
   std::shared_ptr<RigidBody> weld_to_body;
   Eigen::Isometry3d transform_to_world;
@@ -1887,7 +1887,7 @@ void RigidBodyTree::AddFloatingJoint(
     transform_to_world = weld_to_frame->transform_to_body;
   }
 
-  bool floating_joint_added = false;
+  int num_floating_joints_added = 0;
 
   for (auto i : link_indices) {
     if (bodies[i]->parent == nullptr) {
@@ -1905,19 +1905,19 @@ void RigidBodyTree::AddFloatingJoint(
           std::unique_ptr<DrakeJoint> joint(new FixedJoint(
               floating_joint_name, transform_to_world * transform_to_model));
           bodies[i]->setJoint(move(joint));
-          floating_joint_added = true;
+          num_floating_joints_added++;
         } break;
         case DrakeJoint::ROLLPITCHYAW: {
           std::unique_ptr<DrakeJoint> joint(new RollPitchYawFloatingJoint(
               floating_joint_name, transform_to_world * transform_to_model));
           bodies[i]->setJoint(move(joint));
-          floating_joint_added = true;
+          num_floating_joints_added++;
         } break;
         case DrakeJoint::QUATERNION: {
           std::unique_ptr<DrakeJoint> joint(new QuaternionFloatingJoint(
               floating_joint_name, transform_to_world * transform_to_model));
           bodies[i]->setJoint(move(joint));
-          floating_joint_added = true;
+          num_floating_joints_added++;
         } break;
         default:
           throw std::runtime_error("unknown floating base type");
@@ -1925,7 +1925,7 @@ void RigidBodyTree::AddFloatingJoint(
     }
   }
 
-  if (!floating_joint_added) {
+  if (num_floating_joints_added == 0) {
     throw std::runtime_error(
         "No root links found (every link in the rigid body model has a joint "
         "connecting it to some other joint).  You're about to loop "
@@ -1934,6 +1934,8 @@ void RigidBodyTree::AddFloatingJoint(
     // could handle it by disconnecting one of the internal nodes, making that a
     // loop joint, and connecting the new free joint to the world
   }
+
+  return num_floating_joints_added;
 }
 
 template DRAKERBM_EXPORT Eigen::Matrix<

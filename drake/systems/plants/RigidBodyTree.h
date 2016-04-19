@@ -14,9 +14,9 @@
 #include "drake/systems/plants/KinematicsCache.h"
 #include "drake/systems/plants/RigidBody.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
-#include "drake/systems/plants/pose_map.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
 #include "drake/systems/plants/joints/DrakeJoints.h"
+#include "drake/systems/plants/pose_map.h"
 #include "drake/systems/plants/shapes/DrakeShapes.h"
 #include "drake/util/drakeUtil.h"
 
@@ -713,7 +713,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
      */
     int ncols = in_terms_of_qdot ? num_positions : num_velocities;
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                  Eigen::Dynamic> full(compact.rows(), ncols);
+                  Eigen::Dynamic>
+        full(compact.rows(), ncols);
     full.setZero();
     int compact_col_start = 0;
     for (std::vector<int>::const_iterator it = joint_path.begin();
@@ -751,22 +752,24 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * created while calling add_rigid_body(). The purpose of the floating joint
    * is to connect the links and of their child branches to the rigid body tree.
    *
-   * @param pose_map A mapping where the key is the link's name and the value
-   * is a the transform from the frame of the link to the frame of the model
-   * to which the link belongs.
    * @param floating_base_type The floating joint's type.
    * @param link_indices A list of link indexes to check. A floating joint is
    * added to any link in this list that does not have a parent joint.
    * @param weld_to_frame The frame to which the floating joint should attach
    * the parent-less non-world links. This parameter may be nullptr, in which
    * case the link is welded to the world with zero offset.
-   * @throws A std::runtime_error if no parent-less links are found in the
-   * rigid body tree, or if the floating_base_type is unrecognized.
+   * @param pose_map A mapping where the key is the link's name and the value
+   * is the transform from the frame of the link to the frame of the model
+   * to which the link belongs.
+   * @return The number of floating joint added to this rigid body tree.
+   * @throws A std::runtime_error if the floating_base_type is unrecognized or
+   * zero floating joints were added to the model.
    */
-  void AddFloatingJoint(
-      const PoseMap* pose_map, DrakeJoint::FloatingBaseType floating_base_type,
+  int AddFloatingJoint(
+      DrakeJoint::FloatingBaseType floating_base_type,
       const std::vector<int>& link_indices,
-      const std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
+      const std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr,
+      const PoseMap* pose_map = nullptr);
 
  public:
   static const std::set<int> default_robot_num_set;
