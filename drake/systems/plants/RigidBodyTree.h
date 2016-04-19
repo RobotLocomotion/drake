@@ -139,7 +139,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
   template <typename DerivedQ>
   KinematicsCache<typename DerivedQ::Scalar> doKinematics(
-      const Eigen::MatrixBase<DerivedQ>& q) {
+      const Eigen::MatrixBase<DerivedQ>& q) const {
     KinematicsCache<typename DerivedQ::Scalar> ret(bodies);
     ret.initialize(q);
     doKinematics(ret);
