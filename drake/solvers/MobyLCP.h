@@ -1,8 +1,7 @@
 // Adapted with permission from code by Evan Drumwright
 // (https://github.com/edrumwri).
 
-#ifndef DRAKE_SOLVERS_MOBYLCP_H_
-#define DRAKE_SOLVERS_MOBYLCP_H_
+#pragma once
 
 #include <fstream>
 #include <Eigen/SparseCore>
@@ -87,5 +86,3 @@ class DRAKEOPTIMIZATION_EXPORT MobyLCPSolver
 };
 
 }  // end namespace Drake
-
-#endif  // DRAKE_SOLVERS_MOBYLCP_H_

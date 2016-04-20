@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_PLANTS_JOINTS_QUATERNIONFLOATINGJOINT_H_
-#define DRAKE_SYSTEMS_PLANTS_JOINTS_QUATERNIONFLOATINGJOINT_H_
+#pragma once
 
 #include "DrakeJointImpl.h"
 #include "drake/util/drakeGeometryUtil.h"
@@ -145,5 +144,3 @@ class DRAKEJOINTS_EXPORT QuaternionFloatingJoint
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-
-#endif  // DRAKE_SYSTEMS_PLANTS_JOINTS_QUATERNIONFLOATINGJOINT_H_

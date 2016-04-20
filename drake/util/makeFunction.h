@@ -1,5 +1,4 @@
-#ifndef DRAKE_UTIL_MAKEFUNCTION_H_
-#define DRAKE_UTIL_MAKEFUNCTION_H_
+#pragma once
 
 #include <functional>
 
@@ -40,5 +39,3 @@ auto make_function(ReturnType (ClassType::*p)(Args...) const)
   return {std::mem_fn(p)};
 }
 }
-
-#endif  // DRAKE_UTIL_MAKEFUNCTION_H_

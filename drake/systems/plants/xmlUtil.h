@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_PLANTS_XMLUTIL_H_
-#define DRAKE_SYSTEMS_PLANTS_XMLUTIL_H_
+#pragma once
 
 #include <string>
 #include <map>
@@ -70,5 +69,3 @@ DRAKEXMLUTIL_EXPORT void populatePackageMap(PackageMap& package_map);
 DRAKEXMLUTIL_EXPORT std::string resolveFilename(const std::string& filename,
                                                 const PackageMap& package_map,
                                                 const std::string& root_dir);
-
-#endif  // DRAKE_SYSTEMS_PLANTS_XMLUTIL_H_

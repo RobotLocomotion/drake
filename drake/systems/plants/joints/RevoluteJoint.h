@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_PLANTS_JOINTS_REVOLUTEJOINT_H_
-#define DRAKE_SYSTEMS_PLANTS_JOINTS_REVOLUTEJOINT_H_
+#pragma once
 
 #include "FixedAxisOneDoFJoint.h"
 #include <Eigen/Geometry>
@@ -43,5 +42,3 @@ class DRAKEJOINTS_EXPORT RevoluteJoint
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-
-#endif  // DRAKE_SYSTEMS_PLANTS_JOINTS_REVOLUTEJOINT_H_

@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_CONTROLLERS_INSTANTANEOUSQPCONTROLLER_H_
-#define DRAKE_SYSTEMS_CONTROLLERS_INSTANTANEOUSQPCONTROLLER_H_
+#pragma once
 
 #include <memory>
 #include "QPCommon.h"
@@ -124,5 +123,3 @@ void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot,
                             const KinematicModifications& modifications);
 void applyURDFModifications(std::unique_ptr<RigidBodyTree>& robot,
                             const std::string& urdf_modifications_filename);
-
-#endif  // DRAKE_SYSTEMS_CONTROLLERS_INSTANTANEOUSQPCONTROLLER_H_

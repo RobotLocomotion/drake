@@ -1,5 +1,4 @@
-#ifndef DRAKE_UTIL_CONVEXHULL_H_
-#define DRAKE_UTIL_CONVEXHULL_H_
+#pragma once
 
 #include <vector>
 #include <Eigen/Dense>
@@ -33,5 +32,3 @@ DRAKECONVEXHULL_EXPORT bool inConvexHull(
 DRAKECONVEXHULL_EXPORT double signedDistanceInsideConvexHull(
     const Eigen::Ref<const Eigen::Matrix<double, 2, Eigen::Dynamic>> &pts,
     const Eigen::Ref<const Eigen::Vector2d> &q);
-
-#endif  // DRAKE_UTIL_CONVEXHULL_H_

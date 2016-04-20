@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_PLANTS_RIGIDBODYTREEMEXCONVERSIONS_H_
-#define DRAKE_SYSTEMS_PLANTS_RIGIDBODYTREEMEXCONVERSIONS_H_
+#pragma once
 
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "KinematicsCache.h"
@@ -99,5 +98,3 @@ void toMex(const KinematicPath &path, mxArray *dest[], int nlhs) {
     dest[2] = stdVectorToMatlab(path.joint_direction_signs);
   }
 }
-
-#endif  // DRAKE_SYSTEMS_PLANTS_RIGIDBODYTREEMEXCONVERSIONS_H_

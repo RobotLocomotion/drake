@@ -1,5 +1,4 @@
-#ifndef DRAKE_SOLVERS_FASTQP_H_
-#define DRAKE_SOLVERS_FASTQP_H_
+#pragma once
 
 #include <Eigen/Dense>
 #include <vector>
@@ -34,5 +33,3 @@ Eigen::MatrixBase<tB>& f, const Eigen::MatrixBase<tC>& Aeq, const
 Eigen::MatrixBase<tD>& beq, const Eigen::MatrixBase<tE>& Ain, const
 Eigen::MatrixBase<tF>& bin, std::set<int>& active, Eigen::MatrixBase<tG>& x);
 */
-
-#endif  // DRAKE_SOLVERS_FASTQP_H_
