@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_ROBOTINTERFACES_BODYMOTIONDATA_H_
-#define DRAKE_SYSTEMS_ROBOTINTERFACES_BODYMOTIONDATA_H_
+#pragma once
 
 #include <vector>
 #include <Eigen/Core>
@@ -48,5 +47,3 @@ class BodyMotionData {
 
   const Eigen::Vector3d& getXyzProportionalGainMultiplier() const;
 };
-
-#endif  // DRAKE_SYSTEMS_ROBOTINTERFACES_BODYMOTIONDATA_H_

@@ -1,6 +1,4 @@
-#ifndef DRAKE_SYSTEMS_PLANTS_EIQUADPROG_H_
-#define DRAKE_SYSTEMS_PLANTS_EIQUADPROG_H_
-
+#pragma once
 
 /*
  FILE eiquadprog.h
@@ -582,5 +580,3 @@ inline void delete_constraint(MatrixXd& R, MatrixXd& J, VectorXi& A, VectorXd& u
 }
 
 }
-
-#endif  // DRAKE_SYSTEMS_PLANTS_EIQUADPROG_H_

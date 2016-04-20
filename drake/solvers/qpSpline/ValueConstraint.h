@@ -1,5 +1,4 @@
-#ifndef DRAKE_SOLVERS_QPSPLINE_VALUECONSTRAINT_H_
-#define DRAKE_SOLVERS_QPSPLINE_VALUECONSTRAINT_H_
+#pragma once
 
 #include "drake/drakeSplineGeneration_export.h"
 
@@ -15,5 +14,3 @@ class DRAKESPLINEGENERATION_EXPORT ValueConstraint {
   double getTime() const;
   double getValue() const;
 };
-
-#endif /* DRAKE_SOLVERS_QPSPLINE_VALUECONSTRAINT_H_ */

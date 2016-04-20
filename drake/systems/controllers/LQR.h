@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_CONTROLLERS_LQR_H_
-#define DRAKE_SYSTEMS_CONTROLLERS_LQR_H_
+#pragma once
 
 #include "drake/core/Function.h"
 #include "drake/core/Gradient.h"
@@ -57,6 +56,3 @@ timeInvariantLQR(const System& sys,
       Matrix<double, num_inputs, 0>::Zero(), -K, toEigen(u0) + K * toEigen(x0));
 }
 }
-
-#endif  // DRAKE_SYSTEMS_CONTROLLERS_LQR_H_
-
