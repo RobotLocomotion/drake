@@ -6,8 +6,8 @@ Additional prerequisite
 
 Install `pygame` (e.g. with `brew install pygame`, or `apt-get install python-pygame`)
 
-You can still run the car simulation without `pygame`, but it won't be much fun.
-to run the simulation without `pygame`, you can use `publishDrivingCommand` (see below).
+Note that you can still run the car simulation without `pygame`, but it won't be as fun.
+To run the simulation without `pygame`, use `publishDrivingCommand` as described below.
 
 Add environment variable `DRAKE_ROOT` pointing to the location of your clone of the Drake repository.
 
