@@ -240,7 +240,8 @@ string RigidBodyTree::getStateName(int state_num) const {
     return getVelocityName(state_num - num_positions);
 }
 
-void RigidBodyTree::drawKinematicTree(std::string graphviz_dotfile_filename) {
+void RigidBodyTree::drawKinematicTree(
+    std::string graphviz_dotfile_filename) const {
   ofstream dotfile;
   dotfile.open(graphviz_dotfile_filename);
   dotfile << "digraph {" << endl;
