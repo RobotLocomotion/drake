@@ -302,10 +302,6 @@ find_program(avl avl PATHS ${CMAKE_INSTALL_DIR}/bin )
 find_program(xfoil xfoil PATHS ${CMAKE_INSTALL_DIR}/bin )
 find_program(ffmpeg ffmpeg)
 
-# todo: build doxygen here (and remove it from the Makefile)
-# http://majewsky.wordpress.com/2010/08/14/tip-of-the-day-cmake-and-doxygen/
-
-
 # write some additional information to the CMake cache
 set(lcm_java_classpath "${lcm-java_CLASSPATH}" CACHE FILEPATH "${lcm-java_CLASSPATH}" FORCE)
 
@@ -324,6 +320,12 @@ if (MATLAB_FOUND)
   	COMMAND "r = RigidBodyManipulator('Acrobot.urdf'), megaclear"
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/examples/Acrobot
     PROPERTIES TIMEOUT 300)
+endif()
+
+option(BUILD_DOCUMENTATION "Build Doxygen and Sphinx documentation." ON)
+
+if(BUILD_DOCUMENTATION)
+  add_subdirectory(doc)
 endif()
 
 if(IS_DIRECTORY doc/textbook)
