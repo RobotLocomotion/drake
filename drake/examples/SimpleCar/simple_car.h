@@ -1,5 +1,4 @@
-#ifndef DRAKE_EXAMPLES_SIMPLECAR_SIMPLE_CAR_H_
-#define DRAKE_EXAMPLES_SIMPLECAR_SIMPLE_CAR_H_
+#pragma once
 
 #include <algorithm>
 #include <cmath>
@@ -91,5 +90,3 @@ class DRAKESIMPLECAR_EXPORT SimpleCar {
   const drake::lcmt_simple_car_config_t config_;
 };
 }
-
-#endif  // DRAKE_EXAMPLES_SIMPLECAR_SIMPLE_CAR_H_

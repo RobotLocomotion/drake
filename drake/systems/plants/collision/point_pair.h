@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_PLANTS_COLLISION_POINT_PAIR_H_
-#define DRAKE_SYSTEMS_PLANTS_COLLISION_POINT_PAIR_H_
+#pragma once
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
@@ -66,6 +65,3 @@ class DRAKECOLLISION_EXPORT PointPair {
 };
 
 }  // namespace DrakeCollision
-
-#endif  // DRAKE_SYSTEMS_PLANTS_COLLISION_POINT_PAIR_H_
-

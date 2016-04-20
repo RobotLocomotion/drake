@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_PLANTS_RIGIDBODYFRAME_H_
-#define DRAKE_SYSTEMS_PLANTS_RIGIDBODYFRAME_H_
+#pragma once
 
 #include <Eigen/Dense>
 
@@ -51,5 +50,3 @@ class DRAKERBM_EXPORT RigidBodyFrame {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-
-#endif  // DRAKE_SYSTEMS_PLANTS_RIGIDBODYFRAME_H_

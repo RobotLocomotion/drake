@@ -1,5 +1,4 @@
-#ifndef DRAKE_UTIL_DRAKEAPPUTIL_H_
-#define DRAKE_UTIL_DRAKEAPPUTIL_H_
+#pragma once
 
 #include <string>
 #include <algorithm>
@@ -37,5 +36,3 @@ bool commandLineOptionExists(char** begin, char** end,
                              const std::string& option) {
   return std::find(begin, end, option) != end;
 }
-
-#endif  // DRAKE_UTIL_DRAKEAPPUTIL_H_

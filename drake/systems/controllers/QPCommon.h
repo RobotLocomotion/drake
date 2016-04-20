@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_CONTROLLERS_QPCOMMON_H_
-#define DRAKE_SYSTEMS_CONTROLLERS_QPCOMMON_H_
+#pragma once
 
 #include "drake/systems/controllers/controlUtil.h"
 #include "drake/util/drakeUtil.h"
@@ -364,4 +363,3 @@ class KinematicModifications {
   }
 };
 
-#endif  // DRAKE_SYSTEMS_CONTROLLERS_QPCOMMON_H_
