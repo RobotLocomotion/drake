@@ -1,5 +1,4 @@
-#ifndef DRAKE_EXAMPLES_QUADROTOR_QUADROTOROUTPUT_H_
-#define DRAKE_EXAMPLES_QUADROTOR_QUADROTOROUTPUT_H_
+#pragma once
 
 #include <Eigen/Dense>
 #include "lcmtypes/drake/lcmt_quadrotor_output_t.hpp"
@@ -105,5 +104,3 @@ bool encode(const double& t, const QuadrotorOutput<double> & x, drake::lcmt_quad
   msg.rangefinder = x.rangefinder;
   return true;
 }
-
-#endif  // DRAKE_EXAMPLES_QUADROTOR_QUADROTOROUTPUT_H_

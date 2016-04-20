@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_LCMSYSTEM_H_
-#define DRAKE_SYSTEMS_LCMSYSTEM_H_
+#pragma once
 
 #include <mutex>
 #include <stdexcept>
@@ -290,5 +289,3 @@ void runLCM(const System &sys, std::shared_ptr<lcm::LCM> lcm, double t0,
 }
 
 }  // end namespace Drake
-
-#endif  // DRAKE_SYSTEMS_LCMSYSTEM_H_

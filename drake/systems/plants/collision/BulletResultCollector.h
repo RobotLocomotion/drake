@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_PLANTS_COLLISION_BULLETRESULTCOLLECTOR_H_
-#define DRAKE_SYSTEMS_PLANTS_COLLISION_BULLETRESULTCOLLECTOR_H_
+#pragma once
 
 #include "drake/systems/plants/collision/DrakeCollision.h"
 #include "drake/systems/plants/collision/ResultCollector.h"
@@ -33,5 +32,3 @@ class BulletResultCollector : public ResultCollector,
   int curr_bodyB_idx;
 };
 }
-
-#endif  // DRAKE_SYSTEMS_PLANTS_COLLISION_BULLETRESULTCOLLECTOR_H_

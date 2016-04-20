@@ -1,5 +1,4 @@
-#ifndef DRAKE_UTIL_DRAKEUTIL_H_
-#define DRAKE_UTIL_DRAKEUTIL_H_
+#pragma once
 
 /*
  * drakeUtil.h
@@ -182,5 +181,3 @@ void lqr(Eigen::MatrixBase<DerivedA> const& A,
   care(A, B, Q, R, S);
   K = R_cholesky.solve(B.transpose() * S);
 }
-
-#endif  // DRAKE_UTIL_DRAKEUTIL_H_

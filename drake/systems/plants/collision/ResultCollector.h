@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_PLANTS_COLLISION_RESULTCOLLECTOR_H_
-#define DRAKE_SYSTEMS_PLANTS_COLLISION_RESULTCOLLECTOR_H_
+#pragma once
 
 #include "drake/systems/plants/collision/DrakeCollision.h"
 
@@ -27,5 +26,3 @@ class ResultCollector {
 
 typedef std::shared_ptr<ResultCollector> ResultCollShPtr;
 }
-
-#endif  // DRAKE_SYSTEMS_PLANTS_COLLISION_RESULTCOLLECTOR_H_

@@ -1,5 +1,4 @@
-#ifndef DRAKE_EXAMPLES_QUADROTOR_QUADROTORINPUT_H_
-#define DRAKE_EXAMPLES_QUADROTOR_QUADROTORINPUT_H_
+#pragma once
 
 #include <Eigen/Dense>
 #include "lcmtypes/drake/lcmt_quadrotor_input_t.hpp"
@@ -40,5 +39,3 @@ bool decode(const drake::lcmt_quadrotor_input_t& msg, double& t, QuadrotorInput<
   x.motors = Eigen::Vector4d(msg.motors);
   return true;
 }
-
-#endif  // DRAKE_EXAMPLES_QUADROTOR_QUADROTORINPUT_H_

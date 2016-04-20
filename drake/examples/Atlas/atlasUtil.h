@@ -1,5 +1,4 @@
-#ifndef DRAKE_EXAMPLES_ATLAS_ATLASUTIL_H_
-#define DRAKE_EXAMPLES_ATLAS_ATLASUTIL_H_
+#pragma once
 
 #include "drake/drakeAtlasUtil_export.h"
 
@@ -13,5 +12,3 @@ namespace Atlas {
 DRAKEATLASUTIL_EXPORT bool ankleCloseToLimits(double akx, double aky,
                                               double tol);
 }
-
-#endif  // DRAKE_EXAMPLES_ATLAS_ATLASUTIL_H_

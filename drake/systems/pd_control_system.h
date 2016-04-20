@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_PD_CONTROL_SYSTEM_H_
-#define DRAKE_SYSTEMS_PD_CONTROL_SYSTEM_H_
+#pragma once
 
 #include <memory>
 
@@ -82,5 +81,3 @@ class PDControlSystem {
 };
 
 }  // end namespace Drake
-
-#endif  // DRAKE_SYSTEMS_PD_CONTROL_SYSTEM_H_

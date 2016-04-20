@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_TRAJECTORIES_PIECEWISEPOLYNOMIALBASE_H_
-#define DRAKE_SYSTEMS_TRAJECTORIES_PIECEWISEPOLYNOMIALBASE_H_
+#pragma once
 
 #include <Eigen/Core>
 #include <vector>
@@ -26,5 +25,3 @@ class DRAKETRAJECTORIES_EXPORT PiecewisePolynomialBase
  protected:
   PiecewisePolynomialBase();
 };
-
-#endif /* DRAKE_SYSTEMS_TRAJECTORIES_PIECEWISEPOLYNOMIALBASE_H_ */

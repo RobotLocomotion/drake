@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_PLANTS_RIGID_BODY_TREE_URDF_H_
-#define DRAKE_SYSTEMS_PLANTS_RIGID_BODY_TREE_URDF_H_
+#pragma once
 
 #include <memory>
 #include <string>
@@ -21,5 +20,3 @@ DRAKERBM_EXPORT std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
 
 }  // namespace systems
 }  // namespace drake
-
-#endif  // DRAKE_SYSTEMS_PLANTS_RIGID_BODY_TREE_URDF_H_

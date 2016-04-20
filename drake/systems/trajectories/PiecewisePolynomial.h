@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_TRAJECTORIES_PIECEWISEPOLYNOMIAL_H_
-#define DRAKE_SYSTEMS_TRAJECTORIES_PIECEWISEPOLYNOMIAL_H_
+#pragma once
 
 #include <Eigen/Core>
 #include "drake/systems/trajectories/PiecewisePolynomialBase.h"
@@ -109,5 +108,3 @@ class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial
   double segmentValueAtGlobalAbscissa(int segment_index, double t,
                                       Eigen::Index row, Eigen::Index col) const;
 };
-
-#endif  // DRAKE_SYSTEMS_TRAJECTORIES_PIECEWISEPOLYNOMIAL_H_
