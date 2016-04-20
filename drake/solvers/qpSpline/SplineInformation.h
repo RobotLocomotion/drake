@@ -1,5 +1,4 @@
-#ifndef DRAKE_SOLVERS_QPSPLINE_SPLINEINFORMATION_H_
-#define DRAKE_SOLVERS_QPSPLINE_SPLINEINFORMATION_H_
+#pragma once
 
 #include <vector>
 #include "drake/systems/trajectories/PiecewisePolynomialBase.h"
@@ -40,5 +39,3 @@ class DRAKESPLINEGENERATION_EXPORT SplineInformation
 
   std::vector<double> const& getSegmentTimes() const;
 };
-
-#endif /* DRAKE_SOLVERS_QPSPLINE_SPLINEINFORMATION_H_ */

@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_PLANTS_JOINTS_FIXEDJOINT_H_
-#define DRAKE_SYSTEMS_PLANTS_JOINTS_FIXEDJOINT_H_
+#pragma once
 
 #include "DrakeJointImpl.h"
 
@@ -93,5 +92,3 @@ class DRAKEJOINTS_EXPORT FixedJoint : public DrakeJointImpl<FixedJoint> {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-
-#endif /* DRAKE_SYSTEMS_PLANTS_JOINTS_FIXEDJOINT_H_ */

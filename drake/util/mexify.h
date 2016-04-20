@@ -1,5 +1,4 @@
-#ifndef DRAKE_UTIL_MEXIFY_H_
-#define DRAKE_UTIL_MEXIFY_H_
+#pragma once
 
 //
 // Created by Twan Koolen on 8/22/15.
@@ -242,5 +241,3 @@ auto fromMex(const mxArray *source, T *trigger_type)
     throw std::runtime_error(log.str());
   }
 }
-
-#endif  // DRAKE_UTIL_MEXIFY_H_

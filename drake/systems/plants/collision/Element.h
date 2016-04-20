@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_PLANTS_COLLISION_ELEMENT_H_
-#define DRAKE_SYSTEMS_PLANTS_COLLISION_ELEMENT_H_
+#pragma once
 
 #include <stdint.h>
 #include <memory>
@@ -55,5 +54,3 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
 };
 
 }  // namespace DrakeCollision
-
-#endif  // DRAKE_SYSTEMS_PLANTS_COLLISION_ELEMENT_H_

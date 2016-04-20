@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_PLANTS_KINEMATICSCACHE_H_
-#define DRAKE_SYSTEMS_PLANTS_KINEMATICSCACHE_H_
+#pragma once
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -269,5 +268,3 @@ class KinematicsCache {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 #endif
 };
-
-#endif  // DRAKE_SYSTEMS_PLANTS_KINEMATICSCACHE_H_

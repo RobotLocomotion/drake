@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_CASCADE_SYSTEM_H_
-#define DRAKE_SYSTEMS_CASCADE_SYSTEM_H_
+#pragma once
 
 #include <memory>
 
@@ -111,5 +110,3 @@ std::shared_ptr<CascadeSystem<System1, System2>> cascade(
 }
 
 }  // namespace Drake
-
-#endif  // DRAKE_SYSTEMS_CASCADE_SYSTEM_H_

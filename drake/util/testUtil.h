@@ -1,5 +1,4 @@
-#ifndef DRAKE_UTIL_TESTUTIL_H_
-#define DRAKE_UTIL_TESTUTIL_H_
+#pragma once
 
 #include <chrono>
 #include <cmath>
@@ -50,5 +49,3 @@ void valuecheck(double a, double b, double tolerance) {
     throw std::runtime_error(stream.str());
   }
 }
-
-#endif  // DRAKE_UTIL_TESTUTIL_H_

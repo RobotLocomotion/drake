@@ -1,5 +1,4 @@
-#ifndef DRAKE_SOLVERS_MATHEMATICALPROGRAM_H_
-#define DRAKE_SOLVERS_MATHEMATICALPROGRAM_H_
+#pragma once
 
 #include <memory>
 
@@ -48,5 +47,3 @@ class DRAKEOPTIMIZATION_EXPORT MathematicalProgramSolverInterface {
   virtual bool Solve(OptimizationProblem& prog) const = 0;
 };
 }
-
-#endif  // DRAKE_SOLVERS_MATHEMATICALPROGRAM_H_

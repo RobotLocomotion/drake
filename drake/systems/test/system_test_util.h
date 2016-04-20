@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_TEST_SYSTEM_TEST_UTIL_H_
-#define DRAKE_SYSTEMS_TEST_SYSTEM_TEST_UTIL_H_
+#pragma once
 
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/cascade_system.h"
@@ -49,5 +48,3 @@ CreateRandomAffineSystem(size_t num_states, size_t num_inputs,
 
 }  // namespace system_test
 }  // namespace Drake
-
-#endif  // DRAKE_SYSTEMS_TEST_SYSTEM_TEST_UTIL_H_

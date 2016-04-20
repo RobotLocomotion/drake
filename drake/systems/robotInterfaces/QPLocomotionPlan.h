@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_ROBOTINTERFACES_QPLOCOMOTIONPLAN_H_
-#define DRAKE_SYSTEMS_ROBOTINTERFACES_QPLOCOMOTIONPLAN_H_
+#pragma once
 
 #include <vector>
 #include <map>
@@ -266,5 +265,3 @@ class QPLocomotionPlan {
   static const std::map<Side, int> createJointIndicesMap(
       RigidBodyTree& robot, const std::map<Side, std::string>& foot_body_ids);
 };
-
-#endif  // DRAKE_SYSTEMS_ROBOTINTERFACES_QPLOCOMOTIONPLAN_H_

@@ -1,5 +1,4 @@
-#ifndef DRAKE_SOLVERS_GUROBIQP_H_
-#define DRAKE_SOLVERS_GUROBIQP_H_
+#pragma once
 
 #include <Eigen/Dense>
 #include <vector>
@@ -35,5 +34,3 @@ GRBmodel* gurobiActiveSetQP(GRBenv* env, std::vector<Eigen::MatrixXd*> QblkDiag,
                             const Eigen::VectorXd& bin, Eigen::VectorXd& lb,
                             Eigen::VectorXd& ub, int*& vbasis, int vbasis_len,
                             int*& cbasis, int cbasis_len, Eigen::VectorXd& x);
-
-#endif  // DRAKE_SOLVERS_GUROBIQP_H_

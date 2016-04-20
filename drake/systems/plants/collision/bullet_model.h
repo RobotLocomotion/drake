@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_PLANTS_COLLISION_BULLET_MODEL_H_
-#define DRAKE_SYSTEMS_PLANTS_COLLISION_BULLET_MODEL_H_
+#pragma once
 
 #include <string>
 #include <vector>
@@ -159,5 +158,3 @@ class BulletModel : public Model {
 };
 
 }  // namespace DrakeCollision
-
-#endif  // DRAKE_SYSTEMS_PLANTS_COLLISION_BULLET_MODEL_H_
