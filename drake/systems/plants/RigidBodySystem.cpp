@@ -13,6 +13,10 @@ using namespace Eigen;
 using namespace Drake;
 using namespace tinyxml2;
 
+size_t RigidBodySystem::getNumStates() const {
+  return tree->num_positions + tree->num_velocities;
+}
+
 size_t RigidBodySystem::getNumInputs(void) const {
   size_t num = tree->actuators.size();
   for (auto const& f : force_elements) {
