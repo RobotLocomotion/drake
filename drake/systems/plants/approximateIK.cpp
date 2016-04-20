@@ -15,7 +15,6 @@ void approximateIK(RigidBodyTree* model, const MatrixBase<DerivedA>& q_seed,
                    RigidBodyConstraint* *const constraint_array,
                    const IKoptions& ikoptions,
                    MatrixBase<DerivedC>* q_sol, int* INFO) {
-
   int num_kc = 0;
   int nq = model->num_positions;
   SingleTimeKinematicConstraint** kc_array =
