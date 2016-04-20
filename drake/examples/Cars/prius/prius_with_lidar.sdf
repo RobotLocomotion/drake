@@ -417,7 +417,7 @@
         <geometry>
           <mesh>
             <!-- <uri>prius.dae</uri> -->
-            <uri>model://prius/meshes/prius.dae</uri>
+            <uri>prius.dae</uri>
           </mesh>
         </geometry>
         <material>
