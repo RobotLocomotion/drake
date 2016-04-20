@@ -71,7 +71,6 @@ bool encode(const double &t, const Vector &x, drake::rost_drake_signal &msg) {
  */
 template <class Vector>
 bool decode(const drake::rost_drake_signal &msg, double &timestamp, Vector &x) {
-
   // Decodes the timestamp.
   timestamp = double(msg.timestamp) / 1000.0;
 
@@ -124,8 +123,9 @@ class ROSInputSystem {
 
 template <template <typename> class Vector>
 class ROSInputSystem<
-    Vector, typename std::enable_if<!std::is_void<
-                typename Vector<double>::LCMMessageType>::value>::type> {
+    Vector,
+    typename std::enable_if<
+        !std::is_void<typename Vector<double>::LCMMessageType>::value>::type> {
  public:
   template <typename ScalarType>
   using StateVector = NullVector<ScalarType>;
@@ -139,11 +139,11 @@ class ROSInputSystem<
   ROSInputSystem(const System &sys) {
     ros::NodeHandle nh;
     sub_ = nh.subscribe(Vector<double>::channel(), 1000,
-      &ROSInputSystem<Vector>::callback, this);
+                        &ROSInputSystem<Vector>::callback, this);
   }
   virtual ~ROSInputSystem() {}
 
-  void callback(const drake::rost_drake_signal::ConstPtr& msg) {
+  void callback(const drake::rost_drake_signal::ConstPtr &msg) {
     data_mutex.lock();
     decode(*msg, timestamp, data);
     data_mutex.unlock();
@@ -198,8 +198,9 @@ class ROSOutputSystem {
 
 template <template <typename> class Vector>
 class ROSOutputSystem<
-    Vector, typename std::enable_if<!std::is_void<
-                typename Vector<double>::LCMMessageType>::value>::type> {
+    Vector,
+    typename std::enable_if<
+        !std::is_void<typename Vector<double>::LCMMessageType>::value>::type> {
  public:
   template <typename ScalarType>
   using StateVector = NullVector<ScalarType>;
@@ -208,7 +209,12 @@ class ROSOutputSystem<
   template <typename ScalarType>
   using OutputVector = NullVector<ScalarType>;
 
-  ROSOutputSystem() : initialized_publisher_(false) { }
+  ROSOutputSystem() {
+    ros::NodeHandle nh;
+    // TODO(liang): Modify to not hard code topic name. In LCMSystem, the topic
+    // name was originally defined in method output() and used u.channel().
+    publisher_ = nh.advertise<drake::rost_drake_signal>("output", 1000);
+  }
 
   StateVector<double> dynamics(const double &t, const StateVector<double> &x,
                                const InputVector<double> &u) const {
@@ -217,28 +223,20 @@ class ROSOutputSystem<
 
   OutputVector<double> output(const double &t, const StateVector<double> &x,
                               const InputVector<double> &u) const {
-
     // Hard code message type to be drake::rost_drake_signal.
     drake::rost_drake_signal msg;
-    if (!encode(t, u, msg))
-      throw std::runtime_error(std::string("failed to encode meesage of type ")
-                               + "drake::rost_drake_signal");
 
-    // Instantiates a ROS topic publisher if one has not already been created.
-    if (!initialized_publisher_) {
-      ros::NodeHandle nh;
-      publisher_ = nh.advertise<drake::rost_drake_signal>(u.channel(), 1000);
-      initialized_publisher_ = true;
-    }
+    if (!encode(t, u, msg))
+      throw std::runtime_error(
+          std::string("failed to encode meesage of type ") +
+          "drake::rost_drake_signal");
 
     // Publishes the message.
-    publisher_.publish(&msg);
+    publisher_.publish(msg);
     return OutputVector<double>();
   }
 
  private:
-
-  bool initialized_publisher_;
   /*!
    * The ROS topic publisher for publishing drake::rost_drake_signal
    * messages.
@@ -284,10 +282,10 @@ void RunROS(std::shared_ptr<System> sys, double t0, double tf,
   //    typename System::template OutputVector<double> x = 1;  // useful for
   //    debugging
   auto ros_input =
-      std::make_shared<internal::ROSInputSystem<System::template InputVector> >(
+      std::make_shared<internal::ROSInputSystem<System::template InputVector>>(
           *sys);
-  auto ros_output =
-      std::make_shared<internal::ROSOutputSystem<System::template OutputVector>>();
+  auto ros_output = std::make_shared<
+      internal::ROSOutputSystem<System::template OutputVector>>();
   auto ros_sys = cascade(ros_input, cascade(sys, ros_output));
 
   bool has_ros_input =
@@ -316,9 +314,11 @@ void RunROS(std::shared_ptr<System> sys, double t0, double tf,
     // internal::LCMLoop lcm_loop(*lcm);
     // std::thread lcm_thread;
     // if (has_ros_input) {
-    //   // only start up the listener thread if I actually have inputs to listen
+    //   // only start up the listener thread if I actually have inputs to
+    //   listen
     //   // to
-    //   lcm_thread = std::thread(&internal::LCMLoop::loopWithSelect, &lcm_loop);
+    //   lcm_thread = std::thread(&internal::LCMLoop::loopWithSelect,
+    //   &lcm_loop);
     // }
 
     SimulationOptions ros_options = options;
