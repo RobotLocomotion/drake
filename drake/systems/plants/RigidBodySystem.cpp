@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include "drake/solvers/Optimization.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
+#include "drake/systems/plants/pose_map.h"
 #include "drake/systems/plants/rigid_body_tree_urdf.h"
 #include "spruce.hh"
 #include "xmlUtil.h"

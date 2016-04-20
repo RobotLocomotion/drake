@@ -1,5 +1,4 @@
-#ifndef DRAKE_UTIL_POLYNOMIAL_H_
-#define DRAKE_UTIL_POLYNOMIAL_H_
+#pragma once
 
 #include <Eigen/Core>
 #include <complex>
@@ -364,5 +363,3 @@ std::ostream& operator<<(
 }
 
 typedef Polynomial<double> Polynomiald;
-
-#endif  // DRAKE_UTIL_POLYNOMIAL_H_

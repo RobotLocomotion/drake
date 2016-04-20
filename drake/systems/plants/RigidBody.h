@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_PLANTS_RIGIDBODY_H_
-#define DRAKE_SYSTEMS_PLANTS_RIGIDBODY_H_
+#pragma once
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
@@ -146,5 +145,3 @@ class DRAKERBM_EXPORT RigidBody {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 #endif
 };
-
-#endif  // DRAKE_SYSTEMS_PLANTS_RIGIDBODY_H_

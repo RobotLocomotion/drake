@@ -1,11 +1,11 @@
-#ifndef DRAKE_SYSTEMS_PLANTS_XMLUTIL_H_
-#define DRAKE_SYSTEMS_PLANTS_XMLUTIL_H_
+#pragma once
 
 #include <string>
 #include <map>
 #include <Eigen/Dense>
 
 #include "spruce.hh"
+#include "drake/systems/plants/pose_map.h"
 #include "drake/thirdParty/tinyxml2/tinyxml2.h"
 #include "drake/drakeXMLUtil_export.h"
 
@@ -60,13 +60,6 @@ DRAKEXMLUTIL_EXPORT bool parseStringValue(tinyxml2::XMLElement* node,
 DRAKEXMLUTIL_EXPORT void originAttributesToTransform(tinyxml2::XMLElement* node,
                                                      Eigen::Isometry3d& T);
 
-typedef std::map<std::string, Eigen::Vector4d, std::less<std::string>,
-                 Eigen::aligned_allocator<
-                     std::pair<std::string, Eigen::Vector4d> > > MaterialMap;
-typedef std::map<
-    std::string, Eigen::Isometry3d, std::less<std::string>,
-    Eigen::aligned_allocator<std::pair<const std::string, Eigen::Isometry3d> > >
-    PoseMap;
 DRAKEXMLUTIL_EXPORT void poseValueToTransform(
     tinyxml2::XMLElement* node, const PoseMap& pose_map, Eigen::Isometry3d& T,
     const Eigen::Isometry3d& T_default_frame = Eigen::Isometry3d::Identity());
@@ -76,5 +69,3 @@ DRAKEXMLUTIL_EXPORT void populatePackageMap(PackageMap& package_map);
 DRAKEXMLUTIL_EXPORT std::string resolveFilename(const std::string& filename,
                                                 const PackageMap& package_map,
                                                 const std::string& root_dir);
-
-#endif  // DRAKE_SYSTEMS_PLANTS_XMLUTIL_H_

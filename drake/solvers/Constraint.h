@@ -1,5 +1,4 @@
-#ifndef DRAKE_SOLVERS_CONSTRAINT_H_
-#define DRAKE_SOLVERS_CONSTRAINT_H_
+#pragma once
 
 #include <stdexcept>
 
@@ -240,5 +239,3 @@ class LinearComplementarityConstraint : public Constraint {
 };
 
 }  // namespace Drake
-
-#endif  // DRAKE_SOLVERS_CONSTRAINT_H_

@@ -1,5 +1,4 @@
-#ifndef DRAKE_EXAMPLES_ACROBOT_ACROBOT_H_
-#define DRAKE_EXAMPLES_ACROBOT_ACROBOT_H_
+#pragma once
 
 #include <iostream>
 #include <cmath>
@@ -177,5 +176,3 @@ class Acrobot {
   double m1, m2, l1, l2, lc1, lc2, Ic1, Ic2, b1, b2,
       g;  // parameters (initialized in the constructor)
 };
-
-#endif  // DRAKE_EXAMPLES_ACROBOT_ACROBOT_H_

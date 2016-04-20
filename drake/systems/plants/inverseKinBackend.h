@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_PLANTS_INVERSEKINBACKEND_H_
-#define DRAKE_SYSTEMS_PLANTS_INVERSEKINBACKEND_H_
+#pragma once
 
 #include <string>
 #include <Eigen/StdVector>
@@ -21,5 +20,3 @@ void inverseKinBackend(RigidBodyTree *model, const int mode, const int nT,
                        Eigen::MatrixBase<DerivedE> &qddot_sol, int *INFO,
                        std::vector<std::string> &infeasible_constraint,
                        const IKoptions &ikoptions);
-
-#endif  // DRAKE_SYSTEMS_PLANTS_INVERSEKINBACKEND_H_

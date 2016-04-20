@@ -15,8 +15,8 @@ if (NOT DEFINED CMAKE_MACOSX_RPATH)
   set(CMAKE_MACOSX_RPATH ON)
 endif()
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-
+# prepend module path so we can override FindMatlab.cmake
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 if(WITH_PYTHON_3)
   set(Python_ADDITIONAL_VERSIONS 3.5)
   find_package(PythonInterp 3)
@@ -115,16 +115,6 @@ elseif (MSVC)
   add_definitions(-D_USE_MATH_DEFINES) # to get math constants on MSVC (see https://msdn.microsoft.com/en-us/library/4hwaceh6.aspx)
 endif()
 
-# set up matlab build
-include(cmake/mex.cmake)
-mex_setup()
-
-# frustratingly, this didn't seem to work, so instead I've added a -C argument to both the Makefile and the drake-admin/runUnitTests scripts
-#if (NOT CTEST_CONFIGURATION_TYPE)
-#   set(CTEST_CONFIGURATION_TYPE ${CMAKE_BUILD_TYPE})
-#   message("Setting CTEST Configuration Type to ${CTEST_CONFIGURATION_TYPE}")
-#endif()
-
 # similar to the export headers, any other generated headers will be installed to build/include/drake, but will be created in ${PROJECT_BINARY_DIR}/exports/drake
 # These headers can be included as drake/bla.h
 set(generated_dir ${PROJECT_BINARY_DIR}/generated)
@@ -133,10 +123,21 @@ configure_file(core/Path.h.in ${drake_path_header})
 install(FILES ${drake_path_header} DESTINATION include/drake/)
 include_directories(BEFORE ${generated_dir})
 
-find_package( Perl )
-if (MATLAB_FOUND AND NOT PERL_FOUND)
-  message(WARNING "Perl not found.  MATLAB unit tests will not run as a part of make test")
-endif()
+# set up matlab build
+include(cmake/mex.cmake)
+if (DISABLE_MATLAB)
+	message(STATUS "MATLAB is disabled because the CMake option DISABLE_MATLAB is set to ON.")
+else()
+	# Search for MATLAB and configure various MEX options.
+	# If MATLAB is found, MATLAB_FOUND is set.
+	mex_setup()
+        # if matlab is in the PATH then use cmake find_package to find it
+        # along with what is needed to use matlab_add_unit_test
+        if(MATLAB_FOUND)
+          find_package(Matlab COMPONENTS MAIN_PROGRAM)
+        endif()
+
+endif (DISABLE_MATLAB)
 
 # add ctest for a matlab string
 # add_matlab_test(NAME <testname> COMMAND <matlab_string_to_eval>
@@ -146,33 +147,37 @@ endif()
 # note: default working directory is CMAKE_CURRENT_SOURCE_DIR
 # note: properties are set internally using set_tests_properties ( <testname> PROPERTIES <prop1> <value1> ...)
 function(add_matlab_test)
-  if (MATLAB_FOUND AND PERL_FOUND)
-    set(oneValueArgs NAME COMMAND WORKING_DIRECTORY)
-    set(multiValueArgs PROPERTIES)
-    cmake_parse_arguments(parsed_args "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+  # no matlab no tests
+  if(NOT MATLAB_FOUND)
+    return()
+  endif()
+  set(oneValueArgs NAME COMMAND WORKING_DIRECTORY)
+  set(multiValueArgs PROPERTIES)
+  cmake_parse_arguments(parsed_args "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
-    string(REPLACE ' '' parsed_args_COMMAND ${parsed_args_COMMAND}) # turn ' into '' so we can eval it in matlab
-    if (NOT parsed_args_WORKING_DIRECTORY)
-      set(parsed_args_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-    endif()
+  string(REPLACE ' '' parsed_args_COMMAND ${parsed_args_COMMAND}) # turn ' into '' so we can eval it in matlab
+  if (NOT parsed_args_WORKING_DIRECTORY)
+    set(parsed_args_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  endif()
 
-  # set(exit_status 1)   # missing dependency => failure
-    set(exit_status "~strncmp(ex.identifier,'Drake:MissingDependency',23)")  # missing dependency => pass
-    set(matlab_command "addpath('${CMAKE_INSTALL_PREFIX}/matlab'); addpath_drake;  global g_disable_visualizers; g_disable_visualizers=true; try, eval('${parsed_args_COMMAND}'); catch ex, disp(getReport(ex,'extended')); disp(' '); force_close_system; exit(${exit_status}); end; force_close_system; exit(0)")
-    if (RANDOMIZED_UNIT_TESTS)
-      set(matlab_command "rng('shuffle'); rng_state=rng; disp(sprintf('To reproduce this test use rng(%d,''%s'')',rng_state.Seed,rng_state.Type)); disp(' '); ${matlab_command}")
-    endif()
-    set(call_matlab ${PERL_EXECUTABLE} ${CMAKE_SOURCE_DIR}/cmake/matlab_clean.pl -nosplash)
-    if (WIN32)
-       set(call_matlab ${call_matlab} -nodesktop -wait)
-    else()
-       set(call_matlab ${call_matlab} -nodisplay)
-    endif()
+  set(exit_status "~strncmp(ex.identifier,'Drake:MissingDependency',23)")  # missing dependency => pass
+  set(additional_paths "${CMAKE_INSTALL_PREFIX}/matlab;${parsed_args_WORKING_DIRECTORY};")
+  set(cmd_to_run_before_test "addpath_drake; global g_disable_visualizers; g_disable_visualizers=true;")
+  set(custom_Matlab_test_command "try, eval('${parsed_args_COMMAND}'); catch ex, disp(getReport(ex,'extended')); disp(' '); force_close_system; exit(${exit_status}); end; force_close_system; exit(0)")
 
-    add_test(NAME ${parsed_args_NAME} COMMAND ${call_matlab} "-r" "${matlab_command}" WORKING_DIRECTORY ${parsed_args_WORKING_DIRECTORY} ${parsed_args_UNPARSED_ARGUMENTS})
-    if (parsed_args_PROPERTIES)
-      set_tests_properties(${parsed_args_NAME} PROPERTIES ${parsed_args_PROPERTIES})
-    endif()
+  if (RANDOMIZED_UNIT_TESTS)
+    set(custom_Matlab_test_command "rng('shuffle'); rng_state=rng; disp(sprintf('To reproduce this test use rng(%d,''%s'')',rng_state.Seed,rng_state.Type)); disp(' '); ${custom_Matlab_test_command}")
+  endif()
+
+  matlab_add_unit_test(NAME ${parsed_args_NAME}
+    ADDITIONAL_PATH ${additional_paths}
+    UNITTEST_PRECOMMAND ${cmd_to_run_before_test}
+    CUSTOM_TEST_COMMAND \"${custom_Matlab_test_command}\"
+    WORKING_DIRECTORY ${parsed_args_WORKING_DIRECTORY}
+    TIMEOUT -1) # use an infinite timeout and rely on add_test ctest timeout
+
+  if (parsed_args_PROPERTIES)
+    set_tests_properties(${parsed_args_NAME} PROPERTIES ${parsed_args_PROPERTIES})
   endif()
 endfunction()
 
@@ -183,6 +188,10 @@ find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
 if (GTEST_FOUND)
   set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pthread")
+  if (WIN32)
+    # The following compiler flag is needed to support parameterized Google tests on Windows.
+    SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DGTEST_LINKED_AS_SHARED_LIBRARY=1" )
+  endif()
 endif()
 
 set(drake_jar_javafiles util/Transform.java)

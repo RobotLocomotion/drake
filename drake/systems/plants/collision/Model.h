@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_PLANTS_COLLISION_MODEL_H_
-#define DRAKE_SYSTEMS_PLANTS_COLLISION_MODEL_H_
+#pragma once
 
 #include <memory>
 #include <unordered_map>
@@ -207,5 +206,3 @@ class DRAKECOLLISION_EXPORT Model {
 };
 
 }  // namespace DrakeCollision
-
-#endif  // DRAKE_SYSTEMS_PLANTS_COLLISION_MODEL_H_

@@ -1,5 +1,4 @@
-#ifndef DRAKE_UTIL_TRIGPOLY_H_
-#define DRAKE_UTIL_TRIGPOLY_H_
+#pragma once
 
 #include "drake/util/Polynomial.h"
 #include <map>
@@ -301,5 +300,3 @@ std::ostream& operator<<(
 }
 
 typedef TrigPoly<double> TrigPolyd;
-
-#endif  // DRAKE_UTIL_TRIGPOLY_H_

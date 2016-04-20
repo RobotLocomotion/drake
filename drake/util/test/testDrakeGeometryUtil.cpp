@@ -26,8 +26,8 @@ namespace {
 
 void testExpmap2quat(const Vector4d &quat);
 
-void testRotationConversionFunctions() {
-  int ntests = 100;
+TEST(DrakeGeometryUtilTest, RotationConversionFunctions) {
+  int ntests = 1;
   default_random_engine generator;
   // quat2axis, axis2quat
   for (int i = 0; i < ntests; i++) {
@@ -91,7 +91,8 @@ void testRotationConversionFunctions() {
       CompareMatrices(R_expected, R_eigen, 1e-6, MatrixCompareType::absolute));
 }
 
-void testDHomogTrans(int ntests) {
+TEST(DrakeGeometryUtilTest, DHomogTrans) {
+  const int ntests = 1;
   Isometry3d T;
   std::default_random_engine generator;
 
@@ -119,7 +120,9 @@ void testDHomogTrans(int ntests) {
   }
 }
 
-void testDHomogTransInv(int ntests, bool check) {
+TEST(DrakeGeometryUtilTest, DHomogTransInv) {
+  const int ntests = 1;
+  const bool check = true;
   Isometry3d T;
   std::default_random_engine generator;
   for (int testnr = 0; testnr < ntests; testnr++) {
@@ -153,7 +156,8 @@ void testDHomogTransInv(int ntests, bool check) {
   }
 }
 
-void testDTransformAdjoint(int ntests) {
+TEST(DrakeGeometryUtilTest, DTransformAdjoint) {
+  const int ntests = 1;
   const int nv = 6;
   const int nq = 34;
   const int cols_X = 3;
@@ -175,7 +179,8 @@ void testDTransformAdjoint(int ntests) {
   }
 }
 
-void testDTransformAdjointTranspose(int ntests) {
+TEST(DrakeGeometryUtilTest, DTransformAdjointTranspose) {
+  const int ntests = 1;
   const int nv = 6;
   const int nq = 34;
   const int cols_X = 3;
@@ -197,7 +202,8 @@ void testDTransformAdjointTranspose(int ntests) {
   }
 }
 
-void testNormalizeVec(int ntests) {
+TEST(DrakeGeometryUtilTest, NormalizeVec) {
+  const int ntests = 1;
   const int x_rows = 4;
 
   for (int testnr = 0; testnr < ntests; testnr++) {
@@ -219,7 +225,7 @@ void testNormalizeVec(int ntests) {
   }
 }
 
-void testSpatialCrossProduct() {
+TEST(DrakeGeometryUtilTest, SpatialCrossProduct) {
   auto a = (Matrix<double, TWIST_SIZE, 1>::Random()).eval();
   auto b = (Matrix<double, TWIST_SIZE, TWIST_SIZE>::Identity()).eval();
   auto a_crm_b = crossSpatialMotion(a, b);
@@ -228,7 +234,7 @@ void testSpatialCrossProduct() {
                               MatrixCompareType::absolute));
 }
 
-void testdrpy2rotmat() {
+TEST(DrakeGeometryUtilTest, drpy2rotmat) {
   default_random_engine generator;
   Vector3d rpy = uniformlyRandomRPY(generator);
   Matrix3d R = rpy2rotmat(rpy);
@@ -259,28 +265,6 @@ void testExpmap2quat(const Vector4d &quat) {
   Matrix3d identity = Matrix3d::Identity();
   EXPECT_TRUE(CompareMatrices((expmap_grad * quat_back_grad).eval(), identity,
                               1e-10, MatrixCompareType::absolute));
-}
-
-TEST(drakeGeometryUtilTest, AllTests) {
-  testRotationConversionFunctions();
-
-  int ntests = 100000;
-  std::cout << "testDHomogTrans elapsed time: "
-            << measure<>::execution(testDHomogTrans, ntests) << std::endl;
-  std::cout << "testDHomogTransInv elapsed time: "
-            << measure<>::execution(testDHomogTransInv, ntests, false)
-            << std::endl;
-  std::cout << "testDTransformAdjoint elapsed time: "
-            << measure<>::execution(testDTransformAdjoint, ntests) << std::endl;
-  std::cout << "testDTransformAdjointTranspose elapsed time: "
-            << measure<>::execution(testDTransformAdjointTranspose, ntests)
-            << std::endl;
-  std::cout << "testNormalizeVec elapsed time: "
-            << measure<>::execution(testNormalizeVec, ntests) << std::endl;
-
-  testDHomogTransInv(1000, true);
-  testSpatialCrossProduct();
-  testdrpy2rotmat();
 }
 
 }  // namespace

@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_PLANTS_RIGIDBODYSYSTEM_H_
-#define DRAKE_SYSTEMS_PLANTS_RIGIDBODYSYSTEM_H_
+#pragma once
 
 #include "KinematicsCache.h"
 #include "drake/drakeRBSystem_export.h"
@@ -403,7 +402,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySpringDamper
  * @brief Represents generalized vector-valued noise
  */
 template <typename ScalarType, int Dimension, typename Derived>
-class DRAKERBSYSTEM_EXPORT NoiseModel {
+class NoiseModel {
  public:
   virtual Eigen::Matrix<ScalarType, Dimension, 1> generateNoise(
       Eigen::MatrixBase<Derived> const& input) = 0;
@@ -414,7 +413,7 @@ class DRAKERBSYSTEM_EXPORT NoiseModel {
  * distribution is parameterized by a Gaussian
  */
 template <typename ScalarType, int Dimension, typename Derived>
-class DRAKERBSYSTEM_EXPORT AdditiveGaussianNoiseModel
+class AdditiveGaussianNoiseModel
     : public NoiseModel<ScalarType, Dimension, Derived> {
  public:
   AdditiveGaussianNoiseModel(double mean, double std_dev)
@@ -584,5 +583,3 @@ class DRAKERBSYSTEM_EXPORT RigidBodyMagnetometer : public RigidBodySensor {
 
 // end namespace Drake
 }
-
-#endif  // DRAKE_SYSTEMS_PLANTS_RIGIDBODYSYSTEM_H_
