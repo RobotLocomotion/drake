@@ -217,4 +217,4 @@ template void approximateIK(RigidBodyTree*, const MatrixBase<Map<VectorXd>>& ,
 template void approximateIK(RigidBodyTree*, const MatrixBase<VectorXd>& ,
                             const MatrixBase<VectorXd>& , const int,
                             RigidBodyConstraint** const,
-                            const IKoptions&, MatrixBase<VectorXd>&, int*);
+                            const IKoptions&, MatrixBase<VectorXd>*, int*);
