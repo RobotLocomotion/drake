@@ -92,6 +92,14 @@ if (LCM_FOUND)
     if (snopt_c_FOUND)
       add_test(NAME comparePriusURDFtoSDF COMMAND compareRigidBodySystems prius.sdf prius.urdf 0 0 0.378326 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/examples/Cars/prius")
     endif (snopt_c_FOUND)
+
+    add_executable(load_model_test load_model_test.cc)
+    target_link_libraries(load_model_test drakeRBSystem ${GTEST_BOTH_LIBRARIES})
+    add_test(NAME load_model_test COMMAND load_model_test)
+
+    add_executable(rigid_body_tree_test rigid_body_tree_test.cc)
+    target_link_libraries(rigid_body_tree_test drakeRBSystem ${GTEST_BOTH_LIBRARIES})
+    add_test(NAME rigid_body_tree_test COMMAND rigid_body_tree_test)
   endif (GTEST_FOUND)
 endif (LCM_FOUND)
 
