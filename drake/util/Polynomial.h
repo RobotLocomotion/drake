@@ -76,7 +76,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
 
   /// \brief An additive atom of a Polynomial: The product of any number of
   /// Terms and a coefficient.
-  class DRAKEPOLYNOMIAL_EXPORT Monomial {
+  class Monomial {
    public:
     CoefficientType coefficient;
     std::vector<Term> terms;  // a list of N variable ids
