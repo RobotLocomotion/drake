@@ -191,7 +191,7 @@ class BotVisualizerROS {
                    "to subscribe to ROS topic \""
                 << drake_viewer_load_robot_publisher_.getTopic() << "\"..."
                 << std::endl;
-      ros::Duration(0.5).sleep(); // sleep for half a second
+      ros::Duration(0.5).sleep();  // Sleeps for half a second.
     }
 
     drake_viewer_load_robot_publisher_.publish(vr);

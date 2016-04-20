@@ -1,6 +1,3 @@
-cmake_minimum_required(VERSION 2.8.3)
-project(drake)
-
 if(roscpp_FOUND)
   # The catkin and genmsg packages are required to generate ROS message code from
   # their specification files.
@@ -23,10 +20,10 @@ if(roscpp_FOUND)
 
   include_directories(${${PROJECT_NAME}_INCLUDE_DIRS})
 
-  message(STATUS "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-  get_cmake_property(_variableNames VARIABLES)
-  foreach (_variableName ${_variableNames})
-      message(STATUS "${_variableName}=${${_variableName}}")
-  endforeach()
-  message(STATUS "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+  # message(STATUS "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+  # get_cmake_property(_variableNames VARIABLES)
+  # foreach (_variableName ${_variableNames})
+  #     message(STATUS "${_variableName}=${${_variableName}}")
+  # endforeach()
+  # message(STATUS "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 endif()
