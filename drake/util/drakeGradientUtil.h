@@ -1,5 +1,4 @@
-#ifndef DRAKE_UTIL_DRAKEGRADIENTUTIL_H_
-#define DRAKE_UTIL_DRAKEGRADIENTUTIL_H_
+#pragma once
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -431,5 +430,3 @@ void resizeDerivativesToMatchScalar(Eigen::MatrixBase<Derived>& mat,
       Derived, typename Derived::Scalar>::run(mat, scalar);
 }
 }
-
-#endif  // DRAKE_UTIL_DRAKEGRADIENTUTIL_H_

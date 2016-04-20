@@ -1,5 +1,4 @@
-#ifndef DRAKE_UTIL_EIGEN_MATRIX_COMPARE_H_
-#define DRAKE_UTIL_EIGEN_MATRIX_COMPARE_H_
+#pragma once
 
 #include <Eigen/Dense>
 #include <cmath>
@@ -123,5 +122,3 @@ bool CompareMatrices(const Eigen::MatrixBase<DerivedA>& m1,
 
 }  // namespace util
 }  // namespace drake
-
-#endif  // DRAKE_UTIL_EIGEN_MATRIX_COMPARE_H_

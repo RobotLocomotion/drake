@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_PLANTS_BOTVISUALIZER_H_
-#define DRAKE_SYSTEMS_PLANTS_BOTVISUALIZER_H_
+#pragma once
 
 #include <lcm/lcm-cpp.hpp>
 #include <Eigen/Dense>
@@ -181,5 +180,3 @@ class BotVisualizer {
 };
 
 }  // end namespace Drake
-
-#endif  // DRAKE_SYSTEMS_PLANTS_BOTVISUALIZER_H_

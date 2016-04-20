@@ -101,7 +101,7 @@ if(gurobi_FOUND)
   set(drakeIK_PODS_PKG ${drakeIK_PODS_PKG} gurobi)
 endif()
 if(snopt_c_FOUND)
-  set(drakeIK_SRC_FILES ${drakeIK_SRC_FILES} inverseKin.cpp inverseKinPointwise.cpp inverseKinTraj.cpp inverseKinBackend.cpp)
+  set(drakeIK_SRC_FILES ${drakeIK_SRC_FILES} inverseKin.cpp inverseKinPointwise.cpp inverseKinTraj.cpp inverseKinSnoptBackend.cpp)
   set(drakeIK_PODS_PKG ${drakeIK_PODS_PKG} snopt_c)
 endif()
 

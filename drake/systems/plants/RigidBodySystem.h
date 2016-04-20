@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_PLANTS_RIGIDBODYSYSTEM_H_
-#define DRAKE_SYSTEMS_PLANTS_RIGIDBODYSYSTEM_H_
+#pragma once
 
 #include "KinematicsCache.h"
 #include "drake/drakeRBSystem_export.h"
@@ -584,5 +583,3 @@ class DRAKERBSYSTEM_EXPORT RigidBodyMagnetometer : public RigidBodySensor {
 
 // end namespace Drake
 }
-
-#endif  // DRAKE_SYSTEMS_PLANTS_RIGIDBODYSYSTEM_H_

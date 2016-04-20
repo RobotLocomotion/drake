@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_FEEDBACK_SYSTEM_H_
-#define DRAKE_SYSTEMS_FEEDBACK_SYSTEM_H_
+#pragma once
 
 #include <memory>
 
@@ -144,5 +143,3 @@ std::shared_ptr<FeedbackSystem<System1, System2>> feedback(
 }
 
 }  // namespace Drake
-
-#endif  // DRAKE_SYSTEMS_FEEDBACK_SYSTEM_H_

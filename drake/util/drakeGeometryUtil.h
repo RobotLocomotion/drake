@@ -1,5 +1,4 @@
-#ifndef DRAKE_UTIL_DRAKEGEOMETRYUTIL_H_
-#define DRAKE_UTIL_DRAKEGEOMETRYUTIL_H_
+#pragma once
 
 #include <Eigen/Dense>
 #include <cstring>
@@ -1639,5 +1638,3 @@ void quat2expmapSequence(const Eigen::MatrixBase<DerivedQ>& quat,
     expmap_autodiff_previous = expmap_autodiff;
   }
 }
-
-#endif  // DRAKE_UTIL_DRAKEGEOMETRYUTIL_H_

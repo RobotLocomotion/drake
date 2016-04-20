@@ -1,5 +1,4 @@
-#ifndef DRAKE_SOLVERS_NLOPTSOLVER_H_
-#define DRAKE_SOLVERS_NLOPTSOLVER_H_
+#pragma once
 
 #include "drake/drakeOptimization_export.h"
 
@@ -16,5 +15,3 @@ class DRAKEOPTIMIZATION_EXPORT NloptSolver :
   virtual bool Solve(OptimizationProblem& prog) const override;
 };
 }
-
-#endif  // DRAKE_SOLVERS_NLOPTSOLVER_H_

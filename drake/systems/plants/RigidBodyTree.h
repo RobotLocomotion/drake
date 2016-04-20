@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_PLANTS_RIGIDBODYTREE_H_
-#define DRAKE_SYSTEMS_PLANTS_RIGIDBODYTREE_H_
+#pragma once
 
 #include <Eigen/Dense>
 #include <Eigen/LU>
@@ -135,11 +134,11 @@ class DRAKERBM_EXPORT RigidBodyTree {
   std::string getVelocityName(int velocity_num) const;
   std::string getStateName(int state_num) const;
 
-  void drawKinematicTree(std::string graphviz_dotfile_filename);
+  void drawKinematicTree(std::string graphviz_dotfile_filename) const;
 
   template <typename DerivedQ>
   KinematicsCache<typename DerivedQ::Scalar> doKinematics(
-      const Eigen::MatrixBase<DerivedQ>& q) {
+      const Eigen::MatrixBase<DerivedQ>& q) const {
     KinematicsCache<typename DerivedQ::Scalar> ret(bodies);
     ret.initialize(q);
     doKinematics(ret);
@@ -835,5 +834,3 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
   std::set<std::string> already_printed_warnings;
 };
-
-#endif  // DRAKE_SYSTEMS_PLANTS_RIGIDBODYTREE_H_

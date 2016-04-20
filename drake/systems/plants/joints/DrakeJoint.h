@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_PLANTS_JOINTS_DRAKEJOINT_H_
-#define DRAKE_SYSTEMS_PLANTS_JOINTS_DRAKEJOINT_H_
+#pragma once
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
@@ -110,5 +109,3 @@ class DRAKEJOINTS_EXPORT DrakeJoint {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-
-#endif  // DRAKE_SYSTEMS_PLANTS_JOINTS_DRAKEJOINT_H_

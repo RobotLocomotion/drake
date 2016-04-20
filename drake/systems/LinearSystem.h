@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_LINEARSYSTEM_H_
-#define DRAKE_SYSTEMS_LINEARSYSTEM_H_
+#pragma once
 
 #include "drake/systems/System.h"
 
@@ -122,5 +121,3 @@ class Gain : public LinearSystem<NullVector, InputVec, OutputVec> {
 };
 
 }  // end namespace Drake
-
-#endif  // DRAKE_SYSTEMS_LINEARSYSTEM_H_

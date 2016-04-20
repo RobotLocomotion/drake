@@ -1,5 +1,4 @@
-#ifndef DRAKE_SOLVERS_OPTIMIZATION_H_
-#define DRAKE_SOLVERS_OPTIMIZATION_H_
+#pragma once
 
 #include <algorithm>
 #include <list>
@@ -668,5 +667,3 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 };
 
 }  // end namespace Drake
-
-#endif  // DRAKE_SOLVERS_OPTIMIZATION_H_

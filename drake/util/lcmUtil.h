@@ -1,5 +1,4 @@
-#ifndef DRAKE_UTIL_LCMUTIL_H_
-#define DRAKE_UTIL_LCMUTIL_H_
+#pragma once
 
 #include <Eigen/Core>
 #include <iostream>
@@ -58,5 +57,3 @@ DRAKELCMUTIL_EXPORT void verifySubtypeSizes(
     drake::lcmt_support_data& support_data);
 DRAKELCMUTIL_EXPORT void verifySubtypeSizes(
     drake::lcmt_qp_controller_input& qp_input);
-
-#endif  // DRAKE_UTIL_LCMUTIL_H_

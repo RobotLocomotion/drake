@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_PLANTS_CONSTRAINT_RIGIDBODYCONSTRAINT_H_
-#define DRAKE_SYSTEMS_PLANTS_CONSTRAINT_RIGIDBODYCONSTRAINT_H_
+#pragma once
 
 //-----------------------------------------
 /**
@@ -977,5 +976,3 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT GravityCompensationTorqueConstraint
   Eigen::VectorXd lb;
   Eigen::VectorXd ub;
 };
-
-#endif  // DRAKE_SYSTEMS_PLANTS_CONSTRAINT_RIGIDBODYCONSTRAINT_H_

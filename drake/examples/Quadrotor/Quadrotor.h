@@ -1,5 +1,4 @@
-#ifndef DRAKE_EXAMPLES_QUADROTOR_QUADROTOR_H_
-#define DRAKE_EXAMPLES_QUADROTOR_QUADROTOR_H_
+#pragma once
 
 #include <iostream>
 #include <cmath>
@@ -223,5 +222,3 @@ class Quadrotor {
   const double kf = 1;
   const double km = 0.0245;
 };
-
-#endif  // DRAKE_EXAMPLES_QUADROTOR_QUADROTOR_H_
