@@ -1,5 +1,4 @@
-#ifndef DRAKE_SOLVERS_QPSPLINE_CONTINUITYCONSTRAINT_H_
-#define DRAKE_SOLVERS_QPSPLINE_CONTINUITYCONSTRAINT_H_
+#pragma once
 
 #include "drake/drakeSplineGeneration_export.h"
 
@@ -16,5 +15,3 @@ class DRAKESPLINEGENERATION_EXPORT ContinuityConstraint {
   int getFirstSplineIndex() const;
   int getSecondSplineIndex() const;
 };
-
-#endif /* DRAKE_SOLVERS_QPSPLINE_CONTINUITYCONSTRAINT_H_ */

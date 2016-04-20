@@ -1,5 +1,4 @@
-#ifndef DRAKE_UTIL_DRAKEMEXUTIL_H_
-#define DRAKE_UTIL_DRAKEMEXUTIL_H_
+#pragma once
 
 #include <mex.h>
 
@@ -347,5 +346,3 @@ mxArray* eigenToMatlabGeneral(const Eigen::MatrixBase<
     Eigen::Matrix<double, RowsAtCompileTime, ColsAtCompileTime>>& mat) {
   return eigenToMatlab(mat.const_cast_derived());
 }
-
-#endif  // DRAKE_UTIL_DRAKEMEXUTIL_H_

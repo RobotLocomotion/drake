@@ -115,16 +115,6 @@ elseif (MSVC)
   add_definitions(-D_USE_MATH_DEFINES) # to get math constants on MSVC (see https://msdn.microsoft.com/en-us/library/4hwaceh6.aspx)
 endif()
 
-# set up matlab build
-include(cmake/mex.cmake)
-mex_setup()
-
-# frustratingly, this didn't seem to work, so instead I've added a -C argument to both the Makefile and the drake-admin/runUnitTests scripts
-#if (NOT CTEST_CONFIGURATION_TYPE)
-#   set(CTEST_CONFIGURATION_TYPE ${CMAKE_BUILD_TYPE})
-#   message("Setting CTEST Configuration Type to ${CTEST_CONFIGURATION_TYPE}")
-#endif()
-
 # similar to the export headers, any other generated headers will be installed to build/include/drake, but will be created in ${PROJECT_BINARY_DIR}/exports/drake
 # These headers can be included as drake/bla.h
 set(generated_dir ${PROJECT_BINARY_DIR}/generated)
@@ -132,6 +122,16 @@ set(drake_path_header ${generated_dir}/drake/Path.h)
 configure_file(core/Path.h.in ${drake_path_header})
 install(FILES ${drake_path_header} DESTINATION include/drake/)
 include_directories(BEFORE ${generated_dir})
+
+# set up matlab build
+include(cmake/mex.cmake)
+if (DISABLE_MATLAB)
+	message(STATUS "MATLAB is disabled because the CMake option DISABLE_MATLAB is set to ON.")
+else()
+	# Search for MATLAB and configure various MEX options.
+	# If MATLAB is found, MATLAB_FOUND is set.
+	mex_setup()
+endif (DISABLE_MATLAB)
 
 find_package( Perl )
 if (MATLAB_FOUND AND NOT PERL_FOUND)
@@ -183,6 +183,10 @@ find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
 if (GTEST_FOUND)
   set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pthread")
+  if (WIN32)
+    # The following compiler flag is needed to support parameterized Google tests on Windows.
+    SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DGTEST_LINKED_AS_SHARED_LIBRARY=1" )
+  endif()
 endif()
 
 set(drake_jar_javafiles util/Transform.java)

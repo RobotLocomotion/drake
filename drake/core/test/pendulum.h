@@ -1,5 +1,4 @@
-#ifndef DRAKE_CORE_TEST_PENDULUM_H_
-#define DRAKE_CORE_TEST_PENDULUM_H_
+#pragma once
 
 #include <Eigen/Dense>
 
@@ -59,5 +58,3 @@ class PendulumInput {
 }  // namespace test
 }  // namespace core
 }  // namespace drake
-
-#endif  // DRAKE_CORE_TEST_PENDULUM_H_

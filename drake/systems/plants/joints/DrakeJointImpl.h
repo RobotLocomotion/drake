@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_PLANTS_JOINTS_DRAKEJOINTIMPL_H_
-#define DRAKE_SYSTEMS_PLANTS_JOINTS_DRAKEJOINTIMPL_H_
+#pragma once
 
 #include "drake/systems/plants/joints/DrakeJoint.h"
 
@@ -83,5 +82,3 @@ template <typename T>
 int sign(T val) {
   return (T(0) < val) - (val < T(0));
 }
-
-#endif  // DRAKE_SYSTEMS_PLANTS_JOINTS_DRAKEJOINTIMPL_H_

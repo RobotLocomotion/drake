@@ -1,5 +1,4 @@
-#ifndef DRAKE_UTIL_STANDARDMEXCONVERSIONS_H_
-#define DRAKE_UTIL_STANDARDMEXCONVERSIONS_H_
+#pragma once
 
 //
 // Created by Twan Koolen on 10/10/15.
@@ -308,5 +307,3 @@ int toMex(const std::tuple<Ts...>& source, mxArray* dest[], int nlhs) {
   return Drake::internal::TupleToMexHelper<sizeof...(Ts)>::run(source, dest,
                                                                nlhs);
 }
-
-#endif  // DRAKE_UTIL_STANDARDMEXCONVERSIONS_H_
