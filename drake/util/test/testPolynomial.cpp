@@ -72,14 +72,22 @@ void testOperators() {
     poly1_times_poly1 *= poly1_times_poly1;
 
     double t = uniform(generator);
-    valuecheck(sum.value(t), poly1.value(t) + poly2.value(t), 1e-8);
-    valuecheck(difference.value(t), poly2.value(t) - poly1.value(t), 1e-8);
-    valuecheck(product.value(t), poly1.value(t) * poly2.value(t), 1e-8);
-    valuecheck(poly1_plus_scalar.value(t), poly1.value(t) + scalar, 1e-8);
-    valuecheck(poly1_minus_scalar.value(t), poly1.value(t) - scalar, 1e-8);
-    valuecheck(poly1_scaled.value(t), poly1.value(t) * scalar, 1e-8);
-    valuecheck(poly1_div.value(t), poly1.value(t) / scalar, 1e-8);
-    valuecheck(poly1_times_poly1.value(t), poly1.value(t) * poly1.value(t),
+    valuecheck(sum.evaluateUnivariate(t),
+               poly1.evaluateUnivariate(t) + poly2.evaluateUnivariate(t), 1e-8);
+    valuecheck(difference.evaluateUnivariate(t),
+               poly2.evaluateUnivariate(t) - poly1.evaluateUnivariate(t), 1e-8);
+    valuecheck(product.evaluateUnivariate(t),
+               poly1.evaluateUnivariate(t) * poly2.evaluateUnivariate(t), 1e-8);
+    valuecheck(poly1_plus_scalar.evaluateUnivariate(t),
+               poly1.evaluateUnivariate(t) + scalar, 1e-8);
+    valuecheck(poly1_minus_scalar.evaluateUnivariate(t),
+               poly1.evaluateUnivariate(t) - scalar, 1e-8);
+    valuecheck(poly1_scaled.evaluateUnivariate(t),
+               poly1.evaluateUnivariate(t) * scalar, 1e-8);
+    valuecheck(poly1_div.evaluateUnivariate(t),
+               poly1.evaluateUnivariate(t) / scalar, 1e-8);
+    valuecheck(poly1_times_poly1.evaluateUnivariate(t),
+               poly1.evaluateUnivariate(t) * poly1.evaluateUnivariate(t),
                1e-8);
   }
 }
@@ -97,7 +105,7 @@ void testRoots() {
     auto roots = poly.roots();
     valuecheck<Eigen::Index>(roots.rows(), poly.getDegree());
     for (int i = 0; i < roots.size(); i++) {
-      auto value = poly.value(roots[i]);
+      auto value = poly.evaluateUnivariate(roots[i]);
       valuecheck(std::abs(value), 0.0, 1e-8);
     }
   }
@@ -110,11 +118,11 @@ void testEvalType() {
   VectorXd coeffs = VectorXd::Random(int_distribution(generator));
   Polynomial<double> poly(coeffs);
 
-  auto valueIntInput = poly.value(1);
+  auto valueIntInput = poly.evaluateUnivariate(1);
   const auto& double_type = typeid(double);  // NOLINT(readability/function)
   valuecheck(typeid(decltype(valueIntInput)) == double_type, true);
 
-  auto valueComplexInput = poly.value(std::complex<double>(1.0, 2.0));
+  auto valueComplexInput = poly.evaluateUnivariate(std::complex<double>(1.0, 2.0));
   valuecheck(
       typeid(decltype(valueComplexInput)) == typeid(std::complex<double>),
       true);
@@ -145,8 +153,9 @@ void testPolynomialMatrix() {
   for (int row = 0; row < A.rows(); ++row) {
     for (int col = 0; col < A.cols(); ++col) {
       double t = uniform(generator);
-      valuecheck(sum(row, col).value(t),
-                 A(row, col).value(t) + C(row, col).value(t), 1e-8);
+      valuecheck(sum(row, col).evaluateUnivariate(t),
+                 A(row, col).evaluateUnivariate(t) +
+                 C(row, col).evaluateUnivariate(t), 1e-8);
     }
   }
 
@@ -278,10 +287,10 @@ TEST(PolynomialTest, MultivariateValue) {
   const std::map<Polynomiald::VarType, double> eval_point = {
     {x.getSimpleVariable(), 1},
     {y.getSimpleVariable(), 2}};
-  EXPECT_EQ((x * x + y).multivariateValue(eval_point), 3);
-  EXPECT_EQ((2 * x * x + y).multivariateValue(eval_point), 4);
-  EXPECT_EQ((x * x + 2 * y).multivariateValue(eval_point), 5);
-  EXPECT_EQ((x * x + x * y).multivariateValue(eval_point), 3);
+  EXPECT_EQ((x * x + y).evaluateMultivariate(eval_point), 3);
+  EXPECT_EQ((2 * x * x + y).evaluateMultivariate(eval_point), 4);
+  EXPECT_EQ((x * x + 2 * y).evaluateMultivariate(eval_point), 5);
+  EXPECT_EQ((x * x + x * y).evaluateMultivariate(eval_point), 3);
 }
 
 }

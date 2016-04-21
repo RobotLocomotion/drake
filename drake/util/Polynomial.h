@@ -177,7 +177,8 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
    * be different from both CoefficientsType and RealScalar)
    */
   template <typename T>
-  typename Product<CoefficientType, T>::type value(const T& x) const {
+  typename Product<CoefficientType, T>::type evaluateUnivariate(
+      const T& x) const {
     typedef typename Product<CoefficientType, T>::type ProductType;
 
     if (!is_univariate)
@@ -207,7 +208,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
    * (which can be different from both CoefficientsType and RealScalar)
    */
   template <typename T>
-  typename Product<CoefficientType, T>::type multivariateValue(
+  typename Product<CoefficientType, T>::type evaluateMultivariate(
       const std::map<VarType, T>& var_values) const {
     typedef typename Product<CoefficientType, T>::type ProductType;
 

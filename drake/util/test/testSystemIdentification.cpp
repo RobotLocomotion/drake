@@ -85,7 +85,7 @@ TEST(SystemIdentificationTest, testLumpedParameterRewrite) {
   };
   for (const auto& poly_var_pair : lump_map) {
     eval_point[poly_var_pair.second] =
-        poly_var_pair.first.multivariateValue(eval_point);
+        poly_var_pair.first.evaluateMultivariate(eval_point);
   }
 
   for (const Polynomiald& poly : input) {
@@ -103,8 +103,8 @@ TEST(SystemIdentificationTest, testLumpedParameterRewrite) {
 
     // Rewriting in terms of lumped parameters should never change the
     // actual value of a polynomial at a particular point.
-    EXPECT_EQ(poly.multivariateValue(eval_point),
-              rewritten.multivariateValue(eval_point));
+    EXPECT_EQ(poly.evaluateMultivariate(eval_point),
+              rewritten.evaluateMultivariate(eval_point));
   }
 }
 
