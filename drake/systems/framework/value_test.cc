@@ -1,8 +1,7 @@
-#include "drake/systems/framework/value.h"
-
 #include <memory>
 
 #include "drake/systems/framework/abstract_value.h"
+#include "drake/systems/framework/value.h"
 
 #include "gtest/gtest.h"
 

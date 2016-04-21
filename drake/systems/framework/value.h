@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_FRAMEWORK_VALUE_H_
-#define DRAKE_SYSTEMS_FRAMEWORK_VALUE_H_
+#pragma once
 
 #include <memory>
 
@@ -42,5 +41,3 @@ class Value : public AbstractValue {
 
 }  // namespace systems
 }  // namespace drake
-
-#endif  // DRAKE_SYSTEMS_FRAMEWORK_VALUE_H_
