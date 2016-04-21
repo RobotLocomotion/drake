@@ -4,6 +4,9 @@ if (LCM_FOUND)
   target_link_libraries(carSimLCM drakeRBSystem drakeLCMSystem)
 #  add_test(NAME carSimLCM COMMAND carSimLCM WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/examples/Cars)
 
+  add_executable(carSimLCMandROS simulateLCMandROS.cpp)
+  target_link_libraries(carSimLCMandROS drakeRBSystem drakeLCMSystem)
+
   add_executable(publishDrivingCommand publishDrivingCommand.cpp)
   pods_use_pkg_config_packages(publishDrivingCommand lcm)
   add_test(NAME publishDrivingCommand COMMAND publishDrivingCommand 1.0 0.0)
