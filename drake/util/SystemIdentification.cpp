@@ -74,20 +74,12 @@ typename SystemIdentification<T>::LumpingMapType
 SystemIdentification<T>::GetLumpedParametersFromPolynomials(
     const std::vector<PolyType>& polys,
     const std::set<VarType>& vars_of_interest) {
-  // Before we begin, check that we can reserve some names (VarType values)
-  // for our lumped parameters.
+  // Before we begin, find all the VarTypes in use so that we can create
+  // unique ones for our lumped parameters.
   std::set<VarType> all_vars;
   for (const PolyType& poly : polys) {
     const auto& poly_vars = poly.getVariables();
     all_vars.insert(poly_vars.begin(), poly_vars.end());
-  }
-  const VarType reservation_start = Polynomiald("lump", 1).getSimpleVariable();
-  const VarType reservation_end = Polynomiald("lump", 1000).getSimpleVariable();
-  for (const VarType& var : all_vars) {
-    if ((var >= reservation_start) && (var <= reservation_end)) {
-      throw std::runtime_error(
-          "Lumped parameters failed because variable name already in use");
-    }
   }
 
   // Extract every combination of the vars_of_interest.
@@ -120,14 +112,22 @@ SystemIdentification<T>::GetLumpedParametersFromPolynomials(
     }
   }
 
-  // For each such parameter polynomial, create a lumped parameter.
+  // For each such parameter polynomial, create a lumped parameter with a
+  // unique VarType id.
   int lump_index = 1;
+  static const std::string kLumpedVariablePrefix = "lump";
   LumpingMapType lumping_map;
-
   for (const PolyType& lump : lumped_parameters) {
-    VarType lump_var = PolyType("lump", lump_index).getSimpleVariable();
-    lumping_map[lump] = lump_var;
-    lump_index++;
+    while (true) {
+      VarType lump_var = PolyType(kLumpedVariablePrefix,
+                                  lump_index).getSimpleVariable();
+      lump_index++;
+      if (!all_vars.count(lump_var)) {
+        lumping_map[lump] = lump_var;
+        all_vars.insert(lump_var);
+        break;
+      }
+    }  // Loop termination: If every id is already used, PolyType() will throw.
   }
 
   return lumping_map;
