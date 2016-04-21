@@ -770,6 +770,34 @@ class DRAKERBM_EXPORT RigidBodyTree {
       const std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr,
       const PoseMap* pose_map = nullptr);
 
+  /**
+   * @brief Returns a non-constant reference to a body by index in the tree.
+   *
+   * Rigid bodies are numbered in the order they are added to the tree.
+   *
+   * @param[in] index The body index.
+   * @see add_rigid_body
+   */
+  RigidBody& get_body(int index){
+    assert(index < bodies.size() &&
+        "Input index exceeds the number of bodies in the tree");
+    return *bodies[index];
+  }
+
+  /**
+   * @brief Returns a constant reference to a body by index in the tree.
+   *
+   * Rigid bodies are numbered in the order they are added to the tree.
+   *
+   * @param[in] index The body index.
+   * @see add_rigid_body
+   */
+  RigidBody& get_body(int index) const{
+    assert(index < bodies.size() &&
+        "Input index exceeds the number of bodies in the tree");
+    return *bodies[index];
+  }
+
  public:
   static const std::set<int> default_robot_num_set;
 
@@ -779,6 +807,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
   Eigen::VectorXd joint_limit_max;
 
   // Rigid body objects
+  // TODO(amcastro-tri): make it a vector of std::unique_ptr's
+  // TODO(amcastro-tri): make private and start using accessors get_body
   std::vector<std::shared_ptr<RigidBody> > bodies;
 
   // Rigid body frames
