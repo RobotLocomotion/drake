@@ -1,8 +1,5 @@
 #pragma once
 
-#include <Eigen/Core>
-#include <unsupported/Eigen/Polynomials>
-
 #include <complex>
 #include <map>
 #include <random>
@@ -10,6 +7,9 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+
+#include <Eigen/Core>
+#include <unsupported/Eigen/Polynomials>
 
 #include "drake/drakePolynomial_export.h"
 
@@ -42,11 +42,9 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
  public:
   typedef _CoefficientType CoefficientType;
   typedef unsigned int VarType;
-  typedef unsigned int PowerType;
-  typedef int MSVC_STD_POW_PowerType;  // can't believe i have to do this, but
-                                       // msvc considers the call to std::pow
-                                       // ambiguous because it won't cast
-                                       // unsigned int to int
+  /// This should be 'unsigned int' but MSVC considers a call to std::pow(...,
+  /// unsigned int) ambiguous because it won't cast unsigned int to int.
+  typedef int PowerType;
   typedef typename Eigen::NumTraits<CoefficientType>::Real RealScalar;
   typedef std::complex<RealScalar> RootType;
   typedef Eigen::Matrix<RootType, Eigen::Dynamic, 1> RootsType;
@@ -97,7 +95,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
     bool hasSameExponents(const Monomial& other) const;
 
     /// Factors this by other; returns 0 iff other does not divide this.
-    Monomial factor(const Monomial& other) const;
+    Monomial factor(const Monomial& divisor) const;
   };
 
  private:
@@ -194,26 +192,27 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
       else
         value += iter->coefficient *
                  std::pow((ProductType)x,
-                          (MSVC_STD_POW_PowerType)iter->terms[0].power);
+                          (PowerType)iter->terms[0].power);
     }
     return value;
   }
 
-  /// Evaluate a univariate Polynomial at a specific point.
+  /// Evaluate a multivariate Polynomial at a specific point.
   /**
-   * Evaluates a univariate Polynomial at the given x.  Throws an
-   * exception of this Polynomial is not univariate.
+   * Evaluates a univariate Polynomial with the given values for each
+   * variable.  Throws an exception of the Polynomial contains values for
+   * which values were not provided.
    *
-   * x may be of any type supporting the ** and + operations (which can
-   * be different from both CoefficientsType and RealScalar)
+   * The provided values may be of any type supporting the ** and + operations
+   * (which can be different from both CoefficientsType and RealScalar)
    */
   template <typename T>
   typename Product<CoefficientType, T>::type multivariateValue(
-      const std::map<VarType, T>& xs) const {
+      const std::map<VarType, T>& var_values) const {
     typedef typename Product<CoefficientType, T>::type ProductType;
 
     for (const VarType& var : getVariables()) {
-      if (!xs.count(var)) {
+      if (!var_values.count(var)) {
         throw std::runtime_error(
             "No value provided for variable " + var);
       }
@@ -223,8 +222,8 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
     for (const Monomial& monomial : monomials) {
       ProductType monomial_value = monomial.coefficient;
       for (const Term& term : monomial.terms) {
-        monomial_value *= std::pow(static_cast<ProductType>(xs.at(term.var)),
-                                   (MSVC_STD_POW_PowerType)term.power);
+        monomial_value *= std::pow(static_cast<ProductType>(var_values.at(term.var)),
+                     static_cast<PowerType>(term.power));
       }
       value += monomial_value;
     }

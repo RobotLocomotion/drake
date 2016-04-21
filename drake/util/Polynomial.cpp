@@ -108,7 +108,7 @@ int Polynomial<CoefficientType>::Monomial::getDegree() const {
 
 template <typename CoefficientType>
 int Polynomial<CoefficientType>::Monomial::getDegreeOf(VarType v) const {
-  for (auto term : terms) {
+  for (const Term& term : terms) {
     if (term.var == v) {
       return term.power;
     }
@@ -118,22 +118,22 @@ int Polynomial<CoefficientType>::Monomial::getDegreeOf(VarType v) const {
 
 template <typename CoefficientType>
 typename Polynomial<CoefficientType>::Monomial
-Polynomial<CoefficientType>::Monomial::factor(const Monomial& other) const {
+Polynomial<CoefficientType>::Monomial::factor(const Monomial& divisor) const {
   Monomial error, result;
   error.coefficient = 0;
-  result.coefficient = coefficient / other.coefficient;
-  for (auto term : terms) {
-    const PowerType other_power = other.getDegreeOf(term.var);
-    if (term.power < other_power) { return error; }
+  result.coefficient = coefficient / divisor.coefficient;
+  for (const Term& term : terms) {
+    const PowerType divisor_power = divisor.getDegreeOf(term.var);
+    if (term.power < divisor_power) { return error; }
     Term new_term;
     new_term.var = term.var;
-    new_term.power = term.power - other_power;
+    new_term.power = term.power - divisor_power;
     if (new_term.power > 0) {
       result.terms.push_back(new_term);
     }
   }
-  for (const Term& other_term : other.terms) {
-    if (!getDegreeOf(other_term.var)) { return error; }
+  for (const Term& divisor_term : divisor.terms) {
+    if (!getDegreeOf(divisor_term.var)) { return error; }
   }
   return result;
 }

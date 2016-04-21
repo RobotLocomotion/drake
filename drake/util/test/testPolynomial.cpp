@@ -193,7 +193,7 @@ TEST(PolynomialTest, VariableIdGeneration) {
   EXPECT_EQ(result, "x1");
 }
 
-TEST(PolynomialTest, testGetVariables) {
+TEST(PolynomialTest, GetVariables) {
   Polynomiald x = Polynomiald("x");
   Polynomiald::VarType x_var = x.getSimpleVariable();
   Polynomiald y = Polynomiald("y");
@@ -220,7 +220,7 @@ TEST(PolynomialTest, testGetVariables) {
 
 // TODO(ggould-tri) -- This test does not pass, which is a misfeature or
 // bug in Polynomial.
-TEST(PolynomialTest, DISABLED_testSimplification) {
+TEST(PolynomialTest, DISABLED_Simplification) {
   Polynomiald x = Polynomiald("x");
   Polynomiald y = Polynomiald("y");
 
@@ -246,7 +246,7 @@ TEST(PolynomialTest, DISABLED_testSimplification) {
 // be longstanding confusions about dll export of nested classes of class
 // templates in msvc.
 #ifndef WIN32
-TEST(PolynomialTest, testMonomialFactor) {
+TEST(PolynomialTest, MonomialFactor) {
   Polynomiald x = Polynomiald("x");
   Polynomiald y = Polynomiald("y");
 
@@ -272,10 +272,10 @@ TEST(PolynomialTest, testMonomialFactor) {
 }
 #endif
 
-TEST(PolynomialTest, testMultivariateValue) {
+TEST(PolynomialTest, MultivariateValue) {
   Polynomiald x = Polynomiald("x");
   Polynomiald y = Polynomiald("y");
-  std::map<Polynomiald::VarType, double> eval_point = {
+  const std::map<Polynomiald::VarType, double> eval_point = {
     {x.getSimpleVariable(), 1},
     {y.getSimpleVariable(), 2}};
   EXPECT_EQ((x * x + y).multivariateValue(eval_point), 3);
