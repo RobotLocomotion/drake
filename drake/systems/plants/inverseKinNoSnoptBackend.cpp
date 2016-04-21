@@ -26,7 +26,7 @@ void inverseKinSnoptBackend(
 
 template void inverseKinSnoptBackend(
     RigidBodyTree* model, const int mode, const int nT,
-    const double* t,const MatrixBase<Map<MatrixXd>>& q_seed,
+    const double* t, const MatrixBase<Map<MatrixXd>>& q_seed,
     const MatrixBase<Map<MatrixXd>>& q_nom, const int num_constraints,
     RigidBodyConstraint** const constraint_array,
     const IKoptions& ikoptions, MatrixBase<Map<MatrixXd>>* q_sol,
