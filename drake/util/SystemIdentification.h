@@ -44,6 +44,12 @@ class DRAKEPOLYNOMIAL_EXPORT SystemIdentification {
    *   a*x + b*x + a*c*y + a*c*y**2
    * And our variables of interest are x and y, then our lumped parameters are:
    *   lump1 == a+b ;  lump2 == a*c
+   * and we return:
+   *   { (a + b) -> VarType("lump", 1);  (a * c) -> VarType("lump", 2) }
+   *
+   * Note however that this function provides no guarantees of the lumped
+   * parameter names generated except that they are unique -- "lump1" and
+   * "lump2" here are examples.
    */
   static LumpingMapType GetLumpedParametersFromPolynomial(
       const PolyType& poly,
@@ -81,6 +87,11 @@ class DRAKEPOLYNOMIAL_EXPORT SystemIdentification {
    * For instance, if x and y are of interest on the polynomial
    *   a * x + b * x*y + b * y^2 + c * y^2,
    * then return x, x*y, and y^2.
+   *
+   * NOTE: This will also return the empty combination iff there are terms for
+   * the polynomial that do not contain any vars of interest.  This behaviour
+   * is slightly surprising but in practice matches what we want to do with
+   * the combinations.
    */
   static std::set<MonomialType>
   GetAllCombinationsOfVars(

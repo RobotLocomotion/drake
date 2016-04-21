@@ -15,6 +15,8 @@ SystemIdentification<T>::GetAllCombinationsOfVars(
     for (const MonomialType& monomial : poly.getMonomials()) {
       MonomialType interest_monomial;
       interest_monomial.coefficient = 1;
+      // For each term in the monomial, iff that term's variable is in
+      // vars_of_interest multiply it in.
       for (const TermType& term : monomial.terms) {
         if (vars_of_interest.count(term.var)) {
           interest_monomial.terms.push_back(term);
@@ -31,6 +33,10 @@ bool SystemIdentification<T>::MonomialMatches(
     const MonomialType& haystack,
     const MonomialType& needle,
     const std::set<VarType>& vars_of_interest) {
+  // By factoring the needle out of the haystack, we either get a failure (in
+  // which case return false) or a residue monomial (the parts of haystack not
+  // in needle).  If the resuidue contains a var of interest, return false.
+  // Otherwise we meet the criteria and return true.
   const MonomialType residue = haystack.factor(needle);
   if (residue.coefficient == 0) {
     return false;
