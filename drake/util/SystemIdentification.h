@@ -115,11 +115,16 @@ class DRAKEPOLYNOMIAL_EXPORT SystemIdentification {
   /// Factor out the smallest coefficient in a Polynomial.
   /**
    * The resulting pair is the factored coefficient and a polynomial whose
-   * smallest coefficient is 1.
+   * smallest coefficient is 1.  This allows lumped parameter polynomials to
+   * be compared to determine when they differ only by coefficient.
+   *
+   * For instance, given the polynomial:
+   *   2 * x + 3 * y
+   * this will return
+   *   {2, x + 1.5 * y}
    */
   static std::pair<CoefficientType, PolyType>
-  NormalizePolynomial(const PolyType& poly);
+  CanonicalizePolynomial(const PolyType& poly);
 };
 }  // namespace util
 }  // namespace drake
-

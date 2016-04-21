@@ -1,15 +1,14 @@
-#include <iostream>
 #include "drake/util/Polynomial.h"
 #include "drake/util/SystemIdentification.h"
-#include "drake/util/testUtil.h"
 #include "gtest/gtest.h"
 
 namespace drake {
 namespace util {
+namespace {
 
 typedef SystemIdentification<double> SID;
 
-TEST(SystemIdentificationTest, testLumpedSingle) {
+TEST(SystemIdentificationTest, LumpedSingle) {
   Polynomiald x = Polynomiald("x");
   Polynomiald y = Polynomiald("y");
   Polynomiald a = Polynomiald("a");
@@ -29,7 +28,7 @@ TEST(SystemIdentificationTest, testLumpedSingle) {
   EXPECT_EQ(lump_map.count(a * c), 1);
 }
 
-TEST(SystemIdentificationTest, testLumpedMulti) {
+TEST(SystemIdentificationTest, LumpedMulti) {
   Polynomiald x = Polynomiald("x");
   Polynomiald y = Polynomiald("y");
   Polynomiald a = Polynomiald("a");
@@ -53,9 +52,18 @@ TEST(SystemIdentificationTest, testLumpedMulti) {
   EXPECT_EQ(lump_map.count(a), 1);
   EXPECT_EQ(lump_map.count(a + b), 1);
   EXPECT_EQ(lump_map.count(a * c), 1);
+
+  // TODO(ggould-tri) The above code should be able to be more cleanly written
+  // using gmock as something like:
+  //
+  // EXPECT_THAT(lump_map, ElementsAre(std::make_pair(a, _),
+  //                                   std::make_pair((a + b), _),
+  //                                   std::make_pair((a * c), _)));
+  //
+  // but the author could not get this working.
 }
 
-TEST(SystemIdentificationTest, testLumpedParameterRewrite) {
+TEST(SystemIdentificationTest, LumpedParameterRewrite) {
   Polynomiald x = Polynomiald("x");
   Polynomiald y = Polynomiald("y");
   Polynomiald a = Polynomiald("a");
@@ -83,6 +91,10 @@ TEST(SystemIdentificationTest, testLumpedParameterRewrite) {
     {b.getSimpleVariable(), 5},
     {c.getSimpleVariable(), 7},
   };
+  // Compute the value of each lumped parameter at eval_point; store those
+  // values into the eval_point (so that now it provides both lumped and
+  // un-lumped values and can be used to evaluate either the original or the
+  // rewritten polynomial).
   for (const auto& poly_var_pair : lump_map) {
     eval_point[poly_var_pair.second] =
         poly_var_pair.first.evaluateMultivariate(eval_point);
@@ -105,8 +117,13 @@ TEST(SystemIdentificationTest, testLumpedParameterRewrite) {
     // actual value of a polynomial at a particular point.
     EXPECT_EQ(poly.evaluateMultivariate(eval_point),
               rewritten.evaluateMultivariate(eval_point));
+
+    // TODO(ggould-tri) The above tests do not ensure that the original and
+    // rewritten polys are everywhere and always structurally identical, just
+    // nearly always identical in their evaluateMultivariate behaviour.
   }
 }
 
-}  // namespace test
+}  // anonymous namespace
+}  // namespace util
 }  // namespace drake

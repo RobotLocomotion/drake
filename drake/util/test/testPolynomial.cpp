@@ -1,4 +1,4 @@
-#include <iostream>
+#include <sstream>
 #include <map>
 
 #include "drake/util/Polynomial.h"

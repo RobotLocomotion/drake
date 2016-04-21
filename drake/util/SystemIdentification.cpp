@@ -51,7 +51,7 @@ bool SystemIdentification<T>::MonomialMatches(
 
 template<typename T>
 std::pair<T, typename SystemIdentification<T>::PolyType>
-SystemIdentification<T>::NormalizePolynomial(const PolyType& poly) {
+SystemIdentification<T>::CanonicalizePolynomial(const PolyType& poly) {
   std::vector<MonomialType> monomials = poly.getMonomials();
   const T min_coefficient = std::min_element(
       monomials.begin(), monomials.end(),
@@ -113,7 +113,7 @@ SystemIdentification<T>::GetLumpedParametersFromPolynomials(
       PolyType lumped_parameter_polynomial(lumped_parameter.begin(),
                                            lumped_parameter.end());
       PolyType normalized =
-          NormalizePolynomial(lumped_parameter_polynomial).second;
+          CanonicalizePolynomial(lumped_parameter_polynomial).second;
       lumped_parameters.insert(normalized);
     }
   }
@@ -179,11 +179,11 @@ SystemIdentification<T>::RewritePolynomialWithLumpedParameters(
     }
     const PolyType factor_polynomial(factor_monomials.begin(),
                                      factor_monomials.end());
-    const auto& normalization = NormalizePolynomial(factor_polynomial);
-    const T coefficient = normalization.first;
-    const PolyType& normalized = normalization.second;
+    const auto& canonicalization = CanonicalizePolynomial(factor_polynomial);
+    const T coefficient = canonicalization.first;
+    const PolyType& canonicalized = canonicalization.second;
 
-    if (!lumped_parameters.count(normalized)) {
+    if (!lumped_parameters.count(canonicalized)) {
       // Factoring out this combination yielded a parameter polynomial that
       // does not correspond to a lumped variable.  Ignore it.
       continue;
@@ -192,7 +192,7 @@ SystemIdentification<T>::RewritePolynomialWithLumpedParameters(
     // We have a lumped parameter, so construct a new monomial and replace the
     // working monomials list.
     TermType lump_term;
-    lump_term.var = lumped_parameters.at(normalized);
+    lump_term.var = lumped_parameters.at(canonicalized);
     lump_term.power = 1;
     MonomialType lumped_monomial;
     lumped_monomial.terms = interest_monomial.terms;
