@@ -76,7 +76,6 @@ endif()
 
 include(CMakeDependentOption)
 option(DISABLE_MATLAB "Don't use MATLAB even if it is present." OFF)
-CMAKE_DEPENDENT_OPTION(WITH_SPOTLESS "polynomial optimization front-end for MATLAB" ON "NOT DISABLE_MATLAB" OFF)
 if (DISABLE_MATLAB)
 	message(STATUS "MATLAB is disabled.")
 else()
@@ -84,9 +83,13 @@ else()
 	if (matlab)
 		message(STATUS "Found MATLAB at " ${matlab})
 	else ()
-		message("Looked for MATLAB but could not find it.")
+		message(STATUS "Looked for MATLAB but could not find it.")
 	endif(matlab)
 endif (DISABLE_MATLAB)
+
+# If DISABLE_MATLAB is set or matlab is not found, WITH_SPOTLESS is hidden and default OFF.
+# Otherwise, WITH_SPOTLESS is visible and default ON.
+CMAKE_DEPENDENT_OPTION(WITH_SPOTLESS "polynomial optimization front-end for MATLAB" ON "NOT DISABLE_MATLAB;matlab" OFF)
 
 option(WITH_YAML_CPP "library for reading and writing yaml configuration files" ON)
 
