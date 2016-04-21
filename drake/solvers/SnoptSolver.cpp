@@ -191,11 +191,12 @@ static int snopt_userfun(snopt::integer* Status, snopt::integer* n,
 
   // evaluate objective
   auto tx = Drake::initializeAutoDiff(xvec);
-  Drake::TaylorVecXd ty(1), this_x(*n);
+  Drake::TaylorVecXd ty(1), this_x;
   for (auto const& binding : current_problem->generic_objectives()) {
     auto const& obj = binding.constraint();
     size_t index = 0;
     for (const Drake::DecisionVariableView& v : binding.variable_list()) {
+      this_x.conservativeResize(index + v.size());
       this_x.segment(index, v.size()) = tx.segment(v.index(), v.size());
       index += v.size();
     }
@@ -220,6 +221,7 @@ static int snopt_userfun(snopt::integer* Status, snopt::integer* n,
     auto const& c = binding.constraint();
     size_t index = 0, num_constraints = c->num_constraints();
     for (const Drake::DecisionVariableView& v : binding.variable_list()) {
+      this_x.conservativeResize(index + v.size());
       this_x.segment(index, v.size()) = tx.segment(v.index(), v.size());
       index += v.size();
     }
