@@ -11,6 +11,8 @@ namespace Drake {
 namespace systems {
 namespace plants {
 
+/// This function is primarily documented through RigidBodyIK.h.  All
+/// parameters are passthroughs from there.
 template <typename DerivedA, typename DerivedB, typename DerivedC,
           typename DerivedD, typename DerivedE>
 void inverseKinBackend(RigidBodyTree *model, const int mode, const int nT,

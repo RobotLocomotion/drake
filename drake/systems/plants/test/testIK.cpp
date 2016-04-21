@@ -1,6 +1,5 @@
 #include <cstdlib>
-#include <iostream>
-
+#
 #include <Eigen/Dense>
 
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
