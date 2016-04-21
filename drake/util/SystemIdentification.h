@@ -1,5 +1,4 @@
-#ifndef DRAKE_UTIL_SYSTEMIDENTIFICATION_H_
-#define DRAKE_UTIL_SYSTEMIDENTIFICATION_H_
+#pragma once
 
 #include <map>
 #include <set>
@@ -17,11 +16,16 @@ namespace util {
  * This class is a holder for templated utility methods.  It should not be
  * constructed.  It must be template-instantiated (in its cpp file) for each
  * supported variant of Polynomial (currently only Polynomial<double>).
+ *
+ * Note: The term "system identification" used throughout here refers to the
+ * process of simplifying the equations defining a physical system to a
+ * minimum number of "lumped" parameters and then estimating the values of
+ * those parameters based on empirical data.  For reference, see e.g.:
+ *   https://dl.dropboxusercontent.com/u/3432353/parameterEstimation.pdf
  */
-template <typename _CoefficientType = double>
+template <typename CoefficientType>
 class DRAKEPOLYNOMIAL_EXPORT SystemIdentification {
  public:
-  typedef _CoefficientType CoefficientType;
   typedef ::Polynomial<CoefficientType> PolyType;
   typedef typename PolyType::Monomial MonomialType;
   typedef typename PolyType::Term TermType;
@@ -86,7 +90,11 @@ class DRAKEPOLYNOMIAL_EXPORT SystemIdentification {
   /// Test if one monomial is a product of parameters times another monomial.
   /**
    * Return true iff monomial "haystack" consists only of the monomial "needle"
-   * times variables not in "vars_of_interest.
+   * times variables not in "vars_of_interest".
+   *
+   * For instance, with vars-of-interest x, y:
+   *    haystack 3 * a * x * x * y   matches needle  x * x * y
+   *    haystack x * x * y * y does not match needle x * x * y
    */
   static bool MonomialMatches(
     const MonomialType& haystack,
@@ -101,6 +109,6 @@ class DRAKEPOLYNOMIAL_EXPORT SystemIdentification {
   static std::pair<CoefficientType, PolyType>
   NormalizePolynomial(const PolyType& poly);
 };
-};
-};
-#endif  // DRAKE_UTIL_SYSTEMIDENTIFICATION_H_
+}  // namespace util
+}  // namespace drake
+

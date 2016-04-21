@@ -13,7 +13,7 @@ SystemIdentification<T>::GetAllCombinationsOfVars(
   std::set<MonomialType> interest_monomials;
   for (const PolyType& poly : polys) {
     for (const MonomialType& monomial : poly.getMonomials()) {
-      typename PolyType::Monomial interest_monomial;
+      MonomialType interest_monomial;
       interest_monomial.coefficient = 1;
       for (const TermType& term : monomial.terms) {
         if (vars_of_interest.count(term.var)) {
@@ -91,7 +91,7 @@ SystemIdentification<T>::GetLumpedParametersFromPolynomials(
   }
 
   // Extract every combination of the vars_of_interest.
-  const std::set<typename PolyType::Monomial> interest_monomials =
+  const std::set<MonomialType> interest_monomials =
       GetAllCombinationsOfVars(polys, vars_of_interest);
 
   // For each of those combinations, find the corresponding polynomials of
@@ -101,6 +101,10 @@ SystemIdentification<T>::GetLumpedParametersFromPolynomials(
     for (const PolyType& poly : polys) {
       std::vector<MonomialType> lumped_parameter;
       for (const MonomialType& monomial : poly.getMonomials()) {
+        // NOTE: This may be a performance hotspot if this method is called in
+        // a tight loop, due to the nested for loops here and in
+        // MonomialMatches and its callees.  If so it can be sped up via loop
+        // reordering and intermediate maps at some cost to readability.
         if (MonomialMatches(monomial, interest_monomial, vars_of_interest)) {
           lumped_parameter.push_back(monomial.factor(interest_monomial));
         }
@@ -118,7 +122,7 @@ SystemIdentification<T>::GetLumpedParametersFromPolynomials(
 
   // For each such parameter polynomial, create a lumped parameter.
   int lump_index = 1;
-  typename SystemIdentification<T>::LumpingMapType lumping_map;
+  LumpingMapType lumping_map;
 
   for (const PolyType& lump : lumped_parameters) {
     VarType lump_var = PolyType("lump", lump_index).getSimpleVariable();
@@ -137,7 +141,7 @@ SystemIdentification<T>::RewritePolynomialWithLumpedParameters(
   // Reconstruct vars_of_interest, the variables in poly that are not
   // mentioned by the lumped_parameters.
   std::set<VarType> vars_of_interest = poly.getVariables();
-  for (auto lump_name_pair : lumped_parameters) {
+  for (const auto& lump_name_pair : lumped_parameters) {
     std::set<VarType> parameters_in_lump = lump_name_pair.first.getVariables();
     for (const VarType& var : parameters_in_lump) {
       vars_of_interest.erase(var);
@@ -148,7 +152,7 @@ SystemIdentification<T>::RewritePolynomialWithLumpedParameters(
   // polynomial of parameters that multiply by each combination; if that
   // polynomial is a lumped variable, substitute in a new monomial of the
   // lumped variable times the combination instead.
-  std::set<typename PolyType::Monomial> interest_monomials =
+  std::set<MonomialType> interest_monomials =
       GetAllCombinationsOfVars({poly}, vars_of_interest);
   std::vector<MonomialType> working_monomials = poly.getMonomials();
   for (const MonomialType& interest_monomial : interest_monomials) {
@@ -168,7 +172,7 @@ SystemIdentification<T>::RewritePolynomialWithLumpedParameters(
       }
     }
     const PolyType factor_polynomial(factor_monomials.begin(),
-                               factor_monomials.end());
+                                     factor_monomials.end());
     const auto& normalization = NormalizePolynomial(factor_polynomial);
     const T coefficient = normalization.first;
     const PolyType& normalized = normalization.second;
@@ -195,7 +199,7 @@ SystemIdentification<T>::RewritePolynomialWithLumpedParameters(
   return PolyType(working_monomials.begin(), working_monomials.end());
 }
 
-};
-};
+}  // namespace util
+}  // namespace drake
 
 template class DRAKEPOLYNOMIAL_EXPORT drake::util::SystemIdentification<double>;
