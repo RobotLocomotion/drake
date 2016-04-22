@@ -114,6 +114,8 @@ TEST(ValueTest, SubclassOfValue) {
   EXPECT_EQ("3,4", printable_erased->print());
 }
 
+// Tests that even after being cloned, PrintableValue can be unerased to
+// PrintInterface.
 TEST(ValueTest, SubclassOfValueSurvivesClone) {
   Point point(5, 6);
   PrintableValue<Point> printable_value(point);
