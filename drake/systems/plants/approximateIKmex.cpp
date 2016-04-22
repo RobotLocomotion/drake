@@ -36,8 +36,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   Map<VectorXd> q_sol(mxGetPrSafe(plhs[0]), nq);
   int info;
   // VectorXd q_sol(nq);
-  approximateIK(model, q_seed, q_nom, num_constraints, constraint_array,
-                *ikoptions, &q_sol, &info);
+  approximateIK(model, q_seed, q_nom, num_constraints, constraint_array, q_sol,
+                info, *ikoptions);
   // plhs[0] = mxCreateDoubleMatrix(nq, 1, mxREAL);
   // memcpy(mxGetPrSafe(plhs[0]), q_sol.data(), sizeof(double)*nq);
   if (nlhs > 1) {

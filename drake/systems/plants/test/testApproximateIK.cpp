@@ -28,8 +28,8 @@ int main() {
   IKoptions ikoptions(model);
   VectorXd q_sol(model->num_positions);
   int info;
-  approximateIK(model, q0, q0, num_constraints, constraint_array,
-                ikoptions, &q_sol, &info);
+  approximateIK(model, q0, q0, num_constraints, constraint_array, q_sol, info,
+                ikoptions);
   printf("INFO = %d\n", info);
   delete com_kc;
   delete[] constraint_array;

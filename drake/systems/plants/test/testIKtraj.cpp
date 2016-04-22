@@ -83,8 +83,8 @@ int main() {
   int info = 0;
   vector<string> infeasible_constraint;
   inverseKinTraj(model, nT, t, qdot0, q0, q0, num_constraints, constraint_array,
-                 ikoptions,
-                 &q_sol, &qdot_sol, &qddot_sol, &info, &infeasible_constraint);
+                 q_sol, qdot_sol, qddot_sol, info, infeasible_constraint,
+                 ikoptions);
   printf("INFO = %d\n", info);
   if (info != 1) {
     cerr << "Failure" << endl;
@@ -93,8 +93,8 @@ int main() {
   ikoptions.setFixInitialState(false);
   ikoptions.setMajorIterationsLimit(500);
   inverseKinTraj(model, nT, t, qdot0, q0, q0, num_constraints, constraint_array,
-                 ikoptions,
-                 &q_sol, &qdot_sol, &qddot_sol, &info, &infeasible_constraint);
+                 q_sol, qdot_sol, qddot_sol, info, infeasible_constraint,
+                 ikoptions);
   printf("INFO = %d\n", info);
   if (info != 1) {
     cerr << "Failure" << endl;
@@ -104,8 +104,8 @@ int main() {
   t_inbetween << 0.1, 0.15, 0.3, 0.4, 0.6;
   ikoptions.setAdditionaltSamples(t_inbetween);
   inverseKinTraj(model, nT, t, qdot0, q0, q0, num_constraints, constraint_array,
-                 ikoptions,
-                 &q_sol, &qdot_sol, &qddot_sol, &info, &infeasible_constraint);
+                 q_sol, qdot_sol, qddot_sol, info, infeasible_constraint,
+                 ikoptions);
   printf("INFO = %d\n", info);
   if (info != 1) {
     cerr << "Failure" << endl;

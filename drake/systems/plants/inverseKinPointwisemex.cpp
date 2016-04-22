@@ -35,9 +35,8 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   int* info = new int[nT];
   vector<string> infeasible_constraint;
   inverseKinPointwise(model, nT, t, q_seed, q_nom, num_constraints,
-                      constraint_array, *ikoptions,
-                      &q_sol, info, &infeasible_constraint);
-
+                      constraint_array, q_sol, info, infeasible_constraint,
+                      *ikoptions);
   plhs[1] = mxCreateDoubleMatrix(1, nT, mxREAL);
   for (int i = 0; i < nT; i++) {
     *(mxGetPrSafe(plhs[1]) + i) = (double)info[i];

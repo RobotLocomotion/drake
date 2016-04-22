@@ -31,7 +31,7 @@ int main() {
   int* info = new int[nT];
   vector<string> infeasible_constraint;
   inverseKinPointwise(&rbm, nT, t, q0, q0, num_constraints, constraint_array,
-                      ikoptions, &q_sol, info, &infeasible_constraint);
+                      q_sol, info, infeasible_constraint, ikoptions);
   for (int i = 0; i < nT; i++) {
     printf("INFO[%d] = %d ", i, info[i]);
     if (info[i] != 1) {
