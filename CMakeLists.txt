@@ -76,7 +76,6 @@ endif()
 
 include(CMakeDependentOption)
 option(DISABLE_MATLAB "Don't use MATLAB even if it is present." OFF)
-CMAKE_DEPENDENT_OPTION(WITH_SPOTLESS "polynomial optimization front-end for MATLAB" ON "NOT DISABLE_MATLAB" OFF)
 if (DISABLE_MATLAB)
 	message(STATUS "MATLAB is disabled.")
 else()
@@ -84,9 +83,13 @@ else()
 	if (matlab)
 		message(STATUS "Found MATLAB at " ${matlab})
 	else ()
-		message("Looked for MATLAB but could not find it.")
+		message(STATUS "Looked for MATLAB but could not find it.")
 	endif(matlab)
 endif (DISABLE_MATLAB)
+
+# If DISABLE_MATLAB is set or matlab is not found, WITH_SPOTLESS is hidden and default OFF.
+# Otherwise, WITH_SPOTLESS is visible and default ON.
+CMAKE_DEPENDENT_OPTION(WITH_SPOTLESS "polynomial optimization front-end for MATLAB" ON "NOT DISABLE_MATLAB;matlab" OFF)
 
 option(WITH_YAML_CPP "library for reading and writing yaml configuration files" ON)
 
@@ -149,7 +152,7 @@ set(cmake_GIT_CLONE_DIR "${PROJECT_SOURCE_DIR}/drake/cmake")
 set(cmake_NO_BUILD TRUE)
 set(cmake_IS_PUBLIC TRUE)
 set(director_GIT_REPOSITORY https://github.com/RobotLocomotion/director.git)
-set(director_GIT_TAG 7782d87304a7819e8716237b1251451bb949c792)
+set(director_GIT_TAG c00034a7934476d72633b5611823a387bc8e5b59)
 set(director_SOURCE_DIR ${PROJECT_SOURCE_DIR}/externals/director/distro/pods/drake-distro)
 set(director_IS_PUBLIC TRUE)
 set(drake_java_args -DJava_JAVA_EXECUTABLE=${Java_JAVA_EXECUTABLE} -DJava_JAVAC_EXECUTABLE=${Java_JAVAC_EXECUTABLE} -DJava_JAVAH_EXECUTABLE=${Java_JAVAH_EXECUTABLE} -DJava_VERSION_STRING=${Java_VERSION_STRING})

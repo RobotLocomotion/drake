@@ -10,17 +10,17 @@ using namespace std;
 using namespace Eigen;
 
 template <typename DerivedA, typename DerivedB, typename DerivedC>
-void approximateIK(RigidBodyTree *model, const MatrixBase<DerivedA> &q_seed,
-                   const MatrixBase<DerivedB> &q_nom, const int num_constraints,
-                   RigidBodyConstraint **const constraint_array,
-                   MatrixBase<DerivedC> &q_sol, int &INFO,
-                   const IKoptions &ikoptions) {
+void approximateIK(RigidBodyTree* model, const MatrixBase<DerivedA>& q_seed,
+                   const MatrixBase<DerivedB>& q_nom, const int num_constraints,
+                   RigidBodyConstraint* *const constraint_array,
+                   const IKoptions& ikoptions,
+                   MatrixBase<DerivedC>* q_sol, int* INFO) {
   int num_kc = 0;
   int nq = model->num_positions;
-  SingleTimeKinematicConstraint **kc_array =
-      new SingleTimeKinematicConstraint *[num_constraints];
-  double *joint_lb = new double[nq];
-  double *joint_ub = new double[nq];
+  SingleTimeKinematicConstraint** kc_array =
+      new SingleTimeKinematicConstraint* [num_constraints];
+  double* joint_lb = new double[nq];
+  double* joint_ub = new double[nq];
   for (int j = 0; j < nq; j++) {
     joint_lb[j] = model->joint_limit_min[j];
     joint_ub[j] = model->joint_limit_max[j];
@@ -30,13 +30,13 @@ void approximateIK(RigidBodyTree *model, const MatrixBase<DerivedA> &q_seed,
     if (constraint_category ==
         RigidBodyConstraint::SingleTimeKinematicConstraintCategory) {
       kc_array[num_kc] =
-          static_cast<SingleTimeKinematicConstraint *>(constraint_array[i]);
+          static_cast<SingleTimeKinematicConstraint*>(constraint_array[i]);
       num_kc++;
     } else if (constraint_category ==
                RigidBodyConstraint::PostureConstraintCategory) {
       VectorXd joint_min, joint_max;
-      PostureConstraint *pc =
-          static_cast<PostureConstraint *>(constraint_array[i]);
+      PostureConstraint* pc =
+          static_cast<PostureConstraint*>(constraint_array[i]);
       pc->bounds(nullptr, joint_min, joint_max);
       for (int j = 0; j < nq; j++) {
         joint_lb[j] = (joint_lb[j] < joint_min[j] ? joint_min[j] : joint_lb[j]);
@@ -55,8 +55,8 @@ void approximateIK(RigidBodyTree *model, const MatrixBase<DerivedA> &q_seed,
   MatrixXd Q;
   ikoptions.getQ(Q);
   int error;
-  GRBenv *grb_env = nullptr;
-  GRBmodel *grb_model = nullptr;
+  GRBenv* grb_env = nullptr;
+  GRBmodel* grb_model = nullptr;
 
   VectorXd qtmp = -2 * Q * q_nom;
 
@@ -99,7 +99,7 @@ void approximateIK(RigidBodyTree *model, const MatrixBase<DerivedA> &q_seed,
       }
     }
   }
-  int *allIndsData = new int[nq];
+  int* allIndsData = new int[nq];
   for (int j = 0; j < nq; j++) {
     allIndsData[j] = j;
   }
@@ -116,7 +116,7 @@ void approximateIK(RigidBodyTree *model, const MatrixBase<DerivedA> &q_seed,
     kc_array[kc_idx]->eval(nullptr, cache, c, dc);
     for (c_idx = 0; c_idx < nc; c_idx++) {
       VectorXd rowVec = dc.row(c_idx);
-      double *Jrow = rowVec.data();
+      double* Jrow = rowVec.data();
       double c_seed = c(c_idx) - dc.row(c_idx) * q_seed;
       double rhs_row;
       if (std::isinf(-lb(c_idx))) {
@@ -174,13 +174,13 @@ void approximateIK(RigidBodyTree *model, const MatrixBase<DerivedA> &q_seed,
   VectorXd q_sol_data(nq);
   error =
       GRBgetdblattrarray(grb_model, GRB_DBL_ATTR_X, 0, nq, q_sol_data.data());
-  q_sol = q_sol_data;
+  (*q_sol) = q_sol_data;
 
-  error = GRBgetintattr(grb_model, GRB_INT_ATTR_STATUS, &INFO);
-  if (INFO == 2) {
-    INFO = 0;
+  error = GRBgetintattr(grb_model, GRB_INT_ATTR_STATUS, INFO);
+  if ((*INFO) == 2) {
+    (*INFO) = 0;
   } else {
-    INFO = 1;
+    (*INFO) = 1;
   }
   // debug only
   /*GRBwrite(grb_model,"gurobi_approximateIK.lp");
@@ -207,12 +207,13 @@ void approximateIK(RigidBodyTree *model, const MatrixBase<DerivedA> &q_seed,
   return;
 }
 
-template void approximateIK(RigidBodyTree *, const MatrixBase<Map<VectorXd>> &,
-                            const MatrixBase<Map<VectorXd>> &, const int,
-                            RigidBodyConstraint **const,
-                            MatrixBase<Map<VectorXd>> &, int &,
-                            const IKoptions &);
-template void approximateIK(RigidBodyTree *, const MatrixBase<VectorXd> &,
-                            const MatrixBase<VectorXd> &, const int,
-                            RigidBodyConstraint **const, MatrixBase<VectorXd> &,
-                            int &, const IKoptions &);
+template void approximateIK(RigidBodyTree*, const MatrixBase<Map<VectorXd>>& ,
+                            const MatrixBase<Map<VectorXd>>& , const int,
+                            RigidBodyConstraint** const,
+                            const IKoptions&,
+                            MatrixBase<Map<VectorXd>>*, int*);
+
+template void approximateIK(RigidBodyTree*, const MatrixBase<VectorXd>& ,
+                            const MatrixBase<VectorXd>& , const int,
+                            RigidBodyConstraint** const,
+                            const IKoptions&, MatrixBase<VectorXd>*, int*);
