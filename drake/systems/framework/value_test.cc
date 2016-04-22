@@ -80,7 +80,7 @@ TEST(ValueTest, ClassType) {
 }
 
 // A child class of Value<T> that requires T to satisfy PrintInterface, and
-// exposes some functions using that interface.
+// also satisfies PrintInterface itself.
 template <typename T>
 class PrintableValue : public Value<T>, public PrintInterface {
  public:
