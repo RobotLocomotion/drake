@@ -1,9 +1,8 @@
 
 add_library_with_exports(LIB_NAME drakeSystemFramework
-                         SOURCE_FILES abstract_value.cc
-                                      value.cc)
+                         SOURCE_FILES value.cc value.h)
 
-drake_install_headers(abstract_value.h value.h)
+drake_install_headers(value.h)
 
 if (GTEST_FOUND)
 	add_executable(value_test value_test.cc)
