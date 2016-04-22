@@ -17,6 +17,17 @@ namespace util {
  * constructed.  It must be template-instantiated (in its cpp file) for each
  * supported variant of Polynomial (currently only Polynomial<double>).
  *
+ * For the purposes of system identification we require here that the set of
+ * variables in a polynomial can be divided into two groups:
+ *
+ *  * "Parameter variables" are unchanged through many evaluations of the
+ *    Polynomial and so may be factored and renamed (lumped) at will.  In
+ *    effect parameter variables are treated as constants.
+ *
+ *  * "Active variables" are those that may vary between evaluations of the
+ *    Polynomial, for instance because they are inputs or state variables
+ *    of the system.
+ *
  * Note: The term "system identification" used throughout here refers to the
  * process of simplifying the equations defining a physical system to a
  * minimum number of "lumped" parameters and then estimating the values of
@@ -34,15 +45,14 @@ class DRAKEPOLYNOMIAL_EXPORT SystemIdentification {
 
   /// Extract lumped parameters from a given polynomial.
   /**
-   * Given a Polynomial, poly, and a set of "variables of interest" (that is,
-   * variables that are not to be considered parameters and should not be
-   * lumped), obtain all of the unique expressions by which combinations of
-   * the variables of interest are multiplied to form the monomials of the
-   * Polynomial.
+   * Given a Polynomial, poly, and a set of variables of poly that should be
+   * treated as parameters (that is, variables eligible to be lumped), obtain
+   * all of the unique expressions by which combinations of the remaining
+   * active variables are multiplied to form the monomials of the Polynomial.
    *
    * For instance, if we have the polynomial:
    *   a*x + b*x + a*c*y + a*c*y**2
-   * And our variables of interest are x and y, then our lumped parameters are:
+   * And our parameters are a, b, and c, then our lumped parameters are:
    *   lump1 == a+b ;  lump2 == a*c
    * and we return:
    *   { (a + b) -> VarType("lump", 1);  (a * c) -> VarType("lump", 2) }
@@ -53,7 +63,7 @@ class DRAKEPOLYNOMIAL_EXPORT SystemIdentification {
    */
   static LumpingMapType GetLumpedParametersFromPolynomial(
       const PolyType& poly,
-      const std::set<VarType>& vars_of_interest);
+      const std::set<VarType>& parameter_vars);
 
   /// Same as GetLumpedParametersFromPolynomial but for multiple Polynomials.
   /**
@@ -63,7 +73,7 @@ class DRAKEPOLYNOMIAL_EXPORT SystemIdentification {
    */
   static LumpingMapType GetLumpedParametersFromPolynomials(
       const std::vector<PolyType>& polys,
-      const std::set<VarType>& vars_of_interest);
+      const std::set<VarType>& parameter_vars);
 
   /// Rewrite a Polynomial in terms of lumped parameters.
   /**
@@ -82,35 +92,35 @@ class DRAKEPOLYNOMIAL_EXPORT SystemIdentification {
   /// This class is not constructable.
   SystemIdentification() {}
 
-  /// Return every combination of the given vars_of_interest in the polynomials.
+  /// Return every combination of the given variables in the polynomials.
   /**
-   * For instance, if x and y are of interest on the polynomial
+   * For instance, if we want combinations of x and y in the polynomial
    *   a * x + b * x*y + b * y^2 + c * y^2,
    * then return x, x*y, and y^2.
    *
    * NOTE: This will also return the empty combination iff there are terms for
-   * the polynomial that do not contain any vars of interest.  This behaviour
-   * is slightly surprising but in practice matches what we want to do with
-   * the combinations.
+   * the polynomial that do not contain any of the requested variables.  This
+   * behaviour is slightly surprising but in practice matches what we want to
+   * do with the combinations.
    */
   static std::set<MonomialType>
   GetAllCombinationsOfVars(
       const std::vector<PolyType>& polys,
-      const std::set<VarType>& vars_of_interest);
+      const std::set<VarType>& vars);
 
   /// Test if one monomial is a product of parameters times another monomial.
   /**
    * Return true iff monomial "haystack" consists only of the monomial "needle"
-   * times variables not in "vars_of_interest".
+   * times variables not in "active_vars".
    *
-   * For instance, with vars-of-interest x, y:
+   * For instance, with active vars x, y:
    *    haystack 3 * a * x * x * y   matches needle  x * x * y
    *    haystack x * x * y * y does not match needle x * x * y
    */
   static bool MonomialMatches(
     const MonomialType& haystack,
     const MonomialType& needle,
-    const std::set<VarType>& vars_of_interest);
+    const std::set<VarType>& active_vars);
 
   /// Factor out the smallest coefficient in a Polynomial.
   /**

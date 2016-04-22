@@ -18,11 +18,12 @@ TEST(SystemIdentificationTest, LumpedSingle) {
   /* From the SystemIdentification.h doxygen */
   Polynomiald input = (a * x) + (b * x) + (a * c * y) + (a * c * y * y);
 
-  std::set<Polynomiald::VarType> interests = {
-    x.getSimpleVariable(),
-    y.getSimpleVariable()};
+  std::set<Polynomiald::VarType> parameters = {
+    a.getSimpleVariable(),
+    b.getSimpleVariable(),
+    c.getSimpleVariable()};
   SID::LumpingMapType lump_map =
-      SID::GetLumpedParametersFromPolynomial(input, interests);
+      SID::GetLumpedParametersFromPolynomial(input, parameters);
   EXPECT_EQ(lump_map.size(), 2);
   EXPECT_EQ(lump_map.count(a + b), 1);
   EXPECT_EQ(lump_map.count(a * c), 1);
@@ -41,11 +42,12 @@ TEST(SystemIdentificationTest, LumpedMulti) {
     2 * a,
     a};
 
-  std::set<Polynomiald::VarType> interests = {
-    x.getSimpleVariable(),
-    y.getSimpleVariable()};
+  std::set<Polynomiald::VarType> parameters = {
+    a.getSimpleVariable(),
+    b.getSimpleVariable(),
+    c.getSimpleVariable()};
   SID::LumpingMapType lump_map =
-      SID::GetLumpedParametersFromPolynomials(input, interests);
+      SID::GetLumpedParametersFromPolynomials(input, parameters);
 
   // Note that we expect that 'a' and '2*a' will collapse to one lumped param.
   EXPECT_EQ(lump_map.size(), 3);
@@ -77,11 +79,12 @@ TEST(SystemIdentificationTest, LumpedParameterRewrite) {
     2 * a,
     a};
 
-  std::set<Polynomiald::VarType> interests = {
-    x.getSimpleVariable(),
-    y.getSimpleVariable()};
+  std::set<Polynomiald::VarType> parameters = {
+    a.getSimpleVariable(),
+    b.getSimpleVariable(),
+    c.getSimpleVariable()};
   SID::LumpingMapType lump_map =
-      SID::GetLumpedParametersFromPolynomials(input, interests);
+      SID::GetLumpedParametersFromPolynomials(input, parameters);
 
   // A point for testing numeric stability.
   std::map<Polynomiald::VarType, double> eval_point = {
