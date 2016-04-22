@@ -139,6 +139,7 @@ SystemIdentification<T>::GetLumpedParametersFromPolynomials(
   return lumping_map;
 }
 
+
 template<typename T>
 typename SystemIdentification<T>::PolyType
 SystemIdentification<T>::RewritePolynomialWithLumpedParameters(
@@ -162,6 +163,15 @@ SystemIdentification<T>::RewritePolynomialWithLumpedParameters(
       GetAllCombinationsOfVars({poly}, vars_of_interest);
   std::vector<MonomialType> working_monomials = poly.getMonomials();
   for (const MonomialType& interest_monomial : interest_monomials) {
+    // Because we must iterate over working_monomials, we cannot alter it in
+    // place.  Instead we build up two lists in parallel: The updated value of
+    // working_monomials (new_working_monomials) unchanged by rewriting and
+    // the monomials of non-interest variables that might form the polynomial
+    // of a lumped parameter.
+    //
+    // If (and only if) the polynomial of factored monomials matches a lumped
+    // parameter, we construct a new working_monomials list from the
+    // new_working_monomials list plus a lumped-parameter term.
     std::vector<MonomialType> new_working_monomials;
     std::vector<MonomialType> factor_monomials;
     for (const MonomialType& working_monomial : working_monomials) {
@@ -185,7 +195,11 @@ SystemIdentification<T>::RewritePolynomialWithLumpedParameters(
 
     if (!lumped_parameters.count(canonicalized)) {
       // Factoring out this combination yielded a parameter polynomial that
-      // does not correspond to a lumped variable.  Ignore it.
+      // does not correspond to a lumped variable.  Ignore it, because we
+      // cannot rewrite it correctly.
+      //
+      // This can happen if `poly` was not one of the polynomials used to
+      // construct `lumped_parameters`.
       continue;
     }
 
