@@ -51,7 +51,7 @@ double EvaluateCosts(const std::vector<double>& x,
 
   auto tx = initializeAutoDiff(xvec);
   TaylorVecXd ty(1);
-  TaylorVecXd this_x(x.size());
+  TaylorVecXd this_x;
 
   if (!grad.empty()) {
     grad.assign(grad.size(), 0);
@@ -60,6 +60,7 @@ double EvaluateCosts(const std::vector<double>& x,
   for (auto const& binding : prog->generic_objectives()) {
     size_t index = 0;
     for (const DecisionVariableView& v : binding.variable_list()) {
+      this_x.conservativeResize(index + v.size());
       this_x.segment(index, v.size()) = tx.segment(v.index(), v.size());
       index += v.size();
     }
