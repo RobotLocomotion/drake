@@ -13,25 +13,26 @@ namespace {
 class RigidBodyTreeTest : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    // Defines a four rigid bodies
-    r1b1 = std::make_shared<RigidBody>();
+    // Defines a four rigid bodies.
+    r1b1 = std::shared_ptr<RigidBody>(new RigidBody());
     r1b1->model_name = "robot1";
     r1b1->linkname = "body1";
 
-    r2b1 = std::make_shared<RigidBody>();
+    r2b1 = std::shared_ptr<RigidBody>(new RigidBody());
     r2b1->model_name = "robot2";
     r2b1->linkname = "body1";
 
-    r3b1 = std::make_shared<RigidBody>();
+    r3b1 = std::shared_ptr<RigidBody>(new RigidBody());
     r3b1->model_name = "robot3";
     r3b1->linkname = "body1";
 
-    r4b1 = std::make_shared<RigidBody>();
+    r4b1 = std::shared_ptr<RigidBody>(new RigidBody());
     r4b1->model_name = "robot4";
     r4b1->linkname = "body1";
   }
 
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   RigidBodyTree tree;
   std::shared_ptr<RigidBody> r1b1;
   std::shared_ptr<RigidBody> r2b1;
