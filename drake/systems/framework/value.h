@@ -8,7 +8,8 @@
 namespace drake {
 namespace systems {
 
-template <typename T> class Value;
+template <typename T>
+class Value;
 
 /// A fully type-erased container class.
 ///

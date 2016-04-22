@@ -87,10 +87,10 @@ class SubclassOfPoint : public Point {
 // Tests that attempting to unerase an AbstractValue to a parent class of the
 // original class throws std::bad_cast.
 TEST(ValueTest, CannotUneraseToParentClass) {
- SubclassOfPoint point;
- Value<SubclassOfPoint> value(point);
- AbstractValue& erased = value;
- EXPECT_THROW(erased.GetMutableValue<Point>(), std::bad_cast);
+  SubclassOfPoint point;
+  Value<SubclassOfPoint> value(point);
+  AbstractValue& erased = value;
+  EXPECT_THROW(erased.GetMutableValue<Point>(), std::bad_cast);
 }
 
 // A child class of Value<T> that requires T to satisfy PrintInterface, and
@@ -135,12 +135,11 @@ TEST(ValueTest, SubclassOfValueSurvivesClone) {
   PrintableValue<Point> printable_value(point);
   const AbstractValue& erased = printable_value;
   std::unique_ptr<AbstractValue> cloned = erased.Clone();
-  PrintInterface* printable_erased = dynamic_cast<PrintInterface*>(
-      cloned.get());
+  PrintInterface* printable_erased =
+      dynamic_cast<PrintInterface*>(cloned.get());
   ASSERT_NE(nullptr, printable_erased);
   EXPECT_EQ("5,6", printable_erased->print());
 }
-
 
 }  // namespace
 }  // namespace systems
