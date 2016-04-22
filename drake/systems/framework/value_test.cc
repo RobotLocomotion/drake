@@ -79,6 +79,20 @@ TEST(ValueTest, ClassType) {
   EXPECT_EQ(2, erased.GetValue<Point>().y());
 }
 
+class SubclassOfPoint : public Point {
+ public:
+  SubclassOfPoint() : Point(-1, -2) {}
+};
+
+// Tests that attempting to unerase an AbstractValue to a parent class of the
+// original class throws std::bad_cast.
+TEST(ValueTest, CannotUneraseToParentClass) {
+ SubclassOfPoint point;
+ Value<SubclassOfPoint> value(point);
+ AbstractValue& erased = value;
+ EXPECT_THROW(erased.GetMutableValue<Point>(), std::bad_cast);
+}
+
 // A child class of Value<T> that requires T to satisfy PrintInterface, and
 // also satisfies PrintInterface itself.
 template <typename T>
