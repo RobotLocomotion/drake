@@ -13,6 +13,10 @@ using namespace Eigen;
 using namespace Drake;
 using namespace tinyxml2;
 
+size_t RigidBodySystem::getNumStates() const {
+  return tree->num_positions + tree->num_velocities;
+}
+
 size_t RigidBodySystem::getNumInputs(void) const {
   size_t num = tree->actuators.size();
   for (auto const& f : force_elements) {
@@ -603,17 +607,31 @@ void parseURDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
 
 void parseSDFJoint(RigidBodySystem& sys, string model_name, XMLElement* node,
                    PoseMap& pose_map) {
-  // todo: parse joint sensors
+
+  // Obtains the name of the joint.
+  const char* attr = node->Attribute("name");
+  if (!attr) throw runtime_error("ERROR: joint tag is missing name attribute");
+  string joint_name(attr);
+
+  if (node->FirstChildElement("sensor") != nullptr) {
+    // TODO(liangfok): Add support for sensors on joints.
+    throw runtime_error("Error: Joint sensors are not supported yet."
+                        "Unable to parse sensor on joint " + joint_name + ".");
+  }
 }
 
 void parseSDFLink(RigidBodySystem& sys, string model_name, XMLElement* node,
                   PoseMap& pose_map) {
+
+  // Obtains the name of the link.
   const char* attr = node->Attribute("name");
   if (!attr) throw runtime_error("ERROR: link tag is missing name attribute");
   string link_name(attr);
 
+  // Obtains the corresponding rigid body from the rigid body tree.
   auto body = sys.getRigidBodyTree()->findLink(link_name, model_name);
 
+  // Obtains the transform from the link to the model.
   Isometry3d transform_link_to_model = Isometry3d::Identity();
   XMLElement* pose = node->FirstChildElement("pose");
   if (pose) {
@@ -622,6 +640,7 @@ void parseSDFLink(RigidBodySystem& sys, string model_name, XMLElement* node,
         std::pair<string, Isometry3d>(body->linkname, transform_link_to_model));
   }
 
+  // Processes each sensor element within the link.
   for (XMLElement* elnode = node->FirstChildElement("sensor"); elnode;
        elnode = elnode->NextSiblingElement("sensor")) {
     attr = elnode->Attribute("name");
@@ -641,7 +660,7 @@ void parseSDFLink(RigidBodySystem& sys, string model_name, XMLElement* node,
                            transform_link_to_model);
     }
 
-    if (type.compare("ray") == 0) {
+    if (type == "ray") {
       auto frame = allocate_shared<RigidBodyFrame>(
           Eigen::aligned_allocator<RigidBodyFrame>(), sensor_name, body,
           transform_link_to_model.inverse() * transform_sensor_to_model);
@@ -654,17 +673,22 @@ void parseSDFLink(RigidBodySystem& sys, string model_name, XMLElement* node,
 }
 
 void parseSDFModel(RigidBodySystem& sys, XMLElement* node) {
-  PoseMap pose_map;  // because sdf specifies almost everything in the global
-                     // (actually model) coordinates instead of relative
-                     // coordinates.  sigh...
+  // A pose map is necessary since SDF specifies almost everything in the
+  // global coordinate frame. The pose map contains transforms from a link's
+  // coordinate frame to the model's coordinate frame.
+  PoseMap pose_map;
+
+  // Obtains the name of the model.
   if (!node->Attribute("name"))
     throw runtime_error("Error: your model must have a name attribute");
   string model_name = node->Attribute("name");
 
+  // Parses each link element within the model.
   for (XMLElement* elnode = node->FirstChildElement("link"); elnode;
        elnode = elnode->NextSiblingElement("link"))
     parseSDFLink(sys, model_name, elnode, pose_map);
 
+  // Parses each joint element within the model.
   for (XMLElement* elnode = node->FirstChildElement("joint"); elnode;
        elnode = elnode->NextSiblingElement("joint"))
     parseSDFJoint(sys, model_name, elnode, pose_map);
@@ -716,11 +740,12 @@ void RigidBodySystem::addRobotFromSDF(
     const string& sdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
+
+  // Adds the robot to the rigid body tree.
   tree->addRobotFromSDF(sdf_filename, floating_base_type, weld_to_frame);
 
-  // now parse additional tags understood by rigid body system (actuators,
-  // sensors, etc)
-
+  // Parses the additional SDF elements that are understood by RigidBodySystem,
+  // namely (actuators, sensors, etc.).
   XMLDocument xml_doc;
   xml_doc.LoadFile(sdf_filename.data());
   if (xml_doc.ErrorID() != XML_SUCCESS) {
@@ -737,14 +762,13 @@ void RigidBodySystem::addRobotFromFile(
   spruce::path p(filename);
   auto ext = p.extension();
 
-  std::transform(ext.begin(), ext.end(), ext.begin(),
-                 ::tolower);  // convert to lower case
+  // Converts the file extension to be all lower case.
+  std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 
-  if (ext.compare(".urdf") == 0) {
+  if (ext == ".urdf")
     addRobotFromURDF(filename, floating_base_type, weld_to_frame);
-  } else if (ext.compare(".sdf") == 0) {
+  else if (ext == ".sdf")
     addRobotFromSDF(filename, floating_base_type, weld_to_frame);
-  } else {
+  else
     throw runtime_error("unknown file extension: " + ext);
-  }
 }

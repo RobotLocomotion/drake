@@ -192,9 +192,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
     return tree;
   }
 
-  size_t getNumStates() const {
-    return tree->num_positions + tree->num_velocities;
-  }
+  size_t getNumStates() const;
   size_t getNumInputs() const;
   size_t getNumOutputs() const;
 
