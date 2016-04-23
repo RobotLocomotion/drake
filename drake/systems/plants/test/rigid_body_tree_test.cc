@@ -16,9 +16,9 @@ class RigidBodyTreeTest : public ::testing::Test {
     // NOTE: The code below is inefficient because it requires two heap
     // allocations, one to create the object and another to save it
     // in a shared_ptr. We chose to do it this way instead of using
-    // std::make_shared, which would only require one heap allocation, to avoid
-    // needing a custom allocator for RigidBodyTree and RigidBody. We feel that
-    // the additional heap allocation overhead is acceptable since the
+    // std::allocate_shared, which would only require one heap allocation, to
+    // avoid needing a custom allocator for RigidBodyTree and RigidBody. We feel
+    // that the additional heap allocation overhead is acceptable since the
     // allocations are being done at startup only.
     //
     // For additional information, see:
