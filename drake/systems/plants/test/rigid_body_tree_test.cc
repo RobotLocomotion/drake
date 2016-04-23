@@ -46,7 +46,6 @@ class RigidBodyTreeTest : public ::testing::Test {
   }
 
  public:
-  // EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   std::shared_ptr<RigidBodyTree> tree;
   std::shared_ptr<RigidBody> r1b1;
   std::shared_ptr<RigidBody> r2b1;
