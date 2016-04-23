@@ -13,34 +13,28 @@ namespace {
 class RigidBodyTreeTest : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    // NOTE: The code below is inefficient because it requires two heap
-    // allocations, one to create the object and another to create the
-    // shared_ptr. We chose to do it this way instead of using
-    // std::allocate_shared, which would only require one heap allocation, to
-    // avoid needing a custom allocator for RigidBodyTree and RigidBody. We feel
-    // that the additional heap allocation overhead is acceptable since the
-    // allocations are being done at startup only.
-    //
-    // For additional information, see:
-    // https://github.com/RobotLocomotion/drake/issues/1854
-
     // Instantiates the rigid body tree.
-    tree = std::shared_ptr<RigidBodyTree>(new RigidBodyTree());
+    tree = std::allocate_shared<RigidBodyTree>(
+      Eigen::aligned_allocator<RigidBodyTree>());
 
     // Defines a four rigid bodies.
-    r1b1 = std::shared_ptr<RigidBody>(new RigidBody());
+    r1b1 = std::allocate_shared<RigidBody>(
+      Eigen::aligned_allocator<RigidBody>());
     r1b1->model_name = "robot1";
     r1b1->linkname = "body1";
 
-    r2b1 = std::shared_ptr<RigidBody>(new RigidBody());
+    r2b1 = std::allocate_shared<RigidBody>(
+      Eigen::aligned_allocator<RigidBody>());
     r2b1->model_name = "robot2";
     r2b1->linkname = "body1";
 
-    r3b1 = std::shared_ptr<RigidBody>(new RigidBody());
+    r3b1 = std::allocate_shared<RigidBody>(
+      Eigen::aligned_allocator<RigidBody>());
     r3b1->model_name = "robot3";
     r3b1->linkname = "body1";
 
-    r4b1 = std::shared_ptr<RigidBody>(new RigidBody());
+    r4b1 = std::allocate_shared<RigidBody>(
+      Eigen::aligned_allocator<RigidBody>());
     r4b1->model_name = "robot4";
     r4b1->linkname = "body1";
   }
