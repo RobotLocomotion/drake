@@ -1,0 +1,1 @@
+Kuka LBR IIWA R820 14. Arm model taken from: https://github.com/SalvoVirga/iiwa_stack
