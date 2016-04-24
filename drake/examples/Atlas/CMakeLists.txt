@@ -11,7 +11,7 @@ if (LCM_FOUND)
   target_link_libraries(runAtlasDynamics drakeRBSystem drakeLCMSystem)
   add_dependencies(runAtlasDynamics drake_lcmtypes lcmtype_agg_hpp)
   pods_use_pkg_config_packages(runAtlasDynamics lcm)
-  add_test(NAME runAtlasDynamics COMMAND runAtlasDynamics 5.0 1.0 --non-realtime)
+  add_test(NAME runAtlasDynamics COMMAND runAtlasDynamics 0.4)
 endif()
 
 add_matlab_test(NAME examples/Atlas/robotiqHandInspector COMMAND robotiqHandInspector)
