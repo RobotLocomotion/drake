@@ -31,15 +31,24 @@ To build Drake (and only Drake, this assumes that dependencies were already buil
 1. Go to Run > Edit Configurations.
 2. Select 'Build All' and click OK.
 3. Click Run > Build (or use the keyboard shortcut).
+
 Note that it's possible to select any CMake target you want from the Edit Configurations menu. This can come in very handy when you want to quickly iterate on a e.g. a specific executable without building all of Drake all the time.
 
 Code formatter settings
 =======================
-Since we currently don't have an up to date style guide, this is kind of up to you, but I would at least change the indentation settings.
 
-1. Go to the preferences menu.
-2. Go to Editor > Code Style > C/C++
-3. Set it up the way you like. In the future, we should export code style settings we agree upon and have everybody import them.
+1. Make sure you have installed `clang-format` (see :code_style_tools:)
+2. Go to File > Preferences > Tools > External Tools
+3. Add an entry for clang-format with
+
+  * Program: `clang-format`
+  * Parameters: `-i $FilePath$`
+  * Working directory : `$ProjectFileDir$/..`
+
+Now you can run this (manually) on any file using Tools > External Tools in the drop down menu.
+
+NB: There is probably a better way to do this (see Editor > Code Style > C/C++).
+
 
 Running a C++ executable
 ========================
