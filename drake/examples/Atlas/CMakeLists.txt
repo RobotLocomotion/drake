@@ -6,6 +6,14 @@ pods_install_pkg_config_file(drake-atlas-util
   REQUIRES
   VERSION 0.0.1)
 
+if (LCM_FOUND)
+  add_executable(runAtlasDynamics runAtlasDynamics.cpp)
+  target_link_libraries(runAtlasDynamics drakeRBSystem drakeLCMSystem)
+  add_dependencies(runAtlasDynamics drake_lcmtypes lcmtype_agg_hpp)
+  pods_use_pkg_config_packages(runAtlasDynamics lcm)
+  add_test(NAME runAtlasDynamics COMMAND runAtlasDynamics 5.0 1.0 --non-realtime)
+endif()
+
 add_matlab_test(NAME examples/Atlas/robotiqHandInspector COMMAND robotiqHandInspector)
 add_matlab_test(NAME examples/Atlas/runAtlasDynamics COMMAND runAtlasDynamics)
 add_matlab_test(NAME examples/Atlas/runAtlasFootstepPlanning COMMAND runAtlasFootstepPlanning)
