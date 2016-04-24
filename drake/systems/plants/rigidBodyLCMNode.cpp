@@ -31,7 +31,14 @@ Usage:  rigidBodyLCMNode [options] full_path_to_urdf_or_sdf_file
 int main(int argc, char* argv[]) {
   if (argc < 2) {
     std::cerr << "Usage: " << argv[0]
-              << " [options] full_path_to_urdf_or_sdf_file" << std::endl;
+              << " [options] full_path_to_urdf_or_sdf_file" << std::endl
+              << "Options: " << std::endl
+              << "  --base [FIXED|RPY|(QUAT)]      defines the connection "
+                 "between the root link and the world"
+              << std::endl
+              << "  --add_flat_terrain             adds a large box to "
+                 "approximate flat terrain"
+              << std::endl;
     return 1;
   }
 
