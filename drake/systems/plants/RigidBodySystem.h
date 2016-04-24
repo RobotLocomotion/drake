@@ -232,6 +232,16 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
   friend DRAKERBSYSTEM_EXPORT StateVector<double> getInitialState(
       const RigidBodySystem& sys);
 
+  /**
+   * An accessor to the sensors within this rigid body system. This is useful
+   * for downstream components to understand the meaning of the output signal
+   * of this system.
+   *
+   * @return a const reference to the sensors vector within this rigid body
+   * system.
+   */
+  const std::vector<std::shared_ptr<RigidBodySensor>> & GetSensors() const;
+
   // some parameters defining the contact
   bool use_multi_contact;
   double penetration_stiffness;  // k
@@ -447,7 +457,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySensor {
   virtual Eigen::VectorXd output(
       const double& t, const KinematicsCache<double>& rigid_body_state,
       const RigidBodySystem::InputVector<double>& u) const = 0;
-
+  const string & get_name() const { return name; }
  protected:
   RigidBodySystem const& sys;
   std::string name;

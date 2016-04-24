@@ -230,6 +230,10 @@ RigidBodySystem::OutputVector<double> RigidBodySystem::output(
   return y;
 }
 
+const std::vector<std::shared_ptr<RigidBodySensor>> & RigidBodySystem::GetSensors() const {
+  return sensors;
+}
+
 // todo: move this to a more central location
 class SingleTimeKinematicConstraintWrapper : public Constraint {
  public:

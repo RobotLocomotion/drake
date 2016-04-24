@@ -29,6 +29,11 @@ class SensorVisualizerLidar {
   template <typename ScalarType>
   using InputVector = RobotStateVector<ScalarType>;
 
+  /**
+   * The constructor. It takes as input a rigid body system to get semantic
+   * information about the output from the rigid body system, specifically
+   * about the sensor state.
+   */
   SensorVisualizerLidar(std::shared_ptr<RigidBodySystem> rigid_body_system)
       : rigid_body_system_(rigid_body_system) {
   }
@@ -41,12 +46,20 @@ class SensorVisualizerLidar {
   OutputVector<double> output(const double &t, const StateVector<double> &x,
                               const InputVector<double> &u) const {
 
-    std::cout << "SensorVisualizerLidar::output: Method called!\n"
-              << "  - size of state vector: " << x.rows() << " x " << x.cols() << "\n"
-              << "  - size of input vector: " << u.rows() << " x " << u.cols() << "\n"
-              << "  - state vector: " << x.transpose() << "\n"
-              << "  - input vector: " << u.transpose()
-              << std::endl;
+    const std::vector<std::shared_ptr<RigidBodySensor>> & sensor_vector
+      = rigid_body_system_->GetSensors();
+
+    for (auto & sensor : sensor_vector) {
+      std::cout << "SensorVisualizerLidar: output: Processing sensor "
+        << sensor.get_name() << std::endl;
+    }
+
+    // std::cout << "SensorVisualizerLidar::output: Method called!\n"
+    //           << "  - size of state vector: " << x.rows() << " x " << x.cols() << "\n"
+    //           << "  - size of input vector: " << u.rows() << " x " << u.cols() << "\n"
+    //           << "  - state vector: " << x.transpose() << "\n"
+    //           << "  - input vector: " << u.transpose()
+    //           << std::endl;
 
     return u;  // pass the output through
   }
