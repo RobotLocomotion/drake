@@ -16,7 +16,7 @@ class RigidBodyTreeTest : public ::testing::Test {
     // Instantiates the rigid body tree.
     tree = std::unique_ptr<RigidBodyTree>(new RigidBodyTree());
 
-    // Defines a four rigid bodies.
+    // Defines four rigid bodies.
     r1b1 = std::allocate_shared<RigidBody>(
       Eigen::aligned_allocator<RigidBody>());
     r1b1->model_name = "robot1";
