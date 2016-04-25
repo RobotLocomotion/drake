@@ -2207,6 +2207,12 @@ template void inverseKinSnoptBackend(
     const IKoptions& ikoptions, MatrixBase<Map<VectorXd>>* q_sol,
     MatrixBase<VectorXd>* qdot_sol, MatrixBase<VectorXd>* qddot_sol,
     int* INFO, std::vector<std::string>* infeasible_constraint);
+
+// We have to suppress some cpplint false positives; somehow, cpplint
+// doesn't grok our use of explicit template instantiation above.
+// NOLINTNEXTLINE(readability/fn_size)
 }
+// NOLINTNEXTLINE(readability/fn_size)
 }
+// NOLINTNEXTLINE(readability/fn_size)
 }
