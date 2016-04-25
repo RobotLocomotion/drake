@@ -16,7 +16,7 @@ meaningful display to a human. The result is compiler-dependent.
 @see CanonicalizeTypeName()
 @relates drake::common::NiceTypeName **/
 /** @cond **/ DRAKECOMMON_EXPORT /** @endcond **/
-std::string DemangleTypeName(const char *typeid_name);
+std::string DemangleTypeName(const char* typeid_name);
 
 /** Given a compiler-dependent demangled type name string as returned by
 DemangleTypeName(), attempts to form a canonicalized representation that will be
@@ -26,11 +26,11 @@ uses this function to produce a human-friendly type name that is the same on any
 platform. The input argument is left empty.
 @relates drake::common::NiceTypeName **/
 /** @cond **/ DRAKECOMMON_EXPORT /** @endcond **/
-std::string CanonicalizeTypeName(std::string &&demangled_name);
+std::string CanonicalizeTypeName(std::string&& demangled_name);
 
 /** Same, but takes an lvalue reference so has to copy the input.
 @relates drake::common::NiceTypeName **/
-inline std::string CanonicalizeTypeName(const std::string &demangled_name) {
+inline std::string CanonicalizeTypeName(const std::string& demangled_name) {
   return CanonicalizeTypeName(std::string(demangled_name));
 }
 
@@ -63,7 +63,7 @@ class NiceTypeName {
   the same on all platforms, using `drake::common::CanonicalizeTypeName()`. This
   is an expensive operation but is only done once per instantiation of
   `NiceTypeName<T>` for a given type `T`. **/
-  static const std::string &Get() {
+  static const std::string& Get() {
     static const std::string canonical = CanonicalizeTypeName(GetRaw());
     return canonical;
   }
@@ -73,7 +73,7 @@ class NiceTypeName {
   expensive on some platforms but is done only once per instantiation of
   `NiceTypeName<T>` for a given type `T`. Prefer Get() unless you have a good
   reason to use GetRaw(). **/
-  static const std::string &GetRaw() {
+  static const std::string& GetRaw() {
     static const std::string raw = DemangleTypeName(typeid(T).name());
     return raw;
   }
