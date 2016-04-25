@@ -268,73 +268,89 @@ TEST(LoadSDFTest, TestDualOffset2) {
       link1_body->getJoint().getTransformToParentBody().matrix().isApprox(
           Eigen::Isometry3d::Identity().matrix(), 1e-10))
       << "Incorrect transform from the link1's frame to Drake's world frame."
-      << "Got:\n"
-      << link1_body->getJoint().getTransformToParentBody().matrix() << "\n"
-      << "Expected:\n"
-      << Eigen::Isometry3d::Identity().matrix();
+      << "Got:\n" << link1_body->getJoint().getTransformToParentBody().matrix()
+      << "\n"
+      << "Expected:\n" << Eigen::Isometry3d::Identity().matrix();
 }
 
-TEST(LoadURDFTest, TestLoadURDFFixedToWorld) {
-  // Loads a URDF model that's connected to the world via a fixed joint.
+class ModelToWorldTransformTestParams {
+ public:
+  ModelToWorldTransformTestParams(std::string urdf_path,
+                                  std::string root_link_name, double x,
+                                  double y, double z, double roll, double pitch,
+                                  double yaw)
+      : urdf_path_(urdf_path),
+        root_link_name_(root_link_name),
+        x_(x),
+        y_(y),
+        z_(z),
+        roll_(roll),
+        pitch_(pitch),
+        yaw_(yaw) {}
 
+  std::string urdf_path_, root_link_name_;
+  double x_, y_, z_, roll_, pitch_, yaw_;
+};
+
+/**
+ * Defines a class that extends Google Test's ::testing::TestWithParam
+ * class, which enables parameterized Google Tests. In this case, the parameter
+ * is a ModelToWorldTransformTestParams.
+ */
+class ModelToWorldTransformTest
+    : public ::testing::TestWithParam<ModelToWorldTransformTestParams> {
+ protected:
   RigidBodySystem rbs;
-  rbs.addRobotFromFile(
-      Drake::getDrakePath() +
-      "/systems/plants/test/cylindrical_1dof_robot_fixed_to_world.urdf");
-
-  // Verifies that the transform between the robot's root node
-  // and the world is equal to identity.
-
   Eigen::Isometry3d T_model_to_world;
+};
+
+TEST_P(ModelToWorldTransformTest, TestModelToWorldTransform) {
+  ModelToWorldTransformTestParams params = GetParam();
+
+  rbs.addRobotFromFile(params.urdf_path_);
+
+  // Verifies that the transform between the robot's root node and the world is
+  // as expected.
+
   {
     Eigen::Vector3d xyz, rpy;
-    xyz << 1, 2, 3;
-    rpy << 0.1, 0.5, 1.8;
+    xyz << params.x_, params.y_, params.z_;
+    rpy << params.roll_, params.pitch_, params.yaw_;
     T_model_to_world.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
   }
 
-  auto link1_body = rbs.getRigidBodyTree()->findLink("link1");
+  auto link1_body = rbs.getRigidBodyTree()->findLink(params.root_link_name_);
   EXPECT_TRUE(link1_body != nullptr);
   EXPECT_TRUE(
       link1_body->getJoint().getTransformToParentBody().matrix().isApprox(
           T_model_to_world.matrix(), 1e-10))
       << "Incorrect transform from the link1's frame to Drake's world frame."
-      << "Got:\n"
-      << link1_body->getJoint().getTransformToParentBody().matrix() << "\n"
-      << "Expected:\n"
-      << T_model_to_world.matrix();
+      << "Got:\n" << link1_body->getJoint().getTransformToParentBody().matrix()
+      << "\n"
+      << "Expected:\n" << T_model_to_world.matrix();
 }
 
-TEST(LoadURDFTest, TestLoadURDFFloatingInWorld) {
-  // Loads a URDF model that's connected to the world via a fixed joint.
+INSTANTIATE_TEST_CASE_P(
+    MODEL_TO_WORLD_TRANSFORM_TESTS, ModelToWorldTransformTest,
+    ::testing::Values(
 
-  RigidBodySystem rbs;
-  rbs.addRobotFromFile(
-      Drake::getDrakePath() +
-      "/systems/plants/test/cylindrical_1dof_robot_floating_in_world.urdf");
+        // Evaluates the ability to load a URDF model that's connected to the
+        // world via a fixed joint.
+        ModelToWorldTransformTestParams(
+            Drake::getDrakePath() +
+                std::string(
+                    "/systems/plants/test/"
+                    "cylindrical_1dof_robot_fixed_to_world.urdf"),
+            std::string("link1"), 1, 2, 3, 0.1, 0.5, 1.8),
 
-  // Verifies that the transform between the robot's root node
-  // and the world is equal to identity.
-
-  Eigen::Isometry3d T_model_to_world;
-  {
-    Eigen::Vector3d xyz, rpy;
-    xyz << 3, 2, 1;
-    rpy << 0.2, 0.9, -1.57;
-    T_model_to_world.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
-  }
-
-  auto link1_body = rbs.getRigidBodyTree()->findLink("link1");
-  EXPECT_TRUE(link1_body != nullptr);
-  EXPECT_TRUE(
-      link1_body->getJoint().getTransformToParentBody().matrix().isApprox(
-          T_model_to_world.matrix(), 1e-10))
-      << "Incorrect transform from the link1's frame to Drake's world frame."
-      << "Got:\n"
-      << link1_body->getJoint().getTransformToParentBody().matrix() << "\n"
-      << "Expected:\n"
-      << T_model_to_world.matrix();
-}
+        // Evaluates the ability to load a URDF model that's connected to the
+        // world via a floating joint.
+        ModelToWorldTransformTestParams(
+            Drake::getDrakePath() +
+                std::string(
+                    "/systems/plants/test/"
+                    "cylindrical_1dof_robot_floating_in_world.urdf"),
+            std::string("link1"), 3, 2, 1, 0.2, 0.9, -1.57)));
 
 }  // namespace
 }  // namespace test
