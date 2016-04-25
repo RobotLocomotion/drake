@@ -95,10 +95,10 @@ GTEST_TEST(TestNiceTypeName,StdClasses) {
   EXPECT_EQ(NiceTypeName<std::vector<std::string>>::Get(), 
     "std::vector<" + string_name + ",std::allocator<" + string_name + ">>");
 
-  // Try non-standard allocator.
-  using NonStdAlloc = std::vector<int,std::allocator<unsigned>>;
+  // Try specified allocator.
+  using NonStdAlloc = std::vector<int,std::allocator<int>>;
   EXPECT_EQ(NiceTypeName<NonStdAlloc>::Get(), 
-    "std::vector<int,std::allocator<unsigned int>>");
+    "std::vector<int,std::allocator<int>>");
 }
 
 
