@@ -9,7 +9,6 @@ copy of the License at http://www.apache.org/licenses/LICENSE-2.0. */
 
 #include <algorithm>
 #include <array>
-#include <cstdlib>
 #include <regex>
 #include <string>
 
