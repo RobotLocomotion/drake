@@ -215,7 +215,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
     for (const VarType& var : getVariables()) {
       if (!var_values.count(var)) {
         throw std::runtime_error(
-            "No value provided for variable " + var);
+            "No value provided for variable " + std::to_string(var));
       }
     }
 
