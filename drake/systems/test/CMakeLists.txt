@@ -9,6 +9,12 @@ if (GTEST_FOUND)
 	add_executable(feedback_system_test feedback_system_test.cc)
 	target_link_libraries(feedback_system_test ${GTEST_BOTH_LIBRARIES})
 	add_test(NAME feedback_system_test COMMAND feedback_system_test)
+
+	if(roscpp_FOUND)
+		add_executable(ros_test ros_test.cc)
+		target_link_libraries(ros_test ${GTEST_BOTH_LIBRARIES} ${roscpp_LIBRARIES})
+		add_test(NAME ros_test COMMAND ros_test)
+	endif()
 endif()
 
 add_matlab_test(NAME systems/test/HybridSystemSampleTimeTest.run COMMAND HybridSystemSampleTimeTest.run)
