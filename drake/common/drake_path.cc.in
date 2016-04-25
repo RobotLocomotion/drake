@@ -1,0 +1,11 @@
+/* @THIS_FILE_IS_USED_BY_CMAKE_TO_CREATE_GENERATED_CODE@ */
+
+#include "drake/common/drake_path.h"
+
+namespace drake {
+
+std::string getDrakePath() {
+  return std::string("@PROJECT_SOURCE_DIR@");
+}
+
+}  // namespace drake
