@@ -44,20 +44,24 @@ string drake::common::DemangleTypeName(const char* typeid_name) {
 string drake::common::CanonicalizeTypeName(string&& demangled) {
   using SPair = std::pair<std::regex, string>;
   // These are applied in this order.
-  static const std::array<SPair, 7> subs{
-      // Remove unwanted keywords and following space.
-      SPair(std::regex("\\b(class|struct|enum|union) "), ""),
-      // Tidy up anonymous namespace.
-      SPair(std::regex("[`(]anonymous namespace[')]"), "(anonymous)"),
-      // Replace Microsoft __int64 with long long.
-      SPair(std::regex("\\b__int64\\b"), "long long"),
-      // Temporarily replace spaces we want to keep with "!". (\w is
-      // alphanumeric or underscore.)
-      SPair(std::regex("(\\w) (\\w)"), "$1!$2"),
-      SPair(std::regex(" "), ""),  // Delete unwanted spaces.
-      // OSX clang throws in extra namespaces like "__1". Delete them.
-      SPair(std::regex("\\b__[0-9]+::"), ""),
-      SPair(std::regex("!"), " ")  // Restore wanted spaces.
+  static const std::array<SPair, 8> subs{
+    // Remove unwanted keywords and following space. (\b is word boundary.)
+    SPair(std::regex("\\b(class|struct|enum|union) "), ""),
+    // Tidy up anonymous namespace.
+    SPair(std::regex("[`(]anonymous namespace[')]"), "(anonymous)"),
+    // Replace Microsoft __int64 with long long.
+    SPair(std::regex("\\b__int64\\b"), "long long"),
+    // Temporarily replace spaces we want to keep with "!". (\w is
+    // alphanumeric or underscore.)
+    SPair(std::regex("(\\w) (\\w)"), "$1!$2"),
+    SPair(std::regex(" "), ""),  // Delete unwanted spaces.
+    // OSX clang throws in extra namespaces like "__1". Delete them.
+    SPair(std::regex("\\b__[0-9]+::"), ""),
+    SPair(std::regex("!"), " "),  // Restore wanted spaces.
+    // Recognize std::string's full name and abbreviate.
+    SPair(std::regex("\\bstd::basic_string<char,std::char_traits<char>,"
+                     "std::allocator<char>>"),
+          "std::string")
   };
   string canonical(std::move(demangled));
   for (const auto& sp : subs) {

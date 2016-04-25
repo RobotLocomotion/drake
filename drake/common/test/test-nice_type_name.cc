@@ -44,7 +44,7 @@ GTEST_TEST(TestNiceTypeName, Canonicalize) {
   // OSX's stl like to throw in these extra namespaces.
   EXPECT_EQ(CanonicalizeTypeName("std:: __1 :: __23 :: set<T>"), "std::set<T>");
 
-  // Should leaves spaces between words.
+  // Should leave spaces between words.
   EXPECT_EQ(CanonicalizeTypeName("lunch bucket"), "lunch bucket");
   // And keep funny looking namespaces if they aren't __digits.
   EXPECT_EQ(CanonicalizeTypeName("std::my__1::__23x::resigned char"),
@@ -74,29 +74,26 @@ GTEST_TEST(TestNiceTypeName, BuiltIns) {
 }
 
 GTEST_TEST(TestNiceTypeName, StdClasses) {
-  const std::string string_name =
-      "std::basic_string<char,std::char_traits<char>,std::allocator<char>>";
-
-  EXPECT_EQ(NiceTypeName<std::string>::Get(), string_name);
-  EXPECT_EQ(NiceTypeName<string>::Get(), string_name);
+  EXPECT_EQ(NiceTypeName<std::string>::Get(), "std::string");
+  EXPECT_EQ(NiceTypeName<string>::Get(), "std::string");
 
   // Shouldn't be fooled by an alias or typedef.
   using MyStringAlias = std::string;
   typedef std::string MyStringTypedef;
-  EXPECT_EQ(NiceTypeName<MyStringAlias>::Get(), string_name);
-  EXPECT_EQ(NiceTypeName<MyStringTypedef>::Get(), string_name);
+  EXPECT_EQ(NiceTypeName<MyStringAlias>::Get(), "std::string");
+  EXPECT_EQ(NiceTypeName<MyStringTypedef>::Get(), "std::string");
 
   // std::vector with default allocator.
   EXPECT_EQ(NiceTypeName<std::vector<int>>::Get(),
             "std::vector<int,std::allocator<int>>");
   EXPECT_EQ(
       NiceTypeName<std::vector<std::string>>::Get(),
-      "std::vector<" + string_name + ",std::allocator<" + string_name + ">>");
+      "std::vector<std::string,std::allocator<std::string>>");
 
   // Try non-standard allocator.
-  using NonStdAlloc = std::vector<int, std::allocator<unsigned>>;
+  using NonStdAlloc = std::vector<unsigned, std::allocator<unsigned>>;
   EXPECT_EQ(NiceTypeName<NonStdAlloc>::Get(),
-            "std::vector<int,std::allocator<unsigned int>>");
+            "std::vector<unsigned int,std::allocator<unsigned int>>");
 }
 
 GTEST_TEST(TestNiceTypeName, Eigen) {

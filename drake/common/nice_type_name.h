@@ -10,7 +10,7 @@
 namespace drake {
 namespace common {
 
-/** Using the algorithm appropriate to the current compiler, demangle a type
+/** Using the algorithm appropriate to the current compiler, demangles a type
 name as returned by typeid(T).name(), with the result hopefully suitable for
 meaningful display to a human. The result is compiler-dependent.
 @see CanonicalizeTypeName()
@@ -19,7 +19,7 @@ meaningful display to a human. The result is compiler-dependent.
 std::string DemangleTypeName(const char *typeid_name);
 
 /** Given a compiler-dependent demangled type name string as returned by
-DemangleTypeName(), attempt to form a canonicalized representation that will be
+DemangleTypeName(), attempts to form a canonicalized representation that will be
 the same for any compiler. Unnecessary spaces and superfluous keywords like
 "class" and "struct" are removed. The `Get()` method of NiceTypeName\<T>
 uses this function to produce a human-friendly type name that is the same on any
