@@ -564,9 +564,9 @@ void parseFrame(RigidBodyTree* model, XMLElement* node) {
 }
 
 /**
- * Searches for a joint that connects the URDF model to the world.
+ * Searches for a joint that connects the URDF model to a link called "world".
  * If it finds such a joint, it updates the weld_to_frame parameter with the
- * offset specifies by the joint.
+ * offset specified by the joint.
  *
  * An exception is thrown if no such joint is found, or if multiple
  * world-connecting joints are found.
@@ -586,13 +586,13 @@ void parseWorldJoint(XMLElement* node,
     const char* attr = joint_node->Attribute("drake_ignore");
     if (attr && strcmp(attr, "true") == 0) continue;
 
-    // Parses the parent and child link names.
+    // Parses the names of the joint, joint type, parent link, and child link.
     std::string joint_name, joint_type, parent_name, child_name;
     parseJointKeyParams(joint_node, joint_name, joint_type, parent_name,
                         child_name);
 
     if (parent_name == "world") {
-      // Double checks to ensure only one joint connects the model to the world.
+      // Ensures only one joint connects the model to the world.
       if (found_world_joint)
         throw runtime_error(
             "ERROR: Model contains multiple joints that connect to world!");
@@ -600,7 +600,7 @@ void parseWorldJoint(XMLElement* node,
 
       // The world-connecting joint was found. The following code updates the
       // weld_to_frame parameter based on the joint's offset, and the
-      // floating_base_type parameter based on the joint type.
+      // floating_base_type parameter based on the joint's type.
       Isometry3d transform_to_parent_body = Isometry3d::Identity();
       XMLElement* origin = joint_node->FirstChildElement("origin");
       if (origin) {
@@ -619,10 +619,8 @@ void parseWorldJoint(XMLElement* node,
       }
 
       // Throws an exception if the joint connecting the model to the world
-      // includes an axis specification.
-      //
-      // TODO(liangfok): Update URDF parser to support axis specification
-      // in joint that connects model to the world.
+      // includes an axis specification. This is a very strange situation that
+      // may not be physically possible in the real world.
       if (node->FirstChildElement("axis")) {
         throw runtime_error(
             "ERROR: Drake's URDF parser does not support an axis specification"
@@ -647,10 +645,10 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
        link_node = link_node->NextSiblingElement("material"))
     parseMaterial(link_node, materials);  // accept failed material parsing
 
-  // The actual floating base type may differ from parameter floating_base_type
-  // because it may be specified by the URDF itself when the URDF contains a
-  // world link. By default, actual_floating_base_type equals paramter
-  // floating_base_type.
+  // Makes a copy of parameter floating_base_type. This is necessary since the
+  // actual type may be specified by the URDF itself when the URDF contains a
+  // world link and a joint connecting to the world link. By default,
+  // actual_floating_base_type equals parameter floating_base_type.
   DrakeJoint::FloatingBaseType actual_floating_base_type = floating_base_type;
 
   // Maintains a list of links that were added to the rigid body tree.
@@ -673,15 +671,17 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
       if (std::string(name_attr) == "world") {
         // A world link was specified within the URDF. The following code
         // verifies that parameter weld_to_frame is not specified. It throws an
-        // exception if it is. Otherwise, it extract the information necessary
-        // create the virtual joint that connects the robot to the world.
+        // exception if it is since the model being added is connected to the
+        // world in two different ways. Otherwise, it extract the information
+        // necessary create the virtual joint that connects the robot to the
+        // world.
         if (weld_to_frame != nullptr) {
           throw runtime_error(
               "Both weld_to_frame and world link specified. "
               "Only one may be specified when instantiating "
               "a URDF model.");
         } else {
-          // Since a world link was specifies, there must be a joint that
+          // Since a world link was specified, there must be a joint that
           // connects the world to the robot's root note. The following
           // method call parses the information contained within this joint.
           parseWorldJoint(node, actual_floating_base_type, weld_to_frame);
