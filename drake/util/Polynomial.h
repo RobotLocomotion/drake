@@ -200,9 +200,9 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
 
   /// Evaluate a multivariate Polynomial at a specific point.
   /**
-   * Evaluates a univariate Polynomial with the given values for each
-   * variable.  Throws an exception of the Polynomial contains values for
-   * which values were not provided.
+   * Evaluates a Polynomial with the given values for each variable.  Throws
+   * an exception of the Polynomial contains values for which values were not
+   * provided.
    *
    * The provided values may be of any type supporting the ** and + operations
    * (which can be different from both CoefficientsType and RealScalar)
@@ -223,8 +223,9 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
     for (const Monomial& monomial : monomials) {
       ProductType monomial_value = monomial.coefficient;
       for (const Term& term : monomial.terms) {
-        monomial_value *= std::pow(static_cast<ProductType>(var_values.at(term.var)),
-                     static_cast<PowerType>(term.power));
+        monomial_value *= std::pow(
+            static_cast<ProductType>(var_values.at(term.var)),
+            static_cast<PowerType>(term.power));
       }
       value += monomial_value;
     }
