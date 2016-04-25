@@ -7,10 +7,11 @@ copy of the License at http://www.apache.org/licenses/LICENSE-2.0. */
 
 #include "drake/common/nice_type_name.h"
 
-#include <string>
-#include <regex>
-#include <array>
 #include <algorithm>
+#include <array>
+#include <cstdlib>
+#include <regex>
+#include <string>
 
 using std::string;
 
@@ -27,7 +28,7 @@ using std::string;
 string drake::common::DemangleTypeName(const char* typeid_name) {
   #if defined(__GNUG__)
     int status=-100; // just in case it doesn't get set
-    char* ret = abi::__cxa_demangle(name, NULL, NULL, &status);
+    char* ret = abi::__cxa_demangle(typeid_name, NULL, NULL, &status);
     const char* const demangled_name = (status == 0) ? ret : typeid_name;
     string demangled_string(demangled_name);
     if (ret) std::free(ret);
