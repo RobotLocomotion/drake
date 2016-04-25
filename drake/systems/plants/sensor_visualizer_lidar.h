@@ -51,7 +51,7 @@ class SensorVisualizerLidar {
 
     for (auto & sensor : sensor_vector) {
       std::cout << "SensorVisualizerLidar: output: Processing sensor "
-        << sensor.get_name() << std::endl;
+        << sensor->get_name() << std::endl;
     }
 
     // std::cout << "SensorVisualizerLidar::output: Method called!\n"

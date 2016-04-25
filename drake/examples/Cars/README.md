@@ -54,7 +54,7 @@ $ ../../pod-build/bin/publishDrivingCommand 1.0 .4
 Every time that you run the command above, it sends one LCM message.
 
 *Adjustments for Windows*
-- Insert the configuration directory (e.g. `Release/`) after `bin/` in paths to 
+- Insert the configuration directory (e.g. `Release/`) after `bin/` in paths to
 the executables.
 - When running from the Windows Command Prompt you'll need to use backslashes in
 place of forward slashes.

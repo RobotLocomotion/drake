@@ -457,7 +457,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySensor {
   virtual Eigen::VectorXd output(
       const double& t, const KinematicsCache<double>& rigid_body_state,
       const RigidBodySystem::InputVector<double>& u) const = 0;
-  const string & get_name() const { return name; }
+  const std::string & get_name() const { return name; }
  protected:
   RigidBodySystem const& sys;
   std::string name;
