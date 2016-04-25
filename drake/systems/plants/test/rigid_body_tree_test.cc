@@ -14,8 +14,7 @@ class RigidBodyTreeTest : public ::testing::Test {
  protected:
   virtual void SetUp() {
     // Instantiates the rigid body tree.
-    tree = std::allocate_shared<RigidBodyTree>(
-      Eigen::aligned_allocator<RigidBodyTree>());
+    tree = std::unique_ptr<RigidBodyTree>(new RigidBodyTree());
 
     // Defines a four rigid bodies.
     r1b1 = std::allocate_shared<RigidBody>(
@@ -40,7 +39,7 @@ class RigidBodyTreeTest : public ::testing::Test {
   }
 
  public:
-  std::shared_ptr<RigidBodyTree> tree;
+  std::unique_ptr<RigidBodyTree> tree;
   std::shared_ptr<RigidBody> r1b1;
   std::shared_ptr<RigidBody> r2b1;
   std::shared_ptr<RigidBody> r3b1;
