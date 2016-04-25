@@ -27,20 +27,6 @@ if (LCM_FOUND)
 #  )
 endif()
 
-if(roscpp_FOUND)
-  # message(STATUS "=============================================================")
-  # get_cmake_property(_variableNames VARIABLES)
-  # foreach (_variableName ${_variableNames})
-  #     message(STATUS "${_variableName}=${${_variableName}}")
-  # endforeach()
-  # message(STATUS "=============================================================")
-
-  # include_directories(/home/liang/dev/drake/drake/pod-build/devel/include/)
-  add_executable(run_pendulum_dynamics_ros run_pendulum_dynamics_ros.cc)
-  add_dependencies(run_pendulum_dynamics_ros ${PROJECT_NAME}_generate_messages)
-  target_link_libraries(run_pendulum_dynamics_ros drakeRBM ${roscpp_LIBRARIES})
-endif()
-
 add_subdirectory(test)
 
 add_matlab_test(NAME examples/Pendulum/PendulumEnergyShaping.run COMMAND PendulumEnergyShaping.run)

@@ -265,6 +265,30 @@ find_package(roscpp QUIET)
 if(roscpp_FOUND)
   message(STATUS "Found roscpp installed at ${roscpp_DIR}, so building ROS-specific functionality.")
   include_directories(${roscpp_INCLUDE_DIRS})
+
+  find_package(catkin REQUIRED)
+  find_package(genmsg REQUIRED)
+
+  find_package(std_msgs REQUIRED)
+  include_directories(${std_msgs_INCLUDE_DIRS})
+
+  # Enumerates Drake's custom ROS messages. Note that this needs to be done here
+  # rather than within a CMakeLists.txt in subdirectory rostypes/ since the
+  # include_directories() call to add the path to the generated files would not
+  # propogate back to this CMakeLists.txt level and thus not down to the
+  # applications that use the custom ROS messages.
+  add_message_files(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/rostypes FILES
+    rost_drake_signal.msg
+    rost_viewer_draw.msg
+    rost_viewer_geometry_data.msg
+    rost_viewer_link_data.msg
+    rost_viewer_load_robot.msg)
+
+  # Generates the code for Drake's custom ROS messages.
+  generate_messages(DEPENDENCIES std_msgs)
+
+  # Includes the directories containing the generated ROS message code.
+  include_directories("${${PROJECT_NAME}_INCLUDE_DIRS}")
 else()
   message(STATUS "Couldn't find roscpp so not building ROS-specific functionality. If you want ROS support, be sure to source the ROS setup.sh prior to building Drake.")
 endif()
@@ -272,7 +296,6 @@ endif()
 include_directories(thirdParty/spruce/include)
 include_directories(thirdParty/cimg)
 
-add_subdirectory(rostypes)
 add_subdirectory(core)
 add_subdirectory(util)
 add_subdirectory(solvers)

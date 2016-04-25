@@ -8,11 +8,7 @@
 
 #include "ros/ros.h"
 
-// #include <lcm/lcm-cpp.hpp>
-// #include "lcmtypes/drake/lcmt_drake_signal.hpp"
-
 #include "drake/rost_drake_signal.h"
-#include "drake/drakeLCMSystem_export.h"
 #include "drake/systems/Simulation.h"
 #include "drake/systems/System.h"
 #include "drake/systems/cascade_system.h"
@@ -25,27 +21,27 @@ using Drake::getCoordinateName;
 namespace drake {
 namespace systems {
 
-/** @defgroup lcm_vector_concept LCMVector<ScalarType> Concept
+/** @defgroup ros_vector_concept ROSVector<ScalarType> Concept
  * @ingroup vector_concept
  * @brief A specialization of the Vector concept adding the ability to read and
- * publish LCM messages
+ * publish ROS messages
  *
  * <table>
  * <tr><th colspan="2"> Valid Expressions (which must be implemented)
- * <tr><td> LCMMessageType
+ * <tr><td> ROSMessageType
  *     <td> defined with a typedef
  * <tr><td> static std::string channel() const
  *     <td> return the name of the channel to subscribe to/ publish on
  * <tr><td><pre>
  * bool encode(const double& t,
  *             const Vector<double>& x,
- *             LCMMessageType& msg)</pre>
- *     <td> define the mapping from your LCM type to your Vector type
+ *             ROSMessageType& msg)</pre>
+ *     <td> define the mapping from your ROS type to your Vector type
  * <tr><td><pre>
- * bool decode(const LCMMessageType& msg,
+ * bool decode(const ROSMessageType& msg,
  *             double& t,
  *             Vector<double>& x)</pre>
- *     <td> define the mapping from your Vector type to your LCM type
+ *     <td> define the mapping from your Vector type to your ROS type
  * </table>
 //  */
 
@@ -183,7 +179,7 @@ class ROSOutputSystem {
   template <typename ScalarType>
   using OutputVector = NullVector<ScalarType>;
 
-  ROSOutputSystem(std::shared_ptr<lcm::LCM> lcm) {}
+  ROSOutputSystem() {}
 
   StateVector<double> dynamics(const double &t, const StateVector<double> &x,
                                const InputVector<double> &u) const {
@@ -244,18 +240,6 @@ class ROSOutputSystem<
   ros::Publisher publisher_;
 };
 
-// todo: template specialization for the CombinedVector case
-
-// class DRAKELCMSYSTEM_EXPORT LCMLoop {
-//  public:
-//   bool stop;
-//   lcm::LCM &lcm;
-
-//   LCMLoop(lcm::LCM &_lcm) : lcm(_lcm), stop(false) {}
-
-//   void loopWithSelect();
-// };
-
 }  // end namespace internal
 
 /**
@@ -263,9 +247,6 @@ class ROSOutputSystem<
  * topics and the output being published to ROS topics.
  *
  * @ingroup simulation
- *
- * The input and output vector types must overload a publishLCM namespace
- * method; the default for new vectors is to not publish anything.
  *
  * @param sys The rigid body system to simulate.
  * @param t0 The simulation's start time.
@@ -292,52 +273,29 @@ void RunROS(std::shared_ptr<System> sys, double t0, double tf,
       internal::ROSInputSystem<System::template InputVector>::has_ros_input;
 
   if (has_ros_input && Drake::size(x0) == 0 && !sys->isTimeVarying()) {
-    // then this is really a static function, not a dynamical system.
-    // block on receiving lcm input and process the output exactly when a new
+    // This is really a static function, not a dynamical system.
+    // Blocks on receiving ROS input and process the output exactly when a new
     // input message is received.
-    // note: this will never return (unless there is an lcm error)
-
-    //      std::cout << "LCM output will be triggered on receipt of an LCM
-    //      Input" << std::endl;
+    // Note: this will never return (unless there is a ROS error)
 
     double t = 0.0;
     typename System::template StateVector<double> x;
     NullVector<double> u;
 
-    while (1) {
-      // if (lcm->handle() != 0) {
-      //   throw std::runtime_error("something went wrong in lcm.handle");
-      // }
+    while (ros::ok()) {
       ros_sys->output(t, x, u);
     }
   } else {
-    // internal::LCMLoop lcm_loop(*lcm);
-    // std::thread lcm_thread;
-    // if (has_ros_input) {
-    //   // only start up the listener thread if I actually have inputs to
-    //   listen
-    //   // to
-    //   lcm_thread = std::thread(&internal::LCMLoop::loopWithSelect,
-    //   &lcm_loop);
-    // }
-
     SimulationOptions ros_options = options;
     if (ros_options.realtime_factor < 0.0) ros_options.realtime_factor = 1.0;
     simulate(*ros_sys, t0, tf, x0, ros_options);
-
-    // if (has_ros_input) {
-    //   // shutdown the lcm thread
-    //   lcm_loop.stop = true;
-    //   lcm_thread.join();
-    // }
   }
 }
 
-// template <typename System>
-// void runLCM(const System &sys, std::shared_ptr<lcm::LCM> lcm, double t0,
-//             double tf) {
-//   runLCM(sys, lcm, t0, tf, getInitialState(*sys));
-// }
+template <typename System>
+void runROS(const System &sys, double t0, double tf) {
+  runROS(sys, t0, tf, getInitialState(*sys));
+}
 
 }  // end namespace systems
 }  // end namespace drake
