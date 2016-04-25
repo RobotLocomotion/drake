@@ -274,6 +274,68 @@ TEST(LoadSDFTest, TestDualOffset2) {
       << Eigen::Isometry3d::Identity().matrix();
 }
 
+TEST(LoadURDFTest, TestLoadURDFFixedToWorld) {
+  // Loads a URDF model that's connected to the world via a fixed joint.
+
+  RigidBodySystem rbs;
+  rbs.addRobotFromFile(
+      Drake::getDrakePath() +
+      "/systems/plants/test/cylindrical_1dof_robot_fixed_to_world.urdf");
+
+  // Verifies that the transform between the robot's root node
+  // and the world is equal to identity.
+
+  Eigen::Isometry3d T_model_to_world;
+  {
+    Eigen::Vector3d xyz, rpy;
+    xyz << 1, 2, 3;
+    rpy << 0.1, 0.5, 1.8;
+    T_model_to_world.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+  }
+
+  auto link1_body = rbs.getRigidBodyTree()->findLink("link1");
+  EXPECT_TRUE(link1_body != nullptr);
+  EXPECT_TRUE(
+      link1_body->getJoint().getTransformToParentBody().matrix().isApprox(
+          T_model_to_world.matrix(), 1e-10))
+      << "Incorrect transform from the link1's frame to Drake's world frame."
+      << "Got:\n"
+      << link1_body->getJoint().getTransformToParentBody().matrix() << "\n"
+      << "Expected:\n"
+      << T_model_to_world.matrix();
+}
+
+TEST(LoadURDFTest, TestLoadURDFFloatingInWorld) {
+  // Loads a URDF model that's connected to the world via a fixed joint.
+
+  RigidBodySystem rbs;
+  rbs.addRobotFromFile(
+      Drake::getDrakePath() +
+      "/systems/plants/test/cylindrical_1dof_robot_floating_in_world.urdf");
+
+  // Verifies that the transform between the robot's root node
+  // and the world is equal to identity.
+
+  Eigen::Isometry3d T_model_to_world;
+  {
+    Eigen::Vector3d xyz, rpy;
+    xyz << 3, 2, 1;
+    rpy << 0.2, 0.9, -1.57;
+    T_model_to_world.matrix() << rpy2rotmat(rpy), xyz, 0, 0, 0, 1;
+  }
+
+  auto link1_body = rbs.getRigidBodyTree()->findLink("link1");
+  EXPECT_TRUE(link1_body != nullptr);
+  EXPECT_TRUE(
+      link1_body->getJoint().getTransformToParentBody().matrix().isApprox(
+          T_model_to_world.matrix(), 1e-10))
+      << "Incorrect transform from the link1's frame to Drake's world frame."
+      << "Got:\n"
+      << link1_body->getJoint().getTransformToParentBody().matrix() << "\n"
+      << "Expected:\n"
+      << T_model_to_world.matrix();
+}
+
 }  // namespace
 }  // namespace test
 }  // namespace plants
