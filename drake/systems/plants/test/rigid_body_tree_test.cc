@@ -13,8 +13,7 @@ namespace {
 class RigidBodyTreeTest : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    // Instantiates the rigid body tree.
-    tree = std::unique_ptr<RigidBodyTree>(new RigidBodyTree());
+    tree.reset(new RigidBodyTree());
 
     // Defines four rigid bodies.
     r1b1 = std::allocate_shared<RigidBody>(
