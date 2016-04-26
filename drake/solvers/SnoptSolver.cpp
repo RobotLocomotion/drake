@@ -490,7 +490,7 @@ SolutionResult Drake::SnoptSolver::Solve(
   if (info >= 1 && info <= 6) {
     return SolutionResult::kSolutionFound;
   } else if (info >= 11 && info <= 16) {
-    return SolutionResult::kInfeasibleConstraint;
+    return SolutionResult::kInfeasibleConstraints;
   } else if (info == 91) {
     return SolutionResult::kInvalidInput;
   }

@@ -6,7 +6,7 @@ namespace solvers {
 enum SolutionResult {
     kSolutionFound = 0,
     kInvalidInput = -1,
-    kInfeasibleConstraint = -2,
+    kInfeasibleConstraints = -2,
     kUnknownError = -3,
   };
 
