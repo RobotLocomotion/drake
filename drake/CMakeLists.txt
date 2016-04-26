@@ -219,12 +219,12 @@ if(roscpp_FOUND)
   # include_directories() call to add the path to the generated files would not
   # propogate back to this CMakeLists.txt level and thus not down to the
   # applications that use the custom ROS messages.
-  add_message_files(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/rostypes FILES
-    rost_drake_signal.msg
-    rost_viewer_draw.msg
-    rost_viewer_geometry_data.msg
-    rost_viewer_link_data.msg
-    rost_viewer_load_robot.msg)
+  # add_message_files(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/rostypes FILES
+  #   rost_drake_signal.msg
+  #   rost_viewer_draw.msg
+  #   rost_viewer_geometry_data.msg
+  #   rost_viewer_link_data.msg
+  #   rost_viewer_load_robot.msg)
 
   # Generates the code for Drake's custom ROS messages.
   # generate_messages(DEPENDENCIES std_msgs)
