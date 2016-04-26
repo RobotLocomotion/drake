@@ -184,7 +184,7 @@ void RigidBodyTree::accumulateContactJacobian(
 //   J: (3m x nq)
 //  (optional outputs if compute_second_derivatives is true)
 //  dJ: (3m x nq^2) Second order contact Jacobian
-// TODO: change output to be 3m * nq x nq (or possibly 3m * nv x nq)
+// TODO(tkoolen): change output to be 3m * nq x nq (or possibly 3m * nv x nq)
 
 template <typename Scalar>
 void RigidBodyTree::computeContactJacobians(
