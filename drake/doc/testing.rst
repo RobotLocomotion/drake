@@ -2,8 +2,8 @@
 Detailed Notes on How to Run Unit Tests
 ***************************************
 
-Finding a Specific Test
-=======================
+Finding a Specific Unit Test
+============================
 
 ::
 
