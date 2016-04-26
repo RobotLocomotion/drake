@@ -138,7 +138,6 @@ class DRAKEPOLYNOMIAL_EXPORT SystemIdentification {
 
   /// Obtain a new lumped variable ID not already in vars_in_use.
   static VarType CreateLumpVar(const std::set<VarType>& vars_in_use);
-
 };
 }  // namespace util
 }  // namespace drake
