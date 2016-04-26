@@ -21,6 +21,9 @@ using std::string;
 #include <cstdlib>
 #endif
 
+namespace drake {
+namespace common {
+
 // On gcc and clang typeid(T).name() returns an indecipherable mangled string
 // that requires processing to become human readable. Microsoft returns a
 // reasonable name directly.
@@ -69,3 +72,7 @@ string drake::common::CanonicalizeTypeName(string&& demangled) {
   }
   return canonical;
 }
+
+} // namespace common
+} // namespace drake
+
