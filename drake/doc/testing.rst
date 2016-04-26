@@ -10,8 +10,7 @@ Finding a Specific Unit Test
    cd path/to/your/drake-distro/drake/pod-build
    ctest -N
 
-This will list all the available tests. You can pipe the output of the `ctest -N` command to `grep` if you have a clue on how the test is named. 
-
+This will list all the available tests. You can pipe the output of the `ctest -N` command to `grep` if you have a clue about the unit test's name, which you can determine by looking at the `CMakeLists.txt` that included the unit test.
 
 Running a Specific Test
 =======================
