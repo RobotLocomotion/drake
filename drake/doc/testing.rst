@@ -1,6 +1,6 @@
-*************************
-Detailed Notes on Testing
-*************************
+***************************************
+Detailed Notes on How to Run Unit Tests
+***************************************
 
 Finding a Specific Test
 =======================
