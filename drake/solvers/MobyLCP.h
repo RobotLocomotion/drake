@@ -43,7 +43,8 @@ class DRAKEOPTIMIZATION_EXPORT MobyLCPSolver
                                 double zero_tol = -1.0) const;
 
   virtual bool available() const override { return true; }
-  virtual bool Solve(OptimizationProblem& prog) const override;
+  virtual drake::solvers::SolutionResult Solve(
+      OptimizationProblem& prog) const override;
 
  private:
   void ClearIndexVectors() const;
