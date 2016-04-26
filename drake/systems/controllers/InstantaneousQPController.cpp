@@ -888,7 +888,7 @@ int InstantaneousQPController::setupAndSolveQP(
   Vector3d kdot_des;
   if (include_angular_momentum) {
     VectorXd k = Ak * robot_state.qd;
-    kdot_des = -params.Kp_ang * k;  // TODO: parameterize
+    kdot_des = -params.Kp_ang * k;  // TODO(rdeits): parameterize
   }
 
   //----------------------------------------------------------------------
@@ -1079,7 +1079,7 @@ int InstantaneousQPController::setupAndSolveQP(
       desired_body_accelerations.size() > 0 && max_body_accel_weight > 1e-10;
   if (use_fast_qp > 0 && !include_angular_momentum &&
       !include_body_accel_cost_terms) {
-    // TODO: update to include angular momentum, body accel objectives.
+    // TODO(rdeits): update to include angular momentum, body accel objectives.
 
     //    We want Hqp inverse, which I can compute efficiently using the
     //    matrix inversion lemma (see wikipedia):

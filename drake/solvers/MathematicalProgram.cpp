@@ -132,8 +132,8 @@ class NonlinearProgram : public MathematicalProgram {
 class LinearComplementarityProblem : public MathematicalProgram {
  public:
   virtual bool Solve(OptimizationProblem& prog) const override {
-    // TODO ggould given the Moby solver's meticulous use of temporaries, it
-    // would be an easy performance win to reuse this solver object by making
+    // TODO(ggould-tri) given the Moby solver's meticulous use of temporaries,
+    // it would be an easy performance win to reuse this solver object by making
     // a static place to store it.
     MobyLCPSolver solver;
     return solver.Solve(prog);
