@@ -5,6 +5,8 @@
 #include <string>
 #include <typeinfo>
 
+#include "drake/drakeSystemFramework_export.h"
+
 namespace drake {
 namespace systems {
 
@@ -16,7 +18,7 @@ class Value;
 /// Only Value<T> should inherit directly from AbstractValue. User-defined
 /// classes that define additional type-erased features should inherit from
 /// Value<T>.
-class AbstractValue {
+class DRAKESYSTEMFRAMEWORK_EXPORT AbstractValue {
  public:
   AbstractValue() {}
   virtual ~AbstractValue() {}
@@ -83,7 +85,7 @@ class AbstractValue {
 /// care to define the copy constructors and override Clone().
 /// @tparam T Must be copy-constructible, and therefore not abstract.
 template <typename T>
-class Value : public AbstractValue {
+class DRAKESYSTEMFRAMEWORK_EXPORT Value : public AbstractValue {
  public:
   explicit Value(const T& v) : value_(v) {}
 
