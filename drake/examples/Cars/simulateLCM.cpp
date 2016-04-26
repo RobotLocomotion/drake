@@ -18,7 +18,7 @@ class DrivingCommand {
 
   DrivingCommand(void) : throttle(0), brake(0), steering_angle(0) {}
   template <typename Derived>
-  DrivingCommand(const Eigen::MatrixBase<Derived>& x)
+  explicit DrivingCommand(const Eigen::MatrixBase<Derived>& x)
       : steering_angle(x(0)), throttle(x(1)), brake(x(2)) {}
 
   template <typename Derived>

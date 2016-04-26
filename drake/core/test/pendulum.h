@@ -11,8 +11,10 @@ template <typename ScalarType = double>
 class PendulumState {  // models the Drake::Vector concept
  public:
   PendulumState(void) : theta(0), thetadot(0) {}
+
   template <typename Derived>
-  PendulumState(const Eigen::MatrixBase<Derived>& x)
+  PendulumState(  // NOLINT(runtime/explicit) per Drake::Vector.
+      const Eigen::MatrixBase<Derived>& x)
       : theta(x(0)), thetadot(x(1)) {}
 
   template <typename Derived>
@@ -41,7 +43,7 @@ class PendulumInput {
  public:
   PendulumInput(void) : tau(0) {}
   template <typename Derived>
-  PendulumInput(const Eigen::MatrixBase<Derived>& x)
+  explicit PendulumInput(const Eigen::MatrixBase<Derived>& x)
       : tau(x(0)) {}
 
   template <typename Derived>
