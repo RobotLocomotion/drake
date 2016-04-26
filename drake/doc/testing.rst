@@ -15,7 +15,7 @@ This will list all the available tests. You can pipe the output of the `ctest -N
 Running a Specific Test
 =======================
 
-Once you know how the test is named you can run it by issuing a::
+Once you know the unit tests' name, you can run it by issuing a::
 
   ctest -VV -R name_of_the_test_as_ouput_from_ctest-N
 
