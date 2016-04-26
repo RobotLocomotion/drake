@@ -28,8 +28,8 @@ ABBREVIATE_BRIEF       = a \
 ALWAYS_DETAILED_SEC    = NO
 INLINE_INHERITED_MEMB  = NO
 FULL_PATH_NAMES        = YES
-STRIP_FROM_PATH        =
-STRIP_FROM_INC_PATH    =
+STRIP_FROM_PATH        = "@drake_SOURCE_DIR@/.."
+STRIP_FROM_INC_PATH    = "@drake_SOURCE_DIR@/.."
 SHORT_NAMES            = NO
 JAVADOC_AUTOBRIEF      = NO
 QT_AUTOBRIEF           = NO
@@ -112,7 +112,7 @@ WARN_LOGFILE           = "@CMAKE_CURRENT_BINARY_DIR@/doxygen_cxx.log"
 #---------------------------------------------------------------------------
 # Configuration options related to the input files
 #---------------------------------------------------------------------------
-INPUT                  = "@CMAKE_SOURCE_DIR@"
+INPUT                  = "@drake_SOURCE_DIR@"
 INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          = *.c \
                          *.cc \
@@ -125,9 +125,9 @@ FILE_PATTERNS          = *.c \
                          *.hpp \
                          *.h++
 RECURSIVE              = YES
-EXCLUDE                = "@CMAKE_SOURCE_DIR@/examples" \
-                         "@CMAKE_SOURCE_DIR@/pod-build" \
-                         "@CMAKE_SOURCE_DIR@/thirdParty"
+EXCLUDE                = "@drake_SOURCE_DIR@/examples" \
+                         "@drake_SOURCE_DIR@/pod-build" \
+                         "@drake_SOURCE_DIR@/thirdParty"
 EXCLUDE_SYMLINKS       = NO
 EXCLUDE_PATTERNS       =
 EXCLUDE_SYMBOLS        =
