@@ -611,7 +611,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   void SetSolverResult(const std::string& solver_name, int solver_result) {
     solver_name_ = solver_name;
-    solver_result = solver_result;
+    solver_result_ = solver_result;
   }
 
   const std::list<Binding<Constraint>>& generic_objectives() const {
