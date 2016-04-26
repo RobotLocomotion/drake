@@ -12,6 +12,7 @@
 #include "drake/drakeOptimization_export.h"
 #include "drake/solvers/Constraint.h"
 #include "drake/solvers/MathematicalProgram.h"
+#include "drake/solvers/solution_result.h"
 
 
 namespace Drake {
@@ -563,7 +564,12 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     x_initial_guess_.segment(var.index(), var.size()) = x0;
   }
 
-  bool Solve() {
+  /**
+   * Solve the OptimizationProblem.
+   *
+   * @return SolutionResult indicating if the solution was successful.
+   */
+  drake::solvers::SolutionResult Solve() {
     return problem_type_->Solve(*this);
   }  // todo: add argument for options
 
