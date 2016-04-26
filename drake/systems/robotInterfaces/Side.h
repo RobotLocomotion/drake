@@ -5,7 +5,7 @@
 #include "drake/drakeSide_export.h"
 
 // adapted from https://en.wikibooks.org/wiki/More_C%2B%2B_Idioms/Type_Safe_Enum
-// TODO: replace with enum class
+// TODO(tkoolen): replace with enum class
 class DRAKESIDE_EXPORT Side {
  public:
   enum SideEnum { LEFT, RIGHT };

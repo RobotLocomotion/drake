@@ -51,8 +51,8 @@ class DRAKETRAJECTORIES_EXPORT ExponentialPlusPiecewisePolynomial
   ExponentialPlusPiecewisePolynomial(
       const PiecewisePolynomial<CoefficientType>& piecewise_polynomial_part);
 
-  ValueType value(
-      double t) const;  // TODO: fix return type (handle complex etc.)
+  // TODO(tkoolen): fix return type (handle complex etc.)
+  ValueType value(double t) const;
 
   ExponentialPlusPiecewisePolynomial derivative(int derivative_order = 1) const;
 

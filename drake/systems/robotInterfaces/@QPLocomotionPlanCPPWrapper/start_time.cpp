@@ -4,7 +4,8 @@
 using namespace std;
 using namespace Eigen;
 
-// TODO: rename to getStartTime after QPLocomotionPlan interface changes
+// TODO(tkoolen): rename to getStartTime after QPLocomotionPlan interface
+// changes
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nrhs != 1 || nlhs != 1) {
     mexErrMsgTxt("usage: time = start_time(obj);");

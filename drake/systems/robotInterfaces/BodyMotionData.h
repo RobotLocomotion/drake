@@ -4,10 +4,10 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include "drake/systems/trajectories/PiecewisePolynomial.h"
-#include "drake/drakeQPLocomotionPlan_export.h"  // TODO: exports
+#include "drake/drakeQPLocomotionPlan_export.h"  // TODO(tkoolen): exports
 
 class BodyMotionData {
- public:  // TODO: would be better to make this private
+ public:  // TODO(tkoolen): would be better to make this private
   int body_or_frame_id;
   PiecewisePolynomial<double> trajectory;
   std::vector<bool> toe_off_allowed;

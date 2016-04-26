@@ -15,9 +15,9 @@
 #include "drake/systems/controllers/zmpUtil.h"
 
 class QuadraticLyapunovFunction {
-  // TODO: move into its own file
-  // TODO: make part of a Lyapunov function class hierarchy
-  // TODO: more functionality
+  // TODO(tkoolen): move into its own file
+  // TODO(tkoolen): make part of a Lyapunov function class hierarchy
+  // TODO(tkoolen): more functionality
  private:
   Eigen::MatrixXd S;
   ExponentialPlusPiecewisePolynomial<double> s1;
@@ -40,12 +40,13 @@ class QuadraticLyapunovFunction {
 };
 
 struct RigidBodySupportStateElement {
-  // TODO: turn this into a class with more functionality
-  // TODO: consolidate with SupportStateElement?
-  int body;  // TODO: should probably be a RigidBody smart pointer
+  // TODO(tkoolen): turn this into a class with more functionality
+  // TODO(tkoolen): consolidate with SupportStateElement?
+  int body;  // TODO(tkoolen): should probably be a RigidBody smart pointer
   Eigen::Matrix3Xd contact_points;
   bool use_contact_surface;
-  Eigen::Vector4d support_surface;  // TODO: should probably be a different type
+  // TODO(tkoolen): should probably be a different type
+  Eigen::Vector4d support_surface;
 };
 
 typedef std::vector<RigidBodySupportStateElement> RigidBodySupportState;
@@ -152,7 +153,7 @@ struct QPLocomotionPlanSettings {
 
 class QPLocomotionPlan {
  private:
-  RigidBodyTree& robot;  // TODO: const correctness
+  RigidBodyTree& robot;  // TODO(tkoolen): const correctness
   QPLocomotionPlanSettings settings;
   const std::map<Side, int> foot_body_ids;
   const std::map<Side, int> knee_indices;
