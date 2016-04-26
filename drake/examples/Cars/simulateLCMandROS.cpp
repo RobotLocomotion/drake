@@ -81,6 +81,8 @@ bool decode(const drake::lcmt_driving_control_cmd_t& msg, double& t,
  */
 
 int main(int argc, char* argv[]) {
+  ros::init(argc, argv, "drake_simulate_lcm_and_ros");
+
   if (argc < 2) {
     std::cerr << "Usage: " << argv[0] << " vehicle_urdf [world sdf files ...]"
               << std::endl;
@@ -189,7 +191,8 @@ int main(int argc, char* argv[]) {
       make_shared<BotVisualizer<RigidBodySystem::StateVector>>(lcm, tree);
 
   auto lidar_visualizer =
-      make_shared<SensorVisualizerLidar<RigidBodySystem::StateVector>>(rigid_body_sys);
+      make_shared<drake::systems::plants::SensorVisualizerLidar<
+          RigidBodySystem::StateVector>>(rigid_body_sys);
 
   auto sys = cascade(cascade(vehicle_sys, bot_visualizer), lidar_visualizer);
 
