@@ -182,7 +182,7 @@ static int snoptIKfun(snopt::integer* Status, snopt::integer* n,
                       snopt::doublereal ru[], snopt::integer* lenru) {
   Map<VectorXd> q(x, nq);
   KinematicsCache<double> cache =
-      model->doKinematics(q);  // TODO: pass this into the function?
+      model->doKinematics(q);  // TODO(tkoolen): pass this into the function?
   IK_cost_fun(x, F[0], G);
   IK_constraint_fun(cache, x, &F[1], &G[nq]);
   return 0;

@@ -71,7 +71,7 @@ KinematicsCache<Scalar> &fromMexUnsafe(const mxArray *mex,
 // set<int>: not of sufficient quality yet
 bool isConvertibleFromMex(const mxArray *source, std::set<int> *,
                           std::ostream *log) NOEXCEPT {
-  return true;  // TODO: improve
+  return true;  // TODO(tkoolen): improve
 }
 
 std::set<int> fromMexUnsafe(const mxArray *source, std::set<int> *) {
