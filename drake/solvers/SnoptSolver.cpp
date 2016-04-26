@@ -431,7 +431,7 @@ bool Drake::SnoptSolver::Solve(
   snopt::doublereal ObjAdd = 0.0;
   snopt::integer ObjRow = 1;  // feasibility problem (for now)
 
-  // TODO sam.creasey These should be made into options when #1879 is
+  // TODO(sam.creasey) These should be made into options when #1879 is
   // resolved or deleted.
   /*
     mysnseti("Derivative
