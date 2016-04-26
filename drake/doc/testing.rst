@@ -17,9 +17,9 @@ Running a Specific Test
 
 Once you know the unit tests' name, you can run it by issuing a::
 
-  ctest -VV -R name_of_the_test_as_ouput_from_ctest-N
+  ctest -VV -R name_of_the_test_as_output_from_ctest-N
 
-where `name_of_the_test_as_ouput_from_ctest-N` is the name of the test exactly as printed out by `ctest -N` including, if any, the entire path to the test as printed out to the screen. 
+where `name_of_the_test_as_output_from_ctest-N` is the name of the test exactly as printed out by `ctest -N` including, if any, the entire path to the test as printed out to the screen. 
 
 
 Example: Find and run test `cascade_system`
