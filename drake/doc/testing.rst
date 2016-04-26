@@ -22,8 +22,8 @@ Once you know the unit tests' name, you can run it by issuing a::
 where `name_of_the_test_as_output_from_ctest-N` is the name of the test exactly as printed out by `ctest -N` including, if any, the entire path to the test as printed out to the screen. 
 
 
-Example: Find and run test `cascade_system`
-=============================================
+Example: Find and run unit test named `cascade_system`
+======================================================
 
 Find test::
 
