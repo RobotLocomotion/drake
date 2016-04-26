@@ -184,7 +184,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
     if (!is_univariate)
       throw std::runtime_error(
           "this method can only be used for univariate polynomials");
-    ProductType value = (ProductType)0;
+    ProductType value = 0;
     for (typename std::vector<Monomial>::const_iterator iter =
              monomials.begin();
          iter != monomials.end(); iter++) {
@@ -219,7 +219,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
       }
     }
 
-    ProductType value = (ProductType)0;
+    ProductType value = 0;
     for (const Monomial& monomial : monomials) {
       ProductType monomial_value = monomial.coefficient;
       for (const Term& term : monomial.terms) {

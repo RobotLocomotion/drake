@@ -135,6 +135,10 @@ class DRAKEPOLYNOMIAL_EXPORT SystemIdentification {
    */
   static std::pair<CoefficientType, PolyType>
   CanonicalizePolynomial(const PolyType& poly);
+
+  /// Obtain a new lumped variable ID not already in vars_in_use.
+  static VarType CreateLumpVar(const std::set<VarType>& vars_in_use);
+
 };
 }  // namespace util
 }  // namespace drake

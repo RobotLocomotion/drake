@@ -125,23 +125,30 @@ SystemIdentification<T>::GetLumpedParametersFromPolynomials(
 
   // For each such parameter polynomial, create a lumped parameter with a
   // unique VarType id.
-  int lump_index = 1;
-  static const std::string kLumpedVariablePrefix = "lump";
   LumpingMapType lumping_map;
   for (const PolyType& lump : lumped_parameters) {
-    while (true) {
-      VarType lump_var = PolyType(kLumpedVariablePrefix,
-                                  lump_index).getSimpleVariable();
-      lump_index++;
-      if (!all_vars.count(lump_var)) {
-        lumping_map[lump] = lump_var;
-        all_vars.insert(lump_var);
-        break;
-      }
-    }  // Loop termination: If every id is already used, PolyType() will throw.
+    VarType lump_var = CreateLumpVar(all_vars);
+    lumping_map[lump] = lump_var;
+    all_vars.insert(lump_var);
   }
 
   return lumping_map;
+}
+
+template<typename T>
+typename SystemIdentification<T>::VarType
+SystemIdentification<T>::CreateLumpVar(
+    const std::set<VarType>& vars_in_use) {
+  int lump_index = 1;
+  static const std::string kLumpedVariablePrefix = "lump";
+  while (true) {
+    VarType lump_var = PolyType(kLumpedVariablePrefix,
+                                lump_index).getSimpleVariable();
+    lump_index++;
+    if (!vars_in_use.count(lump_var)) {
+      return lump_var;
+    }
+  }  // Loop termination: If every id is already used, PolyType() will throw.
 }
 
 
