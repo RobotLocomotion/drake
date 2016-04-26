@@ -45,9 +45,6 @@ the test failed if it times out or calls ``error``.
 
 Take at look at :doc:`testing` for more detailed notes including **how to find and run specific tests**.
 
-**To find and run specific tests.**
-
-
 .. _supported-configurations:
 
 Supported Configurations
