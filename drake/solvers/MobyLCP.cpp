@@ -157,6 +157,10 @@ SolutionResult MobyLCPSolver::Solve(OptimizationProblem& prog) const {
   // implementation but might perform better if the solver were to parallelize
   // internally.
   Eigen::VectorXd solution(prog.num_vars());
+
+  // We don't actually indicate different results.
+  prog.SetSolverResult("MobyLCP", 0);
+
   for (const auto& binding : bindings) {
     Eigen::VectorXd constraint_solution(binding.GetNumElements());
     const std::shared_ptr<LinearComplementarityConstraint> constraint =

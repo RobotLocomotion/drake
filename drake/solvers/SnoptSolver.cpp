@@ -483,6 +483,7 @@ SolutionResult Drake::SnoptSolver::Solve(
     sol(i) = static_cast<double>(x[i]);
   }
   prog.SetDecisionVariableValues(sol);
+  prog.SetSolverResult("SNOPT", info);
 
   // todo: extract the other useful quantities, too.
 
@@ -494,5 +495,4 @@ SolutionResult Drake::SnoptSolver::Solve(
     return SolutionResult::kInvalidInput;
   }
   return SolutionResult::kUnknownError;
-
 }

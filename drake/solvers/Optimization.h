@@ -247,7 +247,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
       : problem_type_(MathematicalProgramInterface::GetLeastSquaresProgram()),
         num_vars_(0),
         x_initial_guess_(
-            static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)) {}
+            static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)),
+      solver_result_(0) {}
 
   const DecisionVariableView AddContinuousVariables(std::size_t num_new_vars,
                                                     std::string name = "x") {
@@ -596,6 +597,23 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     }
   }
 
+  /**
+   * Get the name and result code of the particular solver which was
+   * used to solve this OptimizationProblem.  The solver names and
+   * results are not documented here as this function is only intended
+   * for debugging, testing, and support of certain legacy
+   * APIs.
+   */
+  void GetSolverResult(std::string* solver_name, int* solver_result) {
+    *solver_name = solver_name_;
+    *solver_result = solver_result_;
+  }
+
+  void SetSolverResult(const std::string& solver_name, int solver_result) {
+    solver_name_ = solver_name;
+    solver_result = solver_result;
+  }
+
   const std::list<Binding<Constraint>>& generic_objectives() const {
     return generic_objectives_;
   }  // e.g. for snopt_user_fun
@@ -670,6 +688,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   Eigen::VectorXd x_initial_guess_;
   std::shared_ptr<SolverData> solver_data_;
   std::shared_ptr<MathematicalProgramInterface> problem_type_;
+  std::string solver_name_;
+  int solver_result_;
 };
 
 }  // end namespace Drake
