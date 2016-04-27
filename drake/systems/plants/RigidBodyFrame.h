@@ -14,6 +14,10 @@ class DRAKERBM_EXPORT RigidBodyFrame {
   /**
    * A constructor where the transform-to-body is specified using an
    * Eigen::Isometry3d matrix.
+   * TODO(amcastro-tri): RigidBodyFrame constructor should take a RigidBody
+   * reference. However this is sometimes called with a nullptr.
+   * See for instance compareRigidBodySystems.cpp
+   *
    */
   RigidBodyFrame(const std::string& _name, RigidBody* _body,
                  const Eigen::Isometry3d& _transform_to_body)
@@ -26,7 +30,7 @@ class DRAKERBM_EXPORT RigidBodyFrame {
    * A constructor where the transform-to-body is specified using
    * Euler angles.
    */
-  RigidBodyFrame(const std::string& _name, RigidBody& _body,
+  RigidBodyFrame(const std::string& _name, RigidBody* _body,
                  const Eigen::Vector3d& xyz = Eigen::Vector3d::Zero(),
                  const Eigen::Vector3d& rpy = Eigen::Vector3d::Zero())
       : name(_name), body(_body), frame_index(0) {
