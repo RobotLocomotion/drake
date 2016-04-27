@@ -19,12 +19,14 @@ namespace Drake {
 /// * see lcmt_simple_car_config_t
 ///
 /// input vector:
-/// * steering angle (virtual center wheel angle, with some limits)
+/// * steering angle (virtual center wheel angle, with some limits);
+///   a positive angle means a positive change in heading (right turn)
 /// * throttle (0-1)
 /// * brake (0-1)
 ///
 /// state vector (planar for now):
-/// * position: x, y, heading
+/// * position: x, y, heading;
+///   heading is 0deg when pointed +y, 90deg when pointed +x
 /// * velocity
 ///
 /// output vector: same as state vector.
