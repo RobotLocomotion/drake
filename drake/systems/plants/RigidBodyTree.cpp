@@ -91,7 +91,7 @@ void RigidBodyTree::compile(void) {
     if (bodies[i]->hasParent() && bodies[i]->I.isConstant(0)) {
       bool hasChild = false;
       for (size_t j = i + 1; j < bodies.size(); j++) {
-        if (bodies[j]->parent == bodies[i]) {
+        if (body(j).has_as_parent(body(i))){
           hasChild = true;
           break;
         }
@@ -99,8 +99,8 @@ void RigidBodyTree::compile(void) {
       if (!hasChild) {
         // now check if this body is attached by a loop joint
         for (const auto& loop : loops) {
-          if ((loop.frameA->body == bodies[i]) ||
-              (loop.frameB->body == bodies[i])) {
+          if ((loop.frameA->body == &body(i)) ||
+              (loop.frameB->body == &body(i))) {
             hasChild = true;
             break;
           }
@@ -112,7 +112,7 @@ void RigidBodyTree::compile(void) {
         unique_ptr<DrakeJoint> joint_unique_ptr(
             new FixedJoint(bodies[i]->getJoint().getName(),
                            bodies[i]->getJoint().getTransformToParentBody()));
-        bodies[i]->setJoint(move(joint_unique_ptr));
+        bodies[i]->setJoint(std::move(joint_unique_ptr));
       }
     }
   }
@@ -953,7 +953,7 @@ void RigidBodyTree::findAncestorBodies(std::vector<int>& ancestor_bodies,
   const RigidBody* current_body = bodies[body_idx].get();
   while (current_body->hasParent()) {
     ancestor_bodies.push_back(current_body->parent->body_index);
-    current_body = current_body->parent.get();
+    current_body = current_body->parent;
   }
 }
 
@@ -1203,7 +1203,7 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::massMatrix(
           (element_i.motion_subspace_in_world.transpose() * F).eval();
 
       // Hij
-      shared_ptr<RigidBody> body_j(body_i.parent);
+      RigidBody* body_j(body_i.parent);
       while (body_j->hasParent()) {
         const auto& element_j = cache.getElement(*body_j);
         int v_start_j = body_j->velocity_num_start;
@@ -1662,7 +1662,7 @@ shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
 }
 
 int RigidBodyTree::findLinkId(const std::string& name, int robot) const {
-  shared_ptr<RigidBody> link = findLink(name, robot);
+  RigidBody* link = findLink(name, robot);
   if (link == nullptr)
     throw std::runtime_error("could not find link id: " + name);
   return link->body_index;
@@ -1853,13 +1853,13 @@ int RigidBodyTree::AddFloatingJoint(
     const std::shared_ptr<RigidBodyFrame> weld_to_frame,
     const PoseMap* pose_map) {
   std::string floating_joint_name;
-  std::shared_ptr<RigidBody> weld_to_body;
+  RigidBody* weld_to_body;
   Eigen::Isometry3d transform_to_world;
 
   if (weld_to_frame == nullptr) {
     // If weld_to_frame is not specified, weld the newly added model(s) to the
     // world with zero offset.
-    weld_to_body = bodies[0];
+    weld_to_body = bodies[0].get();
     floating_joint_name = "base";
     transform_to_world = Eigen::Isometry3d::Identity();
   } else {
@@ -1874,7 +1874,7 @@ int RigidBodyTree::AddFloatingJoint(
             "Attempted to weld robot to the world while specifying a body "
             "link!");
       }
-      weld_to_body = bodies[0];  // the world's body
+      weld_to_body = bodies[0].get();  // the world's body
       floating_joint_name = "base";
     } else {
       weld_to_body = weld_to_frame->body;
