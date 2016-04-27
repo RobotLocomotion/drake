@@ -11,6 +11,7 @@
 #include <Eigen/Core>
 #include <unsupported/Eigen/Polynomials>
 
+#include "drake/core/Gradient.h"
 #include "drake/drakePolynomial_export.h"
 
 /// A scalar multi-variate polynomial, modeled after the msspoly in spotless.
@@ -192,10 +193,32 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
         value += iter->coefficient;
       else
         value += iter->coefficient *
-                 std::pow((ProductType)x,
-                          (PowerType)iter->terms[0].power);
+                 pow((ProductType)x,
+                     (PowerType)iter->terms[0].power);
     }
     return value;
+  }
+
+  /// Local version of pow to deal with autodiff.
+  /**
+   * A version of std::pow that uses std::pow for arithmetic types and
+   * repeated multiplication for non-arithmetic types (eg, autodiff).
+   */
+  template <bool B, typename T = void>
+  using enable_if_t = typename std::enable_if<B, T>::type;
+  template <typename Base>
+  static Base pow(
+      const enable_if_t<std::is_arithmetic<Base>::value, Base>& base,
+      const PowerType& exponent) {
+    return std::pow(base, exponent);
+  }
+  template <typename Base>
+  static Base pow(const Base& base, const PowerType& exponent) {
+    Base result = base;
+    for (int i = 1; i < exponent; i++) {
+      result = result * base;
+    }
+    return result;
   }
 
   /// Evaluate a multivariate Polynomial at a specific point.
@@ -210,7 +233,8 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
   template <typename T>
   typename Product<CoefficientType, T>::type evaluateMultivariate(
       const std::map<VarType, T>& var_values) const {
-    typedef typename Product<CoefficientType, T>::type ProductType;
+    typedef typename std::remove_const<
+      typename Product<CoefficientType, T>::type>::type ProductType;
 
     for (const VarType& var : getVariables()) {
       if (!var_values.count(var)) {
@@ -223,9 +247,40 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
     for (const Monomial& monomial : monomials) {
       ProductType monomial_value = monomial.coefficient;
       for (const Term& term : monomial.terms) {
-        monomial_value *= std::pow(
+        monomial_value = monomial_value * pow(
             static_cast<ProductType>(var_values.at(term.var)),
             static_cast<PowerType>(term.power));
+      }
+      value += monomial_value;
+    }
+    return value;
+  }
+
+  /// Specialization of  evaluateMultivariate on TaylorVarXd.
+  /**
+   * Specialize evaluateMultivariate on TaylorVarXd because Eigen autodiffs
+   * implement a confusing subset of const- and non-const types of operators
+   * and conversions that makes a strictly generic approach too confusing and
+   * unreadable.
+   *
+   * Note that it is up to the caller to ensure that all of the var_values'
+   * partial derivative terms correctly correspond to one another:  Polynomial
+   * has no knowledge of whatever vector var_values' indexes correspond to.
+   */
+  Drake::TaylorVarXd evaluateMultivariate(
+      const std::map<VarType, Drake::TaylorVarXd>& var_values) const {
+    for (const VarType& var : getVariables()) {
+      if (!var_values.count(var)) {
+        throw std::runtime_error(
+            "No value provided for variable " + std::to_string(var));
+      }
+    }
+
+    Drake::TaylorVarXd value(0);
+    for (const Monomial& monomial : monomials) {
+      Drake::TaylorVarXd monomial_value(monomial.coefficient);
+      for (const Term& term : monomial.terms) {
+        monomial_value *= pow(var_values.at(term.var), term.power);
       }
       value += monomial_value;
     }

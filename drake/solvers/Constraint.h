@@ -5,6 +5,8 @@
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
 
+#include "drake/util/Polynomial.h"
+
 namespace Drake {
 
 /* Constraint
@@ -94,9 +96,54 @@ class QuadraticConstraint : public Constraint {
   Eigen::VectorXd b_;
 };
 
+/** PolynomialConstraint
+ * @brief lb <= P(x, y...) <= ub (for P a multivariate polynomial in x, y...)
+ *
+ * A constraint on the value of a multivariate polynomial.
+ *
+ * The Polynomial class uses a different variable naming scheme, and so the
+ * caller must provide a list of Polynomial::VarType to allow bindings to map
+ * the individual scalar elements of the given VariableList.
+ */
+class PolynomialConstraint : public Constraint {
+ public:
+  PolynomialConstraint(
+      const Polynomiald& polynomial,
+      const std::vector<Polynomiald::VarType>& poly_vars,
+      double lb, double ub)
+      : Constraint(1, Vector1d::Constant(lb), Vector1d::Constant(ub)),
+        polynomial_(polynomial),
+        poly_vars_(poly_vars) {}
+  virtual ~PolynomialConstraint() {}
+
+  virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                    Eigen::VectorXd& y) const override {
+    std::map<Polynomiald::VarType, double> evaluation_point;
+    for (int i = 0; i < poly_vars_.size(); i++) {
+      evaluation_point[poly_vars_[i]] = x[i];
+    }
+    y.resize(num_constraints());
+    y[0] = polynomial_.evaluateMultivariate(evaluation_point);
+  }
+
+  virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
+                    TaylorVecXd& y) const override {
+    std::map<Polynomiald::VarType, TaylorVarXd> evaluation_point;
+    for (int i = 0; i < poly_vars_.size(); i++) {
+      evaluation_point[poly_vars_[i]] = x[i];
+    }
+    y.resize(num_constraints());
+    y[0] = polynomial_.evaluateMultivariate(evaluation_point);
+  }
+
+ private:
+  const Polynomiald& polynomial_;
+  const std::vector<Polynomiald::VarType>& poly_vars_;
+};
+
 // todo: consider implementing DifferentiableConstraint,
-// TwiceDifferentiableConstraint, PolynomialConstraint, QuadraticConstraint,
-// ComplementarityConstraint, IntegerConstraint, ...
+// TwiceDifferentiableConstraint, ComplementarityConstraint,
+// IntegerConstraint, ...
 /** LinearConstraint
  * @brief Implements a constraint of the form @f lb <= Ax <= ub @f
  */
@@ -110,6 +157,7 @@ class LinearConstraint : public Constraint {
       : Constraint(a.rows(), lb, ub), A_(a) {
     assert(a.rows() == lb.rows());
   }
+
   virtual ~LinearConstraint() {}
 
   virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,

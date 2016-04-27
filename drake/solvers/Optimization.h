@@ -13,6 +13,7 @@
 #include "drake/solvers/Constraint.h"
 #include "drake/solvers/MathematicalProgram.h"
 #include "drake/solvers/solution_result.h"
+#include "drake/util/Polynomial.h"
 
 
 namespace Drake {
@@ -404,7 +405,6 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     return AddLinearConstraint(A, lb, ub, variable_views_);
   }
 
-
   /** AddLinearEqualityConstraint
    *
    * @brief adds linear equality constraints referencing potentially a
@@ -551,6 +551,45 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
           const Eigen::MatrixBase<DerivedM>& M,
           const Eigen::MatrixBase<Derivedq>& q) {
     return AddLinearComplementarityConstraint(M, q, variable_views_);
+  }
+
+  /** AddPolynomialConstraint
+   *
+   * @brief adds a polynomial constraint to the program referencing a subset
+   * of the decision variables
+   */
+  std::shared_ptr<PolynomialConstraint>
+      AddPolynomialConstraint(
+          const Polynomiald& polynomial,
+          const std::vector<Polynomiald::VarType>& poly_vars,
+          double lb, double ub,
+          const VariableList& vars) {
+    // TODO(ggould-tri) We treat polynomial constraints as generic for now,
+    // but that need not be so.  Polynomials of degree 1 are linear
+    // constraints, and some polynomial constraints may map to LC constraints.
+    // That will certainly be needed for performance purposes, as
+    // automatically generated rigid body manipulator equations subject to
+    // lumped parameter rewriting may frequently come out as degree 1.
+    problem_type_.reset(
+        problem_type_->AddGenericConstraint());
+    std::shared_ptr<PolynomialConstraint>
+        constraint(new PolynomialConstraint(polynomial, poly_vars, lb, ub));
+    AddGenericConstraint(constraint, vars);
+    return constraint;
+  }
+
+  /** AddPolynomialConstraint
+   *
+   * @brief adds a polynomial constraint to the program referencing a subset
+   * of the decision variables
+   */
+  std::shared_ptr<PolynomialConstraint>
+      AddPolynomialConstraint(
+          const Polynomiald& polynomial,
+          const std::vector<Polynomiald::VarType>& poly_vars,
+          double lb, double ub) {
+    return AddPolynomialConstraint(
+        polynomial, poly_vars, lb, ub, variable_views_);
   }
 
   // template <typename FunctionType>
