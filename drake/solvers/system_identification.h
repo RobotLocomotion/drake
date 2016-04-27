@@ -6,10 +6,10 @@
 #include <vector>
 
 #include "drake/util/Polynomial.h"
-#include "drake/drakePolynomial_export.h"
+#include "drake/drakeOptimization_export.h"
 
 namespace drake {
-namespace util {
+namespace solvers {
 
 /// Utility functions for system identification.
 /**
@@ -35,7 +35,7 @@ namespace util {
  *   https://dl.dropboxusercontent.com/u/3432353/parameterEstimation.pdf
  */
 template <typename CoefficientType>
-class DRAKEPOLYNOMIAL_EXPORT SystemIdentification {
+class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
  public:
   typedef ::Polynomial<CoefficientType> PolyType;
   typedef typename PolyType::Monomial MonomialType;
@@ -139,5 +139,5 @@ class DRAKEPOLYNOMIAL_EXPORT SystemIdentification {
   /// Obtain a new lumped variable ID not already in vars_in_use.
   static VarType CreateLumpVar(const std::set<VarType>& vars_in_use);
 };
-}  // namespace util
+}  // namespace solvers
 }  // namespace drake
