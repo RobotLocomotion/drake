@@ -124,20 +124,24 @@ class DRAKERBM_EXPORT RigidBody {
 
   friend std::ostream& operator<<(std::ostream& out, const RigidBody& b);
 
-  // FIXME: move to a better place:
+  // TODO(amcastro-tri): move to a better place (h + cc files).
   class DRAKERBM_EXPORT CollisionElement : public DrakeCollision::Element {
    public:
     CollisionElement(const CollisionElement& other);
+    // TODO(amcastro-tri): constructor should take a reference to a RigidBody.
+    // Unless a CollisionElement could have a nullptr body?
     CollisionElement(const Eigen::Isometry3d& T_element_to_link,
-                     std::shared_ptr<RigidBody> body);
+                     RigidBody* body);
     CollisionElement(const DrakeShapes::Geometry& geometry,
                      const Eigen::Isometry3d& T_element_to_link,
-                     std::shared_ptr<RigidBody> body);
+                     RigidBody* body);
     virtual ~CollisionElement() {}
 
     CollisionElement* clone() const override;
 
-    const std::shared_ptr<RigidBody>& getBody() const;
+    const RigidBody* getBody() const;
+
+    RigidBody* getBody();
 
     bool CollidesWith(const DrakeCollision::Element* other) const override;
 
@@ -146,7 +150,7 @@ class DRAKERBM_EXPORT RigidBody {
 #endif
 
    private:
-    std::shared_ptr<RigidBody> body;
+    RigidBody* body;
   };
 
  public:
