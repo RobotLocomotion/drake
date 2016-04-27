@@ -44,7 +44,7 @@ string drake::common::NiceTypeName::Demangle(const char* typeid_name) {
 // Given a demangled string, attempt to canonicalize it for platform
 // indpendence. We'll remove Microsoft's "class ", "struct ", etc.
 // designations, and get rid of all unnecessary spaces.
-string drake::common::NiceTypeName::Canonicalize(string&& demangled) {
+string drake::common::NiceTypeName::Canonicalize(const string& demangled) {
   using SPair = std::pair<std::regex, string>;
   // These are applied in this order.
   static const std::array<SPair, 8> subs{
@@ -66,7 +66,7 @@ string drake::common::NiceTypeName::Canonicalize(string&& demangled) {
                      "std::allocator<char>>"),
           "std::string")
   };
-  string canonical(std::move(demangled));
+  string canonical(demangled);
   for (const auto& sp : subs) {
     canonical = std::regex_replace(canonical, sp.first, sp.second);
   }

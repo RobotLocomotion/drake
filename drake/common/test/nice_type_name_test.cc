@@ -33,11 +33,6 @@ GTEST_TEST(TestNiceTypeName, Demangle) {
   EXPECT_EQ(NiceTypeName::Demangle(typeid(bool).name()), "bool");
   EXPECT_EQ(NiceTypeName::Demangle(typeid(int).name()), "int");
   EXPECT_EQ(NiceTypeName::Demangle(typeid(unsigned).name()), "unsigned int");
-
-  // GetRaw() is just an interface to Demangle.
-  EXPECT_EQ(NiceTypeName::GetRaw<bool>(), "bool");
-  EXPECT_EQ(NiceTypeName::GetRaw<int>(), "int");
-  EXPECT_EQ(NiceTypeName::GetRaw<unsigned>(), "unsigned int");
 }
 
 // Standalone tests of the method that is used by NiceTypeName::Get<T>::Get()
@@ -66,8 +61,10 @@ GTEST_TEST(TestNiceTypeName, BuiltIns) {
   EXPECT_EQ(NiceTypeName::Get<unsigned int>(), "unsigned int");
   EXPECT_EQ(NiceTypeName::Get<unsigned>(), "unsigned int");
   EXPECT_EQ(NiceTypeName::Get<long>(), "long");
+  EXPECT_EQ(NiceTypeName::Get<long int>(), "long");
   EXPECT_EQ(NiceTypeName::Get<unsigned long>(), "unsigned long");
   EXPECT_EQ(NiceTypeName::Get<long long>(), "long long");
+  EXPECT_EQ(NiceTypeName::Get<long long int>(), "long long");
   EXPECT_EQ(NiceTypeName::Get<unsigned long long>(), "unsigned long long");
   EXPECT_EQ(NiceTypeName::Get<float>(), "float");
   EXPECT_EQ(NiceTypeName::Get<double>(), "double");
