@@ -12,68 +12,84 @@
 
 namespace Drake {
 
+struct EulerFloatingJointStateIndices {
+  enum Enum {
+    kX = 0,
+    kY = 1,
+    kZ = 2,
+    kRoll = 3,
+    kPitch = 4,
+    kYaw = 5,
+  };
+};
+
+/// Models the Drake::LCMVector concept.
 template <typename ScalarType = double>
-class EulerFloatingJointState {  // models the Drake::LCMVector concept
+class EulerFloatingJointState : private EulerFloatingJointStateIndices {
  public:
   typedef drake::lcmt_euler_floating_joint_state_t LCMMessageType;
   static std::string channel() { return "EULER_FLOATING_JOINT_STATE"; }
-  static const int RowsAtCompileTime = 6;
-  typedef Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> EigenType;
 
-  EulerFloatingJointState() {}
+  static const int RowsAtCompileTime = Eigen::Dynamic;
+  typedef Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> EigenType;
+  size_t size() const { return 6; }
+
+  EulerFloatingJointState() : value_(Eigen::Matrix<ScalarType, 6, 1>::Zero()) {}
 
   template <typename Derived>
   // NOLINTNEXTLINE(runtime/explicit)
-  EulerFloatingJointState(const Eigen::MatrixBase<Derived>& initial)
-      : x(initial(0)),      // BR
-        y(initial(1)),      // BR
-        z(initial(2)),      // BR
-        roll(initial(3)),   // BR
-        pitch(initial(4)),  // BR
-        yaw(initial(5)) {}
+  EulerFloatingJointState(const Eigen::MatrixBase<Derived>& other)
+      : value_(other.segment(0, 6)) {}
 
   template <typename Derived>
-  EulerFloatingJointState& operator=(const Eigen::MatrixBase<Derived>& rhs) {
-    x = rhs(0);
-    y = rhs(1);
-    z = rhs(2);
-    roll = rhs(3);
-    pitch = rhs(4);
-    yaw = rhs(5);
+  EulerFloatingJointState& operator=(const Eigen::MatrixBase<Derived>& other) {
+    value_ = other.segment(0, 6);
     return *this;
   }
 
   friend EigenType toEigen(const EulerFloatingJointState<ScalarType>& vec) {
-    EigenType result;
-    result << vec.x, vec.y, vec.z, vec.roll, vec.pitch, vec.yaw;
-    return result;
+    return vec.value_;
   }
 
   friend std::string getCoordinateName(
       const EulerFloatingJointState<ScalarType>& vec, unsigned int index) {
     switch (index) {
-      case 0:
+      case kX:
         return "x";
-      case 1:
+      case kY:
         return "y";
-      case 2:
+      case kZ:
         return "z";
-      case 3:
+      case kRoll:
         return "roll";
-      case 4:
+      case kPitch:
         return "pitch";
-      case 5:
+      case kYaw:
         return "yaw";
     }
     throw std::domain_error("unknown coordinate index");
   }
 
-  ScalarType x = 0;
-  ScalarType y = 0;
-  ScalarType z = 0;
-  ScalarType roll = 0;
-  ScalarType pitch = 0;
-  ScalarType yaw = 0;
+  ScalarType& x() { return value_(kX); }
+  const ScalarType& x() const { return value_(kX); }
+
+  ScalarType& y() { return value_(kY); }
+  const ScalarType& y() const { return value_(kY); }
+
+  ScalarType& z() { return value_(kZ); }
+  const ScalarType& z() const { return value_(kZ); }
+
+  ScalarType& roll() { return value_(kRoll); }
+  const ScalarType& roll() const { return value_(kRoll); }
+
+  ScalarType& pitch() { return value_(kPitch); }
+  const ScalarType& pitch() const { return value_(kPitch); }
+
+  ScalarType& yaw() { return value_(kYaw); }
+  const ScalarType& yaw() const { return value_(kYaw); }
+
+ private:
+  EigenType value_;
 };
 
 template <typename ScalarType>
@@ -81,12 +97,12 @@ bool encode(const double& t, const EulerFloatingJointState<ScalarType>& wrap,
             // NOLINTNEXTLINE(runtime/references)
             drake::lcmt_euler_floating_joint_state_t& msg) {
   msg.timestamp = static_cast<int64_t>(t * 1000);
-  msg.x = wrap.x;
-  msg.y = wrap.y;
-  msg.z = wrap.z;
-  msg.roll = wrap.roll;
-  msg.pitch = wrap.pitch;
-  msg.yaw = wrap.yaw;
+  msg.x = wrap.x();
+  msg.y = wrap.y();
+  msg.z = wrap.z();
+  msg.roll = wrap.roll();
+  msg.pitch = wrap.pitch();
+  msg.yaw = wrap.yaw();
   return true;
 }
 
@@ -97,12 +113,12 @@ bool decode(const drake::lcmt_euler_floating_joint_state_t& msg,
             // NOLINTNEXTLINE(runtime/references)
             EulerFloatingJointState<ScalarType>& wrap) {
   t = static_cast<double>(msg.timestamp) / 1000.0;
-  wrap.x = msg.x;
-  wrap.y = msg.y;
-  wrap.z = msg.z;
-  wrap.roll = msg.roll;
-  wrap.pitch = msg.pitch;
-  wrap.yaw = msg.yaw;
+  wrap.x() = msg.x;
+  wrap.y() = msg.y;
+  wrap.z() = msg.z;
+  wrap.roll() = msg.roll;
+  wrap.pitch() = msg.pitch;
+  wrap.yaw() = msg.yaw;
   return true;
 }
 

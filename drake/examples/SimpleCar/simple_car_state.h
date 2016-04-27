@@ -12,58 +12,72 @@
 
 namespace Drake {
 
+struct SimpleCarStateIndices {
+  enum Enum {
+    kX = 0,
+    kY = 1,
+    kHeading = 2,
+    kVelocity = 3,
+  };
+};
+
+/// Models the Drake::LCMVector concept.
 template <typename ScalarType = double>
-class SimpleCarState {  // models the Drake::LCMVector concept
+class SimpleCarState : private SimpleCarStateIndices {
  public:
   typedef drake::lcmt_simple_car_state_t LCMMessageType;
   static std::string channel() { return "SIMPLE_CAR_STATE"; }
-  static const int RowsAtCompileTime = 4;
-  typedef Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> EigenType;
 
-  SimpleCarState() {}
+  static const int RowsAtCompileTime = Eigen::Dynamic;
+  typedef Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> EigenType;
+  size_t size() const { return 4; }
+
+  SimpleCarState() : value_(Eigen::Matrix<ScalarType, 4, 1>::Zero()) {}
 
   template <typename Derived>
   // NOLINTNEXTLINE(runtime/explicit)
-  SimpleCarState(const Eigen::MatrixBase<Derived>& initial)
-      : x(initial(0)),        // BR
-        y(initial(1)),        // BR
-        heading(initial(2)),  // BR
-        velocity(initial(3)) {}
+  SimpleCarState(const Eigen::MatrixBase<Derived>& other)
+      : value_(other.segment(0, 4)) {}
 
   template <typename Derived>
-  SimpleCarState& operator=(const Eigen::MatrixBase<Derived>& rhs) {
-    x = rhs(0);
-    y = rhs(1);
-    heading = rhs(2);
-    velocity = rhs(3);
+  SimpleCarState& operator=(const Eigen::MatrixBase<Derived>& other) {
+    value_ = other.segment(0, 4);
     return *this;
   }
 
   friend EigenType toEigen(const SimpleCarState<ScalarType>& vec) {
-    EigenType result;
-    result << vec.x, vec.y, vec.heading, vec.velocity;
-    return result;
+    return vec.value_;
   }
 
   friend std::string getCoordinateName(const SimpleCarState<ScalarType>& vec,
                                        unsigned int index) {
     switch (index) {
-      case 0:
+      case kX:
         return "x";
-      case 1:
+      case kY:
         return "y";
-      case 2:
+      case kHeading:
         return "heading";
-      case 3:
+      case kVelocity:
         return "velocity";
     }
     throw std::domain_error("unknown coordinate index");
   }
 
-  ScalarType x = 0;
-  ScalarType y = 0;
-  ScalarType heading = 0;
-  ScalarType velocity = 0;
+  ScalarType& x() { return value_(kX); }
+  const ScalarType& x() const { return value_(kX); }
+
+  ScalarType& y() { return value_(kY); }
+  const ScalarType& y() const { return value_(kY); }
+
+  ScalarType& heading() { return value_(kHeading); }
+  const ScalarType& heading() const { return value_(kHeading); }
+
+  ScalarType& velocity() { return value_(kVelocity); }
+  const ScalarType& velocity() const { return value_(kVelocity); }
+
+ private:
+  EigenType value_;
 };
 
 template <typename ScalarType>
@@ -71,10 +85,10 @@ bool encode(const double& t, const SimpleCarState<ScalarType>& wrap,
             // NOLINTNEXTLINE(runtime/references)
             drake::lcmt_simple_car_state_t& msg) {
   msg.timestamp = static_cast<int64_t>(t * 1000);
-  msg.x = wrap.x;
-  msg.y = wrap.y;
-  msg.heading = wrap.heading;
-  msg.velocity = wrap.velocity;
+  msg.x = wrap.x();
+  msg.y = wrap.y();
+  msg.heading = wrap.heading();
+  msg.velocity = wrap.velocity();
   return true;
 }
 
@@ -85,10 +99,10 @@ bool decode(const drake::lcmt_simple_car_state_t& msg,
             // NOLINTNEXTLINE(runtime/references)
             SimpleCarState<ScalarType>& wrap) {
   t = static_cast<double>(msg.timestamp) / 1000.0;
-  wrap.x = msg.x;
-  wrap.y = msg.y;
-  wrap.heading = msg.heading;
-  wrap.velocity = msg.velocity;
+  wrap.x() = msg.x;
+  wrap.y() = msg.y;
+  wrap.heading() = msg.heading;
+  wrap.velocity() = msg.velocity;
   return true;
 }
 

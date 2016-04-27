@@ -48,27 +48,27 @@ class DRAKESIMPLECAR_EXPORT SimpleCar {
                                    const InputVector<ScalarType>& input) const {
     // Apply simplistic throttle.
     ScalarType new_velocity =
-        state.velocity + input.throttle * config_.max_acceleration *
+        state.velocity() + input.throttle() * config_.max_acceleration *
         config_.velocity_lookahead_time;
     new_velocity = std::min(new_velocity, config_.max_velocity);
 
     // Apply simplistic brake.
-    new_velocity += input.brake * -config_.max_acceleration *
+    new_velocity += input.brake() * -config_.max_acceleration *
                     config_.velocity_lookahead_time;
     new_velocity = std::max(new_velocity, 0.);
 
     // Apply steering.
     ScalarType sane_steering_angle =
-        std::max(std::min(std::remainder(input.steering_angle, 2 * M_PI),
+        std::max(std::min(std::remainder(input.steering_angle(), 2 * M_PI),
                           config_.max_abs_steering_angle),
                  -config_.max_abs_steering_angle);
     ScalarType curvature = std::tan(sane_steering_angle) / config_.wheelbase;
 
     StateVector<ScalarType> rates;
-    rates.x = state.velocity * std::sin(state.heading);
-    rates.y = state.velocity * std::cos(state.heading);
-    rates.heading = curvature * state.velocity;
-    rates.velocity = (new_velocity - state.velocity) * config_.velocity_kp;
+    rates.x() = state.velocity() * std::sin(state.heading());
+    rates.y() = state.velocity() * std::cos(state.heading());
+    rates.heading() = curvature * state.velocity();
+    rates.velocity() = (new_velocity - state.velocity()) * config_.velocity_kp;
     return rates;
   }
 
