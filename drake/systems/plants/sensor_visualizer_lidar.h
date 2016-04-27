@@ -65,25 +65,50 @@ class SensorVisualizerLidar {
       // determines whether the pointer in fact points to a
       // RigidBodyDepthSensor. Second, if true, it also povides a pointer to the
       // RigidBodyDepthSensor that can be used later in this method.
-      RigidBodyDepthSensor *rbds =
+      RigidBodyDepthSensor *depth_sensor =
           dynamic_cast<RigidBodyDepthSensor *>(sensor.get());
 
-      // If the dynamic cast was successful, the following code creates a ROS
-      // topic publisher for publishing the data contained in the sensor's
-      // output.
-      if (rbds != nullptr) {
-        std::cout << "Sensor " << rbds->get_name() << " is a LIDAR sensor!"
+      if (depth_sensor != nullptr) {
+        // If the dynamic cast was successful, that means the sensor is in fact
+        // a RigidBodyDepth sensor. The following code creates a ROS topic
+        // publisher that will be used to publish the data contained in the
+        // sensor's output. It then creates a sensor_msgs::LaserScan message
+        // for each publisher.
+
+        std::cout << "**** Sensor " << depth_sensor->get_name() << " is a LIDAR sensor!"
                   << std::endl;
-        if (lidar_publishers_.find(rbds->get_name()) ==
+
+        if (lidar_publishers_.find(depth_sensor->get_name()) ==
             lidar_publishers_.end()) {
-          std::string topic_name = "drake/lidar/" + rbds->get_name();
+          std::string topic_name = "drake/lidar/" + depth_sensor->get_name();
           lidar_publishers_.insert(std::pair<std::string, ros::Publisher>(
-              rbds->get_name(),
+              depth_sensor->get_name(),
               nh.advertise<sensor_msgs::LaserScan>(topic_name, 1)));
         } else {
           throw std::runtime_error(
-              "ERROR: Multiple sensors of the same name detected!");
+              "ERROR: Multiple sensors with name " + depth_sensor->get_name() +
+              " found when creating a ROS topic publisher for the sensor!");
         }
+
+        if (lidar_messages_.find(depth_sensor->get_name()) == lidar_messages_.end()) {
+          std::unique_ptr<sensor_msgs::LaserScan> message(new sensor_msgs::LaserScan());
+          message->header.frame_id = depth_sensor->get_name();
+          message->angle_min = 0;
+          message->angle_max = 0;
+          message->angle_increment = 0;
+          message->time_increment = 0;
+          message->scan_time = 0;
+          message->range_min = 0;
+          message->range_max = 0;
+          message->ranges.resize(depth_sensor->num_ranges());
+          message->intensities.resize(depth_sensor->num_ranges());
+          lidar_messages_.insert(std::pair<std::string, sensor_msgs::LaserScan)
+        } else {
+          throw std::runtime_error(
+              "ERROR: Multiple sensors with name " + depth_sensor->get_name() +
+              " found when creating a sensor_msgs::LaserScan message!");
+        }
+
       }
     }
   }
@@ -131,6 +156,13 @@ class SensorVisualizerLidar {
    * The key is the name of the sensor. The value is the ROS topic publisher.
    */
   std::map<std::string, ros::Publisher> lidar_publishers_;
+
+  /**
+   * Maintains a set of ROS sensor_msgs::LaserScan messages for use by the
+   * publishers. This is used to avoid having to allocate a new message
+   * each time one needs to be sent.
+   */
+  std::map<std::string, sensor_msgs::LaserScan> lidar_messages_;
 };
 
 }  // end namespace plants
