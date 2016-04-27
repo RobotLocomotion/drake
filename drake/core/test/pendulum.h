@@ -42,8 +42,10 @@ template <typename ScalarType = double>
 class PendulumInput {
  public:
   PendulumInput(void) : tau(0) {}
+
   template <typename Derived>
-  explicit PendulumInput(const Eigen::MatrixBase<Derived>& x)
+  explicit PendulumInput(  // NOLINT(runtime/explicit) per Drake::Vector.
+      const Eigen::MatrixBase<Derived>& x)
       : tau(x(0)) {}
 
   template <typename Derived>
