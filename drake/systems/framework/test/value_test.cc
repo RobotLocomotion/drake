@@ -12,26 +12,26 @@ namespace drake {
 namespace systems {
 namespace {
 
-TEST(ValueTest, Access) {
+GTEST_TEST(ValueTest, Access) {
   Value<int> value(3);
   const AbstractValue& erased = value;
   EXPECT_EQ(3, erased.GetValue<int>());
 }
 
-TEST(ValueTest, Copy) {
+GTEST_TEST(ValueTest, Copy) {
   Value<int> value(42);
   Value<int> copied_value = value;
   EXPECT_EQ(42, copied_value.get_value());
 }
 
-TEST(ValueTest, Clone) {
+GTEST_TEST(ValueTest, Clone) {
   Value<int> value(43);
   const AbstractValue& erased = value;
   std::unique_ptr<AbstractValue> cloned = erased.Clone();
   EXPECT_EQ(43, cloned->GetValue<int>());
 }
 
-TEST(ValueTest, Mutation) {
+GTEST_TEST(ValueTest, Mutation) {
   Value<int> value(5);
   value.set_value(6);
   AbstractValue& erased = value;
@@ -40,7 +40,7 @@ TEST(ValueTest, Mutation) {
   EXPECT_EQ(7, erased.GetValue<int>());
 }
 
-TEST(ValueTest, BadCast) {
+GTEST_TEST(ValueTest, BadCast) {
   Value<double> value(4);
   const AbstractValue& erased = value;
   EXPECT_THROW(erased.GetValue<int>(), std::bad_cast);
@@ -72,7 +72,7 @@ class Point : public PrintInterface {
 };
 
 // Tests that classes can be erased in an AbstractValue.
-TEST(ValueTest, ClassType) {
+GTEST_TEST(ValueTest, ClassType) {
   Point point(1, 2);
   Value<Point> value(point);
   AbstractValue& erased = value;
@@ -88,7 +88,7 @@ class SubclassOfPoint : public Point {
 
 // Tests that attempting to unerase an AbstractValue to a parent class of the
 // original class throws std::bad_cast.
-TEST(ValueTest, CannotUneraseToParentClass) {
+GTEST_TEST(ValueTest, CannotUneraseToParentClass) {
   SubclassOfPoint point;
   Value<SubclassOfPoint> value(point);
   AbstractValue& erased = value;
@@ -121,7 +121,7 @@ class PrintableValue : public Value<T>, public PrintInterface {
 
 // Tests that AbstractValues can be unerased to interfaces implemented by
 // subclasses of Value<T>.
-TEST(ValueTest, SubclassOfValue) {
+GTEST_TEST(ValueTest, SubclassOfValue) {
   Point point(3, 4);
   PrintableValue<Point> printable_value(point);
   AbstractValue* erased = &printable_value;
@@ -132,7 +132,7 @@ TEST(ValueTest, SubclassOfValue) {
 
 // Tests that even after being cloned, PrintableValue can be unerased to
 // PrintInterface.
-TEST(ValueTest, SubclassOfValueSurvivesClone) {
+GTEST_TEST(ValueTest, SubclassOfValueSurvivesClone) {
   Point point(5, 6);
   PrintableValue<Point> printable_value(point);
   const AbstractValue& erased = printable_value;
