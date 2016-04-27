@@ -18,14 +18,17 @@ namespace Drake {
 /// configuration:
 /// * see lcmt_simple_car_config_t
 ///
+/// state vector (planar for now):
+/// * position: x, y, yaw;
+///   yaw is 0deg when pointed +x, 90deg when pointed +y;
+//    yaw is defined around the +z axis, so positive-turn-left
+/// * velocity
+///
 /// input vector:
-/// * steering angle (virtual center wheel angle, with some limits)
+/// * steering angle (virtual center wheel angle, with some limits);
+///   a positive angle means a positive change in yaw (left turn)
 /// * throttle (0-1)
 /// * brake (0-1)
-///
-/// state vector (planar for now):
-/// * position: x, y, yaw
-/// * velocity
 ///
 /// output vector: same as state vector.
 ///
