@@ -4,6 +4,8 @@
 #include <sstream>
 #include <string>
 
+#include "drake/drakeSystemFramework_export.h"
+
 #include "gtest/gtest.h"
 
 namespace drake {
