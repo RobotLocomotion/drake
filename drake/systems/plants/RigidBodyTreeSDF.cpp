@@ -25,7 +25,7 @@ using namespace std;
 using namespace Eigen;
 using namespace tinyxml2;
 
-void parseSDFInertial(shared_ptr<RigidBody> body, XMLElement* node,
+void parseSDFInertial(RigidBody* body, XMLElement* node,
                       RigidBodyTree* model, PoseMap& pose_map,
                       const Isometry3d& T_link) {
   Isometry3d T = T_link;
@@ -125,7 +125,7 @@ bool parseSDFGeometry(XMLElement* node, const PackageMap& package_map,
   return true;
 }
 
-void parseSDFVisual(shared_ptr<RigidBody> body, XMLElement* node,
+void parseSDFVisual(RigidBody* body, XMLElement* node,
                     RigidBodyTree* model, const PackageMap& package_map,
                     const string& root_dir, PoseMap& pose_map,
                     const Isometry3d& transform_parent_to_model) {
@@ -169,7 +169,7 @@ void parseSDFVisual(shared_ptr<RigidBody> body, XMLElement* node,
   }
 }
 
-void parseSDFCollision(shared_ptr<RigidBody> body, XMLElement* node,
+void parseSDFCollision(RigidBody* body, XMLElement* node,
                        RigidBodyTree* model, const PackageMap& package_map,
                        const string& root_dir, PoseMap& pose_map,
                        const Isometry3d& transform_parent_to_model) {
@@ -209,7 +209,7 @@ bool parseSDFLink(RigidBodyTree* model, std::string model_name,
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return false;
 
-  shared_ptr<RigidBody> body(new RigidBody());
+  RigidBody* body = new RigidBody();
   body->model_name = model_name;
 
   attr = node->Attribute("name");
@@ -245,7 +245,8 @@ bool parseSDFLink(RigidBodyTree* model, std::string model_name,
                       pose_map, transform_to_model);
   }
 
-  model->add_rigid_body(body);
+  // With this call the tree takes ownership of the body.
+  model->add_rigid_body(std::unique_ptr<RigidBody>(body));
   *index = body->body_index;
   return true;
 }

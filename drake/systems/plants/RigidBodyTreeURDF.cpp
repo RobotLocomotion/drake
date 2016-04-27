@@ -38,7 +38,7 @@ int findLinkIndexByJointName(RigidBodyTree* model, string jointname) {
   return index;
 }
 
-void parseInertial(shared_ptr<RigidBody> body, XMLElement* node,
+void parseInertial(RigidBody* body, XMLElement* node,
                    RigidBodyTree* model) {
   Isometry3d T = Isometry3d::Identity();
 
@@ -197,7 +197,7 @@ bool parseGeometry(XMLElement* node, const PackageMap& package_map,
   return true;
 }
 
-void parseVisual(shared_ptr<RigidBody> body, XMLElement* node,
+void parseVisual(RigidBody* body, XMLElement* node,
                  RigidBodyTree* model, const MaterialMap& materials,
                  const PackageMap& package_map, const string& root_dir) {
   // DEBUG
@@ -253,7 +253,7 @@ void parseVisual(shared_ptr<RigidBody> body, XMLElement* node,
   // END_DEBUG
 }
 
-void parseCollision(shared_ptr<RigidBody> body, XMLElement* node,
+void parseCollision(RigidBody* body, XMLElement* node,
                     RigidBodyTree* model, const PackageMap& package_map,
                     const string& root_dir) {
   Isometry3d T_element_to_link = Isometry3d::Identity();
@@ -291,7 +291,7 @@ bool parseLink(RigidBodyTree* model, std::string robot_name, XMLElement* node,
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return false;
 
-  shared_ptr<RigidBody> body(new RigidBody());
+  RigidBody* body = new RigidBody();
   body->model_name = robot_name;
 
   attr = node->Attribute("name");
@@ -316,7 +316,8 @@ bool parseLink(RigidBodyTree* model, std::string robot_name, XMLElement* node,
     parseCollision(body, collision_node, model, package_map, root_dir);
   }
 
-  model->add_rigid_body(body);
+  // With this call the tree takes ownership of the body.
+  model->add_rigid_body(std::unique_ptr<RigidBody>(body));
   *index = body->body_index;
   return true;
 }
@@ -431,7 +432,7 @@ void parseJoint(RigidBodyTree* model, XMLElement* node) {
 
   unique_ptr<DrakeJoint> joint_unique_ptr(joint);
   model->bodies[child_index]->setJoint(move(joint_unique_ptr));
-  model->bodies[child_index]->parent = model->bodies[parent_index];
+  model->bodies[child_index]->parent = model->bodies[parent_index].get();
 }
 
 void parseTransmission(RigidBodyTree* model, XMLElement* node) {
@@ -491,7 +492,7 @@ void parseTransmission(RigidBodyTree* model, XMLElement* node) {
   }
 
   model->actuators.push_back(RigidBodyActuator(
-      actuator_name, model->bodies[body_index], gain, effort_min, effort_max));
+      actuator_name, model->bodies[body_index].get(), gain, effort_min, effort_max));
 }
 
 void parseLoop(RigidBodyTree* model, XMLElement* node) {
