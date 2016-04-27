@@ -49,11 +49,11 @@ RigidBodyTree::RigidBodyTree(
     : collision_model(DrakeCollision::newModel()) {
   a_grav << 0, 0, 0, 0, 0, -9.81;
 
-  shared_ptr<RigidBody> b(new RigidBody());
+  std::unique_ptr<RigidBody> b(new RigidBody());
   b->linkname = "world";
   b->robotnum = 0;
   b->body_index = 0;
-  bodies.push_back(b);
+  bodies.push_back(std::move(b));
 
   initialized = false;
 
@@ -64,11 +64,11 @@ RigidBodyTree::RigidBodyTree(void)
     : collision_model(DrakeCollision::newModel()) {
   a_grav << 0, 0, 0, 0, 0, -9.81;
 
-  shared_ptr<RigidBody> b(new RigidBody());
+  std::unique_ptr<RigidBody> b(new RigidBody());
   b->linkname = "world";
   b->robotnum = 0;
   b->body_index = 0;
-  bodies.push_back(b);
+  bodies.push_back(std::move(b));
 
   initialized = false;
 }
