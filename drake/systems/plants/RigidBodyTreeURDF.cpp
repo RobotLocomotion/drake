@@ -432,7 +432,7 @@ void parseJoint(RigidBodyTree* model, XMLElement* node) {
 
   unique_ptr<DrakeJoint> joint_unique_ptr(joint);
   model->bodies[child_index]->setJoint(move(joint_unique_ptr));
-  model->bodies[child_index]->parent = model->bodies[parent_index].get();
+  model->bodies[child_index]->parent = &model->body(parent_index);
 }
 
 void parseTransmission(RigidBodyTree* model, XMLElement* node) {

@@ -784,12 +784,14 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * @brief Returns a non-constant reference to a body by index in the tree.
    *
    * Rigid bodies are numbered in the order they are added to the tree.
+   * This method is meant for quick access and therefore it is not bound-checked
+   * in release builds.
    *
    * @param[in] index The body index.
    * @see add_rigid_body
    */
-  RigidBody& get_body(int index){
-    assert(index < bodies.size() &&
+  RigidBody& body(int index){
+    assert( 0<=index && index < bodies.size() &&
         "Input index exceeds the number of bodies in the tree");
     return *bodies[index];
   }
@@ -798,12 +800,14 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * @brief Returns a constant reference to a body by index in the tree.
    *
    * Rigid bodies are numbered in the order they are added to the tree.
+   * This method is meant for quick access and therefore it is not bound-checked
+   * in release builds.
    *
    * @param[in] index The body index.
    * @see add_rigid_body
    */
-  RigidBody& get_body(int index) const{
-    assert(index < bodies.size() &&
+  RigidBody& body(int index) const{
+    assert( 0<=index && index < bodies.size() &&
         "Input index exceeds the number of bodies in the tree");
     return *bodies[index];
   }
