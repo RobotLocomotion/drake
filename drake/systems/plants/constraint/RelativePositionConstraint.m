@@ -1,12 +1,12 @@
 classdef RelativePositionConstraint < PositionConstraint
   % Constraining points in body A to be within a bounding box in B' frame on body B
-  
+
   properties(SetAccess = protected)
     body_a = struct('idx',[],'name','');
     body_b = struct('idx',[],'name','');
     bTbp
   end
-  
+
   properties(SetAccess = protected,GetAccess = protected)
     bpTb
   end
@@ -38,7 +38,7 @@ classdef RelativePositionConstraint < PositionConstraint
         J(3*(i-1)+(1:3),:) = dbp_bodyA_pos1+dbpTw_trans;
       end
     end
-    
+
     function cnst_names = evalNames(obj,t)
       cnst_names = cell(3*obj.n_pts,1);
       if(isempty(t))
@@ -53,10 +53,10 @@ classdef RelativePositionConstraint < PositionConstraint
       end
     end
   end
-  
+
   methods
 function obj = RelativePositionConstraint(robot,pts,lb,ub, ...
-                      body_a,body_b,bTbp,tspan)
+                      body_a,body_b,bTbp)
     % @param robot
       % @param body_a         -- Either:
       %                             * An integer body index or frame id OR
@@ -78,13 +78,10 @@ function obj = RelativePositionConstraint(robot,pts,lb,ub, ...
       if(nargin < 7)
         bTbp = [0;0;0;1;0;0;0];
       end
-      if(nargin < 8)
-        tspan = [-inf,inf];
-      end
       body_a_idx = robot.parseBodyOrFrameID(body_a);
       body_b_idx = robot.parseBodyOrFrameID(body_b);
       ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.RelativePositionConstraintType,...
-        robot.getMexModelPtr,pts,lb,ub,body_a_idx,body_b_idx,bTbp,tspan);
+					       robot.getMexModelPtr,pts,lb,ub,body_a_idx,body_b_idx,bTbp);
       typecheck(bTbp,'double');
       sizecheck(bTbp,[7,1]);
       quat_norm = norm(bTbp(4:7));
@@ -93,7 +90,7 @@ function obj = RelativePositionConstraint(robot,pts,lb,ub, ...
       end
       bTbp(4:7) = bTbp(4:7)/quat_norm;
 
-      obj = obj@PositionConstraint(robot, pts, lb, ub,tspan);
+      obj = obj@PositionConstraint(robot, pts, lb, ub);
       obj.body_a.idx = body_a_idx;
       obj.body_a.name = getBodyOrFrameName(obj.robot, obj.body_a.idx);
       obj.body_b.idx = body_b_idx;
@@ -123,7 +120,7 @@ function obj = RelativePositionConstraint(robot,pts,lb,ub, ...
       lcmgl.box((obj.lb+obj.ub)/2,obj.ub-obj.lb);
       lcmgl.switchBuffers();
     end
-    
+
     function joint_idx = kinematicsPathJoints(obj)
       [~,joint_path] = obj.robot.findKinematicPath(obj.body_a.idx,obj.body_b.idx);
       joint_idx = vertcat(obj.robot.body(joint_path).position_num)';

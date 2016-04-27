@@ -24,5 +24,5 @@ function con = makeCon(r)
 
   T = [rpy2rotmat(rpy),xyz;zeros(1,3),1];
 
-  con = WorldPositionInFrameConstraint(r,bodyA_idx,pts,T,lb,ub,[0 1]);
+  con = WorldPositionInFrameConstraint(r,bodyA_idx,pts,T,lb,ub);
 end

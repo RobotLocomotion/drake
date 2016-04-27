@@ -1,17 +1,15 @@
 classdef PostureChangeConstraint < MultipleTimeLinearPostureConstraint
-  % This constrains that the change of joint i within time tspan must be within [lb,ub]
+  % This constrains that the change of joint i must be within [lb,ub]
   % @param robot
   % @param joint_idx             A nx1 vector, the index of the joints
   % @param lb_change             A nx1 vector, the lower bound of the change of joint angles
   % @param ub_change             A nx1 vector, the upper bound of the change of joint angles
-  % @param tspan                 A 1x2 vector, the time span. Optional argument. Default
-  %                              is [-inf inf]
   properties(SetAccess = protected)
     joint_ind
     lb_change
     ub_change
   end
-  
+
   methods(Access=protected)
     function obj = setJointChangeBounds(obj,joint_ind,lb_change,ub_change)
       if(any(~isnumeric(joint_ind)))
@@ -37,20 +35,17 @@ classdef PostureChangeConstraint < MultipleTimeLinearPostureConstraint
       obj.ub_change = ub_change;
     end
   end
-  
+
   methods
-    function obj = PostureChangeConstraint(robot,joint_ind,lb_change,ub_change,tspan)
-      if(nargin<5)
-        tspan = [-inf inf];
-      end
-      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.PostureChangeConstraintType,robot.getMexModelPtr,joint_ind,lb_change,ub_change,tspan);
-      obj = obj@MultipleTimeLinearPostureConstraint(robot,tspan);
+    function obj = PostureChangeConstraint(robot,joint_ind,lb_change,ub_change)
+      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.PostureChangeConstraintType,robot.getMexModelPtr,joint_ind,lb_change,ub_change);
+      obj = obj@MultipleTimeLinearPostureConstraint(robot);
       obj = obj.setJointChangeBounds(joint_ind,lb_change,ub_change);
       obj.type = RigidBodyConstraint.PostureChangeConstraintType;
       obj.mex_ptr = ptr;
     end
-    
-    
+
+
     function num = getNumConstraint(obj,t)
       valid_flag = obj.isTimeValid(t);
       num_valid_t = sum(valid_flag);
@@ -60,7 +55,7 @@ classdef PostureChangeConstraint < MultipleTimeLinearPostureConstraint
         num = 0;
       end
     end
-    
+
     function c = feval(obj,t,q)
       % c = [q(obj.joint_ind,2)-q(obj.joint_ind,1);
       % q(obj.joint_ind,3)-q(obj.joint_ind,1);...;q(obj.joint_ind,n)-q(obj.joint_ind,1)];
@@ -74,7 +69,7 @@ classdef PostureChangeConstraint < MultipleTimeLinearPostureConstraint
         c = [];
       end
     end
-    
+
     function [iAfun,jAvar,A] = geval(obj,t)
       % sparse(iAfun,jAvar,A,num_constraint,length(q)) is the gradient of the function feval w.r.t q
       valid_flag = obj.isTimeValid(t);
@@ -95,7 +90,7 @@ classdef PostureChangeConstraint < MultipleTimeLinearPostureConstraint
         A = [];
       end
     end
-    
+
     function [lb,ub] = bounds(obj,t)
       valid_flag = obj.isTimeValid(t);
       num_valid_t = sum(valid_flag);
@@ -107,7 +102,7 @@ classdef PostureChangeConstraint < MultipleTimeLinearPostureConstraint
         ub = [];
       end
     end
-    
+
     function name_str = name(obj,t)
       valid_flag = obj.isTimeValid(t);
       num_valid_t = sum(valid_flag);
@@ -124,6 +119,6 @@ classdef PostureChangeConstraint < MultipleTimeLinearPostureConstraint
         end
       end
     end
-    
+
   end
 end

@@ -440,12 +440,13 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT RelativePositionConstraint
                          std::vector<std::string> &cnst_names) const;
 
  public:
-  RelativePositionConstraint(RigidBodyTree *model, const Eigen::Matrix3Xd &pts,
-                             const Eigen::MatrixXd &lb,
-                             const Eigen::MatrixXd &ub, int bodyA_idx,
-                             int bodyB_idx,
-                             const Eigen::Matrix<double, 7, 1> &bTbp,
-                             const Eigen::Vector2d &tspan);
+  RelativePositionConstraint(
+      RigidBodyTree *model, const Eigen::Matrix3Xd &pts,
+      const Eigen::MatrixXd &lb,
+      const Eigen::MatrixXd &ub, int bodyA_idx,
+      int bodyB_idx,
+      const Eigen::Matrix<double, 7, 1> &bTbp,
+      const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
   virtual ~RelativePositionConstraint();
 };
 

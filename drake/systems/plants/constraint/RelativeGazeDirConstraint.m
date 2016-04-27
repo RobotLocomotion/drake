@@ -8,13 +8,11 @@ classdef RelativeGazeDirConstraint < GazeDirConstraint
   % @param dir                    -- A 3x1 unit vector, in the body_b frame
   % @param conethreshold          -- A double scalar, the angle of the gaze cone, default
   %                                  is 0
-  % @param tspan                  -- A 1x2 vector, the time span of the constraint,
-  %                                  default is [-inf inf]
   properties(SetAccess = protected)
     body_a = struct('idx',[],'name','');
     body_b = struct('idx',[],'name','');
   end
-  
+
   methods(Access = protected)
     function [c,dc] = evalValidTime(obj,kinsol)
       [axis_pos,daxis_pos] = forwardKin(obj.robot,kinsol,obj.body_a.idx,[zeros(3,1) obj.axis],0);
@@ -27,21 +25,18 @@ classdef RelativeGazeDirConstraint < GazeDirConstraint
       dc = dir_world'*daxis_world + axis_world'*ddir_world;
     end
   end
-  
-  methods  
+
+  methods
     function obj = RelativeGazeDirConstraint(robot,body_a, ...
                                              body_b,axis,dir, ...
-                                             conethreshold,tspan)
-      if(nargin < 7)
-        tspan = [-inf inf];
-      end
+                                             conethreshold)
       if(nargin<6)
         conethreshold = 0;
       end
       body_a_idx = robot.parseBodyOrFrameID(body_a);
       body_b_idx = robot.parseBodyOrFrameID(body_b);
-      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.RelativeGazeDirConstraintType,robot.getMexModelPtr,body_a_idx,body_b_idx,axis,dir,conethreshold,tspan);
-      obj = obj@GazeDirConstraint(robot,axis,dir,conethreshold,tspan);
+      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.RelativeGazeDirConstraintType,robot.getMexModelPtr,body_a_idx,body_b_idx,axis,dir,conethreshold);
+      obj = obj@GazeDirConstraint(robot,axis,dir,conethreshold);
       obj.body_a.idx = body_a_idx;
       obj.body_a.name = getBodyOrFrameName(obj.robot, obj.body_a.idx);
       obj.body_b.idx = body_b_idx;
@@ -51,12 +46,8 @@ classdef RelativeGazeDirConstraint < GazeDirConstraint
     end
 
     function name_str = name(obj,t)
-      if(obj.isTimeValid(t))
-        name_str = {sprintf('%s relative to %s conic gaze constraint at time %10.4f', ...
-                        obj.body_a.name,obj.body_b.name,t)};
-      else
-        name_str = [];
-      end
+      name_str = {sprintf('%s relative to %s conic gaze constraint at time %10.4f', ...
+                          obj.body_a.name,obj.body_b.name,t)};
     end
 
     function drawConstraint(obj,q,lcmgl)
@@ -77,7 +68,7 @@ classdef RelativeGazeDirConstraint < GazeDirConstraint
       lcmgl.glTranslated(wTb(1,4),wTb(2,4),wTb(3,4));
       lcmgl.glRotated(ang_ax_b(4)*180/pi,ang_ax_b(1),ang_ax_b(2),ang_ax_b(3));
       lcmgl.glDrawAxes();
-      
+
       % Rotate and translate back to world frame
       lcmgl.glRotated(-ang_ax_b(4)*180/pi,ang_ax_b(1),ang_ax_b(2),ang_ax_b(3));
       lcmgl.glTranslated(-wTb(1,4),-wTb(2,4),-wTb(3,4));
@@ -115,7 +106,7 @@ classdef RelativeGazeDirConstraint < GazeDirConstraint
 
       lcmgl.switchBuffers();
     end
-    
+
     function joint_idx = kinematicsPathJoints(obj)
       [~,joint_path] = obj.robot.findKinematicPath(obj.body_a.idx,obj.body_b.idx);
       joint_idx = vertcat(obj.robot.body(joint_path).position_num)';

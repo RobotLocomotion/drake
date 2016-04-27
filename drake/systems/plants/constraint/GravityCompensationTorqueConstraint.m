@@ -8,8 +8,8 @@ classdef GravityCompensationTorqueConstraint < SingleTimeKinematicConstraint
     ub
   end
   methods
-    function obj = GravityCompensationTorqueConstraint(robot, joint_indices, lb, ub, tspan)
-      % obj = GravityCompensationTorqueConstraint(robot, joint_indices, lb, ub, tspan)
+    function obj = GravityCompensationTorqueConstraint(robot, joint_indices, lb, ub)
+      % obj = GravityCompensationTorqueConstraint(robot, joint_indices, lb, ub)
       % @param robot          -- RigidBodyManipulator object
       % @param joint_indices  -- column vector containing the indices of the
       %                          joints to which the constraint will be applied
@@ -19,10 +19,8 @@ classdef GravityCompensationTorqueConstraint < SingleTimeKinematicConstraint
       % @param ub             -- Upper bound on the allowable torques. May be a
       %                          scalar, or a column vector with the same number
       %                          of elements as joint_indices
-      % @param tspan
 
-      if nargin < 5, tspan = [-Inf, Inf]; end
-      obj = obj@SingleTimeKinematicConstraint(robot, tspan);
+      obj = obj@SingleTimeKinematicConstraint(robot);
       obj.joint_indices = reshape(joint_indices, [], 1);
       if isscalar(lb)
         lb = repmat(lb, size(obj.joint_indices));
@@ -43,18 +41,13 @@ classdef GravityCompensationTorqueConstraint < SingleTimeKinematicConstraint
       obj.num_constraint = numel(obj.joint_indices);
       obj.type = RigidBodyConstraint.GravityCompensationTorqueConstraintType;
       if robot.getMexModelPtr~=0 && exist('constructPtrRigidBodyConstraintmex','file')
-        obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.GravityCompensationTorqueConstraintType,robot.getMexModelPtr, obj.joint_indices, obj.lb, obj.ub, tspan);
+        obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.GravityCompensationTorqueConstraintType,robot.getMexModelPtr, obj.joint_indices, obj.lb, obj.ub);
       end
     end
 
     function [lb, ub] = bounds(obj, t)
-      if(obj.isTimeValid(t))
-        lb = obj.lb;
-        ub = obj.ub;
-      else
-        lb = [];
-        ub = [];
-      end
+      lb = obj.lb;
+      ub = obj.ub;
     end
 
     function obj = updateRobot(obj,robot)
@@ -63,14 +56,10 @@ classdef GravityCompensationTorqueConstraint < SingleTimeKinematicConstraint
     end
 
     function name_str = name(obj, t)
-      if(obj.isTimeValid(t))
-        joint_names = obj.robot.getPositionFrame().getCoordinateNames();
-        name_str = cellStrCat({'Gravity compensation torque constraint on  '}, ...
-                               joint_names(obj.joint_indices), ...
-                              {sprintf(' at time %10.4f',t)})';
-      else
-        name_str = {};
-      end
+      joint_names = obj.robot.getPositionFrame().getCoordinateNames();
+      name_str = cellStrCat({'Gravity compensation torque constraint on  '}, ...
+                            joint_names(obj.joint_indices), ...
+                            {sprintf(' at time %10.4f',t)})';
     end
   end
   methods (Access = protected)

@@ -462,8 +462,7 @@ if(mode == 2)
     mtlpc_nc(j) = mtlpc.getNumConstraint(t);
     [mtlpc_iAfun_j,mtlpc_jAvar_j,mtlpc_A_j] = mtlpc.geval(t);
     [mtlpc_lb_j,mtlpc_ub_j] = mtlpc.bounds(t);
-    mtlpc_valid_t_flag = mtlpc.isTimeValid(t);
-    if(ikoptions.fixInitialState && mtlpc_valid_t_flag(1))
+    if(ikoptions.fixInitialState)
       % Take out the entries in the sparsity matrix that corresponds to gradient with q0
       mtlpc_A_q0idx = mtlpc_jAvar_j<=nq;
       mtlpc_iAfun{j} = mtlpc_iAfun_j(~mtlpc_A_q0idx);
@@ -716,18 +715,16 @@ for i = 1:nT-1
     t_j = t_inbetween{i}(j)+t(i);
     kinsol_samples{inbetween_idx+i+j} = doKinematics(obj,q_inbetween(:,inbetween_idx+j),false,false);
     for k = 1:length(st_kc_cell)
-      if(st_kc_cell{k}.isTimeValid(t_j))
-        [c_k,dc_k] = st_kc_cell{k}.eval(t_j,kinsol_samples{inbetween_idx+i+j});
-        nc = st_kc_cell{k}.getNumConstraint(t_j);
-        f(nf_cum+(1:nc)) = c_k;
-        if(~fixInitialState)
-          G(nG_cum+(1:nc*nq*(num_qfree+num_qdotfree))) = reshape([dc_k*dqInbetweendqknot{i}(nq*(j-1)+(1:nq),:) dc_k*dqInbetweendqd0{i}(nq*(j-1)+(1:nq),:) dc_k*dqInbetweendqdf{i}(nq*(j-1)+(1:nq),:)],[],1);
-        else
-          G(nG_cum+(1:nc*nq*(num_qfree+num_qdotfree))) = reshape([dc_k*dqInbetweendqknot{i}(nq*(j-1)+(1:nq),nq+1:end) dc_k*dqInbetweendqdf{i}(nq*(j-1)+(1:nq),:)],[],1);
-        end
-        nf_cum = nf_cum+nc;
-        nG_cum = nG_cum+nc*nq*(num_qfree+num_qdotfree);
+      [c_k,dc_k] = st_kc_cell{k}.eval(t_j,kinsol_samples{inbetween_idx+i+j});
+      nc = st_kc_cell{k}.getNumConstraint(t_j);
+      f(nf_cum+(1:nc)) = c_k;
+      if(~fixInitialState)
+        G(nG_cum+(1:nc*nq*(num_qfree+num_qdotfree))) = reshape([dc_k*dqInbetweendqknot{i}(nq*(j-1)+(1:nq),:) dc_k*dqInbetweendqd0{i}(nq*(j-1)+(1:nq),:) dc_k*dqInbetweendqdf{i}(nq*(j-1)+(1:nq),:)],[],1);
+      else
+        G(nG_cum+(1:nc*nq*(num_qfree+num_qdotfree))) = reshape([dc_k*dqInbetweendqknot{i}(nq*(j-1)+(1:nq),nq+1:end) dc_k*dqInbetweendqdf{i}(nq*(j-1)+(1:nq),:)],[],1);
       end
+      nf_cum = nf_cum+nc;
+      nG_cum = nG_cum+nc*nq*(num_qfree+num_qdotfree);
     end
   end
   q_samples(:,inbetween_idx+i) = q(:,i);

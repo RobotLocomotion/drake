@@ -7,11 +7,11 @@ classdef EulerConstraint < SingleTimeKinematicConstraint
     null_constraint_rows
     avg_rpy
   end
-  
+
   methods(Abstract,Access = protected)
     [rpy,J] = evalrpy(obj,kinsol);
   end
-  
+
   methods(Access = protected)
     function [c,dc] = evalValidTime(obj,kinsol)
       [rpy,J] = evalrpy(obj,kinsol);
@@ -20,13 +20,10 @@ classdef EulerConstraint < SingleTimeKinematicConstraint
       dc = J(~obj.null_constraint_rows,:);
     end
   end
-  
+
   methods
-    function obj = EulerConstraint(robot,lb,ub,tspan)
-      if(nargin == 3)
-        tspan = [-inf, inf];
-      end
-      obj = obj@SingleTimeKinematicConstraint(robot,tspan);
+    function obj = EulerConstraint(robot,lb,ub)
+      obj = obj@SingleTimeKinematicConstraint(robot);
       typecheck(lb,'double');
       typecheck(ub,'double');
       sizecheck(lb,[3,1]);
@@ -44,15 +41,10 @@ classdef EulerConstraint < SingleTimeKinematicConstraint
       obj.avg_rpy = (obj.lb+obj.ub)/2;
       obj.num_constraint = sum(~obj.null_constraint_rows);
     end
-    
+
     function [lb,ub] = bounds(obj,t)
-      if(obj.isTimeValid(t))
-        lb = obj.lb;
-        ub = obj.ub;
-      else
-        lb = [];
-        ub = [];
-      end
+      lb = obj.lb;
+      ub = obj.ub;
     end
   end
 end

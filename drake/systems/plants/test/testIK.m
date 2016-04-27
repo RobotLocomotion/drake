@@ -54,7 +54,6 @@ r_leg_aky = find(strcmp(coords,'r_leg_aky'));
 l_leg_hpz = find(strcmp(coords,'l_leg_hpz'));
 r_leg_hpz = find(strcmp(coords,'r_leg_hpz'));
 
-tspan = [0,1];
 nom_data = load('../../../examples/Atlas/data/atlas_fp.mat');
 q_nom = nom_data.xstar(1:nq);
 q_seed = q_nom+1e-2*randn(nq,1);
@@ -65,8 +64,8 @@ ikoptions = ikoptions.setMajorIterationsLimit(5000);
 ikmexoptions = ikoptions;
 ikmexoptions = ikmexoptions.setMex(true);
 
-kc1 = WorldCoMConstraint(robot,[0;0;0.9],[0;0;1],tspan,1);
-kc1prime = WorldCoMConstraint(robot,[nan;nan;0.9],[nan;nan;0.92],tspan/2,1);
+kc1 = WorldCoMConstraint(robot,[0;0;0.9],[0;0;1],1);
+kc1prime = WorldCoMConstraint(robot,[nan;nan;0.9],[nan;nan;0.92],1);
 display('Check a single CoM constraint')
 q = test_IK_userfun(robot,q_seed,q_nom,kc1,ikoptions);
 kinsol = doKinematics(robot,q);
@@ -101,7 +100,7 @@ if(com(3)>1+1e-5 ||com(3)<0.9-1e-5)
   error('CoM constraint is not satisfied');
 end
 end
-pc_knee = PostureConstraint(robot,tspan);
+pc_knee = PostureConstraint(robot);
 l_knee_idx = find(strcmp(robot.getStateFrame.getCoordinateNames(),'l_leg_kny'));
 r_knee_idx = find(strcmp(robot.getStateFrame.getCoordinateNames(),'r_leg_kny'));
 pc_knee = pc_knee.setJointLimits([l_knee_idx;r_knee_idx],[0.2;0.2],[inf;inf]);
@@ -155,8 +154,8 @@ end
 
 
 display('Check a body position constraint')
-kc2l = WorldPositionConstraint(robot,l_foot,l_foot_pts,[nan(2,n_l_foot_pts);zeros(1,n_l_foot_pts)],[nan(2,n_l_foot_pts);zeros(1,n_l_foot_pts)],tspan);
-kc2r = WorldPositionConstraint(robot,r_foot,r_foot_pts,[nan(2,n_r_foot_pts);zeros(1,n_r_foot_pts)],[nan(2,n_r_foot_pts);zeros(1,n_r_foot_pts)],tspan);
+kc2l = WorldPositionConstraint(robot,l_foot,l_foot_pts,[nan(2,n_l_foot_pts);zeros(1,n_l_foot_pts)],[nan(2,n_l_foot_pts);zeros(1,n_l_foot_pts)]);
+kc2r = WorldPositionConstraint(robot,r_foot,r_foot_pts,[nan(2,n_r_foot_pts);zeros(1,n_r_foot_pts)],[nan(2,n_r_foot_pts);zeros(1,n_r_foot_pts)]);
 q = test_IK_userfun(robot,q_seed,q_nom,kc1,pc_knee,kc2l,kc2r,ikoptions);
 kinsol = doKinematics(robot,q);
 lfoot_pos = forwardKin(robot,kinsol,l_foot,l_foot_pts,0);
@@ -180,8 +179,8 @@ display('Check a body position (in random frame) constraint')
 rpy = [pi/10,pi/20,pi/10];
 xyz = [0.5;0.0;0.2];
 T = [rpy2rotmat(rpy),xyz;zeros(1,3),1];
-kc2l_frame = WorldPositionInFrameConstraint(robot,l_foot,l_foot_pts,T,[nan(2,n_l_foot_pts);zeros(1,n_l_foot_pts)],[nan(2,n_l_foot_pts);zeros(1,n_l_foot_pts)],tspan);
-kc2r_frame = WorldPositionInFrameConstraint(robot,r_foot,r_foot_pts,T,[nan(2,n_r_foot_pts);zeros(1,n_r_foot_pts)],[nan(2,n_r_foot_pts);zeros(1,n_r_foot_pts)],tspan);
+kc2l_frame = WorldPositionInFrameConstraint(robot,l_foot,l_foot_pts,T,[nan(2,n_l_foot_pts);zeros(1,n_l_foot_pts)],[nan(2,n_l_foot_pts);zeros(1,n_l_foot_pts)]);
+kc2r_frame = WorldPositionInFrameConstraint(robot,r_foot,r_foot_pts,T,[nan(2,n_r_foot_pts);zeros(1,n_r_foot_pts)],[nan(2,n_r_foot_pts);zeros(1,n_r_foot_pts)]);
 q = test_IK_userfun(robot,q_seed,q_nom,kc1,pc_knee,kc2l_frame,kc2r_frame,ikoptions);
 kinsol = doKinematics(robot,q);
 lfoot_pos = homogTransMult(invHT(T),forwardKin(robot,kinsol,l_foot,l_foot_pts,0));
@@ -202,7 +201,7 @@ end
 end
 
 display('Check the infeasible case')
-kc_err = WorldCoMConstraint(robot,[0;0;2],[0;0;inf],tspan);
+kc_err = WorldCoMConstraint(robot,[0;0;2],[0;0;inf]);
 if(checkDependency('snopt'))
 % [q,info,infeasible_constraint] = inverseKin(robot,q_seed,q_nom,kc_err,kc2l,kc2r,ikoptions);
 [qmex,info_mex,infeasible_constraint_mex] = inverseKin(robot,q_seed,q_nom,kc_err,kc2l,kc2r,ikmexoptions);
@@ -222,7 +221,7 @@ disp(infeasible_constraint_mex);
 end
 
 display('Check a body quaternion constraint')
-kc3 = WorldQuatConstraint(robot,r_foot,[1;0;0;0],0,tspan);
+kc3 = WorldQuatConstraint(robot,r_foot,[1;0;0;0],0);
 q = test_IK_userfun(robot,q_seed,q_nom,kc1,pc_knee,kc2l,kc2r,kc3,ikoptions);
 kinsol = doKinematics(robot,q);
 rfoot_pos = forwardKin(robot,kinsol,r_foot,[0;0;0],2);
@@ -238,7 +237,7 @@ end
 end
 
 display('Check a gaze orientation constraint')
-kc4 = WorldGazeOrientConstraint(robot,r_hand,[1;0;0],[0.5;0.5;-0.5;0.5],0.1*pi,0.8*pi,tspan);
+kc4 = WorldGazeOrientConstraint(robot,r_hand,[1;0;0],[0.5;0.5;-0.5;0.5],0.1*pi,0.8*pi);
 q = test_IK_userfun(robot,q_seed,q_nom,kc1,pc_knee,kc2l,kc2r,kc3,kc4,ikoptions);
 kinsol = doKinematics(robot,q);
 rhand_pos = forwardKin(robot,kinsol,r_hand,[0 1;0 0;0 0],0);
@@ -262,7 +261,7 @@ end
 end
 
 display('Check a gaze direction constraint')
-kc5 = WorldGazeDirConstraint(robot,l_hand,[1;0;0],[1;0;0],0.4*pi,tspan);
+kc5 = WorldGazeDirConstraint(robot,l_hand,[1;0;0],[1;0;0],0.4*pi);
 q = test_IK_userfun(robot,q_seed,q_nom,kc1,pc_knee,kc2l,kc2r,kc3,kc4,kc5,ikoptions);
 kinsol = doKinematics(robot,q);
 lhand_pos = forwardKin(robot,kinsol,l_hand,[0 1;0 0;0 0],0);
@@ -287,7 +286,7 @@ display('Check a gaze target constraint')
 gaze_target = [1;0;1.5];
 gaze_axis = [1;0;0];
 gaze_origin = [0.1;0.2;0.3];
-kc6 = WorldGazeTargetConstraint(robot,head,gaze_axis,gaze_target,gaze_origin,0.1*pi,tspan);
+kc6 = WorldGazeTargetConstraint(robot,head,gaze_axis,gaze_target,gaze_origin,0.1*pi);
 q = test_IK_userfun(robot,q_seed,q_nom,kc1,kc2l,kc2r,kc3,kc4,kc5,kc6,ikoptions);
 kinsol = doKinematics(robot,q);
 head_pos = forwardKin(robot,kinsol,head,[gaze_origin gaze_origin+gaze_axis],0);
@@ -314,13 +313,13 @@ end
 
 if(checkDependency('bullet'))
   display('Check all-to-all closest distance constraint')
-  abcdc = AllBodiesClosestDistanceConstraint(robot,0.05,1e3,tspan);
+  abcdc = AllBodiesClosestDistanceConstraint(robot,0.05,1e3);
   q = test_IK_userfun(robot,q_seed,q_nom,kc1,kc2l,kc2r,kc3,kc4,kc5,kc6,abcdc,ikoptions);
   display('Check IK pointwise with all-to-all closest distance constraint')
   q = test_IKpointwise_userfun(robot,[0,1],[q_seed,q_seed+1e-3*randn(nq,1)],[q_nom,q_nom],kc1,pc_knee,kc2l,kc2r,kc3,kc4,kc5,kc6,abcdc,ikoptions);
 
   display('Check minimum-distance constraint')
-  min_dist_cnstr = MinDistanceConstraint(robot,0.05,[],tspan);
+  min_dist_cnstr = MinDistanceConstraint(robot,0.05,[]);
   q = test_IK_userfun(robot,q_seed,q_nom,kc1,kc2l,kc2r,kc3,kc4,kc5,kc6,min_dist_cnstr,ikoptions);
   display('Check IK pointwise with minimum-distance constraint')
   q = test_IKpointwise_userfun(robot,[0,1],[q_seed,q_seed+1e-3*randn(nq,1)],[q_nom,q_nom],kc1,pc_knee,kc2l,kc2r,kc3,kc4,kc5,kc6,min_dist_cnstr,ikoptions);
@@ -359,7 +358,7 @@ jAvar = [l_leg_kny;r_leg_kny;l_leg_hpy;r_leg_hpy;l_leg_aky;r_leg_aky;l_leg_hpz;r
 A = [1;-1;1;-1;1;-1;1;-1];
 lb = [0;0;0;-0.1*pi];
 ub = [0;0;0;0.1*pi];
-stlpc = SingleTimeLinearPostureConstraint(robot,iAfun,jAvar,A,lb,ub,tspan);
+stlpc = SingleTimeLinearPostureConstraint(robot,iAfun,jAvar,A,lb,ub);
 q = test_IK_userfun(robot,q_seed,q_nom,kc1,kc2l,kc2r,pc_knee,stlpc,qsc,ikoptions);
 valuecheck(q([l_leg_kny;l_leg_hpy;l_leg_aky]),q([r_leg_kny;r_leg_hpy;r_leg_aky]),1e-10);
 if(abs(q(l_leg_hpz)-q(r_leg_hpz))>0.1*pi+1e-8)
@@ -375,7 +374,7 @@ end
 end
 
 display('Check point to point distance constraint')
-hands_distance_cnst = Point2PointDistanceConstraint(robot,l_hand,r_hand,[0;0;0],[0;0;0],0.5,1,tspan);
+hands_distance_cnst = Point2PointDistanceConstraint(robot,l_hand,r_hand,[0;0;0],[0;0;0],0.5,1);
 q = test_IK_userfun(robot,q_seed,q_nom,kc1,qsc,kc2l,kc2r,kc3,hands_distance_cnst,ikoptions);
 kinsol = doKinematics(robot,q);
 lhand_pos = forwardKin(robot,kinsol,l_hand,[0;0;0],0);
@@ -399,7 +398,7 @@ end
 
 head_pts = [[0;0;0] [0.1;0;0]];
 world_pts = [[0;0;0] [0.1;0;0]];
-head_world_dist_cnst = Point2PointDistanceConstraint(robot,head,world,head_pts,world_pts,[1.6 1.6],[1.9 1.9],tspan);
+head_world_dist_cnst = Point2PointDistanceConstraint(robot,head,world,head_pts,world_pts,[1.6 1.6],[1.9 1.9]);
 q = test_IK_userfun(robot,q_seed,q_nom,kc1,qsc,kc2l,kc2r,kc3,head_world_dist_cnst,ikoptions);
 kinsol = doKinematics(robot,q);
 head_pos = forwardKin(robot,kinsol,head,head_pts,0);
@@ -411,7 +410,7 @@ end
 
 display('Check point to line segment distance constraint')
 vertical_line = [[0;0;0] [0;0;1]];
-hand_line_dist_cnst = Point2LineSegDistConstraint(robot,l_hand,[0;0;0],1,vertical_line,0.1,0.2,tspan);
+hand_line_dist_cnst = Point2LineSegDistConstraint(robot,l_hand,[0;0;0],1,vertical_line,0.1,0.2);
 q = test_IK_userfun(robot,q_seed,q_nom,qsc,kc2l,kc2r,hand_line_dist_cnst,ikoptions);
 kinsol = doKinematics(robot,q);
 l_hand_pos = forwardKin(robot,kinsol,l_hand,[0;0;0],0);
@@ -541,36 +540,30 @@ if(any(q_sol>q_ub) || any(q_sol<q_lb))
 end
 for i = 1:nargin-3
   if(isa(varargin{i},'SingleTimeKinematicConstraint'))
-    if(varargin{i}.isTimeValid(t))
-      [lb,ub] = varargin{i}.bounds(t);
-      c = varargin{i}.eval(t,kinsol);
-      if(any(c-ub>1e-3) || any(c-lb<-1e-3))
-        error('solution does not satisfy the SingleTimeKinematicConstraint');
-      end
+    [lb,ub] = varargin{i}.bounds(t);
+    c = varargin{i}.eval(t,kinsol);
+    if(any(c-ub>1e-3) || any(c-lb<-1e-3))
+      error('solution does not satisfy the SingleTimeKinematicConstraint');
     end
   elseif(isa(varargin{i},'PostureConstraint'))
-    if(varargin{i}.isTimeValid(t))
-      [lb,ub] = varargin{i}.bounds(t);
-      if(any(q_sol>ub) || any(q_sol<lb))
-        error('solution does not satisfy the PostureConstraint');
-      end
+    [lb,ub] = varargin{i}.bounds(t);
+    if(any(q_sol>ub) || any(q_sol<lb))
+      error('solution does not satisfy the PostureConstraint');
     end
   elseif(isa(varargin{i},'QuasiStaticConstraint'))
-    if(varargin{i}.isTimeValid(t) && varargin{i}.active)
+    if(varargin{i}.active)
       if(~varargin{i}.checkConstraint(kinsol))
         error('solution does not satisfy the QuasiStaticConstraint');
       end
     end
   elseif(isa(varargin{i},'SingleTimeLinearPostureConstraint'))
-    if(varargin{i}.isTimeValid(t))
-      [lb,ub] = varargin{i}.bounds(t);
-      c = varargin{i}.feval(t,q_sol);
-      if(any(c-ub>1e-3) || any(c-lb < -1e-3))
-        error('solution does not satisfy the SingleTimeLinearPostureConstraint');
-      end
+    [lb,ub] = varargin{i}.bounds(t);
+    c = varargin{i}.feval(t,q_sol);
+    if(any(c-ub>1e-3) || any(c-lb < -1e-3))
+      error('solution does not satisfy the SingleTimeLinearPostureConstraint');
     end
   else
     error('The constraint is not supported');
   end
-end  
+end
 end

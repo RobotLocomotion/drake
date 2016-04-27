@@ -9,9 +9,8 @@ r = RigidBodyManipulator(urdf,options);
 l_leg_kny = find(strcmp(r.getStateFrame.getCoordinateNames(),'l_leg_kny'));
 r_leg_kny = find(strcmp(r.getStateFrame.getCoordinateNames(),'r_leg_kny'));
 
-tspan0 = [0,1];
 t = 0.5;
-pc = PostureConstraint(r,tspan0);
+pc = PostureConstraint(r);
 pc = pc.setJointLimits([l_leg_kny;r_leg_kny],[0.2;0.2],inf(2,1));
 category_name_mex = constraintCategorymex(pc.mex_ptr);
 if(~strcmp(category_name_mex,pc.categoryString()))

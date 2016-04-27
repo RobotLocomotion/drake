@@ -1,5 +1,5 @@
 classdef SingleTimeLinearPostureConstraint < RigidBodyConstraint
-  % A linear constraint on the robot posture for a single time 
+  % A linear constraint on the robot posture for a single time
   % lb<=sparse(iAfun,jAvar,A,max(jAvar),robot.nq)*q<=ub
   % @param iAfun      -- The row index of the sparse linear matrix
   % @param jAvar      -- The column index of the sparse linear matrix
@@ -16,14 +16,10 @@ classdef SingleTimeLinearPostureConstraint < RigidBodyConstraint
     num_constraint
     A_mat
   end
-  
+
   methods
-    function obj = SingleTimeLinearPostureConstraint(robot,iAfun,jAvar,A,lb,ub,tspan)
-      if(nargin<7)
-        tspan = [-inf,inf];
-      end
-      
-      obj = obj@RigidBodyConstraint(RigidBodyConstraint.SingleTimeLinearPostureConstraintCategory,robot,tspan);
+    function obj = SingleTimeLinearPostureConstraint(robot,iAfun,jAvar,A,lb,ub)
+      obj = obj@RigidBodyConstraint(RigidBodyConstraint.SingleTimeLinearPostureConstraintCategory,robot);
       nq = obj.robot.getNumPositions;
       if(~isnumeric(lb))
         error('Drake:SingleTimeLinearPostureConstraint:lb must be numeric');
@@ -63,7 +59,7 @@ classdef SingleTimeLinearPostureConstraint < RigidBodyConstraint
       if(any(iAfun<=0) || any(iAfun~=floor(iAfun)))
         error('Drake:SingleTimeLinearPostureConstraint: iAfun must be positive integers');
       end
-      
+
       if(max(jAvar)>nq)
         error('Drake:SingleTimeLinearPostureConstraint: jAvar must all be no larger than robot.num_dof');
       end
@@ -76,96 +72,50 @@ classdef SingleTimeLinearPostureConstraint < RigidBodyConstraint
       obj.A_mat = sparse(iAfun,jAvar,A,obj.num_constraint,nq);
       obj.type = RigidBodyConstraint.SingleTimeLinearPostureConstraintType;
       if robot.getMexModelPtr~=0 && exist('constructPtrRigidBodyConstraintmex','file')
-        obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.SingleTimeLinearPostureConstraintType,robot.getMexModelPtr,iAfun,jAvar,A,lb,ub,tspan);
+        obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.SingleTimeLinearPostureConstraintType,robot.getMexModelPtr,iAfun,jAvar,A,lb,ub);
       end
     end
-    
-    function flag = isTimeValid(obj,t)
-      if(isempty(t))
-        flag = true;
-      else
-        if(t>=obj.tspan(1)&&t<=obj.tspan(end))
-          flag = true;
-        else
-          flag = false;
-        end
-      end
-    end
-    
+
     function n = getNumConstraint(obj,t)
-      if(obj.isTimeValid(t))
-        n = obj.num_constraint;
-      else
-        n = 0;
-      end
+      n = obj.num_constraint;
     end
-    
+
     function [lb,ub] = bounds(obj,t)
-      if(obj.isTimeValid(t))
-        lb = obj.lb;
-        ub = obj.ub;
-      else
-        lb = [];
-        ub = [];
-      end
+      lb = obj.lb;
+      ub = obj.ub;
     end
-    
+
     function c = feval(obj,t,q)
-      if(obj.isTimeValid(t))
-        c = obj.A_mat*q;
-      else
-        c = [];
-      end
+      c = obj.A_mat*q;
     end
-    
+
     function [iAfun,jAvar,A] = geval(obj,t)
-      if(obj.isTimeValid(t))
-        iAfun = obj.iAfun;
-        jAvar = obj.jAvar;
-        A = obj.A;
-      else
-        iAfun = [];
-        jAvar = [];
-        A = [];
-      end
+      iAfun = obj.iAfun;
+      jAvar = obj.jAvar;
+      A = obj.A;
     end
-    
+
     function [c,dc] = eval(obj,t,q)
-      if(obj.isTimeValid(t))
-        c = obj.A_mat*q;
-        dc = obj.A_mat;
-      else
-        c = [];
-        dc = [];
-      end
+      c = obj.A_mat*q;
+      dc = obj.A_mat;
     end
-    
+
     function name_str = name(obj,t)
-      if(obj.isTimeValid(t))
-        name_str = cell(obj.num_constraint,1);
-        if(isempty(t))
-          t_str = [];
-        else
-          t_str = sprintf('at time %6.3f',t);
-        end
-        for i = 1:obj.num_constraint
-          name_str{i} = sprintf('SingleTimeLinearPostureConstraint row %d %s',i,t_str);
-        end
+      name_str = cell(obj.num_constraint,1);
+      if(isempty(t))
+        t_str = [];
       else
-        name_str = {};
+        t_str = sprintf('at time %6.3f',t);
+      end
+      for i = 1:obj.num_constraint
+        name_str{i} = sprintf('SingleTimeLinearPostureConstraint row %d %s',i,t_str);
       end
     end
-    
+
     function cnstr = generateConstraint(obj,t)
-      if nargin < 2, t = obj.tspan(1); end;
-      % generate a LinearConstraint
-      if(obj.isTimeValid(t))
-        cnstr = {LinearConstraint(obj.lb,obj.ub,obj.A_mat)};
-        name_str = obj.name(t);
-        cnstr{1} = cnstr{1}.setName(name_str);
-      else
-        cnstr = {};
-      end
+      cnstr = {LinearConstraint(obj.lb,obj.ub,obj.A_mat)};
+      name_str = obj.name(t);
+      cnstr{1} = cnstr{1}.setName(name_str);
     end
   end
 end

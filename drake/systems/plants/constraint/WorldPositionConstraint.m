@@ -5,19 +5,18 @@ classdef WorldPositionConstraint < PositionConstraint
 % @param pts              A 3xn_pts matrix, pts(:,i) represents ith pts in
 %                         the body
 % @param lb, ub           Both are 3xn_pts matrices. [lb(:,i), ub(:,i)]
-%                         represents the bounding box for the 
+%                         represents the bounding box for the
 %                         position of pts(:,i) in the world frame
-% @param tspan            OPTIONAL argument. A 1x2 vector
   properties(SetAccess = protected)
     body
     body_name
   end
-  
+
   methods(Access = protected)
     function [pos,J] = evalPositions(obj,kinsol)
       [pos,J] = forwardKin(obj.robot,kinsol,obj.body,obj.pts,0);
     end
-    
+
     function cnst_names = evalNames(obj,t)
       cnst_names = cell(3*obj.n_pts,1);
       if(isempty(t))
@@ -32,20 +31,19 @@ classdef WorldPositionConstraint < PositionConstraint
       end
     end
   end
-  
+
   methods
-    function obj = WorldPositionConstraint(robot,body,pts,lb,ub,tspan)
+    function obj = WorldPositionConstraint(robot,body,pts,lb,ub)
       if(nargin<5), ub = lb; end
-      if(nargin<6), tspan = [-inf,inf]; end
-      obj = obj@PositionConstraint(robot,pts,lb,ub,tspan);
+      obj = obj@PositionConstraint(robot,pts,lb,ub);
       obj.body = obj.robot.parseBodyOrFrameID(body);
       obj.body_name = obj.robot.getBodyOrFrameName(obj.body);
       obj.type = RigidBodyConstraint.WorldPositionConstraintType;
       if robot.getMexModelPtr~=0 && exist('constructPtrRigidBodyConstraintmex','file')
-        obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldPositionConstraintType,robot.getMexModelPtr,body,pts,lb,ub,tspan);
+        obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldPositionConstraintType,robot.getMexModelPtr,body,pts,lb,ub);
       end
     end
-    
+
     function joint_idx = kinematicsPathJoints(obj)
       [~,joint_path] = obj.robot.findKinematicPath(1,obj.body);
       if isa(obj.robot,'TimeSteppingRigidBodyManipulator')
@@ -54,6 +52,6 @@ classdef WorldPositionConstraint < PositionConstraint
         joint_idx = vertcat(obj.robot.body(joint_path).position_num)';
       end
     end
-    
+
   end
 end

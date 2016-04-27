@@ -11,15 +11,15 @@ classdef PositionConstraint < SingleTimeKinematicConstraint
     [pos,J] = evalPositions(obj,kinsol)
     cnst_names = evalNames(obj,t)
   end
-  
+
   methods(Access = protected)
     function [c,dc] = evalValidTime(obj,kinsol)
-      [pos,J] = evalPositions(obj,kinsol); 
+      [pos,J] = evalPositions(obj,kinsol);
       c = pos(~obj.null_constraint_rows);
       dc = J(~obj.null_constraint_rows,:);
     end
   end
-  
+
   methods(Access = protected)
     function obj = setConstraintBounds(obj, lb, ub)
       rows = size(lb,1);
@@ -42,13 +42,10 @@ classdef PositionConstraint < SingleTimeKinematicConstraint
       obj.num_constraint = sum(~obj.null_constraint_rows);
     end
   end
-  
+
   methods
-    function obj = PositionConstraint(robot,pts,lb,ub,tspan)
-      if(nargin == 4)
-        tspan = [-inf,inf];
-      end
-      obj = obj@SingleTimeKinematicConstraint(robot,tspan);
+    function obj = PositionConstraint(robot,pts,lb,ub)
+      obj = obj@SingleTimeKinematicConstraint(robot);
       if(size(pts,1)~=3)
         error('Incorrect size');
       end
@@ -56,25 +53,15 @@ classdef PositionConstraint < SingleTimeKinematicConstraint
       obj.n_pts = size(obj.pts,2);
       obj = setConstraintBounds(obj,lb,ub);
     end
-    
+
     function [lb,ub] = bounds(obj,t)
-      if(obj.isTimeValid(t))
-        lb = obj.lb;
-        ub = obj.ub;
-      else
-        lb = [];
-        ub = [];
-      end
+      lb = obj.lb;
+      ub = obj.ub;
     end
 
     function name_str = name(obj,t)
-      if(obj.isTimeValid(t))
-        cnst_names = evalNames(obj,t);
-        name_str = cnst_names(~obj.null_constraint_rows);
-      else
-        name_str = [];
-      end
+      cnst_names = evalNames(obj,t);
+      name_str = cnst_names(~obj.null_constraint_rows);
     end
   end
 end
-

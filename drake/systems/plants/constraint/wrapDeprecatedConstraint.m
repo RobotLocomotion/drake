@@ -10,18 +10,11 @@ function [kc_cell,qsc_pts] = wrapDeprecatedConstraint(robot,body,pts,pos,options
 %                           can have field 'gaze' and 'contact_state'
 % @param options   -- use_mex   A boolean flag, set to true would construct
 %                               mex constraint object only, default is true
-%                  -- tspan     A 1x2 double vector, the time span of the
-%                               constraint. default is [-inf inf];
 if(~isstruct(options))
   error('The last argument option must be a struct')
 end
 if(~isfield(options,'use_mex'))
   options.use_mex = true;
-end
-if(isfield(options,'tspan'))
-  tspan = options.tspan;
-else
-  tspan = [-inf inf];
 end
 if(isfield(options,'robotnum'))
   robotnum = options.robotnum;
@@ -53,15 +46,15 @@ if(isstruct(pos)&&isfield(pos,'type'))
       else
         quat_des = pos.gaze_orientation/norm(pos.gaze_orientation);
       end
-      kc_cell = {constructRigidBodyConstraint(RigidBodyConstraint.WorldGazeOrientConstraintType,options.use_mex,robot,body,axis,quat_des,conethreshold,threshold,tspan)};
+      kc_cell = {constructRigidBodyConstraint(RigidBodyConstraint.WorldGazeOrientConstraintType,options.use_mex,robot,body,axis,quat_des,conethreshold,threshold)};
     end
     if(isfield(pos,'gaze_target'))
       gaze_target = pos.gaze_target;
-      kc_cell = {constructRigidBodyConstraint(RigidBodyConstraint.WorldGazeTargetConstraintType,options.use_mex,robot,body,axis,gaze_target,[0;0;0],conethreshold,tspan)};
+      kc_cell = {constructRigidBodyConstraint(RigidBodyConstraint.WorldGazeTargetConstraintType,options.use_mex,robot,body,axis,gaze_target,[0;0;0],conethreshold)};
     end
     if(isfield(pos,'gaze_dir'))
       gaze_dir = pos.gaze_dir./norm(pos.gaze_dir);
-      kc_cell = {constructRigidBodyConstraint(RigidBodyConstraint.WorldGazeDirConstraintType,options.use_mex,robot,body,axis,gaze_dir,conethreshold,tspan)};
+      kc_cell = {constructRigidBodyConstraint(RigidBodyConstraint.WorldGazeDirConstraintType,options.use_mex,robot,body,axis,gaze_dir,conethreshold)};
     end
   end
 else
@@ -76,12 +69,12 @@ else
   posmin(isnan(posmin)) = -inf;
   rows = size(posmax,1);
   if(body == 0)
-    kc_cell = {constructRigidBodyConstraint(RigidBodyConstraint.WorldCoMConstraintType,options.use_mex,robot,posmin,posmax,tspan,robotnum)};
+    kc_cell = {constructRigidBodyConstraint(RigidBodyConstraint.WorldCoMConstraintType,options.use_mex,robot,posmin,posmax,robotnum)};
   else
     if(ischar(pts))
       pts = robot.getBody(body).getContactPoints(pts);
     end
-    kc1 = constructRigidBodyConstraint(RigidBodyConstraint.WorldPositionConstraintType,options.use_mex,robot,body,pts,posmin(1:3,:),posmax(1:3,:),tspan);
+    kc1 = constructRigidBodyConstraint(RigidBodyConstraint.WorldPositionConstraintType,options.use_mex,robot,body,pts,posmin(1:3,:),posmax(1:3,:));
     qsc_pts_idx = false(1,size(pts,2));
     if(isfield(pos,'contact_state'))
       if(iscell(pos.contact_state))
@@ -99,7 +92,7 @@ else
     elseif(rows == 6)
       rpymax = posmax(4:6);
       rpymin = posmin(4:6);
-      kc2 = constructRigidBodyConstraint(RigidBodyConstraint.WorldEulerConstraintType,options.use_mex,robot,body,rpymin,rpymax,tspan);
+      kc2 = constructRigidBodyConstraint(RigidBodyConstraint.WorldEulerConstraintType,options.use_mex,robot,body,rpymin,rpymax);
       kc_cell = {kc1,kc2};
     elseif(rows == 7)
       if(any(isinf(posmax(4:7,1))|isinf(posmin(4:7,1))))
@@ -115,7 +108,7 @@ else
           quat_des = 0.5*(quatmin+quatmax);
           tol = max([1-(quatmin'*quat_des)^2 1-(quatmax'*quat_des)^2]);
         end
-        kc2 = constructRigidBodyConstraint(RigidBodyConstraint.WorldQuatConstraintType,options.use_mex,robot,body,quat_des,tol,tspan);
+        kc2 = constructRigidBodyConstraint(RigidBodyConstraint.WorldQuatConstraintType,options.use_mex,robot,body,quat_des,tol);
         kc_cell = {kc1,kc2};
       end
     end

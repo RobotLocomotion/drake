@@ -3,8 +3,6 @@ classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
   % [lb,ub]
   % @param lb      -- a scalar, the lower bound of the distance
   % @param ub      -- a scalar, the upper bound of the distance
-  % @param tspan   -- a 1x2 vector, the time span of the constraint being
-  %                   active
   properties(SetAccess = protected)
     ub
     lb
@@ -32,16 +30,13 @@ classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
     end
   end
   methods
-    function obj = AllBodiesClosestDistanceConstraint(robot,lb,ub,active_collision_options,tspan)
-      if(nargin < 5)
-        tspan = [-inf inf];
-      end
-      if nargin < 3 || isempty(active_collision_options) 
-        active_collision_options = struct(); 
+    function obj = AllBodiesClosestDistanceConstraint(robot,lb,ub,active_collision_options)
+      if nargin < 4 || isempty(active_collision_options)
+        active_collision_options = struct();
       end;
       sizecheck(lb,[1,1]);
       sizecheck(ub,[1,1]);
-      obj = obj@SingleTimeKinematicConstraint(robot,tspan);
+      obj = obj@SingleTimeKinematicConstraint(robot);
       obj = setNumConstraint(obj);
       assert(obj.num_constraint > 0, ...
         'Drake:AllBodiesClosestDistanceConstraint:noConstraints', ...
@@ -52,7 +47,7 @@ classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
       obj.ub = repmat(ub,obj.num_constraint,1);
       obj.type = RigidBodyConstraint.AllBodiesClosestDistanceConstraintType;
       if robot.getMexModelPtr~=0 && exist('constructPtrRigidBodyConstraintmex','file')
-        obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.AllBodiesClosestDistanceConstraintType,robot.getMexModelPtr,lb,ub,active_collision_options,tspan);
+        obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.AllBodiesClosestDistanceConstraintType,robot.getMexModelPtr,lb,ub,active_collision_options);
       end
     end
 
@@ -72,13 +67,8 @@ classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
     end
 
     function [lb,ub] = bounds(obj,t)
-      if(obj.isTimeValid(t))
-        lb = obj.lb;
-        ub = obj.ub;
-      else
-        lb = [];
-        ub = [];
-      end
+      lb = obj.lb;
+      ub = obj.ub;
     end
 
     function [constraintSatisfyFlag,dist,ptsA,ptsB,idxA,idxB] = checkConstraint(obj,q)
@@ -151,11 +141,7 @@ classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
     end
 
     function name = name(obj,t)
-      if(obj.isTimeValid(t))
-        name = repmat({'Closest distance constraint for all non-adjacent bodies'},obj.getNumConstraint(t),1);
-      else
-        name = [];
-      end
+      name = repmat({'Closest distance constraint for all non-adjacent bodies'},obj.getNumConstraint(t),1);
     end
 
   end

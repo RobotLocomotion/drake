@@ -17,5 +17,5 @@ function con = makeCon(r)
   warning(w);
   rpy = 2*pi*rand(3,1) - pi;
   quat = rpy2quat(rpy);
-  con = RelativeQuatConstraint(r,bodyA_idx,bodyB_idx,quat,0,[0,1]);
+  con = RelativeQuatConstraint(r,bodyA_idx,bodyB_idx,quat,0);
 end

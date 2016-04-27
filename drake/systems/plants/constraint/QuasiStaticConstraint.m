@@ -15,11 +15,11 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
     robotnum;
     shrinkFactor
     active;
-    num_pts 
+    num_pts
     bodies;
     body_pts;
   end
-  
+
   properties(SetAccess = protected, GetAccess = protected)
     nq;
     num_bodies;
@@ -27,14 +27,11 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
     plane_row_idx;
   end
   methods
-    function obj = QuasiStaticConstraint(robot,tspan,robotnum)
-      if(nargin<3)
+    function obj = QuasiStaticConstraint(robot,robotnum)
+      if(nargin<2)
         robotnum = 1;
       end
-      if(nargin <2)
-        tspan = [-inf,inf];
-      end
-      obj = obj@RigidBodyConstraint(RigidBodyConstraint.QuasiStaticConstraintCategory,robot,tspan);
+      obj = obj@RigidBodyConstraint(RigidBodyConstraint.QuasiStaticConstraintCategory,robot);
       if(~isempty(setdiff(robotnum,1:length(obj.robot.name))))
         error('Drake:QuasiStaticConstraint: robotnum is not accepted');
       end
@@ -50,33 +47,21 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
       obj.plane_row_idx;
       obj.type = RigidBodyConstraint.QuasiStaticConstraintType;
       if robot.getMexModelPtr~=0 && exist('constructPtrRigidBodyConstraintmex','file')
-        obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.QuasiStaticConstraintType,robot.getMexModelPtr,tspan,robotnum);
+        obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.QuasiStaticConstraintType,robot.getMexModelPtr,robotnum);
       end
     end
-    
-    function flag = isTimeValid(obj,t)
-      if(isempty(t))
-        flag = true;
-      else
-        flag = t>=obj.tspan(1) & t<=obj.tspan(end);
-      end
-    end
-    
+
     function obj = setActive(obj,flag)
       obj.active = logical(flag);
       if obj.mex_ptr~=0
         obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'active',obj.active);
       end
     end
-    
+
     function num_cnst = getNumConstraint(obj,t)
-      if(obj.isTimeValid(t))
-        num_cnst = 3;
-      else
-        num_cnst = 0;
-      end
+      num_cnst = 3;
     end
-    
+
     function obj = addContact(obj,varargin)
       % obj.addContact(body1,body1_pts,body2,body2_pts,...,bodyN,bodyN_pts)
       if obj.mex_ptr~=0
@@ -109,7 +94,7 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
         i = i+2;
       end
     end
-    
+
     function obj = setShrinkFactor(obj,factor)
       if obj.mex_ptr~=0
         obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'factor',factor);
@@ -121,16 +106,11 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
       end
       obj.shrinkFactor = factor;
     end
-    
+
     function [c,dc] = eval(obj,t,kinsol,weights)
-      if(obj.isTimeValid(t))
-        [c,dc] = obj.evalValidTime(kinsol,weights);
-      else
-        c = [];
-        dc = [];
-      end
+      [c,dc] = obj.evalValidTime(kinsol,weights);
     end
-    
+
     function [c,dc] = evalValidTime(obj,kinsol,weights)
       if ~isstruct(kinsol)
         kinsol = obj.robot.doKinematics(kinsol);
@@ -153,7 +133,7 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
       c = com(1:2,:)-support_pos*weights;
       dc = [dcom(1:2,:)-[weights'*dsupport_pos(1:2:end,:);weights'*dsupport_pos(2:2:end,:)] -support_pos];
     end
-    
+
     function flag = checkConstraint(obj,kinsol)
       com = obj.robot.getCOM(kinsol);
       contact_pos = zeros(3,obj.num_pts);
@@ -169,28 +149,19 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
       K = convhull(shrink_vertices(1,:), shrink_vertices(2,:));
       flag = inpolygon(com(1), com(2), shrink_vertices(1,K), shrink_vertices(2,K));
     end
-    
+
     function [lb,ub] = bounds(obj,t)
-      if(obj.isTimeValid(t))
-        lb = [0;0];
-        ub = [0;0];
-      else
-        lb = [];
-        ub = [];
-      end
+      lb = [0;0];
+      ub = [0;0];
     end
     function name_str = name(obj,t)
-      if(obj.isTimeValid(t))
-        if(isempty(t))
-          name_str = {sprintf('QuasiStaticConstraint x');sprintf('QuasiStaticConstraint y')};
-        else
-          name_str = {sprintf('QuasiStaticConstraint x at time %10.4f',t);sprintf('QuasiStaticConstraint y at time %10.4f',t)};
-        end
+      if(isempty(t))
+        name_str = {sprintf('QuasiStaticConstraint x');sprintf('QuasiStaticConstraint y')};
       else
-        name_str = [];
+        name_str = {sprintf('QuasiStaticConstraint x at time %10.4f',t);sprintf('QuasiStaticConstraint y at time %10.4f',t)};
       end
     end
-    
+
     function obj = updateRobotnum(obj,robotnum)
       if(~isempty(setdiff(robotnum,1:length(obj.robot.name))))
         error('Drake:QuasiStaticConstraint: robotnum is not accepted');
@@ -198,7 +169,7 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
       obj.robotnum = robotnum;
       obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'robotnum',robotnum);
     end
-    
+
     function obj = updateRobot(obj,robot)
       obj.robot = robot;
       obj.nq = obj.robot.getNumPositions();
@@ -206,14 +177,13 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
         obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'robot',obj.robot.getMexModelPtr);
       end
     end
-    
+
     function cnstr = generateConstraint(obj,t)
       % generate a FunctionHandleConstraint, a LinearConstraint and a BoundingBoxConstraint if the time is valid
       % @retval cnstr  -- A FunctionHandleConstraint enforcing the CoM on xy-plane matches
       % witht the weighted sum of the shrunk vertices; A LinearConstraint on the weighted
       % sum only, and a BoundingBoxConstraint on the weighted sum only
-      if nargin < 2, t = obj.tspan(1); end;
-      if(obj.isTimeValid(t) && obj.active)
+      if(obj.active)
         name_str = obj.name(t);
         cnstr = {FunctionHandleConstraint([0;0],[0;0],obj.nq+obj.num_pts,@(~,weights,kinsol) obj.evalValidTime(kinsol,weights)),...
           LinearConstraint(1,1,ones(1,obj.num_pts)),...
@@ -228,7 +198,7 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
         cnstr = {};
       end
     end
-    
+
   end
- 
+
 end

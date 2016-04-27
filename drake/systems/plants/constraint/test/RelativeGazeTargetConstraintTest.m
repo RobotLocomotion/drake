@@ -19,5 +19,5 @@ function con = makeCon(r)
   %[x,y,z] = sph2cart(pi*rand-pi/2,pi*rand-pi/2,1);
   x = 1; y = 0; z = 0;
   ax = [x;y;z];
-  con = RelativeGazeTargetConstraint(r,body_a_idx,body_b_idx,ax,target,gaze_origin,pi/32,[0 1]);
+  con = RelativeGazeTargetConstraint(r,body_a_idx,body_b_idx,ax,target,gaze_origin,pi/32);
 end

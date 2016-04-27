@@ -27,9 +27,8 @@ nom_data = load('../../../../examples/Atlas/data/atlas_fp.mat');
 q = nom_data.xstar(1:nq);
 
 shrinkFactor = 0.9;
-tspan = [0,1];
 t = 0.5;
-qsc = QuasiStaticConstraint(r,tspan);
+qsc = QuasiStaticConstraint(r);
 qsc = qsc.setActive(true);
 qsc = qsc.setShrinkFactor(shrinkFactor);
 qsc = qsc.addContact(l_foot,l_foot_pts,r_foot,r_foot_pts);
