@@ -1,12 +1,14 @@
 #pragma once
 
+#include <functional>
+#include <iostream>
+#include <memory>
+#include <stdexcept>
 #include <string>
 #include <vector>
-#include <stdexcept>
-#include <iostream>
-#include <functional>
-#include <memory>
+
 #include <Eigen/Dense>
+
 #include "Gradient.h"
 
 namespace Drake {
