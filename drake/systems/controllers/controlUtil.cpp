@@ -419,19 +419,12 @@ void evaluateXYZExpmapCubicSpline(double t,
 
   // construct autodiff version of expmap
   // autodiff derivatives represent first and second derivative w.r.t. time
-  typedef AutoDiffScalar<Matrix<double, Dynamic, 1>> ADScalar;  // TODO: should
-                                                                // use 1 instead
-                                                                // of dynamic,
-                                                                // but causes
-                                                                // issues with
-                                                                // eigen on MSVC
-                                                                // 32 bit;
-                                                                // should be
-                                                                // fixed in 3.3
-  typedef AutoDiffScalar<Matrix<ADScalar, Dynamic, 1>>
-      ADScalarSecondDeriv;  // TODO: should use 1 instead of dynamic, but causes
-                            // issues with eigen on MSVC 32 bit; should be fixed
-                            // in 3.3
+  // TODO(tkoolen): should use 1 instead of dynamic, but causes issues
+  // with eigen on MSVC 32 bit; should be fixed in 3.3
+  typedef AutoDiffScalar<Matrix<double, Dynamic, 1>> ADScalar;
+  // TODO(tkoolen): should use 1 instead of dynamic, but causes issues
+  // with eigen on MSVC 32 bit; should be fixed in 3.3
+  typedef AutoDiffScalar<Matrix<ADScalar, Dynamic, 1>> ADScalarSecondDeriv;
   Matrix<ADScalarSecondDeriv, 3, 1> expmap_autodiff;
   for (int i = 0; i < expmap_autodiff.size(); i++) {
     expmap_autodiff(i).value() = expmap(i);

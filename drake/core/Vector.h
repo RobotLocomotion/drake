@@ -156,11 +156,11 @@ class CombinedVector {
   CombinedVector(const Eigen::MatrixBase<Derived> &x)
       : vec1(x.topRows(Vector1<ScalarType>::RowsAtCompileTime)),
         vec2(x.bottomRows(Vector2<ScalarType>::RowsAtCompileTime)) {
+    // TODO(RussTedrake): could handle cases where only one of the
+    // subvectors has dynamic size
     static_assert(RowsAtCompileTime != Eigen::Dynamic,
                   "Cannot determine sizes of subvectors because sizes are not "
-                  "known at compile time.");  // TODO: could handle cases where
-                                              // only one of the subvectors has
-                                              // dynamic size
+                  "known at compile time.");
   }
 
   template <typename Derived1, typename Derived2>

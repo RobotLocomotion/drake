@@ -7,7 +7,7 @@ using namespace Eigen;
 
 template <typename CoefficientType>
 bool Polynomial<CoefficientType>::Monomial::hasSameExponents(
-    const Monomial& other) {
+    const Monomial& other) const {
   if (terms.size() != other.terms.size()) return false;
 
   for (typename vector<Term>::const_iterator iter = terms.begin();
@@ -107,6 +107,38 @@ int Polynomial<CoefficientType>::Monomial::getDegree() const {
 }
 
 template <typename CoefficientType>
+int Polynomial<CoefficientType>::Monomial::getDegreeOf(VarType v) const {
+  for (const Term& term : terms) {
+    if (term.var == v) {
+      return term.power;
+    }
+  }
+  return 0;
+}
+
+template <typename CoefficientType>
+typename Polynomial<CoefficientType>::Monomial
+Polynomial<CoefficientType>::Monomial::factor(const Monomial& divisor) const {
+  Monomial error, result;
+  error.coefficient = 0;
+  result.coefficient = coefficient / divisor.coefficient;
+  for (const Term& term : terms) {
+    const PowerType divisor_power = divisor.getDegreeOf(term.var);
+    if (term.power < divisor_power) { return error; }
+    Term new_term;
+    new_term.var = term.var;
+    new_term.power = term.power - divisor_power;
+    if (new_term.power > 0) {
+      result.terms.push_back(new_term);
+    }
+  }
+  for (const Term& divisor_term : divisor.terms) {
+    if (!getDegreeOf(divisor_term.var)) { return error; }
+  }
+  return result;
+}
+
+template <typename CoefficientType>
 int Polynomial<CoefficientType>::getDegree() const {
   int max_degree = 0;
   for (typename vector<Monomial>::const_iterator iter = monomials.begin();
@@ -152,6 +184,18 @@ Polynomial<CoefficientType>::getCoefficients() const {
       coefficients[iter->terms[0].power] = iter->coefficient;
   }
   return coefficients;
+}
+
+template <typename CoefficientType>
+std::set<typename Polynomial<CoefficientType>::VarType>
+Polynomial<CoefficientType>::getVariables() const {
+  std::set<Polynomial<CoefficientType>::VarType> vars;
+  for (const Monomial& monomial : monomials) {
+    for (const Term& term : monomial.terms) {
+      vars.insert(term.var);
+    }
+  }
+  return vars;
 }
 
 template <typename CoefficientType>
