@@ -132,7 +132,8 @@ using VecOut = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
  */
 template <typename F>
 struct FunctionTraits {
-  // TODO: add in/out relation, possibly distinguish differentiable functions
+  // TODO(bradking): add in/out relation, possibly distinguish
+  // differentiable functions
   static size_t numInputs(F const& f) { return f.numInputs(); }
   static size_t numOutputs(F const& f) { return f.numOutputs(); }
   template <typename ScalarType>

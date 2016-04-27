@@ -10,12 +10,12 @@
 #include <string>
 #include "drake/util/convexHull.h"
 #include "drake/examples/Atlas/atlasUtil.h"
-#include "drake/drakeQPLocomotionPlan_export.h"  // TODO: exports
+#include "drake/drakeQPLocomotionPlan_export.h"  // TODO(tkoolen): exports
 #include "drake/core/Gradient.h"
 
-// TODO: discuss possibility of chatter in knee control
-// TODO: make body_motions a map from RigidBody* to BodyMotionData, remove
-// body_id from BodyMotionData?
+// TODO(tkoolen): discuss possibility of chatter in knee control
+// TODO(tkoolen): make body_motions a map from RigidBody* to BodyMotionData,
+// remove body_id from BodyMotionData?
 
 using namespace std;
 using namespace Eigen;
@@ -100,10 +100,10 @@ drake::lcmt_qp_controller_input QPLocomotionPlan::createQPControllerInput(
   if (std::isnan(start_time)) start_time = t_global;
 
   double t_plan = t_global - start_time;
-  if (t_plan < 0)
-    throw std::runtime_error("t_plan is negative!");  // TODO: decide how to
-                                                      // handle this case; fail
-                                                      // fast for now
+  if (t_plan < 0) {
+    // TODO(tkoolen): decide how to handle this case; fail fast for now
+    throw std::runtime_error("t_plan is negative!");
+  }
   t_plan = std::min(t_plan, settings.duration);
 
   // find index into supports vector
@@ -574,7 +574,7 @@ void QPLocomotionPlan::updateSwingTrajectory(
     x1.tail<3>() = quat2expmap(slerp(x0_quat, expmap2quat(x2.tail<3>()), 0.1));
   }
 
-  // TODO: find a less expensive way of doing this
+  // TODO(rdeits): find a less expensive way of doing this
   VectorXd xdf = trajectory.derivative().value(
       trajectory.getEndTime(landing_segment_index));
 

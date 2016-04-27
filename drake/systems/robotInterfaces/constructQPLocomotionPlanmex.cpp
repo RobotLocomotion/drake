@@ -284,7 +284,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs == 1) {
     // By convention, calling the constructor with just one argument (the
     // pointer) should delete the pointer
-    // TODO: make this not depend on number of arguments
+    // TODO(tkoolen): make this not depend on number of arguments
     if (isa(prhs[0], "DrakeMexPointer")) {
       destroyDrakeMexPointer<QPLocomotionPlan*>(prhs[0]);
       return;
