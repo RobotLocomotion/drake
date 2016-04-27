@@ -54,6 +54,7 @@
 
 %immutable RigidBodyTree::actuators;
 %immutable RigidBodyTree::loops;
+%ignore RigidBodyTree::add_rigid_body(std::unique_ptr<RigidBody> body); // unique_ptr confuses SWIG, so we'll ignore it for now
 %include "drake/systems/plants/RigidBodyTree.h"
 %extend RigidBodyTree {
   KinematicsCache<double> doKinematics(const Eigen::MatrixBase<Eigen::VectorXd>& q, const Eigen::MatrixBase<Eigen::VectorXd>& v) {
