@@ -1573,7 +1573,7 @@ RigidBodyTree::relativeRollPitchYawJacobianDotTimesV(
   return ret;
 }
 
-shared_ptr<RigidBody> RigidBodyTree::findLink(std::string linkname,
+RigidBody* RigidBodyTree::findLink(std::string linkname,
                                               int robot) const {
   std::transform(linkname.begin(), linkname.end(), linkname.begin(),
                  ::tolower);  // convert to lower case
@@ -1598,12 +1598,12 @@ shared_ptr<RigidBody> RigidBodyTree::findLink(std::string linkname,
       }
     }
   }
-  if (match >= 0) return bodies[match];
+  if (match >= 0) return bodies[match].get();
   cerr << "could not find any links named " << linkname << endl;
   return nullptr;
 }
 
-shared_ptr<RigidBody> RigidBodyTree::findLink(std::string linkname,
+RigidBody* RigidBodyTree::findLink(std::string linkname,
                                               std::string model_name) const {
   std::transform(linkname.begin(), linkname.end(), linkname.begin(),
                  ::tolower);  // convert to lower case
@@ -1633,7 +1633,7 @@ shared_ptr<RigidBody> RigidBodyTree::findLink(std::string linkname,
       }
     }
   }
-  if (match >= 0) return bodies[match];
+  if (match >= 0) return bodies[match].get();
   cerr << "could not find any links named " << linkname << endl;
   return nullptr;
 }
@@ -1679,7 +1679,7 @@ int RigidBodyTree::findLinkId(const std::string& name, int robot) const {
   return link->body_index;
 }
 
-shared_ptr<RigidBody> RigidBodyTree::findJoint(std::string jointname,
+RigidBody* RigidBodyTree::findJoint(std::string jointname,
                                                int robot) const {
   std::transform(jointname.begin(), jointname.end(), jointname.begin(),
                  ::tolower);  // convert to lower case
@@ -1719,12 +1719,12 @@ shared_ptr<RigidBody> RigidBodyTree::findJoint(std::string jointname,
     cerr << "couldn't find unique joint " << jointname << endl;
     return (nullptr);
   } else {
-    return this->bodies[ind_match];
+    return this->bodies[ind_match].get();
   }
 }
 
 int RigidBodyTree::findJointId(const std::string& name, int robot) const {
-  shared_ptr<RigidBody> link = findJoint(name, robot);
+  RigidBody* link = findJoint(name, robot);
   if (link == nullptr)
     throw std::runtime_error("could not find joint id: " + name);
   return link->body_index;
