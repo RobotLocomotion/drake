@@ -487,7 +487,7 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
         if (limit_node) parseScalarValue(limit_node, "effort", effort_limit);
 
         if (effort_limit != 0.0) {
-          RigidBodyActuator actuator(name, child, 1.0, -effort_limit,
+          RigidBodyActuator actuator(name, *child, 1.0, -effort_limit,
                                      effort_limit);
           model->actuators.push_back(actuator);
         }
@@ -509,7 +509,7 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
       XMLElement* limit_node = axis_node->FirstChildElement("limit");
       if (limit_node) parseScalarValue(limit_node, "effort", effort_limit);
       if (effort_limit != 0.0) {
-        RigidBodyActuator actuator(name, child, 1.0, -effort_limit,
+        RigidBodyActuator actuator(name, *child, 1.0, -effort_limit,
                                    effort_limit);
         model->actuators.push_back(actuator);
       }

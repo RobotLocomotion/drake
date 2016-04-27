@@ -492,7 +492,7 @@ void parseTransmission(RigidBodyTree* model, XMLElement* node) {
   }
 
   model->actuators.push_back(RigidBodyActuator(
-      actuator_name, model->bodies[body_index].get(), gain, effort_min, effort_max));
+      actuator_name, model->body(body_index), gain, effort_min, effort_max));
 }
 
 void parseLoop(RigidBodyTree* model, XMLElement* node) {
