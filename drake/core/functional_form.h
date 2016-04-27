@@ -205,6 +205,19 @@ class DRAKECORE_EXPORT FunctionalForm {
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
 };
 
+#if !defined(DRAKE_DOXYGEN_CXX)
+// Delete comparison operators because any function containing a conditional
+// cannot be evaluated directly with FunctionalForm as its scalar type.
+// Such functions will require a manual overload with FunctionalForm to
+// specify their form.
+bool operator==(FunctionalForm const&, FunctionalForm const&) = delete;
+bool operator!=(FunctionalForm const&, FunctionalForm const&) = delete;
+bool operator<(FunctionalForm const&, FunctionalForm const&) = delete;
+bool operator<=(FunctionalForm const&, FunctionalForm const&) = delete;
+bool operator>(FunctionalForm const&, FunctionalForm const&) = delete;
+bool operator>=(FunctionalForm const&, FunctionalForm const&) = delete;
+#endif  // !defined(DRAKE_DOXYGEN_CXX)
+
 /** \brief Represent a variable in a FunctionalForm.
  *
  * A FunctionalForm is defined with respect to zero or more variables that an
