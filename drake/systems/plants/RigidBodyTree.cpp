@@ -1847,9 +1847,15 @@ void RigidBodyTree::addFrame(std::shared_ptr<RigidBodyFrame> frame) {
   frame->frame_index = -(static_cast<int>(frames.size()) - 1) - 2;  // yuck!!
 }
 
-void RigidBodyTree::add_rigid_body(std::shared_ptr<RigidBody> body) {
-  bodies.push_back(body);
-  body->body_index = static_cast<int>(bodies.size()) - 1;
+RigidBodyTree& RigidBodyTree::add_rigid_body(std::unique_ptr<RigidBody> body) {
+  // TODO (amcastro-tri): body indexes should not be initialized here but on an
+  // initialize call after all bodies and RigidBodySystem's are defined.
+  // This initialize call will make sure that all global and local indexes are
+  // properly computed taking into account a RigidBodySystem could be part of a
+  // larger RigidBodySystem (a system within a tree of systems).
+  body->body_index = static_cast<int>(bodies.size());
+  bodies.push_back(std::move(body));
+  return *this;
 }
 
 int RigidBodyTree::AddFloatingJoint(

@@ -737,13 +737,17 @@ class DRAKERBM_EXPORT RigidBodyTree {
                                                   const RigidBodyTree&);
 
   /**
-   * Adds a rigid body to this rigid body tree. It saves an index value in the
-   * rigid body, which can be used to access the rigid body from within the
-   * "bodies" vector.
+   * @brief Adds and takes ownership of a rigid body.
    *
-   * @param body The rigid body to add to this rigid body tree.
+   * It saves an index value in the rigid body, which can be used to access the
+   * rigid body from within the "bodies" vector.
+   * A RigidBodyTree is the sole owner and manager of the RigidBody's in it.
+   *
+   * @param[in] body The rigid body to add to this rigid body tree.
+   * @return Reference to this tree.
+   *
    */
-  void add_rigid_body(std::shared_ptr<RigidBody> body);
+  RigidBodyTree& add_rigid_body(std::unique_ptr<RigidBody> body);
 
   /**
    * Adds one floating joint to each link specified in the list of link indicies
