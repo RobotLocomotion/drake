@@ -4,3 +4,5 @@ if (MATLAB_FOUND)
 endif(MATLAB_FOUND)
 
 add_matlab_test(NAME systems/plants/joints/test/testDrakeJointsComparison COMMAND testDrakeJointsComparison)
+
+add_executable(testJoint testJoint.cpp)
