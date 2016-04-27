@@ -56,8 +56,8 @@ class DRAKERBM_EXPORT RigidBody {
   }
 
   bool adjacentTo(const RigidBody& other) const {
-    return ((parent.get() == &other && !(joint && joint->isFloating())) ||
-            (other.parent.get() == this &&
+    return ((parent == &other && !(joint && joint->isFloating())) ||
+            (other.parent == this &&
              !(other.joint && other.joint->isFloating())));
   }
 
@@ -96,7 +96,9 @@ class DRAKERBM_EXPORT RigidBody {
   // note: it's very ugly, but parent, dofnum, and pitch also exist currently
   // (independently) at the RigidBodyTree level to represent the featherstone
   // structure.  this version is for the kinematics.
-  std::shared_ptr<RigidBody> parent;
+
+  // TODO(amcastro-tri): make it private and change to parent_
+  RigidBody* parent;
   int body_index;
   int position_num_start;
   int velocity_num_start;
