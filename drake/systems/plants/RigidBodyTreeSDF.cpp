@@ -291,7 +291,7 @@ void parseSDFFrame(RigidBodyTree* model, std::string model_name,
     throw runtime_error("ERROR: frame " + name + " doesn't have a link node");
 
   // The following will throw a std::runtime_error if the link doesn't exist.
-  std::shared_ptr<RigidBody> link = model->findLink(link_name, model_name);
+  RigidBody* link = model->findLink(link_name, model_name);
 
   // Get the frame's pose
   XMLElement* pose = node->FirstChildElement("pose");
