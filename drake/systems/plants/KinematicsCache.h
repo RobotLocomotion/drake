@@ -79,7 +79,7 @@ class KinematicsCache {
   bool inertias_cached;
 
  public:
-  KinematicsCache(const std::vector<std::shared_ptr<RigidBody> >& bodies)
+  KinematicsCache(const std::vector<std::unique_ptr<RigidBody> >& bodies)
       : num_positions(getNumPositions(bodies)),
         num_velocities(getNumVelocities(bodies)),
         q(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(num_positions)),
@@ -241,10 +241,15 @@ class KinematicsCache {
     inertias_cached = false;
   }
 
+  // TODO(amcastro-tri): this method should belong to RigidBodyTree and only be
+  // used on initialization. The RigidBodyTree should have this value stored so
+  // that KinematicsCache can requeste it when needed. See the KinematicsCache
+  // constructor where this request is made.
+  // See TODO fro getNumVelocities.
   static int getNumPositions(
-      const std::vector<std::shared_ptr<RigidBody> >& bodies) {
+      const std::vector<std::unique_ptr<RigidBody> >& bodies) {
     auto add_num_positions =
-        [](int result, std::shared_ptr<RigidBody> body_ptr) -> int {
+        [](int result, const std::unique_ptr<RigidBody>& body_ptr) -> int {
           return body_ptr->hasParent()
                      ? result + body_ptr->getJoint().getNumPositions()
                      : result;
@@ -252,10 +257,11 @@ class KinematicsCache {
     return std::accumulate(bodies.begin(), bodies.end(), 0, add_num_positions);
   }
 
+  // TODO(amcastro-tri): See TODO for getNumPositions.
   static int getNumVelocities(
-      const std::vector<std::shared_ptr<RigidBody> >& bodies) {
+      const std::vector<std::unique_ptr<RigidBody> >& bodies) {
     auto add_num_velocities =
-        [](int result, std::shared_ptr<RigidBody> body_ptr) -> int {
+        [](int result, const std::unique_ptr<RigidBody>& body_ptr) -> int {
           return body_ptr->hasParent()
                      ? result + body_ptr->getJoint().getNumVelocities()
                      : result;
