@@ -1,9 +1,9 @@
 #include "drake/util/Polynomial.h"
-#include "drake/util/SystemIdentification.h"
+#include "drake/solvers/SystemIdentification.h"
 #include "gtest/gtest.h"
 
 namespace drake {
-namespace util {
+namespace solvers {
 namespace {
 
 typedef SystemIdentification<double> SID;
@@ -128,5 +128,5 @@ TEST(SystemIdentificationTest, LumpedParameterRewrite) {
 }
 
 }  // anonymous namespace
-}  // namespace util
+}  // namespace solvers
 }  // namespace drake

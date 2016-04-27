@@ -7,6 +7,11 @@ if (GTEST_FOUND)
   add_executable(testMobyLCP testMobyLCP.cpp)
   target_link_libraries(testMobyLCP drakeOptimization ${GTEST_BOTH_LIBRARIES})
   add_test(NAME testMobyLCP COMMAND testMobyLCP)
+
+  add_executable(test_system_identification test_system_identification.cpp)
+  target_link_libraries(test_system_identification
+                        drakeOptimization ${GTEST_BOTH_LIBRARIES})
+  add_test(NAME test_system_identification COMMAND test_system_identification)
 endif()
 
 add_matlab_test(NAME solvers/test/gloptipoly_constrained_test COMMAND gloptipoly_constrained_test)
