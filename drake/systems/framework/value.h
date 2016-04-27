@@ -85,7 +85,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT AbstractValue {
 /// care to define the copy constructors and override Clone().
 /// @tparam T Must be copy-constructible, and therefore not abstract.
 template <typename T>
-class DRAKESYSTEMFRAMEWORK_EXPORT Value : public AbstractValue {
+class Value : public AbstractValue {
  public:
   explicit Value(const T& v) : value_(v) {}
 
