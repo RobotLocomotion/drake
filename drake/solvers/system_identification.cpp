@@ -235,5 +235,5 @@ SystemIdentification<T>::RewritePolynomialWithLumpedParameters(
 }  // namespace solvers
 }  // namespace drake
 
-template class DRAKEOPTIMIZTION_EXPORT
+template class DRAKEOPTIMIZATION_EXPORT
 drake::solvers::SystemIdentification<double>;
