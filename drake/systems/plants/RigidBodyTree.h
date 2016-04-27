@@ -853,6 +853,34 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
   bool initialized;
 
+  /**
+   * @brief Reorder body list to make sure parents are before children in
+   * the list RigidBodyTree::bodies.
+   *
+   * @see RigidBodyTree::compile
+   *
+   * TODO(amcastro-tri): this implementation is very inefficient since vector
+   * bodies changes in size with the calls to bodies.erase and bodies.insert.
+   * A possibility would be to use std::sort or our own version of a quick sort.
+   */
+  void SortTree() {
+    size_t i = 0;
+    while (i < bodies.size() - 1) {
+      if (bodies[i]->hasParent()) {
+        auto iter = std::find_if(bodies.begin() + i + 1, bodies.end(), [&](std::unique_ptr<RigidBody> const& p) {
+          return p.get() == bodies[i]->parent;
+        });
+        if (iter != bodies.end()) {
+          std::unique_ptr<RigidBody> parent = std::move(*iter);
+          bodies.erase(iter);
+          bodies.insert(bodies.begin() + i, std::move(parent));
+          i--;
+        }
+      }
+      i++;
+    }
+  }
+
   // collision_model and collision_model_no_margins both maintain
   // a collection of the collision geometry in the RBM for use in
   // collision detection of different kinds. collision_model has

@@ -82,19 +82,8 @@ bool RigidBodyTree::transformCollisionFrame(
 }
 
 void RigidBodyTree::compile(void) {
-  // reorder body list to make sure that parents before children in the list
-  size_t i = 0;
-  while (i < bodies.size() - 1) {
-    if (bodies[i]->hasParent()) {
-      auto iter = find(bodies.begin() + i + 1, bodies.end(), bodies[i]->parent);
-      if (iter != bodies.end()) {
-        bodies.erase(iter);
-        bodies.insert(bodies.begin() + i, bodies[i]->parent);
-        i--;
-      }
-    }
-    i++;
-  }
+
+  SortTree();
 
   // weld joints for links that have zero inertia and no children (as seen in
   // pr2.urdf)
