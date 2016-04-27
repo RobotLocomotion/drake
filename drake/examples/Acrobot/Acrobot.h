@@ -63,7 +63,7 @@ class AcrobotInput {
   AcrobotInput(void) : tau(0) {}
 
   template <typename Derived>
-  explicit AcrobotInput(  // NOLINT(runtime/explicit) per Drake::Vector.
+  AcrobotInput(  // NOLINT(runtime/explicit) per Drake::Vector.
       const Eigen::MatrixBase<Derived>& x)
       : tau(x(0)) {}
 
