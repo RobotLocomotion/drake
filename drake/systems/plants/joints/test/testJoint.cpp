@@ -11,12 +11,14 @@ using namespace std;
 
 int main() {
 
-  QuaternionFloating<double> qf;
-  VectorXd q = VectorXd::Random(7);
-  cout << qf.jointTransform(q).matrix() << endl;
+  Isometry3d joint_to_parent_body;
+  joint_to_parent_body.setIdentity();
 
-  const JointType<double>& jt = qf;
-  cout << jointTransform(jt, q).matrix() << endl;
+  Joint<double> j("joint1", joint_to_parent_body, std::unique_ptr<JointType<double>>(new QuaternionFloating<double>()));
+
+  VectorXd q = VectorXd::Random(7);
+  cout << j.getName() << endl;
+  cout << jointTransform(j, q).matrix() << endl;
 
   auto q2 = ConvertMatrix<float>()(q);
   auto& q3 = ConvertMatrix<double>()(q);

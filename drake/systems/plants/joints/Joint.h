@@ -25,14 +25,20 @@ class Joint {
  public:
   static const int MAX_NUM_POSITIONS = 7;
   static const int MAX_NUM_VELOCITIES = 6;
+  const std::unique_ptr<JointType<J>> type;
 
  private:
   const std::string name;
   const Transform3D<J> transform_to_parent_body;
-  const std::unique_ptr<JointType<J>> joint_type;
 
  public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  inline const Transform3D<J> &getTransformToParentBody() const { return transform_to_parent_body; };
+  inline const std::string &getName() const { return name; };
+
+  Joint(const std::string &name, const Transform3D<J> &transform_to_parent_body, std::unique_ptr<JointType<J>> type) :
+      name(name), transform_to_parent_body(transform_to_parent_body), type(std::move(type)) { };
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF((sizeof(Transform3D<J>)%16)==0)
 };
 
 template <typename Scalar>

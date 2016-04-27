@@ -5,12 +5,14 @@
 #ifndef DRAKE_JOINTS_H_H
 #define DRAKE_JOINTS_H_H
 
+#include <Eigen/Geometry>
 #include "drake/systems/plants/joints/Joint.h"
 #include "drake/systems/plants/joints/JointTypes.h"
 
 namespace Drake {
 template <typename J, typename DerivedQ>
-Transform3D<Promote<J, typename DerivedQ::Scalar>> jointTransform(const JointType<J>& type, const Eigen::MatrixBase<DerivedQ> &q) {
+Transform3D<Promote<J, typename DerivedQ::Scalar>> jointTransform(const Joint<J>& joint, const Eigen::MatrixBase<DerivedQ> &q) {
+  const auto& type = *joint.type;
   if (dynamic_cast<const QuaternionFloating<J>*>(&type)) {
     return dynamic_cast<const QuaternionFloating<J>*>(&type)->jointTransform(q);
   }
@@ -18,7 +20,8 @@ Transform3D<Promote<J, typename DerivedQ::Scalar>> jointTransform(const JointTyp
 }
 
 template <typename J, typename DerivedQ>
-MotionSubspace<Promote<J, typename DerivedQ::Scalar>> motionSubspace(const JointType<J>& type, const Eigen::MatrixBase<DerivedQ> &q) {
+MotionSubspace<Promote<J, typename DerivedQ::Scalar>> motionSubspace(const Joint<J>& joint, const Eigen::MatrixBase<DerivedQ> &q) {
+  const auto& type = *joint.type;
   using Q = typename DerivedQ::Scalar;
   if (dynamic_cast<const QuaternionFloating<J>*>(&type)) {
     return dynamic_cast<const QuaternionFloating<J>*>(&type)->template motionSubspace<Q>();
@@ -27,7 +30,8 @@ MotionSubspace<Promote<J, typename DerivedQ::Scalar>> motionSubspace(const Joint
 }
 
 template <typename J, typename DerivedQ>
-ConfigurationDerivativeToVelocity<Promote<J, typename DerivedQ::Scalar>> configurationDerivativeToVelocity(const JointType<J>& type, const Eigen::MatrixBase<DerivedQ>& q) {
+ConfigurationDerivativeToVelocity<Promote<J, typename DerivedQ::Scalar>> configurationDerivativeToVelocity(const Joint<J>& joint, const Eigen::MatrixBase<DerivedQ>& q) {
+  const auto& type = *joint.type;
   if (dynamic_cast<const QuaternionFloating<J>*>(&type)) {
     return dynamic_cast<const QuaternionFloating<J>*>(&type)->template configurationDerivativeToVelocity(q);
   }
@@ -35,7 +39,8 @@ ConfigurationDerivativeToVelocity<Promote<J, typename DerivedQ::Scalar>> configu
 }
 
 template <typename J, typename DerivedQ>
-VelocityToConfigurationDerivative<Promote<J, typename DerivedQ::Scalar>> velocityToConfigurationDerivative(const JointType<J>& type, const Eigen::MatrixBase<DerivedQ>& q) {
+VelocityToConfigurationDerivative<Promote<J, typename DerivedQ::Scalar>> velocityToConfigurationDerivative(const Joint<J>& joint, const Eigen::MatrixBase<DerivedQ>& q) {
+  const auto& type = *joint.type;
   if (dynamic_cast<const QuaternionFloating<J>*>(&type)) {
     return dynamic_cast<const QuaternionFloating<J>*>(&type)->template velocityToConfigurationDerivative(q);
   }
@@ -43,7 +48,8 @@ VelocityToConfigurationDerivative<Promote<J, typename DerivedQ::Scalar>> velocit
 }
 
 template <typename J, typename DerivedV>
-Eigen::Matrix<Promote<J, typename DerivedV::Scalar>, Eigen::Dynamic, 1> frictionTorque(const JointType<J>& type, const Eigen::MatrixBase<DerivedV>& v) {
+Eigen::Matrix<Promote<J, typename DerivedV::Scalar>, Eigen::Dynamic, 1> frictionTorque(const Joint<J>& joint, const Eigen::MatrixBase<DerivedV>& v) {
+  const auto& type = *joint.type;
   using V = typename DerivedV::Scalar;
   if (dynamic_cast<const QuaternionFloating<J>*>(&type)) {
     return dynamic_cast<const QuaternionFloating<J>*>(&type)->template frictionTorque<V>();
