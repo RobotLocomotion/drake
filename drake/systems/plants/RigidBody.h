@@ -24,6 +24,13 @@ class DRAKERBM_EXPORT RigidBody {
 
   bool hasParent() const;
 
+  /**
+   * Checks if the passed RigidBody other is the parent of this body.
+   */
+  bool has_as_parent(const RigidBody& other) const {
+    return parent == &other;
+  }
+
   void addVisualElement(const DrakeShapes::VisualElement& elements);
 
   const DrakeShapes::VectorOfVisualElements& getVisualElements() const;
