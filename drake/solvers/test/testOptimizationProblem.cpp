@@ -94,8 +94,10 @@ void RunNonlinearProgram(OptimizationProblem& prog,
 
   for (const auto& solver : solvers) {
     if (!solver.second->available()) { continue; }
-    ASSERT_NO_THROW(solver.second->Solve(prog)) <<
+    SolutionResult result = SolutionResult::kUnknownError;
+    ASSERT_NO_THROW(result = solver.second->Solve(prog)) <<
         "Using solver: " << solver.first;
+    EXPECT_EQ(result, SolutionResult::kSolutionFound);
     EXPECT_NO_THROW(test_func()) << "Using solver: " << solver.first;
   }
 }

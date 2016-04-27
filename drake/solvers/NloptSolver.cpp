@@ -10,6 +10,8 @@
 #include "drake/core/Gradient.h"
 #include "drake/solvers/Optimization.h"
 
+using drake::solvers::SolutionResult;
+
 namespace Drake {
 namespace {
 Eigen::VectorXd MakeEigenVector(const std::vector<double>& x) {
@@ -200,7 +202,7 @@ bool NloptSolver::available() const {
   return true;
 }
 
-bool NloptSolver::Solve(OptimizationProblem &prog) const {
+SolutionResult NloptSolver::Solve(OptimizationProblem &prog) const {
   int nx = prog.num_vars();
 
   // Load the algo to use and the size.
@@ -287,8 +289,23 @@ bool NloptSolver::Solve(OptimizationProblem &prog) const {
 
   opt.set_xtol_rel(xtol_rel);
 
-  double minf = 0;
-  opt.optimize(x, minf);
+
+  SolutionResult result = SolutionResult::kSolutionFound;
+  nlopt::result nlopt_result = nlopt::FAILURE;
+  try {
+    double minf = 0;
+    nlopt_result = opt.optimize(x, minf);
+  } catch (std::invalid_argument&) {
+    result = SolutionResult::kInvalidInput;
+  } catch (std::bad_alloc&) {
+    result = SolutionResult::kUnknownError;
+  } catch (nlopt::roundoff_limited) {
+    result = SolutionResult::kUnknownError;
+  } catch (nlopt::forced_stop) {
+    result = SolutionResult::kUnknownError;
+  } catch (std::runtime_error&) {
+    result = SolutionResult::kUnknownError;
+  }
 
   Eigen::VectorXd sol(x.size());
   for (int i = 0; i < nx; i++) {
@@ -296,6 +313,7 @@ bool NloptSolver::Solve(OptimizationProblem &prog) const {
   }
 
   prog.SetDecisionVariableValues(sol);
-  return true;
+  prog.SetSolverResult("NLopt", nlopt_result);
+  return result;
 }
 }
