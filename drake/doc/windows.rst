@@ -20,10 +20,8 @@ If you want to use the MATLAB-powered elements of Drake, be sure to:
 
 1. Follow the instructions `here <from_source>`_ to setup MATLAB.
 2. Within MATLAB, execute ``mex -setup`` to set up a compatible compiler (e.g., `Microsoft Visual Studio 2015 Community <http://visualstudio.com>`_).
-3. Installed the `VC++ component <https://msdn.microsoft.com/en-us/library/60k1461a.aspx>`_.
+3. Install the `VC++ component <https://msdn.microsoft.com/en-us/library/60k1461a.aspx>`_.
 4. Add MATLAB to your system path.
-
-If you are using a 64-bit version of MATLAB, you must tell CMAKE to build drake as a 64-bit library. This can be done using a GUI when you configure the project. Or, you can create a new system environment variable ``CMAKE_FLAGS`` and set it to, e.g. ``-G "Visual Studio 14 2015 Win64"``. If you want to build 32-bit binaries, use ``-G "Visual Studio 14 2015"``.
 
 .. _windows-installation-java:
 
@@ -121,6 +119,8 @@ Click on the "Configure" button. Select the generator you want to use. The two o
 
 The screen shot below shows “Visual Studio 14 2015” being selected, which will compile a 32-bit version of Drake.
 
+Note: An alternative way to select the generator is via the ``CMAKE_FLAGS`` environment variable. To use the 64-bit Visual Studio generator, set ``CMAKE_FLAGS`` to be ``-G "Visual Studio 14 2015 Win64"``. If you want to build 32-bit binaries, use ``-G "Visual Studio 14 2015"``.
+
 .. image:: images/windows_install/drake-windows-32bit.png
 
 Click the “Finish” button. Allow the CMake GUI to analyze all of the options. Once done, you should see the following:
@@ -138,24 +138,29 @@ Finally, click on “Generate” to produce the make files. You may now close th
 Compile Drake
 -------------
 
-Back in the ``bash`` terminal, start the compilation process. There are many modes you can compile Drake in. For example, three popular modes are ``Debug``, ``RelWithDebInfo``, and ``Release``. You specify the mode when compiling Drake, as shown below::
+Back in the ``bash`` terminal, start the compilation process. There are many configurations you can compile Drake in. For example, three popular configurations are ``Debug``, ``RelWithDebInfo``, and ``Release``. You specify the mode when compiling Drake, as shown below::
 
     $ cd [build artifacts directory]
-    $ cmake --build . --target ALL_BUILD --config [build mode]
+    $ cmake --build . --target ALL_BUILD --config [build configuration]
 
-For example, to compile Drake in ``RelWithDebInfo``, you would execute::
+For example, to compile Drake using build configuration ``RelWithDebInfo``, execute::
 
     $ cd [build artifacts directory]
     $ cmake --build . --target ALL_BUILD --config RelWithDebInfo
 
-Sit back. Grab a coffee. The compilation will take a while.
+Sit back. Grab a coffee. The compilation process will take a while.
+
+Note that after this initial build is done, if you change Drake's code, you can more quickly recompile by executing::
+
+    $ cd [build artifacts directory]/drake
+    $ cmake --build . --target ALL_BUILD --config [build configuration]
 
 Update PATH Environment Variable
 --------------------------------
 
 The compilation process generates a bunch of shared ``.dll`` libraries. You need to add the path to these directories to your ``PATH`` environment variable. Specifically, add the following:
 
-1. [build artifacts directory]\drake\lib\[build mode]
+1. [build artifacts directory]\drake\lib\[build configuration]
 2. [build artifacts directory]\install\lib
 
 Test Compilation Results
