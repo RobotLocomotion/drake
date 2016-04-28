@@ -25,9 +25,8 @@ using namespace std;
 using namespace Eigen;
 using namespace tinyxml2;
 
-void parseSDFInertial(RigidBody* body, XMLElement* node,
-                      RigidBodyTree* model, PoseMap& pose_map,
-                      const Isometry3d& T_link) {
+void parseSDFInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
+                      PoseMap& pose_map, const Isometry3d& T_link) {
   Isometry3d T = T_link;
   XMLElement* pose = node->FirstChildElement("pose");
   if (pose) poseValueToTransform(pose, pose_map, T, T_link);
@@ -125,9 +124,9 @@ bool parseSDFGeometry(XMLElement* node, const PackageMap& package_map,
   return true;
 }
 
-void parseSDFVisual(RigidBody* body, XMLElement* node,
-                    RigidBodyTree* model, const PackageMap& package_map,
-                    const string& root_dir, PoseMap& pose_map,
+void parseSDFVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
+                    const PackageMap& package_map, const string& root_dir,
+                    PoseMap& pose_map,
                     const Isometry3d& transform_parent_to_model) {
   Isometry3d transform_to_model = transform_parent_to_model;
   XMLElement* pose = node->FirstChildElement("pose");
@@ -169,9 +168,9 @@ void parseSDFVisual(RigidBody* body, XMLElement* node,
   }
 }
 
-void parseSDFCollision(RigidBody* body, XMLElement* node,
-                       RigidBodyTree* model, const PackageMap& package_map,
-                       const string& root_dir, PoseMap& pose_map,
+void parseSDFCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
+                       const PackageMap& package_map, const string& root_dir,
+                       PoseMap& pose_map,
                        const Isometry3d& transform_parent_to_model) {
   Isometry3d transform_to_model = transform_parent_to_model;
   XMLElement* pose = node->FirstChildElement("pose");
