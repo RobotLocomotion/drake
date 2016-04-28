@@ -60,6 +60,7 @@ class SensorVisualizerLidar {
     // Creates a ROS topic publisher for each LIDAR sensor in the rigid body
     // system.
     for (auto &sensor : rigid_body_system->GetSensors()) {
+
       // Attempts to cast the RigidBodySensor pointer to a RigidBodyDepthSensor
       // pointer. This actually does two things simultaneously. First it
       // determines whether the pointer in fact points to a
@@ -75,9 +76,7 @@ class SensorVisualizerLidar {
         // sensor's output. The ROS topic is "drake/lidar/[name of sensor]/".
         // It then creates a sensor_msgs::LaserScan message for each publisher.
 
-        std::cout << "**** Sensor " << depth_sensor->get_name()
-                  << " is a LIDAR sensor!" << std::endl;
-
+        // Creates the ROS topic publisher for the current LIDAR sensor.
         if (lidar_publishers_.find(depth_sensor->get_name()) ==
             lidar_publishers_.end()) {
           std::string topic_name = "drake/lidar/" + depth_sensor->get_name();
@@ -90,6 +89,7 @@ class SensorVisualizerLidar {
               " found when creating a ROS topic publisher for the sensor!");
         }
 
+        // Creates the ROS message for the current LIDAR sensor.
         if (lidar_messages_.find(depth_sensor->get_name()) ==
             lidar_messages_.end()) {
           std::unique_ptr<sensor_msgs::LaserScan> message(
