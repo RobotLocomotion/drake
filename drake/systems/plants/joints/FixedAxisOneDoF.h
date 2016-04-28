@@ -7,7 +7,7 @@ namespace Drake {
 
 template <typename J>
 class FixedAxisOneDoF : public JointType<J> {
- private:
+ protected:
   SpatialVector<J> joint_axis;
   J damping;
   J coulomb_friction;

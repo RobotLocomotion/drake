@@ -6,7 +6,7 @@
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/systems/plants/joints/QuaternionFloating.h"
 #include "drake/systems/plants/joints/RollPitchYawFloating.h"
-#include "drake/systems/plants/joints/FixedAxisOneDoF.h"
+#include "drake/systems/plants/joints/Revolute.h"
 
 namespace Drake {
 
