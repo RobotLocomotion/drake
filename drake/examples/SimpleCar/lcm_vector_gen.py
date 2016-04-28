@@ -14,6 +14,7 @@ def put(fileobj, text, newlines_after=0):
 
 INDICES_BEGIN = """
 struct %(indices)s {
+  static const int kNumCoordiates = %(nfields)d;
 """
 INDICES_FIELD = """static const int %(kname)s = %(k)d;"""
 INDICES_END = """
@@ -28,16 +29,17 @@ def to_kname(field):
 def generate_indices(context, fields):
     # pylint: disable=unused-variable
     header = context["header"]
-    camel = context["camel"]
-    put(header, INDICES_BEGIN % context, 1)
+    indices = context["indices"]
+    nfields = len(fields)
+    put(header, INDICES_BEGIN % locals(), 2)
     for k, field in enumerate(fields):
         kname = to_kname(field)
         put(header, INDICES_FIELD % locals(), 1)
-    put(header, INDICES_END % context, 2)
+    put(header, INDICES_END % locals(), 2)
 
 
 DEFAULT_CTOR = """
-  %(camel)s() : value_(Eigen::Matrix<ScalarType, %(nfields)d, 1>::Zero()) {}
+  %(camel)s() : value_(Eigen::Matrix<ScalarType, K::kNumCoordiates, 1>::Zero()) {}
 """
 
 def generate_default_ctor(context, _):
@@ -49,7 +51,7 @@ EIGEN_CTOR = """
   template <typename Derived>
   // NOLINTNEXTLINE(runtime/explicit)
   %(camel)s(const Eigen::MatrixBase<Derived>& value)
-      : value_(value.segment(0, %(nfields)d)) {}
+      : value_(value.segment(0, K::kNumCoordiates)) {}
 """
 
 def generate_eigen_ctor(context, _):
@@ -60,7 +62,7 @@ def generate_eigen_ctor(context, _):
 EIGEN_ASSIGNMENT = """
   template <typename Derived>
   %(camel)s& operator=(const Eigen::MatrixBase<Derived>& value) {
-    value_ = value.segment(0, %(nfields)s);
+    value_ = value.segment(0, K::kNumCoordiates);
     return *this;
   }
 """
@@ -196,7 +198,7 @@ class %(camel)s {
 
   static const int RowsAtCompileTime = Eigen::Dynamic;
   typedef Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> EigenType;
-  size_t size() const { return %(nfields)d; }
+  size_t size() const { return K::kNumCoordiates; }
 
 """
 
@@ -243,7 +245,6 @@ def generate_code(args):
     header = open(header_file, 'w')
     lcmtype = open(
         os.path.join(args.lcmtype_dir, "lcmt_%s_t.lcm" % snake), 'w')
-    nfields = len(args.fields)
 
     put(header, HEADER_PREAMBLE % locals(), 2)
     generate_indices(locals(), args.fields)

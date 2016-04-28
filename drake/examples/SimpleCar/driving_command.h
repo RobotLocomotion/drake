@@ -13,6 +13,8 @@
 namespace Drake {
 
 struct DrivingCommandIndices {
+  static const int kNumCoordiates = 3;
+
   static const int kSteeringAngle = 0;
   static const int kThrottle = 1;
   static const int kBrake = 2;
@@ -27,18 +29,19 @@ class DrivingCommand {
 
   static const int RowsAtCompileTime = Eigen::Dynamic;
   typedef Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> EigenType;
-  size_t size() const { return 3; }
+  size_t size() const { return K::kNumCoordiates; }
 
-  DrivingCommand() : value_(Eigen::Matrix<ScalarType, 3, 1>::Zero()) {}
+  DrivingCommand()
+      : value_(Eigen::Matrix<ScalarType, K::kNumCoordiates, 1>::Zero()) {}
 
   template <typename Derived>
   // NOLINTNEXTLINE(runtime/explicit)
   DrivingCommand(const Eigen::MatrixBase<Derived>& value)
-      : value_(value.segment(0, 3)) {}
+      : value_(value.segment(0, K::kNumCoordiates)) {}
 
   template <typename Derived>
   DrivingCommand& operator=(const Eigen::MatrixBase<Derived>& value) {
-    value_ = value.segment(0, 3);
+    value_ = value.segment(0, K::kNumCoordiates);
     return *this;
   }
 

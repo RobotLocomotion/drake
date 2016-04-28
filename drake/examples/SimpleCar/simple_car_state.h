@@ -13,6 +13,8 @@
 namespace Drake {
 
 struct SimpleCarStateIndices {
+  static const int kNumCoordiates = 4;
+
   static const int kX = 0;
   static const int kY = 1;
   static const int kHeading = 2;
@@ -28,18 +30,19 @@ class SimpleCarState {
 
   static const int RowsAtCompileTime = Eigen::Dynamic;
   typedef Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> EigenType;
-  size_t size() const { return 4; }
+  size_t size() const { return K::kNumCoordiates; }
 
-  SimpleCarState() : value_(Eigen::Matrix<ScalarType, 4, 1>::Zero()) {}
+  SimpleCarState()
+      : value_(Eigen::Matrix<ScalarType, K::kNumCoordiates, 1>::Zero()) {}
 
   template <typename Derived>
   // NOLINTNEXTLINE(runtime/explicit)
   SimpleCarState(const Eigen::MatrixBase<Derived>& value)
-      : value_(value.segment(0, 4)) {}
+      : value_(value.segment(0, K::kNumCoordiates)) {}
 
   template <typename Derived>
   SimpleCarState& operator=(const Eigen::MatrixBase<Derived>& value) {
-    value_ = value.segment(0, 4);
+    value_ = value.segment(0, K::kNumCoordiates);
     return *this;
   }
 
