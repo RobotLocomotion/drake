@@ -21,6 +21,22 @@ enum class FunctionalForm::Class {
 
 class FunctionalForm::Internal {
  public:
+  // Short constant names to make op tables more readable.
+  static Class constexpr ZERO = Class::kZero;
+  static Class constexpr CONS = Class::kConstant;
+  static Class constexpr LIN = Class::kLinear;
+  static Class constexpr AFF = Class::kAffine;
+  static Class constexpr POLY = Class::kPolynomial;
+  static Class constexpr DIFF = Class::kDifferentiable;
+  static Class constexpr ARB = Class::kArbitrary;
+  static Class constexpr UNDF = Class::kUndefined;
+
+  // Tables recording how ops combine forms.
+  static int constexpr kSize = static_cast<int>(Class::kUndefined) + 1;
+  static Class const kAdd[kSize][kSize];
+  static Class const kMul[kSize][kSize];
+  static Class const kDiv[kSize][kSize];
+
   // Only some of the form classes need to carry variables.
   static bool need_vars(Class c) {
     return c != Class::kZero && c != Class::kConstant;
@@ -95,6 +111,111 @@ bool FunctionalForm::Is(FunctionalForm const& r) const {
 }
 
 FunctionalForm::Variables FunctionalForm::GetVariables() const { return vars_; }
+
+FunctionalForm operator+(FunctionalForm const& l, FunctionalForm const& r) {
+  FunctionalForm::Class c =
+      FunctionalForm::Internal::kAdd[int(l.class_)][int(r.class_)];
+  FunctionalForm::Variables vars;
+  if (FunctionalForm::Internal::need_vars(c)) {
+    vars = FunctionalForm::Variables::Union(l.vars_, r.vars_);
+  }
+  return FunctionalForm(c, std::move(vars));
+}
+
+FunctionalForm operator-(FunctionalForm const& l, FunctionalForm const& r) {
+  FunctionalForm::Class c =
+      FunctionalForm::Internal::kAdd[int(l.class_)][int(r.class_)];
+  FunctionalForm::Variables vars;
+  if (FunctionalForm::Internal::need_vars(c)) {
+    vars = FunctionalForm::Variables::Union(l.vars_, r.vars_);
+  }
+  return FunctionalForm(c, std::move(vars));
+}
+
+FunctionalForm operator*(FunctionalForm const& l, FunctionalForm const& r) {
+  FunctionalForm::Class c =
+      FunctionalForm::Internal::kMul[int(l.class_)][int(r.class_)];
+  FunctionalForm::Variables vars;
+  if (FunctionalForm::Internal::need_vars(c)) {
+    vars = FunctionalForm::Variables::Union(l.vars_, r.vars_);
+  }
+  return FunctionalForm(c, std::move(vars));
+}
+
+FunctionalForm operator/(FunctionalForm const& l, FunctionalForm const& r) {
+  FunctionalForm::Class c =
+      FunctionalForm::Internal::kDiv[int(l.class_)][int(r.class_)];
+  FunctionalForm::Variables vars;
+  if (FunctionalForm::Internal::need_vars(c)) {
+    vars = FunctionalForm::Variables::Union(l.vars_, r.vars_);
+  }
+  return FunctionalForm(c, std::move(vars));
+}
+
+FunctionalForm& operator+=(FunctionalForm& l, FunctionalForm const& r) {
+  l = l + r;
+  return l;
+}
+
+FunctionalForm& operator-=(FunctionalForm& l, FunctionalForm const& r) {
+  l = l - r;
+  return l;
+}
+
+FunctionalForm& operator*=(FunctionalForm& l, FunctionalForm const& r) {
+  l = l * r;
+  return l;
+}
+
+FunctionalForm& operator/=(FunctionalForm& l, FunctionalForm const& r) {
+  l = l / r;
+  return l;
+}
+
+FunctionalForm& operator+=(FunctionalForm& l, double r) {
+  l = l + r;
+  return l;
+}
+
+FunctionalForm& operator-=(FunctionalForm& l, double r) {
+  l = l - r;
+  return l;
+}
+
+FunctionalForm& operator*=(FunctionalForm& l, double r) {
+  l = l * r;
+  return l;
+}
+
+FunctionalForm& operator/=(FunctionalForm& l, double r) {
+  l = l / r;
+  return l;
+}
+
+FunctionalForm operator+(FunctionalForm const& l, double r) {
+  return l + FunctionalForm(r);
+}
+FunctionalForm operator+(double l, FunctionalForm const& r) {
+  return FunctionalForm(l) + r;
+}
+FunctionalForm operator-(FunctionalForm const& l, double r) {
+  return l - FunctionalForm(r);
+}
+FunctionalForm operator-(double l, FunctionalForm const& r) {
+  return FunctionalForm(l) - r;
+}
+FunctionalForm operator*(FunctionalForm const& l, double r) {
+  return l * FunctionalForm(r);
+}
+FunctionalForm operator*(double l, FunctionalForm const& r) {
+  return FunctionalForm(l) * r;
+}
+FunctionalForm operator/(FunctionalForm const& l, double r) {
+  return l / FunctionalForm(r);
+}
+FunctionalForm operator/(double l, FunctionalForm const& r) {
+  return FunctionalForm(l) / r;
+}
 
 static std::string const kFunctionalFormClassNames[] = {
     "zero", "cons", "lin", "aff", "poly", "diff", "arb", "undf",
@@ -351,5 +472,52 @@ bool operator!=(FunctionalForm::Variables const& lhs,
                 FunctionalForm::Variables const& rhs) {
   return !(lhs == rhs);
 }
+
+//---------------------------------------------------------------------------
+
+FunctionalForm::Class const FunctionalForm::Internal::kAdd[kSize][kSize] = {
+    /* clang-format off */
+    /*    \ r:  ZERO  CONS   LIN   AFF  POLY  DIFF   ARB  UNDF */
+    /*  l: \    ----  ----  ----  ----  ----  ----  ----  ---- */
+    /* ZERO */ {ZERO, CONS,  LIN,  AFF, POLY, DIFF,  ARB, UNDF},
+    /* CONS */ {CONS, CONS,  AFF,  AFF, POLY, DIFF,  ARB, UNDF},
+    /* LIN  */ { LIN,  AFF,  LIN,  AFF, POLY, DIFF,  ARB, UNDF},
+    /* AFF  */ { AFF,  AFF,  AFF,  AFF, POLY, DIFF,  ARB, UNDF},
+    /* POLY */ {POLY, POLY, POLY, POLY, POLY, DIFF,  ARB, UNDF},
+    /* DIFF */ {DIFF, DIFF, DIFF, DIFF, DIFF, DIFF,  ARB, UNDF},
+    /* ARB  */ { ARB,  ARB,  ARB,  ARB,  ARB,  ARB,  ARB, UNDF},
+    /* UNDF */ {UNDF, UNDF, UNDF, UNDF, UNDF, UNDF, UNDF, UNDF},
+    /* clang-format on */
+};
+
+FunctionalForm::Class const FunctionalForm::Internal::kMul[kSize][kSize] = {
+    /* clang-format off */
+    /*    \ r:  ZERO  CONS   LIN   AFF  POLY  DIFF   ARB  UNDF */
+    /*  l: \    ----  ----  ----  ----  ----  ----  ----  ---- */
+    /* ZERO */ {ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, UNDF},
+    /* CONS */ {ZERO, CONS,  LIN,  AFF, POLY, DIFF,  ARB, UNDF},
+    /* LIN  */ {ZERO,  LIN, POLY, POLY, POLY, DIFF,  ARB, UNDF},
+    /* AFF  */ {ZERO,  AFF, POLY, POLY, POLY, DIFF,  ARB, UNDF},
+    /* POLY */ {ZERO, POLY, POLY, POLY, POLY, DIFF,  ARB, UNDF},
+    /* DIFF */ {ZERO, DIFF, DIFF, DIFF, DIFF, DIFF,  ARB, UNDF},
+    /* ARB  */ {ZERO,  ARB,  ARB,  ARB,  ARB,  ARB,  ARB, UNDF},
+    /* UNDF */ {UNDF, UNDF, UNDF, UNDF, UNDF, UNDF, UNDF, UNDF},
+    /* clang-format on */
+};
+
+FunctionalForm::Class const FunctionalForm::Internal::kDiv[kSize][kSize] = {
+    /* clang-format off */
+    /*    \ r:  ZERO  CONS   LIN   AFF  POLY  DIFF   ARB  UNDF */
+    /*  l: \    ----  ----  ----  ----  ----  ----  ----  ---- */
+    /* ZERO */ {UNDF, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, UNDF},
+    /* CONS */ {UNDF, CONS, DIFF, DIFF, DIFF, DIFF,  ARB, UNDF},
+    /* LIN  */ {UNDF,  LIN, DIFF, DIFF, DIFF, DIFF,  ARB, UNDF},
+    /* AFF  */ {UNDF,  AFF, DIFF, DIFF, DIFF, DIFF,  ARB, UNDF},
+    /* POLY */ {UNDF, POLY, DIFF, DIFF, DIFF, DIFF,  ARB, UNDF},
+    /* DIFF */ {UNDF, DIFF, DIFF, DIFF, DIFF, DIFF,  ARB, UNDF},
+    /* ARB  */ {UNDF,  ARB,  ARB,  ARB,  ARB,  ARB,  ARB, UNDF},
+    /* UNDF */ {UNDF, UNDF, UNDF, UNDF, UNDF, UNDF, UNDF, UNDF},
+    /* clang-format on */
+};
 
 }  // namespace drake
