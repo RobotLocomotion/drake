@@ -1,3 +1,5 @@
+.. _unit-test-instructions:
+
 ***************************************
 Detailed Notes on How to Run Unit Tests
 ***************************************
