@@ -33,12 +33,12 @@ class DrivingCommand {
 
   template <typename Derived>
   // NOLINTNEXTLINE(runtime/explicit)
-  DrivingCommand(const Eigen::MatrixBase<Derived>& other)
-      : value_(other.segment(0, 3)) {}
+  DrivingCommand(const Eigen::MatrixBase<Derived>& value)
+      : value_(value.segment(0, 3)) {}
 
   template <typename Derived>
-  DrivingCommand& operator=(const Eigen::MatrixBase<Derived>& other) {
-    value_ = other.segment(0, 3);
+  DrivingCommand& operator=(const Eigen::MatrixBase<Derived>& value) {
+    value_ = value.segment(0, 3);
     return *this;
   }
 

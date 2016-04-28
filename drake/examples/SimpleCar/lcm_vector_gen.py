@@ -48,8 +48,8 @@ def generate_default_ctor(context, _):
 EIGEN_CTOR = """
   template <typename Derived>
   // NOLINTNEXTLINE(runtime/explicit)
-  %(camel)s(const Eigen::MatrixBase<Derived>& other)
-      : value_(other.segment(0, %(nfields)d)) {}
+  %(camel)s(const Eigen::MatrixBase<Derived>& value)
+      : value_(value.segment(0, %(nfields)d)) {}
 """
 
 def generate_eigen_ctor(context, _):
@@ -59,8 +59,8 @@ def generate_eigen_ctor(context, _):
 
 EIGEN_ASSIGNMENT = """
   template <typename Derived>
-  %(camel)s& operator=(const Eigen::MatrixBase<Derived>& other) {
-    value_ = other.segment(0, %(nfields)s);
+  %(camel)s& operator=(const Eigen::MatrixBase<Derived>& value) {
+    value_ = value.segment(0, %(nfields)s);
     return *this;
   }
 """

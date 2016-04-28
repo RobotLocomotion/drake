@@ -36,12 +36,12 @@ class EulerFloatingJointState {
 
   template <typename Derived>
   // NOLINTNEXTLINE(runtime/explicit)
-  EulerFloatingJointState(const Eigen::MatrixBase<Derived>& other)
-      : value_(other.segment(0, 6)) {}
+  EulerFloatingJointState(const Eigen::MatrixBase<Derived>& value)
+      : value_(value.segment(0, 6)) {}
 
   template <typename Derived>
-  EulerFloatingJointState& operator=(const Eigen::MatrixBase<Derived>& other) {
-    value_ = other.segment(0, 6);
+  EulerFloatingJointState& operator=(const Eigen::MatrixBase<Derived>& value) {
+    value_ = value.segment(0, 6);
     return *this;
   }
 

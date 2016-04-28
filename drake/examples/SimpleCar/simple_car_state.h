@@ -34,12 +34,12 @@ class SimpleCarState {
 
   template <typename Derived>
   // NOLINTNEXTLINE(runtime/explicit)
-  SimpleCarState(const Eigen::MatrixBase<Derived>& other)
-      : value_(other.segment(0, 4)) {}
+  SimpleCarState(const Eigen::MatrixBase<Derived>& value)
+      : value_(value.segment(0, 4)) {}
 
   template <typename Derived>
-  SimpleCarState& operator=(const Eigen::MatrixBase<Derived>& other) {
-    value_ = other.segment(0, 4);
+  SimpleCarState& operator=(const Eigen::MatrixBase<Derived>& value) {
+    value_ = value.segment(0, 4);
     return *this;
   }
 
