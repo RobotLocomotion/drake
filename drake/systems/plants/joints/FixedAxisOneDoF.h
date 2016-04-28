@@ -101,6 +101,16 @@ class FixedAxisOneDoF : public JointType<J> {
     this->coulomb_window = coulomb_window;
   }
 
+  void setJointLimits(double joint_limit_min, double joint_limit_max) {
+    if (joint_limit_min > joint_limit_max) {
+      throw std::logic_error(
+          "joint_limit_min cannot be larger than joint_limit_max");
+    }
+
+    this->JointType<J>::joint_limit_min[0] = joint_limit_min;
+    this->JointType<J>::joint_limit_max[0] = joint_limit_max;
+  }
+
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF((sizeof(SpatialVector<J>)%16)==0)
 };
 

@@ -4,8 +4,8 @@
 
 using namespace std;
 using namespace Eigen;
+using namespace Drake;
 
-typedef DrakeJoint::AutoDiffFixedMaxSize AutoDiffFixedMaxSize;
 typedef AutoDiffScalar<VectorXd> AutoDiffDynamicSize;
 
 default_random_engine generator;

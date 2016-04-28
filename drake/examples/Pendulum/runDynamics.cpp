@@ -20,7 +20,7 @@ int main(int argc, char* argv[]) {
   auto p = make_shared<Pendulum>();
   auto v = make_shared<BotVisualizer<PendulumState> >(
       lcm, getDrakePath() + "/examples/Pendulum/Pendulum.urdf",
-      DrakeJoint::FIXED);
+      Drake::FloatingBaseType::FIXED);
 
   PendulumState<double> x0;
   x0.theta = 1;

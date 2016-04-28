@@ -13,7 +13,6 @@ template <typename Scalar>
 using MatrixX = Matrix<Scalar, Dynamic, Dynamic>;
 
 typedef AutoDiffScalar<VectorXd> AutoDiffDynamicSize;
-typedef DrakeJoint::AutoDiffFixedMaxSize AutoDiffFixedMaxSize;
 
 template <typename... Args, typename ReturnType>
 auto make_function(ReturnType (*p)(Args...))

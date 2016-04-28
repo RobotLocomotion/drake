@@ -5,7 +5,6 @@
 #include "drake/util/drakeMexUtil.h"
 #include "rigidBodyTreeMexConversions.h"
 #include <stdexcept>
-#include "drake/systems/plants/joints/DrakeJoints.h"
 
 using namespace Eigen;
 using namespace std;

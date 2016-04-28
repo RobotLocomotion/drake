@@ -31,6 +31,8 @@ class JointType {
  private:
   int num_positions;
   int num_velocities;
+
+ protected:
   Eigen::Matrix<J, Eigen::Dynamic, 1> joint_limit_min;
   Eigen::Matrix<J, Eigen::Dynamic, 1> joint_limit_max;
 

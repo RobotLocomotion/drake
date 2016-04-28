@@ -2,7 +2,6 @@
 #include <sstream>
 #include <string>
 
-#include "drake/systems/plants/joints/DrakeJoints.h"
 #include "drake/systems/plants/material_map.h"
 #include "drake/systems/plants/rigid_body_tree_urdf.h"
 #include "drake/systems/plants/xmlUtil.h"
@@ -10,6 +9,7 @@
 using namespace std;
 using namespace Eigen;
 using namespace tinyxml2;
+using namespace Drake;
 
 namespace {
 
@@ -321,8 +321,8 @@ bool parseLink(RigidBodyTree* model, std::string robot_name, XMLElement* node,
   return true;
 }
 
-template <typename JointType>
-void setLimits(XMLElement* node, FixedAxisOneDoFJoint<JointType>* fjoint) {
+template <typename T>
+void setLimits(XMLElement* node, FixedAxisOneDoF<T>* fjoint) {
   XMLElement* limit_node = node->FirstChildElement("limit");
   if (fjoint != nullptr && limit_node) {
     double lower = -numeric_limits<double>::infinity(),
@@ -333,8 +333,8 @@ void setLimits(XMLElement* node, FixedAxisOneDoFJoint<JointType>* fjoint) {
   }
 }
 
-template <typename JointType>
-void setDynamics(XMLElement* node, FixedAxisOneDoFJoint<JointType>* fjoint) {
+template <typename T>
+void setDynamics(XMLElement* node, FixedAxisOneDoF<T>* fjoint) {
   XMLElement* dynamics_node = node->FirstChildElement("dynamics");
   if (fjoint != nullptr && dynamics_node) {
     double damping = 0.0, coulomb_friction = 0.0, coulomb_window = 0.0;
@@ -406,30 +406,29 @@ void parseJoint(RigidBodyTree* model, XMLElement* node) {
     axis.normalize();
   }
 
-  // now construct the actual joint (based on it's type)
-  DrakeJoint* joint = nullptr;
+  // now construct the actual joint (based on its type)
+  JointType<double>* joint = nullptr;
 
   if (type.compare("revolute") == 0 || type.compare("continuous") == 0) {
-    FixedAxisOneDoFJoint<RevoluteJoint>* fjoint =
-        new RevoluteJoint(name, transform_to_parent_body, axis);
+    FixedAxisOneDoF<double>* fjoint = new Revolute<double>(axis);
     setDynamics(node, fjoint);
     setLimits(node, fjoint);
     joint = fjoint;
   } else if (type.compare("fixed") == 0) {
-    joint = new FixedJoint(name, transform_to_parent_body);
+    joint = new Fixed<double>();
   } else if (type.compare("prismatic") == 0) {
-    FixedAxisOneDoFJoint<PrismaticJoint>* fjoint =
-        new PrismaticJoint(name, transform_to_parent_body, axis);
+    FixedAxisOneDoF<double>* fjoint = new Prismatic<double>(axis);
     setDynamics(node, fjoint);
     setLimits(node, fjoint);
     joint = fjoint;
   } else if (type.compare("floating") == 0) {
-    joint = new RollPitchYawFloatingJoint(name, transform_to_parent_body);
+    joint = new RollPitchYawFloating<double>();
   } else {
     throw runtime_error("ERROR: Unrecognized joint type: " + type);
   }
 
-  unique_ptr<DrakeJoint> joint_unique_ptr(joint);
+  unique_ptr<JointType<double>> type_unique_ptr(joint);
+  unique_ptr<DrakeJoint> joint_unique_ptr(new Joint<double>(name, transform_to_parent_body, std::move(type_unique_ptr)));
   model->bodies[child_index]->setJoint(move(joint_unique_ptr));
   model->bodies[child_index]->parent = model->bodies[parent_index];
 }
@@ -534,7 +533,7 @@ void parseFrame(RigidBodyTree* model, XMLElement* node) {
 
 void parseRobot(RigidBodyTree* model, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
-                const DrakeJoint::FloatingBaseType floating_base_type,
+                const Drake::FloatingBaseType floating_base_type,
                 std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr) {
   if (!node->Attribute("name"))
     throw runtime_error("Error: your robot must have a name attribute");
@@ -601,7 +600,7 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
 
 void parseURDF(RigidBodyTree* model, XMLDocument* xml_doc,
                PackageMap& package_map, const string& root_dir,
-               const DrakeJoint::FloatingBaseType floating_base_type,
+               const Drake::FloatingBaseType floating_base_type,
                std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr) {
   populatePackageMap(package_map);
   XMLElement* node = xml_doc->FirstChildElement("robot");
@@ -644,7 +643,7 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
 
 void RigidBodyTree::addRobotFromURDFString(
     const string& xml_string, const string& root_dir,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const Drake::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   PackageMap package_map;
   addRobotFromURDFString(xml_string, package_map, root_dir, floating_base_type,
@@ -653,7 +652,7 @@ void RigidBodyTree::addRobotFromURDFString(
 
 void RigidBodyTree::addRobotFromURDFString(
     const string& xml_string, PackageMap& package_map, const string& root_dir,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const Drake::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   XMLDocument xml_doc;
   xml_doc.Parse(xml_string.c_str());
@@ -663,7 +662,7 @@ void RigidBodyTree::addRobotFromURDFString(
 
 void RigidBodyTree::addRobotFromURDF(
     const string& urdf_filename,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const Drake::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   PackageMap package_map;
   addRobotFromURDF(urdf_filename, package_map, floating_base_type,
@@ -672,7 +671,7 @@ void RigidBodyTree::addRobotFromURDF(
 
 void RigidBodyTree::addRobotFromURDF(
     const string& urdf_filename, PackageMap& package_map,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const Drake::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   XMLDocument xml_doc;
   xml_doc.LoadFile(urdf_filename.data());

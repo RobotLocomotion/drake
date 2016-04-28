@@ -682,7 +682,7 @@ void parseSDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
 
 void RigidBodySystem::addRobotFromURDFString(
     const string& xml_string, const string& root_dir,
-    const DrakeJoint::FloatingBaseType floating_base_type) {
+    const Drake::FloatingBaseType floating_base_type) {
   // first add the urdf to the rigid body tree
   tree->addRobotFromURDFString(xml_string, root_dir, floating_base_type);
 
@@ -696,7 +696,7 @@ void RigidBodySystem::addRobotFromURDFString(
 
 void RigidBodySystem::addRobotFromURDF(
     const string& urdf_filename,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const Drake::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   // first add the urdf to the rigid body tree
   tree->addRobotFromURDF(urdf_filename, floating_base_type, weld_to_frame);
@@ -714,7 +714,7 @@ void RigidBodySystem::addRobotFromURDF(
 
 void RigidBodySystem::addRobotFromSDF(
     const string& sdf_filename,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const Drake::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   tree->addRobotFromSDF(sdf_filename, floating_base_type, weld_to_frame);
 
@@ -732,7 +732,7 @@ void RigidBodySystem::addRobotFromSDF(
 
 void RigidBodySystem::addRobotFromFile(
     const std::string& filename,
-    const DrakeJoint::FloatingBaseType floating_base_type,
+    const Drake::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   spruce::path p(filename);
   auto ext = p.extension();

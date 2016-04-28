@@ -20,7 +20,7 @@ namespace {
 TEST(urdfDynamicsTest, AllTests) {
   auto rbsys = RigidBodySystem();
   rbsys.addRobotFromFile(getDrakePath() + "/examples/Quadrotor/quadrotor.urdf",
-                         DrakeJoint::ROLLPITCHYAW);
+                         Drake::FloatingBaseType::ROLLPITCHYAW);
 
   auto p = Quadrotor();
 

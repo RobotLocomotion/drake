@@ -41,7 +41,7 @@ class BotVisualizer {
 
   BotVisualizer(std::shared_ptr<lcm::LCM> _lcm,
                 const std::string &urdf_filename,
-                const DrakeJoint::FloatingBaseType floating_base_type)
+                const Drake::FloatingBaseType floating_base_type)
       : tree(new RigidBodyTree(urdf_filename, floating_base_type)), lcm(_lcm) {
     init();
   }

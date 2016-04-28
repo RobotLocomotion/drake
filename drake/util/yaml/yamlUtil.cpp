@@ -431,15 +431,15 @@ JointNames parseRobotJointNames(const YAML::Node& joint_names,
 
 namespace YAML {
 template <>
-struct convert<DrakeJoint::FloatingBaseType> {
-  static bool decode(const Node& node, DrakeJoint::FloatingBaseType& rhs) {
+struct convert<Drake::FloatingBaseType> {
+  static bool decode(const Node& node, Drake::FloatingBaseType& rhs) {
     std::string joint_type = node.as<std::string>();
     if (joint_type == "FIXED") {
-      rhs = DrakeJoint::FIXED;
+      rhs = Drake::FloatingBaseType::FIXED;
     } else if (joint_type == "ROLLPITCHYAW") {
-      rhs = DrakeJoint::ROLLPITCHYAW;
+      rhs = Drake::FloatingBaseType::ROLLPITCHYAW;
     } else if (joint_type == "QUATERNION") {
-      rhs = DrakeJoint::QUATERNION;
+      rhs = Drake::FloatingBaseType::QUATERNION;
     } else {
       return false;
     }
@@ -462,9 +462,9 @@ struct convert<Attachment> {
     rhs.attach_to_frame = node["frame"].as<std::string>();
     rhs.urdf_filename = node["urdf"].as<std::string>();
     if (node["joint_type"]) {
-      rhs.joint_type = node["joint_type"].as<DrakeJoint::FloatingBaseType>();
+      rhs.joint_type = node["joint_type"].as<Drake::FloatingBaseType>();
     } else {
-      rhs.joint_type = DrakeJoint::FIXED;
+      rhs.joint_type = Drake::FloatingBaseType::FIXED;
     }
     return true;
   }

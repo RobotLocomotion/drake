@@ -23,10 +23,10 @@ std::shared_ptr<RigidBodyFrame> model_pose_in_world;
 
 TEST(CompareRigidBodySystemsTest, TestAll) {
   auto r1 = make_shared<RigidBodySystem>();
-  r1->addRobotFromFile(model_file_1, DrakeJoint::QUATERNION);
+  r1->addRobotFromFile(model_file_1, Drake::FloatingBaseType::QUATERNION);
 
   auto r2 = make_shared<RigidBodySystem>();
-  r2->addRobotFromFile(model_file_2, DrakeJoint::QUATERNION, model_pose_in_world);
+  r2->addRobotFromFile(model_file_2, Drake::FloatingBaseType::QUATERNION, model_pose_in_world);
 
   // for debugging:
   // r1->getRigidBodyTree()->drawKinematicTree("/tmp/r1.dot");

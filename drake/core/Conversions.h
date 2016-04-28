@@ -1,16 +1,40 @@
-//
-// Created by Twan Koolen on 4/27/16.
-//
-
 #ifndef DRAKE_CONVERSIONS_H_H
 #define DRAKE_CONVERSIONS_H_H
 
 #include <Eigen/Core>
+#include <unsupported/Eigen/AutoDiff>
 #include <utility>
+#include <type_traits>
 
 namespace Drake {
+
 template <typename T1, typename T2>
-using Promote = decltype(std::declval<T1>() * std::declval<T2>());
+struct PromoteDetail {
+
+};
+
+template <>
+struct PromoteDetail<double, double> {
+typedef double type;
+};
+
+template <typename Derived>
+struct PromoteDetail<double, Eigen::AutoDiffScalar<Derived>> {
+  typedef Eigen::AutoDiffScalar<Derived> type;
+};
+
+template <typename Derived>
+struct PromoteDetail<Eigen::AutoDiffScalar<Derived>, double> {
+typedef Eigen::AutoDiffScalar<Derived> type;
+};
+
+template <typename Derived>
+struct PromoteDetail<Eigen::AutoDiffScalar<Derived>, Eigen::AutoDiffScalar<Derived>> {
+  typedef Eigen::AutoDiffScalar<Derived> type;
+};
+
+template <typename T1, typename T2>
+using Promote = typename PromoteDetail<typename std::remove_cv<typename std::remove_reference<T1>::type>::type, typename std::remove_cv<typename std::remove_reference<T2>::type>::type>::type;
 
 template <bool B, class T = void>
 using enable_if_t = typename std::enable_if<B, T>::type;
@@ -35,6 +59,11 @@ struct ConvertMatrix {
   template <typename Derived>
   struct To<Eigen::MatrixBase<Derived>> {
     typedef Eigen::Matrix<ToScalar, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime, 0, Derived::MaxRowsAtCompileTime, Derived::MaxColsAtCompileTime> type;
+  };
+
+  template <typename XprType, int BlockRows, int BlockCols, bool InnerPanel>
+  struct To<Eigen::Block<XprType, BlockRows, BlockCols, InnerPanel>> {
+    typedef Eigen::Matrix<ToScalar, BlockRows, BlockCols> type;
   };
 
   // version for ToScalar != FromScalar

@@ -41,7 +41,7 @@ class Joint {
   inline const Eigen::VectorXd &getJointLimitMax() const { return type->getJointLimitMax(); };
 
   template <typename DerivedQ>
-  Transform3D<Promote<J, typename DerivedQ::Scalar>> jointTransform(const Eigen::MatrixBase<DerivedQ> &q) {
+  Transform3D<Promote<J, typename DerivedQ::Scalar>> jointTransform(const Eigen::MatrixBase<DerivedQ> &q) const {
     using Q = typename DerivedQ::Scalar;
 
     auto revoluteJoint = dynamic_cast<const Revolute<J>*>(type.get());
@@ -72,7 +72,7 @@ class Joint {
   }
 
   template <typename DerivedQ>
-  MotionSubspace<Promote<J, typename DerivedQ::Scalar>> motionSubspace(const Eigen::MatrixBase<DerivedQ> &q) {
+  MotionSubspace<Promote<J, typename DerivedQ::Scalar>> motionSubspace(const Eigen::MatrixBase<DerivedQ> &q) const {
     using Q = typename DerivedQ::Scalar;
 
     auto fixedAxisOneDoFJoint = dynamic_cast<const FixedAxisOneDoF<J>*>(type.get());
@@ -95,7 +95,7 @@ class Joint {
   }
 
   template <typename DerivedQ, typename DerivedV>
-  SpatialVector<Promote<J, typename DerivedQ::Scalar>> motionSubspaceDotTimesV(const Eigen::MatrixBase<DerivedQ> &q, const Eigen::MatrixBase<DerivedV> &v) {
+  SpatialVector<Promote<J, typename DerivedQ::Scalar>> motionSubspaceDotTimesV(const Eigen::MatrixBase<DerivedQ> &q, const Eigen::MatrixBase<DerivedV> &v) const {
     using Q = typename DerivedQ::Scalar;
 
     auto fixedAxisOneDoFJoint = dynamic_cast<const FixedAxisOneDoF<J>*>(type.get());
@@ -118,7 +118,7 @@ class Joint {
   };
 
   template <typename DerivedQ>
-  ConfigurationDerivativeToVelocity<Promote<J, typename DerivedQ::Scalar>> configurationDerivativeToVelocity(const Eigen::MatrixBase<DerivedQ>& q) {
+  ConfigurationDerivativeToVelocity<Promote<J, typename DerivedQ::Scalar>> configurationDerivativeToVelocity(const Eigen::MatrixBase<DerivedQ>& q) const {
     using Q = typename DerivedQ::Scalar;
 
     auto fixedAxisOneDoFJoint = dynamic_cast<const FixedAxisOneDoF<J>*>(type.get());
@@ -141,7 +141,7 @@ class Joint {
   }
 
   template <typename DerivedQ>
-  VelocityToConfigurationDerivative<Promote<J, typename DerivedQ::Scalar>> velocityToConfigurationDerivative(const Eigen::MatrixBase<DerivedQ>& q) {
+  VelocityToConfigurationDerivative<Promote<J, typename DerivedQ::Scalar>> velocityToConfigurationDerivative(const Eigen::MatrixBase<DerivedQ>& q) const {
     using Q = typename DerivedQ::Scalar;
 
     auto fixedAxisOneDoFJoint = dynamic_cast<const FixedAxisOneDoF<J>*>(type.get());
@@ -164,7 +164,7 @@ class Joint {
   }
 
   template <typename DerivedV>
-  Eigen::Matrix<Promote<J, typename DerivedV::Scalar>, Eigen::Dynamic, 1> frictionTorque(const Eigen::MatrixBase<DerivedV>& v) {
+  Eigen::Matrix<Promote<J, typename DerivedV::Scalar>, Eigen::Dynamic, 1> frictionTorque(const Eigen::MatrixBase<DerivedV>& v) const {
     using V = typename DerivedV::Scalar;
 
     auto fixedAxisOneDoFJoint = dynamic_cast<const FixedAxisOneDoF<J>*>(type.get());
@@ -190,5 +190,7 @@ class Joint {
 };
 
 }
+
+using DrakeJoint = Drake::Joint<double>; // for now
 
 #endif //DRAKE_JOINT_H

@@ -24,7 +24,7 @@ struct DrakeMexPointerTypeId<
 };
 template <>
 struct DrakeMexPointerTypeId<
-    KinematicsCache<DrakeJoint::AutoDiffFixedMaxSize>> {
+    KinematicsCache<AutoDiffFixedMaxSize>> {
   enum { value = 4 };
 };
 

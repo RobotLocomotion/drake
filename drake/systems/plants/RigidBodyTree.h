@@ -14,7 +14,6 @@
 #include "drake/systems/plants/RigidBody.h"
 #include "drake/systems/plants/RigidBodyFrame.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
-#include "drake/systems/plants/joints/DrakeJoints.h"
 #include "drake/systems/plants/pose_map.h"
 #include "drake/systems/plants/shapes/DrakeShapes.h"
 #include "drake/util/drakeUtil.h"
@@ -24,6 +23,8 @@
 #define EPSILON 10e-8
 
 typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
+
+typedef Eigen::AutoDiffScalar<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73, 1>> AutoDiffFixedMaxSize;  // 73 is number of states of quat-parameterized Atlas
 
 class DRAKERBM_EXPORT RigidBodyActuator {
  public:
@@ -66,38 +67,38 @@ class DRAKERBM_EXPORT RigidBodyLoop {
 class DRAKERBM_EXPORT RigidBodyTree {
  public:
   RigidBodyTree(const std::string& urdf_filename,
-                const DrakeJoint::FloatingBaseType floating_base_type =
-                    DrakeJoint::ROLLPITCHYAW);
+                const Drake::FloatingBaseType floating_base_type =
+                    Drake::FloatingBaseType::ROLLPITCHYAW);
   RigidBodyTree(void);
   virtual ~RigidBodyTree(void);
 
   void addRobotFromURDFString(
       const std::string& xml_string, const std::string& root_dir = ".",
-      const DrakeJoint::FloatingBaseType floating_base_type =
-          DrakeJoint::ROLLPITCHYAW,
+      const Drake::FloatingBaseType floating_base_type =
+          Drake::FloatingBaseType::ROLLPITCHYAW,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
   void addRobotFromURDFString(
       const std::string& xml_string,
       std::map<std::string, std::string>& package_map,
       const std::string& root_dir = ".",
-      const DrakeJoint::FloatingBaseType floating_base_type =
-          DrakeJoint::ROLLPITCHYAW,
+      const Drake::FloatingBaseType floating_base_type =
+          Drake::FloatingBaseType::ROLLPITCHYAW,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
   void addRobotFromURDF(
       const std::string& urdf_filename,
-      const DrakeJoint::FloatingBaseType floating_base_type =
-          DrakeJoint::ROLLPITCHYAW,
+      const Drake::FloatingBaseType floating_base_type =
+          Drake::FloatingBaseType::ROLLPITCHYAW,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
   void addRobotFromURDF(
       const std::string& urdf_filename,
       std::map<std::string, std::string>& package_map,
-      const DrakeJoint::FloatingBaseType floating_base_type =
-          DrakeJoint::ROLLPITCHYAW,
+      const Drake::FloatingBaseType floating_base_type =
+          Drake::FloatingBaseType::ROLLPITCHYAW,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   void addRobotFromSDF(const std::string& sdf_filename,
-                       const DrakeJoint::FloatingBaseType floating_base_type =
-                           DrakeJoint::QUATERNION,
+                       const Drake::FloatingBaseType floating_base_type =
+                           Drake::FloatingBaseType::QUATERNION,
                        std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   void addFrame(std::shared_ptr<RigidBodyFrame> frame);
@@ -193,15 +194,14 @@ class DRAKERBM_EXPORT RigidBodyTree {
             parent_element.transform_to_world * T_body_to_parent;
 
         // motion subspace in body frame
-        Matrix<Scalar, Dynamic, Dynamic>* dSdq = nullptr;
-        joint.motionSubspace(q_body, element.motion_subspace_in_body, dSdq);
+        element.motion_subspace_in_body = joint.motionSubspace(q_body);
 
         // motion subspace in world frame
         element.motion_subspace_in_world = transformSpatialMotion(
             element.transform_to_world, element.motion_subspace_in_body);
 
-        joint.qdot2v(q_body, element.qdot_to_v, nullptr);
-        joint.v2qdot(q_body, element.v_to_qdot, nullptr);
+        element.qdot_to_v = joint.configurationDerivativeToVelocity(q_body);
+        element.v_to_qdot = joint.velocityToConfigurationDerivative(q_body);
 
         if (cache.hasV()) {
           const auto& v = cache.getV();
@@ -223,9 +223,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
             if (compute_JdotV) {
               // Sdotv
-              joint.motionSubspaceDotTimesV(
-                  q_body, v_body, element.motion_subspace_in_body_dot_times_v,
-                  nullptr, nullptr);
+              element.motion_subspace_in_body_dot_times_v = joint.motionSubspaceDotTimesV(q_body, v_body);
 
               // Jdotv
               auto joint_accel =
@@ -765,7 +763,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * zero floating joints were added to the model.
    */
   int AddFloatingJoint(
-      DrakeJoint::FloatingBaseType floating_base_type,
+      Drake::FloatingBaseType floating_base_type,
       const std::vector<int>& link_indices,
       const std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr,
       const PoseMap* pose_map = nullptr);
