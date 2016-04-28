@@ -107,8 +107,10 @@ def generate_coord_namer(context, fields):
 
 
 ACCESSOR = """
-    ScalarType& %(field)s() { return value_(K::%(kname)s); }
     const ScalarType& %(field)s() const { return value_(K::%(kname)s); }
+    void set_%(field)s(const ScalarType& %(field)s) {
+      value_(K::%(kname)s) = %(field)s;
+    }
 """
 
 def generate_accessors(context, fields):
@@ -152,7 +154,7 @@ bool decode(const drake::lcmt_%(snake)s_t& msg,
             %(camel)s<ScalarType>& wrap) {
   t = static_cast<double>(msg.timestamp) / 1000.0;
 """
-DECODE_FIELD = """  wrap.%(field)s() = msg.%(field)s;"""
+DECODE_FIELD = """  wrap.set_%(field)s(msg.%(field)s);"""
 DECODE_END = """
   return true;
 }

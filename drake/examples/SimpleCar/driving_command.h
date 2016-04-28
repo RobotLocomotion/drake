@@ -59,14 +59,18 @@ class DrivingCommand {
     throw std::domain_error("unknown coordinate index");
   }
 
-  ScalarType& steering_angle() { return value_(K::kSteeringAngle); }
   const ScalarType& steering_angle() const { return value_(K::kSteeringAngle); }
+  void set_steering_angle(const ScalarType& steering_angle) {
+    value_(K::kSteeringAngle) = steering_angle;
+  }
 
-  ScalarType& throttle() { return value_(K::kThrottle); }
   const ScalarType& throttle() const { return value_(K::kThrottle); }
+  void set_throttle(const ScalarType& throttle) {
+    value_(K::kThrottle) = throttle;
+  }
 
-  ScalarType& brake() { return value_(K::kBrake); }
   const ScalarType& brake() const { return value_(K::kBrake); }
+  void set_brake(const ScalarType& brake) { value_(K::kBrake) = brake; }
 
  private:
   typedef DrivingCommandIndices K;
@@ -91,9 +95,9 @@ bool decode(const drake::lcmt_driving_command_t& msg,
             // NOLINTNEXTLINE(runtime/references)
             DrivingCommand<ScalarType>& wrap) {
   t = static_cast<double>(msg.timestamp) / 1000.0;
-  wrap.steering_angle() = msg.steering_angle;
-  wrap.throttle() = msg.throttle;
-  wrap.brake() = msg.brake;
+  wrap.set_steering_angle(msg.steering_angle);
+  wrap.set_throttle(msg.throttle);
+  wrap.set_brake(msg.brake);
   return true;
 }
 

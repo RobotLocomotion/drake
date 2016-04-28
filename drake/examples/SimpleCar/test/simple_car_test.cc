@@ -92,7 +92,7 @@ TEST(SimpleCarTest, ZerosIn) {
 
 TEST(SimpleCarTest, Accelerating) {
   Drake::DrivingCommand<double> max_throttle;
-  max_throttle.throttle() = 1.;
+  max_throttle.set_throttle(1.);
 
   auto car = std::make_shared<Drake::SimpleCar>();
   Drake::SimpleCarState<double> initial_state;
@@ -140,12 +140,12 @@ TEST(SimpleCarTest, Accelerating) {
 
 TEST(SimpleCarTest, Braking) {
   Drake::DrivingCommand<double> max_brake;
-  max_brake.brake() = 1.;
+  max_brake.set_brake(1.);
 
   auto car = std::make_shared<Drake::SimpleCar>();
   Drake::SimpleCarState<double> initial_state;
   double speed = 10.;
-  initial_state.velocity() = speed;
+  initial_state.set_velocity(speed);
 
   auto history_system =
       std::make_shared<HistorySystem<Drake::SimpleCarState>>(initial_state);
@@ -187,7 +187,7 @@ TEST(SimpleCarTest, Steering) {
   auto car = std::make_shared<Drake::SimpleCar>();
   Drake::SimpleCarState<double> initial_state;
   double speed = 40.;
-  initial_state.velocity() = speed;
+  initial_state.set_velocity(speed);
 
   auto history_system =
       std::make_shared<HistorySystem<Drake::SimpleCarState>>(initial_state);

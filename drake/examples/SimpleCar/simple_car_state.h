@@ -62,17 +62,19 @@ class SimpleCarState {
     throw std::domain_error("unknown coordinate index");
   }
 
-  ScalarType& x() { return value_(K::kX); }
   const ScalarType& x() const { return value_(K::kX); }
+  void set_x(const ScalarType& x) { value_(K::kX) = x; }
 
-  ScalarType& y() { return value_(K::kY); }
   const ScalarType& y() const { return value_(K::kY); }
+  void set_y(const ScalarType& y) { value_(K::kY) = y; }
 
-  ScalarType& heading() { return value_(K::kHeading); }
   const ScalarType& heading() const { return value_(K::kHeading); }
+  void set_heading(const ScalarType& heading) { value_(K::kHeading) = heading; }
 
-  ScalarType& velocity() { return value_(K::kVelocity); }
   const ScalarType& velocity() const { return value_(K::kVelocity); }
+  void set_velocity(const ScalarType& velocity) {
+    value_(K::kVelocity) = velocity;
+  }
 
  private:
   typedef SimpleCarStateIndices K;
@@ -98,10 +100,10 @@ bool decode(const drake::lcmt_simple_car_state_t& msg,
             // NOLINTNEXTLINE(runtime/references)
             SimpleCarState<ScalarType>& wrap) {
   t = static_cast<double>(msg.timestamp) / 1000.0;
-  wrap.x() = msg.x;
-  wrap.y() = msg.y;
-  wrap.heading() = msg.heading;
-  wrap.velocity() = msg.velocity;
+  wrap.set_x(msg.x);
+  wrap.set_y(msg.y);
+  wrap.set_heading(msg.heading);
+  wrap.set_velocity(msg.velocity);
   return true;
 }
 

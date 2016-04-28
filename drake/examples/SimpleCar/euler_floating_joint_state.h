@@ -68,23 +68,23 @@ class EulerFloatingJointState {
     throw std::domain_error("unknown coordinate index");
   }
 
-  ScalarType& x() { return value_(K::kX); }
   const ScalarType& x() const { return value_(K::kX); }
+  void set_x(const ScalarType& x) { value_(K::kX) = x; }
 
-  ScalarType& y() { return value_(K::kY); }
   const ScalarType& y() const { return value_(K::kY); }
+  void set_y(const ScalarType& y) { value_(K::kY) = y; }
 
-  ScalarType& z() { return value_(K::kZ); }
   const ScalarType& z() const { return value_(K::kZ); }
+  void set_z(const ScalarType& z) { value_(K::kZ) = z; }
 
-  ScalarType& roll() { return value_(K::kRoll); }
   const ScalarType& roll() const { return value_(K::kRoll); }
+  void set_roll(const ScalarType& roll) { value_(K::kRoll) = roll; }
 
-  ScalarType& pitch() { return value_(K::kPitch); }
   const ScalarType& pitch() const { return value_(K::kPitch); }
+  void set_pitch(const ScalarType& pitch) { value_(K::kPitch) = pitch; }
 
-  ScalarType& yaw() { return value_(K::kYaw); }
   const ScalarType& yaw() const { return value_(K::kYaw); }
+  void set_yaw(const ScalarType& yaw) { value_(K::kYaw) = yaw; }
 
  private:
   typedef EulerFloatingJointStateIndices K;
@@ -112,12 +112,12 @@ bool decode(const drake::lcmt_euler_floating_joint_state_t& msg,
             // NOLINTNEXTLINE(runtime/references)
             EulerFloatingJointState<ScalarType>& wrap) {
   t = static_cast<double>(msg.timestamp) / 1000.0;
-  wrap.x() = msg.x;
-  wrap.y() = msg.y;
-  wrap.z() = msg.z;
-  wrap.roll() = msg.roll;
-  wrap.pitch() = msg.pitch;
-  wrap.yaw() = msg.yaw;
+  wrap.set_x(msg.x);
+  wrap.set_y(msg.y);
+  wrap.set_z(msg.z);
+  wrap.set_roll(msg.roll);
+  wrap.set_pitch(msg.pitch);
+  wrap.set_yaw(msg.yaw);
   return true;
 }
 
