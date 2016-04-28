@@ -2,7 +2,7 @@
 #define DRAKE_JOINT_H
 
 #include <random>
-#include "drake/core/Conversions.h"
+#include "drake/util/TypeConversions.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/systems/plants/joints/QuaternionFloating.h"
 #include "drake/systems/plants/joints/RollPitchYawFloating.h"

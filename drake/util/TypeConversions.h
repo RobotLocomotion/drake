@@ -8,6 +8,7 @@
 
 namespace Drake {
 
+namespace internal {
 template <typename T1, typename T2>
 struct PromoteDetail {
 
@@ -15,7 +16,7 @@ struct PromoteDetail {
 
 template <>
 struct PromoteDetail<double, double> {
-typedef double type;
+  typedef double type;
 };
 
 template <typename Derived>
@@ -25,16 +26,17 @@ struct PromoteDetail<double, Eigen::AutoDiffScalar<Derived>> {
 
 template <typename Derived>
 struct PromoteDetail<Eigen::AutoDiffScalar<Derived>, double> {
-typedef Eigen::AutoDiffScalar<Derived> type;
+  typedef Eigen::AutoDiffScalar<Derived> type;
 };
 
 template <typename Derived>
 struct PromoteDetail<Eigen::AutoDiffScalar<Derived>, Eigen::AutoDiffScalar<Derived>> {
   typedef Eigen::AutoDiffScalar<Derived> type;
 };
+}
 
 template <typename T1, typename T2>
-using Promote = typename PromoteDetail<typename std::remove_cv<typename std::remove_reference<T1>::type>::type, typename std::remove_cv<typename std::remove_reference<T2>::type>::type>::type;
+using Promote = typename internal::PromoteDetail<typename std::remove_cv<typename std::remove_reference<T1>::type>::type, typename std::remove_cv<typename std::remove_reference<T2>::type>::type>::type;
 
 template <bool B, class T = void>
 using enable_if_t = typename std::enable_if<B, T>::type;
