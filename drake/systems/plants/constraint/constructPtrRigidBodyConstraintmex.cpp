@@ -44,7 +44,6 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                           "robot_ptr, robotnum)");
       }
       RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[1]);
-      Vector2d tspan;
       int* robotnum;
       size_t num_robot;
       if (nrhs <= 2) {
@@ -61,10 +60,9 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
         }
         delete[] robotnum_tmp;
       }
-      tspan << -mxGetInf(), mxGetInf();
       set<int> robotnumset(robotnum, robotnum + num_robot);
       QuasiStaticConstraint* cnst =
-          new QuasiStaticConstraint(model, tspan, robotnumset);
+          new QuasiStaticConstraint(model, robotnumset);
       plhs[0] =
           createDrakeConstraintMexPointer((void*)cnst, "QuasiStaticConstraint");
       delete[] robotnum;
@@ -464,7 +462,6 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       }
       RigidBodyTree* model = (RigidBodyTree*)getDrakeMexPointer(prhs[1]);
       WorldCoMConstraint* cnst = nullptr;
-      Vector2d tspan;
       int* robotnum;
       size_t num_robot;
       if (nrhs <= 4) {
@@ -481,7 +478,6 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
         }
         delete[] robotnum_tmp;
       }
-      tspan << -mxGetInf(), mxGetInf();
       set<int> robotnumset(robotnum, robotnum + num_robot);
       int n_pts = 1;
       if (mxGetM(prhs[2]) != 3 || mxGetM(prhs[3]) != 3 ||
@@ -494,7 +490,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       Vector3d ub;
       memcpy(lb.data(), mxGetPrSafe(prhs[2]), sizeof(double) * 3);
       memcpy(ub.data(), mxGetPrSafe(prhs[3]), sizeof(double) * 3);
-      cnst = new WorldCoMConstraint(model, lb, ub, tspan, robotnumset);
+      cnst = new WorldCoMConstraint(model, lb, ub, robotnumset);
       plhs[0] =
           createDrakeConstraintMexPointer((void*)cnst, "WorldCoMConstraint");
       delete[] robotnum;

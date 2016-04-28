@@ -16,8 +16,6 @@ int main() {
   if (!model) {
     cerr << "ERROR: Failed to load model" << endl;
   }
-  Vector2d tspan;
-  tspan << 0, 1;
   int l_hand;
   int r_hand;
   // int l_foot;
@@ -67,10 +65,8 @@ int main() {
   rhand_pos_lb(2) += 0.25;
   Vector3d rhand_pos_ub = rhand_pos_lb;
   rhand_pos_ub(2) += 0.25;
-  Vector2d tspan_end;
-  tspan_end << t[nT - 1], t[nT - 1];
   WorldPositionConstraint* kc_rhand = new WorldPositionConstraint(
-      model, r_hand, r_hand_pt, rhand_pos_lb, rhand_pos_ub, tspan_end);
+      model, r_hand, r_hand_pt, rhand_pos_lb, rhand_pos_ub);
   int num_constraints = 2;
   RigidBodyConstraint** constraint_array =
       new RigidBodyConstraint* [num_constraints];
