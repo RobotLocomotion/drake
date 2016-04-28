@@ -5,8 +5,6 @@
 #include <utility>
 #include <vector>
 
-#include <iostream>
-
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
 
