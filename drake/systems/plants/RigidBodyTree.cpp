@@ -1346,7 +1346,7 @@ RigidBodyTree::transformPointsJacobian(
   auto Jv = J_geometric.template bottomRows<SPACE_DIMENSION>();
 
   Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> J(
-      points_base.size(), cols);  // TODO: size at compile time
+      points_base.size(), cols);  // TODO(tkoolen): size at compile time
   J.setZero();
 
   int row_start = 0;

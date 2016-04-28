@@ -675,7 +675,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   std::string getBodyOrFrameName(int body_or_frame_id) const;
   // @param body_or_frame_id the index of the body or the id of the frame.
 
-  // TODO: remove parseBodyOrFrameID methods
+  // TODO(tkoolen): remove parseBodyOrFrameID methods
   template <typename Scalar>
   int parseBodyOrFrameID(
       const int body_or_frame_id,

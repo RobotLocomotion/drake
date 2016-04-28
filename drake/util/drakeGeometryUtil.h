@@ -137,7 +137,7 @@ Eigen::Matrix<Scalar, 4, 1> slerp(const Eigen::MatrixBase<Derived1>& q1,
   }
 
   // Calculate interpolation factors
-  // TODO: do we really want an epsilon so small?
+  // TODO(tkoolen): do we really want an epsilon so small?
   Scalar r, s;
   if (std::abs(1.0 - lambda) < Eigen::NumTraits<Scalar>::epsilon()) {
     // The quaternions are nearly parallel, so use linear interpolation
@@ -1256,8 +1256,9 @@ transformSpatialInertia(
   if (isRegularInertiaMatrix(I)) {
     // this check is necessary to support the nonstandard inertia matrices
     // resulting from added masses
-    // TODO: SpatialInertiaMatrix class that keeps track of whether matrix is
-    // regular or not
+
+    // TODO(tkoolen): SpatialInertiaMatrix class that keeps track of whether
+    // matrix is regular or not
     const auto& R = T_current_to_new.linear();
     const auto& p = T_current_to_new.translation();
 
@@ -1536,7 +1537,7 @@ Eigen::Matrix<typename Derived1::Scalar, 3, 1> unwrapExpmap(
   }
 }
 
-// TODO: move to AutoDiffScalar.h?
+// TODO(tkoolen): move to AutoDiffScalar.h?
 /** AutoDiffScalar overloads of round to mimic std::round from <cmath>.
  */
 template <typename DerType>
@@ -1544,7 +1545,7 @@ double round(const Eigen::AutoDiffScalar<DerType>& x) {
   return round(x.value());
 }
 
-// TODO: move to AutoDiffScalar.h?
+// TODO(tkoolen): move to AutoDiffScalar.h?
 /** AutoDiffScalar overloads of floor to mimic std::round from <cmath>.
  */
 template <typename DerType>

@@ -5,8 +5,8 @@
 #include "drake/drakeZMPUtil_export.h"
 
 struct DRAKEZMPUTIL_EXPORT TVLQRData {
-  // TODO: move into its own file
-  // TODO: turn into class, private members
+  // TODO(tkoolen): move into its own file
+  // TODO(tkoolen): turn into class, private members
   Eigen::MatrixXd A;
   Eigen::MatrixXd B;
   Eigen::MatrixXd C;

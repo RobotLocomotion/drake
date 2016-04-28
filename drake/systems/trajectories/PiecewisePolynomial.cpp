@@ -296,7 +296,7 @@ template <typename CoefficientType>
 double PiecewisePolynomial<CoefficientType>::segmentValueAtGlobalAbscissa(
     int segment_index, double t, Eigen::Index row, Eigen::Index col) const {
   return polynomials[segment_index](row, col)
-      .value(t - getStartTime(segment_index));
+      .evaluateUnivariate(t - getStartTime(segment_index));
 }
 
 template <typename CoefficientType>
