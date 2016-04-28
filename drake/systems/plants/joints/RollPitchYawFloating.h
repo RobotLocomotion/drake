@@ -8,8 +8,45 @@ namespace  Drake {
 template <typename J>
 class RollPitchYawFloating : public JointType<J> {
  public:
-  static const int NUM_POSITIONS = 6;
-  static const int NUM_VELOCITIES = 6;
+  using JointType<J>::getNumPositions;
+  using JointType<J>::getNumVelocities;
+
+  RollPitchYawFloating() : JointType<J>(6, 6) { };
+
+  virtual inline Eigen::VectorXd randomConfiguration(std::default_random_engine& generator) const override {
+    Eigen::VectorXd q(getNumPositions());
+    std::normal_distribution<double> normal;
+
+    auto pos = q.topRows<3>();
+    for (int i = 0; i < SPACE_DIMENSION; i++) {
+      pos(i) = normal(generator);
+    }
+
+    auto rpy = q.bottomRows<3>();
+    rpy = uniformlyRandomRPY(generator);
+    return q;
+  }
+
+  virtual inline std::string getPositionName(int index) const override {
+    switch (index) {
+      case 0:
+        return "x";
+      case 1:
+        return "y";
+      case 2:
+        return "z";
+      case 3:
+        return "roll";
+      case 4:
+        return "pitch";
+      case 5:
+        return "yaw";
+      default:
+        throw std::runtime_error("bad index");
+    }
+  }
+
+  virtual inline bool isFloating() const override { return true; }
 
   template <typename DerivedQ>
   Transform3D<Promote<J, typename DerivedQ::Scalar>> jointTransform(const Eigen::MatrixBase<DerivedQ> &q) const {
@@ -28,7 +65,7 @@ class RollPitchYawFloating : public JointType<J> {
     using Q = typename DerivedQ::Scalar;
     using T = Promote<J, Q>;
 
-    MotionSubspace<T> ret(TWIST_SIZE, RollPitchYawFloating<J>::NUM_VELOCITIES);
+    MotionSubspace<T> ret(TWIST_SIZE, getNumVelocities());
     auto rpy = ConvertMatrix<T>()(q.template middleRows<RPY_SIZE>(SPACE_DIMENSION));
     Eigen::Matrix<T, SPACE_DIMENSION, RPY_SIZE> E;
     rpydot2angularvelMatrix(rpy, E);
@@ -91,17 +128,17 @@ class RollPitchYawFloating : public JointType<J> {
 
   template <typename Q>
   ConfigurationDerivativeToVelocity<Promote<J, Q>> configurationDerivativeToVelocity() const {
-    return ConfigurationDerivativeToVelocity<Promote<J, Q>>::Identity(RollPitchYawFloating<J>::NUM_VELOCITIES, RollPitchYawFloating<J>::NUM_POSITIONS);
+    return ConfigurationDerivativeToVelocity<Promote<J, Q>>::Identity(getNumVelocities(), getNumPositions());
   }
 
   template <typename Q>
   VelocityToConfigurationDerivative<Promote<J, Q>> velocityToConfigurationDerivative() const {
-    return VelocityToConfigurationDerivative<Promote<J, Q>>::Identity(RollPitchYawFloating<J>::NUM_POSITIONS, RollPitchYawFloating<J>::NUM_VELOCITIES);
+    return VelocityToConfigurationDerivative<Promote<J, Q>>::Identity(getNumPositions(), getNumVelocities());
   }
 
   template <typename V>
   Eigen::Matrix<Promote<J, V>, Eigen::Dynamic, 1> frictionTorque() const {
-    return Eigen::Matrix<V, Eigen::Dynamic, 1>::Zero(QuaternionFloating<J>::NUM_VELOCITIES, 1);
+    return Eigen::Matrix<V, Eigen::Dynamic, 1>::Zero(getNumVelocities(), 1);
   }
 };
 

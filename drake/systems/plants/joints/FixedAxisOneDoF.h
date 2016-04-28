@@ -14,10 +14,12 @@ class FixedAxisOneDoF : public JointType<J> {
   J coulomb_window;
 
  public:
-  static const int NUM_POSITIONS = 1;
-  static const int NUM_VELOCITIES = 1;
+  using JointType<J>::getNumPositions;
+  using JointType<J>::getNumVelocities;
+  using JointType<J>::getJointLimitMin;
+  using JointType<J>::getJointLimitMax;
 
-  FixedAxisOneDoF(const SpatialVector<J>& joint_axis) : joint_axis(joint_axis), damping(0), coulomb_friction(0), coulomb_window(0) { };
+  FixedAxisOneDoF(const SpatialVector<J>& joint_axis) : JointType<J>(1, 1), joint_axis(joint_axis), damping(0), coulomb_friction(0), coulomb_window(0) { };
 
   template <typename Q>
   MotionSubspace<Promote<J, Q>> motionSubspace() const {
@@ -32,19 +34,19 @@ class FixedAxisOneDoF : public JointType<J> {
 
   template <typename Q>
   ConfigurationDerivativeToVelocity<Promote<J, Q>> configurationDerivativeToVelocity() const {
-    return ConfigurationDerivativeToVelocity<Promote<J, Q>>::Identity(NUM_POSITIONS, NUM_VELOCITIES);
+    return ConfigurationDerivativeToVelocity<Promote<J, Q>>::Identity(getNumPositions(), getNumVelocities());
   }
 
   template <typename Q>
   VelocityToConfigurationDerivative <Promote<J, Q>> velocityToConfigurationDerivative() const {
-    return VelocityToConfigurationDerivative<Promote<J, Q>>::Identity(NUM_POSITIONS, NUM_VELOCITIES);
+    return VelocityToConfigurationDerivative<Promote<J, Q>>::Identity(getNumPositions(), getNumVelocities());
   }
 
   template <typename DerivedV>
   Eigen::Matrix<Promote<J, typename DerivedV::Scalar>, Eigen::Dynamic, 1> frictionTorque(const Eigen::MatrixBase<DerivedV> &v) const {
     using T = Promote<J, typename DerivedV::Scalar>;
 
-    Eigen::Matrix<T, Eigen::Dynamic, 1> ret(NUM_VELOCITIES, 1);
+    Eigen::Matrix<T, Eigen::Dynamic, 1> ret(getNumVelocities(), 1);
     using std::abs;
     ret[0] = damping * v[0];
     T coulomb_window_fraction = v[0] / coulomb_window;
@@ -53,48 +55,48 @@ class FixedAxisOneDoF : public JointType<J> {
     return ret;
   }
 
-  Eigen::VectorXd zeroConfiguration() const { return Eigen::VectorXd::Zero(1); }
+  virtual inline Eigen::VectorXd randomConfiguration(std::default_random_engine &generator) const override {
+    Eigen::VectorXd q(getNumPositions());
+    const auto& joint_limit_min = getJointLimitMin();
+    const auto& joint_limit_max = getJointLimitMax();
+    if (std::isfinite(joint_limit_min.value()) &&
+        std::isfinite(joint_limit_max.value())) {
+      std::uniform_real_distribution<double> distribution(
+          joint_limit_min.value(),
+          joint_limit_max.value());
+      q[0] = distribution(generator);
+    } else {
+      std::normal_distribution<double> distribution;
+      double stddev = 1.0;
+      double joint_limit_offset = 1.0;
+      if (std::isfinite(joint_limit_min.value())) {
+        distribution = std::normal_distribution<double>(
+            joint_limit_min.value() + joint_limit_offset, stddev);
+      } else if (std::isfinite(joint_limit_max.value())) {
+        distribution = std::normal_distribution<double>(
+            joint_limit_max.value() - joint_limit_offset, stddev);
+      } else {
+        distribution = std::normal_distribution<double>();
+      }
 
-  // TODO
-//  Eigen::VectorXd randomConfiguration(
-//      std::default_random_engine &generator) const {
-//    Eigen::VectorXd q(1);
-//    if (std::isfinite(DrakeJoint::joint_limit_min.value()) &&
-//        std::isfinite(DrakeJoint::joint_limit_max.value())) {
-//      std::uniform_real_distribution<double> distribution(
-//          DrakeJoint::joint_limit_min.value(),
-//          DrakeJoint::joint_limit_max.value());
-//      q[0] = distribution(generator);
-//    } else {
-//      std::normal_distribution<double> distribution;
-//      double stddev = 1.0;
-//      double joint_limit_offset = 1.0;
-//      if (std::isfinite(DrakeJoint::joint_limit_min.value())) {
-//        distribution = std::normal_distribution<double>(
-//            DrakeJoint::joint_limit_min.value() + joint_limit_offset, stddev);
-//      } else if (std::isfinite(DrakeJoint::joint_limit_max.value())) {
-//        distribution = std::normal_distribution<double>(
-//            DrakeJoint::joint_limit_max.value() - joint_limit_offset, stddev);
-//      } else {
-//        distribution = std::normal_distribution<double>();
-//      }
-//
-//      q[0] = distribution(generator);
-//      if (q[0] < DrakeJoint::joint_limit_min.value()) {
-//        q[0] = DrakeJoint::joint_limit_min.value();
-//      }
-//      if (q[0] > DrakeJoint::joint_limit_max.value()) {
-//        q[0] = DrakeJoint::joint_limit_max.value();
-//      }
-//    }
-//    return q;
-//  }
+      q[0] = distribution(generator);
+      if (q[0] < joint_limit_min.value()) {
+        q[0] = joint_limit_min.value();
+      }
+      if (q[0] > joint_limit_max.value()) {
+        q[0] = joint_limit_max.value();
+      }
+    }
+    return q;
+  }
 
   void setDynamics(const J& damping, const J& coulomb_friction, const J& coulomb_window) {
     this->damping = damping;
     this->coulomb_friction = coulomb_friction;
     this->coulomb_window = coulomb_window;
   }
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF((sizeof(SpatialVector<J>)%16)==0)
 };
 
 }

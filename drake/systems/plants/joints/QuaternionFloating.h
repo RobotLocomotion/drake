@@ -9,8 +9,76 @@ namespace Drake {
 template <typename J>
 class QuaternionFloating : public JointType<J> {
  public:
-  static const int NUM_POSITIONS = 7;
-  static const int NUM_VELOCITIES = 6;
+  using JointType<J>::getNumPositions;
+  using JointType<J>::getNumVelocities;
+
+  QuaternionFloating() : JointType<J>(7, 6) { };
+
+  virtual inline Eigen::VectorXd zeroConfiguration() const override {
+    Eigen::VectorXd ret(getNumPositions());
+    ret << 0, 0, 0, 1, 0, 0, 0;
+    return ret;
+  }
+
+  virtual inline Eigen::VectorXd randomConfiguration(std::default_random_engine &generator) const override {
+    Eigen::VectorXd q(getNumPositions());
+    std::normal_distribution<double> normal;
+
+    // position
+    q[0] = normal(generator);
+    q[1] = normal(generator);
+    q[2] = normal(generator);
+
+    // orientation
+    Eigen::Vector4d quat = uniformlyRandomQuat(generator);
+    q[3] = quat(0);
+    q[4] = quat(1);
+    q[5] = quat(2);
+    q[6] = quat(3);
+    return q;
+  }
+
+  virtual inline std::string getPositionName(int index) const override {
+    switch (index) {
+      case 0:
+        return "x";
+      case 1:
+        return "y";
+      case 2:
+        return "z";
+      case 3:
+        return "qw";
+      case 4:
+        return "qx";
+      case 5:
+        return "qy";
+      case 6:
+        return "qz";
+      default:
+        throw std::runtime_error("bad index");
+    }
+  }
+
+  virtual inline std::string getVelocityName(int index) const override {
+    switch (index) {
+      case 0:
+        return "wx";
+      case 1:
+        return "wy";
+      case 2:
+        return "wz";
+      case 3:
+        return "vx";
+      case 4:
+        return "vy";
+      case 5:
+        return "vz";
+      default:
+        throw std::runtime_error("bad index");
+    }
+  }
+
+  virtual inline bool isFloating() const override { return true; }
 
   template <typename DerivedQ>
   Transform3D<Promote<J, typename DerivedQ::Scalar>> jointTransform(const Eigen::MatrixBase<DerivedQ> &q) const {
@@ -24,7 +92,7 @@ class QuaternionFloating : public JointType<J> {
 
   template <typename Q>
   MotionSubspace<Promote<J, Q>> motionSubspace() const {
-    return MotionSubspace<Promote<J, Q>>::Identity(TWIST_SIZE, QuaternionFloating::NUM_VELOCITIES);
+    return MotionSubspace<Promote<J, Q>>::Identity(TWIST_SIZE, getNumVelocities());
   }
 
   template <typename Q>
@@ -37,7 +105,7 @@ class QuaternionFloating : public JointType<J> {
     using Q = typename DerivedQ::Scalar;
     using T = Promote<J, Q>;
 
-    ConfigurationDerivativeToVelocity<T> ret(QuaternionFloating<J>::NUM_VELOCITIES, QuaternionFloating<J>::NUM_POSITIONS);
+    ConfigurationDerivativeToVelocity<T> ret(getNumVelocities(), getNumPositions());
     auto quat = ConvertMatrix<T>()(q.template middleRows<QUAT_SIZE>(SPACE_DIMENSION));
     auto R = quat2rotmat(quat);
 
@@ -57,7 +125,7 @@ class QuaternionFloating : public JointType<J> {
     using Q = typename DerivedQ::Scalar;
     using T = Promote<J, Q>;
 
-    VelocityToConfigurationDerivative<T> ret(QuaternionFloating<J>::NUM_POSITIONS, QuaternionFloating<J>::NUM_VELOCITIES);
+    VelocityToConfigurationDerivative<T> ret(getNumPositions(), getNumVelocities());
     auto quat = ConvertMatrix<T>()(q.template middleRows<QUAT_SIZE>(SPACE_DIMENSION));
     auto R = quat2rotmat(quat);
 
@@ -74,7 +142,7 @@ class QuaternionFloating : public JointType<J> {
 
   template <typename V>
   Eigen::Matrix<Promote<J, V>, Eigen::Dynamic, 1> frictionTorque() const {
-    return Eigen::Matrix<V, Eigen::Dynamic, 1>::Zero(QuaternionFloating<J>::NUM_VELOCITIES, 1);
+    return Eigen::Matrix<V, Eigen::Dynamic, 1>::Zero(getNumVelocities(), 1);
   }
 };
 
