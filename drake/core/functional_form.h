@@ -42,6 +42,50 @@ namespace drake {
  * which serves as a placeholder providing a distinguishing identifier.
  * We do not represent any details about how an individual variable appears
  * in the combination of one of the above forms, only that it participates.
+ *
+ * FunctionalForm instances may be used in mathematical expressions to
+ * form new instances representing the form of the combined expression.
+ * For example:
+ *
+ *   \code{.cpp}
+ *   FunctionalForm x = FunctionalForm::Linear({"x"});
+ *   FunctionalForm c = FunctionalForm::Constant();
+ *   std::cout << (x * x) << "\n"; // prints "poly(x)"
+ *   std::cout << (x + c) << "\n"; // prints "aff(x)"
+ *   std::cout << (x * c) << "\n"; // prints "lin(x)"
+ *   std::cout << (x + 2) << "\n"; // prints "aff(x)"
+ *   std::cout << (x * 2) << "\n"; // prints "lin(x)"
+ *   std::cout << (x + 0) << "\n"; // prints "lin(x)"
+ *   std::cout << (x * 0) << "\n"; // prints "zero"
+ *   \endcode
+ *
+ * This class is therefore suitable for use as a scalar type to call
+ * a function template to extract its functional form with respect
+ * to some set of its inputs.  For example:
+ *
+ *   \code{.cpp}
+ *   template <typename S> S f(S x, S y) { return x + y; }
+ *   template <typename S> S g(S x, S y) { return x * y; }
+ *   // ...
+ *   FunctionalForm x = FunctionalForm::Linear({"x"});
+ *   FunctionalForm y = FunctionalForm::Linear({"y"});
+ *   FunctionalForm c = FunctionalForm::Constant();
+ *   std::cout << f(2, 3) << "\n"; // prints "5"
+ *   std::cout << f(x, y) << "\n"; // prints "lin(x,y)"
+ *   std::cout << f(x, c) << "\n"; // prints "aff(x)"
+ *   std::cout << g(2, 3) << "\n"; // prints "6"
+ *   std::cout << g(x, y) << "\n"; // prints "poly(x,y)"
+ *   std::cout << g(x, c) << "\n"; // prints "lin(x)"
+ *   \endcode
+ *
+ * Composition is supported naturally:
+ *
+ *   \code{.cpp}
+ *   std::cout << f(g(x,c), y) << "\n"; // prints "lin(x,y)"
+ *   std::cout << f(g(x,c), c) << "\n"; // prints "aff(x)"
+ *   std::cout << f(g(x,y), c) << "\n"; // prints "poly(x,y)"
+ *   std::cout << f(g(c,c), c) << "\n"; // prints "cons"
+ *   \endcode
  */
 class DRAKECORE_EXPORT FunctionalForm {
  public:
@@ -127,6 +171,95 @@ class DRAKECORE_EXPORT FunctionalForm {
    */
   friend DRAKECORE_EXPORT std::ostream& operator<<(std::ostream& os,
                                                    FunctionalForm const& f);
+
+  /** Return a copy of \p lhs updated to record addition of form \p rhs.  */
+  friend DRAKECORE_EXPORT FunctionalForm operator+(FunctionalForm const& lhs,
+                                                   FunctionalForm const& rhs);
+
+  /** Return a copy of \p lhs updated to record addition of a \ref constant
+      or \ref zero.  */
+  friend DRAKECORE_EXPORT FunctionalForm operator+(FunctionalForm const& lhs,
+                                                   double rhs);
+
+  /** Return a copy of \p rhs updated to record its addition to a
+      \ref constant or \ref zero.  */
+  friend DRAKECORE_EXPORT FunctionalForm operator+(double lhs,
+                                                   FunctionalForm const& rhs);
+
+  /** Update \p lhs to record addition of form \p rhs.  */
+  friend DRAKECORE_EXPORT FunctionalForm& operator+=(FunctionalForm& lhs,
+                                                     FunctionalForm const& rhs);
+
+  /** Update \p lhs to record addition of a \ref constant or \ref zero.  */
+  friend DRAKECORE_EXPORT FunctionalForm& operator+=(FunctionalForm& lhs,
+                                                     double rhs);
+
+  /** Return a copy of \p lhs updated to record subtraction of form \p rhs.  */
+  friend DRAKECORE_EXPORT FunctionalForm operator-(FunctionalForm const& lhs,
+                                                   FunctionalForm const& rhs);
+
+  /** Return a copy of \p lhs updated to record subtraction of a
+      \ref constant or \ref zero.  */
+  friend DRAKECORE_EXPORT FunctionalForm operator-(FunctionalForm const& lhs,
+                                                   double rhs);
+
+  /** Return a copy of \p rhs updated to record its subtraction from a
+      \ref constant or \ref zero.  */
+  friend DRAKECORE_EXPORT FunctionalForm operator-(double lhs,
+                                                   FunctionalForm const& rhs);
+
+  /** Update \p lhs to record subtraction of form \p rhs.  */
+  friend DRAKECORE_EXPORT FunctionalForm& operator-=(FunctionalForm& lhs,
+                                                     FunctionalForm const& rhs);
+
+  /** Update \p lhs to record subtraction of a \ref constant or \ref zero.  */
+  friend DRAKECORE_EXPORT FunctionalForm& operator-=(FunctionalForm& lhs,
+                                                     double rhs);
+
+  /** Return a copy of \p lhs updated to record multiplication by \p rhs.  */
+  friend DRAKECORE_EXPORT FunctionalForm operator*(FunctionalForm const& lhs,
+                                                   FunctionalForm const& rhs);
+
+  /** Return a copy of \p lhs updated to record multiplication by a
+      \ref constant or \ref zero.  */
+  friend DRAKECORE_EXPORT FunctionalForm operator*(FunctionalForm const& lhs,
+                                                   double rhs);
+
+  /** Return a copy of \p rhs updated to record its multiplication of a
+      \ref constant or \ref zero.  */
+  friend DRAKECORE_EXPORT FunctionalForm operator*(double lhs,
+                                                   FunctionalForm const& rhs);
+
+  /** Update \p lhs to record multiplication by \p rhs.  */
+  friend DRAKECORE_EXPORT FunctionalForm& operator*=(FunctionalForm& lhs,
+                                                     FunctionalForm const& rhs);
+
+  /** Update \p lhs to record multiplication by a \ref constant
+      or \ref zero.  */
+  friend DRAKECORE_EXPORT FunctionalForm& operator*=(FunctionalForm& lhs,
+                                                     double rhs);
+
+  /** Return a copy of \p lhs updated to record division by \p rhs.  */
+  friend DRAKECORE_EXPORT FunctionalForm operator/(FunctionalForm const& lhs,
+                                                   FunctionalForm const& rhs);
+
+  /** Return a copy of \p lhs updated to record division by a \ref constant
+      or \ref zero.  */
+  friend DRAKECORE_EXPORT FunctionalForm operator/(FunctionalForm const& lhs,
+                                                   double rhs);
+
+  /** Return a copy of \p rhs updated to record its division of a
+      \ref constant or \ref zero.  */
+  friend DRAKECORE_EXPORT FunctionalForm operator/(double lhs,
+                                                   FunctionalForm const& rhs);
+
+  /** Update \p lhs to record division by \p rhs.  */
+  friend DRAKECORE_EXPORT FunctionalForm& operator/=(FunctionalForm& lhs,
+                                                     FunctionalForm const& rhs);
+
+  /** Update \p lhs to record division by a \ref constant or \ref zero.  */
+  friend DRAKECORE_EXPORT FunctionalForm& operator/=(FunctionalForm& lhs,
+                                                     double rhs);
 
   /** \brief Represent a set of Variable instances.
    *

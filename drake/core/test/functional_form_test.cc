@@ -364,6 +364,208 @@ GTEST_TEST(FunctionalFormTest, Stream) {
   }
 }
 
+GTEST_TEST(FunctionalFormTest, Add) {
+  using Variable = FunctionalForm::Variable;
+  {
+    FunctionalForm f = FunctionalForm::Zero() + FunctionalForm::Linear({"x"});
+    EXPECT_TRUE(f.IsLinear());
+    EXPECT_EQ(f.GetVariables(), Vars({"x"}));
+  }
+
+  {
+    FunctionalForm f =
+        FunctionalForm::Linear({"x"}) + FunctionalForm::Linear({"y"});
+    EXPECT_TRUE(f.IsLinear());
+    EXPECT_EQ(f.GetVariables(), Vars({"x", "y"}));
+  }
+
+  {
+    FunctionalForm f =
+        FunctionalForm::Constant() + FunctionalForm::Linear({"x"});
+    EXPECT_TRUE(f.IsAffine());
+    EXPECT_EQ(f.GetVariables(), Vars({"x"}));
+  }
+
+  {
+    FunctionalForm f = 1 + FunctionalForm::Linear({"x"});
+    EXPECT_TRUE(f.IsAffine());
+    EXPECT_EQ(f.GetVariables(), Vars({"x"}));
+  }
+
+  {
+    FunctionalForm f = FunctionalForm::Linear({"x"}) + 1;
+    EXPECT_TRUE(f.IsAffine());
+    EXPECT_EQ(f.GetVariables(), Vars({"x"}));
+  }
+
+  {
+    FunctionalForm f = FunctionalForm::Linear({"x"});
+    f += 1;
+    EXPECT_TRUE(f.IsAffine());
+    EXPECT_EQ(f.GetVariables(), Vars({"x"}));
+  }
+
+  {
+    FunctionalForm f = FunctionalForm::Linear({"x"});
+    f += FunctionalForm::Linear({"y"});
+    EXPECT_TRUE(f.IsLinear());
+    EXPECT_EQ(f.GetVariables(), Vars({"x", "y"}));
+  }
+}
+
+GTEST_TEST(FunctionalFormTest, Subtract) {
+  using Variable = FunctionalForm::Variable;
+  {
+    FunctionalForm f = FunctionalForm::Zero() - FunctionalForm::Linear({"x"});
+    EXPECT_TRUE(f.IsLinear());
+    EXPECT_EQ(f.GetVariables(), Vars({"x"}));
+  }
+
+  {
+    FunctionalForm f =
+        FunctionalForm::Linear({"x"}) - FunctionalForm::Linear({"y"});
+    EXPECT_TRUE(f.IsLinear());
+    EXPECT_EQ(f.GetVariables(), Vars({"x", "y"}));
+  }
+
+  {
+    FunctionalForm f =
+        FunctionalForm::Constant() - FunctionalForm::Linear({"x"});
+    EXPECT_TRUE(f.IsAffine());
+    EXPECT_EQ(f.GetVariables(), Vars({"x"}));
+  }
+
+  {
+    FunctionalForm f = 1 - FunctionalForm::Linear({"x"});
+    EXPECT_TRUE(f.IsAffine());
+    EXPECT_EQ(f.GetVariables(), Vars({"x"}));
+  }
+
+  {
+    FunctionalForm f = FunctionalForm::Linear({"x"}) - 1;
+    EXPECT_TRUE(f.IsAffine());
+    EXPECT_EQ(f.GetVariables(), Vars({"x"}));
+  }
+
+  {
+    FunctionalForm f = FunctionalForm::Linear({"x"});
+    f -= 1;
+    EXPECT_TRUE(f.IsAffine());
+    EXPECT_EQ(f.GetVariables(), Vars({"x"}));
+  }
+
+  {
+    FunctionalForm f = FunctionalForm::Linear({"x"});
+    f -= FunctionalForm::Linear({"y"});
+    EXPECT_TRUE(f.IsLinear());
+    EXPECT_EQ(f.GetVariables(), Vars({"x", "y"}));
+  }
+}
+
+GTEST_TEST(FunctionalFormTest, Multiply) {
+  using Variable = FunctionalForm::Variable;
+  {
+    FunctionalForm f = FunctionalForm::Zero() * FunctionalForm::Linear({"x"});
+    EXPECT_TRUE(f.IsZero());
+    EXPECT_EQ(f.GetVariables(), Vars());
+  }
+
+  {
+    FunctionalForm f =
+        FunctionalForm::Linear({"x"}) * FunctionalForm::Linear({"y"});
+    EXPECT_TRUE(f.IsPolynomial());
+    EXPECT_EQ(f.GetVariables(), Vars({"x", "y"}));
+  }
+
+  {
+    FunctionalForm f =
+        FunctionalForm::Constant() * FunctionalForm::Linear({"x"});
+    EXPECT_TRUE(f.IsLinear());
+    EXPECT_EQ(f.GetVariables(), Vars({"x"}));
+  }
+
+  {
+    FunctionalForm f = 1 * FunctionalForm::Linear({"x"});
+    EXPECT_TRUE(f.IsLinear());
+    EXPECT_EQ(f.GetVariables(), Vars({"x"}));
+  }
+
+  {
+    FunctionalForm f = FunctionalForm::Linear({"x"}) * 1;
+    EXPECT_TRUE(f.IsLinear());
+    EXPECT_EQ(f.GetVariables(), Vars({"x"}));
+  }
+
+  {
+    FunctionalForm f = FunctionalForm::Linear({"x"});
+    f *= 1;
+    EXPECT_TRUE(f.IsLinear());
+    EXPECT_EQ(f.GetVariables(), Vars({"x"}));
+  }
+
+  {
+    FunctionalForm f = FunctionalForm::Linear({"x"});
+    f *= FunctionalForm::Linear({"y"});
+    EXPECT_TRUE(f.IsPolynomial());
+    EXPECT_EQ(f.GetVariables(), Vars({"x", "y"}));
+  }
+}
+
+GTEST_TEST(FunctionalFormTest, Divide) {
+  using Variable = FunctionalForm::Variable;
+  {
+    FunctionalForm f = FunctionalForm::Zero() / FunctionalForm::Linear({"x"});
+    EXPECT_TRUE(f.IsZero());
+    EXPECT_EQ(f.GetVariables(), Vars());
+  }
+
+  {
+    FunctionalForm f =
+        FunctionalForm::Linear({"x"}) / FunctionalForm::Linear({"y"});
+    EXPECT_TRUE(f.IsDifferentiable());
+    EXPECT_EQ(f.GetVariables(), Vars({"x", "y"}));
+  }
+
+  {
+    FunctionalForm f =
+        FunctionalForm::Constant() / FunctionalForm::Linear({"x"});
+    EXPECT_TRUE(f.IsDifferentiable());
+    EXPECT_EQ(f.GetVariables(), Vars({"x"}));
+  }
+
+  {
+    FunctionalForm f = 1 / FunctionalForm::Linear({"x"});
+    EXPECT_TRUE(f.IsDifferentiable());
+    EXPECT_EQ(f.GetVariables(), Vars({"x"}));
+  }
+
+  {
+    FunctionalForm f = 1 / FunctionalForm::Zero();
+    EXPECT_TRUE(f.IsUndefined());
+    EXPECT_EQ(f.GetVariables(), Vars());
+  }
+
+  {
+    FunctionalForm f = FunctionalForm::Linear({"x"}) / 1;
+    EXPECT_TRUE(f.IsLinear());
+    EXPECT_EQ(f.GetVariables(), Vars({"x"}));
+  }
+
+  {
+    FunctionalForm f = FunctionalForm::Linear({"x"});
+    f /= 1;
+    EXPECT_TRUE(f.IsLinear());
+    EXPECT_EQ(f.GetVariables(), Vars({"x"}));
+  }
+
+  {
+    FunctionalForm f = FunctionalForm::Linear({"x"});
+    f /= FunctionalForm::Linear({"y"});
+    EXPECT_TRUE(f.IsDifferentiable());
+    EXPECT_EQ(f.GetVariables(), Vars({"x", "y"}));
+  }
+}
+
 }  // namespace
 }  // namespace test
 }  // namespace core
