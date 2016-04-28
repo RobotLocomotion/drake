@@ -54,6 +54,10 @@ class Joint {
   MotionSubspace<Promote<J, typename DerivedQ::Scalar>> motionSubspace(const Eigen::MatrixBase<DerivedQ> &q) {
     using Q = typename DerivedQ::Scalar;
 
+    auto fixedAxisOneDoFJoint = dynamic_cast<const FixedAxisOneDoF<J>*>(type.get());
+    if (fixedAxisOneDoFJoint) {
+      return fixedAxisOneDoFJoint->template motionSubspace<Q>();
+    }
     auto quaternionFloatingJoint = dynamic_cast<const QuaternionFloating<J>*>(type.get());
     if (quaternionFloatingJoint) {
       return quaternionFloatingJoint->template motionSubspace<Q>();
@@ -69,6 +73,10 @@ class Joint {
   SpatialVector<Promote<J, typename DerivedQ::Scalar>> motionSubspaceDotTimesV(const Eigen::MatrixBase<DerivedQ> &q, const Eigen::MatrixBase<DerivedV> &v) {
     using Q = typename DerivedQ::Scalar;
 
+    auto fixedAxisOneDoFJoint = dynamic_cast<const FixedAxisOneDoF<J>*>(type.get());
+    if (fixedAxisOneDoFJoint) {
+      return fixedAxisOneDoFJoint->template motionSubspaceDotTimesV<Q>();
+    }
     auto quaternionFloatingJoint = dynamic_cast<const QuaternionFloating<J>*>(type.get());
     if (quaternionFloatingJoint) {
       return quaternionFloatingJoint->template motionSubspaceDotTimesV<Q>();
@@ -84,6 +92,10 @@ class Joint {
   ConfigurationDerivativeToVelocity<Promote<J, typename DerivedQ::Scalar>> configurationDerivativeToVelocity(const Eigen::MatrixBase<DerivedQ>& q) {
     using Q = typename DerivedQ::Scalar;
 
+    auto fixedAxisOneDoFJoint = dynamic_cast<const FixedAxisOneDoF<J>*>(type.get());
+    if (fixedAxisOneDoFJoint) {
+      return fixedAxisOneDoFJoint->template configurationDerivativeToVelocity<Q>();
+    }
     auto quaternionFloatingJoint = dynamic_cast<const QuaternionFloating<J>*>(type.get());
     if (quaternionFloatingJoint) {
       return quaternionFloatingJoint->configurationDerivativeToVelocity(q);
@@ -99,6 +111,10 @@ class Joint {
   VelocityToConfigurationDerivative<Promote<J, typename DerivedQ::Scalar>> velocityToConfigurationDerivative(const Eigen::MatrixBase<DerivedQ>& q) {
     using Q = typename DerivedQ::Scalar;
 
+    auto fixedAxisOneDoFJoint = dynamic_cast<const FixedAxisOneDoF<J>*>(type.get());
+    if (fixedAxisOneDoFJoint) {
+      return fixedAxisOneDoFJoint->template velocityToConfigurationDerivative<Q>();
+    }
     auto quaternionFloatingJoint = dynamic_cast<const QuaternionFloating<J>*>(type.get());
     if (quaternionFloatingJoint) {
       return quaternionFloatingJoint->velocityToConfigurationDerivative(q);
@@ -114,6 +130,10 @@ class Joint {
   Eigen::Matrix<Promote<J, typename DerivedV::Scalar>, Eigen::Dynamic, 1> frictionTorque(const Eigen::MatrixBase<DerivedV>& v) {
     using V = typename DerivedV::Scalar;
 
+    auto fixedAxisOneDoFJoint = dynamic_cast<const FixedAxisOneDoF<J>*>(type.get());
+    if (fixedAxisOneDoFJoint) {
+      return fixedAxisOneDoFJoint->frictionTorque(v);
+    }
     auto quaternionFloatingJoint = dynamic_cast<const QuaternionFloating<J>*>(type.get());
     if (quaternionFloatingJoint) {
       return quaternionFloatingJoint->template frictionTorque<V>();
