@@ -7,14 +7,16 @@ Detailed Notes on How to Run Unit Tests
 Finding a Specific Unit Test
 ============================
 
-On Linux and Mac you first need to move to the default build directory and then find your unit test with `ctest -N` as so:
+To find a specific unit test you need to execute `cmake -N` from within the build artifacts directory::
 
-::
-
-   cd path/to/your/drake-distro/drake/pod-build
-   ctest -N
+  cd path/to/your/build/artifacts/directory
+  ctest -N
 
 This will list all the available tests. You can pipe the output of the `ctest -N` command to `grep` if you have a clue about the unit test's name, which you can determine by looking at the `CMakeLists.txt` that included the unit test.
+
+For in source builds in Linux and Mac this directory is `path/to/your/drake-distro/drake/pod-build`.
+For out of source builds this directory is `path/to/your/drake-distro/build/drake`.
+
 
 Running a Specific Test
 =======================
