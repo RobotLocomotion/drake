@@ -14,11 +14,9 @@ def put(fileobj, text, newlines_after=0):
 
 INDICES_BEGIN = """
 struct %(indices)s {
-  enum Enum {
 """
-INDICES_FIELD = """%(kname)s = %(k)d,"""
+INDICES_FIELD = """static const int %(kname)s = %(k)d;"""
 INDICES_END = """
-  };
 };
 """
 
@@ -90,7 +88,7 @@ COORD_NAMER_BEGIN = """
                                        unsigned int index) {
     switch (index) {
 """
-COORD_NAMER_FIELD = """      case %(kname)s: return "%(field)s";"""
+COORD_NAMER_FIELD = """      case K::%(kname)s: return "%(field)s";"""
 COORD_NAMER_END = """    }
     throw std::domain_error("unknown coordinate index");
   }
@@ -109,12 +107,8 @@ def generate_coord_namer(context, fields):
 
 
 ACCESSOR = """
-    ScalarType& %(field)s() {
-      return value_(%(kname)s);
-    }
-    const ScalarType& %(field)s() const {
-      return value_(%(kname)s);
-    }
+    ScalarType& %(field)s() { return value_(K::%(kname)s); }
+    const ScalarType& %(field)s() const { return value_(K::%(kname)s); }
 """
 
 def generate_accessors(context, fields):
@@ -193,7 +187,7 @@ namespace Drake {
 CLASS_BEGIN = """
 /// Models the Drake::LCMVector concept.
 template <typename ScalarType = double>
-class %(camel)s : private %(indices)s {
+class %(camel)s {
  public:
   typedef drake::lcmt_%(snake)s_t LCMMessageType;
   static std::string channel() { return "%(screaming_snake)s"; }
@@ -206,6 +200,7 @@ class %(camel)s : private %(indices)s {
 
 CLASS_END = """
  private:
+  typedef %(indices)s K;
   EigenType value_;
 };
 """

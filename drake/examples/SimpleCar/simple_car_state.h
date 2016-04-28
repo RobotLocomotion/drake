@@ -13,17 +13,15 @@
 namespace Drake {
 
 struct SimpleCarStateIndices {
-  enum Enum {
-    kX = 0,
-    kY = 1,
-    kHeading = 2,
-    kVelocity = 3,
-  };
+  static const int kX = 0;
+  static const int kY = 1;
+  static const int kHeading = 2;
+  static const int kVelocity = 3;
 };
 
 /// Models the Drake::LCMVector concept.
 template <typename ScalarType = double>
-class SimpleCarState : private SimpleCarStateIndices {
+class SimpleCarState {
  public:
   typedef drake::lcmt_simple_car_state_t LCMMessageType;
   static std::string channel() { return "SIMPLE_CAR_STATE"; }
@@ -52,31 +50,32 @@ class SimpleCarState : private SimpleCarStateIndices {
   friend std::string getCoordinateName(const SimpleCarState<ScalarType>& vec,
                                        unsigned int index) {
     switch (index) {
-      case kX:
+      case K::kX:
         return "x";
-      case kY:
+      case K::kY:
         return "y";
-      case kHeading:
+      case K::kHeading:
         return "heading";
-      case kVelocity:
+      case K::kVelocity:
         return "velocity";
     }
     throw std::domain_error("unknown coordinate index");
   }
 
-  ScalarType& x() { return value_(kX); }
-  const ScalarType& x() const { return value_(kX); }
+  ScalarType& x() { return value_(K::kX); }
+  const ScalarType& x() const { return value_(K::kX); }
 
-  ScalarType& y() { return value_(kY); }
-  const ScalarType& y() const { return value_(kY); }
+  ScalarType& y() { return value_(K::kY); }
+  const ScalarType& y() const { return value_(K::kY); }
 
-  ScalarType& heading() { return value_(kHeading); }
-  const ScalarType& heading() const { return value_(kHeading); }
+  ScalarType& heading() { return value_(K::kHeading); }
+  const ScalarType& heading() const { return value_(K::kHeading); }
 
-  ScalarType& velocity() { return value_(kVelocity); }
-  const ScalarType& velocity() const { return value_(kVelocity); }
+  ScalarType& velocity() { return value_(K::kVelocity); }
+  const ScalarType& velocity() const { return value_(K::kVelocity); }
 
  private:
+  typedef SimpleCarStateIndices K;
   EigenType value_;
 };
 

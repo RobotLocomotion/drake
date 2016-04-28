@@ -13,19 +13,17 @@
 namespace Drake {
 
 struct EulerFloatingJointStateIndices {
-  enum Enum {
-    kX = 0,
-    kY = 1,
-    kZ = 2,
-    kRoll = 3,
-    kPitch = 4,
-    kYaw = 5,
-  };
+  static const int kX = 0;
+  static const int kY = 1;
+  static const int kZ = 2;
+  static const int kRoll = 3;
+  static const int kPitch = 4;
+  static const int kYaw = 5;
 };
 
 /// Models the Drake::LCMVector concept.
 template <typename ScalarType = double>
-class EulerFloatingJointState : private EulerFloatingJointStateIndices {
+class EulerFloatingJointState {
  public:
   typedef drake::lcmt_euler_floating_joint_state_t LCMMessageType;
   static std::string channel() { return "EULER_FLOATING_JOINT_STATE"; }
@@ -54,41 +52,42 @@ class EulerFloatingJointState : private EulerFloatingJointStateIndices {
   friend std::string getCoordinateName(
       const EulerFloatingJointState<ScalarType>& vec, unsigned int index) {
     switch (index) {
-      case kX:
+      case K::kX:
         return "x";
-      case kY:
+      case K::kY:
         return "y";
-      case kZ:
+      case K::kZ:
         return "z";
-      case kRoll:
+      case K::kRoll:
         return "roll";
-      case kPitch:
+      case K::kPitch:
         return "pitch";
-      case kYaw:
+      case K::kYaw:
         return "yaw";
     }
     throw std::domain_error("unknown coordinate index");
   }
 
-  ScalarType& x() { return value_(kX); }
-  const ScalarType& x() const { return value_(kX); }
+  ScalarType& x() { return value_(K::kX); }
+  const ScalarType& x() const { return value_(K::kX); }
 
-  ScalarType& y() { return value_(kY); }
-  const ScalarType& y() const { return value_(kY); }
+  ScalarType& y() { return value_(K::kY); }
+  const ScalarType& y() const { return value_(K::kY); }
 
-  ScalarType& z() { return value_(kZ); }
-  const ScalarType& z() const { return value_(kZ); }
+  ScalarType& z() { return value_(K::kZ); }
+  const ScalarType& z() const { return value_(K::kZ); }
 
-  ScalarType& roll() { return value_(kRoll); }
-  const ScalarType& roll() const { return value_(kRoll); }
+  ScalarType& roll() { return value_(K::kRoll); }
+  const ScalarType& roll() const { return value_(K::kRoll); }
 
-  ScalarType& pitch() { return value_(kPitch); }
-  const ScalarType& pitch() const { return value_(kPitch); }
+  ScalarType& pitch() { return value_(K::kPitch); }
+  const ScalarType& pitch() const { return value_(K::kPitch); }
 
-  ScalarType& yaw() { return value_(kYaw); }
-  const ScalarType& yaw() const { return value_(kYaw); }
+  ScalarType& yaw() { return value_(K::kYaw); }
+  const ScalarType& yaw() const { return value_(K::kYaw); }
 
  private:
+  typedef EulerFloatingJointStateIndices K;
   EigenType value_;
 };
 

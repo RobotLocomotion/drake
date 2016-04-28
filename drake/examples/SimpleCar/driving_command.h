@@ -13,16 +13,14 @@
 namespace Drake {
 
 struct DrivingCommandIndices {
-  enum Enum {
-    kSteeringAngle = 0,
-    kThrottle = 1,
-    kBrake = 2,
-  };
+  static const int kSteeringAngle = 0;
+  static const int kThrottle = 1;
+  static const int kBrake = 2;
 };
 
 /// Models the Drake::LCMVector concept.
 template <typename ScalarType = double>
-class DrivingCommand : private DrivingCommandIndices {
+class DrivingCommand {
  public:
   typedef drake::lcmt_driving_command_t LCMMessageType;
   static std::string channel() { return "DRIVING_COMMAND"; }
@@ -51,26 +49,27 @@ class DrivingCommand : private DrivingCommandIndices {
   friend std::string getCoordinateName(const DrivingCommand<ScalarType>& vec,
                                        unsigned int index) {
     switch (index) {
-      case kSteeringAngle:
+      case K::kSteeringAngle:
         return "steering_angle";
-      case kThrottle:
+      case K::kThrottle:
         return "throttle";
-      case kBrake:
+      case K::kBrake:
         return "brake";
     }
     throw std::domain_error("unknown coordinate index");
   }
 
-  ScalarType& steering_angle() { return value_(kSteeringAngle); }
-  const ScalarType& steering_angle() const { return value_(kSteeringAngle); }
+  ScalarType& steering_angle() { return value_(K::kSteeringAngle); }
+  const ScalarType& steering_angle() const { return value_(K::kSteeringAngle); }
 
-  ScalarType& throttle() { return value_(kThrottle); }
-  const ScalarType& throttle() const { return value_(kThrottle); }
+  ScalarType& throttle() { return value_(K::kThrottle); }
+  const ScalarType& throttle() const { return value_(K::kThrottle); }
 
-  ScalarType& brake() { return value_(kBrake); }
-  const ScalarType& brake() const { return value_(kBrake); }
+  ScalarType& brake() { return value_(K::kBrake); }
+  const ScalarType& brake() const { return value_(K::kBrake); }
 
  private:
+  typedef DrivingCommandIndices K;
   EigenType value_;
 };
 
