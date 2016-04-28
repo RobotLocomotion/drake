@@ -58,7 +58,7 @@ class NiceTypeName {
   @see Canonicalize() **/
   /** @cond **/ DRAKECOMMON_EXPORT /** @endcond **/
   static std::string Demangle(const char* typeid_name);
-  
+
   /** Given a compiler-dependent demangled type name string as returned by
   Demangle(), attempts to form a canonicalized representation that will be
   the same for any compiler. Unnecessary spaces and superfluous keywords like
