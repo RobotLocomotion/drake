@@ -192,8 +192,21 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
     return tree;
   }
 
+  /**
+   * Returns the number of joint states in this rigid body system. This includes
+   * joint position and velocity values.
+   */
   size_t getNumStates() const;
+
+  /**
+   * Returns the total number of inputs to this rigid body system.
+   */
   size_t getNumInputs() const;
+
+  /**
+   * Returns the total number of outputs of this rigid body system. This includes
+   * both the number of joint states and the number of sensor states.
+   */
   size_t getNumOutputs() const;
 
   /** dynamics
