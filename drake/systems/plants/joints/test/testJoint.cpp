@@ -25,7 +25,8 @@ int main() {
   for (const auto& joint : joints) {
     VectorXd q = joint->randomConfiguration(generator);
     cout << joint->getName() << endl;
-    cout << joint->jointTransform(q).matrix() << endl;
+    cout << joint->motionSubspace(q) << endl;
+    cout << joint->configurationDerivativeToVelocity(q) << endl;
     cout << endl;
   }
 

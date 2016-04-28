@@ -6,6 +6,7 @@
 #define DRAKE_CONVERSIONS_H_H
 
 #include <Eigen/Core>
+#include <utility>
 
 namespace Drake {
 template <typename T1, typename T2>
@@ -21,27 +22,37 @@ struct Convert {
     return To(from);
   }
 
-  const To& operator()(const To& from) {
-    return from;
+  To&& operator()(To&& from) {
+    return std::forward<To>(from);
   }
 };
 
 template <typename ToScalar>
 struct ConvertMatrix {
-  template <typename DerivedFrom>
-  using To = Eigen::Matrix<ToScalar, DerivedFrom::RowsAtCompileTime, DerivedFrom::ColsAtCompileTime, 0, DerivedFrom::MaxRowsAtCompileTime, DerivedFrom::MaxColsAtCompileTime>;
+  template <typename T>
+  struct To {};
+
+  template <typename Derived>
+  struct To<Eigen::MatrixBase<Derived>> {
+    typedef Eigen::Matrix<ToScalar, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime, 0, Derived::MaxRowsAtCompileTime, Derived::MaxColsAtCompileTime> type;
+  };
 
   // version for ToScalar != FromScalar
-  template <typename DerivedFrom>
-  const Drake::enable_if_t<!std::is_same<ToScalar, typename DerivedFrom::Scalar>::value, To<DerivedFrom>> operator()(const Eigen::MatrixBase<DerivedFrom> &from) {
-    return from.template cast<ToScalar>();
+  template <typename T>
+  const Drake::enable_if_t<!std::is_same<ToScalar, typename std::remove_reference<T>::type::Scalar>::value, typename To<T>::type> operator()(T &&from) {
+    return std::forward<T>(from).template cast<ToScalar>();
   }
 
   // version for ToScalar == FromScalar
-  template <typename DerivedFrom>
-  const Drake::enable_if_t<std::is_same<ToScalar, typename DerivedFrom::Scalar>::value, const Eigen::MatrixBase<DerivedFrom>&> operator()(const Eigen::MatrixBase<DerivedFrom> &from) {
-    return from;
+  template <typename T>
+  const Drake::enable_if_t<std::is_same<ToScalar, typename std::remove_reference<T>::type::Scalar>::value, T&&> operator()(T &&from) {
+    return std::forward<T>(from);
   }
+
+//  template <typename DerivedFrom>
+//  const Drake::enable_if_t<std::is_same<ToScalar, typename DerivedFrom::Scalar>::value, Eigen::Block<DerivedFrom>> operator()(Eigen::Block<DerivedFrom> &&from) {
+//    return from;
+//  }
 };
 }
 

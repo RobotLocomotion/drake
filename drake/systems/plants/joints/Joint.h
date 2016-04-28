@@ -83,6 +83,10 @@ class Joint {
     if (quaternionFloatingJoint) {
       return quaternionFloatingJoint->template motionSubspace<Q>();
     }
+    auto fixedJoint = dynamic_cast<const Fixed<J>*>(type.get());
+    if (fixedJoint) {
+      return fixedJoint->template motionSubspace<Q>();
+    }
     auto rollPitchYawFloatingJoint = dynamic_cast<const RollPitchYawFloating<J>*>(type.get());
     if (rollPitchYawFloatingJoint) {
       return rollPitchYawFloatingJoint->motionSubspace(q);
@@ -102,11 +106,15 @@ class Joint {
     if (quaternionFloatingJoint) {
       return quaternionFloatingJoint->template motionSubspaceDotTimesV<Q>();
     }
+    auto fixedJoint = dynamic_cast<const Fixed<J>*>(type.get());
+    if (fixedJoint) {
+      return fixedJoint->template motionSubspaceDotTimesV<Q>();
+    }
     auto rollPitchYawFloatingJoint = dynamic_cast<const RollPitchYawFloating<J>*>(type.get());
     if (rollPitchYawFloatingJoint) {
-      return rollPitchYawFloatingJoint->motionSubspaceDotTimesV(q);
+      return rollPitchYawFloatingJoint->motionSubspaceDotTimesV(q, v);
     }
-    // TODO
+    throw std::runtime_error("joint type not handled");
   };
 
   template <typename DerivedQ>
@@ -120,6 +128,10 @@ class Joint {
     auto quaternionFloatingJoint = dynamic_cast<const QuaternionFloating<J>*>(type.get());
     if (quaternionFloatingJoint) {
       return quaternionFloatingJoint->configurationDerivativeToVelocity(q);
+    }
+    auto fixedJoint = dynamic_cast<const Fixed<J>*>(type.get());
+    if (fixedJoint) {
+      return fixedJoint->template configurationDerivativeToVelocity<Q>();
     }
     auto rollPitchYawFloatingJoint = dynamic_cast<const RollPitchYawFloating<J>*>(type.get());
     if (rollPitchYawFloatingJoint) {
@@ -140,6 +152,10 @@ class Joint {
     if (quaternionFloatingJoint) {
       return quaternionFloatingJoint->velocityToConfigurationDerivative(q);
     }
+    auto fixedJoint = dynamic_cast<const Fixed<J>*>(type.get());
+    if (fixedJoint) {
+      return fixedJoint->template velocityToConfigurationDerivative<Q>();
+    }
     auto rollPitchYawFloatingJoint = dynamic_cast<const RollPitchYawFloating<J>*>(type.get());
     if (rollPitchYawFloatingJoint) {
       return rollPitchYawFloatingJoint->template velocityToConfigurationDerivative<Q>();
@@ -158,6 +174,10 @@ class Joint {
     auto quaternionFloatingJoint = dynamic_cast<const QuaternionFloating<J>*>(type.get());
     if (quaternionFloatingJoint) {
       return quaternionFloatingJoint->template frictionTorque<V>();
+    }
+    auto fixedJoint = dynamic_cast<const Fixed<J>*>(type.get());
+    if (fixedJoint) {
+      return fixedJoint->template frictionTorque<V>();
     }
     auto rollPitchYawFloatingJoint = dynamic_cast<const RollPitchYawFloating<J>*>(type.get());
     if (rollPitchYawFloatingJoint) {

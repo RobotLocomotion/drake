@@ -17,6 +17,7 @@ class Revolute : public FixedAxisOneDoF<J> {
     using Q = typename DerivedQ::Scalar;
     using T = Promote<J, Q>;
 
+
     Transform3D<T> ret(Eigen::AngleAxis<T>(Convert<T>()(q[0]), ConvertMatrix<T>()(joint_axis.template topRows<3>())));
     ret.makeAffine();
     return ret;

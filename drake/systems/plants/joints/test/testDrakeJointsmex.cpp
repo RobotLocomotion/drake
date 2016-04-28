@@ -1,14 +1,14 @@
 #include <mex.h>
 #include <matrix.h>
 
-#include "drake/systems/plants/joints/DrakeJoints.h"
+#include "drake/systems/plants/joints/Joint.h"
 #include <memory>
 #include <vector>
 #include <string>
-#include <iostream>
 #include <Eigen/Core>
 #include "drake/util/drakeMexUtil.h"
 
+using namespace Drake;
 using namespace Eigen;
 using namespace std;
 
@@ -54,74 +54,38 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 
   Isometry3d transform_to_parent = Isometry3d::Identity();
 
-  vector<unique_ptr<DrakeJoint>> joints;
-  joints.push_back(unique_ptr<DrakeJoint>(new PrismaticJoint(
-      prismaticJointName, transform_to_parent, prismatic_joint_axis)));
-  joints.push_back(unique_ptr<DrakeJoint>(new RevoluteJoint(
-      revoluteJointName, transform_to_parent, revolute_joint_axis)));
-  joints.push_back(unique_ptr<DrakeJoint>(
-      new HelicalJoint(helicalJointName, transform_to_parent,
-                       helical_joint_axis, helical_joint_pitch)));
-  joints.push_back(unique_ptr<DrakeJoint>(
-      new QuaternionFloatingJoint("quaternion_floating", transform_to_parent)));
-  joints.push_back(unique_ptr<DrakeJoint>(
-      new RollPitchYawFloatingJoint("rpy_floating", transform_to_parent)));
+  Joint<double> revolute(revoluteJointName, transform_to_parent, std::unique_ptr<JointType<double>>(new Revolute<double>(revolute_joint_axis)));
+  Joint<double> prismatic(prismaticJointName, transform_to_parent, std::unique_ptr<JointType<double>>(new Prismatic<double>(prismatic_joint_axis)));
+  Joint<double> helical(helicalJointName, transform_to_parent, std::unique_ptr<JointType<double>>(new Helical<double>(helical_joint_axis, helical_joint_pitch)));
+  Joint<double> quaternionFloating("quaternion_floating", transform_to_parent, std::unique_ptr<JointType<double>>(new QuaternionFloating<double>()));
+  Joint<double> rpyFloating("rpy_floating", transform_to_parent, std::unique_ptr<JointType<double>>(new RollPitchYawFloating<double>()));
+  vector<Joint<double>*> joints({&revolute, &prismatic, &helical, &quaternionFloating, &rpyFloating});
 
   const mwSize ndim = 1;
   mwSize dims[] = {1};
   plhs[0] = mxCreateStructArray(ndim, dims, 0, nullptr);
-  for (vector<unique_ptr<DrakeJoint>>::const_iterator it = joints.begin();
-       it != joints.end(); it++) {
-    const unique_ptr<DrakeJoint>& joint = (*it);
-    mxArray* joint_struct_in = safelyGetField(prhs[0], joint->getName());
-    VectorXd q =
-        matlabToEigen<Eigen::Dynamic, 1>(safelyGetField(joint_struct_in, "q"));
-    VectorXd v =
-        matlabToEigen<Eigen::Dynamic, 1>(safelyGetField(joint_struct_in, "v"));
+  for (const auto& joint : joints) {
+    mxArray *joint_struct_in = safelyGetField(prhs[0], joint->getName());
+    VectorXd q = matlabToEigen<Eigen::Dynamic, 1>(safelyGetField(joint_struct_in, "q"));
+    VectorXd v = matlabToEigen<Eigen::Dynamic, 1>(safelyGetField(joint_struct_in, "v"));
     string name = joint->getName();
 
-    mxArray* joint_struct_out = mxCreateStructArray(1, dims, 0, nullptr);
+    mxArray *joint_struct_out = mxCreateStructArray(1, dims, 0, nullptr);
 
     Isometry3d joint_transform = joint->jointTransform(q);
-    safelySetField(joint_struct_out, "joint_transform",
-                   eigenToMatlab(joint_transform.matrix()));
+    safelySetField(joint_struct_out, "joint_transform", eigenToMatlab(joint_transform.matrix()));
 
-    Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic, 0, TWIST_SIZE,
-                  DrakeJoint::MAX_NUM_VELOCITIES>
-        motion_subspace(6, joint->getNumVelocities());
-    MatrixXd dmotion_subspace;
-    joint->motionSubspace(q, motion_subspace, &dmotion_subspace);
-    safelySetField(joint_struct_out, "motion_subspace",
-                   eigenToMatlab(motion_subspace));
-    safelySetField(joint_struct_out, "dmotion_subspace",
-                   eigenToMatlab(dmotion_subspace));
+    auto motion_subspace = joint->motionSubspace(q);
+    safelySetField(joint_struct_out, "motion_subspace", eigenToMatlab(motion_subspace));
 
-    typedef Eigen::Matrix<double, 6, 1> Vector6d;
-    Vector6d motion_subspace_dot_times_v;
-    Gradient<Vector6d, Eigen::Dynamic>::type dmotion_subspace_dot_times_vdq;
-    Gradient<Vector6d, Eigen::Dynamic>::type dmotion_subspace_dot_times_vdv;
+    auto motion_subspace_dot_times_v = joint->motionSubspaceDotTimesV(q, v);
+    safelySetField(joint_struct_out, "motion_subspace_dot_times_v", eigenToMatlab(motion_subspace_dot_times_v));
 
-    joint->motionSubspaceDotTimesV(q, v, motion_subspace_dot_times_v,
-                                   &dmotion_subspace_dot_times_vdq,
-                                   &dmotion_subspace_dot_times_vdv);
-    safelySetField(joint_struct_out, "motion_subspace_dot_times_v",
-                   eigenToMatlab(motion_subspace_dot_times_v));
-    safelySetField(joint_struct_out, "dmotion_subspace_dot_times_vdq",
-                   eigenToMatlab(dmotion_subspace_dot_times_vdq));
-    safelySetField(joint_struct_out, "dmotion_subspace_dot_times_vdv",
-                   eigenToMatlab(dmotion_subspace_dot_times_vdv));
-
-    Matrix<double, Dynamic, Dynamic, 0, DrakeJoint::MAX_NUM_VELOCITIES,
-           DrakeJoint::MAX_NUM_POSITIONS> qdot_to_v;
-    joint->qdot2v(q, qdot_to_v, nullptr);
+    auto qdot_to_v = joint->configurationDerivativeToVelocity(q);
     safelySetField(joint_struct_out, "qdot_to_v", eigenToMatlab(qdot_to_v));
 
-    Matrix<double, Dynamic, Dynamic, 0, DrakeJoint::MAX_NUM_POSITIONS,
-           DrakeJoint::MAX_NUM_VELOCITIES> v_to_qdot;
-    MatrixXd dv_to_qdot;
-    joint->v2qdot(q, v_to_qdot, &dv_to_qdot);
+    auto v_to_qdot = joint->velocityToConfigurationDerivative(q);
     safelySetField(joint_struct_out, "v_to_qdot", eigenToMatlab(v_to_qdot));
-    safelySetField(joint_struct_out, "dv_to_qdot", eigenToMatlab(dv_to_qdot));
 
     int fieldnum = mxAddField(plhs[0], name.c_str());
     mxSetFieldByNumber(plhs[0], 0, fieldnum, joint_struct_out);
