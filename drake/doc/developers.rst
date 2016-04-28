@@ -43,7 +43,7 @@ available in the superbuild.
 directory CMakeLists.txt using add_matlab_test().  ctest will consider
 the test failed if it times out or calls ``error``.
 
-Take at look at :doc:`testing` for more detailed notes including **how to find and run specific tests**.
+Take at look at :doc:`unit_testing_instructions` for more detailed notes including **how to find and run specific tests**.
 
 .. _supported-configurations:
 
