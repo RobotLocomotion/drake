@@ -72,8 +72,8 @@ class SensorVisualizerLidar {
         // If the dynamic cast was successful, that means the sensor is in fact
         // a RigidBodyDepth sensor. The following code creates a ROS topic
         // publisher that will be used to publish the data contained in the
-        // sensor's output. It then creates a sensor_msgs::LaserScan message
-        // for each publisher.
+        // sensor's output. The ROS topic is "drake/lidar/[name of sensor]/".
+        // It then creates a sensor_msgs::LaserScan message for each publisher.
 
         std::cout << "**** Sensor " << depth_sensor->get_name()
                   << " is a LIDAR sensor!" << std::endl;
@@ -126,7 +126,8 @@ class SensorVisualizerLidar {
           // from other variables within this method's scope, set this value
           // to be zero.
           //
-          // See: https://github.com/RobotLocomotion/drake/issues/2210
+          // See:
+          // https://github.com/RobotStateVectortLocomotion/drake/issues/2210
           message->time_increment = 0;
           message->scan_time = 0;
 
@@ -154,17 +155,65 @@ class SensorVisualizerLidar {
 
   OutputVector<double> output(const double &t, const StateVector<double> &x,
                               const InputVector<double> &u) const {
-    // Checks whether it's time to shutdown
-    if (!ros::ok()) {
-      ros::shutdown();
-    }
-
     const std::vector<std::shared_ptr<RigidBodySensor>> &sensor_vector =
         rigid_body_system_->GetSensors();
 
+    // This variable is for tracking where in the output of rigid body system
+    // we are currently processing. We initialize it to be the number of states
+    // of the rigid body system to start past the joint state information.
+    size_t output_index = rigid_body_system_->getNumStates();
+
+    // Iterates through each sensor in the rigid body system. If the sensor is
+    // a LIDAR sensor, store the range measurements in a ROS message and publish
+    // it on the appropriate ROS topic.
     for (auto &sensor : sensor_vector) {
       std::cout << "SensorVisualizerLidar: output: Processing sensor "
                 << sensor->get_name() << std::endl;
+
+      if (output_index + sensor->getNumOutputs() >
+          rigid_body_system_->getNumOutputs()) {
+        std::stringstream buff;
+        buff << "ERROR: Sum of output index " << output_index
+             << " and number of outputs of sensor " << sensor->get_name()
+             << " (" << sensor->getNumOutputs()
+             << ") exceeds the total number of outputs of the rigid body "
+                "system ("
+             << rigid_body_system_->getNumOutputs();
+        throw std::runtime_error(buff.str());
+      }
+
+      RigidBodyDepthSensor *depth_sensor =
+          dynamic_cast<RigidBodyDepthSensor *>(sensor.get());
+
+      if (depth_sensor != nullptr) {
+        size_t sensor_data_index_ = output_index;
+
+        auto message_in_map = lidar_messages_.find(depth_sensor->get_name());
+        if (message_in_map == lidar_messages_.end())
+          throw std::runtime_error(
+              "Could not find ROS message for LIDAR sensor " +
+              depth_sensor->get_name());
+
+        sensor_msgs::LaserScan *message = message_in_map->second.get();
+
+        // Saves the new range measurements in the ROS message.
+        for (size_t ii = 0; ii < depth_sensor->getNumOutputs(); ii++) {
+          message->ranges[ii] = u[sensor_data_index_++];
+        }
+
+        // Publishes the ROS message containing the new range measurements.
+        auto publisher_in_map =
+            lidar_publishers_.find(depth_sensor->get_name());
+        if (publisher_in_map == lidar_publishers_.end())
+          throw std::runtime_error(
+              "ERROR: Failed to find ROS topic publisher for LIDAR sensor " +
+              depth_sensor->get_name());
+
+        publisher_in_map->second.publish(*message);
+      }
+
+      // Shifts the output index variable forward by one sensor.
+      output_index += sensor->getNumOutputs();
     }
 
     // std::cout << "SensorVisualizerLidar::output: Method called!\n"
