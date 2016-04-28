@@ -43,7 +43,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
         "Argument 2 must be of size nq*n_breaks");
   }
   memcpy(q.data(), mxGetPrSafe(prhs[1]), sizeof(double) * nq * n_breaks);
-  int num_cnst = cnst->getNumConstraint(t_ptr, n_breaks);
+  int num_cnst = cnst->getNumConstraint(n_breaks);
   Eigen::VectorXd c(num_cnst);
   cnst->feval(t_ptr, n_breaks, q, c);
   Eigen::VectorXi iAfun;
@@ -54,7 +54,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   cnst->name(t_ptr, n_breaks, cnst_names);
   Eigen::VectorXd lb(num_cnst);
   Eigen::VectorXd ub(num_cnst);
-  cnst->bounds(t_ptr, n_breaks, lb, ub);
+  cnst->bounds(n_breaks, lb, ub);
   Eigen::VectorXd iAfun_tmp(iAfun.size());
   Eigen::VectorXd jAvar_tmp(jAvar.size());
   for (int i = 0; i < iAfun.size(); i++) {

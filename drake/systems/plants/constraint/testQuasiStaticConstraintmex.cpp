@@ -50,7 +50,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   int num_weights = qsc->getNumWeights();
   double* weights = new double[num_weights];
   memcpy(weights, mxGetPrSafe(prhs[2]), sizeof(double) * num_weights);
-  int num_qsc_cnst = qsc->getNumConstraint(t_ptr);
+  int num_qsc_cnst = qsc->getNumConstraint();
   VectorXd c(num_qsc_cnst - 1);
   MatrixXd dc = MatrixXd::Zero(num_qsc_cnst - 1, nq + num_weights);
   KinematicsCache<double> cache = model->doKinematics(q);
@@ -58,7 +58,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   VectorXd lb, ub;
   lb.resize(num_qsc_cnst - 1);
   ub.resize(num_qsc_cnst - 1);
-  qsc->bounds(t_ptr, lb, ub);
+  qsc->bounds(lb, ub);
   plhs[0] = mxCreateLogicalScalar(active);
   plhs[1] = mxCreateDoubleScalar((double)num_weights);
   plhs[2] = mxCreateDoubleMatrix(num_qsc_cnst - 1, 1, mxREAL);

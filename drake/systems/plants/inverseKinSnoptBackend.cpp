@@ -139,7 +139,7 @@ static void IK_constraint_fun(KinematicsCache<double>& cache, double* x,
   int ng_accum = 0;
   int nc;
   for (int i = 0; i < num_st_kc; i++) {
-    nc = st_kc_array[i]->getNumConstraint(ti);
+    nc = st_kc_array[i]->getNumConstraint();
     VectorXd cnst(nc);
     MatrixXd dcnst(nc, nq);
     st_kc_array[i]->eval(ti, cache, cnst, dcnst);
@@ -152,7 +152,7 @@ static void IK_constraint_fun(KinematicsCache<double>& cache, double* x,
     nc_accum += st_lpc_nc[i];
   }
   if (qscActiveFlag) {
-    int num_qsc_cnst = qsc_ptr->getNumConstraint(ti);
+    int num_qsc_cnst = qsc_ptr->getNumConstraint();
     VectorXd cnst(num_qsc_cnst - 1);
     MatrixXd dcnst(num_qsc_cnst - 1, nq + num_qsc_pts);
     qsc_ptr->eval(ti, cache, qsc_weights, cnst, dcnst);
@@ -305,7 +305,7 @@ static int snoptIKtrajfun(snopt::integer* Status, snopt::integer* n,
       Map<VectorXd> qvec(qi, nq);
       KinematicsCache<double> cache = model->doKinematics(qvec);
       for (int k = 0; k < num_st_kc; k++) {
-        int nc = st_kc_array[k]->getNumConstraint(&t_j);
+        int nc = st_kc_array[k]->getNumConstraint();
         VectorXd c_k(nc);
         MatrixXd dc_k(nc, nq);
         st_kc_array[k]->eval(&t_j, cache, c_k, dc_k);
@@ -494,7 +494,7 @@ void inverseKinSnoptBackend(
       VectorXd joint_min, joint_max;
       PostureConstraint* pc = static_cast<PostureConstraint*>(constraint);
       for (int j = 0; j < nT; j++) {
-        pc->bounds(&t[j], joint_min, joint_max);
+        pc->bounds(joint_min, joint_max);
         for (int k = 0; k < nq; k++) {
           joint_limit_min(k, j) =
               (joint_limit_min(k, j) > joint_min[k] ? joint_limit_min(k, j)
@@ -586,11 +586,11 @@ void inverseKinSnoptBackend(
 
   for (int i = 0; i < nT; i++) {
     for (int j = 0; j < num_st_kc; j++) {
-      int nc = st_kc_array[j]->getNumConstraint(&t[i]);
+      int nc = st_kc_array[j]->getNumConstraint();
       VectorXd lb, ub;
       lb.resize(nc);
       ub.resize(nc);
-      st_kc_array[j]->bounds(&t[i], lb, ub);
+      st_kc_array[j]->bounds(lb, ub);
       Cmin_array[i].conservativeResize(Cmin_array[i].size() + nc);
       Cmin_array[i].tail(nc) = lb;
       Cmax_array[i].conservativeResize(Cmax_array[i].size() + nc);
@@ -618,10 +618,10 @@ void inverseKinSnoptBackend(
     }
     st_lpc_nc = new int[num_st_lpc];
     for (int j = 0; j < num_st_lpc; j++) {
-      st_lpc_nc[j] = st_lpc_array[j]->getNumConstraint(&t[i]);
+      st_lpc_nc[j] = st_lpc_array[j]->getNumConstraint();
       VectorXd lb(st_lpc_nc[j]);
       VectorXd ub(st_lpc_nc[j]);
-      st_lpc_array[j]->bounds(&t[i], lb, ub);
+      st_lpc_array[j]->bounds(lb, ub);
       Cmin_array[i].conservativeResize(Cmin_array[i].size() + st_lpc_nc[j]);
       Cmin_array[i].tail(st_lpc_nc[j]) = lb;
       Cmax_array[i].conservativeResize(Cmax_array[i].size() + st_lpc_nc[j]);
@@ -648,7 +648,7 @@ void inverseKinSnoptBackend(
       }
     }
     if (qscActiveFlag) {
-      int num_qsc_cnst = qsc_ptr->getNumConstraint(&t[i]);
+      int num_qsc_cnst = qsc_ptr->getNumConstraint();
       iCfun_array[i].conservativeResize(
           iCfun_array[i].size() + (num_qsc_cnst - 1) * (nq + num_qsc_pts));
       jCvar_array[i].conservativeResize(
@@ -675,7 +675,7 @@ void inverseKinSnoptBackend(
       VectorXd qsc_ub(num_qsc_cnst);
       VectorXd qsc_lb_tmp(num_qsc_cnst - 1);
       VectorXd qsc_ub_tmp(num_qsc_cnst - 1);
-      qsc_ptr->bounds(&t[i], qsc_lb_tmp, qsc_ub_tmp);
+      qsc_ptr->bounds(qsc_lb_tmp, qsc_ub_tmp);
       qsc_lb.head(num_qsc_cnst - 1) = qsc_lb_tmp;
       qsc_lb(num_qsc_cnst - 1) = 1.0;
       qsc_ub.head(num_qsc_cnst - 1) = qsc_ub_tmp;
@@ -1365,10 +1365,10 @@ void inverseKinSnoptBackend(
       jCvar_inbetween_array[i].resize(0);
       for (int j = 0; j < num_st_kc; j++) {
         double* t_inbetween_ptr = inbetween_tSamples.data() + i;
-        int nc = st_kc_array[j]->getNumConstraint(t_inbetween_ptr);
+        int nc = st_kc_array[j]->getNumConstraint();
         VectorXd lb(nc, 1);
         VectorXd ub(nc, 1);
-        st_kc_array[j]->bounds(t_inbetween_ptr, lb, ub);
+        st_kc_array[j]->bounds(lb, ub);
         Cmin_inbetween_array[i].conservativeResize(
             Cmin_inbetween_array[i].size() + nc);
         Cmin_inbetween_array[i].tail(nc) = lb;
@@ -1439,14 +1439,14 @@ void inverseKinSnoptBackend(
     VectorXd* mtlpc_lb = new VectorXd[num_mt_lpc];
     VectorXd* mtlpc_ub = new VectorXd[num_mt_lpc];
     for (int j = 0; j < num_mt_lpc; j++) {
-      mt_lpc_nc[j] = mt_lpc_array[j]->getNumConstraint(t, nT);
+      mt_lpc_nc[j] = mt_lpc_array[j]->getNumConstraint(nT);
       VectorXi mtlpc_iAfun_j;
       VectorXi mtlpc_jAvar_j;
       VectorXd mtlpc_A_j;
       mt_lpc_array[j]->geval(t, nT, mtlpc_iAfun_j, mtlpc_jAvar_j, mtlpc_A_j);
       VectorXd mtlpc_lb_j;
       VectorXd mtlpc_ub_j;
-      mt_lpc_array[j]->bounds(t, nT, mtlpc_lb_j, mtlpc_ub_j);
+      mt_lpc_array[j]->bounds(nT, mtlpc_lb_j, mtlpc_ub_j);
       if (fixInitialState) {
         int num_mtlpc_q0idx = 0;
         for (int k = 0; k < mtlpc_A_j.size(); k++) {
@@ -1503,7 +1503,7 @@ void inverseKinSnoptBackend(
     mt_kc_nc = new int[num_mt_kc];
     for (int j = 0; j < num_mt_kc; j++) {
       mt_kc_nc[j] = mt_kc_array[j]->getNumConstraint(
-          t_samples + qstart_idx, num_qfree + num_inbetween_tSamples);
+          num_qfree + num_inbetween_tSamples);
       nF += mt_kc_nc[j];
       nG += mt_kc_nc[j] * nq * (num_qfree + num_qdotfree);
     }
@@ -1610,8 +1610,7 @@ void inverseKinSnoptBackend(
     for (int j = 0; j < num_mt_kc; j++) {
       VectorXd mtkc_lb(mt_kc_nc[j]);
       VectorXd mtkc_ub(mt_kc_nc[j]);
-      mt_kc_array[j]->bounds(t_samples + qstart_idx,
-                             num_qfree + num_inbetween_tSamples, mtkc_lb,
+      mt_kc_array[j]->bounds(num_qfree + num_inbetween_tSamples, mtkc_lb,
                              mtkc_ub);
       for (int k = 0; k < mt_kc_nc[j]; k++) {
         Flow[nf_cum + k] = mtkc_lb(k);

@@ -231,10 +231,10 @@ class SingleTimeKinematicConstraintWrapper : public Constraint {
  public:
   SingleTimeKinematicConstraintWrapper(
       const shared_ptr<SingleTimeKinematicConstraint>& rigid_body_constraint)
-      : Constraint(rigid_body_constraint->getNumConstraint(nullptr)),
+      : Constraint(rigid_body_constraint->getNumConstraint()),
         rigid_body_constraint(rigid_body_constraint),
         kinsol(rigid_body_constraint->getRobotPointer()->bodies) {
-    rigid_body_constraint->bounds(nullptr, lower_bound_, upper_bound_);
+    rigid_body_constraint->bounds(lower_bound_, upper_bound_);
   }
   virtual ~SingleTimeKinematicConstraintWrapper() {}
 
