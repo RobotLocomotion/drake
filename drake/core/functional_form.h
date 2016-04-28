@@ -86,6 +86,14 @@ namespace drake {
  *   std::cout << f(g(x,y), c) << "\n"; // prints "poly(x,y)"
  *   std::cout << f(g(c,c), c) << "\n"; // prints "cons"
  *   \endcode
+ *
+ * A few basic mathematical functions are also supported:
+ *
+ *   \code{.cpp}
+ *   std::cout << sin(x) << "\n"; // prints "diff(x)"
+ *   \endcode
+ *
+ * See documentation of associated functions for those supported.
  */
 class DRAKECORE_EXPORT FunctionalForm {
  public:
@@ -260,6 +268,30 @@ class DRAKECORE_EXPORT FunctionalForm {
   /** Update \p lhs to record division by a \ref constant or \ref zero.  */
   friend DRAKECORE_EXPORT FunctionalForm& operator/=(FunctionalForm& lhs,
                                                      double rhs);
+
+  /** Return a copy of \p x updated to record application of an
+      \c abs function.  */
+  friend DRAKECORE_EXPORT FunctionalForm abs(FunctionalForm const& x);
+
+  /** Return a copy of \p x updated to record application of a
+      \c cos function.  */
+  friend DRAKECORE_EXPORT FunctionalForm cos(FunctionalForm const& x);
+
+  /** Return a copy of \p x updated to record application of a
+      \c exp function.  */
+  friend DRAKECORE_EXPORT FunctionalForm exp(FunctionalForm const& x);
+
+  /** Return a copy of \p x updated to record application of a
+      \c log function.  */
+  friend DRAKECORE_EXPORT FunctionalForm log(FunctionalForm const& x);
+
+  /** Return a copy of \p x updated to record application of a
+      \c sin function.  */
+  friend DRAKECORE_EXPORT FunctionalForm sin(FunctionalForm const& x);
+
+  /** Return a copy of \p x updated to record application of a
+      \c sqrt function.  */
+  friend DRAKECORE_EXPORT FunctionalForm sqrt(FunctionalForm const& x);
 
   /** \brief Represent a set of Variable instances.
    *
