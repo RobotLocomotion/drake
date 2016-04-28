@@ -243,7 +243,7 @@ class SingleTimeKinematicConstraintWrapper : public Constraint {
     kinsol.initialize(q);
     rigid_body_constraint->getRobotPointer()->doKinematics(kinsol);
     MatrixXd dy;
-    rigid_body_constraint->eval(nullptr, kinsol, y, dy);
+    rigid_body_constraint->eval(kinsol, y, dy);
   }
   virtual void eval(const Eigen::Ref<const TaylorVecXd>& tq,
                     TaylorVecXd& ty) const override {
@@ -251,7 +251,7 @@ class SingleTimeKinematicConstraintWrapper : public Constraint {
     rigid_body_constraint->getRobotPointer()->doKinematics(kinsol);
     VectorXd y;
     MatrixXd dy;
-    rigid_body_constraint->eval(nullptr, kinsol, y, dy);
+    rigid_body_constraint->eval(kinsol, y, dy);
     initializeAutoDiffGivenGradientMatrix(
         y, (dy * autoDiffToGradientMatrix(tq)).eval(), ty);
   }

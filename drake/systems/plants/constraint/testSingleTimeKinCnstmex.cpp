@@ -53,7 +53,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   KinematicsCache<double> cache = cnst->getRobotPointer()->doKinematics(q);
   Eigen::VectorXd c(num_cnst);
   Eigen::MatrixXd dc(num_cnst, nq);
-  cnst->eval(t_ptr, cache, c, dc);
+  cnst->eval(cache, c, dc);
   // mexPrintf("get c, dc\n");
   Eigen::VectorXd lb(num_cnst);
   Eigen::VectorXd ub(num_cnst);

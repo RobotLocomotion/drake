@@ -79,8 +79,7 @@ int QuasiStaticConstraint::getNumConstraint() const {
 void QuasiStaticConstraint::updateRobot(RigidBodyTree *robot) {
   this->robot = robot;
 }
-void QuasiStaticConstraint::eval(const double *t,
-                                 KinematicsCache<double> &cache,
+void QuasiStaticConstraint::eval(KinematicsCache<double> &cache,
                                  const double *weights, VectorXd &c,
                                  MatrixXd &dc) const {
   int nq = this->robot->num_positions;
@@ -284,14 +283,14 @@ void validTimeInd(
 }
 }
 
-void MultipleTimeLinearPostureConstraint::eval(const double *t, int n_breaks,
+void MultipleTimeLinearPostureConstraint::eval(int n_breaks,
                                                const MatrixXd &q, VectorXd &c,
                                                SparseMatrix<double> &dc) const {
-  this->feval(t, n_breaks, q, c);
+  this->feval(n_breaks, q, c);
   VectorXi iAfun;
   VectorXi jAvar;
   VectorXd A;
-  this->geval(t, n_breaks, iAfun, jAvar, A);
+  this->geval(n_breaks, iAfun, jAvar, A);
   int num_cnst = this->getNumConstraint(n_breaks);
   dc.resize(num_cnst, static_cast<int>(q.size()));
   dc.reserve(static_cast<int>(A.size()));
@@ -373,13 +372,12 @@ void SingleTimeLinearPostureConstraint::bounds(VectorXd &lb,
   ub = this->ub;
 }
 
-void SingleTimeLinearPostureConstraint::feval(const double *t,
-                                              const VectorXd &q,
+void SingleTimeLinearPostureConstraint::feval(const VectorXd &q,
                                               VectorXd &c) const {
   c = this->A_mat * q;
 }
 
-void SingleTimeLinearPostureConstraint::geval(const double *t, VectorXi &iAfun,
+void SingleTimeLinearPostureConstraint::geval(VectorXi &iAfun,
                                               VectorXi &jAvar,
                                               VectorXd &A) const {
   iAfun = this->iAfun;
@@ -387,7 +385,7 @@ void SingleTimeLinearPostureConstraint::geval(const double *t, VectorXi &iAfun,
   A = this->A;
 }
 
-void SingleTimeLinearPostureConstraint::eval(const double *t, const VectorXd &q,
+void SingleTimeLinearPostureConstraint::eval(const VectorXd &q,
                                              VectorXd &c,
                                              SparseMatrix<double> &dc) const {
   c = this->A_mat * q;
@@ -433,31 +431,28 @@ MultipleTimeKinematicConstraint::MultipleTimeKinematicConstraint(
     const MultipleTimeKinematicConstraint &rhs)
     : RigidBodyConstraint(rhs) {}
 
-void MultipleTimeKinematicConstraint::eval(const double *t, int n_breaks,
+void MultipleTimeKinematicConstraint::eval(int n_breaks,
                                            const MatrixXd &q, VectorXd &c,
                                            MatrixXd &dc) const {
   const int num_valid_t = n_breaks;
   if (num_valid_t >= 2) {
     int nq = this->robot->num_positions;
-    double *valid_t = new double[num_valid_t];
     MatrixXd valid_q(nq, num_valid_t);
     int valid_idx = 0;
     int *valid2tMap = new int[num_valid_t];
     for (int i = 0; i < n_breaks; i++) {
-      valid_t[valid_idx] = t[i];
       valid_q.col(valid_idx) = q.col(i);
       valid2tMap[valid_idx] = i;
       valid_idx++;
     }
     MatrixXd dc_valid;
-    this->eval_valid(valid_t, num_valid_t, valid_q, c, dc_valid);
+    this->eval_valid(num_valid_t, valid_q, c, dc_valid);
     int nc = this->getNumConstraint(n_breaks);
     dc = MatrixXd::Zero(nc, nq * n_breaks);
     for (int i = 0; i < num_valid_t; i++) {
       dc.block(0, valid2tMap[i] * nq, nc, nq) =
           dc_valid.block(0, i * nq, nc, nq);
     }
-    delete[] valid_t;
     delete[] valid2tMap;
   } else {
     c.resize(0);
@@ -537,7 +532,7 @@ PositionConstraint::PositionConstraint(const PositionConstraint &rhs)
   this->null_constraint_rows = rhs.null_constraint_rows;
 }
 
-void PositionConstraint::eval(const double *t, KinematicsCache<double> &cache,
+void PositionConstraint::eval(KinematicsCache<double> &cache,
                               VectorXd &c, MatrixXd &dc) const {
   Matrix3Xd pos(3, this->n_pts);
   MatrixXd J(3 * this->n_pts, this->robot->num_positions);
@@ -689,7 +684,7 @@ QuatConstraint::QuatConstraint(RigidBodyTree *robot, double tol)
   this->num_constraint = 1;
 }
 
-void QuatConstraint::eval(const double *t, KinematicsCache<double> &cache,
+void QuatConstraint::eval(KinematicsCache<double> &cache,
                           VectorXd &c, MatrixXd &dc) const {
   int num_constraint = this->getNumConstraint();
   c.resize(num_constraint);
@@ -832,7 +827,7 @@ EulerConstraint::EulerConstraint(const EulerConstraint &rhs)
   this->avg_rpy = rhs.avg_rpy;
 }
 
-void EulerConstraint::eval(const double *t, KinematicsCache<double> &cache,
+void EulerConstraint::eval(KinematicsCache<double> &cache,
                            VectorXd &c, MatrixXd &dc) const {
   int n_constraint = this->getNumConstraint();
   Vector3d rpy;
@@ -925,7 +920,7 @@ GazeOrientConstraint::GazeOrientConstraint(
   this->num_constraint = 2;
 }
 
-void GazeOrientConstraint::eval(const double *t, KinematicsCache<double> &cache,
+void GazeOrientConstraint::eval(KinematicsCache<double> &cache,
                                 VectorXd &c, MatrixXd &dc) const {
   using namespace std;
   using namespace Drake;
@@ -1023,8 +1018,7 @@ WorldGazeDirConstraint::WorldGazeDirConstraint(RigidBodyTree *robot, int body,
   this->type = RigidBodyConstraint::WorldGazeDirConstraintType;
 }
 
-void WorldGazeDirConstraint::eval(const double *t,
-                                  KinematicsCache<double> &cache, VectorXd &c,
+void WorldGazeDirConstraint::eval(KinematicsCache<double> &cache, VectorXd &c,
                                   MatrixXd &dc) const {
   Matrix3Xd body_axis_ends(3, 2);
   body_axis_ends.col(0).setZero();
@@ -1074,8 +1068,7 @@ WorldGazeTargetConstraint::WorldGazeTargetConstraint(
   this->type = RigidBodyConstraint::WorldGazeTargetConstraintType;
 }
 
-void WorldGazeTargetConstraint::eval(const double *t,
-                                     KinematicsCache<double> &cache,
+void WorldGazeTargetConstraint::eval(KinematicsCache<double> &cache,
                                      VectorXd &c, MatrixXd &dc) const {
   int num_constraint = this->getNumConstraint();
   int nq = this->robot->num_positions;
@@ -1122,8 +1115,7 @@ RelativeGazeTargetConstraint::RelativeGazeTargetConstraint(
   this->type = RigidBodyConstraint::RelativeGazeTargetConstraintType;
 }
 
-void RelativeGazeTargetConstraint::eval(const double *t,
-                                        KinematicsCache<double> &cache,
+void RelativeGazeTargetConstraint::eval(KinematicsCache<double> &cache,
                                         VectorXd &c, MatrixXd &dc) const {
   int nq = this->robot->num_positions;
   auto target_pos = robot->transformPoints(cache, target, bodyB_idx, 0);
@@ -1180,8 +1172,7 @@ RelativeGazeDirConstraint::RelativeGazeDirConstraint(
   this->type = RigidBodyConstraint::RelativeGazeDirConstraintType;
 }
 
-void RelativeGazeDirConstraint::eval(const double *t,
-                                     KinematicsCache<double> &cache,
+void RelativeGazeDirConstraint::eval(KinematicsCache<double> &cache,
                                      VectorXd &c, MatrixXd &dc) const {
   Matrix3Xd body_axis_ends(3, 2);
   body_axis_ends.block(0, 0, 3, 1) = MatrixXd::Zero(3, 1);
@@ -1232,8 +1223,7 @@ Point2PointDistanceConstraint::Point2PointDistanceConstraint(
   this->type = RigidBodyConstraint::Point2PointDistanceConstraintType;
 }
 
-void Point2PointDistanceConstraint::eval(const double *t,
-                                         KinematicsCache<double> &cache,
+void Point2PointDistanceConstraint::eval(KinematicsCache<double> &cache,
                                          VectorXd &c, MatrixXd &dc) const {
   int num_cnst = this->getNumConstraint();
   MatrixXd posA(3, this->ptA.cols());
@@ -1310,8 +1300,7 @@ Point2LineSegDistConstraint::Point2LineSegDistConstraint(
   this->type = RigidBodyConstraint::Point2LineSegDistConstraintType;
 }
 
-void Point2LineSegDistConstraint::eval(const double *,
-                                       KinematicsCache<double> &cache,
+void Point2LineSegDistConstraint::eval(KinematicsCache<double> &cache,
                                        VectorXd &c, MatrixXd &dc) const {
   int nq = this->robot->num_positions;
 
@@ -1387,8 +1376,7 @@ int WorldFixedPositionConstraint::getNumConstraint(int n_breaks) const {
   }
 }
 
-void WorldFixedPositionConstraint::eval_valid(const double *valid_t,
-                                              int num_valid_t,
+void WorldFixedPositionConstraint::eval_valid(int num_valid_t,
                                               const MatrixXd &valid_q,
                                               VectorXd &c,
                                               MatrixXd &dc_valid) const {
@@ -1473,8 +1461,7 @@ int WorldFixedOrientConstraint::getNumConstraint(int n_breaks) const {
     return 0;
 }
 
-void WorldFixedOrientConstraint::eval_valid(const double *valid_t,
-                                            int num_valid_t,
+void WorldFixedOrientConstraint::eval_valid(int num_valid_t,
                                             const MatrixXd &valid_q,
                                             VectorXd &c,
                                             MatrixXd &dc_valid) const {
@@ -1550,8 +1537,7 @@ int WorldFixedBodyPoseConstraint::getNumConstraint(int n_breaks) const {
   }
 }
 
-void WorldFixedBodyPoseConstraint::eval_valid(const double *valid_t,
-                                              int num_valid_t,
+void WorldFixedBodyPoseConstraint::eval_valid(int num_valid_t,
                                               const MatrixXd &valid_q,
                                               VectorXd &c,
                                               MatrixXd &dc_valid) const {
@@ -1637,12 +1623,11 @@ AllBodiesClosestDistanceConstraint::AllBodiesClosestDistanceConstraint(
       active_group_names(active_group_names) {
   VectorXd c;
   MatrixXd dc;
-  double t = 0;
 
   // FIXME: hack to determine num_constraint
   VectorXd q = robot->getZeroConfiguration();
   KinematicsCache<double> cache = robot->doKinematics(q);
-  eval(&t, cache, c, dc);
+  eval(cache, c, dc);
   // DEBUG
   // std::cout << "ABCDC::ABCDC: c.size() = " << c.size() << std::endl;
   // END_DEBUG
@@ -1650,36 +1635,20 @@ AllBodiesClosestDistanceConstraint::AllBodiesClosestDistanceConstraint(
   this->type = RigidBodyConstraint::AllBodiesClosestDistanceConstraintType;
 }
 
-// AllBodiesClosestDistanceConstraint::AllBodiesClosestDistanceConstraint(const
-// AllBodiesClosestDistanceConstraint &rhs)
-//: SingleTimeKinematicConstraint(rhs)
-//{
-// DEBUG
-// std::cout << "ABCDC::ABCDC: Copy constructor" << std::endl;
-// END_DEBUG
-// double t = 0;
-// VectorXd c;
-// MatrixXd dc;
-// eval(&t, c, dc);
-// num_constraint = c.size();
-//}
-
 void AllBodiesClosestDistanceConstraint::updateRobot(RigidBodyTree *robot) {
   this->robot = robot;
-  double t = 0;
   VectorXd c;
   MatrixXd dc;
 
   // FIXME: hack to determine num_constraint
   VectorXd q = robot->getZeroConfiguration();
   KinematicsCache<double> cache = robot->doKinematics(q);
-  eval(&t, cache, c, dc);
+  eval(cache, c, dc);
 
   this->num_constraint = static_cast<int>(c.size());
 }
 
-void AllBodiesClosestDistanceConstraint::eval(const double *t,
-                                              KinematicsCache<double> &cache,
+void AllBodiesClosestDistanceConstraint::eval(KinematicsCache<double> &cache,
                                               VectorXd &c, MatrixXd &dc) const {
   Matrix3Xd xA, xB, normal;
   std::vector<int> idxA;
@@ -1743,8 +1712,7 @@ MinDistanceConstraint::MinDistanceConstraint(
   this->type = RigidBodyConstraint::MinDistanceConstraintType;
 }
 
-void MinDistanceConstraint::eval(const double *t,
-                                 KinematicsCache<double> &cache, VectorXd &c,
+void MinDistanceConstraint::eval(KinematicsCache<double> &cache, VectorXd &c,
                                  MatrixXd &dc) const {
   // DEBUG
   // std::cout << "MinDistanceConstraint::eval: START" << std::endl;
@@ -1965,7 +1933,7 @@ int PostureChangeConstraint::getNumConstraint(int n_breaks) const {
     return 0;
 }
 
-void PostureChangeConstraint::feval(const double *t, int n_breaks,
+void PostureChangeConstraint::feval(int n_breaks,
                                     const MatrixXd &q, VectorXd &c) const {
   const int num_valid_t = n_breaks;
   if (num_valid_t >= 2) {
@@ -1985,7 +1953,7 @@ void PostureChangeConstraint::feval(const double *t, int n_breaks,
   }
 }
 
-void PostureChangeConstraint::geval(const double *t, int n_breaks,
+void PostureChangeConstraint::geval(int n_breaks,
                                     VectorXi &iAfun, VectorXi &jAvar,
                                     VectorXd &A) const {
   const int num_valid_t = n_breaks;
@@ -2065,8 +2033,7 @@ GravityCompensationTorqueConstraint::GravityCompensationTorqueConstraint(
   this->type = RigidBodyConstraint::GravityCompensationTorqueConstraintType;
 }
 
-void GravityCompensationTorqueConstraint::eval(const double *t,
-                                               KinematicsCache<double> &cache,
+void GravityCompensationTorqueConstraint::eval(KinematicsCache<double> &cache,
                                                VectorXd &c,
                                                MatrixXd &dc) const {
   // FIXME: very inefficient:

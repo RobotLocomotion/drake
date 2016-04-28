@@ -142,7 +142,7 @@ static void IK_constraint_fun(KinematicsCache<double>& cache, double* x,
     nc = st_kc_array[i]->getNumConstraint();
     VectorXd cnst(nc);
     MatrixXd dcnst(nc, nq);
-    st_kc_array[i]->eval(ti, cache, cnst, dcnst);
+    st_kc_array[i]->eval(cache, cnst, dcnst);
     memcpy(&c[nc_accum], cnst.data(), sizeof(double) * nc);
     memcpy(&G[ng_accum], dcnst.data(), sizeof(double) * nc * nq);
     nc_accum += nc;
@@ -155,7 +155,7 @@ static void IK_constraint_fun(KinematicsCache<double>& cache, double* x,
     int num_qsc_cnst = qsc_ptr->getNumConstraint();
     VectorXd cnst(num_qsc_cnst - 1);
     MatrixXd dcnst(num_qsc_cnst - 1, nq + num_qsc_pts);
-    qsc_ptr->eval(ti, cache, qsc_weights, cnst, dcnst);
+    qsc_ptr->eval(cache, qsc_weights, cnst, dcnst);
     memcpy(c + nc_accum, cnst.data(), sizeof(double) * (num_qsc_cnst - 1));
     c[nc_accum + num_qsc_cnst - 1] = 0.0;
     memcpy(G + ng_accum, dcnst.data(), sizeof(double) * dcnst.size());
@@ -300,7 +300,6 @@ static int snoptIKtrajfun(snopt::integer* Status, snopt::integer* n,
         q_inbetween_block_tmp;
     q.resize(nq, nT);
     for (int j = 0; j < t_inbetween[i].size(); j++) {
-      double t_j = t_inbetween[i](j) + t[i];
       double* qi = q_inbetween.data() + (inbetween_idx + j) * nq;
       Map<VectorXd> qvec(qi, nq);
       KinematicsCache<double> cache = model->doKinematics(qvec);
@@ -308,7 +307,7 @@ static int snoptIKtrajfun(snopt::integer* Status, snopt::integer* n,
         int nc = st_kc_array[k]->getNumConstraint();
         VectorXd c_k(nc);
         MatrixXd dc_k(nc, nq);
-        st_kc_array[k]->eval(&t_j, cache, c_k, dc_k);
+        st_kc_array[k]->eval(cache, c_k, dc_k);
         memcpy(F + nf_cum, c_k.data(), sizeof(double) * nc);
         MatrixXd dc_kdx = MatrixXd::Zero(nc, nq * (num_qfree + num_qdotfree));
         dc_kdx.block(0, 0, nc, nq * num_qfree) =
@@ -340,7 +339,7 @@ static int snoptIKtrajfun(snopt::integer* Status, snopt::integer* n,
     VectorXd mtkc_c(mt_kc_nc[i]);
     MatrixXd mtkc_dc(mt_kc_nc[i], nq * (num_qfree + num_inbetween_tSamples));
     mt_kc_array[i]->eval(
-        t_samples + qstart_idx, num_qfree + num_inbetween_tSamples,
+        num_qfree + num_inbetween_tSamples,
         q_samples.block(0, qstart_idx, nq, num_qfree + num_inbetween_tSamples),
         mtkc_c, mtkc_dc);
     memcpy(F + nf_cum, mtkc_c.data(), sizeof(double) * mt_kc_nc[i]);
@@ -628,7 +627,7 @@ void inverseKinSnoptBackend(
       Cmax_array[i].tail(st_lpc_nc[j]) = ub;
       VectorXi iAfun, jAvar;
       VectorXd A;
-      st_lpc_array[j]->geval(&t[i], iAfun, jAvar, A);
+      st_lpc_array[j]->geval(iAfun, jAvar, A);
       iAfun_array[i].conservativeResize(iAfun_array[i].size() + iAfun.size());
       iAfun_array[i].tail(iAfun.size()) =
           iAfun +
@@ -1443,7 +1442,7 @@ void inverseKinSnoptBackend(
       VectorXi mtlpc_iAfun_j;
       VectorXi mtlpc_jAvar_j;
       VectorXd mtlpc_A_j;
-      mt_lpc_array[j]->geval(t, nT, mtlpc_iAfun_j, mtlpc_jAvar_j, mtlpc_A_j);
+      mt_lpc_array[j]->geval(nT, mtlpc_iAfun_j, mtlpc_jAvar_j, mtlpc_A_j);
       VectorXd mtlpc_lb_j;
       VectorXd mtlpc_ub_j;
       mt_lpc_array[j]->bounds(nT, mtlpc_lb_j, mtlpc_ub_j);

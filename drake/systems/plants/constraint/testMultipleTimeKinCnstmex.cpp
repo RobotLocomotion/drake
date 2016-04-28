@@ -44,7 +44,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   int num_cnst = cnst->getNumConstraint(n_breaks);
   Eigen::VectorXd c(num_cnst);
   Eigen::MatrixXd dc(num_cnst, nq * n_breaks);
-  cnst->eval(t_ptr, n_breaks, q, c, dc);
+  cnst->eval(n_breaks, q, c, dc);
   Eigen::VectorXd lb(num_cnst);
   Eigen::VectorXd ub(num_cnst);
   cnst->bounds(n_breaks, lb, ub);

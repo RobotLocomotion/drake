@@ -136,7 +136,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT QuasiStaticConstraint
           QuasiStaticConstraint::defaultRobotNumSet);
   QuasiStaticConstraint(const QuasiStaticConstraint &rhs);
   int getNumConstraint() const;
-  void eval(const double *t, KinematicsCache<double> &cache,
+  void eval(KinematicsCache<double> &cache,
             const double *weights, Eigen::VectorXd &c,
             Eigen::MatrixXd &dc) const;
   void bounds(Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
@@ -213,12 +213,12 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT MultipleTimeLinearPostureConstraint
   MultipleTimeLinearPostureConstraint(RigidBodyTree *model);
   MultipleTimeLinearPostureConstraint(
       const MultipleTimeLinearPostureConstraint &rhs);
-  void eval(const double *t, int n_breaks, const Eigen::MatrixXd &q,
+  void eval(int n_breaks, const Eigen::MatrixXd &q,
             Eigen::VectorXd &c, Eigen::SparseMatrix<double> &dc) const;
   virtual int getNumConstraint(int n_breaks) const = 0;
-  virtual void feval(const double *t, int n_breaks, const Eigen::MatrixXd &q,
+  virtual void feval(int n_breaks, const Eigen::MatrixXd &q,
                      Eigen::VectorXd &c) const = 0;
-  virtual void geval(const double *t, int n_breaks, Eigen::VectorXi &iAfun,
+  virtual void geval(int n_breaks, Eigen::VectorXi &iAfun,
                      Eigen::VectorXi &jAvar, Eigen::VectorXd &A) const = 0;
   virtual void name(const double *t, int n_breaks,
                     std::vector<std::string> &name_str) const = 0;
@@ -276,11 +276,11 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT SingleTimeLinearPostureConstraint
       const SingleTimeLinearPostureConstraint &rhs);
   int getNumConstraint() const;
   void bounds(Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
-  void feval(const double *t, const Eigen::VectorXd &q,
+  void feval(const Eigen::VectorXd &q,
              Eigen::VectorXd &c) const;
-  void geval(const double *t, Eigen::VectorXi &iAfun, Eigen::VectorXi &jAvar,
+  void geval(Eigen::VectorXi &iAfun, Eigen::VectorXi &jAvar,
              Eigen::VectorXd &A) const;
-  void eval(const double *t, const Eigen::VectorXd &q, Eigen::VectorXd &c,
+  void eval(const Eigen::VectorXd &q, Eigen::VectorXd &c,
             Eigen::SparseMatrix<double> &dc) const;
   void name(const double *t, std::vector<std::string> &name_str) const;
   virtual ~SingleTimeLinearPostureConstraint(void){}
@@ -300,7 +300,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT SingleTimeKinematicConstraint
   SingleTimeKinematicConstraint(RigidBodyTree *model);
   SingleTimeKinematicConstraint(const SingleTimeKinematicConstraint &rhs);
   int getNumConstraint() const;
-  virtual void eval(const double *t, KinematicsCache<double> &cache,
+  virtual void eval(KinematicsCache<double> &cache,
                     Eigen::VectorXd &c, Eigen::MatrixXd &dc) const = 0;
   virtual void bounds(Eigen::VectorXd &lb,
                       Eigen::VectorXd &ub) const = 0;
@@ -316,9 +316,9 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT MultipleTimeKinematicConstraint
   MultipleTimeKinematicConstraint(RigidBodyTree *model);
   MultipleTimeKinematicConstraint(const MultipleTimeKinematicConstraint &rhs);
   virtual int getNumConstraint(int n_breaks) const = 0;
-  void eval(const double *t, int n_breaks, const Eigen::MatrixXd &q,
+  void eval(int n_breaks, const Eigen::MatrixXd &q,
             Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
-  virtual void eval_valid(const double *valid_t, int num_valid_t,
+  virtual void eval_valid(int num_valid_t,
                           const Eigen::MatrixXd &valid_q, Eigen::VectorXd &c,
                           Eigen::MatrixXd &dc_valid) const = 0;
   virtual void bounds(int n_breaks, Eigen::VectorXd &lb,
@@ -348,7 +348,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT PositionConstraint
       RigidBodyTree *model, const Eigen::Matrix3Xd &pts, Eigen::MatrixXd lb,
       Eigen::MatrixXd ub);
   PositionConstraint(const PositionConstraint &rhs);
-  virtual void eval(const double *t, KinematicsCache<double> &cache,
+  virtual void eval(KinematicsCache<double> &cache,
                     Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
   virtual void bounds(Eigen::VectorXd &lb,
                       Eigen::VectorXd &ub) const;
@@ -426,7 +426,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT QuatConstraint
 
  public:
   QuatConstraint(RigidBodyTree *model, double tol);
-  virtual void eval(const double *t, KinematicsCache<double> &cache,
+  virtual void eval(KinematicsCache<double> &cache,
                     Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
   virtual void bounds(Eigen::VectorXd &lb,
                       Eigen::VectorXd &ub) const;
@@ -496,7 +496,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT EulerConstraint
       RigidBodyTree *model, const Eigen::Vector3d &lb,
       const Eigen::Vector3d &ub);
   EulerConstraint(const EulerConstraint &rhs);
-  virtual void eval(const double *t, KinematicsCache<double> &cache,
+  virtual void eval(KinematicsCache<double> &cache,
                     Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
   virtual void bounds(Eigen::VectorXd &lb,
                       Eigen::VectorXd &ub) const;
@@ -550,7 +550,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT GazeOrientConstraint
   GazeOrientConstraint(
       RigidBodyTree *model, const Eigen::Vector3d &axis,
       const Eigen::Vector4d &quat_des, double conethreshold, double threshold);
-  virtual void eval(const double *t, KinematicsCache<double> &cache,
+  virtual void eval(KinematicsCache<double> &cache,
                     Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
   virtual void bounds(Eigen::VectorXd &lb,
                       Eigen::VectorXd &ub) const;
@@ -608,7 +608,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldGazeDirConstraint
   WorldGazeDirConstraint(
       RigidBodyTree *model, int body, const Eigen::Vector3d &axis,
       const Eigen::Vector3d &dir, double conethreshold);
-  virtual void eval(const double *t, KinematicsCache<double> &cache,
+  virtual void eval(KinematicsCache<double> &cache,
                     Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
   virtual void name(const double *t, std::vector<std::string> &name_str) const;
   virtual ~WorldGazeDirConstraint(void){}
@@ -646,7 +646,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldGazeTargetConstraint
       RigidBodyTree *model, int body, const Eigen::Vector3d &axis,
       const Eigen::Vector3d &target, const Eigen::Vector3d &gaze_origin,
       double conethreshold);
-  virtual void eval(const double *t, KinematicsCache<double> &cache,
+  virtual void eval(KinematicsCache<double> &cache,
                     Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
   virtual void name(const double *t, std::vector<std::string> &name_str) const;
   virtual ~WorldGazeTargetConstraint(void){}
@@ -665,7 +665,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT RelativeGazeTargetConstraint
       RigidBodyTree *model, int bodyA_idx, int bodyB_idx,
       const Eigen::Vector3d &axis, const Eigen::Vector3d &target,
       const Eigen::Vector3d &gaze_origin, double conethreshold);
-  virtual void eval(const double *t, KinematicsCache<double> &cache,
+  virtual void eval(KinematicsCache<double> &cache,
                     Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
   virtual void name(const double *t, std::vector<std::string> &name_str) const;
   virtual ~RelativeGazeTargetConstraint(void){}
@@ -684,7 +684,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT RelativeGazeDirConstraint
       RigidBodyTree *model, int bodyA_idx, int bodyB_idx,
       const Eigen::Vector3d &axis, const Eigen::Vector3d &dir,
       double conethreshold);
-  virtual void eval(const double *t, KinematicsCache<double> &cache,
+  virtual void eval(KinematicsCache<double> &cache,
                     Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
   virtual void name(const double *t, std::vector<std::string> &name_str) const;
   virtual ~RelativeGazeDirConstraint(void){}
@@ -705,7 +705,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT Point2PointDistanceConstraint
       RigidBodyTree *model, int bodyA, int bodyB, const Eigen::Matrix3Xd &ptA,
       const Eigen::Matrix3Xd &ptB, const Eigen::VectorXd &lb,
       const Eigen::VectorXd &ub);
-  virtual void eval(const double *t, KinematicsCache<double> &cache,
+  virtual void eval(KinematicsCache<double> &cache,
                     Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
   virtual void name(const double *t, std::vector<std::string> &name_str) const;
   virtual void bounds(Eigen::VectorXd &lb,
@@ -728,7 +728,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT Point2LineSegDistConstraint
       RigidBodyTree *model, int pt_body, const Eigen::Vector3d &pt,
       int line_body, const Eigen::Matrix<double, 3, 2> &line_ends,
       double dist_lb, double dist_ub);
-  virtual void eval(const double *t, KinematicsCache<double> &cache,
+  virtual void eval(KinematicsCache<double> &cache,
                     Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
   virtual void name(const double *t, std::vector<std::string> &name_str) const;
   virtual void bounds(Eigen::VectorXd &lb,
@@ -752,7 +752,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldFixedPositionConstraint
   WorldFixedPositionConstraint(
       RigidBodyTree *model, int body, const Eigen::Matrix3Xd &pts);
   virtual int getNumConstraint(int n_breaks) const;
-  virtual void eval_valid(const double *valid_t, int num_valid_t,
+  virtual void eval_valid(int num_valid_t,
                           const Eigen::MatrixXd &valid_q, Eigen::VectorXd &c,
                           Eigen::MatrixXd &dc_valid) const;
   virtual void bounds(int n_breaks, Eigen::VectorXd &lb,
@@ -771,7 +771,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldFixedOrientConstraint
  public:
   WorldFixedOrientConstraint(RigidBodyTree *model, int body);
   virtual int getNumConstraint(int n_breaks) const;
-  virtual void eval_valid(const double *valid_t, int num_valid_t,
+  virtual void eval_valid(int num_valid_t,
                           const Eigen::MatrixXd &valid_q, Eigen::VectorXd &c,
                           Eigen::MatrixXd &dc_valid) const;
   virtual void bounds(int n_breaks, Eigen::VectorXd &lb,
@@ -790,7 +790,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT WorldFixedBodyPoseConstraint
  public:
   WorldFixedBodyPoseConstraint(RigidBodyTree *model, int body);
   virtual int getNumConstraint(int n_breaks) const;
-  virtual void eval_valid(const double *valid_t, int num_valid_t,
+  virtual void eval_valid(int num_valid_t,
                           const Eigen::MatrixXd &valid_q, Eigen::VectorXd &c,
                           Eigen::MatrixXd &dc_valid) const;
   virtual void bounds(int n_breaks, Eigen::VectorXd &lb,
@@ -816,7 +816,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT AllBodiesClosestDistanceConstraint
   // AllBodiesClosestDistanceConstraint(const
   // AllBodiesClosestDistanceConstraint& rhs);
   virtual void updateRobot(RigidBodyTree *robot);
-  virtual void eval(const double *t, KinematicsCache<double> &cache,
+  virtual void eval(KinematicsCache<double> &cache,
                     Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
   virtual void name(const double *t, std::vector<std::string> &name) const;
   virtual void bounds(Eigen::VectorXd &lb,
@@ -837,7 +837,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT MinDistanceConstraint
       const std::vector<int> &active_bodies_idx,
       const std::set<std::string> &active_group_names);
   // MinDistanceConstraint(const MinDistanceConstraint& rhs);
-  virtual void eval(const double *t, KinematicsCache<double> &cache,
+  virtual void eval(KinematicsCache<double> &cache,
                     Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
   virtual void name(const double *t, std::vector<std::string> &name) const;
   void scaleDistance(const Eigen::VectorXd &dist, Eigen::VectorXd &scaled_dist,
@@ -887,9 +887,9 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT PostureChangeConstraint
       RigidBodyTree *model, const Eigen::VectorXi &joint_ind,
       const Eigen::VectorXd &lb_change, const Eigen::VectorXd &ub_change);
   virtual int getNumConstraint(int n_breaks) const;
-  virtual void feval(const double *t, int n_breaks, const Eigen::MatrixXd &q,
+  virtual void feval(int n_breaks, const Eigen::MatrixXd &q,
                      Eigen::VectorXd &c) const;
-  virtual void geval(const double *t, int n_breaks, Eigen::VectorXi &iAfun,
+  virtual void geval(int n_breaks, Eigen::VectorXi &iAfun,
                      Eigen::VectorXi &jAvar, Eigen::VectorXd &A) const;
   virtual void name(const double *t, int n_breaks,
                     std::vector<std::string> &name_str) const;
@@ -904,7 +904,7 @@ class DRAKERIGIDBODYCONSTRAINT_EXPORT GravityCompensationTorqueConstraint
   GravityCompensationTorqueConstraint(
       RigidBodyTree *model, const Eigen::VectorXi &joint_indices,
       const Eigen::VectorXd &lb, const Eigen::VectorXd &ub);
-  virtual void eval(const double *t, KinematicsCache<double> &cache,
+  virtual void eval(KinematicsCache<double> &cache,
                     Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
   virtual void name(const double *t, std::vector<std::string> &name) const;
   virtual void bounds(Eigen::VectorXd &lb,
