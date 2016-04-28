@@ -167,8 +167,6 @@ class SensorVisualizerLidar {
     // a LIDAR sensor, store the range measurements in a ROS message and publish
     // it on the appropriate ROS topic.
     for (auto &sensor : sensor_vector) {
-      std::cout << "SensorVisualizerLidar: output: Processing sensor "
-                << sensor->get_name() << std::endl;
 
       if (output_index + sensor->getNumOutputs() >
           rigid_body_system_->getNumOutputs()) {
@@ -216,16 +214,7 @@ class SensorVisualizerLidar {
       output_index += sensor->getNumOutputs();
     }
 
-    // std::cout << "SensorVisualizerLidar::output: Method called!\n"
-    //           << "  - size of state vector: " << x.rows() << " x " <<
-    //           x.cols() << "\n"
-    //           << "  - size of input vector: " << u.rows() << " x " <<
-    //           u.cols() << "\n"
-    //           << "  - state vector: " << x.transpose() << "\n"
-    //           << "  - input vector: " << u.transpose()
-    //           << std::endl;
-
-    return u;  // pass the output through
+    return u;  // Passes the output through to the next system in the cascade.
   }
 
   bool isTimeVarying() const { return true; }
