@@ -40,11 +40,6 @@ if (GTEST_FOUND)
   target_link_libraries(testPolynomial drakePolynomial ${GTEST_BOTH_LIBRARIES})
   add_test(NAME testPolynomial COMMAND testPolynomial)
 
-  add_executable(testSystemIdentification testSystemIdentification.cpp)
-  target_link_libraries(testSystemIdentification
-                        drakePolynomial ${GTEST_BOTH_LIBRARIES})
-  add_test(NAME testSystemIdentification COMMAND testSystemIdentification)
-
   add_executable(eigen_matrix_compare_test eigen_matrix_compare_test.cc)
   target_link_libraries(eigen_matrix_compare_test ${GTEST_BOTH_LIBRARIES})
   add_test(NAME eigen_matrix_compare_test COMMAND eigen_matrix_compare_test)

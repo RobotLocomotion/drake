@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 2.8.10)
 
 # options
 option(BUILD_SHARED_LIBS "Build Drake with shared libraries." ON)
-option(RANDOMIZE_UNIT_TESTS "every matlab unit is started with a new random seed" OFF)
+option(LONG_RUNNING_TESTS "some tests should be run nightly for coverage, but are too slow for CI" OFF)
+option(RANDOMIZE_MATLAB_TESTS "every matlab unit is started with a new random seed" OFF)
 
 #cmake_policy(SET CMP0042 NEW)
 if (POLICY CMP0054)
@@ -165,7 +166,7 @@ function(add_matlab_test)
   set(cmd_to_run_before_test "addpath_drake; global g_disable_visualizers; g_disable_visualizers=true;")
   set(custom_Matlab_test_command "try, eval('${parsed_args_COMMAND}'); catch ex, disp(getReport(ex,'extended')); disp(' '); force_close_system; exit(${exit_status}); end; force_close_system; exit(0)")
 
-  if (RANDOMIZED_UNIT_TESTS)
+  if (RANDOMIZE_MATLAB_TESTS)
     set(custom_Matlab_test_command "rng('shuffle'); rng_state=rng; disp(sprintf('To reproduce this test use rng(%d,''%s'')',rng_state.Seed,rng_state.Type)); disp(' '); ${custom_Matlab_test_command}")
   endif()
 
