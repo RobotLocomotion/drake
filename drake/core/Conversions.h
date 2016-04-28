@@ -61,27 +61,27 @@ struct ConvertMatrix {
     typedef Eigen::Matrix<ToScalar, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime, 0, Derived::MaxRowsAtCompileTime, Derived::MaxColsAtCompileTime> type;
   };
 
-  template <typename XprType, int BlockRows, int BlockCols, bool InnerPanel>
-  struct To<Eigen::Block<XprType, BlockRows, BlockCols, InnerPanel>> {
-    typedef Eigen::Matrix<ToScalar, BlockRows, BlockCols> type;
+//  template <typename XprType, int BlockRows, int BlockCols, bool InnerPanel>
+//  struct To<Eigen::Block<XprType, BlockRows, BlockCols, InnerPanel>> {
+//    typedef Eigen::Matrix<ToScalar, BlockRows, BlockCols> type;
+//  };
+
+  template <typename Scalar, int RowsAtCompileTime, int ColsAtCompileTime, int Options, int MaxRowsAtCompileTime, int MaxColsAtCompileTime>
+  struct To<Eigen::Matrix<Scalar, RowsAtCompileTime, ColsAtCompileTime, Options, MaxRowsAtCompileTime, MaxColsAtCompileTime>> {
+    typedef Eigen::Matrix<ToScalar, RowsAtCompileTime, ColsAtCompileTime, Options, MaxRowsAtCompileTime, MaxColsAtCompileTime> type;
   };
 
   // version for ToScalar != FromScalar
   template <typename T>
-  const Drake::enable_if_t<!std::is_same<ToScalar, typename std::remove_reference<T>::type::Scalar>::value, typename To<T>::type> operator()(T &&from) {
+  const Drake::enable_if_t<!std::is_same<ToScalar, typename std::remove_reference<T>::type::Scalar>::value, typename To<typename std::remove_cv<typename std::remove_reference<T>::type>::type>::type> operator()(T &&from) {
     return std::forward<T>(from).template cast<ToScalar>();
   }
 
   // version for ToScalar == FromScalar
   template <typename T>
   const Drake::enable_if_t<std::is_same<ToScalar, typename std::remove_reference<T>::type::Scalar>::value, T&&> operator()(T &&from) {
-    return std::forward<T>(from);
+    return std::forward<T>(from); // try not to make a copy
   }
-
-//  template <typename DerivedFrom>
-//  const Drake::enable_if_t<std::is_same<ToScalar, typename DerivedFrom::Scalar>::value, Eigen::Block<DerivedFrom>> operator()(Eigen::Block<DerivedFrom> &&from) {
-//    return from;
-//  }
 };
 }
 
