@@ -229,7 +229,7 @@ TEST(testMobyLCP, testProblem4) {
   bool result = l.SolveLcpFast(M, q, &fast_z);
   EXPECT_TRUE(CompareMatrices(fast_z, z, epsilon, MatrixCompareType::absolute));
 
-  // TODO sammy the Lemke solvers find no solution at all, however.
+  // TODO(sammy-tri) the Lemke solvers find no solution at all, however.
   fast_z.setZero();
   result = l.SolveLcpLemke(M, q, &fast_z);
   EXPECT_FALSE(result);

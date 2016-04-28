@@ -44,7 +44,7 @@ class Constraint {
   }
   virtual ~Constraint() {}
 
-  // TODO: consider using a Ref for `y` too.  This will require the client
+  // TODO(bradking): consider using a Ref for `y`.  This will require the client
   // to do allocation, but also allows it to choose stack allocation instead.
   virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const = 0;

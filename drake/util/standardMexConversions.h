@@ -49,7 +49,7 @@ bool isConvertibleFromMex(
     Eigen::MatrixBase<Eigen::Map<
         const Eigen::Matrix<double, Rows, Cols, Options, MaxRows, MaxCols>>>*,
     std::ostream* log) NOEXCEPT {
-  // TODO: size checks?
+  // TODO(tkoolen): size checks?
   if (!mxIsNumeric(mex)) {
     if (log) *log << "Expected a numeric array";
     return false;
@@ -67,7 +67,7 @@ fromMexUnsafe(
 }
 
 // quick version for VectorXi.
-// TODO: generalize to arbitrary matrices of integers
+// TODO(tkoolen): generalize to arbitrary matrices of integers
 bool isConvertibleFromMex(const mxArray* source,
                           Eigen::MatrixBase<Eigen::Map<const Eigen::VectorXi>>*,
                           std::ostream* log) NOEXCEPT {
@@ -220,7 +220,7 @@ fromMexUnsafe(
 
     if (mxIsSparse(df)) {
       auto gradient_matrix = GradientTypeFixedMaxSize(
-          matlabToEigenSparse(df));  // TODO: inefficient
+          matlabToEigenSparse(df));  // TODO(tkoolen): inefficient
       gradientMatrixToAutoDiff(gradient_matrix, ret);
     } else {
       auto num_derivs = mxGetN(df);

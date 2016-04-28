@@ -182,7 +182,7 @@ static int snoptIKfun(snopt::integer* Status, snopt::integer* n,
                       snopt::doublereal ru[], snopt::integer* lenru) {
   Map<VectorXd> q(x, nq);
   KinematicsCache<double> cache =
-      model->doKinematics(q);  // TODO: pass this into the function?
+      model->doKinematics(q);  // TODO(tkoolen): pass this into the function?
   IK_cost_fun(x, F[0], G);
   IK_constraint_fun(cache, x, &F[1], &G[nq]);
   return 0;
@@ -2207,6 +2207,12 @@ template void inverseKinSnoptBackend(
     const IKoptions& ikoptions, MatrixBase<Map<VectorXd>>* q_sol,
     MatrixBase<VectorXd>* qdot_sol, MatrixBase<VectorXd>* qddot_sol,
     int* INFO, std::vector<std::string>* infeasible_constraint);
+
+// We have to suppress some cpplint false positives; somehow, cpplint
+// doesn't grok our use of explicit template instantiation above.
+// NOLINTNEXTLINE(readability/fn_size)
 }
+// NOLINTNEXTLINE(readability/fn_size)
 }
+// NOLINTNEXTLINE(readability/fn_size)
 }
