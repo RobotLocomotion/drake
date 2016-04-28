@@ -12,10 +12,6 @@ if (LCM_FOUND)
   drake_install_headers(LCMSystem.h)
 endif()
 
-if(roscpp_FOUND)
-  drake_install_headers(ros_system.h)
-endif()
-
 add_subdirectory(frames)
 add_subdirectory(plants)
 add_subdirectory(trajectories)
