@@ -38,8 +38,7 @@ int findLinkIndexByJointName(RigidBodyTree* model, string jointname) {
   return index;
 }
 
-void parseInertial(RigidBody* body, XMLElement* node,
-                   RigidBodyTree* model) {
+void parseInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model) {
   Isometry3d T = Isometry3d::Identity();
 
   XMLElement* origin = node->FirstChildElement("origin");
@@ -197,9 +196,9 @@ bool parseGeometry(XMLElement* node, const PackageMap& package_map,
   return true;
 }
 
-void parseVisual(RigidBody* body, XMLElement* node,
-                 RigidBodyTree* model, const MaterialMap& materials,
-                 const PackageMap& package_map, const string& root_dir) {
+void parseVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
+                 const MaterialMap& materials, const PackageMap& package_map,
+                 const string& root_dir) {
   // DEBUG
   // cout << "parseVisual: START" << endl;
   // END_DEBUG
@@ -253,9 +252,8 @@ void parseVisual(RigidBody* body, XMLElement* node,
   // END_DEBUG
 }
 
-void parseCollision(RigidBody* body, XMLElement* node,
-                    RigidBodyTree* model, const PackageMap& package_map,
-                    const string& root_dir) {
+void parseCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
+                    const PackageMap& package_map, const string& root_dir) {
   Isometry3d T_element_to_link = Isometry3d::Identity();
   XMLElement* origin = node->FirstChildElement("origin");
   if (origin) originAttributesToTransform(origin, T_element_to_link);
