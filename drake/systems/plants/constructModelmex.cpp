@@ -78,7 +78,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     // DEBUG
     // mexPrintf("constructModelmex: body %d\n", i);
     // END_DEBUG
-    shared_ptr<RigidBody> b(new RigidBody());
+    std::unique_ptr<RigidBody> b(new RigidBody());
     b->body_index = i;
 
     b->linkname = mxGetStdString(mxGetPropertySafe(pBodies, i, "linkname"));
@@ -112,7 +112,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
         mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs",
                           "bad body.parent %d (only have %d bodies)",
                           parent_ind, model->bodies.size());
-      if (parent_ind >= 0) b->parent = model->bodies[parent_ind];
+      if (parent_ind >= 0) b->parent = &model->body(parent_ind);
     }
 
     if (b->hasParent()) {
@@ -175,7 +175,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
         }
       }
 
-      b->setJoint(move(joint));
+      b->setJoint(std::move(joint));
     }
 
     // DEBUG
@@ -204,7 +204,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
         auto shape = (DrakeShapes::Shape) static_cast<int>(
             mxGetScalar(mxGetPropertySafe(pShape, 0, "drake_shape_id")));
         vector<double> params_vec;
-        RigidBody::CollisionElement element(T, b);
+        RigidBody::CollisionElement element(T, *b);
         switch (shape) {
           case DrakeShapes::BOX: {
             double* params = mxGetPrSafe(mxGetPropertySafe(pShape, 0, "size"));
@@ -307,7 +307,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
       b->setCollisionFilter(group, mask);
     }
 
-    model->bodies.push_back(b);
+    model->bodies.push_back(std::move(b));
   }
 
   // THIS IS UGLY: I'm sending the terrain contact points into the
@@ -381,7 +381,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     fr->name = mxGetStdString(mxGetPropertySafe(pFrames, i, "name"));
 
     pm = mxGetPropertySafe(pFrames, i, "body_ind");
-    fr->body = model->bodies[(int)mxGetScalar(pm) - 1];
+    fr->body = model->bodies[(int)mxGetScalar(pm) - 1].get();
 
     pm = mxGetPropertySafe(pFrames, i, "T");
     memcpy(fr->transform_to_body.data(), mxGetPrSafe(pm),
@@ -452,7 +452,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     double effort_max =
         mxGetScalar(mxGetPropertySafe(pBodies, joint_index, "effort_max"));
     model->actuators.push_back(RigidBodyActuator(
-        name, model->bodies[joint_index], reduction, effort_min, effort_max));
+        name, model->body(joint_index), reduction, effort_min, effort_max));
   }
 
   //  LOOP CONSTRAINTS
