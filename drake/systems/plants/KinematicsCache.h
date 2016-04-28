@@ -212,7 +212,8 @@ class KinematicsCache {
 
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> getX() const {
     if (hasV()) {
-      Eigen::Matrix<Scalar, Eigen::Dynamic, 1> x(getNumPositions() + getNumVelocities());
+      Eigen::Matrix<Scalar, Eigen::Dynamic, 1> x(getNumPositions() +
+                                                 getNumVelocities());
       x << q, v;
       return x;
     } else {
@@ -248,24 +249,24 @@ class KinematicsCache {
   // See TODO fro getNumVelocities.
   static int getNumPositions(
       const std::vector<std::unique_ptr<RigidBody> >& bodies) {
-    auto add_num_positions =
+    auto add_num_positions =  // CR for clang-format
         [](int result, const std::unique_ptr<RigidBody>& body_ptr) -> int {
-          return body_ptr->hasParent()
-                     ? result + body_ptr->getJoint().getNumPositions()
-                     : result;
-        };
+      return body_ptr->hasParent()
+                 ? result + body_ptr->getJoint().getNumPositions()
+                 : result;
+    };
     return std::accumulate(bodies.begin(), bodies.end(), 0, add_num_positions);
   }
 
   // TODO(amcastro-tri): See TODO for getNumPositions.
   static int getNumVelocities(
       const std::vector<std::unique_ptr<RigidBody> >& bodies) {
-    auto add_num_velocities =
+    auto add_num_velocities =  // CR for clang-format
         [](int result, const std::unique_ptr<RigidBody>& body_ptr) -> int {
-          return body_ptr->hasParent()
-                     ? result + body_ptr->getJoint().getNumVelocities()
-                     : result;
-        };
+      return body_ptr->hasParent()
+                 ? result + body_ptr->getJoint().getNumVelocities()
+                 : result;
+    };
     return std::accumulate(bodies.begin(), bodies.end(), 0, add_num_velocities);
   }
 
