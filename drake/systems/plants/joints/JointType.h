@@ -13,8 +13,6 @@ using Transform3D = Eigen::Transform<Scalar, 3, Eigen::Isometry>;
 template <typename Scalar>
 using SpatialVector = Eigen::Matrix<Scalar, TWIST_SIZE, 1>;
 
-enum class FloatingBaseType { FIXED = 0, ROLLPITCHYAW = 1, QUATERNION = 2 };
-
 template <typename Scalar>
 using MotionSubspace = Eigen::Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic, 0, TWIST_SIZE, MAX_NUM_JOINT_VELOCITIES>;
 

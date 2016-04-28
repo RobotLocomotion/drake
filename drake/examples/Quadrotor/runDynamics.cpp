@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
   shared_ptr<lcm::LCM> lcm = make_shared<lcm::LCM>();
   if (!lcm->good()) return 1;
 
-  Drake::FloatingBaseType floating_base_type = Drake::FloatingBaseType::QUATERNION;
+  DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
   auto rigid_body_sys = make_shared<RigidBodySystem>();
   rigid_body_sys->addRobotFromFile(
       getDrakePath() + "/examples/Quadrotor/warehouse.sdf", floating_base_type);

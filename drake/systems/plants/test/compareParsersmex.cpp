@@ -30,13 +30,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   mxGetString(prhs[1], urdf_file, 1000);
   char floating_base_type_str[100] = "rpy";
   if (nrhs > 2) mxGetString(prhs[2], floating_base_type_str, 100);
-  Drake::FloatingBaseType floating_base_type = Drake::FloatingBaseType::QUATERNION;
+  DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
   if (strcmp(floating_base_type_str, "fixed") == 0)
-    floating_base_type = Drake::FloatingBaseType::FIXED;
+    floating_base_type = DrakeJoint::FIXED;
   else if (strcmp(floating_base_type_str, "rpy") == 0)
-    floating_base_type = Drake::FloatingBaseType::ROLLPITCHYAW;
+    floating_base_type = DrakeJoint::ROLLPITCHYAW;
   else if (strcmp(floating_base_type_str, "quat") == 0)
-    floating_base_type = Drake::FloatingBaseType::QUATERNION;
+    floating_base_type = DrakeJoint::QUATERNION;
   else
     mexErrMsgIdAndTxt(
         "Drake:compareParsersmex:BadInputs",

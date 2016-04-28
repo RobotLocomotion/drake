@@ -67,38 +67,38 @@ class DRAKERBM_EXPORT RigidBodyLoop {
 class DRAKERBM_EXPORT RigidBodyTree {
  public:
   RigidBodyTree(const std::string& urdf_filename,
-                const Drake::FloatingBaseType floating_base_type =
-                    Drake::FloatingBaseType::ROLLPITCHYAW);
+                const DrakeJoint::FloatingBaseType floating_base_type =
+                    DrakeJoint::ROLLPITCHYAW);
   RigidBodyTree(void);
   virtual ~RigidBodyTree(void);
 
   void addRobotFromURDFString(
       const std::string& xml_string, const std::string& root_dir = ".",
-      const Drake::FloatingBaseType floating_base_type =
-          Drake::FloatingBaseType::ROLLPITCHYAW,
+      const DrakeJoint::FloatingBaseType floating_base_type =
+          DrakeJoint::ROLLPITCHYAW,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
   void addRobotFromURDFString(
       const std::string& xml_string,
       std::map<std::string, std::string>& package_map,
       const std::string& root_dir = ".",
-      const Drake::FloatingBaseType floating_base_type =
-          Drake::FloatingBaseType::ROLLPITCHYAW,
+      const DrakeJoint::FloatingBaseType floating_base_type =
+          DrakeJoint::ROLLPITCHYAW,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
   void addRobotFromURDF(
       const std::string& urdf_filename,
-      const Drake::FloatingBaseType floating_base_type =
-          Drake::FloatingBaseType::ROLLPITCHYAW,
+      const DrakeJoint::FloatingBaseType floating_base_type =
+          DrakeJoint::ROLLPITCHYAW,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
   void addRobotFromURDF(
       const std::string& urdf_filename,
       std::map<std::string, std::string>& package_map,
-      const Drake::FloatingBaseType floating_base_type =
-          Drake::FloatingBaseType::ROLLPITCHYAW,
+      const DrakeJoint::FloatingBaseType floating_base_type =
+          DrakeJoint::ROLLPITCHYAW,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   void addRobotFromSDF(const std::string& sdf_filename,
-                       const Drake::FloatingBaseType floating_base_type =
-                           Drake::FloatingBaseType::QUATERNION,
+                       const DrakeJoint::FloatingBaseType floating_base_type =
+                           DrakeJoint::QUATERNION,
                        std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   void addFrame(std::shared_ptr<RigidBodyFrame> frame);
@@ -763,7 +763,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * zero floating joints were added to the model.
    */
   int AddFloatingJoint(
-      Drake::FloatingBaseType floating_base_type,
+      DrakeJoint::FloatingBaseType floating_base_type,
       const std::vector<int>& link_indices,
       const std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr,
       const PoseMap* pose_map = nullptr);

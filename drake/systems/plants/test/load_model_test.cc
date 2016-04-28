@@ -7,7 +7,6 @@
 #include "drake/systems/plants/RigidBodySystem.h"
 
 using Drake::RigidBodySystem;
-using Drake::FloatingBaseType;
 
 namespace drake {
 namespace systems {
@@ -33,7 +32,7 @@ TEST_P(LoadModelTest, TestNoOffset) {
   rbs.addRobotFromFile(Drake::getDrakePath() +
                            "/systems/plants/test/cylindrical_1dof_robot." +
                            GetParam(),
-                       FloatingBaseType::QUATERNION);
+                       DrakeJoint::QUATERNION);
 
   // Verifies that RigidBodyTree cannot find a link thatn does not exist.
   auto nonexistent_body = rbs.getRigidBodyTree()->findLink("not_a_link");
@@ -96,7 +95,7 @@ TEST_P(LoadModelTest, TestVerticalOffset) {
   rbs.addRobotFromFile(Drake::getDrakePath() +
                            "/systems/plants/test/cylindrical_1dof_robot." +
                            GetParam(),
-                       FloatingBaseType::QUATERNION, weld_to_frame);
+                       DrakeJoint::QUATERNION, weld_to_frame);
 
   // Gets the link whose parent joint is called "base".
   auto link1_body = rbs.getRigidBodyTree()->findJoint("base");
@@ -136,7 +135,7 @@ TEST_P(LoadModelTest, TestWeld) {
   rbs.addRobotFromFile(Drake::getDrakePath() +
                            "/systems/plants/test/cylindrical_1dof_robot." +
                            GetParam(),
-                       FloatingBaseType::QUATERNION);
+                       DrakeJoint::QUATERNION);
 
   // Loads a zero-DOF SDF robot model and weld it to the end of the
   // one DOF robot's link 2.
@@ -157,7 +156,7 @@ TEST_P(LoadModelTest, TestWeld) {
   rbs.addRobotFromFile(Drake::getDrakePath() +
                            "/systems/plants/test/cylindrical_0dof_robot." +
                            GetParam(),
-                       FloatingBaseType::FIXED, weld_to_frame);
+                       DrakeJoint::FIXED, weld_to_frame);
 
   // Verifies that the newly added link exists and is in the correct location.
   auto link_body = rbs.getRigidBodyTree()->findLink("link");
@@ -177,7 +176,7 @@ TEST(LoadSDFTest, TestInternalOffset) {
   rbs.addRobotFromFile(
       Drake::getDrakePath() +
           "/systems/plants/test/cylindrical_1dof_robot_offset_z1.sdf",
-      FloatingBaseType::QUATERNION);
+      DrakeJoint::QUATERNION);
 
   // Verifies that the transform between the robot's root node
   // and the world is equal to Z = 1.
@@ -216,7 +215,7 @@ TEST(LoadSDFTest, TestDualOffset1) {
   rbs.addRobotFromFile(
       Drake::getDrakePath() +
           "/systems/plants/test/cylindrical_1dof_robot_offset_z1.sdf",
-      FloatingBaseType::QUATERNION, weld_to_frame);
+      DrakeJoint::QUATERNION, weld_to_frame);
 
   // Verifies that the transform between the robot's root node
   // and the world is equal to X = 2, Z = 1.
@@ -259,7 +258,7 @@ TEST(LoadSDFTest, TestDualOffset2) {
   rbs.addRobotFromFile(
       Drake::getDrakePath() +
           "/systems/plants/test/cylindrical_1dof_robot_offset_z1_r90.sdf",
-      FloatingBaseType::QUATERNION, weld_to_frame);
+      DrakeJoint::QUATERNION, weld_to_frame);
 
   // Verifies that the transform between the robot's root node
   // and the world is equal to identity.

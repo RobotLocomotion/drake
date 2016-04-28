@@ -15,6 +15,9 @@ namespace Drake {
 
 template <typename J>
 class Joint {
+ public:
+  enum FloatingBaseType { FIXED = 0, ROLLPITCHYAW = 1, QUATERNION = 2 };
+
  private:
   const std::string name;
   const Transform3D<J> transform_to_parent_body;

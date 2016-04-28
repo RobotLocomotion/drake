@@ -537,7 +537,7 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
  */
 void parseModel(RigidBodyTree* model, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
-                const Drake::FloatingBaseType floating_base_type,
+                const DrakeJoint::FloatingBaseType floating_base_type,
                 std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   PoseMap pose_map;  // because sdf specifies almost everything in the global
                      // (actually model) coordinates instead of relative
@@ -602,7 +602,7 @@ void parseModel(RigidBodyTree* model, XMLElement* node,
 
 void parseWorld(RigidBodyTree* model, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
-                const Drake::FloatingBaseType floating_base_type,
+                const DrakeJoint::FloatingBaseType floating_base_type,
                 std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   for (XMLElement* model_node = node->FirstChildElement("model"); model_node;
        model_node = model_node->NextSiblingElement("model")) {
@@ -613,7 +613,7 @@ void parseWorld(RigidBodyTree* model, XMLElement* node,
 
 void parseSDF(RigidBodyTree* model, XMLDocument* xml_doc,
               PackageMap& package_map, const string& root_dir,
-              const Drake::FloatingBaseType floating_base_type,
+              const DrakeJoint::FloatingBaseType floating_base_type,
               std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   populatePackageMap(package_map);
 
@@ -645,7 +645,7 @@ void parseSDF(RigidBodyTree* model, XMLDocument* xml_doc,
 
 void RigidBodyTree::addRobotFromSDF(
     const string& urdf_filename,
-    const Drake::FloatingBaseType floating_base_type,
+    const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   PackageMap package_map;
 

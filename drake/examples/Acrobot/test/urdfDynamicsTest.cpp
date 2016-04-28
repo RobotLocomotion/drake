@@ -25,11 +25,11 @@ TEST(AcrobotDynamicsTest, ValueAssignment) {
 
   auto r_urdf = RigidBodySystem();
   r_urdf.addRobotFromFile(getDrakePath() + "/examples/Acrobot/Acrobot.urdf",
-                          Drake::FloatingBaseType::FIXED);
+                          DrakeJoint::FIXED);
 
   auto r_sdf = RigidBodySystem();
   r_sdf.addRobotFromFile(getDrakePath() + "/examples/Acrobot/Acrobot.sdf",
-                         Drake::FloatingBaseType::FIXED);
+                         DrakeJoint::FIXED);
 
   // for debugging:
   /*

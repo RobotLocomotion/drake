@@ -45,7 +45,7 @@ std::ostream& operator<<(std::ostream& os, const RigidBodyTree& tree) {
 
 RigidBodyTree::RigidBodyTree(
     const std::string& urdf_filename,
-    const Drake::FloatingBaseType floating_base_type)
+    const DrakeJoint::FloatingBaseType floating_base_type)
     : collision_model(DrakeCollision::newModel()) {
   a_grav << 0, 0, 0, 0, 0, -9.81;
 
@@ -1853,7 +1853,7 @@ void RigidBodyTree::add_rigid_body(std::shared_ptr<RigidBody> body) {
 }
 
 int RigidBodyTree::AddFloatingJoint(
-    const Drake::FloatingBaseType floating_base_type,
+    const DrakeJoint::FloatingBaseType floating_base_type,
     const std::vector<int>& link_indices,
     const std::shared_ptr<RigidBodyFrame> weld_to_frame,
     const PoseMap* pose_map) {
@@ -1902,19 +1902,19 @@ int RigidBodyTree::AddFloatingJoint(
         transform_to_model = pose_map->at(bodies[i]->linkname);
 
       switch (floating_base_type) {
-        case Drake::FloatingBaseType::FIXED: {
+        case DrakeJoint::FIXED: {
           std::unique_ptr<DrakeJoint> joint(new Joint<double>(
               floating_joint_name, transform_to_world * transform_to_model, unique_ptr<JointType<double>>(new Fixed<double>())));
           bodies[i]->setJoint(move(joint));
           num_floating_joints_added++;
         } break;
-        case Drake::FloatingBaseType::ROLLPITCHYAW: {
+        case DrakeJoint::ROLLPITCHYAW: {
           std::unique_ptr<DrakeJoint> joint(new Joint<double>(
               floating_joint_name, transform_to_world * transform_to_model, unique_ptr<JointType<double>>(new RollPitchYawFloating<double>())));
           bodies[i]->setJoint(move(joint));
           num_floating_joints_added++;
         } break;
-        case Drake::FloatingBaseType::QUATERNION: {
+        case DrakeJoint::QUATERNION: {
           std::unique_ptr<DrakeJoint> joint(new Joint<double>(
               floating_joint_name, transform_to_world * transform_to_model, unique_ptr<JointType<double>>(new QuaternionFloating<double>())));
           bodies[i]->setJoint(move(joint));

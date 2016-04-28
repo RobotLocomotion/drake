@@ -37,16 +37,16 @@ int main(int argc, char* argv[]) {
 
   // todo: consider moving this logic into the RigidBodySystem class so it can
   // be reused
-  Drake::FloatingBaseType floating_base_type = Drake::FloatingBaseType::QUATERNION;
+  DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
   char* floating_base_option =
       getCommandLineOption(argv, argc + argv, "--base");
   if (floating_base_option) {
     if (strcmp(floating_base_option, "FIXED") == 0) {
-      floating_base_type = Drake::FloatingBaseType::FIXED;
+      floating_base_type = DrakeJoint::FIXED;
     } else if (strcmp(floating_base_option, "RPY") == 0) {
-      floating_base_type = Drake::FloatingBaseType::ROLLPITCHYAW;
+      floating_base_type = DrakeJoint::ROLLPITCHYAW;
     } else if (strcmp(floating_base_option, "QUAT") == 0) {
-      floating_base_type = Drake::FloatingBaseType::QUATERNION;
+      floating_base_type = DrakeJoint::QUATERNION;
     } else {
       throw std::runtime_error(string("Unknown base type") +
                                floating_base_option +

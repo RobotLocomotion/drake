@@ -15,7 +15,7 @@ int main(int argc, char* argv[]) {
   // unit test that sets up a lidar in a box room and verifies the returns
 
   auto rigid_body_sys = make_shared<RigidBodySystem>();
-  rigid_body_sys->addRobotFromFile(getDrakePath() + "/systems/plants/test/lidarTest.sdf", Drake::FloatingBaseType::FIXED);
+  rigid_body_sys->addRobotFromFile(getDrakePath() + "/systems/plants/test/lidarTest.sdf", DrakeJoint::FIXED);
 
   double t = 0;
   VectorXd x = VectorXd::Zero(rigid_body_sys->getNumStates());

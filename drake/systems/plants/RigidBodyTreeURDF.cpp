@@ -533,7 +533,7 @@ void parseFrame(RigidBodyTree* model, XMLElement* node) {
 
 void parseRobot(RigidBodyTree* model, XMLElement* node,
                 const PackageMap& package_map, const string& root_dir,
-                const Drake::FloatingBaseType floating_base_type,
+                const DrakeJoint::FloatingBaseType floating_base_type,
                 std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr) {
   if (!node->Attribute("name"))
     throw runtime_error("Error: your robot must have a name attribute");
@@ -600,7 +600,7 @@ void parseRobot(RigidBodyTree* model, XMLElement* node,
 
 void parseURDF(RigidBodyTree* model, XMLDocument* xml_doc,
                PackageMap& package_map, const string& root_dir,
-               const Drake::FloatingBaseType floating_base_type,
+               const DrakeJoint::FloatingBaseType floating_base_type,
                std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr) {
   populatePackageMap(package_map);
   XMLElement* node = xml_doc->FirstChildElement("robot");
@@ -643,7 +643,7 @@ std::shared_ptr<RigidBodyFrame> MakeRigidBodyFrameFromURDFNode(
 
 void RigidBodyTree::addRobotFromURDFString(
     const string& xml_string, const string& root_dir,
-    const Drake::FloatingBaseType floating_base_type,
+    const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   PackageMap package_map;
   addRobotFromURDFString(xml_string, package_map, root_dir, floating_base_type,
@@ -652,7 +652,7 @@ void RigidBodyTree::addRobotFromURDFString(
 
 void RigidBodyTree::addRobotFromURDFString(
     const string& xml_string, PackageMap& package_map, const string& root_dir,
-    const Drake::FloatingBaseType floating_base_type,
+    const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   XMLDocument xml_doc;
   xml_doc.Parse(xml_string.c_str());
@@ -662,7 +662,7 @@ void RigidBodyTree::addRobotFromURDFString(
 
 void RigidBodyTree::addRobotFromURDF(
     const string& urdf_filename,
-    const Drake::FloatingBaseType floating_base_type,
+    const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   PackageMap package_map;
   addRobotFromURDF(urdf_filename, package_map, floating_base_type,
@@ -671,7 +671,7 @@ void RigidBodyTree::addRobotFromURDF(
 
 void RigidBodyTree::addRobotFromURDF(
     const string& urdf_filename, PackageMap& package_map,
-    const Drake::FloatingBaseType floating_base_type,
+    const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
   XMLDocument xml_doc;
   xml_doc.LoadFile(urdf_filename.data());

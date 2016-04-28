@@ -13,11 +13,11 @@ int main(int argc, char* argv[]) {
   for (int i = 0; i < 10; i++) {
     tree.addRobotFromURDF(
         getDrakePath() + "/systems/plants/test/PointMass.urdf",
-        Drake::FloatingBaseType::ROLLPITCHYAW);
+        DrakeJoint::ROLLPITCHYAW);
   }
   tree.addRobotFromURDF(
       getDrakePath() + "/systems/plants/test/FallingBrick.urdf",
-      Drake::FloatingBaseType::FIXED);
+      DrakeJoint::FIXED);
 
   VectorXd q = VectorXd::Random(tree.num_positions);
   VectorXd v = VectorXd::Random(tree.num_velocities);

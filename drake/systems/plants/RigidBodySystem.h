@@ -165,21 +165,21 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
 
   void addRobotFromURDFString(
       const std::string& xml_string, const std::string& root_dir = ".",
-      const Drake::FloatingBaseType floating_base_type =
-          Drake::FloatingBaseType::ROLLPITCHYAW);
+      const DrakeJoint::FloatingBaseType floating_base_type =
+          DrakeJoint::ROLLPITCHYAW);
   void addRobotFromURDF(
       const std::string& urdf_filename,
-      const Drake::FloatingBaseType floating_base_type =
-          Drake::FloatingBaseType::QUATERNION,
+      const DrakeJoint::FloatingBaseType floating_base_type =
+          DrakeJoint::QUATERNION,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
   void addRobotFromSDF(const std::string& sdf_filename,
-                       const Drake::FloatingBaseType floating_base_type =
-                           Drake::FloatingBaseType::QUATERNION,
+                       const DrakeJoint::FloatingBaseType floating_base_type =
+                           DrakeJoint::QUATERNION,
                        std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
   void addRobotFromFile(
       const std::string& filename,
-      const Drake::FloatingBaseType floating_base_type =
-          Drake::FloatingBaseType::QUATERNION,
+      const DrakeJoint::FloatingBaseType floating_base_type =
+          DrakeJoint::QUATERNION,
       std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr);
 
   void addForceElement(std::shared_ptr<RigidBodyForceElement> f) {
