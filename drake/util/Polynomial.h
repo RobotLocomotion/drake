@@ -55,7 +55,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
   };
 
   /// An individual variable raised to an integer power; e.g. x**2.
-  class Term {
+  class DRAKEPOLYNOMIAL_EXPORT Term {
    public:
     VarType var;
     PowerType power;
@@ -74,7 +74,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
 
   /// \brief An additive atom of a Polynomial: The product of any number of
   /// Terms and a coefficient.
-  class Monomial {
+  class DRAKEPOLYNOMIAL_EXPORT Monomial {
    public:
     CoefficientType coefficient;
     std::vector<Term> terms;  // a list of N variable ids
