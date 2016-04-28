@@ -24,7 +24,7 @@ class RollPitchYawFloating : public JointType<J> {
   }
 
   template <typename DerivedQ>
-  MotionSubspace<Promote<J, typename DerivedQ::Scalar>> motionSubspace(const Eigen::MatrixBase<DerivedQ> &q) {
+  MotionSubspace<Promote<J, typename DerivedQ::Scalar>> motionSubspace(const Eigen::MatrixBase<DerivedQ> &q) const {
     using Q = typename DerivedQ::Scalar;
     using T = Promote<J, Q>;
 
@@ -41,7 +41,7 @@ class RollPitchYawFloating : public JointType<J> {
   }
 
   template <typename DerivedQ, typename DerivedV>
-  SpatialVector<Promote<J, typename DerivedQ::Scalar>> motionSubspaceDotTimesV(const Eigen::MatrixBase<DerivedQ> &q, const Eigen::MatrixBase<DerivedV> &v) {
+  SpatialVector<Promote<J, typename DerivedQ::Scalar>> motionSubspaceDotTimesV(const Eigen::MatrixBase<DerivedQ> &q, const Eigen::MatrixBase<DerivedV> &v) const {
     using Q = typename DerivedQ::Scalar;
     using V = typename DerivedV::Scalar;
     static_assert(std::is_same<Q, V>::value, "type of velocity vector must match type of configuration vector");
@@ -90,17 +90,17 @@ class RollPitchYawFloating : public JointType<J> {
   }
 
   template <typename Q>
-  ConfigurationDerivativeToVelocity<Promote<J, Q>> configurationDerivativeToVelocity() {
+  ConfigurationDerivativeToVelocity<Promote<J, Q>> configurationDerivativeToVelocity() const {
     return ConfigurationDerivativeToVelocity<Promote<J, Q>>::Identity(RollPitchYawFloating<J>::NUM_VELOCITIES, RollPitchYawFloating<J>::NUM_POSITIONS);
   }
 
   template <typename Q>
-  VelocityToConfigurationDerivative<Promote<J, Q>> velocityToConfigurationDerivative() {
+  VelocityToConfigurationDerivative<Promote<J, Q>> velocityToConfigurationDerivative() const {
     return VelocityToConfigurationDerivative<Promote<J, Q>>::Identity(RollPitchYawFloating<J>::NUM_POSITIONS, RollPitchYawFloating<J>::NUM_VELOCITIES);
   }
 
   template <typename V>
-  Eigen::Matrix<Promote<J, V>, Eigen::Dynamic, 1> frictionTorque() {
+  Eigen::Matrix<Promote<J, V>, Eigen::Dynamic, 1> frictionTorque() const {
     return Eigen::Matrix<V, Eigen::Dynamic, 1>::Zero(QuaternionFloating<J>::NUM_VELOCITIES, 1);
   }
 };

@@ -6,19 +6,16 @@
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/systems/plants/joints/QuaternionFloating.h"
 #include "drake/systems/plants/joints/RollPitchYawFloating.h"
+#include "drake/systems/plants/joints/FixedAxisOneDoF.h"
 
 namespace Drake {
 
 template <typename J>
 class Joint {
- public:
-  static const int MAX_NUM_POSITIONS = 7;
-  static const int MAX_NUM_VELOCITIES = 6;
-  const std::unique_ptr<JointType<J>> type;
-
  private:
   const std::string name;
   const Transform3D<J> transform_to_parent_body;
+  const std::unique_ptr<JointType<J>> type;
 
  public:
   inline const Transform3D<J> &getTransformToParentBody() const { return transform_to_parent_body; };

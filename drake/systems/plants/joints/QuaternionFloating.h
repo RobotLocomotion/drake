@@ -23,17 +23,17 @@ class QuaternionFloating : public JointType<J> {
   }
 
   template <typename Q>
-  MotionSubspace<Promote<J, Q>> motionSubspace() {
+  MotionSubspace<Promote<J, Q>> motionSubspace() const {
     return MotionSubspace<Promote<J, Q>>::Identity(TWIST_SIZE, QuaternionFloating::NUM_VELOCITIES);
   }
 
   template <typename Q>
-  SpatialVector<Promote<J, Q>> motionSubspaceDotTimesV() {
+  SpatialVector<Promote<J, Q>> motionSubspaceDotTimesV() const {
     return SpatialVector<Promote<J, Q>>::Zero();
   };
 
   template <typename DerivedQ>
-  ConfigurationDerivativeToVelocity<Promote<J, typename DerivedQ::Scalar>> configurationDerivativeToVelocity(const Eigen::MatrixBase<DerivedQ>& q) {
+  ConfigurationDerivativeToVelocity<Promote<J, typename DerivedQ::Scalar>> configurationDerivativeToVelocity(const Eigen::MatrixBase<DerivedQ>& q) const {
     using Q = typename DerivedQ::Scalar;
     using T = Promote<J, Q>;
 
@@ -53,7 +53,7 @@ class QuaternionFloating : public JointType<J> {
   }
 
   template <typename DerivedQ>
-  VelocityToConfigurationDerivative<Promote<J, typename DerivedQ::Scalar>> velocityToConfigurationDerivative(const Eigen::MatrixBase<DerivedQ>& q) {
+  VelocityToConfigurationDerivative<Promote<J, typename DerivedQ::Scalar>> velocityToConfigurationDerivative(const Eigen::MatrixBase<DerivedQ>& q) const {
     using Q = typename DerivedQ::Scalar;
     using T = Promote<J, Q>;
 
@@ -73,7 +73,7 @@ class QuaternionFloating : public JointType<J> {
   }
 
   template <typename V>
-  Eigen::Matrix<Promote<J, V>, Eigen::Dynamic, 1> frictionTorque() {
+  Eigen::Matrix<Promote<J, V>, Eigen::Dynamic, 1> frictionTorque() const {
     return Eigen::Matrix<V, Eigen::Dynamic, 1>::Zero(QuaternionFloating<J>::NUM_VELOCITIES, 1);
   }
 };
