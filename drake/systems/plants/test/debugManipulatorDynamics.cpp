@@ -20,8 +20,7 @@ int main() {
                                          base_or_frame_ind);
 
   auto M = model.massMatrix<double>(cache);
-  cout << M << endl
-       << endl;
+  cout << M << endl << endl;
 
   eigen_aligned_unordered_map<RigidBody const *, Matrix<double, TWIST_SIZE, 1> >
       f_ext;
@@ -33,7 +32,6 @@ int main() {
   vd.setRandom();
 
   auto C = model.inverseDynamics(cache, f_ext, vd);
-  cout << C << endl
-       << endl;
+  cout << C << endl << endl;
   return 0;
 }
