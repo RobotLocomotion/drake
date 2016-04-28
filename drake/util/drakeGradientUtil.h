@@ -200,7 +200,7 @@ typename MatGradMult<DerivedDA, DerivedB>::type matGradMult(
   return ret;
 }
 
-// TODO: could save copies once
+// TODO(tkoolen): could save copies once
 // http://eigen.tuxfamily.org/bz/show_bug.cgi?id=329 is fixed
 template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
