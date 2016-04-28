@@ -27,9 +27,7 @@ class DRAKERBM_EXPORT RigidBody {
   /**
    * Checks if the passed RigidBody other is the parent of this body.
    */
-  bool has_as_parent(const RigidBody& other) const {
-    return parent == &other;
-  }
+  bool has_as_parent(const RigidBody& other) const { return parent == &other; }
 
   void addVisualElement(const DrakeShapes::VisualElement& elements);
 
@@ -63,9 +61,9 @@ class DRAKERBM_EXPORT RigidBody {
   }
 
   bool adjacentTo(const RigidBody& other) const {
-    return ((parent == &other && !(joint && joint->isFloating())) ||
-            (other.parent == this &&
-             !(other.joint && other.joint->isFloating())));
+    return (
+        (parent == &other && !(joint && joint->isFloating())) ||
+        (other.parent == this && !(other.joint && other.joint->isFloating())));
   }
 
   bool CollidesWith(const RigidBody& other) const {
