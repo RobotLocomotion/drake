@@ -38,41 +38,41 @@ class QuaternionFloating : public JointType<J> {
     return q;
   }
 
-  virtual inline std::string getPositionName(int index) const override {
+  virtual inline std::string getPositionNamePostfix(int index) const override {
     switch (index) {
       case 0:
-        return "x";
+        return "_x";
       case 1:
-        return "y";
+        return "_y";
       case 2:
-        return "z";
+        return "_z";
       case 3:
-        return "qw";
+        return "_qw";
       case 4:
-        return "qx";
+        return "_qx";
       case 5:
-        return "qy";
+        return "_qy";
       case 6:
-        return "qz";
+        return "_qz";
       default:
         throw std::runtime_error("bad index");
     }
   }
 
-  virtual inline std::string getVelocityName(int index) const override {
+  virtual inline std::string getVelocityNamePostfix(int index) const override {
     switch (index) {
       case 0:
-        return "wx";
+        return "_wx";
       case 1:
-        return "wy";
+        return "_wy";
       case 2:
-        return "wz";
+        return "_wz";
       case 3:
-        return "vx";
+        return "_vx";
       case 4:
-        return "vy";
+        return "_vy";
       case 5:
-        return "vz";
+        return "_vz";
       default:
         throw std::runtime_error("bad index");
     }

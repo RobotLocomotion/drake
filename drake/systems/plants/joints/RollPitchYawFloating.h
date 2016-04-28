@@ -27,20 +27,20 @@ class RollPitchYawFloating : public JointType<J> {
     return q;
   }
 
-  virtual inline std::string getPositionName(int index) const override {
+  virtual inline std::string getPositionNamePostfix(int index) const override {
     switch (index) {
       case 0:
-        return "x";
+        return "_x";
       case 1:
-        return "y";
+        return "_y";
       case 2:
-        return "z";
+        return "_z";
       case 3:
-        return "roll";
+        return "_roll";
       case 4:
-        return "pitch";
+        return "_pitch";
       case 5:
-        return "yaw";
+        return "_yaw";
       default:
         throw std::runtime_error("bad index");
     }

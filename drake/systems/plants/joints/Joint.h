@@ -7,6 +7,7 @@
 #include "drake/systems/plants/joints/QuaternionFloating.h"
 #include "drake/systems/plants/joints/RollPitchYawFloating.h"
 #include "drake/systems/plants/joints/Revolute.h"
+#include "drake/systems/plants/joints/Prismatic.h"
 
 namespace Drake {
 
@@ -26,10 +27,10 @@ class Joint {
   inline const std::string &getName() const { return name; };
   inline const Transform3D<J> &getTransformToParentBody() const { return transform_to_parent_body; };
   inline std::string getPositionName(int index) const {
-    return name + "_" + type->getPositionName(index);
+    return name + type->getPositionNamePostfix(index);
   }
   inline std::string getVelocityName(int index) const {
-    return name + "_" + type->getVelocityName(index);
+    return name + type->getVelocityNamePostfix(index);
   }
   inline bool isFloating() const { return type->isFloating(); };
   inline Eigen::VectorXd zeroConfiguration() const { return type->zeroConfiguration(); };
@@ -39,9 +40,17 @@ class Joint {
 
   template <typename DerivedQ>
   Transform3D<Promote<J, typename DerivedQ::Scalar>> jointTransform(const Eigen::MatrixBase<DerivedQ> &q) {
+    auto revoluteJoint = dynamic_cast<const Revolute<J>*>(type.get());
+    if (revoluteJoint) {
+      return revoluteJoint->jointTransform(q);
+    }
     auto quaternionFloatingJoint = dynamic_cast<const QuaternionFloating<J>*>(type.get());
     if (quaternionFloatingJoint) {
       return quaternionFloatingJoint->jointTransform(q);
+    }
+    auto prismaticJoint = dynamic_cast<const Prismatic<J>*>(type.get());
+    if (prismaticJoint) {
+      return prismaticJoint->jointTransform(q);
     }
     auto rollPitchYawFloatingJoint = dynamic_cast<const RollPitchYawFloating<J>*>(type.get());
     if (rollPitchYawFloatingJoint) {

@@ -57,10 +57,10 @@ class JointType {
 
   virtual Eigen::VectorXd randomConfiguration(std::default_random_engine &generator) const = 0;
 
-  virtual std::string getPositionName(int index) const = 0;
+  virtual std::string getPositionNamePostfix(int index) const = 0;
 
-  virtual std::string getVelocityName(int index) const {
-    return getPositionName(index) + "dot";
+  virtual std::string getVelocityNamePostfix(int index) const {
+    return getPositionNamePostfix(index) + "dot";
   }
 
   virtual bool isFloating() const { return false; }

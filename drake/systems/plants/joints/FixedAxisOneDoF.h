@@ -21,41 +21,12 @@ class FixedAxisOneDoF : public JointType<J> {
 
   FixedAxisOneDoF(const SpatialVector<J>& joint_axis) : JointType<J>(1, 1), joint_axis(joint_axis), damping(0), coulomb_friction(0), coulomb_window(0) { };
 
-  template <typename Q>
-  MotionSubspace<Promote<J, Q>> motionSubspace() const {
-    using T = Promote<J, Q>;
-    return ConvertMatrix<T>()(joint_axis);
+  inline virtual std::string getPositionNamePostfix(int index) const override {
+    if (index != 0) throw std::runtime_error("bad index");
+    return "";
   }
 
-  template <typename Q>
-  SpatialVector<Promote<J, Q>> motionSubspaceDotTimesV() const {
-    return SpatialVector<Promote<J, Q>>::Zero();
-  }
-
-  template <typename Q>
-  ConfigurationDerivativeToVelocity<Promote<J, Q>> configurationDerivativeToVelocity() const {
-    return ConfigurationDerivativeToVelocity<Promote<J, Q>>::Identity(getNumPositions(), getNumVelocities());
-  }
-
-  template <typename Q>
-  VelocityToConfigurationDerivative <Promote<J, Q>> velocityToConfigurationDerivative() const {
-    return VelocityToConfigurationDerivative<Promote<J, Q>>::Identity(getNumPositions(), getNumVelocities());
-  }
-
-  template <typename DerivedV>
-  Eigen::Matrix<Promote<J, typename DerivedV::Scalar>, Eigen::Dynamic, 1> frictionTorque(const Eigen::MatrixBase<DerivedV> &v) const {
-    using T = Promote<J, typename DerivedV::Scalar>;
-
-    Eigen::Matrix<T, Eigen::Dynamic, 1> ret(getNumVelocities(), 1);
-    using std::abs;
-    ret[0] = damping * v[0];
-    T coulomb_window_fraction = v[0] / coulomb_window;
-    T coulomb = std::min(T(1), std::max(T(-1), coulomb_window_fraction)) * coulomb_friction;
-    ret[0] += coulomb;
-    return ret;
-  }
-
-  virtual inline Eigen::VectorXd randomConfiguration(std::default_random_engine &generator) const override {
+  inline virtual Eigen::VectorXd randomConfiguration(std::default_random_engine &generator) const override {
     Eigen::VectorXd q(getNumPositions());
     const auto& joint_limit_min = getJointLimitMin();
     const auto& joint_limit_max = getJointLimitMax();
@@ -88,6 +59,40 @@ class FixedAxisOneDoF : public JointType<J> {
       }
     }
     return q;
+  }
+
+  template <typename Q>
+  MotionSubspace<Promote<J, Q>> motionSubspace() const {
+    using T = Promote<J, Q>;
+    return ConvertMatrix<T>()(joint_axis);
+  }
+
+  template <typename Q>
+  SpatialVector<Promote<J, Q>> motionSubspaceDotTimesV() const {
+    return SpatialVector<Promote<J, Q>>::Zero();
+  }
+
+  template <typename Q>
+  ConfigurationDerivativeToVelocity<Promote<J, Q>> configurationDerivativeToVelocity() const {
+    return ConfigurationDerivativeToVelocity<Promote<J, Q>>::Identity(getNumPositions(), getNumVelocities());
+  }
+
+  template <typename Q>
+  VelocityToConfigurationDerivative <Promote<J, Q>> velocityToConfigurationDerivative() const {
+    return VelocityToConfigurationDerivative<Promote<J, Q>>::Identity(getNumPositions(), getNumVelocities());
+  }
+
+  template <typename DerivedV>
+  Eigen::Matrix<Promote<J, typename DerivedV::Scalar>, Eigen::Dynamic, 1> frictionTorque(const Eigen::MatrixBase<DerivedV> &v) const {
+    using T = Promote<J, typename DerivedV::Scalar>;
+
+    Eigen::Matrix<T, Eigen::Dynamic, 1> ret(getNumVelocities(), 1);
+    using std::abs;
+    ret[0] = damping * v[0];
+    T coulomb_window_fraction = v[0] / coulomb_window;
+    T coulomb = std::min(T(1), std::max(T(-1), coulomb_window_fraction)) * coulomb_friction;
+    ret[0] += coulomb;
+    return ret;
   }
 
   void setDynamics(const J& damping, const J& coulomb_friction, const J& coulomb_window) {
