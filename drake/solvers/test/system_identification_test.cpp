@@ -1,6 +1,8 @@
-#include "drake/util/Polynomial.h"
 #include "drake/solvers/system_identification.h"
+
 #include "gtest/gtest.h"
+
+#include "drake/util/Polynomial.h"
 
 namespace drake {
 namespace solvers {
