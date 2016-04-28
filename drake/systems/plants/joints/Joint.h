@@ -18,11 +18,24 @@ class Joint {
   const std::unique_ptr<JointType<J>> type;
 
  public:
-  inline const Transform3D<J> &getTransformToParentBody() const { return transform_to_parent_body; };
-  inline const std::string &getName() const { return name; };
-
   Joint(const std::string &name, const Transform3D<J> &transform_to_parent_body, std::unique_ptr<JointType<J>> type) :
       name(name), transform_to_parent_body(transform_to_parent_body), type(std::move(type)) { };
+
+  inline int getNumPositions() const { return type->getNumPositions(); }
+  inline int getNumVelocities() const { return type->getNumVelocities(); }
+  inline const std::string &getName() const { return name; };
+  inline const Transform3D<J> &getTransformToParentBody() const { return transform_to_parent_body; };
+  inline std::string getPositionName(int index) const {
+    return name + "_" + type->getPositionName(index);
+  }
+  inline std::string getVelocityName(int index) const {
+    return name + "_" + type->getVelocityName(index);
+  }
+  inline bool isFloating() const { return type->isFloating(); };
+  inline Eigen::VectorXd zeroConfiguration() const { return type->zeroConfiguration(); };
+  inline Eigen::VectorXd randomConfiguration(std::default_random_engine &generator) const { return type->randomConfiguration(generator); };
+  inline const Eigen::VectorXd &getJointLimitMin() const { return type->getJointLimitMin(); };
+  inline const Eigen::VectorXd &getJointLimitMax() const { return type->getJointLimitMax(); };
 
   template <typename DerivedQ>
   Transform3D<Promote<J, typename DerivedQ::Scalar>> jointTransform(const Eigen::MatrixBase<DerivedQ> &q) {
