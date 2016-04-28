@@ -479,20 +479,31 @@ class DRAKERBSYSTEM_EXPORT RigidBodyDepthSensor : public RigidBodySensor {
 
   virtual ~RigidBodyDepthSensor() {}
 
-  virtual size_t getNumOutputs() const override {
-    return num_pixel_rows * num_pixel_cols;
-  }
+  virtual size_t getNumOutputs() const override;
+
+  virtual size_t get_num_pixel_rows() const;
+
+  virtual size_t get_num_pixel_cols() const;
+
+  virtual bool is_vertical_scanner() const;
+
+  virtual bool is_horizontal_scanner() const;
+
+  virtual double get_min_pitch() const;
+
+  virtual double get_max_pitch() const;
+
+  virtual double get_min_yaw() const;
+
+  virtual double get_max_yaw() const;
+
+  virtual double get_min_range() const;
+
+  virtual double get_max_range() const;
 
   virtual Eigen::VectorXd output(
       const double& t, const KinematicsCache<double>& rigid_body_state,
       const RigidBodySystem::InputVector<double>& u) const override;
-
-  /**
-   * Returns the total number of range measurements produced by this sensor.
-   */
-  virtual size_t num_ranges() {
-    return num_pixel_rows * num_pixel_cols;
-  }
 
  private:
   void cacheRaycastEndpoints();

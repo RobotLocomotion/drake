@@ -45,7 +45,7 @@ RigidBodySystem::StateVector<double> RigidBodySystem::dynamics(
     const RigidBodySystem::InputVector<double>& u) const {
   using namespace std;
   using namespace Eigen;
-  eigen_aligned_unordered_map<const RigidBody*, Matrix<double, 6, 1> > f_ext;
+  eigen_aligned_unordered_map<const RigidBody*, Matrix<double, 6, 1>> f_ext;
 
   // todo: make kinematics cache once and re-use it (but have to make one per
   // type)
@@ -230,7 +230,8 @@ RigidBodySystem::OutputVector<double> RigidBodySystem::output(
   return y;
 }
 
-const std::vector<std::shared_ptr<RigidBodySensor>> & RigidBodySystem::GetSensors() const {
+const std::vector<std::shared_ptr<RigidBodySensor>>&
+RigidBodySystem::GetSensors() const {
   return sensors;
 }
 
@@ -282,7 +283,7 @@ Drake::getInitialState(const RigidBodySystem& sys) {
     // todo: move this up to the system level?
 
     OptimizationProblem prog;
-    std::vector<RigidBodyLoop, Eigen::aligned_allocator<RigidBodyLoop> > const&
+    std::vector<RigidBodyLoop, Eigen::aligned_allocator<RigidBodyLoop>> const&
         loops = sys.tree->loops;
 
     int nq = sys.tree->num_positions;
@@ -332,8 +333,7 @@ RigidBodyPropellor::RigidBodyPropellor(RigidBodySystem& sys, XMLElement* node,
   if (!parent_node)
     throw runtime_error("propellor " + name + " is missing the parent node");
   frame = drake::systems::MakeRigidBodyFrameFromURDFNode(
-      *tree, parent_node, node->FirstChildElement("origin"),
-      name + "Frame");
+      *tree, parent_node, node->FirstChildElement("origin"), name + "Frame");
   tree->addFrame(frame);
 
   axis << 1.0, 0.0, 0.0;
@@ -576,6 +576,38 @@ Eigen::VectorXd RigidBodyDepthSensor::output(
   return distances;
 }
 
+size_t RigidBodyDepthSensor::getNumOutputs() const {
+  return num_pixel_rows * num_pixel_cols;
+}
+
+size_t RigidBodyDepthSensor::get_num_pixel_rows() const {
+  return num_pixel_rows;
+}
+
+size_t RigidBodyDepthSensor::get_num_pixel_cols() const {
+  return num_pixel_cols;
+}
+
+bool RigidBodyDepthSensor::is_vertical_scanner() const {
+  return min_pitch != 0 || max_pitch != 0;
+}
+
+bool RigidBodyDepthSensor::is_horizontal_scanner() const {
+  return min_yaw != 0 || max_yaw != 0;
+}
+
+double RigidBodyDepthSensor::get_min_pitch() const { return min_pitch; }
+
+double RigidBodyDepthSensor::get_max_pitch() const { return max_pitch; }
+
+double RigidBodyDepthSensor::get_min_yaw() const { return min_yaw; }
+
+double RigidBodyDepthSensor::get_max_yaw() const { return max_yaw; }
+
+double RigidBodyDepthSensor::get_min_range() const { return min_range; }
+
+double RigidBodyDepthSensor::get_max_range() const { return max_range; }
+
 void parseForceElement(RigidBodySystem& sys, XMLElement* node) {
   string name = node->Attribute("name");
 
@@ -611,7 +643,6 @@ void parseURDF(RigidBodySystem& sys, XMLDocument* xml_doc) {
 
 void parseSDFJoint(RigidBodySystem& sys, string model_name, XMLElement* node,
                    PoseMap& pose_map) {
-
   // Obtains the name of the joint.
   const char* attr = node->Attribute("name");
   if (!attr) throw runtime_error("ERROR: joint tag is missing name attribute");
@@ -619,14 +650,15 @@ void parseSDFJoint(RigidBodySystem& sys, string model_name, XMLElement* node,
 
   if (node->FirstChildElement("sensor") != nullptr) {
     // TODO(liangfok): Add support for sensors on joints.
-    throw runtime_error("Error: Joint sensors are not supported yet."
-                        "Unable to parse sensor on joint " + joint_name + ".");
+    throw runtime_error(
+        "Error: Joint sensors are not supported yet."
+        "Unable to parse sensor on joint " +
+        joint_name + ".");
   }
 }
 
 void parseSDFLink(RigidBodySystem& sys, string model_name, XMLElement* node,
                   PoseMap& pose_map) {
-
   // Obtains the name of the link.
   const char* attr = node->Attribute("name");
   if (!attr) throw runtime_error("ERROR: link tag is missing name attribute");
@@ -744,7 +776,6 @@ void RigidBodySystem::addRobotFromSDF(
     const string& sdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type,
     std::shared_ptr<RigidBodyFrame> weld_to_frame) {
-
   // Adds the robot to the rigid body tree.
   tree->addRobotFromSDF(sdf_filename, floating_base_type, weld_to_frame);
 

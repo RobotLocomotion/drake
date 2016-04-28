@@ -75,8 +75,8 @@ class SensorVisualizerLidar {
         // sensor's output. It then creates a sensor_msgs::LaserScan message
         // for each publisher.
 
-        std::cout << "**** Sensor " << depth_sensor->get_name() << " is a LIDAR sensor!"
-                  << std::endl;
+        std::cout << "**** Sensor " << depth_sensor->get_name()
+                  << " is a LIDAR sensor!" << std::endl;
 
         if (lidar_publishers_.find(depth_sensor->get_name()) ==
             lidar_publishers_.end()) {
@@ -90,46 +90,58 @@ class SensorVisualizerLidar {
               " found when creating a ROS topic publisher for the sensor!");
         }
 
-        if (lidar_messages_.find(depth_sensor->get_name()) == lidar_messages_.end()) {
-          std::unique_ptr<sensor_msgs::LaserScan> message(new sensor_msgs::LaserScan());
+        if (lidar_messages_.find(depth_sensor->get_name()) ==
+            lidar_messages_.end()) {
+          std::unique_ptr<sensor_msgs::LaserScan> message(
+              new sensor_msgs::LaserScan());
           message->header.frame_id = depth_sensor->get_name();
 
           // The rigid body depth sensor scans either horizontally or
           // vertically.
-          bool is_horizontal_scanner = false;
-          bool is_vertical_scanner = false;
-
-          if (depth_sensor->get_min_pitch() != 0 || depth_sensor->get_max_pitch() != 0)
-            is_vertical_scanner = true;
-          if (depth_sensor->get_min_yaw() != 0 || depth_sensor->get_max_yaw() != 0)
-            is_horizontal_scanner = true;
+          bool is_horizontal_scanner = depth_sensor->is_horizontal_scanner();
+          bool is_vertical_scanner = depth_sensor->is_vertical_scanner();
 
           if (is_horizontal_scanner && is_vertical_scanner)
-            throw std::runtime_error("ERROR: Rigid body depth sensor " + depth_sensor->get_name() + " has both horizontal and vertical dimensions. Expecting it only scan within a 2D plane!");
+            throw std::runtime_error(
+                "ERROR: Rigid body depth sensor " + depth_sensor->get_name() +
+                " has both horizontal and vertical dimensions. Expecting it to "
+                "only scan within a 2D plane!");
 
           if (is_horizontal_scanner) {
-
+            message->angle_min = depth_sensor->get_min_yaw();
+            message->angle_max = depth_sensor->get_max_yaw();
+            message->angle_increment =
+                (depth_sensor->get_max_yaw() - depth_sensor->get_min_yaw()) /
+                depth_sensor->get_num_pixel_cols();
           } else {
-
+            message->angle_min = depth_sensor->get_min_pitch();
+            message->angle_max = depth_sensor->get_max_pitch();
+            message->angle_increment = (depth_sensor->get_max_pitch() -
+                                        depth_sensor->get_min_pitch()) /
+                                       depth_sensor->get_num_pixel_rows();
           }
 
-          message->angle_min = 0;
-          message->angle_max = 0;
-          message->angle_increment = 0;
+          // TODO(liangfok): Update sensor output to include time-between
+          // measurement information.
           message->time_increment = 0;
-          message->scan_time = 0; // TODO(liangfok): Add this to the model
+
+          // TODO(liangfok): Update sensor output to include time-between-scan
+          // information.
+          message->scan_time = 0;
+
           message->range_min = depth_sensor->get_min_range();
           message->range_max = depth_sensor->get_max_range();
-          message->ranges.resize(depth_sensor->num_ranges());
-          message->intensities.resize(depth_sensor->num_ranges());
+          message->ranges.resize(depth_sensor->getNumOutputs());
+          message->intensities.resize(depth_sensor->getNumOutputs());
 
-          lidar_messages_.insert(std::pair<std::string, sensor_msgs::LaserScan)
+          lidar_messages_.insert(
+              std::pair<std::string, std::unique_ptr<sensor_msgs::LaserScan>>(
+                  depth_sensor->get_name(), std::move(message)));
         } else {
           throw std::runtime_error(
               "ERROR: Multiple sensors with name " + depth_sensor->get_name() +
               " found when creating a sensor_msgs::LaserScan message!");
         }
-
       }
     }
   }
@@ -183,7 +195,8 @@ class SensorVisualizerLidar {
    * publishers. This is used to avoid having to allocate a new message
    * each time one needs to be sent.
    */
-  std::map<std::string, sensor_msgs::LaserScan> lidar_messages_;
+  std::map<std::string, std::unique_ptr<sensor_msgs::LaserScan>>
+      lidar_messages_;
 };
 
 }  // end namespace plants
