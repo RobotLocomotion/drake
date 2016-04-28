@@ -11,7 +11,7 @@ class Fixed : public JointType<J> {
   using JointType<J>::getNumPositions;
   using JointType<J>::getNumVelocities;
 
-  Fixed() : JointType<J>(1, 1) { }
+  Fixed() : JointType<J>(0, 0) { }
 
 
   inline virtual Eigen::VectorXd randomConfiguration(std::default_random_engine &generator) const override {

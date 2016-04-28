@@ -4,6 +4,7 @@
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
+#include <iostream>
 
 using Eigen::Matrix;
 using std::make_shared;
@@ -30,6 +31,8 @@ TEST(testMassSpringDamper, AllTests) {
 
     auto xdot = toEigen(sys->dynamics(0.0, x0, u0));
     xdot_desired << x0(1), (u0(0) - k * x0(0) - b * x0(1)) / mass;
+    std::cout << "act: " << xdot.transpose() << std::endl;
+    std::cout << "des: " << xdot_desired.transpose() << std::endl;
 
     EXPECT_TRUE(
         CompareMatrices(xdot_desired, xdot, 1e-5, MatrixCompareType::absolute));
