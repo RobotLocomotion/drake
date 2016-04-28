@@ -48,7 +48,7 @@ int PiecewiseFunction::getSegmentIndex(double t) const {
   t = std::min(std::max(t, getStartTime()), getEndTime());
 
   int segment_index = 0;
-  // TODO: something smarter than this linear search
+  // TODO(tkoolen): something smarter than this linear search
   while (t >= getEndTime(segment_index) &&
          segment_index < getNumberOfSegments() - 1)
     segment_index++;

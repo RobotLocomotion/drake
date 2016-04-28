@@ -3,12 +3,6 @@
 # debugMexTester.m and debugMexTest.cpp were moved to dev
 # add_mex(debugMexTest debugMexTest.cpp)
 
-if (GTEST_FOUND)
-  add_executable(testDrakeGeometryUtil testDrakeGeometryUtil.cpp)
-  target_link_libraries(testDrakeGeometryUtil drakeGeometryUtil ${GTEST_BOTH_LIBRARIES})
-  add_test(NAME testDrakeGeometryUtil COMMAND testDrakeGeometryUtil)
-endif (GTEST_FOUND)
-
 add_executable(testDrakeGradientUtil testDrakeGradientUtil.cpp)
 target_link_libraries(testDrakeGradientUtil drakeGeometryUtil)
 add_test(NAME testDrakeGradientUtil COMMAND testDrakeGradientUtil)
@@ -33,17 +27,24 @@ add_executable(testConvexHull testConvexHull.cpp)
 target_link_libraries(testConvexHull drakeConvexHull)
 add_test(NAME testConvexHull COMMAND testConvexHull)
 
-if (GTEST_FOUND)
-  add_executable(testPolynomial testPolynomial.cpp)
-  target_link_libraries(testPolynomial drakePolynomial ${GTEST_BOTH_LIBRARIES})
-  add_test(NAME testPolynomial COMMAND testPolynomial)
-endif (GTEST_FOUND)
-
 add_executable(testTrigPoly testTrigPoly.cpp)
 target_link_libraries(testTrigPoly drakePolynomial)
 add_test(NAME testTrigPoly COMMAND testTrigPoly)
 
 if (GTEST_FOUND)
+  add_executable(testDrakeGeometryUtil testDrakeGeometryUtil.cpp)
+  target_link_libraries(testDrakeGeometryUtil drakeGeometryUtil ${GTEST_BOTH_LIBRARIES})
+  add_test(NAME testDrakeGeometryUtil COMMAND testDrakeGeometryUtil)
+
+  add_executable(testPolynomial testPolynomial.cpp)
+  target_link_libraries(testPolynomial drakePolynomial ${GTEST_BOTH_LIBRARIES})
+  add_test(NAME testPolynomial COMMAND testPolynomial)
+
+  add_executable(testSystemIdentification testSystemIdentification.cpp)
+  target_link_libraries(testSystemIdentification
+                        drakePolynomial ${GTEST_BOTH_LIBRARIES})
+  add_test(NAME testSystemIdentification COMMAND testSystemIdentification)
+
   add_executable(eigen_matrix_compare_test eigen_matrix_compare_test.cc)
   target_link_libraries(eigen_matrix_compare_test ${GTEST_BOTH_LIBRARIES})
   add_test(NAME eigen_matrix_compare_test COMMAND eigen_matrix_compare_test)

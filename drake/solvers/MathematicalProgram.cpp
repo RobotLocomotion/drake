@@ -5,6 +5,8 @@
 #include "Optimization.h"
 #include "SnoptSolver.h"
 
+using drake::solvers::SolutionResult;
+
 namespace Drake {
 MathematicalProgramInterface::~MathematicalProgramInterface() {}
 
@@ -55,7 +57,7 @@ class MathematicalProgram : public MathematicalProgramInterface {
       override {
     return new MathematicalProgram;
   };
-  virtual bool Solve(OptimizationProblem& prog) const override {
+  virtual SolutionResult Solve(OptimizationProblem& prog) const override {
     throw std::runtime_error(
         "MathematicalProgram::Solve: "
         "No solver available for the given optimization problem!");
@@ -81,7 +83,7 @@ class NonlinearProgram : public MathematicalProgram {
     return new NonlinearProgram;
   }
 
-  virtual bool Solve(OptimizationProblem& prog) const override {
+  virtual SolutionResult Solve(OptimizationProblem& prog) const override {
     if (snopt_solver.available()) {
       return snopt_solver.Solve(prog);
     }
@@ -131,9 +133,9 @@ class NonlinearProgram : public MathematicalProgram {
 
 class LinearComplementarityProblem : public MathematicalProgram {
  public:
-  virtual bool Solve(OptimizationProblem& prog) const override {
-    // TODO ggould given the Moby solver's meticulous use of temporaries, it
-    // would be an easy performance win to reuse this solver object by making
+  virtual SolutionResult Solve(OptimizationProblem& prog) const override {
+    // TODO(ggould-tri) given the Moby solver's meticulous use of temporaries,
+    // it would be an easy performance win to reuse this solver object by making
     // a static place to store it.
     MobyLCPSolver solver;
     return solver.Solve(prog);
@@ -155,7 +157,7 @@ class LeastSquares : public NonlinearProgram {  // public LinearProgram, public
     return new LinearComplementarityProblem;
   };
 
-  virtual bool Solve(OptimizationProblem& prog) const override {
+  virtual SolutionResult Solve(OptimizationProblem& prog) const override {
     size_t num_constraints = 0;
     for (auto const& binding : prog.linear_equality_constraints()) {
       num_constraints += binding.constraint()->A().rows();
@@ -184,7 +186,7 @@ class LeastSquares : public NonlinearProgram {  // public LinearProgram, public
     // least-squares solution
     prog.SetDecisionVariableValues(
         Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beq));
-    return true;
+    return SolutionResult::kSolutionFound;
   }
 };
 }
