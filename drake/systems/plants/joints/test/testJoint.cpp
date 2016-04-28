@@ -10,13 +10,15 @@ int main() {
   Isometry3d joint_to_parent_body;
   joint_to_parent_body.setIdentity();
   Vector3d axis = Vector3d::Random();
+  double pitch = 1.0;
 
-  Joint<double> quaternionFloating("joint1", joint_to_parent_body, std::unique_ptr<JointType<double>>(new QuaternionFloating<double>()));
-  Joint<double> rpyFloating("joint2", joint_to_parent_body, std::unique_ptr<JointType<double>>(new RollPitchYawFloating<double>()));
-  Joint<double> revolute("joint3", joint_to_parent_body, std::unique_ptr<JointType<double>>(new Revolute<double>(axis)));
-  Joint<double> prismatic("joint4", joint_to_parent_body, std::unique_ptr<JointType<double>>(new Prismatic<double>(axis)));
+  Joint<double> quaternionFloating("quaternionFloating", joint_to_parent_body, std::unique_ptr<JointType<double>>(new QuaternionFloating<double>()));
+  Joint<double> rpyFloating("rpyFloating", joint_to_parent_body, std::unique_ptr<JointType<double>>(new RollPitchYawFloating<double>()));
+  Joint<double> revolute("revolute", joint_to_parent_body, std::unique_ptr<JointType<double>>(new Revolute<double>(axis)));
+  Joint<double> prismatic("prismatic", joint_to_parent_body, std::unique_ptr<JointType<double>>(new Prismatic<double>(axis)));
+  Joint<double> helical("helical", joint_to_parent_body, std::unique_ptr<JointType<double>>(new Helical<double>(axis, pitch)));
   
-  vector<Joint<double>*> joints({&quaternionFloating, &rpyFloating, &revolute, &prismatic});
+  vector<Joint<double>*> joints({&quaternionFloating, &rpyFloating, &revolute, &prismatic, &helical});
 
   default_random_engine generator;
   for (const auto& joint : joints) {

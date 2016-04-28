@@ -8,6 +8,7 @@
 #include "drake/systems/plants/joints/RollPitchYawFloating.h"
 #include "drake/systems/plants/joints/Revolute.h"
 #include "drake/systems/plants/joints/Prismatic.h"
+#include "drake/systems/plants/joints/Helical.h"
 
 namespace Drake {
 
@@ -55,6 +56,10 @@ class Joint {
     auto rollPitchYawFloatingJoint = dynamic_cast<const RollPitchYawFloating<J>*>(type.get());
     if (rollPitchYawFloatingJoint) {
       return rollPitchYawFloatingJoint->jointTransform(q);
+    }
+    auto helicalJoint = dynamic_cast<const Helical<J>*>(type.get());
+    if (helicalJoint) {
+      return helicalJoint->jointTransform(q);
     }
     throw std::runtime_error("joint type not handled");
   }
