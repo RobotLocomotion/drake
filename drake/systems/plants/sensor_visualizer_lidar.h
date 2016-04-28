@@ -121,12 +121,13 @@ class SensorVisualizerLidar {
                                        depth_sensor->get_num_pixel_rows();
           }
 
-          // TODO(liangfok): Update sensor output to include time-between
-          // measurement information.
+          // Since the RigidBodyDepthSensor does not include this information
+          // in the output and it is difficult to obtain this information
+          // from other variables within this method's scope, set this value
+          // to be zero.
+          //
+          // See: https://github.com/RobotLocomotion/drake/issues/2210
           message->time_increment = 0;
-
-          // TODO(liangfok): Update sensor output to include time-between-scan
-          // information.
           message->scan_time = 0;
 
           message->range_min = depth_sensor->get_min_range();
