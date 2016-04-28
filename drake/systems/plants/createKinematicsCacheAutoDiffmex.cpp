@@ -36,7 +36,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         break;
       case DrakeMexPointerTypeId<
           KinematicsCache<AutoDiffFixedMaxSize>>::value:
-        destructKinematicsCache<typename AutoDiffFixedMaxSize>(
+        destructKinematicsCache<AutoDiffFixedMaxSize>(
             prhs[0]);
         break;
       default:
@@ -49,7 +49,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     if (num_derivs <=
         AutoDiffFixedMaxSize::DerType::MaxRowsAtCompileTime) {
       plhs[0] =
-          createKinematicsCache<typename AutoDiffFixedMaxSize>(
+          createKinematicsCache<AutoDiffFixedMaxSize>(
               *model);
     } else {
       plhs[0] = createKinematicsCache<AutoDiffScalar<VectorXd>>(*model);
