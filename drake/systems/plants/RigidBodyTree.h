@@ -28,8 +28,7 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 class DRAKERBM_EXPORT RigidBodyActuator {
  public:
   RigidBodyActuator(
-      const std::string& name, const RigidBody& body,
-      double reduction = 1.0,
+      const std::string& name, const RigidBody& body, double reduction = 1.0,
       double effort_limit_min = -std::numeric_limits<double>::infinity(),
       double effort_limit_max = std::numeric_limits<double>::infinity())
       : name(name),
@@ -109,7 +108,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
   void surfaceTangents(
       Eigen::Map<Eigen::Matrix3Xd> const& normals,
-      std::vector<Eigen::Map<Eigen::Matrix3Xd> >& tangents) const;
+      std::vector<Eigen::Map<Eigen::Matrix3Xd>>& tangents) const;
 
   /*!
    * Updates the frame of collision elements to be equal to the joint's frame.
@@ -382,7 +381,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> dynamicsBiasTerm(
       KinematicsCache<Scalar>& cache,
       const eigen_aligned_unordered_map<
-          RigidBody const*, Eigen::Matrix<Scalar, TWIST_SIZE, 1> >& f_ext,
+          RigidBody const*, Eigen::Matrix<Scalar, TWIST_SIZE, 1>>& f_ext,
       bool include_velocity_terms = true) const;
 
   /** \brief Compute
@@ -415,7 +414,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> inverseDynamics(
       KinematicsCache<Scalar>& cache,
       const eigen_aligned_unordered_map<
-          RigidBody const*, Eigen::Matrix<Scalar, TWIST_SIZE, 1> >& f_ext,
+          RigidBody const*, Eigen::Matrix<Scalar, TWIST_SIZE, 1>>& f_ext,
       const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& vd,
       bool include_velocity_terms = true) const;
 
@@ -658,8 +657,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
   RigidBody* findLink(std::string linkname, int robot) const;
 
-  RigidBody* findLink(std::string linkname,
-                      std::string model_name = "") const;
+  RigidBody* findLink(std::string linkname, std::string model_name = "") const;
 
   int findLinkId(const std::string& linkname, int robot = -1) const;
 
@@ -721,8 +719,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
      */
     int ncols = in_terms_of_qdot ? num_positions : num_velocities;
     Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime,
-                  Eigen::Dynamic>
-        full(compact.rows(), ncols);
+                  Eigen::Dynamic> full(compact.rows(), ncols);
     full.setZero();
     int compact_col_start = 0;
     for (std::vector<int>::const_iterator it = joint_path.begin();
@@ -793,9 +790,9 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * @param[in] index The body index.
    * @see add_rigid_body
    */
-  RigidBody& body(int index){
-    assert( 0<=index && index < bodies.size() &&
-        "Input index exceeds the number of bodies in the tree");
+  RigidBody& body(int index) {
+    assert(0 <= index && index < bodies.size() &&
+           "Input index exceeds the number of bodies in the tree");
     return *bodies[index];
   }
 
@@ -809,9 +806,9 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * @param[in] index The body index.
    * @see add_rigid_body
    */
-  RigidBody& body(int index) const{
-    assert( 0<=index && index < bodies.size() &&
-        "Input index exceeds the number of bodies in the tree");
+  RigidBody& body(int index) const {
+    assert(0 <= index && index < bodies.size() &&
+           "Input index exceeds the number of bodies in the tree");
     return *bodies[index];
   }
 
@@ -830,14 +827,14 @@ class DRAKERBM_EXPORT RigidBodyTree {
   std::vector<std::unique_ptr<RigidBody>> bodies;
 
   // Rigid body frames
-  std::vector<std::shared_ptr<RigidBodyFrame> > frames;
+  std::vector<std::shared_ptr<RigidBodyFrame>> frames;
 
   // Rigid body actuators
-  std::vector<RigidBodyActuator, Eigen::aligned_allocator<RigidBodyActuator> >
+  std::vector<RigidBodyActuator, Eigen::aligned_allocator<RigidBodyActuator>>
       actuators;
 
   // Rigid body loops
-  std::vector<RigidBodyLoop, Eigen::aligned_allocator<RigidBodyLoop> > loops;
+  std::vector<RigidBodyLoop, Eigen::aligned_allocator<RigidBodyLoop>> loops;
 
   Eigen::Matrix<double, TWIST_SIZE, 1> a_grav;
   Eigen::MatrixXd B;  // the B matrix maps inputs into joint-space forces
@@ -870,9 +867,10 @@ class DRAKERBM_EXPORT RigidBodyTree {
     size_t i = 0;
     while (i < bodies.size() - 1) {
       if (bodies[i]->hasParent()) {
-        auto iter = std::find_if(bodies.begin() + i + 1, bodies.end(), [&](std::unique_ptr<RigidBody> const& p) {
-          return p.get() == bodies[i]->parent;
-        });
+        auto iter = std::find_if(bodies.begin() + i + 1, bodies.end(),
+                                 [&](std::unique_ptr<RigidBody> const& p) {
+                                   return p.get() == bodies[i]->parent;
+                                 });
         if (iter != bodies.end()) {
           std::unique_ptr<RigidBody> parent = std::move(*iter);
           bodies.erase(iter);
