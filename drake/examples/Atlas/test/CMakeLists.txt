@@ -1,6 +1,5 @@
 
-# The following tests have been disabled because of excessive runtime requirements
-if (0)
+if (LONG_RUNNING_TESTS)
   add_matlab_test(NAME examples/Atlas/test/multiRobotTest COMMAND multiRobotTest)
   add_matlab_test(NAME examples/Atlas/test/runAtlasFastBackwardWalking COMMAND runAtlasFastBackwardWalking PROPERTIES  TIMEOUT  1000)
   add_matlab_test(NAME examples/Atlas/test/runAtlasFastWalking COMMAND runAtlasFastWalking)
