@@ -1,9 +1,7 @@
-//
-// Created by Twan Koolen on 4/27/16.
-//
-
 #ifndef DRAKE_ROLLPITCHYAWFLOATING_H
 #define DRAKE_ROLLPITCHYAWFLOATING_H
+
+#include "drake/systems/plants/joints/JointType.h"
 
 namespace  Drake {
 

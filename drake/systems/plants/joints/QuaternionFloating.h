@@ -1,6 +1,8 @@
 #ifndef DRAKE_QUATERNIONFLOATING_H
 #define DRAKE_QUATERNIONFLOATING_H
 
+#include "drake/systems/plants/joints/JointType.h"
+
 namespace Drake {
 
 
