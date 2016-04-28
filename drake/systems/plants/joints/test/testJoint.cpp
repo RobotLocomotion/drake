@@ -17,8 +17,9 @@ int main() {
   Joint<double> revolute("revolute", joint_to_parent_body, std::unique_ptr<JointType<double>>(new Revolute<double>(axis)));
   Joint<double> prismatic("prismatic", joint_to_parent_body, std::unique_ptr<JointType<double>>(new Prismatic<double>(axis)));
   Joint<double> helical("helical", joint_to_parent_body, std::unique_ptr<JointType<double>>(new Helical<double>(axis, pitch)));
+  Joint<double> fixed("fixed", joint_to_parent_body, std::unique_ptr<JointType<double>>(new Fixed<double>()));
   
-  vector<Joint<double>*> joints({&quaternionFloating, &rpyFloating, &revolute, &prismatic, &helical});
+  vector<Joint<double>*> joints({&quaternionFloating, &rpyFloating, &revolute, &prismatic, &helical, &fixed});
 
   default_random_engine generator;
   for (const auto& joint : joints) {

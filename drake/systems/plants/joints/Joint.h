@@ -9,6 +9,7 @@
 #include "drake/systems/plants/joints/Revolute.h"
 #include "drake/systems/plants/joints/Prismatic.h"
 #include "drake/systems/plants/joints/Helical.h"
+#include "drake/systems/plants/joints/Fixed.h"
 
 namespace Drake {
 
@@ -41,6 +42,8 @@ class Joint {
 
   template <typename DerivedQ>
   Transform3D<Promote<J, typename DerivedQ::Scalar>> jointTransform(const Eigen::MatrixBase<DerivedQ> &q) {
+    using Q = typename DerivedQ::Scalar;
+
     auto revoluteJoint = dynamic_cast<const Revolute<J>*>(type.get());
     if (revoluteJoint) {
       return revoluteJoint->jointTransform(q);
@@ -48,6 +51,10 @@ class Joint {
     auto quaternionFloatingJoint = dynamic_cast<const QuaternionFloating<J>*>(type.get());
     if (quaternionFloatingJoint) {
       return quaternionFloatingJoint->jointTransform(q);
+    }
+    auto fixedJoint = dynamic_cast<const Fixed<J>*>(type.get());
+    if (fixedJoint) {
+      return fixedJoint->template jointTransform<Q>();
     }
     auto prismaticJoint = dynamic_cast<const Prismatic<J>*>(type.get());
     if (prismaticJoint) {
