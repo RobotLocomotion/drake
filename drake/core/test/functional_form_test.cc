@@ -566,6 +566,52 @@ GTEST_TEST(FunctionalFormTest, Divide) {
   }
 }
 
+GTEST_TEST(FunctionalFormTest, Functions) {
+  using Variable = FunctionalForm::Variable;
+
+  {
+    FunctionalForm f = abs(FunctionalForm::Linear({"x"}));
+    EXPECT_TRUE(f.IsDifferentiable());
+    EXPECT_EQ(f.GetVariables(), Vars({"x"}));
+  }
+
+  {
+    FunctionalForm f = cos(FunctionalForm::Linear({"x"}));
+    EXPECT_TRUE(f.IsDifferentiable());
+    EXPECT_EQ(f.GetVariables(), Vars({"x"}));
+  }
+
+  {
+    FunctionalForm f = exp(FunctionalForm::Linear({"x"}));
+    EXPECT_TRUE(f.IsDifferentiable());
+    EXPECT_EQ(f.GetVariables(), Vars({"x"}));
+  }
+
+  {
+    FunctionalForm f = log(FunctionalForm::Linear({"x"}));
+    EXPECT_TRUE(f.IsDifferentiable());
+    EXPECT_EQ(f.GetVariables(), Vars({"x"}));
+  }
+
+  {
+    FunctionalForm f = log(FunctionalForm::Zero());
+    EXPECT_TRUE(f.IsUndefined());
+    EXPECT_EQ(f.GetVariables(), Vars());
+  }
+
+  {
+    FunctionalForm f = sin(FunctionalForm::Linear({"x"}));
+    EXPECT_TRUE(f.IsDifferentiable());
+    EXPECT_EQ(f.GetVariables(), Vars({"x"}));
+  }
+
+  {
+    FunctionalForm f = sqrt(FunctionalForm::Linear({"x"}));
+    EXPECT_TRUE(f.IsDifferentiable());
+    EXPECT_EQ(f.GetVariables(), Vars({"x"}));
+  }
+}
+
 }  // namespace
 }  // namespace test
 }  // namespace core

@@ -48,6 +48,12 @@ class FunctionalForm::Internal {
   static Form const kAdd[kSize][kSize];
   static Form const kMul[kSize][kSize];
   static Form const kDiv[kSize][kSize];
+  static Form const kAbs[kSize];
+  static Form const kCos[kSize];
+  static Form const kExp[kSize];
+  static Form const kLog[kSize];
+  static Form const kSin[kSize];
+  static Form const kSqrt[kSize];
 
   // Only some of the forms need to carry variables.
   static bool need_vars(Form f) {
@@ -160,6 +166,36 @@ FunctionalForm operator/(FunctionalForm const& l, FunctionalForm const& r) {
     vars = FunctionalForm::Variables::Union(l.vars_, r.vars_);
   }
   return FunctionalForm(f, std::move(vars));
+}
+
+FunctionalForm abs(FunctionalForm const& x) {
+  return FunctionalForm(FunctionalForm::Internal::kAbs[IndexOf(x.form_)],
+                        FunctionalForm::Variables(x.vars_));
+}
+
+FunctionalForm cos(FunctionalForm const& x) {
+  return FunctionalForm(FunctionalForm::Internal::kCos[IndexOf(x.form_)],
+                        FunctionalForm::Variables(x.vars_));
+}
+
+FunctionalForm exp(FunctionalForm const& x) {
+  return FunctionalForm(FunctionalForm::Internal::kExp[IndexOf(x.form_)],
+                        FunctionalForm::Variables(x.vars_));
+}
+
+FunctionalForm log(FunctionalForm const& x) {
+  return FunctionalForm(FunctionalForm::Internal::kLog[IndexOf(x.form_)],
+                        FunctionalForm::Variables(x.vars_));
+}
+
+FunctionalForm sin(FunctionalForm const& x) {
+  return FunctionalForm(FunctionalForm::Internal::kSin[IndexOf(x.form_)],
+                        FunctionalForm::Variables(x.vars_));
+}
+
+FunctionalForm sqrt(FunctionalForm const& x) {
+  return FunctionalForm(FunctionalForm::Internal::kSqrt[IndexOf(x.form_)],
+                        FunctionalForm::Variables(x.vars_));
 }
 
 FunctionalForm& operator+=(FunctionalForm& l, FunctionalForm const& r) {
@@ -527,6 +563,54 @@ FunctionalForm::Form const FunctionalForm::Internal::kDiv[kSize][kSize] = {
     /* DIFF */ {UNDF, DIFF, DIFF, DIFF, DIFF, DIFF,  ARB, UNDF},
     /* ARB  */ {UNDF,  ARB,  ARB,  ARB,  ARB,  ARB,  ARB, UNDF},
     /* UNDF */ {UNDF, UNDF, UNDF, UNDF, UNDF, UNDF, UNDF, UNDF},
+    /* clang-format on */
+};
+
+FunctionalForm::Form const FunctionalForm::Internal::kAbs[kSize] = {
+    /* clang-format off */
+    /* ZERO  CONS   LIN   AFF  POLY  DIFF   ARB  UNDF */
+    /* ----  ----  ----  ----  ----  ----  ----  ---- */
+       ZERO, CONS, DIFF, DIFF, DIFF, DIFF,  ARB, UNDF,
+    /* clang-format on */
+};
+
+FunctionalForm::Form const FunctionalForm::Internal::kCos[kSize] = {
+    /* clang-format off */
+    /* ZERO  CONS   LIN   AFF  POLY  DIFF   ARB  UNDF */
+    /* ----  ----  ----  ----  ----  ----  ----  ---- */
+       CONS, CONS, DIFF, DIFF, DIFF, DIFF,  ARB, UNDF,
+    /* clang-format on */
+};
+
+FunctionalForm::Form const FunctionalForm::Internal::kExp[kSize] = {
+    /* clang-format off */
+    /* ZERO  CONS   LIN   AFF  POLY  DIFF   ARB  UNDF */
+    /* ----  ----  ----  ----  ----  ----  ----  ---- */
+       CONS, CONS, DIFF, DIFF, DIFF, DIFF,  ARB, UNDF,
+    /* clang-format on */
+};
+
+FunctionalForm::Form const FunctionalForm::Internal::kLog[kSize] = {
+    /* clang-format off */
+    /* ZERO  CONS   LIN   AFF  POLY  DIFF   ARB  UNDF */
+    /* ----  ----  ----  ----  ----  ----  ----  ---- */
+       UNDF, CONS, DIFF, DIFF, DIFF, DIFF,  ARB, UNDF,
+    /* clang-format on */
+};
+
+FunctionalForm::Form const FunctionalForm::Internal::kSin[kSize] = {
+    /* clang-format off */
+    /* ZERO  CONS   LIN   AFF  POLY  DIFF   ARB  UNDF */
+    /* ----  ----  ----  ----  ----  ----  ----  ---- */
+       ZERO, CONS, DIFF, DIFF, DIFF, DIFF,  ARB, UNDF,
+    /* clang-format on */
+};
+
+FunctionalForm::Form const FunctionalForm::Internal::kSqrt[kSize] = {
+    /* clang-format off */
+    /* ZERO  CONS   LIN   AFF  POLY  DIFF   ARB  UNDF */
+    /* ----  ----  ----  ----  ----  ----  ----  ---- */
+       ZERO, CONS, DIFF, DIFF, DIFF, DIFF,  ARB, UNDF,
     /* clang-format on */
 };
 
