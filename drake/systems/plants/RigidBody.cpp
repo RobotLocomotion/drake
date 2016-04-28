@@ -109,9 +109,7 @@ const RigidBody* RigidBody::CollisionElement::getBody() const {
  * TODO(amcastro-tri): this method should return a reference to the RigidBody.
  * TODO(amcastro-tri): getBody() -> get_body()
  */
-RigidBody* RigidBody::CollisionElement::getBody() {
-  return this->body;
-}
+RigidBody* RigidBody::CollisionElement::getBody() { return this->body; }
 
 bool RigidBody::CollisionElement::CollidesWith(
     const DrakeCollision::Element* other) const {
