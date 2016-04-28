@@ -139,10 +139,28 @@ Continuous Integration Notes
     CDash <https://drake-cdash.csail.mit.edu/index.php?project=Drake>
     jenkins
 
-IDE Notes
-=========
-* `CLion <https://github.com/tkoolen/drake/wiki/CLion-setup-(experimental)>`_
-* `Eclipse <https://github.com/tkoolen/drake/wiki/Eclipse-setup-(experimental)>`_
+IDE and Text Editor Notes
+=========================
+
+.. toctree::
+    :maxdepth: 1
+
+    clion
+    `Eclipse <https://github.com/tkoolen/drake/wiki/Eclipse-setup-(experimental)>`_
+
+
+Sublime Text
+------------
+
+Recommended packages to install:
+
+1. https://packagecontrol.io/packages/SublimeLinter-cpplint
+
+To display the current file's full path in the title bar on OSX, open your user preferences by going to "Sublime Text," "Preferences," "Settings - User." Then add the following to your user preferences:
+
+    "show_full_path": true
+
+
 
 Operating System Notes
 ======================

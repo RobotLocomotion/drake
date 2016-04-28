@@ -17,8 +17,7 @@ add_matlab_test(NAME examples/Atlas/runCOMFixedPointSearch COMMAND runCOMFixedPo
 add_matlab_test(NAME examples/Atlas/runDRCDoorTask COMMAND runDRCDoorTask)
 add_matlab_test(NAME examples/Atlas/runRobotiqPDControl COMMAND runRobotiqPDControl)
 
-# The following tests have been disabled because of excessive runtime requirements
-if (0)
+if (LONG_RUNNING_TESTS)
   add_matlab_test(NAME examples/Atlas/runAtlasBalancing COMMAND runAtlasBalancing)
   add_matlab_test(NAME examples/Atlas/runAtlasBalancingPerturb COMMAND runAtlasBalancingPerturb)
   add_matlab_test(NAME examples/Atlas/runAtlasBalancingWithContactSensor COMMAND runAtlasBalancingWithContactSensor)
