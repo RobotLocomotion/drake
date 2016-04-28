@@ -7,6 +7,8 @@ Detailed Notes on How to Run Unit Tests
 Finding a Specific Unit Test
 ============================
 
+On Linux and Mac you first need to move to the default build directory and then find your unit test with `ctest -N` as so:
+
 ::
 
    cd path/to/your/drake-distro/drake/pod-build
