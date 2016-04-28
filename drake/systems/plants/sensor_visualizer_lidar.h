@@ -93,15 +93,36 @@ class SensorVisualizerLidar {
         if (lidar_messages_.find(depth_sensor->get_name()) == lidar_messages_.end()) {
           std::unique_ptr<sensor_msgs::LaserScan> message(new sensor_msgs::LaserScan());
           message->header.frame_id = depth_sensor->get_name();
+
+          // The rigid body depth sensor scans either horizontally or
+          // vertically.
+          bool is_horizontal_scanner = false;
+          bool is_vertical_scanner = false;
+
+          if (depth_sensor->get_min_pitch() != 0 || depth_sensor->get_max_pitch() != 0)
+            is_vertical_scanner = true;
+          if (depth_sensor->get_min_yaw() != 0 || depth_sensor->get_max_yaw() != 0)
+            is_horizontal_scanner = true;
+
+          if (is_horizontal_scanner && is_vertical_scanner)
+            throw std::runtime_error("ERROR: Rigid body depth sensor " + depth_sensor->get_name() + " has both horizontal and vertical dimensions. Expecting it only scan within a 2D plane!");
+
+          if (is_horizontal_scanner) {
+
+          } else {
+
+          }
+
           message->angle_min = 0;
           message->angle_max = 0;
           message->angle_increment = 0;
           message->time_increment = 0;
-          message->scan_time = 0;
-          message->range_min = 0;
-          message->range_max = 0;
+          message->scan_time = 0; // TODO(liangfok): Add this to the model
+          message->range_min = depth_sensor->get_min_range();
+          message->range_max = depth_sensor->get_max_range();
           message->ranges.resize(depth_sensor->num_ranges());
           message->intensities.resize(depth_sensor->num_ranges());
+
           lidar_messages_.insert(std::pair<std::string, sensor_msgs::LaserScan)
         } else {
           throw std::runtime_error(
