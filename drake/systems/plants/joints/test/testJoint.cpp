@@ -1,7 +1,3 @@
-//
-// Created by Twan Koolen on 4/27/16.
-//
-
 #include "drake/systems/plants/joints/Joints.h"
 #include <iostream>
 

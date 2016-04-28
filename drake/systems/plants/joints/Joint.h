@@ -18,7 +18,10 @@ using SpatialVector = Eigen::Matrix<Scalar, TWIST_SIZE, 1>;
 enum class FloatingBaseType { FIXED = 0, ROLLPITCHYAW = 1, QUATERNION = 2 };
 
 template <typename J>
-class JointType;
+class JointType {
+ public:
+  virtual ~JointType() {};
+};
 
 template <typename J>
 class Joint {

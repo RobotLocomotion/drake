@@ -1,16 +1,8 @@
-//
-// Created by Twan Koolen on 4/27/16.
-//
-
-#ifndef DRAKE_JOINTTYPES_H
-#define DRAKE_JOINTTYPES_H
+#ifndef DRAKE_QUATERNIONFLOATING_H
+#define DRAKE_QUATERNIONFLOATING_H
 
 namespace Drake {
-template <typename J>
-class JointType {
- public:
-  virtual ~JointType() {};
-};
+
 
 template <typename J>
 class QuaternionFloating : public JointType<J> {
@@ -86,5 +78,4 @@ class QuaternionFloating : public JointType<J> {
 
 }
 
-
-#endif //DRAKE_JOINTTYPES_H
+#endif //DRAKE_QUATERNIONFLOATING_H
