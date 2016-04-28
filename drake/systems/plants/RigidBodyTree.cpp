@@ -82,7 +82,6 @@ bool RigidBodyTree::transformCollisionFrame(
 }
 
 void RigidBodyTree::compile(void) {
-
   SortTree();
 
   // weld joints for links that have zero inertia and no children (as seen in
@@ -91,7 +90,7 @@ void RigidBodyTree::compile(void) {
     if (bodies[i]->hasParent() && bodies[i]->I.isConstant(0)) {
       bool hasChild = false;
       for (size_t j = i + 1; j < bodies.size(); j++) {
-        if (body(j).has_as_parent(body(i))){
+        if (body(j).has_as_parent(body(i))) {
           hasChild = true;
           break;
         }
@@ -1562,8 +1561,7 @@ RigidBodyTree::relativeRollPitchYawJacobianDotTimesV(
   return ret;
 }
 
-RigidBody* RigidBodyTree::findLink(std::string linkname,
-                                              int robot) const {
+RigidBody* RigidBodyTree::findLink(std::string linkname, int robot) const {
   std::transform(linkname.begin(), linkname.end(), linkname.begin(),
                  ::tolower);  // convert to lower case
 
@@ -1593,7 +1591,7 @@ RigidBody* RigidBodyTree::findLink(std::string linkname,
 }
 
 RigidBody* RigidBodyTree::findLink(std::string linkname,
-                                              std::string model_name) const {
+                                   std::string model_name) const {
   std::transform(linkname.begin(), linkname.end(), linkname.begin(),
                  ::tolower);  // convert to lower case
   std::transform(model_name.begin(), model_name.end(), model_name.begin(),
@@ -1668,8 +1666,7 @@ int RigidBodyTree::findLinkId(const std::string& name, int robot) const {
   return link->body_index;
 }
 
-RigidBody* RigidBodyTree::findJoint(std::string jointname,
-                                               int robot) const {
+RigidBody* RigidBodyTree::findJoint(std::string jointname, int robot) const {
   std::transform(jointname.begin(), jointname.end(), jointname.begin(),
                  ::tolower);  // convert to lower case
 
