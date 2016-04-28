@@ -128,13 +128,12 @@ class DRAKERBM_EXPORT RigidBody {
   class DRAKERBM_EXPORT CollisionElement : public DrakeCollision::Element {
    public:
     CollisionElement(const CollisionElement& other);
-    // TODO(amcastro-tri): constructor should take a reference to a RigidBody.
-    // Unless a CollisionElement could have a nullptr body?
+    // TODO(amcastro-tri): The RigidBody should be const?
     CollisionElement(const Eigen::Isometry3d& T_element_to_link,
-                     RigidBody* body);
+                     RigidBody& body);
     CollisionElement(const DrakeShapes::Geometry& geometry,
                      const Eigen::Isometry3d& T_element_to_link,
-                     RigidBody* body);
+                     RigidBody& body);
     virtual ~CollisionElement() {}
 
     CollisionElement* clone() const override;
