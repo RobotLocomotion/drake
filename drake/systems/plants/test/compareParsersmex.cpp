@@ -54,7 +54,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   for (int i = 0; i < cpp_model->bodies.size(); i++) {
     if (cpp_model->bodies[i]->hasParent() &&
         cpp_model->bodies[i]->getJoint().getNumPositions() > 0) {
-      shared_ptr<RigidBody> b =
+      RigidBody* b =
           matlab_model->findJoint(cpp_model->bodies[i]->getJoint().getName());
       if (b == nullptr) continue;
       for (int j = 0; j < b->getJoint().getNumPositions(); j++) {

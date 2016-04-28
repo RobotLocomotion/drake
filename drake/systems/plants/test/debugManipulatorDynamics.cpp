@@ -27,7 +27,7 @@ int main() {
       f_ext;
   Matrix<double, TWIST_SIZE, 1> f_ext_r_foot;
   f_ext_r_foot.setRandom();
-  f_ext.insert({model.findLink("r_foot").get(), f_ext_r_foot});
+  f_ext.insert({model.findLink("r_foot"), f_ext_r_foot});
 
   Matrix<double, Eigen::Dynamic, 1> vd(model.num_velocities);
   vd.setRandom();
