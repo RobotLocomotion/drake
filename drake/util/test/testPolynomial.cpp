@@ -250,11 +250,6 @@ TEST(PolynomialTest, DISABLED_Simplification) {
   }
 }
 
-// Disabled on Windows because I have not been able to discern how to cause
-// the Monomial class to be exported in the polynomial dll.  There appear to
-// be longstanding confusions about dll export of nested classes of class
-// templates in msvc.
-#ifndef WIN32
 TEST(PolynomialTest, MonomialFactor) {
   Polynomiald x = Polynomiald("x");
   Polynomiald y = Polynomiald("y");
@@ -279,7 +274,6 @@ TEST(PolynomialTest, MonomialFactor) {
   EXPECT_EQ(m_x2y.factor(m_x2), m_y);
   EXPECT_EQ(m_x2y.factor(m_y), m_x2);
 }
-#endif
 
 TEST(PolynomialTest, MultivariateValue) {
   Polynomiald x = Polynomiald("x");
