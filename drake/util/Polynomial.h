@@ -256,10 +256,10 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
    * implement a confusing subset of operators and conversions that makes a
    * strictly generic approach too confusing and unreadable.
    *
-   * Note that it is up to the caller to ensure that all of the var_values'
-   * partial derivative terms correctly correspond to one another because
-   * Polynomial has no knowledge of what variables or vector elements
-   * var_values' indexes correspond to.
+   * Note that it is up to the caller to ensure that all of the TaylorVarXds
+   * in var_values correctly correspond to one another, because Polynomial has
+   * no knowledge of what partial derivative terms the indices of a given
+   * TaylorVarXd correspond to.
    */
   Drake::TaylorVarXd evaluateMultivariate(
       const std::map<VarType, Drake::TaylorVarXd>& var_values) const {

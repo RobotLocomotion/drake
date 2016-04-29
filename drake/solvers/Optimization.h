@@ -358,7 +358,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   /** AddLinearConstraint
    *
    * @brief Adds linear constraints referencing potentially a subset
-   * of the decision variables.
+   * of the decision variables (defined in the vars parameter).
    */
   void AddLinearConstraint(
       std::shared_ptr<LinearConstraint> con,
@@ -381,7 +381,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   /** AddLinearConstraint
    *
    * @brief Adds linear constraints referencing potentially a subset
-   * of the decision variables.
+   * of the decision variables (defined in the vars parameter).
    */
   template <typename DerivedA, typename DerivedLB, typename DerivedUB>
   std::shared_ptr<LinearConstraint> AddLinearConstraint(
@@ -409,7 +409,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   /** AddLinearEqualityConstraint
    *
    * @brief Adds linear equality constraints referencing potentially a
-   * subset of the decision variables.
+   * subset of the decision variables (defined in the vars parameter).
    */
   void AddLinearEqualityConstraint(
       std::shared_ptr<LinearEqualityConstraint> con,
@@ -486,7 +486,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   /** AddBoundingBoxConstraint
    *
    * @brief Adds bounding box constraints referencing potentially a
-   * subset of the decision variables.
+   * subset of the decision variables (defined in the vars parameter).
    */
   template <typename DerivedLB, typename DerivedUB>
   std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
@@ -557,7 +557,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   /** AddPolynomialConstraint
    *
    * @brief Adds a polynomial constraint to the program referencing a subset
-   * of the decision variables.
+   * of the decision variables (defined in the vars parameter).
    */
   std::shared_ptr<PolynomialConstraint>
       AddPolynomialConstraint(
@@ -583,7 +583,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   /** AddPolynomialConstraint
    *
    * @brief Adds a polynomial constraint to the program referencing a subset
-   * of the decision variables.
+   * of the decision variables (defined in the vars parameter).
    */
   std::shared_ptr<PolynomialConstraint>
       AddPolynomialConstraint(

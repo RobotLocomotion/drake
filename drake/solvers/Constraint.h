@@ -109,8 +109,8 @@ class QuadraticConstraint : public Constraint {
  *
  * The Polynomial class uses a different variable naming scheme; thus the
  * caller must provide a list of Polynomial::VarType variables that correspond
- * to the members of the Binding (the individual scalar elements of the given
- * VariableList).
+ * to the members of the OptimizationProblem::Binding (the individual scalar
+ * elements of the given VariableList).
  */
 class PolynomialConstraint : public Constraint {
  public:
