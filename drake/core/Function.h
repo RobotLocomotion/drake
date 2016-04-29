@@ -38,7 +38,7 @@ struct InputOutputRelation {
   Form form;
   // todo: add sparsity info
 
-  InputOutputRelation(Form f) : form(f) {}
+  explicit InputOutputRelation(Form f) : form(f) {}
 
   static bool isA(const Form& f, const Form& base) {
     if (f == base || base == Form::ARBITRARY) return true;

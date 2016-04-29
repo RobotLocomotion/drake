@@ -17,7 +17,7 @@
 
 class DLLEXPORT MexWrapper {
  public:
-  MexWrapper(std::string const& filename);
+  explicit MexWrapper(std::string const& filename);
   ~MexWrapper();
   void mexFunction(int nlhs, mxArray* plhs[], int nrhs,
                    const mxArray* prhs[]) const;

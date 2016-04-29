@@ -12,7 +12,8 @@ class QuadrotorInput {
     QuadrotorInput(void) : motors(Eigen::Vector4d::Zero()) {}
 
     template <typename Derived>
-    QuadrotorInput(const Eigen::MatrixBase<Derived>& x) : motors(x) {}
+    QuadrotorInput(  // NOLINT(runtime/explicit) per Drake::Vector.
+        const Eigen::MatrixBase<Derived>& x) : motors(x) {}
 
     template <typename Derived>
     QuadrotorInput& operator=(const Eigen::MatrixBase<Derived>& x) {
