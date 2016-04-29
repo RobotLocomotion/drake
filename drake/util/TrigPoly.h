@@ -45,7 +45,8 @@ class TrigPoly {
   TrigPoly() {}
 
   /// Constructs a constant TrigPoly.
-  explicit TrigPoly(const CoefficientType& scalar) : poly(scalar) {}
+  // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
+  TrigPoly(const CoefficientType& scalar) : poly(scalar) {}
 
   /**
    * Constructs a TrigPoly on the associated Polynomial p, but with the

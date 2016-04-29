@@ -88,7 +88,8 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
   /// Construct a Polynomial of a single constant. e.g. "5".
   // This is required for some Eigen operations when used in a
   // polynomial matrix.
-  explicit Polynomial(const CoefficientType& scalar);
+  // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
+  Polynomial(const CoefficientType& scalar);
 
   /// Construct a Polynomial consisting of a single Monomial, e.g. "5xy**3".
   Polynomial(const CoefficientType coeff, const std::vector<Term>& terms);
