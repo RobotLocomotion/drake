@@ -10,6 +10,8 @@ namespace systems {
 /// will typically provide names for the elements of the vector, and may also
 /// provide other computations for the convenience of Systems handling the
 /// signal. The vector is always a column vector.
+///
+/// @tparam ScalarType Must be a Scalar compatible with Eigen.
 template <typename ScalarType>
 class VectorInterface {
  public:
