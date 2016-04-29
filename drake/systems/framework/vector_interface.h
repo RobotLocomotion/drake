@@ -18,8 +18,7 @@ class VectorInterface {
 
   // VectorInterfaces are neither copyable nor moveable.
   VectorInterface(const VectorInterface<ScalarType>& other) = delete;
-  VectorInterface& operator=(const VectorInterface<ScalarType>& other) =
-      delete;
+  VectorInterface& operator=(const VectorInterface<ScalarType>& other) = delete;
   VectorInterface(VectorInterface<ScalarType>&& other) = delete;
   VectorInterface& operator=(VectorInterface<ScalarType>&& other) = delete;
 
