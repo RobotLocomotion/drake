@@ -2,14 +2,11 @@ classdef GazeDirConstraint < GazeConstraint
   properties(SetAccess = protected)
     dir % a 3x1 vector in the world frame, the deried gaze direction
   end
-  
-  
+
+
   methods
-    function obj = GazeDirConstraint(robot,axis,dir,conethreshold,tspan)
-      if(nargin == 4)
-        tspan = [-inf inf];
-      end
-      obj = obj@GazeConstraint(robot,axis,conethreshold,tspan);
+    function obj = GazeDirConstraint(robot,axis,dir,conethreshold)
+      obj = obj@GazeConstraint(robot,axis,conethreshold);
       typecheck(dir,'double');
       sizecheck(dir,[3,1]);
       if(any(isinf(dir))||any(isnan(dir)))
@@ -22,17 +19,12 @@ classdef GazeDirConstraint < GazeConstraint
       obj.dir = dir/len_dir;
       obj.num_constraint = 1;
     end
-    
-    
+
+
     function [lb,ub] = bounds(obj,t)
-      if(obj.isTimeValid(t))
-        lb = cos(obj.conethreshold)-1;
-        ub = 0;
-      else
-        lb = [];
-        ub = [];
-      end
+      lb = cos(obj.conethreshold)-1;
+      ub = 0;
     end
   end
-  
+
 end

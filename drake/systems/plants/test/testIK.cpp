@@ -16,8 +16,6 @@ using drake::util::MatrixCompareType;
 TEST(testIK, simpleIK) {
   RigidBodyTree model("examples/Atlas/urdf/atlas_minimal_contact.urdf");
 
-  Vector2d tspan;
-  tspan << 0, 1;
   VectorXd q0 = model.getZeroConfiguration();
   // The state frame of cpp model does not match with the state frame of MATLAB
   // model, since the dofname_to_dofnum is different in cpp and MATLAB
@@ -26,7 +24,7 @@ TEST(testIK, simpleIK) {
   Vector3d com_ub = Vector3d::Zero();
   com_lb(2) = 0.9;
   com_ub(2) = 1.0;
-  WorldCoMConstraint com_kc(&model, com_lb, com_ub, tspan);
+  WorldCoMConstraint com_kc(&model, com_lb, com_ub);
 
   std::vector<RigidBodyConstraint*> constraint_array;
   constraint_array.push_back(&com_kc);

@@ -9,7 +9,7 @@ classdef RelativeQuatConstraint < QuatConstraint
     body_b = struct('idx',[],'name','');
     quat_des
   end
-  
+
   methods(Access = protected)
     function [orient_prod, dorient_prod] = evalOrientationProduct(obj,kinsol)
       [pos_a,J_a] = forwardKin(obj.robot,kinsol,obj.body_a.idx,[0;0;0],2);
@@ -28,9 +28,9 @@ classdef RelativeQuatConstraint < QuatConstraint
       dorient_prod = obj.quat_des'*dquat_a2bdq;
     end
   end
-  
+
   methods
-    function obj = RelativeQuatConstraint(robot,body_a,body_b,quat_des,tol,tspan)
+    function obj = RelativeQuatConstraint(robot,body_a,body_b,quat_des,tol)
       % @param robot
       % @param body_a     -- An int scalar, the bodyA index
       % @param body_b     -- An int scalar, the bodyB index
@@ -38,14 +38,11 @@ classdef RelativeQuatConstraint < QuatConstraint
       % from body A frame to bodyB frame
       % @param tol           -- A scalar, the maximum allowable angle between the desired
       % orientation and the actual orientation
-      if(nargin<6)
-        tspan = [-inf,inf];
-      end
       body_a_idx = robot.parseBodyOrFrameID(body_a);
       body_b_idx = robot.parseBodyOrFrameID(body_b);
       ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.RelativeQuatConstraintType,...
-        robot.getMexModelPtr,body_a_idx,body_b_idx,quat_des,tol,tspan);
-      obj = obj@QuatConstraint(robot, tol,tspan);
+        robot.getMexModelPtr,body_a_idx,body_b_idx,quat_des,tol);
+      obj = obj@QuatConstraint(robot, tol);
       obj.body_a.idx = body_a_idx;
       obj.body_a.name = getBodyOrFrameName(obj.robot, obj.body_a.idx);
       obj.body_b.idx = body_b_idx;
@@ -61,25 +58,19 @@ classdef RelativeQuatConstraint < QuatConstraint
       obj.mex_ptr = ptr;
     end
 
-    
+
 
     function name_str = name(obj,t)
-      if(obj.isTimeValid(t))
-        if(isempty(t))
-          time_str = '';
-        else
-          time_str = sprintf('at time %5.2f',t);
-        end
-          
-        name_str = {sprintf('%s relative to %s orientation constraint %s', ...
-                        obj.body_a.name,obj.body_b.name,time_str)};
+      if(isempty(t))
+        time_str = '';
       else
-        name_str = [];
+        time_str = sprintf('at time %5.2f',t);
       end
+
+      name_str = {sprintf('%s relative to %s orientation constraint %s', ...
+                          obj.body_a.name,obj.body_b.name,time_str)};
     end
 
-
-    
     function drawConstraint(obj,q,lcmgl)
       kinsol = doKinematics(obj.robot,q,false,false);
       wTa = kinsol.T{obj.body_a.idx};
@@ -102,11 +93,10 @@ classdef RelativeQuatConstraint < QuatConstraint
 
       lcmgl.switchBuffers();
     end
-    
+
     function joint_idx = kinematicsPathJoints(obj)
       [~,joint_path] = obj.robot.findKinematicPath(obj.body_a.idx,obj.body_b.idx);
       joint_idx = vertcat(obj.robot.body(joint_path).position_num)';
     end
   end
 end
-

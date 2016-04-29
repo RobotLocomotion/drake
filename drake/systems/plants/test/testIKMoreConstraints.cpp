@@ -40,9 +40,6 @@ void findJointAndInsert(const RigidBodyTree &model, const std::string &name,
 TEST(testIKMoreConstraints, IKMoreConstraints) {
   RigidBodyTree model("examples/Atlas/urdf/atlas_minimal_contact.urdf");
 
-  Vector2d tspan;
-  tspan << 0, 1;
-
   // Default Atlas v5 posture:
   VectorXd qstar(model.num_positions);
   qstar << -0.0260, 0, 0.8440, 0, 0, 0, 0, 0, 0, 0.2700, 0, 0.0550, -0.5700,
@@ -51,7 +48,7 @@ TEST(testIKMoreConstraints, IKMoreConstraints) {
       -0.5000, 0.0985, 0, 0.0008, 0.2564;
 
   // 1 Back Posture Constraint
-  PostureConstraint kc_posture_back(&model, tspan);
+  PostureConstraint kc_posture_back(&model);
   std::vector<int> back_idx;
   findJointAndInsert(model, "back_bkz", back_idx);
   findJointAndInsert(model, "back_bky", back_idx);
@@ -61,7 +58,7 @@ TEST(testIKMoreConstraints, IKMoreConstraints) {
   kc_posture_back.setJointLimits(3, back_idx.data(), back_lb, back_ub);
 
   // 2 Knees Constraint
-  PostureConstraint kc_posture_knees(&model, tspan);
+  PostureConstraint kc_posture_knees(&model);
   std::vector<int> knee_idx;
   findJointAndInsert(model, "l_leg_kny", knee_idx);
   findJointAndInsert(model, "r_leg_kny", knee_idx);
@@ -74,7 +71,7 @@ TEST(testIKMoreConstraints, IKMoreConstraints) {
   kc_posture_knees.setJointLimits(2, knee_idx.data(), knee_lb, knee_ub);
 
   // 3 Left Arm Constraint
-  PostureConstraint kc_posture_larm(&model, tspan);
+  PostureConstraint kc_posture_larm(&model);
   std::vector<int> larm_idx;
   findJointAndInsert(model, "l_arm_shz", larm_idx);
   findJointAndInsert(model, "l_arm_shx", larm_idx);
@@ -109,10 +106,10 @@ TEST(testIKMoreConstraints, IKMoreConstraints) {
   lfoot_pos_ub(2) += 0.01;
   // std::cout << lfoot_pos0.transpose() << " lfoot\n" ;
   WorldPositionConstraint kc_lfoot_pos(&model, l_foot, l_foot_pt, lfoot_pos_lb,
-                                       lfoot_pos_ub, tspan);
+                                       lfoot_pos_ub);
   Eigen::Vector4d quat_des(1, 0, 0, 0);
   double tol = 0.0017453292519943296;
-  WorldQuatConstraint kc_lfoot_quat(&model, l_foot, quat_des, tol, tspan);
+  WorldQuatConstraint kc_lfoot_quat(&model, l_foot, quat_des, tol);
 
   // 5 Right Foot Position and Orientation Constraints
   int r_foot = model.findLinkId("r_foot");
@@ -129,8 +126,8 @@ TEST(testIKMoreConstraints, IKMoreConstraints) {
   rfoot_pos_ub(2) += 0.001;
   // std::cout << rfoot_pos0.transpose() << " lfoot\n" ;
   WorldPositionConstraint kc_rfoot_pos(&model, r_foot, r_foot_pt, rfoot_pos_lb,
-                                       rfoot_pos_ub, tspan);
-  WorldQuatConstraint kc_rfoot_quat(&model, r_foot, quat_des, tol, tspan);
+                                       rfoot_pos_ub);
+  WorldQuatConstraint kc_rfoot_quat(&model, r_foot, quat_des, tol);
 
   // 6 Right Position Constraints (actual reaching constraint)
   int r_hand = model.findLinkId("r_hand");
@@ -148,10 +145,10 @@ TEST(testIKMoreConstraints, IKMoreConstraints) {
   rhand_pos_ub(2) += 0.05;
   // std::cout << rhand_pos_ub.transpose() << " rhand\n" ;
   WorldPositionConstraint kc_rhand(&model, r_hand, r_hand_pt, rhand_pos_lb,
-                                   rhand_pos_ub, tspan);
+                                   rhand_pos_ub);
 
   // 7 QuasiStatic Constraints
-  QuasiStaticConstraint kc_quasi(&model, tspan);
+  QuasiStaticConstraint kc_quasi(&model);
   kc_quasi.setShrinkFactor(0.2);
   kc_quasi.setActive(true);
   Eigen::Matrix3Xd l_foot_pts = Eigen::Matrix3Xd::Zero(3, 4);

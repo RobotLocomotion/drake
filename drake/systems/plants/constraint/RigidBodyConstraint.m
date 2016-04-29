@@ -5,17 +5,15 @@ classdef RigidBodyConstraint
   %                         class has a unique type. Please use positive number for
   %                         this category.
   % @param robot         -- A RigidBodyManipulator or TimeSteppingRigidBodyManipulator
-  % @param tspan         -- A 1 x 2 double vector. The time span 
   % @param mex_ptr       -- A DrakeConstraintMexPointer. The mex pointer of the
   % RigidBodyConstraint
   properties(SetAccess = protected)
     category
     type
     robot
-    tspan
     mex_ptr=0;
   end
-  
+
   properties(Constant)
     SingleTimeKinematicConstraintCategory = -1;
     MultipleTimeKinematicConstraintCategory = -2;
@@ -25,7 +23,7 @@ classdef RigidBodyConstraint
     SingleTimeLinearPostureConstraintCategory = -6;
     ContactWrenchConstraintCategory = -7;
   end
-  
+
   properties(Constant)
     QuasiStaticConstraintType = 1;
     PostureConstraintType = 2;
@@ -55,9 +53,9 @@ classdef RigidBodyConstraint
     MinDistanceConstraintType = 26;
     GravityCompensationTorqueConstraintType = 27;
   end
-  
+
   methods
-    function obj = RigidBodyConstraint(category,robot,tspan)
+    function obj = RigidBodyConstraint(category,robot)
       if(~isnumeric(category))
         error('Drake:RigidBodyConstraint:BadInput','category has to be an integer');
       end
@@ -71,19 +69,8 @@ classdef RigidBodyConstraint
         error('Drake:RigidBodyConstraint:BadInput','robot has to be a RigidBodyManipulator or a TimeSteppingRigidBodyManipulator');
       end
       obj.robot = robot;
-      if(nargin<3)
-        tspan = [-inf,inf];
-      end
-      if(isempty(tspan));
-        tspan = [-inf,inf];
-      end
-      tspan_size = size(tspan);
-      if(~isnumeric(tspan) || length(tspan_size) ~= 2 || tspan_size(1) ~= 1 || tspan_size(2) ~= 2 || tspan(1)>tspan(2))
-        error('Drake:RigidBodyConstraint:BadInput','tspan should be a 1 x 2 vector, and tspan(1) <= tspan(2)');
-      end
-      obj.tspan = tspan;
     end
-    
+
     function cat_str = categoryString(obj)
       if(obj.category == RigidBodyConstraint.SingleTimeKinematicConstraintCategory)
         cat_str = 'SingleTimeKinematicConstraint';
@@ -101,9 +88,9 @@ classdef RigidBodyConstraint
         error('Drake:RigidBody:UnsupportedCategory','The constraint category is not supported');
       end
     end
-    
+
   end
-  
+
   methods(Abstract)
     cnstr = generateConstraint(obj,t)
     % Given the time, this method would generate a cell of Constraint objects, that encode

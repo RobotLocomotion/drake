@@ -62,7 +62,7 @@ classdef InverseKinematicsTrajectory < NonlinearProgram
   properties(Access = private)
     bbcon_initial_state_id % The ID of the BoundingBoxConstraint on the initial state
   end
-  
+
   methods
     function obj = InverseKinematicsTrajectory(robot,t,q_nom_traj,fix_initial_state,x0,varargin)
       % obj =
@@ -133,21 +133,17 @@ classdef InverseKinematicsTrajectory < NonlinearProgram
         end
         if(isa(varargin{i},'SingleTimeKinematicConstraint'))
           for j = t_start:obj.nT
-            if(varargin{i}.isTimeValid(obj.t_knot(j)))
-              cnstr = varargin{i}.generateConstraint(obj.t_knot(j));
-              obj = obj.addKinematicConstraint(cnstr{1},j);
-            end
+            cnstr = varargin{i}.generateConstraint(obj.t_knot(j));
+            obj = obj.addKinematicConstraint(cnstr{1},j);
           end
         elseif(isa(varargin{i},'PostureConstraint'))
           for j = t_start:obj.nT
-            if(varargin{i}.isTimeValid(obj.t_knot(j)))
-              cnstr = varargin{i}.generateConstraint(obj.t_knot(j));
-              obj = obj.addBoundingBoxConstraint(cnstr{1},obj.q_idx(:,j));
-            end
+            cnstr = varargin{i}.generateConstraint(obj.t_knot(j));
+            obj = obj.addBoundingBoxConstraint(cnstr{1},obj.q_idx(:,j));
           end
         elseif(isa(varargin{i},'QuasiStaticConstraint'))
           for j = t_start:obj.nT
-            if(varargin{i}.isTimeValid(obj.t_knot(j)) && varargin{i}.active)
+            if(varargin{i}.active)
               if(~isempty(obj.qsc_weight_idx{j}))
                 error('Drake:InverseKinematicsTrajectory:currently only support at most one QuasiStaticConstraint at an individual time');
               end
@@ -165,10 +161,8 @@ classdef InverseKinematicsTrajectory < NonlinearProgram
           end
         elseif(isa(varargin{i},'SingleTimeLinearPostureConstraint'))
           for j = t_start:obj.nT
-            if(varargin{i}.isTimeValid(obj.t_knot(j)))
-              cnstr = varargin{i}.generateConstraint(obj.t_knot(j));
-              obj = obj.addLinearConstraint(cnstr{1},obj.q_idx(:,j));
-            end
+            cnstr = varargin{i}.generateConstraint(obj.t_knot(j));
+            obj = obj.addLinearConstraint(cnstr{1},obj.q_idx(:,j));
           end
         elseif(isa(varargin{i},'MultipleTimeKinematicConstraint'))
           valid_t_flag = varargin{i}.isTimeValid(obj.t_knot(t_start:end));

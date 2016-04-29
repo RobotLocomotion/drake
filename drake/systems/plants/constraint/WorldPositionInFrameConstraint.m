@@ -5,23 +5,22 @@ classdef WorldPositionInFrameConstraint < WorldPositionConstraint
 % @param pts              A 3xn_pts matrix, pts(:,i) represents ith pts in
 %                         the body
 % @param lb, ub           Both are 3xn_pts matrices. [lb(:,i), ub(:,i)]
-%                         represents the bounding box for the 
+%                         represents the bounding box for the
 %                         position of pts(:,i) in the world frame
 % @param T                Homogeneous transform of the frame in which the
 %                         positions should be evaluated
-% @param tspan            OPTIONAL argument. A 1x2 vector
   properties(SetAccess = protected)
     f_T_o
     o_T_f
   end
-  
+
   methods(Access = protected)
     function [pos,J] = evalPositions(obj,kinsol)
       [pos,J] = forwardKin(obj.robot,kinsol,obj.body,obj.pts,0);
       pos = homogTransMult(obj.f_T_o,pos);
       J = reshape(obj.f_T_o(1:3,1:3)*reshape(J,3,[]),3*obj.n_pts,[]);
     end
-    
+
     function cnst_names = evalNames(obj,t)
       cnst_names = cell(3*obj.n_pts,1);
       if(isempty(t))
@@ -36,24 +35,21 @@ classdef WorldPositionInFrameConstraint < WorldPositionConstraint
       end
     end
   end
-  
+
   methods
-    function obj = WorldPositionInFrameConstraint(robot,body,pts,o_T_f,lb,ub,tspan)
-      if(nargin < 7)
-        tspan = [-inf,inf];
-      end
-      obj = obj@WorldPositionConstraint(robot,body,pts,lb,ub,tspan);
+    function obj = WorldPositionInFrameConstraint(robot,body,pts,o_T_f,lb,ub)
+      obj = obj@WorldPositionConstraint(robot,body,pts,lb,ub);
       obj.o_T_f = o_T_f;
       obj.f_T_o = invHT(o_T_f);
       obj.type = RigidBodyConstraint.WorldPositionInFrameConstraintType;
       if robot.getMexModelPtr~=0 && exist('constructPtrRigidBodyConstraintmex','file')
-        ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldPositionInFrameConstraintType,robot.getMexModelPtr,body,pts,o_T_f,lb,ub,tspan);
+        ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldPositionInFrameConstraintType,robot.getMexModelPtr,body,pts,o_T_f,lb,ub);
         obj.mex_ptr = ptr;
       end
     end
-    
-    
-    
+
+
+
     function drawConstraint(obj,q,lcmgl)
       kinsol = doKinematics(obj.robot,q,false,false);
       pts_w = forwardKin(obj.robot,kinsol,obj.body,obj.pts);

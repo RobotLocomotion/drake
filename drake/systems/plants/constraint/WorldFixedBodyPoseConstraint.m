@@ -4,15 +4,12 @@ classdef WorldFixedBodyPoseConstraint < MultipleTimeKinematicConstraint
   % @param robot         -- A RigidBodyManipulator or a
   %                         TimeSteppingRigidBodyManipulator
   % @param body          -- An int scalar, the body index
-  % @param tspan         -- Optional input, a 1x2 double array, the time span
-  %                             of this constaint being active. Default is
-  %                             [-inf inf]
-  
+
   properties(SetAccess = protected)
-    body 
+    body
     body_name
   end
-  
+
   methods(Access = protected)
     function [c,dc_valid] = evalValidTime(obj,kinsol_cell)
       N = length(kinsol_cell);
@@ -49,14 +46,11 @@ classdef WorldFixedBodyPoseConstraint < MultipleTimeKinematicConstraint
       end
     end
   end
-  
+
   methods
-    function obj = WorldFixedBodyPoseConstraint(robot,body,tspan)
-      if(nargin == 2)
-        tspan = [-inf inf];
-      end
-      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldFixedBodyPoseConstraintType,robot.getMexModelPtr,body,tspan);
-      obj = obj@MultipleTimeKinematicConstraint(robot,tspan);
+    function obj = WorldFixedBodyPoseConstraint(robot,body)
+      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldFixedBodyPoseConstraintType,robot.getMexModelPtr,body);
+      obj = obj@MultipleTimeKinematicConstraint(robot);
       sizecheck(body,[1,1]);
       if(~isnumeric(body))
         error('Drake:WorldFixedBodyPoseConstraint: body must be an integer');
@@ -66,17 +60,12 @@ classdef WorldFixedBodyPoseConstraint < MultipleTimeKinematicConstraint
       obj.type = RigidBodyConstraint.WorldFixedBodyPoseConstraintType;
       obj.mex_ptr = ptr;
     end
-    
+
     function num = getNumConstraint(obj,t)
-      valid_t = t(obj.isTimeValid(t));
-      if(length(valid_t)>=2)
-        num = 2;
-      else
-        num = 0;
-      end
+      num = 2;
     end
-    
-    
+
+
     function [lb,ub] = bounds(obj,t,N)
       % [lb,ub] = bounds(obj,t) returns the upper and lower bounds for this
       % constraint at all valid times given in t.
@@ -107,17 +96,12 @@ classdef WorldFixedBodyPoseConstraint < MultipleTimeKinematicConstraint
         end
       end
     end
-    
+
     function name_str = name(obj,t)
-      valid_t = t(obj.isTimeValid(t));
-      if(length(valid_t)>=2)
-        name_str = {sprintf('World fixed body pose constraint for %s position',obj.body_name);...
-          sprintf('World fixed body pose constraint for %s orientation',obj.body_name)};
-      else
-        name_str = {};
-      end
+      name_str = {sprintf('World fixed body pose constraint for %s position',obj.body_name);...
+		  sprintf('World fixed body pose constraint for %s orientation',obj.body_name)};
     end
-    
+
     function joint_idx = kinematicPathJoints(obj)
       [~,joint_path] = obj.robot.findKinematicPath(1,obj.body);
       joint_idx = vertcat(obj.robot.body(joint_path).position_num)';

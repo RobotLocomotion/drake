@@ -41,13 +41,13 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   }
   memcpy(q.data(), mxGetPrSafe(prhs[1]), sizeof(double) * nq * n_breaks);
   int type = cnst->getType();
-  int num_cnst = cnst->getNumConstraint(t_ptr, n_breaks);
+  int num_cnst = cnst->getNumConstraint(n_breaks);
   Eigen::VectorXd c(num_cnst);
   Eigen::MatrixXd dc(num_cnst, nq * n_breaks);
-  cnst->eval(t_ptr, n_breaks, q, c, dc);
+  cnst->eval(n_breaks, q, c, dc);
   Eigen::VectorXd lb(num_cnst);
   Eigen::VectorXd ub(num_cnst);
-  cnst->bounds(t_ptr, n_breaks, lb, ub);
+  cnst->bounds(n_breaks, lb, ub);
   std::vector<std::string> cnst_names;
   cnst->name(t_ptr, n_breaks, cnst_names);
   int retvec_size;

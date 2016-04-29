@@ -6,17 +6,14 @@ classdef WorldFixedPositionConstraint < MultipleTimeKinematicConstraint
   % @param body              -- An int scalar, the body index
   % @param pts               -- A 3 x npts double array, pts(:,i) is the i'th
   %                             point
-  % @param tspan             -- Optional input, a 1x2 double array, the time span
-  %                             of this constaint being active. Default is
-  %                             [-inf inf]
-  
+
   properties(SetAccess = protected)
     body
     body_name;
     pts
     tol = 0; % tolerance for the constraint
   end
-  
+
   methods(Access = protected)
     function [c,dc_valid] = evalValidTime(obj,kinsol_cell)
       N = length(kinsol_cell);
@@ -47,14 +44,11 @@ classdef WorldFixedPositionConstraint < MultipleTimeKinematicConstraint
       end
     end
   end
-  
+
   methods
-    function obj = WorldFixedPositionConstraint(robot,body,pts,tspan)
-      if nargin == 3
-        tspan = [-inf inf];
-      end
-      mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldFixedPositionConstraintType,robot.getMexModelPtr,body,pts,tspan);
-      obj = obj@MultipleTimeKinematicConstraint(robot,tspan);
+    function obj = WorldFixedPositionConstraint(robot,body,pts)
+      mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldFixedPositionConstraintType,robot.getMexModelPtr,body,pts);
+      obj = obj@MultipleTimeKinematicConstraint(robot);
       sizecheck(body,[1,1]);
       if(~isnumeric(body))
         error('Drake:WorldFixedPositionConstraint: body must be an integer');
@@ -75,7 +69,7 @@ classdef WorldFixedPositionConstraint < MultipleTimeKinematicConstraint
       obj.type = RigidBodyConstraint.WorldFixedPositionConstraintType;
       obj.mex_ptr = mex_ptr;
     end
-    
+
     function num = getNumConstraint(obj,t)
       valid_t = t(obj.isTimeValid(t));
       if(length(valid_t)>=2)
@@ -84,7 +78,7 @@ classdef WorldFixedPositionConstraint < MultipleTimeKinematicConstraint
         num = 0;
       end
     end
-    
+
     function [lb,ub] = bounds(obj,t,N)
       % [lb,ub] = bounds(obj,t) returns the upper and lower bounds for this
       % constraint at all valid times given in t.
@@ -116,7 +110,7 @@ classdef WorldFixedPositionConstraint < MultipleTimeKinematicConstraint
         end
       end
     end
-    
+
     % set the tolerance for the constraint, default is 0.
     function obj = setTol(obj,tol)
       if ~isnumeric(tol)
@@ -130,10 +124,10 @@ classdef WorldFixedPositionConstraint < MultipleTimeKinematicConstraint
       if tol < 0
         error('Drake:WorldFixedPositionConstraint:SignError','tol must be >= 0');
       end
-      
-       obj.tol = tol; 
+
+       obj.tol = tol;
     end
-    
+
     function name_str = name(obj,t)
       valid_t = t(obj.isTimeValid(t));
       if(length(valid_t)>=2)

@@ -37,7 +37,7 @@ void approximateIK(RigidBodyTree* model, const MatrixBase<DerivedA>& q_seed,
       VectorXd joint_min, joint_max;
       PostureConstraint* pc =
           static_cast<PostureConstraint*>(constraint_array[i]);
-      pc->bounds(nullptr, joint_min, joint_max);
+      pc->bounds(joint_min, joint_max);
       for (int j = 0; j < nq; j++) {
         joint_lb[j] = (joint_lb[j] < joint_min[j] ? joint_min[j] : joint_lb[j]);
         joint_ub[j] = (joint_ub[j] > joint_max[j] ? joint_max[j] : joint_ub[j]);
@@ -107,13 +107,13 @@ void approximateIK(RigidBodyTree* model, const MatrixBase<DerivedA>& q_seed,
   KinematicsCache<double> cache = model->doKinematics(q_seed);
   int kc_idx, c_idx;
   for (kc_idx = 0; kc_idx < num_kc; kc_idx++) {
-    int nc = kc_array[kc_idx]->getNumConstraint(nullptr);
+    int nc = kc_array[kc_idx]->getNumConstraint();
     VectorXd lb(nc);
     VectorXd ub(nc);
     VectorXd c(nc);
     MatrixXd dc(nc, nq);
-    kc_array[kc_idx]->bounds(nullptr, lb, ub);
-    kc_array[kc_idx]->eval(nullptr, cache, c, dc);
+    kc_array[kc_idx]->bounds(lb, ub);
+    kc_array[kc_idx]->eval(cache, c, dc);
     for (c_idx = 0; c_idx < nc; c_idx++) {
       VectorXd rowVec = dc.row(c_idx);
       double* Jrow = rowVec.data();

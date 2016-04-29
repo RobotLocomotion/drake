@@ -1,10 +1,8 @@
 classdef MinDistanceConstraint < SingleTimeKinematicConstraint
   % Constrains the closest distance between all bodies to be greater
-  % than  min_distance. 
+  % than  min_distance.
   %
   % @param min_distance    -- a scalar, the lower bound of the distance
-  % @param tspan   -- a 1x2 vector, the time span of the constraint being
-  %                   active
   properties
     min_distance
     active_collision_options = struct('body_idx',{},'collision_groups',{});
@@ -31,19 +29,16 @@ classdef MinDistanceConstraint < SingleTimeKinematicConstraint
   end
 
   methods
-    function obj = MinDistanceConstraint(robot,min_distance,active_collision_options,tspan)
-      if(nargin < 4)
-        tspan = [-inf inf];
-      end
+    function obj = MinDistanceConstraint(robot,min_distance,active_collision_options)
       if nargin < 3, active_collision_options = struct(); end;
       sizecheck(min_distance,[1,1]);
       assert(min_distance>0);
       checkDependency('bullet');
-      obj = obj@SingleTimeKinematicConstraint(robot,tspan);
+      obj = obj@SingleTimeKinematicConstraint(robot);
       obj.type = RigidBodyConstraint.MinDistanceConstraintType;
       obj.min_distance = min_distance;
       if robot.getMexModelPtr~=0 && exist('constructPtrRigidBodyConstraintmex','file')
-        obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.MinDistanceConstraintType,robot.getMexModelPtr,min_distance,active_collision_options,tspan);
+        obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.MinDistanceConstraintType,robot.getMexModelPtr,min_distance,active_collision_options);
       end
       obj.num_constraint = 1;
       obj.active_collision_options = active_collision_options;
@@ -68,14 +63,14 @@ classdef MinDistanceConstraint < SingleTimeKinematicConstraint
       % element-wise to dist. This hinge loss is given by
       %
       % \f[
-      % c = 
+      % c =
       % \begin{cases}
       %   -de^{\frac{1}{d}}, & d <   0  \\
       %   0,                & d \ge 0.
       % \end{cases}
       % \f]
-      %           
-      
+      %
+
       idx_neg = find(dist < 0);
       cost = zeros(size(dist));
       dcost_ddist = zeros(numel(dist));
@@ -98,15 +93,11 @@ classdef MinDistanceConstraint < SingleTimeKinematicConstraint
       obj.active_collision_options.collision_groups = setdiff(obj.active_collision_options.collision_groups,collision_geometry_group_names);
 
       obj.mex_ptr.delete();
-      obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.MinDistanceConstraintType,obj.robot.getMexModelPtr,obj.min_distance,obj.active_collision_options,obj.tspan);
+      obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.MinDistanceConstraintType,obj.robot.getMexModelPtr,obj.min_distance,obj.active_collision_options);
     end
 
     function num = getNumConstraint(obj,t)
-      if obj.isTimeValid(t)
-        num = 1;
-      else
-        num = 0;
-      end
+      num = 1;
     end
 
     function obj = updateRobot(obj,robot)
@@ -115,13 +106,8 @@ classdef MinDistanceConstraint < SingleTimeKinematicConstraint
     end
 
     function [lb,ub] = bounds(obj,t)
-      if obj.isTimeValid(t)
-        lb = 0;
-        ub = 0;
-      else
-        lb = [];
-        ub = [];
-      end
+      lb = 0;
+      ub = 0;
     end
 
     function name_str = name(obj,t)

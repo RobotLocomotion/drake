@@ -19,11 +19,9 @@ void drakePrintMatrix(const MatrixXd &mat) {
 namespace DrakeRigidBodyConstraint {
 Vector3d com_pts = Vector3d::Zero();
 const int WorldCoMDefaultRobotNum[1] = {0};
-Vector2d default_tspan(-std::numeric_limits<double>::infinity(),
-                       std::numeric_limits<double>::infinity());
 }
-RigidBodyConstraint::RigidBodyConstraint(int category, RigidBodyTree *robot,
-                                         const Vector2d &tspan) {
+
+RigidBodyConstraint::RigidBodyConstraint(int category, RigidBodyTree *robot) {
   if (category >= 0 || category <= -7) {
     std::cerr << "Drake:RigidBodyConstraint:Unsupported constraint category"
               << std::endl;
@@ -31,19 +29,10 @@ RigidBodyConstraint::RigidBodyConstraint(int category, RigidBodyTree *robot,
   this->category = category;
   this->type = 0;
   this->robot = robot;
-  if (tspan(0) > tspan(1)) {
-    std::cerr << "Drake:RigidBodyConstraint:tspan(0) should be no larger than "
-                 "tspan(1)" << std::endl;
-  }
-  this->tspan[0] = tspan(0);
-  this->tspan[1] = tspan(1);
 }
 
 RigidBodyConstraint::RigidBodyConstraint(const RigidBodyConstraint &rhs)
-    : category(rhs.category), type(rhs.type), robot(rhs.robot) {
-  this->tspan[0] = rhs.tspan[0];
-  this->tspan[1] = rhs.tspan[1];
-}
+    : category(rhs.category), type(rhs.type), robot(rhs.robot) {}
 
 RigidBodyConstraint::~RigidBodyConstraint(void) {}
 
@@ -59,10 +48,9 @@ const int QuasiStaticDefaultRobotNum[1] = {0};
 const std::set<int> QuasiStaticConstraint::defaultRobotNumSet(
     QuasiStaticDefaultRobotNum, QuasiStaticDefaultRobotNum + 1);
 QuasiStaticConstraint::QuasiStaticConstraint(RigidBodyTree *robot,
-                                             const Vector2d &tspan,
                                              const std::set<int> &robotnumset)
     : RigidBodyConstraint(RigidBodyConstraint::QuasiStaticConstraintCategory,
-                          robot, tspan) {
+                          robot) {
   this->m_robotnumset = robotnumset;
   this->shrinkFactor = 0.9;
   this->active = false;
@@ -84,86 +72,65 @@ QuasiStaticConstraint::QuasiStaticConstraint(const QuasiStaticConstraint &rhs)
 
 QuasiStaticConstraint::~QuasiStaticConstraint() {}
 
-bool QuasiStaticConstraint::isTimeValid(const double *t) const {
-  if (t == nullptr) return true;
-  return (*t) >= this->tspan[0] && (*t) <= this->tspan[1];
-}
-
-int QuasiStaticConstraint::getNumConstraint(const double *t) const {
-  if (this->isTimeValid(t)) {
-    return 3;
-  } else {
-    return 0;
-  }
+int QuasiStaticConstraint::getNumConstraint() const {
+  return 3;
 }
 
 void QuasiStaticConstraint::updateRobot(RigidBodyTree *robot) {
   this->robot = robot;
 }
-void QuasiStaticConstraint::eval(const double *t,
-                                 KinematicsCache<double> &cache,
+void QuasiStaticConstraint::eval(KinematicsCache<double> &cache,
                                  const double *weights, VectorXd &c,
                                  MatrixXd &dc) const {
-  if (this->isTimeValid(t)) {
-    int nq = this->robot->num_positions;
-    dc.resize(2, nq + this->num_pts);
-    auto com = robot->centerOfMass(cache, m_robotnumset);
-    auto dcom = robot->centerOfMassJacobian(cache, m_robotnumset, true);
-    MatrixXd contact_pos(3, this->num_pts);
-    MatrixXd dcontact_pos(3 * this->num_pts, nq);
-    int num_accum_pts = 0;
-    Vector3d center_pos = Vector3d::Zero();
-    MatrixXd dcenter_pos = MatrixXd::Zero(3, nq);
-    for (int i = 0; i < this->num_bodies; i++) {
-      auto body_contact_pos =
-          robot->transformPoints(cache, body_pts[i], bodies[i], 0);
-      auto dbody_contact_pos = robot->transformPointsJacobian(
-          cache, body_pts[i], bodies[i], 0, true);
+  int nq = this->robot->num_positions;
+  dc.resize(2, nq + this->num_pts);
+  auto com = robot->centerOfMass(cache, m_robotnumset);
+  auto dcom = robot->centerOfMassJacobian(cache, m_robotnumset, true);
+  MatrixXd contact_pos(3, this->num_pts);
+  MatrixXd dcontact_pos(3 * this->num_pts, nq);
+  int num_accum_pts = 0;
+  Vector3d center_pos = Vector3d::Zero();
+  MatrixXd dcenter_pos = MatrixXd::Zero(3, nq);
+  for (int i = 0; i < this->num_bodies; i++) {
+    auto body_contact_pos =
+        robot->transformPoints(cache, body_pts[i], bodies[i], 0);
+    auto dbody_contact_pos = robot->transformPointsJacobian(
+        cache, body_pts[i], bodies[i], 0, true);
 
-      contact_pos.block(0, num_accum_pts, 3, this->num_body_pts[i]) =
-          body_contact_pos;
-      dcontact_pos.block(3 * num_accum_pts, 0, 3 * this->num_body_pts[i], nq) =
-          dbody_contact_pos;
-      for (int j = 0; j < this->num_body_pts[i]; j++) {
-        center_pos = center_pos + body_contact_pos.col(j);
-        dcenter_pos = dcenter_pos + dbody_contact_pos.block(3 * j, 0, 3, nq);
-      }
-      num_accum_pts += this->num_body_pts[i];
+    contact_pos.block(0, num_accum_pts, 3, this->num_body_pts[i]) =
+        body_contact_pos;
+    dcontact_pos.block(3 * num_accum_pts, 0, 3 * this->num_body_pts[i], nq) =
+        dbody_contact_pos;
+    for (int j = 0; j < this->num_body_pts[i]; j++) {
+      center_pos = center_pos + body_contact_pos.col(j);
+      dcenter_pos = dcenter_pos + dbody_contact_pos.block(3 * j, 0, 3, nq);
     }
-    center_pos = center_pos / this->num_pts;
-    dcenter_pos = dcenter_pos / this->num_pts;
-    MatrixXd support_pos(2, this->num_pts);
-    MatrixXd dsupport_pos(2 * this->num_pts, nq);
-    c = com.head(2);
-    dc.block(0, 0, 2, nq) = dcom.block(0, 0, 2, nq);
-    for (int i = 0; i < this->num_pts; i++) {
-      support_pos.col(i) = center_pos.head(2) * (1.0 - this->shrinkFactor) +
-                           contact_pos.block(0, i, 2, 1) * this->shrinkFactor;
-      dsupport_pos.block(2 * i, 0, 2, nq) =
-          dcenter_pos.block(0, 0, 2, nq) * (1.0 - this->shrinkFactor) +
-          dcontact_pos.block(3 * i, 0, 2, nq) * this->shrinkFactor;
-      c = c - weights[i] * support_pos.col(i);
-      dc.block(0, 0, 2, nq) = dc.block(0, 0, 2, nq) -
-                              weights[i] * dsupport_pos.block(2 * i, 0, 2, nq);
-    }
-    dc.block(0, nq, 2, this->num_pts) = -support_pos;
-  } else {
-    c.resize(0);
-    dc.resize(0, 0);
+    num_accum_pts += this->num_body_pts[i];
   }
+  center_pos = center_pos / this->num_pts;
+  dcenter_pos = dcenter_pos / this->num_pts;
+  MatrixXd support_pos(2, this->num_pts);
+  MatrixXd dsupport_pos(2 * this->num_pts, nq);
+  c = com.head(2);
+  dc.block(0, 0, 2, nq) = dcom.block(0, 0, 2, nq);
+  for (int i = 0; i < this->num_pts; i++) {
+    support_pos.col(i) = center_pos.head(2) * (1.0 - this->shrinkFactor) +
+        contact_pos.block(0, i, 2, 1) * this->shrinkFactor;
+    dsupport_pos.block(2 * i, 0, 2, nq) =
+        dcenter_pos.block(0, 0, 2, nq) * (1.0 - this->shrinkFactor) +
+        dcontact_pos.block(3 * i, 0, 2, nq) * this->shrinkFactor;
+    c = c - weights[i] * support_pos.col(i);
+    dc.block(0, 0, 2, nq) = dc.block(0, 0, 2, nq) -
+        weights[i] * dsupport_pos.block(2 * i, 0, 2, nq);
+  }
+  dc.block(0, nq, 2, this->num_pts) = -support_pos;
 }
 
-void QuasiStaticConstraint::bounds(const double *t, VectorXd &lb,
-                                   VectorXd &ub) const {
-  if (this->isTimeValid(t)) {
-    lb.resize(2);
-    ub.resize(2);
-    lb << 0.0, 0.0;
-    ub << 0.0, 0.0;
-  } else {
-    lb.resize(0);
-    ub.resize(0);
-  }
+void QuasiStaticConstraint::bounds(VectorXd &lb, VectorXd &ub) const {
+  lb.resize(2);
+  ub.resize(2);
+  lb << 0.0, 0.0;
+  ub << 0.0, 0.0;
 }
 
 void QuasiStaticConstraint::name(const double *t,
@@ -235,10 +202,8 @@ void QuasiStaticConstraint::updateRobotnum(std::set<int> &robotnumset) {
   this->m_robotnumset = robotnumset;
 }
 
-PostureConstraint::PostureConstraint(RigidBodyTree *robot,
-                                     const Eigen::Vector2d &tspan)
-    : RigidBodyConstraint(RigidBodyConstraint::PostureConstraintCategory, robot,
-                          tspan) {
+PostureConstraint::PostureConstraint(RigidBodyTree *robot)
+    : RigidBodyConstraint(RigidBodyConstraint::PostureConstraintCategory, robot) {
   this->joint_limit_min0 = this->robot->joint_limit_min;
   this->joint_limit_max0 = this->robot->joint_limit_max;
   this->lb = this->joint_limit_min0;
@@ -257,11 +222,6 @@ PostureConstraint::PostureConstraint(const PostureConstraint &rhs)
     this->lb[i] = rhs.lb[i];
     this->ub[i] = rhs.ub[i];
   }
-}
-
-bool PostureConstraint::isTimeValid(const double *t) const {
-  if (t == nullptr) return true;
-  return (*t) >= this->tspan[0] && (*t) <= this->tspan[1];
 }
 
 void PostureConstraint::setJointLimits(const VectorXi &joint_idx,
@@ -293,77 +253,45 @@ void PostureConstraint::setJointLimits(int num_idx, const int *joint_idx,
   }
 }
 
-void PostureConstraint::bounds(const double *t, VectorXd &joint_min,
+void PostureConstraint::bounds(VectorXd &joint_min,
                                VectorXd &joint_max) const {
-  if (this->isTimeValid(t)) {
-    joint_min = this->lb;
-    joint_max = this->ub;
-  } else {
-    joint_min = this->robot->joint_limit_min;
-    joint_max = this->robot->joint_limit_max;
-  }
+  joint_min = this->lb;
+  joint_max = this->ub;
 }
 
 MultipleTimeLinearPostureConstraint::MultipleTimeLinearPostureConstraint(
-    RigidBodyTree *robot, const Eigen::Vector2d &tspan)
+    RigidBodyTree *robot)
     : RigidBodyConstraint(
           RigidBodyConstraint::MultipleTimeLinearPostureConstraintCategory,
-          robot, tspan) {}
+          robot) {}
 
 MultipleTimeLinearPostureConstraint::MultipleTimeLinearPostureConstraint(
     const MultipleTimeLinearPostureConstraint &rhs)
     : RigidBodyConstraint(rhs) {}
 
-std::vector<bool> MultipleTimeLinearPostureConstraint::isTimeValid(
-    const double *t, int n_breaks) const {
-  std::vector<bool> flag;
-  for (int i = 0; i < n_breaks; i++) {
-    if (i < n_breaks - 1) {
-      if (t[i + 1] < t[i]) {
-        std::cerr << "Drake:Constraint:BadInputs: t must be in ascending order"
-                  << std::endl;
-      }
-    }
-    if ((t[i] > this->tspan[1] || t[i] < this->tspan[0])) {
-      flag.push_back(false);
-    } else {
-      flag.push_back(true);
-    }
-  }
-  return flag;
-}
-
-int MultipleTimeLinearPostureConstraint::numValidTime(
-    const std::vector<bool> &valid_flag) const {
-  int num_valid_t = 0;
-  for (auto it = valid_flag.begin(); it != valid_flag.end(); it++) {
-    if (*it) {
-      num_valid_t++;
-    }
-  }
-  return num_valid_t;
-}
-
-void MultipleTimeLinearPostureConstraint::validTimeInd(
-    const std::vector<bool> &valid_flag, VectorXi &valid_t_ind) const {
+namespace {
+// TODO(sam.creasey) This function is mostly vestigal and shouldn't
+// really exist anymore.  It still serves a useful purpose, but it's
+// smaller and less obvious than it once was.
+void validTimeInd(
+    int n_breaks, VectorXi &valid_t_ind) {
   valid_t_ind.resize(0);
-  for (int i = 0; i < valid_flag.size(); i++) {
-    if (valid_flag.at(i)) {
-      valid_t_ind.conservativeResize(valid_t_ind.size() + 1);
-      valid_t_ind(valid_t_ind.size() - 1) = i;
-    }
+  for (int i = 0; i < n_breaks; i++) {
+    valid_t_ind.conservativeResize(valid_t_ind.size() + 1);
+    valid_t_ind(valid_t_ind.size() - 1) = i;
   }
 }
+}
 
-void MultipleTimeLinearPostureConstraint::eval(const double *t, int n_breaks,
+void MultipleTimeLinearPostureConstraint::eval(int n_breaks,
                                                const MatrixXd &q, VectorXd &c,
                                                SparseMatrix<double> &dc) const {
-  this->feval(t, n_breaks, q, c);
+  this->feval(n_breaks, q, c);
   VectorXi iAfun;
   VectorXi jAvar;
   VectorXd A;
-  this->geval(t, n_breaks, iAfun, jAvar, A);
-  int num_cnst = this->getNumConstraint(t, n_breaks);
+  this->geval(n_breaks, iAfun, jAvar, A);
+  int num_cnst = this->getNumConstraint(n_breaks);
   dc.resize(num_cnst, static_cast<int>(q.size()));
   dc.reserve(static_cast<int>(A.size()));
   for (int i = 0; i < iAfun.size(); i++) {
@@ -373,11 +301,9 @@ void MultipleTimeLinearPostureConstraint::eval(const double *t, int n_breaks,
 
 SingleTimeLinearPostureConstraint::SingleTimeLinearPostureConstraint(
     RigidBodyTree *robot, const VectorXi &iAfun, const VectorXi &jAvar,
-    const VectorXd &A, const VectorXd &lb, const VectorXd &ub,
-    const Vector2d &tspan)
+    const VectorXd &A, const VectorXd &lb, const VectorXd &ub)
     : RigidBodyConstraint(
-          RigidBodyConstraint::SingleTimeLinearPostureConstraintCategory, robot,
-          tspan) {
+          RigidBodyConstraint::SingleTimeLinearPostureConstraintCategory, robot) {
   this->lb = lb;
   this->ub = ub;
   this->num_constraint = static_cast<int>(this->lb.size());
@@ -436,87 +362,49 @@ SingleTimeLinearPostureConstraint::SingleTimeLinearPostureConstraint(
       num_constraint(rhs.num_constraint),
       A_mat(rhs.A_mat) {}
 
-bool SingleTimeLinearPostureConstraint::isTimeValid(const double *t) const {
-  if (t == nullptr) {
-    return true;
-  }
-  if (*t >= this->tspan[0] && *t <= this->tspan[1]) {
-    return true;
-  }
-  return false;
+int SingleTimeLinearPostureConstraint::getNumConstraint() const {
+  return this->num_constraint;
 }
 
-int SingleTimeLinearPostureConstraint::getNumConstraint(const double *t) const {
-  if (this->isTimeValid(t)) {
-    return this->num_constraint;
-  } else {
-    return 0;
-  }
-}
-
-void SingleTimeLinearPostureConstraint::bounds(const double *t, VectorXd &lb,
+void SingleTimeLinearPostureConstraint::bounds(VectorXd &lb,
                                                VectorXd &ub) const {
-  if (this->isTimeValid(t)) {
-    lb = this->lb;
-    ub = this->ub;
-  } else {
-    lb.resize(0);
-    ub.resize(0);
-  }
+  lb = this->lb;
+  ub = this->ub;
 }
 
-void SingleTimeLinearPostureConstraint::feval(const double *t,
-                                              const VectorXd &q,
+void SingleTimeLinearPostureConstraint::feval(const VectorXd &q,
                                               VectorXd &c) const {
-  if (this->isTimeValid(t)) {
-    c = this->A_mat * q;
-  } else {
-    c.resize(0);
-  }
+  c = this->A_mat * q;
 }
 
-void SingleTimeLinearPostureConstraint::geval(const double *t, VectorXi &iAfun,
+void SingleTimeLinearPostureConstraint::geval(VectorXi &iAfun,
                                               VectorXi &jAvar,
                                               VectorXd &A) const {
-  if (this->isTimeValid(t)) {
-    iAfun = this->iAfun;
-    jAvar = this->jAvar;
-    A = this->A;
-  } else {
-    iAfun.resize(0);
-    jAvar.resize(0);
-    A.resize(0);
-  }
+  iAfun = this->iAfun;
+  jAvar = this->jAvar;
+  A = this->A;
 }
 
-void SingleTimeLinearPostureConstraint::eval(const double *t, const VectorXd &q,
+void SingleTimeLinearPostureConstraint::eval(const VectorXd &q,
                                              VectorXd &c,
                                              SparseMatrix<double> &dc) const {
-  if (this->isTimeValid(t)) {
-    c = this->A_mat * q;
-    dc = this->A_mat;
-  } else {
-    c.resize(0);
-    dc.resize(0, 0);
-  }
+  c = this->A_mat * q;
+  dc = this->A_mat;
 }
 
 void SingleTimeLinearPostureConstraint::name(
     const double *t, std::vector<std::string> &name_str) const {
-  if (this->isTimeValid(t)) {
-    std::string time_str = this->getTimeString(t);
-    for (int i = 0; i < this->num_constraint; i++) {
-      name_str.push_back("SingleTimeLinearPostureConstraint row " +
-                         std::to_string(i) + time_str);
-    }
+  std::string time_str = this->getTimeString(t);
+  for (int i = 0; i < this->num_constraint; i++) {
+    name_str.push_back("SingleTimeLinearPostureConstraint row " +
+                       std::to_string(i) + time_str);
   }
 }
 
 SingleTimeKinematicConstraint::SingleTimeKinematicConstraint(
-    RigidBodyTree *robot, const Vector2d &tspan)
+    RigidBodyTree *robot)
     : RigidBodyConstraint(
-          RigidBodyConstraint::SingleTimeKinematicConstraintCategory, robot,
-          tspan) {
+          RigidBodyConstraint::SingleTimeKinematicConstraintCategory, robot) {
   this->num_constraint = 0;
 }
 
@@ -525,16 +413,9 @@ SingleTimeKinematicConstraint::SingleTimeKinematicConstraint(
     : RigidBodyConstraint(rhs) {
   this->num_constraint = rhs.num_constraint;
 }
-bool SingleTimeKinematicConstraint::isTimeValid(const double *t) const {
-  if (t == nullptr) return true;
-  return (*t) >= this->tspan[0] && (*t) <= this->tspan[1];
-}
 
-int SingleTimeKinematicConstraint::getNumConstraint(const double *t) const {
-  if (isTimeValid(t)) {
-    return this->num_constraint;
-  }
-  return 0;
+int SingleTimeKinematicConstraint::getNumConstraint() const {
+  return this->num_constraint;
 }
 
 void SingleTimeKinematicConstraint::updateRobot(RigidBodyTree *robot) {
@@ -542,73 +423,41 @@ void SingleTimeKinematicConstraint::updateRobot(RigidBodyTree *robot) {
 }
 
 MultipleTimeKinematicConstraint::MultipleTimeKinematicConstraint(
-    RigidBodyTree *robot, const Vector2d &tspan)
+    RigidBodyTree *robot)
     : RigidBodyConstraint(
-          RigidBodyConstraint::MultipleTimeKinematicConstraintCategory, robot,
-          tspan) {}
+          RigidBodyConstraint::MultipleTimeKinematicConstraintCategory, robot) {}
 
 MultipleTimeKinematicConstraint::MultipleTimeKinematicConstraint(
     const MultipleTimeKinematicConstraint &rhs)
     : RigidBodyConstraint(rhs) {}
 
-void MultipleTimeKinematicConstraint::eval(const double *t, int n_breaks,
+void MultipleTimeKinematicConstraint::eval(int n_breaks,
                                            const MatrixXd &q, VectorXd &c,
                                            MatrixXd &dc) const {
-  int num_valid_t = this->numValidTime(t, n_breaks);
+  const int num_valid_t = n_breaks;
   if (num_valid_t >= 2) {
-    std::vector<bool> valid_time_flag = this->isTimeValid(t, n_breaks);
     int nq = this->robot->num_positions;
-    double *valid_t = new double[num_valid_t];
     MatrixXd valid_q(nq, num_valid_t);
     int valid_idx = 0;
     int *valid2tMap = new int[num_valid_t];
     for (int i = 0; i < n_breaks; i++) {
-      if (valid_time_flag[i]) {
-        valid_t[valid_idx] = t[i];
-        valid_q.col(valid_idx) = q.col(i);
-        valid2tMap[valid_idx] = i;
-        valid_idx++;
-      }
+      valid_q.col(valid_idx) = q.col(i);
+      valid2tMap[valid_idx] = i;
+      valid_idx++;
     }
     MatrixXd dc_valid;
-    this->eval_valid(valid_t, num_valid_t, valid_q, c, dc_valid);
-    int nc = this->getNumConstraint(t, n_breaks);
+    this->eval_valid(num_valid_t, valid_q, c, dc_valid);
+    int nc = this->getNumConstraint(n_breaks);
     dc = MatrixXd::Zero(nc, nq * n_breaks);
     for (int i = 0; i < num_valid_t; i++) {
       dc.block(0, valid2tMap[i] * nq, nc, nq) =
           dc_valid.block(0, i * nq, nc, nq);
     }
-    delete[] valid_t;
     delete[] valid2tMap;
   } else {
     c.resize(0);
     dc.resize(0, 0);
   }
-}
-
-std::vector<bool> MultipleTimeKinematicConstraint::isTimeValid(
-    const double *t, int n_breaks) const {
-  std::vector<bool> flag;
-  for (int i = 0; i < n_breaks; i++) {
-    if ((t[i] > this->tspan[1] || t[i] < this->tspan[0])) {
-      flag.push_back(false);
-    } else {
-      flag.push_back(true);
-    }
-  }
-  return flag;
-}
-
-int MultipleTimeKinematicConstraint::numValidTime(const double *t,
-                                                  int n_breaks) const {
-  std::vector<bool> valid_flag = this->isTimeValid(t, n_breaks);
-  int num_valid_t = 0;
-  for (auto it = valid_flag.begin(); it != valid_flag.end(); it++) {
-    if (*it) {
-      num_valid_t++;
-    }
-  }
-  return num_valid_t;
 }
 
 void MultipleTimeKinematicConstraint::updateRobot(RigidBodyTree *robot) {
@@ -617,8 +466,8 @@ void MultipleTimeKinematicConstraint::updateRobot(RigidBodyTree *robot) {
 
 PositionConstraint::PositionConstraint(RigidBodyTree *robot,
                                        const Matrix3Xd &pts, MatrixXd lb,
-                                       MatrixXd ub, const Vector2d &tspan)
-    : SingleTimeKinematicConstraint(robot, tspan) {
+                                       MatrixXd ub)
+    : SingleTimeKinematicConstraint(robot) {
   this->n_pts = static_cast<int>(pts.cols());
   if (pts.rows() != 3) {
     std::cerr << "pts must have 3 rows" << std::endl;
@@ -683,58 +532,47 @@ PositionConstraint::PositionConstraint(const PositionConstraint &rhs)
   this->null_constraint_rows = rhs.null_constraint_rows;
 }
 
-void PositionConstraint::eval(const double *t, KinematicsCache<double> &cache,
+void PositionConstraint::eval(KinematicsCache<double> &cache,
                               VectorXd &c, MatrixXd &dc) const {
-  if (this->isTimeValid(t)) {
-    Matrix3Xd pos(3, this->n_pts);
-    MatrixXd J(3 * this->n_pts, this->robot->num_positions);
-    this->evalPositions(cache, pos, J);
-    c.resize(this->getNumConstraint(t), 1);
-    dc.resize(this->getNumConstraint(t), this->robot->num_positions);
-    int valid_row_idx = 0;
-    int i = 0;
-    while (i < this->getNumConstraint(t)) {
-      if (!this->null_constraint_rows[valid_row_idx]) {
-        c(i) = pos(valid_row_idx);
-        dc.row(i) = J.row(valid_row_idx);
-        i++;
-        valid_row_idx++;
-      } else {
-        valid_row_idx++;
-      }
+  Matrix3Xd pos(3, this->n_pts);
+  MatrixXd J(3 * this->n_pts, this->robot->num_positions);
+  this->evalPositions(cache, pos, J);
+  c.resize(this->getNumConstraint(), 1);
+  dc.resize(this->getNumConstraint(), this->robot->num_positions);
+  int valid_row_idx = 0;
+  int i = 0;
+  while (i < this->getNumConstraint()) {
+    if (!this->null_constraint_rows[valid_row_idx]) {
+      c(i) = pos(valid_row_idx);
+      dc.row(i) = J.row(valid_row_idx);
+      i++;
+      valid_row_idx++;
+    } else {
+      valid_row_idx++;
     }
-  } else {
-    c.resize(0);
-    dc.resize(0, 0);
   }
 }
 
-void PositionConstraint::bounds(const double *t, VectorXd &lb,
-                                VectorXd &ub) const {
-  if (this->isTimeValid(t)) {
-    lb = this->lb;
-    ub = this->ub;
-  }
+void PositionConstraint::bounds(VectorXd &lb ,VectorXd &ub) const {
+  lb = this->lb;
+  ub = this->ub;
 }
 
 void PositionConstraint::name(const double *t,
                               std::vector<std::string> &name_str) const {
-  if (this->isTimeValid(t)) {
-    std::vector<std::string> cnst_names;
-    this->evalNames(t, cnst_names);
-    for (int i = 0; i < 3 * this->n_pts; i++) {
-      if (!this->null_constraint_rows[i]) {
-        name_str.push_back(cnst_names.at(i));
+  std::vector<std::string> cnst_names;
+  this->evalNames(t, cnst_names);
+  for (int i = 0; i < 3 * this->n_pts; i++) {
+    if (!this->null_constraint_rows[i]) {
+      name_str.push_back(cnst_names.at(i));
       }
-    }
   }
 }
 
 WorldPositionConstraint::WorldPositionConstraint(RigidBodyTree *robot, int body,
                                                  const Matrix3Xd &pts,
-                                                 MatrixXd lb, MatrixXd ub,
-                                                 const Vector2d &tspan)
-    : PositionConstraint(robot, pts, lb, ub, tspan) {
+                                                 MatrixXd lb, MatrixXd ub)
+    : PositionConstraint(robot, pts, lb, ub) {
   this->body = body;
   this->body_name = robot->getBodyOrFrameName(body);
   this->type = RigidBodyConstraint::WorldPositionConstraintType;
@@ -766,10 +604,9 @@ const std::set<int> WorldCoMConstraint::defaultRobotNumSet(
     DrakeRigidBodyConstraint::WorldCoMDefaultRobotNum + 1);
 
 WorldCoMConstraint::WorldCoMConstraint(RigidBodyTree *robot, Vector3d lb,
-                                       Vector3d ub, const Vector2d &tspan,
+                                       Vector3d ub,
                                        const std::set<int> &robotnum)
-    : PositionConstraint(robot, DrakeRigidBodyConstraint::com_pts, lb, ub,
-                         tspan) {
+    : PositionConstraint(robot, DrakeRigidBodyConstraint::com_pts, lb, ub) {
   this->m_robotnum = robotnum;
   this->body = -1;
   this->body_name = "CoM";
@@ -799,8 +636,8 @@ WorldCoMConstraint::~WorldCoMConstraint() {}
 RelativePositionConstraint::RelativePositionConstraint(
     RigidBodyTree *robot, const Matrix3Xd &pts, const MatrixXd &lb,
     const MatrixXd &ub, int bodyA_idx, int bodyB_idx,
-    const Matrix<double, 7, 1> &bTbp, const Vector2d &tspan)
-    : PositionConstraint(robot, pts, lb, ub, tspan) {
+    const Matrix<double, 7, 1> &bTbp)
+    : PositionConstraint(robot, pts, lb, ub) {
   this->bodyA_idx = bodyA_idx;
   this->bodyB_idx = bodyB_idx;
   bodyA_name = robot->getBodyOrFrameName(bodyA_idx);
@@ -838,9 +675,8 @@ void RelativePositionConstraint::evalNames(
 
 RelativePositionConstraint::~RelativePositionConstraint() {}
 
-QuatConstraint::QuatConstraint(RigidBodyTree *robot, double tol,
-                               const Vector2d &tspan)
-    : SingleTimeKinematicConstraint(robot, tspan) {
+QuatConstraint::QuatConstraint(RigidBodyTree *robot, double tol)
+    : SingleTimeKinematicConstraint(robot) {
   if (tol < 0.0 || tol > M_PI) {
     std::cerr << "tol must be within [0 PI]" << std::endl;
   }
@@ -848,38 +684,30 @@ QuatConstraint::QuatConstraint(RigidBodyTree *robot, double tol,
   this->num_constraint = 1;
 }
 
-void QuatConstraint::eval(const double *t, KinematicsCache<double> &cache,
+void QuatConstraint::eval(KinematicsCache<double> &cache,
                           VectorXd &c, MatrixXd &dc) const {
-  int num_constraint = this->getNumConstraint(t);
+  int num_constraint = this->getNumConstraint();
   c.resize(num_constraint);
   dc.resize(num_constraint, this->robot->num_positions);
-  if (this->isTimeValid(t)) {
-    double prod;
-    MatrixXd dprod(1, this->robot->num_positions);
-    this->evalOrientationProduct(cache, prod, dprod);
-    c(0) = 2.0 * prod * prod - 1.0;
-    dc = 4.0 * prod * dprod;
-  } else {
-    c.resize(0);
-    dc.resize(0, 0);
-  }
+  double prod;
+  MatrixXd dprod(1, this->robot->num_positions);
+  this->evalOrientationProduct(cache, prod, dprod);
+  c(0) = 2.0 * prod * prod - 1.0;
+  dc = 4.0 * prod * dprod;
 }
 
-void QuatConstraint::bounds(const double *t, VectorXd &lb, VectorXd &ub) const {
-  lb.resize(this->getNumConstraint(t));
-  ub.resize(this->getNumConstraint(t));
-  if (this->isTimeValid(t)) {
-    lb[0] = cos(this->tol);
-    ub[0] = 1.0;
-  }
+void QuatConstraint::bounds(VectorXd &lb, VectorXd &ub) const {
+  lb.resize(this->getNumConstraint());
+  ub.resize(this->getNumConstraint());
+  lb[0] = cos(this->tol);
+  ub[0] = 1.0;
 }
 
 QuatConstraint::~QuatConstraint(void) {}
 
 WorldQuatConstraint::WorldQuatConstraint(RigidBodyTree *robot, int body,
-                                         const Vector4d &quat_des, double tol,
-                                         const Vector2d &tspan)
-    : QuatConstraint(robot, tol, tspan) {
+                                         const Vector4d &quat_des, double tol)
+    : QuatConstraint(robot, tol) {
   this->body = body;
   this->body_name = robot->getBodyOrFrameName(body);
   if (quat_des.norm() <= 0) {
@@ -900,11 +728,9 @@ void WorldQuatConstraint::evalOrientationProduct(
 
 void WorldQuatConstraint::name(const double *t,
                                std::vector<std::string> &name_str) const {
-  if (this->isTimeValid(t)) {
-    std::string time_str = this->getTimeString(t);
-    for (int i = 0; i < this->num_constraint; i++) {
-      name_str.push_back(this->body_name + " quaternion constraint" + time_str);
-    }
+  std::string time_str = this->getTimeString(t);
+  for (int i = 0; i < this->num_constraint; i++) {
+    name_str.push_back(this->body_name + " quaternion constraint" + time_str);
   }
 }
 
@@ -913,9 +739,8 @@ WorldQuatConstraint::~WorldQuatConstraint() {}
 RelativeQuatConstraint::RelativeQuatConstraint(RigidBodyTree *robot,
                                                int bodyA_idx, int bodyB_idx,
                                                const Vector4d &quat_des,
-                                               double tol,
-                                               const Vector2d &tspan)
-    : QuatConstraint(robot, tol, tspan) {
+                                               double tol)
+    : QuatConstraint(robot, tol) {
   this->bodyA_idx = bodyA_idx;
   this->bodyB_idx = bodyB_idx;
   this->bodyA_name = this->robot->bodies[bodyA_idx]->linkname;
@@ -937,22 +762,20 @@ void RelativeQuatConstraint::evalOrientationProduct(
 
 void RelativeQuatConstraint::name(const double *t,
                                   std::vector<std::string> &name_str) const {
-  if (this->isTimeValid(t)) {
-    std::string time_str = this->getTimeString(t);
-    std::string tmp_name = this->bodyA_name + " relative to " +
-                           this->bodyB_name + " quaternion constraint" +
-                           time_str;
-    for (int i = 0; i < this->num_constraint; i++) {
-      name_str.push_back(tmp_name);
-    }
+  std::string time_str = this->getTimeString(t);
+  std::string tmp_name = this->bodyA_name + " relative to " +
+      this->bodyB_name + " quaternion constraint" +
+      time_str;
+  for (int i = 0; i < this->num_constraint; i++) {
+    name_str.push_back(tmp_name);
   }
 }
 
 RelativeQuatConstraint::~RelativeQuatConstraint() {}
 
 EulerConstraint::EulerConstraint(RigidBodyTree *robot, const Vector3d &lb,
-                                 const Vector3d &ub, const Vector2d &tspan)
-    : SingleTimeKinematicConstraint(robot, tspan) {
+                                 const Vector3d &ub)
+    : SingleTimeKinematicConstraint(robot) {
   this->num_constraint = 0;
   Vector3d my_lb = lb, my_ub = ub;
   for (int i = 0; i < 3; i++) {
@@ -1004,47 +827,38 @@ EulerConstraint::EulerConstraint(const EulerConstraint &rhs)
   this->avg_rpy = rhs.avg_rpy;
 }
 
-void EulerConstraint::eval(const double *t, KinematicsCache<double> &cache,
+void EulerConstraint::eval(KinematicsCache<double> &cache,
                            VectorXd &c, MatrixXd &dc) const {
-  int n_constraint = this->getNumConstraint(t);
-  if (this->isTimeValid(t)) {
-    Vector3d rpy;
-    MatrixXd drpy(3, this->robot->num_positions);
-    this->evalrpy(cache, rpy, drpy);
-    c.resize(n_constraint);
-    dc.resize(n_constraint, this->robot->num_positions);
-    int valid_row_idx = 0;
-    int i = 0;
-    while (i < n_constraint) {
-      if (!this->null_constraint_rows[valid_row_idx]) {
-        c(i) = rpy(valid_row_idx);
-        c(i) = angleDiff(this->avg_rpy[i], c(i)) + this->avg_rpy[i];
-        dc.row(i) = drpy.row(valid_row_idx);
-        valid_row_idx++;
-        i++;
-      } else {
-        valid_row_idx++;
-      }
+  int n_constraint = this->getNumConstraint();
+  Vector3d rpy;
+  MatrixXd drpy(3, this->robot->num_positions);
+  this->evalrpy(cache, rpy, drpy);
+  c.resize(n_constraint);
+  dc.resize(n_constraint, this->robot->num_positions);
+  int valid_row_idx = 0;
+  int i = 0;
+  while (i < n_constraint) {
+    if (!this->null_constraint_rows[valid_row_idx]) {
+      c(i) = rpy(valid_row_idx);
+      c(i) = angleDiff(this->avg_rpy[i], c(i)) + this->avg_rpy[i];
+      dc.row(i) = drpy.row(valid_row_idx);
+      valid_row_idx++;
+      i++;
+    } else {
+      valid_row_idx++;
     }
-  } else {
-    c.resize(0);
-    dc.resize(0, 0);
   }
 }
 
-void EulerConstraint::bounds(const double *t, VectorXd &lb,
-                             VectorXd &ub) const {
-  if (this->isTimeValid(t)) {
-    lb = this->lb;
-    ub = this->ub;
-  }
+void EulerConstraint::bounds(VectorXd &lb, VectorXd &ub) const {
+  lb = this->lb;
+  ub = this->ub;
 }
 
 WorldEulerConstraint::WorldEulerConstraint(RigidBodyTree *robot, int body,
                                            const Vector3d &lb,
-                                           const Vector3d &ub,
-                                           const Vector2d &tspan)
-    : EulerConstraint(robot, lb, ub, tspan) {
+                                           const Vector3d &ub)
+    : EulerConstraint(robot, lb, ub) {
   this->body = body;
   this->body_name = robot->getBodyOrFrameName(body);
   this->type = RigidBodyConstraint::WorldEulerConstraintType;
@@ -1058,29 +872,27 @@ void WorldEulerConstraint::evalrpy(const KinematicsCache<double> &cache,
 
 void WorldEulerConstraint::name(const double *t,
                                 std::vector<std::string> &name_str) const {
-  if (this->isTimeValid(t)) {
-    std::string time_str = this->getTimeString(t);
-    int constraint_idx = 0;
-    if (!this->null_constraint_rows[0]) {
-      name_str.push_back(this->body_name + " roll" + time_str);
-      constraint_idx++;
-    }
-    if (!this->null_constraint_rows[1]) {
-      name_str.push_back(this->body_name + " pitch" + time_str);
-      constraint_idx++;
-    }
-    if (!this->null_constraint_rows[2]) {
-      name_str.push_back(this->body_name + " yaw" + time_str);
-      constraint_idx++;
-    }
+  std::string time_str = this->getTimeString(t);
+  int constraint_idx = 0;
+  if (!this->null_constraint_rows[0]) {
+    name_str.push_back(this->body_name + " roll" + time_str);
+    constraint_idx++;
+  }
+  if (!this->null_constraint_rows[1]) {
+    name_str.push_back(this->body_name + " pitch" + time_str);
+    constraint_idx++;
+  }
+  if (!this->null_constraint_rows[2]) {
+    name_str.push_back(this->body_name + " yaw" + time_str);
+    constraint_idx++;
   }
 }
 
 WorldEulerConstraint::~WorldEulerConstraint() {}
 
 GazeConstraint::GazeConstraint(RigidBodyTree *robot, const Vector3d &axis,
-                               double conethreshold, const Vector2d &tspan)
-    : SingleTimeKinematicConstraint(robot, tspan) {
+                               double conethreshold)
+    : SingleTimeKinematicConstraint(robot) {
   double len_axis = axis.norm();
   if (len_axis <= 0) {
     std::cerr << "axis must be non-zero" << std::endl;
@@ -1094,8 +906,8 @@ GazeConstraint::GazeConstraint(RigidBodyTree *robot, const Vector3d &axis,
 
 GazeOrientConstraint::GazeOrientConstraint(
     RigidBodyTree *robot, const Vector3d &axis, const Vector4d &quat_des,
-    double conethreshold, double threshold, const Vector2d &tspan)
-    : GazeConstraint(robot, axis, conethreshold, tspan) {
+    double conethreshold, double threshold)
+    : GazeConstraint(robot, axis, conethreshold) {
   double len_quat_des = quat_des.norm();
   if (len_quat_des <= 0) {
     std::cerr << "quat_des must be non-zero" << std::endl;
@@ -1108,63 +920,53 @@ GazeOrientConstraint::GazeOrientConstraint(
   this->num_constraint = 2;
 }
 
-void GazeOrientConstraint::eval(const double *t, KinematicsCache<double> &cache,
+void GazeOrientConstraint::eval(KinematicsCache<double> &cache,
                                 VectorXd &c, MatrixXd &dc) const {
   using namespace std;
   using namespace Drake;
 
-  int num_constraint = this->getNumConstraint(t);
+  int num_constraint = this->getNumConstraint();
   c.resize(num_constraint);
   dc.resize(num_constraint, this->robot->num_positions);
-  if (this->isTimeValid(t)) {
-    Vector4d quat;
-    int nq = this->robot->num_positions;
-    MatrixXd dquat(4, nq);
-    this->evalOrientation(cache, quat, dquat);
+  Vector4d quat;
+  int nq = this->robot->num_positions;
+  MatrixXd dquat(4, nq);
+  this->evalOrientation(cache, quat, dquat);
 
-    auto axis_err_autodiff_args = initializeAutoDiffTuple(quat, quat_des, axis);
-    auto e_autodiff = quatDiffAxisInvar(get<0>(axis_err_autodiff_args),
-                                        get<1>(axis_err_autodiff_args),
-                                        get<2>(axis_err_autodiff_args));
-    auto axis_err = e_autodiff.value();
-    auto daxis_err = e_autodiff.derivatives().transpose().eval();
+  auto axis_err_autodiff_args = initializeAutoDiffTuple(quat, quat_des, axis);
+  auto e_autodiff = quatDiffAxisInvar(get<0>(axis_err_autodiff_args),
+                                      get<1>(axis_err_autodiff_args),
+                                      get<2>(axis_err_autodiff_args));
+  auto axis_err = e_autodiff.value();
+  auto daxis_err = e_autodiff.derivatives().transpose().eval();
 
-    MatrixXd daxis_err_dq(1, nq);
-    daxis_err_dq = daxis_err.block(0, 0, 1, 4) * dquat;
+  MatrixXd daxis_err_dq(1, nq);
+  daxis_err_dq = daxis_err.block(0, 0, 1, 4) * dquat;
 
-    auto quat_diff_autodiff_args = initializeAutoDiffTuple(quat, quat_des);
-    auto q_diff_autodiff = quatDiff(get<0>(quat_diff_autodiff_args),
-                                    get<1>(quat_diff_autodiff_args));
-    auto q_diff = autoDiffToValueMatrix(q_diff_autodiff);
-    auto dq_diff = autoDiffToGradientMatrix(q_diff_autodiff);
+  auto quat_diff_autodiff_args = initializeAutoDiffTuple(quat, quat_des);
+  auto q_diff_autodiff = quatDiff(get<0>(quat_diff_autodiff_args),
+                                  get<1>(quat_diff_autodiff_args));
+  auto q_diff = autoDiffToValueMatrix(q_diff_autodiff);
+  auto dq_diff = autoDiffToGradientMatrix(q_diff_autodiff);
 
-    MatrixXd dq_diff_dq(4, nq);
-    dq_diff_dq = dq_diff.block(0, 0, 4, 4) * dquat;
-    c << axis_err, q_diff(0);
-    dc.row(0) = daxis_err_dq;
-    dc.row(1) = dq_diff_dq.row(0);
-  } else {
-    c.resize(0);
-    dc.resize(0, 0);
-  }
+  MatrixXd dq_diff_dq(4, nq);
+  dq_diff_dq = dq_diff.block(0, 0, 4, 4) * dquat;
+  c << axis_err, q_diff(0);
+  dc.row(0) = daxis_err_dq;
+  dc.row(1) = dq_diff_dq.row(0);
 }
 
-void GazeOrientConstraint::bounds(const double *t, VectorXd &lb,
-                                  VectorXd &ub) const {
-  lb.resize(this->getNumConstraint(t));
-  ub.resize(this->getNumConstraint(t));
-  if (this->isTimeValid(t)) {
-    lb << cos(this->conethreshold) - 1.0, cos(this->threshold / 2.0);
-    ub << 0, std::numeric_limits<double>::infinity();
-  }
+void GazeOrientConstraint::bounds(VectorXd &lb, VectorXd &ub) const {
+  lb.resize(this->getNumConstraint());
+  ub.resize(this->getNumConstraint());
+  lb << cos(this->conethreshold) - 1.0, cos(this->threshold / 2.0);
+  ub << 0, std::numeric_limits<double>::infinity();
 }
 
 WorldGazeOrientConstraint::WorldGazeOrientConstraint(
     RigidBodyTree *robot, int body, const Vector3d &axis,
-    const Vector4d &quat_des, double conethreshold, double threshold,
-    const Vector2d &tspan)
-    : GazeOrientConstraint(robot, axis, quat_des, conethreshold, threshold,
-                           tspan) {
+    const Vector4d &quat_des, double conethreshold, double threshold)
+    : GazeOrientConstraint(robot, axis, quat_des, conethreshold, threshold) {
   this->body = body;
   this->body_name = robot->getBodyOrFrameName(body);
   this->type = RigidBodyConstraint::WorldGazeOrientConstraintType;
@@ -1179,20 +981,17 @@ void WorldGazeOrientConstraint::evalOrientation(
 
 void WorldGazeOrientConstraint::name(const double *t,
                                      std::vector<std::string> &name_str) const {
-  if (this->isTimeValid(t)) {
-    std::string time_str = this->getTimeString(t);
-    name_str.push_back(this->body_name +
-                       " conic gaze orientation constraint at time" + time_str);
-    name_str.push_back(this->body_name +
-                       " revolute gaze orientation constraint at time" +
-                       time_str);
-  }
+  std::string time_str = this->getTimeString(t);
+  name_str.push_back(this->body_name +
+                     " conic gaze orientation constraint at time" + time_str);
+  name_str.push_back(this->body_name +
+                     " revolute gaze orientation constraint at time" +
+                     time_str);
 }
 
 GazeDirConstraint::GazeDirConstraint(RigidBodyTree *robot, const Vector3d &axis,
-                                     const Vector3d &dir, double conethreshold,
-                                     const Vector2d &tspan)
-    : GazeConstraint(robot, axis, conethreshold, tspan) {
+                                     const Vector3d &dir, double conethreshold)
+    : GazeConstraint(robot, axis, conethreshold) {
   double len_dir = dir.norm();
   if (len_dir <= 0) {
     std::cerr << "dir should be non-zero" << std::endl;
@@ -1201,142 +1000,114 @@ GazeDirConstraint::GazeDirConstraint(RigidBodyTree *robot, const Vector3d &axis,
   this->num_constraint = 1;
 }
 
-void GazeDirConstraint::bounds(const double *t, VectorXd &lb,
-                               VectorXd &ub) const {
-  int num_constraint = this->getNumConstraint(t);
+void GazeDirConstraint::bounds(VectorXd &lb, VectorXd &ub) const {
+  int num_constraint = this->getNumConstraint();
   lb.resize(num_constraint);
   ub.resize(num_constraint);
-  if (this->isTimeValid(t)) {
-    lb[0] = cos(this->conethreshold) - 1.0;
-    ub[0] = 0.0;
-  }
+  lb[0] = cos(this->conethreshold) - 1.0;
+  ub[0] = 0.0;
 }
 
 WorldGazeDirConstraint::WorldGazeDirConstraint(RigidBodyTree *robot, int body,
                                                const Vector3d &axis,
                                                const Vector3d &dir,
-                                               double conethreshold,
-                                               const Vector2d &tspan)
-    : GazeDirConstraint(robot, axis, dir, conethreshold, tspan) {
+                                               double conethreshold)
+    : GazeDirConstraint(robot, axis, dir, conethreshold) {
   this->body = body;
   this->body_name = robot->getBodyOrFrameName(body);
   this->type = RigidBodyConstraint::WorldGazeDirConstraintType;
 }
 
-void WorldGazeDirConstraint::eval(const double *t,
-                                  KinematicsCache<double> &cache, VectorXd &c,
+void WorldGazeDirConstraint::eval(KinematicsCache<double> &cache, VectorXd &c,
                                   MatrixXd &dc) const {
-  if (this->isTimeValid(t)) {
-    Matrix3Xd body_axis_ends(3, 2);
-    body_axis_ends.col(0).setZero();
-    body_axis_ends.col(1) = this->axis;
-    int nq = this->robot->num_positions;
-    auto axis_pos = robot->transformPoints(cache, body_axis_ends, body, 0);
-    auto daxis_pos =
-        robot->transformPointsJacobian(cache, body_axis_ends, body, 0, true);
-    Vector3d axis_world = axis_pos.col(1) - axis_pos.col(0);
-    MatrixXd daxis_world =
-        daxis_pos.block(3, 0, 3, nq) - daxis_pos.block(0, 0, 3, nq);
-    c.resize(1);
-    c(0) = axis_world.dot(this->dir) - 1.0;
-    dc = this->dir.transpose() * daxis_world;
-  } else {
-    c.resize(0);
-    dc.resize(0, 0);
-  }
+  Matrix3Xd body_axis_ends(3, 2);
+  body_axis_ends.col(0).setZero();
+  body_axis_ends.col(1) = this->axis;
+  int nq = this->robot->num_positions;
+  auto axis_pos = robot->transformPoints(cache, body_axis_ends, body, 0);
+  auto daxis_pos =
+      robot->transformPointsJacobian(cache, body_axis_ends, body, 0, true);
+  Vector3d axis_world = axis_pos.col(1) - axis_pos.col(0);
+  MatrixXd daxis_world =
+      daxis_pos.block(3, 0, 3, nq) - daxis_pos.block(0, 0, 3, nq);
+  c.resize(1);
+  c(0) = axis_world.dot(this->dir) - 1.0;
+  dc = this->dir.transpose() * daxis_world;
 }
 
 void WorldGazeDirConstraint::name(const double *t,
                                   std::vector<std::string> &name_str) const {
-  if (this->isTimeValid(t)) {
-    std::string time_str = this->getTimeString(t);
-    name_str.push_back(this->body_name + " conic gaze direction constraint" +
-                       time_str);
-  }
+  std::string time_str = this->getTimeString(t);
+  name_str.push_back(this->body_name + " conic gaze direction constraint" +
+                     time_str);
 }
 
 GazeTargetConstraint::GazeTargetConstraint(
     RigidBodyTree *robot, const Vector3d &axis, const Vector3d &target,
-    const Vector3d &gaze_origin, double conethreshold, const Vector2d &tspan)
-    : GazeConstraint(robot, axis, conethreshold, tspan) {
+    const Vector3d &gaze_origin, double conethreshold)
+    : GazeConstraint(robot, axis, conethreshold) {
   this->target = target;
   this->gaze_origin = gaze_origin;
   this->num_constraint = 1;
 }
 
-void GazeTargetConstraint::bounds(const double *t, VectorXd &lb,
-                                  VectorXd &ub) const {
-  int num_constraint = this->getNumConstraint(t);
+void GazeTargetConstraint::bounds(VectorXd &lb, VectorXd &ub) const {
+  int num_constraint = this->getNumConstraint();
   lb.resize(num_constraint);
   ub.resize(num_constraint);
-  if (this->isTimeValid(t)) {
-    lb[0] = cos(this->conethreshold) - 1.0;
-    ub[0] = 0.0;
-  }
+  lb[0] = cos(this->conethreshold) - 1.0;
+  ub[0] = 0.0;
 }
 
 WorldGazeTargetConstraint::WorldGazeTargetConstraint(
     RigidBodyTree *robot, int body, const Vector3d &axis,
-    const Vector3d &target, const Vector3d &gaze_origin, double conethreshold,
-    const Vector2d &tspan)
-    : GazeTargetConstraint(robot, axis, target, gaze_origin, conethreshold,
-                           tspan) {
+    const Vector3d &target, const Vector3d &gaze_origin, double conethreshold)
+    : GazeTargetConstraint(robot, axis, target, gaze_origin, conethreshold) {
   this->body = body;
   this->body_name = robot->getBodyOrFrameName(body);
   this->type = RigidBodyConstraint::WorldGazeTargetConstraintType;
 }
 
-void WorldGazeTargetConstraint::eval(const double *t,
-                                     KinematicsCache<double> &cache,
+void WorldGazeTargetConstraint::eval(KinematicsCache<double> &cache,
                                      VectorXd &c, MatrixXd &dc) const {
-  int num_constraint = this->getNumConstraint(t);
+  int num_constraint = this->getNumConstraint();
   int nq = this->robot->num_positions;
   c.resize(num_constraint);
   dc.resize(num_constraint, nq);
-  if (this->isTimeValid(t)) {
-    Matrix3Xd body_axis_ends(3, 2);
-    body_axis_ends.col(0) = this->gaze_origin;
-    body_axis_ends.col(1) = this->gaze_origin + this->axis;
-    int nq = this->robot->num_positions;
-    auto axis_ends = robot->transformPoints(cache, body_axis_ends, body, 0);
-    auto daxis_ends =
-        robot->transformPointsJacobian(cache, body_axis_ends, body, 0, true);
+  Matrix3Xd body_axis_ends(3, 2);
+  body_axis_ends.col(0) = this->gaze_origin;
+  body_axis_ends.col(1) = this->gaze_origin + this->axis;
+  auto axis_ends = robot->transformPoints(cache, body_axis_ends, body, 0);
+  auto daxis_ends =
+      robot->transformPointsJacobian(cache, body_axis_ends, body, 0, true);
 
-    Vector3d world_axis = axis_ends.col(1) - axis_ends.col(0);
-    MatrixXd dworld_axis =
-        daxis_ends.block(3, 0, 3, nq) - daxis_ends.block(0, 0, 3, nq);
-    Vector3d dir = this->target - axis_ends.col(0);
-    MatrixXd ddir = -daxis_ends.block(0, 0, 3, nq);
-    double dir_norm = dir.norm();
-    Vector3d dir_normalized = dir / dir_norm;
-    MatrixXd ddir_normalized = (MatrixXd::Identity(3, 3) * dir_norm * dir_norm -
-                                dir * dir.transpose()) /
-                               (std::pow(dir_norm, 3)) * ddir;
-    c(0) = dir_normalized.dot(world_axis) - 1.0;
-    dc = dir_normalized.transpose() * dworld_axis +
-         world_axis.transpose() * ddir_normalized;
-  } else {
-    c.resize(0);
-    dc.resize(0, 0);
-  }
+  Vector3d world_axis = axis_ends.col(1) - axis_ends.col(0);
+  MatrixXd dworld_axis =
+      daxis_ends.block(3, 0, 3, nq) - daxis_ends.block(0, 0, 3, nq);
+  Vector3d dir = this->target - axis_ends.col(0);
+  MatrixXd ddir = -daxis_ends.block(0, 0, 3, nq);
+  double dir_norm = dir.norm();
+  Vector3d dir_normalized = dir / dir_norm;
+  MatrixXd ddir_normalized = (MatrixXd::Identity(3, 3) * dir_norm * dir_norm -
+                              dir * dir.transpose()) /
+      (std::pow(dir_norm, 3)) * ddir;
+  c(0) = dir_normalized.dot(world_axis) - 1.0;
+  dc = dir_normalized.transpose() * dworld_axis +
+      world_axis.transpose() * ddir_normalized;
 }
 
 void WorldGazeTargetConstraint::name(const double *t,
                                      std::vector<std::string> &name_str) const {
-  if (this->isTimeValid(t)) {
-    std::string time_str = this->getTimeString(t);
-    name_str.push_back(this->body_name + " conic gaze target constraint" +
-                       time_str);
-  }
+  std::string time_str = this->getTimeString(t);
+  name_str.push_back(this->body_name + " conic gaze target constraint" +
+                     time_str);
 }
 
 RelativeGazeTargetConstraint::RelativeGazeTargetConstraint(
     RigidBodyTree *robot, int bodyA_idx, int bodyB_idx,
     const Eigen::Vector3d &axis, const Vector3d &target,
-    const Vector3d &gaze_origin, double conethreshold,
-    const Eigen::Vector2d &tspan)
-    : GazeTargetConstraint(robot, axis, target, gaze_origin, conethreshold,
-                           tspan) {
+    const Vector3d &gaze_origin, double conethreshold)
+    : GazeTargetConstraint(robot, axis, target, gaze_origin, conethreshold) {
   this->bodyA_idx = bodyA_idx;
   this->bodyB_idx = bodyB_idx;
   this->bodyA_name = this->robot->bodies[this->bodyA_idx]->linkname;
@@ -1344,64 +1115,56 @@ RelativeGazeTargetConstraint::RelativeGazeTargetConstraint(
   this->type = RigidBodyConstraint::RelativeGazeTargetConstraintType;
 }
 
-void RelativeGazeTargetConstraint::eval(const double *t,
-                                        KinematicsCache<double> &cache,
+void RelativeGazeTargetConstraint::eval(KinematicsCache<double> &cache,
                                         VectorXd &c, MatrixXd &dc) const {
-  if (this->isTimeValid(t)) {
-    int nq = this->robot->num_positions;
-    auto target_pos = robot->transformPoints(cache, target, bodyB_idx, 0);
-    auto dtarget_pos =
-        robot->transformPointsJacobian(cache, target, bodyB_idx, 0, true);
+  int nq = this->robot->num_positions;
+  auto target_pos = robot->transformPoints(cache, target, bodyB_idx, 0);
+  auto dtarget_pos =
+      robot->transformPointsJacobian(cache, target, bodyB_idx, 0, true);
 
-    auto origin_pos = robot->transformPoints(cache, gaze_origin, bodyA_idx, 0);
-    auto dorigin_pos =
-        robot->transformPointsJacobian(cache, gaze_origin, bodyA_idx, 0, true);
+  auto origin_pos = robot->transformPoints(cache, gaze_origin, bodyA_idx, 0);
+  auto dorigin_pos =
+      robot->transformPointsJacobian(cache, gaze_origin, bodyA_idx, 0, true);
 
-    auto axis_pos = robot->transformPoints(cache, axis, bodyA_idx, 0);
-    auto daxis_pos =
-        robot->transformPointsJacobian(cache, axis, bodyA_idx, 0, true);
+  auto axis_pos = robot->transformPoints(cache, axis, bodyA_idx, 0);
+  auto daxis_pos =
+      robot->transformPointsJacobian(cache, axis, bodyA_idx, 0, true);
 
-    Vector3d axis_origin = Vector3d::Zero();
-    auto axis_origin_pos =
-        robot->transformPoints(cache, axis_origin, bodyA_idx, 0);
-    auto daxis_origin_pos =
-        robot->transformPointsJacobian(cache, axis_origin, bodyA_idx, 0, true);
+  Vector3d axis_origin = Vector3d::Zero();
+  auto axis_origin_pos =
+      robot->transformPoints(cache, axis_origin, bodyA_idx, 0);
+  auto daxis_origin_pos =
+      robot->transformPointsJacobian(cache, axis_origin, bodyA_idx, 0, true);
 
-    axis_pos -= axis_origin_pos;
-    daxis_pos -= daxis_origin_pos;
+  axis_pos -= axis_origin_pos;
+  daxis_pos -= daxis_origin_pos;
 
-    Vector3d origin_to_target = target_pos - origin_pos;
-    MatrixXd dorigin_to_target = dtarget_pos - dorigin_pos;
-    double origin_to_target_norm = origin_to_target.norm();
-    c.resize(1);
-    c(0) = origin_to_target.dot(axis_pos) / origin_to_target_norm - 1.0;
-    dc.resize(1, nq);
-    MatrixXd dcdorigin_to_target =
-        (axis_pos.transpose() * origin_to_target_norm -
-         axis_pos.dot(origin_to_target) / origin_to_target_norm *
-             origin_to_target.transpose()) /
-        (origin_to_target_norm * origin_to_target_norm);
-    MatrixXd dcdaxis_pos = origin_to_target.transpose() / origin_to_target_norm;
-    dc = dcdorigin_to_target * dorigin_to_target + dcdaxis_pos * daxis_pos;
-  } else {
-    c.resize(0);
-    dc.resize(0, 0);
-  }
+  Vector3d origin_to_target = target_pos - origin_pos;
+  MatrixXd dorigin_to_target = dtarget_pos - dorigin_pos;
+  double origin_to_target_norm = origin_to_target.norm();
+  c.resize(1);
+  c(0) = origin_to_target.dot(axis_pos) / origin_to_target_norm - 1.0;
+  dc.resize(1, nq);
+  MatrixXd dcdorigin_to_target =
+      (axis_pos.transpose() * origin_to_target_norm -
+       axis_pos.dot(origin_to_target) / origin_to_target_norm *
+       origin_to_target.transpose()) /
+      (origin_to_target_norm * origin_to_target_norm);
+  MatrixXd dcdaxis_pos = origin_to_target.transpose() / origin_to_target_norm;
+  dc = dcdorigin_to_target * dorigin_to_target + dcdaxis_pos * daxis_pos;
 }
 
 void RelativeGazeTargetConstraint::name(
     const double *t, std::vector<std::string> &name_str) const {
-  if (this->isTimeValid(t)) {
-    std::string time_str = this->getTimeString(t);
-    name_str.push_back(this->bodyA_name + " relative to " + this->bodyB_name +
-                       " conic gaze constraint" + time_str);
-  }
+  std::string time_str = this->getTimeString(t);
+  name_str.push_back(this->bodyA_name + " relative to " + this->bodyB_name +
+                     " conic gaze constraint" + time_str);
 }
 
 RelativeGazeDirConstraint::RelativeGazeDirConstraint(
     RigidBodyTree *robot, int bodyA_idx, int bodyB_idx, const Vector3d &axis,
-    const Vector3d &dir, double conethreshold, const Eigen::Vector2d &tspan)
-    : GazeDirConstraint(robot, axis, dir, conethreshold, tspan),
+    const Vector3d &dir, double conethreshold)
+    : GazeDirConstraint(robot, axis, dir, conethreshold),
       bodyA_idx(bodyA_idx),
       bodyB_idx(bodyB_idx) {
   this->bodyA_name = this->robot->bodies[this->bodyA_idx]->linkname;
@@ -1409,56 +1172,47 @@ RelativeGazeDirConstraint::RelativeGazeDirConstraint(
   this->type = RigidBodyConstraint::RelativeGazeDirConstraintType;
 }
 
-void RelativeGazeDirConstraint::eval(const double *t,
-                                     KinematicsCache<double> &cache,
+void RelativeGazeDirConstraint::eval(KinematicsCache<double> &cache,
                                      VectorXd &c, MatrixXd &dc) const {
-  if (this->isTimeValid(t)) {
-    Matrix3Xd body_axis_ends(3, 2);
-    body_axis_ends.block(0, 0, 3, 1) = MatrixXd::Zero(3, 1);
-    body_axis_ends.block(0, 1, 3, 1) = this->axis;
-    Matrix3Xd body_dir_ends(3, 2);
-    body_dir_ends.block(0, 0, 3, 1) = MatrixXd::Zero(3, 1);
-    body_dir_ends.block(0, 1, 3, 1) = this->dir;
-    int nq = this->robot->num_positions;
+  Matrix3Xd body_axis_ends(3, 2);
+  body_axis_ends.block(0, 0, 3, 1) = MatrixXd::Zero(3, 1);
+  body_axis_ends.block(0, 1, 3, 1) = this->axis;
+  Matrix3Xd body_dir_ends(3, 2);
+  body_dir_ends.block(0, 0, 3, 1) = MatrixXd::Zero(3, 1);
+  body_dir_ends.block(0, 1, 3, 1) = this->dir;
+  int nq = this->robot->num_positions;
 
-    auto axis_pos = robot->transformPoints(cache, body_axis_ends, bodyA_idx, 0);
-    auto daxis_pos = robot->transformPointsJacobian(cache, body_axis_ends,
-                                                    bodyA_idx, 0, true);
+  auto axis_pos = robot->transformPoints(cache, body_axis_ends, bodyA_idx, 0);
+  auto daxis_pos = robot->transformPointsJacobian(cache, body_axis_ends,
+                                                  bodyA_idx, 0, true);
 
-    auto dir_pos = robot->transformPoints(cache, body_dir_ends, bodyB_idx, 0);
-    auto ddir_pos = robot->transformPointsJacobian(cache, body_dir_ends,
-                                                   bodyB_idx, 0, true);
+  auto dir_pos = robot->transformPoints(cache, body_dir_ends, bodyB_idx, 0);
+  auto ddir_pos = robot->transformPointsJacobian(cache, body_dir_ends,
+                                                 bodyB_idx, 0, true);
 
-    Vector3d axis_world = axis_pos.col(1) - axis_pos.col(0);
-    MatrixXd daxis_world =
-        daxis_pos.block(3, 0, 3, nq) - daxis_pos.block(0, 0, 3, nq);
-    Vector3d dir_world = dir_pos.col(1) - dir_pos.col(0);
-    MatrixXd ddir_world =
-        ddir_pos.block(3, 0, 3, nq) - ddir_pos.block(0, 0, 3, nq);
-    c.resize(1);
-    c(0) = axis_world.dot(dir_world) - 1.0;
-    dc = dir_world.transpose() * daxis_world +
-         axis_world.transpose() * ddir_world;
-  } else {
-    c.resize(0);
-    dc.resize(0, 0);
-  }
+  Vector3d axis_world = axis_pos.col(1) - axis_pos.col(0);
+  MatrixXd daxis_world =
+      daxis_pos.block(3, 0, 3, nq) - daxis_pos.block(0, 0, 3, nq);
+  Vector3d dir_world = dir_pos.col(1) - dir_pos.col(0);
+  MatrixXd ddir_world =
+      ddir_pos.block(3, 0, 3, nq) - ddir_pos.block(0, 0, 3, nq);
+  c.resize(1);
+  c(0) = axis_world.dot(dir_world) - 1.0;
+  dc = dir_world.transpose() * daxis_world +
+      axis_world.transpose() * ddir_world;
 }
 
 void RelativeGazeDirConstraint::name(const double *t,
                                      std::vector<std::string> &name_str) const {
-  if (this->isTimeValid(t)) {
-    std::string time_str = this->getTimeString(t);
-    name_str.push_back(this->bodyA_name + " relative to " + this->bodyB_name +
-                       " conic gaze constraint" + time_str);
-  }
+  std::string time_str = this->getTimeString(t);
+  name_str.push_back(this->bodyA_name + " relative to " + this->bodyB_name +
+                     " conic gaze constraint" + time_str);
 }
 
 Point2PointDistanceConstraint::Point2PointDistanceConstraint(
     RigidBodyTree *robot, int bodyA, int bodyB, const Matrix3Xd &ptA,
-    const Matrix3Xd &ptB, const VectorXd &dist_lb, const VectorXd &dist_ub,
-    const Vector2d &tspan)
-    : SingleTimeKinematicConstraint(robot, tspan) {
+    const Matrix3Xd &ptB, const VectorXd &dist_lb, const VectorXd &dist_ub)
+    : SingleTimeKinematicConstraint(robot) {
   this->bodyA = bodyA;
   this->bodyB = bodyB;
   this->ptA = ptA;
@@ -1469,87 +1223,73 @@ Point2PointDistanceConstraint::Point2PointDistanceConstraint(
   this->type = RigidBodyConstraint::Point2PointDistanceConstraintType;
 }
 
-void Point2PointDistanceConstraint::eval(const double *t,
-                                         KinematicsCache<double> &cache,
+void Point2PointDistanceConstraint::eval(KinematicsCache<double> &cache,
                                          VectorXd &c, MatrixXd &dc) const {
-  if (this->isTimeValid(t)) {
-    int num_cnst = this->getNumConstraint(t);
-    MatrixXd posA(3, this->ptA.cols());
-    MatrixXd dposA(3 * this->ptA.cols(), this->robot->num_positions);
-    if (this->bodyA != 0) {
-      posA = robot->transformPoints(cache, ptA, bodyA, 0);
-      dposA = robot->transformPointsJacobian(cache, ptA, bodyA, 0, true);
-    } else {
-      posA = this->ptA.block(0, 0, 3, this->ptA.cols());
-      dposA = MatrixXd::Zero(3 * this->ptA.cols(), this->robot->num_positions);
-    }
-    MatrixXd posB(3, this->ptB.cols());
-    MatrixXd dposB(3 * this->ptB.cols(), this->robot->num_positions);
-    if (this->bodyB != 0) {
-      posB = robot->transformPoints(cache, ptB, bodyB, 0);
-      dposB = robot->transformPointsJacobian(cache, ptB, bodyB, 0, true);
-    } else {
-      posB = this->ptB.block(0, 0, 3, this->ptB.cols());
-      dposB = MatrixXd::Zero(3 * this->ptB.cols(), this->robot->num_positions);
-    }
-    MatrixXd d = posA - posB;
-    MatrixXd dd = dposA - dposB;
-    MatrixXd tmp1 = d.cwiseProduct(d);
-    MatrixXd tmp2 = tmp1.colwise().sum();
-    c.resize(num_cnst, 1);
-    c = tmp2.transpose();
-    dc.resize(num_cnst, this->robot->num_positions);
-    for (int i = 0; i < num_cnst; i++) {
-      dc.row(i) = 2 * d.col(i).transpose() *
-                  dd.block(3 * i, 0, 3, this->robot->num_positions);
-    }
+  int num_cnst = this->getNumConstraint();
+  MatrixXd posA(3, this->ptA.cols());
+  MatrixXd dposA(3 * this->ptA.cols(), this->robot->num_positions);
+  if (this->bodyA != 0) {
+    posA = robot->transformPoints(cache, ptA, bodyA, 0);
+    dposA = robot->transformPointsJacobian(cache, ptA, bodyA, 0, true);
   } else {
-    c.resize(0);
-    dc.resize(0, 0);
+    posA = this->ptA.block(0, 0, 3, this->ptA.cols());
+    dposA = MatrixXd::Zero(3 * this->ptA.cols(), this->robot->num_positions);
+  }
+  MatrixXd posB(3, this->ptB.cols());
+  MatrixXd dposB(3 * this->ptB.cols(), this->robot->num_positions);
+  if (this->bodyB != 0) {
+    posB = robot->transformPoints(cache, ptB, bodyB, 0);
+    dposB = robot->transformPointsJacobian(cache, ptB, bodyB, 0, true);
+  } else {
+    posB = this->ptB.block(0, 0, 3, this->ptB.cols());
+    dposB = MatrixXd::Zero(3 * this->ptB.cols(), this->robot->num_positions);
+  }
+  MatrixXd d = posA - posB;
+  MatrixXd dd = dposA - dposB;
+  MatrixXd tmp1 = d.cwiseProduct(d);
+  MatrixXd tmp2 = tmp1.colwise().sum();
+  c.resize(num_cnst, 1);
+  c = tmp2.transpose();
+  dc.resize(num_cnst, this->robot->num_positions);
+  for (int i = 0; i < num_cnst; i++) {
+    dc.row(i) = 2 * d.col(i).transpose() *
+        dd.block(3 * i, 0, 3, this->robot->num_positions);
   }
 }
 
 void Point2PointDistanceConstraint::name(
     const double *t, std::vector<std::string> &name_str) const {
-  if (this->isTimeValid(t)) {
-    int num_cnst = this->getNumConstraint(t);
-    std::string time_str = this->getTimeString(t);
-    for (int i = 0; i < num_cnst; i++) {
-      std::string bodyA_name;
-      if (this->bodyA != 0) {
-        bodyA_name = this->robot->bodies[bodyA]->linkname;
-      } else {
-        bodyA_name = "World";
-      }
-      std::string bodyB_name;
-      if (this->bodyB != 0) {
-        bodyB_name = this->robot->bodies[bodyB]->linkname;
-      } else {
-        bodyB_name = "World";
-      }
-      name_str.push_back("Distance from " + bodyA_name + " pt " +
-                         std::to_string(i) + " to " + bodyB_name + " pt " +
-                         std::to_string(i) + time_str);
+  int num_cnst = this->getNumConstraint();
+  std::string time_str = this->getTimeString(t);
+  for (int i = 0; i < num_cnst; i++) {
+    std::string bodyA_name;
+    if (this->bodyA != 0) {
+      bodyA_name = this->robot->bodies[bodyA]->linkname;
+    } else {
+      bodyA_name = "World";
     }
+    std::string bodyB_name;
+    if (this->bodyB != 0) {
+      bodyB_name = this->robot->bodies[bodyB]->linkname;
+    } else {
+      bodyB_name = "World";
+    }
+    name_str.push_back("Distance from " + bodyA_name + " pt " +
+                       std::to_string(i) + " to " + bodyB_name + " pt " +
+                       std::to_string(i) + time_str);
   }
 }
 
-void Point2PointDistanceConstraint::bounds(const double *t, VectorXd &lb,
+void Point2PointDistanceConstraint::bounds(VectorXd &lb,
                                            VectorXd &ub) const {
-  if (this->isTimeValid(t)) {
-    lb = this->dist_lb.cwiseProduct(this->dist_lb);
-    ub = this->dist_ub.cwiseProduct(this->dist_ub);
-  } else {
-    lb.resize(0);
-    ub.resize(0);
-  }
+  lb = this->dist_lb.cwiseProduct(this->dist_lb);
+  ub = this->dist_ub.cwiseProduct(this->dist_ub);
 }
 
 Point2LineSegDistConstraint::Point2LineSegDistConstraint(
     RigidBodyTree *robot, int pt_body, const Vector3d &pt, int line_body,
-    const Matrix<double, 3, 2> &line_ends, double dist_lb, double dist_ub,
-    const Vector2d &tspan)
-    : SingleTimeKinematicConstraint(robot, tspan) {
+    const Matrix<double, 3, 2> &line_ends, double dist_lb, double dist_ub)
+    : SingleTimeKinematicConstraint(robot) {
   this->pt_body = pt_body;
   this->pt = pt;
   this->line_body = line_body;
@@ -1560,77 +1300,64 @@ Point2LineSegDistConstraint::Point2LineSegDistConstraint(
   this->type = RigidBodyConstraint::Point2LineSegDistConstraintType;
 }
 
-void Point2LineSegDistConstraint::eval(const double *t,
-                                       KinematicsCache<double> &cache,
+void Point2LineSegDistConstraint::eval(KinematicsCache<double> &cache,
                                        VectorXd &c, MatrixXd &dc) const {
-  if (this->isTimeValid(t)) {
-    int nq = this->robot->num_positions;
+  int nq = this->robot->num_positions;
 
-    auto pt_pos = robot->transformPoints(cache, pt, pt_body, 0);
-    auto J_pt = robot->transformPointsJacobian(cache, pt, pt_body, 0, true);
+  auto pt_pos = robot->transformPoints(cache, pt, pt_body, 0);
+  auto J_pt = robot->transformPointsJacobian(cache, pt, pt_body, 0, true);
 
-    auto line_pos = robot->transformPoints(cache, line_ends, line_body, 0);
-    auto J_line =
-        robot->transformPointsJacobian(cache, line_ends, line_body, 0, true);
+  auto line_pos = robot->transformPoints(cache, line_ends, line_body, 0);
+  auto J_line =
+      robot->transformPointsJacobian(cache, line_ends, line_body, 0, true);
 
-    Vector3d x0 = pt_pos;
-    Vector3d x1 = line_pos.col(0);
-    Vector3d x2 = line_pos.col(1);
-    Vector3d x21 = x2 - x1;
-    MatrixXd J21 = J_line.block(3, 0, 3, nq) - J_line.block(0, 0, 3, nq);
-    Vector3d x10 = x1 - x0;
-    MatrixXd J10 = J_line.block(0, 0, 3, nq) - J_pt;
-    double x21_square = x21.squaredNorm();
-    double t = -x10.dot(x21) / x21_square;
-    MatrixXd dtdx10 = -x21.transpose() / x21_square;
-    MatrixXd dtdx21 =
-        -(x10.transpose() * x21_square - x10.dot(x21) * 2.0 * x21.transpose()) /
-        (x21_square * x21_square);
-    MatrixXd dtdq = dtdx10 * J10 + dtdx21 * J21;
-    Vector3d h = x0 - (x1 + x21 * t);
-    MatrixXd dhdq = J_pt - (J_line.block(0, 0, 3, nq) + J21 * t + x21 * dtdq);
-    double d = h.squaredNorm();
-    MatrixXd dddq = 2 * h.transpose() * dhdq;
-    c.resize(2);
-    dc.resize(2, nq);
-    c << d, t;
-    dc.block(0, 0, 1, nq) = dddq;
-    dc.block(1, 0, 1, nq) = dtdq;
-  } else {
-    c.resize(0);
-    dc.resize(0, 0);
-  }
+  Vector3d x0 = pt_pos;
+  Vector3d x1 = line_pos.col(0);
+  Vector3d x2 = line_pos.col(1);
+  Vector3d x21 = x2 - x1;
+  MatrixXd J21 = J_line.block(3, 0, 3, nq) - J_line.block(0, 0, 3, nq);
+  Vector3d x10 = x1 - x0;
+  MatrixXd J10 = J_line.block(0, 0, 3, nq) - J_pt;
+  double x21_square = x21.squaredNorm();
+  double t = -x10.dot(x21) / x21_square;
+  MatrixXd dtdx10 = -x21.transpose() / x21_square;
+  MatrixXd dtdx21 =
+      -(x10.transpose() * x21_square - x10.dot(x21) * 2.0 * x21.transpose()) /
+      (x21_square * x21_square);
+  MatrixXd dtdq = dtdx10 * J10 + dtdx21 * J21;
+  Vector3d h = x0 - (x1 + x21 * t);
+  MatrixXd dhdq = J_pt - (J_line.block(0, 0, 3, nq) + J21 * t + x21 * dtdq);
+  double d = h.squaredNorm();
+  MatrixXd dddq = 2 * h.transpose() * dhdq;
+  c.resize(2);
+  dc.resize(2, nq);
+  c << d, t;
+  dc.block(0, 0, 1, nq) = dddq;
+  dc.block(1, 0, 1, nq) = dtdq;
 }
 
-void Point2LineSegDistConstraint::bounds(const double *t, VectorXd &lb,
+void Point2LineSegDistConstraint::bounds(VectorXd &lb,
                                          VectorXd &ub) const {
-  if (this->isTimeValid(t)) {
-    lb.resize(2);
-    ub.resize(2);
-    lb << this->dist_lb * this->dist_lb, 0.0;
-    ub << this->dist_ub * this->dist_ub, 1.0;
-  } else {
-    lb.resize(0);
-    ub.resize(0);
-  }
+  lb.resize(2);
+  ub.resize(2);
+  lb << this->dist_lb * this->dist_lb, 0.0;
+  ub << this->dist_ub * this->dist_ub, 1.0;
 }
 
 void Point2LineSegDistConstraint::name(
     const double *t, std::vector<std::string> &name_str) const {
-  if (this->isTimeValid(t)) {
-    std::string time_str = this->getTimeString(t);
-    name_str.push_back(
-        "Distance from " + this->robot->bodies[this->pt_body]->linkname +
-        " pt to a line on " + this->robot->bodies[this->line_body]->linkname +
-        time_str);
-    name_str.push_back("Fraction of point projection onto line segment " +
-                       time_str);
-  }
+  std::string time_str = this->getTimeString(t);
+  name_str.push_back(
+      "Distance from " + this->robot->bodies[this->pt_body]->linkname +
+      " pt to a line on " + this->robot->bodies[this->line_body]->linkname +
+      time_str);
+  name_str.push_back("Fraction of point projection onto line segment " +
+                     time_str);
 }
 
 WorldFixedPositionConstraint::WorldFixedPositionConstraint(
-    RigidBodyTree *robot, int body, const Matrix3Xd &pts, const Vector2d &tspan)
-    : MultipleTimeKinematicConstraint(robot, tspan) {
+    RigidBodyTree *robot, int body, const Matrix3Xd &pts)
+    : MultipleTimeKinematicConstraint(robot) {
   this->body = body;
   if (pts.rows() != 3) {
     std::cerr << "pts must have 3 rows" << std::endl;
@@ -1640,9 +1367,8 @@ WorldFixedPositionConstraint::WorldFixedPositionConstraint(
   this->type = RigidBodyConstraint::WorldFixedPositionConstraintType;
 }
 
-int WorldFixedPositionConstraint::getNumConstraint(const double *t,
-                                                   int n_breaks) const {
-  int num_valid_t = this->numValidTime(t, n_breaks);
+int WorldFixedPositionConstraint::getNumConstraint(int n_breaks) const {
+  const int num_valid_t = n_breaks;
   if (num_valid_t >= 2) {
     return static_cast<int>(this->pts.cols());
   } else {
@@ -1650,8 +1376,7 @@ int WorldFixedPositionConstraint::getNumConstraint(const double *t,
   }
 }
 
-void WorldFixedPositionConstraint::eval_valid(const double *valid_t,
-                                              int num_valid_t,
+void WorldFixedPositionConstraint::eval_valid(int num_valid_t,
                                               const MatrixXd &valid_q,
                                               VectorXd &c,
                                               MatrixXd &dc_valid) const {
@@ -1693,9 +1418,9 @@ void WorldFixedPositionConstraint::eval_valid(const double *valid_t,
   delete[] prev_idx;
 }
 
-void WorldFixedPositionConstraint::bounds(const double *t, int n_breaks,
+void WorldFixedPositionConstraint::bounds(int n_breaks,
                                           VectorXd &lb, VectorXd &ub) const {
-  int num_valid_t = this->numValidTime(t, n_breaks);
+  const int num_valid_t = n_breaks;
   if (num_valid_t >= 2) {
     int n_pts = static_cast<int>(this->pts.cols());
     lb.resize(n_pts, 1);
@@ -1710,7 +1435,7 @@ void WorldFixedPositionConstraint::bounds(const double *t, int n_breaks,
 
 void WorldFixedPositionConstraint::name(
     const double *t, int n_breaks, std::vector<std::string> &name_str) const {
-  int num_valid_t = this->numValidTime(t, n_breaks);
+  const int num_valid_t = n_breaks;
   if (num_valid_t >= 2) {
     int n_pts = static_cast<int>(this->pts.cols());
     for (int i = 0; i < n_pts; i++) {
@@ -1721,25 +1446,22 @@ void WorldFixedPositionConstraint::name(
 }
 
 WorldFixedOrientConstraint::WorldFixedOrientConstraint(RigidBodyTree *robot,
-                                                       int body,
-                                                       const Vector2d &tspan)
-    : MultipleTimeKinematicConstraint(robot, tspan) {
+                                                       int body)
+    : MultipleTimeKinematicConstraint(robot) {
   this->body = body;
   this->body_name = robot->getBodyOrFrameName(body);
   this->type = RigidBodyConstraint::WorldFixedOrientConstraintType;
 }
 
-int WorldFixedOrientConstraint::getNumConstraint(const double *t,
-                                                 int n_breaks) const {
-  int num_valid_t = this->numValidTime(t, n_breaks);
+int WorldFixedOrientConstraint::getNumConstraint(int n_breaks) const {
+  const int num_valid_t = n_breaks;
   if (num_valid_t >= 2)
     return 1;
   else
     return 0;
 }
 
-void WorldFixedOrientConstraint::eval_valid(const double *valid_t,
-                                            int num_valid_t,
+void WorldFixedOrientConstraint::eval_valid(int num_valid_t,
                                             const MatrixXd &valid_q,
                                             VectorXd &c,
                                             MatrixXd &dc_valid) const {
@@ -1775,9 +1497,9 @@ void WorldFixedOrientConstraint::eval_valid(const double *valid_t,
   delete[] prev_idx;
 }
 
-void WorldFixedOrientConstraint::bounds(const double *t, int n_breaks,
+void WorldFixedOrientConstraint::bounds(int n_breaks,
                                         VectorXd &lb, VectorXd &ub) const {
-  int num_valid_t = this->numValidTime(t, n_breaks);
+  const int num_valid_t = n_breaks;
   if (num_valid_t >= 2) {
     lb.resize(1);
     ub.resize(1);
@@ -1791,7 +1513,7 @@ void WorldFixedOrientConstraint::bounds(const double *t, int n_breaks,
 
 void WorldFixedOrientConstraint::name(
     const double *t, int n_breaks, std::vector<std::string> &name_str) const {
-  int num_valid_t = this->numValidTime(t, n_breaks);
+  const int num_valid_t = n_breaks;
   if (num_valid_t >= 2) {
     name_str.push_back("World fixed orientation constraint for " +
                        this->body_name);
@@ -1799,16 +1521,15 @@ void WorldFixedOrientConstraint::name(
 }
 
 WorldFixedBodyPoseConstraint::WorldFixedBodyPoseConstraint(
-    RigidBodyTree *robot, int body, const Vector2d &tspan)
-    : MultipleTimeKinematicConstraint(robot, tspan) {
+    RigidBodyTree *robot, int body)
+    : MultipleTimeKinematicConstraint(robot) {
   this->body = body;
   this->body_name = robot->getBodyOrFrameName(body);
   this->type = RigidBodyConstraint::WorldFixedBodyPoseConstraintType;
 }
 
-int WorldFixedBodyPoseConstraint::getNumConstraint(const double *t,
-                                                   int n_breaks) const {
-  int num_valid_t = this->numValidTime(t, n_breaks);
+int WorldFixedBodyPoseConstraint::getNumConstraint(int n_breaks) const {
+  const int num_valid_t = n_breaks;
   if (num_valid_t >= 2) {
     return 2;
   } else {
@@ -1816,8 +1537,7 @@ int WorldFixedBodyPoseConstraint::getNumConstraint(const double *t,
   }
 }
 
-void WorldFixedBodyPoseConstraint::eval_valid(const double *valid_t,
-                                              int num_valid_t,
+void WorldFixedBodyPoseConstraint::eval_valid(int num_valid_t,
                                               const MatrixXd &valid_q,
                                               VectorXd &c,
                                               MatrixXd &dc_valid) const {
@@ -1867,9 +1587,9 @@ void WorldFixedBodyPoseConstraint::eval_valid(const double *valid_t,
   delete[] prev_idx;
 }
 
-void WorldFixedBodyPoseConstraint::bounds(const double *t, int n_breaks,
+void WorldFixedBodyPoseConstraint::bounds(int n_breaks,
                                           VectorXd &lb, VectorXd &ub) const {
-  int num_valid_t = this->numValidTime(t, n_breaks);
+  const int num_valid_t = n_breaks;
   if (num_valid_t >= 2) {
     lb.resize(2);
     ub.resize(2);
@@ -1883,7 +1603,7 @@ void WorldFixedBodyPoseConstraint::bounds(const double *t, int n_breaks,
 
 void WorldFixedBodyPoseConstraint::name(
     const double *t, int n_breaks, std::vector<std::string> &name_str) const {
-  int num_valid_t = this->numValidTime(t, n_breaks);
+  const int num_valid_t = n_breaks;
   if (num_valid_t >= 2) {
     name_str.push_back("World fixed body pose constraint for " +
                        this->body_name + " position");
@@ -1895,20 +1615,19 @@ void WorldFixedBodyPoseConstraint::name(
 AllBodiesClosestDistanceConstraint::AllBodiesClosestDistanceConstraint(
     RigidBodyTree *robot, double lb, double ub,
     const std::vector<int> &active_bodies_idx,
-    const std::set<std::string> &active_group_names, const Vector2d &tspan)
-    : SingleTimeKinematicConstraint(robot, tspan),
+    const std::set<std::string> &active_group_names)
+    : SingleTimeKinematicConstraint(robot),
       lb(lb),
       ub(ub),
       active_bodies_idx(active_bodies_idx),
       active_group_names(active_group_names) {
   VectorXd c;
   MatrixXd dc;
-  double t = 0;
 
   // FIXME: hack to determine num_constraint
   VectorXd q = robot->getZeroConfiguration();
   KinematicsCache<double> cache = robot->doKinematics(q);
-  eval(&t, cache, c, dc);
+  eval(cache, c, dc);
   // DEBUG
   // std::cout << "ABCDC::ABCDC: c.size() = " << c.size() << std::endl;
   // END_DEBUG
@@ -1916,103 +1635,76 @@ AllBodiesClosestDistanceConstraint::AllBodiesClosestDistanceConstraint(
   this->type = RigidBodyConstraint::AllBodiesClosestDistanceConstraintType;
 }
 
-// AllBodiesClosestDistanceConstraint::AllBodiesClosestDistanceConstraint(const
-// AllBodiesClosestDistanceConstraint &rhs)
-//: SingleTimeKinematicConstraint(rhs)
-//{
-// DEBUG
-// std::cout << "ABCDC::ABCDC: Copy constructor" << std::endl;
-// END_DEBUG
-// double t = 0;
-// VectorXd c;
-// MatrixXd dc;
-// eval(&t, c, dc);
-// num_constraint = c.size();
-//}
-
 void AllBodiesClosestDistanceConstraint::updateRobot(RigidBodyTree *robot) {
   this->robot = robot;
-  double t = 0;
   VectorXd c;
   MatrixXd dc;
 
   // FIXME: hack to determine num_constraint
   VectorXd q = robot->getZeroConfiguration();
   KinematicsCache<double> cache = robot->doKinematics(q);
-  eval(&t, cache, c, dc);
+  eval(cache, c, dc);
 
   this->num_constraint = static_cast<int>(c.size());
 }
 
-void AllBodiesClosestDistanceConstraint::eval(const double *t,
-                                              KinematicsCache<double> &cache,
+void AllBodiesClosestDistanceConstraint::eval(KinematicsCache<double> &cache,
                                               VectorXd &c, MatrixXd &dc) const {
-  if (this->isTimeValid(t)) {
-    Matrix3Xd xA, xB, normal;
-    std::vector<int> idxA;
-    std::vector<int> idxB;
+  Matrix3Xd xA, xB, normal;
+  std::vector<int> idxA;
+  std::vector<int> idxB;
 
-    if (active_bodies_idx.size() > 0) {
-      if (active_group_names.size() > 0) {
-        robot->collisionDetect(cache, c, normal, xA, xB, idxA, idxB,
-                               active_bodies_idx, active_group_names);
-      } else {
-        robot->collisionDetect(cache, c, normal, xA, xB, idxA, idxB,
-                               active_bodies_idx);
-      }
+  if (active_bodies_idx.size() > 0) {
+    if (active_group_names.size() > 0) {
+      robot->collisionDetect(cache, c, normal, xA, xB, idxA, idxB,
+                             active_bodies_idx, active_group_names);
     } else {
-      if (active_group_names.size() > 0) {
-        robot->collisionDetect(cache, c, normal, xA, xB, idxA, idxB,
-                               active_group_names);
-      } else {
-        robot->collisionDetect(cache, c, normal, xA, xB, idxA, idxB);
-      }
-    }
-    int num_pts = static_cast<int>(xA.cols());
-    dc = MatrixXd::Zero(num_pts, robot->num_positions);
-    MatrixXd JA = MatrixXd::Zero(3, robot->num_positions);
-    MatrixXd JB = MatrixXd::Zero(3, robot->num_positions);
-    for (int i = 0; i < num_pts; ++i) {
-      JA =
-          robot->transformPointsJacobian(cache, xA.col(i), idxA.at(i), 0, true);
-      JB =
-          robot->transformPointsJacobian(cache, xB.col(i), idxB.at(i), 0, true);
-      dc.row(i) = normal.col(i).transpose() * (JA - JB);
+      robot->collisionDetect(cache, c, normal, xA, xB, idxA, idxB,
+                             active_bodies_idx);
     }
   } else {
-    c.resize(0);
-    dc.resize(0, 0);
+    if (active_group_names.size() > 0) {
+      robot->collisionDetect(cache, c, normal, xA, xB, idxA, idxB,
+                             active_group_names);
+    } else {
+      robot->collisionDetect(cache, c, normal, xA, xB, idxA, idxB);
+    }
+  }
+  int num_pts = static_cast<int>(xA.cols());
+  dc = MatrixXd::Zero(num_pts, robot->num_positions);
+  MatrixXd JA = MatrixXd::Zero(3, robot->num_positions);
+  MatrixXd JB = MatrixXd::Zero(3, robot->num_positions);
+  for (int i = 0; i < num_pts; ++i) {
+    JA =
+        robot->transformPointsJacobian(cache, xA.col(i), idxA.at(i), 0, true);
+    JB =
+        robot->transformPointsJacobian(cache, xB.col(i), idxB.at(i), 0, true);
+    dc.row(i) = normal.col(i).transpose() * (JA - JB);
   }
 }
 
-void AllBodiesClosestDistanceConstraint::bounds(const double *t, VectorXd &lb,
+void AllBodiesClosestDistanceConstraint::bounds(VectorXd &lb,
                                                 VectorXd &ub) const {
   lb.resize(num_constraint);
   ub.resize(num_constraint);
-  if (this->isTimeValid(t)) {
-    lb = VectorXd::Constant(num_constraint, this->lb);
-    ub = VectorXd::Constant(num_constraint, this->ub);
-  }
+  lb = VectorXd::Constant(num_constraint, this->lb);
+  ub = VectorXd::Constant(num_constraint, this->ub);
 }
 
 void AllBodiesClosestDistanceConstraint::name(
     const double *t, std::vector<std::string> &name) const {
-  if (this->isTimeValid(t)) {
-    std::string time_str = this->getTimeString(t);
-    std::string cnst_name = "All-to-all closest distance constraint" + time_str;
-    for (int i = 0; i < this->num_constraint; i++) {
-      name.push_back(cnst_name);
-    }
-  } else {
-    name.push_back("");
+  std::string time_str = this->getTimeString(t);
+  std::string cnst_name = "All-to-all closest distance constraint" + time_str;
+  for (int i = 0; i < this->num_constraint; i++) {
+    name.push_back(cnst_name);
   }
 }
 
 MinDistanceConstraint::MinDistanceConstraint(
     RigidBodyTree *robot, double min_distance,
     const std::vector<int> &active_bodies_idx,
-    const std::set<std::string> &active_group_names, const Vector2d &tspan)
-    : SingleTimeKinematicConstraint(robot, tspan),
+    const std::set<std::string> &active_group_names)
+    : SingleTimeKinematicConstraint(robot),
       min_distance(min_distance),
       active_bodies_idx(active_bodies_idx),
       active_group_names(active_group_names) {
@@ -2020,123 +1712,117 @@ MinDistanceConstraint::MinDistanceConstraint(
   this->type = RigidBodyConstraint::MinDistanceConstraintType;
 }
 
-void MinDistanceConstraint::eval(const double *t,
-                                 KinematicsCache<double> &cache, VectorXd &c,
+void MinDistanceConstraint::eval(KinematicsCache<double> &cache, VectorXd &c,
                                  MatrixXd &dc) const {
   // DEBUG
   // std::cout << "MinDistanceConstraint::eval: START" << std::endl;
   // END_DEBUG
-  if (this->isTimeValid(t)) {
-    VectorXd dist, scaled_dist, pairwise_costs;
-    Matrix3Xd xA, xB, normal;
-    MatrixXd ddist_dq, dscaled_dist_ddist, dpairwise_costs_dscaled_dist;
-    std::vector<int> idxA;
-    std::vector<int> idxB;
+  VectorXd dist, scaled_dist, pairwise_costs;
+  Matrix3Xd xA, xB, normal;
+  MatrixXd ddist_dq, dscaled_dist_ddist, dpairwise_costs_dscaled_dist;
+  std::vector<int> idxA;
+  std::vector<int> idxB;
 
-    if (active_bodies_idx.size() > 0) {
-      if (active_group_names.size() > 0) {
-        robot->collisionDetect(cache, dist, normal, xA, xB, idxA, idxB,
-                               active_bodies_idx, active_group_names);
-      } else {
-        robot->collisionDetect(cache, dist, normal, xA, xB, idxA, idxB,
-                               active_bodies_idx);
-      }
+  if (active_bodies_idx.size() > 0) {
+    if (active_group_names.size() > 0) {
+      robot->collisionDetect(cache, dist, normal, xA, xB, idxA, idxB,
+                             active_bodies_idx, active_group_names);
     } else {
-      if (active_group_names.size() > 0) {
-        robot->collisionDetect(cache, dist, normal, xA, xB, idxA, idxB,
-                               active_group_names);
-      } else {
-        robot->collisionDetect(cache, dist, normal, xA, xB, idxA, idxB);
-      }
+      robot->collisionDetect(cache, dist, normal, xA, xB, idxA, idxB,
+                             active_bodies_idx);
     }
-
-    int num_pts = static_cast<int>(xA.cols());
-    ddist_dq = MatrixXd::Zero(num_pts, robot->num_positions);
-
-    // Compute Jacobian of closest distance vector
-    // DEBUG
-    // std:: cout << "IntegratedClosestDistanceConstraint::eval_valid: Compute
-    // distance Jacobian" << std::endl;
-    // END_DEBUG
-    scaleDistance(dist, scaled_dist, dscaled_dist_ddist);
-    penalty(scaled_dist, pairwise_costs, dpairwise_costs_dscaled_dist);
-
-    std::vector<std::vector<int>> orig_idx_of_pt_on_bodyA(robot->bodies.size());
-    std::vector<std::vector<int>> orig_idx_of_pt_on_bodyB(robot->bodies.size());
-    for (int k = 0; k < num_pts; ++k) {
-      // DEBUG
-      // std::cout << "MinDistanceConstraint::eval: First loop: " << k <<
-      // std::endl;
-      // std::cout << "pairwise_costs.size() = " << pairwise_costs.size() <<
-      // std::endl;
-      // std::cout << "pairwise_costs.size() = " << pairwise_costs.size() <<
-      // std::endl;
-      // END_DEBUG
-      if (pairwise_costs(k) > 0) {
-        orig_idx_of_pt_on_bodyA.at(idxA.at(k)).push_back(k);
-        orig_idx_of_pt_on_bodyB.at(idxB.at(k)).push_back(k);
-      }
-    }
-    for (int k = 0; k < robot->bodies.size(); ++k) {
-      // DEBUG
-      // std::cout << "MinDistanceConstraint::eval: Second loop: " << k <<
-      // std::endl;
-      // END_DEBUG
-      int l = 0;
-      int numA = static_cast<int>(orig_idx_of_pt_on_bodyA.at(k).size());
-      int numB = static_cast<int>(orig_idx_of_pt_on_bodyB.at(k).size());
-      if (numA + numB == 0) {
-        continue;
-      }
-      Matrix3Xd x_k(3, numA + numB);
-      for (; l < numA; ++l) {
-        // DEBUG
-        // std::cout << "MinDistanceConstraint::eval: Third loop: " << l <<
-        // std::endl;
-        // END_DEBUG
-        x_k.col(l) = xA.col(orig_idx_of_pt_on_bodyA.at(k).at(l));
-      }
-      for (; l < numA + numB; ++l) {
-        // DEBUG
-        // std::cout << "MinDistanceConstraint::eval: Fourth loop: " << l <<
-        // std::endl;
-        // END_DEBUG
-        x_k.col(l) = xB.col(orig_idx_of_pt_on_bodyB.at(k).at(l - numA));
-      }
-
-      auto J_k = robot->transformPointsJacobian(cache, x_k, k, 0, true);
-
-      l = 0;
-      for (; l < numA; ++l) {
-        // DEBUG
-        // std::cout << "MinDistanceConstraint::eval: Fifth loop: " << l <<
-        // std::endl;
-        // END_DEBUG
-        ddist_dq.row(orig_idx_of_pt_on_bodyA.at(k).at(l)) +=
-            normal.col(orig_idx_of_pt_on_bodyA.at(k).at(l)).transpose() *
-            J_k.block(3 * l, 0, 3, robot->num_positions);
-      }
-      for (; l < numA + numB; ++l) {
-        // DEBUG
-        // std::cout << "MinDistanceConstraint::eval: Sixth loop: " << l <<
-        // std::endl;
-        // END_DEBUG
-        ddist_dq.row(orig_idx_of_pt_on_bodyB.at(k).at(l - numA)) +=
-            -normal.col(orig_idx_of_pt_on_bodyB.at(k).at(l - numA))
-                 .transpose() *
-            J_k.block(3 * l, 0, 3, robot->num_positions);
-      }
-    }
-    // DEBUG
-    // std::cout << "MinDistanceConstraint::eval: Set outputs" << std::endl;
-    // END_DEBUG
-    MatrixXd dcost_dscaled_dist(dpairwise_costs_dscaled_dist.colwise().sum());
-    c(0) = pairwise_costs.sum();
-    dc = dcost_dscaled_dist * dscaled_dist_ddist * ddist_dq;
   } else {
-    c.resize(0);
-    dc.resize(0, 0);
+    if (active_group_names.size() > 0) {
+      robot->collisionDetect(cache, dist, normal, xA, xB, idxA, idxB,
+                             active_group_names);
+    } else {
+      robot->collisionDetect(cache, dist, normal, xA, xB, idxA, idxB);
+    }
   }
+
+  int num_pts = static_cast<int>(xA.cols());
+  ddist_dq = MatrixXd::Zero(num_pts, robot->num_positions);
+
+  // Compute Jacobian of closest distance vector
+  // DEBUG
+  // std:: cout << "IntegratedClosestDistanceConstraint::eval_valid: Compute
+  // distance Jacobian" << std::endl;
+  // END_DEBUG
+  scaleDistance(dist, scaled_dist, dscaled_dist_ddist);
+  penalty(scaled_dist, pairwise_costs, dpairwise_costs_dscaled_dist);
+
+  std::vector<std::vector<int>> orig_idx_of_pt_on_bodyA(robot->bodies.size());
+  std::vector<std::vector<int>> orig_idx_of_pt_on_bodyB(robot->bodies.size());
+  for (int k = 0; k < num_pts; ++k) {
+    // DEBUG
+    // std::cout << "MinDistanceConstraint::eval: First loop: " << k <<
+    // std::endl;
+    // std::cout << "pairwise_costs.size() = " << pairwise_costs.size() <<
+    // std::endl;
+    // std::cout << "pairwise_costs.size() = " << pairwise_costs.size() <<
+    // std::endl;
+    // END_DEBUG
+    if (pairwise_costs(k) > 0) {
+      orig_idx_of_pt_on_bodyA.at(idxA.at(k)).push_back(k);
+      orig_idx_of_pt_on_bodyB.at(idxB.at(k)).push_back(k);
+    }
+  }
+  for (int k = 0; k < robot->bodies.size(); ++k) {
+    // DEBUG
+    // std::cout << "MinDistanceConstraint::eval: Second loop: " << k <<
+    // std::endl;
+    // END_DEBUG
+    int l = 0;
+    int numA = static_cast<int>(orig_idx_of_pt_on_bodyA.at(k).size());
+    int numB = static_cast<int>(orig_idx_of_pt_on_bodyB.at(k).size());
+    if (numA + numB == 0) {
+      continue;
+    }
+    Matrix3Xd x_k(3, numA + numB);
+    for (; l < numA; ++l) {
+      // DEBUG
+      // std::cout << "MinDistanceConstraint::eval: Third loop: " << l <<
+      // std::endl;
+      // END_DEBUG
+      x_k.col(l) = xA.col(orig_idx_of_pt_on_bodyA.at(k).at(l));
+    }
+    for (; l < numA + numB; ++l) {
+      // DEBUG
+      // std::cout << "MinDistanceConstraint::eval: Fourth loop: " << l <<
+      // std::endl;
+      // END_DEBUG
+      x_k.col(l) = xB.col(orig_idx_of_pt_on_bodyB.at(k).at(l - numA));
+    }
+
+    auto J_k = robot->transformPointsJacobian(cache, x_k, k, 0, true);
+
+    l = 0;
+    for (; l < numA; ++l) {
+      // DEBUG
+      // std::cout << "MinDistanceConstraint::eval: Fifth loop: " << l <<
+      // std::endl;
+      // END_DEBUG
+      ddist_dq.row(orig_idx_of_pt_on_bodyA.at(k).at(l)) +=
+          normal.col(orig_idx_of_pt_on_bodyA.at(k).at(l)).transpose() *
+          J_k.block(3 * l, 0, 3, robot->num_positions);
+    }
+    for (; l < numA + numB; ++l) {
+      // DEBUG
+      // std::cout << "MinDistanceConstraint::eval: Sixth loop: " << l <<
+      // std::endl;
+      // END_DEBUG
+      ddist_dq.row(orig_idx_of_pt_on_bodyB.at(k).at(l - numA)) +=
+          -normal.col(orig_idx_of_pt_on_bodyB.at(k).at(l - numA))
+          .transpose() *
+          J_k.block(3 * l, 0, 3, robot->num_positions);
+    }
+  }
+  // DEBUG
+  // std::cout << "MinDistanceConstraint::eval: Set outputs" << std::endl;
+  // END_DEBUG
+  MatrixXd dcost_dscaled_dist(dpairwise_costs_dscaled_dist.colwise().sum());
+  c(0) = pairwise_costs.sum();
+  dc = dcost_dscaled_dist * dscaled_dist_ddist * ddist_dq;
   // DEBUG
   // std::cout << "MinDistanceConstraint::eval: END" << std::endl;
   // END_DEBUG
@@ -2166,32 +1852,24 @@ void MinDistanceConstraint::penalty(const Eigen::VectorXd &dist,
   }
 }
 
-void MinDistanceConstraint::bounds(const double *t, VectorXd &lb,
+void MinDistanceConstraint::bounds(VectorXd &lb,
                                    VectorXd &ub) const {
-  lb.resize(this->num_constraint);
-  ub.resize(this->num_constraint);
-  if (this->isTimeValid(t)) {
-    lb = VectorXd::Zero(num_constraint);
-    ub = VectorXd::Zero(num_constraint);
-  }
+  lb = VectorXd::Zero(num_constraint);
+  ub = VectorXd::Zero(num_constraint);
 }
 
 void MinDistanceConstraint::name(const double *t,
                                  std::vector<std::string> &name) const {
-  if (this->isTimeValid(t)) {
-    std::string time_str = this->getTimeString(t);
-    std::string cnst_name("Minimum distance constraint" + time_str);
-    name.push_back(cnst_name);
-  } else {
-    name.push_back("");
-  }
+  std::string time_str = this->getTimeString(t);
+  std::string cnst_name("Minimum distance constraint" + time_str);
+  name.push_back(cnst_name);
 }
 
 WorldPositionInFrameConstraint::WorldPositionInFrameConstraint(
     RigidBodyTree *robot, int body, const Eigen::Matrix3Xd &pts,
     const Eigen::Matrix4d &T_frame_to_world, const Eigen::MatrixXd &lb,
-    const Eigen::MatrixXd &ub, const Eigen::Vector2d &tspan)
-    : WorldPositionConstraint(robot, body, pts, lb, ub, tspan) {
+    const Eigen::MatrixXd &ub)
+    : WorldPositionConstraint(robot, body, pts, lb, ub) {
   this->T_frame_to_world = T_frame_to_world;
   this->T_world_to_frame = T_frame_to_world.inverse();
   this->type = RigidBodyConstraint::WorldPositionInFrameConstraintType;
@@ -2223,9 +1901,8 @@ WorldPositionInFrameConstraint::~WorldPositionInFrameConstraint() {}
 PostureChangeConstraint::PostureChangeConstraint(RigidBodyTree *robot,
                                                  const VectorXi &joint_ind,
                                                  const VectorXd &lb_change,
-                                                 const VectorXd &ub_change,
-                                                 const Vector2d &tspan)
-    : MultipleTimeLinearPostureConstraint(robot, tspan) {
+                                                 const VectorXd &ub_change)
+    : MultipleTimeLinearPostureConstraint(robot) {
   this->setJointChangeBounds(joint_ind, lb_change, ub_change);
   this->type = RigidBodyConstraint::PostureChangeConstraintType;
 }
@@ -2248,24 +1925,21 @@ void PostureChangeConstraint::setJointChangeBounds(const VectorXi &joint_ind,
   }
 }
 
-int PostureChangeConstraint::getNumConstraint(const double *t,
-                                              int n_breaks) const {
-  std::vector<bool> valid_flag = this->isTimeValid(t, n_breaks);
-  int num_valid_t = this->numValidTime(valid_flag);
+int PostureChangeConstraint::getNumConstraint(int n_breaks) const {
+  const int num_valid_t = n_breaks;
   if (num_valid_t >= 2)
     return (num_valid_t - 1) * static_cast<int>(this->joint_ind.size());
   else
     return 0;
 }
 
-void PostureChangeConstraint::feval(const double *t, int n_breaks,
+void PostureChangeConstraint::feval(int n_breaks,
                                     const MatrixXd &q, VectorXd &c) const {
-  std::vector<bool> valid_flag = this->isTimeValid(t, n_breaks);
-  int num_valid_t = this->numValidTime(valid_flag);
+  const int num_valid_t = n_breaks;
   if (num_valid_t >= 2) {
     VectorXi valid_t_ind;
-    this->validTimeInd(valid_flag, valid_t_ind);
-    int nc = this->getNumConstraint(t, n_breaks);
+    validTimeInd(n_breaks, valid_t_ind);
+    int nc = this->getNumConstraint(n_breaks);
     c.resize(nc);
     for (int i = 1; i < num_valid_t; i++) {
       for (int j = 0; j < this->joint_ind.size(); j++) {
@@ -2279,20 +1953,19 @@ void PostureChangeConstraint::feval(const double *t, int n_breaks,
   }
 }
 
-void PostureChangeConstraint::geval(const double *t, int n_breaks,
+void PostureChangeConstraint::geval(int n_breaks,
                                     VectorXi &iAfun, VectorXi &jAvar,
                                     VectorXd &A) const {
-  std::vector<bool> valid_flag = this->isTimeValid(t, n_breaks);
-  int num_valid_t = this->numValidTime(valid_flag);
+  const int num_valid_t = n_breaks;
   if (num_valid_t >= 2) {
     int num_joints = static_cast<int>(this->joint_ind.size());
-    int nc = this->getNumConstraint(t, n_breaks);
+    int nc = this->getNumConstraint(n_breaks);
     int nq = this->robot->num_positions;
     iAfun.resize(nc * 2);
     jAvar.resize(nc * 2);
     A.resize(nc * 2);
     VectorXi valid_t_ind;
-    this->validTimeInd(valid_flag, valid_t_ind);
+    validTimeInd(n_breaks, valid_t_ind);
     for (int i = 0; i < num_valid_t - 1; i++) {
       for (int j = 0; j < num_joints; j++) {
         iAfun(i * num_joints + j) = i * num_joints + j;
@@ -2317,10 +1990,9 @@ void PostureChangeConstraint::geval(const double *t, int n_breaks,
 
 void PostureChangeConstraint::name(const double *t, int n_breaks,
                                    std::vector<std::string> &name_str) const {
-  std::vector<bool> valid_flag = this->isTimeValid(t, n_breaks);
-  int num_valid_t = this->numValidTime(valid_flag);
+  const int num_valid_t = n_breaks;
   VectorXi valid_t_ind;
-  this->validTimeInd(valid_flag, valid_t_ind);
+  validTimeInd(n_breaks, valid_t_ind);
   if (num_valid_t >= 2) {
     for (int i = 1; i < num_valid_t; i++) {
       for (int j = 0; j < this->joint_ind.size(); j++) {
@@ -2332,12 +2004,11 @@ void PostureChangeConstraint::name(const double *t, int n_breaks,
   }
 }
 
-void PostureChangeConstraint::bounds(const double *t, int n_breaks,
+void PostureChangeConstraint::bounds(int n_breaks,
                                      VectorXd &lb, VectorXd &ub) const {
-  std::vector<bool> valid_flag = this->isTimeValid(t, n_breaks);
-  int num_valid_t = this->numValidTime(valid_flag);
+  const int num_valid_t = n_breaks;
   if (num_valid_t >= 2) {
-    int nc = this->getNumConstraint(t, n_breaks);
+    int nc = this->getNumConstraint(n_breaks);
     lb.resize(nc);
     ub.resize(nc);
     int num_joints = static_cast<int>(this->joint_ind.size());
@@ -2353,8 +2024,8 @@ void PostureChangeConstraint::bounds(const double *t, int n_breaks,
 
 GravityCompensationTorqueConstraint::GravityCompensationTorqueConstraint(
     RigidBodyTree *robot, const VectorXi &joint_indices, const VectorXd &lb,
-    const VectorXd &ub, const Vector2d &tspan)
-    : SingleTimeKinematicConstraint(robot, tspan),
+    const VectorXd &ub)
+    : SingleTimeKinematicConstraint(robot),
       lb(lb),
       ub(ub),
       joint_indices(joint_indices) {
@@ -2362,8 +2033,7 @@ GravityCompensationTorqueConstraint::GravityCompensationTorqueConstraint(
   this->type = RigidBodyConstraint::GravityCompensationTorqueConstraintType;
 }
 
-void GravityCompensationTorqueConstraint::eval(const double *t,
-                                               KinematicsCache<double> &cache,
+void GravityCompensationTorqueConstraint::eval(KinematicsCache<double> &cache,
                                                VectorXd &c,
                                                MatrixXd &dc) const {
   // FIXME: very inefficient:
@@ -2389,24 +2059,15 @@ void GravityCompensationTorqueConstraint::eval(const double *t,
 
 void GravityCompensationTorqueConstraint::name(
     const double *t, std::vector<std::string> &name) const {
-  if (this->isTimeValid(t)) {
-    std::string time_str = this->getTimeString(t);
-    std::string cnst_name = "Gravity compensation torque constraint" + time_str;
-    for (int i = 0; i < this->num_constraint; i++) {
-      name.push_back(cnst_name);
-    }
-  } else {
-    name.push_back("");
+  std::string time_str = this->getTimeString(t);
+  std::string cnst_name = "Gravity compensation torque constraint" + time_str;
+  for (int i = 0; i < this->num_constraint; i++) {
+    name.push_back(cnst_name);
   }
 }
 
-void GravityCompensationTorqueConstraint::bounds(const double *t, VectorXd &lb,
+void GravityCompensationTorqueConstraint::bounds(VectorXd &lb,
                                                  VectorXd &ub) const {
-  if (this->isTimeValid(t)) {
-    lb = this->lb;
-    ub = this->ub;
-  } else {
-    lb.resize(0);
-    ub.resize(0);
-  }
+  lb = this->lb;
+  ub = this->ub;
 }

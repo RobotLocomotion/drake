@@ -24,5 +24,5 @@ function con = makeCon(r)
   T = [xyz;rpy2quat(rpy)];
 %   T = [rpy2rotmat(rpy),xyz;zeros(1,3),1];
 
-  con = RelativePositionConstraint(r,pts,lb,ub,bodyA_idx,bodyB_idx,T,[0 1]);
+  con = RelativePositionConstraint(r,pts,lb,ub,bodyA_idx,bodyB_idx,T);
 end

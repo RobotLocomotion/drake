@@ -53,16 +53,16 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     t_ptr = mxGetPrSafe(prhs[2]);
   }
   int type = stlpc->getType();
-  int num_cnst = stlpc->getNumConstraint(t_ptr);
+  int num_cnst = stlpc->getNumConstraint();
   VectorXd c(num_cnst);
-  stlpc->feval(t_ptr, q, c);
+  stlpc->feval(q, c);
   VectorXi iAfun, jAvar;
   VectorXd A;
-  stlpc->geval(t_ptr, iAfun, jAvar, A);
+  stlpc->geval(iAfun, jAvar, A);
   vector<string> cnst_names;
   stlpc->name(t_ptr, cnst_names);
   VectorXd lb, ub;
-  stlpc->bounds(t_ptr, lb, ub);
+  stlpc->bounds(lb, ub);
   plhs[0] = mxCreateDoubleScalar((double)type);
   plhs[1] = mxCreateDoubleScalar((double)num_cnst);
   int retvec_size;

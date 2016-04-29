@@ -231,10 +231,10 @@ class SingleTimeKinematicConstraintWrapper : public Constraint {
  public:
   SingleTimeKinematicConstraintWrapper(
       const shared_ptr<SingleTimeKinematicConstraint>& rigid_body_constraint)
-      : Constraint(rigid_body_constraint->getNumConstraint(nullptr)),
+      : Constraint(rigid_body_constraint->getNumConstraint()),
         rigid_body_constraint(rigid_body_constraint),
         kinsol(rigid_body_constraint->getRobotPointer()->bodies) {
-    rigid_body_constraint->bounds(nullptr, lower_bound_, upper_bound_);
+    rigid_body_constraint->bounds(lower_bound_, upper_bound_);
   }
   virtual ~SingleTimeKinematicConstraintWrapper() {}
 
@@ -243,7 +243,7 @@ class SingleTimeKinematicConstraintWrapper : public Constraint {
     kinsol.initialize(q);
     rigid_body_constraint->getRobotPointer()->doKinematics(kinsol);
     MatrixXd dy;
-    rigid_body_constraint->eval(nullptr, kinsol, y, dy);
+    rigid_body_constraint->eval(kinsol, y, dy);
   }
   virtual void eval(const Eigen::Ref<const TaylorVecXd>& tq,
                     TaylorVecXd& ty) const override {
@@ -251,7 +251,7 @@ class SingleTimeKinematicConstraintWrapper : public Constraint {
     rigid_body_constraint->getRobotPointer()->doKinematics(kinsol);
     VectorXd y;
     MatrixXd dy;
-    rigid_body_constraint->eval(nullptr, kinsol, y, dy);
+    rigid_body_constraint->eval(kinsol, y, dy);
     initializeAutoDiffGivenGradientMatrix(
         y, (dy * autoDiffToGradientMatrix(tq)).eval(), ty);
   }
@@ -282,21 +282,17 @@ Drake::getInitialState(const RigidBodySystem& sys) {
 
     Matrix<double, 7, 1> bTbp = Matrix<double, 7, 1>::Zero();
     bTbp(3) = 1.0;
-    Vector2d tspan;
-    tspan << -std::numeric_limits<double>::infinity(),
-        std::numeric_limits<double>::infinity();
     Vector3d zero = Vector3d::Zero();
     for (int i = 0; i < loops.size(); i++) {
       auto con1 = make_shared<RelativePositionConstraint>(
           sys.tree.get(), zero, zero, zero, loops[i].frameA->frame_index,
-          loops[i].frameB->frame_index, bTbp, tspan);
+          loops[i].frameB->frame_index, bTbp);
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con1wrapper(
           new SingleTimeKinematicConstraintWrapper(con1));
       prog.AddGenericConstraint(con1wrapper, {qvar});
       auto con2 = make_shared<RelativePositionConstraint>(
           sys.tree.get(), loops[i].axis, loops[i].axis, loops[i].axis,
-          loops[i].frameA->frame_index, loops[i].frameB->frame_index, bTbp,
-          tspan);
+          loops[i].frameA->frame_index, loops[i].frameB->frame_index, bTbp);
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con2wrapper(
           new SingleTimeKinematicConstraintWrapper(con2));
       prog.AddGenericConstraint(con2wrapper, {qvar});

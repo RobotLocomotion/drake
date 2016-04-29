@@ -6,35 +6,20 @@ classdef PostureConstraint<RigidBodyConstraint
     joint_limit_min0;% The default lower bound of the  posture of the robot
     joint_limit_max0;% The default upper bound of the  posture of the robot
   end
-  
+
   methods
-    function obj = PostureConstraint(robot,tspan)
+    function obj = PostureConstraint(robot)
 		% @param robot                      -- A RigidBodyManipulator or a TimeSteppingRigidBodyManipulator object
-      if(nargin < 2)
-        tspan = [-inf inf];
-      end
-      obj = obj@RigidBodyConstraint(RigidBodyConstraint.PostureConstraintCategory,robot,tspan);
+      obj = obj@RigidBodyConstraint(RigidBodyConstraint.PostureConstraintCategory,robot);
 			[obj.joint_limit_min0,obj.joint_limit_max0] = robot.getJointLimits();
       obj.lb = obj.joint_limit_min0;
       obj.ub = obj.joint_limit_max0;
       obj.type = RigidBodyConstraint.PostureConstraintType;
       if robot.getMexModelPtr~=0 && exist('constructPtrRigidBodyConstraintmex','file')
-        obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.PostureConstraintType,robot.getMexModelPtr,tspan);
+        obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.PostureConstraintType,robot.getMexModelPtr);
       end
     end
-    
-    function flag = isTimeValid(obj,t)
-      if(isempty(t))
-        flag = true;
-      else
-        if(t>=obj.tspan(1)&&t<=obj.tspan(end))
-          flag = true;
-        else
-          flag = false;
-        end
-      end
-    end
-    
+
     function obj = setJointLimits(obj,joint_ind,joint_min,joint_max)
 		  % @param joint_ind   A column vector. The indices of the joints whose joint limits are to be set
 			% @param joint_min   A column vector of the same size as joint_ind. The lower bound of the joints are max([robot.joint_limit_min(joint_ind) joint_min]),[],2);
@@ -60,26 +45,16 @@ classdef PostureConstraint<RigidBodyConstraint
         error('Either the joint_max is smaller than the robot default joint min, or the joint min is larger than the robot default joint max');
       end
     end
-    
+
     function [lb,ub] = bounds(obj,t)
-      if obj.isTimeValid(t)
-        lb = obj.lb;
-        ub = obj.ub;
-      else
-        lb = obj.joint_limit_min0;
-        ub = obj.joint_limit_max0;
-      end
+      lb = obj.lb;
+      ub = obj.ub;
     end
-    
+
     function cnstr = generateConstraint(obj,t)
       % generate a BoundingBoxConstraint on the robot posture if t is a valid time
       % or if no time is given
-      if nargin < 2, t = obj.tspan(1); end;
-      if(obj.isTimeValid(t))
-        cnstr = {BoundingBoxConstraint(obj.lb,obj.ub)};
-      else
-        cnstr = {};
-      end
+      cnstr = {BoundingBoxConstraint(obj.lb,obj.ub)};
     end
   end
 end

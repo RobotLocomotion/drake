@@ -3,7 +3,7 @@ classdef RelativeGazeOrientConstraint < GazeOrientConstraint
     body_a = struct('idx',[],'name','');
     body_b = struct('idx',[],'name','');
   end
-  
+
   methods(Access = protected)
     function [quat, dquat_dq] = evalOrientation(obj,kinsol)
       [x_a,J_a] = forwardKin(obj.robot,kinsol,obj.body_a.idx,[0;0;0],2);
@@ -16,12 +16,12 @@ classdef RelativeGazeOrientConstraint < GazeOrientConstraint
       dquat_dq = dquat*[dquat_b;dquat_a];
     end
   end
-  
+
   methods
-    function obj = RelativeGazeOrientConstraint(robot,tspan,body_a, ...
+    function obj = RelativeGazeOrientConstraint(robot,body_a, ...
         body_b,axis,quat_des, ...
         threshold,conethreshold)
-      obj = obj@GazeOrientConstraint(robot,tspan,axis,quat_des,threshold, ...
+      obj = obj@GazeOrientConstraint(robot,axis,quat_des,threshold, ...
         conethreshold);
       body_a_idx = robot.parseBodyOrFrameID(body_a);
       body_b_idx = robot.parseBodyOrFrameID(body_b);
@@ -31,7 +31,7 @@ classdef RelativeGazeOrientConstraint < GazeOrientConstraint
       obj.body_b.name = getBodyOrFrameName(obj.robot, obj.body_b.idx);
     end
 
-    
+
 
     function drawConstraint(obj,q,lcmgl)
       norm_axis = obj.axis/norm(obj.axis);
@@ -140,14 +140,10 @@ classdef RelativeGazeOrientConstraint < GazeOrientConstraint
     end
 
     function name_str = name(obj,t)
-      if(t>=obj.tspan(1)&&t<=obj.tspan(end))||isempty(t)
-        name_str = {sprintf('%s relative to %s conic gaze constraint at time %10.4f', ...
-                        obj.body_a.name,obj.body_b.name,t);...
-                sprintf('%s relative to %s conic gaze constraint at time %10.4f', ...
-                        obj.body_a.name,obj.body_b.name,t)};
-      else
-        name_str = [];
-      end
+      name_str = {sprintf('%s relative to %s conic gaze constraint at time %10.4f', ...
+                          obj.body_a.name,obj.body_b.name,t);...
+                  sprintf('%s relative to %s conic gaze constraint at time %10.4f', ...
+                          obj.body_a.name,obj.body_b.name,t)};
     end
 
   end

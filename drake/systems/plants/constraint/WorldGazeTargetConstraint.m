@@ -6,7 +6,6 @@ classdef WorldGazeTargetConstraint < GazeTargetConstraint
 % @param target           A 3x1 point in the world frame
 % @param gaze_origin      A 3x1 point in the body frame
 % @param conethreshold    A scalar in [0,pi], default is 0
-% @param tspan            OPTIONAL argument. A 1x2 vector
 % The body has the orientation such that its axis is within a cone, the
 % aperture of the cone being 2xconethreshold, the axis of the cone being
 % the line connecting target and gaze_origin
@@ -14,7 +13,7 @@ classdef WorldGazeTargetConstraint < GazeTargetConstraint
     body
     body_name
   end
-  
+
   methods(Access = protected)
     function [c,dc] = evalValidTime(obj,kinsol)
       [axis_ends,daxis_ends] = forwardKin(obj.robot,kinsol,obj.body,[obj.gaze_origin obj.gaze_origin+obj.axis],0);
@@ -29,30 +28,23 @@ classdef WorldGazeTargetConstraint < GazeTargetConstraint
       dc = dir_normalized'*dworld_axis+world_axis'*ddir_normalized;
     end
   end
-  
+
   methods
-    function obj = WorldGazeTargetConstraint(robot,body,axis,target,gaze_origin,conethreshold,tspan)
-      if(nargin == 6)
-        tspan = [-inf inf];
-      end
-      obj = obj@GazeTargetConstraint(robot,axis,target,gaze_origin,conethreshold,tspan);
+    function obj = WorldGazeTargetConstraint(robot,body,axis,target,gaze_origin,conethreshold)
+      obj = obj@GazeTargetConstraint(robot,axis,target,gaze_origin,conethreshold);
       obj.body = obj.robot.parseBodyOrFrameID(body);
       obj.body_name = obj.robot.getBodyOrFrameName(obj.body);
       obj.type = RigidBodyConstraint.WorldGazeTargetConstraintType;
       if(robot.getMexModelPtr~=0 && exist('constructPtrRigidBodyConstraintmex','file'))
-        ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldGazeTargetConstraintType,robot.getMexModelPtr,body,axis,target,gaze_origin,conethreshold,tspan);
+        ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldGazeTargetConstraintType,robot.getMexModelPtr,body,axis,target,gaze_origin,conethreshold);
         obj.mex_ptr = ptr;
       end
     end
-    
+
     function name_str = name(obj,t)
-      if(obj.isTimeValid(t))
-        name_str = {sprintf('%s conic gaze target constraint at time %10.4f',obj.body_name,t)};
-      else
-        name_str = [];
-      end
+      name_str = {sprintf('%s conic gaze target constraint at time %10.4f',obj.body_name,t)};
     end
-    
+
     function joint_idx = kinematicsPathJoints(obj)
       [~,joint_path] = obj.robot.findKinematicPath(1,obj.body);
       joint_idx = vertcat(obj.robot.body(joint_path).position_num)';

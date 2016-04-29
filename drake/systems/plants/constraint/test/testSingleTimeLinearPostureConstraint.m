@@ -17,9 +17,8 @@ jAvar = [l_leg_kny;r_leg_kny;l_leg_hpy;r_leg_hpy;l_leg_aky;r_leg_aky;l_leg_hpz;r
 A = [1;-1;1;-1;1;-1;1;-1];
 lb = [0;0;0;-0.1*pi];
 ub = [0;0;0;0.1*pi];
-tspan = [0 1];
 q = getRandomConfiguration(robot);
-stlpc = SingleTimeLinearPostureConstraint(robot,iAfun,jAvar,A,lb,ub,tspan);
+stlpc = SingleTimeLinearPostureConstraint(robot,iAfun,jAvar,A,lb,ub);
 
 % todo: move this farther down, so that more tests are included when this
 % dependency is not satisfied...
@@ -29,21 +28,7 @@ category_name_mex = constraintCategorymex(stlpc.mex_ptr);
 if(~strcmp(category_name_mex,stlpc.categoryString()))
   error('category name string do not match')
 end
-display('Check t within tspan');
 t = 0;
-num_cnst = stlpc.getNumConstraint(t);
-valuecheck(num_cnst,4);
-testSingleTimeLinearPostureConstraint_userfun(stlpc,q,t);
-display('Check t outside of tspan')
-t = -1;
-num_cnst = stlpc.getNumConstraint(t);
-valuecheck(num_cnst,0);
-testSingleTimeLinearPostureConstraint_userfun(stlpc,q,t);
-display('Check empty t')
-t = [];
-num_cnst = stlpc.getNumConstraint(t);
-valuecheck(num_cnst,4);
-testSingleTimeLinearPostureConstraint_userfun(stlpc,q,t);
 display('Check constraint value');
 q(l_leg_kny) = q(r_leg_kny);
 q(l_leg_hpy) = q(r_leg_hpy);

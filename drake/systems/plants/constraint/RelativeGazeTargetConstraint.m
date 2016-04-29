@@ -8,13 +8,11 @@ classdef RelativeGazeTargetConstraint < GazeTargetConstraint
   % @param gaze_origin            -- A 3x1 vector, the gaze origin on body_a frame
   % @param conethreshold          -- A double scalar, the angle of the gaze cone, default
   %                                  is 0
-  % @param tspan                  -- A 1x2 vector, the time span of the constraint,
-  %                                  default is [-inf inf]
   properties(SetAccess = protected)
     body_a = struct('idx',[],'name','');
     body_b = struct('idx',[],'name','');
   end
-  
+
   methods(Access = protected)
     function [c,dc] = evalValidTime(obj,kinsol)
       [pos_a,dpos_a_dq] = obj.robot.forwardKin(kinsol,obj.body_a.idx,[0;0;0],2);
@@ -32,20 +30,17 @@ classdef RelativeGazeTargetConstraint < GazeTargetConstraint
       dc = u_gv'*du_ga_dq + u_ga'*du_gv_dq;
     end
   end
-  
+
   methods
     function obj = RelativeGazeTargetConstraint(robot,body_a, ...
-        body_b,axis,target,gaze_origin,conethreshold,tspan)
-      if(nargin < 8)
-        tspan = [-inf inf];
-      end
+        body_b,axis,target,gaze_origin,conethreshold)
       if(nargin<7)
         conethreshold = 0;
       end
       body_a_idx = robot.parseBodyOrFrameID(body_a);
       body_b_idx = robot.parseBodyOrFrameID(body_b);
-      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.RelativeGazeTargetConstraintType,robot.getMexModelPtr,body_a_idx,body_b_idx,axis,target,gaze_origin,conethreshold,tspan);
-      obj = obj@GazeTargetConstraint(robot,axis,target,gaze_origin,conethreshold,tspan);
+      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.RelativeGazeTargetConstraintType,robot.getMexModelPtr,body_a_idx,body_b_idx,axis,target,gaze_origin,conethreshold);
+      obj = obj@GazeTargetConstraint(robot,axis,target,gaze_origin,conethreshold);
       obj.body_a.idx = body_a_idx;
       obj.body_a.name = getBodyOrFrameName(obj.robot, obj.body_a.idx);
       obj.body_b.idx = body_b_idx;
@@ -53,16 +48,11 @@ classdef RelativeGazeTargetConstraint < GazeTargetConstraint
       obj.type = RigidBodyConstraint.RelativeGazeTargetConstraintType;
       obj.mex_ptr = ptr;
     end
-    
-    function name_str = name(obj,t)
-      if(obj.isTimeValid(t))
-        name_str = {sprintf('%s relative to %s conic gaze constraint at time %10.4f', ...
-                        obj.body_a.name,obj.body_b.name,t)};
-      else
-        name_str = [];
-      end
-    end
 
+    function name_str = name(obj,t)
+      name_str = {sprintf('%s relative to %s conic gaze constraint at time %10.4f', ...
+                          obj.body_a.name,obj.body_b.name,t)};
+    end
 
     function drawConstraint(obj,q,lcmgl)
       norm_axis = obj.axis/norm(obj.axis);
@@ -116,7 +106,7 @@ classdef RelativeGazeTargetConstraint < GazeTargetConstraint
 
       lcmgl.switchBuffers();
     end
-    
+
     function joint_idx = kinematicsPathJoints(obj)
       [~,joint_path] = obj.robot.findKinematicPath(obj.body_a.idx,obj.body_b.idx);
       joint_idx = vertcat(obj.robot.body(joint_path).position_num)';
