@@ -224,32 +224,25 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
   /// Evaluate a multivariate Polynomial at a specific point.
   /**
    * Evaluates a Polynomial with the given values for each variable.  Throws
-   * an exception of the Polynomial contains values for which values were not
-   * provided.
+   * std::out_of_range if the Polynomial contains values for which values were
+   * not provided.
    *
-   * The provided values may be of any type supporting the ** and + operations
-   * (which can be different from both CoefficientsType and RealScalar)
+   * The provided values may be of any type which is std::is_arithmetic
+   * (supporting the std::pow, *, and + operations) and need not be
+   * CoefficientsType or RealScalar)
    */
   template <typename T>
   typename Product<CoefficientType, T>::type evaluateMultivariate(
       const std::map<VarType, T>& var_values) const {
     typedef typename std::remove_const<
       typename Product<CoefficientType, T>::type>::type ProductType;
-
-    for (const VarType& var : getVariables()) {
-      if (!var_values.count(var)) {
-        throw std::runtime_error(
-            "No value provided for variable " + std::to_string(var));
-      }
-    }
-
     ProductType value = 0;
     for (const Monomial& monomial : monomials) {
       ProductType monomial_value = monomial.coefficient;
       for (const Term& term : monomial.terms) {
-        monomial_value = monomial_value * pow(
+        monomial_value *= std::pow(
             static_cast<ProductType>(var_values.at(term.var)),
-            static_cast<PowerType>(term.power));
+            term.power);
       }
       value += monomial_value;
     }
@@ -259,9 +252,8 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
   /// Specialization of  evaluateMultivariate on TaylorVarXd.
   /**
    * Specialize evaluateMultivariate on TaylorVarXd because Eigen autodiffs
-   * implement a confusing subset of const- and non-const types of operators
-   * and conversions that makes a strictly generic approach too confusing and
-   * unreadable.
+   * implement a confusing subset of operators and conversions that makes a
+   * strictly generic approach too confusing and unreadable.
    *
    * Note that it is up to the caller to ensure that all of the var_values'
    * partial derivative terms correctly correspond to one another:  Polynomial
@@ -269,13 +261,6 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
    */
   Drake::TaylorVarXd evaluateMultivariate(
       const std::map<VarType, Drake::TaylorVarXd>& var_values) const {
-    for (const VarType& var : getVariables()) {
-      if (!var_values.count(var)) {
-        throw std::runtime_error(
-            "No value provided for variable " + std::to_string(var));
-      }
-    }
-
     Drake::TaylorVarXd value(0);
     for (const Monomial& monomial : monomials) {
       Drake::TaylorVarXd monomial_value(monomial.coefficient);

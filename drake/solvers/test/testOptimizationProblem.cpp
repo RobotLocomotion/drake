@@ -526,7 +526,9 @@ TEST(testOptimizationProblem, multiLCP) {
 
 /** Simple test of polynomial constraints. */
 TEST(testOptimizationProblem, polynomialConstraint) {
-  static const double inf = std::numeric_limits<double>::infinity();
+  static const double kInf = std::numeric_limits<double>::infinity();
+  // Generic constraints in nlopt require a very generous epsilon.
+  static const double kEpsilon = 1e-4;
 
   // Given a degenerate polynomial, get the trivial solution.
   {
@@ -534,7 +536,7 @@ TEST(testOptimizationProblem, polynomialConstraint) {
     OptimizationProblem problem;
     auto x_var = problem.AddContinuousVariables(1);
     std::vector<Polynomiald::VarType> var_mapping = { x.getSimpleVariable() };
-    problem.AddPolynomialConstraint(x, var_mapping, 2, inf);
+    problem.AddPolynomialConstraint(x, var_mapping, 2, kInf);
     problem.Solve();
     EXPECT_GE(x_var.value()[0], 2);
     // TODO(ggould-tri) test this with a two-sided and/or equality constraint,
@@ -548,9 +550,10 @@ TEST(testOptimizationProblem, polynomialConstraint) {
     OptimizationProblem problem;
     auto x_var = problem.AddContinuousVariables(1);
     std::vector<Polynomiald::VarType> var_mapping = { x.getSimpleVariable() };
-    problem.AddPolynomialConstraint(poly, var_mapping, -inf, 0);
+    problem.AddPolynomialConstraint(poly, var_mapping, -kInf, 0);
     problem.Solve();
     EXPECT_NEAR(x_var.value()[0], 1, 0.2);
+    EXPECT_LE(poly.evaluateUnivariate(x_var.value()[0]), kEpsilon);
   }
 
   // Given a small multivariate polynomial, find a low point.
@@ -563,10 +566,14 @@ TEST(testOptimizationProblem, polynomialConstraint) {
     std::vector<Polynomiald::VarType> var_mapping = {
       x.getSimpleVariable(),
       y.getSimpleVariable()};
-    problem.AddPolynomialConstraint(poly, var_mapping, -inf, 0);
+    problem.AddPolynomialConstraint(poly, var_mapping, -kInf, 0);
     problem.Solve();
     EXPECT_NEAR(xy_var.value()[0], 1, 0.2);
     EXPECT_NEAR(xy_var.value()[1], -2, 0.2);
+    std::map<Polynomiald::VarType, double> eval_point = {
+      {x.getSimpleVariable(), xy_var.value()[0]},
+      {y.getSimpleVariable(), xy_var.value()[1]}};
+    EXPECT_LE(poly.evaluateMultivariate(eval_point), kEpsilon);
   }
 
   // Given two polynomial constraints, satisfy both.
@@ -578,10 +585,11 @@ TEST(testOptimizationProblem, polynomialConstraint) {
     OptimizationProblem problem;
     auto x_var = problem.AddContinuousVariables(1);
     std::vector<Polynomiald::VarType> var_mapping = { x.getSimpleVariable() };
-    problem.AddPolynomialConstraint(poly, var_mapping, -inf, 0);
-    problem.AddPolynomialConstraint(x, var_mapping, -inf, 0);
+    problem.AddPolynomialConstraint(poly, var_mapping, -kInf, 0);
+    problem.AddPolynomialConstraint(x, var_mapping, -kInf, 0);
     problem.Solve();
     EXPECT_NEAR(x_var.value()[0], -0.7, 0.2);
+    EXPECT_LE(poly.evaluateUnivariate(x_var.value()[0]), kEpsilon);
   }
 }
 
