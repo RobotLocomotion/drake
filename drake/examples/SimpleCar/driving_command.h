@@ -12,9 +12,12 @@
 
 namespace Drake {
 
+/// Describes the row indices of a DrivingCommand.
 struct DrivingCommandIndices {
+  /// The total number of rows (coordinates).
   static const int kNumCoordiates = 3;
 
+  // The index of each individual coordinate.
   static const int kSteeringAngle = 0;
   static const int kThrottle = 1;
   static const int kBrake = 2;
@@ -24,31 +27,56 @@ struct DrivingCommandIndices {
 template <typename ScalarType = double>
 class DrivingCommand {
  public:
-  typedef drake::lcmt_driving_command_t LCMMessageType;
-  static std::string channel() { return "DRIVING_COMMAND"; }
+  /// @name Getters and Setters
+  //@{
+  const ScalarType& steering_angle() const { return value_(K::kSteeringAngle); }
+  void set_steering_angle(const ScalarType& steering_angle) {
+    value_(K::kSteeringAngle) = steering_angle;
+  }
+  const ScalarType& throttle() const { return value_(K::kThrottle); }
+  void set_throttle(const ScalarType& throttle) {
+    value_(K::kThrottle) = throttle;
+  }
+  const ScalarType& brake() const { return value_(K::kBrake); }
+  void set_brake(const ScalarType& brake) { value_(K::kBrake) = brake; }
+  //@}
 
+  /// @name Implement the Drake::Vector concept.
+  //@{
+
+  // Even though in practice we have a fixed size, we declare
+  // ourselves dynamically sized for compatibility with the
+  // system/framework/vector_interface.h API, and so that we
+  // can avoid the alignment issues that come into play with
+  // a fixed-size Eigen::Matrix member field.
   static const int RowsAtCompileTime = Eigen::Dynamic;
   typedef Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> EigenType;
   size_t size() const { return K::kNumCoordiates; }
 
+  /// Zero-valued default constructor.
   DrivingCommand()
       : value_(Eigen::Matrix<ScalarType, K::kNumCoordiates, 1>::Zero()) {}
 
+  /// Implicit Eigen::Matrix conversion.
   template <typename Derived>
   // NOLINTNEXTLINE(runtime/explicit)
   DrivingCommand(const Eigen::MatrixBase<Derived>& value)
       : value_(value.segment(0, K::kNumCoordiates)) {}
 
+  /// Eigen::Matrix assignment.
   template <typename Derived>
   DrivingCommand& operator=(const Eigen::MatrixBase<Derived>& value) {
     value_ = value.segment(0, K::kNumCoordiates);
     return *this;
   }
 
+  /// Magic conversion specialization back to Eigen.
   friend EigenType toEigen(const DrivingCommand<ScalarType>& vec) {
     return vec.value_;
   }
 
+  /// Magic pretty names for our coordiantes.  (This is an optional
+  /// part of the Drake::Vector concept, but seems worthwhile.)
   friend std::string getCoordinateName(const DrivingCommand<ScalarType>& vec,
                                        unsigned int index) {
     switch (index) {
@@ -62,18 +90,13 @@ class DrivingCommand {
     throw std::domain_error("unknown coordinate index");
   }
 
-  const ScalarType& steering_angle() const { return value_(K::kSteeringAngle); }
-  void set_steering_angle(const ScalarType& steering_angle) {
-    value_(K::kSteeringAngle) = steering_angle;
-  }
+  //@}
 
-  const ScalarType& throttle() const { return value_(K::kThrottle); }
-  void set_throttle(const ScalarType& throttle) {
-    value_(K::kThrottle) = throttle;
-  }
-
-  const ScalarType& brake() const { return value_(K::kBrake); }
-  void set_brake(const ScalarType& brake) { value_(K::kBrake) = brake; }
+  /// @name Implement the LCMVector concept
+  //@{
+  typedef drake::lcmt_driving_command_t LCMMessageType;
+  static std::string channel() { return "DRIVING_COMMAND"; }
+  //@}
 
  private:
   typedef DrivingCommandIndices K;
