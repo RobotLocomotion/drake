@@ -20,7 +20,8 @@ namespace Drake {
 
 /**
  * DecisionVariable
- * @brief Provides storage for a decision variable inside an OptimizationProblem.
+ * @brief Provides storage for a decision variable inside an
+ * OptimizationProblem.
  */
 class DecisionVariable {
  public:
@@ -318,7 +319,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   }
 
   /** addQuadraticCost
-   * @brief adds a cost term of the form (x-x_desired)'*Q*(x-x_desired)
+   * @brief Adds a cost term of the form (x-x_desired)'*Q*(x-x_desired).
    */
   template <typename DerivedQ, typename Derivedb>
   std::shared_ptr<QuadraticConstraint> AddQuadraticCost(
@@ -340,7 +341,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** addGenericConstraint
    *
-   * @brief adds a generic constraint to the program.  This should
+   * @brief Adds a generic constraint to the program.  This should
    * only be used if a more specific type of constraint is not
    * available, as it may require the use of a significantly more
    * expensive solver.
@@ -356,7 +357,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddLinearConstraint
    *
-   * @brief adds linear constraints referencing potentially a subset
+   * @brief Adds linear constraints referencing potentially a subset
    * of the decision variables.
    */
   void AddLinearConstraint(
@@ -369,8 +370,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddLinearConstraint
    *
-   * @brief adds linear constraints to the program for all (currently existing)
-   * variables
+   * @brief Adds linear constraints to the program for all (currently existing)
+   * variables.
    */
   void AddLinearConstraint(
       std::shared_ptr<LinearConstraint> con) {
@@ -379,7 +380,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddLinearConstraint
    *
-   * @brief adds linear constraints referencing potentially a subset
+   * @brief Adds linear constraints referencing potentially a subset
    * of the decision variables.
    */
   template <typename DerivedA, typename DerivedLB, typename DerivedUB>
@@ -394,8 +395,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddLinearConstraint
    *
-   * @brief adds linear constraints to the program for all (currently existing)
-   * variables
+   * @brief Adds linear constraints to the program for all (currently existing)
+   * variables.
    */
   template <typename DerivedA, typename DerivedLB, typename DerivedUB>
   std::shared_ptr<LinearConstraint> AddLinearConstraint(
@@ -407,7 +408,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddLinearEqualityConstraint
    *
-   * @brief adds linear equality constraints referencing potentially a
+   * @brief Adds linear equality constraints referencing potentially a
    * subset of the decision variables.
    */
   void AddLinearEqualityConstraint(
@@ -420,8 +421,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddLinearEqualityConstraint
    *
-   * @brief adds linear equality constraints to the program for all
-   * (currently existing) variables
+   * @brief Adds linear equality constraints to the program for all
+   * (currently existing) variables.
    */
   void AddLinearEqualityConstraint(
       std::shared_ptr<LinearEqualityConstraint> con) {
@@ -430,7 +431,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddLinearEqualityConstraint
    *
-   * @brief adds linear equality constraints referencing potentially a subset of
+   * @brief Adds linear equality constraints referencing potentially a subset of
    * the decision variables.
    * Example: to add and equality constraint which only depends on two of the
    * elements of x, you could use
@@ -449,8 +450,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddLinearEqualityConstraint
    *
-   * @brief adds linear equality constraints to the program for all
-   * (currently existing) variables
+   * @brief Adds linear equality constraints to the program for all
+   * (currently existing) variables.
    */
   template <typename DerivedA, typename DerivedB>
   std::shared_ptr<LinearEqualityConstraint> AddLinearEqualityConstraint(
@@ -461,7 +462,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddBoundingBoxConstraint
    *
-   * @brief adds bounding box constraints referencing potentially a subset of
+   * @brief Adds bounding box constraints referencing potentially a subset of
    * the decision variables.
    */
   void AddBoundingBoxConstraint(
@@ -474,8 +475,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddBoundingBoxConstraint
    *
-   * @brief adds bounding box constraints to the program for all
-   * (currently existing) variables
+   * @brief Adds bounding box constraints to the program for all
+   * (currently existing) variables.
    */
   void AddBoundingBoxConstraint(
       std::shared_ptr<BoundingBoxConstraint> con) {
@@ -484,7 +485,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddBoundingBoxConstraint
    *
-   * @brief adds bounding box constraints referencing potentially a
+   * @brief Adds bounding box constraints referencing potentially a
    * subset of the decision variables.
    */
   template <typename DerivedLB, typename DerivedUB>
@@ -499,8 +500,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddBoundingBoxConstraint
    *
-   * @brief adds bounding box constraints to the program for all
-   * (currently existing) variables
+   * @brief Adds bounding box constraints to the program for all
+   * (currently existing) variables.
    */
   template <typename DerivedLB, typename DerivedUB>
   std::shared_ptr<BoundingBoxConstraint> AddBoundingBoxConstraint(
@@ -511,7 +512,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddLinearComplementarityConstraint
    *
-   * @brief adds a linear complementarity constraints referencing a subset of
+   * @brief Adds a linear complementarity constraints referencing a subset of
    * the decision variables.
    */
   template <typename DerivedM, typename Derivedq>
@@ -542,7 +543,7 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddLinearComplementarityConstraint
    *
-   * @brief adds a linear complementarity constraint to the program for all
+   * @brief Adds a linear complementarity constraint to the program for all
    * (currently existing) variables.
    */
   template <typename DerivedM, typename Derivedq>
@@ -555,8 +556,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddPolynomialConstraint
    *
-   * @brief adds a polynomial constraint to the program referencing a subset
-   * of the decision variables
+   * @brief Adds a polynomial constraint to the program referencing a subset
+   * of the decision variables.
    */
   std::shared_ptr<PolynomialConstraint>
       AddPolynomialConstraint(
@@ -566,10 +567,11 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
           const VariableList& vars) {
     // TODO(ggould-tri) We treat polynomial constraints as generic for now,
     // but that need not be so.  Polynomials of degree 1 are linear
-    // constraints, and some polynomial constraints may map to LC constraints.
-    // That will certainly be needed for performance purposes, as
-    // automatically generated rigid body manipulator equations subject to
-    // lumped parameter rewriting may frequently come out as degree 1.
+    // constraints, and some polynomial constraints may map to linear
+    // complementarity constraints.  That will certainly be needed for
+    // performance purposes, as automatically generated rigid body manipulator
+    // equations subject to lumped parameter rewriting may frequently come out
+    // as degree 1.
     problem_type_.reset(
         problem_type_->AddGenericConstraint());
     std::shared_ptr<PolynomialConstraint>
@@ -580,8 +582,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddPolynomialConstraint
    *
-   * @brief adds a polynomial constraint to the program referencing a subset
-   * of the decision variables
+   * @brief Adds a polynomial constraint to the program referencing a subset
+   * of the decision variables.
    */
   std::shared_ptr<PolynomialConstraint>
       AddPolynomialConstraint(

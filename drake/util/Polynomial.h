@@ -202,7 +202,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
   /// Local version of pow to deal with autodiff.
   /**
    * A version of std::pow that uses std::pow for arithmetic types and
-   * repeated multiplication for non-arithmetic types (eg, autodiff).
+   * repeated multiplication for non-arithmetic types (e.g., autodiff).
    */
   template <bool B, typename T = void>
   using enable_if_t = typename std::enable_if<B, T>::type;
@@ -212,6 +212,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
       const PowerType& exponent) {
     return std::pow(base, exponent);
   }
+
   template <typename Base>
   static Base pow(const Base& base, const PowerType& exponent) {
     Base result = base;
@@ -224,8 +225,8 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
   /// Evaluate a multivariate Polynomial at a specific point.
   /**
    * Evaluates a Polynomial with the given values for each variable.  Throws
-   * std::out_of_range if the Polynomial contains values for which values were
-   * not provided.
+   * std::out_of_range if the Polynomial contains variables for which values
+   * were not provided.
    *
    * The provided values may be of any type which is std::is_arithmetic
    * (supporting the std::pow, *, and + operations) and need not be
@@ -249,15 +250,16 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
     return value;
   }
 
-  /// Specialization of  evaluateMultivariate on TaylorVarXd.
+  /// Specialization of evaluateMultivariate on TaylorVarXd.
   /**
    * Specialize evaluateMultivariate on TaylorVarXd because Eigen autodiffs
    * implement a confusing subset of operators and conversions that makes a
    * strictly generic approach too confusing and unreadable.
    *
    * Note that it is up to the caller to ensure that all of the var_values'
-   * partial derivative terms correctly correspond to one another:  Polynomial
-   * has no knowledge of whatever vector var_values' indexes correspond to.
+   * partial derivative terms correctly correspond to one another because
+   * Polynomial has no knowledge of what variables or vector elements
+   * var_values' indexes correspond to.
    */
   Drake::TaylorVarXd evaluateMultivariate(
       const std::map<VarType, Drake::TaylorVarXd>& var_values) const {

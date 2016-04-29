@@ -44,6 +44,7 @@ class Constraint {
       : lower_bound_(lb), upper_bound_(ub) {
     check(num_constraints);
   }
+
   virtual ~Constraint() {}
 
   // TODO(bradking): consider using a Ref for `y`.  This will require the client
@@ -70,13 +71,17 @@ class Constraint {
  */
 class QuadraticConstraint : public Constraint {
  public:
+  static const int kNumConstraints = 1;
+
   template <typename DerivedQ, typename Derivedb>
   QuadraticConstraint(const Eigen::MatrixBase<DerivedQ>& Q,
                       const Eigen::MatrixBase<Derivedb>& b, double lb,
                       double ub)
-      : Constraint(1, Vector1d::Constant(lb), Vector1d::Constant(ub)),
+      : Constraint(kNumConstraints,
+                   Vector1d::Constant(lb), Vector1d::Constant(ub)),
         Q_(Q),
         b_(b) {}
+
   virtual ~QuadraticConstraint() {}
 
   virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -97,28 +102,37 @@ class QuadraticConstraint : public Constraint {
 };
 
 /** PolynomialConstraint
- * @brief lb <= P(x, y...) <= ub (for P a multivariate polynomial in x, y...)
+ * @brief lb <= P(x, y...) <= ub where P is a multivariate polynomial
+ *  in x, y...
  *
  * A constraint on the value of a multivariate polynomial.
  *
- * The Polynomial class uses a different variable naming scheme, and so the
- * caller must provide a list of Polynomial::VarType to allow bindings to map
- * the individual scalar elements of the given VariableList.
+ * The Polynomial class uses a different variable naming scheme; thus the
+ * caller must provide a list of Polynomial::VarType variables that correspond
+ * to the members of the Binding (the individual scalar elements of the given
+ * VariableList).
  */
 class PolynomialConstraint : public Constraint {
  public:
+  static const int kNumConstraints = 1;
+
   PolynomialConstraint(
       const Polynomiald& polynomial,
       const std::vector<Polynomiald::VarType>& poly_vars,
       double lb, double ub)
-      : Constraint(1, Vector1d::Constant(lb), Vector1d::Constant(ub)),
+      : Constraint(kNumConstraints,
+                   Vector1d::Constant(lb), Vector1d::Constant(ub)),
         polynomial_(polynomial),
         poly_vars_(poly_vars) {}
+
   virtual ~PolynomialConstraint() {}
 
   virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
-    std::map<Polynomiald::VarType, double> evaluation_point;
+    // To avoid repeated allocation, reuse a static map.
+    static std::map<Polynomiald::VarType, double> evaluation_point;
+    evaluation_point.clear();
+
     for (int i = 0; i < poly_vars_.size(); i++) {
       evaluation_point[poly_vars_[i]] = x[i];
     }
@@ -128,7 +142,10 @@ class PolynomialConstraint : public Constraint {
 
   virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
                     TaylorVecXd& y) const override {
-    std::map<Polynomiald::VarType, TaylorVarXd> evaluation_point;
+    // To avoid repeated allocation, reuse a static map.
+    static std::map<Polynomiald::VarType, TaylorVarXd> evaluation_point;
+    evaluation_point.clear();
+
     for (int i = 0; i < poly_vars_.size(); i++) {
       evaluation_point[poly_vars_[i]] = x[i];
     }
@@ -192,6 +209,7 @@ class LinearEqualityConstraint : public LinearConstraint {
   LinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,
                            const Eigen::MatrixBase<DerivedB>& beq)
       : LinearConstraint(Aeq, beq, beq) {}
+
   virtual ~LinearEqualityConstraint() {}
 
   /* updateConstraint
@@ -229,6 +247,7 @@ class BoundingBoxConstraint : public LinearConstraint {
                         const Eigen::MatrixBase<DerivedUB>& ub)
       : LinearConstraint(Eigen::MatrixXd::Identity(lb.rows(), lb.rows()), lb,
                          ub) {}
+
   virtual ~BoundingBoxConstraint() {}
 
   virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,

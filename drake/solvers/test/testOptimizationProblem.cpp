@@ -524,8 +524,18 @@ TEST(testOptimizationProblem, multiLCP) {
                               MatrixCompareType::absolute));
 }
 
+// The current windows CI build has no solver for generic constraints.  The
+// DISABLED_ logic below ensures that we still at least get compile-time
+// checking of the test and resulting template instantiations.
+
 /** Simple test of polynomial constraints. */
-TEST(testOptimizationProblem, polynomialConstraint) {
+TEST(testOptimizationProblem,
+#if !defined(WIN32) && !defined(WIN64)
+     polynomialConstraint
+#else
+     DISABLED_polynomialConstraint
+#endif
+  ) {
   static const double kInf = std::numeric_limits<double>::infinity();
   // Generic constraints in nlopt require a very generous epsilon.
   static const double kEpsilon = 1e-4;
@@ -578,8 +588,8 @@ TEST(testOptimizationProblem, polynomialConstraint) {
 
   // Given two polynomial constraints, satisfy both.
   {
-    // (x^4 - x^2 + 0.2 has two minima; constrain x < 0 and require the
-    // negative one.)
+    // (x^4 - x^2 + 0.2 has two minima, one at 0.5 and the other at -0.5;
+    // constrain x < 0 and EXPECT that the solver finds the negative one.)
     Polynomiald x("x");
     Polynomiald poly = x * x * x * x - x * x + 0.2;
     OptimizationProblem problem;
