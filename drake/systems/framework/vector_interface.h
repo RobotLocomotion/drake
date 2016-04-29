@@ -13,9 +13,20 @@ namespace systems {
 template <typename ScalarType>
 class VectorInterface {
  public:
-  /// After a.Initialize(b.value()), a must be identical to b.
-  /// Throws a runtime error if value has incorrect dimensions.
-  virtual void Initialize(
+  VectorInterface() {}
+  virtual ~VectorInterface() {}
+
+  // VectorInterfaces are neither copyable nor moveable.
+  VectorInterface(const VectorInterface<ScalarType>& other) = delete;
+  VectorInterface& operator=(const VectorInterface<ScalarType>& other) =
+      delete;
+  VectorInterface(VectorInterface<ScalarType>&& other) = delete;
+  VectorInterface& operator=(VectorInterface<ScalarType>&& other) = delete;
+
+  /// After a.set_value(b.get_value()), a must be identical to b.
+  /// May throw a runtime error if the new value has different dimensions
+  /// than expected by the concrete class implementing VectorInterface.
+  virtual void set_value(
       const Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>& value) = 0;
 
   /// Returns a real-valued column vector representing the entire state of
