@@ -1,9 +1,9 @@
-#include "drake/util/SystemIdentification.h"
+#include "drake/solvers/system_identification.h"
 
 #include <algorithm>
 
 namespace drake {
-namespace util {
+namespace solvers {
 
 template<typename T>
 std::set<typename SystemIdentification<T>::MonomialType>
@@ -232,7 +232,8 @@ SystemIdentification<T>::RewritePolynomialWithLumpedParameters(
   return PolyType(working_monomials.begin(), working_monomials.end());
 }
 
-}  // namespace util
+}  // namespace solvers
 }  // namespace drake
 
-template class DRAKEPOLYNOMIAL_EXPORT drake::util::SystemIdentification<double>;
+template class DRAKEOPTIMIZATION_EXPORT
+drake::solvers::SystemIdentification<double>;

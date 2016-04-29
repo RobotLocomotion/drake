@@ -12,6 +12,7 @@
 #include "drake/drakeOptimization_export.h"
 #include "drake/solvers/Constraint.h"
 #include "drake/solvers/MathematicalProgram.h"
+#include "drake/solvers/solution_result.h"
 
 
 namespace Drake {
@@ -63,7 +64,7 @@ class DecisionVariableView {  // enables users to access pieces of the decision
   /// Create a view which covers an entire DecisionVariable.
   ///
   /// @p var is aliased, and must remain valid for the lifetime of the view.
-  DecisionVariableView(const DecisionVariable& var)
+  explicit DecisionVariableView(const DecisionVariable& var)
       : var_(var), start_index_(0), size_(var_.value().rows()) {}
 
   /// Create a view covering part of a DecisionVariable.
@@ -246,7 +247,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
       : problem_type_(MathematicalProgramInterface::GetLeastSquaresProgram()),
         num_vars_(0),
         x_initial_guess_(
-            static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)) {}
+            static_cast<Eigen::Index>(INITIAL_VARIABLE_ALLOCATION_NUM)),
+      solver_result_(0) {}
 
   const DecisionVariableView AddContinuousVariables(std::size_t num_new_vars,
                                                     std::string name = "x") {
@@ -563,7 +565,12 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
     x_initial_guess_.segment(var.index(), var.size()) = x0;
   }
 
-  bool Solve() {
+  /**
+   * Solve the OptimizationProblem.
+   *
+   * @return SolutionResult indicating if the solution was successful.
+   */
+  drake::solvers::SolutionResult Solve() {
     return problem_type_->Solve(*this);
   }  // todo: add argument for options
 
@@ -588,6 +595,23 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
       v.set_value(x.middleRows(index, v.value().rows()));
       index += v.value().rows();
     }
+  }
+
+  /**
+   * Get the name and result code of the particular solver which was
+   * used to solve this OptimizationProblem.  The solver names and
+   * results are not documented here as this function is only intended
+   * for debugging, testing, and support of certain legacy
+   * APIs.
+   */
+  void GetSolverResult(std::string* solver_name, int* solver_result) const {
+    *solver_name = solver_name_;
+    *solver_result = solver_result_;
+  }
+
+  void SetSolverResult(const std::string& solver_name, int solver_result) {
+    solver_name_ = solver_name;
+    solver_result_ = solver_result;
   }
 
   const std::list<Binding<Constraint>>& generic_objectives() const {
@@ -664,6 +688,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   Eigen::VectorXd x_initial_guess_;
   std::shared_ptr<SolverData> solver_data_;
   std::shared_ptr<MathematicalProgramInterface> problem_type_;
+  std::string solver_name_;
+  int solver_result_;
 };
 
 }  // end namespace Drake

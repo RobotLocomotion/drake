@@ -15,8 +15,12 @@ class DRAKESIDE_EXPORT Side {
 
  public:
   static const std::array<SideEnum, 2> values;
+
   Side();  // to allow usage in STL containers
+
+  // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
   Side(SideEnum v);
+
   SideEnum underlying() const { return val; }
 
   bool operator==(const Side& other) const;

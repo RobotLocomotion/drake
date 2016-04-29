@@ -10,12 +10,6 @@ This page contains information that may be useful to people developing in OS X.
    :depth: 2
    :local:
 
-cpplint
-=======
-
-cpplint is a tool for checking whether C++ code conforms to a certain style. To install it on OS X, execute:
-
-    pip install cpplint
 
 pygame
 ======
@@ -63,23 +57,9 @@ SourceTree
 
 (*Notes comming soon*)
 
-Text Editors and IDEs
-=====================
 
-Below are some notes on various text edtiors and IDEs we've used on OS X.
+Profiling
+=========
 
-CLion
------
+A few of us have used the xcode tool "Instruments" (which should already be installed on your system) with considerable success, but we do not have much experience with it yet.
 
-(*Notes comming soon*)
-
-Sublime Text
-------------
-
-Recommended packages to install:
-
-1. https://packagecontrol.io/packages/SublimeLinter-cpplint
-
-To display the current file's full path in the title bar, open your user preferences by going to "Sublime Text," "Preferences," "Settings - User." Then add the following to your user preferences:
-
-    "show_full_path": true
