@@ -80,16 +80,16 @@ kinsol = r.doKinematics(state);
 
 footPose = r.forwardKin(kinsol,l_foot, [0; 0; 0], 2);
 leftFootPosConstraint = WorldPositionConstraint(r, l_foot, [0; 0; 0], footPose(1:3), footPose(1:3));
-leftFootQuatConstraint = WorldQuatConstraint(r, l_foot, footPose(4:7), 0.0, [0.0, 1.0]);
+leftFootQuatConstraint = WorldQuatConstraint(r, l_foot, footPose(4:7), 0.0);
 
 footPose = r.forwardKin(kinsol,r_foot, [0; 0; 0], 2);
 rightFootPosConstraint = WorldPositionConstraint(r, r_foot, [0; 0; 0], footPose(1:3), footPose(1:3));
-rightFootQuatConstraint = WorldQuatConstraint(r, r_foot, footPose(4:7), 0.0, [0.0, 1.0]);
+rightFootQuatConstraint = WorldQuatConstraint(r, r_foot, footPose(4:7), 0.0);
 
 %Quasi tatic constraint
 l_foot_pts = r.getBody(l_foot).getTerrainContactPoints();
 r_foot_pts = r.getBody(r_foot).getTerrainContactPoints();
-quasiStaticConstraint = QuasiStaticConstraint(r, [-inf, inf], 1);
+quasiStaticConstraint = QuasiStaticConstraint(r, 1);
 quasiStaticConstraint = quasiStaticConstraint.setShrinkFactor(0.5);
 quasiStaticConstraint = quasiStaticConstraint.setActive(true);
 quasiStaticConstraint = quasiStaticConstraint.addContact(l_foot, l_foot_pts);
@@ -105,7 +105,7 @@ startPoseConstraints = {leftFootPosConstraint, leftFootQuatConstraint, rightFoot
 [q_start, info, infeasible_constraint] = inverseKin(r, ik_seed_pose, ik_nominal_pose, startPoseConstraints{:}, ikoptions);
 if options.visualize
   v.draw(0,q_start);
-  
+
 end
 
 %Set end pose constraints and compute end configuration

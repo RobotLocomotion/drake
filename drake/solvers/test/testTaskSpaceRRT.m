@@ -56,7 +56,7 @@ warning(w);
 xyz_quat_start = [0.5969; -0.1587; 0.85; -0.584; -0.457; 0.662; 0.112];
 
 % IK constraints
-qsc_constraint_0 = QuasiStaticConstraint(r, [-inf, inf], 1);
+qsc_constraint_0 = QuasiStaticConstraint(r, 1);
 qsc_constraint_0 = qsc_constraint_0.setShrinkFactor(0.5);
 qsc_constraint_0 = qsc_constraint_0.setActive(true);
 qsc_constraint_0 = qsc_constraint_0.addContact(l_foot, l_foot_pts);
@@ -67,10 +67,10 @@ ref_frame = [0.99999962214379723, 3.8873668451910772e-05, 0.00086844752325226373
 lower_bounds = [0.0; 0.0; 0.0] + [0.0; 0.0; 0.0];
 upper_bounds = [0.0; 0.0; 0.0] + [0.0; 0.0; 0.0];
 ref_frame = inv(ref_frame);
-position_constraint_1 = WorldPositionConstraint(r, l_foot, ref_frame(1:3,:)*[point_in_link_frame;1], lower_bounds, upper_bounds, [0.0, 1.0]);
+position_constraint_1 = WorldPositionConstraint(r, l_foot, ref_frame(1:3,:)*[point_in_link_frame;1], lower_bounds, upper_bounds);
 
 
-quat_constraint_2 = WorldQuatConstraint(r, l_foot, [0.99999680768841015; -0.0024891132733300568; 0.00043417407699420605; -2.0517608182535892e-05], 0.0, [0.0, 1.0]);
+quat_constraint_2 = WorldQuatConstraint(r, l_foot, [0.99999680768841015; -0.0024891132733300568; 0.00043417407699420605; -2.0517608182535892e-05], 0.0);
 
 
 point_in_link_frame = [0.0; 0.0; 0.0];
@@ -78,31 +78,31 @@ ref_frame = [0.99999972333813658, -3.8603987442147522e-05, 0.0007428548865743092
 lower_bounds = [0.0; 0.0; 0.0] + [0.0; 0.0; 0.0];
 upper_bounds = [0.0; 0.0; 0.0] + [0.0; 0.0; 0.0];
 ref_frame = inv(ref_frame);
-position_constraint_3 = WorldPositionConstraint(r, r_foot, ref_frame(1:3,:)*[point_in_link_frame;1], lower_bounds, upper_bounds, [0.0, 1.0]);
+position_constraint_3 = WorldPositionConstraint(r, r_foot, ref_frame(1:3,:)*[point_in_link_frame;1], lower_bounds, upper_bounds);
 
 
-quat_constraint_4 = WorldQuatConstraint(r, r_foot, [0.99999684531339206; 0.0024841562616134435; 0.00037137837375452614; 2.0224619435999976e-05], 0.0, [0.0, 1.0]);
+quat_constraint_4 = WorldQuatConstraint(r, r_foot, [0.99999684531339206; 0.0024841562616134435; 0.00037137837375452614; 2.0224619435999976e-05], 0.0);
 
-posture_constraint_5 = PostureConstraint(r, [-inf, inf]);
+posture_constraint_5 = PostureConstraint(r);
 joint_inds = [joints.back_bkx; joints.back_bky; joints.back_bkz];
 joints_lower_limit = q_zero(joint_inds) + [-0.08726646259971647; -0.08726646259971647; -inf];
 joints_upper_limit = q_zero(joint_inds) + [0.08726646259971647; 0.08726646259971647; inf];
 posture_constraint_5 = posture_constraint_5.setJointLimits(joint_inds, joints_lower_limit, joints_upper_limit);
 
-posture_constraint_6 = PostureConstraint(r, [-inf, inf]);
+posture_constraint_6 = PostureConstraint(r);
 joint_inds = [joints.base_x; joints.base_y; joints.base_roll; joints.base_pitch; joints.base_yaw];
 joints_lower_limit = q_nom(joint_inds) + [0.0; 0.0; 0.0; 0.0; 0.0];
 joints_upper_limit = q_nom(joint_inds) + [0.0; 0.0; 0.0; 0.0; 0.0];
 posture_constraint_6 = posture_constraint_6.setJointLimits(joint_inds, joints_lower_limit, joints_upper_limit);
 
 % fixed right arm
-posture_constraint_7 = PostureConstraint(r, [-inf, inf]);
+posture_constraint_7 = PostureConstraint(r);
 joint_inds = [joints.r_arm_shz; joints.r_arm_shx; joints.r_arm_ely; joints.r_arm_elx; joints.r_arm_uwy; joints.r_arm_mwx; joints.neck_ay];
 joints_lower_limit = q_nom(joint_inds);
 joints_upper_limit = q_nom(joint_inds);
 posture_constraint_7 = posture_constraint_7.setJointLimits(joint_inds, joints_lower_limit, joints_upper_limit);
 
-posture_constraint_8 = PostureConstraint(r, [-inf, inf]);
+posture_constraint_8 = PostureConstraint(r);
 joint_inds = [joints.l_leg_kny;joints.r_leg_kny];
 joints_lower_limit = 30*pi/180*[1;1];
 joints_upper_limit = 120*pi/180*[1;1];
@@ -112,7 +112,7 @@ point_in_link_frame = [0; -0.24449999999999988; 0.011200000000000071];
 ref_frame = [0.10040853387866658, 0.30507204666777654, 0.94702121025152886, 0.19671872655867628; -0.070421541493923046, 0.95162340926777023, -0.29908810311880585, 1.0145817508809061; -0.9924509725008871, -0.036659695518642732, 0.11703475512224609, 0.9; 0.0, 0.0, 0.0, 1.0];
 lower_bounds = [0.0; 0.0; 0.0] + [-0; -0; -0];
 upper_bounds = [0.0; 0.0; 0.0] + [0.0; 0.0; 0.0];
-position_constraint_7 = WorldPositionInFrameConstraint(r, l_hand, point_in_link_frame, ref_frame, lower_bounds, upper_bounds, [1.0, 1.0]);
+position_constraint_7 = WorldPositionInFrameConstraint(r, l_hand, point_in_link_frame, ref_frame, lower_bounds, upper_bounds);
 %ref_frame = inv(ref_frame);
 %position_constraint_7 = WorldPositionConstraint(r, l_hand, ref_frame(1:3,:)*[point_in_link_frame;1], lower_bounds, upper_bounds, [1.0, 1.0]);
 
@@ -121,7 +121,7 @@ point_in_link_frame = [-0.35; -0.27; 0.011200000000000071];
 
 
 
-quat_constraint_8 = WorldQuatConstraint(r, l_hand, [0.1439; 0.6104; -0.0161; 0.7787], 10*pi/180, [1.0, 1.0]);
+quat_constraint_8 = WorldQuatConstraint(r, l_hand, [0.1439; 0.6104; -0.0161; 0.7787], 10*pi/180);
 
 l_hand_initial_quat_constraint = WorldQuatConstraint(r, l_hand, xyz_quat_start(4:7), 0*pi/180);
 
@@ -169,7 +169,7 @@ else
   v = [];
 end
 
-posture_constraint_6 = PostureConstraint(r, [-inf, inf]);
+posture_constraint_6 = PostureConstraint(r);
 joint_inds = [joints.base_x; joints.base_y; joints.base_roll; joints.base_pitch; joints.base_yaw];
 joints_lower_limit = q_start(joint_inds) + [0.0; 0.0; 0.0; 0.0; 0.0];
 joints_upper_limit = q_start(joint_inds) + [0.0; 0.0; 0.0; 0.0; 0.0];
@@ -192,9 +192,9 @@ if options.visualize
   v.draw(0,q_start);
 end
 
-position_constraint_7 = WorldPositionConstraint(r, l_hand, point_in_link_frame, xyz_quat_start(1:3), xyz_quat_start(1:3), [1.0, 1.0]);
+position_constraint_7 = WorldPositionConstraint(r, l_hand, point_in_link_frame, xyz_quat_start(1:3), xyz_quat_start(1:3));
 
-quat_constraint_8 = WorldQuatConstraint(r, l_hand, xyz_quat_start(4:7), 0, [1.0, 1.0]);
+quat_constraint_8 = WorldQuatConstraint(r, l_hand, xyz_quat_start(4:7), 0);
 
 active_constraints = [base_constraints,{position_constraint_7,quat_constraint_8}];
 
@@ -288,5 +288,3 @@ t_scaled = tf*(-real(acos(2*t_scaled/tf-1)+pi)/2);
 xtraj = PPTrajectory(pchip(t_scaled,[q_path(:,idx_unique); zeros(r.getNumVelocities(),numel(t_scaled))]));
 xtraj = xtraj.setOutputFrame(r.getStateFrame());
 end
-
-
