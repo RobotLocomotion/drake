@@ -98,7 +98,8 @@ void RunNonlinearProgram(OptimizationProblem& prog,
     SolutionResult result = SolutionResult::kUnknownError;
     ASSERT_NO_THROW(result = solver.second->Solve(prog)) <<
         "Using solver: " << solver.first;
-    EXPECT_EQ(result, SolutionResult::kSolutionFound);
+    EXPECT_EQ(result, SolutionResult::kSolutionFound) <<
+        "Using solver: " << solver.first;
     EXPECT_NO_THROW(test_func()) << "Using solver: " << solver.first;
   }
 }
@@ -281,14 +282,10 @@ TEST(testOptimizationProblem, lowerBoundTest) {
   c3 << 1, 1, 0, 0, 0, 0;
   prog.AddLinearConstraint(
       c3.transpose(),
-      Drake::Vector1d::Constant(-std::numeric_limits<double>::infinity()),
+      Drake::Vector1d::Constant(2),
       Drake::Vector1d::Constant(6));
   Eigen::VectorXd c4(6);
   c4 << 1, 1, 0, 0, 0, 0;
-  prog.AddLinearConstraint(
-      c4.transpose(),
-      Drake::Vector1d::Constant(2),
-      Drake::Vector1d::Constant(std::numeric_limits<double>::infinity()));
   Eigen::VectorXd lower(6);
   lower << 0, 0, 1, 0, 1, 0;
   Eigen::VectorXd upper(6);
@@ -299,18 +296,23 @@ TEST(testOptimizationProblem, lowerBoundTest) {
 
   Eigen::VectorXd expected(6);
   expected << 5, 1, 5, 0, 5, 10;
-  prog.SetInitialGuess({x}, expected + .1 * Eigen::VectorXd::Random(6));
-
-  // This test actually fails in SNOPT but works in NLopt.
-  NloptSolver nlopt_solver;
-  if (!nlopt_solver.available()) { return; }
-  nlopt_solver.Solve(prog);
+  Eigen::VectorXd delta = .1 * Eigen::VectorXd::Random(6);
+  prog.SetInitialGuess({x}, expected + delta);
 
   // This test seems to be fairly sensitive to how much the randomness
   // causes the initial guess to deviate, so the tolerance is a bit
   // larget than others.
-  EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-6,
-                              MatrixCompareType::absolute));
+  RunNonlinearProgram(prog, [&]() {
+      EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-6,
+                                  MatrixCompareType::absolute));
+    });
+
+  // Try again with the offsets in the opposite direction.
+  prog.SetInitialGuess({x}, expected - delta);
+  RunNonlinearProgram(prog, [&]() {
+      EXPECT_TRUE(CompareMatrices(x.value(), expected, 1e-6,
+                                  MatrixCompareType::absolute));
+    });
 }
 
 class SixHumpCamelObjective {

@@ -97,15 +97,15 @@ double ApplyConstraintBounds(double result, double lb, double ub) {
   // For upper bounds rewrite as: f(x) - ub <= 0
   // For lower bounds rewrite as: -f(x) + lb <= 0
   //
+  // If both upper and lower bounds are set, then pick one as
+  // appropriate depending on which bound is being exceeded.
+  //
   // See
   // http://ab-initio.mit.edu/wiki/index.php/NLopt_Reference#Nonlinear_constraints
   // for more detail on how NLopt interprets return values.
 
-  if (ub != std::numeric_limits<double>::infinity()) {
-    if ((lb != -std::numeric_limits<double>::infinity()) && (lb != ub)) {
-      throw std::runtime_error(
-          "Constraints with different upper and lower bounds not implemented.");
-    }
+  if ((ub != std::numeric_limits<double>::infinity()) &&
+      ((result >= lb) || (lb == ub))) {
     result -= ub;
   } else {
     if (lb == -std::numeric_limits<double>::infinity()) {
