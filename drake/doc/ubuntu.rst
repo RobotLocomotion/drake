@@ -37,9 +37,9 @@ To work around this issue, the symbolic link for the standard C++ library provid
 
 Update the symbolic link in MATLAB to point to the version that was installed earlier into ``/usr/lib``.  An example for MATLAB R2015b is shown below::
 
-    cd /usr/local/MATLAB/R2015b/sys/os/glnxa64
+    cd /usr/local/MATLAB/R2016a/sys/os/glnxa64
     sudo rm libstdc++.so.6
-    sudo ln -s /usr/lib/gcc/x86_64-linux-gnu/4.9/libstdc++.so libstdc++.so.6
+    sudo ln -s /usr/lib/gcc/x86_64-linux-gnu/4.9.3/libstdc++.so libstdc++.so.6
 
 You may wish to use `ccache` to speed up your (re)builds.
 To do so, add `/usr/lib/ccache` to the front of your `$PATH`.
