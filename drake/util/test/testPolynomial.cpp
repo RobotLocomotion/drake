@@ -191,6 +191,13 @@ TEST(PolynomialTest, VariableIdGeneration) {
   EXPECT_EQ(result, "x1");
 }
 
+TEST(PolynomialTest, Conversion) {
+  // Confirm that these conversions compile okay.
+  Polynomial<double> x(1.0);
+  Polynomial<double> y = 2.0;
+  Polynomial<double> z = 3;
+}
+
 }
 }  // namespace test
 }  // namespace drake
