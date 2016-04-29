@@ -9,7 +9,7 @@ Finding a Specific Unit Test
 
 To find a specific unit test you need to execute `cmake -N` from within the build artifacts directory::
 
-  cd path/to/your/build/artifacts/directory
+  cd [drake build artifacts directory]
 
 For in source builds in Linux and Mac this directory is `[drake distro]/drake/pod-build`.
 For out of source builds this directory is `[drake build artifacts directory]/drake`.
@@ -37,7 +37,7 @@ Example: Find and run unit test named `cascade_system`
 
 Find test::
 
-  cd path/to/your/drake-distro/drake/pod-build
+  cd [drake build artifacts directory]
   ctest -N | grep -i cascade
 
 Run the test::
