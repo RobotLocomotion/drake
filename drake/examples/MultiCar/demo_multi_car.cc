@@ -1,5 +1,6 @@
 #include <cmath>
 #include <memory>
+#include <sstream>
 
 #include "drake/Path.h"
 #include "drake/systems/LCMSystem.h"
@@ -87,6 +88,25 @@ int main(int argc, const char* argv[]) {
   cars_system->addSystem(sedan2_system);
   cars_vis_adapter->addSystem(car_vis_adapter);
 
+  // Meh, need more cars!
+  for (int i = 0; i < 100; ++i) {
+    world_tree->addRobotFromURDF(
+        (i % 2) ? SEDAN_URDF : BREADTRUCK_URDF,
+        DrakeJoint::ROLLPITCHYAW,
+        nullptr /*weld_to_frame*/);
+    std::ostringstream name;
+    name << "car-" << i;
+    world_tree->bodies.back()->linkname = name.str();
+    auto system = std::make_shared<Drake::TrivialCar>(
+        (i % 19 - 10) * 10.,
+        ((i + 11) % 23 - 11) * 10.,
+        0.0,
+        ((i % 10) - 5) * 2.0);
+    cars_system->addSystem(system);
+    cars_vis_adapter->addSystem(car_vis_adapter);
+  }
+
+
   // NpcCarSystem:
   //  U:  ()
   //  X:  ()
@@ -108,9 +128,12 @@ int main(int argc, const char* argv[]) {
       cars_system, cars_vis_adapter), visualizer);
 
   decltype(the_system)::element_type::StateVector<double> initial_state;
+  Drake::SimulationOptions options;
+  options.realtime_factor = 0.;
   runLCM(the_system, lcm,
-         0, std::numeric_limits<double>::infinity(), // timespan
-         initial_state);
+      0, std::numeric_limits<double>::infinity(), // timespan
+      initial_state,
+      options);
 
   return 0;
 }
