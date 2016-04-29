@@ -11,8 +11,9 @@ To find a specific unit test you need to execute `cmake -N` from within the buil
 
   cd path/to/your/build/artifacts/directory
 
-For in source builds in Linux and Mac this directory is `path/to/your/drake-distro/drake/pod-build`.
-For out of source builds this directory is `path/to/your/drake-distro/build/drake`.
+For in source builds in Linux and Mac this directory is `[drake distro]/drake/pod-build`.
+For out of source builds this directory is `[drake build artifacts directory]/drake`.
+
 To retrieve a list of all the available unit tests issue a::
 
   ctest -N
