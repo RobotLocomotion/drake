@@ -21,13 +21,12 @@ template <class System1, class System2>
 class CascadeSystem {
  public:
   template <typename ScalarType>
-  using StateVector = typename CombinedVectorUtil<
-      System1::template StateVector,
-      System2::template StateVector>::template type<ScalarType>;
-  template <typename ScalarType>
   using StateVector1 = typename System1::template StateVector<ScalarType>;
   template <typename ScalarType>
   using StateVector2 = typename System2::template StateVector<ScalarType>;
+  using util = CombinedVectorUtil<StateVector1, StateVector2>;
+  template <typename ScalarType>
+  using StateVector = typename util::template type<ScalarType>;
   template <typename ScalarType>
   using InputVector = typename System1::template InputVector<ScalarType>;
   template <typename ScalarType>
@@ -35,9 +34,8 @@ class CascadeSystem {
       typename System1::template OutputVector<ScalarType>;
   template <typename ScalarType>
   using OutputVector = typename System2::template OutputVector<ScalarType>;
-  typedef std::shared_ptr<System1> System1Ptr;
-  typedef std::shared_ptr<System2> System2Ptr;
-  typedef CombinedVectorUtil<StateVector1, StateVector2> util;
+  using System1Ptr = std::shared_ptr<System1>;
+  using System2Ptr = std::shared_ptr<System2>;
 
   static_assert(
       std::is_same<typename System1::template OutputVector<double>,
