@@ -129,33 +129,31 @@ class PolynomialConstraint : public Constraint {
 
   virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
-    // To avoid repeated allocation, reuse a static map.
-    static std::map<Polynomiald::VarType, double> evaluation_point;
-    evaluation_point.clear();
-
+    double_evaluation_point_.clear();
     for (int i = 0; i < poly_vars_.size(); i++) {
-      evaluation_point[poly_vars_[i]] = x[i];
+      double_evaluation_point_[poly_vars_[i]] = x[i];
     }
     y.resize(num_constraints());
-    y[0] = polynomial_.evaluateMultivariate(evaluation_point);
+    y[0] = polynomial_.evaluateMultivariate(double_evaluation_point_);
   }
 
   virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
                     TaylorVecXd& y) const override {
-    // To avoid repeated allocation, reuse a static map.
-    static std::map<Polynomiald::VarType, TaylorVarXd> evaluation_point;
-    evaluation_point.clear();
-
+    taylor_evaluation_point_.clear();
     for (int i = 0; i < poly_vars_.size(); i++) {
-      evaluation_point[poly_vars_[i]] = x[i];
+      taylor_evaluation_point_[poly_vars_[i]] = x[i];
     }
     y.resize(num_constraints());
-    y[0] = polynomial_.evaluateMultivariate(evaluation_point);
+    y[0] = polynomial_.evaluateMultivariate(taylor_evaluation_point_);
   }
 
  private:
-  const Polynomiald& polynomial_;
-  const std::vector<Polynomiald::VarType>& poly_vars_;
+  const Polynomiald polynomial_;
+  const std::vector<Polynomiald::VarType> poly_vars_;
+
+  /// To avoid repeated allocation, reuse a map for the evaluation point.
+  mutable std::map<Polynomiald::VarType, double> double_evaluation_point_;
+  mutable std::map<Polynomiald::VarType, TaylorVarXd> taylor_evaluation_point_;
 };
 
 // todo: consider implementing DifferentiableConstraint,
