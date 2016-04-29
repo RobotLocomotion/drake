@@ -199,6 +199,26 @@ Polynomial<CoefficientType>::getVariables() const {
 }
 
 template <typename CoefficientType>
+Polynomial<CoefficientType> Polynomial<CoefficientType>::evaluatePartial(
+    const std::map<VarType, CoefficientType>& var_values) const {
+  std::vector<Monomial> new_monomials;
+  for (const Monomial& monomial : monomials) {
+    std::vector<Term> new_terms;
+    CoefficientType new_coefficient = monomial.coefficient;
+    for (const Term& term : monomial.terms) {
+      if (var_values.count(term.var)) {
+        new_coefficient *= std::pow(var_values.at(term.var), term.power);
+      } else {
+        new_terms.push_back(term);
+      }
+    }
+    Monomial new_monomial = {new_coefficient, new_terms};
+    new_monomials.push_back(new_monomial);
+  }
+  return Polynomial(new_monomials.begin(), new_monomials.end());
+}
+
+template <typename CoefficientType>
 void Polynomial<CoefficientType>::subs(const VarType& orig,
                                        const VarType& replacement) {
   for (typename vector<Monomial>::iterator iter = monomials.begin();
