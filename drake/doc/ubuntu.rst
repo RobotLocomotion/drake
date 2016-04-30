@@ -39,7 +39,7 @@ Update the symbolic link in MATLAB to point to the version that was installed ea
 
     cd /usr/local/MATLAB/R2016a/sys/os/glnxa64
     sudo rm libstdc++.so.6
-    sudo ln -s /usr/lib/gcc/x86_64-linux-gnu/4.9.3/libstdc++.so libstdc++.so.6
+    sudo ln -s /usr/lib/gcc/x86_64-linux-gnu/4.9/libstdc++.so libstdc++.so.6
 
 You may wish to use `ccache` to speed up your (re)builds.
 To do so, add `/usr/lib/ccache` to the front of your `$PATH`.
