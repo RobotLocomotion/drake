@@ -138,7 +138,7 @@ def generate_accessors(context, fields):
     header = context["header"]
     indices = context["indices"]
     put(header, ACCESSOR_BEGIN % locals(), 1)
-    for field in enumerate(fields):
+    for field in fields:
         kname = to_kname(field)
         put(header, ACCESSOR % locals(), 1)
     put(header, ACCESSOR_END % locals(), 2)
