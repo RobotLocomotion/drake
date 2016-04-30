@@ -27,6 +27,9 @@ struct DrivingCommandIndices {
 template <typename ScalarType = double>
 class DrivingCommand {
  public:
+  // An abbreviation for our row index constants.
+  typedef DrivingCommandIndices K;
+
   /// @name Getters and Setters
   //@{
   const ScalarType& steering_angle() const { return value_(K::kSteeringAngle); }
@@ -53,7 +56,7 @@ class DrivingCommand {
   typedef Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> EigenType;
   size_t size() const { return K::kNumCoordiates; }
 
-  /// Zero-valued default constructor.
+  /// Default constructor.  Sets all rows to zero.
   DrivingCommand()
       : value_(Eigen::Matrix<ScalarType, K::kNumCoordiates, 1>::Zero()) {}
 
@@ -75,7 +78,7 @@ class DrivingCommand {
     return vec.value_;
   }
 
-  /// Magic pretty names for our coordiantes.  (This is an optional
+  /// Magic pretty names for our coordinates.  (This is an optional
   /// part of the Drake::Vector concept, but seems worthwhile.)
   friend std::string getCoordinateName(const DrivingCommand<ScalarType>& vec,
                                        unsigned int index) {
@@ -99,7 +102,6 @@ class DrivingCommand {
   //@}
 
  private:
-  typedef DrivingCommandIndices K;
   EigenType value_;
 };
 

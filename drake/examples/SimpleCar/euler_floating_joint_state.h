@@ -30,6 +30,9 @@ struct EulerFloatingJointStateIndices {
 template <typename ScalarType = double>
 class EulerFloatingJointState {
  public:
+  // An abbreviation for our row index constants.
+  typedef EulerFloatingJointStateIndices K;
+
   /// @name Getters and Setters
   //@{
   const ScalarType& x() const { return value_(K::kX); }
@@ -58,7 +61,7 @@ class EulerFloatingJointState {
   typedef Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> EigenType;
   size_t size() const { return K::kNumCoordiates; }
 
-  /// Zero-valued default constructor.
+  /// Default constructor.  Sets all rows to zero.
   EulerFloatingJointState()
       : value_(Eigen::Matrix<ScalarType, K::kNumCoordiates, 1>::Zero()) {}
 
@@ -80,7 +83,7 @@ class EulerFloatingJointState {
     return vec.value_;
   }
 
-  /// Magic pretty names for our coordiantes.  (This is an optional
+  /// Magic pretty names for our coordinates.  (This is an optional
   /// part of the Drake::Vector concept, but seems worthwhile.)
   friend std::string getCoordinateName(
       const EulerFloatingJointState<ScalarType>& vec, unsigned int index) {
@@ -110,7 +113,6 @@ class EulerFloatingJointState {
   //@}
 
  private:
-  typedef EulerFloatingJointStateIndices K;
   EigenType value_;
 };
 

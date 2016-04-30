@@ -44,7 +44,7 @@ def generate_indices(context, fields):
 
 
 DEFAULT_CTOR = """
-  /// Zero-valued default constructor.
+  /// Default constructor.  Sets all rows to zero.
   %(camel)s() : value_(Eigen::Matrix<ScalarType, K::kNumCoordiates, 1>::Zero()) {}
 """
 
@@ -95,7 +95,7 @@ def generate_to_eigen(context, _):
 
 
 COORD_NAMER_BEGIN = """
-  /// Magic pretty names for our coordiantes.  (This is an optional
+  /// Magic pretty names for our coordinates.  (This is an optional
   /// part of the Drake::Vector concept, but seems worthwhile.)
   friend std::string getCoordinateName(const %(camel)s<ScalarType>& vec,
                                        unsigned int index) {
@@ -212,6 +212,8 @@ CLASS_BEGIN = """
 template <typename ScalarType = double>
 class %(camel)s {
  public:
+  // An abbreviation for our row index constants.
+  typedef %(indices)s K;
 """
 
 DRAKE_VECTOR_BEGIN = """
@@ -240,7 +242,6 @@ CLASS_END = """
   //@}
 
  private:
-  typedef %(indices)s K;
   EigenType value_;
 };
 """

@@ -28,6 +28,9 @@ struct SimpleCarStateIndices {
 template <typename ScalarType = double>
 class SimpleCarState {
  public:
+  // An abbreviation for our row index constants.
+  typedef SimpleCarStateIndices K;
+
   /// @name Getters and Setters
   //@{
   const ScalarType& x() const { return value_(K::kX); }
@@ -54,7 +57,7 @@ class SimpleCarState {
   typedef Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> EigenType;
   size_t size() const { return K::kNumCoordiates; }
 
-  /// Zero-valued default constructor.
+  /// Default constructor.  Sets all rows to zero.
   SimpleCarState()
       : value_(Eigen::Matrix<ScalarType, K::kNumCoordiates, 1>::Zero()) {}
 
@@ -76,7 +79,7 @@ class SimpleCarState {
     return vec.value_;
   }
 
-  /// Magic pretty names for our coordiantes.  (This is an optional
+  /// Magic pretty names for our coordinates.  (This is an optional
   /// part of the Drake::Vector concept, but seems worthwhile.)
   friend std::string getCoordinateName(const SimpleCarState<ScalarType>& vec,
                                        unsigned int index) {
@@ -102,7 +105,6 @@ class SimpleCarState {
   //@}
 
  private:
-  typedef SimpleCarStateIndices K;
   EigenType value_;
 };
 
