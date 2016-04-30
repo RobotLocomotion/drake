@@ -56,7 +56,7 @@ def generate_default_ctor(context, _):
 EIGEN_CTOR = """
   /// Implicit Eigen::Matrix conversion.
   template <typename Derived>
-  // NOLINTNEXTLINE(runtime/explicit)
+  // NOLINTNEXTLINE(runtime/explicit) per Drake::Vector.
   %(camel)s(const Eigen::MatrixBase<Derived>& value)
       : value_(value.segment(0, K::kNumCoordiates)) {}
 """
