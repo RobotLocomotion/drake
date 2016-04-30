@@ -9,6 +9,8 @@
 
 #include "drake/solvers/Optimization.h"
 
+using drake::solvers::SolutionResult;
+
 namespace snopt {
 #include "snopt.hh"
 #include "snfilewrapper.hh"
@@ -110,7 +112,7 @@ struct SNOPTData : public Drake::OptimizationProblem::SolverData {
 };
 
 struct SNOPTRun {
-  SNOPTRun(SNOPTData& d) : D(d) {
+  explicit SNOPTRun(SNOPTData& d) : D(d) {
     // Minimum default allocation needed by snInit
     D.min_alloc_w(snopt_mincw, snopt_miniw * 1000, snopt_minrw * 1000);
 
@@ -246,7 +248,7 @@ static int snopt_userfun(snopt::integer* Status, snopt::integer* n,
   return 0;
 }
 
-bool Drake::SnoptSolver::Solve(
+SolutionResult Drake::SnoptSolver::Solve(
     OptimizationProblem& prog) const {
   auto d = prog.GetSolverData<SNOPTData>();
   SNOPTRun cur(*d);
@@ -481,8 +483,16 @@ bool Drake::SnoptSolver::Solve(
     sol(i) = static_cast<double>(x[i]);
   }
   prog.SetDecisionVariableValues(sol);
+  prog.SetSolverResult("SNOPT", info);
 
   // todo: extract the other useful quantities, too.
 
-  return true;
+  if (info >= 1 && info <= 6) {
+    return SolutionResult::kSolutionFound;
+  } else if (info >= 11 && info <= 16) {
+    return SolutionResult::kInfeasibleConstraints;
+  } else if (info == 91) {
+    return SolutionResult::kInvalidInput;
+  }
+  return SolutionResult::kUnknownError;
 }

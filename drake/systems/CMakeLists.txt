@@ -13,6 +13,7 @@ if (LCM_FOUND)
 endif()
 
 add_subdirectory(frames)
+add_subdirectory(framework)
 add_subdirectory(plants)
 add_subdirectory(trajectories)
 add_subdirectory(controllers)

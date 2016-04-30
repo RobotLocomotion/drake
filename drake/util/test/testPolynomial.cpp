@@ -1,4 +1,6 @@
-#include <iostream>
+#include <sstream>
+#include <map>
+
 #include "drake/util/Polynomial.h"
 #include "drake/util/eigen_matrix_compare.h"
 #include "drake/util/testUtil.h"
@@ -70,14 +72,22 @@ void testOperators() {
     poly1_times_poly1 *= poly1_times_poly1;
 
     double t = uniform(generator);
-    valuecheck(sum.value(t), poly1.value(t) + poly2.value(t), 1e-8);
-    valuecheck(difference.value(t), poly2.value(t) - poly1.value(t), 1e-8);
-    valuecheck(product.value(t), poly1.value(t) * poly2.value(t), 1e-8);
-    valuecheck(poly1_plus_scalar.value(t), poly1.value(t) + scalar, 1e-8);
-    valuecheck(poly1_minus_scalar.value(t), poly1.value(t) - scalar, 1e-8);
-    valuecheck(poly1_scaled.value(t), poly1.value(t) * scalar, 1e-8);
-    valuecheck(poly1_div.value(t), poly1.value(t) / scalar, 1e-8);
-    valuecheck(poly1_times_poly1.value(t), poly1.value(t) * poly1.value(t),
+    valuecheck(sum.evaluateUnivariate(t),
+               poly1.evaluateUnivariate(t) + poly2.evaluateUnivariate(t), 1e-8);
+    valuecheck(difference.evaluateUnivariate(t),
+               poly2.evaluateUnivariate(t) - poly1.evaluateUnivariate(t), 1e-8);
+    valuecheck(product.evaluateUnivariate(t),
+               poly1.evaluateUnivariate(t) * poly2.evaluateUnivariate(t), 1e-8);
+    valuecheck(poly1_plus_scalar.evaluateUnivariate(t),
+               poly1.evaluateUnivariate(t) + scalar, 1e-8);
+    valuecheck(poly1_minus_scalar.evaluateUnivariate(t),
+               poly1.evaluateUnivariate(t) - scalar, 1e-8);
+    valuecheck(poly1_scaled.evaluateUnivariate(t),
+               poly1.evaluateUnivariate(t) * scalar, 1e-8);
+    valuecheck(poly1_div.evaluateUnivariate(t),
+               poly1.evaluateUnivariate(t) / scalar, 1e-8);
+    valuecheck(poly1_times_poly1.evaluateUnivariate(t),
+               poly1.evaluateUnivariate(t) * poly1.evaluateUnivariate(t),
                1e-8);
   }
 }
@@ -95,7 +105,7 @@ void testRoots() {
     auto roots = poly.roots();
     valuecheck<Eigen::Index>(roots.rows(), poly.getDegree());
     for (int i = 0; i < roots.size(); i++) {
-      auto value = poly.value(roots[i]);
+      auto value = poly.evaluateUnivariate(roots[i]);
       valuecheck(std::abs(value), 0.0, 1e-8);
     }
   }
@@ -108,11 +118,11 @@ void testEvalType() {
   VectorXd coeffs = VectorXd::Random(int_distribution(generator));
   Polynomial<double> poly(coeffs);
 
-  auto valueIntInput = poly.value(1);
+  auto valueIntInput = poly.evaluateUnivariate(1);
   const auto& double_type = typeid(double);  // NOLINT(readability/function)
   valuecheck(typeid(decltype(valueIntInput)) == double_type, true);
 
-  auto valueComplexInput = poly.value(std::complex<double>(1.0, 2.0));
+  auto valueComplexInput = poly.evaluateUnivariate(std::complex<double>(1.0, 2.0));
   valuecheck(
       typeid(decltype(valueComplexInput)) == typeid(std::complex<double>),
       true);
@@ -143,8 +153,9 @@ void testPolynomialMatrix() {
   for (int row = 0; row < A.rows(); ++row) {
     for (int col = 0; col < A.cols(); ++col) {
       double t = uniform(generator);
-      valuecheck(sum(row, col).value(t),
-                 A(row, col).value(t) + C(row, col).value(t), 1e-8);
+      valuecheck(sum(row, col).evaluateUnivariate(t),
+                 A(row, col).evaluateUnivariate(t) +
+                 C(row, col).evaluateUnivariate(t), 1e-8);
     }
   }
 
@@ -189,6 +200,98 @@ TEST(PolynomialTest, VariableIdGeneration) {
   std::string result;
   test_stream >> result;
   EXPECT_EQ(result, "x1");
+}
+
+TEST(PolynomialTest, GetVariables) {
+  Polynomiald x = Polynomiald("x");
+  Polynomiald::VarType x_var = x.getSimpleVariable();
+  Polynomiald y = Polynomiald("y");
+  Polynomiald::VarType y_var = y.getSimpleVariable();
+  Polynomiald z = Polynomiald("z");
+  Polynomiald::VarType z_var = z.getSimpleVariable();
+
+  EXPECT_TRUE(x.getVariables().count(x_var));
+  EXPECT_FALSE(x.getVariables().count(y_var));
+
+  EXPECT_FALSE(Polynomiald().getVariables().count(x_var));
+
+  EXPECT_TRUE((x + x).getVariables().count(x_var));
+
+  EXPECT_TRUE((x + y).getVariables().count(x_var));
+  EXPECT_TRUE((x + y).getVariables().count(y_var));
+
+  EXPECT_TRUE((x * y * y + z).getVariables().count(x_var));
+  EXPECT_TRUE((x * y * y + z).getVariables().count(y_var));
+  EXPECT_TRUE((x * y * y + z).getVariables().count(z_var));
+
+  EXPECT_FALSE(x.derivative().getVariables().count(x_var));
+}
+
+// TODO(ggould-tri) -- This test does not pass, which is a misfeature or
+// bug in Polynomial.
+TEST(PolynomialTest, DISABLED_Simplification) {
+  Polynomiald x = Polynomiald("x");
+  Polynomiald y = Polynomiald("y");
+
+  { // Test duplicate monomials.
+    std::stringstream test_stream;
+    test_stream << ((x * y) + (x * y));
+    std::string result;
+    test_stream >> result;
+    EXPECT_EQ(result, "2 * x1 * y1");
+  }
+
+  { // Test monomials that are duplicates under commutativity.
+    std::stringstream test_stream;
+    test_stream << ((x * y) + (y * x));
+    std::string result;
+    test_stream >> result;
+    EXPECT_EQ(result, "2 * x1 * y1");
+  }
+}
+
+TEST(PolynomialTest, MonomialFactor) {
+  Polynomiald x = Polynomiald("x");
+  Polynomiald y = Polynomiald("y");
+
+  // "m_" prefix denotes monomial.
+  Polynomiald::Monomial m_one = Polynomiald(1).getMonomials()[0];
+  Polynomiald::Monomial m_two = Polynomiald(2).getMonomials()[0];
+  Polynomiald::Monomial m_x = x.getMonomials()[0];
+  Polynomiald::Monomial m_y = y.getMonomials()[0];
+  Polynomiald::Monomial m_2x = (x * 2).getMonomials()[0];
+  Polynomiald::Monomial m_x2 = (x * x).getMonomials()[0];
+  Polynomiald::Monomial m_x2y = (x * x * y).getMonomials()[0];
+
+  // Expect failures
+  EXPECT_EQ(m_x.factor(m_y).coefficient, 0);
+  EXPECT_EQ(m_x.factor(m_x2).coefficient, 0);
+
+  // Expect successes
+  EXPECT_EQ(m_x.factor(m_x), m_one);
+  EXPECT_EQ(m_2x.factor(m_x), m_two);
+  EXPECT_EQ(m_x2.factor(m_x), m_x);
+  EXPECT_EQ(m_x2y.factor(m_x2), m_y);
+  EXPECT_EQ(m_x2y.factor(m_y), m_x2);
+}
+
+TEST(PolynomialTest, MultivariateValue) {
+  Polynomiald x = Polynomiald("x");
+  Polynomiald y = Polynomiald("y");
+  const std::map<Polynomiald::VarType, double> eval_point = {
+    {x.getSimpleVariable(), 1},
+    {y.getSimpleVariable(), 2}};
+  EXPECT_EQ((x * x + y).evaluateMultivariate(eval_point), 3);
+  EXPECT_EQ((2 * x * x + y).evaluateMultivariate(eval_point), 4);
+  EXPECT_EQ((x * x + 2 * y).evaluateMultivariate(eval_point), 5);
+  EXPECT_EQ((x * x + x * y).evaluateMultivariate(eval_point), 3);
+}
+
+TEST(PolynomialTest, Conversion) {
+  // Confirm that these conversions compile okay.
+  Polynomial<double> x(1.0);
+  Polynomial<double> y = 2.0;
+  Polynomial<double> z = 3;
 }
 
 }
