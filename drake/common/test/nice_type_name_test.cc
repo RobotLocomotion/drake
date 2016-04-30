@@ -40,7 +40,8 @@ GTEST_TEST(TestNiceTypeName, Canonicalize) {
   EXPECT_EQ(NiceTypeName::Canonicalize("class std :: vector < double   >"),
             "std::vector<double>");
   // OSX's stl like to throw in these extra namespaces.
-  EXPECT_EQ(NiceTypeName::Canonicalize("std:: __1 :: __23 :: set<T>"), "std::set<T>");
+  EXPECT_EQ(NiceTypeName::Canonicalize("std:: __1 :: __23 :: set<T>"),
+            "std::set<T>");
 
   // Should leave spaces between words.
   EXPECT_EQ(NiceTypeName::Canonicalize("lunch bucket"), "lunch bucket");
@@ -53,17 +54,22 @@ GTEST_TEST(TestNiceTypeName, BuiltIns) {
   EXPECT_EQ(NiceTypeName::Get<bool>(), "bool");
   EXPECT_EQ(NiceTypeName::Get<signed char>(), "signed char");
   EXPECT_EQ(NiceTypeName::Get<unsigned char>(), "unsigned char");
-  EXPECT_EQ(NiceTypeName::Get<short>(), "short");
-  EXPECT_EQ(NiceTypeName::Get<unsigned short>(), "unsigned short");
+  EXPECT_EQ(NiceTypeName::Get<short>(), "short");  // NOLINT(runtime/int)
+  EXPECT_EQ(NiceTypeName::Get<unsigned short>(),   // NOLINT(runtime/int)
+            "unsigned short");
   EXPECT_EQ(NiceTypeName::Get<int>(), "int");
   EXPECT_EQ(NiceTypeName::Get<unsigned int>(), "unsigned int");
   EXPECT_EQ(NiceTypeName::Get<unsigned>(), "unsigned int");
-  EXPECT_EQ(NiceTypeName::Get<long>(), "long");
-  EXPECT_EQ(NiceTypeName::Get<long int>(), "long");
-  EXPECT_EQ(NiceTypeName::Get<unsigned long>(), "unsigned long");
-  EXPECT_EQ(NiceTypeName::Get<long long>(), "long long");
-  EXPECT_EQ(NiceTypeName::Get<long long int>(), "long long");
-  EXPECT_EQ(NiceTypeName::Get<unsigned long long>(), "unsigned long long");
+  EXPECT_EQ(NiceTypeName::Get<long>(), "long");      // NOLINT(runtime/int)
+  EXPECT_EQ(NiceTypeName::Get<long int>(), "long");  // NOLINT(runtime/int)
+  EXPECT_EQ(NiceTypeName::Get<unsigned long>(),      // NOLINT(runtime/int)
+            "unsigned long");
+  EXPECT_EQ(NiceTypeName::Get<long long>(),  // NOLINT(runtime/int)
+            "long long");
+  EXPECT_EQ(NiceTypeName::Get<long long int>(),  // NOLINT(runtime/int)
+            "long long");
+  EXPECT_EQ(NiceTypeName::Get<unsigned long long>(),  // NOLINT(runtime/int)
+            "unsigned long long");
   EXPECT_EQ(NiceTypeName::Get<float>(), "float");
   EXPECT_EQ(NiceTypeName::Get<double>(), "double");
   EXPECT_EQ(NiceTypeName::Get<long double>(), "long double");
@@ -86,9 +92,8 @@ GTEST_TEST(TestNiceTypeName, StdClasses) {
   // std::vector with default allocator.
   EXPECT_EQ(NiceTypeName::Get<std::vector<int>>(),
             "std::vector<int,std::allocator<int>>");
-  EXPECT_EQ(
-      NiceTypeName::Get<std::vector<std::string>>(),
-      "std::vector<std::string,std::allocator<std::string>>");
+  EXPECT_EQ(NiceTypeName::Get<std::vector<std::string>>(),
+            "std::vector<std::string,std::allocator<std::string>>");
 
   // Try non-standard allocator.
   using NonStdAlloc = std::vector<unsigned, std::allocator<unsigned>>;
@@ -100,7 +105,7 @@ GTEST_TEST(TestNiceTypeName, Eigen) {
   EXPECT_EQ(NiceTypeName::Get<Eigen::Matrix3f>(),
             "Eigen::Matrix<float,3,3,0,3,3>");
 
-  using PairType = std::pair<Eigen::Vector2i,Eigen::Vector3d>;
+  using PairType = std::pair<Eigen::Vector2i, Eigen::Vector3d>;
   EXPECT_EQ(NiceTypeName::Get<PairType>(),
             "std::pair<Eigen::Matrix<int,2,1,0,2,1>,"
             "Eigen::Matrix<double,3,1,0,3,1>>");

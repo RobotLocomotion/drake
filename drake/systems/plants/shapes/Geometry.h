@@ -46,7 +46,7 @@ class DRAKESHAPES_EXPORT Geometry {
                                                      const Geometry &);
 
  protected:
-  Geometry(Shape shape);
+  explicit Geometry(Shape shape);
   void getBoundingBoxPoints(double x_half_width, double y_half_width,
                             double z_half_width,
                             Eigen::Matrix3Xd &points) const;
@@ -57,7 +57,7 @@ class DRAKESHAPES_EXPORT Geometry {
 
 class DRAKESHAPES_EXPORT Sphere : public Geometry {
  public:
-  Sphere(double radius);
+  explicit Sphere(double radius);
   virtual ~Sphere() {}
   virtual Sphere *clone() const;
   virtual void getPoints(Eigen::Matrix3Xd &points) const;
@@ -76,7 +76,7 @@ class DRAKESHAPES_EXPORT Sphere : public Geometry {
 
 class DRAKESHAPES_EXPORT Box : public Geometry {
  public:
-  Box(const Eigen::Vector3d &size);
+  explicit Box(const Eigen::Vector3d &size);
   virtual ~Box() {}
   virtual Box *clone() const;
   virtual void getPoints(Eigen::Matrix3Xd &points) const;
@@ -132,7 +132,7 @@ class DRAKESHAPES_EXPORT Capsule : public Geometry {
 
 class DRAKESHAPES_EXPORT Mesh : public Geometry {
  public:
-  Mesh(const std::string &filename);
+  explicit Mesh(const std::string &filename);
   Mesh(const std::string &filename, const std::string &resolved_filename);
   virtual ~Mesh() {}
   virtual Mesh *clone() const;
@@ -156,7 +156,7 @@ class DRAKESHAPES_EXPORT Mesh : public Geometry {
 
 class DRAKESHAPES_EXPORT MeshPoints : public Geometry {
  public:
-  MeshPoints(const Eigen::Matrix3Xd &points);
+  explicit MeshPoints(const Eigen::Matrix3Xd &points);
   virtual ~MeshPoints() {}
   virtual MeshPoints *clone() const;
 

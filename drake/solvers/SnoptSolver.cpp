@@ -112,7 +112,7 @@ struct SNOPTData : public Drake::OptimizationProblem::SolverData {
 };
 
 struct SNOPTRun {
-  SNOPTRun(SNOPTData& d) : D(d) {
+  explicit SNOPTRun(SNOPTData& d) : D(d) {
     // Minimum default allocation needed by snInit
     D.min_alloc_w(snopt_mincw, snopt_miniw * 1000, snopt_minrw * 1000);
 

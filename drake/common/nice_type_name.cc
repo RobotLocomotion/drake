@@ -74,6 +74,6 @@ string drake::common::NiceTypeName::Canonicalize(const string& demangled) {
   return canonical;
 }
 
-} // namespace common
-} // namespace drake
+}  // namespace common
+}  // namespace drake
 

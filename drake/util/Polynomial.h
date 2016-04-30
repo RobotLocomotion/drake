@@ -112,6 +112,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
   /// Construct a Polynomial of a single constant. e.g. "5".
   // This is required for some Eigen operations when used in a
   // polynomial matrix.
+  // NOLINTNEXTLINE(runtime/explicit) This conversion is desirable.
   Polynomial(const CoefficientType& scalar);
 
   /// Construct a Polynomial consisting of a single Monomial, e.g. "5xy**3".
@@ -123,7 +124,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
 
   /// Construct a polynomial consisting of a single Monomial of the variable
   /// named varname + num.
-  Polynomial(const std::string varname, const unsigned int num = 1);
+  explicit Polynomial(const std::string varname, const unsigned int num = 1);
 
   /// Construct a single Monomial of the given coefficient and variable.
   Polynomial(const CoefficientType& coeff, const VarType& v);
@@ -131,7 +132,7 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
   /// A legacy constructor for univariate polynomials:  Takes a vector
   /// of coefficients for the constant, x, x**2, x**3... Monomials.
   template <typename Derived>
-  Polynomial(Eigen::MatrixBase<Derived> const& coefficients) {
+  explicit Polynomial(Eigen::MatrixBase<Derived> const& coefficients) {
     VarType v = variableNameToId("t");
     for (int i = 0; i < coefficients.size(); i++) {
       Monomial m;
