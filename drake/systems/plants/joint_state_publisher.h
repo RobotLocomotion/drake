@@ -57,99 +57,57 @@ class JointStatePublisher {
     // http://wiki.ros.org/roscpp/Overview/NodeHandles
     ros::NodeHandle nh;
 
-    joint_state_publisher_ = nh.advertise<sensor_msgs::LaserScan>(
+    joint_state_publisher_ = nh.advertise<sensor_msgs::JointState>(
       "joint_states", kQueueSize);
 
+    std::cout << "JointStatePublisher: Initializing joint state message." << std::endl;
 
-    // // Creates a ROS topic publisher for each LIDAR sensor in the rigid body
-    // // system.
-    // for (auto &sensor : rigid_body_system->GetSensors()) {
+    auto rigid_body_tree = rigid_body_system->getRigidBodyTree();
+    for (auto & rigid_body : rigid_body_tree->bodies) {
+      if (rigid_body->GetName() != "world") {
+        std::cout << "JointStatePublisher: Processing link: " << rigid_body->GetName() << std::endl;
+        const DrakeJoint & joint = rigid_body->getJoint();
 
-    //   // Attempts to cast the RigidBodySensor pointer to a RigidBodyDepthSensor
-    //   // pointer. This actually does two things simultaneously. First it
-    //   // determines whether the pointer in fact points to a
-    //   // RigidBodyDepthSensor. Second, if true, it also povides a pointer to the
-    //   // RigidBodyDepthSensor that can be used later in this method.
-    //   RigidBodyDepthSensor *depth_sensor =
-    //       dynamic_cast<RigidBodyDepthSensor *>(sensor.get());
+        std::stringstream ss;
+        ss << "JointStatePublisher: Link \"" << rigid_body->GetName()
+          << "\" has " << joint.getNumPositions() << " positions and "
+          << joint.getNumVelocities() << " velocities." << std::endl;
+        for (int ii = 0; ii < joint.getNumPositions(); ii++) {
+          ss << ii << ": " << joint.getPositionName(ii);
+          if (ii < joint.getNumPositions() - 1)
+            ss << std::endl;
+        }
+        std::cout << ss.str() << std::endl;
 
-    //   if (depth_sensor != nullptr) {
-    //     // If the dynamic cast was successful, that means the sensor is in fact
-    //     // a RigidBodyDepth sensor. The following code creates a ROS topic
-    //     // publisher that will be used to publish the data contained in the
-    //     // sensor's output. The ROS topic is "drake/lidar/[name of sensor]/".
-    //     // It then creates a sensor_msgs::LaserScan message for each publisher.
+        // Determines whether the joint is a QuaternionFloatingJoint by
+        // checking whether the joint has 7 positions and 6 velocities.
+        // If it is, it sets the number of positions to be 6 (x, y, z, r, p, y)
+        // instead of 7 (x, y, z, w, z, y, z) since sensor_msgs::JointState
+        // message uses Euler angles for the floating joint. It also sets
+        // the names of the bank joints to use "roll", "pitch", and "yaw".
+        if (joint.getNumPositions() == 7 && joint.getNumVelocities() == 6) {
+          joint_state_message_.name.push_back(joint.getName() + "_x");
+          joint_state_message_.name.push_back(joint.getName() + "_y");
+          joint_state_message_.name.push_back(joint.getName() + "_z");
+          joint_state_message_.name.push_back(joint.getName() + "_r");
+          joint_state_message_.name.push_back(joint.getName() + "_p");
+          joint_state_message_.name.push_back(joint.getName() + "_y");
+        } else {
+          for (int ii = 0; ii < joint.getNumPositions(); ii++) {
+            joint_state_message_.name.push_back(joint.getPositionName(ii));
+          }
+        }
+      }
+    }
 
-    //     // Creates the ROS topic publisher for the current LIDAR sensor.
-    //     if (lidar_publishers_.find(depth_sensor->get_name()) ==
-    //         lidar_publishers_.end()) {
-    //       std::string topic_name = "drake/lidar/" + depth_sensor->get_name();
-    //       lidar_publishers_.insert(std::pair<std::string, ros::Publisher>(
-    //           depth_sensor->get_name(),
-    //           nh.advertise<sensor_msgs::LaserScan>(topic_name, 1)));
-    //     } else {
-    //       throw std::runtime_error(
-    //           "ERROR: Multiple sensors with name " + depth_sensor->get_name() +
-    //           " found when creating a ROS topic publisher for the sensor!");
-    //     }
-
-    //     // Creates the ROS message for the current LIDAR sensor.
-    //     if (lidar_messages_.find(depth_sensor->get_name()) ==
-    //         lidar_messages_.end()) {
-    //       std::unique_ptr<sensor_msgs::LaserScan> message(
-    //           new sensor_msgs::LaserScan());
-    //       message->header.frame_id = depth_sensor->get_name();
-
-    //       // The rigid body depth sensor scans either horizontally or
-    //       // vertically.
-    //       bool is_horizontal_scanner = depth_sensor->is_horizontal_scanner();
-    //       bool is_vertical_scanner = depth_sensor->is_vertical_scanner();
-
-    //       if (is_horizontal_scanner && is_vertical_scanner)
-    //         throw std::runtime_error(
-    //             "ERROR: Rigid body depth sensor " + depth_sensor->get_name() +
-    //             " has both horizontal and vertical dimensions. Expecting it to "
-    //             "only scan within a 2D plane!");
-
-    //       if (is_horizontal_scanner) {
-    //         message->angle_min = depth_sensor->get_min_yaw();
-    //         message->angle_max = depth_sensor->get_max_yaw();
-    //         message->angle_increment =
-    //             (depth_sensor->get_max_yaw() - depth_sensor->get_min_yaw()) /
-    //             depth_sensor->get_num_pixel_cols();
-    //       } else {
-    //         message->angle_min = depth_sensor->get_min_pitch();
-    //         message->angle_max = depth_sensor->get_max_pitch();
-    //         message->angle_increment = (depth_sensor->get_max_pitch() -
-    //                                     depth_sensor->get_min_pitch()) /
-    //                                    depth_sensor->get_num_pixel_rows();
-    //       }
-
-    //       // Since the RigidBodyDepthSensor does not include this information
-    //       // in the output and it is difficult to obtain this information
-    //       // from other variables within this method's scope, set this value
-    //       // to be zero.
-    //       //
-    //       // See:
-    //       // https://github.com/RobotStateVectortLocomotion/drake/issues/2210
-    //       message->time_increment = 0;
-    //       message->scan_time = 0;
-
-    //       message->range_min = depth_sensor->get_min_range();
-    //       message->range_max = depth_sensor->get_max_range();
-    //       message->ranges.resize(depth_sensor->getNumOutputs());
-    //       message->intensities.resize(depth_sensor->getNumOutputs());
-
-    //       lidar_messages_.insert(
-    //           std::pair<std::string, std::unique_ptr<sensor_msgs::LaserScan>>(
-    //               depth_sensor->get_name(), std::move(message)));
-    //     } else {
-    //       throw std::runtime_error(
-    //           "ERROR: Multiple sensors with name " + depth_sensor->get_name() +
-    //           " found when creating a sensor_msgs::LaserScan message!");
-    //     }
-    //   }
-    // }
+    std::stringstream ss;
+    ss << "Joint names:\n";
+    for (int ii = 0; ii < joint_state_message_.name.size(); ii++) {
+      ss << ii << ". " << joint_state_message_.name[ii];
+      if (ii < joint_state_message_.name.size() - 1)
+        ss << "\n";
+    }
+    std::cout << ss.str() << std::endl;
   }
 
   StateVector<double> dynamics(const double &t, const StateVector<double> &x,
@@ -159,6 +117,10 @@ class JointStatePublisher {
 
   OutputVector<double> output(const double &t, const StateVector<double> &x,
                               const InputVector<double> &u) const {
+
+    // To convert from quaternion to RPY, see: drake/util/drakeGeometryUtil.h
+    //   Methods: quat2rotmat(), rotmat2rpy()
+
     // const std::vector<std::shared_ptr<RigidBodySensor>> &sensor_vector =
     //     rigid_body_system_->GetSensors();
 
