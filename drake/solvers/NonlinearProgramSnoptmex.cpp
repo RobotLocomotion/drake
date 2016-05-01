@@ -72,10 +72,11 @@ void mysnsetr(const char* strOpt, snopt::doublereal val, snopt::integer* iPrint,
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs != 13 && nlhs != 5) {
-    mexErrMsgIdAndTxt("Drake:NonlinearProgramSnoptmex:InvalidInputs",
-                      "The usage is [x, F, info, xmul, Fmul] = "
-                      "NonlinearProgramSnoptmex(x, xlow, xupp, Flow, Fupp, userfun,"
-                      "ObjAdd, ObjRow, A, iAfun, jAvar, iGfun, jGvar, options)");
+    mexErrMsgIdAndTxt(
+        "Drake:NonlinearProgramSnoptmex:InvalidInputs",
+        "The usage is [x, F, info, xmul, Fmul] = "
+        "NonlinearProgramSnoptmex(x, xlow, xupp, Flow, Fupp, userfun,"
+        "ObjAdd, ObjRow, A, iAfun, jAvar, iGfun, jGvar, options)");
   }
 
   if (lenrw == 0) {  // then initialize (sninit needs some default allocation)
