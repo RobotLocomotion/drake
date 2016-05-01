@@ -148,8 +148,8 @@ TEST(testOptimizationProblem, trivialLeastSquares) {
   RunNonlinearProgram(prog, [&]() {
       EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10,
                                   MatrixCompareType::absolute));
-      EXPECT_TRUE(
-          CompareMatrices(b / 3, x.value(), 1e-10, MatrixCompareType::absolute));
+      EXPECT_TRUE(CompareMatrices(b / 3, x.value(), 1e-10,
+                                  MatrixCompareType::absolute));
     });
 }
 
