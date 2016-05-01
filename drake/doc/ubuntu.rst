@@ -5,8 +5,8 @@ Ubuntu 14.04 LTS (Trusty)
 Install the prerequisites::
 
     sudo apt-get update
-    sudo apt-get upgrade -y
-    sudo apt-get install -y --no-install-recommends lsb-core software-properties-common wget
+    sudo apt-get upgrade
+    sudo apt-get install --no-install-recommends lsb-core software-properties-common wget
     sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
     wget -q -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
 
