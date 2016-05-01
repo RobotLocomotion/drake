@@ -153,10 +153,13 @@ inline double solve_quadprog(MatrixBase<tA> & G, MatrixBase<tB> & g0,
  * pre-computed */
 template <typename tA, typename tB, typename tC, typename tD, typename tE,
           typename tF>
-inline double solve_quadprog2(LLT<MatrixXd, Lower> &chol, double c1,
+inline double solve_quadprog2(LLT<MatrixXd, Lower> & chol,
+                              double c1,
                               MatrixBase<tA> & g0,
-                              const MatrixBase<tB> & CE, const MatrixBase<tC> & ce0,
-                              const MatrixBase<tD> & CI, const MatrixBase<tE> & ci0,
+                              const MatrixBase<tB> & CE,
+                              const MatrixBase<tC> & ce0,
+                              const MatrixBase<tD> & CI,
+                              const MatrixBase<tE> & ci0,
                               MatrixBase<tF>& x) {
   int i, j, k, l; /* indices */
   int ip, me, mi;
@@ -179,8 +182,8 @@ inline double solve_quadprog2(LLT<MatrixXd, Lower> &chol, double c1,
 
   me = p; /* number of equality constraints */
   mi = m; /* number of inequality constraints */
-  q = 0;  /* size of the active set A (containing the indices of the
-           * active constraints) */
+  q = 0;  // size of the active set A (containing the indices of the
+          // active constraints)
 
   /*
    * Preprocessing phase
