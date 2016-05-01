@@ -160,10 +160,11 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     snopt::snopenappend_(&iPrint, print_file_name, &INFO_snopt,
                          print_file_name_len);
 
-    // mysnseti("Major print
-    // level", static_cast<snopt::integer>(11),&iPrint,&iSumm,&INFO_snopt, cw,&lencw, iw,&leniw, rw,&lenrw);
-    // mysnseti("Print
-    // file", iPrint,&iPrint,&iSumm,&INFO_snopt, cw,&lencw, iw,&leniw, rw,&lenrw);
+    // mysnseti("Major print level",
+    //   static_cast<snopt::integer>(11),&iPrint,&iSumm,&INFO_snopt,
+    //   cw,&lencw, iw,&leniw, rw,&lenrw);
+    // mysnseti("Print file", iPrint,&iPrint,&iSumm,&INFO_snopt,
+    //   cw,&lencw, iw,&leniw, rw,&lenrw);
   }
 
   snopt::integer minrw, miniw, mincw;
