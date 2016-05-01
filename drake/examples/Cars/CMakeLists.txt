@@ -14,7 +14,7 @@ if(roscpp_FOUND)
   # message(STATUS "=============================================================")
 
   add_executable(carSimLCMandROS simulateLCMandROS.cpp)
-  add_dependencies(carSimLCMandROS ${PROJECT_NAME}_generate_messages)
+  # add_dependencies(carSimLCMandROS ${PROJECT_NAME}_generate_messages)
   target_link_libraries(carSimLCMandROS drakeRBM drakeRBSystem drakeLCMSystem ${roscpp_LIBRARIES})
 endif()
 
