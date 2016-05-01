@@ -7,6 +7,7 @@
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/drakeAppUtil.h"
 #include "drake/systems/plants/sensor_visualizer_lidar.h"
+#include "drake/systems/plants/joint_state_publisher.h"
 
 using namespace std;
 using namespace Eigen;
@@ -194,7 +195,11 @@ int main(int argc, char* argv[]) {
       make_shared<drake::systems::plants::SensorVisualizerLidar<
           RigidBodySystem::StateVector>>(rigid_body_sys);
 
-  auto sys = cascade(cascade(vehicle_sys, bot_visualizer), lidar_visualizer);
+  auto joint_state_publisher =
+      make_shared<drake::systems::plants::JointStatePublisher<
+          RigidBodySystem::StateVector>>(rigid_body_sys);
+
+  auto sys = cascade(cascade(cascade(vehicle_sys, bot_visualizer), lidar_visualizer), joint_state_publisher);
 
   SimulationOptions options = default_simulation_options;
   rigid_body_sys->penetration_stiffness = 5000.0;
