@@ -102,7 +102,8 @@ class QuadraticConstraint : public Constraint {
  */
 class LinearConstraint : public Constraint {
  public:
-  explicit LinearConstraint(size_t num_constraints) : Constraint(num_constraints) {}
+  explicit LinearConstraint(size_t num_constraints)
+      : Constraint(num_constraints) {}
   template <typename DerivedA, typename DerivedLB, typename DerivedUB>
   LinearConstraint(const Eigen::MatrixBase<DerivedA>& a,
                    const Eigen::MatrixBase<DerivedLB>& lb,
