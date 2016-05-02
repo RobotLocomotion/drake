@@ -47,7 +47,7 @@ GTEST_TEST(TestNiceTypeName, Canonicalize) {
   EXPECT_EQ(NiceTypeName::Canonicalize("lunch bucket"), "lunch bucket");
   // And keep funny looking namespaces if they aren't __digits.
   EXPECT_EQ(NiceTypeName::Canonicalize("std::my__1::__23x::resigned char"),
-            "std::my__1::__23x::resigned char");
+            "std::my__1::resigned char");
 }
 
 GTEST_TEST(TestNiceTypeName, BuiltIns) {
