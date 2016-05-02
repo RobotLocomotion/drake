@@ -5,6 +5,9 @@
 namespace drake {
 namespace systems {
 
+template <typename ScalarType>
+using VectorX = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
+
 /// VectorInterface is a pure abstract interface that real-valued signals
 /// between Systems must satisfy. Classes that inherit from VectorInterface
 /// will typically provide names for the elements of the vector, and may also
@@ -15,7 +18,6 @@ namespace systems {
 template <typename ScalarType>
 class VectorInterface {
  public:
-  VectorInterface() {}
   virtual ~VectorInterface() {}
 
   // VectorInterfaces are neither copyable nor moveable.
@@ -25,18 +27,19 @@ class VectorInterface {
   VectorInterface& operator=(VectorInterface<ScalarType>&& other) = delete;
 
   /// After a.set_value(b.get_value()), a must be identical to b.
-  /// May throw a runtime error if the new value has different dimensions
+  /// May throw std::runtime_error if the new value has different dimensions
   /// than expected by the concrete class implementing VectorInterface.
-  virtual void set_value(
-      const Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>& value) = 0;
+  virtual void set_value(const VectorX<ScalarType>& value) = 0;
 
-  /// Returns a real-valued column vector representing the entire state of
-  /// this signal.
-  virtual const Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>& get_value()
-      const = 0;
+  /// Returns a column vector containing the entire current value of the signal.
+  virtual const VectorX<ScalarType>& get_value() const = 0;
 
-  /// Returns a pointer that allows mutation of the state of this signal.
-  virtual Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>* get_mutable_value() = 0;
+  /// Returns a reference that allows mutation of the values in this vector, but
+  /// not resize of the vector itself.
+  virtual Eigen::VectorBlock<VectorX<ScalarType>> get_mutable_value() = 0;
+
+ protected:
+  VectorInterface() {}
 };
 
 }  // namespace systems
