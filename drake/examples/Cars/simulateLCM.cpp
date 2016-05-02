@@ -1,3 +1,5 @@
+#include "spruce.hh"
+
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/pd_control_system.h"
@@ -82,7 +84,7 @@ bool decode(const drake::lcmt_driving_control_cmd_t& msg, double& t,
 
 int main(int argc, char* argv[]) {
   if (argc < 2) {
-    std::cerr << "Usage: " << argv[0] << " vehicle_urdf [world sdf files ...]"
+    std::cerr << "Usage: " << argv[0] << " vehicle_model [world sdf files ...]"
               << std::endl;
     return 1;
   }
@@ -92,6 +94,25 @@ int main(int argc, char* argv[]) {
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
 
   auto rigid_body_sys = make_shared<RigidBodySystem>();
+
+  // The offset between Drake's world frame and the vehicle's world frame
+  // depends on whether the vehicle model is an SDF file or a URDF file. The SDF
+  // file internally specifies the offset, meaning z_offset to be zero.
+  // The URDF cannot specify this offset internally, meaning z_offset should
+  // be 0.378326 meters.
+  double z_offset = 0;
+  {
+    spruce::path p(argv[1]);
+    auto ext = p.extension();
+
+    // Converts the file extension to be all lower case.
+    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+
+    // Sets the Z-axis transform from Drake's world frame to the model's
+    // world frame by 0.378326 meters if the model is a URDF.
+    if (ext == ".urdf")
+      z_offset = 0.378326;
+  }
 
   // The following variable, weld_to_frame, is only needed if the model is a
   // URDF file. It is needed since URDF does not specify the location and
@@ -110,7 +131,7 @@ int main(int argc, char* argv[]) {
       // The following parameter specifies the X,Y,Z position of the car's root
       // link in the world's frame. The kinematics of the car model requires
       // that its root link be elevated along the Z-axis by 0.378326m.
-      Eigen::Vector3d(0, 0, 0.378326),
+      Eigen::Vector3d(0, 0, z_offset),
 
       // The following parameter specifies the roll, pitch, and yaw of the car's
       // root link in the world's frame.
