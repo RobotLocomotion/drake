@@ -46,9 +46,9 @@ class DRAKERBM_EXPORT RigidBodyActuator {
 
 class DRAKERBM_EXPORT RigidBodyLoop {
  public:
-  /**
-   * @brief Constructs a RigidBodyLoop between two frames
-   */
+   //
+   // Constructs a RigidBodyLoop between two frames. Is this the correct API?
+   // TODO(amcastro-tri): review the correctness of this API
   RigidBodyLoop(std::shared_ptr<RigidBodyFrame> _frameA,
                 std::shared_ptr<RigidBodyFrame> _frameB,
                 const Eigen::Vector3d& _axis)
