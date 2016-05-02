@@ -861,25 +861,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // TODO(amcastro-tri): This implementation is very inefficient since vector
   // bodies changes in size with the calls to bodies.erase and bodies.insert.
   // A possibility would be to use std::sort or our own version of a quick sort.
-  void SortTree() {
-    if (bodies.size() == 0) return;  // no-op if there are no RigidBody's
-    size_t i = 0;
-    while (i < bodies.size() - 1) {
-      if (bodies[i]->hasParent()) {
-        auto iter = std::find_if(bodies.begin() + i + 1, bodies.end(),
-                                 [&](std::unique_ptr<RigidBody> const& p) {
-                                   return bodies[i]->has_as_parent(*p);
-                                 });
-        if (iter != bodies.end()) {
-          std::unique_ptr<RigidBody> parent = std::move(*iter);
-          bodies.erase(iter);
-          bodies.insert(bodies.begin() + i, std::move(parent));
-          --i;
-        }
-      }
-      ++i;
-    }
-  }
+  void SortTree();
 
   // collision_model and collision_model_no_margins both maintain
   // a collection of the collision geometry in the RBM for use in

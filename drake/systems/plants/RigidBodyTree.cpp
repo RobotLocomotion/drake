@@ -81,6 +81,26 @@ bool RigidBodyTree::transformCollisionFrame(
   return collision_model->transformCollisionFrame(eid, transform_body_to_joint);
 }
 
+void RigidBodyTree::SortTree() {
+  if (bodies.size() == 0) return;  // no-op if there are no RigidBody's
+  size_t i = 0;
+  while (i < bodies.size() - 1) {
+    if (bodies[i]->hasParent()) {
+      auto iter = std::find_if(bodies.begin() + i + 1, bodies.end(),
+                               [&](std::unique_ptr<RigidBody> const& p) {
+                                 return bodies[i]->has_as_parent(*p);
+                               });
+      if (iter != bodies.end()) {
+        std::unique_ptr<RigidBody> parent = std::move(*iter);
+        bodies.erase(iter);
+        bodies.insert(bodies.begin() + i, std::move(parent));
+        --i;
+      }
+    }
+    ++i;
+  }
+}
+
 void RigidBodyTree::compile(void) {
   SortTree();
 
