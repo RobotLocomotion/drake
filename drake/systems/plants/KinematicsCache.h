@@ -244,9 +244,9 @@ class KinematicsCache {
 
   // TODO(amcastro-tri): this method should belong to RigidBodyTree and only be
   // used on initialization. The RigidBodyTree should have this value stored so
-  // that KinematicsCache can requeste it when needed. See the KinematicsCache
+  // that KinematicsCache can request it when needed. See the KinematicsCache
   // constructor where this request is made.
-  // See TODO fro getNumVelocities.
+  // See TODO for getNumVelocities.
   static int getNumPositions(
       const std::vector<std::unique_ptr<RigidBody> >& bodies) {
     auto add_num_positions =  // CR for clang-format
