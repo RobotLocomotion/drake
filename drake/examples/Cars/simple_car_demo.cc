@@ -4,7 +4,7 @@
 
 #include "drake/Path.h"
 
-#include "drake/examples/SimpleCar/euler_floating_joint_state.h"
+#include "drake/examples/Cars/gen/euler_floating_joint_state.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/plants/BotVisualizer.h"
