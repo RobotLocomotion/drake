@@ -82,7 +82,7 @@ int do_main(int argc, const char* argv[]) {
   // Load a simplistic rendering from accompanying URDF file.
   //
   auto tree = std::make_shared<RigidBodyTree>(
-      getDrakePath() + "/examples/SimpleCar/boxcar.urdf");
+      getDrakePath() + "/examples/Cars/models/boxcar.urdf");
 
   auto viz =
       std::make_shared<BotVisualizer<EulerFloatingJointState> >(
