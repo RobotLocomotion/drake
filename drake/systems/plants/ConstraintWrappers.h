@@ -15,43 +15,73 @@ namespace Drake {
 namespace systems {
 namespace plants {
 
+/// Helper class to avoid recalculating a kinematics cache which is
+/// going to be used repeatedly by multiple other classes.
+template <typename Scalar>
+class KinematicsCacheHelper {
+ public:
+  KinematicsCacheHelper(
+      const std::vector<std::unique_ptr<RigidBody> >& bodies)
+      : kinsol_(bodies) {}
+
+  KinematicsCache<Scalar>& UpdateKinematics(
+      const Eigen::Ref<const Eigen::VectorXd>& q,
+      const RigidBodyTree* tree) {
+    if ((q.size() != last_q_.size()) || (q != last_q_) ||
+        (tree != last_tree_)) {
+      last_q_ = q;
+      last_tree_ = tree;
+      kinsol_.initialize(q);
+      tree->doKinematics(kinsol_);
+    }
+    return kinsol_;
+  }
+
+ private:
+  Eigen::VectorXd last_q_;
+  const RigidBodyTree* last_tree_;
+  KinematicsCache<Scalar> kinsol_;
+};
+
 class SingleTimeKinematicConstraintWrapper : public Constraint {
  public:
   SingleTimeKinematicConstraintWrapper(
-      const std::shared_ptr<SingleTimeKinematicConstraint>& rigid_body_constraint)
+      const std::shared_ptr<SingleTimeKinematicConstraint>& rigid_body_constraint,
+      KinematicsCacheHelper<double>* kin_helper)
       : Constraint(rigid_body_constraint->getNumConstraint(nullptr)),
         rigid_body_constraint_shared_(rigid_body_constraint),
         rigid_body_constraint_(rigid_body_constraint.get()),
-        kinsol_(rigid_body_constraint->getRobotPointer()->bodies) {
+        kin_helper_(kin_helper) {
     rigid_body_constraint->bounds(nullptr, lower_bound_, upper_bound_);
   }
 
   // Don't take partial ownership of the constraint, instead alias it
   // for the lifetime of the wrapper.
   SingleTimeKinematicConstraintWrapper(
-      const SingleTimeKinematicConstraint* rigid_body_constraint)
+      const SingleTimeKinematicConstraint* rigid_body_constraint,
+      KinematicsCacheHelper<double>* kin_helper)
       : Constraint(rigid_body_constraint->getNumConstraint(nullptr)),
         rigid_body_constraint_(rigid_body_constraint),
-        kinsol_(rigid_body_constraint->getRobotPointer()->bodies) {
+        kin_helper_(kin_helper) {
     rigid_body_constraint->bounds(nullptr, lower_bound_, upper_bound_);
   }
   ~SingleTimeKinematicConstraintWrapper() override {}
 
   void eval(const Eigen::Ref<const Eigen::VectorXd>& q,
                     Eigen::VectorXd& y) const override {
-    kinsol_.initialize(q);
-    rigid_body_constraint_->getRobotPointer()->doKinematics(kinsol_);
+    auto& kinsol = kin_helper_->UpdateKinematics(
+        q, rigid_body_constraint_->getRobotPointer());
     Eigen::MatrixXd dy;
-    rigid_body_constraint_->eval(nullptr, kinsol_, y, dy);
+    rigid_body_constraint_->eval(nullptr, kinsol, y, dy);
   }
   void eval(const Eigen::Ref<const TaylorVecXd>& tq,
                     TaylorVecXd& ty) const override {
     Eigen::VectorXd q = autoDiffToValueMatrix(tq);
-    kinsol_.initialize(q);
-    rigid_body_constraint_->getRobotPointer()->doKinematics(kinsol_);
+    auto& kinsol = kin_helper_->UpdateKinematics(
+        q, rigid_body_constraint_->getRobotPointer());
     Eigen::VectorXd y;
     Eigen::MatrixXd dy;
-    rigid_body_constraint_->eval(nullptr, kinsol_, y, dy);
+    rigid_body_constraint_->eval(nullptr, kinsol, y, dy);
     initializeAutoDiffGivenGradientMatrix(
         y, (dy * autoDiffToGradientMatrix(tq)).eval(), ty);
   }
@@ -59,7 +89,7 @@ class SingleTimeKinematicConstraintWrapper : public Constraint {
  private:
   std::shared_ptr<SingleTimeKinematicConstraint> rigid_body_constraint_shared_;
   const SingleTimeKinematicConstraint* rigid_body_constraint_;
-  mutable KinematicsCache<double> kinsol_;
+  mutable KinematicsCacheHelper<double>* kin_helper_;
 };
 
 class QuasiStaticConstraintWrapper : public Constraint {
@@ -70,34 +100,37 @@ class QuasiStaticConstraintWrapper : public Constraint {
   // third was handled differently in the original SNOPT
   // implementation, which we won't try to reproduce here.
   QuasiStaticConstraintWrapper(
-      const QuasiStaticConstraint* rigid_body_constraint)
+      const QuasiStaticConstraint* rigid_body_constraint,
+      KinematicsCacheHelper<double>* kin_helper)
       : Constraint(rigid_body_constraint->getNumConstraint(nullptr) - 1),
         rigid_body_constraint_(rigid_body_constraint),
-        kinsol_(rigid_body_constraint->getRobotPointer()->bodies) {
+        kin_helper_(kin_helper) {
     rigid_body_constraint->bounds(nullptr, lower_bound_, upper_bound_);
   }
   virtual ~QuasiStaticConstraintWrapper() {}
 
   virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& q,
                     Eigen::VectorXd& y) const override {
-    kinsol_.initialize(q.head(
-        rigid_body_constraint_->getRobotPointer()->num_positions));
-    rigid_body_constraint_->getRobotPointer()->doKinematics(kinsol_);
+    auto& kinsol = kin_helper_->UpdateKinematics(
+        q.head(
+            rigid_body_constraint_->getRobotPointer()->num_positions),
+            rigid_body_constraint_->getRobotPointer());
     auto weights = q.tail(rigid_body_constraint_->getNumWeights());
     Eigen::MatrixXd dy;
-    rigid_body_constraint_->eval(nullptr, kinsol_, weights.data(), y, dy);
+    rigid_body_constraint_->eval(nullptr, kinsol, weights.data(), y, dy);
   }
   virtual void eval(const Eigen::Ref<const TaylorVecXd>& tq,
                     TaylorVecXd& ty) const override {
     Eigen::VectorXd q = autoDiffToValueMatrix(tq);
-    kinsol_.initialize(q.head(
-        rigid_body_constraint_->getRobotPointer()->num_positions));
-    rigid_body_constraint_->getRobotPointer()->doKinematics(kinsol_);
+    auto& kinsol = kin_helper_->UpdateKinematics(
+        q.head(
+            rigid_body_constraint_->getRobotPointer()->num_positions),
+        rigid_body_constraint_->getRobotPointer());
 
     Eigen::VectorXd y;
     Eigen::MatrixXd dy;
     auto weights = q.tail(rigid_body_constraint_->getNumWeights());
-    rigid_body_constraint_->eval(nullptr, kinsol_, weights.data(), y, dy);
+    rigid_body_constraint_->eval(nullptr, kinsol, weights.data(), y, dy);
     y.conservativeResize(num_constraints());
     initializeAutoDiffGivenGradientMatrix(
         y, (dy * autoDiffToGradientMatrix(tq)).eval(), ty);
@@ -105,8 +138,7 @@ class QuasiStaticConstraintWrapper : public Constraint {
 
  private:
   const QuasiStaticConstraint* rigid_body_constraint_;
-  // TODO(sam.creasey) share the kinematics cache between wrappers
-  mutable KinematicsCache<double> kinsol_;
+  mutable KinematicsCacheHelper<double>* kin_helper_;
 };
 
 }

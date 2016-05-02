@@ -16,6 +16,7 @@ using namespace tinyxml2;
 
 // TODO(sam.creasey) This whole file should be in this namespace.
 using Drake::systems::plants::SingleTimeKinematicConstraintWrapper;
+using Drake::systems::plants::KinematicsCacheHelper;
 
 size_t RigidBodySystem::getNumInputs(void) const {
   size_t num = tree->actuators.size();
@@ -255,19 +256,20 @@ Drake::getInitialState(const RigidBodySystem& sys) {
     tspan << -std::numeric_limits<double>::infinity(),
         std::numeric_limits<double>::infinity();
     Vector3d zero = Vector3d::Zero();
+    KinematicsCacheHelper<double> kin_helper(sys.tree->bodies);
     for (int i = 0; i < loops.size(); i++) {
       auto con1 = make_shared<RelativePositionConstraint>(
           sys.tree.get(), zero, zero, zero, loops[i].frameA->frame_index,
           loops[i].frameB->frame_index, bTbp, tspan);
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con1wrapper(
-          new SingleTimeKinematicConstraintWrapper(con1));
+          new SingleTimeKinematicConstraintWrapper(con1, &kin_helper));
       prog.AddGenericConstraint(con1wrapper, {qvar});
       auto con2 = make_shared<RelativePositionConstraint>(
           sys.tree.get(), loops[i].axis, loops[i].axis, loops[i].axis,
           loops[i].frameA->frame_index, loops[i].frameB->frame_index, bTbp,
           tspan);
       std::shared_ptr<SingleTimeKinematicConstraintWrapper> con2wrapper(
-          new SingleTimeKinematicConstraintWrapper(con2));
+          new SingleTimeKinematicConstraintWrapper(con2, &kin_helper));
       prog.AddGenericConstraint(con2wrapper, {qvar});
     }
 

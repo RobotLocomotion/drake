@@ -122,6 +122,8 @@ void inverseKinMode1(
   auto objective = std::make_shared<Mode1Objective>(model, Q);
   prog.AddCost(objective, {vars});
 
+  KinematicsCacheHelper<double> kin_helper(model->bodies);
+
   bool qsc_active = false;
   for (int i = 0; i < num_constraints; i++) {
     RigidBodyConstraint* constraint = constraint_array[i];
@@ -129,7 +131,7 @@ void inverseKinMode1(
     if (constraint_category ==
         RigidBodyConstraint::SingleTimeKinematicConstraintCategory) {
       auto wrapper = std::make_shared<SingleTimeKinematicConstraintWrapper>(
-          static_cast<SingleTimeKinematicConstraint*>(constraint));
+          static_cast<SingleTimeKinematicConstraint*>(constraint), &kin_helper);
       // TODO(sam.creasey) I believe that this should have the bounds
       // updated with changes in time steps.
       prog.AddGenericConstraint(wrapper, {vars});
@@ -185,7 +187,8 @@ void inverseKinMode1(
       int num_vars = qsc->getNumWeights();
       DecisionVariableView qsc_vars =
           prog.AddContinuousVariables(num_vars, "qsc");
-      auto wrapper = std::make_shared<QuasiStaticConstraintWrapper>(qsc);
+      auto wrapper = std::make_shared<QuasiStaticConstraintWrapper>(
+          qsc, &kin_helper);
       prog.AddGenericConstraint(wrapper, {vars, qsc_vars});
       prog.AddBoundingBoxConstraint(VectorXd::Constant(num_vars, 0.),
                                     VectorXd::Constant(num_vars, 1.), {qsc_vars});
