@@ -23,7 +23,7 @@ The following notes are for Ubuntu Linux and OS X users. Windows users need to a
 $ cd [path to drake-distro]/drake/examples/Cars
 $ ../../../build/bin/drake-visualizer &
 $ python SteeringCommandDriver.py &
-$ ../../pod-build/bin/carSimLCM prius/prius.urdf stata_garage_p1.sdf
+$ ../../pod-build/bin/carSimLCM models/prius/prius.urdf models/stata_garage_p1.sdf
 ```
 
 To avoid the car moving out of view, we recommend setting Drake Visualizer to chase cam mode.  Choose from the Menu, select 'View`, then 'Camera Control Panel'. Then click 'Select Target' and click on the Toyota Prius.  Change 'Track Mode' to be 'Smooth Follow' and increase the elevation to 30 degrees.
