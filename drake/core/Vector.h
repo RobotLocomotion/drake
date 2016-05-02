@@ -153,7 +153,7 @@ class CombinedVector {
       : vec1(first), vec2(second) {}
 
   template <typename Derived>
-  CombinedVector(const Eigen::MatrixBase<Derived> &x)
+  explicit CombinedVector(const Eigen::MatrixBase<Derived> &x)
       : vec1(x.topRows(Vector1<ScalarType>::RowsAtCompileTime)),
         vec2(x.bottomRows(Vector2<ScalarType>::RowsAtCompileTime)) {
     // TODO(RussTedrake): could handle cases where only one of the

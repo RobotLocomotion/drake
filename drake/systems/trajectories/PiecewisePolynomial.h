@@ -31,7 +31,7 @@ class DRAKETRAJECTORIES_EXPORT PiecewisePolynomial
 
   // single segment and/or constant value constructor
   template <typename Derived>
-  PiecewisePolynomial(const Eigen::MatrixBase<Derived>& value)
+  explicit PiecewisePolynomial(const Eigen::MatrixBase<Derived>& value)
       : PiecewisePolynomialBase(std::vector<double>(
             {{0.0, std::numeric_limits<double>::infinity()}})) {
     polynomials.push_back(value.template cast<PolynomialType>());

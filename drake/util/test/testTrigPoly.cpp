@@ -5,6 +5,12 @@ using namespace Eigen;
 using namespace std;
 
 int main(int argc, char **argv) {
+  // Confirm that these conversions compile okay.
+  TrigPolyd x(1.0);
+  TrigPolyd y = 2.0;
+  TrigPolyd z = 3;
+
+  // Test something else.
   Polynomiald q("q");
   Polynomiald s("s");
   Polynomiald c("c");

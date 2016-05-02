@@ -94,8 +94,10 @@ void RunNonlinearProgram(OptimizationProblem& prog,
 
   for (const auto& solver : solvers) {
     if (!solver.second->available()) { continue; }
-    ASSERT_NO_THROW(solver.second->Solve(prog)) <<
+    SolutionResult result = SolutionResult::kUnknownError;
+    ASSERT_NO_THROW(result = solver.second->Solve(prog)) <<
         "Using solver: " << solver.first;
+    EXPECT_EQ(result, SolutionResult::kSolutionFound);
     EXPECT_NO_THROW(test_func()) << "Using solver: " << solver.first;
   }
 }
@@ -146,8 +148,8 @@ TEST(testOptimizationProblem, trivialLeastSquares) {
   RunNonlinearProgram(prog, [&]() {
       EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10,
                                   MatrixCompareType::absolute));
-      EXPECT_TRUE(
-          CompareMatrices(b / 3, x.value(), 1e-10, MatrixCompareType::absolute));
+      EXPECT_TRUE(CompareMatrices(b / 3, x.value(), 1e-10,
+                                  MatrixCompareType::absolute));
     });
 }
 
@@ -361,8 +363,9 @@ class GloptipolyConstrainedExampleConstraint
                            // constraint without going through Drake::Function
  public:
   GloptipolyConstrainedExampleConstraint()
-      : Constraint(1, Vector1d::Constant(0),
-                   Vector1d::Constant(std::numeric_limits<double>::infinity())) {}
+      : Constraint(
+            1, Vector1d::Constant(0),
+            Vector1d::Constant(std::numeric_limits<double>::infinity())) {}
 
   // for just these two types, implementing this locally is almost cleaner...
   virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
