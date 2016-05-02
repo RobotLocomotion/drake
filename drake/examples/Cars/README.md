@@ -1,5 +1,7 @@
-How to run the car simulation
-=============================
+Car Simulation Instructions
+===========================
+
+This README file provides instructions on how to run the various car simulations included with Drake.
  
 Additional prerequisite
 -----------------------

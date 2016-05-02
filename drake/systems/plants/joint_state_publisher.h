@@ -3,7 +3,9 @@
 #include <Eigen/Dense>
 
 #include "ros/ros.h"
+#include "geometry_msgs/TransformStamped.h"
 #include "sensor_msgs/JointState.h"
+#include "tf/transform_broadcaster.h"
 
 #include "drake/core/Vector.h"
 #include "drake/systems/System.h"
@@ -51,7 +53,8 @@ class JointStatePublisher {
    * See: https://github.com/RobotLocomotion/drake/issues/2152
    */
   JointStatePublisher(std::shared_ptr<RigidBodySystem> rigid_body_system)
-      : rigid_body_system_(rigid_body_system) {
+      : rigid_body_system_(rigid_body_system),
+        joint_state_message_(new sensor_msgs::JointState()) {
     // Instantiates a ROS node handle, which is necessary to interact with ROS.
     // For more information, see:
     // http://wiki.ros.org/roscpp/Overview/NodeHandles
@@ -64,47 +67,90 @@ class JointStatePublisher {
 
     auto rigid_body_tree = rigid_body_system->getRigidBodyTree();
     for (auto & rigid_body : rigid_body_tree->bodies) {
-      if (rigid_body->GetName() != "world") {
-        std::cout << "JointStatePublisher: Processing link: " << rigid_body->GetName() << std::endl;
-        const DrakeJoint & joint = rigid_body->getJoint();
 
-        std::stringstream ss;
-        ss << "JointStatePublisher: Link \"" << rigid_body->GetName()
-          << "\" has " << joint.getNumPositions() << " positions and "
-          << joint.getNumVelocities() << " velocities." << std::endl;
+      // Skips the world link since the world link does not have a joint.
+      if (rigid_body->GetName() == "world") continue;
+
+      const DrakeJoint & joint = rigid_body->getJoint();
+
+      // Skips fixed joints.
+      if (joint.getNumPositions() == 0 && joint.getNumVelocities() == 0)
+        continue;
+
+      // Identifies whether the joint is a base joint. Base joint states are
+      // conveyed to ROS using a dedicated tf::TransformBroadcaster. Non-base
+      // joint states are transmitted via a sensor_msgs::JointState message.
+      if (joint.getName() != "base") {
         for (int ii = 0; ii < joint.getNumPositions(); ii++) {
-          ss << ii << ": " << joint.getPositionName(ii);
-          if (ii < joint.getNumPositions() - 1)
-            ss << std::endl;
+          joint_state_message_->name.push_back(joint.getPositionName(ii));
         }
-        std::cout << ss.str() << std::endl;
+      } else {
 
-        // Determines whether the joint is a QuaternionFloatingJoint by
-        // checking whether the joint has 7 positions and 6 velocities.
-        // If it is, it sets the number of positions to be 6 (x, y, z, r, p, y)
-        // instead of 7 (x, y, z, w, z, y, z) since sensor_msgs::JointState
-        // message uses Euler angles for the floating joint. It also sets
-        // the names of the bank joints to use "roll", "pitch", and "yaw".
-        if (joint.getNumPositions() == 7 && joint.getNumVelocities() == 6) {
-          joint_state_message_.name.push_back(joint.getName() + "_x");
-          joint_state_message_.name.push_back(joint.getName() + "_y");
-          joint_state_message_.name.push_back(joint.getName() + "_z");
-          joint_state_message_.name.push_back(joint.getName() + "_r");
-          joint_state_message_.name.push_back(joint.getName() + "_p");
-          joint_state_message_.name.push_back(joint.getName() + "_y");
+        // The following if statement verifies that an odometry message for the
+        // current model has not already been added to the odometry_message_
+        // map.
+        if (odometry_messages_.find(rigid_body->GetModelName()) ==
+          odometry_messages_.end()) {
+
+          // Instantiates a geometry_msgs::TransformStamped message for the
+          // current model.
+
+          std::unique_ptr<geometry_msgs::TransformStamped> message(
+            new geometry_msgs::TransformStamped());
+
+          // TODO: Initialize the message.
+          message->header.frame_id = "world";
+          message->child_frame_id = rigid_body->GetName();
+
+          odometry_messages_[rigid_body->GetModelName()] = std::move(message);
         } else {
-          for (int ii = 0; ii < joint.getNumPositions(); ii++) {
-            joint_state_message_.name.push_back(joint.getPositionName(ii));
-          }
+          throw std::runtime_error(
+              "ERROR: Multiple models named " + rigid_body->GetModelName() +
+              " found when creating a geometry_msgs::TransformStamped message!");
         }
+
+        // // std::stringstream ss;
+        // // ss << "JointStatePublisher: Link \"" << rigid_body->GetName()
+        // //   << "\" has " << joint.getNumPositions() << " positions and "
+        // //   << joint.getNumVelocities() << " velocities." << std::endl;
+        // // for (int ii = 0; ii < joint.getNumPositions(); ii++) {
+        // //   ss << ii << ": " << joint.getPositionName(ii);
+        // //   if (ii < joint.getNumPositions() - 1)
+        // //     ss << std::endl;
+        // // }
+        // // std::cout << ss.str() << std::endl;
+
+        // // Determines whether the joint is a QuaternionFloatingJoint by
+        // // checking if the joint has 7 positions and 6 velocities.
+        // // If it is, the following code sets the number of positions to be 6
+        // // (x, y, z, r, p, y) instead of 7 (x, y, z, w, z, y, z) since
+        // // sensor_msgs::JointState messages uses Euler angles for the floating
+        // // joint. It also sets the names of the bank joints to use "roll",
+        // // "pitch", and "yaw".
+        // if (joint.getNumPositions() == 7 && joint.getNumVelocities() == 6) {
+        //   joint_state_message_.name.push_back(joint.getName() + "_x");
+        //   joint_state_message_.name.push_back(joint.getName() + "_y");
+        //   joint_state_message_.name.push_back(joint.getName() + "_z");
+        //   joint_state_message_.name.push_back(joint.getName() + "_r");
+        //   joint_state_message_.name.push_back(joint.getName() + "_p");
+        //   joint_state_message_.name.push_back(joint.getName() + "_y");
+        // } else {
+        //   for (int ii = 0; ii < joint.getNumPositions(); ii++) {
+        //     joint_state_message_.name.push_back(joint.getPositionName(ii));
+        //   }
+        // }
       }
     }
 
+    joint_state_message_->position.resize(joint_state_message_->name.size());
+    joint_state_message_->velocity.resize(joint_state_message_->name.size());
+    joint_state_message_->effort.resize(joint_state_message_->name.size());
+
     std::stringstream ss;
     ss << "Joint names:\n";
-    for (int ii = 0; ii < joint_state_message_.name.size(); ii++) {
-      ss << ii << ". " << joint_state_message_.name[ii];
-      if (ii < joint_state_message_.name.size() - 1)
+    for (int ii = 0; ii < joint_state_message_->name.size(); ii++) {
+      ss << ii << ". " << joint_state_message_->name[ii];
+      if (ii < joint_state_message_->name.size() - 1)
         ss << "\n";
     }
     std::cout << ss.str() << std::endl;
@@ -118,68 +164,87 @@ class JointStatePublisher {
   OutputVector<double> output(const double &t, const StateVector<double> &x,
                               const InputVector<double> &u) const {
 
-    // To convert from quaternion to RPY, see: drake/util/drakeGeometryUtil.h
-    //   Methods: quat2rotmat(), rotmat2rpy()
+    // Remembers where in the joint state message we are currently saving state.
+    size_t joint_state_message_index = 0;
 
-    // const std::vector<std::shared_ptr<RigidBodySensor>> &sensor_vector =
-    //     rigid_body_system_->GetSensors();
+    // Remembers where in the input vector we are currently obtaining state.
+    size_t input_vector_index = 0;
 
-    // // This variable is for tracking where in the output of rigid body system
-    // // we are currently processing. We initialize it to be the number of states
-    // // of the rigid body system to start past the joint state information.
-    // size_t output_index = rigid_body_system_->getNumStates();
+    // Saves the joint positions.
+    auto rigid_body_tree = rigid_body_system_->getRigidBodyTree();
+    for (auto & rigid_body : rigid_body_tree->bodies) {
 
-    // // Iterates through each sensor in the rigid body system. If the sensor is
-    // // a LIDAR sensor, store the range measurements in a ROS message and publish
-    // // it on the appropriate ROS topic.
-    // for (auto &sensor : sensor_vector) {
+      // Skips the world link since it does not have a joint.
+      if (rigid_body->GetName() == "world") continue;
 
-    //   if (output_index + sensor->getNumOutputs() >
-    //       rigid_body_system_->getNumOutputs()) {
-    //     std::stringstream buff;
-    //     buff << "ERROR: Sum of output index " << output_index
-    //          << " and number of outputs of sensor " << sensor->get_name()
-    //          << " (" << sensor->getNumOutputs()
-    //          << ") exceeds the total number of outputs of the rigid body "
-    //             "system ("
-    //          << rigid_body_system_->getNumOutputs();
-    //     throw std::runtime_error(buff.str());
-    //   }
+      const DrakeJoint & joint = rigid_body->getJoint();
 
-    //   RigidBodyDepthSensor *depth_sensor =
-    //       dynamic_cast<RigidBodyDepthSensor *>(sensor.get());
+      // Skips fixed joints.
+      if (joint.getNumPositions() == 0 && joint.getNumVelocities() == 0)
+        continue;
 
-    //   if (depth_sensor != nullptr) {
-    //     size_t sensor_data_index_ = output_index;
+      if (joint.getName() != "base") {
+        for (int ii = 0; ii < joint.getNumPositions(); ii++) {
+          joint_state_message_->position[joint_state_message_index] =
+            u[input_vector_index];
+          joint_state_message_->velocity[joint_state_message_index] =
+            u[rigid_body_tree->num_positions + input_vector_index];
 
-    //     auto message_in_map = lidar_messages_.find(depth_sensor->get_name());
-    //     if (message_in_map == lidar_messages_.end())
-    //       throw std::runtime_error(
-    //           "Could not find ROS message for LIDAR sensor " +
-    //           depth_sensor->get_name());
+          joint_state_message_index++;
+          input_vector_index++;
+        }
+      } else {
+        if (joint.getNumPositions() == 7 && joint.getNumVelocities() == 6) {
 
-    //     sensor_msgs::LaserScan *message = message_in_map->second.get();
+          // Searches for and obtains the odometry message for the current
+          // base joint.
+          auto message_in_map = odometry_messages_.find(rigid_body->GetModelName());
+          if (message_in_map == odometry_messages_.end())
+            throw std::runtime_error(
+              "ERROR: JointStatePublisher::output: Could not find Odometry "
+              "ROS message for rigid body \"" + rigid_body->GetModelName() +
+              "\".");
 
-    //     // Saves the new range measurements in the ROS message.
-    //     for (size_t ii = 0; ii < depth_sensor->getNumOutputs(); ii++) {
-    //       message->ranges[ii] = u[sensor_data_index_++];
-    //     }
+          geometry_msgs::TransformStamped* message = message_in_map->second.get();
 
-    //     // Publishes the ROS message containing the new range measurements.
-    //     auto publisher_in_map =
-    //         lidar_publishers_.find(depth_sensor->get_name());
-    //     if (publisher_in_map == lidar_publishers_.end())
-    //       throw std::runtime_error(
-    //           "ERROR: Failed to find ROS topic publisher for LIDAR sensor " +
-    //           depth_sensor->get_name());
+          // Updates the message with the latest joint state.
+          message->header.stamp = ros::Time::now();
 
-    //     publisher_in_map->second.publish(*message);
-    //   }
+          message->transform.translation.x = u[input_vector_index++];
+          message->transform.translation.y = u[input_vector_index++];
+          message->transform.translation.z = u[input_vector_index++];
 
-    //   // Shifts the output index variable forward by one sensor.
-    //   output_index += sensor->getNumOutputs();
-    // }
+          message->transform.rotation.w = u[input_vector_index++];
+          message->transform.rotation.x = u[input_vector_index++];
+          message->transform.rotation.y = u[input_vector_index++];
+          message->transform.rotation.z = u[input_vector_index++];
 
+          // Publishes the newly updated odometry message.
+          //
+          // Note that we cannot do the following because this method is
+          // declared const, but tf::TransformBroadcaster::sendTransform()
+          // is not const.
+          //
+          //   tf_broadcaster_.sendTransform(*message);
+          //
+          // Thus'm using the workaround described here:
+          //
+          //  http://stackoverflow.com/questions/8325400/how-to-call-a-non-const-method-from-a-const-method
+          const_cast<tf::TransformBroadcaster*>(&tf_broadcaster_)->sendTransform(*message);
+
+        } else {
+          std::stringstream error_msg;
+          error_msg << "ERROR: JointStatePublisher::output: "
+            << "Unable to handle non-quaternion base joints." << std::endl
+            << "  - joint name: " << joint.getName() << std::endl
+            << "  - # position DOFs: " << joint.getNumPositions() << std::endl
+            << "  - # velocity DOFs: " << joint.getNumVelocities() << std::endl;
+          throw std::runtime_error(error_msg.str());
+        }
+      }
+    }
+
+    joint_state_publisher_.publish(*joint_state_message_.get());
     return u;  // Passes the output through to the next system in the cascade.
   }
 
@@ -197,8 +262,25 @@ class JointStatePublisher {
   /**
    * The joint state message to publish. This is used to avoid having to
    * allocate a new message each time one needs to be sent.
+   *
+   * The std::unique_ptr indirection is needed to be able to modify
+   * the joint state messag within method output(), which is const.
    */
-  sensor_msgs::JointState joint_state_message_;
+  std::unique_ptr<sensor_msgs::JointState> joint_state_message_;
+
+  /**
+   * Publishes the transform messages that specify the position of the model's
+   * root node and the world.
+   */
+  tf::TransformBroadcaster tf_broadcaster_;
+
+  /**
+   * Maintains a set of ROS geometry_msgs::TransformStamped messages, one for
+   * each model in the world. This is used to avoid having to allocate a new
+   * message each time one needs to be sent. The key is the name of the model.
+   */
+  std::map<std::string, std::unique_ptr<geometry_msgs::TransformStamped>>
+      odometry_messages_;
 };
 
 }  // end namespace plants

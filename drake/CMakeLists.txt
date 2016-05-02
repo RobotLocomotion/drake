@@ -218,6 +218,9 @@ if(roscpp_FOUND)
   find_package(sensor_msgs REQUIRED)
   include_directories(${sensor_msgs_INCLUDE_DIRS})
 
+  find_package(tf REQUIRED)
+  include_directories(${tf_INCLUDE_DIRS})
+
   # Enumerates Drake's custom ROS messages. Note that this needs to be done here
   # rather than within a CMakeLists.txt in subdirectory rostypes/ since the
   # include_directories() call to add the path to the generated files would not
