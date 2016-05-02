@@ -868,7 +868,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
       if (bodies[i]->hasParent()) {
         auto iter = std::find_if(bodies.begin() + i + 1, bodies.end(),
                                  [&](std::unique_ptr<RigidBody> const& p) {
-                                   return p.get() == bodies[i]->parent;
+                                   return bodies[i]->has_as_parent(*p);
                                  });
         if (iter != bodies.end()) {
           std::unique_ptr<RigidBody> parent = std::move(*iter);
