@@ -90,7 +90,8 @@ int main(int argc, char* argv[]) {
 
   runLCM(sys, lcm, 0, std::numeric_limits<double>::infinity(),
          getInitialState(*sys), options);
-  //  simulate(*sys, 0, std::numeric_limits<double>::max(), getInitialState(*sys), options);
+  //  simulate(*sys, 0, std::numeric_limits<double>::max(),
+  //      getInitialState(*sys), options);
 
   return 0;
 }
