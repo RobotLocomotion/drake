@@ -190,6 +190,6 @@ TEST(testIKMoreConstraints, IKMoreConstraints) {
   Vector3d com = model.centerOfMass(cache);
   printf("%5.6f\n%5.6f\n%5.6f\n", com(0), com(1), com(2));
   EXPECT_TRUE(
-      CompareMatrices(com, Vector3d(0.074890, -0.037551, 1.008913), 1e-6,
+      CompareMatrices(com, Vector3d(0.074890, -0.037551, 1.008913), 1e-4,
                       MatrixCompareType::absolute));
 }
