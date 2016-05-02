@@ -1,7 +1,7 @@
 Car Simulation Instructions
 ===========================
 
-This README file provides instructions on how to run the car simulations.
+This README file provides instructions on how to run Drake's car simulations.
 
 The instructions are written for Ubuntu Linux and OS X users. Windows users will
 need to adjust the instructions slightly. See the notes at the end of this
@@ -19,7 +19,7 @@ To run the Drake Visualizer, open a terminal and execute the following commands:
 
 ```
 $ cd [drake-distro]/drake/examples/Cars
-$ ../../../build/bin/drake-visualizer &
+$ ../../../build/bin/drake-visualizer
 ```
 
 The Drake Visualizer window should appear.
@@ -83,7 +83,7 @@ To enable this package, edit your `~/.bashrc` and add the following lines to it
 ```
 # Setup Drake's ROS workspace
 source /opt/ros/indigo/setup.bash
-export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:[drake-ditro]/drake/examples/Cars/ros_packages
+export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:[drake-distro]/drake/examples/Cars/ros_packages
 ```
 
 Save and close your `~/.bashrc` file. Then apply the changes by executing the
@@ -93,10 +93,16 @@ following command:
 $ source ~/.bashrc
 ```
 
-Ensure Drake's `drake_cars_example` ROS package is in your ROS workspace:
+Ensure Drake's `drake_cars_examples` ROS package is in your ROS workspace:
 
 ```
 $ roscd drake_cars_example/
+```
+
+Start RViz:
+
+```
+$ roslaunch drake_cars_examples rviz_prius.launch
 ```
 
 To run the simulation:
@@ -104,6 +110,12 @@ To run the simulation:
 ```
 $ cd [drake-distro]/drake/examples/Cars
 $ ../../pod-build/bin/carSimLCMandROS prius/prius.sdf stata_garage_p1.sdf
+```
+
+To view the ROS `TF` tree:
+
+```
+$ rosrun rqt_tf_tree rqt_tf_tree
 ```
 
 Additional Simulation Notes
