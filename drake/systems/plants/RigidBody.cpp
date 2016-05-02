@@ -93,12 +93,6 @@ RigidBody::CollisionElement* RigidBody::CollisionElement::clone() const {
   return new CollisionElement(*this);
 }
 
-/**
- * @brief Returns a const body attached to this CollisionElement.
- *
- * TODO(amcastro-tri): this method should return a reference to the RigidBody.
- * TODO(amcastro-tri): getBody() -> get_body()
- */
 const RigidBody* RigidBody::CollisionElement::getBody() const {
   return this->body;
 }

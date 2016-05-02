@@ -136,6 +136,12 @@ class DRAKERBM_EXPORT RigidBody {
 
     CollisionElement* clone() const override;
 
+    /**
+     * @brief Returns a const reference to the body to which this
+     * CollisionElement is attached.
+     */
+    // TODO(amcastro-tri): this method should return a reference to the RigidBody.
+    // TODO(amcastro-tri): getBody() -> get_body()
     const RigidBody* getBody() const;
 
     RigidBody* getBody();
