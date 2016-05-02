@@ -23,10 +23,11 @@
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs != 3 || nlhs != 7) {
-    mexErrMsgIdAndTxt("Drake:testMultipleTimeKinCnstmex:BadInputs",
-                      "Usage "
-                      "[type, num_cnst, cnst_val, dcnst_val, cnst_name, lb, ub] = "
-                      "testMultipleTimeKinCnstmex(kinCnst, q, t)");
+    mexErrMsgIdAndTxt(
+        "Drake:testMultipleTimeKinCnstmex:BadInputs",
+        "Usage "
+        "[type, num_cnst, cnst_val, dcnst_val, cnst_name, lb, ub] = "
+        "testMultipleTimeKinCnstmex(kinCnst, q, t)");
   }
   MultipleTimeKinematicConstraint* cnst =
       (MultipleTimeKinematicConstraint*)getDrakeMexPointer(prhs[0]);

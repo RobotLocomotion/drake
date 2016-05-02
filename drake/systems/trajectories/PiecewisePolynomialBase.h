@@ -8,7 +8,7 @@
 class DRAKETRAJECTORIES_EXPORT PiecewisePolynomialBase
     : public PiecewiseFunction {
  public:
-  PiecewisePolynomialBase(std::vector<double> const& segment_times);
+  explicit PiecewisePolynomialBase(std::vector<double> const& segment_times);
 
   virtual ~PiecewisePolynomialBase();
 

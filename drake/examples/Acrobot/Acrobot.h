@@ -13,8 +13,10 @@ class AcrobotState {  // models the Drake::Vector concept
   static std::string channel() { return "AcrobotState"; }
 
   AcrobotState(void) : shoulder(0), elbow(0), shoulder_dot(0), elbow_dot(0) {}
+
   template <typename Derived>
-  AcrobotState(const Eigen::MatrixBase<Derived>& x)
+  AcrobotState(  // NOLINT(runtime/explicit) per Drake::Vector.
+      const Eigen::MatrixBase<Derived>& x)
       : shoulder(x(0)), elbow(x(1)), shoulder_dot(x(2)), elbow_dot(x(3)) {}
 
   template <typename Derived>
@@ -59,8 +61,10 @@ class AcrobotInput {
   static std::string channel() { return "AcrobotInput"; }
 
   AcrobotInput(void) : tau(0) {}
+
   template <typename Derived>
-  AcrobotInput(const Eigen::MatrixBase<Derived>& x)
+  AcrobotInput(  // NOLINT(runtime/explicit) per Drake::Vector.
+      const Eigen::MatrixBase<Derived>& x)
       : tau(x(0)) {}
 
   template <typename Derived>

@@ -32,7 +32,7 @@ class DRAKEIKOPTIONS_EXPORT IKoptions {
   void setDefaultParams(RigidBodyTree *robot);
 
  public:
-  IKoptions(RigidBodyTree *robot);
+  explicit IKoptions(RigidBodyTree *robot);
   IKoptions(const IKoptions &rhs);
   ~IKoptions(void);
   RigidBodyTree *getRobotPtr() const;

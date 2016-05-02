@@ -1,12 +1,14 @@
 #pragma once
 
+#include <functional>
+#include <iostream>
+#include <memory>
+#include <stdexcept>
 #include <string>
 #include <vector>
-#include <stdexcept>
-#include <iostream>
-#include <functional>
-#include <memory>
+
 #include <Eigen/Dense>
+
 #include "Gradient.h"
 
 namespace Drake {
@@ -36,7 +38,7 @@ struct InputOutputRelation {
   Form form;
   // todo: add sparsity info
 
-  InputOutputRelation(Form f) : form(f) {}
+  explicit InputOutputRelation(Form f) : form(f) {}
 
   static bool isA(const Form& f, const Form& base) {
     if (f == base || base == Form::ARBITRARY) return true;
@@ -146,45 +148,45 @@ struct FunctionTraits {
 template <typename F>
 struct FunctionTraits<std::reference_wrapper<F>> {
   static size_t numInputs(std::reference_wrapper<F> const& f) {
-    return f.get().numInputs();
+    return FunctionTraits<F>::numInputs(f.get());
   }
   static size_t numOutputs(std::reference_wrapper<F> const& f) {
-    return f.get().numOutputs();
+    return FunctionTraits<F>::numOutputs(f.get());
   }
   template <typename ScalarType>
   static void eval(std::reference_wrapper<F> const& f,
                    VecIn<ScalarType> const& x, VecOut<ScalarType>& y) {
-    f.get().eval(x, y);
+    FunctionTraits<F>::eval(f.get(), x, y);
   }
 };
 
 template <typename F>
 struct FunctionTraits<std::shared_ptr<F>> {
   static size_t numInputs(std::shared_ptr<F> const& f) {
-    return f->numInputs();
+    return FunctionTraits<F>::numInputs(*f);
   }
   static size_t numOutputs(std::shared_ptr<F> const& f) {
-    return f->numOutputs();
+    return FunctionTraits<F>::numOutputs(*f);
   }
   template <typename ScalarType>
   static void eval(std::shared_ptr<F> const& f, VecIn<ScalarType> const& x,
                    VecOut<ScalarType>& y) {
-    f->eval(x, y);
+    FunctionTraits<F>::eval(*f, x, y);
   }
 };
 
 template <typename F>
 struct FunctionTraits<std::unique_ptr<F>> {
   static size_t numInputs(std::unique_ptr<F> const& f) {
-    return f->numInputs();
+    return FunctionTraits<F>::numInputs(*f);
   }
   static size_t numOutputs(std::unique_ptr<F> const& f) {
-    return f->numOutputs();
+    return FunctionTraits<F>::numOutputs(*f);
   }
   template <typename ScalarType>
   static void eval(std::unique_ptr<F> const& f, VecIn<ScalarType> const& x,
                    VecOut<ScalarType>& y) {
-    f->eval(x, y);
+    FunctionTraits<F>::eval(*f, x, y);
   }
 };
 

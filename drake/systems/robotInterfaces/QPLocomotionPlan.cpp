@@ -625,7 +625,7 @@ class AddressEqual {
   const T& t;
 
  public:
-  AddressEqual(const T& t) : t(t) {}
+  explicit AddressEqual(const T& t) : t(t) {}
   bool operator()(const T& other) const { return &t == &other; }
 };
 
