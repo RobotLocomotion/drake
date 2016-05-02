@@ -45,7 +45,7 @@ GTEST_TEST(TestNiceTypeName, Canonicalize) {
 
   // Should leave spaces between words.
   EXPECT_EQ(NiceTypeName::Canonicalize("lunch bucket"), "lunch bucket");
-  // And keep funny looking namespaces if they aren't __digits.
+  // And keep funny looking namespaces if they aren't __something.
   EXPECT_EQ(NiceTypeName::Canonicalize("std::my__1::__23x::resigned char"),
             "std::my__1::resigned char");
 }
