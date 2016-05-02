@@ -142,11 +142,15 @@ class DRAKERBM_EXPORT RigidBody {
      * @brief Returns a const reference to the body to which this
      * CollisionElement is attached.
      */
-    // TODO(amcastro-tri): this method should return a reference to the RigidBody.
     // TODO(amcastro-tri): getBody() -> get_body()
-    const RigidBody* getBody() const;
+    RigidBody& getBody() const;
 
-    RigidBody* getBody();
+    /**
+     * @brief Returns a mutable reference to the body to which this
+     * CollisionElement is attached.
+     */
+    // TODO(amcastro-tri): getBody() -> get_body()
+    RigidBody& getBody();
 
     bool CollidesWith(const DrakeCollision::Element* other) const override;
 

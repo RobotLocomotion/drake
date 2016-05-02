@@ -370,7 +370,7 @@ void RigidBodyTree::collisionDetectFromPoints(
     const RigidBody::CollisionElement* elementB =
         dynamic_cast<const RigidBody::CollisionElement*>(
             collision_model->readElement(closest_points[i].getIdB()));
-    body_idx.push_back(elementB->getBody()->body_index);
+    body_idx.push_back(elementB->getBody().body_index);
   }
 }
 
@@ -441,11 +441,11 @@ bool RigidBodyTree::collisionDetect(
     // cout << "RigidBodyTree::collisionDetect: elementA = " << elementA <<
     // endl;
     // END_DEBUG
-    bodyA_idx.push_back(elementA->getBody()->body_index);
+    bodyA_idx.push_back(elementA->getBody().body_index);
     const RigidBody::CollisionElement* elementB =
         dynamic_cast<const RigidBody::CollisionElement*>(
             collision_model->readElement(points[i].getIdB()));
-    bodyB_idx.push_back(elementB->getBody()->body_index);
+    bodyB_idx.push_back(elementB->getBody().body_index);
   }
   return points_found;
 }
@@ -554,8 +554,8 @@ void RigidBodyTree::potentialCollisions(const KinematicsCache<double>& cache,
     xB.col(i) = ptB;
     normal.col(i) = n;
     phi[i] = distance;
-    bodyA_idx.push_back(elementA->getBody()->body_index);
-    bodyB_idx.push_back(elementB->getBody()->body_index);
+    bodyA_idx.push_back(elementA->getBody().body_index);
+    bodyB_idx.push_back(elementB->getBody().body_index);
   }
 }
 
@@ -597,11 +597,11 @@ bool RigidBodyTree::allCollisions(const KinematicsCache<double>& cache,
     const RigidBody::CollisionElement* elementA =
         dynamic_cast<const RigidBody::CollisionElement*>(
             collision_model->readElement(points[i].getIdA()));
-    bodyA_idx.push_back(elementA->getBody()->body_index);
+    bodyA_idx.push_back(elementA->getBody().body_index);
     const RigidBody::CollisionElement* elementB =
         dynamic_cast<const RigidBody::CollisionElement*>(
             collision_model->readElement(points[i].getIdB()));
-    bodyB_idx.push_back(elementB->getBody()->body_index);
+    bodyB_idx.push_back(elementB->getBody().body_index);
   }
   return points_found;
 }
@@ -1834,7 +1834,7 @@ void RigidBodyTree::addFrame(std::shared_ptr<RigidBodyFrame> frame) {
 }
 
 RigidBodyTree& RigidBodyTree::add_rigid_body(std::unique_ptr<RigidBody> body) {
-  // TODO (amcastro-tri): body indexes should not be initialized here but on an
+  // TODO(amcastro-tri): body indexes should not be initialized here but on an
   // initialize call after all bodies and RigidBodySystem's are defined.
   // This initialize call will make sure that all global and local indexes are
   // properly computed taking into account a RigidBodySystem could be part of a
