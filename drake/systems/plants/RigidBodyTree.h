@@ -803,7 +803,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * @param[in] index The body index.
    * @see add_rigid_body
    */
-  RigidBody& body(int index) const {
+  const RigidBody& body(int index) const {
     // This method is meant for quick access and therefore it is not
     // bound-checked in release builds.
     assert(0 <= index && index < bodies.size() &&
