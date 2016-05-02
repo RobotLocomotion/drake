@@ -249,8 +249,8 @@ class KinematicsCache {
   // See TODO for getNumVelocities.
   static int getNumPositions(
       const std::vector<std::unique_ptr<RigidBody> >& bodies) {
-    auto add_num_positions =  // CR for clang-format
-        [](int result, const std::unique_ptr<RigidBody>& body_ptr) -> int {
+    auto add_num_positions = [](
+        int result, const std::unique_ptr<RigidBody>& body_ptr) -> int {
       return body_ptr->hasParent()
                  ? result + body_ptr->getJoint().getNumPositions()
                  : result;
@@ -261,8 +261,8 @@ class KinematicsCache {
   // TODO(amcastro-tri): See TODO for getNumPositions.
   static int getNumVelocities(
       const std::vector<std::unique_ptr<RigidBody> >& bodies) {
-    auto add_num_velocities =  // CR for clang-format
-        [](int result, const std::unique_ptr<RigidBody>& body_ptr) -> int {
+    auto add_num_velocities = [](
+        int result, const std::unique_ptr<RigidBody>& body_ptr) -> int {
       return body_ptr->hasParent()
                  ? result + body_ptr->getJoint().getNumVelocities()
                  : result;
