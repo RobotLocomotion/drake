@@ -582,8 +582,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
 
   /** AddPolynomialConstraint
    *
-   * @brief Adds a polynomial constraint to the program referencing a subset
-   * of the decision variables (defined in the vars parameter).
+   * @brief Adds a polynomial constraint to the program referencing all of the
+   * decision variables.
    */
   std::shared_ptr<PolynomialConstraint>
       AddPolynomialConstraint(

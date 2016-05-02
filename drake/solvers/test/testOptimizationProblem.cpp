@@ -556,7 +556,7 @@ TEST(testOptimizationProblem,
   // Given a small univariate polynomial, find a low point.
   {
     Polynomiald x("x");
-    Polynomiald poly = (x-1) * (x-1) - 0.01;
+    Polynomiald poly = (x - 1) * (x - 1) - 0.01;
     OptimizationProblem problem;
     auto x_var = problem.AddContinuousVariables(1);
     std::vector<Polynomiald::VarType> var_mapping = { x.getSimpleVariable() };
@@ -570,7 +570,7 @@ TEST(testOptimizationProblem,
   {
     Polynomiald x("x");
     Polynomiald y("y");
-    Polynomiald poly = (x-1) * (x-1) + (y+2) * (y+2) - 0.01;
+    Polynomiald poly = (x - 1) * (x - 1) + (y + 2) * (y + 2) - 0.01;
     OptimizationProblem problem;
     auto xy_var = problem.AddContinuousVariables(2);
     std::vector<Polynomiald::VarType> var_mapping = {

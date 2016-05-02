@@ -84,12 +84,12 @@ class QuadraticConstraint : public Constraint {
 
   virtual ~QuadraticConstraint() {}
 
-  virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+  void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
     y.resize(num_constraints());
     y = .5 * x.transpose() * Q_ * x + b_.transpose() * x;
   }
-  virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
+  void eval(const Eigen::Ref<const TaylorVecXd>& x,
                     TaylorVecXd& y) const override {
     y.resize(num_constraints());
     y = .5 * x.transpose() * Q_.cast<TaylorVarXd>() * x +
@@ -127,7 +127,7 @@ class PolynomialConstraint : public Constraint {
 
   virtual ~PolynomialConstraint() {}
 
-  virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+  void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
     double_evaluation_point_.clear();
     for (int i = 0; i < poly_vars_.size(); i++) {
@@ -137,7 +137,7 @@ class PolynomialConstraint : public Constraint {
     y[0] = polynomial_.evaluateMultivariate(double_evaluation_point_);
   }
 
-  virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
+  void eval(const Eigen::Ref<const TaylorVecXd>& x,
                     TaylorVecXd& y) const override {
     taylor_evaluation_point_.clear();
     for (int i = 0; i < poly_vars_.size(); i++) {
@@ -175,12 +175,12 @@ class LinearConstraint : public Constraint {
 
   virtual ~LinearConstraint() {}
 
-  virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+  void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
     y.resize(num_constraints());
     y = A_ * x;
   }
-  virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
+  void eval(const Eigen::Ref<const TaylorVecXd>& x,
                     TaylorVecXd& y) const override {
     y.resize(num_constraints());
     y = A_.cast<TaylorVarXd>() * x;
@@ -248,12 +248,12 @@ class BoundingBoxConstraint : public LinearConstraint {
 
   virtual ~BoundingBoxConstraint() {}
 
-  virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+  void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
     y.resize(num_constraints());
     y = x;
   }
-  virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
+  void eval(const Eigen::Ref<const TaylorVecXd>& x,
                     TaylorVecXd& y) const override {
     y.resize(num_constraints());
     y = x;
@@ -282,12 +282,12 @@ class LinearComplementarityConstraint : public Constraint {
   virtual ~LinearComplementarityConstraint() {}
 
   /** Return Mx + q (the value of the slack variable). */
-  virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+  void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
     y.resize(num_constraints());
     y = (M_ * x) + q_;
   }
-  virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
+  void eval(const Eigen::Ref<const TaylorVecXd>& x,
                     TaylorVecXd& y) const override {
     y.resize(num_constraints());
     y = (M_.cast<TaylorVarXd>() * x) + q_.cast<TaylorVarXd>();

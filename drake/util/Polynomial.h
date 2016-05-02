@@ -199,29 +199,6 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
     return value;
   }
 
-  /// Local version of pow to deal with autodiff.
-  /**
-   * A version of std::pow that uses std::pow for arithmetic types and
-   * repeated multiplication for non-arithmetic types (e.g., autodiff).
-   */
-  template <bool B, typename T = void>
-  using enable_if_t = typename std::enable_if<B, T>::type;
-  template <typename Base>
-  static Base pow(
-      const enable_if_t<std::is_arithmetic<Base>::value, Base>& base,
-      const PowerType& exponent) {
-    return std::pow(base, exponent);
-  }
-
-  template <typename Base>
-  static Base pow(const Base& base, const PowerType& exponent) {
-    Base result = base;
-    for (int i = 1; i < exponent; i++) {
-      result = result * base;
-    }
-    return result;
-  }
-
   /// Evaluate a multivariate Polynomial at a specific point.
   /**
    * Evaluates a Polynomial with the given values for each variable.  Throws
@@ -452,6 +429,31 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
                                   const unsigned int m = 1);
 
   static std::string idToVariableName(const VarType id);
+  //@}
+
+  //@{
+  /// Local version of pow to deal with autodiff.
+  /**
+   * A version of std::pow that uses std::pow for arithmetic types and
+   * repeated multiplication for non-arithmetic types (e.g., autodiff).
+   */
+  template <bool B, typename T = void>
+  using enable_if_t = typename std::enable_if<B, T>::type;
+  template <typename Base>
+  static Base pow(
+      const enable_if_t<std::is_arithmetic<Base>::value, Base>& base,
+      const PowerType& exponent) {
+    return std::pow(base, exponent);
+  }
+
+  template <typename Base>
+  static Base pow(const Base& base, const PowerType& exponent) {
+    Base result = base;
+    for (int i = 1; i < exponent; i++) {
+      result = result * base;
+    }
+    return result;
+  }
   //@}
 
   /// Sorts through Monomial list and merges any that have the same powers.
