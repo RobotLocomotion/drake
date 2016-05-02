@@ -60,6 +60,8 @@ class DRAKERBM_EXPORT RigidBody {
     this->collision_filter_ignores &= ~group;
   }
 
+  // TODO(amcastro-tri): change to is_adjacent_to()
+  // TODO(amcastro-tri): use has_as_parent()
   bool adjacentTo(const RigidBody& other) const {
     return (
         (parent == &other && !(joint && joint->isFloating())) ||
