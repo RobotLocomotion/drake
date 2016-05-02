@@ -46,9 +46,9 @@ class DRAKERBM_EXPORT RigidBodyActuator {
 
 class DRAKERBM_EXPORT RigidBodyLoop {
  public:
-   //
-   // Constructs a RigidBodyLoop between two frames. Is this the correct API?
-   // TODO(amcastro-tri): review the correctness of this API
+  //
+  // Constructs a RigidBodyLoop between two frames. Is this the correct API?
+  // TODO(amcastro-tri): review the correctness of this API
   RigidBodyLoop(std::shared_ptr<RigidBodyFrame> _frameA,
                 std::shared_ptr<RigidBodyFrame> _frameB,
                 const Eigen::Vector3d& _axis)
@@ -857,12 +857,12 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * the list RigidBodyTree::bodies.
    *
    * @see RigidBodyTree::compile
-   *
-   * TODO(amcastro-tri): this implementation is very inefficient since vector
-   * bodies changes in size with the calls to bodies.erase and bodies.insert.
-   * A possibility would be to use std::sort or our own version of a quick sort.
    */
+  // TODO(amcastro-tri): This implementation is very inefficient since vector
+  // bodies changes in size with the calls to bodies.erase and bodies.insert.
+  // A possibility would be to use std::sort or our own version of a quick sort.
   void SortTree() {
+    if (bodies.size() == 0) return;  // no-op if there are no RigidBody's
     size_t i = 0;
     while (i < bodies.size() - 1) {
       if (bodies[i]->hasParent()) {
