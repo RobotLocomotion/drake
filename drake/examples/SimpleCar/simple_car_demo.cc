@@ -46,58 +46,67 @@ class LCMTap {
   const std::shared_ptr<lcm::LCM> lcm;
 };
 
-int main(int argc, const char* argv[]) {
+namespace Drake {
+namespace {
+
+int do_main(int argc, const char* argv[]) {
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
 
-  auto car = std::make_shared<Drake::SimpleCar>();
+  auto car = std::make_shared<SimpleCar>();
 
   //
   // Make a linear system to map simple car state to the state vector of a
   // floating joint, allowing motion and steering in the x-y plane only.
   //
-  Drake::EulerFloatingJointState<double> y0;
-  y0.yaw = M_PI / 2;
-
-  const int insize = Drake::SimpleCarState<double>::RowsAtCompileTime;
-  const int outsize = Drake::EulerFloatingJointState<double>::RowsAtCompileTime;
-  Eigen::Matrix<double, outsize, insize> D;
-  D <<
-      1, 0,  0, 0,  // x
-      0, 1,  0, 0,  // y
-      0, 0,  0, 0,  // z
-      0, 0,  0, 0,  // roll
-      0, 0,  0, 0,  // pitch
-      0, 0, -1, 0;  // yaw
+  const int insize = SimpleCarState<double>().size();
+  const int outsize = EulerFloatingJointState<double>().size();
+  Eigen::MatrixXd D;
+  D.setZero(outsize, insize);
+  D(EulerFloatingJointStateIndices::kX, SimpleCarStateIndices::kX) = 1;
+  D(EulerFloatingJointStateIndices::kY, SimpleCarStateIndices::kY) = 1;
+  D(EulerFloatingJointStateIndices::kYaw, SimpleCarStateIndices::kHeading) = -1;
+  EulerFloatingJointState<double> y0;
+  y0.set_yaw(M_PI / 2);
   auto adapter = std::make_shared<
-      Drake::AffineSystem<Drake::NullVector, Drake::SimpleCarState,
-                          Drake::EulerFloatingJointState> >(
-      Eigen::MatrixXd::Zero(0, 0), Eigen::MatrixXd::Zero(0, insize),
-      Eigen::VectorXd::Zero(0), Eigen::MatrixXd::Zero(outsize, 0), D,
-      toEigen(y0));
+      AffineSystem<
+        NullVector,
+        SimpleCarState,
+        EulerFloatingJointState> >(
+            Eigen::MatrixXd::Zero(0, 0),
+            Eigen::MatrixXd::Zero(0, insize),
+            Eigen::VectorXd::Zero(0),
+            Eigen::MatrixXd::Zero(outsize, 0), D,
+            toEigen(y0));
 
   //
   // Load a simplistic rendering from accompanying URDF file.
   //
   auto tree = std::make_shared<RigidBodyTree>(
-      Drake::getDrakePath() + "/examples/SimpleCar/boxcar.urdf");
+      getDrakePath() + "/examples/SimpleCar/boxcar.urdf");
 
   auto viz =
-      std::make_shared<Drake::BotVisualizer<Drake::EulerFloatingJointState> >(
+      std::make_shared<BotVisualizer<EulerFloatingJointState> >(
           lcm, tree);
 
   // Make some taps to publish intermediate states to LCM.
-  auto car_tap = std::make_shared<LCMTap<Drake::SimpleCarState> >(lcm);
-  auto adapter_tap =
-      std::make_shared<LCMTap<Drake::EulerFloatingJointState> >(lcm);
+  auto car_tap = std::make_shared<LCMTap<SimpleCarState> >(lcm);
+  auto adapter_tap = std::make_shared<LCMTap<EulerFloatingJointState> >(lcm);
 
   // Assemble car, adapter, and visualizer, with intervening taps.
-  auto car_tapped = Drake::cascade(car, car_tap);
-  auto adapter_tapped = Drake::cascade(adapter, adapter_tap);
-  auto adapt_viz = Drake::cascade(adapter_tapped, viz);
-  auto sys = Drake::cascade(car_tapped, adapt_viz);
+  auto car_tapped = cascade(car, car_tap);
+  auto adapter_tapped = cascade(adapter, adapter_tap);
+  auto adapt_viz = cascade(adapter_tapped, viz);
+  auto sys = cascade(car_tapped, adapt_viz);
 
-  Drake::SimpleCarState<double> initial_state;
+  SimpleCarState<double> initial_state;
   runLCM(sys, lcm, 0, std::numeric_limits<double>::infinity(), initial_state);
 
   return 0;
+}
+
+}  // namespace
+}  // namespace Drake
+
+int main(int argc, const char* argv[]) {
+  return Drake::do_main(argc, argv);
 }
