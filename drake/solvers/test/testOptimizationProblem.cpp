@@ -606,7 +606,6 @@ TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
         EXPECT_LE(poly.evaluateUnivariate(x_var.value()[0]), kEpsilon);
       });
   }
-
 }
 
 }  // namespace
