@@ -103,7 +103,7 @@ int main(int argc, char* argv[]) {
   // file internally specifies the offset, meaning z_offset to be zero.
   // The URDF cannot specify this offset internally, meaning z_offset should
   // be 0.378326 meters.
-  int z_offset = 0;
+  double z_offset = 0;
   {
     spruce::path p(argv[1]);
     auto ext = p.extension();
@@ -111,6 +111,8 @@ int main(int argc, char* argv[]) {
     // Converts the file extension to be all lower case.
     std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 
+    // Sets the Z-axis transform from Drake's world frame to the model's
+    // world frame by 0.378326 meters if the model is a URDF.
     if (ext == ".urdf")
       z_offset = 0.378326;
   }
