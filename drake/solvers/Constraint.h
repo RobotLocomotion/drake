@@ -82,7 +82,7 @@ class QuadraticConstraint : public Constraint {
         Q_(Q),
         b_(b) {}
 
-  virtual ~QuadraticConstraint() {}
+  ~QuadraticConstraint() override {}
 
   void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
@@ -125,7 +125,7 @@ class PolynomialConstraint : public Constraint {
         polynomial_(polynomial),
         poly_vars_(poly_vars) {}
 
-  virtual ~PolynomialConstraint() {}
+  ~PolynomialConstraint() override {}
 
   void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
@@ -174,7 +174,7 @@ class LinearConstraint : public Constraint {
     assert(a.rows() == lb.rows());
   }
 
-  virtual ~LinearConstraint() {}
+  ~LinearConstraint() override {}
 
   void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
@@ -209,7 +209,7 @@ class LinearEqualityConstraint : public LinearConstraint {
                            const Eigen::MatrixBase<DerivedB>& beq)
       : LinearConstraint(Aeq, beq, beq) {}
 
-  virtual ~LinearEqualityConstraint() {}
+  ~LinearEqualityConstraint() override {}
 
   /* updateConstraint
    * @brief change the parameters of the constraint (A and b), but not the
@@ -247,7 +247,7 @@ class BoundingBoxConstraint : public LinearConstraint {
       : LinearConstraint(Eigen::MatrixXd::Identity(lb.rows(), lb.rows()), lb,
                          ub) {}
 
-  virtual ~BoundingBoxConstraint() {}
+  ~BoundingBoxConstraint() override {}
 
   void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
@@ -280,7 +280,7 @@ class LinearComplementarityConstraint : public Constraint {
                                   const Eigen::MatrixBase<Derivedq>& q)
       : Constraint(q.rows()), M_(M), q_(q) {}
 
-  virtual ~LinearComplementarityConstraint() {}
+  ~LinearComplementarityConstraint() override {}
 
   /** Return Mx + q (the value of the slack variable). */
   void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
