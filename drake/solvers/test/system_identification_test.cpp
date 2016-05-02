@@ -129,6 +129,40 @@ TEST(SystemIdentificationTest, LumpedParameterRewrite) {
   }
 }
 
+TEST(SystemIdentificationTest, EstimateParameters) {
+  Polynomiald x = Polynomiald("x");
+  auto x_var = x.getSimpleVariable();
+  Polynomiald y = Polynomiald("y");
+  auto y_var = y.getSimpleVariable();
+  Polynomiald a = Polynomiald("a");
+  auto a_var = a.getSimpleVariable();
+  Polynomiald b = Polynomiald("b");
+  auto b_var = b.getSimpleVariable();
+  Polynomiald c = Polynomiald("c");
+  auto c_var = c.getSimpleVariable();
+  Polynomiald poly = (a * x) + (b * x * x) + (c * y);
+  const static double kEpsilon = 1e-4;
+
+  std::vector<SID::PartialEvalType> sample_points {
+    {{x_var, 1}, {y_var, 1}},
+    {{x_var, 1}, {y_var, 2}},
+    {{x_var, 2}, {y_var, 1}},
+    {{x_var, 2}, {y_var, 2}}};
+
+  { // A very simple test case in which the error is zero.
+    std::vector<double> sample_results {3, 4, 7, 8};
+    SID::PartialEvalType expected_params {
+      {a_var, 1}, {b_var, 1}, {c_var, 1}};
+    SID::PartialEvalType estimated_params =
+        SID::EstimateParameters(poly, sample_points, sample_results);
+    EXPECT_EQ(estimated_params.size(), 3);
+    for (const auto& var : {a_var, b_var, c_var}) {
+      EXPECT_NEAR(estimated_params[var], expected_params[var], kEpsilon);
+    }
+  }
+
+}
+
 }  // anonymous namespace
 }  // namespace solvers
 }  // namespace drake
