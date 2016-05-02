@@ -949,7 +949,7 @@ int RigidBodyTree::parseBodyOrFrameID(const int body_or_frame_id) const {
 
 void RigidBodyTree::findAncestorBodies(std::vector<int>& ancestor_bodies,
                                        int body_idx) const {
-  const RigidBody* current_body = bodies[body_idx].get();
+  const RigidBody* current_body = &body(body_idx);
   while (current_body->hasParent()) {
     ancestor_bodies.push_back(current_body->parent->body_index);
     current_body = current_body->parent;
