@@ -528,15 +528,14 @@ TEST(testOptimizationProblem, multiLCP) {
 // The current windows CI build has no solver for generic constraints.  The
 // DISABLED_ logic below ensures that we still at least get compile-time
 // checking of the test and resulting template instantiations.
+#if !defined(WIN32) && !defined(WIN64)
+#define POLYNOMIAL_CONSTRAINT_TEST_NAME polynomialConstraint
+#else
+#define POLYNOMIAL_CONSTRAINT_TEST_NAME DISABLED_polynomialConstraint
+#endif
 
 /** Simple test of polynomial constraints. */
-TEST(testOptimizationProblem,
-#if !defined(WIN32) && !defined(WIN64)
-     polynomialConstraint
-#else
-     DISABLED_polynomialConstraint
-#endif
-  ) {
+TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
   static const double kInf = std::numeric_limits<double>::infinity();
   // Generic constraints in nlopt require a very generous epsilon.
   static const double kEpsilon = 1e-4;
