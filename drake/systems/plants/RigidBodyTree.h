@@ -661,7 +661,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
   int findLinkId(const std::string& linkname, int robot = -1) const;
 
-  // TODO(amcastro-tri): the name of this method is missleading.
+  // TODO(amcastro-tri): The name of this method is misleading.
   // It returns a RigidBody when the user seems to request a joint.
   RigidBody* findJoint(std::string jointname, int robot = -1) const;
 
