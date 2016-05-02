@@ -2131,6 +2131,7 @@ void MinDistanceConstraint::eval(const double *t,
     // std::cout << "MinDistanceConstraint::eval: Set outputs" << std::endl;
     // END_DEBUG
     MatrixXd dcost_dscaled_dist(dpairwise_costs_dscaled_dist.colwise().sum());
+    c.resize(1);
     c(0) = pairwise_costs.sum();
     dc = dcost_dscaled_dist * dscaled_dist_ddist * ddist_dq;
   } else {
