@@ -213,17 +213,41 @@ class JointStatePublisher {
             << "  - input_vector_index: " << input_vector_index
             << std::endl;
 
+          // The input vector, u, appears to contain the delta position and
+          // and orientation values. I believe the following code obtains
+          // the absolute values of the floating DOFs.
+          static const int kWorldLinkIndex = 0;
+          auto uvec = Drake::toEigen(u);
+          auto q = uvec.head(rigid_body_tree->num_positions);
+          KinematicsCache<double> cache = rigid_body_tree->doKinematics(q);
+          auto transform = rigid_body_tree->relativeTransform(cache, kWorldLinkIndex,
+            rigid_body_tree->findLinkId(rigid_body->GetName()));
+          auto translation = transform.translation();
+          auto quat = rotmat2quat(transform.linear());
+
           // Updates the message with the latest joint state.
           message->header.stamp = ros::Time::now();
 
-          message->transform.translation.x = u[input_vector_index++];
-          message->transform.translation.y = u[input_vector_index++];
-          message->transform.translation.z = u[input_vector_index++];
 
-          message->transform.rotation.w = u[input_vector_index++];
-          message->transform.rotation.x = u[input_vector_index++];
-          message->transform.rotation.y = u[input_vector_index++];
-          message->transform.rotation.z = u[input_vector_index++];
+          message->transform.translation.x = translation(0);
+          message->transform.translation.y = translation(1);
+          message->transform.translation.z = translation(2);
+
+          message->transform.rotation.w = quat(0);
+          message->transform.rotation.x = quat(1);
+          message->transform.rotation.y = quat(2);
+          message->transform.rotation.z = quat(3);
+
+          input_vector_index += 7;
+
+          // message->transform.translation.x = u[input_vector_index++];
+          // message->transform.translation.y = u[input_vector_index++];
+          // message->transform.translation.z = u[input_vector_index++];
+
+          // message->transform.rotation.w = u[input_vector_index++];
+          // message->transform.rotation.x = u[input_vector_index++];
+          // message->transform.rotation.y = u[input_vector_index++];
+          // message->transform.rotation.z = u[input_vector_index++];
 
           std::cout
             << "  - translation.x = " << message->transform.translation.x << "\n"
