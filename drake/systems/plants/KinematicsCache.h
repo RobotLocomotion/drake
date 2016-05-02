@@ -85,8 +85,8 @@ class KinematicsCache {
         q(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(num_positions)),
         v(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(num_velocities)),
         velocity_vector_valid(false) {
-    for (const auto& body_shared_ptr : bodies) {
-      const RigidBody& body = *body_shared_ptr;
+    for (const auto& body_unique_ptr : bodies) {
+      const RigidBody& body = *body_unique_ptr;
       int num_positions_joint =
           body.hasParent() ? body.getJoint().getNumPositions() : 0;
       int num_velocities_joint =
