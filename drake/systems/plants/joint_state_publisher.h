@@ -207,6 +207,12 @@ class JointStatePublisher {
 
           geometry_msgs::TransformStamped* message = message_in_map->second.get();
 
+          std::cout << "Drake: JointStatePublisher: Publishing world-to-"
+            << rigid_body->GetName() << " transform...\n"
+            << "  - input vector: " << u.transpose() << "\n"
+            << "  - input_vector_index: " << input_vector_index
+            << std::endl;
+
           // Updates the message with the latest joint state.
           message->header.stamp = ros::Time::now();
 
@@ -219,15 +225,27 @@ class JointStatePublisher {
           message->transform.rotation.y = u[input_vector_index++];
           message->transform.rotation.z = u[input_vector_index++];
 
+          std::cout
+            << "  - translation.x = " << message->transform.translation.x << "\n"
+            << "  - translation.y = " << message->transform.translation.y << "\n"
+            << "  - translation.z = " << message->transform.translation.z << "\n"
+            << "  - rotation.w = " << message->transform.rotation.w << "\n"
+            << "  - rotation.x = " << message->transform.rotation.x << "\n"
+            << "  - rotation.y = " << message->transform.rotation.y << "\n"
+            << "  - rotation.z = " << message->transform.rotation.z
+            << std::endl;
+
           // Publishes the newly updated odometry message.
           //
-          // Note that we cannot do the following because this method is
-          // declared const, but tf::TransformBroadcaster::sendTransform()
+          // Note that we need to const_cast<...> a pointer to the transform
+          // broadcaster because tf::TransformBroadcaster::sendTransform()
           // is not const.
+          //
+          // Otherwise, we would be able to execute:
           //
           //   tf_broadcaster_.sendTransform(*message);
           //
-          // Thus'm using the workaround described here:
+          // The workaround being used is described here:
           //
           //  http://stackoverflow.com/questions/8325400/how-to-call-a-non-const-method-from-a-const-method
           const_cast<tf::TransformBroadcaster*>(&tf_broadcaster_)->sendTransform(*message);
@@ -244,6 +262,7 @@ class JointStatePublisher {
       }
     }
 
+    // std::cout << "Drake: JointStatePublisher: Publishingjoint state message..." << std::endl;
     joint_state_publisher_.publish(*joint_state_message_.get());
     return u;  // Passes the output through to the next system in the cascade.
   }

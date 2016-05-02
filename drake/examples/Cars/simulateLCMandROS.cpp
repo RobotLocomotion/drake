@@ -1,3 +1,5 @@
+#include "spruce.hh"
+
 #include "lcmtypes/drake/lcmt_driving_control_cmd_t.hpp"
 
 #include "drake/systems/LCMSystem.h"
@@ -96,10 +98,25 @@ int main(int argc, char* argv[]) {
 
   auto rigid_body_sys = make_shared<RigidBodySystem>();
 
-  // The following variable, weld_to_frame, is only needed if the model is a
-  // URDF file. It is needed since URDF does not specify the location and
-  // orientation of the car's root node in the world. If the model is an SDF,
-  // weld_to_frame is ignored by the parser.
+  // The offset between Drake's world frame and the vehicle's world frame
+  // depends on whether the vehicle model is an SDF file or a URDF file. The SDF
+  // file internally specifies the offset, meaning z_offset to be zero.
+  // The URDF cannot specify this offset internally, meaning z_offset should
+  // be 0.378326 meters.
+  int z_offset = 0;
+  {
+    spruce::path p(argv[1]);
+    auto ext = p.extension();
+
+    // Converts the file extension to be all lower case.
+    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+
+    if (ext == ".urdf")
+      z_offset = 0.378326;
+  }
+
+  // The following variable specifies the transformation between Drake's world
+  // frame and the vehicle's world frame.
   auto weld_to_frame = allocate_shared<RigidBodyFrame>(
       aligned_allocator<RigidBodyFrame>(),
       // Weld the model to the world link.
@@ -113,7 +130,7 @@ int main(int argc, char* argv[]) {
       // The following parameter specifies the X,Y,Z position of the car's root
       // link in the world's frame. The kinematics of the car model requires
       // that its root link be elevated along the Z-axis by 0.378326m.
-      Eigen::Vector3d(0, 0, 0.378326),
+      Eigen::Vector3d(0, 0, z_offset),
 
       // The following parameter specifies the roll, pitch, and yaw of the car's
       // root link in the world's frame.
