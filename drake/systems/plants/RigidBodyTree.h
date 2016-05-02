@@ -874,10 +874,10 @@ class DRAKERBM_EXPORT RigidBodyTree {
           std::unique_ptr<RigidBody> parent = std::move(*iter);
           bodies.erase(iter);
           bodies.insert(bodies.begin() + i, std::move(parent));
-          i--;
+          --i;
         }
       }
-      i++;
+      ++i;
     }
   }
 
