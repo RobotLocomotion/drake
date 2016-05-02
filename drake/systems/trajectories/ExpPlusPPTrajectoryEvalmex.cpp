@@ -116,9 +116,10 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 
       // eval() function call
       if (nrhs != 2 || nlhs != 2) {
-        mexErrMsgIdAndTxt("Drake:ExpPlusPPTmex:WrongNumberOfInputs",
-                          "Usage obj = ExpPlusPPTmex(breaks, K, A, alpha, gamma) "
-                          "or [y, jj] = ExpPlusPPTmex(obj, t)");
+        mexErrMsgIdAndTxt(
+            "Drake:ExpPlusPPTmex:WrongNumberOfInputs",
+            "Usage obj = ExpPlusPPTmex(breaks, K, A, alpha, gamma) "
+            "or [y, jj] = ExpPlusPPTmex(obj, t)");
       }
 
       Map<VectorXd> t(mxGetPr(prhs[1]), mxGetNumberOfElements(prhs[1]));

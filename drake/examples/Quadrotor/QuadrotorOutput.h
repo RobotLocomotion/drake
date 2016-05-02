@@ -23,7 +23,8 @@ class QuadrotorOutput {
     }
 
     template <typename Derived>
-    QuadrotorOutput(const Eigen::MatrixBase<Derived>& x) {
+    QuadrotorOutput(  // NOLINT(runtime/explicit) per Drake::Vector.
+        const Eigen::MatrixBase<Derived>& x) {
       fromEigen<Derived>(x);
     }
 
@@ -33,8 +34,10 @@ class QuadrotorOutput {
       return *this;
     }
 
-    friend Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> toEigen(const QuadrotorOutput<ScalarType>& vec) {
-        Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> x = Eigen::Matrix<ScalarType, RowsAtCompileTime, 1>::Zero();
+    friend Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> toEigen(
+            const QuadrotorOutput<ScalarType>& vec) {
+        Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> x =
+            Eigen::Matrix<ScalarType, RowsAtCompileTime, 1>::Zero();
 
         x.segment<3>(0) = vec.position;
         x.segment<4>(3) = vec.orientation;
@@ -59,7 +62,8 @@ class QuadrotorOutput {
         rangefinder = x[num_lidar_points + 22];
     }
 
-    friend std::string getCoordinateName(const QuadrotorOutput<ScalarType>& vec, unsigned int index) {
+    friend std::string getCoordinateName(const QuadrotorOutput<ScalarType>& vec,
+                                         unsigned int index) {
       static const std::vector<std::string> coordinate_names =
           {"x", "y", "z",
            "qx", "qy", "qz", "qw",
@@ -70,7 +74,8 @@ class QuadrotorOutput {
            "mag_x", "mag_y", "mag_z"
           };
       if (index >= 22) return "lidar_" + std::to_string(index - 22);
-      return index >= 0 && index < RowsAtCompileTime ? coordinate_names[index] : std::string("error");
+      return (index >= 0 && index < RowsAtCompileTime) ? coordinate_names[index]
+                                                       : std::string("error");
     }
 
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -84,7 +89,8 @@ class QuadrotorOutput {
     ScalarType rangefinder;
 };
 
-bool encode(const double& t, const QuadrotorOutput<double> & x, drake::lcmt_quadrotor_output_t& msg) {
+bool encode(const double& t, const QuadrotorOutput<double> & x,
+            drake::lcmt_quadrotor_output_t& msg) {
   msg.timestamp = static_cast<int64_t>(t*1000);
   Eigen::Map<Eigen::Vector3d> lcm_position(msg.position);
   Eigen::Map<Eigen::Vector4d> lcm_orientation(msg.orientation);
@@ -93,7 +99,9 @@ bool encode(const double& t, const QuadrotorOutput<double> & x, drake::lcmt_quad
   Eigen::Map<Eigen::Vector3d> lcm_gyroscope(msg.gyroscope);
   Eigen::Map<Eigen::Vector3d> lcm_magnetometer(msg.magnetometer);
 
-  Eigen::Map< Eigen::Matrix<double, QuadrotorOutput<double>::num_lidar_points, 1> > lcm_lidar(msg.lidar_returns);
+  Eigen::Map<
+    Eigen::Matrix<double, QuadrotorOutput<double>::num_lidar_points, 1>
+    > lcm_lidar(msg.lidar_returns);
   lcm_position = x.position;
   lcm_orientation = x.orientation;
   lcm_twist = x.twist;

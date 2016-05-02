@@ -31,7 +31,7 @@ class Constraint {
   }
 
  public:
-  Constraint(size_t num_constraints)
+  explicit Constraint(size_t num_constraints)
       : lower_bound_(num_constraints), upper_bound_(num_constraints) {
     check(num_constraints);
     lower_bound_.setConstant(-std::numeric_limits<double>::infinity());
@@ -164,7 +164,8 @@ class PolynomialConstraint : public Constraint {
  */
 class LinearConstraint : public Constraint {
  public:
-  LinearConstraint(size_t num_constraints) : Constraint(num_constraints) {}
+  explicit LinearConstraint(size_t num_constraints)
+      : Constraint(num_constraints) {}
   template <typename DerivedA, typename DerivedLB, typename DerivedUB>
   LinearConstraint(const Eigen::MatrixBase<DerivedA>& a,
                    const Eigen::MatrixBase<DerivedLB>& lb,

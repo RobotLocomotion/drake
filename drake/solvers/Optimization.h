@@ -66,7 +66,7 @@ class DecisionVariableView {  // enables users to access pieces of the decision
   /// Create a view which covers an entire DecisionVariable.
   ///
   /// @p var is aliased, and must remain valid for the lifetime of the view.
-  DecisionVariableView(const DecisionVariable& var)
+  explicit DecisionVariableView(const DecisionVariable& var)
       : var_(var), start_index_(0), size_(var_.value().rows()) {}
 
   /// Create a view covering part of a DecisionVariable.
@@ -715,8 +715,8 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
   VariableList variable_views_;
   std::list<Binding<Constraint>> generic_objectives_;
   std::list<Binding<Constraint>> generic_constraints_;
-  std::list<Binding<LinearConstraint>>
-      linear_constraints_;  // note: does not include linear_equality_constraints_
+  // note: linear_constraints_ does not include linear_equality_constraints_
+  std::list<Binding<LinearConstraint>> linear_constraints_;
   std::list<Binding<LinearEqualityConstraint>> linear_equality_constraints_;
   std::list<Binding<BoundingBoxConstraint>> bbox_constraints_;
 

@@ -112,7 +112,7 @@ struct SNOPTData : public Drake::OptimizationProblem::SolverData {
 };
 
 struct SNOPTRun {
-  SNOPTRun(SNOPTData& d) : D(d) {
+  explicit SNOPTRun(SNOPTData& d) : D(d) {
     // Minimum default allocation needed by snInit
     D.min_alloc_w(snopt_mincw, snopt_miniw * 1000, snopt_minrw * 1000);
 
@@ -274,10 +274,10 @@ SolutionResult Drake::SnoptSolver::Solve(
   const Eigen::VectorXd x_initial_guess = prog.initial_guess();
   for (int i = 0; i < nx; i++) {
     x[i] = static_cast<snopt::doublereal>(x_initial_guess(i));
-    xlow[i] =
-        static_cast<snopt::doublereal>(-std::numeric_limits<double>::infinity());
-    xupp[i] =
-        static_cast<snopt::doublereal>(std::numeric_limits<double>::infinity());
+    xlow[i] = static_cast<snopt::doublereal>(
+        -std::numeric_limits<double>::infinity());
+    xupp[i] = static_cast<snopt::doublereal>(  // BR
+        std::numeric_limits<double>::infinity());
   }
   for (auto const& binding : prog.bounding_box_constraints()) {
     auto const& c = binding.constraint();

@@ -108,26 +108,32 @@ inline void compute_d(VectorXd &d, const MatrixXd& J, const VectorXd& np) {
   d = J.adjoint() * np;
 }
 
-inline void update_z(VectorXd& z, const MatrixXd& J, const VectorXd& d,  int iq) {
+inline void update_z(VectorXd& z, const MatrixXd& J, const VectorXd& d,
+                     int iq) {
   z = J.rightCols(z.size()-iq) * d.tail(d.size()-iq);
 }
 
-inline void update_r(const MatrixXd& R, VectorXd& r, const VectorXd& d, int iq) {
+inline void update_r(const MatrixXd& R, VectorXd& r, const VectorXd& d,
+                     int iq) {
   r.head(iq)= R.topLeftCorner(iq, iq).triangularView<Upper>().solve(d.head(iq));
 }
 
-bool add_constraint(MatrixXd& R, MatrixXd& J, VectorXd& d, int& iq, double& R_norm);
-void delete_constraint(MatrixXd& R, MatrixXd& J, VectorXi& A, VectorXd& u,  int p, int& iq, int l);
+bool add_constraint(MatrixXd& R, MatrixXd& J, VectorXd& d, int& iq,
+                    double& R_norm);
+void delete_constraint(MatrixXd& R, MatrixXd& J, VectorXi& A, VectorXd& u,
+                       int p, int& iq, int l);
 
-/* solve_quadprog2 is used when the Cholesky decomposition of the G matrix is precomputed */
-double solve_quadprog2(LLT<MatrixXd, Lower> &chol,  double c1, VectorXd & g0,
+/* solve_quadprog2 is used when the Cholesky decomposition of the G
+ * matrix is precomputed */
+double solve_quadprog2(LLT<MatrixXd, Lower> &chol, double c1, VectorXd & g0,
                       const MatrixXd & CE, const VectorXd & ce0,
                       const MatrixXd & CI, const VectorXd & ci0,
                       VectorXd& x);
 
 /* solve_quadprog is used for on-demand QP solving */
-template <typename tA, typename tB, typename tC, typename tD, typename tE, typename tF, typename tG>
-inline double solve_quadprog(MatrixBase<tA> & G,  MatrixBase<tB> & g0,
+template <typename tA, typename tB, typename tC, typename tD, typename tE,
+          typename tF, typename tG>
+inline double solve_quadprog(MatrixBase<tA> & G, MatrixBase<tB> & g0,
                       const MatrixBase<tC> & CE, const MatrixBase<tD> & ce0,
                       const MatrixBase<tE> & CI, const MatrixBase<tF> & ci0,
                       MatrixBase<tG>& x) {
@@ -143,12 +149,18 @@ inline double solve_quadprog(MatrixBase<tA> & G,  MatrixBase<tB> & g0,
   return solve_quadprog2(chol, c1, g0, CE, ce0, CI, ci0, x);
 }
 
-/* solve_quadprog2 is used for when the Cholesky decomposition of G is pre-computed */
-template <typename tA, typename tB, typename tC, typename tD, typename tE, typename tF>
-inline double solve_quadprog2(LLT<MatrixXd, Lower> &chol,  double c1, MatrixBase<tA> & g0,
-                      const MatrixBase<tB> & CE, const MatrixBase<tC> & ce0,
-                      const MatrixBase<tD> & CI, const MatrixBase<tE> & ci0,
-                      MatrixBase<tF>& x) {
+/* solve_quadprog2 is used for when the Cholesky decomposition of G is
+ * pre-computed */
+template <typename tA, typename tB, typename tC, typename tD, typename tE,
+          typename tF>
+inline double solve_quadprog2(LLT<MatrixXd, Lower> & chol,
+                              double c1,
+                              MatrixBase<tA> & g0,
+                              const MatrixBase<tB> & CE,
+                              const MatrixBase<tC> & ce0,
+                              const MatrixBase<tD> & CI,
+                              const MatrixBase<tE> & ci0,
+                              MatrixBase<tF>& x) {
   int i, j, k, l; /* indices */
   int ip, me, mi;
   int n = g0.size();
@@ -170,7 +182,8 @@ inline double solve_quadprog2(LLT<MatrixXd, Lower> &chol,  double c1, MatrixBase
 
   me = p; /* number of equality constraints */
   mi = m; /* number of inequality constraints */
-  q = 0;  /* size of the active set A (containing the indices of the active constraints) */
+  q = 0;  // size of the active set A (containing the indices of the
+          // active constraints)
 
   /*
    * Preprocessing phase
@@ -183,7 +196,8 @@ inline double solve_quadprog2(LLT<MatrixXd, Lower> &chol,  double c1, MatrixBase
   R.setZero();
   R_norm = 1.0; /* this variable will hold the norm of the matrix R */
 
-  /* compute the inverse of the factorized matrix G^-1, this is the initial value for H */
+  /* compute the inverse of the factorized matrix G^-1, this is the
+   * initial value for H */
   // J = L^-T
   J.setIdentity();
   J = chol.matrixU().solve(J);
@@ -225,8 +239,10 @@ inline double solve_quadprog2(LLT<MatrixXd, Lower> &chol,  double c1, MatrixBase
     /* compute full step length t2: i.e., the minimum step in primal space s.t. the contraint
        becomes feasible */
     t2 = 0.0;
-    if (std::abs(z.dot(z)) > std::numeric_limits<double>::epsilon())  // i.e. z != 0
+    if (std::abs(z.dot(z)) > std::numeric_limits<double>::epsilon()) {
+      // i.e. z != 0
       t2 = (-np.dot(x) - ce0(i)) / z.dot(np);
+    }
 
     x += t2 * z;
 
@@ -275,7 +291,8 @@ l1:
 #endif
 
 
-  if (std::abs(psi) <= mi * std::numeric_limits<double>::epsilon() * c1 * c2* 100.0) {
+  if (std::abs(psi) <= (
+          mi * std::numeric_limits<double>::epsilon() * c1 * c2 * 100.0)) {
     /* numerically there are not infeasibilities anymore */
     q = iq;
     return f_value;
@@ -311,10 +328,12 @@ l2: /* Step 2: check for feasibility and determine a new S-pair */
 #endif
 
 l2a:/* Step 2a: determine step direction */
-  /* compute z = H np: the step direction in the primal space (through J, see the paper) */
+  /* compute z = H np: the step direction in the primal space
+   * (through J, see the paper) */
   compute_d(d, J, np);
   update_z(z, J, d, iq);
-  /* compute N* np (if q > 0): the negative of the step direction in the dual space */
+  /* compute N* np (if q > 0): the negative of the step direction in
+   * the dual space */
   update_r(R, r, d, iq);
 #ifdef TRACE_SOLVER
   std::cerr << "Step direction z" << std::endl;
@@ -327,7 +346,8 @@ l2a:/* Step 2a: determine step direction */
 
   /* Step 2b: compute step length */
   l = 0;
-  /* Compute t1: partial step length (maximum step in dual space without violating dual feasibility */
+  /* Compute t1: partial step length (maximum step in dual space
+   * without violating dual feasibility */
   t1 = inf; /* +inf */
   /* find the index l s.t. it reaches the minimum of u+(x) / r */
   for (k = me; k < iq; k++) {
@@ -337,16 +357,20 @@ l2a:/* Step 2a: determine step direction */
       l = A(k);
     }
   }
-  /* Compute t2: full step length (minimum step in primal space such that the constraint ip becomes feasible */
-  if (std::abs(z.dot(z))  > std::numeric_limits<double>::epsilon())  // i.e. z != 0
+  /* Compute t2: full step length (minimum step in primal space such
+   * that the constraint ip becomes feasible */
+  if (std::abs(z.dot(z))  > std::numeric_limits<double>::epsilon()) {
+    // i.e. z != 0
     t2 = -s(ip) / z.dot(np);
-  else
+  } else {
     t2 = inf; /* +inf */
+  }
 
   /* the step is chosen as the minimum of t1 and t2 */
   t = std::min(t1, t2);
 #ifdef TRACE_SOLVER
-  std::cerr << "Step sizes: " << t << " (t1 = " << t1 << ", t2 = " << t2 << ") ";
+  std::cerr << "Step sizes: " << t << " (t1 = " << t1 << ", t2 = " << t2
+            << ") ";
 #endif
 
   /* Step 2c: determine new S-pair and take step: */
@@ -447,7 +471,8 @@ l2a:/* Step 2a: determine step direction */
 }
 
 
-inline bool add_constraint(MatrixXd& R, MatrixXd& J, VectorXd& d, int& iq, double& R_norm) {
+inline bool add_constraint(MatrixXd& R, MatrixXd& J, VectorXd& d, int& iq,
+                           double& R_norm) {
   int n = J.rows();
 #ifdef TRACE_SOLVER
   std::cerr << "Add constraint " << iq << '/';
@@ -509,7 +534,8 @@ inline bool add_constraint(MatrixXd& R, MatrixXd& J, VectorXd& d, int& iq, doubl
 }
 
 
-inline void delete_constraint(MatrixXd& R, MatrixXd& J, VectorXi& A, VectorXd& u, int p, int& iq, int l) {
+inline void delete_constraint(MatrixXd& R, MatrixXd& J, VectorXi& A,
+                              VectorXd& u, int p, int& iq, int l) {
   int n = R.rows();
 #ifdef TRACE_SOLVER
   std::cerr << "Delete constraint " << l << ' ' << iq;
