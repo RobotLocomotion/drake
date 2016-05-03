@@ -235,11 +235,11 @@ class LowerBoundTestConstraint : public Constraint {
 
 
   // for just these two types, implementing this locally is almost cleaner...
-  virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+  void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
     evalImpl(x, y);
   }
-  virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
+  void eval(const Eigen::Ref<const TaylorVecXd>& x,
                     TaylorVecXd& y) const override {
     evalImpl(x, y);
   }
@@ -367,11 +367,11 @@ class GloptipolyConstrainedExampleConstraint
             Vector1d::Constant(std::numeric_limits<double>::infinity())) {}
 
   // for just these two types, implementing this locally is almost cleaner...
-  virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+  void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
     evalImpl(x, y);
   }
-  virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
+  void eval(const Eigen::Ref<const TaylorVecXd>& x,
                     TaylorVecXd& y) const override {
     evalImpl(x, y);
   }
