@@ -236,7 +236,7 @@ class SingleTimeKinematicConstraintWrapper : public Constraint {
         kinsol(rigid_body_constraint->getRobotPointer()->bodies) {
     rigid_body_constraint->bounds(nullptr, lower_bound_, upper_bound_);
   }
-  virtual ~SingleTimeKinematicConstraintWrapper() {}
+  ~SingleTimeKinematicConstraintWrapper() override {}
 
   void eval(const Eigen::Ref<const Eigen::VectorXd>& q,
                     Eigen::VectorXd& y) const override {
