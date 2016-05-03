@@ -101,18 +101,13 @@ int main(int argc, char* argv[]) {
   // The URDF cannot specify this offset internally, meaning z_offset should
   // be 0.378326 meters.
   double z_offset = 0;
-  {
-    spruce::path p(argv[1]);
-    auto ext = p.extension();
 
-    // Converts the file extension to be all lower case.
-    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-
-    // Sets the Z-axis transform from Drake's world frame to the model's
-    // world frame by 0.378326 meters if the model is a URDF.
-    if (ext == ".urdf")
-      z_offset = 0.378326;
-  }
+  // TODO(liangfok): Once PR 2171 is merged, modify prius.urdf to contain a
+  // world link and proper offset of the chassis_floor. For more information,
+  // see: https://github.com/RobotLocomotion/drake/pull/2171 and
+  // https://github.com/RobotLocomotion/drake/issues/2247
+  if (std::string(argv[1]).find("prius.urdf") != std::string::npos)
+    z_offset = 0.378326;
 
   // The following variable, weld_to_frame, is only needed if the model is a
   // URDF file. It is needed since URDF does not specify the location and
@@ -129,8 +124,7 @@ int main(int argc, char* argv[]) {
       nullptr,
 
       // The following parameter specifies the X,Y,Z position of the car's root
-      // link in the world's frame. The kinematics of the car model requires
-      // that its root link be elevated along the Z-axis by 0.378326m.
+      // link in the world's frame.
       Eigen::Vector3d(0, 0, z_offset),
 
       // The following parameter specifies the roll, pitch, and yaw of the car's

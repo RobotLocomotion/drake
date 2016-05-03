@@ -70,7 +70,7 @@ To start the simulation, open a new terminal and execute the following:
 
 ```
 $ cd [drake-distro]/drake/examples/Cars
-$ ../../pod-build/bin/carSimLCM prius/prius.urdf stata_garage_p1.sdf
+$ ../../pod-build/bin/carSimLCM models/prius/prius.urdf models/stata_garage_p1.sdf
 ```
 
 ### Simulation Using Drake + LCM + ROS
