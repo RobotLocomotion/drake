@@ -34,8 +34,8 @@ class RigidBodyTreeTest : public ::testing::Test {
   }
 
  public:
-  // TODO: A stack object here (preferable to a pointer) generates build issues
-  // on Windows platforms. See git-hub issue #1854.
+  // TODO(amcastro-tri): A stack object here (preferable to a pointer)
+  // generates build issues on Windows platforms. See git-hub issue #1854.
   std::unique_ptr<RigidBodyTree> tree;
   // TODO(amcastro-tri): these pointers will be replaced by Sherm's
   // unique_ptr_reference's
