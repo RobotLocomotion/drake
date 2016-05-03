@@ -82,7 +82,8 @@ bool RigidBodyTree::transformCollisionFrame(
 }
 
 void RigidBodyTree::compile(void) {
-  // Reorders the bodies list so that parent rigid bodies are before child rigid bodies.
+  // Reorders the bodies list so that parent rigid bodies are before child rigid
+  // bodies.
   size_t i = 0;
   while (i < bodies.size() - 1) {
     if (bodies[i]->hasParent()) {
@@ -1923,11 +1924,6 @@ int RigidBodyTree::AddFloatingJoint(
           std::unique_ptr<DrakeJoint> joint(new QuaternionFloatingJoint(
               floating_joint_name, transform_to_world * transform_to_model));
           bodies[i]->setJoint(move(joint));
-          std::cout << "************ Adding floating joint for model " << bodies[i]->GetModelName() << ", link " << bodies[i]->GetName() << ":\n"
-            << "  - transform_to_model:\n" << transform_to_model.matrix() << "\n"
-            << "  - transform_to_world:\n" << transform_to_world.matrix() << "\n"
-            << "  - transform_root_link_to_world:\n" << (transform_to_world * transform_to_model).matrix()
-            << std::endl;
           num_floating_joints_added++;
         } break;
         default:

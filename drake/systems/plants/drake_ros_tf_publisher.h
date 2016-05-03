@@ -39,6 +39,7 @@ class DrakeRosTfPublisher {
   // Specifies that the transforms should be transmitted at most ten times per
   // second.
   static constexpr double kMinTransmitPeriod_ = 0.1;
+
  public:
   template <typename ScalarType>
   using StateVector = NullVector<ScalarType>;
@@ -58,15 +59,13 @@ class DrakeRosTfPublisher {
    */
   DrakeRosTfPublisher(const std::shared_ptr<RigidBodyTree> rigid_body_tree)
       : rigid_body_tree_(rigid_body_tree) {
-
     // Initializes the time stamp of the previous transmission to be zero.
     previous_send_time_.sec = 0;
     previous_send_time_.nsec = 0;
 
     // Instantiates a geometry_msgs::TransformStamped message for each rigid
     // body in the rigid body tree.
-    for (auto & rigid_body : rigid_body_tree->bodies) {
-
+    for (auto &rigid_body : rigid_body_tree->bodies) {
       // Skips the world link since the world link does not have a joint.
       if (rigid_body->GetName() == "world") continue;
 
@@ -74,7 +73,7 @@ class DrakeRosTfPublisher {
       if (!rigid_body->hasParent()) continue;
 
       // Obtains the current link's joint.
-      const DrakeJoint & joint = rigid_body->getJoint();
+      const DrakeJoint &joint = rigid_body->getJoint();
 
       // Creates a unique key for holding the transform message.
       std::string key = rigid_body->GetModelName() + rigid_body->GetName();
@@ -89,7 +88,7 @@ class DrakeRosTfPublisher {
       // Instantiates a geometry_msgs::TransformStamped message for the
       // current rigid body.
       std::unique_ptr<geometry_msgs::TransformStamped> message(
-        new geometry_msgs::TransformStamped());
+          new geometry_msgs::TransformStamped());
 
       message->header.frame_id = rigid_body->parent->GetName();
       message->child_frame_id = rigid_body->GetName();
@@ -115,7 +114,7 @@ class DrakeRosTfPublisher {
 
     // Instantiates a geometry_msgs::TransformStamped message for each frame
     // in the rigid body tree.
-    for (auto & frame : rigid_body_tree->frames) {
+    for (auto &frame : rigid_body_tree->frames) {
       std::string key = frame->body->GetModelName() + frame->name;
 
       // Checks whether a transform message for the current frame was already
@@ -128,7 +127,7 @@ class DrakeRosTfPublisher {
       // Instantiates a geometry_msgs::TransformStamped message for the
       // current frame.
       std::unique_ptr<geometry_msgs::TransformStamped> message(
-        new geometry_msgs::TransformStamped());
+          new geometry_msgs::TransformStamped());
 
       message->header.frame_id = frame->body->GetName();
       message->child_frame_id = frame->name;
@@ -160,7 +159,6 @@ class DrakeRosTfPublisher {
 
   OutputVector<double> output(const double &t, const StateVector<double> &x,
                               const InputVector<double> &u) {
-
     // Checks whether enough time has elapsed since the last transmission.
     // Aborts if insufficient time has passed. This is to prevent flooding ROS
     // topic /tf.
@@ -176,8 +174,7 @@ class DrakeRosTfPublisher {
     auto q = uvec.head(rigid_body_tree_->num_positions);
     KinematicsCache<double> cache = rigid_body_tree_->doKinematics(q);
 
-    for (auto & rigid_body : rigid_body_tree_->bodies) {
-
+    for (auto &rigid_body : rigid_body_tree_->bodies) {
       // Skips the world link since the world link.
       if (rigid_body->GetName() == "world") continue;
 
@@ -185,7 +182,7 @@ class DrakeRosTfPublisher {
       if (!rigid_body->hasParent()) continue;
 
       // Obtains the current link's joint.
-      const DrakeJoint & joint = rigid_body->getJoint();
+      const DrakeJoint &joint = rigid_body->getJoint();
 
       // Obtains a unique key for holding the transform message.
       std::string key = rigid_body->GetModelName() + rigid_body->GetName();
@@ -194,18 +191,20 @@ class DrakeRosTfPublisher {
       // link exists in the transform_messages_ map.
       auto message_in_map = transform_messages_.find(key);
       if (message_in_map == transform_messages_.end())
-        throw std::runtime_error("ERROR: DrakeRosTfPublisher: Unable to find"
-          "transform message with key " + key);
+        throw std::runtime_error(
+            "ERROR: DrakeRosTfPublisher: Unable to find"
+            "transform message with key " +
+            key);
 
       // Obtains a pointer to the geometry_msgs::TransformStamped message for
       // the current link.
-      geometry_msgs::TransformStamped* message = message_in_map->second.get();
+      geometry_msgs::TransformStamped *message = message_in_map->second.get();
 
       // Updates the transform only if the joint is not fixed.
       if (joint.getNumPositions() != 0 || joint.getNumVelocities() != 0) {
-        auto transform = rigid_body_tree_->relativeTransform(cache,
-          rigid_body_tree_->findLinkId(rigid_body->parent->GetName()),
-          rigid_body_tree_->findLinkId(rigid_body->GetName()));
+        auto transform = rigid_body_tree_->relativeTransform(
+            cache, rigid_body_tree_->findLinkId(rigid_body->parent->GetName()),
+            rigid_body_tree_->findLinkId(rigid_body->GetName()));
         auto translation = transform.translation();
         auto quat = rotmat2quat(transform.linear());
 
@@ -227,19 +226,21 @@ class DrakeRosTfPublisher {
     }
 
     // Publishes the transform for each frame in the rigid body tree.
-    for (auto & frame : rigid_body_tree_->frames) {
+    for (auto &frame : rigid_body_tree_->frames) {
       std::string key = frame->body->GetModelName() + frame->name;
 
       // Verifies that a geometry_msgs::TransformStamped message for the current
       // link exists in the transform_messages_ map.
       auto message_in_map = transform_messages_.find(key);
       if (message_in_map == transform_messages_.end())
-        throw std::runtime_error("ERROR: DrakeRosTfPublisher: Unable to find"
-          "transform message with key " + key);
+        throw std::runtime_error(
+            "ERROR: DrakeRosTfPublisher: Unable to find"
+            "transform message with key " +
+            key);
 
       // Obtains a pointer to the geometry_msgs::TransformStamped message for
       // the current link.
-      geometry_msgs::TransformStamped* message = message_in_map->second.get();
+      geometry_msgs::TransformStamped *message = message_in_map->second.get();
 
       // Updates the message with the latest time stamp. There's no need to
       // update anything else since frames do not move relative to their
@@ -257,7 +258,6 @@ class DrakeRosTfPublisher {
   bool isDirectFeedthrough() const { return true; }
 
  private:
-
   /**
    * The rigid body tree being used by Drake's rigid body dynamics engine.
    */

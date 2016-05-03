@@ -18,13 +18,9 @@ RigidBody::RigidBody()
   I << Matrix<double, TWIST_SIZE, TWIST_SIZE>::Zero();
 }
 
-const std::string& RigidBody::GetName() const {
-  return linkname;
-}
+const std::string& RigidBody::GetName() const { return linkname; }
 
-const std::string& RigidBody::GetModelName() const {
-  return model_name;
-}
+const std::string& RigidBody::GetModelName() const { return model_name; }
 
 void RigidBody::setJoint(std::unique_ptr<DrakeJoint> new_joint) {
   this->joint = move(new_joint);
@@ -35,11 +31,12 @@ const DrakeJoint& RigidBody::getJoint() const {
     return (*joint);
   } else {
     if (linkname == "world")
-      throw runtime_error("ERROR: Attempted to get the world link's joint. "
-                          "The world link does not have a joint!");
+      throw runtime_error(
+          "ERROR: Attempted to get the world link's joint. "
+          "The world link does not have a joint!");
     else
-      throw runtime_error("Joint of link " + linkname + " in model "
-        + model_name + " is not initialized");
+      throw runtime_error("Joint of link " + linkname + " in model " +
+                          model_name + " is not initialized");
   }
 }
 

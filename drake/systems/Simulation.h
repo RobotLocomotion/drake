@@ -115,7 +115,9 @@ void simulate(const System& sys, double ti, double tf,
   double t = ti;
   while (t < tf) {
     double realtime_factor = options.realtime_factor;
-    if (realtime_factor < 0.0) { realtime_factor = 0.0; }
+    if (realtime_factor < 0.0) {
+      realtime_factor = 0.0;
+    }
     if (!handle_realtime_factor(start, t, realtime_factor,
                                 options.timeout_seconds)) {
       std::stringstream error_msg;
@@ -141,16 +143,14 @@ void simulate(const System& sys, double ti, double tf,
     // This is an RK2 integrator (explicit trapezoid rule).
     // First stage: xd0 = dynamics(t0,x0,u0).
     xdot0 = sys.dynamics(t, x, u);
-    x1est =
-        toEigen(x) + dt * toEigen(xdot0);  // explicit Euler step
+    x1est = toEigen(x) + dt * toEigen(xdot0);  // explicit Euler step
     t += dt;
 
     // Second stage: xd1 = dynamics(t1,x1est,u0).
     xdot1 = sys.dynamics(t, x1est, u);
 
     // 2nd order result: x = x0 + dt (xd0+xd1)/2.
-    x = toEigen(x) +
-        (dt / 2) * (toEigen(xdot0) + toEigen(xdot1));
+    x = toEigen(x) + (dt / 2) * (toEigen(xdot0) + toEigen(xdot1));
   }
 }
 

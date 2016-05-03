@@ -113,8 +113,7 @@ int main(int argc, char* argv[]) {
 
     // Sets the Z-axis transform from Drake's world frame to the model's
     // world frame by 0.378326 meters if the model is a URDF.
-    if (ext == ".urdf")
-      z_offset = 0.378326;
+    if (ext == ".urdf") z_offset = 0.378326;
   }
 
   // The following variable specifies the transformation between Drake's world
@@ -214,12 +213,12 @@ int main(int argc, char* argv[]) {
       make_shared<drake::systems::plants::SensorVisualizerLidar<
           RigidBodySystem::StateVector>>(rigid_body_sys);
 
-  auto tf_publisher =
-      make_shared<drake::systems::plants::DrakeRosTfPublisher<
-          RigidBodySystem::StateVector>>(tree);
+  auto tf_publisher = make_shared<drake::systems::plants::DrakeRosTfPublisher<
+      RigidBodySystem::StateVector>>(tree);
 
-  auto sys = cascade(cascade(cascade(vehicle_sys, bot_visualizer),
-    lidar_visualizer), tf_publisher);
+  auto sys =
+      cascade(cascade(cascade(vehicle_sys, bot_visualizer), lidar_visualizer),
+              tf_publisher);
 
   SimulationOptions options = default_simulation_options;
   rigid_body_sys->penetration_stiffness = 5000.0;

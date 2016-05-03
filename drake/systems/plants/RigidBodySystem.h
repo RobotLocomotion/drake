@@ -204,8 +204,8 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
   size_t getNumInputs() const;
 
   /**
-   * Returns the total number of outputs of this rigid body system. This includes
-   * both the number of joint states and the number of sensor states.
+   * Returns the total number of outputs of this rigid body system. This
+   * includes both the number of joint states and the number of sensor states.
    */
   size_t getNumOutputs() const;
 
@@ -253,7 +253,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * @return a const reference to the sensors vector within this rigid body
    * system.
    */
-  const std::vector<std::shared_ptr<RigidBodySensor>> & GetSensors() const;
+  const std::vector<std::shared_ptr<RigidBodySensor>>& GetSensors() const;
 
   // some parameters defining the contact
   bool use_multi_contact;
@@ -470,7 +470,8 @@ class DRAKERBSYSTEM_EXPORT RigidBodySensor {
   virtual Eigen::VectorXd output(
       const double& t, const KinematicsCache<double>& rigid_body_state,
       const RigidBodySystem::InputVector<double>& u) const = 0;
-  const std::string & get_name() const { return name; }
+  const std::string& get_name() const { return name; }
+
  protected:
   RigidBodySystem const& sys;
   std::string name;

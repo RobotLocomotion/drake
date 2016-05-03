@@ -60,7 +60,6 @@ class SensorVisualizerLidar {
     // Creates a ROS topic publisher for each LIDAR sensor in the rigid body
     // system.
     for (auto &sensor : rigid_body_system->GetSensors()) {
-
       // Attempts to cast the RigidBodySensor pointer to a RigidBodyDepthSensor
       // pointer. This actually does two things simultaneously. First it
       // determines whether the pointer in fact points to a
@@ -167,7 +166,6 @@ class SensorVisualizerLidar {
     // a LIDAR sensor, store the range measurements in a ROS message and publish
     // it on the appropriate ROS topic.
     for (auto &sensor : sensor_vector) {
-
       if (output_index + sensor->getNumOutputs() >
           rigid_body_system_->getNumOutputs()) {
         std::stringstream buff;
