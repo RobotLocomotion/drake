@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <vector>
 
+#include "drake/drakeSystemFramework_export.h"
 #include "drake/util/eigen_matrix_compare.h"
 
 #include <Eigen/Dense>
