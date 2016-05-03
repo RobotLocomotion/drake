@@ -55,7 +55,7 @@
 %immutable RigidBodyTree::actuators;
 %immutable RigidBodyTree::loops;
 %ignore RigidBodyTree::add_rigid_body(std::unique_ptr<RigidBody> body); // unique_ptr confuses SWIG, so we'll ignore it for now
-%ignore RigidBodyTree::bodies; //ignore this member so that it doesn't generate setters/getters. These cause problems since bodies is a vector of unique_ptr's and SWIG doesn't support them.
+%ignore RigidBodyTree::bodies; // Ignore this member so that it doesn't generate setters/getters. These cause problems since bodies is a vector of unique_ptr's and SWIG doesn't support them.
 %include "drake/systems/plants/RigidBodyTree.h"
 %extend RigidBodyTree {
   KinematicsCache<double> doKinematics(const Eigen::MatrixBase<Eigen::VectorXd>& q, const Eigen::MatrixBase<Eigen::VectorXd>& v) {
