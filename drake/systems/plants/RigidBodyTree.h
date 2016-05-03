@@ -745,12 +745,13 @@ class DRAKERBM_EXPORT RigidBodyTree {
   /**
    * @brief Adds and takes ownership of a rigid body.
    *
+   * A RigidBodyTree is the sole owner and manager of the RigidBody's in it.
+   *
    * @param[in] body The rigid body to add to this rigid body tree.
    * @return Reference to this tree.
    */
   // It saves an index value in the rigid body, which can be used to access the
   // rigid body from within the "bodies" vector.
-  // A RigidBodyTree is the sole owner and manager of the RigidBody's in it.
   RigidBodyTree& add_rigid_body(std::unique_ptr<RigidBody> body);
 
   /**
