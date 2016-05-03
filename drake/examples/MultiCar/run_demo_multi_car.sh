@@ -25,6 +25,6 @@ DRAKE_DIST=$(readlink -f $DRAKE/..)
 $DRAKE_DIST/build/bin/bot-spy &
 $DRAKE_DIST/build/bin/drake-visualizer &
 sleep 1  # Wait, to be sure drake-visualizer sees the load_robot message.
-$DRAKE/pod-build/bin/demo_multi_car &
+$DRAKE/pod-build/bin/demo_multi_car $1 &
 
 wait
