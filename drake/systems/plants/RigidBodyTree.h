@@ -783,16 +783,13 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * @brief Returns a mutable reference to a body by index in the tree.
    *
    * Rigid bodies are numbered in the order they are added to the tree.
-   * This method is meant for quick access and therefore it is not bound-checked
-   * in release builds.
+   * This method will throw std::out_of_range for illegal body indexes.
    *
    * @param[in] index The body index.
    * @see add_rigid_body
    */
   RigidBody& body(int index) {
-    assert(0 <= index && index < bodies.size() &&
-           "Input index exceeds the number of bodies in the tree");
-    return *bodies[index];
+    return *bodies.at(index);
   }
 
   /**
