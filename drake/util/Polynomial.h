@@ -11,6 +11,7 @@
 #include <Eigen/Core>
 #include <unsupported/Eigen/Polynomials>
 
+#include "drake/core/Gradient.h"
 #include "drake/drakePolynomial_export.h"
 
 /// A scalar multi-variate polynomial, modeled after the msspoly in spotless.
@@ -193,8 +194,8 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
         value += iter->coefficient;
       else
         value += iter->coefficient *
-                 std::pow((ProductType)x,
-                          (PowerType)iter->terms[0].power);
+                 pow((ProductType)x,
+                     (PowerType)iter->terms[0].power);
     }
     return value;
   }
@@ -202,31 +203,49 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
   /// Evaluate a multivariate Polynomial at a specific point.
   /**
    * Evaluates a Polynomial with the given values for each variable.  Throws
-   * an exception of the Polynomial contains values for which values were not
-   * provided.
+   * std::out_of_range if the Polynomial contains variables for which values
+   * were not provided.
    *
-   * The provided values may be of any type supporting the ** and + operations
-   * (which can be different from both CoefficientsType and RealScalar)
+   * The provided values may be of any type which is std::is_arithmetic
+   * (supporting the std::pow, *, and + operations) and need not be
+   * CoefficientsType or RealScalar)
    */
   template <typename T>
   typename Product<CoefficientType, T>::type evaluateMultivariate(
       const std::map<VarType, T>& var_values) const {
-    typedef typename Product<CoefficientType, T>::type ProductType;
-
-    for (const VarType& var : getVariables()) {
-      if (!var_values.count(var)) {
-        throw std::runtime_error(
-            "No value provided for variable " + std::to_string(var));
-      }
-    }
-
+    typedef typename std::remove_const<
+      typename Product<CoefficientType, T>::type>::type ProductType;
     ProductType value = 0;
     for (const Monomial& monomial : monomials) {
       ProductType monomial_value = monomial.coefficient;
       for (const Term& term : monomial.terms) {
         monomial_value *= std::pow(
             static_cast<ProductType>(var_values.at(term.var)),
-            static_cast<PowerType>(term.power));
+            term.power);
+      }
+      value += monomial_value;
+    }
+    return value;
+  }
+
+  /// Specialization of evaluateMultivariate on TaylorVarXd.
+  /**
+   * Specialize evaluateMultivariate on TaylorVarXd because Eigen autodiffs
+   * implement a confusing subset of operators and conversions that makes a
+   * strictly generic approach too confusing and unreadable.
+   *
+   * Note that it is up to the caller to ensure that all of the TaylorVarXds
+   * in var_values correctly correspond to one another, because Polynomial has
+   * no knowledge of what partial derivative terms the indices of a given
+   * TaylorVarXd correspond to.
+   */
+  Drake::TaylorVarXd evaluateMultivariate(
+      const std::map<VarType, Drake::TaylorVarXd>& var_values) const {
+    Drake::TaylorVarXd value(0);
+    for (const Monomial& monomial : monomials) {
+      Drake::TaylorVarXd monomial_value(monomial.coefficient);
+      for (const Term& term : monomial.terms) {
+        monomial_value *= pow(var_values.at(term.var), term.power);
       }
       value += monomial_value;
     }
@@ -411,6 +430,31 @@ class DRAKEPOLYNOMIAL_EXPORT Polynomial {
                                   const unsigned int m = 1);
 
   static std::string idToVariableName(const VarType id);
+  //@}
+
+  //@{
+  /// Local version of pow to deal with autodiff.
+  /**
+   * A version of std::pow that uses std::pow for arithmetic types and
+   * repeated multiplication for non-arithmetic types (e.g., autodiff).
+   */
+  template <bool B, typename T = void>
+  using enable_if_t = typename std::enable_if<B, T>::type;
+  template <typename Base>
+  static Base pow(
+      const enable_if_t<std::is_arithmetic<Base>::value, Base>& base,
+      const PowerType& exponent) {
+    return std::pow(base, exponent);
+  }
+
+  template <typename Base>
+  static Base pow(const Base& base, const PowerType& exponent) {
+    Base result = base;
+    for (int i = 1; i < exponent; i++) {
+      result = result * base;
+    }
+    return result;
+  }
   //@}
 
   /// Sorts through Monomial list and merges any that have the same powers.

@@ -20,7 +20,7 @@ add_matlab_test(NAME solvers/test/rrt_bugtrap COMMAND rrt_bugtrap)
 add_matlab_test(NAME solvers/test/rrt_piano_mover COMMAND rrt_piano_mover)
 add_matlab_test(NAME solvers/test/rrt_piano_mover_rotation COMMAND rrt_piano_mover_rotation)
 add_matlab_test(NAME solvers/test/rrt_piano_mover_translation COMMAND rrt_piano_mover_translation)
-add_matlab_test(NAME solvers/test/sixHumpCamel COMMAND sixHumpCamel)
+# add_matlab_test(NAME solvers/test/sixHumpCamel COMMAND sixHumpCamel)  # FIXME
 add_matlab_test(NAME solvers/test/testConstraint COMMAND testConstraint)
 add_matlab_test(NAME solvers/test/testGurobiLCP COMMAND testGurobiLCP)
 add_matlab_test(NAME solvers/test/testLQRmex COMMAND testLQRmex)
