@@ -203,6 +203,35 @@ include(cmake/procman.cmake)  # helper script for writing procman files
 # set up and build lcm types
 include(cmake/lcmtypes.cmake)
 
+# Setup ROS if it is available on the local system
+find_package(roscpp QUIET)
+if(roscpp_FOUND)
+  message(STATUS "Found roscpp installed at ${roscpp_DIR}, so building ROS-specific functionality.")
+  include_directories(${roscpp_INCLUDE_DIRS})
+
+  find_package(catkin REQUIRED)
+  find_package(genmsg REQUIRED)
+
+  find_package(std_msgs REQUIRED)
+  include_directories(${std_msgs_INCLUDE_DIRS})
+
+  # Enumerates Drake's custom ROS messages. Note that this needs to be done here
+  # rather than within a CMakeLists.txt in subdirectory rostypes/ since the
+  # include_directories() call to add the path to the generated files would not
+  # propogate back to this CMakeLists.txt level and thus not down to the
+  # applications that use the custom ROS messages.
+  # add_message_files(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/rostypes FILES
+  #   DrakeFoo.msg)
+
+  # Generates the code for Drake's custom ROS messages.
+  # generate_messages(DEPENDENCIES std_msgs)
+
+  # Includes the directories containing the generated ROS message code.
+  # include_directories("${${PROJECT_NAME}_INCLUDE_DIRS}")
+else()
+  message(STATUS "Couldn't find roscpp so not building ROS-specific functionality. If you want ROS support, be sure to source the ROS setup.sh prior to building Drake.")
+endif()
+
 if (LCM_FOUND)
   #add_subdirectory(lcmtypes)
   lcmtypes_build()
@@ -260,14 +289,7 @@ else()
    endif()
 endif()
 
-# Setup ROS if it is available on the local system
-find_package(roscpp QUIET)
-if(roscpp_FOUND)
-  message(STATUS "Found roscpp installed at ${roscpp_DIR}, so building ROS-specific functionality.")
-  include_directories(${roscpp_INCLUDE_DIRS})
-else()
-  message(STATUS "Couldn't find roscpp so not building ROS-specific functionality. If you want ROS support, be sure to source the ROS setup.sh prior to building Drake.")
-endif()
+
 
 include_directories(thirdParty/spruce/include)
 include_directories(thirdParty/cimg)

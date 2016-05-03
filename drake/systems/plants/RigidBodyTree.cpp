@@ -82,7 +82,8 @@ bool RigidBodyTree::transformCollisionFrame(
 }
 
 void RigidBodyTree::compile(void) {
-  // reorder body list to make sure that parents before children in the list
+  // Reorders the bodies list so that parent rigid bodies are before child rigid
+  // bodies.
   size_t i = 0;
   while (i < bodies.size() - 1) {
     if (bodies[i]->hasParent()) {
@@ -96,8 +97,7 @@ void RigidBodyTree::compile(void) {
     i++;
   }
 
-  // weld joints for links that have zero inertia and no children (as seen in
-  // pr2.urdf)
+  // Welds joints for links that have zero inertia and no children.
   for (size_t i = 0; i < bodies.size(); i++) {
     if (bodies[i]->hasParent() && bodies[i]->I.isConstant(0)) {
       bool hasChild = false;
@@ -118,8 +118,7 @@ void RigidBodyTree::compile(void) {
         }
       }
       if (!hasChild) {
-        cout << "welding " << bodies[i]->getJoint().getName()
-             << " because it has no inertia beneath it" << endl;
+        cout << "Welding joint " << bodies[i]->getJoint().getName() << endl;
         unique_ptr<DrakeJoint> joint_unique_ptr(
             new FixedJoint(bodies[i]->getJoint().getName(),
                            bodies[i]->getJoint().getTransformToParentBody()));
@@ -128,6 +127,9 @@ void RigidBodyTree::compile(void) {
     }
   }
 
+  // Counts the number of position and velocitie there are in this rigid body
+  // tree. Also initializes the position_num_start and velocity_num_start
+  // variables within Rigid Body.
   num_positions = 0;
   num_velocities = 0;
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
@@ -143,10 +145,13 @@ void RigidBodyTree::compile(void) {
     }
   }
 
+  // Updates the body_index member variable within each rigid body to be the
+  // rigid body's position in this rigid body tree's bodies vector.
   for (size_t i = 0; i < bodies.size(); i++) {
     bodies[i]->body_index = static_cast<int>(i);
   }
 
+  // Initializes the B matrix, which maps inputs into joint space forces.
   B.resize(num_velocities, actuators.size());
   B = MatrixXd::Zero(num_velocities, actuators.size());
   for (size_t ia = 0; ia < actuators.size(); ia++)
@@ -154,7 +159,7 @@ void RigidBodyTree::compile(void) {
       B(actuators[ia].body->velocity_num_start + i, ia) =
           actuators[ia].reduction;
 
-  // gather joint limits in RBM vector
+  // Initializes the joint limit vectors.
   joint_limit_min = VectorXd::Constant(
       num_positions, -std::numeric_limits<double>::infinity());
   joint_limit_max = VectorXd::Constant(num_positions,
@@ -172,6 +177,7 @@ void RigidBodyTree::compile(void) {
     }
   }
 
+  // Updates the static collision elements and terrain contact points.
   updateStaticCollisionElements();
 
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {

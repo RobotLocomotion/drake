@@ -192,10 +192,21 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
     return tree;
   }
 
-  size_t getNumStates() const {
-    return tree->num_positions + tree->num_velocities;
-  }
+  /**
+   * Returns the number of joint states in this rigid body system. This includes
+   * joint position and velocity values.
+   */
+  size_t getNumStates() const;
+
+  /**
+   * Returns the total number of inputs to this rigid body system.
+   */
   size_t getNumInputs() const;
+
+  /**
+   * Returns the total number of outputs of this rigid body system. This includes
+   * both the number of joint states and the number of sensor states.
+   */
   size_t getNumOutputs() const;
 
   /** dynamics
@@ -233,6 +244,16 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
 
   friend DRAKERBSYSTEM_EXPORT StateVector<double> getInitialState(
       const RigidBodySystem& sys);
+
+  /**
+   * An accessor to the sensors within this rigid body system. This is useful
+   * for downstream components to understand the meaning of the output signal
+   * of this system.
+   *
+   * @return a const reference to the sensors vector within this rigid body
+   * system.
+   */
+  const std::vector<std::shared_ptr<RigidBodySensor>> & GetSensors() const;
 
   // some parameters defining the contact
   bool use_multi_contact;
@@ -449,7 +470,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySensor {
   virtual Eigen::VectorXd output(
       const double& t, const KinematicsCache<double>& rigid_body_state,
       const RigidBodySystem::InputVector<double>& u) const = 0;
-
+  const std::string & get_name() const { return name; }
  protected:
   RigidBodySystem const& sys;
   std::string name;
@@ -471,9 +492,28 @@ class DRAKERBSYSTEM_EXPORT RigidBodyDepthSensor : public RigidBodySensor {
 
   virtual ~RigidBodyDepthSensor() {}
 
-  virtual size_t getNumOutputs() const override {
-    return num_pixel_rows * num_pixel_cols;
-  }
+  virtual size_t getNumOutputs() const override;
+
+  virtual size_t get_num_pixel_rows() const;
+
+  virtual size_t get_num_pixel_cols() const;
+
+  virtual bool is_vertical_scanner() const;
+
+  virtual bool is_horizontal_scanner() const;
+
+  virtual double get_min_pitch() const;
+
+  virtual double get_max_pitch() const;
+
+  virtual double get_min_yaw() const;
+
+  virtual double get_max_yaw() const;
+
+  virtual double get_min_range() const;
+
+  virtual double get_max_range() const;
+
   virtual Eigen::VectorXd output(
       const double& t, const KinematicsCache<double>& rigid_body_state,
       const RigidBodySystem::InputVector<double>& u) const override;
