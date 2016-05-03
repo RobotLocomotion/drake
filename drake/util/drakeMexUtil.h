@@ -120,11 +120,13 @@ Eigen::Map<const Eigen::Matrix<double, Rows, Cols>> matlabToEigenMap(
   if (mxIsEmpty(mex)) {
     // be lenient when it comes to dimensions in the empty input case
     if (Rows == Dynamic && Cols == Dynamic) {
-      // if both dimensions are dynamic, then follow the dimensions of the Matlab matrix
+      // if both dimensions are dynamic, then follow the dimensions of
+      // the Matlab matrix
       rows = mxGetM(mex);
       cols = mxGetN(mex);
     } else {
-      // if only one dimension is dynamic, use the known dimension at compile time and set the other dimension to zero
+      // if only one dimension is dynamic, use the known dimension at
+      // compile time and set the other dimension to zero
       rows = Rows == Dynamic ? 0 : Rows;
       cols = Cols == Dynamic ? 0 : Cols;
     }

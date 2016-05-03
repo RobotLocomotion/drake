@@ -87,8 +87,7 @@ void testOperators() {
     valuecheck(poly1_div.evaluateUnivariate(t),
                poly1.evaluateUnivariate(t) / scalar, 1e-8);
     valuecheck(poly1_times_poly1.evaluateUnivariate(t),
-               poly1.evaluateUnivariate(t) * poly1.evaluateUnivariate(t),
-               1e-8);
+               poly1.evaluateUnivariate(t) * poly1.evaluateUnivariate(t), 1e-8);
   }
 }
 
@@ -122,7 +121,8 @@ void testEvalType() {
   const auto& double_type = typeid(double);  // NOLINT(readability/function)
   valuecheck(typeid(decltype(valueIntInput)) == double_type, true);
 
-  auto valueComplexInput = poly.evaluateUnivariate(std::complex<double>(1.0, 2.0));
+  auto valueComplexInput =
+      poly.evaluateUnivariate(std::complex<double>(1.0, 2.0));
   valuecheck(
       typeid(decltype(valueComplexInput)) == typeid(std::complex<double>),
       true);
@@ -233,7 +233,7 @@ TEST(PolynomialTest, DISABLED_Simplification) {
   Polynomiald x = Polynomiald("x");
   Polynomiald y = Polynomiald("y");
 
-  { // Test duplicate monomials.
+  {  // Test duplicate monomials.
     std::stringstream test_stream;
     test_stream << ((x * y) + (x * y));
     std::string result;
@@ -241,7 +241,7 @@ TEST(PolynomialTest, DISABLED_Simplification) {
     EXPECT_EQ(result, "2 * x1 * y1");
   }
 
-  { // Test monomials that are duplicates under commutativity.
+  {  // Test monomials that are duplicates under commutativity.
     std::stringstream test_stream;
     test_stream << ((x * y) + (y * x));
     std::string result;
@@ -250,11 +250,6 @@ TEST(PolynomialTest, DISABLED_Simplification) {
   }
 }
 
-// Disabled on Windows because I have not been able to discern how to cause
-// the Monomial class to be exported in the polynomial dll.  There appear to
-// be longstanding confusions about dll export of nested classes of class
-// templates in msvc.
-#ifndef WIN32
 TEST(PolynomialTest, MonomialFactor) {
   Polynomiald x = Polynomiald("x");
   Polynomiald y = Polynomiald("y");
@@ -279,7 +274,6 @@ TEST(PolynomialTest, MonomialFactor) {
   EXPECT_EQ(m_x2y.factor(m_x2), m_y);
   EXPECT_EQ(m_x2y.factor(m_y), m_x2);
 }
-#endif
 
 TEST(PolynomialTest, MultivariateValue) {
   Polynomiald x = Polynomiald("x");
@@ -291,6 +285,13 @@ TEST(PolynomialTest, MultivariateValue) {
   EXPECT_EQ((2 * x * x + y).evaluateMultivariate(eval_point), 4);
   EXPECT_EQ((x * x + 2 * y).evaluateMultivariate(eval_point), 5);
   EXPECT_EQ((x * x + x * y).evaluateMultivariate(eval_point), 3);
+}
+
+TEST(PolynomialTest, Conversion) {
+  // Confirm that these conversions compile okay.
+  Polynomial<double> x(1.0);
+  Polynomial<double> y = 2.0;
+  Polynomial<double> z = 3;
 }
 
 }

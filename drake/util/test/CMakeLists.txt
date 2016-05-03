@@ -40,11 +40,6 @@ if (GTEST_FOUND)
   target_link_libraries(testPolynomial drakePolynomial ${GTEST_BOTH_LIBRARIES})
   add_test(NAME testPolynomial COMMAND testPolynomial)
 
-  add_executable(testSystemIdentification testSystemIdentification.cpp)
-  target_link_libraries(testSystemIdentification
-                        drakePolynomial ${GTEST_BOTH_LIBRARIES})
-  add_test(NAME testSystemIdentification COMMAND testSystemIdentification)
-
   add_executable(eigen_matrix_compare_test eigen_matrix_compare_test.cc)
   target_link_libraries(eigen_matrix_compare_test ${GTEST_BOTH_LIBRARIES})
   add_test(NAME eigen_matrix_compare_test COMMAND eigen_matrix_compare_test)
@@ -90,8 +85,8 @@ add_matlab_test(NAME util/test/testQuat COMMAND testQuat)
 add_matlab_test(NAME util/test/testQuat2expmap COMMAND testQuat2expmap)
 add_matlab_test(NAME util/test/testQuat2expmapSequence COMMAND testQuat2expmapSequence)
 add_matlab_test(NAME util/test/testQuat2rotmat COMMAND testQuat2rotmat)
-add_matlab_test(NAME util/test/testQuatConjugate COMMAND testQuatConjugate)
-add_matlab_test(NAME util/test/testQuatProduct COMMAND testQuatProduct)
+# add_matlab_test(NAME util/test/testQuatConjugate COMMAND testQuatConjugate)  # FIXME
+# add_matlab_test(NAME util/test/testQuatProduct COMMAND testQuatProduct)  # FIXME
 add_matlab_test(NAME util/test/testQuatRotateVec COMMAND testQuatRotateVec)
 add_matlab_test(NAME util/test/testQuatdot2angularvel COMMAND testQuatdot2angularvel)
 add_matlab_test(NAME util/test/testQuatdot2angularvelMatrix COMMAND testQuatdot2angularvelMatrix)

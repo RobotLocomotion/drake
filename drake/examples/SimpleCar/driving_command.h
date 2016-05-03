@@ -12,53 +12,97 @@
 
 namespace Drake {
 
+/// Describes the row indices of a DrivingCommand.
+struct DrivingCommandIndices {
+  /// The total number of rows (coordinates).
+  static const int kNumCoordiates = 3;
+
+  // The index of each individual coordinate.
+  static const int kSteeringAngle = 0;
+  static const int kThrottle = 1;
+  static const int kBrake = 2;
+};
+
+/// Models the Drake::LCMVector concept.
 template <typename ScalarType = double>
-class DrivingCommand {  // models the Drake::LCMVector concept
+class DrivingCommand {
  public:
-  typedef drake::lcmt_driving_command_t LCMMessageType;
-  static std::string channel() { return "DRIVING_COMMAND"; }
-  static const int RowsAtCompileTime = 3;
+  // An abbreviation for our row index constants.
+  typedef DrivingCommandIndices K;
+
+  /// @name Getters and Setters
+  //@{
+  const ScalarType& steering_angle() const { return value_(K::kSteeringAngle); }
+  void set_steering_angle(const ScalarType& steering_angle) {
+    value_(K::kSteeringAngle) = steering_angle;
+  }
+  const ScalarType& throttle() const { return value_(K::kThrottle); }
+  void set_throttle(const ScalarType& throttle) {
+    value_(K::kThrottle) = throttle;
+  }
+  const ScalarType& brake() const { return value_(K::kBrake); }
+  void set_brake(const ScalarType& brake) { value_(K::kBrake) = brake; }
+  //@}
+
+  /// @name Implement the Drake::Vector concept.
+  //@{
+
+  // Even though in practice we have a fixed size, we declare
+  // ourselves dynamically sized for compatibility with the
+  // system/framework/vector_interface.h API, and so that we
+  // can avoid the alignment issues that come into play with
+  // a fixed-size Eigen::Matrix member field.
+  static const int RowsAtCompileTime = Eigen::Dynamic;
   typedef Eigen::Matrix<ScalarType, RowsAtCompileTime, 1> EigenType;
+  size_t size() const { return K::kNumCoordiates; }
 
-  DrivingCommand() {}
+  /// Default constructor.  Sets all rows to zero.
+  DrivingCommand()
+      : value_(Eigen::Matrix<ScalarType, K::kNumCoordiates, 1>::Zero()) {}
 
+  /// Implicit Eigen::Matrix conversion.
   template <typename Derived>
-  // NOLINTNEXTLINE(runtime/explicit)
-  DrivingCommand(const Eigen::MatrixBase<Derived>& initial)
-      : steering_angle(initial(0)),  // BR
-        throttle(initial(1)),        // BR
-        brake(initial(2)) {}
+  // NOLINTNEXTLINE(runtime/explicit) per Drake::Vector.
+  DrivingCommand(const Eigen::MatrixBase<Derived>& value)
+      : value_(value.segment(0, K::kNumCoordiates)) {}
 
+  /// Eigen::Matrix assignment.
   template <typename Derived>
-  DrivingCommand& operator=(const Eigen::MatrixBase<Derived>& rhs) {
-    steering_angle = rhs(0);
-    throttle = rhs(1);
-    brake = rhs(2);
+  DrivingCommand& operator=(const Eigen::MatrixBase<Derived>& value) {
+    value_ = value.segment(0, K::kNumCoordiates);
     return *this;
   }
 
+  /// Magic conversion specialization back to Eigen.
   friend EigenType toEigen(const DrivingCommand<ScalarType>& vec) {
-    EigenType result;
-    result << vec.steering_angle, vec.throttle, vec.brake;
-    return result;
+    return vec.value_;
   }
 
+  /// Magic pretty names for our coordinates.  (This is an optional
+  /// part of the Drake::Vector concept, but seems worthwhile.)
   friend std::string getCoordinateName(const DrivingCommand<ScalarType>& vec,
                                        unsigned int index) {
     switch (index) {
-      case 0:
+      case K::kSteeringAngle:
         return "steering_angle";
-      case 1:
+      case K::kThrottle:
         return "throttle";
-      case 2:
+      case K::kBrake:
         return "brake";
     }
     throw std::domain_error("unknown coordinate index");
   }
 
-  ScalarType steering_angle = 0;
-  ScalarType throttle = 0;
-  ScalarType brake = 0;
+  //@}
+
+  /// @name Implement the LCMVector concept
+  //@{
+  typedef drake::lcmt_driving_command_t LCMMessageType;
+  static std::string channel() { return "DRIVING_COMMAND"; }
+  //@}
+
+ private:
+  EigenType value_;
 };
 
 template <typename ScalarType>
@@ -66,9 +110,9 @@ bool encode(const double& t, const DrivingCommand<ScalarType>& wrap,
             // NOLINTNEXTLINE(runtime/references)
             drake::lcmt_driving_command_t& msg) {
   msg.timestamp = static_cast<int64_t>(t * 1000);
-  msg.steering_angle = wrap.steering_angle;
-  msg.throttle = wrap.throttle;
-  msg.brake = wrap.brake;
+  msg.steering_angle = wrap.steering_angle();
+  msg.throttle = wrap.throttle();
+  msg.brake = wrap.brake();
   return true;
 }
 
@@ -79,9 +123,9 @@ bool decode(const drake::lcmt_driving_command_t& msg,
             // NOLINTNEXTLINE(runtime/references)
             DrivingCommand<ScalarType>& wrap) {
   t = static_cast<double>(msg.timestamp) / 1000.0;
-  wrap.steering_angle = msg.steering_angle;
-  wrap.throttle = msg.throttle;
-  wrap.brake = msg.brake;
+  wrap.set_steering_angle(msg.steering_angle);
+  wrap.set_throttle(msg.throttle);
+  wrap.set_brake(msg.brake);
   return true;
 }
 

@@ -4,6 +4,7 @@
 #include "drake/solvers/Optimization.h"
 #include "drake/solvers/SnoptSolver.h"
 #include "drake/util/eigen_matrix_compare.h"
+#include "drake/util/Polynomial.h"
 #include "drake/util/testUtil.h"
 #include "gtest/gtest.h"
 
@@ -148,8 +149,8 @@ TEST(testOptimizationProblem, trivialLeastSquares) {
   RunNonlinearProgram(prog, [&]() {
       EXPECT_TRUE(CompareMatrices(b.topRows(2) / 2, y.value(), 1e-10,
                                   MatrixCompareType::absolute));
-      EXPECT_TRUE(
-          CompareMatrices(b / 3, x.value(), 1e-10, MatrixCompareType::absolute));
+      EXPECT_TRUE(CompareMatrices(b / 3, x.value(), 1e-10,
+                                  MatrixCompareType::absolute));
     });
 }
 
@@ -363,8 +364,9 @@ class GloptipolyConstrainedExampleConstraint
                            // constraint without going through Drake::Function
  public:
   GloptipolyConstrainedExampleConstraint()
-      : Constraint(1, Vector1d::Constant(0),
-                   Vector1d::Constant(std::numeric_limits<double>::infinity())) {}
+      : Constraint(
+            1, Vector1d::Constant(0),
+            Vector1d::Constant(std::numeric_limits<double>::infinity())) {}
 
   // for just these two types, implementing this locally is almost cleaner...
   virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -521,6 +523,84 @@ TEST(testOptimizationProblem, multiLCP) {
 
   EXPECT_TRUE(CompareMatrices(y.value(), Vector2d(16, 0), 1e-4,
                               MatrixCompareType::absolute));
+}
+
+// The current windows CI build has no solver for generic constraints.  The
+// DISABLED_ logic below ensures that we still at least get compile-time
+// checking of the test and resulting template instantiations.
+#if !defined(WIN32) && !defined(WIN64)
+#define POLYNOMIAL_CONSTRAINT_TEST_NAME polynomialConstraint
+#else
+#define POLYNOMIAL_CONSTRAINT_TEST_NAME DISABLED_polynomialConstraint
+#endif
+
+/** Simple test of polynomial constraints. */
+TEST(testOptimizationProblem, POLYNOMIAL_CONSTRAINT_TEST_NAME) {
+  static const double kInf = std::numeric_limits<double>::infinity();
+  // Generic constraints in nlopt require a very generous epsilon.
+  static const double kEpsilon = 1e-4;
+
+  // Given a degenerate polynomial, get the trivial solution.
+  {
+    Polynomiald x("x");
+    OptimizationProblem problem;
+    auto x_var = problem.AddContinuousVariables(1);
+    std::vector<Polynomiald::VarType> var_mapping = { x.getSimpleVariable() };
+    problem.AddPolynomialConstraint(x, var_mapping, 2, kInf);
+    problem.Solve();
+    EXPECT_GE(x_var.value()[0], 2);
+    // TODO(ggould-tri) test this with a two-sided and/or equality constraint,
+    // once the nlopt wrapper supports those.
+  }
+
+  // Given a small univariate polynomial, find a low point.
+  {
+    Polynomiald x("x");
+    Polynomiald poly = (x - 1) * (x - 1) - 0.01;
+    OptimizationProblem problem;
+    auto x_var = problem.AddContinuousVariables(1);
+    std::vector<Polynomiald::VarType> var_mapping = { x.getSimpleVariable() };
+    problem.AddPolynomialConstraint(poly, var_mapping, -kInf, 0);
+    problem.Solve();
+    EXPECT_NEAR(x_var.value()[0], 1, 0.2);
+    EXPECT_LE(poly.evaluateUnivariate(x_var.value()[0]), kEpsilon);
+  }
+
+  // Given a small multivariate polynomial, find a low point.
+  {
+    Polynomiald x("x");
+    Polynomiald y("y");
+    Polynomiald poly = (x - 1) * (x - 1) + (y + 2) * (y + 2) - 0.01;
+    OptimizationProblem problem;
+    auto xy_var = problem.AddContinuousVariables(2);
+    std::vector<Polynomiald::VarType> var_mapping = {
+      x.getSimpleVariable(),
+      y.getSimpleVariable()};
+    problem.AddPolynomialConstraint(poly, var_mapping, -kInf, 0);
+    problem.Solve();
+    EXPECT_NEAR(xy_var.value()[0], 1, 0.2);
+    EXPECT_NEAR(xy_var.value()[1], -2, 0.2);
+    std::map<Polynomiald::VarType, double> eval_point = {
+      {x.getSimpleVariable(), xy_var.value()[0]},
+      {y.getSimpleVariable(), xy_var.value()[1]}};
+    EXPECT_LE(poly.evaluateMultivariate(eval_point), kEpsilon);
+  }
+
+  // Given two polynomial constraints, satisfy both.
+  {
+    // (x^4 - x^2 + 0.2 has two minima, one at 0.5 and the other at -0.5;
+    // constrain x < 0 and EXPECT that the solver finds the negative one.)
+    Polynomiald x("x");
+    Polynomiald poly = x * x * x * x - x * x + 0.2;
+    OptimizationProblem problem;
+    auto x_var = problem.AddContinuousVariables(1);
+    std::vector<Polynomiald::VarType> var_mapping = { x.getSimpleVariable() };
+    problem.AddPolynomialConstraint(poly, var_mapping, -kInf, 0);
+    problem.AddPolynomialConstraint(x, var_mapping, -kInf, 0);
+    problem.Solve();
+    EXPECT_NEAR(x_var.value()[0], -0.7, 0.2);
+    EXPECT_LE(poly.evaluateUnivariate(x_var.value()[0]), kEpsilon);
+  }
 }
 
 }  // namespace
