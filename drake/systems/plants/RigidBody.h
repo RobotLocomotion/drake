@@ -8,7 +8,7 @@
 #include <set>
 #include "drake/drakeRBM_export.h"
 #include "drake/systems/plants/collision/DrakeCollision.h"
-#include "drake/systems/plants/joints/DrakeJoint.h"
+#include "drake/systems/plants/joints/Joint.h"
 
 class DRAKERBM_EXPORT RigidBody {
  private:

@@ -45,7 +45,7 @@ class RigidBodyTreeTest : public ::testing::Test {
   std::shared_ptr<RigidBody> r4b1;
 };
 
-TEST_F(RigidBodyTreeTest, TestAddFloatingJointNoOffset) {
+TEST_F(RigidBodyTreeTest, TestAddgJointNoOffset) {
   // Adds rigid bodies r1b1 and r2b1 to the rigid body tree and verify they can
   // be found.
   tree->add_rigid_body(r1b1);

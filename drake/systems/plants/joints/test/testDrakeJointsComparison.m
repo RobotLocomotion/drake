@@ -56,21 +56,17 @@ for i = 1 : length(fields)
   joint_transform = jointTransform(body, q);
   valuecheck(data_out_i.joint_transform, joint_transform);
   
-  [motion_subspace, dmotion_subspace] = motionSubspace(body, q);
+  motion_subspace = motionSubspace(body, q);
   valuecheck(data_out_i.motion_subspace, motion_subspace);
-  valuecheck(data_out_i.dmotion_subspace, dmotion_subspace);
   
-  [motion_subspace_dot_times_v, dmotion_subspace_dot_times_vdq, dmotion_subspace_dot_times_vdv] = motionSubspaceDotTimesV(body, q, v);
+  motion_subspace_dot_times_v = motionSubspaceDotTimesV(body, q, v);
   valuecheck(data_out_i.motion_subspace_dot_times_v, motion_subspace_dot_times_v);
-  valuecheck(data_out_i.dmotion_subspace_dot_times_vdq, dmotion_subspace_dot_times_vdq);
-  valuecheck(data_out_i.dmotion_subspace_dot_times_vdv, dmotion_subspace_dot_times_vdv);
   
   qdot_to_v = jointQdot2v(body, q);
   valuecheck(data_out_i.qdot_to_v, qdot_to_v);
 
-  [v_to_qdot, dv_to_qdot] = jointV2qdot(body, q);
+  v_to_qdot = jointV2qdot(body, q);
   valuecheck(data_out_i.v_to_qdot, v_to_qdot);
-  valuecheck(data_out_i.dv_to_qdot, dv_to_qdot);
   
 end
 

@@ -6,7 +6,6 @@
 
 #include "drake/systems/plants/RigidBodyTree.h"
 #include "drake/thirdParty/tinyxml2/tinyxml2.h"
-#include "joints/DrakeJoints.h"
 
 #include "drake/Path.h"
 #include "xmlUtil.h"
@@ -24,6 +23,7 @@
 using namespace std;
 using namespace Eigen;
 using namespace tinyxml2;
+using namespace Drake;
 
 void parseSDFInertial(shared_ptr<RigidBody> body, XMLElement* node,
                       RigidBodyTree* model, PoseMap& pose_map,
@@ -250,8 +250,8 @@ bool parseSDFLink(RigidBodyTree* model, std::string model_name,
   return true;
 }
 
-template <typename JointType>
-void setSDFLimits(XMLElement* node, FixedAxisOneDoFJoint<JointType>* fjoint) {
+template <typename T>
+void setSDFLimits(XMLElement* node, FixedAxisOneDoF<T>* fjoint) {
   XMLElement* limit_node = node->FirstChildElement("limit");
   if (fjoint != nullptr && limit_node) {
     double lower = -numeric_limits<double>::infinity(),
@@ -262,9 +262,8 @@ void setSDFLimits(XMLElement* node, FixedAxisOneDoFJoint<JointType>* fjoint) {
   }
 }
 
-template <typename JointType>
-void setSDFDynamics(RigidBodyTree* model, XMLElement* node,
-                    FixedAxisOneDoFJoint<JointType>* fjoint) {
+template <typename T>
+void setSDFDynamics(RigidBodyTree* model, XMLElement* node, FixedAxisOneDoF<T>* fjoint) {
   XMLElement* dynamics_node = node->FirstChildElement("dynamics");
   if (fjoint != nullptr && dynamics_node) {
     double damping = 0.0, coulomb_friction = 0.0, coulomb_window = 0.0;
@@ -471,11 +470,11 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
     }
 
     // construct the actual joint (based on its type)
-    DrakeJoint* joint = nullptr;
+    JointType<double>* joint;
 
     if (type.compare("revolute") == 0 || type.compare("gearbox") == 0) {
-      FixedAxisOneDoFJoint<RevoluteJoint>* fjoint =
-          new RevoluteJoint(name, transform_to_parent_body, axis);
+      FixedAxisOneDoF<double>* fjoint =
+          new Revolute<double>(axis);
       if (axis_node) {
         setSDFDynamics(model, axis_node, fjoint);
         setSDFLimits(axis_node, fjoint);
@@ -495,10 +494,9 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
       joint = fjoint;
 
     } else if (type.compare("fixed") == 0) {
-      joint = new FixedJoint(name, transform_to_parent_body);
+      joint = new Fixed<double>();
     } else if (type.compare("prismatic") == 0) {
-      FixedAxisOneDoFJoint<PrismaticJoint>* fjoint =
-          new PrismaticJoint(name, transform_to_parent_body, axis);
+      FixedAxisOneDoF<double>* fjoint = new Prismatic<double>(axis);
       if (axis_node) {
         setSDFDynamics(model, axis_node, fjoint);
         setSDFLimits(axis_node, fjoint);
@@ -513,12 +511,13 @@ void parseSDFJoint(RigidBodyTree* model, std::string model_name,
         model->actuators.push_back(actuator);
       }
     } else if (type.compare("floating") == 0) {
-      joint = new RollPitchYawFloatingJoint(name, transform_to_parent_body);
+      joint = new RollPitchYawFloating<double>();
     } else {
       throw runtime_error("ERROR: Unrecognized joint type: " + type);
     }
 
-    unique_ptr<DrakeJoint> joint_unique_ptr(joint);
+    unique_ptr<JointType<double>> type_unique_ptr(joint);
+    unique_ptr<Joint<double>> joint_unique_ptr(new Joint<double>(name, transform_to_parent_body, std::move(type_unique_ptr)));
     child->setJoint(move(joint_unique_ptr));
     child->parent = parent;
   }

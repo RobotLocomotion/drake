@@ -35,8 +35,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         destructKinematicsCache<AutoDiffScalar<VectorXd>>(prhs[0]);
         break;
       case DrakeMexPointerTypeId<
-          KinematicsCache<DrakeJoint::AutoDiffFixedMaxSize>>::value:
-        destructKinematicsCache<typename DrakeJoint::AutoDiffFixedMaxSize>(
+          KinematicsCache<AutoDiffFixedMaxSize>>::value:
+        destructKinematicsCache<AutoDiffFixedMaxSize>(
             prhs[0]);
         break;
       default:
@@ -47,9 +47,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         static_cast<RigidBodyTree *>(getDrakeMexPointer(prhs[0]));
     int num_derivs = static_cast<int>(mxGetScalar(prhs[1]));
     if (num_derivs <=
-        DrakeJoint::AutoDiffFixedMaxSize::DerType::MaxRowsAtCompileTime) {
+        AutoDiffFixedMaxSize::DerType::MaxRowsAtCompileTime) {
       plhs[0] =
-          createKinematicsCache<typename DrakeJoint::AutoDiffFixedMaxSize>(
+          createKinematicsCache<AutoDiffFixedMaxSize>(
               *model);
     } else {
       plhs[0] = createKinematicsCache<AutoDiffScalar<VectorXd>>(*model);

@@ -5,10 +5,10 @@
 #include "drake/util/drakeMexUtil.h"
 #include "rigidBodyTreeMexConversions.h"
 #include <stdexcept>
-#include "drake/systems/plants/joints/DrakeJoints.h"
 
 using namespace Eigen;
 using namespace std;
+using namespace Drake;
 
 bool isMxArrayVector(const mxArray* array) {
   size_t num_rows = mxGetM(array);
@@ -16,9 +16,9 @@ bool isMxArrayVector(const mxArray* array) {
   return (num_rows <= 1) || (num_cols <= 1);
 }
 
-template <typename Derived>
+template <typename T>
 void setDynamics(const mxArray* pBodies, int i,
-                 FixedAxisOneDoFJoint<Derived>* fixed_axis_one_dof_joint) {
+                 FixedAxisOneDoF<T>* fixed_axis_one_dof_joint) {
   double damping = mxGetScalar(mxGetPropertySafe(pBodies, i, "damping"));
   double coulomb_friction =
       mxGetScalar(mxGetPropertySafe(pBodies, i, "coulomb_friction"));
@@ -28,9 +28,9 @@ void setDynamics(const mxArray* pBodies, int i,
                                         coulomb_window);
 }
 
-template <typename Derived>
+template <typename T>
 void setLimits(const mxArray* pBodies, int i,
-               FixedAxisOneDoFJoint<Derived>* fixed_axis_one_dof_joint) {
+               FixedAxisOneDoF<T>* fixed_axis_one_dof_joint) {
   double joint_limit_min =
       mxGetScalar(mxGetPropertySafe(pBodies, i, "joint_limit_min"));
   double joint_limit_max =
@@ -135,37 +135,31 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
 
       double pitch = mxGetScalar(mxGetPropertySafe(pBodies, i, "pitch"));
 
-      std::unique_ptr<DrakeJoint> joint;
+      JointType<double>* jointType;
+
       switch (floating) {
         case 0: {
           if (pitch == 0.0) {
-            RevoluteJoint* revolute_joint = new RevoluteJoint(
-                joint_name, transform_to_parent_body, joint_axis);
-            joint = std::unique_ptr<RevoluteJoint>(revolute_joint);
+            FixedAxisOneDoF<double>* revolute_joint = new Revolute<double>(joint_axis);
+            jointType = revolute_joint;
             setLimits(pBodies, i, revolute_joint);
             setDynamics(pBodies, i, revolute_joint);
-          } else if (std::isinf(static_cast<double>(pitch))) {
-            PrismaticJoint* prismatic_joint = new PrismaticJoint(
-                joint_name, transform_to_parent_body, joint_axis);
-            joint = std::unique_ptr<PrismaticJoint>(prismatic_joint);
+          } else if (std::isinf(pitch)) {
+            FixedAxisOneDoF<double>* prismatic_joint = new Prismatic<double>(joint_axis);
+            jointType = prismatic_joint;
             setLimits(pBodies, i, prismatic_joint);
             setDynamics(pBodies, i, prismatic_joint);
           } else {
-            joint = std::unique_ptr<HelicalJoint>(new HelicalJoint(
-                joint_name, transform_to_parent_body, joint_axis, pitch));
+            jointType = new Helical<double>(joint_axis, pitch);
           }
           break;
         }
         case 1: {
-          joint = std::unique_ptr<RollPitchYawFloatingJoint>(
-              new RollPitchYawFloatingJoint(joint_name,
-                                            transform_to_parent_body));
+          jointType = new RollPitchYawFloating<double>();
           break;
         }
         case 2: {
-          joint = std::unique_ptr<QuaternionFloatingJoint>(
-              new QuaternionFloatingJoint(joint_name,
-                                          transform_to_parent_body));
+          jointType = new QuaternionFloating<double>();
           break;
         }
         default: {
@@ -174,7 +168,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
           throw std::runtime_error(stream.str());
         }
       }
-
+      std::unique_ptr<Joint<double>> joint(new Joint<double>(joint_name, transform_to_parent_body, unique_ptr<JointType<double>>(jointType)));
       b->setJoint(move(joint));
     }
 

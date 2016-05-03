@@ -11,7 +11,6 @@ using namespace Eigen;
 using namespace Drake;
 
 typedef AutoDiffScalar<VectorXd> AutoDiffDynamicSize;
-typedef DrakeJoint::AutoDiffFixedMaxSize AutoDiffFixedMaxSize;
 
 /**
  * Mex function implementations

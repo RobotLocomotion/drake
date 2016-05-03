@@ -1,7 +1,6 @@
 #include "drake/systems/plants/RigidBodyTree.h"
 
-#include "drake/systems/plants/joints/DrakeJoint.h"
-#include "drake/systems/plants/joints/FixedJoint.h"
+#include "drake/systems/plants/joints/Joint.h"
 #include "drake/util/drakeGeometryUtil.h"
 #include "drake/util/drakeUtil.h"
 
@@ -15,6 +14,7 @@
 
 using namespace std;
 using namespace Eigen;
+using namespace Drake;
 
 const set<int> RigidBodyTree::default_robot_num_set = {0};
 
@@ -120,9 +120,9 @@ void RigidBodyTree::compile(void) {
       if (!hasChild) {
         cout << "welding " << bodies[i]->getJoint().getName()
              << " because it has no inertia beneath it" << endl;
+
         unique_ptr<DrakeJoint> joint_unique_ptr(
-            new FixedJoint(bodies[i]->getJoint().getName(),
-                           bodies[i]->getJoint().getTransformToParentBody()));
+            new Joint<double>(bodies[i]->getJoint().getName(), bodies[i]->getJoint().getTransformToParentBody(), unique_ptr<JointType<double>>(new Fixed<double>())));
         bodies[i]->setJoint(move(joint_unique_ptr));
       }
     }
@@ -1903,20 +1903,20 @@ int RigidBodyTree::AddFloatingJoint(
 
       switch (floating_base_type) {
         case DrakeJoint::FIXED: {
-          std::unique_ptr<DrakeJoint> joint(new FixedJoint(
-              floating_joint_name, transform_to_world * transform_to_model));
+          std::unique_ptr<DrakeJoint> joint(new Joint<double>(
+              floating_joint_name, transform_to_world * transform_to_model, unique_ptr<JointType<double>>(new Fixed<double>())));
           bodies[i]->setJoint(move(joint));
           num_floating_joints_added++;
         } break;
         case DrakeJoint::ROLLPITCHYAW: {
-          std::unique_ptr<DrakeJoint> joint(new RollPitchYawFloatingJoint(
-              floating_joint_name, transform_to_world * transform_to_model));
+          std::unique_ptr<DrakeJoint> joint(new Joint<double>(
+              floating_joint_name, transform_to_world * transform_to_model, unique_ptr<JointType<double>>(new RollPitchYawFloating<double>())));
           bodies[i]->setJoint(move(joint));
           num_floating_joints_added++;
         } break;
         case DrakeJoint::QUATERNION: {
-          std::unique_ptr<DrakeJoint> joint(new QuaternionFloatingJoint(
-              floating_joint_name, transform_to_world * transform_to_model));
+          std::unique_ptr<DrakeJoint> joint(new Joint<double>(
+              floating_joint_name, transform_to_world * transform_to_model, unique_ptr<JointType<double>>(new QuaternionFloating<double>())));
           bodies[i]->setJoint(move(joint));
           num_floating_joints_added++;
         } break;

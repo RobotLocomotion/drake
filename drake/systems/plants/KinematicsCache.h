@@ -20,17 +20,17 @@ class KinematicsCacheElement {
    */
   Eigen::Transform<Scalar, SPACE_DIMENSION, Eigen::Isometry> transform_to_world;
   Eigen::Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic, 0, TWIST_SIZE,
-                DrakeJoint::MAX_NUM_VELOCITIES>
+                Drake::MAX_NUM_JOINT_VELOCITIES>
       motion_subspace_in_body;  // gradient w.r.t. q_i only
   Eigen::Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic, 0, TWIST_SIZE,
-                DrakeJoint::MAX_NUM_VELOCITIES>
+                Drake::MAX_NUM_JOINT_VELOCITIES>
       motion_subspace_in_world;  // gradient w.r.t. q
   Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, 0,
-                DrakeJoint::MAX_NUM_VELOCITIES,
-                DrakeJoint::MAX_NUM_POSITIONS> qdot_to_v;  // gradient w.r.t. q
+                Drake::MAX_NUM_JOINT_VELOCITIES,
+                Drake::MAX_NUM_JOINT_POSITIONS> qdot_to_v;  // gradient w.r.t. q
   Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, 0,
-                DrakeJoint::MAX_NUM_POSITIONS,
-                DrakeJoint::MAX_NUM_VELOCITIES> v_to_qdot;  // gradient w.r.t. q
+                Drake::MAX_NUM_JOINT_POSITIONS,
+                Drake::MAX_NUM_JOINT_VELOCITIES> v_to_qdot;  // gradient w.r.t. q
   Eigen::Matrix<Scalar, TWIST_SIZE, TWIST_SIZE> inertia_in_world;
   Eigen::Matrix<Scalar, TWIST_SIZE, TWIST_SIZE> crb_in_world;
 
