@@ -38,11 +38,11 @@ class RigidBodyTreeTest : public ::testing::Test {
   // generates build issues on Windows platforms. See git-hub issue #1854.
   std::unique_ptr<RigidBodyTree> tree;
   // TODO(amcastro-tri): these pointers will be replaced by Sherm's
-  // unique_ptr_reference's
-  RigidBody* r1b1;
-  RigidBody* r2b1;
-  RigidBody* r3b1;
-  RigidBody* r4b1;
+  // unique_ptr_reference's.
+  RigidBody* r1b1{};
+  RigidBody* r2b1{};
+  RigidBody* r3b1{};
+  RigidBody* r4b1{};
 };
 
 TEST_F(RigidBodyTreeTest, TestAddFloatingJointNoOffset) {
