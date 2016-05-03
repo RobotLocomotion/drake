@@ -50,7 +50,7 @@ GTEST_TEST(NamedValueVectorTest, GetInvalidKey) {
 GTEST_TEST(NamedValueVectorTest, Mutate) {
   NamedValueVector<int> vector(
       std::vector<std::pair<std::string, int>>{{"foo", 1}, {"bar", 2}});
-  vector.get_mutable_value()(1) = 6;
+  vector.get_mutable_value()[1] = 6;
   EXPECT_EQ(1, *vector.get_named_value("foo"));
   EXPECT_EQ(6, *vector.get_named_value("bar"));
 }

@@ -8,7 +8,7 @@ namespace drake {
 namespace systems {
 
 template <typename ScalarType>
-using VectorX = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
+using VectorX = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1 /* column */>;
 
 /// VectorInterface is a pure abstract interface that real-valued signals
 /// between Systems must satisfy. Classes that inherit from VectorInterface
@@ -22,7 +22,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT VectorInterface {
  public:
   virtual ~VectorInterface() {}
 
-  // VectorInterfaces are neither copyable nor moveable.
+  // VectorInterface objects are neither copyable nor moveable.
   VectorInterface(const VectorInterface<ScalarType>& other) = delete;
   VectorInterface& operator=(const VectorInterface<ScalarType>& other) = delete;
   VectorInterface(VectorInterface<ScalarType>&& other) = delete;
@@ -37,7 +37,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT VectorInterface {
   virtual const VectorX<ScalarType>& get_value() const = 0;
 
   /// Returns a reference that allows mutation of the values in this vector, but
-  /// not resize of the vector itself.
+  /// does not allow resizing the vector itself.
   virtual Eigen::VectorBlock<VectorX<ScalarType>> get_mutable_value() = 0;
 
  protected:

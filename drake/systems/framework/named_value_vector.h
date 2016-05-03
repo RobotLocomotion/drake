@@ -23,7 +23,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT NamedValueVector
   /// Constructs a vector with one ScalarType element per name in names. Throws
   /// an std::runtime_error if names are not unique.
   explicit NamedValueVector(const std::vector<std::string>& names)
-      : values_(VectorX<ScalarType>::Zero(names.size(), 1)),
+      : values_(VectorX<ScalarType>::Zero(names.size(), 1 /* column */)),
         names_(MakeNameMap(names)) {
     if (names_.size() != names.size()) {
       throw std::runtime_error("NamedValueVector has non-unique names.");
@@ -58,7 +58,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT NamedValueVector
     return values_.head(values_.rows());
   }
 
-  ScalarType* has_named_value(const std::string& name) const {
+  bool has_named_value(const std::string& name) const {
     return names_.find(name) != names_.end();
   }
 
@@ -83,7 +83,8 @@ class DRAKESYSTEMFRAMEWORK_EXPORT NamedValueVector
   }
 
  private:
-  // Given a list of names, assigns an index into values_ to each name.
+  // Given a list of names, returns a map from each name to its index in the
+  // vector. If a name appears multiple times, the last index is used.
   static std::map<std::string, size_t> MakeNameMap(
       const std::vector<std::string>& names) {
     std::map<std::string, size_t> name_map;
@@ -103,7 +104,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT NamedValueVector
     return keys;
   }
 
-  // The column vector backing store.
+  // The column vector of ScalarType values.
   VectorX<ScalarType> values_;
   // A map from a name, to the corresponding index in values_.
   const std::map<std::string, size_t> names_;
