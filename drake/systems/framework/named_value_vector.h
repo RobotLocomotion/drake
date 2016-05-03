@@ -35,10 +35,8 @@ class DRAKESYSTEMFRAMEWORK_EXPORT NamedValueVector
   NamedValueVector(
       const std::vector<std::pair<std::string, ScalarType>>& named_values)
       : NamedValueVector(GetKeys(named_values)) {
-    for (const auto& named_value : named_values) {
-      const std::string& name = named_value.first;
-      const ScalarType& value = named_value.second;
-      values_(names_.find(name)->second) = value;
+    for (int i = 0; i < named_values.size(); ++i) {
+      values_[i] = named_values[i].second;
     }
   }
 
@@ -95,7 +93,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT NamedValueVector
     return name_map;
   }
 
-  // Extracts the first element of each pair in named_values.
+  // Extracts the first element of each pair in named_values, preserving order.
   static std::vector<std::string> GetKeys(
       const std::vector<std::pair<std::string, ScalarType>>& named_values) {
     std::vector<std::string> keys;

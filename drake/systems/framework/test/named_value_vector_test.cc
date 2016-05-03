@@ -22,7 +22,6 @@ GTEST_TEST(NamedValueVectorTest, Access) {
   EXPECT_EQ(2, *vector.get_named_value("bar"));
   Eigen::Matrix<int, 2, 1> expected;
   expected << 1, 2;
-  const double tolerance = 1e-6;
   EXPECT_EQ(expected, vector.get_value());
 }
 
