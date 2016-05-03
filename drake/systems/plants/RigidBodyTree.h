@@ -818,8 +818,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
   Eigen::VectorXd joint_limit_max;
 
   // Rigid body objects
-  // TODO(amcastro-tri): make private and start using accessors body(int)
-  // TODO(amcastro-tri): rename to bodies_ to follow Google's style guide once
+  // TODO(amcastro-tri): make private and start using accessors body(int).
+  // TODO(amcastro-tri): rename to bodies_ to follow Google's style guide once.
   // accessors are used throughout the code.
   std::vector<std::unique_ptr<RigidBody> > bodies;
 
