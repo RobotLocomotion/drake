@@ -59,15 +59,16 @@ class DRAKESYSTEMFRAMEWORK_EXPORT NamedValueVector : public VectorInterface<Scal
     return values_.head(values_.rows());
   }
 
-  bool has_named_value(const std::string& name) const {
+  ScalarType* has_named_value(const std::string& name) const {
     return names_.find(name) != names_.end();
   }
 
   /// Sets the element with the given name. Throws std::runtime_error if
   /// the name doesn't exist.
   void set_named_value(const std::string& name, ScalarType value) {
-    if (has_named_value(name)) {
-      values_(names_.find(name)->second) = value;
+    auto it = names_.find(name);
+    if (it != names_.end()) {
+      values_(it->second) = value;
     } else {
       throw std::runtime_error("Name " + name + " does not exist.");
     }
@@ -75,13 +76,15 @@ class DRAKESYSTEMFRAMEWORK_EXPORT NamedValueVector : public VectorInterface<Scal
 
   /// Returns the value with a given name, or nullptr if it doesn't exist.
   const ScalarType* get_named_value(const std::string& name) const {
-    if (has_named_value(name)) {
-      return &values_(names_.find(name)->second);
+    auto it = names_.find(name);
+    if (it != names_.end()) {
+      return &values_(it->second);
     }
     return nullptr;
   }
 
  private:
+  // Given a list of names, assigns an index into values_ to each name.
   static std::map<std::string, size_t> MakeNameMap(
       const std::vector<std::string>& names) {
     std::map<std::string, size_t> name_map;
@@ -91,6 +94,7 @@ class DRAKESYSTEMFRAMEWORK_EXPORT NamedValueVector : public VectorInterface<Scal
     return name_map;
   }
 
+  // Extracts the first element of each pair in named_values.
   static std::vector<std::string> GetKeys(
       const std::vector<std::pair<std::string, ScalarType>>& named_values) {
     std::vector<std::string> keys;
