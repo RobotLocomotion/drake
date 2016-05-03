@@ -108,7 +108,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
 
   void surfaceTangents(
       Eigen::Map<Eigen::Matrix3Xd> const& normals,
-      std::vector<Eigen::Map<Eigen::Matrix3Xd>>& tangents) const;
+      std::vector<Eigen::Map<Eigen::Matrix3Xd> >& tangents) const;
 
   /*!
    * Updates the frame of collision elements to be equal to the joint's frame.
@@ -381,7 +381,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> dynamicsBiasTerm(
       KinematicsCache<Scalar>& cache,
       const eigen_aligned_unordered_map<
-          RigidBody const*, Eigen::Matrix<Scalar, TWIST_SIZE, 1>>& f_ext,
+          RigidBody const*, Eigen::Matrix<Scalar, TWIST_SIZE, 1> >& f_ext,
       bool include_velocity_terms = true) const;
 
   /** \brief Compute
@@ -414,7 +414,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   Eigen::Matrix<Scalar, Eigen::Dynamic, 1> inverseDynamics(
       KinematicsCache<Scalar>& cache,
       const eigen_aligned_unordered_map<
-          RigidBody const*, Eigen::Matrix<Scalar, TWIST_SIZE, 1>>& f_ext,
+          RigidBody const*, Eigen::Matrix<Scalar, TWIST_SIZE, 1> >& f_ext,
       const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& vd,
       bool include_velocity_terms = true) const;
 
@@ -823,17 +823,17 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // TODO(amcastro-tri): make private and start using accessors body(int)
   // TODO(amcastro-tri): rename to bodies_ to follow Google's style guide once
   // accessors are used throughout the code.
-  std::vector<std::unique_ptr<RigidBody>> bodies;
+  std::vector<std::unique_ptr<RigidBody> > bodies;
 
   // Rigid body frames
-  std::vector<std::shared_ptr<RigidBodyFrame>> frames;
+  std::vector<std::shared_ptr<RigidBodyFrame> > frames;
 
   // Rigid body actuators
-  std::vector<RigidBodyActuator, Eigen::aligned_allocator<RigidBodyActuator>>
+  std::vector<RigidBodyActuator, Eigen::aligned_allocator<RigidBodyActuator> >
       actuators;
 
   // Rigid body loops
-  std::vector<RigidBodyLoop, Eigen::aligned_allocator<RigidBodyLoop>> loops;
+  std::vector<RigidBodyLoop, Eigen::aligned_allocator<RigidBodyLoop> > loops;
 
   Eigen::Matrix<double, TWIST_SIZE, 1> a_grav;
   Eigen::MatrixXd B;  // the B matrix maps inputs into joint-space forces
