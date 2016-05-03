@@ -7,7 +7,10 @@
 #include <iosfwd>
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <vector>
+
+#include <Eigen/Core>
 
 namespace drake {
 
@@ -94,6 +97,9 @@ namespace drake {
  *   \endcode
  *
  * See documentation of associated functions for those supported.
+ *
+ * FunctionalForm may also be used as the scalar type of an \c Eigen::Matrix<>.
+ * Basic matrix and vector expressions are supported.
  */
 class DRAKECORE_EXPORT FunctionalForm {
  public:
@@ -502,4 +508,231 @@ class
   Tag tag_;
 };
 
+/** \relates FunctionalForm
+ * Return a copy of \p lhs updated to record addition of a matrix of
+ * \ref constant and/or \ref zero components.
+ */
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixL::Scalar, FunctionalForm>::value &&
+        std::is_same<typename MatrixR::Scalar, double>::value,
+    typename MatrixL::PlainObject>::type
+operator+(MatrixL const& lhs, MatrixR const& rhs) {
+  return lhs + rhs.template cast<FunctionalForm>();
+}
+
+/** \relates FunctionalForm
+ * Return a copy of \p rhs updated to record its addition to a matrix of
+ * \ref constant and/or \ref zero components.
+ */
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixL::Scalar, double>::value &&
+        std::is_same<typename MatrixR::Scalar, FunctionalForm>::value,
+    typename MatrixR::PlainObject>::type
+operator+(MatrixL const& lhs, MatrixR const& rhs) {
+  return lhs.template cast<FunctionalForm>() + rhs;
+}
+
+/** \relates FunctionalForm
+ * Update \p lhs to record addition of a matrix of \ref constant and/or
+ * \ref zero components.
+ */
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixL::Scalar, FunctionalForm>::value &&
+        std::is_same<typename MatrixR::Scalar, double>::value,
+    MatrixL&>::type
+operator+=(MatrixL& lhs, MatrixR const& rhs) {
+  return lhs += rhs.template cast<FunctionalForm>();
+}
+
+/** \relates FunctionalForm
+ * Return a copy of \p lhs updated to record subtraction of a matrix of
+ * \ref constant and/or \ref zero components.
+ */
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixL::Scalar, FunctionalForm>::value &&
+        std::is_same<typename MatrixR::Scalar, double>::value,
+    typename MatrixL::PlainObject>::type
+operator-(MatrixL const& lhs, MatrixR const& rhs) {
+  return lhs - rhs.template cast<FunctionalForm>();
+}
+
+/** \relates FunctionalForm
+ * Return a copy of \p rhs updated to record its subtraction from a
+ * matrix of \ref constant and/or \ref zero components.
+ */
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixL::Scalar, double>::value &&
+        std::is_same<typename MatrixR::Scalar, FunctionalForm>::value,
+    typename MatrixR::PlainObject>::type
+operator-(MatrixL const& lhs, MatrixR const& rhs) {
+  return lhs.template cast<FunctionalForm>() - rhs;
+}
+
+/** \relates FunctionalForm
+ * Update \p lhs to record subtraction of a matrix of \ref constant and/or
+ * \ref zero components.
+ */
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixL::Scalar, FunctionalForm>::value &&
+        std::is_same<typename MatrixR::Scalar, double>::value,
+    MatrixL&>::type
+operator-=(MatrixL& lhs, MatrixR const& rhs) {
+  return lhs -= rhs.template cast<FunctionalForm>();
+}
+
+/** \relates FunctionalForm
+ * Return the result of right-multiplying \p lhs by a matrix of \ref constant
+ * and/or \ref zero components.
+ */
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixL::Scalar, FunctionalForm>::value &&
+        std::is_same<typename MatrixR::Scalar, double>::value,
+    Eigen::Matrix<FunctionalForm, MatrixL::RowsAtCompileTime,
+                  MatrixR::ColsAtCompileTime> >::type
+operator*(MatrixL const& lhs, MatrixR const& rhs) {
+  return lhs * rhs.template cast<FunctionalForm>();
+}
+
+/** \relates FunctionalForm
+ * Return the result of left-multiplying \p rhs by a matrix of \ref constant
+ * and/or \ref zero components.
+ */
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixL::Scalar, double>::value &&
+        std::is_same<typename MatrixR::Scalar, FunctionalForm>::value,
+    Eigen::Matrix<FunctionalForm, MatrixL::RowsAtCompileTime,
+                  MatrixR::ColsAtCompileTime> >::type
+operator*(MatrixL const& lhs, MatrixR const& rhs) {
+  return lhs.template cast<FunctionalForm>() * rhs;
+}
+
+/** \relates FunctionalForm
+ * Return a copy of \p lhs updated to record component-wise multiplication by a
+ * \ref constant or \ref zero scalar.
+ */
+template <typename MatrixL>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_same<typename MatrixL::Scalar, FunctionalForm>::value,
+    typename MatrixL::PlainObject>::type
+operator*(MatrixL const& lhs, double rhs) {
+  return lhs * FunctionalForm(rhs);
+}
+
+/** \relates FunctionalForm
+ * Return a copy of \p rhs updated to record component-wise multiplication by a
+ * \ref constant or \ref zero scalar.
+ */
+template <typename MatrixR>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixR>, MatrixR>::value &&
+        std::is_same<typename MatrixR::Scalar, FunctionalForm>::value,
+    typename MatrixR::PlainObject>::type
+operator*(double lhs, MatrixR const& rhs) {
+  return FunctionalForm(lhs) * rhs;
+}
+
+/** \relates FunctionalForm
+ * Update \p lhs to record component-wise multiplication by a \ref constant
+ * or \ref zero scalar.
+ */
+template <typename MatrixL>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_same<typename MatrixL::Scalar, FunctionalForm>::value,
+    MatrixL&>::type
+operator*=(MatrixL& lhs, double rhs) {
+  return lhs *= FunctionalForm(rhs);
+}
+
+/** \relates FunctionalForm
+ * Return a copy of \p lhs updated to record component-wise division by
+ * a \ref constant or \ref zero scalar.
+ */
+template <typename MatrixL>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_same<typename MatrixL::Scalar, FunctionalForm>::value,
+    typename MatrixL::PlainObject>::type
+operator/(MatrixL const& lhs, double rhs) {
+  return lhs / FunctionalForm(rhs);
+}
+
+/** \relates FunctionalForm
+ * Update \p lhs to record component-wise division by a \ref constant
+ * or \ref zero scalar.
+ */
+template <typename MatrixL>
+typename std::enable_if<
+    std::is_base_of<Eigen::MatrixBase<MatrixL>, MatrixL>::value &&
+        std::is_same<typename MatrixL::Scalar, FunctionalForm>::value,
+    MatrixL&>::type
+operator/=(MatrixL& lhs, double rhs) {
+  return lhs /= FunctionalForm(rhs);
+}
+
 }  // namespace drake
+
+#if !defined(DRAKE_DOXYGEN_CXX)
+// Define Eigen traits needed for Matrix<FunctionalForm>.
+namespace Eigen {
+
+// Eigen scalar type traits for Matrix<FunctionalForm>.
+template <>
+struct NumTraits<drake::FunctionalForm> {
+  enum {
+    // Our set of allowed values is discrete, and no epsilon is allowed during
+    // equality comparison, so treat this as an unsigned integer type.
+    IsInteger = 1,
+    IsSigned = 0,
+    IsComplex = 0,
+    RequireInitialization = 1,
+    ReadCost = 1,
+    AddCost = 1,
+    MulCost = 1
+  };
+
+  typedef drake::FunctionalForm Real;
+  typedef drake::FunctionalForm Nested;
+
+  static inline Real dummy_precision() { return drake::FunctionalForm(); }
+};
+
+namespace internal {
+
+// Eigen component-wise Matrix<FunctionalForm>::isConstant(FunctionalForm).
+template <>
+struct scalar_fuzzy_impl<drake::FunctionalForm> {
+  static inline bool isApprox(drake::FunctionalForm x, drake::FunctionalForm y,
+                              drake::FunctionalForm) {
+    return x.Is(y);
+  }
+};
+
+}  // namespace internal
+}  // namespace Eigen
+#endif  // !defined(DRAKE_DOXYGEN_CXX)

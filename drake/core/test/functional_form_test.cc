@@ -2,6 +2,8 @@
 
 #include <sstream>
 
+#include <Eigen/Core>
+
 #include "gtest/gtest.h"
 
 namespace drake {
@@ -609,6 +611,209 @@ GTEST_TEST(FunctionalFormTest, Functions) {
     FunctionalForm f = sqrt(FunctionalForm::Linear({"x"}));
     EXPECT_TRUE(f.IsDifferentiable());
     EXPECT_EQ(f.GetVariables(), Vars({"x"}));
+  }
+}
+
+class FunctionalFormMatrixTest : public ::testing::Test {
+ protected:
+  using FF = FunctionalForm;
+
+  Eigen::Matrix<FunctionalForm, 3, 2> A;
+  Eigen::Matrix<FunctionalForm, 2, 3> B;
+  Eigen::Matrix<double, 3, 2> C;
+
+  template <typename Derived>
+  Eigen::Ref<typename Derived::PlainObject const> ref(
+      Eigen::MatrixBase<Derived> const& m) const {
+    return m;
+  }
+
+  template <typename Derived>
+  Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic> dyn(
+      Eigen::MatrixBase<Derived> const& m) const {
+    return m;
+  }
+
+  void SetUp() {
+    // clang-format off
+    A <<
+        FF::Linear({"a11"}), FF::Constant(),
+        FF::Linear({"a21"}), FF::Polynomial({"a22"}),
+        FF::Linear({"a31"}), FF::Linear({"a32"});
+    B <<
+        FF::Constant(),      FF::Constant(), FF::Zero(),
+        FF::Linear({"b21"}), FF::Constant(), FF::Linear({"b23"});
+    // clang-format on
+    C.setConstant(1);
+  }
+
+  void CheckAPlusBTranspose(Eigen::Matrix<FunctionalForm, 3, 2> const& f) {
+    EXPECT_TRUE(f(0, 0).Is(FF::Affine({"a11"})));
+    EXPECT_TRUE(f(0, 1).Is(FF::Affine({"b21"})));
+    EXPECT_TRUE(f(1, 0).Is(FF::Affine({"a21"})));
+    EXPECT_TRUE(f(1, 1).Is(FF::Polynomial({"a22"})));
+    EXPECT_TRUE(f(2, 0).Is(FF::Linear({"a31"})));
+    EXPECT_TRUE(f(2, 1).Is(FF::Linear({"a32", "b23"})));
+  }
+
+  void CheckAPlusC(Eigen::Matrix<FunctionalForm, 3, 2> const& f) {
+    EXPECT_TRUE(f(0, 0).Is(FF::Affine({"a11"})));
+    EXPECT_TRUE(f(0, 1).Is(FF::Constant()));
+    EXPECT_TRUE(f(1, 0).Is(FF::Affine({"a21"})));
+    EXPECT_TRUE(f(1, 1).Is(FF::Polynomial({"a22"})));
+    EXPECT_TRUE(f(2, 0).Is(FF::Affine({"a31"})));
+    EXPECT_TRUE(f(2, 1).Is(FF::Affine({"a32"})));
+  }
+
+  void CheckATimesScalar(Eigen::Matrix<FunctionalForm, 3, 2> const& f) {
+    EXPECT_TRUE(f(0, 0).Is(FF::Linear({"a11"})));
+    EXPECT_TRUE(f(0, 1).Is(FF::Constant()));
+    EXPECT_TRUE(f(1, 0).Is(FF::Linear({"a21"})));
+    EXPECT_TRUE(f(1, 1).Is(FF::Polynomial({"a22"})));
+    EXPECT_TRUE(f(2, 0).Is(FF::Linear({"a31"})));
+    EXPECT_TRUE(f(2, 1).Is(FF::Linear({"a32"})));
+  }
+
+  void CheckATimesB(Eigen::Matrix<FunctionalForm, 3, 3> const& f) {
+    EXPECT_TRUE(f(0, 0).Is(FF::Linear({"a11", "b21"})));
+    EXPECT_TRUE(f(0, 1).Is(FF::Affine({"a11"})));
+    EXPECT_TRUE(f(0, 2).Is(FF::Linear({"b23"})));
+    EXPECT_TRUE(f(1, 0).Is(FF::Polynomial({"a21", "a22", "b21"})));
+    EXPECT_TRUE(f(1, 1).Is(FF::Polynomial({"a21", "a22"})));
+    EXPECT_TRUE(f(1, 2).Is(FF::Polynomial({"a22", "b23"})));
+    EXPECT_TRUE(f(2, 0).Is(FF::Polynomial({"a31", "a32", "b21"})));
+    EXPECT_TRUE(f(2, 1).Is(FF::Linear({"a31", "a32"})));
+    EXPECT_TRUE(f(2, 2).Is(FF::Polynomial({"a32", "b23"})));
+  }
+
+  void CheckATimesCTranspose(Eigen::Matrix<FunctionalForm, 3, 3> const& f) {
+    EXPECT_TRUE(f(0, 0).Is(FF::Affine({"a11"})));
+    EXPECT_TRUE(f(0, 1).Is(FF::Affine({"a11"})));
+    EXPECT_TRUE(f(0, 2).Is(FF::Affine({"a11"})));
+    EXPECT_TRUE(f(1, 0).Is(FF::Polynomial({"a21", "a22"})));
+    EXPECT_TRUE(f(1, 1).Is(FF::Polynomial({"a21", "a22"})));
+    EXPECT_TRUE(f(1, 2).Is(FF::Polynomial({"a21", "a22"})));
+    EXPECT_TRUE(f(2, 0).Is(FF::Linear({"a31", "a32"})));
+    EXPECT_TRUE(f(2, 1).Is(FF::Linear({"a31", "a32"})));
+    EXPECT_TRUE(f(2, 2).Is(FF::Linear({"a31", "a32"})));
+  }
+
+  void CheckCTimesATranspose(Eigen::Matrix<FunctionalForm, 2, 2> const& f) {
+    EXPECT_TRUE(f(0, 0).Is(FF::Linear({"a11", "a21", "a31"})));
+    EXPECT_TRUE(f(0, 1).Is(FF::Polynomial({"a22", "a32"})));
+    EXPECT_TRUE(f(1, 0).Is(FF::Linear({"a11", "a21", "a31"})));
+    EXPECT_TRUE(f(1, 1).Is(FF::Polynomial({"a22", "a32"})));
+  }
+
+  void CheckADivScalar(Eigen::Matrix<FunctionalForm, 3, 2> const& f) {
+    EXPECT_TRUE(f(0, 0).Is(FF::Linear({"a11"})));
+    EXPECT_TRUE(f(0, 1).Is(FF::Constant()));
+    EXPECT_TRUE(f(1, 0).Is(FF::Linear({"a21"})));
+    EXPECT_TRUE(f(1, 1).Is(FF::Polynomial({"a22"})));
+    EXPECT_TRUE(f(2, 0).Is(FF::Linear({"a31"})));
+    EXPECT_TRUE(f(2, 1).Is(FF::Linear({"a32"})));
+  }
+
+ public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+
+TEST_F(FunctionalFormMatrixTest, Constant) {
+  Eigen::Matrix<FunctionalForm, 3, 3> M;
+  M.setConstant(FunctionalForm::Constant());
+  EXPECT_TRUE(M.isConstant(FunctionalForm::Constant()));
+  EXPECT_TRUE(M.transpose().isConstant(FunctionalForm::Constant()));
+}
+
+TEST_F(FunctionalFormMatrixTest, Add) {
+  CheckAPlusBTranspose(A + B.transpose());
+  CheckAPlusBTranspose(ref(A) + ref(B.transpose()));
+  CheckAPlusC(A + C);
+  CheckAPlusC(ref(A) + C);
+  CheckAPlusC(dyn(A) + C);
+  CheckAPlusC(A + ref(C));
+  CheckAPlusC(A + dyn(C));
+  CheckAPlusC(ref(A) + ref(C));
+  CheckAPlusC(dyn(A) + dyn(C));
+  CheckAPlusC(C + A);
+  CheckAPlusC(ref(C) + A);
+  CheckAPlusC(dyn(C) + A);
+  CheckAPlusC(C + ref(A));
+  CheckAPlusC(C + dyn(A));
+  CheckAPlusC(ref(C) + ref(A));
+  CheckAPlusC(dyn(C) + dyn(A));
+  {
+    Eigen::Matrix<FunctionalForm, 3, 2> f = A;
+    f += C;
+    CheckAPlusC(f);
+  }
+}
+
+TEST_F(FunctionalFormMatrixTest, Subtract) {
+  CheckAPlusC(A - C);
+  CheckAPlusC(ref(A) - C);
+  CheckAPlusC(dyn(A) - C);
+  CheckAPlusC(A - ref(C));
+  CheckAPlusC(A - dyn(C));
+  CheckAPlusC(ref(A) - ref(C));
+  CheckAPlusC(dyn(A) - dyn(C));
+  CheckAPlusC(C - A);
+  CheckAPlusC(ref(C) - A);
+  CheckAPlusC(dyn(C) - A);
+  CheckAPlusC(C - ref(A));
+  CheckAPlusC(C - dyn(A));
+  CheckAPlusC(ref(C) - ref(A));
+  CheckAPlusC(dyn(C) - dyn(A));
+  {
+    Eigen::Matrix<FunctionalForm, 3, 2> f = A;
+    f -= C;
+    CheckAPlusC(f);
+  }
+}
+
+TEST_F(FunctionalFormMatrixTest, Multiply) {
+  CheckATimesScalar(A * 2);
+  CheckATimesScalar(ref(A) * 2);
+  CheckATimesScalar(dyn(A) * 2);
+  CheckATimesScalar(2 * A);
+  CheckATimesScalar(2 * ref(A));
+  CheckATimesScalar(2 * dyn(A));
+  {
+    Eigen::Matrix<FunctionalForm, 3, 2> f = A;
+    f *= 2;
+    CheckATimesScalar(f);
+  }
+  CheckATimesB(A * B);
+  CheckATimesB(ref(A) * B);
+  CheckATimesB(dyn(A) * B);
+  CheckATimesB(A * ref(B));
+  CheckATimesB(A * dyn(B));
+  CheckATimesB(ref(A) * ref(B));
+  CheckATimesB(dyn(A) * dyn(B));
+  CheckATimesCTranspose(A * C.transpose());
+  CheckATimesCTranspose(ref(A) * C.transpose());
+  CheckATimesCTranspose(dyn(A) * C.transpose());
+  CheckATimesCTranspose(A * ref(C.transpose()));
+  CheckATimesCTranspose(A * dyn(C.transpose()));
+  CheckATimesCTranspose(ref(A) * ref(C.transpose()));
+  CheckATimesCTranspose(dyn(A) * dyn(C.transpose()));
+  CheckCTimesATranspose(C.transpose() * A);
+  CheckCTimesATranspose(C.transpose() * ref(A));
+  CheckCTimesATranspose(C.transpose() * dyn(A));
+  CheckCTimesATranspose(ref(C.transpose()) * A);
+  CheckCTimesATranspose(dyn(C.transpose()) * A);
+  CheckCTimesATranspose(ref(C.transpose()) * ref(A));
+  CheckCTimesATranspose(dyn(C.transpose()) * dyn(A));
+}
+
+TEST_F(FunctionalFormMatrixTest, Divide) {
+  CheckADivScalar(A / 2);
+  CheckADivScalar(ref(A) / 2);
+  CheckADivScalar(dyn(A) / 2);
+  {
+    Eigen::Matrix<FunctionalForm, 3, 2> f = A;
+    f /= 2;
+    CheckADivScalar(f);
   }
 }
 
