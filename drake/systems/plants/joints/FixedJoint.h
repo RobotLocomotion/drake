@@ -84,9 +84,9 @@ class DRAKEJOINTS_EXPORT FixedJoint : public DrakeJointImpl<FixedJoint> {
         getNumVelocities(), 1);
   }
 
-  virtual std::string getPositionName(int index) const override;
-  virtual Eigen::VectorXd zeroConfiguration() const override;
-  virtual Eigen::VectorXd randomConfiguration(
+  std::string getPositionName(int index) const override;
+  Eigen::VectorXd zeroConfiguration() const override;
+  Eigen::VectorXd randomConfiguration(
       std::default_random_engine &generator) const override;
 
  public:
