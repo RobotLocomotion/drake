@@ -53,8 +53,7 @@ class MathematicalProgram : public MathematicalProgramInterface {
   MathematicalProgramInterface* AddLinearEqualityConstraint() override {
     return new MathematicalProgram;
   };
-  MathematicalProgramInterface* AddLinearComplementarityConstraint()
-      override {
+  MathematicalProgramInterface* AddLinearComplementarityConstraint() override {
     return new MathematicalProgram;
   };
   SolutionResult Solve(OptimizationProblem& prog) const override {
@@ -78,8 +77,7 @@ class NonlinearProgram : public MathematicalProgram {
   MathematicalProgramInterface* AddLinearEqualityConstraint() override {
     return new NonlinearProgram;
   };
-  MathematicalProgramInterface* AddLinearComplementarityConstraint()
-      override {
+  MathematicalProgramInterface* AddLinearComplementarityConstraint() override {
     return new NonlinearProgram;
   }
 
@@ -140,8 +138,7 @@ class LinearComplementarityProblem : public MathematicalProgram {
     MobyLCPSolver solver;
     return solver.Solve(prog);
   }
-  MathematicalProgramInterface* AddLinearComplementarityConstraint()
-      override {
+  MathematicalProgramInterface* AddLinearComplementarityConstraint() override {
     return new LinearComplementarityProblem;
   };
 };
@@ -152,8 +149,7 @@ class LeastSquares : public NonlinearProgram {  // public LinearProgram, public
   MathematicalProgramInterface* AddLinearEqualityConstraint() override {
     return new LeastSquares;
   };
-  MathematicalProgramInterface* AddLinearComplementarityConstraint()
-      override {
+  MathematicalProgramInterface* AddLinearComplementarityConstraint() override {
     return new LinearComplementarityProblem;
   };
 
