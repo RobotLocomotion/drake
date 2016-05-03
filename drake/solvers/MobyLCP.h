@@ -42,8 +42,8 @@ class DRAKEOPTIMIZATION_EXPORT MobyLCPSolver
                                 int max_exp = 20, double piv_tol = -1.0,
                                 double zero_tol = -1.0) const;
 
-  virtual bool available() const override { return true; }
-  virtual drake::solvers::SolutionResult Solve(
+  bool available() const override { return true; }
+  drake::solvers::SolutionResult Solve(
       OptimizationProblem& prog) const override;
 
  private:

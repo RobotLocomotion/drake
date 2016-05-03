@@ -41,23 +41,23 @@ class MathematicalProgram : public MathematicalProgramInterface {
      return new
      MathematicalProgram; };
   */
-  virtual MathematicalProgramInterface* AddGenericObjective() override {
+  MathematicalProgramInterface* AddGenericObjective() override {
     return new MathematicalProgram;
   };
-  virtual MathematicalProgramInterface* AddGenericConstraint() override {
+  MathematicalProgramInterface* AddGenericConstraint() override {
     return new MathematicalProgram;
   };
-  virtual MathematicalProgramInterface* AddLinearConstraint() override {
+  MathematicalProgramInterface* AddLinearConstraint() override {
     return new MathematicalProgram;
   };
-  virtual MathematicalProgramInterface* AddLinearEqualityConstraint() override {
+  MathematicalProgramInterface* AddLinearEqualityConstraint() override {
     return new MathematicalProgram;
   };
-  virtual MathematicalProgramInterface* AddLinearComplementarityConstraint()
+  MathematicalProgramInterface* AddLinearComplementarityConstraint()
       override {
     return new MathematicalProgram;
   };
-  virtual SolutionResult Solve(OptimizationProblem& prog) const override {
+  SolutionResult Solve(OptimizationProblem& prog) const override {
     throw std::runtime_error(
         "MathematicalProgram::Solve: "
         "No solver available for the given optimization problem!");
@@ -66,24 +66,24 @@ class MathematicalProgram : public MathematicalProgramInterface {
 
 class NonlinearProgram : public MathematicalProgram {
  public:
-  virtual MathematicalProgramInterface* AddGenericObjective() override {
+  MathematicalProgramInterface* AddGenericObjective() override {
     return new NonlinearProgram;
   };
-  virtual MathematicalProgramInterface* AddGenericConstraint() override {
+  MathematicalProgramInterface* AddGenericConstraint() override {
     return new NonlinearProgram;
   };
-  virtual MathematicalProgramInterface* AddLinearConstraint() override {
+  MathematicalProgramInterface* AddLinearConstraint() override {
     return new NonlinearProgram;
   };
-  virtual MathematicalProgramInterface* AddLinearEqualityConstraint() override {
+  MathematicalProgramInterface* AddLinearEqualityConstraint() override {
     return new NonlinearProgram;
   };
-  virtual MathematicalProgramInterface* AddLinearComplementarityConstraint()
+  MathematicalProgramInterface* AddLinearComplementarityConstraint()
       override {
     return new NonlinearProgram;
   }
 
-  virtual SolutionResult Solve(OptimizationProblem& prog) const override {
+  SolutionResult Solve(OptimizationProblem& prog) const override {
     if (snopt_solver.available()) {
       return snopt_solver.Solve(prog);
     }
@@ -133,14 +133,14 @@ class NonlinearProgram : public MathematicalProgram {
 
 class LinearComplementarityProblem : public MathematicalProgram {
  public:
-  virtual SolutionResult Solve(OptimizationProblem& prog) const override {
+  SolutionResult Solve(OptimizationProblem& prog) const override {
     // TODO(ggould-tri) given the Moby solver's meticulous use of temporaries,
     // it would be an easy performance win to reuse this solver object by making
     // a static place to store it.
     MobyLCPSolver solver;
     return solver.Solve(prog);
   }
-  virtual MathematicalProgramInterface* AddLinearComplementarityConstraint()
+  MathematicalProgramInterface* AddLinearComplementarityConstraint()
       override {
     return new LinearComplementarityProblem;
   };
@@ -149,15 +149,15 @@ class LinearComplementarityProblem : public MathematicalProgram {
 class LeastSquares : public NonlinearProgram {  // public LinearProgram, public
  public:
   // LinearComplementarityProblem
-  virtual MathematicalProgramInterface* AddLinearEqualityConstraint() override {
+  MathematicalProgramInterface* AddLinearEqualityConstraint() override {
     return new LeastSquares;
   };
-  virtual MathematicalProgramInterface* AddLinearComplementarityConstraint()
+  MathematicalProgramInterface* AddLinearComplementarityConstraint()
       override {
     return new LinearComplementarityProblem;
   };
 
-  virtual SolutionResult Solve(OptimizationProblem& prog) const override {
+  SolutionResult Solve(OptimizationProblem& prog) const override {
     size_t num_constraints = 0;
     for (auto const& binding : prog.linear_equality_constraints()) {
       num_constraints += binding.constraint()->A().rows();
