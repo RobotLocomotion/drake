@@ -3,6 +3,11 @@
 #include <sstream>
 #include <string>
 
+#ifdef _WIN32
+#include <windows.h>
+#include <Shlwapi.h>
+#endif
+
 #include "drake/Path.h"
 #include "drake/thirdParty/tinydir/tinydir.h"
 #include "drake/util/drakeGeometryUtil.h"
@@ -208,8 +213,11 @@ string resolveFilename(const string& filename,
     mesh_filename_s = spruce::path(root_dir);
 
     // if root_dir is a relative path then convert it to absolute
-    // note, this check assumes posix paths
+#ifdef _WIN32
+    bool dirIsRelative = PathIsRelative(mesh_filename_s.getStr().c_str());
+#else
     bool dirIsRelative = (mesh_filename_s.getStr().find("/") != 0);
+#endif
     if (dirIsRelative) {
       mesh_filename_s = spruce::path();
       mesh_filename_s.setAsCurrent();
