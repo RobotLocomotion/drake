@@ -93,7 +93,7 @@ RigidBody::CollisionElement* RigidBody::CollisionElement::clone() const {
   return new CollisionElement(*this);
 }
 
-RigidBody& RigidBody::CollisionElement::getBody() const { return *body; }
+const RigidBody& RigidBody::CollisionElement::getBody() const { return *body; }
 
 RigidBody& RigidBody::CollisionElement::getBody() { return *body; }
 

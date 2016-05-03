@@ -144,7 +144,7 @@ class DRAKERBM_EXPORT RigidBody {
      * CollisionElement is attached.
      */
     // TODO(amcastro-tri): getBody() -> get_body()
-    RigidBody& getBody() const;
+    const RigidBody& getBody() const;
 
     /**
      * @brief Returns a mutable reference to the body to which this
