@@ -289,7 +289,7 @@ bool parseLink(RigidBodyTree* model, std::string robot_name, XMLElement* node,
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return false;
 
-  RigidBody* body = new RigidBody();
+  std::unique_ptr<RigidBody> body(new RigidBody());
   body->model_name = robot_name;
 
   attr = node->Attribute("name");
@@ -301,21 +301,20 @@ bool parseLink(RigidBodyTree* model, std::string robot_name, XMLElement* node,
         "ERROR: do not name a link 'world', it is a reserved name");
 
   XMLElement* inertial_node = node->FirstChildElement("inertial");
-  if (inertial_node) parseInertial(body, inertial_node, model);
+  if (inertial_node) parseInertial(body.get(), inertial_node, model);
 
   for (XMLElement* visual_node = node->FirstChildElement("visual"); visual_node;
        visual_node = visual_node->NextSiblingElement("visual")) {
-    parseVisual(body, visual_node, model, materials, package_map, root_dir);
+    parseVisual(body.get(), visual_node, model, materials, package_map, root_dir);
   }
 
   for (XMLElement* collision_node = node->FirstChildElement("collision");
        collision_node;
        collision_node = collision_node->NextSiblingElement("collision")) {
-    parseCollision(body, collision_node, model, package_map, root_dir);
+    parseCollision(body.get(), collision_node, model, package_map, root_dir);
   }
 
-  // With this call the tree takes ownership of the body.
-  model->add_rigid_body(std::unique_ptr<RigidBody>(body));
+  model->add_rigid_body(std::move(body));
   *index = body->body_index;
   return true;
 }
