@@ -6,7 +6,7 @@ Install the prerequisites::
 
     sudo apt-get update
     sudo apt-get upgrade
-    sudo apt-get install --no-install-recommends lsb-core python-software-properties wget
+    sudo apt-get install --no-install-recommends lsb-core software-properties-common wget
     sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
     wget -q -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
 
@@ -35,9 +35,9 @@ The version of the standard C++ libraries that are shipped with the Linux distri
 
 To work around this issue, the symbolic link for the standard C++ library provided by MATLAB must be redirected to point to a more up-to-date version.
 
-Update the symbolic link in MATLAB to point to the version that was installed earlier into ``/usr/lib``.  An example for MATLAB R2015b is shown below::
+Update the symbolic link in MATLAB to point to the version that was installed earlier into ``/usr/lib``.  An example for MATLAB R2016a is shown below::
 
-    cd /usr/local/MATLAB/R2015b/sys/os/glnxa64
+    cd /usr/local/MATLAB/R2016a/sys/os/glnxa64
     sudo rm libstdc++.so.6
     sudo ln -s /usr/lib/gcc/x86_64-linux-gnu/4.9/libstdc++.so libstdc++.so.6
 

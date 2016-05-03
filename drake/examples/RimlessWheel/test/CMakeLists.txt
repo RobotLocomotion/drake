@@ -1,3 +1,3 @@
 
-add_matlab_test(NAME examples/RimlessWheel/test/testContactGradients COMMAND testContactGradients)
-add_matlab_test(NAME examples/RimlessWheel/test/testLCPgradients COMMAND testLCPgradients)
+# add_matlab_test(NAME examples/RimlessWheel/test/testContactGradients COMMAND testContactGradients)  # FIXME
+# add_matlab_test(NAME examples/RimlessWheel/test/testLCPgradients COMMAND testLCPgradients)  # FIXME

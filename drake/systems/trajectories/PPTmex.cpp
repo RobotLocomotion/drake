@@ -122,7 +122,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
       if (nrhs < 2) {
         mexErrMsgIdAndTxt(
             "Drake:PPTmex:WrongNumberOfInputs",
-            "Usage obj = PPTmex(breaks, coefs, order, dims) or y = PPTmex(obj, t)");
+            "Usage obj = PPTmex(breaks, coefs, order, dims) "
+            "or y = PPTmex(obj, t)");
       }
 
       double *command = mxGetPr(prhs[1]);
