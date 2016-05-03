@@ -82,7 +82,8 @@ bool RigidBodyTree::transformCollisionFrame(
 }
 
 void RigidBodyTree::compile(void) {
-  // Reorders the bodies list so that parent rigid bodies are before child rigid bodies.
+  // Reorders the bodies list so that parent rigid bodies are before child rigid
+  // bodies.
   size_t i = 0;
   while (i < bodies.size() - 1) {
     if (bodies[i]->hasParent()) {

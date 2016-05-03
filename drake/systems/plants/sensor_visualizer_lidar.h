@@ -50,7 +50,8 @@ class SensorVisualizerLidar {
    * Ideally, the output of the rigid body system should be self-descriptive.
    * See: https://github.com/RobotLocomotion/drake/issues/2152
    */
-  SensorVisualizerLidar(std::shared_ptr<RigidBodySystem> rigid_body_system)
+  explicit SensorVisualizerLidar(
+      std::shared_ptr<RigidBodySystem> rigid_body_system)
       : rigid_body_system_(rigid_body_system) {
     // Instantiates a ROS node handle, which is necessary to interact with ROS.
     // For more information, see:
@@ -60,7 +61,6 @@ class SensorVisualizerLidar {
     // Creates a ROS topic publisher for each LIDAR sensor in the rigid body
     // system.
     for (auto &sensor : rigid_body_system->GetSensors()) {
-
       // Attempts to cast the RigidBodySensor pointer to a RigidBodyDepthSensor
       // pointer. This actually does two things simultaneously. First it
       // determines whether the pointer in fact points to a
@@ -167,7 +167,6 @@ class SensorVisualizerLidar {
     // a LIDAR sensor, store the range measurements in a ROS message and publish
     // it on the appropriate ROS topic.
     for (auto &sensor : sensor_vector) {
-
       if (output_index + sensor->getNumOutputs() >
           rigid_body_system_->getNumOutputs()) {
         std::stringstream buff;
