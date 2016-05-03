@@ -57,7 +57,8 @@ class DrakeRosTfPublisher {
    * @param rigid_body_tree The rigid body tree being modeled. This parameter
    * is necessary to understand the meaning of the input data to this system.
    */
-  DrakeRosTfPublisher(const std::shared_ptr<RigidBodyTree> rigid_body_tree)
+  explicit DrakeRosTfPublisher(
+      const std::shared_ptr<RigidBodyTree> rigid_body_tree)
       : rigid_body_tree_(rigid_body_tree) {
     // Initializes the time stamp of the previous transmission to be zero.
     previous_send_time_.sec = 0;

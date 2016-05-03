@@ -50,7 +50,8 @@ class SensorVisualizerLidar {
    * Ideally, the output of the rigid body system should be self-descriptive.
    * See: https://github.com/RobotLocomotion/drake/issues/2152
    */
-  SensorVisualizerLidar(std::shared_ptr<RigidBodySystem> rigid_body_system)
+  explicit SensorVisualizerLidar(
+      std::shared_ptr<RigidBodySystem> rigid_body_system)
       : rigid_body_system_(rigid_body_system) {
     // Instantiates a ROS node handle, which is necessary to interact with ROS.
     // For more information, see:
