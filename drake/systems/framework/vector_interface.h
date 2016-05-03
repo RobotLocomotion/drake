@@ -28,12 +28,13 @@ class DRAKESYSTEMFRAMEWORK_EXPORT VectorInterface {
   VectorInterface(VectorInterface<ScalarType>&& other) = delete;
   VectorInterface& operator=(VectorInterface<ScalarType>&& other) = delete;
 
-  /// After a.set_value(b.get_value()), a must be identical to b.
+  /// Sets the vector to the given value. After a.set_value(b.get_value()), a
+  /// must be identical to b.
   /// May throw std::runtime_error if the new value has different dimensions
   /// than expected by the concrete class implementing VectorInterface.
   virtual void set_value(const VectorX<ScalarType>& value) = 0;
 
-  /// Returns a column vector containing the entire current value of the signal.
+  /// Returns a column vector containing the entire value of the signal.
   virtual const VectorX<ScalarType>& get_value() const = 0;
 
   /// Returns a reference that allows mutation of the values in this vector, but
