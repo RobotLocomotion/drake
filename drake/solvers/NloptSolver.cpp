@@ -97,8 +97,9 @@ double ApplyConstraintBounds(double result, double lb, double ub) {
   // For upper bounds rewrite as: f(x) - ub <= 0
   // For lower bounds rewrite as: -f(x) + lb <= 0
   //
-  // If both upper and lower bounds are set, then pick one as
-  // appropriate depending on which bound is being exceeded.
+  // If both upper and lower bounds are set, default to evaluating the
+  // upper bound, and switch to the lower bound only if it's being
+  // exceeded.
   //
   // See
   // http://ab-initio.mit.edu/wiki/index.php/NLopt_Reference#Nonlinear_constraints
@@ -167,6 +168,12 @@ void EvaluateVectorConstraint(unsigned m, double* result, unsigned n,
     xvec[i] = x[i];
   }
 
+  // http://ab-initio.mit.edu/wiki/index.php/NLopt_Reference#Vector-valued_constraints
+  // explicity tells us that it's allocated m * n array elements
+  // before invoking this function.  It does not seem to have been
+  // zeroed, and not all constraints will store gradients for all
+  // decision variables (so don't leave junk in the other array
+  // elements).
   if (grad) {
     memset(grad, 0, sizeof(double) * m * n);
   }

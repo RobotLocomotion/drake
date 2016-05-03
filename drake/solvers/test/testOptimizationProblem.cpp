@@ -284,8 +284,6 @@ TEST(testOptimizationProblem, lowerBoundTest) {
       c3.transpose(),
       Drake::Vector1d::Constant(2),
       Drake::Vector1d::Constant(6));
-  Eigen::VectorXd c4(6);
-  c4 << 1, 1, 0, 0, 0, 0;
   Eigen::VectorXd lower(6);
   lower << 0, 0, 1, 0, 1, 0;
   Eigen::VectorXd upper(6);
