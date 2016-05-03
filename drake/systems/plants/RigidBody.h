@@ -60,7 +60,7 @@ class DRAKERBM_EXPORT RigidBody {
     this->collision_filter_ignores &= ~group;
   }
 
-  // TODO(amcastro-tri): change to is_adjacent_to()
+  // TODO(amcastro-tri): Change to is_adjacent_to().
   bool adjacentTo(const RigidBody& other) const {
     return (
         (has_as_parent(other)
@@ -105,7 +105,7 @@ class DRAKERBM_EXPORT RigidBody {
   // (independently) at the RigidBodyTree level to represent the featherstone
   // structure.  this version is for the kinematics.
 
-  // TODO(amcastro-tri): make it private and change to parent_
+  // TODO(amcastro-tri): Make it private and change to parent_.
   RigidBody* parent;
   int body_index;
   int position_num_start;
