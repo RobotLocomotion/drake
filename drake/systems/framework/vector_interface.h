@@ -1,7 +1,5 @@
 #pragma once
 
-#include "drake/drakeSystemFramework_export.h"
-
 #include <Eigen/Dense>
 
 namespace drake {
@@ -17,8 +15,7 @@ using VectorX = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1 /* column */>;
 /// signal. The vector is always a column vector.
 ///
 /// @tparam ScalarType Must be a Scalar compatible with Eigen.
-template <typename ScalarType>
-class DRAKESYSTEMFRAMEWORK_EXPORT VectorInterface {
+template <typename ScalarType> class VectorInterface {
  public:
   virtual ~VectorInterface() {}
 

@@ -5,8 +5,6 @@
 #include <stdexcept>
 #include <vector>
 
-#include "drake/drakeSystemFramework_export.h"
-
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
