@@ -82,7 +82,7 @@ bool decode(const drake::lcmt_driving_control_cmd_t& msg, double& t,
 
 int main(int argc, char* argv[]) {
   if (argc < 2) {
-    std::cerr << "Usage: " << argv[0] << " vehicle_urdf [world sdf files ...]"
+    std::cerr << "Usage: " << argv[0] << " vehicle_model [world sdf files ...]"
               << std::endl;
     return 1;
   }
@@ -92,6 +92,20 @@ int main(int argc, char* argv[]) {
   DrakeJoint::FloatingBaseType floating_base_type = DrakeJoint::QUATERNION;
 
   auto rigid_body_sys = make_shared<RigidBodySystem>();
+
+  // The offset between Drake's world frame and the vehicle's world frame
+  // depends on whether the vehicle model is an SDF file or a URDF file. The SDF
+  // file internally specifies the offset, meaning z_offset to be zero.
+  // The URDF cannot specify this offset internally, meaning z_offset should
+  // be 0.378326 meters.
+  double z_offset = 0;
+
+  // TODO(liangfok): Once PR 2171 is merged, modify prius.urdf to contain a
+  // world link and proper offset of the chassis_floor. For more information,
+  // see: https://github.com/RobotLocomotion/drake/pull/2171 and
+  // https://github.com/RobotLocomotion/drake/issues/2247
+  if (std::string(argv[1]).find("prius.urdf") != std::string::npos)
+    z_offset = 0.378326;
 
   // The following variable, weld_to_frame, is only needed if the model is a
   // URDF file. It is needed since URDF does not specify the location and
@@ -108,9 +122,8 @@ int main(int argc, char* argv[]) {
       nullptr,
 
       // The following parameter specifies the X,Y,Z position of the car's root
-      // link in the world's frame. The kinematics of the car model requires
-      // that its root link be elevated along the Z-axis by 0.378326m.
-      Eigen::Vector3d(0, 0, 0.378326),
+      // link in the world's frame.
+      Eigen::Vector3d(0, 0, z_offset),
 
       // The following parameter specifies the roll, pitch, and yaw of the car's
       // root link in the world's frame.
