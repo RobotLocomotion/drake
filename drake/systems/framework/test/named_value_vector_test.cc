@@ -6,7 +6,6 @@
 #include <vector>
 
 #include "drake/drakeSystemFramework_export.h"
-#include "drake/util/eigen_matrix_compare.h"
 
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
@@ -24,8 +23,7 @@ GTEST_TEST(NamedValueVectorTest, Access) {
   Eigen::Matrix<int, 2, 1> expected;
   expected << 1, 2;
   const double tolerance = 1e-6;
-  EXPECT_TRUE(CompareMatrices(vector.get_value(), expected, tolerance,
-                              util::MatrixCompareType::absolute));
+  EXPECT_EQ(expected, vector.get_value());
 }
 
 GTEST_TEST(NamedValueVectorTest, Set) {
