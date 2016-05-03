@@ -109,7 +109,7 @@ To run the simulation:
 
 ```
 $ cd [drake-distro]/drake/examples/Cars
-$ ../../pod-build/bin/carSimLCMandROS prius/prius.sdf stata_garage_p1.sdf
+$ ../../pod-build/bin/carSimLCMandROS models/prius/prius_with_lidar.sdf models/stata_garage_p1.sdf
 ```
 
 To view the ROS `TF` tree:
