@@ -77,8 +77,6 @@ TEST_F(RigidBodyTreeTest, TestAddFloatingJointNoOffset) {
 }
 
 TEST_F(RigidBodyTreeTest, TestAddFloatingJointWithOffset) {
-  // RigidBodyTree takes ownership of these bodies.
-  // User still has access to these bodies through the raw pointers.
   // TODO(amcastro-tri): these pointers will be replaced by Sherm's
   // unique_ptr_reference's
   tree->add_rigid_body(std::unique_ptr<RigidBody>(r1b1));
