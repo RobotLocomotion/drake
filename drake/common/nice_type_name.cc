@@ -58,7 +58,7 @@ string drake::common::NiceTypeName::Canonicalize(const string& demangled) {
     // alphanumeric or underscore.)
     SPair(std::regex("(\\w) (\\w)"), "$1!$2"),
     SPair(std::regex(" "), ""),  // Delete unwanted spaces.
-    // Some compilers throw in extra namespaces like "__1" or "__cxx11". 
+    // Some compilers throw in extra namespaces like "__1" or "__cxx11".
     // Delete them.
     SPair(std::regex("\\b__[[:alnum:]_]+::"), ""),
     SPair(std::regex("!"), " "),  // Restore wanted spaces.
