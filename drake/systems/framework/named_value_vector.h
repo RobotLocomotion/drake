@@ -17,7 +17,8 @@ namespace systems {
 /// NamedValueVector is a low-performance convenience implementation of
 /// VectorInterface that labels each element in a column vector with a string.
 template <typename ScalarType>
-class DRAKESYSTEMFRAMEWORK_EXPORT NamedValueVector : public VectorInterface<ScalarType> {
+class DRAKESYSTEMFRAMEWORK_EXPORT NamedValueVector
+    : public VectorInterface<ScalarType> {
  public:
   /// Constructs a vector with one ScalarType element per name in names. Throws
   /// an std::runtime_error if names are not unique.
