@@ -312,7 +312,7 @@
     <visual name="v1">
       <origin rpy="0 0 0" xyz="-2.27 -0.91139 -0.21858"/>
       <geometry>
-        <mesh filename="package://drake/examples/Cars/models/prius/prius.dae" scale="1.0 1.0 1.0"/>
+        <mesh filename="prius.dae" scale="1.0 1.0 1.0"/>
       </geometry>
     </visual>
   </link>
