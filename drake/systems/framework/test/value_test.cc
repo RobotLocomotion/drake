@@ -108,7 +108,7 @@ class PrintableValue : public Value<T>, public PrintInterface {
   PrintableValue(PrintableValue<T>&& other) = delete;
   PrintableValue& operator=(PrintableValue<T>&& other) = delete;
 
-  virtual std::unique_ptr<AbstractValue> Clone() const override {
+  std::unique_ptr<AbstractValue> Clone() const override {
     return std::unique_ptr<PrintableValue<T>>(
         new PrintableValue<T>(this->get_value()));
   }

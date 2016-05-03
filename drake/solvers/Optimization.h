@@ -224,14 +224,14 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
                      std::forward<Args>(args)...),
           f_(std::forward<F>(f)) {}
 
-    virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+    void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                       Eigen::VectorXd& y) const override {
       y.resize(FunctionTraits<F>::numOutputs(f_));
       assert(x.rows() == FunctionTraits<F>::numInputs(f_));
       assert(y.rows() == FunctionTraits<F>::numOutputs(f_));
       FunctionTraits<F>::eval(f_, x, y);
     }
-    virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
+    void eval(const Eigen::Ref<const TaylorVecXd>& x,
                       TaylorVecXd& y) const override {
       y.resize(FunctionTraits<F>::numOutputs(f_));
       assert(x.rows() == FunctionTraits<F>::numInputs(f_));
