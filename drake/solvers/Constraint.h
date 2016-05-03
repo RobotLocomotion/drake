@@ -5,6 +5,8 @@
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
 
+#include "drake/util/Polynomial.h"
+
 namespace Drake {
 
 /* Constraint
@@ -42,6 +44,7 @@ class Constraint {
       : lower_bound_(lb), upper_bound_(ub) {
     check(num_constraints);
   }
+
   virtual ~Constraint() {}
 
   // TODO(bradking): consider using a Ref for `y`.  This will require the client
@@ -68,21 +71,25 @@ class Constraint {
  */
 class QuadraticConstraint : public Constraint {
  public:
+  static const int kNumConstraints = 1;
+
   template <typename DerivedQ, typename Derivedb>
   QuadraticConstraint(const Eigen::MatrixBase<DerivedQ>& Q,
                       const Eigen::MatrixBase<Derivedb>& b, double lb,
                       double ub)
-      : Constraint(1, Vector1d::Constant(lb), Vector1d::Constant(ub)),
+      : Constraint(kNumConstraints,
+                   Vector1d::Constant(lb), Vector1d::Constant(ub)),
         Q_(Q),
         b_(b) {}
-  virtual ~QuadraticConstraint() {}
 
-  virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+  ~QuadraticConstraint() override {}
+
+  void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
     y.resize(num_constraints());
     y = .5 * x.transpose() * Q_ * x + b_.transpose() * x;
   }
-  virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
+  void eval(const Eigen::Ref<const TaylorVecXd>& x,
                     TaylorVecXd& y) const override {
     y.resize(num_constraints());
     y = .5 * x.transpose() * Q_.cast<TaylorVarXd>() * x +
@@ -94,15 +101,71 @@ class QuadraticConstraint : public Constraint {
   Eigen::VectorXd b_;
 };
 
+/** PolynomialConstraint
+ * @brief lb <= P(x, y...) <= ub where P is a multivariate polynomial
+ *  in x, y...
+ *
+ * A constraint on the value of a multivariate polynomial.
+ *
+ * The Polynomial class uses a different variable naming scheme; thus the
+ * caller must provide a list of Polynomial::VarType variables that correspond
+ * to the members of the OptimizationProblem::Binding (the individual scalar
+ * elements of the given VariableList).
+ */
+class PolynomialConstraint : public Constraint {
+ public:
+  static const int kNumConstraints = 1;
+
+  PolynomialConstraint(
+      const Polynomiald& polynomial,
+      const std::vector<Polynomiald::VarType>& poly_vars,
+      double lb, double ub)
+      : Constraint(kNumConstraints,
+                   Vector1d::Constant(lb), Vector1d::Constant(ub)),
+        polynomial_(polynomial),
+        poly_vars_(poly_vars) {}
+
+  ~PolynomialConstraint() override {}
+
+  void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                    Eigen::VectorXd& y) const override {
+    double_evaluation_point_.clear();
+    for (int i = 0; i < poly_vars_.size(); i++) {
+      double_evaluation_point_[poly_vars_[i]] = x[i];
+    }
+    y.resize(num_constraints());
+    y[0] = polynomial_.evaluateMultivariate(double_evaluation_point_);
+  }
+
+  void eval(const Eigen::Ref<const TaylorVecXd>& x,
+                    TaylorVecXd& y) const override {
+    taylor_evaluation_point_.clear();
+    for (int i = 0; i < poly_vars_.size(); i++) {
+      taylor_evaluation_point_[poly_vars_[i]] = x[i];
+    }
+    y.resize(num_constraints());
+    y[0] = polynomial_.evaluateMultivariate(taylor_evaluation_point_);
+  }
+
+ private:
+  const Polynomiald polynomial_;
+  const std::vector<Polynomiald::VarType> poly_vars_;
+
+  /// To avoid repeated allocation, reuse a map for the evaluation point.
+  mutable std::map<Polynomiald::VarType, double> double_evaluation_point_;
+  mutable std::map<Polynomiald::VarType, TaylorVarXd> taylor_evaluation_point_;
+};
+
 // todo: consider implementing DifferentiableConstraint,
-// TwiceDifferentiableConstraint, PolynomialConstraint, QuadraticConstraint,
-// ComplementarityConstraint, IntegerConstraint, ...
+// TwiceDifferentiableConstraint, ComplementarityConstraint,
+// IntegerConstraint, ...
 /** LinearConstraint
  * @brief Implements a constraint of the form @f lb <= Ax <= ub @f
  */
 class LinearConstraint : public Constraint {
  public:
-  explicit LinearConstraint(size_t num_constraints) : Constraint(num_constraints) {}
+  explicit LinearConstraint(size_t num_constraints)
+      : Constraint(num_constraints) {}
   template <typename DerivedA, typename DerivedLB, typename DerivedUB>
   LinearConstraint(const Eigen::MatrixBase<DerivedA>& a,
                    const Eigen::MatrixBase<DerivedLB>& lb,
@@ -110,14 +173,15 @@ class LinearConstraint : public Constraint {
       : Constraint(a.rows(), lb, ub), A_(a) {
     assert(a.rows() == lb.rows());
   }
-  virtual ~LinearConstraint() {}
 
-  virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+  ~LinearConstraint() override {}
+
+  void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
     y.resize(num_constraints());
     y = A_ * x;
   }
-  virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
+  void eval(const Eigen::Ref<const TaylorVecXd>& x,
                     TaylorVecXd& y) const override {
     y.resize(num_constraints());
     y = A_.cast<TaylorVarXd>() * x;
@@ -144,7 +208,8 @@ class LinearEqualityConstraint : public LinearConstraint {
   LinearEqualityConstraint(const Eigen::MatrixBase<DerivedA>& Aeq,
                            const Eigen::MatrixBase<DerivedB>& beq)
       : LinearConstraint(Aeq, beq, beq) {}
-  virtual ~LinearEqualityConstraint() {}
+
+  ~LinearEqualityConstraint() override {}
 
   /* updateConstraint
    * @brief change the parameters of the constraint (A and b), but not the
@@ -181,14 +246,15 @@ class BoundingBoxConstraint : public LinearConstraint {
                         const Eigen::MatrixBase<DerivedUB>& ub)
       : LinearConstraint(Eigen::MatrixXd::Identity(lb.rows(), lb.rows()), lb,
                          ub) {}
-  virtual ~BoundingBoxConstraint() {}
 
-  virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+  ~BoundingBoxConstraint() override {}
+
+  void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
     y.resize(num_constraints());
     y = x;
   }
-  virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
+  void eval(const Eigen::Ref<const TaylorVecXd>& x,
                     TaylorVecXd& y) const override {
     y.resize(num_constraints());
     y = x;
@@ -214,15 +280,15 @@ class LinearComplementarityConstraint : public Constraint {
                                   const Eigen::MatrixBase<Derivedq>& q)
       : Constraint(q.rows()), M_(M), q_(q) {}
 
-  virtual ~LinearComplementarityConstraint() {}
+  ~LinearComplementarityConstraint() override {}
 
   /** Return Mx + q (the value of the slack variable). */
-  virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+  void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
     y.resize(num_constraints());
     y = (M_ * x) + q_;
   }
-  virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
+  void eval(const Eigen::Ref<const TaylorVecXd>& x,
                     TaylorVecXd& y) const override {
     y.resize(num_constraints());
     y = (M_.cast<TaylorVarXd>() * x) + q_.cast<TaylorVarXd>();

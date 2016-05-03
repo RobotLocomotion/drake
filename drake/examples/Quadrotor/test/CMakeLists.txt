@@ -4,7 +4,7 @@ if (LCM_FOUND AND GTEST_FOUND)
   add_test(NAME quadrotorURDFDynamicsTest COMMAND quadrotorURDFDynamicsTest)
 endif(LCM_FOUND AND GTEST_FOUND)
 
-add_matlab_test(NAME examples/Quadrotor/test/buildOcTree COMMAND buildOcTree)
+# add_matlab_test(NAME examples/Quadrotor/test/buildOcTree COMMAND buildOcTree)  # FIXME: see #2100
 add_matlab_test(NAME examples/Quadrotor/test/manipulatorGradients COMMAND manipulatorGradients)
 add_matlab_test(NAME examples/Quadrotor/test/propellorGradients COMMAND propellorGradients)
 add_matlab_test(NAME examples/Quadrotor/test/quadrotorDynamics COMMAND quadrotorDynamics)

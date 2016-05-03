@@ -50,7 +50,8 @@ int barycomp(const void* b1, const void* b2) {
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs < 2) {
-    mexPrintf("Usage: [indices, coefs] = barycentricInterpolation(bins, pts)\n");
+    mexPrintf(
+        "Usage: [indices, coefs] = barycentricInterpolation(bins, pts)\n");
     return;
   }
 
