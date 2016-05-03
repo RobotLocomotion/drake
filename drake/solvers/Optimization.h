@@ -646,6 +646,12 @@ class DRAKEOPTIMIZATION_EXPORT OptimizationProblem {
    * the specifed solver exists.  Use this only when you have
    * particular knowledge of what solver is being invoked, and exactly
    * what tuning is required.
+   *
+   * Supported solver names/options:
+   *
+   * "SNOPT" -- Paramater names and values as specified in SNOPT
+   * User's Guide section 7.7 "Description ofthe optional parameters",
+   * used as described in section 7.5 for snSet().
    */
   void SetSolverOption(const std::string& solver_name,
                        const std::string& solver_option,
