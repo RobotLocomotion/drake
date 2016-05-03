@@ -1,4 +1,5 @@
 #include <cmath>
+#include <cstdlib>
 #include <memory>
 #include <sstream>
 
@@ -17,6 +18,14 @@
 
 
 int main(int argc, const char* argv[]) {
+
+  int num_extra_cars = 100;
+  if (argc == 2) {
+    num_extra_cars = atoi(argv[1]);
+    if (num_extra_cars < 0) {
+      num_extra_cars = 0;
+    }
+  }
 
   // Make a linear system to map NPC car state to the state vector of a
   // floating joint, allowing motion and steering in the x-y plane only.
@@ -89,7 +98,7 @@ int main(int argc, const char* argv[]) {
   cars_vis_adapter->addSystem(car_vis_adapter);
 
   // Meh, need more cars!
-  for (int i = 0; i < 100; ++i) {
+  for (int i = 0; i < num_extra_cars; ++i) {
     world_tree->addRobotFromURDF(
         (i % 2) ? SEDAN_URDF : BREADTRUCK_URDF,
         DrakeJoint::ROLLPITCHYAW,
