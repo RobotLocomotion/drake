@@ -1,4 +1,4 @@
-#include "drake/examples/SimpleCar/simple_car.h"
+#include "drake/examples/Cars/simple_car.h"
 
 #include <cmath>
 

@@ -6,8 +6,8 @@
 #include <Eigen/Geometry>
 
 #include "drake/drakeSimpleCar_export.h"
-#include "drake/examples/SimpleCar/driving_command.h"
-#include "drake/examples/SimpleCar/simple_car_state.h"
+#include "drake/examples/Cars/gen/driving_command.h"
+#include "drake/examples/Cars/gen/simple_car_state.h"
 #include "lcmtypes/drake/lcmt_simple_car_config_t.hpp"
 
 namespace Drake {
