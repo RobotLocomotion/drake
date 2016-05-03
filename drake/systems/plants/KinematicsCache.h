@@ -86,7 +86,7 @@ class KinematicsCache {
 
  public:
   explicit KinematicsCache(
-      const std::vector<std::unique_ptr<RigidBody>>& bodies)
+      const std::vector<std::unique_ptr<RigidBody> >& bodies)
       : num_positions(getNumPositions(bodies)),
         num_velocities(getNumVelocities(bodies)),
         q(Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(num_positions)),
@@ -255,7 +255,7 @@ class KinematicsCache {
   // constructor where this request is made.
   // See TODO for getNumVelocities.
   static int getNumPositions(
-      const std::vector<std::unique_ptr<RigidBody>>& bodies) {
+      const std::vector<std::unique_ptr<RigidBody> >& bodies) {
     auto add_num_positions = [](
         int result, const std::unique_ptr<RigidBody>& body_ptr) -> int {
       return body_ptr->hasParent()
@@ -267,7 +267,7 @@ class KinematicsCache {
 
   // TODO(amcastro-tri): See TODO for getNumPositions.
   static int getNumVelocities(
-      const std::vector<std::unique_ptr<RigidBody>>& bodies) {
+      const std::vector<std::unique_ptr<RigidBody> >& bodies) {
     auto add_num_velocities = [](
         int result, const std::unique_ptr<RigidBody>& body_ptr) -> int {
       return body_ptr->hasParent()
