@@ -4,7 +4,7 @@
     <param name="robot_description"
         command="$(find xacro)/xacro.py '$(find drake_cars_examples)/models/drake_prius/xacro/drake_prius_rviz.xacro'" />
 
-    <!-- Start the joint state publisher, robot state publisher, and RViz -->
+    <!-- Start RViz -->
     <include file="$(find drake_cars_examples)/launch/rviz.xml">
         <arg name="RVizConfigFile" value="$(find drake_cars_examples)/rviz/drake_cars_examples.rviz" />
     </include>

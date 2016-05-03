@@ -75,8 +75,8 @@ $ ../../pod-build/bin/carSimLCM models/prius/prius.urdf models/stata_garage_p1.s
 
 ### Simulation Using Drake + LCM + ROS
 
-Drake's car example includes a ROS package located in
-`[drake distro]/drake/examples/Cars/ros_packages`.
+Drake's car example includes a ROS package called `drake_cars_examples`, which
+is located in `[drake distro]/drake/examples/Cars/ros_packages`.
 To enable this package, edit your `~/.bashrc` and add the following lines to it
 (be sure all other ROS-related settings are commented out):
 
@@ -93,10 +93,13 @@ following command:
 $ source ~/.bashrc
 ```
 
-Ensure Drake's `drake_cars_examples` ROS package is in your ROS workspace:
+Ensure the `drake_cars_examples` ROS package is in your ROS workspace. This can
+be done by executing the command below. It should change your present
+current working directory to be
+`[drake distro]/drake/examples/Cars/ros_packages/drake_cars_examples/`.
 
 ```
-$ roscd drake_cars_example/
+$ roscd drake_cars_examples
 ```
 
 Start RViz:
