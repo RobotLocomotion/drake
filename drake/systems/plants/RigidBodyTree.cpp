@@ -81,6 +81,9 @@ bool RigidBodyTree::transformCollisionFrame(
   return collision_model->transformCollisionFrame(eid, transform_body_to_joint);
 }
 
+// TODO(amcastro-tri): This implementation is very inefficient since vector
+// bodies changes in size with the calls to bodies.erase and bodies.insert.
+// A possibility would be to use std::sort or our own version of a quick sort.
 void RigidBodyTree::SortTree() {
   if (bodies.size() == 0) return;  // no-op if there are no RigidBody's
   size_t i = 0;
@@ -1853,6 +1856,8 @@ void RigidBodyTree::addFrame(std::shared_ptr<RigidBodyFrame> frame) {
   frame->frame_index = -(static_cast<int>(frames.size()) - 1) - 2;  // yuck!!
 }
 
+// It saves an index value in the rigid body, which can be used to access the
+// rigid body from within the "bodies" vector.
 RigidBodyTree& RigidBodyTree::add_rigid_body(std::unique_ptr<RigidBody> body) {
   // TODO(amcastro-tri): body indexes should not be initialized here but on an
   // initialize call after all bodies and RigidBodySystem's are defined.

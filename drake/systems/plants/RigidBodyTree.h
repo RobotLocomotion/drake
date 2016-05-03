@@ -750,8 +750,6 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * @param[in] body The rigid body to add to this rigid body tree.
    * @return Reference to this tree.
    */
-  // It saves an index value in the rigid body, which can be used to access the
-  // rigid body from within the "bodies" vector.
   RigidBodyTree& add_rigid_body(std::unique_ptr<RigidBody> body);
 
   /**
@@ -856,9 +854,6 @@ class DRAKERBM_EXPORT RigidBodyTree {
    *
    * @see RigidBodyTree::compile
    */
-  // TODO(amcastro-tri): This implementation is very inefficient since vector
-  // bodies changes in size with the calls to bodies.erase and bodies.insert.
-  // A possibility would be to use std::sort or our own version of a quick sort.
   void SortTree();
 
   // collision_model and collision_model_no_margins both maintain
