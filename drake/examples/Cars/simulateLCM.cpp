@@ -1,5 +1,3 @@
-#include "spruce.hh"
-
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/pd_control_system.h"
