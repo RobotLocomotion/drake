@@ -94,6 +94,7 @@ Next steps
    Doxygen (C++) <http://drake002.csail.mit.edu/drake/doxygen_cpp/>
    URDF Reference <http://drake002.csail.mit.edu/drake/urdf/drakeURDF.html>
    faq
+   issues
    video_tutorials
    Mailing list <http://mailman.mit.edu/mailman/listinfo/drake-users>
    credits
