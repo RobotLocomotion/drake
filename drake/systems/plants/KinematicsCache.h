@@ -63,11 +63,17 @@ class KinematicsCacheElement {
 template <typename Scalar>
 class KinematicsCache {
  private:
-  std::unordered_map<
-      RigidBody const*, KinematicsCacheElement<Scalar>,
+  typedef KinematicsCacheElement<Scalar> KinematicsCacheElementScalar;
+  typedef std::pair<RigidBody const* const, KinematicsCacheElementScalar>
+      RigidBodyKCacheElementPair;
+  typedef Eigen::aligned_allocator<RigidBodyKCacheElementPair>
+      RigidBodyKCacheElementPairAllocator;
+  typedef std::unordered_map<
+      RigidBody const*, KinematicsCacheElementScalar,
       std::hash<RigidBody const*>, std::equal_to<RigidBody const*>,
-      Eigen::aligned_allocator<std::pair<
-          RigidBody const* const, KinematicsCacheElement<Scalar>>>> elements;
+      RigidBodyKCacheElementPairAllocator> RigidBodyToKCacheElementMap;
+
+  RigidBodyToKCacheElementMap elements;
   std::vector<RigidBody const*> bodies;
   const int num_positions;
   const int num_velocities;
