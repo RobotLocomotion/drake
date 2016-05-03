@@ -22,7 +22,7 @@ add_matlab_test(NAME examples/Atlas/test/testChangeRootLink COMMAND testChangeRo
 add_matlab_test(NAME examples/Atlas/test/testCollisionVolumes COMMAND testCollisionVolumes)
 add_matlab_test(NAME examples/Atlas/test/testKin COMMAND testKin)
 add_matlab_test(NAME examples/Atlas/test/testKin2 COMMAND testKin2)
-add_matlab_test(NAME examples/Atlas/test/testKneeSingularity COMMAND testKneeSingularity)
+# add_matlab_test(NAME examples/Atlas/test/testKneeSingularity COMMAND testKneeSingularity)  # FIXME: see #1603
 add_matlab_test(NAME examples/Atlas/test/testMex COMMAND testMex)
 add_matlab_test(NAME examples/Atlas/test/testOutputGradients COMMAND testOutputGradients)
 add_matlab_test(NAME examples/Atlas/test/testRunningPlanner COMMAND testRunningPlanner)

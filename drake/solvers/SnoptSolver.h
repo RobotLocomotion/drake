@@ -11,8 +11,8 @@ class DRAKEOPTIMIZATION_EXPORT SnoptSolver :
  public:
   // This solver is implemented in various pieces depending on if
   // SNOPT was available during compilation.
-  virtual bool available() const override;
-  virtual drake::solvers::SolutionResult Solve(
+  bool available() const override;
+  drake::solvers::SolutionResult Solve(
       OptimizationProblem& prog) const override;
 };
 }
