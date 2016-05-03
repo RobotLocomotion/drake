@@ -19,7 +19,7 @@ using drake::util::MatrixCompareType;
 // Find the joint position indices corresponding to 'name'
 vector<int> getJointPositionVectorIndices(const RigidBodyTree &model,
                                           const std::string &name) {
-  shared_ptr<RigidBody> joint_parent_body = model.findJoint(name);
+  RigidBody* joint_parent_body = model.findJoint(name);
   int num_positions = joint_parent_body->getJoint().getNumPositions();
   vector<int> ret(static_cast<size_t>(num_positions));
 
