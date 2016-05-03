@@ -748,9 +748,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * A RigidBodyTree is the sole owner and manager of the RigidBody's in it.
    *
    * @param[in] body The rigid body to add to this rigid body tree.
-   * @return Reference to this tree.
    */
-  RigidBodyTree& add_rigid_body(std::unique_ptr<RigidBody> body);
+  void add_rigid_body(std::unique_ptr<RigidBody> body);
 
   /**
    * Adds one floating joint to each link specified in the list of link indicies

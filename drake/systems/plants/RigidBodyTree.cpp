@@ -1858,7 +1858,7 @@ void RigidBodyTree::addFrame(std::shared_ptr<RigidBodyFrame> frame) {
 
 // It saves an index value in the rigid body, which can be used to access the
 // rigid body from within the "bodies" vector.
-RigidBodyTree& RigidBodyTree::add_rigid_body(std::unique_ptr<RigidBody> body) {
+void RigidBodyTree::add_rigid_body(std::unique_ptr<RigidBody> body) {
   // TODO(amcastro-tri): body indexes should not be initialized here but on an
   // initialize call after all bodies and RigidBodySystem's are defined.
   // This initialize call will make sure that all global and local indexes are
@@ -1866,7 +1866,6 @@ RigidBodyTree& RigidBodyTree::add_rigid_body(std::unique_ptr<RigidBody> body) {
   // larger RigidBodySystem (a system within a tree of systems).
   body->body_index = static_cast<int>(bodies.size());
   bodies.push_back(std::move(body));
-  return *this;
 }
 
 int RigidBodyTree::AddFloatingJoint(
