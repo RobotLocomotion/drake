@@ -55,6 +55,8 @@ class JointStatePublisher {
   JointStatePublisher(std::shared_ptr<RigidBodySystem> rigid_body_system)
       : rigid_body_system_(rigid_body_system) {
 
+    // Instantiates a geometry_msgs::TransformStamped message for each rigid
+    // body in the rigid body tree.
     auto rigid_body_tree = rigid_body_system->getRigidBodyTree();
     for (auto & rigid_body : rigid_body_tree->bodies) {
 
@@ -67,31 +69,78 @@ class JointStatePublisher {
       // Obtains the current link's joint.
       const DrakeJoint & joint = rigid_body->getJoint();
 
-      // Skips links that are attached to the rigid body tree via fixed joints.
-      if (joint.getNumPositions() == 0 && joint.getNumVelocities() == 0)
-        continue;
-
       // Creates a unique key for holding the transform message.
       std::string key = rigid_body->GetModelName() + rigid_body->GetName();
 
-      // Verifies that an odometry message for the current link has not already
-      // been added to the transform_messages_ map.
-      if (transform_messages_.find(key) == transform_messages_.end()) {
-
-        // Instantiates a geometry_msgs::TransformStamped message for the
-        // current model.
-        std::unique_ptr<geometry_msgs::TransformStamped> message(
-          new geometry_msgs::TransformStamped());
-
-        message->header.frame_id = rigid_body->parent->GetName();
-        message->child_frame_id = rigid_body->GetName();
-
-        transform_messages_[key] = std::move(message);
-      } else {
+      // Checks whether a transform message for the current link was already
+      // added to the transform_messages_ map.
+      if (transform_messages_.find(key) != transform_messages_.end())
         throw std::runtime_error(
-            "ERROR: Multiple models named " + rigid_body->GetModelName() +
+            "ERROR: Multiple model/links named " + key +
             " found when creating a geometry_msgs::TransformStamped message!");
+
+      // Instantiates a geometry_msgs::TransformStamped message for the
+      // current model.
+      std::unique_ptr<geometry_msgs::TransformStamped> message(
+        new geometry_msgs::TransformStamped());
+
+      message->header.frame_id = rigid_body->parent->GetName();
+      message->child_frame_id = rigid_body->GetName();
+
+      // Initializes the transformation if the joint is fixed.
+      if (joint.getNumPositions() == 0 && joint.getNumVelocities() == 0) {
+        auto translation = joint.getTransformToParentBody().translation();
+        auto quat = rotmat2quat(joint.getTransformToParentBody().linear());
+
+        message->transform.translation.x = translation(0);
+        message->transform.translation.y = translation(1);
+        message->transform.translation.z = translation(2);
+
+        message->transform.rotation.w = quat(0);
+        message->transform.rotation.x = quat(1);
+        message->transform.rotation.y = quat(2);
+        message->transform.rotation.z = quat(3);
       }
+
+      transform_messages_[key] = std::move(message);
+    }
+
+    // Instantiates a geometry_msgs::TransformStamped message for each frame
+    // in the rigid body tree.
+    for (auto & frame : rigid_body_tree->frames) {
+      std::string key = frame->body->GetModelName() + frame->name;
+
+      // Checks whether a transform message for the current link was already
+      // added to the transform_messages_ map.
+      if (transform_messages_.find(key) != transform_messages_.end())
+        throw std::runtime_error(
+            "ERROR: Multiple models/frames named " + key +
+            " found when creating a geometry_msgs::TransformStamped message!");
+
+      // Instantiates a geometry_msgs::TransformStamped message for the
+      // current model.
+      std::unique_ptr<geometry_msgs::TransformStamped> message(
+        new geometry_msgs::TransformStamped());
+
+      message->header.frame_id = frame->body->GetName();
+      message->child_frame_id = frame->name;
+
+      // Frames are fixed to a particular rigid body. The following code saves
+      // the transformation in the frame's geometry_msgs::TransformStamped
+      // message.
+      auto translation = frame->transform_to_body.translation();
+      auto quat = rotmat2quat(frame->transform_to_body.linear());
+
+      message->transform.translation.x = translation(0);
+      message->transform.translation.y = translation(1);
+      message->transform.translation.z = translation(2);
+
+      message->transform.rotation.w = quat(0);
+      message->transform.rotation.x = quat(1);
+      message->transform.rotation.y = quat(2);
+      message->transform.rotation.z = quat(3);
+
+      transform_messages_[key] = std::move(message);
     }
   }
 
@@ -122,39 +171,40 @@ class JointStatePublisher {
       // Obtains the current link's joint.
       const DrakeJoint & joint = rigid_body->getJoint();
 
-      // Skips links that are attached to the rigid body tree via fixed joints.
-      if (joint.getNumPositions() == 0 && joint.getNumVelocities() == 0)
-        continue;
-
       // Obtains a unique key for holding the transform message.
       std::string key = rigid_body->GetModelName() + rigid_body->GetName();
 
-      // Verifies that an odometry message for the current link has not already
-      // been added to the transform_messages_ map.
+      // Verifies that a geometry_msgs::TransformStamped message for the current
+      // link exists in the transform_messages_ map.
       auto message_in_map = transform_messages_.find(key);
       if (message_in_map == transform_messages_.end())
         throw std::runtime_error("ERROR: JointStatePublisher: Unable to find"
           "transform message with key " + key);
 
+      // Obtains a pointer to the geometry_msgs::TransformStamped message for
+      // the current link.
       geometry_msgs::TransformStamped* message = message_in_map->second.get();
 
-      auto transform = rigid_body_tree->relativeTransform(cache,
-        rigid_body_tree->findLinkId(rigid_body->parent->GetName()),
-        rigid_body_tree->findLinkId(rigid_body->GetName()));
-      auto translation = transform.translation();
-      auto quat = rotmat2quat(transform.linear());
+      // Updates the transform only if the joint is not fixed.
+      if (joint.getNumPositions() != 0 || joint.getNumVelocities() != 0) {
+        auto transform = rigid_body_tree->relativeTransform(cache,
+          rigid_body_tree->findLinkId(rigid_body->parent->GetName()),
+          rigid_body_tree->findLinkId(rigid_body->GetName()));
+        auto translation = transform.translation();
+        auto quat = rotmat2quat(transform.linear());
 
-      // Updates the message with the latest joint state.
+        message->transform.translation.x = translation(0);
+        message->transform.translation.y = translation(1);
+        message->transform.translation.z = translation(2);
+
+        message->transform.rotation.w = quat(0);
+        message->transform.rotation.x = quat(1);
+        message->transform.rotation.y = quat(2);
+        message->transform.rotation.z = quat(3);
+      }
+
+      // Updates the time stamp in the message.
       message->header.stamp = ros::Time::now();
-
-      message->transform.translation.x = translation(0);
-      message->transform.translation.y = translation(1);
-      message->transform.translation.z = translation(2);
-
-      message->transform.rotation.w = quat(0);
-      message->transform.rotation.x = quat(1);
-      message->transform.rotation.y = quat(2);
-      message->transform.rotation.z = quat(3);
 
       // Publishes the newly updated odometry message.
       //
@@ -169,6 +219,35 @@ class JointStatePublisher {
       // The workaround being used is described here:
       //
       //  http://stackoverflow.com/questions/8325400/how-to-call-a-non-const-method-from-a-const-method
+      const_cast<tf::TransformBroadcaster*>(&tf_broadcaster_)->sendTransform(*message);
+    }
+
+    // For each frame in the rigid body tree, publish the latest transform
+    // information.
+    for (auto & frame : rigid_body_tree->frames) {
+      std::cout << "JointStatePublisher: output: Publishing frame transform\n"
+        << "  - rigid body name: " << frame->body->GetName() << "\n"
+        << "  - frame name: " << frame->name
+        << std::endl;
+      std::string key = frame->body->GetModelName() + frame->name;
+
+      // Verifies that a geometry_msgs::TransformStamped message for the current
+      // link exists in the transform_messages_ map.
+      auto message_in_map = transform_messages_.find(key);
+      if (message_in_map == transform_messages_.end())
+        throw std::runtime_error("ERROR: JointStatePublisher: Unable to find"
+          "transform message with key " + key);
+
+      // Obtains a pointer to the geometry_msgs::TransformStamped message for
+      // the current link.
+      geometry_msgs::TransformStamped* message = message_in_map->second.get();
+
+      // Updates the message with the latest time stamp. There's no need to
+      // update anything else since frames do not move relative to their
+      // rigid body.
+      message->header.stamp = ros::Time::now();
+
+      // Publishes the transform message.
       const_cast<tf::TransformBroadcaster*>(&tf_broadcaster_)->sendTransform(*message);
     }
 
