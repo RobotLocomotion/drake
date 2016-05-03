@@ -1,5 +1,6 @@
-All components of Drake are licensed under the BSD 3-Clause
-License.
+All components of Drake are licensed under the BSD 3-Clause License
+shown below. Where noted in the source code, some portions may 
+be subject to other permissive, non-viral licenses.
 
 Copyright 2012-2016 Robot Locomotion Group @ CSAIL
 All rights reserved.

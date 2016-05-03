@@ -182,7 +182,7 @@ static int snoptIKfun(snopt::integer* Status, snopt::integer* n,
                       snopt::doublereal ru[], snopt::integer* lenru) {
   Map<VectorXd> q(x, nq);
   KinematicsCache<double> cache =
-      model->doKinematics(q);  // TODO: pass this into the function?
+      model->doKinematics(q);  // TODO(tkoolen): pass this into the function?
   IK_cost_fun(x, F[0], G);
   IK_constraint_fun(cache, x, &F[1], &G[nq]);
   return 0;
@@ -439,8 +439,8 @@ void inverseKinSnoptBackend(
   q_nom = q_nom_input;
   if (q_seed.rows() != nq || q_seed.cols() != nT || q_nom.rows() != nq ||
       q_nom.cols() != nT) {
-    cerr << "Drake:inverseKinSnoptBackend: q_seed and q_nom must be of size nq x nT"
-         << endl;
+    cerr << "Drake:inverseKinSnoptBackend: "
+        "q_seed and q_nom must be of size nq x nT" << endl;
   }
 
   if (lenrw == 0) {  // then initialize (sninit needs some default allocation)
@@ -487,8 +487,9 @@ void inverseKinSnoptBackend(
                RigidBodyConstraint::QuasiStaticConstraintCategory) {
       num_qsc++;
       if (num_qsc > 1) {
-        cerr << "Drake:inverseKinSnoptBackend:current implementation supports at "
-                "most one QuasiStaticConstraint" << endl;
+        cerr << "Drake:inverseKinSnoptBackend: "
+            "current implementation supports at "
+            "most one QuasiStaticConstraint" << endl;
       }
       qsc_ptr = static_cast<QuasiStaticConstraint*>(constraint);
     } else if (constraint_category ==
@@ -505,9 +506,10 @@ void inverseKinSnoptBackend(
               (joint_limit_max(k, j) < joint_max[k] ? joint_limit_max(k, j)
                                                     : joint_max[k]);
           if (joint_limit_min(k, j) > joint_limit_max(k, j)) {
-            cerr << "Drake:inverseKinSnoptBackend:BadInputs Some posture constraint "
-                    "has lower bound larger than the upper bound of other "
-                    "posture constraint for joint " << k << " at " << j
+            cerr << "Drake:inverseKinSnoptBackend: "
+                "BadInputs Some posture constraint "
+                "has lower bound larger than the upper bound of other "
+                "posture constraint for joint " << k << " at " << j
                  << "'th time " << endl;
           }
         }
@@ -866,7 +868,9 @@ void inverseKinSnoptBackend(
 
       snopt::sninit_(&iPrint, &iSumm, cw.get(), &lencw, iw.get(), &leniw,
                      rw.get(), &lenrw, 8 * lencw);
-      // snopt::snfilewrapper_(specname,&iSpecs,&INFO_snopt[i], cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw, spec_len, 8*lencw);
+      // snopt::snfilewrapper_(specname,&iSpecs,&INFO_snopt[i],
+      //     cw.get(),&lencw, iw.get(),&leniw, rw.get(),&lenrw, spec_len,
+      //     8*lencw);
       char strOpt1[200] = "Derivative option";
       snopt::integer DerOpt = 1,
                      strOpt_len = static_cast<snopt::integer>(strlen(strOpt1));
@@ -1205,8 +1209,12 @@ void inverseKinSnoptBackend(
           xupp[j * (nq + num_qsc_pts) + k] =
               joint_limit_max((j + qstart_idx) * nq + k);
         }
-        // memcpy(xlow+j*(nq+num_qsc_pts), joint_limit_min.data()+(j+qstart_idx)*nq, sizeof(double)*nq);
-        // memcpy(xupp+j*(nq+num_qsc_pts), joint_limit_max.data()+(j+qstart_idx)*nq, sizeof(double)*nq);
+        // memcpy(xlow+j*(nq+num_qsc_pts),
+        //        joint_limit_min.data()+(j+qstart_idx)*nq,
+        //        sizeof(double)*nq);
+        // memcpy(xupp+j*(nq+num_qsc_pts),
+        //        joint_limit_max.data()+(j+qstart_idx)*nq,
+        //        sizeof(double)*nq);
         for (int k = 0; k < num_qsc_pts; k++) {
           xlow[j * (nq + num_qsc_pts) + nq + k] = 0.0;
           xupp[j * (nq + num_qsc_pts) + nq + k] = 1.0;
@@ -1216,8 +1224,12 @@ void inverseKinSnoptBackend(
           xlow[j * nq + k] = joint_limit_min(k, j + qstart_idx);
           xupp[j * nq + k] = joint_limit_max(k, j + qstart_idx);
         }
-        // memcpy(xlow+j*nq, joint_limit_min.col(j+qstart_idx).data(), sizeof(double)*nq);
-        // memcpy(xupp+j*nq, joint_limit_max.col(j+qstart_idx).data(), sizeof(double)*nq);
+        // memcpy(xlow+j*nq,
+        //    joint_limit_min.col(j+qstart_idx).data(),
+        //    sizeof(double)*nq);
+        // memcpy(xupp+j*nq,
+        //    joint_limit_max.col(j+qstart_idx).data(),
+        //    sizeof(double)*nq);
       }
     }
     if (fixInitialState) {
@@ -1596,8 +1608,12 @@ void inverseKinSnoptBackend(
         Flow[nf_cum + k] = Cmin_inbetween_array[j](k);
         Fupp[nf_cum + k] = Cmax_inbetween_array[j](k);
       }
-      // memcpy(Flow+nf_cum, Cmin_inbetween_array[j].data(), sizeof(double)*nc_inbetween_array[j]);
-      // memcpy(Fupp+nf_cum, Cmax_inbetween_array[j].data(), sizeof(double)*nc_inbetween_array[j]);
+      // memcpy(Flow+nf_cum,
+      //        Cmin_inbetween_array[j].data(),
+      //        sizeof(double)*nc_inbetween_array[j]);
+      // memcpy(Fupp+nf_cum,
+      //        Cmax_inbetween_array[j].data(),
+      //        sizeof(double)*nc_inbetween_array[j]);
       if (debug_mode) {
         for (int k = 0; k < nc_inbetween_array[j]; k++) {
           Fname[nf_cum + k] = Cname_inbetween_array[j][k];
@@ -1688,7 +1704,9 @@ void inverseKinSnoptBackend(
         for (int k = 0; k < nq; k++) {
           x[j * (nq + num_qsc_pts) + k] = q_seed((j + qstart_idx) * nq + k);
         }
-        // memcpy(x+j*(nq+num_qsc_pts), q_seed.data()+(j+qstart_idx)*nq, sizeof(double)*nq);
+        // memcpy(x+j*(nq+num_qsc_pts),
+        //        q_seed.data()+(j+qstart_idx)*nq,
+        //        sizeof(double)*nq);
         for (int k = 0; k < num_qsc_pts; k++) {
           x[j * (nq + num_qsc_pts) + nq + k] = 1.0 / num_qsc_pts;
         }
