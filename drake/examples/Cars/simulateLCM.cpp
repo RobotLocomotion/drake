@@ -93,11 +93,8 @@ int main(int argc, char* argv[]) {
 
   auto rigid_body_sys = make_shared<RigidBodySystem>();
 
-  // The offset between Drake's world frame and the vehicle's world frame
-  // depends on whether the vehicle model is an SDF file or a URDF file. The SDF
-  // file internally specifies the offset, meaning z_offset to be zero.
-  // The URDF cannot specify this offset internally, meaning z_offset should
-  // be 0.378326 meters.
+  // The Z-axis offset between Drake's world frame and the vehicle's world
+  // frame.
   double z_offset = 0;
 
   // TODO(liangfok): Once PR 2171 is merged, modify prius.urdf to contain a

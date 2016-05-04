@@ -34,6 +34,15 @@ namespace plants {
 
 template <template <typename> class RobotStateVector>
 class SensorVisualizerLidar {
+ private:
+  // Specifies that the LIDAR messages should be transmitted at most 20 times
+  // per second.
+  //
+  // TODO(liangfok): Modify sensor model to include scan frequency and time
+  // between scan measurements. See:
+  // https://github.com/RobotLocomotion/drake/issues/2210
+  static constexpr double kMinTransmitPeriod_ = 0.05;
+
  public:
   template <typename ScalarType>
   using StateVector = NullVector<ScalarType>;
@@ -53,6 +62,10 @@ class SensorVisualizerLidar {
   explicit SensorVisualizerLidar(
       std::shared_ptr<RigidBodySystem> rigid_body_system)
       : rigid_body_system_(rigid_body_system) {
+    // Initializes the time stamp of the previous transmission to be zero.
+    previous_send_time_.sec = 0;
+    previous_send_time_.nsec = 0;
+
     // Instantiates a ROS node handle, which is necessary to interact with ROS.
     // For more information, see:
     // http://wiki.ros.org/roscpp/Overview/NodeHandles
@@ -154,7 +167,16 @@ class SensorVisualizerLidar {
   }
 
   OutputVector<double> output(const double &t, const StateVector<double> &x,
-                              const InputVector<double> &u) const {
+                              const InputVector<double> &u) {
+    // Checks whether enough time has elapsed since the last transmission.
+    // Aborts if insufficient time has passed. This is to prevent flooding ROS
+    // topic /tf.
+    ros::Time current_time = ros::Time::now();
+    if ((current_time - previous_send_time_).toSec() < kMinTransmitPeriod_)
+      return u;
+
+    previous_send_time_ = current_time;
+
     const std::vector<std::shared_ptr<RigidBodySensor>> &sensor_vector =
         rigid_body_system_->GetSensors();
 
@@ -235,6 +257,11 @@ class SensorVisualizerLidar {
    */
   std::map<std::string, std::unique_ptr<sensor_msgs::LaserScan>>
       lidar_messages_;
+
+  /**
+   * The previous time the LIDAR messages were sent.
+   */
+  ros::Time previous_send_time_;
 };
 
 }  // end namespace plants
