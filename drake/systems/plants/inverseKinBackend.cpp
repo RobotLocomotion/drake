@@ -103,131 +103,134 @@ void inverseKinMode1(
     MatrixBase<DerivedD>* qdot_sol, MatrixBase<DerivedE>* qddot_sol, int* INFO,
     std::vector<std::string>* infeasible_constraint) {
 
-  OptimizationProblem prog;
-  prog.SetSolverOption("SNOPT", "Major optimality tolerance",
-                       ikoptions.getMajorOptimalityTolerance());
-  prog.SetSolverOption("SNOPT", "Major feasibility tolerance",
-                       ikoptions.getMajorFeasibilityTolerance());
-  prog.SetSolverOption("SNOPT", "Superbasics limit",
-                       ikoptions.getSuperbasicsLimit());
-  prog.SetSolverOption("SNOPT", "Major iterations limit",
-                       ikoptions.getMajorIterationsLimit());
-  prog.SetSolverOption("SNOPT", "Iterations limit",
-                       ikoptions.getIterationsLimit());
-
-  DecisionVariableView vars = prog.AddContinuousVariables(model->num_positions);
-
-  MatrixXd Q;
-  ikoptions.getQ(Q);
-  auto objective = std::make_shared<Mode1Objective>(model, Q);
-  prog.AddCost(objective, {vars});
-
   KinematicsCacheHelper<double> kin_helper(model->bodies);
 
-  bool qsc_active = false;
-  for (int i = 0; i < num_constraints; i++) {
-    RigidBodyConstraint* constraint = constraint_array[i];
-    const int constraint_category = constraint->getCategory();
-    if (constraint_category ==
-        RigidBodyConstraint::SingleTimeKinematicConstraintCategory) {
-      auto wrapper = std::make_shared<SingleTimeKinematicConstraintWrapper>(
-          static_cast<SingleTimeKinematicConstraint*>(constraint), &kin_helper);
-      // TODO(sam.creasey) I believe that this should have the bounds
-      // updated with changes in time steps.
-      prog.AddGenericConstraint(wrapper, {vars});
-    } else if (constraint_category ==
-               RigidBodyConstraint::PostureConstraintCategory) {
-      PostureConstraint* pc = static_cast<PostureConstraint*>(constraint);
-      VectorXd lb;
-      VectorXd ub;
-      // TODO(sam.creasey) This needs to support updating the
-      // posture constraints across time steps.  Possibly store an
-      // array of PostureConstraint + BoundingBoxConstraint pairs and
-      // add an update method to BoundingBoxConstraint.
-      pc->bounds(&t[0], lb, ub);
-      prog.AddBoundingBoxConstraint(lb, ub, {vars});
-    } else if (constraint_category ==
-               RigidBodyConstraint::SingleTimeLinearPostureConstraintCategory) {
-      SingleTimeLinearPostureConstraint* st_lpc =
-          static_cast<SingleTimeLinearPostureConstraint*>(constraint);
-      // TODO(sam.creasey) This should have the constraints updated
-      // across time steps.
-      VectorXd lb;
-      VectorXd ub;
-      st_lpc->bounds(&t[0], lb, ub);
+  // TODO(sam.creasey) I really don't like rebuilding the
+  // OptimizationProblem for every timestep, but it's not possible to
+  // enable/disable (or even remove) a constraint from an
+  // OptimizationProblem between calls to Solve() currently, so
+  // there's not actually another way.
+  for (int t_index = 0; t_index < nT; t_index++) {
+    OptimizationProblem prog;
+    prog.SetSolverOption("SNOPT", "Major optimality tolerance",
+                         ikoptions.getMajorOptimalityTolerance());
+    prog.SetSolverOption("SNOPT", "Major feasibility tolerance",
+                         ikoptions.getMajorFeasibilityTolerance());
+    prog.SetSolverOption("SNOPT", "Superbasics limit",
+                         ikoptions.getSuperbasicsLimit());
+    prog.SetSolverOption("SNOPT", "Major iterations limit",
+                         ikoptions.getMajorIterationsLimit());
+    prog.SetSolverOption("SNOPT", "Iterations limit",
+                         ikoptions.getIterationsLimit());
 
-      VectorXi iAfun;
-      VectorXi jAvar;
-      VectorXd A;
-      st_lpc->geval(&t[0], iAfun, jAvar, A);
+    DecisionVariableView vars = prog.AddContinuousVariables(model->num_positions);
 
-      assert(iAfun.size() == jAvar.size());
-      assert(iAfun.size() != A.size());
+    MatrixXd Q;
+    ikoptions.getQ(Q);
+    auto objective = std::make_shared<Mode1Objective>(model, Q);
+    prog.AddCost(objective, {vars});
 
-      typedef Eigen::Triplet<double> T;
-      std::vector<T> triplet_list;
-      for (size_t i = 0; i < iAfun.size(); i++) {
-        triplet_list.push_back(T(iAfun[i], jAvar[i], A[i]));
-      }
+    bool qsc_active = false;
+    for (int i = 0; i < num_constraints; i++) {
+      RigidBodyConstraint* constraint = constraint_array[i];
+      const int constraint_category = constraint->getCategory();
+      if (constraint_category ==
+          RigidBodyConstraint::SingleTimeKinematicConstraintCategory) {
+        SingleTimeKinematicConstraint* stc =
+            static_cast<SingleTimeKinematicConstraint*>(constraint);
+        if (!stc->isTimeValid(&t[t_index])) { continue; }
+        auto wrapper = std::make_shared<SingleTimeKinematicConstraintWrapper>(
+            stc, &kin_helper);
+        prog.AddGenericConstraint(wrapper, {vars});
+      } else if (constraint_category ==
+                 RigidBodyConstraint::PostureConstraintCategory) {
+        PostureConstraint* pc = static_cast<PostureConstraint*>(constraint);
+        if (!pc->isTimeValid(&t[t_index])) { continue; }
+        VectorXd lb;
+        VectorXd ub;
+        pc->bounds(&t[t_index], lb, ub);
+        prog.AddBoundingBoxConstraint(lb, ub, {vars});
+      } else if (constraint_category ==
+                 RigidBodyConstraint::SingleTimeLinearPostureConstraintCategory) {
+        SingleTimeLinearPostureConstraint* st_lpc =
+            static_cast<SingleTimeLinearPostureConstraint*>(constraint);
+        if (!st_lpc->isTimeValid(&t[t_index])) { continue; }
+        VectorXd lb;
+        VectorXd ub;
+        st_lpc->bounds(&t[t_index], lb, ub);
 
-      Eigen::SparseMatrix<double> A_sparse(st_lpc->getNumConstraint(&t[0]),
-                                           model->num_positions);
-      A_sparse.setFromTriplets(triplet_list.begin(), triplet_list.end());
-      prog.AddLinearConstraint(MatrixXd(A_sparse), lb, ub, {vars});
-    } else if (constraint_category ==
-               RigidBodyConstraint::QuasiStaticConstraintCategory) {
-      if (qsc_active) {
+        VectorXi iAfun;
+        VectorXi jAvar;
+        VectorXd A;
+        st_lpc->geval(&t[t_index], iAfun, jAvar, A);
+
+        assert(iAfun.size() == jAvar.size());
+        assert(iAfun.size() != A.size());
+
+        typedef Eigen::Triplet<double> T;
+        std::vector<T> triplet_list;
+        for (size_t i = 0; i < iAfun.size(); i++) {
+          triplet_list.push_back(T(iAfun[i], jAvar[i], A[i]));
+        }
+
+        Eigen::SparseMatrix<double> A_sparse(st_lpc->getNumConstraint(&t[t_index]),
+                                             model->num_positions);
+        A_sparse.setFromTriplets(triplet_list.begin(), triplet_list.end());
+        prog.AddLinearConstraint(MatrixXd(A_sparse), lb, ub, {vars});
+      } else if (constraint_category ==
+                 RigidBodyConstraint::QuasiStaticConstraintCategory) {
+        if (qsc_active) {
+          throw std::runtime_error(
+              "Drake::inverseKinBackend: current implementation supports at "
+              "most one QuasiStaticConstraint");
+        }
+
+        QuasiStaticConstraint* qsc =
+            static_cast<QuasiStaticConstraint*>(constraint);
+        if (!qsc->isTimeValid(&t[t_index])) { continue; }
+        int num_vars = qsc->getNumWeights();
+        DecisionVariableView qsc_vars =
+            prog.AddContinuousVariables(num_vars, "qsc");
+        auto wrapper = std::make_shared<QuasiStaticConstraintWrapper>(
+            qsc, &kin_helper);
+        prog.AddGenericConstraint(wrapper, {vars, qsc_vars});
+        prog.AddBoundingBoxConstraint(VectorXd::Constant(num_vars, 0.),
+                                      VectorXd::Constant(num_vars, 1.), {qsc_vars});
+        VectorXd constraint(num_vars);
+        constraint.fill(1.);
+        prog.AddLinearEqualityConstraint(constraint.transpose(),
+                                         Vector1d::Constant(1.), {qsc_vars});
+        prog.SetInitialGuess(qsc_vars,
+                             VectorXd::Constant(num_vars, 1.0 / num_vars));
+      } else if (constraint_category ==
+                 RigidBodyConstraint::MultipleTimeKinematicConstraintCategory) {
+        throw std::runtime_error("MultipleTimeKinematicConstraint is not supported"
+                                 " in pointwise mode.");
+      } else if (constraint_category ==
+                 RigidBodyConstraint::MultipleTimeLinearPostureConstraintCategory) {
         throw std::runtime_error(
-            "Drake::inverseKinBackend: current implementation supports at "
-            "most one QuasiStaticConstraint");
+            "MultipleTimeLinearPostureConstraint is not supported"
+            " in pointwise mode.");
       }
-
-      QuasiStaticConstraint* qsc =
-          static_cast<QuasiStaticConstraint*>(constraint);
-      int num_vars = qsc->getNumWeights();
-      DecisionVariableView qsc_vars =
-          prog.AddContinuousVariables(num_vars, "qsc");
-      auto wrapper = std::make_shared<QuasiStaticConstraintWrapper>(
-          qsc, &kin_helper);
-      prog.AddGenericConstraint(wrapper, {vars, qsc_vars});
-      prog.AddBoundingBoxConstraint(VectorXd::Constant(num_vars, 0.),
-                                    VectorXd::Constant(num_vars, 1.), {qsc_vars});
-      VectorXd constraint(num_vars);
-      constraint.fill(1.);
-      prog.AddLinearEqualityConstraint(constraint.transpose(),
-                                       Vector1d::Constant(1.), {qsc_vars});
-      prog.SetInitialGuess(qsc_vars,
-                           VectorXd::Constant(num_vars, 1.0 / num_vars));
-    } else if (constraint_category ==
-               RigidBodyConstraint::MultipleTimeKinematicConstraintCategory) {
-      throw std::runtime_error("MultipleTimeKinematicConstraint is not supported"
-                               " in pointwise mode.");
-    } else if (constraint_category ==
-               RigidBodyConstraint::MultipleTimeLinearPostureConstraintCategory) {
-      throw std::runtime_error(
-          "MultipleTimeLinearPostureConstraint is not supported"
-          " in pointwise mode.");
     }
-  }
 
-  // Add a bounding box constraint from them model.
-  prog.AddBoundingBoxConstraint(model->joint_limit_min, model->joint_limit_max,
-                                {vars});
+    // Add a bounding box constraint from them model.
+    prog.AddBoundingBoxConstraint(model->joint_limit_min, model->joint_limit_max,
+                                  {vars});
 
-  for (int t = 0; t < nT; t++) {
     // TODO(sam.creasey) would this be faster if we stored the view
     // instead of copying into a VectorXd?
-    objective->set_q_nom(q_nom.col(t));
-    if (!ikoptions.getSequentialSeedFlag() || (t == 0)) {
-      prog.SetInitialGuess(vars, q_seed.col(t));
+    objective->set_q_nom(q_nom.col(t_index));
+    if (!ikoptions.getSequentialSeedFlag() || (t_index == 0)) {
+      prog.SetInitialGuess(vars, q_seed.col(t_index));
     } else {
-      prog.SetInitialGuess(vars, q_sol->col(t - 1));
+      prog.SetInitialGuess(vars, q_sol->col(t_index - 1));
     }
 
     SolutionResult result = prog.Solve();
     prog.PrintSolution();
-    q_sol->col(t) = vars.value();
-    INFO[t] = GetSolverInfo(prog, result);
+    q_sol->col(t_index) = vars.value();
+    INFO[t_index] = GetSolverInfo(prog, result);
   }
 }
 
@@ -270,7 +273,7 @@ void inverseKinBackend(
   }
 
   // Fall through to SNOPT implementation if needed.
-  if (!constraints_supported || (mode != 1) || (nT != 1)) {
+  if (!constraints_supported || (mode != 1)) {
     inverseKinSnoptBackend(model, mode, nT, t, q_seed,
                            q_nom, num_constraints, constraint_array,
                            ikoptions, q_sol, qdot_sol, qddot_sol, INFO,
