@@ -1,3 +1,4 @@
+# TODO(jwnimmer-tri) Remove this in lieu of steering_command_driver.py.
 
 import copy, pygame, lcm, argparse, sys
 from drake.lcmt_driving_control_cmd_t import lcmt_driving_control_cmd_t as lcm_msg
