@@ -189,11 +189,11 @@ TEST(SystemIdentificationTest, BasicEstimateParameters) {
 ///@{
 
 struct State { double acceleration, velocity, position, force; };
-const static double kMass = 1;
-const static double kDamping = 0.1;
-const static double kSpring = 2;
-const static double kNoise = 0.01;
-const static double kNoiseSeed = 1;
+static const double kMass = 1;
+static const double kDamping = 0.1;
+static const double kSpring = 2;
+static const double kNoise = 0.01;
+static const double kNoiseSeed = 1;
 
 State AdvanceState(const State& previous, double input_force, double dt) {
   State next;
@@ -209,12 +209,12 @@ State AdvanceState(const State& previous, double input_force, double dt) {
 }
 
 std::vector<State> MakeTestData() {
-  const static double kDt = 0.01;
-  const static double kDuration1 = 1;
-  const static double kInputForce1 = 1;
-  const static double kDuration2 = 3;
-  const static double kInputForce2 = 0;
-  const static State kInitial {0, 0, 0, 0};
+  static const double kDt = 0.01;
+  static const double kDuration1 = 1;
+  static const double kInputForce1 = 1;
+  static const double kDuration2 = 3;
+  static const double kInputForce2 = 0;
+  static const State kInitial {0, 0, 0, 0};
 
   std::vector<State> result { kInitial };
   State current = kInitial;
