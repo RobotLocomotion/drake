@@ -87,7 +87,5 @@ endif()
 
 if(DRAKE_DOCUMENTATION_OUTPUTS)
   add_custom_target(documentation ALL DEPENDS ${DRAKE_DOCUMENTATION_OUTPUTS})
-  install(FILES .nojekyll DESTINATION ${DRAKE_DOCUMENTATION_DIR})
-  # TODO(jamiesnape): Install CNAME to DRAKE_DOCUMENTATION_DIR once #2149 is
-  # resolved.
+  install(FILES .nojekyll CNAME DESTINATION ${DRAKE_DOCUMENTATION_DIR})
 endif()
