@@ -242,7 +242,7 @@ std::vector<State> MakeTestData() {
 #define IDENTIFICATION_TEST_NAME DISABLED_SpringMassIdentification
 #endif
 
-TEST(SystemIdentificationTest, SpringMassIdentification) {
+TEST(SystemIdentificationTest, IDENTIFICATION_TEST_NAME) {
   Polynomiald x = Polynomiald("x");
   auto x_var = x.getSimpleVariable();
   Polynomiald v = Polynomiald("v");
