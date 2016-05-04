@@ -1,6 +1,10 @@
 #include "drake/solvers/system_identification.h"
 
 #include <algorithm>
+#include <cmath>
+
+#include "drake/solvers/Optimization.h"
+
 
 namespace drake {
 namespace solvers {
@@ -127,7 +131,7 @@ SystemIdentification<T>::GetLumpedParametersFromPolynomials(
   // unique VarType id.
   LumpingMapType lumping_map;
   for (const PolyType& lump : lumped_parameters) {
-    VarType lump_var = CreateLumpVar(all_vars);
+    VarType lump_var = CreateUnusedVar("lump", all_vars);
     lumping_map[lump] = lump_var;
     all_vars.insert(lump_var);
   }
@@ -137,13 +141,12 @@ SystemIdentification<T>::GetLumpedParametersFromPolynomials(
 
 template<typename T>
 typename SystemIdentification<T>::VarType
-SystemIdentification<T>::CreateLumpVar(
+SystemIdentification<T>::CreateUnusedVar(
+    const std::string& prefix,
     const std::set<VarType>& vars_in_use) {
   int lump_index = 1;
-  static const std::string kLumpedVariablePrefix = "lump";
   while (true) {
-    VarType lump_var = PolyType(kLumpedVariablePrefix,
-                                lump_index).getSimpleVariable();
+    VarType lump_var = PolyType(prefix, lump_index).getSimpleVariable();
     lump_index++;
     if (!vars_in_use.count(lump_var)) {
       return lump_var;
@@ -230,6 +233,87 @@ SystemIdentification<T>::RewritePolynomialWithLumpedParameters(
   }
 
   return PolyType(working_monomials.begin(), working_monomials.end());
+}
+
+template<typename T>
+std::pair<typename SystemIdentification<T>::PartialEvalType, T>
+SystemIdentification<T>::EstimateParameters(
+    const PolyType& poly,
+    const std::vector<PartialEvalType>& active_var_values,
+    const std::vector<T>& result_values) {
+  assert(active_var_values.size() > 0);
+  assert(active_var_values.size() == result_values.size());
+  int num_data = active_var_values.size();
+
+  const std::set<VarType> all_vars = poly.getVariables();
+
+  // The set of vars left unspecified in at least one of active_var_values,
+  // and thus which must appear in our return map.
+  std::set<VarType> vars_to_estimate_set;
+  for (const PartialEvalType& partial_eval_map : active_var_values) {
+    std::set<VarType> unspecified_vars = all_vars;
+    for (auto const& element : partial_eval_map) {
+      unspecified_vars.erase(element.first);
+    }
+    vars_to_estimate_set.insert(unspecified_vars.begin(),
+                                unspecified_vars.end());
+  }
+  std::vector<VarType> vars_to_estimate(vars_to_estimate_set.begin(),
+                                        vars_to_estimate_set.end());
+  int num_to_estimate = vars_to_estimate.size();
+
+  // Make sure we have as many data points as vars we are estimating, or else
+  // our solution will be meaningless.
+  assert(num_data > vars_to_estimate.size());
+
+  // Build up our optimization problem and create any necessary VarType IDs.
+  Drake::OptimizationProblem problem;
+  const auto parameter_variables =
+      problem.AddContinuousVariables(num_to_estimate, "param");
+  const auto error_variables =
+      problem.AddContinuousVariables(num_data, "error");
+  std::vector<VarType> problem_vartypes = vars_to_estimate;
+  std::vector<VarType> error_vartypes;
+  std::set<VarType> vars_in_problem = vars_to_estimate_set;
+  for (int i = 0; i < num_data; i++) {
+    VarType error_var = CreateUnusedVar("err", vars_in_problem);
+    vars_in_problem.insert(error_var);
+    error_vartypes.push_back(error_var);
+    problem_vartypes.push_back(error_var);
+  }
+
+  // For each datum, build a constraint with an error term.
+  for (int i = 0; i < num_data; i++) {
+    const PartialEvalType& partial_eval_map = active_var_values[i];
+    PolyType partial_poly = poly.evaluatePartial(partial_eval_map);
+    PolyType constraint_poly = partial_poly + PolyType(1, error_vartypes[i]);
+    problem.AddPolynomialConstraint(
+        constraint_poly, problem_vartypes, result_values[i], result_values[i]);
+  }
+
+  // Create a cost function that is least-squares on the error terms.
+  auto cost = problem.AddQuadraticCost(
+      Eigen::MatrixXd::Identity(num_data, num_data),
+      Eigen::VectorXd::Zero(num_data),
+      std::list<Drake::DecisionVariableView> { error_variables });
+
+  // Solve the problem and copy out the result.
+  SolutionResult solution_result = problem.Solve();
+  if (solution_result != kSolutionFound) {
+    throw std::runtime_error(
+        "Solution failed: " + std::to_string(solution_result));
+  }
+  PartialEvalType estimates;
+  for (int i = 0; i < num_to_estimate; i++) {
+    VarType var = vars_to_estimate[i];
+    estimates[var] = parameter_variables.value()[i];
+  }
+  T error_squared = 0;
+  for (int i = 0; i < num_data; i++) {
+    error_squared += error_variables.value()[i] * error_variables.value()[i];
+  }
+
+  return std::make_pair(estimates, std::sqrt(error_squared));
 }
 
 }  // namespace solvers
