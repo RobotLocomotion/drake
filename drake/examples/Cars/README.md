@@ -121,6 +121,17 @@ To view the ROS `TF` tree:
 $ rosrun rqt_tf_tree rqt_tf_tree
 ```
 
+To drive the car around using a keyboard:
+
+```
+$ cd [drake distro]/drake/examples/Cars/ros_packages/
+$ git git@github.com:liangfok/ackermann-drive-teleop.git ackermann_drive_teleop
+$ cd ackermann_drive_teleop
+$ git checkout feature/ackermann_drive_stamped
+$ rosrun ackermann_drive_teleop ackermann_drive_keyop.py
+```
+
+
 Additional Simulation Notes
 ---------------------------
 
@@ -157,6 +168,23 @@ $ ../../pod-build/bin/publishDrivingCommand 1.0 .4
 
 Every time that you run the command above, it sends one LCM message.
 
+### Troubleshooting
+
+You may encounter the following error when executing the command to start RViz:
+
+```
+$ roslaunch drake_cars_examples rviz_prius.launch
+...
+  File "/opt/ros/indigo/share/xacro/xacro.py", line 47, in <module>
+    cur_dir = os.getcwd()
+OSError: [Errno 2] No such file or directory
+
+```
+
+This is often because the terminal was in a directory that was removed and
+replaced with another identically-named directory, possibly due to switching git
+branches. To fix this problem, simply change back to your `[drake distro]`
+directory and then navigate back to `[drake distro]/examples/Cars`.
 
 Adjustments for Windows
 -----------------------
