@@ -1,5 +1,7 @@
 #include "drake/solvers/system_identification.h"
 
+#include <random>  // Used only with deterministic seeds!
+
 #include "gtest/gtest.h"
 
 #include "drake/util/Polynomial.h"
@@ -182,6 +184,103 @@ TEST(SystemIdentificationTest, BasicEstimateParameters) {
     }
   }
 }
+
+/// Test to check parameter estimation for a basic spring-mass system.
+///@{
+
+struct State { double acceleration, velocity, position, force; };
+const static double kMass = 1;
+const static double kDamping = 0.1;
+const static double kSpring = 2;
+const static double kNoise = 0.01;
+const static double kNoiseSeed = 1;
+
+State AdvanceState(const State& previous, double input_force, double dt) {
+  State next;
+  next.force = input_force;
+  next.acceleration = (input_force -
+                       previous.velocity * kDamping -
+                       previous.position * kSpring) / kMass;
+  next.velocity = previous.velocity +
+      (dt * (previous.acceleration + next.acceleration) / 2);
+  next.position = previous.position +
+      (dt * (previous.velocity + next.velocity) / 2);
+  return next;
+}
+
+std::vector<State> MakeTestData() {
+  const static double kDt = 0.01;
+  const static double kDuration1 = 1;
+  const static double kInputForce1 = 1;
+  const static double kDuration2 = 3;
+  const static double kInputForce2 = 0;
+  const static State kInitial {0, 0, 0, 0};
+
+  std::vector<State> result { kInitial };
+  State current = kInitial;
+  double t = 0;
+  while (t < kDuration1) {
+    current = AdvanceState(current, kInputForce1, kDt);
+    result.push_back(current);
+    t += kDt;
+  }
+  while (t < kDuration1 + kDuration2) {
+    current = AdvanceState(current, kInputForce2, kDt);
+    result.push_back(current);
+    t += kDt;
+  }
+
+  return result;
+}
+
+TEST(SystemIdentificationTest, SpringMassIdentification) {
+  Polynomiald x = Polynomiald("x");
+  auto x_var = x.getSimpleVariable();
+  Polynomiald v = Polynomiald("v");
+  auto v_var = v.getSimpleVariable();
+  Polynomiald a = Polynomiald("a");
+  auto a_var = a.getSimpleVariable();
+  Polynomiald mass = Polynomiald("m");
+  auto mass_var = mass.getSimpleVariable();
+  Polynomiald damping = Polynomiald("b");
+  auto damping_var = damping.getSimpleVariable();
+  Polynomiald spring = Polynomiald("k");
+  auto spring_var = spring.getSimpleVariable();
+  Polynomiald manipulator = (mass * a) + (damping * v) + (spring * x);
+
+  std::default_random_engine noise_generator;
+  noise_generator.seed(kNoiseSeed);
+  std::uniform_real_distribution<double> noise_distribution(-kNoise, kNoise);
+  auto noise = std::bind(noise_distribution, noise_generator);
+
+  std::vector<State> oracular_data = MakeTestData();
+  std::vector<SID::PartialEvalType> observed_outputs;
+  std::vector<double> observed_inputs;
+  for (const State& oracular_state : oracular_data) {
+    observed_inputs.push_back(oracular_state.force + noise());
+    SID::PartialEvalType output;
+    output[x_var] = oracular_state.position + noise();
+    output[v_var] = oracular_state.velocity + noise();
+    output[a_var] = oracular_state.acceleration + noise();
+    observed_outputs.push_back(output);
+  }
+
+  SID::PartialEvalType estimated_params;
+  double error;
+  std::tie(estimated_params, error) =
+      SID::EstimateParameters(manipulator, observed_outputs, observed_inputs);
+
+  // Multiple layers of naive discrete-time numeric integration yields a very
+  // high error value here, particular for the damping term for reasons that I
+  // (ggould-tri) don't fully understand.
+  EXPECT_LT(error, 0.3);
+  EXPECT_EQ(estimated_params.size(), 3);
+  EXPECT_NEAR(estimated_params[mass_var], kMass, kNoise);
+  EXPECT_NEAR(estimated_params[damping_var], kDamping, error);
+  EXPECT_NEAR(estimated_params[spring_var], kSpring, kNoise);
+}
+
+///@}
 
 }  // anonymous namespace
 }  // namespace solvers
