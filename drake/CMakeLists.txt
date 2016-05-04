@@ -274,6 +274,7 @@ include_directories(thirdParty/cimg)
 
 add_subdirectory(common)
 add_subdirectory(core)
+add_subdirectory(multibody_dynamics)
 add_subdirectory(util)
 add_subdirectory(solvers)
 add_subdirectory(systems)
