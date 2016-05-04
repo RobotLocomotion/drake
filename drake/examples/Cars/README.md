@@ -15,8 +15,8 @@ Setup your Python path:
 $ export PYTHONPATH="[path to drake-distro]/build/lib/python2.7/dist-packages:[path to drake-distro]/build/lib/python2.7/site-packages:$PYTHONPATH"
 ```
 
-Running the simulator
----------------------
+Running the prius simulator
+---------------------------
 The following notes are for Ubuntu Linux and OS X users. Windows users need to adjust the instructions slightly. See the notes at the end of this section.
 
 ```
@@ -54,3 +54,8 @@ the executables.
 - When running from the Windows Command Prompt you'll need to use backslashes in
 place of forward slashes.
 - To run a command in the background use `start cmdline` in place of `cmdline &`.
+
+Running the simple car simulator
+--------------------------------
+
+Run `./simple_car_demo.sh`.
