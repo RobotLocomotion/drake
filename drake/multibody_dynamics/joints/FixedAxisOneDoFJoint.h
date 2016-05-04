@@ -25,23 +25,23 @@ class FixedAxisOneDoFJoint : public Joint<Scalar> {
     return VectorX<double>::Random(GetNumPositions());
   }
 
-  virtual MotionSubspaceType<Scalar> MotionSubspace(const Eigen::Ref<VectorX<Scalar>> &q) const override {
+  virtual MotionSubspaceType<Scalar> MotionSubspace(const Eigen::Ref<const VectorX<Scalar>> &q) const override {
     return joint_axis_;
   }
 
-  virtual SpatialVector<Scalar> MotionSubspaceDotTimesV(const Eigen::Ref<VectorX<Scalar>> &q, const Eigen::Ref<VectorX<Scalar>> &v) const override {
+  virtual SpatialVector<Scalar> MotionSubspaceDotTimesV(const Eigen::Ref<const VectorX<Scalar>> &q, const Eigen::Ref<const VectorX<Scalar>> &v) const override {
     return SpatialVector<Scalar>::Zero();
   }
 
-  virtual ConfigurationDerivativeToVelocityType<Scalar> ConfigurationDerivativeToVelocity(const Eigen::Ref<VectorX<Scalar>> &q) const override {
+  virtual ConfigurationDerivativeToVelocityType<Scalar> ConfigurationDerivativeToVelocity(const Eigen::Ref<const VectorX<Scalar>> &q) const override {
     return ConfigurationDerivativeToVelocityType<Scalar>::Identity(GetNumPositions(), GetNumVelocities());
   }
 
-  virtual VelocityToConfigurationDerivativeType<Scalar> VelocityToConfigurationDerivative(const Eigen::Ref<VectorX<Scalar>> &q) const override {
+  virtual VelocityToConfigurationDerivativeType<Scalar> VelocityToConfigurationDerivative(const Eigen::Ref<const VectorX<Scalar>> &q) const override {
     return VelocityToConfigurationDerivativeType<Scalar>::Identity(GetNumPositions(), GetNumVelocities());
   }
 
-  virtual VectorX<Scalar> FrictionTorque(const Eigen::Ref<VectorX<Scalar>> &v) const override {
+  virtual VectorX<Scalar> FrictionTorque(const Eigen::Ref<const VectorX<Scalar>> &v) const override {
     VectorX<Scalar> ret(GetNumVelocities(), 1);
     using std::abs;
     ret[0] = damping_ * v[0];

@@ -15,7 +15,7 @@ class RevoluteJoint : public FixedAxisOneDoFJoint<Scalar> {
     // empty
   }
 
-  virtual Transform3D<Scalar> JointTransform(const Eigen::Ref<VectorX<Scalar>> &q) const override {
+  virtual Transform3D<Scalar> JointTransform(const Eigen::Ref<const VectorX<Scalar>> &q) const override {
     const auto& joint_axis = GetJointAxis();
     Transform3D<Scalar> ret(Eigen::AngleAxis<Scalar>(q[0], joint_axis.template topRows<3>()));
     ret.makeAffine();

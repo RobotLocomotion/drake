@@ -80,7 +80,7 @@ class QuaternionFloatingJoint : public Joint<Scalar> {
     return q;
   }
 
-  virtual Transform3D<Scalar> JointTransform(const Eigen::Ref<VectorX<Scalar>> &q) const override {
+  virtual Transform3D<Scalar> JointTransform(const Eigen::Ref<const VectorX<Scalar>> &q) const override {
     Transform3D<Scalar> ret;
     ret.linear() = quat2rotmat(q.template bottomRows<4>());
     ret.translation() << q[0], q[1], q[2];
@@ -88,15 +88,15 @@ class QuaternionFloatingJoint : public Joint<Scalar> {
     return ret;
   }
 
-  virtual MotionSubspaceType<Scalar> MotionSubspace(const Eigen::Ref<VectorX<Scalar>> &q) const override {
+  virtual MotionSubspaceType<Scalar> MotionSubspace(const Eigen::Ref<const VectorX<Scalar>> &q) const override {
     return MotionSubspaceType<Scalar>::Identity(TWIST_SIZE, GetNumVelocities());
   }
 
-  virtual SpatialVector<Scalar> MotionSubspaceDotTimesV(const Eigen::Ref<VectorX<Scalar>> &q, const Eigen::Ref<VectorX<Scalar>> &v) const override {
+  virtual SpatialVector<Scalar> MotionSubspaceDotTimesV(const Eigen::Ref<const VectorX<Scalar>> &q, const Eigen::Ref<const VectorX<Scalar>> &v) const override {
     return SpatialVector<Scalar>::Zero();
   }
 
-  virtual ConfigurationDerivativeToVelocityType<Scalar> ConfigurationDerivativeToVelocity(const Eigen::Ref<VectorX<Scalar>> &q) const override {
+  virtual ConfigurationDerivativeToVelocityType<Scalar> ConfigurationDerivativeToVelocity(const Eigen::Ref<const VectorX<Scalar>> &q) const override {
 
     ConfigurationDerivativeToVelocityType<Scalar> ret(GetNumVelocities(), GetNumPositions());
     auto quat = q.template middleRows<QUAT_SIZE>(SPACE_DIMENSION);
@@ -113,7 +113,7 @@ class QuaternionFloatingJoint : public Joint<Scalar> {
     return ret;
   }
 
-  virtual VelocityToConfigurationDerivativeType<Scalar> VelocityToConfigurationDerivative(const Eigen::Ref<VectorX<Scalar>> &q) const override {
+  virtual VelocityToConfigurationDerivativeType<Scalar> VelocityToConfigurationDerivative(const Eigen::Ref<const VectorX<Scalar>> &q) const override {
     VelocityToConfigurationDerivativeType<Scalar> ret(GetNumPositions(), GetNumVelocities());
     auto quat = q.template middleRows<QUAT_SIZE>(SPACE_DIMENSION);
     auto R = quat2rotmat(quat);
@@ -129,7 +129,7 @@ class QuaternionFloatingJoint : public Joint<Scalar> {
     return ret;
   }
 
-  virtual VectorX<Scalar> FrictionTorque(const Eigen::Ref<VectorX<Scalar>> &v) const override {
+  virtual VectorX<Scalar> FrictionTorque(const Eigen::Ref<const VectorX<Scalar>> &v) const override {
     return Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(GetNumVelocities(), 1);
   }
 };

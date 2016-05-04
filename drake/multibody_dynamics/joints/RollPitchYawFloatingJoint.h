@@ -52,7 +52,7 @@ class RollPitchYawFloatingJoint : public Joint<Scalar> {
     return q;
   }
 
-  virtual Transform3D<Scalar> JointTransform(const Eigen::Ref<VectorX<Scalar>> &q) const override {
+  virtual Transform3D<Scalar> JointTransform(const Eigen::Ref<const VectorX<Scalar>> &q) const override {
     Transform3D<Scalar> ret;
     ret.linear() = rpy2rotmat(q.template middleRows<RPY_SIZE>(SPACE_DIMENSION));
     ret.translation() = q.template middleRows<SPACE_DIMENSION>(0);
@@ -60,7 +60,7 @@ class RollPitchYawFloatingJoint : public Joint<Scalar> {
     return ret;
   }
 
-  virtual MotionSubspaceType<Scalar> MotionSubspace(const Eigen::Ref<VectorX<Scalar>> &q) const override {
+  virtual MotionSubspaceType<Scalar> MotionSubspace(const Eigen::Ref<const VectorX<Scalar>> &q) const override {
     MotionSubspaceType<Scalar> ret(TWIST_SIZE, GetNumVelocities());
     auto rpy = q.template middleRows<RPY_SIZE>(SPACE_DIMENSION);
     Eigen::Matrix<Scalar, SPACE_DIMENSION, RPY_SIZE> E;
@@ -73,7 +73,7 @@ class RollPitchYawFloatingJoint : public Joint<Scalar> {
     return ret;
   }
 
-  virtual SpatialVector<Scalar> MotionSubspaceDotTimesV(const Eigen::Ref<VectorX<Scalar>> &q, const Eigen::Ref<VectorX<Scalar>> &v) const override {
+  virtual SpatialVector<Scalar> MotionSubspaceDotTimesV(const Eigen::Ref<const VectorX<Scalar>> &q, const Eigen::Ref<const VectorX<Scalar>> &v) const override {
     SpatialVector<Scalar> ret;
 
     auto rpy = q.template middleRows<RPY_SIZE>(SPACE_DIMENSION);
@@ -116,15 +116,15 @@ class RollPitchYawFloatingJoint : public Joint<Scalar> {
     return ret;
   }
 
-  virtual ConfigurationDerivativeToVelocityType<Scalar> ConfigurationDerivativeToVelocity(const Eigen::Ref<VectorX<Scalar>> &q) const override {
+  virtual ConfigurationDerivativeToVelocityType<Scalar> ConfigurationDerivativeToVelocity(const Eigen::Ref<const VectorX<Scalar>> &q) const override {
     return ConfigurationDerivativeToVelocityType<Scalar>::Identity(GetNumVelocities(), GetNumPositions());
   }
 
-  virtual VelocityToConfigurationDerivativeType<Scalar> VelocityToConfigurationDerivative(const Eigen::Ref<VectorX<Scalar>> &q) const override {
+  virtual VelocityToConfigurationDerivativeType<Scalar> VelocityToConfigurationDerivative(const Eigen::Ref<const VectorX<Scalar>> &q) const override {
     return VelocityToConfigurationDerivativeType<Scalar>::Identity(GetNumPositions(), GetNumVelocities());
   }
 
-  virtual VectorX<Scalar> FrictionTorque(const Eigen::Ref<VectorX<Scalar>> &v) const override {
+  virtual VectorX<Scalar> FrictionTorque(const Eigen::Ref<const VectorX<Scalar>> &v) const override {
     return VectorX<Scalar>::Zero(GetNumVelocities(), 1);
   }
 };

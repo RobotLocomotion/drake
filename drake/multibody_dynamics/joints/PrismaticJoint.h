@@ -15,7 +15,7 @@ class PrismaticJoint : public FixedAxisOneDoFJoint<Scalar> {
     // empty
   }
 
-  virtual Transform3D<Scalar> JointTransform(const Eigen::Ref<VectorX<Scalar>> &q) const override {
+  virtual Transform3D<Scalar> JointTransform(const Eigen::Ref<const VectorX<Scalar>> &q) const override {
     Transform3D<Scalar> ret;
     ret.linear().setIdentity();
     const auto& joint_axis = GetJointAxis();
