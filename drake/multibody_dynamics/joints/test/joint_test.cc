@@ -1,4 +1,3 @@
-#include <iostream>
 #include <gtest/gtest.h>
 #include "drake/multibody_dynamics/joints/Joints.h"
 #include "drake/core/Gradient.h"
