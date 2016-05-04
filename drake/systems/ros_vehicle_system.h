@@ -96,28 +96,28 @@ class ROSAckermannCommandReceiverSystem {
   using OutputVector = Vector<ScalarType>;
   // static const bool has_lcm_input = true;
 
-  explicit ROSAckermannCommandReceiverSystem() {
+  explicit ROSAckermannCommandReceiverSystem() : spinner_(1) {
     ros::NodeHandle nh;
 
     // Instantiates a ROS topic subscriber that receives vehicle driving
     // commands.
-    subscriber_ = nh.subscribe("vehicle_drive_command", kSubscriberQueueSize,
+    subscriber_ = nh.subscribe("ackermann_cmd", kSubscriberQueueSize,
       &ROSAckermannCommandReceiverSystem::commandCallback, this);
 
-    // Instantiates a subscriber for the drive command
-
-    // lcm::Subscription *sub =
-    //     lcm->subscribe(Vector<double>::channel(),
-    //                    &ROSAckermannCommandReceiverSystem<Vector>::handleMessage, this);
-    // sub->setQueueCapacity(1);
+    // Instantiates a child thread for receiving ROS messages.
+    // See: http://wiki.ros.org/roscpp/Overview/Callbacks%20and%20Spinning#Multi-threaded_Spinning
+    // ros::AsyncSpinner spinner(1); // Use 1 thread
+    spinner_.start();
   }
 
   virtual ~ROSAckermannCommandReceiverSystem() {}
 
   void commandCallback(const ackermann_msgs::AckermannDriveStamped& msg) {
+    std::cout << "RosAckermannCommandReceiverSystem: Received command:\n"
+      << msg << std::endl;
     data_mutex_.lock();
-    data_(0) = msg.drive.steering_angle;
-    data_(1) = msg.drive.speed;
+    // data_(0) = msg.drive.steering_angle;
+    // data_(1) = msg.drive.speed;
     data_mutex_.unlock();
   }
 
@@ -142,6 +142,8 @@ class ROSAckermannCommandReceiverSystem {
 
   // double timestamp;
   OutputVector<double> data_;
+
+  ros::AsyncSpinner spinner_;
 };
 
 // template <template <typename> class Vector, typename Enable = void>
