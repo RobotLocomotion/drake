@@ -8,15 +8,15 @@ namespace drake {
 template <typename Scalar>
 class HelicalJoint : public FixedAxisOneDoFJoint<Scalar> {
  public:
-  using FixedAxisOneDoFJoint<Scalar>::getJointAxis;
+  using FixedAxisOneDoFJoint<Scalar>::GetJointAxis;
 
   HelicalJoint(const std::string& name, const Transform3D<Scalar> &transform_to_parent_body, const Eigen::Matrix<Scalar, 3, 1>& axis, const Scalar& pitch) :
-      FixedAxisOneDoFJoint<Scalar>(name, transform_to_parent_body, createSpatialAxis(axis, pitch)) {
+      FixedAxisOneDoFJoint<Scalar>(name, transform_to_parent_body, CreateSpatialAxis(axis, pitch)) {
     // empty
   }
 
-  virtual Transform3D<Scalar> jointTransform(const Eigen::Ref<VectorX<Scalar>> &q) const override {
-    const auto& joint_axis = getJointAxis();
+  virtual Transform3D<Scalar> JointTransform(const Eigen::Ref<VectorX<Scalar>> &q) const override {
+    const auto& joint_axis = GetJointAxis();
     auto rotation = Eigen::AngleAxis<Scalar>(q[0], joint_axis.template topRows<3>());
     auto translation = Eigen::Translation<Scalar, 3>(q[0] * joint_axis.template bottomRows<3>());
     Transform3D<Scalar> ret(rotation * translation);
@@ -25,7 +25,7 @@ class HelicalJoint : public FixedAxisOneDoFJoint<Scalar> {
   }
 
  private:
-  static SpatialVector<Scalar> createSpatialAxis(const Eigen::Matrix<Scalar, 3, 1>& axis, const Scalar& pitch) {
+  static SpatialVector<Scalar> CreateSpatialAxis(const Eigen::Matrix<Scalar, 3, 1>& axis, const Scalar& pitch) {
     auto ret = SpatialVector<Scalar>();
     ret.template topRows<3>() = axis;
     ret.template bottomRows<3>() = pitch * axis;

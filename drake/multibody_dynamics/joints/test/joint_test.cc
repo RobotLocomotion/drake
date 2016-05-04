@@ -31,9 +31,9 @@ class JointTest : public ::testing::Test {
 
 TEST_F(JointTest, ZeroConfiguration) {
   for (const auto& joint_ptr : joints) {
-    // zero configuration --> jointTransform identity
-    auto q0 = joint_ptr->zeroConfiguration();
-    auto zero_transform = joint_ptr->jointTransform(q0);
+    // zero configuration --> JointTransform identity
+    auto q0 = joint_ptr->ZeroConfiguration();
+    auto zero_transform = joint_ptr->JointTransform(q0);
     EXPECT_TRUE(zero_transform.isApprox(Transform3D<double>::Identity()));
   }
 }
@@ -44,13 +44,15 @@ TEST_F(JointTest, ZeroConfiguration) {
 TEST_F(JointTest, ConfigurationDotToVelocityAndBack) {
   std::default_random_engine generator;
   for (const auto& joint_ptr : joints) {
-    auto q = joint_ptr->randomConfiguration(generator);
-    auto velocity_to_configuration_dot = joint_ptr->velocityToConfigurationDerivative(q);
-    auto configuration_dot_to_velocity = joint_ptr->configurationDerivativeToVelocity(q);
-    int num_velocities = joint_ptr->getNumVelocities();
+    auto q = joint_ptr->RandomConfiguration(generator);
+    auto velocity_to_configuration_dot = joint_ptr->VelocityToConfigurationDerivative(q);
+    auto configuration_dot_to_velocity = joint_ptr->ConfigurationDerivativeToVelocity(q);
+    int num_velocities = joint_ptr->GetNumVelocities();
     auto bla = (configuration_dot_to_velocity * velocity_to_configuration_dot).eval();
     auto zero = MatrixXd::Identity(num_velocities, num_velocities).eval();
     EXPECT_TRUE(bla.isApprox(zero));
   }
 }
+
+} // drake
 

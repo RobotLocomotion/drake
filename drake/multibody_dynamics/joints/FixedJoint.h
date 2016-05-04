@@ -9,44 +9,44 @@ namespace drake {
 template <typename Scalar>
 class FixedJoint : public Joint<Scalar> {
  public:
-  using Joint<Scalar>::getNumPositions;
-  using Joint<Scalar>::getNumVelocities;
+  using Joint<Scalar>::GetNumPositions;
+  using Joint<Scalar>::GetNumVelocities;
 
   FixedJoint(const std::string &name, const Transform3D<Scalar> &transform_to_parent_body) :
       Joint<Scalar>(name, transform_to_parent_body, 0, 0, false) {
     // empty
   }
 
-  virtual std::string getPositionNamePostfix(int index) const override {
+  virtual std::string GetPositionNamePostfix(int index) const override {
     throw std::runtime_error("bad index");
   }
 
-  virtual VectorX<double> randomConfiguration(std::default_random_engine &generator) const override {
-    return VectorX<double>::Zero(getNumPositions());
+  virtual VectorX<double> RandomConfiguration(std::default_random_engine &generator) const override {
+    return VectorX<double>::Zero(GetNumPositions());
   }
 
-  virtual Transform3D<Scalar> jointTransform(const Eigen::Ref<VectorX<Scalar>> &q) const override {
+  virtual Transform3D<Scalar> JointTransform(const Eigen::Ref<VectorX<Scalar>> &q) const override {
     return Transform3D<Scalar>::Identity();
   }
 
-  virtual MotionSubspace<Scalar> motionSubspace(const Eigen::Ref<VectorX<Scalar>> &q) const override {
-    return MotionSubspace<Scalar>::Zero(TWIST_SIZE, getNumVelocities());
+  virtual MotionSubspaceType<Scalar> MotionSubspace(const Eigen::Ref<VectorX<Scalar>> &q) const override {
+    return MotionSubspaceType<Scalar>::Zero(TWIST_SIZE, GetNumVelocities());
   }
 
-  virtual SpatialVector<Scalar> motionSubspaceDotTimesV(const Eigen::Ref<VectorX<Scalar>> &q, const Eigen::Ref<VectorX<Scalar>> &v) const override {
+  virtual SpatialVector<Scalar> MotionSubspaceDotTimesV(const Eigen::Ref<VectorX<Scalar>> &q, const Eigen::Ref<VectorX<Scalar>> &v) const override {
     return SpatialVector<Scalar>::Zero();
   }
 
-  virtual ConfigurationDerivativeToVelocity<Scalar> configurationDerivativeToVelocity(const Eigen::Ref<VectorX<Scalar>> &q) const override {
-    return ConfigurationDerivativeToVelocity<Scalar>::Zero(getNumVelocities(), getNumPositions());
+  virtual ConfigurationDerivativeToVelocityType<Scalar> ConfigurationDerivativeToVelocity(const Eigen::Ref<VectorX<Scalar>> &q) const override {
+    return ConfigurationDerivativeToVelocityType<Scalar>::Zero(GetNumVelocities(), GetNumPositions());
   }
 
-  virtual VelocityToConfigurationDerivative<Scalar> velocityToConfigurationDerivative(const Eigen::Ref<VectorX<Scalar>> &q) const override {
-    return VelocityToConfigurationDerivative<Scalar>::Zero(getNumPositions(), getNumVelocities());
+  virtual VelocityToConfigurationDerivativeType<Scalar> VelocityToConfigurationDerivative(const Eigen::Ref<VectorX<Scalar>> &q) const override {
+    return VelocityToConfigurationDerivativeType<Scalar>::Zero(GetNumPositions(), GetNumVelocities());
   }
 
-  virtual VectorX<Scalar> frictionTorque(const Eigen::Ref<VectorX<Scalar>> &v) const override {
-    return VectorX<Scalar>::Zero(getNumVelocities(), 1);
+  virtual VectorX<Scalar> FrictionTorque(const Eigen::Ref<VectorX<Scalar>> &v) const override {
+    return VectorX<Scalar>::Zero(GetNumVelocities(), 1);
   }
 
 };

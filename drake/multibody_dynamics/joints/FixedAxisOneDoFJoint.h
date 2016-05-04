@@ -8,66 +8,66 @@ namespace drake {
 template <typename Scalar>
 class FixedAxisOneDoFJoint : public Joint<Scalar> {
  public:
-  using Joint<Scalar>::getNumPositions;
-  using Joint<Scalar>::getNumVelocities;
+  using Joint<Scalar>::GetNumPositions;
+  using Joint<Scalar>::GetNumVelocities;
 
   FixedAxisOneDoFJoint(const std::string &name, const Transform3D<Scalar> &transform_to_parent_body, const SpatialVector<Scalar>& axis) :
-      Joint<Scalar>(name, transform_to_parent_body, 1, 1, false), joint_axis(axis) {
+      Joint<Scalar>(name, transform_to_parent_body, 1, 1, false), joint_axis_(axis) {
     // empty
   }
 
-  virtual std::string getPositionNamePostfix(int index) const override {
+  virtual std::string GetPositionNamePostfix(int index) const override {
     if (index != 0) throw std::runtime_error("bad index");
     return "";
   }
 
-  virtual VectorX<double> randomConfiguration(std::default_random_engine &generator) const override {
-    return VectorX<double>::Random(getNumPositions());
+  virtual VectorX<double> RandomConfiguration(std::default_random_engine &generator) const override {
+    return VectorX<double>::Random(GetNumPositions());
   }
 
-  virtual MotionSubspace<Scalar> motionSubspace(const Eigen::Ref<VectorX<Scalar>> &q) const override {
-    return joint_axis;
+  virtual MotionSubspaceType<Scalar> MotionSubspace(const Eigen::Ref<VectorX<Scalar>> &q) const override {
+    return joint_axis_;
   }
 
-  virtual SpatialVector<Scalar> motionSubspaceDotTimesV(const Eigen::Ref<VectorX<Scalar>> &q, const Eigen::Ref<VectorX<Scalar>> &v) const override {
+  virtual SpatialVector<Scalar> MotionSubspaceDotTimesV(const Eigen::Ref<VectorX<Scalar>> &q, const Eigen::Ref<VectorX<Scalar>> &v) const override {
     return SpatialVector<Scalar>::Zero();
   }
 
-  virtual ConfigurationDerivativeToVelocity<Scalar> configurationDerivativeToVelocity(const Eigen::Ref<VectorX<Scalar>> &q) const override {
-    return ConfigurationDerivativeToVelocity<Scalar>::Identity(getNumPositions(), getNumVelocities());
+  virtual ConfigurationDerivativeToVelocityType<Scalar> ConfigurationDerivativeToVelocity(const Eigen::Ref<VectorX<Scalar>> &q) const override {
+    return ConfigurationDerivativeToVelocityType<Scalar>::Identity(GetNumPositions(), GetNumVelocities());
   }
 
-  virtual VelocityToConfigurationDerivative<Scalar> velocityToConfigurationDerivative(const Eigen::Ref<VectorX<Scalar>> &q) const override {
-    return VelocityToConfigurationDerivative<Scalar>::Identity(getNumPositions(), getNumVelocities());
+  virtual VelocityToConfigurationDerivativeType<Scalar> VelocityToConfigurationDerivative(const Eigen::Ref<VectorX<Scalar>> &q) const override {
+    return VelocityToConfigurationDerivativeType<Scalar>::Identity(GetNumPositions(), GetNumVelocities());
   }
 
-  virtual VectorX<Scalar> frictionTorque(const Eigen::Ref<VectorX<Scalar>> &v) const override {
-    VectorX<Scalar> ret(getNumVelocities(), 1);
+  virtual VectorX<Scalar> FrictionTorque(const Eigen::Ref<VectorX<Scalar>> &v) const override {
+    VectorX<Scalar> ret(GetNumVelocities(), 1);
     using std::abs;
-    ret[0] = damping * v[0];
-    Scalar coulomb_window_fraction = v[0] / coulomb_window;
-    Scalar coulomb = std::min(Scalar(1), std::max(Scalar(-1), coulomb_window_fraction)) * coulomb_friction;
+    ret[0] = damping_ * v[0];
+    Scalar coulomb_window_fraction = v[0] / coulomb_window_;
+    Scalar coulomb = std::min(Scalar(1), std::max(Scalar(-1), coulomb_window_fraction)) * coulomb_friction_;
     ret[0] += coulomb;
     return ret;
   }
 
-  void setDynamics(const Scalar& damping, const Scalar& coulomb_friction, const Scalar& coulomb_window) {
-    this->damping = damping;
-    this->coulomb_friction = coulomb_friction;
-    this->coulomb_window = coulomb_window;
+  void SetDynamics(const Scalar& damping, const Scalar& coulomb_friction, const Scalar& coulomb_window) {
+    this->damping_ = damping;
+    this->coulomb_friction_ = coulomb_friction;
+    this->coulomb_window_ = coulomb_window;
   }
 
-  const SpatialVector <Scalar> &getJointAxis() const {
-    return joint_axis;
+  const SpatialVector <Scalar> &GetJointAxis() const {
+    return joint_axis_;
   }
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF((sizeof(SpatialVector<Scalar>)%16)==0)
 
  private:
-  SpatialVector<Scalar> joint_axis;
-  Scalar damping;
-  Scalar coulomb_friction;
-  Scalar coulomb_window;
+  SpatialVector<Scalar> joint_axis_;
+  Scalar damping_;
+  Scalar coulomb_friction_;
+  Scalar coulomb_window_;
 };
 
 }

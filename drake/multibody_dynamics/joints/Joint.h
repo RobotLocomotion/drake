@@ -24,13 +24,13 @@ template <typename Scalar>
 using SpatialVector = Eigen::Matrix<Scalar, TWIST_SIZE, 1>;
 
 template <typename Scalar>
-using MotionSubspace = Eigen::Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic, 0, TWIST_SIZE, kMaxNumJointVelocities>;
+using MotionSubspaceType = Eigen::Matrix<Scalar, TWIST_SIZE, Eigen::Dynamic, 0, TWIST_SIZE, kMaxNumJointVelocities>;
 
 template <typename Scalar>
-using ConfigurationDerivativeToVelocity = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, 0, kMaxNumJointVelocities, kMaxNumJointPositions>;
+using ConfigurationDerivativeToVelocityType = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, 0, kMaxNumJointVelocities, kMaxNumJointPositions>;
 
 template <typename Scalar>
-using VelocityToConfigurationDerivative = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, 0, kMaxNumJointPositions, kMaxNumJointVelocities>;
+using VelocityToConfigurationDerivativeType = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, 0, kMaxNumJointPositions, kMaxNumJointVelocities>;
 // end move to better place
 
 // TODO: find place to implement joint limits
@@ -39,61 +39,61 @@ template <typename Scalar>
 class Joint {
  public:
   Joint(const std::string &name, const Transform3D<Scalar> &transform_to_parent_body, int num_positions, int num_velocities, bool is_floating) :
-      name(name), transform_to_parent_body(transform_to_parent_body), num_positions(num_positions), num_velocities(num_velocities), is_floating(is_floating) {
+      name_(name), transform_to_parent_body_(transform_to_parent_body), num_positions_(num_positions), num_velocities_(num_velocities), is_floating_(is_floating) {
     assert(num_positions <= kMaxNumJointPositions);
     assert(num_velocities <= kMaxNumJointVelocities);
   }
 
-  int getNumPositions() const { return num_positions; }
+  int GetNumPositions() const { return num_positions_; }
 
-  int getNumVelocities() const { return num_velocities; }
+  int GetNumVelocities() const { return num_velocities_; }
 
-  const std::string &getName() const { return name; };
+  const std::string &GetName() const { return name_; };
 
-  const Transform3D<Scalar> &getTransformToParentBody() const { return transform_to_parent_body; };
+  const Transform3D<Scalar> &GetTransformToParentBody() const { return transform_to_parent_body_; };
 
-  std::string getPositionName(int index) const {
-    return name + getPositionNamePostfix(index);
+  std::string GetPositionName(int index) const {
+    return name_ + GetPositionNamePostfix(index);
   }
 
-  std::string getVelocityName(int index) const {
-    return name + getVelocityNamePostfix(index);
+  std::string GetVelocityName(int index) const {
+    return name_ + GetVelocityNamePostfix(index);
   }
 
-  bool isFloating() const { return is_floating; };
+  bool IsFloating() const { return is_floating_; };
 
-  virtual std::string getPositionNamePostfix(int index) const = 0;
+  virtual std::string GetPositionNamePostfix(int index) const = 0;
 
-  virtual std::string getVelocityNamePostfix(int index) const {
-    return getPositionName(index) + "dot";
+  virtual std::string GetVelocityNamePostfix(int index) const {
+    return GetPositionNamePostfix(index) + "dot";
   }
 
-  virtual VectorX<double> zeroConfiguration() const {
-    return Eigen::VectorXd::Zero(getNumPositions());
+  virtual VectorX<double> ZeroConfiguration() const {
+    return Eigen::VectorXd::Zero(GetNumPositions());
   }
 
-  virtual VectorX<double> randomConfiguration(std::default_random_engine &generator) const = 0;
+  virtual VectorX<double> RandomConfiguration(std::default_random_engine &generator) const = 0;
 
-  virtual Transform3D<Scalar> jointTransform(const Eigen::Ref<VectorX<Scalar>> &q) const = 0;
+  virtual Transform3D<Scalar> JointTransform(const Eigen::Ref<VectorX<Scalar>> &q) const = 0;
 
-  virtual MotionSubspace<Scalar> motionSubspace(const Eigen::Ref<VectorX<Scalar>> &q) const = 0;
+  virtual MotionSubspaceType<Scalar> MotionSubspace(const Eigen::Ref<VectorX<Scalar>> &q) const = 0;
 
-  virtual SpatialVector<Scalar> motionSubspaceDotTimesV(const Eigen::Ref<VectorX<Scalar>> &q, const Eigen::Ref<VectorX<Scalar>> &v) const = 0;
+  virtual SpatialVector<Scalar> MotionSubspaceDotTimesV(const Eigen::Ref<VectorX<Scalar>> &q, const Eigen::Ref<VectorX<Scalar>> &v) const = 0;
 
-  virtual ConfigurationDerivativeToVelocity<Scalar> configurationDerivativeToVelocity(const Eigen::Ref<VectorX<Scalar>> &q) const = 0;
+  virtual ConfigurationDerivativeToVelocityType<Scalar> ConfigurationDerivativeToVelocity(const Eigen::Ref<VectorX<Scalar>> &q) const = 0;
 
-  virtual VelocityToConfigurationDerivative<Scalar> velocityToConfigurationDerivative(const Eigen::Ref<VectorX<Scalar>> &q) const = 0;
+  virtual VelocityToConfigurationDerivativeType<Scalar> VelocityToConfigurationDerivative(const Eigen::Ref<VectorX<Scalar>> &q) const = 0;
 
-  virtual VectorX<Scalar> frictionTorque(const Eigen::Ref<VectorX<Scalar>> &v) const = 0;
+  virtual VectorX<Scalar> FrictionTorque(const Eigen::Ref<VectorX<Scalar>> &v) const = 0;
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF((sizeof(Transform3D<Scalar>)%16)==0)
 
  private:
-  const std::string name;
-  const Transform3D<Scalar> transform_to_parent_body;
-  const int num_positions;
-  const int num_velocities;
-  const bool is_floating;
+  const std::string name_;
+  const Transform3D<Scalar> transform_to_parent_body_;
+  const int num_positions_;
+  const int num_velocities_;
+  const bool is_floating_;
 };
 
 }

@@ -8,8 +8,8 @@ namespace drake {
 template <typename Scalar>
 class RollPitchYawFloatingJoint : public Joint<Scalar> {
  public:
-  using Joint<Scalar>::getNumPositions;
-  using Joint<Scalar>::getNumVelocities;
+  using Joint<Scalar>::GetNumPositions;
+  using Joint<Scalar>::GetNumVelocities;
 
 
   RollPitchYawFloatingJoint(const std::string &name, const Transform3D<Scalar> &transform_to_parent_body) :
@@ -17,7 +17,7 @@ class RollPitchYawFloatingJoint : public Joint<Scalar> {
     // empty
   }
 
-  virtual std::string getPositionNamePostfix(int index) const override {
+  virtual std::string GetPositionNamePostfix(int index) const override {
     switch (index) {
       case 0:
         return "_x";
@@ -36,7 +36,7 @@ class RollPitchYawFloatingJoint : public Joint<Scalar> {
     }
   }
 
-  virtual Eigen::VectorXd randomConfiguration(std::default_random_engine &generator) const override {
+  virtual Eigen::VectorXd RandomConfiguration(std::default_random_engine &generator) const override {
     using namespace Eigen;
 
     VectorXd q(6);
@@ -52,7 +52,7 @@ class RollPitchYawFloatingJoint : public Joint<Scalar> {
     return q;
   }
 
-  virtual Transform3D<Scalar> jointTransform(const Eigen::Ref<VectorX<Scalar>> &q) const override {
+  virtual Transform3D<Scalar> JointTransform(const Eigen::Ref<VectorX<Scalar>> &q) const override {
     Transform3D<Scalar> ret;
     ret.linear() = rpy2rotmat(q.template middleRows<RPY_SIZE>(SPACE_DIMENSION));
     ret.translation() = q.template middleRows<SPACE_DIMENSION>(0);
@@ -60,8 +60,8 @@ class RollPitchYawFloatingJoint : public Joint<Scalar> {
     return ret;
   }
 
-  virtual MotionSubspace<Scalar> motionSubspace(const Eigen::Ref<VectorX<Scalar>> &q) const override {
-    MotionSubspace<Scalar> ret(TWIST_SIZE, getNumVelocities());
+  virtual MotionSubspaceType<Scalar> MotionSubspace(const Eigen::Ref<VectorX<Scalar>> &q) const override {
+    MotionSubspaceType<Scalar> ret(TWIST_SIZE, GetNumVelocities());
     auto rpy = q.template middleRows<RPY_SIZE>(SPACE_DIMENSION);
     Eigen::Matrix<Scalar, SPACE_DIMENSION, RPY_SIZE> E;
     rpydot2angularvelMatrix(rpy, E);
@@ -73,7 +73,7 @@ class RollPitchYawFloatingJoint : public Joint<Scalar> {
     return ret;
   }
 
-  virtual SpatialVector<Scalar> motionSubspaceDotTimesV(const Eigen::Ref<VectorX<Scalar>> &q, const Eigen::Ref<VectorX<Scalar>> &v) const override {
+  virtual SpatialVector<Scalar> MotionSubspaceDotTimesV(const Eigen::Ref<VectorX<Scalar>> &q, const Eigen::Ref<VectorX<Scalar>> &v) const override {
     SpatialVector<Scalar> ret;
 
     auto rpy = q.template middleRows<RPY_SIZE>(SPACE_DIMENSION);
@@ -116,16 +116,16 @@ class RollPitchYawFloatingJoint : public Joint<Scalar> {
     return ret;
   }
 
-  virtual ConfigurationDerivativeToVelocity<Scalar> configurationDerivativeToVelocity(const Eigen::Ref<VectorX<Scalar>> &q) const override {
-    return ConfigurationDerivativeToVelocity<Scalar>::Identity(getNumVelocities(), getNumPositions());
+  virtual ConfigurationDerivativeToVelocityType<Scalar> ConfigurationDerivativeToVelocity(const Eigen::Ref<VectorX<Scalar>> &q) const override {
+    return ConfigurationDerivativeToVelocityType<Scalar>::Identity(GetNumVelocities(), GetNumPositions());
   }
 
-  virtual VelocityToConfigurationDerivative<Scalar> velocityToConfigurationDerivative(const Eigen::Ref<VectorX<Scalar>> &q) const override {
-    return VelocityToConfigurationDerivative<Scalar>::Identity(getNumPositions(), getNumVelocities());
+  virtual VelocityToConfigurationDerivativeType<Scalar> VelocityToConfigurationDerivative(const Eigen::Ref<VectorX<Scalar>> &q) const override {
+    return VelocityToConfigurationDerivativeType<Scalar>::Identity(GetNumPositions(), GetNumVelocities());
   }
 
-  virtual VectorX<Scalar> frictionTorque(const Eigen::Ref<VectorX<Scalar>> &v) const override {
-    return VectorX<Scalar>::Zero(getNumVelocities(), 1);
+  virtual VectorX<Scalar> FrictionTorque(const Eigen::Ref<VectorX<Scalar>> &v) const override {
+    return VectorX<Scalar>::Zero(GetNumVelocities(), 1);
   }
 };
 

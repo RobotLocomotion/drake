@@ -8,15 +8,15 @@ namespace drake {
 template <typename Scalar>
 class QuaternionFloatingJoint : public Joint<Scalar> {
  public:
-  using Joint<Scalar>::getNumPositions;
-  using Joint<Scalar>::getNumVelocities;
+  using Joint<Scalar>::GetNumPositions;
+  using Joint<Scalar>::GetNumVelocities;
 
   QuaternionFloatingJoint(const std::string &name, const Transform3D<Scalar> &transform_to_parent_body) :
       Joint<Scalar>(name, transform_to_parent_body, 7, 6, true) {
     // empty
   }
 
-  virtual std::string getPositionNamePostfix(int index) const override {
+  virtual std::string GetPositionNamePostfix(int index) const override {
     switch (index) {
       case 0:
         return "_x";
@@ -37,7 +37,7 @@ class QuaternionFloatingJoint : public Joint<Scalar> {
     }
   }
 
-  virtual std::string getVelocityNamePostfix(int index) const override {
+  virtual std::string GetVelocityNamePostfix(int index) const override {
     switch (index) {
       case 0:
         return "_wx";
@@ -56,14 +56,14 @@ class QuaternionFloatingJoint : public Joint<Scalar> {
     }
   }
 
-  virtual VectorX<double> zeroConfiguration() const override {
-    VectorX<double> ret(getNumPositions());
+  virtual VectorX<double> ZeroConfiguration() const override {
+    VectorX<double> ret(GetNumPositions());
     ret << 0, 0, 0, 1, 0, 0, 0;
     return ret;
   }
 
-  virtual VectorX<double> randomConfiguration(std::default_random_engine &generator) const override {
-    VectorX<double> q(getNumPositions());
+  virtual VectorX<double> RandomConfiguration(std::default_random_engine &generator) const override {
+    VectorX<double> q(GetNumPositions());
     std::normal_distribution<double> normal;
 
     // position
@@ -80,7 +80,7 @@ class QuaternionFloatingJoint : public Joint<Scalar> {
     return q;
   }
 
-  virtual Transform3D<Scalar> jointTransform(const Eigen::Ref<VectorX<Scalar>> &q) const override {
+  virtual Transform3D<Scalar> JointTransform(const Eigen::Ref<VectorX<Scalar>> &q) const override {
     Transform3D<Scalar> ret;
     ret.linear() = quat2rotmat(q.template bottomRows<4>());
     ret.translation() << q[0], q[1], q[2];
@@ -88,17 +88,17 @@ class QuaternionFloatingJoint : public Joint<Scalar> {
     return ret;
   }
 
-  virtual MotionSubspace<Scalar> motionSubspace(const Eigen::Ref<VectorX<Scalar>> &q) const override {
-    return MotionSubspace<Scalar>::Identity(TWIST_SIZE, getNumVelocities());
+  virtual MotionSubspaceType<Scalar> MotionSubspace(const Eigen::Ref<VectorX<Scalar>> &q) const override {
+    return MotionSubspaceType<Scalar>::Identity(TWIST_SIZE, GetNumVelocities());
   }
 
-  virtual SpatialVector<Scalar> motionSubspaceDotTimesV(const Eigen::Ref<VectorX<Scalar>> &q, const Eigen::Ref<VectorX<Scalar>> &v) const override {
+  virtual SpatialVector<Scalar> MotionSubspaceDotTimesV(const Eigen::Ref<VectorX<Scalar>> &q, const Eigen::Ref<VectorX<Scalar>> &v) const override {
     return SpatialVector<Scalar>::Zero();
   }
 
-  virtual ConfigurationDerivativeToVelocity<Scalar> configurationDerivativeToVelocity(const Eigen::Ref<VectorX<Scalar>> &q) const override {
+  virtual ConfigurationDerivativeToVelocityType<Scalar> ConfigurationDerivativeToVelocity(const Eigen::Ref<VectorX<Scalar>> &q) const override {
 
-    ConfigurationDerivativeToVelocity<Scalar> ret(getNumVelocities(), getNumPositions());
+    ConfigurationDerivativeToVelocityType<Scalar> ret(GetNumVelocities(), GetNumPositions());
     auto quat = q.template middleRows<QUAT_SIZE>(SPACE_DIMENSION);
     auto R = quat2rotmat(quat);
 
@@ -113,8 +113,8 @@ class QuaternionFloatingJoint : public Joint<Scalar> {
     return ret;
   }
 
-  virtual VelocityToConfigurationDerivative<Scalar> velocityToConfigurationDerivative(const Eigen::Ref<VectorX<Scalar>> &q) const override {
-    VelocityToConfigurationDerivative<Scalar> ret(getNumPositions(), getNumVelocities());
+  virtual VelocityToConfigurationDerivativeType<Scalar> VelocityToConfigurationDerivative(const Eigen::Ref<VectorX<Scalar>> &q) const override {
+    VelocityToConfigurationDerivativeType<Scalar> ret(GetNumPositions(), GetNumVelocities());
     auto quat = q.template middleRows<QUAT_SIZE>(SPACE_DIMENSION);
     auto R = quat2rotmat(quat);
 
@@ -129,8 +129,8 @@ class QuaternionFloatingJoint : public Joint<Scalar> {
     return ret;
   }
 
-  virtual VectorX<Scalar> frictionTorque(const Eigen::Ref<VectorX<Scalar>> &v) const override {
-    return Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(getNumVelocities(), 1);
+  virtual VectorX<Scalar> FrictionTorque(const Eigen::Ref<VectorX<Scalar>> &v) const override {
+    return Eigen::Matrix<Scalar, Eigen::Dynamic, 1>::Zero(GetNumVelocities(), 1);
   }
 };
 
