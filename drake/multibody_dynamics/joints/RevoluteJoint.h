@@ -1,7 +1,7 @@
 #ifndef DRAKE_MULTIBODY_DYNAMICS_JOINTS_REVOLUTEJOINT_H_H
 #define DRAKE_MULTIBODY_DYNAMICS_JOINTS_REVOLUTEJOINT_H_H
 
-#include "drake/multibody_dynamics/joints/FixedAxisOneDofJoint.h"
+#include "drake/multibody_dynamics/joints/FixedAxisOneDoFJoint.h"
 
 namespace drake {
 
