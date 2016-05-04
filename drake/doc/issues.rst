@@ -97,7 +97,7 @@ present, the issue is assumed to affect all configurations.
 Status
 ======
 For the most part, we rely on reviewable.io to communicate PR status. There
-are only three ``status`` labels.  All three flags are optional, but Drake
+are only two ``status`` labels.  Both flags are optional, but Drake
 administrators managing the PR queue will respect them.
 
 * ``do not review``: Use this status to indicate you do not want anyone to
