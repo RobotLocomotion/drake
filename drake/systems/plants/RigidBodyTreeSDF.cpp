@@ -113,7 +113,7 @@ bool parseSDFGeometry(XMLElement* node, const PackageMap& package_map,
     string resolved_filename = resolveFilename(uri, package_map, root_dir);
     DrakeShapes::Mesh mesh(uri, resolved_filename);
 
-    parseScalarValue(shape_node, "scale", mesh.scale);
+    parseThreeVectorValue(shape_node, "scale", mesh.scale);
     element.setGeometry(mesh);
   } else {
     cerr << "Warning: geometry element has an unknown type and will be ignored."

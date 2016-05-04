@@ -145,7 +145,7 @@ class DRAKESHAPES_EXPORT Mesh : public Geometry {
   friend DRAKESHAPES_EXPORT std::ostream &operator<<(std::ostream &,
                                                      const Mesh &);
 
-  double scale;
+  Eigen::Vector3d scale;
   std::string filename;
   std::string resolved_filename;
   bool extractMeshVertices(Eigen::Matrix3Xd &vertex_coordinates) const;

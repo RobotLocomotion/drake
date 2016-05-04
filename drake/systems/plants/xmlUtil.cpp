@@ -12,6 +12,40 @@ using namespace std;
 using namespace Eigen;
 using namespace tinyxml2;
 
+bool parseThreeVectorValue(const char* strval, Eigen::Vector3d& val) {
+  if (strval) {
+    std::stringstream ss(strval);
+    // supports a single scalar value or 3-vector value.
+    ss >> val[0];
+    if (ss.good()) {
+      ss >> val[1] >> val[2];
+    } else {
+      val[1] = val[0];
+      val[2] = val[0];
+    }
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool parseThreeVectorValue(tinyxml2::XMLElement* node, Eigen::Vector3d& val) {
+  if (node)
+    return parseThreeVectorValue(node->FirstChild()->Value(), val);
+  else
+    return false;
+}
+
+bool parseThreeVectorValue(tinyxml2::XMLElement* node, const char* element_name,
+                           Eigen::Vector3d& val) {
+  return parseThreeVectorValue(node->FirstChildElement(element_name), val);
+}
+
+bool parseThreeVectorAttribute(tinyxml2::XMLElement* node,
+                               const char* element_name, Eigen::Vector3d& val) {
+  return parseThreeVectorValue(node->Attribute(element_name), val);
+}
+
 // only writes values if they exist
 bool parseVectorAttribute(const tinyxml2::XMLElement* node,
                           const char* attribute_name, Eigen::Vector3d& val) {
@@ -207,14 +241,14 @@ string resolveFilename(const string& filename,
   } else {
     std::string normalized_root_dir = spruce::path(root_dir).getStr();
 
-    // if root_dir is a relative path then convert it to absolute
+// if root_dir is a relative path then convert it to absolute
 #ifdef _WIN32
-    bool dirIsRelative = !(normalized_root_dir.size() >= 2
-                           && std::isalpha(normalized_root_dir[0])
-                           && normalized_root_dir[1] == ':');
+    bool dirIsRelative = !(normalized_root_dir.size() >= 2 &&
+                           std::isalpha(normalized_root_dir[0]) &&
+                           normalized_root_dir[1] == ':');
 #else
-    bool dirIsRelative = !(normalized_root_dir.size() >= 1
-                           && normalized_root_dir[0] == '/');
+    bool dirIsRelative =
+        !(normalized_root_dir.size() >= 1 && normalized_root_dir[0] == '/');
 #endif
     if (dirIsRelative) {
       mesh_filename_s = spruce::path();
