@@ -99,11 +99,13 @@ class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
    * Measured v is provided in a list of values, result_values.
    * These lists must have the same length.
    *
-   * The result is a map of polynomial VarTypes (a, b, ...) to their estimated
-   * values, suitable as input for Polynomial::evaluatePartial.
+   * The return value is a pair, {estimates, error}, where:
+   *   * results is a map of polynomial VarTypes (a, b, ...) to their estimated
+   *     values, suitable as input for Polynomial::evaluatePartial.
+   *   * error is the root-mean-square error of the estimates.
    */
   typedef std::map<VarType, CoefficientType> PartialEvalType;
-  static PartialEvalType EstimateParameters(
+  static std::pair<PartialEvalType, CoefficientType> EstimateParameters(
       const PolyType& poly,
       const std::vector<PartialEvalType>& active_var_values,
       const std::vector<CoefficientType>& result_values);

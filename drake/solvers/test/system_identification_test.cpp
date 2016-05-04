@@ -129,7 +129,7 @@ TEST(SystemIdentificationTest, LumpedParameterRewrite) {
   }
 }
 
-TEST(SystemIdentificationTest, EstimateParameters) {
+TEST(SystemIdentificationTest, BasicEstimateParameters) {
   Polynomiald x = Polynomiald("x");
   auto x_var = x.getSimpleVariable();
   Polynomiald y = Polynomiald("y");
@@ -141,7 +141,6 @@ TEST(SystemIdentificationTest, EstimateParameters) {
   Polynomiald c = Polynomiald("c");
   auto c_var = c.getSimpleVariable();
   Polynomiald poly = (a * x) + (b * x * x) + (c * y);
-  const static double kEpsilon = 1e-4;
 
   std::vector<SID::PartialEvalType> sample_points {
     {{x_var, 1}, {y_var, 1}},
@@ -153,14 +152,35 @@ TEST(SystemIdentificationTest, EstimateParameters) {
     std::vector<double> sample_results {3, 4, 7, 8};
     SID::PartialEvalType expected_params {
       {a_var, 1}, {b_var, 1}, {c_var, 1}};
-    SID::PartialEvalType estimated_params =
+
+    SID::PartialEvalType estimated_params;
+    double error;
+    std::tie(estimated_params, error) =
         SID::EstimateParameters(poly, sample_points, sample_results);
+
+    EXPECT_LT(error, 1e-7);
     EXPECT_EQ(estimated_params.size(), 3);
     for (const auto& var : {a_var, b_var, c_var}) {
-      EXPECT_NEAR(estimated_params[var], expected_params[var], kEpsilon);
+      EXPECT_NEAR(estimated_params[var], expected_params[var], 2 * error);
     }
   }
 
+  { // Test with some error injected.
+    std::vector<double> sample_results {3.05, 3.95, 7.05, 8.05};
+    SID::PartialEvalType expected_params {
+      {a_var, 1}, {b_var, 1}, {c_var, 1}};
+
+    SID::PartialEvalType estimated_params;
+    double error;
+    std::tie(estimated_params, error) =
+        SID::EstimateParameters(poly, sample_points, sample_results);
+
+    EXPECT_LT(error, 0.1);
+    EXPECT_EQ(estimated_params.size(), 3);
+    for (const auto& var : {a_var, b_var, c_var}) {
+      EXPECT_NEAR(estimated_params[var], expected_params[var], 2 * error);
+    }
+  }
 }
 
 }  // anonymous namespace

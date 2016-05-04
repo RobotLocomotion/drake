@@ -1,6 +1,7 @@
 #include "drake/solvers/system_identification.h"
 
 #include <algorithm>
+#include <cmath>
 
 #include "drake/solvers/Optimization.h"
 
@@ -235,7 +236,7 @@ SystemIdentification<T>::RewritePolynomialWithLumpedParameters(
 }
 
 template<typename T>
-typename SystemIdentification<T>::PartialEvalType
+std::pair<typename SystemIdentification<T>::PartialEvalType, T>
 SystemIdentification<T>::EstimateParameters(
     const PolyType& poly,
     const std::vector<PartialEvalType>& active_var_values,
@@ -302,13 +303,17 @@ SystemIdentification<T>::EstimateParameters(
     throw std::runtime_error(
         "Solution failed: " + std::to_string(solution_result));
   }
-  PartialEvalType result;
+  PartialEvalType estimates;
   for (int i = 0; i < num_to_estimate; i++) {
     VarType var = vars_to_estimate[i];
-    result[var] = parameter_variables.value()[i];
+    estimates[var] = parameter_variables.value()[i];
+  }
+  T error_squared = 0;
+  for (int i = 0; i < num_data; i++) {
+    error_squared += error_variables.value()[i] * error_variables.value()[i];
   }
 
-  return result;
+  return std::make_pair(estimates, std::sqrt(error_squared));
 }
 
 }  // namespace solvers
