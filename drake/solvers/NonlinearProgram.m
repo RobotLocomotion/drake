@@ -298,16 +298,17 @@ classdef NonlinearProgram
       obj.cin2nlcon_idx = [obj.cin2nlcon_idx;length(obj.nlcon)*ones(length(cnstr.cin_idx),1)];
       obj.ceq2nlcon_idx = [obj.ceq2nlcon_idx;length(obj.nlcon)*ones(length(cnstr.ceq_idx),1)];
 
-      Geq_idx = cnstr.lb(cnstr.iCfun) == cnstr.ub(cnstr.iCfun);
+      [cnstr_iCfun,cnstr_jCvar] = cnstr.getSparseStructure();
+      Geq_idx = cnstr.lb(cnstr_iCfun) == cnstr.ub(cnstr_iCfun);
       Gin_idx = ~Geq_idx;
       inv_ceq_idx = zeros(cnstr.num_cnstr,1);
       inv_ceq_idx(cnstr.ceq_idx) = (1:length(cnstr.ceq_idx))';
       inv_cin_idx = zeros(cnstr.num_cnstr,1);
       inv_cin_idx(cnstr.cin_idx) = (1:length(cnstr.cin_idx))';
-      obj.iCinfun = [obj.iCinfun;obj.num_cin+inv_cin_idx(cnstr.iCfun(Gin_idx))];
-      obj.jCinvar = [obj.jCinvar;xind_vec(cnstr.jCvar(Gin_idx))];
-      obj.iCeqfun = [obj.iCeqfun;obj.num_ceq+inv_ceq_idx(cnstr.iCfun(Geq_idx))];
-      obj.jCeqvar = [obj.jCeqvar;xind_vec(cnstr.jCvar(Geq_idx))];
+      obj.iCinfun = [obj.iCinfun;obj.num_cin+inv_cin_idx(cnstr_iCfun(Gin_idx))];
+      obj.jCinvar = [obj.jCinvar;xind_vec(cnstr_jCvar(Gin_idx))];
+      obj.iCeqfun = [obj.iCeqfun;obj.num_ceq+inv_ceq_idx(cnstr_iCfun(Geq_idx))];
+      obj.jCeqvar = [obj.jCeqvar;xind_vec(cnstr_jCvar(Geq_idx))];
       obj.cin_name = [obj.cin_name;cnstr.name(cnstr.cin_idx)];
       obj.ceq_name = [obj.ceq_name;cnstr.name(cnstr.ceq_idx)];
       obj.num_cin = obj.num_cin + length(cnstr.cin_idx);
@@ -356,8 +357,8 @@ classdef NonlinearProgram
         end
         obj.lcon = [obj.lcon,{cnstr}];
 
-
-        cnstr_A = sparse(cnstr.iCfun,xind(cnstr.jCvar),cnstr.A_val,cnstr.num_cnstr,obj.num_vars,cnstr.nnz);
+        [cnstr_iCfun,cnstr_jCvar,cnstr_nnz] = cnstr.getSparseStructure();
+        cnstr_A = sparse(cnstr_iCfun,xind(cnstr_jCvar),cnstr.A_val,cnstr.num_cnstr,obj.num_vars,cnstr_nnz);
         cnstr_beq = (cnstr.lb(cnstr.ceq_idx)+cnstr.ub(cnstr.ceq_idx))/2;
         cnstr_Aeq = cnstr_A(cnstr.ceq_idx,:);
         cnstr_Ain = cnstr_A(cnstr.cin_idx,:);
@@ -464,7 +465,8 @@ classdef NonlinearProgram
       end
       obj.cost_dataind{end+1} = data_ind;
 %         obj.cost_xind_cell = [obj.cost_xind_cell,{xind(cnstr.jCvar)}];
-      obj.jFvar = unique([obj.jFvar;xind_vec(cnstr.jCvar)]);
+      [~,cnstr_jCvar] = cnstr.getSparseStructure();
+      obj.jFvar = unique([obj.jFvar;xind_vec(cnstr_jCvar)]);
       obj.iFfun = ones(length(obj.jFvar),1);
     end
 

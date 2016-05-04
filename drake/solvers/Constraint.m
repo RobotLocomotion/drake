@@ -15,11 +15,6 @@ classdef Constraint
     name    % cell array of constraint names
     ceq_idx   % The row index of the equality constraint
     cin_idx   % The row index of the inequality constraint
-
-    % gradient sparsity information
-    iCfun   % An int vector. The row index of non-zero entries of the gradient matrix
-    jCvar   % An int vector. The column index of the non-zero entries of the gradient matrix
-    nnz     % An int scalar. The maximal number of non-zero entries in the gradient matrix
   end
 
   properties
@@ -28,6 +23,13 @@ classdef Constraint
                       % then it calls geval only if the grad_level is insufficient
                       % to supply all of the requested arguments.  Refer to
                       % the 'geval' documentation for additional supported values. @default ''
+  end
+  
+  properties(Access = private)
+    % gradient sparsity information
+    iCfun   % An int vector. The row index of non-zero entries of the gradient matrix
+    jCvar   % An int vector. The column index of the non-zero entries of the gradient matrix
+    nnz     % An int scalar. The maximal number of non-zero entries in the gradient matrix
   end
 
   methods
@@ -54,9 +56,9 @@ classdef Constraint
 
       obj.name = repmat({''},obj.num_cnstr,1);
 
-      obj.iCfun = reshape(bsxfun(@times,(1:obj.num_cnstr)',ones(1,obj.xdim)),[],1);
-      obj.jCvar = reshape(bsxfun(@times,1:obj.xdim,ones(obj.num_cnstr,1)),[],1);
-      obj.nnz = obj.num_cnstr*obj.xdim;
+      obj.iCfun = nan;
+      obj.jCvar = nan;
+      obj.nnz = nan;
     end
 
     function obj = setSparseStructure(obj,iCfun,jCvar)
@@ -78,6 +80,18 @@ classdef Constraint
       obj.nnz = numel(iCfun);
     end
 
+    function [iCfun,jCvar,nnz] = getSparseStructure(obj)
+      if(isnan(obj.iCfun))
+        iCfun = reshape(bsxfun(@times,(1:obj.num_cnstr)',ones(1,obj.xdim)),[],1);
+        jCvar = reshape(bsxfun(@times,1:obj.xdim,ones(obj.num_cnstr,1)),[],1);
+        nnz = obj.num_cnstr*obj.xdim;
+      else
+        iCfun = obj.iCfun;
+        jCvar = obj.jCvar;
+        nnz = numel(iCfun);
+      end
+    end
+    
     function checkGradient(obj,tol,varargin)
       % Check the accuracy and sparsity pattern of the gradient
       % @param tol    -- A double scalar. The tolerance of the user gradient, compared with
@@ -86,7 +100,8 @@ classdef Constraint
       [~,dc] = obj.eval(varargin{:});
       [~,dc_numeric] = geval(@obj.eval,varargin{:},struct('grad_method','numerical'));
       valuecheck(dc,dc_numeric,tol);
-      valuecheck(dc,sparse(obj.iCfun,obj.jCvar,dc(sub2ind([obj.num_cnstr,obj.xdim],obj.iCfun,obj.jCvar)),obj.num_cnstr,obj.xdim,obj.nnz));
+      [m_iCfun,m_jCvar,m_nnz] = obj.getSparseStructure();
+      valuecheck(dc,sparse(m_iCfun,m_jCvar,dc(sub2ind([obj.num_cnstr,obj.xdim],m_iCfun,m_jCvar)),obj.num_cnstr,obj.xdim,m_nnz));
     end
 
     function obj = setName(obj,name)
