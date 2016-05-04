@@ -1,6 +1,5 @@
 #include "lcmtypes/drake/lcmt_driving_control_cmd_t.hpp"
 
-#include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/pd_control_system.h"
 #include "drake/systems/plants/BotVisualizer.h"
@@ -8,6 +7,7 @@
 #include "drake/util/drakeAppUtil.h"
 #include "drake/systems/plants/sensor_visualizer_lidar.h"
 #include "drake/systems/plants/drake_ros_tf_publisher.h"
+#include "drake/systems/ros_vehicle_system.h"
 
 using namespace std;
 using namespace Eigen;
@@ -227,7 +227,7 @@ int main(int argc, char* argv[]) {
   // initially as the ackerman constraint (hopefully) gets enforced by the
   // stabilization terms.
 
-  runLCM(sys, lcm, 0, std::numeric_limits<double>::infinity(), x0, options);
+  run_ros_vehicle_sim(sys, 0 /* start time */, std::numeric_limits<double>::infinity(), x0, options);
   //  simulate(*sys, 0, std::numeric_limits<double>::infinity(), x0, options);
 
   return 0;
