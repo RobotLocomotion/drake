@@ -50,6 +50,7 @@ bool parseScalarAttribute(tinyxml2::XMLElement* node,
  * @param[out] val The three vector into which the results should be stored.
  * @return Whether the three vector was successfully parsed from strval.
  */
+DRAKEXMLUTIL_EXPORT
 bool parseThreeVectorValue(const char* strval, Eigen::Vector3d& val);
 
 /**
@@ -62,6 +63,7 @@ bool parseThreeVectorValue(const char* strval, Eigen::Vector3d& val);
  * @return Whether the three vector was successfully parsed from the XML element
  * node.
  */
+DRAKEXMLUTIL_EXPORT
 bool parseThreeVectorValue(tinyxml2::XMLElement* node, Eigen::Vector3d& val);
 
 /**
@@ -77,6 +79,7 @@ bool parseThreeVectorValue(tinyxml2::XMLElement* node, Eigen::Vector3d& val);
  * @return Whether the three vector was successfully parsed from the XML element
  * node.
  */
+DRAKEXMLUTIL_EXPORT
 bool parseThreeVectorValue(tinyxml2::XMLElement* node, const char* element_name,
                            Eigen::Vector3d& val);
 
@@ -92,6 +95,7 @@ bool parseThreeVectorValue(tinyxml2::XMLElement* node, const char* element_name,
  * @return Whether the three vector was successfully parsed from the XML element
  * node.
  */
+DRAKEXMLUTIL_EXPORT
 bool parseThreeVectorAttribute(tinyxml2::XMLElement* node,
                                const char* element_name, Eigen::Vector3d& val);
 
