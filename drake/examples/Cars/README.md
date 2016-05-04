@@ -165,3 +165,8 @@ the executables.
 - When running from the Windows Command Prompt you'll need to use backslashes in
 place of forward slashes.
 - To run a command in the background use `start cmdline` in place of `cmdline &`.
+
+Running the simple car simulator
+--------------------------------
+
+Run `./simple_car_demo.sh`.
