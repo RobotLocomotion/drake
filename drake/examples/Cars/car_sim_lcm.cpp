@@ -70,7 +70,7 @@ std::ostream& operator<<(std::ostream& os,
 bool decode(const drake::lcmt_driving_command_t& msg, double& t,
             DrivingCommand<double>& x) {
   t = double(msg.timestamp) / 1000.0;
-  x.steering_angle = msg.steering_angle_rad;
+  x.steering_angle = msg.steering_angle;
   x.throttle = msg.throttle;
   x.brake = msg.brake;
   return true;

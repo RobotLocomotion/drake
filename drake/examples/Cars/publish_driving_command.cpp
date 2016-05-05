@@ -10,7 +10,7 @@ using namespace std;
 
 int main(int argc, char** argv) {
   if (argc < 3)
-    cout << "Usage: publishDrivingCommand throttle steering_angle_rad"
+    cout << "Usage: publishDrivingCommand throttle steering_angle"
          << endl;
 
   lcm::LCM lcm;
@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
   command.brake = 0.0;
 
   stringstream s(argv[2]);
-  s >> command.steering_angle_rad;
+  s >> command.steering_angle;
 
   lcm.publish("DRIVING_COMMAND", &command);
 

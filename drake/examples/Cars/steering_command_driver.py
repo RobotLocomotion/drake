@@ -31,19 +31,19 @@ STEERING_AXIS = 0
 ACCEL_AXIS = 1
 BRAKE_AXIS = 2
 
-MAX_STEERING_ANGLE_RAD = math.radians(45)
-STEERING_BUTTON_STEP_ANGLE_RAD = MAX_STEERING_ANGLE_RAD / 100.0
+MAX_STEERING_ANGLE = math.radians(45)
+STEERING_BUTTON_STEP_ANGLE = MAX_STEERING_ANGLE / 100.0
 TURN_LEFT_SIGN = 1.0
 TURN_RIGHT_SIGN = -1.0
 
 THROTTLE_SCALE = 1.0
 BRAKE_SCALE = 1.0
 
-def _limit_steering(requested_value_rad):
-    if abs(requested_value_rad) <= MAX_STEERING_ANGLE_RAD:
-        return requested_value_rad
+def _limit_steering(requested_value):
+    if abs(requested_value) <= MAX_STEERING_ANGLE:
+        return requested_value
     else:
-        return math.copysign(MAX_STEERING_ANGLE_RAD, requested_value_rad)
+        return math.copysign(MAX_STEERING_ANGLE, requested_value)
 
 class KeyboardEventProcessor:
     def __init__(self):
@@ -62,11 +62,11 @@ class KeyboardEventProcessor:
         elif (event.key == pygame.K_LEFT) and (event.type == pygame.KEYDOWN):
             new_msg.steering_angle = _limit_steering(
                 last_msg.steering_angle + (
-                    STEERING_BUTTON_STEP_ANGLE_RAD * TURN_LEFT_SIGN))
+                    STEERING_BUTTON_STEP_ANGLE * TURN_LEFT_SIGN))
         elif (event.key == pygame.K_RIGHT) and (event.type == pygame.KEYDOWN):
             new_msg.steering_angle = _limit_steering(
                 last_msg.steering_angle + (
-                    STEERING_BUTTON_STEP_ANGLE_RAD * TURN_RIGHT_SIGN))
+                    STEERING_BUTTON_STEP_ANGLE * TURN_RIGHT_SIGN))
         return new_msg
 
 
@@ -94,7 +94,7 @@ class JoystickEventProcessor:
         new_msg = copy.copy(last_msg)
         if event.axis == STEERING_AXIS:
             new_msg.steering_angle = (
-                TURN_RIGHT_SIGN * event.value * MAX_STEERING_ANGLE_RAD)
+                TURN_RIGHT_SIGN * event.value * MAX_STEERING_ANGLE)
         elif event.axis == ACCEL_AXIS:
             new_msg.throttle = -0.5 * event.value + 0.5
         elif event.axis == BRAKE_AXIS:
