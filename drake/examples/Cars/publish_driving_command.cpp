@@ -1,3 +1,5 @@
+// TODO(jwnimmer-tri) Replace this with a simple command-line argument
+// to steering_command_driver.py.
 
 #include <iostream>
 #include <sstream>

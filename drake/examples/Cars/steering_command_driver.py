@@ -2,7 +2,6 @@
 
 """Publishes steering commands over LCM.
 """
-# Adapted from drake/examples/Cars/SteeringCommandDriver.py.
 
 import argparse
 import copy
