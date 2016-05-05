@@ -128,9 +128,10 @@ $ cd [drake distro]/drake/examples/Cars/ros_packages/
 $ git git@github.com:liangfok/ackermann-drive-teleop.git ackermann_drive_teleop
 $ cd ackermann_drive_teleop
 $ git checkout feature/ackermann_drive_stamped
-$ rosrun ackermann_drive_teleop ackermann_drive_keyop.py
+$ rosrun ackermann_drive_teleop ackermann_drive_keyop.py 1.0 0.7
 ```
-
+The 1.0 and 0.7 parameters in the last command above specifies a max throttle
+of 1.0 m/s and a max steering angle of 0.7 radians.
 
 Additional Simulation Notes
 ---------------------------

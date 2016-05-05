@@ -68,14 +68,20 @@ std::ostream& operator<<(std::ostream& os,
             << "]";
 }
 
-bool decode(const drake::lcmt_driving_control_cmd_t& msg, double& t,
+bool decode(const ackermann_msgs::AckermannDriveStamped& msg,
             DrivingCommand<double>& x) {
-  t = double(msg.timestamp) / 1000.0;
-  x.steering_angle = msg.steering_angle;
-  x.throttle = msg.throttle_value;
-  x.brake = msg.brake_value;
+  x.steering_angle = msg.drive.steering_angle;
+  if (msg.drive.speed > 0) {
+    x.throttle = msg.drive.speed;
+    x.brake = 0;
+  } else {
+    x.throttle = 0;
+    x.brake = -1 * msg.drive.speed;
+  }
   return true;
 }
+
+
 
 /** Driving Simulator
  * Usage:  simulateLCM vehicle_model_file [world_model files ...]
