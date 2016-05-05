@@ -24,7 +24,7 @@ namespace Drake {
 /// * brake (0-1)
 ///
 /// state vector (planar for now):
-/// * position: x, y, heading
+/// * position: x, y, yaw
 /// * velocity
 ///
 /// output vector: same as state vector.
@@ -65,9 +65,9 @@ class DRAKESIMPLECAR_EXPORT SimpleCar {
     ScalarType curvature = std::tan(sane_steering_angle) / config_.wheelbase;
 
     StateVector<ScalarType> rates;
-    rates.set_x(state.velocity() * std::cos(state.heading()));
-    rates.set_y(state.velocity() * std::sin(state.heading()));
-    rates.set_heading(curvature * state.velocity());
+    rates.set_x(state.velocity() * std::cos(state.yaw()));
+    rates.set_y(state.velocity() * std::sin(state.yaw()));
+    rates.set_yaw(curvature * state.velocity());
     rates.set_velocity((new_velocity - state.velocity()) * config_.velocity_kp);
     return rates;
   }
