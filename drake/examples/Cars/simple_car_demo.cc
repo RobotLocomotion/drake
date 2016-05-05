@@ -64,9 +64,8 @@ int do_main(int argc, const char* argv[]) {
   D.setZero(outsize, insize);
   D(EulerFloatingJointStateIndices::kX, SimpleCarStateIndices::kX) = 1;
   D(EulerFloatingJointStateIndices::kY, SimpleCarStateIndices::kY) = 1;
-  D(EulerFloatingJointStateIndices::kYaw, SimpleCarStateIndices::kHeading) = -1;
+  D(EulerFloatingJointStateIndices::kYaw, SimpleCarStateIndices::kHeading) = 1;
   EulerFloatingJointState<double> y0;
-  y0.set_yaw(M_PI / 2);
   auto adapter = std::make_shared<
       AffineSystem<
         NullVector,

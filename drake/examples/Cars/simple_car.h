@@ -65,8 +65,8 @@ class DRAKESIMPLECAR_EXPORT SimpleCar {
     ScalarType curvature = std::tan(sane_steering_angle) / config_.wheelbase;
 
     StateVector<ScalarType> rates;
-    rates.set_x(state.velocity() * std::sin(state.heading()));
-    rates.set_y(state.velocity() * std::cos(state.heading()));
+    rates.set_x(state.velocity() * std::cos(state.heading()));
+    rates.set_y(state.velocity() * std::sin(state.heading()));
     rates.set_heading(curvature * state.velocity());
     rates.set_velocity((new_velocity - state.velocity()) * config_.velocity_kp);
     return rates;
