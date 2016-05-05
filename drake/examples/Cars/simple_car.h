@@ -1,8 +1,7 @@
 #pragma once
 
 #include "drake/drakeCars_export.h"
-#include "drake/examples/Cars/gen/driving_command.h"
-#include "drake/examples/Cars/gen/simple_car_state.h"
+#include "drake/examples/Cars/system1_cars_vectors.h"
 #include "lcmtypes/drake/lcmt_simple_car_config_t.hpp"
 
 namespace drake {
@@ -56,11 +55,11 @@ class DRAKECARS_EXPORT SimpleCar {
   //@{
 
   template <typename ScalarType>
-  using StateVector = SimpleCarState<ScalarType>;
+  using StateVector = SimpleCarState1<ScalarType>;
   template <typename ScalarType>
-  using InputVector = DrivingCommand<ScalarType>;
+  using InputVector = DrivingCommand1<ScalarType>;
   template <typename ScalarType>
-  using OutputVector = SimpleCarState<ScalarType>;
+  using OutputVector = SimpleCarState1<ScalarType>;
 
   template <typename ScalarType>
   StateVector<ScalarType> dynamics(const ScalarType& time,
