@@ -125,7 +125,7 @@ To drive the car around using a keyboard:
 
 ```
 $ cd [drake distro]/drake/examples/Cars/ros_packages/
-$ git git@github.com:liangfok/ackermann-drive-teleop.git ackermann_drive_teleop
+$ git clone git@github.com:liangfok/ackermann-drive-teleop.git ackermann_drive_teleop
 $ cd ackermann_drive_teleop
 $ git checkout feature/ackermann_drive_stamped
 $ rosrun ackermann_drive_teleop ackermann_drive_keyop.py 1.0 0.7
