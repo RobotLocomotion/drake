@@ -4,7 +4,7 @@
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/drakeAppUtil.h"
-#include "lcmtypes/drake/lcmt_driving_control_cmd_t.hpp"
+#include "lcmtypes/drake/lcmt_driving_command_t.hpp"
 
 using namespace std;
 using namespace Eigen;
@@ -13,7 +13,7 @@ using namespace Drake;
 template <typename ScalarType = double>
 class DrivingCommand {
  public:
-  typedef drake::lcmt_driving_control_cmd_t LCMMessageType;
+  typedef drake::lcmt_driving_command_t LCMMessageType;
   static std::string channel() { return "DRIVING_COMMAND"; }
 
   DrivingCommand(void) : throttle(0), brake(0), steering_angle(0) {}
@@ -67,12 +67,12 @@ std::ostream& operator<<(std::ostream& os,
             << "]";
 }
 
-bool decode(const drake::lcmt_driving_control_cmd_t& msg, double& t,
+bool decode(const drake::lcmt_driving_command_t& msg, double& t,
             DrivingCommand<double>& x) {
   t = double(msg.timestamp) / 1000.0;
-  x.steering_angle = msg.steering_angle;
-  x.throttle = msg.throttle_value;
-  x.brake = msg.brake_value;
+  x.steering_angle = msg.steering_angle_rad;
+  x.throttle = msg.throttle;
+  x.brake = msg.brake;
   return true;
 }
 
