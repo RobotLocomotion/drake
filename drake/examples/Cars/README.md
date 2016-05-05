@@ -22,7 +22,7 @@ The following notes are for Ubuntu Linux and OS X users. Windows users need to a
 ```
 $ cd [path to drake-distro]/drake/examples/Cars
 $ ../../../build/bin/drake-visualizer &
-$ python SteeringCommandDriver.py &
+$ python steering_command_driver.py &
 $ ../../pod-build/bin/car_sim_lcm models/prius/prius.urdf models/stata_garage_p1.sdf
 ```
 
