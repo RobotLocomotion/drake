@@ -119,7 +119,7 @@ TEST(SimpleCarTest, Accelerating) {
 
   EXPECT_EQ(history_system->states_[start_time].x(), 0.);
   EXPECT_EQ(history_system->states_[start_time].y(), 0.);
-  EXPECT_EQ(history_system->states_[start_time].heading(), 0.);
+  EXPECT_EQ(history_system->states_[start_time].yaw(), 0.);
   EXPECT_EQ(history_system->states_[start_time].velocity(), 0.);
 
   // These clauses are deliberately broad; we don't care so much about the
@@ -131,7 +131,7 @@ TEST(SimpleCarTest, Accelerating) {
             Drake::SimpleCar::kDefaultConfig.max_velocity *
             (end_time - start_time) / 2);
   EXPECT_EQ(history_system->states_[max_time].y(), 0.);
-  EXPECT_EQ(history_system->states_[max_time].heading(), 0.);
+  EXPECT_EQ(history_system->states_[max_time].yaw(), 0.);
   EXPECT_NEAR(history_system->states_[max_time].velocity(),
               Drake::SimpleCar::kDefaultConfig.max_velocity, 1e-5);
 }
@@ -168,14 +168,14 @@ TEST(SimpleCarTest, Braking) {
 
   EXPECT_EQ(history_system->states_[start_time].x(), 0.);
   EXPECT_EQ(history_system->states_[start_time].y(), 0.);
-  EXPECT_EQ(history_system->states_[start_time].heading(), 0.);
+  EXPECT_EQ(history_system->states_[start_time].yaw(), 0.);
   EXPECT_EQ(history_system->states_[start_time].velocity(), speed);
 
   // This clause is deliberately broad; we don't care so much about the exact
   // value, but rather that we stopped reasonably.
   EXPECT_LT(history_system->states_[max_time].x(), 20.);
   EXPECT_EQ(history_system->states_[max_time].y(), 0.);
-  EXPECT_EQ(history_system->states_[max_time].heading(), 0.);
+  EXPECT_EQ(history_system->states_[max_time].yaw(), 0.);
   EXPECT_NEAR(history_system->states_[max_time].velocity(), 0., 1e-5);
 }
 
@@ -209,7 +209,7 @@ TEST(SimpleCarTest, Steering) {
 
   EXPECT_EQ(history_system->states_[start_time].x(), 0.);
   EXPECT_EQ(history_system->states_[start_time].y(), 0.);
-  EXPECT_EQ(history_system->states_[start_time].heading(), 0.);
+  EXPECT_EQ(history_system->states_[start_time].yaw(), 0.);
   EXPECT_EQ(history_system->states_[start_time].velocity(), speed);
 
   double min_turn_radius =
@@ -229,13 +229,13 @@ TEST(SimpleCarTest, Steering) {
                 min_turn_radius, 1e-2);
   }
 
-  // Predict our final heading.
-  double predicted_heading =
+  // Predict our final yaw.
+  double predicted_yaw =
       std::remainder((speed / min_turn_radius) * (max_time - start_time),
                       2 * M_PI);
-  double end_heading =
-      std::remainder(history_system->states_[max_time].heading(), 2 * M_PI);
-  EXPECT_NEAR(end_heading, predicted_heading, 1e-5);
+  double end_yaw =
+      std::remainder(history_system->states_[max_time].yaw(), 2 * M_PI);
+  EXPECT_NEAR(end_yaw, predicted_yaw, 1e-5);
 
   EXPECT_EQ(history_system->states_[max_time].velocity(), speed);
 }

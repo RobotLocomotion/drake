@@ -20,7 +20,7 @@ struct SimpleCarStateIndices {
   // The index of each individual coordinate.
   static const int kX = 0;
   static const int kY = 1;
-  static const int kHeading = 2;
+  static const int kYaw = 2;
   static const int kVelocity = 3;
 };
 
@@ -37,8 +37,8 @@ class SimpleCarState {
   void set_x(const ScalarType& x) { value_(K::kX) = x; }
   const ScalarType& y() const { return value_(K::kY); }
   void set_y(const ScalarType& y) { value_(K::kY) = y; }
-  const ScalarType& heading() const { return value_(K::kHeading); }
-  void set_heading(const ScalarType& heading) { value_(K::kHeading) = heading; }
+  const ScalarType& yaw() const { return value_(K::kYaw); }
+  void set_yaw(const ScalarType& yaw) { value_(K::kYaw) = yaw; }
   const ScalarType& velocity() const { return value_(K::kVelocity); }
   void set_velocity(const ScalarType& velocity) {
     value_(K::kVelocity) = velocity;
@@ -88,8 +88,8 @@ class SimpleCarState {
         return "x";
       case K::kY:
         return "y";
-      case K::kHeading:
-        return "heading";
+      case K::kYaw:
+        return "yaw";
       case K::kVelocity:
         return "velocity";
     }
@@ -115,7 +115,7 @@ bool encode(const double& t, const SimpleCarState<ScalarType>& wrap,
   msg.timestamp = static_cast<int64_t>(t * 1000);
   msg.x = wrap.x();
   msg.y = wrap.y();
-  msg.heading = wrap.heading();
+  msg.yaw = wrap.yaw();
   msg.velocity = wrap.velocity();
   return true;
 }
@@ -129,7 +129,7 @@ bool decode(const drake::lcmt_simple_car_state_t& msg,
   t = static_cast<double>(msg.timestamp) / 1000.0;
   wrap.set_x(msg.x);
   wrap.set_y(msg.y);
-  wrap.set_heading(msg.heading);
+  wrap.set_yaw(msg.yaw);
   wrap.set_velocity(msg.velocity);
   return true;
 }

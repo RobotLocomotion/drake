@@ -20,7 +20,7 @@ gen () {
         --title="$title" "$@"
 }
 
-gen "simple car state" x y heading velocity
+gen "simple car state" x y yaw velocity
 gen "driving command" steering_angle_rad throttle brake
 gen "euler floating joint state" x y z roll pitch yaw
 
