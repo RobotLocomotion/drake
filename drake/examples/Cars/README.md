@@ -7,7 +7,7 @@ Additional prerequisite
 Install `pygame` (e.g. with `brew install pygame`, or `apt-get install python-pygame`)
 
 Note that you can still run the car simulation without `pygame`, but it won't be as fun.
-To run the simulation without `pygame`, use `publishDrivingCommand` as described below.
+To run the simulation without `pygame`, use `publish_driving_command` as described below.
 
 Setup your Python path:
 
@@ -23,7 +23,7 @@ The following notes are for Ubuntu Linux and OS X users. Windows users need to a
 $ cd [path to drake-distro]/drake/examples/Cars
 $ ../../../build/bin/drake-visualizer &
 $ python SteeringCommandDriver.py &
-$ ../../pod-build/bin/carSimLCM models/prius/prius.urdf models/stata_garage_p1.sdf
+$ ../../pod-build/bin/car_sim_lcm models/prius/prius.urdf models/stata_garage_p1.sdf
 ```
 
 To avoid the car moving out of view, we recommend setting Drake Visualizer to chase cam mode.  Choose from the Menu, select 'View`, then 'Camera Control Panel'. Then click 'Select Target' and click on the Toyota Prius.  Change 'Track Mode' to be 'Smooth Follow' and increase the elevation to 30 degrees.
@@ -38,13 +38,13 @@ and steering commands using the command line interface
 
 ```
 $ cd [path to drake-distro]/drake/examples/Cars
-$ ../../pod-build/bin/publishDrivingCommand [throttle_value] [steering_value]
+$ ../../pod-build/bin/publish_driving_command [throttle_value] [steering_value]
 ```
 where the values in brackets should be replaced with desired values.  For example:
 
 ```
 $ cd [path to drake-distro]/drake/examples/Cars
-$ ../../pod-build/bin/publishDrivingCommand 1.0 .4
+$ ../../pod-build/bin/publish_driving_command 1.0 .4
 ```
 Every time that you run the command above, it sends one LCM message.
 
@@ -59,3 +59,6 @@ Running the simple car simulator
 --------------------------------
 
 Run `./simple_car_demo.sh`.
+
+This is not supported under windows (though you can probably cobble
+together some workarounds by hand if you are motivated).
