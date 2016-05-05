@@ -74,7 +74,7 @@ mlint	:
 
 .PHONY: test
 test	:  configure
-	-@cd pod-build && ctest -M Experimental -T Test -T Submit -C $(BUILD_TYPE) --output-on-failure --timeout 300
+	-@cd pod-build && ctest -M Experimental -C $(BUILD_TYPE) --output-on-failure --timeout 300
 
 release_filelist: configure
 	echo ".UNITTEST"
