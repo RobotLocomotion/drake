@@ -61,12 +61,12 @@ class KeyboardEventProcessor:
             new_msg.brake = (
                 (event.type == pygame.KEYDOWN) * BRAKE_SCALE)
         elif (event.key == pygame.K_LEFT) and (event.type == pygame.KEYDOWN):
-            new_msg.steering_angle = _limit_steering(
-                last_msg.steering_angle + (
+            new_msg.steering_angle_rad = _limit_steering(
+                last_msg.steering_angle_rad + (
                     STEERING_BUTTON_STEP_ANGLE_RAD * TURN_LEFT_SIGN))
         elif (event.key == pygame.K_RIGHT) and (event.type == pygame.KEYDOWN):
-            new_msg.steering_angle = _limit_steering(
-                last_msg.steering_angle + (
+            new_msg.steering_angle_rad = _limit_steering(
+                last_msg.steering_angle_rad + (
                     STEERING_BUTTON_STEP_ANGLE_RAD * TURN_RIGHT_SIGN))
         return new_msg
 
@@ -94,7 +94,7 @@ class JoystickEventProcessor:
     def processEvent(self, event, last_msg):
         new_msg = copy.copy(last_msg)
         if event.axis == STEERING_AXIS:
-            new_msg.steering_angle = (
+            new_msg.steering_angle_rad = (
                 TURN_RIGHT_SIGN * event.value * MAX_STEERING_ANGLE_RAD)
         elif event.axis == ACCEL_AXIS:
             new_msg.throttle = -0.5 * event.value + 0.5
@@ -122,7 +122,7 @@ class SteeringCommandPublisher:
     def printLCMValues(self):
         self.screen.fill(5)
         surface = self.font.render(
-            'Steering Angle: %f' % (self.last_msg.steering_angle),
+            'Steering Angle: %f' % (self.last_msg.steering_angle_rad),
             True, (250, 250, 250))
         self.screen.blit(surface, (2, 0))
         surface = self.font.render(

@@ -4,7 +4,7 @@ package drake;
 struct lcmt_driving_command_t
 {
   int64_t timestamp;
-  double steering_angle;
+  double steering_angle_rad;
   double throttle;
   double brake;
 }

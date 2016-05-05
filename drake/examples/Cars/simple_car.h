@@ -59,7 +59,7 @@ class DRAKESIMPLECAR_EXPORT SimpleCar {
 
     // Apply steering.
     ScalarType sane_steering_angle =
-        std::max(std::min(std::remainder(input.steering_angle(), 2 * M_PI),
+        std::max(std::min(std::remainder(input.steering_angle_rad(), 2 * M_PI),
                           config_.max_abs_steering_angle),
                  -config_.max_abs_steering_angle);
     ScalarType curvature = std::tan(sane_steering_angle) / config_.wheelbase;

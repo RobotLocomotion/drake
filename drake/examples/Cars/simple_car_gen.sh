@@ -21,7 +21,7 @@ gen () {
 }
 
 gen "simple car state" x y heading velocity
-gen "driving command" steering_angle throttle brake
+gen "driving command" steering_angle_rad throttle brake
 gen "euler floating joint state" x y z roll pitch yaw
 
 $CLANG_FORMAT --style=Google -i \

@@ -18,7 +18,7 @@ struct DrivingCommandIndices {
   static const int kNumCoordiates = 3;
 
   // The index of each individual coordinate.
-  static const int kSteeringAngle = 0;
+  static const int kSteeringAngleRad = 0;
   static const int kThrottle = 1;
   static const int kBrake = 2;
 };
@@ -32,9 +32,11 @@ class DrivingCommand {
 
   /// @name Getters and Setters
   //@{
-  const ScalarType& steering_angle() const { return value_(K::kSteeringAngle); }
-  void set_steering_angle(const ScalarType& steering_angle) {
-    value_(K::kSteeringAngle) = steering_angle;
+  const ScalarType& steering_angle_rad() const {
+    return value_(K::kSteeringAngleRad);
+  }
+  void set_steering_angle_rad(const ScalarType& steering_angle_rad) {
+    value_(K::kSteeringAngleRad) = steering_angle_rad;
   }
   const ScalarType& throttle() const { return value_(K::kThrottle); }
   void set_throttle(const ScalarType& throttle) {
@@ -83,8 +85,8 @@ class DrivingCommand {
   friend std::string getCoordinateName(const DrivingCommand<ScalarType>& vec,
                                        unsigned int index) {
     switch (index) {
-      case K::kSteeringAngle:
-        return "steering_angle";
+      case K::kSteeringAngleRad:
+        return "steering_angle_rad";
       case K::kThrottle:
         return "throttle";
       case K::kBrake:
@@ -110,7 +112,7 @@ bool encode(const double& t, const DrivingCommand<ScalarType>& wrap,
             // NOLINTNEXTLINE(runtime/references)
             drake::lcmt_driving_command_t& msg) {
   msg.timestamp = static_cast<int64_t>(t * 1000);
-  msg.steering_angle = wrap.steering_angle();
+  msg.steering_angle_rad = wrap.steering_angle_rad();
   msg.throttle = wrap.throttle();
   msg.brake = wrap.brake();
   return true;
@@ -123,7 +125,7 @@ bool decode(const drake::lcmt_driving_command_t& msg,
             // NOLINTNEXTLINE(runtime/references)
             DrivingCommand<ScalarType>& wrap) {
   t = static_cast<double>(msg.timestamp) / 1000.0;
-  wrap.set_steering_angle(msg.steering_angle);
+  wrap.set_steering_angle_rad(msg.steering_angle_rad);
   wrap.set_throttle(msg.throttle);
   wrap.set_brake(msg.brake);
   return true;
