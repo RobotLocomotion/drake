@@ -131,7 +131,16 @@ TEST(SystemIdentificationTest, LumpedParameterRewrite) {
   }
 }
 
-TEST(SystemIdentificationTest, BasicEstimateParameters) {
+// The current windows CI build has no solver for generic constraints.  The
+// DISABLED_ logic below ensures that we still at least get compile-time
+// checking of the test and resulting template instantiations.
+#if !defined(WIN32) && !defined(WIN64)
+#define BASIC_ESTIMATE_TEST_NAME BasicEstimateParameters
+#else
+#define BASIC_ESTIMATE_TEST_NAME DISABLED_BasicEstimateParameters
+#endif
+
+TEST(SystemIdentificationTest, BASIC_ESTIMATE_TEST_NAME) {
   Polynomiald x = Polynomiald("x");
   auto x_var = x.getSimpleVariable();
   Polynomiald y = Polynomiald("y");
