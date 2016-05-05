@@ -48,6 +48,36 @@ TEST(JointTest, ConfigurationDotToVelocityAndBack) {
   }
 }
 
+TEST(JointTest, MotionSubspaceDotTimesV) {
+  using namespace Drake;
+
+  auto joints_double = createJoints<double>();
+  auto joints_autodiff = createJoints<AutoDiffScalar<Matrix<double, 1, 1>>>();
+  std::default_random_engine generator;
+
+  for (int i = 0; i < joints_double.size(); i++) {
+    const auto &joint_ptr_double = joints_double[i];
+    const auto &joint_ptr_autodiff = joints_autodiff[i];
+
+    auto q = joint_ptr_double->RandomConfiguration(generator);
+    auto v = VectorXd::Random(joint_ptr_double->GetNumVelocities()).eval();
+
+    // directly using method
+    auto motion_subspace_dot_times_v_1 = joint_ptr_double->MotionSubspaceDotTimesV(q, v);
+
+    // using autodiff
+    auto qd = (joint_ptr_double->VelocityToConfigurationDerivative(q) * v).eval();
+    auto q_autodiff = initializeAutoDiffGivenGradientMatrix(q, qd);
+    auto motion_subspace_autodiff = joint_ptr_autodiff->MotionSubspace(q_autodiff);
+    auto motion_subspace_dot_vectorized = autoDiffToGradientMatrix(motion_subspace_autodiff);
+    Map<Matrix<double, TWIST_SIZE, Eigen::Dynamic>> motion_subspace_dot(motion_subspace_dot_vectorized.data(), TWIST_SIZE, joint_ptr_double->GetNumVelocities());
+    auto motion_subspace_dot_times_v_2 = (motion_subspace_dot * v).eval();
+
+    EXPECT_TRUE(motion_subspace_dot_times_v_1.isApprox(motion_subspace_dot_times_v_2));
+  }
+
+}
+
 TEST(JointTest, JointTransformDerivativeTwoWays) {
   using namespace Drake;
 

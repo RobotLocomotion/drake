@@ -43,7 +43,6 @@ class FixedAxisOneDoFJoint : public Joint<Scalar> {
 
   virtual VectorX<Scalar> FrictionTorque(const Eigen::Ref<const VectorX<Scalar>> &v) const override {
     VectorX<Scalar> ret(GetNumVelocities(), 1);
-    using std::abs;
     ret[0] = damping_ * v[0];
     Scalar coulomb_window_fraction = v[0] / coulomb_window_;
     Scalar coulomb = std::min(Scalar(1), std::max(Scalar(-1), coulomb_window_fraction)) * coulomb_friction_;
