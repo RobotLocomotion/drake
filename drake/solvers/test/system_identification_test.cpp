@@ -264,7 +264,10 @@ TEST(SystemIdentificationTest, IDENTIFICATION_TEST_NAME) {
   auto damping_var = damping.getSimpleVariable();
   Polynomiald spring = Polynomiald("k");
   auto spring_var = spring.getSimpleVariable();
-  Polynomiald manipulator = (mass * a) + (damping * v) + (spring * x);
+
+  // We use a simple equation of motion rather than a manipulator equation
+  // here because we are testing the 1D version of parameter estimation.
+  Polynomiald equation_of_motion = (mass * a) + (damping * v) + (spring * x);
 
   std::default_random_engine noise_generator;
   noise_generator.seed(kNoiseSeed);
@@ -286,11 +289,12 @@ TEST(SystemIdentificationTest, IDENTIFICATION_TEST_NAME) {
   SID::PartialEvalType estimated_params;
   double error;
   std::tie(estimated_params, error) =
-      SID::EstimateParameters(manipulator, observed_outputs, observed_inputs);
+      SID::EstimateParameters(equation_of_motion,
+                              observed_outputs, observed_inputs);
 
   // Multiple layers of naive discrete-time numeric integration yields a very
-  // high error value here, particular for the damping term for reasons that I
-  // (ggould-tri) don't fully understand.
+  // high error value here, which almost all lands in the damping constant
+  // because it is the smallest term in the equation of motion.
   EXPECT_LT(error, 0.3);
   EXPECT_EQ(estimated_params.size(), 3);
   EXPECT_NEAR(estimated_params[mass_var], kMass, kNoise);
