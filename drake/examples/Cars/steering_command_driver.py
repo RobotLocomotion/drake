@@ -16,9 +16,13 @@ THIS_FILE = os.path.abspath(__file__)
 THIS_DIR = os.path.dirname(THIS_FILE)
 DRAKE_DIR = os.path.dirname(os.path.dirname(THIS_DIR))
 DRAKE_DIST_DIR = os.path.dirname(DRAKE_DIR)
+DRAKE_LCMTYPES_DIR = os.path.join(
+    DRAKE_DIR, "pod-build/lcmgen/lcmtypes")
 DRAKE_PYTHON_DIR = os.path.join(DRAKE_DIST_DIR, "build/lib/python2.7")
-sys.path.extend([os.path.join(DRAKE_PYTHON_DIR, "dist-packages"),
-                 os.path.join(DRAKE_PYTHON_DIR, "site-packages")])
+sys.path.extend([
+    DRAKE_LCMTYPES_DIR,  # First (to pick up local edits to messages).
+    os.path.join(DRAKE_PYTHON_DIR, "dist-packages"),
+    os.path.join(DRAKE_PYTHON_DIR, "site-packages")])
 
 import lcm
 
