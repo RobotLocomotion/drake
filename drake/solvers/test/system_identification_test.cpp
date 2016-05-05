@@ -169,7 +169,7 @@ TEST(SystemIdentificationTest, BASIC_ESTIMATE_TEST_NAME) {
     std::tie(estimated_params, error) =
         SID::EstimateParameters(poly, sample_points, sample_results);
 
-    EXPECT_LT(error, 1e-7);
+    EXPECT_LT(error, 1e-5);
     EXPECT_EQ(estimated_params.size(), 3);
     for (const auto& var : {a_var, b_var, c_var}) {
       EXPECT_NEAR(estimated_params[var], expected_params[var], 4 * error);
