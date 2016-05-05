@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "drake/examples/MultiCar/n_ary_state.h"
+#include "drake/systems/n_ary_state.h"
 
 
 namespace Drake {
