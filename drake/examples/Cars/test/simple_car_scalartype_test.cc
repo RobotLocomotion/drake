@@ -37,12 +37,12 @@ GTEST_TEST(SimpleCarScalarTypeTest, CompileTest) {
   const SimpleCar dut;
 
   const MST time_zero{};
-  const SimpleCarState<MST> state_zeros{};
-  const DrivingCommand<MST> input_zeros{};
+  const SimpleCarState1<MST> state_zeros{};
+  const DrivingCommand1<MST> input_zeros{};
 
-  const SimpleCarState<MST> dynamics =
+  const SimpleCarState1<MST> dynamics =
       dut.dynamics(time_zero, state_zeros, input_zeros);
-  const SimpleCarState<MST> output =
+  const SimpleCarState1<MST> output =
       dut.output(time_zero, state_zeros, input_zeros);
 
   // If we compiled, declare victory.

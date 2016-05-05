@@ -5,7 +5,6 @@
 #include "drake/common/drake_path.h"
 
 #include "drake/examples/Cars/car_simulation.h"
-#include "drake/examples/Cars/gen/euler_floating_joint_state.h"
 #include "drake/examples/Cars/lcm_tap.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
@@ -35,12 +34,12 @@ int do_main(int argc, const char* argv[]) {
       drake::GetDrakePath() + "/examples/Cars/models/boxcar.urdf");
 
   auto viz =
-      std::make_shared<BotVisualizer<EulerFloatingJointState> >(
+      std::make_shared<BotVisualizer<EulerFloatingJointState1>>(
           lcm, tree);
 
   // Make some taps to publish intermediate states to LCM.
-  auto car_tap = std::make_shared<LcmTap<SimpleCarState> >(lcm);
-  auto adapter_tap = std::make_shared<LcmTap<EulerFloatingJointState> >(lcm);
+  auto car_tap = std::make_shared<LcmTap<SimpleCarState1>>(lcm);
+  auto adapter_tap = std::make_shared<LcmTap<EulerFloatingJointState1>>(lcm);
 
   // Assemble car, adapter, and visualizer, with intervening taps.
   auto car_tapped = cascade(car, car_tap);
@@ -48,7 +47,7 @@ int do_main(int argc, const char* argv[]) {
   auto adapt_viz = cascade(adapter_tapped, viz);
   auto sys = cascade(car_tapped, adapt_viz);
 
-  SimpleCarState<double> initial_state;
+  SimpleCarState1<double> initial_state;
   runLCM(sys, lcm, 0, std::numeric_limits<double>::infinity(), initial_state);
 
   return 0;

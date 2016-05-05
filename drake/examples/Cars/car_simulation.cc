@@ -3,8 +3,6 @@
 #include <cstdlib>
 
 #include "drake/examples/Cars/curve2.h"
-#include "drake/examples/Cars/gen/euler_floating_joint_state.h"
-#include "drake/examples/Cars/gen/simple_car_state.h"
 #include "drake/examples/Cars/trajectory_car.h"
 
 using drake::AffineSystem;
@@ -138,7 +136,7 @@ void AddFlatTerrain(const std::shared_ptr<RigidBodyTree>& rigid_body_tree,
 }
 
 std::shared_ptr<CascadeSystem<
-    Gain<DrivingCommand, PDControlSystem<RigidBodySystem>::InputVector>,
+    Gain<DrivingCommand1, PDControlSystem<RigidBodySystem>::InputVector>,
     PDControlSystem<RigidBodySystem>>>
 CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
   const auto& tree = rigid_body_sys->getRigidBodyTree();
@@ -202,9 +200,10 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
 
   auto vehicle_sys = cascade(
       std::allocate_shared<
-          Gain<DrivingCommand, PDControlSystem<RigidBodySystem>::InputVector>>(
-          Eigen::aligned_allocator<Gain<
-              DrivingCommand, PDControlSystem<RigidBodySystem>::InputVector>>(),
+          Gain<DrivingCommand1, PDControlSystem<RigidBodySystem>::InputVector>>(
+          Eigen::aligned_allocator<
+              Gain<DrivingCommand1,
+                   PDControlSystem<RigidBodySystem>::InputVector>>(),
           map_driving_cmd_to_x_d),
       vehicle_with_pd);
 
@@ -274,29 +273,28 @@ std::shared_ptr<TrajectoryCar> CreateTrajectoryCarSystem(int index) {
   return std::make_shared<TrajectoryCar>(curve, kSpeed, start_time);
 }
 
-std::shared_ptr<AffineSystem<
-  NullVector, SimpleCarState, EulerFloatingJointState>>
+std::shared_ptr<
+    AffineSystem<NullVector, SimpleCarState1, EulerFloatingJointState1>>
 CreateSimpleCarVisualizationAdapter() {
-  const int insize = SimpleCarState<double>().size();
-  const int outsize = EulerFloatingJointState<double>().size();
+  const int insize = SimpleCarState1<double>().size();
+  const int outsize = EulerFloatingJointState1<double>().size();
   MatrixXd D;
   D.setZero(outsize, insize);
   D(EulerFloatingJointStateIndices::kX, SimpleCarStateIndices::kX) = 1;
   D(EulerFloatingJointStateIndices::kY, SimpleCarStateIndices::kY) = 1;
   D(EulerFloatingJointStateIndices::kYaw, SimpleCarStateIndices::kHeading) = 1;
-  EulerFloatingJointState<double> y0;
+  EulerFloatingJointState1<double> y0;
   return std::make_shared<
     AffineSystem<
         NullVector,
-        SimpleCarState,
-        EulerFloatingJointState>>(
+        SimpleCarState1,
+        EulerFloatingJointState1>>(
             MatrixXd::Zero(0, 0),
             MatrixXd::Zero(0, insize),
             VectorXd::Zero(0),
             MatrixXd::Zero(outsize, 0),
             D, toEigen(y0));
 }
-
 
 SimulationOptions GetCarSimulationDefaultOptions() {
   SimulationOptions result;
