@@ -4,15 +4,15 @@
 #include <sstream>
 
 #include "drake/Path.h"
-#include "drake/systems/LCMSystem.h"
 #include "drake/systems/cascade_system.h"
-#include "drake/systems/Simulation.h"
+#include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
+#include "drake/systems/n_ary_state.h"
+#include "drake/systems/n_ary_system.h"
+#include "drake/systems/Simulation.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
-#include "drake/examples/MultiCar/n_ary_state.h"
-#include "drake/examples/MultiCar/n_ary_system.h"
 #include "drake/examples/MultiCar/trivial_car.h"
 #include "drake/examples/MultiCar/xyz_rpy.h"
 
