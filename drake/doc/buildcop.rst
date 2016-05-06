@@ -12,7 +12,7 @@ RobotLocomotion/drake GitHub repo.
 
 The build cop will rotate on a weekly basis, initially through members of the
 Kitware team, but may extend to include members of the TRI team in future. The 
-`rotation <https://github.com/RobotLocomotion/drake-ci/wiki/Build-Cop-Rotation>`_.
+`schedule <https://github.com/RobotLocomotion/drake-ci/wiki/Build-Cop-Rotation>`_
 is maintained on the RobotLocomotion/drake-ci wiki.
 
 Process
