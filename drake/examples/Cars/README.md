@@ -70,7 +70,7 @@ To start the simulation, open a new terminal and execute the following:
 
 ```
 $ cd [drake-distro]/drake/examples/Cars
-$ ../../pod-build/bin/carSimLCM models/prius/prius.urdf models/stata_garage_p1.sdf
+$ ../../pod-build/bin/car_sim_lcm models/prius/prius.urdf models/stata_garage_p1.sdf
 ```
 
 ### Simulation Using Drake + LCM + ROS
@@ -144,7 +144,7 @@ throttle and steering commands using the command line:
 
 ```
 $ cd [drake-distro]/drake/examples/Cars
-$ ../../pod-build/bin/publishDrivingCommand [throttle_value] [steering_value]
+$ ../../pod-build/bin/publish_driving_command [throttle_value] [steering_value]
 ```
 where the values in square brackets should be replaced with desired values.
 
@@ -152,7 +152,7 @@ For example:
 
 ```
 $ cd [path to drake-distro]/drake/examples/Cars
-$ ../../pod-build/bin/publishDrivingCommand 1.0 .4
+$ ../../pod-build/bin/publish_driving_command 1.0 .4
 ```
 
 Every time that you run the command above, it sends one LCM message.
@@ -170,3 +170,6 @@ Running the simple car simulator
 --------------------------------
 
 Run `./simple_car_demo.sh`.
+
+This is not supported under windows (though you can probably cobble
+together some workarounds by hand if you are motivated).
