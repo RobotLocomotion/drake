@@ -28,17 +28,17 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 class DRAKERBM_EXPORT RigidBodyActuator {
  public:
   RigidBodyActuator(
-      const std::string& name, const RigidBody& body, double reduction = 1.0,
+      const std::string& name, const RigidBody* const body, double reduction = 1.0,
       double effort_limit_min = -std::numeric_limits<double>::infinity(),
       double effort_limit_max = std::numeric_limits<double>::infinity())
       : name(name),
-        body(&body),
+        body(body),
         reduction(reduction),
         effort_limit_min(effort_limit_min),
         effort_limit_max(effort_limit_max) {}
 
   const std::string name;
-  const RigidBody* body;
+  const RigidBody* const body;
   const double reduction;
   const double effort_limit_min;
   const double effort_limit_max;
