@@ -47,6 +47,9 @@ RigidBodyTree::RigidBodyTree(
     const std::string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type)
     : collision_model(DrakeCollision::newModel()) {
+  num_positions = 0;
+  num_velocities = 0;
+
   a_grav << 0, 0, 0, 0, 0, -9.81;
 
   std::unique_ptr<RigidBody> b(new RigidBody());
@@ -62,6 +65,9 @@ RigidBodyTree::RigidBodyTree(
 
 RigidBodyTree::RigidBodyTree(void)
     : collision_model(DrakeCollision::newModel()) {
+  num_positions = 0;
+  num_velocities = 0;
+
   a_grav << 0, 0, 0, 0, 0, -9.81;
 
   std::unique_ptr<RigidBody> b(new RigidBody());
