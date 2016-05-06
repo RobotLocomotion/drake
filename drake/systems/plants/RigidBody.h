@@ -24,6 +24,9 @@ class DRAKERBM_EXPORT RigidBody {
 
   bool hasParent() const;
 
+  int id() const { return body_index;}
+  void set_id(int id) { body_index = id;}
+
   /**
    * Checks if the passed RigidBody other is the parent of this body.
    */
