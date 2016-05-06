@@ -28,7 +28,8 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 class DRAKERBM_EXPORT RigidBodyActuator {
  public:
   RigidBodyActuator(
-      const std::string& name, const RigidBody* const body, double reduction = 1.0,
+      const std::string& name, const RigidBody* const body,
+      double reduction = 1.0,
       double effort_limit_min = -std::numeric_limits<double>::infinity(),
       double effort_limit_max = std::numeric_limits<double>::infinity())
       : name(name),
@@ -753,7 +754,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * @param[in] body The rigid body to add to this rigid body tree.
    * @return The unique id of the body in the RigidBodyTree.
    */
-   void add_rigid_body(std::unique_ptr<RigidBody> body);
+  void add_rigid_body(std::unique_ptr<RigidBody> body);
 
   /**
    * Adds one floating joint to each link specified in the list of link indicies
@@ -780,13 +781,9 @@ class DRAKERBM_EXPORT RigidBodyTree {
       const std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr,
       const PoseMap* pose_map = nullptr);
 
-  RigidBody& world() {
-    return *bodies[0];
-  }
+  RigidBody& world() { return *bodies[0]; }
 
-  const RigidBody& world() const {
-    return *bodies[0];
-  }
+  const RigidBody& world() const { return *bodies[0]; }
 
  public:
   static const std::set<int> default_robot_num_set;
