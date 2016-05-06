@@ -46,7 +46,8 @@ class KinematicsCacheHelper {
 class SingleTimeKinematicConstraintWrapper : public Constraint {
  public:
   SingleTimeKinematicConstraintWrapper(
-      const std::shared_ptr<SingleTimeKinematicConstraint>& rigid_body_constraint,
+      const std::shared_ptr<SingleTimeKinematicConstraint>&
+        rigid_body_constraint,
       KinematicsCacheHelper<double>* kin_helper)
       : Constraint(rigid_body_constraint->getNumConstraint(nullptr)),
         rigid_body_constraint_shared_(rigid_body_constraint),
@@ -109,8 +110,8 @@ class QuasiStaticConstraintWrapper : public Constraint {
   }
   virtual ~QuasiStaticConstraintWrapper() {}
 
-  virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& q,
-                    Eigen::VectorXd& y) const override {
+  void eval(const Eigen::Ref<const Eigen::VectorXd>& q,
+            Eigen::VectorXd& y) const override {
     auto& kinsol = kin_helper_->UpdateKinematics(
         q.head(
             rigid_body_constraint_->getRobotPointer()->num_positions),
@@ -119,8 +120,8 @@ class QuasiStaticConstraintWrapper : public Constraint {
     Eigen::MatrixXd dy;
     rigid_body_constraint_->eval(nullptr, kinsol, weights.data(), y, dy);
   }
-  virtual void eval(const Eigen::Ref<const TaylorVecXd>& tq,
-                    TaylorVecXd& ty) const override {
+  void eval(const Eigen::Ref<const TaylorVecXd>& tq,
+            TaylorVecXd& ty) const override {
     Eigen::VectorXd q = autoDiffToValueMatrix(tq);
     auto& kinsol = kin_helper_->UpdateKinematics(
         q.head(
@@ -145,4 +146,4 @@ class QuasiStaticConstraintWrapper : public Constraint {
 }
 }
 
-#endif // DRAKE_SYSTEMS_PLANTS_CONSTRAINT_CONSTRAINTWRAPPERS_H_
+#endif  // DRAKE_SYSTEMS_PLANTS_CONSTRAINT_CONSTRAINTWRAPPERS_H_
