@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 2.8.10)
 
+add_matlab_test(NAME jenkins_junk_test COMMAND jenkins_launch_matlab)
+
+message(FATAL_ERROR "exiting")
+
 # options
 option(BUILD_SHARED_LIBS "Build Drake with shared libraries." ON)
 option(LONG_RUNNING_TESTS "some tests should be run nightly for coverage, but are too slow for CI" OFF)
