@@ -36,6 +36,25 @@ https://help.github.com/articles/generating-ssh-keys/
 
 This capability is primarily meant for members of our team and close collaborators with whom we share licenses.
 
+Using Gurobi as an external
+===========================
+
+Gurobi is enabled to build by default if one uses ``WITH_ALL_PUBLIC_EXTERNALS``. Additionally, some users may wish to install the Gurobi Optimizer as part of their Drake build even if they do not select ``WITH_ALL_PUBLIC_EXTERNALS`` by toggling ``WITH_GUROBI`` to ``ON``.
+
+To facilitate the Gurobi's building process, create an account and obtain a license on `Gurobi's website <http://www.gurobi.com/registration/general-reg-form?utm_expid=11945996-32.QTGUWGdTRw2vsRW5839Z5w.1&utm_referrer=http%3A%2F%2Fwww.gurobi.com%2Flogin>`_ *before* perforiming the Drake build with Gurobi. To actually be able to use Gurobi, there are two required verification steps:
+
+1. During the Drake build process, Gurobi will ask for your credentials that you created on their site in the above step. If you are doing a parallel build (with ``-j``), you may see that your build has paused at a seemingly random spot. If so, hit enter, and you should see something like::
+
+     Enter your password for gurobi.com:
+
+If so, press enter again and it should prompt you for your username. Enter that, hit enter, and enter your password. At this point, the Drake build should continue to completion.
+
+2. Before doing anything else, you need to ensure that your Gurobi license is verified. To do this, simply run::
+
+     cd drake-distro
+     ./externals/gurobi/gurobi604/linux64/bin/grbgetkey [key-number]
+
+where ``[key-number]`` is the number you were given when you obtained a license from Gurobi. You should now have a function Gurobi to use with Drake.
 
 Mandatory platform specific instructions
 ========================================
