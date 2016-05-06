@@ -452,7 +452,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     double effort_max =
         mxGetScalar(mxGetPropertySafe(pBodies, joint_index, "effort_max"));
     model->actuators.push_back(RigidBodyActuator(
-        name, model->body(joint_index), reduction, effort_min, effort_max));
+        name, &model->body(joint_index), reduction, effort_min, effort_max));
   }
 
   //  LOOP CONSTRAINTS
