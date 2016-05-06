@@ -746,10 +746,14 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * @brief Adds and takes ownership of a rigid body.
    *
    * A RigidBodyTree is the sole owner and manager of the RigidBody's in it.
+   * A body is assigned a unique id (RigidBody::id()) when added to a
+   * RigidBodyTree. This unique id can be use to access a body with the accessor
+   * RigidBodyTree::body.
    *
    * @param[in] body The rigid body to add to this rigid body tree.
+   * @return The unique id of the body in the RigidBodyTree.
    */
-  void add_rigid_body(std::unique_ptr<RigidBody> body);
+   int add_rigid_body(std::unique_ptr<RigidBody> body);
 
   /**
    * Adds one floating joint to each link specified in the list of link indicies
@@ -777,16 +781,16 @@ class DRAKERBM_EXPORT RigidBodyTree {
       const PoseMap* pose_map = nullptr);
 
   /**
-   * @brief Returns a mutable reference to a body by index in the tree.
+   * @brief Returns a mutable reference to a body in the tree by its id.
    *
-   * Rigid bodies are numbered in the order they are added to the tree.
+   * Rigid bodies' id are assigned in the order they are added to the tree.
    * This method will throw std::out_of_range for illegal body indexes.
    *
-   * @param[in] index The body index.
+   * @param[in] id The body id.
    * @see add_rigid_body
    */
-  RigidBody& body(int index) {
-    return *bodies.at(index);
+  RigidBody& body(int id) {
+    return *bodies_by_id.at(id);
   }
 
   /**
@@ -819,6 +823,11 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // TODO(amcastro-tri): rename to bodies_ to follow Google's style guide once.
   // accessors are used throughout the code.
   std::vector<std::unique_ptr<RigidBody> > bodies;
+
+  // Rigid bodies ordered by body id for fast access.
+  // Rigid body id's are assigned by RigidBodyTree::add_rigid_body and stored
+  // internally within the RigidBody
+  std::vector<RigidBody*> bodies_by_id;
 
   // Rigid body frames
   std::vector<std::shared_ptr<RigidBodyFrame> > frames;

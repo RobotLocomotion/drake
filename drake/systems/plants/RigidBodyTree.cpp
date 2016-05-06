@@ -108,6 +108,11 @@ void RigidBodyTree::SortTree() {
     }
     ++i;
   }
+
+  // Keep a list of bodies ordered by id.
+  for(auto& b: bodies) {
+    bodies_by_id[b->id()] = b.get();
+  }
 }
 
 void RigidBodyTree::compile(void) {
@@ -1862,16 +1867,24 @@ void RigidBodyTree::addFrame(std::shared_ptr<RigidBodyFrame> frame) {
   frame->frame_index = -(static_cast<int>(frames.size()) - 1) - 2;  // yuck!!
 }
 
-// It saves an index value in the rigid body, which can be used to access the
-// rigid body from within the "bodies" vector.
-void RigidBodyTree::add_rigid_body(std::unique_ptr<RigidBody> body) {
+int RigidBodyTree::add_rigid_body(std::unique_ptr<RigidBody> body) {
   // TODO(amcastro-tri): body indexes should not be initialized here but on an
   // initialize call after all bodies and RigidBodySystem's are defined.
   // This initialize call will make sure that all global and local indexes are
   // properly computed taking into account a RigidBodySystem could be part of a
   // larger RigidBodySystem (a system within a tree of systems).
-  body->body_index = static_cast<int>(bodies.size());
+  body->set_id(static_cast<int>(bodies.size()));
+
+  // bodies_by_id keeps bodies sorted by id.
+  // bodies_by_id and bodies have the same order before call to SortTree
+  bodies_by_id.push_back(body.get());
+
+  // bodies will be sorted by SortTree by generation. Therefore bodies[0]
+  // (world) will be at the top and subsequent generations of children will
+  // follow.
   bodies.push_back(std::move(body));
+
+  return body->id();
 }
 
 int RigidBodyTree::AddFloatingJoint(
