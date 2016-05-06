@@ -314,8 +314,7 @@ bool parseLink(RigidBodyTree* model, std::string robot_name, XMLElement* node,
     parseCollision(body.get(), collision_node, model, package_map, root_dir);
   }
 
-  model->add_rigid_body(std::move(body));
-  *index = body->body_index;
+  *index = model->add_rigid_body(std::move(body));
   return true;
 }
 

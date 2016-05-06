@@ -244,8 +244,7 @@ bool parseSDFLink(RigidBodyTree* model, std::string model_name,
                       pose_map, transform_to_model);
   }
 
-  model->add_rigid_body(std::move(body));
-  *index = body->body_index;
+  *index = model->add_rigid_body(std::move(body));
   return true;
 }
 
