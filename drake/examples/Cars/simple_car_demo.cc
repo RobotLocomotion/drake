@@ -1,10 +1,10 @@
-#include "drake/examples/SimpleCar/simple_car.h"
+#include "drake/examples/Cars/simple_car.h"
 
 #include <cmath>
 
 #include "drake/Path.h"
 
-#include "drake/examples/SimpleCar/euler_floating_joint_state.h"
+#include "drake/examples/Cars/gen/euler_floating_joint_state.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/plants/BotVisualizer.h"
@@ -82,7 +82,7 @@ int do_main(int argc, const char* argv[]) {
   // Load a simplistic rendering from accompanying URDF file.
   //
   auto tree = std::make_shared<RigidBodyTree>(
-      getDrakePath() + "/examples/SimpleCar/boxcar.urdf");
+      getDrakePath() + "/examples/Cars/models/boxcar.urdf");
 
   auto viz =
       std::make_shared<BotVisualizer<EulerFloatingJointState> >(
