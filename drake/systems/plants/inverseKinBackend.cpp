@@ -22,6 +22,11 @@ using Eigen::VectorXi;
 
 using drake::solvers::SolutionResult;
 
+/// NOTE: The contents of this class are for the most part direct ports of
+/// drake/systems/plants/@RigidBodyManipulator/inverseKinBackend.m from Matlab
+/// to C++; many methods and variables follow Matlab conventions and are
+/// documented in that file.
+
 namespace Drake {
 namespace systems {
 namespace plants {
@@ -37,13 +42,13 @@ class Mode1Objective : public Constraint {
         Q_(Q) {}
 
   void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
-                    Eigen::VectorXd& y) const override {
+            Eigen::VectorXd& y) const override {
     VectorXd q_err = x - q_nom_i_;
     y(0) = q_err.transpose() * Q_ * q_err;
   }
 
   void eval(const Eigen::Ref<const TaylorVecXd>& x,
-                    TaylorVecXd& y) const override {
+            TaylorVecXd& y) const override {
     VectorXd x_val = autoDiffToValueMatrix(x);
     VectorXd q_err = x_val - q_nom_i_;
     VectorXd y_val = q_err.transpose() * Q_ * q_err;
