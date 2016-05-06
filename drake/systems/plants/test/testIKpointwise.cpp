@@ -26,7 +26,7 @@ TEST(testIKpointwise, simpleIKpointwise) {
   }
   Vector3d com_des = Vector3d::Zero();
   com_des(2) = std::numeric_limits<double>::quiet_NaN();
-  // TODO sammy stop allocating on heap?
+  // TODO(sammy-tri) stop allocating on heap?
   WorldCoMConstraint com_kc(&rbm, com_des, com_des);
   Vector3d com_lb = Vector3d::Zero();
   Vector3d com_ub = Vector3d::Zero();
