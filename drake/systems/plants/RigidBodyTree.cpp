@@ -108,7 +108,6 @@ void RigidBodyTree::SortTree() {
     }
     ++i;
   }
-
 }
 
 void RigidBodyTree::compile(void) {
