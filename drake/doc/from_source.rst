@@ -54,7 +54,7 @@ To facilitate the Gurobi's building process, create an account and obtain a lice
      cd drake-distro
      ./externals/gurobi/gurobi604/linux64/bin/grbgetkey [key-number]
 
-where ``[key-number]`` is the number you were given when you obtained a license from Gurobi. You should now have a function Gurobi to use with Drake.
+   where ``[key-number]`` is the number you were given when you obtained a license from Gurobi. You should now have a function Gurobi to use with Drake.
 
 Mandatory platform specific instructions
 ========================================
