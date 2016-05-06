@@ -36,13 +36,13 @@ class Mode1Objective : public Constraint {
         model_(model),
         Q_(Q) {}
 
-  virtual void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
+  void eval(const Eigen::Ref<const Eigen::VectorXd>& x,
                     Eigen::VectorXd& y) const override {
     VectorXd q_err = x - q_nom_i_;
     y(0) = q_err.transpose() * Q_ * q_err;
   }
 
-  virtual void eval(const Eigen::Ref<const TaylorVecXd>& x,
+  void eval(const Eigen::Ref<const TaylorVecXd>& x,
                     TaylorVecXd& y) const override {
     VectorXd x_val = autoDiffToValueMatrix(x);
     VectorXd q_err = x_val - q_nom_i_;
@@ -85,7 +85,7 @@ int GetSolverInfo(const OptimizationProblem& prog, SolutionResult result) {
       return 13;
     }
     case SolutionResult::kUnknownError: {
-      return 100; // Not a real SNOPT error.
+      return 100;  // Not a real SNOPT error.
     }
   }
 
@@ -123,7 +123,8 @@ void inverseKinMode1(
     prog.SetSolverOption("SNOPT", "Iterations limit",
                          ikoptions.getIterationsLimit());
 
-    DecisionVariableView vars = prog.AddContinuousVariables(model->num_positions);
+    DecisionVariableView vars =
+        prog.AddContinuousVariables(model->num_positions);
 
     MatrixXd Q;
     ikoptions.getQ(Q);
@@ -150,8 +151,9 @@ void inverseKinMode1(
         VectorXd ub;
         pc->bounds(&t[t_index], lb, ub);
         prog.AddBoundingBoxConstraint(lb, ub, {vars});
-      } else if (constraint_category ==
-                 RigidBodyConstraint::SingleTimeLinearPostureConstraintCategory) {
+      } else if (
+          constraint_category ==
+          RigidBodyConstraint::SingleTimeLinearPostureConstraintCategory) {
         SingleTimeLinearPostureConstraint* st_lpc =
             static_cast<SingleTimeLinearPostureConstraint*>(constraint);
         if (!st_lpc->isTimeValid(&t[t_index])) { continue; }
@@ -173,8 +175,9 @@ void inverseKinMode1(
           triplet_list.push_back(T(iAfun[i], jAvar[i], A[i]));
         }
 
-        Eigen::SparseMatrix<double> A_sparse(st_lpc->getNumConstraint(&t[t_index]),
-                                             model->num_positions);
+        Eigen::SparseMatrix<double> A_sparse(
+            st_lpc->getNumConstraint(&t[t_index]),
+            model->num_positions);
         A_sparse.setFromTriplets(triplet_list.begin(), triplet_list.end());
         prog.AddLinearConstraint(MatrixXd(A_sparse), lb, ub, {vars});
       } else if (constraint_category ==
@@ -195,7 +198,8 @@ void inverseKinMode1(
             qsc, &kin_helper);
         prog.AddGenericConstraint(wrapper, {vars, qsc_vars});
         prog.AddBoundingBoxConstraint(VectorXd::Constant(num_vars, 0.),
-                                      VectorXd::Constant(num_vars, 1.), {qsc_vars});
+                                      VectorXd::Constant(num_vars, 1.),
+                                      {qsc_vars});
         VectorXd constraint(num_vars);
         constraint.fill(1.);
         prog.AddLinearEqualityConstraint(constraint.transpose(),
@@ -204,10 +208,12 @@ void inverseKinMode1(
                              VectorXd::Constant(num_vars, 1.0 / num_vars));
       } else if (constraint_category ==
                  RigidBodyConstraint::MultipleTimeKinematicConstraintCategory) {
-        throw std::runtime_error("MultipleTimeKinematicConstraint is not supported"
-                                 " in pointwise mode.");
-      } else if (constraint_category ==
-                 RigidBodyConstraint::MultipleTimeLinearPostureConstraintCategory) {
+        throw std::runtime_error(
+            "MultipleTimeKinematicConstraint is not supported"
+            " in pointwise mode.");
+      } else if (
+          constraint_category ==
+          RigidBodyConstraint::MultipleTimeLinearPostureConstraintCategory) {
         throw std::runtime_error(
             "MultipleTimeLinearPostureConstraint is not supported"
             " in pointwise mode.");
@@ -215,8 +221,9 @@ void inverseKinMode1(
     }
 
     // Add a bounding box constraint from them model.
-    prog.AddBoundingBoxConstraint(model->joint_limit_min, model->joint_limit_max,
-                                  {vars});
+    prog.AddBoundingBoxConstraint(
+        model->joint_limit_min, model->joint_limit_max,
+        {vars});
 
     // TODO(sam.creasey) would this be faster if we stored the view
     // instead of copying into a VectorXd?
@@ -234,7 +241,7 @@ void inverseKinMode1(
   }
 }
 
-} // namespace (anon)
+}  // namespace (anon)
 
 template <typename DerivedA, typename DerivedB, typename DerivedC,
           typename DerivedD, typename DerivedE>
