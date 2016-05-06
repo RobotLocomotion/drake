@@ -47,7 +47,7 @@ To facilitate the Gurobi's building process, create an account and obtain a lice
 
      Enter your password for gurobi.com:
 
-If so, press enter again and it should prompt you for your username. Enter that, hit enter, and enter your password. At this point, the Drake build should continue to completion.
+   If so, press enter again and it should prompt you for your username. Enter that, hit enter, and enter your password. At this point, the Drake build should continue to completion.
 
 2. Before doing anything else, you need to ensure that your Gurobi license is verified. To do this, simply run::
 
