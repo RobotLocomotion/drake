@@ -20,7 +20,7 @@ namespace Drake {
 ///
 /// state vector (planar for now):
 /// * position: x, y, yaw;
-///   yaw is 0deg when pointed +x, 90deg when pointed +y;
+///   yaw is 0 rad when pointed +x, pi/2 rad when pointed +y;
 //    yaw is defined around the +z axis, so positive-turn-left
 /// * velocity
 ///
