@@ -753,7 +753,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * @param[in] body The rigid body to add to this rigid body tree.
    * @return The unique id of the body in the RigidBodyTree.
    */
-   int add_rigid_body(std::unique_ptr<RigidBody> body);
+   void add_rigid_body(std::unique_ptr<RigidBody> body);
 
   /**
    * Adds one floating joint to each link specified in the list of link indicies
@@ -780,34 +780,12 @@ class DRAKERBM_EXPORT RigidBodyTree {
       const std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr,
       const PoseMap* pose_map = nullptr);
 
-  /**
-   * @brief Returns a mutable reference to a body in the tree by its id.
-   *
-   * Rigid bodies' id are assigned in the order they are added to the tree.
-   * This method will throw std::out_of_range for illegal body indexes.
-   *
-   * @param[in] id The body id.
-   * @see add_rigid_body
-   */
-  RigidBody& body(int id) {
-    return *bodies_by_id.at(id);
+  RigidBody& world() {
+    return *bodies[0];
   }
 
-  /**
-   * @brief Returns a constant reference to a body by index in the tree.
-   *
-   * Rigid bodies are numbered in the order they are added to the tree.
-   * In Debug builds this method will assert if index is out-of-bounds.
-   *
-   * @param[in] index The body index.
-   * @see add_rigid_body
-   */
-  const RigidBody& body(int index) const {
-    // This method is meant for quick access and therefore it is not
-    // bound-checked in release builds.
-    assert(0 <= index && index < bodies.size() &&
-           "Input index exceeds the number of bodies in the tree");
-    return *bodies[index];
+  const RigidBody& world() const {
+    return *bodies[0];
   }
 
  public:
@@ -823,11 +801,6 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // TODO(amcastro-tri): rename to bodies_ to follow Google's style guide once.
   // accessors are used throughout the code.
   std::vector<std::unique_ptr<RigidBody> > bodies;
-
-  // Rigid bodies ordered by body id for fast access.
-  // Rigid body id's are assigned by RigidBodyTree::add_rigid_body and stored
-  // internally within the RigidBody
-  std::vector<RigidBody*> bodies_by_id;
 
   // Rigid body frames
   std::vector<std::shared_ptr<RigidBodyFrame> > frames;

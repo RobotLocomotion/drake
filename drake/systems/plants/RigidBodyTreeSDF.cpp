@@ -208,7 +208,7 @@ bool parseSDFLink(RigidBodyTree* model, std::string model_name,
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return false;
 
-  std::unique_ptr<RigidBody> body(new RigidBody());
+  RigidBody* body = new RigidBody();
   body->model_name = model_name;
 
   attr = node->Attribute("name");
@@ -229,22 +229,23 @@ bool parseSDFLink(RigidBodyTree* model, std::string model_name,
 
   XMLElement* inertial_node = node->FirstChildElement("inertial");
   if (inertial_node)
-    parseSDFInertial(body.get(), inertial_node, model, pose_map, transform_to_model);
+    parseSDFInertial(body, inertial_node, model, pose_map, transform_to_model);
 
   for (XMLElement* visual_node = node->FirstChildElement("visual"); visual_node;
        visual_node = visual_node->NextSiblingElement("visual")) {
-    parseSDFVisual(body.get(), visual_node, model, package_map, root_dir, pose_map,
+    parseSDFVisual(body, visual_node, model, package_map, root_dir, pose_map,
                    transform_to_model);
   }
 
   for (XMLElement* collision_node = node->FirstChildElement("collision");
        collision_node;
        collision_node = collision_node->NextSiblingElement("collision")) {
-    parseSDFCollision(body.get(), collision_node, model, package_map, root_dir,
+    parseSDFCollision(body, collision_node, model, package_map, root_dir,
                       pose_map, transform_to_model);
   }
 
-  *index = model->add_rigid_body(std::move(body));
+  model->add_rigid_body(std::unique_ptr<RigidBody>(body));
+  *index = body->body_index;
   return true;
 }
 

@@ -109,10 +109,6 @@ void RigidBodyTree::SortTree() {
     ++i;
   }
 
-  // Keep a list of bodies ordered by id.
-  for(auto& b: bodies) {
-    bodies_by_id[b->id()] = b.get();
-  }
 }
 
 void RigidBodyTree::compile(void) {
@@ -120,11 +116,22 @@ void RigidBodyTree::compile(void) {
 
   // weld joints for links that have zero inertia and no children (as seen in
   // pr2.urdf)
+  // TODO(amcastro-tri): this is O(n^2). RigidBody should contain a list of
+  // children
+  // TODO(amcastro-tri): the order in which these loops should be performed
+  // should be stated more clearly with an iterator.
+  // An option would be to have:
+  //   RigidBodyTree::upwards_body_iterator: travels the tree upwards towards
+  //   the root.
+  //   RigidBodyTree::downwards_body_iterator: travles the tree downwards from
+  //   the root towards the last leaf.
+  //   RigidBodyTree::byid_body_iterator: travels the tree in the order bodies
+  //   were originally added.
   for (size_t i = 0; i < bodies.size(); i++) {
     if (bodies[i]->hasParent() && bodies[i]->I.isConstant(0)) {
       bool hasChild = false;
       for (size_t j = i + 1; j < bodies.size(); j++) {
-        if (body(j).has_as_parent(body(i))) {
+        if (bodies[j]->has_as_parent(*bodies[i])) {
           hasChild = true;
           break;
         }
@@ -132,8 +139,8 @@ void RigidBodyTree::compile(void) {
       if (!hasChild) {
         // now check if this body is attached by a loop joint
         for (const auto& loop : loops) {
-          if ((loop.frameA->body == &body(i)) ||
-              (loop.frameB->body == &body(i))) {
+          if ((loop.frameA->body == bodies[i].get()) ||
+              (loop.frameB->body == bodies[i].get())) {
             hasChild = true;
             break;
           }
@@ -142,7 +149,7 @@ void RigidBodyTree::compile(void) {
       if (!hasChild) {
         cout << "welding " << bodies[i]->getJoint().getName()
              << " because it has no inertia beneath it" << endl;
-        unique_ptr<DrakeJoint> joint_unique_ptr(
+        std::unique_ptr<DrakeJoint> joint_unique_ptr(
             new FixedJoint(bodies[i]->getJoint().getName(),
                            bodies[i]->getJoint().getTransformToParentBody()));
         bodies[i]->setJoint(std::move(joint_unique_ptr));
@@ -150,6 +157,9 @@ void RigidBodyTree::compile(void) {
     }
   }
 
+  // Notice bodies here are accecessed in the sorted vector RBT::bodies
+  // This then determines the numbering in position_num_start and
+  // in velocity_num_start.
   num_positions = 0;
   num_velocities = 0;
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
@@ -165,6 +175,11 @@ void RigidBodyTree::compile(void) {
     }
   }
 
+  // TODO(amcastro-tri): body's id should not change after call add_rigid_body.
+  // There should be a unique id that doesn't change during computation.
+  // If we do opt for chaning the id within compile() then it should happen
+  // within SortTree not after. However the code before this depends on body's
+  // indexes, yuck!
   for (size_t i = 0; i < bodies.size(); i++) {
     bodies[i]->body_index = static_cast<int>(i);
   }
@@ -983,7 +998,7 @@ int RigidBodyTree::parseBodyOrFrameID(const int body_or_frame_id) const {
 
 void RigidBodyTree::findAncestorBodies(std::vector<int>& ancestor_bodies,
                                        int body_idx) const {
-  const RigidBody* current_body = &body(body_idx);
+  const RigidBody* current_body = bodies[body_idx].get();
   while (current_body->hasParent()) {
     ancestor_bodies.push_back(current_body->parent->body_index);
     current_body = current_body->parent;
@@ -1867,7 +1882,7 @@ void RigidBodyTree::addFrame(std::shared_ptr<RigidBodyFrame> frame) {
   frame->frame_index = -(static_cast<int>(frames.size()) - 1) - 2;  // yuck!!
 }
 
-int RigidBodyTree::add_rigid_body(std::unique_ptr<RigidBody> body) {
+void RigidBodyTree::add_rigid_body(std::unique_ptr<RigidBody> body) {
   // TODO(amcastro-tri): body indexes should not be initialized here but on an
   // initialize call after all bodies and RigidBodySystem's are defined.
   // This initialize call will make sure that all global and local indexes are
@@ -1875,16 +1890,10 @@ int RigidBodyTree::add_rigid_body(std::unique_ptr<RigidBody> body) {
   // larger RigidBodySystem (a system within a tree of systems).
   body->set_id(static_cast<int>(bodies.size()));
 
-  // bodies_by_id keeps bodies sorted by id.
-  // bodies_by_id and bodies have the same order before call to SortTree
-  bodies_by_id.push_back(body.get());
-
   // bodies will be sorted by SortTree by generation. Therefore bodies[0]
   // (world) will be at the top and subsequent generations of children will
   // follow.
   bodies.push_back(std::move(body));
-
-  return body->id();
 }
 
 int RigidBodyTree::AddFloatingJoint(
