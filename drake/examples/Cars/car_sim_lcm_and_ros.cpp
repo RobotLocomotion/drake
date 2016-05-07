@@ -82,7 +82,7 @@ bool decode(const drake::lcmt_driving_control_cmd_t& msg, double& t,
  */
 
 int main(int argc, char* argv[]) {
-  ros::init(argc, argv, "drake_simulate_lcm_and_ros");
+  ros::init(argc, argv, "drake_car_sim_lcm_and_ros");
 
   if (argc < 2) {
     std::cerr << "Usage: " << argv[0] << " vehicle_urdf [world sdf files ...]"

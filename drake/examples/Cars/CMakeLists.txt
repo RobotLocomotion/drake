@@ -24,16 +24,8 @@ if (LCM_FOUND)
   target_link_libraries(car_sim_lcm drakeRBSystem drakeLCMSystem)
 
 if(roscpp_FOUND)
-  # message(STATUS "=============================================================")
-  # get_cmake_property(_variableNames VARIABLES)
-  # foreach (_variableName ${_variableNames})
-  #     message(STATUS "${_variableName}=${${_variableName}}")
-  # endforeach()
-  # message(STATUS "=============================================================")
-
-  add_executable(carSimLCMandROS simulateLCMandROS.cpp)
-  # add_dependencies(carSimLCMandROS ${PROJECT_NAME}_generate_messages)
-  target_link_libraries(carSimLCMandROS drakeRBM drakeRBSystem drakeLCMSystem ${roscpp_LIBRARIES} ${tf_LIBRARIES})
+  add_executable(car_sim_lcm_and_ros car_sim_lcm_and_ros.cpp)
+  target_link_libraries(car_sim_lcm_and_ros drakeRBM drakeRBSystem drakeLCMSystem ${roscpp_LIBRARIES} ${tf_LIBRARIES})
 endif()
 
   add_executable(publish_driving_command publish_driving_command.cpp)
