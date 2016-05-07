@@ -205,25 +205,7 @@ string resolveFilename(const string& filename,
       return string();
     }
   } else {
-    std::string normalized_root_dir = spruce::path(root_dir).getStr();
-
-    // if root_dir is a relative path then convert it to absolute
-#ifdef _WIN32
-    bool dirIsRelative = !(normalized_root_dir.size() >= 2
-                           && std::isalpha(normalized_root_dir[0])
-                           && normalized_root_dir[1] == ':');
-#else
-    bool dirIsRelative = !(normalized_root_dir.size() >= 1
-                           && normalized_root_dir[0] == '/');
-#endif
-    if (dirIsRelative) {
-      mesh_filename_s = spruce::path();
-      mesh_filename_s.setAsCurrent();
-      mesh_filename_s.append(normalized_root_dir);
-    } else {
-      mesh_filename_s = spruce::path(normalized_root_dir);
-    }
-
+    mesh_filename_s = spruce::path(root_dir);
     mesh_filename_s.append(filename);
   }
   if (!mesh_filename_s.exists()) {
