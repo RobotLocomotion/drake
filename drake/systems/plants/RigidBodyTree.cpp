@@ -108,6 +108,11 @@ void RigidBodyTree::SortTree() {
     }
     ++i;
   }
+
+  // Reasign body_index to be the i-th entry in RBT::bodies
+  for (size_t i = 0; i < bodies.size(); i++) {
+    bodies[i]->body_index = static_cast<int>(i);
+  }
 }
 
 void RigidBodyTree::compile(void) {
@@ -122,10 +127,8 @@ void RigidBodyTree::compile(void) {
   // An option would be to have:
   //   RigidBodyTree::upwards_body_iterator: travels the tree upwards towards
   //   the root.
-  //   RigidBodyTree::downwards_body_iterator: travles the tree downwards from
+  //   RigidBodyTree::downwards_body_iterator: travels the tree downwards from
   //   the root towards the last leaf.
-  //   RigidBodyTree::byid_body_iterator: travels the tree in the order bodies
-  //   were originally added.
   for (size_t i = 0; i < bodies.size(); i++) {
     if (bodies[i]->hasParent() && bodies[i]->I.isConstant(0)) {
       bool hasChild = false;
@@ -172,15 +175,6 @@ void RigidBodyTree::compile(void) {
       body.position_num_start = 0;
       body.velocity_num_start = 0;
     }
-  }
-
-  // TODO(amcastro-tri): body's id should not change after call add_rigid_body.
-  // There should be a unique id that doesn't change during computation.
-  // If we do opt for chaning the id within compile() then it should happen
-  // within SortTree not after. However the code before this depends on body's
-  // indexes, yuck!
-  for (size_t i = 0; i < bodies.size(); i++) {
-    bodies[i]->body_index = static_cast<int>(i);
   }
 
   B.resize(num_velocities, actuators.size());
