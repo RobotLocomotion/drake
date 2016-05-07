@@ -788,8 +788,8 @@ class DRAKERBM_EXPORT RigidBodyTree {
  public:
   static const std::set<int> default_robot_num_set;
 
-  int num_positions;
-  int num_velocities;
+  int num_positions{};
+  int num_velocities{};
   Eigen::VectorXd joint_limit_min;
   Eigen::VectorXd joint_limit_max;
 
