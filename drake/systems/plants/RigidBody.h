@@ -25,7 +25,11 @@ class DRAKERBM_EXPORT RigidBody {
   bool hasParent() const;
 
   /**
-   * Checks if the passed RigidBody other is the parent of this body.
+   * Checks if a particular rigid body is the parent of this rigid body.
+   *
+   * @param[in] other The potential parent of this rigid body.
+   * @return true if the supplied rigid body parameter other is the parent of
+   * this rigid body.
    */
   bool has_as_parent(const RigidBody& other) const { return parent == &other; }
 
