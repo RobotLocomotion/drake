@@ -1881,7 +1881,7 @@ void RigidBodyTree::add_rigid_body(std::unique_ptr<RigidBody> body) {
   // This initialize call will make sure that all global and local indexes are
   // properly computed taking into account a RigidBodySystem could be part of a
   // larger RigidBodySystem (a system within a tree of systems).
-  body->set_id(static_cast<int>(bodies.size()));
+  body->body_index = static_cast<int>(bodies.size());
 
   // bodies will be sorted by SortTree by generation. Therefore bodies[0]
   // (world) will be at the top and subsequent generations of children will
