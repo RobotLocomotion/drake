@@ -2,7 +2,6 @@
 
 """Publishes steering commands over LCM.
 """
-# Adapted from drake/examples/Cars/SteeringCommandDriver.py.
 
 import argparse
 import copy
@@ -16,9 +15,13 @@ THIS_FILE = os.path.abspath(__file__)
 THIS_DIR = os.path.dirname(THIS_FILE)
 DRAKE_DIR = os.path.dirname(os.path.dirname(THIS_DIR))
 DRAKE_DIST_DIR = os.path.dirname(DRAKE_DIR)
+DRAKE_LCMTYPES_DIR = os.path.join(
+    DRAKE_DIR, "pod-build/lcmgen/lcmtypes")
 DRAKE_PYTHON_DIR = os.path.join(DRAKE_DIST_DIR, "build/lib/python2.7")
-sys.path.extend([os.path.join(DRAKE_PYTHON_DIR, "dist-packages"),
-                 os.path.join(DRAKE_PYTHON_DIR, "site-packages")])
+sys.path.extend([
+    DRAKE_LCMTYPES_DIR,  # First (to pick up local edits to messages).
+    os.path.join(DRAKE_PYTHON_DIR, "dist-packages"),
+    os.path.join(DRAKE_PYTHON_DIR, "site-packages")])
 
 import lcm
 
@@ -27,11 +30,20 @@ from drake.lcmt_driving_command_t import lcmt_driving_command_t as lcm_msg
 STEERING_AXIS = 0
 ACCEL_AXIS = 1
 BRAKE_AXIS = 2
-MAX_STEERING_ANGLE = math.radians(45)
-THROTTLE_MULTIPLIER = 1.0
-BRAKE_MULTIPLIER = 1.0
-STEERING_BUTTON_STEP_FACTOR = 100
 
+MAX_STEERING_ANGLE = math.radians(45)
+STEERING_BUTTON_STEP_ANGLE = MAX_STEERING_ANGLE / 100.0
+TURN_LEFT_SIGN = 1.0
+TURN_RIGHT_SIGN = -1.0
+
+THROTTLE_SCALE = 1.0
+BRAKE_SCALE = 1.0
+
+def _limit_steering(requested_value):
+    if abs(requested_value) <= MAX_STEERING_ANGLE:
+        return requested_value
+    else:
+        return math.copysign(MAX_STEERING_ANGLE, requested_value)
 
 class KeyboardEventProcessor:
     def __init__(self):
@@ -43,20 +55,18 @@ class KeyboardEventProcessor:
         new_msg = copy.copy(last_msg)
         if event.key == pygame.K_UP:
             new_msg.throttle = (
-              (event.type == pygame.KEYDOWN) * THROTTLE_MULTIPLIER)
+                (event.type == pygame.KEYDOWN) * THROTTLE_SCALE)
         elif event.key == pygame.K_DOWN:
             new_msg.brake = (
-              (event.type == pygame.KEYDOWN) * BRAKE_MULTIPLIER)
-        elif event.key == pygame.K_RIGHT:
-            new_msg.steering_angle = min(
-              MAX_STEERING_ANGLE,
-              (MAX_STEERING_ANGLE/STEERING_BUTTON_STEP_FACTOR) *
-              (event.type == pygame.KEYDOWN) + last_msg.steering_angle)
-        elif event.key == pygame.K_LEFT:
-            new_msg.steering_angle = max(
-                MAX_STEERING_ANGLE * -1,
-                (MAX_STEERING_ANGLE / STEERING_BUTTON_STEP_FACTOR) * -1 *
-                (event.type == pygame.KEYDOWN) + last_msg.steering_angle)
+                (event.type == pygame.KEYDOWN) * BRAKE_SCALE)
+        elif (event.key == pygame.K_LEFT) and (event.type == pygame.KEYDOWN):
+            new_msg.steering_angle = _limit_steering(
+                last_msg.steering_angle + (
+                    STEERING_BUTTON_STEP_ANGLE * TURN_LEFT_SIGN))
+        elif (event.key == pygame.K_RIGHT) and (event.type == pygame.KEYDOWN):
+            new_msg.steering_angle = _limit_steering(
+                last_msg.steering_angle + (
+                    STEERING_BUTTON_STEP_ANGLE * TURN_RIGHT_SIGN))
         return new_msg
 
 
@@ -83,7 +93,8 @@ class JoystickEventProcessor:
     def processEvent(self, event, last_msg):
         new_msg = copy.copy(last_msg)
         if event.axis == STEERING_AXIS:
-            new_msg.steering_angle = -1 * event.value * MAX_STEERING_ANGLE
+            new_msg.steering_angle = (
+                TURN_RIGHT_SIGN * event.value * MAX_STEERING_ANGLE)
         elif event.axis == ACCEL_AXIS:
             new_msg.throttle = -0.5 * event.value + 0.5
         elif event.axis == BRAKE_AXIS:
