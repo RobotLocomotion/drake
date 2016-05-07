@@ -85,8 +85,9 @@ bool RigidBodyTree::transformCollisionFrame(
   return collision_model->transformCollisionFrame(eid, transform_body_to_joint);
 }
 
-// TODO(amcastro-tri): This implementation is very inefficient since vector
-// bodies changes in size with the calls to bodies.erase and bodies.insert.
+// TODO(amcastro-tri): This implementation is very inefficient since member
+// vector RigidBodyTree::bodies changes in size with the calls to bodies.erase
+// and bodies.insert.
 // A possibility would be to use std::sort or our own version of a quick sort.
 void RigidBodyTree::SortTree() {
   if (bodies.size() == 0) return;  // no-op if there are no RigidBody's
