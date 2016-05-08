@@ -752,7 +752,6 @@ class DRAKERBM_EXPORT RigidBodyTree {
    * RigidBodyTree::body.
    *
    * @param[in] body The rigid body to add to this rigid body tree.
-   * @return The unique id of the body in the RigidBodyTree.
    */
   void add_rigid_body(std::unique_ptr<RigidBody> body);
 
