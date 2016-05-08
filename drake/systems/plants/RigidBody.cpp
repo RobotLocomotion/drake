@@ -81,12 +81,12 @@ RigidBody::CollisionElement::CollisionElement(const CollisionElement& other)
     : DrakeCollision::Element(other), body(other.body) {}
 
 RigidBody::CollisionElement::CollisionElement(
-    const Isometry3d& T_element_to_link, RigidBody* body)
+    const Isometry3d& T_element_to_link, const RigidBody* const body)
     : DrakeCollision::Element(T_element_to_link), body(body) {}
 
 RigidBody::CollisionElement::CollisionElement(
     const DrakeShapes::Geometry& geometry, const Isometry3d& T_element_to_link,
-    RigidBody* body)
+    const RigidBody* const body)
     : DrakeCollision::Element(geometry, T_element_to_link), body(body) {}
 
 RigidBody::CollisionElement* RigidBody::CollisionElement::clone() const {
@@ -94,8 +94,6 @@ RigidBody::CollisionElement* RigidBody::CollisionElement::clone() const {
 }
 
 const RigidBody& RigidBody::CollisionElement::getBody() const { return *body; }
-
-RigidBody& RigidBody::CollisionElement::getBody() { return *body; }
 
 bool RigidBody::CollisionElement::CollidesWith(
     const DrakeCollision::Element* other) const {

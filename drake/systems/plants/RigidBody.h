@@ -137,10 +137,10 @@ class DRAKERBM_EXPORT RigidBody {
     // TODO(amcastro-tri): It should not be possible to construct a
     // CollisionElement without specifying a geometry. Remove this constructor.
     CollisionElement(const Eigen::Isometry3d& T_element_to_link,
-                     RigidBody* body);
+                     const RigidBody* const body);
     CollisionElement(const DrakeShapes::Geometry& geometry,
                      const Eigen::Isometry3d& T_element_to_link,
-                     RigidBody* body);
+                     const RigidBody* const body);
     virtual ~CollisionElement() {}
 
     CollisionElement* clone() const override;
@@ -152,13 +152,6 @@ class DRAKERBM_EXPORT RigidBody {
     // TODO(amcastro-tri): getBody() -> get_body()
     const RigidBody& getBody() const;
 
-    /**
-     * @brief Returns a mutable reference to the body to which this
-     * CollisionElement is attached.
-     */
-    // TODO(amcastro-tri): getBody() -> get_body()
-    RigidBody& getBody();
-
     bool CollidesWith(const DrakeCollision::Element* other) const override;
 
 #ifndef SWIG
@@ -166,7 +159,7 @@ class DRAKERBM_EXPORT RigidBody {
 #endif
 
    private:
-    RigidBody* body;
+    const RigidBody* const body;
   };
 
  public:
