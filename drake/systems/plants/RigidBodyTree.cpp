@@ -154,7 +154,7 @@ void RigidBodyTree::compile(void) {
     }
   }
 
-  // Notice bodies here are accecessed in the sorted vector RBT::bodies
+  // Notice bodies here are accecessed in the sorted vector RBT::bodies.
   // This then determines the numbering in position_num_start and
   // in velocity_num_start.
   num_positions = 0;
