@@ -780,8 +780,16 @@ class DRAKERBM_EXPORT RigidBodyTree {
       const std::shared_ptr<RigidBodyFrame> weld_to_frame = nullptr,
       const PoseMap* pose_map = nullptr);
 
+  /**
+   * @brief Returns a mutable reference to the RigidBody associated with the
+   * world in the model. This is the root of the RigidBodyTree.
+   */
   RigidBody& world() { return *bodies[0]; }
 
+  /**
+   * @brief Returns a const reference to the RigidBody associated with the
+   * world in the model. This is the root of the RigidBodyTree.
+   */
   const RigidBody& world() const { return *bodies[0]; }
 
  public:
