@@ -208,7 +208,8 @@ bool parseSDFLink(RigidBodyTree* model, std::string model_name,
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return false;
 
-  RigidBody* body = new RigidBody();
+  RigidBody* body{};
+  std::unique_ptr<RigidBody> owned_body(body = new RigidBody());
   body->model_name = model_name;
 
   attr = node->Attribute("name");
@@ -244,7 +245,7 @@ bool parseSDFLink(RigidBodyTree* model, std::string model_name,
                       pose_map, transform_to_model);
   }
 
-  model->add_rigid_body(std::unique_ptr<RigidBody>(body));
+  model->add_rigid_body(std::move(owned_body));
   *index = body->body_index;
   return true;
 }

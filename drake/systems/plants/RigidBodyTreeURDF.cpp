@@ -289,7 +289,8 @@ bool parseLink(RigidBodyTree* model, std::string robot_name, XMLElement* node,
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return false;
 
-  RigidBody* body = new RigidBody();
+  RigidBody* body{};
+  std::unique_ptr<RigidBody> owned_body(body = new RigidBody());
   body->model_name = robot_name;
 
   attr = node->Attribute("name");
@@ -314,7 +315,7 @@ bool parseLink(RigidBodyTree* model, std::string robot_name, XMLElement* node,
     parseCollision(body, collision_node, model, package_map, root_dir);
   }
 
-  model->add_rigid_body(std::unique_ptr<RigidBody>(body));
+  model->add_rigid_body(std::move(owned_body));
   *index = body->body_index;
   return true;
 }
