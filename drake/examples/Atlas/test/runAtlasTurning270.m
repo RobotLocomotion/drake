@@ -6,4 +6,4 @@ runAtlasWalking([], struct('initial_pose', [0;0;0;0;0;3*pi/2],...
                                 'max_num_steps', 15));
 end
 
-% TIMEOUT 1000
+% TIMEOUT 1500

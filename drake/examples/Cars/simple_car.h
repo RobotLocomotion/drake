@@ -10,7 +10,7 @@
 #include "drake/examples/Cars/gen/simple_car_state.h"
 #include "lcmtypes/drake/lcmt_simple_car_config_t.hpp"
 
-namespace Drake {
+namespace drake {
 
 /// SimpleCar -- model an idealized response to driving commands, neglecting
 /// all physics.

@@ -204,7 +204,7 @@ HEADER_PREAMBLE = """
 
 #include "lcmtypes/drake/lcmt_%(snake)s_t.hpp"
 
-namespace Drake {
+namespace drake {
 """
 
 CLASS_BEGIN = """
@@ -247,7 +247,7 @@ CLASS_END = """
 """
 
 HEADER_POSTAMBLE = """
-}  // namespace Drake
+}  // namespace drake
 """
 
 LCMTYPE_PREAMBLE = """
