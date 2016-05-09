@@ -5,6 +5,7 @@
 #include "drake/Path.h"
 
 #include "drake/examples/Cars/gen/euler_floating_joint_state.h"
+#include "drake/examples/Cars/lcm_tap.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/plants/BotVisualizer.h"
@@ -14,42 +15,6 @@ using Drake::AffineSystem;
 using Drake::BotVisualizer;
 using Drake::NullVector;
 using Drake::cascade;
-
-// TODO(rpoyner-tri): move this to somewhere common; it is useful.
-/// LCMTap -- a system that wires input to output, and publishes input to LCM.
-template <template <typename> class Vector>
-class LCMTap {
- public:
-  template <typename ScalarType>
-  using StateVector = NullVector<ScalarType>;
-  template <typename ScalarType>
-  using InputVector = Vector<ScalarType>;
-  template <typename ScalarType>
-  using OutputVector = Vector<ScalarType>;
-
-  explicit LCMTap(std::shared_ptr<lcm::LCM> lcm) : lcm(lcm) {}
-
-  StateVector<double> dynamics(const double& t, const StateVector<double>& x,
-                               const InputVector<double>& u) const {
-    return StateVector<double>();
-  }
-
-  OutputVector<double> output(const double& t, const StateVector<double>& x,
-                              const InputVector<double>& u) const {
-    typename Vector<double>::LCMMessageType msg;
-    if (!encode(t, u, msg))
-      throw std::runtime_error(std::string("failed to encode") +
-                               msg.getTypeName());
-    lcm->publish(u.channel(), &msg);
-    return u;
-  }
-
-  bool isTimeVarying() const { return false; }
-  bool isDirectFeedthrough() const { return true; }
-
- private:
-  const std::shared_ptr<lcm::LCM> lcm;
-};
 
 namespace drake {
 namespace {
@@ -93,8 +58,8 @@ int do_main(int argc, const char* argv[]) {
           lcm, tree);
 
   // Make some taps to publish intermediate states to LCM.
-  auto car_tap = std::make_shared<LCMTap<SimpleCarState> >(lcm);
-  auto adapter_tap = std::make_shared<LCMTap<EulerFloatingJointState> >(lcm);
+  auto car_tap = std::make_shared<LcmTap<SimpleCarState> >(lcm);
+  auto adapter_tap = std::make_shared<LcmTap<EulerFloatingJointState> >(lcm);
 
   // Assemble car, adapter, and visualizer, with intervening taps.
   auto car_tapped = cascade(car, car_tap);
