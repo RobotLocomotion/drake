@@ -9,7 +9,11 @@ import math
 import os
 import sys
 
-import pygame
+try:
+    import pygame
+except ImportError:
+    # We will flag this as an error later, and only if we really needed it.
+    pass
 
 THIS_FILE = os.path.abspath(__file__)
 THIS_DIR = os.path.dirname(THIS_FILE)
@@ -148,25 +152,54 @@ class SteeringCommandPublisher:
                 self.printLCMValues()
 
 
+def publish_driving_command(lcm_tag, throttle, steering_angle):
+    lc = lcm.LCM()
+    last_msg = lcm_msg()
+    last_msg.throttle = throttle
+    last_msg.steering_angle = steering_angle
+    lc.publish(lcm_tag, last_msg.encode())
+
+
 def main():
     parser = argparse.ArgumentParser(
-      description=__doc__)
-    parser.add_argument(
-      '--input_method', choices=['joystick', 'keyboard'], default='keyboard',
-      help='the input method to use for publishing LCM steering commands'
-      ' (default keyboard)')
+        description=__doc__,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
       '--lcm_tag', default='DRIVING_COMMAND',
-      help='tag to publish the LCM messages with (default STEERING_DRIVER)')
+      help='tag to publish the LCM messages with')
+    parser.add_argument(
+      '--mode', choices=['interactive', 'one-time'], default='interactive',
+      help='whether to run interactively with pygame input,'
+           ' or just send a single command')
+    parser.add_argument(
+      '--input_method', choices=['joystick', 'keyboard'], default='keyboard',
+      help='the interactive input method to use for publishing LCM commands')
     parser.add_argument(
       '--joy_name', default='Driving Force GT',
-      help='system name of the joystick (default Driving Force GT)')
+        help='system name of the joystick')
+    parser.add_argument(
+      '--throttle', type=float, default='0.0', help='initial throttle')
+    parser.add_argument(
+      '--steering-angle', type=float, default='0.0',
+        help='initial steering angle (in radians), positive-left')
+
     args = parser.parse_args()
+
+    if args.mode == 'one-time':
+        publish_driving_command(
+            args.lcm_tag, args.throttle, args.steering_angle)
+        return 0
+
+    if 'pygame' not in sys.modules:
+        print >>sys.stderr, 'error: missing pygame; see README.md for help.'
+        return 1
 
     publisher = SteeringCommandPublisher(
       args.input_method, args.lcm_tag, args.joy_name)
     publisher.start()
 
+    return 0
+
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
