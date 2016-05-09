@@ -122,17 +122,15 @@ TEST(SimpleCarTest, Accelerating) {
   EXPECT_EQ(history_system->states_[start_time].heading(), 0.);
   EXPECT_EQ(history_system->states_[start_time].velocity(), 0.);
 
-  EXPECT_EQ(history_system->states_[max_time].x(), 0.);
-
   // These clauses are deliberately broad; we don't care so much about the
   // exact values, but rather that we got somewhere.
-  EXPECT_NEAR(history_system->states_[max_time].y(),
+  EXPECT_NEAR(history_system->states_[max_time].x(),
               Drake::SimpleCar::kDefaultConfig.max_velocity *
               (end_time - start_time), 3e2);
-  EXPECT_GT(history_system->states_[max_time].y(),
+  EXPECT_GT(history_system->states_[max_time].x(),
             Drake::SimpleCar::kDefaultConfig.max_velocity *
             (end_time - start_time) / 2);
-
+  EXPECT_EQ(history_system->states_[max_time].y(), 0.);
   EXPECT_EQ(history_system->states_[max_time].heading(), 0.);
   EXPECT_NEAR(history_system->states_[max_time].velocity(),
               Drake::SimpleCar::kDefaultConfig.max_velocity, 1e-5);
@@ -173,16 +171,16 @@ TEST(SimpleCarTest, Braking) {
   EXPECT_EQ(history_system->states_[start_time].heading(), 0.);
   EXPECT_EQ(history_system->states_[start_time].velocity(), speed);
 
-  EXPECT_EQ(history_system->states_[max_time].x(), 0.);
   // This clause is deliberately broad; we don't care so much about the exact
   // value, but rather that we stopped reasonably.
-  EXPECT_LT(history_system->states_[max_time].y(), 20.);
+  EXPECT_LT(history_system->states_[max_time].x(), 20.);
+  EXPECT_EQ(history_system->states_[max_time].y(), 0.);
   EXPECT_EQ(history_system->states_[max_time].heading(), 0.);
   EXPECT_NEAR(history_system->states_[max_time].velocity(), 0., 1e-5);
 }
 
 TEST(SimpleCarTest, Steering) {
-  Drake::DrivingCommand<double> left(Eigen::Vector3d(-M_PI / 2, 0., 0.));
+  Drake::DrivingCommand<double> left(Eigen::Vector3d(M_PI / 2, 0., 0.));
 
   auto car = std::make_shared<Drake::SimpleCar>();
   Drake::SimpleCarState<double> initial_state;
@@ -222,18 +220,18 @@ TEST(SimpleCarTest, Steering) {
   for (const auto& pair : history_system->states_) {
     const auto& state = pair.second;
     // Our drive circle should fit in a small box.
-    EXPECT_LT(state.x(), turn_epsilon);
-    EXPECT_GT(state.x(), -(2 * min_turn_radius + turn_epsilon));
-    EXPECT_LT(state.y(), min_turn_radius + turn_epsilon);
-    EXPECT_GT(state.y(), -(min_turn_radius + turn_epsilon));
+    EXPECT_GT(state.x(), -(min_turn_radius + turn_epsilon));
+    EXPECT_LT(state.x(), min_turn_radius + turn_epsilon);
+    EXPECT_GT(state.y(), -turn_epsilon);
+    EXPECT_LT(state.y(), (2 * min_turn_radius + turn_epsilon));
     // Our drive state should be near the predicted circle.
-    EXPECT_NEAR(std::hypot(state.x() + min_turn_radius, state.y()),
+    EXPECT_NEAR(std::hypot(state.x(), state.y() - min_turn_radius),
                 min_turn_radius, 1e-2);
   }
 
   // Predict our final heading.
   double predicted_heading =
-      -std::remainder((speed / min_turn_radius) * (max_time - start_time),
+      std::remainder((speed / min_turn_radius) * (max_time - start_time),
                       2 * M_PI);
   double end_heading =
       std::remainder(history_system->states_[max_time].heading(), 2 * M_PI);

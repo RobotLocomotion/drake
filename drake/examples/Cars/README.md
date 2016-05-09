@@ -54,7 +54,7 @@ Then execute:
 
 ```
 $ cd [drake-distro]/drake/examples/Cars
-$ python SteeringCommandDriver.py
+$ python steering_command_driver.py
 ```
 
 Start the Drake Simulator
@@ -169,7 +169,16 @@ place of forward slashes.
 Running the simple car simulator
 --------------------------------
 
-Run `./simple_car_demo.sh`.
-
+The following notes are for Ubuntu Linux and OS X users.
 This is not supported under windows (though you can probably cobble
 together some workarounds by hand if you are motivated).
+
+Run:
+```
+$ drake-distro/drake/examples/SimpleCar/simple_car_demo.sh
+```
+
+Ensure that the (very small) `pygame` window has focus, then use your
+arrow keys and/or joystick to drive around.
+
+Use Ctrl-C in your terminal to stop and close the demo.
