@@ -55,8 +55,6 @@ RigidBodyTree::RigidBodyTree(
   b->body_index = 0;
   bodies.push_back(std::move(b));
 
-  initialized = false;
-
   addRobotFromURDF(urdf_filename, floating_base_type);
 }
 
@@ -69,8 +67,6 @@ RigidBodyTree::RigidBodyTree(void)
   b->robotnum = 0;
   b->body_index = 0;
   bodies.push_back(std::move(b));
-
-  initialized = false;
 }
 
 RigidBodyTree::~RigidBodyTree(void) {}

@@ -831,7 +831,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   template <typename Scalar>
   void updateCompositeRigidBodyInertias(KinematicsCache<Scalar>& cache) const;
 
-  bool initialized;
+  bool initialized{false};
 
   /**
    * @brief Reorder body list to make sure parents are before children in
