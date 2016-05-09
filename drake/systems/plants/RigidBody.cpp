@@ -78,29 +78,26 @@ void RigidBody::ApplyTransformToJointFrame(
 }
 
 RigidBody::CollisionElement::CollisionElement(const CollisionElement& other)
-    : DrakeCollision::Element(other), body(other.body) {}
+    : DrakeCollision::Element(other) {}
 
 RigidBody::CollisionElement::CollisionElement(
     const Isometry3d& T_element_to_link, const RigidBody* const body)
-    : DrakeCollision::Element(T_element_to_link), body(body) {}
+    : DrakeCollision::Element(T_element_to_link, body) {}
 
 RigidBody::CollisionElement::CollisionElement(
     const DrakeShapes::Geometry& geometry, const Isometry3d& T_element_to_link,
     const RigidBody* const body)
-    : DrakeCollision::Element(geometry, T_element_to_link), body(body) {}
+    : DrakeCollision::Element(geometry, T_element_to_link, body) {}
 
 RigidBody::CollisionElement* RigidBody::CollisionElement::clone() const {
   return new CollisionElement(*this);
 }
 
-const RigidBody& RigidBody::CollisionElement::getBody() const { return *body; }
-
 bool RigidBody::CollisionElement::CollidesWith(
     const DrakeCollision::Element* other) const {
-  auto other_rb = dynamic_cast<const RigidBody::CollisionElement*>(other);
   bool collides = true;
-  if (other_rb != nullptr) {
-    collides = this->body->CollidesWith(*other_rb->body);
+  if (other->is_attached_to_body()) {
+    collides = getBody().CollidesWith(other->getBody());
   }
   return collides;
 }
