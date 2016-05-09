@@ -7,7 +7,7 @@ Additional prerequisite
 Install `pygame` (e.g. with `brew install pygame`, or `apt-get install python-pygame`)
 
 Note that you can still run the car simulation without `pygame`, but it won't be as fun.
-To run the simulation without `pygame`, use `publish_driving_command` as described below.
+To run the simulation without `pygame`, use `--mode=one-time` as described below.
 
 Setup your Python path:
 
@@ -32,19 +32,18 @@ Ensure that the (very small) `pygame` window has focus, then use your arrow
 keys to drive around. If you have a joystick / steering wheel.. you can use
 that, too (see SteeringCommandDriver.py for details).
 
-If for some reason the python game interface is not to your liking (e.g. you
-don’t have python on your system, etc), then you can generate simple throttle
-and steering commands using the command line interface
+If pygame is unavailable, you can still generate simple throttle and
+steering commands using the command line interface
 
 ```
 $ cd [path to drake-distro]/drake/examples/Cars
-$ ../../pod-build/bin/publish_driving_command [throttle_value] [steering_value]
+$ python steering_command_driver.py --mode=one-time --throttle=[throttle_value] --steering-angle=[steering_value]
 ```
 where the values in brackets should be replaced with desired values.  For example:
 
 ```
 $ cd [path to drake-distro]/drake/examples/Cars
-$ ../../pod-build/bin/publish_driving_command 1.0 .4
+$ python steering_command_driver.py --mode=one-time --throttle=1.0 --steering-angle=0.4
 ```
 Every time that you run the command above, it sends one LCM message.
 
