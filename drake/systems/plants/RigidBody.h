@@ -137,6 +137,17 @@ class DRAKERBM_EXPORT RigidBody {
     collision_elements_.push_back(e);
   }
 
+  /**
+   * @brief Adds body to a given collision gropu by group id.
+   *
+   * This call adds each of the collision elements in this body to the provided
+   * collision gropu.
+   *
+   * @param[in] group_id Collision group id. Collision elements in this group
+   * do not interact.
+   */
+  void add_to_collision_group(int group_id);
+
   Eigen::Matrix3Xd contact_pts;
 
   double mass;
