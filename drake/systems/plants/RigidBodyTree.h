@@ -831,12 +831,10 @@ class DRAKERBM_EXPORT RigidBodyTree {
   template <typename Scalar>
   void updateCompositeRigidBodyInertias(KinematicsCache<Scalar>& cache) const;
 
-  /**
-   * @brief Reorder body list to make sure parents are before children in
-   * the list RigidBodyTree::bodies.
-   *
-   * @see RigidBodyTree::compile
-   */
+  // Reorder body list to make sure parents are before children in
+  // the list RigidBodyTree::bodies.
+  //
+  // RigidBodyTree::compile
   void SortTree();
 
   // collision_model and collision_model_no_margins both maintain
