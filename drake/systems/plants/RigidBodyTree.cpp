@@ -200,7 +200,7 @@ void RigidBodyTree::compile(void) {
     getTerrainContactPoints(body, body.contact_pts);
   }
 
-  initialized = true;
+  initialized_ = true;
 }
 
 Eigen::VectorXd RigidBodyTree::getZeroConfiguration() const {

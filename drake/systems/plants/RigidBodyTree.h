@@ -165,7 +165,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
     using namespace Eigen;
 
     const auto& q = cache.getQ();
-    if (!initialized)
+    if (!initialized_)
       throw runtime_error("RigidBodyTree::doKinematics: call compile first.");
 
     compute_JdotV = compute_JdotV && cache.hasV();  // no sense in computing
@@ -864,5 +864,5 @@ class DRAKERBM_EXPORT RigidBodyTree {
   RigidBodyTree& operator=(const RigidBodyTree&) { return *this; }
 
   std::set<std::string> already_printed_warnings;
-  bool initialized{false};
+  bool initialized_{false};
 };
