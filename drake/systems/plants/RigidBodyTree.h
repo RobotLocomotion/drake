@@ -831,8 +831,6 @@ class DRAKERBM_EXPORT RigidBodyTree {
   template <typename Scalar>
   void updateCompositeRigidBodyInertias(KinematicsCache<Scalar>& cache) const;
 
-  bool initialized{false};
-
   /**
    * @brief Reorder body list to make sure parents are before children in
    * the list RigidBodyTree::bodies.
@@ -866,4 +864,5 @@ class DRAKERBM_EXPORT RigidBodyTree {
   RigidBodyTree& operator=(const RigidBodyTree&) { return *this; }
 
   std::set<std::string> already_printed_warnings;
+  bool initialized{false};
 };
