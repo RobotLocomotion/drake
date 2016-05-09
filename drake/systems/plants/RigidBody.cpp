@@ -102,15 +102,6 @@ RigidBody::CollisionElement* RigidBody::CollisionElement::clone() const {
   return new CollisionElement(*this);
 }
 
-bool RigidBody::CollisionElement::CollidesWith(
-    const DrakeCollision::Element* other) const {
-  bool collides = true;
-  if (other->is_attached_to_body()) {
-    collides = getBody().CollidesWith(other->getBody());
-  }
-  return collides;
-}
-
 ostream& operator<<(ostream& out, const RigidBody& b) {
   std::string parent_joint_name =
       b.hasParent() ? b.getJoint().getName() : "no parent joint";
