@@ -35,7 +35,7 @@ if (LCM_FOUND)
 
   if(roscpp_FOUND)
     add_executable(car_sim_lcm_and_ros car_sim_lcm_and_ros.cpp)
-    target_link_libraries(car_sim_lcm_and_ros drakeCar drakeRBM drakeRBSystem drakeLCMSystem ${roscpp_LIBRARIES} ${tf_LIBRARIES})
+    target_link_libraries(car_sim_lcm_and_ros drakeCar drakeRBSystem drakeLCMSystem ${roscpp_LIBRARIES} ${tf_LIBRARIES})
   endif()
 
   add_executable(publish_driving_command publish_driving_command.cpp)

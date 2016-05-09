@@ -11,6 +11,9 @@
 //   return true;
 // }
 
+using Eigen::MatrixXd;
+using Eigen::Matrix;
+using Eigen::VectorXd;
 
 namespace drake {
 
@@ -56,7 +59,8 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc, char* argv[]) {
 
   // Instantiates a rigid body system and adds the robot to it.
   auto rigid_body_sys = std::make_shared<RigidBodySystem>();
-  rigid_body_sys->addRobotFromFile(argv[1], DrakeJoint::QUATERNION, weld_to_frame);
+  rigid_body_sys->addRobotFromFile(argv[1], DrakeJoint::QUATERNION,
+                                   weld_to_frame);
 
   // Adds the environment to the rigid body tree.
   auto const& tree = rigid_body_sys->getRigidBodyTree();
@@ -83,7 +87,79 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc, char* argv[]) {
     tree->updateStaticCollisionElements();
   }
 
+  rigid_body_sys->penetration_stiffness = 5000.0;
+  rigid_body_sys->penetration_damping =
+      rigid_body_sys->penetration_stiffness / 10.0;
+  rigid_body_sys->friction_coefficient = 10.0;  // essentially infinite friction
+
   return rigid_body_sys;
+}
+
+std::shared_ptr<CascadeSystem<
+    Gain<DrivingCommand, PDControlSystem<RigidBodySystem>::InputVector>,
+    PDControlSystem<RigidBodySystem>>>
+CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
+  auto const& tree = rigid_body_sys->getRigidBodyTree();
+
+  MatrixXd Kp(getNumInputs(*rigid_body_sys), tree->num_positions);
+  MatrixXd Kd(getNumInputs(*rigid_body_sys), tree->num_velocities);
+
+  Matrix<double, Eigen::Dynamic, 3> map_driving_cmd_to_x_d(
+      tree->num_positions + tree->num_velocities, 3);
+
+  // Sets up PD controller for throttle and steering
+  double kpSteering = 400, kdSteering = 80, kThrottle = 100;
+  Kp.setZero();
+  Kd.setZero();
+  map_driving_cmd_to_x_d.setZero();
+
+  for (int actuator_idx = 0; actuator_idx < tree->actuators.size();
+       actuator_idx++) {
+    const std::string& actuator_name = tree->actuators[actuator_idx].name;
+
+    if (actuator_name == "steering") {
+      auto const& b = tree->actuators[actuator_idx].body;
+      Kp(actuator_idx, b->position_num_start) = kpSteering;  // steering
+      Kd(actuator_idx, b->velocity_num_start) = kdSteering;  // steeringdot
+      map_driving_cmd_to_x_d(b->position_num_start, 0) = 1;  // steering command
+
+    } else if (actuator_name == "right_wheel_joint" ||
+               actuator_name == "left_wheel_joint") {
+      auto const& b = tree->actuators[actuator_idx].body;
+      Kd(actuator_idx, b->velocity_num_start) = kThrottle;  // throttle
+      map_driving_cmd_to_x_d(tree->num_positions + b->velocity_num_start, 1) =
+          20;  // throttle (velocity) command
+      map_driving_cmd_to_x_d(tree->num_positions + b->velocity_num_start, 2) =
+          -20;  // braking (velocity) command
+    }
+  }
+
+  auto vehicle_with_pd = std::make_shared<PDControlSystem<RigidBodySystem>>(
+      rigid_body_sys, Kp, Kd);
+
+  auto vehicle_sys = cascade(
+      std::make_shared<
+          Gain<DrivingCommand, PDControlSystem<RigidBodySystem>::InputVector>>(
+          map_driving_cmd_to_x_d),
+      vehicle_with_pd);
+
+  return vehicle_sys;
+}
+
+void SetSimulationOptions(SimulationOptions * sim_options) {
+  if (sim_options == nullptr)
+    throw std::runtime_error("ERROR: Simulation options are null!");
+  *sim_options = Drake::default_simulation_options;
+  sim_options->initial_step_size = 5e-3;
+  sim_options->timeout_seconds = std::numeric_limits<double>::infinity();
+}
+
+VectorXd GetInitialState(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
+  auto const& tree = rigid_body_sys->getRigidBodyTree();
+
+  VectorXd x0 = VectorXd::Zero(rigid_body_sys->getNumStates());
+  x0.head(tree->num_positions) = tree->getZeroConfiguration();
+  return x0;
 }
 
 }  // namespace drake
