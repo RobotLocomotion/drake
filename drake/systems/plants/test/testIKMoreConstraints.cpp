@@ -17,8 +17,8 @@ using drake::util::CompareMatrices;
 using drake::util::MatrixCompareType;
 
 // Find the joint position indices corresponding to 'name'
-vector<int> getJointPositionVectorIndices(const RigidBodyTree &model,
-                                          const std::string &name) {
+vector<int> getJointPositionVectorIndices(const RigidBodyTree& model,
+                                          const std::string& name) {
   RigidBody* joint_parent_body = model.findJoint(name);
   int num_positions = joint_parent_body->getJoint().getNumPositions();
   vector<int> ret(static_cast<size_t>(num_positions));
@@ -29,8 +29,8 @@ vector<int> getJointPositionVectorIndices(const RigidBodyTree &model,
   return ret;
 }
 
-void findJointAndInsert(const RigidBodyTree &model, const std::string &name,
-                        vector<int> &position_list) {
+void findJointAndInsert(const RigidBodyTree& model, const std::string& name,
+                        vector<int>& position_list) {
   auto position_indices = getJointPositionVectorIndices(model, name);
 
   position_list.insert(position_list.end(), position_indices.begin(),
@@ -163,7 +163,7 @@ TEST(testIKMoreConstraints, IKMoreConstraints) {
       -0.0624, -0.0811, -0.0811, -0.0811, -0.0811;
   kc_quasi.addContact(1, &r_foot, &r_foot_pts);
 
-  std::vector<RigidBodyConstraint *> constraint_array;
+  std::vector<RigidBodyConstraint*> constraint_array;
   constraint_array.push_back(&kc_quasi);
   constraint_array.push_back(&kc_posture_knees);
   constraint_array.push_back(&kc_lfoot_pos);
@@ -179,17 +179,15 @@ TEST(testIKMoreConstraints, IKMoreConstraints) {
   int info;
   vector<string> infeasible_constraint;
   inverseKin(&model, qstar, qstar, constraint_array.size(),
-             constraint_array.data(), ikoptions,
-             &q_sol, &info, &infeasible_constraint);
+             constraint_array.data(), ikoptions, &q_sol, &info,
+             &infeasible_constraint);
   printf("INFO = %d\n", info);
   EXPECT_EQ(info, 1);
-
 
   /////////////////////////////////////////
   KinematicsCache<double> cache = model.doKinematics(q_sol);
   Vector3d com = model.centerOfMass(cache);
   printf("%5.6f\n%5.6f\n%5.6f\n", com(0), com(1), com(2));
-  EXPECT_TRUE(
-      CompareMatrices(com, Vector3d(0.074890, -0.037551, 1.008913), 1e-6,
-                      MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(com, Vector3d(0.074890, -0.037551, 1.008913),
+                              1e-6, MatrixCompareType::absolute));
 }
