@@ -32,3 +32,5 @@ x0(nq+1:end) = 0;
 xtraj = sys.simulate([0 8], x0, struct('gui_control_interface', true));
 
 v.playback(xtraj, struct('slider', true));
+
+% TIMEOUT 1500
