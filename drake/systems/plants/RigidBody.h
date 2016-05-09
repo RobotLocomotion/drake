@@ -172,8 +172,6 @@ class DRAKERBM_EXPORT RigidBody {
 
     CollisionElement* clone() const override;
 
-    bool CollidesWith(const DrakeCollision::Element* other) const override;
-
 #ifndef SWIG
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 #endif
