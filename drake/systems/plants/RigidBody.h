@@ -116,8 +116,26 @@ class DRAKERBM_EXPORT RigidBody {
   DrakeShapes::VectorOfVisualElements visual_elements;
 
   std::vector<DrakeCollision::ElementId> collision_element_ids;
+
+  typedef std::vector<DrakeCollision::Element*> CollisionElementsVector;
+  typedef
+      typename CollisionElementsVector::iterator collision_elements_iterator;
+  typedef typename CollisionElementsVector::const_iterator
+      const_collision_elements_iterator;
   std::map<std::string, std::vector<DrakeCollision::ElementId> >
       collision_element_groups;
+
+  collision_elements_iterator collision_elements_begin() {
+    return collision_elements_.begin();
+  }
+
+  collision_elements_iterator collision_elements_end() {
+    return collision_elements_.end();
+  }
+
+  void add_collision_element(DrakeCollision::Element* e) {
+    collision_elements_.push_back(e);
+  }
 
   Eigen::Matrix3Xd contact_pts;
 
@@ -154,4 +172,7 @@ class DRAKERBM_EXPORT RigidBody {
 #ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 #endif
+
+ private:
+  CollisionElementsVector collision_elements_;
 };
