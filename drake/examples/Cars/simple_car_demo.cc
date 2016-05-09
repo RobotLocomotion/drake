@@ -10,13 +10,18 @@
 #include "drake/systems/plants/BotVisualizer.h"
 #include "lcmtypes/drake/lcmt_driving_command_t.hpp"
 
+using Drake::AffineSystem;
+using Drake::BotVisualizer;
+using Drake::NullVector;
+using Drake::cascade;
+
 // TODO(rpoyner-tri): move this to somewhere common; it is useful.
 /// LCMTap -- a system that wires input to output, and publishes input to LCM.
 template <template <typename> class Vector>
 class LCMTap {
  public:
   template <typename ScalarType>
-  using StateVector = Drake::NullVector<ScalarType>;
+  using StateVector = NullVector<ScalarType>;
   template <typename ScalarType>
   using InputVector = Vector<ScalarType>;
   template <typename ScalarType>
@@ -46,7 +51,7 @@ class LCMTap {
   const std::shared_ptr<lcm::LCM> lcm;
 };
 
-namespace Drake {
+namespace drake {
 namespace {
 
 int do_main(int argc, const char* argv[]) {
@@ -81,7 +86,7 @@ int do_main(int argc, const char* argv[]) {
   // Load a simplistic rendering from accompanying URDF file.
   //
   auto tree = std::make_shared<RigidBodyTree>(
-      getDrakePath() + "/examples/Cars/models/boxcar.urdf");
+      Drake::getDrakePath() + "/examples/Cars/models/boxcar.urdf");
 
   auto viz =
       std::make_shared<BotVisualizer<EulerFloatingJointState> >(
@@ -104,8 +109,8 @@ int do_main(int argc, const char* argv[]) {
 }
 
 }  // namespace
-}  // namespace Drake
+}  // namespace drake
 
 int main(int argc, const char* argv[]) {
-  return Drake::do_main(argc, argv);
+  return drake::do_main(argc, argv);
 }
