@@ -1,16 +1,6 @@
 cmake_minimum_required(VERSION 2.8.10)
 
-find_package(Matlab)
-set(working_directory .)
-execute_process(
-        COMMAND "${Matlab_PROGRAM}" -logfile "${Matlab_LOG_FILE}" -r "jenkins_launch_matlab.m"
-        RESULT_VARIABLE res
-        ${test_timeout}
-        OUTPUT_QUIET # we do not want the output twice
-        WORKING_DIRECTORY ${working_directory}
-        ${devnull}
-)
-return()
+
 
 # options
 option(BUILD_SHARED_LIBS "Build Drake with shared libraries." ON)
