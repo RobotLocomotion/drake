@@ -563,6 +563,8 @@ bool RigidBodyTree::collisionDetect(const KinematicsCache<double>& cache,
                                     Matrix3Xd& xA, Matrix3Xd& xB,
                                     vector<int>& bodyA_idx,
                                     vector<int>& bodyB_idx, bool use_margins) {
+  // TODO(amcastro-tri): Move initialization of ids_to_check this to
+  // RigidBodyTree::compile since it doesn't change during simulation.
   vector<DrakeCollision::ElementId> ids_to_check;
   for (auto body_iter = bodies.begin(); body_iter != bodies.end();
        ++body_iter) {

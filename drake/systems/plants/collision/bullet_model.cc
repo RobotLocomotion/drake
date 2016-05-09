@@ -635,6 +635,11 @@ bool BulletModel::collisionRaycast(const Matrix3Xd& origins,
   return true;
 }
 
+// TODO(amcastro-tri): Change API so that ids_to_check actually is an
+// std::vector<CollisionElement*>. That why we avoid calling readElement().
+// TODO(amcastro-tri): id_pairs could be computed by RigidBodyTree::compile only
+// once and be passed to this method every time is called since id_pairs does
+// not change during simulation.
 bool BulletModel::closestPointsAllToAll(
     const std::vector<ElementId>& ids_to_check, const bool use_margins,
     std::vector<PointPair>& closest_points) {
