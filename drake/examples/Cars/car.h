@@ -17,7 +17,6 @@ using Drake::RigidBodySystem;
 using Drake::PDControlSystem;
 using Drake::CascadeSystem;
 using Drake::Gain;
-using Drake::DrivingCommand;
 using Drake::SimulationOptions;
 
 namespace drake {
@@ -30,7 +29,7 @@ namespace drake {
  * @param[in] argv an array of command line arguments.
  * @return A shared pointer to a rigid body system.
  */
-std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc, char* argv[]);
+std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc, const char* argv[]);
 
 /**
  * Creates a vehicle system by instantiating a PD controller and cascading it

@@ -38,9 +38,4 @@ if (LCM_FOUND)
     target_link_libraries(car_sim_lcm_and_ros drakeCar drakeRBSystem drakeLCMSystem ${roscpp_LIBRARIES} ${tf_LIBRARIES})
   endif()
 
-  add_executable(publish_driving_command publish_driving_command.cpp)
-  add_dependencies(publish_driving_command drake_lcmtypes lcmtype_agg_hpp)
-  pods_use_pkg_config_packages(publish_driving_command lcm)
-  add_test(NAME publish_driving_command COMMAND publish_driving_command 1.0 0.0)
-
 endif (LCM_FOUND)

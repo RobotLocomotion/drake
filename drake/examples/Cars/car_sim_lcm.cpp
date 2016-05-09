@@ -10,17 +10,15 @@
 #include "drake/examples/Cars/gen/driving_command.h"
 
 using Drake::BotVisualizer;
-using Drake::DrivingCommand;
 using Drake::Gain;
 using Drake::SimulationOptions;
 
 using Eigen::VectorXd;
 
-/** Driving Simulator
- * Usage:  simulateLCM vehicle_model_file [world_model files ...]
- */
+namespace drake {
+namespace {
 
-int main(int argc, char* argv[]) {
+int do_main(int argc, const char* argv[]) {
   // Initializes communication layer(s).
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
 
@@ -44,4 +42,11 @@ int main(int argc, char* argv[]) {
   Drake::runLCM(sys, lcm, 0, std::numeric_limits<double>::infinity(),
                 drake::GetInitialState(rigid_body_sys), options);
   return 0;
+}
+
+}  // namespace
+}  // namespace drake
+
+int main(int argc, const char* argv[]) {
+  return drake::do_main(argc, argv);
 }

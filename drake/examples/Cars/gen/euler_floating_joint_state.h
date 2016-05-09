@@ -10,7 +10,7 @@
 
 #include "lcmtypes/drake/lcmt_euler_floating_joint_state_t.hpp"
 
-namespace Drake {
+namespace drake {
 
 /// Describes the row indices of a EulerFloatingJointState.
 struct EulerFloatingJointStateIndices {
@@ -146,4 +146,4 @@ bool decode(const drake::lcmt_euler_floating_joint_state_t& msg,
   return true;
 }
 
-}  // namespace Drake
+}  // namespace drake

@@ -17,7 +17,7 @@ using Eigen::VectorXd;
 
 namespace drake {
 
-std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc, char* argv[]) {
+std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc, const char* argv[]) {
   if (argc < 2) {
     std::cerr << "Usage: " << argv[0] << " vehicle_model [world sdf files ...]"
               << std::endl;

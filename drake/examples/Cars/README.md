@@ -30,7 +30,8 @@ Start the Steering Command Driver
 The Steering Command Driver provides a Graphical User Interface (GUI) for users
 to issue driving commands to the car in the simulation. Note that running this
 is not strictly necessary since it's possible to issue driving commands directly
-from the command line (this will be desribed later in this document).
+from the command line. To run the simulation without `pygame`, use `--mode=one-time`
+as described below.
 
 The Steering Command Driver is based on `pygame`, which can be installed by
 executing the following:
@@ -143,8 +144,8 @@ If you are unable to run the Steering Command Driver, you can generate simple
 throttle and steering commands using the command line:
 
 ```
-$ cd [drake-distro]/drake/examples/Cars
-$ ../../pod-build/bin/publish_driving_command [throttle_value] [steering_value]
+$ cd [path to drake-distro]/drake/examples/Cars
+$ python steering_command_driver.py --mode=one-time --throttle=[throttle_value] --steering-angle=[steering_value]
 ```
 where the values in square brackets should be replaced with desired values.
 
@@ -152,7 +153,7 @@ For example:
 
 ```
 $ cd [path to drake-distro]/drake/examples/Cars
-$ ../../pod-build/bin/publish_driving_command 1.0 .4
+$ python steering_command_driver.py --mode=one-time --throttle=1.0 --steering-angle=0.4
 ```
 
 Every time that you run the command above, it sends one LCM message.
