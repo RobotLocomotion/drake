@@ -1890,7 +1890,7 @@ int RigidBodyTree::AddFloatingJoint(
     const std::shared_ptr<RigidBodyFrame> weld_to_frame,
     const PoseMap* pose_map) {
   std::string floating_joint_name;
-  RigidBody* weld_to_body(nullptr);
+  RigidBody* weld_to_body{nullptr};
   Eigen::Isometry3d transform_to_world;
 
   if (weld_to_frame == nullptr) {
