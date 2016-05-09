@@ -17,7 +17,8 @@ using Eigen::VectorXd;
 
 namespace drake {
 
-std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc, const char* argv[]) {
+std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc,
+                                                       const char* argv[]) {
   if (argc < 2) {
     std::cerr << "Usage: " << argv[0] << " vehicle_model [world sdf files ...]"
               << std::endl;
@@ -64,8 +65,13 @@ std::shared_ptr<RigidBodySystem> CreateRigidBodySystem(int argc, const char* arg
 
   // Adds the environment to the rigid body tree.
   auto const& tree = rigid_body_sys->getRigidBodyTree();
-  for (int i = 2; i < argc; i++)
-    tree->addRobotFromSDF(argv[i], DrakeJoint::FIXED);
+  for (int i = 2; i < argc; i++) {
+    if (std::string(argv[i]) == "--duration") {
+      i++;  // skip the next flag
+    } else {
+      tree->addRobotFromSDF(argv[i], DrakeJoint::FIXED);
+    }
+  }
 
   // If no environment was specified, adds a flat terrain.
   if (argc < 3) {

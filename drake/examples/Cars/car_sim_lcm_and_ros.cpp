@@ -49,15 +49,21 @@ int do_main(int argc, const char* argv[]) {
   SimulationOptions options;
   drake::SetSimulationOptions(&options);
 
+  // Obtains the duration of the simulation
+  double duration = std::numeric_limits<double>::infinity();
+  char* duration_string = getCommandLineOption(
+      const_cast<char**>(argv), const_cast<char**>(argv) + argc, "--duration");
+  if (duration_string) duration = atof(duration_string);
+
+  std::cout << "Running simulation for duration " << duration << std::endl;
+
   // Starts the simulation.
-  Drake::runLCM(sys, lcm, 0, std::numeric_limits<double>::infinity(),
-                drake::GetInitialState(rigid_body_sys), options);
+  Drake::runLCM(sys, lcm, 0, duration, drake::GetInitialState(rigid_body_sys),
+                options);
   return 0;
 }
 
 }  // namespace
 }  // namespace drake
 
-int main(int argc, const char* argv[]) {
-  return drake::do_main(argc, argv);
-}
+int main(int argc, const char* argv[]) { return drake::do_main(argc, argv); }
