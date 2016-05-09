@@ -6,8 +6,8 @@
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodySystem.h"
 #include "drake/util/drakeAppUtil.h"
-#include "drake/systems/plants/sensor_visualizer_lidar.h"
-#include "drake/systems/plants/drake_ros_tf_publisher.h"
+#include "drake/ros/sensor_visualizer_lidar.h"
+#include "drake/ros/drake_ros_tf_publisher.h"
 
 using Drake::BotVisualizer;
 using Drake::Gain;

@@ -807,3 +807,25 @@ void RigidBodySystem::addRobotFromFile(
   else
     throw runtime_error("unknown file extension: " + ext);
 }
+
+namespace Drake {
+
+Eigen::VectorXd spatialForceInFrameToJointTorque(
+    const RigidBodyTree* tree, const KinematicsCache<double>& rigid_body_state,
+    const RigidBodyFrame* frame, const Eigen::Matrix<double, 6, 1>& force) {
+  auto T_frame_to_world =
+      tree->relativeTransform(rigid_body_state, 0, frame->frame_index);
+  auto force_in_world = transformSpatialForce(T_frame_to_world, force);
+  std::vector<int> v_indices;
+  auto J = tree->geometricJacobian(rigid_body_state, 0, frame->frame_index, 0,
+                                   false, &v_indices);
+  Eigen::VectorXd tau = Eigen::VectorXd::Zero(tree->num_velocities);
+  for (int i = 0; i < v_indices.size(); i++) {
+    tau(v_indices[i]) = J.col(i).dot(force_in_world);
+    //      std::cout << " f_" << tree->getVelocityName(v_indices[i]) << " = "
+    //      << tau(v_indices[i]) << std::endl;
+  }
+  return tau;
+}
+
+}  // namespace Drake

@@ -310,6 +310,7 @@ add_subdirectory(thirdParty/spruce)
 add_subdirectory(thirdParty/tinyxml2)
 add_subdirectory(examples)
 add_subdirectory(bindings)
+add_subdirectory(ros)
 
 # setup matlab pods-compliance
 include(cmake/matlab_pods.cmake)
