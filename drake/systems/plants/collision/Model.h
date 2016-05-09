@@ -28,13 +28,21 @@ class DRAKECOLLISION_EXPORT Model {
 
   bool removeElement(const ElementId& id);
 
-  /** \brief Get a read-only pointer to a collision element in this model.
-   * \param id an ElementId corresponding to the desired collision element
-   * \return a read-only pointer to the collision element corresponding to
+  /** @brief Get a pointer to a const collision element in this model.
+   * @param id an ElementId corresponding to the desired collision element
+   * @return a read-only pointer to the collision element corresponding to
    * the given id or nullptr if no such collision element is present in the
    * model.
    */
   virtual const Element* readElement(ElementId id) const;
+
+  /** @brief Get a pointer to a mutable collision element in this model.
+   * @param id an ElementId corresponding to the desired collision element
+   * @return a read-only pointer to the collision element corresponding to
+   * the given id or nullptr if no such collision element is present in the
+   * model.
+   */
+  virtual Element* readElement(ElementId id);
 
   virtual void getTerrainContactPoints(ElementId id0,
                                        Eigen::Matrix3Xd& terrain_points);
