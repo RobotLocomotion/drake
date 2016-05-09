@@ -289,7 +289,7 @@ bool parseLink(RigidBodyTree* model, std::string robot_name, XMLElement* node,
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return false;
 
-  RigidBody* body{};
+  RigidBody* body{nullptr};
   std::unique_ptr<RigidBody> owned_body(body = new RigidBody());
   body->model_name = robot_name;
 
