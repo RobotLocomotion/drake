@@ -179,8 +179,8 @@ TEST(testIKMoreConstraints, IKMoreConstraints) {
   int info;
   vector<string> infeasible_constraint;
   inverseKin(&model, qstar, qstar, constraint_array.size(),
-             constraint_array.data(), ikoptions, &q_sol, &info,
-             &infeasible_constraint);
+             constraint_array.data(), ikoptions,
+             &q_sol, &info, &infeasible_constraint);
   printf("INFO = %d\n", info);
   EXPECT_EQ(info, 1);
 
