@@ -146,7 +146,7 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys) {
   return vehicle_sys;
 }
 
-void SetSimulationOptions(SimulationOptions * sim_options) {
+void SetSimulationOptions(SimulationOptions* sim_options) {
   if (sim_options == nullptr)
     throw std::runtime_error("ERROR: Simulation options are null!");
   *sim_options = Drake::default_simulation_options;

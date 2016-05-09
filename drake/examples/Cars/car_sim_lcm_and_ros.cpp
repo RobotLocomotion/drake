@@ -39,8 +39,9 @@ int main(int argc, char* argv[]) {
       std::make_shared<drake::systems::plants::SensorVisualizerLidar<
           RigidBodySystem::StateVector>>(rigid_body_sys);
 
-  auto tf_publisher = std::make_shared<drake::systems::plants::DrakeRosTfPublisher<
-      RigidBodySystem::StateVector>>(tree);
+  auto tf_publisher =
+      std::make_shared<drake::systems::plants::DrakeRosTfPublisher<
+          RigidBodySystem::StateVector>>(tree);
 
   auto sys =
       cascade(cascade(cascade(vehicle_sys, bot_visualizer), lidar_visualizer),
@@ -51,6 +52,7 @@ int main(int argc, char* argv[]) {
   drake::SetSimulationOptions(&options);
 
   // Starts the simulation.
-  Drake::runLCM(sys, lcm, 0, std::numeric_limits<double>::infinity(), drake::GetInitialState(rigid_body_sys), options);
+  Drake::runLCM(sys, lcm, 0, std::numeric_limits<double>::infinity(),
+                drake::GetInitialState(rigid_body_sys), options);
   return 0;
 }

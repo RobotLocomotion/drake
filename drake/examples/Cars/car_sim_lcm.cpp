@@ -41,6 +41,7 @@ int main(int argc, char* argv[]) {
   drake::SetSimulationOptions(&options);
 
   // Starts the simulation.
-  Drake::runLCM(sys, lcm, 0, std::numeric_limits<double>::infinity(), drake::GetInitialState(rigid_body_sys), options);
+  Drake::runLCM(sys, lcm, 0, std::numeric_limits<double>::infinity(),
+                drake::GetInitialState(rigid_body_sys), options);
   return 0;
 }

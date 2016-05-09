@@ -49,7 +49,7 @@ CreateVehicleSystem(std::shared_ptr<RigidBodySystem> rigid_body_sys);
  * @param[out] sim_options A pointer to where the simulation options should
  * be saved.
  */
-void SetSimulationOptions(SimulationOptions * sim_options);
+void SetSimulationOptions(SimulationOptions* sim_options);
 
 /**
  * Obtains a valid initial state of the system being simulated.
@@ -57,6 +57,7 @@ void SetSimulationOptions(SimulationOptions * sim_options);
  * @param[in] rigid_body_sys The rigid body system being simulated.
  * @return The initial state of the system.
  */
-Eigen::VectorXd GetInitialState(std::shared_ptr<RigidBodySystem> rigid_body_sys);
+Eigen::VectorXd GetInitialState(
+    std::shared_ptr<RigidBodySystem> rigid_body_sys);
 
 }  // namespace drake
