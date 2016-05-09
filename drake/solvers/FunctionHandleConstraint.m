@@ -33,7 +33,8 @@ classdef FunctionHandleConstraint < Constraint
       % that is.
       
       obj_new = FunctionHandleConstraint(obj.lb,obj.ub,obj.xdim,eval_handle_new);
-      obj_new = obj_new.setSparseStructure(obj.iCfun,obj.jCvar);
+      [iCfun,jCvar] = obj.getSparseStructure();
+      obj_new = obj_new.setSparseStructure(iCfun,jCvar);
       obj_new = obj_new.setName(obj.name);
     end
 

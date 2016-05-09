@@ -310,7 +310,8 @@ valuecheck(lb_mex,lb,1e-8);
 valuecheck(ub_mex,ub,1e-8);
 valuecheck(c,c_cnstr);
 valuecheck(dc,dc_cnstr);
-valuecheck(sparse(cnstr{1}.iCfun,cnstr{1}.jCvar,dc_cnstr(sub2ind([cnstr{1}.num_cnstr,cnstr{1}.xdim],cnstr{1}.iCfun,cnstr{1}.jCvar)),...
+[iCfun,jCvar] = cnstr{1}.getSparseStructure();
+valuecheck(sparse(iCfun,jCvar,dc_cnstr(sub2ind([cnstr{1}.num_cnstr,cnstr{1}.xdim],iCfun,jCvar)),...
 cnstr{1}.num_cnstr,cnstr{1}.xdim),dc_cnstr);
 valuecheck(lb,cnstr{1}.lb);
 valuecheck(ub,cnstr{1}.ub);
