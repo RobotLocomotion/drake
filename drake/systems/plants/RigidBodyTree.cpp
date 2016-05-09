@@ -200,6 +200,22 @@ void RigidBodyTree::compile(void) {
     getTerrainContactPoints(body, body.contact_pts);
   }
 
+  // Create collision groups
+  int ncol_groups = 0;
+  // 1) For collision elements in the same body
+  for(auto& body: bodies) {
+    body->add_to_collision_group(ncol_groups++);
+  }
+
+  // 2) For collision elements in different bodies
+  for(int i = 0; i < bodies.size(); ++i)
+    for(int j = i+1; j < bodies.size(); ++j)
+      if(!bodies[i]->CollidesWith(*bodies[j])){
+        bodies[i]->add_to_collision_group(ncol_groups);
+        bodies[j]->add_to_collision_group(ncol_groups);
+        ++ncol_groups;
+      }
+
   initialized_ = true;
 }
 
