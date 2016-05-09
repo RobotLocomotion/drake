@@ -324,6 +324,9 @@ DrakeCollision::ElementId RigidBodyTree::addCollisionElement(
   if (id != 0) {
     body.collision_element_ids.push_back(id);
     body.collision_element_groups[group_name].push_back(id);
+    // TODO(amcastro-tri): cleanup API so that we do not need readElement any
+    // more
+    body.add_collision_element(collision_model->readElement(id));
   }
   return id;
 }
