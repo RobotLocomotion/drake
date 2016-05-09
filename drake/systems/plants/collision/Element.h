@@ -10,6 +10,21 @@
 #include "drake/drakeCollision_export.h"
 #include "drake/systems/plants/shapes/DrakeShapes.h"
 
+template <class InputIterator1, class InputIterator2>
+bool have_intersection (InputIterator1 first1, InputIterator1 last1,
+                        InputIterator2 first2, InputIterator2 last2)
+{
+  while (first1!=last1 && first2!=last2)
+  {
+    if (*first1<*first2) ++first1;
+    else if (*first2<*first1) ++first2;
+    else {
+      return true;
+    }
+  }
+  return false;
+}
+
 // Forward declaration.
 // RigidBody's interface is never used by the collision engine.
 // It is however useful the concept of having a CollisionElement attached to a
@@ -41,7 +56,7 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
    * with the other object.  CollidesWith should be symmetric: if
    * A collides with B, B collides with A.
    */
-  virtual bool CollidesWith(const Element* other) const { return true; }
+  virtual bool CollidesWith(const Element* other) const;
 
   /**
    * @brief Returns a const reference to the body to which this
@@ -55,6 +70,8 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
 
   bool is_attached_to_body() const { return body_!= nullptr; }
 
+  void add_to_collision_group(int group_id);
+
   /**
    * A toString method for this class.
    */
@@ -67,6 +84,12 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
  private:
   ElementId id;
   const RigidBody* const body_{};
+
+  // Collision groups in Drake are represented simply by an integer.
+  // Collision elements in the same group do not collide.
+  // A collision element can belong to more than one group.
+  // Vector collision_groups_ is kept sorted.
+  std::vector<int> collision_groups_;
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
