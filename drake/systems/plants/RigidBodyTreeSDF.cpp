@@ -25,9 +25,8 @@ using namespace std;
 using namespace Eigen;
 using namespace tinyxml2;
 
-void parseSDFInertial(shared_ptr<RigidBody> body, XMLElement* node,
-                      RigidBodyTree* model, PoseMap& pose_map,
-                      const Isometry3d& T_link) {
+void parseSDFInertial(RigidBody* body, XMLElement* node, RigidBodyTree* model,
+                      PoseMap& pose_map, const Isometry3d& T_link) {
   Isometry3d T = T_link;
   XMLElement* pose = node->FirstChildElement("pose");
   if (pose) poseValueToTransform(pose, pose_map, T, T_link);
@@ -125,9 +124,9 @@ bool parseSDFGeometry(XMLElement* node, const PackageMap& package_map,
   return true;
 }
 
-void parseSDFVisual(shared_ptr<RigidBody> body, XMLElement* node,
-                    RigidBodyTree* model, const PackageMap& package_map,
-                    const string& root_dir, PoseMap& pose_map,
+void parseSDFVisual(RigidBody* body, XMLElement* node, RigidBodyTree* model,
+                    const PackageMap& package_map, const string& root_dir,
+                    PoseMap& pose_map,
                     const Isometry3d& transform_parent_to_model) {
   Isometry3d transform_to_model = transform_parent_to_model;
   XMLElement* pose = node->FirstChildElement("pose");
@@ -169,9 +168,9 @@ void parseSDFVisual(shared_ptr<RigidBody> body, XMLElement* node,
   }
 }
 
-void parseSDFCollision(shared_ptr<RigidBody> body, XMLElement* node,
-                       RigidBodyTree* model, const PackageMap& package_map,
-                       const string& root_dir, PoseMap& pose_map,
+void parseSDFCollision(RigidBody* body, XMLElement* node, RigidBodyTree* model,
+                       const PackageMap& package_map, const string& root_dir,
+                       PoseMap& pose_map,
                        const Isometry3d& transform_parent_to_model) {
   Isometry3d transform_to_model = transform_parent_to_model;
   XMLElement* pose = node->FirstChildElement("pose");
@@ -209,7 +208,8 @@ bool parseSDFLink(RigidBodyTree* model, std::string model_name,
   const char* attr = node->Attribute("drake_ignore");
   if (attr && strcmp(attr, "true") == 0) return false;
 
-  shared_ptr<RigidBody> body(new RigidBody());
+  RigidBody* body{nullptr};
+  std::unique_ptr<RigidBody> owned_body(body = new RigidBody());
   body->model_name = model_name;
 
   attr = node->Attribute("name");
@@ -245,7 +245,7 @@ bool parseSDFLink(RigidBodyTree* model, std::string model_name,
                       pose_map, transform_to_model);
   }
 
-  model->add_rigid_body(body);
+  model->add_rigid_body(std::move(owned_body));
   *index = body->body_index;
   return true;
 }
@@ -291,7 +291,7 @@ void parseSDFFrame(RigidBodyTree* model, std::string model_name,
     throw runtime_error("ERROR: frame " + name + " doesn't have a link node");
 
   // The following will throw a std::runtime_error if the link doesn't exist.
-  std::shared_ptr<RigidBody> link = model->findLink(link_name, model_name);
+  RigidBody* link = model->findLink(link_name, model_name);
 
   // Get the frame's pose
   XMLElement* pose = node->FirstChildElement("pose");

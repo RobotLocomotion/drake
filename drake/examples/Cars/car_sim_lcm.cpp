@@ -11,11 +11,10 @@ using namespace std;
 using namespace Eigen;
 using namespace Drake;
 
-/** Driving Simulator
- * Usage:  simulateLCM vehicle_model_file [world_model files ...]
- */
+namespace drake {
+namespace {
 
-int main(int argc, char* argv[]) {
+int do_main(int argc, const char* argv[]) {
   if (argc < 2) {
     std::cerr << "Usage: " << argv[0] << " vehicle_model [world sdf files ...]"
               << std::endl;
@@ -77,14 +76,14 @@ int main(int argc, char* argv[]) {
     Isometry3d T_element_to_link = Isometry3d::Identity();
     T_element_to_link.translation() << 0, 0,
         -box_depth / 2;  // top of the box is at z=0
-    auto& world = tree->bodies[0];
+    RigidBody& world = tree->world();
     Vector4d color;
     color << 0.9297, 0.7930, 0.6758,
         1;  // was hex2dec({'ee','cb','ad'})'/256 in matlab
-    world->addVisualElement(
+    world.addVisualElement(
         DrakeShapes::VisualElement(geom, T_element_to_link, color));
     tree->addCollisionElement(
-        RigidBody::CollisionElement(geom, T_element_to_link, world), *world,
+        RigidBody::CollisionElement(geom, T_element_to_link, &world), world,
         "terrain");
     tree->updateStaticCollisionElements();
   }
@@ -154,4 +153,11 @@ int main(int argc, char* argv[]) {
   //  simulate(*sys, 0, std::numeric_limits<double>::infinity(), x0, options);
 
   return 0;
+}
+
+}  // namespace
+}  // namespace drake
+
+int main(int argc, const char* argv[]) {
+  return drake::do_main(argc, argv);
 }

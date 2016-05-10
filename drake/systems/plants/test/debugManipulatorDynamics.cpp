@@ -20,20 +20,18 @@ int main() {
                                          base_or_frame_ind);
 
   auto M = model.massMatrix<double>(cache);
-  cout << M << endl
-       << endl;
+  cout << M << endl << endl;
 
   eigen_aligned_unordered_map<RigidBody const *, Matrix<double, TWIST_SIZE, 1> >
       f_ext;
   Matrix<double, TWIST_SIZE, 1> f_ext_r_foot;
   f_ext_r_foot.setRandom();
-  f_ext.insert({model.findLink("r_foot").get(), f_ext_r_foot});
+  f_ext.insert({model.findLink("r_foot"), f_ext_r_foot});
 
   Matrix<double, Eigen::Dynamic, 1> vd(model.num_velocities);
   vd.setRandom();
 
   auto C = model.inverseDynamics(cache, f_ext, vd);
-  cout << C << endl
-       << endl;
+  cout << C << endl << endl;
   return 0;
 }
