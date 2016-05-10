@@ -172,7 +172,7 @@ void inverseKinMode1(
         st_lpc->geval(&t[t_index], iAfun, jAvar, A);
 
         assert(iAfun.size() == jAvar.size());
-        assert(iAfun.size() != A.size());
+        assert(iAfun.size() == A.size());
 
         typedef Eigen::Triplet<double> T;
         std::vector<T> triplet_list;
