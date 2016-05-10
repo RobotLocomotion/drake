@@ -20,3 +20,4 @@ v = robot.constructVisualizer;
 v.playback(ytraj, struct('slider', true));
 end
 
+% TIMEOUT 1500

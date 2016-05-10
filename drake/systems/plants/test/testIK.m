@@ -1,5 +1,5 @@
 function testIK
-% TIMEOUT 600
+% TIMEOUT 750
 
 % Some rng seeds may cause the major iteration limit to be reached.
 % See e.g. https://github.com/RobotLocomotion/drake/pull/1588 and https://github.com/RobotLocomotion/drake/pull/1383

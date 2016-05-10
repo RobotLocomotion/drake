@@ -1,5 +1,5 @@
 function [xtraj,info,v] = testTaskSpaceRRT(options, rng_seed)
-% TIMEOUT 600
+% TIMEOUT 750
 if nargin < 1 || isempty(options), options = struct(); end
 if nargin < 2, rng; else rng(rng_seed); end
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');

@@ -176,3 +176,5 @@ cnstr = [lfoot_cnstr,rfoot_cnstr,{qsc,utorso_upright}];
 end
 
 end
+
+% TIMEOUT 3000
