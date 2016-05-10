@@ -156,27 +156,6 @@ class DRAKERBM_EXPORT RigidBody {
 
   friend std::ostream& operator<<(std::ostream& out, const RigidBody& b);
 
-  // TODO(amcastro-tri): move to a better place (h + cc files).
-  class DRAKERBM_EXPORT CollisionElement : public DrakeCollision::Element {
-   public:
-    CollisionElement(const CollisionElement& other);
-    // TODO(amcastro-tri): The RigidBody should be const?
-    // TODO(amcastro-tri): It should not be possible to construct a
-    // CollisionElement without specifying a geometry. Remove this constructor.
-    CollisionElement(const Eigen::Isometry3d& T_element_to_link,
-                     const RigidBody* const body);
-    CollisionElement(const DrakeShapes::Geometry& geometry,
-                     const Eigen::Isometry3d& T_element_to_link,
-                     const RigidBody* const body);
-    virtual ~CollisionElement() {}
-
-    CollisionElement* clone() const override;
-
-#ifndef SWIG
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-#endif
-  };
-
  public:
 #ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

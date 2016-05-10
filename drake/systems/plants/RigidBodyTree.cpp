@@ -338,7 +338,7 @@ map<string, int> RigidBodyTree::computePositionNameToIndexMap() const {
 }
 
 DrakeCollision::ElementId RigidBodyTree::addCollisionElement(
-    const RigidBody::CollisionElement& element, RigidBody& body,
+    const DrakeCollision::Element& element, RigidBody& body,
     const string& group_name) {
   DrakeCollision::ElementId id = collision_model->addElement(element);
   if (id != 0) {
@@ -423,8 +423,8 @@ void RigidBodyTree::collisionDetectFromPoints(
     body_x.col(i) = ptA;
     normal.col(i) = n;
     phi[i] = distance;
-    const RigidBody::CollisionElement* elementB =
-        dynamic_cast<const RigidBody::CollisionElement*>(
+    const DrakeCollision::Element* elementB =
+        dynamic_cast<const DrakeCollision::Element*>(
             collision_model->readElement(closest_points[i].getIdB()));
     body_idx.push_back(elementB->getBody().body_index);
   }
@@ -482,8 +482,8 @@ bool RigidBodyTree::collisionDetect(
     xB.col(i) = ptB;
     normal.col(i) = n;
     phi[i] = distance;
-    const RigidBody::CollisionElement* elementA =
-        dynamic_cast<const RigidBody::CollisionElement*>(
+    const DrakeCollision::Element* elementA =
+        dynamic_cast<const DrakeCollision::Element*>(
             collision_model->readElement(points[i].getIdA()));
     // DEBUG
     // cout << "RigidBodyTree::collisionDetect: points[i].getIdA() = " <<
@@ -498,8 +498,8 @@ bool RigidBodyTree::collisionDetect(
     // endl;
     // END_DEBUG
     bodyA_idx.push_back(elementA->getBody().body_index);
-    const RigidBody::CollisionElement* elementB =
-        dynamic_cast<const RigidBody::CollisionElement*>(
+    const DrakeCollision::Element* elementB =
+        dynamic_cast<const DrakeCollision::Element*>(
             collision_model->readElement(points[i].getIdB()));
     bodyB_idx.push_back(elementB->getBody().body_index);
   }
@@ -601,11 +601,11 @@ void RigidBodyTree::potentialCollisions(const KinematicsCache<double>& cache,
   double distance;
 
   for (size_t i = 0; i < num_potential_collisions; i++) {
-    const RigidBody::CollisionElement* elementA =
-        dynamic_cast<const RigidBody::CollisionElement*>(
+    const DrakeCollision::Element* elementA =
+        dynamic_cast<const DrakeCollision::Element*>(
             collision_model->readElement(potential_collisions[i].getIdA()));
-    const RigidBody::CollisionElement* elementB =
-        dynamic_cast<const RigidBody::CollisionElement*>(
+    const DrakeCollision::Element* elementB =
+        dynamic_cast<const DrakeCollision::Element*>(
             collision_model->readElement(potential_collisions[i].getIdB()));
     potential_collisions[i].getResults(&ptA, &ptB, &n, &distance);
     xA.col(i) = ptA;
@@ -652,12 +652,12 @@ bool RigidBodyTree::allCollisions(const KinematicsCache<double>& cache,
     xA_in_world.col(i) = ptA;
     xB_in_world.col(i) = ptB;
 
-    const RigidBody::CollisionElement* elementA =
-        dynamic_cast<const RigidBody::CollisionElement*>(
+    const DrakeCollision::Element* elementA =
+        dynamic_cast<const DrakeCollision::Element*>(
             collision_model->readElement(points[i].getIdA()));
     bodyA_idx.push_back(elementA->getBody().body_index);
-    const RigidBody::CollisionElement* elementB =
-        dynamic_cast<const RigidBody::CollisionElement*>(
+    const DrakeCollision::Element* elementB =
+        dynamic_cast<const DrakeCollision::Element*>(
             collision_model->readElement(points[i].getIdB()));
     bodyB_idx.push_back(elementB->getBody().body_index);
   }

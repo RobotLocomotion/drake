@@ -86,22 +86,6 @@ void RigidBody::ApplyTransformToJointFrame(
   }
 }
 
-RigidBody::CollisionElement::CollisionElement(const CollisionElement& other)
-    : DrakeCollision::Element(other) {}
-
-RigidBody::CollisionElement::CollisionElement(
-    const Isometry3d& T_element_to_link, const RigidBody* const body)
-    : DrakeCollision::Element(T_element_to_link, body) {}
-
-RigidBody::CollisionElement::CollisionElement(
-    const DrakeShapes::Geometry& geometry, const Isometry3d& T_element_to_link,
-    const RigidBody* const body)
-    : DrakeCollision::Element(geometry, T_element_to_link, body) {}
-
-RigidBody::CollisionElement* RigidBody::CollisionElement::clone() const {
-  return new CollisionElement(*this);
-}
-
 ostream& operator<<(ostream& out, const RigidBody& b) {
   std::string parent_joint_name =
       b.hasParent() ? b.getJoint().getName() : "no parent joint";
