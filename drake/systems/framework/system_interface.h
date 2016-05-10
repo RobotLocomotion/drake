@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system_output.h"
@@ -14,7 +15,7 @@ namespace systems {
 /// Do not write concrete classes that inherit directly from
 /// AbstractSystemInterface. Instead, use a more specific interface in the
 /// *SystemInterface family.
-class AbstractSystemInterface {
+class DRAKESYSTEMFRAMEWORK_EXPORT AbstractSystemInterface {
  public:
   AbstractSystemInterface() {}
   virtual ~AbstractSystemInterface() {}

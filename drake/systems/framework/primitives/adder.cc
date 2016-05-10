@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <string>
 
+#include "drake/drakeSystemFramework_export.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
@@ -93,7 +94,7 @@ void Adder<ScalarType>::MapVelocityToConfigurationDerivative(
   derivatives->set_value(VectorX<ScalarType>::Zero(0));
 }
 
-template class Adder<double>;
+template class DRAKESYSTEMFRAMEWORK_EXPORT Adder<double>;
 
 }  // namespace systems
 }  // namesapce drake
