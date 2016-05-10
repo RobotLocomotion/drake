@@ -89,6 +89,13 @@ TEST(TrigPolyTest, EvaluatePartialTest) {
 
   EXPECT_EQ(multivariate.evaluatePartial(MapType {{theta_var, 0}}),
             phi + sin(phi));
+  EXPECT_EQ(multivariate.evaluatePartial(MapType {{phi_var, 0}}),
+            theta + sin(theta));
+  // TODO(#2216) This fails due to a known drake bug:
+#if 0
+  EXPECT_EQ(multivariate.evaluatePartial(MapType {{phi_var, 1}}),
+            theta + cos(theta) + sin(theta + 1));
+#endif
 }
 
 }  // anonymous namespace
