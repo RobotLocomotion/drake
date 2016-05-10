@@ -10,7 +10,7 @@
 namespace drake {
 namespace systems {
 
-/// TODO comment
+/// A template interface for Systems that have continuous dynamics.
 template <typename ScalarType>
 class ContinuousSystemInterface : public SystemInterface<ScalarType> {
  public:
