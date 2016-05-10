@@ -6,25 +6,22 @@
 #include "gtest/gtest.h"
 
 namespace {
-/// An expression of the minimal ScalarType concept for SimpleCar.
+/// An expression of the minimal ScalarType (MST) concept for SimpleCar.
 struct MST {
-  typedef MST T;
-
   MST() {}
   MST(const double&) {}
   MST& operator=(const MST&) { return *this; }
 
-  T operator*(double) const { return *this; }
-  T operator/(double) const { return *this; }
+  MST operator*(double) const { return *this; }
+  MST operator/(double) const { return *this; }
 
-  T operator+(const T&) const { return *this; }
-  T operator-(const T&) const { return *this; }
-  T operator+=(const T&) const { return *this; }
-  T operator*(const T&) const { return *this; }
+  MST operator+(const MST&) const { return *this; }
+  MST operator-(const MST&) const { return *this; }
+  MST operator+=(const MST&) const { return *this; }
+  MST operator*(const MST&) const { return *this; }
 
-  bool operator<(const T&) const { return true; }
+  bool operator<(const MST&) const { return true; }
 };
-MST remainder(const MST&, const MST&) { return MST{}; }
 MST sin(const MST&) { return MST{}; }
 MST cos(const MST&) { return MST{}; }
 MST tan(const MST&) { return MST{}; }
