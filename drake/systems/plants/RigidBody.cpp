@@ -88,24 +88,22 @@ void RigidBody::ApplyTransformToJointFrame(
 }
 
 RigidBody::CollisionElement::CollisionElement(const CollisionElement& other)
-    : DrakeCollision::Element(other), body(other.getBody()) {}
+    : DrakeCollision::Element(other), body(other.body) {}
 
 RigidBody::CollisionElement::CollisionElement(
-    const Isometry3d& T_element_to_link, std::shared_ptr<RigidBody> body)
+    const Isometry3d& T_element_to_link, const RigidBody* const body)
     : DrakeCollision::Element(T_element_to_link), body(body) {}
 
 RigidBody::CollisionElement::CollisionElement(
     const DrakeShapes::Geometry& geometry, const Isometry3d& T_element_to_link,
-    std::shared_ptr<RigidBody> body)
+    const RigidBody* const body)
     : DrakeCollision::Element(geometry, T_element_to_link), body(body) {}
 
 RigidBody::CollisionElement* RigidBody::CollisionElement::clone() const {
   return new CollisionElement(*this);
 }
 
-const std::shared_ptr<RigidBody>& RigidBody::CollisionElement::getBody() const {
-  return this->body;
-}
+const RigidBody& RigidBody::CollisionElement::getBody() const { return *body; }
 
 bool RigidBody::CollisionElement::CollidesWith(
     const DrakeCollision::Element* other) const {

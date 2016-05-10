@@ -28,6 +28,15 @@ class DRAKERBM_EXPORT RigidBody {
 
   bool hasParent() const;
 
+  /**
+   * Checks if a particular rigid body is the parent of this rigid body.
+   *
+   * @param[in] other The potential parent of this rigid body.
+   * @return true if the supplied rigid body parameter other is the parent of
+   * this rigid body.
+   */
+  bool has_as_parent(const RigidBody& other) const { return parent == &other; }
+
   void addVisualElement(const DrakeShapes::VisualElement& elements);
 
   const DrakeShapes::VectorOfVisualElements& getVisualElements() const;
@@ -59,9 +68,10 @@ class DRAKERBM_EXPORT RigidBody {
     this->collision_filter_ignores &= ~group;
   }
 
+  // TODO(amcastro-tri): Change to is_adjacent_to().
   bool adjacentTo(const RigidBody& other) const {
-    return ((parent.get() == &other && !(joint && joint->isFloating())) ||
-            (other.parent.get() == this &&
+    return ((has_as_parent(other) && !(joint && joint->isFloating())) ||
+            (other.has_as_parent(*this) &&
              !(other.joint && other.joint->isFloating())));
   }
 
@@ -100,7 +110,9 @@ class DRAKERBM_EXPORT RigidBody {
   // note: it's very ugly, but parent, dofnum, and pitch also exist currently
   // (independently) at the RigidBodyTree level to represent the featherstone
   // structure.  this version is for the kinematics.
-  std::shared_ptr<RigidBody> parent;
+
+  // TODO(amcastro-tri): Make it private and change to parent_.
+  RigidBody* parent;
   int body_index;
   int position_num_start;
   int velocity_num_start;
@@ -119,20 +131,28 @@ class DRAKERBM_EXPORT RigidBody {
 
   friend std::ostream& operator<<(std::ostream& out, const RigidBody& b);
 
-  // FIXME: move to a better place:
+  // TODO(amcastro-tri): move to a better place (h + cc files).
   class DRAKERBM_EXPORT CollisionElement : public DrakeCollision::Element {
    public:
     CollisionElement(const CollisionElement& other);
+    // TODO(amcastro-tri): The RigidBody should be const?
+    // TODO(amcastro-tri): It should not be possible to construct a
+    // CollisionElement without specifying a geometry. Remove this constructor.
     CollisionElement(const Eigen::Isometry3d& T_element_to_link,
-                     std::shared_ptr<RigidBody> body);
+                     const RigidBody* const body);
     CollisionElement(const DrakeShapes::Geometry& geometry,
                      const Eigen::Isometry3d& T_element_to_link,
-                     std::shared_ptr<RigidBody> body);
+                     const RigidBody* const body);
     virtual ~CollisionElement() {}
 
     CollisionElement* clone() const override;
 
-    const std::shared_ptr<RigidBody>& getBody() const;
+    /**
+     * @brief Returns a const reference to the body to which this
+     * CollisionElement is attached.
+     */
+    // TODO(amcastro-tri): getBody() -> get_body()
+    const RigidBody& getBody() const;
 
     bool CollidesWith(const DrakeCollision::Element* other) const override;
 
@@ -141,7 +161,7 @@ class DRAKERBM_EXPORT RigidBody {
 #endif
 
    private:
-    std::shared_ptr<RigidBody> body;
+    const RigidBody* const body;
   };
 
  public:
