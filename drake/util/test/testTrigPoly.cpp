@@ -1,4 +1,3 @@
-#include <iostream>
 #include <sstream>
 #include <map>
 
@@ -76,6 +75,20 @@ TEST(TrigPolyTest, EvaluateMultivariateTest) {
                   1e-6) << "phi: " << phi_value << " theta: " << theta_value;
     }
   }
+}
+
+TEST(TrigPolyTest, EvaluatePartialTest) {
+  const TrigPolyd theta(Polynomiald("th"),
+                        Polynomiald("sth"), Polynomiald("cth"));
+  const TrigPolyd::VarType theta_var =
+      theta.getPolynomial().getSimpleVariable();
+  const TrigPolyd phi(Polynomiald("phi"),
+                      Polynomiald("sphi"), Polynomiald("cphi"));
+  const TrigPolyd::VarType phi_var = phi.getPolynomial().getSimpleVariable();
+  const TrigPolyd multivariate = theta + phi * cos(theta) + sin(phi + theta);
+
+  EXPECT_EQ(multivariate.evaluatePartial(MapType {{theta_var, 0}}),
+            phi + sin(phi));
 }
 
 }  // anonymous namespace
