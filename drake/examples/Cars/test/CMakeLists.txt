@@ -1,5 +1,7 @@
 if (GTEST_FOUND AND LCM_FOUND AND NOT WIN32)
-  add_executable(simple_car_test simple_car_test.cc)
+  add_executable(simple_car_test
+    simple_car_test.cc
+    simple_car_scalartype_test.cc)
   target_link_libraries(simple_car_test ${GTEST_BOTH_LIBRARIES} drakeSimpleCar)
   add_test(NAME simple_car_test COMMAND simple_car_test)
 endif ()
