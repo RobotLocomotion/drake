@@ -113,6 +113,7 @@ CMAKE_DEPENDENT_OPTION(WITH_SEDUMI "semi-definite programming solver" OFF "NOT D
 CMAKE_DEPENDENT_OPTION(WITH_TEXTBOOK "pull in the Underactuated Robotics textbook and its examples" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
 CMAKE_DEPENDENT_OPTION(WITH_YALMIP "free optimization front-end for MATLAB" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
 CMAKE_DEPENDENT_OPTION(WITH_XFOIL "use w/ XFOIL to compute aerodynamic coefficients for airfoils" OFF "NOT DISABLE_MATLAB;matlab;NOT WIN32" OFF)
+
 ###########################################
 # External Projects that are OFF by default
 ###########################################
