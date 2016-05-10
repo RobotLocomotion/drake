@@ -49,13 +49,11 @@ RigidBodyTree::RigidBodyTree(
     : collision_model(DrakeCollision::newModel()) {
   a_grav << 0, 0, 0, 0, 0, -9.81;
 
-  shared_ptr<RigidBody> b(new RigidBody());
+  std::unique_ptr<RigidBody> b(new RigidBody());
   b->linkname = "world";
   b->robotnum = 0;
   b->body_index = 0;
-  bodies.push_back(b);
-
-  initialized = false;
+  bodies.push_back(std::move(b));
 
   addRobotFromURDF(urdf_filename, floating_base_type);
 }
@@ -64,13 +62,11 @@ RigidBodyTree::RigidBodyTree(void)
     : collision_model(DrakeCollision::newModel()) {
   a_grav << 0, 0, 0, 0, 0, -9.81;
 
-  shared_ptr<RigidBody> b(new RigidBody());
+  std::unique_ptr<RigidBody> b(new RigidBody());
   b->linkname = "world";
   b->robotnum = 0;
   b->body_index = 0;
-  bodies.push_back(b);
-
-  initialized = false;
+  bodies.push_back(std::move(b));
 }
 
 RigidBodyTree::~RigidBodyTree(void) {}
@@ -81,28 +77,54 @@ bool RigidBodyTree::transformCollisionFrame(
   return collision_model->transformCollisionFrame(eid, transform_body_to_joint);
 }
 
-void RigidBodyTree::compile(void) {
-  // reorder body list to make sure that parents before children in the list
+// TODO(amcastro-tri): This implementation is very inefficient since member
+// vector RigidBodyTree::bodies changes in size with the calls to bodies.erase
+// and bodies.insert.
+// A possibility would be to use std::sort or our own version of a quick sort.
+void RigidBodyTree::SortTree() {
+  if (bodies.size() == 0) return;  // no-op if there are no RigidBody's
   size_t i = 0;
   while (i < bodies.size() - 1) {
     if (bodies[i]->hasParent()) {
-      auto iter = find(bodies.begin() + i + 1, bodies.end(), bodies[i]->parent);
+      auto iter = std::find_if(bodies.begin() + i + 1, bodies.end(),
+                               [&](std::unique_ptr<RigidBody> const& p) {
+                                 return bodies[i]->has_as_parent(*p);
+                               });
       if (iter != bodies.end()) {
+        std::unique_ptr<RigidBody> parent = std::move(*iter);
         bodies.erase(iter);
-        bodies.insert(bodies.begin() + i, bodies[i]->parent);
-        i--;
+        bodies.insert(bodies.begin() + i, std::move(parent));
+        --i;
       }
     }
-    i++;
+    ++i;
   }
+
+  // Reasign body_index to be the i-th entry in RBT::bodies
+  for (size_t i = 0; i < bodies.size(); i++) {
+    bodies[i]->body_index = static_cast<int>(i);
+  }
+}
+
+void RigidBodyTree::compile(void) {
+  SortTree();
 
   // weld joints for links that have zero inertia and no children (as seen in
   // pr2.urdf)
+  // TODO(amcastro-tri): this is O(n^2). RigidBody should contain a list of
+  // children
+  // TODO(amcastro-tri): the order in which these loops should be performed
+  // should be stated more clearly with an iterator.
+  // An option would be to have:
+  //   RigidBodyTree::upwards_body_iterator: travels the tree upwards towards
+  //   the root.
+  //   RigidBodyTree::downwards_body_iterator: travels the tree downwards from
+  //   the root towards the last leaf.
   for (size_t i = 0; i < bodies.size(); i++) {
     if (bodies[i]->hasParent() && bodies[i]->I.isConstant(0)) {
       bool hasChild = false;
       for (size_t j = i + 1; j < bodies.size(); j++) {
-        if (bodies[j]->parent == bodies[i]) {
+        if (bodies[j]->has_as_parent(*bodies[i])) {
           hasChild = true;
           break;
         }
@@ -110,8 +132,8 @@ void RigidBodyTree::compile(void) {
       if (!hasChild) {
         // now check if this body is attached by a loop joint
         for (const auto& loop : loops) {
-          if ((loop.frameA->body == bodies[i]) ||
-              (loop.frameB->body == bodies[i])) {
+          if ((loop.frameA->body == bodies[i].get()) ||
+              (loop.frameB->body == bodies[i].get())) {
             hasChild = true;
             break;
           }
@@ -120,14 +142,17 @@ void RigidBodyTree::compile(void) {
       if (!hasChild) {
         cout << "welding " << bodies[i]->getJoint().getName()
              << " because it has no inertia beneath it" << endl;
-        unique_ptr<DrakeJoint> joint_unique_ptr(
+        std::unique_ptr<DrakeJoint> joint_unique_ptr(
             new FixedJoint(bodies[i]->getJoint().getName(),
                            bodies[i]->getJoint().getTransformToParentBody()));
-        bodies[i]->setJoint(move(joint_unique_ptr));
+        bodies[i]->setJoint(std::move(joint_unique_ptr));
       }
     }
   }
 
+  // Notice bodies here are accessed in the sorted vector RBT::bodies.
+  // This then determines the numbering in position_num_start and
+  // in velocity_num_start.
   num_positions = 0;
   num_velocities = 0;
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {
@@ -141,10 +166,6 @@ void RigidBodyTree::compile(void) {
       body.position_num_start = 0;
       body.velocity_num_start = 0;
     }
-  }
-
-  for (size_t i = 0; i < bodies.size(); i++) {
-    bodies[i]->body_index = static_cast<int>(i);
   }
 
   B.resize(num_velocities, actuators.size());
@@ -179,7 +200,7 @@ void RigidBodyTree::compile(void) {
     getTerrainContactPoints(body, body.contact_pts);
   }
 
-  initialized = true;
+  initialized_ = true;
 }
 
 Eigen::VectorXd RigidBodyTree::getZeroConfiguration() const {
@@ -382,7 +403,7 @@ void RigidBodyTree::collisionDetectFromPoints(
     const RigidBody::CollisionElement* elementB =
         dynamic_cast<const RigidBody::CollisionElement*>(
             collision_model->readElement(closest_points[i].getIdB()));
-    body_idx.push_back(elementB->getBody()->body_index);
+    body_idx.push_back(elementB->getBody().body_index);
   }
 }
 
@@ -453,11 +474,11 @@ bool RigidBodyTree::collisionDetect(
     // cout << "RigidBodyTree::collisionDetect: elementA = " << elementA <<
     // endl;
     // END_DEBUG
-    bodyA_idx.push_back(elementA->getBody()->body_index);
+    bodyA_idx.push_back(elementA->getBody().body_index);
     const RigidBody::CollisionElement* elementB =
         dynamic_cast<const RigidBody::CollisionElement*>(
             collision_model->readElement(points[i].getIdB()));
-    bodyB_idx.push_back(elementB->getBody()->body_index);
+    bodyB_idx.push_back(elementB->getBody().body_index);
   }
   return points_found;
 }
@@ -566,8 +587,8 @@ void RigidBodyTree::potentialCollisions(const KinematicsCache<double>& cache,
     xB.col(i) = ptB;
     normal.col(i) = n;
     phi[i] = distance;
-    bodyA_idx.push_back(elementA->getBody()->body_index);
-    bodyB_idx.push_back(elementB->getBody()->body_index);
+    bodyA_idx.push_back(elementA->getBody().body_index);
+    bodyB_idx.push_back(elementB->getBody().body_index);
   }
 }
 
@@ -609,11 +630,11 @@ bool RigidBodyTree::allCollisions(const KinematicsCache<double>& cache,
     const RigidBody::CollisionElement* elementA =
         dynamic_cast<const RigidBody::CollisionElement*>(
             collision_model->readElement(points[i].getIdA()));
-    bodyA_idx.push_back(elementA->getBody()->body_index);
+    bodyA_idx.push_back(elementA->getBody().body_index);
     const RigidBody::CollisionElement* elementB =
         dynamic_cast<const RigidBody::CollisionElement*>(
             collision_model->readElement(points[i].getIdB()));
-    bodyB_idx.push_back(elementB->getBody()->body_index);
+    bodyB_idx.push_back(elementB->getBody().body_index);
   }
   return points_found;
 }
@@ -964,7 +985,7 @@ void RigidBodyTree::findAncestorBodies(std::vector<int>& ancestor_bodies,
   const RigidBody* current_body = bodies[body_idx].get();
   while (current_body->hasParent()) {
     ancestor_bodies.push_back(current_body->parent->body_index);
-    current_body = current_body->parent.get();
+    current_body = current_body->parent;
   }
 }
 
@@ -1214,7 +1235,7 @@ Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> RigidBodyTree::massMatrix(
           (element_i.motion_subspace_in_world.transpose() * F).eval();
 
       // Hij
-      shared_ptr<RigidBody> body_j(body_i.parent);
+      RigidBody* body_j(body_i.parent);
       while (body_j->hasParent()) {
         const auto& element_j = cache.getElement(*body_j);
         int v_start_j = body_j->velocity_num_start;
@@ -1573,8 +1594,7 @@ RigidBodyTree::relativeRollPitchYawJacobianDotTimesV(
   return ret;
 }
 
-shared_ptr<RigidBody> RigidBodyTree::findLink(std::string linkname,
-                                              int robot) const {
+RigidBody* RigidBodyTree::findLink(std::string linkname, int robot) const {
   std::transform(linkname.begin(), linkname.end(), linkname.begin(),
                  ::tolower);  // convert to lower case
 
@@ -1598,13 +1618,13 @@ shared_ptr<RigidBody> RigidBodyTree::findLink(std::string linkname,
       }
     }
   }
-  if (match >= 0) return bodies[match];
+  if (match >= 0) return bodies[match].get();
   cerr << "could not find any links named " << linkname << endl;
   return nullptr;
 }
 
-shared_ptr<RigidBody> RigidBodyTree::findLink(std::string linkname,
-                                              std::string model_name) const {
+RigidBody* RigidBodyTree::findLink(std::string linkname,
+                                   std::string model_name) const {
   std::transform(linkname.begin(), linkname.end(), linkname.begin(),
                  ::tolower);  // convert to lower case
   std::transform(model_name.begin(), model_name.end(), model_name.begin(),
@@ -1633,7 +1653,7 @@ shared_ptr<RigidBody> RigidBodyTree::findLink(std::string linkname,
       }
     }
   }
-  if (match >= 0) return bodies[match];
+  if (match >= 0) return bodies[match].get();
   cerr << "could not find any links named " << linkname << endl;
   return nullptr;
 }
@@ -1673,14 +1693,13 @@ shared_ptr<RigidBodyFrame> RigidBodyTree::findFrame(
 }
 
 int RigidBodyTree::findLinkId(const std::string& name, int robot) const {
-  shared_ptr<RigidBody> link = findLink(name, robot);
+  RigidBody* link = findLink(name, robot);
   if (link == nullptr)
     throw std::runtime_error("could not find link id: " + name);
   return link->body_index;
 }
 
-shared_ptr<RigidBody> RigidBodyTree::findJoint(std::string jointname,
-                                               int robot) const {
+RigidBody* RigidBodyTree::findJoint(std::string jointname, int robot) const {
   std::transform(jointname.begin(), jointname.end(), jointname.begin(),
                  ::tolower);  // convert to lower case
 
@@ -1719,12 +1738,12 @@ shared_ptr<RigidBody> RigidBodyTree::findJoint(std::string jointname,
     cerr << "couldn't find unique joint " << jointname << endl;
     return (nullptr);
   } else {
-    return this->bodies[ind_match];
+    return this->bodies[ind_match].get();
   }
 }
 
 int RigidBodyTree::findJointId(const std::string& name, int robot) const {
-  shared_ptr<RigidBody> link = findJoint(name, robot);
+  RigidBody* link = findJoint(name, robot);
   if (link == nullptr)
     throw std::runtime_error("could not find joint id: " + name);
   return link->body_index;
@@ -1847,9 +1866,18 @@ void RigidBodyTree::addFrame(std::shared_ptr<RigidBodyFrame> frame) {
   frame->frame_index = -(static_cast<int>(frames.size()) - 1) - 2;  // yuck!!
 }
 
-void RigidBodyTree::add_rigid_body(std::shared_ptr<RigidBody> body) {
-  bodies.push_back(body);
-  body->body_index = static_cast<int>(bodies.size()) - 1;
+void RigidBodyTree::add_rigid_body(std::unique_ptr<RigidBody> body) {
+  // TODO(amcastro-tri): body indexes should not be initialized here but on an
+  // initialize call after all bodies and RigidBodySystem's are defined.
+  // This initialize call will make sure that all global and local indexes are
+  // properly computed taking into account a RigidBodySystem could be part of a
+  // larger RigidBodySystem (a system within a tree of systems).
+  body->body_index = static_cast<int>(bodies.size());
+
+  // bodies will be sorted by SortTree by generation. Therefore bodies[0]
+  // (world) will be at the top and subsequent generations of children will
+  // follow.
+  bodies.push_back(std::move(body));
 }
 
 int RigidBodyTree::AddFloatingJoint(
@@ -1858,13 +1886,13 @@ int RigidBodyTree::AddFloatingJoint(
     const std::shared_ptr<RigidBodyFrame> weld_to_frame,
     const PoseMap* pose_map) {
   std::string floating_joint_name;
-  std::shared_ptr<RigidBody> weld_to_body;
+  RigidBody* weld_to_body{nullptr};
   Eigen::Isometry3d transform_to_world;
 
   if (weld_to_frame == nullptr) {
     // If weld_to_frame is not specified, weld the newly added model(s) to the
     // world with zero offset.
-    weld_to_body = bodies[0];
+    weld_to_body = bodies[0].get();
     floating_joint_name = "base";
     transform_to_world = Eigen::Isometry3d::Identity();
   } else {
@@ -1879,7 +1907,7 @@ int RigidBodyTree::AddFloatingJoint(
             "Attempted to weld robot to the world while specifying a body "
             "link!");
       }
-      weld_to_body = bodies[0];  // the world's body
+      weld_to_body = bodies[0].get();  // the world's body
       floating_joint_name = "base";
     } else {
       weld_to_body = weld_to_frame->body;
