@@ -30,10 +30,10 @@ int main(int argc, const char* argv[]) {
   // Make a linear system to map NPC car state to the state vector of a
   // floating joint, allowing motion and steering in the x-y plane only.
   //
-  Drake::XyzRpy<double> y0(0., 0., 0., 0., 0., M_PI / 2.);
+  drake::XyzRpy<double> y0(0., 0., 0., 0., 0., M_PI / 2.);
 
-  const int insize = Drake::TrivialCarState<double>::RowsAtCompileTime;
-  const int outsize = Drake::XyzRpy<double>::RowsAtCompileTime;
+  const int insize = drake::TrivialCarState<double>::RowsAtCompileTime;
+  const int outsize = drake::XyzRpy<double>::RowsAtCompileTime;
   Eigen::Matrix<double, outsize, insize> D;
   D <<
       1, 0,  0,  // x
@@ -45,8 +45,8 @@ int main(int argc, const char* argv[]) {
 
   auto car_vis_adapter = std::make_shared<
     Drake::AffineSystem<Drake::NullVector,
-                        Drake::TrivialCarState,
-                        Drake::XyzRpy> >(
+                        drake::TrivialCarState,
+                        drake::XyzRpy> >(
       Eigen::MatrixXd::Zero(0, 0),
       Eigen::MatrixXd::Zero(0, insize),
       Eigen::VectorXd::Zero(0),
@@ -63,9 +63,9 @@ int main(int argc, const char* argv[]) {
 
   // NarySystem for car 'physics'.
   // NB:  One could compose the other way as well.
-  auto cars_system = std::make_shared<Drake::NArySystem<Drake::TrivialCar> >();
+  auto cars_system = std::make_shared<drake::NArySystem<drake::TrivialCar> >();
   // NarySystem for car visualization.
-  auto cars_vis_adapter = std::make_shared<Drake::NArySystem<decltype(car_vis_adapter)::element_type> >();
+  auto cars_vis_adapter = std::make_shared<drake::NArySystem<decltype(car_vis_adapter)::element_type> >();
 
   // Create one Sedan.
   world_tree->addRobotFromURDF(SEDAN_URDF,
@@ -75,7 +75,7 @@ int main(int argc, const char* argv[]) {
   //              on *links*, otherwise only one of the same-named links will
   //              be get updated joint parameters.
   world_tree->bodies.back()->linkname = "sedan1";
-  auto sedan_system = std::make_shared<Drake::TrivialCar>(0., 5., 0.3, 2.0);
+  auto sedan_system = std::make_shared<drake::TrivialCar>(0., 5., 0.3, 2.0);
   cars_system->addSystem(sedan_system);
   cars_vis_adapter->addSystem(car_vis_adapter);
 
@@ -84,7 +84,7 @@ int main(int argc, const char* argv[]) {
                                DrakeJoint::ROLLPITCHYAW,
                                nullptr /*weld_to_frame*/);
   world_tree->bodies.back()->linkname = "breadtruck1";
-  auto breadtruck_system = std::make_shared<Drake::TrivialCar>(15., 0., 0.7, 10.0);
+  auto breadtruck_system = std::make_shared<drake::TrivialCar>(15., 0., 0.7, 10.0);
   cars_system->addSystem(breadtruck_system);
   cars_vis_adapter->addSystem(car_vis_adapter);
 
@@ -93,7 +93,7 @@ int main(int argc, const char* argv[]) {
                                DrakeJoint::ROLLPITCHYAW,
                                nullptr /*weld_to_frame*/);
   world_tree->bodies.back()->linkname = "sedan2";
-  auto sedan2_system = std::make_shared<Drake::TrivialCar>(-5., 0., -0.3, -2.0);
+  auto sedan2_system = std::make_shared<drake::TrivialCar>(-5., 0., -0.3, -2.0);
   cars_system->addSystem(sedan2_system);
   cars_vis_adapter->addSystem(car_vis_adapter);
 
@@ -106,7 +106,7 @@ int main(int argc, const char* argv[]) {
     std::ostringstream name;
     name << "car-" << i;
     world_tree->bodies.back()->linkname = name.str();
-    auto system = std::make_shared<Drake::TrivialCar>(
+    auto system = std::make_shared<drake::TrivialCar>(
         (i % 19 - 10) * 10.,
         ((i + 11) % 23 - 11) * 10.,
         0.0,

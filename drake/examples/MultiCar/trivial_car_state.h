@@ -4,7 +4,7 @@
 #include <string>
 #include <Eigen/Core>
 
-namespace Drake {
+namespace drake {
 
 template <typename ScalarType> // = double>
 class TrivialCarState {
