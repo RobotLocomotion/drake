@@ -20,7 +20,8 @@ class ContinuousSystem : public ContinuousSystemInterface<T> {
   /// @p generalized_velocity and @p configuration_derivatives are not the
   /// same size. Child classes should override this function if qdot != v.
   void MapVelocityToConfigurationDerivatives(
-      const Context<T>& context, const StateVector<T>& generalized_velocity,
+      const ContextBase<T>& context,
+      const StateVector<T>& generalized_velocity,
       StateVector<T>* configuration_derivatives) const override {
     if (generalized_velocity.size() != configuration_derivatives->size()) {
       throw std::out_of_range(

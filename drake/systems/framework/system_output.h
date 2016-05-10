@@ -72,6 +72,12 @@ class OutputPort {
     return vector_data_.get();
   }
 
+  /// Returns a clone of this OutputPort containing a clone of the data, but
+  /// without any dependents.
+  std::unique_ptr<OutputPort<T>> Clone() const {
+    return std::make_unique<OutputPort<T>>(vector_data_->Clone());
+  }
+
  private:
   // OutputPort objects are neither copyable nor moveable.
   OutputPort(const OutputPort& other) = delete;
@@ -94,12 +100,64 @@ class OutputPort {
   int64_t version_ = 0;
 };
 
-/// A container for all the output of a System.
+/// An abstract base class template for the output ports of a System.
 ///
 /// @tparam T The type of the output data. Must be a valid Eigen scalar.
 template <typename T>
-struct SystemOutput {
-  std::vector<std::unique_ptr<OutputPort<T>>> ports;
+class SystemOutput {
+ public:
+  virtual ~SystemOutput() {}
+
+  virtual int get_num_ports() const = 0;
+  virtual OutputPort<T>* get_mutable_port(int index) = 0;
+  virtual const OutputPort<T>& get_port(int index) const = 0;
+
+  /// Returns a type-preserving clone of this SystemOutput using the NVI idiom.
+  std::unique_ptr<SystemOutput<T>> Clone() const {
+    return std::unique_ptr<SystemOutput<T>>(DoClone());
+  }
+
+ protected:
+  /// The NVI implementation of Clone().
+  virtual SystemOutput<T>* DoClone() const = 0;
+};
+
+/// A container for all the output of a leaf System.
+///
+/// @tparam T The type of the output data. Must be a valid Eigen scalar.
+template <typename T>
+struct LeafSystemOutput : public SystemOutput<T> {
+  LeafSystemOutput() {}
+  ~LeafSystemOutput() override {}
+
+  int get_num_ports() const override {
+    return static_cast<int>(ports_.size());
+  }
+
+  OutputPort<T>* get_mutable_port(int index) override {
+    return ports_[index].get();
+  }
+
+  const OutputPort<T>& get_port(int index) const override {
+    return *ports_[index];
+  }
+
+  std::vector<std::unique_ptr<OutputPort<T>>>* get_mutable_ports() {
+    return &ports_;
+  }
+
+ protected:
+  /// Returns a clone that includes a deep copy of all the output ports.
+  LeafSystemOutput<T>* DoClone() const override {
+    LeafSystemOutput<T>* clone = new LeafSystemOutput<T>();
+    for (const auto& port : ports_) {
+      clone->ports_.push_back(port->Clone());
+    }
+    return clone;
+  }
+
+ private:
+  std::vector<std::unique_ptr<OutputPort<T>>> ports_;
 };
 
 }  // namespace systems
