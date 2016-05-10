@@ -1,24 +1,18 @@
 #pragma once
 
-#include <algorithm>
 #include <cmath>
 
-#include <Eigen/Geometry>
-
-
 #include "drake/core/Vector.h"
-
-#include "drake/drakeTrivialCar_export.h"
-#include "drake/examples/MultiCar/trivial_car_state.h"
+#include "drake/examples/Cars/trivial_car_state.h"
 
 namespace drake {
 
-/// TrivialCar - no physics, no commands, just sits there.
+/// TrivialCar - no physics, no commands, just sits there --- but it does spin.
 ///
 /// output vector:
 /// * position: x, y, heading
 ///
-class DRAKETRIVIALCAR_EXPORT TrivialCar {
+class TrivialCar {
  public:
   template <typename ScalarType>
   using StateVector = Drake::NullVector<ScalarType>;

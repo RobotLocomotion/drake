@@ -1,11 +1,9 @@
 #!/bin/bash
 
-# Run the simple car demo with its allied apps:
+# Run the multi-car demo with its allied apps:
 #
-#  * steering_command_driver.py for interactive input
 #  * drake-visualizer to see things move
 #  * bot-spy to see LCM traffic of state and visualization
-#  * lcm-logger to capture LCM activity to disk
 #
 # To kill all the processes, just kill the script in the console with
 # Control-C.
