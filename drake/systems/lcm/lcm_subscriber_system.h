@@ -69,20 +69,21 @@ class DRAKELCMSYSTEM2_EXPORT LcmSubscriberSystem :
    * The default context for this system is one that has zero input ports and
    * no state.
    */
-  std::unique_ptr<Context<double>> CreateDefaultContext() const override;
+  std::unique_ptr<ContextBase<double>> CreateDefaultContext() const override;
 
   /**
    * The output consists of a single port containing a
    * `drake::systems::BasicVector<double>` object.
    */
-  std::unique_ptr<SystemOutput<double>> AllocateOutput() const override;
+  std::unique_ptr<SystemOutput<double>> AllocateOutput(
+      const ContextBase<double>& context) const override;
 
   /**
    * Computes the output for the given context, possibly updating values
    * in the cache. Note that the context is ignored since it contains no
    * information.
    */
-  void EvalOutput(const Context<double>& context,
+  void EvalOutput(const ContextBase<double>& context,
                   SystemOutput<double>* output) const override;
 
  private:

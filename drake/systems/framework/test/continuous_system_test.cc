@@ -6,9 +6,9 @@
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
 
+#include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/basic_state_vector.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/context.h"
 #include "drake/systems/framework/state_vector.h"
 #include "drake/systems/framework/system_output.h"
 
@@ -27,21 +27,25 @@ class TestContinuousSystem : public ContinuousSystem<double> {
   std::string get_name() const override { return "TestContinuousSystem"; }
 
   std::unique_ptr<ContinuousState<double>> AllocateTimeDerivatives()
-      const override { return nullptr; }
-
-  std::unique_ptr<Context<double>> CreateDefaultContext() const override {
+      const override {
     return nullptr;
   }
 
-  std::unique_ptr<SystemOutput<double>> AllocateOutput() const override {
+  std::unique_ptr<ContextBase<double>> CreateDefaultContext()
+      const override {
     return nullptr;
   }
 
-  void EvalOutput(const Context<double>& context,
+  std::unique_ptr<SystemOutput<double>> AllocateOutput(
+      const ContextBase<double>& context) const override {
+    return nullptr;
+  }
+
+  void EvalOutput(const ContextBase<double>& context,
                   SystemOutput<double>* output) const override {}
 
   void EvalTimeDerivatives(
-      const Context<double>& context,
+      const ContextBase<double>& context,
       ContinuousState<double>* derivatives) const override {}
 };
 

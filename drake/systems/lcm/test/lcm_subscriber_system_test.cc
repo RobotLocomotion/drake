@@ -71,8 +71,8 @@ void TestSubscriber(::lcm::LCM* lcm, const std::string& channel_name,
   MessagePublisher publisher(channel_name, lcm);
   publisher.Start();
 
-  std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
-  std::unique_ptr<SystemOutput<double>> output = dut->AllocateOutput();
+  std::unique_ptr<ContextBase<double>> context = dut->CreateDefaultContext();
+  std::unique_ptr<SystemOutput<double>> output = dut->AllocateOutput(*context);
 
   // Start the LCM recieve thread after all objects it can potentially use
   // are instantiated. Since objects are destructed in the reverse order of
@@ -100,7 +100,7 @@ void TestSubscriber(::lcm::LCM* lcm, const std::string& channel_name,
 
     // Gets the output of the LcmSubscriberSystem.
     const drake::systems::VectorInterface<double>* vector =
-        output->ports[0]->get_vector_data();
+        output->get_port(0).get_vector_data();
 
     // Downcasts the output vector to be a pointer to a BasicVector.
     const BasicVector<double>& basic_vector =
