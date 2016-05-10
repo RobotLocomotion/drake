@@ -66,21 +66,21 @@ BVHModel<OBBRSS>* FCLModel::newFCLCapsuleShape(
   fcl::BVHModel<OBBRSS>* bvh_shape = new fcl::BVHModel<OBBRSS>();
 
   // fcl does not have a method to generate a capsule mesh.
-  // TODO: Make one.
+  // TODO(law12019): Make one.
   // fcl::generateBVHModel(*bvh_shape, shape, Transform3f(), numTheta,
   // numLength);
 
   return bvh_shape;
 }
 
-// TODO: Figure out how to convert mesh verts to fcl mesh.
+// TODO(law12019): Figure out how to convert mesh verts to fcl mesh.
 BVHModel<OBBRSS>* FCLModel::newFCLMeshShape(const DrakeShapes::Mesh& geometry,
                                             bool use_margins) {
   Matrix3Xd vertices;
   if (geometry.extractMeshVertices(vertices)) {
     // geometry.getPoints(Eigen::Matrix3Xd &points) const;
   }
-  // TODO: What about traingle indexes?
+  // TODO(law12019): What about traingle indexes?
   cerr << "Warning: FCLModel::newMeshShape is not implemented." << endl;
   throw std::runtime_error("not implemented yet");
 }
@@ -125,7 +125,7 @@ ElementId FCLModel::addElement(const Element& element) {
 
 vector<PointPair> FCLModel::potentialCollisionPoints(bool use_margins) {
   ResultCollector c;
-  // TODO: Not Implemented
+  // TODO(law12019): Not Implemented
   cerr << "Warning: FCLModel::potentialCollisionPoints not implemented."
        << endl;
   throw std::runtime_error("not implemented yet");
@@ -133,7 +133,7 @@ vector<PointPair> FCLModel::potentialCollisionPoints(bool use_margins) {
 
 bool FCLModel::collidingPointsCheckOnly(const vector<Vector3d>& points,
                                         double collision_threshold) {
-  // TODO: Not Implemented
+  // TODO(law12019): Not Implemented
   cerr << "Warning: FCLModel::collisionPointsCheckOnly not implemented."
        << endl;
   throw std::runtime_error("not implemented yet");
@@ -160,7 +160,7 @@ void FCLModel::updateModel() {
   cerr << "Warning: FCLModel::updateModel not implemented." << endl;
   // NOTE: ccl: I am not sure what changes I have to accommodate.
   // Should I rebuild the fclModels?
-  // TODO: Test this.
+  // TODO(law12019): Test this.
   throw std::runtime_error("not implemented yet");
 }
 
@@ -169,7 +169,7 @@ bool FCLModel::findClosestPointsBtwElements(
     std::unique_ptr<ResultCollector>& c) {
   // For FCL we are converting basic shapes into meshes.
   // This is the same special case in BulletModel.
-  // TODO: Consider sharing code.
+  // TODO(law12019): Consider sharing code.
   // special case: two spheres (because we need to handle the zero-radius sphere
   // case)
   if (elements[idA]->getShape() == DrakeShapes::SPHERE &&
@@ -283,7 +283,7 @@ bool FCLModel::collisionRaycast(const Matrix3Xd& origins,
 }
 
 // This is the same implementation as in bullet.
-// TODO: consider sharing code.
+// TODO(law12019): consider sharing code.
 bool FCLModel::closestPointsAllToAll(const vector<ElementId>& ids_to_check,
                                      const bool use_margins,
                                      vector<PointPair>& closest_points) {
@@ -308,7 +308,7 @@ bool FCLModel::closestPointsAllToAll(const vector<ElementId>& ids_to_check,
 }
 
 // Copy and paste identicalcode to BulletModel.
-// TODO: Consider sharing this code.
+// TODO(law12019): Consider sharing this code.
 bool FCLModel::closestPointsPairwise(const vector<ElementIdPair>& id_pairs,
                                      const bool use_margins,
                                      vector<PointPair>& closest_points) {
