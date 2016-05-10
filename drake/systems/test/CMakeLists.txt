@@ -14,6 +14,10 @@ if (GTEST_FOUND)
 	target_link_libraries(n_ary_state_test ${GTEST_BOTH_LIBRARIES})
 	add_test(NAME n_ary_state_test COMMAND n_ary_state_test)
 
+	add_executable(n_ary_system_test n_ary_system_test.cc)
+	target_link_libraries(n_ary_system_test ${GTEST_BOTH_LIBRARIES})
+	add_test(NAME n_ary_system_test COMMAND n_ary_system_test)
+
 	if(roscpp_FOUND)
 		add_executable(ros_test ros_test.cc)
 		target_link_libraries(ros_test ${GTEST_BOTH_LIBRARIES} ${roscpp_LIBRARIES})
