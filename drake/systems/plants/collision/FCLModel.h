@@ -1,5 +1,4 @@
-#ifndef DRAKE_COLLISION_FCL_MODEL
-#define DRAKE_COLLISION_FCL_MODEL
+#pragma once
 
 #include "Element.h"
 #include "Model.h"
@@ -98,4 +97,3 @@ class FCLModel : public Model {
   FCLModel& operator=(const FCLModel&) { return *this; }
 };
 }
-#endif
