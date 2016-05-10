@@ -70,6 +70,13 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
 
   bool is_attached_to_body() const { return body_!= nullptr; }
 
+  /**
+   * @brief Adds this collsion element to collision group group_id
+   *
+   * CollisionElement's within a group do not collide.
+   * Calling this method to add an element to a group it already belongs to does
+   * not have any effect.
+   */
   void add_to_collision_group(int group_id);
 
   /**

@@ -39,9 +39,14 @@ bool Element::CollidesWith(const Element* other) const {
                             other->collision_groups_.end());
 }
 
+// Order(N) insertion.
+// Member CollisionElement::collision_groups_ is sorted so that checking if two
+// collision elements belong to a same group can be performed in order N.
+// See CollisionElement::CollidesWith
 void Element::add_to_collision_group(int group_id) {
-  collision_groups_.push_back(group_id);
-  std::sort(collision_groups_.begin(), collision_groups_.end());
+  auto it = std::lower_bound(collision_groups_.begin(), collision_groups_.end(), group_id);
+  if (it == collision_groups_.end() || group_id < *it)
+    collision_groups_.insert(it, group_id);
 }
 
 ostream& operator<<(ostream& out, const Element& ee) {
