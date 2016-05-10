@@ -28,3 +28,5 @@ r = r.removeCollisionGroupsExcept({'heel','toe'});
 r = compile(r);
 
 r.runWalkingDemo(walking_options);
+
+% TIMEOUT 1500

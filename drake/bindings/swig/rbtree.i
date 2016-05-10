@@ -17,11 +17,11 @@
 %include <std_vector.i>
 
 #define SWIG_SHARED_PTR_NAMESPACE std
-// SWIG has built-in support for shared pointers, and can use either std::shared_ptr
-// or boost::shared_ptr, since they provide similar enough interfaces. Even though
-// the interface file is called 'boost_shared_ptr.i', the above #define tells SWIG
-// to use the std:: implementation instead. Note that this does NOT result in any
-// boost headers being included. 
+// SWIG has built-in support for shared pointers, and can use either
+// std::shared_ptr or boost::shared_ptr, since they provide similar enough
+// interfaces. Even though the interface file is called 'boost_shared_ptr.i',
+// the above #define tells SWIG to use the std:: implementation instead. Note
+// that this does NOT result in any boost headers being included.
 %include <boost_shared_ptr.i>
 
 %include <eigen.i>
@@ -49,14 +49,25 @@
 %template(AutoDiff3XDynamic) AutoDiffWrapper<Eigen::VectorXd, SPACE_DIMENSION, Eigen::Dynamic>;
 %template(AutoDiff3XMax73) AutoDiffWrapper<Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 73>, SPACE_DIMENSION, Eigen::Dynamic>;
 
-%ignore RigidBody::setJoint(std::unique_ptr<DrakeJoint> joint); // unique_ptr confuses SWIG, so we'll ignore it for now
+// unique_ptr confuses SWIG, so we'll ignore it for now
+%ignore RigidBody::setJoint(std::unique_ptr<DrakeJoint> joint);
 %include "drake/systems/plants/RigidBody.h"
 
 %immutable RigidBodyTree::actuators;
 %immutable RigidBodyTree::loops;
+
+// unique_ptr confuses SWIG, so we'll ignore it for now
+%ignore RigidBodyTree::add_rigid_body(std::unique_ptr<RigidBody> body);
+
+// Ignore this member so that it doesn't generate setters/getters.
+// These cause problems since bodies is a vector of unique_ptr's and
+// SWIG doesn't support them.
+%ignore RigidBodyTree::bodies;
 %include "drake/systems/plants/RigidBodyTree.h"
 %extend RigidBodyTree {
-  KinematicsCache<double> doKinematics(const Eigen::MatrixBase<Eigen::VectorXd>& q, const Eigen::MatrixBase<Eigen::VectorXd>& v) {
+  KinematicsCache<double> doKinematics(
+    const Eigen::MatrixBase<Eigen::VectorXd>& q,
+    const Eigen::MatrixBase<Eigen::VectorXd>& v) {
     return $self->doKinematics(q, v);
   }
 

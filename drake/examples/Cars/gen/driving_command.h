@@ -10,7 +10,7 @@
 
 #include "lcmtypes/drake/lcmt_driving_command_t.hpp"
 
-namespace Drake {
+namespace drake {
 
 /// Describes the row indices of a DrivingCommand.
 struct DrivingCommandIndices {
@@ -129,4 +129,4 @@ bool decode(const drake::lcmt_driving_command_t& msg,
   return true;
 }
 
-}  // namespace Drake
+}  // namespace drake

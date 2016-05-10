@@ -6,4 +6,4 @@ runValkyrieWalking([], struct('initial_pose', [1;0;0;0;0;pi/2],...
                                 'max_num_steps', 15));
 end
 
-% TIMEOUT 1000
+% TIMEOUT 1500

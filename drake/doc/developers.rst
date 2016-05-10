@@ -132,6 +132,8 @@ passes CI. You may click it to merge your PR. If you do not have write access,
 or if you believe that status checks are failing for inconsequential reasons,
 ask your platform reviewer to perform the merge for you.
 
+**After Merge.** If your PR breaks continuous integration, the :doc:`buildcop`
+will contact you to work out a resolution.
 
 Continuous Integration Notes
 ============================

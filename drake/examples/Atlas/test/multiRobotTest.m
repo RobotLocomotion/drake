@@ -22,3 +22,4 @@ xtraj = simulate(r,[0 3]);
 v = r.constructVisualizer();
 v.playback(xtraj);
 
+% TIMEOUT 1500

@@ -1,2 +1,2 @@
 
-add_matlab_test(NAME solvers/trajectoryOptimization/test/contactImplicitBrick COMMAND contactImplicitBrick)
+add_matlab_test(NAME solvers/trajectoryOptimization/test/contactImplicitBrick COMMAND contactImplicitBrick PROPERTIES TIMEOUT 750)

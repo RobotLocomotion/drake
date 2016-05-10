@@ -5,48 +5,18 @@
 #include "drake/Path.h"
 
 #include "drake/examples/Cars/gen/euler_floating_joint_state.h"
+#include "drake/examples/Cars/lcm_tap.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "lcmtypes/drake/lcmt_driving_command_t.hpp"
 
-// TODO(rpoyner-tri): move this to somewhere common; it is useful.
-/// LCMTap -- a system that wires input to output, and publishes input to LCM.
-template <template <typename> class Vector>
-class LCMTap {
- public:
-  template <typename ScalarType>
-  using StateVector = Drake::NullVector<ScalarType>;
-  template <typename ScalarType>
-  using InputVector = Vector<ScalarType>;
-  template <typename ScalarType>
-  using OutputVector = Vector<ScalarType>;
+using Drake::AffineSystem;
+using Drake::BotVisualizer;
+using Drake::NullVector;
+using Drake::cascade;
 
-  explicit LCMTap(std::shared_ptr<lcm::LCM> lcm) : lcm(lcm) {}
-
-  StateVector<double> dynamics(const double& t, const StateVector<double>& x,
-                               const InputVector<double>& u) const {
-    return StateVector<double>();
-  }
-
-  OutputVector<double> output(const double& t, const StateVector<double>& x,
-                              const InputVector<double>& u) const {
-    typename Vector<double>::LCMMessageType msg;
-    if (!encode(t, u, msg))
-      throw std::runtime_error(std::string("failed to encode") +
-                               msg.getTypeName());
-    lcm->publish(u.channel(), &msg);
-    return u;
-  }
-
-  bool isTimeVarying() const { return false; }
-  bool isDirectFeedthrough() const { return true; }
-
- private:
-  const std::shared_ptr<lcm::LCM> lcm;
-};
-
-namespace Drake {
+namespace drake {
 namespace {
 
 int do_main(int argc, const char* argv[]) {
@@ -81,15 +51,15 @@ int do_main(int argc, const char* argv[]) {
   // Load a simplistic rendering from accompanying URDF file.
   //
   auto tree = std::make_shared<RigidBodyTree>(
-      getDrakePath() + "/examples/Cars/models/boxcar.urdf");
+      Drake::getDrakePath() + "/examples/Cars/models/boxcar.urdf");
 
   auto viz =
       std::make_shared<BotVisualizer<EulerFloatingJointState> >(
           lcm, tree);
 
   // Make some taps to publish intermediate states to LCM.
-  auto car_tap = std::make_shared<LCMTap<SimpleCarState> >(lcm);
-  auto adapter_tap = std::make_shared<LCMTap<EulerFloatingJointState> >(lcm);
+  auto car_tap = std::make_shared<LcmTap<SimpleCarState> >(lcm);
+  auto adapter_tap = std::make_shared<LcmTap<EulerFloatingJointState> >(lcm);
 
   // Assemble car, adapter, and visualizer, with intervening taps.
   auto car_tapped = cascade(car, car_tap);
@@ -104,8 +74,8 @@ int do_main(int argc, const char* argv[]) {
 }
 
 }  // namespace
-}  // namespace Drake
+}  // namespace drake
 
 int main(int argc, const char* argv[]) {
-  return Drake::do_main(argc, argv);
+  return drake::do_main(argc, argv);
 }

@@ -10,7 +10,7 @@
 
 #include "lcmtypes/drake/lcmt_simple_car_state_t.hpp"
 
-namespace Drake {
+namespace drake {
 
 /// Describes the row indices of a SimpleCarState.
 struct SimpleCarStateIndices {
@@ -134,4 +134,4 @@ bool decode(const drake::lcmt_simple_car_state_t& msg,
   return true;
 }
 
-}  // namespace Drake
+}  // namespace drake

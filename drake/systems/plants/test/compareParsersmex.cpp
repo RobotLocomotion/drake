@@ -16,7 +16,7 @@ using drake::util::MatrixCompareType;
  * robot generated via the c++ parser
  */
 
-void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
   if (nrhs < 1) {
     mexErrMsgIdAndTxt(
         "Drake:compareParsersmex:NotEnoughInputs",
@@ -24,7 +24,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   }
 
   // first get the model_ptr back from matlab
-  RigidBodyTree *matlab_model = (RigidBodyTree *)getDrakeMexPointer(prhs[0]);
+  RigidBodyTree* matlab_model = (RigidBodyTree*)getDrakeMexPointer(prhs[0]);
 
   char urdf_file[1000];
   mxGetString(prhs[1], urdf_file, 1000);
@@ -42,7 +42,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         "Drake:compareParsersmex:BadInputs",
         "Unknown floating base type.  must be 'fixed', 'rpy', or 'quat'");
 
-  RigidBodyTree *cpp_model = new RigidBodyTree(urdf_file, floating_base_type);
+  RigidBodyTree* cpp_model = new RigidBodyTree(urdf_file, floating_base_type);
 
   // Compute coordinate transform between the two models (in case they are not
   // identical)
@@ -54,7 +54,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   for (int i = 0; i < cpp_model->bodies.size(); i++) {
     if (cpp_model->bodies[i]->hasParent() &&
         cpp_model->bodies[i]->getJoint().getNumPositions() > 0) {
-      shared_ptr<RigidBody> b =
+      RigidBody* b =
           matlab_model->findJoint(cpp_model->bodies[i]->getJoint().getName());
       if (b == nullptr) continue;
       for (int j = 0; j < b->getJoint().getNumPositions(); j++) {
@@ -99,9 +99,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         cpp_model->doKinematics(cpp_q, cpp_v, true);
 
     {  // compare H, C, and B
-      eigen_aligned_unordered_map<RigidBody const *,
-                                  Matrix<double, TWIST_SIZE, 1> >
-          f_ext;
+      eigen_aligned_unordered_map<RigidBody const*,
+                                  Matrix<double, TWIST_SIZE, 1>> f_ext;
 
       auto matlab_H = matlab_model->massMatrix(matlab_cache);
       auto cpp_H = cpp_model->massMatrix(cpp_cache);

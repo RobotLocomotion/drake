@@ -78,11 +78,11 @@ class HistorySystem {
 };
 
 TEST(SimpleCarTest, ZerosIn) {
-  Drake::SimpleCar dut;
-  Drake::SimpleCarState<double> state_zeros;
-  Drake::DrivingCommand<double> input_zeros;
+  SimpleCar dut;
+  SimpleCarState<double> state_zeros;
+  DrivingCommand<double> input_zeros;
 
-  Drake::SimpleCarState<double> rates =
+  SimpleCarState<double> rates =
       dut.dynamics(0., state_zeros, input_zeros);
 
   const double tolerance = 1e-8;
@@ -91,16 +91,16 @@ TEST(SimpleCarTest, ZerosIn) {
 }
 
 TEST(SimpleCarTest, Accelerating) {
-  Drake::DrivingCommand<double> max_throttle;
+  DrivingCommand<double> max_throttle;
   max_throttle.set_throttle(1.);
 
-  auto car = std::make_shared<Drake::SimpleCar>();
-  Drake::SimpleCarState<double> initial_state;
+  auto car = std::make_shared<SimpleCar>();
+  SimpleCarState<double> initial_state;
   auto history_system =
-      std::make_shared<HistorySystem<Drake::SimpleCarState>>(initial_state);
+      std::make_shared<HistorySystem<SimpleCarState>>(initial_state);
   auto lead_foot = Drake::cascade(
       Drake::cascade(
-          std::make_shared<ConstantInputSystem<Drake::DrivingCommand>>(
+          std::make_shared<ConstantInputSystem<DrivingCommand>>(
               max_throttle),
           car),
       history_system);
@@ -125,31 +125,31 @@ TEST(SimpleCarTest, Accelerating) {
   // These clauses are deliberately broad; we don't care so much about the
   // exact values, but rather that we got somewhere.
   EXPECT_NEAR(history_system->states_[max_time].x(),
-              Drake::SimpleCar::kDefaultConfig.max_velocity *
+              SimpleCar::kDefaultConfig.max_velocity *
               (end_time - start_time), 3e2);
   EXPECT_GT(history_system->states_[max_time].x(),
-            Drake::SimpleCar::kDefaultConfig.max_velocity *
+            SimpleCar::kDefaultConfig.max_velocity *
             (end_time - start_time) / 2);
   EXPECT_EQ(history_system->states_[max_time].y(), 0.);
   EXPECT_EQ(history_system->states_[max_time].heading(), 0.);
   EXPECT_NEAR(history_system->states_[max_time].velocity(),
-              Drake::SimpleCar::kDefaultConfig.max_velocity, 1e-5);
+              SimpleCar::kDefaultConfig.max_velocity, 1e-5);
 }
 
 TEST(SimpleCarTest, Braking) {
-  Drake::DrivingCommand<double> max_brake;
+  DrivingCommand<double> max_brake;
   max_brake.set_brake(1.);
 
-  auto car = std::make_shared<Drake::SimpleCar>();
-  Drake::SimpleCarState<double> initial_state;
+  auto car = std::make_shared<SimpleCar>();
+  SimpleCarState<double> initial_state;
   double speed = 10.;
   initial_state.set_velocity(speed);
 
   auto history_system =
-      std::make_shared<HistorySystem<Drake::SimpleCarState>>(initial_state);
+      std::make_shared<HistorySystem<SimpleCarState>>(initial_state);
   auto panic_stop = Drake::cascade(
       Drake::cascade(
-          std::make_shared<ConstantInputSystem<Drake::DrivingCommand>>(
+          std::make_shared<ConstantInputSystem<DrivingCommand>>(
               max_brake),
           car),
       history_system);
@@ -180,18 +180,18 @@ TEST(SimpleCarTest, Braking) {
 }
 
 TEST(SimpleCarTest, Steering) {
-  Drake::DrivingCommand<double> left(Eigen::Vector3d(M_PI / 2, 0., 0.));
+  DrivingCommand<double> left(Eigen::Vector3d(M_PI / 2, 0., 0.));
 
-  auto car = std::make_shared<Drake::SimpleCar>();
-  Drake::SimpleCarState<double> initial_state;
+  auto car = std::make_shared<SimpleCar>();
+  SimpleCarState<double> initial_state;
   double speed = 40.;
   initial_state.set_velocity(speed);
 
   auto history_system =
-      std::make_shared<HistorySystem<Drake::SimpleCarState>>(initial_state);
+      std::make_shared<HistorySystem<SimpleCarState>>(initial_state);
   auto brickyard = Drake::cascade(
       Drake::cascade(
-          std::make_shared<ConstantInputSystem<Drake::DrivingCommand>>(left),
+          std::make_shared<ConstantInputSystem<DrivingCommand>>(left),
           car),
       history_system);
 
@@ -213,8 +213,8 @@ TEST(SimpleCarTest, Steering) {
   EXPECT_EQ(history_system->states_[start_time].velocity(), speed);
 
   double min_turn_radius =
-      Drake::SimpleCar::kDefaultConfig.wheelbase /
-      std::tan(Drake::SimpleCar::kDefaultConfig.max_abs_steering_angle);
+      SimpleCar::kDefaultConfig.wheelbase /
+      std::tan(SimpleCar::kDefaultConfig.max_abs_steering_angle);
   double turn_epsilon = min_turn_radius * 1e-3;
 
   for (const auto& pair : history_system->states_) {
