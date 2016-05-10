@@ -38,10 +38,14 @@ class DRAKESIMPLECAR_EXPORT SimpleCar {
   const drake::lcmt_simple_car_config_t& config() const { return config_; }
 
   /// @name Implement the Drake System concept.
-  /// @tparam ScalarType must support certain math operations TBD later.
+  ///
+  /// @tparam ScalarType must support certain math operations as
+  /// enumerated in @see test/simple_car_scalartype_test.cc.
   ///
   /// Instantiated templates for the following ScalarTypes are provided:
   /// - double
+  /// They are already available to link against in libdrakeCars.
+  ///
   /// To use other unusual ScalarType substitutions, @see simple_car-inl.h.
   //@{
 
