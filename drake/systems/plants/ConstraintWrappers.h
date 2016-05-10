@@ -1,5 +1,4 @@
-#ifndef DRAKE_SYSTEMS_PLANTS_CONSTRAINTWRAPPERS_H_
-#define DRAKE_SYSTEMS_PLANTS_CONSTRAINTWRAPPERS_H_
+#pragma once
 
 #include <memory>
 
@@ -45,19 +44,7 @@ class KinematicsCacheHelper {
 
 class SingleTimeKinematicConstraintWrapper : public Constraint {
  public:
-  SingleTimeKinematicConstraintWrapper(
-      const std::shared_ptr<SingleTimeKinematicConstraint>&
-        rigid_body_constraint,
-      KinematicsCacheHelper<double>* kin_helper)
-      : Constraint(rigid_body_constraint->getNumConstraint(nullptr)),
-        rigid_body_constraint_shared_(rigid_body_constraint),
-        rigid_body_constraint_(rigid_body_constraint.get()),
-        kin_helper_(kin_helper) {
-    rigid_body_constraint->bounds(nullptr, lower_bound_, upper_bound_);
-  }
-
-  // Don't take partial ownership of the constraint, instead alias it
-  // for the lifetime of the wrapper.
+  /// All pointers are aliased for the lifetime of the wrapper.
   SingleTimeKinematicConstraintWrapper(
       const SingleTimeKinematicConstraint* rigid_body_constraint,
       KinematicsCacheHelper<double>* kin_helper)
@@ -88,18 +75,17 @@ class SingleTimeKinematicConstraintWrapper : public Constraint {
   }
 
  private:
-  std::shared_ptr<SingleTimeKinematicConstraint> rigid_body_constraint_shared_;
   const SingleTimeKinematicConstraint* rigid_body_constraint_;
   mutable KinematicsCacheHelper<double>* kin_helper_;
 };
 
 class QuasiStaticConstraintWrapper : public Constraint {
  public:
-  // Don't take partial ownership of the constraint, instead alias it
-  // for the lifetime of the wrapper.  Also, the wrapped
-  // QuasiStaticConstraint claims to have three constraints, but the
-  // third was handled differently in the original SNOPT
-  // implementation, which we won't try to reproduce here.
+  /// All pointers are aliased for the lifetime of the wrapper.  Also,
+  /// the wrapped QuasiStaticConstraint claims to have three
+  /// constraints, but the third was handled differently in the
+  /// original SNOPT implementation, which we won't try to reproduce
+  /// here.
   QuasiStaticConstraintWrapper(
       const QuasiStaticConstraint* rigid_body_constraint,
       KinematicsCacheHelper<double>* kin_helper)
@@ -145,5 +131,3 @@ class QuasiStaticConstraintWrapper : public Constraint {
 }
 }
 }
-
-#endif  // DRAKE_SYSTEMS_PLANTS_CONSTRAINT_CONSTRAINTWRAPPERS_H_

@@ -32,11 +32,10 @@ namespace systems {
 namespace plants {
 namespace {
 
-class Mode1Objective : public Constraint {
+class InverseKinObjective : public Constraint {
  public:
-  // All references are aliased for the life of the objective.  It
-  // should be short.
-  Mode1Objective(RigidBodyTree* model, const MatrixXd& Q)
+  // All references are aliased for the life of the objective.
+  InverseKinObjective(RigidBodyTree* model, const MatrixXd& Q)
       : Constraint(model->num_positions),
         model_(model),
         Q_(Q) {}
@@ -58,6 +57,10 @@ class Mode1Objective : public Constraint {
         y_val, (dy_vec * gradient_mat).eval(), y);
   }
 
+
+  /// Set the nominal posture.  This should be invoked before any
+  /// calls to eval() (the output of eval() is undefined if this has
+  /// not been set.)
   void set_q_nom(const VectorXd& q_nom_i) {
     q_nom_i_ = q_nom_i;
   }
@@ -133,7 +136,7 @@ void inverseKinMode1(
 
     MatrixXd Q;
     ikoptions.getQ(Q);
-    auto objective = std::make_shared<Mode1Objective>(model, Q);
+    auto objective = std::make_shared<InverseKinObjective>(model, Q);
     prog.AddCost(objective, {vars});
 
     bool qsc_active = false;
@@ -225,7 +228,7 @@ void inverseKinMode1(
       }
     }
 
-    // Add a bounding box constraint from them model.
+    // Add a bounding box constraint from the model.
     prog.AddBoundingBoxConstraint(
         model->joint_limit_min, model->joint_limit_max,
         {vars});
