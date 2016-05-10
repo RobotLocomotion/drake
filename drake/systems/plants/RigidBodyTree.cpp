@@ -109,7 +109,7 @@ void RigidBodyTree::SortTree() {
 void RigidBodyTree::compile(void) {
   SortTree();
 
-  // weld joints for links that have zero inertia and no children (as seen in
+  // Welds joints for links that have zero inertia and no children (as seen in
   // pr2.urdf)
   // TODO(amcastro-tri): this is O(n^2). RigidBody should contain a list of
   // children
@@ -140,8 +140,7 @@ void RigidBodyTree::compile(void) {
         }
       }
       if (!hasChild) {
-        cout << "welding " << bodies[i]->getJoint().getName()
-             << " because it has no inertia beneath it" << endl;
+        cout << "Welding joint " << bodies[i]->getJoint().getName() << endl;
         std::unique_ptr<DrakeJoint> joint_unique_ptr(
             new FixedJoint(bodies[i]->getJoint().getName(),
                            bodies[i]->getJoint().getTransformToParentBody()));
@@ -150,7 +149,8 @@ void RigidBodyTree::compile(void) {
     }
   }
 
-  // Notice bodies here are accessed in the sorted vector RBT::bodies.
+  // Counts the number of position and velocitie there are in this rigid body
+  // tree. Notice bodies here are accessed in the sorted vector RBT::bodies.
   // This then determines the numbering in position_num_start and
   // in velocity_num_start.
   num_positions = 0;
@@ -175,7 +175,7 @@ void RigidBodyTree::compile(void) {
       B(actuators[ia].body->velocity_num_start + i, ia) =
           actuators[ia].reduction;
 
-  // gather joint limits in RBM vector
+  // Initializes the joint limit vectors.
   joint_limit_min = VectorXd::Constant(
       num_positions, -std::numeric_limits<double>::infinity());
   joint_limit_max = VectorXd::Constant(num_positions,
@@ -193,6 +193,7 @@ void RigidBodyTree::compile(void) {
     }
   }
 
+  // Updates the static collision elements and terrain contact points.
   updateStaticCollisionElements();
 
   for (auto it = bodies.begin(); it != bodies.end(); ++it) {

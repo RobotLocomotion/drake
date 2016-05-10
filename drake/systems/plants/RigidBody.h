@@ -19,6 +19,10 @@ class DRAKERBM_EXPORT RigidBody {
  public:
   RigidBody();
 
+  const std::string& GetName() const;
+
+  const std::string& GetModelName() const;
+
   void setJoint(std::unique_ptr<DrakeJoint> joint);
   const DrakeJoint& getJoint() const;
 
