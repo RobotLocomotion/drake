@@ -35,11 +35,17 @@ class TrigPoly {
  public:
   typedef _CoefficientType CoefficientType;
   typedef Polynomial<CoefficientType> PolyType;
+  typedef typename PolyType::VarType VarType;
   struct SinCosVars {
-    typename PolyType::VarType s;
-    typename PolyType::VarType c;
+    VarType s;
+    VarType c;
   };
-  typedef std::map<typename PolyType::VarType, SinCosVars> SinCosMap;
+  typedef std::map<VarType, SinCosVars> SinCosMap;
+
+  template <typename Rhs, typename Lhs>
+  struct Product {
+    typedef decltype((Rhs)0 * (Lhs)0) type;
+  };
 
   /// Constructs a vacuous TrigPoly.
   TrigPoly() {}
@@ -166,6 +172,57 @@ class TrigPoly {
         pb(m.begin() + 1, m.end());
     TrigPoly a(pa, p.sin_cos_map), b(pb, p.sin_cos_map);
     return cos(a) * cos(b) - sin(a) * sin(b);
+  }
+
+  /// Return all of the base (non-sin/cos) variables in this TrigPoly.
+  std::set<VarType> getVariables() const {
+    std::set<VarType> vars = poly.getVariables();
+    for (const auto& sin_cos_item : sin_cos_map) {
+      vars.erase(sin_cos_item.second.s);
+      vars.erase(sin_cos_item.second.c);
+    }
+    return vars;
+  }
+
+  /// Given a value for every variable in this expression, evaluate it.
+  /**
+   * By analogy with Polynomial::evaluateMultivariate().  Values must be
+   * supplied for all base variables; supplying values for sin/cos variables
+   * is an error.
+   */
+  template <typename T>
+  typename Product<CoefficientType, T>::type evaluateMultivariate(
+      const std::map<VarType, T>& var_values) const {
+    std::map<VarType, T> all_var_values = var_values;
+    for (const auto& sin_cos_item : sin_cos_map) {
+      assert(!var_values.count(sin_cos_item.second.s));
+      assert(!var_values.count(sin_cos_item.second.c));
+      all_var_values[sin_cos_item.second.s] =
+          std::sin(var_values.at(sin_cos_item.first));
+      all_var_values[sin_cos_item.second.c] =
+          std::cos(var_values.at(sin_cos_item.first));
+    }
+    return poly.evaluateMultivariate(all_var_values);
+  }
+
+  /// Partially evaluate this expression, returning the resulting expression.
+  /**
+   * By analogy with Polynomial::evaluatePartial.  Values must be supplied for
+   * all base variables only; supplying values for sin/cos variables is an
+   * error.
+   */
+  virtual TrigPoly<CoefficientType> evaluatePartial(
+      const std::map<VarType, CoefficientType>& var_values) const {
+    std::map<VarType, CoefficientType> var_values_with_sincos = var_values;
+    for (const auto& sin_cos_item : sin_cos_map) {
+      assert(!var_values.count(sin_cos_item.second.s));
+      assert(!var_values.count(sin_cos_item.second.c));
+      var_values_with_sincos[sin_cos_item.second.s] =
+          std::sin(var_values.at(sin_cos_item.first));
+      var_values_with_sincos[sin_cos_item.second.c] =
+          std::cos(var_values.at(sin_cos_item.first));
+    }
+    return TrigPoly(poly.evaluatePartial(var_values_with_sincos), sin_cos_map);
   }
 
   TrigPoly& operator+=(const TrigPoly& other) {
