@@ -1,4 +1,4 @@
-#include "drake/examples/Cars/simple_car.h"
+#include "drake/examples/Cars/simple_car-inl.h"
 
 namespace drake {
 
@@ -17,4 +17,23 @@ const lcmt_simple_car_config_t SimpleCar::kDefaultConfig = {
   1   // Hz
 };
 
-}
+// Explicitly instantiate all ScalarType-using definitions.
+#define DRAKE_INSTANTIATE(ScalarType)                           \
+template DRAKECARS_EXPORT                                       \
+SimpleCar::StateVector<ScalarType> SimpleCar::dynamics(         \
+      const ScalarType&,                                        \
+      const SimpleCar::StateVector<ScalarType>&,                \
+      const SimpleCar::InputVector<ScalarType>&) const;         \
+template DRAKECARS_EXPORT                                       \
+SimpleCar::OutputVector<ScalarType> drake::SimpleCar::output(   \
+    const ScalarType&,                                          \
+    const SimpleCar::StateVector<ScalarType>&,                  \
+    const SimpleCar::InputVector<ScalarType>&) const;
+
+// These instantiations must match the API documentation in simple_car.h.
+DRAKE_INSTANTIATE(double)
+// TODO(jwnimmer-tri) Add support for additional types.
+
+#undef DRAKE_CARS_INSTANTIATE_SCALAR_TYPE
+
+}  // namespace drake
