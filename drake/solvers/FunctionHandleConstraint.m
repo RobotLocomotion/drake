@@ -18,7 +18,7 @@ classdef FunctionHandleConstraint < Constraint
 
       if nargin<5, grad_level = -1; end
 
-      obj = obj@Constraint(lb,ub,xdim,grad_level);
+      obj = obj@Constraint(lb,ub,xdim,struct('grad_level',grad_level));
       obj.eval_handle = eval_handle;
     end
 
@@ -33,7 +33,7 @@ classdef FunctionHandleConstraint < Constraint
       % that is.
       
       obj_new = FunctionHandleConstraint(obj.lb,obj.ub,obj.xdim,eval_handle_new);
-      [iCfun,jCvar] = obj.getSparseStructure();
+      [iCfun,jCvar] = obj.getGradientSparseStructure();
       obj_new = obj_new.setSparseStructure(iCfun,jCvar);
       obj_new = obj_new.setName(obj.name);
     end

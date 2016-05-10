@@ -298,7 +298,7 @@ classdef NonlinearProgram
       obj.cin2nlcon_idx = [obj.cin2nlcon_idx;length(obj.nlcon)*ones(length(cnstr.cin_idx),1)];
       obj.ceq2nlcon_idx = [obj.ceq2nlcon_idx;length(obj.nlcon)*ones(length(cnstr.ceq_idx),1)];
 
-      [cnstr_iCfun,cnstr_jCvar] = cnstr.getSparseStructure();
+      [cnstr_iCfun,cnstr_jCvar] = cnstr.getGradientSparseStructure();
       Geq_idx = cnstr.lb(cnstr_iCfun) == cnstr.ub(cnstr_iCfun);
       Gin_idx = ~Geq_idx;
       inv_ceq_idx = zeros(cnstr.num_cnstr,1);
@@ -357,7 +357,7 @@ classdef NonlinearProgram
         end
         obj.lcon = [obj.lcon,{cnstr}];
 
-        [cnstr_iCfun,cnstr_jCvar,cnstr_nnz] = cnstr.getSparseStructure();
+        [cnstr_iCfun,cnstr_jCvar,cnstr_nnz] = cnstr.getGradientSparseStructure();
         cnstr_A = sparse(cnstr_iCfun,xind(cnstr_jCvar),cnstr.A_val,cnstr.num_cnstr,obj.num_vars,cnstr_nnz);
         cnstr_beq = (cnstr.lb(cnstr.ceq_idx)+cnstr.ub(cnstr.ceq_idx))/2;
         cnstr_Aeq = cnstr_A(cnstr.ceq_idx,:);
@@ -465,7 +465,7 @@ classdef NonlinearProgram
       end
       obj.cost_dataind{end+1} = data_ind;
 %         obj.cost_xind_cell = [obj.cost_xind_cell,{xind(cnstr.jCvar)}];
-      [~,cnstr_jCvar] = cnstr.getSparseStructure();
+      [~,cnstr_jCvar] = cnstr.getGradientSparseStructure();
       obj.jFvar = unique([obj.jFvar;xind_vec(cnstr_jCvar)]);
       obj.iFfun = ones(length(obj.jFvar),1);
     end

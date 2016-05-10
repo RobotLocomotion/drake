@@ -125,7 +125,7 @@ valuecheck(qsc_cnstr{1}.ub,[0;0]);
 [c_cnstr,dc_cnstr] = qsc_cnstr{1}.eval(q,weights2,kinsol);
 valuecheck(c_cnstr,c2);
 valuecheck(dc_cnstr,dc2);
-[iCfun,jCvar] = qsc_cnstr{1}.getSparseStructure();
+[iCfun,jCvar] = qsc_cnstr{1}.getGradientSparseStructure();
 valuecheck(sparse(iCfun,jCvar,dc2(sub2ind([qsc_cnstr{1}.num_cnstr,qsc_cnstr{1}.xdim],iCfun,jCvar)),...
   qsc_cnstr{1}.num_cnstr,qsc_cnstr{1}.xdim),dc_cnstr);
 valuecheck(qsc_cnstr{2}.lb,1);

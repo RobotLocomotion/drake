@@ -102,8 +102,10 @@ num_cnstr = 1e5;
 xdim = 1e6;
 A = sparse((1:num_cnstr)',(xdim-num_cnstr+1:xdim)',ones(num_cnstr,1),num_cnstr,xdim);
 cnstr = LinearConstraint(-inf(num_cnstr,1),ones(num_cnstr,1),A);
-[iCfun,jCvar,nnz] = cnstr.getSparseStructure();
-valuecheck(A,sparse(iCfun,jCvar,ones(nnz,1),num_cnstr,xdim));
+[iCfun,jCvar,nnz] = cnstr.getGradientSparseStructure();
+if(any(any(sparse(iCfun,jCvar,ones(nnz,1),num_cnstr,xdim)-A)))
+  error('The sparse gradient is wrong');
+end
 end
 
 function [c,dc] = cnstr_userfun2(x)
