@@ -25,7 +25,6 @@ endif()
 
 macro(add_ik_cpp)
   add_executable(${ARGV} ${ARGV}.cpp)
-  set_target_properties(${ARGV} PROPERTIES COMPILE_FLAGS "-fPIC")
   target_link_libraries(${ARGV} drakeRigidBodyConstraint drakeIK)
   add_test( NAME ${ARGV} WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}" COMMAND ${ARGV})
 endmacro()
