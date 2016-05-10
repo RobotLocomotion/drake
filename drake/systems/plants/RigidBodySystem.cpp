@@ -1,5 +1,6 @@
 
 #include "drake/systems/plants/RigidBodySystem.h"
+#include <list>
 #include <stdexcept>
 #include "drake/solvers/Optimization.h"
 #include "drake/systems/plants/constraint/RigidBodyConstraint.h"
@@ -257,7 +258,7 @@ Drake::getInitialState(const RigidBodySystem& sys) {
         std::numeric_limits<double>::infinity();
     Vector3d zero = Vector3d::Zero();
     KinematicsCacheHelper<double> kin_helper(sys.tree->bodies);
-    std::vector<RelativePositionConstraint> constraints;
+    std::list<RelativePositionConstraint> constraints;
     for (int i = 0; i < loops.size(); i++) {
       constraints.push_back(RelativePositionConstraint(
           sys.tree.get(), zero, zero, zero, loops[i].frameA->frame_index,
