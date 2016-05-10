@@ -45,6 +45,7 @@ class DRAKESIMPLECAR_EXPORT SimpleCar {
   ///
   /// Instantiated templates for the following ScalarTypes are provided:
   /// - double
+  /// - Drake::TaylorVarXd
   /// They are already available to link against in libdrakeCars.
   ///
   /// To use other unusual ScalarType substitutions, @see simple_car-inl.h.

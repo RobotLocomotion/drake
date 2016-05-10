@@ -20,3 +20,6 @@ const lcmt_simple_car_config_t SimpleCar::kDefaultConfig = {
 }
 
 DRAKE_SIMPLE_CAR_INSTANTIATE_SCALAR_TYPE(double)
+
+#include "drake/core/Gradient.h"
+DRAKE_SIMPLE_CAR_INSTANTIATE_SCALAR_TYPE(Drake::TaylorVarXd)
