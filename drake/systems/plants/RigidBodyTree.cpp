@@ -201,6 +201,12 @@ void RigidBodyTree::compile(void) {
   }
 
   // Create collision groups
+  CreateCollisionGroups();
+
+  initialized_ = true;
+}
+
+void RigidBodyTree::CreateCollisionGroups() {
   int ncol_groups = 0;
   // 1) For collision elements in the same body
   for(auto& body: bodies) {
@@ -215,8 +221,6 @@ void RigidBodyTree::compile(void) {
         bodies[j]->add_to_collision_group(ncol_groups);
         ++ncol_groups;
       }
-
-  initialized_ = true;
 }
 
 Eigen::VectorXd RigidBodyTree::getZeroConfiguration() const {

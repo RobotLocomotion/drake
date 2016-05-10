@@ -837,6 +837,20 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // See RigidBodyTree::compile
   void SortTree();
 
+  // Define a number of collision groups to be used by DrakeCollision::Model.
+  // The groups defined are:
+  // - One group per RigidBody: and so CollisionElement's in a body do not
+  // collide
+  // - One group per pair of bodies that are not meant to collide. For instance,
+  // adjacent bodies. This is created by querying the information provided by
+  // RigidBody::collidesWith.
+  // Notice that collision groups provide a more general functionality that
+  // could be exploited in the future. For instance, in a robot arm we could
+  // probably like to actually check for collisions between adjacent joints if
+  // we have a precise definition of the geometry. Such extension could be
+  // easily implemented by overriding this method.
+  void CreateCollisionGroups();
+
   // collision_model and collision_model_no_margins both maintain
   // a collection of the collision geometry in the RBM for use in
   // collision detection of different kinds. collision_model has
