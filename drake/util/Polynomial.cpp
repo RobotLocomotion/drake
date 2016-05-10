@@ -203,8 +203,8 @@ Polynomial<CoefficientType> Polynomial<CoefficientType>::evaluatePartial(
     const std::map<VarType, CoefficientType>& var_values) const {
   std::vector<Monomial> new_monomials;
   for (const Monomial& monomial : monomials) {
-    std::vector<Term> new_terms;
     CoefficientType new_coefficient = monomial.coefficient;
+    std::vector<Term> new_terms;
     for (const Term& term : monomial.terms) {
       if (var_values.count(term.var)) {
         new_coefficient *= std::pow(var_values.at(term.var), term.power);

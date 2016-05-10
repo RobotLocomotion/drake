@@ -194,6 +194,8 @@ TEST(SystemIdentificationTest, BASIC_ESTIMATE_TEST_NAME) {
   }
 }
 
+#undef BASIC_ESTIMATE_TEST_NAME
+
 /// Test to check parameter estimation for a basic spring-mass system.
 ///@{
 
@@ -205,7 +207,7 @@ static const double kNoise = 0.01;
 static const double kNoiseSeed = 1;
 
 State AdvanceState(const State& previous, double input_force, double dt) {
-  State next;
+  State next{};
   next.force = input_force;
   next.acceleration = (input_force -
                        previous.velocity * kDamping -
@@ -275,8 +277,8 @@ TEST(SystemIdentificationTest, IDENTIFICATION_TEST_NAME) {
   auto noise = std::bind(noise_distribution, noise_generator);
 
   std::vector<State> oracular_data = MakeTestData();
-  std::vector<SID::PartialEvalType> observed_outputs;
   std::vector<double> observed_inputs;
+  std::vector<SID::PartialEvalType> observed_outputs;
   for (const State& oracular_state : oracular_data) {
     observed_inputs.push_back(oracular_state.force + noise());
     SID::PartialEvalType output;
@@ -295,13 +297,18 @@ TEST(SystemIdentificationTest, IDENTIFICATION_TEST_NAME) {
   // Multiple layers of naive discrete-time numeric integration yields a very
   // high error value here, which almost all lands in the damping constant
   // because it is the smallest term in the equation of motion.
+  //
+  // The value for the error check here is an arbitrary empirical observation,
+  // to catch changes that heavily regress accuracy.
   EXPECT_LT(error, 0.3);
+
   EXPECT_EQ(estimated_params.size(), 3);
   EXPECT_NEAR(estimated_params[mass_var], kMass, kNoise);
   EXPECT_NEAR(estimated_params[damping_var], kDamping,
               observed_inputs.size() * error);
   EXPECT_NEAR(estimated_params[spring_var], kSpring, kNoise);
 }
+#undef IDENTIFICATION_TEST_NAME
 
 ///@}
 

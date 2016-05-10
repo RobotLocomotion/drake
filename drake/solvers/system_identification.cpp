@@ -243,7 +243,7 @@ SystemIdentification<T>::EstimateParameters(
     const std::vector<T>& result_values) {
   assert(active_var_values.size() > 0);
   assert(active_var_values.size() == result_values.size());
-  int num_data = active_var_values.size();
+  const int num_data = active_var_values.size();
 
   const std::set<VarType> all_vars = poly.getVariables();
 
@@ -264,14 +264,22 @@ SystemIdentification<T>::EstimateParameters(
 
   // Make sure we have as many data points as vars we are estimating, or else
   // our solution will be meaningless.
-  assert(num_data > vars_to_estimate.size());
+  assert(num_data >= vars_to_estimate.size());
 
-  // Build up our optimization problem and create any necessary VarType IDs.
+  // Build up our optimization problem's decision variables.
   Drake::OptimizationProblem problem;
   const auto parameter_variables =
       problem.AddContinuousVariables(num_to_estimate, "param");
   const auto error_variables =
       problem.AddContinuousVariables(num_data, "error");
+
+  // Create any necessary VarType IDs.  We build up two lists of VarType:
+  //  * problem_vartypes holds a VarType for each decision variable.  This
+  //    list will be used to build the constraints.
+  //  * error_vartypes holds a VarType for each error variable.  This list
+  //    will be used to build the objective function.
+  // In addition a temporary set, vars_to_estimate_set, is used for ensuring
+  // unique names.
   std::vector<VarType> problem_vartypes = vars_to_estimate;
   std::vector<VarType> error_vartypes;
   std::set<VarType> vars_in_problem = vars_to_estimate_set;

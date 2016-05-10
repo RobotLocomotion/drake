@@ -100,8 +100,8 @@ class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
    * These lists must have the same length.
    *
    * The return value is a pair, {estimates, error}, where:
-   *   * results is a map of polynomial VarTypes (a, b, ...) to their estimated
-   *     values, suitable as input for Polynomial::evaluatePartial.
+   *   * estimates is a map of polynomial VarTypes (a, b, ...) to their
+   *     estimated values, suitable as input for Polynomial::evaluatePartial.
    *   * error is the root-mean-square error of the estimates.
    */
   typedef std::map<VarType, CoefficientType> PartialEvalType;
@@ -158,7 +158,8 @@ class DRAKEOPTIMIZATION_EXPORT SystemIdentification {
   static std::pair<CoefficientType, PolyType>
   CanonicalizePolynomial(const PolyType& poly);
 
-  /// Obtain a new lumped variable ID not already in vars_in_use.
+  /// Obtain a new variable ID not already in vars_in_use.  The string part of
+  /// the variable's name will be prefix.
   static VarType CreateUnusedVar(const std::string& prefix,
                                  const std::set<VarType>& vars_in_use);
 };
