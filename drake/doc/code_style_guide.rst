@@ -62,7 +62,7 @@ Additional Rules
   do not need to be member-initialized, but you can do so if the default
   constructor does not provide the behavior you want. Note that fixed-size
   Eigen objects are intentionally left uninitialized; if you want yours
-  zero-initialized you can member initialize it by passing an appropriate
+  zero-initialized you can member-initialize it by passing an appropriate
   ``Zero``, for example: ``Eigen::Matrix3d mat_{Eigen::Matrix3d::Zero()};``.
 
 MATLAB Style
