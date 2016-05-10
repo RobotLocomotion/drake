@@ -79,6 +79,10 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
    */
   void add_to_collision_group(int group_id);
 
+  int number_of_groups() const;
+
+  std::vector<int> collision_groups() const;
+
   /**
    * A toString method for this class.
    */

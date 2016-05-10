@@ -50,6 +50,10 @@ void Element::add_to_collision_group(int group_id) {
     collision_groups_.insert(it, group_id);
 }
 
+int Element::number_of_groups() const { return collision_groups_.size(); }
+
+std::vector<int> Element::collision_groups() const { return collision_groups_; }
+
 ostream& operator<<(ostream& out, const Element& ee) {
   out << "DrakeCollision::Element:\n"
       << "  - id = " << ee.id << "\n"
