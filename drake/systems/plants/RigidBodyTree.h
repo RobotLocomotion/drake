@@ -834,7 +834,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
   // Reorder body list to make sure parents are before children in
   // the list RigidBodyTree::bodies.
   //
-  // RigidBodyTree::compile
+  // See RigidBodyTree::compile
   void SortTree();
 
   // collision_model and collision_model_no_margins both maintain
