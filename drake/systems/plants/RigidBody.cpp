@@ -5,6 +5,8 @@
 using namespace std;
 using namespace Eigen;
 
+const string RigidBody::kWorldLinkName = "world";
+
 RigidBody::RigidBody()
     : parent(nullptr),
       collision_filter_group(DrakeCollision::DEFAULT_GROUP),
@@ -30,13 +32,14 @@ const DrakeJoint& RigidBody::getJoint() const {
   if (joint) {
     return (*joint);
   } else {
-    if (linkname == "world")
+    if (linkname == std::string(kWorldLinkName)) {
       throw runtime_error(
           "ERROR: Attempted to get the world link's joint. "
           "The world link does not have a joint!");
-    else
+    } else {
       throw runtime_error("Joint of link " + linkname + " in model " +
                           model_name + " is not initialized");
+    }
   }
 }
 

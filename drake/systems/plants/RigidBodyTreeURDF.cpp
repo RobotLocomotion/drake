@@ -297,7 +297,7 @@ bool parseLink(RigidBodyTree* model, std::string robot_name, XMLElement* node,
   if (!attr) throw runtime_error("ERROR: link tag is missing name attribute");
 
   body->linkname = attr;
-  if (body->linkname == "world")
+  if (body->linkname == RigidBody::kWorldLinkName)
     throw runtime_error(
         "ERROR: do not name a link 'world', it is a reserved name");
 

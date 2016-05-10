@@ -47,23 +47,22 @@ RigidBodyTree::RigidBodyTree(
     const std::string& urdf_filename,
     const DrakeJoint::FloatingBaseType floating_base_type)
     : collision_model(DrakeCollision::newModel()) {
-  a_grav << 0, 0, 0, 0, 0, -9.81;
-
-  std::unique_ptr<RigidBody> b(new RigidBody());
-  b->linkname = "world";
-  b->robotnum = 0;
-  b->body_index = 0;
-  bodies.push_back(std::move(b));
-
+  init();
   addRobotFromURDF(urdf_filename, floating_base_type);
 }
 
 RigidBodyTree::RigidBodyTree(void)
     : collision_model(DrakeCollision::newModel()) {
+  init();
+}
+
+void RigidBodyTree::init(void) {
+  // Sets the gravity vector;
   a_grav << 0, 0, 0, 0, 0, -9.81;
 
+  // Adds the rigid body representing the world.
   std::unique_ptr<RigidBody> b(new RigidBody());
-  b->linkname = "world";
+  b->linkname = RigidBody::kWorldLinkName;
   b->robotnum = 0;
   b->body_index = 0;
   bodies.push_back(std::move(b));
@@ -1901,7 +1900,7 @@ int RigidBodyTree::AddFloatingJoint(
     // ensure the "body" variable within weld_to_frame is nullptr. Then, only
     // use the transform_to_body variable within weld_to_frame to initialize
     // the robot at the desired location in the world.
-    if (weld_to_frame->name == "world") {
+    if (weld_to_frame->name == RigidBody::kWorldLinkName) {
       if (weld_to_frame->body != nullptr) {
         throw std::runtime_error(
             "RigidBodyTree::AddFloatingJoint: "

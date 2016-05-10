@@ -48,7 +48,7 @@ int do_main(int argc, const char* argv[]) {
   auto weld_to_frame = allocate_shared<RigidBodyFrame>(
       aligned_allocator<RigidBodyFrame>(),
       // Weld the model to the world link.
-      "world",
+      RigidBody::kWorldLinkName,
 
       // A pointer to a rigid body to which to weld the model is not needed
       // since the model will be welded to the world, which can by automatically
@@ -158,6 +158,4 @@ int do_main(int argc, const char* argv[]) {
 }  // namespace
 }  // namespace drake
 
-int main(int argc, const char* argv[]) {
-  return drake::do_main(argc, argv);
-}
+int main(int argc, const char* argv[]) { return drake::do_main(argc, argv); }

@@ -230,9 +230,12 @@ RigidBodySystem::OutputVector<double> RigidBodySystem::output(
   return y;
 }
 
-const std::vector<std::shared_ptr<RigidBodySensor>>&
-RigidBodySystem::GetSensors() const {
-  return sensors;
+std::vector<const RigidBodySensor*> RigidBodySystem::GetSensors() const {
+  std::vector<const RigidBodySensor*> result;
+  for (size_t ii = 0; ii < sensors.size(); ii++) {
+    result.push_back(sensors[ii].get());
+  }
+  return result;
 }
 
 // todo: move this to a more central location

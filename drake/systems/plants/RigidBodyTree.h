@@ -28,8 +28,7 @@ typedef Eigen::Matrix<double, 3, BASIS_VECTOR_HALF_COUNT> Matrix3kd;
 class DRAKERBM_EXPORT RigidBodyActuator {
  public:
   RigidBodyActuator(
-      const std::string& name, const RigidBody* body,
-      double reduction = 1.0,
+      const std::string& name, const RigidBody* body, double reduction = 1.0,
       double effort_limit_min = -std::numeric_limits<double>::infinity(),
       double effort_limit_max = std::numeric_limits<double>::infinity())
       : name(name),
@@ -820,6 +819,12 @@ class DRAKERBM_EXPORT RigidBodyTree {
   Eigen::MatrixXd B;  // the B matrix maps inputs into joint-space forces
 
  private:
+  /**
+   * Initializes the rigid body tree with the gravity vector
+   * and the rigid body representing the world.
+   */
+  void init(void);
+
   // helper functions for contactConstraints
   template <typename Scalar>
   void accumulateContactJacobian(

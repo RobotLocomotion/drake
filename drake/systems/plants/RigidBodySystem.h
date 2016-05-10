@@ -127,7 +127,10 @@ class LoopConstraint : public LinearEqualityConstraint {
 */
 }
 
-/** RigidBodySystem
+/**
+ * Implements Drake's System concept where state is both joint position
+ * and velocity.
+ *
  * @brief implements the System concept by wrapping the RigidBodyTree algorithms
  * with additional sensors and actuators/forces
  * @concept{system_concept}
@@ -192,21 +195,18 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
     return tree;
   }
 
-  /**
-   * Returns the number of joint states in this rigid body system. This includes
-   * joint position and velocity values.
-   */
+  // This class overrides the System method. See System's documentation for more
+  // details. The state includes both joint position and velocity values. See
+  // class overview description.
   size_t getNumStates() const;
 
-  /**
-   * Returns the total number of inputs to this rigid body system.
-   */
+  // This class overrides the System getNumInputs() method. See System's
+  // documentation for more details.
   size_t getNumInputs() const;
 
-  /**
-   * Returns the total number of outputs of this rigid body system. This
-   * includes both the number of joint states and the number of sensor states.
-   */
+  // This class overrides the System method. See System's documentation for more
+  // details. The outputs include both joint state and the number of sensor
+  // states. See class overview description for more details.
   size_t getNumOutputs() const;
 
   /** dynamics
@@ -253,7 +253,7 @@ class DRAKERBSYSTEM_EXPORT RigidBodySystem {
    * @return a const reference to the sensors vector within this rigid body
    * system.
    */
-  const std::vector<std::shared_ptr<RigidBodySensor>>& GetSensors() const;
+  std::vector<const RigidBodySensor*> GetSensors() const;
 
   // some parameters defining the contact
   bool use_multi_contact;

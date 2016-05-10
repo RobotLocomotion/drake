@@ -1519,13 +1519,13 @@ void Point2PointDistanceConstraint::name(
       if (this->bodyA != 0) {
         bodyA_name = this->robot->bodies[bodyA]->linkname;
       } else {
-        bodyA_name = "World";
+        bodyA_name = RigidBody::kWorldLinkName;
       }
       std::string bodyB_name;
       if (this->bodyB != 0) {
         bodyB_name = this->robot->bodies[bodyB]->linkname;
       } else {
-        bodyB_name = "World";
+        bodyB_name = RigidBody::kWorldLinkName;
       }
       name_str.push_back("Distance from " + bodyA_name + " pt " +
                          std::to_string(i) + " to " + bodyB_name + " pt " +

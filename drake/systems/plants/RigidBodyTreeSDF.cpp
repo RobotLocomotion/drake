@@ -216,7 +216,7 @@ bool parseSDFLink(RigidBodyTree* model, std::string model_name,
   if (!attr) throw runtime_error("ERROR: link tag is missing name attribute");
   body->linkname = attr;
 
-  if (body->linkname == "world")
+  if (body->linkname == RigidBody::kWorldLinkName)
     throw runtime_error(
         "ERROR: do not name a link 'world', it is a reserved name");
 
@@ -579,7 +579,7 @@ void parseModel(RigidBodyTree* model, XMLElement* node,
     // By default, the robot is welded to the world frame.
     if (weld_to_frame == nullptr) {
       weld_to_frame = std::allocate_shared<RigidBodyFrame>(
-          Eigen::aligned_allocator<RigidBodyFrame>(), "world",
+          Eigen::aligned_allocator<RigidBodyFrame>(), RigidBody::kWorldLinkName,
           nullptr,  // Valid since the robot is attached to the world.
           Eigen::Isometry3d::Identity());
     }
@@ -624,11 +624,12 @@ void parseSDF(RigidBodyTree* model, XMLDocument* xml_doc,
         "ERROR: This xml file does not contain an sdf tag");
 
   // If we have a world, load it.
-  XMLElement* world_node = node->FirstChildElement("world");
+  XMLElement* world_node =
+      node->FirstChildElement(RigidBody::kWorldLinkName.c_str());
   if (world_node) {
     // If we have more than one world, it is ambiguous which one the user
     // wishes.
-    if (world_node->NextSiblingElement("world")) {
+    if (world_node->NextSiblingElement(RigidBody::kWorldLinkName.c_str())) {
       throw runtime_error("ERROR: Multiple worlds in file, ambiguous.");
     }
     parseWorld(model, world_node, package_map, root_dir, floating_base_type,
