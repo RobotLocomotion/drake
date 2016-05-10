@@ -12,7 +12,6 @@
 #include <iomanip>
 #include <iostream>
 
-
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
 
@@ -30,10 +29,9 @@ using std::unique_ptr;
 using std::cout;
 using std::endl;
 
-
 namespace drake {
 
-using systems::VectorInterface;
+using systems::ContextBase;
 using systems::BasicVector;
 using systems::BasicStateVector;
 using systems::Context;
@@ -58,7 +56,7 @@ class SpringMassSystemTest : public ::testing::Test {
     // Construct the system I/O objects.
     system_.reset(new SpringMassSystem("test_system", kSpring, kMass));
     context_ = system_->CreateDefaultContext();
-    system_output_ = system_->AllocateOutput();
+    system_output_ = system_->AllocateOutput(*context_);
     system_derivatives_ = system_->AllocateTimeDerivatives();
     const int nq = system_derivatives_->get_generalized_position().size();
     configuration_derivatives_ = std::unique_ptr<BasicStateVector<double>>(
@@ -69,7 +67,7 @@ class SpringMassSystemTest : public ::testing::Test {
     state_ = dynamic_cast<SpringMassStateVector*>(
         context_->get_mutable_state()->continuous_state->get_mutable_state());
     output_ = dynamic_cast<const SpringMassOutputVector*>(
-        system_output_->ports[0]->get_vector_data());
+        system_output_->get_port(0).get_vector_data());
     derivatives_ = dynamic_cast<SpringMassStateVector*>(
         system_derivatives_->get_mutable_state());
   }
@@ -82,7 +80,7 @@ class SpringMassSystemTest : public ::testing::Test {
 
  protected:
   std::unique_ptr<SpringMassSystem> system_;
-  std::unique_ptr<Context<double>> context_;
+  std::unique_ptr<ContextBase<double>> context_;
   std::unique_ptr<SystemOutput<double>> system_output_;
   std::unique_ptr<ContinuousState<double>> system_derivatives_;
   std::unique_ptr<BasicStateVector<double>> configuration_derivatives_;
@@ -129,7 +127,7 @@ TEST_F(SpringMassSystemTest, Output) {
   // Displacement 100cm, vel 250cm/s (.25 is exact in binary).
   InitializeState(0.1, 0.25);
   system_->EvalOutput(*context_, system_output_.get());
-  ASSERT_EQ(1u, system_output_->ports.size());
+  ASSERT_EQ(1, system_output_->get_num_ports());
 
   // Check the output through the application-specific interface.
   EXPECT_NEAR(0.1, output_->get_position(), 1e-14);
@@ -214,7 +212,7 @@ TEST_F(SpringMassSystemTest, ForceEnergyAndPower) {
   EXPECT_EQ(v, 2.0);
   EXPECT_EQ(w_c, 0.0);
   EXPECT_NEAR(f, -k * (q - q0), 1e-14);
-  EXPECT_NEAR(pe, k * (q-q0) * (q-q0) / 2, 1e-14);
+  EXPECT_NEAR(pe, k * (q - q0) * (q - q0) / 2, 1e-14);
   EXPECT_NEAR(ke, m * v * v / 2, 1e-14);
   EXPECT_NEAR(power_c, f * v, 1e-14);
   EXPECT_EQ(power_nc, 0.0);
@@ -232,7 +230,7 @@ The numerical routine here should then be used in a separate test to make sure
 the autodifferentiated matrices agree with the numerical one. Also, consider
 switching to central differences here to get more decimal places. */
 MatrixX<double> CalcDxdotDx(const ContinuousSystem<double>& system,
-                            const Context<double>& context) {
+                            const ContextBase<double>& context) {
   const double perturb = 1e-7;  // roughly sqrt(precision)
   auto derivs0 = system.AllocateTimeDerivatives();
   system.EvalTimeDerivatives(context, derivs0.get());
@@ -259,9 +257,8 @@ MatrixX<double> CalcDxdotDx(const ContinuousSystem<double>& system,
 }
 
 /* Explicit Euler (unstable): x1 = x0 + h xdot(t0,x0) */
-void StepExplicitEuler(double h,
-                       const ContinuousState<double>& derivs,
-                       Context<double>& context) {
+void StepExplicitEuler(double h, const ContinuousState<double>& derivs,
+                       ContextBase<double>& context) {
   const double t = context.get_time();
   // Invalidate all xc-dependent quantities.
   StateVector<double>* xc =
@@ -277,7 +274,7 @@ void StepExplicitEuler(double h,
     q1 = q0 + h qdot(q0,v1) */
 void StepSemiExplicitEuler(double h, const ContinuousSystem<double>& system,
                            ContinuousState<double>& derivs,  // in/out
-                           Context<double>& context) {
+                           ContextBase<double>& context) {
   // Allocate a temp to hold qdot. This would normally be done once per
   // integration, not per time step!
   // const int nq = derivs.get_generalized_position().size();
@@ -322,7 +319,7 @@ void StepSemiExplicitEuler(double h, const ContinuousSystem<double>& system,
     while (norm(dx)/norm(x0) > tol) */
 void StepImplicitEuler(double h, const ContinuousSystem<double>& system,
                        ContinuousState<double>& derivs,  // in/out
-                       Context<double>& context) {
+                       ContextBase<double>& context) {
   const double t = context.get_time();
 
   // Invalidate all xc-dependent quantities.
@@ -332,7 +329,7 @@ void StepImplicitEuler(double h, const ContinuousSystem<double>& system,
   const auto vx0 = x1->CopyToVector();
   const auto& dx0 = derivs.get_state();
   x1->PlusEqScaled(h, dx0);  // x1 += h*dx0 (initial guess)
-  context.set_time(t + h);  // t=t1
+  context.set_time(t + h);   // t=t1
   const int nx = static_cast<int>(vx0.size());
   const auto I = MatrixX<double>::Identity(nx, nx);
 
@@ -355,7 +352,7 @@ void StepImplicitEuler(double h, const ContinuousSystem<double>& system,
 /* Calculate the total energy for this system in the given Context.
 TODO(sherm1): assuming there is only KE and PE to worry about. */
 double CalcEnergy(const SpringMassSystem& system,
-                  const Context<double>& context) {
+                  const ContextBase<double>& context) {
   return system.EvalPotentialEnergy(context) +
          system.EvalKineticEnergy(context);
 }
@@ -385,7 +382,7 @@ TEST_F(SpringMassSystemTest, Integrate) {
   // Allocate resources.
   for (int i = 0; i < kNumIntegrators; ++i) {
     contexts.push_back(system_->CreateDefaultContext());
-    outputs.push_back(system_->AllocateOutput());
+    outputs.push_back(system_->AllocateOutput(*contexts.back()));
     derivs.push_back(system_->AllocateTimeDerivatives());
   }
 
@@ -433,8 +430,8 @@ TEST_F(SpringMassSystemTest, Integrate) {
 
 /* Test that EvalConservativePower() correctly measures the transfer of power
 from potential energy to kinetic energy. We have to integrate the power to
-calculate the net work W(t) done by the spring on the mass. If we set W(0)=0, 
-then it should always hold that 
+calculate the net work W(t) done by the spring on the mass. If we set W(0)=0,
+then it should always hold that
   PE(t) + KE(t) = PE(0) + KE(0)
   KE(t) = KE(0) + W(t)
   PE(t) = PE(0) - W(t)
