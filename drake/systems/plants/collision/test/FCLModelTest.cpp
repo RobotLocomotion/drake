@@ -22,6 +22,12 @@ using namespace std;
 using namespace fcl;
 using namespace Eigen;
 
+using test_func_t =
+    bool (*)(const Transform3f&,
+             const std::vector<Vec3f>&, const std::vector<Triangle>&,
+             const std::vector<Vec3f>&, const std::vector<Triangle>&,
+             SplitMethodType, bool);
+
 // FCL only stuff to explore its behavior.
 
 // Basic shapes (tested box-box)
@@ -229,7 +235,7 @@ bool fcl_collide_test(const Transform3f& tf,
   }
 }
 
-void testFCLMultiPoint() {
+void testFCLMultiPoint(test_func_t test_func) {
   std::cout << "------------------------------------------------\n";
   std::vector<Vec3f> p1(8), p2(6);
   std::vector<Triangle> t1(12), t2(8);
@@ -295,78 +301,21 @@ void testFCLMultiPoint() {
   // Vec3f T(0, 0, 0.5); // bug
   transform1.setTransform(R, T);
 
-  fcl_collide_test<OBB>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEAN, verbose);
-  fcl_collide_test<OBB>(transform1, p1, t1, p2, t2, SPLIT_METHOD_BV_CENTER, verbose);
-  fcl_collide_test<OBB>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEDIAN, verbose);
-  fcl_collide_test<RSS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEAN, verbose);
-  fcl_collide_test<RSS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_BV_CENTER, verbose);
-  fcl_collide_test<RSS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEDIAN, verbose);
-  fcl_collide_test<AABB>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEAN, verbose);
-  fcl_collide_test<AABB>(transform1, p1, t1, p2, t2, SPLIT_METHOD_BV_CENTER, verbose);
-  fcl_collide_test<AABB>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEDIAN, verbose);
-  fcl_collide_test<KDOP<24> >(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEAN, verbose);
-  fcl_collide_test<KDOP<24> >(transform1, p1, t1, p2, t2, SPLIT_METHOD_BV_CENTER, verbose);
-  fcl_collide_test<KDOP<24> >(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEDIAN, verbose);
-  fcl_collide_test<KDOP<18> >(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEAN, verbose);
-  fcl_collide_test<KDOP<18> >(transform1, p1, t1, p2, t2, SPLIT_METHOD_BV_CENTER, verbose);
-  fcl_collide_test<KDOP<18> >(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEDIAN, verbose);
-  fcl_collide_test<KDOP<16> >(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEAN, verbose);
-  fcl_collide_test<KDOP<16> >(transform1, p1, t1, p2, t2, SPLIT_METHOD_BV_CENTER, verbose);
-  fcl_collide_test<KDOP<16> >(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEDIAN, verbose);
-  fcl_collide_test<kIOS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEAN, verbose);
-  fcl_collide_test<kIOS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEDIAN, verbose);
-  fcl_collide_test<kIOS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_BV_CENTER, verbose);
-  fcl_collide_test<OBBRSS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEAN, verbose);
-  fcl_collide_test<OBBRSS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEDIAN, verbose);
-  fcl_collide_test<OBBRSS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_BV_CENTER, verbose);
+  test_func(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEAN, verbose);
+  test_func(transform1, p1, t1, p2, t2, SPLIT_METHOD_BV_CENTER, verbose);
+  test_func(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEDIAN, verbose);
+}
 
-  /*
-  fcl_collide_test2<OBB>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEAN, verbose);
-  fcl_collide_test2<OBB>(transform1, p1, t1, p2, t2, SPLIT_METHOD_BV_CENTER, verbose);
-  fcl_collide_test2<OBB>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEDIAN, verbose);
-  fcl_collide_test2<RSS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEAN, verbose);
-  fcl_collide_test2<RSS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_BV_CENTER, verbose);
-  fcl_collide_test2<RSS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEDIAN, verbose);
-  fcl_collide_test2<AABB>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEAN, verbose);
-  fcl_collide_test2<AABB>(transform1, p1, t1, p2, t2, SPLIT_METHOD_BV_CENTER, verbose);
-  fcl_collide_test2<AABB>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEDIAN, verbose);
-  fcl_collide_test2<KDOP<24> >(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEAN, verbose);
-  fcl_collide_test2<KDOP<24> >(transform1, p1, t1, p2, t2, SPLIT_METHOD_BV_CENTER, verbose);
-  fcl_collide_test2<KDOP<24> >(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEDIAN, verbose);
-  fcl_collide_test2<KDOP<18> >(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEAN, verbose);
-  fcl_collide_test2<KDOP<18> >(transform1, p1, t1, p2, t2, SPLIT_METHOD_BV_CENTER, verbose);
-  fcl_collide_test2<KDOP<18> >(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEDIAN, verbose);
-  fcl_collide_test2<KDOP<16> >(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEAN, verbose);
-  fcl_collide_test2<KDOP<16> >(transform1, p1, t1, p2, t2, SPLIT_METHOD_BV_CENTER, verbose);
-  fcl_collide_test2<KDOP<16> >(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEDIAN, verbose);
-  fcl_collide_test_Oriented<OBB, MeshCollisionTraversalNodeOBB>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEAN, verbose);
-  fcl_collide_test_Oriented<OBB, MeshCollisionTraversalNodeOBB>(transform1, p1, t1, p2, t2, SPLIT_METHOD_BV_CENTER, verbose);
-  fcl_collide_test_Oriented<OBB, MeshCollisionTraversalNodeOBB>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEDIAN, verbose);
-  fcl_collide_test_Oriented<RSS, MeshCollisionTraversalNodeRSS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEAN, verbose);
-  fcl_collide_test_Oriented<RSS, MeshCollisionTraversalNodeRSS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_BV_CENTER, verbose);
-  fcl_collide_test_Oriented<RSS, MeshCollisionTraversalNodeRSS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEDIAN, verbose);
-  test_collide_func<RSS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEDIAN);
-  test_collide_func<OBB>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEDIAN);
-  test_collide_func<AABB>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEDIAN);
-  fcl_collide_test2<kIOS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEAN, verbose);
-  fcl_collide_test2<kIOS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEDIAN, verbose);
-  fcl_collide_test2<kIOS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_BV_CENTER, verbose);
-  fcl_collide_test_Oriented<kIOS, MeshCollisionTraversalNodekIOS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEAN, verbose);
-  fcl_collide_test_Oriented<kIOS, MeshCollisionTraversalNodekIOS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEDIAN, verbose);
-  fcl_collide_test_Oriented<kIOS, MeshCollisionTraversalNodekIOS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_BV_CENTER, verbose);
-  test_collide_func<kIOS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEAN);
-  test_collide_func<kIOS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEDIAN);
-  test_collide_func<kIOS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_BV_CENTER);
-  fcl_collide_test2<OBBRSS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEAN, verbose);
-  fcl_collide_test2<OBBRSS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEDIAN, verbose);
-  fcl_collide_test2<OBBRSS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_BV_CENTER, verbose);
-  fcl_collide_test_Oriented<OBBRSS, MeshCollisionTraversalNodeOBBRSS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEAN, verbose);
-  fcl_collide_test_Oriented<OBBRSS, MeshCollisionTraversalNodeOBBRSS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEDIAN, verbose);
-  fcl_collide_test_Oriented<OBBRSS, MeshCollisionTraversalNodeOBBRSS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_BV_CENTER, verbose);
-  test_collide_func<OBBRSS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEAN);
-  test_collide_func<OBBRSS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_MEDIAN);
-  test_collide_func<OBBRSS>(transform1, p1, t1, p2, t2, SPLIT_METHOD_BV_CENTER);
-  */
+void testFCLMultiPoint() {
+  std::cout << "------------------------------------------------\n";
+  testFCLMultiPoint(&fcl_collide_test<OBB>);
+  testFCLMultiPoint(&fcl_collide_test<RSS>);
+  testFCLMultiPoint(&fcl_collide_test<AABB>);
+  testFCLMultiPoint(&fcl_collide_test<KDOP<24> >);
+  testFCLMultiPoint(&fcl_collide_test<KDOP<18> >);
+  testFCLMultiPoint(&fcl_collide_test<KDOP<16> >);
+  testFCLMultiPoint(&fcl_collide_test<kIOS>);
+  testFCLMultiPoint(&fcl_collide_test<OBBRSS>);
 }
 
 // DrakeCollision stuff
