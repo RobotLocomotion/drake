@@ -39,6 +39,10 @@ class TrigPoly {
   struct SinCosVars {
     VarType s;
     VarType c;
+
+    bool operator==(const struct SinCosVars& other) const {
+      return (s == other.s) && (c == other.c);
+    }
   };
   typedef std::map<VarType, SinCosVars> SinCosMap;
 
@@ -59,7 +63,15 @@ class TrigPoly {
    * additional information about sin and cos relations in _sin_cos_map.
    */
   TrigPoly(const PolyType& p, const SinCosMap& _sin_cos_map)
-      : poly(p), sin_cos_map(_sin_cos_map) {}
+      : poly(p), sin_cos_map(_sin_cos_map) {
+    // The provided _sin_cos_map might have extraneous entries; clip them.
+    std::set<VarType> vars_in_use = p.getVariables();
+    for (const auto& sin_cos_entry : _sin_cos_map) {
+      if (!vars_in_use.count(sin_cos_entry.first)) {
+        sin_cos_map.erase(sin_cos_entry.first);
+      }
+    }
+  }
 
   /**
    * Constructs a TrigPoly version of q, but with the additional information
@@ -217,12 +229,30 @@ class TrigPoly {
     for (const auto& sin_cos_item : sin_cos_map) {
       assert(!var_values.count(sin_cos_item.second.s));
       assert(!var_values.count(sin_cos_item.second.c));
+      if (!var_values.count(sin_cos_item.first)) {
+        continue;
+      }
       var_values_with_sincos[sin_cos_item.second.s] =
           std::sin(var_values.at(sin_cos_item.first));
       var_values_with_sincos[sin_cos_item.second.c] =
           std::cos(var_values.at(sin_cos_item.first));
     }
     return TrigPoly(poly.evaluatePartial(var_values_with_sincos), sin_cos_map);
+  }
+
+  /// Compare two TrigPolys for equality.
+  /**
+   * Note that the question of equality of TrigPolys is a bit subtle.  It is
+   * not immediately clear if two TrigPolys whose poly and sin_cos_map members
+   * differ equivalently (eg, a + b (b = cos(a)) and a + c (c = cos(a))) should
+   * be considered equal.
+   *
+   * For simplicity we only consider exactly equality rather than semantic
+   * equivalence.  However that decision could reasonably revisited in the
+   * future.
+   */
+  bool operator==(const TrigPoly& other) const {
+    return (poly == other.poly) && (sin_cos_map == other.sin_cos_map);
   }
 
   TrigPoly& operator+=(const TrigPoly& other) {
