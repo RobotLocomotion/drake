@@ -1,11 +1,10 @@
-#include "drake/examples/Cars/simple_car.h"
-
 #include <cmath>
 
 #include "drake/Path.h"
 
 #include "drake/examples/Cars/gen/euler_floating_joint_state.h"
 #include "drake/examples/Cars/lcm_tap.h"
+#include "drake/examples/Cars/simple_car-inl.h"
 #include "drake/systems/LCMSystem.h"
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/plants/BotVisualizer.h"
