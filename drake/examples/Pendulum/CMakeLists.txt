@@ -5,9 +5,7 @@ if (LCM_FOUND)
 
   add_executable(runPendulumEnergyShaping runEnergyShaping.cpp)
   target_link_libraries(runPendulumEnergyShaping drakeRBM drakeLCMSystem)
-#  add_test(NAME runPendulumEnergyShaping COMMAND runPendulumEnergyShaping --non-realtime)
-#  set_tests_properties(runPendulumEnergyShaping PROPERTIES TIMEOUT 10)
-    # disabled for now since it's not a good test, since it will always timeout
+  # add_test(NAME runPendulumEnergyShaping COMMAND runPendulumEnergyShaping --non-realtime)  # FIXME: disabled for now since it's not a good test, since it will always timeout
 
   add_executable(runPendulumLQR runLQR.cpp)
   target_link_libraries(runPendulumLQR drakeRBM drakeLCMSystem)
@@ -37,7 +35,10 @@ add_matlab_test(NAME examples/Pendulum/runLQRtest COMMAND runLQRtest)
 add_matlab_test(NAME examples/Pendulum/runPassive COMMAND runPassive)
 add_matlab_test(NAME examples/Pendulum/runPassiveURDF COMMAND runPassiveURDF)
 add_matlab_test(NAME examples/Pendulum/runSwingUp COMMAND runSwingUp)
-add_matlab_test(NAME examples/Pendulum/runTrajectorySwingUpAndBalance COMMAND runTrajectorySwingUpAndBalance)
 add_matlab_test(NAME examples/Pendulum/runTrigLQR COMMAND runTrigLQR)
 add_matlab_test(NAME examples/Pendulum/runValueIteration COMMAND runValueIteration)
 add_matlab_test(NAME examples/Pendulum/PendulumEnergyControl.run COMMAND PendulumEnergyControl.run)
+
+if (LONG_RUNNING_TESTS)
+  # add_matlab_test(NAME examples/Pendulum/runTrajectorySwingUpAndBalance COMMAND runTrajectorySwingUpAndBalance PROPERTIES TIMEOUT 1500)  # FIXME: see #2305
+endif()

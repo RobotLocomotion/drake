@@ -90,12 +90,12 @@ Next steps
    installation
    Introduction and Examples <http://underactuated.csail.mit.edu/underactuated.html?chapter=drake>
    developers
-   Doxygen (MATLAB) <http://drake002.csail.mit.edu/drake/doxygen_matlab/>
-   Doxygen (C++) <http://drake002.csail.mit.edu/drake/doxygen_cpp/>
+   Doxygen (C++) <doxygen_cxx/index.html#://>
+   Doxygen (MATLAB) <doxygen_matlab/index.html#://>
    URDF Reference <http://drake002.csail.mit.edu/drake/urdf/drakeURDF.html>
    faq
    issues
    video_tutorials
    Mailing list <http://mailman.mit.edu/mailman/listinfo/drake-users>
    credits
-   GitHub <http://github.com/RobotLocomotion/drake>
+   GitHub <https://github.com/RobotLocomotion/drake>

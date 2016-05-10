@@ -71,4 +71,4 @@ nv = plant.getNumVelocities();
 valuecheck(xtraj_data(1:nq,:),xtraj_ts_data(1:nq,:),position_tol); % is there a correct tolerance here?
 valuecheck(xtraj_data(nq+(1:nv),:),xtraj_ts_data(nq+(1:nv),:),velocity_tol); % is there a correct tolerance here?
 
-
+% TIMEOUT 750

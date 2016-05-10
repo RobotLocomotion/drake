@@ -124,3 +124,6 @@ utorso_upright = WorldGazeDirConstraint(r,utorso,[0;0;1],[0;0;1],0.05*pi);
 cnstr = [lfoot_cnstr,rfoot_cnstr,{qsc,utorso_upright}];
 
 end
+
+% TIMEOUT 1500
+
