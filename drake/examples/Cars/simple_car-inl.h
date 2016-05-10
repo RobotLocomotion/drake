@@ -1,5 +1,9 @@
 #pragma once
 
+/// @file
+/// Templated method implementation for @see simple_car.h.
+/// Most users should only include that file, not this one.
+
 #include "simple_car.h"
 
 #include <algorithm>
@@ -7,6 +11,7 @@
 
 #include <Eigen/Geometry>
 
+#include "drake/drakeSimpleCar_export.h"
 #include "drake/examples/Cars/gen/driving_command.h"
 #include "drake/examples/Cars/gen/simple_car_state.h"
 
@@ -52,3 +57,19 @@ SimpleCar::OutputVector<ScalarType> SimpleCar::output(
 }
 
 }  // namespace drake
+
+/// At outermost scope, invoke this macro to explicitly instantiate
+/// all ScalarType-using definitions that are declared by simple_car.h.
+#define DRAKE_SIMPLE_CAR_INSTANTIATE_SCALAR_TYPE(ScalarType)            \
+template DRAKESIMPLECAR_EXPORT                                          \
+::drake::SimpleCar::StateVector<ScalarType>                             \
+drake::SimpleCar::dynamics(                                             \
+      const ScalarType&,                                                \
+      const ::drake::SimpleCar::StateVector<ScalarType>&,               \
+      const ::drake::SimpleCar::InputVector<ScalarType>&) const;        \
+template DRAKESIMPLECAR_EXPORT                                          \
+::drake::SimpleCar::OutputVector<ScalarType>                            \
+drake::SimpleCar::output(                                               \
+    const ScalarType&,                                                  \
+    const ::drake::SimpleCar::StateVector<ScalarType>&,                 \
+    const ::drake::SimpleCar::InputVector<ScalarType>&) const;

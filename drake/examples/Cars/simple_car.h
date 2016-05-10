@@ -38,7 +38,11 @@ class DRAKESIMPLECAR_EXPORT SimpleCar {
   const drake::lcmt_simple_car_config_t& config() const { return config_; }
 
   /// @name Implement the Drake System concept.
-  /// @tparam ScalarType must be ... TODO(jwnimmer-tri)
+  /// @tparam ScalarType must support certain math operations TBD later.
+  ///
+  /// Instantiated templates for the following ScalarTypes are provided:
+  /// - double
+  /// To use other unusual ScalarType substitutions, @see simple_car-inl.h.
   //@{
 
   template <typename ScalarType>

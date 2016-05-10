@@ -1,4 +1,4 @@
-#include "drake/examples/Cars/simple_car-inl.h"
+#include "drake/examples/Cars/simple_car.h"
 
 #include <cmath>
 #include <memory>
