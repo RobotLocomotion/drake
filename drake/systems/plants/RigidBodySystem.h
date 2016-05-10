@@ -481,24 +481,54 @@ class DRAKERBSYSTEM_EXPORT RigidBodyDepthSensor : public RigidBodySensor {
 
   size_t getNumOutputs() const override;
 
+  /**
+   * Returns the number of points in the image vertically (pitch).
+   */
   virtual size_t get_num_pixel_rows() const;
 
+  /**
+   * Returns the number of points in the image horizontally (yaw).
+   */
   virtual size_t get_num_pixel_cols() const;
 
+  /**
+   * Returns whether this depth sensor scans vertically.
+   */
   virtual bool is_vertical_scanner() const;
 
+  /**
+   * Returns whether this depth sensor scans horizontally.
+   */
   virtual bool is_horizontal_scanner() const;
 
+  /**
+   * Returns minimum pitch of this sensor's FOV in radians.
+   */
   virtual double get_min_pitch() const;
 
+  /**
+   * Returns maximum pitch of this sensor's FOV in radians.
+   */
   virtual double get_max_pitch() const;
 
+  /**
+   * Returns the minimum yaw of this sensor's FOV in radians.
+   */
   virtual double get_min_yaw() const;
 
+  /**
+   * Returns the maximum yaw of this sensor's FOV in radians.
+   */
   virtual double get_max_yaw() const;
 
+  /**
+   * Returns the minimum range of this sensor in meters.
+   */
   virtual double get_min_range() const;
 
+  /**
+   * Returns the maximum range of this sensor in meters.
+   */
   virtual double get_max_range() const;
 
   Eigen::VectorXd output(
