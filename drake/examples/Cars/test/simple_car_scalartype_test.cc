@@ -22,7 +22,6 @@ struct MST {
 
   bool operator<(const MST&) const { return true; }
 };
-MST remainder(const MST&, const MST&) { return MST{}; }
 MST sin(const MST&) { return MST{}; }
 MST cos(const MST&) { return MST{}; }
 MST tan(const MST&) { return MST{}; }

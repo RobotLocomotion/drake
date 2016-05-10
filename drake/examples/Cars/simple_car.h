@@ -23,8 +23,9 @@ namespace drake {
 /// * velocity
 ///
 /// input vector:
-/// * steering angle (virtual center wheel angle, with some limits);
-///   a positive angle means a positive change in heading (left turn)
+/// * steering angle (virtual center wheel angle);
+///   a positive angle means a positive change in heading (left turn);
+///   the value must lie within (-pi, +pi).
 /// * throttle (0-1)
 /// * brake (0-1)
 ///
