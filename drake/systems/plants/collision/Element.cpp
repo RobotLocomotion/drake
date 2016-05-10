@@ -20,7 +20,8 @@ Element::Element(const DrakeShapes::Geometry& geometry,
 }
 
 Element::Element(const Element& other)
-    : DrakeShapes::Element(other), id((ElementId) this), body_(other.body_) {}
+    : DrakeShapes::Element(other), id((ElementId) this), body_(other.body_),
+      collision_groups_(other.collision_groups_) {}
 
 Element* Element::clone() const { return new Element(*this); }
 
