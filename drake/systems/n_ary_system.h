@@ -5,7 +5,7 @@
 #include "drake/systems/n_ary_state.h"
 
 
-namespace Drake {
+namespace drake {
 
 template <class UnitSystem>
 class NArySystem {

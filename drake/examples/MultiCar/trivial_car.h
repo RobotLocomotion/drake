@@ -11,7 +11,7 @@
 #include "drake/drakeTrivialCar_export.h"
 #include "drake/examples/MultiCar/trivial_car_state.h"
 
-namespace Drake {
+namespace drake {
 
 /// TrivialCar - no physics, no commands, just sits there.
 ///

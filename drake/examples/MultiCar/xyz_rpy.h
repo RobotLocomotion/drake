@@ -2,7 +2,7 @@
 
 #include <Eigen/Core>
 
-namespace Drake {
+namespace drake {
 
 template <typename ScalarType>
 class XyzRpy { // models Drake::Vector
