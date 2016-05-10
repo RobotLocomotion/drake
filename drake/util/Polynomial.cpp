@@ -292,6 +292,15 @@ Polynomial<CoefficientType> Polynomial<CoefficientType>::integral(
 }
 
 template <typename CoefficientType>
+bool Polynomial<CoefficientType>::operator==(
+    const Polynomial<CoefficientType>& other) const {
+  const std::set<Monomial> this_monomials(monomials.begin(), monomials.end());
+  const std::set<Monomial> other_monomials(other.monomials.begin(),
+                                           other.monomials.end());
+  return this_monomials == other_monomials;
+}
+
+template <typename CoefficientType>
 Polynomial<CoefficientType>& Polynomial<CoefficientType>::operator+=(
     const Polynomial<CoefficientType>& other) {
   for (typename vector<Monomial>::const_iterator iter = other.monomials.begin();
@@ -543,6 +552,10 @@ template <typename CoefficientType>
 void Polynomial<CoefficientType>::makeMonomialsUnique(void) {
   VarType unique_var = 0;  // also update the univariate flag
   for (ptrdiff_t i = monomials.size() - 1; i >= 0; i--) {
+    if (monomials[i].coefficient == 0) {
+      monomials.erase(monomials.begin() + i);
+      continue;
+    }
     Monomial& mi = monomials[i];
     if (!mi.terms.empty()) {
       if (mi.terms.size() > 1) is_univariate = false;
