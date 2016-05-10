@@ -29,6 +29,9 @@ ElementId Element::getId() const { return id; }
 const RigidBody& Element::getBody() const { return *body_; }
 
 bool Element::CollidesWith(const Element* other) const {
+  // Do not collide with self
+  if(this == other) return false;
+
   // If collision_groups_.size() = N and other->collision_groups_.size() = M
   // The worst case (no intersection) is O(N+M).
   return !have_intersection(collision_groups_.begin(), collision_groups_.end(),
