@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include "drake/systems/n_ary_state.h"
@@ -7,6 +8,9 @@
 
 namespace drake {
 
+/// A System which aggregates multiple instances of a UnitSystem system.
+/// The aggregate state, input, and output vectors are composed of the
+/// concatenation of the respective vectors of the component systems.
 template <class UnitSystem>
 class NArySystem {
  public:
@@ -22,6 +26,7 @@ class NArySystem {
 
   NArySystem() {}
 
+  /// Add @param system to the end of the NArySystem's list of UnitSystems.
   void addSystem(std::shared_ptr<UnitSystem> system) {
     systems_.push_back(system);
   }
@@ -31,6 +36,12 @@ class NArySystem {
   StateVector<ScalarType> dynamics(const ScalarType& time,
                                    const StateVector<ScalarType>& state,
                                    const InputVector<ScalarType>& input) const {
+    if ((state.count() >= 0) && (state.count() != systems_.size())) {
+      throw std::invalid_argument("State count differs from systems count.");
+    }
+    if ((input.count() >= 0) && (input.count() != systems_.size())) {
+      throw std::invalid_argument("Input count differs from systems count.");
+    }
     StateVector<ScalarType> xdot(systems_.size());
     for (std::size_t i = 0; i < systems_.size(); ++i) {
       xdot.set(i, systems_[i]->dynamics(time, state.get(i), input.get(i)));
@@ -43,6 +54,12 @@ class NArySystem {
   OutputVector<ScalarType> output(const ScalarType& time,
                                   const StateVector<ScalarType>& state,
                                   const InputVector<ScalarType>& input) const {
+    if ((state.count() >= 0) && (state.count() != systems_.size())) {
+      throw std::invalid_argument("State count differs from systems count.");
+    }
+    if ((input.count() >= 0) && (input.count() != systems_.size())) {
+      throw std::invalid_argument("Input count differs from systems count.");
+    }
     OutputVector<ScalarType> y(systems_.size());
     for (std::size_t i = 0; i < systems_.size(); ++i) {
       y.set(i, systems_[i]->output(time, state.get(i), input.get(i)));
