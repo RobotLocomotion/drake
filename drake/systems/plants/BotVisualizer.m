@@ -44,7 +44,8 @@ classdef BotVisualizer < RigidBodyVisualizer
           disp('attempting to launch the drake director')
           retval = systemWCMakeEnv([fullfile(pods_get_bin_path,'drake-visualizer'),' &> drake-visualizer.out &']);
 
-          if isempty(obj.status_agg.getNextMessage(5000)) % wait for viewer to come up
+          if isempty(obj.status_agg.getNextMessage(10000)) % wait for viewer to come up
+            type drake-visualizer.out
             error('Drake:BotVisualizer:AutostartFailed','Failed to automatically start up a viewer (or to receive the ack, see https://github.com/RobotLocomotion/drake/issues/317)');
           end
         end
