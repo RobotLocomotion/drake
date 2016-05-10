@@ -84,7 +84,7 @@ class FCLModel : public Model {
 
   class unknownShapeException : public std::exception {
    public:
-    unknownShapeException(DrakeShapes::Shape shape);
+    explicit unknownShapeException(DrakeShapes::Shape shape);
     virtual const char* what() const throw();
     virtual ~unknownShapeException() throw() {}
 
