@@ -49,5 +49,7 @@ class DRAKERBM_EXPORT RigidBodyFrame {
   int frame_index;  // this will be negative, but will also be gone soon!
 
  public:
+#ifndef SWIG
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
