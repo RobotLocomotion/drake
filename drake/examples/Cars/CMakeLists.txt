@@ -22,4 +22,9 @@ if (LCM_FOUND)
   add_executable(car_sim_lcm car_sim_lcm.cpp)
   add_dependencies(car_sim_lcm drake_lcmtypes lcmtype_agg_hpp)
   target_link_libraries(car_sim_lcm drakeRBSystem drakeLCMSystem)
+
+  drake_install_headers(trivial_car.h)
+  add_executable(demo_multi_car demo_multi_car.cc)
+  target_link_libraries(demo_multi_car drakeRBSystem drakeLCMSystem)
+
 endif (LCM_FOUND)

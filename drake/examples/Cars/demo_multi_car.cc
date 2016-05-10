@@ -9,12 +9,11 @@
 #include "drake/systems/LinearSystem.h"
 #include "drake/systems/n_ary_state.h"
 #include "drake/systems/n_ary_system.h"
-#include "drake/systems/Simulation.h"
 #include "drake/systems/plants/BotVisualizer.h"
 #include "drake/systems/plants/RigidBodyTree.h"
 
-#include "drake/examples/MultiCar/trivial_car.h"
-#include "drake/examples/MultiCar/xyz_rpy.h"
+#include "drake/examples/Cars/trivial_car.h"
+#include "drake/examples/Cars/xyz_rpy.h"
 
 
 int main(int argc, const char* argv[]) {
@@ -29,9 +28,7 @@ int main(int argc, const char* argv[]) {
 
   // Make a linear system to map NPC car state to the state vector of a
   // floating joint, allowing motion and steering in the x-y plane only.
-  //
   drake::XyzRpy<double> y0(0., 0., 0., 0., 0., M_PI / 2.);
-
   const int insize = drake::TrivialCarState<double>::RowsAtCompileTime;
   const int outsize = drake::XyzRpy<double>::RowsAtCompileTime;
   Eigen::Matrix<double, outsize, insize> D;
@@ -42,7 +39,6 @@ int main(int argc, const char* argv[]) {
       0, 0,  0,  // roll
       0, 0,  0,  // pitch
       0, 0, -1;  // yaw
-
   auto car_vis_adapter = std::make_shared<
     Drake::AffineSystem<Drake::NullVector,
                         drake::TrivialCarState,
@@ -54,18 +50,27 @@ int main(int argc, const char* argv[]) {
       toEigen(y0));
 
   const std::string SEDAN_URDF = Drake::getDrakePath() +
-      "/examples/MultiCar/sedan.urdf";
+      "/examples/Cars/models/sedan.urdf";
   const std::string BREADTRUCK_URDF = Drake::getDrakePath() +
-      "/examples/MultiCar/breadtruck.urdf";
+      "/examples/Cars/models/breadtruck.urdf";
 
   // RigidBodyTree for visualization.
   auto world_tree = std::make_shared<RigidBodyTree>();
 
   // NarySystem for car 'physics'.
-  // NB:  One could compose the other way as well.
+  //  U: ()
+  //  X: ()
+  //  Y: [(xy-position, heading), ...] per TrivialCarState
   auto cars_system = std::make_shared<drake::NArySystem<drake::TrivialCar> >();
   // NarySystem for car visualization.
+  // BotVisualizer:
+  //  U: [(xy-position, heading), ...] per TrivialCarState
+  //  X: ()
+  //  Y: [(x, y, z, roll, pitch, yaw), ...] per DrakeJoint::ROLLPITCHYAW per car
   auto cars_vis_adapter = std::make_shared<drake::NArySystem<decltype(car_vis_adapter)::element_type> >();
+  // NB:  One could compose the other way as well (i.e., individually cascade
+  // each TrivialCar with a car_vis_adapter, and then stack each of those pairs
+  // into a single NArySystem).
 
   // Create one Sedan.
   world_tree->addRobotFromURDF(SEDAN_URDF,
@@ -73,7 +78,7 @@ int main(int argc, const char* argv[]) {
                                nullptr /*weld_to_frame*/);
   // TODO maddog  Hmm... it appears that drake_visualizer wants unique names,
   //              on *links*, otherwise only one of the same-named links will
-  //              be get updated joint parameters.
+  //              get updated joint parameters.
   world_tree->bodies.back()->linkname = "sedan1";
   auto sedan_system = std::make_shared<drake::TrivialCar>(0., 5., 0.3, 2.0);
   cars_system->addSystem(sedan_system);
@@ -97,7 +102,7 @@ int main(int argc, const char* argv[]) {
   cars_system->addSystem(sedan2_system);
   cars_vis_adapter->addSystem(car_vis_adapter);
 
-  // Meh, need more cars!
+  // Meh, need a lot more cars!
   for (int i = 0; i < num_extra_cars; ++i) {
     world_tree->addRobotFromURDF(
         (i % 2) ? SEDAN_URDF : BREADTRUCK_URDF,
@@ -107,6 +112,7 @@ int main(int argc, const char* argv[]) {
     name << "car-" << i;
     world_tree->bodies.back()->linkname = name.str();
     auto system = std::make_shared<drake::TrivialCar>(
+        // Hackery to spread them around a little on the plane.
         (i % 19 - 10) * 10.,
         ((i + 11) % 23 - 11) * 10.,
         0.0,
@@ -114,17 +120,6 @@ int main(int argc, const char* argv[]) {
     cars_system->addSystem(system);
     cars_vis_adapter->addSystem(car_vis_adapter);
   }
-
-
-  // NpcCarSystem:
-  //  U:  ()
-  //  X:  ()
-  //  Y:  (xy-position, heading)   SingleNpcCarState
-
-  // BotVisualizer:  DrakeJoint::ROLLPITCHYAW per NPC
-  //  U: (x, y, z, roll, pitch, yaw)
-  //  X: ()
-  //  Y: [== U]
 
   std::shared_ptr<lcm::LCM> lcm = std::make_shared<lcm::LCM>();
   auto visualizer =

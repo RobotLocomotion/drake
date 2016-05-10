@@ -4,6 +4,8 @@
 
 namespace drake {
 
+/// Simple Drake::Vector-concept class which captures the parameters of
+/// a DrakeJoint::ROLLPITCHYAW (Euler angle) floating joint.
 template <typename ScalarType>
 class XyzRpy { // models Drake::Vector
  public:
@@ -34,4 +36,4 @@ class XyzRpy { // models Drake::Vector
  private:
   EigenType vector_;
 };
-} // namespace Drake
+} // namespace drake
