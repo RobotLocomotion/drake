@@ -3,8 +3,8 @@
 #include <string>
 
 #include "drake/drakeSystemFramework_export.h"
+#include "drake/systems/framework/abstract_context.h"
 #include "drake/systems/framework/cache.h"
-#include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system_output.h"
 
 namespace drake {
@@ -48,18 +48,21 @@ class SystemInterface : public AbstractSystemInterface {
  public:
   /// Returns a default context, initialized with the correct
   /// numbers of concrete input ports and state variables for this System.
-  /// Since input port pointers are not owned by the Context, they should
+  /// Since input port pointers are not owned by the context, they should
   /// simply be initialized to nullptr.
-  virtual std::unique_ptr<Context<T>> CreateDefaultContext() const = 0;
+  virtual std::unique_ptr<AbstractContext<T>> CreateDefaultContext() const = 0;
 
   /// Returns a default output, initialized with the correct number of
-  /// concrete output ports for this System.
-  virtual std::unique_ptr<SystemOutput<T>> AllocateOutput() const = 0;
+  /// concrete output ports for this System. @p context is provided as
+  /// an argument to support some specialized use cases. Most typical
+  /// System implementations should ignore it.
+  virtual std::unique_ptr<SystemOutputInterface<T>> AllocateOutput(
+      const AbstractContext<T>& context) const = 0;
 
   /// Computes the output for the given context, possibly updating values
   /// in the cache.
-  virtual void EvalOutput(const Context<T>& context,
-                          SystemOutput<T>* output) const = 0;
+  virtual void EvalOutput(const AbstractContext<T>& context,
+                          SystemOutputInterface<T>* output) const = 0;
 
   // TODO(sherm): these two energy methods should be present only for systems
   // that represent some kind of physical system that can store energy in its
@@ -70,14 +73,16 @@ class SystemInterface : public AbstractSystemInterface {
   // systems.
 
   /// Return the potential energy currently stored in the configuration provided
-  /// in the given Context. Non-physical Systems will return 0.
-  virtual T EvalPotentialEnergy(const Context<T>& context) const {
+  /// in the given @p context. Non-physical Systems will return 0.
+  virtual T EvalPotentialEnergy(const AbstractContext<T>& context) const {
     return T(0);
   }
 
   /// Return the kinetic energy currently present in the motion provided in the
-  /// given Context. Non-physical Systems will return 0.
-  virtual T EvalKineticEnergy(const Context<T>& context) const { return T(0); }
+  /// given @p context. Non-physical Systems will return 0.
+  virtual T EvalKineticEnergy(const AbstractContext<T>& context) const {
+    return T(0);
+  }
 
  protected:
   SystemInterface() {}

@@ -2,12 +2,14 @@
 
 namespace drake {
 
+using systems::AbstractContext;
 using systems::BasicVector;
 using systems::Context;
 using systems::ContinuousState;
 using systems::OutputPort;
 using systems::StateVector;
 using systems::SystemOutput;
+using systems::SystemOutputInterface;
 using systems::VectorInterface;
 
 namespace examples {
@@ -46,7 +48,8 @@ SpringMassStateVector* SpringMassStateVector::DoClone() const {
 }
 
 SpringMassOutputVector::SpringMassOutputVector()
-    : BasicVector<double>(kStateSize-1) {}  // don't output conservative energy
+    : BasicVector<double>(kStateSize - 1) {
+}  // don't output conservative energy
 
 double SpringMassOutputVector::get_position() const { return get_value()[0]; }
 double SpringMassOutputVector::get_velocity() const { return get_value()[1]; }
@@ -73,25 +76,21 @@ SpringMassSystem::SpringMassSystem(const std::string& name,
       mass_kg_(mass_kg) {}
 
 double SpringMassSystem::EvalSpringForce(const MyContext& context) const {
-  const double k = spring_constant_N_per_m_,
-               x = get_position(context),
+  const double k = spring_constant_N_per_m_, x = get_position(context),
                x0 = 0.,  // TODO(david-german-tri) should be a parameter.
-               stretch = x - x0, f = -k * stretch;
+      stretch = x - x0, f = -k * stretch;
   return f;
 }
 
 double SpringMassSystem::EvalPotentialEnergy(const MyContext& context) const {
-  const double k = spring_constant_N_per_m_,
-               x = get_position(context),
+  const double k = spring_constant_N_per_m_, x = get_position(context),
                x0 = 0.,  // TODO(david-german-tri) should be a parameter.
-               stretch = x - x0, pe = k * stretch * stretch / 2;
+      stretch = x - x0, pe = k * stretch * stretch / 2;
   return pe;
 }
 
 double SpringMassSystem::EvalKineticEnergy(const MyContext& context) const {
-  const double m = mass_kg_,
-               v = get_velocity(context),
-               ke = m * v * v / 2;
+  const double m = mass_kg_, v = get_velocity(context), ke = m * v * v / 2;
   return ke;
 }
 
@@ -108,9 +107,9 @@ double SpringMassSystem::EvalNonConservativePower(const MyContext&) const {
 std::string SpringMassSystem::get_name() const { return name_; }
 
 // Reserve a context with no input, and a SpringMassStateVector state.
-std::unique_ptr<Context<double>> SpringMassSystem::CreateDefaultContext()
-    const {
-  std::unique_ptr<Context<double>> context(new Context<double>);
+std::unique_ptr<AbstractContext<double>>
+SpringMassSystem::CreateDefaultContext() const {
+  std::unique_ptr<AbstractContext<double>> context(new Context<double>);
   std::unique_ptr<SpringMassStateVector> state(new SpringMassStateVector(0, 0));
   context->get_mutable_state()->continuous_state.reset(
       new ContinuousState<double>(std::move(state), 1 /* size of q */,
@@ -118,15 +117,16 @@ std::unique_ptr<Context<double>> SpringMassSystem::CreateDefaultContext()
   return context;
 }
 
-std::unique_ptr<SystemOutput<double>> SpringMassSystem::AllocateOutput() const {
+std::unique_ptr<SystemOutputInterface<double>> SpringMassSystem::AllocateOutput(
+    const AbstractContext<double>& context) const {
   std::unique_ptr<SystemOutput<double>> output(new SystemOutput<double>);
   {
     std::unique_ptr<VectorInterface<double>> data(new SpringMassOutputVector());
     std::unique_ptr<OutputPort<double>> port(
         new OutputPort<double>(std::move(data)));
-    output->ports.push_back(std::move(port));
+    output->get_mutable_ports()->push_back(std::move(port));
   }
-  return output;
+  return std::unique_ptr<SystemOutputInterface<double>>(output.release());
 }
 
 std::unique_ptr<ContinuousState<double>>
@@ -139,8 +139,8 @@ SpringMassSystem::AllocateTimeDerivatives() const {
 }
 
 // Assign the state to the output.
-void SpringMassSystem::EvalOutput(const Context<double>& context,
-                                  SystemOutput<double>* output) const {
+void SpringMassSystem::EvalOutput(const AbstractContext<double>& context,
+                                  SystemOutputInterface<double>* output) const {
   // TODO(david-german-tri): Cache the output of this function.
   const SpringMassStateVector& state = get_state(context);
   SpringMassOutputVector* output_vector = get_mutable_output(output);
@@ -150,7 +150,7 @@ void SpringMassSystem::EvalOutput(const Context<double>& context,
 
 // Compute the actual physics.
 void SpringMassSystem::EvalTimeDerivatives(
-    const Context<double>& context,
+    const AbstractContext<double>& context,
     ContinuousState<double>* derivatives) const {
   // TODO(david-german-tri): Cache the output of this function.
   const SpringMassStateVector& state = get_state(context);
