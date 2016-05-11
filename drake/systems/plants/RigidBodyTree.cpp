@@ -209,14 +209,14 @@ void RigidBodyTree::compile(void) {
 void RigidBodyTree::CreateCollisionGroups() {
   int ncol_groups = 0;
   // 1) For collision elements in the same body
-  for(auto& body: bodies) {
+  for (auto& body : bodies) {
     body->add_to_collision_group(ncol_groups++);
   }
 
   // 2) For collision elements in different bodies
-  for(int i = 0; i < bodies.size(); ++i)
-    for(int j = i+1; j < bodies.size(); ++j)
-      if(!bodies[i]->CollidesWith(*bodies[j])){
+  for (int i = 0; i < bodies.size(); ++i)
+    for (int j = i + 1; j < bodies.size(); ++j)
+      if (!bodies[i]->CollidesWith(*bodies[j])) {
         bodies[i]->add_to_collision_group(ncol_groups);
         bodies[j]->add_to_collision_group(ncol_groups);
         ++ncol_groups;
@@ -424,7 +424,7 @@ void RigidBodyTree::collisionDetectFromPoints(
     normal.col(i) = n;
     phi[i] = distance;
     const DrakeCollision::Element* elementB =
-            collision_model->readElement(closest_points[i].getIdB());
+        collision_model->readElement(closest_points[i].getIdB());
     body_idx.push_back(elementB->getBody().body_index);
   }
 }
@@ -482,7 +482,7 @@ bool RigidBodyTree::collisionDetect(
     normal.col(i) = n;
     phi[i] = distance;
     const DrakeCollision::Element* elementA =
-            collision_model->readElement(points[i].getIdA());
+        collision_model->readElement(points[i].getIdA());
     // DEBUG
     // cout << "RigidBodyTree::collisionDetect: points[i].getIdA() = " <<
     // points[i].getIdA() << endl;
@@ -497,7 +497,7 @@ bool RigidBodyTree::collisionDetect(
     // END_DEBUG
     bodyA_idx.push_back(elementA->getBody().body_index);
     const DrakeCollision::Element* elementB =
-            collision_model->readElement(points[i].getIdB());
+        collision_model->readElement(points[i].getIdB());
     bodyB_idx.push_back(elementB->getBody().body_index);
   }
   return points_found;
@@ -599,9 +599,9 @@ void RigidBodyTree::potentialCollisions(const KinematicsCache<double>& cache,
 
   for (size_t i = 0; i < num_potential_collisions; i++) {
     const DrakeCollision::Element* elementA =
-            collision_model->readElement(potential_collisions[i].getIdA());
+        collision_model->readElement(potential_collisions[i].getIdA());
     const DrakeCollision::Element* elementB =
-            collision_model->readElement(potential_collisions[i].getIdB());
+        collision_model->readElement(potential_collisions[i].getIdB());
     potential_collisions[i].getResults(&ptA, &ptB, &n, &distance);
     xA.col(i) = ptA;
     xB.col(i) = ptB;
@@ -648,10 +648,10 @@ bool RigidBodyTree::allCollisions(const KinematicsCache<double>& cache,
     xB_in_world.col(i) = ptB;
 
     const DrakeCollision::Element* elementA =
-            collision_model->readElement(points[i].getIdA());
+        collision_model->readElement(points[i].getIdA());
     bodyA_idx.push_back(elementA->getBody().body_index);
     const DrakeCollision::Element* elementB =
-            collision_model->readElement(points[i].getIdB());
+        collision_model->readElement(points[i].getIdB());
     bodyB_idx.push_back(elementB->getBody().body_index);
   }
   return points_found;
