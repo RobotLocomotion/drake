@@ -51,9 +51,9 @@ bool OverlapFilterCallback::needBroadphaseCollision(
     if ((bt_collision_object0->getUserPointer() != NULL) &&
         (bt_collision_object1->getUserPointer() != NULL)) {
       auto element0 =
-          static_cast<Element*>(bt_collision_object0->getUserPointer());
+          static_cast<CollisionElement*>(bt_collision_object0->getUserPointer());
       auto element1 =
-          static_cast<Element*>(bt_collision_object1->getUserPointer());
+          static_cast<CollisionElement*>(bt_collision_object1->getUserPointer());
       collides = collides && element0->CollidesWith(element1);
     }
   }
@@ -164,7 +164,7 @@ std::unique_ptr<btCollisionShape> BulletModel::newBulletMeshPointsShape(
   return bt_shape;
 }
 
-ElementId BulletModel::addElement(const Element& element) {
+ElementId BulletModel::addElement(const CollisionElement& element) {
   ElementId id = Model::addElement(element);
 
   if (id != 0) {
@@ -273,8 +273,8 @@ std::vector<PointPair> BulletModel::potentialCollisionPoints(bool use_margins) {
     const btCollisionObject* obA = contact_manifold->getBody0();
     const btCollisionObject* obB = contact_manifold->getBody1();
 
-    auto elementA = static_cast<Element*>(obA->getUserPointer());
-    auto elementB = static_cast<Element*>(obB->getUserPointer());
+    auto elementA = static_cast<CollisionElement*>(obA->getUserPointer());
+    auto elementB = static_cast<CollisionElement*>(obB->getUserPointer());
 
     DrakeShapes::Shape shapeA = elementA->getShape();
     DrakeShapes::Shape shapeB = elementB->getShape();
@@ -646,11 +646,11 @@ bool BulletModel::closestPointsAllToAll(
   std::vector<ElementIdPair> id_pairs;
   for (int i = 0; i < ids_to_check.size(); ++i) {
     ElementId id_a = ids_to_check[i];
-    const Element* element_a = readElement(id_a);
+    const CollisionElement* element_a = readElement(id_a);
     if (element_a != nullptr) {
       for (int j = i + 1; j < ids_to_check.size(); ++j) {
         ElementId id_b = ids_to_check[j];
-        const Element* element_b = readElement(id_b);
+        const CollisionElement* element_b = readElement(id_b);
         if (element_b != nullptr && element_a->CollidesWith(element_b)) {
           id_pairs.push_back(std::make_pair(id_a, id_b));
         }
@@ -688,8 +688,8 @@ bool BulletModel::collisionPointsAllToAll(
             ->getManifoldByIndexInternal(i);
     const btCollisionObject* obA = contactManifold->getBody0();
     const btCollisionObject* obB = contactManifold->getBody1();
-    auto elementA = static_cast<Element*>(obA->getUserPointer());
-    auto elementB = static_cast<Element*>(obB->getUserPointer());
+    auto elementA = static_cast<CollisionElement*>(obA->getUserPointer());
+    auto elementB = static_cast<CollisionElement*>(obB->getUserPointer());
     DrakeShapes::Shape shapeA = elementA->getShape();
     DrakeShapes::Shape shapeB = elementB->getShape();
     double marginA = 0;

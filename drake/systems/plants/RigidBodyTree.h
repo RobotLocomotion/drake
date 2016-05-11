@@ -543,7 +543,7 @@ class DRAKERBM_EXPORT RigidBodyTree {
       Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>& J) const;
 
   DrakeCollision::ElementId addCollisionElement(
-      const DrakeCollision::Element& element, RigidBody& body,
+      const DrakeCollision::CollisionElement& element, RigidBody& body,
       const std::string& group_name);
 
   template <class UnaryPredicate>

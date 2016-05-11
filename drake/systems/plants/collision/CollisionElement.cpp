@@ -1,4 +1,4 @@
-#include "Element.h"
+#include "CollisionElement.h"
 
 #include <iostream>
 
@@ -9,32 +9,32 @@ using namespace std;
 using drake::common::algorithms::have_intersection;
 
 namespace DrakeCollision {
-Element::Element(const Isometry3d& T_element_to_local,
+CollisionElement::CollisionElement(const Isometry3d& T_element_to_local,
                  const RigidBody* const body)
     : DrakeShapes::Element(T_element_to_local), body_(body) {
   id = (ElementId) this;
 }
 
-Element::Element(const DrakeShapes::Geometry& geometry,
+CollisionElement::CollisionElement(const DrakeShapes::Geometry& geometry,
                  const Isometry3d& T_element_to_local,
                  const RigidBody* const body)
     : DrakeShapes::Element(geometry, T_element_to_local), body_(body) {
   id = (ElementId) this;
 }
 
-Element::Element(const Element& other)
+CollisionElement::CollisionElement(const CollisionElement& other)
     : DrakeShapes::Element(other),
       id((ElementId) this),
       body_(other.body_),
       collision_groups_(other.collision_groups_) {}
 
-Element* Element::clone() const { return new Element(*this); }
+CollisionElement* CollisionElement::clone() const { return new CollisionElement(*this); }
 
-ElementId Element::getId() const { return id; }
+ElementId CollisionElement::getId() const { return id; }
 
-const RigidBody& Element::getBody() const { return *body_; }
+const RigidBody& CollisionElement::getBody() const { return *body_; }
 
-bool Element::CollidesWith(const Element* other) const {
+bool CollisionElement::CollidesWith(const CollisionElement* other) const {
   // Do not collide with self
   if (this == other) return false;
 
@@ -49,7 +49,7 @@ bool Element::CollidesWith(const Element* other) const {
 // Member CollisionElement::collision_groups_ is sorted so that checking if two
 // collision elements belong to a same group can be performed in order N.
 // See CollisionElement::CollidesWith
-void Element::add_to_collision_group(int group_id) {
+void CollisionElement::add_to_collision_group(int group_id) {
   auto it = std::lower_bound(collision_groups_.begin(),
                              collision_groups_.end(),
                              group_id);
@@ -57,11 +57,11 @@ void Element::add_to_collision_group(int group_id) {
     collision_groups_.insert(it, group_id);
 }
 
-int Element::number_of_groups() const { return collision_groups_.size(); }
+int CollisionElement::number_of_groups() const { return collision_groups_.size(); }
 
-std::vector<int> Element::collision_groups() const { return collision_groups_; }
+std::vector<int> CollisionElement::collision_groups() const { return collision_groups_; }
 
-ostream& operator<<(ostream& out, const Element& ee) {
+ostream& operator<<(ostream& out, const CollisionElement& ee) {
   out << "DrakeCollision::Element:\n"
       << "  - id = " << ee.id << "\n"
       << "  - T_element_to_world =\n" << ee.T_element_to_world.matrix() << "\n"

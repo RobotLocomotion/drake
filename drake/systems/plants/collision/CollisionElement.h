@@ -19,20 +19,20 @@ class RigidBody;
 namespace DrakeCollision {
 typedef uintptr_t ElementId;
 
-class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
+class DRAKECOLLISION_EXPORT CollisionElement : public DrakeShapes::Element {
  public:
-  Element(const Eigen::Isometry3d& T_element_to_local =
+  CollisionElement(const Eigen::Isometry3d& T_element_to_local =
               Eigen::Isometry3d::Identity(),
           const RigidBody* const body = nullptr);
 
-  Element(const DrakeShapes::Geometry& geometry,
+  CollisionElement(const DrakeShapes::Geometry& geometry,
           const Eigen::Isometry3d& T_element_to_local =
               Eigen::Isometry3d::Identity(),
           const RigidBody* const body = nullptr);
 
-  virtual ~Element() {}
+  virtual ~CollisionElement() {}
 
-  virtual Element* clone() const;
+  virtual CollisionElement* clone() const;
 
   ElementId getId() const;
 
@@ -43,7 +43,7 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
    * with the other object.  CollidesWith should be symmetric: if
    * A collides with B, B collides with A.
    */
-  virtual bool CollidesWith(const Element* other) const;
+  virtual bool CollidesWith(const CollisionElement* other) const;
 
   /**
    * @brief Returns a const reference to the body to which this
@@ -74,10 +74,10 @@ class DRAKECOLLISION_EXPORT Element : public DrakeShapes::Element {
    * A toString method for this class.
    */
   friend DRAKECOLLISION_EXPORT std::ostream& operator<<(std::ostream&,
-                                                        const Element&);
+                                                        const CollisionElement&);
 
  protected:
-  Element(const Element& other);
+  CollisionElement(const CollisionElement& other);
 
  private:
   ElementId id;

@@ -8,7 +8,7 @@
 #include "BulletCollision/NarrowPhaseCollision/btGjkPairDetector.h"
 #include "BulletCollision/NarrowPhaseCollision/btPointCollector.h"
 
-#include "Element.h"
+#include "CollisionElement.h"
 #include "Model.h"
 #include "BulletResultCollector.h"
 
@@ -57,7 +57,7 @@ class BulletModel : public Model {
 
   void updateModel() override;
 
-  ElementId addElement(const Element& element) override;
+  ElementId addElement(const CollisionElement& element) override;
 
   bool updateElementWorldTransform(
       const ElementId, const Eigen::Isometry3d& T_local_to_world) override;

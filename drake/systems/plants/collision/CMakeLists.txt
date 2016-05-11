@@ -1,4 +1,4 @@
-set(drakeCollision_SRC_FILES DrakeCollision.cpp Element.cpp point_pair.cc Model.cpp ResultCollector.cpp)
+set(drakeCollision_SRC_FILES DrakeCollision.cpp CollisionElement.cpp point_pair.cc Model.cpp ResultCollector.cpp)
 pods_find_pkg_config(bullet)
 
 if (bullet_FOUND)
@@ -18,5 +18,5 @@ enable_testing()
 add_subdirectory(test)
 
 pods_install_libraries(drakeCollision)
-drake_install_headers(DrakeCollision.h point_pair.h Element.h Model.h)
+drake_install_headers(DrakeCollision.h point_pair.h CollisionElement.h Model.h)
   

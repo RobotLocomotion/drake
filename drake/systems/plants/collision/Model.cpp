@@ -6,8 +6,8 @@ using namespace std;
 using namespace Eigen;
 
 namespace DrakeCollision {
-ElementId Model::addElement(const Element& element) {
-  unique_ptr<Element> element_local(element.clone());
+ElementId Model::addElement(const CollisionElement& element) {
+  unique_ptr<CollisionElement> element_local(element.clone());
   ElementId id = element_local->getId();
   this->elements.insert(make_pair(id, move(element_local)));
   return id;
@@ -17,7 +17,7 @@ bool Model::removeElement(const ElementId& id) {
   return elements.erase(id) > 0;
 }
 
-const Element* Model::readElement(ElementId id) const {
+const CollisionElement* Model::readElement(ElementId id) const {
   auto element_iter = elements.find(id);
   if (element_iter != elements.end()) {
     return element_iter->second.get();
@@ -26,7 +26,7 @@ const Element* Model::readElement(ElementId id) const {
   }
 }
 
-Element* Model::readElement(ElementId id) {
+CollisionElement* Model::readElement(ElementId id) {
   auto element_iter = elements.find(id);
   if (element_iter != elements.end()) {
     return element_iter->second.get();

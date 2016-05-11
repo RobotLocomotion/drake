@@ -13,6 +13,8 @@
 class DRAKERBM_EXPORT RigidBody {
  private:
   std::unique_ptr<DrakeJoint> joint;
+
+  // TODO(amcastro-tri): move this to CollisionElement.
   DrakeCollision::bitmask collision_filter_group;
   DrakeCollision::bitmask collision_filter_ignores;
 
@@ -117,7 +119,7 @@ class DRAKERBM_EXPORT RigidBody {
 
   std::vector<DrakeCollision::ElementId> collision_element_ids;
 
-  typedef std::vector<DrakeCollision::Element*> CollisionElementsVector;
+  typedef std::vector<DrakeCollision::CollisionElement*> CollisionElementsVector;
   typedef
       typename CollisionElementsVector::iterator collision_elements_iterator;
   typedef typename CollisionElementsVector::const_iterator
@@ -133,7 +135,7 @@ class DRAKERBM_EXPORT RigidBody {
     return collision_elements_.end();
   }
 
-  void add_collision_element(DrakeCollision::Element* e) {
+  void add_collision_element(DrakeCollision::CollisionElement* e) {
     collision_elements_.push_back(e);
   }
 

@@ -51,9 +51,9 @@ TEST(ModelTest, ClosestPointsAllToAll) {
   DrakeShapes::Box geometry_1(Vector3d(1, 1, 1));
   DrakeShapes::Sphere geometry_2(0.5);
   DrakeShapes::Sphere geometry_3(0.5);
-  Element element_1(geometry_1);
-  Element element_2(geometry_2, T_elem2_to_body);
-  Element element_3(geometry_3);
+  CollisionElement element_1(geometry_1);
+  CollisionElement element_2(geometry_2, T_elem2_to_body);
+  CollisionElement element_3(geometry_3);
 
   // Populate the model.
   std::shared_ptr<Model> model = newModel();
@@ -99,7 +99,7 @@ TEST(ModelTest, ClosestPointsAllToAll) {
 }
 
 TEST(ModelTest, CollisionGroups) {
-  Element element_1, element_2, element_3;
+  CollisionElement element_1, element_2, element_3;
 
   // Add to a number of collision groups in random order
   element_1.add_to_collision_group(2);

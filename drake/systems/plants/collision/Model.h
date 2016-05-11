@@ -6,7 +6,7 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-#include "Element.h"
+#include "CollisionElement.h"
 #include "drake/drakeCollision_export.h"
 #include "drake/systems/plants/collision/point_pair.h"
 
@@ -24,7 +24,7 @@ class DRAKECOLLISION_EXPORT Model {
   * \return an ElementId that uniquely identifies the added element within
   * this model
   */
-  virtual ElementId addElement(const Element& element);
+  virtual ElementId addElement(const CollisionElement& element);
 
   bool removeElement(const ElementId& id);
 
@@ -34,7 +34,7 @@ class DRAKECOLLISION_EXPORT Model {
    * the given id or nullptr if no such collision element is present in the
    * model.
    */
-  virtual const Element* readElement(ElementId id) const;
+  virtual const CollisionElement* readElement(ElementId id) const;
 
   /** @brief Get a pointer to a mutable collision element in this model.
    * @param id an ElementId corresponding to the desired collision element
@@ -42,7 +42,7 @@ class DRAKECOLLISION_EXPORT Model {
    * the given id or nullptr if no such collision element is present in the
    * model.
    */
-  virtual Element* readElement(ElementId id);
+  virtual CollisionElement* readElement(ElementId id);
 
   virtual void getTerrainContactPoints(ElementId id0,
                                        Eigen::Matrix3Xd& terrain_points);
@@ -206,7 +206,7 @@ class DRAKECOLLISION_EXPORT Model {
   // Protected member variables are forbidden by the style guide.
   // Please do not add new references to this member.  Instead, use
   // the accessors.
-  std::unordered_map<ElementId, std::unique_ptr<Element>> elements;
+  std::unordered_map<ElementId, std::unique_ptr<CollisionElement>> elements;
 
  private:
   Model(const Model&) {}
