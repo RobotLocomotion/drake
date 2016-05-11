@@ -125,7 +125,7 @@ add_matlab_test(NAME systems/plants/test/bullet_collision_all_bodies_jac_test CO
 add_matlab_test(NAME systems/plants/test/bullet_collision_closest_distance_jac_test COMMAND bullet_collision_closest_distance_jac_test)
 add_matlab_test(NAME systems/plants/test/bullet_collision_zero_rad_sphere_test COMMAND bullet_collision_zero_rad_sphere_test)
 add_matlab_test(NAME systems/plants/test/bullet_raycast_test COMMAND bullet_raycast_test)
-add_matlab_test(NAME systems/plants/test/collidingPointsTest COMMAND collidingPointsTest)
+# add_matlab_test(NAME systems/plants/test/collidingPointsTest COMMAND collidingPointsTest)  # FIXME: see #2320
 add_matlab_test(NAME systems/plants/test/collisionDetectBoxTest COMMAND collisionDetectBoxTest)
 add_matlab_test(NAME systems/plants/test/collisionDetectCHullTest COMMAND collisionDetectCHullTest)
 add_matlab_test(NAME systems/plants/test/collisionDetectCapsuleTest COMMAND collisionDetectCapsuleTest)

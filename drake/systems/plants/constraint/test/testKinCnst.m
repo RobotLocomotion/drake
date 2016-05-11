@@ -422,3 +422,5 @@ function c = eval_numerical_matlab(constraint,t,q)
 kinsol = doKinematics(constraint.robot,q,false,false);
 c = constraint.eval(t,kinsol);
 end
+
+% TIMEOUT 750
